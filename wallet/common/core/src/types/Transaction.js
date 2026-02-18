@@ -1,3 +1,5 @@
+/** @typedef {import('./Token').Token} Token */
+
 /**
  * @typedef {Object} Transaction
  * @property {string} type - The transaction type.
@@ -40,6 +42,20 @@
  * @typedef {Object} CosignedTransaction
  * @property {CosignedTransactionDTO} dto - Transaction data transfer object.
  * @property {string} hash - The transaction hash.
+ */
+
+/** @typedef {'slow'|'medium'|'fast'} TransactionFeeTierLevel */
+
+/**
+ * @typedef {Object} TransactionFeeTiers
+ * @property {TransactionFee} slow - The slow fee tier.
+ * @property {TransactionFee} medium - The medium fee tier.
+ * @property {TransactionFee} fast - The fast fee tier.
+ */
+
+/**
+ * @typedef {Object} TransactionFee
+ * @property {Token} token - The fee amount represented as a token.
  */
 
 export default {};

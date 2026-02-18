@@ -159,10 +159,10 @@ a {
 }
 
 :root {
-	--toastify-color-info: $color-info;
-	--toastify-color-success: $color-success;
-	--toastify-color-warning: $color-warning;
-	--toastify-color-error: $color-danger;
+	--toastify-color-info: #{$color-info};
+	--toastify-color-success: #{$color-success};
+	--toastify-color-warning: #{$color-warning};
+	--toastify-color-error: #{$color-danger};
 	--toastify-toast-width: 20rem;
 	--toastify-toast-background: #fff;
 	--toastify-toast-min-height: 2rem;

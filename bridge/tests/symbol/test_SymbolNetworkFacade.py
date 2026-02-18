@@ -114,9 +114,9 @@ async def test_can_extract_mosaic_id_other(server):  # pylint: disable=redefined
 
 # region create_connector
 
-def test_can_create_connector():
+async def test_can_create_connector(server):  # pylint: disable=redefined-outer-name
 	# Arrange:
-	config = _create_config()
+	config = _create_config(server)
 	config.extensions['rosetta_endpoint'] = 'http://rosetta.api:9988'
 	facade = SymbolNetworkFacade(config)
 
@@ -125,12 +125,38 @@ def test_can_create_connector():
 
 	# Assert:
 	assert isinstance(connector, SymbolConnector)
-	assert 'http://foo.bar:1234' == connector.endpoint
+	assert server.make_url('') == connector.endpoint
+
+	# - finalized chain height is used
+	chain_height = await connector.chain_height()
+	finalized_chain_height = await connector.finalized_chain_height()
+	assert 1234 == chain_height
+	assert 1198 == finalized_chain_height
 
 
-def test_can_create_connector_rosetta():
+async def test_can_create_connector_with_finalization_disabled(server):  # pylint: disable=redefined-outer-name
 	# Arrange:
-	config = _create_config()
+	config = _create_config(server, config_extensions={'is_finalization_supported': 'False'})
+	config.extensions['rosetta_endpoint'] = 'http://rosetta.api:9988'
+	facade = SymbolNetworkFacade(config)
+
+	# Act:
+	connector = facade.create_connector()
+
+	# Assert:
+	assert isinstance(connector, SymbolConnector)
+	assert server.make_url('') == connector.endpoint
+
+	# - finalized chain height is NOT used
+	chain_height = await connector.chain_height()
+	finalized_chain_height = await connector.finalized_chain_height()
+	assert 1234 == chain_height
+	assert 1234 == finalized_chain_height
+
+
+async def test_can_create_connector_rosetta(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	config = _create_config(server)
 	config.extensions['rosetta_endpoint'] = 'http://rosetta.api:9988'
 	facade = SymbolNetworkFacade(config)
 
@@ -139,7 +165,13 @@ def test_can_create_connector_rosetta():
 
 	# Assert:
 	assert isinstance(connector, SymbolConnector)
-	assert 'http://foo.bar:1234' == connector.endpoint
+	assert server.make_url('') == connector.endpoint
+
+	# - finalized chain height is used
+	chain_height = await connector.chain_height()
+	finalized_chain_height = await connector.finalized_chain_height()
+	assert 1234 == chain_height
+	assert 1198 == finalized_chain_height
 
 # endregion
 

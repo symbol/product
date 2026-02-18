@@ -97,6 +97,7 @@ describe('api/TransactionService', () => {
 		it('announces transaction and returns hash', async () => {
 			// Arrange:
 			const dto = { payload: '0xdeadbeef' };
+			const signedTransaction = { dto };
 			const provider = {
 				broadcastTransaction: jest.fn().mockResolvedValue({ hash: '0xHASH' })
 			};
@@ -104,7 +105,7 @@ describe('api/TransactionService', () => {
 			const service = createService();
 
 			// Act:
-			const result = await service.announceTransaction(networkProperties, dto);
+			const result = await service.announceTransaction(networkProperties, signedTransaction);
 
 			// Assert:
 			expect(provider.broadcastTransaction).toHaveBeenCalledWith(dto);

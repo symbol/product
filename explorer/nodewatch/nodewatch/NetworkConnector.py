@@ -69,9 +69,9 @@ class NetworkConnector:
 					latest_finalized_block = response_json['latestFinalizedBlock']
 					descriptor.finalized_info = FinalizedInfo(
 						int(latest_finalized_block['height']),
-						int(latest_finalized_block['finalizedEpoch']),
+						int(latest_finalized_block['finalizationEpoch']),
 						latest_finalized_block['hash'],
-						int(latest_finalized_block['finalizedPoint'])
+						int(latest_finalized_block['finalizationPoint'])
 					)
 		except (
 			aiohttp.client_exceptions.ClientConnectorError,

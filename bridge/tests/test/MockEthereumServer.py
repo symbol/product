@@ -6,6 +6,8 @@ from .BridgeTestUtils import HASHES
 
 
 async def create_simple_ethereum_client(aiohttp_client):
+	# pylint: disable=too-many-statements
+
 	"""Creates an Ethereum client with support for basic operations ."""
 
 	class MockEthereumServer:
@@ -15,6 +17,8 @@ async def create_simple_ethereum_client(aiohttp_client):
 
 			self.simulate_announce_error = False
 			self.simulate_estimate_gas_error = False
+			self.simulate_sync = False
+			self.failed_transaction_execution_hash = None
 			self.gas_price_override = None
 
 		async def rpc_main(self, request):  # pylint: disable = too-many-return-statements
@@ -43,8 +47,14 @@ async def create_simple_ethereum_client(aiohttp_client):
 			if 'eth_getTransactionCount' == method:
 				return await self._handle_eth_get_transaction_count(request, request_json['params'][1])
 
+			if 'eth_getTransactionReceipt' == method:
+				return await self._handle_eth_get_transaction_receipt(request, request_json['params'][0])
+
 			if 'eth_sendRawTransaction' == method:
 				return await self._handle_eth_send_raw_transaction(request)
+
+			if 'eth_syncing' == method:
+				return await self._handle_eth_syncing(request)
 
 			if 'eth_call' == method:
 				return await self._handle_eth_call(request, request_json['params'][0]['data'])
@@ -140,14 +150,37 @@ async def create_simple_ethereum_client(aiohttp_client):
 				'result': block_identifier_to_count_map[block_identifier]
 			})
 
+		async def _handle_eth_get_transaction_receipt(self, request, transaction_hash):
+			status = '0x0' if self.failed_transaction_execution_hash == transaction_hash else '0x1'
+			return await self._process(request, {
+				'result': {'status': status}
+			})
+
 		async def _handle_eth_send_raw_transaction(self, request):
 			if self.simulate_announce_error:
+				error_message = 'INTERNAL_ERROR: IntrinsicGas'
+				if isinstance(self.simulate_announce_error, str):
+					error_message = self.simulate_announce_error
+
 				return await self._process(request, {
-					'error': {'code': -32000, 'message': 'INTERNAL_ERROR: IntrinsicGas'}
+					'error': {'code': -32000, 'message': error_message}
 				})
 
 			return await self._process(request, {
 				'result': '0xe1f3095770633ab2b18081658bad475439f6a08c902d0915903bafff06e6febf'
+			})
+
+		async def _handle_eth_syncing(self, request):
+			if self.simulate_sync:
+				return await self._process(request, {
+					'result': {
+						'startingBlock': '0x0',
+						'currentBlock': '0x1518'
+					}
+				})
+
+			return await self._process(request, {
+				'result': False
 			})
 
 		async def _handle_eth_call(self, request, data):

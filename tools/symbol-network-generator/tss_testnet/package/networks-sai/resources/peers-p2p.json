@@ -1,0 +1,38 @@
+{
+    "_info": "this file contains a list of peer nodes",
+    "knownPeers": [
+        {
+            "publicKey": "70DEE932834D2B47C59B3BDC3CBBEE35AF6C38969D792BF27A52FFE89F3E62D8",
+            "endpoint": {
+                "host": "amity.symboltest.net",
+                "port": 7900
+            },
+            "metadata": {
+                "name": "amity",
+                "roles": "Api,Peer,Voting"
+            }
+        },
+        {
+            "publicKey": "7B0979063909BA522F0918AA2E5E117421EA51F294AA6C382301C7343800DF65",
+            "endpoint": {
+                "host": "fancy.symboltest.net",
+                "port": 7900
+            },
+            "metadata": {
+                "name": "fancy",
+                "roles": "Peer,Voting"
+            }
+        },
+        {
+            "publicKey": "B5E8079E7A9E3D086EDACD65CDD2F86FC2F8B2D36B0C46A3F1BAE1F81ECC147D",
+            "endpoint": {
+                "host": "ranger.symboltest.net",
+                "port": 7900
+            },
+            "metadata": {
+                "name": "ranger",
+                "roles": "Peer,Voting"
+            }
+        }
+    ]
+}

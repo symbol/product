@@ -1,0 +1,73 @@
+extends:
+  - ../../../_symbol/linters/javascript/default.eslintrc
+  - plugin:import/recommended
+  - plugin:react/recommended
+
+plugins:
+  - react
+  - jsdoc
+
+parser: '@babel/eslint-parser'
+
+parserOptions:
+  ecmaFeatures:
+    jsx: true
+
+env:
+  browser: true
+  es6: true
+  jest: true
+  node: true
+
+rules:
+  sort-imports:
+    - error
+    - ignoreDeclarationSort: true
+  no-unused-vars: error
+  yoda: off
+  react/prop-types: off
+  react/react-in-jsx-scope: off
+  no-underscore-dangle: off
+  jsdoc/no-undefined-types: 1
+  import/named: off
+  import/namespace: off
+  prefer-destructuring:
+    - error
+    - VariableDeclarator:
+        array: false
+        object: true
+      AssignmentExpression:
+        array: false
+        object: false
+
+settings:
+  react:
+    version: detect
+  import/ignore:
+    - react-native
+    - symbol-sdk
+    - symbol-sdk/symbol
+  import/resolver:
+    node:
+      extensions:
+        - .js
+        - .jsx
+    eslint-import-resolver-custom-alias:
+      alias:
+        '@/app': './src'
+        '__fixtures__': './__fixtures__'
+        '__tests__': './__tests__'
+        'symbol-sdk/symbol': './node_modules/symbol-sdk/src/symbol/index.js'
+      extensions:
+        - .js
+        - .jsx
+  import/parsers:
+    '@babel/eslint-parser':
+      - .js
+      - .jsx
+
+overrides:
+  - files:
+    - '*.js'
+    - '*.jsx'
+

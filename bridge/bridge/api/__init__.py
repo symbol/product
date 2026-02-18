@@ -4,7 +4,7 @@ from collections import namedtuple
 from decimal import Decimal
 from pathlib import Path
 
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, send_from_directory
 from symbolchain.CryptoTypes import Hash256
 from symbollightapi.model.Exceptions import NodeException
 
@@ -16,11 +16,11 @@ from ..NetworkFacadeLoader import load_network_facade
 from ..NetworkUtils import BalanceTransfer, estimate_balance_transfer_fees
 from ..price_oracle.PriceOracleLoader import load_price_oracle
 from ..price_oracle.PriceOracleThrottle import make_throttled_conversion_rate_lookup
-from ..WorkflowUtils import create_conversion_rate_calculator_factory, is_native_to_native_conversion
+from ..WorkflowUtils import create_conversion_rate_calculator_factory, is_daily_limit_exceeded, is_native_to_native_conversion
 from .Validators import is_valid_address_string, is_valid_decimal_string, is_valid_hash_string
 
 FilterOptions = namedtuple('FilterOptions', ['address', 'transaction_hash', 'offset', 'limit', 'sort', 'payout_status'])
-PrepareOptions = namedtuple('PrepareOptions', ['recipient_address', 'amount'])
+EstimateOptions = namedtuple('EstimateOptions', ['recipient_address', 'amount'])
 
 # region handler implementations
 
@@ -88,7 +88,7 @@ def _parse_filter_parameters(context, address, transaction_hash, is_unwrap_mode)
 
 
 def _make_bad_request_response(parse_failure_identifier):
-	return jsonify({'error': f'{parse_failure_identifier} parameter is invalid'}), 400
+	return jsonify({'errorCode': 'INVALID_REQUEST_PARAMS', 'error': f'{parse_failure_identifier} parameter is invalid'}), 400
 
 
 def _handle_wrap_requests(context, address, transaction_hash, database_name):
@@ -117,6 +117,7 @@ def _handle_wrap_requests(context, address, transaction_hash, database_name):
 				'payoutNetAmount': str(int(view.payout_net_amount)) if view.payout_net_amount else None,
 				'payoutTotalFee': str(int(view.payout_total_fee)) if view.payout_total_fee else None,
 				'payoutConversionRate': str(int(view.payout_conversion_rate)) if view.payout_conversion_rate else None,
+				'payoutSentTimestamp': view.payout_sent_timestamp,
 
 				'payoutTimestamp': view.payout_timestamp,
 
@@ -147,7 +148,7 @@ def _handle_wrap_errors(context, address, transaction_hash, database_name):
 		])
 
 
-def _parse_prepare_parameters(network_facade, request_json):
+def _parse_estimate_parameters(network_facade, request_json):
 	recipient_address = request_json.get('recipientAddress', None)
 	if not is_valid_address_string(network_facade, recipient_address):
 		return (None, 'recipientAddress')
@@ -160,14 +161,32 @@ def _parse_prepare_parameters(network_facade, request_json):
 
 	amount = int(amount)
 
-	return (PrepareOptions(recipient_address, amount), None)
+	return (EstimateOptions(recipient_address, amount), None)
 
 
-async def _handle_wrap_prepare(is_unwrap_mode, context, fee_multiplier):  # pylint: disable=too-many-locals
+def _make_estimate_error(code, message):
+	return jsonify({'errorCode': code, 'error': message})
+
+
+def _check_limits(gross_amount, network_facade, database):
+	max_transfer_amount = int(network_facade.config.extensions.get('max_transfer_amount', 0))
+	if max_transfer_amount and gross_amount > max_transfer_amount:
+		error_message = f'gross transfer amount {gross_amount} exceeds max transfer amount {max_transfer_amount}'
+		return _make_estimate_error('REQUEST_LIMIT_EXCEEDED', error_message), 400
+
+	(is_exceeded, amount_remaining) = is_daily_limit_exceeded(network_facade, database, gross_amount)
+	if is_exceeded:
+		error_message = f'daily transfer limit is exceeded ({amount_remaining} remaining), please try again later'
+		return _make_estimate_error('DAILY_LIMIT_EXCEEDED', error_message), 400
+
+	return None
+
+
+async def _handle_wrap_estimate(is_unwrap_mode, context, fee_multiplier, database_name):  # pylint: disable=too-many-locals
 	network_facade = context.native_facade if is_unwrap_mode else context.wrapped_facade
 
 	request_json = request.get_json()
-	(prepare_options, parse_failure_identifier) = _parse_prepare_parameters(network_facade, request_json)
+	(estimate_options, parse_failure_identifier) = _parse_estimate_parameters(network_facade, request_json)
 	if parse_failure_identifier:
 		return _make_bad_request_response(parse_failure_identifier)
 
@@ -180,14 +199,18 @@ async def _handle_wrap_prepare(is_unwrap_mode, context, fee_multiplier):  # pyli
 			fee_multiplier)
 		calculator = conversion_rate_calculator_factory.create_best_calculator()
 		calculator_func = calculator.to_native_amount if is_unwrap_mode else calculator.to_wrapped_amount
-		gross_amount = calculator_func(prepare_options.amount)
+		gross_amount = calculator_func(estimate_options.amount)
+
+		check_limits_result = _check_limits(gross_amount, network_facade, getattr(databases, database_name))
+		if check_limits_result:
+			return check_limits_result
 
 		if fee_multiplier:
 			fee_multiplier *= Decimal(calculator_func(10 ** 12)) / Decimal(10 ** 12)
 
 		balance_transfer = BalanceTransfer(
 			network_facade.make_public_key(network_facade.config.extensions['signer_public_key']),
-			prepare_options.recipient_address,
+			estimate_options.recipient_address,
 			gross_amount,
 			None)
 
@@ -197,7 +220,7 @@ async def _handle_wrap_prepare(is_unwrap_mode, context, fee_multiplier):  # pyli
 		try:
 			fee_information = await estimate_balance_transfer_fees(network_facade, balance_transfer, fee_multiplier or Decimal('1'))
 		except NodeException as ex:
-			return jsonify({'error': str(ex)}), 500
+			return _make_estimate_error('UNEXPECTED_ERROR', str(ex)), 500
 
 		result = {
 			'grossAmount': str(gross_amount),
@@ -281,14 +304,14 @@ def add_wrap_routes(app, context):
 
 		return _handle_wrap_errors(context, address, transaction_hash, 'wrap_request')
 
-	@app.route('/wrap/prepare', methods=['POST'])
-	async def wrap_prepare():
+	@app.route('/wrap/estimate', methods=['POST'])
+	async def wrap_estimate():
 		await context.load()
 
 		fee_multiplier = await context.conversion_rate_lookup()
 		fee_multiplier *= Decimal(10 ** context.native_facade.native_token_precision)
 		fee_multiplier /= Decimal(10 ** context.wrapped_facade.native_token_precision)
-		return await _handle_wrap_prepare(False, context, fee_multiplier)
+		return await _handle_wrap_estimate(False, context, fee_multiplier, 'wrap_request')
 
 
 def add_unwrap_routes(app, context):
@@ -308,11 +331,11 @@ def add_unwrap_routes(app, context):
 
 		return _handle_wrap_errors(context, address, transaction_hash, 'unwrap_request')
 
-	@app.route('/unwrap/prepare', methods=['POST'])
-	async def unwrap_prepare():
+	@app.route('/unwrap/estimate', methods=['POST'])
+	async def unwrap_estimate():
 		await context.load()
 
-		return await _handle_wrap_prepare(True, context, None)
+		return await _handle_wrap_estimate(True, context, None, 'unwrap_request')
 
 
 def create_app():
@@ -330,8 +353,13 @@ def create_app():
 		return jsonify({
 			'nativeNetwork': _network_config_to_dict(config.native_network),
 			'wrappedNetwork': _network_config_to_dict(config.wrapped_network),
-			'enabled': True
+			'enabled': True,
+			'mode': config.global_.mode.name.lower()
 		})
+
+	@app.route('/openapi')
+	def openapi():  # pylint: disable=unused-variable
+		return send_from_directory('static/openapi', 'index.html')
 
 	add_wrap_routes(app, context)
 	if config.wrapped_network.mosaic_id:  # not native to native conversion

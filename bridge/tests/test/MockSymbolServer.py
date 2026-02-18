@@ -19,6 +19,19 @@ async def create_simple_symbol_client(aiohttp_client, currency_mosaic_id, addres
 				'chain': {'currencyMosaicId': currency_mosaic_id}
 			})
 
+		async def chain_info(self, request):
+			return await self._process(request, {
+				'height': '1234',
+				'scoreHigh': '888999',
+				'scoreLow': '222111',
+				'latestFinalizedBlock': {
+					'finalizationEpoch': 222,
+					'finalizationPoint': 10,
+					'height': '1198',
+					'hash': 'C49C566E4CF60856BC127C9E4748C89E3D38566DE0DAFE1A491012CC27A1C043'
+				}
+			})
+
 		@staticmethod
 		async def node_time(request):
 			return await MockSymbolServer._process(request, {
@@ -64,6 +77,7 @@ async def create_simple_symbol_client(aiohttp_client, currency_mosaic_id, addres
 	# create an app using the server
 	app = web.Application()
 	app.router.add_get('/network/properties', mock_server.network_properties)
+	app.router.add_get('/chain/info', mock_server.chain_info)
 	app.router.add_get('/node/time', mock_server.node_time)
 	app.router.add_get(r'/accounts/{account_id}', mock_server.accounts_by_id)
 	app.router.add_get(r'/transactionStatus/{transaction_hash}', mock_server.transaction_status)

@@ -1,6 +1,17 @@
+import datetime
+from collections import namedtuple
 from decimal import Decimal
 
+from symbollightapi.model.Constants import TimeoutSettings, TransactionStatus
+from symbollightapi.model.Exceptions import NodeException
+
 from .ConversionRateCalculatorFactory import ConversionRateCalculator, ConversionRateCalculatorFactory
+from .ethereum.EthereumConnector import ConfirmedTransactionExecutionFailure
+from .models.BridgeConfiguration import StrategyMode
+from .NetworkUtils import is_transient_error
+
+PrepareSendResult = namedtuple('PrepareSendResult', ['error_message', 'fee_multiplier', 'transfer_amount'])
+
 
 # region calculate_search_range
 
@@ -71,7 +82,7 @@ def is_native_to_native_conversion(wrapped_facade):
 
 
 def validate_global_configuration(global_config, wrapped_facade):
-	is_swap_strategy = 'swap' == global_config.mode
+	is_swap_strategy = StrategyMode.SWAP == global_config.mode
 	if is_native_to_native_conversion(wrapped_facade):
 		if not is_swap_strategy:
 			raise ValueError('wrapped token is native but swap mode is not selected')
@@ -94,9 +105,97 @@ def create_conversion_rate_calculator_factory(execution_context, databases, nati
 
 		return NativeConversionRateCalculatorFactory(databases, fee_multiplier)
 
-	if 'wrap' == execution_context.strategy_mode:
+	if StrategyMode.WRAP == execution_context.strategy_mode:
 		return NativeConversionRateCalculatorFactory(databases, Decimal(1))  # wrapped mode (1:1) uses fixed unity multiplier (1)
 
 	return ConversionRateCalculatorFactory(databases, native_facade.extract_mosaic_id().formatted, execution_context.is_unwrap_mode)
+
+# endregion
+
+
+# region prepare_send / is_daily_limit_exceeded
+
+def prepare_send(network, request, conversion_function, fee_multiplier):
+	"""Performs basic calculations and validation prior to sending a payout transaction."""
+
+	def make_error(error_message):
+		return PrepareSendResult(error_message, None, None)
+
+	if not fee_multiplier:
+		fee_multiplier = Decimal('1')
+	else:
+		if fee_multiplier < Decimal('0'):
+			raise ValueError('fee_multiplier must be non-negative')
+
+		fee_multiplier *= Decimal(conversion_function(10 ** 12)) / Decimal(10 ** 12)
+
+	transfer_amount = conversion_function(request.amount)
+
+	max_transfer_amount = int(network.config.extensions.get('max_transfer_amount', 0))
+	if max_transfer_amount and transfer_amount > max_transfer_amount:
+		return make_error(f'gross transfer amount {transfer_amount} exceeds max transfer amount {max_transfer_amount}')
+
+	return PrepareSendResult(None, fee_multiplier, transfer_amount)
+
+
+def is_daily_limit_exceeded(network, database, transfer_amount):
+	"""Checks if the specified transfer amount will fit within the rolling 24 hour gross transfer limit."""
+
+	max_daily_transfer_amount = int(network.config.extensions.get('max_daily_transfer_amount', 0))
+	if not max_daily_transfer_amount:
+		return (False, -1)
+
+	day_ago = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=1)
+	cumulative_amount = database.cumulative_gross_amount_sent_since(day_ago.timestamp())
+
+	available_amount = max_daily_transfer_amount - cumulative_amount
+	return (transfer_amount > available_amount, int(available_amount))
+
+# endregion
+
+
+# region check_expiry / check_pending_sent_request
+
+def check_expiry(config_extensions, database, request):
+	"""Determines if the specified request is expired (timed out)."""
+
+	request_lifetime_hours = int(config_extensions.get('request_lifetime_hours', 0))
+	if request_lifetime_hours:
+		request_timestamp = database.payout_sent_timestamp_for_request(request)
+		request_datetime = datetime.datetime.fromtimestamp(request_timestamp, datetime.timezone.utc)
+		if (datetime.datetime.now(datetime.timezone.utc) - request_datetime) > datetime.timedelta(hours=request_lifetime_hours):
+			return f'request timestamp {request_datetime} is more than {request_lifetime_hours} in the past'
+
+	return None
+
+
+async def check_pending_sent_request(request, database, connector, config_extensions):
+	"""Checks a pending sent request and updates database appropriately."""
+
+	transient_retry_message = 'node dropped payout transaction'
+	payout_transaction_hash = database.payout_transaction_hash_for_request(request)
+	try:
+		is_unconfirmed = await connector.try_wait_for_announced_transaction(
+			payout_transaction_hash,
+			TransactionStatus.UNCONFIRMED,
+			TimeoutSettings(1, 0))
+	except ConfirmedTransactionExecutionFailure as ex:
+		is_unconfirmed = False
+		transient_retry_message = str(ex)
+	except NodeException as ex:
+		if not is_transient_error(ex):
+			database.mark_payout_failed(request, str(ex))
+
+		return
+
+	if is_unconfirmed:
+		return
+
+	error_message = check_expiry(config_extensions, database, request)
+	if error_message:
+		database.mark_payout_failed(request, error_message)
+	else:
+		# original request timestamp (derived from block timestamp) is used, so this will not repeat indefinitely
+		database.mark_payout_failed_transient(request, transient_retry_message)
 
 # endregion

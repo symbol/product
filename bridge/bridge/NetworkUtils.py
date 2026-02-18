@@ -4,7 +4,7 @@ from decimal import ROUND_UP, Decimal
 
 from symbolchain.CryptoTypes import Hash256, PrivateKey
 from symbollightapi.model.Constants import TimeoutSettings, TransactionStatus
-from symbollightapi.model.Exceptions import NodeException
+from symbollightapi.model.Exceptions import HttpException, InsufficientBalanceException, NodeException, NodeTransientException
 
 BalanceChange = namedtuple('BalanceChange', ['address', 'currency_id', 'amount', 'transaction_hash'])
 BalanceTransfer = namedtuple('BalanceTransfer', ['signer_public_key', 'recipient_address', 'amount', 'message'])
@@ -43,35 +43,39 @@ async def estimate_balance_transfer_fees(network_facade, balance_transfer, fee_m
 class TransactionSender:
 	"""Utility class for sending transactions to a network."""
 
-	@staticmethod
-	def _load_key_pair(network_facade):
-		private_key = PrivateKey(network_facade.config.extensions['signer_private_key'])
-		return network_facade.sdk_facade.KeyPair(private_key)
-
-	def __init__(self, network_facade, fee_multiplier=Decimal(1)):
+	def __init__(self, network_facade):
 		"""Creates a sender."""
 
 		self.network_facade = network_facade
-		self.sender_key_pair = self._load_key_pair(self.network_facade)
-		self.fee_multiplier = fee_multiplier
 		self.mosaic_id = self.network_facade.extract_mosaic_id().id
 
 		self.unconfirmed_wait_time_seconds = network_facade.config.extensions.get('unconfirmed_wait_time_seconds', 60)
+		self.sender_key_pair = None
 		self.timestamp = None
 
-	async def init(self):
+	async def init(self, vault_connector=None):
 		"""Initializes the sender."""
+
+		vault_key_prefix = 'vault:'
+		config_private_key = self.network_facade.config.extensions['signer_private_key']
+		if config_private_key.startswith(vault_key_prefix):
+			secret_data = await vault_connector.read_kv_secret_data(config_private_key[len(vault_key_prefix):])
+			private_key = PrivateKey(secret_data['signerPrivateKey'])
+		else:
+			private_key = PrivateKey(config_private_key)
+
+		self.sender_key_pair = self.network_facade.sdk_facade.KeyPair(private_key)
 
 		connector = self.network_facade.create_connector()
 		self.timestamp = await connector.network_time()
 
-	async def try_send_transfer(self, destination_address, amount, messsage=None):
+	async def try_send_transfer(self, destination_address, fee_multiplier, amount, messsage=None):
 		"""Sends a transfer to the network."""
 
 		def make_balance_transfer(amount):
 			return BalanceTransfer(self.sender_key_pair.public_key, destination_address, amount, messsage)
 
-		fee_information = await estimate_balance_transfer_fees(self.network_facade, make_balance_transfer(amount), self.fee_multiplier)
+		fee_information = await estimate_balance_transfer_fees(self.network_facade, make_balance_transfer(amount), fee_multiplier)
 
 		if amount < fee_information.total:
 			error_message = ''.join([
@@ -140,5 +144,24 @@ async def download_rosetta_block_balance_changes(connector, blockchain, network,
 				balance_changes.append(balance_change)
 
 	return balance_changes
+
+# endregion
+
+
+# region is_transient_error
+
+def is_transient_error(error):
+	"""Determines if an error is transient. If False, it should be considered permanent."""
+
+	if isinstance(error, HttpException):
+		# 408: request timeout
+		# 429: too many requests
+		# 503: service unavailable
+		return error.http_status_code in (408, 429, 503)
+
+	if isinstance(error, (InsufficientBalanceException, NodeTransientException)):
+		return True
+
+	return False
 
 # endregion

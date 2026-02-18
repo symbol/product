@@ -10,6 +10,7 @@ from bridge.models.WrapRequest import (
 	WrapRequest,
 	check_address_and_make_wrap_result,
 	coerce_zero_balance_wrap_request_to_error,
+	make_next_retry_wrap_request,
 	make_wrap_error_result,
 	make_wrap_request_result
 )
@@ -23,13 +24,41 @@ class WrapRequestTest(unittest.TestCase):
 	# region test utils
 
 	@staticmethod
-	def _create_test_transaction_identifier_arguments():
+	def _create_test_transaction_identifier_arguments(transaction_subindex=5):
 		return [
 			7654,
 			Hash256('C0B52BE17C2F41539E50857855A226A24AFE8B23B51E42F3186FBC725EA63550'),
-			5,
+			transaction_subindex,
 			Address('TB7GF436SYPM4UQF2YYI563QIETUO5NZR6EREKPI')
 		]
+
+	# endregion
+
+	# region make_next_retry_wrap_request
+
+	def _assert_make_next_retry_wrap_request(self, original_subindex, expected_subindex):
+		# Arrange:
+		transaction_identifier = TransactionIdentifier(*self._create_test_transaction_identifier_arguments(original_subindex))
+		original_request = make_wrap_request_result(transaction_identifier, 8888_000000, self.VALID_ADDRESS).request
+
+		# Act:
+		result = make_next_retry_wrap_request(original_request)
+
+		# Assert:
+		expected_request = WrapRequest(
+			*self._create_test_transaction_identifier_arguments(expected_subindex),
+			8888_000000,
+			self.VALID_ADDRESS)
+		self.assertEqual(expected_request, result)
+
+	def test_can_make_next_retry_wrap_request_negative_subindex(self):
+		self._assert_make_next_retry_wrap_request(-1, 0x0001FFFF)
+
+	def test_can_make_next_retry_wrap_request_zero_subindex(self):
+		self._assert_make_next_retry_wrap_request(0, 0x00010000)
+
+	def test_can_make_next_retry_wrap_request_positive_subindex(self):
+		self._assert_make_next_retry_wrap_request(0x00AA00BC, 0x00AB00BC)
 
 	# endregion
 

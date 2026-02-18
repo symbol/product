@@ -6,7 +6,7 @@ from symbolchain import sc
 from symbolchain.CryptoTypes import Hash256, PrivateKey, PublicKey
 from symbolchain.facade.SymbolFacade import SymbolFacade
 from symbolchain.symbol.Network import Address, Network, NetworkTimestamp
-from symbollightapi.model.Exceptions import NodeException
+from symbollightapi.model.Exceptions import HttpException, InsufficientBalanceException, NodeException, NodeTransientException
 
 from bridge.models.BridgeConfiguration import NetworkConfiguration
 from bridge.NetworkUtils import (
@@ -15,17 +15,25 @@ from bridge.NetworkUtils import (
 	FeeInformation,
 	TransactionSender,
 	download_rosetta_block_balance_changes,
-	estimate_balance_transfer_fees
+	estimate_balance_transfer_fees,
+	is_transient_error
 )
 from bridge.symbol.SymbolNetworkFacade import SymbolNetworkFacade
+from bridge.VaultConnector import VaultConnector
 
 from .test.BridgeTestUtils import HASHES
 from .test.MockSymbolServer import create_simple_symbol_client
+from .test.MockVaultServer import create_simple_vault_client
 
 
 @pytest.fixture
 async def server(aiohttp_client):
 	return await create_simple_symbol_client(aiohttp_client, '0x72C0\'212E\'67A0\'8BCE')
+
+
+@pytest.fixture
+async def vault_server(aiohttp_client):
+	return await create_simple_vault_client(aiohttp_client)
 
 
 # pylint: disable=invalid-name
@@ -69,7 +77,7 @@ async def test_can_estimate_balance_transfer_fees_when_conversion_fee_is_nonzero
 # endregion
 
 
-# region TransactionSender - constructor, init
+# region TransactionSender - constructor
 
 def _create_config(server=None, mosaic_id='E74B99BA41F4AFEE', config_extensions=None):  # pylint: disable=redefined-outer-name
 	endpoint = server.make_url('') if server else 'http://foo.bar:1234'
@@ -82,15 +90,19 @@ def _create_config(server=None, mosaic_id='E74B99BA41F4AFEE', config_extensions=
 
 def test_can_create_transaction_sender():
 	# Act:
-	sender = TransactionSender(SymbolNetworkFacade(_create_config()), Decimal(1.2))
+	sender = TransactionSender(SymbolNetworkFacade(_create_config()))
 
 	# Assert:
 	assert 'testnet' == sender.network_facade.network.name
-	assert PrivateKey('F490900201CD6365A89FDD41B7B2CC71E9537455E8AB626A47EBFA0681E5BE62') == sender.sender_key_pair.private_key
-	assert Decimal(1.2) == sender.fee_multiplier
 	assert 0xE74B99BA41F4AFEE == sender.mosaic_id
+
+	assert sender.sender_key_pair is None
 	assert sender.timestamp is None
 
+# endregion
+
+
+# region init
 
 async def test_can_initialize_transaction_sender(server):  # pylint: disable=redefined-outer-name
 	# Arrange:
@@ -100,6 +112,22 @@ async def test_can_initialize_transaction_sender(server):  # pylint: disable=red
 	await sender.init()
 
 	# Assert:
+	assert PrivateKey('F490900201CD6365A89FDD41B7B2CC71E9537455E8AB626A47EBFA0681E5BE62') == sender.sender_key_pair.private_key
+	assert NetworkTimestamp(68414660756) == sender.timestamp
+
+
+async def test_can_initialize_transaction_sender_with_vault(server, vault_server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	connector = VaultConnector(vault_server.make_url(''), 'TOKEN')
+	sender = TransactionSender(SymbolNetworkFacade(_create_config(server, config_extensions={
+		'signer_private_key': 'vault:test_secret'
+	})))
+
+	# Act:
+	await sender.init(connector)
+
+	# Assert:
+	assert PrivateKey('2525B8B423FCD66D460ED1D53D3B2971DE858792FF70741C0C96922BA2C46C75') == sender.sender_key_pair.private_key
 	assert NetworkTimestamp(68414660756) == sender.timestamp
 
 # endregion
@@ -131,12 +159,12 @@ def _assert_sample_balance_transfer_common(transaction, expected_transaction_typ
 	assert _make_sc_address('TD3KYLTDR7PP4ZWGXCSCCTQ7NRCMPCCD3WPKK7Y') == transaction.recipient_address
 
 
-async def _create_transaction_sender(server, fee_multiplier, update_config):  # pylint: disable=redefined-outer-name
+async def _create_transaction_sender(server, update_config):  # pylint: disable=redefined-outer-name
 	config = _create_config(server)
 	if update_config:
 		update_config(config)
 
-	sender = TransactionSender(SymbolNetworkFacade(config), fee_multiplier)
+	sender = TransactionSender(SymbolNetworkFacade(config))
 	await sender.init()
 	return sender
 
@@ -144,10 +172,10 @@ async def _create_transaction_sender(server, fee_multiplier, update_config):  # 
 async def _assert_try_send_transfer_success(server, amount, message, expected_fee, fee_multiplier=Decimal(1), update_config=None):
 	# pylint: disable=redefined-outer-name,too-many-arguments,too-many-positional-arguments
 	# Arrange:
-	sender = await _create_transaction_sender(server, fee_multiplier, update_config)
+	sender = await _create_transaction_sender(server, update_config)
 
 	# Act:
-	result = await sender.try_send_transfer('TD3KYLTDR7PP4ZWGXCSCCTQ7NRCMPCCD3WPKK7Y', amount, message)
+	result = await sender.try_send_transfer('TD3KYLTDR7PP4ZWGXCSCCTQ7NRCMPCCD3WPKK7Y', fee_multiplier, amount, message)
 
 	# Assert:
 	assert not result.is_error
@@ -170,10 +198,10 @@ async def _assert_try_send_transfer_success(server, amount, message, expected_fe
 async def _assert_try_send_transfer_failure(server, amount, expected_error_message, update_config=None):
 	# pylint: disable=redefined-outer-name
 	# Arrange:
-	sender = await _create_transaction_sender(server, Decimal(1), update_config)
+	sender = await _create_transaction_sender(server, update_config)
 
 	# Act:
-	result = await sender.try_send_transfer('TD3KYLTDR7PP4ZWGXCSCCTQ7NRCMPCCD3WPKK7Y', amount)
+	result = await sender.try_send_transfer('TD3KYLTDR7PP4ZWGXCSCCTQ7NRCMPCCD3WPKK7Y', Decimal(1), amount)
 
 	# Assert:
 	assert result.is_error
@@ -251,7 +279,7 @@ async def test_try_send_transfer_succeeds_with_custom_mosaic_id(server):  # pyli
 	await sender.init()
 
 	# Act:
-	result = await sender.try_send_transfer('TD3KYLTDR7PP4ZWGXCSCCTQ7NRCMPCCD3WPKK7Y', 12345000, 'test message 2')
+	result = await sender.try_send_transfer('TD3KYLTDR7PP4ZWGXCSCCTQ7NRCMPCCD3WPKK7Y', Decimal(1), 12345000, 'test message 2')
 
 	# Assert:
 	assert not result.is_error
@@ -278,6 +306,7 @@ async def test_try_send_transfer_succeeds_with_custom_mosaic_id(server):  # pyli
 async def test_can_send_transaction(server):  # pylint: disable=redefined-outer-name
 	# Arrange:
 	sender = TransactionSender(SymbolNetworkFacade(_create_config(server)))
+	await sender.init()
 
 	# Act:
 	transaction_hash = await sender.send_transaction(SymbolFacade(Network.TESTNET).transaction_factory.create({
@@ -307,6 +336,7 @@ async def test_cannot_send_transaction_that_does_not_transition_to_unconfirmed(s
 	server.mock.simulate_transaction_status_not_found = True
 
 	sender = TransactionSender(SymbolNetworkFacade(_create_config(server)))
+	await sender.init()
 
 	# Act + Assert:
 	with pytest.raises(NodeException, match=r'aborting because transaction .+ did not transition to unconfirmed status'):
@@ -513,5 +543,30 @@ async def test_can_download_rosetta_block_balance_changes_prefers_currency_id_wh
 		BalanceChange('beta', '777', 22222, Hash256(HASHES[0])),
 		BalanceChange('beta', 'baz.token', 44444, Hash256(HASHES[0])),
 	] == balance_changes
+
+# endregion
+
+
+# region is_transient_error
+
+def test_is_transient_error_returns_true_for_transient_http_errors():
+	for status_code in (408, 429, 503):
+		assert is_transient_error(HttpException('some HTTP error', status_code)), f'status code: {status_code}'
+
+
+def test_is_transient_error_returns_false_for_non_transient_http_errors():
+	for status_code in (403, 404, 418, 500, 502):
+		assert not is_transient_error(HttpException('some HTTP error', status_code)), f'status code: {status_code}'
+
+
+def test_is_transient_error_returns_true_for_non_http_transient_errors():
+	assert is_transient_error(InsufficientBalanceException('some error'))
+	assert is_transient_error(NodeTransientException('some error'))
+
+
+def test_is_transient_error_returns_false_for_other_non_transient_errors():
+	assert not is_transient_error(Exception('some error'))
+	assert not is_transient_error(ValueError('some error'))
+	assert not is_transient_error(NodeException('some error'))
 
 # endregion

@@ -1,5 +1,6 @@
 import { transactionToEthereum } from './transaction-to-ethereum';
 import { ethers } from 'ethers';
+import { TransactionBundle } from 'wallet-common-core';
 
 /** @typedef {import('../types/Account').PublicAccount} PublicAccount */
 /** @typedef {import('../types/Network').NetworkProperties} NetworkProperties */
@@ -43,6 +44,20 @@ export const signTransaction = async (networkIdentifier, transaction, privateKey
 		dto: signedTransactionString,
 		hash
 	};
+};
+
+/**
+ * Signs a transaction bundle with a private key.
+ * @param {string} networkIdentifier - The network identifier.
+ * @param {TransactionBundle} transactionBundle - The transaction bundle object.
+ * @param {string} privateKey - The signer account private key.
+ * @returns {TransactionBundle} The signed transaction bundle.
+ */
+export const signTransactionBundle = async (networkIdentifier, transactionBundle, privateKey) => {
+	const signedTransactions = await Promise.all(transactionBundle.transactions.map(tx => 
+		signTransaction(networkIdentifier, tx, privateKey)));
+
+	return new TransactionBundle(signedTransactions, transactionBundle.metadata);
 };
 
 /**

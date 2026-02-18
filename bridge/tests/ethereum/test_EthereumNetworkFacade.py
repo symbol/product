@@ -262,9 +262,9 @@ def test_cannot_extract_wrap_request_from_transaction_mismatched_recipient():
 # endregion
 
 
-# region create_transfer_transaction
+# region create_transfer_transaction (ERC20)
 
-def _create_sample_balance_transfer(signer_public_key=None):
+def _create_sample_balance_transfer(signer_public_key=None, message=None):
 	default_signer_public_key = ''.join([
 		'0x',
 		'B2B454118618A6D3E79FEDE753F60824C4D7E5EA15B4282D847801C8246A5A7C',
@@ -275,7 +275,7 @@ def _create_sample_balance_transfer(signer_public_key=None):
 		EthereumPublicKey(signer_public_key or default_signer_public_key),
 		EthereumAddress('0xF0109fC8DF283027b6285cc889F5aA624EaC1F55'),
 		88888_000000,
-		None)
+		message)
 
 
 async def test_cannot_create_transfer_transaction_from_account_with_unknown_nonce(server):  # pylint: disable=redefined-outer-name
@@ -298,8 +298,8 @@ async def test_cannot_create_transfer_transaction_from_account_with_unknown_nonc
 			'0x67b1d87101671b127f5f8714789C7192f7ad340e')
 
 
-async def _assert_can_create_transfer_transaction(server, config_extensions, expected_values):
-	# pylint: disable=redefined-outer-name
+async def _assert_can_create_transfer_transaction(server, config_extensions, expected_values):  # pylint: disable=redefined-outer-name
+	# Arrange:
 	facade = EthereumNetworkFacade(_create_config(server, config_extensions=config_extensions))
 	await facade.init()
 
@@ -356,18 +356,6 @@ async def test_can_create_transfer_transaction_with_multiple_custom_properties(s
 	})
 
 
-async def test_can_create_transfer_transaction_with_gas_price_fallback(server):  # pylint: disable=redefined-outer-name
-	# Arrange:
-	server.mock.gas_price_override = 2983960434 + 654360002 + 1000000  # 3639320436
-
-	# Act + Assert:
-	await _assert_can_create_transfer_transaction(server, None, {
-		'gas': 24150,  # ceil(21000 * 1.15 == 24150)
-		'max_fee_per_gas': 4367184524,  # ceil(3639320436 * 1.2 == 4367184523.2)
-		'max_priority_fee_per_gas': 4367184524 - 2983960434  # ceil(3639320436 * 1.2 == 4367184523.2) - ceil(2486633695 * 1.2 == 2983960434)
-	})
-
-
 async def test_can_create_multiple_transfer_transactions_with_autoincrementing_nonce(server):  # pylint: disable=redefined-outer-name
 	# Arrange:
 	facade = EthereumNetworkFacade(_create_config(server))
@@ -386,8 +374,61 @@ async def test_can_create_multiple_transfer_transactions_with_autoincrementing_n
 	assert [14, 15, 16, 17] == [transaction['nonce'] for transaction in transactions]
 
 
+async def _assert_can_create_transfer_transaction_with_message(server, message, expected_message):
+	# pylint: disable=redefined-outer-name
+	# Arrange:
+	server.mock.gas_price_override = 1000
+
+	facade = EthereumNetworkFacade(_create_config(server))
+	await facade.init()
+
+	# Act:
+	transaction = await facade.create_transfer_transaction(
+		None,
+		_create_sample_balance_transfer(message=message),
+		'0x67b1d87101671b127f5f8714789C7192f7ad340e')
+
+	# Assert:
+	assert {
+		'from': '0xb5368c39Efb0DbA28C082733FE3F9463A215CC3D',
+		'to': '0x67b1d87101671b127f5f8714789C7192f7ad340e',
+		'data': ''.join([
+			'0x',
+			'a9059cbb000000000000000000000000',
+			'F0109fC8DF283027b6285cc889F5aA624EaC1F55',
+			hexlify(int(88888_000000).to_bytes(32, 'big')).decode('utf8'),
+			expected_message
+		]),
+		'nonce': 14,
+		'chainId': 8876,
+
+		'gas': 24150,  # ceil(21000 * 1.15 == 24150)
+		'maxFeePerGas': 2983960434 + 654360002,  # ceil(2486633695 * 1.2 == 2983960434) + ceil(623200001 * 1.05 == 654360001.05)
+		'maxPriorityFeePerGas': 654360002  # ceil(623200001 * 1.05 == 654360001.05)
+	} == transaction
+
+
+async def test_can_create_transfer_transaction_with_message_string(server):  # pylint: disable=redefined-outer-name
+	await _assert_can_create_transfer_transaction_with_message(
+		server,
+		'custom message',
+		hexlify('custom message'.encode('utf8')).decode('utf8'))
+
+
+async def test_can_create_transfer_transaction_with_message_bytes(server):  # pylint: disable=redefined-outer-name
+	await _assert_can_create_transfer_transaction_with_message(
+		server,
+		'custom message'.encode('utf8'),
+		hexlify('custom message'.encode('utf8')).decode('utf8'))
+
+# endregion
+
+
+# region create_transfer_transaction (native)
+
 async def _assert_can_create_transfer_transaction_native(server, config_extensions, expected_values):
 	# pylint: disable=redefined-outer-name
+	# Arrange:
 	facade = EthereumNetworkFacade(_create_config(server, mosaic_id='', config_extensions=config_extensions))
 	await facade.init()
 
@@ -436,17 +477,45 @@ async def test_can_create_transfer_transaction_native_with_multiple_custom_prope
 	})
 
 
-async def test_can_create_transfer_transaction_native_with_gas_price_fallback(server):  # pylint: disable=redefined-outer-name
+async def _assert_can_create_transfer_transaction_native_with_message(server, message, expected_message):
+	# pylint: disable=redefined-outer-name
 	# Arrange:
-	server.mock.gas_price_override = 2983960434 + 654360002 + 1000000  # 3639320436
+	server.mock.gas_price_override = 1000
 
-	# Act + Assert:
-	await _assert_can_create_transfer_transaction_native(server, None, {
-		'gas': 19432,  # ceil(16897 * 1.15 == 19431.55)
-		'max_fee_per_gas': 4367184524,  # ceil(3639320436 * 1.2 == 4367184523.2)
-		'max_priority_fee_per_gas': 4367184524 - 2983960434  # ceil(3639320436 * 1.2 == 4367184523.2) - ceil(2486633695 * 1.2 == 2983960434)
-	})
+	facade = EthereumNetworkFacade(_create_config(server, mosaic_id=''))
+	await facade.init()
 
+	# Act:
+	transaction = await facade.create_transfer_transaction(None, _create_sample_balance_transfer(message=message), '')
+
+	# Assert:
+	assert {
+		'from': '0xb5368c39Efb0DbA28C082733FE3F9463A215CC3D',
+		'to': '0xF0109fC8DF283027b6285cc889F5aA624EaC1F55',
+		'value': hex(88888_000000),
+		'nonce': 14,
+		'chainId': 8876,
+		'data': expected_message,
+
+		# since data is present, use default values from ERC20 transfer tests
+		'gas': 24150,  # ceil(21000 * 1.15 == 24150)
+		'maxFeePerGas': 2983960434 + 654360002,  # ceil(2486633695 * 1.2 == 2983960434) + ceil(623200001 * 1.05 == 654360001.05)
+		'maxPriorityFeePerGas': 654360002  # ceil(623200001 * 1.05 == 654360001.05)
+	} == transaction
+
+
+async def test_can_create_transfer_transaction_native_with_message_string(server):  # pylint: disable=redefined-outer-name
+	await _assert_can_create_transfer_transaction_native_with_message(
+		server,
+		'custom message',
+		f'0x{hexlify("custom message".encode("utf8")).decode("utf8")}')
+
+
+async def test_can_create_transfer_transaction_native_with_message_bytes(server):  # pylint: disable=redefined-outer-name
+	await _assert_can_create_transfer_transaction_native_with_message(
+		server,
+		'custom message'.encode('utf8'),
+		f'0x{hexlify("custom message".encode("utf8")).decode("utf8")}')
 
 # endregion
 
@@ -494,18 +563,6 @@ async def test_can_calculate_transfer_transaction_fee_with_multiple_custom_prope
 		'gas_price_multiple': '1.1',
 		'priority_fee_multiple': '1.11'
 	}, Decimal(23334 * (2735297065 + 691752002)))
-
-
-async def test_can_calculate_transfer_transaction_fee_gas_price_fallback(server):  # pylint: disable=redefined-outer-name
-	# Arrange:
-	server.mock.gas_price_override = 2983960434 + 654360002 + 1000000  # 3639320436
-
-	# Act + Assert:
-	# - gas          => ceil(21000 * 1.15 == 24150)
-	# - gas_price    => ceil(3639320436 * 1.2 == 4367184523.2)
-	# - base_fee     => ceil(2486633695 * 1.2 == 2983960434)
-	# - priority_fee => ceil(623200001 * 1.05 == 654360001.05)
-	await _assert_can_calculate_transfer_transaction_fee(server, None, Decimal(24150 * 4367184524))
 
 
 async def test_can_calculate_transfer_transaction_fee_for_account_with_unknown_nonce(server):  # pylint: disable=redefined-outer-name

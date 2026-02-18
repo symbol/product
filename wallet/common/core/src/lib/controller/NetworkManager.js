@@ -214,6 +214,16 @@ export class NetworkManager {
 	};
 
 	/**
+	 * Stops the connection job and resets the connection status.
+	 * @returns {void}
+	 */
+	stopConnectionJob = () => {
+		this.#clearConnectionTimer();
+		this.stopChainListener();
+		this.#setStatus(NetworkConnectionStatus.INITIAL);
+	};
+
+	/**
 	 * Starts the chain listener to listen for blockchain events.
 	 * If the listener is already running, it will be restarted.
 	 * @returns {Promise<void>} - A promise that resolves when the listener is successfully started.
@@ -221,7 +231,7 @@ export class NetworkManager {
 	restartChainListener = async () => {
 		this.stopChainListener();
 
-		if (this._state.networkConnectionStatus !== NetworkConnectionStatus.CONNECTED)
+		if (this._state.networkConnectionStatus !== NetworkConnectionStatus.CONNECTED || !this._state.listenAddress)
 			return;
 
 		try {

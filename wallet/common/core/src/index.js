@@ -8,6 +8,7 @@ import { MnemonicKeystore } from './lib/keystore/MnemonicKeystore';
 import { StorageInterface } from './lib/storage/StorageInterface';
 // Modules
 import { AddressBookModule } from './lib/modules/AddressBookModule';
+import { BridgeModule } from './lib/modules/BridgeModule';
 import { LocalizationModule } from './lib/modules/LocalizationModule';
 import { MarketModule } from './lib/modules/MarketModule';
 // Utils
@@ -36,6 +37,9 @@ import {
 } from './error/NetworkError';
 import { SdkError } from './error/SdkError';
 import { WalletError } from './error/WalletError';
+// Other
+import { BridgeManager } from './lib/bridge/BridgeManager';
+import { TransactionBundle } from './lib/models/TransactionBundle';
 
 
 export {
@@ -51,6 +55,7 @@ export {
 	createNetworkMap,
 	constants,
 	AddressBookModule,
+	BridgeModule,
 	LocalizationModule,
 	MarketModule,
 
@@ -65,5 +70,8 @@ export {
 	InternalServerError,
 	NetworkRequestError,
 	SdkError,
-	WalletError
+	WalletError,
+
+	BridgeManager,
+	TransactionBundle
 };

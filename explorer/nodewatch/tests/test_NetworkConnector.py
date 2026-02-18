@@ -43,9 +43,9 @@ async def server(aiohttp_client):
 					**response_json,
 					'latestFinalizedBlock': {
 						'height': finalized_height,
-						'finalizedEpoch': 3,
+						'finalizationEpoch': 3,
 						'hash': 'E29E5695EB269B7DD1D76DBF05FDA1731AB24F561D2032248434FA36A27AFB4C',
-						'finalizedPoint': 2
+						'finalizationPoint': 2
 					}
 				}
 

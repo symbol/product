@@ -58,7 +58,6 @@ async def _download_block_timestamps(database, connector, heights):
 	logger.info('detected transactions in %s blocks, looking up timestamps...', len(heights))
 	block_height_timestamp_pairs = await query_block_timestamps(connector, heights)
 	for height_timestamp_pair in block_height_timestamp_pairs:
-		logger.info('> saving block %s with timestamp %s', height_timestamp_pair[0], height_timestamp_pair[1])
 		database.set_block_timestamp(*height_timestamp_pair)
 
 
@@ -68,7 +67,7 @@ async def _download_all(database, network, is_valid_address):
 	await _download_block_timestamps(database, connector, heights)
 
 
-async def main_impl(execution_context, databases, native_facade, wrapped_facade, _price_oracle):
+async def main_impl(execution_context, databases, native_facade, wrapped_facade, _external_services):
 	if execution_context.is_unwrap_mode:
 		await _download_all(databases.unwrap_request, wrapped_facade, native_facade.is_valid_address)
 	else:

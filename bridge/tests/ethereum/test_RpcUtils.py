@@ -42,10 +42,15 @@ class RpcUtilsTest(unittest.TestCase):
 		self.assertEqual(expected_parsed_value, parsed_value)
 
 	def test_can_parse_rpc_response_hex_value_with_even_significant_digits(self):
-		self._assert_can_parse_rpc_response_hex_value('0xAB1234', 0xAB1234)
+		for separator in ('x', 'X'):
+			self._assert_can_parse_rpc_response_hex_value(f'0{separator}AB1234', 0xAB1234)
 
 	def test_can_parse_rpc_response_hex_value_with_odd_significant_digits(self):
-		self._assert_can_parse_rpc_response_hex_value('0xAB123', 0xAB123)
+		for separator in ('x', 'X'):
+			self._assert_can_parse_rpc_response_hex_value(f'0{separator}AB123', 0xAB123)
+
+	def test_can_parse_rpc_response_hex_value_without_hex_prefix(self):
+		self._assert_can_parse_rpc_response_hex_value('AB1234', 0xAB1234)
 
 	# endregion
 
@@ -59,15 +64,29 @@ class RpcUtilsTest(unittest.TestCase):
 		self.assertEqual(expected_parsed_value, parsed_value)
 
 	def test_can_parse_rpc_response_hex_bytes(self):
+		for separator in ('x', 'X'):
+			self._assert_can_parse_rpc_response_hex_bytes(
+				f'0{separator}67b1d87101671b127f5f8714789c7192f7ad340e',
+				bytes([
+					0x67, 0xB1, 0xD8, 0x71, 0x01, 0x67, 0x1B, 0x12,
+					0x7F, 0x5F, 0x87, 0x14, 0x78, 0x9C, 0x71, 0x92,
+					0xF7, 0xAD, 0x34, 0x0E
+				]))
+
+	def test_can_parse_rpc_response_hex_bytes_empty(self):
+		for separator in ('x', 'X'):
+			self._assert_can_parse_rpc_response_hex_bytes(f'0{separator}', bytes())
+
+	def test_can_parse_rpc_response_hex_bytes_without_hex_prefix(self):
 		self._assert_can_parse_rpc_response_hex_bytes(
-			'0x67b1d87101671b127f5f8714789c7192f7ad340e',
+			'67b1d87101671b127f5f8714789c7192f7ad340e',
 			bytes([
 				0x67, 0xB1, 0xD8, 0x71, 0x01, 0x67, 0x1B, 0x12,
 				0x7F, 0x5F, 0x87, 0x14, 0x78, 0x9C, 0x71, 0x92,
 				0xF7, 0xAD, 0x34, 0x0E
 			]))
 
-	def test_can_parse_rpc_response_hex_bytes_empty(self):
-		self._assert_can_parse_rpc_response_hex_bytes('0x', bytes())
+	def test_can_parse_rpc_response_hex_bytes_empty_without_hex_prefix(self):
+		self._assert_can_parse_rpc_response_hex_bytes('', bytes())
 
 	# endregion

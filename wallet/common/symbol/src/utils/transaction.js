@@ -1,8 +1,8 @@
 import { transactionToSymbol } from './transaction-to-symbol';
-import { MessageType, TransactionType } from '../constants';
+import { MessageType, TransactionBundleType, TransactionType } from '../constants';
 import { Hash256, PrivateKey, PublicKey, utils } from 'symbol-sdk';
 import { MessageEncoder, SymbolFacade, models } from 'symbol-sdk/symbol';
-import { absoluteToRelativeAmount } from 'wallet-common-core';
+import { TransactionBundle, absoluteToRelativeAmount } from 'wallet-common-core';
 
 /** @typedef {import('../types/Account').PublicAccount} PublicAccount */
 /** @typedef {import('../types/Account').UnresolvedAddressWithLocation} UnresolvedAddressWithLocation */
@@ -237,6 +237,32 @@ export const removeAllowedTransactions = (transactions, blackList) => {
 };
 
 /**
+ * Signs a transaction bundle with a private key.
+ * @param {string} networkIdentifier - The network identifier.
+ * @param {TransactionBundle} transactionBundle - The transaction bundle object.
+ * @param {string} privateKey - The signer account private key.
+ * @returns {TransactionBundle} The signed transaction bundle.
+ */
+export const signTransactionBundle = (networkIdentifier, transactionBundle, privateKey) => {
+	if (transactionBundle.metadata.type === TransactionBundleType.MULTISIG_TRANSFER) {
+		// Sign aggregate bonded transaction
+		const aggregateBondedTransaction = transactionBundle.transactions.find(tx => tx.type === TransactionType.AGGREGATE_BONDED);
+		const signedAggregateBondedTransaction = signTransaction(networkIdentifier, aggregateBondedTransaction, privateKey);
+
+		// Sign hash lock transaction
+		const hashLockTransaction = transactionBundle.transactions.find(tx => tx.type === TransactionType.HASH_LOCK);
+		hashLockTransaction.aggregateHash = signedAggregateBondedTransaction.hash;
+		const signedHashLockTransaction = signTransaction(networkIdentifier, hashLockTransaction, privateKey);
+
+		return new TransactionBundle([signedHashLockTransaction, signedAggregateBondedTransaction], transactionBundle.metadata);
+	}
+
+	const signedTransactions = transactionBundle.transactions.map(tx => signTransaction(networkIdentifier, tx, privateKey));
+
+	return new TransactionBundle(signedTransactions, transactionBundle.metadata);
+};
+
+/**
  * Signs a transaction with a private key.
  * @param {string} networkIdentifier - The network identifier.
  * @param {Transaction} transaction - The transaction object.
@@ -300,21 +326,6 @@ export const createDeadline = (hours = 2, epochAdjustment) => {
 };
 
 /**
- * Creates a fee object for a transaction.
- * @param {number} amount - The fee amount in relative units.
- * @param {NetworkProperties} networkProperties - The network properties.
- * @returns {BaseMosaic} The fee object containing amount, divisibility, id, and name.
- */
-export const createFee = (amount, networkProperties) => {
-	return {
-		amount,
-		divisibility: networkProperties.networkCurrency.divisibility,
-		id: networkProperties.networkCurrency.mosaicId,
-		name: networkProperties.networkCurrency.name
-	};
-};
-
-/**
  * Calculates the transaction size.
  * @param {string} networkIdentifier - The network identifier.
  * @param {Transaction} transaction - The transaction object.
@@ -344,6 +355,56 @@ export const calculateTransactionFees = (networkProperties, size) => {
 		fast: absoluteToRelativeAmount(fast, divisibility),
 		medium: absoluteToRelativeAmount(medium, divisibility),
 		slow: absoluteToRelativeAmount(slow, divisibility)
+	};
+};
+
+/**
+ * Creates a fee object for a transaction.
+ * @param {NetworkProperties} networkProperties - The network properties.
+ * @param {number} amount - The fee amount in relative units.
+ * @returns {BaseMosaic} The fee object containing amount, divisibility, id, and name.
+ */
+export const createTransactionFee = (networkProperties, amount) => {
+	return {
+		token: {
+			amount,
+			divisibility: networkProperties.networkCurrency.divisibility,
+			id: networkProperties.networkCurrency.mosaicId,
+			name: networkProperties.networkCurrency.name
+		}
+	};
+};
+
+/**
+ * Calculates the transaction fees for a given transaction.
+ * @param {NetworkProperties} networkProperties - The network properties.
+ * @param {number} size - The transaction size.
+ * @returns {TransactionFees} The transaction fees.
+ */
+export const createTransactionFeeTiers = (networkProperties, size) => {
+	const { transactionFees } = networkProperties;
+	const { divisibility } = networkProperties.networkCurrency;
+
+	const minFeeMultiplier = Number(transactionFees.minFeeMultiplier);
+	const averageFeeMultiplier = Number(transactionFees.averageFeeMultiplier);
+
+	const fastAbsoluteAmount = Math.round((minFeeMultiplier + averageFeeMultiplier) * size);
+	const mediumAbsoluteAmount = Math.round((minFeeMultiplier + (averageFeeMultiplier * 0.65)) * size);
+	const slowAbsoluteAmount = Math.round((minFeeMultiplier + (averageFeeMultiplier * 0.35)) * size);
+
+	return {
+		fast: createTransactionFee(
+			networkProperties,
+			absoluteToRelativeAmount(fastAbsoluteAmount, divisibility)
+		),
+		medium: createTransactionFee(
+			networkProperties,
+			absoluteToRelativeAmount(mediumAbsoluteAmount, divisibility)
+		),
+		slow: createTransactionFee(
+			networkProperties,
+			absoluteToRelativeAmount(slowAbsoluteAmount, divisibility)
+		)
 	};
 };
 
@@ -448,7 +509,7 @@ export const getUnresolvedIdsFromTransactions = (transactions, config) => {
 
 						value.forEach(mosaic => {
 							const mosaicId = mosaic?.mosaicId ?? mosaic?.id ?? mosaic;
-							
+
 							if (mosaicId)
 								mosaicIds.push(mapMosaicId(mosaicId));
 						});

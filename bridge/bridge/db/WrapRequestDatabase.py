@@ -1,9 +1,11 @@
+import datetime
+import logging
 from collections import namedtuple
 from enum import Enum
 
 from symbolchain.CryptoTypes import Hash256
 
-from ..models.WrapRequest import WrapRequest, make_wrap_error_result
+from ..models.WrapRequest import WrapRequest, make_next_retry_wrap_request, make_wrap_error_result
 from .MaxProcessedHeightMixin import MaxProcessedHeightMixin
 
 PayoutDetails = namedtuple('PayoutDetails', ['transaction_hash', 'net_amount', 'total_fee', 'conversion_rate'])
@@ -14,7 +16,7 @@ WrapRequestErrorView = namedtuple('WrapErrorView', [
 ])
 WrapRequestView = namedtuple('WrapRequestView', [
 	'request_transaction_height', 'request_transaction_hash', 'request_transaction_subindex', 'sender_address',
-	'request_amount', 'destination_address', 'payout_status', 'payout_transaction_hash',
+	'request_amount', 'destination_address', 'payout_status', 'payout_transaction_hash', 'payout_sent_timestamp',
 	'request_timestamp',
 	'payout_transaction_height', 'payout_net_amount', 'payout_total_fee', 'payout_conversion_rate',
 	'payout_timestamp',
@@ -42,6 +44,8 @@ class WrapRequestDatabase(MaxProcessedHeightMixin):  # pylint: disable=too-many-
 		self.network_facade = network_facade
 		self.payout_network_facade = payout_network_facade
 
+		self._logger = logging.getLogger(__name__)
+
 	# region create_tables
 
 	def create_tables(self):
@@ -58,6 +62,7 @@ class WrapRequestDatabase(MaxProcessedHeightMixin):  # pylint: disable=too-many-
 			message text,
 			PRIMARY KEY (request_transaction_hash, request_transaction_subindex)
 		)''')
+		# payout_sent_timestamp: set once and persisted across all retries
 		cursor.execute('''CREATE TABLE IF NOT EXISTS wrap_request (
 			request_transaction_height integer,
 			request_transaction_hash blob,
@@ -67,6 +72,8 @@ class WrapRequestDatabase(MaxProcessedHeightMixin):  # pylint: disable=too-many-
 			destination_address blob,
 			payout_status integer,
 			payout_transaction_hash blob UNIQUE,
+			payout_sent_timestamp timestamp,
+			is_retried integer,
 			PRIMARY KEY (request_transaction_hash, request_transaction_subindex)
 		)''')
 		cursor.execute('''CREATE TABLE IF NOT EXISTS payout_transaction (
@@ -115,11 +122,9 @@ class WrapRequestDatabase(MaxProcessedHeightMixin):  # pylint: disable=too-many-
 		self._add_error_with_cursor(cursor, error)
 		self.connection.commit()
 
-	def add_request(self, request):
-		"""Adds a request to the request table."""
-
+	def _add_request(self, request, payout_sent_timestamp=None):
 		cursor = self.connection.cursor()
-		cursor.execute('''INSERT INTO wrap_request VALUES (?, ?, ?, ?, ?, ?, ?, ?)''', (
+		cursor.execute('''INSERT INTO wrap_request VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''', (
 			request.transaction_height,
 			request.transaction_hash.bytes,
 			request.transaction_subindex,
@@ -127,8 +132,15 @@ class WrapRequestDatabase(MaxProcessedHeightMixin):  # pylint: disable=too-many-
 			float(request.amount),
 			request.destination_address,
 			WrapRequestStatus.UNPROCESSED.value,
-			None))
+			None,
+			payout_sent_timestamp,
+			False))
 		self.connection.commit()
+
+	def add_request(self, request):
+		"""Adds a request to the request table."""
+
+		self._add_request(request)
 
 	# endregion
 
@@ -166,58 +178,37 @@ class WrapRequestDatabase(MaxProcessedHeightMixin):  # pylint: disable=too-many-
 
 	# endregion
 
-	# region cumulative_wrapped_amount_at, cumulative_net_amount_at, cumulative_fees_paid_at, payout_transaction_hashes_at
+	# region cumulative_gross_amount_at, payout_transaction_hashes_at
 
-	def cumulative_wrapped_amount_at(self, timestamp, relative_block_adjustment=0):
-		"""Gets cumulative amount of wrapped tokens issued at or before timestamp."""
-
-		if relative_block_adjustment > 0:
-			raise ValueError('relative_block_adjustment must not be positive')
-
-		if not self.is_synced_at_timestamp(timestamp):
-			raise ValueError(f'requested wrapped amount at {timestamp} beyond current database timestamp {self._max_processed_timestamp()}')
-
-		if relative_block_adjustment:
-			height = self.lookup_block_height(timestamp)
-			timestamp = self._lookup_block_timestamp_closest(height + relative_block_adjustment)
+	def cumulative_gross_amount_at(self, timestamp):
+		"""Gets cumulative gross amount of wrapped tokens issued at or before timestamp."""
 
 		cursor = self.connection.cursor()
 		cursor.execute('''
-			SELECT SUM(wrap_request.amount)
-			FROM wrap_request
-			LEFT JOIN block_metadata ON wrap_request.request_transaction_height = block_metadata.height
-			WHERE block_metadata.timestamp <= ?
-		''', (timestamp,))
-		sum_amount = cursor.fetchone()[0]
-		return sum_amount or 0
-
-	def cumulative_net_amount_at(self, timestamp):
-		"""Gets cumulative amount of wrapped tokens issued at or before timestamp."""
-
-		cursor = self.connection.cursor()
-		cursor.execute('''
-			SELECT SUM(payout_transaction.net_amount)
+			SELECT SUM(payout_transaction.net_amount), SUM(payout_transaction.total_fee)
 			FROM wrap_request
 			LEFT JOIN block_metadata ON wrap_request.request_transaction_height = block_metadata.height
 			LEFT JOIN payout_transaction ON wrap_request.payout_transaction_hash = payout_transaction.transaction_hash
-			WHERE block_metadata.timestamp <= ?
+			WHERE block_metadata.timestamp <= ? AND NOT wrap_request.is_retried
 		''', (timestamp,))
-		sum_amount = cursor.fetchone()[0]
-		return sum_amount or 0
+		sum_amounts = cursor.fetchone()
+		return sum(amount if amount else 0 for amount in sum_amounts)
 
-	def cumulative_fees_paid_at(self, timestamp):
-		"""Gets cumulative amount of fees paid at or before timestamp."""
+	def cumulative_gross_amount_sent_since(self, timestamp):
+		"""
+		Gets cumulative gross amount of wrapped tokens sent after timestamp.
+		Importantly, timestamp is relative to sent time, not request time.
+		"""
 
 		cursor = self.connection.cursor()
 		cursor.execute('''
-			SELECT SUM(payout_transaction.total_fee)
+			SELECT SUM(payout_transaction.net_amount), SUM(payout_transaction.total_fee)
 			FROM wrap_request
-			LEFT JOIN block_metadata ON wrap_request.request_transaction_height = block_metadata.height
 			LEFT JOIN payout_transaction ON wrap_request.payout_transaction_hash = payout_transaction.transaction_hash
-			WHERE block_metadata.timestamp <= ?
+			WHERE wrap_request.payout_sent_timestamp > ? AND NOT wrap_request.is_retried
 		''', (timestamp,))
-		sum_amount = cursor.fetchone()[0]
-		return sum_amount or 0
+		sum_amounts = cursor.fetchone()
+		return sum(amount if amount else 0 for amount in sum_amounts)
 
 	def payout_transaction_hashes_at(self, timestamp):
 		"""Gets all payout transaction hashes at or before timestamp."""
@@ -229,7 +220,7 @@ class WrapRequestDatabase(MaxProcessedHeightMixin):  # pylint: disable=too-many-
 			LEFT JOIN block_metadata ON wrap_request.request_transaction_height = block_metadata.height
 			LEFT JOIN payout_transaction ON wrap_request.payout_transaction_hash = payout_transaction.transaction_hash
 			WHERE block_metadata.timestamp <= ?
-			AND wrap_request.payout_transaction_hash IS NOT NULL
+			AND wrap_request.payout_transaction_hash IS NOT NULL AND NOT wrap_request.is_retried
 		''', (timestamp,))
 		for row in cursor:
 			yield Hash256(row[0])
@@ -270,16 +261,19 @@ class WrapRequestDatabase(MaxProcessedHeightMixin):  # pylint: disable=too-many-
 	def mark_payout_sent(self, request, payout_details):
 		"""Marks a payout as sent with the transaction hash of the payout."""
 
+		payout_sent_timestamp = self.payout_sent_timestamp_for_request(request)
+
 		cursor = self.connection.cursor()
 		cursor.execute(
 			'''
 				UPDATE wrap_request
-				SET payout_status = ?, payout_transaction_hash = ?
+				SET payout_status = ?, payout_transaction_hash = ?, payout_sent_timestamp = ?
 				WHERE request_transaction_hash IS ? AND request_transaction_subindex IS ?
 			''',
 			(
 				WrapRequestStatus.SENT.value,
 				payout_details.transaction_hash.bytes,
+				payout_sent_timestamp or datetime.datetime.now(datetime.timezone.utc).timestamp(),
 				request.transaction_hash.bytes,
 				request.transaction_subindex
 			))
@@ -296,24 +290,53 @@ class WrapRequestDatabase(MaxProcessedHeightMixin):  # pylint: disable=too-many-
 
 		self.connection.commit()
 
-	def mark_payout_failed(self, request, message):
-		"""Marks a payout as failed with a message."""
+		self._logger.info(
+			'R[%s:%s] sent payout transaction with hash %s; %s amount (%s fee deducted) at conversion rate %s',
+			request.transaction_hash,
+			request.transaction_subindex,
+			payout_details.transaction_hash,
+			payout_details.net_amount,
+			payout_details.total_fee,
+			payout_details.conversion_rate)
+
+	def _mark_payout_failed(self, request, message, is_retried):
+		payout_transaction_hash = self.payout_transaction_hash_for_request(request)
 
 		cursor = self.connection.cursor()
 		cursor.execute(
 			'''
 				UPDATE wrap_request
-				SET payout_status = ?
+				SET payout_status = ?, is_retried = ?
 				WHERE request_transaction_hash IS ? AND request_transaction_subindex IS ?
 			''',
 			(
 				WrapRequestStatus.FAILED.value,
+				is_retried,
 				request.transaction_hash.bytes,
 				request.transaction_subindex
 			))
 
+		if payout_transaction_hash:
+			cursor.execute(
+				'''UPDATE payout_transaction SET height = ? WHERE transaction_hash IS ?''',
+				(-1, payout_transaction_hash.bytes))
+
 		self._add_error_with_cursor(cursor, make_wrap_error_result(request, message).error)
 		self.connection.commit()
+
+		self._logger.info('R[%s:%s] marking payout failed with error: %s', request.transaction_hash, request.transaction_subindex, message)
+
+	def mark_payout_failed(self, request, message):
+		"""Marks a payout as failed with a message."""
+
+		self._mark_payout_failed(request, message, False)
+
+	def mark_payout_failed_transient(self, request, message):
+		"""Marks a payout as a transient failure and resets it to unprocessed state."""
+
+		payout_sent_timestamp = self.payout_sent_timestamp_for_request(request)
+		self._mark_payout_failed(request, message, True)
+		self._add_request(make_next_retry_wrap_request(request), payout_sent_timestamp)
 
 	def mark_payout_completed(self, payout_transaction_hash, height):
 		"""Marks a payout complete at a height."""
@@ -332,6 +355,8 @@ class WrapRequestDatabase(MaxProcessedHeightMixin):  # pylint: disable=too-many-
 			(height, 0))
 
 		self.connection.commit()
+
+		self._logger.info('marking payout transaction %s complete at height %s', payout_transaction_hash, height)
 
 	# endregion
 
@@ -381,10 +406,14 @@ class WrapRequestDatabase(MaxProcessedHeightMixin):  # pylint: disable=too-many-
 
 		self._set_block_timestamp(height, raw_timestamp, self.network_facade, 'block_metadata')
 
+		self._logger.info('saving block %s with timestamp %s', height, raw_timestamp)
+
 	def set_payout_block_timestamp(self, height, raw_timestamp):
 		"""Sets a payout block timestamp."""
 
 		self._set_block_timestamp(height, raw_timestamp, self.payout_network_facade, 'payout_block_metadata')
+
+		self._logger.info('saving payout block %s with timestamp %s', height, raw_timestamp)
 
 	# endregion
 
@@ -439,6 +468,38 @@ class WrapRequestDatabase(MaxProcessedHeightMixin):  # pylint: disable=too-many-
 
 	# endregion
 
+	# region payout_transaction_hash_for_request, payout_sent_timestamp_for_request
+
+	def _payout_details_for_request(self, request):
+		cursor = self.connection.cursor()
+		cursor.execute(
+			'''
+				SELECT payout_transaction_hash, payout_sent_timestamp
+				FROM wrap_request
+				WHERE request_transaction_hash IS ? AND request_transaction_subindex IS ?
+			''',
+			(
+				request.transaction_hash.bytes,
+				request.transaction_subindex
+			))
+		fetch_result = cursor.fetchone()
+		return (
+			Hash256(fetch_result[0]) if fetch_result and fetch_result[0] else None,
+			fetch_result[1] if fetch_result else None
+		)
+
+	def payout_transaction_hash_for_request(self, request):
+		"""Gets the payout transaction hash associated with a request."""
+
+		return self._payout_details_for_request(request)[0]
+
+	def payout_sent_timestamp_for_request(self, request):
+		"""Gets the payout sent timestamp associated with a request."""
+
+		return self._payout_details_for_request(request)[1]
+
+	# endregion
+
 	# region find_errors, find_requests
 
 	@staticmethod
@@ -486,6 +547,7 @@ class WrapRequestDatabase(MaxProcessedHeightMixin):  # pylint: disable=too-many-
 					wrap_request.destination_address,
 					wrap_request.payout_status,
 					wrap_request.payout_transaction_hash,
+					wrap_request.payout_sent_timestamp,
 					block_metadata.timestamp,
 					payout_transaction.height,
 					payout_transaction.net_amount,

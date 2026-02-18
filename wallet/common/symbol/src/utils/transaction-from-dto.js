@@ -10,7 +10,7 @@ import {
 } from './mosaic';
 import { networkTypeToIdentifier } from './network';
 import {
-	createFee,
+	createTransactionFee,
 	decodePlainMessage,
 	getUnresolvedIdsFromTransactions,
 	isAggregateTransaction,
@@ -163,7 +163,10 @@ const baseTransactionFromDTO = (transactionDTO, config) => {
 		height: Number(meta.height),
 		hash: meta.hash,
 		fee: transaction.maxFee
-			? createFee(absoluteToRelativeAmount(transaction.maxFee, networkProperties.networkCurrency.divisibility), networkProperties)
+			? createTransactionFee(
+				networkProperties, 
+				absoluteToRelativeAmount(transaction.maxFee, networkProperties.networkCurrency.divisibility)
+			)
 			: null,
 		signerAddress: signerPublicKey ? addressFromPublicKey(signerPublicKey, networkProperties.networkIdentifier) : null,
 		signerPublicKey

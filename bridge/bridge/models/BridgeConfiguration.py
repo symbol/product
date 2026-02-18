@@ -1,5 +1,6 @@
 import configparser
 from collections import namedtuple
+from enum import Enum
 
 MachineConfiguration = namedtuple('MachineConfiguration', ['database_directory', 'log_filename', 'log_backup_count', 'max_log_size'])
 PriceOracleConfiguration = namedtuple('PriceOracle', ['url', 'access_token'])
@@ -7,7 +8,17 @@ GlobalConfiguration = namedtuple('GlobalConfiguration', ['mode'])
 NetworkConfiguration = namedtuple('NetworkConfiguration', [
 	'blockchain', 'network', 'endpoint', 'bridge_address', 'mosaic_id', 'extensions'
 ])
-BridgeConfiguration = namedtuple('BridgeConfiguration', ['machine', 'global_', 'price_oracle', 'native_network', 'wrapped_network'])
+BridgeConfiguration = namedtuple('BridgeConfiguration', [
+	'machine', 'global_', 'price_oracle', 'vault', 'native_network', 'wrapped_network'
+])
+
+
+class StrategyMode(Enum):
+	"""Global strategy mode."""
+
+	STAKE = 1
+	WRAP = 2
+	SWAP = 3
 
 
 def _camel_case_to_snake_case(value):
@@ -44,7 +55,7 @@ def parse_global_configuration(config):
 	if mode not in ('stake', 'wrap', 'swap'):
 		raise ValueError(f'mode "{mode}" is not supported')
 
-	return GlobalConfiguration(mode)
+	return GlobalConfiguration({'stake': StrategyMode.STAKE, 'wrap': StrategyMode.WRAP, 'swap': StrategyMode.SWAP}[mode])
 
 
 def parse_network_configuration(config):
@@ -73,5 +84,6 @@ def parse_bridge_configuration(filename):
 		parse_machine_configuration(parser['machine']),
 		parse_global_configuration(parser['global']),
 		parse_price_oracle_configuration(parser['price_oracle']),
+		parse_price_oracle_configuration(parser['vault']),
 		parse_network_configuration(parser['native_network']),
 		parse_network_configuration(parser['wrapped_network']))

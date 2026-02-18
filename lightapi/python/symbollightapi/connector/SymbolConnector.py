@@ -7,7 +7,7 @@ from symbolchain.symbol.Network import Address, NetworkTimestamp
 
 from ..model.Constants import TransactionStatus
 from ..model.Endpoint import Endpoint
-from ..model.Exceptions import NodeException
+from ..model.Exceptions import InsufficientBalanceException, NodeException
 from ..model.NodeInfo import NodeInfo
 from .BasicConnector import BasicConnector
 
@@ -328,7 +328,11 @@ class SymbolConnector(BasicConnector):  # pylint: disable=too-many-public-method
 				return True
 
 			if 'failed' == status:
-				raise NodeException(f'transaction was rejected with error {response_json["code"]}')
+				error_message = f'transaction was rejected with error {response_json["code"]}'
+				if 'Failure_Core_Insufficient_Balance' == response_json['code']:
+					raise InsufficientBalanceException(error_message)
+
+				raise NodeException(error_message)
 
 			await asyncio.sleep(timeout_settings.interval)
 

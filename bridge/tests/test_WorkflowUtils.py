@@ -1,21 +1,33 @@
+import datetime
 import tempfile
+from collections import namedtuple
 from decimal import Decimal
 
 import pytest
+from symbolchain.CryptoTypes import Hash256
 from symbolchain.nem.Network import Network
+from symbollightapi.model.Constants import TimeoutSettings, TransactionStatus
+from symbollightapi.model.Exceptions import NodeException, NodeTransientException
 
 from bridge.ConversionRateCalculatorFactory import ConversionRateCalculatorFactory
 from bridge.db.Databases import Databases
-from bridge.models.BridgeConfiguration import GlobalConfiguration
+from bridge.ethereum.EthereumConnector import ConfirmedTransactionExecutionFailure
+from bridge.models.BridgeConfiguration import GlobalConfiguration, StrategyMode
 from bridge.models.Constants import ExecutionContext, PrintableMosaicId
+from bridge.models.WrapRequest import WrapRequest
 from bridge.WorkflowUtils import (
 	NativeConversionRateCalculatorFactory,
 	calculate_search_range,
+	check_expiry,
+	check_pending_sent_request,
 	create_conversion_rate_calculator_factory,
+	is_daily_limit_exceeded,
 	is_native_to_native_conversion,
+	prepare_send,
 	validate_global_configuration
 )
 
+from .test.BridgeTestUtils import assert_timestamp_within_last_second
 from .test.MockNetworkFacade import MockNemNetworkFacade
 
 # pylint: disable=invalid-name
@@ -205,18 +217,18 @@ def test_is_not_native_to_native_conversion_when_network_facade_does_not_use_cur
 
 def test_validate_global_configuration_validates_strategy_mode_against_wrapped_token():
 	# Assert: swap mode and native wrapped token   => allowed
-	validate_global_configuration(GlobalConfiguration('swap'), MockNetworkFacade(None))
+	validate_global_configuration(GlobalConfiguration(StrategyMode.SWAP), MockNetworkFacade(None))
 
 	# - other mode and not native wrapped token    => allowed
-	validate_global_configuration(GlobalConfiguration('stake'), MockNetworkFacade(12345))
+	validate_global_configuration(GlobalConfiguration(StrategyMode.STAKE), MockNetworkFacade(12345))
 
 	# native mode and not native wrapped token     => disallowed
 	with pytest.raises(ValueError, match='wrapped token is not native but swap mode is selected'):
-		validate_global_configuration(GlobalConfiguration('swap'), MockNetworkFacade(12345))
+		validate_global_configuration(GlobalConfiguration(StrategyMode.SWAP), MockNetworkFacade(12345))
 
 	# - other mode and native wrapped token        => disallowed
 	with pytest.raises(ValueError, match='wrapped token is native but swap mode is not selected'):
-		validate_global_configuration(GlobalConfiguration('stake'), MockNetworkFacade(None))
+		validate_global_configuration(GlobalConfiguration(StrategyMode.STAKE), MockNetworkFacade(None))
 
 # endregion
 
@@ -242,7 +254,7 @@ def _assert_can_create_default_calculator_factory_when_wrapped_facade_does_not_u
 
 			# Act:
 			factory = create_conversion_rate_calculator_factory(
-				ExecutionContext(is_unwrap_mode, 'stake'),
+				ExecutionContext(is_unwrap_mode, StrategyMode.STAKE),
 				databases,
 				MockNetworkFacade('alpha'),
 				MockNetworkFacade('beta'),
@@ -273,7 +285,7 @@ def test_can_create_native_calculator_factory_when_wrapped_facade_uses_currency_
 
 			# Act:
 			factory = create_conversion_rate_calculator_factory(
-				ExecutionContext(False, 'stake'),
+				ExecutionContext(False, StrategyMode.STAKE),
 				databases,
 				MockNetworkFacade('alpha'),
 				MockNetworkFacade(''),
@@ -295,7 +307,7 @@ def test_cannot_create_native_calculator_factory_when_wrapped_facade_uses_curren
 			# Act + Assert:
 			with pytest.raises(ValueError, match='native to native conversions do not support unwrap mode'):
 				create_conversion_rate_calculator_factory(
-					ExecutionContext(True, 'stake'),
+					ExecutionContext(True, StrategyMode.STAKE),
 					databases,
 					MockNetworkFacade('alpha'),
 					MockNetworkFacade(''),
@@ -311,7 +323,7 @@ def _assert_can_create_native_calculator_factory_when_strategy_mode_wrapped(is_u
 
 			# Act:
 			factory = create_conversion_rate_calculator_factory(
-				ExecutionContext(is_unwrap_mode, 'wrap'),
+				ExecutionContext(is_unwrap_mode, StrategyMode.WRAP),
 				databases,
 				MockNetworkFacade('alpha'),
 				MockNetworkFacade('beta'),
@@ -330,5 +342,296 @@ def test_can_create_native_calculator_factory_when_strategy_mode_wrapped_and_wra
 
 def test_can_create_native_calculator_factory_when_strategy_mode_wrapped_and_unwrap_mode():
 	_assert_can_create_native_calculator_factory_when_strategy_mode_wrapped(True)
+
+# endregion
+
+
+# region prepare_send
+
+def _make_network_facade_from_config_extensions(config_extensions):
+	PrepareSendMockNetworkFacade = namedtuple('PrepareSendMockNetworkFacade', ['config'])
+	PrepareSendMockNetwork = namedtuple('PrepareSendMockNetwork', ['extensions'])
+
+	return PrepareSendMockNetworkFacade(PrepareSendMockNetwork(config_extensions))
+
+
+def run_prepare_send_test(config_extensions, amount, fee_multiplier=None):
+	def conversion_function(amount):
+		return amount ** 2
+
+	# Arrange:
+	network = _make_network_facade_from_config_extensions(config_extensions)
+	request = WrapRequest(None, None, None, None, amount, None)
+
+	# Act:
+	return prepare_send(network, request, conversion_function, fee_multiplier)
+
+
+def test_can_prepare_send_without_fee_multiplier():
+	# Act:
+	result = run_prepare_send_test({}, 88888888)
+
+	# Assert:
+	assert not result.error_message
+	assert Decimal('1') == result.fee_multiplier
+	assert Decimal('88888888') * Decimal('88888888') == result.transfer_amount
+
+
+def test_can_prepare_send_with_fee_multiplier():
+	# Act:
+	result = run_prepare_send_test({}, 88888888, Decimal('7.8'))
+
+	# Assert:
+	assert not result.error_message
+	assert Decimal('7.8') * Decimal(10 ** 12) == result.fee_multiplier
+	assert Decimal('88888888') * Decimal('88888888') == result.transfer_amount
+
+
+def test_cannot_prepare_send_with_negative_fee_multiplier():
+	# Act + Assert:
+	with pytest.raises(ValueError, match='fee_multiplier must be non-negative'):
+		run_prepare_send_test({}, 88888888, Decimal('-7.8'))
+
+
+def test_can_prepare_send_with_max_transfer_amount():
+	# Act:
+	result = run_prepare_send_test({'max_transfer_amount': '1000000'}, 1000)
+
+	# Assert:
+	assert not result.error_message
+	assert Decimal('1') == result.fee_multiplier
+	assert Decimal('1000000') == result.transfer_amount
+
+
+def test_cannot_prepare_send_with_greater_than_max_transfer_amount():
+	# Act:
+	result = run_prepare_send_test({'max_transfer_amount': '1000000'}, 1001)
+
+	# Assert:
+	assert 'gross transfer amount 1002001 exceeds max transfer amount 1000000' == result.error_message
+	assert not result.fee_multiplier
+	assert not result.transfer_amount
+
+# endregion
+
+
+# region is_daily_limit_exceeded
+
+def run_is_daily_limit_exceeded_test(config_extensions, amount_from_database, transfer_amount):
+	# Arrange:
+	class MockDailyLimitDatabase:
+		def __init__(self):
+			self.timestamps = []
+
+		def cumulative_gross_amount_sent_since(self, timestamp):
+			self.timestamps.append(timestamp)
+			return amount_from_database
+
+	network = _make_network_facade_from_config_extensions(config_extensions)
+	database = MockDailyLimitDatabase()
+
+	# Act:
+	result = is_daily_limit_exceeded(network, database, transfer_amount)
+
+	# Assert:
+	for timestamp in database.timestamps:
+		timestamp_datetime = datetime.datetime.fromtimestamp(timestamp, tz=datetime.timezone.utc)
+		assert_timestamp_within_last_second((timestamp_datetime + datetime.timedelta(days=1)).timestamp())
+
+	return result
+
+
+def test_is_daily_limit_exceeded_false_when_not_configured():
+	assert (False, -1) == run_is_daily_limit_exceeded_test({}, 110, 100)
+
+
+def test_is_daily_limit_exceeded_false_when_cumulative_and_transfer_no_greater_than_configured_value():
+	assert (False, 90) == run_is_daily_limit_exceeded_test({'max_daily_transfer_amount': '200'}, 110, 80)
+	assert (False, 90) == run_is_daily_limit_exceeded_test({'max_daily_transfer_amount': '200'}, 110, 90)
+	assert (False, 0) == run_is_daily_limit_exceeded_test({'max_daily_transfer_amount': '200'}, 200, 0)
+
+
+def test_is_daily_limit_exceeded_true_when_cumulative_and_transfer_greater_than_configured_value():
+	assert (True, 90) == run_is_daily_limit_exceeded_test({'max_daily_transfer_amount': '200'}, 110, 91)
+	assert (True, 90) == run_is_daily_limit_exceeded_test({'max_daily_transfer_amount': '200'}, 110, 100)
+	assert (True, 0) == run_is_daily_limit_exceeded_test({'max_daily_transfer_amount': '200'}, 200, 1)
+
+# endregion
+
+
+# region check_expiry
+
+def run_check_expiry_test(config_extensions, request_timestamp):
+	class CheckExpiryMockDatabase:
+		@staticmethod
+		def payout_sent_timestamp_for_request(request):
+			return request_timestamp if 1234 == request.transaction_height else None
+
+	# Arrange:
+	database = CheckExpiryMockDatabase()
+	request = WrapRequest(1234, None, None, None, None, None)
+
+	# Act:
+	return check_expiry(config_extensions, database, request)
+
+
+def test_can_check_expiry_disabled():
+	# Act:
+	request_datetime = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=25))
+	error_message = run_check_expiry_test({}, request_timestamp=request_datetime.timestamp())
+
+	# Assert:
+	assert not error_message
+
+
+def test_can_check_expiry_not_expired():
+	# Act:
+	request_datetime = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=23))
+	error_message = run_check_expiry_test({'request_lifetime_hours': '24'}, request_timestamp=request_datetime.timestamp())
+
+	# Assert:
+	assert not error_message
+
+
+def test_can_check_expiry_expired():
+	# Act:
+	request_datetime = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=25))
+	error_message = run_check_expiry_test({'request_lifetime_hours': '24'}, request_timestamp=request_datetime.timestamp())
+
+	# Assert:
+	assert f'request timestamp {request_datetime} is more than 24 in the past' == error_message
+
+# endregion
+
+
+# region check_pending_sent_request
+
+async def run_check_pending_sent_request_test(request_timestamp, try_wait_result, asserter):
+	# Arrange:
+	payout_transaction_hash = Hash256('4D46C2CEC80FCAFCDA7F07C749E366416FC488FBEE448E4A5112916B49635661')
+
+	class CheckPendingSentRequestMockDatabase:
+		def __init__(self):
+			self.failed_payouts = []
+
+		@staticmethod
+		def payout_sent_timestamp_for_request(request):
+			return request_timestamp if 1234 == request.transaction_height else None
+
+		@staticmethod
+		def payout_transaction_hash_for_request(_request):
+			return payout_transaction_hash
+
+		def mark_payout_failed(self, request, message):
+			self.failed_payouts.append(('failed', request, message))
+
+		def mark_payout_failed_transient(self, request, message):
+			self.failed_payouts.append(('failed-transient', request, message))
+
+	class CheckPendingSentRequestMockConnector:
+		def __init__(self):
+			self.try_waits = []
+
+		async def try_wait_for_announced_transaction(self, transaction_hash, desired_status, timeout_settings):
+			self.try_waits.append((transaction_hash, desired_status, timeout_settings))
+			if isinstance(try_wait_result, NodeException):
+				raise try_wait_result
+
+			return try_wait_result
+
+	database = CheckPendingSentRequestMockDatabase()
+	connector = CheckPendingSentRequestMockConnector()
+	request = WrapRequest(1234, None, None, None, None, None)
+
+	# Act:
+	await check_pending_sent_request(request, database, connector, {'request_lifetime_hours': '24'})
+
+	# Assert:
+	assert [(payout_transaction_hash, TransactionStatus.UNCONFIRMED, TimeoutSettings(1, 0))] == connector.try_waits
+	asserter(request, database)
+
+
+async def test_check_pending_sent_request_not_marked_when_unconfirmed():
+	# Arrange:
+	request_datetime = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=23))
+
+	def asserter(_request, database):
+		# Assert:
+		assert [] == database.failed_payouts
+
+	# Act:
+	await run_check_pending_sent_request_test(request_datetime.timestamp(), True, asserter)
+
+
+async def test_check_pending_sent_request_mark_failed_when_non_transient_node_error():
+	# Arrange:
+	request_datetime = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=23))
+
+	def asserter(request, database):
+		# Assert:
+		assert [('failed', request, 'node failure')] == database.failed_payouts
+
+	# Act:
+	await run_check_pending_sent_request_test(request_datetime.timestamp(), NodeException('node failure'), asserter)
+
+
+async def test_check_pending_sent_request_not_marked_when_transient_node_error():
+	# Arrange:
+	request_datetime = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=23))
+
+	def asserter(_request, database):
+		# Assert:
+		assert [] == database.failed_payouts
+
+	# Act:
+	await run_check_pending_sent_request_test(request_datetime.timestamp(), NodeTransientException('transient node failure'), asserter)
+
+
+async def test_check_pending_sent_request_mark_failed_when_not_unconfirmed_and_expired():
+	# Arrange:
+	request_datetime = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=25))
+
+	def asserter(request, database):
+		# Assert:
+		assert [('failed', request, f'request timestamp {request_datetime} is more than 24 in the past')] == database.failed_payouts
+
+	# Act:
+	await run_check_pending_sent_request_test(request_datetime.timestamp(), False, asserter)
+
+
+async def test_check_pending_sent_request_mark_failed_transient_when_not_unconfirmed_and_not_expired():
+	# Arrange:
+	request_datetime = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=23))
+
+	def asserter(request, database):
+		# Assert:
+		assert [('failed-transient', request, 'node dropped payout transaction')] == database.failed_payouts
+
+	# Act:
+	await run_check_pending_sent_request_test(request_datetime.timestamp(), False, asserter)
+
+
+async def test_check_pending_sent_request_mark_failed_when_execution_failure_and_expired():
+	# Arrange:
+	request_datetime = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=25))
+
+	def asserter(request, database):
+		# Assert:
+		assert [('failed', request, f'request timestamp {request_datetime} is more than 24 in the past')] == database.failed_payouts
+
+	# Act:
+	await run_check_pending_sent_request_test(request_datetime.timestamp(), ConfirmedTransactionExecutionFailure('exec failure'), asserter)
+
+
+async def test_check_pending_sent_request_mark_failed_transient_when_execution_failure_and_not_expired():
+	# Arrange:
+	request_datetime = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=23))
+
+	def asserter(request, database):
+		# Assert:
+		assert [('failed-transient', request, 'exec failure')] == database.failed_payouts
+
+	# Act:
+	await run_check_pending_sent_request_test(request_datetime.timestamp(), ConfirmedTransactionExecutionFailure('exec failure'), asserter)
 
 # endregion

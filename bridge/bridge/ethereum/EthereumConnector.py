@@ -7,12 +7,16 @@ import sha3
 from aiolimiter import AsyncLimiter
 from symbollightapi.connector.BasicConnector import BasicConnector
 from symbollightapi.model.Constants import DEFAULT_ASYNC_LIMITER_ARGUMENTS, TransactionStatus
-from symbollightapi.model.Exceptions import NodeException
+from symbollightapi.model.Exceptions import InsufficientBalanceException, NodeException, NodeTransientException
 
 from .EthereumAdapters import EthereumNetworkTimestamp
 from .RpcUtils import make_rpc_request_json, parse_rpc_response_hex_value
 
 FeeInformation = namedtuple('FeeInformation', ['base_fee', 'priority_fee'])
+
+
+class ConfirmedTransactionExecutionFailure(NodeException):
+	"""Exception raised when a transaction is confirmed but failed execution."""
 
 
 class EthereumConnector(BasicConnector):
@@ -46,7 +50,11 @@ class EthereumConnector(BasicConnector):
 	async def _post_rpc(self, request_json):
 		response_json = await self.post('', request_json)
 		if 'error' in response_json:
-			raise NodeException(f'{request_json["method"]} RPC call failed: {response_json["error"]["message"]}')
+			error_message = f'{request_json["method"]} RPC call failed: {response_json["error"]["message"]}'
+			if 'transfer amount exceeds balance' in response_json['error']['message']:
+				raise InsufficientBalanceException(error_message)
+
+			raise NodeException(error_message)
 
 		return response_json['result']
 
@@ -179,7 +187,12 @@ class EthereumConnector(BasicConnector):
 
 	# region filter_confirmed_transactions
 
-	async def _transaction_status_and_height_by_hash(self, transaction_hash):
+	async def _transaction_status_from_receipt(self, transaction_hash):
+		request_json = make_rpc_request_json('eth_getTransactionReceipt', [f'0x{transaction_hash}'])
+		transaction_json = await self._post_rpc(request_json)
+		return parse_rpc_response_hex_value(transaction_json['status'])
+
+	async def _transaction_status_and_height_by_hash(self, transaction_hash, raise_error_on_execution_failure=True):
 		request_json = make_rpc_request_json('eth_getTransactionByHash', [f'0x{transaction_hash}'])
 		transaction_json = await self._post_rpc(request_json)
 		if not transaction_json:
@@ -188,6 +201,14 @@ class EthereumConnector(BasicConnector):
 		block_number = transaction_json.get('blockNumber', None)
 		if block_number is None:
 			return (TransactionStatus.UNCONFIRMED, None)
+
+		is_success = await self._transaction_status_from_receipt(transaction_hash)
+		if not is_success:
+			if raise_error_on_execution_failure:
+				raise ConfirmedTransactionExecutionFailure('transaction confirmed on chain but failed execution')
+
+			# only called by filter_confirmed_transactions, so result can be anything except TransactionStatus.CONFIRMED
+			return (None, 0)
 
 		return (TransactionStatus.CONFIRMED, parse_rpc_response_hex_value(block_number))
 
@@ -198,7 +219,7 @@ class EthereumConnector(BasicConnector):
 
 		async def get_transaction_hash_height_pair(transaction_hash):
 			async with limiter:
-				(status, height) = await self._transaction_status_and_height_by_hash(transaction_hash)
+				(status, height) = await self._transaction_status_and_height_by_hash(transaction_hash, False)
 				return (transaction_hash if TransactionStatus.CONFIRMED == status else None, height)
 
 		tasks = [get_transaction_hash_height_pair(transaction_hash) for transaction_hash in transaction_hashes]
@@ -239,8 +260,17 @@ class EthereumConnector(BasicConnector):
 
 	# region announce_transaction
 
+	async def _require_synced(self, action):
+		request_json = make_rpc_request_json('eth_syncing', [])
+		result_json = await self._post_rpc(request_json)
+
+		if result_json is not False:
+			raise NodeTransientException(f'node is syncing and cannot {action}')
+
 	async def announce_transaction(self, transaction_payload):
 		"""Announces a transaction to the network."""
+
+		await self._require_synced('accept transactions')
 
 		raw_transaction_hex = hexlify(transaction_payload['signature'].raw_transaction).decode('utf8')
 		request_json = make_rpc_request_json('eth_sendRawTransaction', [f'0x{raw_transaction_hex}'])
@@ -253,11 +283,15 @@ class EthereumConnector(BasicConnector):
 	async def try_wait_for_announced_transaction(self, transaction_hash, desired_status, timeout_settings):
 		"""Tries to wait for a previously announced transaction to transition to a desired status."""
 
+		await self._require_synced('check transaction status')
+
 		for _ in range(timeout_settings.retry_count):
 			try:
 				(status, _) = await self._transaction_status_and_height_by_hash(transaction_hash)
 				if status and status.value >= desired_status.value:
 					return True
+			except (ConfirmedTransactionExecutionFailure, NodeTransientException):
+				raise
 			except NodeException:
 				# ignore 400 not found errors (not_found_as_error will not work because these are not 404)
 				await asyncio.sleep(timeout_settings.interval)

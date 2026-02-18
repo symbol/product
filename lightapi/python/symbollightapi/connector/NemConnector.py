@@ -11,20 +11,21 @@ from symbolchain.nem.Network import Address, NetworkTimestamp
 from ..model.Block import Block
 from ..model.Constants import DEFAULT_ASYNC_LIMITER_ARGUMENTS, TransactionStatus
 from ..model.Endpoint import Endpoint
-from ..model.Exceptions import NodeException
+from ..model.Exceptions import InsufficientBalanceException, NodeException
 from ..model.NodeInfo import NodeInfo
 from ..model.Transaction import TransactionFactory, TransactionHandler
 from .BasicConnector import BasicConnector
 from .NemBlockCalculator import NemBlockCalculator
 
 MosaicFeeInformation = namedtuple('MosaicFeeInformation', ['supply', 'divisibility'])
+AccountMosaic = namedtuple('AccountMosaic', ['mosaic_id', 'quantity'])
 
 MICROXEM_PER_XEM = 1000000
 
 
 # region NemAccountInfo
 
-class NemAccountInfo:
+class NemAccountInfo:  # pylint: disable=too-many-instance-attributes
 	"""Represents a NEM account."""
 
 	def __init__(self, address):
@@ -39,6 +40,11 @@ class NemAccountInfo:
 		self.harvested_blocks = 0
 
 		self.remote_status = None
+		self.status = None
+
+		self.min_cosignatories = None
+		self.cosignatories = []
+		self.cosignatory_of = []
 
 # endregion
 
@@ -145,7 +151,7 @@ class NemConnector(BasicConnector):
 
 	# endregion
 
-	# region GET (balance, account_info)
+	# region GET (balance, account_info, account_mosaics)
 
 	async def balance(self, address, mosaic_id=None):
 		"""Gets account balance for specified mosaic."""
@@ -154,12 +160,24 @@ class NemConnector(BasicConnector):
 			response_json = await self.get(f'account/get?address={address}')
 			return response_json['account']['balance']
 
-		mosaics_json = await self.get(f'account/mosaic/owned?address={address}', 'data')
-		mosaic_json = next((
-			mosaic_json for mosaic_json in mosaics_json
-			if (mosaic_json['mosaicId']['namespaceId'], mosaic_json['mosaicId']['name']) == mosaic_id
+		mosaics = await self.account_mosaics(address)
+		mosaic = next((
+			mosaic for mosaic in mosaics
+			if mosaic.mosaic_id == mosaic_id
 		), None)
-		return mosaic_json['quantity'] if mosaic_json else 0
+		return mosaic.quantity if mosaic else 0
+
+	async def account_mosaics(self, address):
+		"""Gets mosaics owned by an account."""
+
+		mosaics_json = await self.get(f'account/mosaic/owned?address={address}', 'data')
+
+		return [
+			AccountMosaic(
+				mosaic_id=(mosaic_json['mosaicId']['namespaceId'], mosaic_json['mosaicId']['name']),
+				quantity=mosaic_json['quantity']
+			) for mosaic_json in mosaics_json
+		]
 
 	async def account_info(self, address, forwarded=False):
 		subpath = '/forwarded' if forwarded else ''
@@ -173,8 +191,16 @@ class NemConnector(BasicConnector):
 		account_info.importance = account_json['importance']
 		account_info.harvested_blocks = account_json['harvestedBlocks']
 
+		multisig_json = account_json['multisigInfo']
+		account_info.min_cosignatories = multisig_json['minCosignatories'] if multisig_json else None
+
 		meta_json = response_json['meta']
 		account_info.remote_status = meta_json['remoteStatus']
+		account_info.status = meta_json['status']
+
+		account_info.cosignatories = [Address(cosignatories['address']) for cosignatories in meta_json['cosignatories']]
+		account_info.cosignatory_of = [Address(cosignatory_of['address']) for cosignatory_of in meta_json['cosignatoryOf']]
+
 		return account_info
 
 	# endregion
@@ -275,7 +301,11 @@ class NemConnector(BasicConnector):
 
 		response = await self._announce_transaction(transaction_payload, 'transaction/announce')
 		if 'SUCCESS' != response['message']:
-			raise NodeException(f'announce transaction failed {response}')
+			error_message = f'announce transaction failed with error {response["message"]}'
+			if 'FAILURE_INSUFFICIENT_BALANCE' == response['message']:
+				raise InsufficientBalanceException(error_message)
+
+			raise NodeException(error_message)
 
 	# endregion
 
@@ -330,7 +360,9 @@ class NemConnector(BasicConnector):
 			],
 			block_json['difficulty'],
 			block_json['hash'],
-			block['signer'],
+			block_json['totalFee'],
+			Address(block_json['beneficiary']),
+			PublicKey(block['signer']),
 			block['signature'],
 			size
 		)

@@ -9,6 +9,25 @@ WrapError = namedtuple('WrapError', _TRANSACTION_IDENTIFIER_PROPERTY_NAMES + ['m
 WrapRequestResult = namedtuple('WrapRequestResult', ['is_error', 'request', 'error'])
 
 
+# region make_next_retry_wrap_request
+
+def make_next_retry_wrap_request(request):
+	"""Makes a new wrap request that represents the next retry of an original wrap request."""
+
+	subindex = request.transaction_subindex if 0 <= request.transaction_subindex else 0xFFFF
+	subindex += 0x10000
+
+	return WrapRequest(
+		request.transaction_height,
+		request.transaction_hash,
+		subindex,
+		request.sender_address,
+		request.amount,
+		request.destination_address)
+
+# endregion
+
+
 # region make_wrap_request_result / make_wrap_error_result
 
 def make_wrap_request_result(transaction_identifier, *args):

@@ -57,10 +57,7 @@ class ConversionRateCalculatorFactory:
 
 	def _lookup_wrapped_balance(self, timestamp):
 		adjusted_timestamp = timestamp + self._native_adjustment
-		return sum((
-			self._databases.wrap_request.cumulative_net_amount_at(adjusted_timestamp),
-			self._databases.wrap_request.cumulative_fees_paid_at(adjusted_timestamp)
-		))
+		return self._databases.wrap_request.cumulative_gross_amount_at(adjusted_timestamp)
 
 	def _lookup_unwrapped_balance(self, native_height, timestamp):
 		transaction_hashes = list(self._databases.unwrap_request.payout_transaction_hashes_at(timestamp))

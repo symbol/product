@@ -4,10 +4,10 @@ import pytest
 from hexbytes import HexBytes
 from symbolchain.CryptoTypes import Hash256
 from symbollightapi.model.Constants import TimeoutSettings, TransactionStatus
-from symbollightapi.model.Exceptions import NodeException
+from symbollightapi.model.Exceptions import InsufficientBalanceException, NodeException, NodeTransientException
 
 from bridge.ethereum.EthereumAdapters import EthereumAddress
-from bridge.ethereum.EthereumConnector import EthereumConnector
+from bridge.ethereum.EthereumConnector import ConfirmedTransactionExecutionFailure, EthereumConnector
 from bridge.ethereum.RpcUtils import make_rpc_request_json
 
 from ..test.BridgeTestUtils import HASHES
@@ -278,7 +278,7 @@ async def test_can_estimate_fees_from_history(server):  # pylint: disable=redefi
 
 # region filter_confirmed_transactions
 
-async def test_can_filter_confirmed_transactions(server):  # pylint: disable=redefined-outer-name
+async def _run_can_filter_confirmed_transactions_test(server):  # pylint: disable=redefined-outer-name
 	# Arrange:
 	connector = EthereumConnector(server.make_url(''))
 	transaction_hashes = [Hash256(HASHES[i]) for i in (0, 3, 1, 2)]
@@ -287,16 +287,41 @@ async def test_can_filter_confirmed_transactions(server):  # pylint: disable=red
 	transaction_hash_height_pairs = await connector.filter_confirmed_transactions(transaction_hashes)
 
 	# Assert:
-	assert [f'{server.make_url("")}/'] * 4 == server.mock.urls
+	assert [f'{server.make_url("")}/'] * 6 == server.mock.urls
+
 	assert [
 		make_rpc_request_json('eth_getTransactionByHash', [f'0x{transaction_hash}'])
 		for transaction_hash in transaction_hashes
+	] + [
+		# - eth_getTransactionReceipt is only called for confirmed transactions
+		make_rpc_request_json('eth_getTransactionReceipt', [f'0x{HASHES[index]}'])
+		for index in (0, 2)
 	] == server.mock.request_json_payloads
 
-	assert 2 == len(transaction_hash_height_pairs)
+	return transaction_hash_height_pairs
 
+
+async def test_can_filter_confirmed_transactions(server):  # pylint: disable=redefined-outer-name
+	# Act:
+	transaction_hash_height_pairs = await _run_can_filter_confirmed_transactions_test(server)
+
+	# Assert:
+	assert 2 == len(transaction_hash_height_pairs)
 	assert (Hash256(HASHES[0]), 0xAF) == transaction_hash_height_pairs[0]
 	assert (Hash256(HASHES[2]), 0xA8) == transaction_hash_height_pairs[1]
+
+
+async def test_can_filter_confirmed_transactions_excludes_transactions_with_execution_failure(server):
+	# pylint: disable=redefined-outer-name
+	# Arrange:
+	server.mock.failed_transaction_execution_hash = f'0x{HASHES[0]}'
+
+	# Act:
+	transaction_hash_height_pairs = await _run_can_filter_confirmed_transactions_test(server)
+
+	# Assert:
+	assert 1 == len(transaction_hash_height_pairs)
+	assert (Hash256(HASHES[2]), 0xA8) == transaction_hash_height_pairs[0]
 
 # endregion
 
@@ -359,8 +384,9 @@ async def test_can_announce_transaction_success(server):  # pylint: disable=rede
 	await connector.announce_transaction(transaction)
 
 	# Assert:
-	assert [f'{server.make_url("")}/'] == server.mock.urls
+	assert [f'{server.make_url("")}/'] * 2 == server.mock.urls
 	assert [
+		make_rpc_request_json('eth_syncing', []),
 		make_rpc_request_json('eth_sendRawTransaction', [f'0x{EXAMPLE_TRANSACTION_SIGNING_PAYLOAD_HEX.lower()}'])
 	] == server.mock.request_json_payloads
 
@@ -376,6 +402,31 @@ async def test_cannot_announce_transaction_with_error(server):  # pylint: disabl
 	with pytest.raises(NodeException, match='eth_sendRawTransaction RPC call failed: INTERNAL_ERROR: IntrinsicGas'):
 		await connector.announce_transaction(transaction)
 
+
+async def test_cannot_announce_transaction_with_error_insufficient_balance(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	server.mock.simulate_announce_error = 'execution reverted: ERC20: transfer amount exceeds balance'
+
+	connector = EthereumConnector(server.make_url(''))
+	transaction = {'signature': SignedTransaction(HexBytes(EXAMPLE_TRANSACTION_SIGNING_PAYLOAD_HEX))}
+
+	# Act + Assert:
+	with pytest.raises(InsufficientBalanceException, match=f'eth_sendRawTransaction RPC call failed: {server.mock.simulate_announce_error}'):
+		await connector.announce_transaction(transaction)
+
+
+async def test_cannot_announce_transaction_to_syncing_node(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	server.mock.simulate_sync = True
+
+	connector = EthereumConnector(server.make_url(''))
+	transaction = {'signature': SignedTransaction(HexBytes(EXAMPLE_TRANSACTION_SIGNING_PAYLOAD_HEX))}
+
+	# Act + Assert:
+	with pytest.raises(NodeTransientException, match='node is syncing and cannot accept transactions'):
+		await connector.announce_transaction(transaction)
+
+
 # endregion
 
 
@@ -389,9 +440,13 @@ async def _assert_can_try_wait_for_announced_transaction_success(server, transac
 	result = await connector.try_wait_for_announced_transaction(transaction_hash, status, TimeoutSettings(5, 0.001))
 
 	# Assert:
-	assert [f'{server.make_url("")}/'] == server.mock.urls
+	is_confirmed = transaction_hash == Hash256(HASHES[0])
+
+	assert [f'{server.make_url("")}/'] * (3 if is_confirmed else 2) == server.mock.urls
 	assert [
-		make_rpc_request_json('eth_getTransactionByHash', [f'0x{transaction_hash}'])
+		make_rpc_request_json('eth_syncing', []),
+		make_rpc_request_json('eth_getTransactionByHash', [f'0x{transaction_hash}']),
+		*([make_rpc_request_json('eth_getTransactionReceipt', [f'0x{transaction_hash}'])] if is_confirmed else [])
 	] == server.mock.request_json_payloads
 	assert result
 
@@ -404,8 +459,10 @@ async def _assert_can_try_wait_for_announced_transaction_timeout(server, transac
 	result = await connector.try_wait_for_announced_transaction(transaction_hash, status, TimeoutSettings(5, 0.001))
 
 	# Assert:
-	assert [f'{server.make_url("")}/'] * 5 == server.mock.urls
+	assert [f'{server.make_url("")}/'] * 6 == server.mock.urls
 	assert [
+		make_rpc_request_json('eth_syncing', [])
+	] + [
 		make_rpc_request_json('eth_getTransactionByHash', [f'0x{transaction_hash}'])
 	] * 5 == server.mock.request_json_payloads
 	assert not result
@@ -433,5 +490,27 @@ async def test_can_try_wait_for_announced_transaction_confirmed_timeout_unconfir
 
 async def test_can_try_wait_for_announced_transaction_confirmed_timeout_unknown(server):  # pylint: disable=redefined-outer-name
 	await _assert_can_try_wait_for_announced_transaction_timeout(server, Hash256(HASHES[3]), TransactionStatus.CONFIRMED)
+
+
+async def test_cannot_try_wait_for_announced_transaction_to_syncing_node(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	server.mock.simulate_sync = True
+
+	connector = EthereumConnector(server.make_url(''))
+
+	# Act + Assert:
+	with pytest.raises(NodeTransientException, match='node is syncing and cannot check transaction status'):
+		await connector.try_wait_for_announced_transaction(Hash256(HASHES[0]), TransactionStatus.UNCONFIRMED, TimeoutSettings(5, 0.001))
+
+
+async def test_cannot_try_wait_for_announced_transaction_with_execution_failure(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	server.mock.failed_transaction_execution_hash = f'0x{HASHES[0]}'
+
+	connector = EthereumConnector(server.make_url(''))
+
+	# Act + Assert:
+	with pytest.raises(ConfirmedTransactionExecutionFailure, match='transaction confirmed on chain but failed execution'):
+		await connector.try_wait_for_announced_transaction(Hash256(HASHES[0]), TransactionStatus.UNCONFIRMED, TimeoutSettings(5, 0.001))
 
 # endregion
