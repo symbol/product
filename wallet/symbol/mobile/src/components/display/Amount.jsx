@@ -21,12 +21,18 @@ export const Amount = ({ value, ticker, isColored = false, size = 'm' }) => {
 		m: Typography.Semantic.bodyBold.m,
 		s: Typography.Semantic.body.s
 	};
+	const decimalTextStyleMap = {
+		l: Typography.Semantic.body.l,
+		m: Typography.Semantic.bodyBold.m,
+		s: Typography.Semantic.body.s
+	};
 	const tickerTextStyleMap = {
-		l: Typography.Semantic.body.m,
+		l: Typography.Semantic.body.l,
 		m: Typography.Semantic.body.m,
 		s: Typography.Semantic.body.s
 	};
 	const amountTextStyle = amountTextStyleMap[size];
+	const decimalTextStyle = decimalTextStyleMap[size];
 	const tickerTextStyle = tickerTextStyleMap[size];
 
 	// Color
@@ -38,11 +44,19 @@ export const Amount = ({ value, ticker, isColored = false, size = 'm' }) => {
 
 	let textColor;
 	const stringValue = String(value);
+	const decimalSeparatorIndex = stringValue.indexOf('.');
+	const integerPart = decimalSeparatorIndex === -1
+		? stringValue
+		: stringValue.slice(0, decimalSeparatorIndex);
+	const decimalPart = decimalSeparatorIndex === -1
+		? ''
+		: stringValue.slice(decimalSeparatorIndex);
+
 	if (
-		isColored === false 
-        || !stringValue
-        || typeof stringValue !== 'string' 
-        || stringValue === '0'
+		isColored === false
+		|| !stringValue
+		|| typeof stringValue !== 'string'
+		|| stringValue === '0'
 	)
 		textColor = colorMap.neutral;
 	else if (stringValue.startsWith('-'))
@@ -55,6 +69,10 @@ export const Amount = ({ value, ticker, isColored = false, size = 'm' }) => {
 		...amountTextStyle,
 		color: textColor
 	};
+	const decimalStyle = {
+		...decimalTextStyle,
+		color: textColor
+	};
 	const tickerStyle = {
 		...tickerTextStyle,
 		color: textColor
@@ -62,8 +80,13 @@ export const Amount = ({ value, ticker, isColored = false, size = 'm' }) => {
 
 	return (
 		<View style={styles.root}>
-			<Text style={amountStyle}>{value}</Text>
-			<Text style={tickerStyle}>{` ${ticker}`}</Text>
+			<Text style={amountStyle}>{integerPart}</Text>
+			{Boolean(decimalPart) && (
+				<Text style={decimalStyle}>{decimalPart}</Text>
+			)}
+			{Boolean(ticker) && (
+				<Text style={tickerStyle}>{` ${ticker}`}</Text>
+			)}
 		</View>
 	);
 };
