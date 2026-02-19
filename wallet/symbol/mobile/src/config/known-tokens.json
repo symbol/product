@@ -18,7 +18,27 @@
         ]
     },
     "ethereum": {
-        "testnet": [],
-        "mainnet": []
+        "testnet": [
+            {
+                "tokenId": "ETH",
+                "imageId": "eth",
+                "name": "Ether",
+                "ticker": "ETH"
+            },
+            {
+                "tokenId": "0x5E8343A455F03109B737B6D8b410e4ECCE998cdA",
+                "imageId": "wxym",
+                "name": "Wrapped XYM",
+                "ticker": "wXYM"
+            }
+        ],
+        "mainnet": [
+            {
+                "tokenId": "ETH",
+                "imageId": "eth",
+                "name": "Ether",
+                "ticker": "ETH"
+            }
+        ]
     }
 }
