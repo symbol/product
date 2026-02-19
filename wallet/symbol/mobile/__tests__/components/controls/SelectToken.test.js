@@ -1,8 +1,10 @@
 import { SelectToken } from '@/app/components/controls/SelectToken';
 import { TokenFixtureBuilder } from '__fixtures__/local/TokenFixtureBuilder';
+import { ScreenTester } from '__tests__/ScreenTester';
 import { runDropdownSelectTest, runRenderTextTest } from '__tests__/component-tests';
 import { mockLocalization } from '__tests__/mock-helpers';
-import { fireEvent, render } from '@testing-library/react-native';
+
+// Mocks
 
 jest.mock('@/app/utils', () => ({
 	getTokenKnownInfo: (chainName, networkIdentifier, tokenId) => {
@@ -15,48 +17,62 @@ jest.mock('@/app/utils', () => ({
 	}
 }));
 
+// Constants
+
+const CHAIN_NAME = 'symbol';
+const NETWORK_IDENTIFIER = 'mainnet';
+
+// Screen Text
+
 const SCREEN_TEXT = {
-	selectTokenLabel: 'select_token',
+	inputSelectTokenLabel: 'select_token',
 	textSymbolTokenName: 'Symbol Token',
 	textCustomTokenName: 'Custom Token',
-	textUnknownTokenName: 'Test Token 2',
+	textUnknownTokenName: 'Mainnet Symbol Token 2',
 	textSymbolTokenDisplay: 'Symbol Token • XYM',
 	textCustomTokenDisplay: 'Custom Token • CTK'
 };
 
-const TOKEN_SYMBOL = TokenFixtureBuilder
-	.createWithToken('symbol', 'mainnet', 0)
+// Token Fixtures
+
+const tokenSymbol = TokenFixtureBuilder
+	.createWithToken(CHAIN_NAME, NETWORK_IDENTIFIER, 0)
 	.setAmount('1000')
 	.build();
 
-const TOKEN_CUSTOM = TokenFixtureBuilder
-	.createWithToken('symbol', 'mainnet', 1)
+const tokenCustom = TokenFixtureBuilder
+	.createWithToken(CHAIN_NAME, NETWORK_IDENTIFIER, 1)
 	.setAmount('500')
 	.build();
 
-const TOKEN_UNKNOWN = TokenFixtureBuilder
-	.createWithToken('symbol', 'mainnet', 2)
+const tokenUnknown = TokenFixtureBuilder
+	.createWithToken(CHAIN_NAME, NETWORK_IDENTIFIER, 2)
 	.setAmount('250')
 	.build();
 
-const TOKEN_LIST = [TOKEN_SYMBOL, TOKEN_CUSTOM, TOKEN_UNKNOWN];
+const TOKEN_LIST = [tokenSymbol, tokenCustom, tokenUnknown];
+
+// Dropdown Items
 
 const DROPDOWN_ITEMS = [
-	{ value: TOKEN_SYMBOL.id, label: SCREEN_TEXT.textSymbolTokenDisplay },
-	{ value: TOKEN_CUSTOM.id, label: SCREEN_TEXT.textCustomTokenDisplay },
-	{ value: TOKEN_UNKNOWN.id, label: SCREEN_TEXT.textUnknownTokenName }
+	{ value: tokenSymbol.id, label: SCREEN_TEXT.textSymbolTokenDisplay },
+	{ value: tokenCustom.id, label: SCREEN_TEXT.textCustomTokenDisplay },
+	{ value: tokenUnknown.id, label: SCREEN_TEXT.textUnknownTokenName }
 ];
 
+// Props Factory
+
 const createDefaultProps = (overrides = {}) => ({
-	label: SCREEN_TEXT.selectTokenLabel,
-	value: TOKEN_SYMBOL.id,
+	label: SCREEN_TEXT.inputSelectTokenLabel,
+	value: tokenSymbol.id,
 	tokens: TOKEN_LIST,
-	chainName: 'symbol',
-	networkIdentifier: 'mainnet',
+	chainName: CHAIN_NAME,
+	networkIdentifier: NETWORK_IDENTIFIER,
 	onChange: jest.fn(),
 	...overrides
 });
 
+// Tests
 
 describe('components/SelectToken', () => {
 	beforeEach(() => {
@@ -66,7 +82,7 @@ describe('components/SelectToken', () => {
 	runRenderTextTest(SelectToken, {
 		props: createDefaultProps(),
 		textToRender: [
-			{ type: 'text', value: SCREEN_TEXT.selectTokenLabel },
+			{ type: 'text', value: SCREEN_TEXT.inputSelectTokenLabel },
 			{ type: 'text', value: SCREEN_TEXT.textSymbolTokenName }
 		]
 	});
@@ -85,27 +101,27 @@ describe('components/SelectToken', () => {
 				const props = createDefaultProps(config.props);
 
 				// Act:
-				const { getByText } = render(<SelectToken {...props} />);
+				const screenTester = new ScreenTester(SelectToken, props);
 
 				// Assert:
-				expect(getByText(expected.displayedName)).toBeTruthy();
+				screenTester.expectText([expected.displayedName]);
 			});
 		};
 
 		const tokenNameResolutionTests = [
 			{
 				description: 'displays resolved name from getTokenKnownInfo',
-				config: { props: { value: TOKEN_SYMBOL.id } },
+				config: { props: { value: tokenSymbol.id } },
 				expected: { displayedName: SCREEN_TEXT.textSymbolTokenName }
 			},
 			{
 				description: 'displays resolved name for custom token',
-				config: { props: { value: TOKEN_CUSTOM.id } },
+				config: { props: { value: tokenCustom.id } },
 				expected: { displayedName: SCREEN_TEXT.textCustomTokenName }
 			},
 			{
 				description: 'falls back to token.name when getTokenKnownInfo returns null',
-				config: { props: { value: TOKEN_UNKNOWN.id } },
+				config: { props: { value: tokenUnknown.id } },
 				expected: { displayedName: SCREEN_TEXT.textUnknownTokenName }
 			}
 		];
@@ -116,42 +132,37 @@ describe('components/SelectToken', () => {
 	});
 
 	describe('token list', () => {
-		it('renders all tokens in dropdown when opened', async () => {
+		it('renders all tokens in dropdown when opened', () => {
 			// Arrange:
 			const props = createDefaultProps();
-			const { getByText, findByText } = render(<SelectToken {...props} />);
+			const screenTester = new ScreenTester(SelectToken, props);
 
 			// Act:
-			const trigger = getByText(SCREEN_TEXT.textSymbolTokenName);
-			fireEvent.press(trigger);
+			screenTester.pressButton(SCREEN_TEXT.textSymbolTokenName);
 
 			// Assert:
-			const symbolToken = await findByText(SCREEN_TEXT.textSymbolTokenDisplay);
-			const customToken = await findByText(SCREEN_TEXT.textCustomTokenDisplay);
-			const unknownToken = await findByText(SCREEN_TEXT.textUnknownTokenName);
-			
-			expect(symbolToken).toBeTruthy();
-			expect(customToken).toBeTruthy();
-			expect(unknownToken).toBeTruthy();
+			screenTester.expectText([
+				SCREEN_TEXT.textSymbolTokenDisplay,
+				SCREEN_TEXT.textCustomTokenDisplay,
+				SCREEN_TEXT.textUnknownTokenName
+			]);
 		});
 	});
 
 	describe('onChange', () => {
 		const runOnChangeTest = (description, config, expected) => {
-			it(description, async () => {
+			it(description, () => {
 				// Arrange:
 				const onChangeMock = jest.fn();
 				const props = createDefaultProps({ 
 					value: config.initialValue, 
 					onChange: onChangeMock 
 				});
-				const { getByText, findByText } = render(<SelectToken {...props} />);
+				const screenTester = new ScreenTester(SelectToken, props);
 
 				// Act:
-				const trigger = getByText(config.triggerText);
-				fireEvent.press(trigger);
-				const tokenOption = await findByText(config.selectText);
-				fireEvent.press(tokenOption);
+				screenTester.pressButton(config.triggerText);
+				screenTester.pressButton(config.selectText);
 
 				// Assert:
 				expect(onChangeMock).toHaveBeenCalledWith(expected.selectedValue);
@@ -162,29 +173,29 @@ describe('components/SelectToken', () => {
 			{
 				description: 'calls onChange with custom token id when selected',
 				config: { 
-					initialValue: TOKEN_SYMBOL.id, 
+					initialValue: tokenSymbol.id, 
 					triggerText: SCREEN_TEXT.textSymbolTokenName,
 					selectText: SCREEN_TEXT.textCustomTokenDisplay
 				},
-				expected: { selectedValue: TOKEN_CUSTOM.id }
+				expected: { selectedValue: tokenCustom.id }
 			},
 			{
 				description: 'calls onChange with unknown token id when selected',
 				config: { 
-					initialValue: TOKEN_SYMBOL.id, 
+					initialValue: tokenSymbol.id, 
 					triggerText: SCREEN_TEXT.textSymbolTokenName,
 					selectText: SCREEN_TEXT.textUnknownTokenName
 				},
-				expected: { selectedValue: TOKEN_UNKNOWN.id }
+				expected: { selectedValue: tokenUnknown.id }
 			},
 			{
 				description: 'calls onChange with symbol token id when selected from custom',
 				config: { 
-					initialValue: TOKEN_CUSTOM.id, 
+					initialValue: tokenCustom.id, 
 					triggerText: SCREEN_TEXT.textCustomTokenName,
 					selectText: SCREEN_TEXT.textSymbolTokenDisplay
 				},
-				expected: { selectedValue: TOKEN_SYMBOL.id }
+				expected: { selectedValue: tokenSymbol.id }
 			}
 		];
 
@@ -199,10 +210,10 @@ describe('components/SelectToken', () => {
 			const props = createDefaultProps({ tokens: [], value: '' });
 
 			// Act:
-			const { getByText } = render(<SelectToken {...props} />);
+			const screenTester = new ScreenTester(SelectToken, props);
 
 			// Assert:
-			expect(getByText(SCREEN_TEXT.selectTokenLabel)).toBeTruthy();
+			screenTester.expectText([SCREEN_TEXT.inputSelectTokenLabel]);
 		});
 	});
 });
