@@ -1,3 +1,5 @@
+import { walletStorageAccounts } from '__fixtures__/local/wallet';
+
 const LINKED_KEYS = {
 	linkedPublicKey: '67599EEC06BE291E8608E3475D36E4C520389D6C853EA223CF9D744B47A4F630',
 	nodePublicKey: 'E4EAF960E8C4291AF1810F706E16750E3790237FDCF8887B4B0C1854603AD0FF',
@@ -76,7 +78,7 @@ export class AccountInfoFixtureBuilder {
 			...EMPTY_FIXTURE,
 			address: account.address,
 			publicKey: account.publicKey
-		});
+		}, chainName, networkIdentifier);
 	};
 
 	/**
@@ -231,6 +233,30 @@ export class AccountInfoFixtureBuilder {
 	 */
 	setFetchedAt = fetchedAt => {
 		this._data.fetchedAt = fetchedAt;
+		
+		return this;
+	};
+
+	/**
+	 * Sets the tokens for the account.
+	 * 
+	 * @param {Array} tokens - The account tokens.
+	 * @returns {AccountInfoFixtureBuilder} The builder instance.
+	 */
+	setTokens = tokens => {
+		this._data.tokens = tokens;
+		
+		return this;
+	};
+
+	/**
+	 * Sets the mosaics for the account.
+	 * 
+	 * @param {Array} mosaics - The account mosaics.
+	 * @returns {AccountInfoFixtureBuilder} The builder instance.
+	 */
+	setMosaics = mosaics => {
+		this._data.mosaics = mosaics;
 		
 		return this;
 	};
