@@ -1,6 +1,7 @@
 import os
 import shutil
 import tempfile
+import ipaddress
 from pathlib import Path
 
 
@@ -97,14 +98,7 @@ class CertificateFactory:
 				'basicConstraints = critical,CA:TRUE',
 				'keyUsage = critical,keyCertSign,cRLSign',
 				'subjectKeyIdentifier = hash',
-				'authorityKeyIdentifier = keyid:always,issuer',
-				'',
-				'[x509_v3_node]',
-				'basicConstraints = critical,CA:FALSE',
-				'keyUsage = critical,digitalSignature',
-				'extendedKeyUsage = serverAuth,clientAuth',
-				'subjectKeyIdentifier = hash',
-				'authorityKeyIdentifier = keyid,issuer'
+				'authorityKeyIdentifier = keyid:always,issuer'
 			]))
 
 		# create new certs directory
@@ -146,6 +140,13 @@ class CertificateFactory:
 		if not node_cn:
 			raise RuntimeError('Node common name cannot be empty')
 
+		def _alt_name_entry(common_name):
+			try:
+				ipaddress.ip_address(common_name)
+				return f'IP.1 = {common_name}'
+			except ValueError:
+				return f'DNS.1 = {common_name}'
+
 		# prepare node config
 		with open('node.cnf', 'wt', encoding='utf8') as outfile:
 			outfile.write('\n'.join([
@@ -163,8 +164,16 @@ class CertificateFactory:
 				'extendedKeyUsage = serverAuth,clientAuth',
 				'subjectAltName = @alt_names',
 				'',
+				'[x509_v3_node]',
+				'basicConstraints = critical,CA:FALSE',
+				'keyUsage = critical,digitalSignature',
+				'extendedKeyUsage = serverAuth,clientAuth',
+				'subjectKeyIdentifier = hash',
+				'authorityKeyIdentifier = keyid,issuer',
+				'subjectAltName = @alt_names',
+				'',
 				'[alt_names]',
-				f'DNS.1 = {node_cn}'
+				_alt_name_entry(node_cn)
 			]))
 
 		# prepare node certificate signing request
@@ -186,12 +195,13 @@ class CertificateFactory:
 		self.openssl_executor.dispatch(self._add_ca_password([
 			'ca',
 			'-config', 'ca.cnf',
+			'-extfile', 'node.cnf',
+			'-extensions', 'x509_v3_node',
 			'-days', str(days),
 			'-notext',
 			'-batch',
 			'-in', 'node.csr.pem',
 			'-out', 'node.crt.pem',
-			'-extensions', 'x509_v3_node'
 		] + ([] if not start_date else ['-startdate', start_date.strftime('%y%m%d%H%M%SZ')])))
 
 	@staticmethod
