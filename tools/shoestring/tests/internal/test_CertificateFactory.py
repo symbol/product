@@ -11,6 +11,8 @@ from shoestring.internal.OpensslExecutor import OpensslExecutor
 
 
 class CertificateFactoryTest(unittest.TestCase):
+	# pylint: disable=too-many-public-methods
+
 	# region common utils
 
 	@staticmethod
@@ -200,7 +202,16 @@ class CertificateFactoryTest(unittest.TestCase):
 	def test_can_generate_ca_certificate_with_custom_duration(self):
 		self._assert_can_generate_ca_certificate({'days': 1000}, 1000)
 
-	def _assert_can_generate_node_certificate(self, should_generate_certificate_chain, additional_args, expected_values, node_common_name='my NODE common name', expected_san='DNS:my NODE common name'):
+	def _assert_can_generate_node_certificate(
+		self,
+		should_generate_certificate_chain,
+		additional_args,
+		expected_values,
+		node_common_name='my NODE common name',
+		expected_san='DNS:my NODE common name'
+	):
+		# pylint: disable=too-many-arguments, too-many-positional-arguments, too-many-locals
+
 		# Arrange: certificate has second resolution, so clear microseconds for assert below to work
 		future_start_delay_days = expected_values.get('delay_days', 0)
 		test_start_time = datetime.datetime.utcnow().replace(microsecond=0) + datetime.timedelta(future_start_delay_days)
