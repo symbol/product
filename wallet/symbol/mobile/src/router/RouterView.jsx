@@ -63,6 +63,7 @@ export const RouterView = ({ isActive, flow }) => (
 						<Stack.Group screenOptions={{ headerShown: false }}>
 							<Stack.Screen name={RouteName.Home} component={screens.Home} />
 							<Stack.Screen name={RouteName.History} component={screens.History} />
+							<Stack.Screen name={RouteName.Assets} component={screens.Assets} />
 						</Stack.Group>
 						<Stack.Group>
 							<Stack.Screen name={RouteName.AccountDetails} component={screens.AccountDetails} />
