@@ -30,11 +30,9 @@ const EmptyListPlaceholder = () => (
  * @returns {React.ReactNode}
  */
 const SectionHeader = ({ title, titleStyle }) => (
-	<View style={styles.sectionHeader}>
-		<StyledText type="label" style={titleStyle}>
-			{title}
-		</StyledText>
-	</View>
+	<StyledText type="label" style={titleStyle}>
+		{title}
+	</StyledText>
 );
 
 /**
@@ -88,6 +86,7 @@ const LoadingFooter = ({ isLoading, renderPlaceholder }) => (
  * @param {function} props.keyExtractor - Function to extract unique keys from items
  * @param {function} props.renderItem - Function to render list items
  * @param {function} [props.renderScreenHeader] - Function to render custom screen header
+ * @param {function} [props.renderSectionHeader] - Function to render custom section headers
  * @param {function} [props.renderPlaceholder] - Function to render placeholder items during loading
  * @param {function} [props.shouldShowFooter] - Function to determine if footer should be shown for a section
  *
@@ -107,6 +106,7 @@ export const FilteredListScreenTemplate = ({
 	onEndReached,
 	keyExtractor,
 	renderScreenHeader,
+	renderSectionHeader: renderSectionHeaderProp,
 	renderItem,
 	renderPlaceholder,
 	shouldShowFooter
@@ -135,12 +135,17 @@ export const FilteredListScreenTemplate = ({
 	}, [isLoading || isRefreshing || isPageLoading]);
 
 	const renderSectionHeader = useCallback(({ section }) => (
-		<SectionHeader title={section.title} titleStyle={section.titleStyle} />
-	), []);
+		<View style={styles.sectionHeader}>
+			{renderSectionHeaderProp 
+				? renderSectionHeaderProp({ section }) 
+				: <SectionHeader title={section.title} titleStyle={section.titleStyle} />
+			}
+		</View>
+	), [renderSectionHeaderProp]);
 
 	const renderSectionFooter = useCallback(({ section }) => {
 		const showFooter = shouldShowFooter?.(section.group) ?? false;
-		if (!showFooter) 
+		if (!showFooter)
 			return null;
 
 		return (
