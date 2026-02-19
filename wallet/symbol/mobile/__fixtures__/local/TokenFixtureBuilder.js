@@ -123,4 +123,52 @@ export class TokenFixtureBuilder {
 		
 		return this;
 	};
+
+	/**
+	 * Sets the start height for the token.
+	 * 
+	 * @param {number} startHeight - The token creation height.
+	 * @returns {TokenFixtureBuilder} The builder instance.
+	 */
+	setStartHeight = startHeight => {
+		this._data.startHeight = startHeight;
+		
+		return this;
+	};
+
+	/**
+	 * Sets the end height for the token.
+	 * 
+	 * @param {number} endHeight - The token expiration height.
+	 * @returns {TokenFixtureBuilder} The builder instance.
+	 */
+	setEndHeight = endHeight => {
+		this._data.endHeight = endHeight;
+		
+		return this;
+	};
+
+	/**
+	 * Sets whether the token has unlimited duration (no expiration).
+	 * 
+	 * @param {boolean} isUnlimitedDuration - True if the token has unlimited duration, false otherwise.
+	 * @returns {TokenFixtureBuilder} The builder instance.
+	 */
+	setIsUnlimitedDuration = isUnlimitedDuration => {
+		this._data.isUnlimitedDuration = isUnlimitedDuration;
+		
+		return this;
+	};
+
+	/**
+	 * Sets the creator address for the token.
+	 * 
+	 * @param {string} creator - The creator address.
+	 * @returns {TokenFixtureBuilder} The builder instance.
+	 */
+	setCreator = creator => {
+		this._data.creator = creator;
+		
+		return this;
+	};
 }
