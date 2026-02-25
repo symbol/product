@@ -13,6 +13,7 @@ class BlockTest(unittest.TestCase):
 			1,
 			95000000000000,
 			'9708256E8A8DFB76EED41DCFA2E47F4AF520B7B3286AFB7F60DCA02851F8A53E',
+			'TCJLCZSOQ6RGWHTPSV2DW467WZSHK4NBSITND4OF',
 			'45C1553FB1BE7F25B6F79278B9EDE1129BB9163F3B85883EA90F1C66F497E68B',
 			(
 				'919AE66A34119B49812B335827B357F86884AB08B628029FD6E8DB3572FAEB4F'
@@ -37,6 +38,7 @@ class BlockTest(unittest.TestCase):
 		self.assertEqual(1, block_view.total_transactions)
 		self.assertEqual(95000000000000, block_view.difficulty)
 		self.assertEqual('9708256E8A8DFB76EED41DCFA2E47F4AF520B7B3286AFB7F60DCA02851F8A53E', block_view.block_hash)
+		self.assertEqual('TCJLCZSOQ6RGWHTPSV2DW467WZSHK4NBSITND4OF', block_view.beneficiary)
 		self.assertEqual('45C1553FB1BE7F25B6F79278B9EDE1129BB9163F3B85883EA90F1C66F497E68B', block_view.signer)
 		self.assertEqual(
 			'919AE66A34119B49812B335827B357F86884AB08B628029FD6E8DB3572FAEB4F'
@@ -60,6 +62,7 @@ class BlockTest(unittest.TestCase):
 			'totalTransactions': 1,
 			'difficulty': 95000000000000,
 			'hash': '9708256E8A8DFB76EED41DCFA2E47F4AF520B7B3286AFB7F60DCA02851F8A53E',
+			'beneficiary': 'TCJLCZSOQ6RGWHTPSV2DW467WZSHK4NBSITND4OF',
 			'signer': '45C1553FB1BE7F25B6F79278B9EDE1129BB9163F3B85883EA90F1C66F497E68B',
 			'signature': (
 				'919AE66A34119B49812B335827B357F86884AB08B628029FD6E8DB3572FAEB4F'
@@ -82,6 +85,7 @@ class BlockTest(unittest.TestCase):
 		self.assertNotEqual(block_view, self._create_default_block_view(('total_transactions', 2)))
 		self.assertNotEqual(block_view, self._create_default_block_view(('difficulty', 95000000000001)))
 		self.assertNotEqual(block_view, self._create_default_block_view(('block_hash', 'random hash')))
+		self.assertNotEqual(block_view, self._create_default_block_view(('beneficiary', 'random beneficiary')))
 		self.assertNotEqual(block_view, self._create_default_block_view(('signer', 'random signer')))
 		self.assertNotEqual(block_view, self._create_default_block_view(('signature', 'random signature')))
 		self.assertNotEqual(block_view, self._create_default_block_view(('size', 'random size')))
