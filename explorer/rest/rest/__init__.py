@@ -1,5 +1,4 @@
 import configparser
-from collections import namedtuple
 from pathlib import Path
 
 from flask import Flask, abort, jsonify, request
@@ -8,10 +7,7 @@ from symbolchain.CryptoTypes import PublicKey
 from zenlog import log
 
 from rest.facade.NemRestFacade import NemRestFacade
-
-DatabaseConfig = namedtuple('DatabaseConfig', ['database', 'user', 'password', 'host', 'port'])
-Pagination = namedtuple('Pagination', ['limit', 'offset'])
-Sorting = namedtuple('Sorting', ['field', 'order'])
+from rest.model.common import DatabaseConfig, Pagination, Sorting
 
 
 def create_app():
