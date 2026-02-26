@@ -1,9 +1,11 @@
 import os
 import tempfile
 from pathlib import Path
+from unittest.mock import AsyncMock, patch
 
 import pytest
 import testing.postgresql
+from symbollightapi.model.Exceptions import NodeException
 
 from rest import create_app
 
@@ -180,7 +182,6 @@ def test_api_nem_blocks_invalid_offset(client):  # pylint: disable=redefined-out
 def test_api_nem_blocks_invalid_sort(client):  # pylint: disable=redefined-outer-name
 	_assert_get_api_nem_blocks_fail(client, 'Sort must be either ASC or DESC', sort='invalid')
 
-
 # endregion
 
 
@@ -252,7 +253,6 @@ def test_api_nem_account_not_found(client):  # pylint: disable=redefined-outer-n
 		'status': 404
 	} == response.json
 
-
 # endregion
 
 # region /accounts
@@ -323,5 +323,43 @@ def test_api_nem_accounts_invalid_sort_field(client):  # pylint: disable=redefin
 def test_api_nem_accounts_invalid_sort_order(client):  # pylint: disable=redefined-outer-name, invalid-name
 	_assert_get_nem_accounts_bad_request(client, 'Sort order must be either ASC or DESC', sort_order='INVALID')
 
+# endregion
+
+# region /health
+
+@patch('rest.facade.NemRestFacade.NemConnector.node_info')
+def test_api_nem_health(mock_node_info, client):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	mock_node_info.return_value = AsyncMock()
+
+	# Act:
+	response = client.get('/api/nem/health')
+
+	# Assert:
+	_assert_status_code_and_headers(response, 200)
+	assert {
+		'isHealthy': True,
+		'lastSyncedAt': EXPECTED_BLOCK_VIEW_2.timestamp,
+		'lastBlockHeight': EXPECTED_BLOCK_VIEW_2.height,
+		'errors': []
+	} == response.json
+
+
+@patch('rest.facade.NemRestFacade.NemConnector.node_info')
+def test_api_nem_health_node_fails(mock_node_info, client):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	mock_node_info.side_effect = NodeException('Connection refused')
+
+	# Act:
+	response = client.get('/api/nem/health')
+
+	# Assert:
+	_assert_status_code_and_headers(response, 200)
+	assert {
+		'isHealthy': False,
+		'lastSyncedAt': EXPECTED_BLOCK_VIEW_2.timestamp,
+		'lastBlockHeight': EXPECTED_BLOCK_VIEW_2.height,
+		'errors': [{'type': 'synchronization', 'message': 'Connection refused'}]
+	} == response.json
 
 # endregion
