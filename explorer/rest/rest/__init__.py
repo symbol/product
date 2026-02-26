@@ -115,6 +115,8 @@ def setup_nem_routes(app, nem_api_facade):  # pylint: disable=too-many-statement
 		if not result:
 			abort(404)
 
+		return jsonify(result)
+
 	@app.route('/api/nem/health')
 	async def api_get_nem_health():
 		result = await nem_api_facade.get_health()
