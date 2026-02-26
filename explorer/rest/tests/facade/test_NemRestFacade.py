@@ -1,5 +1,10 @@
-from rest import Pagination, Sorting
+import asyncio
+from unittest.mock import AsyncMock, patch
+
+from symbollightapi.model.Exceptions import NodeException
+
 from rest.facade.NemRestFacade import NemRestFacade
+from rest.model.common import Pagination, Sorting
 
 from ..test.DatabaseTestUtils import ACCOUNT_VIEWS, BLOCK_VIEWS, DatabaseTestBase
 
@@ -20,7 +25,7 @@ class TestNemRestFacade(DatabaseTestBase):
 
 	def setUp(self):
 		super().setUp()
-		self.nem_rest_facade = NemRestFacade(self.db_config, 'mainnet')
+		self.nem_rest_facade = NemRestFacade('http://localhost:7890', self.db_config, 'mainnet')
 
 	# region block
 
@@ -144,4 +149,37 @@ class TestNemRestFacade(DatabaseTestBase):
 			expected_accounts=[EXPECTED_ACCOUNT_2],
 			is_harvesting=True
 		)
+
+	# endregion
+
+	# region health
+
+	@patch('rest.facade.NemRestFacade.NemConnector.node_info')
+	def test_can_retrieve_health(self, mock_node_info):
+		# Arrange:
+		mock_node_info.return_value = AsyncMock()
+
+		# Act:
+		result = asyncio.run(self.nem_rest_facade.get_health())
+
+		# Assert:
+		self.assertTrue(result['isHealthy'])
+		self.assertEqual(EXPECTED_BLOCK_2['timestamp'], result['lastSyncedAt'])
+		self.assertEqual(EXPECTED_BLOCK_2['height'], result['lastBlockHeight'])
+		self.assertEqual([], result['errors'])
+
+	@patch('rest.facade.NemRestFacade.NemConnector.node_info')
+	def test_can_retrieve_health_with_node_exception(self, mock_node_info):
+		# Arrange:
+		mock_node_info.side_effect = NodeException('Connection refused')
+
+		# Act:
+		result = asyncio.run(self.nem_rest_facade.get_health())
+
+		# Assert:
+		self.assertFalse(result['isHealthy'])
+		self.assertEqual(EXPECTED_BLOCK_2['timestamp'], result['lastSyncedAt'])
+		self.assertEqual(EXPECTED_BLOCK_2['height'], result['lastBlockHeight'])
+		self.assertEqual([{'type': 'synchronization', 'message': 'Connection refused'}], result['errors'])
+
 	# endregion

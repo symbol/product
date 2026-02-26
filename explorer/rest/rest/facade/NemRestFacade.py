@@ -5,6 +5,7 @@ from symbollightapi.connector.NemConnector import NemConnector
 from symbollightapi.model.Exceptions import NodeException
 
 from rest.db.NemDatabase import NemDatabase
+from rest.model.common import Pagination
 
 
 class NemRestFacade:
@@ -55,7 +56,11 @@ class NemRestFacade:
 	async def get_health(self):
 		"""Gets health of the node."""
 
-		latest_block = self.nem_db.get_blocks(limit=1, offset=0, min_height=1, sort='DESC')[0]
+		latest_block = self.nem_db.get_blocks(
+			pagination=Pagination(1, 0),
+			min_height=1,
+			sort='DESC'
+		)[0]
 
 		last_synced_at = latest_block.timestamp
 		last_block_height = latest_block.height
@@ -64,16 +69,16 @@ class NemRestFacade:
 
 		try:
 			await self.nem_connector.node_info()
-		except Exception:
+		except NodeException as error:
 			is_healthy = False
 			errors.append({
-				"type": "synchronization",
-				"message": "Node is not responding"
+				'type': 'synchronization',
+				'message': str(error)
 			})
 
 		return {
-				"isHealthy": is_healthy,
-				"lastSyncedAt": last_synced_at,
-				"lastBlockHeight": last_block_height,
-				"errors": errors
-			}
+			'isHealthy': is_healthy,
+			'lastSyncedAt': last_synced_at,
+			'lastBlockHeight': last_block_height,
+			'errors': errors
+		}
