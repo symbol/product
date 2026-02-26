@@ -22,7 +22,6 @@ class SymbolPeerConnector:
 		(self.node_host, self.node_port) = (host, port)
 		self.timeout_seconds = None
 		self.node_public_key = None
-		self.certificate_processor = None
 
 		self.ssl_context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
 		self.ssl_context.check_hostname = False
@@ -67,7 +66,7 @@ class SymbolPeerConnector:
 	async def _send_socket_request(self, packet_type, parser):
 		writer = None
 		self.node_public_key = None
-		self.certificate_processor = CatapultCertificateProcessor()
+		certificate_processor = CatapultCertificateProcessor()
 		try:
 			reader, writer = await asyncio.open_connection(
 				self.node_host,
@@ -77,16 +76,18 @@ class SymbolPeerConnector:
 
 			# Handshake succeeded; try Catapult-specific chain processing.
 			ssl_object = writer.get_extra_info('ssl_object')
-			self._try_populate_peer_public_key(ssl_object)
+			self.node_public_key = self._try_populate_peer_public_key(ssl_object, certificate_processor)
 
 			return await asyncio.wait_for(self._process_write_read(reader, writer, packet_type, parser), timeout=self.timeout_seconds)
 		except (ConnectionRefusedError, OSError, ssl.SSLError, asyncio.exceptions.IncompleteReadError, asyncio.exceptions.TimeoutError) as ex:
 			raise NodeException from ex
 		finally:
 			if writer:
-				writer.close()
-
-			self.certificate_processor = None
+				try:
+					writer.close()
+					await writer.wait_closed()
+				except Exception:  # pylint: disable=broad-except
+					pass
 
 	@staticmethod
 	def _try_get_peer_chain_as_der(ssl_object):
@@ -107,9 +108,15 @@ class SymbolPeerConnector:
 				continue
 
 			der_chain = []
+			ssl_certificate_type = getattr(ssl, 'Certificate', None)
+			ssl_der_encoding = getattr(ssl, 'DER', None)
 			for item in chain:
 				if isinstance(item, (bytes, bytearray)):
 					der_chain.append(bytes(item))
+				# pylint: disable-next=isinstance-second-argument-not-valid-type
+				elif ssl_certificate_type is not None and ssl_der_encoding is not None and isinstance(item, ssl_certificate_type):
+					# Python 3.10+: ssl.Certificate requires explicit DER format argument
+					der_chain.append(item.public_bytes(ssl_der_encoding))
 				elif hasattr(item, 'public_bytes'):
 					try:
 						der_chain.append(item.public_bytes())
@@ -122,19 +129,19 @@ class SymbolPeerConnector:
 		leaf_der = ssl_object.getpeercert(binary_form=True)
 		return [leaf_der] if leaf_der else []
 
-	def _try_populate_peer_public_key(self, ssl_object):
-		"""Tries Catapult-style chain verification and extracts peer public key."""
+	@staticmethod
+	def _try_populate_peer_public_key(ssl_object, certificate_processor):
+		"""Tries Catapult-style chain verification and extracts peer public key. Returns the public key or None."""
 		try:
-			chain_der = self._try_get_peer_chain_as_der(ssl_object)
-			if not chain_der or not self.certificate_processor:
-				return
+			chain_der = SymbolPeerConnector._try_get_peer_chain_as_der(ssl_object)
+			if not chain_der or not certificate_processor:
+				return None
 
-			if self.certificate_processor.verify_der_chain(chain_der):
-				self.node_public_key = self.certificate_processor.certificate(self.certificate_processor.size - 1).public_key
-			elif chain_der:
-				self.node_public_key = self.certificate_processor.try_extract_public_key_from_der(chain_der[0])
+			if certificate_processor.verify_der_chain(chain_der):
+				return certificate_processor.certificate(certificate_processor.size - 1).public_key
+			return certificate_processor.try_extract_public_key_from_der(chain_der[0])
 		except Exception:  # pylint: disable=broad-except
-			return
+			return None
 
 	@staticmethod
 	async def _process_write_read(reader, writer, packet_type, parser):

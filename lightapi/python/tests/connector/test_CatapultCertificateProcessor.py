@@ -3,7 +3,7 @@ from datetime import datetime, timedelta, timezone
 
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
-from cryptography.hazmat.primitives.asymmetric import ed25519, rsa
+from cryptography.hazmat.primitives.asymmetric import ed448, ed25519, rsa
 from cryptography.x509.oid import NameOID
 from symbolchain.CryptoTypes import PublicKey
 
@@ -29,7 +29,7 @@ def create_certificate(subject_name, issuer_name, subject_key, issuer_key):
 	builder = builder.serial_number(x509.random_serial_number())
 	builder = builder.not_valid_before(now - timedelta(minutes=5))
 	builder = builder.not_valid_after(now + timedelta(days=365))
-	algorithm = None if isinstance(issuer_key, ed25519.Ed25519PrivateKey) else hashes.SHA256()
+	algorithm = None if isinstance(issuer_key, (ed25519.Ed25519PrivateKey, ed448.Ed448PrivateKey)) else hashes.SHA256()
 	return builder.sign(private_key=issuer_key, algorithm=algorithm)
 
 
@@ -112,7 +112,7 @@ class CatapultCertificateProcessorTest(unittest.TestCase):
 		self.assertFalse(verify_result)
 		self.assertEqual(0, processor.size)
 
-	def test_unparseable_certificate_takes_precedence_over_chain_status(self):
+	def test_cannot_add_chain_with_unparsable_certificate(self):
 		# Arrange:
 		chain_der = [b'not-a-certificate', to_der(create_default_certificate('Bob'))]
 		processor = CatapultCertificateProcessor()
@@ -124,7 +124,7 @@ class CatapultCertificateProcessorTest(unittest.TestCase):
 		self.assertFalse(verify_result)
 		self.assertEqual(0, processor.size)
 
-	def test_consecutive_certificates_with_same_public_key_are_not_collapsed(self):
+	def test_can_add_chain_where_root_and_leaf_share_same_key(self):
 		# Arrange:
 		shared_key = ed25519.Ed25519PrivateKey.generate()
 		chain_der = create_signed_chain('Alice', 'Bob', leaf_key=shared_key, root_key=shared_key)
@@ -139,7 +139,7 @@ class CatapultCertificateProcessorTest(unittest.TestCase):
 		self.assertEqual('CN=Alice,O=NEM,C=JP', processor.certificate(0).subject)
 		self.assertEqual('CN=Bob,O=NEM,C=JP', processor.certificate(1).subject)
 
-	def test_consecutive_certificates_with_same_subject_are_not_collapsed(self):
+	def test_can_add_chain_where_root_and_leaf_have_same_subject_name(self):
 		# Arrange:
 		chain_der = create_signed_chain('Alice', 'Alice')
 		processor = CatapultCertificateProcessor()
@@ -191,6 +191,48 @@ class CatapultCertificateProcessorTest(unittest.TestCase):
 		self.assertFalse(verify_result)
 		self.assertEqual(0, processor.size)
 
+	def test_cannot_add_chain_when_both_certificates_are_self_signed(self):
+		# Arrange:
+		chain_der = [to_der(create_default_certificate('Alice')), to_der(create_default_certificate('Bob'))]
+		processor = CatapultCertificateProcessor()
+
+		# Act:
+		verify_result = processor.verify_der_chain(chain_der)
+
+		# Assert:
+		self.assertFalse(verify_result)
+		self.assertEqual(0, processor.size)
+
+	def test_cannot_add_chain_when_certificate_info_parse_fails(self):
+		# Arrange:
+		root_key = ed448.Ed448PrivateKey.generate()
+		leaf_key = ed448.Ed448PrivateKey.generate()
+		chain_der = create_signed_chain('Alice', 'Bob', leaf_key=leaf_key, root_key=root_key)
+		processor = CatapultCertificateProcessor()
+
+		# Act:
+		verify_result = processor.verify_der_chain(chain_der)
+
+		# Assert:
+		self.assertFalse(verify_result)
+		self.assertEqual(0, processor.size)
+
+	def test_state_is_reset_between_calls(self):
+		# Arrange:
+		processor = CatapultCertificateProcessor()
+		failed_verify_result = processor.verify_der_chain([to_der(create_default_certificate('Alice'))])
+		self.assertFalse(failed_verify_result)
+		self.assertEqual(0, processor.size)
+
+		# Act:
+		verify_result = processor.verify_der_chain(create_signed_chain('Charlie', 'Dave'))
+
+		# Assert:
+		self.assertTrue(verify_result)
+		self.assertEqual(2, processor.size)
+		self.assertEqual('CN=Charlie,O=NEM,C=JP', processor.certificate(0).subject)
+		self.assertEqual('CN=Dave,O=NEM,C=JP', processor.certificate(1).subject)
+
 	# endregion
 
 	# region try_extract_public_key_from_der
@@ -218,7 +260,7 @@ class CatapultCertificateProcessorTest(unittest.TestCase):
 		# Assert:
 		self.assertIsNone(public_key)
 
-	def test_extract_public_key_from_non_ed25519_certificate_returns_none(self):
+	def test_extract_public_key_from_unsupported_key_certificate_returns_none(self):
 		# Arrange:
 		rsa_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
 		certificate = create_certificate(create_name('Alice'), create_name('Alice'), rsa_key, rsa_key)

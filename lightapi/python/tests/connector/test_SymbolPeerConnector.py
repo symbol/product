@@ -156,7 +156,7 @@ async def server():  # pylint: disable=too-many-statements
 
 # endregion
 
-# pylint: disable=invalid-name
+# pylint: disable=invalid-name, protected-access
 
 
 # region error handling
@@ -290,5 +290,227 @@ async def test_can_query_peers(server):  # pylint: disable=redefined-outer-name
 
 	# Assert:
 	assert [NODE_INFO_2, NODE_INFO_3] == peers
+
+# endregion
+
+
+# region _try_get_peer_chain_as_der
+
+def test_try_get_peer_chain_as_der_prioritizes_unverified_chain():
+	class CertificateObject:
+		def __init__(self, payload):
+			self.payload = payload
+
+		def public_bytes(self):
+			return self.payload
+
+	class MockSslObject:
+		@staticmethod
+		def get_unverified_chain():
+			return [CertificateObject(b'\xAA\xBB')]
+
+		@staticmethod
+		def get_verified_chain():
+			raise RuntimeError('should not be called')
+
+		@staticmethod
+		def getpeercert(binary_form=True):
+			assert binary_form
+			return b'\xFF'
+
+	assert [b'\xAA\xBB'] == SymbolPeerConnector._try_get_peer_chain_as_der(MockSslObject())
+
+
+def test_try_get_peer_chain_as_der_returns_verified_chain_when_unverified_fails():
+	class CertificateObject:
+		def __init__(self, payload):
+			self.payload = payload
+
+		def public_bytes(self):
+			return self.payload
+
+	class MockSslObject:
+		@staticmethod
+		def get_unverified_chain():
+			raise RuntimeError('unverified chain unavailable')
+
+		@staticmethod
+		def get_verified_chain():
+			return [CertificateObject(b'\xAA\xBB')]
+
+		@staticmethod
+		def getpeercert(binary_form=True):
+			assert binary_form
+			return b'\xFF'
+
+	assert [b'\xAA\xBB'] == SymbolPeerConnector._try_get_peer_chain_as_der(MockSslObject())
+
+
+def test_try_get_peer_chain_as_der_ignores_items_with_incompatible_public_bytes_call():
+	class InvalidCertificateObject:
+		@staticmethod
+		def public_bytes(encoding):
+			return encoding
+
+	class MockSslObject:
+		@staticmethod
+		def get_unverified_chain():
+			return [InvalidCertificateObject()]
+
+		@staticmethod
+		def get_verified_chain():
+			return []
+
+		@staticmethod
+		def getpeercert(binary_form=True):
+			assert binary_form
+			return b'\xCC\xDD'
+
+	assert [b'\xCC\xDD'] == SymbolPeerConnector._try_get_peer_chain_as_der(MockSslObject())
+
+
+def test_try_get_peer_chain_as_der_falls_back_to_peer_cert_when_chain_api_missing():
+	class MockSslObject:
+		@staticmethod
+		def getpeercert(binary_form=True):
+			assert binary_form
+			return b'\x11\x22\x33'
+
+	assert [b'\x11\x22\x33'] == SymbolPeerConnector._try_get_peer_chain_as_der(MockSslObject())
+
+
+def test_try_get_peer_chain_as_der_returns_empty_when_ssl_object_is_none():
+	assert [] == SymbolPeerConnector._try_get_peer_chain_as_der(None)
+
+
+def test_try_get_peer_chain_as_der_returns_bytes_items_directly():
+	class MockSslObject:
+		@staticmethod
+		def get_unverified_chain():
+			return [bytearray(b'\x44\x55')]
+
+		@staticmethod
+		def get_verified_chain():
+			return []
+
+		@staticmethod
+		def getpeercert(binary_form=True):
+			assert binary_form
+			return b'\x00'
+
+	result = SymbolPeerConnector._try_get_peer_chain_as_der(MockSslObject())
+	assert [b'\x44\x55'] == result
+	assert isinstance(result[0], bytes)
+
+# endregion
+
+
+# region _try_populate_peer_public_key
+
+def test_try_populate_peer_public_key_returns_none_when_chain_empty():
+	# Act:
+	result = SymbolPeerConnector._try_populate_peer_public_key(None, object())
+
+	# Assert:
+	assert result is None
+
+
+def test_try_populate_peer_public_key_returns_key_on_verified_chain():
+	class CertificateInfo:
+		def __init__(self, public_key):
+			self.public_key = public_key
+
+	class MockSslObject:
+		@staticmethod
+		def get_unverified_chain():
+			return [b'\xAB\xCD']
+
+		@staticmethod
+		def get_verified_chain():
+			return []
+
+		@staticmethod
+		def getpeercert(binary_form=True):
+			assert binary_form
+			return b'\xFF'
+
+	class MockProcessor:
+		size = 1
+
+		@staticmethod
+		def verify_der_chain(_chain_der):
+			return True
+
+		@staticmethod
+		def certificate(_index):
+			return CertificateInfo(PublicKey('D8F4FE47F1F5B1046748067E52725AEBAA1ED9F3CE45D02054011A39671DD9AA'))
+
+	# Act:
+	result = SymbolPeerConnector._try_populate_peer_public_key(MockSslObject(), MockProcessor())
+
+	# Assert:
+	assert PublicKey('D8F4FE47F1F5B1046748067E52725AEBAA1ED9F3CE45D02054011A39671DD9AA') == result
+
+
+def test_try_populate_peer_public_key_falls_back_to_leaf_extraction_on_verification_failure():
+	class MockSslObject:
+		@staticmethod
+		def get_unverified_chain():
+			return [b'\xAB\xCD']
+
+		@staticmethod
+		def get_verified_chain():
+			return []
+
+		@staticmethod
+		def getpeercert(binary_form=True):
+			assert binary_form
+			return b'\xFF'
+
+	class MockProcessor:
+		size = 1
+
+		@staticmethod
+		def verify_der_chain(_chain_der):
+			return False
+
+		@staticmethod
+		def try_extract_public_key_from_der(certificate_der):
+			if b'\xAB\xCD' == certificate_der:
+				return PublicKey('D8F4FE47F1F5B1046748067E52725AEBAA1ED9F3CE45D02054011A39671DD9AA')
+			return None
+
+	# Act:
+	result = SymbolPeerConnector._try_populate_peer_public_key(MockSslObject(), MockProcessor())
+
+	# Assert:
+	assert PublicKey('D8F4FE47F1F5B1046748067E52725AEBAA1ED9F3CE45D02054011A39671DD9AA') == result
+
+
+def test_try_populate_peer_public_key_returns_none_on_internal_exception():
+	class MockSslObject:
+		@staticmethod
+		def get_unverified_chain():
+			return [b'\xAB\xCD']
+
+		@staticmethod
+		def get_verified_chain():
+			return []
+
+		@staticmethod
+		def getpeercert(binary_form=True):
+			assert binary_form
+			return b'\xFF'
+
+	class MockProcessor:
+		@staticmethod
+		def verify_der_chain(_chain_der):
+			raise RuntimeError('forced failure')
+
+	# Act:
+	result = SymbolPeerConnector._try_populate_peer_public_key(MockSslObject(), MockProcessor())
+
+	# Assert:
+	assert result is None
 
 # endregion
