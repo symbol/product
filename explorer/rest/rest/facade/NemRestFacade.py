@@ -1,6 +1,8 @@
 from symbolchain.CryptoTypes import PublicKey
 from symbolchain.nem.Network import Address, Network
 from symbolchain.Network import NetworkLocator
+from symbollightapi.connector.NemConnector import NemConnector
+from symbollightapi.model.Exceptions import NodeException
 
 from rest.db.NemDatabase import NemDatabase
 
@@ -8,11 +10,12 @@ from rest.db.NemDatabase import NemDatabase
 class NemRestFacade:
 	"""Nem Rest Facade."""
 
-	def __init__(self, db_config, network_name):
+	def __init__(self, node_url, db_config, network_name):
 		"""Creates a facade object."""
 
 		self.network = NetworkLocator.find_by_name(Network.NETWORKS, network_name)
 		self.nem_db = NemDatabase(db_config, self.network)
+		self.nem_connector = NemConnector(node_url, self.network)
 
 	def get_block(self, height):
 		"""Gets block by height."""

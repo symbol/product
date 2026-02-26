@@ -28,6 +28,7 @@ def setup_nem_facade(app):
 	config = configparser.ConfigParser()
 	db_path = Path(app.config.get('DATABASE_CONFIG_FILEPATH'))
 	network_name = app.config.get('NETWORK_NAME', 'mainnet')
+	node_url = app.config.get('NODE_URL', 'http://localhost:7890')
 
 	log.info(f'loading database config from {db_path}')
 
@@ -42,7 +43,7 @@ def setup_nem_facade(app):
 		nem_db_config['port']
 	)
 
-	return NemRestFacade(db_params, network_name)
+	return NemRestFacade(node_url, db_params, network_name)
 
 
 def setup_nem_routes(app, nem_api_facade):  # pylint: disable=too-many-statements
