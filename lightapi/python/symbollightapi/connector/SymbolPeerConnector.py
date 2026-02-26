@@ -1,17 +1,16 @@
 import asyncio
-import ctypes
 import ssl
 
+from cryptography import x509
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 from symbolchain.BufferReader import BufferReader
 from symbolchain.CryptoTypes import Hash256, PublicKey
 from symbolchain.symbol.Network import NetworkTimestamp
 
-from ..bindings.openssl import ffi, lib
 from ..model.Endpoint import Endpoint
 from ..model.NodeInfo import NodeInfo
 from ..model.PacketHeader import PacketHeader, PacketType
 from .BasicConnector import NodeException
-from .CatapultCertificateProcessor import CatapultCertificateProcessor
 from .SymbolConnector import ChainStatistics, FinalizationStatistics
 
 
@@ -23,26 +22,16 @@ class SymbolPeerConnector:
 
 		(self.node_host, self.node_port) = (host, port)
 		self.timeout_seconds = None
-		self.certificate_processor = None
 		self.node_public_key = None
+		self._certificate_directory = certificate_directory
 
-		self.ssl_context = ssl.create_default_context()
-		self.ssl_context.verify_flags &= ~ssl.VERIFY_X509_STRICT
+		self.ssl_context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
 		self.ssl_context.check_hostname = False
+		self.ssl_context.verify_mode = ssl.CERT_NONE
+
 		self.ssl_context.load_cert_chain(
 			certificate_directory / 'node.full.crt.pem',
 			keyfile=certificate_directory / 'node.key.pem')
-
-		# get python wrapper object address (SSL_CTX* is offset 16 bytes)
-		ssl_context_object_address = id(self.ssl_context)
-		ssl_context_raw_address = ctypes.cast(ssl_context_object_address, ctypes.POINTER(ctypes.c_uint64))[2]
-		ssl_context_pointer = ffi.cast('SSL_CTX *', ssl_context_raw_address)
-
-		self._verify_callback_wrapper = ffi.callback('int (*)(int, X509_STORE_CTX *)', self._verify_callback)
-		lib.SSL_CTX_set_verify(
-			ssl_context_pointer,
-			lib.SSL_VERIFY_PEER | lib.SSL_VERIFY_FAIL_IF_NO_PEER_CERT,
-			self._verify_callback_wrapper)
 
 	async def chain_height(self):
 		"""Gets chain height."""
@@ -76,32 +65,48 @@ class SymbolPeerConnector:
 
 		return await self._send_socket_request(PacketType.PEERS, self._parse_peers_response)
 
-	def _verify_callback(self, preverified, certificate_store_context):
-		if not self.certificate_processor.verify(preverified, certificate_store_context):
-			return False
-
-		if self.certificate_processor.size > 0:
-			self.node_public_key = self.certificate_processor.certificate(self.certificate_processor.size - 1).public_key
-
-		return True
-
 	async def _send_socket_request(self, packet_type, parser):
 		writer = None
-		self.certificate_processor = CatapultCertificateProcessor()  # due to structure of this connector, handshake is done each request
+		self.node_public_key = None
 		try:
 			reader, writer = await asyncio.open_connection(
 				self.node_host,
 				self.node_port,
 				ssl=self.ssl_context,
 				ssl_handshake_timeout=self.timeout_seconds)
+
+			# Handshake succeeded; validate peer cert (tolerant of X.509 v1)
+			ssl_object = writer.get_extra_info('ssl_object')
+			self._try_populate_peer_public_key(ssl_object)
+
 			return await asyncio.wait_for(self._process_write_read(reader, writer, packet_type, parser), timeout=self.timeout_seconds)
-		except (ConnectionRefusedError, OSError, asyncio.exceptions.IncompleteReadError, asyncio.exceptions.TimeoutError) as ex:
+		except (ConnectionRefusedError, OSError, ssl.SSLError, asyncio.exceptions.IncompleteReadError, asyncio.exceptions.TimeoutError) as ex:
 			raise NodeException from ex
 		finally:
 			if writer:
 				writer.close()
 
-			self.certificate_processor = None
+	@staticmethod
+	def _extract_ed25519_public_key(certificate):
+		public_key = certificate.public_key()
+		if not isinstance(public_key, Ed25519PublicKey):
+			raise ValueError('peer certificate public key is not Ed25519')
+		return PublicKey(public_key.public_bytes_raw())
+
+	def _try_populate_peer_public_key(self, ssl_object):
+		"""Tries to extract peer Ed25519 public key; leaves None on failure."""
+		if not ssl_object:
+			return
+
+		try:
+			leaf_der = ssl_object.getpeercert(binary_form=True)
+			if not leaf_der:
+				return
+
+			certificate = x509.load_der_x509_certificate(leaf_der)
+			self.node_public_key = self._extract_ed25519_public_key(certificate)
+		except Exception:  # pylint: disable=broad-except
+			return
 
 	@staticmethod
 	async def _process_write_read(reader, writer, packet_type, parser):
