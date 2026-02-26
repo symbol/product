@@ -1,8 +1,6 @@
 import asyncio
 import ssl
 
-from cryptography import x509
-from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 from symbolchain.BufferReader import BufferReader
 from symbolchain.CryptoTypes import Hash256, PublicKey
 from symbolchain.symbol.Network import NetworkTimestamp
@@ -11,6 +9,7 @@ from ..model.Endpoint import Endpoint
 from ..model.NodeInfo import NodeInfo
 from ..model.PacketHeader import PacketHeader, PacketType
 from .BasicConnector import NodeException
+from .CatapultCertificateProcessor import CatapultCertificateProcessor
 from .SymbolConnector import ChainStatistics, FinalizationStatistics
 
 
@@ -23,7 +22,7 @@ class SymbolPeerConnector:
 		(self.node_host, self.node_port) = (host, port)
 		self.timeout_seconds = None
 		self.node_public_key = None
-		self._certificate_directory = certificate_directory
+		self.certificate_processor = None
 
 		self.ssl_context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
 		self.ssl_context.check_hostname = False
@@ -68,6 +67,7 @@ class SymbolPeerConnector:
 	async def _send_socket_request(self, packet_type, parser):
 		writer = None
 		self.node_public_key = None
+		self.certificate_processor = CatapultCertificateProcessor()
 		try:
 			reader, writer = await asyncio.open_connection(
 				self.node_host,
@@ -75,7 +75,7 @@ class SymbolPeerConnector:
 				ssl=self.ssl_context,
 				ssl_handshake_timeout=self.timeout_seconds)
 
-			# Handshake succeeded; validate peer cert (tolerant of X.509 v1)
+			# Handshake succeeded; try Catapult-specific chain processing.
 			ssl_object = writer.get_extra_info('ssl_object')
 			self._try_populate_peer_public_key(ssl_object)
 
@@ -86,25 +86,53 @@ class SymbolPeerConnector:
 			if writer:
 				writer.close()
 
+			self.certificate_processor = None
+
 	@staticmethod
-	def _extract_ed25519_public_key(certificate):
-		public_key = certificate.public_key()
-		if not isinstance(public_key, Ed25519PublicKey):
-			raise ValueError('peer certificate public key is not Ed25519')
-		return PublicKey(public_key.public_bytes_raw())
+	def _try_get_peer_chain_as_der(ssl_object):
+		if not ssl_object:
+			return []
+
+		for method_name in ('get_unverified_chain', 'get_verified_chain'):
+			method = getattr(ssl_object, method_name, None)
+			if not method:
+				continue
+
+			try:
+				chain = method()
+			except Exception:  # pylint: disable=broad-except
+				continue
+
+			if not chain:
+				continue
+
+			der_chain = []
+			for item in chain:
+				if isinstance(item, (bytes, bytearray)):
+					der_chain.append(bytes(item))
+				elif hasattr(item, 'public_bytes'):
+					try:
+						der_chain.append(item.public_bytes())
+					except TypeError:
+						continue
+
+			if der_chain:
+				return der_chain
+
+		leaf_der = ssl_object.getpeercert(binary_form=True)
+		return [leaf_der] if leaf_der else []
 
 	def _try_populate_peer_public_key(self, ssl_object):
-		"""Tries to extract peer Ed25519 public key; leaves None on failure."""
-		if not ssl_object:
-			return
-
+		"""Tries Catapult-style chain verification and extracts peer public key."""
 		try:
-			leaf_der = ssl_object.getpeercert(binary_form=True)
-			if not leaf_der:
+			chain_der = self._try_get_peer_chain_as_der(ssl_object)
+			if not chain_der or not self.certificate_processor:
 				return
 
-			certificate = x509.load_der_x509_certificate(leaf_der)
-			self.node_public_key = self._extract_ed25519_public_key(certificate)
+			if self.certificate_processor.verify_der_chain(chain_der):
+				self.node_public_key = self.certificate_processor.certificate(self.certificate_processor.size - 1).public_key
+			elif chain_der:
+				self.node_public_key = self.certificate_processor.try_extract_public_key_from_der(chain_der[0])
 		except Exception:  # pylint: disable=broad-except
 			return
 
