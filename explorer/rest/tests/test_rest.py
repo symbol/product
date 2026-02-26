@@ -257,6 +257,7 @@ def test_api_nem_account_not_found(client):  # pylint: disable=redefined-outer-n
 
 # region /accounts
 
+
 def _assert_get_nem_accounts_bad_request(client, expected_message, **query_params):  # pylint: disable=redefined-outer-name
 	# Act:
 	response = client.get('/api/nem/accounts', query_string=query_params)
@@ -326,6 +327,7 @@ def test_api_nem_accounts_invalid_sort_order(client):  # pylint: disable=redefin
 # endregion
 
 # region /health
+
 
 @patch('rest.facade.NemRestFacade.NemConnector.node_info')
 def test_api_nem_health(mock_node_info, client):  # pylint: disable=redefined-outer-name
