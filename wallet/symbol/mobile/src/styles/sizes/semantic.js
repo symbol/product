@@ -38,6 +38,7 @@ export const Semantic = {
 		l: Primitives.spacing500  // 40px
 	},
 	layoutPadding: {
+		none: Primitives.spacing0, // 0px
 		s: Primitives.spacing100, // 8px
 		m: Primitives.spacing200, // 16px
 		l: Primitives.spacing300, // 24px
@@ -45,12 +46,15 @@ export const Semantic = {
 		xxl: Primitives.spacing500 // 40px
 	},
 	layoutSpacing: {
+		none: Primitives.spacing0, // 0px
 		xs: Primitives.spacing050, // 4px
 		s: Primitives.spacing100, // 8px
 		m: Primitives.spacing200, // 16px
 		l: Primitives.spacing300, // 24px
 		xl: Primitives.spacing400, // 32px,
-		xxl: Primitives.spacing500 // 40px
+		xxl: Primitives.spacing500, // 40px
+		xxxl: Primitives.spacing600, // 48px
+		xxxxl: Primitives.spacing1000 // 80px
 	},
 	headerHeight: {
 		m: Primitives.spacing700 // 56px

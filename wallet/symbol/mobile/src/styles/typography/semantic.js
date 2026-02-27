@@ -122,7 +122,7 @@ export const Semantic = {
 	},
 	label: {
 		s: {
-			...Fonts.secondary.bold,
+			...Fonts.monospace.bold,
 			fontSize: Primitives.s[0],
 			lineHeight: Primitives.s[1],
 			textTransform: 'uppercase'
