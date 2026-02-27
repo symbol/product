@@ -490,7 +490,7 @@ class TransactionHandler:
 	@staticmethod
 	def _map_namespace_registration_args(tx_json):
 		return {
-			'rental_fee_sink': tx_json['rentalFeeSink'],
+			'rental_fee_sink': Address(tx_json['rentalFeeSink']),
 			'rental_fee': tx_json['rentalFee'],
 			'parent': tx_json['parent'],
 			'namespace': tx_json['newPart'],
@@ -523,7 +523,7 @@ class TransactionHandler:
 
 		return {
 			'creation_fee': tx_json['creationFee'],
-			'creation_fee_sink': PublicKey(tx_json['creationFeeSink']),
+			'creation_fee_sink': Address(tx_json['creationFeeSink']),
 			'creator': PublicKey(mosaic_definition['creator']),
 			'description': mosaic_definition['description'],
 			'namespace_name': f'{mosaic_id["namespaceId"]}.{mosaic_id["name"]}',
