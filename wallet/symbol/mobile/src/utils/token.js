@@ -11,13 +11,33 @@ import { safeOperationWithRelativeAmounts } from 'wallet-common-core';
  * @returns {object|null} The known token entry if found, otherwise null.
  */
 export const getTokenKnownInfo = (chainName, networkIdentifier, tokenId) => {
-	const knownTokenEntry = knownTokens[chainName][networkIdentifier].find(token => token.tokenId === tokenId);
+	const knownTokenEntry = knownTokens[chainName][networkIdentifier]
+		.find(token => token.tokenId === tokenId);
 
 	return {
 		name: knownTokenEntry ? knownTokenEntry.name : null,
 		ticker: knownTokenEntry ? knownTokenEntry.ticker : null,
 		imageId: knownTokenEntry ? knownTokenEntry.imageId : null
 	};
+};
+
+/**
+ * Calculates the total fee amount for a transaction based on the provided transaction fee tiers and selected speed.
+ * 
+ * @param {import('wallet-common-core/src/types/Transaction').TransactionFeeTiers[]} transactionFeeTiers - Array of transaction fee tiers.
+ * @param {import('wallet-common-core/src/types/Transaction').TransactionFeeTierLevel} speed
+ * - The selected transaction speed (e.g., 'slow', 'average', 'fast').
+ * 
+ * @returns {string} The total fee amount as a string.
+ */
+export const getTotalFeeAmount = (transactionFeeTiers, speed) => {
+	const { divisibility } = transactionFeeTiers[0][speed].token;
+
+	return safeOperationWithRelativeAmounts(
+		divisibility,
+		transactionFeeTiers.map(feeTier => feeTier[speed].token.amount),
+		(...args) => args.reduce((a, b) => a + b, 0n)
+	);
 };
 
 /**
@@ -39,11 +59,7 @@ export const getAvailableBalance = (token, nativeTokenId, transactionFeeTiers, s
 		return tokenTotalBalance;
 
 	const divisibility = token.divisibility || 0;
-	const totalFee = safeOperationWithRelativeAmounts(
-		divisibility,
-		transactionFeeTiers.map(feeTier => feeTier[speed].token.amount),
-		(...args) => args.reduce((a, b) => a + b, 0n)
-	);
+	const totalFee = getTotalFeeAmount(transactionFeeTiers, speed);
 
 	return safeOperationWithRelativeAmounts(
 		divisibility,
