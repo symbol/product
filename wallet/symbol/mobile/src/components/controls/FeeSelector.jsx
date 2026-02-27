@@ -1,7 +1,6 @@
 /** @typedef {import('wallet-common-core/src/types/Transaction').TransactionFeeTierLevel} TransactionFeeTierLevel */
 /** @typedef {import('wallet-common-core/src/types/Transaction').TransactionFeeTiers} TransactionFeeTiers */
 
-import { config } from '@/app/config';
 import { useToggle } from '@/app/hooks';
 import { $t } from '@/app/localization';
 import { Colors, Sizes, Typography } from '@/app/styles';
@@ -56,11 +55,12 @@ const createFeeTierOption = (level, value) => ({
  * @param {string} props.title - The title label displayed above the fee selector.
  * @param {TransactionFeeTiers | TransactionFeeTiers[]} props.feeTiers - The fee tiers configuration.
  * @param {TransactionFeeTierLevel} props.value - The currently selected fee tier level.
+ * @param {string} props.ticker - The ticker symbol for the fee currency.
  * @param {function} props.onChange - Function to call when the selected fee tier changes.
  *
  * @returns {React.ReactNode} FeeSelector component
  */
-export const FeeSelector = ({ style, title, feeTiers, value, onChange }) => {
+export const FeeSelector = ({ style, title, feeTiers, value, ticker, onChange }) => {
 	// State
 	const [sliderKey, refreshSlider] = useToggle(true);
 	const imageTranslation = useSharedValue(0);
@@ -102,7 +102,7 @@ export const FeeSelector = ({ style, title, feeTiers, value, onChange }) => {
 	const imageSrc = IMAGES[sliderValue];
 	const selectedFeeValue = options[sliderValue].value;
 	const selectedFeeLabel = options[sliderValue].label;
-	const valueField = `${selectedFeeLabel} | ${selectedFeeValue} ${config.chains.symbol.ticker}`;
+	const valueField = `${selectedFeeLabel} | ${selectedFeeValue} ${ticker}`;
 
 	// Animations
 	const animatedImageStyle = useAnimatedStyle(() => ({
