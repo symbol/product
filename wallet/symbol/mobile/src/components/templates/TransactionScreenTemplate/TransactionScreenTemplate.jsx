@@ -36,8 +36,9 @@ const TRANSACTION_SEND_EXECUTION_DELAY_MS = 2000;
  * @param {import('@/app/types/RefreshConfig').RefreshConfig} [props.refresh] - Refresh control.
  * @param {string} [props.confirmDialogTitle] - Title for the confirmation dialog.
  * @param {string} [props.confirmDialogText] - Text for the confirmation dialog body.
- 
-* @returns {React.Node} rendered TransactionScreenTemplate component
+ * @param {React.Node} [props.modals] - Additional modals to be rendered.
+ * 
+ * @returns {React.Node} rendered TransactionScreenTemplate component
  */
 export const TransactionScreenTemplate = props => {
 	const {
@@ -58,7 +59,8 @@ export const TransactionScreenTemplate = props => {
 		isCustomSendButtonUsed,
 		refresh,
 		confirmDialogTitle,
-		confirmDialogText
+		confirmDialogText,
+		modals
 	} = props;
 
 	// UI State
@@ -162,6 +164,7 @@ export const TransactionScreenTemplate = props => {
 				</Screen.Bottom>
 			)}
 			<Screen.Modals>
+				{modals}
 				<TransactionConfirmationDialog
 					isVisible={isConfirmationDialogVisible}
 					title={confirmDialogTitle}

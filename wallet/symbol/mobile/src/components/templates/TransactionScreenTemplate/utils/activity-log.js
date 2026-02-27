@@ -8,14 +8,6 @@ import { ActivityStatus } from '@/app/constants';
 /** @typedef {import('@/app/types/ActivityLog').ActivityLogItem} ActivityLogItem */
 
 /**
- * @typedef {Object} ActivityLogStep
- * @property {string} type - The transaction status step type from TransactionStatusStep
- * @property {string} icon - Icon name to display for the step
- * @property {ActionStatus} status - Current status of the step
- * @property {string} caption - Additional caption text, typically error messages
- */
-
-/**
  * @typedef {Object} BuildActivityLogParams
  * @property {ActionState} createStatus - Current status of the transaction creation step
  * @property {ActionState} signStatus - Current status of the transaction signing step
@@ -30,7 +22,7 @@ import { ActivityStatus } from '@/app/constants';
  * The confirmation step's status is dynamically calculated based on announcement and confirmation states.
  * 
  * @param {BuildActivityLogParams} params - Parameters containing all workflow step statuses and confirmation state
- * @returns {ActivityLogStep[]} Array of activity log steps representing the complete transaction workflow
+ * @returns {ActivityLogItem[]} Array of activity log steps representing the complete transaction workflow
  */
 export const buildActivityLog = ({
 	createStatus,
