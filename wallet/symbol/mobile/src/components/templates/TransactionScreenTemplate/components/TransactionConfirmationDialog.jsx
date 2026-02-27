@@ -1,6 +1,5 @@
-import { DialogBox, Stack, StyledText, TableView } from '@/app/components';
+import { DialogBox, Divider, Stack, StyledText, TableView } from '@/app/components';
 import { $t } from '@/app/localization';
-import { Sizes } from '@/app/styles';
 import React from 'react';
 import { ScrollView } from 'react-native-gesture-handler';
 
@@ -16,18 +15,18 @@ import { ScrollView } from 'react-native-gesture-handler';
  * A dialog component for confirming transaction details before submission.
  * Displays a scrollable preview of all transactions in a bundle with their details rendered in table format.
  * Supports both single transactions and composite bundles with multiple transactions.
- * 
+ *
  * @param {object} props - Component props
  * @param {boolean} props.isVisible - Controls the visibility of the confirmation dialog
  * @param {string} [props.title] - Custom dialog title, defaults to localized transfer confirmation title
  * @param {string} [props.text] - Optional descriptive text displayed below the title
  * @param {TransactionBundle|null} props.transactionBundle - The transaction bundle containing transactions to preview
- * @param {function(Transaction): TableRow[]} props.getConfirmationPreview 
+ * @param {function(Transaction): TableRow[]} props.getConfirmationPreview
  * - Callback function that generates table row data for a transaction preview
  * @param {WalletController} props.walletController - Wallet controller instance providing address book, accounts, and network info
  * @param {function(): void} props.onConfirm - Callback invoked when user confirms the transaction
  * @param {function(): void} props.onCancel - Callback invoked when user cancels the confirmation
- * 
+ *
  * @returns {React.ReactNode} Transaction confirmation dialog component
  */
 export const TransactionConfirmationDialog = ({
@@ -41,6 +40,18 @@ export const TransactionConfirmationDialog = ({
 	onCancel
 }) => {
 	const isTransactionCounterShown = transactionBundle?.isComposite;
+	const isFirstDividerShown = !!text;
+	const isNextDividerShown = isTransactionCounterShown;
+
+	const isDividerShown = index => {
+		if (index === 0)
+			return isFirstDividerShown;
+
+		if (index > 0)
+			return isNextDividerShown;
+
+		return false;
+	};
 
 	return (
 		<DialogBox
@@ -55,8 +66,9 @@ export const TransactionConfirmationDialog = ({
 				<Stack>
 					{isVisible && transactionBundle?.transactions.map((transaction, index) => (
 						<Stack key={`t_preview_${index}`}>
+							{isDividerShown(index) && <Divider />}
 							{isTransactionCounterShown && (
-								<StyledText type="title" size="s" style={{ marginTop: Sizes.Semantic.spacing.m }}>
+								<StyledText type="title" size="s">
 									{$t('form_transfer_transaction_preview_title', { index: index + 1 })}
 								</StyledText>
 							)}
