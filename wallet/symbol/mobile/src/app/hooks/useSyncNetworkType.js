@@ -18,15 +18,18 @@ const { ControllerEventName } = constants;
  */
 export const useSyncNetworkType = ({ mainWalletController, additionalWalletControllers }) => {
 	useEffect(() => {
-		const handleNetworkChange = () => {
-			additionalWalletControllers.forEach(controller =>
-				controller.selectNetwork(mainWalletController.networkIdentifier));
+		const syncNetworkType = () => {
+			additionalWalletControllers.forEach(controller => {
+				if (controller.isStateReady)
+					controller.selectNetwork(mainWalletController.networkIdentifier);
+			});
 		};
-        
-		mainWalletController.on(ControllerEventName.NETWORK_CHANGE, handleNetworkChange);
+
+		syncNetworkType();
+		mainWalletController.on(ControllerEventName.NETWORK_CHANGE, syncNetworkType);
 
 		return () => {
-			mainWalletController.removeListener(ControllerEventName.NETWORK_CHANGE, handleNetworkChange);
+			mainWalletController.removeListener(ControllerEventName.NETWORK_CHANGE, syncNetworkType);
 		};
 	}, []);
 }; 
