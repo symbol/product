@@ -48,6 +48,8 @@ const sourceMap = {
 		'chevron-down': require('@/app/assets/images/icons/white/chevron-down.png'),
 		'send-wallet': require('@/app/assets/images/icons/white/send-wallet.png'),
 		'chevron-up': require('@/app/assets/images/icons/white/chevron-up.png'),
+		'chevron-right': require('@/app/assets/images/icons/white/chevron-right.png'),
+		'chevron-left': require('@/app/assets/images/icons/white/chevron-left.png'),
 		'show': require('@/app/assets/images/icons/white/show.png'),
 		'copy': require('@/app/assets/images/icons/white/copy.png'),
 		'sign': require('@/app/assets/images/icons/white/sign.png'),
@@ -65,7 +67,8 @@ const sourceMap = {
 		'plus': require('@/app/assets/images/icons/white/plus.png'),
 		'minus': require('@/app/assets/images/icons/white/minus.png'),
 		'file-code': require('@/app/assets/images/icons/white/file-code.png'),
-		'settings': require('@/app/assets/images/icons/white/settings.png')
+		'settings': require('@/app/assets/images/icons/white/settings.png'),
+		'swap': require('@/app/assets/images/icons/white/swap.png')
 	},
 	secondary: {
 		'account-add': require('@/app/assets/images/icons/aqua/account-add.png'),
@@ -164,7 +167,23 @@ const sourceMap = {
 		'token-symbol': require('@/app/assets/images/icons/black/token-symbol.png'),
 		'ethereum': require('@/app/assets/images/icons/black/ethereum.png'),
 		'plus': require('@/app/assets/images/icons/black/plus.png'),
-		'minus': require('@/app/assets/images/icons/black/minus.png')
+		'minus': require('@/app/assets/images/icons/black/minus.png'),
+		'swap': require('@/app/assets/images/icons/black/swap.png')
+	},
+	danger: {
+		'alert-danger': require('@/app/assets/images/icons/red/alert-danger.png')
+	},
+	warning: {
+		'alert-warning': require('@/app/assets/images/icons/yellow/alert-warning.png'),
+		'pending': require('@/app/assets/images/icons/yellow/pending.png'),
+		'send-plane': require('@/app/assets/images/icons/yellow/send-plane.png')
+	},
+	success: {
+		'check-circle': require('@/app/assets/images/icons/green/check-circle.png'),
+		'check-circle-big': require('@/app/assets/images/icons/green/check-circle-big.png')
+	},
+	info: {
+		'sign': require('@/app/assets/images/icons/blue/sign.png')
 	}
 };
 
