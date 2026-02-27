@@ -8,4 +8,12 @@
 
 /** @typedef {'default'|'inverse'} InverseColorVariants */
 
+export const SemanticRoleColorVariant = {
+	DANGER: 'danger',
+	WARNING: 'warning',
+	SUCCESS: 'success',
+	NEUTRAL: 'neutral',
+	INFO: 'info'
+};
+
 export {};

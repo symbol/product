@@ -14,11 +14,7 @@ import {
 } from 'wallet-common-core';
 import { TransferModule } from 'wallet-common-ethereum';
 
-/**
- * @typedef {Object} WalletControllerModules
- * @property {TransferModule} transfer - The module that handles transfer transaction operations.
- * @property {BridgeModule} bridge - The module that handles bridge transaction operations.
- */
+/** @typedef {import('@/app/types/Wallet').AdditionalWalletController} AdditionalWalletController */
 
 const modules = [
 	new TransferModule(),
@@ -30,7 +26,7 @@ const modules = [
 
 /**
  * Wallet controller.
- * @type {WalletController & { modules: WalletControllerModules }}
+ * @type {AdditionalWalletController}
  */
 export const ethereumWalletController = /** @type {any} */ (
 	new WalletController({
