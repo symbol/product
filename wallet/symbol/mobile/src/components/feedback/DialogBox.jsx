@@ -1,4 +1,4 @@
-import { StyledText, TextBox } from '@/app/components';
+import { Stack, StyledText, TextBox } from '@/app/components';
 import { useValidation } from '@/app/hooks';
 import { PlatformUtils } from '@/app/lib/platform/PlatformUtils';
 import { $t } from '@/app/localization';
@@ -135,7 +135,7 @@ export const DialogBox = props => {
 		setPromptValue('');
 	}, [isVisible]);
 
-	if (!isVisible) 
+	if (!isVisible)
 		return null;
 
 	// Temporary workaround for broken Modal in react-native v82 on iOS
@@ -152,17 +152,19 @@ export const DialogBox = props => {
 				<SafeAreaView style={styles.safeArea}>
 					<View style={[styles.modal, style]}>
 						<View style={[styles.content, contentContainerStyle]}>
-							<StyledText type="title">
-								{title}
-							</StyledText>
-							{!!text && !isPrompt && (
-								<StyledText type="body">
-									{text}
+							<Stack>
+								<StyledText type="title">
+									{title}
 								</StyledText>
-							)}
-							<ScrollView>
-								{children}
-							</ScrollView>
+								{!!text && !isPrompt && (
+									<StyledText type="body">
+										{text}
+									</StyledText>
+								)}
+								<ScrollView>
+									{children}
+								</ScrollView>
+							</Stack>
 							{isPrompt && (
 								<TextBox
 									label={text}
