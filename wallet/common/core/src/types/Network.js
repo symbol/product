@@ -18,10 +18,18 @@
  */
 
 /**
+ * @typedef {Object} NetworkCurrency
+ * @property {string} id - Token identifier.
+ * @property {number} divisibility - Token divisibility.
+ * @property {string} name - Token name or symbol.
+ */
+
+/**
  * @typedef {Object} NetworkProperties
  * @property {string} nodeUrl - API node URL.
  * @property {string} networkIdentifier - Network identifier.
  * @property {number} chainHeight - Chain height at the time of the request.
+ * @property {NetworkCurrency} networkCurrency - The native currency information for the network.
  */
 
 export default {};
