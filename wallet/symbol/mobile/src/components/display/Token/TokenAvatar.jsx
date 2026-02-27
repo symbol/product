@@ -23,10 +23,11 @@ const sizeMap = {
  * @param {object} props - Component props
  * @param {string} props.imageId - Known token image identifier
  * @param {string} [props.size=DEFAULT_SIZE] - Size of the avatar
+ * @param {object} [props.style] - Additional styles for the avatar
  * 
  * @returns {React.ReactNode} Token avatar component
  */
-export const TokenAvatar = ({ imageId, size = DEFAULT_SIZE }) => {
+export const TokenAvatar = ({ imageId, size = DEFAULT_SIZE, style }) => {
 	// Image
 	const tokenImagePack = tokenImages[imageId];
 	const tokenImageSrcFromPack = tokenImagePack ? tokenImagePack[sizeMap[size]] : null;
@@ -41,7 +42,7 @@ export const TokenAvatar = ({ imageId, size = DEFAULT_SIZE }) => {
 	const rootSizeStyle = rootSizeStyleMap[size];
 
 	return (
-		<Image source={imageSrc} style={rootSizeStyle} />
+		<Image source={imageSrc} style={[rootSizeStyle, style]} />
 	);
 };
 
