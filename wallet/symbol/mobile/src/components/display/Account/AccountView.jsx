@@ -34,7 +34,7 @@ export const AccountView = ({ address, name, imageId, size = DEFAULT_SIZE }) => 
 				imageId={imageId}
 				size={size}
 			/>
-			<View>
+			<View style={styles.textContainer}>
 				{isNameVisible && (
 					<StyledText>
 						{name}
@@ -53,7 +53,8 @@ export const AccountView = ({ address, name, imageId, size = DEFAULT_SIZE }) => 
 const styles = StyleSheet.create({
 	root: {
 		flexDirection: 'row',
-		alignItems: 'center'
+		alignItems: 'center',
+		flexShrink: 1
 	},
 	root_small: {
 		gap: Sizes.Semantic.spacing.s
@@ -63,5 +64,8 @@ const styles = StyleSheet.create({
 	},
 	root_large: {
 		gap: Sizes.Semantic.spacing.m
+	},
+	textContainer: {
+		flexShrink: 1
 	}
 });
