@@ -6,3 +6,5 @@ symbol-sdk-python==3.3.0
 zenlog==1.1
 Path==17.1.1
 flask_cors==6.0.2
+symbol-lightapi~=0.0.9
+aiolimiter~=1.2.1
