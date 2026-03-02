@@ -7,6 +7,7 @@ export const RouteName = {
 	Home: 'Home',
 	History: 'History',
 	Assets: 'Assets',
+	TokenDetails: 'TokenDetails',
 	AccountDetails: 'AccountDetails',
 	AccountList: 'AccountList',
 	AddSeedAccount: 'AddSeedAccount',
@@ -15,7 +16,11 @@ export const RouteName = {
 	Settings: 'Settings',
 	SettingsAbout: 'SettingsAbout',
 	SettingsNetwork: 'SettingsNetwork',
-	SettingsSecurity: 'SettingsSecurity'
+	SettingsSecurity: 'SettingsSecurity',
+	BridgeAccountList: 'BridgeAccountList',
+	BridgeAccountDetails: 'BridgeAccountDetails',
+	BridgeSwap: 'BridgeSwap',
+	BridgeSwapDetails: 'BridgeSwapDetails'
 };
 
 export const RouterFlow = {

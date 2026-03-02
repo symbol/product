@@ -66,10 +66,15 @@ export const RouterView = ({ isActive, flow }) => (
 							<Stack.Screen name={RouteName.Assets} component={screens.Assets} />
 						</Stack.Group>
 						<Stack.Group>
+							<Stack.Screen name={RouteName.TokenDetails} component={screens.TokenDetails} />
 							<Stack.Screen name={RouteName.AccountDetails} component={screens.AccountDetails} />
 							<Stack.Screen name={RouteName.AccountList} component={screens.AccountList} />
 							<Stack.Screen name={RouteName.AddSeedAccount} component={screens.AddSeedAccount} />
 							<Stack.Screen name={RouteName.Send} component={screens.Send} />
+							<Stack.Screen name={RouteName.BridgeAccountList} component={screens.BridgeAccountList} />
+							<Stack.Screen name={RouteName.BridgeAccountDetails} component={screens.BridgeAccountDetails} />
+							<Stack.Screen name={RouteName.BridgeSwap} component={screens.BridgeSwap} />
+							<Stack.Screen name={RouteName.BridgeSwapDetails} component={screens.BridgeSwapDetails} />
 							<Stack.Screen name={RouteName.Settings} component={screens.Settings} />
 							<Stack.Screen name={RouteName.SettingsAbout} component={screens.SettingsAbout} />
 							<Stack.Screen name={RouteName.SettingsNetwork} component={screens.SettingsNetwork} />
