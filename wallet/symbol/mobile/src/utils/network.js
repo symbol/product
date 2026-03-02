@@ -10,16 +10,24 @@ import { InternalServerError, InvalidRequestError, NetworkRequestError, NotFound
 export const makeRequest = async (url, options) => {
 	const response = await fetch(url, options);
 
-	if (response.ok)
-		return response.json();
+	const rawText = await response.text();
+
+	let jsonData;
 
 	let errorMessageText;
+
 	try {
-		const errorMessage = await response.json();
-		errorMessageText = errorMessage.message || errorMessage.error;
-	} catch {
+		jsonData = JSON.parse(rawText);
+	} catch {}
+
+	if (response.ok && jsonData)
+		return jsonData;
+
+	if (!response.ok && jsonData)
+		errorMessageText = jsonData.message || jsonData.error;
+
+	if (!response.ok && !errorMessageText)
 		errorMessageText = response.statusText;
-	}
 
 	switch (response.status) {
 	case 400:
