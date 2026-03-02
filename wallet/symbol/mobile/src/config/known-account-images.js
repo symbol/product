@@ -36,6 +36,7 @@ export const accountImages = {
 	'bitbank': require('@/app/assets/images/accounts/bitbank.png'),
 	'bybit': require('@/app/assets/images/accounts/bybit.png'),
 	'mexc': require('@/app/assets/images/accounts/mexc.png'),
+	'symbol': require('@/app/assets/images/accounts/symbol.png'),
 	'symbol-protocol-treasury': require('@/app/assets/images/accounts/symbol.png'),
 	'quadratic-funding': require('@/app/assets/images/accounts/symbol.png'),
 	'harvest-network-fee-sink': require('@/app/assets/images/accounts/symbol.png'),
