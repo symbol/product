@@ -1,4 +1,4 @@
-import { ButtonPlain, Card, DialogBox, PasscodeView, Screen, Spacer, TableView } from '@/app/components';
+import { ButtonPlain, Card, DialogBox, PasscodeView, Screen, Spacer, Stack, TableView } from '@/app/components';
 import { config } from '@/app/config';
 import { usePasscode, useToggle, useWalletController } from '@/app/hooks';
 import { PlatformUtils } from '@/app/lib/platform/PlatformUtils';
@@ -13,7 +13,7 @@ import { constants } from 'wallet-common-core';
  * in block explorer, access faucet on testnet, and reveal private key.
  */
 export const AccountDetails = () => {
-	const walletController = useWalletController(chainName);
+	const walletController = useWalletController();
 	const { chainName, networkIdentifier, currentAccount, currentAccountInfo } = walletController;
 	const isTestnet = networkIdentifier === 'testnet';
 	const isMultisigCosigner = currentAccountInfo?.multisigAddresses.length;
@@ -99,7 +99,7 @@ export const AccountDetails = () => {
 							<TableView
 								data={tableData}
 								addressBook={walletController.modules.addressBook}
-								walletAccounts={walletController.accounts[networkIdentifier]}
+								walletAccounts={walletController.accounts}
 								chainName={chainName}
 								networkIdentifier={networkIdentifier}
 								translate={$t}
@@ -111,23 +111,25 @@ export const AccountDetails = () => {
 			</Screen.Upper>
 			<Screen.Bottom>
 				<Spacer>
-					{isTestnet && (
+					<Stack>
+						{isTestnet && (
+							<ButtonPlain
+								icon="faucet"
+								text={$t('button_faucet')}
+								onPress={openFaucet}
+							/>
+						)}
 						<ButtonPlain
-							icon="faucet"
-							text={$t('button_faucet')}
-							onPress={openFaucet}
+							icon="block-explorer"
+							text={$t('button_openTransactionInExplorer')}
+							onPress={openBlockExplorer}
 						/>
-					)}
-					<ButtonPlain
-						icon="block-explorer"
-						text={$t('button_openTransactionInExplorer')}
-						onPress={openBlockExplorer}
-					/>
-					<ButtonPlain
-						icon="key"
-						text={$t('button_revealPrivateKey')}
-						onPress={() => privateKeyPasscode.show()}
-					/>
+						<ButtonPlain
+							icon="key"
+							text={$t('button_revealPrivateKey')}
+							onPress={() => privateKeyPasscode.show()}
+						/>
+					</Stack>
 				</Spacer>
 				<DialogBox
 					type="alert"
