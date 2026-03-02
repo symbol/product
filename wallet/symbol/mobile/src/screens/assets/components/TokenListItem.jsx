@@ -1,88 +1,48 @@
 import { Amount, ListItemContainer, StyledText, TokenAvatar } from '@/app/components';
-import { $t } from '@/app/localization';
-import { Colors, Sizes } from '@/app/styles';
-import { blockDurationToDaysLeft, getTokenKnownInfo } from '@/app/utils';
-import { useEffect } from 'react';
+import { ExpirationProgress } from '@/app/screens/assets/components';
+import { getTokenDisplayInfo } from '@/app/screens/assets/utils';
+import { Sizes } from '@/app/styles';
+import React from 'react';
 import { StyleSheet, View } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 
-const REMAINING_BLOCK_WARNING_THRESHOLD = 2880;
-const ANIMATION_DURATION = 500;
-const ANIMATION_DELAY = 1000;
-const PROGRESS_HEIGHT = Sizes.Semantic.spacing.xs;
 const PROGRESS_WIDTH = Sizes.Semantic.spacing.m * 15;
 
-const ExpirationProgress = ({ endHeight, startHeight, chainHeight, blockGenerationTargetTime }) => {
-	// Expiration percentage calculation
-	const durationBlocks = endHeight - startHeight;
-	const elapsedBlocks = chainHeight - startHeight;
-	const expirationPercentage = durationBlocks <= 0
-		? (chainHeight >= endHeight ? 100 : 0)
-		: Math.max(0, Math.min(100, Math.trunc((elapsedBlocks * 100) / durationBlocks)));
+/** @typedef {import('@/app/types/Token').Token} Token */
+/** @typedef {import('@/app/types/Network').NetworkIdentifier} NetworkIdentifier */
 
-	// Color
-	const remainedBlocks = endHeight - chainHeight;
-	const progressBarColorStyle = remainedBlocks > REMAINING_BLOCK_WARNING_THRESHOLD
-		? styles.progress__normal
-		: remainedBlocks > 0
-			? styles.progress__warning
-			: styles.progress__expired;
+/**
+ * @typedef {Object} TokenListItemProps
+ * @property {Token} token - Token data to display
+ * @property {string} chainName - Chain name identifier
+ * @property {NetworkIdentifier} networkIdentifier - Network identifier (mainnet/testnet)
+ * @property {number} chainHeight - Current blockchain height
+ * @property {number} blockGenerationTargetTime - Average block generation time in seconds
+ * @property {function(Token): void} [onPress] - Optional press handler
+ */
 
-	// Progress slide animation
-	const displayedPercentage = useSharedValue(0);
-	const animatedProgressBarStyle = useAnimatedStyle(() => ({
-		width: `${displayedPercentage.value}%`
-	}));
-
-	const progressBarStyle = [styles.progressBar, progressBarColorStyle, animatedProgressBarStyle];
-
-	useEffect(() => {
-		setTimeout(() => {
-			displayedPercentage.value = withTiming(expirationPercentage, { duration: ANIMATION_DURATION });
-		}, ANIMATION_DELAY);
-	}, [expirationPercentage]);
-
-	// Expiration status text
-	const statusText = expirationPercentage === 100
-		? $t('s_assets_item_expired')
-		: $t('s_assets_item_expireIn', { inTime: blockDurationToDaysLeft(remainedBlocks, blockGenerationTargetTime) });
-
-	return (
-		<View>
-			<StyledText type="label" variant="secondary" size="s">
-				{statusText}
-			</StyledText>
-			<View style={styles.progressBarOuter}>
-				<Animated.View style={progressBarStyle} />
-			</View>
-		</View>
-	);
-};
-
-export const TokenListItem = ({ token, chainName, networkIdentifier, chainHeight, blockGenerationTargetTime }) => {
-	// Data resolution
-	const resolvedTokenInfo = getTokenKnownInfo(
-		chainName,
-		networkIdentifier,
-		token.id
-	);
-
-	// Name
-	const name = resolvedTokenInfo.name ?? token.name;
-	const { ticker } = resolvedTokenInfo;
-	const nameText = !ticker
-		? name
-		: `${name} • ${ticker}`;
+/**
+ * TokenListItem component. Displays a token in a list with avatar, name, amount,
+ * and optional expiration progress indicator.
+ * @param {TokenListItemProps} props - Component props
+ * @returns {React.ReactNode} TokenListItem component
+ */
+export const TokenListItem = ({ token, chainName, networkIdentifier, chainHeight, blockGenerationTargetTime, onPress }) => {
+	const tokenDisplayData = getTokenDisplayInfo(token, chainName, networkIdentifier);
 
 	// Expiration progress
 	const isProgressShown = token.endHeight && !token.isUnlimitedDuration;
 
+	// Handlers
+	const handlePress = () => {
+		onPress?.(token);
+	};
+
 	return (
-		<ListItemContainer cardStyle={styles.root}>
-			<TokenAvatar imageId={resolvedTokenInfo.imageId} size="l" />
+		<ListItemContainer cardStyle={styles.root} onPress={handlePress}>
+			<TokenAvatar imageId={tokenDisplayData.imageId} size="l" />
 			<View>
 				<StyledText>
-					{nameText}
+					{tokenDisplayData.name}
 				</StyledText>
 				<Amount size="l" value={token.amount} />
 				{isProgressShown && (
@@ -91,6 +51,7 @@ export const TokenListItem = ({ token, chainName, networkIdentifier, chainHeight
 						endHeight={token.endHeight}
 						chainHeight={chainHeight}
 						blockGenerationTargetTime={blockGenerationTargetTime}
+						style={styles.expirationProgress}
 					/>
 				)}
 			</View>
@@ -104,27 +65,7 @@ const styles = StyleSheet.create({
 		alignItems: 'center',
 		gap: Sizes.Semantic.spacing.m
 	},
-	progressBarOuter: {
-		width: PROGRESS_WIDTH,
-		height: PROGRESS_HEIGHT,
-		backgroundColor: Colors.Semantic.background.tertiary.darker,
-		overflow: 'hidden',
-		borderRadius: Sizes.Semantic.borderRadius.round
-	},
-	progressBar: {
-		position: 'absolute',
-		bottom: 0,
-		left: 0,
-		width: '100%',
-		height: '100%'
-	},
-	progress__normal: {
-		backgroundColor: Colors.Semantic.role.secondary.default
-	},
-	progress__warning: {
-		backgroundColor: Colors.Semantic.role.warning.default
-	},
-	progress__expired: {
-		backgroundColor: Colors.Semantic.role.danger.default
+	expirationProgress: {
+		width: PROGRESS_WIDTH
 	}
 });
