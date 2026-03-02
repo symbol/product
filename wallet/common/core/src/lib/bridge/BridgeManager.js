@@ -28,6 +28,32 @@ const BridgeMode = {
 	WRAP: 'wrap',
 	UNWRAP: 'unwrap'
 };
+const BROKEN_HASH_CHAIN_NAMES = ['ethereum']; // Chains for which bridge API returns transaction hashes without 0x prefix
+
+
+/**
+ * Ensure that a string with 0x prefix is in correct case (lowercase).
+ * 
+ * @param {string} hash - The hash to fix.
+ * @returns {string} - The fixed hash.
+ */
+const fix0xCase = hash => hash.startsWith('0x') 
+	? `0x${hash.substring(2).toLowerCase()}` 
+	: hash;
+
+/**
+ * Ensure that transaction hash has 0x prefix for chains that are expected to have it, even if the bridge API returns it without.
+ * 
+ * @param {string} hash - The hash to fix.
+ * @param {string} chainName - The name of the chain.
+ * @returns {string} - The fixed hash.
+ */
+const fixMissing0xTransactionHash = (hash, chainName) => {
+	if (BROKEN_HASH_CHAIN_NAMES.includes(chainName) && !hash.startsWith('0x'))
+		return `0x${hash.toLowerCase()}`;
+
+	return hash;
+};
 
 export class BridgeManager {
 	/** @type {WalletControllerWithBridgeModule} */
@@ -156,10 +182,6 @@ export class BridgeManager {
 	 * @returns {Promise} - Promise that resolves when loading is complete.
 	 */
 	load = async () => {
-		// Clear config
-		this.#config = null;
-		this.#bridgeApi.setNetworkIdentifier(null);
-
 		// Get network identifiers from both wallet controllers
 		const nativeNetworkIdentifier = this.#nativeWalletController.networkIdentifier;
 		const wrappedNetworkIdentifier = this.#wrappedWalletController.networkIdentifier;
@@ -242,6 +264,9 @@ export class BridgeManager {
 	 * @returns {Promise<BridgeRequest[]>} - List of requests.
 	 */
 	fetchSentRequests = async (mode, { pageSize, pageNumber } = {}) => {
+		if (!this.#config)
+			throw new Error('Failed to fetch sent requests. No bridge config fetched');
+
 		const walletController = this.#getSourceWalletController(mode);
 		const bridgeAddress = mode === BridgeMode.WRAP
 			? this.#config.nativeNetwork.bridgeAddress
@@ -360,6 +385,11 @@ export class BridgeManager {
 	#transactionToPendingRequest(transaction, context) {
 		const { mode, sourceToken, targetToken, sourceChainName, targetChainName } = context;
 
+		if (!sourceToken || !targetToken)
+			throw new Error('Failed to create pending request. Token info is not available');
+
+		const transactionTokens = transaction.mosaics ?? transaction.tokens ?? [];
+
 		return {
 			type: mode,
 			requestStatus: 'confirmed',
@@ -368,10 +398,11 @@ export class BridgeManager {
 			sourceTokenInfo: sourceToken,
 			targetTokenInfo: targetToken,
 			requestTransaction: {
-				signerAddress: transaction.senderAddress,
+				signerAddress: transaction.signerAddress,
 				hash: transaction.hash,
 				height: transaction.height,
-				timestamp: transaction.timestamp
+				timestamp: transaction.timestamp,
+				token: transactionTokens[0]
 			}
 		};
 	}
@@ -388,9 +419,12 @@ export class BridgeManager {
 	 * @returns {BridgeRequest} - Mapped request object
 	 */
 	#requestFromDto(dto, { mode, sourceToken, targetToken, sourceChainName, targetChainName }) {
+		if (!sourceToken || !targetToken)
+			throw new Error('Failed to map request from DTO. Token info is not available');
+
 		const requestTransaction = {
-			signerAddress: dto.senderAddress,
-			hash: dto.requestTransactionHash,
+			signerAddress: fix0xCase(dto.senderAddress),
+			hash: fixMissing0xTransactionHash(dto.requestTransactionHash, sourceChainName),
 			height: dto.requestTransactionHeight ?? null,
 			timestamp: Math.trunc(dto.requestTimestamp * 1000),
 			token: {
@@ -399,8 +433,8 @@ export class BridgeManager {
 			}
 		};
 		const payoutTransaction = dto.payoutTransactionHash ? {
-			recipientAddress: dto.destinationAddress,
-			hash: dto.payoutTransactionHash,
+			recipientAddress: fix0xCase(dto.destinationAddress),
+			hash: fixMissing0xTransactionHash(dto.payoutTransactionHash, targetChainName),
 			height: dto.payoutTransactionHeight ?? null,
 			timestamp: Math.trunc(dto.payoutTimestamp * 1000),
 			token: {
@@ -440,8 +474,8 @@ export class BridgeManager {
 	 */
 	#errorFromDto(dto, { mode, sourceToken, targetToken, sourceChainName, targetChainName }) {
 		const requestTransaction = {
-			signerAddress: dto.senderAddress,
-			hash: dto.requestTransactionHash,
+			signerAddress: fix0xCase(dto.senderAddress),
+			hash: fixMissing0xTransactionHash(dto.requestTransactionHash, sourceChainName),
 			height: dto.requestTransactionHeight ?? null,
 			timestamp: Math.trunc(dto.requestTimestamp * 1000)
 		};
