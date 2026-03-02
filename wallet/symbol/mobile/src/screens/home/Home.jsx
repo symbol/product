@@ -54,7 +54,7 @@ export const Home = () => {
 								ticker={walletController.ticker}
 								networkIdentifier={walletController.networkIdentifier}
 								onNameChange={renameManager.call}
-								onReceivePress={Router.goToSettings}
+								onSwapPress={Router.goToBridgeSwap}
 								onSendPress={Router.goToSend}
 								onDetailsPress={Router.goToAccountDetails}
 							/>
