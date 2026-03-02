@@ -3,25 +3,27 @@ import { useAsyncManager, useInit, useLoading, useReactiveWalletControllers, use
 import { walletControllers as controllers } from '@/app/lib/controller';
 import { useMemo, useState } from 'react';
 
+/** @typedef {import('@/app/types/Filter').FilterItem} FilterItem */
+/** @typedef {import('@/app/types/Filter').FilterValue} FilterValue */
+/** @typedef {import('@/app/screens/assets/types/Assets').AssetSection} AssetSection */
+
 /**
- * @typedef {Object} AssetsData
- * @property {Array} sections - Sections for SectionList
- * @property {object} filter - Current filter values
- * @property {function} setFilter - Function to update filter
- * @property {Array} filterConfig - Filter configuration
+ * @typedef {Object} UseAssetsDataReturnType
+ * @property {AssetSection[]} sections - Asset sections for SectionList
+ * @property {FilterValue} filter - Current filter values
+ * @property {function(FilterValue): void} setFilter - Function to update filter
+ * @property {FilterItem[]} filterConfig - Filter configuration array
  * @property {boolean} isLoading - Whether initial loading is in progress
  * @property {boolean} isRefreshing - Whether refresh is in progress
  * @property {boolean} isLastPage - Whether the last page has been reached
- * @property {function} refresh - Function to refresh all data
+ * @property {function(): void} refresh - Function to refresh all data
  */
 
 /**
- * Main hook for the Assets screen. Builds asset sections,
- * manages filter state, and refreshes account data on wallet events.
- *
- * @returns {AssetsData} Assets data and controls
+ * React hook that manages assets screen state.
+ * Builds asset sections, manages filter state, and refreshes account data on wallet events.
+ * @returns {UseAssetsDataReturnType} Assets data and controls
  */
-
 export const useAssetsData = () => {
 	const walletControllers = useReactiveWalletControllers([controllers.main, ...controllers.additional]);
 
