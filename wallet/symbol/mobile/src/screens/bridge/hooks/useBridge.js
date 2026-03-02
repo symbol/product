@@ -1,4 +1,4 @@
-import { BridgeMode, BridgePairsStatus } from '../types/Bridge';
+import { BridgeMode, BridgePairsStatus } from '@/app/screens/bridge/types/Bridge';
 import { bridges } from '@/app/lib/controller';
 import { loadWalletController } from '@/app/screens/bridge/utils';
 import { useCallback, useEffect, useState } from 'react';
