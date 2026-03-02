@@ -9,10 +9,14 @@ import SplashScreen from 'react-native-splash-screen';
  * Mocks the useWalletController hook to simulate wallet controller behavior.
  *
  * @param {Object} overrides - An object to override specific methods of the wallet controller mock.
+ * @param {Object} [options] - Mock options.
+ * @param {boolean} [options.bindUseWalletController=false] - Whether to bind the mock to useWalletController hook.
  * 
  * @return {import('wallet-common-core').WalletController} The mocked wallet controller.
  */
-export const mockWalletController = (overrides = {}) => {
+export const mockWalletController = (overrides = {}, options = {}) => {
+	const { bindUseWalletController = false } = options;
+
 	const walletControllerMock = {
 		chainName: 'symbol',
 		networkApi: {},
@@ -65,7 +69,9 @@ export const mockWalletController = (overrides = {}) => {
 		removeListener: jest.fn(),
 		...overrides
 	};
-	jest.spyOn(hooks, 'useWalletController').mockReturnValue(walletControllerMock);
+
+	if (bindUseWalletController)
+		jest.spyOn(hooks, 'useWalletController').mockReturnValue(walletControllerMock);
 
 	return walletControllerMock;
 };
