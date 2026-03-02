@@ -1,11 +1,14 @@
 import { walletControllers } from '@/app/lib/controller';
 import { useEffect, useMemo, useState } from 'react';
-import { WalletController, constants } from 'wallet-common-core';
+import { constants } from 'wallet-common-core';
+
+/** @typedef {import('@/app/types/Wallet').MainWalletController} MainWalletController */
+/** @typedef {import('@/app/types/Wallet').AdditionalWalletController} AdditionalWalletController */
 
 /**
  * Hook to access the wallet controller.
  * It listens for state changes and updates the component when the state changes.
- * @returns {typeof walletControllers.main | WalletController} The wallet controller instance.
+ * @returns {MainWalletController | AdditionalWalletController} The wallet controller instance.
  */
 export const useWalletController = chainName => {
 	const walletController = useMemo(() => {
@@ -25,7 +28,7 @@ export const useWalletController = chainName => {
 		return () => {
 			walletController.removeListener(constants.ControllerEventName.STATE_CHANGE, handleStateChange);
 		};
-	}, []);
+	}, [walletController]);
 
 	return walletController;
 };

@@ -1,15 +1,4 @@
 /**
- * Filter type enum for categorizing filter behavior
- * @readonly
- * @enum {string}
- */
-export const FilterType = {
-	BOOLEAN: 'boolean',
-	SELECT: 'select',
-	ADDRESS: 'address'
-};
-
-/**
  * @typedef {object} FilterOption
  * @property {string} label - Display label for the option
  * @property {*} value - Value of the option
@@ -26,3 +15,14 @@ export const FilterType = {
 /**
  * @typedef {Object.<string, *>} FilterValue
  */
+
+/**
+ * Filter type enum for categorizing filter behavior
+ * @readonly
+ * @enum {string}
+ */
+export const FilterType = {
+	BOOLEAN: 'boolean',
+	SELECT: 'select',
+	ADDRESS: 'address'
+};
