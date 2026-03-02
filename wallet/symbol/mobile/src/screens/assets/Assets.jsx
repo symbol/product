@@ -3,8 +3,15 @@ import { useAssetsData } from './hooks';
 import { Header } from '@/app/app/components';
 import { AccountView, CopyButtonContainer, FilteredListScreenTemplate } from '@/app/components';
 import { useWalletController } from '@/app/hooks';
-import { useCallback } from 'react';
+import { Router } from '@/app/router/Router';
+import React, { useCallback } from 'react';
 
+/**
+ * Assets screen component. Displays a filterable list of tokens/mosaics across all connected
+ * wallet accounts grouped by chain. Supports filtering by expired and created tokens, and
+ * allows navigation to token details screen.
+ * @returns {React.ReactNode} Assets component
+ */
 export const Assets = () => {
 	const walletController = useWalletController();
 	const {
@@ -42,6 +49,13 @@ export const Assets = () => {
 	), []);
 
 	const renderItem = useCallback(({ item, section }) => {
+		const handleTokenPress = token => {
+			Router.goToTokenDetails({ params: { 
+				chainName: section.chainName, 
+				tokenId: token.id 
+			}});
+		};
+
 		return (
 			<TokenListItem
 				token={item}
@@ -49,6 +63,7 @@ export const Assets = () => {
 				networkIdentifier={networkIdentifier}
 				chainHeight={networkProperties.chainHeight}
 				blockGenerationTargetTime={networkProperties.blockGenerationTargetTime}
+				onPress={handleTokenPress}
 			/>
 		);
 	}, [networkIdentifier, networkProperties.chainHeight, networkProperties.blockGenerationTargetTime]);
