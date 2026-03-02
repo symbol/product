@@ -14,6 +14,7 @@ export const useTransactionFees = (createTransaction, walletController) => {
 		callback: async () => {
 			const transaction = await createTransaction();
 			return await walletController.modules.transfer.calculateTransactionFees(transaction);
-		}
+		},
+		shouldShowErrorPopup: false
 	});
 };

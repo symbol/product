@@ -12,6 +12,7 @@ import { useRef, useState } from 'react';
  * @param {T} [config.defaultData=null] - The default data value.
  * @param {function(*)} [config.onError=null] - An optional error handler function called on error.
  * @param {function(T)} [config.onSuccess=null] - An optional success handler function called on success.
+ * @param {boolean} [config.shouldShowErrorPopup=true] - Whether to show an error popup on error.
  * @param {boolean} [config.shouldClearDataOnCall=false] - Whether to clear data when calling the async function.
  * @param {boolean} [config.defaultLoadingState=false] - The default loading state.
  
@@ -24,8 +25,9 @@ export const useAsyncManager = config => {
 		defaultData = null, 
 		onError = null,
 		onSuccess = null,
+		shouldShowErrorPopup = true,
 		shouldClearDataOnCall = false, 
-		defaultLoadingState = false 
+		defaultLoadingState = false
 	} = config;
 	const [isLoading, setIsLoading] = useState(defaultLoadingState);
 	const [isCompleted, setIsCompleted] = useState(false);
@@ -74,7 +76,7 @@ export const useAsyncManager = config => {
 					
 					if (onError)
 						onError(error);
-					else
+					else if (shouldShowErrorPopup)
 						showError(error);
 
 					reject(error);
