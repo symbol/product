@@ -306,7 +306,7 @@ describe('hooks/useBridge', () => {
 			});
 		};
 
-		const PAIRS_STATUS_TESTS = [
+		const pairsStatusTests = [
 			{
 				description: 'returns loading when no bridge cache is loaded',
 				config: { bridges: [createBridgeManagerMock(BridgeScenario.NOT_READY)] },
@@ -329,7 +329,7 @@ describe('hooks/useBridge', () => {
 			}
 		];
 
-		PAIRS_STATUS_TESTS.forEach(test => {
+		pairsStatusTests.forEach(test => {
 			runPairsStatusTest(test.description, test.config, test.expected);
 		});
 	});
@@ -367,7 +367,7 @@ describe('hooks/useBridge', () => {
 			});
 		};
 
-		const SWAP_DIRECTION_TESTS = [
+		const swapDirectionTests = [
 			{
 				description: 'creates wrap pair with native source and wrapped target',
 				mode: BridgeMode.WRAP,
@@ -386,7 +386,7 @@ describe('hooks/useBridge', () => {
 			}
 		];
 
-		SWAP_DIRECTION_TESTS.forEach(test => {
+		swapDirectionTests.forEach(test => {
 			runSwapDirectionTest(test.description, test.mode, test.expected);
 		});
 
@@ -635,7 +635,7 @@ describe('hooks/useBridge', () => {
 			});
 		};
 
-		const SUBSCRIPTION_TESTS = [
+		const subscriptionTests = [
 			{
 				description: 'subscribes to account change',
 				eventName: ControllerEventName.ACCOUNT_CHANGE
@@ -650,7 +650,7 @@ describe('hooks/useBridge', () => {
 			}
 		];
 
-		SUBSCRIPTION_TESTS.forEach(test => {
+		subscriptionTests.forEach(test => {
 			runSubscriptionTest(test.description, test.eventName);
 		});
 
