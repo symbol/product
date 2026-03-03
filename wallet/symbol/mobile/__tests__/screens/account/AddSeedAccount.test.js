@@ -136,10 +136,16 @@ const mockSeedAccountBalances = (balances = MOCK_SEED_BALANCES) => {
 
 describe('screens/account/AddSeedAccount', () => {
 	beforeEach(() => {
+		jest.useFakeTimers();
 		mockLocalization();
 		mockRouter();
 		mockSeedAccountBalances();
 		jest.clearAllMocks();
+	});
+
+	afterEach(() => {
+		jest.clearAllTimers();
+		jest.useRealTimers();
 	});
 
 	describe('render', () => {

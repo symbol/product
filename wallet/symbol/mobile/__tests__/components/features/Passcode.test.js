@@ -74,8 +74,14 @@ const advanceTimersPastError = async () => {
 
 describe('components/features/Passcode', () => {
 	beforeEach(() => {
+		jest.useFakeTimers();
 		mockLocalization();
 		jest.clearAllMocks();
+	});
+
+	afterEach(() => {
+		jest.clearAllTimers();
+		jest.useRealTimers();
 	});
 
 	describe('render', () => {
@@ -416,8 +422,14 @@ describe('components/features/Passcode', () => {
 
 describe('components/features/PasscodeView', () => {
 	beforeEach(() => {
+		jest.useFakeTimers();
 		mockLocalization();
 		jest.clearAllMocks();
+	});
+
+	afterEach(() => {
+		jest.clearAllTimers();
+		jest.useRealTimers();
 	});
 
 	describe('visibility', () => {

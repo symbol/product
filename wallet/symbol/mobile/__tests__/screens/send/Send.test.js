@@ -211,10 +211,16 @@ const mockDebounce = () => {
 
 describe('screens/send/Send', () => {
 	beforeEach(() => {
+		jest.useFakeTimers();
 		jest.clearAllMocks();
 		mockLocalization();
 		mockTransactionFees(null, false);
 		mockDebounce();
+	});
+
+	afterEach(() => {
+		jest.clearAllTimers();
+		jest.useRealTimers();
 	});
 
 	describe('render', () => {

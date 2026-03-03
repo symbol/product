@@ -35,8 +35,14 @@ const mockPasscodeManager = (overrides = {}) => {
 
 describe('screens/settings/SettingsSecurity', () => {
 	beforeEach(() => {
+		jest.useFakeTimers();
 		mockLocalization();
 		jest.clearAllMocks();
+	});
+
+	afterEach(() => {
+		jest.clearAllTimers();
+		jest.useRealTimers();
 	});
 
 	describe('render', () => {

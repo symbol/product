@@ -56,9 +56,15 @@ const mockWalletControllerConfigured = (overrides = {}) => {
 
 describe('screens/settings/SettingsNetwork', () => {
 	beforeEach(() => {
+		jest.useFakeTimers();
 		mockLocalization();
 		mockOs('android');
 		jest.clearAllMocks();
+	});
+
+	afterEach(() => {
+		jest.clearAllTimers();
+		jest.useRealTimers();
 	});
 
 	describe('render', () => {

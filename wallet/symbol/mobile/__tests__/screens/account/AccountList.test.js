@@ -129,10 +129,16 @@ const mockAccountBalances = (balances = MOCK_BALANCES) => {
 
 describe('screens/account/AccountList', () => {
 	beforeEach(() => {
+		jest.useFakeTimers();
 		mockLocalization();
 		mockRouter();
 		mockAccountBalances();
 		jest.clearAllMocks();
+	});
+
+	afterEach(() => {
+		jest.clearAllTimers();
+		jest.useRealTimers();
 	});
 
 	describe('render', () => {

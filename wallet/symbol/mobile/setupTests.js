@@ -23,5 +23,5 @@ jest.mock('@/app/hooks', () => ({
 beforeEach(() => {
 	jest.clearAllMocks();
 	jest.restoreAllMocks();
-	jest.useFakeTimers();
+	// Note: Individual tests should call jest.useFakeTimers() if needed
 });

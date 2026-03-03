@@ -35,7 +35,13 @@ const createConfig = (overrides = {}) => ({
 
 describe('hooks/usePagination', () => {
 	beforeEach(() => {
+		jest.useFakeTimers();
 		__DEV__ = false;
+	});
+
+	afterEach(() => {
+		jest.clearAllTimers();
+		jest.useRealTimers();
 	});
 
 	describe('initialization', () => {

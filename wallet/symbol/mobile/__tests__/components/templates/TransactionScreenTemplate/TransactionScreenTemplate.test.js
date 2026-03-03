@@ -116,8 +116,14 @@ const createDefaultProps = (overrides = {}) => ({
 
 describe('components/templates/TransactionScreenTemplate', () => {
 	beforeEach(() => {
+		jest.useFakeTimers();
 		mockLocalization();
 		jest.clearAllMocks();
+	});
+
+	afterEach(() => {
+		jest.clearAllTimers();
+		jest.useRealTimers();
 	});
 
 	describe('render', () => {

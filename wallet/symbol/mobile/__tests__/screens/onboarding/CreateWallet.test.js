@@ -25,7 +25,13 @@ const SCREEN_TEXT = {
 
 describe('screens/onboarding/CreateWallet', () => {
 	beforeEach(() => {
+		jest.useFakeTimers();
 		mockLocalization();
+	});
+
+	afterEach(() => {
+		jest.clearAllTimers();
+		jest.useRealTimers();
 	});
 
 	it('create wallet flow', async () => {

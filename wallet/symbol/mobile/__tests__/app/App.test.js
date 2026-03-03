@@ -83,6 +83,7 @@ const mockWalletControllers = () => {
 describe('App', () => {
 	beforeEach(() => {
 		mockRouter({ goToHome: jest.fn() });
+		jest.useFakeTimers();
 	});
 
 	describe('flow rendering', () => {
