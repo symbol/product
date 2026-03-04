@@ -19,32 +19,32 @@ import { renderHook } from '@testing-library/react-native';
  * });
  */
 export const runHookContractTest = (hook, {
-    props,
-    contract
+	props,
+	contract
 }) => {
-    describe('contract', () => {
-        it('returns all expected fields', async () => {
-            // Act:
-            const { result } = renderHook(() => hook(props));
+	describe('contract', () => {
+		it('returns all expected fields', async () => {
+			// Act:
+			const { result } = renderHook(() => hook(props));
 
-            // Assert:
-            Object.keys(contract).forEach(key => {
-                expect(result.current).toHaveProperty(key);
-                if (contract[key] === 'array')
-                    expect(Array.isArray(result.current[key])).toBe(true);
-                else
-                    expect(typeof result.current[key]).toBe(contract[key]);
-            });
-        });
+			// Assert:
+			Object.keys(contract).forEach(key => {
+				expect(result.current).toHaveProperty(key);
+				if (contract[key] === 'array')
+					expect(Array.isArray(result.current[key])).toBe(true);
+				else
+					expect(typeof result.current[key]).toBe(contract[key]);
+			});
+		});
 
-        it('does not return unexpected fields', async () => {
-            // Act:
-            const { result } = renderHook(() => hook(props));
+		it('does not return unexpected fields', async () => {
+			// Act:
+			const { result } = renderHook(() => hook(props));
 
-            // Assert:
-            Object.keys(result.current).forEach(key => {
-                expect(contract).toHaveProperty(key);
-            });
-        });
-    });
-}
+			// Assert:
+			Object.keys(result.current).forEach(key => {
+				expect(contract).toHaveProperty(key);
+			});
+		});
+	});
+};

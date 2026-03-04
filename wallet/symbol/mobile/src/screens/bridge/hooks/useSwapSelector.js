@@ -134,7 +134,7 @@ export const useSwapSelector = ({ pairs, defaultSourceChainName }) => {
 	}, [pairs, defaultSourceChainName]);
 
 	// Calculated values based on current source and target
-	
+
 	const { bridge, mode } = useMemo(() => {
 		if (source && target)
 			return getCorrespondingBridge(pairs, source, target);
@@ -143,7 +143,9 @@ export const useSwapSelector = ({ pairs, defaultSourceChainName }) => {
 	}, [pairs, source, target]);
 
 	const sourceList = useMemo(() => {
-		if (!target || pairs.length === 0) return [];
+		if (!target || pairs.length === 0) 
+			return [];
+
 		return getOppositeSideList(pairs, target, SwapSideType.TARGET);
 	}, [pairs, target]);
 
@@ -159,8 +161,7 @@ export const useSwapSelector = ({ pairs, defaultSourceChainName }) => {
 	const changeSource = useCallback(newSource => {
 		const isValid = pairs.some(pair =>
 			pair.source.chainName === newSource.chainName &&
-			pair.source.token.id === newSource.token.id
-		);
+			pair.source.token.id === newSource.token.id);
 
 		if (isValid) 
 			setSource(newSource);
@@ -169,8 +170,7 @@ export const useSwapSelector = ({ pairs, defaultSourceChainName }) => {
 	const changeTarget = useCallback(newTarget => {
 		const isValid = pairs.some(pair =>
 			pair.target.chainName === newTarget.chainName &&
-			pair.target.token.id === newTarget.token.id
-		);
+			pair.target.token.id === newTarget.token.id);
 
 		if (isValid) 
 			setTarget(newTarget);
