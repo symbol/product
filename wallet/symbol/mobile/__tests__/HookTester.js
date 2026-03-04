@@ -35,7 +35,7 @@ export class HookTester {
 	 * 
 	 * @param {Array} newProps - The new props to pass to the hook as arguments.
 	 */
-	updateProps = (newProps) => {
+	updateProps = newProps => {
 		this.hookRenderer.rerender(newProps);
 	};
 
@@ -44,7 +44,7 @@ export class HookTester {
 	 * 
 	 * @param {any} expected - The expected value to compare against the current result.
 	 */
-	expectResult = (expected) => {
+	expectResult = expected => {
 		expect(this.currentResult).toStrictEqual(expected);
 	};
 
