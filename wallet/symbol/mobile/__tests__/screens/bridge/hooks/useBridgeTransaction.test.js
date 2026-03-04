@@ -95,7 +95,7 @@ describe('hooks/useBridgeTransaction', () => {
 	});
 
 	runHookContractTest(useBridgeTransaction, {
-		props: createHookParams(),
+		props: [createHookParams()],
 		contract: {
 			createTransaction: 'function',
 			getTransactionPreviewTable: 'function'

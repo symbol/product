@@ -51,7 +51,7 @@ describe('hooks/useEstimation', () => {
 	});
 
 	runHookContractTest(useEstimation, {
-		props: createHookParams(),
+		props: [createHookParams()],
 		contract: {
 			estimate: 'function',
 			estimation: 'object',

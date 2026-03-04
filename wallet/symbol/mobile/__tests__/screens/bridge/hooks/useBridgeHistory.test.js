@@ -42,7 +42,7 @@ describe('hooks/useBridgeHistory', () => {
 	});
 
 	runHookContractTest(useBridgeHistory, {
-		props: createHookParams(),
+		props: [createHookParams()],
 		contract: {
 			history: 'object',
 			isHistoryLoading: 'boolean',

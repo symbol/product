@@ -19,13 +19,13 @@ import { renderHook } from '@testing-library/react-native';
  * });
  */
 export const runHookContractTest = (hook, {
-	props,
+	props = [],
 	contract
 }) => {
 	describe('contract', () => {
 		it('returns all expected fields', async () => {
 			// Act:
-			const { result } = renderHook(() => hook(props));
+			const { result } = renderHook(() => hook(...props));
 
 			// Assert:
 			Object.keys(contract).forEach(key => {
@@ -39,7 +39,7 @@ export const runHookContractTest = (hook, {
 
 		it('does not return unexpected fields', async () => {
 			// Act:
-			const { result } = renderHook(() => hook(props));
+			const { result } = renderHook(() => hook(...props));
 
 			// Assert:
 			Object.keys(result.current).forEach(key => {
