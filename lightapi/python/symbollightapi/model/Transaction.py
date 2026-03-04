@@ -1,6 +1,8 @@
 from collections import namedtuple
 
+from symbolchain.CryptoTypes import PublicKey
 from symbolchain.nc import TransactionType
+from symbolchain.nem.Network import Address
 
 from ..model.Exceptions import UnknownTransactionType
 
@@ -428,7 +430,7 @@ class TransactionHandler:
 
 		return {
 			'amount': tx_json['amount'],
-			'recipient': tx_json['recipient'],
+			'recipient': Address(tx_json['recipient']),
 			'message': message,
 			'mosaics': mosaics,
 		}
@@ -437,7 +439,7 @@ class TransactionHandler:
 	def _map_account_key_link_args(tx_json):
 		return {
 			'mode': tx_json['mode'],
-			'remote_account': tx_json['remoteAccount'],
+			'remote_account': PublicKey(tx_json['remoteAccount']),
 		}
 
 	@staticmethod
@@ -447,7 +449,7 @@ class TransactionHandler:
 			'modifications': [
 				Modification(
 					modification['modificationType'],
-					modification['cosignatoryAccount'])
+					PublicKey(modification['cosignatoryAccount']))
 				for modification in tx_json['modifications']
 			]
 		}
@@ -461,7 +463,7 @@ class TransactionHandler:
 		common_args = {
 			'transaction_hash': None,
 			'height': None,
-			'sender': other_transaction['signer'],
+			'sender': PublicKey(other_transaction['signer']),
 			'fee': other_transaction['fee'],
 			'timestamp': other_transaction['timeStamp'],
 			'deadline': other_transaction['deadline'],
@@ -473,8 +475,8 @@ class TransactionHandler:
 				CosignSignatureTransaction(
 					signature['timeStamp'],
 					signature['otherHash']['data'],
-					signature['otherAccount'],
-					signature['signer'],
+					Address(signature['otherAccount']),
+					PublicKey(signature['signer']),
 					signature['fee'],
 					signature['deadline'],
 					signature['signature']
@@ -488,7 +490,7 @@ class TransactionHandler:
 	@staticmethod
 	def _map_namespace_registration_args(tx_json):
 		return {
-			'rental_fee_sink': tx_json['rentalFeeSink'],
+			'rental_fee_sink': Address(tx_json['rentalFeeSink']),
 			'rental_fee': tx_json['rentalFee'],
 			'parent': tx_json['parent'],
 			'namespace': tx_json['newPart'],
@@ -514,15 +516,15 @@ class TransactionHandler:
 		if mosaic_levy:
 			mosaic_levy = MosaicLevy(
 				mosaic_levy['fee'],
-				mosaic_levy['recipient'],
+				Address(mosaic_levy['recipient']),
 				mosaic_levy['type'],
 				f'{mosaic_levy["mosaicId"]["namespaceId"]}.{mosaic_levy["mosaicId"]["name"]}'
 			)
 
 		return {
 			'creation_fee': tx_json['creationFee'],
-			'creation_fee_sink': tx_json['creationFeeSink'],
-			'creator': mosaic_definition['creator'],
+			'creation_fee_sink': Address(tx_json['creationFeeSink']),
+			'creator': PublicKey(mosaic_definition['creator']),
 			'description': mosaic_definition['description'],
 			'namespace_name': f'{mosaic_id["namespaceId"]}.{mosaic_id["name"]}',
 			'properties': mosaic_properties,

@@ -378,7 +378,7 @@ class NemConnector(BasicConnector):
 		common_args = {
 			'transaction_hash': transaction['hash'],
 			'height': block_height,
-			'sender': tx_json['signer'],
+			'sender': PublicKey(tx_json['signer']),
 			'fee': tx_json['fee'],
 			'timestamp': tx_json['timeStamp'],
 			'deadline': tx_json['deadline'],
