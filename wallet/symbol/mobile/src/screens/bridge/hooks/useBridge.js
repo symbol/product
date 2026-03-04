@@ -1,5 +1,5 @@
-import { BridgeMode, BridgePairsStatus } from '@/app/screens/bridge/types/Bridge';
 import { bridges } from '@/app/lib/controller';
+import { BridgeMode, BridgePairsStatus } from '@/app/screens/bridge/types/Bridge';
 import { loadWalletController } from '@/app/screens/bridge/utils';
 import { useCallback, useEffect, useState } from 'react';
 import { ControllerEventName } from 'wallet-common-core/src/constants';

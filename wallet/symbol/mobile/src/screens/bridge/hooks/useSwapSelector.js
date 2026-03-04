@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
+import { SwapSideType } from '@/app/screens/bridge/types/Bridge';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 /** @typedef {import('@/app/screens/bridge/types/Bridge').SwapPair} SwapPair */
 /** @typedef {import('@/app/screens/bridge/types/Bridge').SwapSide} SwapSide */
@@ -25,14 +26,14 @@ const getDefaultPair = (pairs, defaultSourceChainName) => {
  */
 const getOppositeSideList = (pairs, side, type) => {
 	const filteredPairs = pairs.filter(pair => {
-		if (type === 'source')
+		if (type === SwapSideType.SOURCE)
 			return pair.source.chainName === side.chainName && pair.source.token.id === side.token.id;
 
-		if (type === 'target')
+		if (type === SwapSideType.TARGET)
 			return pair.target.chainName === side.chainName && pair.target.token.id === side.token.id;
 	});
 
-	return filteredPairs.map(pair => type === 'source' ? pair.target : pair.source);
+	return filteredPairs.map(pair => type === SwapSideType.SOURCE ? pair.target : pair.source);
 };
 
 /**
@@ -43,7 +44,7 @@ const getOppositeSideList = (pairs, side, type) => {
  * @returns {SwapSide} Updated swap side.
  */
 const getUpdatedSide = (pairs, side, type) => {
-	const getSide = pair => type === 'source' ? pair.source : pair.target;
+	const getSide = pair => type === SwapSideType.SOURCE ? pair.source : pair.target;
 
 	const pair = pairs.find(pair => 
 		getSide(pair).chainName === side.chainName &&
@@ -102,59 +103,84 @@ const getCorrespondingBridge = (pairs, source, target) => {
  * @returns {UseSwapSelectorReturnType}
  */
 export const useSwapSelector = ({ pairs, defaultSourceChainName }) => {
-	// Source and target state
 	const [source, setSource] = useState(null);
 	const [target, setTarget] = useState(null);
-	const [sourceList, setSourceList] = useState([]);
-	const [targetList, setTargetList] = useState([]);
 
-	// Handle source and target values and list changes
+	// Initialize source and target when pairs become available
+	useEffect(() => {
+		if (pairs.length === 0) {
+			setSource(null);
+			setTarget(null);
+			return;
+		}
+
+		setSource(prevSource => {
+			if (!prevSource) {
+				const defaultPair = getDefaultPair(pairs, defaultSourceChainName);
+				return defaultPair.source;
+			}
+
+			return getUpdatedSide(pairs, prevSource, SwapSideType.SOURCE);
+		});
+
+		setTarget(prevTarget => {
+			if (!prevTarget) {
+				const defaultPair = getDefaultPair(pairs, defaultSourceChainName);
+				return defaultPair.target;
+			}
+
+			return getUpdatedSide(pairs, prevTarget, SwapSideType.TARGET);
+		});
+	}, [pairs, defaultSourceChainName]);
+
+	// Calculated values based on current source and target
+	
+	const { bridge, mode } = useMemo(() => {
+		if (source && target)
+			return getCorrespondingBridge(pairs, source, target);
+
+		return { bridge: null, mode: null };
+	}, [pairs, source, target]);
+
+	const sourceList = useMemo(() => {
+		if (!target || pairs.length === 0) return [];
+		return getOppositeSideList(pairs, target, SwapSideType.TARGET);
+	}, [pairs, target]);
+
+	const targetList = useMemo(() => {
+		if (!source || pairs.length === 0) 
+			return [];
+		
+		return getOppositeSideList(pairs, source, SwapSideType.SOURCE);
+	}, [pairs, source]);
+
+	// User interactions
+
+	const changeSource = useCallback(newSource => {
+		const isValid = pairs.some(pair =>
+			pair.source.chainName === newSource.chainName &&
+			pair.source.token.id === newSource.token.id
+		);
+
+		if (isValid) 
+			setSource(newSource);
+	}, [pairs]);
+
+	const changeTarget = useCallback(newTarget => {
+		const isValid = pairs.some(pair =>
+			pair.target.chainName === newTarget.chainName &&
+			pair.target.token.id === newTarget.token.id
+		);
+
+		if (isValid) 
+			setTarget(newTarget);
+	}, [pairs]);
+
 	const reverse = useCallback(() => {
 		setSource(target);
 		setTarget(source);
 	}, [source, target]);
 
-	// Bridge and mode determination based on source and target selection
-	const [bridge, setBridge] = useState(null);
-	const [mode, setMode] = useState(null);
-
-	// Main effect
-	useEffect(() => {
-		// Set default source and target on first load
-		if (pairs.length && !source) {
-			const defaultPair = getDefaultPair(pairs, defaultSourceChainName);
-			setSource(defaultPair.source);
-			setTarget(defaultPair.target);
-		}
-
-		// Refresh lists on source/target change
-		else if (pairs.length && source && target) {
-			setSource(getUpdatedSide(pairs, source, 'source'));
-			setTarget(getUpdatedSide(pairs, target, 'target'));
-			setSourceList(getOppositeSideList(pairs, target, 'target'));
-			setTargetList(getOppositeSideList(pairs, source, 'source'));
-		}
-		else {
-			setSource(null);
-			setTarget(null);
-			setSourceList([]);
-			setTargetList([]);
-		}
-
-		// Determine bridge and mode based on source and target
-		if (source && target) {
-			const { bridge, mode } = getCorrespondingBridge(pairs, source, target);
-			setBridge(bridge);
-			setMode(mode);
-		}
-
-		// Reset bridge and mode if source or target is not selected
-		else {
-			setBridge(null);
-			setMode(null);
-		}
-	}, [pairs, defaultSourceChainName, source, target]);
-	
 	return {
 		isReady: source !== null && target !== null && bridge !== null && mode !== null,
 		bridge,
@@ -163,8 +189,8 @@ export const useSwapSelector = ({ pairs, defaultSourceChainName }) => {
 		target,
 		sourceList,
 		targetList,
-		changeSource: setSource,
-		changeTarget: setTarget,
+		changeSource,
+		changeTarget,
 		reverse
 	};
 };
