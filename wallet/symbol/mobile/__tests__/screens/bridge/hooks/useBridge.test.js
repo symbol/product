@@ -4,7 +4,7 @@ import { AccountFixtureBuilder } from '__fixtures__/local/AccountFixtureBuilder'
 import { AccountInfoFixtureBuilder } from '__fixtures__/local/AccountInfoFixtureBuilder';
 import { NetworkPropertiesFixtureBuilder } from '__fixtures__/local/NetworkPropertiesFixtureBuilder';
 import { TokenFixtureBuilder } from '__fixtures__/local/TokenFixtureBuilder';
-import { mockWalletController } from '__tests__/mock-helpers';
+import { createWalletControllerMock } from '__tests__/mock-helpers';
 import { act, renderHook, waitFor } from '@testing-library/react-native';
 import { ControllerEventName } from 'wallet-common-core/src/constants';
 
@@ -224,7 +224,7 @@ const renderUseBridge = async () => {
 };
 
 const createBridgeWalletController = (baseController, state, currentAccountInfo = null) => {
-	return mockWalletController({
+	return createWalletControllerMock({
 		...baseController,
 		...state,
 		currentAccountInfo,

@@ -6,7 +6,8 @@ describe('utils/network', () => {
 		ok,
 		status,
 		statusText,
-		json: jest.fn().mockResolvedValue(body)
+		json: jest.fn().mockResolvedValue(body),
+		text: jest.fn().mockResolvedValue(JSON.stringify(body))
 	});
 
 	const createMockErrorResponse = (status, errorBody, statusText = 'Error') =>
@@ -125,12 +126,12 @@ describe('utils/network', () => {
 
 		it('falls back to statusText when JSON parsing fails', async () => {
 			// Arrange:
-			const mockResponse = {
-				ok: false,
-				status: 400,
-				statusText: 'Bad Request',
-				json: jest.fn().mockRejectedValue(new Error('Invalid JSON'))
-			};
+			const mockResponse = createMockResponse(
+				false,
+				400,
+				'Invalid JSON Body',
+				'Bad Request'
+			);
 			global.fetch.mockResolvedValue(mockResponse);
 
 			// Act & Assert:

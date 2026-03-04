@@ -3,7 +3,7 @@ import { AccountFixtureBuilder } from '__fixtures__/local/AccountFixtureBuilder'
 import { AccountInfoFixtureBuilder } from '__fixtures__/local/AccountInfoFixtureBuilder';
 import { NetworkPropertiesFixtureBuilder } from '__fixtures__/local/NetworkPropertiesFixtureBuilder';
 import { TokenFixtureBuilder } from '__fixtures__/local/TokenFixtureBuilder';
-import { mockWalletController } from '__tests__/mock-helpers';
+import { createWalletControllerMock } from '__tests__/mock-helpers';
 import { act, renderHook } from '@testing-library/react-native';
 import { ControllerEventName } from 'wallet-common-core/src/constants';
 
@@ -210,10 +210,10 @@ const ControllerScenario = {
 
 // Test helpers
 
-const createWalletControllerMock = (scenario, overrides = {}) => {
+const createWalletController = (scenario, overrides = {}) => {
 	const eventHandlers = {};
 
-	return mockWalletController({
+	return createWalletControllerMock({
 		...scenario,
 		fetchAccountInfo: jest.fn().mockResolvedValue(undefined),
 		on: jest.fn((eventName, handler) => {
@@ -252,7 +252,7 @@ describe('hooks/useBridgeAccounts', () => {
 		it('returns accounts array and refresh function', () => {
 			// Arrange:
 			setAdditionalControllers([
-				createWalletControllerMock(ControllerScenario.SYMBOL_READY)
+				createWalletController(ControllerScenario.SYMBOL_READY)
 			]);
 
 			// Act:
@@ -268,8 +268,8 @@ describe('hooks/useBridgeAccounts', () => {
 		it('creates account object for each wallet controller', () => {
 			// Arrange:
 			setAdditionalControllers([
-				createWalletControllerMock(ControllerScenario.SYMBOL_READY),
-				createWalletControllerMock(ControllerScenario.ETHEREUM_READY)
+				createWalletController(ControllerScenario.SYMBOL_READY),
+				createWalletController(ControllerScenario.ETHEREUM_READY)
 			]);
 
 			// Act:
@@ -295,7 +295,7 @@ describe('hooks/useBridgeAccounts', () => {
 				it(description, () => {
 					// Arrange:
 					setAdditionalControllers([
-						createWalletControllerMock(config.scenario)
+						createWalletController(config.scenario)
 					]);
 
 					// Act:
@@ -382,7 +382,7 @@ describe('hooks/useBridgeAccounts', () => {
 				// Arrange:
 				const fetchAccountInfoMock = jest.fn();
 				setAdditionalControllers([
-					createWalletControllerMock(config.scenario, {
+					createWalletController(config.scenario, {
 						fetchAccountInfo: fetchAccountInfoMock
 					})
 				]);
@@ -425,10 +425,10 @@ describe('hooks/useBridgeAccounts', () => {
 			const symbolFetchAccountInfoMock = jest.fn();
 			const ethereumFetchAccountInfoMock = jest.fn();
 			setAdditionalControllers([
-				createWalletControllerMock(ControllerScenario.SYMBOL_READY, {
+				createWalletController(ControllerScenario.SYMBOL_READY, {
 					fetchAccountInfo: symbolFetchAccountInfoMock
 				}),
-				createWalletControllerMock(ControllerScenario.ETHEREUM_READY, {
+				createWalletController(ControllerScenario.ETHEREUM_READY, {
 					fetchAccountInfo: ethereumFetchAccountInfoMock
 				})
 			]);
@@ -448,7 +448,7 @@ describe('hooks/useBridgeAccounts', () => {
 				// Arrange:
 				const onMock = jest.fn();
 				setAdditionalControllers([
-					createWalletControllerMock(ControllerScenario.SYMBOL_READY, {
+					createWalletController(ControllerScenario.SYMBOL_READY, {
 						on: onMock
 					})
 				]);
@@ -485,10 +485,10 @@ describe('hooks/useBridgeAccounts', () => {
 			const symbolOnMock = jest.fn();
 			const ethereumOnMock = jest.fn();
 			setAdditionalControllers([
-				createWalletControllerMock(ControllerScenario.SYMBOL_READY, {
+				createWalletController(ControllerScenario.SYMBOL_READY, {
 					on: symbolOnMock
 				}),
-				createWalletControllerMock(ControllerScenario.ETHEREUM_READY, {
+				createWalletController(ControllerScenario.ETHEREUM_READY, {
 					on: ethereumOnMock
 				})
 			]);
@@ -507,7 +507,7 @@ describe('hooks/useBridgeAccounts', () => {
 			it(description, () => {
 				// Arrange:
 				const fetchAccountInfoMock = jest.fn();
-				const controller = createWalletControllerMock(config.scenario, {
+				const controller = createWalletController(config.scenario, {
 					fetchAccountInfo: fetchAccountInfoMock
 				});
 				setAdditionalControllers([controller]);
@@ -572,7 +572,7 @@ describe('hooks/useBridgeAccounts', () => {
 			// Arrange:
 			const removeListenerMock = jest.fn();
 			setAdditionalControllers([
-				createWalletControllerMock(ControllerScenario.SYMBOL_READY, {
+				createWalletController(ControllerScenario.SYMBOL_READY, {
 					removeListener: removeListenerMock
 				})
 			]);
@@ -593,10 +593,10 @@ describe('hooks/useBridgeAccounts', () => {
 			const symbolRemoveListenerMock = jest.fn();
 			const ethereumRemoveListenerMock = jest.fn();
 			setAdditionalControllers([
-				createWalletControllerMock(ControllerScenario.SYMBOL_READY, {
+				createWalletController(ControllerScenario.SYMBOL_READY, {
 					removeListener: symbolRemoveListenerMock
 				}),
-				createWalletControllerMock(ControllerScenario.ETHEREUM_READY, {
+				createWalletController(ControllerScenario.ETHEREUM_READY, {
 					removeListener: ethereumRemoveListenerMock
 				})
 			]);
@@ -617,7 +617,7 @@ describe('hooks/useBridgeAccounts', () => {
 				// Arrange:
 				const fetchAccountInfoMock = jest.fn();
 				setAdditionalControllers([
-					createWalletControllerMock(config.scenario, {
+					createWalletController(config.scenario, {
 						fetchAccountInfo: fetchAccountInfoMock
 					})
 				]);
@@ -665,10 +665,10 @@ describe('hooks/useBridgeAccounts', () => {
 			const symbolFetchAccountInfoMock = jest.fn();
 			const ethereumFetchAccountInfoMock = jest.fn();
 			setAdditionalControllers([
-				createWalletControllerMock(ControllerScenario.SYMBOL_READY, {
+				createWalletController(ControllerScenario.SYMBOL_READY, {
 					fetchAccountInfo: symbolFetchAccountInfoMock
 				}),
-				createWalletControllerMock(ControllerScenario.ETHEREUM_READY, {
+				createWalletController(ControllerScenario.ETHEREUM_READY, {
 					fetchAccountInfo: ethereumFetchAccountInfoMock
 				})
 			]);
@@ -692,10 +692,10 @@ describe('hooks/useBridgeAccounts', () => {
 			const symbolFetchAccountInfoMock = jest.fn();
 			const ethereumFetchAccountInfoMock = jest.fn();
 			setAdditionalControllers([
-				createWalletControllerMock(ControllerScenario.SYMBOL_READY, {
+				createWalletController(ControllerScenario.SYMBOL_READY, {
 					fetchAccountInfo: symbolFetchAccountInfoMock
 				}),
-				createWalletControllerMock(ControllerScenario.ETHEREUM_READY, {
+				createWalletController(ControllerScenario.ETHEREUM_READY, {
 					...ControllerState.NOT_READY,
 					fetchAccountInfo: ethereumFetchAccountInfoMock
 				})

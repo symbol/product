@@ -46,6 +46,7 @@ const createDefaultProps = (overrides = {}) => ({
 	feeTiers: FEE_TIERS_DEFAULT,
 	value: FeeTierLevel.MEDIUM,
 	onChange: jest.fn(),
+	ticker: 'XYM',
 	...overrides
 });
 
