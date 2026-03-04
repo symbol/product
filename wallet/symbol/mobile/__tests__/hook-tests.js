@@ -1,4 +1,5 @@
 import { renderHook } from '@testing-library/react-native';
+import { act } from 'react';
 
 /**
  * Runs contract tests for a given hook.
@@ -6,6 +7,7 @@ import { renderHook } from '@testing-library/react-native';
  * @param {Function} hook - The custom React hook to be tested.
  * @param {Object} options - The options for the contract test.
  * @param {Object} options.props - The props to be passed to the hook.
+ * @param {boolean} [options.waitAsyncEffects=false] - Whether to wait for async effects to resolve before assertions.
  * @param {Object} options.contract - The contract defining the expected fields and their types.
  * 
  * @example
@@ -20,12 +22,19 @@ import { renderHook } from '@testing-library/react-native';
  */
 export const runHookContractTest = (hook, {
 	props = [],
+	waitAsyncEffects = false,
 	contract
 }) => {
 	describe('contract', () => {
 		it('returns all expected fields', async () => {
 			// Act:
 			const { result } = renderHook(() => hook(...props));
+
+			if (waitAsyncEffects) {
+				await act(async () => {
+					await Promise.resolve();
+				});
+			}
 
 			// Assert:
 			Object.keys(contract).forEach(key => {
@@ -40,6 +49,12 @@ export const runHookContractTest = (hook, {
 		it('does not return unexpected fields', async () => {
 			// Act:
 			const { result } = renderHook(() => hook(...props));
+
+			if (waitAsyncEffects) {
+				await act(async () => {
+					await Promise.resolve();
+				});
+			}
 
 			// Assert:
 			Object.keys(result.current).forEach(key => {
