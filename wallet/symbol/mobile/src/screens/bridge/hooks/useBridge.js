@@ -17,7 +17,7 @@ import { ControllerEventName } from 'wallet-common-core/src/constants';
  */
 const isBridgeControllersHaveAccounts = bridge =>
 	bridge.nativeWalletController.hasAccounts &&
-    bridge.wrappedWalletController.hasAccounts;
+	bridge.wrappedWalletController.hasAccounts;
 
 /**
  * Checks if both wallet controllers in a bridge have loaded their cache.
@@ -26,7 +26,7 @@ const isBridgeControllersHaveAccounts = bridge =>
  */
 const isBridgeControllersCacheLoaded = bridge =>
 	bridge.nativeWalletController.isStateReady &&
-    bridge.wrappedWalletController.isStateReady;
+	bridge.wrappedWalletController.isStateReady;
 
 /**
  * Checks if both wallet controllers in a bridge are connected to the network.
@@ -35,7 +35,7 @@ const isBridgeControllersCacheLoaded = bridge =>
  */
 const isBridgeControllersNetworkConnected = bridge =>
 	bridge.nativeWalletController.isNetworkConnectionReady &&
-    bridge.wrappedWalletController.isNetworkConnectionReady;
+	bridge.wrappedWalletController.isNetworkConnectionReady;
 
 /**
  * Checks if a bridge is fully ready (cache loaded, has accounts, and connected).
@@ -44,8 +44,8 @@ const isBridgeControllersNetworkConnected = bridge =>
  */
 const isBridgeControllersReady = bridge =>
 	isBridgeControllersCacheLoaded(bridge) &&
-    isBridgeControllersHaveAccounts(bridge) &&
-    isBridgeControllersNetworkConnected(bridge);
+	isBridgeControllersHaveAccounts(bridge) &&
+	isBridgeControllersNetworkConnected(bridge);
 
 /**
  * Extracts all wallet controllers from an array of bridges.
@@ -76,8 +76,8 @@ const createSwapPair = (bridge, mode) => {
 		: bridge.wrappedTokenInfo;
 
 	const sourceAccountTokens = sourceWalletController.currentAccountInfo?.tokens
-        || sourceWalletController.currentAccountInfo?.mosaics
-        || [];
+		|| sourceWalletController.currentAccountInfo?.mosaics
+		|| [];
 	const sourceTokenBalance = sourceAccountTokens.find(t => t.id === sourceTokenInfo.id)?.amount || '0';
 
 	const targetWalletController = mode === BridgeMode.WRAP
@@ -89,8 +89,8 @@ const createSwapPair = (bridge, mode) => {
 		: bridge.nativeTokenInfo;
 
 	const targetAccountTokens = targetWalletController.currentAccountInfo?.tokens
-        || targetWalletController.currentAccountInfo?.mosaics
-        || [];
+		|| targetWalletController.currentAccountInfo?.mosaics
+		|| [];
 	const targetTokenBalance = targetAccountTokens.find(t => t.id === targetTokenInfo.id)?.amount || '0';
 
 	return {
@@ -167,7 +167,7 @@ export const useBridge = () => {
 			if (pairsStatus !== newStatus)
 				setPairsStatus(newStatus);
 		};
-        
+
 		if (!hasBridgesWithLoadedCache)
 			setPairsStatusIfDifferent(BridgePairsStatus.LOADING);
 		else if (hasBridgesWithLoadedCache && !hasBridgesWithAccounts)
@@ -178,7 +178,7 @@ export const useBridge = () => {
 
 	const fetchBalances = useCallback(async () => {
 		const walletControllers = getBridgesWalletControllers(bridges);
-		const readyControllers = walletControllers.filter(controller => 
+		const readyControllers = walletControllers.filter(controller =>
 			controller.isWalletReady && controller.hasAccounts);
 		await Promise.all(readyControllers.map(controller => controller.fetchAccountInfo()));
 		updatePairs();
@@ -187,7 +187,7 @@ export const useBridge = () => {
 	const loadWalletControllers = useCallback(async () => {
 		const walletControllers = getBridgesWalletControllers(bridges);
 		const notReadyControllers = walletControllers.filter(controller => !controller.isStateReady);
-        
+
 		await Promise.all(notReadyControllers.map(controller => loadWalletController(controller)));
 	}, [bridges]);
 
@@ -220,12 +220,10 @@ export const useBridge = () => {
 		return () => unsubscribes.forEach(unsubscribe => unsubscribe());
 	};
 
-	const init = useCallback(() => {
-		(async () => {
-			await loadWalletControllers();
-			await loadBridges();
-			await fetchBalances();
-		})();
+	const init = useCallback(async () => {
+		await loadWalletControllers();
+		await loadBridges();
+		await fetchBalances();
 	}, [loadWalletControllers, loadBridges, fetchBalances]);
 
 	useEffect(() => {
