@@ -29,7 +29,7 @@ describe('hooks/useBridgeNoPairsDialog', () => {
 	});
 
 	runHookContractTest(useBridgeNoPairsDialog, {
-		props: createHookParams(),
+		props: [createHookParams()],
 		contract: {
 			isVisible: 'boolean',
 			onSuccess: 'function',

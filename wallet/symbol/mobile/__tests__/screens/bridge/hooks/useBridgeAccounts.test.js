@@ -3,8 +3,10 @@ import { AccountFixtureBuilder } from '__fixtures__/local/AccountFixtureBuilder'
 import { AccountInfoFixtureBuilder } from '__fixtures__/local/AccountInfoFixtureBuilder';
 import { NetworkPropertiesFixtureBuilder } from '__fixtures__/local/NetworkPropertiesFixtureBuilder';
 import { TokenFixtureBuilder } from '__fixtures__/local/TokenFixtureBuilder';
+import { HookTester } from '__tests__/HookTester';
+import { runHookContractTest } from '__tests__/hook-tests';
 import { createWalletControllerMock } from '__tests__/mock-helpers';
-import { act, renderHook } from '@testing-library/react-native';
+import { act } from '@testing-library/react-native';
 import { ControllerEventName } from 'wallet-common-core/src/constants';
 
 // Mocks
@@ -240,27 +242,83 @@ const setAdditionalControllers = controllers => {
 	MOCK_ADDITIONAL_CONTROLLERS = controllers;
 };
 
-const renderUseBridgeAccounts = () => renderHook(() => useBridgeAccounts());
-
 describe('hooks/useBridgeAccounts', () => {
 	beforeEach(() => {
 		jest.clearAllMocks();
 		setAdditionalControllers([]);
 	});
 
-	describe('hook contract', () => {
-		it('returns accounts array and refresh function', () => {
+	runHookContractTest(useBridgeAccounts, {
+		props: [],
+		contract: {
+			accounts: 'array',
+			refresh: 'function'
+		}
+	});
+
+	describe('initialization', () => {
+		const runInitializationFetchTest = (description, config, expected) => {
+			it(description, () => {
+				// Arrange:
+				const fetchAccountInfoMock = jest.fn();
+				setAdditionalControllers([
+					createWalletController(config.scenario, {
+						fetchAccountInfo: fetchAccountInfoMock
+					})
+				]);
+
+				// Act:
+				new HookTester(useBridgeAccounts);
+
+				// Assert:
+				if (expected.shouldFetch)
+					expect(fetchAccountInfoMock).toHaveBeenCalledTimes(1);
+				else
+					expect(fetchAccountInfoMock).not.toHaveBeenCalled();
+			});
+		};
+
+		const initializationTests = [
+			{
+				description: 'calls fetchAccountInfo on mount for ready controllers',
+				config: { scenario: ControllerScenario.SYMBOL_READY },
+				expected: { shouldFetch: true }
+			},
+			{
+				description: 'does not call fetchAccountInfo when no currentAccount',
+				config: { scenario: ControllerScenario.SYMBOL_READY_NO_ACCOUNT },
+				expected: { shouldFetch: false }
+			},
+			{
+				description: 'does not call fetchAccountInfo when wallet is not ready',
+				config: { scenario: ControllerScenario.SYMBOL_NOT_READY },
+				expected: { shouldFetch: false }
+			}
+		];
+
+		initializationTests.forEach(test => {
+			runInitializationFetchTest(test.description, test.config, test.expected);
+		});
+
+		it('calls fetchAccountInfo for each ready controller', () => {
 			// Arrange:
+			const symbolFetchAccountInfoMock = jest.fn();
+			const ethereumFetchAccountInfoMock = jest.fn();
 			setAdditionalControllers([
-				createWalletController(ControllerScenario.SYMBOL_READY)
+				createWalletController(ControllerScenario.SYMBOL_READY, {
+					fetchAccountInfo: symbolFetchAccountInfoMock
+				}),
+				createWalletController(ControllerScenario.ETHEREUM_READY, {
+					fetchAccountInfo: ethereumFetchAccountInfoMock
+				})
 			]);
 
 			// Act:
-			const { result } = renderUseBridgeAccounts();
+			new HookTester(useBridgeAccounts);
 
 			// Assert:
-			expect(Array.isArray(result.current.accounts)).toBe(true);
-			expect(typeof result.current.refresh).toBe('function');
+			expect(symbolFetchAccountInfoMock).toHaveBeenCalledTimes(1);
+			expect(ethereumFetchAccountInfoMock).toHaveBeenCalledTimes(1);
 		});
 	});
 
@@ -273,10 +331,10 @@ describe('hooks/useBridgeAccounts', () => {
 			]);
 
 			// Act:
-			const { result } = renderUseBridgeAccounts();
+			const hookTester = new HookTester(useBridgeAccounts);
 
 			// Assert:
-			expect(result.current.accounts).toHaveLength(2);
+			expect(hookTester.currentResult.accounts).toHaveLength(2);
 		});
 
 		it('returns empty array when no additional controllers exist', () => {
@@ -284,10 +342,10 @@ describe('hooks/useBridgeAccounts', () => {
 			setAdditionalControllers([]);
 
 			// Act:
-			const { result } = renderUseBridgeAccounts();
+			const hookTester = new HookTester(useBridgeAccounts);
 
 			// Assert:
-			expect(result.current.accounts).toEqual([]);
+			expect(hookTester.currentResult.accounts).toEqual([]);
 		});
 
 		describe('account object properties', () => {
@@ -299,8 +357,8 @@ describe('hooks/useBridgeAccounts', () => {
 					]);
 
 					// Act:
-					const { result } = renderUseBridgeAccounts();
-					const mappedAccount = result.current.accounts[0];
+					const hookTester = new HookTester(useBridgeAccounts);
+					const mappedAccount = hookTester.currentResult.accounts[0];
 
 					// Assert:
 					expect(mappedAccount).toMatchObject(expected);
@@ -376,72 +434,6 @@ describe('hooks/useBridgeAccounts', () => {
 		});
 	});
 
-	describe('initialization', () => {
-		const runInitializationFetchTest = (description, config, expected) => {
-			it(description, () => {
-				// Arrange:
-				const fetchAccountInfoMock = jest.fn();
-				setAdditionalControllers([
-					createWalletController(config.scenario, {
-						fetchAccountInfo: fetchAccountInfoMock
-					})
-				]);
-
-				// Act:
-				renderUseBridgeAccounts();
-
-				// Assert:
-				if (expected.shouldFetch)
-					expect(fetchAccountInfoMock).toHaveBeenCalledTimes(1);
-				else
-					expect(fetchAccountInfoMock).not.toHaveBeenCalled();
-			});
-		};
-
-		const initializationFetchTests = [
-			{
-				description: 'calls fetchAccountInfo on mount for ready controllers',
-				config: { scenario: ControllerScenario.SYMBOL_READY },
-				expected: { shouldFetch: true }
-			},
-			{
-				description: 'does not call fetchAccountInfo when no currentAccount',
-				config: { scenario: ControllerScenario.SYMBOL_READY_NO_ACCOUNT },
-				expected: { shouldFetch: false }
-			},
-			{
-				description: 'does not call fetchAccountInfo when wallet is not ready',
-				config: { scenario: ControllerScenario.SYMBOL_NOT_READY },
-				expected: { shouldFetch: false }
-			}
-		];
-
-		initializationFetchTests.forEach(test => {
-			runInitializationFetchTest(test.description, test.config, test.expected);
-		});
-
-		it('calls fetchAccountInfo for each ready controller', () => {
-			// Arrange:
-			const symbolFetchAccountInfoMock = jest.fn();
-			const ethereumFetchAccountInfoMock = jest.fn();
-			setAdditionalControllers([
-				createWalletController(ControllerScenario.SYMBOL_READY, {
-					fetchAccountInfo: symbolFetchAccountInfoMock
-				}),
-				createWalletController(ControllerScenario.ETHEREUM_READY, {
-					fetchAccountInfo: ethereumFetchAccountInfoMock
-				})
-			]);
-
-			// Act:
-			renderUseBridgeAccounts();
-
-			// Assert:
-			expect(symbolFetchAccountInfoMock).toHaveBeenCalledTimes(1);
-			expect(ethereumFetchAccountInfoMock).toHaveBeenCalledTimes(1);
-		});
-	});
-
 	describe('event subscriptions', () => {
 		const runEventSubscriptionTest = (description, eventName) => {
 			it(description, () => {
@@ -454,7 +446,7 @@ describe('hooks/useBridgeAccounts', () => {
 				]);
 
 				// Act:
-				renderUseBridgeAccounts();
+				new HookTester(useBridgeAccounts);
 
 				// Assert:
 				expect(onMock).toHaveBeenCalledWith(eventName, expect.any(Function));
@@ -494,7 +486,7 @@ describe('hooks/useBridgeAccounts', () => {
 			]);
 
 			// Act:
-			renderUseBridgeAccounts();
+			new HookTester(useBridgeAccounts);
 
 			// Assert:
 			expect(symbolOnMock).toHaveBeenCalledTimes(EXPECTED_EVENT_SUBSCRIPTIONS_PER_CONTROLLER);
@@ -511,7 +503,7 @@ describe('hooks/useBridgeAccounts', () => {
 					fetchAccountInfo: fetchAccountInfoMock
 				});
 				setAdditionalControllers([controller]);
-				renderUseBridgeAccounts();
+				new HookTester(useBridgeAccounts);
 				fetchAccountInfoMock.mockClear();
 
 				// Act:
@@ -578,8 +570,8 @@ describe('hooks/useBridgeAccounts', () => {
 			]);
 
 			// Act:
-			const { unmount } = renderUseBridgeAccounts();
-			unmount();
+			const hookTester = new HookTester(useBridgeAccounts);
+			hookTester.hookRenderer.unmount();
 
 			// Assert:
 			expect(removeListenerMock).toHaveBeenCalledTimes(EXPECTED_EVENT_SUBSCRIPTIONS_PER_CONTROLLER);
@@ -602,8 +594,8 @@ describe('hooks/useBridgeAccounts', () => {
 			]);
 
 			// Act:
-			const { unmount } = renderUseBridgeAccounts();
-			unmount();
+			const hookTester = new HookTester(useBridgeAccounts);
+			hookTester.hookRenderer.unmount();
 
 			// Assert:
 			expect(symbolRemoveListenerMock).toHaveBeenCalledTimes(EXPECTED_EVENT_SUBSCRIPTIONS_PER_CONTROLLER);
@@ -622,12 +614,12 @@ describe('hooks/useBridgeAccounts', () => {
 					})
 				]);
 
-				const { result } = renderUseBridgeAccounts();
+				const hookTester = new HookTester(useBridgeAccounts);
 				fetchAccountInfoMock.mockClear();
 
 				// Act:
 				act(() => {
-					result.current.refresh();
+					hookTester.currentResult.refresh();
 				});
 
 				// Assert:
@@ -673,13 +665,13 @@ describe('hooks/useBridgeAccounts', () => {
 				})
 			]);
 
-			const { result } = renderUseBridgeAccounts();
+			const hookTester = new HookTester(useBridgeAccounts);
 			symbolFetchAccountInfoMock.mockClear();
 			ethereumFetchAccountInfoMock.mockClear();
 
 			// Act:
 			act(() => {
-				result.current.refresh();
+				hookTester.currentResult.refresh();
 			});
 
 			// Assert:
@@ -701,13 +693,13 @@ describe('hooks/useBridgeAccounts', () => {
 				})
 			]);
 
-			const { result } = renderUseBridgeAccounts();
+			const hookTester = new HookTester(useBridgeAccounts);
 			symbolFetchAccountInfoMock.mockClear();
 			ethereumFetchAccountInfoMock.mockClear();
 
 			// Act:
 			act(() => {
-				result.current.refresh();
+				hookTester.currentResult.refresh();
 			});
 
 			// Assert:

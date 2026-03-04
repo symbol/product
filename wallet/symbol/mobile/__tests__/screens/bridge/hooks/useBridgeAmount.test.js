@@ -101,7 +101,7 @@ describe('hooks/useBridgeAmount', () => {
 	});
 
 	runHookContractTest(useBridgeAmount, {
-		props: createHookParams(),
+		props: [createHookParams()],
 		contract: {
 			amount: 'string',
 			amountInput: 'string',

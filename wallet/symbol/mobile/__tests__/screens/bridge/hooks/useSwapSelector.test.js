@@ -173,7 +173,7 @@ describe('hooks/useSwapSelector', () => {
 	});
 
 	runHookContractTest(useSwapSelector, {
-		props: createHookParams(),
+		props: [createHookParams()],
 		contract: {
 			isReady: 'boolean',
 			bridge: 'object',
