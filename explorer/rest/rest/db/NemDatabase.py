@@ -5,6 +5,7 @@ from symbolchain.nem.Network import Address
 
 from rest.model.Account import AccountView
 from rest.model.Block import BlockView
+from rest.model.Namespace import NamespaceView
 
 from .DatabaseConnection import DatabaseConnectionPool
 
@@ -91,6 +92,25 @@ class NemDatabase(DatabaseConnectionPool):
 			cosignatories=[str(Address(address)) for address in cosignatories] if cosignatories else None
 		)
 
+	def _create_namespace_view(self, result):  # pylint: disable=no-self-use
+		(
+			root_namespace,
+			owner,
+			registered_height,
+			registered_timestamp,
+			expiration_height,
+			sub_namespaces
+		) = result
+
+		return NamespaceView(
+			root_namespace=root_namespace,
+			owner=str(PublicKey(owner)),
+			registered_height=registered_height,
+			registered_timestamp=str(registered_timestamp),
+			expiration_height=expiration_height,
+			sub_namespaces=sub_namespaces
+		)
+
 	def _generate_account_query(self, where_condition, order_condition='', limit_condition=''):  # pylint: disable=no-self-use
 		"""Base account query."""
 
@@ -133,6 +153,25 @@ class NemDatabase(DatabaseConnectionPool):
 				signature,
 				size
 			FROM blocks
+			{where_condition}
+			{order_condition}
+			{limit_condition}
+		'''
+
+	def _generate_namespace_query(self, where_condition='', order_condition='', limit_condition=''):  # pylint: disable=no-self-use
+		"""Base namespace query."""
+
+		return f'''
+			SELECT
+				root_namespace,
+				owner,
+				registered_height,
+				b.timestamp AS registered_timestamp,
+				expiration_height ,
+				sub_namespaces
+			FROM namespaces n
+			left join blocks b
+				on n.registered_height = b.height
 			{where_condition}
 			{order_condition}
 			{limit_condition}
@@ -217,3 +256,37 @@ class NemDatabase(DatabaseConnectionPool):
 			results = cursor.fetchall()
 
 			return [self._create_account_view(result) for result in results]
+
+	def get_namespace_by_name(self, name):
+		"""Gets namespace by root namespace or sub namespace name."""
+
+		where_condition = 'WHERE n.root_namespace = %s or %s = ANY(n.sub_namespaces)'
+
+		sql = self._generate_namespace_query(where_condition)
+
+		with self.connection() as connection:
+			cursor = connection.cursor()
+			cursor.execute(sql, (name, name))
+			result = cursor.fetchone()
+
+			return self._create_namespace_view(result) if result else None
+
+	def get_namespaces(self, pagination, sort):
+		"""Gets namespaces pagination in database."""
+
+		order_condition = f' ORDER BY registered_height {sort}'
+		limit_condition = ' LIMIT %s OFFSET %s'
+
+		sql = self._generate_namespace_query(
+			order_condition=order_condition,
+			limit_condition=limit_condition
+		)
+
+		params = [pagination.limit, pagination.offset]
+
+		with self.connection() as connection:
+			cursor = connection.cursor()
+			cursor.execute(sql, params)
+			results = cursor.fetchall()
+
+			return [self._create_namespace_view(result) for result in results]
