@@ -184,6 +184,9 @@ const sourceMap = {
 	},
 	info: {
 		'sign': require('@/app/assets/images/icons/blue/sign.png')
+	},
+	neutral: {
+		'info-circle': require('@/app/assets/images/icons/grey/info-circle.png')
 	}
 };
 
@@ -201,7 +204,7 @@ const sourceMap = {
  */
 export const Icon = ({ name, size = 'm', variant = 'default', src, style: customStyle }) => {
 	const iconSize = sizeMap[size];
-	const iconSource = src ?? sourceMap[variant][name];
+	const iconSource = src ?? sourceMap[variant]?.[name];
 
 	if (!iconSource)
 		throw new Error(`Icon: Icon source not found for name "${name}" and color variant "${variant}".`);

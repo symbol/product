@@ -29,14 +29,17 @@ export const InputAmount = props => {
 	const [priceText, setPriceText] = useState('');
 
 	// Validation
-	const errorMessage = useValidation(value, [validateAmount(availableBalance), ...extraValidators], $t);
+	const amountValidator = availableBalance === undefined
+		? () => null
+		: validateAmount(availableBalance);
+	const errorMessage = useValidation(value, [amountValidator, ...extraValidators], $t);
 
 	useEffect(() => {
 		onValidityChange?.(!errorMessage);
 	}, [value, errorMessage]);
 
 	// Price text
-	useEffect(() => {
+	useEffect(() => {		
 		setPriceText(getUserCurrencyAmountText(value, price, networkIdentifier));
 	}, [value, price, networkIdentifier]);
 

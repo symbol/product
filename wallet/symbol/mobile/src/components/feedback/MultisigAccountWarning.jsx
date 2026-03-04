@@ -27,7 +27,7 @@ export const MultisigAccountWarning = ({ cosignatories, addressBook, accounts, c
 	return (
 		<Stack>
 			<Alert
-				type="warning"
+				variant="warning"
 				title={$t('warning_multisig_title')}
 				body={$t('warning_multisig_body')}
 			/>
