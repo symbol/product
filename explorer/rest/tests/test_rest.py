@@ -9,7 +9,7 @@ from symbollightapi.model.Exceptions import NodeException
 
 from rest import create_app
 
-from .test.DatabaseTestUtils import ACCOUNT_VIEWS, BLOCK_VIEWS, DatabaseConfig, initialize_database
+from .test.DatabaseTestUtils import ACCOUNT_VIEWS, BLOCK_VIEWS, NAMESPACE_VIEWS, DatabaseConfig, initialize_database
 
 DATABASE_CONFIG_INI = 'db_config.ini'
 
@@ -18,6 +18,7 @@ DATABASE_CONFIG_INI = 'db_config.ini'
 EXPECTED_BLOCK_VIEW_1 = BLOCK_VIEWS[0]
 
 EXPECTED_BLOCK_VIEW_2 = BLOCK_VIEWS[1]
+
 
 # endregion
 
@@ -393,5 +394,106 @@ def test_api_nem_health_node_fails(mock_chain_height, client):  # pylint: disabl
 		'lastDBHeight': EXPECTED_BLOCK_VIEW_2.height,
 		'errors': [{'type': 'synchronization', 'message': 'Connection refused'}]
 	} == response.json
+
+# endregion
+
+# region /namespace/<name>
+
+def _assert_get_nem_namespace_by_name(client, name, expected_status_code, expected_result):  # pylint: disable=redefined-outer-name
+	# Act:
+	response = client.get(f'/api/nem/namespace/{name}')
+
+	# Assert:
+	_assert_status_code_and_headers(response, expected_status_code)
+	assert expected_result == response.json
+
+
+def test_api_namespace_by_root_namespace(client):  # pylint: disable=redefined-outer-name
+	_assert_get_nem_namespace_by_name(client, 'root', 200, NAMESPACE_VIEWS[0].to_dict())
+
+
+def test_api_namespace_by_sub_namespace(client):  # pylint: disable=redefined-outer-name
+	_assert_get_nem_namespace_by_name(client, 'root_sub.sub_1', 200, NAMESPACE_VIEWS[1].to_dict())
+
+
+def test_api_namespace_by_name_not_found(client):  # pylint: disable=redefined-outer-name
+	_assert_get_nem_namespace_by_name(client, 'nonexistent', 404, {
+		'message': 'Resource not found',
+		'status': 404
+	})
+
+
+# endregion
+
+# region /namespaces
+
+def _get_api_nem_namespaces(client, **query_params):  # pylint: disable=redefined-outer-name
+	query_string = '&'.join(f'{key}={val}' for key, val in query_params.items())
+	return client.get(f'/api/nem/namespaces?{query_string}')
+
+
+def _assert_get_api_nem_namespaces(client, expected_status_code, expected_result, **query_params):  # pylint: disable=redefined-outer-name
+	# Act:
+	response = _get_api_nem_namespaces(client, **query_params)
+
+	# Assert:
+	_assert_status_code_and_headers(response, expected_status_code)
+	assert expected_result == response.json
+
+
+def _assert_get_api_nem_namespaces_fail(client, expected_message, **query_params):  # pylint: disable=redefined-outer-name
+	# Act:
+	response = _get_api_nem_namespaces(client, **query_params)
+
+	# Assert:
+	_assert_status_code_and_headers(response, 400)
+	assert {
+		'message': expected_message,
+		'status': 400
+	} == response.json
+
+
+def test_api_namespaces_without_params(client):  # pylint: disable=redefined-outer-name
+	_assert_get_api_nem_namespaces(client, 200, [NAMESPACE_VIEWS[1].to_dict(), NAMESPACE_VIEWS[0].to_dict()])
+
+
+def test_api_namespaces_applies_limit(client):  # pylint: disable=redefined-outer-name
+	_assert_get_api_nem_namespaces(client, 200, [NAMESPACE_VIEWS[1].to_dict()], limit=1)
+
+
+def test_api_namespaces_applies_offset(client):  # pylint: disable=redefined-outer-name
+	_assert_get_api_nem_namespaces(client, 200, [NAMESPACE_VIEWS[0].to_dict()], offset=1)
+
+
+def test_api_namespaces_applies_sorted_by_registered_height_asc(client):  # pylint: disable=redefined-outer-name, invalid-name
+	_assert_get_api_nem_namespaces(client, 200, [NAMESPACE_VIEWS[0].to_dict(), NAMESPACE_VIEWS[1].to_dict()], sort='ASC')
+
+
+def test_api_namespaces_applies_sorted_by_registered_height_desc(client):  # pylint: disable=redefined-outer-name, invalid-name
+	_assert_get_api_nem_namespaces(client, 200, [NAMESPACE_VIEWS[1].to_dict(), NAMESPACE_VIEWS[0].to_dict()], sort='DESC')
+
+
+def test_api_namespaces_with_all_params(client):  # pylint: disable=redefined-outer-name
+	_assert_get_api_nem_namespaces(
+		client,
+		200,
+		[NAMESPACE_VIEWS[0].to_dict()],
+		limit=1,
+		offset=1,
+		sort='DESC'
+	)
+
+
+def test_api_namespaces_invalid_sort(client):  # pylint: disable=redefined-outer-name, invalid-name
+	_assert_get_api_nem_namespaces_fail(client, 'Sort must be either ASC or DESC', sort='INVALID')
+
+
+def test_api_namespaces_invalid_limit(client):  # pylint: disable=redefined-outer-name
+	_assert_get_api_nem_namespaces_fail(client, 'Limit and offset must be greater than or equal to 0', limit=-1)
+
+
+def test_api_namespaces_invalid_offset(client):  # pylint: disable=redefined-outer-name
+	_assert_get_api_nem_namespaces_fail(client, 'Limit and offset must be greater than or equal to 0', offset=-1)
+
 
 # endregion
