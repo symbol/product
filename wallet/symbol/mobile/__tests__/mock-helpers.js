@@ -70,7 +70,6 @@ export const createWalletControllerMock = (overrides = {}) => {
 	return walletControllerMock;
 };
 
-
 /**
  * Mocks the useWalletController hook to simulate wallet controller behavior.
  *

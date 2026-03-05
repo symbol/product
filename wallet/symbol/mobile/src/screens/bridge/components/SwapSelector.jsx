@@ -108,20 +108,21 @@ const SelectTokenDropdown = props => {
  * @param {Object} props - Component props.
  * @param {SwapSide|null} props.value - Selected swap side.
  * @param {SwapSide[]} props.list - Available options.
+ * @param {string} props.accessibilityLabel - Accessibility label for the touchable element.
  * @param {(item: SwapSide) => void} props.onChange - Selection change handler.
  * @returns {import('react').ReactNode} TokenSelect component
  */
-const TokenSelect = ({ value, list, onChange }) => {
+const TokenSelect = ({ value, list, accessibilityLabel, onChange }) => {
 	// Dropdown visibility state
 	const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 	const openDropdown = () => setIsDropdownOpen(true);
 	const closeDropdown = () => setIsDropdownOpen(false);
 
 	if (!value)
-		return <ListItemContainer cardStyle={{ opacity: 0.3 }} />;
+		return <ListItemContainer cardStyle={{ opacity: 0.3 }} accessibilityLabel={accessibilityLabel} />;
 
 	return (
-		<ListItemContainer onPress={openDropdown}>
+		<ListItemContainer onPress={openDropdown} accessibilityLabel={accessibilityLabel}>
 			<TokenItem
 				token={value.token}
 				chainName={value.chainName}
@@ -196,6 +197,7 @@ export const SwapSelector = ({
 				<TokenSelect
 					value={source}
 					list={sourceList}
+					accessibilityLabel="Select source token"
 					onChange={onSourceChange}
 				/>
 			</Animated.View>
@@ -208,6 +210,7 @@ export const SwapSelector = ({
 				<TokenSelect
 					value={target}
 					list={targetList}
+					accessibilityLabel="Select target token"
 					onChange={onTargetChange}
 				/>
 			</Animated.View>
