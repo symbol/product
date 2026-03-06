@@ -37,6 +37,7 @@ export const createWalletControllerMock = (overrides = {}) => {
 		isNetworkConnectionReady: true,
 		isStateReady: true,
 		isWalletReady: true,
+		modules: {},
 
 		loadCache: jest.fn(),
 		selectAccount: jest.fn(),

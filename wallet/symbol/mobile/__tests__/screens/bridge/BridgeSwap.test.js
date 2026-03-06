@@ -51,7 +51,6 @@ const CHAIN_NAME_SYMBOL = 'symbol';
 const CHAIN_NAME_ETHEREUM = 'ethereum';
 const NETWORK_IDENTIFIER = 'testnet';
 const BRIDGE_ID_XYM_TO_WXYM = 'symbol-xym-ethereum-wxym';
-const TEST_AMOUNT = '100';
 const PAYOUT_AMOUNT = '99';
 const HISTORY_ITEM_TRANSACTION_HASH = '0C905EB065E6A42029CD1A10E710422761495A63D433535BA6EAA9BCF36AB8B6';
 
@@ -412,7 +411,7 @@ describe('screens/bridge/BridgeSwap', () => {
 					changeTarget: changeTargetMock
 				},
 				useBridgeAmount: {
-					amount: TEST_AMOUNT,
+					amount: '100',
 					isAmountValid: true,
 					availableBalance: '1000'
 				},
