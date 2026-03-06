@@ -62,23 +62,44 @@ class NemRestFacade:
 			sort='DESC'
 		)[0]
 
-		last_synced_at = latest_block.timestamp
-		last_block_height = latest_block.height
-		is_healthy = True
+		last_db_synced_at = latest_block.timestamp
+		last_db_height = latest_block.height
+		max_lag_blocks = 2  # Allow up to 2 blocks of lag between node height and database height
+
+		# Check node connectivity and height
+		try:
+			node_height = await self.nem_connector.chain_height()
+		except NodeException as error:
+			return {
+				'isHealthy': False,
+				'nodeUp': False,
+				'nodeHeight': None,
+				'backendSynced': False,
+				'lastDBSyncedAt': last_db_synced_at,
+				'lastDBHeight': last_db_height,
+				'errors': [{
+					'type': 'synchronization',
+					'message': str(error)
+				}]
+			}
+
+		# Check synchronization lag
+		sync_lag_blocks = max(0, node_height - last_db_height)
+		backend_synced = sync_lag_blocks <= max_lag_blocks
 		errors = []
 
-		try:
-			await self.nem_connector.node_info()
-		except NodeException as error:
-			is_healthy = False
+		if not backend_synced:
 			errors.append({
 				'type': 'synchronization',
-				'message': str(error)
+				'message': f'Database is {sync_lag_blocks} blocks behind node height'
 			})
 
 		return {
-			'isHealthy': is_healthy,
-			'lastSyncedAt': last_synced_at,
-			'lastBlockHeight': last_block_height,
+			'isHealthy': backend_synced,
+			'nodeUp': True,
+			'nodeHeight': node_height,
+			'backendSynced': backend_synced,
+			'lastDBSyncedAt': last_db_synced_at,
+			'lastDBHeight': last_db_height,
 			'errors': errors
 		}

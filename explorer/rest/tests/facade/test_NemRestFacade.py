@@ -1,5 +1,5 @@
 import asyncio
-from unittest.mock import AsyncMock, patch
+from unittest.mock import patch
 
 from symbollightapi.model.Exceptions import NodeException
 
@@ -21,7 +21,7 @@ EXPECTED_ACCOUNT_2 = ACCOUNT_VIEWS[1].to_dict()
 # endregion
 
 
-class TestNemRestFacade(DatabaseTestBase):
+class TestNemRestFacade(DatabaseTestBase):  # pylint: disable=too-many-public-methods
 
 	def setUp(self):
 		super().setUp()
@@ -154,32 +154,55 @@ class TestNemRestFacade(DatabaseTestBase):
 
 	# region health
 
-	@patch('rest.facade.NemRestFacade.NemConnector.node_info')
-	def test_can_retrieve_health(self, mock_node_info):
+	@patch('rest.facade.NemRestFacade.NemConnector.chain_height')
+	def test_can_retrieve_health(self, mock_chain_height):
 		# Arrange:
-		mock_node_info.return_value = AsyncMock()
+		mock_chain_height.return_value = 2
 
 		# Act:
 		result = asyncio.run(self.nem_rest_facade.get_health())
 
 		# Assert:
 		self.assertTrue(result['isHealthy'])
-		self.assertEqual(EXPECTED_BLOCK_2['timestamp'], result['lastSyncedAt'])
-		self.assertEqual(EXPECTED_BLOCK_2['height'], result['lastBlockHeight'])
+		self.assertTrue(result['nodeUp'])
+		self.assertEqual(2, result['nodeHeight'])
+		self.assertTrue(result['backendSynced'])
+		self.assertEqual(EXPECTED_BLOCK_2['timestamp'], result['lastDBSyncedAt'])
+		self.assertEqual(EXPECTED_BLOCK_2['height'], result['lastDBHeight'])
 		self.assertEqual([], result['errors'])
 
-	@patch('rest.facade.NemRestFacade.NemConnector.node_info')
-	def test_can_retrieve_health_with_node_exception(self, mock_node_info):
+	@patch('rest.facade.NemRestFacade.NemConnector.chain_height')
+	def test_can_retrieve_health_with_node_sync_lag(self, mock_chain_height):
 		# Arrange:
-		mock_node_info.side_effect = NodeException('Connection refused')
+		mock_chain_height.return_value = 5
 
 		# Act:
 		result = asyncio.run(self.nem_rest_facade.get_health())
 
 		# Assert:
 		self.assertFalse(result['isHealthy'])
-		self.assertEqual(EXPECTED_BLOCK_2['timestamp'], result['lastSyncedAt'])
-		self.assertEqual(EXPECTED_BLOCK_2['height'], result['lastBlockHeight'])
+		self.assertTrue(result['nodeUp'])
+		self.assertEqual(5, result['nodeHeight'])
+		self.assertFalse(result['backendSynced'])
+		self.assertEqual(EXPECTED_BLOCK_2['timestamp'], result['lastDBSyncedAt'])
+		self.assertEqual(EXPECTED_BLOCK_2['height'], result['lastDBHeight'])
+		self.assertEqual([{'type': 'synchronization', 'message': 'Database is 3 blocks behind node height'}], result['errors'])
+
+	@patch('rest.facade.NemRestFacade.NemConnector.chain_height')
+	def test_can_retrieve_health_with_node_exception(self, mock_chain_height):
+		# Arrange:
+		mock_chain_height.side_effect = NodeException('Connection refused')
+
+		# Act:
+		result = asyncio.run(self.nem_rest_facade.get_health())
+
+		# Assert:
+		self.assertFalse(result['isHealthy'])
+		self.assertFalse(result['nodeUp'])
+		self.assertIsNone(result['nodeHeight'])
+		self.assertFalse(result['backendSynced'])
+		self.assertEqual(EXPECTED_BLOCK_2['timestamp'], result['lastDBSyncedAt'])
+		self.assertEqual(EXPECTED_BLOCK_2['height'], result['lastDBHeight'])
 		self.assertEqual([{'type': 'synchronization', 'message': 'Connection refused'}], result['errors'])
 
 	# endregion
