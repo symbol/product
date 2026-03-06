@@ -12,23 +12,23 @@ import { ControllerEventName } from 'wallet-common-core/src/constants';
 
 // Mocks
 
-const MOCK_LOAD_WALLET_CONTROLLER = jest.fn().mockResolvedValue(undefined);
+const mockLoadWalletController = jest.fn().mockResolvedValue(undefined);
 
 jest.mock('@/app/screens/bridge/utils', () => ({
-	loadWalletController: (...args) => MOCK_LOAD_WALLET_CONTROLLER(...args)
+	loadWalletController: (...args) => mockLoadWalletController(...args)
 }));
 
 const mockBridges = [];
-const MOCK_MAIN_WALLET_CONTROLLER = { networkIdentifier: 'testnet' };
-const MOCK_ETHEREUM_WALLET_CONTROLLER = { networkIdentifier: 'testnet' };
+const mockMainWalletController = { networkIdentifier: 'testnet' };
+const mockEthereumWalletController = { networkIdentifier: 'testnet' };
 
 jest.mock('@/app/lib/controller', () => ({
-	default: MOCK_MAIN_WALLET_CONTROLLER,
-	symbolWalletController: MOCK_MAIN_WALLET_CONTROLLER,
-	ethereumWalletController: MOCK_ETHEREUM_WALLET_CONTROLLER,
+	default: mockMainWalletController,
+	symbolWalletController: mockMainWalletController,
+	ethereumWalletController: mockEthereumWalletController,
 	walletControllers: {
-		main: MOCK_MAIN_WALLET_CONTROLLER,
-		additional: [MOCK_ETHEREUM_WALLET_CONTROLLER]
+		main: mockMainWalletController,
+		additional: [mockEthereumWalletController]
 	},
 	get bridges() {
 		return mockBridges;
@@ -77,40 +77,40 @@ const BridgeControllerState = {
 
 // Fixtures
 
-const NATIVE_ACCOUNT = AccountFixtureBuilder
+const nativeAccount = AccountFixtureBuilder
 	.createWithAccount(NATIVE_CHAIN_NAME, NETWORK_IDENTIFIER, 0)
 	.build();
 
-const WRAPPED_ACCOUNT = AccountFixtureBuilder
+const wrappedAccount = AccountFixtureBuilder
 	.createWithAccount(WRAPPED_CHAIN_NAME, NETWORK_IDENTIFIER, 0)
 	.build();
 
-const NATIVE_NETWORK_PROPERTIES = NetworkPropertiesFixtureBuilder
+const nativeNetworkProperties = NetworkPropertiesFixtureBuilder
 	.createWithType(NATIVE_CHAIN_NAME, NETWORK_IDENTIFIER)
 	.build();
 
-const WRAPPED_NETWORK_PROPERTIES = NetworkPropertiesFixtureBuilder
+const wrappedNetworkProperties = NetworkPropertiesFixtureBuilder
 	.createWithType(WRAPPED_CHAIN_NAME, NETWORK_IDENTIFIER)
 	.build();
 
-const NATIVE_TOKEN = TokenFixtureBuilder
+const nativeToken = TokenFixtureBuilder
 	.createWithToken(NATIVE_CHAIN_NAME, NETWORK_IDENTIFIER, 0)
 	.build();
 
-const WRAPPED_TOKEN = TokenFixtureBuilder
+const wrappedToken = TokenFixtureBuilder
 	.createWithToken(WRAPPED_CHAIN_NAME, NETWORK_IDENTIFIER, 1)
 	.build();
 
-const NATIVE_TOKEN_INFO = {
-	id: NATIVE_TOKEN.id,
-	name: NATIVE_TOKEN.name,
-	divisibility: NATIVE_TOKEN.divisibility
+const nativeTokenInfo = {
+	id: nativeToken.id,
+	name: nativeToken.name,
+	divisibility: nativeToken.divisibility
 };
 
-const WRAPPED_TOKEN_INFO = {
-	id: WRAPPED_TOKEN.id,
-	name: WRAPPED_TOKEN.name,
-	divisibility: WRAPPED_TOKEN.divisibility
+const wrappedTokenInfo = {
+	id: wrappedToken.id,
+	name: wrappedToken.name,
+	divisibility: wrappedToken.divisibility
 };
 
 const createAccountInfoWithTokens = (chainName, account, tokens) => {
@@ -129,42 +129,42 @@ const createAccountInfoWithMosaics = (chainName, account, mosaics) => {
 		.build();
 };
 
-const NATIVE_ACCOUNT_INFO_WITH_TOKEN = createAccountInfoWithTokens(
+const nativeAccountInfoWithToken = createAccountInfoWithTokens(
 	NATIVE_CHAIN_NAME,
-	NATIVE_ACCOUNT,
-	[{ id: NATIVE_TOKEN_INFO.id, amount: BalanceValue.NATIVE }]
+	nativeAccount,
+	[{ id: nativeTokenInfo.id, amount: BalanceValue.NATIVE }]
 );
 
-const WRAPPED_ACCOUNT_INFO_WITH_TOKEN = createAccountInfoWithTokens(
+const wrappedAccountInfoWithToken = createAccountInfoWithTokens(
 	WRAPPED_CHAIN_NAME,
-	WRAPPED_ACCOUNT,
-	[{ id: WRAPPED_TOKEN_INFO.id, amount: BalanceValue.WRAPPED }]
+	wrappedAccount,
+	[{ id: wrappedTokenInfo.id, amount: BalanceValue.WRAPPED }]
 );
 
-const NATIVE_ACCOUNT_INFO_WITH_MOSAIC = createAccountInfoWithMosaics(
+const nativeAccountInfoWithMosaic = createAccountInfoWithMosaics(
 	NATIVE_CHAIN_NAME,
-	NATIVE_ACCOUNT,
-	[{ id: NATIVE_TOKEN_INFO.id, amount: BalanceValue.NATIVE }]
+	nativeAccount,
+	[{ id: nativeTokenInfo.id, amount: BalanceValue.NATIVE }]
 );
 
-const WRAPPED_ACCOUNT_INFO_WITH_MOSAIC = createAccountInfoWithMosaics(
+const wrappedAccountInfoWithMosaic = createAccountInfoWithMosaics(
 	WRAPPED_CHAIN_NAME,
-	WRAPPED_ACCOUNT,
-	[{ id: WRAPPED_TOKEN_INFO.id, amount: BalanceValue.WRAPPED }]
+	wrappedAccount,
+	[{ id: wrappedTokenInfo.id, amount: BalanceValue.WRAPPED }]
 );
 
-const NATIVE_BASE_CONTROLLER = {
+const nativeBaseController = {
 	chainName: NATIVE_CHAIN_NAME,
 	networkIdentifier: NETWORK_IDENTIFIER,
-	networkProperties: NATIVE_NETWORK_PROPERTIES,
-	currentAccount: NATIVE_ACCOUNT
+	networkProperties: nativeNetworkProperties,
+	currentAccount: nativeAccount
 };
 
-const WRAPPED_BASE_CONTROLLER = {
+const wrappedBaseController = {
 	chainName: WRAPPED_CHAIN_NAME,
 	networkIdentifier: NETWORK_IDENTIFIER,
-	networkProperties: WRAPPED_NETWORK_PROPERTIES,
-	currentAccount: WRAPPED_ACCOUNT
+	networkProperties: wrappedNetworkProperties,
+	currentAccount: wrappedAccount
 };
 
 const BridgeScenario = {
@@ -195,14 +195,14 @@ const BridgeScenario = {
 	WITH_TOKEN_BALANCES: {
 		nativeState: BridgeControllerState.READY,
 		wrappedState: BridgeControllerState.READY,
-		nativeAccountInfo: NATIVE_ACCOUNT_INFO_WITH_TOKEN,
-		wrappedAccountInfo: WRAPPED_ACCOUNT_INFO_WITH_TOKEN
+		nativeAccountInfo: nativeAccountInfoWithToken,
+		wrappedAccountInfo: wrappedAccountInfoWithToken
 	},
 	WITH_MOSAIC_BALANCES: {
 		nativeState: BridgeControllerState.READY,
 		wrappedState: BridgeControllerState.READY,
-		nativeAccountInfo: NATIVE_ACCOUNT_INFO_WITH_MOSAIC,
-		wrappedAccountInfo: WRAPPED_ACCOUNT_INFO_WITH_MOSAIC
+		nativeAccountInfo: nativeAccountInfoWithMosaic,
+		wrappedAccountInfo: wrappedAccountInfoWithMosaic
 	}
 };
 
@@ -242,13 +242,13 @@ const createBridgeWalletController = (baseController, state, currentAccountInfo 
 const createBridgeManagerMock = (scenario = BridgeScenario.FULLY_READY, overrides = {}) => {
 	const nativeWalletController = overrides.nativeWalletController
 		?? createBridgeWalletController(
-			NATIVE_BASE_CONTROLLER,
+			nativeBaseController,
 			scenario.nativeState,
 			scenario.nativeAccountInfo
 		);
 	const wrappedWalletController = overrides.wrappedWalletController
 		?? createBridgeWalletController(
-			WRAPPED_BASE_CONTROLLER,
+			wrappedBaseController,
 			scenario.wrappedState,
 			scenario.wrappedAccountInfo
 		);
@@ -257,8 +257,8 @@ const createBridgeManagerMock = (scenario = BridgeScenario.FULLY_READY, override
 		id: BRIDGE_ID,
 		nativeWalletController,
 		wrappedWalletController,
-		nativeTokenInfo: NATIVE_TOKEN_INFO,
-		wrappedTokenInfo: WRAPPED_TOKEN_INFO,
+		nativeTokenInfo,
+		wrappedTokenInfo,
 		load: overrides.load ?? jest.fn().mockResolvedValue(),
 		isEnabled: true,
 		isReady: true,
@@ -394,9 +394,9 @@ describe('hooks/useBridge', () => {
 			// Assert:
 			await hookTester.waitFor(() => {
 				const wrapPair = hookTester.currentResult.pairs.find(item => item.mode === BridgeMode.WRAP);
-				expect(wrapPair.source.token.id).toBe(NATIVE_TOKEN_INFO.id);
+				expect(wrapPair.source.token.id).toBe(nativeTokenInfo.id);
 				expect(wrapPair.source.token.amount).toBe(BalanceValue.NATIVE);
-				expect(wrapPair.target.token.id).toBe(WRAPPED_TOKEN_INFO.id);
+				expect(wrapPair.target.token.id).toBe(wrappedTokenInfo.id);
 				expect(wrapPair.target.token.amount).toBe(BalanceValue.WRAPPED);
 			});
 		});
@@ -488,10 +488,10 @@ describe('hooks/useBridge', () => {
 
 			// Assert:
 			await hookTester.waitFor(() => {
-				expect(MOCK_LOAD_WALLET_CONTROLLER).toHaveBeenCalledTimes(2);
+				expect(mockLoadWalletController).toHaveBeenCalledTimes(2);
 			});
-			expect(MOCK_LOAD_WALLET_CONTROLLER).toHaveBeenCalledWith(bridge.nativeWalletController);
-			expect(MOCK_LOAD_WALLET_CONTROLLER).toHaveBeenCalledWith(bridge.wrappedWalletController);
+			expect(mockLoadWalletController).toHaveBeenCalledWith(bridge.nativeWalletController);
+			expect(mockLoadWalletController).toHaveBeenCalledWith(bridge.wrappedWalletController);
 		});
 
 		it('does not load already-ready wallet controllers', async () => {
@@ -505,7 +505,7 @@ describe('hooks/useBridge', () => {
 			});
 
 			// Assert:
-			expect(MOCK_LOAD_WALLET_CONTROLLER).not.toHaveBeenCalled();
+			expect(mockLoadWalletController).not.toHaveBeenCalled();
 		});
 
 		it('loads only fully-ready bridges', async () => {
@@ -527,7 +527,7 @@ describe('hooks/useBridge', () => {
 		it('can manually reload wallet controllers', async () => {
 			// Arrange:
 			const notReadyNativeController = createBridgeWalletController(
-				NATIVE_BASE_CONTROLLER,
+				nativeBaseController,
 				BridgeControllerState.NOT_READY
 			);
 			const bridge = createBridgeManagerMock(BridgeScenario.FULLY_READY, {
@@ -538,17 +538,17 @@ describe('hooks/useBridge', () => {
 			// Act:
 			const hookTester = await createUseBridgeHookTester();
 			await hookTester.waitFor(() => {
-				expect(MOCK_LOAD_WALLET_CONTROLLER).toHaveBeenCalledWith(notReadyNativeController);
+				expect(mockLoadWalletController).toHaveBeenCalledWith(notReadyNativeController);
 			});
 
-			MOCK_LOAD_WALLET_CONTROLLER.mockClear();
+			mockLoadWalletController.mockClear();
 			await act(async () => {
 				await hookTester.currentResult.loadWalletControllers();
 			});
 
 			// Assert:
-			expect(MOCK_LOAD_WALLET_CONTROLLER).toHaveBeenCalledTimes(1);
-			expect(MOCK_LOAD_WALLET_CONTROLLER).toHaveBeenCalledWith(notReadyNativeController);
+			expect(mockLoadWalletController).toHaveBeenCalledTimes(1);
+			expect(mockLoadWalletController).toHaveBeenCalledWith(notReadyNativeController);
 		});
 
 		it('can manually reload ready bridges', async () => {

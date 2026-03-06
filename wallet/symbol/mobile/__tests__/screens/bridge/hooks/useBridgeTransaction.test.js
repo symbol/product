@@ -16,75 +16,75 @@ const AMOUNT = '25';
 
 // Fixtures
 
-const SOURCE_ACCOUNT = AccountFixtureBuilder
+const sourceAccount = AccountFixtureBuilder
 	.createWithAccount(CHAIN_NAME, NETWORK_IDENTIFIER, 0)
 	.build();
 
-const TARGET_ACCOUNT = AccountFixtureBuilder
+const targetAccount = AccountFixtureBuilder
 	.createWithAccount('ethereum', NETWORK_IDENTIFIER, 0)
 	.build();
 
-const SOURCE_TOKEN = TokenFixtureBuilder
+const sourceToken = TokenFixtureBuilder
 	.createWithToken(CHAIN_NAME, NETWORK_IDENTIFIER, 0)
 	.setAmount('200')
 	.build();
 
-const TRANSFER_TOKEN = TokenFixtureBuilder
+const transferToken = TokenFixtureBuilder
 	.createWithToken(CHAIN_NAME, NETWORK_IDENTIFIER, 0)
 	.setAmount(AMOUNT)
 	.build();
 
-const TRANSACTION_FEE_TOKEN = TokenFixtureBuilder
+const transactionFeeToken = TokenFixtureBuilder
 	.createWithToken(CHAIN_NAME, NETWORK_IDENTIFIER, 0)
 	.setAmount('0.1')
 	.build();
 
-const BRIDGE_TRANSACTION = TransactionFixtureBuilder
+const bridgeTransaction = TransactionFixtureBuilder
 	.createDefault(CHAIN_NAME, NETWORK_IDENTIFIER)
 	.override({
-		message: { text: TARGET_ACCOUNT.address },
-		mosaics: [TRANSFER_TOKEN],
+		message: { text: targetAccount.address },
+		mosaics: [transferToken],
 		fee: {
-			token: TRANSACTION_FEE_TOKEN
+			token: transactionFeeToken
 		}
 	})
 	.build();
 
-const BRIDGE_MODULE = {
-	createTransaction: jest.fn().mockResolvedValue(BRIDGE_TRANSACTION)
+const bridgeModule = {
+	createTransaction: jest.fn().mockResolvedValue(bridgeTransaction)
 };
 
-const SOURCE_WALLET_CONTROLLER = createWalletControllerMock({
-	currentAccount: SOURCE_ACCOUNT,
+const sourceWalletController = createWalletControllerMock({
+	currentAccount: sourceAccount,
 	modules: {
-		bridge: BRIDGE_MODULE
+		bridge: bridgeModule
 	}
 });
 
-const TARGET_WALLET_CONTROLLER = createWalletControllerMock({
-	currentAccount: TARGET_ACCOUNT
+const targetWalletController = createWalletControllerMock({
+	currentAccount: targetAccount
 });
 
-const SOURCE_SIDE = {
+const sourceSide = {
 	chainName: CHAIN_NAME,
 	networkIdentifier: NETWORK_IDENTIFIER,
-	token: SOURCE_TOKEN,
-	walletController: SOURCE_WALLET_CONTROLLER
+	token: sourceToken,
+	walletController: sourceWalletController
 };
 
-const TARGET_SIDE = {
+const targetSide = {
 	chainName: 'ethereum',
 	networkIdentifier: NETWORK_IDENTIFIER,
-	token: SOURCE_TOKEN,
-	walletController: TARGET_WALLET_CONTROLLER
+	token: sourceToken,
+	walletController: targetWalletController
 };
 
 // Hook Helpers
 
 const createHookParams = overrides => ({
 	bridgeId: BRIDGE_ID,
-	source: SOURCE_SIDE,
-	target: TARGET_SIDE,
+	source: sourceSide,
+	target: targetSide,
 	amount: AMOUNT,
 	...overrides
 });
@@ -108,7 +108,7 @@ describe('hooks/useBridgeTransaction', () => {
 			const params = createHookParams();
 			const expectedTransactionData = {
 				bridgeId: BRIDGE_ID,
-				recipientAddress: TARGET_ACCOUNT.address,
+				recipientAddress: targetAccount.address,
 				amount: AMOUNT
 			};
 			let createdTransaction;
@@ -122,13 +122,13 @@ describe('hooks/useBridgeTransaction', () => {
 			});
 
 			// Assert:
-			expect(BRIDGE_MODULE.createTransaction).toHaveBeenCalledWith(expectedTransactionData);
-			expect(createdTransaction).toStrictEqual(BRIDGE_TRANSACTION);
+			expect(bridgeModule.createTransaction).toHaveBeenCalledWith(expectedTransactionData);
+			expect(createdTransaction).toStrictEqual(bridgeTransaction);
 			expect(previewTable).toStrictEqual([
-				{ type: 'account', value: BRIDGE_TRANSACTION.signerAddress, title: 'signerAddress' },
-				{ type: 'account', value: BRIDGE_TRANSACTION.message.text, title: 'recipientAddress' },
-				{ type: 'token', value: BRIDGE_TRANSACTION.mosaics, title: 'mosaics' },
-				{ type: 'fee', value: BRIDGE_TRANSACTION.fee, title: 'fee' }
+				{ type: 'account', value: bridgeTransaction.signerAddress, title: 'signerAddress' },
+				{ type: 'account', value: bridgeTransaction.message.text, title: 'recipientAddress' },
+				{ type: 'token', value: bridgeTransaction.mosaics, title: 'mosaics' },
+				{ type: 'fee', value: bridgeTransaction.fee, title: 'fee' }
 			]);
 		});
 	});
