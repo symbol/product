@@ -11,10 +11,10 @@ import { ControllerEventName } from 'wallet-common-core/src/constants';
 
 // Mocks
 
-let MOCK_ADDITIONAL_CONTROLLERS = [];
+let mockAdditionalControllers = [];
 
 jest.mock('@/app/hooks', () => ({
-	useReactiveWalletControllers: () => MOCK_ADDITIONAL_CONTROLLERS
+	useReactiveWalletControllers: () => mockAdditionalControllers
 }));
 
 jest.mock('@/app/lib/controller', () => ({
@@ -56,23 +56,23 @@ const EXPECTED_EVENT_SUBSCRIPTIONS_PER_CONTROLLER = 3;
 
 // Fixtures
 
-const SYMBOL_ACCOUNT = AccountFixtureBuilder
+const symbolAccount = AccountFixtureBuilder
 	.createWithAccount(ChainName.SYMBOL, NetworkIdentifier.TESTNET, 0)
 	.build();
 
-const ETHEREUM_ACCOUNT = AccountFixtureBuilder
+const ethereumAccount = AccountFixtureBuilder
 	.createWithAccount(ChainName.ETHEREUM, NetworkIdentifier.TESTNET, 0)
 	.build();
 
-const NETWORK_PROPERTIES_SYMBOL_TESTNET = NetworkPropertiesFixtureBuilder
+const networkPropertiesSymbolTestnet = NetworkPropertiesFixtureBuilder
 	.createWithType(ChainName.SYMBOL, NetworkIdentifier.TESTNET)
 	.build();
 
-const NETWORK_PROPERTIES_ETHEREUM_TESTNET = NetworkPropertiesFixtureBuilder
+const networkPropertiesEthereumTestnet = NetworkPropertiesFixtureBuilder
 	.createWithType(ChainName.ETHEREUM, NetworkIdentifier.TESTNET)
 	.build();
 
-const TOKEN_SYMBOL = TokenFixtureBuilder
+const tokenSymbol = TokenFixtureBuilder
 	.createEmpty()
 	.setId('token-symbol-1')
 	.setName('Token Symbol 1')
@@ -80,7 +80,7 @@ const TOKEN_SYMBOL = TokenFixtureBuilder
 	.setAmount('1000')
 	.build();
 
-const TOKEN_ETHEREUM = TokenFixtureBuilder
+const tokenEthereum = TokenFixtureBuilder
 	.createEmpty()
 	.setId('token-ethereum-1')
 	.setName('Token Ethereum 1')
@@ -88,7 +88,7 @@ const TOKEN_ETHEREUM = TokenFixtureBuilder
 	.setAmount('2000')
 	.build();
 
-const TOKENS_MIXED = [TOKEN_SYMBOL, TOKEN_ETHEREUM];
+const tokensMixed = [tokenSymbol, tokenEthereum];
 
 const createAccountInfoFixture = ({ chainName, account, balance, tokens = [], hasFetchedAt = true }) => {
 	const builder = AccountInfoFixtureBuilder
@@ -103,29 +103,29 @@ const createAccountInfoFixture = ({ chainName, account, balance, tokens = [], ha
 	return builder.build();
 };
 
-const SYMBOL_ACCOUNT_INFO_LOADED = createAccountInfoFixture({
+const symbolAccountInfoLoaded = createAccountInfoFixture({
 	chainName: ChainName.SYMBOL,
-	account: SYMBOL_ACCOUNT,
+	account: symbolAccount,
 	balance: BalanceValue.SYMBOL
 });
 
-const SYMBOL_ACCOUNT_INFO_NOT_LOADED = createAccountInfoFixture({
+const symbolAccountInfoNotLoaded = createAccountInfoFixture({
 	chainName: ChainName.SYMBOL,
-	account: SYMBOL_ACCOUNT,
+	account: symbolAccount,
 	balance: BalanceValue.SYMBOL,
 	hasFetchedAt: false
 });
 
-const SYMBOL_ACCOUNT_INFO_WITH_TOKENS = createAccountInfoFixture({
+const symbolAccountInfoWithTokens = createAccountInfoFixture({
 	chainName: ChainName.SYMBOL,
-	account: SYMBOL_ACCOUNT,
+	account: symbolAccount,
 	balance: BalanceValue.SYMBOL,
-	tokens: TOKENS_MIXED
+	tokens: tokensMixed
 });
 
-const ETHEREUM_ACCOUNT_INFO_LOADED = createAccountInfoFixture({
+const ethereumAccountInfoLoaded = createAccountInfoFixture({
 	chainName: ChainName.ETHEREUM,
-	account: ETHEREUM_ACCOUNT,
+	account: ethereumAccount,
 	balance: BalanceValue.ETHEREUM
 });
 
@@ -149,25 +149,25 @@ const ControllerScenario = {
 		chainName: ChainName.SYMBOL,
 		ticker: Ticker.SYMBOL,
 		networkIdentifier: NetworkIdentifier.TESTNET,
-		networkProperties: NETWORK_PROPERTIES_SYMBOL_TESTNET,
-		currentAccount: SYMBOL_ACCOUNT,
-		currentAccountInfo: SYMBOL_ACCOUNT_INFO_LOADED,
+		networkProperties: networkPropertiesSymbolTestnet,
+		currentAccount: symbolAccount,
+		currentAccountInfo: symbolAccountInfoLoaded,
 		...ControllerState.READY
 	},
 	ETHEREUM_READY: {
 		chainName: ChainName.ETHEREUM,
 		ticker: Ticker.ETHEREUM,
 		networkIdentifier: NetworkIdentifier.TESTNET,
-		networkProperties: NETWORK_PROPERTIES_ETHEREUM_TESTNET,
-		currentAccount: ETHEREUM_ACCOUNT,
-		currentAccountInfo: ETHEREUM_ACCOUNT_INFO_LOADED,
+		networkProperties: networkPropertiesEthereumTestnet,
+		currentAccount: ethereumAccount,
+		currentAccountInfo: ethereumAccountInfoLoaded,
 		...ControllerState.READY
 	},
 	SYMBOL_READY_NO_ACCOUNT: {
 		chainName: ChainName.SYMBOL,
 		ticker: Ticker.SYMBOL,
 		networkIdentifier: NetworkIdentifier.TESTNET,
-		networkProperties: NETWORK_PROPERTIES_SYMBOL_TESTNET,
+		networkProperties: networkPropertiesSymbolTestnet,
 		currentAccount: null,
 		currentAccountInfo: null,
 		...ControllerState.READY
@@ -176,17 +176,17 @@ const ControllerScenario = {
 		chainName: ChainName.SYMBOL,
 		ticker: Ticker.SYMBOL,
 		networkIdentifier: NetworkIdentifier.TESTNET,
-		networkProperties: NETWORK_PROPERTIES_SYMBOL_TESTNET,
-		currentAccount: SYMBOL_ACCOUNT,
-		currentAccountInfo: SYMBOL_ACCOUNT_INFO_LOADED,
+		networkProperties: networkPropertiesSymbolTestnet,
+		currentAccount: symbolAccount,
+		currentAccountInfo: symbolAccountInfoLoaded,
 		...ControllerState.NOT_READY
 	},
 	SYMBOL_READY_NO_ACCOUNT_INFO: {
 		chainName: ChainName.SYMBOL,
 		ticker: Ticker.SYMBOL,
 		networkIdentifier: NetworkIdentifier.TESTNET,
-		networkProperties: NETWORK_PROPERTIES_SYMBOL_TESTNET,
-		currentAccount: SYMBOL_ACCOUNT,
+		networkProperties: networkPropertiesSymbolTestnet,
+		currentAccount: symbolAccount,
 		currentAccountInfo: null,
 		...ControllerState.READY
 	},
@@ -194,18 +194,18 @@ const ControllerScenario = {
 		chainName: ChainName.SYMBOL,
 		ticker: Ticker.SYMBOL,
 		networkIdentifier: NetworkIdentifier.TESTNET,
-		networkProperties: NETWORK_PROPERTIES_SYMBOL_TESTNET,
-		currentAccount: SYMBOL_ACCOUNT,
-		currentAccountInfo: SYMBOL_ACCOUNT_INFO_NOT_LOADED,
+		networkProperties: networkPropertiesSymbolTestnet,
+		currentAccount: symbolAccount,
+		currentAccountInfo: symbolAccountInfoNotLoaded,
 		...ControllerState.READY
 	},
 	SYMBOL_READY_WITH_TOKENS: {
 		chainName: ChainName.SYMBOL,
 		ticker: Ticker.SYMBOL,
 		networkIdentifier: NetworkIdentifier.TESTNET,
-		networkProperties: NETWORK_PROPERTIES_SYMBOL_TESTNET,
-		currentAccount: SYMBOL_ACCOUNT,
-		currentAccountInfo: SYMBOL_ACCOUNT_INFO_WITH_TOKENS,
+		networkProperties: networkPropertiesSymbolTestnet,
+		currentAccount: symbolAccount,
+		currentAccountInfo: symbolAccountInfoWithTokens,
 		...ControllerState.READY
 	}
 };
@@ -239,7 +239,7 @@ const createWalletController = (scenario, overrides = {}) => {
 };
 
 const setAdditionalControllers = controllers => {
-	MOCK_ADDITIONAL_CONTROLLERS = controllers;
+	mockAdditionalControllers = controllers;
 };
 
 describe('hooks/useBridgeAccounts', () => {
@@ -389,7 +389,7 @@ describe('hooks/useBridgeAccounts', () => {
 				{
 					description: 'maps account from currentAccount',
 					config: { scenario: ControllerScenario.SYMBOL_READY },
-					expected: { account: SYMBOL_ACCOUNT }
+					expected: { account: symbolAccount }
 				},
 				{
 					description: 'maps balance from currentAccountInfo',
@@ -404,7 +404,7 @@ describe('hooks/useBridgeAccounts', () => {
 				{
 					description: 'maps tokens from currentAccountInfo',
 					config: { scenario: ControllerScenario.SYMBOL_READY_WITH_TOKENS },
-					expected: { tokens: TOKENS_MIXED }
+					expected: { tokens: tokensMixed }
 				},
 				{
 					description: 'returns empty tokens array when currentAccountInfo is null',

@@ -14,73 +14,73 @@ const FEE_TIER_LEVEL_AVERAGE = 'average';
 
 // Fixtures
 
-const ACCOUNT = AccountFixtureBuilder
+const account = AccountFixtureBuilder
 	.createWithAccount(CHAIN_NAME, NETWORK_IDENTIFIER, 0)
 	.build();
 
-const NATIVE_TOKEN = TokenFixtureBuilder
+const nativeToken = TokenFixtureBuilder
 	.createWithToken(CHAIN_NAME, NETWORK_IDENTIFIER, 0)
 	.setAmount('100')
 	.build();
 
-const NON_NATIVE_TOKEN = TokenFixtureBuilder
+const nonNativeToken = TokenFixtureBuilder
 	.createWithToken(CHAIN_NAME, NETWORK_IDENTIFIER, 1)
 	.setAmount('150')
 	.build();
 
-const NETWORK_CURRENCY = {
-	id: NATIVE_TOKEN.id,
-	mosaicId: NATIVE_TOKEN.id,
-	divisibility: NATIVE_TOKEN.divisibility,
-	name: NATIVE_TOKEN.name
+const networkCurrency = {
+	id: nativeToken.id,
+	mosaicId: nativeToken.id,
+	divisibility: nativeToken.divisibility,
+	name: nativeToken.name
 };
 
-const NETWORK_PROPERTIES = NetworkPropertiesFixtureBuilder
+const networkProperties = NetworkPropertiesFixtureBuilder
 	.createWithType(CHAIN_NAME, NETWORK_IDENTIFIER)
-	.setNetworkCurrency(NETWORK_CURRENCY)
+	.setNetworkCurrency(networkCurrency)
 	.build();
 
-const WALLET_CONTROLLER_WITH_NETWORK = createWalletControllerMock({
+const walletControllerWithNetwork = createWalletControllerMock({
 	chainName: CHAIN_NAME,
 	networkIdentifier: NETWORK_IDENTIFIER,
-	networkProperties: NETWORK_PROPERTIES,
-	currentAccount: ACCOUNT
+	networkProperties,
+	currentAccount: account
 });
 
-const WALLET_CONTROLLER_WITHOUT_NETWORK_CURRENCY = createWalletControllerMock({
+const walletControllerWithoutNetworkCurrency = createWalletControllerMock({
 	chainName: CHAIN_NAME,
 	networkIdentifier: NETWORK_IDENTIFIER,
 	networkProperties: { networkCurrency: null },
-	currentAccount: ACCOUNT
+	currentAccount: account
 });
 
-const SOURCE_NATIVE = {
+const sourceNative = {
 	chainName: CHAIN_NAME,
 	networkIdentifier: NETWORK_IDENTIFIER,
-	token: NATIVE_TOKEN,
-	walletController: WALLET_CONTROLLER_WITH_NETWORK
+	token: nativeToken,
+	walletController: walletControllerWithNetwork
 };
 
-const SOURCE_NON_NATIVE = {
+const sourceNonNative = {
 	chainName: CHAIN_NAME,
 	networkIdentifier: NETWORK_IDENTIFIER,
-	token: NON_NATIVE_TOKEN,
-	walletController: WALLET_CONTROLLER_WITH_NETWORK
+	token: nonNativeToken,
+	walletController: walletControllerWithNetwork
 };
 
-const SOURCE_WITHOUT_NETWORK_CURRENCY = {
+const sourceWithoutNetworkCurrency = {
 	chainName: CHAIN_NAME,
 	networkIdentifier: NETWORK_IDENTIFIER,
-	token: NATIVE_TOKEN,
-	walletController: WALLET_CONTROLLER_WITHOUT_NETWORK_CURRENCY
+	token: nativeToken,
+	walletController: walletControllerWithoutNetworkCurrency
 };
 
-const TRANSACTION_FEES = [
+const transactionFees = [
 	{
 		[FEE_TIER_LEVEL_AVERAGE]: {
 			token: {
 				amount: '1',
-				divisibility: NATIVE_TOKEN.divisibility
+				divisibility: nativeToken.divisibility
 			}
 		}
 	}
@@ -89,8 +89,8 @@ const TRANSACTION_FEES = [
 // Hook Helpers
 
 const createHookParams = overrides => ({
-	source: SOURCE_NATIVE,
-	transactionFees: TRANSACTION_FEES,
+	source: sourceNative,
+	transactionFees,
 	transactionFeeTierLevel: FEE_TIER_LEVEL_AVERAGE,
 	...overrides
 });
@@ -134,7 +134,7 @@ describe('hooks/useBridgeAmount', () => {
 			{
 				description: 'initializes with native currency balance minus fee',
 				config: {
-					source: SOURCE_NATIVE
+					source: sourceNative
 				},
 				expected: {
 					amount: '0',
@@ -146,7 +146,7 @@ describe('hooks/useBridgeAmount', () => {
 			{
 				description: 'initializes with zero available balance when native currency is missing',
 				config: {
-					source: SOURCE_WITHOUT_NETWORK_CURRENCY
+					source: sourceWithoutNetworkCurrency
 				},
 				expected: {
 					amount: '0',
@@ -158,7 +158,7 @@ describe('hooks/useBridgeAmount', () => {
 			{
 				description: 'initializes non-native source with full available balance',
 				config: {
-					source: SOURCE_NON_NATIVE
+					source: sourceNonNative
 				},
 				expected: {
 					amount: '0',

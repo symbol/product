@@ -19,38 +19,38 @@ const BRIDGE_ID_XYM_TO_ETH = 'symbol-xym-ethereum-eth';
 
 // Account Fixtures
 
-const SYMBOL_ACCOUNT = AccountFixtureBuilder
+const symbolAccount = AccountFixtureBuilder
 	.createWithAccount(CHAIN_NAME_SYMBOL, NETWORK_IDENTIFIER, 0)
 	.build();
 
-const ETHEREUM_ACCOUNT = AccountFixtureBuilder
+const ethereumAccount = AccountFixtureBuilder
 	.createWithAccount(CHAIN_NAME_ETHEREUM, NETWORK_IDENTIFIER, 0)
 	.build();
 
 // Network Properties Fixtures
 
-const SYMBOL_NETWORK_PROPERTIES = NetworkPropertiesFixtureBuilder
+const symbolNetworkProperties = NetworkPropertiesFixtureBuilder
 	.createWithType(CHAIN_NAME_SYMBOL, NETWORK_IDENTIFIER)
 	.build();
 
-const ETHEREUM_NETWORK_PROPERTIES = NetworkPropertiesFixtureBuilder
+const ethereumNetworkProperties = NetworkPropertiesFixtureBuilder
 	.createWithType(CHAIN_NAME_ETHEREUM, NETWORK_IDENTIFIER)
 	.build();
 
 // Wallet Controller Fixtures
 
-const SYMBOL_WALLET_CONTROLLER = createWalletControllerMock({
+const symbolWalletController = createWalletControllerMock({
 	chainName: CHAIN_NAME_SYMBOL,
 	networkIdentifier: NETWORK_IDENTIFIER,
-	networkProperties: SYMBOL_NETWORK_PROPERTIES,
-	currentAccount: SYMBOL_ACCOUNT
+	networkProperties: symbolNetworkProperties,
+	currentAccount: symbolAccount
 });
 
-const ETHEREUM_WALLET_CONTROLLER = createWalletControllerMock({
+const ethereumWalletController = createWalletControllerMock({
 	chainName: CHAIN_NAME_ETHEREUM,
 	networkIdentifier: NETWORK_IDENTIFIER,
-	networkProperties: ETHEREUM_NETWORK_PROPERTIES,
-	currentAccount: ETHEREUM_ACCOUNT
+	networkProperties: ethereumNetworkProperties,
+	currentAccount: ethereumAccount
 });
 
 // Bridge Fixtures
@@ -61,108 +61,108 @@ const createBridgeMock = id => ({
 	createTransaction: jest.fn()
 });
 
-const BRIDGE_XYM_TO_WXYM = createBridgeMock(BRIDGE_ID_XYM_TO_WXYM);
-const BRIDGE_XYM_TO_ETH = createBridgeMock(BRIDGE_ID_XYM_TO_ETH);
+const bridgeXymToWxym = createBridgeMock(BRIDGE_ID_XYM_TO_WXYM);
+const bridgeXymToEth = createBridgeMock(BRIDGE_ID_XYM_TO_ETH);
 
 // Token Fixtures
 
-const SWAP_TOKEN_XYM = TokenFixtureBuilder
+const swapTokenXym = TokenFixtureBuilder
 	.createWithToken(CHAIN_NAME_SYMBOL, NETWORK_IDENTIFIER, 0)
 	.setAmount('1000000000')
 	.build();
 
-const SWAP_TOKEN_WXYM = TokenFixtureBuilder
+const swapTokenWxym = TokenFixtureBuilder
 	.createWithToken(CHAIN_NAME_ETHEREUM, NETWORK_IDENTIFIER, 1)
 	.setAmount('500000000')
 	.build();
 
-const SWAP_TOKEN_ETH = TokenFixtureBuilder
+const swapTokenEth = TokenFixtureBuilder
 	.createWithToken(CHAIN_NAME_ETHEREUM, NETWORK_IDENTIFIER, 0)
 	.setAmount('2000000000')
 	.build();
 
-const SWAP_TOKEN_XYM_UPDATED = TokenFixtureBuilder
+const swapTokenXymUpdated = TokenFixtureBuilder
 	.createWithToken(CHAIN_NAME_SYMBOL, NETWORK_IDENTIFIER, 0)
 	.setAmount('9999999')
 	.build();
 
 // Swap Side Fixtures
 
-const SWAP_SIDE_SYMBOL_XYM = {
-	token: SWAP_TOKEN_XYM,
+const swapSideSymbolXym = {
+	token: swapTokenXym,
 	chainName: CHAIN_NAME_SYMBOL,
 	networkIdentifier: NETWORK_IDENTIFIER,
-	walletController: SYMBOL_WALLET_CONTROLLER
+	walletController: symbolWalletController
 };
 
-const SWAP_SIDE_ETHEREUM_WXYM = {
-	token: SWAP_TOKEN_WXYM,
+const swapSideEthereumWxym = {
+	token: swapTokenWxym,
 	chainName: CHAIN_NAME_ETHEREUM,
 	networkIdentifier: NETWORK_IDENTIFIER,
-	walletController: ETHEREUM_WALLET_CONTROLLER
+	walletController: ethereumWalletController
 };
 
-const SWAP_SIDE_ETHEREUM_ETH = {
-	token: SWAP_TOKEN_ETH,
+const swapSideEthereumEth = {
+	token: swapTokenEth,
 	chainName: CHAIN_NAME_ETHEREUM,
 	networkIdentifier: NETWORK_IDENTIFIER,
-	walletController: ETHEREUM_WALLET_CONTROLLER
+	walletController: ethereumWalletController
 };
 
 // Swap Pair Fixtures
 
-const SWAP_PAIR_XYM_TO_WXYM = {
-	source: SWAP_SIDE_SYMBOL_XYM,
-	target: SWAP_SIDE_ETHEREUM_WXYM,
-	bridge: BRIDGE_XYM_TO_WXYM,
+const swapPairXymToWxym = {
+	source: swapSideSymbolXym,
+	target: swapSideEthereumWxym,
+	bridge: bridgeXymToWxym,
 	mode: BridgeMode.WRAP
 };
 
-const SWAP_PAIR_WXYM_TO_XYM = {
-	source: SWAP_SIDE_ETHEREUM_WXYM,
-	target: SWAP_SIDE_SYMBOL_XYM,
-	bridge: BRIDGE_XYM_TO_WXYM,
+const swapPairWxymToXym = {
+	source: swapSideEthereumWxym,
+	target: swapSideSymbolXym,
+	bridge: bridgeXymToWxym,
 	mode: BridgeMode.UNWRAP
 };
 
-const SWAP_PAIR_XYM_TO_ETH = {
-	source: SWAP_SIDE_SYMBOL_XYM,
-	target: SWAP_SIDE_ETHEREUM_ETH,
-	bridge: BRIDGE_XYM_TO_ETH,
+const swapPairXymToEth = {
+	source: swapSideSymbolXym,
+	target: swapSideEthereumEth,
+	bridge: bridgeXymToEth,
 	mode: BridgeMode.WRAP
 };
 
-const SWAP_PAIR_ETH_TO_XYM = {
-	source: SWAP_SIDE_ETHEREUM_ETH,
-	target: SWAP_SIDE_SYMBOL_XYM,
-	bridge: BRIDGE_XYM_TO_ETH,
+const swapPairEthToXym = {
+	source: swapSideEthereumEth,
+	target: swapSideSymbolXym,
+	bridge: bridgeXymToEth,
 	mode: BridgeMode.UNWRAP
 };
 
-const SWAP_PAIR_XYM_TO_WXYM_UPDATED = {
-	...SWAP_PAIR_XYM_TO_WXYM,
+const swapPairXymToWxymUpdated = {
+	...swapPairXymToWxym,
 	source: {
-		...SWAP_PAIR_XYM_TO_WXYM.source,
-		token: SWAP_TOKEN_XYM_UPDATED
+		...swapPairXymToWxym.source,
+		token: swapTokenXymUpdated
 	}
 };
 
 // Pair Collections
 
-const PAIRS_EMPTY = [];
-const PAIRS_SINGLE_WXYM = [SWAP_PAIR_XYM_TO_WXYM];
-const PAIRS_BIDIRECTIONAL_WXYM = [SWAP_PAIR_XYM_TO_WXYM, SWAP_PAIR_WXYM_TO_XYM];
-const PAIRS_ALL = [
-	SWAP_PAIR_XYM_TO_WXYM,
-	SWAP_PAIR_WXYM_TO_XYM,
-	SWAP_PAIR_XYM_TO_ETH,
-	SWAP_PAIR_ETH_TO_XYM
+const pairsEmpty = [];
+const pairsSingleWxym = [swapPairXymToWxym];
+const pairsBidirectionalWxym = [swapPairXymToWxym, swapPairWxymToXym];
+const pairsAll = [
+	swapPairXymToWxym,
+	swapPairWxymToXym,
+	swapPairXymToEth,
+	swapPairEthToXym
 ];
 
 // Hook Helpers
 
 const createHookParams = overrides => ({
-	pairs: PAIRS_BIDIRECTIONAL_WXYM,
+	pairs: pairsBidirectionalWxym,
 	defaultSourceChainName: CHAIN_NAME_SYMBOL,
 	...overrides
 });
@@ -208,7 +208,7 @@ describe('hooks/useSwapSelector', () => {
 			{
 				description: 'sets null state when pairs are empty',
 				config: {
-					pairs: PAIRS_EMPTY,
+					pairs: pairsEmpty,
 					defaultSourceChainName: CHAIN_NAME_SYMBOL
 				},
 				expected: {
@@ -222,13 +222,13 @@ describe('hooks/useSwapSelector', () => {
 			{
 				description: 'falls back to first pair when default source chain is not found',
 				config: {
-					pairs: PAIRS_SINGLE_WXYM,
+					pairs: pairsSingleWxym,
 					defaultSourceChainName: 'unknown-chain'
 				},
 				expected: {
-					source: SWAP_PAIR_XYM_TO_WXYM.source,
-					target: SWAP_PAIR_XYM_TO_WXYM.target,
-					bridge: BRIDGE_XYM_TO_WXYM,
+					source: swapPairXymToWxym.source,
+					target: swapPairXymToWxym.target,
+					bridge: bridgeXymToWxym,
 					mode: BridgeMode.WRAP,
 					isReady: true
 				}
@@ -260,25 +260,25 @@ describe('hooks/useSwapSelector', () => {
 		const defaultSelectionTests = [
 			{
 				description: 'selects wrap direction for symbol as default source',
-				config: { pairs: PAIRS_BIDIRECTIONAL_WXYM, defaultSourceChainName: CHAIN_NAME_SYMBOL },
+				config: { pairs: pairsBidirectionalWxym, defaultSourceChainName: CHAIN_NAME_SYMBOL },
 				expected: {
 					sourceChainName: CHAIN_NAME_SYMBOL,
-					sourceTokenId: SWAP_TOKEN_XYM.id,
+					sourceTokenId: swapTokenXym.id,
 					targetChainName: CHAIN_NAME_ETHEREUM,
-					targetTokenId: SWAP_TOKEN_WXYM.id,
-					bridge: BRIDGE_XYM_TO_WXYM,
+					targetTokenId: swapTokenWxym.id,
+					bridge: bridgeXymToWxym,
 					mode: BridgeMode.WRAP
 				}
 			},
 			{
 				description: 'selects unwrap direction for ethereum as default source',
-				config: { pairs: PAIRS_BIDIRECTIONAL_WXYM, defaultSourceChainName: CHAIN_NAME_ETHEREUM },
+				config: { pairs: pairsBidirectionalWxym, defaultSourceChainName: CHAIN_NAME_ETHEREUM },
 				expected: {
 					sourceChainName: CHAIN_NAME_ETHEREUM,
-					sourceTokenId: SWAP_TOKEN_WXYM.id,
+					sourceTokenId: swapTokenWxym.id,
 					targetChainName: CHAIN_NAME_SYMBOL,
-					targetTokenId: SWAP_TOKEN_XYM.id,
-					bridge: BRIDGE_XYM_TO_WXYM,
+					targetTokenId: swapTokenXym.id,
+					bridge: bridgeXymToWxym,
 					mode: BridgeMode.UNWRAP
 				}
 			}
@@ -323,16 +323,16 @@ describe('hooks/useSwapSelector', () => {
 			{
 				description: 'ignores invalid source selection and keeps current state',
 				config: {
-					pairs: PAIRS_SINGLE_WXYM,
+					pairs: pairsSingleWxym,
 					defaultSourceChainName: CHAIN_NAME_SYMBOL,
-					changeSource: SWAP_SIDE_ETHEREUM_ETH
+					changeSource: swapSideEthereumEth
 				},
 				expected: {
-					source: SWAP_SIDE_SYMBOL_XYM,
-					target: SWAP_SIDE_ETHEREUM_WXYM,
-					sourceList: [SWAP_SIDE_SYMBOL_XYM],
-					targetList: [SWAP_SIDE_ETHEREUM_WXYM],
-					bridge: BRIDGE_XYM_TO_WXYM,
+					source: swapSideSymbolXym,
+					target: swapSideEthereumWxym,
+					sourceList: [swapSideSymbolXym],
+					targetList: [swapSideEthereumWxym],
+					bridge: bridgeXymToWxym,
 					mode: BridgeMode.WRAP,
 					isReady: true
 				}
@@ -340,19 +340,19 @@ describe('hooks/useSwapSelector', () => {
 			{
 				description: 'updates target to ETH maintaining symbol XYM source',
 				config: {
-					pairs: PAIRS_ALL,
+					pairs: pairsAll,
 					defaultSourceChainName: CHAIN_NAME_SYMBOL,
-					changeTarget: SWAP_SIDE_ETHEREUM_ETH
+					changeTarget: swapSideEthereumEth
 				},
 				expected: {
-					source: SWAP_SIDE_SYMBOL_XYM,
-					target: SWAP_SIDE_ETHEREUM_ETH,
-					sourceList: [SWAP_SIDE_SYMBOL_XYM],
+					source: swapSideSymbolXym,
+					target: swapSideEthereumEth,
+					sourceList: [swapSideSymbolXym],
 					targetList: [
-						SWAP_SIDE_ETHEREUM_WXYM,
-						SWAP_SIDE_ETHEREUM_ETH
+						swapSideEthereumWxym,
+						swapSideEthereumEth
 					],
-					bridge: BRIDGE_XYM_TO_ETH,
+					bridge: bridgeXymToEth,
 					mode: BridgeMode.WRAP,
 					isReady: true
 				}
@@ -360,17 +360,17 @@ describe('hooks/useSwapSelector', () => {
 			{
 				description: 'switches from wrap to unwrap by changing both source and target',
 				config: {
-					pairs: PAIRS_BIDIRECTIONAL_WXYM,
+					pairs: pairsBidirectionalWxym,
 					defaultSourceChainName: CHAIN_NAME_SYMBOL,
-					changeSource: SWAP_SIDE_ETHEREUM_WXYM,
-					changeTarget: SWAP_SIDE_SYMBOL_XYM
+					changeSource: swapSideEthereumWxym,
+					changeTarget: swapSideSymbolXym
 				},
 				expected: {
-					source: SWAP_SIDE_ETHEREUM_WXYM,
-					target: SWAP_SIDE_SYMBOL_XYM,
-					sourceList: [SWAP_SIDE_ETHEREUM_WXYM],
-					targetList: [SWAP_SIDE_SYMBOL_XYM],
-					bridge: BRIDGE_XYM_TO_WXYM,
+					source: swapSideEthereumWxym,
+					target: swapSideSymbolXym,
+					sourceList: [swapSideEthereumWxym],
+					targetList: [swapSideSymbolXym],
+					bridge: bridgeXymToWxym,
 					mode: BridgeMode.UNWRAP,
 					isReady: true
 				}
@@ -378,19 +378,19 @@ describe('hooks/useSwapSelector', () => {
 			{
 				description: 'changes ethereum source from WXYM to ETH keeping XYM target',
 				config: {
-					pairs: PAIRS_ALL,
+					pairs: pairsAll,
 					defaultSourceChainName: CHAIN_NAME_ETHEREUM,
-					changeSource: SWAP_SIDE_ETHEREUM_ETH
+					changeSource: swapSideEthereumEth
 				},
 				expected: {
-					source: SWAP_SIDE_ETHEREUM_ETH,
-					target: SWAP_SIDE_SYMBOL_XYM,
+					source: swapSideEthereumEth,
+					target: swapSideSymbolXym,
 					sourceList: [
-						SWAP_SIDE_ETHEREUM_WXYM,
-						SWAP_SIDE_ETHEREUM_ETH
+						swapSideEthereumWxym,
+						swapSideEthereumEth
 					],
-					targetList: [SWAP_SIDE_SYMBOL_XYM],
-					bridge: BRIDGE_XYM_TO_ETH,
+					targetList: [swapSideSymbolXym],
+					bridge: bridgeXymToEth,
 					mode: BridgeMode.UNWRAP,
 					isReady: true
 				}
@@ -398,20 +398,20 @@ describe('hooks/useSwapSelector', () => {
 			{
 				description: 'switches from unwrap to wrap with cross-chain token change',
 				config: {
-					pairs: PAIRS_ALL,
+					pairs: pairsAll,
 					defaultSourceChainName: CHAIN_NAME_ETHEREUM,
-					changeSource: SWAP_SIDE_SYMBOL_XYM,
-					changeTarget: SWAP_SIDE_ETHEREUM_ETH
+					changeSource: swapSideSymbolXym,
+					changeTarget: swapSideEthereumEth
 				},
 				expected: {
-					source: SWAP_SIDE_SYMBOL_XYM,
-					target: SWAP_SIDE_ETHEREUM_ETH,
-					sourceList: [SWAP_SIDE_SYMBOL_XYM],
+					source: swapSideSymbolXym,
+					target: swapSideEthereumEth,
+					sourceList: [swapSideSymbolXym],
 					targetList: [
-						SWAP_SIDE_ETHEREUM_WXYM,
-						SWAP_SIDE_ETHEREUM_ETH
+						swapSideEthereumWxym,
+						swapSideEthereumEth
 					],
-					bridge: BRIDGE_XYM_TO_ETH,
+					bridge: bridgeXymToEth,
 					mode: BridgeMode.WRAP,
 					isReady: true
 				}
@@ -428,7 +428,7 @@ describe('hooks/useSwapSelector', () => {
 			it(description, () => {
 				// Arrange:
 				const hookTester = new HookTester(useSwapSelector, [createHookParams({
-					pairs: PAIRS_BIDIRECTIONAL_WXYM,
+					pairs: pairsBidirectionalWxym,
 					defaultSourceChainName: CHAIN_NAME_SYMBOL
 				})]);
 				const initialSource = hookTester.currentResult.source;
@@ -474,7 +474,7 @@ describe('hooks/useSwapSelector', () => {
 		it('refreshes selected side balance when pairs are rerendered', async () => {
 			// Arrange:
 			const params = createHookParams({
-				pairs: PAIRS_SINGLE_WXYM,
+				pairs: pairsSingleWxym,
 				defaultSourceChainName: CHAIN_NAME_SYMBOL
 			});
 			const hookTester = new HookTester(useSwapSelector, [params]);
@@ -482,21 +482,21 @@ describe('hooks/useSwapSelector', () => {
 			// Act:
 			act(() => {
 				hookTester.updateProps([{
-					pairs: [SWAP_PAIR_XYM_TO_WXYM_UPDATED],
+					pairs: [swapPairXymToWxymUpdated],
 					defaultSourceChainName: CHAIN_NAME_SYMBOL
 				}]);
 			});
 
 			// Assert:
 			await hookTester.waitFor(() => {
-				expect(hookTester.currentResult.source.token.amount).toBe(SWAP_TOKEN_XYM_UPDATED.amount);
+				expect(hookTester.currentResult.source.token.amount).toBe(swapTokenXymUpdated.amount);
 			});
 		});
 
 		it('resets hook state when pairs become empty', async () => {
 			// Arrange:
 			const params = createHookParams({
-				pairs: PAIRS_BIDIRECTIONAL_WXYM,
+				pairs: pairsBidirectionalWxym,
 				defaultSourceChainName: CHAIN_NAME_SYMBOL
 			});
 			const hookTester = new HookTester(useSwapSelector, [params]);
@@ -504,7 +504,7 @@ describe('hooks/useSwapSelector', () => {
 			// Act:
 			act(() => {
 				hookTester.updateProps([{
-					pairs: PAIRS_EMPTY,
+					pairs: pairsEmpty,
 					defaultSourceChainName: CHAIN_NAME_SYMBOL
 				}]);
 			});
@@ -524,14 +524,14 @@ describe('hooks/useSwapSelector', () => {
 		it('keeps previous state when selected pair no longer exists in updated pairs', async () => {
 			// Arrange:
 			const params = createHookParams({
-				pairs: PAIRS_ALL,
+				pairs: pairsAll,
 				defaultSourceChainName: CHAIN_NAME_SYMBOL
 			});
 			const hookTester = new HookTester(useSwapSelector, [params]);
 
 			// Change to XYM -> ETH pair
 			act(() => {
-				hookTester.currentResult.changeTarget(SWAP_SIDE_ETHEREUM_ETH);
+				hookTester.currentResult.changeTarget(swapSideEthereumEth);
 			});
 
 			const previousSource = hookTester.currentResult.source;
@@ -540,7 +540,7 @@ describe('hooks/useSwapSelector', () => {
 			// Act: Update pairs to only include WXYM pairs
 			act(() => {
 				hookTester.updateProps([{
-					pairs: PAIRS_BIDIRECTIONAL_WXYM,
+					pairs: pairsBidirectionalWxym,
 					defaultSourceChainName: CHAIN_NAME_SYMBOL
 				}]);
 			});

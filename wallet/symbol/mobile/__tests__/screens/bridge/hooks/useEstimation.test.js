@@ -13,33 +13,33 @@ const AMOUNT = '12';
 
 // Fixtures
 
-const ESTIMATION_FEE_TOKEN = TokenFixtureBuilder
+const estimationFeeToken = TokenFixtureBuilder
 	.createWithToken(CHAIN_NAME, NETWORK_IDENTIFIER, 0)
 	.setAmount('0.2')
 	.build();
 
-const ESTIMATION_RECEIVE_TOKEN = TokenFixtureBuilder
+const estimationReceiveToken = TokenFixtureBuilder
 	.createWithToken('ethereum', NETWORK_IDENTIFIER, 1)
 	.setAmount('11.8')
 	.build();
 
-const ESTIMATION_DATA = {
+const estimationData = {
 	fee: {
-		token: ESTIMATION_FEE_TOKEN
+		token: estimationFeeToken
 	},
 	receive: {
-		token: ESTIMATION_RECEIVE_TOKEN
+		token: estimationReceiveToken
 	}
 };
 
-const BRIDGE_MANAGER = {
-	estimateRequest: jest.fn().mockResolvedValue(ESTIMATION_DATA)
+const bridgeManager = {
+	estimateRequest: jest.fn().mockResolvedValue(estimationData)
 };
 
 // Hook Helpers
 
 const createHookParams = overrides => ({
-	bridge: BRIDGE_MANAGER,
+	bridge: bridgeManager,
 	mode: BridgeMode.WRAP,
 	amount: AMOUNT,
 	...overrides
@@ -75,8 +75,8 @@ describe('hooks/useEstimation', () => {
 
 			// Assert:
 			await hookTester.waitFor(() => {
-				expect(BRIDGE_MANAGER.estimateRequest).toHaveBeenCalledWith(expectedMode, expectedAmount);
-				expect(hookTester.currentResult.estimation).toStrictEqual(ESTIMATION_DATA);
+				expect(bridgeManager.estimateRequest).toHaveBeenCalledWith(expectedMode, expectedAmount);
+				expect(hookTester.currentResult.estimation).toStrictEqual(estimationData);
 				expect(hookTester.currentResult.isLoading).toBe(false);
 			});
 		});

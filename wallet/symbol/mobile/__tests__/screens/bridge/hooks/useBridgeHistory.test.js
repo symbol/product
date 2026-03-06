@@ -11,28 +11,28 @@ const NETWORK_IDENTIFIER = 'testnet';
 
 // Fixtures
 
-const ACCOUNT = AccountFixtureBuilder
+const account = AccountFixtureBuilder
 	.createWithAccount(CHAIN_NAME, NETWORK_IDENTIFIER, 0)
 	.build();
 
-const HISTORY_ENTRY_1 = {
+const historyEntry1 = {
 	id: 'bridge-request-1',
-	sourceAddress: ACCOUNT.address,
+	sourceAddress: account.address,
 	targetAddress: 'target-address-1',
 	amount: '10'
 };
 
-const HISTORY_ENTRIES = [HISTORY_ENTRY_1];
+const historyEntries = [historyEntry1];
 
-const BRIDGE_READY = {
+const bridgeReady = {
 	isReady: true,
-	fetchRecentHistory: jest.fn().mockResolvedValue(HISTORY_ENTRIES)
+	fetchRecentHistory: jest.fn().mockResolvedValue(historyEntries)
 };
 
 // Hook Helpers
 
 const createHookParams = overrides => ({
-	bridge: BRIDGE_READY,
+	bridge: bridgeReady,
 	...overrides
 });
 
@@ -61,8 +61,8 @@ describe('hooks/useBridgeHistory', () => {
 
 			// Assert:
 			await hookTester.waitFor(() => {
-				expect(BRIDGE_READY.fetchRecentHistory).toHaveBeenCalledWith(BRIDGE_HISTORY_PAGE_SIZE);
-				expect(hookTester.currentResult.history).toStrictEqual(HISTORY_ENTRIES);
+				expect(bridgeReady.fetchRecentHistory).toHaveBeenCalledWith(BRIDGE_HISTORY_PAGE_SIZE);
+				expect(hookTester.currentResult.history).toStrictEqual(historyEntries);
 			});
 		});
 	});
