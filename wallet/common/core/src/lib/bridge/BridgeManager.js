@@ -402,7 +402,7 @@ export class BridgeManager {
 				hash: transaction.hash,
 				height: transaction.height,
 				timestamp: transaction.timestamp,
-				token: transactionTokens[0]
+				token: transactionTokens[0] ?? null
 			}
 		};
 	}
