@@ -154,7 +154,7 @@ As an alternative to manually installing dependencies and running scripts, you c
 ### Build the Docker image
 
 ```sh
-docker build -t symbolplatform/bridge:1.1 -f Dockerfile --network host ..
+docker build -t symbolplatform/bridge:1.1 -f Dockerfile --network host .
 ```
 
 ### Running the Bridge

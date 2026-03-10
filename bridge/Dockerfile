@@ -25,13 +25,7 @@ ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
 # Create application directory
 WORKDIR /app
-COPY bridge/ /app/bridge
-
-# need the latest lightapi(remove when lightapi is published to pypi)
-COPY lightapi/python /app/lightapi
-
-USER root
-RUN pip install -e /app/lightapi
+COPY . /app/bridge
 
 USER ubuntu
 RUN pip install -r /app/bridge/requirements.txt \
