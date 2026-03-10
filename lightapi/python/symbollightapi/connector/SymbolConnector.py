@@ -320,19 +320,17 @@ class SymbolConnector(BasicConnector):  # pylint: disable=too-many-public-method
 		for _ in range(timeout_settings.retry_count):
 			response_json = await self.get(f'transactionStatus/{transaction_hash}', not_found_as_error=False)
 
-			if 'group' not in response_json:  # not found
-				continue
+			if 'group' in response_json:
+				status = response_json['group']
+				if status in desired_status_strings:
+					return True
 
-			status = response_json['group']
-			if status in desired_status_strings:
-				return True
+				if 'failed' == status:
+					error_message = f'transaction was rejected with error {response_json["code"]}'
+					if 'Failure_Core_Insufficient_Balance' == response_json['code']:
+						raise InsufficientBalanceException(error_message)
 
-			if 'failed' == status:
-				error_message = f'transaction was rejected with error {response_json["code"]}'
-				if 'Failure_Core_Insufficient_Balance' == response_json['code']:
-					raise InsufficientBalanceException(error_message)
-
-				raise NodeException(error_message)
+					raise NodeException(error_message)
 
 			await asyncio.sleep(timeout_settings.interval)
 
