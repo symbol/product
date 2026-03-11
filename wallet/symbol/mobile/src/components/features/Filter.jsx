@@ -118,9 +118,6 @@ export const Filter = props => {
 	const handleClear = () => Object.keys(value).length !== 0 && onChange({});
 
 	const handleFilterPress = filter => {
-		if (!isFilterAvailable(filter.name)) 
-			return;
-
 		if (filter.type === FilterType.BOOLEAN)
 			handleFilterValueChange(filter, !value[filter.name]);
 		else
