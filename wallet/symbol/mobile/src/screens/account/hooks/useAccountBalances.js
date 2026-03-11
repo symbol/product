@@ -10,6 +10,7 @@ import { safeOperationWithRelativeAmounts } from 'wallet-common-core';
 
 /**
  * Calculates balance change between current and cached values.
+ * 
  * @param {string} currentBalance - The current fetched balance.
  * @param {string} cachedBalance - The previously cached balance.
  * @param {number} divisibility - Network currency divisibility.
