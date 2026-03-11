@@ -33,6 +33,7 @@ const StorageKey = {
 	PIN_HASH: 'passcode:pinHash',
 	PIN_SALT: 'passcode:pinSalt',
 	FAILED_ATTEMPTS: 'passcode:failedAttempts',
+	CONSECUTIVE_FAILURES: 'passcode:consecutiveFailures',
 	LOCKOUT_UNTIL: 'passcode:lockoutUntil'
 };
 
@@ -42,21 +43,26 @@ const ErrorMessage = {
 	MUST_BE_DIGITS: 'Passcode must contain only digits'
 };
 
-const VerifyResult = {
-	VALID: {
-		isValid: true,
-		remainingAttempts: PASSCODE_MAX_FAILED_ATTEMPTS,
-		isLocked: false
-	},
-	LOCKED: {
-		isValid: false,
-		remainingAttempts: 0,
-		isLocked: true
-	}
+// Expected Results
+
+const verifyResultValid = {
+	isValid: true,
+	remainingAttempts: PASSCODE_MAX_FAILED_ATTEMPTS,
+	isLocked: false,
+	lockoutUntil: null
 };
 
-const LockStatus = {
-	UNLOCKED: { isLocked: false, remainingTimeMs: 0 }
+const verifyResultLocked = {
+	isValid: false,
+	remainingAttempts: 0,
+	isLocked: true,
+	lockoutUntil: expect.any(Number)
+};
+
+const lockStatusUnlocked = {
+	isLocked: false,
+	lockoutUntil: null,
+	consecutiveFailures: 0
 };
 
 // Helpers
@@ -70,9 +76,19 @@ const setupFailedAttempts = async count => {
 	await mockSecureStorage.setItem(StorageKey.FAILED_ATTEMPTS, String(count));
 };
 
-const setupActiveLockout = async () => {
-	const futureTime = Date.now() + PASSCODE_LOCKOUT_DURATION_MS;
+const setupConsecutiveFailures = async count => {
+	await mockSecureStorage.setItem(StorageKey.CONSECUTIVE_FAILURES, String(count));
+};
+
+const setupActiveLockout = async (durationMultiplier = 1) => {
+	const futureTime = Date.now() + (durationMultiplier * PASSCODE_LOCKOUT_DURATION_MS);
 	await mockSecureStorage.setItem(StorageKey.LOCKOUT_UNTIL, String(futureTime));
+};
+
+const setupExpiredLockout = async consecutiveFailures => {
+	const expiredTime = Date.now() - 1000;
+	await mockSecureStorage.setItem(StorageKey.LOCKOUT_UNTIL, String(expiredTime));
+	await setupConsecutiveFailures(consecutiveFailures);
 };
 
 describe('lib/PasscodeManager', () => {
@@ -218,7 +234,7 @@ describe('lib/PasscodeManager', () => {
 	});
 
 	describe('create', () => {
-		it('stores hashed passcode with salt and resets failed attempts', async () => {
+		it('stores hashed passcode with salt and resets all state', async () => {
 			// Act:
 			await passcodeManager.create(VALID_PASSCODE);
 
@@ -226,6 +242,8 @@ describe('lib/PasscodeManager', () => {
 			expect(mockSecureStorage.setItem).toHaveBeenCalledWith(StorageKey.PIN_HASH, expect.any(String));
 			expect(mockSecureStorage.setItem).toHaveBeenCalledWith(StorageKey.PIN_SALT, expect.any(String));
 			expect(mockSecureStorage.removeItem).toHaveBeenCalledWith(StorageKey.FAILED_ATTEMPTS);
+			expect(mockSecureStorage.removeItem).toHaveBeenCalledWith(StorageKey.CONSECUTIVE_FAILURES);
+			expect(mockSecureStorage.removeItem).toHaveBeenCalledWith(StorageKey.LOCKOUT_UNTIL);
 		});
 
 		it('throws for invalid passcode format', async () => {
@@ -240,34 +258,49 @@ describe('lib/PasscodeManager', () => {
 			await setupPasscode(passcodeManager);
 		});
 
-		it('returns valid result for correct passcode', async () => {
-			// Act:
-			const result = await passcodeManager.verify(VALID_PASSCODE);
+		describe('successful verification', () => {
+			it('returns valid result for correct passcode', async () => {
+				// Act:
+				const result = await passcodeManager.verify(VALID_PASSCODE);
 
-			// Assert:
-			expect(result).toEqual(VerifyResult.VALID);
+				// Assert:
+				expect(result).toEqual(verifyResultValid);
+			});
+
+			it('resets failed attempts on successful verification', async () => {
+				// Arrange:
+				await setupFailedAttempts(3);
+				await setupConsecutiveFailures(2);
+
+				// Act:
+				await passcodeManager.verify(VALID_PASSCODE);
+
+				// Assert:
+				expect(mockSecureStorage.removeItem).toHaveBeenCalledWith(StorageKey.FAILED_ATTEMPTS);
+				expect(mockSecureStorage.removeItem).toHaveBeenCalledWith(StorageKey.CONSECUTIVE_FAILURES);
+			});
 		});
 
-		it('resets failed attempts on successful verification', async () => {
-			// Arrange:
-			await setupFailedAttempts(3);
+		describe('failed verification with remaining attempts', () => {
+			it('increments failed attempts on incorrect passcode', async () => {
+				// Act:
+				await passcodeManager.verify(INVALID_PASSCODE);
 
-			// Act:
-			await passcodeManager.verify(VALID_PASSCODE);
+				// Assert:
+				expect(mockSecureStorage.setItem).toHaveBeenCalledWith(StorageKey.FAILED_ATTEMPTS, '1');
+			});
 
-			// Assert:
-			expect(mockSecureStorage.removeItem).toHaveBeenCalledWith(StorageKey.FAILED_ATTEMPTS);
-		});
+			it('does not increment consecutive failures until attempts are exhausted', async () => {
+				// Act:
+				await passcodeManager.verify(INVALID_PASSCODE);
 
-		it('increments failed attempts on incorrect passcode', async () => {
-			// Act:
-			await passcodeManager.verify(INVALID_PASSCODE);
+				// Assert:
+				expect(mockSecureStorage.setItem).not.toHaveBeenCalledWith(
+					StorageKey.CONSECUTIVE_FAILURES,
+					expect.any(String)
+				);
+			});
 
-			// Assert:
-			expect(mockSecureStorage.setItem).toHaveBeenCalledWith(StorageKey.FAILED_ATTEMPTS, '1');
-		});
-
-		describe('remaining attempts', () => {
 			const runRemainingAttemptsTest = (description, config, expected) => {
 				it(description, async () => {
 					// Arrange:
@@ -278,26 +311,28 @@ describe('lib/PasscodeManager', () => {
 					const result = await passcodeManager.verify(INVALID_PASSCODE);
 
 					// Assert:
-					expect(result.remainingAttempts).toBe(expected.remainingAttempts);
 					expect(result.isValid).toBe(false);
+					expect(result.isLocked).toBe(expected.isLocked);
+					expect(result.remainingAttempts).toBe(expected.remainingAttempts);
 				});
 			};
 
 			const remainingAttemptsTests = [
 				{
-					description: 'returns correct remaining after first failure',
+					description: 'returns correct remaining attempts after first failure',
 					config: { previousAttempts: 0 },
-					expected: { remainingAttempts: PASSCODE_MAX_FAILED_ATTEMPTS - 1 }
+					expected: {
+						remainingAttempts: PASSCODE_MAX_FAILED_ATTEMPTS - 1,
+						isLocked: false
+					}
 				},
 				{
-					description: 'returns correct remaining after multiple failures',
+					description: 'returns correct remaining attempts after multiple failures',
 					config: { previousAttempts: 5 },
-					expected: { remainingAttempts: PASSCODE_MAX_FAILED_ATTEMPTS - 6 }
-				},
-				{
-					description: 'returns zero when max reached',
-					config: { previousAttempts: PASSCODE_MAX_FAILED_ATTEMPTS - 1 },
-					expected: { remainingAttempts: 0 }
+					expected: {
+						remainingAttempts: PASSCODE_MAX_FAILED_ATTEMPTS - 6,
+						isLocked: false
+					}
 				}
 			];
 
@@ -306,20 +341,42 @@ describe('lib/PasscodeManager', () => {
 			});
 		});
 
-		describe('lockout', () => {
-			it('sets lockout when max attempts exceeded', async () => {
+		describe('lockout on attempts exhaustion', () => {
+			it('enters lockout when all attempts are exhausted', async () => {
 				// Arrange:
 				await setupFailedAttempts(PASSCODE_MAX_FAILED_ATTEMPTS - 1);
+				const beforeTime = 1000;
+				jest.spyOn(Date, 'now').mockReturnValue(beforeTime);
 
 				// Act:
 				const result = await passcodeManager.verify(INVALID_PASSCODE);
 
 				// Assert:
+				expect(result.isValid).toBe(false);
 				expect(result.isLocked).toBe(true);
-				expect(mockSecureStorage.setItem).toHaveBeenCalledWith(StorageKey.LOCKOUT_UNTIL, expect.any(String));
+				expect(result.remainingAttempts).toBe(0);
+				expect(result.lockoutUntil).toBe(beforeTime);
+				Date.now.mockRestore();
 			});
 
-			it('returns locked result when already locked', async () => {
+			it('sets consecutive failures to 1 on first lockout', async () => {
+				// Arrange:
+				await setupFailedAttempts(PASSCODE_MAX_FAILED_ATTEMPTS - 1);
+				const beforeTime = 1000;
+				jest.spyOn(Date, 'now').mockReturnValue(beforeTime);
+
+				// Act:
+				await passcodeManager.verify(INVALID_PASSCODE);
+
+				// Assert:
+				expect(mockSecureStorage.setItem).toHaveBeenCalledWith(StorageKey.CONSECUTIVE_FAILURES, '1');
+				expect(mockSecureStorage.setItem).toHaveBeenCalledWith(StorageKey.LOCKOUT_UNTIL, String(beforeTime));
+				Date.now.mockRestore();
+			});
+		});
+
+		describe('lockout behavior', () => {
+			it('returns locked result when attempting verification during active lockout', async () => {
 				// Arrange:
 				await setupActiveLockout();
 
@@ -327,7 +384,97 @@ describe('lib/PasscodeManager', () => {
 				const result = await passcodeManager.verify(VALID_PASSCODE);
 
 				// Assert:
-				expect(result).toEqual(VerifyResult.LOCKED);
+				expect(result).toEqual(verifyResultLocked);
+			});
+
+			it('does not verify passcode during active lockout', async () => {
+				// Arrange:
+				await setupActiveLockout();
+				const getItemSpy = jest.spyOn(mockSecureStorage, 'getItem');
+
+				// Act:
+				await passcodeManager.verify(VALID_PASSCODE);
+
+				// Assert:
+				expect(getItemSpy).toHaveBeenCalledWith(StorageKey.LOCKOUT_UNTIL);
+				expect(getItemSpy).toHaveBeenCalledWith(StorageKey.CONSECUTIVE_FAILURES);
+				expect(getItemSpy).not.toHaveBeenCalledWith(StorageKey.PIN_HASH);
+				expect(getItemSpy).not.toHaveBeenCalledWith(StorageKey.PIN_SALT);
+			});
+		});
+
+		describe('post-lockout behavior', () => {
+			it('allows correct passcode on first attempt after lockout expires', async () => {
+				// Arrange:
+				await setupExpiredLockout(1);
+				jest.clearAllMocks();
+
+				// Act:
+				const result = await passcodeManager.verify(VALID_PASSCODE);
+
+				// Assert:
+				expect(result).toEqual(verifyResultValid);
+				expect(mockSecureStorage.removeItem).toHaveBeenCalledWith(StorageKey.LOCKOUT_UNTIL);
+				expect(mockSecureStorage.removeItem).toHaveBeenCalledWith(StorageKey.FAILED_ATTEMPTS);
+				expect(mockSecureStorage.removeItem).toHaveBeenCalledWith(StorageKey.CONSECUTIVE_FAILURES);
+			});
+
+			it('immediately locks again on first failed attempt after lockout expires', async () => {
+				// Arrange:
+				const beforeTime = 3000;
+				jest.spyOn(Date, 'now').mockReturnValue(beforeTime);
+				await mockSecureStorage.setItem(StorageKey.LOCKOUT_UNTIL, String(beforeTime - 1000));
+				await setupConsecutiveFailures(1);
+				jest.clearAllMocks();
+
+				// Act:
+				const result = await passcodeManager.verify(INVALID_PASSCODE);
+
+				// Assert:
+				expect(result.isValid).toBe(false);
+				expect(result.isLocked).toBe(true);
+				expect(result.remainingAttempts).toBe(0);
+				expect(result.lockoutUntil).toBe(beforeTime + PASSCODE_LOCKOUT_DURATION_MS);
+				Date.now.mockRestore();
+			});
+
+			it('increments consecutive failures on lockout after expired lockout', async () => {
+				// Arrange:
+				const beforeTime = 3000;
+				jest.spyOn(Date, 'now').mockReturnValue(beforeTime);
+				await mockSecureStorage.setItem(StorageKey.LOCKOUT_UNTIL, String(beforeTime - 1000));
+				await setupConsecutiveFailures(1);
+				jest.clearAllMocks();
+
+				// Act:
+				await passcodeManager.verify(INVALID_PASSCODE);
+
+				// Assert:
+				expect(mockSecureStorage.setItem).toHaveBeenCalledWith(StorageKey.CONSECUTIVE_FAILURES, '2');
+				expect(mockSecureStorage.setItem).toHaveBeenCalledWith(
+					StorageKey.LOCKOUT_UNTIL,
+					String(beforeTime + PASSCODE_LOCKOUT_DURATION_MS)
+				);
+				Date.now.mockRestore();
+			});
+		});
+
+		describe('consecutive failures behavior', () => {
+			it('multiplies lockout duration by consecutive failures count', async () => {
+				// Arrange:
+				await setupFailedAttempts(PASSCODE_MAX_FAILED_ATTEMPTS - 1);
+				await setupConsecutiveFailures(2);
+				const beforeTime = 5000;
+				jest.spyOn(Date, 'now').mockReturnValue(beforeTime);
+				const expectedLockoutTime = beforeTime + (2 * PASSCODE_LOCKOUT_DURATION_MS);
+
+				// Act:
+				const result = await passcodeManager.verify(INVALID_PASSCODE);
+
+				// Assert:
+				expect(result.lockoutUntil).toBe(expectedLockoutTime);
+				expect(mockSecureStorage.setItem).toHaveBeenCalledWith(StorageKey.CONSECUTIVE_FAILURES, '3');
+				Date.now.mockRestore();
 			});
 		});
 	});
@@ -337,6 +484,7 @@ describe('lib/PasscodeManager', () => {
 			// Arrange:
 			await setupPasscode(passcodeManager);
 			await setupFailedAttempts(3);
+			await setupConsecutiveFailures(2);
 			await setupActiveLockout();
 			jest.clearAllMocks();
 
@@ -347,112 +495,206 @@ describe('lib/PasscodeManager', () => {
 			expect(mockSecureStorage.removeItem).toHaveBeenCalledWith(StorageKey.PIN_HASH);
 			expect(mockSecureStorage.removeItem).toHaveBeenCalledWith(StorageKey.PIN_SALT);
 			expect(mockSecureStorage.removeItem).toHaveBeenCalledWith(StorageKey.FAILED_ATTEMPTS);
+			expect(mockSecureStorage.removeItem).toHaveBeenCalledWith(StorageKey.CONSECUTIVE_FAILURES);
 			expect(mockSecureStorage.removeItem).toHaveBeenCalledWith(StorageKey.LOCKOUT_UNTIL);
+		});
+
+		it('resets passcode set status', async () => {
+			// Arrange:
+			await setupPasscode(passcodeManager);
+
+			// Act:
+			await passcodeManager.clear();
+
+			// Assert:
+			const isSet = await passcodeManager.isPasscodeSet();
+			expect(isSet).toBe(false);
 		});
 	});
 
-	describe('failed attempts management', () => {
-		const runGetFailedAttemptsTest = (description, config, expected) => {
-			it(description, async () => {
-				// Arrange:
-				if (config.storedValue !== null)
-					await mockSecureStorage.setItem(StorageKey.FAILED_ATTEMPTS, config.storedValue);
+	describe('internal state management', () => {
+		describe('failed attempts', () => {
+			const runGetFailedAttemptsTest = (description, config, expected) => {
+				it(description, async () => {
+					// Arrange:
+					if (config.storedValue !== null)
+						await mockSecureStorage.setItem(StorageKey.FAILED_ATTEMPTS, config.storedValue);
 
+					// Act:
+					const result = await passcodeManager.getFailedAttempts();
+
+					// Assert:
+					expect(result).toBe(expected.attempts);
+				});
+			};
+
+			const getFailedAttemptsTests = [
+				{
+					description: 'returns 0 when no attempts stored',
+					config: { storedValue: null },
+					expected: { attempts: 0 }
+				},
+				{
+					description: 'returns stored count',
+					config: { storedValue: '5' },
+					expected: { attempts: 5 }
+				}
+			];
+
+			getFailedAttemptsTests.forEach(test => {
+				runGetFailedAttemptsTest(test.description, test.config, test.expected);
+			});
+
+			it('increments failed attempts', async () => {
 				// Act:
-				const result = await passcodeManager.getFailedAttempts();
+				const result = await passcodeManager.incrementFailedAttempts();
 
 				// Assert:
-				expect(result).toBe(expected.attempts);
+				expect(result).toBe(1);
+				expect(mockSecureStorage.setItem).toHaveBeenCalledWith(StorageKey.FAILED_ATTEMPTS, '1');
 			});
-		};
 
-		const getFailedAttemptsTests = [
-			{
-				description: 'returns 0 when no attempts stored',
-				config: { storedValue: null },
-				expected: { attempts: 0 }
-			},
-			{
-				description: 'returns stored count',
-				config: { storedValue: '5' },
-				expected: { attempts: 5 }
-			}
-		];
+			it('resets failed attempts', async () => {
+				// Arrange:
+				await setupFailedAttempts(5);
+				jest.clearAllMocks();
 
-		getFailedAttemptsTests.forEach(test => {
-			runGetFailedAttemptsTest(test.description, test.config, test.expected);
+				// Act:
+				await passcodeManager.resetFailedAttempts();
+
+				// Assert:
+				expect(mockSecureStorage.removeItem).toHaveBeenCalledWith(StorageKey.FAILED_ATTEMPTS);
+			});
 		});
 
-		it('resets failed attempts', async () => {
-			// Arrange:
-			await setupFailedAttempts(5);
-			jest.clearAllMocks();
+		describe('consecutive failures', () => {
+			const runGetConsecutiveFailuresTest = (description, config, expected) => {
+				it(description, async () => {
+					// Arrange:
+					if (config.storedValue !== null)
+						await mockSecureStorage.setItem(StorageKey.CONSECUTIVE_FAILURES, config.storedValue);
 
-			// Act:
-			await passcodeManager.resetFailedAttempts();
+					// Act:
+					const result = await passcodeManager.getConsecutiveFailures();
 
-			// Assert:
-			expect(mockSecureStorage.removeItem).toHaveBeenCalledWith(StorageKey.FAILED_ATTEMPTS);
+					// Assert:
+					expect(result).toBe(expected.failures);
+				});
+			};
+
+			const getConsecutiveFailuresTests = [
+				{
+					description: 'returns 0 when no consecutive failures stored',
+					config: { storedValue: null },
+					expected: { failures: 0 }
+				},
+				{
+					description: 'returns stored consecutive failures count',
+					config: { storedValue: '3' },
+					expected: { failures: 3 }
+				}
+			];
+
+			getConsecutiveFailuresTests.forEach(test => {
+				runGetConsecutiveFailuresTest(test.description, test.config, test.expected);
+			});
+
+			it('resets consecutive failures', async () => {
+				// Arrange:
+				await setupConsecutiveFailures(3);
+				jest.clearAllMocks();
+
+				// Act:
+				await passcodeManager.resetConsecutiveFailures();
+
+				// Assert:
+				expect(mockSecureStorage.removeItem).toHaveBeenCalledWith(StorageKey.CONSECUTIVE_FAILURES);
+			});
 		});
-	});
 
-	describe('lockout management', () => {
-		it('stores lockout timestamp with correct duration', async () => {
-			// Arrange:
-			const beforeTime = Date.now();
-			const expectedLockoutTimeString = String(beforeTime + PASSCODE_LOCKOUT_DURATION_MS);
+		describe('lockout', () => {
+			it('sets lockout with base duration for first consecutive failure', async () => {
+				// Arrange:
+				const consecutiveFailures = 0;
+				const beforeTime = 2000;
+				jest.spyOn(Date, 'now').mockReturnValue(beforeTime);
 
-			// Act:
-			await passcodeManager.setLockout();
+				// Act:
+				const lockoutUntil = await passcodeManager.setLockout(consecutiveFailures);
 
-			// Assert:
-			expect(mockSecureStorage.setItem)
-				.toHaveBeenCalledWith(StorageKey.LOCKOUT_UNTIL, expectedLockoutTimeString);
-		});
+				// Assert:
+				expect(lockoutUntil).toBe(beforeTime);
+				expect(mockSecureStorage.setItem).toHaveBeenCalledWith(StorageKey.LOCKOUT_UNTIL, String(beforeTime));
+				expect(mockSecureStorage.setItem).toHaveBeenCalledWith(StorageKey.CONSECUTIVE_FAILURES, '1');
+				Date.now.mockRestore();
+			});
 
-		it('clears lockout timestamp', async () => {
-			// Arrange:
-			await setupActiveLockout();
-			jest.clearAllMocks();
+			it('sets lockout with multiplied duration for subsequent failures', async () => {
+				// Arrange:
+				const consecutiveFailures = 3;
+				const beforeTime = 4000;
+				jest.spyOn(Date, 'now').mockReturnValue(beforeTime);
+				const expectedLockoutTime = beforeTime + (3 * PASSCODE_LOCKOUT_DURATION_MS);
 
-			// Act:
-			await passcodeManager.clearLockout();
+				// Act:
+				const lockoutUntil = await passcodeManager.setLockout(consecutiveFailures);
 
-			// Assert:
-			expect(mockSecureStorage.removeItem).toHaveBeenCalledWith(StorageKey.LOCKOUT_UNTIL);
+				// Assert:
+				expect(lockoutUntil).toBe(expectedLockoutTime);
+				expect(mockSecureStorage.setItem).toHaveBeenCalledWith(StorageKey.LOCKOUT_UNTIL, String(expectedLockoutTime));
+				expect(mockSecureStorage.setItem).toHaveBeenCalledWith(StorageKey.CONSECUTIVE_FAILURES, '4');
+				Date.now.mockRestore();
+			});
+
+			it('clears lockout timestamp', async () => {
+				// Arrange:
+				await setupActiveLockout();
+				jest.clearAllMocks();
+
+				// Act:
+				await passcodeManager.clearLockout();
+
+				// Assert:
+				expect(mockSecureStorage.removeItem).toHaveBeenCalledWith(StorageKey.LOCKOUT_UNTIL);
+			});
 		});
 
 		describe('getLockStatus', () => {
-			it('returns unlocked when no lockout set', async () => {
+			it('returns unlocked status when no lockout is set', async () => {
 				// Act:
 				const result = await passcodeManager.getLockStatus();
 
 				// Assert:
-				expect(result).toEqual(LockStatus.UNLOCKED);
+				expect(result).toEqual(lockStatusUnlocked);
 			});
 
-			it('returns locked with remaining time when lockout active', async () => {
+			it('returns locked status with remaining time when lockout is active', async () => {
 				// Arrange:
 				await setupActiveLockout();
+				await setupConsecutiveFailures(2);
 
 				// Act:
 				const result = await passcodeManager.getLockStatus();
 
 				// Assert:
 				expect(result.isLocked).toBe(true);
-				expect(result.remainingTimeMs).toBeGreaterThan(0);
+				expect(result.lockoutUntil).toBeGreaterThan(Date.now());
+				expect(result.consecutiveFailures).toBe(2);
 			});
 
-			it('clears expired lockout and returns unlocked', async () => {
+			it('clears expired lockout and returns unlocked with consecutive failures preserved', async () => {
 				// Arrange:
 				const expiredTime = Date.now() - 1000;
 				await mockSecureStorage.setItem(StorageKey.LOCKOUT_UNTIL, String(expiredTime));
+				await setupConsecutiveFailures(5);
 
 				// Act:
 				const result = await passcodeManager.getLockStatus();
 
 				// Assert:
-				expect(result).toEqual(LockStatus.UNLOCKED);
+				expect(result.isLocked).toBe(false);
+				expect(result.lockoutUntil).toBeNull();
+				expect(result.consecutiveFailures).toBe(5);
 				expect(mockSecureStorage.removeItem).toHaveBeenCalledWith(StorageKey.LOCKOUT_UNTIL);
 				expect(mockSecureStorage.removeItem).toHaveBeenCalledWith(StorageKey.FAILED_ATTEMPTS);
 			});
@@ -480,7 +722,7 @@ describe('lib/PasscodeManager', () => {
 			expect(isSetAfterClear).toBe(false);
 		});
 
-		it('handles lockout workflow correctly', async () => {
+		it('handles complete lockout cycle with expiry and success', async () => {
 			// Arrange:
 			await passcodeManager.create(VALID_PASSCODE);
 
@@ -488,14 +730,46 @@ describe('lib/PasscodeManager', () => {
 			for (let i = 0; i < PASSCODE_MAX_FAILED_ATTEMPTS; i++)
 				await passcodeManager.verify(INVALID_PASSCODE);
 
-			// Assert: Account is locked
-			const lockStatus = await passcodeManager.getLockStatus();
-			expect(lockStatus.isLocked).toBe(true);
+			// Assert: Lockout is set and consecutive failures is 1
+			const lockStatusAfterFirstCycle = await passcodeManager.getLockStatus();
+			expect(lockStatusAfterFirstCycle.isLocked).toBe(false);
+			expect(lockStatusAfterFirstCycle.consecutiveFailures).toBe(1);
 
-			// Assert: Cannot verify while locked
+			// Act: Verify correct passcode after lockout expires
 			const result = await passcodeManager.verify(VALID_PASSCODE);
-			expect(result.isLocked).toBe(true);
-			expect(result.isValid).toBe(false);
+
+			// Assert: Success and all state reset
+			expect(result.isValid).toBe(true);
+			expect(result.isLocked).toBe(false);
+			const lockStatusAfterSuccess = await passcodeManager.getLockStatus();
+			expect(lockStatusAfterSuccess.consecutiveFailures).toBe(0);
+		});
+
+		it('handles multiple lockout cycles with increasing durations', async () => {
+			// Arrange:
+			await passcodeManager.create(VALID_PASSCODE);
+			const mockNow = 10000;
+			jest.spyOn(Date, 'now').mockReturnValue(mockNow);
+
+			// Act: First lockout cycle
+			for (let i = 0; i < PASSCODE_MAX_FAILED_ATTEMPTS; i++)
+				await passcodeManager.verify(INVALID_PASSCODE);
+
+			// Assert: First lockout with base duration
+			let lockStatus = await passcodeManager.getLockStatus();
+			expect(lockStatus.consecutiveFailures).toBe(1);
+
+			// Act: Simulate lockout expiry and second lockout
+			Date.now.mockReturnValue(mockNow + PASSCODE_LOCKOUT_DURATION_MS + 1000);
+			const secondLockoutResult = await passcodeManager.verify(INVALID_PASSCODE);
+
+			// Assert: Second lockout with duration multiplied by consecutive failures
+			expect(secondLockoutResult.isLocked).toBe(true);
+			expect(secondLockoutResult.lockoutUntil).toBe(mockNow + PASSCODE_LOCKOUT_DURATION_MS + 1000 + PASSCODE_LOCKOUT_DURATION_MS);
+			lockStatus = await passcodeManager.getLockStatus();
+			expect(lockStatus.consecutiveFailures).toBe(2);
+
+			Date.now.mockRestore();
 		});
 	});
 });

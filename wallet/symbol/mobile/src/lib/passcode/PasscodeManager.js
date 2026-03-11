@@ -8,6 +8,7 @@ import { StorageInterface } from 'wallet-common-core';
 const STORAGE_KEY_PIN_HASH = 'pinHash';
 const STORAGE_KEY_PIN_SALT = 'pinSalt';
 const STORAGE_KEY_FAILED_ATTEMPTS = 'failedAttempts';
+const STORAGE_KEY_CONSECUTIVE_FAILURES = 'consecutiveFailures';
 const STORAGE_KEY_LOCKOUT_UNTIL = 'lockoutUntil';
 const PBKDF2_ITERATIONS = 10000;
 const PBKDF2_KEY_SIZE_WORDS = 256 / 32;
@@ -86,18 +87,37 @@ export class PasscodeManager {
 		await this.storage.setItem(STORAGE_KEY_PIN_HASH, hash);
 		await this.storage.setItem(STORAGE_KEY_PIN_SALT, salt);
 		await this.resetFailedAttempts();
+		await this.resetConsecutiveFailures();
+		await this.clearLockout();
 	};
+
+	/**
+	 * @typedef {Object} VerifyResult
+	 * @property {boolean} isValid - Whether the passcode is correct.
+	 * @property {number} remainingAttempts - Remaining attempts before lockout.
+	 * @property {boolean} isLocked - Whether the user is currently locked out.
+	 * @property {number|null} lockoutUntil - Timestamp until which the user is locked out, or null if not locked.
+	 */
 
 	/**
 	 * Verify if the provided passcode matches the stored passcode.
 	 * @param {string} passcode - The passcode to verify.
-	 * @returns {Promise<{isValid: boolean, remainingAttempts: number, isLocked: boolean}>}
+	 * @returns {Promise<VerifyResult>} - Verification result and status.
 	 */
 	verify = async passcode => {
+		// await this.resetFailedAttempts();
+		// await this.resetConsecutiveFailures();
+		// await this.clearLockout();
 		const lockStatus = await this.getLockStatus();
 
-		if (lockStatus.isLocked)
-			return { isValid: false, remainingAttempts: 0, isLocked: true };
+		if (lockStatus.isLocked) {
+			return { 
+				isValid: false, 
+				remainingAttempts: 0, 
+				isLocked: true,
+				lockoutUntil: lockStatus.lockoutUntil
+			};
+		}
 
 		const storedHash = await this.storage.getItem(STORAGE_KEY_PIN_HASH);
 		const storedSalt = await this.storage.getItem(STORAGE_KEY_PIN_SALT);
@@ -107,16 +127,31 @@ export class PasscodeManager {
 
 		if (isValid) {
 			await this.resetFailedAttempts();
-			return { isValid: true, remainingAttempts: PASSCODE_MAX_FAILED_ATTEMPTS, isLocked: false };
+			await this.resetConsecutiveFailures();
+			return { 
+				isValid: true, 
+				remainingAttempts: PASSCODE_MAX_FAILED_ATTEMPTS, 
+				isLocked: false,
+				lockoutUntil: null
+			};
 		}
 
+		const { consecutiveFailures } = lockStatus;
 		const failedAttempts = await this.incrementFailedAttempts();
 		const remainingAttempts = PASSCODE_MAX_FAILED_ATTEMPTS - failedAttempts;
 
-		if (remainingAttempts <= 0)
-			await this.setLockout();
+		let lockoutUntil = null;
+		if (remainingAttempts <= 0 || consecutiveFailures)
+			lockoutUntil = await this.setLockout(consecutiveFailures);
 
-		return { isValid: false, remainingAttempts: Math.max(0, remainingAttempts), isLocked: remainingAttempts <= 0 };
+		const isLocked = Boolean(lockoutUntil);
+		
+		return { 
+			isValid: false, 
+			remainingAttempts: isLocked ? 0 : Math.max(0, remainingAttempts), 
+			isLocked,
+			lockoutUntil
+		};
 	};
 
 	/**
@@ -127,6 +162,7 @@ export class PasscodeManager {
 		await this.storage.removeItem(STORAGE_KEY_PIN_HASH);
 		await this.storage.removeItem(STORAGE_KEY_PIN_SALT);
 		await this.resetFailedAttempts();
+		await this.resetConsecutiveFailures();
 		await this.clearLockout();
 	};
 
@@ -157,6 +193,16 @@ export class PasscodeManager {
 	};
 
 	/**
+	 * Get the current number of consecutive failures.
+	 * @returns {Promise<number>}
+	 */
+	getConsecutiveFailures = async () => {
+		const failures = await this.storage.getItem(STORAGE_KEY_CONSECUTIVE_FAILURES);
+		
+		return failures ? parseInt(failures, 10) : 0;
+	};
+
+	/**
 	 * Increment failed attempts counter.
 	 * @returns {Promise<number>} - The new failed attempts count.
 	 */
@@ -177,12 +223,25 @@ export class PasscodeManager {
 	};
 
 	/**
-	 * Set lockout timestamp.
+	 * Reset consecutive failures counter.
 	 * @returns {Promise<void>}
 	 */
-	setLockout = async () => {
-		const lockoutUntil = Date.now() + PASSCODE_LOCKOUT_DURATION_MS;
+	resetConsecutiveFailures = async () => {
+		await this.storage.removeItem(STORAGE_KEY_CONSECUTIVE_FAILURES);
+	};
+
+	/**
+	 * Set lockout timestamp.
+	 * @param {number} consecutiveFailures - Current consecutive failures count.
+	 * @returns {Promise<number>} - The timestamp until which the user is locked out.
+	 */
+	setLockout = async consecutiveFailures => {
+		const lockoutDuration = consecutiveFailures * PASSCODE_LOCKOUT_DURATION_MS;
+		const lockoutUntil = Date.now() + lockoutDuration;
 		await this.storage.setItem(STORAGE_KEY_LOCKOUT_UNTIL, String(lockoutUntil));
+		await this.storage.setItem(STORAGE_KEY_CONSECUTIVE_FAILURES, String(consecutiveFailures + 1));
+
+		return lockoutUntil;
 	};
 
 	/**
@@ -195,13 +254,15 @@ export class PasscodeManager {
 
 	/**
 	 * Get lock status.
-	 * @returns {Promise<{isLocked: boolean, remainingTimeMs: number}>}
+	 * @returns {Promise<{isLocked: boolean, lockoutUntil: number, consecutiveFailures: number}>}
 	 */
 	getLockStatus = async () => {
 		const lockoutUntil = await this.storage.getItem(STORAGE_KEY_LOCKOUT_UNTIL);
+		const consecutiveFailures = await this.getConsecutiveFailures();
 
-		if (!lockoutUntil)
-			return { isLocked: false, remainingTimeMs: 0 };
+		if (!lockoutUntil) 
+			return { isLocked: false, lockoutUntil: null, consecutiveFailures };
+		
 
 		const lockoutTime = parseInt(lockoutUntil, 10);
 		const now = Date.now();
@@ -209,9 +270,18 @@ export class PasscodeManager {
 		if (now >= lockoutTime) {
 			await this.clearLockout();
 			await this.resetFailedAttempts();
-			return { isLocked: false, remainingTimeMs: 0 };
+			
+			return { 
+				isLocked: false, 
+				lockoutUntil: null, 
+				consecutiveFailures 
+			};
 		}
 
-		return { isLocked: true, remainingTimeMs: lockoutTime - now };
+		return { 
+			isLocked: true, 
+			lockoutUntil: lockoutTime, 
+			consecutiveFailures 
+		};
 	};
 }

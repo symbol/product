@@ -34,7 +34,7 @@ const SCREEN_TEXT = {
 	textCreateConfirmDescription: 's_passcode_createConfirm_description',
 	textErrorIncorrect: 's_passcode_error_incorrect',
 	textErrorMismatch: 's_passcode_error_mismatch',
-	textErrorMaxAttempts: 's_passcode_error_maxAttempts',
+	textErrorMaxAttempts: 's_passcode_error_maxAttempts_time_minute',
 	buttonCancel: 'button_cancel',
 	buttonDelete: 'delete'
 };
@@ -44,7 +44,7 @@ const PIN_PAD_BUTTONS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
 const PasscodeVerifyResult = {
 	VALID: { isValid: true, remainingAttempts: PASSCODE_MAX_FAILED_ATTEMPTS, isLocked: false },
 	INVALID: { isValid: false, remainingAttempts: PASSCODE_MAX_FAILED_ATTEMPTS - 1, isLocked: false },
-	LOCKED: { isValid: false, remainingAttempts: 0, isLocked: true }
+	LOCKED: { isValid: false, remainingAttempts: 0, isLocked: true, lockoutUntil: Date.now() + 60000 }
 };
 
 const mockPasscodeManager = (overrides = {}) => {
