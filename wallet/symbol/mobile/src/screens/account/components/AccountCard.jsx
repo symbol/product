@@ -72,47 +72,6 @@ const BalanceChangeBadge = ({ value, ticker }) => {
 	);
 };
 
-
-/**
- * AnimatedBalance component. Displays balance with fade animation only when value changes.
- *
- * @param {object} props - Component props
- * @param {string} props.value - Balance value to display.
- * @param {string} props.ticker - Currency ticker symbol.
- *
- * @returns {React.ReactNode} AnimatedBalance component
- */
-// Note: This component is temporarily not used due to performance issues with React Native v0.82,
-// that causes slower screen rendering. It will be used in the future once the underlying issues are resolved.
-// const AnimatedBalance = ({ value, ticker }) => {
-// 	const isFirstRender = useRef(true);
-// 	const previousValue = useRef(value);
-// 	const opacity = useSharedValue(1);
-
-// 	useEffect(() => {
-// 		if (isFirstRender.current) {
-// 			isFirstRender.current = false;
-// 			return;
-// 		}
-
-// 		if (previousValue.current !== value) {
-// 			opacity.value = 0.5;
-// 			opacity.value = withTiming(1, { duration: BALANCE_FADE_DURATION });
-// 			previousValue.current = value;
-// 		}
-// 	}, [value]);
-
-// 	const animatedStyle = useAnimatedStyle(() => ({
-// 		opacity: opacity.value
-// 	}));
-
-// 	return (
-// 		<Animated.View style={animatedStyle}>
-// 			<Amount value={value} ticker={ticker} size="l" />
-// 		</Animated.View>
-// 	);
-// };
-
 /**
  * AccountCard component. Displays account information including name, balance, and address
  * with optional loading state, active/inactive styling, and remove functionality.
