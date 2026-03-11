@@ -17,7 +17,6 @@ import { WalletAccountType } from 'wallet-common-core/src/constants';
 
 const BALANCE_CHANGE_ANIMATION_DELAY = 1000;
 const BALANCE_CHANGE_ANIMATION_DURATION = 250;
-// const BALANCE_FADE_DURATION = 125;
 
 /**
  * RemoveButton component. Renders a touchable icon button for removing or hiding an account.
