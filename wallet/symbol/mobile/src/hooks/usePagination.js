@@ -49,39 +49,37 @@ export const usePagination = ({
 	});
 
 	const fetchPage = async (pageNumber, shouldReplaceData) => {
-		try {
-			const pageData = await asyncManager.call(pageNumber);
-			
-			setPageNumber(prev => prev + 1);
-			setData(prevData => dataUpdater(shouldReplaceData ? [] : prevData, pageData));
+		const pageData = await asyncManager.call(pageNumber);
 
-			const isPageEmpty = pageData.length === 0;
-			const isPageIncomplete = pageSize !== null && pageData.length < pageSize;
+		setPageNumber(prev => prev + 1);
+		setData(prevData => dataUpdater(shouldReplaceData ? [] : prevData, pageData));
 
-			if (isPageEmpty || isPageIncomplete)
-				setIsLastPage(true);
-		} catch {
-			// Error handled by asyncManager.onError
-		}
+		const isPageEmpty = pageData.length === 0;
+		const isPageIncomplete = pageSize !== null && pageData.length < pageSize;
+
+		if (isPageEmpty || isPageIncomplete)
+			setIsLastPage(true);
+
+		return pageData;
 	};
 
 	const fetchNextPage = useCallback(async () => {
 		if (asyncManager.isLoading || isLastPage)
 			return;
 
-		await fetchPage(pageNumber);
+		return fetchPage(pageNumber);
 	}, [asyncManager, pageNumber, isLastPage, pageSize, dataUpdater]);
 
 	const fetchFirstPage = useCallback(async () => {
-		if (asyncManager.isLoading) 
+		if (asyncManager.isLoading)
 			return;
 
 		// Reset state before fetching first page
 		setPageNumber(firstPageNumber);
 		setIsLastPage(false);
 		asyncManager.reset();
-		
-		await fetchPage(firstPageNumber, true);
+
+		return fetchPage(firstPageNumber, true);
 	}, [asyncManager, firstPageNumber, isLastPage, pageSize, dataUpdater]);
 
 	const reset = useCallback(() => {
@@ -95,7 +93,7 @@ export const usePagination = ({
 		setData(newData);
 	}, []);
 
-	return { 
+	return {
 		isLoading: asyncManager.isLoading,
 		isLastPage,
 		pageNumber,
