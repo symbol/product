@@ -6,7 +6,8 @@ const EMPTY_AGGREGATE_FIXTURE = {
 	amount: '0',
 	innerTransactions: [],
 	cosignatures: [],
-	receivedCosignatures: []
+	receivedCosignatures: [],
+	fee: null
 };
 
 export class AggregateTransactionFixtureBuilder extends TransactionFixtureBuilder {
@@ -87,10 +88,7 @@ export class AggregateTransactionFixtureBuilder extends TransactionFixtureBuilde
 	 */
 	static createWithData = data => {
 		return new AggregateTransactionFixtureBuilder({
-			innerTransactions: data.innerTransactions ?? [],
-			cosignatures: data.cosignatures ?? [],
-			receivedCosignatures: data.receivedCosignatures ?? [],
-			amount: data.amount ?? '0',
+			...EMPTY_AGGREGATE_FIXTURE,
 			...data
 		});
 	};

@@ -8,7 +8,8 @@ const EMPTY_TRANSFER_FIXTURE = {
 	recipientAddress: '',
 	message: null,
 	mosaics: [],
-	amount: '0'
+	amount: '0',
+	fee: null
 };
 
 export class TransferTransactionFixtureBuilder extends TransactionFixtureBuilder {
@@ -81,10 +82,7 @@ export class TransferTransactionFixtureBuilder extends TransactionFixtureBuilder
 	 */
 	static createWithData = data => {
 		return new TransferTransactionFixtureBuilder({
-			recipientAddress: data.recipientAddress ?? '',
-			message: data.message ?? null,
-			mosaics: data.mosaics ?? [],
-			amount: data.amount ?? '0',
+			...EMPTY_TRANSFER_FIXTURE,
 			...data
 		});
 	};

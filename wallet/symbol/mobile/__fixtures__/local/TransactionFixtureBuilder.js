@@ -85,7 +85,10 @@ export class TransactionFixtureBuilder {
      * @returns {TransactionFixtureBuilder}
      */
 	static createWithData = data => {
-		return new TransactionFixtureBuilder(data);
+		return new TransactionFixtureBuilder({
+			...DEFAULT_FIXTURE,
+			...data
+		});
 	};
 
 	/**
