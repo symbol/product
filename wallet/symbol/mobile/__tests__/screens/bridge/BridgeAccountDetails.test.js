@@ -109,6 +109,12 @@ describe('screens/bridge/BridgeAccountDetails', () => {
 		mockLocalization();
 		mockLink();
 		jest.clearAllMocks();
+		jest.useFakeTimers();
+	});
+
+	afterEach(() => {
+		jest.clearAllTimers();
+		jest.useRealTimers();
 	});
 
 	describe('render', () => {

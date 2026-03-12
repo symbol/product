@@ -103,6 +103,12 @@ describe('screens/bridge/BridgeAccountList', () => {
 	beforeEach(() => {
 		mockLocalization();
 		jest.clearAllMocks();
+		jest.useFakeTimers();
+	});
+
+	afterEach(() => {
+		jest.clearAllTimers();
+		jest.useRealTimers();
 	});
 
 	describe('render', () => {

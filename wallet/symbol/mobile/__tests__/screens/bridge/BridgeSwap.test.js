@@ -382,6 +382,12 @@ describe('screens/bridge/BridgeSwap', () => {
 			goToBridgeSwapDetails: jest.fn()
 		});
 		jest.clearAllMocks();
+		jest.useFakeTimers();
+	});
+
+	afterEach(() => {
+		jest.clearAllTimers();
+		jest.useRealTimers();
 	});
 
 	describe('swap token selection and transaction flow', () => {

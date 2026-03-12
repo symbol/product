@@ -173,6 +173,12 @@ const createWalletControllerConfig = (accountInfo, networkProperties) => ({
 describe('screens/assets/TokenDetails', () => {
 	beforeEach(() => {
 		mockLocalization();
+		jest.useFakeTimers();
+	});
+
+	afterEach(() => {
+		jest.clearAllTimers();
+		jest.useRealTimers();
 	});
 
 	describe('render', () => {
