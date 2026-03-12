@@ -1,5 +1,6 @@
 import { BridgeSwapDetails } from '@/app/screens/bridge/BridgeSwapDetails';
 import { BridgePayoutStatus, BridgeRequestStatus } from '@/app/screens/bridge/types/Bridge';
+import { formatDate } from '@/app/utils';
 import { AccountFixtureBuilder } from '__fixtures__/local/AccountFixtureBuilder';
 import { NetworkPropertiesFixtureBuilder } from '__fixtures__/local/NetworkPropertiesFixtureBuilder';
 import { TokenFixtureBuilder } from '__fixtures__/local/TokenFixtureBuilder';
@@ -18,6 +19,8 @@ const PAYOUT_TRANSACTION_HASH = '0xPAYOUT789ABC123DEF';
 const REQUEST_TIMESTAMP = 1684265310994;
 const PAYOUT_TIMESTAMP = 1684351710994;
 const ERROR_MESSAGE = 'Bridge processing error';
+const REQUEST_TIMESTAMP_TEXT = formatDate(REQUEST_TIMESTAMP, key => key, true);
+const PAYOUT_TIMESTAMP_TEXT = formatDate(PAYOUT_TIMESTAMP, key => key, true);
 
 // Screen Text
 
@@ -318,7 +321,7 @@ describe('screens/bridge/BridgeSwapDetails', () => {
 						SCREEN_TEXT.textStepPayoutSend,
 						SCREEN_TEXT.textStepPayoutConfirmation,
 						// Request timestamp formatted with time
-						'month_may 16, 2023 21:28'
+						REQUEST_TIMESTAMP_TEXT
 					],
 					notVisibleTexts: []
 				}
@@ -349,9 +352,9 @@ describe('screens/bridge/BridgeSwapDetails', () => {
 						SCREEN_TEXT.textStepPayoutSend,
 						SCREEN_TEXT.textStepPayoutConfirmation,
 						// Request timestamp with time
-						'month_may 16, 2023 21:28',
+						REQUEST_TIMESTAMP_TEXT,
 						// Payout timestamp with time
-						'month_may 17, 2023 21:28'
+						PAYOUT_TIMESTAMP_TEXT
 					],
 					notVisibleTexts: []
 				}

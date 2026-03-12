@@ -1,7 +1,14 @@
 import { ActivityStatus } from '@/app/constants';
 import { BridgePayoutStatus, BridgeRequestStatus } from '@/app/screens/bridge/types/Bridge';
 import { buildActivityLog } from '@/app/screens/bridge/utils/activity-log';
+import { formatDate } from '@/app/utils';
 import { mockLocalization } from '__tests__/mock-helpers';
+
+// Constants
+
+const REQUEST_TIMESTAMP = 1684265310994;
+const PAYOUT_TIMESTAMP = 1684351710994;
+const ERROR_MESSAGE = 'Bridge processing error';
 
 // Screen Text
 
@@ -10,15 +17,9 @@ const SCREEN_TEXT = {
 	textStepAwaitingBridge: 's_bridge_swapStatus_step_awaitingBridge',
 	textStepPayoutSend: 's_bridge_swapStatus_step_payoutSend',
 	textStepPayoutConfirmation: 's_bridge_swapStatus_step_payoutConfirmation',
-	textRequestDateValue: 'month_may 16, 2023 21:28',
-	textPayoutDateValue: 'month_may 17, 2023 21:28'
+	textRequestDateValue: formatDate(REQUEST_TIMESTAMP, key => key, true),
+	textPayoutDateValue: formatDate(PAYOUT_TIMESTAMP, key => key, true)
 };
-
-// Constants
-
-const REQUEST_TIMESTAMP = 1684265310994;
-const PAYOUT_TIMESTAMP = 1684351710994;
-const ERROR_MESSAGE = 'Bridge processing error';
 
 // Icon Names
 
