@@ -1,4 +1,3 @@
-import { Router } from '@/app/Router';
 import {
 	Checkbox,
 	Dropdown,
@@ -15,7 +14,8 @@ import {
 import { MessageType } from '@/app/constants';
 import { useAsyncManager, useDebounce, useProp, useToggle, useTransactionFees, useWalletController } from '@/app/hooks';
 import { $t } from '@/app/localization';
-import { formatAmountInput, getAddressName, getAvailableBalance, handleError, objectToTableData } from '@/app/utils';
+import { Router } from '@/app/router/Router';
+import { formatAmountInput, getAccountKnownInfo, getAvailableBalance, handleError, objectToTableData } from '@/app/utils';
 import React, { useEffect, useMemo, useState } from 'react';
 import Animated, { FadeInDown, FadeOut } from 'react-native-reanimated';
 import { constants as symbolConstants } from 'wallet-common-symbol';
@@ -116,7 +116,7 @@ export const Send = props => {
 	// Get transaction preview data for confirmation dialog
 	const getTransactionPreviewTable = transaction => {
 		if (symbolConstants.TransactionType.HASH_LOCK === transaction.type) {
-			return {
+			const hashLockData = {
 				type: transaction.type,
 				description: $t('form_transfer_hash_lock_description', {
 					lockedAmount: transaction.lockedAmount,
@@ -124,6 +124,8 @@ export const Send = props => {
 				}),
 				fee: transaction.fee
 			};
+
+			return objectToTableData(hashLockData);
 		}
 
 		const transfer = transaction.innerTransactions ? transaction.innerTransactions[0] : transaction;
@@ -131,8 +133,7 @@ export const Send = props => {
 		const data = {
 			type: transfer.type,
 			sender: transfer.signerAddress,
-			recipientAddress: transfer.recipientAddress,
-			mosaics: transfer.mosaics ?? transfer.tokens
+			recipientAddress: transfer.recipientAddress
 		};
 
 		if (transfer.message) {
@@ -140,6 +141,7 @@ export const Send = props => {
 			data.isMessageEncrypted = transfer.message.type === MessageType.ENCRYPTED_TEXT;
 		}
 
+		data.mosaics = transfer.mosaics ?? transfer.tokens;
 		data.fee = transaction.fee;
 
 		return objectToTableData(data);
@@ -171,10 +173,19 @@ export const Send = props => {
 	useEffect(() => {
 		if (isAccountCosignatoryOfMultisig) {
 			const senderAddresses = [currentAccount.address, ...currentAccountInfo.multisigAddresses];
-			const senderAddressOptions = senderAddresses.map(address => ({
-				value: address,
-				label: getAddressName(address, currentAccount, walletAccounts, addressBook)
-			}));
+			const senderAddressOptions = senderAddresses.map(address => {
+				const knownInfo = getAccountKnownInfo(address, {
+					walletAccounts,
+					addressBook,
+					chainName: walletController.chainName,
+					networkIdentifier: walletController.networkIdentifier
+				});
+
+				return {
+					value: address,
+					label: knownInfo.name || address
+				};
+			});
 			setSenderOptions(senderAddressOptions);
 		}
 	}, [isStateReady, currentAccount, currentAccountInfo.multisigAddresses]);
@@ -241,7 +252,7 @@ export const Send = props => {
 					)}
 					{isAccountCosignatoryOfMultisig && (
 						<Dropdown
-							title={$t('input_sender')}
+							label={$t('input_sender')}
 							value={senderAddress}
 							list={senderOptions}
 							onChange={setSenderAddress}

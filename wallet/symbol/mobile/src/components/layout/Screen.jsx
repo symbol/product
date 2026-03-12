@@ -25,12 +25,16 @@ export const Screen = ({ isScrollDisabled, isLoading, backgroundImageSrc, render
 	const defaultRefreshColor = Colors.Components.loadingIndicator.surface;
 
 	// Separate upper and bottom content if defined
+	let header = null;
 	let upper = null;
 	let bottom = null;
 	let modals = null;
 	React.Children.forEach(children, child => {
 		if (!child)
 			return;
+
+		if (child.type === Screen.Header)
+			header = child.props.children;
 
 		if (child.type === Screen.Upper)
 			upper = child.props.children;
@@ -42,12 +46,15 @@ export const Screen = ({ isScrollDisabled, isLoading, backgroundImageSrc, render
 			modals = child.props.children;
 	});
 
+	const isSectioned = Boolean(header || upper || bottom || modals);
+
 	return (
 		<View style={styles.root}>
 			{!!backgroundImageSrc && (
 				<Image source={backgroundImageSrc} style={styles.backgroundImage} />
 			)}
 			<KeyboardAvoidingView style={styles.contentContainer} enabled={isKeyboardAvoidingViewEnabled} behavior="padding">
+				{header}
 				<ContentContainer
 					style={styles.contentContainer}
 					refreshControl={refresh ? (
@@ -58,7 +65,7 @@ export const Screen = ({ isScrollDisabled, isLoading, backgroundImageSrc, render
 						/>
 					) : null}
 				>
-					{upper ? upper : children}
+					{isSectioned ? upper : children}
 				</ContentContainer>
 				{bottom && (
 					<View>
@@ -84,6 +91,7 @@ export const Screen = ({ isScrollDisabled, isLoading, backgroundImageSrc, render
 	);
 };
 
+Screen.Header = props => { return props.children; };
 Screen.Upper = props => { return props.children; };
 Screen.Bottom = props => { return props.children; };
 Screen.Modals = props => { return props.children; };

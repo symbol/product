@@ -124,23 +124,79 @@ export class ScreenTester {
 	};
 
 	/**
+	 * Simulates pressing a button/element by its testID.
+	 * This finds the element and then traverses up to find the nearest pressable ancestor.
+	 * 
+	 * @param {string} testID - The testID of the element or its child to press.
+	 * @param {number} [index] - The index of the element if multiple elements have the same testID.
+	 */
+	pressButtonByTestId = (testID, index) => {
+		const { getByTestId, getAllByTestId } = this.renderer;
+		let element;
+
+		if (index !== undefined) {
+			const elements = getAllByTestId(testID);
+			element = elements[index];
+		} else {
+			element = getByTestId(testID);
+		}
+
+		// Find the nearest pressable parent
+		let current = element;
+		while (current && !current.props?.onPress) 
+			current = current.parent;
+		
+
+		if (current?.props?.onPress) {
+			fireEvent.press(current);
+		} else {
+			// Fallback: try pressing the element itself
+			fireEvent.press(element);
+		}
+	};
+
+	/**
 	 * Asserts that an element with the specified testID is present on the screen.
 	 * 
 	 * @param {string} testID - The testID of the element to check for.
+	 * @param {'testId'|'text'|'label'} [by='testId'] - Optional method to find the element (not used currently).
 	 */
-	expectElement = testID => {
-		const { getByTestId } = this.renderer;
-		expect(getByTestId(testID)).toBeTruthy();
+	expectElement = (testID, by = 'testId') => {
+		const { getByTestId, getByText, getByLabelText } = this.renderer;
+		switch (by) {
+		case 'text':
+			expect(getByText(testID)).toBeTruthy();
+			break;
+		case 'label':
+			expect(getByLabelText(testID)).toBeTruthy();
+			break;
+		case 'testId':
+		default:
+			expect(getByTestId(testID)).toBeTruthy();
+			break;
+		}
 	};
 
 	/**
 	 * Asserts that an element with the specified testID is not present on the screen.
 	 * 
 	 * @param {string} testID - The testID of the element to check for absence.
+	 * @param {'testId'|'text'|'label'} [by='testId'] - Optional method to find the element (not used currently).
 	 */
-	notExpectElement = testID => {
-		const { queryByTestId } = this.renderer;
-		expect(queryByTestId(testID)).toBeNull();
+	notExpectElement = (testID, by = 'testId') => {
+		const { queryByTestId, queryByText, queryByLabelText } = this.renderer;
+		switch (by) {
+		case 'text':
+			expect(queryByText(testID)).toBeNull();
+			break;
+		case 'label':
+			expect(queryByLabelText(testID)).toBeNull();
+			break;
+		case 'testId':
+		default:
+			expect(queryByTestId(testID)).toBeNull();
+			break;
+		}
 	};
 
 	/**
@@ -234,5 +290,26 @@ export class ScreenTester {
 	 */
 	printDebug = () => {
 		this.renderer.debug();
+	};
+	
+	/**
+	 * Gets the count of elements with the specified text.
+	 *
+	 * @param {string} text - The text to search for.
+	 * @returns {number} The count of elements with the specified text.
+	 */
+	getTextCount = text => {
+		const { queryAllByText } = this.renderer;
+		return queryAllByText(text).length;
+	};
+
+	/**
+	 * Asserts that the specified text appears a certain number of times.
+	 *
+	 * @param {string} text - The text to check.
+	 * @param {number} count - The expected count.
+	 */
+	expectTextCount = (text, count) => {
+		expect(this.getTextCount(text)).toBe(count);
 	};
 }

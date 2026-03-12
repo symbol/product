@@ -1,5 +1,4 @@
 import { generateMnemonic } from './utils/mnemonic';
-import { Router } from '@/app/Router';
 import {
 	Button,
 	ButtonClose,
@@ -17,6 +16,7 @@ import {
 import { MAX_SEED_ACCOUNTS_PER_NETWORK } from '@/app/constants';
 import { useAsyncManager, usePasscode, useToggle, useValidation, useWalletController } from '@/app/hooks';
 import { $t } from '@/app/localization';
+import { Router } from '@/app/router/Router';
 import { Steps } from '@/app/screens/onboarding/components/Steps';
 import { WalletCreationAnimation } from '@/app/screens/onboarding/components/WalletCreationAnimation';
 import { validateAccountName, validateRequired } from '@/app/utils';

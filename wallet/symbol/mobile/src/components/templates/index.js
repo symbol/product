@@ -1,1 +1,2 @@
-export { TransactionScreenTemplate } from './TransactionScreenTemplate/TransactionScreenTemplate';
+export * from './FilteredListScreenTemplate';
+export * from './TransactionScreenTemplate';

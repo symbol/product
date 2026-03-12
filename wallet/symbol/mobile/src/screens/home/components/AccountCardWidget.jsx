@@ -11,7 +11,6 @@ import {
 	StyledText,
 	TouchableNative
 } from '@/app/components';
-import { config } from '@/app/config';
 import { useToggle } from '@/app/hooks';
 import { $t } from '@/app/localization';
 import { Colors, Sizes, Typography } from '@/app/styles';
@@ -21,7 +20,6 @@ import { Image, StyleSheet, Text, View } from 'react-native';
 
 const CARD_BACKGROUND_COLOR = Colors.Semantic.role.primary.default;
 const BUTTON_BACKGROUND_COLOR = Colors.Semantic.role.primary.weaker;
-const BUTTON_BACKGROUND_COLOR_PRESSED = Colors.Semantic.role.primary.muted;
 
 /**
  * ActionButton component
@@ -39,12 +37,7 @@ const ActionButton = ({ icon, text, isLast = false, onPress }) => {
 
 	return (
 		<View style={buttonStyle}>
-			<TouchableNative
-				color={BUTTON_BACKGROUND_COLOR}
-				colorPressed={BUTTON_BACKGROUND_COLOR_PRESSED}
-				onPress={onPress}
-				style={styles.actionButtonPressable}
-			>
+			<TouchableNative onPress={onPress} style={styles.actionButtonPressable}>
 				<Icon name={icon} size="xs" />
 				<Text style={styles.actionButtonText}>{text}</Text>
 			</TouchableNative>
@@ -63,6 +56,7 @@ const ActionButton = ({ icon, text, isLast = false, onPress }) => {
  * @param {string} props.balance - Account balance amount.
  * @param {string} props.name - Account name.
  * @param {import('../../../types/Price').Price} props.price - Current token price for fiat conversion.
+ * @param {string} props.ticker - Currency ticker symbol.
  * @param {string} props.networkIdentifier - Network identifier for currency formatting.
  * @param {function} props.onNameChange - Callback when account name is changed.
  * @param {function} props.onReceivePress - Callback when receive button is pressed.
@@ -77,6 +71,7 @@ export const AccountCardWidget = props => {
 		balance,
 		name,
 		price,
+		ticker,
 		networkIdentifier,
 		onNameChange,
 		onReceivePress,
@@ -113,7 +108,7 @@ export const AccountCardWidget = props => {
 					<Field title={$t('c_accountCard_title_balance')}>
 						<Amount
 							value={balance}
-							ticker={config.chains.symbol.ticker}
+							ticker={ticker}
 							size="l"
 						/>
 						{!!userCurrencyBalanceText && (

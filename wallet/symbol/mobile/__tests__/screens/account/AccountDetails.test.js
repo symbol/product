@@ -123,8 +123,14 @@ const mockWalletControllerConfigured = (overrides = {}) => {
 
 describe('screens/account/AccountDetails', () => {
 	beforeEach(() => {
+		jest.useFakeTimers();
 		mockLocalization();
 		jest.clearAllMocks();
+	});
+
+	afterEach(() => {
+		jest.clearAllTimers();
+		jest.useRealTimers();
 	});
 
 	describe('render', () => {

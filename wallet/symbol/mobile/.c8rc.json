@@ -1,5 +1,5 @@
 {
-	"all": "true",
+	"all": false,
 	"include": ["src/**"],
 	"exclude": [
 		"src/types/**",

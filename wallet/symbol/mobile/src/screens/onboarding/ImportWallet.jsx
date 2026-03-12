@@ -1,9 +1,9 @@
 import { getOptinAccountFromMnemonic } from './utils/optin';
-import { Router } from '@/app/Router';
 import { Button, ButtonClose, FlexContainer, PasscodeView, Screen, Spacer, Stack, StyledText, SymbolLogo } from '@/app/components';
 import { MAX_SEED_ACCOUNTS_PER_NETWORK } from '@/app/constants';
 import { useAsyncManager, usePasscode, useWalletController } from '@/app/hooks';
 import { $t } from '@/app/localization';
+import { Router } from '@/app/router/Router';
 import { MnemonicInput } from '@/app/screens/onboarding/components/MnemonicInput';
 import { WalletCreationAnimation } from '@/app/screens/onboarding/components/WalletCreationAnimation';
 import React, { useState } from 'react';

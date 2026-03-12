@@ -110,7 +110,7 @@ const renderRowValue = (row, resolvedData, translate, key) => {
 			<BooleanView
 				key={key}
 				value={row.value}
-				text={translate(`fieldValue_${row.value}`)}
+				text={translate(`data_${row.value}`)}
 			/>
 		);
 	case 'encryption':
@@ -118,7 +118,7 @@ const renderRowValue = (row, resolvedData, translate, key) => {
 			<BooleanView
 				key={key}
 				value={row.value}
-				text={translate(`fieldValue_${row.value ? 'encrypted' : 'unencrypted'}`)}
+				text={translate(`data_${row.value ? 'encrypted' : 'unencrypted'}`)}
 			/>
 		);
 	case 'copy':
@@ -128,7 +128,7 @@ const renderRowValue = (row, resolvedData, translate, key) => {
 			</CopyButtonContainer>
 		);
 	case 'translate':
-		return <StyledText key={key}>{translate(`fieldValue_${row.value}`)}</StyledText>;
+		return <StyledText key={key}>{translate(`data_${row.value}`)}</StyledText>;
 	case 'text':
 	default:
 		return <StyledText key={key}>{`${row.value}` ?? '-'}</StyledText>;
