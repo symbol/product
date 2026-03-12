@@ -1,15 +1,25 @@
-import { Router, RouterView, navigationRef } from '@/app/Router';
+import { Router } from '@/app/router/Router';
+import { RouterView } from '@/app/router/RouterView';
+import { navigationRef } from '@/app/router/navigationRef';
 import { render, waitFor } from '@testing-library/react-native';
 import React from 'react';
 
-jest.mock('@react-navigation/native', () => ({
-	...jest.requireActual('@react-navigation/native'),
-	createNavigationContainerRef: () => ({
-		goBack: jest.fn(),
-		navigate: jest.fn(),
-		reset: jest.fn()
-	})
-}));
+jest.mock('@react-navigation/native', () => {
+	const React = require('react');
+	const { View } = require('react-native');
+
+	return {
+		...jest.requireActual('@react-navigation/native'),
+		NavigationContainer: ({ children }) => <View>{children}</View>,
+		createNavigationContainerRef: () => ({
+			current: null,
+			isReady: jest.fn().mockReturnValue(true),
+			goBack: jest.fn(),
+			navigate: jest.fn(),
+			reset: jest.fn()
+		})
+	};
+});
 
 jest.mock('react-native-safe-area-context', () => {
 	const { View } = require('react-native');
@@ -29,6 +39,24 @@ jest.mock('react-native-safe-area-context', () => {
 	};
 });
 
+jest.mock('react-native-screens', () => ({
+	enableScreens: jest.fn(),
+	enableFreeze: jest.fn()
+}));
+
+jest.mock('@react-navigation/native-stack', () => {
+	const React = require('react');
+	const { View } = require('react-native');
+
+	return {
+		createNativeStackNavigator: () => ({
+			Navigator: ({ children }) => <View>{children}</View>,
+			Group: ({ children }) => <View>{children}</View>,
+			Screen: ({ component: Component }) => <Component />
+		})
+	};
+});
+
 jest.mock('@/app/screens', () => {
 	const { Text } = require('react-native');
 	// eslint-disable-next-line react/display-name
@@ -39,7 +67,10 @@ jest.mock('@/app/screens', () => {
 		CreateWallet: createMockScreen('CreateWallet'),
 		ImportWallet: createMockScreen('ImportWallet'),
 		Home: createMockScreen('Home'),
+		History: createMockScreen('History'),
 		AccountDetails: createMockScreen('AccountDetails'),
+		AccountList: createMockScreen('AccountList'),
+		AddSeedAccount: createMockScreen('AddSeedAccount'),
 		Send: createMockScreen('Send'),
 		Settings: createMockScreen('Settings'),
 		SettingsAbout: createMockScreen('SettingsAbout'),
@@ -72,6 +103,11 @@ const NAVIGATION_SCREENS_CONFIG = [
 		hasParams: false
 	},
 	{
+		screenName: 'History',
+		shouldReset: true,
+		hasParams: false
+	},
+	{
 		screenName: 'Send',
 		shouldReset: false,
 		hasParams: true
@@ -81,8 +117,16 @@ const NAVIGATION_SCREENS_CONFIG = [
 		shouldReset: false,
 		hasParams: true
 	},
+	{		screenName: 'AccountList',
+		shouldReset: false,
+		hasParams: true
+	},
 	{
-		screenName: 'Settings',
+		screenName: 'AddSeedAccount',
+		shouldReset: false,
+		hasParams: true
+	},
+	{		screenName: 'Settings',
 		shouldReset: false,
 		hasParams: true
 	},
@@ -131,7 +175,13 @@ describe('Router', () => {
 			const { screenName, shouldReset, hasParams } = config;
 			const methodName = `goTo${screenName}`;
 			const description = `navigates to ${screenName} screen${shouldReset ? ' with reset' : ''}`;
-			const params = hasParams ? { testParam: 123 } : undefined;
+			const params = hasParams 
+				? { 
+					params: { 
+						testParam: 123 
+					} 
+				} 
+				: undefined;
 
 			it(description, () => {
 				// Act:
@@ -144,7 +194,7 @@ describe('Router', () => {
 						routes: [{ name: screenName }]
 					});
 				} else if (hasParams) {
-					expect(navigationRef.navigate).toHaveBeenCalledWith(screenName, params);
+					expect(navigationRef.navigate).toHaveBeenCalledWith(screenName, params.params);
 				} else {
 					expect(navigationRef.navigate).toHaveBeenCalledWith(screenName);
 				}

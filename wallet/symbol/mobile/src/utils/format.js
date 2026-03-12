@@ -41,3 +41,30 @@ export const formatAmountInput = (amount, divisibility) => {
 		? `${intPart}.${truncated}`
 		: intPart;
 };
+
+/**
+ * Formats a date string to a readable format.
+ * @param {string} dateStr - The date string.
+ * @param {Function} translate - The translation function.
+ * @param {boolean} [showTime] - Whether to show the time.
+ * @returns {string} The formatted date string.
+ */
+export const formatDate = (dateStr, translate, showTime = false) => {
+	const months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+
+	const addZero = num => {
+		return 0 <= num && 10 > num ? '0' + num : num + '';
+	};
+
+	const dateObj = new Date(dateStr);
+	const minutes = addZero(dateObj.getMinutes());
+	const hour = addZero(dateObj.getHours());
+	const month = 'function' === typeof translate ? translate('month_' + months[dateObj.getMonth()]) : months[dateObj.getMonth()];
+	const day = dateObj.getDate();
+	const year = dateObj.getFullYear();
+
+	let formattedDate = `${month} ${day}, ${year}`;
+	formattedDate += showTime ? ` ${hour}:${minutes}` : '';
+
+	return formattedDate;
+};

@@ -51,6 +51,12 @@ export const Semantic = {
 		l: Primitives.spacing300, // 24px
 		xl: Primitives.spacing400, // 32px,
 		xxl: Primitives.spacing500 // 40px
+	},
+	headerHeight: {
+		m: Primitives.spacing700 // 56px
+	},
+	navigationMenuHeight: {
+		m: Primitives.spacing700 // 56px
 	}
 };
 

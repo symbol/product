@@ -44,6 +44,7 @@ module.exports = {
 	clearMocks: true,
 	setupFilesAfterEnv: ['./setupTests.js'],
 	setupFiles: ['./node_modules/react-native-gesture-handler/jestSetup.js'],
+	maxWorkers: process.env.CI ? 2 : '50%',
 
 	// Transform & module settings
 	transform: {

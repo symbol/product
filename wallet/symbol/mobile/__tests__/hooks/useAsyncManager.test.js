@@ -19,7 +19,13 @@ const createConfig = (overrides = {}) => ({
 
 describe('hooks/useAsyncManager', () => {
 	beforeEach(() => {
+		jest.useFakeTimers();
 		__DEV__ = false;
+	});
+
+	afterEach(() => {
+		jest.clearAllTimers();
+		jest.useRealTimers();
 	});
 
 	describe('initialization', () => {

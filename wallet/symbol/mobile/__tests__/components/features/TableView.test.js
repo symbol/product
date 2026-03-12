@@ -174,7 +174,7 @@ describe('components/TableView', () => {
 					}
 				},
 				expected: {
-					visibleTexts: ['Active', 'fieldValue_true']
+					visibleTexts: ['Active', 'data_true']
 				}
 			},
 			{
@@ -187,7 +187,7 @@ describe('components/TableView', () => {
 					}
 				},
 				expected: {
-					visibleTexts: ['Active', 'fieldValue_false']
+					visibleTexts: ['Active', 'data_false']
 				}
 			},
 			{
@@ -200,7 +200,7 @@ describe('components/TableView', () => {
 					}
 				},
 				expected: {
-					visibleTexts: ['Message', 'fieldValue_encrypted']
+					visibleTexts: ['Message', 'data_encrypted']
 				}
 			},
 			{
@@ -213,7 +213,7 @@ describe('components/TableView', () => {
 					}
 				},
 				expected: {
-					visibleTexts: ['Message', 'fieldValue_unencrypted']
+					visibleTexts: ['Message', 'data_unencrypted']
 				}
 			},
 			{
@@ -226,7 +226,7 @@ describe('components/TableView', () => {
 					}
 				},
 				expected: {
-					visibleTexts: ['Status', 'fieldValue_pending']
+					visibleTexts: ['Status', 'data_pending']
 				}
 			}
 		];

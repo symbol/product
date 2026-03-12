@@ -38,7 +38,13 @@ const SCREEN_TEXT = {
 
 describe('screens/onboarding/ImportWallet', () => {
 	beforeEach(() => {
+		jest.useFakeTimers();
 		mockLocalization();
+	});
+
+	afterEach(() => {
+		jest.clearAllTimers();
+		jest.useRealTimers();
 	});
 
 	it('import wallet flow', async () => {

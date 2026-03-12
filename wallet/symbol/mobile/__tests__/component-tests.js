@@ -49,6 +49,7 @@ export const runVisibilityTest = (Component, config) => {
  * @typedef {Object} SwitchPressTest
  * @property {Object} props - The props to be passed to the component.
  * @property {string} textToPress - The text of the element to be pressed.
+ * @property {string} [labelToPress] - The accessibility label of the element to be pressed (used if textToPress is not provided).
  */
 
 /**
@@ -58,7 +59,7 @@ export const runVisibilityTest = (Component, config) => {
  * @param {SwitchPressTest} config - Configuration object for the test.
  */
 export const runSwitchPressTest = (Component, config) => {
-	const { props, textToPress } = config;
+	const { props, textToPress, labelToPress } = config;
 	const cases = [
 		{ 
 			description: 'fires event from off to on',
@@ -93,6 +94,7 @@ export const runSwitchPressTest = (Component, config) => {
 						isDisabled: testCase.isDisabled
 					},
 					textToPress: textToPress,
+					labelToPress: labelToPress,
 					eventPropName: 'onChange'
 				};
 				const expected = {
@@ -110,6 +112,7 @@ export const runSwitchPressTest = (Component, config) => {
  * @typedef {Object} PressTest
  * @property {Object} props - The props to be passed to the component.
  * @property {string} textToPress - The text of the element to be pressed.
+ * @property {string} [labelToPress] - The accessibility label of the element to be pressed (used if textToPress is not provided).
  * @property {boolean} [testDisabledState] - Whether to test the disabled state of the component.
  */
 
@@ -120,7 +123,7 @@ export const runSwitchPressTest = (Component, config) => {
  * @param {PressTest} config - Configuration object for the test.
  */
 export const runPressTest = (Component, config) => {
-	const { props, textToPress, testDisabledState } = config;
+	const { props, textToPress, labelToPress, testDisabledState } = config;
 	const cases = [
 		{ 
 			description: 'fires event when pressed',
@@ -152,6 +155,7 @@ export const runPressTest = (Component, config) => {
 						isDisabled: testCase.isDisabled
 					},
 					textToPress: textToPress,
+					labelToPress: labelToPress,
 					eventPropName: 'onPress',
 					skipCallback: testCase.skipCallback || false
 				};
