@@ -1,9 +1,11 @@
+from collections import namedtuple
+
 from cryptography import x509
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 from symbolchain.CryptoTypes import PublicKey
 from zenlog import log
 
-from .CertificateUtils import CertificateInfo
+CertificateInfo = namedtuple('CertificateInfo', ['subject', 'public_key'])
 
 
 class CatapultCertificateProcessor:
