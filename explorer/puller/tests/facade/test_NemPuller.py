@@ -24,7 +24,7 @@ from symbollightapi.model.Transaction import (
 	TransferTransaction
 )
 
-from puller.facade.NemPuller import AccountRecord, DatabaseConfig, NamespaceRecord, NemPuller
+from puller.facade.NemPuller import AccountRecord, DatabaseConfig, MosaicRecord, NamespaceRecord, NemPuller
 
 # region test data
 
@@ -136,7 +136,7 @@ NEM_CONNECTOR_RESPONSE_BLOCKS = [
 			MosaicDefinitionTransaction(
 				'4725e523e5d5a562121f38953d6da3ae695060533fc0c5634b31de29c3b766e1',
 				2,
-				'a700809530e5428066807ec0d34859c52e260fc60634aaac13e3972dcfc08736',
+				PublicKey('a700809530e5428066807ec0d34859c52e260fc60634aaac13e3972dcfc08736'),
 				150000,
 				73397,
 				83397,
@@ -144,16 +144,16 @@ NEM_CONNECTOR_RESPONSE_BLOCKS = [
 				'0294fcbba0b2838acd184daf1d9ae3c0f645308b442547156364192cd3d2d605',
 				10000000,
 				'NBMOSAICOD4F54EE5CDMR23CCBGOAM2XSIUX6TRS',
-				'a700809530e5428066807ec0d34859c52e260fc60634aaac13e3972dcfc08736',
+				PublicKey('a700809530e5428066807ec0d34859c52e260fc60634aaac13e3972dcfc08736'),
 				'NEM namespace test',
 				MosaicProperties(4, 3100000, False, True),
-				MosaicLevy(500, 'NBRYCNWZINEVNITUESKUMFIENWKYCRUGNFZV25AV', 1, 'nem.xem'),
+				MosaicLevy(500, Address('NBRYCNWZINEVNITUESKUMFIENWKYCRUGNFZV25AV'), 1, 'nem.xem'),
 				'namespace.test'
 			),
 			MosaicSupplyChangeTransaction(
 				'cb805b4499479135934e70452d12ad9ecc26c46a111fe0cdda8e09741d257708',
 				2,
-				'da04b4a1d64add6c70958d383f9d247af1aaa957cb89f15b2d059b278e0594d5',
+				PublicKey('da04b4a1d64add6c70958d383f9d247af1aaa957cb89f15b2d059b278e0594d5'),
 				150000,
 				73397,
 				83397,
@@ -836,3 +836,82 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 			'root.root_1.namespace',
 			'root'
 		))
+
+	@patch('puller.facade.NemPuller.NemDatabase.upsert_mosaic')
+	def test_can_process_mosaic_definition(self, mock_upsert_mosaic):
+		# Arrange:
+		mosaic_transaction = NEM_CONNECTOR_RESPONSE_BLOCKS[2].transactions[4]
+
+		cursor = Mock()
+
+		# Act:
+		self.puller._process_mosaic_definition(cursor, mosaic_transaction, mosaic_transaction.height)  # pylint: disable=protected-access
+
+		# Assert:
+		upsert_mosaic_calls = mock_upsert_mosaic.call_args_list
+		self.assertEqual(len(upsert_mosaic_calls), 1)
+		self.assertEqual(upsert_mosaic_calls[0][0], (
+			cursor,
+			MosaicRecord(
+				root_namespace='namespace',
+				namespace_name='namespace.test',
+				description='NEM namespace test',
+				creator=PublicKey('a700809530e5428066807ec0d34859c52e260fc60634aaac13e3972dcfc08736'),
+				registered_height=2,
+				initial_supply=3100000,
+				total_supply=3100000,
+				divisibility=4,
+				supply_mutable=False,
+				transferable=True,
+				levy_type=1,
+				levy_namespace_name='nem.xem',
+				levy_fee=500,
+				levy_recipient=Address('NBRYCNWZINEVNITUESKUMFIENWKYCRUGNFZV25AV')
+			),
+		))
+
+	def _assert_mosaic_supply_change(self, mock_update_mosaic_total_supply, supply_type, expected_supply_change):
+		# Arrange:
+		supply_change_transaction = MosaicSupplyChangeTransaction(
+			'cb805b4499479135934e70452d12ad9ecc26c46a111fe0cdda8e09741d257708',
+			2,
+			PublicKey('da04b4a1d64add6c70958d383f9d247af1aaa957cb89f15b2d059b278e0594d5'),
+			150000,
+			73397,
+			83397,
+			'7fef5a89a1c6c98347b8d488a8dd28902e8422680f917c28f3ef0100d394b91c'
+			'd85f7cdfd7bdcd6f0cb8089ae9d4e6ef24a8caca35d1cfec7e33c9ccab5e1503',
+			supply_type,
+			500000,
+			'namespace.test'
+		)
+
+		cursor = Mock()
+
+		# Act:
+		self.puller._process_mosaic_supply_change(cursor, supply_change_transaction)  # pylint: disable=protected-access
+
+		# Assert:
+		update_total_supply_calls = mock_update_mosaic_total_supply.call_args_list
+		self.assertEqual(len(update_total_supply_calls), 1)
+		self.assertEqual(update_total_supply_calls[0][0], (
+			cursor,
+			'namespace.test',
+			expected_supply_change
+		))
+
+	@patch('puller.facade.NemPuller.NemDatabase.update_mosaic_total_supply')
+	def test_can_process_mosaic_supply_change_decrease(self, mock_update_mosaic_total_supply):
+		self._assert_mosaic_supply_change(
+			mock_update_mosaic_total_supply,
+			supply_type=2,
+			expected_supply_change=-500000
+		)
+
+	@patch('puller.facade.NemPuller.NemDatabase.update_mosaic_total_supply')
+	def test_can_process_mosaic_supply_change_increase(self, mock_update_mosaic_total_supply):
+		self._assert_mosaic_supply_change(
+			mock_update_mosaic_total_supply,
+			supply_type=1,
+			expected_supply_change=500000
+		)
