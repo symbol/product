@@ -83,11 +83,8 @@ class SymbolPeerConnector:
 			raise NodeException from ex
 		finally:
 			if writer:
-				try:
-					writer.close()
-					await writer.wait_closed()
-				except Exception:  # pylint: disable=broad-except
-					pass
+				writer.close()
+				await writer.wait_closed()
 
 	@staticmethod
 	def _try_get_peer_chain_as_der(ssl_object):

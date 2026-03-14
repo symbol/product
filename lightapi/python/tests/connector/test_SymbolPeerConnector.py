@@ -402,6 +402,35 @@ def test_try_get_peer_chain_as_der_returns_bytes_items_directly():
 	assert [b'\x44\x55'] == result
 	assert isinstance(result[0], bytes)
 
+
+def test_try_get_peer_chain_as_der_supports_ssl_certificate_items(monkeypatch):
+	class FakeCertificate:
+		def __init__(self, payload):
+			self.payload = payload
+
+		def public_bytes(self, encoding):
+			assert 'der-encoding' == encoding
+			return self.payload
+
+	class MockSslObject:
+		@staticmethod
+		def get_unverified_chain():
+			return [FakeCertificate(b'\x77\x88')]
+
+		@staticmethod
+		def get_verified_chain():
+			return []
+
+		@staticmethod
+		def getpeercert(binary_form=True):
+			assert binary_form
+			return b'\x00'
+
+	monkeypatch.setattr(ssl, 'Certificate', FakeCertificate, raising=False)
+	monkeypatch.setattr(ssl, 'DER', 'der-encoding', raising=False)
+
+	assert [b'\x77\x88'] == SymbolPeerConnector._try_get_peer_chain_as_der(MockSslObject())
+
 # endregion
 
 
