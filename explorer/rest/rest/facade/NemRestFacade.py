@@ -11,12 +11,13 @@ from rest.model.common import Pagination
 class NemRestFacade:
 	"""Nem Rest Facade."""
 
-	def __init__(self, node_url, db_config, network_name):
+	def __init__(self, db_config, rest_config):
 		"""Creates a facade object."""
 
-		self.network = NetworkLocator.find_by_name(Network.NETWORKS, network_name)
+		self.network = NetworkLocator.find_by_name(Network.NETWORKS, rest_config.network_name)
 		self.nem_db = NemDatabase(db_config, self.network)
-		self.nem_connector = NemConnector(node_url, self.network)
+		self.nem_connector = NemConnector(rest_config.node_url, self.network)
+		self.max_lag_blocks = rest_config.max_lag_blocks
 
 	def get_block(self, height):
 		"""Gets block by height."""
@@ -64,7 +65,6 @@ class NemRestFacade:
 
 		last_db_synced_at = latest_block.timestamp
 		last_db_height = latest_block.height
-		max_lag_blocks = 2  # Allow up to 2 blocks of lag between node height and database height
 
 		# Check node connectivity and height
 		try:
@@ -85,7 +85,7 @@ class NemRestFacade:
 
 		# Check synchronization lag
 		sync_lag_blocks = max(0, node_height - last_db_height)
-		backend_synced = sync_lag_blocks <= max_lag_blocks
+		backend_synced = sync_lag_blocks <= self.max_lag_blocks  # Allow up to configured blocks of lag between node height and database height
 		errors = []
 
 		if not backend_synced:

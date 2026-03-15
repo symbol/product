@@ -4,7 +4,7 @@ from unittest.mock import patch
 from symbollightapi.model.Exceptions import NodeException
 
 from rest.facade.NemRestFacade import NemRestFacade
-from rest.model.common import Pagination, Sorting
+from rest.model.common import Pagination, RestConfig, Sorting
 
 from ..test.DatabaseTestUtils import ACCOUNT_VIEWS, BLOCK_VIEWS, DatabaseTestBase
 
@@ -25,7 +25,11 @@ class TestNemRestFacade(DatabaseTestBase):  # pylint: disable=too-many-public-me
 
 	def setUp(self):
 		super().setUp()
-		self.nem_rest_facade = NemRestFacade('http://localhost:7890', self.db_config, 'mainnet')
+		self.nem_rest_facade = NemRestFacade(self.db_config, RestConfig(
+			network_name='mainnet',
+			node_url='http://localhost:7890',
+			max_lag_blocks=2
+		))
 
 	# region block
 

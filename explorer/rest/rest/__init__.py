@@ -7,7 +7,7 @@ from symbolchain.CryptoTypes import PublicKey
 from zenlog import log
 
 from rest.facade.NemRestFacade import NemRestFacade
-from rest.model.common import DatabaseConfig, Pagination, Sorting
+from rest.model.common import DatabaseConfig, Pagination, RestConfig, Sorting
 
 
 def create_app():
@@ -27,8 +27,6 @@ def setup_nem_facade(app):
 	app.config.from_envvar('EXPLORER_REST_SETTINGS')
 	config = configparser.ConfigParser()
 	db_path = Path(app.config.get('DATABASE_CONFIG_FILEPATH'))
-	network_name = app.config.get('NETWORK_NAME', 'mainnet')
-	node_url = app.config.get('NODE_URL', 'http://localhost:7890')
 
 	log.info(f'loading database config from {db_path}')
 
@@ -43,7 +41,13 @@ def setup_nem_facade(app):
 		nem_db_config['port']
 	)
 
-	return NemRestFacade(node_url, db_params, network_name)
+	rest_config = RestConfig(
+		app.config.get('NETWORK_NAME', 'mainnet'),
+		app.config.get('NODE_URL', 'http://localhost:7890'),
+		int(app.config.get('MAX_LAG_BLOCKS', 2))
+	)
+
+	return NemRestFacade(db_params, rest_config)
 
 
 def setup_nem_routes(app, nem_api_facade):  # pylint: disable=too-many-statements
