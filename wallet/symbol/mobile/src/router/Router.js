@@ -36,6 +36,9 @@ export class Router {
 			routes: [{ name: RouteName.History }]
 		});
 	}
+	static goToTransactionDetails(params) {
+		navigationRef.navigate(RouteName.TransactionDetails, parseNavigationParams(params));
+	}
 	static goToAssets() {
 		navigationRef.reset({
 			index: 0,

@@ -8,6 +8,8 @@ const keyToTypeMap = {
 		'sender',
 		'recipient',
 		'signerAddress',
+		'senderAddress',
+		'transactionInitiator',
 		'linkedAccountAddress',
 		'targetAddress',
 		'sourceAddress',

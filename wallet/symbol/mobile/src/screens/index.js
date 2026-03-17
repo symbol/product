@@ -16,6 +16,7 @@ export { AccountList } from './account/AccountList';
 export { AddSeedAccount } from './account/AddSeedAccount';
 export { Send } from './send/Send';
 export { History } from './history/History';
+export { TransactionDetails } from './history/TransactionDetails';
 export { Assets } from './assets/Assets';
 export { TokenDetails } from './assets/TokenDetails';
 
