@@ -5,6 +5,8 @@ import { View } from 'react-native';
 
 const DEFAULT_ORIENTATION = 'horizontal';
 const WIDTH = Sizes.Semantic.borderWidth.s;
+const COLOR_DEFAULT = Colors.Components.divider.default.background;
+const COLOR_INVERSE = Colors.Components.divider.inverted.background;
 
 /**
  * Divider component. A visual separator used to divide content areas, supporting horizontal and vertical orientations.
@@ -12,15 +14,17 @@ const WIDTH = Sizes.Semantic.borderWidth.s;
  * @param {object} props - Component props
  * @param {'horizontal'|'vertical'} [props.orientation='horizontal'] - Orientation of the divider.
  * @param {string} [props.color] - Color of the divider. Defaults to the standard card background color.
+ * @param {boolean} [props.inverse=false] - If true, uses the inverted default color.
  *
  * @returns {React.ReactNode} Divider component
  */
 export const Divider = ({
 	orientation = DEFAULT_ORIENTATION,
-	color = Colors.Components.card.background
+	color = COLOR_DEFAULT,
+	inverse = false
 }) => {
 	const dynamicStyle = {
-		backgroundColor: color,
+		backgroundColor: inverse ? COLOR_INVERSE : color,
 		width: orientation === 'horizontal' ? '100%' : WIDTH,
 		height: orientation === 'horizontal' ? WIDTH : '100%'
 	};

@@ -104,6 +104,14 @@ export const Components = {
 	dataContainer: {
 		background: Semantic.background.tertiary.darker
 	},
+	divider: {
+		default: {
+			background: Semantic.background.primary.default
+		},
+		inverted: {
+			background: Semantic.background.primary.darker
+		}
+	},
 	popupMessage: {
 		background: Semantic.background.tertiary.darker,
 		text: Semantic.role.secondary.default,
