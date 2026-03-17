@@ -1,10 +1,10 @@
 import { Icon, StyledText } from '@/app/components';
 import { MessageType } from '@/app/constants';
-import { Sizes } from '@/app/styles';
+import { Colors, Sizes } from '@/app/styles';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 
-const ICON_SIZE = 'm';
+const ICON_SIZE = 'xs';
 
 const iconMap = {
 	encrypted: 'message-encrypted',
@@ -25,14 +25,19 @@ const iconMap = {
  */
 export const MessageView = ({ message }) => {
 	let iconName;
+	let label;
 
-	if (message.type === MessageType.ENCRYPTED_TEXT)
+	if (message.type === MessageType.ENCRYPTED_TEXT) {
 		iconName = iconMap.encrypted;
-	else if (message.type !== MessageType.PLAIN_TEXT)
+		label = 'Encrypted Message';
+	} else if (message.type !== MessageType.PLAIN_TEXT) {
 		iconName = iconMap.raw;
+		label = 'Data';
+	}
 
 	const isTextVisible = Boolean(message.text);
 	const isIconVisible = Boolean(iconName);
+	const isLabelVisible = Boolean(label) && !isTextVisible;
 
 	return (
 		<View style={styles.root}>
@@ -42,6 +47,11 @@ export const MessageView = ({ message }) => {
 			{isTextVisible && (
 				<StyledText>{message.text}</StyledText>
 			)}
+			{isLabelVisible && (
+				<View style={styles.label}>
+					<StyledText type="label" size="s" inverse>{label}</StyledText>
+				</View>
+			)}
 		</View>
 	);
 };
@@ -50,5 +60,11 @@ const styles = StyleSheet.create({
 	root: {
 		flexDirection: 'row',
 		gap: Sizes.Semantic.spacing.s
+	},
+	label: {
+		backgroundColor: Colors.Semantic.content.secondary.default,
+		borderRadius: Sizes.Semantic.borderRadius.m,
+		paddingHorizontal: Sizes.Semantic.spacing.m,
+		height: Sizes.Semantic.spacing.l
 	}
 });
