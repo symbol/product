@@ -19,12 +19,12 @@ export const Amount = ({ value, ticker, isColored = false, size = 'm' }) => {
 	const amountTextStyleMap = {
 		l: Typography.Semantic.body.xl,
 		m: Typography.Semantic.bodyBold.m,
-		s: Typography.Semantic.body.s
+		s: Typography.Semantic.bodyBold.s
 	};
 	const decimalTextStyleMap = {
 		l: Typography.Semantic.body.l,
 		m: Typography.Semantic.bodyBold.m,
-		s: Typography.Semantic.body.s
+		s: Typography.Semantic.bodyBold.s
 	};
 	const tickerTextStyleMap = {
 		l: Typography.Semantic.body.l,

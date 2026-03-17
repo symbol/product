@@ -3,7 +3,7 @@ import { Sizes } from '@/app/styles';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 
-const ICON_SIZE = 'm';
+const ICON_SIZE = 'xs';
 
 const iconMap = {
 	true: 'check',
