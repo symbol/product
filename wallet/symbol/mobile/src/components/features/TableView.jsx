@@ -162,6 +162,9 @@ export const TableView = ({
 	isTitleTranslatable = false,
 	showEmptyArrays = false
 }) => {
+	if (!data || !Array.isArray(data))
+		throw new Error(`TableView: "data" prop must be a valid array of rows. Received: ${typeof data}`);
+
 	const translate = $t;
 	const resolvedData = useResolvedData(data, {
 		addressBook,
@@ -169,9 +172,6 @@ export const TableView = ({
 		chainName,
 		networkIdentifier
 	});
-
-	if (!data || !Array.isArray(data))
-		return null;
 
 	const shouldRenderRow = row => {
 		const isArrayValue = Array.isArray(row.value);
