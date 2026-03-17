@@ -7,20 +7,24 @@ import { Sizes } from '@/app/styles';
 import React, { useMemo } from 'react';
 import { StyleSheet } from 'react-native';
 
+/** @typedef {import('@/app/types/Transaction').Transaction} Transaction */
+/** @typedef {import('@/app/types/Account').WalletAccount} WalletAccount */
+/** @typedef {import('@/app/types/Network').NetworkIdentifier} NetworkIdentifier */
+
 /**
- * HistoryWidget widget component. Displays pending transactions.
+ * HistoryWidget component. Displays pending (partial and unconfirmed) transactions
+ * in a card widget on the home screen.
  *
- * @param {object} props - Component props
- * @param {Array} props.partial - Array of partial (pending multisig) transactions.
- * @param {Array} props.unconfirmed - Array of unconfirmed transactions.
- * @param {object} props.currentAccount - Current user account.
- * @param {object} props.walletAccounts - Wallet accounts by network.
- * @param {object} props.addressBook - Address book instance.
- * @param {string} props.networkIdentifier - Network identifier (e.g., 'mainnet').
+ * @param {Object} props - Component props.
+ * @param {Transaction[]} props.partial - Partial (pending multisig) transactions.
+ * @param {Transaction[]} props.unconfirmed - Unconfirmed transactions.
+ * @param {WalletAccount} props.currentAccount - Current user account.
+ * @param {WalletAccount[]} props.walletAccounts - Wallet accounts for the network.
+ * @param {Object} props.addressBook - Address book instance.
+ * @param {NetworkIdentifier} props.networkIdentifier - Network identifier (e.g., 'mainnet').
  * @param {string} props.chainName - Chain name (e.g., 'symbol').
- * @param {string} props.ticker - The ticker symbol for the network currency.
- *
- * @returns {React.ReactNode} HistoryWidget component
+ * @param {string} props.ticker - Ticker symbol for the network currency.
+ * @returns {React.ReactNode} HistoryWidget component.
  */
 export const HistoryWidget = ({
 	partial,
@@ -40,7 +44,13 @@ export const HistoryWidget = ({
 
 	// Handlers
 	const handleHeaderPress = () => Router.goToHistory();
-	const handleTransactionPress = transaction => Router.goToTransactionDetails({ transaction });
+	const handleTransactionPress = (transaction, group) => Router.goToTransactionDetails({
+		params: {
+			chainName,
+			transaction,
+			group
+		}
+	});
 
 	return (
 		<Card>
@@ -62,7 +72,7 @@ export const HistoryWidget = ({
 							networkIdentifier={networkIdentifier}
 							chainName={chainName}
 							ticker={ticker}
-							onPress={() => handleTransactionPress(item)}
+							onPress={() => handleTransactionPress(item, item.group)}
 						/>
 					))}
 				</Stack>
