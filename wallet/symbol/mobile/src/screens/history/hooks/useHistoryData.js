@@ -5,28 +5,39 @@ import { TransactionGroup } from '@/app/constants';
 import { useInit, useLoading, useTransactionListener } from '@/app/hooks';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
+/** @typedef {import('@/app/types/Wallet').WalletController} WalletController */
+/** @typedef {import('@/app/types/Transaction').Transaction} Transaction */
+
 /**
- * @typedef {Object} HistoryData
- * @property {Array} sections - Sections for SectionList
- * @property {object} filter - Current filter values
- * @property {function} setFilter - Function to update filter
- * @property {Array} filterConfig - Filter configuration
- * @property {boolean} isLoading - Whether initial loading is in progress
- * @property {boolean} isRefreshing - Whether refresh is in progress
- * @property {boolean} isPageLoading - Whether next page is loading
- * @property {boolean} isLastPage - Whether the last page has been reached
- * @property {function} refresh - Function to refresh all data
- * @property {function} fetchNextPage - Function to fetch the next page
- * @property {function} shouldShowFooter - Function to check if footer should show for section
+ * @typedef {Object} HistorySection
+ * @property {string} title - Section title.
+ * @property {string} group - Transaction group identifier.
+ * @property {Transaction[]|Object[]} data - Section data items.
+ * @property {Object} [titleStyle] - Optional title style.
  */
 
 /**
- * Main hook for the History screen. Combines transaction and receipt history,
- * manages filter state, and handles data refresh on wallet events.
- * @param {object} params - Hook parameters
- * @param {import('wallet-common-core').WalletController} params.walletController - Wallet controller instance
+ * @typedef {Object} UseHistoryDataResult
+ * @property {HistorySection[]} sections - Sections for SectionList.
+ * @property {Object} filter - Current filter values.
+ * @property {function(Object): void} setFilter - Function to update filter.
+ * @property {Object[]} filterConfig - Filter configuration.
+ * @property {boolean} isLoading - Whether initial loading is in progress.
+ * @property {boolean} isRefreshing - Whether refresh is in progress.
+ * @property {boolean} isPageLoading - Whether next page is loading.
+ * @property {boolean} isLastPage - Whether the last page has been reached.
+ * @property {function(): void} refresh - Function to refresh all data.
+ * @property {function(): void} fetchNextPage - Function to fetch the next page.
+ * @property {function(string): boolean} shouldShowFooter - Returns whether footer should show for section.
+ */
+
+/**
+ * React hook for managing history screen data. Combines transaction and receipt
+ * history, manages filter state, and handles data refresh on wallet events.
  *
- * @returns {HistoryData} History data and controls
+ * @param {Object} params - Hook parameters.
+ * @param {WalletController} params.walletController - Wallet controller instance.
+ * @returns {UseHistoryDataResult} History data and controls.
  */
 export const useHistoryData = ({ walletController }) => {
 	const { isWalletReady, currentAccount } = walletController;

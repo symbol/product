@@ -6,19 +6,20 @@ const FIRST_PAGE_NUMBER = 1;
 const PAGE_SIZE = 15;
 
 /**
- * @typedef {Object} ReceiptHistoryState
- * @property {Array} receipts - Harvested receipts/blocks
- * @property {boolean} isLoading - Whether initial loading is in progress
- * @property {boolean} isPageLoading - Whether next page is loading
- * @property {boolean} isLastPage - Whether the last page has been reached
- * @property {function} refresh - Function to refresh all data
- * @property {function} fetchNextPage - Function to fetch the next page
+ * @typedef {Object} UseReceiptHistoryResult
+ * @property {Object[]} receipts - Harvested receipts/blocks.
+ * @property {boolean} isLoading - Whether initial loading is in progress.
+ * @property {boolean} isPageLoading - Whether next page is loading.
+ * @property {boolean} isLastPage - Whether the last page has been reached.
+ * @property {function(): void} refresh - Function to refresh all data.
+ * @property {function(): void} resetAndRefresh - Function to reset and refresh all data.
+ * @property {function(): void} fetchNextPage - Function to fetch the next page.
  */
 
 /**
- * Hook for managing harvested blocks/receipts history with pagination.
+ * React hook for managing harvested blocks/receipts history with pagination.
  *
- * @returns {ReceiptHistoryState} Receipt history state and controls
+ * @returns {UseReceiptHistoryResult} Receipt history state and controls.
  */
 export const useReceiptHistory = () => {
 	const walletController = useWalletController();

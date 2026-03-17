@@ -4,11 +4,15 @@ import { SectionType } from './utils';
 import { Header } from '@/app/app/components';
 import { FilteredListScreenTemplate } from '@/app/components';
 import { useWalletController } from '@/app/hooks';
+import { Router } from '@/app/router/Router';
 import React, { useCallback } from 'react';
 
 /**
  * History screen component. Displays transaction history with filtering,
- * pagination, and pull-to-refresh functionality.
+ * pagination, and pull-to-refresh functionality. Supports switching between
+ * transaction and harvested receipts views.
+ *
+ * @returns {React.ReactNode} History screen component.
  */
 export const History = () => {
 	// Wallet data
@@ -36,8 +40,14 @@ export const History = () => {
 		shouldShowFooter
 	} = useHistoryData({ walletController });
 
-	const handleTransactionPress = useCallback(() => {
-		// Router.goToTransactionDetails({ transaction }); not implemented
+	const handleTransactionPress = useCallback((transaction, group) => {
+		Router.goToTransactionDetails({
+			params: {
+				chainName,
+				transaction,
+				group
+			}
+		});
 	}, []);
 
 	const renderScreenHeader = useCallback(() => (
@@ -62,7 +72,7 @@ export const History = () => {
 				networkIdentifier={networkIdentifier}
 				chainName={chainName}
 				ticker={ticker}
-				onPress={() => handleTransactionPress(item)}
+				onPress={() => handleTransactionPress(item, section.group)}
 			/>
 		);
 	}, [

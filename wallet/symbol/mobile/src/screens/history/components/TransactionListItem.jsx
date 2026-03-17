@@ -5,25 +5,28 @@ import { Colors, Sizes } from '@/app/styles';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 
+/** @typedef {import('@/app/types/Transaction').Transaction} Transaction */
+/** @typedef {import('@/app/types/Account').WalletAccount} WalletAccount */
+/** @typedef {import('@/app/types/Network').NetworkIdentifier} NetworkIdentifier */
+
 const AWAITING_SIGNATURE_COLOR = Colors.Semantic.role.info.default;
 
 /**
- * TransactionListItem component. A list item for displaying transaction information in a
- * compact format with an icon, action, description, date/status, and amount.
+ * TransactionListItem component. Displays transaction information in a compact
+ * list item format with icon, action, description, date/status, and amount.
  *
- * @param {object} props - Component props
- * @param {string} props.group - The transaction group (confirmed, unconfirmed, partial)
- * @param {object} props.transaction - The transaction object
- * @param {object} props.currentAccount - Current user account
- * @param {object} props.walletAccounts - Wallet accounts by network
- * @param {object} props.addressBook - Address book instance
- * @param {string} props.networkIdentifier - Network identifier (e.g., 'mainnet')
- * @param {string} props.chainName - Chain name (e.g., 'symbol')
- * @param {string} props.ticker - The ticker symbol for the network currency
- * @param {boolean} [props.isDateHidden=false] - Whether to hide the date display
- * @param {function} [props.onPress] - Function to call when the item is pressed
- *
- * @returns {React.ReactNode} Transaction list item component
+ * @param {Object} props - Component props.
+ * @param {string} props.group - Transaction group (confirmed, unconfirmed, partial).
+ * @param {Transaction} props.transaction - Transaction data to display.
+ * @param {WalletAccount} props.currentAccount - Current user account.
+ * @param {WalletAccount[]} props.walletAccounts - Wallet accounts for the network.
+ * @param {Object} props.addressBook - Address book instance.
+ * @param {NetworkIdentifier} props.networkIdentifier - Network identifier (e.g., 'mainnet').
+ * @param {string} props.chainName - Chain name (e.g., 'symbol').
+ * @param {string} props.ticker - Ticker symbol for the network currency.
+ * @param {boolean} [props.isDateHidden=false] - Whether to hide the date display.
+ * @param {function(): void} [props.onPress] - Callback when item is pressed.
+ * @returns {React.ReactNode} TransactionListItem component.
  */
 export const TransactionListItem = ({
 	group,
