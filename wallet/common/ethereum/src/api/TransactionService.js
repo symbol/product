@@ -40,6 +40,24 @@ export class TransactionService {
 	};
 
 	/**
+	 * Fetches transaction info by hash.
+	 * @param {NetworkProperties} networkProperties - Network properties.
+	 * @param {PublicAccount} currentAccount - Current account.
+	 * @param {string} hash - Requested transaction hash.
+	 * @returns {Promise<Transaction>} - The transaction info.
+	 */
+	fetchAccountTransaction = async (networkProperties, currentAccount, transactionHash) => {
+		const provider = createEthereumJrpcProvider(networkProperties);
+
+		const transaction = await provider.getTransaction(transactionHash);
+
+		if (!transaction) 
+			throw new ApiError(`Transaction with hash ${transactionHash} not found`);
+
+		return this.resolveTransactionDTOs(networkProperties, [transaction], currentAccount);
+	};
+
+	/**
 	 * Fetches the status of a transaction.
 	 * @param {NetworkProperties} networkProperties - Network properties.
 	 * @param {string} transactionHash - The transaction hash.

@@ -754,6 +754,17 @@ export class WalletController {
 	};
 
 	/**
+	 * Fetch transaction info by transaction hash
+	 * @param {string} transactionHash - transaction hash
+	 * @returns {Promise<Transaction>} - transaction info object
+	 */
+	fetchAccountTransaction = async transactionHash => {
+		const { networkProperties } = this._state;
+
+		return this._api.transaction.fetchAccountTransaction(networkProperties, this.currentAccount, transactionHash);
+	};
+
+	/**
 	 * Return wallet mnemonic passphrase from the secure storage
 	 * @returns {Promise<string>} - mnemonic passphrase
 	 */
