@@ -35,7 +35,7 @@ import { createExplorerTransactionUrl } from '@/app/utils';
  * @returns {import('react').ReactNode} SwapSideDetails component
  */
 export const SwapSideDetails = ({ type, chainName, networkIdentifier, token, account, transactionHash }) => {
-	const emptyValuePlaceholder = $t('data_v_na');
+	const emptyValuePlaceholder = $t('data_na');
 
 	// Account
 	const isAccountVisible = !!account;
