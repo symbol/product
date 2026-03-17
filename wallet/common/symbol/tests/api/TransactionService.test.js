@@ -215,15 +215,19 @@ describe('TransactionService', () => {
 		});
 	});
 
-	describe('fetchTransactionInfo', () => {
-		const runFetchTransactionInfoTest = async (config, expectedResult) => {
+	describe('fetchAccountTransaction', () => {
+		const runFetchAccountTransactionTest = async (config, expectedResult) => {
 			// Arrange:
 			const { group, hash, dtoResponse } = config;
-			const url = `${networkProperties.nodeUrl}/transactions/${group}/${hash}`;
-			const expectedCalls = [{ url, options: undefined, response: dtoResponse }];
+			const statusUrl = `${networkProperties.nodeUrl}/transactionStatus/${hash}`;
+			const transactionUrl = `${networkProperties.nodeUrl}/transactions/${group}/${hash}`;
+			const expectedCalls = [
+				{ url: statusUrl, options: undefined, response: { group } },
+				{ url: transactionUrl, options: undefined, response: dtoResponse }
+			];
 			jest.spyOn(transactionService, 'resolveTransactionDTOs').mockResolvedValueOnce([{ mapped: true }]);
 			const functionToTest = () =>
-				transactionService.fetchTransactionInfo(hash, { group, currentAccount, networkProperties });
+				transactionService.fetchAccountTransaction(networkProperties, currentAccount, hash);
 
 			// Act & Assert:
 			await runApiTest(mockMakeRequest, functionToTest, expectedCalls, expectedResult);
@@ -237,7 +241,7 @@ describe('TransactionService', () => {
 			const expectedResult = { mapped: true };
 
 			// Act & Assert:
-			await runFetchTransactionInfoTest({ group, hash, dtoResponse }, expectedResult);
+			await runFetchAccountTransactionTest({ group, hash, dtoResponse }, expectedResult);
 		});
 	});
 

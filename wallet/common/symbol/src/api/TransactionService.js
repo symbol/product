@@ -93,15 +93,14 @@ export class TransactionService {
 
 	/**
 	 * Fetches transaction info by hash.
+	 * @param {NetworkProperties} networkProperties - Network properties.
+	 * @param {PublicAccount} currentAccount - Current account.
 	 * @param {string} hash - Requested transaction hash.
-	 * @param {object} config - Config.
-	 * @param {NetworkProperties} config.networkProperties - Network properties.
-	 * @param {PublicAccount} config.currentAccount - Current account.
-	 * @param {string} config.group - Transaction group.
 	 * @returns {Promise<Transaction>} - The transaction info.
 	 */
-	fetchTransactionInfo = async (hash, config) => {
-		const { group = TransactionGroup.CONFIRMED, currentAccount, networkProperties } = config;
+	fetchAccountTransaction = async (networkProperties, currentAccount, hash) => {
+		const { group } = await this.fetchTransactionStatus(networkProperties, hash);
+
 		const transactionUrl = `${networkProperties.nodeUrl}/transactions/${group}/${hash}`;
 		const transactionDTO = await this.#makeRequest(transactionUrl);
 		const transactions = await this.resolveTransactionDTOs(networkProperties, [transactionDTO], currentAccount);

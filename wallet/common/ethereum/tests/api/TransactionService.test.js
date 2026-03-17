@@ -93,6 +93,48 @@ describe('api/TransactionService', () => {
 		});
 	});
 
+	describe('fetchAccountTransaction', () => {
+		it('fetches transaction by hash and resolves it', async () => {
+			// Arrange:
+			const transactionHash = '0xHASH123';
+			const transactionDTO = { hash: transactionHash, from: currentAccount.address };
+			const resolvedTransactions = [{ id: 'tx1' }];
+			const provider = {
+				getTransaction: jest.fn().mockResolvedValue(transactionDTO)
+			};
+			createEthereumJrpcProviderMock.mockReturnValue(provider);
+
+			const service = createService();
+			const resolveSpy = jest
+				.spyOn(service, 'resolveTransactionDTOs')
+				.mockResolvedValue(resolvedTransactions);
+
+			// Act:
+			const result = await service.fetchAccountTransaction(networkProperties, currentAccount, transactionHash);
+
+			// Assert:
+			expect(createEthereumJrpcProviderMock).toHaveBeenCalledWith(networkProperties);
+			expect(provider.getTransaction).toHaveBeenCalledWith(transactionHash);
+			expect(resolveSpy).toHaveBeenCalledWith(networkProperties, [transactionDTO], currentAccount);
+			expect(result).toBe(resolvedTransactions);
+		});
+
+		it('throws ApiError when transaction is not found', async () => {
+			// Arrange:
+			const transactionHash = '0xMISSING';
+			const provider = {
+				getTransaction: jest.fn().mockResolvedValue(null)
+			};
+			createEthereumJrpcProviderMock.mockReturnValue(provider);
+
+			const service = createService();
+
+			// Act & Assert:
+			await expect(service.fetchAccountTransaction(networkProperties, currentAccount, transactionHash))
+				.rejects.toThrow(`Transaction with hash ${transactionHash} not found`);
+		});
+	});
+
 	describe('announceTransaction', () => {
 		it('announces transaction and returns hash', async () => {
 			// Arrange:
