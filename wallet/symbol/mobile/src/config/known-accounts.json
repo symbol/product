@@ -14,6 +14,13 @@
                 "accounts": [
                     "TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI"
                 ]
+            },
+            {
+                "imageId": "bridge-symbol-ethereum",
+                "name": "Ethereum wXYM Bridge",
+                "accounts": [
+                    "TBQAAMLT4R6TPIZVWERYURELILHHMCERDWZ4FCQ"
+                ]
             }
         ],
         "mainnet": [
