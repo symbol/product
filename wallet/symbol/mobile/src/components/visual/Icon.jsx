@@ -68,7 +68,10 @@ const sourceMap = {
 		'minus': require('@/app/assets/images/icons/white/minus.png'),
 		'file-code': require('@/app/assets/images/icons/white/file-code.png'),
 		'settings': require('@/app/assets/images/icons/white/settings.png'),
-		'swap': require('@/app/assets/images/icons/white/swap.png')
+		'swap': require('@/app/assets/images/icons/white/swap.png'),
+		'lock': require('@/app/assets/images/icons/white/lock.png'),
+		'namespace': require('@/app/assets/images/icons/white/namespace.png'),
+		'message': require('@/app/assets/images/icons/white/message.png')
 	},
 	secondary: {
 		'account-add': require('@/app/assets/images/icons/aqua/account-add.png'),
@@ -183,7 +186,8 @@ const sourceMap = {
 		'check-circle-big': require('@/app/assets/images/icons/green/check-circle-big.png')
 	},
 	info: {
-		'sign': require('@/app/assets/images/icons/blue/sign.png')
+		'sign': require('@/app/assets/images/icons/blue/sign.png'),
+		'info-circle': require('@/app/assets/images/icons/blue/info-circle.png')
 	},
 	neutral: {
 		'info-circle': require('@/app/assets/images/icons/grey/info-circle.png')
