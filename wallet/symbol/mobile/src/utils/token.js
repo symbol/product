@@ -1,6 +1,9 @@
 import { knownTokens } from '@/app/config';
 import { safeOperationWithRelativeAmounts } from 'wallet-common-core';
 
+/** @typedef {import('@/app/types/Token').Token} Token */
+/** @typedef {import('@/app/types/Network').NetworkIdentifier} NetworkIdentifier */
+
 /**
  * Retrieves the known token entry from the known tokens configuration.
  * 
@@ -66,4 +69,86 @@ export const getAvailableBalance = (token, nativeTokenId, transactionFeeTiers, s
 		[tokenTotalBalance, totalFee],
 		(a, b) => a - b
 	);
+};
+
+/**
+ * Token display data structure.
+ * @typedef {Object} TokenDisplayData
+ * @property {string} name - The display name of the token, potentially including ticker.
+ * @property {string|null} ticker - The token's ticker symbol, if available.
+ * @property {string|null} imageId - The known image identifier for the token, if available.
+ */
+
+/**
+ * Creates token display data by combining token information with known token metadata.
+ * 
+ * @param {Token} token - The token for which to create display data.
+ * @param {string} chainName - The name of the blockchain (e.g., 'symbol', 'ethereum').
+ * @param {NetworkIdentifier} networkIdentifier - The network identifier (e.g., 'mainnet', 'testnet').
+ * 
+ * @returns {TokenDisplayData} The token display data.
+ */
+export const createTokenDisplayData = (token, chainName, networkIdentifier) => {
+	const tokenKnownInfo = getTokenKnownInfo(
+		chainName,
+		networkIdentifier,
+		token.id
+	);
+
+	const name = tokenKnownInfo.name ?? token.name ?? token.id;
+	const { ticker, imageId } = tokenKnownInfo;
+
+	const nameText = !ticker
+		? name
+		: `${name} • ${ticker}`;
+
+	return {
+		name: nameText,
+		ticker,
+		imageId
+	};
+};
+
+/**
+ * Checks if the provided list of tokens includes the native currency token.
+ * 
+ * @param {Token[]} tokens - The list of tokens to check.
+ * @param {string} nativeTokenId - The native currency token ID of the blockchain.
+ * @returns {boolean} True if the native currency token is present, otherwise false.
+ */
+export const hasNativeCurrencyToken = (tokens, nativeTokenId) => {
+	return tokens.some(token => token.id === nativeTokenId);
+};
+
+/**
+ * Retrieves the native currency token from the provided list of tokens.
+ * 
+ * @param {Token[]} tokens - The list of tokens to search through.
+ * @param {string} nativeTokenId - The native currency token ID of the blockchain.
+ * @returns {Token|null} The native currency token if found, otherwise null.
+ */
+export const getNativeCurrencyToken = (tokens, nativeTokenId) => {
+	return tokens.find(token => token.id === nativeTokenId) ?? null;
+};
+
+/**
+ * Checks if the provided list of tokens includes any non-native currency tokens.
+ * 
+ * @param {Token[]} tokens - The list of tokens to check.
+ * @param {string} nativeTokenId - The native currency token ID of the blockchain.
+ * @returns {boolean} True if at least one non-native currency token is present, otherwise false.
+ */
+export const hasNonNativeCurrencyTokens = (tokens, nativeTokenId) => {
+	return tokens.some(token => token.id !== nativeTokenId);
+};
+
+/**
+ * Retrieves all non-native currency tokens from the provided list of tokens.
+ * 
+ * @param {Token[]} tokens - The list of tokens to search through.
+ * @param {string} nativeTokenId - The native currency token ID of the blockchain.
+ * @returns {Token[]} An array of non-native currency tokens.
+ */
+export const getNonNativeCurrencyTokens = (tokens, nativeTokenId) => {
+	return tokens.filter(token => token.id !== nativeTokenId) ?? [];
 };

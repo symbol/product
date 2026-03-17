@@ -1,4 +1,5 @@
 import { useAsyncManager, useTransactionListener, useWalletListener } from '@/app/hooks';
+import { DB_UPDATE_LATENCY_AFTER_ANNOUNCE } from '@/app/screens/history/constants';
 import { TransactionGroup } from 'wallet-common-core/src/constants';
 
 /** @typedef {import('@/app/types/Wallet').WalletController} WalletController */
@@ -8,7 +9,6 @@ import { TransactionGroup } from 'wallet-common-core/src/constants';
 
 const FIRST_PAGE_NUMBER = 1;
 const PAGE_SIZE = 15;
-const DB_UPDATE_LATENCY = 500;
 
 /**
  * Props for the HistoryWidget component.
@@ -60,7 +60,7 @@ export const useHistoryWidget = walletController => {
 		setTimeout(() => {
 			unconfirmedManager.call();
 			partialManager.call();
-		}, DB_UPDATE_LATENCY);
+		}, DB_UPDATE_LATENCY_AFTER_ANNOUNCE);
 	};
 	const clear = () => {
 		unconfirmedManager.reset();
