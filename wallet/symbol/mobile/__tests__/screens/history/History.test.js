@@ -6,7 +6,7 @@ import { NetworkPropertiesFixtureBuilder } from '__fixtures__/local/NetworkPrope
 import { ReceiptFixtureBuilder } from '__fixtures__/local/ReceiptFixtureBuilder';
 import { TransferTransactionFixtureBuilder } from '__fixtures__/local/TransferTransactionFixtureBuilder';
 import { ScreenTester } from '__tests__/ScreenTester';
-import { mockLocalization, mockOs, mockWalletController } from '__tests__/mock-helpers';
+import { mockLocalization, mockOs, mockRouter, mockWalletController } from '__tests__/mock-helpers';
 
 // Mocks
 
@@ -925,6 +925,32 @@ describe('screens/history/History', () => {
 
 		multisigSignatureTests.forEach(test => {
 			runMultisigSignatureTest(test.description, test.config, test.expected);
+		});
+	});
+
+	describe('navigation', () => {
+		it('navigates to transaction details when a transaction is pressed', async () => {
+			// Arrange:
+			const routerMock = mockRouter({ goToTransactionDetails: jest.fn() });
+			mockWalletControllerConfigured({
+				fetchAccountTransactions: createFetchAccountTransactionsMock({
+					confirmed: [confirmedTransfer1]
+				})
+			});
+
+			// Act:
+			const screenTester = new ScreenTester(History);
+			await screenTester.waitForTimer();
+			screenTester.pressButton(SCREEN_TEXT.textTransactionOutgoing);
+
+			// Assert:
+			expect(routerMock.goToTransactionDetails).toHaveBeenCalledWith({
+				params: {
+					transaction: confirmedTransfer1,
+					chainName: CHAIN_NAME,
+					group: TransactionGroup.CONFIRMED
+				}
+			});
 		});
 	});
 

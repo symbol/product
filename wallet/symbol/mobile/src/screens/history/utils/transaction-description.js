@@ -8,12 +8,24 @@ import {
 	isOutgoingTransaction
 } from 'wallet-common-symbol/src/utils/transaction';
 
+/** @typedef {import('@/app/types/Transaction').Transaction} Transaction */
+/** @typedef {import('@/app/types/Account').WalletAccount} WalletAccount */
+
+/**
+ * Options for resolving account display information.
+ * @typedef {Object} AccountResolveOptions
+ * @property {WalletAccount[]} walletAccounts - Wallet accounts.
+ * @property {Object} addressBook - Address book instance.
+ * @property {string} chainName - Chain name.
+ * @property {string} networkIdentifier - Network identifier.
+ */
+
 /**
  * Gets the description for a transfer transaction.
- * @param {object} transaction - Transaction object
- * @param {object} currentAccount - Current account
- * @param {object} resolveOptions - Options for resolving account info
- * @returns {string} Transfer description
+ * @param {Transaction} transaction - Transaction object.
+ * @param {WalletAccount} currentAccount - Current account.
+ * @param {AccountResolveOptions} resolveOptions - Options for resolving account info.
+ * @returns {string} Transfer description.
  */
 const getTransferDescription = (transaction, currentAccount, resolveOptions) => {
 	const { signerAddress, recipientAddress } = transaction;
@@ -41,8 +53,8 @@ const getTransferDescription = (transaction, currentAccount, resolveOptions) => 
 
 /**
  * Gets the description for an aggregate transaction.
- * @param {object} transaction - Transaction object
- * @returns {string} Aggregate description
+ * @param {Transaction} transaction - Transaction object.
+ * @returns {string} Aggregate description.
  */
 const getAggregateDescription = transaction => {
 	if (isHarvestingServiceTransaction(transaction))
@@ -59,10 +71,10 @@ const getAggregateDescription = transaction => {
 
 /**
  * Gets the description text for a transaction.
- * @param {object} transaction - Transaction object
- * @param {object} currentAccount - Current account
- * @param {object} resolveOptions - Options for resolving account info
- * @returns {string} Description text
+ * @param {Transaction} transaction - Transaction object.
+ * @param {WalletAccount} currentAccount - Current account.
+ * @param {AccountResolveOptions} resolveOptions - Options for resolving account info.
+ * @returns {string} Description text.
  */
 export const getTransactionDescription = (transaction, currentAccount, resolveOptions) => {
 	const { type } = transaction;
