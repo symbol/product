@@ -1,5 +1,4 @@
 import configparser
-from collections import namedtuple
 from pathlib import Path
 
 from flask import Flask, abort, jsonify, request
@@ -8,10 +7,7 @@ from symbolchain.CryptoTypes import PublicKey
 from zenlog import log
 
 from rest.facade.NemRestFacade import NemRestFacade
-
-DatabaseConfig = namedtuple('DatabaseConfig', ['database', 'user', 'password', 'host', 'port'])
-Pagination = namedtuple('Pagination', ['limit', 'offset'])
-Sorting = namedtuple('Sorting', ['field', 'order'])
+from rest.model.common import DatabaseConfig, Pagination, RestConfig, Sorting
 
 
 def create_app():
@@ -31,7 +27,6 @@ def setup_nem_facade(app):
 	app.config.from_envvar('EXPLORER_REST_SETTINGS')
 	config = configparser.ConfigParser()
 	db_path = Path(app.config.get('DATABASE_CONFIG_FILEPATH'))
-	network_name = app.config.get('NETWORK_NAME', 'mainnet')
 
 	log.info(f'loading database config from {db_path}')
 
@@ -46,7 +41,13 @@ def setup_nem_facade(app):
 		nem_db_config['port']
 	)
 
-	return NemRestFacade(db_params, network_name)
+	rest_config = RestConfig(
+		app.config.get('NETWORK_NAME', 'mainnet'),
+		app.config.get('NODE_URL', 'http://localhost:7890'),
+		int(app.config.get('MAX_LAG_BLOCKS', 2))
+	)
+
+	return NemRestFacade(db_params, rest_config)
 
 
 def setup_nem_routes(app, nem_api_facade):  # pylint: disable=too-many-statements
@@ -117,6 +118,12 @@ def setup_nem_routes(app, nem_api_facade):  # pylint: disable=too-many-statement
 
 		if not result:
 			abort(404)
+
+		return jsonify(result)
+
+	@app.route('/api/nem/health')
+	async def api_get_nem_health():
+		result = await nem_api_facade.get_health()
 
 		return jsonify(result)
 
