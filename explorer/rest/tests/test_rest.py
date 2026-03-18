@@ -1,9 +1,11 @@
 import os
 import tempfile
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 import testing.postgresql
+from symbollightapi.model.Exceptions import NodeException
 
 from rest import create_app
 
@@ -180,7 +182,6 @@ def test_api_nem_blocks_invalid_offset(client):  # pylint: disable=redefined-out
 def test_api_nem_blocks_invalid_sort(client):  # pylint: disable=redefined-outer-name
 	_assert_get_api_nem_blocks_fail(client, 'Sort must be either ASC or DESC', sort='invalid')
 
-
 # endregion
 
 
@@ -252,10 +253,10 @@ def test_api_nem_account_not_found(client):  # pylint: disable=redefined-outer-n
 		'status': 404
 	} == response.json
 
-
 # endregion
 
 # region /accounts
+
 
 def _assert_get_nem_accounts_bad_request(client, expected_message, **query_params):  # pylint: disable=redefined-outer-name
 	# Act:
@@ -323,5 +324,74 @@ def test_api_nem_accounts_invalid_sort_field(client):  # pylint: disable=redefin
 def test_api_nem_accounts_invalid_sort_order(client):  # pylint: disable=redefined-outer-name, invalid-name
 	_assert_get_nem_accounts_bad_request(client, 'Sort order must be either ASC or DESC', sort_order='INVALID')
 
+# endregion
+
+# region /health
+
+
+@patch('rest.facade.NemRestFacade.NemConnector.chain_height')
+def test_api_nem_health(mock_chain_height, client):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	mock_chain_height.return_value = 2
+
+	# Act:
+	response = client.get('/api/nem/health')
+
+	# Assert:
+	_assert_status_code_and_headers(response, 200)
+	assert {
+		'isHealthy': True,
+		'nodeUp': True,
+		'nodeHeight': 2,
+		'backendSynced': True,
+		'lastDBSyncedAt': EXPECTED_BLOCK_VIEW_2.timestamp,
+		'lastDBHeight': EXPECTED_BLOCK_VIEW_2.height,
+		'errors': []
+	} == response.json
+
+
+@patch('rest.facade.NemRestFacade.NemConnector.chain_height')
+def test_api_nem_health_node_behind(mock_chain_height, client):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	mock_chain_height.return_value = 10
+
+	# Act:
+	response = client.get('/api/nem/health')
+
+	# Assert:
+	_assert_status_code_and_headers(response, 200)
+	assert {
+		'isHealthy': False,
+		'nodeUp': True,
+		'nodeHeight': 10,
+		'backendSynced': False,
+		'lastDBSyncedAt': EXPECTED_BLOCK_VIEW_2.timestamp,
+		'lastDBHeight': EXPECTED_BLOCK_VIEW_2.height,
+		'errors': [{
+			'type': 'synchronization',
+			'message': 'Database is 8 blocks behind node height'
+		}]
+	} == response.json
+
+
+@patch('rest.facade.NemRestFacade.NemConnector.chain_height')
+def test_api_nem_health_node_fails(mock_chain_height, client):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	mock_chain_height.side_effect = NodeException('Connection refused')
+
+	# Act:
+	response = client.get('/api/nem/health')
+
+	# Assert:
+	_assert_status_code_and_headers(response, 200)
+	assert {
+		'isHealthy': False,
+		'nodeUp': False,
+		'nodeHeight': None,
+		'backendSynced': False,
+		'lastDBSyncedAt': EXPECTED_BLOCK_VIEW_2.timestamp,
+		'lastDBHeight': EXPECTED_BLOCK_VIEW_2.height,
+		'errors': [{'type': 'synchronization', 'message': 'Connection refused'}]
+	} == response.json
 
 # endregion
