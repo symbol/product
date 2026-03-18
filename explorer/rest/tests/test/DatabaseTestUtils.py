@@ -10,6 +10,7 @@ from symbolchain.nem.Network import Address, Network
 from rest.db.NemDatabase import NemDatabase
 from rest.model.Account import AccountView
 from rest.model.Block import BlockView
+from rest.model.Mosaic import MosaicView
 from rest.model.Namespace import NamespaceView
 
 Block = namedtuple(
@@ -48,6 +49,22 @@ Namespace = namedtuple('Namespace', [
 	'registered_height',
 	'expiration_height',
 	'sub_namespaces'
+])
+Mosaic = namedtuple('Mosaic', [
+	'root_namespace',
+	'namespace_name',
+	'description',
+	'creator',
+	'registered_height',
+	'initial_supply',
+	'total_supply',
+	'divisibility',
+	'supply_mutable',
+	'transferable',
+	'levy_type',
+	'levy_namespace_name',
+	'levy_fee',
+	'levy_recipient'
 ])
 DatabaseConfig = namedtuple('DatabaseConfig', ['database', 'user', 'password', 'host', 'port'])
 
@@ -110,6 +127,7 @@ ACCOUNTS = [
 		None,
 		None)
 ]
+
 NAMESPACES = [
 	Namespace(
 		'root',
@@ -124,6 +142,41 @@ NAMESPACES = [
 		2,
 		525800,
 		['root_sub.sub_1', 'root_sub.sub_2']
+	),
+]
+
+MOSAICS = [
+	Mosaic(
+		'root',
+		'root.mosaic',
+		'Test mosaic',
+		PublicKey('a5f06d59b97aa40c82afb941a61fb6483bdb7491805cdb9dc47d92136983b9a5'),
+		1,
+		1000000,
+		1000000,
+		0,
+		False,
+		True,
+		1,
+		'root.levy_mosaic',
+		1000000,
+		Address('NBFWZ4IVRHEIBRCGHLYDS62FSFTBM3VDFA7E6LSQ')
+	),
+	Mosaic(
+		'root',
+		'root.levy_mosaic',
+		'Test levy mosaic',
+		PublicKey('a5f06d59b97aa40c82afb941a61fb6483bdb7491805cdb9dc47d92136983b9a5'),
+		2,
+		20000000,
+		20000000,
+		6,
+		False,
+		True,
+		None,
+		None,
+		None,
+		None
 	),
 ]
 
@@ -203,6 +256,47 @@ NAMESPACE_VIEWS = [
 	)
 ]
 
+MOSAIC_VIEWS = [
+	MosaicView(
+		namespace_name=MOSAICS[0].namespace_name,
+		description=MOSAICS[0].description,
+		creator='NBFWZ4IVRHEIBRCGHLYDS62FSFTBM3VDFA7E6LSQ',
+		mosaic_registered_height=MOSAICS[0].registered_height,
+		mosaic_registered_timestamp=BLOCKS[0].timestamp,
+		initial_supply=MOSAICS[0].initial_supply,
+		total_supply=MOSAICS[0].total_supply,
+		divisibility=MOSAICS[0].divisibility,
+		supply_mutable=MOSAICS[0].supply_mutable,
+		transferable=MOSAICS[0].transferable,
+		levy_type='absolute fee',
+		levy_namespace_name=MOSAICS[0].levy_namespace_name,
+		levy_fee=1.0,
+		levy_recipient='NBFWZ4IVRHEIBRCGHLYDS62FSFTBM3VDFA7E6LSQ',
+		root_namespace_registered_height=NAMESPACES[0].registered_height,
+		root_namespace_registered_timestamp=BLOCKS[0].timestamp,
+		root_namespace_expiration_height=NAMESPACES[0].expiration_height
+	),
+	MosaicView(
+		namespace_name=MOSAICS[1].namespace_name,
+		description=MOSAICS[1].description,
+		creator='NBFWZ4IVRHEIBRCGHLYDS62FSFTBM3VDFA7E6LSQ',
+		mosaic_registered_height=MOSAICS[1].registered_height,
+		mosaic_registered_timestamp=BLOCKS[1].timestamp,
+		initial_supply=MOSAICS[1].initial_supply,
+		total_supply=MOSAICS[1].total_supply,
+		divisibility=MOSAICS[1].divisibility,
+		supply_mutable=MOSAICS[1].supply_mutable,
+		transferable=MOSAICS[1].transferable,
+		levy_type=None,
+		levy_namespace_name=None,
+		levy_fee=None,
+		levy_recipient=None,
+		root_namespace_registered_height=NAMESPACES[0].registered_height,
+		root_namespace_registered_timestamp=BLOCKS[0].timestamp,
+		root_namespace_expiration_height=NAMESPACES[0].expiration_height
+	)
+]
+
 # endregion
 
 
@@ -262,6 +356,28 @@ def initialize_database(db_config, network_name):
 				registered_height bigint NOT NULL,
 				expiration_height bigint NOT NULL,
 				sub_namespaces VARCHAR(146)[] DEFAULT '{}'
+			)
+			'''
+		)
+
+		cursor.execute(
+			'''
+			CREATE TABLE IF NOT EXISTS mosaics (
+				id serial PRIMARY KEY,
+				root_namespace varchar(16) NOT NULL,
+				namespace_name varchar(146) NOT NULL UNIQUE,
+				description varchar(512),
+				creator bytea NOT NULL,
+				registered_height bigint NOT NULL,
+				initial_supply bigint,
+				total_supply bigint,
+				divisibility int NOT NULL,
+				supply_mutable boolean,
+				transferable boolean,
+				levy_type int,
+				levy_namespace_name varchar(146),
+				levy_fee bigint,
+				levy_recipient bytea
 			)
 			'''
 		)
@@ -339,6 +455,44 @@ def initialize_database(db_config, network_name):
 					namespace.registered_height,
 					namespace.expiration_height,
 					namespace.sub_namespaces
+				)
+			)
+
+		for mosaic in MOSAICS:
+			cursor.execute(
+				'''
+				INSERT INTO mosaics (
+					root_namespace,
+					namespace_name,
+					description,
+					creator,
+					registered_height,
+					initial_supply,
+					total_supply,
+					divisibility,
+					supply_mutable,
+					transferable,
+					levy_type,
+					levy_namespace_name,
+					levy_fee,
+					levy_recipient
+				)
+				VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+				''', (
+					mosaic.root_namespace,
+					mosaic.namespace_name,
+					mosaic.description,
+					mosaic.creator.bytes,
+					mosaic.registered_height,
+					mosaic.initial_supply,
+					mosaic.total_supply,
+					mosaic.divisibility,
+					mosaic.supply_mutable,
+					mosaic.transferable,
+					mosaic.levy_type,
+					mosaic.levy_namespace_name,
+					mosaic.levy_fee,
+					mosaic.levy_recipient.bytes if mosaic.levy_recipient else None
 				)
 			)
 
