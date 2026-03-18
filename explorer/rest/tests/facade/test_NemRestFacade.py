@@ -6,7 +6,7 @@ from symbollightapi.model.Exceptions import NodeException
 from rest.facade.NemRestFacade import NemRestFacade
 from rest.model.common import Pagination, RestConfig, Sorting
 
-from ..test.DatabaseTestUtils import ACCOUNT_VIEWS, BLOCK_VIEWS, NAMESPACE_VIEWS, DatabaseTestBase
+from ..test.DatabaseTestUtils import ACCOUNT_VIEWS, BLOCK_VIEWS, MOSAIC_VIEWS, NAMESPACE_VIEWS, DatabaseTestBase
 
 # region test data
 
@@ -21,6 +21,10 @@ EXPECTED_ACCOUNT_2 = ACCOUNT_VIEWS[1].to_dict()
 EXPECTED_NAMESPACE_1 = NAMESPACE_VIEWS[0].to_dict()
 
 EXPECTED_NAMESPACE_2 = NAMESPACE_VIEWS[1].to_dict()
+
+EXPECTED_MOSAIC_1 = MOSAIC_VIEWS[0].to_dict()
+
+EXPECTED_MOSAIC_2 = MOSAIC_VIEWS[1].to_dict()
 
 # endregion
 
@@ -269,6 +273,62 @@ class TestNemRestFacade(DatabaseTestBase):  # pylint: disable=too-many-public-me
 			pagination=Pagination(10, 0),
 			sort='DESC',
 			expected_namespaces=[EXPECTED_NAMESPACE_2, EXPECTED_NAMESPACE_1]
+		)
+
+	# endregion
+
+	# region mosaic
+
+	def _assert_can_retrieve_mosaic_by_namespace_name(self, namespace_name, expected_mosaic):
+		# Act:
+		mosaic = self.nem_rest_facade.get_mosaic_by_name(namespace_name)
+
+		# Assert:
+		self.assertEqual(expected_mosaic, mosaic)
+
+	def test_can_retrieve_mosaic_by_namespace_name(self):
+		self._assert_can_retrieve_mosaic_by_namespace_name(namespace_name='root.mosaic', expected_mosaic=EXPECTED_MOSAIC_1)
+
+	def test_returns_none_for_nonexistent_mosaic_namespace_name(self):
+		self._assert_can_retrieve_mosaic_by_namespace_name(namespace_name='nonexistent', expected_mosaic=None)
+
+	# endregion
+
+	# region mosaics
+
+	def _assert_can_retrieve_mosaics(self, pagination, sort, expected_mosaics):
+		# Act:
+		mosaics = self.nem_rest_facade.get_mosaics(pagination, sort)
+
+		# Assert:
+		self.assertEqual(expected_mosaics, mosaics)
+
+	def test_can_retrieve_mosaics_filtered_by_limit(self):
+		self._assert_can_retrieve_mosaics(
+			pagination=Pagination(1, 0),
+			sort='DESC',
+			expected_mosaics=[EXPECTED_MOSAIC_2]
+		)
+
+	def test_can_retrieve_mosaics_filtered_by_offset(self):
+		self._assert_can_retrieve_mosaics(
+			pagination=Pagination(1, 1),
+			sort='DESC',
+			expected_mosaics=[EXPECTED_MOSAIC_1]
+		)
+
+	def test_can_retrieve_mosaics_sorted_by_registered_height_asc(self):
+		self._assert_can_retrieve_mosaics(
+			pagination=Pagination(10, 0),
+			sort='ASC',
+			expected_mosaics=[EXPECTED_MOSAIC_1, EXPECTED_MOSAIC_2]
+		)
+
+	def test_can_retrieve_mosaics_sorted_by_registered_height_desc(self):
+		self._assert_can_retrieve_mosaics(
+			pagination=Pagination(10, 0),
+			sort='DESC',
+			expected_mosaics=[EXPECTED_MOSAIC_2, EXPECTED_MOSAIC_1]
 		)
 
 	# endregion
