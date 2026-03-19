@@ -68,7 +68,7 @@ class MosaicView:  # pylint: disable=too-many-instance-attributes,too-few-public
 		return {
 			'namespaceName': self.namespace_name,
 			'description': self.description,
-			'creator': str(self.creator),
+			'creator': self.creator,
 			'mosaicRegisteredHeight': self.mosaic_registered_height,
 			'mosaicRegisteredTimestamp': self.mosaic_registered_timestamp,
 			'initialSupply': self.initial_supply,
@@ -79,7 +79,7 @@ class MosaicView:  # pylint: disable=too-many-instance-attributes,too-few-public
 			'levyType': self.levy_type,
 			'levyNamespaceName': self.levy_namespace_name,
 			'levyFee': self.levy_fee,
-			'levyRecipient': str(self.levy_recipient) if self.levy_recipient else None,
+			'levyRecipient': self.levy_recipient,
 			'rootNamespaceRegisteredHeight': self.root_namespace_registered_height,
 			'rootNamespaceRegisteredTimestamp': self.root_namespace_registered_timestamp,
 			'rootNamespaceExpirationHeight': self.root_namespace_expiration_height
