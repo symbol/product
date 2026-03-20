@@ -6,7 +6,7 @@ from symbollightapi.model.Exceptions import NodeException
 from rest.facade.NemRestFacade import NemRestFacade
 from rest.model.common import Pagination, RestConfig, Sorting
 
-from ..test.DatabaseTestUtils import ACCOUNT_VIEWS, BLOCK_VIEWS, MOSAIC_VIEWS, NAMESPACE_VIEWS, DatabaseTestBase
+from ..test.DatabaseTestUtils import ACCOUNT_VIEWS, BLOCK_VIEWS, MOSAIC_RICH_LIST_VIEWS, MOSAIC_VIEWS, NAMESPACE_VIEWS, DatabaseTestBase
 
 # region test data
 
@@ -22,9 +22,17 @@ EXPECTED_NAMESPACE_1 = NAMESPACE_VIEWS[0].to_dict()
 
 EXPECTED_NAMESPACE_2 = NAMESPACE_VIEWS[1].to_dict()
 
+EXPECTED_NAMESPACE_3 = NAMESPACE_VIEWS[2].to_dict()
+
 EXPECTED_MOSAIC_1 = MOSAIC_VIEWS[0].to_dict()
 
 EXPECTED_MOSAIC_2 = MOSAIC_VIEWS[1].to_dict()
+
+EXPECTED_MOSAIC_3 = MOSAIC_VIEWS[2].to_dict()
+
+EXPECTED_MOSAIC_RICH_LIST_1 = MOSAIC_RICH_LIST_VIEWS[0].to_dict()
+
+EXPECTED_MOSAIC_RICH_LIST_2 = MOSAIC_RICH_LIST_VIEWS[1].to_dict()
 
 # endregion
 
@@ -228,10 +236,10 @@ class TestNemRestFacade(DatabaseTestBase):  # pylint: disable=too-many-public-me
 		self.assertEqual(expected_namespace, namespace)
 
 	def test_can_retrieve_namespace_by_root_namespace_name(self):
-		self._assert_can_retrieve_namespace_by_name(name='root', expected_namespace=EXPECTED_NAMESPACE_1)
+		self._assert_can_retrieve_namespace_by_name(name='root', expected_namespace=EXPECTED_NAMESPACE_2)
 
 	def test_can_retrieve_namespace_by_sub_namespace_name(self):
-		self._assert_can_retrieve_namespace_by_name(name='root_sub.sub_1', expected_namespace=EXPECTED_NAMESPACE_2)
+		self._assert_can_retrieve_namespace_by_name(name='root_sub.sub_1', expected_namespace=EXPECTED_NAMESPACE_3)
 
 	def test_returns_none_for_nonexistent_namespace_name(self):
 		self._assert_can_retrieve_namespace_by_name(name='nonexistent', expected_namespace=None)
@@ -258,21 +266,21 @@ class TestNemRestFacade(DatabaseTestBase):  # pylint: disable=too-many-public-me
 		self._assert_can_retrieve_namespaces(
 			pagination=Pagination(1, 1),
 			sort='DESC',
-			expected_namespaces=[EXPECTED_NAMESPACE_1]
+			expected_namespaces=[EXPECTED_NAMESPACE_3]
 		)
 
 	def test_can_retrieve_namespaces_sorted_by_registered_height_asc(self):
 		self._assert_can_retrieve_namespaces(
 			pagination=Pagination(10, 0),
 			sort='ASC',
-			expected_namespaces=[EXPECTED_NAMESPACE_1, EXPECTED_NAMESPACE_2]
+			expected_namespaces=[EXPECTED_NAMESPACE_1, EXPECTED_NAMESPACE_2, EXPECTED_NAMESPACE_3]
 		)
 
 	def test_can_retrieve_namespaces_sorted_by_registered_height_desc(self):
 		self._assert_can_retrieve_namespaces(
 			pagination=Pagination(10, 0),
 			sort='DESC',
-			expected_namespaces=[EXPECTED_NAMESPACE_2, EXPECTED_NAMESPACE_1]
+			expected_namespaces=[EXPECTED_NAMESPACE_2, EXPECTED_NAMESPACE_3, EXPECTED_NAMESPACE_1]
 		)
 
 	# endregion
@@ -287,7 +295,7 @@ class TestNemRestFacade(DatabaseTestBase):  # pylint: disable=too-many-public-me
 		self.assertEqual(expected_mosaic, mosaic)
 
 	def test_can_retrieve_mosaic_by_namespace_name(self):
-		self._assert_can_retrieve_mosaic_by_namespace_name(namespace_name='root.mosaic', expected_mosaic=EXPECTED_MOSAIC_1)
+		self._assert_can_retrieve_mosaic_by_namespace_name(namespace_name='root.mosaic', expected_mosaic=EXPECTED_MOSAIC_2)
 
 	def test_returns_none_for_nonexistent_mosaic_namespace_name(self):
 		self._assert_can_retrieve_mosaic_by_namespace_name(namespace_name='nonexistent', expected_mosaic=None)
@@ -314,21 +322,49 @@ class TestNemRestFacade(DatabaseTestBase):  # pylint: disable=too-many-public-me
 		self._assert_can_retrieve_mosaics(
 			pagination=Pagination(1, 1),
 			sort='DESC',
-			expected_mosaics=[EXPECTED_MOSAIC_1]
+			expected_mosaics=[EXPECTED_MOSAIC_3]
 		)
 
 	def test_can_retrieve_mosaics_sorted_by_registered_height_asc(self):
 		self._assert_can_retrieve_mosaics(
 			pagination=Pagination(10, 0),
 			sort='ASC',
-			expected_mosaics=[EXPECTED_MOSAIC_1, EXPECTED_MOSAIC_2]
+			expected_mosaics=[EXPECTED_MOSAIC_1, EXPECTED_MOSAIC_2, EXPECTED_MOSAIC_3]
 		)
 
 	def test_can_retrieve_mosaics_sorted_by_registered_height_desc(self):
 		self._assert_can_retrieve_mosaics(
 			pagination=Pagination(10, 0),
 			sort='DESC',
-			expected_mosaics=[EXPECTED_MOSAIC_2, EXPECTED_MOSAIC_1]
+			expected_mosaics=[EXPECTED_MOSAIC_2, EXPECTED_MOSAIC_3, EXPECTED_MOSAIC_1]
+		)
+
+	# endregion
+
+	# region mosaic rich list
+	def _assert_can_retrieve_mosaic_rich_list(self, pagination, expected_mosaic_rich_list):
+		# Act:
+		mosaic_rich_list = self.nem_rest_facade.get_mosaic_rich_list(pagination, 'nem.xem')
+
+		# Assert:
+		self.assertEqual(expected_mosaic_rich_list, mosaic_rich_list)
+
+	def test_can_retrieve_mosaic_rich_list_by_namespace_name(self):
+		self._assert_can_retrieve_mosaic_rich_list(
+			pagination=Pagination(10, 0),
+			expected_mosaic_rich_list=[EXPECTED_MOSAIC_RICH_LIST_2, EXPECTED_MOSAIC_RICH_LIST_1]
+		)
+
+	def test_can_retrieve_mosaic_rich_list_filtered_by_limit(self):
+		self._assert_can_retrieve_mosaic_rich_list(
+			pagination=Pagination(1, 0),
+			expected_mosaic_rich_list=[EXPECTED_MOSAIC_RICH_LIST_2]
+		)
+
+	def test_can_retrieve_mosaic_rich_list_filtered_by_offset(self):
+		self._assert_can_retrieve_mosaic_rich_list(
+			pagination=Pagination(1, 1),
+			expected_mosaic_rich_list=[EXPECTED_MOSAIC_RICH_LIST_1]
 		)
 
 	# endregion
