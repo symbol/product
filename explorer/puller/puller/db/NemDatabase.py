@@ -224,7 +224,8 @@ class NemDatabase(DatabaseConnection):
 			)
 		)
 
-	def upsert_namespace(self, cursor, namespace):  # pylint: disable=no-self-use
+	@staticmethod
+	def upsert_namespace(cursor, namespace):
 		"""Insert or update namespace information."""
 
 		cursor.execute(
@@ -250,7 +251,8 @@ class NemDatabase(DatabaseConnection):
 			)
 		)
 
-	def update_sub_namespaces(self, cursor, sub_namespace, root_namespace):  # pylint: disable=no-self-use
+	@staticmethod
+	def update_sub_namespaces(cursor, sub_namespace, root_namespace):
 		"""Appends sub-namespace to a root namespace's sub_namespaces array."""
 
 		cursor.execute(
