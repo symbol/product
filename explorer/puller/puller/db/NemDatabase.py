@@ -122,7 +122,8 @@ class NemDatabase(DatabaseConnection):
 
 		self.connection.commit()
 
-	def insert_block(self, cursor, block):  # pylint: disable=no-self-use
+	@staticmethod
+	def insert_block(cursor, block):
 		"""Adds block height into table."""
 
 		cursor.execute(
@@ -156,7 +157,8 @@ class NemDatabase(DatabaseConnection):
 		results = cursor.fetchone()
 		return 0 if results[0] is None else results[0]
 
-	def upsert_account(self, cursor, account_info):  # pylint: disable=no-self-use
+	@staticmethod
+	def upsert_account(cursor, account_info):
 		"""Insert or update account information."""
 
 		cursor.execute(
@@ -208,7 +210,8 @@ class NemDatabase(DatabaseConnection):
 			)
 		)
 
-	def update_account_harvested_fees(self, cursor, harvester, total_fees, last_height):  # pylint: disable=no-self-use
+	@staticmethod
+	def update_account_harvested_fees(cursor, harvester, total_fees, last_height):
 		"""Updates harvested fees for an account."""
 
 		cursor.execute(
