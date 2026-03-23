@@ -323,6 +323,10 @@ describe('screens/assets/TokenDetails', () => {
 						String(TOKEN_END_HEIGHT),
 						SCREEN_TEXT.textAlertExpirable,
 						SCREEN_TEXT.textExpireIn
+					],
+					textsNotRendered: [
+						SCREEN_TEXT.textAlertExpired,
+						SCREEN_TEXT.textExpired
 					]
 				}
 			},
@@ -342,6 +346,10 @@ describe('screens/assets/TokenDetails', () => {
 						String(TOKEN_END_HEIGHT),
 						SCREEN_TEXT.textAlertExpired,
 						SCREEN_TEXT.textExpired
+					],
+					textsNotRendered: [
+						SCREEN_TEXT.textAlertExpirable,
+						SCREEN_TEXT.textExpireIn
 					]
 				}
 			}
