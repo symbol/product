@@ -6,6 +6,7 @@ from queue import Queue
 
 from symbolchain.CryptoTypes import PublicKey
 from symbolchain.facade.NemFacade import NemFacade
+from symbolchain.nc import TransactionType
 from symbolchain.nem.Network import Address, Network
 from symbollightapi.connector.NemConnector import NemConnector
 from symbollightapi.model.Exceptions import NodeException
@@ -40,6 +41,12 @@ AccountRecord = namedtuple('AccountRecord', [
 	'cosignatory_of',
 	'cosignatories'
 ])
+NamespaceRecord = namedtuple('NamespaceRecord', [
+	'root_namespace',
+	'owner',
+	'registered_height',
+	'expiration_height'
+])
 DatabaseConfig = namedtuple('DatabaseConfig', ['database', 'user', 'password', 'host', 'port'])
 
 
@@ -60,7 +67,8 @@ class NemPuller:
 		self.nem_connector = NemConnector(node_url, network)
 		self.nem_facade = NemFacade(str(network))
 
-	async def _retry_operation(self, operation, description, retries=3, delay=2):  # pylint: disable=no-self-use
+	@staticmethod
+	async def _retry_operation(operation, description, retries=3, delay=2):
 		"""Retries an async operation with exponential backoff."""
 
 		for attempt in range(1, retries + 1):
@@ -191,7 +199,8 @@ class NemPuller:
 
 		self.nem_db.insert_block(cursor, block)
 
-	def _convert_mosaics_to_json(self, account_mosaics):  # pylint: disable=no-self-use
+	@staticmethod
+	def _convert_mosaics_to_json(account_mosaics):
 		"""Convert AccountMosaic to Json format."""
 
 		return [
@@ -202,7 +211,8 @@ class NemPuller:
 			for mosaic in account_mosaics
 		]
 
-	def _create_account_record(self, account_info, mosaics_json, remote_address=None):  # pylint: disable=no-self-use
+	@staticmethod
+	def _create_account_record(account_info, mosaics_json, remote_address=None):
 		"""Create AccountRecord from account info and mosaics."""
 
 		return AccountRecord(
@@ -260,6 +270,44 @@ class NemPuller:
 				last_height
 			)
 
+	def _process_root_namespace(self, cursor, transaction, block_height):
+		"""Process root namespace data."""
+
+		# add 1 year to expired height
+		expired_height = block_height + (365 * 1440)
+
+		namespace = NamespaceRecord(
+			root_namespace=transaction.namespace,
+			owner=transaction.sender,
+			registered_height=block_height,
+			expiration_height=expired_height
+		)
+
+		self.nem_db.upsert_namespace(cursor, namespace)
+
+	def _process_sub_namespace(self, cursor, transaction):
+		"""Process sub namespace data."""
+
+		root_namespace = transaction.parent.split('.')[0]
+
+		new_sub_namespace = f'{transaction.parent}.{transaction.namespace}'
+		self.nem_db.update_sub_namespaces(cursor, new_sub_namespace, root_namespace)
+
+	def _process_namespace(self, cursor, transaction, block_height):
+		"""Process namespace in a block."""
+
+		if transaction.parent:
+			self._process_sub_namespace(cursor, transaction)
+		else:
+			self._process_root_namespace(cursor, transaction, block_height)
+
+	def _process_transactions(self, cursor, block_transactions, height):
+		"""Process transactions in a block."""
+
+		for transaction in block_transactions:
+			if transaction.transaction_type == TransactionType.NAMESPACE_REGISTRATION.value:
+				self._process_namespace(cursor, transaction, height)
+
 	async def sync_nemesis_block(self):
 		"""Sync and write Nemesis block to database."""
 
@@ -271,6 +319,8 @@ class NemPuller:
 
 		addresses = self._extract_addresses_from_block(nemesis_block)
 		await self._process_account_batch(cursor, addresses)
+
+		self._process_transactions(cursor, nemesis_block.transactions, nemesis_block.height)
 
 		self._commit_blocks('Committed Nemesis block')
 
@@ -315,6 +365,8 @@ class NemPuller:
 				current_fees + block.total_fee,
 				block.height
 			)
+
+			self._process_transactions(cursor, block.transactions, block.height)
 
 			# Batch commits
 			if processed % batch_size == 0:
