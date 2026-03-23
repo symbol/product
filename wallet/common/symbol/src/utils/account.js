@@ -8,6 +8,18 @@ import { Address, Network, SymbolFacade } from 'symbol-sdk/symbol';
 /** @typedef {import('../types/Account').WalletAccount} WalletAccount */
 
 /**
+ * Normalizes a Symbol address by ensuring it follows the uppercase convention without dashes.
+ * @param {string} address - The address to normalize.
+ * @returns {string} The normalized address.
+ */
+export const normalizeAddress = address => {
+	if (typeof address !== 'string')
+		throw new TypeError('Expected address to be a string value');
+	
+	return address.replace(/-/g, '').toUpperCase();
+};
+
+/**
  * Generates a key pair consisting of a private key and a public key.
  * @returns {KeyPair} An object containing the generated private key and public key.
  */

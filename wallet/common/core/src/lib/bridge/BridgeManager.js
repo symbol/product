@@ -23,36 +23,25 @@ import { absoluteToRelativeAmount, relativeToAbsoluteAmount } from '../../utils/
 /** @typedef {import('../../types/Token').Token} Token */
 /** @typedef {import('../../types/Token').TokenInfo} TokenInfo */
 
+/**
+ * @typedef {Object} SwapSideInfo
+ * @property {string} chainName - The blockchain name.
+ * @property {TokenInfo} tokenInfo - Token info for this side of the swap.
+ * @property {function(string): string} normalizeAddress - Function to normalize an address for this chain.
+ * @property {function(string): string} normalizeTransactionHash - Function to normalize a transaction hash for this chain.
+ */
+
+/**
+ * @typedef {Object} SwapContext
+ * @property {string} mode - The bridge mode ('wrap' or 'unwrap').
+ * @property {SwapSideInfo} source - Source side information.
+ * @property {SwapSideInfo} target - Target side information.
+ */
+
 
 const BridgeMode = {
 	WRAP: 'wrap',
 	UNWRAP: 'unwrap'
-};
-const BROKEN_HASH_CHAIN_NAMES = ['ethereum']; // Chains for which bridge API returns transaction hashes without 0x prefix
-
-
-/**
- * Ensure that a string with 0x prefix is in correct case (lowercase).
- * 
- * @param {string} hash - The hash to fix.
- * @returns {string} - The fixed hash.
- */
-const fix0xCase = hash => hash.startsWith('0x') 
-	? `0x${hash.substring(2).toLowerCase()}` 
-	: hash;
-
-/**
- * Ensure that transaction hash has 0x prefix for chains that are expected to have it, even if the bridge API returns it without.
- * 
- * @param {string} hash - The hash to fix.
- * @param {string} chainName - The name of the chain.
- * @returns {string} - The fixed hash.
- */
-const fixMissing0xTransactionHash = (hash, chainName) => {
-	if (BROKEN_HASH_CHAIN_NAMES.includes(chainName) && !hash.startsWith('0x'))
-		return `0x${hash.toLowerCase()}`;
-
-	return hash;
 };
 
 export class BridgeManager {
@@ -178,6 +167,37 @@ export class BridgeManager {
 	};
 
 	/**
+	 * Create a SwapSideInfo object for a given wallet controller.
+	 * @param {WalletControllerWithBridgeModule} walletController - Wallet controller.
+	 * @param {TokenInfo} tokenInfo - Token info.
+	 * @returns {SwapSideInfo} - Swap side information.
+	 */
+	#createSwapSideInfo = (walletController, tokenInfo) => ({
+		chainName: walletController.chainName,
+		tokenInfo,
+		normalizeAddress: walletController.walletSdk.normalizeAddress,
+		normalizeTransactionHash: walletController.walletSdk.normalizeTransactionHash
+	});
+
+	/**
+	 * Get swap context with source and target information based on mode.
+	 * @param {string} mode - 'wrap' or 'unwrap'
+	 * @returns {SwapContext} - Swap context with source and target information.
+	 */
+	#getSwapContext = mode => {
+		const sourceWalletController = this.#getSourceWalletController(mode);
+		const targetWalletController = this.#getTargetWalletController(mode);
+		const sourceToken = this.#getSourceToken(mode);
+		const targetToken = this.#getTargetToken(mode);
+
+		return {
+			mode,
+			source: this.#createSwapSideInfo(sourceWalletController, sourceToken),
+			target: this.#createSwapSideInfo(targetWalletController, targetToken)
+		};
+	};
+
+	/**
 	 * Fetch bridge configuration, source and target token infos, and register tokens in wallet controllers. 
 	 * @returns {Promise} - Promise that resolves when loading is complete.
 	 */
@@ -219,6 +239,8 @@ export class BridgeManager {
 		delete config.wrappedNetwork.tokenId;
 		config.nativeNetwork.tokenInfo = nativeToken;
 		config.wrappedNetwork.tokenInfo = wrappedToken;
+		config.nativeNetwork.bridgeAddress = this.#nativeWalletController.walletSdk.normalizeAddress(config.nativeNetwork.bridgeAddress);
+		config.wrappedNetwork.bridgeAddress = this.#wrappedWalletController.walletSdk.normalizeAddress(config.wrappedNetwork.bridgeAddress);
 
 		// Update state
 		this.#config = config;
@@ -244,10 +266,10 @@ export class BridgeManager {
 
 		// Merge and sort by request transaction timestamp descending
 		const allData = [...wrapRequests, ...unwrapRequests, ...wrapErrors, ...unwrapErrors, ...wrapPending, ...unwrapPending];
-		const normalizeHash = hash => hash.startsWith('0x') ? hash.slice(2).toUpperCase() : hash.toUpperCase();
+		
 		const filteredByRequestHash = allData.filter((request, index, self) =>
 			index === self.findIndex(item => 
-				normalizeHash(item.requestTransaction.hash) === normalizeHash(request.requestTransaction.hash)));
+				item.requestTransaction.hash === request.requestTransaction.hash));
 		const sortedByTimestamp = filteredByRequestHash.sort((a, b) => b.requestTransaction.timestamp - a.requestTransaction.timestamp);
 
 		// Return only the requested number of items
@@ -276,15 +298,9 @@ export class BridgeManager {
 			pageSize,
 			pageNumber
 		});
-		const lowercaseBridgeAddress = bridgeAddress.toLowerCase();
-		const filteredTransactions = transactions.filter(tx => tx.recipientAddress?.toLowerCase() === lowercaseBridgeAddress);
-		const context = {
-			mode,
-			sourceToken: this.#getSourceToken(mode),
-			targetToken: this.#getTargetToken(mode),
-			sourceChainName: walletController.chainName,
-			targetChainName: this.#getTargetWalletController(mode).chainName
-		};
+		const context = this.#getSwapContext(mode);
+		const filteredTransactions = transactions.filter(tx => context.source.normalizeAddress(tx.recipientAddress) === bridgeAddress);
+		
 
 		return filteredTransactions.map(transaction => this.#transactionToPendingRequest(transaction, context));
 	};
@@ -307,13 +323,7 @@ export class BridgeManager {
 			throw new Error('Failed to fetch bridge requests. No bridge config fetched');
 
 		const requestDtos = await this.#bridgeApi.fetchRequests(mode, currentAccount.address, { pageSize, pageNumber });
-		const context = {
-			mode,
-			sourceToken: this.#getSourceToken(mode),
-			targetToken: this.#getTargetToken(mode),
-			sourceChainName: this.#getSourceWalletController(mode).chainName,
-			targetChainName: this.#getTargetWalletController(mode).chainName
-		};
+		const context = this.#getSwapContext(mode);
 
 		return requestDtos.map(dto => this.#requestFromDto(dto, context));
 	};
@@ -336,13 +346,7 @@ export class BridgeManager {
 			throw new Error('Failed to fetch errors. No bridge config fetched');
 
 		const errorDtos = await this.#bridgeApi.fetchErrors(mode, currentAccount.address, { pageSize, pageNumber });
-		const context = {
-			mode,
-			sourceToken: this.#getSourceToken(mode),
-			targetToken: this.#getTargetToken(mode),
-			sourceChainName: this.#getSourceWalletController(mode).chainName,
-			targetChainName: this.#getTargetWalletController(mode).chainName
-		};
+		const context = this.#getSwapContext(mode);
 
 		return errorDtos.map(dto => this.#errorFromDto(dto, context));
 	};
@@ -382,10 +386,16 @@ export class BridgeManager {
 		}
 	};
 
+	/**
+	 * Convert a transaction to a pending bridge request.
+	 * @param {object} transaction - The transaction object.
+	 * @param {SwapContext} context - Swap context with source and target information.
+	 * @returns {BridgeRequest} - The pending bridge request.
+	 */
 	#transactionToPendingRequest(transaction, context) {
-		const { mode, sourceToken, targetToken, sourceChainName, targetChainName } = context;
+		const { mode, source, target } = context;
 
-		if (!sourceToken || !targetToken)
+		if (!source.tokenInfo || !target.tokenInfo)
 			throw new Error('Failed to create pending request. Token info is not available');
 
 		const transactionTokens = transaction.mosaics ?? transaction.tokens ?? [];
@@ -393,13 +403,13 @@ export class BridgeManager {
 		return {
 			type: mode,
 			requestStatus: 'confirmed',
-			sourceChainName,
-			targetChainName,
-			sourceTokenInfo: sourceToken,
-			targetTokenInfo: targetToken,
+			sourceChainName: source.chainName,
+			targetChainName: target.chainName,
+			sourceTokenInfo: source.tokenInfo,
+			targetTokenInfo: target.tokenInfo,
 			requestTransaction: {
-				signerAddress: transaction.signerAddress,
-				hash: transaction.hash,
+				signerAddress: source.normalizeAddress(transaction.signerAddress),
+				hash: source.normalizeTransactionHash(transaction.hash),
 				height: transaction.height,
 				timestamp: transaction.timestamp,
 				token: transactionTokens[0] ?? null
@@ -409,52 +419,47 @@ export class BridgeManager {
 
 	/**
 	 * Map request DTO to request object.
-	 * @param {object} dto - Request DTO from the bridge
-	 * @param {object} context - Context information
-	 * @param {string} context.mode - 'wrap' or 'unwrap'
-	 * @param {TokenInfo} context.sourceToken - Source token info
-	 * @param {TokenInfo} context.targetToken - Target token info
-	 * @param {string} context.sourceChainName - Source chain name
-	 * @param {string} context.targetChainName - Target chain name
-	 * @returns {BridgeRequest} - Mapped request object
+	 * @param {object} dto - Request DTO from the bridge.
+	 * @param {SwapContext} context - Swap context with source and target information.
+	 * @returns {BridgeRequest} - Mapped request object.
 	 */
-	#requestFromDto(dto, { mode, sourceToken, targetToken, sourceChainName, targetChainName }) {
-		if (!sourceToken || !targetToken)
+	#requestFromDto(dto, { mode, source, target }) {
+		if (!source.tokenInfo || !target.tokenInfo)
 			throw new Error('Failed to map request from DTO. Token info is not available');
 
 		const requestTransaction = {
-			signerAddress: fix0xCase(dto.senderAddress),
-			hash: fixMissing0xTransactionHash(dto.requestTransactionHash, sourceChainName),
+			signerAddress: source.normalizeAddress(dto.senderAddress),
+			hash: source.normalizeTransactionHash(dto.requestTransactionHash),
 			height: dto.requestTransactionHeight ?? null,
 			timestamp: Math.trunc(dto.requestTimestamp * 1000),
 			token: {
-				...sourceToken,
-				amount: absoluteToRelativeAmount(dto.requestAmount, sourceToken.divisibility)
+				...source.tokenInfo,
+				amount: absoluteToRelativeAmount(dto.requestAmount, source.tokenInfo.divisibility)
 			}
 		};
 		const payoutTransaction = dto.payoutTransactionHash ? {
-			recipientAddress: fix0xCase(dto.destinationAddress),
-			hash: fixMissing0xTransactionHash(dto.payoutTransactionHash, targetChainName),
+			recipientAddress: target.normalizeAddress(dto.destinationAddress),
+			hash: target.normalizeTransactionHash(dto.payoutTransactionHash),
 			height: dto.payoutTransactionHeight ?? null,
 			timestamp: Math.trunc(dto.payoutTimestamp * 1000),
 			token: {
-				...targetToken,
-				amount: absoluteToRelativeAmount(dto.payoutNetAmount, targetToken.divisibility)
+				...target.tokenInfo,
+				amount: absoluteToRelativeAmount(dto.payoutNetAmount, target.tokenInfo.divisibility)
 			}
 		} : null;
 
 		return {
 			type: mode,
-			sourceChainName,
-			targetChainName,
-			sourceTokenInfo: sourceToken,
-			targetTokenInfo: targetToken,
+			sourceChainName: source.chainName,
+			targetChainName: target.chainName,
+			sourceTokenInfo: source.tokenInfo,
+			targetTokenInfo: target.tokenInfo,
 			payoutStatus: dto.payoutStatus,
 			payoutConversionRate: dto.payoutConversionRate
-				? absoluteToRelativeAmount(dto.payoutConversionRate, targetToken.divisibility)
+				? absoluteToRelativeAmount(dto.payoutConversionRate, target.tokenInfo.divisibility)
 				: null,
 			payoutTotalFee: dto.payoutTotalFee
-				? absoluteToRelativeAmount(dto.payoutTotalFee, targetToken.divisibility)
+				? absoluteToRelativeAmount(dto.payoutTotalFee, target.tokenInfo.divisibility)
 				: null,
 			requestTransaction,
 			payoutTransaction
@@ -462,20 +467,15 @@ export class BridgeManager {
 	}
 
 	/**
-	 * Private: Map error DTO to error object.
-	 * @param {object} dto - Error DTO from the bridge
-	 * @param {object} context - Context information
-	 * @param {string} context.mode - 'wrap' or 'unwrap'
-	 * @param {TokenInfo} context.sourceToken - Source token info
-	 * @param {TokenInfo} context.targetToken - Target token info
-	 * @param {string} context.sourceChainName - Source chain name
-	 * @param {string} context.targetChainName - Target chain name
-	 * @returns {BridgeError} - Mapped error object
+	 * Map error DTO to error object.
+	 * @param {object} dto - Error DTO from the bridge.
+	 * @param {SwapContext} context - Swap context with source and target information.
+	 * @returns {BridgeError} - Mapped error object.
 	 */
-	#errorFromDto(dto, { mode, sourceToken, targetToken, sourceChainName, targetChainName }) {
+	#errorFromDto(dto, { mode, source, target }) {
 		const requestTransaction = {
-			signerAddress: fix0xCase(dto.senderAddress),
-			hash: fixMissing0xTransactionHash(dto.requestTransactionHash, sourceChainName),
+			signerAddress: source.normalizeAddress(dto.senderAddress),
+			hash: source.normalizeTransactionHash(dto.requestTransactionHash),
 			height: dto.requestTransactionHeight ?? null,
 			timestamp: Math.trunc(dto.requestTimestamp * 1000)
 		};
@@ -483,10 +483,10 @@ export class BridgeManager {
 		return {
 			type: mode,
 			requestStatus: 'error',
-			sourceChainName,
-			targetChainName,
-			sourceTokenInfo: sourceToken,
-			targetTokenInfo: targetToken,
+			sourceChainName: source.chainName,
+			targetChainName: target.chainName,
+			sourceTokenInfo: source.tokenInfo,
+			targetTokenInfo: target.tokenInfo,
 			errorMessage: dto.errorMessage,
 			requestTransaction
 		};

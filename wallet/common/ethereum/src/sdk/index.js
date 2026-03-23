@@ -4,7 +4,9 @@ export {
 	signTransaction,
 	signTransactionBundle,
 	createPrivateAccount, 
-	createPrivateKeysFromMnemonic 
+	createPrivateKeysFromMnemonic,
+	normalizeAddress,
+	normalizeTransactionHash
 } from '../utils';
 
 export const cosignTransaction = () => {

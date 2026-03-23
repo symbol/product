@@ -103,13 +103,28 @@ describe('BridgeManager', () => {
 		divisibility: 6,
 		amount
 	});
-	const createController = ({ chainName, currentAccountAddress }) => ({
+	const symbolSdk = {
+		normalizeAddress: address => address.replace(/-/g, '').toUpperCase(),
+		normalizeTransactionHash: hash => hash.toUpperCase()
+	};
+	const ethereumSdk = {
+		normalizeAddress: address => {
+			const lower = address.toLowerCase();
+			return lower.startsWith('0x') ? lower : `0x${lower}`;
+		},
+		normalizeTransactionHash: hash => {
+			const lower = hash.toLowerCase();
+			return lower.startsWith('0x') ? lower : `0x${lower}`;
+		}
+	};
+	const createController = ({ chainName, currentAccountAddress, walletSdk }) => ({
 		networkIdentifier,
 		chainName,
 		networkProperties: { chainId: 'test-chain' },
 		currentAccount: { address: currentAccountAddress },
 		isWalletReady: true,
 		fetchAccountTransactions: jest.fn(async () => []),
+		walletSdk,
 		modules: {
 			bridge: {
 				fetchTokenInfo: jest.fn(async tokenId => createTokenInfo(tokenId)),
@@ -119,11 +134,13 @@ describe('BridgeManager', () => {
 	});
 	const createNativeController = () => createController({
 		chainName: 'symbol',
-		currentAccountAddress: SYMBOL_ACCOUNT_ADDRESS
+		currentAccountAddress: SYMBOL_ACCOUNT_ADDRESS,
+		walletSdk: symbolSdk
 	});
 	const createWrappedController = () => createController({
 		chainName: 'ethereum',
-		currentAccountAddress: ETHEREUM_ACCOUNT_ADDRESS
+		currentAccountAddress: ETHEREUM_ACCOUNT_ADDRESS,
+		walletSdk: ethereumSdk
 	});
 	const toAbsolute = (amount, divisibility = 6) => {
 		const [i, f = ''] = String(amount).split('.');
@@ -265,7 +282,7 @@ describe('BridgeManager', () => {
 			};
 			const expectedWrappedConfig = {
 				blockchain: configResponse.wrappedNetwork.blockchain,
-				bridgeAddress: configResponse.wrappedNetwork.bridgeAddress,
+				bridgeAddress: configResponse.wrappedNetwork.bridgeAddress.toLowerCase(),
 				defaultNodeUrl: configResponse.wrappedNetwork.defaultNodeUrl,
 				explorerUrl: configResponse.wrappedNetwork.explorerUrl,
 				network: configResponse.wrappedNetwork.network,
@@ -817,8 +834,8 @@ describe('BridgeManager', () => {
 					sourceTokenInfo: manager.config.wrappedNetwork.tokenInfo,
 					targetTokenInfo: manager.config.nativeNetwork.tokenInfo,
 					requestTransaction: {
-						signerAddress: wrappedWalletController.currentAccount.address,
-						hash: 'PENDING_UNWRAP_HASH_1',
+						signerAddress: ETHEREUM_ADDRESS_FORMATTED,
+						hash: '0xpending_unwrap_hash_1',
 						height: 300,
 						timestamp: 2000,
 						token: null
@@ -899,7 +916,7 @@ describe('BridgeManager', () => {
 				errorMessage: 'error',
 				requestTransaction: {
 					signerAddress: SYMBOL_ACCOUNT_ADDRESS,
-					hash: 'hash1',
+					hash: 'HASH1',
 					height: 0,
 					timestamp: 2500
 				}

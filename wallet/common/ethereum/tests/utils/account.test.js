@@ -7,6 +7,7 @@ import {
 	isEthereumAddress,
 	isPrivateKey,
 	isPublicKey,
+	normalizeAddress,
 	publicAccountFromPrivateKey,
 	publicAccountFromPublicKey
 } from '../../src/utils';
@@ -259,6 +260,50 @@ describe('utils/account', () => {
 
 			// Act & Assert:
 			runIsEthereumAddressTest(input, expectedResult);
+		});
+	});
+
+	describe('normalizeAddress', () => {
+		it('prepends 0x and lowercases address without prefix', () => {
+			// Arrange:
+			const address = 'B1B2145B7D2BA5AB20EE0BCB0F7FAD08A1BFC7A4';
+			const expectedResult = '0xb1b2145b7d2ba5ab20ee0bcb0f7fad08a1bfc7a4';
+
+			// Act:
+			const result = normalizeAddress(address);
+
+			// Assert:
+			expect(result).toBe(expectedResult);
+		});
+
+		it('lowercases address that already has 0x prefix', () => {
+			// Arrange:
+			const address = '0xB1B2145B7D2BA5AB20EE0BCB0F7FAD08A1BFC7A4';
+			const expectedResult = '0xb1b2145b7d2ba5ab20ee0bcb0f7fad08a1bfc7a4';
+
+			// Act:
+			const result = normalizeAddress(address);
+
+			// Assert:
+			expect(result).toBe(expectedResult);
+		});
+
+		it('returns already normalized address unchanged', () => {
+			// Arrange:
+			const address = '0xb1b2145b7d2ba5ab20ee0bcb0f7fad08a1bfc7a4';
+
+			// Act:
+			const result = normalizeAddress(address);
+
+			// Assert:
+			expect(result).toBe(address);
+		});
+
+		it('throws TypeError when address is not a string', () => {
+			// Act & Assert:
+			expect(() => normalizeAddress(123)).toThrow(TypeError);
+			expect(() => normalizeAddress(null)).toThrow(TypeError);
+			expect(() => normalizeAddress(undefined)).toThrow(TypeError);
 		});
 	});
 });

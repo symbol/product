@@ -1,5 +1,7 @@
-import { to0x } from './account';
+import { normalizeAddress } from './account';
 import { createFee } from './fee';
+import { to0x } from './format';
+import { normalizeTransactionHash } from './transaction';
 import { TransactionType } from '../constants';
 import { absoluteToRelativeAmount, hexToBase32 } from 'wallet-common-core';
 
@@ -34,9 +36,11 @@ export const transactionFromDTO = (transactionDTO, config) => {
 const baseTransactionFromDTO = (transactionDTO, config) => {
 	const transaction = {
 		height: transactionDTO.blockNumber ? BigInt(transactionDTO.blockNumber).toString() : null,
-		hash: transactionDTO.hash ? transactionDTO.hash.toLowerCase() : null,
+		hash: transactionDTO.hash 
+			? normalizeTransactionHash(transactionDTO.hash) 
+			: null,
 		nonce: transactionDTO.nonce ? BigInt(transactionDTO.nonce).toString() : null,
-		signerAddress: transactionDTO.from.toLowerCase(),
+		signerAddress: normalizeAddress(transactionDTO.from),
 		fee: createFee({
 			maxFeePerGas: absoluteToRelativeAmount(
 				BigInt(transactionDTO.maxFeePerGas).toString(),
@@ -68,7 +72,9 @@ const transferTransactionFromDTO = (transactionDTO, config) => {
 		...baseTransactionFromDTO(transactionDTO, config),
 		type: TransactionType.TRANSFER,
 		tokens: [token],
-		recipientAddress: transactionDTO.to ? transactionDTO.to.toLowerCase() : null
+		recipientAddress: transactionDTO.to 
+			? normalizeAddress(transactionDTO.to) 
+			: null
 	};
 };
 
@@ -76,7 +82,7 @@ const erc20LikeTransactionFromDTO = (transactionDTO, config) => {
 	const data = transactionDTO.input.slice(10);
 	const amountHex = data.slice(64, 128);
 	const amountAbsolute = BigInt(to0x(amountHex)).toString();
-	const contractAddress = transactionDTO.to.toLowerCase();
+	const contractAddress = normalizeAddress(transactionDTO.to);
 	const tokenInfo = config.tokenInfos[contractAddress];
 	const token = {
 		...tokenInfo,
@@ -86,7 +92,7 @@ const erc20LikeTransactionFromDTO = (transactionDTO, config) => {
 		...baseTransactionFromDTO(transactionDTO, config),
 		type: TransactionType.ERC_20_TRANSFER,
 		tokens: [token],
-		recipientAddress: to0x(data.slice(24, 64).toLowerCase())
+		recipientAddress: normalizeAddress(to0x(data.slice(24, 64).toLowerCase()))
 	};
 
 	// If input data has more than just the recipient and amount, treat it as a message

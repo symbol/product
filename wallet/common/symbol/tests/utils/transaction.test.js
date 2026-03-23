@@ -14,6 +14,7 @@ import {
 	isIncomingTransaction,
 	isOutgoingTransaction,
 	isTransactionAwaitingSignatureByAccount,
+	normalizeTransactionHash,
 	removeAllowedTransactions,
 	removeBlockedTransactions,
 	signTransaction,
@@ -749,6 +750,38 @@ describe('utils/transaction', () => {
 
 			// Act & Assert:
 			runUnresolvedIdsExtractionTests(transactions, config, expected);
+		});
+	});
+
+	describe('normalizeTransactionHash', () => {
+		it('converts lowercase hash to uppercase', () => {
+			// Arrange:
+			const hash = 'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2';
+			const expectedResult = 'A1B2C3D4E5F6A1B2C3D4E5F6A1B2C3D4E5F6A1B2C3D4E5F6A1B2C3D4E5F6A1B2';
+
+			// Act:
+			const result = normalizeTransactionHash(hash);
+
+			// Assert:
+			expect(result).toBe(expectedResult);
+		});
+
+		it('returns already uppercase hash unchanged', () => {
+			// Arrange:
+			const hash = 'A1B2C3D4E5F6A1B2C3D4E5F6A1B2C3D4E5F6A1B2C3D4E5F6A1B2C3D4E5F6A1B2';
+
+			// Act:
+			const result = normalizeTransactionHash(hash);
+
+			// Assert:
+			expect(result).toBe(hash);
+		});
+
+		it('throws TypeError when hash is not a string', () => {
+			// Act & Assert:
+			expect(() => normalizeTransactionHash(123)).toThrow(TypeError);
+			expect(() => normalizeTransactionHash(null)).toThrow(TypeError);
+			expect(() => normalizeTransactionHash(undefined)).toThrow(TypeError);
 		});
 	});
 });

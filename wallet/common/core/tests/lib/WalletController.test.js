@@ -40,7 +40,9 @@ const defaultParameters = {
 		encryptMessage: jest.fn().mockResolvedValue(''),
 		decryptMessage: jest.fn().mockResolvedValue(''),
 		createPrivateAccount: jest.fn().mockResolvedValue(),
-		createPrivateKeysFromMnemonic: jest.fn().mockResolvedValue([])
+		createPrivateKeysFromMnemonic: jest.fn().mockResolvedValue([]),
+		normalizeAddress: jest.fn(address => address),
+		normalizeTransactionHash: jest.fn(hash => hash)
 	},
 	persistentStorageInterface: createStorageMock({}),
 	secureStorageInterface: createStorageMock({}),

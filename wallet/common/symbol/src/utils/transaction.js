@@ -16,6 +16,18 @@ import { TransactionBundle, absoluteToRelativeAmount } from 'wallet-common-core'
 const { TransactionFactory } = models;
 
 /**
+ * Normalizes a transaction hash by ensuring it follows the uppercase convention.
+ * @param {string} hash - The transaction hash to normalize.
+ * @returns {string} The normalized transaction hash.
+ */
+export const normalizeTransactionHash = hash => {
+	if (typeof hash !== 'string')
+		throw new TypeError('Expected hash to be a string value');
+
+	return hash.toUpperCase();
+};
+
+/**
  * Checks if a transaction is an aggregate transaction.
  * @param {Transaction | object} transaction - The transaction or Symbol transaction object.
  * @returns {boolean} A boolean indicating whether the transaction is an aggregate transaction.
