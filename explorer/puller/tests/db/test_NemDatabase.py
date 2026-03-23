@@ -8,7 +8,7 @@ from symbolchain.nem.Network import Address
 from test_DatabaseConnection import DatabaseConfig
 
 from puller.db.NemDatabase import NemDatabase
-from puller.facade.NemPuller import AccountRecord, BlockRecord
+from puller.facade.NemPuller import AccountRecord, BlockRecord, NamespaceRecord
 
 # region test data
 
@@ -68,7 +68,8 @@ class NemDatabaseTest(unittest.TestCase):
 		# Destroy the temporary PostgreSQL database
 		self.postgresql.stop()
 
-	def _fetch_account_from_db(self, cursor, address):  # pylint: disable=no-self-use
+	@staticmethod
+	def _fetch_account_from_db(cursor, address):
 		"""Helper method to fetch account data from database."""
 
 		cursor.execute(
@@ -96,6 +97,26 @@ class NemDatabaseTest(unittest.TestCase):
 		)
 		return cursor.fetchone()
 
+	@staticmethod
+	def _fetch_namespace_from_db(cursor, root_namespace):
+		"""Helper method to fetch namespace data from database."""
+
+		cursor.execute(
+			'''
+			SELECT
+				root_namespace,
+				encode(owner, 'hex'),
+				registered_height,
+				expiration_height,
+				sub_namespaces
+			FROM namespaces
+			WHERE root_namespace = %s
+			''',
+			(root_namespace,)
+		)
+
+		return cursor.fetchone()
+
 	def test_can_create_tables(self):
 		# Arrange:
 		with NemDatabase(self.db_config) as nem_database:
@@ -114,9 +135,10 @@ class NemDatabaseTest(unittest.TestCase):
 			results = cursor.fetchall()
 
 		# Assert:
-		self.assertEqual(len(results), 2)
+		self.assertEqual(len(results), 3)
 		self.assertEqual(results[0][0], 'accounts')
 		self.assertEqual(results[1][0], 'blocks')
+		self.assertEqual(results[2][0], 'namespaces')
 
 	def test_can_insert_block(self):
 		# Arrange:
@@ -320,3 +342,114 @@ class NemDatabaseTest(unittest.TestCase):
 		# Assert:
 		self.assertEqual(result[7], 750000)  # harvested_fees
 		self.assertEqual(result[11], 20)      # last_harvested_height
+
+	def test_can_insert_namespace(self):
+		# Arrange:
+		with NemDatabase(self.db_config) as nem_database:
+			nem_database.create_tables()
+
+			cursor = nem_database.connection.cursor()
+
+			# Act:
+			nem_database.upsert_namespace(
+				cursor,
+				namespace=NamespaceRecord(
+					root_namespace='root',
+					owner=PublicKey('8d07f90fb4bbe7715fa327c926770166a11be2e494a970605f2e12557f66c9b9'),
+					registered_height=100,
+					expiration_height=200
+				)
+			)
+
+			nem_database.connection.commit()
+			result = self._fetch_namespace_from_db(cursor, 'root')
+
+		# Assert:
+		self.assertIsNotNone(result)
+		self.assertEqual(result, (
+			'root',
+			'8d07f90fb4bbe7715fa327c926770166a11be2e494a970605f2e12557f66c9b9',
+			100,
+			200,
+			[]
+		))
+
+	def test_can_update_namespace_by_root_namespace_conflict(self):
+		# Arrange:
+		with NemDatabase(self.db_config) as nem_database:
+			nem_database.create_tables()
+
+			cursor = nem_database.connection.cursor()
+
+			# insert initial namespace
+			nem_database.upsert_namespace(
+				cursor,
+				namespace=NamespaceRecord(
+					root_namespace='root',
+					owner=PublicKey('8d07f90fb4bbe7715fa327c926770166a11be2e494a970605f2e12557f66c9b9'),
+					registered_height=100,
+					expiration_height=200
+				)
+			)
+
+			# Act:
+			nem_database.upsert_namespace(
+				cursor,
+				namespace=NamespaceRecord(
+					root_namespace='root',
+					owner=PublicKey('f9bd190dd0c364261f5c8a74870cc7f7374e631352293c62ecc437657e5de2cd'),
+					registered_height=150,
+					expiration_height=250
+				)
+			)
+
+			nem_database.connection.commit()
+			result = self._fetch_namespace_from_db(cursor, 'root')
+
+		# Assert:
+		self.assertIsNotNone(result)
+		self.assertEqual(result, (
+			'root',
+			'f9bd190dd0c364261f5c8a74870cc7f7374e631352293c62ecc437657e5de2cd',
+			150,
+			250,
+			[]
+		))
+
+	def test_can_update_sub_namespaces(self):
+		# Arrange:
+		with NemDatabase(self.db_config) as nem_database:
+			nem_database.create_tables()
+
+			cursor = nem_database.connection.cursor()
+
+			# insert initial namespace
+			nem_database.upsert_namespace(
+				cursor,
+				namespace=NamespaceRecord(
+					root_namespace='root',
+					owner=PublicKey('8d07f90fb4bbe7715fa327c926770166a11be2e494a970605f2e12557f66c9b9'),
+					registered_height=100,
+					expiration_height=200
+				)
+			)
+
+			# Act:
+			nem_database.update_sub_namespaces(
+				cursor,
+				'sub1',
+				'root'
+			)
+
+			nem_database.connection.commit()
+			result = self._fetch_namespace_from_db(cursor, 'root')
+
+		# Assert:
+		self.assertIsNotNone(result)
+		self.assertEqual(result, (
+			'root',
+			'8d07f90fb4bbe7715fa327c926770166a11be2e494a970605f2e12557f66c9b9',
+			100,
+			200,
+			['sub1']
+		))

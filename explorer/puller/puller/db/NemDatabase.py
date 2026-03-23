@@ -47,6 +47,14 @@ class NemDatabase(DatabaseConnection):
 			'''
 		)
 
+		# Create indexes for namespaces table
+		cursor.execute(
+			'''
+			CREATE INDEX IF NOT EXISTS idx_namespaces_root_namespace
+				ON namespaces (root_namespace)
+			'''
+		)
+
 	def create_tables(self):
 		"""Creates database tables."""
 
@@ -96,11 +104,26 @@ class NemDatabase(DatabaseConnection):
 			'''
 		)
 
+		# Create Namespaces table
+		cursor.execute(
+			'''
+			CREATE TABLE IF NOT EXISTS namespaces (
+				id serial PRIMARY KEY,
+				root_namespace varchar(16) NOT NULL UNIQUE,
+				owner bytea NOT NULL,
+				registered_height bigint NOT NULL,
+				expiration_height bigint NOT NULL,
+				sub_namespaces VARCHAR(146)[] DEFAULT '{}'
+			)
+			'''
+		)
+
 		self._create_table_indexes(cursor)
 
 		self.connection.commit()
 
-	def insert_block(self, cursor, block):  # pylint: disable=no-self-use
+	@staticmethod
+	def insert_block(cursor, block):
 		"""Adds block height into table."""
 
 		cursor.execute(
@@ -134,7 +157,8 @@ class NemDatabase(DatabaseConnection):
 		results = cursor.fetchone()
 		return 0 if results[0] is None else results[0]
 
-	def upsert_account(self, cursor, account_info):  # pylint: disable=no-self-use
+	@staticmethod
+	def upsert_account(cursor, account_info):
 		"""Insert or update account information."""
 
 		cursor.execute(
@@ -186,7 +210,8 @@ class NemDatabase(DatabaseConnection):
 			)
 		)
 
-	def update_account_harvested_fees(self, cursor, harvester, total_fees, last_height):  # pylint: disable=no-self-use
+	@staticmethod
+	def update_account_harvested_fees(cursor, harvester, total_fees, last_height):
 		"""Updates harvested fees for an account."""
 
 		cursor.execute(
@@ -199,5 +224,48 @@ class NemDatabase(DatabaseConnection):
 				total_fees,
 				last_height,
 				harvester.bytes
+			)
+		)
+
+	@staticmethod
+	def upsert_namespace(cursor, namespace):
+		"""Insert or update namespace information."""
+
+		cursor.execute(
+			'''
+			INSERT INTO namespaces (
+				root_namespace,
+				owner,
+				registered_height,
+				expiration_height
+			)
+			VALUES (%s, %s, %s, %s)
+			ON CONFLICT (root_namespace)
+			DO UPDATE SET
+				owner = EXCLUDED.owner,
+				registered_height = EXCLUDED.registered_height,
+				expiration_height = EXCLUDED.expiration_height
+			''',
+			(
+				namespace.root_namespace,
+				namespace.owner.bytes,
+				namespace.registered_height,
+				namespace.expiration_height
+			)
+		)
+
+	@staticmethod
+	def update_sub_namespaces(cursor, sub_namespace, root_namespace):
+		"""Appends sub-namespace to a root namespace's sub_namespaces array."""
+
+		cursor.execute(
+			'''
+			UPDATE namespaces
+			SET sub_namespaces = array_append(sub_namespaces, %s)
+			WHERE root_namespace = %s
+			''',
+			(
+				sub_namespace,
+				root_namespace
 			)
 		)
