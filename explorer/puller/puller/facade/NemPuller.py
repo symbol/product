@@ -67,7 +67,8 @@ class NemPuller:
 		self.nem_connector = NemConnector(node_url, network)
 		self.nem_facade = NemFacade(str(network))
 
-	async def _retry_operation(self, operation, description, retries=3, delay=2):  # pylint: disable=no-self-use
+	@staticmethod
+	async def _retry_operation(operation, description, retries=3, delay=2):
 		"""Retries an async operation with exponential backoff."""
 
 		for attempt in range(1, retries + 1):
@@ -198,7 +199,8 @@ class NemPuller:
 
 		self.nem_db.insert_block(cursor, block)
 
-	def _convert_mosaics_to_json(self, account_mosaics):  # pylint: disable=no-self-use
+	@staticmethod
+	def _convert_mosaics_to_json(account_mosaics):
 		"""Convert AccountMosaic to Json format."""
 
 		return [
@@ -209,7 +211,8 @@ class NemPuller:
 			for mosaic in account_mosaics
 		]
 
-	def _create_account_record(self, account_info, mosaics_json, remote_address=None):  # pylint: disable=no-self-use
+	@staticmethod
+	def _create_account_record(account_info, mosaics_json, remote_address=None):
 		"""Create AccountRecord from account info and mosaics."""
 
 		return AccountRecord(
@@ -290,7 +293,7 @@ class NemPuller:
 		new_sub_namespace = f'{transaction.parent}.{transaction.namespace}'
 		self.nem_db.update_sub_namespaces(cursor, new_sub_namespace, root_namespace)
 
-	def _process_namespace(self, cursor, transaction, block_height):  # pylint: disable=no-self-use
+	def _process_namespace(self, cursor, transaction, block_height):
 		"""Process namespace in a block."""
 
 		if transaction.parent:
@@ -298,7 +301,7 @@ class NemPuller:
 		else:
 			self._process_root_namespace(cursor, transaction, block_height)
 
-	def _process_transactions(self, cursor, block_transactions, height):  # pylint: disable=no-self-use
+	def _process_transactions(self, cursor, block_transactions, height):
 		"""Process transactions in a block."""
 
 		for transaction in block_transactions:

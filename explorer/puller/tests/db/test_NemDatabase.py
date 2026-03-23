@@ -68,7 +68,8 @@ class NemDatabaseTest(unittest.TestCase):
 		# Destroy the temporary PostgreSQL database
 		self.postgresql.stop()
 
-	def _fetch_account_from_db(self, cursor, address):  # pylint: disable=no-self-use
+	@staticmethod
+	def _fetch_account_from_db(cursor, address):
 		"""Helper method to fetch account data from database."""
 
 		cursor.execute(
@@ -96,7 +97,8 @@ class NemDatabaseTest(unittest.TestCase):
 		)
 		return cursor.fetchone()
 
-	def _fetch_namespace_from_db(self, cursor, root_namespace):  # pylint: disable=no-self-use
+	@staticmethod
+	def _fetch_namespace_from_db(cursor, root_namespace):
 		"""Helper method to fetch namespace data from database."""
 
 		cursor.execute(
