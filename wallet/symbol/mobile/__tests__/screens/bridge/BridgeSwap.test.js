@@ -476,10 +476,11 @@ describe('screens/bridge/BridgeSwap', () => {
 
 			// Act:
 			screenTester.pressButton(SCREEN_TEXT.buttonConfirm);
-			await screenTester.waitForTimer();
-			await screenTester.waitForTimer();
-			await screenTester.waitForTimer();
-			await screenTester.waitForTimer();
+			await screenTester.waitForTimer(); // show passcode
+			await screenTester.waitForTimer(); // delay due to issue with modals on iOS. 
+			// Cannot open a status dialog immediately after a passcode success
+			await screenTester.waitForTimer(); // sign transaction 
+			await screenTester.waitForTimer(); // announce transaction
 
 			// Assert:
 			expect(createTransactionMock).toHaveBeenCalled();
