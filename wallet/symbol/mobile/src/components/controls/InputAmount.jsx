@@ -39,7 +39,7 @@ export const InputAmount = props => {
 	}, [value, errorMessage]);
 
 	// Price text
-	useEffect(() => {		
+	useEffect(() => {
 		setPriceText(getUserCurrencyAmountText(value, price, networkIdentifier));
 	}, [value, price, networkIdentifier]);
 

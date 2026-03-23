@@ -48,4 +48,3 @@ export const useBridgeTransaction = ({ bridgeId, source, target, amount }) => {
 		getTransactionPreviewTable
 	};
 };
- 
