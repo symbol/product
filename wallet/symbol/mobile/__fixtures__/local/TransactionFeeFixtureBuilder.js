@@ -30,21 +30,21 @@ const createEthereumTransactionFeeTiers = (chainName, networkIdentifier, slow, m
 
 	return {
 		slow: {
-			gasLimit: '0',
-			maxFeePerGas: '0',
-			maxPriorityFeePerGas: '0',
+			gasLimit: '1000',
+			maxFeePerGas: '0.1',
+			maxPriorityFeePerGas: '5',
 			token: tokenSlow
 		},
 		medium: {
-			gasLimit: '0',
-			maxFeePerGas: '0',
-			maxPriorityFeePerGas: '0',
+			gasLimit: '1000',
+			maxFeePerGas: '0.2',
+			maxPriorityFeePerGas: '6',
 			token: tokenMedium
 		},
 		fast: {
-			gasLimit: '0',
-			maxFeePerGas: '0',
-			maxPriorityFeePerGas: '0',
+			gasLimit: '1000',
+			maxFeePerGas: '0.3',
+			maxPriorityFeePerGas: '7',
 			token: tokenFast
 		}
 	};
