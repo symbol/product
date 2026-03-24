@@ -8,11 +8,9 @@ import { knownAccounts } from '@/app/config';
 
 /**
  * Retrieves the known account entry from the known accounts configuration.
- * 
  * @param {string} chainName - The name of the blockchain (e.g., 'symbol', 'ethereum').
  * @param {string} networkIdentifier - The network identifier (e.g., 'mainnet', 'testnet').
  * @param {string} address - The account address to look up.
- * 
  * @returns {KnownAccount|null} The known account entry if found, otherwise null.
  */
 const getKnownAccountEntry = (chainName, networkIdentifier, address) => {
@@ -45,14 +43,12 @@ const getWalletAccountName = (address, walletAccounts) => {
 
 /**
  * Retrieves the account info from various sources: wallet accounts, address book, or known accounts config.
- * 
  * @param {string} address - The account address to look up.
  * @param {object} options - The options to search for the account name.
  * @param {Array} [options.walletAccounts] - The list of wallet accounts.
  * @param {object} [options.addressBook] - The address book instance
  * @param {string} [options.chainName] - The name of the blockchain (e.g., 'symbol', 'ethereum').
  * @param {string} [options.networkIdentifier] - The network identifier (e.g., 'mainnet', 'testnet').
- * 
  * @returns {KnownAccountInfo} The account info if found, otherwise null.
  */
 export const getAccountKnownInfo = (address, options) => {
