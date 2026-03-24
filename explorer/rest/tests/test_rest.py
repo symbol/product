@@ -399,6 +399,7 @@ def test_api_nem_health_node_fails(mock_chain_height, client):  # pylint: disabl
 
 # region /namespace/<name>
 
+
 def _assert_get_nem_namespace_by_name(client, name, expected_status_code, expected_result):  # pylint: disable=redefined-outer-name
 	# Act:
 	response = client.get(f'/api/nem/namespace/{name}')
