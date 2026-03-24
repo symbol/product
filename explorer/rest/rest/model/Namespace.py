@@ -26,9 +26,9 @@ class NamespaceView:
 
 		return {
 			'rootNamespace': self.root_namespace,
-			'owner': str(self.owner),
+			'owner': self.owner,
 			'registeredHeight': self.registered_height,
-			'registeredTimestamp': str(self.registered_timestamp),
+			'registeredTimestamp': self.registered_timestamp,
 			'expirationHeight': self.expiration_height,
 			'subNamespaces': self.sub_namespaces
 		}
