@@ -318,9 +318,9 @@ describe('hooks/useBridge', () => {
 				expected: { pairsStatus: BridgePairsStatus.OK }
 			},
 			{
-				description: 'returns loading when bridge list is empty',
+				description: 'returns not configured when bridge list is empty',
 				config: { bridges: [] },
-				expected: { pairsStatus: BridgePairsStatus.LOADING }
+				expected: { pairsStatus: BridgePairsStatus.NOT_CONFIGURED }
 			}
 		];
 

@@ -168,7 +168,9 @@ export const useBridge = () => {
 				setPairsStatus(newStatus);
 		};
 
-		if (!hasBridgesWithLoadedCache)
+		if (bridges.length === 0)
+			setPairsStatusIfDifferent(BridgePairsStatus.NOT_CONFIGURED);
+		else if (!hasBridgesWithLoadedCache)
 			setPairsStatusIfDifferent(BridgePairsStatus.LOADING);
 		else if (hasBridgesWithLoadedCache && !hasBridgesWithAccounts)
 			setPairsStatusIfDifferent(BridgePairsStatus.NO_PAIRS);

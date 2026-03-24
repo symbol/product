@@ -96,7 +96,7 @@
 
 /**
  * Bridge pairs loading status.
- * @typedef {'loading' | 'ok' | 'no_pairs' | 'error'} BridgePairsStatusType
+ * @typedef {'not_configured' | 'loading' | 'ok' | 'no_pairs' | 'error'} BridgePairsStatusType
  */
 
 /**
@@ -122,6 +122,7 @@ export const BridgeMode = {
 
 /** Bridge pairs loading status constants. */
 export const BridgePairsStatus = {
+	NOT_CONFIGURED: /** @type {BridgePairsStatusType} */ ('not_configured'),
 	LOADING: /** @type {BridgePairsStatusType} */ ('loading'),
 	OK: /** @type {BridgePairsStatusType} */ ('ok'),
 	NO_PAIRS: /** @type {BridgePairsStatusType} */ ('no_pairs'),
