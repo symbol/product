@@ -36,12 +36,12 @@ const getNativeCurrency = source => {
  * @returns {string} The available balance string.
  */
 const calculateAvailableBalance = (source, transactionFees, transactionFeeTierLevel) => {
-	if (!source?.token || source.token.amount === '0')
+	if (!source?.token || source.token.amount === '0' || !transactionFees)
 		return '0';
 
 	const networkCurrency = getNativeCurrency(source);
 
-	if (!networkCurrency || !transactionFees)
+	if (!networkCurrency)
 		return '0';
 
 	const nativeCurrencyId = networkCurrency.mosaicId || networkCurrency.id;
