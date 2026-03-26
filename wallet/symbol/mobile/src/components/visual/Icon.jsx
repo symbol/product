@@ -3,17 +3,7 @@ import { Image } from 'react-native';
 
 /** @typedef {import('react')} React */
 
-const sizeMap = {
-	xxs: Sizes.Primitives.spacing150, // 12px message type, boolean, widget header icon (was 14)
-	xs: Sizes.Primitives.spacing200, // 16px - button copy, transaction send activity icon  
-	// 18 - transaction graphic action, checkbox inner icon, edit button, button plain
-	s: Sizes.Primitives.spacing250, // 20 - close button icon close
-	m: Sizes.Primitives.spacing300, // 24px -standard - tx type, navigation, transaction graphic target icon
-	l: Sizes.Primitives.spacing400, // 32px - transaction send activity circle wrapper, settings items icons,
-	// 36 - icon asset
-	xl: Sizes.Primitives.spacing500 // 40px - token icon bridge
-	// 48px - transaction graphic target wrapper, avatar md
-};
+const sizeMap = Sizes.Semantic.iconSize;
 
 const sourceMap = {
 	default: {
@@ -199,10 +189,11 @@ const sourceMap = {
  * 
  * @param {object} props - Component props.
  * @param {string} props.name - Icon name.
- * @param {'xxs' | 'xs' | 's' | 'm' | 'l' | 'xl' | 'xxl'} props.size - Icon size (xxs, xs, s, m, l, xl, xxl).
- * @param {'default' | 'secondary' | 'inverse'} props.variant - Icon color (default, secondary, inverse).
- * @param {object} props.src - Optional source path for custom icon.
- * @param {object} props.style - Optional additional styles.
+ * @param {'xxs' | 'xs' | 's' | 'm' | 'l' | 'xl' | 'xxl'} [props.size='m'] - Icon size.
+ * @param {'default' | 'secondary' | 'inverse' | 'danger' | 'warning' | 'success' | 'info' | 'neutral'} [props.variant='default']
+ *   - Icon color variant.
+ * @param {object} [props.src] - Optional source for a custom icon image.
+ * @param {object} [props.style] - Optional additional styles.
  * 
  * @returns {React.ReactNode} Icon component
  */

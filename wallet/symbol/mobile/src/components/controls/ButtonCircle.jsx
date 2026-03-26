@@ -3,8 +3,10 @@ import { Colors, Sizes } from '@/app/styles';
 import React from 'react';
 import { StyleSheet } from 'react-native';
 
-const BUTTON_SIZE = Sizes.Component.circleButton.m.surface.size;
-const ICON_SIZE = 's';
+const DEFAULT_SIZE = 'l';
+const BUTTON_SIZE_S = Sizes.Semantic.circleControlSize.s;
+const BUTTON_SIZE_M = Sizes.Semantic.circleControlSize.m;
+const BUTTON_SIZE_L = Sizes.Semantic.circleControlSize.l;
 const ELEVATION = 2;
 
 /**
@@ -26,19 +28,35 @@ const ButtonVariant = {
  * @param {object} props - Component props
  * @param {string} props.icon - Icon name to display inside the button.
  * @param {'secondary'|'danger'|'warning'|'neutral'} [props.variant='secondary'] - Button color variant.
+ * @param {'s'|'m'|'l'} [props.size='l'] - Button size variant.
  * @param {boolean} [props.isDisabled=false] - Disables the button if true.
- * @param {boolean} [props.isFloating=true] - If true, applies absolute positioning.
+ * @param {boolean} [props.isFloating=false] - If true, applies absolute positioning.
  * @param {function} props.onPress - Callback fired on button press.
  *
- * @returns {React.ReactNode} Circle button component
+ * @returns {React.ReactNode} ButtonCircle component
  */
 export const ButtonCircle = ({
 	icon,
 	variant = ButtonVariant.SECONDARY,
+	size = DEFAULT_SIZE,
 	isDisabled = false,
-	isFloating = true,
+	isFloating = false,
 	onPress
 }) => {
+	const rootSizeStyleMap = {
+		s: styles.root_small,
+		m: styles.root_medium,
+		l: styles.root_large
+	};
+	const iconSizeMap = {
+		s: 'xxs',
+		m: 'xs',
+		l: 's'
+	};
+
+	const rootSizeStyle = rootSizeStyleMap[size];
+	const iconSize = iconSizeMap[size] ?? iconSizeMap[DEFAULT_SIZE];
+
 	const styleMap = {
 		[ButtonVariant.SECONDARY]: styles.surface_secondary,
 		[ButtonVariant.DANGER]: styles.surface_danger,
@@ -59,25 +77,37 @@ export const ButtonCircle = ({
 
 	return (
 		<TouchableNative
-			containerStyle={[styles.root, floatingStyle]}
+			containerStyle={[styles.root, rootSizeStyle, floatingStyle]}
 			style={[styles.surface, surfaceStyle]}
 			accessibilityRole="button"
 			accessibilityLabel={icon}
 			disabled={isDisabled}
 			onPress={handlePress}
 		>
-			<Icon name={icon} size={ICON_SIZE} variant="inverse" />
+			<Icon name={icon} size={iconSize} variant="inverse" />
 		</TouchableNative>
 	);
 };
 
 const styles = StyleSheet.create({
 	root: {
-		width: BUTTON_SIZE,
-		height: BUTTON_SIZE,
-		borderRadius: Sizes.Semantic.borderRadius.round,
 		overflow: 'hidden',
 		elevation: ELEVATION
+	},
+	root_small: {
+		width: BUTTON_SIZE_S,
+		height: BUTTON_SIZE_S,
+		borderRadius: BUTTON_SIZE_S / 2
+	},
+	root_medium: {
+		width: BUTTON_SIZE_M,
+		height: BUTTON_SIZE_M,
+		borderRadius: BUTTON_SIZE_M / 2
+	},
+	root_large: {
+		width: BUTTON_SIZE_L,
+		height: BUTTON_SIZE_L,
+		borderRadius: BUTTON_SIZE_L / 2
 	},
 	root_floating: {
 		position: 'absolute',
@@ -85,8 +115,8 @@ const styles = StyleSheet.create({
 		right: Sizes.Semantic.layoutPadding.m
 	},
 	surface: {
-		width: BUTTON_SIZE,
-		height: BUTTON_SIZE,
+		width: '100%',
+		height: '100%',
 		justifyContent: 'center',
 		alignItems: 'center'
 	},
