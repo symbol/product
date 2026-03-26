@@ -152,6 +152,24 @@ export const isPrivateKey = stringToTest => {
 };
 
 /**
+ * Checks if a given string is a valid public key.
+ * @param {string} stringToTest - The string to test.
+ * @returns {boolean} A boolean indicating if the string is a valid public key.
+ */
+export const isPublicKey = stringToTest => {
+	if (typeof stringToTest !== 'string')
+		return false;
+
+	try {
+		new PublicKey(stringToTest);
+		
+		return true;
+	} catch {
+		return false;
+	}
+};
+
+/**
  * Checks if a given string is a valid Symbol address.
  * @param {string} address - The address to test.
  * @param {string} [networkIdentifier] - The network identifier (optional).

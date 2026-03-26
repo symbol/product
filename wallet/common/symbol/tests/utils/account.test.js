@@ -7,6 +7,7 @@ import {
 	createWalletAccount,
 	generateKeyPair,
 	isPrivateKey,
+	isPublicKey,
 	isSymbolAddress,
 	normalizeAddress,
 	publicAccountFromPrivateKey,
@@ -14,6 +15,29 @@ import {
 } from '../../src/utils';
 import { walletStorageAccounts } from '../__fixtures__/local/wallet';
 import { forEachNetwork } from '../test-utils';
+
+const keyTests = [
+	{
+		description: 'returns false if the input is not a string',
+		config: { inputs: [123, null, undefined, [], {}, () => {}, true] },
+		expected: { result: false }
+	},
+	{
+		description: 'returns false if the input is not a valid key',
+		config: { input: 'invalid' },
+		expected: { result: false }
+	}
+];
+
+const runKeyTest = (fn, description, config, expected) => {
+	it(description, () => {
+		// Arrange:
+		const inputs = config.inputs ?? [config.input];
+
+		// Act & Assert:
+		inputs.forEach(input => expect(fn(input)).toBe(expected.result));
+	});
+};
 
 
 describe('utils/account', () => {
@@ -154,39 +178,32 @@ describe('utils/account', () => {
 	});
 
 	describe('isPrivateKey', () => {
-		const runIsPublicOrPrivateKeyTest = (input, expectedResult) => {
-			// Act:
-			const result = isPrivateKey(input);
+		const privateKeyTests = [
+			{
+				description: 'returns true if the input is a private key',
+				config: { input: 'F94C017383A5FE74B5AB56B9EA09534E9C7F4DF299A80428C883B8124B60B710' },
+				expected: { result: true }
+			},
+			...keyTests
+		];
 
-			// Assert:
-			expect(result).toBe(expectedResult);
-		};
-
-		it('returns true if the input is a private key', () => {
-			// Arrange:
-			const privateKey = 'F94C017383A5FE74B5AB56B9EA09534E9C7F4DF299A80428C883B8124B60B710';
-			const expectedResult = true;
-
-			// Act & Assert:
-			runIsPublicOrPrivateKeyTest(privateKey, expectedResult);
+		privateKeyTests.forEach(({ description, config, expected }) => {
+			runKeyTest(isPrivateKey, description, config, expected);
 		});
+	});
 
-		it('returns false if the input is not a string', () => {
-			// Arrange:
-			const inputs = [123, null, undefined, [], {}, () => {}, true];
-			const expectedResult = false;
+	describe('isPublicKey', () => {
+		const publicKeyTests = [
+			{
+				description: 'returns true if the input is a public key',
+				config: { input: 'A55C641506CE1A9E097A551DF9B6FC5C58AC9C22E6B0368EBAED0184CD9ADDAB' },
+				expected: { result: true }
+			},
+			...keyTests
+		];
 
-			// Act & Assert:
-			inputs.forEach(input => runIsPublicOrPrivateKeyTest(input, expectedResult));
-		});
-
-		it('returns false if the input is not a private key', () => {
-			// Arrange:
-			const input = 'invalid';
-			const expectedResult = false;
-
-			// Act & Assert:
-			runIsPublicOrPrivateKeyTest(input, expectedResult);
+		publicKeyTests.forEach(({ description, config, expected }) => {
+			runKeyTest(isPublicKey, description, config, expected);
 		});
 	});
 
