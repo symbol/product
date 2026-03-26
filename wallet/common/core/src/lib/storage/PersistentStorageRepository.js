@@ -24,7 +24,8 @@ export class PersistentStorageRepository {
 		ADDRESS_BOOK: 'ADDRESS_BOOK',
 		USER_CURRENCY: 'USER_CURRENCY',
 		NETWORK_PROPERTIES: 'NETWORK_PROPERTIES',
-		SELECTED_LANGUAGE: 'SELECTED_LANGUAGE'
+		SELECTED_LANGUAGE: 'SELECTED_LANGUAGE',
+		MULTISIG_ACCOUNTS: 'MULTISIG_ACCOUNTS'
 	};
 
 	/**
@@ -274,6 +275,25 @@ export class PersistentStorageRepository {
 	 */
 	setSelectedLanguage = async payload => {
 		return this.storage.setItem(PersistentStorageRepository.STORAGE_KEYS.SELECTED_LANGUAGE, payload);
+	};
+
+	/**
+	 * Get the multisig accounts.
+	 * @returns {Promise<NetworkObjectMap|null>} A promise that resolves to the multisig accounts object or null if not set.
+	 */
+	getMultisigAccounts = async () => {
+		const json = await this.storage.getItem(PersistentStorageRepository.STORAGE_KEYS.MULTISIG_ACCOUNTS);
+
+		return decodeJson(json);
+	};
+
+	/**
+	 * Set the multisig accounts.
+	 * @param {NetworkObjectMap} payload - The multisig accounts object to set.
+	 * @returns {Promise<void>} A promise that resolves when the multisig accounts are set.
+	 */
+	setMultisigAccounts = async payload => {
+		return this.storage.setItem(PersistentStorageRepository.STORAGE_KEYS.MULTISIG_ACCOUNTS, JSON.stringify(payload));
 	};
 
 	/**

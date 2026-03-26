@@ -1,12 +1,12 @@
 import { 
-	MessageType, 
-	TransactionBundleType, 
-	TransactionType,
-	SINGLE_TRANSACTION_DEADLINE_HOURS,
-	MULTISIG_TRANSACTION_DEADLINE_HOURS,
-	EMPTY_AGGREGATE_HASH,
-	HASH_LOCK_AMOUNT,
+	EMPTY_AGGREGATE_HASH, 
+	HASH_LOCK_AMOUNT, 
 	HASH_LOCK_DURATION,
+	MULTISIG_TRANSACTION_DEADLINE_HOURS,
+	MessageType,
+	SINGLE_TRANSACTION_DEADLINE_HOURS,
+	TransactionBundleType,
+	TransactionType
 } from '../constants';
 import {
 	addressFromPublicKey,
