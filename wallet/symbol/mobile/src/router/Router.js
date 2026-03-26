@@ -75,6 +75,18 @@ export class Router {
 	static goToBridgeSwapDetails(params) {
 		navigationRef.navigate(RouteName.BridgeSwapDetails, parseNavigationParams(params));
 	}
+	static goToMultisigAccountList(params) {
+		navigationRef.navigate(RouteName.MultisigAccountList, parseNavigationParams(params));
+	}
+	static goToMultisigAccountDetails(params) {
+		navigationRef.navigate(RouteName.MultisigAccountDetails, parseNavigationParams(params));
+	}
+	static goToCreateMultisigAccount(params) {
+		navigationRef.navigate(RouteName.CreateMultisigAccount, parseNavigationParams(params));
+	}
+	static goToModifyMultisigAccount(params) {
+		navigationRef.navigate(RouteName.ModifyMultisigAccount, parseNavigationParams(params));
+	}
 	static goToSettings(params) {
 		navigationRef.navigate(RouteName.Settings, parseNavigationParams(params));
 	}
