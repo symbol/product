@@ -49,6 +49,7 @@ export const TransactionType = {
 export const TransactionBundleType = {
 	DEFAULT: 'default',
 	MULTISIG_TRANSFER: 'multisig-transfer',
+	MULTISIG_ACCOUNT_MODIFICATION: 'multisig-account-modification',
 	DELEGATED_HARVESTING: 'delegated-harvesting'
 };
 
