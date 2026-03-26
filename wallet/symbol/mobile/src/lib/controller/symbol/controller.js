@@ -15,7 +15,7 @@ import {
 	StorageInterface,
 	WalletController
 } from 'wallet-common-core';
-import { HarvestingModule, TransferModule } from 'wallet-common-symbol';
+import { HarvestingModule, MultisigModule, TransferModule } from 'wallet-common-symbol';
 
 /** @typedef {import('@/app/types/Wallet').MainWalletController} MainWalletController */
 
@@ -24,6 +24,7 @@ const modules = [
 	new MarketModule({
 		marketApi: symbolNetworkApi.market
 	}),
+	new MultisigModule(),
 	new TransferModule(),
 	new LocalizationModule(),
 	new HarvestingModule(),
