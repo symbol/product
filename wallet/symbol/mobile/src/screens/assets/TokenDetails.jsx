@@ -13,7 +13,7 @@ import {
 	TableView,
 	TokenAvatar
 } from '@/app/components';
-import { useWalletController } from '@/app/hooks';
+import { useAsyncManager, useWalletController } from '@/app/hooks';
 import { $t } from '@/app/localization';
 import { Router } from '@/app/router/Router';
 import { ExpirationProgress } from '@/app/screens/assets/components';
@@ -24,17 +24,34 @@ import React from 'react';
 /**
  * TokenDetails screen component. Displays detailed information about a specific token including
  * balance, creator, supply, divisibility, and expiration status. Allows sending tokens if not expired.
- * @param {{ route: { params: { chainName: string, tokenId: string } } }} props - Component props
+ *
+ * @param {object} props - Component props.
+ * @param {object} props.route - React Navigation route object.
+ * @param {object} props.route.params - Route parameters.
+ * @param {string} props.route.params.chainName - The blockchain name.
+ * @param {string} props.route.params.tokenId - The token identifier.
+ * @param {string} props.route.params.accountAddress - The owner account address.
+ * @param {object} [props.route.params.preloadedData] - Preloaded token data to avoid initial fetch.
+ *
  * @returns {React.ReactNode} TokenDetails component
  */
 export const TokenDetails = ({ route }) => {
-	const { chainName, tokenId } = route.params;
+	const { chainName, tokenId, accountAddress, preloadedData } = route.params;
 	const walletController = useWalletController(chainName);
-	const { networkIdentifier, currentAccount, currentAccountInfo, networkProperties } = walletController;
+	const { networkIdentifier, networkProperties } = walletController;
 
-	// Find token in wallet
-	const tokens = currentAccountInfo?.tokens || currentAccountInfo?.mosaics || [];
-	const token = tokens.find(t => t.id === tokenId);
+	// Fetch data
+	const dataManager = useAsyncManager({
+		callback: async () => {
+			const accountInfo = await walletController.networkApi.account.fetchAccountInfo(networkProperties, accountAddress);
+
+			const tokens = accountInfo.tokens ?? accountInfo.mosaics ?? [];
+			
+			return tokens.find(token => token.id === tokenId);
+		},
+		defaultData: preloadedData
+	});
+	const token = dataManager.data;
 
 	// Token display data
 	const {
@@ -57,7 +74,7 @@ export const TokenDetails = ({ route }) => {
 		}
 	];
 
-	if (token.creator === currentAccount.address) {
+	if (token.creator === accountAddress) {
 		tableData.push({
 			title: 'supply',
 			value: token.supply,
@@ -88,15 +105,16 @@ export const TokenDetails = ({ route }) => {
 	} = getExpirationData(token, networkProperties);
 
 	// Send button
-	const openSendScreen = () => Router.goToSend({ params: { chainName, tokenId } });
-
-	// Refresh data
-	const refresh = () => walletController.fetchAccountInfo();
+	const openSendScreen = () => Router.goToSend({ params: { 
+		chainName, 
+		tokenId,
+		senderAddress: accountAddress 
+	}});
 
 	const isSendButtonDisabled = isTokenExpired;
 
 	return (
-		<Screen refresh={{ onRefresh: refresh }}>
+		<Screen refresh={{ onRefresh: dataManager.call, isRefreshing: dataManager.isLoading }}>
 			<Screen.Upper>
 				<Spacer>
 					<Stack>
