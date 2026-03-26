@@ -6,12 +6,17 @@ import { Router } from '@/app/router/Router';
 import { useHistoryWidget } from '@/app/screens/history/hooks';
 import { HistoryWidget } from '@/app/screens/history/widgets/HistoryWidget';
 import { AccountCardWidget } from '@/app/screens/home/components/AccountCardWidget';
+import { WidgetAnimatedWrapper } from '@/app/screens/home/components/WidgetAnimatedWrapper';
+import { useMultisigWidget } from '@/app/screens/multisig/hooks/useMultisigWidget';
+import { MultisigWidget } from '@/app/screens/multisig/widgets/MultisigWidget';
 import React from 'react';
-import Animated, { FadeInDown, FadeInUp, FadeOutUp } from 'react-native-reanimated';
+import Animated, { FadeInUp } from 'react-native-reanimated';
 
 /**
  * Home screen component. The main dashboard screen displaying the current account's balance, name,
  * and providing navigation to send transaction, view account details, and receive QR-code screens.
+ *
+ * @returns {React.ReactNode} Home component
  */
 export const Home = () => {
 	const walletController = useWalletController();
@@ -28,11 +33,13 @@ export const Home = () => {
 
 	// Widgets
 	const historyWidget = useHistoryWidget(walletController);
+	const multisigWidget = useMultisigWidget(walletController);
 
 	// Data fetching
 	const fetchData = () => {
 		walletController.fetchAccountInfo();
 		historyWidget.refresh();
+		multisigWidget.refresh();
 	};
 
 	useInit(fetchData, walletController.isWalletReady);
@@ -59,11 +66,12 @@ export const Home = () => {
 								onDetailsPress={Router.goToAccountDetails}
 							/>
 						</Animated.View>
-						{historyWidget.isVisible && (
-							<Animated.View entering={FadeInDown.delay(125)} exiting={FadeOutUp}>
-								<HistoryWidget {...historyWidget.props} />
-							</Animated.View>
-						)}
+						<WidgetAnimatedWrapper isVisible={historyWidget.isVisible}>
+							<HistoryWidget {...historyWidget.props} />
+						</WidgetAnimatedWrapper>
+						<WidgetAnimatedWrapper isVisible={multisigWidget.isVisible}>
+							<MultisigWidget {...multisigWidget.props} />
+						</WidgetAnimatedWrapper>
 					</Stack>
 				</Spacer>
 			</Screen.Upper>
