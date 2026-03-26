@@ -136,6 +136,17 @@ const storageTestConfig = [
 		setterName: 'setNetworkProperties',
 		setterArguments: [jsonObject],
 		storagePayload: jsonString
+	},
+	{
+		key: 'MULTISIG_ACCOUNTS',
+		getterName: 'getMultisigAccounts',
+		emptyStorageValue: null,
+		expectedEmptyValue: null,
+		filledStorageValue: jsonString,
+		expectedFilledValue: jsonObject,
+		setterName: 'setMultisigAccounts',
+		setterArguments: [jsonObject],
+		storagePayload: jsonString
 	}
 ];
 
