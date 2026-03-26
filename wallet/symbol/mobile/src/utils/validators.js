@@ -2,6 +2,11 @@ import { Bip39 } from '@/app/lib/bip39';
 import { isAddress } from '@/app/utils';
 import { safeOperationWithRelativeAmounts } from 'wallet-common-core';
 
+/**
+ * Returns a validator that checks whether the field is not empty.
+ * @param {boolean} [isRequired=true] - Whether the field is required.
+ * @returns {function(string): string|undefined} Validator function.
+ */
 export const validateRequired =
 	(isRequired = true) =>
 		str => {
@@ -10,11 +15,19 @@ export const validateRequired =
 		
 		};
 
+/**
+ * Returns a validator that checks whether an account name is within the allowed length.
+ * @returns {function(string): string|undefined} Validator function.
+ */
 export const validateAccountName = () => str => {
 	if (str.length > 15) 
 		return 'validation_error_account_name_long';
 };
 
+/**
+ * Returns a validator that checks whether a mnemonic phrase is valid.
+ * @returns {function(string): string|undefined} Validator function.
+ */
 export const validateMnemonic = () => str => {
 	const isValidMnemonic = Bip39.validateMnemonic(str.trim());
 
@@ -22,6 +35,11 @@ export const validateMnemonic = () => str => {
 		return 'validation_error_mnemonic_invalid';
 };
 
+/**
+ * Returns a validator that checks whether an amount does not exceed the available balance.
+ * @param {string} availableBalance - The available balance to validate against.
+ * @returns {function(string): string|undefined} Validator function.
+ */
 export const validateAmount = availableBalance => str => {
 	const MAX_DIVISIBILITY = 18;
 	const isAmountGreaterThanBalance = safeOperationWithRelativeAmounts(
