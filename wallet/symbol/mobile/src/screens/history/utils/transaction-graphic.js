@@ -307,7 +307,7 @@ const createSourceData = (transaction, options) => {
 
 	return {
 		type: TransactionGraphicAvatarType.ACCOUNT,
-		text: accountDisplayData.name,
+		text: accountDisplayData.name ?? address,
 		accountAddress: address,
 		imageId: accountDisplayData.imageId,
 		color: accountDisplayData.color
@@ -338,7 +338,7 @@ const createTargetData = (transaction, config, options) => {
 
 		return {
 			type: targetType,
-			text: accountDisplayData.name,
+			text: accountDisplayData.name ?? address,
 			accountAddress: address,
 			imageId: accountDisplayData.imageId,
 			color: accountDisplayData.color
