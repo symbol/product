@@ -115,7 +115,12 @@ export class TransactionService {
 	 * @returns {Promise<void>} - A promise that resolves when the transaction bundle is announced.
 	 */
 	announceTransactionBundle = async (networkProperties, signedTransactionBundle) => {
-		if (signedTransactionBundle.metadata.type === TransactionBundleType.MULTISIG_TRANSFER) {
+		const multisigTypes = [
+			TransactionBundleType.MULTISIG_TRANSFER,
+			TransactionBundleType.MULTISIG_ACCOUNT_MODIFICATION
+		];
+
+		if (multisigTypes.includes(signedTransactionBundle.metadata.type)) {
 			await this.announceTransactionsSequentially(
 				networkProperties,
 				signedTransactionBundle.transactions,

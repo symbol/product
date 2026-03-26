@@ -2,7 +2,7 @@ import { transactionToSymbol } from './transaction-to-symbol';
 import { MessageType, TransactionBundleType, TransactionType } from '../constants';
 import { Hash256, PrivateKey, PublicKey, utils } from 'symbol-sdk';
 import { MessageEncoder, SymbolFacade, models } from 'symbol-sdk/symbol';
-import { TransactionBundle, absoluteToRelativeAmount } from 'wallet-common-core';
+import { SdkError, TransactionBundle, absoluteToRelativeAmount } from 'wallet-common-core';
 
 /** @typedef {import('../types/Account').PublicAccount} PublicAccount */
 /** @typedef {import('../types/Account').UnresolvedAddressWithLocation} UnresolvedAddressWithLocation */
@@ -256,10 +256,21 @@ export const removeAllowedTransactions = (transactions, blackList) => {
  * @returns {TransactionBundle} The signed transaction bundle.
  */
 export const signTransactionBundle = (networkIdentifier, transactionBundle, privateKey) => {
-	if (transactionBundle.metadata.type === TransactionBundleType.MULTISIG_TRANSFER) {
+	const multisigTypes = [
+		TransactionBundleType.MULTISIG_TRANSFER, 
+		TransactionBundleType.MULTISIG_ACCOUNT_MODIFICATION
+	];
+
+	if (multisigTypes.includes(transactionBundle.metadata.type)) {
 		// Sign aggregate bonded transaction
 		const aggregateBondedTransaction = transactionBundle.transactions.find(tx => tx.type === TransactionType.AGGREGATE_BONDED);
-		const signedAggregateBondedTransaction = signTransaction(networkIdentifier, aggregateBondedTransaction, privateKey);
+		const { cosignaturePrivateKeys = [] } = transactionBundle.metadata;
+		const signedAggregateBondedTransaction = signTransaction(
+			networkIdentifier, 
+			aggregateBondedTransaction, 
+			privateKey, 
+			cosignaturePrivateKeys
+		);
 
 		// Sign hash lock transaction
 		const hashLockTransaction = transactionBundle.transactions.find(tx => tx.type === TransactionType.HASH_LOCK);
