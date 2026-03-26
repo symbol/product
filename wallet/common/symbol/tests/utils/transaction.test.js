@@ -455,6 +455,44 @@ describe('utils/transaction', () => {
 			// Assert:
 			expect(result).toStrictEqual(expectedResult);
 		});
+
+		it('returns the signed aggregate transaction with cosignatures when cosignaturePrivateKeys is provided', () => {
+			// Arrange:
+			const transaction = walletTransactions[1]; // Aggregate complete transaction
+			const { privateKey } = walletStorageAccounts.testnet[0];
+			const cosignaturePrivateKeys = [
+				walletStorageAccounts.testnet[1].privateKey,
+				walletStorageAccounts.testnet[2].privateKey
+			];
+
+			// Act:
+			const result = signTransaction(networkProperties.networkIdentifier, transaction, privateKey, cosignaturePrivateKeys);
+
+			// Assert:
+			expect(result).toHaveProperty('hash');
+			expect(result).toHaveProperty('dto');
+			expect(result.dto).toHaveProperty('payload');
+			// The payload should contain the cosignatures (each cosignature is 104 bytes = 208 hex chars)
+			// Verify the payload is longer than it would be without cosignatures
+			const resultWithoutCosignatures = signTransaction(networkProperties.networkIdentifier, transaction, privateKey, []);
+			expect(result.dto.payload.length).toBeGreaterThan(resultWithoutCosignatures.dto.payload.length);
+			// Each cosignature adds 104 bytes (208 hex chars): 8 (version) + 32 (publicKey) + 64 (signature)
+			const expectedAdditionalLength = cosignaturePrivateKeys.length * 208;
+			expect(result.dto.payload.length - resultWithoutCosignatures.dto.payload.length).toBe(expectedAdditionalLength);
+		});
+
+		it('throws when cosignaturePrivateKeys are provided for non-aggregate transactions', () => {
+			// Arrange:
+			const transaction = walletTransactions[0]; // Non-aggregate transaction (namespace registration)
+			const { privateKey } = walletStorageAccounts.testnet[0];
+			const cosignaturePrivateKeys = [
+				walletStorageAccounts.testnet[1].privateKey
+			];
+
+			// Act & Assert:
+			expect(() => signTransaction(networkProperties.networkIdentifier, transaction, privateKey, cosignaturePrivateKeys))
+				.toThrow('Cosignatures can only be added to aggregate transactions');
+		});
 	});
 
 	describe('cosignTransaction', () => {
