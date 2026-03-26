@@ -58,6 +58,8 @@
  * @property {boolean} isMultisig - Whether the account is a multisig account.
  * @property {string[]} cosignatories - List of cosignatories.
  * @property {string[]} multisigAddresses - List of multisig addresses.
+ * @property {number} [minApproval] - Minimum number of cosignatories required for transaction approval.
+ * @property {number} [minRemoval] - Minimum number of cosignatories required for removal of cosignatories.
  * @property {Namespace[]} namespaces - Account created namespaces.
  */
 
