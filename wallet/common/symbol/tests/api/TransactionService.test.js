@@ -415,27 +415,43 @@ describe('TransactionService', () => {
 	});
 
 	describe('announceTransactionBundle', () => {
-		it('uses announceTransactionsSequentially with PARTIAL for MULTISIG_TRANSFER', async () => {
-			// Arrange:
-			const bundle = {
-				metadata: { type: TransactionBundleType.MULTISIG_TRANSFER },
-				transactions: [createSignedTransaction('p1', 'H1'), createSignedTransaction('p2', 'H2')]
-			};
-			const spySequential = jest
-				.spyOn(transactionService, 'announceTransactionsSequentially')
-				.mockResolvedValue();
+		const multisigBundleCases = [
+			{
+				description: 'uses announceTransactionsSequentially with PARTIAL for MULTISIG_TRANSFER',
+				bundleType: TransactionBundleType.MULTISIG_TRANSFER
+			},
+			{
+				description: 'uses announceTransactionsSequentially with PARTIAL for MULTISIG_ACCOUNT_MODIFICATION',
+				bundleType: TransactionBundleType.MULTISIG_ACCOUNT_MODIFICATION
+			}
+		];
 
-			// Act:
-			await transactionService.announceTransactionBundle(networkProperties, bundle);
+		const runAnnounceTransactionBundleMultisigTest = async (description, config) => {
+			it(description, async () => {
+				// Arrange:
+				const { bundleType } = config;
+				const bundle = {
+					metadata: { type: bundleType },
+					transactions: [createSignedTransaction('p1', 'H1'), createSignedTransaction('p2', 'H2')]
+				};
+				const spySequential = jest
+					.spyOn(transactionService, 'announceTransactionsSequentially')
+					.mockResolvedValue();
 
-			// Assert:
-			expect(spySequential).toHaveBeenCalledTimes(1);
-			expect(spySequential).toHaveBeenCalledWith(
-				networkProperties,
-				bundle.transactions,
-				TransactionAnnounceGroup.PARTIAL
-			);
-		});
+				// Act:
+				await transactionService.announceTransactionBundle(networkProperties, bundle);
+
+				// Assert:
+				expect(spySequential).toHaveBeenCalledTimes(1);
+				expect(spySequential).toHaveBeenCalledWith(
+					networkProperties,
+					bundle.transactions,
+					TransactionAnnounceGroup.PARTIAL
+				);
+			});
+		};
+
+		multisigBundleCases.forEach(({ description, ...config }) => runAnnounceTransactionBundleMultisigTest(description, config));
 
 		it('announces each transaction with DEFAULT group when not multisig', async () => {
 			// Arrange:
