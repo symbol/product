@@ -1,4 +1,5 @@
 import { Bip39 } from '@/app/lib/bip39';
+import { isAddress } from '@/app/utils';
 import { safeOperationWithRelativeAmounts } from 'wallet-common-core';
 
 export const validateRequired =
@@ -31,4 +32,18 @@ export const validateAmount = availableBalance => str => {
 
 	if (isAmountGreaterThanBalance !== '0')
 		return 'validation_error_balance_not_enough';
+};
+
+/**
+ * Returns a validator that checks whether a value is a valid address for the given blockchain.
+ * @param {string} chainName - The blockchain name (e.g., 'symbol', 'ethereum').
+ * @returns {function(string): string|undefined} Validator function.
+ */
+export const validateAddress = chainName => str => {
+	const trimmedStr = str.trim();
+
+	if (isAddress(trimmedStr, chainName))
+		return;
+	
+	return 'validation_error_address_invalid';
 };
