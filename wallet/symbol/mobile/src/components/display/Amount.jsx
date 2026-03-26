@@ -2,19 +2,40 @@ import { Colors, Typography } from '@/app/styles';
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
+const splitValue = stringValue => {
+	const decimalSeparatorIndex = stringValue.indexOf('.');
+	const integerPart = decimalSeparatorIndex === -1
+		? stringValue
+		: stringValue.slice(0, decimalSeparatorIndex);
+	const decimalPart = decimalSeparatorIndex === -1
+		? ''
+		: stringValue.slice(decimalSeparatorIndex);
+
+	return { integerPart, decimalPart };
+};
+
 /**
  * Amount component. A display component for showing numeric values with ticker symbols,
  * supporting conditional coloring based on positive/negative values and multiple size variants.
  *
  * @param {object} props - Component props
- * @param {string} props.value - The numeric value to display
+ * @param {string|null} props.value - The numeric value to display
  * @param {string} props.ticker - The ticker symbol (e.g., currency code)
  * @param {boolean} [props.isColored=false] - Whether to apply color based on value sign
  * @param {string} [props.size='m'] - Size variant ('s', 'm', 'l')
+ * @param {object} [props.style] - Additional styles to apply to the root container
  * 
- * @returns {React.ReactNode} Amount display component
+ * @returns {React.ReactNode} Amount component
  */
-export const Amount = ({ value, ticker, isColored = false, size = 'm' }) => {
+export const Amount = ({ value, ticker, isColored = false, size = 'm', style }) => {
+	const isValueProvided = typeof value === 'string' && value !== '';
+	let splittedValue;
+
+	if (isValueProvided)
+		splittedValue = splitValue(value);
+	else
+		splittedValue = { integerPart: '', decimalPart: '' };
+
 	// Size
 	const amountTextStyleMap = {
 		l: Typography.Semantic.body.xl,
@@ -43,23 +64,13 @@ export const Amount = ({ value, ticker, isColored = false, size = 'm' }) => {
 	};
 
 	let textColor;
-	const stringValue = String(value);
-	const decimalSeparatorIndex = stringValue.indexOf('.');
-	const integerPart = decimalSeparatorIndex === -1
-		? stringValue
-		: stringValue.slice(0, decimalSeparatorIndex);
-	const decimalPart = decimalSeparatorIndex === -1
-		? ''
-		: stringValue.slice(decimalSeparatorIndex);
-
 	if (
-		isColored === false
-		|| !stringValue
-		|| typeof stringValue !== 'string'
-		|| stringValue === '0'
+		!isColored
+		|| !isValueProvided
+		|| value === '0'
 	)
 		textColor = colorMap.neutral;
-	else if (stringValue.startsWith('-'))
+	else if (value.startsWith('-'))
 		textColor = colorMap.negative;
 	else
 		textColor = colorMap.positive;
@@ -79,10 +90,17 @@ export const Amount = ({ value, ticker, isColored = false, size = 'm' }) => {
 	};
 
 	return (
-		<View style={styles.root}>
-			<Text style={amountStyle}>{integerPart}</Text>
-			{Boolean(decimalPart) && (
-				<Text style={decimalStyle}>{decimalPart}</Text>
+		<View style={[styles.root, style]}>
+			{isValueProvided && (
+				<>
+					<Text style={amountStyle}>{splittedValue.integerPart}</Text>
+					{Boolean(splittedValue.decimalPart) && (
+						<Text style={decimalStyle}>{splittedValue.decimalPart}</Text>
+					)}
+				</>
+			)}
+			{!isValueProvided && (
+				<Text style={amountStyle}>..</Text>
 			)}
 			{Boolean(ticker) && (
 				<Text style={tickerStyle}>{` ${ticker}`}</Text>
