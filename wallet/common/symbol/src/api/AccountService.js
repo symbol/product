@@ -79,7 +79,13 @@ export class AccountService {
 			namespaces: namespaces.value,
 			isMultisig: isMultisigRequestSucceeded && multisigInfo.value.cosignatories.length > 0,
 			cosignatories: isMultisigRequestSucceeded ? multisigInfo.value.cosignatories : [],
-			multisigAddresses: isMultisigRequestSucceeded ? multisigInfo.value.multisigAddresses : []
+			multisigAddresses: isMultisigRequestSucceeded ? multisigInfo.value.multisigAddresses : [],
+			...(isMultisigRequestSucceeded
+				? {
+					minApproval: multisigInfo.value.minApproval,
+					minRemoval: multisigInfo.value.minRemoval
+				}
+				: {})
 		};
 	};
 
