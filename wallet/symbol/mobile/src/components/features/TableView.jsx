@@ -121,6 +121,15 @@ const renderRowValue = (row, resolvedData, translate, key) => {
 				text={translate(`data_${row.value ? 'encrypted' : 'unencrypted'}`)}
 			/>
 		);
+	case 'delta':
+		return (
+			<StyledText key={key}>
+				{translate(
+					'data_delta_' + (row.value > 0 ? 'increase' : row.value < 0 ? 'decrease' : 'unchanged'), 
+					{ delta: Math.abs(row.value) }
+				)}
+			</StyledText>
+		);
 	case 'copy':
 		return (
 			<CopyButtonContainer key={key} isStretched value={row.value}>
@@ -150,7 +159,7 @@ const renderRowValue = (row, resolvedData, translate, key) => {
  * @param {boolean} [props.isTitleTranslatable=false] - Whether row titles should be translated
  * @param {boolean} [props.showEmptyArrays=false] - Whether to show rows with empty array values
  *
- * @returns {React.ReactNode} Table view component
+ * @returns {React.ReactNode} TableView component
  */
 export const TableView = ({
 	style,
