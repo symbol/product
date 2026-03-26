@@ -19,9 +19,13 @@ const keyToTypeMap = {
 		'restrictionAddressAdditions',
 		'restrictionAddressDeletions',
 		'addressAdditions',
+		'addressDeletions',
+		'cosignatoryAdditions',
+		'cosignatoryDeletions',
 		'receivedCosignatures',
 		'addressDeletions',
-		'multisigAddresses'
+		'multisigAddresses',
+		'multisigAddress'
 	],
 	copy: [
 		'id',
@@ -70,6 +74,11 @@ const keyToTypeMap = {
 		'transactionType',
 		'restrictionOperationAdditions',
 		'restrictionOperationDeletions'
+	],
+	delta: [
+		'minApprovalDelta',
+		'minRemovalDelta',
+		'delta'
 	],
 	translate: [
 		'registrationType',
