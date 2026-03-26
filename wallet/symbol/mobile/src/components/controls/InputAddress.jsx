@@ -6,7 +6,7 @@ import React, { useEffect, useMemo } from 'react';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
 
 /**
- * A dropdown modal component that displays a list of contacts and wallet accounts for address
+ * InputAddressDropdown component. A dropdown modal component that displays a list of contacts and wallet accounts for address
  * selection, with account information resolution.
  *
  * @param {object} props - Component props.
@@ -20,7 +20,7 @@ import { StyleSheet, TouchableOpacity, View } from 'react-native';
  * @param {function} props.onChange - Callback when an address is selected.
  * @param {function} props.onClose - Callback when the dropdown is closed.
  * 
- * @returns {React.ReactNode} The InputAddressDropdown component.
+ * @returns {React.ReactNode} InputAddressDropdown component.
  */
 export const InputAddressDropdown = props => {
 	const { title, value, isOpen, addressBook, accounts, chainName, networkIdentifier, onChange, onClose } = props;
@@ -83,15 +83,16 @@ export const InputAddressDropdown = props => {
  * @param {string} [props.networkIdentifier] - Network identifier for account resolution.
  * @param {function} props.onChange - Callback when input value changes.
  * @param {function} props.onValidityChange - Callback when validity state changes.
+ * @param {Array} [props.extraValidators=[]] - Additional validators to apply.
  * 
- * @returns {React.ReactNode} The InputAddress component.
+ * @returns {React.ReactNode} InputAddress component.
  */
 export const InputAddress = props => {
-	const { label, value, addressBook, accounts, chainName, networkIdentifier, onChange, onValidityChange } = props;
+	const { label, value, addressBook, accounts, chainName, networkIdentifier, onChange, onValidityChange, extraValidators = [] } = props;
 	const [isDropdownOpen, toggleDropdown] = useToggle(false);
 
 	// Validation
-	const errorMessage = useValidation(value, [validateRequired()], $t);
+	const errorMessage = useValidation(value, [validateRequired(), ...extraValidators], $t);
 
 	useEffect(() => {
 		onValidityChange?.(!errorMessage);
