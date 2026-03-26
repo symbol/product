@@ -77,7 +77,7 @@ const styles = StyleSheet.create({
 	progressBarOuter: {
 		width: '100%',
 		height: PROGRESS_HEIGHT,
-		backgroundColor: Colors.Semantic.background.tertiary.darker,
+		backgroundColor: Colors.Components.progress.background,
 		overflow: 'hidden',
 		borderRadius: Sizes.Semantic.borderRadius.round
 	},
@@ -89,12 +89,12 @@ const styles = StyleSheet.create({
 		height: '100%'
 	},
 	progress__normal: {
-		backgroundColor: Colors.Semantic.role.secondary.default
+		backgroundColor: Colors.Components.progress.bar.default
 	},
 	progress__warning: {
-		backgroundColor: Colors.Semantic.role.warning.default
+		backgroundColor: Colors.Components.progress.bar.warning
 	},
 	progress__expired: {
-		backgroundColor: Colors.Semantic.role.danger.default
+		backgroundColor: Colors.Components.progress.bar.danger
 	}
 });

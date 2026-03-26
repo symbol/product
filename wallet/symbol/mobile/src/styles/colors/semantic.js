@@ -110,6 +110,9 @@ export const Components = {
 		},
 		inverted: {
 			background: Semantic.background.primary.darker
+		},
+		accent: {
+			background: Semantic.background.tertiary.lighter
 		}
 	},
 	popupMessage: {
@@ -215,6 +218,15 @@ export const Components = {
 	summary: {
 		background: Semantic.background.tertiary.darker,
 		text: Semantic.content.primary.default
+	},
+	progress: {
+		background: Semantic.background.tertiary.darker,
+		bar: {
+			default: Semantic.role.secondary.default,
+			success: Semantic.role.success.default,
+			warning: Semantic.role.warning.default,
+			danger: Semantic.role.danger.default
+		}
 	},
 	buttonCardEmbedded: {
 		primary: {
