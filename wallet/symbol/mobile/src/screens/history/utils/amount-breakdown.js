@@ -28,7 +28,7 @@ const ensureAccountEntry = (breakdownMap, address) => {
  */
 const updateTokenAmount = (breakdownMap, address, token, changeType) => {
 	ensureAccountEntry(breakdownMap, address);
-    
+
 	const tokenId = token.id;
 	const { divisibility } = token;
 	const existingToken = breakdownMap[address].tokens[tokenId];
@@ -38,8 +38,8 @@ const updateTokenAmount = (breakdownMap, address, token, changeType) => {
 	const newAmount = safeOperationWithRelativeAmounts(
 		divisibility,
 		[existingAmount, changeAmount],
-		(existing, change) => changeType === AmountChangeType.INCREASE 
-			? existing + change 
+		(existing, change) => changeType === AmountChangeType.INCREASE
+			? existing + change
 			: existing - change
 	);
 
@@ -58,8 +58,8 @@ const updateTokenAmount = (breakdownMap, address, token, changeType) => {
  */
 const processTransferTransaction = (transaction, breakdownMap) => {
 	const tokens = transaction.mosaics ?? transaction.tokens ?? [];
-	const {signerAddress} = transaction;
-	const {recipientAddress} = transaction;
+	const { signerAddress } = transaction;
+	const { recipientAddress } = transaction;
 
 	for (const token of tokens) {
 		updateTokenAmount(breakdownMap, signerAddress, token, AmountChangeType.DECREASE);
@@ -77,9 +77,9 @@ const processTransaction = (transaction, breakdownMap) => {
 		processTransferTransaction(transaction, breakdownMap);
 
 	if (AggregateTypes.includes(transaction.type) && transaction.innerTransactions) {
-		for (const innerTx of transaction.innerTransactions) 
+		for (const innerTx of transaction.innerTransactions)
 			processTransaction(innerTx, breakdownMap);
-        
+
 	}
 };
 
@@ -96,6 +96,28 @@ export const calculateAmountBreakdown = transaction => {
 	processTransaction(transaction, breakdownMap);
 
 	return breakdownMap;
+};
+
+/**
+ * Ensures the current account has an entry for the native token in the breakdown map.
+ * If the current account is not involved in the transaction, it will add an entry with zero amount.
+ * 
+ * @param {AmountBreakdownMap} breakdownMap - The breakdown map to update.
+ * @param {string} currentAccountAddress - The current wallet account address.
+ * @param {string} nativeCurrencyTokenId - The native currency token ID.
+ */
+const ensureCurrentAccountHasNativeTokenEntry = (breakdownMap, currentAccountAddress, nativeCurrencyTokenId) => {
+	if (!breakdownMap[currentAccountAddress])
+		breakdownMap[currentAccountAddress] = { tokens: {} };
+
+	if (!breakdownMap[currentAccountAddress].tokens[nativeCurrencyTokenId]) {
+		breakdownMap[currentAccountAddress].tokens[nativeCurrencyTokenId] = {
+			tokenId: nativeCurrencyTokenId,
+			name: null,
+			amount: '0',
+			divisibility: null
+		};
+	}
 };
 
 /**
@@ -145,10 +167,10 @@ const formatAmountWithSign = (amount, changeType) => {
  * @returns {AmountBreakdownDisplayData} Display-ready breakdown data.
  */
 export const createAmountBreakdownDisplayData = (transaction, options) => {
-	const { 
-		chainName, 
-		networkIdentifier, 
-		nativeCurrencyTokenId, 
+	const {
+		chainName,
+		networkIdentifier,
+		nativeCurrencyTokenId,
 		currentAccountAddress,
 		walletAccounts,
 		addressBook
@@ -156,6 +178,10 @@ export const createAmountBreakdownDisplayData = (transaction, options) => {
 
 	const breakdownMap = calculateAmountBreakdown(transaction);
 	const accountDisplayOptions = { chainName, networkIdentifier, walletAccounts, addressBook };
+
+	// Ensure current account always has a native token entry in the breakdown
+	if (currentAccountAddress)
+		ensureCurrentAccountHasNativeTokenEntry(breakdownMap, currentAccountAddress, nativeCurrencyTokenId);
 
 	// Build breakdown display rows
 	/** @type {import('@/app/screens/history/types/AmountBreakdown').BreakdownDisplayRow[]} */
@@ -174,7 +200,7 @@ export const createAmountBreakdownDisplayData = (transaction, options) => {
 		// Sort tokens: native currency first, then custom tokens
 		const tokenEntries = Object.entries(accountBreakdown.tokens);
 		const sortedTokenEntries = tokenEntries.sort(([tokenIdA], [tokenIdB]) => {
-			if (tokenIdA === nativeCurrencyTokenId) 
+			if (tokenIdA === nativeCurrencyTokenId)
 				return -1;
 
 			if (tokenIdB === nativeCurrencyTokenId)
@@ -184,10 +210,10 @@ export const createAmountBreakdownDisplayData = (transaction, options) => {
 		});
 
 		for (const [tokenId, tokenChange] of sortedTokenEntries) {
-			const token = { 
+			const token = {
 				id: tokenId,
 				name: tokenChange.name,
-				divisibility: tokenChange.divisibility 
+				divisibility: tokenChange.divisibility
 			};
 			const tokenDisplayData = createTokenDisplayData(token, chainName, networkIdentifier);
 			const isNativeToken = tokenId === nativeCurrencyTokenId;
@@ -209,7 +235,7 @@ export const createAmountBreakdownDisplayData = (transaction, options) => {
 	}
 
 	const sortedBreakdown = breakdown.sort((a, b) => {
-		if (a.account.address === currentAccountAddress) 
+		if (a.account.address === currentAccountAddress)
 			return -1;
 
 		if (b.account.address === currentAccountAddress)
@@ -220,22 +246,11 @@ export const createAmountBreakdownDisplayData = (transaction, options) => {
 
 	// Calculate current account summary
 	const currentAccountBreakdown = sortedBreakdown.find(item => item.account.address === currentAccountAddress);
-
-	let currentAccountSummary = {
-		amountText: '0',
-		type: AmountChangeType.INCREASE
+	const nativeAmount = currentAccountBreakdown?.amounts.find(item => item.tokenId === nativeCurrencyTokenId);
+	const currentAccountSummary = {
+		amountText: nativeAmount?.amountText ?? '0',
+		type: nativeAmount?.type ?? AmountChangeType.NONE
 	};
-
-	if (currentAccountBreakdown) {
-		const nativeAmount = currentAccountBreakdown.amounts.find(item => item.tokenId === nativeCurrencyTokenId);
-        
-		if (nativeAmount) {
-			currentAccountSummary = {
-				amountText: nativeAmount.amountText,
-				type: nativeAmount.type
-			};
-		}
-	}
 
 	return {
 		currentAccount: currentAccountSummary,
