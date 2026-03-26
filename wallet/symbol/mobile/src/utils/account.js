@@ -109,7 +109,7 @@ export const createAccountDisplayData = (address, options) => {
 
 	return {
 		address,
-		name: knownInfo?.name ?? address,
+		name: knownInfo?.name ?? null,
 		imageId: knownInfo?.imageId ?? null,
 		color
 	};
