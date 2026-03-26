@@ -23,9 +23,22 @@ import { constants as symbolConstants } from 'wallet-common-symbol';
 const CHAINS_THAT_HAVE_MESSAGE_FIELD = ['symbol', 'nem'];
 
 /**
- * Send screen component. This screen allows users to send tokens to recipient addresses,
+ * Send screen component. Allows users to send tokens to recipient addresses,
  * supporting multisig accounts, message attachments with encryption options, and dynamic fee
  * selection for efficient transaction processing.
+ *
+ * @param {object} props - Component props.
+ * @param {object} props.route - React Navigation route object.
+ * @param {object} [props.route.params] - Route parameters.
+ * @param {string} [props.route.params.chainName] - The blockchain name.
+ * @param {string} [props.route.params.senderAddress] - Pre-filled sender address.
+ * @param {string} [props.route.params.recipientAddress] - Pre-filled recipient address.
+ * @param {string} [props.route.params.tokenId] - Pre-selected token identifier.
+ * @param {string} [props.route.params.amount] - Pre-filled amount.
+ * @param {object} [props.route.params.message] - Pre-filled message object.
+ * @param {string} [props.route.params.message.text] - Pre-filled message text.
+ *
+ * @returns {React.ReactNode} Send component
  */
 export const Send = props => {
 	const { route } = props;
@@ -54,7 +67,8 @@ export const Send = props => {
 	const [isRecipientValid, setRecipientValid] = useState(false);
 
 	// Form inputs
-	const [senderAddress, setSenderAddress] = useProp(currentAccount.address);
+	const defaultSenderAddress = route.params?.senderAddress || currentAccount.address;
+	const [senderAddress, setSenderAddress] = useProp(defaultSenderAddress);
 	const [recipientAddress, setRecipientAddress] = useProp(route.params?.recipientAddress, '');
 	const [selectedTokenId, setSelectedTokenId] = useProp(route.params?.tokenId, null);
 	const [amount, setAmount] = useProp(route.params?.amount, '0');
