@@ -1,4 +1,8 @@
+/** @typedef {import('wallet-common-core/src/types/Account').PublicAccount} PublicAccount */
+
 /** @typedef {import('wallet-common-core/src/types/Account').WalletAccount} WalletAccount */
+
+/** @typedef {import('wallet-common-core/src/types/Account').PrivateAccount} PrivateAccount */
 
 /** @typedef {import('wallet-common-symbol/src/types/Account').AccountInfo} SymbolAccountInfo */
 
