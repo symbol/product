@@ -1,5 +1,15 @@
 import { knownAccounts } from '@/app/config';
 import { generateBlockie } from '@/app/lib/blockie';
+import {
+	isEthereumAddress,
+	isPublicKey as isEthereumPublicKey 
+} from 'wallet-common-ethereum/src/utils/account';
+import { 
+	createPrivateAccount,
+	generateKeyPair,
+	isSymbolAddress,
+	isPublicKey as isSymbolPublicKey
+} from 'wallet-common-symbol/src/utils/account';
 
 /** @typedef {import('@/app/types/Account').WalletAccount} WalletAccount */
 /** @typedef {import('@/app/types/Network').NetworkIdentifier} NetworkIdentifier */
@@ -109,3 +119,51 @@ export const createAccountDisplayData = (address, options) => {
 		color
 	};
 };
+
+/**
+ * Checks whether a value is a valid public key for the given blockchain.
+ * @param {string} value - The value to check.
+ * @param {string} chainName - The blockchain name (e.g., 'symbol', 'ethereum').
+ * @returns {boolean} True if the value is a valid public key.
+ */
+export const isPublicKey = (value, chainName) => {
+	if (chainName === 'symbol')
+		return isSymbolPublicKey(value);
+	
+	if (chainName === 'ethereum')
+		return isEthereumPublicKey(value);
+	
+	throw new Error(`Unsupported chain name: ${chainName}`);
+};
+
+/**
+ * Checks whether a value is a valid address for the given blockchain.
+ * @param {string} value - The value to check.
+ * @param {string} chainName - The blockchain name (e.g., 'symbol', 'ethereum').
+ * @returns {boolean} True if the value is a valid address.
+ */
+export const isAddress = (value, chainName) => {
+	if (chainName === 'symbol')
+		return isSymbolAddress(value);
+	
+	if (chainName === 'ethereum')
+		return isEthereumAddress(value);
+	
+	throw new Error(`Unsupported chain name: ${chainName}`);
+};
+
+/**
+ * Generates a new private account for the Symbol blockchain.
+ * @param {string} chainName - The blockchain name (must be 'symbol').
+ * @param {NetworkIdentifier} networkIdentifier - The network identifier.
+ * @returns {import('@/app/types/Account').PrivateAccount} The generated private account.
+ */
+export const generateAccount = (chainName, networkIdentifier) => {
+	if (chainName !== 'symbol')
+		throw new Error(`Account generation is only supported for Symbol chain. Unsupported chain: ${chainName}`);
+	
+	const { privateKey } = generateKeyPair();
+	
+	return createPrivateAccount(privateKey, networkIdentifier);
+};
+
