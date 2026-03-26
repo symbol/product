@@ -79,7 +79,15 @@ export const Passcode = props => {
 };
 
 /**
- * PasscodeView component. A modal wrapper for the Passcode component.
+ * PasscodeView component. A full-screen modal wrapper for the Passcode component.
+ *
+ * @param {object} props - Component props.
+ * @param {boolean} props.isVisible - Whether the modal is visible.
+ * @param {'create' | 'verify'} [props.type] - The type of passcode operation.
+ * @param {function} props.onSuccess - Callback fired on successful passcode entry.
+ * @param {function} [props.onCancel] - Callback fired when the user cancels.
+ *
+ * @returns {React.ReactNode} PasscodeView component
  */
 export const PasscodeView = ({ isVisible, type, onSuccess, onCancel }) => {
 	if (!isVisible)
