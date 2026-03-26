@@ -21,7 +21,11 @@ export const RouteName = {
 	BridgeAccountList: 'BridgeAccountList',
 	BridgeAccountDetails: 'BridgeAccountDetails',
 	BridgeSwap: 'BridgeSwap',
-	BridgeSwapDetails: 'BridgeSwapDetails'
+	BridgeSwapDetails: 'BridgeSwapDetails',
+	MultisigAccountList: 'MultisigAccountList',
+	MultisigAccountDetails: 'MultisigAccountDetails',
+	CreateMultisigAccount: 'CreateMultisigAccount',
+	ModifyMultisigAccount: 'ModifyMultisigAccount'
 };
 
 export const RouterFlow = {

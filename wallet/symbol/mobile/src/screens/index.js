@@ -25,3 +25,9 @@ export { BridgeAccountList } from './bridge/BridgeAccountList';
 export { BridgeAccountDetails } from './bridge/BridgeAccountDetails';
 export { BridgeSwap } from './bridge/BridgeSwap';
 export { BridgeSwapDetails } from './bridge/BridgeSwapDetails';
+
+// Multisig
+export { MultisigAccountList } from './multisig/MultisigAccountList';
+export { MultisigAccountDetails } from './multisig/MultisigAccountDetails';
+export { CreateMultisigAccount } from './multisig/CreateMultisigAccount';
+export { ModifyMultisigAccount } from './multisig/ModifyMultisigAccount';

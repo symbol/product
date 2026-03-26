@@ -78,6 +78,10 @@ jest.mock('@/app/screens', () => {
 		BridgeAccountDetails: createMockScreen('BridgeAccountDetails'),
 		BridgeSwap: createMockScreen('BridgeSwap'),
 		BridgeSwapDetails: createMockScreen('BridgeSwapDetails'),
+		MultisigAccountList: createMockScreen('MultisigAccountList'),
+		MultisigAccountDetails: createMockScreen('MultisigAccountDetails'),
+		CreateMultisigAccount: createMockScreen('CreateMultisigAccount'),
+		ModifyMultisigAccount: createMockScreen('ModifyMultisigAccount'),
 		Send: createMockScreen('Send'),
 		Settings: createMockScreen('Settings'),
 		SettingsAbout: createMockScreen('SettingsAbout'),
@@ -159,6 +163,26 @@ const NAVIGATION_SCREENS_CONFIG = [
 	},
 	{
 		screenName: 'SettingsSecurity',
+		shouldReset: false,
+		hasParams: true
+	},
+	{
+		screenName: 'MultisigAccountList',
+		shouldReset: false,
+		hasParams: true
+	},
+	{
+		screenName: 'MultisigAccountDetails',
+		shouldReset: false,
+		hasParams: true
+	},
+	{
+		screenName: 'CreateMultisigAccount',
+		shouldReset: false,
+		hasParams: false
+	},
+	{
+		screenName: 'ModifyMultisigAccount',
 		shouldReset: false,
 		hasParams: true
 	}
