@@ -27,6 +27,7 @@ export const Semantic = {
 		xxl: Primitives.spacing400 // 32px
 	},
 	controlHeight: {
+		s: Primitives.spacing400, // 32px
 		m: Primitives.spacing600 // 48px
 	},
 	circleControlSize: {
