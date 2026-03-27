@@ -41,7 +41,8 @@ export const Semantic = {
 	avatarHeight: {
 		s: Primitives.spacing300, // 24px
 		m: Primitives.spacing400, // 32px
-		l: Primitives.spacing500  // 40px
+		l: Primitives.spacing500,  // 40px
+		xl: Primitives.spacing600  // 48px
 	},
 	layoutPadding: {
 		none: Primitives.spacing0, // 0px
