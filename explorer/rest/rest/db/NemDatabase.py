@@ -52,7 +52,8 @@ class NemDatabase(DatabaseConnectionPool):
 			size=size
 		)
 
-	def _create_account_view(self, result):  # pylint: disable=no-self-use,too-many-locals
+	@staticmethod
+	def _create_account_view(result):  # pylint: disable=too-many-locals
 		(
 			address,
 			public_key,
@@ -92,7 +93,8 @@ class NemDatabase(DatabaseConnectionPool):
 			cosignatories=[str(Address(address)) for address in cosignatories] if cosignatories else None
 		)
 
-	def _create_namespace_view(self, result):  # pylint: disable=no-self-use
+	@staticmethod
+	def _create_namespace_view(result):
 		(
 			root_namespace,
 			owner,
@@ -111,7 +113,8 @@ class NemDatabase(DatabaseConnectionPool):
 			sub_namespaces=sub_namespaces
 		)
 
-	def _generate_account_query(self, where_condition, order_condition='', limit_condition=''):  # pylint: disable=no-self-use
+	@staticmethod
+	def _generate_account_query(where_condition, order_condition='', limit_condition=''):
 		"""Base account query."""
 
 		return f'''
@@ -137,7 +140,8 @@ class NemDatabase(DatabaseConnectionPool):
 			{limit_condition}
 		'''
 
-	def _generate_block_query(self, where_condition, order_condition='', limit_condition=''):  # pylint: disable=no-self-use
+	@staticmethod
+	def _generate_block_query(where_condition, order_condition='', limit_condition=''):
 		"""Base block query."""
 
 		return f'''
@@ -158,7 +162,8 @@ class NemDatabase(DatabaseConnectionPool):
 			{limit_condition}
 		'''
 
-	def _generate_namespace_query(self, where_condition='', order_condition='', limit_condition=''):  # pylint: disable=no-self-use
+	@staticmethod
+	def _generate_namespace_query(where_condition='', order_condition='', limit_condition=''):
 		"""Base namespace query."""
 
 		return f'''
