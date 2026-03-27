@@ -25,7 +25,11 @@ export const RouteName = {
 	MultisigAccountList: 'MultisigAccountList',
 	MultisigAccountDetails: 'MultisigAccountDetails',
 	CreateMultisigAccount: 'CreateMultisigAccount',
-	ModifyMultisigAccount: 'ModifyMultisigAccount'
+	ModifyMultisigAccount: 'ModifyMultisigAccount',
+	ContactList: 'ContactList',
+	ContactDetails: 'ContactDetails',
+	CreateContact: 'CreateContact',
+	EditContact: 'EditContact'
 };
 
 export const RouterFlow = {

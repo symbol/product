@@ -99,4 +99,16 @@ export class Router {
 	static goToSettingsSecurity(params) {
 		navigationRef.navigate(RouteName.SettingsSecurity, parseNavigationParams(params));
 	}
+	static goToContactList(params) {
+		navigationRef.navigate(RouteName.ContactList, parseNavigationParams(params));
+	}
+	static goToContactDetails(params) {
+		navigationRef.navigate(RouteName.ContactDetails, parseNavigationParams(params));
+	}
+	static goToCreateContact(params) {
+		navigationRef.navigate(RouteName.CreateContact, parseNavigationParams(params));
+	}
+	static goToEditContact(params) {
+		navigationRef.navigate(RouteName.EditContact, parseNavigationParams(params));
+	}
 }
