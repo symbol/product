@@ -464,6 +464,22 @@ export const Components = {
 			text: Semantic.content.primary.inverse
 		}
 	},
+	// Tab selector control
+	tabSelector: {
+		default: {
+			background: Semantic.background.secondary.default,
+			text: Semantic.role.secondary.default,
+			border: Semantic.role.secondary.default
+		},
+		pressed: {
+			background: Semantic.role.secondary.weaker,
+			text: Semantic.role.secondary.default
+		},
+		active: {
+			background: Semantic.role.secondary.default,
+			text: Semantic.content.primary.inverse
+		}
+	},
 	// Link, plain text button etc.
 	link: {
 		default: {
