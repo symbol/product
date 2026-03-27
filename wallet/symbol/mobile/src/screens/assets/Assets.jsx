@@ -51,8 +51,10 @@ export const Assets = () => {
 	const renderItem = useCallback(({ item, section }) => {
 		const handleTokenPress = token => {
 			Router.goToTokenDetails({ params: { 
-				chainName: section.chainName, 
-				tokenId: token.id 
+				chainName: section.chainName,
+				accountAddress: section.address,
+				tokenId: token.id,
+				preloadedData: token
 			}});
 		};
 
