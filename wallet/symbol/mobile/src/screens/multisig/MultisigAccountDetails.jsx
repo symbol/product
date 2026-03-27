@@ -179,7 +179,7 @@ export const MultisigAccountDetails = ({ route }) => {
 					<Divider />
 					<ButtonPlain
 						icon="send-plane"
-						text={$t('button_sendTransferTransaction')}
+						text={$t('button_sendTransactionFromThisAccount')}
 						onPress={openSendScreen}
 					/>
 					<ButtonPlain
