@@ -20,6 +20,12 @@ export { TransactionDetails } from './history/TransactionDetails';
 export { Assets } from './assets/Assets';
 export { TokenDetails } from './assets/TokenDetails';
 
+// Address Book
+export { ContactList } from './address-book/ContactList';
+export { ContactDetails } from './address-book/ContactDetails';
+export { CreateContact } from './address-book/CreateContact';
+export { EditContact } from './address-book/EditContact';
+
 // Bridge
 export { BridgeAccountList } from './bridge/BridgeAccountList';
 export { BridgeAccountDetails } from './bridge/BridgeAccountDetails';
