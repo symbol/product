@@ -32,7 +32,8 @@ const TabSelectorItem = ({ label, isActive, isDisabled, onPress }) => {
 
 	const handlePress = e => {
 		e?.stopPropagation?.();
-		if (isDisabled) return;
+		if (isDisabled) 
+			return;
 		onPress?.();
 	};
 
@@ -66,7 +67,8 @@ const TabSelectorItem = ({ label, isActive, isDisabled, onPress }) => {
  */
 export const TabSelector = ({ list, value, isDisabled = false, style, onChange }) => {
 	const handleTabPress = tabValue => {
-		if (tabValue === value) return;
+		if (tabValue === value) 
+			return;
 		onChange?.(tabValue);
 	};
 
