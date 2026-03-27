@@ -3,6 +3,8 @@ import { Screen, Spacer, Stack } from '@/app/components';
 import { useInit, useWalletController } from '@/app/hooks';
 import { useAsyncManager } from '@/app/hooks/useAsyncManager';
 import { Router } from '@/app/router/Router';
+import { useAddressBookWidget } from '@/app/screens/address-book/hooks';
+import { AddressBookWidget } from '@/app/screens/address-book/widgets/AddressBookWidget';
 import { useHistoryWidget } from '@/app/screens/history/hooks';
 import { HistoryWidget } from '@/app/screens/history/widgets/HistoryWidget';
 import { AccountCardWidget } from '@/app/screens/home/components/AccountCardWidget';
@@ -33,6 +35,7 @@ export const Home = () => {
 
 	// Widgets
 	const historyWidget = useHistoryWidget(walletController);
+	const addressBookWidget = useAddressBookWidget(walletController);
 	const multisigWidget = useMultisigWidget(walletController);
 
 	// Data fetching
@@ -68,6 +71,9 @@ export const Home = () => {
 						</Animated.View>
 						<WidgetAnimatedWrapper isVisible={historyWidget.isVisible}>
 							<HistoryWidget {...historyWidget.props} />
+						</WidgetAnimatedWrapper>
+						<WidgetAnimatedWrapper isVisible={addressBookWidget.isVisible}>
+							<AddressBookWidget {...addressBookWidget.props} />
 						</WidgetAnimatedWrapper>
 						<WidgetAnimatedWrapper isVisible={multisigWidget.isVisible}>
 							<MultisigWidget {...multisigWidget.props} />

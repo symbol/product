@@ -74,6 +74,10 @@ jest.mock('@/app/screens', () => {
 		AccountDetails: createMockScreen('AccountDetails'),
 		AccountList: createMockScreen('AccountList'),
 		AddSeedAccount: createMockScreen('AddSeedAccount'),
+		ContactList: createMockScreen('ContactList'),
+		ContactDetails: createMockScreen('ContactDetails'),
+		CreateContact: createMockScreen('CreateContact'),
+		EditContact: createMockScreen('EditContact'),
 		BridgeAccountList: createMockScreen('BridgeAccountList'),
 		BridgeAccountDetails: createMockScreen('BridgeAccountDetails'),
 		BridgeSwap: createMockScreen('BridgeSwap'),
@@ -138,7 +142,7 @@ const NAVIGATION_SCREENS_CONFIG = [
 		shouldReset: false,
 		hasParams: true
 	},
-	{		screenName: 'AccountList',
+	{	screenName: 'AccountList',
 		shouldReset: false,
 		hasParams: true
 	},
@@ -147,7 +151,26 @@ const NAVIGATION_SCREENS_CONFIG = [
 		shouldReset: false,
 		hasParams: true
 	},
-	{		screenName: 'Settings',
+	{
+		screenName: 'ContactList',
+		shouldReset: false,
+		hasParams: true
+	},
+	{
+		screenName: 'ContactDetails',
+		shouldReset: false,
+		hasParams: true
+	},
+	{	screenName: 'CreateContact',
+		shouldReset: false,
+		hasParams: true
+	},
+	{
+		screenName: 'EditContact',
+		shouldReset: false,
+		hasParams: true
+	},
+	{	screenName: 'Settings',
 		shouldReset: false,
 		hasParams: true
 	},
