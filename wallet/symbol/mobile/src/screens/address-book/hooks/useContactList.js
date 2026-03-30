@@ -2,7 +2,7 @@ import { ContactListType } from '@/app/screens/address-book/types/AddressBook';
 import { useState } from 'react';
 
 /** @typedef {import('wallet-common-core').AddressBookModule} AddressBookModule */
-/** @typedef {import('wallet-common-core').Contact} Contact */
+/** @typedef {import('wallet-common-core/src/types/AddressBook').Contact} Contact */
 
 /**
  * Return type for useContactList hook.

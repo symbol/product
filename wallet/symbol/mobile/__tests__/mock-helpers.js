@@ -159,6 +159,28 @@ export const mockOs = platform => {
 };
 
 /**
+ * Creates a mock address book module object.
+ * 
+ * @param {import('wallet-common-core/src/types/AddressBook').Contact[]} [contacts=[]] - Array of contact objects.
+ * @returns {Object} The mocked address book module.
+ */
+export const createAddressBookMock = (contacts = []) => {
+	const whiteList = contacts.filter(contact => !contact.isBlackListed);
+	const blackList = contacts.filter(contact => contact.isBlackListed);
+
+	return {
+		whiteList,
+		blackList,
+		contacts,
+		getContactById: jest.fn(id => contacts.find(c => c.id === id) || null),
+		getContactByAddress: jest.fn(address => contacts.find(c => c.address === address) || null),
+		addContact: jest.fn(),
+		removeContact: jest.fn(),
+		updateContact: jest.fn()
+	};
+};
+
+/**
  * Mocks the link opening functionality.
  * 
  * @return {Function} The mocked openLink function.
