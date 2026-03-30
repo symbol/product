@@ -1,10 +1,9 @@
-import { Card, Spacer, Stack, StyledText, TouchableNative } from '@/app/components';
+import { Spacer, Stack, WidgetContainer } from '@/app/components';
 import { $t } from '@/app/localization';
 import { Router } from '@/app/router/Router';
 import { ContactCompactItem } from '@/app/screens/address-book/components';
-import { Sizes } from '@/app/styles';
 import React from 'react';
-import { ScrollView, StyleSheet } from 'react-native';
+import { ScrollView } from 'react-native';
 
 const ICON_ADD_CONTACT = 'account-add';
 
@@ -28,12 +27,7 @@ export const AddressBookWidget = ({ contacts }) => {
 	const handleAddContactPress = () => Router.goToCreateContact();
 
 	return (
-		<Card>
-			<TouchableNative style={styles.header} onPress={handleHeaderPress}>
-				<StyledText type="title" size="s">
-					{$t('s_addressBook_widget_name')}
-				</StyledText>
-			</TouchableNative>
+		<WidgetContainer title={$t('s_addressBook_widget_name')} onHeaderPress={handleHeaderPress}>
 			<ScrollView horizontal showsHorizontalScrollIndicator={false}>
 				<Spacer>
 					<Stack gap="s" direction="row">
@@ -53,13 +47,6 @@ export const AddressBookWidget = ({ contacts }) => {
 					</Stack>
 				</Spacer>
 			</ScrollView>
-		</Card>
+		</WidgetContainer>
 	);
 };
-
-const styles = StyleSheet.create({
-	header: {
-		paddingHorizontal: Sizes.Semantic.layoutSpacing.m,
-		paddingTop: Sizes.Semantic.layoutSpacing.m
-	}
-});
