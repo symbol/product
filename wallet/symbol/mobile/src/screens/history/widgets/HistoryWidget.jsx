@@ -1,11 +1,9 @@
 import { TransactionListItem } from '../components/TransactionListItem';
-import { Card, Spacer, Stack, StyledText, TouchableNative } from '@/app/components';
+import { Spacer, Stack, WidgetContainer } from '@/app/components';
 import { TransactionGroup } from '@/app/constants';
 import { $t } from '@/app/localization';
 import { Router } from '@/app/router/Router';
-import { Sizes } from '@/app/styles';
 import React, { useMemo } from 'react';
-import { StyleSheet } from 'react-native';
 
 /** @typedef {import('@/app/types/Transaction').Transaction} Transaction */
 /** @typedef {import('@/app/types/Account').WalletAccount} WalletAccount */
@@ -53,12 +51,7 @@ export const HistoryWidget = ({
 	});
 
 	return (
-		<Card>
-			<TouchableNative style={styles.header} onPress={handleHeaderPress}>
-				<StyledText type="title" size="s">
-					{$t('s_history_widget_name')}
-				</StyledText>
-			</TouchableNative>
+		<WidgetContainer title={$t('s_history_widget_name')} onHeaderPress={handleHeaderPress}>
 			<Spacer>
 				<Stack>
 					{transactions.map(item => (
@@ -77,13 +70,6 @@ export const HistoryWidget = ({
 					))}
 				</Stack>
 			</Spacer>
-		</Card>
+		</WidgetContainer>
 	);
 };
-
-const styles = StyleSheet.create({
-	header: {
-		paddingHorizontal: Sizes.Semantic.layoutSpacing.m,
-		paddingTop: Sizes.Semantic.layoutSpacing.m
-	}
-});
