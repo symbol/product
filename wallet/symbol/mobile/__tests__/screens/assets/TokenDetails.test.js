@@ -141,11 +141,13 @@ const createAccountInfoWithToken = token => AccountInfoFixtureBuilder
 
 // Route Props Factory
 
-const createRouteProps = tokenId => ({
+const createRouteProps = (tokenId, preloadedData) => ({
 	route: {
 		params: {
 			chainName: CHAIN_NAME,
-			tokenId
+			tokenId,
+			accountAddress: currentAccount.address,
+			preloadedData
 		}
 	}
 });
@@ -200,7 +202,7 @@ describe('screens/assets/TokenDetails', () => {
 			];
 
 			// Act:
-			const screenTester = new ScreenTester(TokenDetails, createRouteProps(TOKEN_ID));
+			const screenTester = new ScreenTester(TokenDetails, createRouteProps(TOKEN_ID, tokenOwnedByCurrentAccount));
 			await screenTester.waitForTimer();
 
 			// Assert:
@@ -216,7 +218,7 @@ describe('screens/assets/TokenDetails', () => {
 				mockWalletController(createWalletControllerConfig(accountInfo, networkPropertiesActive));
 
 				// Act:
-				const screenTester = new ScreenTester(TokenDetails, createRouteProps(TOKEN_ID));
+				const screenTester = new ScreenTester(TokenDetails, createRouteProps(TOKEN_ID, config.token));
 
 				// Assert:
 				if (expected.textsRendered?.length)
@@ -281,7 +283,7 @@ describe('screens/assets/TokenDetails', () => {
 				mockWalletController(createWalletControllerConfig(accountInfo, config.networkProperties));
 
 				// Act:
-				const screenTester = new ScreenTester(TokenDetails, createRouteProps(TOKEN_ID));
+				const screenTester = new ScreenTester(TokenDetails, createRouteProps(TOKEN_ID, config.token));
 
 				// Assert:
 				if (expected.textsRendered?.length)
@@ -359,10 +361,10 @@ describe('screens/assets/TokenDetails', () => {
 				const accountInfo = createAccountInfoWithToken(config.token);
 				mockWalletController(createWalletControllerConfig(accountInfo, config.networkProperties));
 				const routerMock = mockRouter({ goToSend: jest.fn() });
-				const navigationParams = { chainName: CHAIN_NAME, tokenId: TOKEN_ID };
+				const navigationParams = { chainName: CHAIN_NAME, tokenId: TOKEN_ID, senderAddress: currentAccount.address };
 
 				// Act:
-				const screenTester = new ScreenTester(TokenDetails, createRouteProps(TOKEN_ID));
+				const screenTester = new ScreenTester(TokenDetails, createRouteProps(TOKEN_ID, config.token));
 				screenTester.pressButton(SCREEN_TEXT.buttonSend);
 
 				// Assert:
