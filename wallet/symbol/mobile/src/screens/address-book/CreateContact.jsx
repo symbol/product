@@ -1,7 +1,7 @@
 import { useContactFormState } from './hooks';
 import { ContactListType } from './types/AddressBook';
 import { createContactListTypeAlertData, createContactListTypeTabs } from './utils';
-import { Alert, Button, Screen, Spacer, Stack, StyledText, TabSelector, TextBox } from '@/app/components';
+import { Alert, Button, Screen, Spacer, StableHeightContainer, Stack, StyledText, TabSelector, TextBox } from '@/app/components';
 import { useAsyncManager, useValidation, useWalletController } from '@/app/hooks';
 import { $t } from '@/app/localization';
 import { Router } from '@/app/router/Router';
@@ -85,12 +85,14 @@ export const CreateContact = ({ route }) => {
 							value={listType}
 							onChange={changeListType}
 						/>
-						{listTypeAlert.isVisible && (
-							<Alert
-								variant={listTypeAlert.variant}
-								body={listTypeAlert.text}
-							/>
-						)}
+						<StableHeightContainer>
+							{listTypeAlert.isVisible && (
+								<Alert
+									variant={listTypeAlert.variant}
+									body={listTypeAlert.text}
+								/>
+							)}
+						</StableHeightContainer>
 						<Stack gap="m">
 							<TextBox
 								label={$t('input_name')}
