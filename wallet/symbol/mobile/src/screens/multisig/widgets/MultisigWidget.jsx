@@ -1,10 +1,8 @@
-import { Card, Spacer, Stack, StyledText, TouchableNative } from '@/app/components';
+import { Spacer, Stack, WidgetContainer } from '@/app/components';
 import { $t } from '@/app/localization';
 import { Router } from '@/app/router/Router';
 import { MultisigAccountListItem } from '@/app/screens/multisig/components';
-import { Sizes } from '@/app/styles';
 import React from 'react';
-import { StyleSheet } from 'react-native';
 
 /** @typedef {import('@/app/types/Account').WalletAccount} WalletAccount */
 /** @typedef {import('@/app/types/Account').SymbolAccountInfo} SymbolAccountInfo */
@@ -43,12 +41,7 @@ export const MultisigWidget = ({
 	});
 
 	return (
-		<Card>
-			<TouchableNative style={styles.header} onPress={handleHeaderPress}>
-				<StyledText type="title" size="s">
-					{$t('s_multisig_widget_name')}
-				</StyledText>
-			</TouchableNative>
+		<WidgetContainer title={$t('s_multisig_widget_name')} onHeaderPress={handleHeaderPress}>
 			<Spacer>
 				<Stack gap="s">
 					{multisigAccountList.map(item => (
@@ -66,13 +59,6 @@ export const MultisigWidget = ({
 					))}
 				</Stack>
 			</Spacer>
-		</Card>
+		</WidgetContainer>
 	);
 };
-
-const styles = StyleSheet.create({
-	header: {
-		paddingHorizontal: Sizes.Semantic.layoutSpacing.m,
-		paddingTop: Sizes.Semantic.layoutSpacing.m
-	}
-});

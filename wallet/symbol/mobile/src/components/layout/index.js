@@ -11,3 +11,4 @@ export * from './Screen';
 export * from './Spacer';
 export * from './StableHeightContainer';
 export * from './Stack';
+export * from './WidgetContainer';
