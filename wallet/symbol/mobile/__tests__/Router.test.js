@@ -202,7 +202,7 @@ const NAVIGATION_SCREENS_CONFIG = [
 	{
 		screenName: 'CreateMultisigAccount',
 		shouldReset: false,
-		hasParams: false
+		hasParams: true
 	},
 	{
 		screenName: 'ModifyMultisigAccount',
