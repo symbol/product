@@ -77,7 +77,9 @@ class ShoestringConfigurationTest(unittest.TestCase):
 		# Assert:
 		self.assertEqual('foo', network_config.name)
 		self.assertEqual(123, network_config.identifier)
-		self.assertEqual(datetime.datetime(2023, 5, 23, 14, 58, 41), network_config.datetime_converter.to_datetime(0))
+		self.assertEqual(
+			datetime.datetime(2023, 5, 23, 14, 58, 41, tzinfo=datetime.timezone.utc),
+			network_config.datetime_converter.to_datetime(0))
 		self.assertEqual(self.GENERATION_HASH_SEED, network_config.generation_hash_seed)
 
 	def test_cannot_parse_network_configuration_incomplete(self):
@@ -345,7 +347,9 @@ class ShoestringConfigurationTest(unittest.TestCase):
 			# Assert:
 			self.assertEqual('foo', config.network.name)
 			self.assertEqual(123, config.network.identifier)
-			self.assertEqual(datetime.datetime(2023, 5, 23, 14, 58, 41), config.network.datetime_converter.to_datetime(0))
+			self.assertEqual(
+				datetime.datetime(2023, 5, 23, 14, 58, 41, tzinfo=datetime.timezone.utc),
+				config.network.datetime_converter.to_datetime(0))
 			self.assertEqual(self.GENERATION_HASH_SEED, config.network.generation_hash_seed)
 
 			self.assertEqual('symbolplatform/symbol-server:gcc-0.0.0.0', config.images.client)

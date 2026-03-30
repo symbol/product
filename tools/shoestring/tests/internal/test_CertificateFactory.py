@@ -130,21 +130,27 @@ class CertificateFactoryTest(unittest.TestCase):
 		self.assertEqual(expected_subject, re.search(r'Subject: CN ?= ?(.*)\n', x509_output).group(1))
 
 	def _assert_certificate_duration(self, x509_output, test_start_time, expected_days, has_explicit_start_date=False):
-		time_format = '%b %d %H:%M:%S %Y %Z'
-		cert_start_time = datetime.datetime.strptime(re.search(r'Not Before: (.*)\n', x509_output).group(1), time_format)
-		cert_end_time = datetime.datetime.strptime(re.search(r'Not After : (.*)\n', x509_output).group(1), time_format)
+		def extract_utc_time_from_x509_output(prefix):
+			time_format = '%b %d %H:%M:%S %Y %z'
+			matching_time_string = re.search(prefix + r': (.*)\n', x509_output).group(1)
+
+			# timezone aware (%z) parsing recognizes Z but not GMT
+			return datetime.datetime.strptime(matching_time_string.replace('GMT', 'Z'), time_format)
+
+		cert_start_time = extract_utc_time_from_x509_output('Not Before')
+		cert_end_time = extract_utc_time_from_x509_output('Not After ')
 
 		if has_explicit_start_date:
 			self.assertEqual(test_start_time, cert_start_time)
 		else:
 			self.assertLessEqual(test_start_time, cert_start_time)
-			self.assertLessEqual(cert_start_time, datetime.datetime.utcnow())
+			self.assertLessEqual(cert_start_time, datetime.datetime.now(datetime.timezone.utc))
 
 		self.assertEqual(expected_days, (cert_end_time - cert_start_time).days)
 
 	def _assert_can_generate_ca_certificate(self, additional_args, expected_duration_days):
 		# Arrange: certificate has second resolution, so clear microseconds for assert below to work
-		test_start_time = datetime.datetime.utcnow().replace(microsecond=0)
+		test_start_time = datetime.datetime.now(datetime.timezone.utc).replace(microsecond=0)
 		with tempfile.TemporaryDirectory() as package_directory:
 			ca_certificate_path = Path(package_directory) / 'ca.crt.pem'
 
@@ -183,7 +189,7 @@ class CertificateFactoryTest(unittest.TestCase):
 	def _assert_can_generate_node_certificate(self, should_generate_certificate_chain, additional_args, expected_values):
 		# Arrange: certificate has second resolution, so clear microseconds for assert below to work
 		future_start_delay_days = expected_values.get('delay_days', 0)
-		test_start_time = datetime.datetime.utcnow().replace(microsecond=0) + datetime.timedelta(future_start_delay_days)
+		test_start_time = datetime.datetime.now(datetime.timezone.utc).replace(microsecond=0) + datetime.timedelta(future_start_delay_days)
 
 		if future_start_delay_days:
 			additional_args['start_date'] = test_start_time
