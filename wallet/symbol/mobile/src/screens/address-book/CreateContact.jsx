@@ -1,6 +1,11 @@
 import { useContactFormState } from './hooks';
 import { ContactListType } from './types/AddressBook';
-import { createContactListTypeAlertData, createContactListTypeTabs } from './utils';
+import { 
+	createContactListTypeAlertData, 
+	createContactListTypeTabs, 
+	validateUniqueContactAddress, 
+	validateUniqueContactName 
+} from './utils';
 import { Alert, Button, Screen, Spacer, StableHeightContainer, Stack, StyledText, TabSelector, TextBox } from '@/app/components';
 import { useAsyncManager, useValidation, useWalletController } from '@/app/hooks';
 import { $t } from '@/app/localization';
@@ -24,7 +29,8 @@ export const CreateContact = ({ route }) => {
 
 	const { listType: initialListType } = route.params || {};
 	const walletController = useWalletController();
-	const { chainName } = walletController;
+	const { chainName, accounts, networkIdentifier } = walletController;
+	const networkAccounts = accounts[networkIdentifier];
 	const { addressBook } = walletController.modules;
 	
 	// List type tabs
@@ -45,8 +51,16 @@ export const CreateContact = ({ route }) => {
 
 	// Validation
 	const isNameRequired = listType === ContactListType.WHITELIST;
-	const nameErrorMessage = useValidation(name, [validateRequired(isNameRequired), validateAccountName()], $t);
-	const addressErrorMessage = useValidation(address, [validateRequired(), validateAddress(chainName)], $t);
+	const nameErrorMessage = useValidation(name, [
+		validateRequired(isNameRequired), 
+		validateUniqueContactName(networkAccounts, addressBook), 
+		validateAccountName()
+	], $t);
+	const addressErrorMessage = useValidation(address, [
+		validateRequired(),
+		validateUniqueContactAddress(networkAccounts, addressBook),
+		validateAddress(chainName)
+	], $t);
 
 	// Alert
 	const listTypeAlert = createContactListTypeAlertData(listType);
