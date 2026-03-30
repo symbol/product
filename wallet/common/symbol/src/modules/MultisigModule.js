@@ -109,11 +109,12 @@ export class MultisigModule {
 	 * @returns {Promise<AccountInfo[]>} The list of multisig accounts.
 	 */
 	fetchData = async () => {
-		const { currentAccount, networkProperties } = this.#walletController;
-		const currentAccountInfo = await this.#api.account.fetchAccountInfo(networkProperties, currentAccount.address);
+		const { currentAccount, networkProperties, networkIdentifier } = this.#walletController;
+		const currentAccountAddress = currentAccount.address;
+		const currentAccountInfo = await this.#api.account.fetchAccountInfo(networkProperties, currentAccountAddress);
 
 		if (!currentAccountInfo.multisigAddresses || currentAccountInfo.multisigAddresses.length === 0) {
-			await this.#updateCachedMultisigAccounts([]);
+			await this.#updateCachedMultisigAccounts([], networkIdentifier, currentAccountAddress);
 			
 			return [];
 		}
@@ -121,7 +122,7 @@ export class MultisigModule {
 		const multisigAccountInfos = await Promise.all(currentAccountInfo.multisigAddresses.map(address =>
 			this.#api.account.fetchAccountInfo(networkProperties, address)));
 
-		await this.#updateCachedMultisigAccounts(multisigAccountInfos);
+		await this.#updateCachedMultisigAccounts(multisigAccountInfos, networkIdentifier, currentAccountAddress);
 
 		return multisigAccountInfos;
 	};
@@ -256,16 +257,17 @@ export class MultisigModule {
 	/**
 	 * Updates the cached multisig accounts for a specific wallet account.
 	 * @param {AccountInfo[]} multisigAccounts - The multisig accounts to cache.
+	 * @param {string} networkIdentifier - The network identifier for which to update the cache.
+	 * @param {string} currentAccountAddress - The address of the current wallet account.
 	 * @returns {Promise<void>}
 	 */
-	#updateCachedMultisigAccounts = async multisigAccounts => {
-		const { networkIdentifier, currentAccount } = this.#walletController;
+	#updateCachedMultisigAccounts = async (multisigAccounts, networkIdentifier, currentAccountAddress) => {
 		const allMultisigAccounts = await this.#loadMultisigAccounts();
 
 		if (!allMultisigAccounts[networkIdentifier])
 			allMultisigAccounts[networkIdentifier] = {};
 
-		allMultisigAccounts[networkIdentifier][currentAccount.address] = multisigAccounts;
+		allMultisigAccounts[networkIdentifier][currentAccountAddress] = multisigAccounts;
 
 		await this._persistentStorageRepository.setMultisigAccounts(allMultisigAccounts);
 
