@@ -1,6 +1,6 @@
 import { useContactFormState } from './hooks';
 import { ContactListType } from './types/AddressBook';
-import { createContactListTypeAlertData, createContactListTypeTabs } from './utils';
+import { createContactListTypeAlertData, createContactListTypeTabs, validateUniqueContactName } from './utils';
 import { Alert, Button, Screen, Spacer, StableHeightContainer, Stack, StyledText, TabSelector, TextBox } from '@/app/components';
 import { useAsyncManager, useValidation, useWalletController } from '@/app/hooks';
 import { $t } from '@/app/localization';
@@ -22,9 +22,11 @@ import React, { useMemo } from 'react';
  */
 export const EditContact = ({ route }) => {
 	const defaultBlacklistContactName = $t('s_addressBook_account_blacklist_defaultName');
-    
+
 	const { contactId } = route.params;
 	const walletController = useWalletController();
+	const { accounts, networkIdentifier } = walletController;
+	const networkAccounts = accounts[networkIdentifier];
 	const { addressBook } = walletController.modules;
 	const existingContact = addressBook.getContactById(contactId);
 
@@ -53,7 +55,11 @@ export const EditContact = ({ route }) => {
 
 	// Validation
 	const isNameRequired = listType === ContactListType.WHITELIST;
-	const nameErrorMessage = useValidation(name, [validateRequired(isNameRequired), validateAccountName()], $t);
+	const nameErrorMessage = useValidation(name, [
+		validateRequired(isNameRequired),
+		validateUniqueContactName(networkAccounts, addressBook),
+		validateAccountName()
+	], $t);
 
 	// Alert
 	const listTypeAlert = createContactListTypeAlertData(listType);
@@ -62,10 +68,10 @@ export const EditContact = ({ route }) => {
 	const saveManager = useAsyncManager({
 		callback: async () => {
 			const contact = getContact();
-            
+
 			if (contact.isBlackListed && !contact.name)
 				contact.name = defaultBlacklistContactName;
-            
+
 			return addressBook.updateContact({ ...contact, id: contactId });
 		},
 		onSuccess: () => Router.goBack()
