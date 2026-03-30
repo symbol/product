@@ -9,4 +9,5 @@ export * from './Grid';
 export * from './ListItemContainer';
 export * from './Screen';
 export * from './Spacer';
+export * from './StableHeightContainer';
 export * from './Stack';
