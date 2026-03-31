@@ -260,4 +260,28 @@ export class AccountInfoFixtureBuilder {
 		
 		return this;
 	};
+
+	/**
+	 * Sets the minimum approvals required for transactions.
+	 * 
+	 * @param {number} minApproval - The minimum approvals.
+	 * @returns {AccountInfoFixtureBuilder} The builder instance.
+	 */
+	setMinApproval = minApproval => {
+		this._data.minApproval = minApproval;
+		
+		return this;
+	};
+
+	/**
+	 * Sets the minimum removals required for cosignatory removal.
+	 * 
+	 * @param {number} minRemoval - The minimum removals.
+	 * @returns {AccountInfoFixtureBuilder} The builder instance.
+	 */
+	setMinRemoval = minRemoval => {
+		this._data.minRemoval = minRemoval;
+		
+		return this;
+	};
 }
