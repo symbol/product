@@ -6,7 +6,7 @@ from symbollightapi.model.Exceptions import NodeException
 from rest.facade.NemRestFacade import NemRestFacade
 from rest.model.common import Pagination, RestConfig, Sorting
 
-from ..test.DatabaseTestUtils import ACCOUNT_VIEWS, BLOCK_VIEWS, DatabaseTestBase
+from ..test.DatabaseTestUtils import ACCOUNT_VIEWS, BLOCK_VIEWS, NAMESPACE_VIEWS, DatabaseTestBase
 
 # region test data
 
@@ -18,11 +18,14 @@ EXPECTED_ACCOUNT_1 = ACCOUNT_VIEWS[0].to_dict()
 
 EXPECTED_ACCOUNT_2 = ACCOUNT_VIEWS[1].to_dict()
 
+EXPECTED_NAMESPACE_1 = NAMESPACE_VIEWS[0].to_dict()
+
+EXPECTED_NAMESPACE_2 = NAMESPACE_VIEWS[1].to_dict()
+
 # endregion
 
 
 class TestNemRestFacade(DatabaseTestBase):  # pylint: disable=too-many-public-methods
-
 	def setUp(self):
 		super().setUp()
 		self.nem_rest_facade = NemRestFacade(self.db_config, RestConfig(
@@ -208,5 +211,64 @@ class TestNemRestFacade(DatabaseTestBase):  # pylint: disable=too-many-public-me
 		self.assertEqual(EXPECTED_BLOCK_2['timestamp'], result['lastDBSyncedAt'])
 		self.assertEqual(EXPECTED_BLOCK_2['height'], result['lastDBHeight'])
 		self.assertEqual([{'type': 'synchronization', 'message': 'Connection refused'}], result['errors'])
+
+	# endregion
+
+	# region namespace
+
+	def _assert_can_retrieve_namespace_by_name(self, name, expected_namespace):
+		# Act:
+		namespace = self.nem_rest_facade.get_namespace_by_name(name)
+
+		# Assert:
+		self.assertEqual(expected_namespace, namespace)
+
+	def test_can_retrieve_namespace_by_root_namespace_name(self):
+		self._assert_can_retrieve_namespace_by_name(name='root', expected_namespace=EXPECTED_NAMESPACE_1)
+
+	def test_can_retrieve_namespace_by_sub_namespace_name(self):
+		self._assert_can_retrieve_namespace_by_name(name='root_sub.sub_1', expected_namespace=EXPECTED_NAMESPACE_2)
+
+	def test_returns_none_for_nonexistent_namespace_name(self):
+		self._assert_can_retrieve_namespace_by_name(name='nonexistent', expected_namespace=None)
+
+	# endregion
+
+	# region namespaces
+
+	def _assert_can_retrieve_namespaces(self, pagination, sort, expected_namespaces):
+		# Act:
+		namespaces = self.nem_rest_facade.get_namespaces(pagination, sort)
+
+		# Assert:
+		self.assertEqual(expected_namespaces, namespaces)
+
+	def test_can_retrieve_namespaces_filtered_by_limit(self):
+		self._assert_can_retrieve_namespaces(
+			pagination=Pagination(1, 0),
+			sort='DESC',
+			expected_namespaces=[EXPECTED_NAMESPACE_2]
+		)
+
+	def test_can_retrieve_namespaces_filtered_by_offset(self):
+		self._assert_can_retrieve_namespaces(
+			pagination=Pagination(1, 1),
+			sort='DESC',
+			expected_namespaces=[EXPECTED_NAMESPACE_1]
+		)
+
+	def test_can_retrieve_namespaces_sorted_by_registered_height_asc(self):
+		self._assert_can_retrieve_namespaces(
+			pagination=Pagination(10, 0),
+			sort='ASC',
+			expected_namespaces=[EXPECTED_NAMESPACE_1, EXPECTED_NAMESPACE_2]
+		)
+
+	def test_can_retrieve_namespaces_sorted_by_registered_height_desc(self):
+		self._assert_can_retrieve_namespaces(
+			pagination=Pagination(10, 0),
+			sort='DESC',
+			expected_namespaces=[EXPECTED_NAMESPACE_2, EXPECTED_NAMESPACE_1]
+		)
 
 	# endregion
