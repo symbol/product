@@ -10,6 +10,7 @@ from symbolchain.nem.Network import Address, Network
 from rest.db.NemDatabase import NemDatabase
 from rest.model.Account import AccountView
 from rest.model.Block import BlockView
+from rest.model.Namespace import NamespaceView
 
 Block = namedtuple(
 	'Block',
@@ -40,6 +41,13 @@ Account = namedtuple('Account', [
 	'min_cosignatories',
 	'cosignatory_of',
 	'cosignatories'
+])
+Namespace = namedtuple('Namespace', [
+	'root_namespace',
+	'owner',
+	'registered_height',
+	'expiration_height',
+	'sub_namespaces'
 ])
 DatabaseConfig = namedtuple('DatabaseConfig', ['database', 'user', 'password', 'host', 'port'])
 
@@ -102,6 +110,23 @@ ACCOUNTS = [
 		None,
 		None)
 ]
+NAMESPACES = [
+	Namespace(
+		'root',
+		PublicKey('a5f06d59b97aa40c82afb941a61fb6483bdb7491805cdb9dc47d92136983b9a5'),
+		1,
+		525700,
+		[]
+	),
+	Namespace(
+		'root_sub',
+		PublicKey('a5f06d59b97aa40c82afb941a61fb6483bdb7491805cdb9dc47d92136983b9a5'),
+		2,
+		525800,
+		['root_sub.sub_1', 'root_sub.sub_2']
+	),
+]
+
 
 BLOCK_VIEWS = [
 	BlockView(*BLOCKS[0]._replace(
@@ -159,6 +184,25 @@ ACCOUNT_VIEWS = [
 	)
 ]
 
+NAMESPACE_VIEWS = [
+	NamespaceView(
+		root_namespace=NAMESPACES[0].root_namespace,
+		owner=str(NAMESPACES[0].owner),
+		registered_height=NAMESPACES[0].registered_height,
+		registered_timestamp=BLOCKS[0].timestamp,
+		expiration_height=NAMESPACES[0].expiration_height,
+		sub_namespaces=NAMESPACES[0].sub_namespaces
+	),
+	NamespaceView(
+		root_namespace=NAMESPACES[1].root_namespace,
+		owner=str(NAMESPACES[1].owner),
+		registered_height=NAMESPACES[1].registered_height,
+		registered_timestamp=BLOCKS[1].timestamp,
+		expiration_height=NAMESPACES[1].expiration_height,
+		sub_namespaces=NAMESPACES[1].sub_namespaces
+	)
+]
+
 # endregion
 
 
@@ -208,6 +252,19 @@ def initialize_database(db_config, network_name):
 				size bigint DEFAULT 0
 		)
 		''')
+
+		cursor.execute(
+			'''
+			CREATE TABLE IF NOT EXISTS namespaces (
+				id serial PRIMARY KEY,
+				root_namespace varchar(16) NOT NULL UNIQUE,
+				owner bytea NOT NULL,
+				registered_height bigint NOT NULL,
+				expiration_height bigint NOT NULL,
+				sub_namespaces VARCHAR(146)[] DEFAULT '{}'
+			)
+			'''
+		)
 
 		# Insert data
 		for block in BLOCKS:
@@ -262,6 +319,26 @@ def initialize_database(db_config, network_name):
 					account.min_cosignatories,
 					[address.bytes for address in account.cosignatory_of] if account.cosignatory_of else None,
 					[address.bytes for address in account.cosignatories] if account.cosignatories else None
+				)
+			)
+
+		for namespace in NAMESPACES:
+			cursor.execute(
+				'''
+				INSERT INTO namespaces (
+					root_namespace,
+					owner,
+					registered_height,
+					expiration_height,
+					sub_namespaces
+				)
+				VALUES (%s, %s, %s, %s, %s)
+				''', (
+					namespace.root_namespace,
+					namespace.owner.bytes,
+					namespace.registered_height,
+					namespace.expiration_height,
+					namespace.sub_namespaces
 				)
 			)
 
