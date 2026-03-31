@@ -28,16 +28,22 @@ export const getAssetsFilterConfig = () => [
 
 /**
  * Creates an asset section from chain data.
+ * @param {string} title - Section title (account name)
+ * @param {string} name - Account name
  * @param {string} chainName - Chain name identifier
  * @param {string} address - Account address
  * @param {Token[]} assets - Array of tokens
+ * @param {string} [title] - Optional section title to display above the account info
+ * @param {boolean} [hasTopMargin=false] - Whether to add top margin to the section header.
  * @returns {AssetSection} Asset section object
  */
-const createSection = (chainName, address, assets) => ({
-	title: address,
+const createSection = (name, chainName, address, assets, title, hasTopMargin) => ({
+	name,
 	chainName,
 	address,
-	data: assets
+	data: assets,
+	title,
+	hasTopMargin
 });
 
 /**
@@ -77,7 +83,7 @@ export const buildAssetsSections = ({
 	const sections = [];
 	const controllersWithAccounts = walletControllers.filter(controller => controller.currentAccount);
 
-	controllersWithAccounts.forEach(controller => {
+	controllersWithAccounts.forEach((controller, index) => {
 		const { currentAccount, currentAccountInfo, chainName, networkProperties } = controller;
 
 		const assets = currentAccountInfo?.tokens ?? currentAccountInfo?.mosaics ?? [];
@@ -85,12 +91,57 @@ export const buildAssetsSections = ({
 
 		if (filteredAssets.length === 0)
 			return;
-		
+
+		let title;
+
+		if (index === 0)
+			title = $t('s_assets_section_currentAccount');
+
+		if (index === 1)
+			title = $t('s_assets_section_bridgeAccounts');
+
 		sections.push(createSection(
+			currentAccount.name,
 			chainName,
 			currentAccount.address,
-			filteredAssets
+			filteredAssets,
+			title,
+			index !== 0
 		));
+	});
+
+	controllersWithAccounts.forEach((controller, index) => {
+		const multisigModule = controller.modules.multisig;
+
+		if (!multisigModule)
+			return;
+
+		const { multisigAccounts } = multisigModule;
+		const { chainName, networkProperties } = controller;
+
+		let title = null;
+
+		if (index === 0)
+			title = $t('s_assets_section_multisigAccounts');
+
+		multisigAccounts.forEach(multisigAccount => {
+			const assets = multisigAccount.tokens ?? multisigAccount.mosaics ?? [];
+			const filteredAssets = filterAssets(assets, filter, multisigAccount, networkProperties);
+
+			if (filteredAssets.length === 0)
+				return;
+
+			sections.push(createSection(
+				multisigAccount.name,
+				chainName,
+				multisigAccount.address,
+				filteredAssets,
+				title,
+				true
+			));
+
+			title = null;
+		});
 	});
 
 	return sections;

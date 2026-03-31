@@ -1,7 +1,7 @@
 import { TokenListItem } from './components';
 import { useAssetsData } from './hooks';
 import { Header } from '@/app/app/components';
-import { AccountView, CopyButtonContainer, FilteredListScreenTemplate } from '@/app/components';
+import { AccountView, CopyButtonContainer, FilteredListScreenTemplate, Spacer, StyledText } from '@/app/components';
 import { useWalletController } from '@/app/hooks';
 import { Router } from '@/app/router/Router';
 import React, { useCallback } from 'react';
@@ -40,22 +40,37 @@ export const Assets = () => {
 	}, []);
 
 	const renderSectionHeader = useCallback(({ section }) => (
-		<CopyButtonContainer value={section.address} isStretched>
-			<AccountView
-				address={section.address}
-				name={section.chainName}
-			/>
-		</CopyButtonContainer>
+		<>
+			{Boolean(section.title) && (
+				<Spacer 
+					x="none" 
+					top={section.hasTopMargin ? 's' : 'none'} 
+					bottom="s"
+				>
+					<StyledText type="title">
+						{section.title}
+					</StyledText>
+				</Spacer>
+			)}
+			<CopyButtonContainer value={section.address} isStretched>
+				<AccountView
+					address={section.address}
+					name={section.name}
+				/>
+			</CopyButtonContainer>
+		</>
 	), []);
 
 	const renderItem = useCallback(({ item, section }) => {
 		const handleTokenPress = token => {
-			Router.goToTokenDetails({ params: { 
-				chainName: section.chainName,
-				accountAddress: section.address,
-				tokenId: token.id,
-				preloadedData: token
-			}});
+			Router.goToTokenDetails({
+				params: {
+					chainName: section.chainName,
+					accountAddress: section.address,
+					tokenId: token.id,
+					preloadedData: token
+				}
+			});
 		};
 
 		return (
