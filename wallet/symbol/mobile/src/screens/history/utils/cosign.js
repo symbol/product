@@ -64,7 +64,7 @@ export const getTransactionCosignStatus = (transaction, options) => {
 		return CosignStatus.INITIATED_BY_BLOCKED_ACCOUNT;
 
 	const isInitiatorWalletAccount = walletAccounts?.some(account => account.address === initiator);
-	const isInitiatorInContacts = addressBook.whitelist?.some(contact => contact.address === initiator);
+	const isInitiatorInContacts = addressBook.whiteList?.some(contact => contact.address === initiator);
 	const isInitiatorMultisigCosigner = multisigCosigners?.some(cosigner => cosigner.address === initiator);
 	const isInitiatorKnown = isInitiatorWalletAccount || isInitiatorInContacts || isInitiatorMultisigCosigner;
 

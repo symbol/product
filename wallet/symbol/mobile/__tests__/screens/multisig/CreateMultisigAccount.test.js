@@ -255,8 +255,8 @@ describe('screens/multisig/CreateMultisigAccount', () => {
 			setupMocks();
 
 			// Act:
-			new ScreenTester(CreateMultisigAccount, routeProps);
-			await jest.runAllTimersAsync();
+			const screenTester = new ScreenTester(CreateMultisigAccount, routeProps);
+			await screenTester.waitForTimer();
 
 			// Assert:
 			expect(accountUtils.generateAccount).toHaveBeenCalledWith(CHAIN_NAME, NETWORK_IDENTIFIER);
@@ -545,8 +545,10 @@ describe('screens/multisig/CreateMultisigAccount', () => {
 			await screenTester.waitForTimer(); // announce
 
 			// Assert:
-			expect(walletControllerMock.signTransactionBundle).toHaveBeenCalled();
-			expect(walletControllerMock.announceSignedTransactionBundle).toHaveBeenCalled();
+			expect(walletControllerMock.signTransactionBundle).toHaveBeenCalledWith(mockTransactionBundle);
+			expect(walletControllerMock.announceSignedTransactionBundle).toHaveBeenCalledWith({
+				transactions: [{ hash: 'SIGNED_TX_HASH' }]
+			});
 		});
 	});
 });
