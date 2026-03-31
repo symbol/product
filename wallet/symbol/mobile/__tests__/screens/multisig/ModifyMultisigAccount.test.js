@@ -275,8 +275,8 @@ describe('screens/multisig/ModifyMultisigAccount', () => {
 			const props = createRouteProps(multisigAccountInfo.address);
 
 			// Act:
-			new ScreenTester(ModifyMultisigAccount, props);
-			await jest.runAllTimersAsync();
+			const screenTester = new ScreenTester(ModifyMultisigAccount, props);
+			await screenTester.waitForTimer();
 
 			// Assert:
 			expect(multisigModuleMock.fetchAccountInfo).toHaveBeenCalledWith(multisigAccountInfo.address);
@@ -556,8 +556,10 @@ describe('screens/multisig/ModifyMultisigAccount', () => {
 			await screenTester.waitForTimer(); // announce
 
 			// Assert:
-			expect(walletControllerMock.signTransactionBundle).toHaveBeenCalled();
-			expect(walletControllerMock.announceSignedTransactionBundle).toHaveBeenCalled();
+			expect(walletControllerMock.signTransactionBundle).toHaveBeenCalledWith(mockTransactionBundle);
+			expect(walletControllerMock.announceSignedTransactionBundle).toHaveBeenCalledWith({
+				transactions: [{ hash: 'SIGNED_TX_HASH' }]
+			});
 		});
 	});
 });

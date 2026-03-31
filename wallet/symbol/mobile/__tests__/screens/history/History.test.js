@@ -315,6 +315,7 @@ describe('screens/history/History', () => {
 	beforeEach(() => {
 		mockLocalization();
 		mockOs('android');
+		mockRouter({ goToTransactionDetails: jest.fn() });
 		jest.clearAllMocks();
 		jest.useFakeTimers();
 	});
