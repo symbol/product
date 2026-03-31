@@ -38,11 +38,17 @@ const createHookParams = overrides => ({
 
 describe('hooks/useBridgeHistory', () => {
 	beforeEach(() => {
+		jest.useFakeTimers();
 		jest.clearAllMocks();
+	});
+
+	afterEach(() => {
+		jest.useRealTimers();
 	});
 
 	runHookContractTest(useBridgeHistory, {
 		props: [createHookParams()],
+		waitAsyncEffects: true,
 		contract: {
 			history: 'object',
 			isHistoryLoading: 'boolean',
@@ -58,12 +64,11 @@ describe('hooks/useBridgeHistory', () => {
 
 			// Act:
 			const hookTester = new HookTester(useBridgeHistory, [params]);
+			await hookTester.waitForTimer();
 
 			// Assert:
-			await hookTester.waitFor(() => {
-				expect(bridgeReady.fetchRecentHistory).toHaveBeenCalledWith(BRIDGE_HISTORY_PAGE_SIZE);
-				expect(hookTester.currentResult.history).toStrictEqual(historyEntries);
-			});
+			expect(bridgeReady.fetchRecentHistory).toHaveBeenCalledWith(BRIDGE_HISTORY_PAGE_SIZE);
+			expect(hookTester.currentResult.history).toStrictEqual(historyEntries);
 		});
 	});
 });
