@@ -26,7 +26,6 @@ EXPECTED_NAMESPACE_2 = NAMESPACE_VIEWS[1].to_dict()
 
 
 class TestNemRestFacade(DatabaseTestBase):  # pylint: disable=too-many-public-methods
-
 	def setUp(self):
 		super().setUp()
 		self.nem_rest_facade = NemRestFacade(self.db_config, RestConfig(

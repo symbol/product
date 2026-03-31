@@ -76,6 +76,57 @@ def _assert_status_code_and_headers(response, expected_status_code):
 	assert response.headers['Access-Control-Allow-Origin'] == '*'
 
 
+def _assert_status_code_400(response, expected_message):
+	_assert_status_code_and_headers(response, 400)
+	assert {
+		'message': expected_message,
+		'status': 400
+	} == response.json
+
+
+def _get_api(client, endpoint, **query_params):  # pylint: disable=redefined-outer-name
+	query_string = '&'.join(f'{key}={val}' for key, val in query_params.items())
+	return client.get(f'/api/nem/{endpoint}?{query_string}')
+
+
+def test_invalid_pagination_params(client):  # pylint: disable=redefined-outer-name
+
+	for module in ['blocks', 'accounts', 'namespaces']:
+		# Act:
+		response = client.get(f'/api/nem/{module}', query_string={'limit': -1})
+
+		_assert_status_code_400(response, 'Limit and offset must be greater than or equal to 0')
+
+		# Act:
+		response = client.get(f'/api/nem/{module}', query_string={'offset': -1})
+
+		_assert_status_code_400(response, 'Limit and offset must be greater than or equal to 0')
+
+
+def test_invalid_sort_params(client):  # pylint: disable=redefined-outer-name
+
+	for module in ['blocks', 'namespaces']:
+		# Act:
+		response = client.get(f'/api/nem/{module}', query_string={'sort': 'INVALID'})
+
+		# Assert:
+		_assert_status_code_400(response, 'Sort must be either ASC or DESC')
+
+
+def test_data_not_found(client):  # pylint: disable=redefined-outer-name
+
+	for module, params in [('block', '/3'), ('account', '?address=NANEMOABLAGR72AZ2RV3V4ZHDCXW25XQ73O7OBT5'), ('namespace', '/nonexistent')]:
+		# Act:
+		response = client.get(f'/api/nem/{module}{params}')
+
+		# Assert:
+		_assert_status_code_and_headers(response, 404)
+		assert {
+			'message': 'Resource not found',
+			'status': 404
+		} == response.json
+
+
 # region /block/<height>
 
 def _assert_get_api_nem_block_by_height(client, height, expected_status_code, expected_result):  # pylint: disable=redefined-outer-name
@@ -91,13 +142,6 @@ def test_api_nem_block_by_height(client):  # pylint: disable=redefined-outer-nam
 	_assert_get_api_nem_block_by_height(client, 1, 200, EXPECTED_BLOCK_VIEW_1.to_dict())
 
 
-def test_api_nem_block_non_exist(client):  # pylint: disable=redefined-outer-name
-	_assert_get_api_nem_block_by_height(client, 3, 404, {
-		'message': 'Resource not found',
-		'status': 404
-	})
-
-
 def test_api_nem_block_by_invalid_height(client):  # pylint: disable=redefined-outer-name
 	_assert_get_api_nem_block_by_height(client, 0, 400, {
 		'message': 'Height must be greater than or equal to 1',
@@ -109,30 +153,13 @@ def test_api_nem_block_by_invalid_height(client):  # pylint: disable=redefined-o
 
 # region /blocks
 
-def _get_api_nem_blocks(client, **query_params):  # pylint: disable=redefined-outer-name
-	query_string = '&'.join(f'{key}={val}' for key, val in query_params.items())
-	return client.get(f'/api/nem/blocks?{query_string}')
-
-
 def _assert_get_api_nem_blocks(client, expected_status_code, expected_result, **query_params):  # pylint: disable=redefined-outer-name
 	# Act:
-	response = _get_api_nem_blocks(client, **query_params)
+	response = _get_api(client, 'blocks', **query_params)
 
 	# Assert:
 	_assert_status_code_and_headers(response, expected_status_code)
 	assert expected_result == response.json
-
-
-def _assert_get_api_nem_blocks_fail(client, expected_message, **query_params):  # pylint: disable=redefined-outer-name
-	# Act:
-	response = _get_api_nem_blocks(client, **query_params)
-
-	# Assert:
-	_assert_status_code_and_headers(response, 400)
-	assert {
-		'message': expected_message,
-		'status': 400
-	} == response.json
 
 
 def test_api_nem_blocks_without_params(client):  # pylint: disable=redefined-outer-name
@@ -169,19 +196,15 @@ def test_api_nem_blocks_with_all_params(client):  # pylint: disable=redefined-ou
 
 
 def test_api_nem_blocks_invalid_min_height(client):  # pylint: disable=redefined-outer-name, invalid-name
-	_assert_get_api_nem_blocks_fail(client, 'Minimum height must be greater than or equal to 1', min_height=0)
+	# Act:
+	response = _get_api(client, 'blocks', min_height=0)
 
-
-def test_api_nem_blocks_invalid_limit(client):  # pylint: disable=redefined-outer-name
-	_assert_get_api_nem_blocks_fail(client, 'Limit and offset must be greater than or equal to 0', limit=-1)
-
-
-def test_api_nem_blocks_invalid_offset(client):  # pylint: disable=redefined-outer-name
-	_assert_get_api_nem_blocks_fail(client, 'Limit and offset must be greater than or equal to 0', offset=-1)
-
-
-def test_api_nem_blocks_invalid_sort(client):  # pylint: disable=redefined-outer-name
-	_assert_get_api_nem_blocks_fail(client, 'Sort must be either ASC or DESC', sort='invalid')
+	# Assert:
+	_assert_status_code_and_headers(response, 400)
+	assert {
+		'message': 'Minimum height must be greater than or equal to 1',
+		'status': 400
+	} == response.json
 
 # endregion
 
@@ -243,17 +266,6 @@ def test_api_nem_account_invalid_public_key(client):  # pylint: disable=redefine
 	_assert_get_nem_account_bad_request(client, 'Invalid public key format', publicKey='INVALIDPUBLICKEY')
 
 
-def test_api_nem_account_not_found(client):  # pylint: disable=redefined-outer-name
-	# Act:
-	response = client.get('/api/nem/account?address=NANEMOABLAGR72AZ2RV3V4ZHDCXW25XQ73O7OBT5')
-
-	# Assert:
-	_assert_status_code_and_headers(response, 404)
-	assert {
-		'message': 'Resource not found',
-		'status': 404
-	} == response.json
-
 # endregion
 
 # region /accounts
@@ -261,7 +273,7 @@ def test_api_nem_account_not_found(client):  # pylint: disable=redefined-outer-n
 
 def _assert_get_nem_accounts_bad_request(client, expected_message, **query_params):  # pylint: disable=redefined-outer-name
 	# Act:
-	response = client.get('/api/nem/accounts', query_string=query_params)
+	response = _get_api(client, 'accounts', **query_params)
 
 	# Assert:
 	_assert_status_code_and_headers(response, 400)
@@ -272,12 +284,8 @@ def _assert_get_nem_accounts_bad_request(client, expected_message, **query_param
 
 
 def _assert_get_api_nem_accounts(client, expected_status_code, expected_result, **query_params):  # pylint: disable=redefined-outer-name
-	# Arrange:
-	query_string = '&'.join(f'{key}={val}' for key, val in query_params.items())
-	client.get(f'/api/nem/accounts?{query_string}')
-
 	# Act:
-	response = client.get(f'/api/nem/accounts?{query_string}')
+	response = _get_api(client, 'accounts', **query_params)
 
 	# Assert:
 	_assert_status_code_and_headers(response, expected_status_code)
@@ -308,14 +316,6 @@ def test_api_nem_accounts_applies_sorted_by_balance_desc(client):  # pylint: dis
 
 def test_api_nem_accounts_applies_sorted_by_balance_asc(client):  # pylint: disable=redefined-outer-name, invalid-name
 	_assert_get_api_nem_accounts(client, 200, [ACCOUNT_VIEWS[0].to_dict(), ACCOUNT_VIEWS[1].to_dict()], sort_field='BALANCE', sort_order='ASC')
-
-
-def test_api_nem_accounts_invalid_limit(client):  # pylint: disable=redefined-outer-name
-	_assert_get_nem_accounts_bad_request(client, 'Limit and offset must be greater than or equal to 0', limit=-1)
-
-
-def test_api_nem_accounts_invalid_offset(client):  # pylint: disable=redefined-outer-name, invalid-name
-	_assert_get_nem_accounts_bad_request(client, 'Limit and offset must be greater than or equal to 0', offset=-1)
 
 
 def test_api_nem_accounts_invalid_sort_field(client):  # pylint: disable=redefined-outer-name, invalid-name
@@ -428,30 +428,13 @@ def test_api_namespace_by_name_not_found(client):  # pylint: disable=redefined-o
 
 # region /namespaces
 
-def _get_api_nem_namespaces(client, **query_params):  # pylint: disable=redefined-outer-name
-	query_string = '&'.join(f'{key}={val}' for key, val in query_params.items())
-	return client.get(f'/api/nem/namespaces?{query_string}')
-
-
 def _assert_get_api_nem_namespaces(client, expected_status_code, expected_result, **query_params):  # pylint: disable=redefined-outer-name
 	# Act:
-	response = _get_api_nem_namespaces(client, **query_params)
+	response = _get_api(client, 'namespaces', **query_params)
 
 	# Assert:
 	_assert_status_code_and_headers(response, expected_status_code)
 	assert expected_result == response.json
-
-
-def _assert_get_api_nem_namespaces_fail(client, expected_message, **query_params):  # pylint: disable=redefined-outer-name
-	# Act:
-	response = _get_api_nem_namespaces(client, **query_params)
-
-	# Assert:
-	_assert_status_code_and_headers(response, 400)
-	assert {
-		'message': expected_message,
-		'status': 400
-	} == response.json
 
 
 def test_api_namespaces_without_params(client):  # pylint: disable=redefined-outer-name
@@ -483,18 +466,6 @@ def test_api_namespaces_with_all_params(client):  # pylint: disable=redefined-ou
 		offset=1,
 		sort='DESC'
 	)
-
-
-def test_api_namespaces_invalid_sort(client):  # pylint: disable=redefined-outer-name, invalid-name
-	_assert_get_api_nem_namespaces_fail(client, 'Sort must be either ASC or DESC', sort='INVALID')
-
-
-def test_api_namespaces_invalid_limit(client):  # pylint: disable=redefined-outer-name
-	_assert_get_api_nem_namespaces_fail(client, 'Limit and offset must be greater than or equal to 0', limit=-1)
-
-
-def test_api_namespaces_invalid_offset(client):  # pylint: disable=redefined-outer-name
-	_assert_get_api_nem_namespaces_fail(client, 'Limit and offset must be greater than or equal to 0', offset=-1)
 
 
 # endregion
