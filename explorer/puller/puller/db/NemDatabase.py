@@ -301,7 +301,8 @@ class NemDatabase(DatabaseConnection):
 			)
 		)
 
-	def upsert_mosaic(self, cursor, mosaic_definition):  # pylint: disable=no-self-use
+	@staticmethod
+	def upsert_mosaic(cursor, mosaic_definition):
 		"""Insert or update mosaic information."""
 
 		cursor.execute(
@@ -357,7 +358,8 @@ class NemDatabase(DatabaseConnection):
 			)
 		)
 
-	def update_mosaic_total_supply(self, cursor, namespace_name, adjustment):  # pylint: disable=no-self-use
+	@staticmethod
+	def update_mosaic_total_supply(cursor, namespace_name, adjustment):
 		"""Updates mosaic total supply."""
 
 		cursor.execute(
