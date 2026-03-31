@@ -87,6 +87,22 @@ msgstr "input private key file (optional)"
 msgid "argument-help-pemtool-output"
 msgstr "output PEM key file"
 
+#: shoestring/commands/pemview.py:42
+msgid "argument-help-pemview-ask-pass"
+msgstr "show password prompt for accessing a password protected PEM"
+
+#: shoestring/commands/pemview.py:40
+msgid "argument-help-pemview-input"
+msgstr "input PEM file"
+
+#: shoestring/commands/pemview.py:41
+msgid "argument-help-pemview-network"
+msgstr "Symbol network name to use for generating address"
+
+#: shoestring/commands/pemview.py:43
+msgid "argument-help-pemview-show-private"
+msgstr "output private key to console too"
+
 #: shoestring/commands/renew_certificates.py:37
 msgid "argument-help-renew-certificates-renew-ca"
 msgstr "renews CA certificate too"
@@ -313,22 +329,26 @@ msgid "main-pemtool-help"
 msgstr "generates PEM files"
 
 #: shoestring/__main__.py:27
+msgid "main-pemview-help"
+msgstr "view a PEM file"
+
+#: shoestring/__main__.py:28
 msgid "main-renew-certificates-help"
 msgstr "renews certificates"
 
-#: shoestring/__main__.py:28
+#: shoestring/__main__.py:29
 msgid "main-renew-voting-keys-help"
 msgstr "renews voting keys"
 
-#: shoestring/__main__.py:29
+#: shoestring/__main__.py:30
 msgid "main-reset-data-help"
 msgstr "resets data to allow a resync from scratch"
 
-#: shoestring/__main__.py:30
+#: shoestring/__main__.py:31
 msgid "main-setup-help"
 msgstr "sets up a node"
 
-#: shoestring/__main__.py:31
+#: shoestring/__main__.py:32
 msgid "main-signer-help"
 msgstr "signs a transaction"
 
@@ -340,7 +360,7 @@ msgstr "valid subcommands"
 msgid "main-title"
 msgstr "Shoestring Tool"
 
-#: shoestring/__main__.py:32
+#: shoestring/__main__.py:33
 msgid "main-upgrade-help"
 msgstr "upgrades a node to the latest client version"
 
@@ -358,7 +378,7 @@ msgstr "detected current finalization epoch as {epoch}"
 msgid "nodewatch-client-detected-height"
 msgstr "detected last finalized height as {height}"
 
-#: shoestring/internal/PeerDownloader.py:64
+#: shoestring/internal/PeerDownloader.py:65
 msgid "peer-downloader-loading-api-endpoints"
 msgstr "loading api endpoints from {filepath}'"
 
@@ -385,6 +405,30 @@ msgstr "Provided passwords do not match"
 #: shoestring/commands/pemtool.py:43
 msgid "pemtool-saved-pem-file"
 msgstr "saved {filepath}"
+
+#: shoestring/commands/pemview.py:17
+msgid "pemview-error-input-file-does-not-exist"
+msgstr "input file ({filepath}) does not exist"
+
+#: shoestring/commands/pemview.py:14
+msgid "pemview-error-input-file-unexpected-suffix"
+msgstr "input file ({filepath}) does not have .pem extension"
+
+#: shoestring/commands/pemview.py:26
+msgid "pemview-loaded-pem-file"
+msgstr "loaded {filepath}"
+
+#: shoestring/commands/pemview.py:32
+msgid "pemview-show-address"
+msgstr "    address: {address}"
+
+#: shoestring/commands/pemview.py:36
+msgid "pemview-show-private-key"
+msgstr "private key: {private_key}"
+
+#: shoestring/commands/pemview.py:33
+msgid "pemview-show-public-key"
+msgstr " public key: {public_key}"
 
 #: shoestring/commands/renew_voting_keys.py:89
 msgid "renew-voting-keys-maximum-already-registered"

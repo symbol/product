@@ -78,6 +78,22 @@ msgstr ""
 msgid "argument-help-pemtool-output"
 msgstr ""
 
+#: shoestring/commands/pemview.py:42
+msgid "argument-help-pemview-ask-pass"
+msgstr ""
+
+#: shoestring/commands/pemview.py:40
+msgid "argument-help-pemview-input"
+msgstr ""
+
+#: shoestring/commands/pemview.py:41
+msgid "argument-help-pemview-network"
+msgstr ""
+
+#: shoestring/commands/pemview.py:43
+msgid "argument-help-pemview-show-private"
+msgstr ""
+
 #: shoestring/commands/renew_certificates.py:37
 msgid "argument-help-renew-certificates-renew-ca"
 msgstr ""
@@ -296,22 +312,26 @@ msgid "main-pemtool-help"
 msgstr ""
 
 #: shoestring/__main__.py:27
-msgid "main-renew-certificates-help"
+msgid "main-pemview-help"
 msgstr ""
 
 #: shoestring/__main__.py:28
-msgid "main-renew-voting-keys-help"
+msgid "main-renew-certificates-help"
 msgstr ""
 
 #: shoestring/__main__.py:29
-msgid "main-reset-data-help"
+msgid "main-renew-voting-keys-help"
 msgstr ""
 
 #: shoestring/__main__.py:30
-msgid "main-setup-help"
+msgid "main-reset-data-help"
 msgstr ""
 
 #: shoestring/__main__.py:31
+msgid "main-setup-help"
+msgstr ""
+
+#: shoestring/__main__.py:32
 msgid "main-signer-help"
 msgstr ""
 
@@ -323,7 +343,7 @@ msgstr ""
 msgid "main-title"
 msgstr ""
 
-#: shoestring/__main__.py:32
+#: shoestring/__main__.py:33
 msgid "main-upgrade-help"
 msgstr ""
 
@@ -339,7 +359,7 @@ msgstr ""
 msgid "nodewatch-client-detected-height"
 msgstr ""
 
-#: shoestring/internal/PeerDownloader.py:64
+#: shoestring/internal/PeerDownloader.py:65
 msgid "peer-downloader-loading-api-endpoints"
 msgstr ""
 
@@ -365,6 +385,30 @@ msgstr ""
 
 #: shoestring/commands/pemtool.py:43
 msgid "pemtool-saved-pem-file"
+msgstr ""
+
+#: shoestring/commands/pemview.py:17
+msgid "pemview-error-input-file-does-not-exist"
+msgstr ""
+
+#: shoestring/commands/pemview.py:14
+msgid "pemview-error-input-file-unexpected-suffix"
+msgstr ""
+
+#: shoestring/commands/pemview.py:26
+msgid "pemview-loaded-pem-file"
+msgstr ""
+
+#: shoestring/commands/pemview.py:32
+msgid "pemview-show-address"
+msgstr ""
+
+#: shoestring/commands/pemview.py:36
+msgid "pemview-show-private-key"
+msgstr ""
+
+#: shoestring/commands/pemview.py:33
+msgid "pemview-show-public-key"
 msgstr ""
 
 #: shoestring/commands/renew_voting_keys.py:89

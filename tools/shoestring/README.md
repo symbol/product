@@ -125,6 +125,20 @@ pemtool --output OUTPUT [--input INPUT] [--ask-pass] [--force]
   --force          overwrite output file if it already exists
 ```
 
+### pemview
+
+Outputs information about a private key PEM file.
+
+```
+pemview --input INPUT --network NETWORK [--ask-pass] [--show-private]
+
+options:
+  --input INPUT      input PEM file
+  --network NETWORK  Symbol network name to use for generating address
+  --ask-pass         show password prompt for accessing a password protected PEM
+  --show-private     output private key to console too
+```
+
 ### setup
 
 Sets up a Symbol node from scratch

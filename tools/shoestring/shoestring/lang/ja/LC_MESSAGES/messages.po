@@ -85,6 +85,22 @@ msgstr "入力秘密鍵ファイル（オプション）"
 msgid "argument-help-pemtool-output"
 msgstr "出力PEM鍵ファイル"
 
+#: shoestring/commands/pemview.py:42
+msgid "argument-help-pemview-ask-pass"
+msgstr ""
+
+#: shoestring/commands/pemview.py:40
+msgid "argument-help-pemview-input"
+msgstr ""
+
+#: shoestring/commands/pemview.py:41
+msgid "argument-help-pemview-network"
+msgstr ""
+
+#: shoestring/commands/pemview.py:43
+msgid "argument-help-pemview-show-private"
+msgstr ""
+
 #: shoestring/commands/renew_certificates.py:37
 msgid "argument-help-renew-certificates-renew-ca"
 msgstr "CA証明書も更新"
@@ -307,22 +323,26 @@ msgid "main-pemtool-help"
 msgstr "PEMファイルを生成します"
 
 #: shoestring/__main__.py:27
+msgid "main-pemview-help"
+msgstr ""
+
+#: shoestring/__main__.py:28
 msgid "main-renew-certificates-help"
 msgstr "証明書を更新します"
 
-#: shoestring/__main__.py:28
+#: shoestring/__main__.py:29
 msgid "main-renew-voting-keys-help"
 msgstr "投票キーを更新します"
 
-#: shoestring/__main__.py:29
+#: shoestring/__main__.py:30
 msgid "main-reset-data-help"
 msgstr "データをリセットして最初から再同期できるようにします"
 
-#: shoestring/__main__.py:30
+#: shoestring/__main__.py:31
 msgid "main-setup-help"
 msgstr "ノードをセットアップします"
 
-#: shoestring/__main__.py:31
+#: shoestring/__main__.py:32
 msgid "main-signer-help"
 msgstr "トランザクションに署名します"
 
@@ -334,7 +354,7 @@ msgstr "有効なサブコマンド"
 msgid "main-title"
 msgstr "Shoestring Tool"
 
-#: shoestring/__main__.py:32
+#: shoestring/__main__.py:33
 msgid "main-upgrade-help"
 msgstr "ノードを最新のクライアントバージョンにアップグレードします"
 
@@ -350,7 +370,7 @@ msgstr "現在の最終エポックが {epoch} として検出されました"
 msgid "nodewatch-client-detected-height"
 msgstr "最後に確定したブロック高が {height} として検出されました"
 
-#: shoestring/internal/PeerDownloader.py:64
+#: shoestring/internal/PeerDownloader.py:65
 msgid "peer-downloader-loading-api-endpoints"
 msgstr "ファイル {filepath} からAPIエンドポイントを読み込み中"
 
@@ -377,6 +397,30 @@ msgstr "提供されたパスワードが一致しません"
 #: shoestring/commands/pemtool.py:43
 msgid "pemtool-saved-pem-file"
 msgstr "ファイル {filepath} を保存しました"
+
+#: shoestring/commands/pemview.py:17
+msgid "pemview-error-input-file-does-not-exist"
+msgstr ""
+
+#: shoestring/commands/pemview.py:14
+msgid "pemview-error-input-file-unexpected-suffix"
+msgstr ""
+
+#: shoestring/commands/pemview.py:26
+msgid "pemview-loaded-pem-file"
+msgstr ""
+
+#: shoestring/commands/pemview.py:32
+msgid "pemview-show-address"
+msgstr ""
+
+#: shoestring/commands/pemview.py:36
+msgid "pemview-show-private-key"
+msgstr ""
+
+#: shoestring/commands/pemview.py:33
+msgid "pemview-show-public-key"
+msgstr ""
 
 #: shoestring/commands/renew_voting_keys.py:89
 msgid "renew-voting-keys-maximum-already-registered"
