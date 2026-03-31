@@ -103,3 +103,17 @@ class NemRestFacade:
 			'lastDBHeight': last_db_height,
 			'errors': errors
 		}
+
+	def get_namespace_by_name(self, name):
+		"""Gets namespace by root namespace or sub namespace name."""
+
+		namespace = self.nem_db.get_namespace_by_name(name)
+
+		return namespace.to_dict() if namespace else None
+
+	def get_namespaces(self, pagination, sort):
+		"""Gets namespaces pagination."""
+
+		namespaces = self.nem_db.get_namespaces(pagination, sort)
+
+		return [namespace.to_dict() for namespace in namespaces]

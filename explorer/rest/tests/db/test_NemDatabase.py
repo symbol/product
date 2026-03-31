@@ -1,7 +1,7 @@
 from rest import Pagination, Sorting
 from rest.db.NemDatabase import NemDatabase
 
-from ..test.DatabaseTestUtils import ACCOUNT_VIEWS, ACCOUNTS, BLOCK_VIEWS, DatabaseTestBase
+from ..test.DatabaseTestUtils import ACCOUNT_VIEWS, ACCOUNTS, BLOCK_VIEWS, NAMESPACE_VIEWS, DatabaseTestBase
 
 # region test data
 
@@ -13,10 +13,14 @@ EXPECTED_ACCOUNT_VIEW_1 = ACCOUNT_VIEWS[0]
 
 EXPECTED_ACCOUNT_VIEW_2 = ACCOUNT_VIEWS[1]
 
+EXPECTED_NAMESPACE_VIEW_1 = NAMESPACE_VIEWS[0]
+
+EXPECTED_NAMESPACE_VIEW_2 = NAMESPACE_VIEWS[1]
+
 # endregion
 
 
-class NemDatabaseTest(DatabaseTestBase):
+class NemDatabaseTest(DatabaseTestBase):  # pylint: disable=too-many-public-methods
 
 	def setUp(self):
 		super().setUp()
@@ -107,5 +111,48 @@ class NemDatabaseTest(DatabaseTestBase):
 
 	def test_can_query_accounts_sorted_by_balance_desc(self):
 		self._assert_can_query_accounts(Pagination(10, 0), Sorting('BALANCE', 'desc'), [EXPECTED_ACCOUNT_VIEW_2, EXPECTED_ACCOUNT_VIEW_1])
+
+	# endregion
+
+	# region namespace
+
+	def _assert_can_query_namespace_by_name(self, namespace, expected_namespace):
+		# Act:
+		namespace_view = self.nem_db.get_namespace_by_name(namespace)
+
+		# Assert:
+		self.assertEqual(expected_namespace, namespace_view)
+
+	def test_can_query_namespace_by_root_namespace(self):
+		self._assert_can_query_namespace_by_name('root', EXPECTED_NAMESPACE_VIEW_1)
+
+	def test_can_query_namespace_by_sub_namespace(self):
+		self._assert_can_query_namespace_by_name('root_sub.sub_1', EXPECTED_NAMESPACE_VIEW_2)
+
+	def test_cannot_query_nonexistent_namespace(self):
+		self._assert_can_query_namespace_by_name('nonexistent', None)
+
+	# endregion
+
+	# region namespaces
+
+	def _assert_can_query_namespaces_with_filter(self, pagination, sort, expected_namespaces):
+		# Act:
+		namespaces_view = self.nem_db.get_namespaces(pagination, sort)
+
+		# Assert:
+		self.assertEqual(expected_namespaces, namespaces_view)
+
+	def test_can_query_namespaces_filtered_limit_offset_0(self):
+		self._assert_can_query_namespaces_with_filter(Pagination(1, 0), 'desc', [EXPECTED_NAMESPACE_VIEW_2])
+
+	def test_can_query_namespaces_filtered_offset_1(self):
+		self._assert_can_query_namespaces_with_filter(Pagination(1, 1), 'desc', [EXPECTED_NAMESPACE_VIEW_1])
+
+	def test_can_query_namespaces_sorted_by_registered_height_asc(self):
+		self._assert_can_query_namespaces_with_filter(Pagination(10, 0), 'asc', [EXPECTED_NAMESPACE_VIEW_1, EXPECTED_NAMESPACE_VIEW_2])
+
+	def test_can_query_namespaces_sorted_by_registered_height_desc(self):
+		self._assert_can_query_namespaces_with_filter(Pagination(10, 0), 'desc', [EXPECTED_NAMESPACE_VIEW_2, EXPECTED_NAMESPACE_VIEW_1])
 
 	# endregion
