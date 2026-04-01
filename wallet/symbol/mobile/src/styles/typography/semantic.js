@@ -92,6 +92,12 @@ export const Semantic = {
 		}
 	},
 	button: {
+		s: {
+			...Fonts.secondary.bold,
+			fontSize: Primitives.m[0],
+			lineHeight: Primitives.m[1],
+			textTransform: 'uppercase'
+		},
 		m: {
 			...Fonts.secondary.bold,
 			fontSize: Primitives.l[0],

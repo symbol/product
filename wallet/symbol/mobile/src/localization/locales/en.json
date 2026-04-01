@@ -415,6 +415,7 @@
     "c_transactionStatus_status_announceError_description": "Transaction was not broadcasted to the network",
     "c_transactionStatus_status_failedTransaction_title": "Transaction Failed",
     "c_transactionStatus_status_failedTransaction_description": "Transaction was rejected by the network",
+    "s_home_updates": "Updates",
     "s_home_widgets": "Widgets",
     "s_history_widget_name": "New Transactions",
     "s_history_filter_type": "Type",
