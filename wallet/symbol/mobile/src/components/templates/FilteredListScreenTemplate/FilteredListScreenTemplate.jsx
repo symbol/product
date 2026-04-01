@@ -1,4 +1,4 @@
-import { Filter, LoadingIndicator, Screen, StyledText } from '@/app/components';
+import { AnimatedListItem, Filter, LoadingIndicator, Screen, StyledText } from '@/app/components';
 import { useWalletController } from '@/app/hooks';
 import { $t } from '@/app/localization';
 import { Colors, Sizes } from '@/app/styles';
@@ -135,12 +135,12 @@ export const FilteredListScreenTemplate = ({
 	}, [isLoading || isRefreshing || isPageLoading]);
 
 	const renderSectionHeader = useCallback(({ section }) => (
-		<View style={styles.sectionHeader}>
+		<AnimatedListItem style={styles.sectionHeader}>
 			{renderSectionHeaderProp 
 				? renderSectionHeaderProp({ section }) 
 				: <SectionHeader title={section.title} titleStyle={section.titleStyle} />
 			}
-		</View>
+		</AnimatedListItem>
 	), [renderSectionHeaderProp]);
 
 	const renderSectionFooter = useCallback(({ section }) => {
@@ -157,9 +157,9 @@ export const FilteredListScreenTemplate = ({
 	}, [shouldShowFooter, isPageLoading, renderPlaceholder]);
 
 	const renderItemWrapper = useCallback(({ item, section, index }) => (
-		<View style={styles.listItem}>
+		<AnimatedListItem style={styles.listItem}>
 			{renderItem({ item, section, index })}
-		</View>
+		</AnimatedListItem>
 	), [renderItem]);
 
 	return (

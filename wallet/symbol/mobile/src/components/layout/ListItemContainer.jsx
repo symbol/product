@@ -1,20 +1,13 @@
 import { TouchableNative } from '@/app/components';
-import { PlatformUtils } from '@/app/lib/platform/PlatformUtils';
 import { Colors, Sizes } from '@/app/styles';
-import { useIsFocused } from '@react-navigation/native';
-import React, { useCallback, useEffect, useState } from 'react';
-import { StyleSheet } from 'react-native';
-import Animated, { FadeIn, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import React, { useCallback } from 'react';
+import { StyleSheet, View } from 'react-native';
 
-const SCALE_DEFAULT = 1;
-const SCALE_EXPANDED = 1.2;
-const ANIMATION_DURATION_MS = 250;
-const MIN_CARD_HEIGHT = 75;
+const MIN_CARD_HEIGHT = Sizes.Semantic.spacing.m * 9;
 
 /**
- * ListItemContainer component. A pressable card container for list items with animated
- * scale transitions and optional border highlighting. Provides visual feedback on press
- * and collapses when navigating back to the list screen.
+ * ListItemContainer component. A pressable card container for list items
+ * with optional border highlighting. Provides visual feedback on press.
  *
  * @param {object} props - Component props
  * @param {React.ReactNode} props.children - Child components to render inside the container.
@@ -38,21 +31,9 @@ export const ListItemContainer = ({
 	accessibilityLabel,
 	onPress
 }) => {
-	// State
-	const [isExpanded, setIsExpanded] = useState(false);
-	const isFocused = useIsFocused();
-
-	// Animation values
-	const scale = useSharedValue(SCALE_DEFAULT);
-
-	// Animated styles
-	const animatedCardStyle = useAnimatedStyle(() => ({
-		transform: [{ scale: scale.value }]
-	}));
-
 	// Computed styles
 	const dynamicBorderStyle = borderColor ? { borderColor, borderWidth: Sizes.Semantic.borderWidth.m } : null;
-	const cardStyles = [styles.card, dynamicBorderStyle, animatedCardStyle, contentContainerStyle, cardStyle];
+	const cardStyles = [styles.card, dynamicBorderStyle, contentContainerStyle, cardStyle];
 	const rootStyles = [styles.root, style];
 
 	// Handlers
@@ -61,36 +42,22 @@ export const ListItemContainer = ({
 			return;
 
 		onPress();
-		setIsExpanded(true);
 	}, [isDisabled, onPress]);
 
-	// Effects
-	useEffect(() => {
-		const shouldCollapse = isFocused && isExpanded;
-
-		if (!shouldCollapse)
-			return;
-
-		if (PlatformUtils.getOS() === 'android')
-			scale.value = SCALE_EXPANDED;
-
-		scale.value = withTiming(SCALE_DEFAULT, { duration: ANIMATION_DURATION_MS });
-		setIsExpanded(false);
-	}, [isFocused, isExpanded, scale]);
 
 	return (
-		<Animated.View entering={FadeIn} style={rootStyles}>
+		<View style={rootStyles}>
 			<TouchableNative
 				onPress={handlePress}
 				disabled={isDisabled}
 				accessibilityRole="button"
 				accessibilityLabel={accessibilityLabel}
 			>
-				<Animated.View style={cardStyles}>
+				<View style={cardStyles}>
 					{children}
-				</Animated.View>
+				</View>
 			</TouchableNative>
-		</Animated.View>
+		</View>
 	);
 };
 
