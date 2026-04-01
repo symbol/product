@@ -6,13 +6,14 @@ import { jest } from '@jest/globals';
 import SplashScreen from 'react-native-splash-screen';
 
 /**
- * Mocks the useWalletController hook to simulate wallet controller behavior.
+ * Create a mock wallet controller object to simulate wallet controller behavior.
  *
  * @param {Object} overrides - An object to override specific methods of the wallet controller mock.
+ * @param {Object} [options] - Mock options.
  * 
  * @return {import('wallet-common-core').WalletController} The mocked wallet controller.
  */
-export const mockWalletController = (overrides = {}) => {
+export const createWalletControllerMock = (overrides = {}) => {
 	const walletControllerMock = {
 		chainName: 'symbol',
 		networkApi: {},
@@ -36,6 +37,7 @@ export const mockWalletController = (overrides = {}) => {
 		isNetworkConnectionReady: true,
 		isStateReady: true,
 		isWalletReady: true,
+		modules: {},
 
 		loadCache: jest.fn(),
 		selectAccount: jest.fn(),
@@ -65,6 +67,20 @@ export const mockWalletController = (overrides = {}) => {
 		removeListener: jest.fn(),
 		...overrides
 	};
+
+	return walletControllerMock;
+};
+
+/**
+ * Mocks the useWalletController hook to simulate wallet controller behavior.
+ *
+ * @param {Object} overrides - An object to override specific methods of the wallet controller mock.
+ * @param {Object} [options] - Mock options.
+ * 
+ * @return {import('wallet-common-core').WalletController} The mocked wallet controller.
+ */
+export const mockWalletController = (overrides = {}) => {
+	const walletControllerMock = createWalletControllerMock(overrides);
 	jest.spyOn(hooks, 'useWalletController').mockReturnValue(walletControllerMock);
 
 	return walletControllerMock;

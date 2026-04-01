@@ -1,0 +1,1 @@
+export const BRIDGE_HISTORY_PAGE_SIZE = 5;

@@ -8,7 +8,8 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
 const SCREENS_THAT_SHOW_NAVIGATION_MENU = [
 	RouteName.Home,
-	RouteName.History
+	RouteName.History,
+	RouteName.Assets
 ];
 
 /**

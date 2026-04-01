@@ -23,6 +23,7 @@ const MIN_CARD_HEIGHT = 75;
  * @param {object} [props.style] - Additional styles for the outer wrapper.
  * @param {object} [props.cardStyle] - Additional styles for card content container.
  * @param {object} [props.contentContainerStyle] - Additional styles for the inner card container.
+ * @param {string} [props.accessibilityLabel] - Accessibility label for the touchable element.
  * @param {function} [props.onPress] - Function to call when the container is pressed.
  *
  * @returns {React.ReactNode} ListItemContainer component
@@ -34,6 +35,7 @@ export const ListItemContainer = ({
 	style,
 	cardStyle,
 	contentContainerStyle,
+	accessibilityLabel,
 	onPress
 }) => {
 	// State
@@ -55,7 +57,7 @@ export const ListItemContainer = ({
 
 	// Handlers
 	const handlePress = useCallback(() => {
-		if (isDisabled || !onPress) 
+		if (isDisabled || !onPress)
 			return;
 
 		onPress();
@@ -66,10 +68,10 @@ export const ListItemContainer = ({
 	useEffect(() => {
 		const shouldCollapse = isFocused && isExpanded;
 
-		if (!shouldCollapse) 
+		if (!shouldCollapse)
 			return;
 
-		if (PlatformUtils.getOS() === 'android') 
+		if (PlatformUtils.getOS() === 'android')
 			scale.value = SCALE_EXPANDED;
 
 		scale.value = withTiming(SCALE_DEFAULT, { duration: ANIMATION_DURATION_MS });
@@ -78,7 +80,12 @@ export const ListItemContainer = ({
 
 	return (
 		<Animated.View entering={FadeIn} style={rootStyles}>
-			<TouchableNative onPress={handlePress} disabled={isDisabled}>
+			<TouchableNative
+				onPress={handlePress}
+				disabled={isDisabled}
+				accessibilityRole="button"
+				accessibilityLabel={accessibilityLabel}
+			>
 				<Animated.View style={cardStyles}>
 					{children}
 				</Animated.View>

@@ -8,6 +8,7 @@ import {
 	generateKeyPair,
 	isPrivateKey,
 	isSymbolAddress,
+	normalizeAddress,
 	publicAccountFromPrivateKey,
 	publicAccountFromPublicKey
 } from '../../src/utils';
@@ -272,6 +273,50 @@ describe('utils/account', () => {
 
 			// Assert:
 			expect(result).toBe(expectedResult);
+		});
+	});
+
+	describe('normalizeAddress', () => {
+		it('returns uppercase address without dashes', () => {
+			// Arrange:
+			const address = 'NALS-BRWZ-TK3W-QEGZ-25NO-4YH2-MOU4S';
+			const expectedResult = 'NALSBRWZTK3WQEGZ25NO4YH2MOU4S';
+
+			// Act:
+			const result = normalizeAddress(address);
+
+			// Assert:
+			expect(result).toBe(expectedResult);
+		});
+
+		it('converts lowercase address to uppercase', () => {
+			// Arrange:
+			const address = 'nalsbrwztk3wqegz25no4yh2mou4sxyy6avy72i';
+			const expectedResult = 'NALSBRWZTK3WQEGZ25NO4YH2MOU4SXYY6AVY72I';
+
+			// Act:
+			const result = normalizeAddress(address);
+
+			// Assert:
+			expect(result).toBe(expectedResult);
+		});
+
+		it('returns already normalized address unchanged', () => {
+			// Arrange:
+			const address = 'NALSBRWZTK3WQEGZ25NO4YH2MOU4SXYY6AVY72I';
+
+			// Act:
+			const result = normalizeAddress(address);
+
+			// Assert:
+			expect(result).toBe(address);
+		});
+
+		it('throws TypeError when address is not a string', () => {
+			// Act & Assert:
+			expect(() => normalizeAddress(123)).toThrow(TypeError);
+			expect(() => normalizeAddress(null)).toThrow(TypeError);
+			expect(() => normalizeAddress(undefined)).toThrow(TypeError);
 		});
 	});
 });

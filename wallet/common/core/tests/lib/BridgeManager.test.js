@@ -8,6 +8,7 @@ const SYMBOL_TOKEN_ID = '72C0212E67A08BCE';
 const ETHEREUM_BRIDGE_ADDRESS = '0x9B5b717FEC711af80050986D1306D5c8Fb9FA953';
 const ETHEREUM_TOKEN_ID = '0x5E8343A455F03109B737B6D8b410e4ECCE998cdA';
 const ETHEREUM_ACCOUNT_ADDRESS = '0xeCA7dadA410614B604FFcBE0378C05474b0aeD8D';
+const ETHEREUM_ADDRESS_FORMATTED = '0xeca7dada410614b604ffcbe0378c05474b0aed8d';
 
 const BRIDGE_URL = 'https://bridge.example.com';
 const BRIDGE_ID = 'symbol-ethereum-bridge';
@@ -102,13 +103,28 @@ describe('BridgeManager', () => {
 		divisibility: 6,
 		amount
 	});
-	const createController = ({ chainName, currentAccountAddress }) => ({
+	const symbolSdk = {
+		normalizeAddress: address => address.replace(/-/g, '').toUpperCase(),
+		normalizeTransactionHash: hash => hash.toUpperCase()
+	};
+	const ethereumSdk = {
+		normalizeAddress: address => {
+			const lower = address.toLowerCase();
+			return lower.startsWith('0x') ? lower : `0x${lower}`;
+		},
+		normalizeTransactionHash: hash => {
+			const lower = hash.toLowerCase();
+			return lower.startsWith('0x') ? lower : `0x${lower}`;
+		}
+	};
+	const createController = ({ chainName, currentAccountAddress, walletSdk }) => ({
 		networkIdentifier,
 		chainName,
 		networkProperties: { chainId: 'test-chain' },
 		currentAccount: { address: currentAccountAddress },
 		isWalletReady: true,
 		fetchAccountTransactions: jest.fn(async () => []),
+		walletSdk,
 		modules: {
 			bridge: {
 				fetchTokenInfo: jest.fn(async tokenId => createTokenInfo(tokenId)),
@@ -118,11 +134,13 @@ describe('BridgeManager', () => {
 	});
 	const createNativeController = () => createController({
 		chainName: 'symbol',
-		currentAccountAddress: SYMBOL_ACCOUNT_ADDRESS
+		currentAccountAddress: SYMBOL_ACCOUNT_ADDRESS,
+		walletSdk: symbolSdk
 	});
 	const createWrappedController = () => createController({
 		chainName: 'ethereum',
-		currentAccountAddress: ETHEREUM_ACCOUNT_ADDRESS
+		currentAccountAddress: ETHEREUM_ACCOUNT_ADDRESS,
+		walletSdk: ethereumSdk
 	});
 	const toAbsolute = (amount, divisibility = 6) => {
 		const [i, f = ''] = String(amount).split('.');
@@ -264,7 +282,7 @@ describe('BridgeManager', () => {
 			};
 			const expectedWrappedConfig = {
 				blockchain: configResponse.wrappedNetwork.blockchain,
-				bridgeAddress: configResponse.wrappedNetwork.bridgeAddress,
+				bridgeAddress: configResponse.wrappedNetwork.bridgeAddress.toLowerCase(),
 				defaultNodeUrl: configResponse.wrappedNetwork.defaultNodeUrl,
 				explorerUrl: configResponse.wrappedNetwork.explorerUrl,
 				network: configResponse.wrappedNetwork.network,
@@ -427,8 +445,8 @@ describe('BridgeManager', () => {
 						token: createToken(SYMBOL_TOKEN_ID, '15')
 					},
 					payoutTransaction: {
-						recipientAddress: ETHEREUM_ACCOUNT_ADDRESS,
-						hash: 'C240B79CCC230438A685EB684A82DD81B58BD5A896805DC97A72D33F4812EEFF',
+						recipientAddress: ETHEREUM_ADDRESS_FORMATTED,
+						hash: '0xc240b79ccc230438a685eb684a82dd81b58bd5a896805dc97a72d33f4812eeff',
 						height: 49896,
 						timestamp: 1757430500000,
 						token: createToken(ETHEREUM_TOKEN_ID, '14.999999')
@@ -463,8 +481,8 @@ describe('BridgeManager', () => {
 					payoutConversionRate: '1',
 					payoutTotalFee: '0.0176',
 					requestTransaction: {
-						signerAddress: ETHEREUM_ACCOUNT_ADDRESS,
-						hash: 'D2C59C2516AE16728673B0BAF82753270FBCCB261D0212976A4FD3D885418F93',
+						signerAddress: ETHEREUM_ADDRESS_FORMATTED,
+						hash: '0xd2c59c2516ae16728673b0baf82753270fbccb261d0212976a4fd3d885418f93',
 						height: 8313,
 						timestamp: 1756931504000,
 						token: createToken(ETHEREUM_TOKEN_ID, '499.99999')
@@ -678,8 +696,8 @@ describe('BridgeManager', () => {
 				targetTokenInfo: createTokenInfo(SYMBOL_TOKEN_ID),
 				errorMessage: 'Oops',
 				requestTransaction: {
-					signerAddress: ETHEREUM_ACCOUNT_ADDRESS,
-					hash: 'ERR_UNWRAP',
+					signerAddress: ETHEREUM_ADDRESS_FORMATTED,
+					hash: '0xerr_unwrap',
 					height: 22,
 					timestamp: 111000
 				}
@@ -744,14 +762,14 @@ describe('BridgeManager', () => {
 			const pageNumber = 1;
 			const transactions = [
 				{
-					senderAddress: nativeWalletController.currentAccount.address,
+					signerAddress: nativeWalletController.currentAccount.address,
 					recipientAddress: lowerCaseBridge,
 					hash: 'PENDING_WRAP_HASH_1',
 					height: 100,
 					timestamp: 1000
 				},
 				{
-					senderAddress: nativeWalletController.currentAccount.address,
+					signerAddress: nativeWalletController.currentAccount.address,
 					recipientAddress: 'SOME_OTHER_ADDRESS',
 					hash: 'IGNORED_HASH',
 					height: 200,
@@ -770,7 +788,8 @@ describe('BridgeManager', () => {
 						signerAddress: nativeWalletController.currentAccount.address,
 						hash: 'PENDING_WRAP_HASH_1',
 						height: 100,
-						timestamp: 1000
+						timestamp: 1000,
+						token: null
 					}
 				}
 			];
@@ -792,14 +811,14 @@ describe('BridgeManager', () => {
 			const pageNumber = 2;
 			const transactions = [
 				{
-					senderAddress: wrappedWalletController.currentAccount.address,
+					signerAddress: wrappedWalletController.currentAccount.address,
 					recipientAddress: mixedCaseBridge,
 					hash: 'PENDING_UNWRAP_HASH_1',
 					height: 300,
 					timestamp: 2000
 				},
 				{
-					senderAddress: wrappedWalletController.currentAccount.address,
+					signerAddress: wrappedWalletController.currentAccount.address,
 					recipientAddress: '0xnotbridge',
 					hash: 'IGNORED_HASH_2',
 					height: 301,
@@ -815,10 +834,11 @@ describe('BridgeManager', () => {
 					sourceTokenInfo: manager.config.wrappedNetwork.tokenInfo,
 					targetTokenInfo: manager.config.nativeNetwork.tokenInfo,
 					requestTransaction: {
-						signerAddress: wrappedWalletController.currentAccount.address,
-						hash: 'PENDING_UNWRAP_HASH_1',
+						signerAddress: ETHEREUM_ADDRESS_FORMATTED,
+						hash: '0xpending_unwrap_hash_1',
 						height: 300,
-						timestamp: 2000
+						timestamp: 2000,
+						token: null
 					}
 				}
 			];
@@ -896,7 +916,7 @@ describe('BridgeManager', () => {
 				errorMessage: 'error',
 				requestTransaction: {
 					signerAddress: SYMBOL_ACCOUNT_ADDRESS,
-					hash: 'hash1',
+					hash: 'HASH1',
 					height: 0,
 					timestamp: 2500
 				}

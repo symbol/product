@@ -1,3 +1,5 @@
+import moment from 'moment';
+
 /**
  * Returns the amount in network currency text.
  * @param {number} amount - Mosaic amount.
@@ -67,4 +69,16 @@ export const formatDate = (dateStr, translate, showTime = false) => {
 	formattedDate += showTime ? ` ${hour}:${minutes}` : '';
 
 	return formattedDate;
+};
+
+/**
+ * Converts a duration to days left from now.
+ * @param {number} duration - The duration in blocks left.
+ * @param {number} blockGenerationTargetTime - The block generation time.
+ * @returns {string} The days left.
+ */
+export const blockDurationToDaysLeft = (duration, blockGenerationTargetTime) => {
+	const seconds = duration * blockGenerationTargetTime;
+    
+	return moment.utc().add(seconds, 's').fromNow();
 };

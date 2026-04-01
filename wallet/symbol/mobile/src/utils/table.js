@@ -107,7 +107,6 @@ const getTypeForKey = key => keyTypeIndex[key] ?? 'text';
 /**
  * Converts an object to table data format for TableView component.
  * Automatically determines the row type based on the object keys.
- *
  * @param {object} obj - Key-value pairs object to convert
  * @returns {import('@/app/types/Table').TableRow[]} Array of table row objects
  */

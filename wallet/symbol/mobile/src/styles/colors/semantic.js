@@ -204,6 +204,10 @@ export const Components = {
 			border: Semantic.role.secondary.default
 		}
 	},
+	summary: {
+		background: Semantic.background.tertiary.darker,
+		text: Semantic.content.primary.default
+	},
 	buttonCardEmbedded: {
 		primary: {
 			default: {
@@ -222,56 +226,68 @@ export const Components = {
 	buttonSolid: {
 		secondary: {
 			default: {
+				border: Semantic.role.secondary.default,
 				background: Semantic.role.secondary.default,
 				text: Semantic.content.primary.inverse
 			},
 			pressed: {
+				border: Semantic.role.secondary.weaker,
 				background: Semantic.role.secondary.weaker,
 				text: Semantic.content.primary.inverse
 			},
 			disabled: {
-				background: Semantic.role.secondary.weaker,
+				border: Semantic.role.secondary.muted,
+				background: Semantic.role.secondary.muted,
 				text: Semantic.content.primary.inverse
 			}
 		},
 		danger: {
 			default: {
+				border: Semantic.role.danger.default,
 				background: Semantic.role.danger.default,
 				text: Semantic.content.primary.inverse
 			},
 			pressed: {
+				border: Semantic.role.danger.weaker,
 				background:Semantic.role.danger.weaker, 
 				text: Semantic.content.primary.inverse
 			},
 			disabled: {
+				border: Semantic.role.danger.muted,
 				background: Semantic.role.danger.muted,
 				text: Semantic.content.primary.inverse
 			}
 		},
 		warning: {
 			default: {
+				border: Semantic.role.warning.default,
 				background: Semantic.role.warning.default,
 				text: Semantic.content.primary.inverse
 			},
 			pressed: {
+				border: Semantic.role.warning.weaker,
 				background: Semantic.role.warning.weaker,
 				text: Semantic.content.primary.inverse
 			},
 			disabled: {
+				border: Semantic.role.warning.muted,
 				background: Semantic.role.warning.muted,
 				text: Semantic.content.primary.inverse
 			}
 		},
 		neutral: {
 			default: {
+				border: Semantic.role.neutral.default,
 				background: Semantic.role.neutral.default,
 				text: Semantic.content.primary.inverse
 			},
 			pressed: {
+				border: Semantic.role.neutral.weaker,
 				background: Semantic.role.neutral.weaker,
 				text: Semantic.content.primary.inverse
 			},
 			disabled: {
+				border: Semantic.role.neutral.muted,
 				background: Semantic.role.neutral.muted,
 				text: Semantic.content.primary.inverse
 			}

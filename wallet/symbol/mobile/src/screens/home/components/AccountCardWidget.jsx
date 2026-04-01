@@ -49,7 +49,7 @@ const ActionButton = ({ icon, text, isLast = false, onPress }) => {
  * AccountCardWidget component
  *
  * A card widget displaying account information including name, balance, and address.
- * Provides action buttons for account details, send, and receive operations.
+ * Provides action buttons for account details, send, and swap operations.
  *
  * @param {object} props - Component props
  * @param {string} props.address - Account address to display.
@@ -59,7 +59,7 @@ const ActionButton = ({ icon, text, isLast = false, onPress }) => {
  * @param {string} props.ticker - Currency ticker symbol.
  * @param {string} props.networkIdentifier - Network identifier for currency formatting.
  * @param {function} props.onNameChange - Callback when account name is changed.
- * @param {function} props.onReceivePress - Callback when receive button is pressed.
+ * @param {function} props.onSwapPress - Callback when swap button is pressed.
  * @param {function} props.onSendPress - Callback when send button is pressed.
  * @param {function} props.onDetailsPress - Callback when account details button is pressed.
  *
@@ -74,7 +74,7 @@ export const AccountCardWidget = props => {
 		ticker,
 		networkIdentifier,
 		onNameChange,
-		onReceivePress,
+		onSwapPress,
 		onSendPress,
 		onDetailsPress
 	} = props;
@@ -136,10 +136,10 @@ export const AccountCardWidget = props => {
 					onPress={onSendPress}
 				/>
 				<ActionButton
-					icon="receive"
-					text={$t('c_accountCard_button_receive')}
+					icon="swap"
+					text={$t('c_accountCard_button_swap')}
 					isLast
-					onPress={onReceivePress}
+					onPress={onSwapPress}
 				/>
 			</View>
 			<DialogBox

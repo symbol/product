@@ -1,5 +1,5 @@
 import { Bip39 } from '@/app/lib/bip39';
-import { relativeToAbsoluteAmount } from 'wallet-common-core';
+import { safeOperationWithRelativeAmounts } from 'wallet-common-core';
 
 export const validateRequired =
 	(isRequired = true) =>
@@ -23,7 +23,12 @@ export const validateMnemonic = () => str => {
 
 export const validateAmount = availableBalance => str => {
 	const MAX_DIVISIBILITY = 18;
+	const isAmountGreaterThanBalance = safeOperationWithRelativeAmounts(
+		MAX_DIVISIBILITY,
+		[str, availableBalance],
+		(amount, balance) => (amount > balance ? 1n : 0n)
+	);
 
-	if (relativeToAbsoluteAmount(str, MAX_DIVISIBILITY) > relativeToAbsoluteAmount(availableBalance, MAX_DIVISIBILITY))
+	if (isAmountGreaterThanBalance !== '0')
 		return 'validation_error_balance_not_enough';
 };

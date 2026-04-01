@@ -86,5 +86,7 @@ export const REQUIRED_SDK_METHODS = [
 	'encryptMessage',
 	'decryptMessage',
 	'createPrivateAccount',
-	'createPrivateKeysFromMnemonic'
+	'createPrivateKeysFromMnemonic',
+	'normalizeAddress',
+	'normalizeTransactionHash'
 ];

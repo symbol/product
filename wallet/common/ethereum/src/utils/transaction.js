@@ -1,3 +1,4 @@
+import { to0x } from './format';
 import { transactionToEthereum } from './transaction-to-ethereum';
 import { ethers } from 'ethers';
 import { TransactionBundle } from 'wallet-common-core';
@@ -8,6 +9,17 @@ import { TransactionBundle } from 'wallet-common-core';
 /** @typedef {import('../types/Transaction').Transaction} Transaction */
 /** @typedef {import('../types/Transaction').SignedTransaction} SignedTransaction */
 
+/**
+ * Normalizes a transaction hash by ensuring it follows the '0x' lowercase convention.
+ * @param {string} hash - The transaction hash to normalize.
+ * @returns {string} The normalized transaction hash.
+ */
+export const normalizeTransactionHash = hash => {
+	if (typeof hash !== 'string')
+		throw new TypeError('Expected hash to be a string value');
+
+	return to0x(hash);
+};
 
 /**
  * Checks if a transaction is an outgoing transaction.

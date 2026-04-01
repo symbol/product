@@ -1,5 +1,6 @@
 export * from './ActionRow';
 export * from './Card';
+export * from './Divider';
 export * from './Field';
 export * from './FlexContainer';
 export * from './Grid';

@@ -156,6 +156,25 @@ export class ScreenTester {
 	};
 
 	/**
+	 * Asserts that a loading indicator is present on the screen.
+	 * 
+	 * @param {number} [count=1] - The expected number of loading indicators.
+	 */
+	expectLoadingIndicator = (count = 1) => {
+		const { getAllByTestId } = this.renderer;
+		const indicators = getAllByTestId('loading-indicator');
+		expect(indicators.length).toBe(count);
+	};
+
+	/**
+	 * Asserts that no loading indicator is present on the screen.
+	 */
+	notExpectLoadingIndicator = () => {
+		const { queryByTestId } = this.renderer;
+		expect(queryByTestId('loading-indicator')).toBeNull();
+	};
+
+	/**
 	 * Asserts that an element with the specified testID is present on the screen.
 	 * 
 	 * @param {string} testID - The testID of the element to check for.
