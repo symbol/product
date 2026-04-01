@@ -42,7 +42,7 @@ export const MultisigWidget = ({
 
 	return (
 		<WidgetContainer title={$t('s_multisig_widget_name')} onHeaderPress={handleHeaderPress}>
-			<Spacer>
+			<Spacer x="s" y="s">
 				<Stack gap="s">
 					{multisigAccountList.map(item => (
 						<MultisigAccountListItem

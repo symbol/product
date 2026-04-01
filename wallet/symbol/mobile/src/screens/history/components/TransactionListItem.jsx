@@ -10,6 +10,7 @@ import { StyleSheet, View } from 'react-native';
 /** @typedef {import('@/app/types/Network').NetworkIdentifier} NetworkIdentifier */
 
 const AWAITING_SIGNATURE_COLOR = Colors.Semantic.role.info.default;
+const TEXT_PIXEL_CORRECTION = 1;
 
 /**
  * TransactionListItem component. Displays transaction information in a compact
@@ -68,7 +69,7 @@ export const TransactionListItem = ({
 				<TransactionAvatar iconName={transactionData.iconName} size="s" />
 			</View>
 			<View style={styles.contentSection}>
-				<StyledText type="title" size="s">
+				<StyledText type="title" size="s" style={styles.actionText}>
 					{transactionData.action}
 				</StyledText>
 				{transactionData.isAwaitingAccountSignature && (
@@ -104,6 +105,9 @@ const styles = StyleSheet.create({
 		flexDirection: 'row',
 		width: '100%'
 	},
+	actionText: {
+		marginBottom: -TEXT_PIXEL_CORRECTION
+	},
 	iconSection: {
 		flexDirection: 'column',
 		justifyContent: 'center',
@@ -119,7 +123,7 @@ const styles = StyleSheet.create({
 		flexDirection: 'row',
 		justifyContent: 'space-between',
 		alignItems: 'center',
-		marginTop: Sizes.Semantic.spacing.xs
+		marginTop: TEXT_PIXEL_CORRECTION
 	},
 	dateText: {
 		opacity: 0.7

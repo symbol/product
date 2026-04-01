@@ -201,7 +201,7 @@ const styles = StyleSheet.create({
 		width: '100%'
 	},
 	list: {
-		paddingVertical: Sizes.Semantic.spacing.s,
+		paddingVertical: Sizes.Semantic.spacing.m,
 		paddingLeft: Sizes.Semantic.spacing.m
 	},
 	chipWrapper: {
@@ -209,9 +209,9 @@ const styles = StyleSheet.create({
 	},
 	chip: {
 		overflow: 'hidden',
+		height: Sizes.Semantic.spacing.xl,
 		borderRadius: Sizes.Semantic.borderRadius.l,
 		paddingHorizontal: Sizes.Semantic.spacing.m,
-		paddingVertical: Sizes.Semantic.spacing.s,
 		justifyContent: 'center',
 		alignItems: 'center'
 	},
