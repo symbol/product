@@ -24,7 +24,7 @@ def parse_network_configuration(config):
 
 	name = config['name']
 	identifier = int(config['identifier'])
-	epoch_adjustment = datetime.datetime.utcfromtimestamp(int(config['epochAdjustment']))
+	epoch_adjustment = datetime.datetime.fromtimestamp(int(config['epochAdjustment']), datetime.timezone.utc)
 	generation_hash_seed = Hash256(config['generationHashSeed'])
 	return Network(name, identifier, epoch_adjustment, generation_hash_seed)
 
