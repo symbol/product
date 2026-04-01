@@ -1,4 +1,5 @@
 export * from './ActionRow';
+export * from './AnimatedListItem';
 export * from './Card';
 export * from './Columns';
 export * from './Divider';
