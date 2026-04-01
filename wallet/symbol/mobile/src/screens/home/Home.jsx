@@ -1,7 +1,8 @@
 import { Header } from '@/app/app/components';
-import { Screen, Spacer, Stack } from '@/app/components';
+import { Grid, Screen, Spacer, Stack, StyledText } from '@/app/components';
 import { useInit, useWalletController } from '@/app/hooks';
 import { useAsyncManager } from '@/app/hooks/useAsyncManager';
+import { $t } from '@/app/localization';
 import { Router } from '@/app/router/Router';
 import { useAddressBookWidget } from '@/app/screens/address-book/hooks';
 import { AddressBookWidget } from '@/app/screens/address-book/widgets/AddressBookWidget';
@@ -47,14 +48,17 @@ export const Home = () => {
 
 	useInit(fetchData, walletController.isWalletReady);
 
+	const isUpdatesWidgetsVisible = historyWidget.isVisible;
+
 	return (
 		<Screen refresh={{ onRefresh: fetchData }}>
 			<Screen.Header>
 				<Header currentAccount={currentAccount} />
 			</Screen.Header>
 			<Screen.Upper>
+				<Grid isVisible={false} />
 				<Spacer>
-					<Stack>
+					<Stack gap="l">
 						<Animated.View entering={FadeInUp}>
 							<AccountCardWidget
 								address={currentAccount?.address ?? ''}
@@ -69,15 +73,29 @@ export const Home = () => {
 								onDetailsPress={Router.goToAccountDetails}
 							/>
 						</Animated.View>
-						<WidgetAnimatedWrapper isVisible={historyWidget.isVisible}>
-							<HistoryWidget {...historyWidget.props} />
-						</WidgetAnimatedWrapper>
-						<WidgetAnimatedWrapper isVisible={addressBookWidget.isVisible}>
-							<AddressBookWidget {...addressBookWidget.props} />
-						</WidgetAnimatedWrapper>
-						<WidgetAnimatedWrapper isVisible={multisigWidget.isVisible}>
-							<MultisigWidget {...multisigWidget.props} />
-						</WidgetAnimatedWrapper>
+
+						{isUpdatesWidgetsVisible && (
+							<Stack gap="m">
+								<StyledText type="title">
+									{$t('s_home_updates')}
+								</StyledText>
+								<WidgetAnimatedWrapper isVisible={historyWidget.isVisible}>
+									<HistoryWidget {...historyWidget.props} />
+								</WidgetAnimatedWrapper>
+							</Stack>
+						)}
+
+						<Stack gap="m">
+							<StyledText type="title">
+								{$t('s_home_widgets')}
+							</StyledText>
+							<WidgetAnimatedWrapper isVisible={addressBookWidget.isVisible}>
+								<AddressBookWidget {...addressBookWidget.props} />
+							</WidgetAnimatedWrapper>
+							<WidgetAnimatedWrapper isVisible={multisigWidget.isVisible}>
+								<MultisigWidget {...multisigWidget.props} />
+							</WidgetAnimatedWrapper>
+						</Stack>
 					</Stack>
 				</Spacer>
 			</Screen.Upper>

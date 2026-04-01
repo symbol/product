@@ -21,7 +21,7 @@ export const EditButtonContainer = ({ children, onEditPress, isStretched = false
 				hitSlop={10} 
 				onPress={onEditPress}
 			>
-				<Icon name="edit" size="s" />
+				<Icon name="edit" size="xs" />
 			</TouchableOpacity>
 		}
 	>

@@ -21,6 +21,12 @@ import { Image, StyleSheet, Text, View } from 'react-native';
 const CARD_BACKGROUND_COLOR = Colors.Semantic.role.primary.default;
 const BUTTON_BACKGROUND_COLOR = Colors.Semantic.role.primary.weaker;
 
+const ART_HEIGHT = Sizes.Semantic.spacing.m * 25;
+const ART_WIDTH = Sizes.Semantic.spacing.m * 32;
+const ART_TOP_OFFSET = Sizes.Semantic.spacing.m * 7;
+
+const CONTENT_TOP_OFFSET = Sizes.Semantic.spacing.m * 10;
+
 /**
  * ActionButton component
  *
@@ -159,15 +165,15 @@ const styles = StyleSheet.create({
 	root: {
 		position: 'relative',
 		width: '100%',
-		marginTop: 58,
-		paddingTop: 81
+		marginTop: ART_TOP_OFFSET,
+		paddingTop: CONTENT_TOP_OFFSET
 	},
 	art: {
 		position: 'absolute',
-		height: 201,
-		width: 260,
+		height: ART_HEIGHT,
+		width: ART_WIDTH,
 		right: 0,
-		top: -58,
+		top: -ART_TOP_OFFSET,
 		resizeMode: 'stretch'
 	},
 	loadingIndicator: {
@@ -208,7 +214,7 @@ const styles = StyleSheet.create({
 	},
 	actionButtonText: {
 		...Typography.Semantic.button.m,
-		fontSize: 15,
+		fontSize: Typography.Semantic.button.m * 0.9,
 		color: Colors.Components.buttonCardEmbedded.primary.default.text
 	}
 });

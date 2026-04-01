@@ -14,7 +14,7 @@ import React from 'react';
 export const CopyButtonContainer = ({ children, value, isStretched }) => (
 	<ActionRow 
 		isStretched={isStretched} 
-		button={<CopyButton content={value} />}
+		button={<CopyButton content={value} size="s" />}
 	>
 		{children}
 	</ActionRow>
