@@ -1,5 +1,5 @@
 import { Header } from '@/app/app/components';
-import { Grid, Screen, Spacer, Stack, StyledText } from '@/app/components';
+import { Screen, Spacer, Stack, StyledText } from '@/app/components';
 import { useInit, useWalletController } from '@/app/hooks';
 import { useAsyncManager } from '@/app/hooks/useAsyncManager';
 import { $t } from '@/app/localization';
@@ -56,7 +56,6 @@ export const Home = () => {
 				<Header currentAccount={currentAccount} />
 			</Screen.Header>
 			<Screen.Upper>
-				<Grid isVisible={false} />
 				<Spacer>
 					<Stack gap="l">
 						<Animated.View entering={FadeInUp}>

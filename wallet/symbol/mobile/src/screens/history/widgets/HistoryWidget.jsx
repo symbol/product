@@ -52,7 +52,7 @@ export const HistoryWidget = ({
 
 	return (
 		<WidgetContainer title={$t('s_history_widget_name')} onHeaderPress={handleHeaderPress}>
-			<Spacer>
+			<Spacer x="s" y="s">
 				<Stack>
 					{transactions.map(item => (
 						<TransactionListItem
