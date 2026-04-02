@@ -165,7 +165,8 @@ class NemDatabase(DatabaseConnectionPool):
 			root_namespace_expiration_height=root_namespace_expiration_height,
 		)
 
-	def _generate_account_query(self, where_condition, order_condition='', limit_condition=''):  # pylint: disable=no-self-use
+	@staticmethod
+	def _generate_account_query(where_condition, order_condition='', limit_condition=''):
 		"""Base account query."""
 
 		return f'''
@@ -233,7 +234,8 @@ class NemDatabase(DatabaseConnectionPool):
 			{limit_condition}
 		'''
 
-	def _generate_mosaic_query(self, where_condition='', order_condition='', limit_condition=''):  # pylint: disable=no-self-use
+	@staticmethod
+	def _generate_mosaic_query(where_condition='', order_condition='', limit_condition=''):
 		"""Base mosaic query."""
 
 		return f'''
