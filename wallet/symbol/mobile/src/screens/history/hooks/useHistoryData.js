@@ -63,6 +63,7 @@ export const useHistoryData = ({ walletController }) => {
 		onTransactionUnconfirmed: selectedHistory.refresh,
 		onTransactionPartial: selectedHistory.refresh,
 		onTransactionConfirmed: selectedHistory.refresh,
+		onTransactionError: selectedHistory.refresh,
 		deps: [walletController, selectedHistory.refresh]
 	});
 
