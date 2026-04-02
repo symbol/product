@@ -1,11 +1,11 @@
 import datetime
 import unittest
-from unittest.mock import MagicMock
 
 import psycopg2
 import testing.postgresql
 from symbolchain.CryptoTypes import PublicKey
 from symbolchain.nem.Network import Address
+from symbollightapi.model.Transaction import Mosaic
 from test_DatabaseConnection import DatabaseConfig
 
 from puller.db.NemDatabase import NemDatabase
@@ -721,10 +721,6 @@ class NemDatabaseTest(unittest.TestCase):
 
 	def test_insert_transaction_mosaic(self):
 		# Arrange:
-		mosaic = MagicMock()
-		mosaic.namespace_name = 'nem.xem'
-		mosaic.quantity = 2000000
-
 		with NemDatabase(self.db_config) as nem_database:
 			nem_database.create_tables()
 
@@ -739,7 +735,10 @@ class NemDatabaseTest(unittest.TestCase):
 			nem_database.insert_transaction_mosaic(
 				cursor,
 				transaction_id=1,
-				mosaic=mosaic
+				mosaic=Mosaic(
+					namespace_name='nem.xem',
+					quantity=2000000
+				)
 			)
 
 			nem_database.connection.commit()
