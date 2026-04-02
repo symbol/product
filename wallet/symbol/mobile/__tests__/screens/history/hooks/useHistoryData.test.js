@@ -637,6 +637,7 @@ describe('hooks/useHistoryData', () => {
 				onTransactionUnconfirmed: transactionHistory.refresh,
 				onTransactionPartial: transactionHistory.refresh,
 				onTransactionConfirmed: transactionHistory.refresh,
+				onTransactionError: transactionHistory.refresh,
 				deps: [walletController, transactionHistory.refresh]
 			});
 		});
