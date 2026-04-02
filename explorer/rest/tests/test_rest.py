@@ -469,17 +469,13 @@ def test_api_namespaces_with_all_params(client):  # pylint: disable=redefined-ou
 
 # region /mosaic/<name>
 
-def _assert_get_nem_mosaic_by_name(client, name, expected_status_code, expected_result):  # pylint: disable=redefined-outer-name
+def test_api_mosaic_by_name(client):  # pylint: disable=redefined-outer-name
 	# Act:
-	response = client.get(f'/api/nem/mosaic/{name}')
+	response = client.get('/api/nem/mosaic/root.mosaic')
 
 	# Assert:
-	_assert_status_code_and_headers(response, expected_status_code)
-	assert expected_result == response.json
-
-
-def test_api_mosaic_by_name(client):  # pylint: disable=redefined-outer-name
-	_assert_get_nem_mosaic_by_name(client, 'root.mosaic', 200, MOSAIC_VIEWS[0].to_dict())
+	_assert_status_code_and_headers(response, 200)
+	assert MOSAIC_VIEWS[0].to_dict() == response.json
 
 
 # endregion
