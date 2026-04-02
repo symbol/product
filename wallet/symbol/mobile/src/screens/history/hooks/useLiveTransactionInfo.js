@@ -58,7 +58,8 @@ export const useLiveTransactionInfo = (walletController, preloadedData, preloade
 	useTimer({
 		isActive: isWalletReady,
 		callback: transactionManager.call,
-		interval: REFRESH_TRANSACTION_DETAILS_INTERVAL
+		interval: REFRESH_TRANSACTION_DETAILS_INTERVAL,
+		hasImmediateExecution: true
 	});
 
 	return {
