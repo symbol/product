@@ -75,13 +75,13 @@ const renderRowValue = (row, resolvedData, translate, key) => {
 	switch (row.type) {
 	case 'account':
 		return (
-			<AccountView
-				key={key}
-				isStretched
-				address={row.value}
-				name={resolvedData.get(row.value)?.name}
-				imageId={resolvedData.get(row.value)?.imageId}
-			/>
+			<CopyButtonContainer key={key} isStretched value={row.value}>
+				<AccountView
+					address={row.value}
+					name={resolvedData.get(row.value)?.name}
+					imageId={resolvedData.get(row.value)?.imageId}
+				/>
+			</CopyButtonContainer>
 		);
 	case 'token':
 		return (

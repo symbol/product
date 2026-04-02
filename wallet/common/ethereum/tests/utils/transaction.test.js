@@ -2,6 +2,7 @@ import {
 	createFee,
 	isIncomingTransaction,
 	isOutgoingTransaction,
+	normalizeTransactionHash,
 	signTransaction
 } from '../../src/utils';
 import { networkCurrency } from '../__fixtures__/local/network';
@@ -84,6 +85,50 @@ describe('utils/transaction', () => {
 
 				expect(result).toStrictEqual(expectedOutputs[i]);
 			}
+		});
+	});
+
+	describe('normalizeTransactionHash', () => {
+		it('prepends 0x and lowercases hash without prefix', () => {
+			// Arrange:
+			const hash = 'A1B2C3D4E5F6A1B2C3D4E5F6A1B2C3D4E5F6A1B2C3D4E5F6A1B2C3D4E5F6A1B2';
+			const expectedResult = '0xa1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2';
+
+			// Act:
+			const result = normalizeTransactionHash(hash);
+
+			// Assert:
+			expect(result).toBe(expectedResult);
+		});
+
+		it('lowercases hash that already has 0x prefix', () => {
+			// Arrange:
+			const hash = '0xA1B2C3D4E5F6A1B2C3D4E5F6A1B2C3D4E5F6A1B2C3D4E5F6A1B2C3D4E5F6A1B2';
+			const expectedResult = '0xa1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2';
+
+			// Act:
+			const result = normalizeTransactionHash(hash);
+
+			// Assert:
+			expect(result).toBe(expectedResult);
+		});
+
+		it('returns already normalized hash unchanged', () => {
+			// Arrange:
+			const hash = '0xa1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2';
+
+			// Act:
+			const result = normalizeTransactionHash(hash);
+
+			// Assert:
+			expect(result).toBe(hash);
+		});
+
+		it('throws TypeError when hash is not a string', () => {
+			// Act & Assert:
+			expect(() => normalizeTransactionHash(123)).toThrow(TypeError);
+			expect(() => normalizeTransactionHash(null)).toThrow(TypeError);
+			expect(() => normalizeTransactionHash(undefined)).toThrow(TypeError);
 		});
 	});
 });

@@ -15,7 +15,7 @@ import { MessageType } from '@/app/constants';
 import { useAsyncManager, useDebounce, useProp, useToggle, useTransactionFees, useWalletController } from '@/app/hooks';
 import { $t } from '@/app/localization';
 import { Router } from '@/app/router/Router';
-import { formatAmountInput, getAccountKnownInfo, getAvailableBalance, handleError, objectToTableData } from '@/app/utils';
+import { formatAmountInput, getAccountKnownInfo, getAvailableBalance, objectToTableData, showError } from '@/app/utils';
 import React, { useEffect, useMemo, useState } from 'react';
 import Animated, { FadeInDown, FadeOut } from 'react-native-reanimated';
 import { constants as symbolConstants } from 'wallet-common-symbol';
@@ -56,7 +56,7 @@ export const Send = props => {
 	// Form inputs
 	const [senderAddress, setSenderAddress] = useProp(currentAccount.address);
 	const [recipientAddress, setRecipientAddress] = useProp(route.params?.recipientAddress, '');
-	const [selectedTokenId, setSelectedTokenId] = useProp(route.params?.tokenId ?? route.params?.mosaicId, null);
+	const [selectedTokenId, setSelectedTokenId] = useProp(route.params?.tokenId, null);
 	const [amount, setAmount] = useProp(route.params?.amount, '0');
 	const [messageText, setMessageText] = useProp(route.params?.message?.text, '');
 	const [isMessageEncryptedCheckboxValue, toggleMessageEncrypted] = useToggle(false);
@@ -192,8 +192,9 @@ export const Send = props => {
 
 	// Update token list and sender public key when sender address changes
 	const updateSenderInfo = (tokens, publicKey) => {
+		const preferredToken = tokens.find(token => token.id === selectedTokenId);
 		setSenderTokenList(tokens);
-		setSelectedTokenId(tokens[0]?.id || null);
+		setSelectedTokenId(preferredToken?.id || tokens[0]?.id || null);
 		setSenderPublicKey(publicKey);
 	};
 
@@ -204,7 +205,7 @@ export const Send = props => {
 			updateSenderInfo(tokenList, publicKey);
 		},
 		onError: e => {
-			handleError(e);
+			showError(e);
 			updateSenderInfo([], '');
 		}
 	});

@@ -1,3 +1,4 @@
+import { to0x } from './format';
 import { SigningKey, Wallet, computeAddress, isAddress } from 'ethers';
 
 /** @typedef {import('../types/Account').KeyPair} KeyPair */
@@ -6,20 +7,15 @@ import { SigningKey, Wallet, computeAddress, isAddress } from 'ethers';
 /** @typedef {import('../types/Account').WalletAccount} WalletAccount */
 
 /**
- * Ensures a hex string follows the '0x' lowercase convention.
- * @param {string} hex - The hex string.
- * @returns {string} The lowercase hex string prefixed with '0x'.
+ * Normalizes an Ethereum address by ensuring it follows the '0x' lowercase convention.
+ * @param {string} address - The address to normalize.
+ * @returns {string} The normalized address.
  */
-export const to0x = hex => {
-	if (typeof hex !== 'string')
-		throw new TypeError('Expected a string value');
+export const normalizeAddress = address => {
+	if (typeof address !== 'string')
+		throw new TypeError('Expected address to be a string value');
 
-	const lowercaseHex = hex.toLowerCase();
-
-	if (lowercaseHex.startsWith('0x'))
-		return lowercaseHex;
-
-	return `0x${lowercaseHex}`;
+	return to0x(address);
 };
 
 /**

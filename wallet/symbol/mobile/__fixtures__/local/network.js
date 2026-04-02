@@ -40,5 +40,55 @@ export const networkProperties = {
 				...tokens.symbol.testnet[0]
 			}
 		}
+	},
+	ethereum: {
+		mainnet: {
+			nodeUrl: 'https://node.ethereum.com:8545',
+			wsUrl: 'wss://node.ethereum.com:8545/ws',
+			networkIdentifier: 'mainnet',
+			chainId: 1,
+			chainHeight: 9876543,
+			transactionFees: {
+				slow: { 
+					maxPriorityFeePerGas: '0.000000002', 
+					maxFeePerGas: '0.000000122' 
+				},
+				medium: { 
+					maxPriorityFeePerGas: '0.000000003', 
+					maxFeePerGas: '0.000000153' 
+				},
+				fast: { 
+					maxPriorityFeePerGas: '0.000000004', 
+					maxFeePerGas: '0.000000204' 
+				}
+			},
+			networkCurrency: {
+				...tokens.ethereum.mainnet[0]
+			}
+		},
+		testnet: {
+			nodeUrl: 'https://node.ethereum.com:8545',
+			wsUrl: 'wss://node.ethereum.com:8545/ws',
+			networkIdentifier: 'testnet',
+			chainId: 5,
+			chainHeight: 1319595,
+			transactionFees: {
+				slow: { 
+					maxPriorityFeePerGas: '0.000000002', 
+					maxFeePerGas: '0.000000122' 
+				},
+				medium: { 
+					maxPriorityFeePerGas: '0.000000003', 
+					maxFeePerGas: '0.000000153' 
+				},
+				fast: { 
+					maxPriorityFeePerGas: '0.000000004', 
+					maxFeePerGas: '0.000000204' 
+				}
+			},
+			networkCurrency: {
+				...tokens.ethereum.testnet[0]
+			}
+		}
 	}
 };

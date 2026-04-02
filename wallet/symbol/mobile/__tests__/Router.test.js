@@ -68,9 +68,15 @@ jest.mock('@/app/screens', () => {
 		ImportWallet: createMockScreen('ImportWallet'),
 		Home: createMockScreen('Home'),
 		History: createMockScreen('History'),
+		Assets: createMockScreen('Assets'),
+		TokenDetails: createMockScreen('TokenDetails'),
 		AccountDetails: createMockScreen('AccountDetails'),
 		AccountList: createMockScreen('AccountList'),
 		AddSeedAccount: createMockScreen('AddSeedAccount'),
+		BridgeAccountList: createMockScreen('BridgeAccountList'),
+		BridgeAccountDetails: createMockScreen('BridgeAccountDetails'),
+		BridgeSwap: createMockScreen('BridgeSwap'),
+		BridgeSwapDetails: createMockScreen('BridgeSwapDetails'),
 		Send: createMockScreen('Send'),
 		Settings: createMockScreen('Settings'),
 		SettingsAbout: createMockScreen('SettingsAbout'),
@@ -104,6 +110,11 @@ const NAVIGATION_SCREENS_CONFIG = [
 	},
 	{
 		screenName: 'History',
+		shouldReset: true,
+		hasParams: false
+	},
+	{
+		screenName: 'Assets',
 		shouldReset: true,
 		hasParams: false
 	},

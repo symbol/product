@@ -36,6 +36,15 @@ export class Router {
 			routes: [{ name: RouteName.History }]
 		});
 	}
+	static goToAssets() {
+		navigationRef.reset({
+			index: 0,
+			routes: [{ name: RouteName.Assets }]
+		});
+	}
+	static goToTokenDetails(params) {
+		navigationRef.navigate(RouteName.TokenDetails, parseNavigationParams(params));
+	}
 	static goToAccountDetails(params) {
 		navigationRef.navigate(RouteName.AccountDetails, parseNavigationParams(params));
 	}
@@ -50,6 +59,18 @@ export class Router {
 	}
 	static goToSend(params) {
 		navigationRef.navigate(RouteName.Send, parseNavigationParams(params));
+	}
+	static goToBridgeAccountList(params) {
+		navigationRef.navigate(RouteName.BridgeAccountList, parseNavigationParams(params));
+	}
+	static goToBridgeAccountDetails(params) {
+		navigationRef.navigate(RouteName.BridgeAccountDetails, parseNavigationParams(params));
+	}
+	static goToBridgeSwap(params) {
+		navigationRef.navigate(RouteName.BridgeSwap, parseNavigationParams(params));
+	}
+	static goToBridgeSwapDetails(params) {
+		navigationRef.navigate(RouteName.BridgeSwapDetails, parseNavigationParams(params));
 	}
 	static goToSettings(params) {
 		navigationRef.navigate(RouteName.Settings, parseNavigationParams(params));

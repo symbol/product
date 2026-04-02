@@ -67,8 +67,7 @@ export const ButtonPlain = ({ text, icon, isDisabled = false, isCentered = false
 const styles = StyleSheet.create({
 	root: {
 		flexDirection: 'row',
-		alignItems: 'center',
-		height: Sizes.Semantic.controlHeight.m
+		alignItems: 'center'
 	},
 	icon: {
 		marginRight: Sizes.Semantic.spacing.s

@@ -16,3 +16,11 @@ export { AccountList } from './account/AccountList';
 export { AddSeedAccount } from './account/AddSeedAccount';
 export { Send } from './send/Send';
 export { History } from './history/History';
+export { Assets } from './assets/Assets';
+export { TokenDetails } from './assets/TokenDetails';
+
+// Bridge
+export { BridgeAccountList } from './bridge/BridgeAccountList';
+export { BridgeAccountDetails } from './bridge/BridgeAccountDetails';
+export { BridgeSwap } from './bridge/BridgeSwap';
+export { BridgeSwapDetails } from './bridge/BridgeSwapDetails';

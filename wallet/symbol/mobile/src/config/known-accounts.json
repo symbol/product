@@ -7,6 +7,13 @@
                 "accounts": [
                     "TARDV42KTAIZEF64EQT4NXT7K55DHWBEFIXVJQY"
                 ]
+            },
+            {
+                "imageId": "symbol",
+                "name": "Symbol Protocol",
+                "accounts": [
+                    "TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI"
+                ]
             }
         ],
         "mainnet": [
@@ -320,6 +327,13 @@
                 "name": "Namespace and Mosaic Fee Sink",
                 "accounts": [
                     "NCVORTEX4XD5IQASZQEHDWUXT33XBOTBMKFDCLI"
+                ]
+            },
+            {
+                "imageId": "symbol",
+                "name": "Symbol Protocol",
+                "accounts": [
+                    "NASYMBOLLK6FSL7GSEMQEAWN7VW55ZSZU25TBOA"
                 ]
             }
         ]

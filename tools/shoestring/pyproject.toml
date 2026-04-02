@@ -15,14 +15,19 @@ repository = 'https://github.com/symbol/product/tree/main/tools/shoestring'
 keywords = ['symbol', 'shoestring', 'deployment', 'node']
 
 classifiers = [
-    'Programming Language :: Python :: 3.10',
-    'Programming Language :: Python :: 3.11',
-    'Programming Language :: Python :: 3.12',
-    'Programming Language :: Python :: 3.13',
-    'Programming Language :: Python :: 3.14'
+	'Programming Language :: Python :: 3.10',
+	'Programming Language :: Python :: 3.11',
+	'Programming Language :: Python :: 3.12',
+	'Programming Language :: Python :: 3.13',
+	'Programming Language :: Python :: 3.14'
 ]
 
 include = ['shoestring/lang/*/LC_MESSAGES/messages.mo']
 
 [tool.poetry.dependencies]
 python = "^3.10"
+
+[tool.pytest.ini_options]
+filterwarnings = [
+	"ignore:The 'warn' method is deprecated:DeprecationWarning"
+]

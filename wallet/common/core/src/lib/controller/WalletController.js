@@ -73,6 +73,9 @@ export class WalletController {
 	/** @type {ProtocolNetworkApi} */
 	_api;
 
+	/** @type {ProtocolWalletSdk} */
+	_sdk;
+
 	/** @type {NetworkManager} */
 	_networkManager;
 
@@ -124,6 +127,7 @@ export class WalletController {
 		this.#chainName = chainName;
 		this.#ticker = ticker;
 		this._api = api;
+		this._sdk = sdk;
 		this.networkIdentifiers = networkIdentifiers;
 		this.#createDefaultNetworkProperties = createDefaultNetworkProperties;
 		this.#setStateProcessor = setStateProcessor;
@@ -184,6 +188,14 @@ export class WalletController {
 	 */
 	get networkApi() {
 		return this._api;
+	}
+
+	/**
+	 * Returns the wallet SDK instance.
+	 * @returns {ProtocolWalletSdk} - The wallet SDK instance.
+	 */
+	get walletSdk() {
+		return this._sdk;
 	}
 
 	/**

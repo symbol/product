@@ -36,7 +36,7 @@ export const Alert = ({ variant = DEFAULT_VARIANT, title, body, isIconHidden = f
 	return (
 		<View style={[styles.root, containerStyle, style]}>
 			{!isIconHidden && iconName && (
-				<Icon name={iconName} size="m" color={palette.text} />
+				<Icon name={iconName} variant={variant} size="m" color={palette.text} />
 			)}
 			{!!title && (
 				<StyledText type="label" size="l" style={[styles.text, textStyle]}>
@@ -55,7 +55,7 @@ const styles = StyleSheet.create({
 	root: {
 		flexDirection: 'column',
 		padding: Sizes.Semantic.spacing.m,
-		borderRadius: Sizes.Semantic.borderRadius.s,
+		borderRadius: Sizes.Semantic.borderRadius.m,
 		alignItems: 'center',
 		gap: Sizes.Semantic.spacing.xs
 	},

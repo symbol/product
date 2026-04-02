@@ -17,16 +17,8 @@ import {
 } from 'wallet-common-core';
 import { HarvestingModule, TransferModule } from 'wallet-common-symbol';
 
-/** @typedef {import('../../types/Network').NetworkProperties} NetworkProperties */
+/** @typedef {import('@/app/types/Wallet').MainWalletController} MainWalletController */
 
-/**
- * @typedef {Object} WalletControllerModules
- * @property {AddressBookModule} addressBook - The address book module.
- * @property {HarvestingModule} harvesting - The module that handles harvesting information and operations.
- * @property {LocalizationModule} localization - The module that handles localization and language settings.
- * @property {MarketModule} market - The module that handles market information.
- * @property {TransferModule} transfer - The module that handles transfer transaction operations.
- */
 const modules = [
 	new AddressBookModule(),
 	new MarketModule({
@@ -43,7 +35,7 @@ const modules = [
 
 /**
  * Symbol wallet controller.
- * @type {WalletController & { modules: WalletControllerModules, networkProperties: NetworkProperties }}
+ * @type {MainWalletController}
  */
 export const symbolWalletController = /** @type {any} */ (
 	new WalletController({
