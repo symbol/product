@@ -68,6 +68,7 @@ export const getHistoryFilterConfig = () => [
  * @returns {Object} Section configuration.
  */
 export const createSection = (title, group, data, titleStyle = null) => ({
+	key: group,
 	title,
 	group,
 	data,

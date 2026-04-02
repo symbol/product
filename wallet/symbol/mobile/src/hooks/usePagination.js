@@ -30,7 +30,7 @@ const defaultDataUpdater = (prevData, newData) => [...prevData, ...newData];
  */
 export const usePagination = ({
 	callback,
-	defaultData = [],
+	defaultData,
 	onError = null,
 	pageSize = null,
 	firstPageNumber = 1,
@@ -43,7 +43,7 @@ export const usePagination = ({
 
 	const asyncManager = useAsyncManager({
 		callback: async page => await callback({ pageNumber: page, pageSize }),
-		defaultData,
+		defaultData: defaultData ?? [],
 		defaultLoadingState,
 		onError
 	});
@@ -80,11 +80,11 @@ export const usePagination = ({
 		asyncManager.reset();
 
 		return fetchPage(firstPageNumber, true);
-	}, [asyncManager, firstPageNumber, isLastPage, pageSize, dataUpdater]);
+	}, [asyncManager, firstPageNumber, isLastPage, defaultData, pageSize, dataUpdater]);
 
 	const reset = useCallback(() => {
 		setPageNumber(firstPageNumber);
-		setData(defaultData);
+		setData(defaultData ?? []);
 		setIsLastPage(false);
 		asyncManager.reset();
 	}, [firstPageNumber, defaultData, asyncManager]);

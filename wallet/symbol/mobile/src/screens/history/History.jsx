@@ -55,7 +55,7 @@ export const History = () => {
 	), [currentAccount]);
 
 	const keyExtractor = useCallback((item, index) => {
-		return `${index}-${item.hash || item.id || item.height}`;
+		return item.hash || item.id || String(item.height) || String(index);
 	}, []);
 
 	const renderItem = useCallback(({ item, section }) => {
