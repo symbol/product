@@ -47,6 +47,22 @@ NamespaceRecord = namedtuple('NamespaceRecord', [
 	'registered_height',
 	'expiration_height'
 ])
+MosaicRecord = namedtuple('MosaicRecord', [
+	'root_namespace',
+	'namespace_name',
+	'description',
+	'creator',
+	'registered_height',
+	'initial_supply',
+	'total_supply',
+	'divisibility',
+	'supply_mutable',
+	'transferable',
+	'levy_type',
+	'levy_namespace_name',
+	'levy_fee',
+	'levy_recipient'
+])
 DatabaseConfig = namedtuple('DatabaseConfig', ['database', 'user', 'password', 'host', 'port'])
 
 
@@ -301,12 +317,47 @@ class NemPuller:
 		else:
 			self._process_root_namespace(cursor, transaction, block_height)
 
+	def _process_mosaic_definition(self, cursor, transaction, block_height):
+		"""Process mosaic definition in a block."""
+
+		mosaic_properties = transaction.properties
+		levy_properties = transaction.levy
+
+		mosaic = MosaicRecord(
+			root_namespace=transaction.namespace_name.split('.')[0],
+			namespace_name=transaction.namespace_name,
+			description=transaction.description,
+			creator=transaction.creator,
+			registered_height=block_height,
+			initial_supply=mosaic_properties.initial_supply,
+			total_supply=mosaic_properties.initial_supply,
+			divisibility=mosaic_properties.divisibility,
+			supply_mutable=mosaic_properties.supply_mutable,
+			transferable=mosaic_properties.transferable,
+			levy_type=levy_properties.type if levy_properties else None,
+			levy_namespace_name=levy_properties.namespace_name if levy_properties else None,
+			levy_fee=levy_properties.fee if levy_properties else None,
+			levy_recipient=levy_properties.recipient if levy_properties else None
+		)
+
+		self.nem_db.upsert_mosaic(cursor, mosaic)
+
+	def _process_mosaic_supply_change(self, cursor, transaction):
+		"""Process mosaic supply change in a block."""
+
+		adjustment = transaction.delta if transaction.supply_type == 1 else -transaction.delta
+		self.nem_db.update_mosaic_total_supply(cursor, transaction.namespace_name, adjustment)
+
 	def _process_transactions(self, cursor, block_transactions, height):
 		"""Process transactions in a block."""
 
 		for transaction in block_transactions:
 			if transaction.transaction_type == TransactionType.NAMESPACE_REGISTRATION.value:
 				self._process_namespace(cursor, transaction, height)
+			elif transaction.transaction_type == TransactionType.MOSAIC_DEFINITION.value:
+				self._process_mosaic_definition(cursor, transaction, height)
+			elif transaction.transaction_type == TransactionType.MOSAIC_SUPPLY_CHANGE.value:
+				self._process_mosaic_supply_change(cursor, transaction)
 
 	async def sync_nemesis_block(self):
 		"""Sync and write Nemesis block to database."""

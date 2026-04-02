@@ -55,6 +55,14 @@ class NemDatabase(DatabaseConnection):
 			'''
 		)
 
+		# Create indexes for mosaics table
+		cursor.execute(
+			'''
+			CREATE INDEX IF NOT EXISTS idx_mosaic_name
+				ON mosaics (namespace_name)
+			'''
+		)
+
 	def create_tables(self):
 		"""Creates database tables."""
 
@@ -114,6 +122,29 @@ class NemDatabase(DatabaseConnection):
 				registered_height bigint NOT NULL,
 				expiration_height bigint NOT NULL,
 				sub_namespaces VARCHAR(146)[] DEFAULT '{}'
+			)
+			'''
+		)
+
+		# Create Mosaics table
+		cursor.execute(
+			'''
+			CREATE TABLE IF NOT EXISTS mosaics (
+				id serial PRIMARY KEY,
+				root_namespace varchar(16) NOT NULL,
+				namespace_name varchar(146) NOT NULL UNIQUE,
+				description varchar(512),
+				creator bytea NOT NULL,
+				registered_height bigint NOT NULL,
+				initial_supply bigint,
+				total_supply bigint,
+				divisibility int NOT NULL,
+				supply_mutable boolean,
+				transferable boolean,
+				levy_type int,
+				levy_namespace_name varchar(146),
+				levy_fee bigint,
+				levy_recipient bytea
 			)
 			'''
 		)
@@ -267,5 +298,78 @@ class NemDatabase(DatabaseConnection):
 			(
 				sub_namespace,
 				root_namespace
+			)
+		)
+
+	@staticmethod
+	def upsert_mosaic(cursor, mosaic_definition):
+		"""Insert or update mosaic information."""
+
+		cursor.execute(
+			'''
+			INSERT INTO mosaics (
+				root_namespace,
+				namespace_name,
+				description,
+				creator,
+				registered_height,
+				initial_supply,
+				total_supply,
+				divisibility,
+				supply_mutable,
+				transferable,
+				levy_type,
+				levy_namespace_name,
+				levy_fee,
+				levy_recipient
+			)
+			VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+			ON CONFLICT (namespace_name)
+			DO UPDATE SET
+				root_namespace = EXCLUDED.root_namespace,
+				description = EXCLUDED.description,
+				creator = EXCLUDED.creator,
+				registered_height = EXCLUDED.registered_height,
+				initial_supply = EXCLUDED.initial_supply,
+				total_supply = EXCLUDED.total_supply,
+				divisibility = EXCLUDED.divisibility,
+				supply_mutable = EXCLUDED.supply_mutable,
+				transferable = EXCLUDED.transferable,
+				levy_type = EXCLUDED.levy_type,
+				levy_namespace_name = EXCLUDED.levy_namespace_name,
+				levy_fee = EXCLUDED.levy_fee,
+				levy_recipient = EXCLUDED.levy_recipient
+			''',
+			(
+				mosaic_definition.root_namespace,
+				mosaic_definition.namespace_name,
+				mosaic_definition.description,
+				mosaic_definition.creator.bytes,
+				mosaic_definition.registered_height,
+				mosaic_definition.initial_supply,
+				mosaic_definition.total_supply,
+				mosaic_definition.divisibility,
+				mosaic_definition.supply_mutable,
+				mosaic_definition.transferable,
+				mosaic_definition.levy_type,
+				mosaic_definition.levy_namespace_name,
+				mosaic_definition.levy_fee,
+				mosaic_definition.levy_recipient.bytes if mosaic_definition.levy_recipient else None
+			)
+		)
+
+	@staticmethod
+	def update_mosaic_total_supply(cursor, namespace_name, adjustment):
+		"""Updates mosaic total supply."""
+
+		cursor.execute(
+			'''
+			UPDATE mosaics
+			SET total_supply = GREATEST(0, total_supply + %s)
+			WHERE namespace_name = %s AND supply_mutable = true
+			''',
+			(
+				adjustment,
+				namespace_name
 			)
 		)
