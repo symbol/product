@@ -91,7 +91,7 @@ def _get_api(client, endpoint, **query_params):  # pylint: disable=redefined-out
 
 def test_invalid_pagination_params(client):  # pylint: disable=redefined-outer-name
 
-	for module in ['blocks', 'accounts', 'namespaces']:
+	for module in ['blocks', 'accounts', 'namespaces', 'mosaics']:
 		# Act:
 		response = client.get(f'/api/nem/{module}', query_string={'limit': -1})
 
@@ -105,7 +105,7 @@ def test_invalid_pagination_params(client):  # pylint: disable=redefined-outer-n
 
 def test_invalid_sort_params(client):  # pylint: disable=redefined-outer-name
 
-	for module in ['blocks', 'namespaces']:
+	for module in ['blocks', 'namespaces', 'mosaics']:
 		# Act:
 		response = client.get(f'/api/nem/{module}', query_string={'sort': 'INVALID'})
 
@@ -115,7 +115,11 @@ def test_invalid_sort_params(client):  # pylint: disable=redefined-outer-name
 
 def test_data_not_found(client):  # pylint: disable=redefined-outer-name
 
-	for module, params in [('block', '/3'), ('account', '?address=NANEMOABLAGR72AZ2RV3V4ZHDCXW25XQ73O7OBT5'), ('namespace', '/nonexistent')]:
+	for module, params in [
+		('block', '/3'),
+		('account', '?address=NANEMOABLAGR72AZ2RV3V4ZHDCXW25XQ73O7OBT5'),
+		('namespace', '/nonexistent'),
+		('mosaic', '/nonexistent')]:
 		# Act:
 		response = client.get(f'/api/nem/{module}{params}')
 
@@ -417,13 +421,6 @@ def test_api_namespace_by_sub_namespace(client):  # pylint: disable=redefined-ou
 	_assert_get_nem_namespace_by_name(client, 'root_sub.sub_1', 200, NAMESPACE_VIEWS[1].to_dict())
 
 
-def test_api_namespace_by_name_not_found(client):  # pylint: disable=redefined-outer-name
-	_assert_get_nem_namespace_by_name(client, 'nonexistent', 404, {
-		'message': 'Resource not found',
-		'status': 404
-	})
-
-
 # endregion
 
 # region /namespaces
@@ -485,41 +482,17 @@ def test_api_mosaic_by_name(client):  # pylint: disable=redefined-outer-name
 	_assert_get_nem_mosaic_by_name(client, 'root.mosaic', 200, MOSAIC_VIEWS[0].to_dict())
 
 
-def test_api_mosaic_by_name_not_found(client):  # pylint: disable=redefined-outer-name
-	_assert_get_nem_mosaic_by_name(client, 'nonexistent', 404, {
-		'message': 'Resource not found',
-		'status': 404
-	})
-
-
 # endregion
 
 # region /mosaics
 
-def _get_api_nem_mosaics(client, **query_params):  # pylint: disable=redefined-outer-name
-	query_string = '&'.join(f'{key}={val}' for key, val in query_params.items())
-	return client.get(f'/api/nem/mosaics?{query_string}')
-
-
 def _assert_get_api_nem_mosaics(client, expected_status_code, expected_result, **query_params):  # pylint: disable=redefined-outer-name
 	# Act:
-	response = _get_api_nem_mosaics(client, **query_params)
+	response = _get_api(client, 'mosaics', **query_params)
 
 	# Assert:
 	_assert_status_code_and_headers(response, expected_status_code)
 	assert expected_result == response.json
-
-
-def _assert_get_api_nem_mosaics_fail(client, expected_message, **query_params):  # pylint: disable=redefined-outer-name
-	# Act:
-	response = _get_api_nem_mosaics(client, **query_params)
-
-	# Assert:
-	_assert_status_code_and_headers(response, 400)
-	assert {
-		'message': expected_message,
-		'status': 400
-	} == response.json
 
 
 def test_api_mosaics_without_params(client):  # pylint: disable=redefined-outer-name
@@ -551,18 +524,6 @@ def test_api_mosaics_with_all_params(client):  # pylint: disable=redefined-outer
 		offset=1,
 		sort='DESC'
 	)
-
-
-def test_api_mosaics_invalid_sort(client):  # pylint: disable=redefined-outer-name, invalid-name
-	_assert_get_api_nem_mosaics_fail(client, 'Sort must be either ASC or DESC', sort='INVALID')
-
-
-def test_api_mosaics_invalid_limit(client):  # pylint: disable=redefined-outer-name
-	_assert_get_api_nem_mosaics_fail(client, 'Limit and offset must be greater than or equal to 0', limit=-1)
-
-
-def test_api_mosaics_invalid_offset(client):  # pylint: disable=redefined-outer-name, invalid-name
-	_assert_get_api_nem_mosaics_fail(client, 'Limit and offset must be greater than or equal to 0', offset=-1)
 
 
 # endregion
