@@ -85,9 +85,11 @@ export const Home = () => {
 						)}
 
 						<Stack gap="m">
-							<StyledText type="title">
-								{$t('s_home_widgets')}
-							</StyledText>
+							<WidgetAnimatedWrapper isVisible>
+								<StyledText type="title">
+									{$t('s_home_widgets')}
+								</StyledText>
+							</WidgetAnimatedWrapper>
 							<WidgetAnimatedWrapper isVisible={addressBookWidget.isVisible}>
 								<AddressBookWidget {...addressBookWidget.props} />
 							</WidgetAnimatedWrapper>
