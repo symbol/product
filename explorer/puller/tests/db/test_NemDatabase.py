@@ -8,7 +8,7 @@ from symbolchain.nem.Network import Address
 from test_DatabaseConnection import DatabaseConfig
 
 from puller.db.NemDatabase import NemDatabase
-from puller.facade.NemPuller import AccountRecord, BlockRecord, NamespaceRecord
+from puller.facade.NemPuller import AccountRecord, BlockRecord, MosaicRecord, NamespaceRecord
 
 # region test data
 
@@ -54,6 +54,25 @@ ACCOUNTS = [
 		None,
 		[],
 		[])
+]
+
+MOSAICS = [
+	MosaicRecord(
+		root_namespace='nem',
+		namespace_name='nem.xem',
+		description='network currency',
+		creator=PublicKey('f9bd190dd0c364261f5c8a74870cc7f7374e631352293c62ecc437657e5de2cd'),
+		registered_height=1,
+		initial_supply=8999999999000000,
+		total_supply=8999999999000000,
+		divisibility=6,
+		supply_mutable=False,
+		transferable=True,
+		levy_type=None,
+		levy_namespace_name=None,
+		levy_fee=None,
+		levy_recipient=None
+	)
 ]
 # endregion
 
@@ -117,6 +136,35 @@ class NemDatabaseTest(unittest.TestCase):
 
 		return cursor.fetchone()
 
+	def _fetch_mosaic_from_db(self, cursor, namespace_name):  # pylint: disable=no-self-use
+		"""Helper method to fetch mosaic data from database."""
+
+		# pylint: disable=duplicate-code
+		cursor.execute(
+			'''
+			SELECT
+				root_namespace,
+				namespace_name,
+				description,
+				encode(creator, 'hex'),
+				registered_height,
+				initial_supply,
+				total_supply,
+				divisibility,
+				supply_mutable,
+				transferable,
+				levy_type,
+				levy_namespace_name,
+				levy_fee,
+				encode(levy_recipient, 'hex')
+			FROM mosaics
+			WHERE namespace_name = %s
+			''',
+			(namespace_name,)
+		)
+
+		return cursor.fetchone()
+
 	def test_can_create_tables(self):
 		# Arrange:
 		with NemDatabase(self.db_config) as nem_database:
@@ -135,10 +183,11 @@ class NemDatabaseTest(unittest.TestCase):
 			results = cursor.fetchall()
 
 		# Assert:
-		self.assertEqual(len(results), 3)
+		self.assertEqual(len(results), 4)
 		self.assertEqual(results[0][0], 'accounts')
 		self.assertEqual(results[1][0], 'blocks')
-		self.assertEqual(results[2][0], 'namespaces')
+		self.assertEqual(results[2][0], 'mosaics')
+		self.assertEqual(results[3][0], 'namespaces')
 
 	def test_can_insert_block(self):
 		# Arrange:
@@ -453,3 +502,135 @@ class NemDatabaseTest(unittest.TestCase):
 			200,
 			['sub1']
 		))
+
+	def test_can_insert_mosaic(self):
+		# Arrange:
+		with NemDatabase(self.db_config) as nem_database:
+			nem_database.create_tables()
+
+			cursor = nem_database.connection.cursor()
+
+			# Act:
+			nem_database.upsert_mosaic(
+				cursor,
+				mosaic_definition=MOSAICS[0]
+			)
+
+			nem_database.connection.commit()
+
+			result = self._fetch_mosaic_from_db(cursor, 'nem.xem')
+
+		# Assert:
+		self.assertIsNotNone(result)
+		self.assertEqual(result, (
+			'nem',
+			'nem.xem',
+			'network currency',
+			'f9bd190dd0c364261f5c8a74870cc7f7374e631352293c62ecc437657e5de2cd',
+			1,
+			8999999999000000,
+			8999999999000000,
+			6,
+			False,
+			True,
+			None,
+			None,
+			None,
+			None
+		))
+
+	def test_can_update_mosaic_by_namespace_name_conflict(self):
+		# Arrange:
+		with NemDatabase(self.db_config) as nem_database:
+			nem_database.create_tables()
+
+			cursor = nem_database.connection.cursor()
+
+			# insert initial mosaic
+			nem_database.upsert_mosaic(
+				cursor,
+				mosaic_definition=MOSAICS[0]
+			)
+
+			# Act:
+			nem_database.upsert_mosaic(
+				cursor,
+				mosaic_definition=MOSAICS[0]._replace(
+					description='updated description'
+				)
+			)
+
+			nem_database.connection.commit()
+
+			result = self._fetch_mosaic_from_db(cursor, 'nem.xem')
+
+		# Assert:
+		self.assertIsNotNone(result)
+		self.assertEqual(result, (
+			'nem',
+			'nem.xem',
+			'updated description',
+			'f9bd190dd0c364261f5c8a74870cc7f7374e631352293c62ecc437657e5de2cd',
+			1,
+			8999999999000000,
+			8999999999000000,
+			6,
+			False,
+			True,
+			None,
+			None,
+			None,
+			None
+		))
+
+	def _assert_mosaic_total_supply(self, is_supply_mutable, adjustment, expected_total_supply):
+		# Arrange:
+		with NemDatabase(self.db_config) as nem_database:
+			nem_database.create_tables()
+
+			cursor = nem_database.connection.cursor()
+
+			# insert initial mosaic
+			nem_database.upsert_mosaic(
+				cursor,
+				mosaic_definition=MOSAICS[0]._replace(
+					total_supply=1000,
+					supply_mutable=is_supply_mutable
+				)
+			)
+
+			# Act:
+			nem_database.update_mosaic_total_supply(
+				cursor,
+				namespace_name='nem.xem',
+				adjustment=adjustment
+			)
+
+			nem_database.connection.commit()
+
+			result = self._fetch_mosaic_from_db(cursor, 'nem.xem')
+
+		# Assert:
+		self.assertIsNotNone(result)
+		self.assertEqual(result[6], expected_total_supply)  # total_supply
+
+	def test_can_increase_update_mosaic_total_supply(self):
+		self._assert_mosaic_total_supply(
+			is_supply_mutable=True,
+			adjustment=3000,
+			expected_total_supply=4000
+		)
+
+	def test_can_decrease_update_mosaic_total_supply(self):
+		self._assert_mosaic_total_supply(
+			is_supply_mutable=True,
+			adjustment=-3000,
+			expected_total_supply=0
+		)
+
+	def test_cannot_update_mosaic_total_supply_if_supply_immutable(self):
+		self._assert_mosaic_total_supply(
+			is_supply_mutable=False,
+			adjustment=3000,
+			expected_total_supply=1000
+		)
