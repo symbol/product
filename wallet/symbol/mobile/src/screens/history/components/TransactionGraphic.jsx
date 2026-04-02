@@ -130,7 +130,8 @@ export const TransactionGraphic = ({ typeText, source, target, arrowCaptions }) 
 
 const styles = StyleSheet.create({
 	root: {
-		flexDirection: 'column'
+		flexDirection: 'column',
+		gap: Sizes.Semantic.spacing.m
 	},
 	avatar: {
 		backgroundColor: Colors.Semantic.background.tertiary.darker,
