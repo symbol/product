@@ -63,8 +63,8 @@ export const useTransactionHistory = ({ filter }) => {
 	const requestedAccountPublicKey = useRef(null);
 
 	// State for unconfirmed and partial (not paginated)
-	const [unconfirmed, setUnconfirmed] = useState([]);
-	const [partial, setPartial] = useState([]);
+	const [unconfirmed, setUnconfirmed] = useState({});
+	const [partial, setPartial] = useState({});
 
 	// Get blacklist
 	const blackList = useMemo(
@@ -101,22 +101,34 @@ export const useTransactionHistory = ({ filter }) => {
 	const pendingTransactionsManager = useAsyncManager({
 		callback: async () => {
 			const [unconfirmedData, partialData] = await Promise.all([
-				walletController.fetchAccountTransactions({ group: TransactionGroup.UNCONFIRMED }),
-				walletController.fetchAccountTransactions({ group: TransactionGroup.PARTIAL })
+				walletController.fetchAccountTransactions({ 
+					group: TransactionGroup.UNCONFIRMED,
+					filter
+				}),
+				walletController.fetchAccountTransactions({ 
+					group: TransactionGroup.PARTIAL,
+					filter
+				})
 			]);
 
 			// Skip if account changed
-			if (requestedAccountPublicKey.current !== currentAccount.publicKey)
-				return { unconfirmed: [], partial: [] };
+			if (requestedAccountPublicKey.current !== currentAccount.publicKey) {
+				return { 
+					accountPublicKey: requestedAccountPublicKey.current,
+					unconfirmed: [], 
+					partial: [] 
+				};
+			}
 
 			return {
+				accountPublicKey: requestedAccountPublicKey.current,
 				unconfirmed: filterByBlacklist(unconfirmedData, blackList, filter.blocked),
 				partial: filterByBlacklist(partialData, blackList, filter.blocked)
 			};
 		},
 		onSuccess: data => {
-			setUnconfirmed(data.unconfirmed);
-			setPartial(data.partial);
+			setUnconfirmed(prev => ({ ...prev, [data.accountPublicKey]: data.unconfirmed }));
+			setPartial(prev => ({ ...prev, [data.accountPublicKey]: data.partial }));
 		},
 		onError: showError
 	});
@@ -124,10 +136,6 @@ export const useTransactionHistory = ({ filter }) => {
 	// Refresh all transaction data
 	const refresh = useCallback(() => {
 		requestedAccountPublicKey.current = currentAccount.publicKey;
-		
-		// Reset pending transactions
-		setUnconfirmed([]);
-		setPartial([]);
 		
 		// Fetch fresh data
 		confirmedPagination.fetchFirstPage();
@@ -143,12 +151,12 @@ export const useTransactionHistory = ({ filter }) => {
 	const resetAndRefresh = useCallback(() => {
 		confirmedPagination.reset();
 		refresh();
-	}, [confirmedPagination, refresh]);
+	}, [confirmedPagination.reset, refresh]);
 
 	return {
 		confirmed: confirmedPagination.data,
-		unconfirmed,
-		partial,
+		unconfirmed: unconfirmed[currentAccount.publicKey] ?? [],
+		partial: partial[currentAccount.publicKey] ?? [],
 		isLoading: confirmedPagination.isLoading && confirmedPagination.pageNumber === FIRST_PAGE_NUMBER,
 		isPageLoading: confirmedPagination.isLoading && confirmedPagination.pageNumber > FIRST_PAGE_NUMBER,
 		isLastPage: confirmedPagination.isLastPage,
