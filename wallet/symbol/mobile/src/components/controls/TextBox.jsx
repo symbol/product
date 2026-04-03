@@ -1,6 +1,6 @@
 import { useDualColorTransition } from '@/app/hooks';
 import { Colors, Sizes, Typography } from '@/app/styles';
-import React, { createRef } from 'react';
+import React, { useRef } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
@@ -40,7 +40,8 @@ export const TextBox = props => {
 		value,
 		onChange
 	} = props;
-	const ref = innerRef || createRef();
+	const fallbackRef = useRef(null);
+	const ref = innerRef || fallbackRef;
 	const isError = Boolean(errorMessage);
 	const numberOfLines = multiline ? MULTILINE_NUMBER_OF_LINES : 1;
 
