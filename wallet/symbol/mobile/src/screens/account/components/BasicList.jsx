@@ -41,6 +41,10 @@ export const BasicList = ({
 	keyExtractor,
 	onItemPress
 }) => {
+	const headerComponent = 'function' === typeof renderHeader
+		? renderHeader()
+		: renderHeader;
+
 	const renderListItem = useCallback(({ item }) => (
 		<ListItem onPress={() => onItemPress?.(item)}>
 			{renderItem({ item })}
@@ -49,7 +53,7 @@ export const BasicList = ({
 
 	return (
 		<FlatList
-			ListHeaderComponent={renderHeader}
+			ListHeaderComponent={headerComponent}
 			style={styles.container}
 			contentContainerStyle={styles.listContent}
 			data={data}
@@ -65,7 +69,7 @@ const styles = StyleSheet.create({
 	},
 	listContent: {
 		padding: Sizes.Semantic.layoutPadding.m,
-		gap: Sizes.Semantic.layoutSpacing.m
+		gap: Sizes.Semantic.layoutSpacing.s
 	},
 	itemContainer: {
 		borderRadius: Sizes.Semantic.borderRadius.m,

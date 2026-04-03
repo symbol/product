@@ -93,6 +93,6 @@ const styles = StyleSheet.create({
 	itemContainer: {
 		borderRadius: Sizes.Semantic.borderRadius.m,
 		overflow: 'hidden',
-		marginBottom: Sizes.Semantic.layoutSpacing.m
+		marginBottom: Sizes.Semantic.layoutSpacing.s
 	}
 });

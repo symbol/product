@@ -2,12 +2,14 @@ import { knownAccounts } from '@/app/config';
 import { generateBlockie } from '@/app/lib/blockie';
 import {
 	isEthereumAddress,
-	isPublicKey as isEthereumPublicKey 
+	isPrivateKey as isEthereumPrivateKey,
+	isPublicKey as isEthereumPublicKey
 } from 'wallet-common-ethereum/src/utils/account';
 import { 
 	createPrivateAccount,
 	generateKeyPair,
 	isSymbolAddress,
+	isPrivateKey as isSymbolPrivateKey,
 	isPublicKey as isSymbolPublicKey
 } from 'wallet-common-symbol/src/utils/account';
 
@@ -127,6 +129,22 @@ export const isPublicKey = (value, chainName) => {
 	
 	if (chainName === 'ethereum')
 		return isEthereumPublicKey(value);
+	
+	throw new Error(`Unsupported chain name: ${chainName}`);
+};
+
+/**
+ * Checks whether a value is a valid private key for the given blockchain.
+ * @param {string} value - The value to check.
+ * @param {string} chainName - The blockchain name (e.g., 'symbol', 'ethereum').
+ * @returns {boolean} True if the value is a valid private key.
+ */
+export const isPrivateKey = (value, chainName) => {
+	if (chainName === 'symbol')
+		return isSymbolPrivateKey(value);
+	
+	if (chainName === 'ethereum')
+		return isEthereumPrivateKey(value);
 	
 	throw new Error(`Unsupported chain name: ${chainName}`);
 };
