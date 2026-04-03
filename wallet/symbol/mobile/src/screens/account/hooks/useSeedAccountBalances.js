@@ -65,7 +65,7 @@ export const useSeedAccountBalances = ({ seedAccounts, networkProperties, networ
 
 		setBalanceMap(newBalanceMap);
 		setLoadingMap(newLoadingMap);
-	}, [seedAccounts, networkApi, networkProperties]);
+	}, [seedAccounts, networkApi, networkProperties?.networkIdentifier]);
 
 	// Calculate formatted balances
 	const accountBalances = useMemo(() => {

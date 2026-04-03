@@ -148,7 +148,7 @@ export const useAccountBalances = walletController => {
 	// Fetch balances only when the set of accounts changes (not on reorder)
 	useEffect(() => {
 		fetchBalances();
-	}, [accountsKey, networkApi, networkProperties]);
+	}, [accountsKey, networkApi, networkIdentifier]);
 
 	return {
 		accountBalances
