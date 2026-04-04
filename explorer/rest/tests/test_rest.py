@@ -9,7 +9,15 @@ from symbollightapi.model.Exceptions import NodeException
 
 from rest import create_app
 
-from .test.DatabaseTestUtils import ACCOUNT_VIEWS, BLOCK_VIEWS, MOSAIC_VIEWS, NAMESPACE_VIEWS, DatabaseConfig, initialize_database
+from .test.DatabaseTestUtils import (
+	ACCOUNT_VIEWS,
+	BLOCK_VIEWS,
+	MOSAIC_RICH_LIST_VIEWS,
+	MOSAIC_VIEWS,
+	NAMESPACE_VIEWS,
+	DatabaseConfig,
+	initialize_database
+)
 
 DATABASE_CONFIG_INI = 'db_config.ini'
 
@@ -91,7 +99,7 @@ def _get_api(client, endpoint, **query_params):  # pylint: disable=redefined-out
 
 def test_invalid_pagination_params(client):  # pylint: disable=redefined-outer-name
 
-	for module in ['blocks', 'accounts', 'namespaces', 'mosaics']:
+	for module in ['blocks', 'accounts', 'namespaces', 'mosaics', 'mosaic/rich/list']:
 		# Act:
 		response = client.get(f'/api/nem/{module}', query_string={'limit': -1})
 
@@ -528,6 +536,58 @@ def test_api_mosaics_with_all_params(client):  # pylint: disable=redefined-outer
 		offset=1,
 		sort='DESC'
 	)
+
+
+# endregion
+
+# region /mosaic/rich/list Todo: fix line to long
+
+def _assert_get_api_nem_mosaic_rich_list(client, expected_status_code, expected_result, **query_params):
+	# pylint: disable=redefined-outer-name
+	# Act:
+	response = _get_api(client, 'mosaic/rich/list', **query_params)
+
+	# Assert:
+	_assert_status_code_and_headers(response, expected_status_code)
+	assert expected_result == response.json
+
+
+def test_api_mosaic_rich_list_without_params(client):  # pylint: disable=redefined-outer-name, invalid-name
+	_assert_get_api_nem_mosaic_rich_list(
+		client,
+		200,
+		[
+			MOSAIC_RICH_LIST_VIEWS[1].to_dict(),
+			MOSAIC_RICH_LIST_VIEWS[0].to_dict()
+		]
+	)
+
+
+def test_api_mosaic_rich_list_applies_namespace_name(client):  # pylint: disable=redefined-outer-name, invalid-name
+	_assert_get_api_nem_mosaic_rich_list(
+		client,
+		200,
+		[
+			MOSAIC_RICH_LIST_VIEWS[1].to_dict(),
+			MOSAIC_RICH_LIST_VIEWS[0].to_dict()
+		],
+		namespace_name='nem.xem'
+	)
+
+
+def test_api_mosaic_rich_list_applies_limit(client):  # pylint: disable=redefined-outer-name, invalid-name
+	_assert_get_api_nem_mosaic_rich_list(
+		client,
+		200,
+		[
+			MOSAIC_RICH_LIST_VIEWS[1].to_dict()
+		],
+		limit=1
+	)
+
+
+def test_api_mosaic_rich_list_applies_offset(client):  # pylint: disable=redefined-outer-name, invalid-name
+	_assert_get_api_nem_mosaic_rich_list(client, 200, [MOSAIC_RICH_LIST_VIEWS[0].to_dict()], offset=1)
 
 
 # endregion
