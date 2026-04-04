@@ -414,11 +414,11 @@ def _assert_get_nem_namespace_by_name(client, name, expected_status_code, expect
 
 
 def test_api_namespace_by_root_namespace(client):  # pylint: disable=redefined-outer-name
-	_assert_get_nem_namespace_by_name(client, 'root', 200, NAMESPACE_VIEWS[0].to_dict())
+	_assert_get_nem_namespace_by_name(client, 'root', 200, NAMESPACE_VIEWS[1].to_dict())
 
 
 def test_api_namespace_by_sub_namespace(client):  # pylint: disable=redefined-outer-name
-	_assert_get_nem_namespace_by_name(client, 'root_sub.sub_1', 200, NAMESPACE_VIEWS[1].to_dict())
+	_assert_get_nem_namespace_by_name(client, 'root_sub.sub_1', 200, NAMESPACE_VIEWS[2].to_dict())
 
 
 # endregion
@@ -435,7 +435,7 @@ def _assert_get_api_nem_namespaces(client, expected_status_code, expected_result
 
 
 def test_api_namespaces_without_params(client):  # pylint: disable=redefined-outer-name
-	_assert_get_api_nem_namespaces(client, 200, [NAMESPACE_VIEWS[1].to_dict(), NAMESPACE_VIEWS[0].to_dict()])
+	_assert_get_api_nem_namespaces(client, 200, [NAMESPACE_VIEWS[1].to_dict(), NAMESPACE_VIEWS[2].to_dict(), NAMESPACE_VIEWS[0].to_dict()])
 
 
 def test_api_namespaces_applies_limit(client):  # pylint: disable=redefined-outer-name
@@ -443,22 +443,30 @@ def test_api_namespaces_applies_limit(client):  # pylint: disable=redefined-oute
 
 
 def test_api_namespaces_applies_offset(client):  # pylint: disable=redefined-outer-name
-	_assert_get_api_nem_namespaces(client, 200, [NAMESPACE_VIEWS[0].to_dict()], offset=1)
+	_assert_get_api_nem_namespaces(client, 200, [NAMESPACE_VIEWS[2].to_dict(), NAMESPACE_VIEWS[0].to_dict()], offset=1)
 
 
 def test_api_namespaces_applies_sorted_by_registered_height_asc(client):  # pylint: disable=redefined-outer-name, invalid-name
-	_assert_get_api_nem_namespaces(client, 200, [NAMESPACE_VIEWS[0].to_dict(), NAMESPACE_VIEWS[1].to_dict()], sort='ASC')
+	_assert_get_api_nem_namespaces(client, 200, [
+		NAMESPACE_VIEWS[0].to_dict(),
+		NAMESPACE_VIEWS[1].to_dict(),
+		NAMESPACE_VIEWS[2].to_dict()
+	], sort='ASC')
 
 
 def test_api_namespaces_applies_sorted_by_registered_height_desc(client):  # pylint: disable=redefined-outer-name, invalid-name
-	_assert_get_api_nem_namespaces(client, 200, [NAMESPACE_VIEWS[1].to_dict(), NAMESPACE_VIEWS[0].to_dict()], sort='DESC')
+	_assert_get_api_nem_namespaces(client, 200, [
+		NAMESPACE_VIEWS[1].to_dict(),
+		NAMESPACE_VIEWS[2].to_dict(),
+		NAMESPACE_VIEWS[0].to_dict()
+	], sort='DESC')
 
 
 def test_api_namespaces_with_all_params(client):  # pylint: disable=redefined-outer-name
 	_assert_get_api_nem_namespaces(
 		client,
 		200,
-		[NAMESPACE_VIEWS[0].to_dict()],
+		[NAMESPACE_VIEWS[2].to_dict()],
 		limit=1,
 		offset=1,
 		sort='DESC'
@@ -475,7 +483,7 @@ def test_api_mosaic_by_name(client):  # pylint: disable=redefined-outer-name
 
 	# Assert:
 	_assert_status_code_and_headers(response, 200)
-	assert MOSAIC_VIEWS[0].to_dict() == response.json
+	assert MOSAIC_VIEWS[1].to_dict() == response.json
 
 
 # endregion
@@ -492,7 +500,7 @@ def _assert_get_api_nem_mosaics(client, expected_status_code, expected_result, *
 
 
 def test_api_mosaics_without_params(client):  # pylint: disable=redefined-outer-name
-	_assert_get_api_nem_mosaics(client, 200, [MOSAIC_VIEWS[1].to_dict(), MOSAIC_VIEWS[0].to_dict()])
+	_assert_get_api_nem_mosaics(client, 200, [MOSAIC_VIEWS[1].to_dict(), MOSAIC_VIEWS[2].to_dict(), MOSAIC_VIEWS[0].to_dict()])
 
 
 def test_api_mosaics_applies_limit(client):  # pylint: disable=redefined-outer-name
@@ -500,22 +508,22 @@ def test_api_mosaics_applies_limit(client):  # pylint: disable=redefined-outer-n
 
 
 def test_api_mosaics_applies_offset(client):  # pylint: disable=redefined-outer-name
-	_assert_get_api_nem_mosaics(client, 200, [MOSAIC_VIEWS[0].to_dict()], offset=1)
+	_assert_get_api_nem_mosaics(client, 200, [MOSAIC_VIEWS[2].to_dict(), MOSAIC_VIEWS[0].to_dict()], offset=1)
 
 
 def test_api_mosaics_applies_sorted_by_registered_height_asc(client):  # pylint: disable=redefined-outer-name, invalid-name
-	_assert_get_api_nem_mosaics(client, 200, [MOSAIC_VIEWS[0].to_dict(), MOSAIC_VIEWS[1].to_dict()], sort='ASC')
+	_assert_get_api_nem_mosaics(client, 200, [MOSAIC_VIEWS[0].to_dict(), MOSAIC_VIEWS[1].to_dict(), MOSAIC_VIEWS[2].to_dict()], sort='ASC')
 
 
 def test_api_mosaics_applies_sorted_by_registered_height_desc(client):  # pylint: disable=redefined-outer-name, invalid-name
-	_assert_get_api_nem_mosaics(client, 200, [MOSAIC_VIEWS[1].to_dict(), MOSAIC_VIEWS[0].to_dict()], sort='DESC')
+	_assert_get_api_nem_mosaics(client, 200, [MOSAIC_VIEWS[1].to_dict(), MOSAIC_VIEWS[2].to_dict(), MOSAIC_VIEWS[0].to_dict()], sort='DESC')
 
 
 def test_api_mosaics_with_all_params(client):  # pylint: disable=redefined-outer-name
 	_assert_get_api_nem_mosaics(
 		client,
 		200,
-		[MOSAIC_VIEWS[0].to_dict()],
+		[MOSAIC_VIEWS[2].to_dict()],
 		limit=1,
 		offset=1,
 		sort='DESC'
