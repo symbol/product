@@ -278,7 +278,6 @@ export class BridgeManager {
 
 	/**
 	 * Fetch pending requests that was sent to the bridge.
-	fetchPendingRequests
 	 * @param {string} mode - 'wrap' or 'unwrap'
 	 * @param {object} searchCriteria - Search criteria.
 	 * @param {number} searchCriteria.pageSize - Number of items to fetch.
@@ -299,9 +298,10 @@ export class BridgeManager {
 			pageNumber
 		});
 		const context = this.#getSwapContext(mode);
-		const filteredTransactions = transactions.filter(tx => context.source.normalizeAddress(tx.recipientAddress) === bridgeAddress);
+		const filteredTransactions = transactions.filter(tx =>
+			tx.recipientAddress 
+			&& context.source.normalizeAddress(tx.recipientAddress) === bridgeAddress);
 		
-
 		return filteredTransactions.map(transaction => this.#transactionToPendingRequest(transaction, context));
 	};
 
