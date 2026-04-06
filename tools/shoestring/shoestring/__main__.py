@@ -24,6 +24,7 @@ def parse_args(args):
 	register_subcommand(subparsers, 'init', _('main-init-help'))
 	register_subcommand(subparsers, 'min-cosignatures-count', _('main-min-cosignatures-count-help'))
 	register_subcommand(subparsers, 'pemtool', _('main-pemtool-help'))
+	register_subcommand(subparsers, 'pemview', _('main-pemview-help'))
 	register_subcommand(subparsers, 'renew-certificates', _('main-renew-certificates-help'))
 	register_subcommand(subparsers, 'renew-voting-keys', _('main-renew-voting-keys-help'))
 	register_subcommand(subparsers, 'reset-data', _('main-reset-data-help'))
