@@ -433,7 +433,7 @@ describe('WalletController', () => {
 			expect(walletController._state.walletAccounts).toStrictEqual(expectedWalletAccounts);
 			if (shouldRemoveFromExternalKeystore) {
 				expect(walletController._keystores.external.removeAccount)
-					.toHaveBeenCalledWith(accountToRemove.networkIdentifier, accountToRemove.publicKey, password);
+					.toHaveBeenCalledWith(accountToRemove.publicKey, accountToRemove.networkIdentifier, password);
 			} else {
 				expect(walletController._keystores.external.removeAccount)
 					.not.toHaveBeenCalled();
