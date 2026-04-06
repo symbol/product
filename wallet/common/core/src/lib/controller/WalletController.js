@@ -591,7 +591,7 @@ export class WalletController {
 		if (isExternalAccount) {
 			// Remove account from the keystore
 			const keystore = this.#accessKeystore(WalletAccountType.EXTERNAL);
-			await keystore.removeAccount(networkIdentifier, publicKey, password);
+			await keystore.removeAccount(publicKey, networkIdentifier, password);
 		}
 
 		// Load existing accounts from persistent storage
