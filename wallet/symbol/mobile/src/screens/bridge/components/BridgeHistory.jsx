@@ -1,4 +1,14 @@
-import { Amount, Icon, ListItemContainer, Stack, StatusRow, StyledText, TokenAvatar, TransactionAvatar } from '@/app/components';
+import { 
+	Amount, 
+	AnimatedListItem, 
+	Icon, 
+	ListItemContainer, 
+	Stack, 
+	StatusRow, 
+	StyledText, 
+	TokenAvatar, 
+	TransactionAvatar 
+} from '@/app/components';
 import { $t } from '@/app/localization';
 import { BRIDGE_HISTORY_PAGE_SIZE } from '@/app/screens/bridge/constants';
 import { BridgeRequestStatus } from '@/app/screens/bridge/types/Bridge';
@@ -207,12 +217,13 @@ export const BridgeHistory = ({ history, networkIdentifier, onItemPress }) => {
 		<Stack gap="l">
 			<Stack gap="s">
 				{history.map(item => (
-					<SwapListItem
-						key={item.requestTransaction.hash}
-						data={item}
-						networkIdentifier={networkIdentifier}
-						onPress={onItemPress}
-					/>
+					<AnimatedListItem key={item.requestTransaction.hash}>
+						<SwapListItem
+							data={item}
+							networkIdentifier={networkIdentifier}
+							onPress={onItemPress}
+						/>
+					</AnimatedListItem>
 				))}
 			</Stack>
 			<StyledText type="label" style={styles.pageSizeMessage}>
