@@ -19,7 +19,7 @@ msgstr "送信するシリアライズ済みトランザクションファイル
 
 #: shoestring/commands/min_cosignatures_count.py:35
 #: shoestring/commands/renew_certificates.py:36
-#: shoestring/commands/setup.py:146 shoestring/commands/signer.py:93
+#: shoestring/commands/setup.py:155 shoestring/commands/signer.py:93
 msgid "argument-help-ca-key-path"
 msgstr "メイン秘密鍵PEMファイルへのパス"
 
@@ -29,7 +29,7 @@ msgstr "メイン秘密鍵PEMファイルへのパス"
 #: shoestring/commands/min_cosignatures_count.py:34
 #: shoestring/commands/renew_certificates.py:34
 #: shoestring/commands/renew_voting_keys.py:112
-#: shoestring/commands/reset_data.py:86 shoestring/commands/setup.py:138
+#: shoestring/commands/reset_data.py:86 shoestring/commands/setup.py:147
 #: shoestring/commands/signer.py:92
 msgid "argument-help-config"
 msgstr "shoestring設定ファイルへのパス"
@@ -37,7 +37,7 @@ msgstr "shoestring設定ファイルへのパス"
 #: shoestring/commands/health.py:75
 #: shoestring/commands/renew_certificates.py:35
 #: shoestring/commands/renew_voting_keys.py:113
-#: shoestring/commands/reset_data.py:87 shoestring/commands/setup.py:140
+#: shoestring/commands/reset_data.py:87 shoestring/commands/setup.py:149
 msgid "argument-help-directory"
 msgstr "インストールディレクトリ（デフォルト: {default_path}）"
 
@@ -113,21 +113,25 @@ msgstr "ノードキーを保持"
 msgid "argument-help-reset-data-purge-harvesters"
 msgstr "harvesters.datファイルを削除"
 
-#: shoestring/commands/setup.py:141
+#: shoestring/commands/setup.py:156
+msgid "argument-help-setup-output-transaction-only"
+msgstr ""
+
+#: shoestring/commands/setup.py:150
 msgid "argument-help-setup-overrides"
 msgstr "カスタムユーザー設定ファイルへのパス"
 
-#: shoestring/commands/init.py:28 shoestring/commands/setup.py:139
+#: shoestring/commands/init.py:28 shoestring/commands/setup.py:148
 msgid "argument-help-setup-package"
 msgstr ""
 "ネットワーク構成パッケージ。可能な値：（name | file:///filename | "
 "http(s)://uri）（デフォルト：mainnet）"
 
-#: shoestring/commands/setup.py:142
+#: shoestring/commands/setup.py:151
 msgid "argument-help-setup-rest-overrides"
 msgstr "カスタムユーザーREST設定へのパス（これはAPIロールにのみ有効）"
 
-#: shoestring/commands/setup.py:145
+#: shoestring/commands/setup.py:154
 msgid "argument-help-setup-security"
 msgstr "セキュリティモード（デフォルト：default）"
 
@@ -159,7 +163,7 @@ msgstr "ノード {endpoint} へ接続中"
 
 #: shoestring/commands/init.py:17 shoestring/commands/reset_data.py:56
 #: shoestring/internal/Preparer.py:193
-#: shoestring/internal/VoterConfigurator.py:53
+#: shoestring/internal/VoterConfigurator.py:55
 msgid "general-copying-file"
 msgstr "ファイル {source_path} を {destination_path} へコピー中"
 
@@ -168,7 +172,7 @@ msgid "general-copying-tree"
 msgstr "ツリー {source_path} を {destination_path} へコピー中"
 
 #: shoestring/commands/renew_voting_keys.py:46
-#: shoestring/internal/Preparer.py:408
+#: shoestring/internal/Preparer.py:415
 msgid "general-created-aggregate-transaction"
 msgstr "ハッシュ {transaction_hash} の集約トランザクションを作成しました"
 
@@ -370,11 +374,11 @@ msgstr "現在の最終エポックが {epoch} として検出されました"
 msgid "nodewatch-client-detected-height"
 msgstr "最後に確定したブロック高が {height} として検出されました"
 
-#: shoestring/internal/PeerDownloader.py:65
+#: shoestring/internal/PeerDownloader.py:79
 msgid "peer-downloader-loading-api-endpoints"
 msgstr "ファイル {filepath} からAPIエンドポイントを読み込み中"
 
-#: shoestring/internal/PeerDownloader.py:20
+#: shoestring/internal/PeerDownloader.py:34
 msgid "peer-downloader-saved-file"
 msgstr "保存されたピアファイル {filepath}"
 
@@ -446,9 +450,13 @@ msgstr "ディレクトリ {directory} を削除しています"
 msgid "setup-no-state-changes-required"
 msgstr "アカウントは既に適切に設定されているため、トランザクションを生成しません"
 
-#: shoestring/commands/setup.py:84
+#: shoestring/commands/setup.py:93
 msgid "setup-resources-directory-exists"
 msgstr "リソースディレクトリ {directory} はすでに存在するため、セットアップに失敗しました。アップグレードを実行するつもりでしたか？"
+
+#: shoestring/commands/setup.py:82
+msgid "setup-status-output-transaction-only"
+msgstr ""
 
 #: shoestring/commands/signer.py:32
 msgid "signer-aggregate-transaction"

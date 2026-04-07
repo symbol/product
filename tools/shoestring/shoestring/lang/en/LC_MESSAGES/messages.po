@@ -21,7 +21,7 @@ msgstr "file containing serialized transaction to send"
 
 #: shoestring/commands/min_cosignatures_count.py:35
 #: shoestring/commands/renew_certificates.py:36
-#: shoestring/commands/setup.py:146 shoestring/commands/signer.py:93
+#: shoestring/commands/setup.py:155 shoestring/commands/signer.py:93
 msgid "argument-help-ca-key-path"
 msgstr "path to main private key PEM file"
 
@@ -31,7 +31,7 @@ msgstr "path to main private key PEM file"
 #: shoestring/commands/min_cosignatures_count.py:34
 #: shoestring/commands/renew_certificates.py:34
 #: shoestring/commands/renew_voting_keys.py:112
-#: shoestring/commands/reset_data.py:86 shoestring/commands/setup.py:138
+#: shoestring/commands/reset_data.py:86 shoestring/commands/setup.py:147
 #: shoestring/commands/signer.py:92
 msgid "argument-help-config"
 msgstr "path to shoestring configuration file"
@@ -39,7 +39,7 @@ msgstr "path to shoestring configuration file"
 #: shoestring/commands/health.py:75
 #: shoestring/commands/renew_certificates.py:35
 #: shoestring/commands/renew_voting_keys.py:113
-#: shoestring/commands/reset_data.py:87 shoestring/commands/setup.py:140
+#: shoestring/commands/reset_data.py:87 shoestring/commands/setup.py:149
 msgid "argument-help-directory"
 msgstr "installation directory (default: {default_path})"
 
@@ -115,21 +115,25 @@ msgstr "retain node key"
 msgid "argument-help-reset-data-purge-harvesters"
 msgstr "purge harvesters.dat file"
 
-#: shoestring/commands/setup.py:141
+#: shoestring/commands/setup.py:156
+msgid "argument-help-setup-output-transaction-only"
+msgstr "only output linking transaction from a previous setup"
+
+#: shoestring/commands/setup.py:150
 msgid "argument-help-setup-overrides"
 msgstr "path to custom user settings"
 
-#: shoestring/commands/init.py:28 shoestring/commands/setup.py:139
+#: shoestring/commands/init.py:28 shoestring/commands/setup.py:148
 msgid "argument-help-setup-package"
 msgstr ""
 "Network configuration package. Possible values: (name | file:///filename "
 "| http(s)://uri) (default: mainnet)"
 
-#: shoestring/commands/setup.py:142
+#: shoestring/commands/setup.py:151
 msgid "argument-help-setup-rest-overrides"
 msgstr "path to custom user REST settings (this is only valid for API roles)"
 
-#: shoestring/commands/setup.py:145
+#: shoestring/commands/setup.py:154
 msgid "argument-help-setup-security"
 msgstr "security mode (default: default)"
 
@@ -161,7 +165,7 @@ msgstr "connecting to {endpoint}"
 
 #: shoestring/commands/init.py:17 shoestring/commands/reset_data.py:56
 #: shoestring/internal/Preparer.py:193
-#: shoestring/internal/VoterConfigurator.py:53
+#: shoestring/internal/VoterConfigurator.py:55
 msgid "general-copying-file"
 msgstr "copying FILE {source_path} into {destination_path}"
 
@@ -170,7 +174,7 @@ msgid "general-copying-tree"
 msgstr "copying TREE {source_path} to {destination_path}"
 
 #: shoestring/commands/renew_voting_keys.py:46
-#: shoestring/internal/Preparer.py:408
+#: shoestring/internal/Preparer.py:415
 msgid "general-created-aggregate-transaction"
 msgstr "created aggregate transaction with hash {transaction_hash}"
 
@@ -378,11 +382,11 @@ msgstr "detected current finalization epoch as {epoch}"
 msgid "nodewatch-client-detected-height"
 msgstr "detected last finalized height as {height}"
 
-#: shoestring/internal/PeerDownloader.py:65
+#: shoestring/internal/PeerDownloader.py:79
 msgid "peer-downloader-loading-api-endpoints"
 msgstr "loading api endpoints from {filepath}'"
 
-#: shoestring/internal/PeerDownloader.py:20
+#: shoestring/internal/PeerDownloader.py:34
 msgid "peer-downloader-saved-file"
 msgstr "saved peers file {filepath}"
 
@@ -456,11 +460,15 @@ msgstr ""
 "no transaction has been generated because account is already properly "
 "configured"
 
-#: shoestring/commands/setup.py:84
+#: shoestring/commands/setup.py:93
 msgid "setup-resources-directory-exists"
 msgstr ""
 "setup failed because resources directory {directory} already exists, did "
 "you intend to run upgrade?"
+
+#: shoestring/commands/setup.py:82
+msgid "setup-status-output-transaction-only"
+msgstr "generating linking transaction from previous setup..."
 
 #: shoestring/commands/signer.py:32
 msgid "signer-aggregate-transaction"

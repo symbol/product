@@ -491,3 +491,63 @@ async def test_cannot_rerun_setup_when_directory_exists(server):  # pylint: disa
 				assert 1 == ex_info.value.code
 
 # endregion
+
+
+# region output-transaction-only
+
+def _read_file_contents(filepath):
+	with open(filepath, 'rb') as infile:
+		return infile.read()
+
+
+async def _assert_can_regenerate_links(server, node_features):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	with tempfile.TemporaryDirectory() as output_directory:
+		with tempfile.TemporaryDirectory() as package_directory:
+			prepare_shoestring_configuration(package_directory, node_features, server.make_url(''), api_https=False)
+			_prepare_overrides(package_directory)
+			prepare_testnet_package(package_directory, 'resources.zip')
+
+			with tempfile.TemporaryDirectory() as ca_directory:
+				# - run initial setup
+				setup_command_args = [
+					'setup',
+					'--config', str(Path(package_directory) / 'sai.shoestring.ini'),
+					'--security', 'insecure',
+					'--package', f'file://{Path(package_directory) / "resources.zip"}',
+					'--directory', output_directory,
+					'--ca-key-path', str(Path(ca_directory) / 'xyz.key.pem'),
+					'--overrides', str(Path(package_directory) / 'user_overrides.ini')
+				]
+				await main(setup_command_args)
+
+				# - read (and delete) generated transaction
+				transaction_filepath = Path(output_directory) / 'linking_transaction.dat'
+				original_transaction = _read_file_contents(transaction_filepath)
+				transaction_filepath.unlink()
+
+				# Sanity:
+				assert not transaction_filepath.exists()
+
+				# Act: rerun with --output-transaction-only
+				await main(setup_command_args + ['--output-transaction-only'])
+
+				# Assert: same transaction was generated
+				assert transaction_filepath.exists()
+
+				regenerated_transaction = _read_file_contents(transaction_filepath)
+				assert original_transaction == regenerated_transaction
+
+
+async def test_can_regenerate_links_harvester_node(server):  # pylint: disable=redefined-outer-name
+	await _assert_can_regenerate_links(server, NodeFeatures.HARVESTER)
+
+
+async def test_can_regenerate_links_voter_node(server):  # pylint: disable=redefined-outer-name
+	await _assert_can_regenerate_links(server, NodeFeatures.VOTER)
+
+
+async def test_can_regenerate_links_full_node(server):  # pylint: disable=redefined-outer-name
+	await _assert_can_regenerate_links(server, NodeFeatures.API | NodeFeatures.HARVESTER | NodeFeatures.VOTER)
+
+# endregion

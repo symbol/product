@@ -586,6 +586,93 @@ class PreparerTest(unittest.TestCase):
 
 	# endregion
 
+	# region load_keys
+
+	def _can_load_keys(self, node_features, asserter):
+		# Arrange: use a full node to generate all files
+		with tempfile.TemporaryDirectory() as output_directory:
+			full_node_features = NodeFeatures.API | NodeFeatures.HARVESTER | NodeFeatures.VOTER
+			with Preparer(output_directory, self._create_configuration(full_node_features)) as preparer:
+				self._initialize_temp_directory_with_package_files(preparer)
+				preparer.prepare_resources()
+				preparer.configure_keys(5, 4)
+
+				# Act: only load keys for the specified features
+				preparer2 = Preparer(output_directory, self._create_configuration(node_features))
+				preparer2.load_keys()
+
+				# Assert:
+				asserter(preparer, preparer2)
+
+	def _assert_harvester_keys_not_loaded(self, preparer, preparer2):
+		harvester_configurator = preparer.harvester_configurator
+		harvester_configurator2 = preparer2.harvester_configurator
+		self.assertNotEqual(harvester_configurator.remote_key_pair.public_key, harvester_configurator2.remote_key_pair.public_key)
+		self.assertNotEqual(harvester_configurator.vrf_key_pair.public_key, harvester_configurator2.vrf_key_pair.public_key)
+
+	def _assert_harvester_keys_loaded(self, preparer, preparer2):
+		harvester_configurator = preparer.harvester_configurator
+		harvester_configurator2 = preparer2.harvester_configurator
+		self.assertEqual(harvester_configurator.remote_key_pair.public_key, harvester_configurator2.remote_key_pair.public_key)
+		self.assertEqual(harvester_configurator.vrf_key_pair.public_key, harvester_configurator2.vrf_key_pair.public_key)
+
+	def _assert_voter_keys_not_loaded(self, preparer, preparer2):
+		self.assertNotEqual(preparer.voter_configurator.voting_public_key, preparer2.voter_configurator.voting_public_key)
+		self.assertEqual(None, preparer2.new_voting_key_file_epoch_range)
+
+	def _assert_voter_keys_loaded(self, preparer, preparer2):
+		self.assertEqual(preparer.voter_configurator.voting_public_key, preparer2.voter_configurator.voting_public_key)
+
+		self.assertNotEqual(None, preparer2.new_voting_key_file_epoch_range)
+		self.assertEqual(preparer.new_voting_key_file_epoch_range, preparer2.new_voting_key_file_epoch_range)
+
+	def test_can_load_keys_peer_node(self):
+		def asserter(preparer, preparer2):
+			# Assert: nothing was loaded
+			self._assert_harvester_keys_not_loaded(preparer, preparer2)
+			self._assert_voter_keys_not_loaded(preparer, preparer2)
+
+		# Act:
+		self._can_load_keys(NodeFeatures.PEER, asserter)
+
+	def test_can_load_keys_api_node(self):
+		def asserter(preparer, preparer2):
+			# Assert: nothing was loaded
+			self._assert_harvester_keys_not_loaded(preparer, preparer2)
+			self._assert_voter_keys_not_loaded(preparer, preparer2)
+
+		# Act:
+		self._can_load_keys(NodeFeatures.API, asserter)
+
+	def test_can_load_keys_harvester_node(self):
+		def asserter(preparer, preparer2):
+			# Assert: only harvester keys were loaded
+			self._assert_harvester_keys_loaded(preparer, preparer2)
+			self._assert_voter_keys_not_loaded(preparer, preparer2)
+
+		# Act:
+		self._can_load_keys(NodeFeatures.HARVESTER, asserter)
+
+	def test_can_load_keys_voter_node(self):
+		def asserter(preparer, preparer2):
+			# Assert: only voter keys were loaded
+			self._assert_harvester_keys_not_loaded(preparer, preparer2)
+			self._assert_voter_keys_loaded(preparer, preparer2)
+
+		# Act:
+		self._can_load_keys(NodeFeatures.VOTER, asserter)
+
+	def test_can_load_keys_full_node(self):
+		def asserter(preparer, preparer2):
+			# Assert: harvester and voter keys were loaded
+			self._assert_harvester_keys_loaded(preparer, preparer2)
+			self._assert_voter_keys_loaded(preparer, preparer2)
+
+		# Act:
+		self._can_load_keys(NodeFeatures.API | NodeFeatures.HARVESTER | NodeFeatures.VOTER, asserter)
+
+	# endregion
+
 	# region generate_certificates
 
 	@staticmethod
@@ -919,7 +1006,7 @@ class PreparerTest(unittest.TestCase):
 				assert_aggregate_transaction(self, transaction, expected_aggregate_descriptor)
 				self.assertEqual(1, len(transaction.transactions))
 
-				new_voting_public_key = preparer.voter_configurator.voting_key_pair.public_key
+				new_voting_public_key = preparer.voter_configurator.voting_public_key
 				assert_link_transaction(
 					self,
 					transaction.transactions[0],
@@ -930,8 +1017,9 @@ class PreparerTest(unittest.TestCase):
 		imports_config,
 		expected_link_transaction_count,
 		expect_harvester_links,
-		expect_voter_links
-	):  # pylint: disable=too-many-locals
+		expect_voter_links,
+		reload_keys=False
+	):  # pylint: disable=too-many-arguments, too-many-positional-arguments, too-many-locals,
 		# Arrange:
 		account_public_key = self._random_public_key()
 
@@ -951,7 +1039,11 @@ class PreparerTest(unittest.TestCase):
 				preparer.configure_keys(5, 4)
 
 				# Act:
-				transaction = preparer.prepare_linking_transaction(account_public_key, existing_links, 2222)
+				if not reload_keys:
+					transaction = preparer.prepare_linking_transaction(account_public_key, existing_links, 2222)
+				else:
+					preparer2 = Preparer(output_directory, config)
+					transaction = preparer2.prepare_linking_transaction(account_public_key, existing_links, 2222)
 
 				# Assert:
 				if 0 == expected_link_transaction_count:
@@ -1003,7 +1095,7 @@ class PreparerTest(unittest.TestCase):
 						LinkDescriptor(TransactionType.VOTING_KEY_LINK, first_existing_voting_public_key, LinkAction.UNLINK, (1111, 2222)))
 
 					# - check voting unlinks
-					new_voting_public_key = preparer.voter_configurator.voting_key_pair.public_key
+					new_voting_public_key = preparer.voter_configurator.voting_public_key
 					assert_link_transaction(
 						self,
 						transaction.transactions[voter_links_start_index + 1],
@@ -1050,5 +1142,16 @@ class PreparerTest(unittest.TestCase):
 
 			# Act + Assert: neither harvester nor voter (un)links are present
 			self._assert_prepare_linking_transaction_can_create_aggregate_with_all_links_and_unlinks(imports_config, 0, False, False)
+
+	def test_prepare_linking_transaction_can_create_aggregate_with_all_links_and_unlinks_import_harvester_and_voter_after_load_keys(self):
+		# Arrange: copy of previous test, except loads keys into a fresh preparer
+		with tempfile.TemporaryDirectory() as source_directory:
+			imports_harvester_filepath = Path(source_directory) / 'import.properties'
+			self._write_harvester_imports_file(imports_harvester_filepath)
+
+			imports_config = ImportsConfiguration(imports_harvester_filepath, source_directory, None)
+
+			# Act + Assert: neither harvester nor voter (un)links are present (using a fresh preparer with loaded keys)
+			self._assert_prepare_linking_transaction_can_create_aggregate_with_all_links_and_unlinks(imports_config, 0, False, False, True)
 
 	# endregion

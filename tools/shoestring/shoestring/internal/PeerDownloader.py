@@ -5,8 +5,22 @@ from zenlog import log
 
 from .NodeDownloader import NodeDownloader
 
-# region download_peers
+# region find_api_node
 
+
+async def find_api_node(nodewatch_endpoint):
+	"""Finds an api node."""
+
+	downloader = NodeDownloader(nodewatch_endpoint)
+	downloader.max_output_nodes = 1
+	await downloader.download_peer_nodes()
+
+	return downloader.select_api_endpoints()[0]
+
+# endregion
+
+
+# region download_peers
 
 def _save_peers_file(nodes, directory, name):
 	nodes.sort(key=lambda node: node['publicKey'])

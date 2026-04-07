@@ -12,7 +12,7 @@ msgstr ""
 
 #: shoestring/commands/min_cosignatures_count.py:35
 #: shoestring/commands/renew_certificates.py:36
-#: shoestring/commands/setup.py:146 shoestring/commands/signer.py:93
+#: shoestring/commands/setup.py:155 shoestring/commands/signer.py:93
 msgid "argument-help-ca-key-path"
 msgstr ""
 
@@ -22,7 +22,7 @@ msgstr ""
 #: shoestring/commands/min_cosignatures_count.py:34
 #: shoestring/commands/renew_certificates.py:34
 #: shoestring/commands/renew_voting_keys.py:112
-#: shoestring/commands/reset_data.py:86 shoestring/commands/setup.py:138
+#: shoestring/commands/reset_data.py:86 shoestring/commands/setup.py:147
 #: shoestring/commands/signer.py:92
 msgid "argument-help-config"
 msgstr ""
@@ -30,7 +30,7 @@ msgstr ""
 #: shoestring/commands/health.py:75
 #: shoestring/commands/renew_certificates.py:35
 #: shoestring/commands/renew_voting_keys.py:113
-#: shoestring/commands/reset_data.py:87 shoestring/commands/setup.py:140
+#: shoestring/commands/reset_data.py:87 shoestring/commands/setup.py:149
 msgid "argument-help-directory"
 msgstr ""
 
@@ -106,19 +106,23 @@ msgstr ""
 msgid "argument-help-reset-data-purge-harvesters"
 msgstr ""
 
-#: shoestring/commands/setup.py:141
+#: shoestring/commands/setup.py:156
+msgid "argument-help-setup-output-transaction-only"
+msgstr ""
+
+#: shoestring/commands/setup.py:150
 msgid "argument-help-setup-overrides"
 msgstr ""
 
-#: shoestring/commands/init.py:28 shoestring/commands/setup.py:139
+#: shoestring/commands/init.py:28 shoestring/commands/setup.py:148
 msgid "argument-help-setup-package"
 msgstr ""
 
-#: shoestring/commands/setup.py:142
+#: shoestring/commands/setup.py:151
 msgid "argument-help-setup-rest-overrides"
 msgstr ""
 
-#: shoestring/commands/setup.py:145
+#: shoestring/commands/setup.py:154
 msgid "argument-help-setup-security"
 msgstr ""
 
@@ -150,7 +154,7 @@ msgstr ""
 
 #: shoestring/commands/init.py:17 shoestring/commands/reset_data.py:56
 #: shoestring/internal/Preparer.py:193
-#: shoestring/internal/VoterConfigurator.py:53
+#: shoestring/internal/VoterConfigurator.py:55
 msgid "general-copying-file"
 msgstr ""
 
@@ -159,7 +163,7 @@ msgid "general-copying-tree"
 msgstr ""
 
 #: shoestring/commands/renew_voting_keys.py:46
-#: shoestring/internal/Preparer.py:408
+#: shoestring/internal/Preparer.py:415
 msgid "general-created-aggregate-transaction"
 msgstr ""
 
@@ -359,11 +363,11 @@ msgstr ""
 msgid "nodewatch-client-detected-height"
 msgstr ""
 
-#: shoestring/internal/PeerDownloader.py:65
+#: shoestring/internal/PeerDownloader.py:79
 msgid "peer-downloader-loading-api-endpoints"
 msgstr ""
 
-#: shoestring/internal/PeerDownloader.py:20
+#: shoestring/internal/PeerDownloader.py:34
 msgid "peer-downloader-saved-file"
 msgstr ""
 
@@ -435,8 +439,12 @@ msgstr ""
 msgid "setup-no-state-changes-required"
 msgstr ""
 
-#: shoestring/commands/setup.py:84
+#: shoestring/commands/setup.py:93
 msgid "setup-resources-directory-exists"
+msgstr ""
+
+#: shoestring/commands/setup.py:82
+msgid "setup-status-output-transaction-only"
 msgstr ""
 
 #: shoestring/commands/signer.py:32

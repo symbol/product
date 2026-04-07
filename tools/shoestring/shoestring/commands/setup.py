@@ -10,7 +10,7 @@ from shoestring.internal.ConfigurationManager import ConfigurationManager, load_
 from shoestring.internal.NodeFeatures import NodeFeatures
 from shoestring.internal.NodewatchClient import get_current_finalization_epoch
 from shoestring.internal.PackageResolver import download_and_extract_package
-from shoestring.internal.PeerDownloader import download_peers
+from shoestring.internal.PeerDownloader import download_peers, find_api_node
 from shoestring.internal.PemUtils import read_public_key_from_public_key_pem_file
 from shoestring.internal.Preparer import Preparer
 from shoestring.internal.ShoestringConfiguration import parse_shoestring_configuration
@@ -76,10 +76,19 @@ async def _prepare_linking_transaction(preparer, api_endpoint):
 
 async def run_main(args):
 	config = parse_shoestring_configuration(args.config)
+	is_initial_setup = hasattr(args, 'security')
+
+	if is_initial_setup and args.output_transaction_only:
+		log.info(_('setup-status-output-transaction-only'))
+
+		api_endpoint = await find_api_node(config.services.nodewatch)
+		preparer = Preparer(Path(args.directory), config, log)
+		preparer.load_keys()
+
+		await _prepare_linking_transaction(preparer, api_endpoint)
+		return
 
 	with Preparer(Path(args.directory), config, log) as preparer:
-		is_initial_setup = hasattr(args, 'security')
-
 		if is_initial_setup and preparer.directories.resources.exists():
 			log.error(_('setup-resources-directory-exists').format(directory=preparer.directories.resources))
 			sys.exit(1)
@@ -144,4 +153,5 @@ def add_arguments(parser, is_initial_setup=True):
 	if is_initial_setup:
 		parser.add_argument('--security', help=_('argument-help-setup-security'), choices=SECURITY_MODES, default='default')
 		parser.add_argument('--ca-key-path', help=_('argument-help-ca-key-path'), required=True)
+		parser.add_argument('--output-transaction-only', help=_('argument-help-setup-output-transaction-only'), action='store_true')
 		parser.set_defaults(func=run_main)

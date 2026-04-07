@@ -99,7 +99,7 @@ async def run_main(args):
 	# add new root voting key
 	voter_configurator = VoterConfigurator(config_manager)
 	new_voting_key_file_epoch_range = voter_configurator.generate_voting_key_file(directories.voting_keys, current_finalization_epoch)
-	transaction_builder.link_voting_public_key(voter_configurator.voting_key_pair.public_key, *new_voting_key_file_epoch_range)
+	transaction_builder.link_voting_public_key(voter_configurator.voting_public_key, *new_voting_key_file_epoch_range)
 
 	# generate transaction
 	await _save_transaction(config.transaction, directories, transaction_builder)

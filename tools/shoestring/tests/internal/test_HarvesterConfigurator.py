@@ -145,3 +145,31 @@ class HarvesterConfiguratorTest(unittest.TestCase):
 			# Assert:
 			generated_files = sorted([path.name for path in Path(keys_directory).iterdir()])
 			self.assertEqual([], generated_files)
+
+	def test_can_load_harvester_keys_from_directory_enabled(self):
+		# Arrange:
+		with tempfile.TemporaryDirectory() as keys_directory:
+			configurator = HarvesterConfigurator(None)
+			configurator.generate_harvester_key_files(keys_directory)
+
+			# Act:
+			configurator2 = HarvesterConfigurator(None)
+			configurator2.load_harvester_keys_from_directory(keys_directory)
+
+			# Assert:
+			self.assertEqual(configurator.remote_key_pair.public_key, configurator2.remote_key_pair.public_key)
+			self.assertEqual(configurator.vrf_key_pair.public_key, configurator2.vrf_key_pair.public_key)
+
+	def test_cannot_load_harvester_keys_from_directory_disabled(self):
+		# Arrange:
+		with tempfile.TemporaryDirectory() as keys_directory:
+			configurator = HarvesterConfigurator(None)
+			configurator.generate_harvester_key_files(keys_directory)
+
+			# Act:
+			configurator2 = HarvesterConfigurator(None, 'none')
+			configurator2.load_harvester_keys_from_directory(keys_directory)
+
+			# Assert: nothing was loaded
+			self.assertFalse(hasattr(configurator2, 'remote_key_pair'))
+			self.assertFalse(hasattr(configurator2, 'vrf_key_pair'))

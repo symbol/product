@@ -62,3 +62,13 @@ class HarvesterConfigurator:
 
 		for name in ('remote', 'vrf'):
 			(Path(directory) / f'{name}.pem').chmod(0o400)
+
+	def load_harvester_keys_from_directory(self, directory):
+		"""Loads harvester private key files from disk."""
+
+		if not self.is_enabled:
+			return
+
+		storage = PrivateKeyStorage(directory)
+		self.remote_key_pair = KeyPair(storage.load('remote'))
+		self.vrf_key_pair = KeyPair(storage.load('vrf'))

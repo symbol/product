@@ -327,6 +327,15 @@ class Preparer:
 				current_finalization_epoch,
 				grace_period_epochs)
 
+	def load_keys(self):
+		"""Loads keys from disk based on enabled features."""
+
+		if NodeFeatures.HARVESTER in self.config.node.features:
+			self.harvester_configurator.load_harvester_keys_from_directory(self.directories.keys)
+
+		if NodeFeatures.VOTER in self.config.node.features:
+			self.new_voting_key_file_epoch_range = self.voter_configurator.load_voting_key_from_directory(self.directories.voting_keys)
+
 	def generate_certificates(self, ca_key_path, require_ca=True):
 		"""Generates and packages all certificates."""
 
@@ -392,9 +401,7 @@ class Preparer:
 					existing_links.voting_public_keys[0].end_epoch)
 
 			if NodeFeatures.VOTER in self.config.node.features and self.new_voting_key_file_epoch_range:
-				transaction_builder.link_voting_public_key(
-					self.voter_configurator.voting_key_pair.public_key,
-					*self.new_voting_key_file_epoch_range)
+				transaction_builder.link_voting_public_key(self.voter_configurator.voting_public_key, *self.new_voting_key_file_epoch_range)
 
 		aggregate_transaction, transaction_hash = transaction_builder.build(
 			NetworkTimestamp(timestamp).add_hours(self.config.transaction.timeout_hours),

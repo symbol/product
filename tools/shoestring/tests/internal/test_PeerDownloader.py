@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from shoestring.internal.PeerDownloader import download_peers, load_api_endpoints
+from shoestring.internal.PeerDownloader import download_peers, find_api_node, load_api_endpoints
 
 from ..test.MockNodewatchServer import setup_mock_nodewatch_server
 
@@ -19,6 +19,23 @@ async def nodewatch_server(aiohttp_client):
 
 
 # pylint: disable=invalid-name
+
+
+# region find_api_node
+
+async def test_can_find_api_node(nodewatch_server):  # pylint: disable=redefined-outer-name
+	# Act:
+	endpoint = await find_api_node(nodewatch_server.make_url(''))
+
+	# Assert:
+	assert endpoint in [
+		'http://ik1-432-48199.vs.sakura.ne.jp:3333',
+		'http://0-0-5symbol.open-nodes.com:3000',
+		'http://wolf.importance.jp:3000',
+		'https://whydah.symbolmain.net:3001'
+	]
+
+# endregion
 
 
 # region download_peers

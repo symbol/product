@@ -25,10 +25,12 @@ class VoterConfigurator:
 
 		if not self.is_imported:
 			self.voting_key_pair = KeyPair(PrivateKey.random())
+			self.voting_public_key = self.voting_key_pair.public_key
 		else:
 			# when importing, each file should have its own key pair
 			# since the voting keys don't need to be reregistered later, the keys don't need to be extracted
 			self.voting_key_pair = None
+			self.voting_public_key = None
 
 	def patch_configuration(self):
 		"""Patches voting settings."""
@@ -81,6 +83,16 @@ class VoterConfigurator:
 		output_filepath.chmod(0o600)
 
 		return EpochRange(start_epoch, end_epoch)
+
+	def load_voting_key_from_directory(self, directory):
+		"""Loads (latest) voting key file from disk."""
+
+		descriptors = inspect_voting_key_files(directory)
+		latest_descriptor = descriptors[-1]
+
+		self.voting_key_pair = None
+		self.voting_public_key = latest_descriptor.public_key
+		return EpochRange(latest_descriptor.start_epoch, latest_descriptor.end_epoch)
 
 
 def inspect_voting_key_files(directory):

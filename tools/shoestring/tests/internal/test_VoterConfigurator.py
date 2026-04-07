@@ -40,9 +40,12 @@ class VoterConfiguratorTest(unittest.TestCase):
 
 		# Assert:
 		self.assertEqual(False, configurator1.is_imported)
-		self.assertEqual(False, configurator2.is_imported)
+		self.assertEqual(configurator1.voting_public_key, configurator1.voting_key_pair.public_key)
 
-		self.assertEqual(2, len(set([configurator1.voting_key_pair.public_key, configurator2.voting_key_pair.public_key])))
+		self.assertEqual(False, configurator2.is_imported)
+		self.assertEqual(configurator2.voting_public_key, configurator2.voting_key_pair.public_key)
+
+		self.assertEqual(2, len(set([configurator1.voting_public_key, configurator2.voting_public_key])))
 
 	def test_configurator_can_import_key_pairs(self):
 		# Act:
@@ -52,6 +55,7 @@ class VoterConfiguratorTest(unittest.TestCase):
 		self.assertEqual(True, configurator.is_imported)
 
 		self.assertEqual(None, configurator.voting_key_pair)
+		self.assertEqual(None, configurator.voting_public_key)
 
 	def test_can_patch_configuration(self):
 		# Arrange:
@@ -132,7 +136,7 @@ class VoterConfiguratorTest(unittest.TestCase):
 			(start_epoch, end_epoch, root_public_key) = self._read_voting_key_file_header(new_voting_key_tree_file)
 			self.assertEqual(5 + 1 + 1, start_epoch)
 			self.assertEqual(5 + 1 + 1 + 221, end_epoch)
-			self.assertEqual(configurator.voting_key_pair.public_key, root_public_key)
+			self.assertEqual(configurator.voting_public_key, root_public_key)
 			self.assertEqual(0o600, new_voting_key_tree_file.stat().st_mode & 0o777)
 
 			# - check return values:
@@ -158,7 +162,7 @@ class VoterConfiguratorTest(unittest.TestCase):
 			(start_epoch, end_epoch, root_public_key) = self._read_voting_key_file_header(new_voting_key_tree_file)
 			self.assertEqual(5 + 1 + 7, start_epoch)
 			self.assertEqual(5 + 1 + 7 + 221, end_epoch)
-			self.assertEqual(configurator.voting_key_pair.public_key, root_public_key)
+			self.assertEqual(configurator.voting_public_key, root_public_key)
 			self.assertEqual(0o600, new_voting_key_tree_file.stat().st_mode & 0o777)
 
 			# - check return values:
@@ -188,10 +192,10 @@ class VoterConfiguratorTest(unittest.TestCase):
 			(start_epoch, end_epoch, root_public_key) = self._read_voting_key_file_header(new_voting_key_tree_file)
 			self.assertEqual(400, start_epoch)
 			self.assertEqual(400 + 221, end_epoch)
-			self.assertEqual(configurator.voting_key_pair.public_key, root_public_key)
+			self.assertEqual(configurator.voting_public_key, root_public_key)
 			self.assertEqual(0o600, new_voting_key_tree_file.stat().st_mode & 0o777)
 
-			# - check return values:
+			# - check return values
 			self.assertEqual(400, epoch_range.start_epoch)
 			self.assertEqual(400 + 221, epoch_range.end_epoch)
 
@@ -227,6 +231,32 @@ class VoterConfiguratorTest(unittest.TestCase):
 
 				# - returned range is unset
 				self.assertEqual(None, epoch_range)
+	# endregion
+
+	# region load_voting_key_from_directory
+
+	def test_can_load_voting_key_from_directory(self):
+		# Arrange:
+		with tempfile.TemporaryDirectory() as temp_directory:
+			voting_key_file_directory = self._prepare_generate_voting_key_file_test(temp_directory)
+
+			self._write_voting_key_file_header(voting_key_file_directory, 'private_key_tree3.dat', 100, 199)
+			self._write_voting_key_file_header(voting_key_file_directory, 'private_key_tree5.dat', 200, 299)
+			public_key_3 = self._write_voting_key_file_header(voting_key_file_directory, 'private_key_tree7.dat', 300, 399)
+
+			# Act:
+			config_manager = ConfigurationManager(temp_directory)
+			configurator = VoterConfigurator(config_manager)
+			epoch_range = configurator.load_voting_key_from_directory(voting_key_file_directory)
+
+			# Assert: only public key should be set
+			self.assertEqual(None, configurator.voting_key_pair)
+			self.assertEqual(public_key_3, configurator.voting_public_key)
+
+			# - check return values
+			self.assertEqual(300, epoch_range.start_epoch)
+			self.assertEqual(399, epoch_range.end_epoch)
+
 	# endregion
 
 	# region inspect_voting_key_files
