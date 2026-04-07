@@ -13,6 +13,7 @@ from symbollightapi.model.Exceptions import NodeException
 from symbollightapi.model.Transaction import (
 	AccountKeyLinkTransaction,
 	CosignSignatureTransaction,
+	Message,
 	Modification,
 	MosaicDefinitionTransaction,
 	MosaicLevy,
@@ -24,7 +25,7 @@ from symbollightapi.model.Transaction import (
 	TransferTransaction
 )
 
-from puller.facade.NemPuller import AccountRecord, DatabaseConfig, MosaicRecord, NamespaceRecord, NemPuller
+from puller.facade.NemPuller import AccountRecord, DatabaseConfig, MosaicRecord, NamespaceRecord, NemPuller, TransactionRecord
 
 # region test data
 
@@ -36,14 +37,14 @@ NEM_CONNECTOR_RESPONSE_BLOCKS = [
 			TransferTransaction(
 				'd6c9902cfa23dbbdd212d720f86391dd91d215bf77d806f03a6c2dd2e730628a',
 				2,
-				'8d07f90fb4bbe7715fa327c926770166a11be2e494a970605f2e12557f66c9b9',
+				PublicKey('8d07f90fb4bbe7715fa327c926770166a11be2e494a970605f2e12557f66c9b9'),
 				9000000,
 				73397,
 				83397,
 				'e0cc7f71e353ca0aaf2f009d74aeac5f97d4796b0f08c009058fb33d93c2e8ca'
 				'68c0b63e46ff125f43314014d324ac032d2c82996a6e47068b251f1d71fdd001',
 				180000040000000,
-				'NCOPERAWEWCD4A34NP5UQCCKEX44MW4SL3QYJYS5',
+				Address('NCOPERAWEWCD4A34NP5UQCCKEX44MW4SL3QYJYS5'),
 				('476f6f64206c75636b21', 1),
 				None
 			),
@@ -80,34 +81,34 @@ NEM_CONNECTOR_RESPONSE_BLOCKS = [
 		[
 			AccountKeyLinkTransaction(
 				'306f20260a1b7af692834809d3e7d53edd41616d5076ac0fac6cfa75982185df',
-				2,
-				'22df5f43ee3739a10c346b3ec2d3878668c5514696be425f9067d3a11c777f1d',
+				3,
+				PublicKey('22df5f43ee3739a10c346b3ec2d3878668c5514696be425f9067d3a11c777f1d'),
 				8000000,
 				73397,
 				83397,
 				'1b81379847241e45da86b27911e5c9a9192ec04f644d98019657d32838b49c14'
 				'3eaa4815a3028b80f9affdbf0b94cd620f7a925e02783dda67b8627b69ddf70e',
 				1,
-				'7195f4d7a40ad7e31958ae96c4afed002962229675a4cae8dc8a18e290618981'
+				PublicKey('7195f4d7a40ad7e31958ae96c4afed002962229675a4cae8dc8a18e290618981')
 			),
 			TransferTransaction(
 				'd6c9902cfa23dbbdd212d720f86391dd91d215bf77d806f03a6c2dd2e730628a',
-				2,
-				'8d07f90fb4bbe7715fa327c926770166a11be2e494a970605f2e12557f66c9b9',
+				3,
+				PublicKey('8d07f90fb4bbe7715fa327c926770166a11be2e494a970605f2e12557f66c9b9'),
 				9000000,
 				73397,
 				83397,
 				'e0cc7f71e353ca0aaf2f009d74aeac5f97d4796b0f08c009058fb33d93c2e8ca'
 				'68c0b63e46ff125f43314014d324ac032d2c82996a6e47068b251f1d71fdd001',
 				180000040000000,
-				'NCOPERAWEWCD4A34NP5UQCCKEX44MW4SL3QYJYS5',
-				('476f6f64206c75636b21', 1),
+				Address('NCOPERAWEWCD4A34NP5UQCCKEX44MW4SL3QYJYS5'),
+				Message('476f6f64206c75636b21', 1),
 				None
 			),
 			MultisigAccountModificationTransaction(
 				'cc64ca69bfa95db2ff7ac1e21fe6d27ece189c603200ebc9778d8bb80ca25c3c',
-				2,
-				'f41b99320549741c5cce42d9e4bb836d98c50ed5415d0c3c2912d1bb50e6a0e5',
+				3,
+				PublicKey('f41b99320549741c5cce42d9e4bb836d98c50ed5415d0c3c2912d1bb50e6a0e5'),
 				40000000,
 				73397,
 				83397,
@@ -115,27 +116,27 @@ NEM_CONNECTOR_RESPONSE_BLOCKS = [
 				'4f2b486f25451a1f90da7f0e312d9e8570e4bc03798e58d19dec86feb4152307',
 				2,
 				[
-					Modification(1, '1fbdbdde28daf828245e4533765726f0b7790e0b7146e2ce205df3e86366980b'),
-					Modification(1, 'f94e8702eb1943b23570b1b83be1b81536df35538978820e98bfce8f999e2d37')
+					Modification(1, PublicKey('1fbdbdde28daf828245e4533765726f0b7790e0b7146e2ce205df3e86366980b')),
+					Modification(1, PublicKey('f94e8702eb1943b23570b1b83be1b81536df35538978820e98bfce8f999e2d37'))
 				]
 			),
 			NamespaceRegistrationTransaction(
 				'7e547e45cfc9c34809ce184db6ae7b028360c0f1492cc37b7b4d31c22af07dc3',
-				2,
+				3,
 				PublicKey('a700809530e5428066807ec0d34859c52e260fc60634aaac13e3972dcfc08736'),
 				150000,
 				73397,
 				83397,
 				'9fc70720d0333d7d8f9eb14ef45ce45a846d37e79cf7a4244b4db36dcb0d3dfe'
 				'0170daefbf4d30f92f343110a6f03a14aedcf7913e465a4a1cc199639169410a',
-				'NAMESPACEWH4MKFMBCVFERDPOOP4FK7MTBXDPZZA',
+				Address('NAMESPACEWH4MKFMBCVFERDPOOP4FK7MTBXDPZZA'),
 				100000000,
 				None,
 				'namespace'
 			),
 			MosaicDefinitionTransaction(
 				'4725e523e5d5a562121f38953d6da3ae695060533fc0c5634b31de29c3b766e1',
-				2,
+				3,
 				PublicKey('a700809530e5428066807ec0d34859c52e260fc60634aaac13e3972dcfc08736'),
 				150000,
 				73397,
@@ -143,7 +144,7 @@ NEM_CONNECTOR_RESPONSE_BLOCKS = [
 				'a80ccd44955ded7d35ee3aa011bfafd3f30cc746f63cb59a9d02171f908a0f4a'
 				'0294fcbba0b2838acd184daf1d9ae3c0f645308b442547156364192cd3d2d605',
 				10000000,
-				'NBMOSAICOD4F54EE5CDMR23CCBGOAM2XSIUX6TRS',
+				Address('NBMOSAICOD4F54EE5CDMR23CCBGOAM2XSIUX6TRS'),
 				PublicKey('a700809530e5428066807ec0d34859c52e260fc60634aaac13e3972dcfc08736'),
 				'NEM namespace test',
 				MosaicProperties(4, 3100000, False, True),
@@ -152,7 +153,7 @@ NEM_CONNECTOR_RESPONSE_BLOCKS = [
 			),
 			MosaicSupplyChangeTransaction(
 				'cb805b4499479135934e70452d12ad9ecc26c46a111fe0cdda8e09741d257708',
-				2,
+				3,
 				PublicKey('da04b4a1d64add6c70958d383f9d247af1aaa957cb89f15b2d059b278e0594d5'),
 				150000,
 				73397,
@@ -165,8 +166,8 @@ NEM_CONNECTOR_RESPONSE_BLOCKS = [
 			),
 			MultisigTransaction(
 				'3375969dbc2aaae1cad0d89854d4f41b4fef553dbe9c7d39bdf72e3c538f98fe',
-				2,
-				'aa455d831430872feb0c6ae14265209182546c985a321c501be7fdc96ed04757',
+				3,
+				PublicKey('aa455d831430872feb0c6ae14265209182546c985a321c501be7fdc96ed04757'),
 				500000,
 				73397,
 				83397,
@@ -176,8 +177,8 @@ NEM_CONNECTOR_RESPONSE_BLOCKS = [
 					CosignSignatureTransaction(
 						261593985,
 						'edcc8d1c48165f5b771087fbe3c4b4d41f5f8f6c4ce715e050b86fb4e7fdeb64',
-						'NAGJG3QFWYZ37LMI7IQPSGQNYADGSJZGJRD2DIYA',
-						'ae6754c70b7e3ba0c51617c8f9efd462d0bf680d45e09c3444e817643d277826',
+						Address('NAGJG3QFWYZ37LMI7IQPSGQNYADGSJZGJRD2DIYA'),
+						PublicKey('ae6754c70b7e3ba0c51617c8f9efd462d0bf680d45e09c3444e817643d277826'),
 						500000,
 						261680385,
 						'249bc2dbad96e827eabc991b59dff7f12cc27f3e0da8ab3db6a3201169431786'
@@ -187,13 +188,13 @@ NEM_CONNECTOR_RESPONSE_BLOCKS = [
 				TransferTransaction(
 					None,
 					None,
-					'fbae41931de6a0cc25153781321f3de0806c7ba9a191474bb9a838118c8de4d3',
+					PublicKey('fbae41931de6a0cc25153781321f3de0806c7ba9a191474bb9a838118c8de4d3'),
 					750000,
 					73397,
 					83397,
 					None,
 					150000000000,
-					'NBUH72UCGBIB64VYTAAJ7QITJ62BLISFFQOHVP65',
+					Address('NBUH72UCGBIB64VYTAAJ7QITJ62BLISFFQOHVP65'),
 					None,
 					None
 				),
@@ -800,8 +801,8 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 			NamespaceRecord(
 				root_namespace='namespace',
 				owner=PublicKey('a700809530e5428066807ec0d34859c52e260fc60634aaac13e3972dcfc08736'),
-				registered_height=2,
-				expiration_height=2 + (365 * 1440)
+				registered_height=3,
+				expiration_height=3 + (365 * 1440)
 			)
 		))
 
@@ -857,7 +858,7 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 				namespace_name='namespace.test',
 				description='NEM namespace test',
 				creator=PublicKey('a700809530e5428066807ec0d34859c52e260fc60634aaac13e3972dcfc08736'),
-				registered_height=2,
+				registered_height=3,
 				initial_supply=3100000,
 				total_supply=3100000,
 				divisibility=4,
