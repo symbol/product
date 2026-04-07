@@ -219,7 +219,7 @@ NEM_CONNECTOR_RESPONSE_ACCOUNT_INFO = NemAccountInfo(Address('TALICE6XEEEOBFJVY3
 # endregion
 
 
-class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
+class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-methods, too-many-lines
 
 	def setUp(self):
 		self.postgresql = testing.postgresql.Postgresql()
@@ -916,3 +916,190 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 			supply_type=1,
 			expected_supply_change=500000
 		)
+
+	def _assert_transaction_record(self, transaction, payload, amount=None, recipient_address=None):
+		# Act:
+		record = self.puller._build_transaction_record(transaction, False)  # pylint: disable=protected-access
+
+		# Assert:
+		self.assertEqual(record, TransactionRecord(
+			transaction_hash=transaction.transaction_hash,
+			height=3,
+			sender_public_key=transaction.sender,
+			fee=transaction.fee,
+			timestamp='2015-03-29 20:29:42+00:00',
+			deadline='2015-03-29 23:16:22+00:00',
+			amount=amount,
+			signature=transaction.signature,
+			transaction_type=transaction.transaction_type,
+			is_inner=False,
+			inner_transaction_id=None,
+			sender_address=transaction.sender,
+			recipient_address=recipient_address,
+			payload=payload
+		))
+
+	def test_can_build_transaction_record_transfer(self):
+		# Arrange:
+		transaction = NEM_CONNECTOR_RESPONSE_BLOCKS[2].transactions[1]
+
+		self._assert_transaction_record(
+			transaction, {
+				'payload': '476f6f64206c75636b21',
+				'is_plain': 1
+			},
+			amount=180000040000000,
+			recipient_address=transaction.recipient
+		)
+
+	def test_can_build_transaction_record_transfer_without_message(self):
+		# Arrange:
+		transaction = NEM_CONNECTOR_RESPONSE_BLOCKS[2].transactions[1]
+
+		transaction.message = None
+
+		self._assert_transaction_record(
+			transaction,
+			{},
+			amount=180000040000000,
+			recipient_address=transaction.recipient
+		)
+
+	def test_can_build_transaction_record_account_key_link(self):
+		# Arrange:
+		transaction = NEM_CONNECTOR_RESPONSE_BLOCKS[2].transactions[0]
+
+		self._assert_transaction_record(
+			transaction, {
+				'mode': 1,
+				'remote_account': '7195F4D7A40AD7E31958AE96C4AFED002962229675A4CAE8DC8A18E290618981'
+			})
+
+	def test_can_build_transaction_record_multisig_account_modification(self):
+		# Arrange:
+		transaction = NEM_CONNECTOR_RESPONSE_BLOCKS[2].transactions[2]
+
+		self._assert_transaction_record(
+			transaction, {
+				'min_cosignatories': 2,
+				'modifications': [
+					{
+						'modification_type': 1,
+						'cosignatory_account': '1FBDBDDE28DAF828245E4533765726F0B7790E0B7146E2CE205DF3E86366980B'
+					},
+					{
+						'modification_type': 1,
+						'cosignatory_account': 'F94E8702EB1943B23570B1B83BE1B81536DF35538978820E98BFCE8F999E2D37'
+					}
+				]
+			}
+		)
+
+	def test_can_build_transaction_record_multisig(self):
+		# Arrange:
+		transaction = NEM_CONNECTOR_RESPONSE_BLOCKS[2].transactions[6]
+
+		self._assert_transaction_record(
+			transaction, {
+				'inner_hash': transaction.inner_hash,
+				'signatures': [
+					{
+						'transaction_type': signature.transaction_type,
+						'timestamp': '2023-07-12 17:06:10+00:00',
+						'deadline': '2023-07-13 17:06:10+00:00',
+						'fee': signature.fee,
+						'other_hash': signature.other_hash,
+						'other_account': str(signature.other_account),
+						'sender': str(signature.sender),
+						'signature': signature.signature
+					} for signature in transaction.signatures
+				]
+			}
+		)
+
+	def test_can_build_transaction_record_namespace_registration(self):
+		# Arrange:
+		transaction = NEM_CONNECTOR_RESPONSE_BLOCKS[2].transactions[3]
+
+		self._assert_transaction_record(
+			transaction, {
+				'rental_fee_sink': str(transaction.rental_fee_sink),
+				'rental_fee': transaction.rental_fee,
+				'parent': transaction.parent,
+				'namespace': transaction.namespace,
+			})
+
+	def test_can_build_transaction_record_mosaic_definition(self):
+		# Arrange:
+		transaction = NEM_CONNECTOR_RESPONSE_BLOCKS[2].transactions[4]
+
+		self._assert_transaction_record(
+			transaction, {
+				'creation_fee_sink': str(transaction.creation_fee_sink),
+				'creation_fee': transaction.creation_fee,
+				'creator': str(transaction.sender),
+				'description': transaction.description,
+				'namespace_name': transaction.namespace_name,
+				'mosaic_properties': {
+					'divisibility': transaction.properties.divisibility,
+					'initial_supply': transaction.properties.initial_supply,
+					'supply_mutable': transaction.properties.supply_mutable,
+					'transferable': transaction.properties.transferable
+				},
+				'levy': {
+					'type': transaction.levy.type,
+					'namespace_name': transaction.levy.namespace_name,
+					'fee': transaction.levy.fee,
+					'recipient': str(transaction.levy.recipient)
+				}
+			}
+		)
+
+	def test_can_build_transaction_record_mosaic_definition_without_levy(self):
+		# Arrange:
+		mosaic_definition = NEM_CONNECTOR_RESPONSE_BLOCKS[2].transactions[4]
+
+		transaction = MosaicDefinitionTransaction(
+			mosaic_definition.transaction_hash,
+			mosaic_definition.height,
+			mosaic_definition.sender,
+			mosaic_definition.fee,
+			mosaic_definition.timestamp,
+			mosaic_definition.deadline,
+			mosaic_definition.signature,
+			mosaic_definition.creation_fee,
+			mosaic_definition.creation_fee_sink,
+			mosaic_definition.creator,
+			mosaic_definition.description,
+			mosaic_definition.properties,
+			None,
+			mosaic_definition.namespace_name
+		)
+
+		self._assert_transaction_record(
+			transaction, {
+				'creation_fee_sink': str(transaction.creation_fee_sink),
+				'creation_fee': transaction.creation_fee,
+				'creator': str(transaction.sender),
+				'description': transaction.description,
+				'namespace_name': transaction.namespace_name,
+				'mosaic_properties': {
+					'divisibility': transaction.properties.divisibility,
+					'initial_supply': transaction.properties.initial_supply,
+					'supply_mutable': transaction.properties.supply_mutable,
+					'transferable': transaction.properties.transferable
+				},
+				'levy': None
+			}
+		)
+
+	def test_can_build_transaction_record_mosaic_supply_change(self):
+		# Arrange:
+		transaction = NEM_CONNECTOR_RESPONSE_BLOCKS[2].transactions[5]
+
+		self._assert_transaction_record(
+			transaction, {
+				'supply_type': transaction.supply_type,
+				'delta': transaction.delta,
+				'namespace_name': transaction.namespace_name
+			})

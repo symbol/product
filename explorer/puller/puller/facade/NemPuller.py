@@ -63,6 +63,22 @@ MosaicRecord = namedtuple('MosaicRecord', [
 	'levy_fee',
 	'levy_recipient'
 ])
+TransactionRecord = namedtuple('TransactionRecord', [
+	'transaction_hash',
+	'height',
+	'sender_public_key',
+	'fee',
+	'timestamp',
+	'deadline',
+	'signature',
+	'amount',
+	'transaction_type',
+	'is_inner',
+	'inner_transaction_id',
+	'sender_address',
+	'recipient_address',
+	'payload'
+])
 DatabaseConfig = namedtuple('DatabaseConfig', ['database', 'user', 'password', 'host', 'port'])
 
 
@@ -348,6 +364,97 @@ class NemPuller:
 		adjustment = transaction.delta if transaction.supply_type == 1 else -transaction.delta
 		self.nem_db.update_mosaic_total_supply(cursor, transaction.namespace_name, adjustment)
 
+	def _build_transaction_record(self, transaction, is_inner, inner_transaction_id=None):
+		"""Create TransactionRecord from transaction data."""
+
+		payload = None
+		if transaction.transaction_type == TransactionType.TRANSFER.value:
+			payload = {
+				'payload': transaction.message.payload,
+				'is_plain': transaction.message.is_plain,
+			} if transaction.message else {}
+		elif transaction.transaction_type == TransactionType.ACCOUNT_KEY_LINK.value:
+			payload = {
+				'mode': transaction.mode,
+				'remote_account': str(transaction.remote_account)
+			}
+		elif transaction.transaction_type == TransactionType.MULTISIG_ACCOUNT_MODIFICATION.value:
+			payload = {
+				'min_cosignatories': transaction.min_cosignatories,
+				'modifications': [
+					{
+						'modification_type': modification.modification_type,
+						'cosignatory_account': str(modification.cosignatory_account)
+					}
+					for modification in transaction.modifications
+				]
+			}
+		elif transaction.transaction_type == TransactionType.MULTISIG.value:
+			payload = {
+				'inner_hash': transaction.inner_hash,
+				'signatures': [
+					{
+						'transaction_type': signature.transaction_type,
+						'timestamp': self._convert_timestamp_to_datetime(signature.timestamp),
+						'deadline': self._convert_timestamp_to_datetime(signature.deadline),
+						'fee': signature.fee,
+						'other_hash': signature.other_hash,
+						'other_account': str(signature.other_account),
+						'sender': str(signature.sender),
+						'signature': signature.signature
+					} for signature in transaction.signatures
+				]
+			}
+		elif transaction.transaction_type == TransactionType.NAMESPACE_REGISTRATION.value:
+			payload = {
+				'rental_fee_sink': str(transaction.rental_fee_sink),
+				'rental_fee': transaction.rental_fee,
+				'parent': transaction.parent,
+				'namespace': transaction.namespace
+			}
+		elif transaction.transaction_type == TransactionType.MOSAIC_DEFINITION.value:
+			payload = {
+				'creation_fee_sink': str(transaction.creation_fee_sink),
+				'creation_fee': transaction.creation_fee,
+				'creator': str(transaction.sender),
+				'description': transaction.description,
+				'namespace_name': transaction.namespace_name,
+				'mosaic_properties': {
+					'divisibility': transaction.properties.divisibility,
+					'initial_supply': transaction.properties.initial_supply,
+					'supply_mutable': transaction.properties.supply_mutable,
+					'transferable': transaction.properties.transferable
+				},
+				'levy': {
+					'type': transaction.levy.type,
+					'namespace_name': transaction.levy.namespace_name,
+					'fee': transaction.levy.fee,
+					'recipient': str(transaction.levy.recipient)
+				} if transaction.levy else None
+			}
+		elif transaction.transaction_type == TransactionType.MOSAIC_SUPPLY_CHANGE.value:
+			payload = {
+				'namespace_name': transaction.namespace_name,
+				'supply_type': transaction.supply_type,
+				'delta': transaction.delta
+			}
+
+		return TransactionRecord(
+			transaction_hash=transaction.transaction_hash,
+			height=transaction.height,
+			sender_public_key=transaction.sender,
+			fee=transaction.fee,
+			timestamp=self._convert_timestamp_to_datetime(transaction.timestamp),
+			deadline=self._convert_timestamp_to_datetime(transaction.deadline),
+			amount=transaction.amount if hasattr(transaction, 'amount') else None,
+			signature=transaction.signature,
+			transaction_type=transaction.transaction_type,
+			is_inner=is_inner,
+			inner_transaction_id=inner_transaction_id,  # to be updated after insertion if it's an inner transaction
+			sender_address=transaction.sender,
+			recipient_address=transaction.recipient if hasattr(transaction, 'recipient') else None,
+			payload=payload
+		)
 	def _process_transactions(self, cursor, block_transactions, height):
 		"""Process transactions in a block."""
 
