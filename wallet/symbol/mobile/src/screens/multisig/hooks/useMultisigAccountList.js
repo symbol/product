@@ -33,9 +33,14 @@ export const useMultisigAccountList = walletController => {
 	const handleTransactionStatusChange = () => {
 		refresh();
 	};
+	const handleNetworkConnected = () => {
+		refresh();
+	};
 	const handleAccountChange = () => {
 		clear();
-		refresh();
+		
+		if (walletController.isWalletReady)
+			refresh();
 	};
 
 	useTransactionListener({
@@ -48,7 +53,8 @@ export const useMultisigAccountList = walletController => {
 
 	useWalletListener({
 		walletControllers: [walletController],
-		onAccountChange: handleAccountChange
+		onAccountChange: handleAccountChange,
+		onNetworkConnected: handleNetworkConnected
 	});
 
 	return {

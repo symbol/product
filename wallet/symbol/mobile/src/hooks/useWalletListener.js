@@ -11,47 +11,66 @@ const { ControllerEventName } = constants;
  *
  * @param {Object} options - Hook options.
  * @param {WalletController[]} options.walletControllers - Array of wallet controller instances to listen to.
- * @param {Function} options.[onWalletCreate] - Callback invoked when a wallet is created.
+ * @param {Function} [options.onWalletCreate] - Callback invoked when a wallet is created.
  *   Receives the newly created wallet object as its first parameter.
- * @param {Function} options.[onWalletClear] - Callback invoked when a wallet is cleared.
+ * @param {Function} [options.onWalletClear] - Callback invoked when a wallet is cleared.
  *   Receives the cleared wallet identifier as its first parameter.
- * @param {Function} options.[onAccountChange] - Callback invoked when the active account changes.
+ * @param {Function} [options.onAccountChange] - Callback invoked when the active account changes.
  *   Receives the new account details as its first parameter.
+ * @param {Function} [options.onNetworkConnected] - Callback invoked when the wallet connects to a network.
+ *   Receives the network details as its first parameter.
  * @param {Array} [options.deps=[]] - Dependency array for the useEffect hook to control when listeners are re-registered.
  * @returns {void}
  */
-export const useWalletListener = ({ 
-	walletControllers, 
+export const useWalletListener = ({
+	walletControllers,
 	onWalletCreate,
-	onWalletClear, 
+	onWalletClear,
 	onAccountChange,
+	onNetworkConnected,
 	deps = []
 }) => {
 	useEffect(() => {
-		if (onWalletCreate)
-		{walletControllers.forEach(walletController =>
-			walletController.on(ControllerEventName.WALLET_CREATE, onWalletCreate));}
+		if (onWalletCreate) {
+			walletControllers.forEach(walletController =>
+				walletController.on(ControllerEventName.WALLET_CREATE, onWalletCreate));
+		}
 
-		if (onWalletClear)
-		{walletControllers.forEach(walletController =>
-			walletController.on(ControllerEventName.WALLET_CLEAR, onWalletClear));}
+		if (onWalletClear) {
+			walletControllers.forEach(walletController =>
+				walletController.on(ControllerEventName.WALLET_CLEAR, onWalletClear));
+		}
 
-		if (onAccountChange)
-		{walletControllers.forEach(walletController =>
-			walletController.on(ControllerEventName.ACCOUNT_CHANGE, onAccountChange));}
+		if (onAccountChange) {
+			walletControllers.forEach(walletController =>
+				walletController.on(ControllerEventName.ACCOUNT_CHANGE, onAccountChange));
+		}
+
+		if (onNetworkConnected) {
+			walletControllers.forEach(walletController =>
+				walletController.on(ControllerEventName.NETWORK_CONNECTED, onNetworkConnected));
+		}
 
 		return () => {
-			if (onWalletCreate)
-			{walletControllers.forEach(walletController =>
-				walletController.removeListener(ControllerEventName.WALLET_CREATE, onWalletCreate));}
-			
-			if (onWalletClear)
-			{walletControllers.forEach(walletController =>
-				walletController.removeListener(ControllerEventName.WALLET_CLEAR, onWalletClear));}
+			if (onWalletCreate) {
+				walletControllers.forEach(walletController =>
+					walletController.removeListener(ControllerEventName.WALLET_CREATE, onWalletCreate));
+			}
 
-			if (onAccountChange)
-			{walletControllers.forEach(walletController =>
-				walletController.removeListener(ControllerEventName.ACCOUNT_CHANGE, onAccountChange));}
+			if (onWalletClear) {
+				walletControllers.forEach(walletController =>
+					walletController.removeListener(ControllerEventName.WALLET_CLEAR, onWalletClear));
+			}
+
+			if (onAccountChange) {
+				walletControllers.forEach(walletController =>
+					walletController.removeListener(ControllerEventName.ACCOUNT_CHANGE, onAccountChange));
+			}
+
+			if (onNetworkConnected) {
+				walletControllers.forEach(walletController =>
+					walletController.removeListener(ControllerEventName.NETWORK_CONNECTED, onNetworkConnected));
+			}
 		};
 	}, deps);
 };

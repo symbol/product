@@ -73,7 +73,6 @@ export const SettingsNetwork = () => {
 			await walletController.selectNetwork(networkIdentifier, nodeUrl);
 		}
 	});
-
 	const selectNetwork = async networkIdentifier => {
 		setSelectedNetworkIdentifier(networkIdentifier);
 		saveChangesManager.call(networkIdentifier, null);
