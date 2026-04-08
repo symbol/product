@@ -18,7 +18,12 @@ import { StyleSheet } from 'react-native';
  */
 export const WidgetContainer = ({ title, onHeaderPress, children }) => (
 	<Card style={styles.root}>
-		<TouchableNative style={styles.header} onPress={onHeaderPress} color={Colors.Components.cardHeader.background}>
+		<TouchableNative
+			style={styles.header} 
+			color={Colors.Components.cardHeader.background}
+			colorPressed={Colors.Components.card.background}
+			onPress={onHeaderPress} 
+		>
 			<StyledText type="label">
 				{title}
 			</StyledText>
