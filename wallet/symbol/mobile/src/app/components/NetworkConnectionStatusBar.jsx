@@ -62,7 +62,7 @@ const styles = StyleSheet.create({
 		alignItems: 'center'
 	},
 	text: {
-		...Typography.Semantic.bodyBold.s,
+		...Typography.Semantic.bodyBold.xs,
 		color: Colors.Components.networkConnectionStatus.default.text
 	}
 });
