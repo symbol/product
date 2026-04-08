@@ -1,3 +1,4 @@
+import { usePasscodeJumpAnimation } from './usePasscodeJumpAnimation';
 import { usePasscodeShake } from './usePasscodeShake';
 import {
 	ERROR_DISPLAY_DURATION_MS,
@@ -6,6 +7,7 @@ import {
 } from '../constants';
 import { usePasscodeInput } from '@/app/components/features/Passcode/hooks/usePasscodeInput';
 import { PASSCODE_PIN_LENGTH, PasscodeMode } from '@/app/constants';
+import { useAsyncManager } from '@/app/hooks';
 import { passcodeManager } from '@/app/lib/passcode';
 import { PlatformUtils } from '@/app/lib/platform/PlatformUtils';
 import { $t } from '@/app/localization';
@@ -20,7 +22,6 @@ import { useEffect, useState } from 'react';
  */
 export const usePasscodeManager = ({ mode, onSuccess }) => {
 	// State
-	const [isLoading, setIsLoading] = useState(true);
 	const [step, setStep] = useState(PasscodeStep.ENTER);
 	const [isError, setIsError] = useState(false);
 	const [errorMessage, setErrorMessage] = useState('');
@@ -37,6 +38,7 @@ export const usePasscodeManager = ({ mode, onSuccess }) => {
 
 	// Animation
 	const { shakeAnimation, triggerShake } = usePasscodeShake();
+	const { dotAnimations, startJumpAnimation, stopJumpAnimation } = usePasscodeJumpAnimation();
 
 	// Computed
 	const isCreateMode = mode === PasscodeMode.CREATE;
@@ -59,42 +61,83 @@ export const usePasscodeManager = ({ mode, onSuccess }) => {
 		}, ERROR_DISPLAY_DURATION_MS);
 	};
 
-	// Handlers
-	const handleVerifyPasscode = async inputPasscode => {
-		const result = await passcodeManager.verify(inputPasscode);
+	// Async managers
+	const initManager = useAsyncManager({
+		callback: async () => {
+			const isPasscodeEnabled = await passcodeManager.isPasscodeSet();
 
-		if (result.isValid) {
+			if (!isPasscodeEnabled && mode === PasscodeMode.VERIFY)
+				onSuccess();
+		},
+		defaultLoadingState: true,
+		shouldShowErrorPopup: false
+	});
+
+	const verifyManager = useAsyncManager({
+		callback: async inputPasscode => {
+			const result = await passcodeManager.verify(inputPasscode);
+
+			if (result.isValid) {
+				onSuccess();
+				return result;
+			}
+
+			setIsTooManyAttempts(result.isLocked);
+			setRemainingAttempts(result.remainingAttempts);
+
+			let errorMessage;
+			if (result.isLocked) {
+				const remainingTimeMs = result.lockoutUntil - Date.now();
+				const remainingMinutes = Math.ceil(remainingTimeMs / 60000);
+				errorMessage = remainingMinutes > 1
+					? $t('s_passcode_error_maxAttempts_time_minutes', { count: remainingMinutes })
+					: $t('s_passcode_error_maxAttempts_time_minute');
+			} else {
+				errorMessage = $t('s_passcode_error_incorrect');
+			}
+
+			showError(errorMessage);
+			passcodeInput.clear();
+
+			return result;
+		},
+		shouldShowErrorPopup: false,
+		onError: () => passcodeInput.clear()
+	});
+
+	const createManager = useAsyncManager({
+		callback: async inputPasscode => {
+			await passcodeManager.create(inputPasscode);
 			onSuccess();
-			return;
+		},
+		shouldShowErrorPopup: false,
+		onError: () => {
+			passcodeInput.clear();
+			passcodeConfirmInput.clear();
+			setStep(PasscodeStep.ENTER);
 		}
+	});
 
-		setIsTooManyAttempts(result.isLocked);
-		setRemainingAttempts(result.remainingAttempts);
+	// Derived validating state
+	const isValidating = verifyManager.isLoading || createManager.isLoading;
 
-		let errorMessage;
-		if (result.isLocked) {
-			const remainingTimeMs = result.lockoutUntil - Date.now();
-			const remainingMinutes = Math.ceil(remainingTimeMs / 60000);
-			errorMessage = remainingMinutes > 1
-				? $t('s_passcode_error_maxAttempts_time_minutes', { count: remainingMinutes })
-				: $t('s_passcode_error_maxAttempts_time_minute');
-		} else {
-			errorMessage = $t('s_passcode_error_incorrect');
-		}
+	// Handle validation state changes
+	useEffect(() => {
+		if (isValidating) 
+			startJumpAnimation();
+		else 
+			stopJumpAnimation();
+	}, [isValidating, startJumpAnimation, stopJumpAnimation]);
 
-		showError(errorMessage);
-		passcodeInput.clear();
-	};
-
-	const handleCreatePasscode = async inputPasscode => {
+	// Handlers
+	const handleCreatePasscode = inputPasscode => {
 		if (step === PasscodeStep.ENTER) {
 			setStep(PasscodeStep.CONFIRM);
 			return;
 		}
 
 		if (inputPasscode === passcodeInput.value) {
-			await passcodeManager.create(inputPasscode);
-			onSuccess();
+			createManager.call(inputPasscode);
 			return;
 		}
 
@@ -109,26 +152,18 @@ export const usePasscodeManager = ({ mode, onSuccess }) => {
 			if (isCreateMode)
 				handleCreatePasscode(value);
 			else
-				handleVerifyPasscode(value);
+				verifyManager.call(value);
 		}, PASSCODE_COMPLETE_DELAY_MS);
 	};
 
 	// Initialize
-	useEffect(() => {
-		const initialize = async () => {
-			const isPasscodeEnabled = await passcodeManager.isPasscodeSet();
-
-			if (!isPasscodeEnabled && mode === PasscodeMode.VERIFY)
-				onSuccess();
-
-			setIsLoading(false);
-		};
-
-		initialize();
-	}, [mode, onSuccess]);
+	useEffect(() => { 
+		initManager.call(); 
+	}, []);
 
 	return {
-		isLoading,
+		isLoading: initManager.isLoading,
+		isValidating,
 		isError,
 		errorMessage,
 		remainingAttempts,
@@ -136,6 +171,7 @@ export const usePasscodeManager = ({ mode, onSuccess }) => {
 		currentInputValue,
 		step,
 		shakeAnimation,
+		dotAnimations,
 		inputKey,
 		backspace
 	};

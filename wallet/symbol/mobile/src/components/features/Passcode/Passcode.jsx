@@ -1,8 +1,8 @@
 import { Dots, PinPad, StatusText } from './components';
 import { usePasscodeManager } from './hooks';
 import { getPasscodeSubtitle, getPasscodeTitle } from './utils';
-import { ButtonClose, LoadingIndicator } from '@/app/components';
-import { PASSCODE_PIN_LENGTH , PasscodeMode } from '@/app/constants';
+import { ButtonClose } from '@/app/components';
+import { PASSCODE_PIN_LENGTH, PasscodeMode } from '@/app/constants';
 import { $t } from '@/app/localization';
 import { Colors, Sizes, Typography } from '@/app/styles';
 import React from 'react';
@@ -27,12 +27,14 @@ export const Passcode = props => {
 	const mode = type;
 	const {
 		isLoading,
+		isValidating,
 		isError,
 		errorMessage,
 		remainingAttempts,
 		currentInputValue,
 		step,
 		shakeAnimation,
+		dotAnimations,
 		inputKey,
 		backspace
 	} = usePasscodeManager({ mode, onSuccess });
@@ -42,11 +44,7 @@ export const Passcode = props => {
 	const subtitle = getPasscodeSubtitle({ mode, step, errorMessage, remainingAttempts });
 
 	if (isLoading)
-	{return (
-		<View style={styles.root}>
-			<LoadingIndicator />
-		</View>
-	);}
+		return <View style={styles.root} />;
 
 	return (
 		<View style={styles.root}>
@@ -55,16 +53,17 @@ export const Passcode = props => {
 					<Text style={styles.title}>{title}</Text>
 					<StatusText text={subtitle} isError={isError} />
 				</View>
-				<Dots 
+				<Dots
 					length={PASSCODE_PIN_LENGTH}
 					filledCount={currentInputValue.length}
 					isError={isError}
 					shakeAnimation={shakeAnimation}
+					dotAnimations={dotAnimations}
 				/>
-				<PinPad 
+				<PinPad
 					onKeyPress={inputKey}
 					onDelete={backspace}
-					isDisabled={isError}
+					isDisabled={isError || isValidating}
 				/>
 			</Animated.View>
 			{!!onCancel && (

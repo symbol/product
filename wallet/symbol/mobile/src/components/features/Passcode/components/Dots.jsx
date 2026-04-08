@@ -6,22 +6,29 @@ import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated'
 
 const DOT_ANIMATION_DURATION = 250;
 const DOT_MIN_SIZE = Sizes.Semantic.spacing.s;
-const DOT_MAX_SIZE = Sizes.Semantic.spacing.l;
+const DOT_MAX_SIZE = (Sizes.Semantic.spacing.l + Sizes.Semantic.spacing.m) / 2;
+const CONTAINER_HEIGHT = Sizes.Semantic.spacing.l;
 const DOT_COLOR_DEFAULT = Colors.Semantic.role.secondary.default;
 const DOT_COLOR_ERROR = Colors.Semantic.role.danger.default;
 
 /**
  * Dot component. A single dot indicator for passcode entry.
+ * @param {object} props - Component props.
+ * @param {boolean} props.isFilled - Whether the dot is filled.
+ * @param {boolean} props.isError - Whether to show error state.
+ * @param {object} [props.jumpAnimation] - Shared value for jump animation.
  */
-const Dot = ({ isFilled, isError }) => {
+const Dot = ({ isFilled, isError, jumpAnimation }) => {
 	const animatedStyle = useAnimatedStyle(() => {
 		const size = isFilled ? DOT_MAX_SIZE : DOT_MIN_SIZE;
 		const backgroundColor = isError ? DOT_COLOR_ERROR : DOT_COLOR_DEFAULT;
+		const translateY = jumpAnimation ? jumpAnimation.value : 0;
 		
 		return {
 			width: withTiming(size, { duration: DOT_ANIMATION_DURATION }),
 			height: withTiming(size, { duration: DOT_ANIMATION_DURATION }),
-			backgroundColor
+			backgroundColor,
+			transform: [{ translateY }]
 		};
 	});
 
@@ -38,10 +45,11 @@ const Dot = ({ isFilled, isError }) => {
  * @param {number} props.filledCount - Number of filled dots.
  * @param {boolean} [props.isError=false] - Whether to show error state.
  * @param {object} props.shakeAnimation - Shared value for shake animation.
+ * @param {Array} [props.dotAnimations] - Array of shared values for individual dot animations.
  * 
  * @returns {React.ReactNode} The dots component.
  */
-export const Dots = ({ length = PASSCODE_PIN_LENGTH, filledCount, isError = false, shakeAnimation }) => {
+export const Dots = ({ length = PASSCODE_PIN_LENGTH, filledCount, isError = false, shakeAnimation, dotAnimations }) => {
 	const animatedStyle = useAnimatedStyle(() => ({
 		transform: [{ translateX: shakeAnimation.value }]
 	}));
@@ -53,6 +61,7 @@ export const Dots = ({ length = PASSCODE_PIN_LENGTH, filledCount, isError = fals
 					key={index} 
 					isFilled={index < filledCount} 
 					isError={isError}
+					jumpAnimation={dotAnimations?.[index]}
 				/>
 			))}
 		</Animated.View>
@@ -65,7 +74,7 @@ const styles = StyleSheet.create({
 		justifyContent: 'center',
 		alignItems: 'center',
 		gap: Sizes.Semantic.spacing.l,
-		height: DOT_MAX_SIZE
+		height: CONTAINER_HEIGHT
 	},
 	dot: {
 		borderRadius: Sizes.Semantic.borderRadius.round
