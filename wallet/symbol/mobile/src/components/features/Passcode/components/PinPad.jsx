@@ -3,7 +3,7 @@ import { Colors, Sizes, Typography } from '@/app/styles';
 import React, { useCallback } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-const BUTTON_SIZE = Sizes.Semantic.controlHeight.m;
+const BUTTON_SIZE = Sizes.Semantic.circleControlSize.xl;
 const BUTTON_GAP = Sizes.Semantic.layoutSpacing.m;
 const PIN_PAD_WIDTH = (BUTTON_SIZE * 3) + (BUTTON_GAP * 2);
 const BUTTON_COLOR_DEFAULT = Colors.Components.buttonSolid.secondary.default.background;
