@@ -14,7 +14,7 @@ export const App = () => {
 	const mainWalletController = useWalletController();
 	const [isWalletLoaded, setIsWalletLoaded] = useState(false);
 	const [isUnlocked, setIsUnlocked] = useState(false);
-	const isWalletCreated = mainWalletController.hasAccounts;
+	const [isWalletCreated, setIsWalletCreated] = useState(mainWalletController.hasAccounts);
 	const isPasscodeShown = !isUnlocked && isWalletCreated;
 
 	const isRouterActive = isWalletLoaded && !isPasscodeShown;
@@ -28,8 +28,9 @@ export const App = () => {
 	const init = async () => {
 		setIsWalletLoaded(false);
 
-		await load();
+		await initialLoad();
 		SplashScreen.hide();
+		await initialConnection();
 	};
 
 	const { loadCache, connectToNetwork } = useWalletWorkflow({
@@ -37,12 +38,18 @@ export const App = () => {
 	});
 
 	// Load the wallet and data from cache. Connect to network and fetch data
-	const load = async () => {
+	const initialLoad = async () => {
 		try {
 			await loadCache();
 			await initLocalization();
 			setIsWalletLoaded(true);
-
+			setIsWalletCreated(mainWalletController.hasAccounts);
+		} catch (error) {
+			showError(error);
+		}
+	};
+	const initialConnection = async () => {
+		try {
 			await connectToNetwork();
 			mainWalletController.modules.market.fetchData();
 		} catch (error) {
@@ -51,14 +58,21 @@ export const App = () => {
 	};
 	const handleLogout = async () => {
 		await passcodeManager.clear();
-		handleLoginStateChange();
+		setIsWalletCreated(false);
+		await handleLoginStateChange();
 	};
-	const handleLoginStateChange = () => {
+	const handleLoginStateChange = async () => {
 		Router.goToHome();
-		load();
+		await initialLoad();
+		await initialConnection();
 	};
 	const handleAccountChange = () => {
-		mainWalletController.fetchAccountInfo();
+		if (mainWalletController.isWalletReady)
+			mainWalletController.fetchAccountInfo();
+	};
+	const handleNetworkConnected = () => {
+		if (mainWalletController.isWalletReady)
+			mainWalletController.fetchAccountInfo();
 	};
 
 	// Transaction listeners
@@ -93,7 +107,8 @@ export const App = () => {
 		walletControllers: [mainWalletController],
 		onWalletCreate: handleLoginStateChange,
 		onWalletClear: handleLogout,
-		onAccountChange: handleAccountChange
+		onAccountChange: handleAccountChange,
+		onNetworkConnected: handleNetworkConnected
 	});
 
 	const currentRouteName = useCurrentRoute();
