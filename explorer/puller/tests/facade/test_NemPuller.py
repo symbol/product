@@ -15,6 +15,7 @@ from symbollightapi.model.Transaction import (
 	CosignSignatureTransaction,
 	Message,
 	Modification,
+	Mosaic,
 	MosaicDefinitionTransaction,
 	MosaicLevy,
 	MosaicProperties,
@@ -1103,3 +1104,183 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 				'delta': transaction.delta,
 				'namespace_name': transaction.namespace_name
 			})
+
+	@patch('puller.facade.NemPuller.NemPuller._build_transaction_record')
+	@patch('puller.facade.NemPuller.NemDatabase.insert_transaction')
+	@patch('puller.facade.NemPuller.NemDatabase.insert_transaction_mosaic')
+	def test_can_process_transaction_transfer(self, mock_insert_transaction_mosaic, mock_insert_transaction, mock_build_transaction_record):
+		# Arrange:
+		mock_insert_transaction.return_value = 1  # Simulate inserted transaction ID for linking mosaics
+		transfer = NEM_CONNECTOR_RESPONSE_BLOCKS[2].transactions[1]
+
+		transaction = TransferTransaction(
+			transfer.transaction_hash,
+			transfer.height,
+			transfer.sender,
+			transfer.fee,
+			transfer.timestamp,
+			transfer.deadline,
+			transfer.signature,
+			transfer.amount,
+			transfer.recipient,
+			transfer.message,
+			[
+				Mosaic('namespace.test', 1000000),
+				Mosaic('nem.xem', 8000000)
+			]
+		)
+
+		cursor = Mock()
+
+		# Act:
+		self.puller._process_transaction(cursor, transaction, 3, is_inner=False)  # pylint: disable=protected-access
+
+		# Assert:
+		mock_build_transaction_record.assert_called_once()
+		mock_insert_transaction.assert_called_once()
+		insert_transaction_mosaic_calls = mock_insert_transaction_mosaic.call_args_list
+		for index, mosaic in enumerate(transaction.mosaics):
+			self.assertEqual(insert_transaction_mosaic_calls[index][0], (
+				cursor,
+				1,  # transaction_id from insert_transaction mock
+				mosaic
+			))
+
+	@patch('puller.facade.NemPuller.NemPuller._build_transaction_record')
+	@patch('puller.facade.NemPuller.NemDatabase.insert_transaction')
+	@patch('puller.facade.NemPuller.NemDatabase.insert_transaction_mosaic')
+	def test_can_process_transaction_transfer_without_mosaic(
+		self,
+		mock_insert_transaction_mosaic,
+		mock_insert_transaction,
+		mock_build_transaction_record
+	):
+		# Arrange:
+		transaction = NEM_CONNECTOR_RESPONSE_BLOCKS[2].transactions[1]
+
+		cursor = Mock()
+
+		# Act:
+		self.puller._process_transaction(cursor, transaction, 3, is_inner=False)  # pylint: disable=protected-access
+
+		# Assert:
+		mock_build_transaction_record.assert_called_once()
+		mock_insert_transaction.assert_called_once()
+		mock_insert_transaction_mosaic.assert_not_called()
+
+	@patch('puller.facade.NemPuller.NemPuller._build_transaction_record')
+	@patch('puller.facade.NemPuller.NemDatabase.insert_transaction')
+	@patch('puller.facade.NemPuller.NemPuller._process_namespace')
+	def test_can_process_transaction_namespace_registration(
+		self,
+		mock_process_namespace,
+		mock_insert_transaction,
+		mock_build_transaction_record
+	):
+		# Arrange:
+		transaction = NEM_CONNECTOR_RESPONSE_BLOCKS[2].transactions[3]
+
+		cursor = Mock()
+
+		# Act:
+		self.puller._process_transaction(cursor, transaction, 3, is_inner=False)  # pylint: disable=protected-access
+
+		# Assert:
+		mock_build_transaction_record.assert_called_once()
+		mock_insert_transaction.assert_called_once()
+		mock_process_namespace.assert_called_once_with(cursor, transaction, 3)
+
+	@patch('puller.facade.NemPuller.NemPuller._build_transaction_record')
+	@patch('puller.facade.NemPuller.NemDatabase.insert_transaction')
+	@patch('puller.facade.NemPuller.NemPuller._process_mosaic_definition')
+	def test_can_process_transaction_mosaic_definition(
+		self,
+		mock_process_mosaic_definition,
+		mock_insert_transaction,
+		mock_build_transaction_record
+	):
+		# Arrange:
+		transaction = NEM_CONNECTOR_RESPONSE_BLOCKS[2].transactions[4]
+
+		cursor = Mock()
+
+		# Act:
+		self.puller._process_transaction(cursor, transaction, 3, is_inner=False)  # pylint: disable=protected-access
+
+		# Assert:
+		mock_build_transaction_record.assert_called_once()
+		mock_insert_transaction.assert_called_once()
+		mock_process_mosaic_definition.assert_called_once_with(cursor, transaction, 3)
+
+	@patch('puller.facade.NemPuller.NemPuller._build_transaction_record')
+	@patch('puller.facade.NemPuller.NemDatabase.insert_transaction')
+	@patch('puller.facade.NemPuller.NemPuller._process_mosaic_supply_change')
+	def test_can_process_transaction_mosaic_supply_change(
+		self,
+		mock_process_mosaic_supply_change,
+		mock_insert_transaction,
+		mock_build_transaction_record
+	):
+		# Arrange:
+		transaction = NEM_CONNECTOR_RESPONSE_BLOCKS[2].transactions[5]
+
+		cursor = Mock()
+
+		# Act:
+		self.puller._process_transaction(cursor, transaction, 3, is_inner=False)  # pylint: disable=protected-access
+
+		# Assert:
+		mock_build_transaction_record.assert_called_once()
+		mock_insert_transaction.assert_called_once()
+		mock_process_mosaic_supply_change.assert_called_once_with(cursor, transaction)
+
+	@patch('puller.facade.NemPuller.NemPuller._process_transaction')
+	def test_can_process_transactions_inner_outer(self, mock_process_transaction):
+		# Arrange:
+		mock_process_transaction.return_value = 1  # Simulate inserted transaction ID for linking inner transactions
+		block_data = NEM_CONNECTOR_RESPONSE_BLOCKS[2]
+
+		block = Block(
+			block_data.height,
+			block_data.timestamp,
+			[
+				block_data.transactions[6]
+			],
+			block_data.difficulty,
+			block_data.block_hash,
+			block_data.total_fee,
+			block_data.beneficiary,
+			block_data.signer,
+			block_data.signature,
+			block_data.size
+		)
+
+		cursor = Mock()
+
+		# Act:
+		self.puller._process_transactions(cursor, block.transactions, block.height)  # pylint: disable=protected-access
+
+		# Assert:
+		process_transaction_calls = mock_process_transaction.call_args_list
+		self.assertEqual(len(process_transaction_calls), 2)  # 1 for outer transaction, 1 for inner transaction
+
+		# Ensure the inner transaction is correctly linked to the outer transaction
+		self.assertEqual(block.transactions[0].other_transaction.height, block.transactions[0].height)
+		self.assertEqual(block.transactions[0].other_transaction.transaction_hash, block.transactions[0].inner_hash)
+
+		# first call is inner transaction
+		self.assertEqual(process_transaction_calls[0][0], (cursor,))
+		self.assertEqual(process_transaction_calls[0][1], {
+			'transaction': block.transactions[0].other_transaction,
+			'block_height': 3,
+			'is_inner': True
+		})
+
+		# second call is outer transaction
+		self.assertEqual(process_transaction_calls[1][0], (cursor,))
+		self.assertEqual(process_transaction_calls[1][1], {
+			'transaction': block.transactions[0],
+			'block_height': 3,
+			'is_inner': False,
+			'inner_transaction_id': 1
+		})

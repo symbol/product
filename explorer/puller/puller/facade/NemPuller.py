@@ -455,16 +455,46 @@ class NemPuller:
 			recipient_address=transaction.recipient if hasattr(transaction, 'recipient') else None,
 			payload=payload
 		)
+
+	def _process_transaction(self, cursor, transaction, block_height, is_inner, inner_transaction_id=None):
+		# pylint: disable=too-many-arguments,too-many-positional-arguments
+		"""Process a single transaction."""
+
+		transaction_record = self._build_transaction_record(transaction, is_inner, inner_transaction_id)
+		transaction_id = self.nem_db.insert_transaction(cursor, transaction_record)
+
+		if transaction.transaction_type == TransactionType.TRANSFER.value and transaction.mosaics:
+			for mosaic in transaction.mosaics:
+				self.nem_db.insert_transaction_mosaic(cursor, transaction_id, mosaic)
+		elif transaction.transaction_type == TransactionType.NAMESPACE_REGISTRATION.value:
+			self._process_namespace(cursor, transaction, block_height)
+		elif transaction.transaction_type == TransactionType.MOSAIC_DEFINITION.value:
+			self._process_mosaic_definition(cursor, transaction, block_height)
+		elif transaction.transaction_type == TransactionType.MOSAIC_SUPPLY_CHANGE.value:
+			self._process_mosaic_supply_change(cursor, transaction)
+
+		return transaction_id
+
 	def _process_transactions(self, cursor, block_transactions, height):
 		"""Process transactions in a block."""
 
 		for transaction in block_transactions:
-			if transaction.transaction_type == TransactionType.NAMESPACE_REGISTRATION.value:
-				self._process_namespace(cursor, transaction, height)
-			elif transaction.transaction_type == TransactionType.MOSAIC_DEFINITION.value:
-				self._process_mosaic_definition(cursor, transaction, height)
-			elif transaction.transaction_type == TransactionType.MOSAIC_SUPPLY_CHANGE.value:
-				self._process_mosaic_supply_change(cursor, transaction)
+			inner_transaction_id = None
+
+			# Handle inner transaction first to get its ID for linking
+			if hasattr(transaction, 'other_transaction'):
+				# For inner transactions, we set the transaction hash to the inner hash
+				transaction.other_transaction.transaction_hash = transaction.inner_hash
+				transaction.other_transaction.height = transaction.height
+				inner_transaction_id = self._process_transaction(cursor, transaction=transaction.other_transaction, block_height=height, is_inner=True)
+
+			self._process_transaction(
+				cursor,
+				transaction=transaction,
+				block_height=height,
+				is_inner=False,
+				inner_transaction_id=inner_transaction_id
+			)
 
 	async def sync_nemesis_block(self):
 		"""Sync and write Nemesis block to database."""
