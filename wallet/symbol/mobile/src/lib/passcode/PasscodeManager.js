@@ -1,4 +1,4 @@
-import { PASSCODE_LOCKOUT_DURATION_MS, PASSCODE_MAX_FAILED_ATTEMPTS, PASSCODE_PIN_LENGTH } from '@/app/constants';
+import { PASSCODE_LOCKOUT_DURATION, PASSCODE_MAX_FAILED_ATTEMPTS, PASSCODE_PIN_LENGTH } from '@/app/constants';
 import { SecureStorageInterface } from '@/app/lib/storage/SecureStorageInterface';
 import CryptoJS from 'crypto-js';
 import Hex from 'crypto-js/enc-hex';
@@ -236,7 +236,7 @@ export class PasscodeManager {
 	 * @returns {Promise<number>} - The timestamp until which the user is locked out.
 	 */
 	setLockout = async consecutiveFailures => {
-		const lockoutDuration = consecutiveFailures * PASSCODE_LOCKOUT_DURATION_MS;
+		const lockoutDuration = consecutiveFailures * PASSCODE_LOCKOUT_DURATION;
 		const lockoutUntil = Date.now() + lockoutDuration;
 		await this.storage.setItem(STORAGE_KEY_LOCKOUT_UNTIL, String(lockoutUntil));
 		await this.storage.setItem(STORAGE_KEY_CONSECUTIVE_FAILURES, String(consecutiveFailures + 1));
