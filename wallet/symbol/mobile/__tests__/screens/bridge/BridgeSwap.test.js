@@ -5,7 +5,7 @@ import { NetworkPropertiesFixtureBuilder } from '__fixtures__/local/NetworkPrope
 import { TokenFixtureBuilder } from '__fixtures__/local/TokenFixtureBuilder';
 import { TransactionFeeFixtureBuilder } from '__fixtures__/local/TransactionFeeFixtureBuilder';
 import { ScreenTester } from '__tests__/ScreenTester';
-import { createWalletControllerMock, mockLocalization, mockPasscode, mockRouter } from '__tests__/mock-helpers';
+import { createWalletControllerMock, mockLocalization, mockPasscode, mockRouter, mockWalletController } from '__tests__/mock-helpers';
 import { TransactionBundle } from 'wallet-common-core'; // eslint-disable-line import/order
 
 // Mocks
@@ -13,13 +13,7 @@ import { TransactionBundle } from 'wallet-common-core'; // eslint-disable-line i
 jest.mock('@react-navigation/native', () => ({
 	...jest.requireActual('@react-navigation/native'),
 	useIsFocused: () => true,
-	useFocusEffect: callback => {
-		callback();
-	},
-	useNavigation: () => ({
-		navigate: jest.fn(),
-		goBack: jest.fn()
-	})
+	useFocusEffect: callback => callback()
 }));
 
 jest.mock('@/app/screens/bridge/hooks', () => ({
@@ -32,18 +26,6 @@ jest.mock('@/app/screens/bridge/hooks', () => ({
 	useSwapSelector: jest.fn()
 }));
 
-jest.mock('@/app/hooks', () => {
-	const original = jest.requireActual('@/app/hooks');
-	return {
-		...original,
-		useTransactionFees: jest.fn(() => ({
-			data: null,
-			isLoading: false,
-			call: jest.fn()
-		})),
-		useWalletController: jest.fn()
-	};
-});
 
 // Constants
 
@@ -137,6 +119,12 @@ const tokenEth = TokenFixtureBuilder
 	.setAmount('2000')
 	.build();
 
+// Transfer Module Mock Factory
+
+const createTransferModuleMock = () => ({
+	calculateTransactionFees: jest.fn().mockResolvedValue(transactionFeeTiers)
+});
+
 // Wallet Controller Fixtures
 
 const symbolWalletController = createWalletControllerMock({
@@ -145,6 +133,7 @@ const symbolWalletController = createWalletControllerMock({
 	networkProperties: symbolNetworkProperties,
 	currentAccount: symbolAccount,
 	modules: {
+		transfer: createTransferModuleMock(),
 		bridge: {
 			createTransaction: jest.fn().mockResolvedValue({})
 		}
@@ -157,6 +146,7 @@ const ethereumWalletController = createWalletControllerMock({
 	networkProperties: ethereumNetworkProperties,
 	currentAccount: ethereumAccount,
 	modules: {
+		transfer: createTransferModuleMock(),
 		bridge: {
 			createTransaction: jest.fn().mockResolvedValue({})
 		}
@@ -260,7 +250,6 @@ const estimationResult = {
 
 // Hook Mocks
 
-const { useTransactionFees, useWalletController } = require('@/app/hooks');
 const {
 	useBridge,
 	useBridgeAmount,
@@ -337,13 +326,6 @@ const createUseBridgeNoPairsDialogMock = (overrides = {}) => ({
 	...overrides
 });
 
-const createUseTransactionFeesMock = (overrides = {}) => ({
-	data: null,
-	isLoading: false,
-	call: jest.fn(),
-	...overrides
-});
-
 // Default Props
 
 const createDefaultProps = (overrides = {}) => ({
@@ -367,8 +349,8 @@ const setupMocks = (config = {}) => {
 	useEstimation.mockReturnValue(createUseEstimationMock(config.useEstimation));
 	useBridgeHistory.mockReturnValue(createUseBridgeHistoryMock(config.useBridgeHistory));
 	useBridgeNoPairsDialog.mockReturnValue(createUseBridgeNoPairsDialogMock(config.useBridgeNoPairsDialog));
-	useTransactionFees.mockReturnValue(createUseTransactionFeesMock(config.useTransactionFees));
-	useWalletController.mockReturnValue(walletController);
+	
+	mockWalletController(walletController);
 	
 	return walletController;
 };
@@ -436,6 +418,7 @@ describe('screens/bridge/BridgeSwap', () => {
 			mockPasscode();
 
 			const screenTester = new ScreenTester(BridgeSwap, createDefaultProps());
+			await screenTester.waitForTimer(); // initial fee calculation + estimation
 
 			// Change source token
 
