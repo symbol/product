@@ -147,6 +147,28 @@ const storageTestConfig = [
 		setterName: 'setMultisigAccounts',
 		setterArguments: [jsonObject],
 		storagePayload: jsonString
+	},
+	{
+		key: 'HARVESTING_STATUSES',
+		getterName: 'getHarvestingStatuses',
+		emptyStorageValue: null,
+		expectedEmptyValue: null,
+		filledStorageValue: jsonString,
+		expectedFilledValue: jsonObject,
+		setterName: 'setHarvestingStatuses',
+		setterArguments: [jsonObject],
+		storagePayload: jsonString
+	},
+	{
+		key: 'HARVESTING_SUMMARIES',
+		getterName: 'getHarvestingSummaries',
+		emptyStorageValue: null,
+		expectedEmptyValue: null,
+		filledStorageValue: jsonString,
+		expectedFilledValue: jsonObject,
+		setterName: 'setHarvestingSummaries',
+		setterArguments: [jsonObject],
+		storagePayload: jsonString
 	}
 ];
 

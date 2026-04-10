@@ -38,7 +38,8 @@ export const useHarvestingAccountInfo = walletController => {
 			const result = await walletController.modules.harvesting.fetchStatus();
 			setIsInitialLoad(false);
 			return result;
-		}
+		},
+		defaultData: walletController.modules.harvesting.status
 	});
 
 	const refresh = useCallback(async () => {
