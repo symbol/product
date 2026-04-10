@@ -9,7 +9,7 @@ from symbollightapi.model.Exceptions import NodeException
 
 from rest import create_app
 
-from .test.DatabaseTestUtils import ACCOUNT_VIEWS, BLOCK_VIEWS, NAMESPACE_VIEWS, DatabaseConfig, initialize_database
+from .test.DatabaseTestUtils import ACCOUNT_VIEWS, BLOCK_VIEWS, MOSAIC_VIEWS, NAMESPACE_VIEWS, DatabaseConfig, initialize_database
 
 DATABASE_CONFIG_INI = 'db_config.ini'
 
@@ -91,7 +91,7 @@ def _get_api(client, endpoint, **query_params):  # pylint: disable=redefined-out
 
 def test_invalid_pagination_params(client):  # pylint: disable=redefined-outer-name
 
-	for module in ['blocks', 'accounts', 'namespaces']:
+	for module in ['blocks', 'accounts', 'namespaces', 'mosaics']:
 		# Act:
 		response = client.get(f'/api/nem/{module}', query_string={'limit': -1})
 
@@ -105,7 +105,7 @@ def test_invalid_pagination_params(client):  # pylint: disable=redefined-outer-n
 
 def test_invalid_sort_params(client):  # pylint: disable=redefined-outer-name
 
-	for module in ['blocks', 'namespaces']:
+	for module in ['blocks', 'namespaces', 'mosaics']:
 		# Act:
 		response = client.get(f'/api/nem/{module}', query_string={'sort': 'INVALID'})
 
@@ -115,7 +115,11 @@ def test_invalid_sort_params(client):  # pylint: disable=redefined-outer-name
 
 def test_data_not_found(client):  # pylint: disable=redefined-outer-name
 
-	for module, params in [('block', '/3'), ('account', '?address=NANEMOABLAGR72AZ2RV3V4ZHDCXW25XQ73O7OBT5'), ('namespace', '/nonexistent')]:
+	for module, params in [
+		('block', '/3'),
+		('account', '?address=NANEMOABLAGR72AZ2RV3V4ZHDCXW25XQ73O7OBT5'),
+		('namespace', '/nonexistent'),
+		('mosaic', '/nonexistent')]:
 		# Act:
 		response = client.get(f'/api/nem/{module}{params}')
 
@@ -417,13 +421,6 @@ def test_api_namespace_by_sub_namespace(client):  # pylint: disable=redefined-ou
 	_assert_get_nem_namespace_by_name(client, 'root_sub.sub_1', 200, NAMESPACE_VIEWS[1].to_dict())
 
 
-def test_api_namespace_by_name_not_found(client):  # pylint: disable=redefined-outer-name
-	_assert_get_nem_namespace_by_name(client, 'nonexistent', 404, {
-		'message': 'Resource not found',
-		'status': 404
-	})
-
-
 # endregion
 
 # region /namespaces
@@ -462,6 +459,63 @@ def test_api_namespaces_with_all_params(client):  # pylint: disable=redefined-ou
 		client,
 		200,
 		[NAMESPACE_VIEWS[0].to_dict()],
+		limit=1,
+		offset=1,
+		sort='DESC'
+	)
+
+
+# endregion
+
+# region /mosaic/<name>
+
+def test_api_mosaic_by_name(client):  # pylint: disable=redefined-outer-name
+	# Act:
+	response = client.get('/api/nem/mosaic/root.mosaic')
+
+	# Assert:
+	_assert_status_code_and_headers(response, 200)
+	assert MOSAIC_VIEWS[0].to_dict() == response.json
+
+
+# endregion
+
+# region /mosaics
+
+def _assert_get_api_nem_mosaics(client, expected_status_code, expected_result, **query_params):  # pylint: disable=redefined-outer-name
+	# Act:
+	response = _get_api(client, 'mosaics', **query_params)
+
+	# Assert:
+	_assert_status_code_and_headers(response, expected_status_code)
+	assert expected_result == response.json
+
+
+def test_api_mosaics_without_params(client):  # pylint: disable=redefined-outer-name
+	_assert_get_api_nem_mosaics(client, 200, [MOSAIC_VIEWS[1].to_dict(), MOSAIC_VIEWS[0].to_dict()])
+
+
+def test_api_mosaics_applies_limit(client):  # pylint: disable=redefined-outer-name
+	_assert_get_api_nem_mosaics(client, 200, [MOSAIC_VIEWS[1].to_dict()], limit=1)
+
+
+def test_api_mosaics_applies_offset(client):  # pylint: disable=redefined-outer-name
+	_assert_get_api_nem_mosaics(client, 200, [MOSAIC_VIEWS[0].to_dict()], offset=1)
+
+
+def test_api_mosaics_applies_sorted_by_registered_height_asc(client):  # pylint: disable=redefined-outer-name, invalid-name
+	_assert_get_api_nem_mosaics(client, 200, [MOSAIC_VIEWS[0].to_dict(), MOSAIC_VIEWS[1].to_dict()], sort='ASC')
+
+
+def test_api_mosaics_applies_sorted_by_registered_height_desc(client):  # pylint: disable=redefined-outer-name, invalid-name
+	_assert_get_api_nem_mosaics(client, 200, [MOSAIC_VIEWS[1].to_dict(), MOSAIC_VIEWS[0].to_dict()], sort='DESC')
+
+
+def test_api_mosaics_with_all_params(client):  # pylint: disable=redefined-outer-name
+	_assert_get_api_nem_mosaics(
+		client,
+		200,
+		[MOSAIC_VIEWS[0].to_dict()],
 		limit=1,
 		offset=1,
 		sort='DESC'

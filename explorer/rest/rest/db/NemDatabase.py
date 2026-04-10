@@ -5,6 +5,7 @@ from symbolchain.nem.Network import Address
 
 from rest.model.Account import AccountView
 from rest.model.Block import BlockView
+from rest.model.Mosaic import MosaicView
 from rest.model.Namespace import NamespaceView
 
 from .DatabaseConnection import DatabaseConnectionPool
@@ -16,6 +17,10 @@ def _format_bytes(buffer):
 
 def _format_xem_relative(amount):
 	return amount / (10 ** 6)
+
+
+def _format_relative(amount, divisibility):
+	return amount / (10 ** divisibility)
 
 
 class NemDatabase(DatabaseConnectionPool):
@@ -113,6 +118,53 @@ class NemDatabase(DatabaseConnectionPool):
 			sub_namespaces=sub_namespaces
 		)
 
+	def _create_mosaic_view(self, result):  # pylint: disable=too-many-locals
+		levy_types = {
+			1: 'absolute fee',
+			2: 'percentile'
+		}
+
+		(
+			namespace_name,
+			description,
+			creator,
+			mosaic_registered_height,
+			mosaic_registered_timestamp,
+			initial_supply,
+			total_supply,
+			divisibility,
+			supply_mutable,
+			transferable,
+			levy_type,
+			levy_namespace_name,
+			levy_divisibility,
+			levy_fee,
+			levy_recipient,
+			root_namespace_registered_height,
+			root_namespace_registered_timestamp,
+			root_namespace_expiration_height
+		) = result
+
+		return MosaicView(
+			namespace_name=namespace_name,
+			description=description,
+			creator=str(self.network.public_key_to_address(PublicKey(creator))),
+			mosaic_registered_height=mosaic_registered_height,
+			mosaic_registered_timestamp=str(mosaic_registered_timestamp),
+			initial_supply=initial_supply,
+			total_supply=total_supply,
+			divisibility=divisibility,
+			supply_mutable=supply_mutable,
+			transferable=transferable,
+			levy_type=levy_types.get(levy_type, None),
+			levy_namespace_name=levy_namespace_name,
+			levy_fee=_format_relative(levy_fee, levy_divisibility) if levy_type else None,
+			levy_recipient=str(Address(levy_recipient)) if levy_recipient else None,
+			root_namespace_registered_height=root_namespace_registered_height,
+			root_namespace_registered_timestamp=str(root_namespace_registered_timestamp),
+			root_namespace_expiration_height=root_namespace_expiration_height,
+		)
+
 	@staticmethod
 	def _generate_account_query(where_condition, order_condition='', limit_condition=''):
 		"""Base account query."""
@@ -177,6 +229,47 @@ class NemDatabase(DatabaseConnectionPool):
 			FROM namespaces n
 			left join blocks b
 				on n.registered_height = b.height
+			{where_condition}
+			{order_condition}
+			{limit_condition}
+		'''
+
+	@staticmethod
+	def _generate_mosaic_query(where_condition='', order_condition='', limit_condition=''):
+		"""Base mosaic query."""
+
+		return f'''
+			SELECT
+				m.namespace_name,
+				m.description,
+				m.creator,
+				m.registered_height AS mosaic_registered_height,
+				m_block.timestamp AS mosaic_registered_timestamp,
+				m.initial_supply,
+				m.total_supply,
+				m.divisibility,
+				m.supply_mutable,
+				m.transferable,
+				m.levy_type,
+				m.levy_namespace_name,
+				CASE
+					WHEN m.levy_namespace_name = 'nem.xem' THEN 6
+					ELSE levy.divisibility
+				END AS levy_divisibility,
+				m.levy_fee,
+				m.levy_recipient,
+				ns.registered_height AS root_namespace_registered_height,
+				ns_block.timestamp AS root_namespace_registered_timestamp,
+				ns.expiration_height AS root_namespace_expiration_height
+			FROM mosaics m
+			LEFT JOIN mosaics levy
+				ON levy.namespace_name = m.levy_namespace_name
+			LEFT JOIN namespaces ns
+				ON ns.root_namespace = m.root_namespace
+			LEFT JOIN blocks ns_block
+				ON ns_block.height = ns.registered_height
+			LEFT JOIN blocks m_block
+				ON m_block.height = m.registered_height
 			{where_condition}
 			{order_condition}
 			{limit_condition}
@@ -295,3 +388,34 @@ class NemDatabase(DatabaseConnectionPool):
 			results = cursor.fetchall()
 
 			return [self._create_namespace_view(result) for result in results]
+
+	def get_mosaic_by_name(self, namespace_name):
+		"""Gets mosaic by namespace name in database."""
+
+		where_condition = 'WHERE m.namespace_name = %s'
+
+		sql = self._generate_mosaic_query(where_condition=where_condition)
+
+		with self.connection() as connection:
+			cursor = connection.cursor()
+			cursor.execute(sql, (namespace_name,))
+			result = cursor.fetchone()
+
+			return self._create_mosaic_view(result) if result else None
+
+	def get_mosaics(self, pagination, sort):
+		"""Gets mosaics pagination in database."""
+
+		order_condition = f' ORDER BY m.registered_height {sort}'
+		limit_condition = ' LIMIT %s OFFSET %s'
+
+		sql = self._generate_mosaic_query(order_condition=order_condition, limit_condition=limit_condition)
+
+		params = [pagination.limit, pagination.offset]
+
+		with self.connection() as connection:
+			cursor = connection.cursor()
+			cursor.execute(sql, params)
+			results = cursor.fetchall()
+
+			return [self._create_mosaic_view(result) for result in results]
