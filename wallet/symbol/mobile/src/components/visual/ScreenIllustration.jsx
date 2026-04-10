@@ -22,7 +22,7 @@ const sourceMap = {
 export const ScreenIllustration = ({ name }) => {
 	const source = sourceMap[name];
 
-	if (!source)
+	if (!source && __DEV__)
 		throw new Error(`ScreenIllustration: image source not found for name "${name}".`);
 
 	return (

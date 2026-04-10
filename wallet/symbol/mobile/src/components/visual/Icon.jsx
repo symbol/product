@@ -203,7 +203,7 @@ export const Icon = ({ name, size = 'm', variant = 'default', src, style: custom
 	const iconSize = sizeMap[size];
 	const iconSource = src ?? sourceMap[variant]?.[name];
 
-	if (!iconSource)
+	if (!iconSource && __DEV__)
 		throw new Error(`Icon: Icon source not found for name "${name}" and color variant "${variant}".`);
 
 	const mainStyle = {
@@ -211,10 +211,11 @@ export const Icon = ({ name, size = 'm', variant = 'default', src, style: custom
 		height: iconSize,
 		resizeMode: 'contain'
 	};
+	const fallbackIconSource = sourceMap.default['question-circle'];
 
 	return (
 		<Image 
-			source={iconSource} 
+			source={iconSource ?? fallbackIconSource} 
 			style={[mainStyle, customStyle]}
 			accessibilityLabel={`${name} icon`}
 			testID={`icon-${name}`} 
