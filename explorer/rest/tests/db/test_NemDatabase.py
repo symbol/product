@@ -1,7 +1,7 @@
 from rest import Pagination, Sorting
 from rest.db.NemDatabase import NemDatabase
 
-from ..test.DatabaseTestUtils import ACCOUNT_VIEWS, ACCOUNTS, BLOCK_VIEWS, NAMESPACE_VIEWS, DatabaseTestBase
+from ..test.DatabaseTestUtils import ACCOUNT_VIEWS, ACCOUNTS, BLOCK_VIEWS, MOSAIC_VIEWS, NAMESPACE_VIEWS, DatabaseTestBase
 
 # region test data
 
@@ -16,6 +16,10 @@ EXPECTED_ACCOUNT_VIEW_2 = ACCOUNT_VIEWS[1]
 EXPECTED_NAMESPACE_VIEW_1 = NAMESPACE_VIEWS[0]
 
 EXPECTED_NAMESPACE_VIEW_2 = NAMESPACE_VIEWS[1]
+
+EXPECTED_MOSAIC_VIEW_1 = MOSAIC_VIEWS[0]
+
+EXPECTED_MOSAIC_VIEW_2 = MOSAIC_VIEWS[1]
 
 # endregion
 
@@ -154,5 +158,45 @@ class NemDatabaseTest(DatabaseTestBase):  # pylint: disable=too-many-public-meth
 
 	def test_can_query_namespaces_sorted_by_registered_height_desc(self):
 		self._assert_can_query_namespaces_with_filter(Pagination(10, 0), 'desc', [EXPECTED_NAMESPACE_VIEW_2, EXPECTED_NAMESPACE_VIEW_1])
+
+	# endregion
+
+	# region mosaic
+
+	def _assert_can_query_mosaic_by_name(self, namespace_name, expected_mosaic):
+		# Act:
+		mosaic_view = self.nem_db.get_mosaic_by_name(namespace_name)
+
+		# Assert:
+		self.assertEqual(expected_mosaic, mosaic_view)
+
+	def test_can_query_mosaic_by_namespace_name(self):
+		self._assert_can_query_mosaic_by_name('root.mosaic', EXPECTED_MOSAIC_VIEW_1)
+
+	def test_cannot_query_nonexistent_mosaic(self):
+		self._assert_can_query_mosaic_by_name('nonexistent', None)
+
+	# endregion
+
+	# region mosaics
+
+	def _assert_can_query_mosaics_with_filter(self, pagination, sort, expected_mosaics):
+		# Act:
+		mosaics_view = self.nem_db.get_mosaics(pagination, sort)
+
+		# Assert:
+		self.assertEqual(expected_mosaics, mosaics_view)
+
+	def test_can_query_mosaics_filtered_limit_offset_0(self):
+		self._assert_can_query_mosaics_with_filter(Pagination(1, 0), 'desc', [EXPECTED_MOSAIC_VIEW_2])
+
+	def test_can_query_mosaics_filtered_offset_1(self):
+		self._assert_can_query_mosaics_with_filter(Pagination(1, 1), 'desc', [EXPECTED_MOSAIC_VIEW_1])
+
+	def test_can_query_mosaics_sorted_by_registered_height_asc(self):
+		self._assert_can_query_mosaics_with_filter(Pagination(10, 0), 'asc', [EXPECTED_MOSAIC_VIEW_1, EXPECTED_MOSAIC_VIEW_2])
+
+	def test_can_query_mosaics_sorted_by_registered_height_desc(self):
+		self._assert_can_query_mosaics_with_filter(Pagination(10, 0), 'desc', [EXPECTED_MOSAIC_VIEW_2, EXPECTED_MOSAIC_VIEW_1])
 
 	# endregion
