@@ -37,3 +37,6 @@ export { MultisigAccountList } from './multisig/MultisigAccountList';
 export { MultisigAccountDetails } from './multisig/MultisigAccountDetails';
 export { CreateMultisigAccount } from './multisig/CreateMultisigAccount';
 export { ModifyMultisigAccount } from './multisig/ModifyMultisigAccount';
+
+// Harvesting
+export { Harvesting } from './harvesting/Harvesting';

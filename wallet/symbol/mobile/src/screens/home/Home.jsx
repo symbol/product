@@ -6,6 +6,8 @@ import { $t } from '@/app/localization';
 import { Router } from '@/app/router/Router';
 import { useAddressBookWidget } from '@/app/screens/address-book/hooks';
 import { AddressBookWidget } from '@/app/screens/address-book/widgets/AddressBookWidget';
+import { useHarvestingWidget } from '@/app/screens/harvesting/hooks';
+import { HarvestingWidget } from '@/app/screens/harvesting/widgets';
 import { useHistoryWidget } from '@/app/screens/history/hooks';
 import { HistoryWidget } from '@/app/screens/history/widgets/HistoryWidget';
 import { AccountCardWidget } from '@/app/screens/home/components/AccountCardWidget';
@@ -38,12 +40,14 @@ export const Home = () => {
 	const historyWidget = useHistoryWidget(walletController);
 	const addressBookWidget = useAddressBookWidget(walletController);
 	const multisigWidget = useMultisigWidget(walletController);
+	const harvestingWidget = useHarvestingWidget(walletController);
 
 	// Data fetching
 	const fetchData = () => {
 		walletController.fetchAccountInfo();
 		historyWidget.refresh();
 		multisigWidget.refresh();
+		harvestingWidget.refresh();
 	};
 
 	useInit(fetchData, walletController.isWalletReady);
@@ -95,6 +99,9 @@ export const Home = () => {
 							</WidgetAnimatedWrapper>
 							<WidgetAnimatedWrapper isVisible={multisigWidget.isVisible}>
 								<MultisigWidget {...multisigWidget.props} />
+							</WidgetAnimatedWrapper>
+							<WidgetAnimatedWrapper isVisible={harvestingWidget.isVisible}>
+								<HarvestingWidget {...harvestingWidget.props} />
 							</WidgetAnimatedWrapper>
 						</Stack>
 					</Stack>

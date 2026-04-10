@@ -111,4 +111,7 @@ export class Router {
 	static goToEditContact(params) {
 		navigationRef.navigate(RouteName.EditContact, parseNavigationParams(params));
 	}
+	static goToHarvesting(params) {
+		navigationRef.navigate(RouteName.Harvesting, parseNavigationParams(params));
+	}
 }
