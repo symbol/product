@@ -10,6 +10,8 @@ import { useCallback, useRef } from 'react';
 export const useDebounce = (callback, delay) => {
 	const timerRef = useRef(null);
 	const lastCallTimeRef = useRef(0);
+	const callbackRef = useRef(callback);
+	callbackRef.current = callback;
 
 	const call = useCallback(
 		(...args) => {
@@ -17,7 +19,7 @@ export const useDebounce = (callback, delay) => {
 
 			if (now - lastCallTimeRef.current >= delay) {
 				lastCallTimeRef.current = now;
-				callback(...args);
+				callbackRef.current(...args);
 			} else {
 				if (timerRef.current) 
 					clearTimeout(timerRef.current);
@@ -26,11 +28,11 @@ export const useDebounce = (callback, delay) => {
 
 				timerRef.current = setTimeout(() => {
 					lastCallTimeRef.current = Date.now();
-					callback(...args);
+					callbackRef.current(...args);
 				}, remaining);
 			}
 		},
-		[callback, delay]
+		[delay]
 	);
 
 	return call;
