@@ -3,7 +3,7 @@ import { createHarvestingSummaryViewModel } from '@/app/screens/harvesting/utils
 import { useCallback } from 'react';
 
 /** @typedef {import('@/app/types/Wallet').MainWalletController} MainWalletController */
-/** @typedef {import('@/app/screens/harvesting/utils/harvesting-summary').HarvestingSummaryViewModel} HarvestingSummaryViewModel */
+/** @typedef {import('../types/Harvesting').HarvestingSummaryViewModel} HarvestingSummaryViewModel */
 
 /**
  * Return type for useHarvestingSummary hook.

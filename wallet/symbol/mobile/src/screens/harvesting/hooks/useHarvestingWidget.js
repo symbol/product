@@ -2,14 +2,7 @@ import { useAsyncManager, useWalletRefreshLifecycle } from '@/app/hooks';
 import { createHarvestingSummaryViewModel } from '@/app/screens/harvesting/utils';
 
 /** @typedef {import('@/app/types/Wallet').MainWalletController} MainWalletController */
-/** @typedef {import('@/app/screens/harvesting/utils/harvesting-summary').HarvestingSummaryViewModel} HarvestingSummaryViewModel */
-
-/**
- * Harvesting widget props.
- * @typedef {Object} HarvestingWidgetProps
- * @property {HarvestingSummaryViewModel} summaryViewModel - Summary view model.
- * @property {string} ticker - Ticker symbol for the network currency.
- */
+/** @typedef {import('../types/Harvesting').HarvestingWidgetProps} HarvestingWidgetProps */
 
 /**
  * Return type for useHarvestingWidget hook.
