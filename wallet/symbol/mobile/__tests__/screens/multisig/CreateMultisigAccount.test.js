@@ -6,13 +6,6 @@ import { ScreenTester } from '__tests__/ScreenTester';
 import { createAddressBookMock, mockLocalization, mockPasscode, mockRouter, mockWalletController } from '__tests__/mock-helpers';
 import { ACTION_TYPE, addCosignatory, applyCounterAction } from '__tests__/screens/multisig/multisig-test-helper';
 
-// Mocks
-
-jest.mock('@react-navigation/native', () => ({
-	...jest.requireActual('@react-navigation/native'),
-	useIsFocused: () => true
-}));
-
 // Constants
 
 const CHAIN_NAME = 'symbol';
