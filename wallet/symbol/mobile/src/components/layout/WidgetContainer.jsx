@@ -12,12 +12,14 @@ import { StyleSheet } from 'react-native';
  * @param {object} props - Component props
  * @param {string} props.title - Widget title displayed in the header.
  * @param {function} props.onHeaderPress - Callback invoked when the header is pressed.
+ * @param {string} [props.backgroundColor] - Background color for the widget container.
+
  * @param {React.ReactNode} props.children - Content to render below the header.
  *
  * @returns {React.ReactNode} WidgetContainer component
  */
-export const WidgetContainer = ({ title, onHeaderPress, children }) => (
-	<Card style={styles.root}>
+export const WidgetContainer = ({ title, onHeaderPress, backgroundColor, children }) => (
+	<Card style={styles.root} color={backgroundColor}>
 		<TouchableNative
 			style={styles.header} 
 			color={Colors.Components.cardHeader.background}

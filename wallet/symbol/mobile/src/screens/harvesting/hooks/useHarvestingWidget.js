@@ -1,5 +1,8 @@
-import { useAsyncManager, useWalletRefreshLifecycle } from '@/app/hooks';
-import { createHarvestingSummaryViewModel } from '@/app/screens/harvesting/utils';
+import { useWalletRefreshLifecycle } from '@/app/hooks';
+import { useHarvestingAccountInfo } from '@/app/screens/harvesting/hooks/useHarvestingAccountInfo';
+import { useHarvestingSummary } from '@/app/screens/harvesting/hooks/useHarvestingSummary';
+import { createHarvestingStatusViewModel } from '@/app/screens/harvesting/utils';
+import { useCallback } from 'react';
 
 /** @typedef {import('@/app/types/Wallet').MainWalletController} MainWalletController */
 /** @typedef {import('../types/Harvesting').HarvestingWidgetProps} HarvestingWidgetProps */
@@ -23,25 +26,47 @@ import { createHarvestingSummaryViewModel } from '@/app/screens/harvesting/utils
 export const useHarvestingWidget = walletController => {
 	const { ticker } = walletController;
 
-	// Harvesting summary
-	const summaryManager = useAsyncManager({
-		callback: async () => walletController.modules.harvesting.fetchSummary()
+	// Harvesting status
+	const statusManager = useHarvestingAccountInfo(walletController);
+	const { 
+		harvestingStatus, 
+		isAccountBalanceSufficient, 
+		isAccountImportanceSufficient, 
+		isPendingTransaction 
+	} = statusManager;
+	const statusViewModel = createHarvestingStatusViewModel({
+		harvestingStatus,
+		isBalanceSufficient: isAccountBalanceSufficient,
+		isImportanceSufficient: isAccountImportanceSufficient,
+		isPendingTransaction
 	});
-	const summaryViewModel = createHarvestingSummaryViewModel(summaryManager.data);
+
+	// Harvesting summary
+	const summaryManager = useHarvestingSummary(walletController);
+	const { summaryViewModel } = summaryManager;
 
 	// Subscribe to wallet events for auto-refresh
+	const refreshAll = useCallback(() => {
+		statusManager.refresh();
+		summaryManager.refresh();
+	}, [statusManager, summaryManager]);
+	const clearAll = useCallback(() => {
+		statusManager.reset();
+		summaryManager.reset();
+	}, [statusManager, summaryManager]);
 	useWalletRefreshLifecycle({
 		walletController,
-		onRefresh: summaryManager.call,
-		onClear: summaryManager.reset
+		onRefresh: refreshAll,
+		onClear: clearAll
 	});
 
 	return {
 		isVisible: summaryViewModel.hasData,
-		refresh: summaryManager.call,
-		isLoading: summaryManager.isLoading,
+		refresh: refreshAll,
+		isLoading: summaryManager.isLoading || statusManager.isLoading,
 		props: {
 			summaryViewModel,
+			statusViewModel,
 			ticker
 		}
 	};
