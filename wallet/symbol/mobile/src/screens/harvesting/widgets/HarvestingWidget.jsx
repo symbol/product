@@ -4,15 +4,13 @@ import { $t } from '@/app/localization';
 import { Router } from '@/app/router/Router';
 import React from 'react';
 
-/** @typedef {import('@/app/screens/harvesting/utils/harvesting-summary').HarvestingSummaryViewModel} HarvestingSummaryViewModel */
+/** @typedef {import('../types/Harvesting').HarvestingWidgetProps} HarvestingWidgetProps */
 
 /**
  * HarvestingWidget component. Displays harvesting status and summary in a card widget
  * on the home screen.
  *
- * @param {Object} props - Component props.
- * @param {HarvestingSummaryViewModel} props.summaryViewModel - Summary view model.
- * @param {string} props.ticker - Currency ticker symbol.
+ * @param {HarvestingWidgetProps} props - Component props.
  * @returns {React.ReactNode} HarvestingWidget component.
  */
 export const HarvestingWidget = ({ summaryViewModel, ticker }) => {

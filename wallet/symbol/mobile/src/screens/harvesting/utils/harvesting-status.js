@@ -4,29 +4,9 @@ import { HarvestingStatus } from '@/app/screens/harvesting/types/Harvesting';
 import { safeOperationWithRelativeAmounts } from 'wallet-common-core';
 
 /** @typedef {import('wallet-common-symbol').HarvestingStatus} HarvestingStatusData */
-
-/**
- * Status display configuration.
- * @typedef {Object} StatusDisplayConfig
- * @property {string} statusText - Localized status text.
- * @property {string} icon - Icon name for status card.
- * @property {import('@/app/types/ColorVariants').SemanticRoleColorVariants} variant - Status card variant.
- */
-
-/**
- * Warning display configuration.
- * @typedef {Object} WarningConfig
- * @property {boolean} isVisible - Whether warning is visible.
- * @property {string} [text] - Warning text if visible.
- */
-
-/**
- * Harvesting status view model.
- * @typedef {Object} HarvestingStatusViewModel
- * @property {StatusDisplayConfig} statusDisplay - Status display configuration.
- * @property {WarningConfig} warning - Warning configuration.
- * @property {string|null} nodeUrl - Node URL if available.
- */
+/** @typedef {import('../types/Harvesting').StatusDisplayConfig} StatusDisplayConfig */
+/** @typedef {import('../types/Harvesting').WarningConfig} WarningConfig */
+/** @typedef {import('../types/Harvesting').HarvestingStatusViewModel} HarvestingStatusViewModel */
 
 /**
  * Checks if account balance is sufficient for harvesting.

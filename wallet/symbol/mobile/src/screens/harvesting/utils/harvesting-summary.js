@@ -1,16 +1,7 @@
 import { $t } from '@/app/localization';
 import { formatDate } from '@/app/utils';
 
-/**
- * Harvesting summary view model.
- * @typedef {Object} HarvestingSummaryViewModel
- * @property {boolean} hasData - Whether there is any harvesting data.
- * @property {string} latestAmount - Latest harvested amount.
- * @property {string} latestBlockNumber - Latest block number as string.
- * @property {string} latestDate - Formatted date of latest harvest.
- * @property {string} amountPer30Days - Total amount harvested in last 30 days.
- * @property {string} blocksCount - Number of blocks harvested in last 30 days (formatted for display).
- */
+/** @typedef {import('../types/Harvesting').HarvestingSummaryViewModel} HarvestingSummaryViewModel */
 
 /**
  * Creates harvesting summary view model from API response.
