@@ -185,6 +185,37 @@ def setup_nem_routes(app, nem_api_facade):  # pylint: disable=too-many-statement
 
 		return jsonify(results)
 
+	@app.route('/api/nem/mosaic/<name>')
+	def api_get_nem_mosaic_by_name(name):
+		result = nem_api_facade.get_mosaic_by_name(name)
+
+		if not result:
+			abort(404)
+
+		return jsonify(result)
+
+	@app.route('/api/nem/mosaics')
+	def api_get_nem_mosaics():
+		try:
+			limit = int(request.args.get('limit', 10))
+			offset = int(request.args.get('offset', 0))
+			sort = request.args.get('sort', 'DESC')
+
+			if limit < 0 or offset < 0:
+				raise ValueError('Limit and offset must be greater than or equal to 0')
+			if sort.upper() not in ['ASC', 'DESC']:
+				raise ValueError('Sort must be either ASC or DESC')
+
+		except ValueError as error:
+			abort(400, error)
+
+		results = nem_api_facade.get_mosaics(
+			pagination=Pagination(limit, offset),
+			sort=sort
+		)
+
+		return jsonify(results)
+
 
 def setup_error_handlers(app):
 	@app.errorhandler(404)
