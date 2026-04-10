@@ -368,11 +368,17 @@ class NemPuller:
 		"""Create TransactionRecord from transaction data."""
 
 		payload = None
+		recipient_address = None
+		amount = None
 		if transaction.transaction_type == TransactionType.TRANSFER.value:
 			payload = {
-				'payload': transaction.message.payload,
-				'is_plain': transaction.message.is_plain,
-			} if transaction.message else {}
+				'message': {
+					'payload': transaction.message.payload,
+					'is_plain': transaction.message.is_plain,
+				} if transaction.message else None
+			}
+			recipient_address = transaction.recipient
+			amount = transaction.amount
 		elif transaction.transaction_type == TransactionType.ACCOUNT_KEY_LINK.value:
 			payload = {
 				'mode': transaction.mode,
@@ -407,14 +413,13 @@ class NemPuller:
 			}
 		elif transaction.transaction_type == TransactionType.NAMESPACE_REGISTRATION.value:
 			payload = {
-				'rental_fee_sink': str(transaction.rental_fee_sink),
 				'rental_fee': transaction.rental_fee,
 				'parent': transaction.parent,
 				'namespace': transaction.namespace
 			}
+			recipient_address = transaction.rental_fee_sink
 		elif transaction.transaction_type == TransactionType.MOSAIC_DEFINITION.value:
 			payload = {
-				'creation_fee_sink': str(transaction.creation_fee_sink),
 				'creation_fee': transaction.creation_fee,
 				'creator': str(transaction.sender),
 				'description': transaction.description,
@@ -432,6 +437,7 @@ class NemPuller:
 					'recipient': str(transaction.levy.recipient)
 				} if transaction.levy else None
 			}
+			recipient_address = transaction.creation_fee_sink
 		elif transaction.transaction_type == TransactionType.MOSAIC_SUPPLY_CHANGE.value:
 			payload = {
 				'namespace_name': transaction.namespace_name,
@@ -446,13 +452,13 @@ class NemPuller:
 			fee=transaction.fee,
 			timestamp=self._convert_timestamp_to_datetime(transaction.timestamp),
 			deadline=self._convert_timestamp_to_datetime(transaction.deadline),
-			amount=transaction.amount if hasattr(transaction, 'amount') else None,
+			amount=amount,
 			signature=transaction.signature,
 			transaction_type=transaction.transaction_type,
 			is_inner=is_inner,
 			inner_transaction_id=inner_transaction_id,  # to be updated after insertion if it's an inner transaction
 			sender_address=transaction.sender,
-			recipient_address=transaction.recipient if hasattr(transaction, 'recipient') else None,
+			recipient_address=recipient_address,
 			payload=payload
 		)
 

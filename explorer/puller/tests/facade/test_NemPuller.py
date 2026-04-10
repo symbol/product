@@ -946,8 +946,10 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 
 		self._assert_transaction_record(
 			transaction, {
-				'payload': '476f6f64206c75636b21',
-				'is_plain': 1
+				'message': {
+					'payload': '476f6f64206c75636b21',
+					'is_plain': 1
+				}
 			},
 			amount=180000040000000,
 			recipient_address=transaction.recipient
@@ -961,7 +963,7 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 
 		self._assert_transaction_record(
 			transaction,
-			{},
+			{'message': None},
 			amount=180000040000000,
 			recipient_address=transaction.recipient
 		)
@@ -1024,11 +1026,12 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 
 		self._assert_transaction_record(
 			transaction, {
-				'rental_fee_sink': str(transaction.rental_fee_sink),
 				'rental_fee': transaction.rental_fee,
 				'parent': transaction.parent,
 				'namespace': transaction.namespace,
-			})
+			},
+			recipient_address=transaction.rental_fee_sink
+		)
 
 	def test_can_build_transaction_record_mosaic_definition(self):
 		# Arrange:
@@ -1036,7 +1039,6 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 
 		self._assert_transaction_record(
 			transaction, {
-				'creation_fee_sink': str(transaction.creation_fee_sink),
 				'creation_fee': transaction.creation_fee,
 				'creator': str(transaction.sender),
 				'description': transaction.description,
@@ -1053,7 +1055,8 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 					'fee': transaction.levy.fee,
 					'recipient': str(transaction.levy.recipient)
 				}
-			}
+			},
+			recipient_address=transaction.creation_fee_sink
 		)
 
 	def test_can_build_transaction_record_mosaic_definition_without_levy(self):
@@ -1079,7 +1082,6 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 
 		self._assert_transaction_record(
 			transaction, {
-				'creation_fee_sink': str(transaction.creation_fee_sink),
 				'creation_fee': transaction.creation_fee,
 				'creator': str(transaction.sender),
 				'description': transaction.description,
@@ -1091,7 +1093,8 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 					'transferable': transaction.properties.transferable
 				},
 				'levy': None
-			}
+			},
+			recipient_address=transaction.creation_fee_sink
 		)
 
 	def test_can_build_transaction_record_mosaic_supply_change(self):
