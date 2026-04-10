@@ -1,9 +1,11 @@
-import { Card, Icon, Spacer, Stack, StyledText } from '@/app/components';
+import { Card, Icon, LoadingIndicator, Spacer, Stack, StyledText } from '@/app/components';
 import { Colors, Sizes } from '@/app/styles';
 import React from 'react';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 const CONTENT_COLOR = Colors.Semantic.content.primary.inverse;
+const ICON_SIZE = 'm';
+const ICON_SIZE_VALUE = Sizes.Semantic.iconSize[ICON_SIZE];
 
 /**
  * StatusCard component. A card component for displaying status information with an icon,
@@ -30,16 +32,14 @@ export const StatusCard = ({ variant = 'neutral', statusText, icon, isLoading, c
 						{!isLoading && (
 							<Icon
 								name={icon}
-								size="m"
+								size={ICON_SIZE}
 								variant="inverse"
 							/>
 						)}
 						{isLoading && (
-							<ActivityIndicator
-								style={styles.statusIcon}
-								size="small"
-								color={CONTENT_COLOR}
-							/>
+							<View style={styles.loadingIndicator}>
+								<LoadingIndicator size="sm" color={CONTENT_COLOR} />
+							</View>
 						)}
 						<StyledText size="xl" inverse>
 							{statusText}
@@ -60,5 +60,11 @@ const styles = StyleSheet.create({
 		flexDirection: 'row',
 		alignItems: 'center',
 		gap: Sizes.Semantic.spacing.m
+	},
+	loadingIndicator: {
+		width: ICON_SIZE_VALUE,
+		height: ICON_SIZE_VALUE,
+		justifyContent: 'center',
+		alignItems: 'center'
 	}
 });
