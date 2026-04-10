@@ -29,7 +29,8 @@ export const RouteName = {
 	ContactList: 'ContactList',
 	ContactDetails: 'ContactDetails',
 	CreateContact: 'CreateContact',
-	EditContact: 'EditContact'
+	EditContact: 'EditContact',
+	Harvesting: 'Harvesting'
 };
 
 export const RouterFlow = {
@@ -40,7 +41,7 @@ export const RouterFlow = {
 export const DEEP_LINKING_PREFIX = 'web+symbol://';
 
 export const SCREEN_BACKGROUND_COLOR = 'transparent';
-export const TRANSITION_ANIMATION = 'fade';
+export const TRANSITION_ANIMATION = 'none';
 export const HEADER_BACKGROUND_COLOR = Colors.Components.titlebar.background;
 export const HEADER_TINT_COLOR = Colors.Components.main.text;
 export const HEADER_TITLE_TEXT = Typography.Semantic.title.m;

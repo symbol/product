@@ -19,6 +19,9 @@ describe('screens/onboarding/Home', () => {
 				},
 				market: {
 					price: null
+				},
+				harvesting: {
+					fetchSummary: jest.fn().mockResolvedValue(null)
 				}
 			}
 		});
