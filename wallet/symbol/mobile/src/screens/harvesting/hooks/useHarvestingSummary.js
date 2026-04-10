@@ -22,7 +22,8 @@ import { useCallback } from 'react';
  */
 export const useHarvestingSummary = walletController => {
 	const summaryManager = useAsyncManager({
-		callback: async () => walletController.modules.harvesting.fetchSummary()
+		callback: async () => walletController.modules.harvesting.fetchSummary(),
+		defaultData: walletController.modules.harvesting.summary
 	});
 
 	const summaryViewModel = createHarvestingSummaryViewModel(summaryManager.data);

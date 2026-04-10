@@ -25,6 +25,8 @@ export class PersistentStorageRepository {
 		USER_CURRENCY: 'USER_CURRENCY',
 		NETWORK_PROPERTIES: 'NETWORK_PROPERTIES',
 		SELECTED_LANGUAGE: 'SELECTED_LANGUAGE',
+		HARVESTING_STATUSES: 'HARVESTING_STATUSES',
+		HARVESTING_SUMMARIES: 'HARVESTING_SUMMARIES',
 		MULTISIG_ACCOUNTS: 'MULTISIG_ACCOUNTS'
 	};
 
@@ -258,6 +260,44 @@ export class PersistentStorageRepository {
 	 */
 	setNetworkProperties = async payload => {
 		return this.storage.setItem(PersistentStorageRepository.STORAGE_KEYS.NETWORK_PROPERTIES, JSON.stringify(payload));
+	};
+
+	/**
+	 * Get the cached harvesting statuses.
+	 * @returns {Promise<NetworkObjectMap|null>} A promise that resolves to the harvesting statuses object or null if not set.
+	 */
+	getHarvestingStatuses = async () => {
+		const json = await this.storage.getItem(PersistentStorageRepository.STORAGE_KEYS.HARVESTING_STATUSES);
+
+		return decodeJson(json);
+	};
+
+	/**
+	 * Set the cached harvesting statuses.
+	 * @param {NetworkObjectMap} payload - The harvesting statuses object to set.
+	 * @returns {Promise<void>} A promise that resolves when the harvesting statuses are set.
+	 */
+	setHarvestingStatuses = async payload => {
+		return this.storage.setItem(PersistentStorageRepository.STORAGE_KEYS.HARVESTING_STATUSES, JSON.stringify(payload));
+	};
+
+	/**
+	 * Get the cached harvesting summaries.
+	 * @returns {Promise<NetworkObjectMap|null>} A promise that resolves to the harvesting summaries object or null if not set.
+	 */
+	getHarvestingSummaries = async () => {
+		const json = await this.storage.getItem(PersistentStorageRepository.STORAGE_KEYS.HARVESTING_SUMMARIES);
+
+		return decodeJson(json);
+	};
+
+	/**
+	 * Set the cached harvesting summaries.
+	 * @param {NetworkObjectMap} payload - The harvesting summaries object to set.
+	 * @returns {Promise<void>} A promise that resolves when the harvesting summaries are set.
+	 */
+	setHarvestingSummaries = async payload => {
+		return this.storage.setItem(PersistentStorageRepository.STORAGE_KEYS.HARVESTING_SUMMARIES, JSON.stringify(payload));
 	};
 
 	/**
