@@ -180,7 +180,9 @@ const sourceMap = {
 		'info-circle': require('@/app/assets/images/icons/blue/info-circle.png')
 	},
 	neutral: {
-		'info-circle': require('@/app/assets/images/icons/grey/info-circle.png')
+		'info-circle': require('@/app/assets/images/icons/grey/info-circle.png'),
+		'cross-circle': require('@/app/assets/images/icons/grey/cross-circle.png'),
+		'question-circle': require('@/app/assets/images/icons/grey/question-circle.png')
 	}
 };
 
