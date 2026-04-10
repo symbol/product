@@ -31,10 +31,10 @@ export const createHarvestingSummaryViewModel = summary => {
 
 	return {
 		hasData: true,
-		latestAmount: String(summary.latestAmount || '0'),
+		latestAmount: summary.latestAmount ? `+ ${summary.latestAmount}` : '0',
 		latestBlockNumber: String(summary.latestHeight),
 		latestDate: latestDateFormatted,
-		amountPer30Days: String(summary.amountPer30Days || '0'),
+		amountPer30Days: summary.amountPer30Days ? `+ ${summary.amountPer30Days}` : '0',
 		blocksCount: $t('s_harvesting_harvested_blocks', { count: summary.blocksHarvestedPer30Days || 0 })
 	};
 };

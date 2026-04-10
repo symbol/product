@@ -424,7 +424,7 @@ describe('screens/harvesting/Harvesting', () => {
 				SUMMARY_LATEST_DATE_TEXT
 			]);
 			// Amount components split integer and decimal parts
-			screenTester.expectText(['12', '.5', '150', '.75'], true);
+			screenTester.expectText(['+ 12', '.5', '+ 150', '.75'], true);
 		});
 
 		it('renders summary with placeholder when no harvesting data exists', async () => {
