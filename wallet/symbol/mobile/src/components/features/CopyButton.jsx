@@ -11,15 +11,17 @@ import { TouchableOpacity, View } from 'react-native';
  * @param {string} props.content - Content to copy to clipboard.
  * @param {'s' | 'm'} [props.size='m'] - Button size.
  * @param {object} [props.style] - Additional styles for the button container.
+ * @param {boolean} [props.inverse=false] - If true, uses inverse color scheme.
  * 
  * @returns {React.ReactNode} Copy button component
  */
-export const CopyButton = ({ content, size = 'm', style }) => {
+export const CopyButton = ({ content, size = 'm', style, inverse = false }) => {
 	const iconSizeMap = {
 		s: 'xs',
 		m: 's'
 	};
 	const iconSize = iconSizeMap[size];
+	const iconVariant = inverse ? 'inverse' : 'default';
 
 	const handlePress = () => {
 		try {
@@ -36,7 +38,7 @@ export const CopyButton = ({ content, size = 'm', style }) => {
 	return (
 		<View style={style} onTouchEnd={stopPropagation}>
 			<TouchableOpacity accessibilityRole="button" onPress={handlePress} hitSlop={10}>
-				<Icon name="copy" size={iconSize} />
+				<Icon name="copy" size={iconSize} variant={iconVariant} />
 			</TouchableOpacity>
 		</View>
 	);
