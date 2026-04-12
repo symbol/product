@@ -131,3 +131,10 @@ class NemRestFacade:
 		mosaics = self.nem_db.get_mosaics(pagination, sort)
 
 		return [mosaic.to_dict() for mosaic in mosaics]
+
+	def get_mosaic_rich_list(self, pagination, namespace_name):
+		"""Gets mosaic rich list pagination."""
+
+		mosaic_rich_list = self.nem_db.get_mosaic_rich_list(pagination, namespace_name)
+
+		return [item.to_dict() for item in mosaic_rich_list]

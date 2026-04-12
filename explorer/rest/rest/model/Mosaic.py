@@ -84,3 +84,28 @@ class MosaicView:  # pylint: disable=too-many-instance-attributes,too-few-public
 			'rootNamespaceRegisteredTimestamp': self.root_namespace_registered_timestamp,
 			'rootNamespaceExpirationHeight': self.root_namespace_expiration_height
 		}
+
+
+class MosaicRichListView:
+	def __init__(self, address, remark, balance):
+		"""Create mosaic rich list view."""
+
+		self.address = address
+		self.remark = remark
+		self.balance = balance
+
+	def __eq__(self, other):
+		return isinstance(other, MosaicRichListView) and all([
+			self.address == other.address,
+			self.remark == other.remark,
+			self.balance == other.balance
+		])
+
+	def to_dict(self):
+		"""Formats the mosaic rich list info as a dictionary."""
+
+		return {
+			'address': self.address,
+			'remark': self.remark,
+			'balance': self.balance
+		}

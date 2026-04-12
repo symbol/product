@@ -1,6 +1,6 @@
 import unittest
 
-from rest.model.Mosaic import MosaicView
+from rest.model.Mosaic import MosaicRichListView, MosaicView
 
 
 class MosaicTest(unittest.TestCase):
@@ -107,3 +107,53 @@ class MosaicTest(unittest.TestCase):
 		self.assertNotEqual(mosaic_view, self._create_default_mosaic_view(('root_namespace_registered_height', 2)))
 		self.assertNotEqual(mosaic_view, self._create_default_mosaic_view(('root_namespace_registered_timestamp', '2015-03-29 20:34:19')))
 		self.assertNotEqual(mosaic_view, self._create_default_mosaic_view(('root_namespace_expiration_height', 525701)))
+
+
+class MosaicRichListTest(unittest.TestCase):
+	@staticmethod
+	def _create_default_mosaic_rich_list_view(override=None):
+		mosaic_rich_list_view = MosaicRichListView(
+			address='TBZWVEKB2XMTO4F3RAOEIBWRBMPQ5N23G56ZJM4I',
+			remark='Test remark',
+			balance=1000
+		)
+
+		if override:
+			setattr(mosaic_rich_list_view, override[0], override[1])
+
+		return mosaic_rich_list_view
+
+	def test_can_create_mosaic_rich_list_view(self):
+		# Act:
+		mosaic_rich_list_view = self._create_default_mosaic_rich_list_view()
+
+		# Assert:
+		self.assertEqual('TBZWVEKB2XMTO4F3RAOEIBWRBMPQ5N23G56ZJM4I', mosaic_rich_list_view.address)
+		self.assertEqual('Test remark', mosaic_rich_list_view.remark)
+		self.assertEqual(1000, mosaic_rich_list_view.balance)
+
+	def test_can_convert_to_simple_dict(self):
+		# Arrange:
+		mosaic_rich_list_view = self._create_default_mosaic_rich_list_view()
+
+		# Act:
+		mosaic_rich_list_view_dict = mosaic_rich_list_view.to_dict()
+
+		# Assert:
+		self.assertEqual({
+			'address': 'TBZWVEKB2XMTO4F3RAOEIBWRBMPQ5N23G56ZJM4I',
+			'remark': 'Test remark',
+			'balance': 1000
+		}, mosaic_rich_list_view_dict)
+
+	def test_eq_is_supported(self):
+		# Arrange:
+		mosaic_rich_list_view = self._create_default_mosaic_rich_list_view()
+
+		# Assert:
+		self.assertEqual(mosaic_rich_list_view, self._create_default_mosaic_rich_list_view())
+		self.assertNotEqual(mosaic_rich_list_view, None)
+		self.assertNotEqual(mosaic_rich_list_view, 'mosaic_rich_list_view')
+		self.assertNotEqual(mosaic_rich_list_view, self._create_default_mosaic_rich_list_view(('address', 'ABC')))
+		self.assertNotEqual(mosaic_rich_list_view, self._create_default_mosaic_rich_list_view(('remark', 'Updated remark')))
+		self.assertNotEqual(mosaic_rich_list_view, self._create_default_mosaic_rich_list_view(('balance', 2000)))

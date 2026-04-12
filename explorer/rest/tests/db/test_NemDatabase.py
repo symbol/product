@@ -1,7 +1,15 @@
 from rest import Pagination, Sorting
 from rest.db.NemDatabase import NemDatabase
 
-from ..test.DatabaseTestUtils import ACCOUNT_VIEWS, ACCOUNTS, BLOCK_VIEWS, MOSAIC_VIEWS, NAMESPACE_VIEWS, DatabaseTestBase
+from ..test.DatabaseTestUtils import (
+	ACCOUNT_VIEWS,
+	ACCOUNTS,
+	BLOCK_VIEWS,
+	MOSAIC_RICH_LIST_VIEWS,
+	MOSAIC_VIEWS,
+	NAMESPACE_VIEWS,
+	DatabaseTestBase
+)
 
 # region test data
 
@@ -17,9 +25,13 @@ EXPECTED_NAMESPACE_VIEW_1 = NAMESPACE_VIEWS[0]
 
 EXPECTED_NAMESPACE_VIEW_2 = NAMESPACE_VIEWS[1]
 
+EXPECTED_NAMESPACE_VIEW_3 = NAMESPACE_VIEWS[2]
+
 EXPECTED_MOSAIC_VIEW_1 = MOSAIC_VIEWS[0]
 
 EXPECTED_MOSAIC_VIEW_2 = MOSAIC_VIEWS[1]
+
+EXPECTED_MOSAIC_VIEW_3 = MOSAIC_VIEWS[2]
 
 # endregion
 
@@ -128,10 +140,10 @@ class NemDatabaseTest(DatabaseTestBase):  # pylint: disable=too-many-public-meth
 		self.assertEqual(expected_namespace, namespace_view)
 
 	def test_can_query_namespace_by_root_namespace(self):
-		self._assert_can_query_namespace_by_name('root', EXPECTED_NAMESPACE_VIEW_1)
+		self._assert_can_query_namespace_by_name('root', EXPECTED_NAMESPACE_VIEW_2)
 
 	def test_can_query_namespace_by_sub_namespace(self):
-		self._assert_can_query_namespace_by_name('root_sub.sub_1', EXPECTED_NAMESPACE_VIEW_2)
+		self._assert_can_query_namespace_by_name('root_sub.sub_1', EXPECTED_NAMESPACE_VIEW_3)
 
 	def test_cannot_query_nonexistent_namespace(self):
 		self._assert_can_query_namespace_by_name('nonexistent', None)
@@ -151,13 +163,21 @@ class NemDatabaseTest(DatabaseTestBase):  # pylint: disable=too-many-public-meth
 		self._assert_can_query_namespaces_with_filter(Pagination(1, 0), 'desc', [EXPECTED_NAMESPACE_VIEW_2])
 
 	def test_can_query_namespaces_filtered_offset_1(self):
-		self._assert_can_query_namespaces_with_filter(Pagination(1, 1), 'desc', [EXPECTED_NAMESPACE_VIEW_1])
+		self._assert_can_query_namespaces_with_filter(Pagination(1, 1), 'desc', [EXPECTED_NAMESPACE_VIEW_3])
 
 	def test_can_query_namespaces_sorted_by_registered_height_asc(self):
-		self._assert_can_query_namespaces_with_filter(Pagination(10, 0), 'asc', [EXPECTED_NAMESPACE_VIEW_1, EXPECTED_NAMESPACE_VIEW_2])
+		self._assert_can_query_namespaces_with_filter(
+			Pagination(10, 0),
+			'asc',
+			[EXPECTED_NAMESPACE_VIEW_1, EXPECTED_NAMESPACE_VIEW_2, EXPECTED_NAMESPACE_VIEW_3]
+		)
 
 	def test_can_query_namespaces_sorted_by_registered_height_desc(self):
-		self._assert_can_query_namespaces_with_filter(Pagination(10, 0), 'desc', [EXPECTED_NAMESPACE_VIEW_2, EXPECTED_NAMESPACE_VIEW_1])
+		self._assert_can_query_namespaces_with_filter(
+			Pagination(10, 0),
+			'desc',
+			[EXPECTED_NAMESPACE_VIEW_2, EXPECTED_NAMESPACE_VIEW_3, EXPECTED_NAMESPACE_VIEW_1]
+		)
 
 	# endregion
 
@@ -171,7 +191,7 @@ class NemDatabaseTest(DatabaseTestBase):  # pylint: disable=too-many-public-meth
 		self.assertEqual(expected_mosaic, mosaic_view)
 
 	def test_can_query_mosaic_by_namespace_name(self):
-		self._assert_can_query_mosaic_by_name('root.mosaic', EXPECTED_MOSAIC_VIEW_1)
+		self._assert_can_query_mosaic_by_name('root.mosaic', EXPECTED_MOSAIC_VIEW_2)
 
 	def test_cannot_query_nonexistent_mosaic(self):
 		self._assert_can_query_mosaic_by_name('nonexistent', None)
@@ -191,12 +211,42 @@ class NemDatabaseTest(DatabaseTestBase):  # pylint: disable=too-many-public-meth
 		self._assert_can_query_mosaics_with_filter(Pagination(1, 0), 'desc', [EXPECTED_MOSAIC_VIEW_2])
 
 	def test_can_query_mosaics_filtered_offset_1(self):
-		self._assert_can_query_mosaics_with_filter(Pagination(1, 1), 'desc', [EXPECTED_MOSAIC_VIEW_1])
+		self._assert_can_query_mosaics_with_filter(Pagination(1, 1), 'desc', [EXPECTED_MOSAIC_VIEW_3])
 
 	def test_can_query_mosaics_sorted_by_registered_height_asc(self):
-		self._assert_can_query_mosaics_with_filter(Pagination(10, 0), 'asc', [EXPECTED_MOSAIC_VIEW_1, EXPECTED_MOSAIC_VIEW_2])
+		self._assert_can_query_mosaics_with_filter(
+			Pagination(10, 0),
+			'asc',
+			[EXPECTED_MOSAIC_VIEW_1, EXPECTED_MOSAIC_VIEW_2, EXPECTED_MOSAIC_VIEW_3]
+		)
 
 	def test_can_query_mosaics_sorted_by_registered_height_desc(self):
-		self._assert_can_query_mosaics_with_filter(Pagination(10, 0), 'desc', [EXPECTED_MOSAIC_VIEW_2, EXPECTED_MOSAIC_VIEW_1])
+		self._assert_can_query_mosaics_with_filter(
+			Pagination(10, 0),
+			'desc',
+			[EXPECTED_MOSAIC_VIEW_2, EXPECTED_MOSAIC_VIEW_3, EXPECTED_MOSAIC_VIEW_1]
+		)
+
+	# endregion
+
+	# region mosaic rich list
+
+	def _assert_can_query_mosaic_rich_list_with_filter(self, pagination, namespace_name, expected_mosaic_rich_list):
+		# Act:
+		mosaic_rich_list_view = self.nem_db.get_mosaic_rich_list(pagination, namespace_name)
+		print(mosaic_rich_list_view)
+		print(expected_mosaic_rich_list)
+
+		# Assert:
+		self.assertEqual(expected_mosaic_rich_list, mosaic_rich_list_view)
+
+	def test_can_query_mosaic_rich_list_by_name(self):
+		self._assert_can_query_mosaic_rich_list_with_filter(Pagination(10, 0), 'nem.xem', [MOSAIC_RICH_LIST_VIEWS[1], MOSAIC_RICH_LIST_VIEWS[0]])
+
+	def test_can_query_mosaic_rich_list_with_limit_offset(self):
+		self._assert_can_query_mosaic_rich_list_with_filter(Pagination(1, 0), 'nem.xem', [MOSAIC_RICH_LIST_VIEWS[1]])
+
+	def test_can_query_mosaic_rich_list_filtered_offset_1(self):
+		self._assert_can_query_mosaic_rich_list_with_filter(Pagination(1, 1), 'nem.xem', [MOSAIC_RICH_LIST_VIEWS[0]])
 
 	# endregion

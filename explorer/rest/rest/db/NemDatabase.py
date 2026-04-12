@@ -5,7 +5,7 @@ from symbolchain.nem.Network import Address
 
 from rest.model.Account import AccountView
 from rest.model.Block import BlockView
-from rest.model.Mosaic import MosaicView
+from rest.model.Mosaic import MosaicRichListView, MosaicView
 from rest.model.Namespace import NamespaceView
 
 from .DatabaseConnection import DatabaseConnectionPool
@@ -163,6 +163,21 @@ class NemDatabase(DatabaseConnectionPool):
 			root_namespace_registered_height=root_namespace_registered_height,
 			root_namespace_registered_timestamp=str(root_namespace_registered_timestamp),
 			root_namespace_expiration_height=root_namespace_expiration_height,
+		)
+
+	@staticmethod
+	def _create_mosaic_rich_list_view(result):
+		(
+			address,
+			remark,
+			balance,
+			divisibility
+		) = result
+
+		return MosaicRichListView(
+			address=str(Address(address)),
+			remark=remark,
+			balance=_format_relative(balance, divisibility)
 		)
 
 	@staticmethod
@@ -419,3 +434,41 @@ class NemDatabase(DatabaseConnectionPool):
 			results = cursor.fetchall()
 
 			return [self._create_mosaic_view(result) for result in results]
+
+	def get_mosaic_rich_list(self, pagination, namespace_name):
+		"""Gets mosaic rich list by namespace name pagination in database."""
+
+		sql = '''
+			WITH mosaic_list AS (
+					SELECT
+						a.address,
+						ar.remarks,
+						(mosaic->>'quantity')::bigint as balance
+					FROM
+						accounts a
+						LEFT JOIN account_remarks ar
+							ON ar.address = a.address
+						CROSS JOIN LATERAL jsonb_array_elements(a.mosaics) AS mosaic
+						WHERE (mosaic->>'namespace') = %s AND (mosaic->>'quantity')::bigint > 0
+				)
+				SELECT
+					ml.address,
+					ml.remarks,
+					ml.balance,
+					m.divisibility
+				FROM
+					mosaic_list ml
+					LEFT JOIN mosaics m
+						ON m.namespace_name = %s
+				ORDER BY ml.balance DESC
+				LIMIT %s OFFSET %s
+		'''
+
+		params = [namespace_name, namespace_name, pagination.limit, pagination.offset]
+
+		with self.connection() as connection:
+			cursor = connection.cursor()
+			cursor.execute(sql, params)
+			results = cursor.fetchall()
+
+			return [self._create_mosaic_rich_list_view(result) for result in results]
