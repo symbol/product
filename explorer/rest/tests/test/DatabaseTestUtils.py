@@ -10,7 +10,7 @@ from symbolchain.nem.Network import Address, Network
 from rest.db.NemDatabase import NemDatabase
 from rest.model.Account import AccountView
 from rest.model.Block import BlockView
-from rest.model.Mosaic import MosaicView
+from rest.model.Mosaic import MosaicRichListView, MosaicView
 from rest.model.Namespace import NamespaceView
 
 Block = namedtuple(
@@ -66,6 +66,7 @@ Mosaic = namedtuple('Mosaic', [
 	'levy_fee',
 	'levy_recipient'
 ])
+AddressRemarks = namedtuple('Address_Remarks', ['address', 'remarks'])
 DatabaseConfig = namedtuple('DatabaseConfig', ['database', 'user', 'password', 'host', 'port'])
 
 # region test data
@@ -105,7 +106,7 @@ ACCOUNTS = [
 		0.123456,
 		1000000,
 		99999,
-		[{'quantity': 1000000, 'namespace': 'nem.xem'}],
+		[{'quantity': 1000000, 'namespace': 'nem.xem'}, {'quantity': 10, 'namespace': 'root.mosaic'}],
 		10,
 		'LOCKED',
 		'INACTIVE',
@@ -119,7 +120,7 @@ ACCOUNTS = [
 		0.123456,
 		3000000,
 		99999,
-		[{'quantity': 3000000, 'namespace': 'nem.xem'}],
+		[{'quantity': 3000000, 'namespace': 'nem.xem'}, {'quantity': 15, 'namespace': 'root.mosaic'}],
 		15,
 		'LOCKED',
 		'ACTIVE',
@@ -130,9 +131,16 @@ ACCOUNTS = [
 
 NAMESPACES = [
 	Namespace(
-		'root',
+		'nem',
 		PublicKey('a5f06d59b97aa40c82afb941a61fb6483bdb7491805cdb9dc47d92136983b9a5'),
 		1,
+		0,
+		['nem.xem']
+	),
+	Namespace(
+		'root',
+		PublicKey('a5f06d59b97aa40c82afb941a61fb6483bdb7491805cdb9dc47d92136983b9a5'),
+		2,
 		525700,
 		[]
 	),
@@ -147,11 +155,27 @@ NAMESPACES = [
 
 MOSAICS = [
 	Mosaic(
+		'nem',
+		'nem.xem',
+		'network currency',
+		PublicKey('a5f06d59b97aa40c82afb941a61fb6483bdb7491805cdb9dc47d92136983b9a5'),
+		1,
+		8999999999000000,
+		8999999999000000,
+		6,
+		False,
+		True,
+		None,
+		None,
+		None,
+		None
+	),
+	Mosaic(
 		'root',
 		'root.mosaic',
 		'Test mosaic',
 		PublicKey('a5f06d59b97aa40c82afb941a61fb6483bdb7491805cdb9dc47d92136983b9a5'),
-		1,
+		2,
 		1000000,
 		1000000,
 		0,
@@ -180,6 +204,17 @@ MOSAICS = [
 	),
 ]
 
+ADDRESS_REMARKS = [
+	AddressRemarks(
+		Address('NAGHXD63C4V6REWGXCVKJ2SBS3GUAXGTRQZQXPRO'),
+		'Test remark A'
+	),
+	AddressRemarks(
+		Address('NBFWZ4IVRHEIBRCGHLYDS62FSFTBM3VDFA7E6LSQ'),
+		'Test remark B'
+	)
+]
+
 
 BLOCK_VIEWS = [
 	BlockView(*BLOCKS[0]._replace(
@@ -205,6 +240,9 @@ ACCOUNT_VIEWS = [
 		mosaics=[{
 			'namespace_name': 'nem.xem',
 			'quantity': 1000000
+		}, {
+			'namespace_name': 'root.mosaic',
+			'quantity': 10
 		}],
 		harvested_fees=0.0,
 		harvested_blocks=ACCOUNTS[0].harvested_blocks,
@@ -225,6 +263,9 @@ ACCOUNT_VIEWS = [
 		mosaics=[{
 			'namespace_name': 'nem.xem',
 			'quantity': 3000000
+		}, {
+			'namespace_name': 'root.mosaic',
+			'quantity': 15
 		}],
 		harvested_fees=0.0,
 		harvested_blocks=ACCOUNTS[1].harvested_blocks,
@@ -253,6 +294,14 @@ NAMESPACE_VIEWS = [
 		registered_timestamp=BLOCKS[1].timestamp,
 		expiration_height=NAMESPACES[1].expiration_height,
 		sub_namespaces=NAMESPACES[1].sub_namespaces
+	),
+	NamespaceView(
+		root_namespace=NAMESPACES[2].root_namespace,
+		owner=str(NAMESPACES[2].owner),
+		registered_height=NAMESPACES[2].registered_height,
+		registered_timestamp=BLOCKS[1].timestamp,
+		expiration_height=NAMESPACES[2].expiration_height,
+		sub_namespaces=NAMESPACES[2].sub_namespaces
 	)
 ]
 
@@ -268,10 +317,10 @@ MOSAIC_VIEWS = [
 		divisibility=MOSAICS[0].divisibility,
 		supply_mutable=MOSAICS[0].supply_mutable,
 		transferable=MOSAICS[0].transferable,
-		levy_type='absolute fee',
-		levy_namespace_name=MOSAICS[0].levy_namespace_name,
-		levy_fee=1.0,
-		levy_recipient='NBFWZ4IVRHEIBRCGHLYDS62FSFTBM3VDFA7E6LSQ',
+		levy_type=None,
+		levy_namespace_name=None,
+		levy_fee=None,
+		levy_recipient=None,
 		root_namespace_registered_height=NAMESPACES[0].registered_height,
 		root_namespace_registered_timestamp=BLOCKS[0].timestamp,
 		root_namespace_expiration_height=NAMESPACES[0].expiration_height
@@ -287,13 +336,45 @@ MOSAIC_VIEWS = [
 		divisibility=MOSAICS[1].divisibility,
 		supply_mutable=MOSAICS[1].supply_mutable,
 		transferable=MOSAICS[1].transferable,
+		levy_type='absolute fee',
+		levy_namespace_name=MOSAICS[1].levy_namespace_name,
+		levy_fee=1.0,
+		levy_recipient='NBFWZ4IVRHEIBRCGHLYDS62FSFTBM3VDFA7E6LSQ',
+		root_namespace_registered_height=NAMESPACES[1].registered_height,
+		root_namespace_registered_timestamp=BLOCKS[1].timestamp,
+		root_namespace_expiration_height=NAMESPACES[1].expiration_height
+	),
+	MosaicView(
+		namespace_name=MOSAICS[2].namespace_name,
+		description=MOSAICS[2].description,
+		creator='NBFWZ4IVRHEIBRCGHLYDS62FSFTBM3VDFA7E6LSQ',
+		mosaic_registered_height=MOSAICS[2].registered_height,
+		mosaic_registered_timestamp=BLOCKS[1].timestamp,
+		initial_supply=MOSAICS[2].initial_supply,
+		total_supply=MOSAICS[2].total_supply,
+		divisibility=MOSAICS[2].divisibility,
+		supply_mutable=MOSAICS[2].supply_mutable,
+		transferable=MOSAICS[2].transferable,
 		levy_type=None,
 		levy_namespace_name=None,
 		levy_fee=None,
 		levy_recipient=None,
-		root_namespace_registered_height=NAMESPACES[0].registered_height,
-		root_namespace_registered_timestamp=BLOCKS[0].timestamp,
-		root_namespace_expiration_height=NAMESPACES[0].expiration_height
+		root_namespace_registered_height=NAMESPACES[1].registered_height,
+		root_namespace_registered_timestamp=BLOCKS[1].timestamp,
+		root_namespace_expiration_height=NAMESPACES[1].expiration_height
+	)
+]
+
+MOSAIC_RICH_LIST_VIEWS = [
+	MosaicRichListView(
+		address=str(ACCOUNTS[0].address),
+		remark='Test remark A',
+		balance=1.0
+	),
+	MosaicRichListView(
+		address=str(ACCOUNTS[1].address),
+		remark='Test remark B',
+		balance=3.0
 	)
 ]
 
@@ -378,6 +459,16 @@ def initialize_database(db_config, network_name):
 				levy_namespace_name varchar(146),
 				levy_fee bigint,
 				levy_recipient bytea
+			)
+			'''
+		)
+
+		cursor.execute(
+			'''
+			CREATE TABLE IF NOT EXISTS account_remarks (
+				id serial PRIMARY KEY,
+				address bytea UNIQUE,
+				remarks varchar NOT NULL
 			)
 			'''
 		)
@@ -493,6 +584,20 @@ def initialize_database(db_config, network_name):
 					mosaic.levy_namespace_name,
 					mosaic.levy_fee,
 					mosaic.levy_recipient.bytes if mosaic.levy_recipient else None
+				)
+			)
+
+		for address_remark in ADDRESS_REMARKS:
+			cursor.execute(
+				'''
+				INSERT INTO account_remarks (
+					address,
+					remarks
+				)
+				VALUES (%s, %s)
+				''', (
+					address_remark.address.bytes,
+					address_remark.remarks
 				)
 			)
 

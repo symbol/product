@@ -216,6 +216,26 @@ def setup_nem_routes(app, nem_api_facade):  # pylint: disable=too-many-statement
 
 		return jsonify(results)
 
+	@app.route('/api/nem/mosaic/rich/list')
+	def api_get_nem_mosaic_rich_list_by_name():
+		try:
+			limit = int(request.args.get('limit', 10))
+			offset = int(request.args.get('offset', 0))
+			namespace_name = request.args.get('namespace_name', 'nem.xem')
+
+			if limit < 0 or offset < 0:
+				raise ValueError('Limit and offset must be greater than or equal to 0')
+
+		except ValueError as error:
+			abort(400, error)
+
+		results = nem_api_facade.get_mosaic_rich_list(
+			pagination=Pagination(limit, offset),
+			namespace_name=namespace_name
+		)
+
+		return jsonify(results)
+
 
 def setup_error_handlers(app):
 	@app.errorhandler(404)
