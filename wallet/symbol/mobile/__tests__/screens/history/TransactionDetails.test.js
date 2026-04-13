@@ -1,5 +1,6 @@
 import { SymbolTransactionType, TransactionGroup } from '@/app/constants';
 import { TransactionDetails } from '@/app/screens/history/TransactionDetails';
+import { formatDate } from '@/app/utils';
 import { AccountFixtureBuilder } from '__fixtures__/local/AccountFixtureBuilder';
 import { AggregateTransactionFixtureBuilder } from '__fixtures__/local/AggregateTransactionFixtureBuilde';
 import { ContactFixtureBuilder } from '__fixtures__/local/ContactFixtureBuilder';
@@ -296,27 +297,17 @@ describe('screens/history/TransactionDetails', () => {
 			// Arrange:
 			setupMocks();
 			const props = createRouteProps(transferTransaction);
-			const expectedTimestamp = 'month_may 16, 2023 21:28';
+			const dateText = formatDate(TRANSACTION_TIMESTAMP, t => t, true);
 			const expectedTexts = [
-				// Transaction type
 				SCREEN_TEXT.textTransactionTransferOutgoing,
-				// Status
 				SCREEN_TEXT.textStatusConfirmed,
-				// Formatted timestamp
-				expectedTimestamp,
-				// Transaction hash
+				dateText,
 				TRANSACTION_HASH,
-				// XYM amount (shown as "-1234" in one text node)
 				`-${TRANSFER_XYM_AMOUNT}`,
-				// XYM ticker
 				TICKER,
-				// Formatted amount in arrow caption
 				`${TRANSFER_XYM_AMOUNT} ${TICKER}`,
-				// Message
 				TRANSFER_MESSAGE_TEXT,
-				// Sender address (currentAccount)
 				currentAccount.address,
-				// Recipient address
 				recipientAccount.address
 			];
 
