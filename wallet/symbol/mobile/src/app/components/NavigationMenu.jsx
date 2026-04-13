@@ -22,6 +22,10 @@ const ICON_SOURCE_MAP = {
 	[RouteName.Assets]: {
 		default: require('@/app/assets/images/navigation/assets_d.png'),
 		active: require('@/app/assets/images/navigation/assets_a.png')
+	},
+	[RouteName.Actions]: {
+		default: require('@/app/assets/images/navigation/features_d.png'),
+		active: require('@/app/assets/images/navigation/features_a.png')
 	}
 };
 
@@ -40,6 +44,11 @@ const TAB_CONFIG = [
 		titleKey: 'navigation_assets',
 		name: RouteName.Assets,
 		navigate: () => Router.goToAssets()
+	},
+	{
+		titleKey: 'navigation_actions',
+		name: RouteName.Actions,
+		navigate: () => Router.goToActions()
 	}
 ];
 

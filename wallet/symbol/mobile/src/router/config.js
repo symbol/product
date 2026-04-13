@@ -5,6 +5,7 @@ export const RouteName = {
 	CreateWallet: 'CreateWallet',
 	ImportWallet: 'ImportWallet',
 	Home: 'Home',
+	Actions: 'Actions',
 	History: 'History',
 	TransactionDetails: 'TransactionDetails',
 	Assets: 'Assets',
