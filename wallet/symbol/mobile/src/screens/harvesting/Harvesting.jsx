@@ -35,12 +35,12 @@ export const Harvesting = () => {
 	const walletController = useWalletController();
 	const { ticker, isWalletReady } = walletController;
 
-	// Custom status to feedback pending state after sending start/stop transaction until next status refresh
+	// Custom status to feedback pending state after sending start/stop transaction until next status load
 	const [isPendingTransaction, setIsPendingTransaction] = useState(false);
 
 	// Account harvesting info
 	const {
-		refresh: refreshAccountInfo,
+		load: loadAccountInfo,
 		isLoading: isAccountInfoLoading,
 		harvestingStatus,
 		isEligible,
@@ -53,14 +53,14 @@ export const Harvesting = () => {
 	const {
 		summaryViewModel,
 		isLoading: isSummaryLoading,
-		refresh: refreshSummary,
+		load: loadSummary,
 		reset: resetSummary
 	} = useHarvestingSummary(walletController);
 
 	// Node list
 	const {
 		randomNodeUrl,
-		refresh: refreshNodes,
+		load: loadNodes,
 		reset: resetNodes
 	} = useRandomNode(walletController);
 
@@ -120,13 +120,13 @@ export const Harvesting = () => {
 		|| isPendingTransaction
 		|| (actionType === HarvestingAction.START && !nodeUrl);
 
-	// Initialization & refresh subscription
-	const refreshAll = useCallback(() => {
+	// Initialization and loading subscription
+	const loadAll = useCallback(() => {
 		setIsPendingTransaction(false);
-		refreshAccountInfo();
-		refreshSummary();
-		refreshNodes();
-	}, [refreshAccountInfo, refreshSummary, refreshNodes]);
+		loadAccountInfo();
+		loadSummary();
+		loadNodes();
+	}, [loadAccountInfo, loadSummary, loadNodes]);
 	const clearAll = useCallback(() => {
 		setIsPendingTransaction(false);
 		resetAccountInfo();
@@ -135,11 +135,11 @@ export const Harvesting = () => {
 	}, [resetAccountInfo, resetSummary, resetNodes]);
 	useWalletRefreshLifecycle({ 
 		walletController,
-		onRefresh: refreshAll,
+		onRefresh: loadAll,
 		onClear: clearAll
 	});
-	const { refresh, isRefreshing } = useRefresh(refreshAll, isLoading);
-	useInit(refreshAll, isWalletReady);
+	const { refresh, isRefreshing } = useRefresh(loadAll, isLoading);
+	useInit(loadAll, isWalletReady);
 
 	// Handlers
 	const handleTransactionSendSuccess = useCallback(() => {

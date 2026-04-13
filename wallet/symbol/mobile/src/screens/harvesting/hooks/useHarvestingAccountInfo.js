@@ -8,7 +8,7 @@ import { useCallback, useState } from 'react';
 /**
  * Return type for useHarvestingAccountInfo hook.
  * @typedef {Object} UseHarvestingAccountInfoReturnType
- * @property {() => void} refresh - Fetches the latest harvesting status.
+ * @property {() => void} load - Fetches the latest harvesting status.
  * @property {boolean} isLoading - Whether data is being fetched.
  * @property {HarvestingStatusData|null} harvestingStatus - Current harvesting status.
  * @property {boolean} isEligible - Whether account is eligible for harvesting.
@@ -42,7 +42,7 @@ export const useHarvestingAccountInfo = walletController => {
 		defaultData: walletController.modules.harvesting.status
 	});
 
-	const refresh = useCallback(async () => {
+	const load = useCallback(async () => {
 		await walletController.fetchAccountInfo();
 		await statusManager.call();
 	}, [walletController, statusManager]);
@@ -60,7 +60,7 @@ export const useHarvestingAccountInfo = walletController => {
 	const isLoading = isInitialLoad || statusManager.isLoading;
 
 	return {
-		refresh,
+		load,
 		isLoading,
 		harvestingStatus: statusManager.data,
 		isEligible,

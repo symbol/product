@@ -2,7 +2,7 @@ import { TokenListItem } from './components';
 import { useAssetsData } from './hooks';
 import { Header } from '@/app/app/components';
 import { AccountView, CopyButtonContainer, FilteredListScreenTemplate, Spacer, StyledText } from '@/app/components';
-import { useWalletController } from '@/app/hooks';
+import { useInit, useRefresh, useWalletController, useWalletRefreshLifecycle } from '@/app/hooks';
 import { Router } from '@/app/router/Router';
 import React, { useCallback } from 'react';
 
@@ -17,19 +17,29 @@ export const Assets = () => {
 	const {
 		networkIdentifier,
 		networkProperties,
-		currentAccount
+		currentAccount,
+		isWalletReady
 	} = walletController;
 
+	// Data fetching
 	const {
 		sections,
 		filter,
 		setFilter,
 		filterConfig,
 		isLoading,
-		isRefreshing,
-		isPageLoading,
-		refresh
-	} = useAssetsData({ walletController });
+		load,
+		reset
+	} = useAssetsData();
+
+	// Refresh lifecycle
+	useWalletRefreshLifecycle({
+		walletController,
+		onRefresh: load,
+		onClear: reset
+	});
+	const { refresh, isRefreshing } = useRefresh(load, isLoading);
+	useInit(load, isWalletReady);
 
 	const renderScreenHeader = useCallback(() => (
 		<Header currentAccount={currentAccount} />
@@ -94,7 +104,6 @@ export const Assets = () => {
 			onFilterChange={setFilter}
 			isLoading={isLoading}
 			isRefreshing={isRefreshing}
-			isPageLoading={isPageLoading}
 			onRefresh={refresh}
 			keyExtractor={keyExtractor}
 			renderScreenHeader={renderScreenHeader}

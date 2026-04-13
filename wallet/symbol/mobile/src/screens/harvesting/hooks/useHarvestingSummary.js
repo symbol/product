@@ -10,7 +10,7 @@ import { useCallback } from 'react';
  * @typedef {Object} UseHarvestingSummaryReturnType
  * @property {HarvestingSummaryViewModel} summaryViewModel - Summary view model for rendering.
  * @property {boolean} isLoading - Whether summary is loading.
- * @property {() => void} refresh - Refetches summary data.
+ * @property {() => void} load - Loads summary data.
  * @property {() => void} reset - Resets summary state.
  */
 
@@ -28,7 +28,7 @@ export const useHarvestingSummary = walletController => {
 
 	const summaryViewModel = createHarvestingSummaryViewModel(summaryManager.data);
 
-	const refresh = useCallback(() => {
+	const load = useCallback(() => {
 		summaryManager.call();
 	}, [summaryManager]);
 
@@ -39,7 +39,7 @@ export const useHarvestingSummary = walletController => {
 	return {
 		summaryViewModel,
 		isLoading: summaryManager.isLoading,
-		refresh,
+		load,
 		reset
 	};
 };

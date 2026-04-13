@@ -1,7 +1,7 @@
 import { buildAssetsSections, getAssetsFilterConfig } from '../utils';
-import { useAsyncManager, useInit, useLoading, useReactiveWalletControllers, useTransactionListener, useWalletListener } from '@/app/hooks';
+import { useAsyncManager, useReactiveWalletControllers } from '@/app/hooks';
 import { walletControllers as controllers } from '@/app/lib/controller';
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 /** @typedef {import('@/app/types/Filter').FilterItem} FilterItem */
 /** @typedef {import('@/app/types/Filter').FilterValue} FilterValue */
@@ -13,15 +13,14 @@ import { useMemo, useState } from 'react';
  * @property {FilterValue} filter - Current filter values
  * @property {function(FilterValue): void} setFilter - Function to update filter
  * @property {FilterItem[]} filterConfig - Filter configuration array
- * @property {boolean} isLoading - Whether initial loading is in progress
- * @property {boolean} isRefreshing - Whether refresh is in progress
- * @property {boolean} isLastPage - Whether the last page has been reached
- * @property {function(): void} refresh - Function to refresh all data
+ * @property {boolean} isLoading - Whether loading is in progress
+ * @property {function(): void} load - Function to load all data
+ * @property {function(): void} reset - Function to reset data state
  */
 
 /**
  * React hook that manages assets screen state.
- * Builds asset sections, manages filter state, and refreshes account data on wallet events.
+ * Builds asset sections, manages filter state, and provides data fetching.
  * @returns {UseAssetsDataReturnType} Assets data and controls
  */
 export const useAssetsData = () => {
@@ -42,29 +41,22 @@ export const useAssetsData = () => {
 				.map(controller => controller.fetchAccountInfo()));
 		}
 	});
-	useTransactionListener({
-		walletControllers,
-		onTransactionConfirmed: dataManager.call
-	});
-	useWalletListener({
-		walletControllers,
-		onAccountChange: dataManager.call
-	});
-	useInit(() => {
-		dataManager.call();
-	}, controllers.main.isWalletReady);
 
-	// Determine loading states
-	const [isLoading, isRefreshing] = useLoading(dataManager.isLoading);
+	const load = useCallback(() => {
+		dataManager.call();
+	}, [dataManager]);
+
+	const reset = useCallback(() => {
+		dataManager.reset();
+	}, [dataManager]);
 
 	return {
 		sections,
 		filter,
 		setFilter,
 		filterConfig,
-		isLoading,
-		isRefreshing,
-		isLastPage: true,
-		refresh: dataManager.call
+		isLoading: dataManager.isLoading,
+		load,
+		reset
 	};
 };

@@ -23,7 +23,7 @@ const pickRandom = array => {
  * @property {string|null} randomNodeUrl - Randomly selected node URL.
  * @property {string[]} nodeList - Full list of available nodes.
  * @property {boolean} isLoading - Whether node list is loading.
- * @property {() => void} refresh - Refetches node list.
+ * @property {() => void} load - Loads the node list.
  * @property {() => void} reset - Resets node list state.
  */
 
@@ -44,7 +44,7 @@ export const useRandomNode = walletController => {
 		[nodeListManager.data]
 	);
 
-	const refresh = useCallback(() => {
+	const load = useCallback(() => {
 		nodeListManager.call();
 	}, [nodeListManager]);
 
@@ -56,7 +56,7 @@ export const useRandomNode = walletController => {
 		randomNodeUrl,
 		nodeList: nodeListManager.data,
 		isLoading: nodeListManager.isLoading,
-		refresh,
+		load,
 		reset
 	};
 };
