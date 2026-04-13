@@ -1,7 +1,7 @@
 import { MultisigAccountListItem } from './components';
 import { useMultisigAccountList } from './hooks';
 import { ButtonCircle, EmptyListMessage, Screen, ScreenIllustration, Spacer, Stack, StyledText } from '@/app/components';
-import { useInit, useWalletController } from '@/app/hooks';
+import { useInit, useRefresh, useWalletController, useWalletRefreshLifecycle } from '@/app/hooks';
 import { $t } from '@/app/localization';
 import { Router } from '@/app/router/Router';
 import React from 'react';
@@ -23,7 +23,22 @@ export const MultisigAccountList = () => {
 	const { addressBook } = walletController.modules;
 	const walletAccounts = accounts[networkIdentifier];
 
-	const { data: multisigAccountList, refresh, isLoading } = useMultisigAccountList(walletController);
+	// Data fetching
+	const { 
+		data: multisigAccountList,
+		load,
+		reset,
+		isLoading 
+	} = useMultisigAccountList(walletController);
+
+	// Refresh lifecycle
+	useWalletRefreshLifecycle({
+		walletController,
+		onRefresh: load,
+		onClear: reset
+	});
+	const { refresh, isRefreshing } = useRefresh(load, isLoading);
+	useInit(load, isWalletReady);
 
 	const openAccount = accountInfo => {
 		Router.goToMultisigAccountDetails({
@@ -43,10 +58,8 @@ export const MultisigAccountList = () => {
 		});
 	};
 
-	useInit(refresh, isWalletReady);
-
 	return (
-		<Screen refresh={{ onRefresh: refresh, isRefreshing: isLoading }}>
+		<Screen refresh={{ onRefresh: refresh, isRefreshing }}>
 			<Screen.Header>
 				<ScreenIllustration name="multisig-account" />
 			</Screen.Header>
