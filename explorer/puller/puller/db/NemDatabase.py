@@ -102,13 +102,6 @@ class NemDatabase(DatabaseConnection):
 
 		cursor.execute(
 			'''
-			CREATE INDEX IF NOT EXISTS idx_tx_sender_public_key
-				ON transactions(sender_public_key)
-			'''
-		)
-
-		cursor.execute(
-			'''
 			CREATE INDEX IF NOT EXISTS idx_tx_is_inner
 				ON transactions(is_inner)
 			'''
