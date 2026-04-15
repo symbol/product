@@ -457,7 +457,7 @@ class NemPuller:
 			transaction_type=transaction.transaction_type,
 			is_inner=is_inner,
 			inner_transaction_id=inner_transaction_id,  # to be updated after insertion if it's an inner transaction
-			sender_address=transaction.sender,
+			sender_address=self._convert_public_key_to_address(transaction.sender),
 			recipient_address=recipient_address,
 			payload=payload
 		)

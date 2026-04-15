@@ -935,7 +935,7 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 			transaction_type=transaction.transaction_type,
 			is_inner=False,
 			inner_transaction_id=None,
-			sender_address=transaction.sender,
+			sender_address=self.puller.nem_facade.network.public_key_to_address(transaction.sender),
 			recipient_address=recipient_address,
 			payload=payload
 		))
