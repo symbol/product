@@ -934,7 +934,6 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 			signature=transaction.signature,
 			transaction_type=transaction.transaction_type,
 			is_inner=False,
-			inner_transaction_id=None,
 			sender_address=self.puller.nem_facade.network.public_key_to_address(transaction.sender),
 			recipient_address=recipient_address,
 			payload=payload
@@ -1240,7 +1239,6 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 	@patch('puller.facade.NemPuller.NemPuller._process_transaction')
 	def test_can_process_transactions_inner_outer(self, mock_process_transaction):
 		# Arrange:
-		mock_process_transaction.return_value = 1  # Simulate inserted transaction ID for linking inner transactions
 		block_data = NEM_CONNECTOR_RESPONSE_BLOCKS[2]
 
 		block = Block(
@@ -1284,6 +1282,5 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 		self.assertEqual(process_transaction_calls[1][1], {
 			'transaction': block.transactions[0],
 			'block_height': 3,
-			'is_inner': False,
-			'inner_transaction_id': 1
+			'is_inner': False
 		})

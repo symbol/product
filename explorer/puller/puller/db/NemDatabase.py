@@ -107,13 +107,6 @@ class NemDatabase(DatabaseConnection):
 			'''
 		)
 
-		cursor.execute(
-			'''
-			CREATE INDEX IF NOT EXISTS idx_tx_inner_transaction_id
-				ON transactions(inner_transaction_id)
-			'''
-		)
-
 		# Create indexes for transactions_mosaic table
 		cursor.execute(
 			'''
@@ -232,9 +225,7 @@ class NemDatabase(DatabaseConnection):
 				signature bytea,
 				amount bigint,
 				is_inner boolean DEFAULT false,
-				inner_transaction_id int,
-				payload jsonb,
-				FOREIGN KEY (inner_transaction_id) REFERENCES transactions(id)
+				payload jsonb
 			)
 			'''
 		)
@@ -497,10 +488,9 @@ class NemDatabase(DatabaseConnection):
 				signature,
 				amount,
 				is_inner,
-				inner_transaction_id,
 				payload
 			)
-			VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+			VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
 			RETURNING id
 			''',
 			(
@@ -516,7 +506,6 @@ class NemDatabase(DatabaseConnection):
 				unhexlify(transaction.signature) if transaction.signature else None,
 				transaction.amount,
 				transaction.is_inner,
-				transaction.inner_transaction_id,
 				json.dumps(transaction.payload) if transaction.payload else None
 			)
 		)

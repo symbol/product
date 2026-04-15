@@ -91,7 +91,6 @@ TRANSACTIONS = [
 		),
 		transaction_type=257,
 		is_inner=False,
-		inner_transaction_id=None,
 		sender_address=Address('TCJLCZSOQ6RGWHTPSV2DW467WZSHK4NBSITND4OF'),
 		recipient_address=Address('TBZWVEKB2XMTO4F3RAOEIBWRBMPQ5N23G56ZJM4I'),
 		payload='{}'
@@ -691,7 +690,6 @@ class NemDatabaseTest(unittest.TestCase):
 					encode(signature, 'hex'),
 					amount,
 					is_inner,
-					inner_transaction_id,
 					payload
 				FROM transactions
 				WHERE id = %s
@@ -715,7 +713,6 @@ class NemDatabaseTest(unittest.TestCase):
 			TRANSACTIONS[0].signature,
 			2000000,
 			False,
-			None,
 			'{}'
 		))
 
