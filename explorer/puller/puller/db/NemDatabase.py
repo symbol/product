@@ -63,6 +63,65 @@ class NemDatabase(DatabaseConnection):
 			'''
 		)
 
+		# Create indexes for transactions table
+		cursor.execute(
+			'''
+			CREATE INDEX IF NOT EXISTS idx_transactions_hash
+				ON transactions (transaction_hash)
+			'''
+		)
+
+		cursor.execute(
+			'''
+			CREATE INDEX IF NOT EXISTS idx_transaction_type
+				ON transactions (transaction_type)
+			'''
+		)
+
+		cursor.execute(
+			'''
+			CREATE INDEX IF NOT EXISTS idx_transaction_height
+				ON transactions(height DESC)
+				WHERE is_inner = false
+			'''
+		)
+
+		cursor.execute(
+			'''
+			CREATE INDEX IF NOT EXISTS idx_tx_recipient
+				ON transactions(recipient_address)
+			'''
+		)
+
+		cursor.execute(
+			'''
+			CREATE INDEX IF NOT EXISTS idx_tx_sender_address
+				ON transactions(sender_address)
+			'''
+		)
+
+		cursor.execute(
+			'''
+			CREATE INDEX IF NOT EXISTS idx_tx_is_inner
+				ON transactions(is_inner)
+			'''
+		)
+
+		# Create indexes for transactions_mosaic table
+		cursor.execute(
+			'''
+			CREATE INDEX IF NOT EXISTS idx_mosaic_tx_i
+				ON transactions_mosaic(transaction_id)
+			'''
+		)
+
+		cursor.execute(
+			'''
+			CREATE INDEX IF NOT EXISTS idx_mosaic_lookup
+				ON transactions_mosaic(namespace_name)
+			'''
+		)
+
 	def create_tables(self):
 		"""Creates database tables."""
 
@@ -145,6 +204,42 @@ class NemDatabase(DatabaseConnection):
 				levy_namespace_name varchar(146),
 				levy_fee bigint,
 				levy_recipient bytea
+			)
+			'''
+		)
+
+		# Create Transactions table
+		cursor.execute(
+			'''
+			CREATE TABLE IF NOT EXISTS transactions (
+				id serial PRIMARY KEY,
+				transaction_hash bytea UNIQUE NOT NULL,
+				transaction_type int NOT NULL,
+				height bigint NOT NULL,
+				sender_public_key bytea NOT NULL,
+				sender_address bytea NOT NULL,
+				recipient_address bytea,
+				fee bigint DEFAULT 0,
+				timestamp timestamp NOT NULL,
+				deadline timestamp NOT NULL,
+				signature bytea,
+				amount bigint,
+				is_inner boolean DEFAULT false,
+				payload jsonb
+			)
+			'''
+		)
+
+		# Create Transactions mosaic table
+		cursor.execute(
+			'''
+			CREATE TABLE IF NOT EXISTS transactions_mosaic (
+				id serial PRIMARY KEY,
+				transaction_id int NOT NULL,
+				namespace_name varchar(146),
+				quantity bigint,
+				FOREIGN KEY (transaction_id) REFERENCES transactions(id)
+				ON DELETE CASCADE
 			)
 			'''
 		)
@@ -371,5 +466,68 @@ class NemDatabase(DatabaseConnection):
 			(
 				adjustment,
 				namespace_name
+			)
+		)
+
+	@staticmethod
+	def insert_transaction(cursor, transaction):
+		"""Inserts transaction information."""
+
+		cursor.execute(
+			'''
+			INSERT INTO transactions (
+				transaction_hash,
+				transaction_type,
+				height,
+				sender_public_key,
+				sender_address,
+				recipient_address,
+				fee,
+				timestamp,
+				deadline,
+				signature,
+				amount,
+				is_inner,
+				payload
+			)
+			VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+			RETURNING id
+			''',
+			(
+				unhexlify(transaction.transaction_hash),
+				transaction.transaction_type,
+				transaction.height,
+				transaction.sender_public_key.bytes,
+				transaction.sender_address.bytes,
+				transaction.recipient_address.bytes if transaction.recipient_address else None,
+				transaction.fee,
+				transaction.timestamp,
+				transaction.deadline,
+				unhexlify(transaction.signature) if transaction.signature else None,
+				transaction.amount,
+				transaction.is_inner,
+				json.dumps(transaction.payload) if transaction.payload else None
+			)
+		)
+
+		return cursor.fetchone()[0]
+
+	@staticmethod
+	def insert_transaction_mosaic(cursor, transaction_id, mosaic):
+		"""Inserts transaction mosaic information."""
+
+		cursor.execute(
+			'''
+			INSERT INTO transactions_mosaic (
+				transaction_id,
+				namespace_name,
+				quantity
+			)
+			VALUES (%s, %s, %s)
+			''',
+			(
+				transaction_id,
+				mosaic.namespace_name,
+				mosaic.quantity
 			)
 		)
