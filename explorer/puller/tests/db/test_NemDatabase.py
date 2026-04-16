@@ -5,10 +5,11 @@ import psycopg2
 import testing.postgresql
 from symbolchain.CryptoTypes import PublicKey
 from symbolchain.nem.Network import Address
+from symbollightapi.model.Transaction import Mosaic
 from test_DatabaseConnection import DatabaseConfig
 
 from puller.db.NemDatabase import NemDatabase
-from puller.facade.NemPuller import AccountRecord, BlockRecord, MosaicRecord, NamespaceRecord
+from puller.facade.NemPuller import AccountRecord, BlockRecord, MosaicRecord, NamespaceRecord, TransactionRecord
 
 # region test data
 
@@ -74,6 +75,28 @@ MOSAICS = [
 		levy_recipient=None
 	)
 ]
+
+TRANSACTIONS = [
+	TransactionRecord(
+		transaction_hash='438cf6375dab5a0d32f9b7bf151d4539e00a590f7c022d5572c7d41815a24be4',
+		height=2,
+		sender_public_key=PublicKey('f9bd190dd0c364261f5c8a74870cc7f7374e631352293c62ecc437657e5de2cd'),
+		fee=150000,
+		timestamp='2015-03-29 00:06:25+00:00',
+		deadline='2015-03-29 20:34:19+00:00',
+		amount=2000000,
+		signature=(
+			'1b81379847241e45da86b27911e5c9a9192ec04f644d98019657d32838b49c14'
+			'3eaa4815a3028b80f9affdbf0b94cd620f7a925e02783dda67b8627b69ddf70e'
+		),
+		transaction_type=257,
+		is_inner=False,
+		sender_address=Address('TCJLCZSOQ6RGWHTPSV2DW467WZSHK4NBSITND4OF'),
+		recipient_address=Address('TBZWVEKB2XMTO4F3RAOEIBWRBMPQ5N23G56ZJM4I'),
+		payload='{}'
+	)
+]
+
 # endregion
 
 
@@ -183,11 +206,13 @@ class NemDatabaseTest(unittest.TestCase):
 			results = cursor.fetchall()
 
 		# Assert:
-		self.assertEqual(len(results), 4)
+		self.assertEqual(len(results), 6)
 		self.assertEqual(results[0][0], 'accounts')
 		self.assertEqual(results[1][0], 'blocks')
 		self.assertEqual(results[2][0], 'mosaics')
 		self.assertEqual(results[3][0], 'namespaces')
+		self.assertEqual(results[4][0], 'transactions')
+		self.assertEqual(results[5][0], 'transactions_mosaic')
 
 	def test_can_insert_block(self):
 		# Arrange:
@@ -634,3 +659,102 @@ class NemDatabaseTest(unittest.TestCase):
 			adjustment=3000,
 			expected_total_supply=1000
 		)
+
+	def test_can_insert_transactions(self):
+		# Arrange:
+		with NemDatabase(self.db_config) as nem_database:
+			nem_database.create_tables()
+
+			cursor = nem_database.connection.cursor()
+
+			# Act:
+			nem_database.insert_transaction(
+				cursor,
+				transaction=TRANSACTIONS[0]
+			)
+
+			nem_database.connection.commit()
+
+			cursor.execute(
+				'''
+				SELECT
+					encode(transaction_hash, 'hex'),
+					transaction_type,
+					height,
+					encode(sender_public_key, 'hex'),
+					encode(sender_address, 'hex'),
+					encode(recipient_address, 'hex'),
+					fee,
+					timestamp,
+					deadline,
+					encode(signature, 'hex'),
+					amount,
+					is_inner,
+					payload
+				FROM transactions
+				WHERE id = %s
+				''',
+				(1,)
+			)
+			result = cursor.fetchone()
+
+		# Assert:
+		self.assertIsNotNone(result)
+		self.assertEqual(result, (
+			TRANSACTIONS[0].transaction_hash,
+			257,
+			2,
+			TRANSACTIONS[0].sender_public_key.bytes.hex(),
+			TRANSACTIONS[0].sender_address.bytes.hex(),
+			TRANSACTIONS[0].recipient_address.bytes.hex(),
+			150000,
+			datetime.datetime(2015, 3, 29, 0, 6, 25),
+			datetime.datetime(2015, 3, 29, 20, 34, 19),
+			TRANSACTIONS[0].signature,
+			2000000,
+			False,
+			'{}'
+		))
+
+	def test_insert_transaction_mosaic(self):
+		# Arrange:
+		with NemDatabase(self.db_config) as nem_database:
+			nem_database.create_tables()
+
+			cursor = nem_database.connection.cursor()
+
+			nem_database.insert_transaction(
+				cursor,
+				transaction=TRANSACTIONS[0]
+			)
+
+			# Act:
+			nem_database.insert_transaction_mosaic(
+				cursor,
+				transaction_id=1,
+				mosaic=Mosaic(
+					namespace_name='nem.xem',
+					quantity=2000000
+				)
+			)
+
+			nem_database.connection.commit()
+
+			cursor.execute(
+				'''
+				SELECT
+					namespace_name,
+					quantity
+				FROM transactions_mosaic
+				WHERE namespace_name = %s
+				''',
+				('nem.xem',)
+			)
+			result = cursor.fetchone()
+
+		# Assert:
+		self.assertIsNotNone(result)
+		self.assertEqual(result, (
+			'nem.xem',
+			2000000
+		))

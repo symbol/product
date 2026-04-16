@@ -13,7 +13,9 @@ from symbollightapi.model.Exceptions import NodeException
 from symbollightapi.model.Transaction import (
 	AccountKeyLinkTransaction,
 	CosignSignatureTransaction,
+	Message,
 	Modification,
+	Mosaic,
 	MosaicDefinitionTransaction,
 	MosaicLevy,
 	MosaicProperties,
@@ -24,7 +26,7 @@ from symbollightapi.model.Transaction import (
 	TransferTransaction
 )
 
-from puller.facade.NemPuller import AccountRecord, DatabaseConfig, MosaicRecord, NamespaceRecord, NemPuller
+from puller.facade.NemPuller import AccountRecord, DatabaseConfig, MosaicRecord, NamespaceRecord, NemPuller, TransactionRecord
 
 # region test data
 
@@ -36,14 +38,14 @@ NEM_CONNECTOR_RESPONSE_BLOCKS = [
 			TransferTransaction(
 				'd6c9902cfa23dbbdd212d720f86391dd91d215bf77d806f03a6c2dd2e730628a',
 				2,
-				'8d07f90fb4bbe7715fa327c926770166a11be2e494a970605f2e12557f66c9b9',
+				PublicKey('8d07f90fb4bbe7715fa327c926770166a11be2e494a970605f2e12557f66c9b9'),
 				9000000,
 				73397,
 				83397,
 				'e0cc7f71e353ca0aaf2f009d74aeac5f97d4796b0f08c009058fb33d93c2e8ca'
 				'68c0b63e46ff125f43314014d324ac032d2c82996a6e47068b251f1d71fdd001',
 				180000040000000,
-				'NCOPERAWEWCD4A34NP5UQCCKEX44MW4SL3QYJYS5',
+				Address('NCOPERAWEWCD4A34NP5UQCCKEX44MW4SL3QYJYS5'),
 				('476f6f64206c75636b21', 1),
 				None
 			),
@@ -80,34 +82,34 @@ NEM_CONNECTOR_RESPONSE_BLOCKS = [
 		[
 			AccountKeyLinkTransaction(
 				'306f20260a1b7af692834809d3e7d53edd41616d5076ac0fac6cfa75982185df',
-				2,
-				'22df5f43ee3739a10c346b3ec2d3878668c5514696be425f9067d3a11c777f1d',
+				3,
+				PublicKey('22df5f43ee3739a10c346b3ec2d3878668c5514696be425f9067d3a11c777f1d'),
 				8000000,
 				73397,
 				83397,
 				'1b81379847241e45da86b27911e5c9a9192ec04f644d98019657d32838b49c14'
 				'3eaa4815a3028b80f9affdbf0b94cd620f7a925e02783dda67b8627b69ddf70e',
 				1,
-				'7195f4d7a40ad7e31958ae96c4afed002962229675a4cae8dc8a18e290618981'
+				PublicKey('7195f4d7a40ad7e31958ae96c4afed002962229675a4cae8dc8a18e290618981')
 			),
 			TransferTransaction(
 				'd6c9902cfa23dbbdd212d720f86391dd91d215bf77d806f03a6c2dd2e730628a',
-				2,
-				'8d07f90fb4bbe7715fa327c926770166a11be2e494a970605f2e12557f66c9b9',
+				3,
+				PublicKey('8d07f90fb4bbe7715fa327c926770166a11be2e494a970605f2e12557f66c9b9'),
 				9000000,
 				73397,
 				83397,
 				'e0cc7f71e353ca0aaf2f009d74aeac5f97d4796b0f08c009058fb33d93c2e8ca'
 				'68c0b63e46ff125f43314014d324ac032d2c82996a6e47068b251f1d71fdd001',
 				180000040000000,
-				'NCOPERAWEWCD4A34NP5UQCCKEX44MW4SL3QYJYS5',
-				('476f6f64206c75636b21', 1),
+				Address('NCOPERAWEWCD4A34NP5UQCCKEX44MW4SL3QYJYS5'),
+				Message('476f6f64206c75636b21', 1),
 				None
 			),
 			MultisigAccountModificationTransaction(
 				'cc64ca69bfa95db2ff7ac1e21fe6d27ece189c603200ebc9778d8bb80ca25c3c',
-				2,
-				'f41b99320549741c5cce42d9e4bb836d98c50ed5415d0c3c2912d1bb50e6a0e5',
+				3,
+				PublicKey('f41b99320549741c5cce42d9e4bb836d98c50ed5415d0c3c2912d1bb50e6a0e5'),
 				40000000,
 				73397,
 				83397,
@@ -115,27 +117,27 @@ NEM_CONNECTOR_RESPONSE_BLOCKS = [
 				'4f2b486f25451a1f90da7f0e312d9e8570e4bc03798e58d19dec86feb4152307',
 				2,
 				[
-					Modification(1, '1fbdbdde28daf828245e4533765726f0b7790e0b7146e2ce205df3e86366980b'),
-					Modification(1, 'f94e8702eb1943b23570b1b83be1b81536df35538978820e98bfce8f999e2d37')
+					Modification(1, PublicKey('1fbdbdde28daf828245e4533765726f0b7790e0b7146e2ce205df3e86366980b')),
+					Modification(1, PublicKey('f94e8702eb1943b23570b1b83be1b81536df35538978820e98bfce8f999e2d37'))
 				]
 			),
 			NamespaceRegistrationTransaction(
 				'7e547e45cfc9c34809ce184db6ae7b028360c0f1492cc37b7b4d31c22af07dc3',
-				2,
+				3,
 				PublicKey('a700809530e5428066807ec0d34859c52e260fc60634aaac13e3972dcfc08736'),
 				150000,
 				73397,
 				83397,
 				'9fc70720d0333d7d8f9eb14ef45ce45a846d37e79cf7a4244b4db36dcb0d3dfe'
 				'0170daefbf4d30f92f343110a6f03a14aedcf7913e465a4a1cc199639169410a',
-				'NAMESPACEWH4MKFMBCVFERDPOOP4FK7MTBXDPZZA',
+				Address('NAMESPACEWH4MKFMBCVFERDPOOP4FK7MTBXDPZZA'),
 				100000000,
 				None,
 				'namespace'
 			),
 			MosaicDefinitionTransaction(
 				'4725e523e5d5a562121f38953d6da3ae695060533fc0c5634b31de29c3b766e1',
-				2,
+				3,
 				PublicKey('a700809530e5428066807ec0d34859c52e260fc60634aaac13e3972dcfc08736'),
 				150000,
 				73397,
@@ -143,7 +145,7 @@ NEM_CONNECTOR_RESPONSE_BLOCKS = [
 				'a80ccd44955ded7d35ee3aa011bfafd3f30cc746f63cb59a9d02171f908a0f4a'
 				'0294fcbba0b2838acd184daf1d9ae3c0f645308b442547156364192cd3d2d605',
 				10000000,
-				'NBMOSAICOD4F54EE5CDMR23CCBGOAM2XSIUX6TRS',
+				Address('NBMOSAICOD4F54EE5CDMR23CCBGOAM2XSIUX6TRS'),
 				PublicKey('a700809530e5428066807ec0d34859c52e260fc60634aaac13e3972dcfc08736'),
 				'NEM namespace test',
 				MosaicProperties(4, 3100000, False, True),
@@ -152,7 +154,7 @@ NEM_CONNECTOR_RESPONSE_BLOCKS = [
 			),
 			MosaicSupplyChangeTransaction(
 				'cb805b4499479135934e70452d12ad9ecc26c46a111fe0cdda8e09741d257708',
-				2,
+				3,
 				PublicKey('da04b4a1d64add6c70958d383f9d247af1aaa957cb89f15b2d059b278e0594d5'),
 				150000,
 				73397,
@@ -165,8 +167,8 @@ NEM_CONNECTOR_RESPONSE_BLOCKS = [
 			),
 			MultisigTransaction(
 				'3375969dbc2aaae1cad0d89854d4f41b4fef553dbe9c7d39bdf72e3c538f98fe',
-				2,
-				'aa455d831430872feb0c6ae14265209182546c985a321c501be7fdc96ed04757',
+				3,
+				PublicKey('aa455d831430872feb0c6ae14265209182546c985a321c501be7fdc96ed04757'),
 				500000,
 				73397,
 				83397,
@@ -176,8 +178,8 @@ NEM_CONNECTOR_RESPONSE_BLOCKS = [
 					CosignSignatureTransaction(
 						261593985,
 						'edcc8d1c48165f5b771087fbe3c4b4d41f5f8f6c4ce715e050b86fb4e7fdeb64',
-						'NAGJG3QFWYZ37LMI7IQPSGQNYADGSJZGJRD2DIYA',
-						'ae6754c70b7e3ba0c51617c8f9efd462d0bf680d45e09c3444e817643d277826',
+						Address('NAGJG3QFWYZ37LMI7IQPSGQNYADGSJZGJRD2DIYA'),
+						PublicKey('ae6754c70b7e3ba0c51617c8f9efd462d0bf680d45e09c3444e817643d277826'),
 						500000,
 						261680385,
 						'249bc2dbad96e827eabc991b59dff7f12cc27f3e0da8ab3db6a3201169431786'
@@ -187,13 +189,13 @@ NEM_CONNECTOR_RESPONSE_BLOCKS = [
 				TransferTransaction(
 					None,
 					None,
-					'fbae41931de6a0cc25153781321f3de0806c7ba9a191474bb9a838118c8de4d3',
+					PublicKey('fbae41931de6a0cc25153781321f3de0806c7ba9a191474bb9a838118c8de4d3'),
 					750000,
 					73397,
 					83397,
 					None,
 					150000000000,
-					'NBUH72UCGBIB64VYTAAJ7QITJ62BLISFFQOHVP65',
+					Address('NBUH72UCGBIB64VYTAAJ7QITJ62BLISFFQOHVP65'),
 					None,
 					None
 				),
@@ -218,7 +220,7 @@ NEM_CONNECTOR_RESPONSE_ACCOUNT_INFO = NemAccountInfo(Address('TALICE6XEEEOBFJVY3
 # endregion
 
 
-class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
+class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-methods, too-many-lines
 
 	def setUp(self):
 		self.postgresql = testing.postgresql.Postgresql()
@@ -800,8 +802,8 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 			NamespaceRecord(
 				root_namespace='namespace',
 				owner=PublicKey('a700809530e5428066807ec0d34859c52e260fc60634aaac13e3972dcfc08736'),
-				registered_height=2,
-				expiration_height=2 + (365 * 1440)
+				registered_height=3,
+				expiration_height=3 + (365 * 1440)
 			)
 		))
 
@@ -857,7 +859,7 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 				namespace_name='namespace.test',
 				description='NEM namespace test',
 				creator=PublicKey('a700809530e5428066807ec0d34859c52e260fc60634aaac13e3972dcfc08736'),
-				registered_height=2,
+				registered_height=3,
 				initial_supply=3100000,
 				total_supply=3100000,
 				divisibility=4,
@@ -915,3 +917,370 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 			supply_type=1,
 			expected_supply_change=500000
 		)
+
+	def _assert_transaction_record(self, transaction, payload, amount=None, recipient_address=None):
+		# Act:
+		record = self.puller._build_transaction_record(transaction, False)  # pylint: disable=protected-access
+
+		# Assert:
+		self.assertEqual(record, TransactionRecord(
+			transaction_hash=transaction.transaction_hash,
+			height=3,
+			sender_public_key=transaction.sender,
+			fee=transaction.fee,
+			timestamp='2015-03-29 20:29:42+00:00',
+			deadline='2015-03-29 23:16:22+00:00',
+			amount=amount,
+			signature=transaction.signature,
+			transaction_type=transaction.transaction_type,
+			is_inner=False,
+			sender_address=self.puller.nem_facade.network.public_key_to_address(transaction.sender),
+			recipient_address=recipient_address,
+			payload=payload
+		))
+
+	def test_can_build_transaction_record_transfer(self):
+		# Arrange:
+		transaction = NEM_CONNECTOR_RESPONSE_BLOCKS[2].transactions[1]
+
+		self._assert_transaction_record(
+			transaction, {
+				'message': {
+					'payload': '476f6f64206c75636b21',
+					'is_plain': 1
+				}
+			},
+			amount=180000040000000,
+			recipient_address=transaction.recipient
+		)
+
+	def test_can_build_transaction_record_transfer_without_message(self):
+		# Arrange:
+		transaction = NEM_CONNECTOR_RESPONSE_BLOCKS[2].transactions[1]
+
+		transaction.message = None
+
+		self._assert_transaction_record(
+			transaction,
+			{'message': None},
+			amount=180000040000000,
+			recipient_address=transaction.recipient
+		)
+
+	def test_can_build_transaction_record_account_key_link(self):
+		# Arrange:
+		transaction = NEM_CONNECTOR_RESPONSE_BLOCKS[2].transactions[0]
+
+		self._assert_transaction_record(
+			transaction, {
+				'mode': 1,
+				'remote_account': '7195F4D7A40AD7E31958AE96C4AFED002962229675A4CAE8DC8A18E290618981'
+			})
+
+	def test_can_build_transaction_record_multisig_account_modification(self):
+		# Arrange:
+		transaction = NEM_CONNECTOR_RESPONSE_BLOCKS[2].transactions[2]
+
+		self._assert_transaction_record(
+			transaction, {
+				'min_cosignatories': 2,
+				'modifications': [
+					{
+						'modification_type': 1,
+						'cosignatory_account': '1FBDBDDE28DAF828245E4533765726F0B7790E0B7146E2CE205DF3E86366980B'
+					},
+					{
+						'modification_type': 1,
+						'cosignatory_account': 'F94E8702EB1943B23570B1B83BE1B81536DF35538978820E98BFCE8F999E2D37'
+					}
+				]
+			}
+		)
+
+	def test_can_build_transaction_record_multisig(self):
+		# Arrange:
+		transaction = NEM_CONNECTOR_RESPONSE_BLOCKS[2].transactions[6]
+
+		self._assert_transaction_record(
+			transaction, {
+				'inner_hash': transaction.inner_hash,
+				'signatures': [
+					{
+						'transaction_type': signature.transaction_type,
+						'timestamp': '2023-07-12 17:06:10+00:00',
+						'deadline': '2023-07-13 17:06:10+00:00',
+						'fee': signature.fee,
+						'other_hash': signature.other_hash,
+						'other_account': str(signature.other_account),
+						'sender': str(signature.sender),
+						'signature': signature.signature
+					} for signature in transaction.signatures
+				]
+			}
+		)
+
+	def test_can_build_transaction_record_namespace_registration(self):
+		# Arrange:
+		transaction = NEM_CONNECTOR_RESPONSE_BLOCKS[2].transactions[3]
+
+		self._assert_transaction_record(
+			transaction, {
+				'rental_fee': transaction.rental_fee,
+				'parent': transaction.parent,
+				'namespace': transaction.namespace,
+			},
+			recipient_address=transaction.rental_fee_sink
+		)
+
+	def test_can_build_transaction_record_mosaic_definition(self):
+		# Arrange:
+		transaction = NEM_CONNECTOR_RESPONSE_BLOCKS[2].transactions[4]
+
+		self._assert_transaction_record(
+			transaction, {
+				'creation_fee': transaction.creation_fee,
+				'creator': str(transaction.sender),
+				'description': transaction.description,
+				'namespace_name': transaction.namespace_name,
+				'mosaic_properties': {
+					'divisibility': transaction.properties.divisibility,
+					'initial_supply': transaction.properties.initial_supply,
+					'supply_mutable': transaction.properties.supply_mutable,
+					'transferable': transaction.properties.transferable
+				},
+				'levy': {
+					'type': transaction.levy.type,
+					'namespace_name': transaction.levy.namespace_name,
+					'fee': transaction.levy.fee,
+					'recipient': str(transaction.levy.recipient)
+				}
+			},
+			recipient_address=transaction.creation_fee_sink
+		)
+
+	def test_can_build_transaction_record_mosaic_definition_without_levy(self):
+		# Arrange:
+		mosaic_definition = NEM_CONNECTOR_RESPONSE_BLOCKS[2].transactions[4]
+
+		transaction = MosaicDefinitionTransaction(
+			mosaic_definition.transaction_hash,
+			mosaic_definition.height,
+			mosaic_definition.sender,
+			mosaic_definition.fee,
+			mosaic_definition.timestamp,
+			mosaic_definition.deadline,
+			mosaic_definition.signature,
+			mosaic_definition.creation_fee,
+			mosaic_definition.creation_fee_sink,
+			mosaic_definition.creator,
+			mosaic_definition.description,
+			mosaic_definition.properties,
+			None,
+			mosaic_definition.namespace_name
+		)
+
+		self._assert_transaction_record(
+			transaction, {
+				'creation_fee': transaction.creation_fee,
+				'creator': str(transaction.sender),
+				'description': transaction.description,
+				'namespace_name': transaction.namespace_name,
+				'mosaic_properties': {
+					'divisibility': transaction.properties.divisibility,
+					'initial_supply': transaction.properties.initial_supply,
+					'supply_mutable': transaction.properties.supply_mutable,
+					'transferable': transaction.properties.transferable
+				},
+				'levy': None
+			},
+			recipient_address=transaction.creation_fee_sink
+		)
+
+	def test_can_build_transaction_record_mosaic_supply_change(self):
+		# Arrange:
+		transaction = NEM_CONNECTOR_RESPONSE_BLOCKS[2].transactions[5]
+
+		self._assert_transaction_record(
+			transaction, {
+				'supply_type': transaction.supply_type,
+				'delta': transaction.delta,
+				'namespace_name': transaction.namespace_name
+			})
+
+	@patch('puller.facade.NemPuller.NemPuller._build_transaction_record')
+	@patch('puller.facade.NemPuller.NemDatabase.insert_transaction')
+	@patch('puller.facade.NemPuller.NemDatabase.insert_transaction_mosaic')
+	def test_can_process_transaction_transfer(self, mock_insert_transaction_mosaic, mock_insert_transaction, mock_build_transaction_record):
+		# Arrange:
+		mock_insert_transaction.return_value = 1  # Simulate inserted transaction ID for linking mosaics
+		transfer = NEM_CONNECTOR_RESPONSE_BLOCKS[2].transactions[1]
+
+		transaction = TransferTransaction(
+			transfer.transaction_hash,
+			transfer.height,
+			transfer.sender,
+			transfer.fee,
+			transfer.timestamp,
+			transfer.deadline,
+			transfer.signature,
+			transfer.amount,
+			transfer.recipient,
+			transfer.message,
+			[
+				Mosaic('namespace.test', 1000000),
+				Mosaic('nem.xem', 8000000)
+			]
+		)
+
+		cursor = Mock()
+
+		# Act:
+		self.puller._process_transaction(cursor, transaction, 3, is_inner=False)  # pylint: disable=protected-access
+
+		# Assert:
+		mock_build_transaction_record.assert_called_once()
+		mock_insert_transaction.assert_called_once()
+		insert_transaction_mosaic_calls = mock_insert_transaction_mosaic.call_args_list
+		for index, mosaic in enumerate(transaction.mosaics):
+			self.assertEqual(insert_transaction_mosaic_calls[index][0], (
+				cursor,
+				1,  # transaction_id from insert_transaction mock
+				mosaic
+			))
+
+	@patch('puller.facade.NemPuller.NemPuller._build_transaction_record')
+	@patch('puller.facade.NemPuller.NemDatabase.insert_transaction')
+	@patch('puller.facade.NemPuller.NemDatabase.insert_transaction_mosaic')
+	def test_can_process_transaction_transfer_without_mosaic(
+		self,
+		mock_insert_transaction_mosaic,
+		mock_insert_transaction,
+		mock_build_transaction_record
+	):
+		# Arrange:
+		transaction = NEM_CONNECTOR_RESPONSE_BLOCKS[2].transactions[1]
+
+		cursor = Mock()
+
+		# Act:
+		self.puller._process_transaction(cursor, transaction, 3, is_inner=False)  # pylint: disable=protected-access
+
+		# Assert:
+		mock_build_transaction_record.assert_called_once()
+		mock_insert_transaction.assert_called_once()
+		mock_insert_transaction_mosaic.assert_not_called()
+
+	@patch('puller.facade.NemPuller.NemPuller._build_transaction_record')
+	@patch('puller.facade.NemPuller.NemDatabase.insert_transaction')
+	@patch('puller.facade.NemPuller.NemPuller._process_namespace')
+	def test_can_process_transaction_namespace_registration(
+		self,
+		mock_process_namespace,
+		mock_insert_transaction,
+		mock_build_transaction_record
+	):
+		# Arrange:
+		transaction = NEM_CONNECTOR_RESPONSE_BLOCKS[2].transactions[3]
+
+		cursor = Mock()
+
+		# Act:
+		self.puller._process_transaction(cursor, transaction, 3, is_inner=False)  # pylint: disable=protected-access
+
+		# Assert:
+		mock_build_transaction_record.assert_called_once()
+		mock_insert_transaction.assert_called_once()
+		mock_process_namespace.assert_called_once_with(cursor, transaction, 3)
+
+	@patch('puller.facade.NemPuller.NemPuller._build_transaction_record')
+	@patch('puller.facade.NemPuller.NemDatabase.insert_transaction')
+	@patch('puller.facade.NemPuller.NemPuller._process_mosaic_definition')
+	def test_can_process_transaction_mosaic_definition(
+		self,
+		mock_process_mosaic_definition,
+		mock_insert_transaction,
+		mock_build_transaction_record
+	):
+		# Arrange:
+		transaction = NEM_CONNECTOR_RESPONSE_BLOCKS[2].transactions[4]
+
+		cursor = Mock()
+
+		# Act:
+		self.puller._process_transaction(cursor, transaction, 3, is_inner=False)  # pylint: disable=protected-access
+
+		# Assert:
+		mock_build_transaction_record.assert_called_once()
+		mock_insert_transaction.assert_called_once()
+		mock_process_mosaic_definition.assert_called_once_with(cursor, transaction, 3)
+
+	@patch('puller.facade.NemPuller.NemPuller._build_transaction_record')
+	@patch('puller.facade.NemPuller.NemDatabase.insert_transaction')
+	@patch('puller.facade.NemPuller.NemPuller._process_mosaic_supply_change')
+	def test_can_process_transaction_mosaic_supply_change(
+		self,
+		mock_process_mosaic_supply_change,
+		mock_insert_transaction,
+		mock_build_transaction_record
+	):
+		# Arrange:
+		transaction = NEM_CONNECTOR_RESPONSE_BLOCKS[2].transactions[5]
+
+		cursor = Mock()
+
+		# Act:
+		self.puller._process_transaction(cursor, transaction, 3, is_inner=False)  # pylint: disable=protected-access
+
+		# Assert:
+		mock_build_transaction_record.assert_called_once()
+		mock_insert_transaction.assert_called_once()
+		mock_process_mosaic_supply_change.assert_called_once_with(cursor, transaction)
+
+	@patch('puller.facade.NemPuller.NemPuller._process_transaction')
+	def test_can_process_transactions_inner_outer(self, mock_process_transaction):
+		# Arrange:
+		block_data = NEM_CONNECTOR_RESPONSE_BLOCKS[2]
+
+		block = Block(
+			block_data.height,
+			block_data.timestamp,
+			[
+				block_data.transactions[6]
+			],
+			block_data.difficulty,
+			block_data.block_hash,
+			block_data.total_fee,
+			block_data.beneficiary,
+			block_data.signer,
+			block_data.signature,
+			block_data.size
+		)
+
+		cursor = Mock()
+
+		# Act:
+		self.puller._process_transactions(cursor, block.transactions, block.height)  # pylint: disable=protected-access
+
+		# Assert:
+		process_transaction_calls = mock_process_transaction.call_args_list
+		self.assertEqual(len(process_transaction_calls), 2)  # 1 for outer transaction, 1 for inner transaction
+
+		# Ensure the inner transaction is correctly linked to the outer transaction
+		self.assertEqual(block.transactions[0].other_transaction.height, block.transactions[0].height)
+		self.assertEqual(block.transactions[0].other_transaction.transaction_hash, block.transactions[0].inner_hash)
+
+		# first call is inner transaction
+		self.assertEqual(process_transaction_calls[0][0], (cursor,))
+		self.assertEqual(process_transaction_calls[0][1], {
+			'transaction': block.transactions[0].other_transaction,
+			'block_height': 3,
+			'is_inner': True
+		})
+
+		# second call is outer transaction
+		self.assertEqual(process_transaction_calls[1][0], (cursor,))
+		self.assertEqual(process_transaction_calls[1][1], {
+			'transaction': block.transactions[0],
+			'block_height': 3,
+			'is_inner': False
+		})

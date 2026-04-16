@@ -63,6 +63,21 @@ MosaicRecord = namedtuple('MosaicRecord', [
 	'levy_fee',
 	'levy_recipient'
 ])
+TransactionRecord = namedtuple('TransactionRecord', [
+	'transaction_hash',
+	'height',
+	'sender_public_key',
+	'fee',
+	'timestamp',
+	'deadline',
+	'signature',
+	'amount',
+	'transaction_type',
+	'is_inner',
+	'sender_address',
+	'recipient_address',
+	'payload'
+])
 DatabaseConfig = namedtuple('DatabaseConfig', ['database', 'user', 'password', 'host', 'port'])
 
 
@@ -348,16 +363,140 @@ class NemPuller:
 		adjustment = transaction.delta if transaction.supply_type == 1 else -transaction.delta
 		self.nem_db.update_mosaic_total_supply(cursor, transaction.namespace_name, adjustment)
 
+	def _build_transaction_record(self, transaction, is_inner):
+		"""Create TransactionRecord from transaction data."""
+
+		payload = None
+		recipient_address = None
+		amount = None
+		if transaction.transaction_type == TransactionType.TRANSFER.value:
+			payload = {
+				'message': {
+					'payload': transaction.message.payload,
+					'is_plain': transaction.message.is_plain,
+				} if transaction.message else None
+			}
+			recipient_address = transaction.recipient
+			amount = transaction.amount
+		elif transaction.transaction_type == TransactionType.ACCOUNT_KEY_LINK.value:
+			payload = {
+				'mode': transaction.mode,
+				'remote_account': str(transaction.remote_account)
+			}
+		elif transaction.transaction_type == TransactionType.MULTISIG_ACCOUNT_MODIFICATION.value:
+			payload = {
+				'min_cosignatories': transaction.min_cosignatories,
+				'modifications': [
+					{
+						'modification_type': modification.modification_type,
+						'cosignatory_account': str(modification.cosignatory_account)
+					}
+					for modification in transaction.modifications
+				]
+			}
+		elif transaction.transaction_type == TransactionType.MULTISIG.value:
+			payload = {
+				'inner_hash': transaction.inner_hash,
+				'signatures': [
+					{
+						'transaction_type': signature.transaction_type,
+						'timestamp': self._convert_timestamp_to_datetime(signature.timestamp),
+						'deadline': self._convert_timestamp_to_datetime(signature.deadline),
+						'fee': signature.fee,
+						'other_hash': signature.other_hash,
+						'other_account': str(signature.other_account),
+						'sender': str(signature.sender),
+						'signature': signature.signature
+					} for signature in transaction.signatures
+				]
+			}
+		elif transaction.transaction_type == TransactionType.NAMESPACE_REGISTRATION.value:
+			payload = {
+				'rental_fee': transaction.rental_fee,
+				'parent': transaction.parent,
+				'namespace': transaction.namespace
+			}
+			recipient_address = transaction.rental_fee_sink
+		elif transaction.transaction_type == TransactionType.MOSAIC_DEFINITION.value:
+			payload = {
+				'creation_fee': transaction.creation_fee,
+				'creator': str(transaction.sender),
+				'description': transaction.description,
+				'namespace_name': transaction.namespace_name,
+				'mosaic_properties': {
+					'divisibility': transaction.properties.divisibility,
+					'initial_supply': transaction.properties.initial_supply,
+					'supply_mutable': transaction.properties.supply_mutable,
+					'transferable': transaction.properties.transferable
+				},
+				'levy': {
+					'type': transaction.levy.type,
+					'namespace_name': transaction.levy.namespace_name,
+					'fee': transaction.levy.fee,
+					'recipient': str(transaction.levy.recipient)
+				} if transaction.levy else None
+			}
+			recipient_address = transaction.creation_fee_sink
+		elif transaction.transaction_type == TransactionType.MOSAIC_SUPPLY_CHANGE.value:
+			payload = {
+				'namespace_name': transaction.namespace_name,
+				'supply_type': transaction.supply_type,
+				'delta': transaction.delta
+			}
+
+		return TransactionRecord(
+			transaction_hash=transaction.transaction_hash,
+			height=transaction.height,
+			sender_public_key=transaction.sender,
+			fee=transaction.fee,
+			timestamp=self._convert_timestamp_to_datetime(transaction.timestamp),
+			deadline=self._convert_timestamp_to_datetime(transaction.deadline),
+			amount=amount,
+			signature=transaction.signature,
+			transaction_type=transaction.transaction_type,
+			is_inner=is_inner,
+			sender_address=self._convert_public_key_to_address(transaction.sender),
+			recipient_address=recipient_address,
+			payload=payload
+		)
+
+	def _process_transaction(self, cursor, transaction, block_height, is_inner):
+		# pylint: disable=too-many-arguments,too-many-positional-arguments
+		"""Process a single transaction."""
+
+		transaction_record = self._build_transaction_record(transaction, is_inner)
+		transaction_id = self.nem_db.insert_transaction(cursor, transaction_record)
+
+		if transaction.transaction_type == TransactionType.TRANSFER.value and transaction.mosaics:
+			for mosaic in transaction.mosaics:
+				self.nem_db.insert_transaction_mosaic(cursor, transaction_id, mosaic)
+		elif transaction.transaction_type == TransactionType.NAMESPACE_REGISTRATION.value:
+			self._process_namespace(cursor, transaction, block_height)
+		elif transaction.transaction_type == TransactionType.MOSAIC_DEFINITION.value:
+			self._process_mosaic_definition(cursor, transaction, block_height)
+		elif transaction.transaction_type == TransactionType.MOSAIC_SUPPLY_CHANGE.value:
+			self._process_mosaic_supply_change(cursor, transaction)
+
+		return transaction_id
+
 	def _process_transactions(self, cursor, block_transactions, height):
 		"""Process transactions in a block."""
 
 		for transaction in block_transactions:
-			if transaction.transaction_type == TransactionType.NAMESPACE_REGISTRATION.value:
-				self._process_namespace(cursor, transaction, height)
-			elif transaction.transaction_type == TransactionType.MOSAIC_DEFINITION.value:
-				self._process_mosaic_definition(cursor, transaction, height)
-			elif transaction.transaction_type == TransactionType.MOSAIC_SUPPLY_CHANGE.value:
-				self._process_mosaic_supply_change(cursor, transaction)
+
+			# Handle inner transaction first to get its ID for linking
+			if hasattr(transaction, 'other_transaction'):
+				# For inner transactions, we set the transaction hash to the inner hash
+				transaction.other_transaction.transaction_hash = transaction.inner_hash
+				transaction.other_transaction.height = transaction.height
+				self._process_transaction(cursor, transaction=transaction.other_transaction, block_height=height, is_inner=True)
+
+			self._process_transaction(
+				cursor,
+				transaction=transaction,
+				block_height=height,
+				is_inner=False
+			)
 
 	async def sync_nemesis_block(self):
 		"""Sync and write Nemesis block to database."""
