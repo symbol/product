@@ -181,6 +181,13 @@ signer --config CONFIG --ca-key-path CA_KEY_PATH [--save] filename
   --save                    save signed payload into same file as input
 ```
 
+For aggregate transactions, `signer` can be run multiple times against the same payload file.
+The first run signs the aggregate transaction itself.
+Subsequent runs with different cosignatory keys append aggregate cosignatures instead of replacing the existing aggregate signature.
+
+For aggregate bonded transactions, the first signing run will additionally create a hash lock transaction in `filename` with `.hash_lock.dat` suffix.
+Subsequent cosigning runs do not recreate or replace that hash lock file.
+
 ### announce-transaction
 
 Announces a transaction to the network.
@@ -317,10 +324,10 @@ General properties:
 ```
 feeMultiplier             Min fee multiplier of generated transactions
 timeoutHours              Timeout of generated transactions (in hours)
-minCosignaturesCount      Minimum number of cosignatures generated transactions will require
+minCosignaturesCount      Minimum number of cosignatures generated aggregate transactions will require
 ```
 
-When `signer` command is signing an aggregate bonded transaction, it will additionally generate a hash lock transaction
+When `signer` command is signing an aggregate bonded transaction for the first time, it will additionally generate a hash lock transaction
 using the following properties:
 ```
 hashLockDuration          Hash lock duration in blocks
