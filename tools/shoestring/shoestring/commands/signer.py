@@ -72,7 +72,9 @@ def run_main(args):
 	key_pair = KeyPair(read_private_key_from_private_key_pem_file(args.ca_key_path, config.node.ca_password))
 	is_cosigning = False
 
-	if _is_aggregate(transaction) and not _is_signed(transaction):  # first signer becomes aggregate initiator
+	# For multisig payloads, the prebuilt aggregate can carry the multisig account public key as a placeholder.
+	# The first real signer becomes the aggregate initiator / announcer and therefore replaces the outer signer.
+	if _is_aggregate(transaction) and not _is_signed(transaction):
 		transaction.signer_public_key = sc.PublicKey(key_pair.public_key.bytes)
 	elif _is_aggregate(transaction):
 		is_cosigning = key_pair.public_key.bytes != transaction.signer_public_key.bytes

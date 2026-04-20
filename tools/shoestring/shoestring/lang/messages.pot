@@ -1,12 +1,16 @@
-#: shoestring/commands/announce_transaction.py:31
+#: shoestring/commands/announce_transaction.py:38
 msgid "announce-transaction-announce-successful"
 msgstr ""
 
-#: shoestring/commands/announce_transaction.py:24
+#: shoestring/commands/announce_transaction.py:26
+msgid "announce-transaction-missing-hash-lock"
+msgstr ""
+
+#: shoestring/commands/announce_transaction.py:22
 msgid "announce-transaction-preparing-to-announce"
 msgstr ""
 
-#: shoestring/commands/announce_transaction.py:36
+#: shoestring/commands/announce_transaction.py:43
 msgid "argument-help-announce-transaction-transaction"
 msgstr ""
 
@@ -900,4 +904,3 @@ msgstr ""
 #: shoestring/wizard/screens/welcome.py:39
 msgid "wizard-welcome-upgrade"
 msgstr ""
-

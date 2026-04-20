@@ -174,6 +174,82 @@ async def test_can_sign_aggregate_bonded_transaction_with_wrong_outer_public_key
 	await _assert_can_sign_transaction(create_transaction_descriptor, check_hash_lock=True)
 
 
+async def test_can_sign_multisig_aggregate_complete_transaction_without_replacing_inner_signer():
+	with tempfile.TemporaryDirectory() as output_directory:
+		facade = SymbolFacade('testnet')
+		multisig_public_key = KeyPair(PrivateKey.random()).public_key
+		cosigner_key_pair = KeyPair(PrivateKey.random())
+
+		private_key_storage = PrivateKeyStorage(output_directory, None)
+		private_key_storage.save('cosigner', cosigner_key_pair.private_key)
+
+		transaction_filepath = Path(output_directory) / 'transaction.dat'
+		with open(transaction_filepath, 'wb') as outfile:
+			transaction = facade.transaction_factory.create({
+				**_create_aggregate_transaction_descriptor('aggregate_complete_transaction_v3', multisig_public_key),
+				'deadline': 1234000
+			})
+			outfile.write(transaction.serialize())
+
+		config_filepath = prepare_shoestring_configuration(output_directory, NodeFeatures.PEER)
+
+		await main([
+			'signer',
+			'--config', str(config_filepath),
+			'--ca-key-path', str(Path(output_directory) / 'cosigner.pem'),
+			'--save',
+			str(transaction_filepath)
+		])
+
+		with open(transaction_filepath, 'rb') as infile:
+			transaction = TransactionFactory.deserialize(infile.read())
+
+		assert cosigner_key_pair.public_key == PublicKey(transaction.signer_public_key.bytes)
+		assert multisig_public_key == PublicKey(transaction.transactions[0].signer_public_key.bytes)
+		assert facade.verify_transaction(transaction, transaction.signature)
+
+
+async def test_can_sign_multisig_aggregate_bonded_transaction_without_replacing_inner_signer():
+	with tempfile.TemporaryDirectory() as output_directory:
+		facade = SymbolFacade('testnet')
+		multisig_public_key = KeyPair(PrivateKey.random()).public_key
+		cosigner_key_pair = KeyPair(PrivateKey.random())
+
+		private_key_storage = PrivateKeyStorage(output_directory, None)
+		private_key_storage.save('cosigner', cosigner_key_pair.private_key)
+
+		transaction_filepath = Path(output_directory) / 'transaction.dat'
+		with open(transaction_filepath, 'wb') as outfile:
+			transaction = facade.transaction_factory.create({
+				**_create_aggregate_transaction_descriptor('aggregate_bonded_transaction_v3', multisig_public_key),
+				'deadline': 1234000
+			})
+			outfile.write(transaction.serialize())
+
+		config_filepath = prepare_shoestring_configuration(output_directory, NodeFeatures.PEER)
+
+		await main([
+			'signer',
+			'--config', str(config_filepath),
+			'--ca-key-path', str(Path(output_directory) / 'cosigner.pem'),
+			'--save',
+			str(transaction_filepath)
+		])
+
+		with open(transaction_filepath, 'rb') as infile:
+			transaction = TransactionFactory.deserialize(infile.read())
+
+		assert cosigner_key_pair.public_key == PublicKey(transaction.signer_public_key.bytes)
+		assert multisig_public_key == PublicKey(transaction.transactions[0].signer_public_key.bytes)
+		assert facade.verify_transaction(transaction, transaction.signature)
+
+		hash_lock_transaction_filepath = Path(output_directory) / 'transaction.hash_lock.dat'
+		with open(hash_lock_transaction_filepath, 'rb') as infile:
+			hash_lock_transaction = TransactionFactory.deserialize(infile.read())
+
+		_assert_hash_lock_transaction(hash_lock_transaction, cosigner_key_pair.public_key, facade.hash_transaction(transaction))
+
+
 async def test_can_add_cosignature_to_aggregate_complete_transaction():
 	with tempfile.TemporaryDirectory() as output_directory:
 		facade = SymbolFacade('testnet')
