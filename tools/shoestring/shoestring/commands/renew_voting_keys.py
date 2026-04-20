@@ -89,7 +89,9 @@ async def run_main(args):
 		log.error(_('renew-voting-keys-maximum-already-registered'))
 		return
 
-	account_public_key = read_public_key_from_public_key_pem_file(directories.certificates / 'ca.pubkey.pem')
+	account_public_key = config.transaction.signer_public_key
+	if not account_public_key:
+		account_public_key = read_public_key_from_public_key_pem_file(directories.certificates / 'ca.pubkey.pem')
 	transaction_builder = LinkTransactionBuilder(account_public_key, config.network)
 
 	# remove expired root voting keys
