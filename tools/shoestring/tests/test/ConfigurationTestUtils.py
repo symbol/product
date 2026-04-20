@@ -12,6 +12,9 @@ def prepare_shoestring_configuration(directory, node_features, services_nodewatc
 	parser['services']['nodewatch'] = str(services_nodewatch)
 	parser['node']['features'] = node_features.to_formatted_string()
 
+	if 'transaction_signer_public_key' in node_kwargs and node_kwargs['transaction_signer_public_key'] is not None:
+		parser['transaction']['signerPublicKey'] = str(node_kwargs['transaction_signer_public_key'])
+
 	ca_password = node_kwargs.get('ca_password', None)
 	if ca_password:
 		parser['node']['caPassword'] = f'pass:{ca_password}'

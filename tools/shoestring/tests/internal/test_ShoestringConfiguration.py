@@ -3,7 +3,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from symbolchain.CryptoTypes import Hash256
+from symbolchain.CryptoTypes import Hash256, PublicKey
 
 from shoestring.internal.NodeFeatures import NodeFeatures
 from shoestring.internal.ShoestringConfiguration import (
@@ -41,13 +41,14 @@ class ShoestringConfigurationTest(unittest.TestCase):
 	}
 
 	VALID_TRANSACTION_CONFIGURATION = {
-		'feeMultiplier': '234',
-		'timeoutHours': '3',
-		'minCosignaturesCount': '2',
-		'hashLockDuration': '1440',
-		'currencyMosaicId': '0x72C0212E67A08BCE',
-		'lockedFundsPerAggregate': '10000000'
-	}
+			'feeMultiplier': '234',
+			'timeoutHours': '3',
+			'minCosignaturesCount': '2',
+			'hashLockDuration': '1440',
+			'currencyMosaicId': '0x72C0212E67A08BCE',
+			'lockedFundsPerAggregate': '10000000',
+			'signerPublicKey': 'F357F779799EAE88B400D45E7C3C232391CFD79EFEAA05BC38868356CBE0A4D3'
+		}
 
 	VALID_IMPORTS_CONFIGURATION = {
 		'harvester': 'path/to/config-harvesting.properties',
@@ -167,12 +168,29 @@ class ShoestringConfigurationTest(unittest.TestCase):
 		self.assertEqual(1440, transaction_config.hash_lock_duration)
 		self.assertEqual(0x72C0212E67A08BCE, transaction_config.currency_mosaic_id)
 		self.assertEqual(10000000, transaction_config.locked_funds_per_aggregate)
+		self.assertEqual(PublicKey('F357F779799EAE88B400D45E7C3C232391CFD79EFEAA05BC38868356CBE0A4D3'), transaction_config.signer_public_key)
+
+	def test_can_parse_valid_transaction_configuration_without_signer_public_key(self):
+		# Arrange:
+		config = {**self.VALID_TRANSACTION_CONFIGURATION}
+		del config['signerPublicKey']
+
+		# Act:
+		transaction_config = parse_transaction_configuration(config)
+
+		# Assert:
+		self.assertEqual(None, transaction_config.signer_public_key)
 
 	def test_cannot_parse_transaction_configuration_incomplete(self):
 		# Arrange:
 		for key in self.VALID_TRANSACTION_CONFIGURATION:
 			incomplete_config = {**self.VALID_TRANSACTION_CONFIGURATION}
 			del incomplete_config[key]
+
+			if 'signerPublicKey' == key:
+				transaction_config = parse_transaction_configuration(incomplete_config)
+				self.assertEqual(None, transaction_config.signer_public_key)
+				continue
 
 			# Act + Assert:
 			with self.assertRaises(KeyError):
@@ -186,7 +204,8 @@ class ShoestringConfigurationTest(unittest.TestCase):
 			'minCosignaturesCount': 'not an int',
 			'hashLockDuration': 'not an int',
 			'currencyMosaicId': 'not an int',
-			'lockedFundsPerAggregate': 'not an int'
+			'lockedFundsPerAggregate': 'not an int',
+			'signerPublicKey': 'not a public key'
 		}
 
 		for key, value in corrupt_overrides.items():
