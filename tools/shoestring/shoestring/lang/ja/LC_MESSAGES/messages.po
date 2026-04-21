@@ -474,6 +474,10 @@ msgstr "内部トランザクション:"
 msgid "signer-signed-transaction"
 msgstr "ハッシュ: {transaction_hash} のトランザクション {transaction_type} に署名しました"
 
+#: shoestring/commands/signer.py:84
+msgid "signer-already-cosigned-transaction"
+msgstr "トランザクション {transaction_type} (ハッシュ: {transaction_hash}) はすでにこの鍵で連署済みのためスキップします"
+
 #: shoestring/commands/signer.py:26
 msgid "signer-transaction"
 msgstr "トランザクション: {transaction}"

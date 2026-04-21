@@ -486,6 +486,10 @@ msgstr "Inner transactions:"
 msgid "signer-signed-transaction"
 msgstr "Signed transaction {transaction_type} with hash: {transaction_hash}"
 
+#: shoestring/commands/signer.py:84
+msgid "signer-already-cosigned-transaction"
+msgstr "transaction {transaction_type} with hash {transaction_hash} was already cosigned by this key, skipping"
+
 #: shoestring/commands/signer.py:26
 msgid "signer-transaction"
 msgstr "Transaction: {transaction}"

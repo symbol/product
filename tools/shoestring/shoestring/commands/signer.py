@@ -15,6 +15,7 @@ def _is_aggregate(transaction):
 
 
 def _is_signed(transaction):
+	# Symbol serializes unsigned transactions with an all-zero signature field
 	return any(transaction.signature.bytes)
 
 
@@ -80,7 +81,7 @@ def run_main(args):
 		is_cosigning = key_pair.public_key.bytes != transaction.signer_public_key.bytes
 
 		if is_cosigning and _has_cosignature(transaction, key_pair.public_key):
-			log.info(_('signer-signed-transaction').format(
+			log.info(_('signer-already-cosigned-transaction').format(
 				transaction_type=transaction.type_,
 				transaction_hash=facade.hash_transaction(transaction)))
 			if args.save:

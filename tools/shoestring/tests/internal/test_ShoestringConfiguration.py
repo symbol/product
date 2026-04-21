@@ -41,14 +41,14 @@ class ShoestringConfigurationTest(unittest.TestCase):
 	}
 
 	VALID_TRANSACTION_CONFIGURATION = {
-			'feeMultiplier': '234',
-			'timeoutHours': '3',
-			'minCosignaturesCount': '2',
-			'hashLockDuration': '1440',
-			'currencyMosaicId': '0x72C0212E67A08BCE',
-			'lockedFundsPerAggregate': '10000000',
-			'signerPublicKey': 'F357F779799EAE88B400D45E7C3C232391CFD79EFEAA05BC38868356CBE0A4D3'
-		}
+		'feeMultiplier': '234',
+		'timeoutHours': '3',
+		'minCosignaturesCount': '2',
+		'hashLockDuration': '1440',
+		'currencyMosaicId': '0x72C0212E67A08BCE',
+		'lockedFundsPerAggregate': '10000000',
+		'signerPublicKey': 'F357F779799EAE88B400D45E7C3C232391CFD79EFEAA05BC38868356CBE0A4D3'
+	}
 
 	VALID_IMPORTS_CONFIGURATION = {
 		'harvester': 'path/to/config-harvesting.properties',

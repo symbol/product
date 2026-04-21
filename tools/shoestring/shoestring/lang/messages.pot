@@ -463,6 +463,10 @@ msgstr ""
 msgid "signer-signed-transaction"
 msgstr ""
 
+#: shoestring/commands/signer.py:84
+msgid "signer-already-cosigned-transaction"
+msgstr ""
+
 #: shoestring/commands/signer.py:26
 msgid "signer-transaction"
 msgstr ""
