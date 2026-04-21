@@ -639,8 +639,8 @@ class NemDatabase(DatabaseConnectionPool):
 		transaction = self._get_transaction_query(transaction_hash, is_inner)
 		inner_transaction = None
 
-		if transaction[1] == TransactionType.MULTISIG.value:
+		if transaction and transaction[1] == TransactionType.MULTISIG.value:
 			inner_hash = transaction[9]['inner_hash']
 			inner_transaction = self._get_transaction_query(inner_hash, is_inner=True)
 
-		return self._create_transaction_view(transaction, inner_transaction)
+		return self._create_transaction_view(transaction, inner_transaction) if transaction else None
