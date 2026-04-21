@@ -9,11 +9,11 @@ The changelog format is based on [Keep a Changelog](https://keepachangelog.com/e
 
 ### Added
 - add pemview command which outputs the Symbol address from a pem file
-- add --output-transaction-only flag  to setup command which allows regenerate of setup transactions after expiration.
+- add --output-transaction-only flag to setup command which allows regenerate of setup transactions after expiration.
 
 ### Fixed
 - set the open file limit in the Docker-compose.yaml file for both the hard and soft limits.
-- some utc datetime apis are deprecated, update to use the new utc datetime APIs.
+- some UTC datetime apis are deprecated, update to use the new utc datetime APIs.
 
 ## [0.2.3] - 26 Nov-2025
 
