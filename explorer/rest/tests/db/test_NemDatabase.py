@@ -8,6 +8,7 @@ from ..test.DatabaseTestUtils import (
 	MOSAIC_RICH_LIST_VIEWS,
 	MOSAIC_VIEWS,
 	NAMESPACE_VIEWS,
+	TRANSACTIONS_VIEWS,
 	DatabaseTestBase
 )
 
@@ -250,3 +251,61 @@ class NemDatabaseTest(DatabaseTestBase):  # pylint: disable=too-many-public-meth
 		self._assert_can_query_mosaic_rich_list_with_filter(Pagination(1, 1), 'nem.xem', [MOSAIC_RICH_LIST_VIEWS[0]])
 
 	# endregion
+
+	# region transaction
+
+	def test_can_query_transfer_by_hash(self):
+		# Act:
+		transaction_view = self.nem_db.get_transaction_by_hash('0' * 63 + '1')
+
+		# Assert:
+		self.assertEqual(TRANSACTIONS_VIEWS[0], transaction_view)
+
+	def test_can_query_transfer_v2_by_hash(self):
+		# Act:
+		transaction_view = self.nem_db.get_transaction_by_hash('0' * 63 + '2')
+
+		# Assert:
+		self.assertEqual(TRANSACTIONS_VIEWS[1], transaction_view)
+
+	def test_can_query_account_link_by_hash(self):
+		# Act:
+		transaction_view = self.nem_db.get_transaction_by_hash('0' * 63 + '3')
+
+		# Assert:
+		self.assertEqual(TRANSACTIONS_VIEWS[2], transaction_view)
+
+	def test_can_query_multisig_account_modification_by_hash(self):
+		# Act:
+		transaction_view = self.nem_db.get_transaction_by_hash('0' * 63 + '4')
+
+		# Assert:
+		self.assertEqual(TRANSACTIONS_VIEWS[3], transaction_view)
+
+	def test_can_query_multisig_by_hash(self):
+		# Act:
+		transaction_view = self.nem_db.get_transaction_by_hash('0' * 63 + '5')
+
+		# Assert:
+		self.assertEqual(TRANSACTIONS_VIEWS[4], transaction_view)
+
+	def test_can_query_namespace_registration_by_hash(self):
+		# Act:
+		transaction_view = self.nem_db.get_transaction_by_hash('0' * 63 + '7')
+
+		# Assert:
+		self.assertEqual(TRANSACTIONS_VIEWS[5], transaction_view)
+
+	def test_can_query_mosaic_definition_by_hash(self):
+		# Act:
+		transaction_view = self.nem_db.get_transaction_by_hash('0' * 63 + '8')
+
+		# Assert:
+		self.assertEqual(TRANSACTIONS_VIEWS[6], transaction_view)
+
+	def test_can_query_mosaic_supply_change_by_hash(self):
+		# Act:
+		transaction_view = self.nem_db.get_transaction_by_hash('0' * 63 + '9')
+
+		# Assert:
+		self.assertEqual(TRANSACTIONS_VIEWS[7], transaction_view)
