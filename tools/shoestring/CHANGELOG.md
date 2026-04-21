@@ -5,6 +5,16 @@ The changelog format is based on [Keep a Changelog](https://keepachangelog.com/e
 
 ## next
 
+## [0.2.4] - 22 Apr-2026
+
+### Added
+- add pemview command which outputs the Symbol address from a pem file
+- add --output-transaction-only flag  to setup command which allows regenerate of setup transactions after expiration.
+
+### Fixed
+- set the open file limit in the Docker-compose.yaml file for both the hard and soft limits.
+- some utc datetime apis are deprecated, update to use the new utc datetime APIs.
+
 ## [0.2.3] - 26 Nov-2025
 
 ### Added
@@ -45,6 +55,7 @@ The changelog format is based on [Keep a Changelog](https://keepachangelog.com/e
 - fix openssl generating x509 v3 certificates by explicitly specify x509_extensions
 - health check was failing nodes with https REST due to accessing wrong property from context.  the health agent node using domain name when available.
 
+[0.2.4]: https://github.com/symbol/product/releases/tag/tools%2Fshoestring%2Fv0.2.3...tools%2Fshoestring%2Fv0.2.4
 [0.2.3]: https://github.com/symbol/product/releases/tag/tools%2Fshoestring%2Fv0.2.2...tools%2Fshoestring%2Fv0.2.3
 [0.2.2]: https://github.com/symbol/product/releases/tag/tools%2Fshoestring%2Fv0.2.1...tools%2Fshoestring%2Fv0.2.2
 [0.2.1]: https://github.com/symbol/product/releases/tag/tools%2Fshoestring%2Fv0.1.3...tools%2Fshoestring%2Fv0.2.1
