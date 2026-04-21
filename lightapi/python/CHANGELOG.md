@@ -5,7 +5,7 @@ The changelog format is based on [Keep a Changelog](https://keepachangelog.com/e
 
 ## next
 
-## [0.0.9] - 27 Jan-2026
+## [0.0.9] - 22 Apr-2026
 
 ### Added
 - Added new endpoints to the NemConnector
@@ -14,6 +14,7 @@ The changelog format is based on [Keep a Changelog](https://keepachangelog.com/e
 ### Changed
 - Extended `min_cosignatories`, `cosignatory_of`, and `cosignatories` fields when querying account info.
 - Extended `total_fees` and `beneficiary` fields when querying block info.
+- try_wait_for_announced_transaction function now waits when the transaction hash is not found.
 
 ## [0.0.8] - 26 Nov-2025
 
