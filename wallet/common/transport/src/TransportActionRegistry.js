@@ -1,5 +1,5 @@
 import { RequestSendTransactionUri, ShareAccountAddressUri, ShareTransferTransactionUri } from './actions';
-import { ActionType } from './constants';
+import { ActionType } from './protocol/constants';
 import { UnsupportedActionError } from './errors';
 
 // New actions register here:

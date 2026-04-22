@@ -1,28 +1,32 @@
-import { ActionType, PROTOCOL_VERSION } from '../constants';
+import { ActionMethod, ActionType, PROTOCOL_VERSION } from '../protocol/constants';
 import { ParameterConfig } from '../schema';
 import { createTransportUri, parseRawParameters, validateParameters } from '../utils';
 
 /**
  * @typedef {Object} Parameters
- * @property {string} chainId - Blockchain chain ID (generation hash)
+ * @property {string} chainName - Blockchain name (e.g., 'symbol', 'nem', 'ethereum')
  * @property {string} networkId - Network identifier ('mainnet' or 'testnet')
  * @property {string} recipientAddress - Recipient account address (Base32 encoded)
  * @property {string} amount - Token amount in atomic units (as numeric String)
  * @property {string} [message] - Optional transaction message content
  * @property {boolean} [isMessageEncrypted] - Optional flag indicating if message is encrypted
+ * @property {string} [chainId] - Blockchain chain ID (generation hash)
+ * 
  */
 
 const schema = {
 	params: {
 		required: [
-			ParameterConfig.ChainId,
+			ParameterConfig.ChainName,
 			ParameterConfig.NetworkId,
 			ParameterConfig.RecipientAddress,
-			ParameterConfig.TokenAbsoluteAmount
+			ParameterConfig.TokenId
 		],
 		optional: [
+			ParameterConfig.TokenAbsoluteAmount,
 			ParameterConfig.Message,
-			ParameterConfig.IsMessageEncrypted
+			ParameterConfig.IsMessageEncrypted,
+			ParameterConfig.ChainId,
 		]
 	}
 };
@@ -35,7 +39,7 @@ const schema = {
 export class ShareTransferTransactionUri {
 	static version = PROTOCOL_VERSION;
 	static actionType = ActionType.SHARE;
-	static method = 'transferTransaction';
+	static method = ActionMethod.TRANSFER_TRANSACTION;
     
 	#parameters;
 
@@ -104,6 +108,15 @@ export class ShareTransferTransactionUri {
 	// Getters for parameters
 
 	/**
+	 * Gets the blockchain name (e.g., 'symbol', 'nem', 'ethereum').
+	 * 
+	 * @returns {string} The chain name
+	 */
+	get chainName() {
+		return this.#parameters.chainName;
+	}
+
+	/**
      * Gets the chain ID (generation hash).
      * 
      * @returns {string} The chain ID
@@ -115,10 +128,10 @@ export class ShareTransferTransactionUri {
 	/**
      * Gets the network ID ('mainnet' or 'testnet').
      * 
-     * @returns {string} The network ID
+     * @returns {string} The network identifier
      */
-	get networkId() {
-		return this.#parameters.networkId;
+	get networkIdentifier() {
+		return this.#parameters.networkIdentifier;
 	}
 
 	/**

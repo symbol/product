@@ -1,5 +1,5 @@
 import { getActionClass } from './TransportActionRegistry';
-import { PROTOCOL_VERSION, URI_SCHEME } from './constants';
+import { PROTOCOL_VERSION, URI_SCHEME } from './protocol/constants';
 import { ParseError, UnsupportedActionError } from './errors';
 import { extractUrlParts } from './utils';
 

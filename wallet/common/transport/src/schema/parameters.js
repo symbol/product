@@ -1,6 +1,18 @@
-import { ParameterType } from '../constants';
+import { ParameterType } from './handlers';
 
-/** @typedef {import('../types/Parameter').ParameterDefinition} ParameterDefinition */
+/**
+ * @typedef {Object} ParameterDefinition
+ * @property {string} name - Parameter name as it appears in the URI query string
+ * @property {string} type - Type identifier from ParameterType constants
+ * @property {string} [description] - Human-readable description for error messages
+ */
+
+/**
+ * @typedef {Object} ParameterSchema
+ * @property {Object} params - Parameters configuration
+ * @property {ParameterDefinition[]} params.required - Required parameters
+ * @property {ParameterDefinition[]} params.optional - Optional parameters
+ */
 
 /**
  * Pre-defined parameter configurations for common Transport URI parameters.
@@ -14,13 +26,18 @@ export const ParameterConfig = {
 		type: ParameterType.URL,
 		description: 'URL to receive the response callback'
 	},
+	ChainName: {
+		name: 'chainName',
+		type: ParameterType.STRING,
+		description: 'Name of the blockchain network (e.g., symbol, nem, ethereum)'
+	},
 	ChainId: {
 		name: 'chainId',
 		type: ParameterType.STRING,
 		description: 'Unique identifier for the blockchain (generation hash)'
 	},
 	NetworkId: {
-		name: 'networkId',
+		name: 'networkIdentifier',
 		type: ParameterType.STRING,
 		description: 'Network identifier (mainnet, testnet)'
 	},

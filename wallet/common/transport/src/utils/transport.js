@@ -1,5 +1,5 @@
 import { encodeQueryParameters } from './url';
-import { PROTOCOL_VERSION, URI_SCHEME } from '../constants';
+import { PROTOCOL_VERSION, URI_SCHEME } from '../protocol/constants';
 
 /**
  * Creates a transport URI string from action components.
