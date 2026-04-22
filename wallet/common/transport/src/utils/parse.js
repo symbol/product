@@ -2,9 +2,9 @@ import { validateRawStructure } from './validate';
 import { ValidationError } from '../errors';
 import { ParameterTypeHandlers } from '../schema';
 
-/** @typedef {import('../types/Parameter').ParameterDefinition} ParameterDefinition */
-/** @typedef {import('../types/Parameter').ParameterSchema} ParameterSchema */
-/** @typedef {import('../types/Parameter').TypeHandler} TypeHandler */
+/** @typedef {import('../schema/parameters').ParameterDefinition} ParameterDefinition */
+/** @typedef {import('../schema/parameters').ParameterSchema} ParameterSchema */
+/** @typedef {import('../schema/handlers').TypeHandler} TypeHandler */
 
 /**
  * Parses raw string parameters from URI query into typed values.

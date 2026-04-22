@@ -1,7 +1,7 @@
 
 export * from './TransportUri';
 export * from './actions';
-export * from './constants';
+export * from './protocol/constants';
 export * from './errors';
 export * from './schema';
 export { 

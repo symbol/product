@@ -1,4 +1,15 @@
-import { ParameterType } from '../constants';
+/**
+ * Enum of supported parameter type identifiers.
+ * Each key maps to a handler in {@link ParameterTypeHandlers}.
+ */
+export const ParameterType = {
+	STRING: 'String',
+	NUMBER: 'Number',
+	BOOLEAN: 'Boolean',
+	UINT64_STRING: 'Uint64String',
+	DECIMAL_STRING: 'DecimalString',
+	URL: 'Url'
+};
 
 /**
  * @typedef {Object} TypeHandler

@@ -1,4 +1,4 @@
-import { ActionType, PROTOCOL_VERSION } from '../constants';
+import { ActionMethod, ActionType, PROTOCOL_VERSION } from '../protocol/constants';
 import { ParameterConfig } from '../schema';
 import { createTransportUri, parseRawParameters, validateParameters } from '../utils';
 
@@ -31,7 +31,7 @@ const schema = {
 export class RequestSendTransactionUri {
 	static version = PROTOCOL_VERSION;
 	static actionType = ActionType.REQUEST;
-	static method = 'sendTransaction';
+	static method = ActionMethod.SEND_TRANSACTION;
     
 	#parameters;
 

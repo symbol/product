@@ -1,24 +1,26 @@
-import { ActionType, PROTOCOL_VERSION } from '../constants';
+import { ActionMethod, ActionType, PROTOCOL_VERSION } from '../protocol/constants';
 import { ParameterConfig } from '../schema';
 import { createTransportUri, parseRawParameters, validateParameters } from '../utils';
 
 /**
  * @typedef {Object} Parameters
- * @property {string} chainId - Blockchain chain ID (generation hash)
+ * @property {string} chainName - Blockchain name (e.g., 'symbol', 'nem', 'ethereum')
  * @property {string} networkId - Network identifier ('mainnet' or 'testnet')
  * @property {string} address - Account address (Base32 encoded)
  * @property {string} [name] - Optional human-readable account name
+ * @property {string} [chainId] - Blockchain chain ID (generation hash)
  */
 
 const schema = {
 	params: {
 		required: [
-			ParameterConfig.ChainId,
+			ParameterConfig.ChainName,
 			ParameterConfig.NetworkId,
 			ParameterConfig.AccountAddress
 		],
 		optional: [
-			ParameterConfig.AccountName
+			ParameterConfig.AccountName,
+			ParameterConfig.ChainId,
 		]
 	}
 };
@@ -31,7 +33,7 @@ const schema = {
 export class ShareAccountAddressUri {
 	static version = PROTOCOL_VERSION;
 	static actionType = ActionType.SHARE;
-	static method = 'accountAddress';
+	static method = ActionMethod.ACCOUNT_ADDRESS;
     
 	#parameters;
 
@@ -100,6 +102,15 @@ export class ShareAccountAddressUri {
 	// Getters for parameters
 
 	/**
+     * Gets the chain name (e.g., 'symbol', 'nem', 'ethereum').
+     * 
+     * @returns {string} The chain name
+     */
+	get chainName() {
+		return this.#parameters.chainName;
+	}
+
+	/**
      * Gets the chain ID (generation hash).
      * 
      * @returns {string} The chain ID
@@ -113,8 +124,8 @@ export class ShareAccountAddressUri {
      * 
      * @returns {string} The network ID
      */
-	get networkId() {
-		return this.#parameters.networkId;
+	get networkIdentifier() {
+		return this.#parameters.networkIdentifier;
 	}
 
 	/**
