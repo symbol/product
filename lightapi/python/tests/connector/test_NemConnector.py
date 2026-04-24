@@ -622,6 +622,14 @@ async def server(aiohttp_client):  # pylint: disable=too-many-statements
 		async def local_block_at(self, request):
 			return await self._process(request, CHAIN_BLOCK_1)
 
+		async def transactions_unconfirmed(self, request):
+			return await self._process(request, {
+				'signature': '0' * 128,
+				'entity': {
+					'data': [CHAIN_BLOCK_1['txes'][1]['tx']]
+				}
+			})
+
 	# create a mock server
 	mock_server = MockNemServer()
 
@@ -642,6 +650,7 @@ async def server(aiohttp_client):  # pylint: disable=too-many-statements
 	app.router.add_post('/transaction/announce', mock_server.announce_transaction)
 	app.router.add_post('/local/chain/blocks-after', mock_server.local_chain_blocks_after)
 	app.router.add_post('/local/block/at', mock_server.local_block_at)
+	app.router.add_post('/transactions/unconfirmed', mock_server.transactions_unconfirmed)
 	server = await aiohttp_client(app)  # pylint: disable=redefined-outer-name
 
 	server.mock = mock_server
@@ -1390,5 +1399,26 @@ async def test_can_query_block_at(server):  # pylint: disable=redefined-outer-na
 	# Assert:
 	assert [f'{server.make_url("")}/local/block/at'] == server.mock.urls
 	assert EXPECTED_BLOCK_2 == block
+
+# endregion
+
+
+# region POST (get_unconfirmed_transactions)
+
+async def test_unconfirmed_transactions(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	connector = NemConnector(server.make_url(''))
+
+	# Act:
+	unconfirmed_transactions = await connector.get_unconfirmed_transactions()
+
+	# Assert:
+	setattr(EXPECTED_BLOCK_2.transactions[1], 'transaction_hash', None)
+	setattr(EXPECTED_BLOCK_2.transactions[1], 'height', 0)
+
+	assert [f'{server.make_url("")}/transactions/unconfirmed'] == server.mock.urls
+	assert [
+		EXPECTED_BLOCK_2.transactions[1]
+	] == unconfirmed_transactions
 
 # endregion
