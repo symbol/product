@@ -17,6 +17,10 @@ def _format_bytes(buffer):
 	return hexlify(buffer).decode('utf8').upper()
 
 
+def _format_address_bytes_to_string(buffer):
+	return str(Address(buffer))
+
+
 def _format_xem_relative(amount):
 	return amount / (10 ** 6)
 
@@ -53,7 +57,7 @@ class NemDatabase(DatabaseConnectionPool):
 			total_transactions=total_transactions,
 			difficulty=difficulty,
 			block_hash=_format_bytes(block_hash),
-			beneficiary=str(Address(beneficiary)),
+			beneficiary=_format_address_bytes_to_string(beneficiary),
 			signer=str(self.network.public_key_to_address(PublicKey(signer))),
 			signature=_format_bytes(signature),
 			size=size
@@ -80,9 +84,9 @@ class NemDatabase(DatabaseConnectionPool):
 		) = result
 
 		return AccountView(
-			address=str(Address(address)),
+			address=_format_address_bytes_to_string(address),
 			public_key=str(PublicKey(public_key)) if public_key else None,
-			remote_address=str(Address(remote_address)) if remote_address else None,
+			remote_address=_format_address_bytes_to_string(remote_address) if remote_address else None,
 			importance=importance,
 			balance=_format_xem_relative(balance),
 			vested_balance=_format_xem_relative(vested_balance),
@@ -96,8 +100,8 @@ class NemDatabase(DatabaseConnectionPool):
 			remote_status=remote_status,
 			last_harvested_height=last_harvested_height,
 			min_cosignatories=min_cosignatories,
-			cosignatory_of=[str(Address(address)) for address in cosignatory_of] if cosignatory_of else None,
-			cosignatories=[str(Address(address)) for address in cosignatories] if cosignatories else None
+			cosignatory_of=[_format_address_bytes_to_string(address) for address in cosignatory_of] if cosignatory_of else None,
+			cosignatories=[_format_address_bytes_to_string(address) for address in cosignatories] if cosignatories else None
 		)
 
 	@staticmethod
@@ -161,7 +165,7 @@ class NemDatabase(DatabaseConnectionPool):
 			levy_type=levy_types.get(levy_type, None),
 			levy_namespace_name=levy_namespace_name,
 			levy_fee=_format_relative(levy_fee, levy_divisibility) if levy_type else None,
-			levy_recipient=str(Address(levy_recipient)) if levy_recipient else None,
+			levy_recipient=_format_address_bytes_to_string(levy_recipient) if levy_recipient else None,
 			root_namespace_registered_height=root_namespace_registered_height,
 			root_namespace_registered_timestamp=str(root_namespace_registered_timestamp),
 			root_namespace_expiration_height=root_namespace_expiration_height,
@@ -177,33 +181,23 @@ class NemDatabase(DatabaseConnectionPool):
 		) = result
 
 		return MosaicRichListView(
-			address=str(Address(address)),
+			address=_format_address_bytes_to_string(address),
 			remark=remark,
 			balance=_format_relative(balance, divisibility)
 		)
 
 	def _create_transaction_view(self, transaction, inner_transaction=None):
-		transaction_type_mapping = {
-			257: TransactionType.TRANSFER.name,
-			2049: TransactionType.ACCOUNT_KEY_LINK.name,
-			4100: TransactionType.MULTISIG.name,
-			4097: TransactionType.MULTISIG_ACCOUNT_MODIFICATION.name,
-			16385: TransactionType.MOSAIC_DEFINITION.name,
-			16386: TransactionType.MOSAIC_SUPPLY_CHANGE.name,
-			8193: TransactionType.NAMESPACE_REGISTRATION.name
-		}
-
 		value = self._build_transaction_payload(transaction.transaction_type, transaction.payload, transaction.amount, transaction.mosaics)
 		embedded_transaction = []
-		from_address = str(Address(transaction.from_address))
-		to_address = str(Address(transaction.to_address)) if transaction.to_address else None
+		from_address = _format_address_bytes_to_string(transaction.from_address)
+		to_address = _format_address_bytes_to_string(transaction.to_address) if transaction.to_address else None
 
 		if inner_transaction:
 			value = None
 			embedded_transaction.append({
-				'initiator': str(Address(transaction.from_address)),
+				'initiator': _format_address_bytes_to_string(transaction.from_address),
 				'transactionHash': _format_bytes(inner_transaction.transaction_hash),
-				'transactionType': transaction_type_mapping.get(inner_transaction.transaction_type),
+				'transactionType': TransactionType(inner_transaction.transaction_type).name,
 				'signatures': [{
 					'fee': _format_xem_relative(signature['fee']),
 					'signature': signature['signature'],
@@ -217,12 +211,12 @@ class NemDatabase(DatabaseConnectionPool):
 					inner_transaction.mosaics
 				),
 			})
-			from_address = str(Address(inner_transaction.from_address))
-			to_address = str(Address(inner_transaction.to_address)) if inner_transaction.to_address else None
+			from_address = _format_address_bytes_to_string(inner_transaction.from_address)
+			to_address = _format_address_bytes_to_string(inner_transaction.to_address) if inner_transaction.to_address else None
 
 		return TransactionView(
 			transaction_hash=_format_bytes(transaction.transaction_hash),
-			transaction_type=transaction_type_mapping.get(transaction.transaction_type),
+			transaction_type=TransactionType(transaction.transaction_type).name,
 			from_address=from_address,
 			to_address=to_address,
 			value=value,
@@ -639,8 +633,8 @@ class NemDatabase(DatabaseConnectionPool):
 		transaction = self._get_transaction_query(transaction_hash, is_inner)
 		inner_transaction = None
 
-		if transaction and transaction[1] == TransactionType.MULTISIG.value:
-			inner_hash = transaction[9]['inner_hash']
+		if transaction and transaction.transaction_type == TransactionType.MULTISIG.value:
+			inner_hash = transaction.payload['inner_hash']
 			inner_transaction = self._get_transaction_query(inner_hash, is_inner=True)
 
 		return self._create_transaction_view(transaction, inner_transaction) if transaction else None
