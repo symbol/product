@@ -567,13 +567,13 @@ class NemDatabase(DatabaseConnectionPool):
 				})
 
 			if mosaics:
+				multiplier = 0 if amount == 0 else _format_xem_relative(amount)
 				for mosaic in mosaics:
-					multiplies = amount if amount == 0 else _format_xem_relative(amount)
-					amount = mosaic['quantity'] * multiplies
+					mosaic_amount = mosaic['quantity'] * multiplier
 
 					value.append({
 						'namespace': mosaic['namespace_name'],
-						'amount': _format_relative(amount, mosaic['divisibility'])
+						'amount': _format_relative(mosaic_amount, mosaic['divisibility'])
 					})
 			else:
 				value.append({

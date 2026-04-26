@@ -437,6 +437,11 @@ TRANSACTIONS = [
 TRANSACTIONS_MOSAIC = [
 	TransactionMosaic(  # use for transaction v2
 		transaction_id=2,
+		namespace_name='nem.xem',
+		quantity=2000000
+	),
+	TransactionMosaic(
+		transaction_id=2,
 		namespace_name='root.mosaic',
 		quantity=2000000
 	)
@@ -634,6 +639,10 @@ TRANSACTIONS_VIEWS = [
 					'isPlain': 1,
 					'payload': 'Test message'
 				}
+			},
+			{
+				'namespace': 'nem.xem',
+				'amount': 4.0
 			},
 			{
 				'namespace': 'root.mosaic',
