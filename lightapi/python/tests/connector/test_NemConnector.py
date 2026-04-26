@@ -626,7 +626,19 @@ async def server(aiohttp_client):  # pylint: disable=too-many-statements
 			return await self._process(request, {
 				'signature': '0' * 128,
 				'entity': {
-					'data': [CHAIN_BLOCK_1['txes'][1]['tx']]
+					'data': [
+						{
+							'timeStamp': 73397,
+							'amount': 1000000,
+							'signature': '0' * 128,
+							'fee': 150000,
+							'recipient': 'NCOPERAWEWCD4A34NP5UQCCKEX44MW4SL3QYJYS5',
+							'type': 257,
+							'deadline': 83397,
+							'message': {},
+							'version': 1744830465,
+							'signer': '8d07f90fb4bbe7715fa327c926770166a11be2e494a970605f2e12557f66c9b9'
+						},]
 				}
 			})
 
@@ -1411,14 +1423,24 @@ async def test_unconfirmed_transactions(server):  # pylint: disable=redefined-ou
 
 	# Act:
 	unconfirmed_transactions = await connector.get_unconfirmed_transactions()
+	print(vars(unconfirmed_transactions[0]))
 
 	# Assert:
-	setattr(EXPECTED_BLOCK_2.transactions[1], 'transaction_hash', None)
-	setattr(EXPECTED_BLOCK_2.transactions[1], 'height', 0)
-
 	assert [f'{server.make_url("")}/transactions/unconfirmed'] == server.mock.urls
 	assert [
-		EXPECTED_BLOCK_2.transactions[1]
+		TransferTransaction(
+			transaction_hash=None,
+			height=0,
+			sender=PublicKey('8d07f90fb4bbe7715fa327c926770166a11be2e494a970605f2e12557f66c9b9'),
+			fee=150000,
+			timestamp=73397,
+			deadline=83397,
+			signature='0' * 128,
+			amount=1000000,
+			recipient=Address('NCOPERAWEWCD4A34NP5UQCCKEX44MW4SL3QYJYS5'),
+			mosaics=None,
+			message=None
+		),
 	] == unconfirmed_transactions
 
 # endregion
