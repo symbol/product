@@ -19,6 +19,7 @@ async def run_main(args):
 	openssl_executor = OpensslExecutor(os.environ.get('OPENSSL_EXECUTABLE', 'openssl'))
 	with CertificateFactory(openssl_executor, ca_key_path, config.node.ca_password) as factory:
 		if args.renew_ca:
+			factory.extract_ca_public_key()
 			factory.generate_ca_certificate(config.node.ca_common_name)
 		else:  # health node full certificate check needs current ca cert to pass
 			factory.reuse_ca_certificate(config.node.ca_common_name, directories.certificates)
