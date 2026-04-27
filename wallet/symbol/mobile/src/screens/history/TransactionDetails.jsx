@@ -1,20 +1,20 @@
-import { 
-	Alert, 
-	Amount, 
-	Button, 
-	ButtonPlain, 
-	Columns, 
-	DialogBox, 
-	Divider, 
-	ExpandableCard, 
-	Field, 
-	PasscodeView, 
-	Screen, 
-	Spacer, 
-	Stack, 
-	StatusRow, 
-	StyledText, 
-	TableView 
+import {
+	Alert,
+	Amount,
+	Button,
+	ButtonPlain,
+	Columns,
+	DialogBox,
+	Divider,
+	ExpandableCard,
+	Field,
+	PasscodeView,
+	Screen,
+	Spacer,
+	Stack,
+	StatusRow,
+	StyledText,
+	TableView
 } from '@/app/components';
 import { useWalletController } from '@/app/hooks';
 import { PlatformUtils } from '@/app/lib/platform/PlatformUtils';
@@ -23,17 +23,17 @@ import { AmountBreakdown, TransactionGraphic } from '@/app/screens/history/compo
 import { DB_UPDATE_LATENCY_AFTER_ANNOUNCE } from '@/app/screens/history/constants';
 import { useCosignFlow, useLiveTransactionInfo } from '@/app/screens/history/hooks';
 import { CosignStatus } from '@/app/screens/history/types/Cosignature';
-import { 
-	createAmountBreakdownDisplayData, 
-	createCosignAlertData, 
-	createSafetyWarningAlertData, 
-	createTransactionBaseTableData, 
-	createdCardListData, 
-	getTransactionCosignStatus, 
-	getTransactionDateText, 
-	getTransactionStatus, 
-	getTransactionTypeText, 
-	isTransactionDangerous 
+import {
+	createAmountBreakdownDisplayData,
+	createCosignAlertData,
+	createSafetyWarningAlertData,
+	createTransactionBaseTableData,
+	createdCardListData,
+	getTransactionCosignStatus,
+	getTransactionDateText,
+	getTransactionStatus,
+	getTransactionTypeText,
+	isTransactionDangerous
 } from '@/app/screens/history/utils';
 import { createExplorerTransactionUrl } from '@/app/utils';
 import React from 'react';
@@ -216,13 +216,15 @@ export const TransactionDetails = ({ route }) => {
 							translate={$t}
 							isTitleTranslatable
 						/>
-						<Divider />
-						<Stack>
-							<StyledText type="title" size="s">
-								{$t('s_transactionDetails_amountBreakdown_title')}
-							</StyledText>
-							<AmountBreakdown breakdown={amountBreakdownDisplayData.breakdown} />
-						</Stack>
+						{amountBreakdownDisplayData.isBreakdownVisible && (
+							<Stack>
+								<Divider />
+								<StyledText type="title" size="s">
+									{$t('s_transactionDetails_amountBreakdown_title')}
+								</StyledText>
+								<AmountBreakdown breakdown={amountBreakdownDisplayData.breakdown} />
+							</Stack>
+						)}
 						<Divider />
 						<Stack>
 							{isCosignButtonVisible && (

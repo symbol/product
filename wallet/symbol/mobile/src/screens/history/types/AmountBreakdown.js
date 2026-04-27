@@ -77,6 +77,7 @@ export const AmountDisplaySize = {
  * @typedef {Object} AmountBreakdownDisplayData
  * @property {CurrentAccountSummary} currentAccount - Summary for the current wallet account.
  * @property {BreakdownDisplayRow[]} breakdown - Detailed breakdown for all involved accounts.
+ * @property {boolean} isBreakdownVisible - Whether the breakdown should be shown.
  */
 
 export {};
