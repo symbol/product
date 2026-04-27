@@ -254,6 +254,7 @@ export const createAmountBreakdownDisplayData = (transaction, options) => {
 
 	return {
 		currentAccount: currentAccountSummary,
-		breakdown
+		breakdown,
+		isBreakdownVisible: !!transaction.innerTransactions
 	};
 };
