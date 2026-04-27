@@ -27,7 +27,11 @@ import React from 'react';
 export const CreateContact = ({ route }) => {
 	const defaultBlacklistContactName = $t('s_addressBook_account_blacklist_defaultName');
 
-	const { listType: initialListType } = route.params || {};
+	const { 
+		listType: initialListType, 
+		name: initialName,
+		address: initialAddress 
+	} = route.params || {};
 	const walletController = useWalletController();
 	const { chainName, accounts, networkIdentifier } = walletController;
 	const networkAccounts = accounts[networkIdentifier];
@@ -47,7 +51,7 @@ export const CreateContact = ({ route }) => {
 		changeNotes,
 		changeListType,
 		getContact
-	} = useContactFormState({ listType: initialListType });
+	} = useContactFormState({ listType: initialListType, address: initialAddress, name: initialName });
 
 	// Validation
 	const isNameRequired = listType === ContactListType.WHITELIST;
