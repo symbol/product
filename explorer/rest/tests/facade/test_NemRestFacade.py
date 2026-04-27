@@ -6,7 +6,15 @@ from symbollightapi.model.Exceptions import NodeException
 from rest.facade.NemRestFacade import NemRestFacade
 from rest.model.common import Pagination, RestConfig, Sorting
 
-from ..test.DatabaseTestUtils import ACCOUNT_VIEWS, BLOCK_VIEWS, MOSAIC_RICH_LIST_VIEWS, MOSAIC_VIEWS, NAMESPACE_VIEWS, DatabaseTestBase
+from ..test.DatabaseTestUtils import (
+	ACCOUNT_VIEWS,
+	BLOCK_VIEWS,
+	MOSAIC_RICH_LIST_VIEWS,
+	MOSAIC_VIEWS,
+	NAMESPACE_VIEWS,
+	TRANSACTIONS_VIEWS,
+	DatabaseTestBase
+)
 
 # region test data
 
@@ -33,6 +41,8 @@ EXPECTED_MOSAIC_3 = MOSAIC_VIEWS[2].to_dict()
 EXPECTED_MOSAIC_RICH_LIST_1 = MOSAIC_RICH_LIST_VIEWS[0].to_dict()
 
 EXPECTED_MOSAIC_RICH_LIST_2 = MOSAIC_RICH_LIST_VIEWS[1].to_dict()
+
+EXPECTED_TRANSACTION_1 = TRANSACTIONS_VIEWS[0].to_dict()
 
 # endregion
 
@@ -365,6 +375,29 @@ class TestNemRestFacade(DatabaseTestBase):  # pylint: disable=too-many-public-me
 		self._assert_can_retrieve_mosaic_rich_list(
 			pagination=Pagination(1, 1),
 			expected_mosaic_rich_list=[EXPECTED_MOSAIC_RICH_LIST_1]
+		)
+
+	# endregion
+
+	# region transaction
+
+	def _assert_can_retrieve_transaction_by_hash(self, transaction_hash, expected_transaction):
+		# Act:
+		transaction = self.nem_rest_facade.get_transaction_by_hash(transaction_hash)
+
+		# Assert:
+		self.assertEqual(expected_transaction, transaction)
+
+	def test_can_retrieve_transaction_by_hash(self):
+		self._assert_can_retrieve_transaction_by_hash(
+			transaction_hash='0' * 63 + '1',
+			expected_transaction=EXPECTED_TRANSACTION_1
+		)
+
+	def test_returns_none_for_nonexistent_transaction_hash(self):
+		self._assert_can_retrieve_transaction_by_hash(
+			transaction_hash='1' * 64,
+			expected_transaction=None
 		)
 
 	# endregion

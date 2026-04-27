@@ -236,6 +236,15 @@ def setup_nem_routes(app, nem_api_facade):  # pylint: disable=too-many-statement
 
 		return jsonify(results)
 
+	@app.route('/api/nem/transaction/<transaction_hash>')
+	def api_get_nem_transaction_by_hash(transaction_hash):
+		result = nem_api_facade.get_transaction_by_hash(transaction_hash)
+
+		if not result:
+			abort(404)
+
+		return jsonify(result)
+
 
 def setup_error_handlers(app):
 	@app.errorhandler(404)
