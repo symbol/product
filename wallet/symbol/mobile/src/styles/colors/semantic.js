@@ -252,6 +252,20 @@ export const Components = {
 			}
 		}
 	},
+	buttonSendReceive: {
+		primary: {
+			default: {
+				background: Semantic.role.primary.weaker,
+				separator: Semantic.role.primary.muted,
+				text: Semantic.content.primary.default
+			},
+			disabled: {
+				background: Semantic.role.primary.muted,
+				separator: Semantic.background.primary.darker,
+				text: Semantic.content.primary.muted
+			}
+		}
+	},
 	// Solid button, floating button.
 	buttonSolid: {
 		secondary: {
