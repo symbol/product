@@ -622,6 +622,26 @@ async def server(aiohttp_client):  # pylint: disable=too-many-statements
 		async def local_block_at(self, request):
 			return await self._process(request, CHAIN_BLOCK_1)
 
+		async def transactions_unconfirmed(self, request):
+			return await self._process(request, {
+				'signature': '0' * 128,
+				'entity': {
+					'data': [
+						{
+							'timeStamp': 73397,
+							'amount': 1000000,
+							'signature': '0' * 128,
+							'fee': 150000,
+							'recipient': 'NCOPERAWEWCD4A34NP5UQCCKEX44MW4SL3QYJYS5',
+							'type': 257,
+							'deadline': 83397,
+							'message': {},
+							'version': 1744830465,
+							'signer': '8d07f90fb4bbe7715fa327c926770166a11be2e494a970605f2e12557f66c9b9'
+						},]
+				}
+			})
+
 	# create a mock server
 	mock_server = MockNemServer()
 
@@ -642,6 +662,7 @@ async def server(aiohttp_client):  # pylint: disable=too-many-statements
 	app.router.add_post('/transaction/announce', mock_server.announce_transaction)
 	app.router.add_post('/local/chain/blocks-after', mock_server.local_chain_blocks_after)
 	app.router.add_post('/local/block/at', mock_server.local_block_at)
+	app.router.add_post('/transactions/unconfirmed', mock_server.transactions_unconfirmed)
 	server = await aiohttp_client(app)  # pylint: disable=redefined-outer-name
 
 	server.mock = mock_server
@@ -1390,5 +1411,35 @@ async def test_can_query_block_at(server):  # pylint: disable=redefined-outer-na
 	# Assert:
 	assert [f'{server.make_url("")}/local/block/at'] == server.mock.urls
 	assert EXPECTED_BLOCK_2 == block
+
+# endregion
+
+
+# region POST (get_unconfirmed_transactions)
+
+async def test_unconfirmed_transactions(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	connector = NemConnector(server.make_url(''))
+
+	# Act:
+	unconfirmed_transactions = await connector.get_unconfirmed_transactions()
+
+	# Assert:
+	assert [f'{server.make_url("")}/transactions/unconfirmed'] == server.mock.urls
+	assert [
+		TransferTransaction(
+			transaction_hash=None,
+			height=0,
+			sender=PublicKey('8d07f90fb4bbe7715fa327c926770166a11be2e494a970605f2e12557f66c9b9'),
+			fee=150000,
+			timestamp=73397,
+			deadline=83397,
+			signature='0' * 128,
+			amount=1000000,
+			recipient=Address('NCOPERAWEWCD4A34NP5UQCCKEX44MW4SL3QYJYS5'),
+			mosaics=None,
+			message=None
+		),
+	] == unconfirmed_transactions
 
 # endregion

@@ -1,4 +1,5 @@
 import asyncio
+import random
 from binascii import hexlify
 from collections import namedtuple
 
@@ -393,5 +394,36 @@ class NemConnector(BasicConnector):
 			specific_args = TransactionHandler().map[tx_type](tx_json)
 
 		return TransactionFactory.create_transaction(tx_type, common_args, specific_args)
+
+	# endregion
+
+	# region POST (get_unconfirmed_transactions)
+
+	async def get_unconfirmed_transactions(self):
+		"""Gets unconfirmed transactions."""
+
+		characters = '0123456789abcdef'
+		random_challenge = ''.join(random.choices(characters, k=64))
+
+		unconfirmed_transactions = await self.post(
+			'transactions/unconfirmed',
+			{
+				'entity': {
+					'hashShortIds': []
+				},
+				'challenge': {
+					'data': random_challenge
+				}
+			},
+			property_name='entity'
+		)
+
+		return [
+			self._map_to_transaction({
+				'tx': tx,
+				'hash': None,
+				'innerHash': None
+			}, 0) for tx in unconfirmed_transactions['data']
+		]
 
 	# endregion
