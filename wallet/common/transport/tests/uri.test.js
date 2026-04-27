@@ -18,11 +18,13 @@ const PROTOCOL_VERSION = 'v1';
 // Test Data
 
 const testData = {
+	chainName: 'symbol',
 	chainId: 'ABC123DEF456',
-	networkId: 'mainnet',
+	networkIdentifier: 'mainnet',
 	address: 'TADDRESSXXXXXXXXXXXXXXXXXXXXXXXXX',
 	name: 'My Account',
 	recipientAddress: 'TRECIPIENTXXXXXXXXXXXXXXXXXXXXXXX',
+	tokenId: 'ABCDEF1234567890',
 	amount: '1000000',
 	message: 'Hello World',
 	isMessageEncrypted: false,
@@ -39,8 +41,8 @@ const actionConfigs = [
 		method: 'accountAddress',
 		version: PROTOCOL_VERSION,
 		requiredParams: [
-			{ name: 'chainId', type: ParameterType.STRING },
-			{ name: 'networkId', type: ParameterType.STRING },
+			{ name: 'chainName', type: ParameterType.STRING },
+			{ name: 'networkIdentifier', type: ParameterType.STRING },
 			{ name: 'address', type: ParameterType.STRING }
 		],
 		optionalParams: [
@@ -48,8 +50,8 @@ const actionConfigs = [
 		],
 		testParameters: {
 			required: {
-				chainId: testData.chainId,
-				networkId: testData.networkId,
+				chainName: testData.chainName,
+				networkIdentifier: testData.networkIdentifier,
 				address: testData.address
 			},
 			optional: {
@@ -63,23 +65,25 @@ const actionConfigs = [
 		method: 'transferTransaction',
 		version: PROTOCOL_VERSION,
 		requiredParams: [
-			{ name: 'chainId', type: ParameterType.STRING },
-			{ name: 'networkId', type: ParameterType.STRING },
+			{ name: 'chainName', type: ParameterType.STRING },
+			{ name: 'networkIdentifier', type: ParameterType.STRING },
 			{ name: 'recipientAddress', type: ParameterType.STRING },
-			{ name: 'amount', type: ParameterType.UINT64_STRING }
+			{ name: 'tokenId', type: ParameterType.STRING }
 		],
 		optionalParams: [
+			{ name: 'amount', type: ParameterType.UINT64_STRING },
 			{ name: 'message', type: ParameterType.STRING },
 			{ name: 'isMessageEncrypted', type: ParameterType.BOOLEAN }
 		],
 		testParameters: {
 			required: {
-				chainId: testData.chainId,
-				networkId: testData.networkId,
+				chainName: testData.chainName,
+				networkIdentifier: testData.networkIdentifier,
 				recipientAddress: testData.recipientAddress,
-				amount: testData.amount
+				tokenId: testData.tokenId
 			},
 			optional: {
+				amount: testData.amount,
 				message: testData.message,
 				isMessageEncrypted: testData.isMessageEncrypted
 			}
@@ -92,7 +96,7 @@ const actionConfigs = [
 		version: PROTOCOL_VERSION,
 		requiredParams: [
 			{ name: 'chainId', type: ParameterType.STRING },
-			{ name: 'networkId', type: ParameterType.STRING },
+			{ name: 'networkIdentifier', type: ParameterType.STRING },
 			{ name: 'payload', type: ParameterType.STRING }
 		],
 		optionalParams: [
@@ -101,7 +105,7 @@ const actionConfigs = [
 		testParameters: {
 			required: {
 				chainId: testData.chainId,
-				networkId: testData.networkId,
+				networkIdentifier: testData.networkIdentifier,
 				payload: testData.payload
 			},
 			optional: {

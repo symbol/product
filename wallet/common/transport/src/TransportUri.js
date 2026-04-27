@@ -1,6 +1,6 @@
 import { getActionClass } from './TransportActionRegistry';
-import { PROTOCOL_VERSION, URI_SCHEME } from './protocol/constants';
 import { ParseError, UnsupportedActionError } from './errors';
+import { PROTOCOL_VERSION, URI_SCHEME } from './protocol/constants';
 import { extractUrlParts } from './utils';
 
 
@@ -11,7 +11,7 @@ import { extractUrlParts } from './utils';
  * 
  * @example
  * const action = TransportUri.createFromString(
- *   'web+symbol://v1/share/accountAddress?chainId=abc&networkId=mainnet&address=xyz'
+ *   'web+symbol://v1/share/accountAddress?chainId=abc&networkIdentifier=mainnet&address=xyz'
  * );
  */
 export class TransportUri {

@@ -5,7 +5,7 @@ import { createTransportUri, parseRawParameters, validateParameters } from '../u
 /**
  * @typedef {Object} Parameters
  * @property {string} chainName - Blockchain name (e.g., 'symbol', 'nem', 'ethereum')
- * @property {string} networkId - Network identifier ('mainnet' or 'testnet')
+ * @property {string} NetworkIdentifier - Network identifier ('mainnet' or 'testnet')
  * @property {string} address - Account address (Base32 encoded)
  * @property {string} [name] - Optional human-readable account name
  * @property {string} [chainId] - Blockchain chain ID (generation hash)
@@ -15,12 +15,12 @@ const schema = {
 	params: {
 		required: [
 			ParameterConfig.ChainName,
-			ParameterConfig.NetworkId,
+			ParameterConfig.NetworkIdentifier,
 			ParameterConfig.AccountAddress
 		],
 		optional: [
 			ParameterConfig.AccountName,
-			ParameterConfig.ChainId,
+			ParameterConfig.ChainId
 		]
 	}
 };

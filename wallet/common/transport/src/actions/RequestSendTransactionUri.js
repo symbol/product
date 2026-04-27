@@ -5,7 +5,7 @@ import { createTransportUri, parseRawParameters, validateParameters } from '../u
 /**
  * @typedef {Object} Parameters
  * @property {string} chainId - Blockchain chain ID (generation hash)
- * @property {string} networkId - Network identifier ('mainnet' or 'testnet')
+ * @property {string} networkIdentifier - Network identifier ('mainnet' or 'testnet')
  * @property {string} payload - Serialized transaction payload (hex encoded)
  * @property {string} [callbackUrl] - Optional URL to receive the response callback
  */
@@ -14,7 +14,7 @@ const schema = {
 	params: {
 		required: [
 			ParameterConfig.ChainId,
-			ParameterConfig.NetworkId,
+			ParameterConfig.NetworkIdentifier,
 			ParameterConfig.TransactionPayload
 		],
 		optional: [
@@ -109,12 +109,12 @@ export class RequestSendTransactionUri {
 	}
 
 	/**
-     * Gets the network ID ('mainnet' or 'testnet').
-     * 
-     * @returns {string} The network ID
-     */
-	get networkId() {
-		return this.#parameters.networkId;
+	 * Gets the network ID ('mainnet' or 'testnet').
+	 *
+	 * @returns {string} The network ID
+	 */
+	get networkIdentifier() {
+		return this.#parameters.networkIdentifier;
 	}
 
 	/**

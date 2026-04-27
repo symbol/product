@@ -36,7 +36,7 @@ export const ParameterConfig = {
 		type: ParameterType.STRING,
 		description: 'Unique identifier for the blockchain (generation hash)'
 	},
-	NetworkId: {
+	NetworkIdentifier: {
 		name: 'networkIdentifier',
 		type: ParameterType.STRING,
 		description: 'Network identifier (mainnet, testnet)'
