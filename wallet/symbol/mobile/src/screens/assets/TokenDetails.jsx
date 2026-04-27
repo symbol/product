@@ -1,12 +1,12 @@
 import {
 	Alert,
 	Amount,
-	Button,
 	Card,
 	Divider,
 	Field,
 	FlexContainer,
 	Screen,
+	SendReceiveButtons,
 	Spacer,
 	Stack,
 	StyledText,
@@ -19,6 +19,7 @@ import { Router } from '@/app/router/Router';
 import { ExpirationProgress } from '@/app/screens/assets/components';
 import { getExpirationData, getTokenDisplayInfo } from '@/app/screens/assets/utils';
 import { Colors } from '@/app/styles';
+import { createTransactionQr } from '@/app/utils';
 import React from 'react';
 
 /**
@@ -46,7 +47,7 @@ export const TokenDetails = ({ route }) => {
 			const accountInfo = await walletController.networkApi.account.fetchAccountInfo(networkProperties, accountAddress);
 
 			const tokens = accountInfo.tokens ?? accountInfo.mosaics ?? [];
-			
+
 			return tokens.find(token => token.id === tokenId);
 		},
 		defaultData: preloadedData
@@ -104,14 +105,22 @@ export const TokenDetails = ({ route }) => {
 		alertText
 	} = getExpirationData(token, networkProperties);
 
-	// Send button
-	const openSendScreen = () => Router.goToSend({ params: { 
-		chainName, 
-		tokenId,
-		senderAddress: accountAddress 
-	}});
+	// Send/Receive buttons
+	const receiveQrData = createTransactionQr({
+		recipientAddress: accountAddress,
+		chainName,
+		networkIdentifier,
+		tokenId
+	});
+	const openSendScreen = () => Router.goToSend({
+		params: {
+			chainName,
+			tokenId,
+			senderAddress: accountAddress
+		}
+	});
 
-	const isSendButtonDisabled = isTokenExpired;
+	const isSendReceiveButtonsDisabled = isTokenExpired;
 
 	return (
 		<Screen refresh={{ onRefresh: dataManager.call, isRefreshing: dataManager.isLoading }}>
@@ -134,6 +143,14 @@ export const TokenDetails = ({ route }) => {
 								</Stack>
 							</Spacer>
 						</Card>
+						<SendReceiveButtons
+							tokenName={name}
+							accountAddress={accountAddress}
+							chainName={chainName}
+							receiveQrData={receiveQrData}
+							onSendPress={openSendScreen}
+							isDisabled={isSendReceiveButtonsDisabled}
+						/>
 						<Card>
 							<Spacer>
 								<TableView
@@ -184,17 +201,6 @@ export const TokenDetails = ({ route }) => {
 					</Stack>
 				</Spacer>
 			</Screen.Upper>
-			<Screen.Bottom>
-				<Spacer>
-					<Stack>
-						<Button
-							isDisabled={isSendButtonDisabled}
-							text={$t('button_send')}
-							onPress={openSendScreen}
-						/>
-					</Stack>
-				</Spacer>
-			</Screen.Bottom>
 		</Screen>
 	);
 };
