@@ -10,23 +10,10 @@ export class ValidationError extends Error {
      * @param {string[]} [details=[]] - Array of specific validation failure descriptions
      */
 	constructor(message, details = []) {
-		super(message);
+		const hasDetails = details.length > 0;
+		super(hasDetails ? `${message}: ${details.join('; ')}` : message);
 		this.name = 'ValidationError';
 		this.details = details;
-	}
-
-	/**
-     * Returns a formatted error message including all details.
-     * 
-     * @returns {string} Full error message with semicolon-separated details
-     */
-	getFullMessage() {
-		const hasDetails = this.details.length > 0;
-        
-		if (!hasDetails)
-			return this.message;
-
-		return `${this.message}: ${this.details.join('; ')}`;
 	}
 }
 

@@ -35,7 +35,7 @@ export const validateParameters = (schema, parameters, extraTypeHandlers = {}) =
 
 		// This should not happen since validateRawStructure already checks for unknown parameters
 		if (!parameterDefinition) {
-			errors.push(`Unexpected parameter: "${name}"`);
+			errors.push(`Unexpected parameter "${name}"`);
 			continue;
 		}
 
@@ -50,7 +50,7 @@ export const validateParameters = (schema, parameters, extraTypeHandlers = {}) =
         
 		if (!isValid) {
 			const description = parameterDefinition.description ? ` (${parameterDefinition.description})` : '';
-			errors.push(`Invalid "${name}"${description}: expected type "${parameterDefinition.type}"`);
+			errors.push(`Invalid "${name}"${description}, expected type "${parameterDefinition.type}"`);
 		}
 	}
 
@@ -79,7 +79,7 @@ export const validateRawStructure = (schema, parameters) => {
     
 	if (missingRequired.length > 0) {
 		missingRequired.forEach(parameterDefinition => {
-			errors.push(`Missing required parameter: "${parameterDefinition.name}"`);
+			errors.push(`Missing required parameter "${parameterDefinition.name}"`);
 		});
 	}
 
@@ -89,7 +89,7 @@ export const validateRawStructure = (schema, parameters) => {
     
 	if (unknownParameters.length > 0) {
 		unknownParameters.forEach(name => {
-			errors.push(`Unknown parameter: "${name}"`);
+			errors.push(`Unknown parameter "${name}"`);
 		});
 	}
 
