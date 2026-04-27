@@ -29,6 +29,7 @@ export const Screen = ({ isScrollDisabled, isLoading, backgroundImageSrc, render
 	let upper = null;
 	let bottom = null;
 	let modals = null;
+	let background = null;
 	React.Children.forEach(children, child => {
 		if (!child)
 			return;
@@ -44,9 +45,12 @@ export const Screen = ({ isScrollDisabled, isLoading, backgroundImageSrc, render
 
 		if (child.type === Screen.Modals)
 			modals = child.props.children;
+
+		if (child.type === Screen.Background)
+			background = child.props.children;
 	});
 
-	const isSectioned = Boolean(header || upper || bottom || modals);
+	const isSectioned = Boolean(header || upper || bottom || modals || background);
 
 	return (
 		<View style={styles.root}>
@@ -54,6 +58,11 @@ export const Screen = ({ isScrollDisabled, isLoading, backgroundImageSrc, render
 				<Image source={backgroundImageSrc} style={styles.backgroundImage} />
 			)}
 			<KeyboardAvoidingView style={styles.contentContainer} enabled={isKeyboardAvoidingViewEnabled} behavior="padding">
+				{background && (
+					<View style={styles.backgroundContainer}>
+						{background}
+					</View>
+				)}
 				{header}
 				<ContentContainer
 					style={styles.contentContainer}
@@ -95,6 +104,7 @@ Screen.Header = props => { return props.children; };
 Screen.Upper = props => { return props.children; };
 Screen.Bottom = props => { return props.children; };
 Screen.Modals = props => { return props.children; };
+Screen.Background = props => { return props.children; };
 
 const styles = StyleSheet.create({
 	root: {
@@ -129,5 +139,12 @@ const styles = StyleSheet.create({
 		width: '100%',
 		height: '100%',
 		resizeMode: 'cover'
+	},
+	backgroundContainer: {
+		position: 'absolute',
+		top: 0,
+		left: 0,
+		width: '100%',
+		height: '100%'
 	}
 });

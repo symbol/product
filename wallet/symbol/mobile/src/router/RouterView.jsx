@@ -1,13 +1,13 @@
 import { $t } from '@/app/localization';
-import { 
-	DEEP_LINKING_PREFIX, 
-	HEADER_BACKGROUND_COLOR, 
-	HEADER_TINT_COLOR, 
-	HEADER_TITLE_TEXT, 
-	RouteName, 
-	RouterFlow, 
-	SCREEN_BACKGROUND_COLOR, 
-	TRANSITION_ANIMATION 
+import {
+	DEEP_LINKING_PREFIX,
+	HEADER_BACKGROUND_COLOR,
+	HEADER_TINT_COLOR,
+	HEADER_TITLE_TEXT,
+	RouteName,
+	RouterFlow,
+	SCREEN_BACKGROUND_COLOR,
+	TRANSITION_ANIMATION
 } from '@/app/router/config';
 import { navigationRef } from '@/app/router/navigationRef';
 import * as screens from '@/app/screens';
@@ -75,6 +75,8 @@ export const RouterView = ({ isActive, flow }) => (
 							<Stack.Screen name={RouteName.Actions} component={screens.Actions} />
 							<Stack.Screen name={RouteName.History} component={screens.History} />
 							<Stack.Screen name={RouteName.Assets} component={screens.Assets} />
+							<Stack.Screen name={RouteName.Scan} component={screens.Scan} />
+							<Stack.Screen name={RouteName.TransportRequest} component={screens.TransportRequest} />
 						</Stack.Group>
 						<Stack.Group>
 							<Stack.Screen name={RouteName.TransactionDetails} component={screens.TransactionDetails} />

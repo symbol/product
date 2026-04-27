@@ -31,7 +31,9 @@ export const RouteName = {
 	ContactDetails: 'ContactDetails',
 	CreateContact: 'CreateContact',
 	EditContact: 'EditContact',
-	Harvesting: 'Harvesting'
+	Harvesting: 'Harvesting',
+	Scan: 'Scan',
+	TransportRequest: 'TransportRequest'
 };
 
 export const RouterFlow = {
