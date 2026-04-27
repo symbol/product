@@ -1,6 +1,6 @@
 import { AccountView, BooleanView, CopyButtonContainer, Field, MessageView, Stack, StyledText, TokenView } from '@/app/components';
 import { $t } from '@/app/localization';
-import { getAccountKnownInfo, getTokenKnownInfo } from '@/app/utils';
+import { createTokenDisplayData, getAccountKnownInfo } from '@/app/utils';
 import React, { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 
@@ -39,7 +39,7 @@ const useResolvedData = (data, options) => {
 
 				if ((row.type === 'token' || row.type === 'fee') && value) {
 					const tokenId = value.id ?? value.token?.id ?? value;
-					const info = getTokenKnownInfo(chainName, networkIdentifier, tokenId);
+					const info = createTokenDisplayData(value, chainName, networkIdentifier);
 					resolved.set(tokenId, info);
 				}
 			}
