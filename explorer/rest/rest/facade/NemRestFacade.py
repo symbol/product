@@ -138,3 +138,10 @@ class NemRestFacade:
 		mosaic_rich_list = self.nem_db.get_mosaic_rich_list(pagination, namespace_name)
 
 		return [item.to_dict() for item in mosaic_rich_list]
+
+	def get_transaction_by_hash(self, transaction_hash):
+		"""Gets transaction by hash."""
+
+		transaction = self.nem_db.get_transaction_by_hash(transaction_hash)
+
+		return transaction.to_dict() if transaction else None

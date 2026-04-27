@@ -15,6 +15,7 @@ from .test.DatabaseTestUtils import (
 	MOSAIC_RICH_LIST_VIEWS,
 	MOSAIC_VIEWS,
 	NAMESPACE_VIEWS,
+	TRANSACTIONS_VIEWS,
 	DatabaseConfig,
 	initialize_database
 )
@@ -127,7 +128,8 @@ def test_data_not_found(client):  # pylint: disable=redefined-outer-name
 		('block', '/3'),
 		('account', '?address=NANEMOABLAGR72AZ2RV3V4ZHDCXW25XQ73O7OBT5'),
 		('namespace', '/nonexistent'),
-		('mosaic', '/nonexistent')]:
+		('mosaic', '/nonexistent'),
+		('transaction', '0' * 64)]:
 		# Act:
 		response = client.get(f'/api/nem/{module}{params}')
 
@@ -540,7 +542,7 @@ def test_api_mosaics_with_all_params(client):  # pylint: disable=redefined-outer
 
 # endregion
 
-# region /mosaic/rich/list Todo: fix line to long
+# region /mosaic/rich/list
 
 def _assert_get_api_nem_mosaic_rich_list(client, expected_status_code, expected_result, **query_params):
 	# pylint: disable=redefined-outer-name
@@ -591,3 +593,13 @@ def test_api_mosaic_rich_list_applies_offset(client):  # pylint: disable=redefin
 
 
 # endregion
+
+# region /transaction/<transaction_hash>
+
+def test_api_nem_transaction_by_hash(client):  # pylint: disable=redefined-outer-name
+	# Act:
+	response = client.get('/api/nem/transaction/' + TRANSACTIONS_VIEWS[0].transaction_hash)
+
+	# Assert:
+	_assert_status_code_and_headers(response, 200)
+	assert TRANSACTIONS_VIEWS[0].to_dict() == response.json
