@@ -80,6 +80,11 @@ export const Semantic = {
 		// 36 - icon asset
 		xl: Primitives.spacing500 // 40px - token icon bridge
 		// 48px - transaction graphic target wrapper, avatar md
+	},
+	qrCodeSize: {
+		s: Primitives.spacing100 * 12, // 96px
+		m: Primitives.spacing100 * 32, // 256px
+		l: Primitives.spacing100 * 48 // 384px
 	}
 };
 

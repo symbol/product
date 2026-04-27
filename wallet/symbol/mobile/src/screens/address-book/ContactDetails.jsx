@@ -1,18 +1,13 @@
 import { createBlacklistAlertData } from './utils';
 import {
-	AccountAvatar,
+	AccountInfoCard,
 	Alert,
 	Button,
 	ButtonPlain,
-	Card,
-	CopyButtonContainer,
 	Divider,
-	Field,
-	FlexContainer,
 	Screen,
 	Spacer,
-	Stack,
-	StyledText
+	Stack
 } from '@/app/components';
 import { useAsyncManager, useWalletController } from '@/app/hooks';
 import { PlatformUtils } from '@/app/lib/platform/PlatformUtils';
@@ -42,9 +37,6 @@ export const ContactDetails = ({ route }) => {
 	// Contact data
 	const contact = addressBook.getContactById(contactId);
 	const { address, name, notes, isBlackListed } = contact;
-
-	// Notes
-	const isNotesVisible = notes?.length > 0;
 
 	// Alert for blacklisted contact
 	const blacklistAlert = createBlacklistAlertData(isBlackListed);
@@ -87,43 +79,18 @@ export const ContactDetails = ({ route }) => {
 		<Screen>
 			<Screen.Upper>
 				<Spacer>
-					<Stack gap="l">
-						<Card>
-							<Spacer>
-								<Stack gap="m">
-									<Stack gap="s">
-										<FlexContainer center>
-											<AccountAvatar address={address} size="l" />
-											<StyledText type="title" size="s">
-												{name}
-											</StyledText>
-										</FlexContainer>
-										{blacklistAlert.isVisible && (
-											<Alert
-												variant={blacklistAlert.variant}
-												body={blacklistAlert.text}
-											/>
-										)}
-									</Stack>
-									<Divider accent />
-									<Field title={$t('fieldTitle_address')}>
-										<CopyButtonContainer value={address} isStretched>
-											<StyledText>
-												{address}
-											</StyledText>
-										</CopyButtonContainer>
-									</Field>
-									{isNotesVisible && (
-										<Field title={$t('fieldTitle_notes')}>
-											<StyledText>
-												{notes}
-											</StyledText>
-										</Field>
-									)}
-								</Stack>
-							</Spacer>
-						</Card>
-					</Stack>
+					<AccountInfoCard
+						address={address}
+						name={name}
+						notes={notes}
+					>
+						{blacklistAlert.isVisible && (
+							<Alert
+								variant={blacklistAlert.variant}
+								body={blacklistAlert.text}
+							/>
+						)}
+					</AccountInfoCard>
 				</Spacer>
 			</Screen.Upper>
 			<Screen.Bottom>

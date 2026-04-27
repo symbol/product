@@ -1,13 +1,12 @@
 import {
+	AccountInfoCard,
 	Button,
 	ButtonPlain,
-	Card,
-	CopyButtonContainer,
 	DialogBox,
 	Divider,
-	Field,
 	PasscodeView,
 	Screen,
+	SendReceiveButtons,
 	Spacer,
 	Stack,
 	StyledText
@@ -17,7 +16,7 @@ import { PlatformUtils } from '@/app/lib/platform/PlatformUtils';
 import { $t } from '@/app/localization';
 import { Router } from '@/app/router/Router';
 import { TokenListItem } from '@/app/screens/assets/components';
-import { createExplorerAccountUrl } from '@/app/utils';
+import { createAccountAddressQr, createExplorerAccountUrl } from '@/app/utils';
 import React, { useState } from 'react';
 
 /**
@@ -31,7 +30,12 @@ export const BridgeAccountDetails = ({ route }) => {
 	const { networkIdentifier, currentAccount, currentAccountInfo } = walletController;
 	const tokens = currentAccountInfo?.tokens || currentAccountInfo?.mosaics || [];
 
-	// Send button
+	// Send/Receive buttons
+	const receiveQrData = createAccountAddressQr({
+		address: currentAccount.address,
+		chainName,
+		networkIdentifier
+	});
 	const openSendScreen = () => Router.goToSend({ params: { chainName } });
 
 	// Block explorer
@@ -65,7 +69,7 @@ export const BridgeAccountDetails = ({ route }) => {
 
 	// Handlers
 	const handleTokenPress = token => {
-		Router.goToTokenDetails({ params: { chainName, tokenId: token.id } });
+		Router.goToTokenDetails({ params: { chainName, tokenId: token.id, preloadedData: token } });
 	};
 
 	return (
@@ -73,26 +77,19 @@ export const BridgeAccountDetails = ({ route }) => {
 			<Screen.Upper>
 				<Spacer>
 					<Stack>
-						<Card>
-							<Spacer>
-								<Stack>
-									<Field title={$t('fieldTitle_chainName')}>
-										<StyledText type="title">
-											{chainName}
-										</StyledText>
-									</Field>
-									<Field title={$t('fieldTitle_address')}>
-										<CopyButtonContainer value={currentAccount.address} isStretched>
-											<StyledText>
-												{currentAccount.address}
-											</StyledText>
-										</CopyButtonContainer>
-									</Field>
-								</Stack>
-							</Spacer>
-						</Card>
+						<AccountInfoCard
+							address={currentAccount.address}
+							name={currentAccount.name}
+							chainName={chainName}
+						/>
+						<SendReceiveButtons
+							accountAddress={currentAccount.address}
+							chainName={chainName}
+							receiveQrData={receiveQrData}
+							onSendPress={openSendScreen}
+						/>
 						<Stack gap="s">
-							<StyledText type="label">
+							<StyledText type="title">
 								{$t('s_bridge_tokens_title')}
 							</StyledText>
 							{tokens.map(token => (
@@ -111,11 +108,6 @@ export const BridgeAccountDetails = ({ route }) => {
 			<Screen.Bottom>
 				<Spacer>
 					<Stack>
-						<ButtonPlain
-							icon="send-plane"
-							text={$t('button_sendTransferTransaction')}
-							onPress={openSendScreen}
-						/>
 						<ButtonPlain
 							icon="block-explorer"
 							text={$t('button_openTransactionInExplorer')}

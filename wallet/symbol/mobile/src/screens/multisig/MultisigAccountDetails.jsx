@@ -1,13 +1,12 @@
 import {
-	AccountAvatar,
+	AccountInfoCard,
 	ButtonPlain,
 	Card,
-	CopyButtonContainer,
 	Divider,
 	EmptyListMessage,
 	Field,
-	FlexContainer,
 	Screen,
+	SendReceiveButtons,
 	Spacer,
 	Stack,
 	StyledText
@@ -18,7 +17,7 @@ import { $t } from '@/app/localization';
 import { Router } from '@/app/router/Router';
 import { TokenListItem } from '@/app/screens/assets/components';
 import { CosignatoryList, CosignatureCounter } from '@/app/screens/multisig/components';
-import { createAccountDisplayData, createExplorerAccountUrl } from '@/app/utils';
+import { createAccountAddressQr, createAccountDisplayData, createExplorerAccountUrl } from '@/app/utils';
 import React from 'react';
 
 /**
@@ -71,7 +70,12 @@ export const MultisigAccountDetails = ({ route }) => {
 	// Tokens
 	const tokens = data?.tokens || data?.mosaics || [];
 
-	// Send button
+	// Send/Receive buttons
+	const receiveQrData = createAccountAddressQr({
+		address,
+		chainName,
+		networkIdentifier
+	});
 	const openSendScreen = () => Router.goToSend({
 		params: {
 			chainName,
@@ -88,11 +92,13 @@ export const MultisigAccountDetails = ({ route }) => {
 	const openBlockExplorer = () => PlatformUtils.openLink(explorerUrl);
 
 	// Modify account
-	const openModifyScreen = () => Router.goToModifyMultisigAccount({ params: { 
-		chainName, 
-		accountAddress,
-		preloadedData: data
-	}});
+	const openModifyScreen = () => Router.goToModifyMultisigAccount({
+		params: {
+			chainName,
+			accountAddress,
+			preloadedData: data
+		}
+	});
 
 	// Handlers
 	const handleTokenPress = token => {
@@ -102,33 +108,25 @@ export const MultisigAccountDetails = ({ route }) => {
 	return (
 		<Screen refresh={{ onRefresh: dataManager.call, isRefreshing: dataManager.isLoading }}>
 			<Spacer>
-				<Stack>
-					<Card>
-						<Spacer>
-							<Stack>
-								<FlexContainer center>
-									<AccountAvatar address={address} size="l" />
-									<StyledText type="title" size="s">
-										{accountNameText}
-									</StyledText>
-								</FlexContainer>
-								<Divider accent />
-								<Field title={$t('fieldTitle_chainName')}>
-									<StyledText>
-										{chainName}
-									</StyledText>
-								</Field>
-								<Field title={$t('fieldTitle_address')}>
-									<CopyButtonContainer value={address} isStretched>
-										<StyledText>
-											{address}
-										</StyledText>
-									</CopyButtonContainer>
-								</Field>
-							</Stack>
-						</Spacer>
-					</Card>
+				<Stack gap="l">
+					<Stack>
+						<AccountInfoCard
+							address={address}
+							name={accountNameText}
+							chainName={chainName}
+							imageId={accountDisplay.imageId}
+						/>
+						<SendReceiveButtons
+							accountAddress={address}
+							chainName={chainName}
+							receiveQrData={receiveQrData}
+							onSendPress={openSendScreen}
+						/>
+					</Stack>
 					<Stack gap="s">
+						<StyledText type="title">
+							{$t('s_multisig_multisigInfo_title')}
+						</StyledText>
 						<Card>
 							<Spacer>
 								<Stack>
@@ -160,7 +158,7 @@ export const MultisigAccountDetails = ({ route }) => {
 						</Card>
 					</Stack>
 					<Stack gap="s">
-						<StyledText type="title" size="s">
+						<StyledText type="title">
 							{$t('s_multisig_tokens_title')}
 						</StyledText>
 						{tokens.map(token => (
@@ -177,11 +175,6 @@ export const MultisigAccountDetails = ({ route }) => {
 						)}
 					</Stack>
 					<Divider />
-					<ButtonPlain
-						icon="send-plane"
-						text={$t('button_sendTransactionFromThisAccount')}
-						onPress={openSendScreen}
-					/>
 					<ButtonPlain
 						icon="block-explorer"
 						text={$t('button_openTransactionInExplorer')}
