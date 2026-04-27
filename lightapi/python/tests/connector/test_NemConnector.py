@@ -1423,7 +1423,6 @@ async def test_unconfirmed_transactions(server):  # pylint: disable=redefined-ou
 
 	# Act:
 	unconfirmed_transactions = await connector.get_unconfirmed_transactions()
-	print(vars(unconfirmed_transactions[0]))
 
 	# Assert:
 	assert [f'{server.make_url("")}/transactions/unconfirmed'] == server.mock.urls
