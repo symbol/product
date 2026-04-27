@@ -120,4 +120,10 @@ export class Router {
 	static goToHarvesting(params) {
 		navigationRef.navigate(RouteName.Harvesting, parseNavigationParams(params));
 	}
+	static goToScan(params) {
+		navigationRef.navigate(RouteName.Scan, parseNavigationParams(params));
+	}
+	static goToTransportRequest(params) {
+		navigationRef.navigate(RouteName.TransportRequest, parseNavigationParams(params));
+	}
 }
