@@ -33,6 +33,18 @@ export const Actions = () => {
 			onPress: Router.goToHarvesting
 		},
 		{
+			title: $t('s_actions_multisig_title'),
+			description: $t('s_actions_multisig_description'),
+			imageSource: require('@/app/assets/images/art/multisig-chest.png'),
+			onPress: Router.goToMultisigAccountList
+		},
+		{
+			title: $t('s_actions_externalAccount_title'),
+			description: $t('s_actions_externalAccount_description'),
+			imageSource: require('@/app/assets/images/art/external-accounts.png'),
+			onPress: Router.goToBridgeAccountList
+		},
+		{
 			title: $t('s_actions_send_title'),
 			description: $t('s_actions_send_description'),
 			imageSource: require('@/app/assets/images/art/ship.png'),
@@ -43,12 +55,6 @@ export const Actions = () => {
 			description: $t('s_actions_bridge_description'),
 			imageSource: require('@/app/assets/images/art/bridge.png'),
 			onPress: Router.goToBridgeSwap
-		},
-		{
-			title: $t('s_actions_multisig_title'),
-			description: $t('s_actions_multisig_description'),
-			imageSource: require('@/app/assets/images/art/multisig-chest.png'),
-			onPress: Router.goToMultisigAccountList
 		}
 	], []);
 
