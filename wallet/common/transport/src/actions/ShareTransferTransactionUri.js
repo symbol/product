@@ -5,20 +5,21 @@ import { createTransportUri, parseRawParameters, validateParameters } from '../u
 /**
  * @typedef {Object} Parameters
  * @property {string} chainName - Blockchain name (e.g., 'symbol', 'nem', 'ethereum')
- * @property {string} networkId - Network identifier ('mainnet' or 'testnet')
+ * @property {string} networkIdentifier - Network identifier ('mainnet' or 'testnet')
  * @property {string} recipientAddress - Recipient account address (Base32 encoded)
- * @property {string} amount - Token amount in atomic units (as numeric String)
+ * @property {string} tokenId - Mosaic/token identifier (hex String)
+ * @property {string} [amount] - Optional token amount in atomic units (as numeric String)
  * @property {string} [message] - Optional transaction message content
  * @property {boolean} [isMessageEncrypted] - Optional flag indicating if message is encrypted
  * @property {string} [chainId] - Blockchain chain ID (generation hash)
- * 
+ *
  */
 
 const schema = {
 	params: {
 		required: [
 			ParameterConfig.ChainName,
-			ParameterConfig.NetworkId,
+			ParameterConfig.NetworkIdentifier,
 			ParameterConfig.RecipientAddress,
 			ParameterConfig.TokenId
 		],
@@ -26,7 +27,7 @@ const schema = {
 			ParameterConfig.TokenAbsoluteAmount,
 			ParameterConfig.Message,
 			ParameterConfig.IsMessageEncrypted,
-			ParameterConfig.ChainId,
+			ParameterConfig.ChainId
 		]
 	}
 };
@@ -144,10 +145,19 @@ export class ShareTransferTransactionUri {
 	}
 
 	/**
-     * Gets the token amount in atomic units.
-     * 
-     * @returns {string} The amount as numeric string
-     */
+	 * Gets the mosaic/token identifier.
+	 *
+	 * @returns {string} The token ID as hex string
+	 */
+	get tokenId() {
+		return this.#parameters.tokenId;
+	}
+
+	/**
+	 * Gets the optional token amount in atomic units.
+	 *
+	 * @returns {string|undefined} The amount as numeric string, or undefined if not provided
+	 */
 	get amount() {
 		return this.#parameters.amount;
 	}

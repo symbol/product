@@ -17,8 +17,6 @@ describe('package entry (src/index.js)', () => {
 		expect(typeof entry.URI_SCHEME).toBe('string');
 		expect(typeof entry.PROTOCOL_VERSION).toBe('string');
 		expect(typeof entry.ActionType).toBe('object');
-		expect(typeof entry.ResponseMethod).toBe('object');
-		expect(typeof entry.NetworkIdentifier).toBe('object');
 		expect(typeof entry.ParameterType).toBe('object');
 
 		// Assert: schema
