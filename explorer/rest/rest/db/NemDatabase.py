@@ -220,7 +220,7 @@ class NemDatabase(DatabaseConnectionPool):
 			from_address=from_address,
 			to_address=to_address,
 			value=value,
-			embedded_transactions=embedded_transaction if embedded_transaction else None,
+			embedded_transactions=embedded_transaction or None,
 			fee=_format_xem_relative(transaction.fee),
 			height=transaction.height,
 			timestamp=str(transaction.timestamp),
@@ -339,10 +339,10 @@ class NemDatabase(DatabaseConnectionPool):
 		'''
 
 	@staticmethod
-	def _generate_transaction_sql_query():
+	def _generate_transaction_sql_query(where_condition='', order_condition='', limit_condition=''):
 		"""Base transaction query."""
 
-		return '''
+		return f'''
 			SELECT
 				t.transaction_hash,
 				t.transaction_type,
@@ -367,6 +367,9 @@ class NemDatabase(DatabaseConnectionPool):
 				ON mo.namespace_name = tm.namespace_name
 			WHERE tm.transaction_id = t.id
 			) m ON true
+			{where_condition}
+			{order_condition}
+			{limit_condition}
 		'''
 
 	def _get_account(self, where_condition, query_bytes):
@@ -616,9 +619,10 @@ class NemDatabase(DatabaseConnectionPool):
 	def _get_transaction_query(self, transaction_hash, is_inner=False):
 		"""Gets transaction by where clause."""
 
-		sql = self._generate_transaction_sql_query()
-		sql += ' WHERE t.transaction_hash = %s AND t.is_inner = %s'
-		params = ('\\x' + transaction_hash, is_inner)
+		where_condition = ' WHERE t.transaction_hash = %s AND t.is_inner = %s'
+		sql = self._generate_transaction_sql_query(where_condition=where_condition)
+
+		params = ['\\x' + transaction_hash, is_inner]
 
 		with self.connection() as connection:
 			cursor = connection.cursor()
