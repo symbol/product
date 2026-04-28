@@ -254,7 +254,7 @@ describe('screens/history/TransactionDetails', () => {
 	});
 
 	describe('render', () => {
-		it('renders screen text with field titles, button and amount breakdown title', () => {
+		it('renders screen text with field titles and button', () => {
 			// Arrange:
 			setupMocks();
 			const props = createRouteProps(transferTransaction);
@@ -262,8 +262,22 @@ describe('screens/history/TransactionDetails', () => {
 				SCREEN_TEXT.textFieldAmount,
 				SCREEN_TEXT.textFieldStatus,
 				SCREEN_TEXT.textFieldDate,
-				SCREEN_TEXT.textAmountBreakdownTitle,
 				SCREEN_TEXT.buttonOpenExplorer
+			];
+
+			// Act:
+			const screenTester = new ScreenTester(TransactionDetails, props);
+
+			// Assert:
+			screenTester.expectText(expectedTexts);
+		});
+
+		it('renders amount breakdown title for aggregate transactions', () => {
+			// Arrange:
+			setupMocks();
+			const props = createRouteProps(aggregateBondedSignedByCurrentAccount);
+			const expectedTexts = [
+				SCREEN_TEXT.textAmountBreakdownTitle
 			];
 
 			// Act:

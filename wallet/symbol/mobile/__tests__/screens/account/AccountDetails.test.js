@@ -14,6 +14,7 @@ jest.mock('@/app/lib/platform/PlatformUtils', () => ({
 }));
 
 jest.mock('@/app/utils', () => ({
+	createAccountAddressQr: jest.fn(() => ({})),
 	createExplorerAccountUrl: jest.fn((chainName, networkIdentifier, address) =>
 		`https://explorer.${chainName}.${networkIdentifier}/account/${address}`),
 	getAccountKnownInfo: jest.fn(() => null)
@@ -146,8 +147,6 @@ describe('screens/account/AccountDetails', () => {
 				CHAIN_NAME,
 				SCREEN_TEXT.textFieldNetworkIdentifier,
 				mainnetSeedAccount.networkIdentifier,
-				SCREEN_TEXT.textFieldName,
-				mainnetSeedAccount.name,
 				SCREEN_TEXT.textFieldAccountType,
 				mainnetSeedAccount.accountType
 			];

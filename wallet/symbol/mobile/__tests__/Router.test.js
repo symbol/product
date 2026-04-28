@@ -88,6 +88,8 @@ jest.mock('@/app/screens', () => {
 		CreateMultisigAccount: createMockScreen('CreateMultisigAccount'),
 		ModifyMultisigAccount: createMockScreen('ModifyMultisigAccount'),
 		Harvesting: createMockScreen('Harvesting'),
+		Scan: createMockScreen('Scan'),
+		TransportRequest: createMockScreen('TransportRequest'),
 		Send: createMockScreen('Send'),
 		Settings: createMockScreen('Settings'),
 		SettingsAbout: createMockScreen('SettingsAbout'),

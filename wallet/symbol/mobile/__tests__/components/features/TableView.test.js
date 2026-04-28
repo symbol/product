@@ -16,12 +16,15 @@ jest.mock('@/app/utils', () => ({
 		};
 		return accountInfoMap[address] || { name: null, imageId: null };
 	},
-	getTokenKnownInfo: (chainName, networkIdentifier, tokenId) => {
+	createTokenDisplayData: token => {
 		const tokenInfoMap = {
 			'token1': { name: 'Symbol', ticker: 'XYM', imageId: 'symbol' },
 			'token2': { name: 'Custom Token', ticker: 'CTK', imageId: 'custom' }
 		};
-		return tokenInfoMap[tokenId] || { name: null, ticker: null, imageId: null };
+		const info = tokenInfoMap[token.id] || { name: null, ticker: null, imageId: null };
+		const name = info.name ?? token.name ?? token.id;
+		const nameText = !info.ticker ? name : `${name} • ${info.ticker}`;
+		return { name: nameText, ticker: info.ticker, imageId: info.imageId };
 	}
 }));
 
