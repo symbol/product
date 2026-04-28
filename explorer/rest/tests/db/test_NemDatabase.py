@@ -239,8 +239,6 @@ class NemDatabaseTest(DatabaseTestBase):  # pylint: disable=too-many-public-meth
 	def _assert_can_query_mosaic_rich_list_with_filter(self, pagination, namespace_name, expected_mosaic_rich_list):
 		# Act:
 		mosaic_rich_list_view = self.nem_db.get_mosaic_rich_list(pagination, namespace_name)
-		print(mosaic_rich_list_view)
-		print(expected_mosaic_rich_list)
 
 		# Assert:
 		self.assertEqual(expected_mosaic_rich_list, mosaic_rich_list_view)
