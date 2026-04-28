@@ -1,5 +1,16 @@
 from collections import namedtuple
 
+TransactionQuery = namedtuple('TransactionQuery', [
+	'height',
+	'transaction_types',
+	'sender',
+	'address',
+	'sender_address',
+	'recipient_address',
+	'mosaic'
+])
+
+
 TransactionRecord = namedtuple('TransactionRecord', [
 	'transaction_hash',
 	'transaction_type',
