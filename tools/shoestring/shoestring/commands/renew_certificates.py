@@ -10,7 +10,7 @@ from shoestring.internal.ShoestringConfiguration import parse_shoestring_configu
 
 async def run_main(args):
 	config = parse_shoestring_configuration(args.config)
-	directories = Preparer.DirectoryLocator(None, Path(args.directory))
+	directories = Preparer.DirectoryLocator(None, Path(args.directory).absolute())
 
 	ca_key_path = Path(args.ca_key_path).absolute()
 	if not ca_key_path.exists():
