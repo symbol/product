@@ -39,7 +39,8 @@ const useResolvedData = (data, options) => {
 
 				if ((row.type === 'token' || row.type === 'fee') && value) {
 					const tokenId = value.id ?? value.token?.id ?? value;
-					const info = createTokenDisplayData(value, chainName, networkIdentifier);
+					const tokenData = value.token ?? value;
+					const info = createTokenDisplayData(tokenData, chainName, networkIdentifier);
 					resolved.set(tokenId, info);
 				}
 			}
@@ -89,7 +90,6 @@ const renderRowValue = (row, resolvedData, translate, key) => {
 				key={key}
 				name={resolvedData.get(row.value.id ?? row.value)?.name ?? row.value.name}
 				amount={row.value.amount}
-				ticker={resolvedData.get(row.value.id ?? row.value)?.ticker}
 				imageId={resolvedData.get(row.value.id ?? row.value)?.imageId}
 			/>
 		);
@@ -99,7 +99,6 @@ const renderRowValue = (row, resolvedData, translate, key) => {
 				key={key}
 				name={resolvedData.get(row.value.token?.id ?? row.value.token)?.name ?? row.value.token.name}
 				amount={row.value.token.amount}
-				ticker={resolvedData.get(row.value.token?.id ?? row.value.token)?.ticker}
 				imageId={resolvedData.get(row.value.token?.id ?? row.value.token)?.imageId}
 			/>
 		);

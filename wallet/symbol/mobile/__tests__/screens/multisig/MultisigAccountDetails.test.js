@@ -30,7 +30,7 @@ const SCREEN_TEXT = {
 	textTokensTitle: 's_multisig_tokens_title',
 	textDefaultAccountName: 's_multisig_defaultAccountName',
 	textEmptyList: 'message_emptyList',
-	buttonSendTransaction: 'button_sendTransactionFromThisAccount',
+	buttonSendTransaction: 'button_send',
 	buttonOpenExplorer: 'button_openTransactionInExplorer',
 	buttonModifyAccount: 'button_modifyAccount'
 };
