@@ -49,7 +49,7 @@ export const TransportRequest = ({ route }) => {
 	const requestDetailsViewModel = createRequestDetailsViewModel(transportUriObject);
 
 	// The list of suggested and other actions to display, based on the transport URI content
-	const walletActions = createWalletActions(transportUriObject);
+	const walletActions = createWalletActions(transportUriObject, { chainName: walletController.chainName });
 
 	// Visibility flags
 	const isSuggestedActionsVisible = walletActions.suggested.length > 0;
