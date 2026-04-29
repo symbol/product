@@ -642,3 +642,114 @@ class NemDatabase(DatabaseConnectionPool):
 			inner_transaction = self._get_transaction_query(inner_hash, is_inner=True)
 
 		return self._create_transaction_view(transaction, inner_transaction) if transaction else None
+
+	def _get_transactions(self, params, where_condition='', order_condition='', limit_condition=''):
+		"""Gets transactions by where clause."""
+
+		sql = self._generate_transaction_sql_query(
+			where_condition=where_condition,
+			order_condition=order_condition,
+			limit_condition=limit_condition
+		)
+
+		with self.connection() as connection:
+			cursor = connection.cursor()
+			cursor.execute(sql, params)
+			results = cursor.fetchall()
+
+			return [TransactionRecord(*result) for result in results]
+
+	def _get_inner_transactions(self, transaction_hashes):
+		"""Gets inner transactions by transaction hashes."""
+
+		where_condition = ' WHERE t.transaction_hash IN %s AND t.is_inner = true'
+		order_condition = ' ORDER BY t.height DESC'
+		sql = self._generate_transaction_sql_query(where_condition=where_condition, order_condition=order_condition)
+
+		params = tuple('\\x' + tx_hash for tx_hash in transaction_hashes)
+
+		with self.connection() as connection:
+			cursor = connection.cursor()
+			cursor.execute(sql, (params,))
+			results = cursor.fetchall()
+
+			return [TransactionRecord(*result) for result in results]
+
+	def get_transactions(self, pagination, sort, transaction_query):
+		"""Gets transactions pagination."""
+
+		where_condition = ' WHERE t.is_inner = False '
+		order_condition = f' ORDER BY t.height {sort}'
+		limit_condition = ' LIMIT %s OFFSET %s'
+
+		filter_params = []
+
+		if transaction_query.height:
+			where_condition += ' AND t.height = %s'
+			filter_params.append(transaction_query.height)
+
+		if transaction_query.transaction_types:
+			where_condition += ' AND t.transaction_type IN %s'
+			filter_params.append(tuple(transaction_query.transaction_types))
+
+		if transaction_query.address:
+			where_condition += ' AND (t.sender_address = %s OR t.recipient_address = %s)'
+			filter_params.extend([transaction_query.address.bytes, transaction_query.address.bytes])
+		else:
+			if transaction_query.sender_address:
+				where_condition += ' AND t.sender_address = %s'
+				filter_params.append(transaction_query.sender_address.bytes)
+			elif transaction_query.sender:
+				where_condition += ' AND t.sender_address = %s'
+				filter_params.append(transaction_query.sender.bytes)
+
+			if transaction_query.recipient_address:
+				where_condition += ' AND t.recipient_address = %s'
+				filter_params.append(transaction_query.recipient_address.bytes)
+
+		if transaction_query.mosaic:
+			where_condition += ' AND t.transaction_type = %s'
+
+			if transaction_query.mosaic.upper() == 'NEM.XEM':
+				where_condition += (
+					' AND ( '
+					'	EXISTS (SELECT 1 FROM transactions_mosaic tm WHERE tm.transaction_id = t.id AND tm.namespace_name = %s)'
+					'	OR'
+					'	NOT EXISTS (SELECT 1 FROM transactions_mosaic tm WHERE tm.transaction_id = t.id)'
+					')'
+				)
+			else:
+				where_condition += ' AND EXISTS (SELECT 1 FROM transactions_mosaic tm WHERE tm.transaction_id = t.id AND tm.namespace_name = %s) '
+
+			filter_params.extend([TransactionType.TRANSFER.value, transaction_query.mosaic])
+
+		params = filter_params + [pagination.limit, pagination.offset]
+
+		transactions = self._get_transactions(
+			params,
+			where_condition=where_condition,
+			order_condition=order_condition,
+			limit_condition=limit_condition
+		)
+
+		inner_transaction_hashes = [
+			transaction.payload['inner_hash']
+			for transaction in transactions
+			if transaction.transaction_type == TransactionType.MULTISIG.value and transaction.payload.get('inner_hash')
+		]
+
+		if inner_transaction_hashes:
+			inner_transactions = self._get_inner_transactions(inner_transaction_hashes)
+			inner_transaction_map = {
+				_format_bytes(inner_transaction.transaction_hash).lower(): inner_transaction for inner_transaction in inner_transactions
+			}
+
+			return [
+				self._create_transaction_view(
+					transaction,
+					inner_transaction_map.get(transaction.payload['inner_hash']) if transaction.payload.get('inner_hash') else None
+				)
+				for transaction in transactions
+			]
+
+		return [self._create_transaction_view(transaction) for transaction in transactions]

@@ -1,5 +1,6 @@
 from rest import Pagination, Sorting
 from rest.db.NemDatabase import NemDatabase
+from rest.model.Transaction import TransactionQuery
 
 from ..test.DatabaseTestUtils import (
 	ACCOUNT_VIEWS,
@@ -8,6 +9,7 @@ from ..test.DatabaseTestUtils import (
 	MOSAIC_RICH_LIST_VIEWS,
 	MOSAIC_VIEWS,
 	NAMESPACE_VIEWS,
+	TRANSACTIONS,
 	TRANSACTIONS_VIEWS,
 	DatabaseTestBase
 )
@@ -307,5 +309,117 @@ class NemDatabaseTest(DatabaseTestBase):  # pylint: disable=too-many-public-meth
 
 		# Assert:
 		self.assertEqual(TRANSACTIONS_VIEWS[7], transaction_view)
+
+	# endregion
+
+	# region transactions
+
+	@staticmethod
+	def _make_transaction_query(**kwargs):
+		defaults = TransactionQuery(
+			height=None,
+			transaction_types=None,
+			sender=None,
+			address=None,
+			sender_address=None,
+			recipient_address=None,
+			mosaic=None
+		)
+		return defaults._replace(**kwargs)
+
+	def _assert_can_query_transactions_with_filter(self, pagination, sort, transaction_query, expected_transactions):
+		# Act:
+		transactions_view = self.nem_db.get_transactions(pagination, sort, transaction_query)
+
+		# Assert:
+		self.assertEqual(expected_transactions, transactions_view)
+
+	def test_can_query_transactions_filtered_limit_offset_0(self):
+		self._assert_can_query_transactions_with_filter(
+			Pagination(1, 0), 'desc', self._make_transaction_query(), [TRANSACTIONS_VIEWS[2]]
+		)
+
+	def test_can_query_transactions_filtered_limit_offset_1(self):
+		self._assert_can_query_transactions_with_filter(
+			Pagination(2, 1), 'desc', self._make_transaction_query(), [TRANSACTIONS_VIEWS[2], TRANSACTIONS_VIEWS[4]]
+		)
+
+	def test_can_query_transactions_sorted_by_height_asc(self):
+		self._assert_can_query_transactions_with_filter(
+			Pagination(10, 0), 'asc', self._make_transaction_query(), list(TRANSACTIONS_VIEWS)
+		)
+
+	def test_can_query_transactions_sorted_by_height_desc(self):
+		self._assert_can_query_transactions_with_filter(
+			Pagination(3, 0), 'desc', self._make_transaction_query(),
+			[TRANSACTIONS_VIEWS[3], TRANSACTIONS_VIEWS[2], TRANSACTIONS_VIEWS[4]]
+		)
+
+	def test_can_query_transactions_filtered_by_height(self):
+		self._assert_can_query_transactions_with_filter(
+			Pagination(10, 0), 'desc', self._make_transaction_query(height=1),
+			[TRANSACTIONS_VIEWS[0], TRANSACTIONS_VIEWS[1]]
+		)
+
+	def test_can_query_transactions_filtered_by_nonexistent_height(self):
+		self._assert_can_query_transactions_with_filter(
+			Pagination(10, 0), 'desc', self._make_transaction_query(height=999), []
+		)
+
+	def test_can_query_transactions_filtered_by_multiple_transaction_types(self):
+		# TRANSFER (257) + ACCOUNT_KEY_LINK (2049)
+		self._assert_can_query_transactions_with_filter(
+			Pagination(10, 0), 'desc',
+			self._make_transaction_query(transaction_types=[257, 2049]),
+			[TRANSACTIONS_VIEWS[2], TRANSACTIONS_VIEWS[0], TRANSACTIONS_VIEWS[1]]
+		)
+
+	def test_can_query_transactions_filtered_by_address_as_sender(self):
+		self._assert_can_query_transactions_with_filter(
+			Pagination(2, 0), 'desc', self._make_transaction_query(address=TRANSACTIONS[2].sender_address),
+			[TRANSACTIONS_VIEWS[2]]
+		)
+
+	def test_can_query_transactions_filtered_by_address_as_recipient(self):
+		self._assert_can_query_transactions_with_filter(
+			Pagination(10, 0), 'desc', self._make_transaction_query(address=TRANSACTIONS[0].recipient_address),
+			[TRANSACTIONS_VIEWS[5], TRANSACTIONS_VIEWS[6], TRANSACTIONS_VIEWS[0], TRANSACTIONS_VIEWS[1]]
+		)
+
+	def test_can_query_transactions_filtered_by_sender_address(self):
+		self._assert_can_query_transactions_with_filter(
+			Pagination(10, 0), 'desc', self._make_transaction_query(sender_address=TRANSACTIONS[2].sender_address),
+			[TRANSACTIONS_VIEWS[2]]
+		)
+
+	def test_can_query_transactions_filtered_by_recipient_address(self):
+		self._assert_can_query_transactions_with_filter(
+			Pagination(10, 0), 'desc', self._make_transaction_query(recipient_address=TRANSACTIONS[0].recipient_address),
+			[TRANSACTIONS_VIEWS[5], TRANSACTIONS_VIEWS[6], TRANSACTIONS_VIEWS[0], TRANSACTIONS_VIEWS[1]]
+		)
+
+	def test_can_query_transactions_filtered_by_sender_public_key(self):
+		sender = self.network.public_key_to_address(TRANSACTIONS[2].sender_public_key)
+		self._assert_can_query_transactions_with_filter(
+			Pagination(10, 0), 'desc', self._make_transaction_query(sender=sender),
+			[TRANSACTIONS_VIEWS[2]]
+		)
+
+	def test_can_query_transactions_filtered_by_mosaic_nem_xem(self):
+		self._assert_can_query_transactions_with_filter(
+			Pagination(10, 0), 'desc', self._make_transaction_query(mosaic='nem.xem'),
+			[TRANSACTIONS_VIEWS[0], TRANSACTIONS_VIEWS[1]]
+		)
+
+	def test_can_query_transactions_filtered_by_mosaic_other(self):
+		self._assert_can_query_transactions_with_filter(
+			Pagination(10, 0), 'desc', self._make_transaction_query(mosaic='root.mosaic'),
+			[TRANSACTIONS_VIEWS[1]]
+		)
+
+	def test_can_query_transactions_filtered_by_nonexistent_mosaic(self):
+		self._assert_can_query_transactions_with_filter(
+			Pagination(10, 0), 'desc', self._make_transaction_query(mosaic='nonexistent.mosaic'), []
+		)
 
 	# endregion
