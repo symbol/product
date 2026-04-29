@@ -100,7 +100,7 @@ def _get_api(client, endpoint, **query_params):  # pylint: disable=redefined-out
 
 def test_invalid_pagination_params(client):  # pylint: disable=redefined-outer-name
 
-	for module in ['blocks', 'accounts', 'namespaces', 'mosaics', 'mosaic/rich/list']:
+	for module in ['blocks', 'accounts', 'namespaces', 'mosaics', 'mosaic/rich/list', 'transactions']:
 		# Act:
 		response = client.get(f'/api/nem/{module}', query_string={'limit': -1})
 
@@ -114,7 +114,7 @@ def test_invalid_pagination_params(client):  # pylint: disable=redefined-outer-n
 
 def test_invalid_sort_params(client):  # pylint: disable=redefined-outer-name
 
-	for module in ['blocks', 'namespaces', 'mosaics']:
+	for module in ['blocks', 'namespaces', 'mosaics', 'transactions']:
 		# Act:
 		response = client.get(f'/api/nem/{module}', query_string={'sort': 'INVALID'})
 
@@ -603,3 +603,154 @@ def test_api_nem_transaction_by_hash(client):  # pylint: disable=redefined-outer
 	# Assert:
 	_assert_status_code_and_headers(response, 200)
 	assert TRANSACTIONS_VIEWS[0].to_dict() == response.json
+
+
+# endregion
+
+# region /transactions
+
+def _assert_get_api_nem_transactions(client, expected_status_code, expected_result, **query_params):  # pylint: disable=redefined-outer-name
+	# Act:
+	response = _get_api(client, 'transactions', **query_params)
+
+	print(response.json)
+
+	# Assert:
+	_assert_status_code_and_headers(response, expected_status_code)
+	assert expected_result == response.json
+
+
+def test_api_transactions_without_params(client):  # pylint: disable=redefined-outer-name
+	_assert_get_api_nem_transactions(client, 200, [
+		TRANSACTIONS_VIEWS[7].to_dict(),
+		TRANSACTIONS_VIEWS[5].to_dict(),
+		TRANSACTIONS_VIEWS[6].to_dict(),
+		TRANSACTIONS_VIEWS[2].to_dict(),
+		TRANSACTIONS_VIEWS[3].to_dict(),
+		TRANSACTIONS_VIEWS[4].to_dict(),
+		TRANSACTIONS_VIEWS[1].to_dict(),
+		TRANSACTIONS_VIEWS[0].to_dict()
+	])
+
+
+def test_api_transactions_applies_limit(client):  # pylint: disable=redefined-outer-name
+	_assert_get_api_nem_transactions(client, 200, [TRANSACTIONS_VIEWS[2].to_dict()], limit=1)
+
+
+def test_api_transactions_applies_offset(client):  # pylint: disable=redefined-outer-name
+	_assert_get_api_nem_transactions(client, 200, [
+		TRANSACTIONS_VIEWS[5].to_dict(),
+		TRANSACTIONS_VIEWS[6].to_dict(),
+		TRANSACTIONS_VIEWS[2].to_dict(),
+		TRANSACTIONS_VIEWS[3].to_dict(),
+		TRANSACTIONS_VIEWS[4].to_dict(),
+		TRANSACTIONS_VIEWS[1].to_dict(),
+		TRANSACTIONS_VIEWS[0].to_dict()
+	], offset=1)
+
+
+def test_api_transactions_applies_sorted_by_height_asc(client):  # pylint: disable=redefined-outer-name, invalid-name
+	_assert_get_api_nem_transactions(client, 200, [
+		TRANSACTIONS_VIEWS[0].to_dict(),
+		TRANSACTIONS_VIEWS[1].to_dict(),
+		TRANSACTIONS_VIEWS[2].to_dict(),
+		TRANSACTIONS_VIEWS[3].to_dict(),
+		TRANSACTIONS_VIEWS[4].to_dict(),
+		TRANSACTIONS_VIEWS[5].to_dict(),
+		TRANSACTIONS_VIEWS[6].to_dict(),
+		TRANSACTIONS_VIEWS[7].to_dict(),
+	], sort='ASC')
+
+
+def test_api_transactions_applies_sorted_by_height_desc(client):  # pylint: disable=redefined-outer-name, invalid-name
+	_assert_get_api_nem_transactions(client, 200, [
+		TRANSACTIONS_VIEWS[7].to_dict(),
+		TRANSACTIONS_VIEWS[5].to_dict(),
+		TRANSACTIONS_VIEWS[6].to_dict(),
+		TRANSACTIONS_VIEWS[2].to_dict(),
+		TRANSACTIONS_VIEWS[3].to_dict(),
+		TRANSACTIONS_VIEWS[4].to_dict(),
+		TRANSACTIONS_VIEWS[1].to_dict(),
+		TRANSACTIONS_VIEWS[0].to_dict()
+	], sort='DESC')
+
+
+def test_api_transactions_applies_height(client):  # pylint: disable=redefined-outer-name
+	_assert_get_api_nem_transactions(client, 200, [
+		TRANSACTIONS_VIEWS[0].to_dict(),
+		TRANSACTIONS_VIEWS[1].to_dict()
+	], height=1)
+
+
+def test_api_transactions_applies_transaction_types(client):  # pylint: disable=redefined-outer-name, invalid-name
+	_assert_get_api_nem_transactions(client, 200, [
+		TRANSACTIONS_VIEWS[2].to_dict(),
+		TRANSACTIONS_VIEWS[0].to_dict(),
+		TRANSACTIONS_VIEWS[1].to_dict()
+	], transactionTypes='transfer,account_key_link')
+
+
+def test_api_transactions_applies_address(client):  # pylint: disable=redefined-outer-name, invalid-name
+	_assert_get_api_nem_transactions(client, 200, [
+		TRANSACTIONS_VIEWS[2].to_dict()
+	], address='NBNR6XNZQIGQVXII6L3FPJTUGF6NFGLZHBN52R3V')
+
+
+def test_api_transactions_applies_sender_address(client):  # pylint: disable=redefined-outer-name, invalid-name
+	_assert_get_api_nem_transactions(client, 200, [
+		TRANSACTIONS_VIEWS[2].to_dict()
+	], senderAddress='NBNR6XNZQIGQVXII6L3FPJTUGF6NFGLZHBN52R3V')
+
+
+def test_api_transactions_applies_recipient_address(client):  # pylint: disable=redefined-outer-name, invalid-name
+	_assert_get_api_nem_transactions(client, 200, [
+		TRANSACTIONS_VIEWS[5].to_dict(),
+		TRANSACTIONS_VIEWS[6].to_dict(),
+		TRANSACTIONS_VIEWS[0].to_dict(),
+		TRANSACTIONS_VIEWS[1].to_dict()
+	], recipientAddress='NBFWZ4IVRHEIBRCGHLYDS62FSFTBM3VDFA7E6LSQ')
+
+
+def test_api_transactions_applies_mosaic(client):  # pylint: disable=redefined-outer-name
+	_assert_get_api_nem_transactions(client, 200, [
+		TRANSACTIONS_VIEWS[1].to_dict()
+	], mosaic='root.mosaic')
+
+
+def test_api_transactions_applies_address_ignore_other(client):  # pylint: disable=redefined-outer-name, invalid-name
+	_assert_get_api_nem_transactions(client, 200, [
+		TRANSACTIONS_VIEWS[2].to_dict()
+	], address='NBNR6XNZQIGQVXII6L3FPJTUGF6NFGLZHBN52R3V', senderAddress='NALICEPFLZQRZGPRIJTMJOCPWDNECXTNNG7QLSG3')
+
+	_assert_get_api_nem_transactions(client, 200, [
+		TRANSACTIONS_VIEWS[2].to_dict()
+	], address='NBNR6XNZQIGQVXII6L3FPJTUGF6NFGLZHBN52R3V', recipientAddress='NALICEPFLZQRZGPRIJTMJOCPWDNECXTNNG7QLSG3')
+
+	_assert_get_api_nem_transactions(client, 200, [
+		TRANSACTIONS_VIEWS[2].to_dict()
+	], address='NBNR6XNZQIGQVXII6L3FPJTUGF6NFGLZHBN52R3V', senderPublicKey='f9bd190dd0c364261f5c8a74870cc7f7374e631352293c62ecc437657e5de2cd')
+
+
+def _assert_transaction_invalid_params(client, expected_message, **query_params):  # pylint: disable=redefined-outer-name
+	_assert_get_api_nem_transactions(client, 400, {
+		'message': expected_message,
+		'status': 400
+	}, **query_params)
+
+
+def test_api_transactions_invalid_height(client):  # pylint: disable=redefined-outer-name
+	_assert_transaction_invalid_params(client, 'Height must be greater than or equal to 1', height=-1)
+
+
+def test_api_transactions_invalid_address(client):  # pylint: disable=redefined-outer-name, invalid-name
+	_assert_transaction_invalid_params(client, 'Invalid address format', address='INVALIDADDRESS')
+	_assert_transaction_invalid_params(client, 'Invalid sender address format', senderAddress='INVALIDADDRESS')
+	_assert_transaction_invalid_params(client, 'Invalid recipient address format', recipientAddress='INVALIDADDRESS')
+	_assert_transaction_invalid_params(client, 'Invalid sender public key format', senderPublicKey='INVALIDADDRESS')
+
+
+def test_api_transactions_invalid_transaction_types(client):  # pylint: disable=redefined-outer-name, invalid-name
+	_assert_transaction_invalid_params(client, 'Invalid transaction types', transactionTypes='INVALID')
+
+
+# endregion

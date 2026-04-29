@@ -4,10 +4,12 @@ from pathlib import Path
 from flask import Flask, abort, jsonify, request
 from flask_cors import CORS
 from symbolchain.CryptoTypes import PublicKey
+from symbolchain.nc import TransactionType
 from zenlog import log
 
 from rest.facade.NemRestFacade import NemRestFacade
 from rest.model.common import DatabaseConfig, Pagination, RestConfig, Sorting
+from rest.model.Transaction import TransactionQuery
 
 
 def create_app():
@@ -244,6 +246,87 @@ def setup_nem_routes(app, nem_api_facade):  # pylint: disable=too-many-statement
 			abort(404)
 
 		return jsonify(result)
+
+	@app.route('/api/nem/transactions')
+	def api_get_nem_transactions():  # pylint: disable=too-many-branches,too-many-statements
+		try:
+			limit = int(request.args.get('limit', 10))
+			offset = int(request.args.get('offset', 0))
+			sort = request.args.get('sort', 'DESC')
+			height = request.args.get('height', None)
+			transaction_types = request.args.get('transactionTypes', None)
+			address = request.args.get('address', None)
+			sender_address = request.args.get('senderAddress', None)
+			recipient_address = request.args.get('recipientAddress', None)
+			sender = request.args.get('senderPublicKey', None)
+			mosaic = request.args.get('mosaic', None)
+
+			if limit < 0 or offset < 0:
+				raise ValueError('Limit and offset must be greater than or equal to 0')
+
+			if sort.upper() not in ['ASC', 'DESC']:
+				raise ValueError('Sort must be either ASC or DESC')
+
+			if height is not None:
+				height = int(height)
+				if height < 1:
+					raise ValueError('Height must be greater than or equal to 1')
+
+			if address is not None:
+				if not nem_api_facade.nem_db.network.is_valid_address_string(address):
+					raise ValueError('Invalid address format')
+			else:
+				if sender_address is not None:
+					if not nem_api_facade.nem_db.network.is_valid_address_string(sender_address):
+						raise ValueError('Invalid sender address format')
+				else:
+					if sender is not None:
+						try:
+							PublicKey(sender)
+						except ValueError:
+							abort(400, 'Invalid sender public key format')
+
+				if recipient_address is not None:
+					if not nem_api_facade.nem_db.network.is_valid_address_string(recipient_address):
+						raise ValueError('Invalid recipient address format')
+
+			if transaction_types:
+				valid_transaction_types = {
+					TransactionType.TRANSFER.name,
+					TransactionType.ACCOUNT_KEY_LINK.name,
+					TransactionType.MULTISIG_ACCOUNT_MODIFICATION.name,
+					TransactionType.MULTISIG.name,
+					TransactionType.NAMESPACE_REGISTRATION.name,
+					TransactionType.MOSAIC_DEFINITION.name,
+					TransactionType.MOSAIC_SUPPLY_CHANGE.name
+				}
+
+				transaction_types = [tx_type.upper() for tx_type in transaction_types.split(',')]
+
+				for tx_type in transaction_types:
+					if tx_type not in valid_transaction_types:
+						raise ValueError('Invalid transaction types')
+
+				transaction_types = [TransactionType[t].value for t in transaction_types]
+
+		except ValueError as error:
+			abort(400, error)
+
+		results = nem_api_facade.get_transactions(
+			pagination=Pagination(limit, offset),
+			sort=sort,
+			transaction_query=TransactionQuery(
+				height=height,
+				transaction_types=transaction_types,
+				sender=sender,
+				address=address,
+				sender_address=sender_address,
+				recipient_address=recipient_address,
+				mosaic=mosaic
+			)
+		)
+
+		return jsonify(results)
 
 
 def setup_error_handlers(app):
