@@ -24,7 +24,7 @@ export const createTransportAlertData = (error, validationResult, { transportUri
 		return {
 			isVisible: true,
 			text: $t('s_transportRequest_alert_parseError_text', { message: error.message }),
-			variant: 'error'
+			variant: 'danger'
 		};
 	}
 

@@ -24,20 +24,34 @@ import { Router } from '@/app/router/Router';
  * @property {WalletActionItem[]} other - Additional available actions for the scanned URI type
  */
 
+/**
+ * @typedef {Object} WalletActionsContext
+ * @property {string} chainName - Chain name of the currently active wallet controller
+ */
+
+/**
+ * @typedef {Object} WalletActionCondition
+ * @property {string} type - The wallet action type identifier
+ * @property {(uri: TransportUriObject, ctx: WalletActionsContext) => boolean} [when] - Optional predicate;
+ *   if omitted the action is always included
+ */
+
 const WalletActionType = {
 	ADD_CONTACT: 'add_contact',
 	FILL_TRANSFER_FORM_ONLY_ADDRESS: 'fill_transfer_form_only_address',
 	FILL_TRANSFER_FORM: 'fill_transfer_form'
 };
 
+const isMatchingChain = (uri, ctx) => ctx.chainName === uri.chainName;
+
 const uriActionToWalletAction = {
 	[ActionMethod.ACCOUNT_ADDRESS]: {
-		suggested: [WalletActionType.ADD_CONTACT],
-		other: [WalletActionType.FILL_TRANSFER_FORM_ONLY_ADDRESS]
+		suggested: [{ type: WalletActionType.ADD_CONTACT, when: isMatchingChain }],
+		other: [{ type: WalletActionType.FILL_TRANSFER_FORM_ONLY_ADDRESS }]
 	},
 	[ActionMethod.TRANSFER_TRANSACTION]: {
-		suggested: [WalletActionType.FILL_TRANSFER_FORM],
-		other: [WalletActionType.ADD_CONTACT]
+		suggested: [{ type: WalletActionType.FILL_TRANSFER_FORM }],
+		other: [{ type: WalletActionType.ADD_CONTACT, when: isMatchingChain }]
 	}
 };
 
@@ -49,7 +63,7 @@ const createAddContactAction = transportUriObject => {
 		handlePress: () => Router.goToCreateContact({ 
 			params: {
 				name: transportUriObject.name,
-				address: transportUriObject.address 
+				address: transportUriObject.recipientAddress || transportUriObject.address
 			} 
 		})
 	};
@@ -84,9 +98,10 @@ const createFillTransferFormOnlyAddressAction = transportUriObject => {
  * Creates categorized wallet actions based on the type of transport URI received.
  *
  * @param {TransportUriObject | null} transportUriObject - Parsed transport URI action instance
+ * @param {WalletActionsContext} [context] - Wallet state used to evaluate per-action conditions
  * @returns {WalletActions} Categorized wallet actions with suggested and other lists
  */
-export const createWalletActions = transportUriObject => {
+export const createWalletActions = (transportUriObject, context = {}) => {
 	const actionFactoryMap = {
 		[WalletActionType.ADD_CONTACT]: createAddContactAction,
 		[WalletActionType.FILL_TRANSFER_FORM_ONLY_ADDRESS]: createFillTransferFormOnlyAddressAction,
@@ -104,14 +119,20 @@ export const createWalletActions = transportUriObject => {
 	if (!actionConfig)
 		return { suggested, other };
 
-	for (const actionType of actionConfig.suggested) {
-		const factory = actionFactoryMap[actionType];
+	for (const { type, when } of actionConfig.suggested) {
+		if (when && !when(transportUriObject, context)) 
+			continue;
+
+		const factory = actionFactoryMap[type];
 		if (factory)
 			suggested.push(factory(transportUriObject));
 	}
 
-	for (const actionType of actionConfig.other) {
-		const factory = actionFactoryMap[actionType];
+	for (const { type, when } of actionConfig.other) {
+		if (when && !when(transportUriObject, context)) 
+			continue;
+
+		const factory = actionFactoryMap[type];
 		if (factory)
 			other.push(factory(transportUriObject));
 	}
