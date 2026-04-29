@@ -71,7 +71,7 @@ async def _assert_can_renew_node_certificate(ca_password=None, retain_key=False,
 		node_key_path = preparer.directories.certificates / 'node.key.pem'
 		node_key_data = _load_binary_file_data(node_key_path)
 
-		node_path = output_directory if not use_relative_path else str(Path(output_directory).relative_to(os.getcwd()))
+		node_path = Path(output_directory) if not use_relative_path else Path(output_directory).relative_to(os.getcwd())
 
 		# Sanity:
 		assert_certificate_properties(node_certificate_path, 'ORIGINAL CA CN', 'ORIGINAL NODE CN', 375)
@@ -81,7 +81,7 @@ async def _assert_can_renew_node_certificate(ca_password=None, retain_key=False,
 		await main([
 			'renew-certificates',
 			'--config', str(config_filepath_2),
-			'--directory', node_path,
+			'--directory', str(node_path),
 			'--ca-key-path', str(ca_key_path),
 			*(['--retain-node-key'] if retain_key else [])
 		])
