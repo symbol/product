@@ -216,5 +216,8 @@ class CertificateFactory:
 				continue
 
 			destination_path = Path(output_directory) / filename
+
+			# rm dest file if exist or move will fail to open
+			Path(destination_path).unlink(missing_ok=True)
 			shutil.move(filename, destination_path)
 			destination_path.chmod(0o400)

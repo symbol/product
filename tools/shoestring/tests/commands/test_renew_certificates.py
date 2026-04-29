@@ -119,6 +119,7 @@ async def test_can_renew_node_certificate_with_retain_key():
 
 async def test_can_renew_node_certificate_with_relative_path():
 	await _assert_can_renew_node_certificate(use_relative_path=True)
+
 # endregion
 
 
