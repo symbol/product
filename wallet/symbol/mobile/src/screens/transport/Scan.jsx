@@ -4,6 +4,7 @@ import { useWalletController } from '@/app/hooks';
 import { $t } from '@/app/localization';
 import { Router } from '@/app/router/Router';
 import { createCameraAlertData } from '@/app/screens/transport/utils';
+import { useIsFocused } from '@react-navigation/native';
 import React, { useCallback, useEffect } from 'react';
 import { StyleSheet } from 'react-native';
 import { Camera, useCameraDevice, useCameraPermission, useCodeScanner } from 'react-native-vision-camera';
@@ -40,11 +41,15 @@ export const Scan = () => {
 			requestPermission();
 	}, [hasPermission]);
 
+	// Turn camera on when screen is focused, off when unfocused
+	const isScreenFocused = useIsFocused();
+
 	// Alert data for camera status feedback
 	const cameraAlert = createCameraAlertData(hasPermission, device);
 
 	// Derived State
 	const isCameraReady = device != null && hasPermission;
+	const isCameraActive = isScreenFocused && isCameraReady;
 
 	return (
 		<Screen isScrollDisabled>
@@ -72,7 +77,7 @@ export const Scan = () => {
 				{isCameraReady && (
 					<Camera
 						style={styles.camera}
-						isActive
+						isActive={isCameraActive}
 						device={device}
 						codeScanner={codeScanner}
 					/>
