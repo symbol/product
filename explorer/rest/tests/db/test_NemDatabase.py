@@ -1,6 +1,5 @@
 from rest import Pagination, Sorting
 from rest.db.NemDatabase import NemDatabase
-from rest.model.Transaction import TransactionQuery
 
 from ..test.DatabaseTestUtils import (
 	ACCOUNT_VIEWS,
@@ -313,19 +312,6 @@ class NemDatabaseTest(DatabaseTestBase):  # pylint: disable=too-many-public-meth
 	# endregion
 
 	# region transactions
-
-	@staticmethod
-	def _make_transaction_query(**kwargs):
-		defaults = TransactionQuery(
-			height=None,
-			transaction_types=None,
-			sender=None,
-			address=None,
-			sender_address=None,
-			recipient_address=None,
-			mosaic=None
-		)
-		return defaults._replace(**kwargs)
 
 	def _assert_can_query_transactions_with_filter(self, pagination, sort, transaction_query, expected_transactions):
 		# Act:

@@ -13,7 +13,7 @@ from rest.model.Account import AccountView
 from rest.model.Block import BlockView
 from rest.model.Mosaic import MosaicRichListView, MosaicView
 from rest.model.Namespace import NamespaceView
-from rest.model.Transaction import TransactionView
+from rest.model.Transaction import TransactionQuery, TransactionView
 
 Block = namedtuple(
 	'Block',
@@ -1092,3 +1092,16 @@ class DatabaseTestBase(unittest.TestCase):
 
 	def tearDown(self):
 		self.postgresql.stop()
+
+	@staticmethod
+	def _make_transaction_query(**kwargs):
+		defaults = TransactionQuery(
+			height=None,
+			transaction_types=None,
+			sender=None,
+			address=None,
+			sender_address=None,
+			recipient_address=None,
+			mosaic=None
+		)
+		return defaults._replace(**kwargs)
