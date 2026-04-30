@@ -16,6 +16,7 @@ class CertificateFactory:
 
 		self.temp_directory = None
 		self.original_working_directory = None
+		self._certificate_filenames = ['node.crt.pem', 'node.key.pem', 'ca.pubkey.pem', 'ca.crt.pem', 'node.full.crt.pem']
 
 	def __enter__(self):
 		self.temp_directory = tempfile.TemporaryDirectory()
@@ -196,19 +197,15 @@ class CertificateFactory:
 		full_crt += _read_file('ca.crt.pem')
 		_write_file('node.full.crt.pem', full_crt)
 
-	_CERTIFICATE_FILENAMES = ['node.crt.pem', 'node.key.pem', 'ca.pubkey.pem', 'ca.crt.pem', 'node.full.crt.pem']
-
-	@staticmethod
-	def package(output_directory, package_filter=''):
+	def package(self, output_directory, package_filter=''):
 		"""Creates a package of final files required for node deployment in the specifed output directory."""
 
-		CertificateFactory._package(output_directory, package_filter, CertificateFactory._CERTIFICATE_FILENAMES)
+		CertificateFactory._package(output_directory, package_filter, self._certificate_filenames)
 
-	@staticmethod
-	def remove_package_files(output_directory, package_filter=''):
+	def remove_package_files(self, output_directory, package_filter=''):
 		"""Removes existing package certificate files."""
 
-		for filename in CertificateFactory._CERTIFICATE_FILENAMES:
+		for filename in self._certificate_filenames:
 			if filename.startswith(package_filter):
 				(Path(output_directory) / filename).unlink(missing_ok=True)
 
