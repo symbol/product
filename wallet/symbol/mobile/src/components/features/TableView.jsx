@@ -12,7 +12,11 @@ import { StyleSheet, View } from 'react-native';
  * Resolves known info for account and token rows.
  * @param {TableRow[]} data - Array of table rows.
  * @param {object} options - Resolution options.
- * @returns {Map<string, object>} Map of resolved info by value.
+ * @param {object} options.addressBook - Address book data.
+ * @param {object} options.walletAccounts - Wallet accounts data.
+ * @param {ChainName} options.chainName - Chain name.
+ * @param {NetworkIdentifier} options.networkIdentifier - Network identifier.
+ * @returns {Map<string, *>} Map of resolved info by value.
  */
 const useResolvedData = (data, options) => {
 	const { addressBook, walletAccounts, chainName, networkIdentifier } = options;
@@ -53,7 +57,7 @@ const useResolvedData = (data, options) => {
 /**
  * Renders a single row based on its type.
  * @param {TableRow} row - Row data.
- * @param {Map<string, object>} resolvedData - Map of resolved known info.
+ * @param {Map<string, *>} resolvedData - Map of resolved known info.
  * @param {function(string): string} translate - Translation function.
  * @param {string|number} [key] - Optional key for list rendering.
  * @returns {React.ReactNode} Row content.

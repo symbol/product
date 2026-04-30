@@ -14,7 +14,7 @@ import { useRef, useState } from 'react';
  * @param {boolean} [config.shouldShowErrorPopup=true] - Whether to show an error popup on error.
  * @param {boolean} [config.shouldClearDataOnCall=false] - Whether to clear data when calling the async function.
  * @param {boolean} [config.defaultLoadingState=false] - The default loading state.
-* @returns {import('@/app/types/AsyncManager').AsyncManager<T>} An object containing the call function,.
+* @returns {import('@/app/types/AsyncManager').AsyncManager<T>} An object containing the call function,
 loading state, data, error, and reset function.
  */
 export const useAsyncManager = config => {

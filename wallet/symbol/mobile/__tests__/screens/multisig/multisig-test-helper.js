@@ -1,3 +1,9 @@
+/**
+ * Shared test helpers for multisig screen tests.
+ * Provides reusable interactions that appear identically across CreateMultisigAccount
+ * and ModifyMultisigAccount test files.
+ */
+
 export const ACTION_TYPE = {
 	ADD_COSIGNATORY: 'add',
 	REMOVE_COSIGNATORY: 'remove',
@@ -7,16 +13,11 @@ export const ACTION_TYPE = {
 	DECREMENT_REMOVAL: 'decrement-removal'
 };
 
-/**
- * Shared test helpers for multisig screen tests.
- * Provides reusable interactions that appear identically across CreateMultisigAccount
- * and ModifyMultisigAccount test files.
- */
+/** @typedef {import('__tests__/ScreenTester').ScreenTester} ScreenTester */
 
 /**
  * Opens the add-cosignatory dialog, types the address, and confirms.
- *
- * @param {import('__tests__/ScreenTester').ScreenTester} screenTester
+ * @param {ScreenTester} screenTester - The ScreenTester instance for the current test.
  * @param {object} screenText - The SCREEN_TEXT constant from the calling test file.
  * @param {string} address - Cosignatory address to add.
  */
@@ -29,10 +30,9 @@ export const addCosignatory = async (screenTester, screenText, address) => {
 
 /**
  * Dispatches a single approval/removal counter action (increment or decrement).
- *
- * @param {import('__tests__/ScreenTester').ScreenTester} screenTester
+ * @param {ScreenTester} screenTester - The ScreenTester instance for the current test.
  * @param {object} screenText - The SCREEN_TEXT constant from the calling test file.
- * @param {{ type: 'increment-approval' | 'decrement-approval' | 'increment-removal' | 'decrement-removal' }} action
+ * @param {string} action - The counter action to perform.
  */
 export const applyCounterAction = (screenTester, screenText, action) => {
 	if (action.type === ACTION_TYPE.INCREMENT_APPROVAL)

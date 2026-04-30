@@ -1,7 +1,7 @@
 /**
  * Cosign status type enum.
  * @typedef { 'awaiting_current_account' | 'awaiting_other_account' | 'signed_and_awaiting_other_account' 
- * | 'not_awaiting' | 'initiated_by_blocked_account' | 'initiated_by_unknown_account' } CosignStatusValue.
+ * | 'not_awaiting' | 'initiated_by_blocked_account' | 'initiated_by_unknown_account' } CosignStatusValue
  */
 
 

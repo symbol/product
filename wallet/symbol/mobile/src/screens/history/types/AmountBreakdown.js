@@ -39,12 +39,12 @@ export const AmountDisplaySize = {
 /**
  * Account amount breakdown containing all token changes for an account.
  * @typedef {object} AccountAmountBreakdown
- * @property {Object<string, TokenAmountChange>} tokens - Map of token ID to token amount change.
+ * @property {Record<string, TokenAmountChange>} tokens - Map of token ID to token amount change.
  */
 
 /**
  * Amount breakdown map - maps account addresses to their token changes.
- * @typedef {Object<string, AccountAmountBreakdown>} AmountBreakdownMap
+ * @typedef {Record<string, AccountAmountBreakdown>} AmountBreakdownMap
  */
 
 /**

@@ -1,10 +1,10 @@
 import { hslToRgba } from './hsl2rgb';
 import { PngImage } from './pnglib';
 
-/** Number of colors in the palette (background, foreground, spot) */
+// Number of colors in the palette (background, foreground, spot).
 const PALETTE_COLOR_COUNT = 3;
 
-/** Pixel values for different colors */
+// Pixel values for different colors.
 const PIXEL_BACKGROUND = 0;
 const PIXEL_FOREGROUND = 1;
 const PIXEL_SPOT = 2;
