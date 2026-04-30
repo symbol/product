@@ -662,18 +662,18 @@ class NemDatabase(DatabaseConnectionPool):
 	def _get_inner_transactions(self, transaction_hashes):
 		"""Gets inner transactions by transaction hashes."""
 
+		if not transaction_hashes:
+			return []
+
 		where_condition = ' WHERE t.transaction_hash IN %s AND t.is_inner = true'
 		order_condition = ' ORDER BY t.height DESC'
-		sql = self._generate_transaction_sql_query(where_condition=where_condition, order_condition=order_condition)
+		params = [tuple('\\x' + tx_hash for tx_hash in transaction_hashes)]
 
-		params = tuple('\\x' + tx_hash for tx_hash in transaction_hashes)
-
-		with self.connection() as connection:
-			cursor = connection.cursor()
-			cursor.execute(sql, (params,))
-			results = cursor.fetchall()
-
-			return [TransactionRecord(*result) for result in results]
+		return self._get_transactions(
+			params,
+			where_condition=where_condition,
+			order_condition=order_condition
+		)
 
 	def get_transactions(self, pagination, sort, transaction_query):
 		"""Gets transactions pagination."""
