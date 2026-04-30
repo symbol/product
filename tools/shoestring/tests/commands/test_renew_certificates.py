@@ -41,7 +41,7 @@ def _assert_node_full_certificate(ca_certificate_filepath, node_certificate_file
 	assert node_full_crt_data == node_crt_data + ca_crt_data
 
 
-async def _assert_can_renew_node_certificate(ca_password=None, retain_key=False, use_relative_path=False):
+async def _assert_can_renew_node_certificate(ca_password=None, retain_key=False, use_relative_path=False, force=False):
 	# pylint: disable=too-many-locals
 
 	# Arrange:
@@ -83,7 +83,8 @@ async def _assert_can_renew_node_certificate(ca_password=None, retain_key=False,
 			'--config', str(config_filepath_2),
 			'--directory', str(node_path),
 			'--ca-key-path', str(ca_key_path),
-			*(['--retain-node-key'] if retain_key else [])
+			*(['--retain-node-key'] if retain_key else []),
+			*(['--force'] if force else [])
 		])
 
 		# Assert: node certificate is regenerated (subject changed)
@@ -118,7 +119,7 @@ async def test_can_renew_node_certificate_with_retain_key():
 
 
 async def test_can_renew_node_certificate_with_relative_path():
-	await _assert_can_renew_node_certificate(use_relative_path=True)
+	await _assert_can_renew_node_certificate(use_relative_path=True, force=True)
 
 # endregion
 

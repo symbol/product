@@ -27,7 +27,11 @@ async def run_main(args):
 		factory.generate_node_certificate(config.node.node_common_name)
 		factory.create_node_certificate_chain()
 
-		factory.package(directories.certificates, '' if args.renew_ca else 'node')
+		package_filter = '' if args.renew_ca else 'node'
+		if args.force:
+			factory.remove_package_files(directories.certificates, package_filter)
+
+		factory.package(directories.certificates, package_filter)
 
 
 def add_arguments(parser):
@@ -36,4 +40,5 @@ def add_arguments(parser):
 	parser.add_argument('--ca-key-path', help=_('argument-help-ca-key-path'), required=True)
 	parser.add_argument('--renew-ca', help=_('argument-help-renew-certificates-renew-ca'), action='store_true')
 	parser.add_argument('--retain-node-key', help=_('argument-help-renew-certificates-retain-node-key'), action='store_true')
+	parser.add_argument('--force', help=_('argument-help-renew-certificates-force'), action='store_true')
 	parser.set_defaults(func=run_main)

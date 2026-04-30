@@ -196,13 +196,21 @@ class CertificateFactory:
 		full_crt += _read_file('ca.crt.pem')
 		_write_file('node.full.crt.pem', full_crt)
 
+	_CERTIFICATE_FILENAMES = ['node.crt.pem', 'node.key.pem', 'ca.pubkey.pem', 'ca.crt.pem', 'node.full.crt.pem']
+
 	@staticmethod
 	def package(output_directory, package_filter=''):
 		"""Creates a package of final files required for node deployment in the specifed output directory."""
 
-		CertificateFactory._package(output_directory, package_filter, [
-			'node.crt.pem', 'node.key.pem', 'ca.pubkey.pem', 'ca.crt.pem', 'node.full.crt.pem'
-		])
+		CertificateFactory._package(output_directory, package_filter, CertificateFactory._CERTIFICATE_FILENAMES)
+
+	@staticmethod
+	def remove_package_files(output_directory, package_filter=''):
+		"""Removes existing package certificate files."""
+
+		for filename in CertificateFactory._CERTIFICATE_FILENAMES:
+			if filename.startswith(package_filter):
+				(Path(output_directory) / filename).unlink(missing_ok=True)
 
 	def export_ca(self):
 		"""Exports the CA private key."""
@@ -216,8 +224,5 @@ class CertificateFactory:
 				continue
 
 			destination_path = Path(output_directory) / filename
-
-			# rm dest file if exist or move will fail to open
-			Path(destination_path).unlink(missing_ok=True)
 			shutil.move(filename, destination_path)
 			destination_path.chmod(0o400)
