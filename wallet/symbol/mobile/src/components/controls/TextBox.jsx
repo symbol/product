@@ -10,8 +10,7 @@ const EXTRA_PIXEL_OFFSET = 0.75;
 
 /**
  * TextBox component. A text input field with support for labels, error messages, multiline input, and animated focus interactions.
- *
- * @param {object} props - Component props
+ * @param {object} props - Component props.
  * @param {React.ReactNode} [props.contentRight] - Content to display on the right side of the input.
  * @param {string} [props.errorMessage] - Error message to display below the input. If provided, the input will turn to error state.
  * @param {React.Ref} [props.innerRef] - Ref for the TextInput component.
@@ -22,9 +21,8 @@ const EXTRA_PIXEL_OFFSET = 0.75;
  * @param {object} [props.style] - Additional styles for the component container.
  * @param {string} [props.label] - Title label displayed above the input.
  * @param {string} [props.value] - Current value of the input.
- * @param {function} [props.onChange] - Function to call when the input value changes.
- * 
- * @returns {React.ReactNode} TextBox component
+ * @param {function(string): void} [props.onChange] - Function to call when the input value changes.
+ * @returns {React.ReactNode} TextBox component.
  */
 export const TextBox = props => {
 	const {

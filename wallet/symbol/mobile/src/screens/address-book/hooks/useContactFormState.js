@@ -5,7 +5,7 @@ import { useCallback, useState } from 'react';
 
 /**
  * Return type for useContactFormState hook.
- * @typedef {Object} UseContactFormStateReturnType
+ * @typedef {object} UseContactFormStateReturnType
  * @property {string} name - The contact name.
  * @property {string} address - The contact address.
  * @property {string} notes - The contact notes.
@@ -21,8 +21,7 @@ import { useCallback, useState } from 'react';
 /**
  * React hook for managing contact form state.
  * Handles name, address, notes fields and list type selection.
- *
- * @param {Object} [initialValues] - Initial form values.
+ * @param {object} [initialValues] - Initial form values.
  * @param {string} [initialValues.name] - Initial name value.
  * @param {string} [initialValues.address] - Initial address value.
  * @param {string} [initialValues.notes] - Initial notes value.

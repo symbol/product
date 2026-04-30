@@ -7,7 +7,7 @@ import { useCallback, useEffect, useState } from 'react';
 
 /**
  * Return type for useSenderInfo hook.
- * @typedef {Object} UseSenderInfoReturnType
+ * @typedef {object} UseSenderInfoReturnType
  * @property {Token[]} senderTokenList - List of tokens owned by the sender.
  * @property {string} senderPublicKey - The sender's public key.
  * @property {boolean} isLoading - Whether sender info is being fetched.
@@ -16,8 +16,7 @@ import { useCallback, useEffect, useState } from 'react';
 /**
  * React hook for fetching and managing sender account information.
  * Loads tokens and public key for the selected sender address.
- *
- * @param {Object} params - Hook parameters.
+ * @param {object} params - Hook parameters.
  * @param {WalletController} params.walletController - The wallet controller instance.
  * @param {string} params.senderAddress - The sender account address.
  * @param {string|null} params.selectedTokenId - Currently selected token ID.

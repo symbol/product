@@ -3,13 +3,12 @@ import { useCallback } from 'react';
 import { interpolateColor, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 
 /**
- * Hook for managing press transition animations with color interpolation
- * 
- * @param {object} options - Hook options
- * @param {object} options.palette - Color palette object with default/pressed/disabled states
- * @param {'focused'|'pressed'} options.transitionState - Target state for transition
- * @param {boolean} [options.isDisabled=false] - Whether component is disabled
- * @returns {object} Press transition utilities
+ * React hook for managing press transition animations with color interpolation.
+ * @param {object} options - Hook options.
+ * @param {object} options.palette - Color palette object with default/pressed/disabled states.
+ * @param {'focused'|'pressed'} options.transitionState - Target state for transition.
+ * @param {boolean} [options.isDisabled=false] - Whether component is disabled.
+ * @returns {object} Press transition utilities.
  */
 export const useColorTransition = ({
 	palette,
@@ -33,7 +32,7 @@ export const useColorTransition = ({
 	}, [transition]);
 
 	/**
-	 * Creates animated styles for multiple properties
+	 * Creates animated styles for multiple properties.
 	 * @param {Array<{property: string, styleProperty?: string}>} mappings
 	 */
 	const createAnimatedStyles = mappings => {

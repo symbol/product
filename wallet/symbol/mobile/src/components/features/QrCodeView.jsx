@@ -15,11 +15,9 @@ const ANIMATION_DURATION = 250;
 
 /**
  * QrCodeView component. A component that generates and displays a QR code image from a data string.
- *
  * @param {object} props - Component props.
  * @param {string} props.qrDataString - The data string to encode as a QR code.
- *
- * @returns {React.ReactNode} QrCodeView component
+ * @returns {React.ReactNode} QrCodeView component.
  */
 export const QrCodeView = ({ qrDataString }) => {
 	const [qrImageSource, setQrImageSource] = useState(null);

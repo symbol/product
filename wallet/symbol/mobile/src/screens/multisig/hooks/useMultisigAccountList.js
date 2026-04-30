@@ -6,7 +6,7 @@ import { useCallback } from 'react';
 
 /**
  * Return type for useMultisigAccountList hook.
- * @typedef {Object} UseMultisigAccountListReturnType
+ * @typedef {object} UseMultisigAccountListReturnType
  * @property {() => void} load - Fetches the latest multisig account list.
  * @property {() => void} reset - Resets the multisig account list state.
  * @property {SymbolAccountInfo[]} data - The list of multisig accounts.
@@ -15,7 +15,6 @@ import { useCallback } from 'react';
 
 /**
  * React hook for fetching and managing the list of multisig accounts.
- *
  * @param {MainWalletController} walletController - The wallet controller instance.
  * @returns {UseMultisigAccountListReturnType}
  */

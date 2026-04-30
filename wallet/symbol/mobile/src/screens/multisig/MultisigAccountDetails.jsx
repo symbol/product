@@ -20,6 +20,8 @@ import { CosignatoryList, CosignatureCounter } from '@/app/screens/multisig/comp
 import { createAccountAddressQr, createAccountDisplayData, createExplorerAccountUrl } from '@/app/utils';
 import React from 'react';
 
+/** @typedef {import('@/app/types/Network').ChainName} ChainName */
+
 /**
  * Returns the display name for a multisig account.
  * @param {string|null} name - The account name from address book or wallet.
@@ -33,15 +35,13 @@ const getAccountNameText = name => {
  * MultisigAccountDetails screen component. Displays details of a multisig account including
  * address, approval thresholds, cosignatories, and token balances. Provides navigation to
  * send transactions, block explorer, and account modification.
- *
  * @param {object} props - Component props.
  * @param {object} props.route - React Navigation route object.
  * @param {object} props.route.params - Route parameters.
- * @param {string} props.route.params.chainName - The blockchain name.
+ * @param {ChainName} props.route.params.chainName - The blockchain name.
  * @param {string} props.route.params.accountAddress - The multisig account address.
  * @param {object} [props.route.params.preloadedData] - Preloaded account data to avoid initial fetch.
- *
- * @returns {React.ReactNode} MultisigAccountDetails component
+ * @returns {React.ReactNode} MultisigAccountDetails component.
  */
 export const MultisigAccountDetails = ({ route }) => {
 	const { chainName, accountAddress, preloadedData } = route.params;

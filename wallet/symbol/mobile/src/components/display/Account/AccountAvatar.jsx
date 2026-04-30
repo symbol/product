@@ -5,6 +5,8 @@ import { Sizes } from '@/app/styles';
 import React, { useEffect, useState } from 'react';
 import { Image, StyleSheet, View } from 'react-native';
 
+/** @typedef {import('@/app/types/Sizes').AvatarSize} AvatarSize */
+
 const DEFAULT_SIZE = 'm';
 const AVATAR_SIZE_S = Sizes.Semantic.avatarHeight.s;
 const AVATAR_SIZE_M = Sizes.Semantic.avatarHeight.m;
@@ -15,13 +17,11 @@ const AVATAR_SIZE_XL = Sizes.Semantic.avatarHeight.xl;
  * AccountAvatar component. Displays an avatar for a given account address.
  * If a custom imageId is provided, it uses that image.
  * Otherwise, it generates a blockie image based on the address.
- *
- * @param {object} props - Component props
- * @param {string} props.address - Account address
- * @param {string} [props.imageId] - Known account image identifier
- * @param {string} [props.size=DEFAULT_SIZE] - Size of the avatar
- *
- * @returns {React.ReactNode} Account avatar component
+ * @param {object} props - Component props.
+ * @param {string} props.address - Account address.
+ * @param {string} [props.imageId] - Known account image identifier.
+ * @param {AvatarSize} [props.size=DEFAULT_SIZE] - Size of the avatar.
+ * @returns {React.ReactNode} Account avatar component.
  */
 export const AccountAvatar = ({ address, imageId, size = DEFAULT_SIZE }) => {
 	// Image 

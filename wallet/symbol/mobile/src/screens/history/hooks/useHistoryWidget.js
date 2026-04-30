@@ -6,25 +6,27 @@ import { TransactionGroup } from 'wallet-common-core/src/constants';
 /** @typedef {import('@/app/types/Transaction').Transaction} Transaction */
 /** @typedef {import('@/app/types/Account').WalletAccount} WalletAccount */
 /** @typedef {import('@/app/types/Network').NetworkIdentifier} NetworkIdentifier */
+/** @typedef {import('@/app/types/Network').ChainName} ChainName */
 
 const FIRST_PAGE_NUMBER = 1;
 const PAGE_SIZE = 15;
 
 /**
  * Props for the HistoryWidget component.
- * @typedef {Object} HistoryWidgetProps
+ * @typedef {object} HistoryWidgetProps
  * @property {Transaction[]} unconfirmed - Unconfirmed transactions.
  * @property {Transaction[]} partial - Partial (pending multisig) transactions.
- * @property {string} chainName - Chain name (e.g., 'symbol').
+ * @property {ChainName} chainName - Chain name (e.g., 'symbol').
  * @property {NetworkIdentifier} networkIdentifier - Network identifier.
  * @property {string} ticker - Ticker symbol for the network currency.
  * @property {WalletAccount} currentAccount - Current user account.
  * @property {WalletAccount[]} walletAccounts - Wallet accounts for the network.
- * @property {Object} addressBook - Address book instance.
+ * @property {object} addressBook - Address book instance.
  */
 
 /**
- * @typedef {Object} UseHistoryWidgetResult
+ * Return type of the useHistoryWidget hook.
+ * @typedef {object} UseHistoryWidgetResult
  * @property {boolean} isVisible - Whether the widget should be visible.
  * @property {function(): void} refresh - Function to refresh transaction data.
  * @property {HistoryWidgetProps} props - Props for the HistoryWidget component.
@@ -33,7 +35,6 @@ const PAGE_SIZE = 15;
 /**
  * React hook for managing the history widget state. Fetches unconfirmed and
  * partial transactions, and listens to wallet events for auto-refresh.
- *
  * @param {WalletController} walletController - Wallet controller instance.
  * @returns {UseHistoryWidgetResult} Widget state and props.
  */

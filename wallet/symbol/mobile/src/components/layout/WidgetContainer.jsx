@@ -8,15 +8,13 @@ import { StyleSheet } from 'react-native';
 /**
  * WidgetContainer component. A reusable card layout for home screen widgets, providing
  * a pressable title header and a content area for widget-specific children.
- *
- * @param {object} props - Component props
+ * @param {object} props - Component props.
  * @param {string} props.title - Widget title displayed in the header.
- * @param {function} props.onHeaderPress - Callback invoked when the header is pressed.
+ * @param {function(): void} props.onHeaderPress - Callback invoked when the header is pressed.
  * @param {string} [props.backgroundColor] - Background color for the widget container.
 
  * @param {React.ReactNode} props.children - Content to render below the header.
- *
- * @returns {React.ReactNode} WidgetContainer component
+ * @returns {React.ReactNode} WidgetContainer component.
  */
 export const WidgetContainer = ({ title, onHeaderPress, backgroundColor, children }) => (
 	<Card style={styles.root} color={backgroundColor}>

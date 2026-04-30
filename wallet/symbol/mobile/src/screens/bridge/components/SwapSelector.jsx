@@ -8,17 +8,18 @@ import Animated, { FadeInDown, FadeInUp, FadeOutDown, FadeOutUp } from 'react-na
 /** @typedef {import('@/app/screens/bridge/types/Bridge').SwapSide} SwapSide */
 /** @typedef {import('@/app/screens/bridge/types/Bridge').SwapToken} SwapToken */
 /** @typedef {import('@/app/types/Network').NetworkIdentifier} NetworkIdentifier */
+/** @typedef {import('@/app/types/Network').ChainName} ChainName */
 
 const ICON_SWAP_REVERSE = require('@/app/assets/images/components/swap-reverse.png');
 const REVERSE_BUTTON_SIZE = Sizes.Semantic.spacing.m * 5;
 
 /**
  * TokenItem component. Displays token info with avatar, name, and balance.
- * @param {Object} props - Component props.
+ * @param {object} props - Component props.
  * @param {SwapToken} props.token - Token data.
- * @param {string} props.chainName - Chain name.
+ * @param {ChainName} props.chainName - Chain name.
  * @param {NetworkIdentifier} props.networkIdentifier - Network identifier.
- * @returns {import('react').ReactNode} TokenItem component
+ * @returns {import('react').ReactNode} TokenItem component.
  */
 const TokenItem = ({ token, chainName, networkIdentifier }) => {
 	// Resolve value token info for name, ticker and image
@@ -55,14 +56,14 @@ const TokenItem = ({ token, chainName, networkIdentifier }) => {
 
 /**
  * SelectTokenDropdown component. Dropdown modal for selecting tokens.
- * @param {Object} props - Component props.
+ * @param {object} props - Component props.
  * @param {string} props.title - Dropdown title.
  * @param {SwapSide} props.value - Currently selected value.
  * @param {boolean} props.isOpen - Whether dropdown is open.
  * @param {SwapSide[]} props.list - Available options.
  * @param {(item: SwapSide) => void} props.onChange - Selection change handler.
  * @param {() => void} props.onClose - Close handler.
- * @returns {import('react').ReactNode} SelectTokenDropdown component
+ * @returns {import('react').ReactNode} SelectTokenDropdown component.
  */
 const SelectTokenDropdown = props => {
 	const { title, value, isOpen, list, onChange, onClose } = props;
@@ -105,12 +106,12 @@ const SelectTokenDropdown = props => {
 
 /**
  * TokenSelect component. Displays selected token with tap to change.
- * @param {Object} props - Component props.
+ * @param {object} props - Component props.
  * @param {SwapSide|null} props.value - Selected swap side.
  * @param {SwapSide[]} props.list - Available options.
  * @param {string} props.accessibilityLabel - Accessibility label for the touchable element.
  * @param {(item: SwapSide) => void} props.onChange - Selection change handler.
- * @returns {import('react').ReactNode} TokenSelect component
+ * @returns {import('react').ReactNode} TokenSelect component.
  */
 const TokenSelect = ({ value, list, accessibilityLabel, onChange }) => {
 	// Dropdown visibility state
@@ -142,10 +143,10 @@ const TokenSelect = ({ value, list, accessibilityLabel, onChange }) => {
 
 /**
  * ReverseButton component. Button to swap source and target.
- * @param {Object} props - Component props.
+ * @param {object} props - Component props.
  * @param {boolean} props.isLoading - Whether swap is loading.
  * @param {() => void} props.onPress - Press handler.
- * @returns {import('react').ReactNode} ReverseButton component
+ * @returns {import('react').ReactNode} ReverseButton component.
  */
 const ReverseButton = ({ isLoading, onPress }) => {
 	return (
@@ -163,7 +164,7 @@ const ReverseButton = ({ isLoading, onPress }) => {
 /**
  * SwapSelector component. Provides source and target token selection with reverse functionality.
  * Allows users to select tokens for swap and reverse the swap direction.
- * @param {Object} props - Component props.
+ * @param {object} props - Component props.
  * @param {boolean} props.isLoading - Whether data is loading.
  * @param {SwapSide|null} props.source - Selected source side.
  * @param {SwapSide|null} props.target - Selected target side.
@@ -171,7 +172,7 @@ const ReverseButton = ({ isLoading, onPress }) => {
  * @param {SwapSide[]} props.targetList - Available target options.
  * @param {(side: SwapSide) => void} props.onSourceChange - Source change handler.
  * @param {(side: SwapSide) => void} props.onTargetChange - Target change handler.
- * @returns {import('react').ReactNode} SwapSelector component
+ * @returns {import('react').ReactNode} SwapSelector component.
  */
 export const SwapSelector = ({
 	isLoading,

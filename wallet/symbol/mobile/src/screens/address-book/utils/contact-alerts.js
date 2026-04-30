@@ -3,7 +3,7 @@ import { ContactListType } from '@/app/screens/address-book/types/AddressBook';
 
 /**
  * Alert data for contact list type feedback.
- * @typedef {Object} ContactListTypeAlertData
+ * @typedef {object} ContactListTypeAlertData
  * @property {boolean} isVisible - Whether the alert should be visible.
  * @property {string} text - The alert message text.
  * @property {'success'|'danger'} variant - The alert variant.

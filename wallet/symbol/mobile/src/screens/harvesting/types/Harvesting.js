@@ -6,7 +6,7 @@ export const { HarvestingStatus } = constants;
 
 /**
  * Status display configuration.
- * @typedef {Object} StatusDisplayConfig
+ * @typedef {object} StatusDisplayConfig
  * @property {string} statusText - Localized status text.
  * @property {string} icon - Icon name for status card.
  * @property {import('@/app/types/ColorVariants').SemanticRoleColorVariants} variant - Status card variant.
@@ -14,14 +14,14 @@ export const { HarvestingStatus } = constants;
 
 /**
  * Warning display configuration.
- * @typedef {Object} WarningConfig
+ * @typedef {object} WarningConfig
  * @property {boolean} isVisible - Whether warning is visible.
  * @property {string} [text] - Warning text if visible.
  */
 
 /**
  * Harvesting status view model.
- * @typedef {Object} HarvestingStatusViewModel
+ * @typedef {object} HarvestingStatusViewModel
  * @property {StatusDisplayConfig} statusDisplay - Status display configuration.
  * @property {WarningConfig} warning - Warning configuration.
  * @property {string|null} nodeUrl - Node URL if available.
@@ -29,7 +29,7 @@ export const { HarvestingStatus } = constants;
 
 /**
  * Harvesting summary view model.
- * @typedef {Object} HarvestingSummaryViewModel
+ * @typedef {object} HarvestingSummaryViewModel
  * @property {boolean} hasData - Whether there is any harvesting data.
  * @property {string} latestAmount - Latest harvested amount.
  * @property {string} latestBlockNumber - Latest block number as string.
@@ -40,7 +40,7 @@ export const { HarvestingStatus } = constants;
 
 /**
  * Harvesting widget props.
- * @typedef {Object} HarvestingWidgetProps
+ * @typedef {object} HarvestingWidgetProps
  * @property {HarvestingSummaryViewModel} summaryViewModel - Summary view model.
  * @property {HarvestingStatusViewModel} statusViewModel - Status view model for rendering harvesting status.
  * @property {string} ticker - Ticker symbol for the network currency.

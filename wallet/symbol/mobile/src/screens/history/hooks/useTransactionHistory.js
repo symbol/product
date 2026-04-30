@@ -13,7 +13,7 @@ const PAGE_SIZE = 15;
 /**
  * Filters transactions based on blacklist settings.
  * @param {Transaction[]} transactions - Transactions to filter.
- * @param {Object[]} blackList - Address blacklist.
+ * @param {object[]} blackList - Address blacklist.
  * @param {boolean} showBlocked - Whether to show blocked transactions only.
  * @returns {Transaction[]} Filtered transactions.
  */
@@ -35,7 +35,8 @@ const filterByBlacklist = (transactions, blackList, showBlocked) => {
 const mergeTransactions = (existing, incoming) => uniqBy([...existing, ...incoming], 'hash');
 
 /**
- * @typedef {Object} UseTransactionHistoryResult
+ * Return type of the useTransactionHistory hook.
+ * @typedef {object} UseTransactionHistoryResult
  * @property {Transaction[]} confirmed - Confirmed transactions.
  * @property {Transaction[]} unconfirmed - Unconfirmed transactions.
  * @property {Transaction[]} partial - Partial transactions.
@@ -50,9 +51,8 @@ const mergeTransactions = (existing, incoming) => uniqBy([...existing, ...incomi
 /**
  * React hook for managing transaction history with pagination and filtering.
  * Handles fetching confirmed, unconfirmed, and partial transactions.
- *
- * @param {Object} options - Hook options.
- * @param {Object} options.filter - Current filter values.
+ * @param {object} options - Hook options.
+ * @param {object} options.filter - Current filter values.
  * @returns {UseTransactionHistoryResult} Transaction history state and controls.
  */
 export const useTransactionHistory = ({ filter }) => {

@@ -10,7 +10,7 @@
 
 /**
  * Represents one side of a transaction operation (source or target).
- * @typedef {Object} TransactionGraphicSide
+ * @typedef {object} TransactionGraphicSide
  * @property {TransactionGraphicAvatarType} type - Avatar type to render.
  * @property {string} text - Label rendered next to the avatar.
  * @property {string} [accountAddress] - Optional account address for account avatar type.
@@ -20,14 +20,14 @@
 
 /**
  * Transaction graphic caption configuration.
- * @typedef {Object} TransactionGraphicArrowCaption
+ * @typedef {object} TransactionGraphicArrowCaption
  * @property {CaptionType} type - Type of content to render.
  * @property {string} value - Text string to render or icon name.
  */
 
 /**
  * Transaction graphic view model.
- * @typedef {Object} TransactionGraphicData
+ * @typedef {object} TransactionGraphicData
  * @property {string} typeText - Localized transaction type label.
  * @property {TransactionGraphicSide} source - Source side display data.
  * @property {TransactionGraphicSide} target - Target side display data.

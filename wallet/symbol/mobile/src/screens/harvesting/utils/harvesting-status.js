@@ -43,7 +43,7 @@ export const isEligibleForHarvesting = (balance, importance, divisibility) =>
 
 /**
  * Creates warning configuration based on account eligibility.
- * @param {Object} params - Parameters.
+ * @param {object} params - Parameters.
  * @param {string} params.status - Harvesting status.
  * @param {boolean} params.isBalanceSufficient - Whether balance is sufficient.
  * @param {boolean} params.isImportanceSufficient - Whether importance is sufficient.
@@ -69,7 +69,7 @@ const createEligibilityWarning = ({ status, isBalanceSufficient, isImportanceSuf
 
 /**
  * Creates harvesting status view model from API response and account info.
- * @param {Object} params - Parameters.
+ * @param {object} params - Parameters.
  * @param {HarvestingStatusData|null} params.harvestingStatus - Harvesting status from API.
  * @param {boolean} params.isBalanceSufficient - Whether balance is sufficient.
  * @param {boolean} params.isImportanceSufficient - Whether importance is sufficient.

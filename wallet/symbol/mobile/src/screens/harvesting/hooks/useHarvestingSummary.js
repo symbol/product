@@ -7,7 +7,7 @@ import { useCallback } from 'react';
 
 /**
  * Return type for useHarvestingSummary hook.
- * @typedef {Object} UseHarvestingSummaryReturnType
+ * @typedef {object} UseHarvestingSummaryReturnType
  * @property {HarvestingSummaryViewModel} summaryViewModel - Summary view model for rendering.
  * @property {boolean} isLoading - Whether summary is loading.
  * @property {() => void} load - Loads summary data.
@@ -16,7 +16,6 @@ import { useCallback } from 'react';
 
 /**
  * React hook for fetching and managing harvesting summary data.
- *
  * @param {MainWalletController} walletController - Wallet controller instance.
  * @returns {UseHarvestingSummaryReturnType}
  */

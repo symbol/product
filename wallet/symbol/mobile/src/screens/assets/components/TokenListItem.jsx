@@ -9,22 +9,24 @@ const PROGRESS_WIDTH = Sizes.Semantic.spacing.m * 15;
 
 /** @typedef {import('@/app/types/Token').Token} Token */
 /** @typedef {import('@/app/types/Network').NetworkIdentifier} NetworkIdentifier */
+/** @typedef {import('@/app/types/Network').ChainName} ChainName */
 
 /**
- * @typedef {Object} TokenListItemProps
- * @property {Token} token - Token data to display
- * @property {string} chainName - Chain name identifier
- * @property {NetworkIdentifier} networkIdentifier - Network identifier (mainnet/testnet)
- * @property {number} chainHeight - Current blockchain height
- * @property {number} blockGenerationTargetTime - Average block generation time in seconds
- * @property {function(Token): void} [onPress] - Optional press handler
+ * Props for the TokenListItem component.
+ * @typedef {object} TokenListItemProps
+ * @property {Token} token - Token data to display.
+ * @property {ChainName} chainName - Chain name identifier.
+ * @property {NetworkIdentifier} networkIdentifier - Network identifier (mainnet/testnet).
+ * @property {number} chainHeight - Current blockchain height.
+ * @property {number} blockGenerationTargetTime - Average block generation time in seconds.
+ * @property {function(Token): void} [onPress] - Optional press handler.
  */
 
 /**
  * TokenListItem component. Displays a token in a list with avatar, name, amount,
  * and optional expiration progress indicator.
- * @param {TokenListItemProps} props - Component props
- * @returns {React.ReactNode} TokenListItem component
+ * @param {TokenListItemProps} props - Component props.
+ * @returns {React.ReactNode} TokenListItem component.
  */
 export const TokenListItem = ({ token, chainName, networkIdentifier, chainHeight, blockGenerationTargetTime, onPress }) => {
 	const tokenDisplayData = getTokenDisplayInfo(token, chainName, networkIdentifier);

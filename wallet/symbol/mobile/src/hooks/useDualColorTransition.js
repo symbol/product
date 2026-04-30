@@ -3,15 +3,14 @@ import { useCallback, useEffect } from 'react';
 import { interpolateColor, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 
 /**
- * Hook for managing dual-axis color transitions (e.g., focus + error states)
- * 
- * @param {object} options - Hook options
- * @param {object} options.primaryPalette - Primary color palette (e.g., default state)
- * @param {object} options.secondaryPalette - Secondary color palette (e.g., error state)
- * @param {'focused'|'pressed'} options.transitionState - Target state for primary transition
- * @param {boolean} [options.isDisabled=false] - Whether component is disabled
- * @param {boolean} [options.isSecondaryActive=false] - Whether secondary palette is active (e.g., error state)
- * @returns {object} Dual transition utilities
+ * React hook for managing dual-axis color transitions (e.g., focus + error states).
+ * @param {object} options - Hook options.
+ * @param {object} options.primaryPalette - Primary color palette (e.g., default state).
+ * @param {object} options.secondaryPalette - Secondary color palette (e.g., error state).
+ * @param {'focused'|'pressed'} options.transitionState - Target state for primary transition.
+ * @param {boolean} [options.isDisabled=false] - Whether component is disabled.
+ * @param {boolean} [options.isSecondaryActive=false] - Whether secondary palette is active (e.g., error state).
+ * @returns {object} Dual transition utilities.
  */
 export const useDualColorTransition = ({
 	primaryPalette,
@@ -41,7 +40,7 @@ export const useDualColorTransition = ({
 	}, [primaryTransition]);
 
 	/**
-	 * Creates animated styles with dual-axis interpolation
+	 * Creates animated styles with dual-axis interpolation.
 	 * @param {Array<{property: string, styleProperty?: string}>} mappings
 	 */
 	const createAnimatedStyles = mappings => {

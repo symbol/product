@@ -16,19 +16,20 @@ import Animated, { FadeIn } from 'react-native-reanimated';
 /** @typedef {import('wallet-common-core/src/types/Chain').ChainName} ChainName */
 
 /**
- * @typedef {Object} TransactionStatusDialogProps
- * @property {boolean} isVisible - Controls the visibility of the status dialog
- * @property {ActionState} createStatus - Current status of the transaction creation step
- * @property {ActionState} signStatus - Current status of the transaction signing step
- * @property {ActionState} announceStatus - Current status of the transaction announcement step
- * @property {number} transactionCount - Total number of transactions in the bundle
- * @property {string[]} signedTransactionHashes - Array of transaction hashes after signing
- * @property {string[]} confirmedTransactionHashes - Array of transaction hashes that have been confirmed
- * @property {string[]} failedTransactionHashes - Array of transaction hashes that failed confirmation
- * @property {string[]} partialTransactionHashes - Array of transaction hashes in partial/multisig pending state
- * @property {ChainName} chainName - The blockchain network name (e.g., 'symbol', 'nem')
- * @property {NetworkIdentifier} networkIdentifier - Network identifier ('mainnet' or 'testnet')
- * @property {function(): void} onClose - Callback invoked when the dialog is closed
+ * Props for the TransactionStatusDialog component.
+ * @typedef {object} TransactionStatusDialogProps
+ * @property {boolean} isVisible - Controls the visibility of the status dialog.
+ * @property {ActionState} createStatus - Current status of the transaction creation step.
+ * @property {ActionState} signStatus - Current status of the transaction signing step.
+ * @property {ActionState} announceStatus - Current status of the transaction announcement step.
+ * @property {number} transactionCount - Total number of transactions in the bundle.
+ * @property {string[]} signedTransactionHashes - Array of transaction hashes after signing.
+ * @property {string[]} confirmedTransactionHashes - Array of transaction hashes that have been confirmed.
+ * @property {string[]} failedTransactionHashes - Array of transaction hashes that failed confirmation.
+ * @property {string[]} partialTransactionHashes - Array of transaction hashes in partial/multisig pending state.
+ * @property {ChainName} chainName - The blockchain network name (e.g., 'symbol', 'nem').
+ * @property {NetworkIdentifier} networkIdentifier - Network identifier ('mainnet' or 'testnet').
+ * @property {function(): void} onClose - Callback invoked when the dialog is closed.
  */
 
 /** @constant {number} BASE_ANIMATION_DELAY - Base delay in milliseconds for fade-in animations */
@@ -39,10 +40,8 @@ const BASE_ANIMATION_DELAY = 750;
  * Shows an activity log with create, sign, announce, and confirm steps, along with a status card
  * indicating the overall transaction state. Provides links to view transactions in the block explorer
  * once they have been announced to the network.
- * 
- * @param {TransactionStatusDialogProps} props - Component props
- * 
- * @returns {React.ReactNode} Transaction status dialog component
+ * @param {TransactionStatusDialogProps} props - Component props.
+ * @returns {React.ReactNode} Transaction status dialog component.
  */
 export const TransactionStatusDialog = props => {
 	const {

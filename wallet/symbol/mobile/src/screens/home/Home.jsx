@@ -20,8 +20,7 @@ import Animated, { FadeInUp } from 'react-native-reanimated';
 /**
  * Home screen component. The main dashboard screen displaying the current account's balance, name,
  * and providing navigation to send transaction, view account details, and receive QR-code screens.
- *
- * @returns {React.ReactNode} Home component
+ * @returns {React.ReactNode} Home component.
  */
 export const Home = () => {
 	const walletController = useWalletController();

@@ -6,7 +6,7 @@ import { constants } from 'wallet-common-core';
 /** @typedef {import('@/app/types/Wallet').AdditionalWalletController} AdditionalWalletController */
 
 /**
- * Hook to access the wallet controller.
+ * React hook to access the wallet controller.
  * It listens for state changes and updates the component when the state changes.
  * @returns {MainWalletController | AdditionalWalletController} The wallet controller instance.
  */

@@ -10,8 +10,7 @@ import React from 'react';
 /**
  * ContactList screen component. Displays a list of contacts from the address book
  * with tabs to switch between whitelist and blacklist views.
- *
- * @returns {React.ReactNode} ContactList component
+ * @returns {React.ReactNode} ContactList component.
  */
 export const ContactList = () => {
 	const walletController = useWalletController();

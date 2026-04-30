@@ -2,6 +2,7 @@ import { Bip39 } from '@/app/lib/bip39';
 import { isAddress, isPrivateKey } from '@/app/utils';
 import { safeOperationWithRelativeAmounts } from 'wallet-common-core';
 
+/** @typedef {import('@/app/types/Network').ChainName} ChainName */
 /**
  * Returns a validator that checks whether the field is not empty.
  * @param {boolean} [isRequired=true] - Whether the field is required.
@@ -54,7 +55,7 @@ export const validateAmount = availableBalance => str => {
 
 /**
  * Returns a validator that checks whether a value is a valid address for the given blockchain.
- * @param {string} chainName - The blockchain name (e.g., 'symbol', 'ethereum').
+ * @param {ChainName} chainName - The blockchain name (e.g., 'symbol', 'ethereum').
  * @returns {function(string): string|undefined} Validator function.
  */
 export const validateAddress = chainName => str => {
@@ -68,7 +69,7 @@ export const validateAddress = chainName => str => {
 
 /**
  * Returns a validator that checks whether a value is a valid private key for the given blockchain.
- * @param {string} chainName - The blockchain name (e.g., 'symbol', 'ethereum').
+ * @param {ChainName} chainName - The blockchain name (e.g., 'symbol', 'ethereum').
  * @returns {function(string): string|undefined} Validator function.
  */
 export const validatePrivateKey = chainName => str => {

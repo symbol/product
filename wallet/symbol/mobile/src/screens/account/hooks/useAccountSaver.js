@@ -6,7 +6,7 @@ import { WalletAccountType } from 'wallet-common-core/src/constants';
 
 /**
  * Return type for useAccountSaver hook.
- * @typedef {Object} UseAccountSaverReturnType
+ * @typedef {object} UseAccountSaverReturnType
  * @property {(name: string, index: number) => void} saveMnemonicAccount 
  * - Saves a mnemonic-derived account with the provided name and index.
  * @property {(name: string, privateKey: string) => void} saveExternalAccount 
@@ -18,8 +18,7 @@ import { WalletAccountType } from 'wallet-common-core/src/constants';
 /**
  * React hook for managing account creation save actions.
  * Provides save handlers for mnemonic and external accounts together with loading and error state.
- *
- * @param {Object} params - Hook parameters.
+ * @param {object} params - Hook parameters.
  * @param {WalletController} params.walletController - The wallet controller instance to manage accounts.
  * @param {() => void} params.onSaveComplete - Callback invoked after a successful save operation.
  * @returns {UseAccountSaverReturnType}

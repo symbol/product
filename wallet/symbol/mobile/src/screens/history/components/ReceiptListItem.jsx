@@ -7,9 +7,8 @@ import { StyleSheet, View } from 'react-native';
 /**
  * ReceiptListItem component. Displays receipt/harvested block information in a
  * compact list item format with icon, action, description, date, and amount.
- *
- * @param {Object} props - Component props.
- * @param {Object} props.receipt - Receipt object containing height, amount, and timestamp.
+ * @param {object} props - Component props.
+ * @param {object} props.receipt - Receipt object containing height, amount, and timestamp.
  * @param {string} props.ticker - Ticker symbol for the network currency (e.g., 'XYM').
  * @param {boolean} [props.isDateHidden=false] - Whether to hide the date display.
  * @param {function(): void} [props.onPress] - Callback when item is pressed.

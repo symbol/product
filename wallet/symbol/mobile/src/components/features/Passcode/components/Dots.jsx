@@ -39,14 +39,12 @@ const Dot = ({ isFilled, isError, jumpAnimation }) => {
 
 /**
  * Dots component. A row of dots showing passcode entry progress with shake animation support.
- *
  * @param {object} props - Component props.
  * @param {number} [props.length=PASSCODE_PIN_LENGTH] - Total number of dots.
  * @param {number} props.filledCount - Number of filled dots.
  * @param {boolean} [props.isError=false] - Whether to show error state.
  * @param {object} props.shakeAnimation - Shared value for shake animation.
  * @param {Array} [props.dotAnimations] - Array of shared values for individual dot animations.
- * 
  * @returns {React.ReactNode} The dots component.
  */
 export const Dots = ({ length = PASSCODE_PIN_LENGTH, filledCount, isError = false, shakeAnimation, dotAnimations }) => {

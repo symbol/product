@@ -13,11 +13,9 @@ const sourceMap = {
 
 /**
  * ScreenIllustration component. Displays a full-width decorative illustration image for screen headers.
- *
  * @param {object} props - Component props.
  * @param {string} props.name - Name of the illustration to display.
- *
- * @returns {React.ReactNode} ScreenIllustration component
+ * @returns {React.ReactNode} ScreenIllustration component.
  */
 export const ScreenIllustration = ({ name }) => {
 	const source = sourceMap[name];

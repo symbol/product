@@ -5,7 +5,7 @@ import { useCallback, useEffect, useState } from 'react';
 
 /**
  * Return type for useHarvestingFormState hook.
- * @typedef {Object} UseHarvestingFormStateReturnType
+ * @typedef {object} UseHarvestingFormStateReturnType
  * @property {string} nodeUrl - Currently selected node URL.
  * @property {TransactionFeeTierLevel} feeLevel - Selected transaction fee level.
  * @property {(value: string) => void} setNodeUrl - Updates node URL.
@@ -15,8 +15,7 @@ import { useCallback, useEffect, useState } from 'react';
 
 /**
  * React hook for managing harvesting form state.
- *
- * @param {Object} overrideValues - Initial form values.
+ * @param {object} overrideValues - Initial form values.
  * @param {string} [overrideValues.nodeUrl=''] - Node URL to pre-fill in the form.
  * @returns {UseHarvestingFormStateReturnType}
  */

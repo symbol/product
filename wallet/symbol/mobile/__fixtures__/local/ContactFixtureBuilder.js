@@ -25,7 +25,7 @@ const DEFAULT_BLACKLIST_FIXTURE = {
 };
 
 /**
- * @typedef {Object} Contact
+ * @typedef {object} Contact
  * @property {string} id - Contact ID (typically same as address).
  * @property {string} address - Contact address.
  * @property {string} name - Contact name.
@@ -58,9 +58,9 @@ export class ContactFixtureBuilder {
 	 * Creates a contact fixture with default data for the specified chain and network.
 	 * Uses account data from the fixture list, mapping address to contact id and address.
 	 * 
-	 * @param {string} chainName - chain name the account belongs to.
-	 * @param {'mainnet' | 'testnet'} networkIdentifier - network identifier the account belongs to.
-	 * @param {number} index - account item index in the fixture list (eg. 0, 1, 2, ...).
+	 * @param {string} chainName - Chain name the account belongs to.
+	 * @param {'mainnet' | 'testnet'} networkIdentifier - Network identifier the account belongs to.
+	 * @param {number} index - Account item index in the fixture list (eg. 0, 1, 2, ...).
 	 * @returns {ContactFixtureBuilder}
 	 */
 	static createWithAccount = (chainName, networkIdentifier, index) => {

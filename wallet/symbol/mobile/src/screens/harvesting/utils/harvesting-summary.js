@@ -5,7 +5,7 @@ import { formatDate } from '@/app/utils';
 
 /**
  * Creates harvesting summary view model from API response.
- * @param {Object} summary - Harvesting summary from API.
+ * @param {object} summary - Harvesting summary from API.
  * @param {string} [summary.latestAmount] - Latest harvest amount.
  * @param {number} [summary.latestHeight] - Latest block height.
  * @param {string|number} [summary.latestDate] - Latest harvest timestamp.

@@ -5,12 +5,10 @@ import { ActivityIndicator, StyleSheet, View } from 'react-native';
 const DEFAULT_COLOR = Colors.Components.loadingIndicator.surface;
 /**
  * LoadingIndicator component. A loading spinner in small or large sizes.
- * 
- * @param {object} props - Component props
- * @param {'sm'|'lg'} [props.size='lg'] - Size of the loading indicator
- * @param {string} [props.color] - Color of the loading spinner, defaults to theme color
- * 
- * @returns {React.ReactNode} Loading indicator component
+ * @param {object} props - Component props.
+ * @param {'sm'|'lg'} [props.size='lg'] - Size of the loading indicator.
+ * @param {string} [props.color] - Color of the loading spinner, defaults to theme color.
+ * @returns {React.ReactNode} Loading indicator component.
  */
 export const LoadingIndicator = props => {
 	const { size, color = DEFAULT_COLOR } = props;

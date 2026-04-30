@@ -22,6 +22,7 @@ import { createCosignatoryInputAlertData } from '@/app/screens/multisig/utils/co
 import { generateAccount, validateAddress } from '@/app/utils';
 import React, { useEffect, useMemo, useState } from 'react';
 
+/** @typedef {import('@/app/types/Network').ChainName} ChainName */
 /** @typedef {import('@/app/types/Transaction').TransactionFeeTierLevel} TransactionFeeTierLevel */
 
 /** @type {TransactionFeeTierLevel} */
@@ -30,11 +31,10 @@ const DEFAULT_TRANSACTION_SPEED = 'medium';
 /**
  * CreateMultisigAccount screen component. Provides the interface for creating a new multisig account
  * by generating a random account, adding cosignatories, and configuring approval thresholds.
- *
- * @param {Object} props - Component props.
- * @param {Object} props.route - React Navigation route object.
- * @param {Object} props.route.params - Route parameters.
- * @param {string} props.route.params.chainName - The blockchain name.
+ * @param {object} props - Component props.
+ * @param {object} props.route - React Navigation route object.
+ * @param {object} props.route.params - Route parameters.
+ * @param {ChainName} props.route.params.chainName - The blockchain name.
  * @returns {React.ReactNode} CreateMultisigAccount component.
  */
 export const CreateMultisigAccount = props => {

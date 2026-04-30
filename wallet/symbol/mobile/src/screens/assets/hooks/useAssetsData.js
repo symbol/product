@@ -8,20 +8,21 @@ import { useCallback, useMemo, useState } from 'react';
 /** @typedef {import('@/app/screens/assets/types/Assets').AssetSection} AssetSection */
 
 /**
- * @typedef {Object} UseAssetsDataReturnType
- * @property {AssetSection[]} sections - Asset sections for SectionList
- * @property {FilterValue} filter - Current filter values
- * @property {function(FilterValue): void} setFilter - Function to update filter
- * @property {FilterItem[]} filterConfig - Filter configuration array
- * @property {boolean} isLoading - Whether loading is in progress
- * @property {function(): void} load - Function to load all data
- * @property {function(): void} reset - Function to reset data state
+ * Return type of the useAssetsData hook.
+ * @typedef {object} UseAssetsDataReturnType
+ * @property {AssetSection[]} sections - Asset sections for SectionList.
+ * @property {FilterValue} filter - Current filter values.
+ * @property {function(FilterValue): void} setFilter - Function to update filter.
+ * @property {FilterItem[]} filterConfig - Filter configuration array.
+ * @property {boolean} isLoading - Whether loading is in progress.
+ * @property {function(): void} load - Function to load all data.
+ * @property {function(): void} reset - Function to reset data state.
  */
 
 /**
  * React hook that manages assets screen state.
  * Builds asset sections, manages filter state, and provides data fetching.
- * @returns {UseAssetsDataReturnType} Assets data and controls
+ * @returns {UseAssetsDataReturnType} Assets data and controls.
  */
 export const useAssetsData = () => {
 	const walletControllers = useReactiveWalletControllers([controllers.main, ...controllers.additional]);

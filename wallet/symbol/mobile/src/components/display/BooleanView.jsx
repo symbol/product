@@ -12,12 +12,10 @@ const iconMap = {
 
 /**
  * BooleanView component. A display component that shows boolean values using checkmark or cross icons, with optional accompanying text.
- *
- * @param {object} props - Component props
- * @param {boolean} props.value - The boolean value to display (true shows checkmark, false shows cross)
- * @param {string} [props.text] - Optional descriptive text to display alongside the icon
- *
- * @returns {React.ReactNode} BooleanView component
+ * @param {object} props - Component props.
+ * @param {boolean} props.value - The boolean value to display (true shows checkmark, false shows cross).
+ * @param {string} [props.text] - Optional descriptive text to display alongside the icon.
+ * @returns {React.ReactNode} BooleanView component.
  */
 export const BooleanView = ({ value, text }) => {
 	const iconName = value ? iconMap.true : iconMap.false;

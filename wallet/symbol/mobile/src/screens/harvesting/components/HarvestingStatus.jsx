@@ -7,8 +7,7 @@ import React from 'react';
 /**
  * HarvestingStatus component. Displays the current harvesting status with optional warnings
  * and node URL information.
- *
- * @param {Object} props - Component props.
+ * @param {object} props - Component props.
  * @param {HarvestingStatusViewModel} props.statusViewModel - Status view model.
  * @param {boolean} [props.isLoading=false] - Whether data is loading.
  * @returns {React.ReactNode} HarvestingStatus component.

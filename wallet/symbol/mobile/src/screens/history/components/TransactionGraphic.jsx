@@ -37,8 +37,7 @@ const LockAvatar = () => (
 
 /**
  * Renders the avatar used on either side of the transaction graphic.
- *
- * @param {Object} props - Component props.
+ * @param {object} props - Component props.
  * @param {TransactionGraphicAvatarType} props.type - Avatar type to render.
  * @param {string} [props.imageId] - Optional avatar image identifier.
  * @param {string} [props.accountAddress] - Account avatar address.
@@ -64,7 +63,6 @@ const Avatar = ({ type, imageId, accountAddress }) => {
 
 /**
  * Renders one arrow caption item.
- *
  * @param {TransactionGraphicArrowCaption} props - Caption data.
  * @returns {ReactNode} ArrowCaption component.
  */
@@ -84,8 +82,7 @@ const ArrowCaption = ({ value, type }) => {
 /**
  * TransactionGraphic component. Displays a visual representation of a transaction
  * showing source and target with arrows and captions for transaction type and amount.
- *
- * @param {Object} props - Component props.
+ * @param {object} props - Component props.
  * @param {string} props.typeText - Localized transaction type label.
  * @param {TransactionGraphicSide} props.source - Source side display data.
  * @param {TransactionGraphicSide} props.target - Target side display data.

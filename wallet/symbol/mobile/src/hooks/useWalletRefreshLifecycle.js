@@ -10,8 +10,7 @@ import { useCallback, useRef } from 'react';
  * Listens to transaction and wallet events to auto-refresh data.
  * When the wallet account changes, it executes the optional onClear callback to reset relevant data,
  * then calls onRefresh to fetch new data for the new account.
- *
- * @param {Object} config - Configuration object.
+ * @param {object} config - Configuration object.
  * @param {WalletController} config.walletController - Wallet controller instance.
  * @param {() => void} config.onRefresh - Callback to refresh data.
  * @param {() => void} [config.onClear] - Callback to clear data.

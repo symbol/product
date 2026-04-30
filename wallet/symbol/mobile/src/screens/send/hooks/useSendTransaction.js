@@ -10,7 +10,7 @@ import { constants as symbolConstants } from 'wallet-common-symbol';
 
 /**
  * Return type for useSendTransaction hook.
- * @typedef {Object} UseSendTransactionReturnType
+ * @typedef {object} UseSendTransactionReturnType
  * @property {() => Promise<Transaction>} createTransaction - Creates a transfer transaction.
  * @property {(transaction: Transaction) => TableData} getTransactionPreviewTable
  *   - Generates preview table data for the confirmation dialog.
@@ -18,8 +18,7 @@ import { constants as symbolConstants } from 'wallet-common-symbol';
 
 /**
  * React hook for creating transfer transactions and generating preview data.
- *
- * @param {Object} params - Hook parameters.
+ * @param {object} params - Hook parameters.
  * @param {WalletController} params.walletController - The wallet controller instance.
  * @param {string} params.senderAddress - The sender account address.
  * @param {string} params.senderPublicKey - The sender public key.

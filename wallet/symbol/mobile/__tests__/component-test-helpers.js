@@ -39,7 +39,7 @@ export const expectText = async (screenRender, expectedTextList, shouldBeRendere
  * @typedef {'text' | 'placeholder' | 'label'} TextType
  */
 /**
- * @typedef {Object} RenderText
+ * @typedef {object} RenderText
  * @property {TextType} type - The type of text to render ('text' or 'placeholder').
  * @property {string} value - The actual text value to be rendered.
  */
@@ -47,9 +47,9 @@ export const expectText = async (screenRender, expectedTextList, shouldBeRendere
 /**
  * Helper function to test rendering of React Native components.
  * 
- * @param {Object} config - Configuration object for the test.
+ * @param {object} config - Configuration object for the test.
  * @param {React.Component} config.Component - The React Native component to be tested.
- * @param {Object} config.props - Props to be passed to the component.
+ * @param {object} config.props - Props to be passed to the component.
  * @param {React.ReactNode} [config.children] - Children to be passed to the component.
  * @param {RenderText[]} [config.textToRender] - The text expected to be rendered by the component.
  */
@@ -71,9 +71,9 @@ export const testRenderWith = (config, expected = {}) => {
 /**
  * Helper function to test press events on React Native components.
  * 
- * @param {Object} config - Configuration object for the test.
+ * @param {object} config - Configuration object for the test.
  * @param {React.Component} config.Component - The React Native component to be tested.
- * @param {Object} config.props - Props to be passed to the component.
+ * @param {object} config.props - Props to be passed to the component.
  * @param {string} config.textToPress - The text of the element to be pressed.
  * @param {string} [config.eventPropName='onPress'] - The name of the event prop to be tested.
  * @param {boolean} [config.skipCallback=false] - If true, does not pass the callback to the component.
@@ -120,9 +120,9 @@ export const testPressEvent = (config, expected = {}) => {
 /**
  * Helper function to test text input events on React Native components.
  * 
- * @param {Object} config - Configuration object for the test.
+ * @param {object} config - Configuration object for the test.
  * @param {React.Component} config.Component - The React Native component to be tested.
- * @param {Object} config.props - Props to be passed to the component.
+ * @param {object} config.props - Props to be passed to the component.
  * @param {boolean} config.shouldFireEvent - Indicates if the event should be fired.
  * @param {string} config.textToInput - The text to input into the element.
  * @param {string} [config.eventPropName='onChange'] - The name of the event prop to be tested.
@@ -181,9 +181,9 @@ export const testTextInputEvent = async (config, expected = {}) => {
 /**
  * Helper function to test dropdown selection events on React Native components.
  *
- * @param {Object} config - Configuration object for the test.
+ * @param {object} config - Configuration object for the test.
  * @param {React.Component} config.Component - The React Native component to be tested.
- * @param {Object} config.props - Props to be passed to the component.
+ * @param {object} config.props - Props to be passed to the component.
  * @param {string} config.textToPress - The text of the element to press to open the dropdown.
  * @param {Array<{label: string, value: *}>} config.items - The list of items in the dropdown.
  * @param {string} [config.eventPropName='onChange'] - The name of the event prop to be tested.

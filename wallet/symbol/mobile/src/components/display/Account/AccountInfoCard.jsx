@@ -3,21 +3,20 @@ import { Card, CopyButtonContainer, Divider, Field, FlexContainer, Spacer, Stack
 import { $t } from '@/app/localization';
 import React from 'react';
 
+/** @typedef {import('@/app/types/Network').ChainName} ChainName */
 
 /**
  * AccountInfoCard component. A card for displaying key account identity details, including avatar,
  * name, address, and optional chain name, notes, or extra content above the divider.
- *
- * @param {object} props - Component props
+ * @param {object} props - Component props.
  * @param {string} props.address - Account address.
  * @param {string} props.name - Account display name.
- * @param {string} [props.chainName] - Optional blockchain name shown above the address.
+ * @param {ChainName} [props.chainName] - Optional blockchain name shown above the address.
  * @param {string} [props.notes] - Optional notes shown below the address.
  * @param {string} [props.imageId] - Known account image identifier.
  * @param {React.ReactNode} [props.children] - Optional content rendered below the title row and above the divider.
  * @param {object} [props.style] - Additional styles for the card container.
- *
- * @returns {React.ReactNode} AccountInfoCard component
+ * @returns {React.ReactNode} AccountInfoCard component.
  */
 export const AccountInfoCard = ({
 	address,

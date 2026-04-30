@@ -35,11 +35,10 @@ const CHAINS_WITH_MESSAGE_SUPPORT = ['symbol', 'nem'];
  * Send screen component. Allows users to send tokens to recipient addresses,
  * supporting multisig accounts, message attachments with encryption options, and dynamic fee
  * selection for efficient transaction processing.
- *
- * @param {Object} props - Component props.
- * @param {Object} props.route - React Navigation route object.
+ * @param {object} props - Component props.
+ * @param {object} props.route - React Navigation route object.
  * @param {SendRouteParams} [props.route.params] - Route parameters.
- * @returns {React.ReactNode} Send component
+ * @returns {React.ReactNode} Send component.
  */
 export const Send = props => {
 	// Route & Controller Setup

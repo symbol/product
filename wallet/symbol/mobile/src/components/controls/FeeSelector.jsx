@@ -10,9 +10,6 @@ import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-na
 import Slider from 'react-native-smooth-slider';
 import { safeOperationWithRelativeAmounts } from 'wallet-common-core';
 
-/**
- * @enum {string}
- */
 const FeeTierLevel = {
 	SLOW: 'slow',
 	MEDIUM: 'medium',
@@ -49,16 +46,14 @@ const createFeeTierOption = (level, value) => ({
 /**
  * FeeSelector component. A component for selecting transaction fee levels among slow, medium, and fast
  * options using a slider interface, featuring animated visual feedback.
- *
- * @param {object} props - Component props
+ * @param {object} props - Component props.
  * @param {object} [props.style] - Additional styles for the component container.
  * @param {string} props.title - The title label displayed above the fee selector.
  * @param {TransactionFeeTiers | TransactionFeeTiers[]} props.feeTiers - The fee tiers configuration.
  * @param {TransactionFeeTierLevel} props.value - The currently selected fee tier level.
  * @param {string} props.ticker - The ticker symbol for the fee currency.
- * @param {function} props.onChange - Function to call when the selected fee tier changes.
- *
- * @returns {React.ReactNode} FeeSelector component
+ * @param {function(string): void} props.onChange - Function to call when the selected fee tier changes.
+ * @returns {React.ReactNode} FeeSelector component.
  */
 export const FeeSelector = ({ style, title, feeTiers, value, ticker, onChange }) => {
 	// State

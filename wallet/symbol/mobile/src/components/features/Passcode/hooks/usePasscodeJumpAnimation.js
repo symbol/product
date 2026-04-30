@@ -9,7 +9,7 @@ const DOT_DELAY = 250;
 const ANIMATION_LOOP_DELAY = 2000;
 
 /**
- * Hook for managing passcode dots jump animation.
+ * React hook for managing passcode dots jump animation.
  * Creates a sequential jumping animation where each dot jumps one after another.
  * @param {number} [length=PASSCODE_PIN_LENGTH] - Number of dots.
  * @returns {object} - Jump animation utilities.

@@ -7,8 +7,7 @@ import { StyleSheet, View } from 'react-native';
 /**
  * AmountBreakdown component. Displays a breakdown of token amount changes for
  * each account involved in a transaction.
- *
- * @param {Object} props - Component props.
+ * @param {object} props - Component props.
  * @param {BreakdownDisplayRow[]} props.breakdown - Array of breakdown rows per account.
  * @returns {import('react').ReactNode} AmountBreakdown component.
  */

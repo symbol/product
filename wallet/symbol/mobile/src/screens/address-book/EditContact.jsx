@@ -13,12 +13,11 @@ import React, { useMemo } from 'react';
  * EditContact screen component. Provides the interface for editing an existing contact
  * with name, notes, and list type (whitelist or blacklist) selection.
  * Address field is read-only as it serves as the contact identifier.
- *
- * @param {Object} props - Component props.
- * @param {Object} props.route - React Navigation route object.
- * @param {Object} props.route.params - Route parameters.
+ * @param {object} props - Component props.
+ * @param {object} props.route - React Navigation route object.
+ * @param {object} props.route.params - Route parameters.
  * @param {string} props.route.params.contactId - The contact ID to edit.
- * @returns {React.ReactNode} EditContact component
+ * @returns {React.ReactNode} EditContact component.
  */
 export const EditContact = ({ route }) => {
 	const defaultBlacklistContactName = $t('s_addressBook_account_blacklist_defaultName');

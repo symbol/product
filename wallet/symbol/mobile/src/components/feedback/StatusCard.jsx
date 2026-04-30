@@ -10,16 +10,14 @@ const ICON_SIZE_VALUE = Sizes.Semantic.iconSize[ICON_SIZE];
 /**
  * StatusCard component. A card component for displaying status information with an icon,
  * supporting various visual variants and optional additional content.
- *
- * @param {object} props - Component props
- * @param {import('@/app/types/ColorVariants').SemanticRoleColorVariants} [props.variant='neutral'] - Status variant
+ * @param {object} props - Component props.
+ * @param {import('@/app/types/ColorVariants').SemanticRoleColorVariants} [props.variant='neutral'] - Status variant.
  * determining the card background color.
  * @param {string} props.statusText - Text to display as the primary status message.
  * @param {string} props.icon - Icon name to display alongside the status text.
  * @param {boolean} [props.isLoading=false] - Whether to show a loading spinner instead of the icon.
  * @param {React.ReactNode} [props.children] - Additional content to display below the status row.
- *
- * @returns {React.ReactNode} StatusCard component
+ * @returns {React.ReactNode} StatusCard component.
  */
 export const StatusCard = ({ variant = 'neutral', statusText, icon, isLoading, children }) => {
 	const pallette = Colors.Components.statusCard[variant];

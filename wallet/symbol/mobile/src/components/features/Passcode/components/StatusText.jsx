@@ -7,11 +7,9 @@ const COLOR_ERROR = Colors.Semantic.role.danger.default;
 
 /**
  * StatusText component. Displays the passcode status message including errors and remaining attempts.
- *
  * @param {object} props - Component props.
  * @param {string} props.text - The status text to display.
  * @param {boolean} [props.isError=false] - Whether the text represents an error state.
- * 
  * @returns {React.ReactNode} The status text component.
  */
 export const StatusText = ({ text, isError = false }) => {

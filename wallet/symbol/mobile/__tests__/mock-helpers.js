@@ -8,8 +8,8 @@ import SplashScreen from 'react-native-splash-screen';
 /**
  * Create a mock wallet controller object to simulate wallet controller behavior.
  *
- * @param {Object} overrides - An object to override specific methods of the wallet controller mock.
- * @param {Object} [options] - Mock options.
+ * @param {object} overrides - An object to override specific methods of the wallet controller mock.
+ * @param {object} [options] - Mock options.
  * 
  * @return {import('wallet-common-core').WalletController} The mocked wallet controller.
  */
@@ -74,8 +74,8 @@ export const createWalletControllerMock = (overrides = {}) => {
 /**
  * Mocks the useWalletController hook to simulate wallet controller behavior.
  *
- * @param {Object} overrides - An object to override specific methods of the wallet controller mock.
- * @param {Object} [options] - Mock options.
+ * @param {object} overrides - An object to override specific methods of the wallet controller mock.
+ * @param {object} [options] - Mock options.
  * 
  * @return {import('wallet-common-core').WalletController} The mocked wallet controller.
  */
@@ -99,9 +99,9 @@ export const mockPasscode = () => {
 /**
  * Mocks methods of the Router module.
  * 
- * @param {Object} overrides - An object to override specific methods of the Router mock.
+ * @param {object} overrides - An object to override specific methods of the Router mock.
  * 
- * @return {Object} The mocked router navigation methods.
+ * @return {object} The mocked router navigation methods.
  */
 export const mockRouter = (overrides = {}) => {
 	const { Router} = require('@/app/router/Router');
@@ -118,7 +118,7 @@ export const mockRouter = (overrides = {}) => {
 
 /**
  * Mocks the localization $t function.
- * @param {Object|function(string, object): string} dictionaryOrCallback - Either a dictionary object mapping keys to translations 
+ * @param {object | function(string, object): string} dictionaryOrCallback - Either a dictionary object mapping keys to translations 
  * or a callback function for custom translation logic.
  */
 export const mockLocalization = dictionaryOrCallback => {
@@ -138,7 +138,7 @@ export const mockLocalization = dictionaryOrCallback => {
 /**
  * Mocks the SplashScreen module.
  * 
- * @return {Object} The mocked SplashScreen.
+ * @return {object} The mocked SplashScreen.
  */
 export const mockSplashScreen = () => {
 	const splashScreenMock = {
@@ -162,7 +162,7 @@ export const mockOs = platform => {
  * Creates a mock address book module object.
  * 
  * @param {import('wallet-common-core/src/types/AddressBook').Contact[]} [contacts=[]] - Array of contact objects.
- * @returns {Object} The mocked address book module.
+ * @returns {object} The mocked address book module.
  */
 export const createAddressBookMock = (contacts = []) => {
 	const whiteList = contacts.filter(contact => !contact.isBlackListed);

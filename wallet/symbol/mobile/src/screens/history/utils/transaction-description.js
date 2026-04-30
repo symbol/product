@@ -10,14 +10,16 @@ import {
 
 /** @typedef {import('@/app/types/Transaction').Transaction} Transaction */
 /** @typedef {import('@/app/types/Account').WalletAccount} WalletAccount */
+/** @typedef {import('@/app/types/Network').NetworkIdentifier} NetworkIdentifier */
+/** @typedef {import('@/app/types/Network').ChainName} ChainName */
 
 /**
  * Options for resolving account display information.
- * @typedef {Object} AccountResolveOptions
+ * @typedef {object} AccountResolveOptions
  * @property {WalletAccount[]} walletAccounts - Wallet accounts.
- * @property {Object} addressBook - Address book instance.
- * @property {string} chainName - Chain name.
- * @property {string} networkIdentifier - Network identifier.
+ * @property {object} addressBook - Address book instance.
+ * @property {ChainName} chainName - Chain name.
+ * @property {NetworkIdentifier} networkIdentifier - Network identifier.
  */
 
 /**

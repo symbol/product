@@ -22,17 +22,18 @@ const BUTTON_SEPARATOR_COLOR = Colors.Components.buttonSendReceive.primary.defau
 const BUTTON_SEPARATOR_COLOR_DISABLED = Colors.Components.buttonSendReceive.primary.disabled.separator;
 const BUTTON_TEXT_COLOR = Colors.Components.buttonSendReceive.primary.default.text;
 
+/** @typedef {import('@/app/types/Network').ChainName} ChainName */
+
 /**
- * ActionButton component
+ * ActionButton component.
  *
  * Internal button component for SendReceiveButtons action bar.
- *
- * @param {object} props - Component props
+ * @param {object} props - Component props.
  * @param {string} props.icon - Icon name to display.
  * @param {string} props.text - Button label text.
  * @param {boolean} [props.isLast=false] - Whether this is the last button (no right border).
  * @param {boolean} [props.isDisabled=false] - Whether this button is disabled.
- * @param {function} props.onPress - Callback when button is pressed.
+ * @param {function(): void} props.onPress - Callback when button is pressed.
  */
 const ActionButton = ({ icon, text, isLast = false, isDisabled = false, onPress }) => {
 	const buttonStyle = [
@@ -56,17 +57,15 @@ const ActionButton = ({ icon, text, isLast = false, isDisabled = false, onPress 
  * SendReceiveButtons component. A pair of action buttons for receiving and sending transactions,
  * styled to match AccountCardWidget action bar. The receive button displays a QR code dialog,
  * while the send button either triggers the send callback or shows a multisig warning dialog.
- *
  * @param {object} props - Component props.
- * @param {string} props.chainName - The name of the blockchain network.
+ * @param {ChainName} props.chainName - The name of the blockchain network.
  * @param {string} props.accountAddress - The account address to receive transactions.
  * @param {string} [props.tokenName] - The name of the token.
  * @param {string} props.receiveQrData - QR code data string of the account address.
- * @param {function} props.onSendPress - Callback fired when send button is pressed (if not multisig).
+ * @param {function(): void} props.onSendPress - Callback fired when send button is pressed (if not multisig).
  * @param {boolean} [props.hasMultisigSendWarning=false] - If true, shows multisig warning instead of triggering send.
  * @param {boolean} [props.isDisabled=false] - Disables both buttons if true.
- *
- * @returns {React.ReactNode} SendReceiveButtons component
+ * @returns {React.ReactNode} SendReceiveButtons component.
  */
 export const SendReceiveButtons = ({ 
 	chainName, 

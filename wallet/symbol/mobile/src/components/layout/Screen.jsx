@@ -7,17 +7,15 @@ import { Image, KeyboardAvoidingView, RefreshControl, ScrollView, StyleSheet, Vi
 /**
  * Screen component. A layout component for screen content with support for scrolling, loading
  * indicators, background images, and pull-to-refresh functionality.
- * 
- * @param {object} props - Component props
- * @param {boolean} props.isScrollDisabled - Disable scrolling if true
- * @param {boolean} props.isLoading - Show loading indicator if true
- * @param {string} props.backgroundImageSrc - Background image source
- * @param {function} props.renderLoading - Custom render function for loading indicator
- * @param {import('@/app/types/RefreshConfig').RefreshConfig} [props.refresh] - Optional configuration for
+ * @param {object} props - Component props.
+ * @param {boolean} props.isScrollDisabled - Disable scrolling if true.
+ * @param {boolean} props.isLoading - Show loading indicator if true.
+ * @param {string} props.backgroundImageSrc - Background image source.
+ * @param {function(): React.ReactNode} props.renderLoading - Custom render function for loading indicator.
+ * @param {import('@/app/types/RefreshConfig').RefreshConfig} [props.refresh] - Optional configuration for.
  * pull-to-refresh. If not provided, pull-to-refresh is disabled.
- * @param {React.ReactNode} props.children - Child components
- * 
- * @returns {React.ReactNode} Screen layout component
+ * @param {React.ReactNode} props.children - Child components.
+ * @returns {React.ReactNode} Screen layout component.
  */
 export const Screen = ({ isScrollDisabled, isLoading, backgroundImageSrc, renderLoading, refresh, children }) => {
 	const ContentContainer = isScrollDisabled ? View : ScrollView;

@@ -10,12 +10,10 @@ const ENTERING_ANIMATION_DELAY = 250;
  * AnimatedListItem component. Wraps list items with smooth enter/exit transitions
  * and layout repositioning animations. Items fade in when added and fade out when
  * removed, while other items smoothly move to accommodate the change.
- *
  * @param {object} props - Component props.
  * @param {React.ReactNode} props.children - The item content to animate.
  * @param {object} [props.style] - Additional styles for the animated container.
- *
- * @returns {React.ReactNode} AnimatedListItem component
+ * @returns {React.ReactNode} AnimatedListItem component.
  */
 export const AnimatedListItem = ({ children, style }) => (
 	<Animated.View

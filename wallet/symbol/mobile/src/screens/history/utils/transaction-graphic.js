@@ -12,20 +12,21 @@ import { createTokenDisplayData, getNativeCurrencyToken, hasNonNativeCurrencyTok
 /** @typedef {import('@/app/screens/history/types/TransactionGraphic').TransactionGraphicSide} TransactionGraphicSide */
 /** @typedef {import('@/app/types/Transaction').Transaction} Transaction */
 /** @typedef {import('@/app/types/Network').NetworkIdentifier} NetworkIdentifier */
+/** @typedef {import('@/app/types/Network').ChainName} ChainName */
 /** @typedef {import('@/app/types/Account').WalletAccount} WalletAccount */
 
 /**
  * Target field configuration for extracting target data from a transaction.
- * @typedef {Object} TargetFieldConfig
+ * @typedef {object} TargetFieldConfig
  * @property {string} [addressField] - Transaction field containing the target address.
  * @property {string} [valueField] - Transaction field containing the target value/label.
  * @property {string} [imageIdField] - Transaction field containing the image id.
- * @property {Function} [valueFormat] - Optional formatter function for computing the target value.
+ * @property {function(*): string} [valueFormat] - Optional formatter function for computing the target value.
  */
 
 /**
  * Arrow caption configuration.
- * @typedef {Object} ArrowCaptionConfig
+ * @typedef {object} ArrowCaptionConfig
  * @property {'icon' | 'text'} type - Type of content.
  * @property {string} [icon] - Icon name for icon type.
  * @property {string} [field] - Transaction field for text type.
@@ -37,11 +38,11 @@ import { createTokenDisplayData, getNativeCurrencyToken, hasNonNativeCurrencyTok
 
 /**
  * Transaction graphic configuration for a specific transaction type.
- * @typedef {Object} TransactionGraphicConfig
+ * @typedef {object} TransactionGraphicConfig
  * @property {TransactionGraphicAvatarType} targetType - Avatar type for the target.
  * @property {TargetFieldConfig} targetFields - Fields configuration for extracting target data.
  * @property {ArrowCaptionConfig[]} [arrowCaptions] - Configuration for arrow captions.
- * @property {Function} [typeTextKey] - Optional function to compute type text translation key.
+ * @property {function(*): string} [typeTextKey] - Optional function to compute type text translation key.
  */
 
 /** @type {Record<number, TransactionGraphicConfig>} */
@@ -264,8 +265,8 @@ const transactionGraphicConfigMap = {
 
 /**
  * Options for creating transaction graphic data.
- * @typedef {Object} TransactionGraphicOptions
- * @property {string} chainName - The name of the blockchain (e.g., 'symbol', 'ethereum').
+ * @typedef {object} TransactionGraphicOptions
+ * @property {ChainName} chainName - The name of the blockchain (e.g., 'symbol', 'ethereum').
  * @property {NetworkIdentifier} networkIdentifier - The network identifier (e.g., 'mainnet', 'testnet').
  * @property {string} nativeCurrencyTicker - The ticker symbol for the native currency.
  * @property {string} nativeCurrencyTokenId - The token ID for the native currency.
@@ -435,7 +436,6 @@ const getTypeText = (transaction, config) => {
 
 /**
  * Creates the transaction graphic view model from transaction.
- *
  * @param {Transaction} transaction - Transaction to convert into graphic display data.
  * @param {TransactionGraphicOptions} options - Options for creating the graphic data.
  * @returns {TransactionGraphicData} Transaction graphic data.

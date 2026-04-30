@@ -20,19 +20,20 @@ import { createExplorerTransactionUrl } from '@/app/utils';
 /** @typedef {import('@/app/screens/bridge/types/Bridge').ResolvedTokenData} ResolvedTokenData */
 /** @typedef {import('@/app/screens/bridge/types/Bridge').ResolvedAccountData} ResolvedAccountData */
 /** @typedef {import('@/app/types/Network').NetworkIdentifier} NetworkIdentifier */
+/** @typedef {import('@/app/types/Network').ChainName} ChainName */
 
 /**
  * SwapSideDetails component. Displays detailed information for one side of a swap,
  * including token info, chain name, account address, and transaction hash with
  * copy functionality and block explorer link.
- * @param {Object} props - Component props.
+ * @param {object} props - Component props.
  * @param {SwapSideTypeValue} props.type - The side type (source or target).
- * @param {string} props.chainName - The blockchain name.
+ * @param {ChainName} props.chainName - The blockchain name.
  * @param {NetworkIdentifier} props.networkIdentifier - The network identifier.
  * @param {ResolvedTokenData} props.token - Token information.
  * @param {ResolvedAccountData|null} props.account - Account information.
  * @param {string|null} props.transactionHash - The transaction hash.
- * @returns {import('react').ReactNode} SwapSideDetails component
+ * @returns {import('react').ReactNode} SwapSideDetails component.
  */
 export const SwapSideDetails = ({ type, chainName, networkIdentifier, token, account, transactionHash }) => {
 	const emptyValuePlaceholder = $t('data_na');

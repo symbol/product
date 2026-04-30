@@ -19,16 +19,14 @@ const iconMap = {
 /**
  * ExpandableCard component. A card container with expandable/collapsible content section,
  * featuring animated height transitions and a chevron indicator.
- *
- * @param {object} props - Component props
+ * @param {object} props - Component props.
  * @param {React.ReactNode} props.children - Always visible content rendered at the top of the card.
  * @param {React.ReactNode} props.collapsibleChildren - Content that expands/collapses at the bottom.
  * @param {boolean} [props.isExpanded=false] - External control for expanded state.
  * @param {'s'|'m'|'l'} [props.borderRadius='m'] - Border radius size passed to Card.
  * @param {string} [props.color] - Background color passed to Card.
  * @param {object} [props.style] - Additional styles passed to Card.
- *
- * @returns {React.ReactNode} ExpandableCard component
+ * @returns {React.ReactNode} ExpandableCard component.
  */
 export const ExpandableCard = ({
 	children,

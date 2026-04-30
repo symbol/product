@@ -14,7 +14,7 @@ export class AggregateTransactionFixtureBuilder extends TransactionFixtureBuilde
 	/**
 	 * Creates an aggregate transaction fixture.
 	 *
-	 * @param {object} data - combined base + aggregate data.
+	 * @param {object} data - Combined base + aggregate data.
 	 */
 	constructor(data) {
 		super(data);
@@ -39,8 +39,8 @@ export class AggregateTransactionFixtureBuilder extends TransactionFixtureBuilde
 	/**
 	 * Creates a default AGGREGATE_COMPLETE transaction fixture.
 	 *
-	 * @param {string} [chainName='symbol'] - chain name.
-	 * @param {'mainnet' | 'testnet'} [networkIdentifier='testnet'] - network identifier.
+	 * @param {string} [chainName='symbol'] - Chain name.
+	 * @param {'mainnet' | 'testnet'} [networkIdentifier='testnet'] - Network identifier.
 	 * @returns {AggregateTransactionFixtureBuilder}
 	 */
 	static createDefaultComplete = (chainName = 'symbol', networkIdentifier = 'testnet') => {
@@ -61,8 +61,8 @@ export class AggregateTransactionFixtureBuilder extends TransactionFixtureBuilde
 	/**
 	 * Creates a default AGGREGATE_BONDED transaction fixture.
 	 *
-	 * @param {string} [chainName='symbol'] - chain name.
-	 * @param {'mainnet' | 'testnet'} [networkIdentifier='testnet'] - network identifier.
+	 * @param {string} [chainName='symbol'] - Chain name.
+	 * @param {'mainnet' | 'testnet'} [networkIdentifier='testnet'] - Network identifier.
 	 * @returns {AggregateTransactionFixtureBuilder}
 	 */
 	static createDefaultBonded = (chainName = 'symbol', networkIdentifier = 'testnet') => {
@@ -83,7 +83,7 @@ export class AggregateTransactionFixtureBuilder extends TransactionFixtureBuilde
 	/**
 	 * Creates an aggregate transaction fixture with the provided data.
 	 *
-	 * @param {object} data - full transaction data.
+	 * @param {object} data - Full transaction data.
 	 * @returns {AggregateTransactionFixtureBuilder}
 	 */
 	static createWithData = data => {

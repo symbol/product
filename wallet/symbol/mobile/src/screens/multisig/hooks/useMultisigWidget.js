@@ -5,11 +5,13 @@ import { useMultisigAccountList } from '@/app/screens/multisig/hooks/useMultisig
 /** @typedef {import('@/app/types/Account').WalletAccount} WalletAccount */
 /** @typedef {import('@/app/types/Account').SymbolAccountInfo} SymbolAccountInfo */
 /** @typedef {import('@/app/types/Network').NetworkIdentifier} NetworkIdentifier */
+/** @typedef {import('@/app/types/Network').ChainName} ChainName */
 
 /**
- * @typedef {Object} MultisigWidgetProps
+ * Props passed to the MultisigWidget component.
+ * @typedef {object} MultisigWidgetProps
  * @property {SymbolAccountInfo[]} multisigAccountList - List of multisig accounts.
- * @property {string} chainName - The blockchain name.
+ * @property {ChainName} chainName - The blockchain name.
  * @property {NetworkIdentifier} networkIdentifier - The network identifier.
  * @property {string} ticker - The native currency ticker symbol.
  * @property {WalletAccount} currentAccount - The current wallet account.
@@ -18,7 +20,8 @@ import { useMultisigAccountList } from '@/app/screens/multisig/hooks/useMultisig
  */
 
 /**
- * @typedef {Object} UseMultisigWidgetReturnType
+ * Return type of the useMultisigWidget hook.
+ * @typedef {object} UseMultisigWidgetReturnType
  * @property {boolean} isVisible - Whether the widget should be shown (true when multisig accounts exist).
  * @property {() => void} refresh - Refreshes the multisig account list.
  * @property {boolean} isLoading - Whether data is being fetched.
@@ -29,7 +32,6 @@ import { useMultisigAccountList } from '@/app/screens/multisig/hooks/useMultisig
  * React hook for managing the multisig widget state and data for the home screen.
  * Provides visibility control and widget props derived from the wallet controller.
  * Listens to wallet events for auto-refresh.
- *
  * @param {MainWalletController} walletController - The wallet controller instance.
  * @returns {UseMultisigWidgetReturnType}
  */

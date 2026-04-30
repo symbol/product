@@ -28,7 +28,6 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 /**
  * Harvesting screen component. Provides the interface for viewing and managing
  * delegated harvesting including status, summary, and start/stop controls.
- *
  * @returns {React.ReactNode} Harvesting component.
  */
 export const Harvesting = () => {

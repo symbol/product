@@ -20,12 +20,11 @@ import React from 'react';
  * ContactDetails screen component. Displays details of a contact including
  * avatar, name, address with copy functionality, and notes.
  * Shows a warning alert if the contact is blacklisted.
- *
- * @param {Object} props - Component props.
- * @param {Object} props.route - React Navigation route object.
- * @param {Object} props.route.params - Route parameters.
+ * @param {object} props - Component props.
+ * @param {object} props.route - React Navigation route object.
+ * @param {object} props.route.params - Route parameters.
  * @param {string} props.route.params.contactId - The contact ID to display.
- * @returns {React.ReactNode} ContactDetails component
+ * @returns {React.ReactNode} ContactDetails component.
  */
 export const ContactDetails = ({ route }) => {
 	const { contactId } = route.params;

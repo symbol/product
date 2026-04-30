@@ -10,12 +10,10 @@ const LONG_PRESS_DELAY = 250;
 /**
  * DraggableListItem component. Wraps individual items with touch and animation handling.
  * Must be used inside ReorderableList as it uses the useReorderableDrag hook.
- *
- * @param {object} props - Component props
+ * @param {object} props - Component props.
  * @param {React.ReactNode} props.children - Child components to render.
- * @param {function} props.onPress - Callback when item is pressed.
- *
- * @returns {React.ReactNode} DraggableListItem component
+ * @param {function(): void} props.onPress - Callback when item is pressed.
+ * @returns {React.ReactNode} DraggableListItem component.
  */
 const DraggableListItem = ({ children, onPress }) => {
 	const drag = useReorderableDrag();
@@ -41,15 +39,13 @@ const DraggableListItem = ({ children, onPress }) => {
 /**
  * DraggableList component. A wrapper around ReorderableList providing simplified props
  * and consistent styling for drag-and-drop list functionality.
- *
- * @param {object} props - Component props
+ * @param {object} props - Component props.
  * @param {Array} props.data - Array of items to render.
- * @param {function} props.renderItem - Function to render each item, receives { item }.
- * @param {function} props.keyExtractor - Function to extract unique key from item.
- * @param {function} props.onItemPress - Callback when an item is pressed.
- * @param {function} props.onOrderChange - Callback when items are reordered, receives new data array.
- *
- * @returns {React.ReactNode} DraggableList component
+ * @param {function(object): React.ReactNode} props.renderItem - Function to render each item, receives { item }.
+ * @param {function(object): string} props.keyExtractor - Function to extract unique key from item.
+ * @param {function(): void} props.onItemPress - Callback when an item is pressed.
+ * @param {function(object): void} props.onOrderChange - Callback when items are reordered, receives new data array.
+ * @returns {React.ReactNode} DraggableList component.
  */
 export const DraggableList = ({
 	data,

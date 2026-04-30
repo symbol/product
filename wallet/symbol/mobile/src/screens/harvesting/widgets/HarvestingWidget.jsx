@@ -10,7 +10,6 @@ import React from 'react';
 /**
  * HarvestingWidget component. Displays harvesting status and summary in a card widget
  * on the home screen.
- *
  * @param {HarvestingWidgetProps} props - Component props.
  * @returns {React.ReactNode} HarvestingWidget component.
  */
