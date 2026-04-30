@@ -2,38 +2,44 @@ import { ActionMethod } from '@/app/lib/transport';
 import { $t } from '@/app/localization';
 import { Router } from '@/app/router/Router';
 
+/** @typedef {import('@/app/types/Network').ChainName} ChainName */
 /** @typedef {import('@/app/lib/transport').ShareAccountAddressUri} ShareAccountAddressUri */
 /** @typedef {import('@/app/lib/transport').ShareTransferTransactionUri} ShareTransferTransactionUri */
 /** @typedef {import('@/app/lib/transport').RequestSendTransactionUri} RequestSendTransactionUri */
 
 /**
+ * Union of the three supported transport URI action instances.
  * @typedef {ShareAccountAddressUri | ShareTransferTransactionUri | RequestSendTransactionUri} TransportUriObject
  */
 
 /**
- * @typedef {Object} WalletActionItem
- * @property {string} icon - Icon identifier for the action button
- * @property {string} title - Display title of the action
- * @property {string} description - Human-readable description of what the action does
- * @property {() => void} handlePress - Callback invoked when the action is selected
+ * Data for a single action button displayed on the transport request screen.
+ * @typedef {object} WalletActionItem
+ * @property {string} icon - Icon identifier for the action button.
+ * @property {string} title - Display title of the action.
+ * @property {string} description - Human-readable description of what the action does.
+ * @property {() => void} handlePress - Callback invoked when the action is selected.
  */
 
 /**
- * @typedef {Object} WalletActions
- * @property {WalletActionItem[]} suggested - Recommended actions for the scanned URI type
- * @property {WalletActionItem[]} other - Additional available actions for the scanned URI type
+ * Grouped action buttons (suggested and other) for a scanned transport URI.
+ * @typedef {object} WalletActions
+ * @property {WalletActionItem[]} suggested - Recommended actions for the scanned URI type.
+ * @property {WalletActionItem[]} other - Additional available actions for the scanned URI type.
  */
 
 /**
- * @typedef {Object} WalletActionsContext
- * @property {string} chainName - Chain name of the currently active wallet controller
+ * Context data passed to action condition predicates.
+ * @typedef {object} WalletActionsContext
+ * @property {ChainName} chainName - Chain name of the currently active wallet controller.
  */
 
 /**
- * @typedef {Object} WalletActionCondition
- * @property {string} type - The wallet action type identifier
- * @property {(uri: TransportUriObject, ctx: WalletActionsContext) => boolean} [when] - Optional predicate;
- *   if omitted the action is always included
+ * An action type with an optional predicate controlling its inclusion for a given URI.
+ * @typedef {object} WalletActionCondition
+ * @property {string} type - The wallet action type identifier.
+ * @property {(uri: TransportUriObject, ctx: WalletActionsContext) => boolean} [when] - Optional predicate;.
+ *   if omitted the action is always included.
  */
 
 const WalletActionType = {
@@ -96,10 +102,9 @@ const createFillTransferFormOnlyAddressAction = transportUriObject => {
 
 /**
  * Creates categorized wallet actions based on the type of transport URI received.
- *
- * @param {TransportUriObject | null} transportUriObject - Parsed transport URI action instance
- * @param {WalletActionsContext} [context] - Wallet state used to evaluate per-action conditions
- * @returns {WalletActions} Categorized wallet actions with suggested and other lists
+ * @param {TransportUriObject | null} transportUriObject - Parsed transport URI action instance.
+ * @param {WalletActionsContext} [context] - Wallet state used to evaluate per-action conditions.
+ * @returns {WalletActions} Categorized wallet actions with suggested and other lists.
  */
 export const createWalletActions = (transportUriObject, context = {}) => {
 	const actionFactoryMap = {

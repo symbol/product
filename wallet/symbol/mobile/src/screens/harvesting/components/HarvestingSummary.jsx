@@ -9,8 +9,7 @@ import { StyleSheet, View } from 'react-native';
 /**
  * HarvestingSummary component. Displays harvesting summary including latest harvested block
  * and 30-day statistics.
- *
- * @param {Object} props - Component props.
+ * @param {object} props - Component props.
  * @param {HarvestingSummaryViewModel} props.summaryViewModel - Summary view model.
  * @param {string} props.ticker - Currency ticker symbol.
  * @returns {React.ReactNode} HarvestingSummary component.

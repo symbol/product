@@ -16,12 +16,11 @@ import React from 'react';
 /**
  * TransportRequest screen component. Displays a transport URI received from a QR code scan.
  * Parses the URI, validates it, and shows relevant details and actions based on its content.
- *
- * @param {Object} props - Component props.
- * @param {Object} props.route - React Navigation route object.
- * @param {Object} props.route.params - Route parameters.
+ * @param {object} props - Component props.
+ * @param {object} props.route - React Navigation route object.
+ * @param {object} props.route.params - Route parameters.
  * @param {string} props.route.params.transportUri - The transport URI to display.
- * @returns {React.ReactNode} TransportRequest screen component
+ * @returns {React.ReactNode} TransportRequest screen component.
  */
 export const TransportRequest = ({ route }) => {
 	const { transportUri } = route.params;

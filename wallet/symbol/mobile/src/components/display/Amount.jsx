@@ -2,6 +2,8 @@ import { Colors, Typography } from '@/app/styles';
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
+/** @typedef {import('@/app/types/Sizes').SizeVariant} SizeVariant */
+
 const splitValue = stringValue => {
 	const decimalSeparatorIndex = stringValue.indexOf('.');
 	const integerPart = decimalSeparatorIndex === -1
@@ -17,15 +19,13 @@ const splitValue = stringValue => {
 /**
  * Amount component. A display component for showing numeric values with ticker symbols,
  * supporting conditional coloring based on positive/negative values and multiple size variants.
- *
- * @param {object} props - Component props
- * @param {string|null} props.value - The numeric value to display
- * @param {string} props.ticker - The ticker symbol (e.g., currency code)
- * @param {boolean} [props.isColored=false] - Whether to apply color based on value sign
- * @param {string} [props.size='m'] - Size variant ('s', 'm', 'l')
- * @param {object} [props.style] - Additional styles to apply to the root container
- * 
- * @returns {React.ReactNode} Amount component
+ * @param {object} props - Component props.
+ * @param {string|null} props.value - The numeric value to display.
+ * @param {string} props.ticker - The ticker symbol (e.g., currency code).
+ * @param {boolean} [props.isColored=false] - Whether to apply color based on value sign.
+ * @param {SizeVariant} [props.size='m'] - Size variant.
+ * @param {object} [props.style] - Additional styles to apply to the root container.
+ * @returns {React.ReactNode} Amount component.
  */
 export const Amount = ({ value, ticker, isColored = false, size = 'm', style }) => {
 	const isValueProvided = typeof value === 'string' && value !== '';

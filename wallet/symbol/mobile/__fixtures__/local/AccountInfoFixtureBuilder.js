@@ -20,12 +20,12 @@ const EMPTY_FIXTURE = {
 };
 
 /**
- * @typedef {Object} AccountInfo
+ * @typedef {object} AccountInfo
  * @property {string} address - Account address.
  * @property {string} publicKey - Account public key.
  * @property {string} balance - Account balance as a string.
  * @property {number} importance - Account importance score.
- * @property {Object|null} linkedKeys - Linked keys information or null if no keys are linked.
+ * @property {object | null} linkedKeys - Linked keys information or null if no keys are linked.
  * @property {Array} namespaces - List of namespaces owned by the account.
  * @property {boolean} isMultisig - Indicates if the account is a multisig account.
  * @property {Array} cosignatories - List of cosignatory addresses if the account is multisig.
@@ -40,9 +40,9 @@ export class AccountInfoFixtureBuilder {
 	/**
 	 * Creates an account info fixture with the provided data.
 	 * 
-	 * @param {AccountInfo} data - account data.
-	 * @param {string} [chainName] - chain name the account belongs to.
-	 * @param {'mainnet' | 'testnet'} [networkIdentifier] - network identifier the account belongs to.
+	 * @param {AccountInfo} data - Account data.
+	 * @param {string} [chainName] - Chain name the account belongs to.
+	 * @param {'mainnet' | 'testnet'} [networkIdentifier] - Network identifier the account belongs to.
 	 */
 	constructor(data, chainName, networkIdentifier) {
 		this._data = { ...data };
@@ -63,9 +63,9 @@ export class AccountInfoFixtureBuilder {
 	 * Creates an account info fixture with default data for the specified chain and network.
 	 * Used data from the fixture list.
 	 * 
-	 * @param {string} chainName - chain name the account belongs to.
-	 * @param {'mainnet' | 'testnet'} networkIdentifier - network identifier the account belongs to.
-	 * @param {number} index - account item index in the fixture list (eg. 0, 1, 2, ...).
+	 * @param {string} chainName - Chain name the account belongs to.
+	 * @param {'mainnet' | 'testnet'} networkIdentifier - Network identifier the account belongs to.
+	 * @param {number} index - Account item index in the fixture list (eg. 0, 1, 2, ...).
 	 * @returns {AccountInfoFixtureBuilder}
 	 */
 	static createWithAccount = (chainName, networkIdentifier, index) => {
@@ -84,10 +84,10 @@ export class AccountInfoFixtureBuilder {
 	/**
 	 * Creates an account info fixture with the provided data.
 	 * 
-	 * @param {AccountInfo} data - account data.
+	 * @param {AccountInfo} data - Account data.
 	 * @returns {AccountInfoFixtureBuilder}
-	 * @param {string} [chainName] - chain name the account belongs to.
-	 * @param {'mainnet' | 'testnet'} [networkIdentifier] - network identifier the account belongs to.
+	 * @param {string} [chainName] - Chain name the account belongs to.
+	 * @param {'mainnet' | 'testnet'} [networkIdentifier] - Network identifier the account belongs to.
 	 */
 	static createWithData = (data, chainName, networkIdentifier) => {
 		return new AccountInfoFixtureBuilder(data, chainName, networkIdentifier);

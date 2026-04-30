@@ -1,10 +1,12 @@
 import { $t } from '@/app/localization';
 import { TransactionGroup } from '@/app/types/Transaction';
 
+/** @typedef {import('@/app/types/ColorVariants').SemanticRoleColorVariants} SemanticRoleColorVariants */
+
 /**
  * Transaction status display data.
- * @typedef {Object} TransactionStatusDisplayData
- * @property {string} variant - Semantic color variant for styling.
+ * @typedef {object} TransactionStatusDisplayData
+ * @property {SemanticRoleColorVariants} variant - Semantic color variant for styling.
  * @property {string} iconName - Icon name for the status indicator.
  * @property {string} text - Localized status text.
  */

@@ -10,8 +10,7 @@ const AVATAR_SIZE = Sizes.Semantic.avatarHeight.xl;
 
 /**
  * ContactCompactItem component. Displays a compact contact with avatar and caption.
- *
- * @param {Object} props - Component props.
+ * @param {object} props - Component props.
  * @param {string} [props.address] - The contact address.
  * @param {string} [props.icon] - Icon name if no address is provided.
  * @param {string} props.caption - The contact caption.

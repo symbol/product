@@ -9,19 +9,21 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 /** @typedef {import('@/app/types/Transaction').Transaction} Transaction */
 
 /**
- * @typedef {Object} HistorySection
+ * A section entry for the history SectionList, representing a transaction group or receipt list.
+ * @typedef {object} HistorySection
  * @property {string} title - Section title.
  * @property {string} group - Transaction group identifier.
- * @property {Transaction[]|Object[]} data - Section data items.
- * @property {Object} [titleStyle] - Optional title style.
+ * @property {Transaction[] | object[]} data - Section data items.
+ * @property {object} [titleStyle] - Optional title style.
  */
 
 /**
- * @typedef {Object} UseHistoryDataResult
+ * Return type of the useHistoryData hook.
+ * @typedef {object} UseHistoryDataResult
  * @property {HistorySection[]} sections - Sections for SectionList.
- * @property {Object} filter - Current filter values.
- * @property {function(Object): void} setFilter - Function to update filter.
- * @property {Object[]} filterConfig - Filter configuration.
+ * @property {object} filter - Current filter values.
+ * @property {function(object): void} setFilter - Function to update filter.
+ * @property {object[]} filterConfig - Filter configuration.
  * @property {boolean} isLoading - Whether initial loading is in progress.
  * @property {boolean} isRefreshing - Whether refresh is in progress.
  * @property {boolean} isPageLoading - Whether next page is loading.
@@ -34,8 +36,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 /**
  * React hook for managing history screen data. Combines transaction and receipt
  * history, manages filter state, and handles data refresh on wallet events.
- *
- * @param {Object} params - Hook parameters.
+ * @param {object} params - Hook parameters.
  * @param {WalletController} params.walletController - Wallet controller instance.
  * @returns {UseHistoryDataResult} History data and controls.
  */

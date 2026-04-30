@@ -4,8 +4,7 @@ import { Image, StyleSheet } from 'react-native';
 
 /**
  * SymbolLogo component. A component displaying the Symbol logo image.
- *
- * @returns {React.ReactNode} SymbolLogo component
+ * @returns {React.ReactNode} SymbolLogo component.
  */
 export const SymbolLogo = () => {
 	return (

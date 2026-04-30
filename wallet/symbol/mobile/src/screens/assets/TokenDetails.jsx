@@ -22,19 +22,19 @@ import { Colors } from '@/app/styles';
 import { createTransactionQr } from '@/app/utils';
 import React from 'react';
 
+/** @typedef {import('@/app/types/Network').ChainName} ChainName */
+
 /**
  * TokenDetails screen component. Displays detailed information about a specific token including
  * balance, creator, supply, divisibility, and expiration status. Allows sending tokens if not expired.
- *
  * @param {object} props - Component props.
  * @param {object} props.route - React Navigation route object.
  * @param {object} props.route.params - Route parameters.
- * @param {string} props.route.params.chainName - The blockchain name.
+ * @param {ChainName} props.route.params.chainName - The blockchain name.
  * @param {string} props.route.params.tokenId - The token identifier.
  * @param {string} props.route.params.accountAddress - The owner account address.
  * @param {object} [props.route.params.preloadedData] - Preloaded token data to avoid initial fetch.
- *
- * @returns {React.ReactNode} TokenDetails component
+ * @returns {React.ReactNode} TokenDetails component.
  */
 export const TokenDetails = ({ route }) => {
 	const { chainName, tokenId, accountAddress, preloadedData } = route.params;

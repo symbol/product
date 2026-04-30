@@ -9,7 +9,7 @@ import { formatDate } from '@/app/utils';
 
 /**
  * Parameters for building activity log.
- * @typedef {Object} BuildActivityLogParams
+ * @typedef {object} BuildActivityLogParams
  * @property {BridgeRequestStatusType} requestStatus - Request transaction status.
  * @property {BridgePayoutStatusType} [payoutStatus] - Payout transaction status.
  * @property {number} [requestTimestamp] - Request transaction timestamp.

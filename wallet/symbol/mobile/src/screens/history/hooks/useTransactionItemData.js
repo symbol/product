@@ -11,9 +11,11 @@ import { useMemo } from 'react';
 /** @typedef {import('@/app/types/Transaction').Transaction} Transaction */
 /** @typedef {import('@/app/types/Account').WalletAccount} WalletAccount */
 /** @typedef {import('@/app/types/Network').NetworkIdentifier} NetworkIdentifier */
+/** @typedef {import('@/app/types/Network').ChainName} ChainName */
 
 /**
- * @typedef {Object} TransactionDisplayData
+ * Computed display data for a transaction list item.
+ * @typedef {object} TransactionDisplayData
  * @property {string} iconName - Icon name for the transaction.
  * @property {string} action - Action text for the transaction.
  * @property {string} description - Description text for the transaction.
@@ -23,14 +25,13 @@ import { useMemo } from 'react';
 
 /**
  * React hook for computing transaction display data used in list items.
- *
- * @param {Object} options - Hook options.
+ * @param {object} options - Hook options.
  * @param {Transaction} options.transaction - Transaction object.
  * @param {string} options.group - Transaction group (confirmed, unconfirmed, partial).
  * @param {WalletAccount} options.currentAccount - Current account.
  * @param {WalletAccount[]} options.walletAccounts - Wallet accounts for the network.
- * @param {Object} options.addressBook - Address book instance.
- * @param {string} options.chainName - Chain name (e.g., 'symbol').
+ * @param {object} options.addressBook - Address book instance.
+ * @param {ChainName} options.chainName - Chain name (e.g., 'symbol').
  * @param {NetworkIdentifier} options.networkIdentifier - Network identifier.
  * @param {boolean} [options.isDateHidden=false] - Whether to hide the date.
  * @returns {TransactionDisplayData} Transaction display data.

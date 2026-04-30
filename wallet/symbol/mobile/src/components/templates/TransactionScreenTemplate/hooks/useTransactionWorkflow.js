@@ -19,30 +19,30 @@ import { useState } from 'react';
 /** @typedef {import('wallet-common-core/src/types/Transaction').TransactionFeeTierLevel} TransactionFeeTierLevel */
 
 /**
- * @typedef {Object} TransactionWorkflow
- * @property {TransactionBundle|null} transactionBundle - The current transaction bundle being processed, null if not yet created
- * @property {string[]} signedTransactionHashes - Array of hashes of signed transactions in the bundle
- * @property {AsyncManager<TransactionBundle>} createManager - Manager for handling transaction creation operations
- * @property {AsyncManager<TransactionBundle>} signManager - Manager for handling transaction signing operations
- * @property {AsyncManager<void>} announceManager - Manager for handling transaction announcement operations
- * @property {function(): void} reset - Resets the workflow state, clearing transaction bundle and resetting all managers
- * @property {function(): Promise<void>} executeSignAndAnnounce - Executes the sign and announce workflow for the current transaction bundle
- * @property {function(): Promise<TransactionBundle>} createTransaction - Creates a new transaction bundle using the provided callback
+ * Return type of the useTransactionWorkflow hook, containing the full send workflow state and functions.
+ * @typedef {object} TransactionWorkflow
+ * @property {TransactionBundle|null} transactionBundle - The current transaction bundle being processed, null if not yet created.
+ * @property {string[]} signedTransactionHashes - Array of hashes of signed transactions in the bundle.
+ * @property {AsyncManager<TransactionBundle>} createManager - Manager for handling transaction creation operations.
+ * @property {AsyncManager<TransactionBundle>} signManager - Manager for handling transaction signing operations.
+ * @property {AsyncManager<void>} announceManager - Manager for handling transaction announcement operations.
+ * @property {function(): void} reset - Resets the workflow state, clearing transaction bundle and resetting all managers.
+ * @property {function(): Promise<void>} executeSignAndAnnounce - Executes the sign and announce workflow 
+ * for the current transaction bundle.
+ * @property {function(): Promise<TransactionBundle>} createTransaction - Creates a new transaction bundle using the provided callback.
  */
 
 /**
- * Hook for managing the transaction send workflow (create -> sign -> announce)
- * 
- * @param {Object} params - The parameters object
- * @param {CreateTransactionCallback} params.createTransactionCallback - Callback to create the transaction bundle
- * @param {WalletController} params.walletController - The wallet controller instance
- * @param {TransactionFeeTiers[]} [params.transactionFeeTiers] - Optional array of fee tiers for each transaction
- * @param {TransactionFeeTierLevel} [params.transactionFeeTierLevel] - Optional fee tier level to apply
- * @param {ErrorCallback} [params.onCreateTransactionError] - Optional error callback for transaction creation
- * @param {SuccessCallback} [params.onSendSuccess] - Optional success callback after sign and announce
- * @param {ErrorCallback} [params.onSendError] - Optional error callback for sign and announce
- * 
- * @returns {TransactionWorkflow} The transaction workflow state and functions
+ * React hook for managing the transaction send workflow (create -> sign -> announce).
+ * @param {object} params - The parameters object.
+ * @param {CreateTransactionCallback} params.createTransactionCallback - Callback to create the transaction bundle.
+ * @param {WalletController} params.walletController - The wallet controller instance.
+ * @param {TransactionFeeTiers[]} [params.transactionFeeTiers] - Optional array of fee tiers for each transaction.
+ * @param {TransactionFeeTierLevel} [params.transactionFeeTierLevel] - Optional fee tier level to apply.
+ * @param {ErrorCallback} [params.onCreateTransactionError] - Optional error callback for transaction creation.
+ * @param {SuccessCallback} [params.onSendSuccess] - Optional success callback after sign and announce.
+ * @param {ErrorCallback} [params.onSendError] - Optional error callback for sign and announce.
+ * @returns {TransactionWorkflow} The transaction workflow state and functions.
  */
 export const useTransactionWorkflow = ({
 	createTransactionCallback,

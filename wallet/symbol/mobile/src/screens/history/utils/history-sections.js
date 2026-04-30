@@ -15,7 +15,7 @@ export const SectionType = {
 
 /**
  * Returns the filter configuration for the history screen.
- * @returns {Object[]} Filter configuration array.
+ * @returns {object[]} Filter configuration array.
  */
 export const getHistoryFilterConfig = () => [
 	{
@@ -63,9 +63,9 @@ export const getHistoryFilterConfig = () => [
  * Creates a section object for the SectionList.
  * @param {string} title - Section title.
  * @param {string} group - Transaction group identifier.
- * @param {Transaction[]|Object[]} data - Section data.
- * @param {Object} [titleStyle] - Optional title style.
- * @returns {Object} Section configuration.
+ * @param {Transaction[] | object[]} data - Section data.
+ * @param {object} [titleStyle] - Optional title style.
+ * @returns {object} Section configuration.
  */
 export const createSection = (title, group, data, titleStyle = null) => ({
 	key: group,
@@ -85,13 +85,13 @@ export const SECTION_TITLE_STYLES = {
 
 /**
  * Builds sections array from transaction and receipt data.
- * @param {Object} params - Parameters object.
+ * @param {object} params - Parameters object.
  * @param {Transaction[]} params.partial - Partial transactions.
  * @param {Transaction[]} params.unconfirmed - Unconfirmed transactions.
  * @param {Transaction[]} params.confirmed - Confirmed transactions.
- * @param {Object[]} params.harvested - Harvested receipts.
+ * @param {object[]} params.harvested - Harvested receipts.
  * @param {boolean} params.isHarvestedMode - Whether showing harvested mode.
- * @returns {Object[]} Sections array for SectionList.
+ * @returns {object[]} Sections array for SectionList.
  */
 export const buildHistorySections = ({
 	partial,

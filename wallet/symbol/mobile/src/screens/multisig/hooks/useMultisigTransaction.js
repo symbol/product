@@ -12,7 +12,7 @@ import { objectToTableData } from '@/app/utils';
 
 /**
  * Return type for useMultisigTransaction hook.
- * @typedef {Object} UseMultisigTransactionReturnType
+ * @typedef {object} UseMultisigTransactionReturnType
  * @property {() => Promise<Transaction>} createNewAccountTransaction - Creates a transaction for a new multisig account.
  * @property {() => Promise<Transaction>} createModificationTransaction
  *   - Creates a transaction for modifying an existing multisig account.
@@ -22,8 +22,7 @@ import { objectToTableData } from '@/app/utils';
 
 /**
  * React hook for creating multisig account modification transactions and generating preview data.
- *
- * @param {Object} params - Hook parameters.
+ * @param {object} params - Hook parameters.
  * @param {WalletController} params.walletController - The wallet controller instance.
  * @param {PrivateAccount|null} [params.multisigAccount] - The generated multisig account.
  * @param {AccountInfo|null} [params.multisigAccountInfo] - Existing multisig account info.

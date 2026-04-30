@@ -2,18 +2,19 @@ import { Dropdown, TokenView } from '@/app/components';
 import { getTokenKnownInfo } from '@/app/utils';
 import React from 'react';
 
+/** @typedef {import('@/app/types/Network').NetworkIdentifier} NetworkIdentifier */
+/** @typedef {import('@/app/types/Network').ChainName} ChainName */
+
 /**
  * SelectToken component. A dropdown selector for choosing tokens from a provided list,
  * displaying token names, tickers, and amounts with visual representations.
- *
  * @param {object} props - Component props.
  * @param {string} props.label - Dropdown label.
  * @param {string} props.value - Currently selected token id.
  * @param {import('wallet-common-core/src/types/Token').Token[]} props.tokens - List of available tokens.
- * @param {string} props.chainName - Current chain name.
- * @param {string} props.networkIdentifier - Current network identifier.
- * @param {function} props.onChange - Callback for when the selected token changes.
- * 
+ * @param {ChainName} props.chainName - Current chain name.
+ * @param {NetworkIdentifier} props.networkIdentifier - Current network identifier.
+ * @param {function(object): void} props.onChange - Callback for when the selected token changes.
  * @returns {React.ReactNode} The InputAddress component.
  */
 export const SelectToken = props => {

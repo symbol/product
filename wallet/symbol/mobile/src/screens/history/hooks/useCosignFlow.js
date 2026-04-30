@@ -7,33 +7,35 @@ import { useCallback, useState } from 'react';
 /** @typedef {import('@/app/types/Wallet').WalletController} WalletController */
 
 /**
- * @typedef {Object} ConfirmationDialogProps
+ * Props for the cosign confirmation dialog.
+ * @typedef {object} ConfirmationDialogProps
  * @property {boolean} isVisible - Whether the confirmation dialog is visible.
  * @property {function(): void} onConfirm - Handler for confirm action.
  * @property {function(): void} onCancel - Handler for cancel action.
  */
 
 /**
- * @typedef {Object} SuccessDialogProps
+ * Props for the cosign success dialog.
+ * @typedef {object} SuccessDialogProps
  * @property {boolean} isVisible - Whether the success dialog is visible.
  * @property {function(): void} onSuccess - Handler for success acknowledgment.
  */
 
 /**
- * @typedef {Object} UseCosignFlowResult
+ * Return type of the useCosignFlow hook.
+ * @typedef {object} UseCosignFlowResult
  * @property {boolean} isLoading - Whether a cosign operation is in progress.
  * @property {function(): void} startCosignFlow - Initiates the cosign flow.
  * @property {ConfirmationDialogProps} confirmationDialogProps - Props for confirmation dialog.
  * @property {SuccessDialogProps} successDialogProps - Props for success dialog.
- * @property {Object} passcodeProps - Props for the PasscodeView component.
+ * @property {object} passcodeProps - Props for the PasscodeView component.
  * @property {function(): void} reset - Resets the cosign flow to initial state.
  */
 
 /**
  * React hook for managing the transaction cosignature flow.
  * Handles the complete flow: button press → confirmation dialog → passcode → cosign → success dialog.
- *
- * @param {Object} params - Hook parameters.
+ * @param {object} params - Hook parameters.
  * @param {Transaction} params.transaction - The transaction to cosign.
  * @param {WalletController} params.walletController - Wallet controller instance.
  * @param {function(): void} [params.onSuccess] - Callback invoked after successful cosign.

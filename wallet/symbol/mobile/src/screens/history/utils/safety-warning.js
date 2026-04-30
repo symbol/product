@@ -2,13 +2,14 @@ import { $t } from '@/app/localization';
 import { AggregateTypes, LoseAccessWarningTypes } from '@/app/screens/history/constants';
 
 /** @typedef {import('@/app/types/Transaction').Transaction} Transaction */
+/** @typedef {import('@/app/types/ColorVariants').SemanticRoleColorVariants} SemanticRoleColorVariants */
 
 /**
  * Safety warning alert display data.
- * @typedef {Object} SafetyWarningAlertData
+ * @typedef {object} SafetyWarningAlertData
  * @property {boolean} isVisible - Whether the alert should be displayed.
  * @property {string} [text] - Alert message text.
- * @property {string} [variant] - Semantic color variant for styling.
+ * @property {SemanticRoleColorVariants} [variant] - Semantic color variant for styling.
  */
 
 /**

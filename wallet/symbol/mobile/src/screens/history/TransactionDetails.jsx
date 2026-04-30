@@ -39,19 +39,20 @@ import { createExplorerTransactionUrl } from '@/app/utils';
 import React from 'react';
 
 
+/** @typedef {import('@/app/types/Network').ChainName} ChainName */
 /** @typedef {import('@/app/types/Transaction').Transaction} Transaction */
 
 /**
  * TransactionDetails screen component. Displays a selected transaction with its
  * details, date, current status, and cosignature actions when the transaction
  * requires the active account to co-sign.
- * @param {Object} props - Component props.
- * @param {Object} props.route - React Navigation route object.
- * @param {Object} props.route.params - Route parameters.
- * @param {string} props.route.params.chainName - Chain name (e.g., 'symbol').
+ * @param {object} props - Component props.
+ * @param {object} props.route - React Navigation route object.
+ * @param {object} props.route.params - Route parameters.
+ * @param {ChainName} props.route.params.chainName - Chain name (e.g., 'symbol').
  * @param {Transaction} props.route.params.transaction - Transaction to display.
  * @param {string} props.route.params.group - Transaction group (e.g., 'confirmed', 'unconfirmed').
- * @returns {import('react').ReactNode} TransactionDetails component
+ * @returns {import('react').ReactNode} TransactionDetails component.
  */
 export const TransactionDetails = ({ route }) => {
 	const { chainName, transaction: preloadedData, group } = route.params;

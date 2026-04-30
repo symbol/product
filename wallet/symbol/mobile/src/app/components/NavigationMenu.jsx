@@ -63,15 +63,13 @@ const TAB_CONFIG = [
 
 /**
  * Navigation menu item component. Displays a tab with an icon and title.
- *
- * @param {object} props - Component props
+ * @param {object} props - Component props.
  * @param {string} props.title - Tab title text.
  * @param {boolean} props.isActive - Whether the tab is currently active.
  * @param {object} props.iconDefault - Default icon source.
  * @param {object} props.iconActive - Active icon source.
- * @param {function} props.onPress - Function to call on tab press.
- *
- * @returns {React.ReactNode} NavigationMenuItem component
+ * @param {function(): void} props.onPress - Function to call on tab press.
+ * @returns {React.ReactNode} NavigationMenuItem component.
  */
 const NavigationMenuItem = ({ title, isActive, iconDefault, iconActive, onPress }) => {
 	const itemStyle = isActive ? [styles.item, styles.itemActive] : styles.item;
@@ -94,8 +92,7 @@ const NavigationMenuItem = ({ title, isActive, iconDefault, iconActive, onPress 
 /**
  * Navigation menu component. Displays a horizontal tab bar for main app navigation.
  * Handles navigation between screens.
- *
- * @returns {React.ReactNode} NavigationMenu component
+ * @returns {React.ReactNode} NavigationMenu component.
  */
 export const NavigationMenu = ({ currentRouteName }) => {
 	const handleTabPress = tab => {

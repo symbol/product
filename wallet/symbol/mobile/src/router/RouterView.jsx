@@ -50,12 +50,10 @@ const linkingOptions = {
 /**
  * RouterView component. The root navigation container that renders all app screens
  * based on the current authentication flow (onboarding or main).
- *
  * @param {object} props - Component props.
  * @param {boolean} props.isActive - Whether the navigation stack should be rendered.
  * @param {'onboarding'|'main'} props.flow - The current router flow determining which screens are shown.
- *
- * @returns {React.ReactNode} RouterView component
+ * @returns {React.ReactNode} RouterView component.
  */
 export const RouterView = ({ isActive, flow }) => (
 	<NavigationContainer theme={theme} ref={navigationRef} linking={linkingOptions}>

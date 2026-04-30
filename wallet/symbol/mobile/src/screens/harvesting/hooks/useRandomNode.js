@@ -19,7 +19,7 @@ const pickRandom = array => {
 
 /**
  * Return type for useRandomNode hook.
- * @typedef {Object} UseRandomNodeReturnType
+ * @typedef {object} UseRandomNodeReturnType
  * @property {string|null} randomNodeUrl - Randomly selected node URL.
  * @property {string[]} nodeList - Full list of available nodes.
  * @property {boolean} isLoading - Whether node list is loading.
@@ -29,7 +29,6 @@ const pickRandom = array => {
 
 /**
  * React hook for fetching node list and selecting a random node.
- *
  * @param {MainWalletController} walletController - Wallet controller instance.
  * @returns {UseRandomNodeReturnType}
  */

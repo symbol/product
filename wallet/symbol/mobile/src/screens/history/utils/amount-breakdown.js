@@ -8,6 +8,8 @@ import { safeOperationWithRelativeAmounts } from 'wallet-common-core';
 /** @typedef {import('@/app/screens/history/types/AmountBreakdown').AmountBreakdownMap} AmountBreakdownMap */
 /** @typedef {import('@/app/screens/history/types/AmountBreakdown').AmountBreakdownDisplayData} AmountBreakdownDisplayData */
 /** @typedef {import('@/app/screens/history/types/AmountBreakdown').TokenAmountChange} TokenAmountChange */
+/** @typedef {import('@/app/types/Network').NetworkIdentifier} NetworkIdentifier */
+/** @typedef {import('@/app/types/Network').ChainName} ChainName */
 
 /**
  * Ensures an account entry exists in the breakdown map.
@@ -86,7 +88,6 @@ const processTransaction = (transaction, breakdownMap) => {
 /**
  * Calculates the amount breakdown for a transaction.
  * Returns a map of account addresses to their token balance changes.
- * 
  * @param {Transaction} transaction - The transaction to analyze.
  * @returns {AmountBreakdownMap} Map of account addresses to token changes.
  */
@@ -101,7 +102,6 @@ export const calculateAmountBreakdown = transaction => {
 /**
  * Ensures the current account has an entry for the native token in the breakdown map.
  * If the current account is not involved in the transaction, it will add an entry with zero amount.
- * 
  * @param {AmountBreakdownMap} breakdownMap - The breakdown map to update.
  * @param {string} currentAccountAddress - The current wallet account address.
  * @param {string} nativeCurrencyTokenId - The native currency token ID.
@@ -150,18 +150,17 @@ const formatAmountWithSign = (amount, changeType) => {
 
 /**
  * Options for creating amount breakdown display data.
- * @typedef {Object} AmountBreakdownDisplayOptions
- * @property {string} chainName - The blockchain name.
- * @property {string} networkIdentifier - The network identifier.
+ * @typedef {object} AmountBreakdownDisplayOptions
+ * @property {ChainName} chainName - The blockchain name.
+ * @property {NetworkIdentifier} networkIdentifier - The network identifier.
  * @property {string} nativeCurrencyTokenId - The native currency token ID.
  * @property {string} [currentAccountAddress] - The current wallet account address.
  * @property {import('@/app/types/Account').WalletAccount[]} [walletAccounts] - The wallet accounts.
- * @property {Object} [addressBook] - The address book instance.
+ * @property {object} [addressBook] - The address book instance.
  */
 
 /**
  * Creates display-ready amount breakdown data from a transaction.
- * 
  * @param {Transaction} transaction - The transaction to analyze.
  * @param {AmountBreakdownDisplayOptions} options - Display options including chain context.
  * @returns {AmountBreakdownDisplayData} Display-ready breakdown data.

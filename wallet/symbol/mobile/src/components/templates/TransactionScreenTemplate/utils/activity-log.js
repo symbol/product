@@ -8,21 +8,21 @@ import { ActivityStatus } from '@/app/constants';
 /** @typedef {import('@/app/types/ActivityLog').ActivityLogItem} ActivityLogItem */
 
 /**
- * @typedef {Object} BuildActivityLogParams
- * @property {ActionState} createStatus - Current status of the transaction creation step
- * @property {ActionState} signStatus - Current status of the transaction signing step
- * @property {ActionState} announceStatus - Current status of the transaction announcement step
- * @property {boolean} isAllTransactionsConfirmed - Whether all transactions in the bundle have been confirmed on the network
- * @property {boolean} hasFailedTransactions - Whether any transactions in the bundle were rejected by the network
+ * Parameters for building the transaction workflow activity log.
+ * @typedef {object} BuildActivityLogParams
+ * @property {ActionState} createStatus - Current status of the transaction creation step.
+ * @property {ActionState} signStatus - Current status of the transaction signing step.
+ * @property {ActionState} announceStatus - Current status of the transaction announcement step.
+ * @property {boolean} isAllTransactionsConfirmed - Whether all transactions in the bundle have been confirmed on the network.
+ * @property {boolean} hasFailedTransactions - Whether any transactions in the bundle were rejected by the network.
  */
 
 /**
  * Builds an activity log array representing the transaction workflow steps.
  * Each step (create, sign, announce, confirm) includes its current status, icon, and any error messages.
  * The confirmation step's status is dynamically calculated based on announcement and confirmation states.
- * 
- * @param {BuildActivityLogParams} params - Parameters containing all workflow step statuses and confirmation state
- * @returns {ActivityLogItem[]} Array of activity log steps representing the complete transaction workflow
+ * @param {BuildActivityLogParams} params - Parameters containing all workflow step statuses and confirmation state.
+ * @returns {ActivityLogItem[]} Array of activity log steps representing the complete transaction workflow.
  */
 export const buildActivityLog = ({
 	createStatus,

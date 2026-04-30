@@ -3,7 +3,7 @@ import { useCallback } from 'react';
 import { useSharedValue, withSequence, withTiming } from 'react-native-reanimated';
 
 /**
- * Hook for managing passcode shake animation.
+ * React hook for managing passcode shake animation.
  * @returns {object} - Shake animation utilities.
  */
 export const usePasscodeShake = () => {

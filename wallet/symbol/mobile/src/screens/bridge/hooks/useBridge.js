@@ -135,7 +135,7 @@ const createSwapPairs = bridges => {
 
 /**
  * Return type for useBridge hook.
- * @typedef {Object} UseBridgeReturnType
+ * @typedef {object} UseBridgeReturnType
  * @property {BridgeManager[]} bridges - Array of available bridge managers.
  * @property {SwapPair[]} pairs - Array of available swap pairs.
  * @property {BridgePairsStatusType} pairsStatus - Current status of swap pairs loading.

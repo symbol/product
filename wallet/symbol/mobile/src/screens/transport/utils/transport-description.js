@@ -8,6 +8,7 @@ import { objectToTableData } from '@/app/utils';
 /** @typedef {import('@/app/types/Table').TableRow} TableRow */
 
 /**
+ * Union of the three supported transport URI action instances.
  * @typedef {ShareAccountAddressUri | ShareTransferTransactionUri | RequestSendTransactionUri} TransportUriObject
  */
 
@@ -50,17 +51,17 @@ const attachTokenInfoToParameters = parameters => {
 };
 
 /**
- * @typedef {Object} RequestDetailsViewModel
- * @property {boolean} isVisible - Indicates whether the request details should be displayed
- * @property {string | undefined} title - Display title derived from the action type ('request' or 'share')
- * @property {TableRow[]} tableData - Table rows built from the remaining URI parameters
+ * View model for the request details section of the transport request screen.
+ * @typedef {object} RequestDetailsViewModel
+ * @property {boolean} isVisible - Indicates whether the request details should be displayed.
+ * @property {string | undefined} title - Display title derived from the action type ('request' or 'share').
+ * @property {TableRow[]} tableData - Table rows built from the remaining URI parameters.
  */
 
 /**
  * Creates a view model for displaying transport URI request details.
- *
- * @param {TransportUriObject | null} transportUriObject - Parsed transport URI action instance
- * @returns {RequestDetailsViewModel} View model with title and table data for the RequestDetails component
+ * @param {TransportUriObject | null} transportUriObject - Parsed transport URI action instance.
+ * @returns {RequestDetailsViewModel} View model with title and table data for the RequestDetails component.
  */
 export const createRequestDetailsViewModel = transportUriObject => {
 	if (!transportUriObject)

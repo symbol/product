@@ -7,7 +7,7 @@ import { useCallback } from 'react';
 
 /**
  * Return type for useHarvestingTransaction hook.
- * @typedef {Object} UseHarvestingTransactionReturnType
+ * @typedef {object} UseHarvestingTransactionReturnType
  * @property {(password: string) => Promise<Transaction>} createStartTransaction - Creates start harvesting transaction.
  * @property {() => Transaction} createStopTransaction - Creates stop harvesting transaction.
  * @property {() => TableData} getTransactionPreviewTable - Gets preview table for confirmation dialog.
@@ -15,8 +15,7 @@ import { useCallback } from 'react';
 
 /**
  * React hook for creating harvesting transactions and generating preview data.
- *
- * @param {Object} params - Hook parameters.
+ * @param {object} params - Hook parameters.
  * @param {MainWalletController} params.walletController - The wallet controller instance.
  * @param {string} [params.selectedNodeUrl] - Selected node URL for starting harvesting.
  * @returns {UseHarvestingTransactionReturnType}

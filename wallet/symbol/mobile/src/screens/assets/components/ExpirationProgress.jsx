@@ -12,19 +12,20 @@ const ANIMATION_DELAY = 1000;
 const PROGRESS_HEIGHT = Sizes.Semantic.spacing.xs;
 
 /**
- * @typedef {Object} ExpirationProgressProps
- * @property {number} endHeight - Block height when token expires
- * @property {number} startHeight - Block height when token was created
- * @property {number} chainHeight - Current blockchain height
- * @property {number} blockGenerationTargetTime - Average block generation time in seconds
- * @property {import('react-native').ViewStyle} [style] - Optional container style
+ * Props for the ExpirationProgress component.
+ * @typedef {object} ExpirationProgressProps
+ * @property {number} endHeight - Block height when token expires.
+ * @property {number} startHeight - Block height when token was created.
+ * @property {number} chainHeight - Current blockchain height.
+ * @property {number} blockGenerationTargetTime - Average block generation time in seconds.
+ * @property {import('react-native').ViewStyle} [style] - Optional container style.
  */
 
 /**
  * ExpirationProgress component. Displays animated progress bar showing token expiration status
  * with color-coded warning states and remaining time text.
- * @param {ExpirationProgressProps} props - Component props
- * @returns {React.ReactNode} ExpirationProgress component
+ * @param {ExpirationProgressProps} props - Component props.
+ * @returns {React.ReactNode} ExpirationProgress component.
  */
 export const ExpirationProgress = ({ endHeight, startHeight, chainHeight, blockGenerationTargetTime, style }) => {
 	// Expiration percentage calculation

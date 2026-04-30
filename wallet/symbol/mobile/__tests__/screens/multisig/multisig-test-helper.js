@@ -17,7 +17,7 @@ export const ACTION_TYPE = {
  * Opens the add-cosignatory dialog, types the address, and confirms.
  *
  * @param {import('__tests__/ScreenTester').ScreenTester} screenTester
- * @param {Object} screenText - The SCREEN_TEXT constant from the calling test file.
+ * @param {object} screenText - The SCREEN_TEXT constant from the calling test file.
  * @param {string} address - Cosignatory address to add.
  */
 export const addCosignatory = async (screenTester, screenText, address) => {
@@ -31,7 +31,7 @@ export const addCosignatory = async (screenTester, screenText, address) => {
  * Dispatches a single approval/removal counter action (increment or decrement).
  *
  * @param {import('__tests__/ScreenTester').ScreenTester} screenTester
- * @param {Object} screenText - The SCREEN_TEXT constant from the calling test file.
+ * @param {object} screenText - The SCREEN_TEXT constant from the calling test file.
  * @param {{ type: 'increment-approval' | 'decrement-approval' | 'increment-removal' | 'decrement-removal' }} action
  */
 export const applyCounterAction = (screenTester, screenText, action) => {

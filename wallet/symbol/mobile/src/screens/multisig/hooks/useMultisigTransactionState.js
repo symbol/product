@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 
 /**
  * Return type for useMultisigTransactionState hook.
- * @typedef {Object} UseMultisigTransactionStateReturnType
+ * @typedef {object} UseMultisigTransactionStateReturnType
  * @property {number} minApproval - Minimum approvals required for transactions.
  * @property {number} minRemoval - Minimum approvals required for cosignatory removal.
  * @property {Cosignatory[]} cosignatories - List of cosignatory addresses.
@@ -18,8 +18,7 @@ import { useCallback, useEffect, useState } from 'react';
 /**
  * React hook for managing the multisig transaction state.
  * Handles cosignatory management and approval thresholds.
- *
- * @param {Object} [initialValues] - Initial state values.
+ * @param {object} [initialValues] - Initial state values.
  * @param {Cosignatory[]} [initialValues.cosignatories] - Initial cosignatory addresses.
  * @param {number} [initialValues.minApproval] - Initial minimum approvals required for transactions.
  * @param {number} [initialValues.minRemoval] - Initial minimum approvals required for cosignatory removal.

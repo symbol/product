@@ -6,8 +6,9 @@ const FIRST_PAGE_NUMBER = 1;
 const PAGE_SIZE = 15;
 
 /**
- * @typedef {Object} UseReceiptHistoryResult
- * @property {Object[]} receipts - Harvested receipts/blocks.
+ * Return type of the useReceiptHistory hook.
+ * @typedef {object} UseReceiptHistoryResult
+ * @property {object[]} receipts - Harvested receipts/blocks.
  * @property {boolean} isLoading - Whether initial loading is in progress.
  * @property {boolean} isPageLoading - Whether next page is loading.
  * @property {boolean} isLastPage - Whether the last page has been reached.
@@ -18,7 +19,6 @@ const PAGE_SIZE = 15;
 
 /**
  * React hook for managing harvested blocks/receipts history with pagination.
- *
  * @returns {UseReceiptHistoryResult} Receipt history state and controls.
  */
 export const useReceiptHistory = () => {

@@ -51,7 +51,7 @@ const calculateAvailableBalance = (source, transactionFees, transactionFeeTierLe
 
 /**
  * Return type for useBridgeAmount hook.
- * @typedef {Object} UseBridgeAmountReturnType
+ * @typedef {object} UseBridgeAmountReturnType
  * @property {string} amount - Formatted amount value.
  * @property {string} amountInput - Raw amount input value.
  * @property {boolean} isAmountValid - Whether the amount is valid.
@@ -63,7 +63,7 @@ const calculateAvailableBalance = (source, transactionFees, transactionFeeTierLe
 
 /**
  * React hook for managing swap amount input, validation, and available balance calculation.
- * @param {Object} params - Hook parameters.
+ * @param {object} params - Hook parameters.
  * @param {SwapSide|null} params.source - The source swap side.
  * @param {TransactionFeeTiers|null} params.transactionFees - Transaction fee tiers.
  * @param {TransactionFeeTierLevel} params.transactionFeeTierLevel - Selected fee tier level.

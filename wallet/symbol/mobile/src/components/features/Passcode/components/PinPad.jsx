@@ -50,11 +50,9 @@ const PinPadButton = ({ isDisabled, value, onPress }) => {
 
 /**
  * PinPad component. A numeric keypad for passcode entry.
- *
  * @param {object} props - Component props.
- * @param {function} props.onKeyPress - Callback when a number key is pressed.
- * @param {function} props.onDelete - Callback when delete key is pressed.
- * 
+ * @param {function(string): void} props.onKeyPress - Callback when a number key is pressed.
+ * @param {function(): void} props.onDelete - Callback when delete key is pressed.
  * @returns {React.ReactNode} The pin pad component.
  */
 export const PinPad = ({ isDisabled, onKeyPress, onDelete }) => {

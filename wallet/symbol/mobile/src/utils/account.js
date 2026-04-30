@@ -15,8 +15,10 @@ import {
 
 /** @typedef {import('@/app/types/Account').WalletAccount} WalletAccount */
 /** @typedef {import('@/app/types/Network').NetworkIdentifier} NetworkIdentifier */
+/** @typedef {import('@/app/types/Network').ChainName} ChainName */
 
 /**
+ * Name and optional image ID for a known/labeled account entry.
  * @typedef {object} KnownAccount
  * @property {string} name - The name of the known account.
  * @property {string|null} imageId - The image ID of the known account, or null if not available.
@@ -24,7 +26,7 @@ import {
 
 /**
  * Retrieves the known account entry from the known accounts configuration.
- * @param {string} chainName - The name of the blockchain (e.g., 'symbol', 'ethereum').
+ * @param {ChainName} chainName - The name of the blockchain (e.g., 'symbol', 'ethereum').
  * @param {NetworkIdentifier} networkIdentifier - The network identifier (e.g., 'mainnet', 'testnet').
  * @param {string} address - The account address to look up.
  * @returns {KnownAccount|null} The known account entry if found, otherwise null.
@@ -52,6 +54,7 @@ const getWalletAccountName = (address, walletAccounts) => {
 };
 
 /**
+ * Resolved display info for an account, sourced from wallet accounts, address book, or known config.
  * @typedef {object} KnownAccountInfo
  * @property {string} name - The name of the account stored in known configuration or other sources.
  * @property {string|null} imageId - The image ID of the known account, or null if not available.
@@ -62,8 +65,8 @@ const getWalletAccountName = (address, walletAccounts) => {
  * @param {string} address - The account address to look up.
  * @param {object} options - The options to search for the account name.
  * @param {WalletAccount[]} [options.walletAccounts] - The list of wallet accounts.
- * @param {object} [options.addressBook] - The address book instance
- * @param {string} [options.chainName] - The name of the blockchain (e.g., 'symbol', 'ethereum').
+ * @param {object} [options.addressBook] - The address book instance.
+ * @param {ChainName} [options.chainName] - The name of the blockchain (e.g., 'symbol', 'ethereum').
  * @param {NetworkIdentifier} [options.networkIdentifier] - The network identifier (e.g., 'mainnet', 'testnet').
  * @returns {KnownAccountInfo} The account info if found, otherwise null.
  */
@@ -95,12 +98,11 @@ export const getAccountKnownInfo = (address, options) => {
 
 /**
  * Creates account display data by combining known account information with generated color.
- * 
  * @param {string} address - The account address to create display data for.
  * @param {object} options - The options to search for the account name and image.
  * @param {WalletAccount[]} [options.walletAccounts] - The list of wallet accounts.
- * @param {object} [options.addressBook] - The address book instance
- * @param {string} [options.chainName] - The name of the blockchain (e.g., 'symbol', 'ethereum').
+ * @param {object} [options.addressBook] - The address book instance.
+ * @param {ChainName} [options.chainName] - The name of the blockchain (e.g., 'symbol', 'ethereum').
  * @param {NetworkIdentifier} [options.networkIdentifier] - The network identifier (e.g., 'mainnet', 'testnet').
  * @returns {AccountDisplayData} An object containing the account address, name, imageId, and generated color if no image is available.
  */
@@ -120,7 +122,7 @@ export const createAccountDisplayData = (address, options) => {
 /**
  * Checks whether a value is a valid public key for the given blockchain.
  * @param {string} value - The value to check.
- * @param {string} chainName - The blockchain name (e.g., 'symbol', 'ethereum').
+ * @param {ChainName} chainName - The blockchain name (e.g., 'symbol', 'ethereum').
  * @returns {boolean} True if the value is a valid public key.
  */
 export const isPublicKey = (value, chainName) => {
@@ -136,7 +138,7 @@ export const isPublicKey = (value, chainName) => {
 /**
  * Checks whether a value is a valid private key for the given blockchain.
  * @param {string} value - The value to check.
- * @param {string} chainName - The blockchain name (e.g., 'symbol', 'ethereum').
+ * @param {ChainName} chainName - The blockchain name (e.g., 'symbol', 'ethereum').
  * @returns {boolean} True if the value is a valid private key.
  */
 export const isPrivateKey = (value, chainName) => {
@@ -152,7 +154,7 @@ export const isPrivateKey = (value, chainName) => {
 /**
  * Checks whether a value is a valid address for the given blockchain.
  * @param {string} value - The value to check.
- * @param {string} chainName - The blockchain name (e.g., 'symbol', 'ethereum').
+ * @param {ChainName} chainName - The blockchain name (e.g., 'symbol', 'ethereum').
  * @returns {boolean} True if the value is a valid address.
  */
 export const isAddress = (value, chainName) => {
@@ -167,7 +169,7 @@ export const isAddress = (value, chainName) => {
 
 /**
  * Generates a new private account for the Symbol blockchain.
- * @param {string} chainName - The blockchain name (must be 'symbol').
+ * @param {ChainName} chainName - The blockchain name (must be 'symbol').
  * @param {NetworkIdentifier} networkIdentifier - The network identifier.
  * @returns {import('@/app/types/Account').PrivateAccount} The generated private account.
  */

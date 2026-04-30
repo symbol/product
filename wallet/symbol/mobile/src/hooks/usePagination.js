@@ -4,11 +4,10 @@ import { useCallback, useState } from 'react';
 const defaultDataUpdater = (prevData, newData) => [...prevData, ...newData];
 
 /**
- * Hook for managing pagination with asynchronous data fetching.
- * 
+ * React hook for managing pagination with asynchronous data fetching.
  * @template T The type of data items in the array.
  * 
- * @param {Object} config - The configuration object for the hook.
+ * @param {object} config - The configuration object for the hook.
  * @param {function({pageNumber: number, pageSize: number}): Promise<T[]>} config.callback - The asynchronous callback 
  * function to fetch data for a page.
  * @param {T[]} [config.defaultData=[]] - The default data array.
@@ -17,8 +16,7 @@ const defaultDataUpdater = (prevData, newData) => [...prevData, ...newData];
  * @param {number} [config.firstPageNumber=1] - The starting page number.
  * @param {function(T[], T[]): T[]} [config.dataUpdater=defaultDataUpdater] - Function to update data with new page data.
  * @param {boolean} [config.defaultLoadingState=false] - The default loading state.
- * 
- * @returns {Object} An object containing pagination state and control functions.
+ * @returns {object} An object containing pagination state and control functions.
  * @property {boolean} isLoading - Whether a fetch operation is in progress.
  * @property {boolean} isLastPage - Whether the last page has been reached.
  * @property {number} pageNumber - The current page number.

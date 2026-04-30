@@ -7,7 +7,7 @@ import { useCallback, useState } from 'react';
 
 /**
  * Return type for useHarvestingAccountInfo hook.
- * @typedef {Object} UseHarvestingAccountInfoReturnType
+ * @typedef {object} UseHarvestingAccountInfoReturnType
  * @property {() => void} load - Fetches the latest harvesting status.
  * @property {boolean} isLoading - Whether data is being fetched.
  * @property {HarvestingStatusData|null} harvestingStatus - Current harvesting status.
@@ -19,7 +19,6 @@ import { useCallback, useState } from 'react';
 
 /**
  * React hook for fetching and managing harvesting account information.
- *
  * @param {MainWalletController} walletController - The wallet controller instance.
  * @returns {UseHarvestingAccountInfoReturnType}
  */

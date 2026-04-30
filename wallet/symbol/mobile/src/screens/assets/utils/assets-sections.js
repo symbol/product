@@ -1,6 +1,7 @@
 import { $t } from '@/app/localization';
 import { FilterType } from '@/app/types/Filter';
 
+/** @typedef {import('@/app/types/Network').ChainName} ChainName */
 /** @typedef {import('@/app/types/Wallet').WalletController} WalletController */
 /** @typedef {import('@/app/types/Token').Token} Token */
 /** @typedef {import('@/app/types/Account').WalletAccount} WalletAccount */
@@ -11,7 +12,7 @@ import { FilterType } from '@/app/types/Filter';
 
 /**
  * Returns the filter configuration for the assets screen.
- * @returns {FilterItem[]} Filter configuration array
+ * @returns {FilterItem[]} Filter configuration array.
  */
 export const getAssetsFilterConfig = () => [
 	{
@@ -28,14 +29,14 @@ export const getAssetsFilterConfig = () => [
 
 /**
  * Creates an asset section from chain data.
- * @param {string} title - Section title (account name)
- * @param {string} name - Account name
- * @param {string} chainName - Chain name identifier
- * @param {string} address - Account address
- * @param {Token[]} assets - Array of tokens
- * @param {string} [title] - Optional section title to display above the account info
+ * @param {string} title - Section title (account name).
+ * @param {string} name - Account name.
+ * @param {ChainName} chainName - Chain name identifier.
+ * @param {string} address - Account address.
+ * @param {Token[]} assets - Array of tokens.
+ * @param {string} [title] - Optional section title to display above the account info.
  * @param {boolean} [hasTopMargin=false] - Whether to add top margin to the section header.
- * @returns {AssetSection} Asset section object
+ * @returns {AssetSection} Asset section object.
  */
 const createSection = (name, chainName, address, assets, title, hasTopMargin) => ({
 	name,
@@ -48,11 +49,11 @@ const createSection = (name, chainName, address, assets, title, hasTopMargin) =>
 
 /**
  * Filters assets based on filter criteria.
- * @param {Token[]} assets - Array of tokens to filter
- * @param {FilterValue} filter - Active filter values
- * @param {WalletAccount} currentAccount - Current account
- * @param {NetworkProperties} networkProperties - Network properties with chain height
- * @returns {Token[]} Filtered array of tokens
+ * @param {Token[]} assets - Array of tokens to filter.
+ * @param {FilterValue} filter - Active filter values.
+ * @param {WalletAccount} currentAccount - Current account.
+ * @param {NetworkProperties} networkProperties - Network properties with chain height.
+ * @returns {Token[]} Filtered array of tokens.
  */
 const filterAssets = (assets, filter, currentAccount, networkProperties) => {
 	const filteredByCreated = filter.created
@@ -71,10 +72,10 @@ const filterAssets = (assets, filter, currentAccount, networkProperties) => {
 
 /**
  * Builds sections array from token data.
- * @param {Object} params - Parameters object
- * @param {FilterValue} params.filter - Current filter values
- * @param {WalletController[]} params.walletControllers - Array of wallet controllers to extract accounts and assets from
- * @returns {AssetSection[]} Sections array for SectionList
+ * @param {object} params - Parameters object.
+ * @param {FilterValue} params.filter - Current filter values.
+ * @param {WalletController[]} params.walletControllers - Array of wallet controllers to extract accounts and assets from.
+ * @returns {AssetSection[]} Sections array for SectionList.
  */
 export const buildAssetsSections = ({
 	filter,

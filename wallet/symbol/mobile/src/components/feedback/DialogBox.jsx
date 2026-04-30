@@ -7,9 +7,11 @@ import React, { useEffect, useState } from 'react';
 import { Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+/** @typedef {import('@/app/types/ColorVariants').Generic2ColorVariants} Generic2ColorVariants */
+
 /**
  * Dialog box types configuration
- * Maps dialog type to its button configuration
+ * Maps dialog type to its button configuration.
  */
 const DIALOG_TYPE_CONFIG = {
 	prompt: (onSuccess, onCancel, isPromptValueValid, promptValue) => [
@@ -53,15 +55,14 @@ const DIALOG_TYPE_CONFIG = {
 };
 
 /**
- * DialogButton component
+ * DialogButton component.
  *
  * Internal button component for DialogBox.
- *
- * @param {object} props - Component props
+ * @param {object} props - Component props.
  * @param {string} props.type - Button type. Determines the display text.
- * @param {'primary'|'secondary'} props.variant='primary' - Button style variant.
- * @param {boolean} props.isDisabled=false - Disables the button if true.
- * @param {function} props.onPress - Callback when button is pressed.
+ * @param {Generic2ColorVariants} props.variant - Button style variant.
+ * @param {boolean} [props.isDisabled=false] - Disables the button if true.
+ * @param {function(): void} props.onPress - Callback when button is pressed.
  */
 const DialogButton = ({ type, variant, isDisabled = false, onPress }) => {
 	const variantStyleMap = {
@@ -89,8 +90,7 @@ const DialogButton = ({ type, variant, isDisabled = false, onPress }) => {
 /**
  * DialogBox component. A modal dialog component supporting various interaction types including
  * alerts, confirmations, acceptances, and prompts with optional input validation.
- *
- * @param {object} props - Component props
+ * @param {object} props - Component props.
  * @param {boolean} props.isVisible - Controls the visibility of the dialog.
  * @param {boolean} [props.isDisabled=false] - Disables all buttons if true.
  * @param {'alert'|'confirm'|'accept'|'prompt'} [props.type='alert'] - Dialog type determining button configuration.
@@ -98,12 +98,11 @@ const DialogButton = ({ type, variant, isDisabled = false, onPress }) => {
  * @param {string} [props.text] - Dialog body text or prompt label.
  * @param {React.ReactNode} [props.children] - Additional children elements.
  * @param {Array} [props.promptValidators] - Validation rules for prompt input.
- * @param {function} props.onSuccess - Callback when primary action is triggered.
- * @param {function} [props.onCancel] - Callback when cancel action is triggered.
+ * @param {function(): void} props.onSuccess - Callback when primary action is triggered.
+ * @param {function(): void} [props.onCancel] - Callback when cancel action is triggered.
  * @param {object} [props.style] - Additional styles for the modal container.
  * @param {object} [props.contentContainerStyle] - Additional styles for the content area.
- *
- * @returns {React.ReactNode} DialogBox component
+ * @returns {React.ReactNode} DialogBox component.
  */
 export const DialogBox = props => {
 	const {

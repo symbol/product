@@ -9,18 +9,16 @@ const DEFAULT_PADDING = 'm';
 /**
  * MultiColumnList component. A generic multi-column list using FlatList with flexbox layout.
  * Supports configurable number of columns and delegates item rendering to the caller.
- *
- * @param {object} props - Component props
+ * @param {object} props - Component props.
  * @param {Array} props.data - Array of items to render.
- * @param {function} props.renderItem - Function to render each item, receives { item, index }.
- * @param {function} props.keyExtractor - Function to extract unique key from item.
+ * @param {function(object): React.ReactNode} props.renderItem - Function to render each item, receives { item, index }.
+ * @param {function(object): string} props.keyExtractor - Function to extract unique key from item.
  *  * @param {function|React.ReactNode} [props.renderHeader] - Component rendered before the list.
  * @param {number} [props.columns=2] - Number of columns in the grid.
  * @param {string} [props.gap='s'] - Gap size between columns and rows.
  * @param {string} [props.paddingX='m'] - Horizontal padding for the list content.
  * @param {string} [props.paddingY='m'] - Vertical padding for the list content.
- *
- * @returns {React.ReactNode} MultiColumnList component
+ * @returns {React.ReactNode} MultiColumnList component.
  */
 export const MultiColumnList = ({ 
 	data,

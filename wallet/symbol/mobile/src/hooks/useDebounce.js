@@ -2,10 +2,9 @@ import { useCallback, useRef } from 'react';
 
 /**
  * Debounce hook with immediate first call.
- *
- * @param {function} callback - Function to debounce
- * @param {number} delay - Delay in ms
- * @returns {function(...any): void} - Debounced function
+ * @param {function(...*): void} callback - Function to debounce.
+ * @param {number} delay - Delay in ms.
+ * @returns {function(...any): void} - Debounced function.
  */
 export const useDebounce = (callback, delay) => {
 	const timerRef = useRef(null);

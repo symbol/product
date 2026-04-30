@@ -24,7 +24,7 @@ export const getReceiptTypeText = type => {
 
 /**
  * Gets the description text for a receipt showing block height.
- * @param {Object} receipt - Receipt object.
+ * @param {object} receipt - Receipt object.
  * @param {number} receipt.height - Block height of the receipt.
  * @returns {string} Description text.
  */

@@ -5,7 +5,7 @@ import { HarvestingAction, HarvestingStatus } from '@/app/screens/harvesting/typ
 
 /**
  * Harvesting action configuration.
- * @typedef {Object} HarvestingActionConfig
+ * @typedef {object} HarvestingActionConfig
  * @property {boolean} isNodeSelectorVisible - Whether to show node selector.
  * @property {boolean} isActionButtonVisible - Whether to show action button.
  * @property {string|null} actionType - Action type ('start' or 'stop').
@@ -13,7 +13,7 @@ import { HarvestingAction, HarvestingStatus } from '@/app/screens/harvesting/typ
 
 /**
  * Confirmation dialog data.
- * @typedef {Object} ConfirmationDialogData
+ * @typedef {object} ConfirmationDialogData
  * @property {string} title - Dialog title.
  * @property {string} text - Dialog description text.
  */

@@ -9,7 +9,7 @@ import React from 'react';
 /**
  * MultisigAccountList screen component. Displays a list of multisig accounts for the
  * currently selected wallet account and allows opening multisig account details.
- * @returns {React.ReactNode} MultisigAccountList component
+ * @returns {React.ReactNode} MultisigAccountList component.
  */
 export const MultisigAccountList = () => {
 	const walletController = useWalletController();

@@ -7,7 +7,8 @@ const TRANSACTION_POLLING_INTERVAL_MS = 1000;
 /** @typedef {import('wallet-common-core/src/lib/controllers/WalletController').WalletController} WalletController */
 
 /**
- * @typedef {Object} TransactionPolling
+ * Return type of the useTransactionConfirmationPolling hook.
+ * @typedef {object} TransactionPolling
  * @property {string[]} confirmedTransactionHashes - Array of confirmed transaction hashes.
  * @property {string[]} failedTransactionHashes - Array of failed transaction hashes.
  * @property {string[]} partialTransactionHashes - Array of partial transaction hashes.
@@ -15,13 +16,11 @@ const TRANSACTION_POLLING_INTERVAL_MS = 1000;
  */
 
 /**
- * Hook for managing transaction confirmation status polling
- * 
- * @param {Object} params - The parameters object.
+ * React hook for managing transaction confirmation status polling.
+ * @param {object} params - The parameters object.
  * @param {WalletController} params.walletController - The wallet controller instance.
  * @param {string[]} params.signedTransactionHashes - Array of signed transaction hashes to poll.
  * @param {boolean} params.isActive - Whether the polling is active.
- * 
  * @returns {TransactionPolling} The transaction confirmation polling state and functions.
  */
 export const useTransactionConfirmationPolling = ({

@@ -5,10 +5,8 @@ import { StyleSheet, View } from 'react-native';
 
 /**
  * StatusRow component.
- *
- * @param {object} props - Component props
- *
- * @returns {React.ReactNode} StatusRow component
+ * @param {object} props - Component props.
+ * @returns {React.ReactNode} StatusRow component.
  */
 export const StatusRow = ({ variant = 'neutral', statusText, icon }) => {
 	const pallette = Colors.Components.statusLabel[variant];

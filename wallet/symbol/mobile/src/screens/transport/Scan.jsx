@@ -11,8 +11,7 @@ import { Camera, useCameraDevice, useCameraPermission, useCodeScanner } from 're
 
 /**
  * Scan screen component. Provides a QR code scanner interface.
- *
- * @returns {React.ReactNode} Scan screen component
+ * @returns {React.ReactNode} Scan screen component.
  */
 export const Scan = () => {
 	const walletController = useWalletController();

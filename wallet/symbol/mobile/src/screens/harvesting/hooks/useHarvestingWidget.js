@@ -9,7 +9,7 @@ import { useCallback } from 'react';
 
 /**
  * Return type for useHarvestingWidget hook.
- * @typedef {Object} UseHarvestingWidgetReturnType
+ * @typedef {object} UseHarvestingWidgetReturnType
  * @property {boolean} isVisible - Whether the widget should be visible.
  * @property {() => void} refresh - Function to load harvesting data.
  * @property {boolean} isLoading - Whether data is being fetched.
@@ -19,7 +19,6 @@ import { useCallback } from 'react';
 /**
  * React hook for managing the harvesting widget state.
  * Loads summary data and listens to wallet events for automatic reloads.
- *
  * @param {MainWalletController} walletController - Wallet controller instance.
  * @returns {UseHarvestingWidgetReturnType} Widget state and props.
  */

@@ -29,12 +29,10 @@ const CustomLayout = values => {
 /**
  * WidgetAnimatedWrapper component. Wraps a widget with animated enter/exit transitions and
  * layout repositioning. Renders nothing when not visible.
- *
  * @param {object} props - Component props.
  * @param {boolean} props.isVisible - Whether the wrapped widget should be shown.
  * @param {React.ReactNode} props.children - The widget content to animate.
- *
- * @returns {React.ReactNode} WidgetAnimatedWrapper component
+ * @returns {React.ReactNode} WidgetAnimatedWrapper component.
  */
 export const WidgetAnimatedWrapper = ({ isVisible, children }) => {
 	if (!isVisible)

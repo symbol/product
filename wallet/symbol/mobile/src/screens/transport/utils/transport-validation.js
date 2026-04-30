@@ -1,13 +1,14 @@
 import { TransportValidationResult } from '../types/TransportValidation';
 
+/** @typedef {import('@/app/types/Network').NetworkIdentifier} NetworkIdentifier */
+
 /**
  * Validates a parsed transport URI object against the current wallet state.
  * Checks are applied in priority order: chainName support, chainName active, networkIdentifier, then chainId.
- *
  * @param {import('./transport-actions').TransportUriObject | null} transportUriObject - Parsed transport URI object.
- * @param {Object} walletState - Current wallet state.
- * @param {string} walletState.networkIdentifier - Current network identifier.
- * @param {Object} walletState.networkProperties - Current network properties.
+ * @param {object} walletState - Current wallet state.
+ * @param {NetworkIdentifier} walletState.networkIdentifier - Current network identifier.
+ * @param {object} walletState.networkProperties - Current network properties.
  * @param {string[]} walletState.supportedChains - List of supported chain names.
  * @param {string[]} walletState.activeChains - List of active chain names with selected accounts.
  * @returns {string | null} A {@link TransportValidationResult} value if validation fails, or null if valid.

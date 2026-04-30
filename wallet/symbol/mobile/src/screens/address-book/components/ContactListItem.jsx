@@ -9,8 +9,7 @@ import { StyleSheet, View } from 'react-native';
 /**
  * ContactListItem component. Displays a contact card with avatar,
  * name, and address information.
- *
- * @param {Object} props - Component props.
+ * @param {object} props - Component props.
  * @param {Contact} props.contact - The contact object.
  * @param {() => void} [props.onPress] - Callback when the item is pressed.
  * @returns {React.ReactNode} ContactListItem component.

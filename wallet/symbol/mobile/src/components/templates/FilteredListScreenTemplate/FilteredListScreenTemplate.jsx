@@ -25,8 +25,8 @@ const EmptyListPlaceholder = () => (
 /**
  * Section header component.
  * @param {object} props
- * @param {string} props.title - Section title text
- * @param {object} [props.titleStyle] - Custom title styles
+ * @param {string} props.title - Section title text.
+ * @param {object} [props.titleStyle] - Custom title styles.
  * @returns {React.ReactNode}
  */
 const SectionHeader = ({ title, titleStyle }) => (
@@ -38,8 +38,8 @@ const SectionHeader = ({ title, titleStyle }) => (
 /**
  * Loading footer component for pagination.
  * @param {object} props
- * @param {boolean} props.isLoading - Whether loading indicator should be shown
- * @param {function} props.renderPlaceholder - Function to render placeholder items
+ * @param {boolean} props.isLoading - Whether loading indicator should be shown.
+ * @param {function(object): React.ReactNode} props.renderPlaceholder - Function to render placeholder items.
  * @returns {React.ReactNode}
  */
 const LoadingFooter = ({ isLoading, renderPlaceholder }) => (
@@ -52,45 +52,45 @@ const LoadingFooter = ({ isLoading, renderPlaceholder }) => (
 );
 
 /**
- * @typedef {Object} Section
- * @property {string} title - Section title
- * @property {string} group - Section group identifier
- * @property {Array} data - Section data items
- * @property {object} [titleStyle] - Custom title style
+ * Section configuration for the filtered list, including title, group, and data items.
+ * @typedef {object} Section
+ * @property {string} title - Section title.
+ * @property {string} group - Section group identifier.
+ * @property {Array} data - Section data items.
+ * @property {object} [titleStyle] - Custom title style.
  */
 
 /**
- * @typedef {Object} FilterConfig
- * @property {string} name - Filter field name
- * @property {string} title - Filter display title
- * @property {string} type - Filter type ('select', 'boolean', 'address')
- * @property {Array} [options] - Options for select type filters
+ * Configuration for a single filter field displayed in the list header.
+ * @typedef {object} FilterConfig
+ * @property {string} name - Filter field name.
+ * @property {string} title - Filter display title.
+ * @property {string} type - Filter type ('select', 'boolean', 'address').
+ * @property {Array} [options] - Options for select type filters.
  */
 
 /**
  * FilteredListScreenTemplate component. A reusable template for screens with a filter
  * header and a sectioned list. Provides consistent styling and behavior for list screens.
- *
- * @param {object} props - Component props
- * @param {string} props.listKey - Unique key for the SectionList (forces re-render when changed)
- * @param {Section[]} props.sections - Array of section configurations
- * @param {FilterConfig[]} props.filterConfig - Filter configuration array
- * @param {object} props.filterValue - Current filter values
- * @param {function} props.onFilterChange - Callback when filter values change
- * @param {boolean} props.isLoading - Whether initial loading is in progress
- * @param {boolean} props.isRefreshing - Whether refresh is in progress
- * @param {boolean} props.isPageLoading - Whether next page is loading
- * @param {boolean} props.isFilterDisabled - Whether filter should be disabled
- * @param {function} props.onRefresh - Callback for pull-to-refresh
- * @param {function} props.onEndReached - Callback when list end is reached
- * @param {function} props.keyExtractor - Function to extract unique keys from items
- * @param {function} props.renderItem - Function to render list items
- * @param {function} [props.renderScreenHeader] - Function to render custom screen header
- * @param {function} [props.renderSectionHeader] - Function to render custom section headers
- * @param {function} [props.renderPlaceholder] - Function to render placeholder items during loading
- * @param {function} [props.shouldShowFooter] - Function to determine if footer should be shown for a section
- *
- * @returns {React.ReactNode} FilteredListScreenTemplate component
+ * @param {object} props - Component props.
+ * @param {string} props.listKey - Unique key for the SectionList (forces re-render when changed).
+ * @param {Section[]} props.sections - Array of section configurations.
+ * @param {FilterConfig[]} props.filterConfig - Filter configuration array.
+ * @param {object} props.filterValue - Current filter values.
+ * @param {function(object): void} props.onFilterChange - Callback when filter values change.
+ * @param {boolean} props.isLoading - Whether initial loading is in progress.
+ * @param {boolean} props.isRefreshing - Whether refresh is in progress.
+ * @param {boolean} props.isPageLoading - Whether next page is loading.
+ * @param {boolean} props.isFilterDisabled - Whether filter should be disabled.
+ * @param {function(): void} props.onRefresh - Callback for pull-to-refresh.
+ * @param {function(): void} props.onEndReached - Callback when list end is reached.
+ * @param {function(object): string} props.keyExtractor - Function to extract unique keys from items.
+ * @param {function(object): React.ReactNode} props.renderItem - Function to render list items.
+ * @param {function(): React.ReactNode} [props.renderScreenHeader] - Function to render custom screen header.
+ * @param {function(object): React.ReactNode} [props.renderSectionHeader] - Function to render custom section headers.
+ * @param {function(object): React.ReactNode} [props.renderPlaceholder] - Function to render placeholder items during loading.
+ * @param {function(object): boolean} [props.shouldShowFooter] - Function to determine if footer should be shown for a section.
+ * @returns {React.ReactNode} FilteredListScreenTemplate component.
  */
 export const FilteredListScreenTemplate = ({
 	listKey,

@@ -17,12 +17,11 @@ import React from 'react';
 /**
  * CreateContact screen component. Provides the interface for creating a new contact
  * with name, address, notes, and list type (whitelist or blacklist) selection.
- *
- * @param {Object} props - Component props.
- * @param {Object} props.route - React Navigation route object.
- * @param {Object} props.route.params - Route parameters.
+ * @param {object} props - Component props.
+ * @param {object} props.route - React Navigation route object.
+ * @param {object} props.route.params - Route parameters.
  * @param {string} [props.route.params.listType] - Initial list type (whitelist or blacklist).
- * @returns {React.ReactNode} CreateContact component
+ * @returns {React.ReactNode} CreateContact component.
  */
 export const CreateContact = ({ route }) => {
 	const defaultBlacklistContactName = $t('s_addressBook_account_blacklist_defaultName');

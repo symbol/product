@@ -5,8 +5,7 @@ import { TouchableHighlight , TouchableNativeFeedback, View } from 'react-native
 /**
  * TouchableNative component. A cross-platform touchable wrapper that provides native touch feedback,
  * using ripple effects on Android and highlight colors on iOS.
- *
- * @param {object} props - Component props
+ * @param {object} props - Component props.
  * @param {string} [props.color] - Background color.
  * @param {string} [props.colorPressed] - Color when pressed, defaults to color if not provided.
  * Used for the ripple effect on Android or highlight on iOS.
@@ -14,8 +13,7 @@ import { TouchableHighlight , TouchableNativeFeedback, View } from 'react-native
  * @param {object} [props.style] - Additional styles for the inner View element.
  * @param {object} [props.containerStyle] - Additional styles for the touchable container.
  * @param {boolean} [props.isDisabled] - If true, disables touch interactions.
- *
- * @returns {React.ReactNode} TouchableNative component
+ * @returns {React.ReactNode} TouchableNative component.
  */
 export const TouchableNative = props => {
 	const { color, colorPressed, children, style, containerStyle, isDisabled, ...rest } = props;

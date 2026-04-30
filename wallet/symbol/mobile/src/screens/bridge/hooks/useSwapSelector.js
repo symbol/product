@@ -81,7 +81,7 @@ const getCorrespondingBridge = (pairs, source, target) => {
 
 /**
  * Return type for useSwapSelector hook.
- * @typedef {Object} UseSwapSelectorReturnType
+ * @typedef {object} UseSwapSelectorReturnType
  * @property {boolean} isReady - Whether selection is complete and ready for swap.
  * @property {BridgeManager|null} bridge - Selected bridge manager.
  * @property {BridgeModeType|null} mode - Selected bridge mode.
@@ -97,7 +97,7 @@ const getCorrespondingBridge = (pairs, source, target) => {
 /**
  * React hook for managing swap source/target selection and determining the appropriate bridge.
  * Handles pair filtering, selection lists, and automatic bridge resolution.
- * @param {Object} params - Hook parameters.
+ * @param {object} params - Hook parameters.
  * @param {SwapPair[]} params.pairs - Available swap pairs.
  * @param {string} params.defaultSourceChainName - Default source chain name.
  * @returns {UseSwapSelectorReturnType}

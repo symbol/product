@@ -5,13 +5,11 @@ import { StyleSheet, TouchableOpacity } from 'react-native';
 
 /**
  * ButtonClose component. A button featuring a cross icon with optional text label, designed for closing or dismissing interfaces.
- * 
- * @param {object} props - Component props
- * @param {string} [props.text] - Optional text to display next to the icon
- * @param {object} [props.style] - Additional styles for the button
- * @param {function} props.onPress - Press handler
- * 
- * @returns {React.ReactNode} Close button component
+ * @param {object} props - Component props.
+ * @param {string} [props.text] - Optional text to display next to the icon.
+ * @param {object} [props.style] - Additional styles for the button.
+ * @param {function(): void} props.onPress - Press handler.
+ * @returns {React.ReactNode} Close button component.
  */
 export const ButtonClose = props => {
 	const { text, style, onPress } = props;

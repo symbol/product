@@ -15,15 +15,13 @@ const SCREENS_THAT_SHOW_NAVIGATION_MENU = [
 ];
 
 /**
- * Root app layout component
- *
- * @param {object} props - Component props
- * @param {React.ReactNode} props.children - Child components
- * @param {boolean} props.isNetworkStatusShown - Show network status bar if true
- * @param {string} props.networkStatus - Current network connection status
- * @param {string} props.currentRouteName - Current active route name
- * 
- * @returns {React.ReactNode} Root layout component
+ * Root app layout component.
+ * @param {object} props - Component props.
+ * @param {React.ReactNode} props.children - Child components.
+ * @param {boolean} props.isNetworkStatusShown - Show network status bar if true.
+ * @param {string} props.networkStatus - Current network connection status.
+ * @param {string} props.currentRouteName - Current active route name.
+ * @returns {React.ReactNode} Root layout component.
  */
 export const RootLayout = ({ 
 	children, isNetworkStatusShown, networkStatus, currentRouteName }) => {

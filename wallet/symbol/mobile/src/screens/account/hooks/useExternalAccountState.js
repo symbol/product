@@ -3,9 +3,11 @@ import { $t } from '@/app/localization';
 import { validateAccountName, validatePrivateKey, validateRequired } from '@/app/utils';
 import { useState } from 'react';
 
+/** @typedef {import('@/app/types/Network').ChainName} ChainName */
+
 /**
  * Return type for useExternalAccountState hook.
- * @typedef {Object} UseExternalAccountStateReturnType
+ * @typedef {object} UseExternalAccountStateReturnType
  * @property {boolean} isDialogVisible - Whether the external account dialog is visible.
  * @property {() => void} showDialog - Opens the dialog and resets the account name to the initial value.
  * @property {() => void} hideDialog - Closes the dialog and resets the form values.
@@ -23,10 +25,9 @@ import { useState } from 'react';
 /**
  * React hook for managing external account form state in a dialog.
  * Handles field values, validation messages, and reset behavior for the account name and private key inputs.
- *
- * @param {Object} params - Hook parameters.
+ * @param {object} params - Hook parameters.
  * @param {string} params.initialName - Initial account name used when the dialog opens or resets.
- * @param {string} params.chainName - Blockchain name used to validate the private key.
+ * @param {ChainName} params.chainName - Blockchain name used to validate the private key.
  * @returns {UseExternalAccountStateReturnType}
  */
 export const useExternalAccountState = ({ initialName, chainName }) => {

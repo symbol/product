@@ -6,7 +6,7 @@ import { useAsyncManager } from '@/app/hooks';
 
 /**
  * Return type for useEstimation hook.
- * @typedef {Object} UseEstimationReturnType
+ * @typedef {object} UseEstimationReturnType
  * @property {() => Promise<void>} estimate - Fetches bridge fee estimation.
  * @property {BridgeEstimation|null} estimation - Current estimation data.
  * @property {() => void} clearEstimation - Clears the estimation data.
@@ -15,7 +15,7 @@ import { useAsyncManager } from '@/app/hooks';
 
 /**
  * React hook for fetching bridge fee and receive amount estimations.
- * @param {Object} params - Hook parameters.
+ * @param {object} params - Hook parameters.
  * @param {BridgeManager|null} params.bridge - The bridge manager instance.
  * @param {BridgeModeType|null} params.mode - The bridge operation mode.
  * @param {string} params.amount - The amount to estimate.

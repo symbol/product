@@ -10,7 +10,7 @@ import React, { useCallback } from 'react';
  * Assets screen component. Displays a filterable list of tokens/mosaics across all connected
  * wallet accounts grouped by chain. Supports filtering by expired and created tokens, and
  * allows navigation to token details screen.
- * @returns {React.ReactNode} Assets component
+ * @returns {React.ReactNode} Assets component.
  */
 export const Assets = () => {
 	const walletController = useWalletController();

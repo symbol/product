@@ -8,17 +8,15 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 /**
  * An internal modal component used by the Dropdown for item selection, displaying a list of options in a modal overlay.
- *
- * @param {object} props - Component props
+ * @param {object} props - Component props.
  * @param {*} props.value - Currently selected value.
  * @param {Array<{value: *, label: string}>} props.list - List of selectable items.
  * @param {string} props.title - Modal title.
  * @param {boolean} props.isOpen - Whether the modal is visible.
- * @param {function} [props.renderItem] - Custom render function for list items.
- * @param {function} props.onClose - Callback when modal is closed.
- * @param {function} props.onChange - Callback when a value is selected.
- * 
- * @returns {React.ReactNode} DropdownModal component
+ * @param {function(object): React.ReactNode} [props.renderItem] - Custom render function for list items.
+ * @param {function(): void} props.onClose - Callback when modal is closed.
+ * @param {function(object): void} props.onChange - Callback when a value is selected.
+ * @returns {React.ReactNode} DropdownModal component.
  */
 export const DropdownModal = props => {
 	const { value, list, title, isOpen, renderItem: renderCustomItem, onClose, onChange } = props;
@@ -74,17 +72,15 @@ export const DropdownModal = props => {
 /**
  * Dropdown component. A selection component that displays the current value and opens a modal
  * interface for choosing from a list of options, featuring animated interactions.
- *
- * @param {object} props - Component props
+ * @param {object} props - Component props.
  * @param {string} props.label - Label displayed above the selected value.
  * @param {*} props.value - Currently selected value.
  * @param {Array<{value: *, label: string}>} props.list - List of selectable items.
  * @param {boolean} [props.isDisabled=false] - Whether the dropdown is disabled.
- * @param {function} [props.renderItem] - Custom render function for list items.
+ * @param {function(object): React.ReactNode} [props.renderItem] - Custom render function for list items.
  * @param {object} [props.style] - Additional styles for the component container.
- * @param {function} props.onChange - Callback when a value is selected.
- *
- * @returns {React.ReactNode} Dropdown component
+ * @param {function(object): void} props.onChange - Callback when a value is selected.
+ * @returns {React.ReactNode} Dropdown component.
  */
 export const Dropdown = props => {
 	const { label, value, list, isDisabled = false, renderItem, style, onChange } = props;

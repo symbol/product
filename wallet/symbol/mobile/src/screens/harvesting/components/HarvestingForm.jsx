@@ -8,8 +8,7 @@ import React from 'react';
 /**
  * HarvestingForm component. Provides controls for selecting a node and transaction fee
  * when starting or managing harvesting.
- *
- * @param {Object} props - Component props.
+ * @param {object} props - Component props.
  * @param {string} props.nodeUrl - Currently entered/selected node URL.
  * @param {(value: string) => void} props.onNodeUrlChange - Callback when node URL changes.
  * @param {TransactionFeeTiers} [props.feeTiers] - Transaction fee tiers.

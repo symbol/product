@@ -8,25 +8,20 @@ import { FlatList } from 'react-native-gesture-handler';
 
 const DISABLED_OPACITY = 0.7;
 
-/**
- * @typedef {import('@/app/types/Filter').FilterItem} FilterItem
- */
-
-/**
- * @typedef {import('@/app/types/Filter').FilterValue} FilterValue
- */
+/** @typedef {import('@/app/types/Filter').FilterItem} FilterItem */
+/** @typedef {import('@/app/types/Filter').FilterValue} FilterValue */
+/** @typedef {import('@/app/types/Network').NetworkIdentifier} NetworkIdentifier */
+/** @typedef {import('@/app/types/Network').ChainName} ChainName */
 
 /**
  * FilterChip component. A filter list item button.
- *
- * @param {object} props - Component props
- * @param {string} props.title - Chip display text
- * @param {boolean} [props.isActive=false] - Whether the chip is in active state
- * @param {boolean} [props.isDisabled=false] - Whether the chip is disabled
- * @param {React.ReactNode} [props.iconLeft] - Optional icon to display on the left
- * @param {function} props.onPress - Callback fired on press
- * 
- * @returns {React.ReactNode} FilterChip component
+ * @param {object} props - Component props.
+ * @param {string} props.title - Chip display text.
+ * @param {boolean} [props.isActive=false] - Whether the chip is in active state.
+ * @param {boolean} [props.isDisabled=false] - Whether the chip is disabled.
+ * @param {React.ReactNode} [props.iconLeft] - Optional icon to display on the left.
+ * @param {function(): void} props.onPress - Callback fired on press.
+ * @returns {React.ReactNode} FilterChip component.
  */
 const FilterChip = ({ title, isActive = false, isDisabled = false, iconLeft, onPress }) => {
 	// Color and style animations
@@ -64,12 +59,10 @@ const FilterChip = ({ title, isActive = false, isDisabled = false, iconLeft, onP
 
 /**
  * ClearFilterChip component. A filter clear button.
- *
- * @param {object} props - Component props
- * @param {boolean} [props.isDisabled=false] - Whether the chip is disabled
- * @param {function} props.onPress - Callback fired on press
- * 
- * @returns {React.ReactNode} ClearFilterChip component
+ * @param {object} props - Component props.
+ * @param {boolean} [props.isDisabled=false] - Whether the chip is disabled.
+ * @param {function(): void} props.onPress - Callback fired on press.
+ * @returns {React.ReactNode} ClearFilterChip component.
  */
 const ClearFilterChip = ({ isDisabled = false, onPress }) => (
 	<FilterChip
@@ -83,18 +76,16 @@ const ClearFilterChip = ({ isDisabled = false, onPress }) => (
 /**
  * Filter component. A horizontal scrollable list of filter chips that supports boolean toggles,
  * dropdown selections, and address input filters with modal interfaces.
- *
- * @param {object} props - Component props
- * @param {FilterItem[]} props.data - Array of filter configuration items
- * @param {FilterValue} props.value - Current filter values as key-value pairs
- * @param {boolean} [props.isDisabled=false] - Whether all filters are disabled
- * @param {object} [props.addressBook] - Address book instance for address filters
- * @param {Array} [props.accounts] - List of wallet accounts for address filters
- * @param {string} [props.chainName] - Blockchain name for address resolution
- * @param {string} [props.networkIdentifier] - Network identifier for address resolution
- * @param {function} props.onChange - Callback when filter values change
- *
- * @returns {React.ReactNode} Filter component
+ * @param {object} props - Component props.
+ * @param {FilterItem[]} props.data - Array of filter configuration items.
+ * @param {FilterValue} props.value - Current filter values as key-value pairs.
+ * @param {boolean} [props.isDisabled=false] - Whether all filters are disabled.
+ * @param {object} [props.addressBook] - Address book instance for address filters.
+ * @param {Array} [props.accounts] - List of wallet accounts for address filters.
+ * @param {ChainName} [props.chainName] - Blockchain name for address resolution.
+ * @param {NetworkIdentifier} [props.networkIdentifier] - Network identifier for address resolution.
+ * @param {function(object): void} props.onChange - Callback when filter values change.
+ * @returns {React.ReactNode} Filter component.
  */
 export const Filter = props => {
 	const { 

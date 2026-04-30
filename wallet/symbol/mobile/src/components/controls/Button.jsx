@@ -4,19 +4,19 @@ import React from 'react';
 import { Pressable, StyleSheet } from 'react-native';
 import Animated from 'react-native-reanimated';
 
+/** @typedef {import('@/app/types/ColorVariants').ButtonColorVariants} ButtonColorVariants */
+
 /**
  * Button component. A customizable button that supports different visual types and color variants,
  * featuring animated press interactions for enhanced user feedback.
- * 
- * @param {object} props - Component props
+ * @param {object} props - Component props.
  * @param {string} props.text - Button text.
  * @param {boolean} [props.isDisabled=false] - Disable button if true.
  * @param {'bordered'|'solid'} [type='bordered'] - Button appearance type (bordered or solid).
- * @param {'secondary'|'warning'|'danger'|'neutral'} [props.variant='secondary'] - Button color variant.
+ * @param {ButtonColorVariants} [props.variant='secondary'] - Button color variant.
  * @param {object} [props.style] - Additional styles for the button container.
- * @param {function} props.onPress - Function to call on button press
- * 
- * @returns {React.ReactNode} Button component
+ * @param {function(): void} props.onPress - Function to call on button press.
+ * @returns {React.ReactNode} Button component.
  */
 export const Button = ({ text, isDisabled = false, type = 'bordered', variant = 'secondary', style, onPress }) => {
 	// Color and style animations

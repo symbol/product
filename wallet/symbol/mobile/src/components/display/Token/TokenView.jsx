@@ -3,20 +3,20 @@ import { Sizes } from '@/app/styles';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 
+/** @typedef {import('@/app/types/Sizes').SizeVariant} SizeVariant */
+
 const DEFAULT_SIZE = 'm';
 
 /**
  * TokenView component. A display component showing a token's avatar alongside its name, ticker
  * symbol, and amount, with support for different sizes.
- * 
- * @param {object} props - Component props
- * @param {string} props.name - Token name
- * @param {string} props.amount - Token amount
- * @param {string} [props.ticker] - Token ticker symbol
- * @param {string} [props.imageId] - Known account image identifier
- * @param {string} [props.size=DEFAULT_SIZE] - Size of the avatar
- * 
- * @returns {React.ReactNode} Token view component
+ * @param {object} props - Component props.
+ * @param {string} props.name - Token name.
+ * @param {string} props.amount - Token amount.
+ * @param {string} [props.ticker] - Token ticker symbol.
+ * @param {string} [props.imageId] - Known account image identifier.
+ * @param {SizeVariant} [props.size=DEFAULT_SIZE] - Size of the avatar.
+ * @returns {React.ReactNode} Token view component.
  */
 export const TokenView = ({ name, amount, ticker, imageId, size = DEFAULT_SIZE }) => {
 	// Root container

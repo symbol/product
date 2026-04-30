@@ -7,19 +7,20 @@ import { TransactionGroup } from '@/app/types/Transaction';
 
 /**
  * Transaction status information.
- * @typedef {Object} TransactionStatus
+ * @typedef {object} TransactionStatus
  * @property {string} group - Transaction group from TransactionGroup enum.
  */
 
 /**
  * Live transaction data returned by the hook.
- * @typedef {Object} LiveTransactionData
+ * @typedef {object} LiveTransactionData
  * @property {TransactionStatus} status - Current transaction status.
  * @property {Transaction} transaction - Transaction data.
  */
 
 /**
- * @typedef {Object} UseLiveTransactionInfoResult
+ * Return type of the useLiveTransactionInfo hook.
+ * @typedef {object} UseLiveTransactionInfoResult
  * @property {LiveTransactionData} data - Live transaction data with status.
  * @property {boolean} isLoading - Whether data is being fetched.
  * @property {Error|null} error - Error if fetch failed.
@@ -29,7 +30,6 @@ import { TransactionGroup } from '@/app/types/Transaction';
 /**
  * React hook for fetching and auto-refreshing transaction information.
  * Polls for transaction status updates at regular intervals.
- *
  * @param {WalletController} walletController - Wallet controller instance.
  * @param {Transaction} preloadedData - Initial transaction data.
  * @param {string} preloadedGroup - Initial transaction group.

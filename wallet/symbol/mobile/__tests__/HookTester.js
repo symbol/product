@@ -62,7 +62,7 @@ export class HookTester {
 	/**
 	 * Waits for the expected condition to be met.
 	 * 
-	 * @param {function} callback - The callback function to wait for.
+	 * @param {Function} callback - The callback function to wait for.
 	 */
 	waitFor = async callback => {
 		await waitFor(callback);

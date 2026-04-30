@@ -3,10 +3,9 @@ import { useEffect, useState } from 'react';
 /**
  * A custom hook for managing loading states. 
  * Separates the initial loading state from subsequent loading states, that is counted as refreshing.
- *
  * @param {boolean} isLoading - Indicates whether data is currently being loaded.
  * @param {boolean} [initialLoadingState=false] - The initial state of the loading indicator.
- * @returns {[boolean, boolean]} - Returns an array containing:
+ * @returns {[boolean, boolean]} - Returns an array containing:.
  *   - `isInitialLoading`: `true` if loading for the first time, otherwise `false`.
  *   - `isRefreshing`: `true` if a subsequent loading process is happening, otherwise `false`.
  */

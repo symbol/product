@@ -18,6 +18,8 @@ import { getUserCurrencyAmountText, validateAccountName, validateRequired } from
 import React from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
 
+/** @typedef {import('@/app/types/Network').NetworkIdentifier} NetworkIdentifier */
+
 const CARD_BACKGROUND_COLOR = Colors.Semantic.role.primary.default;
 const BUTTON_BACKGROUND_COLOR = Colors.Semantic.role.primary.weaker;
 
@@ -28,15 +30,14 @@ const ART_TOP_OFFSET = Sizes.Semantic.spacing.m * 7;
 const CONTENT_TOP_OFFSET = Sizes.Semantic.spacing.m * 10;
 
 /**
- * ActionButton component
+ * ActionButton component.
  *
  * Internal button component for AccountCardWidget action bar.
- *
- * @param {object} props - Component props
+ * @param {object} props - Component props.
  * @param {string} props.icon - Icon name to display.
  * @param {string} props.text - Button label text.
  * @param {boolean} [props.isLast=false] - Whether this is the last button (no right border).
- * @param {function} props.onPress - Callback when button is pressed.
+ * @param {function(): void} props.onPress - Callback when button is pressed.
  */
 const ActionButton = ({ icon, text, isLast = false, onPress }) => {
 	const buttonStyle = isLast ? [styles.actionButton, styles.actionButtonLast] : styles.actionButton;
@@ -52,24 +53,22 @@ const ActionButton = ({ icon, text, isLast = false, onPress }) => {
 };
 
 /**
- * AccountCardWidget component
+ * AccountCardWidget component.
  *
  * A card widget displaying account information including name, balance, and address.
  * Provides action buttons for account details, send, and swap operations.
- *
- * @param {object} props - Component props
+ * @param {object} props - Component props.
  * @param {string} props.address - Account address to display.
  * @param {string} props.balance - Account balance amount.
  * @param {string} props.name - Account name.
  * @param {import('../../../types/Price').Price} props.price - Current token price for fiat conversion.
  * @param {string} props.ticker - Currency ticker symbol.
- * @param {string} props.networkIdentifier - Network identifier for currency formatting.
- * @param {function} props.onNameChange - Callback when account name is changed.
- * @param {function} props.onSwapPress - Callback when swap button is pressed.
- * @param {function} props.onSendPress - Callback when send button is pressed.
- * @param {function} props.onDetailsPress - Callback when account details button is pressed.
- *
- * @returns {React.ReactNode} AccountCardWidget component
+ * @param {NetworkIdentifier} props.networkIdentifier - Network identifier for currency formatting.
+ * @param {function(string): void} props.onNameChange - Callback when account name is changed.
+ * @param {function(): void} props.onSwapPress - Callback when swap button is pressed.
+ * @param {function(): void} props.onSendPress - Callback when send button is pressed.
+ * @param {function(): void} props.onDetailsPress - Callback when account details button is pressed.
+ * @returns {React.ReactNode} AccountCardWidget component.
  */
 export const AccountCardWidget = props => {
 	const {

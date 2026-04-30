@@ -14,12 +14,10 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 /**
  * Passcode component. A component for creating or verifying a numeric passcode using a PIN entry
  * interface with custom styling.
- *
  * @param {object} props - The component props.
  * @param {'create' | 'verify'} [props.type] - The type of passcode operation.
- * @param {function} props.onSuccess - The success callback.
- * @param {function} [props.onCancel] - The cancel callback.
- * 
+ * @param {function(): void} props.onSuccess - The success callback.
+ * @param {function(): void} [props.onCancel] - The cancel callback.
  * @returns {React.ReactNode} The passcode component.
  */
 export const Passcode = props => {
@@ -79,14 +77,12 @@ export const Passcode = props => {
 
 /**
  * PasscodeView component. A full-screen modal wrapper for the Passcode component.
- *
  * @param {object} props - Component props.
  * @param {boolean} props.isVisible - Whether the modal is visible.
  * @param {'create' | 'verify'} [props.type] - The type of passcode operation.
- * @param {function} props.onSuccess - Callback fired on successful passcode entry.
- * @param {function} [props.onCancel] - Callback fired when the user cancels.
- *
- * @returns {React.ReactNode} PasscodeView component
+ * @param {function(): void} props.onSuccess - Callback fired on successful passcode entry.
+ * @param {function(): void} [props.onCancel] - Callback fired when the user cancels.
+ * @returns {React.ReactNode} PasscodeView component.
  */
 export const PasscodeView = ({ isVisible, type, onSuccess, onCancel }) => {
 	if (!isVisible)

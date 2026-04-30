@@ -3,7 +3,7 @@
 
 /**
  * Transaction details card view model.
- * @typedef {Object} TransactionCardData
+ * @typedef {object} TransactionCardData
  * @property {TableRow[]} table - Table rows rendered below the graphic.
  * @property {TransactionGraphicData} graphic - Graphic display data for the card.
  */

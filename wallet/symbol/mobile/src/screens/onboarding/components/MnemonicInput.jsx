@@ -16,14 +16,12 @@ const MAX_SUGGESTIONS_COUNT = 20;
 /**
  * MnemonicInput component for entering and validating BIP39 mnemonic phrases.
  * Provides autocomplete suggestions from the BIP39 English wordlist.
- *
- * @param {object} props - Component props
+ * @param {object} props - Component props.
  * @param {string} props.value - Current mnemonic input value.
  * @param {string} [props.label] - Label for the input field.
- * @param {function} props.onChange - Callback when input value changes.
- * @param {function} props.onValidityChange - Callback when validity state changes.
- * 
- * @returns {React.ReactElement} Rendered MnemonicInput component
+ * @param {function(string): void} props.onChange - Callback when input value changes.
+ * @param {function(boolean): void} props.onValidityChange - Callback when validity state changes.
+ * @returns {React.ReactElement} Rendered MnemonicInput component.
  */
 export const MnemonicInput = ({ value, label, onChange, onValidityChange }) => {
 	const textBoxRef = useRef();

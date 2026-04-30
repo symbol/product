@@ -3,18 +3,18 @@ import { Sizes } from '@/app/styles';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 
+/** @typedef {import('@/app/types/Sizes').SizeVariant} SizeVariant */
+
 const DEFAULT_SIZE = 'm';
 
 /**
  * AccountView component. A display component showing an account's avatar alongside its name or address, with support for different sizes.
- * 
- * @param {object} props - Component props
- * @param {string} props.address - Account address
- * @param {string} [props.name] - Optional account name
- * @param {string} [props.imageId] - Known account image identifier
- * @param {string} [props.size=DEFAULT_SIZE] - Size of the avatar
- * 
- * @returns {React.ReactNode} Account view component
+ * @param {object} props - Component props.
+ * @param {string} props.address - Account address.
+ * @param {string} [props.name] - Optional account name.
+ * @param {string} [props.imageId] - Known account image identifier.
+ * @param {SizeVariant} [props.size=DEFAULT_SIZE] - Size of the avatar.
+ * @returns {React.ReactNode} Account view component.
  */
 export const AccountView = ({ address, name, imageId, size = DEFAULT_SIZE }) => {
 	const rootSizeStyleMap = {

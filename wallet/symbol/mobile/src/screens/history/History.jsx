@@ -11,7 +11,6 @@ import React, { useCallback } from 'react';
  * History screen component. Displays transaction history with filtering,
  * pagination, and pull-to-refresh functionality. Supports switching between
  * transaction and harvested receipts views.
- *
  * @returns {React.ReactNode} History screen component.
  */
 export const History = () => {

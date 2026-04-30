@@ -14,10 +14,10 @@ import { $t } from '@/app/localization';
 import { useEffect, useState } from 'react';
 
 /**
- * Hook for managing passcode input logic.
+ * React hook for managing passcode input logic.
  * @param {object} params - Hook parameters.
  * @param {string} params.mode - Passcode mode (create or verify).
- * @param {function} params.onSuccess - Success callback.
+ * @param {function(): void} params.onSuccess - Success callback.
  * @returns {object} - Passcode input state and handlers.
  */
 export const usePasscodeManager = ({ mode, onSuccess }) => {

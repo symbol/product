@@ -7,6 +7,7 @@ import { StyleSheet, View } from 'react-native';
 
 /** @typedef {import('@/app/types/Account').WalletAccount} WalletAccount */
 /** @typedef {import('@/app/types/Network').NetworkIdentifier} NetworkIdentifier */
+/** @typedef {import('@/app/types/Network').ChainName} ChainName */
 
 /**
  * Returns the display name for a multisig account.
@@ -20,14 +21,13 @@ const getAccountNameText = name => {
 /**
  * MultisigAccountListItem component. Displays a multisig account card with avatar,
  * name, balance, and address information.
- *
- * @param {Object} props - Component props.
+ * @param {object} props - Component props.
  * @param {string} props.address - The account address.
  * @param {string} props.balance - The account balance.
  * @param {string} props.ticker - The currency ticker symbol.
  * @param {WalletAccount[]} [props.walletAccounts] - The wallet accounts for display names.
- * @param {Object} [props.addressBook] - The address book for display names.
- * @param {string} props.chainName - The blockchain name.
+ * @param {object} [props.addressBook] - The address book for display names.
+ * @param {ChainName} props.chainName - The blockchain name.
  * @param {NetworkIdentifier} props.networkIdentifier - The network identifier.
  * @param {() => void} [props.onPress] - Callback when the item is pressed.
  * @returns {React.ReactNode} MultisigAccountListItem component.

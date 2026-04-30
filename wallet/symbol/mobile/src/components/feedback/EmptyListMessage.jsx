@@ -7,8 +7,7 @@ import { View } from 'react-native';
 
 /**
  * EmptyListMessage component. Displays a centered message indicating that a list has no items.
- *
- * @returns {React.ReactNode} EmptyListMessage component
+ * @returns {React.ReactNode} EmptyListMessage component.
  */
 export const EmptyListMessage = () => (
 	<View style={styles.root}>

@@ -6,12 +6,10 @@ import { FlatList } from 'react-native-gesture-handler';
 
 /**
  * ListItem component. Wraps individual items with touch handling.
- *
- * @param {object} props - Component props
+ * @param {object} props - Component props.
  * @param {React.ReactNode} props.children - Child components to render.
- * @param {function} props.onPress - Callback when item is pressed.
- *
- * @returns {React.ReactNode} ListItem component
+ * @param {function(): void} props.onPress - Callback when item is pressed.
+ * @returns {React.ReactNode} ListItem component.
  */
 const ListItem = ({ children, onPress }) => (
 	<View style={styles.itemContainer}>
@@ -24,15 +22,13 @@ const ListItem = ({ children, onPress }) => (
 /**
  * BasicList component. A wrapper around FlatList providing simplified props
  * and consistent styling for list functionality.
- *
- * @param {object} props - Component props
+ * @param {object} props - Component props.
  * @param {Array} props.data - Array of items to render.
- * @param {function} props.renderItem - Function to render each item, receives { item }.
- * @param {function} props.renderHeader - Function to render the component before the list.
- * @param {function} props.keyExtractor - Function to extract unique key from item.
- * @param {function} props.onItemPress - Callback when an item is pressed.
- *
- * @returns {React.ReactNode} BasicList component
+ * @param {function(object): React.ReactNode} props.renderItem - Function to render each item, receives { item }.
+ * @param {function(): React.ReactNode} props.renderHeader - Function to render the component before the list.
+ * @param {function(object): string} props.keyExtractor - Function to extract unique key from item.
+ * @param {function(): void} props.onItemPress - Callback when an item is pressed.
+ * @returns {React.ReactNode} BasicList component.
  */
 export const BasicList = ({
 	data,

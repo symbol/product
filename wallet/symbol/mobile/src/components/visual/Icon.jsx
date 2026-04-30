@@ -2,6 +2,7 @@ import { Sizes } from '@/app/styles';
 import { Image } from 'react-native';
 
 /** @typedef {import('react')} React */
+/** @typedef {import('@/app/types/ColorVariants').IconColorVariants} IconColorVariants */
 
 const sizeMap = Sizes.Semantic.iconSize;
 
@@ -188,16 +189,14 @@ const sourceMap = {
 
 /**
  * Icon component. A component for displaying icons with configurable sizes and color variants.
- * 
  * @param {object} props - Component props.
  * @param {string} props.name - Icon name.
  * @param {'xxs' | 'xs' | 's' | 'm' | 'l' | 'xl' | 'xxl'} [props.size='m'] - Icon size.
- * @param {'default' | 'secondary' | 'inverse' | 'danger' | 'warning' | 'success' | 'info' | 'neutral'} [props.variant='default']
+ * @param {IconColorVariants} [props.variant='default']
  *   - Icon color variant.
  * @param {object} [props.src] - Optional source for a custom icon image.
  * @param {object} [props.style] - Optional additional styles.
- * 
- * @returns {React.ReactNode} Icon component
+ * @returns {React.ReactNode} Icon component.
  */
 export const Icon = ({ name, size = 'm', variant = 'default', src, style: customStyle }) => {
 	const iconSize = sizeMap[size];

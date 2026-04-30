@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react';
 
 /**
  * Return type for useCosignatureInput hook.
- * @typedef {Object} UseCosignatureInputReturnType
+ * @typedef {object} UseCosignatureInputReturnType
  * @property {string} cosignatoryInput - Current input value.
  * @property {(value: string) => void} inputCosignatory - Updates the input value.
  * @property {boolean} isInputDialogVisible - Whether the input dialog is visible.
@@ -14,7 +14,6 @@ import { useCallback, useState } from 'react';
 /**
  * React hook for managing cosignatory input dialog and address/public key resolution.
  * Handles both address and public key input, resolving the public key if an address is provided.
- *
  * @param {(publicKey: string) => void} onNewCosignerSubmit - Callback when a valid cosigner is submitted.
  * @returns {UseCosignatureInputReturnType}
  */

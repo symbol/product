@@ -4,7 +4,7 @@ import { $t } from '@/app/localization';
 
 /**
  * Alert data for cosignatory input feedback.
- * @typedef {Object} CosignatoryInputAlertData
+ * @typedef {object} CosignatoryInputAlertData
  * @property {boolean} isVisible - Whether the alert should be visible.
  * @property {string} text - The alert message text.
  * @property {import('@/app/types/ColorVariants').SemanticRoleColorVariants} variant - The alert variant.

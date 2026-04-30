@@ -22,7 +22,7 @@ const getActiveChainNames = walletControllers =>
 
 /**
  * Return type for useSupportedChains hook.
- * @typedef {Object} UseSupportedChainsReturnType
+ * @typedef {object} UseSupportedChainsReturnType
  * @property {string[]} supported - Array of chain names supported by the wallet.
  * @property {string[]} active - Array of chain names with an active account selected.
  */

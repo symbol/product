@@ -11,14 +11,12 @@ const COLOR_ACCENT = Colors.Components.divider.accent.background;
 
 /**
  * Divider component. A visual separator used to divide content areas, supporting horizontal and vertical orientations.
- *
- * @param {object} props - Component props
+ * @param {object} props - Component props.
  * @param {'horizontal'|'vertical'} [props.orientation='horizontal'] - Orientation of the divider.
  * @param {string} [props.color] - Color of the divider. Defaults to the standard card background color.
  * @param {boolean} [props.inverse=false] - If true, uses the inverted default color.
  * @param {boolean} [props.accent=false] - If true, uses the accent color. Overrides inverse and color props.
- *
- * @returns {React.ReactNode} Divider component
+ * @returns {React.ReactNode} Divider component.
  */
 export const Divider = ({
 	orientation = DEFAULT_ORIENTATION,

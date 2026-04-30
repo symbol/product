@@ -92,7 +92,8 @@ export class PasscodeManager {
 	};
 
 	/**
-	 * @typedef {Object} VerifyResult
+	 * Result of a passcode verification attempt.
+	 * @typedef {object} VerifyResult
 	 * @property {boolean} isValid - Whether the passcode is correct.
 	 * @property {number} remainingAttempts - Remaining attempts before lockout.
 	 * @property {boolean} isLocked - Whether the user is currently locked out.

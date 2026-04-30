@@ -8,8 +8,7 @@ const MIN_CARD_HEIGHT = Sizes.Semantic.spacing.m * 9;
 /**
  * ListItemContainer component. A pressable card container for list items
  * with optional border highlighting. Provides visual feedback on press.
- *
- * @param {object} props - Component props
+ * @param {object} props - Component props.
  * @param {React.ReactNode} props.children - Child components to render inside the container.
  * @param {string} [props.borderColor] - Optional border color. When provided, displays a colored border.
  * @param {boolean} [props.isDisabled=false] - Whether the container is disabled and non-interactive.
@@ -17,9 +16,8 @@ const MIN_CARD_HEIGHT = Sizes.Semantic.spacing.m * 9;
  * @param {object} [props.cardStyle] - Additional styles for card content container.
  * @param {object} [props.contentContainerStyle] - Additional styles for the inner card container.
  * @param {string} [props.accessibilityLabel] - Accessibility label for the touchable element.
- * @param {function} [props.onPress] - Function to call when the container is pressed.
- *
- * @returns {React.ReactNode} ListItemContainer component
+ * @param {function(): void} [props.onPress] - Function to call when the container is pressed.
+ * @returns {React.ReactNode} ListItemContainer component.
  */
 export const ListItemContainer = ({
 	children,

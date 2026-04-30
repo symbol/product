@@ -9,7 +9,8 @@ import { formatDate } from '@/app/utils';
 import { useMemo } from 'react';
 
 /**
- * @typedef {Object} ReceiptDisplayData
+ * Computed display data for a receipt list item.
+ * @typedef {object} ReceiptDisplayData
  * @property {string} iconName - Icon name for the TransactionAvatar component.
  * @property {string} action - Action/title text for the receipt.
  * @property {string} description - Description text (e.g., block height).
@@ -17,7 +18,8 @@ import { useMemo } from 'react';
  */
 
 /**
- * @typedef {Object} Receipt
+ * Harvested block receipt data used as input to receipt display utilities.
+ * @typedef {object} Receipt
  * @property {string} type - Receipt type from ReceiptType enum.
  * @property {string} amount - Amount value as string.
  * @property {Date|string} timestamp - Timestamp of the receipt.
@@ -39,8 +41,7 @@ const getReceiptDateText = (date, isDateHidden) => {
 
 /**
  * React hook for computing receipt display data used in list items.
- *
- * @param {Object} options - Hook options.
+ * @param {object} options - Hook options.
  * @param {Receipt} options.receipt - Receipt object containing reward data.
  * @param {boolean} [options.isDateHidden=false] - Whether to hide the date display.
  * @returns {ReceiptDisplayData} Computed display data for the receipt.

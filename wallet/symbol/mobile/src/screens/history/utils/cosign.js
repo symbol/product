@@ -9,22 +9,23 @@ import {
 /** @typedef {import('@/app/types/Transaction').Transaction} Transaction */
 /** @typedef {import('@/app/types/Account').WalletAccount} WalletAccount */
 /** @typedef {import('@/app/screens/history/types/Cosignature').CosignStatusValue} CosignStatusValue */
+/** @typedef {import('@/app/types/ColorVariants').SemanticRoleColorVariants} SemanticRoleColorVariants */
 
 /**
  * Cosign alert display data.
- * @typedef {Object} CosignAlertData
+ * @typedef {object} CosignAlertData
  * @property {boolean} isVisible - Whether the alert should be displayed.
  * @property {string} [text] - Alert message text.
- * @property {string} [variant] - Semantic color variant for styling.
+ * @property {SemanticRoleColorVariants} [variant] - Semantic color variant for styling.
  * @property {string} [icon] - Icon name for the alert.
  */
 
 /**
  * Options for determining transaction cosign status.
- * @typedef {Object} CosignStatusOptions
+ * @typedef {object} CosignStatusOptions
  * @property {string} transactionGroup - Transaction group from TransactionGroup enum.
  * @property {WalletAccount} currentAccount - Current wallet account.
- * @property {Object} addressBook - Address book instance with whitelist and blacklist.
+ * @property {object} addressBook - Address book instance with whitelist and blacklist.
  * @property {WalletAccount[]} [walletAccounts] - All wallet accounts.
  * @property {WalletAccount[]} [multisigCosigners] - Multisig cosigner accounts.
  */

@@ -14,7 +14,7 @@ export class ScreenTester {
 	 * Creates an instance of ScreenTester.
 	 * 
 	 * @param {React.Component} Screen - The screen component to test.
-	 * @param {Object} props - Props to pass to the screen component.
+	 * @param {object} props - Props to pass to the screen component.
 	 */
 	constructor(Screen, props = {}) {
 		this.renderer = render(<Screen {...props} />);
@@ -231,7 +231,7 @@ export class ScreenTester {
 	/**
 	 * Finds if an element or any of its ancestors has a disabled prop set to true.
 	 * 
-	 * @param {Object} element - The element to check.
+	 * @param {object} element - The element to check.
 	 * @param {number} maxDepth - Maximum depth to traverse up the tree.
 	 * @returns {boolean} Whether the element or any ancestor is disabled.
 	 */
@@ -298,7 +298,7 @@ export class ScreenTester {
 	/**
 	 * Waits for the expected condition to be met.
 	 * 
-	 * @param {function} callback - The callback function to wait for.
+	 * @param {Function} callback - The callback function to wait for.
 	 */
 	waitFor = async callback => {
 		await waitFor(callback);

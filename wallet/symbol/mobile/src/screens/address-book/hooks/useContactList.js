@@ -6,7 +6,7 @@ import { useState } from 'react';
 
 /**
  * Return type for useContactList hook.
- * @typedef {Object} UseContactListReturnType
+ * @typedef {object} UseContactListReturnType
  * @property {Contact[]} contacts - The list of contacts based on selected list type.
  * @property {string} listType - The current list type (whitelist or blacklist).
  * @property {(type: string) => void} changeListType - Changes the current list type.
@@ -15,7 +15,6 @@ import { useState } from 'react';
 /**
  * React hook for managing contact list state and filtering.
  * Provides filtered contacts based on selected list type (whitelist or blacklist).
- *
  * @param {AddressBookModule} addressBook - The address book module instance.
  * @param {string} [defaultListType] - The initial list type to display.
  * @returns {UseContactListReturnType}

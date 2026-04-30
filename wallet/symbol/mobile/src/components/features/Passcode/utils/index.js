@@ -47,9 +47,9 @@ export const getPasscodeSubtitle = ({ errorMessage, mode, step, remainingAttempt
 /**
  * Reset passcode state to initial values.
  * @param {object} setters - State setter functions.
- * @param {function} setters.setPasscode - Set passcode state.
- * @param {function} setters.setConfirmPasscode - Set confirm passcode state.
- * @param {function} setters.setStep - Set step state.
+ * @param {function(string): void} setters.setPasscode - Set passcode state.
+ * @param {function(string): void} setters.setConfirmPasscode - Set confirm passcode state.
+ * @param {function(*): void} setters.setStep - Set step state.
  */
 export const resetPasscodeState = ({ setPasscode, setConfirmPasscode, setStep }) => {
 	setPasscode('');

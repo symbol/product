@@ -11,7 +11,7 @@ const DEFAULT_AMOUNT = '0';
 
 /**
  * Return type for useSendFormState hook.
- * @typedef {Object} UseSendFormStateReturnType
+ * @typedef {object} UseSendFormStateReturnType
  * @property {string} senderAddress - The selected sender address.
  * @property {string} recipientAddress - The recipient address.
  * @property {string|null} selectedTokenId - The selected token identifier.
@@ -36,8 +36,7 @@ const DEFAULT_AMOUNT = '0';
 /**
  * React hook for managing send form state.
  * Handles all form fields including sender, recipient, token, amount, message, and transaction speed.
- *
- * @param {Object} params - Hook parameters.
+ * @param {object} params - Hook parameters.
  * @param {string} params.defaultSenderAddress - The default sender address (current account).
  * @param {SendRouteParams} [params.routeParams] - Route parameters for pre-filled values.
  * @returns {UseSendFormStateReturnType}

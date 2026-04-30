@@ -13,14 +13,12 @@ const CONTENT_OVERLAY_OPACITY = 'rgba(0,0,0,0.7)';
 /**
  * ActionCard component. Displays a feature card with an image, title, and description.
  * Used in the Actions screen to navigate to various wallet features.
- *
- * @param {object} props - Component props
+ * @param {object} props - Component props.
  * @param {string} props.title - Card title text.
  * @param {string} props.description - Card description text.
  * @param {number} props.imageSource - Image source for the card background.
- * @param {Function} props.onPress - Callback function when the card is pressed.
- *
- * @returns {React.ReactNode} ActionCard component
+ * @param {function(): void} props.onPress - Callback function when the card is pressed.
+ * @returns {React.ReactNode} ActionCard component.
  */
 export const ActionCard = ({ title, description, imageSource, onPress }) => {
 	return (

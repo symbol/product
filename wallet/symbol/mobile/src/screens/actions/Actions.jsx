@@ -11,8 +11,7 @@ import React, { useCallback, useMemo } from 'react';
 /**
  * Actions screen component. Displays a grid of wallet feature cards providing
  * navigation to various app functionalities like Address Book, Harvesting, Send, and Bridge.
- *
- * @returns {React.ReactNode} Actions screen component
+ * @returns {React.ReactNode} Actions screen component.
  */
 export const Actions = () => {
 	const walletController = useWalletController();

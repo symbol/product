@@ -30,12 +30,10 @@ const progressBarColors = {
 
 /**
  * ProgressSegment component. A single animated segment of the progress bar.
- *
  * @param {object} props - Component props.
  * @param {boolean} props.isFilled - Whether the segment is filled.
  * @param {string} props.filledColor - Color to use when the segment is filled.
- *
- * @returns {React.ReactNode} ProgressSegment component
+ * @returns {React.ReactNode} ProgressSegment component.
  */
 const ProgressSegment = ({ isFilled, filledColor }) => {
 	const progress = useSharedValue(isFilled ? 1 : 0);
@@ -62,16 +60,14 @@ const ProgressSegment = ({ isFilled, filledColor }) => {
  * CosignatureCounter component. Displays a segmented progress bar representing cosignatures count,
  * with optional increment/decrement controls for editing mode.
  * Each segment represents one cosignatory; filled segments indicate the minimum requirement value.
- *
  * @param {object} props - Component props.
  * @param {number} props.value - Current count value (filled segments).
  * @param {number} props.total - Total number of segments (total cosignatories).
  * @param {boolean} [props.isEditable=false] - Whether to show increment/decrement buttons.
  * @param {'min-approval'|'min-removal'} [props.variant='min-approval'] - Determines the color scheme for the progress bar.
- * @param {function} [props.onChange] - Callback fired with new value when increment/decrement buttons are pressed.
+ * @param {function(number): void} [props.onChange] - Callback fired with new value when increment/decrement buttons are pressed.
  * @param {object} [props.style] - Additional styles for the component container.
- *
- * @returns {React.ReactNode} CosignatureCounter component
+ * @returns {React.ReactNode} CosignatureCounter component.
  */
 export const CosignatureCounter = ({
 	value,

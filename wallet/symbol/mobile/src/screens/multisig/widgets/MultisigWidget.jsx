@@ -7,20 +7,19 @@ import React from 'react';
 /** @typedef {import('@/app/types/Account').WalletAccount} WalletAccount */
 /** @typedef {import('@/app/types/Account').SymbolAccountInfo} SymbolAccountInfo */
 /** @typedef {import('@/app/types/Network').NetworkIdentifier} NetworkIdentifier */
+/** @typedef {import('@/app/types/Network').ChainName} ChainName */
 
 /**
  * MultisigWidget component. A card widget displaying a scrollable list of multisig accounts
  * with navigation to the full list or individual account details.
- *
  * @param {object} props - Component props.
  * @param {SymbolAccountInfo[]} props.multisigAccountList - List of multisig accounts to display.
- * @param {string} props.chainName - The blockchain name.
+ * @param {ChainName} props.chainName - The blockchain name.
  * @param {NetworkIdentifier} props.networkIdentifier - The network identifier.
  * @param {string} props.ticker - The native currency ticker symbol.
  * @param {WalletAccount[]} [props.walletAccounts] - Wallet accounts for resolving account names.
  * @param {object} [props.addressBook] - Address book for resolving account names.
- *
- * @returns {React.ReactNode} MultisigWidget component
+ * @returns {React.ReactNode} MultisigWidget component.
  */
 export const MultisigWidget = ({
 	multisigAccountList,

@@ -4,15 +4,15 @@ import { createTokenDisplayData, getAccountKnownInfo } from '@/app/utils';
 import React, { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-/**
- * @typedef {import('@/app/types/Table').TableRow} TableRow
- */
+/** @typedef {import('@/app/types/Table').TableRow} TableRow */
+/** @typedef {import('@/app/types/Network').NetworkIdentifier} NetworkIdentifier */
+/** @typedef {import('@/app/types/Network').ChainName} ChainName */
 
 /**
- * Resolves known info for account and token rows
- * @param {TableRow[]} data - Array of table rows
- * @param {object} options - Resolution options
- * @returns {Map<string, object>} Map of resolved info by value
+ * Resolves known info for account and token rows.
+ * @param {TableRow[]} data - Array of table rows.
+ * @param {object} options - Resolution options.
+ * @returns {Map<string, object>} Map of resolved info by value.
  */
 const useResolvedData = (data, options) => {
 	const { addressBook, walletAccounts, chainName, networkIdentifier } = options;
@@ -51,12 +51,12 @@ const useResolvedData = (data, options) => {
 };
 
 /**
- * Renders a single row based on its type
- * @param {TableRow} row - Row data
- * @param {Map<string, object>} resolvedData - Map of resolved known info
- * @param {function} translate - Translation function
- * @param {string|number} [key] - Optional key for list rendering
- * @returns {React.ReactNode} Row content
+ * Renders a single row based on its type.
+ * @param {TableRow} row - Row data.
+ * @param {Map<string, object>} resolvedData - Map of resolved known info.
+ * @param {function(string): string} translate - Translation function.
+ * @param {string|number} [key] - Optional key for list rendering.
+ * @returns {React.ReactNode} Row content.
  */
 const renderRowValue = (row, resolvedData, translate, key) => {
 	const isArrayValue = Array.isArray(row.value);
@@ -147,18 +147,16 @@ const renderRowValue = (row, resolvedData, translate, key) => {
  * TableView component. A component for displaying structured data in a tabular format, supporting
  * various row types such as accounts, tokens, messages, and booleans with appropriate visual
  * representations.
- *
- * @param {object} props - Component props
- * @param {object} [props.style] - Additional styles for the root container
- * @param {TableRow[]} props.data - Array of row objects to display
- * @param {object} [props.addressBook] - Address book instance for resolving account names
- * @param {Array} [props.walletAccounts] - List of wallet accounts for resolving account names
- * @param {string} [props.chainName] - Blockchain name (e.g., 'symbol')
- * @param {string} [props.networkIdentifier] - Network identifier (e.g., 'mainnet')
- * @param {boolean} [props.isTitleTranslatable=false] - Whether row titles should be translated
- * @param {boolean} [props.showEmptyArrays=false] - Whether to show rows with empty array values
- *
- * @returns {React.ReactNode} TableView component
+ * @param {object} props - Component props.
+ * @param {object} [props.style] - Additional styles for the root container.
+ * @param {TableRow[]} props.data - Array of row objects to display.
+ * @param {object} [props.addressBook] - Address book instance for resolving account names.
+ * @param {Array} [props.walletAccounts] - List of wallet accounts for resolving account names.
+ * @param {ChainName} [props.chainName] - Blockchain name (e.g., 'symbol').
+ * @param {NetworkIdentifier} [props.networkIdentifier] - Network identifier (e.g., 'mainnet').
+ * @param {boolean} [props.isTitleTranslatable=false] - Whether row titles should be translated.
+ * @param {boolean} [props.showEmptyArrays=false] - Whether to show rows with empty array values.
+ * @returns {React.ReactNode} TableView component.
  */
 export const TableView = ({
 	style,
