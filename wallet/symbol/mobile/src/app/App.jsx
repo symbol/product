@@ -5,6 +5,7 @@ import { useTransactionListener, useWalletController, useWalletListener } from '
 import { walletControllers } from '@/app/lib/controller';
 import { passcodeManager } from '@/app/lib/passcode';
 import { $t, initLocalization } from '@/app/localization';
+import { Router } from '@/app/router/Router';
 import { RouterView } from '@/app/router/RouterView';
 import { showError, showMessage } from '@/app/utils';
 import React, { useEffect, useState } from 'react';
@@ -59,10 +60,15 @@ export const App = () => {
 	const handleLogout = async () => {
 		await passcodeManager.clear();
 		setIsWalletCreated(false);
+		Router.goToWelcome();
+		await handleLoginStateChange();
+	};
+	const handleLogin = async () => {
+		setIsWalletCreated(true);
+		Router.goToHome();
 		await handleLoginStateChange();
 	};
 	const handleLoginStateChange = async () => {
-		Router.goToHome();
 		await initialLoad();
 		await initialConnection();
 	};
@@ -71,7 +77,7 @@ export const App = () => {
 			mainWalletController.fetchAccountInfo();
 	};
 	const handleNetworkConnected = () => {
-		if (mainWalletController.isWalletReady)
+		if (mainWalletController.isWalletReady && mainWalletController.hasAccounts)
 			mainWalletController.fetchAccountInfo();
 	};
 
@@ -105,7 +111,7 @@ export const App = () => {
 	// Main wallet listeners - login, logout, account change
 	useWalletListener({
 		walletControllers: [mainWalletController],
-		onWalletCreate: handleLoginStateChange,
+		onWalletCreate: handleLogin,
 		onWalletClear: handleLogout,
 		onAccountChange: handleAccountChange,
 		onNetworkConnected: handleNetworkConnected
