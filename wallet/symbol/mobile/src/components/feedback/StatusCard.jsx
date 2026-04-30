@@ -11,7 +11,7 @@ const ICON_SIZE_VALUE = Sizes.Semantic.iconSize[ICON_SIZE];
  * StatusCard component. A card component for displaying status information with an icon,
  * supporting various visual variants and optional additional content.
  * @param {object} props - Component props.
- * @param {import('@/app/types/ColorVariants').SemanticRoleColorVariants} [props.variant='neutral'] - Status variant.
+ * @param {import('@/app/types/ColorVariants').SemanticRoleColorVariants} [props.variant='neutral'] - Status variant
  * determining the card background color.
  * @param {string} props.statusText - Text to display as the primary status message.
  * @param {string} props.icon - Icon name to display alongside the status text.

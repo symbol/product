@@ -5,5 +5,6 @@ import { TransactionAnnounceGroup } from 'wallet-common-symbol/src/constants';
 /** @typedef {import('wallet-common-core/src/types/Transaction').TransactionFeeTiers} TransactionFeeTiers */
 /** @typedef {import('wallet-common-core/src/types/Transaction').TransactionFeeTierLevel} TransactionFeeTierLevel */
 /** @typedef {import('wallet-common-core/src/types/Transaction').TransactionMessage} TransactionMessage */
+/** @typedef {import('wallet-common-core').TransactionBundle} TransactionBundle */
 
 export { TransactionGroup, TransactionAnnounceGroup };

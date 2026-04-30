@@ -33,7 +33,8 @@ export const useColorTransition = ({
 
 	/**
 	 * Creates animated styles for multiple properties.
-	 * @param {Array<{property: string, styleProperty?: string}>} mappings
+	 * @param {Array<{property: string, styleProperty?: string}>} mappings - Array of properties to animate,
+	 * with optional mapping to style properties.
 	 */
 	const createAnimatedStyles = mappings => {
 		return useAnimatedStyle(() => {

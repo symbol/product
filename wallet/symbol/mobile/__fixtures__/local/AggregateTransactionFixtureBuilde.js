@@ -1,6 +1,8 @@
 import { TransactionFixtureBuilder } from '__fixtures__/local/TransactionFixtureBuilder';
 import { TransactionType } from 'wallet-common-symbol/src/constants';
 
+/** @typedef {import('@/app/types/Transaction').Transaction} Transaction */
+
 const EMPTY_AGGREGATE_FIXTURE = {
 	type: TransactionType.AGGREGATE_COMPLETE,
 	amount: '0',
@@ -96,7 +98,7 @@ export class AggregateTransactionFixtureBuilder extends TransactionFixtureBuilde
 	/**
 	 * Sets the inner transactions for the aggregate.
 	 *
-	 * @param {Array<object>} innerTransactions - Array of inner transaction objects.
+	 * @param {Array<Transaction>} innerTransactions - Array of inner transaction objects.
 	 * @returns {AggregateTransactionFixtureBuilder} The builder instance.
 	 */
 	setInnerTransactions = innerTransactions => {

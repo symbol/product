@@ -24,7 +24,7 @@ const EmptyListPlaceholder = () => (
 
 /**
  * Section header component.
- * @param {object} props
+ * @param {object} props - Component props.
  * @param {string} props.title - Section title text.
  * @param {object} [props.titleStyle] - Custom title styles.
  * @returns {React.ReactNode}
@@ -37,7 +37,7 @@ const SectionHeader = ({ title, titleStyle }) => (
 
 /**
  * Loading footer component for pagination.
- * @param {object} props
+ * @param {object} props - Component props.
  * @param {boolean} props.isLoading - Whether loading indicator should be shown.
  * @param {function(object): React.ReactNode} props.renderPlaceholder - Function to render placeholder items.
  * @returns {React.ReactNode}

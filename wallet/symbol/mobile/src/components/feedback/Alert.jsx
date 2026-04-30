@@ -17,7 +17,7 @@ const variantIconMap = {
  * Alert component. A component for displaying status messages with optional icons and titles,
  * supporting various visual variants for different message types.
  * @param {object} props - Component props.
- * @param {import('@/app/types/ColorVariants').SemanticRoleColorVariants} [props.variant='neutral'] - Alert variant.
+ * @param {import('@/app/types/ColorVariants').SemanticRoleColorVariants} [props.variant='neutral'] - Alert variant
  * determining the color scheme and icon.
  * @param {string} [props.icon] - Optional icon name to override the default icon for the variant.
  * @param {string} [props.title] - Optional title text displayed prominently above the body text.

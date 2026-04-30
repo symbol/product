@@ -16,7 +16,7 @@
 
 /**
  * Dictionary mapping filter field names to their currently selected values.
- * @typedef {Object.<string, *>} FilterValue
+ * @typedef {Record<string, *>} FilterValue
  */
 
 /**

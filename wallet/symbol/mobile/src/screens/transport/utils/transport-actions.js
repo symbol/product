@@ -38,8 +38,8 @@ import { Router } from '@/app/router/Router';
  * An action type with an optional predicate controlling its inclusion for a given URI.
  * @typedef {object} WalletActionCondition
  * @property {string} type - The wallet action type identifier.
- * @property {(uri: TransportUriObject, ctx: WalletActionsContext) => boolean} [when] - Optional predicate;.
- *   if omitted the action is always included.
+ * @property {(uri: TransportUriObject, ctx: WalletActionsContext) => boolean} [when] - Optional predicate;
+ * if omitted the action is always included.
  */
 
 const WalletActionType = {

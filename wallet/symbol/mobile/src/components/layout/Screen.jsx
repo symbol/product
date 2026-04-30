@@ -12,7 +12,7 @@ import { Image, KeyboardAvoidingView, RefreshControl, ScrollView, StyleSheet, Vi
  * @param {boolean} props.isLoading - Show loading indicator if true.
  * @param {string} props.backgroundImageSrc - Background image source.
  * @param {function(): React.ReactNode} props.renderLoading - Custom render function for loading indicator.
- * @param {import('@/app/types/RefreshConfig').RefreshConfig} [props.refresh] - Optional configuration for.
+ * @param {import('@/app/types/RefreshConfig').RefreshConfig} [props.refresh] - Optional configuration for
  * pull-to-refresh. If not provided, pull-to-refresh is disabled.
  * @param {React.ReactNode} props.children - Child components.
  * @returns {React.ReactNode} Screen layout component.
