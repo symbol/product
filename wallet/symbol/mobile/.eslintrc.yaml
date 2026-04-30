@@ -29,6 +29,12 @@ rules:
   react/react-in-jsx-scope: off
   no-underscore-dangle: off
   jsdoc/no-undefined-types: 1
+  jsdoc/require-description: warn
+  jsdoc/require-description-complete-sentence: warn
+  jsdoc/require-param-description: warn
+  jsdoc/check-types:
+    - warn
+    - unifyParentAndChildTypeChecks: true
   import/named: off
   import/namespace: off
   prefer-destructuring:
