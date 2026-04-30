@@ -13,7 +13,7 @@ from rest.model.Account import AccountView
 from rest.model.Block import BlockView
 from rest.model.Mosaic import MosaicRichListView, MosaicView
 from rest.model.Namespace import NamespaceView
-from rest.model.Transaction import TransactionView
+from rest.model.Transaction import TransactionQuery, TransactionView
 
 Block = namedtuple(
 	'Block',
@@ -240,7 +240,7 @@ ADDRESS_REMARKS = [
 TRANSACTIONS = [
 	Transaction(  # Transfer transaction v1
 		transaction_hash='0' * 63 + '1',
-		height=2,
+		height=1,
 		sender_public_key=PublicKey('f9bd190dd0c364261f5c8a74870cc7f7374e631352293c62ecc437657e5de2cd'),
 		fee=150000,
 		timestamp='2015-03-29 00:06:25',
@@ -249,7 +249,7 @@ TRANSACTIONS = [
 		signature='0' * 128,
 		transaction_type=257,
 		is_inner=False,
-		sender_address=Address('NAGHXD63C4V6REWGXCVKJ2SBS3GUAXGTRQZQXPRO'),
+		sender_address=Address('NALICEPFLZQRZGPRIJTMJOCPWDNECXTNNG7QLSG3'),
 		recipient_address=Address('NBFWZ4IVRHEIBRCGHLYDS62FSFTBM3VDFA7E6LSQ'),
 		payload={
 			'message': None
@@ -257,7 +257,7 @@ TRANSACTIONS = [
 	),
 	Transaction(  # Transfer transaction v2
 		transaction_hash='0' * 63 + '2',
-		height=2,
+		height=1,
 		sender_public_key=PublicKey('f9bd190dd0c364261f5c8a74870cc7f7374e631352293c62ecc437657e5de2cd'),
 		fee=150000,
 		timestamp='2015-03-29 00:06:25',
@@ -266,7 +266,7 @@ TRANSACTIONS = [
 		signature='0' * 128,
 		transaction_type=257,
 		is_inner=False,
-		sender_address=Address('NAGHXD63C4V6REWGXCVKJ2SBS3GUAXGTRQZQXPRO'),
+		sender_address=Address('NALICEPFLZQRZGPRIJTMJOCPWDNECXTNNG7QLSG3'),
 		recipient_address=Address('NBFWZ4IVRHEIBRCGHLYDS62FSFTBM3VDFA7E6LSQ'),
 		payload={
 			'message': {
@@ -278,7 +278,7 @@ TRANSACTIONS = [
 	Transaction(  # Account Link
 		transaction_hash='0' * 63 + '3',
 		height=2,
-		sender_public_key=PublicKey('f9bd190dd0c364261f5c8a74870cc7f7374e631352293c62ecc437657e5de2cd'),
+		sender_public_key=PublicKey('9ca54cd15edf88a9df9173375d4a0d706f7a9ddcf57d7547dff8110ddd2adeb9'),
 		fee=150000,
 		timestamp='2015-03-29 00:06:25',
 		deadline='2015-03-29 20:34:19',
@@ -286,7 +286,7 @@ TRANSACTIONS = [
 		signature='0' * 128,
 		transaction_type=2049,
 		is_inner=False,
-		sender_address=Address('NAGHXD63C4V6REWGXCVKJ2SBS3GUAXGTRQZQXPRO'),
+		sender_address=Address('NBNR6XNZQIGQVXII6L3FPJTUGF6NFGLZHBN52R3V'),
 		recipient_address=None,
 		payload={
 			'mode': 1,
@@ -304,7 +304,7 @@ TRANSACTIONS = [
 		signature='0' * 128,
 		transaction_type=4097,
 		is_inner=False,
-		sender_address=Address('NAGHXD63C4V6REWGXCVKJ2SBS3GUAXGTRQZQXPRO'),
+		sender_address=Address('NALICEPFLZQRZGPRIJTMJOCPWDNECXTNNG7QLSG3'),
 		recipient_address=None,
 		payload={
 			'min_cosignatories': 1,
@@ -327,7 +327,7 @@ TRANSACTIONS = [
 		signature='0' * 128,
 		transaction_type=4100,
 		is_inner=False,
-		sender_address=Address('NAGHXD63C4V6REWGXCVKJ2SBS3GUAXGTRQZQXPRO'),
+		sender_address=Address('NALICEPFLZQRZGPRIJTMJOCPWDNECXTNNG7QLSG3'),
 		recipient_address=None,
 		payload={
 			'inner_hash': '0' * 63 + '6',
@@ -356,7 +356,7 @@ TRANSACTIONS = [
 		signature='0' * 128,
 		transaction_type=257,
 		is_inner=True,
-		sender_address=Address('NAGHXD63C4V6REWGXCVKJ2SBS3GUAXGTRQZQXPRO'),
+		sender_address=Address('NALICEPFLZQRZGPRIJTMJOCPWDNECXTNNG7QLSG3'),
 		recipient_address=Address('NBFWZ4IVRHEIBRCGHLYDS62FSFTBM3VDFA7E6LSQ'),
 		payload={
 			'message': None
@@ -373,7 +373,7 @@ TRANSACTIONS = [
 		signature='0' * 128,
 		transaction_type=8193,
 		is_inner=False,
-		sender_address=Address('NAGHXD63C4V6REWGXCVKJ2SBS3GUAXGTRQZQXPRO'),
+		sender_address=Address('NALICEPFLZQRZGPRIJTMJOCPWDNECXTNNG7QLSG3'),
 		recipient_address=Address('NBFWZ4IVRHEIBRCGHLYDS62FSFTBM3VDFA7E6LSQ'),
 		payload={
 			'rental_fee': 100000000,
@@ -392,7 +392,7 @@ TRANSACTIONS = [
 		signature='0' * 128,
 		transaction_type=16385,
 		is_inner=False,
-		sender_address=Address('NAGHXD63C4V6REWGXCVKJ2SBS3GUAXGTRQZQXPRO'),
+		sender_address=Address('NALICEPFLZQRZGPRIJTMJOCPWDNECXTNNG7QLSG3'),
 		recipient_address=Address('NBFWZ4IVRHEIBRCGHLYDS62FSFTBM3VDFA7E6LSQ'),
 		payload={
 			'creation_fee': 200000000,
@@ -424,7 +424,7 @@ TRANSACTIONS = [
 		signature='0' * 128,
 		transaction_type=16386,
 		is_inner=False,
-		sender_address=Address('NAGHXD63C4V6REWGXCVKJ2SBS3GUAXGTRQZQXPRO'),
+		sender_address=Address('NALICEPFLZQRZGPRIJTMJOCPWDNECXTNNG7QLSG3'),
 		recipient_address=None,
 		payload={
 			'namespace_name': 'root.mosaic',
@@ -698,7 +698,7 @@ TRANSACTIONS_VIEWS = [
 		to_address=str(TRANSACTIONS[5].recipient_address),
 		value=None,
 		embedded_transactions=[{
-			'initiator': 'NAGHXD63C4V6REWGXCVKJ2SBS3GUAXGTRQZQXPRO',
+			'initiator': 'NALICEPFLZQRZGPRIJTMJOCPWDNECXTNNG7QLSG3',
 			'transactionHash': '0' * 63 + '6',
 			'transactionType': 'TRANSFER',
 			'signatures': [{
@@ -1092,3 +1092,16 @@ class DatabaseTestBase(unittest.TestCase):
 
 	def tearDown(self):
 		self.postgresql.stop()
+
+	@staticmethod
+	def _make_transaction_query(**kwargs):
+		defaults = TransactionQuery(
+			height=None,
+			transaction_types=None,
+			sender=None,
+			address=None,
+			sender_address=None,
+			recipient_address=None,
+			mosaic=None
+		)
+		return defaults._replace(**kwargs)

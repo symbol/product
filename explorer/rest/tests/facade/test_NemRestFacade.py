@@ -44,6 +44,16 @@ EXPECTED_MOSAIC_RICH_LIST_2 = MOSAIC_RICH_LIST_VIEWS[1].to_dict()
 
 EXPECTED_TRANSACTION_1 = TRANSACTIONS_VIEWS[0].to_dict()
 
+EXPECTED_TRANSACTION_2 = TRANSACTIONS_VIEWS[1].to_dict()
+
+EXPECTED_TRANSACTION_3 = TRANSACTIONS_VIEWS[2].to_dict()
+
+EXPECTED_TRANSACTION_4 = TRANSACTIONS_VIEWS[3].to_dict()
+
+EXPECTED_TRANSACTION_7 = TRANSACTIONS_VIEWS[5].to_dict()
+
+EXPECTED_TRANSACTION_8 = TRANSACTIONS_VIEWS[6].to_dict()
+
 # endregion
 
 
@@ -398,6 +408,109 @@ class TestNemRestFacade(DatabaseTestBase):  # pylint: disable=too-many-public-me
 		self._assert_can_retrieve_transaction_by_hash(
 			transaction_hash='1' * 64,
 			expected_transaction=None
+		)
+
+	# endregion
+
+	# region transactions
+
+	def _assert_can_retrieve_transactions(self, pagination, sort, transaction_query, expected_transactions):
+		# Act:
+		transactions = self.nem_rest_facade.get_transactions(pagination, sort, transaction_query)
+
+		# Assert:
+		self.assertEqual(expected_transactions, transactions)
+
+	def test_can_retrieve_transactions_filtered_by_limit(self):
+		self._assert_can_retrieve_transactions(
+			pagination=Pagination(1, 0),
+			sort='DESC',
+			transaction_query=self._make_transaction_query(),
+			expected_transactions=[EXPECTED_TRANSACTION_3]
+		)
+
+	def test_can_retrieve_transactions_filtered_by_offset(self):
+		self._assert_can_retrieve_transactions(
+			pagination=Pagination(1, 1),
+			sort='DESC',
+			transaction_query=self._make_transaction_query(),
+			expected_transactions=[EXPECTED_TRANSACTION_4]
+		)
+
+	def test_can_retrieve_transactions_filtered_by_height(self):
+		self._assert_can_retrieve_transactions(
+			pagination=Pagination(2, 0),
+			sort='DESC',
+			transaction_query=self._make_transaction_query(
+				height=1
+			),
+			expected_transactions=[EXPECTED_TRANSACTION_1, EXPECTED_TRANSACTION_2]
+		)
+
+	def test_can_retrieve_transactions_sorted_by_height_desc(self):
+		self._assert_can_retrieve_transactions(
+			pagination=Pagination(2, 0),
+			sort='DESC',
+			transaction_query=self._make_transaction_query(),
+			expected_transactions=[EXPECTED_TRANSACTION_3, EXPECTED_TRANSACTION_4]
+		)
+
+	def test_can_retrieve_transactions_sorted_by_height_asc(self):
+		self._assert_can_retrieve_transactions(
+			pagination=Pagination(2, 0),
+			sort='ASC',
+			transaction_query=self._make_transaction_query(),
+			expected_transactions=[EXPECTED_TRANSACTION_2, EXPECTED_TRANSACTION_1]
+		)
+
+	def test_can_retrieve_transactions_filtered_by_sender_public_key(self):
+		self._assert_can_retrieve_transactions(
+			pagination=Pagination(10, 0),
+			sort='DESC',
+			transaction_query=self._make_transaction_query(
+				sender='9ca54cd15edf88a9df9173375d4a0d706f7a9ddcf57d7547dff8110ddd2adeb9'
+			),
+			expected_transactions=[EXPECTED_TRANSACTION_3]
+		)
+
+	def test_can_retrieve_transactions_filtered_by_recipient_address(self):
+		self._assert_can_retrieve_transactions(
+			pagination=Pagination(10, 0),
+			sort='DESC',
+			transaction_query=self._make_transaction_query(
+				recipient_address='NBFWZ4IVRHEIBRCGHLYDS62FSFTBM3VDFA7E6LSQ'
+			),
+			expected_transactions=[EXPECTED_TRANSACTION_7, EXPECTED_TRANSACTION_8, EXPECTED_TRANSACTION_1, EXPECTED_TRANSACTION_2]
+		)
+
+	def test_can_retrieve_transactions_filtered_by_sender_address(self):
+		self._assert_can_retrieve_transactions(
+			pagination=Pagination(10, 0),
+			sort='DESC',
+			transaction_query=self._make_transaction_query(
+				sender_address='NBNR6XNZQIGQVXII6L3FPJTUGF6NFGLZHBN52R3V'
+			),
+			expected_transactions=[EXPECTED_TRANSACTION_3]
+		)
+
+	def test_can_retrieve_transactions_filtered_by_transaction_types(self):
+		self._assert_can_retrieve_transactions(
+			pagination=Pagination(10, 0),
+			sort='DESC',
+			transaction_query=self._make_transaction_query(
+				transaction_types=[257, 2049]
+			),
+			expected_transactions=[EXPECTED_TRANSACTION_3, EXPECTED_TRANSACTION_1, EXPECTED_TRANSACTION_2]
+		)
+
+	def test_can_retrieve_transactions_filtered_by_mosaic(self):
+		self._assert_can_retrieve_transactions(
+			pagination=Pagination(10, 0),
+			sort='DESC',
+			transaction_query=self._make_transaction_query(
+				mosaic='root.mosaic'
+			),
+			expected_transactions=[EXPECTED_TRANSACTION_2]
 		)
 
 	# endregion
