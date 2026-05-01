@@ -7,6 +7,8 @@ from pathlib import Path
 class CertificateFactory:
 	"""Uses openssl to generate SSL certificates and related files."""
 
+	CERTIFICATE_FILENAMES = ['node.crt.pem', 'node.key.pem', 'ca.pubkey.pem', 'ca.crt.pem', 'node.full.crt.pem']
+
 	def __init__(self, openssl_executor, ca_key_path, ca_password=None):
 		"""Creates a factory."""
 
@@ -16,7 +18,6 @@ class CertificateFactory:
 
 		self.temp_directory = None
 		self.original_working_directory = None
-		self._certificate_filenames = ['node.crt.pem', 'node.key.pem', 'ca.pubkey.pem', 'ca.crt.pem', 'node.full.crt.pem']
 
 	def __enter__(self):
 		self.temp_directory = tempfile.TemporaryDirectory()
@@ -200,12 +201,12 @@ class CertificateFactory:
 	def package(self, output_directory, package_filter=''):
 		"""Creates a package of final files required for node deployment in the specifed output directory."""
 
-		CertificateFactory._package(output_directory, package_filter, self._certificate_filenames)
+		CertificateFactory._package(output_directory, package_filter, self.CERTIFICATE_FILENAMES)
 
 	def remove_package_files(self, output_directory, package_filter=''):
 		"""Removes existing package certificate files."""
 
-		for filename in self._certificate_filenames:
+		for filename in self.CERTIFICATE_FILENAMES:
 			if filename.startswith(package_filter):
 				(Path(output_directory) / filename).unlink(missing_ok=True)
 

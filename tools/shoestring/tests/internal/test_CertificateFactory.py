@@ -11,6 +11,8 @@ from shoestring.internal.OpensslExecutor import OpensslExecutor
 
 
 class CertificateFactoryTest(unittest.TestCase):
+	# pylint: disable=too-many-public-methods
+
 	# region common utils
 
 	@staticmethod
@@ -378,7 +380,6 @@ class CertificateFactoryTest(unittest.TestCase):
 			with tempfile.TemporaryDirectory() as ca_directory:
 				ca_key_path = self._create_ca_private_key(ca_directory)
 				with CertificateFactory(self._create_executor(), ca_key_path) as factory:
-
 					# Act + Assert: should not raise even when files are absent
 					factory.remove_package_files(cert_directory)
 					factory.remove_package_files(cert_directory, 'node')
@@ -392,10 +393,14 @@ class CertificateFactoryTest(unittest.TestCase):
 			extra_file = Path(cert_directory) / 'other.txt'
 			extra_file.write_text('keep me', encoding='utf8')
 
+			# Sanity:
+			self.assertEqual(6, len(os.listdir(cert_directory)))
+
 			# Act:
 			self._remove_cert_package(cert_directory)
 
 			# Assert: unrelated file is untouched
+			self.assertEqual(1, len(os.listdir(cert_directory)))
 			self.assertTrue(extra_file.exists())
 			self.assertEqual('keep me', extra_file.read_text(encoding='utf8'))
 

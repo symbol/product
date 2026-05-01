@@ -45,7 +45,12 @@ async def _assert_can_renew_node_certificate(ca_password=None, retain_key=False,
 	# pylint: disable=too-many-locals
 
 	# Arrange:
-	with tempfile.TemporaryDirectory(dir=os.getcwd() if use_relative_path else None) as output_directory:
+	if use_relative_path and not force:
+		# Set the temp directory to cwd so that temp and relative paths are resolved to the same filesystem.
+		# If install path and temp are on different filesystem device then --force has to be used.
+		tempfile.tempdir = os.getcwd()
+
+	with tempfile.TemporaryDirectory() as output_directory:
 		config_filepath_1 = _create_configuration(output_directory, ca_password, 'ORIGINAL CA CN', 'ORIGINAL NODE CN', '1.shoestring.ini')
 		config_filepath_2 = _create_configuration(output_directory, ca_password, 'ORIGINAL CA CN', 'NEW NODE CN', '2.shoestring.ini')
 		preparer = Preparer(output_directory, parse_shoestring_configuration(config_filepath_1))
@@ -119,6 +124,14 @@ async def test_can_renew_node_certificate_with_retain_key():
 
 
 async def test_can_renew_node_certificate_with_relative_path():
+	await _assert_can_renew_node_certificate(use_relative_path=True)
+
+
+async def test_can_renew_node_certificate_with_force():
+	await _assert_can_renew_node_certificate(force=True)
+
+
+async def test_can_renew_node_certificate_with_relative_path_and_force():
 	await _assert_can_renew_node_certificate(use_relative_path=True, force=True)
 
 # endregion
