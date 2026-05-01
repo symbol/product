@@ -84,6 +84,9 @@ export class HarvestingModule {
 		const { networkIdentifier, currentAccount } = this.#walletController;
 		const networkStatuses = this._state.statuses[networkIdentifier];
 
+		if (!currentAccount)
+			return null;
+
 		return networkStatuses[currentAccount.address] || null;
 	}
 
@@ -94,6 +97,9 @@ export class HarvestingModule {
 	get summary() {
 		const { networkIdentifier, currentAccount } = this.#walletController;
 		const networkSummaries = this._state.summaries[networkIdentifier];
+
+		if (!currentAccount)
+			return null;
 
 		return networkSummaries[currentAccount.address] || null;
 	}
