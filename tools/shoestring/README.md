@@ -237,6 +237,7 @@ renew-certificates --config CONFIG [--directory DIRECTORY] --ca-key-path CA_KEY_
   --ca-key-path CA_KEY_PATH path to main private key PEM file
   --renew-ca                renews CA certificate too
   --retain-node-key         retain node key
+  --force                   force overwrite of certificates
 ```
 
 When `--renew-ca` is set, both CA and node certificates will be regenerated. Otherwise, only node certificate will be.

@@ -11,6 +11,8 @@ from shoestring.internal.OpensslExecutor import OpensslExecutor
 
 
 class CertificateFactoryTest(unittest.TestCase):
+	# pylint: disable=too-many-public-methods
+
 	# region common utils
 
 	@staticmethod
@@ -311,6 +313,96 @@ class CertificateFactoryTest(unittest.TestCase):
 					original_ca_crt_data = _load_binary_file_data(ca_certificate_filepath)
 					copied_ca_crt_data = _load_binary_file_data('ca.crt.pem')
 					assert original_ca_crt_data == copied_ca_crt_data
+
+	# endregion
+
+	# region remove_package_files
+
+	def _create_cert_package(self, package_directory):
+		with tempfile.TemporaryDirectory() as ca_directory:
+			ca_key_path = self._create_ca_private_key(ca_directory)
+			with CertificateFactory(self._create_executor(), ca_key_path) as factory:
+				factory.extract_ca_public_key()
+				factory.generate_random_node_private_key()
+				factory.generate_ca_certificate('my CA common name')
+				factory.generate_node_certificate('my NODE common name')
+				factory.create_node_certificate_chain()
+				factory.package(package_directory)
+
+	def _remove_cert_package(self, package_directory, package_filter=''):
+		with CertificateFactory(self._create_executor(), package_directory) as factory:
+			factory.remove_package_files(package_directory, package_filter)
+
+	def test_remove_package_files_removes_all_files_when_no_filter(self):
+		# Arrange:
+		with tempfile.TemporaryDirectory() as cert_directory:
+			self._create_cert_package(cert_directory)
+			all_cert_files = ['node.crt.pem', 'node.key.pem', 'ca.pubkey.pem', 'ca.crt.pem', 'node.full.crt.pem']
+
+			# Act:
+			self._remove_cert_package(cert_directory)
+
+			# Assert: all certificate files are removed
+			for filename in all_cert_files:
+				self.assertFalse((Path(cert_directory) / filename).exists(), f'{filename} should have been removed')
+
+	def test_remove_package_files_removes_only_node_files_when_node_filter(self):
+		# Arrange:
+		with tempfile.TemporaryDirectory() as cert_directory:
+			self._create_cert_package(cert_directory)
+
+			# Act:
+			self._remove_cert_package(cert_directory, 'node')
+
+			# Assert: only node files are removed, ca files are untouched
+			for filename in ['node.crt.pem', 'node.key.pem', 'node.full.crt.pem']:
+				self.assertFalse((Path(cert_directory) / filename).exists(), f'{filename} should have been removed')
+			for filename in ['ca.pubkey.pem', 'ca.crt.pem']:
+				self.assertTrue((Path(cert_directory) / filename).exists(), f'{filename} should still exist')
+
+	def test_remove_package_files_removes_only_ca_files_when_ca_filter(self):
+		# Arrange:
+		with tempfile.TemporaryDirectory() as cert_directory:
+			self._create_cert_package(cert_directory)
+
+			# Act:
+			self._remove_cert_package(cert_directory, 'ca')
+
+			# Assert:
+			for filename in ['ca.pubkey.pem', 'ca.crt.pem']:
+				self.assertFalse((Path(cert_directory) / filename).exists(), f'{filename} should have been removed')
+			for filename in ['node.crt.pem', 'node.key.pem', 'node.full.crt.pem']:
+				self.assertTrue((Path(cert_directory) / filename).exists(), f'{filename} should still exist')
+
+	def test_remove_package_files_succeeds_when_files_do_not_exist(self):
+		# Arrange:
+		with tempfile.TemporaryDirectory() as cert_directory:
+			with tempfile.TemporaryDirectory() as ca_directory:
+				ca_key_path = self._create_ca_private_key(ca_directory)
+				with CertificateFactory(self._create_executor(), ca_key_path) as factory:
+					# Act + Assert: should not raise even when files are absent
+					factory.remove_package_files(cert_directory)
+					factory.remove_package_files(cert_directory, 'node')
+					factory.remove_package_files(cert_directory, 'ca')
+
+	def test_remove_package_files_does_not_remove_non_certificate_files(self):
+		# Arrange:
+		with tempfile.TemporaryDirectory() as cert_directory:
+			self._create_cert_package(cert_directory)
+
+			extra_file = Path(cert_directory) / 'other.txt'
+			extra_file.write_text('keep me', encoding='utf8')
+
+			# Sanity:
+			self.assertEqual(6, len(os.listdir(cert_directory)))
+
+			# Act:
+			self._remove_cert_package(cert_directory)
+
+			# Assert: unrelated file is untouched
+			self.assertEqual(1, len(os.listdir(cert_directory)))
+			self.assertTrue(extra_file.exists())
+			self.assertEqual('keep me', extra_file.read_text(encoding='utf8'))
 
 	# endregion
 
