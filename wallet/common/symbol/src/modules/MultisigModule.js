@@ -91,6 +91,9 @@ export class MultisigModule {
 		const { networkIdentifier, currentAccount } = this.#walletController;
 		const networkMultisigAccounts = this._state.multisigAccounts[networkIdentifier];
 
+		if (!currentAccount)
+			return [];
+
 		return networkMultisigAccounts[currentAccount.address] || [];
 	}
 
