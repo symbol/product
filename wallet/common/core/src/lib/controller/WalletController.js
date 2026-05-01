@@ -473,8 +473,11 @@ export class WalletController {
 
 		// Select first account
 		const currentAccount = walletAccounts[this._state.networkIdentifier][0];
+		const account = await this.selectAccount(currentAccount.publicKey);
 
-		return this.selectAccount(currentAccount.publicKey);
+		this._emit(ControllerEventName.WALLET_CREATE);
+
+		return account;
 	};
 
 	/**
