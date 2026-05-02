@@ -7,6 +7,7 @@ from rest.facade.NemRestFacade import NemRestFacade
 from rest.model.common import Pagination, RestConfig, Sorting
 
 from ..test.DatabaseTestUtils import (
+	ACCOUNT_STATISTIC_VIEW,
 	ACCOUNT_VIEWS,
 	BLOCK_VIEWS,
 	MOSAIC_RICH_LIST_VIEWS,
@@ -25,6 +26,8 @@ EXPECTED_BLOCK_2 = BLOCK_VIEWS[1].to_dict()
 EXPECTED_ACCOUNT_1 = ACCOUNT_VIEWS[0].to_dict()
 
 EXPECTED_ACCOUNT_2 = ACCOUNT_VIEWS[1].to_dict()
+
+EXPECTED_ACCOUNT_STATISTIC = ACCOUNT_STATISTIC_VIEW.to_dict()
 
 EXPECTED_NAMESPACE_1 = NAMESPACE_VIEWS[0].to_dict()
 
@@ -409,12 +412,6 @@ class TestNemRestFacade(DatabaseTestBase):  # pylint: disable=too-many-public-me
 		account_statistics = self.nem_rest_facade.get_account_statistics()
 
 		# Assert:
-		self.assertEqual({
-			'total': 2,
-			'withBalance': 2,
-			'harvestedAccounts': 2,
-			'totalImportance': 0.2469120000,
-			'eligibleHarvestAccounts': 2
-		}, account_statistics)
+		self.assertEqual(EXPECTED_ACCOUNT_STATISTIC, account_statistics)
 
 	# endregion

@@ -1,8 +1,8 @@
 from rest import Pagination, Sorting
 from rest.db.NemDatabase import NemDatabase
-from rest.model.Statistic import StatisticAccountView
 
 from ..test.DatabaseTestUtils import (
+	ACCOUNT_STATISTIC_VIEW,
 	ACCOUNT_VIEWS,
 	ACCOUNTS,
 	BLOCK_VIEWS,
@@ -320,12 +320,6 @@ class NemDatabaseTest(DatabaseTestBase):  # pylint: disable=too-many-public-meth
 		account_statistics = self.nem_db.get_account_statistics()
 
 		# Assert:
-		self.assertEqual(StatisticAccountView(
-			total_accounts=2,
-			accounts_with_balance=2,
-			harvested_accounts=2,
-			total_importance=0.2469120000,
-			eligible_harvest_accounts=2
-		), account_statistics)
+		self.assertEqual(ACCOUNT_STATISTIC_VIEW, account_statistics)
 
 	# endregion
