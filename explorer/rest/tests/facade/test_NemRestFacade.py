@@ -401,3 +401,20 @@ class TestNemRestFacade(DatabaseTestBase):  # pylint: disable=too-many-public-me
 		)
 
 	# endregion
+
+	# region account statistics
+
+	def test_can_retrieve_account_statistics(self):
+		# Act:
+		account_statistics = self.nem_rest_facade.get_account_statistics()
+
+		# Assert:
+		self.assertEqual({
+			'total': 2,
+			'withBalance': 2,
+			'harvestedAccounts': 2,
+			'totalImportance': 0.2469120000,
+			'eligibleHarvestAccounts': 2
+		}, account_statistics)
+
+	# endregion
