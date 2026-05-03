@@ -13,6 +13,7 @@ from ..test.DatabaseTestUtils import (
 	MOSAIC_RICH_LIST_VIEWS,
 	MOSAIC_VIEWS,
 	NAMESPACE_VIEWS,
+	TRANSACTION_STATISTIC_VIEW,
 	TRANSACTIONS_VIEWS,
 	DatabaseTestBase
 )
@@ -28,6 +29,8 @@ EXPECTED_ACCOUNT_1 = ACCOUNT_VIEWS[0].to_dict()
 EXPECTED_ACCOUNT_2 = ACCOUNT_VIEWS[1].to_dict()
 
 EXPECTED_ACCOUNT_STATISTIC = ACCOUNT_STATISTIC_VIEW.to_dict()
+
+EXPECTED_TRANSACTION_STATISTIC = TRANSACTION_STATISTIC_VIEW.to_dict()
 
 EXPECTED_NAMESPACE_1 = NAMESPACE_VIEWS[0].to_dict()
 
@@ -413,5 +416,16 @@ class TestNemRestFacade(DatabaseTestBase):  # pylint: disable=too-many-public-me
 
 		# Assert:
 		self.assertEqual(EXPECTED_ACCOUNT_STATISTIC, account_statistics)
+
+	# endregion
+
+	# region transaction statistics
+
+	def test_can_retrieve_transaction_statistics(self):
+		# Act:
+		transaction_statistics = self.nem_rest_facade.get_transaction_statistics()
+
+		# Assert:
+		self.assertEqual(EXPECTED_TRANSACTION_STATISTIC, transaction_statistics)
 
 	# endregion
