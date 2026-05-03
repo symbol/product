@@ -150,6 +150,23 @@ class CertificateFactoryTest(unittest.TestCase):
 
 		self.assertEqual(expected_days, (cert_end_time - cert_start_time).days)
 
+	def _assert_certificate_is_x509v3(self, x509_output):
+		self.assertIn('X509v3 extensions', x509_output)
+
+	def _assert_node_certificate_tls_extensions(self, x509_output, expected_san):
+		self.assertRegex(x509_output, r'X509v3 Basic Constraints: critical\n\s*CA:FALSE')
+		self.assertRegex(x509_output, r'X509v3 Key Usage: critical\n\s*Digital Signature')
+		self.assertRegex(x509_output, r'X509v3 Extended Key Usage:\s*\n\s*TLS Web Server Authentication, TLS Web Client Authentication')
+		self.assertRegex(x509_output, rf'X509v3 Subject Alternative Name:\s*\n\s*{expected_san}')
+
+	def _assert_certificate_is_strict_x509v3(self, certificate_path, ca_certificate_path):
+		self._create_executor().dispatch([
+			'verify',
+			'-x509_strict',
+			'-CAfile', ca_certificate_path,
+			certificate_path
+		])
+
 	def _assert_can_generate_ca_certificate(self, additional_args, expected_duration_days):
 		# Arrange: certificate has second resolution, so clear microseconds for assert below to work
 		test_start_time = datetime.datetime.now(datetime.timezone.utc).replace(microsecond=0)
@@ -179,8 +196,11 @@ class CertificateFactoryTest(unittest.TestCase):
 					# - check start and expiry times
 					self._assert_certificate_duration(x509_output, test_start_time, expected_duration_days)
 
-					# - verify certificate is properly self signed
-					self._create_executor().dispatch(['verify', '-CAfile', ca_certificate_path, ca_certificate_path])
+					# - verify certificate is properly self signed and strict x509v3
+					self._assert_certificate_is_strict_x509v3(ca_certificate_path, ca_certificate_path)
+
+					# - check certificate is x509v3
+					self._assert_certificate_is_x509v3(x509_output)
 
 	def test_can_generate_ca_certificate(self):
 		self._assert_can_generate_ca_certificate({}, 20 * 365)
@@ -188,7 +208,16 @@ class CertificateFactoryTest(unittest.TestCase):
 	def test_can_generate_ca_certificate_with_custom_duration(self):
 		self._assert_can_generate_ca_certificate({'days': 1000}, 1000)
 
-	def _assert_can_generate_node_certificate(self, should_generate_certificate_chain, additional_args, expected_values):
+	def _assert_can_generate_node_certificate(
+		self,
+		should_generate_certificate_chain,
+		additional_args,
+		expected_values,
+		node_common_name='my NODE common name',
+		expected_san='DNS:my NODE common name'
+	):
+		# pylint: disable=too-many-arguments, too-many-positional-arguments, too-many-locals
+
 		# Arrange: certificate has second resolution, so clear microseconds for assert below to work
 		future_start_delay_days = expected_values.get('delay_days', 0)
 		test_start_time = datetime.datetime.now(datetime.timezone.utc).replace(microsecond=0) + datetime.timedelta(future_start_delay_days)
@@ -210,7 +239,7 @@ class CertificateFactoryTest(unittest.TestCase):
 					factory.generate_ca_certificate('my CA common name')
 
 					# Act:
-					factory.generate_node_certificate('my NODE common name', **additional_args)
+					factory.generate_node_certificate(node_common_name, **additional_args)
 					if should_generate_certificate_chain:
 						factory.create_node_certificate_chain()
 
@@ -230,7 +259,7 @@ class CertificateFactoryTest(unittest.TestCase):
 					], False))
 
 					# - check issuer and subject common names are correct
-					self._assert_certificate_issuer_and_subject(x509_output, 'my CA common name', 'my NODE common name')
+					self._assert_certificate_issuer_and_subject(x509_output, 'my CA common name', node_common_name)
 
 					# - check start and expiry times
 					self._assert_certificate_duration(
@@ -239,9 +268,15 @@ class CertificateFactoryTest(unittest.TestCase):
 						expected_values.get('duration', 375),
 						future_start_delay_days)
 
-					# - verify certificate is properly signed by CA (only if node start date is not in future)
+					# - verify certificate is properly signed by CA and strict x509v3 (only if node start date is not in future)
 					if not future_start_delay_days:
-						self._create_executor().dispatch(['verify', '-CAfile', ca_certificate_path, node_certificate_path])
+						self._assert_certificate_is_strict_x509v3(node_certificate_path, ca_certificate_path)
+
+					# - check certificate is x509v3
+					self._assert_certificate_is_x509v3(x509_output)
+
+					# - check certificate has strict TLS extensions
+					self._assert_node_certificate_tls_extensions(x509_output, expected_san)
 
 	def test_can_generate_node_certificate(self):
 		self._assert_can_generate_node_certificate(False, {}, {})
@@ -254,6 +289,14 @@ class CertificateFactoryTest(unittest.TestCase):
 
 	def test_can_generate_node_certificate_chain(self):
 		self._assert_can_generate_node_certificate(True, {}, {})
+
+	def test_can_generate_node_certificate_with_ip_subject_alt_name(self):
+		self._assert_can_generate_node_certificate(
+			False,
+			{},
+			{},
+			'127.0.0.1',
+			'IP Address:127.0.0.1')
 
 	def test_cannot_generate_ca_certificate_without_common_name(self):
 		# Arrange:

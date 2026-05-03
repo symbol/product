@@ -1,3 +1,4 @@
+import ipaddress
 import os
 import shutil
 import tempfile
@@ -81,6 +82,7 @@ class CertificateFactory:
 				'serial = serial.dat',
 				f'private_key = {self.ca_key_path}',
 				'certificate = ca.crt.pem',
+				'copy_extensions = copy',
 				'policy = policy_catapult',
 				'',
 				'[policy_catapult]',
@@ -92,10 +94,11 @@ class CertificateFactory:
 				'x509_extensions = x509_v3',
 				'',
 				'[dn]',
-				f'CN = {ca_cn}'
+				f'CN = {ca_cn}',
 				'',
 				'[x509_v3]',
 				'basicConstraints = critical,CA:TRUE',
+				'keyUsage = critical,keyCertSign,cRLSign',
 				'subjectKeyIdentifier = hash',
 				'authorityKeyIdentifier = keyid:always,issuer'
 			]))
@@ -139,21 +142,40 @@ class CertificateFactory:
 		if not node_cn:
 			raise RuntimeError('Node common name cannot be empty')
 
+		def _alt_name_entry(common_name):
+			try:
+				ipaddress.ip_address(common_name)
+				return f'IP.1 = {common_name}'
+			except ValueError:
+				return f'DNS.1 = {common_name}'
+
 		# prepare node config
 		with open('node.cnf', 'wt', encoding='utf8') as outfile:
 			outfile.write('\n'.join([
 				'[req]',
 				'prompt = no',
 				'distinguished_name = dn',
-				'x509_extensions = x509_v3',
+				'req_extensions = req_v3',
 				'',
 				'[dn]',
 				f'CN = {node_cn}',
 				'',
-				'[x509_v3]',
-				'basicConstraints = CA:FALSE',
+				'[req_v3]',
+				'basicConstraints = critical,CA:FALSE',
+				'keyUsage = critical,digitalSignature',
+				'extendedKeyUsage = serverAuth,clientAuth',
+				'subjectAltName = @alt_names',
+				'',
+				'[x509_v3_node]',
+				'basicConstraints = critical,CA:FALSE',
+				'keyUsage = critical,digitalSignature',
+				'extendedKeyUsage = serverAuth,clientAuth',
 				'subjectKeyIdentifier = hash',
-				'authorityKeyIdentifier = keyid,issuer'
+				'authorityKeyIdentifier = keyid,issuer',
+				'subjectAltName = @alt_names',
+				'',
+				'[alt_names]',
+				_alt_name_entry(node_cn)
 			]))
 
 		# prepare node certificate signing request
@@ -175,11 +197,13 @@ class CertificateFactory:
 		self.openssl_executor.dispatch(self._add_ca_password([
 			'ca',
 			'-config', 'ca.cnf',
+			'-extfile', 'node.cnf',
+			'-extensions', 'x509_v3_node',
 			'-days', str(days),
 			'-notext',
 			'-batch',
 			'-in', 'node.csr.pem',
-			'-out', 'node.crt.pem'
+			'-out', 'node.crt.pem',
 		] + ([] if not start_date else ['-startdate', start_date.strftime('%y%m%d%H%M%SZ')])))
 
 	@staticmethod
