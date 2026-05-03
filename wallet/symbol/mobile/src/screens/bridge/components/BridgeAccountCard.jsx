@@ -15,14 +15,14 @@ import { StyleSheet, View } from 'react-native';
 /**
  * BridgeAccountCard component. Displays bridge account information including chain name,
  * balance, and address. Shows an activation button for inactive accounts.
- * @param {Object} props - Component props.
+ * @param {object} props - Component props.
  * @param {string} [props.address] - Account address to display.
  * @param {string} props.balance - Account balance amount.
  * @param {string} props.name - Account display name (chain name).
  * @param {string} props.ticker - Currency ticker symbol.
  * @param {boolean} [props.isActive=false] - Whether the account is currently active.
  * @param {() => void} [props.onActivate] - Callback when activate button is pressed.
- * @returns {React.ReactNode} BridgeAccountCard component
+ * @returns {React.ReactNode} BridgeAccountCard component.
  */
 export const BridgeAccountCard = props => {
 	const {

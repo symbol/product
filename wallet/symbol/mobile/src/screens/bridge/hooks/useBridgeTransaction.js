@@ -6,14 +6,14 @@ import { objectToTableData } from '@/app/utils';
 
 /**
  * Return type for useBridgeTransaction hook.
- * @typedef {Object} UseBridgeTransactionReturnType
+ * @typedef {object} UseBridgeTransactionReturnType
  * @property {() => Promise<Transaction>} createTransaction - Creates a bridge transaction.
  * @property {(transaction: Transaction) => TableData} getTransactionPreviewTable - Generates preview table data.
  */
 
 /**
  * React hook for creating bridge transactions and generating transaction preview data.
- * @param {Object} params - Hook parameters.
+ * @param {object} params - Hook parameters.
  * @param {string|undefined} params.bridgeId - The bridge identifier.
  * @param {SwapSide|null} params.source - The source swap side.
  * @param {SwapSide|null} params.target - The target swap side.

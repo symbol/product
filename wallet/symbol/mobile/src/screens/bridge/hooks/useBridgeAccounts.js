@@ -32,7 +32,7 @@ const createBridgeAccountObject = walletController => ({
 
 /**
  * Return type for useBridgeAccounts hook.
- * @typedef {Object} UseBridgeAccountsReturnType
+ * @typedef {object} UseBridgeAccountsReturnType
  * @property {BridgeAccountDisplayData[]} accounts - Array of bridge account objects from additional wallet controllers.
  * @property {() => void} refresh - Refreshes all account balances.
  */

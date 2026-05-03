@@ -1,6 +1,6 @@
 import { useDualColorTransition } from '@/app/hooks';
 import { Colors, Sizes, Typography } from '@/app/styles';
-import React, { createRef } from 'react';
+import React, { useRef } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
@@ -10,8 +10,7 @@ const EXTRA_PIXEL_OFFSET = 0.75;
 
 /**
  * TextBox component. A text input field with support for labels, error messages, multiline input, and animated focus interactions.
- *
- * @param {object} props - Component props
+ * @param {object} props - Component props.
  * @param {React.ReactNode} [props.contentRight] - Content to display on the right side of the input.
  * @param {string} [props.errorMessage] - Error message to display below the input. If provided, the input will turn to error state.
  * @param {React.Ref} [props.innerRef] - Ref for the TextInput component.
@@ -22,9 +21,8 @@ const EXTRA_PIXEL_OFFSET = 0.75;
  * @param {object} [props.style] - Additional styles for the component container.
  * @param {string} [props.label] - Title label displayed above the input.
  * @param {string} [props.value] - Current value of the input.
- * @param {function} [props.onChange] - Function to call when the input value changes.
- * 
- * @returns {React.ReactNode} TextBox component
+ * @param {function(string): void} [props.onChange] - Function to call when the input value changes.
+ * @returns {React.ReactNode} TextBox component.
  */
 export const TextBox = props => {
 	const {
@@ -40,7 +38,8 @@ export const TextBox = props => {
 		value,
 		onChange
 	} = props;
-	const ref = innerRef || createRef();
+	const fallbackRef = useRef(null);
+	const ref = innerRef || fallbackRef;
 	const isError = Boolean(errorMessage);
 	const numberOfLines = multiline ? MULTILINE_NUMBER_OF_LINES : 1;
 

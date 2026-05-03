@@ -19,9 +19,17 @@ const ICON_SOURCE_MAP = {
 		default: require('@/app/assets/images/navigation/history_d.png'),
 		active: require('@/app/assets/images/navigation/history_a.png')
 	},
+	[RouteName.Scan]: {
+		default: require('@/app/assets/images/navigation/scan_d.png'),
+		active: require('@/app/assets/images/navigation/scan_a.png')
+	},
 	[RouteName.Assets]: {
 		default: require('@/app/assets/images/navigation/assets_d.png'),
 		active: require('@/app/assets/images/navigation/assets_a.png')
+	},
+	[RouteName.Actions]: {
+		default: require('@/app/assets/images/navigation/features_d.png'),
+		active: require('@/app/assets/images/navigation/features_a.png')
 	}
 };
 
@@ -37,23 +45,31 @@ const TAB_CONFIG = [
 		navigate: () => Router.goToHistory()
 	},
 	{
+		titleKey: 'navigation_scan',
+		name: RouteName.Scan,
+		navigate: () => Router.goToScan()
+	},
+	{
 		titleKey: 'navigation_assets',
 		name: RouteName.Assets,
 		navigate: () => Router.goToAssets()
+	},
+	{
+		titleKey: 'navigation_actions',
+		name: RouteName.Actions,
+		navigate: () => Router.goToActions()
 	}
 ];
 
 /**
  * Navigation menu item component. Displays a tab with an icon and title.
- *
- * @param {object} props - Component props
+ * @param {object} props - Component props.
  * @param {string} props.title - Tab title text.
  * @param {boolean} props.isActive - Whether the tab is currently active.
  * @param {object} props.iconDefault - Default icon source.
  * @param {object} props.iconActive - Active icon source.
- * @param {function} props.onPress - Function to call on tab press.
- *
- * @returns {React.ReactNode} NavigationMenuItem component
+ * @param {function(): void} props.onPress - Function to call on tab press.
+ * @returns {React.ReactNode} NavigationMenuItem component.
  */
 const NavigationMenuItem = ({ title, isActive, iconDefault, iconActive, onPress }) => {
 	const itemStyle = isActive ? [styles.item, styles.itemActive] : styles.item;
@@ -76,8 +92,7 @@ const NavigationMenuItem = ({ title, isActive, iconDefault, iconActive, onPress 
 /**
  * Navigation menu component. Displays a horizontal tab bar for main app navigation.
  * Handles navigation between screens.
- *
- * @returns {React.ReactNode} NavigationMenu component
+ * @returns {React.ReactNode} NavigationMenu component.
  */
 export const NavigationMenu = ({ currentRouteName }) => {
 	const handleTabPress = tab => {

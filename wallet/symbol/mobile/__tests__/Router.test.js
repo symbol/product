@@ -67,16 +67,29 @@ jest.mock('@/app/screens', () => {
 		CreateWallet: createMockScreen('CreateWallet'),
 		ImportWallet: createMockScreen('ImportWallet'),
 		Home: createMockScreen('Home'),
+		Actions: createMockScreen('Actions'),
 		History: createMockScreen('History'),
+		TransactionDetails: createMockScreen('TransactionDetails'),
 		Assets: createMockScreen('Assets'),
 		TokenDetails: createMockScreen('TokenDetails'),
 		AccountDetails: createMockScreen('AccountDetails'),
 		AccountList: createMockScreen('AccountList'),
 		AddSeedAccount: createMockScreen('AddSeedAccount'),
+		ContactList: createMockScreen('ContactList'),
+		ContactDetails: createMockScreen('ContactDetails'),
+		CreateContact: createMockScreen('CreateContact'),
+		EditContact: createMockScreen('EditContact'),
 		BridgeAccountList: createMockScreen('BridgeAccountList'),
 		BridgeAccountDetails: createMockScreen('BridgeAccountDetails'),
 		BridgeSwap: createMockScreen('BridgeSwap'),
 		BridgeSwapDetails: createMockScreen('BridgeSwapDetails'),
+		MultisigAccountList: createMockScreen('MultisigAccountList'),
+		MultisigAccountDetails: createMockScreen('MultisigAccountDetails'),
+		CreateMultisigAccount: createMockScreen('CreateMultisigAccount'),
+		ModifyMultisigAccount: createMockScreen('ModifyMultisigAccount'),
+		Harvesting: createMockScreen('Harvesting'),
+		Scan: createMockScreen('Scan'),
+		TransportRequest: createMockScreen('TransportRequest'),
 		Send: createMockScreen('Send'),
 		Settings: createMockScreen('Settings'),
 		SettingsAbout: createMockScreen('SettingsAbout'),
@@ -109,9 +122,19 @@ const NAVIGATION_SCREENS_CONFIG = [
 		hasParams: false
 	},
 	{
+		screenName: 'Actions',
+		shouldReset: true,
+		hasParams: false
+	},
+	{
 		screenName: 'History',
 		shouldReset: true,
 		hasParams: false
+	},
+	{
+		screenName: 'TransactionDetails',
+		shouldReset: false,
+		hasParams: true
 	},
 	{
 		screenName: 'Assets',
@@ -128,7 +151,7 @@ const NAVIGATION_SCREENS_CONFIG = [
 		shouldReset: false,
 		hasParams: true
 	},
-	{		screenName: 'AccountList',
+	{	screenName: 'AccountList',
 		shouldReset: false,
 		hasParams: true
 	},
@@ -137,7 +160,26 @@ const NAVIGATION_SCREENS_CONFIG = [
 		shouldReset: false,
 		hasParams: true
 	},
-	{		screenName: 'Settings',
+	{
+		screenName: 'ContactList',
+		shouldReset: false,
+		hasParams: true
+	},
+	{
+		screenName: 'ContactDetails',
+		shouldReset: false,
+		hasParams: true
+	},
+	{	screenName: 'CreateContact',
+		shouldReset: false,
+		hasParams: true
+	},
+	{
+		screenName: 'EditContact',
+		shouldReset: false,
+		hasParams: true
+	},
+	{	screenName: 'Settings',
 		shouldReset: false,
 		hasParams: true
 	},
@@ -153,6 +195,31 @@ const NAVIGATION_SCREENS_CONFIG = [
 	},
 	{
 		screenName: 'SettingsSecurity',
+		shouldReset: false,
+		hasParams: true
+	},
+	{
+		screenName: 'MultisigAccountList',
+		shouldReset: false,
+		hasParams: true
+	},
+	{
+		screenName: 'MultisigAccountDetails',
+		shouldReset: false,
+		hasParams: true
+	},
+	{
+		screenName: 'CreateMultisigAccount',
+		shouldReset: false,
+		hasParams: true
+	},
+	{
+		screenName: 'ModifyMultisigAccount',
+		shouldReset: false,
+		hasParams: true
+	},
+	{
+		screenName: 'Harvesting',
 		shouldReset: false,
 		hasParams: true
 	}

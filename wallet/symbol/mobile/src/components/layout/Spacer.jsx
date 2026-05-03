@@ -7,17 +7,15 @@ const DEFAULT_VALUE = 'm';
 
 /**
  * Spacer component. A layout component providing configurable padding around child content, supporting individual side controls.
- *
- * @param {object} props - Component props
- * @param {React.ReactNode} props.children - Child components
- * @param {string} [props.x='m'] - Horizontal padding size ('s', 'm', 'l', etc.)
- * @param {string} [props.y='m'] - Vertical padding size ('s', 'm', 'l', etc.)
- * @param {string} [props.left] - Left padding size ('s', 'm', 'l', etc.)
- * @param {string} [props.right] - Right padding size ('s', 'm', 'l', etc.)
- * @param {string} [props.top] - Top padding size ('s', 'm', 'l', etc.)
- * @param {string} [props.bottom] - Bottom padding size ('s', 'm', 'l', etc.)
- *
- * @returns {React.ReactNode} Spacer layout component
+ * @param {object} props - Component props.
+ * @param {React.ReactNode} props.children - Child components.
+ * @param {string} [props.x='m'] - Horizontal padding size ('s', 'm', 'l', etc.).
+ * @param {string} [props.y='m'] - Vertical padding size ('s', 'm', 'l', etc.).
+ * @param {string} [props.left] - Left padding size ('s', 'm', 'l', etc.).
+ * @param {string} [props.right] - Right padding size ('s', 'm', 'l', etc.).
+ * @param {string} [props.top] - Top padding size ('s', 'm', 'l', etc.).
+ * @param {string} [props.bottom] - Bottom padding size ('s', 'm', 'l', etc.).
+ * @returns {React.ReactNode} Spacer layout component.
  */
 export const Spacer = ({ 
 	children,

@@ -473,8 +473,11 @@ export class WalletController {
 
 		// Select first account
 		const currentAccount = walletAccounts[this._state.networkIdentifier][0];
+		const account = await this.selectAccount(currentAccount.publicKey);
 
-		return this.selectAccount(currentAccount.publicKey);
+		this._emit(ControllerEventName.WALLET_CREATE);
+
+		return account;
 	};
 
 	/**
@@ -591,7 +594,7 @@ export class WalletController {
 		if (isExternalAccount) {
 			// Remove account from the keystore
 			const keystore = this.#accessKeystore(WalletAccountType.EXTERNAL);
-			await keystore.removeAccount(networkIdentifier, publicKey, password);
+			await keystore.removeAccount(publicKey, networkIdentifier, password);
 		}
 
 		// Load existing accounts from persistent storage
@@ -751,6 +754,17 @@ export class WalletController {
 		const { networkProperties } = this._state;
 
 		return this._api.transaction.fetchTransactionStatus(networkProperties, transactionHash);
+	};
+
+	/**
+	 * Fetch transaction info by transaction hash
+	 * @param {string} transactionHash - transaction hash
+	 * @returns {Promise<Transaction>} - transaction info object
+	 */
+	fetchAccountTransaction = async transactionHash => {
+		const { networkProperties } = this._state;
+
+		return this._api.transaction.fetchAccountTransaction(networkProperties, this.currentAccount, transactionHash);
 	};
 
 	/**

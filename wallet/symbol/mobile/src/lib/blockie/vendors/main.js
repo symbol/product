@@ -1,10 +1,10 @@
 import { hslToRgba } from './hsl2rgb';
 import { PngImage } from './pnglib';
 
-/** Number of colors in the palette (background, foreground, spot) */
+// Number of colors in the palette (background, foreground, spot).
 const PALETTE_COLOR_COUNT = 3;
 
-/** Pixel values for different colors */
+// Pixel values for different colors.
 const PIXEL_BACKGROUND = 0;
 const PIXEL_FOREGROUND = 1;
 const PIXEL_SPOT = 2;
@@ -19,24 +19,24 @@ const DEFAULT_LIGHTNESS_MAX = 60;
 const DEFAULT_COLOR_FACTOR = 2.3;
 
 /**
- * @typedef {Object} BlockieConfig
- * @property {number} [gridSize] - Size of the blockie grid
- * @property {number} [scale] - Scale factor (pixels per cell)
- * @property {number} [hueMax] - Maximum hue value (0-360 degrees)
- * @property {number} [saturationMin] - Minimum saturation percentage
- * @property {number} [saturationMax] - Maximum saturation percentage
- * @property {number} [lightnessMin] - Minimum lightness percentage
- * @property {number} [lightnessMax] - Maximum lightness percentage
+ * @typedef {object} BlockieConfig
+ * @property {number} [gridSize] - Size of the blockie grid.
+ * @property {number} [scale] - Scale factor (pixels per cell).
+ * @property {number} [hueMax] - Maximum hue value (0-360 degrees).
+ * @property {number} [saturationMin] - Minimum saturation percentage.
+ * @property {number} [saturationMax] - Maximum saturation percentage.
+ * @property {number} [lightnessMin] - Minimum lightness percentage.
+ * @property {number} [lightnessMax] - Maximum lightness percentage.
  * @property {number} [colorFactor] - Color probability factor.
- * Determines foreground/background vs spot color ratio
+ * Determines foreground/background vs spot color ratio.
  */
 
 /**
- * @typedef {Object} BlockieResult
- * @property {string} imageBase64 - Base64-encoded PNG data
- * @property {number[]} backgroundColor - HSL values for background color
- * @property {number[]} foregroundColor - HSL values for foreground color
- * @property {number[]} spotColor - HSL values for spot color
+ * @typedef {object} BlockieResult
+ * @property {string} imageBase64 - Base64-encoded PNG data.
+ * @property {number[]} backgroundColor - HSL values for background color.
+ * @property {number[]} foregroundColor - HSL values for foreground color.
+ * @property {number[]} spotColor - HSL values for spot color.
  */
 
 
@@ -47,7 +47,7 @@ const DEFAULT_COLOR_FACTOR = 2.3;
 export class BlockieGenerator {
 	/**
      * Create a new BlockieGenerator instance.
-     * @param {BlockieConfig} [config={}] - Configuration options
+     * @param {BlockieConfig} [config={}] - Configuration options.
      */
 	constructor(config = {}) {
 		this.gridSize = config.gridSize ?? DEFAULT_GRID_SIZE;
@@ -67,7 +67,7 @@ export class BlockieGenerator {
 	/**
      * Initialize the random number generator with a seed string.
      * Uses a hash algorithm similar to Java's String.hashCode().
-     * @param {string} seed - The seed string to initialize the PRNG
+     * @param {string} seed - The seed string to initialize the PRNG.
      * @private
      */
 	_initializeRandomSeed(seed) {
@@ -85,7 +85,7 @@ export class BlockieGenerator {
 	/**
      * Generate a random number between 0 and 1 using Xorshift algorithm.
      * Based on Java's String.hashCode(), expanded to 4 32-bit values.
-     * @returns {number} Random number in range [0, 1)
+     * @returns {number} Random number in range [0, 1).
      * @private
      */
 	_generateRandomNumber() {
@@ -101,7 +101,7 @@ export class BlockieGenerator {
 
 	/**
      * Generate a random HSL color based on configured ranges.
-     * @returns {number[]} HSL values as [hue, saturation, lightness] in range [0, 1]
+     * @returns {number[]} HSL values as [hue, saturation, lightness] in range [0, 1].
      * @private
      */
 	_generateRandomColor() {
@@ -122,7 +122,7 @@ export class BlockieGenerator {
 	/**
      * Generate the pixel data for a blockie pattern.
      * Creates a symmetric pattern by mirroring the left half to the right.
-     * @returns {number[]} Array of pixel values (0 = background, 1 = foreground, 2 = spot)
+     * @returns {number[]} Array of pixel values (0 = background, 1 = foreground, 2 = spot).
      * @private
      */
 	_generatePatternData() {
@@ -151,12 +151,12 @@ export class BlockieGenerator {
 
 	/**
      * Fill a rectangle in the PNG image with a specified color.
-     * @param {PngImage} pngImage - The PNG image to modify
-     * @param {number} startX - Starting X coordinate
-     * @param {number} startY - Starting Y coordinate
-     * @param {number} rectWidth - Width of the rectangle
-     * @param {number} rectHeight - Height of the rectangle
-     * @param {string} colorIndex - The palette color index to use
+     * @param {PngImage} pngImage - The PNG image to modify.
+     * @param {number} startX - Starting X coordinate.
+     * @param {number} startY - Starting Y coordinate.
+     * @param {number} rectWidth - Width of the rectangle.
+     * @param {number} rectHeight - Height of the rectangle.
+     * @param {string} colorIndex - The palette color index to use.
      * @private
      */
 	_fillRectangle(pngImage, startX, startY, rectWidth, rectHeight, colorIndex) {
@@ -168,8 +168,8 @@ export class BlockieGenerator {
 
 	/**
      * Generate a blockie image from an address string.
-     * @param {string} address - The address to generate a blockie for
-     * @returns {BlockieResult} Object containing the image data and colors
+     * @param {string} address - The address to generate a blockie for.
+     * @returns {BlockieResult} Object containing the image data and colors.
      */
 	generate(address) {
 		// Initialize PRNG with lowercase address as seed

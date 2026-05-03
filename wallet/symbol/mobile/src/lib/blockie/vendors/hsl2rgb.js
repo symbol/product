@@ -8,10 +8,10 @@ const ALPHA_OPAQUE = 255;
 
 /**
  * Helper function to convert a single hue component to RGB.
- * @param {number} primaryComponent - The primary color component (p)
- * @param {number} secondaryComponent - The secondary color component (q)
- * @param {number} hueOffset - The hue offset value (t)
- * @returns {number} The RGB component value in range [0, 1]
+ * @param {number} primaryComponent - The primary color component (p).
+ * @param {number} secondaryComponent - The secondary color component (q).
+ * @param {number} hueOffset - The hue offset value (t).
+ * @returns {number} The RGB component value in range [0, 1].
  */
 const hueToRgbComponent = (primaryComponent, secondaryComponent, hueOffset) => {
 	let normalizedHue = hueOffset;
@@ -40,10 +40,10 @@ const hueToRgbComponent = (primaryComponent, secondaryComponent, hueOffset) => {
  * Converts an HSL color value to RGBA.
  * Conversion formula adapted from http://en.wikipedia.org/wiki/HSL_color_space.
  *
- * @param {number} hue - The hue value in range [0, 1]
- * @param {number} saturation - The saturation value in range [0, 1]
- * @param {number} lightness - The lightness value in range [0, 1]
- * @returns {number[]} The RGBA representation as [red, green, blue, alpha] with values in [0, 255]
+ * @param {number} hue - The hue value in range [0, 1].
+ * @param {number} saturation - The saturation value in range [0, 1].
+ * @param {number} lightness - The lightness value in range [0, 1].
+ * @returns {number[]} The RGBA representation as [red, green, blue, alpha] with values in [0, 255].
  */
 export const hslToRgba = (hue, saturation, lightness) => {
 	let red, green, blue;

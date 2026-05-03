@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { WalletController, constants } from 'wallet-common-core';
 
 /**
- * Hook to access the wallet controller.
+ * React hook to access the wallet controller.
  * It listens for state changes and updates the component when the state changes.
  * @returns {Array<typeof walletControllers.main | WalletController>} The wallet controller instance.
  */

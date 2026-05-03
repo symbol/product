@@ -2,6 +2,7 @@ export * from './account';
 export * from './explorer';
 export * from './format';
 export * from './network';
+export * from './qr';
 export * from './table';
 export * from './token';
 export * from './ui';

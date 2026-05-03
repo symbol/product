@@ -1,6 +1,5 @@
 /**
  * A custom hook that validates a value using an array of validator functions.
- *
  * @param {*} value - The value to be validated.
  * @param {Array<function(any): string | null>} validators - An array of validator functions.
  *		Each validator should return an error message if validation fails, or `null` if it passes.

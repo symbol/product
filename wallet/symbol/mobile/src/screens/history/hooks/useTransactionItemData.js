@@ -1,59 +1,40 @@
 import { 
+	getTransactionDateText,
 	getTransactionDescription, 
 	getTransactionIconName, 
-	getTransactionTypeText 
+	getTransactionTypeText,
+	isTransactionAwaitingSignatureByAccount
 } from '../utils';
-import { TransactionGroup } from '@/app/constants';
-import { $t } from '@/app/localization';
-import { formatDate } from '@/app/utils';
+import { TransactionGroup } from '@/app/types/Transaction';
 import { useMemo } from 'react';
-import { isTransactionAwaitingSignatureByAccount } from 'wallet-common-symbol/src/utils/transaction';
+
+/** @typedef {import('@/app/types/Transaction').Transaction} Transaction */
+/** @typedef {import('@/app/types/Account').WalletAccount} WalletAccount */
+/** @typedef {import('@/app/types/Network').NetworkIdentifier} NetworkIdentifier */
+/** @typedef {import('@/app/types/Network').ChainName} ChainName */
 
 /**
+ * Computed display data for a transaction list item.
  * @typedef {object} TransactionDisplayData
- * @property {string} iconName - Icon type for the transaction
- * @property {string} action - Action text for the transaction
- * @property {string} description - Description text for the transaction
- * @property {string} dateText - Date/status text for the transaction
- * @property {boolean} isAwaitingAccountSignature - Whether the transaction is awaiting signature
+ * @property {string} iconName - Icon name for the transaction.
+ * @property {string} action - Action text for the transaction.
+ * @property {string} description - Description text for the transaction.
+ * @property {string} dateText - Date/status text for the transaction.
+ * @property {boolean} isAwaitingAccountSignature - Whether transaction is awaiting signature.
  */
 
 /**
- * Gets the date/status text for a transaction.
- * @param {object} transaction - Transaction object
- * @param {string} group - Transaction group
- * @param {boolean} isDateHidden - Whether to hide the date
- * @returns {string} Date or status text
- */
-const getTransactionDateText = (transaction, group, isDateHidden) => {
-	if (isDateHidden)
-		return '';
-
-	const { deadline, timestamp } = transaction;
-
-	if (group === TransactionGroup.UNCONFIRMED || group === TransactionGroup.PARTIAL) {
-		const deadlineText = formatDate(deadline?.timestamp, $t, true);
-		return $t('transaction_awaitingConfirmation', { deadline: deadlineText });
-	}
-
-	const dateValue = timestamp ?? deadline?.timestamp;
-	return formatDate(dateValue, $t, true);
-};
-
-/**
- * Hook for computing transaction display data.
- *
- * @param {object} options - Hook options
- * @param {object} options.transaction - Transaction object
- * @param {string} options.group - Transaction group (confirmed, unconfirmed, partial)
- * @param {object} options.currentAccount - Current account
- * @param {Array} options.walletAccounts - Wallet accounts for the network
- * @param {object} options.addressBook - Address book instance
- * @param {string} options.chainName - Chain name (e.g., 'symbol')
- * @param {string} options.networkIdentifier - Network identifier (e.g., 'mainnet')
- * @param {boolean} [options.isDateHidden=false] - Whether to hide the date
- *
- * @returns {TransactionDisplayData} Transaction display data
+ * React hook for computing transaction display data used in list items.
+ * @param {object} options - Hook options.
+ * @param {Transaction} options.transaction - Transaction object.
+ * @param {string} options.group - Transaction group (confirmed, unconfirmed, partial).
+ * @param {WalletAccount} options.currentAccount - Current account.
+ * @param {WalletAccount[]} options.walletAccounts - Wallet accounts for the network.
+ * @param {object} options.addressBook - Address book instance.
+ * @param {ChainName} options.chainName - Chain name (e.g., 'symbol').
+ * @param {NetworkIdentifier} options.networkIdentifier - Network identifier.
+ * @param {boolean} [options.isDateHidden=false] - Whether to hide the date.
+ * @returns {TransactionDisplayData} Transaction display data.
  */
 export const useTransactionItemData = ({
 	transaction,
@@ -76,7 +57,7 @@ export const useTransactionItemData = ({
 		const iconName = getTransactionIconName(transaction.type);
 		const action = getTransactionTypeText(transaction, currentAccount);
 		const description = getTransactionDescription(transaction, currentAccount, resolveOptions);
-		const dateText = getTransactionDateText(transaction, group, isDateHidden);
+		const dateText = isDateHidden ? '' : getTransactionDateText(transaction, group);
 
 		const isPartial = group === TransactionGroup.PARTIAL;
 		const isAwaitingAccountSignature = isPartial && isTransactionAwaitingSignatureByAccount(transaction, currentAccount);

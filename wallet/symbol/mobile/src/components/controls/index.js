@@ -8,5 +8,6 @@ export * from './FeeSelector';
 export * from './InputAddress';
 export * from './InputAmount';
 export * from './SelectToken';
+export * from './TabSelector';
 export * from './TextBox';
 export * from './TouchableNative';

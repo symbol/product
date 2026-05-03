@@ -8,16 +8,14 @@ import Animated, { useAnimatedStyle } from 'react-native-reanimated';
 /**
  * ButtonPlain component. A simple button displaying text with an optional icon,
  * supporting content centering and animated press interactions.
- *
  * @param {object} props - Component props.
  * @param {string} props.text - Button text.
  * @param {string} [props.icon] - Icon name (rendered with size "s" and secondary variant).
  * @param {boolean} [props.isDisabled=false] - Disable button if true.
  * @param {boolean} [props.isCentered=false] - Center content horizontally.
  * @param {object} [props.style] - Additional styles for the button container.
- * @param {function} props.onPress - Callback fired on press.
- * 
- * @returns {React.ReactNode} Plain button component
+ * @param {function(): void} props.onPress - Callback fired on press.
+ * @returns {React.ReactNode} Plain button component.
  */
 export const ButtonPlain = ({ text, icon, isDisabled = false, isCentered = false, style, onPress }) => {
 	// Color and style animations

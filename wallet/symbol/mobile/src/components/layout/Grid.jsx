@@ -6,7 +6,6 @@ const GRID_COLOR = '#888a';
 
 /**
  * Grid component. A development overlay component displaying a grid pattern to assist with element alignment and spacing consistency.
- *
  * @returns {React.ReactNode}
  */
 export const Grid = ({ isVisible }) => {

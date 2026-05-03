@@ -35,7 +35,7 @@ const SCREEN_TEXT = {
 	displayNameTokenEth: 'Ether • ETH',
 
 	// Buttons
-	buttonSendTransaction: 'button_sendTransferTransaction',
+	buttonSendTransaction: 'button_send',
 	buttonOpenExplorer: 'button_openTransactionInExplorer',
 	buttonRevealPrivateKey: 'button_revealPrivateKey',
 	buttonRemoveAccount: 'button_removeAccount',
@@ -170,7 +170,8 @@ describe('screens/bridge/BridgeAccountDetails', () => {
 			expect(routerMock.goToTokenDetails).toHaveBeenCalledWith({
 				params: {
 					chainName: CHAIN_NAME,
-					tokenId: tokenEth.id
+					tokenId: tokenEth.id,
+					preloadedData: tokenEth
 				}
 			});
 		});

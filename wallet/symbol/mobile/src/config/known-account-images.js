@@ -40,5 +40,6 @@ export const accountImages = {
 	'symbol-protocol-treasury': require('@/app/assets/images/accounts/symbol.png'),
 	'quadratic-funding': require('@/app/assets/images/accounts/symbol.png'),
 	'harvest-network-fee-sink': require('@/app/assets/images/accounts/symbol.png'),
-	'namespace-and-mosaic-fee-sink': require('@/app/assets/images/accounts/symbol.png')
+	'namespace-and-mosaic-fee-sink': require('@/app/assets/images/accounts/symbol.png'),
+	'bridge-symbol-ethereum': require('@/app/assets/images/accounts/bridge-symbol-ethereum.png')
 };

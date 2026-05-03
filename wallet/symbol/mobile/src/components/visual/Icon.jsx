@@ -2,18 +2,9 @@ import { Sizes } from '@/app/styles';
 import { Image } from 'react-native';
 
 /** @typedef {import('react')} React */
+/** @typedef {import('@/app/types/ColorVariants').IconColorVariants} IconColorVariants */
 
-const sizeMap = {
-	xxs: Sizes.Primitives.spacing150, // 12px message type, boolean, widget header icon (was 14)
-	xs: Sizes.Primitives.spacing200, // 16px - button copy, transaction send activity icon  
-	// 18 - transaction graphic action, checkbox inner icon, edit button, button plain
-	s: Sizes.Primitives.spacing250, // 20 - close button icon close
-	m: Sizes.Primitives.spacing300, // 24px -standard - tx type, navigation, transaction graphic target icon
-	l: Sizes.Primitives.spacing400, // 32px - transaction send activity circle wrapper, settings items icons,
-	// 36 - icon asset
-	xl: Sizes.Primitives.spacing500 // 40px - token icon bridge
-	// 48px - transaction graphic target wrapper, avatar md
-};
+const sizeMap = Sizes.Semantic.iconSize;
 
 const sourceMap = {
 	default: {
@@ -68,7 +59,10 @@ const sourceMap = {
 		'minus': require('@/app/assets/images/icons/white/minus.png'),
 		'file-code': require('@/app/assets/images/icons/white/file-code.png'),
 		'settings': require('@/app/assets/images/icons/white/settings.png'),
-		'swap': require('@/app/assets/images/icons/white/swap.png')
+		'swap': require('@/app/assets/images/icons/white/swap.png'),
+		'lock': require('@/app/assets/images/icons/white/lock.png'),
+		'namespace': require('@/app/assets/images/icons/white/namespace.png'),
+		'message': require('@/app/assets/images/icons/white/message.png')
 	},
 	secondary: {
 		'account-add': require('@/app/assets/images/icons/aqua/account-add.png'),
@@ -183,30 +177,32 @@ const sourceMap = {
 		'check-circle-big': require('@/app/assets/images/icons/green/check-circle-big.png')
 	},
 	info: {
-		'sign': require('@/app/assets/images/icons/blue/sign.png')
+		'sign': require('@/app/assets/images/icons/blue/sign.png'),
+		'info-circle': require('@/app/assets/images/icons/blue/info-circle.png')
 	},
 	neutral: {
-		'info-circle': require('@/app/assets/images/icons/grey/info-circle.png')
+		'info-circle': require('@/app/assets/images/icons/grey/info-circle.png'),
+		'cross-circle': require('@/app/assets/images/icons/grey/cross-circle.png'),
+		'question-circle': require('@/app/assets/images/icons/grey/question-circle.png')
 	}
 };
 
 /**
  * Icon component. A component for displaying icons with configurable sizes and color variants.
- * 
  * @param {object} props - Component props.
  * @param {string} props.name - Icon name.
- * @param {'xxs' | 'xs' | 's' | 'm' | 'l' | 'xl' | 'xxl'} props.size - Icon size (xxs, xs, s, m, l, xl, xxl).
- * @param {'default' | 'secondary' | 'inverse'} props.variant - Icon color (default, secondary, inverse).
- * @param {object} props.src - Optional source path for custom icon.
- * @param {object} props.style - Optional additional styles.
- * 
- * @returns {React.ReactNode} Icon component
+ * @param {'xxs' | 'xs' | 's' | 'm' | 'l' | 'xl' | 'xxl'} [props.size='m'] - Icon size.
+ * @param {IconColorVariants} [props.variant='default']
+ *   - Icon color variant.
+ * @param {object} [props.src] - Optional source for a custom icon image.
+ * @param {object} [props.style] - Optional additional styles.
+ * @returns {React.ReactNode} Icon component.
  */
 export const Icon = ({ name, size = 'm', variant = 'default', src, style: customStyle }) => {
 	const iconSize = sizeMap[size];
 	const iconSource = src ?? sourceMap[variant]?.[name];
 
-	if (!iconSource)
+	if (!iconSource && __DEV__)
 		throw new Error(`Icon: Icon source not found for name "${name}" and color variant "${variant}".`);
 
 	const mainStyle = {
@@ -214,10 +210,11 @@ export const Icon = ({ name, size = 'm', variant = 'default', src, style: custom
 		height: iconSize,
 		resizeMode: 'contain'
 	};
+	const fallbackIconSource = sourceMap.default['question-circle'];
 
 	return (
 		<Image 
-			source={iconSource} 
+			source={iconSource ?? fallbackIconSource} 
 			style={[mainStyle, customStyle]}
 			accessibilityLabel={`${name} icon`}
 			testID={`icon-${name}`} 

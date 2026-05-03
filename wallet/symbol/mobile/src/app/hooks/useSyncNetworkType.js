@@ -5,11 +5,10 @@ const { ControllerEventName } = constants;
 /** @typedef {import('wallet-common-core').WalletController} WalletController */
 
 /**
- * Hook that synchronizes the network type selection across multiple wallet controllers.
+ * React hook that synchronizes the network type selection across multiple wallet controllers.
  * When the main wallet controller changes its selected network, this hook automatically
  * updates all additional wallet controllers to use the same network identifier.
- *
- * @param {Object} options - Hook options.
+ * @param {object} options - Hook options.
  * @param {WalletController} options.mainWalletController 
  * - The main wallet controller instance that drives network selection.
  * @param {WalletController[]} options.additionalWalletControllers 

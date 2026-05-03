@@ -15,19 +15,17 @@ import { ScrollView } from 'react-native-gesture-handler';
  * A dialog component for confirming transaction details before submission.
  * Displays a scrollable preview of all transactions in a bundle with their details rendered in table format.
  * Supports both single transactions and composite bundles with multiple transactions.
- *
- * @param {object} props - Component props
- * @param {boolean} props.isVisible - Controls the visibility of the confirmation dialog
- * @param {string} [props.title] - Custom dialog title, defaults to localized transfer confirmation title
- * @param {string} [props.text] - Optional descriptive text displayed below the title
- * @param {TransactionBundle|null} props.transactionBundle - The transaction bundle containing transactions to preview
+ * @param {object} props - Component props.
+ * @param {boolean} props.isVisible - Controls the visibility of the confirmation dialog.
+ * @param {string} [props.title] - Custom dialog title, defaults to localized transfer confirmation title.
+ * @param {string} [props.text] - Optional descriptive text displayed below the title.
+ * @param {TransactionBundle|null} props.transactionBundle - The transaction bundle containing transactions to preview.
  * @param {function(Transaction): TableRow[]} props.getConfirmationPreview
- * - Callback function that generates table row data for a transaction preview
- * @param {WalletController} props.walletController - Wallet controller instance providing address book, accounts, and network info
- * @param {function(): void} props.onConfirm - Callback invoked when user confirms the transaction
- * @param {function(): void} props.onCancel - Callback invoked when user cancels the confirmation
- *
- * @returns {React.ReactNode} Transaction confirmation dialog component
+ * - Callback function that generates table row data for a transaction preview.
+ * @param {WalletController} props.walletController - Wallet controller instance providing address book, accounts, and network info.
+ * @param {function(): void} props.onConfirm - Callback invoked when user confirms the transaction.
+ * @param {function(): void} props.onCancel - Callback invoked when user cancels the confirmation.
+ * @returns {React.ReactNode} Transaction confirmation dialog component.
  */
 export const TransactionConfirmationDialog = ({
 	isVisible,

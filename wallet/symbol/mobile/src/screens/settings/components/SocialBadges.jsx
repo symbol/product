@@ -11,13 +11,11 @@ const imageMap = {
 };
 
 /**
- * Social badge component
- * 
- * @param {object} props - Component props
+ * Social badge component.
+ * @param {object} props - Component props.
  * @param {any} props.image - Badge image name.
  * @param {string} props.linkUrl - URL to open on press.
- * 
- * @returns {React.ReactNode} Social badge component
+ * @returns {React.ReactNode} Social badge component.
  */
 const SocialBadge = ({ image, linkUrl }) => {
 	const imageSrc = imageMap[image];
@@ -36,9 +34,8 @@ const SocialBadge = ({ image, linkUrl }) => {
 };
 
 /**
- * Social badges list component
- * 
- * @returns {React.ReactNode} Social badges component
+ * Social badges list component.
+ * @returns {React.ReactNode} Social badges component.
  */
 export const SocialBadges = () => {
 	const badges = [

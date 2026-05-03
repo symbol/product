@@ -1,8 +1,8 @@
 import { Dots, PinPad, StatusText } from './components';
 import { usePasscodeManager } from './hooks';
 import { getPasscodeSubtitle, getPasscodeTitle } from './utils';
-import { ButtonClose, LoadingIndicator } from '@/app/components';
-import { PASSCODE_PIN_LENGTH , PasscodeMode } from '@/app/constants';
+import { ButtonClose } from '@/app/components';
+import { PASSCODE_PIN_LENGTH, PasscodeMode } from '@/app/constants';
 import { $t } from '@/app/localization';
 import { Colors, Sizes, Typography } from '@/app/styles';
 import React from 'react';
@@ -14,12 +14,10 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 /**
  * Passcode component. A component for creating or verifying a numeric passcode using a PIN entry
  * interface with custom styling.
- *
  * @param {object} props - The component props.
  * @param {'create' | 'verify'} [props.type] - The type of passcode operation.
- * @param {function} props.onSuccess - The success callback.
- * @param {function} [props.onCancel] - The cancel callback.
- * 
+ * @param {function(): void} props.onSuccess - The success callback.
+ * @param {function(): void} [props.onCancel] - The cancel callback.
  * @returns {React.ReactNode} The passcode component.
  */
 export const Passcode = props => {
@@ -27,12 +25,14 @@ export const Passcode = props => {
 	const mode = type;
 	const {
 		isLoading,
+		isValidating,
 		isError,
 		errorMessage,
 		remainingAttempts,
 		currentInputValue,
 		step,
 		shakeAnimation,
+		dotAnimations,
 		inputKey,
 		backspace
 	} = usePasscodeManager({ mode, onSuccess });
@@ -42,11 +42,7 @@ export const Passcode = props => {
 	const subtitle = getPasscodeSubtitle({ mode, step, errorMessage, remainingAttempts });
 
 	if (isLoading)
-	{return (
-		<View style={styles.root}>
-			<LoadingIndicator />
-		</View>
-	);}
+		return <View style={styles.root} />;
 
 	return (
 		<View style={styles.root}>
@@ -55,16 +51,17 @@ export const Passcode = props => {
 					<Text style={styles.title}>{title}</Text>
 					<StatusText text={subtitle} isError={isError} />
 				</View>
-				<Dots 
+				<Dots
 					length={PASSCODE_PIN_LENGTH}
 					filledCount={currentInputValue.length}
 					isError={isError}
 					shakeAnimation={shakeAnimation}
+					dotAnimations={dotAnimations}
 				/>
-				<PinPad 
+				<PinPad
 					onKeyPress={inputKey}
 					onDelete={backspace}
-					isDisabled={isError}
+					isDisabled={isError || isValidating}
 				/>
 			</Animated.View>
 			{!!onCancel && (
@@ -79,7 +76,13 @@ export const Passcode = props => {
 };
 
 /**
- * PasscodeView component. A modal wrapper for the Passcode component.
+ * PasscodeView component. A full-screen modal wrapper for the Passcode component.
+ * @param {object} props - Component props.
+ * @param {boolean} props.isVisible - Whether the modal is visible.
+ * @param {'create' | 'verify'} [props.type] - The type of passcode operation.
+ * @param {function(): void} props.onSuccess - Callback fired on successful passcode entry.
+ * @param {function(): void} [props.onCancel] - Callback fired when the user cancels.
+ * @returns {React.ReactNode} PasscodeView component.
  */
 export const PasscodeView = ({ isVisible, type, onSuccess, onCancel }) => {
 	if (!isVisible)

@@ -5,16 +5,14 @@ import React from 'react';
 import { StyleSheet, View } from 'react-native';
 
 /**
- * ReceiptListItem component. A list item for displaying receipt information in a
- * compact format with an icon, action, description, date, and amount.
- *
- * @param {object} props - Component props
- * @param {object} props.receipt - The receipt object
- * @param {string} props.ticker - The ticker symbol for the network currency (e.g., 'XYM')
- * @param {boolean} [props.isDateHidden=false] - Whether to hide the date display
- * @param {function} [props.onPress] - Function to call when the item is pressed
- *
- * @returns {React.ReactNode} Receipt list item component
+ * ReceiptListItem component. Displays receipt/harvested block information in a
+ * compact list item format with icon, action, description, date, and amount.
+ * @param {object} props - Component props.
+ * @param {object} props.receipt - Receipt object containing height, amount, and timestamp.
+ * @param {string} props.ticker - Ticker symbol for the network currency (e.g., 'XYM').
+ * @param {boolean} [props.isDateHidden=false] - Whether to hide the date display.
+ * @param {function(): void} [props.onPress] - Callback when item is pressed.
+ * @returns {React.ReactNode} ReceiptListItem component.
  */
 export const ReceiptListItem = ({
 	receipt,

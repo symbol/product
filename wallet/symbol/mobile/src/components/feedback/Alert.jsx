@@ -16,20 +16,19 @@ const variantIconMap = {
 /**
  * Alert component. A component for displaying status messages with optional icons and titles,
  * supporting various visual variants for different message types.
- *
- * @param {object} props - Component props
+ * @param {object} props - Component props.
  * @param {import('@/app/types/ColorVariants').SemanticRoleColorVariants} [props.variant='neutral'] - Alert variant
  * determining the color scheme and icon.
+ * @param {string} [props.icon] - Optional icon name to override the default icon for the variant.
  * @param {string} [props.title] - Optional title text displayed prominently above the body text.
  * @param {string} props.body - Main message content to display in the alert.
  * @param {boolean} [props.isIconHidden=false] - Whether to hide the icon.
  * @param {object} [props.style] - Additional styles for the alert container.
- *
- * @returns {React.ReactNode} Alert component
+ * @returns {React.ReactNode} Alert component.
  */
-export const Alert = ({ variant = DEFAULT_VARIANT, title, body, isIconHidden = false, style }) => {
+export const Alert = ({ variant = DEFAULT_VARIANT, icon, title, body, isIconHidden = false, style }) => {
 	const palette = Colors.Components.alert[variant];
-	const iconName = variantIconMap[variant];
+	const iconName = icon ?? variantIconMap[variant];
 	const containerStyle = { backgroundColor: palette.background };
 	const textStyle = { color: palette.text };
 
@@ -54,10 +53,10 @@ export const Alert = ({ variant = DEFAULT_VARIANT, title, body, isIconHidden = f
 const styles = StyleSheet.create({
 	root: {
 		flexDirection: 'column',
-		padding: Sizes.Semantic.spacing.m,
+		padding: Sizes.Semantic.layoutSpacing.s,
 		borderRadius: Sizes.Semantic.borderRadius.m,
 		alignItems: 'center',
-		gap: Sizes.Semantic.spacing.xs
+		gap: Sizes.Semantic.layoutSpacing.xs
 	},
 	text: {
 		textAlign: 'center'

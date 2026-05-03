@@ -42,7 +42,10 @@ const SCREEN_TEXT = {
 	textFilterExpired: 's_assets_filter_expired',
 	textFilterCreated: 's_assets_filter_created',
 	buttonClear: 'button_clear',
-	textEmptyList: 'message_emptyList'
+	textEmptyList: 'message_emptyList',
+	textSectionCurrentAccount: 's_assets_section_currentAccount',
+	textSectionBridgeAccounts: 's_assets_section_bridgeAccounts',
+	textSectionMultisigAccounts: 's_assets_section_multisigAccounts'
 };
 
 // Account Fixtures
@@ -53,6 +56,10 @@ const symbolMainAccount = AccountFixtureBuilder
 
 const symbolExternalAccount = AccountFixtureBuilder
 	.createWithAccount(CHAIN_NAME_SYMBOL, NETWORK_IDENTIFIER, 1)
+	.build();
+
+const symbolMultisigAccount = AccountFixtureBuilder
+	.createWithAccount(CHAIN_NAME_SYMBOL, NETWORK_IDENTIFIER, 2)
 	.build();
 
 const ethereumMainAccount = AccountFixtureBuilder
@@ -121,6 +128,17 @@ const tokenEthereumActive = TokenFixtureBuilder
 	.setCreator(ethereumMainAccount.address)
 	.build();
 
+const tokenSymbolMultisigActive = TokenFixtureBuilder
+	.createWithToken(CHAIN_NAME_SYMBOL, NETWORK_IDENTIFIER, 1)
+	.setId('SYMBOL_TOKEN_MULTISIG_1')
+	.setName('Symbol Multisig Active')
+	.setAmount('500')
+	.setStartHeight(100_000)
+	.setEndHeight(250_000)
+	.setIsUnlimitedDuration(false)
+	.setCreator(symbolMultisigAccount.address)
+	.build();
+
 // Account Info Fixtures
 
 const accountInfoSymbolWithTokens = AccountInfoFixtureBuilder
@@ -176,7 +194,10 @@ const createWalletControllerMock = config => {
 		on: jest.fn((eventName, callback) => events.addHandler(eventName, callback)),
 		removeListener: jest.fn((eventName, callback) => events.removeHandler(eventName, callback)),
 		emit: events.emit,
-		modules: { addressBook: { whiteList: [], blackList: [], contacts: [] } }
+		modules: {
+			addressBook: { whiteList: [], blackList: [], contacts: [] },
+			...(config.multisigAccounts ? { multisig: { multisigAccounts: config.multisigAccounts } } : {})
+		}
 	};
 };
 
@@ -220,6 +241,17 @@ const CONTROLLER_CONFIG_NOT_READY = {
 	currentAccountInfo: accountInfoEthereumWithTokens,
 	networkProperties: networkPropertiesEthereum,
 	isWalletReady: false
+};
+
+const CONTROLLER_CONFIG_SYMBOL_WITH_MULTISIG = {
+	chainName: CHAIN_NAME_SYMBOL,
+	currentAccount: symbolMainAccount,
+	currentAccountInfo: accountInfoSymbolWithTokens,
+	networkProperties: networkPropertiesSymbol,
+	isWalletReady: true,
+	multisigAccounts: [
+		{ ...symbolMultisigAccount, mosaics: [tokenSymbolMultisigActive] }
+	]
 };
 
 // Mock Setup
@@ -281,11 +313,12 @@ describe('screens/assets/Assets', () => {
 
 			// Assert:
 			screenTester.expectText([
+				SCREEN_TEXT.textSectionCurrentAccount,
 				symbolMainAccount.address,
-				CHAIN_NAME_SYMBOL,
 				tokenSymbolCreatedActive.name,
 				tokenSymbolCreatedActive.amount
 			]);
+			screenTester.expectText([symbolMainAccount.name], true);
 		});
 
 		it('renders tokens from multiple wallet controllers', async () => {
@@ -301,15 +334,37 @@ describe('screens/assets/Assets', () => {
 
 			// Assert:
 			screenTester.expectText([
+				SCREEN_TEXT.textSectionCurrentAccount,
+				SCREEN_TEXT.textSectionBridgeAccounts,
 				symbolMainAccount.address,
 				ethereumMainAccount.address,
-				CHAIN_NAME_SYMBOL,
-				CHAIN_NAME_ETHEREUM,
 				tokenSymbolCreatedActive.name,
 				tokenSymbolCreatedActive.amount,
 				tokenEthereumActive.name,
 				tokenEthereumActive.amount
 			]);
+			screenTester.expectText([symbolMainAccount.name, ethereumMainAccount.name], true);
+		});
+
+		it('renders tokens from multisig accounts', async () => {
+			// Arrange:
+			mockWalletControllers({
+				main: CONTROLLER_CONFIG_SYMBOL_WITH_MULTISIG,
+				additional: []
+			});
+
+			// Act:
+			const screenTester = new ScreenTester(Assets);
+			await screenTester.waitForTimer();
+
+			// Assert:
+			screenTester.expectText([
+				SCREEN_TEXT.textSectionMultisigAccounts,
+				symbolMultisigAccount.address,
+				tokenSymbolMultisigActive.name,
+				tokenSymbolMultisigActive.amount
+			]);
+			screenTester.expectText([symbolMultisigAccount.name], true);
 		});
 	});
 

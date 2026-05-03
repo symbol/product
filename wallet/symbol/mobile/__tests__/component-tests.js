@@ -4,8 +4,8 @@ import React from 'react';
 /** @typedef {import('./component-test-helpers').RenderText} RenderText */
 
 /**
- * @typedef {Object} VisibilityTest
- * @property {Object} props - The props to be passed to the component.
+ * @typedef {object} VisibilityTest
+ * @property {object} props - The props to be passed to the component.
  * @property {RenderText[]} textToRender - The text expected to be rendered by the component.
  */
 
@@ -46,8 +46,8 @@ export const runVisibilityTest = (Component, config) => {
 };
 
 /**
- * @typedef {Object} SwitchPressTest
- * @property {Object} props - The props to be passed to the component.
+ * @typedef {object} SwitchPressTest
+ * @property {object} props - The props to be passed to the component.
  * @property {string} textToPress - The text of the element to be pressed.
  * @property {string} [labelToPress] - The accessibility label of the element to be pressed (used if textToPress is not provided).
  */
@@ -109,8 +109,8 @@ export const runSwitchPressTest = (Component, config) => {
 };
 
 /**
- * @typedef {Object} PressTest
- * @property {Object} props - The props to be passed to the component.
+ * @typedef {object} PressTest
+ * @property {object} props - The props to be passed to the component.
  * @property {string} textToPress - The text of the element to be pressed.
  * @property {string} [labelToPress] - The accessibility label of the element to be pressed (used if textToPress is not provided).
  * @property {boolean} [testDisabledState] - Whether to test the disabled state of the component.
@@ -171,8 +171,8 @@ export const runPressTest = (Component, config) => {
 
 
 /**
- * @typedef {Object} RenderTextTest
- * @property {Object} props - The props to be passed to the component.
+ * @typedef {object} RenderTextTest
+ * @property {object} props - The props to be passed to the component.
  * @property {RenderText[]} textToRender - The text expected to be rendered by the component.
  */
 
@@ -209,8 +209,8 @@ export const runRenderTextTest = (Component, config) => {
 };
 
 /**
- * @typedef {Object} InputTextTest
- * @property {Object} props - The props to be passed to the component.
+ * @typedef {object} InputTextTest
+ * @property {object} props - The props to be passed to the component.
  * @property {{ type: 'placeholder' | 'input', value: string }} [textToFocus] - Target to locate the input 
  * (by placeholder or by current value).
  * @property {string} [textToInput] - Custom text to input (defaults to 'Hello, World!').
@@ -277,8 +277,8 @@ export const runInputTextTest = (Component, config) => {
  * Runs a basic render test for a given component.
  * 
  * @param {React.Component} Component - The React Native component to be tested.
- * @param {Object} [config] - Configuration object for the test.
- * @param {Object} [config.props={}] - Props to be passed to the component.
+ * @param {object} [config] - Configuration object for the test.
+ * @param {object} [config.props={}] - Props to be passed to the component.
  */
 export const runRenderComponentTest = (Component, config = {}) => {
 	const { props = {} } = config;
@@ -293,14 +293,14 @@ export const runRenderComponentTest = (Component, config = {}) => {
 };
 
 /**
- * @typedef {Object} DropdownSelectItem
+ * @typedef {object} DropdownSelectItem
  * @property {string} label - The text label displayed for the item.
  * @property {*} value - The value of the item when selected.
  */
 
 /**
- * @typedef {Object} DropdownSelectTest
- * @property {Object} props - The props to be passed to the component.
+ * @typedef {object} DropdownSelectTest
+ * @property {object} props - The props to be passed to the component.
  * @property {string} textToPress - The text of the element to press to open the dropdown.
  * @property {DropdownSelectItem[]} items - The list of items in the dropdown.
  * @property {boolean} [testDisabledState] - Whether to test the disabled state of the component.

@@ -5,22 +5,23 @@ import { getAccountKnownInfo, validateRequired } from '@/app/utils';
 import React, { useEffect, useMemo } from 'react';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
 
+/** @typedef {import('@/app/types/Network').NetworkIdentifier} NetworkIdentifier */
+/** @typedef {import('@/app/types/Network').ChainName} ChainName */
+
 /**
- * A dropdown modal component that displays a list of contacts and wallet accounts for address
+ * InputAddressDropdown component. A dropdown modal component that displays a list of contacts and wallet accounts for address
  * selection, with account information resolution.
- *
  * @param {object} props - Component props.
  * @param {string} props.title - Dropdown modal title.
  * @param {string} props.value - Currently selected address value.
  * @param {boolean} props.isOpen - Whether the dropdown modal is visible.
  * @param {object} [props.addressBook] - Address book instance.
  * @param {Array} [props.accounts] - List of wallet accounts.
- * @param {string} [props.chainName] - Blockchain name for account resolution.
- * @param {string} [props.networkIdentifier] - Network identifier for account resolution.
- * @param {function} props.onChange - Callback when an address is selected.
- * @param {function} props.onClose - Callback when the dropdown is closed.
- * 
- * @returns {React.ReactNode} The InputAddressDropdown component.
+ * @param {ChainName} [props.chainName] - Blockchain name for account resolution.
+ * @param {NetworkIdentifier} [props.networkIdentifier] - Network identifier for account resolution.
+ * @param {function(string): void} props.onChange - Callback when an address is selected.
+ * @param {function(): void} props.onClose - Callback when the dropdown is closed.
+ * @returns {React.ReactNode} InputAddressDropdown component.
  */
 export const InputAddressDropdown = props => {
 	const { title, value, isOpen, addressBook, accounts, chainName, networkIdentifier, onChange, onClose } = props;
@@ -73,25 +74,24 @@ export const InputAddressDropdown = props => {
 /**
  * InputAddress component. An input field for entering blockchain addresses, featuring validation
  * and an optional dropdown for selecting from saved contacts and wallet accounts.
- *
  * @param {object} props - Component props.
  * @param {string} props.label - Label for the input field.
  * @param {string} props.value - Current address input value.
  * @param {object} [props.addressBook] - Address book instance.
  * @param {Array} [props.accounts] - List of wallet accounts.
- * @param {string} [props.chainName] - Blockchain name for account resolution.
- * @param {string} [props.networkIdentifier] - Network identifier for account resolution.
- * @param {function} props.onChange - Callback when input value changes.
- * @param {function} props.onValidityChange - Callback when validity state changes.
- * 
- * @returns {React.ReactNode} The InputAddress component.
+ * @param {ChainName} [props.chainName] - Blockchain name for account resolution.
+ * @param {NetworkIdentifier} [props.networkIdentifier] - Network identifier for account resolution.
+ * @param {function(string): void} props.onChange - Callback when input value changes.
+ * @param {function(boolean): void} props.onValidityChange - Callback when validity state changes.
+ * @param {Array} [props.extraValidators=[]] - Additional validators to apply.
+ * @returns {React.ReactNode} InputAddress component.
  */
 export const InputAddress = props => {
-	const { label, value, addressBook, accounts, chainName, networkIdentifier, onChange, onValidityChange } = props;
+	const { label, value, addressBook, accounts, chainName, networkIdentifier, onChange, onValidityChange, extraValidators = [] } = props;
 	const [isDropdownOpen, toggleDropdown] = useToggle(false);
 
 	// Validation
-	const errorMessage = useValidation(value, [validateRequired()], $t);
+	const errorMessage = useValidation(value, [validateRequired(), ...extraValidators], $t);
 
 	useEffect(() => {
 		onValidityChange?.(!errorMessage);

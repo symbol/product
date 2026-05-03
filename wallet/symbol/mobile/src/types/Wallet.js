@@ -4,6 +4,7 @@
 /** @typedef {import('wallet-common-core').LocalizationModule} LocalizationModule */
 /** @typedef {import('wallet-common-core').MarketModule} MarketModule */
 /** @typedef {import('wallet-common-symbol').HarvestingModule} HarvestingModule */
+/** @typedef {import('wallet-common-symbol').MultisigModule} SymbolMultisigModule */
 /** @typedef {import('wallet-common-symbol').TransferModule} SymbolTransferModule */
 /** @typedef {import('wallet-common-ethereum').TransferModule} EthereumTransferModule */
 /** @typedef {import('wallet-common-symbol/src/types/Network').NetworkProperties} SymbolNetworkProperties */
@@ -12,35 +13,40 @@
 /** @typedef {import('wallet-common-ethereum/src/types/Account').AccountInfo} EthereumAccountInfo */
 
 /**
- * @typedef {Object} MainWalletControllerModules
+ * Modules available on the main wallet controller.
+ * @typedef {object} MainWalletControllerModules
  * @property {AddressBookModule} addressBook
  * @property {HarvestingModule} harvesting
  * @property {LocalizationModule} localization
  * @property {MarketModule} market
+ * @property {SymbolMultisigModule} multisig
  * @property {SymbolTransferModule} transfer
  * @property {BridgeModule} bridge
  */
 
 /**
- * @typedef {Object} AdditionalWalletControllerModules
+ * Modules available on additional wallet controllers.
+ * @typedef {object} AdditionalWalletControllerModules
  * @property {EthereumTransferModule} transfer
  * @property {BridgeModule} bridge
  */
 
 /**
+ * WalletController extended with main-specific modules and network/account info.
  * @typedef {WalletController & {
  *   modules: MainWalletControllerModules,
  *   networkProperties: SymbolNetworkProperties,
  *   currentAccountInfo: SymbolAccountInfo | null
- * }} MainWalletController
+ * }} MainWalletController.
  */
 
 /**
+ * WalletController extended with additional-specific modules and network/account info.
  * @typedef {WalletController & {
  *   modules: AdditionalWalletControllerModules,
  *   networkProperties: EthereumNetworkProperties,
  *   currentAccountInfo: EthereumAccountInfo | null
- * }} AdditionalWalletController
+ * }} AdditionalWalletController.
  */
 
 

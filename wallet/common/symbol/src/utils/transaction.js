@@ -2,7 +2,7 @@ import { transactionToSymbol } from './transaction-to-symbol';
 import { MessageType, TransactionBundleType, TransactionType } from '../constants';
 import { Hash256, PrivateKey, PublicKey, utils } from 'symbol-sdk';
 import { MessageEncoder, SymbolFacade, models } from 'symbol-sdk/symbol';
-import { TransactionBundle, absoluteToRelativeAmount } from 'wallet-common-core';
+import { SdkError, TransactionBundle, absoluteToRelativeAmount } from 'wallet-common-core';
 
 /** @typedef {import('../types/Account').PublicAccount} PublicAccount */
 /** @typedef {import('../types/Account').UnresolvedAddressWithLocation} UnresolvedAddressWithLocation */
@@ -256,10 +256,21 @@ export const removeAllowedTransactions = (transactions, blackList) => {
  * @returns {TransactionBundle} The signed transaction bundle.
  */
 export const signTransactionBundle = (networkIdentifier, transactionBundle, privateKey) => {
-	if (transactionBundle.metadata.type === TransactionBundleType.MULTISIG_TRANSFER) {
+	const multisigTypes = [
+		TransactionBundleType.MULTISIG_TRANSFER, 
+		TransactionBundleType.MULTISIG_ACCOUNT_MODIFICATION
+	];
+
+	if (multisigTypes.includes(transactionBundle.metadata.type)) {
 		// Sign aggregate bonded transaction
 		const aggregateBondedTransaction = transactionBundle.transactions.find(tx => tx.type === TransactionType.AGGREGATE_BONDED);
-		const signedAggregateBondedTransaction = signTransaction(networkIdentifier, aggregateBondedTransaction, privateKey);
+		const { cosignaturePrivateKeys = [] } = transactionBundle.metadata;
+		const signedAggregateBondedTransaction = signTransaction(
+			networkIdentifier, 
+			aggregateBondedTransaction, 
+			privateKey, 
+			cosignaturePrivateKeys
+		);
 
 		// Sign hash lock transaction
 		const hashLockTransaction = transactionBundle.transactions.find(tx => tx.type === TransactionType.HASH_LOCK);
@@ -279,9 +290,11 @@ export const signTransactionBundle = (networkIdentifier, transactionBundle, priv
  * @param {string} networkIdentifier - The network identifier.
  * @param {Transaction} transaction - The transaction object.
  * @param {string} privateKey - The signer account private key.
+ * @param {string[]} [cosignaturePrivateKeys=[]] - Optional array of private keys for cosignatures.
+ *        Used for aggregate transactions that require multiple signatures.
  * @returns {SignedTransaction} The signed transaction.
  */
-export const signTransaction = (networkIdentifier, transaction, privateKey) => {
+export const signTransaction = (networkIdentifier, transaction, privateKey, cosignaturePrivateKeys = []) => {
 	// Map transaction
 	const transactionOptions = {
 		networkIdentifier
@@ -293,19 +306,44 @@ export const signTransaction = (networkIdentifier, transaction, privateKey) => {
 	const keyPair = new SymbolFacade.KeyPair(new PrivateKey(privateKey));
 	const signature = facade.signTransaction(keyPair, transactionObject);
 
-	// Attach signature
-	const jsonString = facade.transactionFactory.constructor.attachSignature(transactionObject, signature);
+	// Attach signature (this modifies transactionObject in place)
+	facade.transactionFactory.constructor.attachSignature(transactionObject, signature);
 	const hash = facade.hashTransaction(transactionObject).toString();
 
+	// Add cosignatures if provided (for aggregate transactions)
+	const transactionTypeValue = transactionObject.type.value;
+	const isAggregate = transactionTypeValue === TransactionType.AGGREGATE_BONDED 
+		|| transactionTypeValue === TransactionType.AGGREGATE_COMPLETE;
+
+	if (!isAggregate && cosignaturePrivateKeys.length > 0) 
+		throw new SdkError('Cosignatures can only be added to aggregate transactions');
+
+	if (cosignaturePrivateKeys.length > 0) {
+		const transactionHashBytes = facade.hashTransaction(transactionObject).bytes;
+		transactionObject.cosignatures = cosignaturePrivateKeys.map(cosignerPrivateKey => {
+			const cosignerKeyPair = new SymbolFacade.KeyPair(new PrivateKey(cosignerPrivateKey));
+			const cosignature = new models.Cosignature();
+			cosignature.version = 0n;
+			cosignature.signerPublicKey = new models.PublicKey(cosignerKeyPair.publicKey.bytes);
+			cosignature.signature = new models.Signature(cosignerKeyPair.sign(transactionHashBytes).bytes);
+			
+			return cosignature;
+		});
+	}
+
+	// Serialize final transaction
+	const hexPayload = utils.uint8ToHex(transactionObject.serialize());
+	const jsonPayload = { payload: hexPayload };
+
 	return {
-		dto: JSON.parse(jsonString),
+		dto: jsonPayload,
 		hash
 	};
 };
 
 /**
  * Cosigns a partial transaction with a private key.
- * @param {Transaction} transaction - The transaction object.
+ * @param {Transaction|SignedTransaction|CosignedTransaction} transaction - The transaction object.
  * @param {string} privateKey - The cosigner account private key.
  * @returns {CosignedTransaction} The cosigned transaction.
  */

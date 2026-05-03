@@ -1,32 +1,42 @@
 import { useAsyncManager, useTransactionListener, useWalletListener } from '@/app/hooks';
+import { DB_UPDATE_LATENCY_AFTER_ANNOUNCE } from '@/app/screens/history/constants';
 import { TransactionGroup } from 'wallet-common-core/src/constants';
+
+/** @typedef {import('@/app/types/Wallet').WalletController} WalletController */
+/** @typedef {import('@/app/types/Transaction').Transaction} Transaction */
+/** @typedef {import('@/app/types/Account').WalletAccount} WalletAccount */
+/** @typedef {import('@/app/types/Network').NetworkIdentifier} NetworkIdentifier */
+/** @typedef {import('@/app/types/Network').ChainName} ChainName */
 
 const FIRST_PAGE_NUMBER = 1;
 const PAGE_SIZE = 15;
-const DB_UPDATE_LATENCY = 500;
 
 /**
- * @typedef {Object} HistoryWidgetState
- * @property {boolean} isVisible - Indicates if the history widget should be visible based on transaction data.
- * @property {function} refresh - Function to refresh the transaction data.
- * @property {Object} props - Properties to be passed to the HistoryWidget component, including transaction arrays and account details.
- * @property {Array} props.unconfirmed - Array of unconfirmed transactions.
- * @property {Array} props.partial - Array of partial (pending multisig) transactions.
- * @property {string} props.chainName - The name of the blockchain network (e.g., 'symbol').
- * @property {string} props.networkIdentifier - The identifier for the network (e.g., 'mainnet').
- * @property {string} props.ticker - The ticker symbol for the network currency.
- * @property {Object} props.currentAccount - The current user account details.
- * @property {Object} props.walletAccounts - Wallet accounts organized by network.
- * @property {Object} props.addressBook - Address book instance for resolving transaction addresses.
+ * Props for the HistoryWidget component.
+ * @typedef {object} HistoryWidgetProps
+ * @property {Transaction[]} unconfirmed - Unconfirmed transactions.
+ * @property {Transaction[]} partial - Partial (pending multisig) transactions.
+ * @property {ChainName} chainName - Chain name (e.g., 'symbol').
+ * @property {NetworkIdentifier} networkIdentifier - Network identifier.
+ * @property {string} ticker - Ticker symbol for the network currency.
+ * @property {WalletAccount} currentAccount - Current user account.
+ * @property {WalletAccount[]} walletAccounts - Wallet accounts for the network.
+ * @property {object} addressBook - Address book instance.
  */
 
 /**
- * Custom hook for managing the history widget state.
- * It fetches unconfirmed and partial transactions, listens to transaction and wallet changes,
- * and provides necessary props for rendering the history widget.
- *
- * @param {import('wallet-common-core').WalletController} walletController - The wallet controller instance.
- * @returns {HistoryWidgetState} State and props for the history widget component.
+ * Return type of the useHistoryWidget hook.
+ * @typedef {object} UseHistoryWidgetResult
+ * @property {boolean} isVisible - Whether the widget should be visible.
+ * @property {function(): void} refresh - Function to refresh transaction data.
+ * @property {HistoryWidgetProps} props - Props for the HistoryWidget component.
+ */
+
+/**
+ * React hook for managing the history widget state. Fetches unconfirmed and
+ * partial transactions, and listens to wallet events for auto-refresh.
+ * @param {WalletController} walletController - Wallet controller instance.
+ * @returns {UseHistoryWidgetResult} Widget state and props.
  */
 export const useHistoryWidget = walletController => {
 	const unconfirmedManager = useAsyncManager({
@@ -51,7 +61,7 @@ export const useHistoryWidget = walletController => {
 		setTimeout(() => {
 			unconfirmedManager.call();
 			partialManager.call();
-		}, DB_UPDATE_LATENCY);
+		}, DB_UPDATE_LATENCY_AFTER_ANNOUNCE);
 	};
 	const clear = () => {
 		unconfirmedManager.reset();
@@ -61,9 +71,14 @@ export const useHistoryWidget = walletController => {
 	const handleTransactionStatusChange = () => {
 		refresh();
 	};
+	const handleNetworkConnected = () => {
+		refresh();
+	};
 	const handleAccountChange = () => {
 		clear();
-		refresh();
+		
+		if (walletController.isWalletReady)
+			refresh();
 	};
 
 	useTransactionListener({
@@ -76,7 +91,8 @@ export const useHistoryWidget = walletController => {
 
 	useWalletListener({
 		walletControllers: [walletController],
-		onAccountChange: handleAccountChange
+		onAccountChange: handleAccountChange,
+		onNetworkConnected: handleNetworkConnected
 	});
 
 	return {

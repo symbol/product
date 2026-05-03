@@ -36,6 +36,15 @@ export class Router {
 			routes: [{ name: RouteName.History }]
 		});
 	}
+	static goToActions() {
+		navigationRef.reset({
+			index: 0,
+			routes: [{ name: RouteName.Actions }]
+		});
+	}
+	static goToTransactionDetails(params) {
+		navigationRef.navigate(RouteName.TransactionDetails, parseNavigationParams(params));
+	}
 	static goToAssets() {
 		navigationRef.reset({
 			index: 0,
@@ -72,6 +81,18 @@ export class Router {
 	static goToBridgeSwapDetails(params) {
 		navigationRef.navigate(RouteName.BridgeSwapDetails, parseNavigationParams(params));
 	}
+	static goToMultisigAccountList(params) {
+		navigationRef.navigate(RouteName.MultisigAccountList, parseNavigationParams(params));
+	}
+	static goToMultisigAccountDetails(params) {
+		navigationRef.navigate(RouteName.MultisigAccountDetails, parseNavigationParams(params));
+	}
+	static goToCreateMultisigAccount(params) {
+		navigationRef.navigate(RouteName.CreateMultisigAccount, parseNavigationParams(params));
+	}
+	static goToModifyMultisigAccount(params) {
+		navigationRef.navigate(RouteName.ModifyMultisigAccount, parseNavigationParams(params));
+	}
 	static goToSettings(params) {
 		navigationRef.navigate(RouteName.Settings, parseNavigationParams(params));
 	}
@@ -83,5 +104,26 @@ export class Router {
 	}
 	static goToSettingsSecurity(params) {
 		navigationRef.navigate(RouteName.SettingsSecurity, parseNavigationParams(params));
+	}
+	static goToContactList(params) {
+		navigationRef.navigate(RouteName.ContactList, parseNavigationParams(params));
+	}
+	static goToContactDetails(params) {
+		navigationRef.navigate(RouteName.ContactDetails, parseNavigationParams(params));
+	}
+	static goToCreateContact(params) {
+		navigationRef.navigate(RouteName.CreateContact, parseNavigationParams(params));
+	}
+	static goToEditContact(params) {
+		navigationRef.navigate(RouteName.EditContact, parseNavigationParams(params));
+	}
+	static goToHarvesting(params) {
+		navigationRef.navigate(RouteName.Harvesting, parseNavigationParams(params));
+	}
+	static goToScan(params) {
+		navigationRef.navigate(RouteName.Scan, parseNavigationParams(params));
+	}
+	static goToTransportRequest(params) {
+		navigationRef.navigate(RouteName.TransportRequest, parseNavigationParams(params));
 	}
 }

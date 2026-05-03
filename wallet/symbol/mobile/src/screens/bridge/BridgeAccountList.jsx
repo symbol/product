@@ -10,7 +10,7 @@ import React from 'react';
  * BridgeAccountList screen component. Displays a list of bridge accounts from additional
  * wallet controllers, allowing users to view account details and activate new accounts
  * by generating them from the main wallet's mnemonic.
- * @returns {React.ReactNode} BridgeAccountList component
+ * @returns {React.ReactNode} BridgeAccountList component.
  */
 export const BridgeAccountList = () => {
 	const { accounts, refresh } = useBridgeAccounts();

@@ -1,10 +1,10 @@
 import { Icon, StyledText } from '@/app/components';
 import { MessageType } from '@/app/constants';
-import { Sizes } from '@/app/styles';
+import { Colors, Sizes } from '@/app/styles';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 
-const ICON_SIZE = 'm';
+const ICON_SIZE = 'xs';
 
 const iconMap = {
 	encrypted: 'message-encrypted',
@@ -14,25 +14,28 @@ const iconMap = {
 /**
  * MessageView component. A display component for transaction messages, showing appropriate icons
  * for encrypted or raw message types and displaying human-readable text when available.
- *
  * @param {object} props - Component props.
  * @param {object} props.message - Message object containing type and content information.
  * @param {number} props.message.type - The type of message. 0 - plain text, 1 - encrypted, rest - raw data.
- * @param {string} [props.message.text] - Optional human-readable text. content of the message.
+ * @param {string} [props.message.text] - Optional human-readable text. Content of the message.
  * @param {string} props.message.payload - Raw payload data.
- *
  * @returns {React.ReactNode} MessageView component.
  */
 export const MessageView = ({ message }) => {
 	let iconName;
+	let label;
 
-	if (message.type === MessageType.ENCRYPTED_TEXT)
+	if (message.type === MessageType.ENCRYPTED_TEXT) {
 		iconName = iconMap.encrypted;
-	else if (message.type !== MessageType.PLAIN_TEXT)
+		label = 'Encrypted Message';
+	} else if (message.type !== MessageType.PLAIN_TEXT) {
 		iconName = iconMap.raw;
+		label = 'Data';
+	}
 
 	const isTextVisible = Boolean(message.text);
 	const isIconVisible = Boolean(iconName);
+	const isLabelVisible = Boolean(label) && !isTextVisible;
 
 	return (
 		<View style={styles.root}>
@@ -42,6 +45,11 @@ export const MessageView = ({ message }) => {
 			{isTextVisible && (
 				<StyledText>{message.text}</StyledText>
 			)}
+			{isLabelVisible && (
+				<View style={styles.label}>
+					<StyledText type="label" size="s" inverse>{label}</StyledText>
+				</View>
+			)}
 		</View>
 	);
 };
@@ -50,5 +58,11 @@ const styles = StyleSheet.create({
 	root: {
 		flexDirection: 'row',
 		gap: Sizes.Semantic.spacing.s
+	},
+	label: {
+		backgroundColor: Colors.Semantic.content.secondary.default,
+		borderRadius: Sizes.Semantic.borderRadius.m,
+		paddingHorizontal: Sizes.Semantic.spacing.m,
+		height: Sizes.Semantic.spacing.l
 	}
 });
