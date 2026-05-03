@@ -25,3 +25,26 @@ class StatisticAccountView:  # pylint: disable=too-many-positional-arguments, to
 			'totalImportance': self.total_importance,
 			'eligibleHarvestAccounts': self.eligible_harvest_accounts
 		}
+
+
+class StatisticTransactionView:
+	def __init__(self, total_transactions, transaction_last_24_hours, transaction_last_30_days):
+		""""Create statistic view."""
+
+		self.total_transactions = total_transactions
+		self.transaction_last_24_hours = transaction_last_24_hours
+		self.transaction_last_30_days = transaction_last_30_days
+
+	def __eq__(self, other):
+		return isinstance(other, StatisticTransactionView) and all([
+			self.total_transactions == other.total_transactions,
+			self.transaction_last_24_hours == other.transaction_last_24_hours,
+			self.transaction_last_30_days == other.transaction_last_30_days
+		])
+
+	def to_dict(self):
+		return {
+			'total': self.total_transactions,
+			'last24Hours': self.transaction_last_24_hours,
+			'last30Days': self.transaction_last_30_days
+		}

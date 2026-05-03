@@ -16,6 +16,7 @@ from .test.DatabaseTestUtils import (
 	MOSAIC_RICH_LIST_VIEWS,
 	MOSAIC_VIEWS,
 	NAMESPACE_VIEWS,
+	TRANSACTION_STATISTIC_VIEW,
 	TRANSACTIONS_VIEWS,
 	DatabaseConfig,
 	initialize_database
@@ -617,6 +618,19 @@ def test_api_nem_account_statistics(client):  # pylint: disable=redefined-outer-
 	# Assert:
 	_assert_status_code_and_headers(response, 200)
 	assert ACCOUNT_STATISTIC_VIEW.to_dict() == response.json
+
+
+# endregion
+
+# region /transaction/statistics
+
+def test_api_nem_transaction_statistics(client):  # pylint: disable=redefined-outer-name
+	# Act:
+	response = client.get('/api/nem/transaction/statistics')
+
+	# Assert:
+	_assert_status_code_and_headers(response, 200)
+	assert TRANSACTION_STATISTIC_VIEW.to_dict() == response.json
 
 
 # endregion
