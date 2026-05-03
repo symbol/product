@@ -9,6 +9,7 @@ from ..test.DatabaseTestUtils import (
 	MOSAIC_RICH_LIST_VIEWS,
 	MOSAIC_VIEWS,
 	NAMESPACE_VIEWS,
+	TRANSACTION_STATISTIC_VIEW,
 	TRANSACTIONS_VIEWS,
 	DatabaseTestBase
 )
@@ -321,5 +322,16 @@ class NemDatabaseTest(DatabaseTestBase):  # pylint: disable=too-many-public-meth
 
 		# Assert:
 		self.assertEqual(ACCOUNT_STATISTIC_VIEW, account_statistics)
+
+	# endregion
+
+	# region transaction statistics
+
+	def test_can_query_transaction_statistics(self):
+		# Act:
+		transaction_statistics = self.nem_db.get_transaction_statistics()
+
+		# Assert:
+		self.assertEqual(TRANSACTION_STATISTIC_VIEW, transaction_statistics)
 
 	# endregion

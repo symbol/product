@@ -8,7 +8,7 @@ from rest.model.Account import AccountView
 from rest.model.Block import BlockView
 from rest.model.Mosaic import MosaicRichListView, MosaicView
 from rest.model.Namespace import NamespaceView
-from rest.model.Statistic import StatisticAccountView
+from rest.model.Statistic import StatisticAccountView, StatisticTransactionView
 from rest.model.Transaction import TransactionRecord, TransactionView
 
 from .DatabaseConnection import DatabaseConnectionPool
@@ -246,6 +246,21 @@ class NemDatabase(DatabaseConnectionPool):
 			timestamp=str(transaction.timestamp),
 			deadline=str(transaction.deadline),
 			signature=_format_bytes(transaction.signature)
+		)
+
+	@staticmethod
+	def _create_transaction_statistic_view(result):
+
+		(
+			total_transactions,
+			transaction_last_24_hours,
+			transaction_last_30_days
+		) = result
+
+		return StatisticTransactionView(
+			total_transactions=total_transactions,
+			transaction_last_24_hours=transaction_last_24_hours,
+			transaction_last_30_days=transaction_last_30_days
 		)
 
 	@staticmethod
@@ -675,3 +690,36 @@ class NemDatabase(DatabaseConnectionPool):
 			inner_transaction = self._get_transaction_query(inner_hash, is_inner=True)
 
 		return self._create_transaction_view(transaction, inner_transaction) if transaction else None
+
+	def get_transaction_statistics(self):
+		"""Gets transaction statistics from database."""
+
+		with self.connection() as connection:
+			cursor = connection.cursor()
+			cursor.execute('''
+				WITH latest_block AS (
+					SELECT MAX(timestamp) AS max_timestamp
+					FROM blocks
+				)
+				SELECT
+					COALESCE(SUM(b.total_transactions), 0) AS total_transactions,
+					COALESCE(SUM(
+						CASE
+							WHEN b.timestamp > lb.max_timestamp - INTERVAL '24 hours'
+							THEN b.total_transactions
+							ELSE 0
+						END
+					), 0) AS transaction_last_24_hours,
+					COALESCE(SUM(
+						CASE
+							WHEN b.timestamp > lb.max_timestamp - INTERVAL '30 days'
+							THEN b.total_transactions
+							ELSE 0
+						END
+					), 0) AS transaction_last_30_days
+				FROM blocks b
+				CROSS JOIN latest_block lb;
+			''')
+			result = cursor.fetchone()
+
+			return self._create_transaction_statistic_view(result) if result else None
