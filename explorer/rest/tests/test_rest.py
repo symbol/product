@@ -616,7 +616,7 @@ def test_api_nem_account_statistics(client):  # pylint: disable=redefined-outer-
 
 	# Assert:
 	_assert_status_code_and_headers(response, 200)
-	assert ACCOUNT_STATISTIC_VIEW == response.json
+	assert ACCOUNT_STATISTIC_VIEW.to_dict() == response.json
 
 
 # endregion
