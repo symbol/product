@@ -8,6 +8,7 @@ from rest.model.Account import AccountView
 from rest.model.Block import BlockView
 from rest.model.Mosaic import MosaicRichListView, MosaicView
 from rest.model.Namespace import NamespaceView
+from rest.model.Statistic import StatisticAccountView
 from rest.model.Transaction import TransactionRecord, TransactionView
 
 from .DatabaseConnection import DatabaseConnectionPool
@@ -102,6 +103,25 @@ class NemDatabase(DatabaseConnectionPool):
 			min_cosignatories=min_cosignatories,
 			cosignatory_of=[_format_address_bytes_to_string(address) for address in cosignatory_of] if cosignatory_of else None,
 			cosignatories=[_format_address_bytes_to_string(address) for address in cosignatories] if cosignatories else None
+		)
+
+	@staticmethod
+	def _create_account_statistic_view(result):
+
+		(
+			total_accounts,
+			accounts_with_balance,
+			harvested_accounts,
+			total_importance,
+			eligible_harvest_accounts
+		) = result
+
+		return StatisticAccountView(
+			total_accounts=total_accounts,
+			accounts_with_balance=accounts_with_balance,
+			harvested_accounts=harvested_accounts,
+			eligible_harvest_accounts=eligible_harvest_accounts,
+			total_importance=float(total_importance)
 		)
 
 	@staticmethod
@@ -448,6 +468,23 @@ class NemDatabase(DatabaseConnectionPool):
 			results = cursor.fetchall()
 
 			return [self._create_account_view(result) for result in results]
+
+	def get_account_statistics(self):
+		"""Gets account statistics from database."""
+
+		with self.connection() as connection:
+			cursor = connection.cursor()
+			cursor.execute('''
+				SELECT
+					(SELECT COUNT(*) FROM accounts) AS total_accounts,
+					(SELECT COUNT(*) FROM accounts WHERE balance > 0) AS accounts_with_balance,
+					(SELECT COUNT(*) FROM accounts WHERE harvested_blocks > 0) AS harvested_accounts,
+					COALESCE((SELECT SUM(importance) FROM accounts), 0) AS total_importance,
+					(SELECT COUNT(*) FROM accounts WHERE vested_balance > 10000) AS eligible_harvest_accounts
+			''')
+			result = cursor.fetchone()
+
+			return self._create_account_statistic_view(result) if result else None
 
 	def get_namespace_by_name(self, name):
 		"""Gets namespace by root namespace or sub namespace name."""

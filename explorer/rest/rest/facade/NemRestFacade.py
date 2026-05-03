@@ -54,6 +54,13 @@ class NemRestFacade:
 
 		return [account.to_dict() for account in accounts]
 
+	def get_account_statistics(self):
+		"""Gets account statistics."""
+
+		account_statistics = self.nem_db.get_account_statistics()
+
+		return account_statistics.to_dict() if account_statistics else None
+
 	async def get_health(self):
 		"""Gets health of the node."""
 

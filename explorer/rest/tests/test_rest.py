@@ -10,6 +10,7 @@ from symbollightapi.model.Exceptions import NodeException
 from rest import create_app
 
 from .test.DatabaseTestUtils import (
+	ACCOUNT_STATISTIC_VIEW,
 	ACCOUNT_VIEWS,
 	BLOCK_VIEWS,
 	MOSAIC_RICH_LIST_VIEWS,
@@ -603,3 +604,19 @@ def test_api_nem_transaction_by_hash(client):  # pylint: disable=redefined-outer
 	# Assert:
 	_assert_status_code_and_headers(response, 200)
 	assert TRANSACTIONS_VIEWS[0].to_dict() == response.json
+
+
+# endregion
+
+# region /account/statistics
+
+def test_api_nem_account_statistics(client):  # pylint: disable=redefined-outer-name
+	# Act:
+	response = client.get('/api/nem/account/statistics')
+
+	# Assert:
+	_assert_status_code_and_headers(response, 200)
+	assert ACCOUNT_STATISTIC_VIEW.to_dict() == response.json
+
+
+# endregion
