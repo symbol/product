@@ -5,7 +5,7 @@ The changelog format is based on [Keep a Changelog](https://keepachangelog.com/e
 
 ## next
 
-## [0.2.4] - 22 Apr-2026
+## [0.2.4] - 5 May-2026
 
 ### Added
 - add pemview command which outputs the Symbol address from a pem file
@@ -14,6 +14,8 @@ The changelog format is based on [Keep a Changelog](https://keepachangelog.com/e
 ### Fixed
 - set the open file limit in the Docker-compose.yaml file for both the hard and soft limits.
 - some UTC datetime apis are deprecated, update to use the new utc datetime APIs.
+- renew-certificates fails to find the certificate file when a relative path is used, update to use absolute path.
+- renew-certificates fails when temp and shoestring folder are on different devices, add --force option to handle this case.
 
 ## [0.2.3] - 26 Nov-2025
 
