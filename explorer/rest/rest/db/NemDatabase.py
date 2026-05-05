@@ -861,7 +861,7 @@ class NemDatabase(DatabaseConnectionPool):
 		inner_transaction_hashes = [
 			transaction.payload['inner_hash']
 			for transaction in transactions
-			if transaction.transaction_type == TransactionType.MULTISIG.value and transaction.payload.get('inner_hash')
+			if transaction.transaction_type == TransactionType.MULTISIG.value
 		]
 
 		if inner_transaction_hashes:
@@ -873,7 +873,7 @@ class NemDatabase(DatabaseConnectionPool):
 			return [
 				self._create_transaction_view(
 					transaction,
-					inner_transaction_map.get(transaction.payload['inner_hash']) if transaction.payload.get('inner_hash') else None
+					inner_transaction_map.get(transaction.payload.get('inner_hash'))
 				)
 				for transaction in transactions
 			]

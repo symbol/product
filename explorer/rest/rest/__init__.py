@@ -323,20 +323,10 @@ def setup_nem_routes(app, nem_api_facade):  # pylint: disable=too-many-statement
 						raise ValueError('Invalid recipient address format')
 
 			if transaction_types:
-				valid_transaction_types = {
-					TransactionType.TRANSFER.name,
-					TransactionType.ACCOUNT_KEY_LINK.name,
-					TransactionType.MULTISIG_ACCOUNT_MODIFICATION.name,
-					TransactionType.MULTISIG.name,
-					TransactionType.NAMESPACE_REGISTRATION.name,
-					TransactionType.MOSAIC_DEFINITION.name,
-					TransactionType.MOSAIC_SUPPLY_CHANGE.name
-				}
-
 				transaction_types = [tx_type.upper() for tx_type in transaction_types.split(',')]
 
 				for tx_type in transaction_types:
-					if tx_type not in valid_transaction_types:
+					if tx_type not in TransactionType.__members__:
 						raise ValueError('Invalid transaction types')
 
 				transaction_types = [TransactionType[t].value for t in transaction_types]
