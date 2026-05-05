@@ -13,7 +13,12 @@ from rest.model.Account import AccountView
 from rest.model.Block import BlockView
 from rest.model.Mosaic import MosaicRichListView, MosaicView
 from rest.model.Namespace import NamespaceView
-from rest.model.Statistic import StatisticAccountView, StatisticTransactionView
+from rest.model.Statistic import (
+	StatisticAccountView,
+	StatisticTransactionDateRangeDataView,
+	StatisticTransactionDateRangeView,
+	StatisticTransactionView
+)
 from rest.model.Transaction import TransactionView
 
 Block = namedtuple(
@@ -522,6 +527,26 @@ TRANSACTION_STATISTIC_VIEW = StatisticTransactionView(
 	total_transactions=8,
 	transaction_last_24_hours=8,
 	transaction_last_30_days=8
+)
+
+TRANSACTION_DAILY_STATISTIC_VIEW = StatisticTransactionDateRangeView(
+	period_type='DAY',
+	data=[
+		StatisticTransactionDateRangeDataView(
+			period='2015-03-29',
+			total_transactions=8
+		)
+	]
+)
+
+TRANSACTION_MONTH_STATISTIC_VIEW = StatisticTransactionDateRangeView(
+	period_type='MONTH',
+	data=[
+		StatisticTransactionDateRangeDataView(
+			period='2015-03',
+			total_transactions=8
+		)
+	]
 )
 
 NAMESPACE_VIEWS = [
