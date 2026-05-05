@@ -1,4 +1,5 @@
 import configparser
+from datetime import date
 from pathlib import Path
 
 from flask import Flask, abort, jsonify, request
@@ -50,7 +51,7 @@ def setup_nem_facade(app):
 	return NemRestFacade(db_params, rest_config)
 
 
-def setup_nem_routes(app, nem_api_facade):  # pylint: disable=too-many-statements
+def setup_nem_routes(app, nem_api_facade):  # pylint: disable=too-many-statements, too-many-locals
 	@app.route('/api/nem/block/<height>')
 	def api_get_nem_block_by_height(height):
 		try:
@@ -252,6 +253,29 @@ def setup_nem_routes(app, nem_api_facade):  # pylint: disable=too-many-statement
 	@app.route('/api/nem/transaction/statistics')
 	def api_get_nem_transaction_statistics():
 		return jsonify(nem_api_facade.get_transaction_statistics())
+
+	@app.route('/api/nem/transaction/statistics/range')
+	def api_get_nem_transaction_statistics_by_date_range():  # pylint: disable=invalid-name
+		start_date = request.args.get('startDate', '').strip()
+		end_date = request.args.get('endDate', '').strip()
+		period_type = request.args.get('periodType', '').strip().upper()
+
+		if not start_date or not end_date or not period_type:
+			abort(400, 'startDate, endDate and period type are required')
+
+		try:
+			start_date = date.fromisoformat(start_date)
+			end_date = date.fromisoformat(end_date)
+
+			if start_date > end_date:
+				raise ValueError('start date must be less than or equal to end date')
+			if period_type not in ['DAY', 'MONTH']:
+				raise ValueError('Period type must be either DAY or MONTH')
+
+		except ValueError as error:
+			abort(400, error)
+
+		return jsonify(nem_api_facade.get_transaction_statistics_by_date_range(start_date, end_date, period_type))
 
 
 def setup_error_handlers(app):
