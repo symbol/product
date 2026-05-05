@@ -743,7 +743,7 @@ class NemDatabase(DatabaseConnectionPool):
 
 			return self._create_transaction_statistic_view(result) if result else None
 
-	def get_transaction_statistics_by_date_range(self, start_date, end_date, period_type):
+	def get_transaction_statistics_by_date_range(self, start_date, end_date, period_type):  # pylint: disable=invalid-name
 		"""Gets transaction statistics grouped by period from database."""
 
 		period_format = 'YYYY-MM-DD' if 'DAY' == period_type else 'YYYY-MM'
@@ -753,7 +753,7 @@ class NemDatabase(DatabaseConnectionPool):
 				TO_CHAR(DATE_TRUNC('{period_type}', timestamp), '{period_format}') AS period,
 				COALESCE(SUM(total_transactions), 0) AS total_transactions
 			FROM blocks
-			WHERE timestamp >= %s AND timestamp < %s + INTERVAL '1 day'
+			WHERE timestamp >= %s::date AND timestamp < %s::date + INTERVAL '1 day'
 			GROUP BY DATE_TRUNC('{period_type}', timestamp)
 			ORDER BY DATE_TRUNC('{period_type}', timestamp) ASC
 		'''
