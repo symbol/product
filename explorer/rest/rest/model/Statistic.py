@@ -52,3 +52,43 @@ class StatisticTransactionView:
 			'last24Hours': self.transaction_last_24_hours,
 			'last30Days': self.transaction_last_30_days
 		}
+
+
+class StatisticTransactionDateRangeDataView:
+	def __init__(self, period, total_transactions):
+		""""Create transaction statistic date range data view."""
+
+		self.period = period
+		self.total_transactions = total_transactions
+
+	def __eq__(self, other):
+		return isinstance(other, StatisticTransactionDateRangeDataView) and all([
+			self.period == other.period,
+			self.total_transactions == other.total_transactions
+		])
+
+	def to_dict(self):
+		return {
+			'period': self.period,
+			'totalTransactions': self.total_transactions
+		}
+
+
+class StatisticTransactionDateRangeView:
+	def __init__(self, period_type, data):
+		""""Create transaction statistic date range view."""
+
+		self.period_type = period_type
+		self.data = data
+
+	def __eq__(self, other):
+		return isinstance(other, StatisticTransactionDateRangeView) and all([
+			self.period_type == other.period_type,
+			self.data == other.data
+		])
+
+	def to_dict(self):
+		return {
+			'periodType': self.period_type.lower(),
+			'data': [item.to_dict() for item in self.data]
+		}
