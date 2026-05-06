@@ -124,13 +124,7 @@ describe('BridgeManager', () => {
 		currentAccount: { address: currentAccountAddress },
 		isWalletReady: true,
 		fetchAccountTransactions: jest.fn(async () => []),
-		walletSdk,
-		modules: {
-			bridge: {
-				fetchTokenInfo: jest.fn(async tokenId => createTokenInfo(tokenId)),
-				addConfig: jest.fn()
-			}
-		}
+		walletSdk
 	});
 	const createNativeController = () => createController({
 		chainName: 'symbol',
@@ -141,6 +135,14 @@ describe('BridgeManager', () => {
 		chainName: 'ethereum',
 		currentAccountAddress: ETHEREUM_ACCOUNT_ADDRESS,
 		walletSdk: ethereumSdk
+	});
+	const createNativeBridgeHelper = () => ({
+		fetchTokenInfo: jest.fn(async (networkProperties, tokenId) => createTokenInfo(tokenId)),
+		createTransaction: jest.fn()
+	});
+	const createWrappedBridgeHelper = () => ({
+		fetchTokenInfo: jest.fn(async (networkProperties, tokenId) => createTokenInfo(tokenId)),
+		createTransaction: jest.fn()
 	});
 	const toAbsolute = (amount, divisibility = 6) => {
 		const [i, f = ''] = String(amount).split('.');
@@ -157,16 +159,22 @@ describe('BridgeManager', () => {
 	let makeRequest;
 	let nativeWalletController;
 	let wrappedWalletController;
+	let nativeBridgeHelper;
+	let wrappedBridgeHelper;
 	let manager;
 
 	beforeEach(() => {
 		makeRequest = jest.fn();
 		nativeWalletController = createNativeController();
 		wrappedWalletController = createWrappedController();
+		nativeBridgeHelper = createNativeBridgeHelper();
+		wrappedBridgeHelper = createWrappedBridgeHelper();
 		manager = new BridgeManager({
 			id: BRIDGE_ID,
 			nativeWalletController,
 			wrappedWalletController,
+			nativeBridgeHelper,
+			wrappedBridgeHelper,
 			bridgeUrls: bridgeUrlMap,
 			makeRequest
 		});
@@ -295,14 +303,12 @@ describe('BridgeManager', () => {
 
 			// Assert:
 			expect(makeRequest).toHaveBeenCalledWith(expectedUrl);
-			expect(nativeWalletController.modules.bridge.fetchTokenInfo)
-				.toHaveBeenCalledWith(configResponse.nativeNetwork.tokenId);
-			expect(wrappedWalletController.modules.bridge.fetchTokenInfo)
-				.toHaveBeenCalledWith(configResponse.wrappedNetwork.tokenId);
-			expect(nativeWalletController.modules.bridge.addConfig)
-				.toHaveBeenCalledWith(BRIDGE_ID, expectedNativeConfig);
-			expect(wrappedWalletController.modules.bridge.addConfig)
-				.toHaveBeenCalledWith(BRIDGE_ID, expectedWrappedConfig);
+			expect(nativeBridgeHelper.fetchTokenInfo)
+				.toHaveBeenCalledWith(nativeWalletController.networkProperties, configResponse.nativeNetwork.tokenId);
+			expect(wrappedBridgeHelper.fetchTokenInfo)
+				.toHaveBeenCalledWith(wrappedWalletController.networkProperties, configResponse.wrappedNetwork.tokenId);
+			expect(manager.config.nativeNetwork).toStrictEqual(expectedNativeConfig);
+			expect(manager.config.wrappedNetwork).toStrictEqual(expectedWrappedConfig);
 		});
 
 		it('throws if network identifiers do not match', async () => {
@@ -311,6 +317,8 @@ describe('BridgeManager', () => {
 			manager = new BridgeManager({
 				nativeWalletController,
 				wrappedWalletController: badWrapped,
+				nativeBridgeHelper,
+				wrappedBridgeHelper,
 				bridgeUrls: bridgeUrlMap,
 				makeRequest
 			});
@@ -350,6 +358,8 @@ describe('BridgeManager', () => {
 			manager = new BridgeManager({
 				nativeWalletController,
 				wrappedWalletController,
+				nativeBridgeHelper,
+				wrappedBridgeHelper,
 				bridgeUrls: bridgeUrlMap,
 				makeRequest
 			});
@@ -569,6 +579,8 @@ describe('BridgeManager', () => {
 			manager = new BridgeManager({
 				nativeWalletController,
 				wrappedWalletController,
+				nativeBridgeHelper,
+				wrappedBridgeHelper,
 				bridgeUrls: bridgeUrlMap,
 				makeRequest
 			});
@@ -1106,6 +1118,77 @@ describe('BridgeManager', () => {
 			// Act & Assert:
 			await expect(manager.estimateRequest('bad', '1'))
 				.rejects.toThrow('Invalid bridge mode: bad');
+		});
+	});
+
+	describe('createTransaction', () => {
+		it('throws if config is not loaded', async () => {
+			// Act & Assert:
+			await expect(manager.createTransaction('wrap', { recipientAddress: ETHEREUM_ACCOUNT_ADDRESS, amount: '10' }))
+				.rejects.toThrow('Failed to create bridge transaction. No bridge config fetched');
+		});
+
+		it('throws if no current account for source controller', async () => {
+			// Arrange:
+			makeRequest.mockResolvedValueOnce(createConfigResponse());
+			await manager.load();
+			nativeWalletController.currentAccount = null;
+
+			// Act & Assert:
+			await expect(manager.createTransaction('wrap', { recipientAddress: ETHEREUM_ACCOUNT_ADDRESS, amount: '10' }))
+				.rejects.toThrow('Failed to create bridge transaction. No current account selected');
+		});
+
+		it('creates wrap transaction using native bridge helper', async () => {
+			// Arrange:
+			const amount = '10';
+			const expectedTransaction = { type: 'TRANSFER', signerAddress: SYMBOL_ACCOUNT_ADDRESS };
+			makeRequest.mockResolvedValueOnce(createConfigResponse());
+			nativeBridgeHelper.createTransaction.mockResolvedValueOnce(expectedTransaction);
+			await manager.load();
+
+			// Act:
+			const result = await manager.createTransaction('wrap', {
+				recipientAddress: ETHEREUM_ACCOUNT_ADDRESS,
+				amount
+			});
+
+			// Assert:
+			expect(nativeBridgeHelper.createTransaction).toHaveBeenCalledWith({
+				currentAccount: nativeWalletController.currentAccount,
+				networkProperties: nativeWalletController.networkProperties,
+				recipientAddress: ETHEREUM_ACCOUNT_ADDRESS,
+				bridgeAddress: SYMBOL_BRIDGE_ADDRESS,
+				token: { ...createTokenInfo(SYMBOL_TOKEN_ID), amount },
+				fee: undefined
+			});
+			expect(result.transactions).toStrictEqual([expectedTransaction]);
+		});
+
+		it('creates unwrap transaction using wrapped bridge helper', async () => {
+			// Arrange:
+			const amount = '5';
+			const expectedTransaction = { type: 'ERC_20_BRIDGE_TRANSFER', signerAddress: ETHEREUM_ACCOUNT_ADDRESS };
+			makeRequest.mockResolvedValueOnce(createConfigResponse());
+			wrappedBridgeHelper.createTransaction.mockResolvedValueOnce(expectedTransaction);
+			await manager.load();
+
+			// Act:
+			const result = await manager.createTransaction('unwrap', {
+				recipientAddress: SYMBOL_ACCOUNT_ADDRESS,
+				amount
+			});
+
+			// Assert:
+			expect(wrappedBridgeHelper.createTransaction).toHaveBeenCalledWith({
+				currentAccount: wrappedWalletController.currentAccount,
+				networkProperties: wrappedWalletController.networkProperties,
+				recipientAddress: SYMBOL_ACCOUNT_ADDRESS,
+				bridgeAddress: ETHEREUM_BRIDGE_ADDRESS.toLowerCase(),
+				token: { ...createTokenInfo(ETHEREUM_TOKEN_ID), amount },
+				fee: undefined
+			});
+			expect(result.transactions).toStrictEqual([expectedTransaction]);
 		});
 	});
 });

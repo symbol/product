@@ -1,12 +1,9 @@
 import { ethereumNetworkApi } from './api';
-import { ethereumBridgeHelper } from './bridge';
 import { ethereumWalletSdk } from './sdk';
 import { config } from '@/app/config';
 import { PersistentStorageInterface } from '@/app/lib/storage/PersistentStorageInterface';
 import { SecureStorageInterface } from '@/app/lib/storage/SecureStorageInterface';
-import { makeRequest } from '@/app/utils';
 import {
-	BridgeModule,
 	ExternalAccountKeystore,
 	MnemonicKeystore,
 	StorageInterface,
@@ -17,11 +14,7 @@ import { TransferModule } from 'wallet-common-ethereum';
 /** @typedef {import('@/app/types/Wallet').AdditionalWalletController} AdditionalWalletController */
 
 const modules = [
-	new TransferModule(),
-	new BridgeModule({
-		makeRequest,
-		bridgeHelper: ethereumBridgeHelper
-	})
+	new TransferModule()
 ];
 
 /**

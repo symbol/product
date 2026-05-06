@@ -11,7 +11,7 @@ import { act } from '@testing-library/react-native';
 
 const CHAIN_NAME = 'symbol';
 const NETWORK_IDENTIFIER = 'testnet';
-const BRIDGE_ID = 'symbol-xym-ethereum-wxym';
+const MODE = 'wrap';
 const AMOUNT = '25';
 
 // Fixtures
@@ -50,15 +50,12 @@ const bridgeTransaction = TransactionFixtureBuilder
 	})
 	.build();
 
-const bridgeModule = {
+const bridge = {
 	createTransaction: jest.fn().mockResolvedValue(bridgeTransaction)
 };
 
 const sourceWalletController = createWalletControllerMock({
-	currentAccount: sourceAccount,
-	modules: {
-		bridge: bridgeModule
-	}
+	currentAccount: sourceAccount
 });
 
 const targetWalletController = createWalletControllerMock({
@@ -82,7 +79,8 @@ const targetSide = {
 // Hook Helpers
 
 const createHookParams = overrides => ({
-	bridgeId: BRIDGE_ID,
+	bridge,
+	mode: MODE,
 	source: sourceSide,
 	target: targetSide,
 	amount: AMOUNT,
@@ -107,7 +105,6 @@ describe('hooks/useBridgeTransaction', () => {
 			// Arrange:
 			const params = createHookParams();
 			const expectedTransactionData = {
-				bridgeId: BRIDGE_ID,
 				recipientAddress: targetAccount.address,
 				amount: AMOUNT
 			};
@@ -122,7 +119,7 @@ describe('hooks/useBridgeTransaction', () => {
 			});
 
 			// Assert:
-			expect(bridgeModule.createTransaction).toHaveBeenCalledWith(expectedTransactionData);
+			expect(bridge.createTransaction).toHaveBeenCalledWith(MODE, expectedTransactionData);
 			expect(createdTransaction).toStrictEqual(bridgeTransaction);
 			expect(previewTable).toStrictEqual([
 				{ type: 'account', value: bridgeTransaction.signerAddress, title: 'signerAddress' },

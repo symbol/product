@@ -1,4 +1,6 @@
+import { ethereumBridgeHelper } from './ethereum/bridge';
 import { ethereumWalletController } from './ethereum/controller';
+import { symbolBridgeHelper } from './symbol/bridge';
 import { symbolWalletController } from './symbol/controller';
 import { makeRequest } from '@/app/utils';
 import { BridgeManager } from 'wallet-common-core';
@@ -15,6 +17,8 @@ const bridges = [
 		id: 'symbol-xym-ethereum-wxym',
 		nativeWalletController: symbolWalletController,
 		wrappedWalletController: ethereumWalletController,
+		nativeBridgeHelper: symbolBridgeHelper,
+		wrappedBridgeHelper: ethereumBridgeHelper,
 		bridgeUrls: {
 			testnet: 'https://bridge.symbol.tools/testnet/ethereum-wrapped',
 			mainnet: 'https://bridge.symbol.tools/ethereum-wrapped'

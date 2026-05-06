@@ -9,7 +9,6 @@ import { StorageInterface } from './lib/storage/StorageInterface';
 import { PersistentStorageRepository } from './lib/storage/PersistentStorageRepository';
 // Modules
 import { AddressBookModule } from './lib/modules/AddressBookModule';
-import { BridgeModule } from './lib/modules/BridgeModule';
 import { LocalizationModule } from './lib/modules/LocalizationModule';
 import { MarketModule } from './lib/modules/MarketModule';
 // Utils
@@ -59,7 +58,6 @@ export {
 	cloneNetworkObjectMap,
 	constants,
 	AddressBookModule,
-	BridgeModule,
 	LocalizationModule,
 	MarketModule,
 

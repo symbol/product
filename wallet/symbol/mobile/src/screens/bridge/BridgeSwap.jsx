@@ -95,7 +95,7 @@ export const BridgeSwap = props => {
 	const {
 		createTransaction,
 		getTransactionPreviewTable
-	} = useBridgeTransaction({ bridgeId: bridge?.id, source, target, amount });
+	} = useBridgeTransaction({ bridge, mode, source, target, amount });
 
 	// Update ref to point to actual createTransaction
 	createTransactionRef.current = createTransaction;
