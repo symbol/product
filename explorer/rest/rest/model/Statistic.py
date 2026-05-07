@@ -1,6 +1,6 @@
 class StatisticAccountView:  # pylint: disable=too-many-positional-arguments, too-many-arguments
 	def __init__(self, total_accounts, accounts_with_balance, harvested_accounts, total_importance, eligible_harvest_accounts):
-		""""Create account statistic view."""
+		"""Create account statistic view."""
 
 		self.total_accounts = total_accounts
 		self.accounts_with_balance = accounts_with_balance
@@ -18,6 +18,8 @@ class StatisticAccountView:  # pylint: disable=too-many-positional-arguments, to
 		])
 
 	def to_dict(self):
+		"""Formats the account statistic info as a dictionary."""
+
 		return {
 			'total': self.total_accounts,
 			'withBalance': self.accounts_with_balance,

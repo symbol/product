@@ -476,15 +476,16 @@ class NemDatabase(DatabaseConnectionPool):
 			cursor = connection.cursor()
 			cursor.execute('''
 				SELECT
-					(SELECT COUNT(*) FROM accounts) AS total_accounts,
-					(SELECT COUNT(*) FROM accounts WHERE balance > 0) AS accounts_with_balance,
-					(SELECT COUNT(*) FROM accounts WHERE harvested_blocks > 0) AS harvested_accounts,
-					COALESCE((SELECT SUM(importance) FROM accounts), 0) AS total_importance,
-					(SELECT COUNT(*) FROM accounts WHERE vested_balance > 10000) AS eligible_harvest_accounts
+					COUNT(*) AS total_accounts,
+					COUNT(*) FILTER (WHERE balance > 0) AS accounts_with_balance,
+					COUNT(*) FILTER (WHERE harvested_blocks > 0) AS harvested_accounts,
+					COALESCE(SUM(importance), 0) AS total_importance,
+					COUNT(*) FILTER (WHERE vested_balance > 10000) AS eligible_harvest_accounts
+				FROM accounts
 			''')
 			result = cursor.fetchone()
 
-			return self._create_account_statistic_view(result) if result else None
+			return self._create_account_statistic_view(result)
 
 	def get_namespace_by_name(self, name):
 		"""Gets namespace by root namespace or sub namespace name."""
