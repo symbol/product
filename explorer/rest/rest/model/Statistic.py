@@ -56,7 +56,7 @@ class StatisticTransactionView:
 
 class StatisticTransactionDateRangeDataView:
 	def __init__(self, period, total_transactions):
-		""""Create transaction statistic date range data view."""
+		"""Create transaction statistic date range data view."""
 
 		self.period = period
 		self.total_transactions = total_transactions
@@ -68,6 +68,8 @@ class StatisticTransactionDateRangeDataView:
 		])
 
 	def to_dict(self):
+		"""Formats the transaction statistic date range data as a dictionary."""
+
 		return {
 			'period': self.period,
 			'totalTransactions': self.total_transactions
@@ -76,7 +78,7 @@ class StatisticTransactionDateRangeDataView:
 
 class StatisticTransactionDateRangeView:
 	def __init__(self, period_type, data):
-		""""Create transaction statistic date range view."""
+		"""Create transaction statistic date range view."""
 
 		self.period_type = period_type
 		self.data = data
@@ -88,6 +90,8 @@ class StatisticTransactionDateRangeView:
 		])
 
 	def to_dict(self):
+		"""Formats the transaction statistic date range as a dictionary."""
+
 		return {
 			'periodType': self.period_type.lower(),
 			'data': [item.to_dict() for item in self.data]
