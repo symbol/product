@@ -31,7 +31,7 @@ class StatisticAccountView:  # pylint: disable=too-many-positional-arguments, to
 
 class StatisticTransactionView:
 	def __init__(self, total_transactions, transaction_last_24_hours, transaction_last_30_days):
-		""""Create statistic view."""
+		"""Create statistic view."""
 
 		self.total_transactions = total_transactions
 		self.transaction_last_24_hours = transaction_last_24_hours
@@ -45,6 +45,8 @@ class StatisticTransactionView:
 		])
 
 	def to_dict(self):
+		"""Formats the transaction statistic info as a dictionary."""
+
 		return {
 			'total': self.total_transactions,
 			'last24Hours': self.transaction_last_24_hours,
