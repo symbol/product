@@ -9,6 +9,8 @@ from ..test.DatabaseTestUtils import (
 	MOSAIC_RICH_LIST_VIEWS,
 	MOSAIC_VIEWS,
 	NAMESPACE_VIEWS,
+	TRANSACTION_DAILY_STATISTIC_VIEW,
+	TRANSACTION_MONTH_STATISTIC_VIEW,
 	TRANSACTION_STATISTIC_VIEW,
 	TRANSACTIONS_VIEWS,
 	DatabaseTestBase
@@ -333,5 +335,19 @@ class NemDatabaseTest(DatabaseTestBase):  # pylint: disable=too-many-public-meth
 
 		# Assert:
 		self.assertEqual(TRANSACTION_STATISTIC_VIEW, transaction_statistics)
+
+	def test_can_query_transaction_statistics_grouped_daily(self):
+		# Act:
+		transaction_statistics = self.nem_db.get_transaction_statistics_by_date_range('2015-03-29', '2015-03-29', 'DAY')
+
+		# Assert:
+		self.assertEqual(TRANSACTION_DAILY_STATISTIC_VIEW, transaction_statistics)
+
+	def test_can_query_transaction_statistics_grouped_month(self):
+		# Act:
+		transaction_statistics = self.nem_db.get_transaction_statistics_by_date_range('2015-03-01', '2015-03-31', 'MONTH')
+
+		# Assert:
+		self.assertEqual(TRANSACTION_MONTH_STATISTIC_VIEW, transaction_statistics)
 
 	# endregion

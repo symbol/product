@@ -16,6 +16,8 @@ from .test.DatabaseTestUtils import (
 	MOSAIC_RICH_LIST_VIEWS,
 	MOSAIC_VIEWS,
 	NAMESPACE_VIEWS,
+	TRANSACTION_DAILY_STATISTIC_VIEW,
+	TRANSACTION_MONTH_STATISTIC_VIEW,
 	TRANSACTION_STATISTIC_VIEW,
 	TRANSACTIONS_VIEWS,
 	DatabaseConfig,
@@ -631,6 +633,72 @@ def test_api_nem_transaction_statistics(client):  # pylint: disable=redefined-ou
 	# Assert:
 	_assert_status_code_and_headers(response, 200)
 	assert TRANSACTION_STATISTIC_VIEW.to_dict() == response.json
+
+
+def test_api_nem_transaction_statistics_date_range_by_day(client):  # pylint: disable=redefined-outer-name, invalid-name
+	# Act:
+	response = client.get('/api/nem/transaction/statistics/range', query_string={
+		'startDate': '2015-03-29',
+		'endDate': '2015-03-29',
+		'periodType': 'DAY'
+	})
+
+	# Assert:
+	_assert_status_code_and_headers(response, 200)
+	assert TRANSACTION_DAILY_STATISTIC_VIEW.to_dict() == response.json
+
+
+def test_api_nem_transaction_statistics_date_range_by_month(client):  # pylint: disable=redefined-outer-name, invalid-name
+	# Act:
+	response = client.get('/api/nem/transaction/statistics/range', query_string={
+		'startDate': '2015-03-01',
+		'endDate': '2015-03-31',
+		'periodType': 'MONTH'
+	})
+
+	# Assert:
+	_assert_status_code_and_headers(response, 200)
+	assert TRANSACTION_MONTH_STATISTIC_VIEW.to_dict() == response.json
+
+
+def _assert_invalid_transaction_statistics_param(client, expected_message, query_params):  # pylint: disable=redefined-outer-name
+	# Act:
+	response = client.get('/api/nem/transaction/statistics/range', query_string=query_params)
+
+	# Assert:
+	_assert_status_code_400(response, expected_message)
+
+
+def test_api_nem_transaction_statistics_with_missing_params(client):  # pylint: disable=redefined-outer-name, invalid-name
+	_assert_invalid_transaction_statistics_param(
+		client,
+		'startDate, endDate and period type are required',
+		{}
+	)
+
+
+def test_api_nem_transaction_statistics_with_invalid_period_type(client):  # pylint: disable=redefined-outer-name, invalid-name
+	_assert_invalid_transaction_statistics_param(
+		client,
+		'Period type must be either DAY or MONTH',
+		{
+			'startDate': '2015-03-01',
+			'endDate': '2015-03-31',
+			'periodType': 'YEAR'
+		}
+	)
+
+
+def test_api_nem_transaction_statistics_with_invalid_date_range(client):  # pylint: disable=redefined-outer-name, invalid-name
+	_assert_invalid_transaction_statistics_param(
+		client,
+		'start date must be less than or equal to end date',
+		{
+			'startDate': '2015-03-31',
+			'endDate': '2015-03-01',
+			'periodType': 'MONTH'
+		}
+	)
 
 
 # endregion

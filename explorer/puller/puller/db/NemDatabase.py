@@ -47,6 +47,13 @@ class NemDatabase(DatabaseConnection):
 			'''
 		)
 
+		cursor.execute(
+			'''
+			CREATE INDEX IF NOT EXISTS idx_blocks_timestamp
+				ON blocks(timestamp)
+			'''
+		)
+
 		# Create indexes for namespaces table
 		cursor.execute(
 			'''
