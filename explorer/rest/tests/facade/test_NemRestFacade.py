@@ -13,6 +13,8 @@ from ..test.DatabaseTestUtils import (
 	MOSAIC_RICH_LIST_VIEWS,
 	MOSAIC_VIEWS,
 	NAMESPACE_VIEWS,
+	TRANSACTION_DAILY_STATISTIC_VIEW,
+	TRANSACTION_MONTH_STATISTIC_VIEW,
 	TRANSACTION_STATISTIC_VIEW,
 	TRANSACTIONS_VIEWS,
 	DatabaseTestBase
@@ -31,6 +33,10 @@ EXPECTED_ACCOUNT_2 = ACCOUNT_VIEWS[1].to_dict()
 EXPECTED_ACCOUNT_STATISTIC = ACCOUNT_STATISTIC_VIEW.to_dict()
 
 EXPECTED_TRANSACTION_STATISTIC = TRANSACTION_STATISTIC_VIEW.to_dict()
+
+EXPECTED_TRANSACTION_DAILY_STATISTICS = TRANSACTION_DAILY_STATISTIC_VIEW.to_dict()
+
+EXPECTED_TRANSACTION_MONTH_STATISTICS = TRANSACTION_MONTH_STATISTIC_VIEW.to_dict()
 
 EXPECTED_NAMESPACE_1 = NAMESPACE_VIEWS[0].to_dict()
 
@@ -427,5 +433,19 @@ class TestNemRestFacade(DatabaseTestBase):  # pylint: disable=too-many-public-me
 
 		# Assert:
 		self.assertEqual(EXPECTED_TRANSACTION_STATISTIC, transaction_statistics)
+
+	def test_can_retrieve_transaction_statistics_by_day(self):
+		# Act:
+		transaction_statistics = self.nem_rest_facade.get_transaction_statistics_by_date_range('2015-03-29', '2015-03-29', 'DAY')
+
+		# Assert:
+		self.assertEqual(EXPECTED_TRANSACTION_DAILY_STATISTICS, transaction_statistics)
+
+	def test_can_retrieve_transaction_statistics_by_month(self):
+		# Act:
+		transaction_statistics = self.nem_rest_facade.get_transaction_statistics_by_date_range('2015-03-01', '2015-03-31', 'MONTH')
+
+		# Assert:
+		self.assertEqual(EXPECTED_TRANSACTION_MONTH_STATISTICS, transaction_statistics)
 
 	# endregion
