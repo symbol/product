@@ -152,3 +152,10 @@ class NemRestFacade:
 		transaction = self.nem_db.get_transaction_by_hash(transaction_hash)
 
 		return transaction.to_dict() if transaction else None
+
+	def get_transaction_statistics(self):
+		"""Gets transaction statistics."""
+
+		transaction_statistics = self.nem_db.get_transaction_statistics()
+
+		return transaction_statistics.to_dict() if transaction_statistics else None
