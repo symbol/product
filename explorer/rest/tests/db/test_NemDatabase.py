@@ -2,6 +2,7 @@ from rest import Pagination, Sorting
 from rest.db.NemDatabase import NemDatabase
 
 from ..test.DatabaseTestUtils import (
+	ACCOUNT_STATISTIC_VIEW,
 	ACCOUNT_VIEWS,
 	ACCOUNTS,
 	BLOCK_VIEWS,
@@ -309,3 +310,16 @@ class NemDatabaseTest(DatabaseTestBase):  # pylint: disable=too-many-public-meth
 
 		# Assert:
 		self.assertEqual(TRANSACTIONS_VIEWS[7], transaction_view)
+
+	# endregion
+
+	# region account statistics
+
+	def test_can_query_account_statistics(self):
+		# Act:
+		account_statistics = self.nem_db.get_account_statistics()
+
+		# Assert:
+		self.assertEqual(ACCOUNT_STATISTIC_VIEW, account_statistics)
+
+	# endregion
