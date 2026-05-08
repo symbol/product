@@ -159,3 +159,10 @@ class NemRestFacade:
 		transaction_statistics = self.nem_db.get_transaction_statistics()
 
 		return transaction_statistics.to_dict() if transaction_statistics else None
+
+	def get_transaction_statistics_by_date_range(self, start_date, end_date, period_type):  # pylint: disable=invalid-name
+		"""Gets transaction statistics grouped by period type."""
+
+		transaction_statistics = self.nem_db.get_transaction_statistics_by_date_range(start_date, end_date, period_type)
+
+		return transaction_statistics.to_dict() if transaction_statistics else None

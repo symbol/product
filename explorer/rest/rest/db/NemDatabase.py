@@ -8,7 +8,12 @@ from rest.model.Account import AccountView
 from rest.model.Block import BlockView
 from rest.model.Mosaic import MosaicRichListView, MosaicView
 from rest.model.Namespace import NamespaceView
-from rest.model.Statistic import StatisticAccountView, StatisticTransactionView
+from rest.model.Statistic import (
+	StatisticAccountView,
+	StatisticTransactionDateRangeDataView,
+	StatisticTransactionDateRangeView,
+	StatisticTransactionView
+)
 from rest.model.Transaction import TransactionRecord, TransactionView
 
 from .DatabaseConnection import DatabaseConnectionPool
@@ -261,6 +266,19 @@ class NemDatabase(DatabaseConnectionPool):
 			total_transactions=total_transactions,
 			transaction_last_24_hours=transaction_last_24_hours,
 			transaction_last_30_days=transaction_last_30_days
+		)
+
+	@staticmethod
+	def _create_transaction_date_range_statistic_view(results, period_type):
+
+		return StatisticTransactionDateRangeView(
+			period_type=period_type,
+			data=[
+				StatisticTransactionDateRangeDataView(
+					period=period,
+					total_transactions=total_transactions
+				) for period, total_transactions in results
+			]
 		)
 
 	@staticmethod
@@ -724,3 +742,25 @@ class NemDatabase(DatabaseConnectionPool):
 			result = cursor.fetchone()
 
 			return self._create_transaction_statistic_view(result) if result else None
+
+	def get_transaction_statistics_by_date_range(self, start_date, end_date, period_type):  # pylint: disable=invalid-name
+		"""Gets transaction statistics grouped by period from database."""
+
+		period_format = 'YYYY-MM-DD' if 'DAY' == period_type else 'YYYY-MM'
+
+		sql = f'''
+			SELECT
+				TO_CHAR(DATE_TRUNC('{period_type}', timestamp), '{period_format}') AS period,
+				COALESCE(SUM(total_transactions), 0) AS total_transactions
+			FROM blocks
+			WHERE timestamp >= %s::date AND timestamp < %s::date + INTERVAL '1 day'
+			GROUP BY DATE_TRUNC('{period_type}', timestamp)
+			ORDER BY DATE_TRUNC('{period_type}', timestamp) ASC
+		'''
+
+		with self.connection() as connection:
+			cursor = connection.cursor()
+			cursor.execute(sql, (start_date, end_date))
+			results = cursor.fetchall()
+
+			return self._create_transaction_date_range_statistic_view(results, period_type)
