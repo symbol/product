@@ -121,6 +121,10 @@ def setup_nem_routes(app, nem_api_facade):  # pylint: disable=too-many-statement
 
 		return jsonify(result)
 
+	@app.route('/api/nem/account/statistics')
+	def api_get_nem_account_statistics():
+		return jsonify(nem_api_facade.get_account_statistics())
+
 	@app.route('/api/nem/health')
 	async def api_get_nem_health():
 		result = await nem_api_facade.get_health()
