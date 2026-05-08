@@ -24,7 +24,7 @@ const FETCH_INTERVAL = 10000;
  */
 export const useBridgeHistory = ({ bridge }) => {
 	const historyManager = useAsyncManager({
-		callback: async () => bridge && bridge.isReady
+		callback: async () => bridge && bridge.isReady && bridge.hasHistory
 			? bridge.fetchRecentHistory(BRIDGE_HISTORY_PAGE_SIZE)
 			: [],
 		defaultData: []

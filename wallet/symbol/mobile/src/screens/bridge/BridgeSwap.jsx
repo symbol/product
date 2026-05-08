@@ -91,15 +91,6 @@ export const BridgeSwap = props => {
 		reset
 	} = useBridgeAmount({ source, transactionFees, transactionFeeTierLevel: TRANSACTION_SPEED });
 
-	// Transaction creation and preview
-	const {
-		createTransaction,
-		getTransactionPreviewTable
-	} = useBridgeTransaction({ bridge, mode, source, target, amount });
-
-	// Update ref to point to actual createTransaction
-	createTransactionRef.current = createTransaction;
-
 	// Estimation summary
 	const {
 		estimation,
@@ -108,6 +99,15 @@ export const BridgeSwap = props => {
 		isLoading:
         isEstimationLoading
 	} = useEstimation({ bridge, mode, amount });
+
+	// Transaction creation and preview
+	const {
+		createTransaction,
+		getTransactionPreviewTable
+	} = useBridgeTransaction({ bridge, mode, target, amount, estimation });
+
+	// Update ref to point to actual createTransaction
+	createTransactionRef.current = createTransaction;
 
 	// Recent history
 	const { history } = useBridgeHistory({ bridge });

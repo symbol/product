@@ -26,6 +26,7 @@ const historyEntries = [historyEntry1];
 
 const bridgeReady = {
 	isReady: true,
+	hasHistory: true,
 	fetchRecentHistory: jest.fn().mockResolvedValue(historyEntries)
 };
 

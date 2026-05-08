@@ -3,6 +3,7 @@ import { objectToTableData } from '@/app/utils';
 /** @typedef {import('@/app/screens/bridge/types/Bridge').BridgeManager} BridgeManager */
 /** @typedef {import('@/app/screens/bridge/types/Bridge').SwapSide} SwapSide */
 /** @typedef {import('@/app/screens/bridge/types/Bridge').BridgeModeType} BridgeModeType */
+/** @typedef {import('@/app/screens/bridge/types/Bridge').BridgeEstimation} BridgeEstimation */
 /** @typedef {import('@/app/types/Table').TableData} TableData */
 /** @typedef {import('@/app/types/Transaction').Transaction} Transaction */
 
@@ -18,16 +19,17 @@ import { objectToTableData } from '@/app/utils';
  * @param {object} params - Hook parameters.
  * @param {BridgeManager|null} params.bridge - The bridge manager instance.
  * @param {BridgeModeType|null} params.mode - The bridge operation mode.
- * @param {SwapSide|null} params.source - The source swap side.
  * @param {SwapSide|null} params.target - The target swap side.
  * @param {string} params.amount - The amount to transfer.
+ * @param {BridgeEstimation} params.estimation - The estimation data for the transaction.
  * @returns {UseBridgeTransactionReturnType}
  */
-export const useBridgeTransaction = ({ bridge, mode, source, target, amount }) => {
+export const useBridgeTransaction = ({ bridge, mode, target, amount, estimation }) => {
 	const createTransaction = async () => {
 		const transaction = await bridge.createTransaction(mode, {
 			recipientAddress: target.walletController.currentAccount.address,
-			amount
+			amount,
+			amountOutMinimum: estimation?.receiveAmount
 		});
 
 		return transaction;
@@ -36,8 +38,8 @@ export const useBridgeTransaction = ({ bridge, mode, source, target, amount }) =
 	const getTransactionPreviewTable = transaction => {
 		const swapData = {
 			signerAddress: transaction.signerAddress,
-			recipientAddress: transaction.message.text,
-			mosaics: transaction.mosaics || transaction.tokens,
+			recipientAddress: transaction.message?.text ?? transaction.recipientAddress,
+			tokens: transaction.mosaics || transaction.tokens || (transaction.sourceToken ? [transaction.sourceToken] : []),
 			fee: transaction.fee
 		};
 

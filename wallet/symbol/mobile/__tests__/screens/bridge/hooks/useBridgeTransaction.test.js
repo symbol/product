@@ -124,7 +124,7 @@ describe('hooks/useBridgeTransaction', () => {
 			expect(previewTable).toStrictEqual([
 				{ type: 'account', value: bridgeTransaction.signerAddress, title: 'signerAddress' },
 				{ type: 'account', value: bridgeTransaction.message.text, title: 'recipientAddress' },
-				{ type: 'token', value: bridgeTransaction.mosaics, title: 'mosaics' },
+				{ type: 'token', value: bridgeTransaction.mosaics, title: 'tokens' },
 				{ type: 'fee', value: bridgeTransaction.fee, title: 'fee' }
 			]);
 		});
