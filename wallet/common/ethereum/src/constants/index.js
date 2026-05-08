@@ -11,7 +11,9 @@ export const TransactionType = {
 	RESERVED: 0,
 	TRANSFER: 1,
 	ERC_20_TRANSFER: 2,
-	ERC_20_BRIDGE_TRANSFER: 3
+	ERC_20_BRIDGE_TRANSFER: 3,
+	UNISWAP_SWAP: 4,
+	ERC_20_APPROVE: 5
 };
 
 export const ChainId = {

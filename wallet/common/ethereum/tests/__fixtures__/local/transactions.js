@@ -4,13 +4,20 @@ import { ethers } from 'ethers';
 const erc20Interface = new ethers.Interface([
 	'function transfer(address to, uint256 value) public returns (bool)'
 ]);
+const swapRouterInterface = new ethers.Interface([
+	'function exactInputSingle(tuple(address tokenIn, address tokenOut, uint24 fee, address recipient, uint256 deadline, uint256 amountIn, uint256 amountOutMinimum, uint160 sqrtPriceLimitX96)) payable returns (uint256 amountOut)'
+]);
 const signerPublicKey = '0x04d180bfa90bb100d21df55b10cc535b392e87d595593afa9de219f4bd006bd2893d80827f43c47794029a8b4218699e65d837a6beb95b5b2f95a31b52f3e93b13';
 const signerAddress = '0xb1b2145b7d2ba5ab20ee0bcb0f7fad08a1bfc7a4';
 const recipientAddress1 = '0xc5d9cf0ee687e357aea5d26592f8bc9fe32abaa2';
 const recipientAddress2 = '0xe61c8ba605b4a808dd8138c990e941feae532307';
 const erc20ContractAddress = '0x6fe1f90116fd1225c4b713a6efb3f87dce77b445';
+const swapRouterAddress = '0xe592427a0aece92de3edee1f18e0157c05861564';
+const nativeTokenAddress = '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2';
+const wrappedTokenAddress = '0x5e8343a455f03109b737b6d8b410e4ecce998cda';
 const chainId = 3151908;
 const bridgePayload = '982C69A051A72BFBE31AEDA7250AC6C747B7570B3E9C00B6';
+const swapDeadline = 1700000600;
 const baseFee = {
 	gasLimit: 21000,
 	maxFeePerGas: '3',
@@ -214,4 +221,48 @@ export const bridgeTransaction = {
 		'payload': '982C69A051A72BFBE31AEDA7250AC6C747B7570B3E9C00B6',
 		'text': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ'
 	}
+};
+
+export const uniswapWalletTransaction = {
+	type: 4,
+	signerPublicKey,
+	signerAddress,
+	recipientAddress: signerAddress,
+	routerAddress: swapRouterAddress,
+	sourceToken: {
+		id: nativeTokenAddress,
+		amount: '1',
+		divisibility: 18
+	},
+	targetToken: {
+		id: wrappedTokenAddress,
+		amount: '0',
+		divisibility: 6
+	},
+	poolFee: 3000,
+	deadline: swapDeadline,
+	sqrtPriceLimitX96: 0,
+	nonce: 3,
+	fee: baseFee
+};
+
+export const uniswapEthereumTransaction = {
+	from: signerAddress,
+	to: swapRouterAddress,
+	value: 0n,
+	data: swapRouterInterface.encodeFunctionData('exactInputSingle', [{
+		tokenIn: nativeTokenAddress,
+		tokenOut: wrappedTokenAddress,
+		fee: 3000,
+		recipient: signerAddress,
+		deadline: swapDeadline,
+		amountIn: 1000000000000000000n,
+		amountOutMinimum: 0n,
+		sqrtPriceLimitX96: 0n
+	}]),
+	gasLimit: 21000n,
+	maxFeePerGas: 3000000000000000000n,
+	maxPriorityFeePerGas: 1000000000000000000n,
+	chainId,
+	nonce: 3
 };

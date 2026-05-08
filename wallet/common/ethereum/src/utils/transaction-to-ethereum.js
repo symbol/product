@@ -1,6 +1,7 @@
 import { networkIdentifierToChainId } from './network';
 import { TransactionType } from '../constants';
 import { ethers } from 'ethers';
+import { relativeToAbsoluteAmount } from 'wallet-common-core';
 
 /** @typedef {import('../types/Transaction').Transaction} Transaction */
 /** @typedef {import('../types/Transaction').EthersTransaction} EthersTransaction */
@@ -20,6 +21,10 @@ export const transactionToEthereum = (transaction, config) => {
 		return erc20TransferTransactionToEthereum(transaction, config);
 	case TransactionType.ERC_20_BRIDGE_TRANSFER:
 		return erc20BridgeTransferTransactionToEthereum(transaction, config);
+	case TransactionType.UNISWAP_SWAP:
+		return uniswapSwapToEthereum(transaction, config);
+	case TransactionType.ERC_20_APPROVE:
+		return erc20ApproveTransactionToEthereum(transaction, config);
 	}
 
 	return null;
@@ -82,5 +87,52 @@ const erc20BridgeTransferTransactionToEthereum = (transaction, config) => {
 	return {
 		...erc20Transfer,
 		data: erc20DataWithMessage
+	};
+};
+
+const ERC_20_APPROVE_ABI = ['function approve(address spender, uint256 value) public returns (bool)'];
+
+const erc20ApproveTransactionToEthereum = (transaction, config) => {
+	const baseTransaction = createBaseEthereumTransaction(transaction, config.networkIdentifier);
+	const erc20Interface = new ethers.Interface(ERC_20_APPROVE_ABI);
+
+	return {
+		...baseTransaction,
+		to: transaction.tokenId,
+		value: 0n,
+		data: erc20Interface.encodeFunctionData('approve', [
+			transaction.spenderAddress,
+			ethers.parseUnits(transaction.amount, transaction.divisibility)
+		])
+	};
+};
+
+const SWAP_ROUTER_EXACT_INPUT_SINGLE_SIGNATURE =
+	// eslint-disable-next-line max-len
+	'function exactInputSingle(tuple(address tokenIn, address tokenOut, uint24 fee, address recipient, uint256 deadline, uint256 amountIn, uint256 amountOutMinimum, uint160 sqrtPriceLimitX96)) payable returns (uint256 amountOut)';
+
+const SWAP_ROUTER_ABI = [SWAP_ROUTER_EXACT_INPUT_SINGLE_SIGNATURE];
+
+const uniswapSwapToEthereum = (transaction, config) => {
+	const baseTransaction = createBaseEthereumTransaction(transaction, config.networkIdentifier);
+
+	const routerInterface = new ethers.Interface(SWAP_ROUTER_ABI);
+	const absoluteAmountIn = relativeToAbsoluteAmount(transaction.sourceToken.amount, transaction.sourceToken.divisibility);
+	const absoluteAmountOut = relativeToAbsoluteAmount(transaction.targetToken.amount, transaction.targetToken.divisibility);
+
+	return {
+		...baseTransaction,
+		to: transaction.routerAddress,
+		value: 0n,
+		data: routerInterface.encodeFunctionData('exactInputSingle', [{
+			tokenIn: transaction.sourceToken.id,
+			tokenOut: transaction.targetToken.id,
+			fee: transaction.poolFee,
+			recipient: transaction.recipientAddress,
+			deadline: transaction.deadline,
+			amountIn: BigInt(absoluteAmountIn),
+			amountOutMinimum: BigInt(absoluteAmountOut),
+			sqrtPriceLimitX96: BigInt(transaction.sqrtPriceLimitX96)
+		}])
 	};
 };

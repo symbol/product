@@ -10,3 +10,4 @@ export {
 
 export * from './modules';
 export * from './bridge/BridgeHelper';
+export * from './bridge/UniswapManager';
