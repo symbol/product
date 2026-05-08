@@ -60,6 +60,12 @@ export class BridgeManager {
 	/** @type {BridgeHelper} */
 	#wrappedBridgeHelper;
 
+	/** @type {boolean} */
+	#isWrapDisabled;
+
+	/** @type {boolean} */
+	#isUnwrapDisabled;
+
 	/**
 	 * Create BridgeManager instance.
 	 * @param {object} options - Options.
@@ -69,6 +75,8 @@ export class BridgeManager {
 	 * @param {BridgeHelper} options.nativeBridgeHelper - Chain-specific bridge helper for the native chain.
 	 * @param {BridgeHelper} options.wrappedBridgeHelper - Chain-specific bridge helper for the wrapped chain.
 	 * @param {NetworkUrlMap} options.bridgeUrls - Map of network identifiers to bridge API base URLs.
+	 * @param {boolean} [options.isWrapDisabled=false] - Indicates if wrap mode is supported.
+	 * @param {boolean} [options.isUnwrapDisabled=false] - Indicates if unwrap mode is supported.
 	 * @param {Function} options.makeRequest - Function to make HTTP requests. Should return a Promise that resolves to parsed JSON.
 	 */
 	constructor(options) {
@@ -86,6 +94,12 @@ export class BridgeManager {
 			this.#nativeWalletController.chainName, 
 			this.#wrappedWalletController.chainName
 		].sort().join('-');
+		this.#isWrapDisabled = options.isWrapDisabled ?? false;
+		this.#isUnwrapDisabled = options.isUnwrapDisabled ?? false;
+	}
+
+	get hasHistory() {
+		return true;
 	}
 
 	get isEnabled() {
@@ -168,6 +182,21 @@ export class BridgeManager {
 		const controllers = [this.#nativeWalletController, this.#wrappedWalletController];
 		
 		return controllers.find(c => c.chainName === chainName) || null;
+	};
+
+	/**
+	 * Check if a bridge mode is enabled based on manager configuration.
+	 * @param {string} mode - 'wrap' or 'unwrap'
+	 * @returns {boolean} - True if the mode is enabled, false otherwise.
+	 */
+	isModeEnabled = mode => {
+		if (mode === BridgeMode.WRAP)
+			return !this.#isWrapDisabled;
+		
+		if (mode === BridgeMode.UNWRAP)
+			return !this.#isUnwrapDisabled;
+		
+		throw new Error(`Invalid bridge mode: ${mode}`);
 	};
 
 	/**
@@ -312,6 +341,9 @@ export class BridgeManager {
 	 * @returns {Promise<BridgeRequest[]>} - List of requests.
 	 */
 	fetchRequests = async (mode, { pageSize, pageNumber } = {}) => {
+		if (!this.isModeEnabled(mode))
+			return [];
+
 		const currentAccount = this.#getCurrentAccount(mode);
 
 		if (!currentAccount)
@@ -335,6 +367,9 @@ export class BridgeManager {
 	 * @returns {Promise<BridgeError[]>} - List of errors.
 	 */
 	fetchErrors = async (mode, { pageSize, pageNumber } = {}) => {
+		if (!this.isModeEnabled(mode))
+			return [];
+
 		const currentAccount = this.#getCurrentAccount(mode);
 
 		if (!currentAccount)
@@ -356,6 +391,9 @@ export class BridgeManager {
 	 * @returns {Promise<BridgeEstimation>} - Estimation result.
 	 */
 	estimateRequest = async (mode, amount) => {
+		if (!this.isModeEnabled(mode))
+			throw new Error(`Failed to estimate bridge request. Mode ${mode} is disabled`);
+
 		const recipientAccount = this.#getRecipientAccount(mode);
 
 		if (!recipientAccount)
@@ -394,6 +432,9 @@ export class BridgeManager {
 	 * @returns {Promise<TransactionBundle>} - Transaction bundle ready to sign and announce.
 	 */
 	createTransaction = async (mode, { recipientAddress, amount, fee } = {}) => {
+		if (!this.isModeEnabled(mode))
+			throw new Error(`Failed to create bridge transaction. Mode ${mode} is disabled`);
+
 		if (!this.#config)
 			throw new Error('Failed to create bridge transaction. No bridge config fetched');
 
