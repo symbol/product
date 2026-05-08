@@ -60,7 +60,7 @@ describe('api/TokenService', () => {
 			expect(contractMock.symbol).toHaveBeenCalledTimes(1);
 
 			const expectedResult = {
-				id: tokenId,
+				id: tokenId.toLowerCase(),
 				name: 'USDC',
 				divisibility: 6
 			};
@@ -99,8 +99,8 @@ describe('api/TokenService', () => {
 			expect(createContractMock).toHaveBeenCalledTimes(tokenIds.length);
 
 			const expectedResult = {
-				[tokenA]: { id: tokenA, name: 'USDC', divisibility: 6 },
-				[tokenB]: { id: tokenB, name: 'DAI', divisibility: 18 }
+				[tokenA.toLowerCase()]: { id: tokenA.toLowerCase(), name: 'USDC', divisibility: 6 },
+				[tokenB.toLowerCase()]: { id: tokenB.toLowerCase(), name: 'DAI', divisibility: 18 }
 			};
 			expect(result).toStrictEqual(expectedResult);
 		});

@@ -26,7 +26,7 @@ export class TokenService {
 		]);
 
 		return {
-			id: tokenId,
+			id: tokenId.toLowerCase(),
 			name: symbol,
 			divisibility: Number(decimals)
 		};

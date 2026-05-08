@@ -102,13 +102,13 @@ describe('api/AccountService', () => {
 						amount: '1.23'
 					},
 					{
-						id: tokenA,
+						id: tokenA.toLowerCase(),
 						amount: '2.5',
 						name: 'USDC',
 						divisibility: 6
 					},
 					{
-						id: tokenB,
+						id: tokenB.toLowerCase(),
 						amount: '10',
 						name: 'DAI',
 						divisibility: 18

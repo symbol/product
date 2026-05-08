@@ -36,7 +36,7 @@ export class AccountService {
 			const amount = absoluteToRelativeAmount(balanceRaw.toString(), divisibility);
             
 			return {
-				id: tokenAddress,
+				id: tokenAddress.toLowerCase(),
 				amount,
 				name: symbol,
 				divisibility
