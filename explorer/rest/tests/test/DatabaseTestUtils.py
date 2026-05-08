@@ -13,6 +13,7 @@ from rest.model.Account import AccountView
 from rest.model.Block import BlockView
 from rest.model.Mosaic import MosaicRichListView, MosaicView
 from rest.model.Namespace import NamespaceView
+from rest.model.Statistic import StatisticAccountView
 from rest.model.Transaction import TransactionView
 
 Block = namedtuple(
@@ -508,6 +509,14 @@ ACCOUNT_VIEWS = [
 		cosignatories=ACCOUNTS[1].cosignatories
 	)
 ]
+
+ACCOUNT_STATISTIC_VIEW = StatisticAccountView(
+	total_accounts=2,
+	accounts_with_balance=2,
+	harvested_accounts=2,
+	total_importance=0.2469120000,
+	eligible_harvest_accounts=2
+)
 
 NAMESPACE_VIEWS = [
 	NamespaceView(
