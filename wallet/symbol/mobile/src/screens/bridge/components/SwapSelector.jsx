@@ -123,12 +123,14 @@ const TokenSelect = ({ value, list, accessibilityLabel, onChange }) => {
 		return <ListItemContainer cardStyle={{ opacity: 0.3 }} accessibilityLabel={accessibilityLabel} />;
 
 	return (
-		<ListItemContainer onPress={openDropdown} accessibilityLabel={accessibilityLabel}>
-			<TokenItem
-				token={value.token}
-				chainName={value.chainName}
-				networkIdentifier={value.networkIdentifier}
-			/>
+		<>
+			<ListItemContainer onPress={openDropdown} accessibilityLabel={accessibilityLabel}>
+				<TokenItem
+					token={value.token}
+					chainName={value.chainName}
+					networkIdentifier={value.networkIdentifier}
+				/>
+			</ListItemContainer>
 			<SelectTokenDropdown
 				title="Select Token"
 				value={value}
@@ -137,7 +139,7 @@ const TokenSelect = ({ value, list, accessibilityLabel, onChange }) => {
 				onChange={onChange}
 				onClose={closeDropdown}
 			/>
-		</ListItemContainer>
+		</>
 	);
 };
 
