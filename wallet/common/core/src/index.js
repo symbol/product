@@ -38,7 +38,8 @@ import {
 import { SdkError } from './error/SdkError';
 import { WalletError } from './error/WalletError';
 // Other
-import { BridgeManager } from './lib/bridge/BridgeManager';
+import { BridgePairManager } from './lib/bridge/BridgePairManager';
+import { SwapWorkflowManager } from './lib/bridge/SwapWorkflowManager';
 import { TransactionBundle } from './lib/models/TransactionBundle';
 
 
@@ -74,6 +75,7 @@ export {
 	SdkError,
 	WalletError,
 
-	BridgeManager,
+	BridgePairManager,
+	SwapWorkflowManager,
 	TransactionBundle
 };

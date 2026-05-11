@@ -8,8 +8,6 @@ import { TransactionBundle } from '../models/TransactionBundle';
 /** @typedef {import('../../types/Bridge').BridgeHelper} BridgeHelper */
 /** @typedef {import('../../types/Bridge').BridgeNetworkConfig} BridgeNetworkConfig */
 /** @typedef {import('../../types/Bridge').BridgeConfig} BridgeConfig */
-/** @typedef {import('../../types/Bridge').RequestTransaction} RequestTransaction */
-/** @typedef {import('../../types/Bridge').PayoutTransaction} PayoutTransaction */
 /** @typedef {import('../../types/Bridge').BridgeRequest} BridgeRequest */
 /** @typedef {import('../../types/Bridge').BridgeError} BridgeError */
 /** @typedef {import('../../types/Bridge').BridgeEstimation} BridgeEstimation */
@@ -32,13 +30,12 @@ import { TransactionBundle } from '../models/TransactionBundle';
  * @property {SwapSideInfo} target - Target side information.
  */
 
-
 const BridgeMode = {
 	WRAP: 'wrap',
 	UNWRAP: 'unwrap'
 };
 
-export class BridgeManager {
+export class BridgePairManager {
 	/** @type {WalletController} */
 	#nativeWalletController;
 
@@ -54,29 +51,25 @@ export class BridgeManager {
 	/** @type {string} */
 	#id;
 
+	/** @type {string} */
+	#mode;
+
 	/** @type {BridgeHelper} */
 	#nativeBridgeHelper;
 
 	/** @type {BridgeHelper} */
 	#wrappedBridgeHelper;
 
-	/** @type {boolean} */
-	#isWrapDisabled;
-
-	/** @type {boolean} */
-	#isUnwrapDisabled;
-
 	/**
-	 * Create BridgeManager instance.
+	 * Create BridgePairManager instance.
 	 * @param {object} options - Options.
-	 * @param {string} options.id - Custom provided ID to identify the bridge manager.
+	 * @param {string} options.id - Custom provided ID to identify the bridge pair manager.
+	 * @param {string} options.mode - Fixed bridge direction: 'wrap' or 'unwrap'.
 	 * @param {WalletController} options.nativeWalletController - Wallet controller for the native chain.
 	 * @param {WalletController} options.wrappedWalletController - Wallet controller for the wrapped chain.
 	 * @param {BridgeHelper} options.nativeBridgeHelper - Chain-specific bridge helper for the native chain.
 	 * @param {BridgeHelper} options.wrappedBridgeHelper - Chain-specific bridge helper for the wrapped chain.
 	 * @param {NetworkUrlMap} options.bridgeUrls - Map of network identifiers to bridge API base URLs.
-	 * @param {boolean} [options.isWrapDisabled=false] - Indicates if wrap mode is supported.
-	 * @param {boolean} [options.isUnwrapDisabled=false] - Indicates if unwrap mode is supported.
 	 * @param {Function} options.makeRequest - Function to make HTTP requests. Should return a Promise that resolves to parsed JSON.
 	 */
 	constructor(options) {
@@ -91,59 +84,82 @@ export class BridgeManager {
 			networkIdentifier: null
 		});
 		this.#id = options.id ?? [
-			this.#nativeWalletController.chainName, 
+			this.#nativeWalletController.chainName,
 			this.#wrappedWalletController.chainName
 		].sort().join('-');
-		this.#isWrapDisabled = options.isWrapDisabled ?? false;
-		this.#isUnwrapDisabled = options.isUnwrapDisabled ?? false;
+
+		if (options.mode !== BridgeMode.WRAP && options.mode !== BridgeMode.UNWRAP)
+			throw new Error(`Invalid bridge mode: ${options.mode}. Must be 'wrap' or 'unwrap'`);
+
+		this.#mode = options.mode;
 	}
 
+	/**
+	 * Bridge history is always supported.
+	 * @returns {boolean}
+	 */
 	get hasHistory() {
 		return true;
 	}
 
+	/**
+	 * Whether the bridge is enabled (requires config to be loaded).
+	 * @returns {boolean}
+	 */
 	get isEnabled() {
-		if (!this.#config) 
+		if (!this.#config)
 			return false;
 
 		return this.#config.enabled;
 	}
-	
+
+	/**
+	 * Whether the manager is fully ready to create transactions.
+	 * @returns {boolean}
+	 */
 	get isReady() {
 		const isNativeWalletControllerReady = this.#nativeWalletController.isWalletReady;
 		const isWrappedWalletControllerReady = this.#wrappedWalletController.isWalletReady;
 		const isConfigLoaded = this.#config !== null;
 		const isControllerNetworkMatch = this.#nativeWalletController.networkIdentifier ===
 			this.#wrappedWalletController.networkIdentifier;
-		const isBridgeApiNetworkMatch = this.#nativeWalletController.networkIdentifier === 
+		const isBridgeApiNetworkMatch = this.#nativeWalletController.networkIdentifier ===
 			this.#bridgeApi.networkIdentifier;
 
-		return isNativeWalletControllerReady 
-			&& isWrappedWalletControllerReady 
-			&& isConfigLoaded 
+		return isNativeWalletControllerReady
+			&& isWrappedWalletControllerReady
+			&& isConfigLoaded
 			&& isControllerNetworkMatch
 			&& isBridgeApiNetworkMatch;
 	}
 
 	/**
 	 * Get the current bridge configuration.
-	 * @returns {BridgeConfig|null} - The current bridge configuration, or null if not loaded.
+	 * @returns {BridgeConfig|null}
 	 */
 	get config() {
 		return this.#config;
 	}
 
 	/**
-	 * Get bridge manager ID.
-	 * @returns {string} - Bridge manager ID.
+	 * Get bridge pair manager ID.
+	 * @returns {string}
 	 */
 	get id() {
 		return this.#id;
 	}
 
 	/**
+	 * Get the fixed bridge direction.
+	 * @returns {string} - 'wrap' or 'unwrap'
+	 */
+	get mode() {
+		return this.#mode;
+	}
+
+	/**
 	 * Get native network bridge token info.
-	 * @returns {TokenInfo|null} - Token info of the native network, or null if not loaded.
+	 * @returns {TokenInfo|null}
 	 */
 	get nativeTokenInfo() {
 		return this.#config ? this.#config.nativeNetwork.tokenInfo : null;
@@ -151,7 +167,7 @@ export class BridgeManager {
 
 	/**
 	 * Get wrapped network bridge token info.
-	 * @returns {TokenInfo|null} - Token info of the wrapped network, or null if not loaded.
+	 * @returns {TokenInfo|null}
 	 */
 	get wrappedTokenInfo() {
 		return this.#config ? this.#config.wrappedNetwork.tokenInfo : null;
@@ -159,7 +175,7 @@ export class BridgeManager {
 
 	/**
 	 * Get native network wallet controller.
-	 * @returns {WalletController} - Wallet controller for the native chain.
+	 * @returns {WalletController}
 	 */
 	get nativeWalletController() {
 		return this.#nativeWalletController;
@@ -167,43 +183,48 @@ export class BridgeManager {
 
 	/**
 	 * Get wrapped network wallet controller.
-	 * @returns {WalletController} - Wallet controller for the wrapped chain.
+	 * @returns {WalletController}
 	 */
 	get wrappedWalletController() {
 		return this.#wrappedWalletController;
 	}
 
 	/**
+	 * Get the wallet controller for the source side of the fixed mode.
+	 * @returns {WalletController}
+	 */
+	get sourceWalletController() {
+		return this.#mode === BridgeMode.WRAP
+			? this.#nativeWalletController
+			: this.#wrappedWalletController;
+	}
+
+	/**
+	 * Get the wallet controller for the target side of the fixed mode.
+	 * @returns {WalletController}
+	 */
+	get targetWalletController() {
+		return this.#mode === BridgeMode.WRAP
+			? this.#wrappedWalletController
+			: this.#nativeWalletController;
+	}
+
+	/**
 	 * Get wallet controller by chain name.
 	 * @param {string} chainName - Chain name.
-	 * @returns {WalletController|null} - Wallet controller for the specified chain, or null if not found.
+	 * @returns {WalletController|null}
 	 */
 	getWalletController = chainName => {
 		const controllers = [this.#nativeWalletController, this.#wrappedWalletController];
-		
-		return controllers.find(c => c.chainName === chainName) || null;
-	};
 
-	/**
-	 * Check if a bridge mode is enabled based on manager configuration.
-	 * @param {string} mode - 'wrap' or 'unwrap'
-	 * @returns {boolean} - True if the mode is enabled, false otherwise.
-	 */
-	isModeEnabled = mode => {
-		if (mode === BridgeMode.WRAP)
-			return !this.#isWrapDisabled;
-		
-		if (mode === BridgeMode.UNWRAP)
-			return !this.#isUnwrapDisabled;
-		
-		throw new Error(`Invalid bridge mode: ${mode}`);
+		return controllers.find(c => c.chainName === chainName) || null;
 	};
 
 	/**
 	 * Create a SwapSideInfo object for a given wallet controller.
 	 * @param {WalletController} walletController - Wallet controller.
 	 * @param {TokenInfo} tokenInfo - Token info.
-	 * @returns {SwapSideInfo} - Swap side information.
+	 * @returns {SwapSideInfo}
 	 */
 	#createSwapSideInfo = (walletController, tokenInfo) => ({
 		chainName: walletController.chainName,
@@ -213,29 +234,25 @@ export class BridgeManager {
 	});
 
 	/**
-	 * Get swap context with source and target information based on mode.
-	 * @param {string} mode - 'wrap' or 'unwrap'
-	 * @returns {SwapContext} - Swap context with source and target information.
+	 * Get swap context with source and target information for the fixed mode.
+	 * @returns {SwapContext}
 	 */
-	#getSwapContext = mode => {
-		const sourceWalletController = this.#getSourceWalletController(mode);
-		const targetWalletController = this.#getTargetWalletController(mode);
-		const sourceToken = this.#getSourceToken(mode);
-		const targetToken = this.#getTargetToken(mode);
+	#getSwapContext = () => {
+		const sourceToken = this.#mode === BridgeMode.WRAP ? this.nativeTokenInfo : this.wrappedTokenInfo;
+		const targetToken = this.#mode === BridgeMode.WRAP ? this.wrappedTokenInfo : this.nativeTokenInfo;
 
 		return {
-			mode,
-			source: this.#createSwapSideInfo(sourceWalletController, sourceToken),
-			target: this.#createSwapSideInfo(targetWalletController, targetToken)
+			mode: this.#mode,
+			source: this.#createSwapSideInfo(this.sourceWalletController, sourceToken),
+			target: this.#createSwapSideInfo(this.targetWalletController, targetToken)
 		};
 	};
 
 	/**
-	 * Fetch bridge configuration, source and target token infos, and register tokens in wallet controllers. 
-	 * @returns {Promise} - Promise that resolves when loading is complete.
+	 * Fetch bridge configuration, source and target token infos, and register tokens in wallet controllers.
+	 * @returns {Promise<void>}
 	 */
 	load = async () => {
-		// Get network identifiers from both wallet controllers
 		const nativeNetworkIdentifier = this.#nativeWalletController.networkIdentifier;
 		const wrappedNetworkIdentifier = this.#wrappedWalletController.networkIdentifier;
 
@@ -244,27 +261,24 @@ export class BridgeManager {
 
 		this.#bridgeApi.setNetworkIdentifier(nativeNetworkIdentifier);
 
-		// Fetch config from bridge API
 		const config = await this.#bridgeApi.fetchConfig();
 
-		// Validate config
 		const isNativeChainMatch = config.nativeNetwork.blockchain === this.#nativeWalletController.chainName;
 		const isWrappedChainMatch = config.wrappedNetwork.blockchain === this.#wrappedWalletController.chainName;
 		const isNetworkTypeMatch = config.nativeNetwork.network === nativeNetworkIdentifier;
 		const isWrappedNetworkTypeMatch = config.wrappedNetwork.network === wrappedNetworkIdentifier;
 
-		if (!isNativeChainMatch || !isWrappedChainMatch) 
+		if (!isNativeChainMatch || !isWrappedChainMatch)
 			throw new Error('Failed to load bridge config. Bridge networks do not match wallet controller chains.');
 
 		if (!isNetworkTypeMatch || !isWrappedNetworkTypeMatch)
 			throw new Error('Failed to load bridge config. Bridge networks do not match wallet controller networks.');
 
-		// Fetch source and target token infos from chains using helpers
 		const [nativeToken, wrappedToken] = await Promise.all([
 			this.#nativeBridgeHelper.fetchTokenInfo(this.#nativeWalletController.networkProperties, config.nativeNetwork.tokenId),
 			this.#wrappedBridgeHelper.fetchTokenInfo(this.#wrappedWalletController.networkProperties, config.wrappedNetwork.tokenId)
 		]);
-		
+
 		delete config.nativeNetwork.tokenId;
 		delete config.wrappedNetwork.tokenId;
 		config.nativeNetwork.tokenInfo = nativeToken;
@@ -272,79 +286,67 @@ export class BridgeManager {
 		config.nativeNetwork.bridgeAddress = this.#nativeWalletController.walletSdk.normalizeAddress(config.nativeNetwork.bridgeAddress);
 		config.wrappedNetwork.bridgeAddress = this.#wrappedWalletController.walletSdk.normalizeAddress(config.wrappedNetwork.bridgeAddress);
 
-		// Update state
 		this.#config = config;
 	};
 
 	/**
-	 * Fetch recent requests for both wrap and unwrap modes.
-	 * @param {number} count - Number of requests to fetch.
-	 * @returns {Promise<BridgeRequest[]>} - List of recent requests.
+	 * Fetch recent history for the fixed mode (requests, errors, and pending).
+	 * @param {number} count - Number of items to return.
+	 * @returns {Promise<BridgeRequest[]>}
 	 */
 	fetchRecentHistory = async count => {
-		const [wrapRequests, unwrapRequests, wrapErrors, unwrapErrors, wrapPending, unwrapPending] = await Promise.all([
-			this.fetchRequests(BridgeMode.WRAP, { pageSize: count, pageNumber: 1 }),
-			this.fetchRequests(BridgeMode.UNWRAP, { pageSize: count, pageNumber: 1 }),
-			this.fetchErrors(BridgeMode.WRAP, { pageSize: count, pageNumber: 1 }),
-			this.fetchErrors(BridgeMode.UNWRAP, { pageSize: count, pageNumber: 1 }),
-			this.fetchSentRequests(BridgeMode.WRAP, { pageSize: count, pageNumber: 1 }),
-			this.fetchSentRequests(BridgeMode.UNWRAP, { pageSize: count, pageNumber: 1 })
+		const [requests, errors, pending] = await Promise.all([
+			this.fetchRequests({ pageSize: count, pageNumber: 1 }),
+			this.fetchErrors({ pageSize: count, pageNumber: 1 }),
+			this.fetchSentRequests({ pageSize: count, pageNumber: 1 })
 		]);
 
-		// Merge and sort by request transaction timestamp descending
-		const allData = [...wrapRequests, ...unwrapRequests, ...wrapErrors, ...unwrapErrors, ...wrapPending, ...unwrapPending];
-		
+		const allData = [...requests, ...errors, ...pending];
+
 		const filteredByRequestHash = allData.filter((request, index, self) =>
-			index === self.findIndex(item => 
+			index === self.findIndex(item =>
 				item.requestTransaction.hash === request.requestTransaction.hash));
 		const sortedByTimestamp = filteredByRequestHash.sort((a, b) => b.requestTransaction.timestamp - a.requestTransaction.timestamp);
 
-		// Return only the requested number of items
 		return sortedByTimestamp.slice(0, count);
 	};
 
 	/**
-	 * Fetch pending requests that was sent to the bridge.
-	 * @param {string} mode - 'wrap' or 'unwrap'
+	 * Fetch pending requests that were sent to the bridge.
 	 * @param {object} searchCriteria - Search criteria.
 	 * @param {number} searchCriteria.pageSize - Number of items to fetch.
 	 * @param {number} searchCriteria.pageNumber - Page number.
-	 * @returns {Promise<BridgeRequest[]>} - List of requests.
+	 * @returns {Promise<BridgeRequest[]>}
 	 */
-	fetchSentRequests = async (mode, { pageSize, pageNumber } = {}) => {
+	fetchSentRequests = async ({ pageSize, pageNumber } = {}) => {
 		if (!this.#config)
 			throw new Error('Failed to fetch sent requests. No bridge config fetched');
 
-		const walletController = this.#getSourceWalletController(mode);
-		const bridgeAddress = mode === BridgeMode.WRAP
+		const bridgeAddress = this.#mode === BridgeMode.WRAP
 			? this.#config.nativeNetwork.bridgeAddress
 			: this.#config.wrappedNetwork.bridgeAddress;
-		const transactions = await walletController.fetchAccountTransactions({
+		const transactions = await this.sourceWalletController.fetchAccountTransactions({
 			to: bridgeAddress,
 			pageSize,
 			pageNumber
 		});
-		const context = this.#getSwapContext(mode);
+		const context = this.#getSwapContext();
 		const filteredTransactions = transactions.filter(tx =>
-			tx.recipientAddress 
+			tx.recipientAddress
 			&& context.source.normalizeAddress(tx.recipientAddress) === bridgeAddress);
-		
+
 		return filteredTransactions.map(transaction => this.#transactionToPendingRequest(transaction, context));
 	};
 
 	/**
-	 * Fetch requests for current account address that are picked by the bridge.
-	 * @param {string} mode - 'wrap' or 'unwrap'
+	 * Fetch requests for the current account that are picked by the bridge.
 	 * @param {object} searchCriteria - Search criteria.
 	 * @param {number} searchCriteria.pageSize - Number of items to fetch.
 	 * @param {number} searchCriteria.pageNumber - Page number.
-	 * @returns {Promise<BridgeRequest[]>} - List of requests.
+	 * @returns {Promise<BridgeRequest[]>}
 	 */
-	fetchRequests = async (mode, { pageSize, pageNumber } = {}) => {
-		if (!this.isModeEnabled(mode))
-			return [];
-
-		const currentAccount = this.#getCurrentAccount(mode);
+	fetchRequests = async ({ pageSize, pageNumber } = {}) => {
+		const currentAccount = this.#getCurrentAccount();
 
 		if (!currentAccount)
 			throw new Error('Failed to fetch bridge requests. No current account selected');
@@ -352,25 +354,21 @@ export class BridgeManager {
 		if (!this.#config)
 			throw new Error('Failed to fetch bridge requests. No bridge config fetched');
 
-		const requestDtos = await this.#bridgeApi.fetchRequests(mode, currentAccount.address, { pageSize, pageNumber });
-		const context = this.#getSwapContext(mode);
+		const requestDtos = await this.#bridgeApi.fetchRequests(this.#mode, currentAccount.address, { pageSize, pageNumber });
+		const context = this.#getSwapContext();
 
 		return requestDtos.map(dto => this.#requestFromDto(dto, context));
 	};
 
 	/**
-	 * Fetch errors for current account address.
-	 * @param {string} mode - 'wrap' or 'unwrap'
+	 * Fetch errors for the current account.
 	 * @param {object} searchCriteria - Search criteria.
 	 * @param {number} searchCriteria.pageSize - Number of items to fetch.
 	 * @param {number} searchCriteria.pageNumber - Page number.
-	 * @returns {Promise<BridgeError[]>} - List of errors.
+	 * @returns {Promise<BridgeError[]>}
 	 */
-	fetchErrors = async (mode, { pageSize, pageNumber } = {}) => {
-		if (!this.isModeEnabled(mode))
-			return [];
-
-		const currentAccount = this.#getCurrentAccount(mode);
+	fetchErrors = async ({ pageSize, pageNumber } = {}) => {
+		const currentAccount = this.#getCurrentAccount();
 
 		if (!currentAccount)
 			throw new Error('Failed to fetch errors. No current account selected');
@@ -378,33 +376,29 @@ export class BridgeManager {
 		if (!this.#config)
 			throw new Error('Failed to fetch errors. No bridge config fetched');
 
-		const errorDtos = await this.#bridgeApi.fetchErrors(mode, currentAccount.address, { pageSize, pageNumber });
-		const context = this.#getSwapContext(mode);
+		const errorDtos = await this.#bridgeApi.fetchErrors(this.#mode, currentAccount.address, { pageSize, pageNumber });
+		const context = this.#getSwapContext();
 
 		return errorDtos.map(dto => this.#errorFromDto(dto, context));
 	};
 
 	/**
-	 * Estimate bridge fee and how much user will receive.
-	 * @param {string} mode - 'wrap' or 'unwrap'
-	 * @param {string} amount - Amount to be sent to bridge in relative units.
-	 * @returns {Promise<BridgeEstimation>} - Estimation result.
+	 * Estimate bridge fee and how much the user will receive.
+	 * @param {string} amount - Amount to be sent to the bridge in relative units.
+	 * @returns {Promise<BridgeEstimation>}
 	 */
-	estimateRequest = async (mode, amount) => {
-		if (!this.isModeEnabled(mode))
-			throw new Error(`Failed to estimate bridge request. Mode ${mode} is disabled`);
-
-		const recipientAccount = this.#getRecipientAccount(mode);
+	estimateRequest = async amount => {
+		const recipientAccount = this.#getRecipientAccount();
 
 		if (!recipientAccount)
 			throw new Error('Failed to estimate bridge request. No recipient account selected');
 
-		const sourceToken = this.#getSourceToken(mode);
-		const targetToken = this.#getTargetToken(mode);
+		const sourceToken = this.#mode === BridgeMode.WRAP ? this.nativeTokenInfo : this.wrappedTokenInfo;
+		const targetToken = this.#mode === BridgeMode.WRAP ? this.wrappedTokenInfo : this.nativeTokenInfo;
 		const absoluteAmount = relativeToAbsoluteAmount(amount, sourceToken.divisibility);
-		
+
 		try {
-			const estimationDto = await this.#bridgeApi.estimateRequest(mode, absoluteAmount, recipientAccount.address);
+			const estimationDto = await this.#bridgeApi.estimateRequest(this.#mode, absoluteAmount, recipientAccount.address);
 
 			return this.#estimationFromDto(estimationDto, { targetToken });
 		} catch (error) {
@@ -423,40 +417,36 @@ export class BridgeManager {
 	};
 
 	/**
-	 * Create a bridge transaction for the given mode.
-	 * @param {string} mode - 'wrap' or 'unwrap'
+	 * Create a bridge transaction for the fixed mode.
 	 * @param {object} options - Options.
 	 * @param {string} options.recipientAddress - Destination address on the target chain.
 	 * @param {string} options.amount - Amount to bridge in relative units.
 	 * @param {number} [options.fee] - Transaction fee.
-	 * @returns {Promise<TransactionBundle>} - Transaction bundle ready to sign and announce.
+	 * @returns {Promise<TransactionBundle>}
 	 */
-	createTransaction = async (mode, { recipientAddress, amount, fee } = {}) => {
-		if (!this.isModeEnabled(mode))
-			throw new Error(`Failed to create bridge transaction. Mode ${mode} is disabled`);
-
+	createTransaction = async ({ recipientAddress, amount, fee } = {}) => {
 		if (!this.#config)
 			throw new Error('Failed to create bridge transaction. No bridge config fetched');
 
-		const sourceWalletController = this.#getSourceWalletController(mode);
-		const { currentAccount } = sourceWalletController;
+		const { currentAccount } = this.sourceWalletController;
 
 		if (!currentAccount)
 			throw new Error('Failed to create bridge transaction. No current account selected');
 
-		const sourceNetworkConfig = mode === BridgeMode.WRAP
+		const sourceNetworkConfig = this.#mode === BridgeMode.WRAP
 			? this.#config.nativeNetwork
 			: this.#config.wrappedNetwork;
-		const sourceToken = this.#getSourceToken(mode);
+
+		const sourceToken = this.#mode === BridgeMode.WRAP ? this.nativeTokenInfo : this.wrappedTokenInfo;
 		const token = { ...sourceToken, amount };
 
-		const bridgeHelper = mode === BridgeMode.WRAP
+		const bridgeHelper = this.#mode === BridgeMode.WRAP
 			? this.#nativeBridgeHelper
 			: this.#wrappedBridgeHelper;
 
 		const transaction = await bridgeHelper.createTransaction({
 			currentAccount,
-			networkProperties: sourceWalletController.networkProperties,
+			networkProperties: this.sourceWalletController.networkProperties,
 			recipientAddress,
 			bridgeAddress: sourceNetworkConfig.bridgeAddress,
 			token,
@@ -469,8 +459,8 @@ export class BridgeManager {
 	/**
 	 * Convert a transaction to a pending bridge request.
 	 * @param {object} transaction - The transaction object.
-	 * @param {SwapContext} context - Swap context with source and target information.
-	 * @returns {BridgeRequest} - The pending bridge request.
+	 * @param {SwapContext} context - Swap context.
+	 * @returns {BridgeRequest}
 	 */
 	#transactionToPendingRequest(transaction, context) {
 		const { mode, source, target } = context;
@@ -500,8 +490,8 @@ export class BridgeManager {
 	/**
 	 * Map request DTO to request object.
 	 * @param {object} dto - Request DTO from the bridge.
-	 * @param {SwapContext} context - Swap context with source and target information.
-	 * @returns {BridgeRequest} - Mapped request object.
+	 * @param {SwapContext} context - Swap context.
+	 * @returns {BridgeRequest}
 	 */
 	#requestFromDto(dto, { mode, source, target }) {
 		if (!source.tokenInfo || !target.tokenInfo)
@@ -549,8 +539,8 @@ export class BridgeManager {
 	/**
 	 * Map error DTO to error object.
 	 * @param {object} dto - Error DTO from the bridge.
-	 * @param {SwapContext} context - Swap context with source and target information.
-	 * @returns {BridgeError} - Mapped error object.
+	 * @param {SwapContext} context - Swap context.
+	 * @returns {BridgeError}
 	 */
 	#errorFromDto(dto, { mode, source, target }) {
 		const requestTransaction = {
@@ -574,8 +564,10 @@ export class BridgeManager {
 
 	/**
 	 * Map estimation DTO to estimation object.
-	 * @param {object} dto - Estimation DTO from the bridge
-	 * @returns {BridgeEstimation} - Mapped estimation object
+	 * @param {object} dto - Estimation DTO from the bridge.
+	 * @param {object} options - Options.
+	 * @param {TokenInfo} options.targetToken - Target token info.
+	 * @returns {BridgeEstimation}
 	 */
 	#estimationFromDto(dto, { targetToken }) {
 		const isValidAmount = !dto.netAmount.includes('-');
@@ -590,98 +582,14 @@ export class BridgeManager {
 	}
 
 	/**
-	 * Get current account from the appropriate wallet controller based on mode.
-	 * @param {string} mode - 'wrap' or 'unwrap'
-	 * @return {PublicAccount|null} - Current account or null if not set
+	 * Get current (source) account for the fixed mode.
+	 * @returns {PublicAccount|null}
 	 */
-	#getCurrentAccount = mode => {
-		switch (mode) {
-		case BridgeMode.WRAP:
-			return this.#nativeWalletController.currentAccount;
-		case BridgeMode.UNWRAP:
-			return this.#wrappedWalletController.currentAccount;
-		default:
-			throw new Error(`Invalid bridge mode: ${mode}`);
-		}
-	};
+	#getCurrentAccount = () => this.sourceWalletController.currentAccount;
 
 	/**
-	 * Get recipient account from the appropriate wallet controller based on mode.
-	 * @param {string} mode - 'wrap' or 'unwrap'
-	 * @return {PublicAccount|null} - Recipient account or null if not set
+	 * Get recipient (target) account for the fixed mode.
+	 * @returns {PublicAccount|null}
 	 */
-	#getRecipientAccount = mode => {
-		switch (mode) {
-		case BridgeMode.WRAP:
-			return this.#wrappedWalletController.currentAccount;
-		case BridgeMode.UNWRAP:
-			return this.#nativeWalletController.currentAccount;
-		default:
-			throw new Error(`Invalid bridge mode: ${mode}`);
-		}
-	};
-
-	/**
-	 * Get source token that will be sent for bridging.
-	 * @param {string} mode - 'wrap' or 'unwrap'
-	 * @return {Token|null} - Source token or null if not loaded
-	 */
-	#getSourceToken = mode => {
-		switch (mode) {
-		case BridgeMode.WRAP:
-			return this.nativeTokenInfo;
-		case BridgeMode.UNWRAP:
-			return this.wrappedTokenInfo;
-		default:
-			throw new Error(`Invalid bridge mode: ${mode}`);
-		}
-	};
-
-	/**
-	 * Get target token that will be received after bridging.
-	 * @param {string} mode - 'wrap' or 'unwrap'
-	 * @return {Token|null} - Target token or null if not loaded
-	 */
-	#getTargetToken = mode => {
-		switch (mode) {
-		case BridgeMode.WRAP:
-			return this.wrappedTokenInfo;
-		case BridgeMode.UNWRAP:
-			return this.nativeTokenInfo;
-		default:
-			throw new Error(`Invalid bridge mode: ${mode}`);
-		}
-	};
-
-	/**
-	 * Get source wallet controller based on mode.
-	 * @param {string} mode - 'wrap' or 'unwrap'
-	 * @return {WalletController} - Source wallet controller
-	 */
-	#getSourceWalletController = mode => {
-		switch (mode) {
-		case BridgeMode.WRAP:
-			return this.#nativeWalletController;
-		case BridgeMode.UNWRAP:
-			return this.#wrappedWalletController;
-		default:
-			throw new Error(`Invalid bridge mode: ${mode}`);
-		}
-	};
-
-	/**
-	 * Get target wallet controller based on mode.
-	 * @param {string} mode - 'wrap' or 'unwrap'
-	 * @return {WalletController} - Target wallet controller
-	 */
-	#getTargetWalletController = mode => {
-		switch (mode) {
-		case BridgeMode.WRAP:
-			return this.#wrappedWalletController;
-		case BridgeMode.UNWRAP:
-			return this.#nativeWalletController;
-		default:
-			throw new Error(`Invalid bridge mode: ${mode}`);
-		}
-	};
+	#getRecipientAccount = () => this.targetWalletController.currentAccount;
 }
