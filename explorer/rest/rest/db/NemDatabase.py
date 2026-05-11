@@ -831,18 +831,10 @@ class NemDatabase(DatabaseConnectionPool):
 				filter_params.append(transaction_query.recipient_address.bytes)
 
 		if transaction_query.mosaic:
-			where_condition += ' AND t.transaction_type = %s'
-
-			if transaction_query.mosaic.upper() == 'NEM.XEM':
-				where_condition += (
-					' AND ( '
-					'	EXISTS (SELECT 1 FROM transactions_mosaic tm WHERE tm.transaction_id = t.id AND tm.namespace_name = %s)'
-					'	OR'
-					'	NOT EXISTS (SELECT 1 FROM transactions_mosaic tm WHERE tm.transaction_id = t.id)'
-					')'
-				)
-			else:
-				where_condition += ' AND EXISTS (SELECT 1 FROM transactions_mosaic tm WHERE tm.transaction_id = t.id AND tm.namespace_name = %s) '
+			where_condition += (
+				' AND t.transaction_type = %s'
+				' AND EXISTS (SELECT 1 FROM transactions_mosaic tm WHERE tm.transaction_id = t.id AND tm.namespace_name = %s) '
+			)
 
 			filter_params.extend([TransactionType.TRANSFER.value, transaction_query.mosaic])
 

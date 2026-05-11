@@ -441,6 +441,11 @@ TRANSACTIONS = [
 ]
 
 TRANSACTIONS_MOSAIC = [
+	TransactionMosaic(  # use for transaction v1
+		transaction_id=1,
+		namespace_name='nem.xem',
+		quantity=1000000  # default quantity for transfer transaction v1, as amount is stored in payload
+	),
 	TransactionMosaic(  # use for transaction v2
 		transaction_id=2,
 		namespace_name='nem.xem',
