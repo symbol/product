@@ -1,7 +1,7 @@
 import { useAsyncManager, useInit, useTimer } from '@/app/hooks';
 import { BRIDGE_HISTORY_PAGE_SIZE } from '@/app/screens/bridge/constants';
 
-/** @typedef {import('@/app/screens/bridge/types/Bridge').BridgeManager} BridgeManager */
+/** @typedef {import('@/app/screens/bridge/types/Bridge').SwapWorkflowManager} SwapWorkflowManager */
 /** @typedef {import('@/app/screens/bridge/types/Bridge').BridgeRequest} BridgeRequest */
 
 const FETCH_INTERVAL = 10000;
@@ -19,7 +19,7 @@ const FETCH_INTERVAL = 10000;
  * React hook for fetching and auto-refreshing bridge transaction history.
  * Periodically polls for new history entries at a fixed interval.
  * @param {object} params - Hook parameters.
- * @param {BridgeManager|null} params.bridge - The bridge manager instance.
+ * @param {SwapWorkflowManager|null} params.bridge - The bridge manager instance.
  * @returns {UseBridgeHistoryReturnType}
  */
 export const useBridgeHistory = ({ bridge }) => {

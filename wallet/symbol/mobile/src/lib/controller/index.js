@@ -4,8 +4,8 @@ import { ethereumWalletController } from './ethereum/controller';
 import { symbolBridgeHelper } from './symbol/bridge';
 import { symbolWalletController } from './symbol/controller';
 import { makeRequest } from '@/app/utils';
-import { BridgeManager } from 'wallet-common-core';
-import { UniswapManager } from 'wallet-common-ethereum';
+import { BridgePairManager, SwapWorkflowManager } from 'wallet-common-core';
+import { UniswapPairManager } from 'wallet-common-ethereum';
 
 const QUOTER_ADDRESS = '0x01eEE36F73aC548c45aD7A6D623fB37fA2221767';
 const WETH_ADDRESS = '0x3A8C1bd531b5C1aeFBB9ebc3e021C1251cF4Ccb1';
@@ -21,41 +21,80 @@ const walletControllers = {
 };
 
 const bridges = [
-	new BridgeManager({
-		id: 'symbol-xym-ethereum-wxym',
-		nativeWalletController: symbolWalletController,
-		wrappedWalletController: ethereumWalletController,
-		nativeBridgeHelper: symbolBridgeHelper,
-		wrappedBridgeHelper: ethereumBridgeHelper,
-		bridgeUrls: {
-			testnet: 'https://bridge.symbol.tools/testnet/ethereum-wrapped',
-			mainnet: 'https://bridge.symbol.tools/ethereum-wrapped'
-		},
-		makeRequest
+	// XYM -> wXYM
+	new SwapWorkflowManager({
+		id: 'symbol-xym-ethereum-wxym-wrap',
+		pairManagers: [
+			new BridgePairManager({
+				id: 'symbol-xym-ethereum-wxym-wrap',
+				mode: 'wrap',
+				nativeWalletController: symbolWalletController,
+				wrappedWalletController: ethereumWalletController,
+				nativeBridgeHelper: symbolBridgeHelper,
+				wrappedBridgeHelper: ethereumBridgeHelper,
+				bridgeUrls: {
+					testnet: 'https://bridge.symbol.tools/testnet/ethereum-wrapped',
+					mainnet: 'https://bridge.symbol.tools/ethereum-wrapped'
+				},
+				makeRequest
+			})
+		]
 	}),
-	new BridgeManager({
-		id: 'symbol-xym-ethereum-eth',
-		nativeWalletController: symbolWalletController,
-		wrappedWalletController: ethereumWalletController,
-		nativeBridgeHelper: symbolBridgeHelper,
-		wrappedBridgeHelper: ethereumBridgeHelper,
-		isUnwrapDisabled: true, // Disable unwrap mode for the ETH -> XYM since it's not supported by the API
-		bridgeUrls: {
-			testnet: 'https://bridge.symbol.tools/testnet/ethereum-native',
-			mainnet: 'https://bridge.symbol.tools/ethereum-native'
-		},
-		makeRequest
+	// wXYM -> XYM
+	new SwapWorkflowManager({
+		id: 'symbol-xym-ethereum-wxym-unwrap',
+		pairManagers: [
+			new BridgePairManager({
+				id: 'symbol-xym-ethereum-wxym-unwrap',
+				mode: 'unwrap',
+				nativeWalletController: symbolWalletController,
+				wrappedWalletController: ethereumWalletController,
+				nativeBridgeHelper: symbolBridgeHelper,
+				wrappedBridgeHelper: ethereumBridgeHelper,
+				bridgeUrls: {
+					testnet: 'https://bridge.symbol.tools/testnet/ethereum-wrapped',
+					mainnet: 'https://bridge.symbol.tools/ethereum-wrapped'
+				},
+				makeRequest
+			})
+		]
 	}),
-	new UniswapManager({
+	// XYM -> ETH
+	new SwapWorkflowManager({
+		id: 'symbol-xym-ethereum-eth-wrap',
+		pairManagers: [
+			new BridgePairManager({
+				id: 'symbol-xym-ethereum-eth-wrap',
+				mode: 'wrap',
+				nativeWalletController: symbolWalletController,
+				wrappedWalletController: ethereumWalletController,
+				nativeBridgeHelper: symbolBridgeHelper,
+				wrappedBridgeHelper: ethereumBridgeHelper,
+				bridgeUrls: {
+					testnet: 'https://bridge.symbol.tools/testnet/ethereum-native',
+					mainnet: 'https://bridge.symbol.tools/ethereum-native'
+				},
+				makeRequest
+			})
+		]
+	}),
+	// wETH -> wXYM (Uniswap)
+	new SwapWorkflowManager({
 		id: 'ethereum-weth-wxym-uniswap',
-		walletController: ethereumWalletController,
-		uniswapApi: ethereumNetworkApi.uniswap,
-		transactionApi: ethereumNetworkApi.transaction,
-		nativeTokenId: WETH_ADDRESS,
-		wrappedTokenId: WXYM_ADDRESS,
-		quoterAddress: QUOTER_ADDRESS,
-		swapRouterAddress: SWAP_ROUTER,
-		poolFee: UNISWAP_POOL_FEE
+		pairManagers: [
+			new UniswapPairManager({
+				id: 'ethereum-weth-wxym-uniswap',
+				mode: 'wrap',
+				walletController: ethereumWalletController,
+				uniswapApi: ethereumNetworkApi.uniswap,
+				transactionApi: ethereumNetworkApi.transaction,
+				nativeTokenId: WETH_ADDRESS,
+				wrappedTokenId: WXYM_ADDRESS,
+				quoterAddress: QUOTER_ADDRESS,
+				swapRouterAddress: SWAP_ROUTER,
+				poolFee: UNISWAP_POOL_FEE
+			})
+		]
 	})
 ];
 

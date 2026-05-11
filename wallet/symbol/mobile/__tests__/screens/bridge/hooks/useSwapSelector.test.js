@@ -1,5 +1,4 @@
 import { useSwapSelector } from '@/app/screens/bridge/hooks/useSwapSelector';
-import { BridgeMode } from '@/app/screens/bridge/types/Bridge';
 import { AccountFixtureBuilder } from '__fixtures__/local/AccountFixtureBuilder';
 import { NetworkPropertiesFixtureBuilder } from '__fixtures__/local/NetworkPropertiesFixtureBuilder';
 import { TokenFixtureBuilder } from '__fixtures__/local/TokenFixtureBuilder';
@@ -114,29 +113,25 @@ const swapSideEthereumEth = {
 const swapPairXymToWxym = {
 	source: swapSideSymbolXym,
 	target: swapSideEthereumWxym,
-	bridge: bridgeXymToWxym,
-	mode: BridgeMode.WRAP
+	bridge: bridgeXymToWxym
 };
 
 const swapPairWxymToXym = {
 	source: swapSideEthereumWxym,
 	target: swapSideSymbolXym,
-	bridge: bridgeXymToWxym,
-	mode: BridgeMode.UNWRAP
+	bridge: bridgeXymToWxym
 };
 
 const swapPairXymToEth = {
 	source: swapSideSymbolXym,
 	target: swapSideEthereumEth,
-	bridge: bridgeXymToEth,
-	mode: BridgeMode.WRAP
+	bridge: bridgeXymToEth
 };
 
 const swapPairEthToXym = {
 	source: swapSideEthereumEth,
 	target: swapSideSymbolXym,
-	bridge: bridgeXymToEth,
-	mode: BridgeMode.UNWRAP
+	bridge: bridgeXymToEth
 };
 
 const swapPairXymToWxymUpdated = {
@@ -177,7 +172,6 @@ describe('hooks/useSwapSelector', () => {
 		contract: {
 			isReady: 'boolean',
 			bridge: 'object',
-			mode: 'string',
 			source: 'object',
 			target: 'object',
 			sourceList: 'array',
@@ -199,7 +193,6 @@ describe('hooks/useSwapSelector', () => {
 				expect(hookTester.currentResult.source).toStrictEqual(expected.source);
 				expect(hookTester.currentResult.target).toStrictEqual(expected.target);
 				expect(hookTester.currentResult.bridge).toStrictEqual(expected.bridge);
-				expect(hookTester.currentResult.mode).toStrictEqual(expected.mode);
 				expect(hookTester.currentResult.isReady).toBe(expected.isReady);
 			});
 		};
@@ -215,7 +208,6 @@ describe('hooks/useSwapSelector', () => {
 					source: null,
 					target: null,
 					bridge: null,
-					mode: null,
 					isReady: false
 				}
 			},
@@ -229,7 +221,6 @@ describe('hooks/useSwapSelector', () => {
 					source: swapPairXymToWxym.source,
 					target: swapPairXymToWxym.target,
 					bridge: bridgeXymToWxym,
-					mode: BridgeMode.WRAP,
 					isReady: true
 				}
 			}
@@ -253,7 +244,6 @@ describe('hooks/useSwapSelector', () => {
 				expect(hookTester.currentResult.target.chainName).toBe(expected.targetChainName);
 				expect(hookTester.currentResult.target.token.id).toBe(expected.targetTokenId);
 				expect(hookTester.currentResult.bridge).toBe(expected.bridge);
-				expect(hookTester.currentResult.mode).toBe(expected.mode);
 			});
 		};
 
@@ -266,8 +256,7 @@ describe('hooks/useSwapSelector', () => {
 					sourceTokenId: swapTokenXym.id,
 					targetChainName: CHAIN_NAME_ETHEREUM,
 					targetTokenId: swapTokenWxym.id,
-					bridge: bridgeXymToWxym,
-					mode: BridgeMode.WRAP
+					bridge: bridgeXymToWxym
 				}
 			},
 			{
@@ -278,8 +267,7 @@ describe('hooks/useSwapSelector', () => {
 					sourceTokenId: swapTokenWxym.id,
 					targetChainName: CHAIN_NAME_SYMBOL,
 					targetTokenId: swapTokenXym.id,
-					bridge: bridgeXymToWxym,
-					mode: BridgeMode.UNWRAP
+					bridge: bridgeXymToWxym
 				}
 			}
 		];
@@ -314,7 +302,6 @@ describe('hooks/useSwapSelector', () => {
 				expect(hookTester.currentResult.sourceList).toStrictEqual(expected.sourceList);
 				expect(hookTester.currentResult.targetList).toStrictEqual(expected.targetList);
 				expect(hookTester.currentResult.bridge).toBe(expected.bridge);
-				expect(hookTester.currentResult.mode).toBe(expected.mode);
 				expect(hookTester.currentResult.isReady).toBe(expected.isReady);
 			});
 		};
@@ -333,7 +320,6 @@ describe('hooks/useSwapSelector', () => {
 					sourceList: [swapSideSymbolXym],
 					targetList: [swapSideEthereumWxym],
 					bridge: bridgeXymToWxym,
-					mode: BridgeMode.WRAP,
 					isReady: true
 				}
 			},
@@ -347,13 +333,16 @@ describe('hooks/useSwapSelector', () => {
 				expected: {
 					source: swapSideSymbolXym,
 					target: swapSideEthereumEth,
-					sourceList: [swapSideSymbolXym],
+					sourceList: [
+						swapSideSymbolXym,
+						swapSideEthereumWxym,
+						swapSideEthereumEth
+					],
 					targetList: [
 						swapSideEthereumWxym,
 						swapSideEthereumEth
 					],
 					bridge: bridgeXymToEth,
-					mode: BridgeMode.WRAP,
 					isReady: true
 				}
 			},
@@ -368,10 +357,12 @@ describe('hooks/useSwapSelector', () => {
 				expected: {
 					source: swapSideEthereumWxym,
 					target: swapSideSymbolXym,
-					sourceList: [swapSideEthereumWxym],
+					sourceList: [
+						swapSideSymbolXym,
+						swapSideEthereumWxym
+					],
 					targetList: [swapSideSymbolXym],
 					bridge: bridgeXymToWxym,
-					mode: BridgeMode.UNWRAP,
 					isReady: true
 				}
 			},
@@ -386,12 +377,12 @@ describe('hooks/useSwapSelector', () => {
 					source: swapSideEthereumEth,
 					target: swapSideSymbolXym,
 					sourceList: [
+						swapSideSymbolXym,
 						swapSideEthereumWxym,
 						swapSideEthereumEth
 					],
 					targetList: [swapSideSymbolXym],
 					bridge: bridgeXymToEth,
-					mode: BridgeMode.UNWRAP,
 					isReady: true
 				}
 			},
@@ -406,13 +397,16 @@ describe('hooks/useSwapSelector', () => {
 				expected: {
 					source: swapSideSymbolXym,
 					target: swapSideEthereumEth,
-					sourceList: [swapSideSymbolXym],
+					sourceList: [
+						swapSideSymbolXym,
+						swapSideEthereumWxym,
+						swapSideEthereumEth
+					],
 					targetList: [
 						swapSideEthereumWxym,
 						swapSideEthereumEth
 					],
 					bridge: bridgeXymToEth,
-					mode: BridgeMode.WRAP,
 					isReady: true
 				}
 			}
@@ -514,7 +508,6 @@ describe('hooks/useSwapSelector', () => {
 				expect(hookTester.currentResult.source).toBeNull();
 				expect(hookTester.currentResult.target).toBeNull();
 				expect(hookTester.currentResult.bridge).toBeNull();
-				expect(hookTester.currentResult.mode).toBeNull();
 				expect(hookTester.currentResult.sourceList).toStrictEqual([]);
 				expect(hookTester.currentResult.targetList).toStrictEqual([]);
 				expect(hookTester.currentResult.isReady).toBe(false);

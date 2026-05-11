@@ -1,8 +1,7 @@
 import { useAsyncManager } from '@/app/hooks';
 
-/** @typedef {import('@/app/screens/bridge/types/Bridge').BridgeManager} BridgeManager */
+/** @typedef {import('@/app/screens/bridge/types/Bridge').SwapWorkflowManager} SwapWorkflowManager */
 /** @typedef {import('@/app/screens/bridge/types/Bridge').BridgeEstimation} BridgeEstimation */
-/** @typedef {import('@/app/screens/bridge/types/Bridge').BridgeModeType} BridgeModeType */
 
 /**
  * Return type for useEstimation hook.
@@ -16,14 +15,17 @@ import { useAsyncManager } from '@/app/hooks';
 /**
  * React hook for fetching bridge fee and receive amount estimations.
  * @param {object} params - Hook parameters.
- * @param {BridgeManager|null} params.bridge - The bridge manager instance.
- * @param {BridgeModeType|null} params.mode - The bridge operation mode.
+ * @param {SwapWorkflowManager|null} params.bridge - The bridge manager instance.
  * @param {string} params.amount - The amount to estimate.
  * @returns {UseEstimationReturnType}
  */
-export const useEstimation = ({ bridge, mode, amount }) => {
+export const useEstimation = ({ bridge, amount }) => {
 	const estimationManager = useAsyncManager({
-		callback: async () => bridge.estimateRequest(mode, amount),
+		callback: async () => {
+			const estimations = await bridge.estimateRequest(amount);
+
+			return estimations[estimations.length - 1];
+		},
 		shouldShowErrorPopup: false,
 		shouldClearDataOnCall: true
 	});

@@ -11,7 +11,6 @@ import { act } from '@testing-library/react-native';
 
 const CHAIN_NAME = 'symbol';
 const NETWORK_IDENTIFIER = 'testnet';
-const MODE = 'wrap';
 const AMOUNT = '25';
 
 // Fixtures
@@ -51,7 +50,7 @@ const bridgeTransaction = TransactionFixtureBuilder
 	.build();
 
 const bridge = {
-	createTransaction: jest.fn().mockResolvedValue(bridgeTransaction)
+	createTransactionForStep: jest.fn().mockResolvedValue(bridgeTransaction)
 };
 
 const sourceWalletController = createWalletControllerMock({
@@ -80,7 +79,6 @@ const targetSide = {
 
 const createHookParams = overrides => ({
 	bridge,
-	mode: MODE,
 	source: sourceSide,
 	target: targetSide,
 	amount: AMOUNT,
@@ -104,10 +102,6 @@ describe('hooks/useBridgeTransaction', () => {
 		it('creates transaction using initialized params and builds preview rows', async () => {
 			// Arrange:
 			const params = createHookParams();
-			const expectedTransactionData = {
-				recipientAddress: targetAccount.address,
-				amount: AMOUNT
-			};
 			let createdTransaction;
 			let previewTable;
 
@@ -119,7 +113,11 @@ describe('hooks/useBridgeTransaction', () => {
 			});
 
 			// Assert:
-			expect(bridge.createTransaction).toHaveBeenCalledWith(MODE, expectedTransactionData);
+			expect(bridge.createTransactionForStep).toHaveBeenCalledWith(0, {
+				recipientAddress: targetAccount.address,
+				amount: AMOUNT,
+				amountOutMinimum: undefined
+			});
 			expect(createdTransaction).toStrictEqual(bridgeTransaction);
 			expect(previewTable).toStrictEqual([
 				{ type: 'account', value: bridgeTransaction.signerAddress, title: 'signerAddress' },

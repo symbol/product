@@ -1,45 +1,44 @@
 import { bridges } from '@/app/lib/controller';
-import { BridgeMode, BridgePairsStatus } from '@/app/screens/bridge/types/Bridge';
+import { BridgePairsStatus } from '@/app/screens/bridge/types/Bridge';
 import { loadWalletController } from '@/app/screens/bridge/utils';
 import { useCallback, useEffect, useState } from 'react';
 import { ControllerEventName } from 'wallet-common-core/src/constants';
 
-/** @typedef {import('@/app/screens/bridge/types/Bridge').BridgeManager} BridgeManager */
+/** @typedef {import('@/app/screens/bridge/types/Bridge').SwapWorkflowManager} SwapWorkflowManager */
 /** @typedef {import('@/app/screens/bridge/types/Bridge').SwapPair} SwapPair */
 /** @typedef {import('@/app/screens/bridge/types/Bridge').BridgePairsStatusType} BridgePairsStatusType */
-/** @typedef {import('@/app/screens/bridge/types/Bridge').BridgeModeType} BridgeModeType */
 /** @typedef {import('@/app/types/Wallet').WalletController} WalletController */
 
 /**
  * Checks if both wallet controllers in a bridge have accounts.
- * @param {BridgeManager} bridge - The bridge manager instance.
+ * @param {SwapWorkflowManager} bridge - The bridge manager instance.
  * @returns {boolean} True if both controllers have accounts.
  */
 const isBridgeControllersHaveAccounts = bridge =>
-	bridge.nativeWalletController.hasAccounts &&
-	bridge.wrappedWalletController.hasAccounts;
+	bridge.sourceWalletController.hasAccounts &&
+	bridge.targetWalletController.hasAccounts;
 
 /**
  * Checks if both wallet controllers in a bridge have loaded their cache.
- * @param {BridgeManager} bridge - The bridge manager instance.
+ * @param {SwapWorkflowManager} bridge - The bridge manager instance.
  * @returns {boolean} True if both controllers have loaded cache.
  */
 const isBridgeControllersCacheLoaded = bridge =>
-	bridge.nativeWalletController.isStateReady &&
-	bridge.wrappedWalletController.isStateReady;
+	bridge.sourceWalletController.isStateReady &&
+	bridge.targetWalletController.isStateReady;
 
 /**
  * Checks if both wallet controllers in a bridge are connected to the network.
- * @param {BridgeManager} bridge - The bridge manager instance.
+ * @param {SwapWorkflowManager} bridge - The bridge manager instance.
  * @returns {boolean} True if both controllers are connected.
  */
 const isBridgeControllersNetworkConnected = bridge =>
-	bridge.nativeWalletController.isNetworkConnectionReady &&
-	bridge.wrappedWalletController.isNetworkConnectionReady;
+	bridge.sourceWalletController.isNetworkConnectionReady &&
+	bridge.targetWalletController.isNetworkConnectionReady;
 
 /**
  * Checks if a bridge is fully ready (cache loaded, has accounts, and connected).
- * @param {BridgeManager} bridge - The bridge manager instance.
+ * @param {SwapWorkflowManager} bridge - The bridge manager instance.
  * @returns {boolean} True if the bridge is fully ready.
  */
 const isBridgeControllersReady = bridge =>
@@ -49,44 +48,39 @@ const isBridgeControllersReady = bridge =>
 
 /**
  * Extracts all wallet controllers from an array of bridges.
- * @param {BridgeManager[]} bridges - Array of bridge managers.
+ * @param {SwapWorkflowManager[]} bridges - Array of bridge managers.
  * @returns {WalletController[]} Array of wallet controllers.
  */
 const getBridgesWalletControllers = bridges => {
+	const seen = new Set();
+
 	return bridges.reduce((controllers, bridge) => {
-		controllers.push(bridge.nativeWalletController);
-		controllers.push(bridge.wrappedWalletController);
+		[bridge.sourceWalletController, bridge.targetWalletController].forEach(controller => {
+			if (!seen.has(controller)) {
+				seen.add(controller);
+				controllers.push(controller);
+			}
+		});
 		return controllers;
 	}, []);
 };
 
 /**
- * Creates a swap pair object from a bridge and mode.
- * @param {BridgeManager} bridge - The bridge manager instance.
- * @param {BridgeModeType} mode - The bridge operation mode.
+ * Creates a swap pair object from a bridge (direction is fixed in the bridge itself).
+ * @param {SwapWorkflowManager} bridge - The bridge manager instance.
  * @returns {SwapPair} The created swap pair.
  */
-const createSwapPair = (bridge, mode) => {
-	const sourceWalletController = mode === BridgeMode.WRAP
-		? bridge.nativeWalletController
-		: bridge.wrappedWalletController;
-
-	const sourceTokenInfo = mode === BridgeMode.WRAP
-		? bridge.nativeTokenInfo
-		: bridge.wrappedTokenInfo;
+const createSwapPair = bridge => {
+	const { sourceWalletController } = bridge;
+	const { nativeTokenInfo: sourceTokenInfo } = bridge;
 
 	const sourceAccountTokens = sourceWalletController.currentAccountInfo?.tokens
 		|| sourceWalletController.currentAccountInfo?.mosaics
 		|| [];
 	const sourceTokenBalance = sourceAccountTokens.find(t => t.id === sourceTokenInfo.id)?.amount || '0';
 
-	const targetWalletController = mode === BridgeMode.WRAP
-		? bridge.wrappedWalletController
-		: bridge.nativeWalletController;
-
-	const targetTokenInfo = mode === BridgeMode.WRAP
-		? bridge.wrappedTokenInfo
-		: bridge.nativeTokenInfo;
+	const { targetWalletController } = bridge;
+	const { wrappedTokenInfo: targetTokenInfo } = bridge;
 
 	const targetAccountTokens = targetWalletController.currentAccountInfo?.tokens
 		|| targetWalletController.currentAccountInfo?.mosaics
@@ -95,7 +89,6 @@ const createSwapPair = (bridge, mode) => {
 
 	return {
 		bridge,
-		mode,
 		source: {
 			token: {
 				...sourceTokenInfo,
@@ -118,25 +111,16 @@ const createSwapPair = (bridge, mode) => {
 };
 
 /**
- * Creates swap pairs for all bridges (both wrap and unwrap modes).
- * @param {BridgeManager[]} bridges - Array of bridge managers.
+ * Creates swap pairs for all bridges. Each bridge already encodes a fixed direction.
+ * @param {SwapWorkflowManager[]} bridges - Array of bridge managers.
  * @returns {SwapPair[]} Array of swap pairs.
  */
-const createSwapPairs = bridges => {
-	const pairs = [];
-
-	bridges.forEach(bridge => {
-		pairs.push(createSwapPair(bridge, BridgeMode.WRAP));
-		pairs.push(createSwapPair(bridge, BridgeMode.UNWRAP));
-	});
-
-	return pairs;
-};
+const createSwapPairs = bridges => bridges.map(bridge => createSwapPair(bridge));
 
 /**
  * Return type for useBridge hook.
  * @typedef {object} UseBridgeReturnType
- * @property {BridgeManager[]} bridges - Array of available bridge managers.
+ * @property {SwapWorkflowManager[]} bridges - Array of available bridge managers.
  * @property {SwapPair[]} pairs - Array of available swap pairs.
  * @property {BridgePairsStatusType} pairsStatus - Current status of swap pairs loading.
  * @property {() => Promise<void>} loadBridges - Loads all ready bridges.

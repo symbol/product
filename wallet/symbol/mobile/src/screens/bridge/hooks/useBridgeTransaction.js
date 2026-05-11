@@ -1,8 +1,7 @@
 import { objectToTableData } from '@/app/utils';
 
-/** @typedef {import('@/app/screens/bridge/types/Bridge').BridgeManager} BridgeManager */
+/** @typedef {import('@/app/screens/bridge/types/Bridge').SwapWorkflowManager} SwapWorkflowManager */
 /** @typedef {import('@/app/screens/bridge/types/Bridge').SwapSide} SwapSide */
-/** @typedef {import('@/app/screens/bridge/types/Bridge').BridgeModeType} BridgeModeType */
 /** @typedef {import('@/app/screens/bridge/types/Bridge').BridgeEstimation} BridgeEstimation */
 /** @typedef {import('@/app/types/Table').TableData} TableData */
 /** @typedef {import('@/app/types/Transaction').Transaction} Transaction */
@@ -17,16 +16,15 @@ import { objectToTableData } from '@/app/utils';
 /**
  * React hook for creating bridge transactions and generating transaction preview data.
  * @param {object} params - Hook parameters.
- * @param {BridgeManager|null} params.bridge - The bridge manager instance.
- * @param {BridgeModeType|null} params.mode - The bridge operation mode.
+ * @param {SwapWorkflowManager|null} params.bridge - The bridge manager instance.
  * @param {SwapSide|null} params.target - The target swap side.
  * @param {string} params.amount - The amount to transfer.
  * @param {BridgeEstimation} params.estimation - The estimation data for the transaction.
  * @returns {UseBridgeTransactionReturnType}
  */
-export const useBridgeTransaction = ({ bridge, mode, target, amount, estimation }) => {
+export const useBridgeTransaction = ({ bridge, target, amount, estimation }) => {
 	const createTransaction = async () => {
-		const transaction = await bridge.createTransaction(mode, {
+		const transaction = await bridge.createTransactionForStep(0, {
 			recipientAddress: target.walletController.currentAccount.address,
 			amount,
 			amountOutMinimum: estimation?.receiveAmount

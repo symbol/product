@@ -4,7 +4,7 @@
 /** @typedef {import('@/app/types/Token').TokenInfo} TokenInfo */
 /** @typedef {import('@/app/types/Network').NetworkIdentifier} NetworkIdentifier */
 /** @typedef {import('@/app/types/Network').ChainName} ChainName */
-/** @typedef {import('wallet-common-core/src/lib/bridge/BridgeManager').BridgeManager} BridgeManager */
+/** @typedef {import('wallet-common-core/src/lib/bridge/SwapWorkflowManager').SwapWorkflowManager} SwapWorkflowManager */
 /** @typedef {import('wallet-common-core/src/types/Bridge').BridgeEstimation} BridgeEstimation */
 /** @typedef {import('wallet-common-core/src/types/Bridge').BridgeRequest} BridgeRequest */
 /** @typedef {import('@/app/types/ColorVariants').SemanticRoleColorVariants} SemanticRoleColorVariants */
@@ -36,8 +36,7 @@
  * @typedef {object} SwapPair
  * @property {SwapSide} source - The source swap side.
  * @property {SwapSide} target - The target swap side.
- * @property {BridgeManager} bridge - The bridge manager for this swap pair.
- * @property {BridgeModeType} mode - The bridge operation mode (wrap or unwrap).
+ * @property {SwapWorkflowManager} bridge - The bridge manager for this swap pair.
  */
 
 /**

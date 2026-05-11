@@ -59,7 +59,6 @@ export const BridgeSwap = props => {
 	const {
 		isReady,
 		bridge,
-		mode,
 		source,
 		target,
 		sourceList,
@@ -98,13 +97,13 @@ export const BridgeSwap = props => {
 		clearEstimation,
 		isLoading:
         isEstimationLoading
-	} = useEstimation({ bridge, mode, amount });
+	} = useEstimation({ bridge, amount });
 
 	// Transaction creation and preview
 	const {
 		createTransaction,
 		getTransactionPreviewTable
-	} = useBridgeTransaction({ bridge, mode, target, amount, estimation });
+	} = useBridgeTransaction({ bridge, target, amount, estimation });
 
 	// Update ref to point to actual createTransaction
 	createTransactionRef.current = createTransaction;
