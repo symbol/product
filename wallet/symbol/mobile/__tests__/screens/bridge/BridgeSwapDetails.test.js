@@ -146,7 +146,9 @@ const bridgeRequestWithError = createBridgeRequestData({
 const bridgeMock = {
 	id: BRIDGE_ID,
 	nativeWalletController: symbolWalletController,
-	wrappedWalletController: ethereumWalletController
+	wrappedWalletController: ethereumWalletController,
+	sourceWalletController: symbolWalletController,
+	targetWalletController: ethereumWalletController
 };
 
 // Route Props Factory
