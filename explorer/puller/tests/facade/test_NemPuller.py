@@ -1168,7 +1168,11 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 		# Assert:
 		mock_build_transaction_record.assert_called_once()
 		mock_insert_transaction.assert_called_once()
-		mock_insert_transaction_mosaic.assert_not_called()
+		mock_insert_transaction_mosaic.assert_called_once_with(
+			cursor,
+			mock_insert_transaction.return_value,
+			Mosaic('nem.xem', 1000000)
+		)
 
 	@patch('puller.facade.NemPuller.NemPuller._build_transaction_record')
 	@patch('puller.facade.NemPuller.NemDatabase.insert_transaction')

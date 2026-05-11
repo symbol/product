@@ -10,6 +10,7 @@ from symbolchain.nc import TransactionType
 from symbolchain.nem.Network import Address, Network
 from symbollightapi.connector.NemConnector import NemConnector
 from symbollightapi.model.Exceptions import NodeException
+from symbollightapi.model.Transaction import Mosaic
 from zenlog import log
 
 from puller.db.NemDatabase import NemDatabase
@@ -467,8 +468,9 @@ class NemPuller:
 		transaction_record = self._build_transaction_record(transaction, is_inner)
 		transaction_id = self.nem_db.insert_transaction(cursor, transaction_record)
 
-		if transaction.transaction_type == TransactionType.TRANSFER.value and transaction.mosaics:
-			for mosaic in transaction.mosaics:
+		if transaction.transaction_type == TransactionType.TRANSFER.value:
+			mosaics = transaction.mosaics or [Mosaic('nem.xem', 1000000)]
+			for mosaic in mosaics:
 				self.nem_db.insert_transaction_mosaic(cursor, transaction_id, mosaic)
 		elif transaction.transaction_type == TransactionType.NAMESPACE_REGISTRATION.value:
 			self._process_namespace(cursor, transaction, block_height)
