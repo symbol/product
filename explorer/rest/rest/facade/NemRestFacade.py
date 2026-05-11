@@ -156,11 +156,16 @@ class NemRestFacade:
 	def get_transactions(self, pagination, sort, transaction_query):
 		"""Gets transactions pagination."""
 
+		sender_address = (
+			self.network.public_key_to_address(PublicKey(transaction_query.sender))
+			if transaction_query.sender
+			else Address(transaction_query.sender_address) if transaction_query.sender_address else None
+		)
+
 		transaction_query = transaction_query._replace(
 			address=Address(transaction_query.address) if transaction_query.address else None,
-			sender_address=Address(transaction_query.sender_address) if transaction_query.sender_address else None,
+			sender_address=sender_address,
 			recipient_address=Address(transaction_query.recipient_address) if transaction_query.recipient_address else None,
-			sender=self.network.public_key_to_address(PublicKey(transaction_query.sender)) if transaction_query.sender else None
 		)
 
 		transactions = self.nem_db.get_transactions(pagination, sort, transaction_query)

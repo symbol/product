@@ -842,6 +842,15 @@ def test_api_transactions_invalid_address(client):  # pylint: disable=redefined-
 	_assert_transaction_invalid_params(client, 'Invalid sender public key format', senderPublicKey='INVALIDADDRESS')
 
 
+def test_api_transactions_invalid_sender_filter_combination(client):  # pylint: disable=redefined-outer-name, invalid-name
+	_assert_transaction_invalid_params(
+		client,
+		'Only one of senderAddress or senderPublicKey can be provided',
+		senderAddress='NBNR6XNZQIGQVXII6L3FPJTUGF6NFGLZHBN52R3V',
+		senderPublicKey='9ca54cd15edf88a9df9173375d4a0d706f7a9ddcf57d7547dff8110ddd2adeb9'
+	)
+
+
 def test_api_transactions_invalid_transaction_types(client):  # pylint: disable=redefined-outer-name, invalid-name
 	_assert_transaction_invalid_params(client, 'Invalid transaction types', transactionTypes='INVALID')
 

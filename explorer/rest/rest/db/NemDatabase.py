@@ -825,9 +825,6 @@ class NemDatabase(DatabaseConnectionPool):
 			if transaction_query.sender_address:
 				where_condition += ' AND t.sender_address = %s'
 				filter_params.append(transaction_query.sender_address.bytes)
-			elif transaction_query.sender:
-				where_condition += ' AND t.sender_address = %s'
-				filter_params.append(transaction_query.sender.bytes)
 
 			if transaction_query.recipient_address:
 				where_condition += ' AND t.recipient_address = %s'

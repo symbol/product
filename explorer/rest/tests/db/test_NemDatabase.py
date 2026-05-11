@@ -421,13 +421,6 @@ class NemDatabaseTest(DatabaseTestBase):  # pylint: disable=too-many-public-meth
 			[TRANSACTIONS_VIEWS[5], TRANSACTIONS_VIEWS[6], TRANSACTIONS_VIEWS[0], TRANSACTIONS_VIEWS[1]]
 		)
 
-	def test_can_query_transactions_filtered_by_sender_public_key(self):
-		sender = self.network.public_key_to_address(TRANSACTIONS[2].sender_public_key)
-		self._assert_can_query_transactions_with_filter(
-			Pagination(10, 0), 'desc', self._make_transaction_query(sender=sender),
-			[TRANSACTIONS_VIEWS[2]]
-		)
-
 	def test_can_query_transactions_filtered_by_mosaic_nem_xem(self):
 		self._assert_can_query_transactions_with_filter(
 			Pagination(10, 0), 'desc', self._make_transaction_query(mosaic='nem.xem'),

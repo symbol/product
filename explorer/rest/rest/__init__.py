@@ -308,6 +308,9 @@ def setup_nem_routes(app, nem_api_facade):  # pylint: disable=too-many-statement
 				if not nem_api_facade.nem_db.network.is_valid_address_string(address):
 					raise ValueError('Invalid address format')
 			else:
+				if sender_address is not None and sender is not None:
+					raise ValueError('Only one of senderAddress or senderPublicKey can be provided')
+
 				if sender_address is not None:
 					if not nem_api_facade.nem_db.network.is_valid_address_string(sender_address):
 						raise ValueError('Invalid sender address format')
