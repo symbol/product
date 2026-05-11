@@ -10,7 +10,7 @@ Protocol-specific layer for Ethereum used by Wallet Common Core. It provides:
 ```
 src/
 ├── api/        # Network service clients (Account, Block, Listener, Network, Token, Transaction)
-├── bridge/     # BridgeHelper for cross-chain bridge workflows
+├── bridge/     # BridgeHelper and UniswapPairManager for cross-chain bridge and Uniswap swap workflows
 ├── constants/  # Ethereum enums and constants (internal)
 ├── modules/    # Transaction modules (e.g., TransferModule)
 ├── sdk/        # Thin SDK facade (re-exports sign/account helpers)

@@ -1,4 +1,4 @@
-import { UniswapManager } from '../../src/bridge/UniswapManager';
+import { UniswapPairManager } from '../../src/bridge/UniswapPairManager';
 import { TransactionType } from '../../src/constants';
 import { jest } from '@jest/globals';
 import { TransactionBundle } from 'wallet-common-core';
@@ -10,9 +10,10 @@ const WRAPPED_TOKEN_ID = '0x5e8343a455f03109b737b6d8b410e4ecce998cda';
 const QUOTER_ADDRESS = '0xb27308f9f90d607463bb33ea1bebb41c27ce5ab6';
 const SWAP_ROUTER_ADDRESS = '0xe592427a0aece92de3edee1f18e0157c05861564';
 const POOL_FEE = 3000;
-const CUSTOM_ID = 'my-custom-uniswap-id';
+const CUSTOM_ID = 'my-custom-uniswap-pair-id';
 const FIXED_NOW_MS = 1700000000000;
 const FIXED_NOW_S = Math.floor(FIXED_NOW_MS / 1000);
+const DEFAULT_DEADLINE_SECONDS = 600;
 
 // Token infos
 
@@ -70,7 +71,7 @@ const createManager = (overrides = {}) => {
 	const uniswapApi = overrides.uniswapApi ?? createUniswapApiMock();
 	const transactionApi = overrides.transactionApi ?? createTransactionApiMock();
 
-	const manager = new UniswapManager({
+	const manager = new UniswapPairManager({
 		walletController,
 		uniswapApi,
 		transactionApi,
@@ -79,6 +80,7 @@ const createManager = (overrides = {}) => {
 		quoterAddress: QUOTER_ADDRESS,
 		swapRouterAddress: SWAP_ROUTER_ADDRESS,
 		poolFee: POOL_FEE,
+		mode: 'wrap',
 		...overrides.managerOptions
 	});
 
@@ -95,10 +97,30 @@ const createLoadedManager = async (overrides = {}) => {
 
 // Tests
 
-describe('bridge/UniswapManager', () => {
+describe('bridge/UniswapPairManager', () => {
 	afterEach(() => {
 		jest.restoreAllMocks();
 		jest.clearAllMocks();
+	});
+
+	// Constructor
+
+	describe('constructor', () => {
+		it('throws when mode is invalid', () => {
+			// Arrange & Act & Assert:
+			expect(() => createManager({ managerOptions: { mode: 'invalid' } }))
+				.toThrow('Invalid swap mode: invalid. Must be \'wrap\' or \'unwrap\'');
+		});
+
+		it('does not throw when mode is wrap', () => {
+			// Arrange & Act & Assert:
+			expect(() => createManager({ managerOptions: { mode: 'wrap' } })).not.toThrow();
+		});
+
+		it('does not throw when mode is unwrap', () => {
+			// Arrange & Act & Assert:
+			expect(() => createManager({ managerOptions: { mode: 'unwrap' } })).not.toThrow();
+		});
 	});
 
 	// Properties
@@ -119,6 +141,35 @@ describe('bridge/UniswapManager', () => {
 
 				// Act & Assert:
 				expect(manager.id).toBe(CUSTOM_ID);
+			});
+		});
+
+		describe('mode', () => {
+			const runModeTest = (description, config, expected) => {
+				it(description, () => {
+					// Arrange:
+					const { manager } = createManager({ managerOptions: { mode: config.mode } });
+
+					// Act & Assert:
+					expect(manager.mode).toBe(expected.mode);
+				});
+			};
+
+			const modeTests = [
+				{
+					description: 'returns wrap when initialized with wrap mode',
+					config: { mode: 'wrap' },
+					expected: { mode: 'wrap' }
+				},
+				{
+					description: 'returns unwrap when initialized with unwrap mode',
+					config: { mode: 'unwrap' },
+					expected: { mode: 'unwrap' }
+				}
+			];
+
+			modeTests.forEach(test => {
+				runModeTest(test.description, test.config, test.expected);
 			});
 		});
 
@@ -204,6 +255,17 @@ describe('bridge/UniswapManager', () => {
 				expect(manager.wrappedWalletController).toBe(walletController);
 			});
 		});
+
+		describe('sourceWalletController and targetWalletController', () => {
+			it('both return the same wallet controller instance', () => {
+				// Arrange:
+				const { manager, walletController } = createManager();
+
+				// Act & Assert:
+				expect(manager.sourceWalletController).toBe(walletController);
+				expect(manager.targetWalletController).toBe(walletController);
+			});
+		});
 	});
 
 	// Load
@@ -227,6 +289,32 @@ describe('bridge/UniswapManager', () => {
 		});
 	});
 
+	// fetchRecentHistory
+
+	describe('fetchRecentHistory', () => {
+		it('returns empty array before load', async () => {
+			// Arrange:
+			const { manager } = createManager();
+
+			// Act:
+			const history = await manager.fetchRecentHistory();
+
+			// Assert:
+			expect(history).toStrictEqual([]);
+		});
+
+		it('returns empty array after load regardless of page size', async () => {
+			// Arrange:
+			const { manager } = await createLoadedManager();
+
+			// Act:
+			const history = await manager.fetchRecentHistory(100);
+
+			// Assert:
+			expect(history).toStrictEqual([]);
+		});
+	});
+
 	// estimateRequest
 
 	describe('estimateRequest', () => {
@@ -235,18 +323,18 @@ describe('bridge/UniswapManager', () => {
 			const { manager } = createManager();
 
 			// Act & Assert:
-			await expect(manager.estimateRequest('wrap', '1'))
+			await expect(manager.estimateRequest('1'))
 				.rejects.toThrow('Failed to estimate Uniswap swap. Manager not loaded');
 		});
 
 		const runEstimateRequestTest = (description, config, expected) => {
 			it(description, async () => {
 				// Arrange:
-				const { manager, uniswapApi } = await createLoadedManager();
+				const { manager, uniswapApi } = await createLoadedManager({ managerOptions: { mode: config.mode } });
 				uniswapApi.quoteExactInputSingle.mockResolvedValue(config.quotedAbsoluteAmount);
 
 				// Act:
-				const result = await manager.estimateRequest(config.mode, config.inputAmount);
+				const result = await manager.estimateRequest(config.inputAmount);
 
 				// Assert:
 				expect(uniswapApi.quoteExactInputSingle).toHaveBeenCalledWith(
@@ -254,7 +342,11 @@ describe('bridge/UniswapManager', () => {
 					QUOTER_ADDRESS,
 					expected.quoteParams
 				);
-				expect(result).toStrictEqual({ receiveAmount: expected.receiveAmount, bridgeFee: expected.bridgeFee, error: null });
+				expect(result).toStrictEqual({
+					receiveAmount: expected.receiveAmount,
+					bridgeFee: expected.bridgeFee,
+					error: null
+				});
 			});
 		};
 
@@ -314,7 +406,7 @@ describe('bridge/UniswapManager', () => {
 			const { manager } = createManager();
 
 			// Act & Assert:
-			await expect(manager.createTransaction('wrap', { amount: '1' }))
+			await expect(manager.createTransaction({ amount: '1' }))
 				.rejects.toThrow('Failed to create Uniswap transaction. Manager not loaded');
 		});
 
@@ -324,18 +416,18 @@ describe('bridge/UniswapManager', () => {
 			const { manager } = await createLoadedManager({ walletController });
 
 			// Act & Assert:
-			await expect(manager.createTransaction('wrap', { amount: '1' }))
+			await expect(manager.createTransaction({ amount: '1' }))
 				.rejects.toThrow('Failed to create Uniswap transaction. No current account selected');
 		});
 
 		const runCreateTransactionTest = (description, config, expected) => {
 			it(description, async () => {
 				// Arrange:
-				const { manager, transactionApi } = await createLoadedManager();
+				const { manager, transactionApi } = await createLoadedManager({ managerOptions: { mode: config.mode } });
 				transactionApi.fetchTransactionNonce.mockResolvedValue(42);
 
 				// Act:
-				const result = await manager.createTransaction(config.mode, config.options);
+				const result = await manager.createTransaction(config.options);
 
 				// Assert:
 				expect(transactionApi.fetchTransactionNonce).toHaveBeenCalledWith(
@@ -393,7 +485,7 @@ describe('bridge/UniswapManager', () => {
 							amount: '0'
 						},
 						poolFee: POOL_FEE,
-						deadline: FIXED_NOW_S + 600,
+						deadline: FIXED_NOW_S + DEFAULT_DEADLINE_SECONDS,
 						sqrtPriceLimitX96: 0,
 						nonce: 43,
 						fee
@@ -401,7 +493,7 @@ describe('bridge/UniswapManager', () => {
 				}
 			},
 			{
-				description: 'unwrap mode: creates approve + swap bundle with reversed tokens and wrapped divisibility',
+				description: 'unwrap mode: creates approve + swap bundle with reversed tokens',
 				config: {
 					mode: 'unwrap',
 					options: {
@@ -443,7 +535,7 @@ describe('bridge/UniswapManager', () => {
 							amount: '0'
 						},
 						poolFee: POOL_FEE,
-						deadline: FIXED_NOW_S + 600,
+						deadline: FIXED_NOW_S + DEFAULT_DEADLINE_SECONDS,
 						sqrtPriceLimitX96: 0,
 						nonce: 43,
 						fee
@@ -462,7 +554,7 @@ describe('bridge/UniswapManager', () => {
 			transactionApi.fetchTransactionNonce.mockResolvedValue(1);
 
 			// Act:
-			const result = await manager.createTransaction('wrap', { amount: '1', recipientAddress: customRecipientAddress });
+			const result = await manager.createTransaction({ amount: '1', recipientAddress: customRecipientAddress });
 
 			// Assert:
 			expect(result.transactions[1].recipientAddress).toBe(customRecipientAddress);
@@ -474,7 +566,7 @@ describe('bridge/UniswapManager', () => {
 			transactionApi.fetchTransactionNonce.mockResolvedValue(1);
 
 			// Act:
-			const result = await manager.createTransaction('wrap', { amount: '1', recipientAddress: currentAccount.address });
+			const result = await manager.createTransaction({ amount: '1', recipientAddress: currentAccount.address });
 
 			// Assert:
 			expect(result.transactions[1].targetToken.amount).toBe('0');
@@ -486,7 +578,7 @@ describe('bridge/UniswapManager', () => {
 			transactionApi.fetchTransactionNonce.mockResolvedValue(1);
 
 			// Act:
-			const result = await manager.createTransaction('wrap', {
+			const result = await manager.createTransaction({
 				amount: '1',
 				recipientAddress: currentAccount.address,
 				amountOutMinimum: '0.95'
@@ -503,10 +595,10 @@ describe('bridge/UniswapManager', () => {
 			transactionApi.fetchTransactionNonce.mockResolvedValue(1);
 
 			// Act:
-			const result = await manager.createTransaction('wrap', { 
-				amount: '1', 
-				recipientAddress: currentAccount.address, 
-				deadlineSeconds 
+			const result = await manager.createTransaction({
+				amount: '1',
+				recipientAddress: currentAccount.address,
+				deadlineSeconds
 			});
 
 			// Assert:
