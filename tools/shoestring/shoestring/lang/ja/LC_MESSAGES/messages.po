@@ -87,23 +87,23 @@ msgstr "出力PEM鍵ファイル"
 
 #: shoestring/commands/pemview.py:42
 msgid "argument-help-pemview-ask-pass"
-msgstr ""
+msgstr "PEMファイルにパスワードが設定されている時はこのオプションを使用する"
 
 #: shoestring/commands/pemview.py:40
 msgid "argument-help-pemview-input"
-msgstr ""
+msgstr "表示したいPEMファイルを指定"
 
 #: shoestring/commands/pemview.py:41
 msgid "argument-help-pemview-network"
-msgstr ""
+msgstr "ネットワークを指定"
 
 #: shoestring/commands/pemview.py:43
 msgid "argument-help-pemview-show-private"
-msgstr ""
+msgstr "秘密鍵も表示する"
 
 #: shoestring/commands/renew_certificates.py:43
 msgid "argument-help-renew-certificates-force"
-msgstr ""
+msgstr "既存のノード証明書を強制的に上書きする"
 
 #: shoestring/commands/renew_certificates.py:41
 msgid "argument-help-renew-certificates-renew-ca"
@@ -119,7 +119,7 @@ msgstr "harvesters.datファイルを削除"
 
 #: shoestring/commands/setup.py:156
 msgid "argument-help-setup-output-transaction-only"
-msgstr ""
+msgstr "リンクトランザクションのみを再生成する"
 
 #: shoestring/commands/setup.py:150
 msgid "argument-help-setup-overrides"
@@ -332,7 +332,7 @@ msgstr "PEMファイルを生成します"
 
 #: shoestring/__main__.py:27
 msgid "main-pemview-help"
-msgstr ""
+msgstr "PEMファイルの内容を表示します"
 
 #: shoestring/__main__.py:28
 msgid "main-renew-certificates-help"
@@ -408,27 +408,27 @@ msgstr "ファイル {filepath} を保存しました"
 
 #: shoestring/commands/pemview.py:17
 msgid "pemview-error-input-file-does-not-exist"
-msgstr ""
+msgstr "指定されたPEMファイル ({filepath}) が見つかりません"
 
 #: shoestring/commands/pemview.py:14
 msgid "pemview-error-input-file-unexpected-suffix"
-msgstr ""
+msgstr "指定されたファイル ({filepath}) はPEMファイルではありません"
 
 #: shoestring/commands/pemview.py:26
 msgid "pemview-loaded-pem-file"
-msgstr ""
+msgstr "読み込み {filepath}"
 
 #: shoestring/commands/pemview.py:32
 msgid "pemview-show-address"
-msgstr ""
+msgstr "アドレス: {address}"
 
 #: shoestring/commands/pemview.py:36
 msgid "pemview-show-private-key"
-msgstr ""
+msgstr "秘密鍵　: {private_key}"
 
 #: shoestring/commands/pemview.py:33
 msgid "pemview-show-public-key"
-msgstr ""
+msgstr "公開鍵　: {public_key}"
 
 #: shoestring/commands/renew_voting_keys.py:89
 msgid "renew-voting-keys-maximum-already-registered"
@@ -460,7 +460,7 @@ msgstr "リソースディレクトリ {directory} はすでに存在するた�
 
 #: shoestring/commands/setup.py:82
 msgid "setup-status-output-transaction-only"
-msgstr ""
+msgstr "既存のノードからリンクトランザクションを生成中..."
 
 #: shoestring/commands/signer.py:32
 msgid "signer-aggregate-transaction"
@@ -917,4 +917,3 @@ msgstr "ようこそ"
 #: shoestring/wizard/screens/welcome.py:39
 msgid "wizard-welcome-upgrade"
 msgstr "アップグレード"
-
