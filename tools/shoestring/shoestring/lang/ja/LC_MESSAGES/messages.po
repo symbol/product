@@ -412,7 +412,7 @@ msgstr "指定されたPEMファイル ({filepath}) が見つかりません"
 
 #: shoestring/commands/pemview.py:14
 msgid "pemview-error-input-file-unexpected-suffix"
-msgstr "指定されたファイル ({filepath}) はPEM鍵ではありません"
+msgstr "指定されたファイル ({filepath}) はPEMファイルではありません"
 
 #: shoestring/commands/pemview.py:26
 msgid "pemview-loaded-pem-file"
