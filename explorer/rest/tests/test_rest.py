@@ -1,7 +1,7 @@
 import os
 import tempfile
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 import testing.postgresql
@@ -412,6 +412,24 @@ def test_api_nem_health_node_fails(mock_chain_height, client):  # pylint: disabl
 		'lastDBHeight': EXPECTED_BLOCK_VIEW_2.height,
 		'errors': [{'type': 'synchronization', 'message': 'Connection refused'}]
 	} == response.json
+
+# endregion
+
+# region /transactions/unconfirmed
+
+
+@patch('rest.facade.NemRestFacade.NemConnector.get_unconfirmed_transactions')
+def test_api_transactions_unconfirmed(mock_get_unconfirmed_transactions, client):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	mock_get_unconfirmed_transactions.return_value = AsyncMock(return_value=[])
+
+	# Act:
+	response = client.get('/api/nem/transactions/unconfirmed')
+
+	# Assert:
+	_assert_status_code_and_headers(response, 200)
+	assert [] == response.json
+
 
 # endregion
 
