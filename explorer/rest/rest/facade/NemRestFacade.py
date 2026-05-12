@@ -185,3 +185,12 @@ class NemRestFacade:
 		transaction_statistics = self.nem_db.get_transaction_statistics_by_date_range(start_date, end_date, period_type)
 
 		return transaction_statistics.to_dict() if transaction_statistics else None
+
+	async def get_unconfirmed_transactions(self):
+		"""Gets unconfirmed transactions."""
+
+		unconfirmed_transactions = await self.nem_connector.get_unconfirmed_transactions()
+
+		results = self.nem_db.get_unconfirmed_transactions(unconfirmed_transactions)
+
+		return [transaction.to_dict() for transaction in results]
