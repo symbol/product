@@ -101,13 +101,11 @@ def test_can_calculate_multisig_account_modification_transaction_v1():
 	_assert_transaction_size(tx_json, 176)
 
 
-def test_can_calculate_multisig_account_modification_transaction_v2():
+def _assert_multisig_account_modification_transaction_v2_size(minCosignatories):
 	# Arrange:
 	tx_json = {
 		**transaction_base,
-		"minCosignatories": {
-			"relativeChange": 2
-		},
+		"minCosignatories": minCosignatories,
 		"modifications": [
 			{
 				"modificationType": 1,
@@ -119,6 +117,16 @@ def test_can_calculate_multisig_account_modification_transaction_v2():
 	}
 
 	_assert_transaction_size(tx_json, 184)
+
+
+def test_can_calculate_multisig_account_modification_transaction_v2():
+	_assert_multisig_account_modification_transaction_v2_size({
+		"relativeChange": 2
+	})
+
+
+def test_can_calculate_multisig_account_modification_transaction_v2_without_relative_change():
+	_assert_multisig_account_modification_transaction_v2_size({})
 
 
 def test_can_calculate_namespace_registration_with_root_transaction_v1():
