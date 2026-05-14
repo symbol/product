@@ -1,4 +1,4 @@
-import { useTransactionWorkflow } from '@/app/components/templates/TransactionScreenTemplate/hooks/useTransactionWorkflow';
+import { useStandardTransactionWorkflow } from '@/app/components/templates/TransactionScreenTemplate/hooks/useTransactionWorkflow';
 import { act, renderHook } from '@testing-library/react-native';
 
 const MOCK_TRANSACTION_HASH = 'ABC123DEF456';
@@ -39,11 +39,10 @@ const createFailingCallback = (error = new Error(ERROR_MESSAGE)) =>
 	jest.fn().mockRejectedValue(error);
 
 const createDefaultParams = (overrides = {}) => ({
-	createTransactionCallback: createMockCreateTransactionCallback(),
+	createTransaction: createMockCreateTransactionCallback(),
 	walletController: createMockWalletController(),
 	transactionFeeTiers: undefined,
 	transactionFeeTierLevel: undefined,
-	onCreateTransactionError: undefined,
 	onSendSuccess: undefined,
 	onSendError: undefined,
 	...overrides
@@ -68,14 +67,14 @@ describe('hooks/useTransactionWorkflow', () => {
 			const params = createDefaultParams();
 
 			// Act:
-			const { result } = renderHook(() => useTransactionWorkflow(params));
+			const { result } = renderHook(() => useStandardTransactionWorkflow(params));
 
 			// Assert:
-			expect(result.current.transactionBundle).toBeNull();
-			expect(result.current.signedTransactionHashes).toEqual([]);
-			expect(result.current.createManager.isLoading).toBe(false);
-			expect(result.current.signManager.isLoading).toBe(false);
-			expect(result.current.announceManager.isLoading).toBe(false);
+			expect(result.current.transaction).toBeNull();
+			expect(result.current.hashes.signed).toEqual([]);
+			expect(result.current.managers.createManager.isLoading).toBe(false);
+			expect(result.current.managers.signManager.isLoading).toBe(false);
+			expect(result.current.managers.announceManager.isLoading).toBe(false);
 		});
 	});
 
@@ -83,8 +82,8 @@ describe('hooks/useTransactionWorkflow', () => {
 		it('creates transaction bundle successfully', async () => {
 			// Arrange:
 			const mockCallback = createMockCreateTransactionCallback();
-			const params = createDefaultParams({ createTransactionCallback: mockCallback });
-			const { result } = renderHook(() => useTransactionWorkflow(params));
+			const params = createDefaultParams({ createTransaction: mockCallback });
+			const { result } = renderHook(() => useStandardTransactionWorkflow(params));
 
 			// Act:
 			await act(async () => {
@@ -95,8 +94,8 @@ describe('hooks/useTransactionWorkflow', () => {
 
 			// Assert:
 			expect(mockCallback).toHaveBeenCalled();
-			expect(result.current.transactionBundle).toEqual(MOCK_TRANSACTION_BUNDLE);
-			expect(result.current.createManager.isLoading).toBe(false);
+			expect(result.current.transaction).toEqual(MOCK_TRANSACTION_BUNDLE);
+			expect(result.current.managers.createManager.isLoading).toBe(false);
 		});
 
 		it('applies fee tiers when provided', async () => {
@@ -107,11 +106,11 @@ describe('hooks/useTransactionWorkflow', () => {
 			};
 			const mockCallback = createMockCreateTransactionCallback(mockBundle);
 			const params = createDefaultParams({
-				createTransactionCallback: mockCallback,
+				createTransaction: mockCallback,
 				transactionFeeTiers: MOCK_FEE_TIERS,
 				transactionFeeTierLevel: 'fast'
 			});
-			const { result } = renderHook(() => useTransactionWorkflow(params));
+			const { result } = renderHook(() => useStandardTransactionWorkflow(params));
 
 			// Act:
 			await act(async () => {
@@ -124,16 +123,12 @@ describe('hooks/useTransactionWorkflow', () => {
 			expect(mockBundle.applyFeeTier).toHaveBeenCalledWith(MOCK_FEE_TIERS, 'fast');
 		});
 
-		it('calls onCreateTransactionError when creation fails', async () => {
+		it('sets error state when creation fails', async () => {
 			// Arrange:
 			const error = new Error(ERROR_MESSAGE);
 			const mockCallback = createFailingCallback(error);
-			const onCreateTransactionError = jest.fn();
-			const params = createDefaultParams({
-				createTransactionCallback: mockCallback,
-				onCreateTransactionError
-			});
-			const { result } = renderHook(() => useTransactionWorkflow(params));
+			const params = createDefaultParams({ createTransaction: mockCallback });
+			const { result } = renderHook(() => useStandardTransactionWorkflow(params));
 
 			// Act:
 			await act(async () => {
@@ -147,14 +142,14 @@ describe('hooks/useTransactionWorkflow', () => {
 			});
 
 			// Assert:
-			expect(onCreateTransactionError).toHaveBeenCalledWith(error);
+			expect(result.current.managers.createManager.error).toEqual(error);
 		});
 
 		it('sets loading state during creation', async () => {
 			// Arrange:
 			const mockCallback = createMockCreateTransactionCallback();
-			const params = createDefaultParams({ createTransactionCallback: mockCallback });
-			const { result } = renderHook(() => useTransactionWorkflow(params));
+			const params = createDefaultParams({ createTransaction: mockCallback });
+			const { result } = renderHook(() => useStandardTransactionWorkflow(params));
 
 			// Act:
 			act(() => {
@@ -162,7 +157,7 @@ describe('hooks/useTransactionWorkflow', () => {
 			});
 
 			// Assert:
-			expect(result.current.createManager.isLoading).toBe(true);
+			expect(result.current.managers.createManager.isLoading).toBe(true);
 		});
 	});
 
@@ -175,7 +170,7 @@ describe('hooks/useTransactionWorkflow', () => {
 				walletController: mockWalletController,
 				onSendSuccess
 			});
-			const { result } = renderHook(() => useTransactionWorkflow(params));
+			const { result } = renderHook(() => useStandardTransactionWorkflow(params));
 
 			// Create transaction first
 			await act(async () => {
@@ -211,7 +206,7 @@ describe('hooks/useTransactionWorkflow', () => {
 		it('stores signed transaction hashes after signing', async () => {
 			// Arrange:
 			const params = createDefaultParams();
-			const { result } = renderHook(() => useTransactionWorkflow(params));
+			const { result } = renderHook(() => useStandardTransactionWorkflow(params));
 
 			await act(async () => {
 				const promise = result.current.createTransaction();
@@ -236,7 +231,7 @@ describe('hooks/useTransactionWorkflow', () => {
 			await executePromise;
 
 			// Assert:
-			expect(result.current.signedTransactionHashes).toEqual([
+			expect(result.current.hashes.signed).toEqual([
 				MOCK_TRANSACTION_HASH,
 				MOCK_TRANSACTION_HASH_2
 			]);
@@ -253,7 +248,7 @@ describe('hooks/useTransactionWorkflow', () => {
 				walletController: mockWalletController,
 				onSendError
 			});
-			const { result } = renderHook(() => useTransactionWorkflow(params));
+			const { result } = renderHook(() => useStandardTransactionWorkflow(params));
 
 			await act(async () => {
 				const promise = result.current.createTransaction();
@@ -288,7 +283,7 @@ describe('hooks/useTransactionWorkflow', () => {
 				walletController: mockWalletController,
 				onSendError
 			});
-			const { result } = renderHook(() => useTransactionWorkflow(params));
+			const { result } = renderHook(() => useStandardTransactionWorkflow(params));
 
 			await act(async () => {
 				const promise = result.current.createTransaction();
@@ -321,7 +316,7 @@ describe('hooks/useTransactionWorkflow', () => {
 		it('resets all state to initial values', async () => {
 			// Arrange:
 			const params = createDefaultParams();
-			const { result } = renderHook(() => useTransactionWorkflow(params));
+			const { result } = renderHook(() => useStandardTransactionWorkflow(params));
 
 			await act(async () => {
 				const promise = result.current.createTransaction();
@@ -350,10 +345,10 @@ describe('hooks/useTransactionWorkflow', () => {
 			});
 
 			// Assert:
-			expect(result.current.transactionBundle).toBeNull();
-			expect(result.current.signedTransactionHashes).toEqual([]);
-			expect(result.current.createManager.isLoading).toBe(false);
-			expect(result.current.createManager.data).toBeNull();
+			expect(result.current.transaction).toBeNull();
+			expect(result.current.hashes.signed).toEqual([]);
+			expect(result.current.managers.createManager.isLoading).toBe(false);
+			expect(result.current.managers.createManager.data).toBeNull();
 		});
 	});
 });

@@ -6,6 +6,7 @@ import { HookTester } from '__tests__/HookTester';
 import { runHookContractTest } from '__tests__/hook-tests';
 import { createWalletControllerMock } from '__tests__/mock-helpers';
 import { act } from '@testing-library/react-native';
+import { TransactionBundle } from 'wallet-common-core'; // eslint-disable-line import/order
 
 // Constants
 
@@ -49,8 +50,10 @@ const bridgeTransaction = TransactionFixtureBuilder
 	})
 	.build();
 
+const transactionBundle = new TransactionBundle([bridgeTransaction]);
+
 const bridge = {
-	createTransactionForStep: jest.fn().mockResolvedValue(bridgeTransaction)
+	createTransactionForStep: jest.fn().mockResolvedValue(transactionBundle)
 };
 
 const sourceWalletController = createWalletControllerMock({
@@ -60,13 +63,6 @@ const sourceWalletController = createWalletControllerMock({
 const targetWalletController = createWalletControllerMock({
 	currentAccount: targetAccount
 });
-
-const sourceSide = {
-	chainName: CHAIN_NAME,
-	networkIdentifier: NETWORK_IDENTIFIER,
-	token: sourceToken,
-	walletController: sourceWalletController
-};
 
 const targetSide = {
 	chainName: 'ethereum',
@@ -79,7 +75,7 @@ const targetSide = {
 
 const createHookParams = overrides => ({
 	bridge,
-	source: sourceSide,
+	walletController: sourceWalletController,
 	target: targetSide,
 	amount: AMOUNT,
 	...overrides
@@ -94,22 +90,22 @@ describe('hooks/useBridgeTransaction', () => {
 		props: [createHookParams()],
 		contract: {
 			createTransaction: 'function',
-			getTransactionPreviewTable: 'function'
+			getConfirmationPreview: 'function'
 		}
 	});
 
 	describe('initialization', () => {
-		it('creates transaction using initialized params and builds preview rows', async () => {
+		it('creates transaction using initialized params and builds confirmation sections', async () => {
 			// Arrange:
 			const params = createHookParams();
-			let createdTransaction;
-			let previewTable;
+			let createdBundle;
+			let sections;
 
 			// Act:
 			const hookTester = new HookTester(useBridgeTransaction, [params]);
 			await act(async () => {
-				createdTransaction = await hookTester.currentResult.createTransaction();
-				previewTable = hookTester.currentResult.getTransactionPreviewTable(createdTransaction);
+				createdBundle = await hookTester.currentResult.createTransaction();
+				sections = hookTester.currentResult.getConfirmationPreview(createdBundle);
 			});
 
 			// Assert:
@@ -118,13 +114,21 @@ describe('hooks/useBridgeTransaction', () => {
 				amount: AMOUNT,
 				amountOutMinimum: undefined
 			});
-			expect(createdTransaction).toStrictEqual(bridgeTransaction);
-			expect(previewTable).toStrictEqual([
-				{ type: 'account', value: bridgeTransaction.signerAddress, title: 'signerAddress' },
-				{ type: 'account', value: bridgeTransaction.message.text, title: 'recipientAddress' },
-				{ type: 'token', value: bridgeTransaction.mosaics, title: 'tokens' },
-				{ type: 'fee', value: bridgeTransaction.fee, title: 'fee' }
-			]);
+			expect(createdBundle).toStrictEqual(transactionBundle);
+			expect(sections).toStrictEqual([{
+				id: 'section_0',
+				title: '',
+				chainName: sourceWalletController.chainName,
+				networkIdentifier: sourceWalletController.networkIdentifier,
+				addressBook: sourceWalletController.modules.addressBook,
+				walletAccounts: sourceWalletController.accounts,
+				tableData: [
+					{ type: 'account', value: bridgeTransaction.signerAddress, title: 'signerAddress' },
+					{ type: 'account', value: bridgeTransaction.message.text, title: 'recipientAddress' },
+					{ type: 'token', value: bridgeTransaction.mosaics, title: 'tokens' },
+					{ type: 'fee', value: bridgeTransaction.fee, title: 'fee' }
+				]
+			}]);
 		});
 	});
 });

@@ -1,6 +1,5 @@
 import { TransactionScreenTemplate } from '@/app/components/templates/TransactionScreenTemplate/TransactionScreenTemplate';
 import { AccountFixtureBuilder } from '__fixtures__/local/AccountFixtureBuilder';
-import { TokenFixtureBuilder } from '__fixtures__/local/TokenFixtureBuilder';
 import { ScreenTester } from '__tests__/ScreenTester';
 import { mockLocalization, mockPasscode, mockWalletController } from '__tests__/mock-helpers';
 import React from 'react';
@@ -40,13 +39,6 @@ const COSIGNATORY_ACCOUNT_2 = AccountFixtureBuilder
 
 const COSIGNATORIES = [COSIGNATORY_ACCOUNT_1.address, COSIGNATORY_ACCOUNT_2.address];
 
-// Token Fixtures
-
-const TRANSACTION_FEE_TOKEN = TokenFixtureBuilder
-	.createWithToken('symbol', 'testnet', 0)
-	.setAmount(100000)
-	.build();
-
 // Transaction Fixtures
 
 const MOCK_TRANSACTION = {
@@ -62,16 +54,6 @@ const MOCK_TRANSACTION_BUNDLE = {
 	applyFeeTier: jest.fn()
 };
 
-const MOCK_SIGNED_BUNDLE = {
-	transactions: [{ hash: 'ABC123DEF456' }]
-};
-
-const TRANSACTION_FEE_TIERS = [{
-	slow: { token: TRANSACTION_FEE_TOKEN },
-	medium: { token: { ...TRANSACTION_FEE_TOKEN, amount: 200000 } },
-	fast: { token: { ...TRANSACTION_FEE_TOKEN, amount: 300000 } }
-}];
-
 // Confirmation Preview
 
 const CONFIRMATION_PREVIEW_ROWS = [
@@ -81,10 +63,31 @@ const CONFIRMATION_PREVIEW_ROWS = [
 
 // Mock Helpers
 
+const createMockWorkflow = (overrides = {}) => ({
+	transaction: null,
+	status: 'idle',
+	isSending: false,
+	isFailed: false,
+	isSent: false,
+	managers: {
+		createManager: { isLoading: false, error: null, isCompleted: false },
+		signManager: { isLoading: false, error: null, isCompleted: false },
+		announceManager: { isLoading: false, error: null, isCompleted: false }
+	},
+	hashes: {
+		signed: [],
+		confirmed: [],
+		failed: [],
+		partial: []
+	},
+	createTransaction: jest.fn().mockResolvedValue(MOCK_TRANSACTION_BUNDLE),
+	executeSignAndAnnounce: jest.fn().mockResolvedValue(),
+	reset: jest.fn(),
+	...overrides
+});
+
 const createMockWalletController = (overrides = {}) => {
 	return mockWalletController({
-		signTransactionBundle: jest.fn().mockResolvedValue(MOCK_SIGNED_BUNDLE),
-		announceSignedTransactionBundle: jest.fn().mockResolvedValue({}),
 		modules: {
 			addressBook: {
 				getByAddress: jest.fn().mockReturnValue(null),
@@ -101,15 +104,10 @@ const createDefaultProps = (overrides = {}) => ({
 	isMultisigAccount: false,
 	accountCosignatories: [],
 	children: <Text>{SCREEN_TEXT.textChildrenContent}</Text>,
-	createTransaction: jest.fn().mockResolvedValue(MOCK_TRANSACTION_BUNDLE),
 	getConfirmationPreview: jest.fn().mockReturnValue(CONFIRMATION_PREVIEW_ROWS),
-	onCreateTransactionError: jest.fn(),
-	onSendSuccess: jest.fn(),
-	onSendError: jest.fn(),
 	onComplete: jest.fn(),
 	walletController: createMockWalletController(),
-	transactionFeeTiers: TRANSACTION_FEE_TIERS,
-	transactionFeeTierLevel: 'medium',
+	workflow: createMockWorkflow(),
 	isCustomSendButtonUsed: false,
 	...overrides
 });
@@ -259,7 +257,8 @@ describe('components/templates/TransactionScreenTemplate', () => {
 		it('calls createTransaction when send button is pressed', async () => {
 			// Arrange:
 			const createTransactionMock = jest.fn().mockResolvedValue(MOCK_TRANSACTION_BUNDLE);
-			const props = createDefaultProps({ createTransaction: createTransactionMock });
+			const workflow = createMockWorkflow({ createTransaction: createTransactionMock });
+			const props = createDefaultProps({ workflow });
 			const screenTester = new ScreenTester(TransactionScreenTemplate, props);
 
 			// Act:
@@ -286,15 +285,14 @@ describe('components/templates/TransactionScreenTemplate', () => {
 	});
 
 	describe('transaction send workflow', () => {
-		it('signs and announces transaction after confirmation', async () => {
+		it('executes workflow sign and announce after confirmation', async () => {
 			// Arrange:
-			const signMock = jest.fn().mockResolvedValue(MOCK_SIGNED_BUNDLE);
-			const announceMock = jest.fn().mockResolvedValue({});
-			const walletController = createMockWalletController({
-				signTransactionBundle: signMock,
-				announceSignedTransactionBundle: announceMock
+			const executeSignAndAnnounceMock = jest.fn().mockResolvedValue();
+			const workflow = createMockWorkflow({
+				createTransaction: jest.fn().mockResolvedValue(MOCK_TRANSACTION_BUNDLE),
+				executeSignAndAnnounce: executeSignAndAnnounceMock
 			});
-			const props = createDefaultProps({ walletController });
+			const props = createDefaultProps({ workflow });
 			mockPasscode();
 			const screenTester = new ScreenTester(TransactionScreenTemplate, props);
 
@@ -302,36 +300,11 @@ describe('components/templates/TransactionScreenTemplate', () => {
 			screenTester.pressButton(SCREEN_TEXT.buttonSend);
 			await screenTester.waitForTimer(); // create transaction
 			screenTester.pressButton(SCREEN_TEXT.buttonConfirm);
-			await screenTester.waitForTimer(); // passcode + delay
-			await screenTester.waitForTimer(); // sign
-			await screenTester.waitForTimer(); // announce
+			await screenTester.waitForTimer(); // passcode success + open activity log
+			await screenTester.waitForTimer(); // 2s delay → executeSignAndAnnounce
 
 			// Assert:
-			expect(signMock).toHaveBeenCalledWith(MOCK_TRANSACTION_BUNDLE);
-			expect(announceMock).toHaveBeenCalledWith(MOCK_SIGNED_BUNDLE);
-		});
-
-		it('calls onSendSuccess after successful transaction send', async () => {
-			// Arrange:
-			const onSendSuccessMock = jest.fn();
-			const walletController = createMockWalletController();
-			const props = createDefaultProps({
-				walletController,
-				onSendSuccess: onSendSuccessMock
-			});
-			mockPasscode();
-			const screenTester = new ScreenTester(TransactionScreenTemplate, props);
-
-			// Act:
-			screenTester.pressButton(SCREEN_TEXT.buttonSend);
-			await screenTester.waitForTimer(); // create transaction
-			screenTester.pressButton(SCREEN_TEXT.buttonConfirm);
-			await screenTester.waitForTimer(); // passcode + delay
-			await screenTester.waitForTimer(); // sign
-			await screenTester.waitForTimer(); // announce
-
-			// Assert:
-			expect(onSendSuccessMock).toHaveBeenCalledTimes(1);
+			expect(executeSignAndAnnounceMock).toHaveBeenCalledTimes(1);
 		});
 	});
 

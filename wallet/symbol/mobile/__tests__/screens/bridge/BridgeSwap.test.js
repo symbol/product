@@ -298,7 +298,7 @@ const createUseBridgeAmountMock = (overrides = {}) => ({
 
 const createUseBridgeTransactionMock = (overrides = {}) => ({
 	createTransaction: jest.fn().mockResolvedValue(transactionBundle),
-	getTransactionPreviewTable: jest.fn().mockReturnValue([]),
+	getConfirmationPreview: jest.fn().mockReturnValue([]),
 	...overrides
 });
 

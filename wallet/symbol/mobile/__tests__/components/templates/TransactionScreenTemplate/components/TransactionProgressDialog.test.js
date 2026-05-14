@@ -1,4 +1,6 @@
-import { TransactionStatusDialog } from '@/app/components/templates/TransactionScreenTemplate/components/TransactionStatusDialog';
+import { TransactionProgressDialog } from '@/app/components/templates/TransactionScreenTemplate/components/TransactionProgressDialog';
+import { TransactionWorkflowStatus } from '@/app/components/templates/TransactionScreenTemplate/constants';
+import { createTransactionProgressViewModel } from '@/app/components/templates/TransactionScreenTemplate/utils/transaction-progress';
 import { ScreenTester } from '__tests__/ScreenTester';
 import { runRenderComponentTest } from '__tests__/component-tests';
 import { mockLink, mockLocalization, mockOs } from '__tests__/mock-helpers';
@@ -71,122 +73,131 @@ const NETWORK_CONFIG = {
 	networkIdentifier: 'mainnet'
 };
 
-// action status factories
+// Workflow mock factory
 
-const ActionStatusType = {
-	PENDING: 'pending',
-	LOADING: 'loading',
-	COMPLETE: 'complete',
-	ERROR: 'error'
-};
+const createManagerState = ({
+	isLoading = false,
+	error = null,
+	isCompleted = false
+} = {}) => ({ isLoading, error, isCompleted });
 
-const createActionStatus = (status, errorMessage = null) => ({
-	status,
-	errorMessage
+const pendingManager = createManagerState();
+const loadingManager = createManagerState({ isLoading: true });
+const completedManager = createManagerState({ isCompleted: true });
+const createErrorManager = message => createManagerState({ error: new Error(message) });
+
+const createScenarioWorkflow = ({
+	create = pendingManager,
+	sign = pendingManager,
+	announce = pendingManager,
+	signedHashes = [],
+	confirmedHashes = [],
+	failedHashes = [],
+	partialHashes = [],
+	workflowStatus = TransactionWorkflowStatus.IDLE
+} = {}) => ({
+	status: workflowStatus,
+	isSending: create.isLoading || sign.isLoading || announce.isLoading,
+	isSent: create.isCompleted && sign.isCompleted && announce.isCompleted,
+	managers: {
+		createManager: create,
+		signManager: sign,
+		announceManager: announce
+	},
+	hashes: {
+		signed: signedHashes,
+		confirmed: confirmedHashes,
+		failed: failedHashes,
+		partial: partialHashes
+	}
 });
 
-const ActionStatusFactory = {
-	pending: () => createActionStatus(ActionStatusType.PENDING),
-	loading: () => createActionStatus(ActionStatusType.LOADING),
-	complete: () => createActionStatus(ActionStatusType.COMPLETE),
-	error: (message = 'Error occurred') => createActionStatus(ActionStatusType.ERROR, message)
-};
+const createProgressViewModel = (workflow = createScenarioWorkflow()) =>
+	createTransactionProgressViewModel(workflow, NETWORK_CONFIG.chainName, NETWORK_CONFIG.networkIdentifier);
 
-// scenario configs
+// Scenario workflows
 
-const ScenarioConfig = {
-	INITIAL: {
-		createStatus: ActionStatusFactory.pending(),
-		signStatus: ActionStatusFactory.pending(),
-		announceStatus: ActionStatusFactory.pending()
-	},
-	CREATING: {
-		createStatus: ActionStatusFactory.loading(),
-		signStatus: ActionStatusFactory.pending(),
-		announceStatus: ActionStatusFactory.pending()
-	},
-	SIGNING: {
-		createStatus: ActionStatusFactory.complete(),
-		signStatus: ActionStatusFactory.loading(),
-		announceStatus: ActionStatusFactory.pending()
-	},
-	ANNOUNCING: {
-		createStatus: ActionStatusFactory.complete(),
-		signStatus: ActionStatusFactory.complete(),
-		announceStatus: ActionStatusFactory.loading()
-	},
-	ANNOUNCED: {
-		createStatus: ActionStatusFactory.complete(),
-		signStatus: ActionStatusFactory.complete(),
-		announceStatus: ActionStatusFactory.complete(),
-		signedTransactionHashes: TEST_HASHES.single
-	},
-	CONFIRMED: {
-		createStatus: ActionStatusFactory.complete(),
-		signStatus: ActionStatusFactory.complete(),
-		announceStatus: ActionStatusFactory.complete(),
-		transactionCount: 1,
-		signedTransactionHashes: TEST_HASHES.single,
-		confirmedTransactionHashes: TEST_HASHES.single
-	},
-	PARTIAL: {
-		createStatus: ActionStatusFactory.complete(),
-		signStatus: ActionStatusFactory.complete(),
-		announceStatus: ActionStatusFactory.complete(),
-		transactionCount: 1,
-		signedTransactionHashes: TEST_HASHES.partial,
-		partialTransactionHashes: TEST_HASHES.partial
-	},
-	FAILED: {
-		createStatus: ActionStatusFactory.complete(),
-		signStatus: ActionStatusFactory.complete(),
-		announceStatus: ActionStatusFactory.complete(),
-		transactionCount: 1,
-		failedTransactionHashes: TEST_HASHES.failed
-	},
-	CREATE_ERROR: {
-		createStatus: ActionStatusFactory.error('Create error'),
-		signStatus: ActionStatusFactory.pending(),
-		announceStatus: ActionStatusFactory.pending()
-	},
-	SIGN_ERROR: {
-		createStatus: ActionStatusFactory.complete(),
-		signStatus: ActionStatusFactory.error('Sign error'),
-		announceStatus: ActionStatusFactory.pending()
-	},
-	ANNOUNCE_ERROR: {
-		createStatus: ActionStatusFactory.complete(),
-		signStatus: ActionStatusFactory.complete(),
-		announceStatus: ActionStatusFactory.error('Announce error')
-	}
+const ScenarioWorkflow = {
+	INITIAL: createScenarioWorkflow({ workflowStatus: TransactionWorkflowStatus.IDLE }),
+	CREATING: createScenarioWorkflow({
+		create: loadingManager,
+		workflowStatus: TransactionWorkflowStatus.CREATING
+	}),
+	SIGNING: createScenarioWorkflow({
+		create: completedManager,
+		sign: loadingManager,
+		workflowStatus: TransactionWorkflowStatus.SIGNING
+	}),
+	ANNOUNCING: createScenarioWorkflow({
+		create: completedManager,
+		sign: completedManager,
+		announce: loadingManager,
+		workflowStatus: TransactionWorkflowStatus.ANNOUNCING
+	}),
+	ANNOUNCED: createScenarioWorkflow({
+		create: completedManager,
+		sign: completedManager,
+		announce: completedManager,
+		signedHashes: TEST_HASHES.single,
+		workflowStatus: TransactionWorkflowStatus.ANNOUNCED
+	}),
+	CONFIRMED: createScenarioWorkflow({
+		create: completedManager,
+		sign: completedManager,
+		announce: completedManager,
+		signedHashes: TEST_HASHES.single,
+		confirmedHashes: TEST_HASHES.single,
+		workflowStatus: TransactionWorkflowStatus.CONFIRMED
+	}),
+	PARTIAL: createScenarioWorkflow({
+		create: completedManager,
+		sign: completedManager,
+		announce: completedManager,
+		signedHashes: TEST_HASHES.partial,
+		partialHashes: TEST_HASHES.partial,
+		workflowStatus: TransactionWorkflowStatus.PARTIAL
+	}),
+	FAILED: createScenarioWorkflow({
+		create: completedManager,
+		sign: completedManager,
+		announce: completedManager,
+		failedHashes: TEST_HASHES.failed,
+		workflowStatus: TransactionWorkflowStatus.FAILED_TRANSACTIONS
+	}),
+	CREATE_ERROR: createScenarioWorkflow({
+		create: createErrorManager('Create error'),
+		workflowStatus: TransactionWorkflowStatus.CREATE_ERROR
+	}),
+	SIGN_ERROR: createScenarioWorkflow({
+		create: completedManager,
+		sign: createErrorManager('Sign error'),
+		workflowStatus: TransactionWorkflowStatus.SIGN_ERROR
+	}),
+	ANNOUNCE_ERROR: createScenarioWorkflow({
+		create: completedManager,
+		sign: completedManager,
+		announce: createErrorManager('Announce error'),
+		workflowStatus: TransactionWorkflowStatus.ANNOUNCE_ERROR
+	})
 };
 
 // props factory
 
-const createDefaultProps = (overrides = {}) => ({
+const createDefaultProps = (scenario = ScenarioWorkflow.INITIAL, overrides = {}) => ({
 	isVisible: true,
-	createStatus: ActionStatusFactory.pending(),
-	signStatus: ActionStatusFactory.pending(),
-	announceStatus: ActionStatusFactory.pending(),
-	transactionCount: 1,
-	signedTransactionHashes: [],
-	confirmedTransactionHashes: [],
-	failedTransactionHashes: [],
-	partialTransactionHashes: [],
-	chainName: NETWORK_CONFIG.chainName,
-	networkIdentifier: NETWORK_CONFIG.networkIdentifier,
+	transactionProgressViewModel: createProgressViewModel(scenario),
 	onClose: jest.fn(),
 	...overrides
 });
 
-describe('components/TransactionStatusDialog', () => {
+describe('components/TransactionProgressDialog', () => {
 	beforeEach(() => {
 		mockLocalization((key, config) => key === SCREEN_TEXT_TRANSACTION_COUNTER ? `${key}__${config.index}` : key);
 		mockOs('android');
 		jest.clearAllMocks();
 	});
 
-	runRenderComponentTest(TransactionStatusDialog, {
+	runRenderComponentTest(TransactionProgressDialog, {
 		props: createDefaultProps()
 	});
 
@@ -202,7 +213,7 @@ describe('components/TransactionStatusDialog', () => {
 			];
 
 			// Act:
-			const screenTester = new ScreenTester(TransactionStatusDialog, props);
+			const screenTester = new ScreenTester(TransactionProgressDialog, props);
 
 			// Assert:
 			screenTester.expectText(expectedTexts, true);
@@ -210,10 +221,10 @@ describe('components/TransactionStatusDialog', () => {
 
 		it('does not render content when isVisible is false', () => {
 			// Arrange:
-			const props = createDefaultProps({ isVisible: false });
+			const props = createDefaultProps(ScenarioWorkflow.INITIAL, { isVisible: false });
 
 			// Act:
-			const { queryByText } = render(<TransactionStatusDialog {...props} />);
+			const { queryByText } = render(<TransactionProgressDialog {...props} />);
 
 			// Assert:
 			expect(queryByText(SCREEN_TEXT.textStepCreate)).toBeNull();
@@ -227,7 +238,7 @@ describe('components/TransactionStatusDialog', () => {
 				const props = createDefaultProps(config.scenario);
 
 				// Act:
-				const screenTester = new ScreenTester(TransactionStatusDialog, props);
+				const screenTester = new ScreenTester(TransactionProgressDialog, props);
 
 				// Assert:
 				screenTester.expectText([expected.statusTitle, expected.statusDescription]);
@@ -237,7 +248,7 @@ describe('components/TransactionStatusDialog', () => {
 		const statusScenarioTests = [
 			{
 				description: 'shows sending status when creating transaction',
-				config: { scenario: ScenarioConfig.CREATING },
+				config: { scenario: ScenarioWorkflow.CREATING },
 				expected: {
 					statusTitle: SCREEN_TEXT.textStatusSending,
 					statusDescription: SCREEN_TEXT.textDescriptionSending
@@ -245,7 +256,7 @@ describe('components/TransactionStatusDialog', () => {
 			},
 			{
 				description: 'shows sending status when signing transaction',
-				config: { scenario: ScenarioConfig.SIGNING },
+				config: { scenario: ScenarioWorkflow.SIGNING },
 				expected: {
 					statusTitle: SCREEN_TEXT.textStatusSending,
 					statusDescription: SCREEN_TEXT.textDescriptionSending
@@ -253,7 +264,7 @@ describe('components/TransactionStatusDialog', () => {
 			},
 			{
 				description: 'shows sending status when announcing transaction',
-				config: { scenario: ScenarioConfig.ANNOUNCING },
+				config: { scenario: ScenarioWorkflow.ANNOUNCING },
 				expected: {
 					statusTitle: SCREEN_TEXT.textStatusSending,
 					statusDescription: SCREEN_TEXT.textDescriptionSending
@@ -261,7 +272,7 @@ describe('components/TransactionStatusDialog', () => {
 			},
 			{
 				description: 'shows confirming status when announced but not confirmed',
-				config: { scenario: ScenarioConfig.ANNOUNCED },
+				config: { scenario: ScenarioWorkflow.ANNOUNCED },
 				expected: {
 					statusTitle: SCREEN_TEXT.textStatusConfirming,
 					statusDescription: SCREEN_TEXT.textDescriptionConfirming
@@ -269,7 +280,7 @@ describe('components/TransactionStatusDialog', () => {
 			},
 			{
 				description: 'shows success status when transaction is confirmed',
-				config: { scenario: ScenarioConfig.CONFIRMED },
+				config: { scenario: ScenarioWorkflow.CONFIRMED },
 				expected: {
 					statusTitle: SCREEN_TEXT.textStatusSuccess,
 					statusDescription: SCREEN_TEXT.textDescriptionSuccess
@@ -277,7 +288,7 @@ describe('components/TransactionStatusDialog', () => {
 			},
 			{
 				description: 'shows partial status for multisig transaction awaiting signatures',
-				config: { scenario: ScenarioConfig.PARTIAL },
+				config: { scenario: ScenarioWorkflow.PARTIAL },
 				expected: {
 					statusTitle: SCREEN_TEXT.textStatusPartial,
 					statusDescription: SCREEN_TEXT.textDescriptionPartial
@@ -285,7 +296,7 @@ describe('components/TransactionStatusDialog', () => {
 			},
 			{
 				description: 'shows failed status when transaction is rejected by network',
-				config: { scenario: ScenarioConfig.FAILED },
+				config: { scenario: ScenarioWorkflow.FAILED },
 				expected: {
 					statusTitle: SCREEN_TEXT.textDescriptionRejected,
 					statusDescription: SCREEN_TEXT.textDescriptionRejected
@@ -293,7 +304,7 @@ describe('components/TransactionStatusDialog', () => {
 			},
 			{
 				description: 'shows create error status when transaction creation fails',
-				config: { scenario: ScenarioConfig.CREATE_ERROR },
+				config: { scenario: ScenarioWorkflow.CREATE_ERROR },
 				expected: {
 					statusTitle: SCREEN_TEXT.textStatusCreateError,
 					statusDescription: SCREEN_TEXT.textDescriptionCreateError
@@ -301,7 +312,7 @@ describe('components/TransactionStatusDialog', () => {
 			},
 			{
 				description: 'shows sign error status when transaction signing fails',
-				config: { scenario: ScenarioConfig.SIGN_ERROR },
+				config: { scenario: ScenarioWorkflow.SIGN_ERROR },
 				expected: {
 					statusTitle: SCREEN_TEXT.textStatusSignError,
 					statusDescription: SCREEN_TEXT.textDescriptionSignError
@@ -309,7 +320,7 @@ describe('components/TransactionStatusDialog', () => {
 			},
 			{
 				description: 'shows announce error status when transaction announcement fails',
-				config: { scenario: ScenarioConfig.ANNOUNCE_ERROR },
+				config: { scenario: ScenarioWorkflow.ANNOUNCE_ERROR },
 				expected: {
 					statusTitle: SCREEN_TEXT.textStatusAnnounceError,
 					statusDescription: SCREEN_TEXT.textDescriptionAnnounceError
@@ -329,7 +340,7 @@ describe('components/TransactionStatusDialog', () => {
 				const props = createDefaultProps(config.scenario);
 
 				// Act:
-				const screenTester = new ScreenTester(TransactionStatusDialog, props);
+				const screenTester = new ScreenTester(TransactionProgressDialog, props);
 
 				// Assert:
 				if (expected.isVisible)
@@ -342,22 +353,22 @@ describe('components/TransactionStatusDialog', () => {
 		const explorerButtonVisibilityTests = [
 			{
 				description: 'shows explorer button when transaction is announced',
-				config: { scenario: ScenarioConfig.ANNOUNCED },
+				config: { scenario: ScenarioWorkflow.ANNOUNCED },
 				expected: { isVisible: true }
 			},
 			{
 				description: 'shows explorer button when transaction is confirmed',
-				config: { scenario: ScenarioConfig.CONFIRMED },
+				config: { scenario: ScenarioWorkflow.CONFIRMED },
 				expected: { isVisible: true }
 			},
 			{
 				description: 'does not show explorer button when signing',
-				config: { scenario: ScenarioConfig.SIGNING },
+				config: { scenario: ScenarioWorkflow.SIGNING },
 				expected: { isVisible: false }
 			},
 			{
 				description: 'does not show explorer button when announce fails',
-				config: { scenario: ScenarioConfig.ANNOUNCE_ERROR },
+				config: { scenario: ScenarioWorkflow.ANNOUNCE_ERROR },
 				expected: { isVisible: false }
 			}
 		];
@@ -368,13 +379,17 @@ describe('components/TransactionStatusDialog', () => {
 
 		it('shows multiple explorer buttons for multiple transactions', () => {
 			// Arrange:
-			const props = createDefaultProps({
-				...ScenarioConfig.ANNOUNCED,
-				signedTransactionHashes: TEST_HASHES.multiple
+			const announcedWithMultipleHashes = createScenarioWorkflow({
+				create: completedManager,
+				sign: completedManager,
+				announce: completedManager,
+				signedHashes: TEST_HASHES.multiple,
+				workflowStatus: TransactionWorkflowStatus.ANNOUNCED
 			});
+			const props = createDefaultProps(announcedWithMultipleHashes);
 
 			// Act:
-			const { getAllByText, getByText } = render(<TransactionStatusDialog {...props} />);
+			const { getAllByText, getByText } = render(<TransactionProgressDialog {...props} />);
 
 			// Assert:
 			expect(getAllByText(SCREEN_TEXT.buttonViewInExplorer).length).toBe(2);
@@ -385,15 +400,12 @@ describe('components/TransactionStatusDialog', () => {
 		it('opens block explorer with correct URL when button is pressed', () => {
 			// Arrange:
 			const openLinkMock = mockLink();
-			const props = createDefaultProps({
-				...ScenarioConfig.ANNOUNCED,
-				signedTransactionHashes: [TEST_HASHES.single[0]]
-			});
+			const props = createDefaultProps(ScenarioWorkflow.ANNOUNCED);
 			const expectedUrl =
 				`https://explorer.${NETWORK_CONFIG.chainName}.${NETWORK_CONFIG.networkIdentifier}/tx/${TEST_HASHES.single[0]}`;
 
 			// Act:
-			const { getByText } = render(<TransactionStatusDialog {...props} />);
+			const { getByText } = render(<TransactionProgressDialog {...props} />);
 			fireEvent.press(getByText(SCREEN_TEXT.buttonViewInExplorer));
 
 			// Assert:
@@ -406,13 +418,10 @@ describe('components/TransactionStatusDialog', () => {
 			it(description, () => {
 				// Arrange:
 				const onCloseMock = jest.fn();
-				const props = createDefaultProps({
-					...config.scenario,
-					onClose: onCloseMock
-				});
+				const props = createDefaultProps(config.scenario, { onClose: onCloseMock });
 
 				// Act:
-				const screenTester = new ScreenTester(TransactionStatusDialog, props);
+				const screenTester = new ScreenTester(TransactionProgressDialog, props);
 
 				if (expected.isButtonDisabled) {
 					// Assert:
@@ -429,42 +438,42 @@ describe('components/TransactionStatusDialog', () => {
 		const closeButtonTests = [
 			{
 				description: 'close button is disabled when creating transaction',
-				config: { scenario: ScenarioConfig.CREATING },
+				config: { scenario: ScenarioWorkflow.CREATING },
 				expected: { isButtonDisabled: true }
 			},
 			{
 				description: 'close button is disabled when signing transaction',
-				config: { scenario: ScenarioConfig.SIGNING },
+				config: { scenario: ScenarioWorkflow.SIGNING },
 				expected: { isButtonDisabled: true }
 			},
 			{
 				description: 'close button is disabled when announcing transaction',
-				config: { scenario: ScenarioConfig.ANNOUNCING },
+				config: { scenario: ScenarioWorkflow.ANNOUNCING },
 				expected: { isButtonDisabled: true }
 			},
 			{
 				description: 'close button is visible and triggers callback when announced',
-				config: { scenario: ScenarioConfig.ANNOUNCED },
+				config: { scenario: ScenarioWorkflow.ANNOUNCED },
 				expected: { isButtonDisabled: false }
 			},
 			{
 				description: 'close button is visible and triggers callback when confirmed',
-				config: { scenario: ScenarioConfig.CONFIRMED },
+				config: { scenario: ScenarioWorkflow.CONFIRMED },
 				expected: { isButtonDisabled: false }
 			},
 			{
 				description: 'close button is visible and triggers callback on create error',
-				config: { scenario: ScenarioConfig.CREATE_ERROR },
+				config: { scenario: ScenarioWorkflow.CREATE_ERROR },
 				expected: { isButtonDisabled: false }
 			},
 			{
 				description: 'close button is visible and triggers callback on sign error',
-				config: { scenario: ScenarioConfig.SIGN_ERROR },
+				config: { scenario: ScenarioWorkflow.SIGN_ERROR },
 				expected: { isButtonDisabled: false }
 			},
 			{
 				description: 'close button is visible and triggers callback on announce error',
-				config: { scenario: ScenarioConfig.ANNOUNCE_ERROR },
+				config: { scenario: ScenarioWorkflow.ANNOUNCE_ERROR },
 				expected: { isButtonDisabled: false }
 			}
 		];
@@ -481,7 +490,7 @@ describe('components/TransactionStatusDialog', () => {
 				const props = createDefaultProps(config.scenario);
 
 				// Act:
-				const screenTester = new ScreenTester(TransactionStatusDialog, props);
+				const screenTester = new ScreenTester(TransactionProgressDialog, props);
 
 				// Assert:
 				if (expected.errorMessage)
@@ -492,17 +501,17 @@ describe('components/TransactionStatusDialog', () => {
 		const activityLogErrorTests = [
 			{
 				description: 'shows error message in activity log when creation fails',
-				config: { scenario: ScenarioConfig.CREATE_ERROR },
+				config: { scenario: ScenarioWorkflow.CREATE_ERROR },
 				expected: { errorMessage: 'Create error' }
 			},
 			{
 				description: 'shows error message in activity log when signing fails',
-				config: { scenario: ScenarioConfig.SIGN_ERROR },
+				config: { scenario: ScenarioWorkflow.SIGN_ERROR },
 				expected: { errorMessage: 'Sign error' }
 			},
 			{
 				description: 'shows error message in activity log when announcement fails',
-				config: { scenario: ScenarioConfig.ANNOUNCE_ERROR },
+				config: { scenario: ScenarioWorkflow.ANNOUNCE_ERROR },
 				expected: { errorMessage: 'Announce error' }
 			}
 		];
