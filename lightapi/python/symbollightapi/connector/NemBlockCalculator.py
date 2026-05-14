@@ -169,7 +169,8 @@ class NemBlockCalculator:
 		}
 
 		if schema_version == 2:
-			transaction['min_approval_delta'] = tx_json['minCosignatories']['relativeChange']
+			min_cosignatories = tx_json['minCosignatories']
+			transaction['min_approval_delta'] = min_cosignatories.get('relativeChange', 0)
 
 		return transaction
 
