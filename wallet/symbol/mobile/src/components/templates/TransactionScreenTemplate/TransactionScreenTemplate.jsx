@@ -1,6 +1,5 @@
-import { TransactionConfirmationDialog, TransactionStatusDialog } from './components';
-import { useTransactionConfirmationPolling, useTransactionWorkflow } from './hooks';
-import { getActionStatusFromAsyncManager } from './utils';
+import { TransactionConfirmationDialog, TransactionProgressDialog } from './components';
+import { createTransactionProgressViewModel } from './utils';
 import {
 	Button,
 	MultisigAccountWarning,
@@ -11,58 +10,56 @@ import {
 import { usePasscode, useToggle } from '@/app/hooks';
 import { $t } from '@/app/localization';
 import { createSafeInteraction } from '@/app/utils';
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 
 const TRANSACTION_SEND_EXECUTION_DELAY_MS = 2000;
 
 /** @typedef {import('@/app/types/Transaction').TransactionBundle} TransactionBundle */
 /** @typedef {import('@/app/types/Wallet').WalletController} WalletController */
 /** @typedef {import('@/app/types/RefreshConfig').RefreshConfig} RefreshConfig */
+/** @typedef {import('./types/Workflow').TransactionWorkflow} TransactionWorkflow */
+/** @typedef {import('./types/ConfirmationDialog').ConfirmationDialogSection} ConfirmationDialogSection */
+/** @typedef {import('./types/TransactionProgress').TransactionProgressViewModel} TransactionProgressViewModel */
 
 /**
  * TransactionScreenTemplate component. A reusable template component for sending transactions,
  * featuring confirmation dialogs, status tracking, and multisig account warnings.
  * @param {object} props - The component props.
  * @param {boolean} props.isLoading - Loading state for the entire screen.
- * @param {boolean} props.isSendButtonDisabled - Whether the send button is disabled.
- * @param {boolean} props.isMultisigAccount - Whether the current account is a multisig account.
- * @param {string[]} props.accountCosignatories - List of cosignatories if multisig.
- * @param {React.ReactNode} props.children - The form fields to render inside the screen.
- * @param {function(): Promise<TransactionBundle>} props.createTransaction - Callback to create the transaction object.
- * @param {function(): Array} props.getConfirmationPreview - Returns data for confirmation preview table.
- * @param {function(Error): void} [props.onCreateTransactionError] - Handler for transaction creation errors.
- * @param {function(): void} [props.onSendSuccess] - Handler for successful transaction send.
- * @param {function(Error): void} [props.onSendError] - Handler for transaction send errors.
- * @param {function(): void} props.onComplete - Called when the process is complete.
- * @param {WalletController} props.walletController - The wallet controller instance.
- * @param {boolean} [props.isCustomSendButtonUsed] - Whether a custom send button is used.
- * @param {RefreshConfig} [props.refresh] - Refresh control.
+ * @param {boolean} [props.isCustomSendButtonUsed=false] - Whether a custom send button is used.
+ * @param {boolean} [props.isSendButtonDisabled=false] - Whether the send button is disabled.
+ * @param {boolean} [props.isMultisigAccount=false] - Whether the current account is a multisig account.
+ * @param {string[]} [props.accountCosignatories=[]] - List of cosignatories if multisig.
  * @param {string} [props.confirmDialogTitle] - Title for the confirmation dialog.
  * @param {string} [props.confirmDialogText] - Text for the confirmation dialog body.
+ * @param {React.ReactNode} props.children - The form fields to render inside the screen.
  * @param {React.Node} [props.modals] - Additional modals to be rendered.
+ * @param {RefreshConfig} [props.refresh] - Refresh control.
+ * @param {function(TransactionBundle): ConfirmationDialogSection[]} props.getConfirmationPreview
+ *   - Receives the full transaction bundle and returns confirmation sections.
+ * @param {function(): void} props.onComplete - Called when the process is complete.
+ * @param {WalletController} props.walletController - The wallet controller instance.
+ * @param {TransactionWorkflow} props.workflow - The transaction workflow instance.
+ * @param {TransactionProgressViewModel} [props.transactionProgressViewModel] - Optional custom data for the transaction progress dialog.
  * @returns {React.Node} Rendered TransactionScreenTemplate component.
  */
 export const TransactionScreenTemplate = props => {
 	const {
-		isLoading,
-		isSendButtonDisabled,
-		isMultisigAccount,
-		accountCosignatories,
-		children,
-		createTransaction: createTransactionCallback,
-		getConfirmationPreview,
-		onCreateTransactionError,
-		onSendSuccess,
-		onSendError,
-		onComplete,
-		walletController,
-		transactionFeeTiers,
-		transactionFeeTierLevel,
-		isCustomSendButtonUsed,
-		refresh,
+		isLoading = false,
+		isCustomSendButtonUsed = false,
+		isSendButtonDisabled = false,
+		isMultisigAccount = false,
+		accountCosignatories = [],
 		confirmDialogTitle,
 		confirmDialogText,
-		modals
+		children,
+		modals,
+		refresh,
+		getConfirmationPreview,
+		onComplete,
+		walletController,
+		workflow,
+		transactionProgressViewModel: customTransactionProgressViewModel
 	} = props;
 
 	// UI State
@@ -70,35 +67,24 @@ export const TransactionScreenTemplate = props => {
 	const [isStatusDialogVisible, setIsStatusDialogVisible] = useState(false);
 	const [activityKey, setActivityKey] = useState(0);
 
-	// Transaction Workflow
-	const workflow = useTransactionWorkflow({
-		createTransactionCallback,
-		walletController,
-		transactionFeeTiers,
-		transactionFeeTierLevel,
-		onCreateTransactionError,
-		onSendSuccess,
-		onSendError
-	});
+	// Confirmation view
+	const confirmationSections = useMemo(() => {
+		if (isConfirmationDialogVisible && workflow.transaction)
+			return getConfirmationPreview(workflow.transaction);
 
-	const transactionCount = workflow.transactionBundle?.transactions.length || 0;
+		return null;
+	}, [isConfirmationDialogVisible, workflow.transaction]);
 
-	// Transaction Confirmation Polling
-	const confirmationPolling = useTransactionConfirmationPolling({
-		walletController,
-		signedTransactionHashes: workflow.signedTransactionHashes,
-		isActive: isStatusDialogVisible && workflow.announceManager.isCompleted
-	});
-
-	// Action Statuses (derived from AsyncManager states)
-	const createStatus = getActionStatusFromAsyncManager(workflow.createManager);
-	const signStatus = getActionStatusFromAsyncManager(workflow.signManager);
-	const announceStatus = getActionStatusFromAsyncManager(workflow.announceManager);
+	// Transaction Progress View Model
+	const transactionProgressViewModel = customTransactionProgressViewModel ?? createTransactionProgressViewModel(
+		workflow,
+		walletController.chainName,
+		walletController.networkIdentifier
+	);
 
 	// Handlers
 	const resetAll = () => {
 		workflow.reset();
-		confirmationPolling.reset();
 	};
 	const openActivityLog = createSafeInteraction(() => {
 		setIsStatusDialogVisible(true);
@@ -140,7 +126,7 @@ export const TransactionScreenTemplate = props => {
 
 	return (
 		<Screen
-			isLoading={isLoading || workflow.createManager.isLoading}
+			isLoading={isLoading || workflow.managers.createManager.isLoading}
 			refresh={refresh}
 		>
 			{isMultisigAccount ? (
@@ -171,25 +157,14 @@ export const TransactionScreenTemplate = props => {
 					isVisible={isConfirmationDialogVisible}
 					title={confirmDialogTitle}
 					text={confirmDialogText}
-					transactionBundle={workflow.transactionBundle}
-					getConfirmationPreview={getConfirmationPreview}
-					walletController={walletController}
+					sections={confirmationSections}
 					onConfirm={handleConfirmPress}
 					onCancel={toggleConfirmationDialog}
 				/>
-				<TransactionStatusDialog
+				<TransactionProgressDialog
 					key={`transaction_send_activity_${activityKey}`}
 					isVisible={isStatusDialogVisible}
-					createStatus={createStatus}
-					signStatus={signStatus}
-					announceStatus={announceStatus}
-					transactionCount={transactionCount}
-					signedTransactionHashes={workflow.signedTransactionHashes}
-					confirmedTransactionHashes={confirmationPolling.confirmedTransactionHashes}
-					failedTransactionHashes={confirmationPolling.failedTransactionHashes}
-					partialTransactionHashes={confirmationPolling.partialTransactionHashes}
-					chainName={walletController.chainName}
-					networkIdentifier={walletController.networkIdentifier}
+					transactionProgressViewModel={transactionProgressViewModel}
 					onClose={handleActivityClose}
 				/>
 				<PasscodeView {...confirmSendPasscode.props} />

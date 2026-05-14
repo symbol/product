@@ -20,6 +20,7 @@ import {
 	StyledText,
 	TransactionScreenTemplate
 } from '@/app/components';
+import { useStandardTransactionWorkflow } from '@/app/components/templates/TransactionScreenTemplate/hooks';
 import { useTransactionFees, useWalletController } from '@/app/hooks';
 import { $t } from '@/app/localization';
 import { Router } from '@/app/router/Router';
@@ -43,7 +44,7 @@ const TRANSACTION_SPEED = 'medium';
  * @returns {React.ReactNode} BridgeSwap component.
  */
 export const BridgeSwap = props => {
-	// Ref to hold createTransaction for use in useTransactionFees before it's defined
+	// Ref to break createTransaction ↔ useBridgeAmount circular dependency
 	const createTransactionRef = useRef(() => Promise.resolve(null));
 
 	// Load bridges and subscribe to changes
@@ -70,7 +71,7 @@ export const BridgeSwap = props => {
 
 	const sourceWalletController = useWalletController(source?.chainName);
 
-	// Transaction fees (moved before useBridgeAmount to avoid undefined reference)
+	// Transaction fees
 	const {
 		data: transactionFees,
 		isLoading: isFeesLoading,
@@ -102,11 +103,19 @@ export const BridgeSwap = props => {
 	// Transaction creation and preview
 	const {
 		createTransaction,
-		getTransactionPreviewTable
-	} = useBridgeTransaction({ bridge, target, amount, estimation });
+		getConfirmationPreview
+	} = useBridgeTransaction({ bridge, target, amount, estimation, walletController: sourceWalletController });
 
-	// Update ref to point to actual createTransaction
+	// Update ref to break circular dependency with useTransactionFees
 	createTransactionRef.current = createTransaction;
+
+	// Transaction workflow
+	const workflow = useStandardTransactionWorkflow({
+		createTransaction,
+		walletController: sourceWalletController,
+		transactionFeeTiers: transactionFees,
+		transactionFeeTierLevel: TRANSACTION_SPEED
+	});
 
 	// Recent history
 	const { history } = useBridgeHistory({ bridge });
@@ -160,10 +169,10 @@ export const BridgeSwap = props => {
 		<TransactionScreenTemplate
 			isSendButtonDisabled={isButtonDisabled}
 			isLoading={false}
-			createTransaction={createTransaction}
-			getConfirmationPreview={getTransactionPreviewTable}
+			getConfirmationPreview={getConfirmationPreview}
 			onComplete={handleTransactionSendComplete}
 			walletController={sourceWalletController}
+			workflow={workflow}
 			isCustomSendButtonUsed={true}
 			confirmDialogTitle={$t('s_bridge_swap_dialog_confirm_title')}
 			confirmDialogText={$t('s_bridge_swap_dialog_confirm_text', {
@@ -173,8 +182,6 @@ export const BridgeSwap = props => {
 				targetToken: target?.token.name,
 				targetChain: target?.chainName
 			})}
-			transactionFeeTiers={transactionFees}
-			transactionFeeTierLevel={TRANSACTION_SPEED}
 			modals={(
 				<>
 					<DialogBox

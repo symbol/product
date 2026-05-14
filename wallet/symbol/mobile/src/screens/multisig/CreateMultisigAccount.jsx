@@ -13,6 +13,7 @@ import {
 	StyledText,
 	TransactionScreenTemplate
 } from '@/app/components';
+import { useStandardTransactionWorkflow } from '@/app/components/templates/TransactionScreenTemplate/hooks';
 import { useAsyncManager, useDebounce, useTransactionFees, useWalletController } from '@/app/hooks';
 import { $t } from '@/app/localization';
 import { Router } from '@/app/router/Router';
@@ -92,7 +93,7 @@ export const CreateMultisigAccount = props => {
 	// Transaction creation and preview
 	const {
 		createNewAccountTransaction,
-		getTransactionPreviewTable
+		getConfirmationPreview
 	} = useMultisigTransaction({
 		walletController,
 		multisigAccount,
@@ -124,22 +125,28 @@ export const CreateMultisigAccount = props => {
 		Router.goToHome();
 	};
 
+	// Transaction Workflow
+	const workflow = useStandardTransactionWorkflow({
+		createTransaction: createNewAccountTransaction,
+		walletController,
+		transactionFeeTiers: transactionFees,
+		transactionFeeTierLevel: transactionSpeed
+	});
+
 	return (
 		<TransactionScreenTemplate
 			isSendButtonDisabled={isButtonDisabled}
 			isLoading={false}
-			createTransaction={createNewAccountTransaction}
-			getConfirmationPreview={getTransactionPreviewTable}
+			getConfirmationPreview={getConfirmationPreview}
 			onComplete={handleTransactionSendComplete}
 			walletController={walletController}
+			workflow={workflow}
 			isCustomSendButtonUsed={true}
 			confirmDialogTitle={$t('s_multisig_create_dialog_confirm_title')}
 			confirmDialogText={$t('s_multisig_create_dialog_confirm_text', {
 				address: multisigAccount?.address,
 				cosignatoriesCount
 			})}
-			transactionFeeTiers={transactionFees}
-			transactionFeeTierLevel={transactionSpeed}
 			modals={(
 				<DialogBox
 					isVisible={isInputDialogVisible}

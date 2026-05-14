@@ -2,15 +2,16 @@ import { objectToTableData } from '@/app/utils';
 import { useCallback } from 'react';
 
 /** @typedef {import('@/app/types/Wallet').MainWalletController} MainWalletController */
-/** @typedef {import('@/app/types/Table').TableData} TableData */
-/** @typedef {import('@/app/types/Transaction').Transaction} Transaction */
+/** @typedef {import('@/app/types/Transaction').TransactionBundle} TransactionBundle */
+/** @typedef {import('@/app/types/Transaction').TransactionConfirmationDialogSection} TransactionConfirmationDialogSection */
 
 /**
  * Return type for useHarvestingTransaction hook.
  * @typedef {object} UseHarvestingTransactionReturnType
- * @property {(password: string) => Promise<Transaction>} createStartTransaction - Creates start harvesting transaction.
- * @property {() => Transaction} createStopTransaction - Creates stop harvesting transaction.
- * @property {() => TableData} getTransactionPreviewTable - Gets preview table for confirmation dialog.
+ * @property {(password: string) => Promise<TransactionBundle>} createStartTransaction - Creates start harvesting transaction.
+ * @property {() => TransactionBundle} createStopTransaction - Creates stop harvesting transaction.
+ * @property {(transactionBundle: TransactionBundle) => TransactionConfirmationDialogSection[]} getConfirmationPreview
+ *   - Generates the transaction confirmation dialog.
  */
 
 /**
@@ -26,7 +27,7 @@ export const useHarvestingTransaction = ({ walletController, selectedNodeUrl }) 
 	/**
 	 * Creates a start harvesting transaction.
 	 * @param {string} password - Wallet password.
-	 * @returns {Promise<Transaction>}
+	 * @returns {Promise<TransactionBundle>}
 	 */
 	const createStartTransaction = useCallback(async password => {
 		if (!selectedNodeUrl)
@@ -42,27 +43,33 @@ export const useHarvestingTransaction = ({ walletController, selectedNodeUrl }) 
 
 	/**
 	 * Creates a stop harvesting transaction.
-	 * @returns {Transaction}
+	 * @returns {Promise<TransactionBundle>}
 	 */
 	const createStopTransaction = useCallback(() => {
 		return modules.harvesting.createStopHarvestingTransaction();
 	}, [modules.harvesting]);
 
 	/**
-	 * Generates preview table data for the transaction confirmation dialog.
-	 * @returns {TableData}
+	 * Generates confirmation sections for the transaction confirmation dialog.
+	 * @returns {TransactionConfirmationDialogSection[]}
 	 */
-	const getTransactionPreviewTable = useCallback(() => {
-		const previewData = {
-			nodeUrl: selectedNodeUrl
-		};
+	const getConfirmationPreview = useCallback(() => {
+		const { chainName, networkIdentifier, modules: { addressBook }, accounts } = walletController;
 
-		return objectToTableData(previewData);
-	}, [selectedNodeUrl]);
+		return [{
+			id: 'section_0',
+			title: '',
+			chainName,
+			networkIdentifier,
+			addressBook,
+			walletAccounts: accounts,
+			tableData: objectToTableData({ nodeUrl: selectedNodeUrl })
+		}];
+	}, [walletController, selectedNodeUrl]);
 
 	return {
 		createStartTransaction,
 		createStopTransaction,
-		getTransactionPreviewTable
+		getConfirmationPreview
 	};
 };

@@ -1,19 +1,19 @@
-import { MessageType } from '@/app/constants';
+import { MessageType, SymbolTransactionType } from '@/app/constants';
 import { $t } from '@/app/localization';
 import { objectToTableData } from '@/app/utils';
-import { constants as symbolConstants } from 'wallet-common-symbol';
 
 /** @typedef {import('@/app/types/Wallet').WalletController} WalletController */
-/** @typedef {import('@/app/types/Table').TableData} TableData */
 /** @typedef {import('@/app/types/Transaction').Transaction} Transaction */
+/** @typedef {import('@/app/types/Transaction').TransactionBundle} TransactionBundle */
 /** @typedef {import('@/app/types/Token').Token} Token */
+/** @typedef {import('@/app/types/Transaction').TransactionConfirmationDialogSection} TransactionConfirmationDialogSection */
 
 /**
  * Return type for useSendTransaction hook.
  * @typedef {object} UseSendTransactionReturnType
- * @property {() => Promise<Transaction>} createTransaction - Creates a transfer transaction.
- * @property {(transaction: Transaction) => TableData} getTransactionPreviewTable
- *   - Generates preview table data for the confirmation dialog.
+ * @property {() => Promise<TransactionBundle>} createTransaction - Creates a transfer transaction bundle.
+ * @property {(transactionBundle: TransactionBundle) => TransactionConfirmationDialogSection[]} getConfirmationPreview
+ *   - Generates confirmation sections for the transaction confirmation dialog.
  */
 
 /**
@@ -38,8 +38,8 @@ export const useSendTransaction = ({
 	isMessageEncrypted
 }) => {
 	/**
-	 * Creates a transfer transaction.
-	 * @returns {Promise<Transaction>}
+	 * Creates a transfer transaction bundle.
+	 * @returns {Promise<TransactionBundle>}
 	 */
 	const createTransaction = async () => {
 		const transactionBundle = await walletController.modules.transfer.createTransaction({
@@ -56,12 +56,15 @@ export const useSendTransaction = ({
 	};
 
 	/**
-	 * Generates preview table data for the transaction confirmation dialog.
-	 * @param {Transaction} transaction - The transaction to preview.
-	 * @returns {TableData}
+	 * Generates confirmation sections for the transaction confirmation dialog.
+	 * @param {TransactionBundle} transactionBundle - The transaction bundle to preview.
+	 * @returns {TransactionConfirmationDialogSection[]}
 	 */
-	const getTransactionPreviewTable = transaction => {
-		if (symbolConstants.TransactionType.HASH_LOCK === transaction.type) {
+	const getConfirmationPreview = transactionBundle => {
+		const { chainName, networkIdentifier, modules: { addressBook }, accounts } = walletController;
+		const walletAccounts = accounts;
+
+		const createHashLockTableData = transaction => {
 			const hashLockData = {
 				type: transaction.type,
 				description: $t('form_transfer_hash_lock_description', {
@@ -72,29 +75,50 @@ export const useSendTransaction = ({
 			};
 
 			return objectToTableData(hashLockData);
-		}
-
-		const transfer = transaction.innerTransactions ? transaction.innerTransactions[0] : transaction;
-
-		const data = {
-			type: transfer.type,
-			sender: transfer.signerAddress,
-			recipientAddress: transfer.recipientAddress
 		};
 
-		if (transfer.message) {
-			data.messageText = transfer.message.text;
-			data.isMessageEncrypted = transfer.message.type === MessageType.ENCRYPTED_TEXT;
-		}
+		const createTransferTableData = transaction => {
+			const transfer = transaction.innerTransactions ? transaction.innerTransactions[0] : transaction;
 
-		data.mosaics = transfer.mosaics ?? transfer.tokens;
-		data.fee = transaction.fee;
+			const data = {
+				type: transfer.type,
+				sender: transfer.signerAddress,
+				recipientAddress: transfer.recipientAddress
+			};
 
-		return objectToTableData(data);
+			if (transfer.message) {
+				data.messageText = transfer.message.text;
+				data.isMessageEncrypted = transfer.message.type === MessageType.ENCRYPTED_TEXT;
+			}
+
+			data.mosaics = transfer.mosaics ?? transfer.tokens;
+			data.fee = transaction.fee;
+			
+			return objectToTableData(data);
+		};
+
+		return transactionBundle.transactions.map((transaction, index) => {
+			let tableData;
+
+			if (SymbolTransactionType.HASH_LOCK === transaction.type)
+				tableData = createHashLockTableData(transaction);
+			else
+				tableData = createTransferTableData(transaction);
+
+			return {
+				id: `section_${index}`,
+				title: '',
+				chainName,
+				networkIdentifier,
+				addressBook,
+				walletAccounts,
+				tableData
+			};
+		});
 	};
 
 	return {
 		createTransaction,
-		getTransactionPreviewTable
+		getConfirmationPreview
 	};
 };

@@ -5,6 +5,7 @@ import {
 	StyledText,
 	TransactionScreenTemplate
 } from '@/app/components';
+import { useStandardTransactionWorkflow } from '@/app/components/templates/TransactionScreenTemplate/hooks';
 import { useDebounce, useInit, useRefresh, useTransactionFees, useWalletController, useWalletRefreshLifecycle } from '@/app/hooks';
 import { $t } from '@/app/localization';
 import { HarvestingForm, HarvestingStatus, HarvestingSummary } from '@/app/screens/harvesting/components';
@@ -87,7 +88,7 @@ export const Harvesting = () => {
 	const {
 		createStartTransaction,
 		createStopTransaction,
-		getTransactionPreviewTable
+		getConfirmationPreview
 	} = useHarvestingTransaction({ walletController, selectedNodeUrl: nodeUrl });
 	const createTransaction = useCallback(async () => {
 		if (actionType === HarvestingAction.START)
@@ -146,19 +147,25 @@ export const Harvesting = () => {
 		setIsPendingTransaction(true);
 	}, []);
 
+	// Transaction Workflow
+	const workflow = useStandardTransactionWorkflow({
+		createTransaction,
+		walletController,
+		transactionFeeTiers: transactionFees,
+		transactionFeeTierLevel: feeLevel,
+		onSendSuccess: handleTransactionSendSuccess
+	});
+
 	return (
 		<TransactionScreenTemplate
 			isSendButtonDisabled={isButtonDisabled}
 			isLoading={false}
-			createTransaction={createTransaction}
-			getConfirmationPreview={getTransactionPreviewTable}
-			onSendSuccess={handleTransactionSendSuccess}
+			getConfirmationPreview={getConfirmationPreview}
 			walletController={walletController}
+			workflow={workflow}
 			isCustomSendButtonUsed={true}
 			confirmDialogTitle={confirmDialogData.title}
 			confirmDialogText={confirmDialogData.text}
-			transactionFeeTiers={transactionFees}
-			transactionFeeTierLevel={feeLevel}
 			refresh={{ onRefresh: refresh, isRefreshing }}
 		>
 			{buttonProps => (

@@ -5,19 +5,19 @@ import { objectToTableData } from '@/app/utils';
 /** @typedef {import('@/app/types/Account').AccountInfo} AccountInfo */
 /** @typedef {import('@/app/types/Account').PrivateAccount} PrivateAccount */
 /** @typedef {import('@/app/types/Wallet').WalletController} WalletController */
-/** @typedef {import('@/app/types/Table').TableData} TableData */
-/** @typedef {import('@/app/types/Transaction').Transaction} Transaction */
+/** @typedef {import('@/app/types/Transaction').TransactionBundle} TransactionBundle */
 /** @typedef {import('@/app/screens/multisig/types/Multisig').Cosignatory} Cosignatory */
+/** @typedef {import('@/app/types/Transaction').TransactionConfirmationDialogSection} TransactionConfirmationDialogSection */
 
 
 /**
  * Return type for useMultisigTransaction hook.
  * @typedef {object} UseMultisigTransactionReturnType
- * @property {() => Promise<Transaction>} createNewAccountTransaction - Creates a transaction for a new multisig account.
- * @property {() => Promise<Transaction>} createModificationTransaction
+ * @property {() => Promise<TransactionBundle>} createNewAccountTransaction - Creates a transaction for a new multisig account.
+ * @property {() => Promise<TransactionBundle>} createModificationTransaction
  *   - Creates a transaction for modifying an existing multisig account.
- * @property {(transaction: Transaction) => TableData} getTransactionPreviewTable
- *   - Generates preview table data for the confirmation dialog.
+ * @property {(transactionBundle: TransactionBundle) => TransactionConfirmationDialogSection[]} getConfirmationPreview
+ *   - Generates confirmation sections for the transaction confirmation dialog.
  */
 
 /**
@@ -40,9 +40,9 @@ export const useMultisigTransaction = ({
 	minRemoval
 }) => {
 	/**
-     * Creates a multisig account modification transaction.
-     * @returns {Promise<Transaction>}
-     */
+	 * Creates a multisig account modification transaction.
+	 * @returns {Promise<TransactionBundle>}
+	 */
 	const createNewAccountTransaction = async () => {
 		if (!multisigAccount)
 			throw new Error('Multisig account not generated');
@@ -93,12 +93,15 @@ export const useMultisigTransaction = ({
 	};
 
 	/**
-     * Generates preview table data for the transaction confirmation dialog.
-     * @param {Transaction} transaction - The transaction to preview.
-     * @returns {TableData}
-     */
-	const getTransactionPreviewTable = transaction => {
-		if (SymbolTransactionType.HASH_LOCK === transaction.type) {
+	 * Generates confirmation sections for the transaction confirmation dialog.
+	 * @param {TransactionBundle} transactionBundle - The transaction bundle to preview.
+	 * @returns {TransactionConfirmationDialogSection[]}
+	 */
+	const getConfirmationPreview = transactionBundle => {
+		const { chainName, networkIdentifier, modules: { addressBook }, accounts } = walletController;
+		const walletAccounts = accounts;
+
+		const createHashLockTableData = transaction => {
 			const hashLockData = {
 				type: transaction.type,
 				description: $t('form_transfer_hash_lock_description', {
@@ -109,35 +112,57 @@ export const useMultisigTransaction = ({
 			};
 
 			return objectToTableData(hashLockData);
-		}
-		const multisigModificationTransaction = transaction.innerTransactions[0];
-
-		const previewData = {
-			type: transaction.type,
-			transactionInitiator: transaction.signerAddress,
-			multisigAddress: multisigModificationTransaction.signerAddress
 		};
 
-		if (multisigModificationTransaction.addressAdditions.length)
-			previewData.cosignatoryAdditions = multisigModificationTransaction.addressAdditions;
+		const createMultisigModificationTableData = transaction => {
+			const multisigModificationTransaction = transaction.innerTransactions[0];
 
-		if (multisigModificationTransaction.addressDeletions.length)
-			previewData.cosignatoryDeletions = multisigModificationTransaction.addressDeletions;
+			const previewData = {
+				type: transaction.type,
+				transactionInitiator: transaction.signerAddress,
+				multisigAddress: multisigModificationTransaction.signerAddress
+			};
 
-		if (multisigModificationTransaction.minApprovalDelta !== 0)
-			previewData.minApprovalDelta = multisigModificationTransaction.minApprovalDelta;
+			if (multisigModificationTransaction.addressAdditions.length)
+				previewData.cosignatoryAdditions = multisigModificationTransaction.addressAdditions;
 
-		if (multisigModificationTransaction.minRemovalDelta !== 0)
-			previewData.minRemovalDelta = multisigModificationTransaction.minRemovalDelta;
+			if (multisigModificationTransaction.addressDeletions.length)
+				previewData.cosignatoryDeletions = multisigModificationTransaction.addressDeletions;
 
-		previewData.fee = transaction.fee;
+			if (multisigModificationTransaction.minApprovalDelta !== 0)
+				previewData.minApprovalDelta = multisigModificationTransaction.minApprovalDelta;
 
-		return objectToTableData(previewData);
+			if (multisigModificationTransaction.minRemovalDelta !== 0)
+				previewData.minRemovalDelta = multisigModificationTransaction.minRemovalDelta;
+
+			previewData.fee = transaction.fee;
+
+			return objectToTableData(previewData);
+		};
+
+		return transactionBundle.transactions.map((transaction, index) => {
+			let tableData;
+
+			if (SymbolTransactionType.HASH_LOCK === transaction.type)
+				tableData = createHashLockTableData(transaction);
+			else
+				tableData = createMultisigModificationTableData(transaction);
+
+			return {
+				id: `section_${index}`,
+				title: '',
+				chainName,
+				networkIdentifier,
+				addressBook,
+				walletAccounts,
+				tableData
+			};
+		});
 	};
 
 	return {
 		createNewAccountTransaction,
 		createModificationTransaction,
-		getTransactionPreviewTable
+		getConfirmationPreview
 	};
 };

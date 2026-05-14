@@ -3,26 +3,18 @@ import { $t } from '@/app/localization';
 import React from 'react';
 import { ScrollView } from 'react-native-gesture-handler';
 
-/** @typedef {import('wallet-common-core/src/lib/models/TransactionBundle').TransactionBundle} TransactionBundle */
-
-/** @typedef {import('wallet-common-core/src/lib/controllers/WalletController').WalletController} WalletController */
-
-/** @typedef {import('@/app/types/Table').TableRow} TableRow */
-
-/** @typedef {import('wallet-common-core/src/types/Transaction').Transaction} Transaction */
+/** @typedef {import('../types/ConfirmationDialog').ConfirmationDialogSection} ConfirmationDialogSection */
 
 /**
  * A dialog component for confirming transaction details before submission.
- * Displays a scrollable preview of all transactions in a bundle with their details rendered in table format.
- * Supports both single transactions and composite bundles with multiple transactions.
+ * Displays a scrollable preview of all confirmation sections with their details rendered in table format.
+ * Each section carries its own chain context (address book, accounts, chain name, network identifier),
+ * making the dialog multi-chain aware.
  * @param {object} props - Component props.
  * @param {boolean} props.isVisible - Controls the visibility of the confirmation dialog.
  * @param {string} [props.title] - Custom dialog title, defaults to localized transfer confirmation title.
  * @param {string} [props.text] - Optional descriptive text displayed below the title.
- * @param {TransactionBundle|null} props.transactionBundle - The transaction bundle containing transactions to preview.
- * @param {function(Transaction): TableRow[]} props.getConfirmationPreview
- * - Callback function that generates table row data for a transaction preview.
- * @param {WalletController} props.walletController - Wallet controller instance providing address book, accounts, and network info.
+ * @param {ConfirmationDialogSection[]} props.sections - Ordered array of confirmation sections to preview.
  * @param {function(): void} props.onConfirm - Callback invoked when user confirms the transaction.
  * @param {function(): void} props.onCancel - Callback invoked when user cancels the confirmation.
  * @returns {React.ReactNode} Transaction confirmation dialog component.
@@ -31,24 +23,19 @@ export const TransactionConfirmationDialog = ({
 	isVisible,
 	title,
 	text,
-	transactionBundle,
-	getConfirmationPreview,
-	walletController,
+	sections,
 	onConfirm,
 	onCancel
 }) => {
-	const isTransactionCounterShown = transactionBundle?.isComposite;
+	const isMultiSection = sections?.length > 1;
 	const isFirstDividerShown = !!text;
-	const isNextDividerShown = isTransactionCounterShown;
+	const isNextDividerShown = isMultiSection;
 
 	const isDividerShown = index => {
 		if (index === 0)
 			return isFirstDividerShown;
 
-		if (index > 0)
-			return isNextDividerShown;
-
-		return false;
+		return isNextDividerShown;
 	};
 
 	return (
@@ -62,21 +49,21 @@ export const TransactionConfirmationDialog = ({
 		>
 			<ScrollView>
 				<Stack>
-					{isVisible && transactionBundle?.transactions.map((transaction, index) => (
-						<Stack key={`t_preview_${index}`}>
+					{isVisible && sections?.map((section, index) => (
+						<Stack key={section.id ?? `section_${index}`}>
 							{isDividerShown(index) && <Divider />}
-							{isTransactionCounterShown && (
+							{isMultiSection && section.title ? (
 								<StyledText type="title" size="s">
-									{$t('form_transfer_transaction_preview_title', { index: index + 1 })}
+									{section.title}
 								</StyledText>
-							)}
+							) : null}
 							<TableView
 								isTitleTranslatable
-								data={getConfirmationPreview(transaction)}
-								addressBook={walletController.modules.addressBook}
-								walletAccounts={walletController.accounts}
-								chainName={walletController.chainName}
-								networkIdentifier={walletController.networkIdentifier}
+								data={section.tableData}
+								addressBook={section.addressBook}
+								walletAccounts={section.walletAccounts}
+								chainName={section.chainName}
+								networkIdentifier={section.networkIdentifier}
 							/>
 						</Stack>
 					))}

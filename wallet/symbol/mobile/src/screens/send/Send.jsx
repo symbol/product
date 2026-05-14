@@ -11,6 +11,7 @@ import {
 	TextBox,
 	TransactionScreenTemplate
 } from '@/app/components';
+import { useStandardTransactionWorkflow } from '@/app/components/templates/TransactionScreenTemplate/hooks';
 import { useDebounce, useTransactionFees, useWalletController } from '@/app/hooks';
 import { $t } from '@/app/localization';
 import { Router } from '@/app/router/Router';
@@ -137,7 +138,7 @@ export const Send = props => {
 	// Transaction Creation
 	const {
 		createTransaction,
-		getTransactionPreviewTable
+		getConfirmationPreview
 	} = useSendTransaction({
 		walletController,
 		senderAddress,
@@ -176,6 +177,14 @@ export const Send = props => {
 
 	const tokenPrice = getSelectedTokenPrice(selectedTokenId, nativeTokenId, price);
 
+	// Transaction Workflow
+	const workflow = useStandardTransactionWorkflow({
+		createTransaction,
+		walletController,
+		transactionFeeTiers: transactionFees,
+		transactionFeeTierLevel: transactionSpeed
+	});
+
 	// Derived State
 	const isLoading = !isWalletReady || isSenderInfoLoading;
 	const isSendButtonDisabled = !isNetworkConnectionReady
@@ -192,12 +201,10 @@ export const Send = props => {
 			isSendButtonDisabled={isSendButtonDisabled}
 			isMultisigAccount={currentAccountInfo.isMultisig}
 			accountCosignatories={currentAccountInfo.cosignatories}
-			createTransaction={createTransaction}
-			getConfirmationPreview={getTransactionPreviewTable}
+			getConfirmationPreview={getConfirmationPreview}
 			onComplete={Router.goBack}
 			walletController={walletController}
-			transactionFeeTiers={transactionFees}
-			transactionFeeTierLevel={transactionSpeed}
+			workflow={workflow}
 		>
 			<Spacer>
 				<Stack>

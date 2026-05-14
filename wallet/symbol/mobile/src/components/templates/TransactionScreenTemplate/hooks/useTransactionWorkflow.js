@@ -1,55 +1,36 @@
+import { useTransactionConfirmationPolling } from './useTransactionConfirmationPolling';
+import { TransactionWorkflowStatus } from '../constants';
 import { useAsyncManager } from '@/app/hooks';
 import { handleError } from '@/app/utils';
 import { useState } from 'react';
 
-/** @typedef {import('wallet-common-core/src/lib/models/TransactionBundle').TransactionBundle} TransactionBundle */
-
-/** @typedef {import('@/app/types/AsyncManager').AsyncManager} AsyncManager */
+/** @typedef {import('@/app/types/Transaction').TransactionBundle} TransactionBundle */
+/** @typedef {import('@/app/types/Transaction').TransactionFeeTiers} TransactionFeeTiers */
+/** @typedef {import('@/app/types/Transaction').TransactionFeeTierLevel} TransactionFeeTierLevel */
+/** @typedef {import('@/app/types/Wallet').WalletController} WalletController */
+/** @typedef {import('../types/Workflow').StandardTransactionWorkflow} StandardTransactionWorkflow */
 
 /** @typedef {function(): Promise<TransactionBundle>} CreateTransactionCallback */
-
 /** @typedef {function(Error): void} ErrorCallback */
-
 /** @typedef {function(): void} SuccessCallback */
 
-/** @typedef {import('wallet-common-core/src/lib/controllers/WalletController').WalletController} WalletController */
-
-/** @typedef {import('wallet-common-core/src/types/Transaction').TransactionFeeTiers} TransactionFeeTiers */
-
-/** @typedef {import('wallet-common-core/src/types/Transaction').TransactionFeeTierLevel} TransactionFeeTierLevel */
-
 /**
- * Return type of the useTransactionWorkflow hook, containing the full send workflow state and functions.
- * @typedef {object} TransactionWorkflow
- * @property {TransactionBundle|null} transactionBundle - The current transaction bundle being processed, null if not yet created.
- * @property {string[]} signedTransactionHashes - Array of hashes of signed transactions in the bundle.
- * @property {AsyncManager<TransactionBundle>} createManager - Manager for handling transaction creation operations.
- * @property {AsyncManager<TransactionBundle>} signManager - Manager for handling transaction signing operations.
- * @property {AsyncManager<void>} announceManager - Manager for handling transaction announcement operations.
- * @property {function(): void} reset - Resets the workflow state, clearing transaction bundle and resetting all managers.
- * @property {function(): Promise<void>} executeSignAndAnnounce - Executes the sign and announce workflow 
- * for the current transaction bundle.
- * @property {function(): Promise<TransactionBundle>} createTransaction - Creates a new transaction bundle using the provided callback.
- */
-
-/**
- * React hook for managing the transaction send workflow (create -> sign -> announce).
+ * React hook for managing the full transaction send workflow (create → sign → announce → confirm).
+ * Includes built-in confirmation polling and derives a single status value for UI consumption.
  * @param {object} params - The parameters object.
- * @param {CreateTransactionCallback} params.createTransactionCallback - Callback to create the transaction bundle.
+ * @param {CreateTransactionCallback} params.createTransaction - Callback to create the transaction bundle.
  * @param {WalletController} params.walletController - The wallet controller instance.
- * @param {TransactionFeeTiers[]} [params.transactionFeeTiers] - Optional array of fee tiers for each transaction.
+ * @param {TransactionFeeTiers[]} [params.transactionFeeTiers] - Optional fee tiers per transaction.
  * @param {TransactionFeeTierLevel} [params.transactionFeeTierLevel] - Optional fee tier level to apply.
- * @param {ErrorCallback} [params.onCreateTransactionError] - Optional error callback for transaction creation.
- * @param {SuccessCallback} [params.onSendSuccess] - Optional success callback after sign and announce.
- * @param {ErrorCallback} [params.onSendError] - Optional error callback for sign and announce.
- * @returns {TransactionWorkflow} The transaction workflow state and functions.
+ * @param {SuccessCallback} [params.onSendSuccess] - Called after successful announce.
+ * @param {ErrorCallback} [params.onSendError] - Called when sign or announce fails.
+ * @returns {StandardTransactionWorkflow} The workflow state and functions.
  */
-export const useTransactionWorkflow = ({
-	createTransactionCallback,
+export const useStandardTransactionWorkflow = ({
+	createTransaction: createTransactionCallback,
 	walletController,
 	transactionFeeTiers,
 	transactionFeeTierLevel,
-	onCreateTransactionError,
 	onSendSuccess,
 	onSendError
 }) => {
@@ -60,15 +41,15 @@ export const useTransactionWorkflow = ({
 	const createManager = useAsyncManager({
 		callback: async () => {
 			const bundle = await createTransactionCallback();
-            
-			if (transactionFeeTiers) 
+
+			if (transactionFeeTiers)
 				bundle.applyFeeTier(transactionFeeTiers, transactionFeeTierLevel);
-            
+
 			setTransactionBundle(bundle);
-            
+
 			return bundle;
 		},
-		onError: onCreateTransactionError ?? handleError
+		onError: handleError
 	});
 
 	// Sign transaction manager
@@ -76,7 +57,7 @@ export const useTransactionWorkflow = ({
 		callback: async bundle => {
 			const signedBundle = await walletController.signTransactionBundle(bundle);
 			setSignedTransactionHashes(signedBundle.transactions.map(tx => tx.hash));
-            
+
 			return signedBundle;
 		}
 	});
@@ -88,6 +69,13 @@ export const useTransactionWorkflow = ({
 		}
 	});
 
+	// Transaction Confirmation Polling
+	const confirmationPolling = useTransactionConfirmationPolling({
+		walletController,
+		signedTransactionHashes,
+		isActive: announceManager.isCompleted
+	});
+
 	// Interface methods
 	const reset = () => {
 		setTransactionBundle(null);
@@ -95,8 +83,9 @@ export const useTransactionWorkflow = ({
 		createManager.reset();
 		signManager.reset();
 		announceManager.reset();
+		confirmationPolling.reset();
 	};
-	const createTransaction = createManager.call; 
+	const createTransaction = createManager.call;
 	const executeSignAndAnnounce = async () => {
 		try {
 			const signedBundle = await signManager.call(transactionBundle);
@@ -107,14 +96,89 @@ export const useTransactionWorkflow = ({
 		}
 	};
 
-	return {
-		transactionBundle,
-		signedTransactionHashes,
+	// Status
+	const status = createStatus({
 		createManager,
 		signManager,
 		announceManager,
-		reset,
+		confirmationPolling,
+		signedTransactionHashes
+	});
+
+	const managersList = [createManager, signManager, announceManager];
+
+	return {
+		isSending: managersList.some(manager => manager.isLoading),
+		isFailed: managersList.some(manager => manager.error),
+		isSent: managersList.every(manager => manager.isCompleted),
+		transaction: transactionBundle,
+		status,
+		managers: {
+			createManager,
+			signManager,
+			announceManager
+		},
+		hashes: {
+			signed: signedTransactionHashes,
+			confirmed: confirmationPolling.confirmedTransactionHashes,
+			failed: confirmationPolling.failedTransactionHashes,
+			partial: confirmationPolling.partialTransactionHashes
+		},
 		createTransaction,
-		executeSignAndAnnounce
+		executeSignAndAnnounce,
+		reset
 	};
+};
+
+const createStatus = ({ 
+	createManager, 
+	signManager, 
+	announceManager, 
+	confirmationPolling, 
+	signedTransactionHashes 
+}) => {
+	const isAllConfirmed = signedTransactionHashes.length > 0
+		&& confirmationPolling.confirmedTransactionHashes.length === signedTransactionHashes.length;
+	const hasFailedTxs = confirmationPolling.failedTransactionHashes.length > 0;
+	const isPartialTxs = confirmationPolling.partialTransactionHashes.length > 0;
+
+	let status;
+
+	// create
+	if (createManager.isLoading)
+		status = TransactionWorkflowStatus.CREATING;
+	else if (createManager.error)
+		status = TransactionWorkflowStatus.CREATE_ERROR;
+	else if (createManager.isCompleted && !signManager.isLoading && !signManager.isCompleted && !signManager.error)
+		status = TransactionWorkflowStatus.CREATED;
+
+	// sign
+	else if (signManager.isLoading)
+		status = TransactionWorkflowStatus.SIGNING;
+	else if (signManager.error)
+		status = TransactionWorkflowStatus.SIGN_ERROR;
+	else if (signManager.isCompleted && !announceManager.isLoading && !announceManager.isCompleted && !announceManager.error)
+		status = TransactionWorkflowStatus.SIGNED;
+
+	// announce
+	else if (announceManager.isLoading)
+		status = TransactionWorkflowStatus.ANNOUNCING;
+	else if (announceManager.error)
+		status = TransactionWorkflowStatus.ANNOUNCE_ERROR;
+	else if (announceManager.isCompleted && !isAllConfirmed && !hasFailedTxs && !isPartialTxs)
+		status = TransactionWorkflowStatus.ANNOUNCED;
+
+	// post-announce states
+	else if (isAllConfirmed)
+		status = TransactionWorkflowStatus.CONFIRMED;
+	else if (hasFailedTxs)
+		status = TransactionWorkflowStatus.FAILED_TRANSACTIONS;
+	else if (isPartialTxs)
+		status = TransactionWorkflowStatus.PARTIAL;
+
+	// default to idle if nothing has started yet
+	else
+		status = TransactionWorkflowStatus.IDLE;
+
+	return status;
 };
