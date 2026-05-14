@@ -41,7 +41,6 @@ class NemAccountInfo:  # pylint: disable=too-many-instance-attributes
 		self.harvested_blocks = 0
 
 		self.remote_status = None
-		self.status = None
 
 		self.min_cosignatories = None
 		self.cosignatories = []
@@ -197,7 +196,6 @@ class NemConnector(BasicConnector):
 
 		meta_json = response_json['meta']
 		account_info.remote_status = meta_json['remoteStatus']
-		account_info.status = meta_json['status']
 
 		account_info.cosignatories = [Address(cosignatories['address']) for cosignatories in meta_json['cosignatories']]
 		account_info.cosignatory_of = [Address(cosignatory_of['address']) for cosignatory_of in meta_json['cosignatoryOf']]

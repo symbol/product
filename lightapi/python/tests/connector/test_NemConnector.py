@@ -887,7 +887,6 @@ def _assert_account_info_1(account_info):
 	assert 0.0019854120211438703 == account_info.importance
 	assert 54553 == account_info.harvested_blocks
 	assert 'ACTIVE' == account_info.remote_status
-	assert 'LOCKED' == account_info.status
 	assert account_info.min_cosignatories is None
 	assert [] == account_info.cosignatories
 	assert [] == account_info.cosignatory_of
