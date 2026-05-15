@@ -212,7 +212,7 @@ class NemDatabase(DatabaseConnectionPool):
 		)
 
 	def _create_transaction_view(self, transaction, inner_transaction=None):
-		value = self._build_transaction_payload(transaction.transaction_type, transaction.payload, transaction.amount, transaction.mosaics)
+		value = self._build_transaction_payload(transaction.transaction_type, transaction.payload, transaction.mosaics)
 		embedded_transaction = []
 		from_address = _format_address_bytes_to_string(transaction.from_address)
 		to_address = _format_address_bytes_to_string(transaction.to_address) if transaction.to_address else None
@@ -232,7 +232,6 @@ class NemDatabase(DatabaseConnectionPool):
 				'value': self._build_transaction_payload(
 					inner_transaction.transaction_type,
 					inner_transaction.payload,
-					inner_transaction.amount,
 					inner_transaction.mosaics
 				),
 			})
@@ -407,7 +406,6 @@ class NemDatabase(DatabaseConnectionPool):
 				t.signature,
 				t.recipient_address as to_address,
 				t.payload,
-				t.amount,
 				COALESCE(m.mosaics, '[]'::json) AS mosaics
 			FROM transactions t
 			LEFT JOIN LATERAL (
@@ -626,7 +624,7 @@ class NemDatabase(DatabaseConnectionPool):
 
 			return [self._create_mosaic_rich_list_view(result) for result in results]
 
-	def _build_transaction_payload(self, transaction_type, payload, amount, mosaics):
+	def _build_transaction_payload(self, transaction_type, payload, mosaics):
 		"""Builds transaction payload based on transaction type."""
 
 		value = []
@@ -640,19 +638,10 @@ class NemDatabase(DatabaseConnectionPool):
 					},
 				})
 
-			if mosaics:
-				multiplier = 0 if amount == 0 else _format_xem_relative(amount)
-				for mosaic in mosaics:
-					mosaic_amount = mosaic['quantity'] * multiplier
-
-					value.append({
-						'namespace': mosaic['namespace_name'],
-						'amount': _format_relative(mosaic_amount, mosaic['divisibility'])
-					})
-			else:
+			for mosaic in mosaics:
 				value.append({
-					'namespace': 'nem.xem',
-					'amount': _format_xem_relative(amount)
+					'namespace': mosaic['namespace_name'],
+					'amount': _format_relative(mosaic['quantity'], mosaic['divisibility'])
 				})
 		elif transaction_type == TransactionType.ACCOUNT_KEY_LINK.value:
 			value.append({

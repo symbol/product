@@ -22,7 +22,6 @@ TransactionRecord = namedtuple('TransactionRecord', [
 	'signature',
 	'to_address',
 	'payload',
-	'amount',
 	'mosaics'
 ])
 

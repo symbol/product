@@ -83,7 +83,6 @@ Transaction = namedtuple('Transaction', [
 	'timestamp',
 	'deadline',
 	'signature',
-	'amount',
 	'transaction_type',
 	'is_inner',
 	'sender_address',
@@ -251,7 +250,6 @@ TRANSACTIONS = [
 		fee=150000,
 		timestamp='2015-03-29 00:06:25',
 		deadline='2015-03-29 20:34:19',
-		amount=5000000,
 		signature='0' * 128,
 		transaction_type=257,
 		is_inner=False,
@@ -268,7 +266,6 @@ TRANSACTIONS = [
 		fee=150000,
 		timestamp='2015-03-29 00:06:25',
 		deadline='2015-03-29 20:34:19',
-		amount=2000000,
 		signature='0' * 128,
 		transaction_type=257,
 		is_inner=False,
@@ -288,7 +285,6 @@ TRANSACTIONS = [
 		fee=150000,
 		timestamp='2015-03-29 00:06:25',
 		deadline='2015-03-29 20:34:19',
-		amount=None,
 		signature='0' * 128,
 		transaction_type=2049,
 		is_inner=False,
@@ -306,7 +302,6 @@ TRANSACTIONS = [
 		fee=150000,
 		timestamp='2015-03-29 00:06:25',
 		deadline='2015-03-29 20:34:19',
-		amount=None,
 		signature='0' * 128,
 		transaction_type=4097,
 		is_inner=False,
@@ -329,7 +324,6 @@ TRANSACTIONS = [
 		fee=150000,
 		timestamp='2015-03-29 00:06:25',
 		deadline='2015-03-29 20:34:19',
-		amount=None,
 		signature='0' * 128,
 		transaction_type=4100,
 		is_inner=False,
@@ -358,7 +352,6 @@ TRANSACTIONS = [
 		fee=150000,
 		timestamp='2015-03-29 00:06:25',
 		deadline='2015-03-29 20:34:19',
-		amount=5000000,
 		signature='0' * 128,
 		transaction_type=257,
 		is_inner=True,
@@ -375,7 +368,6 @@ TRANSACTIONS = [
 		fee=150000,
 		timestamp='2015-03-29 00:06:25',
 		deadline='2015-03-29 20:34:19',
-		amount=None,
 		signature='0' * 128,
 		transaction_type=8193,
 		is_inner=False,
@@ -394,7 +386,6 @@ TRANSACTIONS = [
 		fee=150000,
 		timestamp='2015-03-29 00:06:25',
 		deadline='2015-03-29 20:34:19',
-		amount=None,
 		signature='0' * 128,
 		transaction_type=16385,
 		is_inner=False,
@@ -426,7 +417,6 @@ TRANSACTIONS = [
 		fee=150000,
 		timestamp='2015-03-29 00:06:25',
 		deadline='2015-03-29 20:34:19',
-		amount=None,
 		signature='0' * 128,
 		transaction_type=16386,
 		is_inner=False,
@@ -444,17 +434,22 @@ TRANSACTIONS_MOSAIC = [
 	TransactionMosaic(  # use for transaction v1
 		transaction_id=1,
 		namespace_name='nem.xem',
-		quantity=1000000  # default quantity for transfer transaction v1, as amount is stored in payload
+		quantity=5000000
 	),
 	TransactionMosaic(  # use for transaction v2
 		transaction_id=2,
 		namespace_name='nem.xem',
-		quantity=2000000
+		quantity=4000000
 	),
 	TransactionMosaic(
 		transaction_id=2,
 		namespace_name='root.mosaic',
-		quantity=2000000
+		quantity=4000000
+	),
+	TransactionMosaic(  # use for inner transfer transaction
+		transaction_id=6,
+		namespace_name='nem.xem',
+		quantity=5000000
 	)
 ]
 
@@ -924,7 +919,6 @@ def initialize_database(db_config, network_name):
 				timestamp timestamp NOT NULL,
 				deadline timestamp NOT NULL,
 				signature bytea,
-				amount bigint,
 				is_inner boolean DEFAULT false,
 				payload jsonb
 			)
@@ -937,7 +931,7 @@ def initialize_database(db_config, network_name):
 				id serial PRIMARY KEY,
 				transaction_id int NOT NULL,
 				namespace_name varchar(146),
-				quantity bigint
+				quantity numeric
 			)
 			'''
 		)
@@ -1084,11 +1078,10 @@ def initialize_database(db_config, network_name):
 					timestamp,
 					deadline,
 					signature,
-					amount,
 					is_inner,
 					payload
 				)
-				VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+				VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
 				''',
 				(
 					unhexlify(transaction.transaction_hash),
@@ -1101,7 +1094,6 @@ def initialize_database(db_config, network_name):
 					transaction.timestamp,
 					transaction.deadline,
 					unhexlify(transaction.signature) if transaction.signature else None,
-					transaction.amount,
 					transaction.is_inner,
 					json.dumps(transaction.payload) if transaction.payload else None
 				)
