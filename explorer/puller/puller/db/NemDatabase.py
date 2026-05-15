@@ -230,7 +230,6 @@ class NemDatabase(DatabaseConnection):
 				timestamp timestamp NOT NULL,
 				deadline timestamp NOT NULL,
 				signature bytea,
-				amount bigint,
 				is_inner boolean DEFAULT false,
 				payload jsonb
 			)
@@ -244,7 +243,7 @@ class NemDatabase(DatabaseConnection):
 				id serial PRIMARY KEY,
 				transaction_id int NOT NULL,
 				namespace_name varchar(146),
-				quantity bigint,
+				quantity numeric,
 				FOREIGN KEY (transaction_id) REFERENCES transactions(id)
 				ON DELETE CASCADE
 			)
@@ -493,11 +492,10 @@ class NemDatabase(DatabaseConnection):
 				timestamp,
 				deadline,
 				signature,
-				amount,
 				is_inner,
 				payload
 			)
-			VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+			VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
 			RETURNING id
 			''',
 			(
@@ -511,7 +509,6 @@ class NemDatabase(DatabaseConnection):
 				transaction.timestamp,
 				transaction.deadline,
 				unhexlify(transaction.signature) if transaction.signature else None,
-				transaction.amount,
 				transaction.is_inner,
 				json.dumps(transaction.payload) if transaction.payload else None
 			)

@@ -918,7 +918,7 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 			expected_supply_change=500000
 		)
 
-	def _assert_transaction_record(self, transaction, payload, amount=None, recipient_address=None):
+	def _assert_transaction_record(self, transaction, payload, recipient_address=None):
 		# Act:
 		record = self.puller._build_transaction_record(transaction, False)  # pylint: disable=protected-access
 
@@ -930,7 +930,6 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 			fee=transaction.fee,
 			timestamp='2015-03-29 20:29:42+00:00',
 			deadline='2015-03-29 23:16:22+00:00',
-			amount=amount,
 			signature=transaction.signature,
 			transaction_type=transaction.transaction_type,
 			is_inner=False,
@@ -950,7 +949,6 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 					'is_plain': 1
 				}
 			},
-			amount=180000040000000,
 			recipient_address=transaction.recipient
 		)
 
@@ -963,7 +961,6 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 		self._assert_transaction_record(
 			transaction,
 			{'message': None},
-			amount=180000040000000,
 			recipient_address=transaction.recipient
 		)
 
@@ -1123,7 +1120,7 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 			transfer.timestamp,
 			transfer.deadline,
 			transfer.signature,
-			transfer.amount,
+			200000,
 			transfer.recipient,
 			transfer.message,
 			[
@@ -1141,7 +1138,17 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 		mock_build_transaction_record.assert_called_once()
 		mock_insert_transaction.assert_called_once()
 		insert_transaction_mosaic_calls = mock_insert_transaction_mosaic.call_args_list
-		for index, mosaic in enumerate(transaction.mosaics):
+		expected_mosaics = [
+			Mosaic(
+				'namespace.test',
+				200000
+			),
+			Mosaic(
+				'nem.xem',
+				1600000
+			)
+		]
+		for index, mosaic in enumerate(expected_mosaics):
 			self.assertEqual(insert_transaction_mosaic_calls[index][0], (
 				cursor,
 				1,  # transaction_id from insert_transaction mock
@@ -1171,7 +1178,7 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 		mock_insert_transaction_mosaic.assert_called_once_with(
 			cursor,
 			mock_insert_transaction.return_value,
-			Mosaic('nem.xem', 1000000)
+			Mosaic('nem.xem', transaction.amount)
 		)
 
 	@patch('puller.facade.NemPuller.NemPuller._build_transaction_record')
