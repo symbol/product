@@ -84,6 +84,7 @@ export const BridgeSwap = props => {
 	// Amount and validation
 	const {
 		amount,
+		amountInput,
 		isAmountValid,
 		availableBalance,
 		changeAmount,
@@ -218,7 +219,7 @@ export const BridgeSwap = props => {
 						<InputAmount
 							label={$t('form_transfer_input_amount')}
 							availableBalance={availableBalance}
-							value={amount}
+							value={amountInput}
 							extraValidators={[validateEstimation(estimation)]}
 							onChange={changeAmount}
 							onValidityChange={changeAmountValidity}
