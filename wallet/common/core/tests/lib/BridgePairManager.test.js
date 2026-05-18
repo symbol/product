@@ -6,7 +6,6 @@ import { jest } from '@jest/globals';
 
 const BRIDGE_URL = 'https://bridge.example.com';
 const NETWORK_IDENTIFIER = 'testnet';
-const CUSTOM_ID = 'my-custom-bridge-pair-id';
 
 // Symbol (native) chain constants
 
@@ -210,25 +209,6 @@ describe('bridge/BridgePairManager', () => {
 
 				// Act & Assert:
 				expect(manager.hasHistory).toBe(true);
-			});
-		});
-
-		describe('id', () => {
-			it('generates default id from sorted chain names when not specified', () => {
-				// Arrange:
-				const { manager } = createManager();
-
-				// Act & Assert:
-				// chain names: 'symbol' and 'ethereum' → sorted: ['ethereum', 'symbol']
-				expect(manager.id).toBe(`${ETHEREUM_CHAIN_NAME}-${SYMBOL_CHAIN_NAME}`);
-			});
-
-			it('uses custom id when specified', () => {
-				// Arrange:
-				const { manager } = createManager({ managerOptions: { id: CUSTOM_ID } });
-
-				// Act & Assert:
-				expect(manager.id).toBe(CUSTOM_ID);
 			});
 		});
 

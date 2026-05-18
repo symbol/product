@@ -3,16 +3,13 @@ import { absoluteToRelativeAmount, relativeToAbsoluteAmount } from '../../utils/
 import { TransactionBundle } from '../models/TransactionBundle';
 
 /** @typedef {import('../controller/WalletController').WalletController} WalletController */
-
 /** @typedef {import('../../types/Account').PublicAccount} PublicAccount */
 /** @typedef {import('../../types/Bridge').BridgeHelper} BridgeHelper */
-/** @typedef {import('../../types/Bridge').BridgeNetworkConfig} BridgeNetworkConfig */
 /** @typedef {import('../../types/Bridge').BridgeConfig} BridgeConfig */
 /** @typedef {import('../../types/Bridge').BridgeRequest} BridgeRequest */
 /** @typedef {import('../../types/Bridge').BridgeError} BridgeError */
 /** @typedef {import('../../types/Bridge').BridgeEstimation} BridgeEstimation */
 /** @typedef {import('../../types/Network').NetworkMap<string>} NetworkUrlMap */
-/** @typedef {import('../../types/Token').Token} Token */
 /** @typedef {import('../../types/Token').TokenInfo} TokenInfo */
 
 /**
@@ -49,9 +46,6 @@ export class BridgePairManager {
 	#config;
 
 	/** @type {string} */
-	#id;
-
-	/** @type {string} */
 	#mode;
 
 	/** @type {BridgeHelper} */
@@ -63,7 +57,6 @@ export class BridgePairManager {
 	/**
 	 * Create BridgePairManager instance.
 	 * @param {object} options - Options.
-	 * @param {string} options.id - Custom provided ID to identify the bridge pair manager.
 	 * @param {string} options.mode - Fixed bridge direction: 'wrap' or 'unwrap'.
 	 * @param {WalletController} options.nativeWalletController - Wallet controller for the native chain.
 	 * @param {WalletController} options.wrappedWalletController - Wallet controller for the wrapped chain.
@@ -83,10 +76,6 @@ export class BridgePairManager {
 			makeRequest: options.makeRequest,
 			networkIdentifier: null
 		});
-		this.#id = options.id ?? [
-			this.#nativeWalletController.chainName,
-			this.#wrappedWalletController.chainName
-		].sort().join('-');
 
 		if (options.mode !== BridgeMode.WRAP && options.mode !== BridgeMode.UNWRAP)
 			throw new Error(`Invalid bridge mode: ${options.mode}. Must be 'wrap' or 'unwrap'`);
@@ -141,13 +130,6 @@ export class BridgePairManager {
 		return this.#config;
 	}
 
-	/**
-	 * Get bridge pair manager ID.
-	 * @returns {string}
-	 */
-	get id() {
-		return this.#id;
-	}
 
 	/**
 	 * Get the fixed bridge direction.
@@ -171,6 +153,22 @@ export class BridgePairManager {
 	 */
 	get wrappedTokenInfo() {
 		return this.#config ? this.#config.wrappedNetwork.tokenInfo : null;
+	}
+
+	/**
+	 * Get token info for the source side of the fixed mode.
+	 * @returns {TokenInfo|null}
+	 */
+	get sourceTokenInfo() {
+		return this.#mode === BridgeMode.WRAP ? this.nativeTokenInfo : this.wrappedTokenInfo;
+	}
+
+	/**
+	 * Get token info for the target side of the fixed mode.
+	 * @returns {TokenInfo|null}
+	 */
+	get targetTokenInfo() {
+		return this.#mode === BridgeMode.WRAP ? this.wrappedTokenInfo : this.nativeTokenInfo;
 	}
 
 	/**
@@ -238,8 +236,8 @@ export class BridgePairManager {
 	 * @returns {SwapContext}
 	 */
 	#getSwapContext = () => {
-		const sourceToken = this.#mode === BridgeMode.WRAP ? this.nativeTokenInfo : this.wrappedTokenInfo;
-		const targetToken = this.#mode === BridgeMode.WRAP ? this.wrappedTokenInfo : this.nativeTokenInfo;
+		const sourceToken = this.sourceTokenInfo;
+		const targetToken = this.targetTokenInfo;
 
 		return {
 			mode: this.#mode,
@@ -292,7 +290,7 @@ export class BridgePairManager {
 	/**
 	 * Fetch recent history for the fixed mode (requests, errors, and pending).
 	 * @param {number} count - Number of items to return.
-	 * @returns {Promise<BridgeRequest[]>}
+	 * @returns {Promise<Array<BridgeRequest|BridgeError>>}
 	 */
 	fetchRecentHistory = async count => {
 		const [requests, errors, pending] = await Promise.all([
@@ -393,8 +391,8 @@ export class BridgePairManager {
 		if (!recipientAccount)
 			throw new Error('Failed to estimate bridge request. No recipient account selected');
 
-		const sourceToken = this.#mode === BridgeMode.WRAP ? this.nativeTokenInfo : this.wrappedTokenInfo;
-		const targetToken = this.#mode === BridgeMode.WRAP ? this.wrappedTokenInfo : this.nativeTokenInfo;
+		const sourceToken = this.sourceTokenInfo;
+		const targetToken = this.targetTokenInfo;
 		const absoluteAmount = relativeToAbsoluteAmount(amount, sourceToken.divisibility);
 
 		try {
@@ -437,8 +435,7 @@ export class BridgePairManager {
 			? this.#config.nativeNetwork
 			: this.#config.wrappedNetwork;
 
-		const sourceToken = this.#mode === BridgeMode.WRAP ? this.nativeTokenInfo : this.wrappedTokenInfo;
-		const token = { ...sourceToken, amount };
+		const token = { ...this.sourceTokenInfo, amount };
 
 		const bridgeHelper = this.#mode === BridgeMode.WRAP
 			? this.#nativeBridgeHelper

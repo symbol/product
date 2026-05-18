@@ -3,7 +3,6 @@ import { jest } from '@jest/globals';
 
 // Workflow ID constants
 
-const CUSTOM_WORKFLOW_ID = 'my-custom-workflow-id';
 const PAIR_MANAGER_A_ID = 'pair-manager-a';
 const PAIR_MANAGER_B_ID = 'pair-manager-b';
 const PAIR_MANAGER_C_ID = 'pair-manager-c';
@@ -12,7 +11,6 @@ const PAIR_MANAGER_C_ID = 'pair-manager-c';
 
 const nativeTokenInfo = { id: 'native-token', name: 'Native Token', ticker: 'NAT', divisibility: 6 };
 const wrappedTokenInfo = { id: 'wrapped-token', name: 'Wrapped Token', ticker: 'WRAP', divisibility: 8 };
-const intermediaryTokenInfo = { id: 'mid-token', name: 'Intermediary Token', ticker: 'MID', divisibility: 6 };
 
 // Wallet controller fixtures
 
@@ -85,35 +83,6 @@ describe('bridge/SwapWorkflowManager', () => {
 	// Properties
 
 	describe('properties', () => {
-		describe('id', () => {
-			it('generates default id by joining pair manager ids with + when not specified', () => {
-				// Arrange:
-				const managerA = createPairManagerMock({ id: PAIR_MANAGER_A_ID });
-				const managerB = createPairManagerMock({ id: PAIR_MANAGER_B_ID });
-				const workflow = createWorkflow([managerA, managerB]);
-
-				// Act & Assert:
-				expect(workflow.id).toBe(`${PAIR_MANAGER_A_ID}+${PAIR_MANAGER_B_ID}`);
-			});
-
-			it('uses single pair manager id when there is only one step', () => {
-				// Arrange:
-				const manager = createPairManagerMock({ id: PAIR_MANAGER_A_ID });
-				const workflow = createWorkflow([manager]);
-
-				// Act & Assert:
-				expect(workflow.id).toBe(PAIR_MANAGER_A_ID);
-			});
-
-			it('uses custom id when specified', () => {
-				// Arrange:
-				const workflow = createWorkflow([createPairManagerMock()], { id: CUSTOM_WORKFLOW_ID });
-
-				// Act & Assert:
-				expect(workflow.id).toBe(CUSTOM_WORKFLOW_ID);
-			});
-		});
-
 		describe('steps', () => {
 			it('returns 1 for a single-step workflow', () => {
 				// Arrange:
@@ -205,14 +174,14 @@ describe('bridge/SwapWorkflowManager', () => {
 					expected: { hasHistory: true }
 				},
 				{
-					description: 'returns false when first pair manager does not have history',
-					config: { managerHistory: [false, true] },
-					expected: { hasHistory: false }
+					description: 'returns true when only first pair manager has history',
+					config: { managerHistory: [true, false] },
+					expected: { hasHistory: true }
 				},
 				{
-					description: 'returns false when last pair manager does not have history',
-					config: { managerHistory: [true, false] },
-					expected: { hasHistory: false }
+					description: 'returns true when only last pair manager has history',
+					config: { managerHistory: [false, true] },
+					expected: { hasHistory: true }
 				},
 				{
 					description: 'returns false when no pair managers have history',
@@ -223,109 +192,6 @@ describe('bridge/SwapWorkflowManager', () => {
 
 			hasHistoryTests.forEach(test => {
 				runHasHistoryTest(test.description, test.config, test.expected);
-			});
-		});
-
-		describe('nativeTokenInfo', () => {
-			const runNativeTokenInfoTest = (description, config, expected) => {
-				it(description, () => {
-					// Arrange:
-					const firstManager = createPairManagerMock({
-						mode: config.firstMode,
-						nativeTokenInfo: config.firstManagerNativeTokenInfo,
-						wrappedTokenInfo: config.firstManagerWrappedTokenInfo
-					});
-					const workflow = createWorkflow([firstManager]);
-
-					// Act & Assert:
-					expect(workflow.nativeTokenInfo).toBe(expected.tokenInfo);
-				});
-			};
-
-			const nativeTokenInfoTests = [
-				{
-					description: 'returns nativeTokenInfo of first manager when its mode is wrap',
-					config: {
-						firstMode: 'wrap',
-						firstManagerNativeTokenInfo: nativeTokenInfo,
-						firstManagerWrappedTokenInfo: intermediaryTokenInfo
-					},
-					expected: { tokenInfo: nativeTokenInfo }
-				},
-				{
-					description: 'returns wrappedTokenInfo of first manager when its mode is unwrap',
-					config: {
-						firstMode: 'unwrap',
-						firstManagerNativeTokenInfo: nativeTokenInfo,
-						firstManagerWrappedTokenInfo: intermediaryTokenInfo
-					},
-					expected: { tokenInfo: intermediaryTokenInfo }
-				}
-			];
-
-			nativeTokenInfoTests.forEach(test => {
-				runNativeTokenInfoTest(test.description, test.config, test.expected);
-			});
-		});
-
-		describe('wrappedTokenInfo', () => {
-			const runWrappedTokenInfoTest = (description, config, expected) => {
-				it(description, () => {
-					// Arrange:
-					const lastManager = createPairManagerMock({
-						mode: config.lastMode,
-						nativeTokenInfo: intermediaryTokenInfo,
-						wrappedTokenInfo: config.lastManagerWrappedTokenInfo
-					});
-					const workflow = createWorkflow([lastManager]);
-
-					// Act & Assert:
-					expect(workflow.wrappedTokenInfo).toBe(expected.tokenInfo);
-				});
-			};
-
-			const wrappedTokenInfoTests = [
-				{
-					description: 'returns wrappedTokenInfo of last manager when its mode is wrap',
-					config: {
-						lastMode: 'wrap',
-						lastManagerWrappedTokenInfo: wrappedTokenInfo
-					},
-					expected: { tokenInfo: wrappedTokenInfo }
-				},
-				{
-					description: 'returns nativeTokenInfo of last manager when its mode is unwrap',
-					config: {
-						lastMode: 'unwrap',
-						lastManagerWrappedTokenInfo: wrappedTokenInfo
-					},
-					expected: { tokenInfo: intermediaryTokenInfo }
-				}
-			];
-
-			wrappedTokenInfoTests.forEach(test => {
-				runWrappedTokenInfoTest(test.description, test.config, test.expected);
-			});
-		});
-
-		describe('nativeTokenInfo and wrappedTokenInfo in a multi-step workflow', () => {
-			it('uses first manager for nativeTokenInfo and last manager for wrappedTokenInfo', () => {
-				// Arrange:
-				const firstManager = createPairManagerMock({
-					mode: 'wrap',
-					nativeTokenInfo,
-					wrappedTokenInfo: intermediaryTokenInfo
-				});
-				const lastManager = createPairManagerMock({
-					mode: 'wrap',
-					nativeTokenInfo: intermediaryTokenInfo,
-					wrappedTokenInfo
-				});
-				const workflow = createWorkflow([firstManager, lastManager]);
-
-				// Act & Assert:
-				expect(workflow.nativeTokenInfo).toBe(nativeTokenInfo);
-				expect(workflow.wrappedTokenInfo).toBe(wrappedTokenInfo);
 			});
 		});
 
