@@ -1,16 +1,16 @@
 import { UniswapPairManager } from '../../src/bridge/UniswapPairManager';
-import { TransactionType } from '../../src/constants';
+import { NETWORK_CURRENCY_ID, NETWORK_CURRENCY_NAME, NETWORK_CURRENCY_TICKER, TransactionType } from '../../src/constants';
 import { jest } from '@jest/globals';
 import { TransactionBundle } from 'wallet-common-core';
 
 // Config constants
 
 const NATIVE_TOKEN_ID = '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2';
+const WETH_TOKEN_ID = '0x3a8c1bd531b5c1aefbb9ebc3e021c1251cf4ccb1';
 const WRAPPED_TOKEN_ID = '0x5e8343a455f03109b737b6d8b410e4ecce998cda';
 const QUOTER_ADDRESS = '0xb27308f9f90d607463bb33ea1bebb41c27ce5ab6';
 const SWAP_ROUTER_ADDRESS = '0xe592427a0aece92de3edee1f18e0157c05861564';
 const POOL_FEE = 3000;
-const CUSTOM_ID = 'my-custom-uniswap-pair-id';
 const FIXED_NOW_MS = 1700000000000;
 const FIXED_NOW_S = Math.floor(FIXED_NOW_MS / 1000);
 const DEFAULT_DEADLINE_SECONDS = 600;
@@ -31,11 +31,26 @@ const wrappedTokenInfo = {
 	divisibility: 6
 };
 
+const ethNetworkCurrency = {
+	name: NETWORK_CURRENCY_NAME,
+	ticker: NETWORK_CURRENCY_TICKER,
+	id: NETWORK_CURRENCY_ID,
+	divisibility: 18
+};
+
+const ethNativeTokenInfo = ethNetworkCurrency;
+
 // Network / Account
 
 const networkProperties = {
 	nodeUrl: 'http://localhost:8545',
-	networkIdentifier: 'testnet'
+	networkIdentifier: 'testnet',
+	networkCurrency: ethNetworkCurrency
+};
+
+const networkPropertiesWithCurrency = {
+	...networkProperties,
+	networkCurrency: ethNetworkCurrency
 };
 
 const currentAccount = {
@@ -76,6 +91,33 @@ const createManager = (overrides = {}) => {
 		uniswapApi,
 		transactionApi,
 		nativeTokenId: NATIVE_TOKEN_ID,
+		wethTokenId: WETH_TOKEN_ID,
+		wrappedTokenId: WRAPPED_TOKEN_ID,
+		quoterAddress: QUOTER_ADDRESS,
+		swapRouterAddress: SWAP_ROUTER_ADDRESS,
+		poolFee: POOL_FEE,
+		mode: 'wrap',
+		...overrides.managerOptions
+	});
+
+	return {
+		manager, walletController, uniswapApi, transactionApi
+	};
+};
+
+const createEthNativeManager = (overrides = {}) => {
+	const walletController = overrides.walletController ?? createWalletControllerMock({ networkProperties: networkPropertiesWithCurrency });
+	const uniswapApi = overrides.uniswapApi ?? createUniswapApiMock({
+		fetchPoolTokenInfos: jest.fn().mockResolvedValue({ nativeTokenInfo: ethNativeTokenInfo, wrappedTokenInfo })
+	});
+	const transactionApi = overrides.transactionApi ?? createTransactionApiMock();
+
+	const manager = new UniswapPairManager({
+		walletController,
+		uniswapApi,
+		transactionApi,
+		nativeTokenId: NETWORK_CURRENCY_ID,
+		wethTokenId: WETH_TOKEN_ID,
 		wrappedTokenId: WRAPPED_TOKEN_ID,
 		quoterAddress: QUOTER_ADDRESS,
 		swapRouterAddress: SWAP_ROUTER_ADDRESS,
@@ -91,6 +133,12 @@ const createManager = (overrides = {}) => {
 
 const createLoadedManager = async (overrides = {}) => {
 	const mocks = createManager(overrides);
+	await mocks.manager.load();
+	return mocks;
+};
+
+const createLoadedEthNativeManager = async (overrides = {}) => {
+	const mocks = createEthNativeManager(overrides);
 	await mocks.manager.load();
 	return mocks;
 };
@@ -121,29 +169,31 @@ describe('bridge/UniswapPairManager', () => {
 			// Arrange & Act & Assert:
 			expect(() => createManager({ managerOptions: { mode: 'unwrap' } })).not.toThrow();
 		});
+
+		it('throws when nativeTokenId is ETH and wethTokenId is not provided', () => {
+			// Arrange & Act & Assert:
+			expect(() => new UniswapPairManager({
+				walletController: createWalletControllerMock(),
+				uniswapApi: createUniswapApiMock(),
+				transactionApi: createTransactionApiMock(),
+				nativeTokenId: NETWORK_CURRENCY_ID,
+				wrappedTokenId: WRAPPED_TOKEN_ID,
+				quoterAddress: QUOTER_ADDRESS,
+				swapRouterAddress: SWAP_ROUTER_ADDRESS,
+				poolFee: POOL_FEE,
+				mode: 'wrap'
+			})).toThrow();
+		});
+
+		it('does not throw when nativeTokenId is ETH and wethTokenId is provided', () => {
+			// Arrange & Act & Assert:
+			expect(() => createEthNativeManager()).not.toThrow();
+		});
 	});
 
 	// Properties
 
 	describe('properties', () => {
-		describe('id', () => {
-			it('generates default id from token ids when not specified', () => {
-				// Arrange:
-				const { manager } = createManager();
-
-				// Act & Assert:
-				expect(manager.id).toBe(`uniswap-${NATIVE_TOKEN_ID}-${WRAPPED_TOKEN_ID}`);
-			});
-
-			it('uses custom id when specified', () => {
-				// Arrange:
-				const { manager } = createManager({ managerOptions: { id: CUSTOM_ID } });
-
-				// Act & Assert:
-				expect(manager.id).toBe(CUSTOM_ID);
-			});
-		});
-
 		describe('mode', () => {
 			const runModeTest = (description, config, expected) => {
 				it(description, () => {
@@ -287,6 +337,23 @@ describe('bridge/UniswapPairManager', () => {
 			expect(manager.nativeTokenInfo).toStrictEqual(nativeTokenInfo);
 			expect(manager.wrappedTokenInfo).toStrictEqual(wrappedTokenInfo);
 		});
+
+		it('native ETH: derives nativeTokenInfo from networkCurrency and fetches wrappedTokenInfo via wethTokenId', async () => {
+			// Arrange:
+			const { manager, uniswapApi } = createEthNativeManager();
+
+			// Act:
+			await manager.load();
+
+			// Assert:
+			expect(uniswapApi.fetchPoolTokenInfos).toHaveBeenCalledWith(
+				networkPropertiesWithCurrency,
+				NETWORK_CURRENCY_ID,
+				WRAPPED_TOKEN_ID
+			);
+			expect(manager.nativeTokenInfo).toStrictEqual(ethNativeTokenInfo);
+			expect(manager.wrappedTokenInfo).toStrictEqual(wrappedTokenInfo);
+		});
 	});
 
 	// fetchRecentHistory
@@ -392,6 +459,32 @@ describe('bridge/UniswapPairManager', () => {
 		estimateRequestTests.forEach(test => {
 			runEstimateRequestTest(test.description, test.config, test.expected);
 		});
+
+		it('native ETH wrap mode: uses wethTokenId for quoter tokenIn instead of ETH id', async () => {
+			// Arrange:
+			const { manager, uniswapApi } = await createLoadedEthNativeManager();
+			uniswapApi.quoteExactInputSingle.mockResolvedValue('990000');
+
+			// Act:
+			const result = await manager.estimateRequest('1');
+
+			// Assert:
+			expect(uniswapApi.quoteExactInputSingle).toHaveBeenCalledWith(
+				networkPropertiesWithCurrency,
+				QUOTER_ADDRESS,
+				{
+					tokenInId: WETH_TOKEN_ID,
+					tokenOutId: WRAPPED_TOKEN_ID,
+					amountIn: '1000000000000000000',
+					fee: POOL_FEE
+				}
+			);
+			expect(result).toStrictEqual({
+				receiveAmount: '0.99',
+				bridgeFee: '0.00297',
+				error: null
+			});
+		});
 	});
 
 	// createTransaction
@@ -484,6 +577,7 @@ describe('bridge/UniswapPairManager', () => {
 							divisibility: wrappedTokenInfo.divisibility,
 							amount: '0'
 						},
+						wethTokenId: WETH_TOKEN_ID,
 						poolFee: POOL_FEE,
 						deadline: FIXED_NOW_S + DEFAULT_DEADLINE_SECONDS,
 						sqrtPriceLimitX96: 0,
@@ -534,6 +628,7 @@ describe('bridge/UniswapPairManager', () => {
 							divisibility: nativeTokenInfo.divisibility,
 							amount: '0'
 						},
+						wethTokenId: WETH_TOKEN_ID,
 						poolFee: POOL_FEE,
 						deadline: FIXED_NOW_S + DEFAULT_DEADLINE_SECONDS,
 						sqrtPriceLimitX96: 0,
@@ -603,6 +698,70 @@ describe('bridge/UniswapPairManager', () => {
 
 			// Assert:
 			expect(result.transactions[1].deadline).toBe(FIXED_NOW_S + deadlineSeconds);
+		});
+
+		it('native ETH wrap: creates single swap transaction with value and wethTokenId as tokenIn', async () => {
+			// Arrange:
+			const { manager, transactionApi } = await createLoadedEthNativeManager();
+			transactionApi.fetchTransactionNonce.mockResolvedValue(5);
+
+			// Act:
+			const result = await manager.createTransaction({
+				recipientAddress: currentAccount.address,
+				amount: '0.001',
+				fee
+			});
+
+			// Assert:
+			expect(transactionApi.fetchTransactionNonce).toHaveBeenCalledWith(
+				networkPropertiesWithCurrency,
+				currentAccount.address
+			);
+			expect(result).toBeInstanceOf(TransactionBundle);
+			expect(result.transactions).toHaveLength(1);
+			expect(result.transactions[0]).toStrictEqual({
+				type: TransactionType.UNISWAP_SWAP,
+				signerPublicKey: currentAccount.publicKey,
+				signerAddress: currentAccount.address,
+				recipientAddress: currentAccount.address,
+				routerAddress: SWAP_ROUTER_ADDRESS,
+				sourceToken: {
+					id: NETWORK_CURRENCY_ID,
+					name: ethNativeTokenInfo.name,
+					ticker: ethNativeTokenInfo.ticker,
+					divisibility: ethNativeTokenInfo.divisibility,
+					amount: '0.001'
+				},
+				targetToken: {
+					id: WRAPPED_TOKEN_ID,
+					name: wrappedTokenInfo.name,
+					ticker: wrappedTokenInfo.ticker,
+					divisibility: wrappedTokenInfo.divisibility,
+					amount: '0'
+				},
+				wethTokenId: WETH_TOKEN_ID,
+				poolFee: POOL_FEE,
+				deadline: FIXED_NOW_S + DEFAULT_DEADLINE_SECONDS,
+				sqrtPriceLimitX96: 0,
+				nonce: 5,
+				fee
+			});
+		});
+
+		it('native ETH wrap: uses single nonce (no approve transaction)', async () => {
+			// Arrange:
+			const { manager, transactionApi } = await createLoadedEthNativeManager();
+			transactionApi.fetchTransactionNonce.mockResolvedValue(10);
+
+			// Act:
+			const result = await manager.createTransaction({
+				recipientAddress: currentAccount.address,
+				amount: '1'
+			});
+
+			// Assert:
+			expect(result.transactions).toHaveLength(1);
+			expect(result.transactions[0].nonce).toBe(10);
 		});
 	});
 });

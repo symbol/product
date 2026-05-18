@@ -4,7 +4,7 @@ import { TransactionBundle, absoluteToRelativeAmount, relativeToAbsoluteAmount }
 
 const DEFAULT_TRANSACTION_DEADLINE_SECONDS = 600;
 
-/** @typedef {import('../types/Account').PublicAccount} PublicAccount */
+/** @typedef {import('wallet-common-core').WalletController} WalletController */
 /** @typedef {import('../types/Token').TokenInfo} TokenInfo */
 /** @typedef {import('../api/UniswapService').UniswapService} UniswapService */
 /** @typedef {import('../api/TransactionService').TransactionService} TransactionService */
@@ -22,7 +22,7 @@ const SwapMode = {
 };
 
 export class UniswapPairManager {
-	/** @type {import('wallet-common-core').WalletController} */
+	/** @type {WalletController} */
 	#walletController;
 
 	/** @type {UniswapService} */
@@ -38,6 +38,9 @@ export class UniswapPairManager {
 	#wrappedTokenId;
 
 	/** @type {string} */
+	#wethTokenId;
+
+	/** @type {string} */
 	#quoterAddress;
 
 	/** @type {string} */
@@ -45,9 +48,6 @@ export class UniswapPairManager {
 
 	/** @type {number} */
 	#poolFee;
-
-	/** @type {string} */
-	#id;
 
 	/** @type {string} */
 	#mode;
@@ -61,13 +61,13 @@ export class UniswapPairManager {
 	/**
 	 * Create UniswapPairManager instance.
 	 * @param {object} options - Options.
-	 * @param {string} options.id - Custom provided ID to identify the Uniswap pair manager.
 	 * @param {string} options.mode - Fixed swap direction: 'wrap' or 'unwrap'.
-	 * @param {import('wallet-common-core').WalletController} options.walletController - Ethereum wallet controller instance.
+	 * @param {WalletController} options.walletController - Ethereum wallet controller instance.
 	 * @param {UniswapService} options.uniswapApi - Uniswap API service for on-chain quote and token info calls.
 	 * @param {TransactionService} options.transactionApi - Transaction API service for nonce fetching.
 	 * @param {string} options.nativeTokenId - ERC20 contract address of the "native" token (tokenIn for WRAP mode, e.g. WETH).
 	 * @param {string} options.wrappedTokenId - ERC20 contract address of the "wrapped" token (tokenOut for WRAP mode, e.g. WXYM).
+	 * @param {string} options.wethTokenId - ERC20 contract address of the WETH token.
 	 * @param {string} options.quoterAddress - Uniswap V3 Quoter contract address.
 	 * @param {string} options.swapRouterAddress - Uniswap V3 SwapRouter contract address.
 	 * @param {number} options.poolFee - Pool fee tier in hundredths of a bip (e.g. 3000 = 0.3%).
@@ -78,10 +78,10 @@ export class UniswapPairManager {
 		this.#transactionApi = options.transactionApi;
 		this.#nativeTokenId = options.nativeTokenId.toLowerCase();
 		this.#wrappedTokenId = options.wrappedTokenId.toLowerCase();
+		this.#wethTokenId = options.wethTokenId.toLowerCase();
 		this.#quoterAddress = normalizeAddress(options.quoterAddress);
 		this.#swapRouterAddress = normalizeAddress(options.swapRouterAddress);
 		this.#poolFee = options.poolFee;
-		this.#id = options.id ?? `uniswap-${options.nativeTokenId}-${options.wrappedTokenId}`;
 		this.#nativeTokenInfo = null;
 		this.#wrappedTokenInfo = null;
 
@@ -89,14 +89,6 @@ export class UniswapPairManager {
 			throw new Error(`Invalid swap mode: ${options.mode}. Must be 'wrap' or 'unwrap'`);
 
 		this.#mode = options.mode;
-	}
-
-	/**
-	 * Get the Uniswap pair manager ID.
-	 * @returns {string}
-	 */
-	get id() {
-		return this.#id;
 	}
 
 	/**
@@ -142,9 +134,25 @@ export class UniswapPairManager {
 	}
 
 	/**
+	 * Token info for the source side of the swap (tokenIn).
+	 * @returns {TokenInfo|null}
+	 */
+	get sourceTokenInfo() {
+		return this.#mode === SwapMode.WRAP ? this.#nativeTokenInfo : this.#wrappedTokenInfo;
+	}
+
+	/**
+	 * Token info for the target side of the swap (tokenOut).
+	 * @returns {TokenInfo|null}
+	 */
+	get targetTokenInfo() {
+		return this.#mode === SwapMode.WRAP ? this.#wrappedTokenInfo : this.#nativeTokenInfo;
+	}
+
+	/**
 	 * The single Ethereum wallet controller, exposed as nativeWalletController
 	 * for interface consistency with BridgePairManager.
-	 * @returns {import('wallet-common-core').WalletController}
+	 * @returns {WalletController}
 	 */
 	get nativeWalletController() {
 		return this.#walletController;
@@ -153,7 +161,7 @@ export class UniswapPairManager {
 	/**
 	 * The single Ethereum wallet controller, exposed as wrappedWalletController
 	 * for interface consistency with BridgePairManager.
-	 * @returns {import('wallet-common-core').WalletController}
+	 * @returns {WalletController}
 	 */
 	get wrappedWalletController() {
 		return this.#walletController;
@@ -162,7 +170,7 @@ export class UniswapPairManager {
 	/**
 	 * Wallet controller for the source side of the swap.
 	 * Both sides share the same controller for Uniswap (single-chain swap).
-	 * @returns {import('wallet-common-core').WalletController}
+	 * @returns {WalletController}
 	 */
 	get sourceWalletController() {
 		return this.#walletController;
@@ -171,7 +179,7 @@ export class UniswapPairManager {
 	/**
 	 * Wallet controller for the target side of the swap.
 	 * Both sides share the same controller for Uniswap (single-chain swap).
-	 * @returns {import('wallet-common-core').WalletController}
+	 * @returns {WalletController}
 	 */
 	get targetWalletController() {
 		return this.#walletController;
@@ -195,7 +203,7 @@ export class UniswapPairManager {
 
 	/**
 	 * Uniswap does not track on-chain history. Returns an empty array.
-	 * @returns {Promise<[]>}
+	 * @returns {Promise<Array>}
 	 */
 	fetchRecentHistory = async () => [];
 
@@ -209,16 +217,15 @@ export class UniswapPairManager {
 		if (!this.#nativeTokenInfo)
 			throw new Error('Failed to estimate Uniswap swap. Manager not loaded');
 
-		const [sourceTokenInfo, targetTokenInfo] = this.#mode === SwapMode.WRAP
-			? [this.#nativeTokenInfo, this.#wrappedTokenInfo]
-			: [this.#wrappedTokenInfo, this.#nativeTokenInfo];
+		const { sourceTokenInfo, targetTokenInfo } = this;
 
 		const { networkProperties } = this.#walletController;
 		const amountInAbsolute = relativeToAbsoluteAmount(amount, sourceTokenInfo.divisibility);
+		const { networkCurrency } = networkProperties;
 
 		const amountOutAbsolute = await this.#uniswapApi.quoteExactInputSingle(networkProperties, this.#quoterAddress, {
-			tokenInId: sourceTokenInfo.id,
-			tokenOutId: targetTokenInfo.id,
+			tokenInId: sourceTokenInfo.id === networkCurrency.id ? this.#wethTokenId : sourceTokenInfo.id,
+			tokenOutId: targetTokenInfo.id === networkCurrency.id ? this.#wethTokenId : targetTokenInfo.id,
 			amountIn: amountInAbsolute,
 			fee: this.#poolFee
 		});
@@ -259,9 +266,8 @@ export class UniswapPairManager {
 		if (!currentAccount)
 			throw new Error('Failed to create Uniswap transaction. No current account selected');
 
-		const [tokenIn, tokenOut] = this.#mode === SwapMode.WRAP
-			? [this.#nativeTokenInfo, this.#wrappedTokenInfo]
-			: [this.#wrappedTokenInfo, this.#nativeTokenInfo];
+		const tokenIn = this.sourceTokenInfo;
+		const tokenOut = this.targetTokenInfo;
 
 		const nonce = await this.#transactionApi.fetchTransactionNonce(networkProperties, currentAccount.address);
 
@@ -273,7 +279,6 @@ export class UniswapPairManager {
 			spenderAddress: this.#swapRouterAddress,
 			amount,
 			divisibility: tokenIn.divisibility,
-			nonce,
 			fee
 		};
 
@@ -291,12 +296,20 @@ export class UniswapPairManager {
 				...tokenOut,
 				amount: amountOutMinimum
 			},
+			wethTokenId: this.#wethTokenId,
 			poolFee: this.#poolFee,
 			deadline: Math.floor(Date.now() / 1000) + deadlineSeconds,
 			sqrtPriceLimitX96: 0,
-			nonce: nonce + 1,
 			fee
 		};
+
+		if (tokenIn.id === networkProperties.networkCurrency.id) {
+			transaction.nonce = nonce;
+			return new TransactionBundle([transaction]);
+		}
+
+		approveTransaction.nonce = nonce;
+		transaction.nonce = nonce + 1;
 
 		return new TransactionBundle([approveTransaction, transaction]);
 	};

@@ -1,5 +1,5 @@
 import { networkIdentifierToChainId } from './network';
-import { TransactionType } from '../constants';
+import { NETWORK_CURRENCY_ID, TransactionType } from '../constants';
 import { ethers } from 'ethers';
 import { relativeToAbsoluteAmount } from 'wallet-common-core';
 
@@ -120,12 +120,20 @@ const uniswapSwapToEthereum = (transaction, config) => {
 	const absoluteAmountIn = relativeToAbsoluteAmount(transaction.sourceToken.amount, transaction.sourceToken.divisibility);
 	const absoluteAmountOut = relativeToAbsoluteAmount(transaction.targetToken.amount, transaction.targetToken.divisibility);
 
+	let value = 0n;
+	let tokenIn = transaction.sourceToken.id;
+
+	if (transaction.sourceToken.id === NETWORK_CURRENCY_ID) {
+		value = BigInt(absoluteAmountIn);
+		tokenIn = transaction.wethTokenId;
+	};
+
 	return {
 		...baseTransaction,
 		to: transaction.routerAddress,
-		value: 0n,
+		value,
 		data: routerInterface.encodeFunctionData('exactInputSingle', [{
-			tokenIn: transaction.sourceToken.id,
+			tokenIn,
 			tokenOut: transaction.targetToken.id,
 			fee: transaction.poolFee,
 			recipient: transaction.recipientAddress,

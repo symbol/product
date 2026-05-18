@@ -266,3 +266,48 @@ export const uniswapEthereumTransaction = {
 	chainId,
 	nonce: 3
 };
+
+export const uniswapNativeEthWalletTransaction = {
+	type: 4,
+	signerPublicKey,
+	signerAddress,
+	recipientAddress: signerAddress,
+	routerAddress: swapRouterAddress,
+	sourceToken: {
+		id: 'eth',
+		amount: '0.001',
+		divisibility: 18
+	},
+	targetToken: {
+		id: wrappedTokenAddress,
+		amount: '0',
+		divisibility: 6
+	},
+	poolFee: 3000,
+	deadline: swapDeadline,
+	sqrtPriceLimitX96: 0,
+	nonce: 7,
+	fee: baseFee,
+	wethTokenId: nativeTokenAddress
+};
+
+export const uniswapNativeEthEthereumTransaction = {
+	from: signerAddress,
+	to: swapRouterAddress,
+	value: 1000000000000000n,
+	data: swapRouterInterface.encodeFunctionData('exactInputSingle', [{
+		tokenIn: nativeTokenAddress,
+		tokenOut: wrappedTokenAddress,
+		fee: 3000,
+		recipient: signerAddress,
+		deadline: swapDeadline,
+		amountIn: 1000000000000000n,
+		amountOutMinimum: 0n,
+		sqrtPriceLimitX96: 0n
+	}]),
+	gasLimit: 21000n,
+	maxFeePerGas: 3000000000000000000n,
+	maxPriorityFeePerGas: 1000000000000000000n,
+	chainId,
+	nonce: 7
+};

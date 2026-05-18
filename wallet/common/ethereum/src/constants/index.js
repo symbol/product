@@ -28,6 +28,7 @@ export const NetworkIdentifier = {
 	SEPOLIA: 'sepolia'
 };
 
-export const NETWORK_CURRENCY_NAME = 'ETH';
-export const NETWORK_CURRENCY_ID = 'ETH';
+export const NETWORK_CURRENCY_TICKER = 'ETH';
+export const NETWORK_CURRENCY_NAME = 'Ether';
+export const NETWORK_CURRENCY_ID = 'eth';
 export const NETWORK_CURRENCY_DIVISIBILITY = 18;
