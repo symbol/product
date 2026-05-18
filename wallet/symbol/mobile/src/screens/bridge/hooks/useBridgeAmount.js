@@ -4,7 +4,6 @@ import { useState } from 'react';
 /** @typedef {import('@/app/screens/bridge/types/Bridge').SwapSide} SwapSide */
 /** @typedef {import('@/app/types/Transaction').TransactionFeeTiers} TransactionFeeTiers */
 /** @typedef {import('@/app/types/Transaction').TransactionFeeTierLevel} TransactionFeeTierLevel */
-/** @typedef {import('@/app/types/Network').NetworkProperties} NetworkProperties */
 /** @typedef {import('@/app/types/Network').NetworkCurrency} NetworkCurrency */
 
 const DEFAULT_AMOUNT = '0';

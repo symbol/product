@@ -1,8 +1,8 @@
 import { useTransactionConfirmationPolling } from './useTransactionConfirmationPolling';
 import { TransactionWorkflowStatus } from '../constants';
 import { useAsyncManager } from '@/app/hooks';
-import { handleError } from '@/app/utils';
-import { useState } from 'react';
+import { showError } from '@/app/utils';
+import { useRef, useState } from 'react';
 
 /** @typedef {import('@/app/types/Transaction').TransactionBundle} TransactionBundle */
 /** @typedef {import('@/app/types/Transaction').TransactionFeeTiers} TransactionFeeTiers */
@@ -35,6 +35,7 @@ export const useStandardTransactionWorkflow = ({
 	onSendError
 }) => {
 	const [transactionBundle, setTransactionBundle] = useState(null);
+	const transactionBundleRef = useRef(null);
 	const [signedTransactionHashes, setSignedTransactionHashes] = useState([]);
 
 	// Create transaction manager
@@ -45,11 +46,11 @@ export const useStandardTransactionWorkflow = ({
 			if (transactionFeeTiers)
 				bundle.applyFeeTier(transactionFeeTiers, transactionFeeTierLevel);
 
+			transactionBundleRef.current = bundle;
 			setTransactionBundle(bundle);
 
 			return bundle;
-		},
-		onError: handleError
+		}
 	});
 
 	// Sign transaction manager
@@ -78,6 +79,7 @@ export const useStandardTransactionWorkflow = ({
 
 	// Interface methods
 	const reset = () => {
+		transactionBundleRef.current = null;
 		setTransactionBundle(null);
 		setSignedTransactionHashes([]);
 		createManager.reset();
@@ -88,11 +90,11 @@ export const useStandardTransactionWorkflow = ({
 	const createTransaction = createManager.call;
 	const executeSignAndAnnounce = async () => {
 		try {
-			const signedBundle = await signManager.call(transactionBundle);
+			const signedBundle = await signManager.call(transactionBundleRef.current);
 			await announceManager.call(signedBundle);
 			onSendSuccess?.();
 		} catch (error) {
-			(onSendError ?? handleError)(error);
+			(onSendError ?? showError)(error);
 		}
 	};
 

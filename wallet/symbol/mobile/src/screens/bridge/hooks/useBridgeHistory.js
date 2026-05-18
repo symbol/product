@@ -3,13 +3,14 @@ import { BRIDGE_HISTORY_PAGE_SIZE } from '@/app/screens/bridge/constants';
 
 /** @typedef {import('@/app/screens/bridge/types/Bridge').SwapWorkflowManager} SwapWorkflowManager */
 /** @typedef {import('@/app/screens/bridge/types/Bridge').BridgeRequest} BridgeRequest */
+/** @typedef {import('@/app/screens/bridge/types/Bridge').BridgeError} BridgeError */
 
 const FETCH_INTERVAL = 10000;
 
 /**
  * Return type for useBridgeHistory hook.
  * @typedef {object} UseBridgeHistoryReturnType
- * @property {BridgeRequest[]} history - Array of recent bridge requests.
+ * @property {Array<BridgeRequest|BridgeError>} history - Array of recent bridge requests and errors.
  * @property {boolean} isHistoryLoading - Whether history is being fetched.
  * @property {() => Promise<void>} refreshHistory - Refreshes the history data.
  * @property {() => void} clearHistory - Clears the history data.

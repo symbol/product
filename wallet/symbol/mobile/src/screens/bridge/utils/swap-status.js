@@ -4,6 +4,7 @@ import { BridgePayoutStatus, BridgeRequestStatus } from '@/app/screens/bridge/ty
 /** @typedef {import('@/app/screens/bridge/types/Bridge').BridgeRequestStatusType} BridgeRequestStatusType */
 /** @typedef {import('@/app/screens/bridge/types/Bridge').BridgePayoutStatusType} BridgePayoutStatusType */
 /** @typedef {import('@/app/screens/bridge/types/Bridge').BridgeRequest} BridgeRequest */
+/** @typedef {import('@/app/screens/bridge/types/Bridge').BridgeError} BridgeError */
 /** @typedef {import('@/app/screens/bridge/types/Bridge').SwapStatusDisplayData} SwapStatusDisplayData */
 /** @typedef {import('@/app/screens/bridge/types/Bridge').SwapStatusCaptionDisplayData} SwapStatusCaptionDisplayData */
 
@@ -76,7 +77,7 @@ export const getSwapStatus = (requestStatus, payoutStatus) => {
 
 /**
  * Gets swap status caption display information.
- * @param {BridgeRequest} data - The bridge request data.
+ * @param {BridgeRequest|BridgeError} data - The bridge history item data.
  * @returns {SwapStatusCaptionDisplayData} Caption display information.
  */
 export const getSwapStatusCaption = data => {

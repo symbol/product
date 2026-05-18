@@ -126,7 +126,7 @@ export const TransactionScreenTemplate = props => {
 
 	return (
 		<Screen
-			isLoading={isLoading || workflow.managers.createManager.isLoading}
+			isLoading={isLoading}
 			refresh={refresh}
 		>
 			{isMultisigAccount ? (

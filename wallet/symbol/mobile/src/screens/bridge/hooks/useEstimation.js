@@ -7,7 +7,7 @@ import { useAsyncManager } from '@/app/hooks';
  * Return type for useEstimation hook.
  * @typedef {object} UseEstimationReturnType
  * @property {() => Promise<void>} estimate - Fetches bridge fee estimation.
- * @property {BridgeEstimation|null} estimation - Current estimation data.
+ * @property {BridgeEstimation[]|null} estimations - Current estimation data.
  * @property {() => void} clearEstimation - Clears the estimation data.
  * @property {boolean} isLoading - Whether estimation is being fetched.
  */
@@ -24,15 +24,16 @@ export const useEstimation = ({ bridge, amount }) => {
 		callback: async () => {
 			const estimations = await bridge.estimateRequest(amount);
 
-			return estimations[estimations.length - 1];
+			return estimations;
 		},
 		shouldShowErrorPopup: false,
 		shouldClearDataOnCall: true
 	});
+
 	
 	return {
 		estimate: estimationManager.call,
-		estimation: estimationManager.data,
+		estimations: estimationManager.data,
 		clearEstimation: estimationManager.reset,
 		isLoading: estimationManager.isLoading
 	};

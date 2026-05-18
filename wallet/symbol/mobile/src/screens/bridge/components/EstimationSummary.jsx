@@ -15,7 +15,7 @@ import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
  * @param {object} props - Component props.
  * @param {string} props.sendAmount - Amount being sent.
  * @param {string} props.transactionFeeAmount - Transaction fee amount.
- * @param {BridgeEstimation|null} props.estimation - Bridge estimation data.
+ * @param {BridgeEstimation[]|null} props.estimations - Bridge estimation data.
  * @param {SwapToken|null} props.sourceToken - Source token info.
  * @param {SwapToken|null} props.targetToken - Target token info.
  * @param {NetworkCurrency|null} props.sourceNetworkCurrency - Source network native currency info.
@@ -25,12 +25,13 @@ import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 export const EstimationSummary = ({
 	sendAmount,
 	transactionFeeAmount,
-	estimation,
+	estimations,
 	sourceToken,
 	targetToken,
 	sourceNetworkCurrency,
 	isLoading
 }) => {
+	const estimation = estimations?.[estimations.length - 1] ?? null;
 	const summary = [
 		{
 			title: $t('s_bridge_summary_amountSend'),

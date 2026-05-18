@@ -71,16 +71,14 @@ const getBridgesWalletControllers = bridges => {
  * @returns {SwapPair} The created swap pair.
  */
 const createSwapPair = bridge => {
-	const { sourceWalletController } = bridge;
-	const { nativeTokenInfo: sourceTokenInfo } = bridge;
+	const { sourceWalletController, sourceTokenInfo } = bridge;
 
 	const sourceAccountTokens = sourceWalletController.currentAccountInfo?.tokens
 		|| sourceWalletController.currentAccountInfo?.mosaics
 		|| [];
 	const sourceTokenBalance = sourceAccountTokens.find(t => t.id === sourceTokenInfo.id)?.amount || '0';
 
-	const { targetWalletController } = bridge;
-	const { wrappedTokenInfo: targetTokenInfo } = bridge;
+	const { targetWalletController, targetTokenInfo } = bridge;
 
 	const targetAccountTokens = targetWalletController.currentAccountInfo?.tokens
 		|| targetWalletController.currentAccountInfo?.mosaics

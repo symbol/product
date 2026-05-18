@@ -20,7 +20,7 @@
     "ethereum": {
         "testnet": [
             {
-                "tokenId": "ETH",
+                "tokenId": "eth",
                 "imageId": "eth",
                 "name": "Ether",
                 "ticker": "ETH"
@@ -34,7 +34,7 @@
         ],
         "mainnet": [
             {
-                "tokenId": "ETH",
+                "tokenId": "eth",
                 "imageId": "eth",
                 "name": "Ether",
                 "ticker": "ETH"

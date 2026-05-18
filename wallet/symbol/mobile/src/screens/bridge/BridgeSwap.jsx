@@ -5,10 +5,11 @@ import {
 	useBridgeHistory,
 	useBridgeNoPairsDialog,
 	useBridgeTransaction,
+	useBridgeTransactionWorkflow,
 	useEstimation,
 	useSwapSelector
 } from './hooks';
-import { validateEstimation } from './utils';
+import { createTransactionProgressViewModel, validateEstimation } from './utils';
 import {
 	Button,
 	ButtonCircle,
@@ -20,7 +21,6 @@ import {
 	StyledText,
 	TransactionScreenTemplate
 } from '@/app/components';
-import { useStandardTransactionWorkflow } from '@/app/components/templates/TransactionScreenTemplate/hooks';
 import { useTransactionFees, useWalletController } from '@/app/hooks';
 import { $t } from '@/app/localization';
 import { Router } from '@/app/router/Router';
@@ -94,7 +94,7 @@ export const BridgeSwap = props => {
 
 	// Estimation summary
 	const {
-		estimation,
+		estimations,
 		estimate,
 		clearEstimation,
 		isLoading:
@@ -105,18 +105,22 @@ export const BridgeSwap = props => {
 	const {
 		createTransaction,
 		getConfirmationPreview
-	} = useBridgeTransaction({ bridge, target, amount, estimation, walletController: sourceWalletController });
+	} = useBridgeTransaction({ bridge, target, amount, estimations, walletController: sourceWalletController });
 
 	// Update ref to break circular dependency with useTransactionFees
 	createTransactionRef.current = createTransaction;
 
 	// Transaction workflow
-	const workflow = useStandardTransactionWorkflow({
+	const workflow = useBridgeTransactionWorkflow({
+		bridge,
 		createTransaction,
 		walletController: sourceWalletController,
 		transactionFeeTiers: transactionFees,
 		transactionFeeTierLevel: TRANSACTION_SPEED
 	});
+
+	// Transaction progress view model
+	const transactionProgressViewModel = createTransactionProgressViewModel(workflow);
 
 	// Recent history
 	const { history } = useBridgeHistory({ bridge });
@@ -174,6 +178,7 @@ export const BridgeSwap = props => {
 			onComplete={handleTransactionSendComplete}
 			walletController={sourceWalletController}
 			workflow={workflow}
+			transactionProgressViewModel={transactionProgressViewModel}
 			isCustomSendButtonUsed={true}
 			confirmDialogTitle={$t('s_bridge_swap_dialog_confirm_title')}
 			confirmDialogText={$t('s_bridge_swap_dialog_confirm_text', {
@@ -220,14 +225,14 @@ export const BridgeSwap = props => {
 							label={$t('form_transfer_input_amount')}
 							availableBalance={availableBalance}
 							value={amountInput}
-							extraValidators={[validateEstimation(estimation)]}
+							extraValidators={[validateEstimation(estimations)]}
 							onChange={changeAmount}
 							onValidityChange={changeAmountValidity}
 						/>
 						<EstimationSummary
 							sendAmount={amount}
 							transactionFeeAmount={transactionFeeAmount}
-							estimation={estimation}
+							estimations={estimations}
 							sourceToken={source?.token}
 							targetToken={target?.token}
 							sourceNetworkCurrency={sourceWalletController?.networkProperties?.networkCurrency}

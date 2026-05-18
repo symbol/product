@@ -13,7 +13,6 @@ import { $t } from '@/app/localization';
 
 /**
  * Maps a TransactionWorkflowStatus value to its full display info: icon, variant, and localised text.
- * $t is called inside the function so localisation updates are picked up on every render.
  * @param {string} status - A TransactionWorkflowStatus value.
  * @returns {StatusInfo} Display info for the given status.
  */

@@ -7,6 +7,7 @@
 /** @typedef {import('wallet-common-core/src/lib/bridge/SwapWorkflowManager').SwapWorkflowManager} SwapWorkflowManager */
 /** @typedef {import('wallet-common-core/src/types/Bridge').BridgeEstimation} BridgeEstimation */
 /** @typedef {import('wallet-common-core/src/types/Bridge').BridgeRequest} BridgeRequest */
+/** @typedef {import('wallet-common-core/src/types/Bridge').BridgeError} BridgeError */
 /** @typedef {import('@/app/types/ColorVariants').SemanticRoleColorVariants} SemanticRoleColorVariants */
 
 /**
