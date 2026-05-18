@@ -1,25 +1,64 @@
 import { jest } from '@jest/globals';
 
-const actual = await import('../../src/utils');
+// Mocks
 
+const actual = await import('../../src/utils');
 const createContractMock = jest.fn();
 const createEthereumJrpcProviderMock = jest.fn().mockReturnValue({ provider: 'mock' });
 
-jest.unstable_mockModule('../../src/utils', async () => {
-	return {
-		...actual,
-		createContract: createContractMock,
-		createEthereumJrpcProvider: createEthereumJrpcProviderMock
-	};
-});
+jest.unstable_mockModule('../../src/utils', async () => ({
+	...actual,
+	createContract: createContractMock,
+	createEthereumJrpcProvider: createEthereumJrpcProviderMock
+}));
 
 const { TokenService } = await import('../../src/api/TokenService');
 
-const networkProperties = {
+// Network Properties
+
+const mainnetNetworkProperties = {
 	nodeUrl: 'http://localhost:8545',
 	networkIdentifier: 'mainnet',
-	networkCurrency: { id: 'ETH', name: 'Ethereum', divisibility: 18 }
+	networkCurrency: {
+		id: 'eth',
+		name: 'Ether',
+		ticker: 'ETH',
+		divisibility: 18
+	}
 };
+
+// ERC20 Token Fixtures
+
+const usdcToken = {
+	address: '0xTokenUsdc',
+	decimals: 6,
+	symbol: 'USDC',
+	name: 'USD Coin'
+};
+
+const daiToken = {
+	address: '0xTokenDai',
+	decimals: 18,
+	symbol: 'DAI',
+	name: 'Dai Stablecoin'
+};
+
+// Contract Mock Factory
+
+const createContractFixture = token => ({
+	decimals: jest.fn().mockResolvedValue(token.decimals),
+	symbol: jest.fn().mockResolvedValue(token.symbol),
+	name: jest.fn().mockResolvedValue(token.name)
+});
+
+// Expected Token Info Factory
+
+const createExpectedTokenInfo = token => ({
+	id: token.address.toLowerCase(),
+	name: token.name,
+	ticker: token.symbol,
+	divisibility: token.decimals
+});
 
 describe('api/TokenService', () => {
 	afterEach(() => {
@@ -28,81 +67,82 @@ describe('api/TokenService', () => {
 	});
 
 	describe('fetchTokenInfo', () => {
-		it('returns token info with symbol as name and decimals as divisibility', async () => {
+		it('returns network currency info when token id matches native currency', async () => {
 			// Arrange:
-			const tokenId = '0xTokenA';
-			const contractMock = {
-				decimals: jest.fn().mockResolvedValue(6),
-				symbol: jest.fn().mockResolvedValue('USDC')
-			};
-			createContractMock.mockReturnValueOnce(contractMock);
-
 			const service = new TokenService();
+			const tokenId = mainnetNetworkProperties.networkCurrency.id;
 
 			// Act:
-			const result = await service.fetchTokenInfo(networkProperties, tokenId);
+			const result = await service.fetchTokenInfo(mainnetNetworkProperties, tokenId);
 
 			// Assert:
-			expect(createEthereumJrpcProviderMock).toHaveBeenCalledWith(networkProperties);
-			expect(createContractMock).toHaveBeenCalledTimes(1);
+			expect(createContractMock).not.toHaveBeenCalled();
+			expect(result).toStrictEqual(mainnetNetworkProperties.networkCurrency);
+		});
 
-			const [passedTokenId, abi, provider] = createContractMock.mock.calls[0];
-			expect(passedTokenId).toBe(tokenId);
-			expect(abi).toEqual(expect.arrayContaining([
-				'function balanceOf(address) view returns (uint256)',
-				'function decimals() view returns (uint8)',
-				'function symbol() view returns (string)'
-			]));
-			// Provider instance passed to createContract is the one returned by createEthereumJrpcProvider
-			expect(provider).toBe(createEthereumJrpcProviderMock.mock.results[0].value);
+		const runFetchTokenInfoTest = (description, config, expected) => {
+			it(description, async () => {
+				// Arrange:
+				createContractMock.mockReturnValueOnce(createContractFixture(config.token));
+				const service = new TokenService();
 
-			expect(contractMock.decimals).toHaveBeenCalledTimes(1);
-			expect(contractMock.symbol).toHaveBeenCalledTimes(1);
+				// Act:
+				const result = await service.fetchTokenInfo(mainnetNetworkProperties, config.token.address);
 
-			const expectedResult = {
-				id: tokenId.toLowerCase(),
-				name: 'USDC',
-				divisibility: 6
-			};
-			expect(result).toStrictEqual(expectedResult);
+				// Assert:
+				expect(createEthereumJrpcProviderMock).toHaveBeenCalledWith(mainnetNetworkProperties);
+				expect(createContractMock).toHaveBeenCalledWith(
+					config.token.address,
+					expect.arrayContaining([
+						'function balanceOf(address) view returns (uint256)',
+						'function decimals() view returns (uint8)',
+						'function symbol() view returns (string)',
+						'function name() view returns (string)'
+					]),
+					createEthereumJrpcProviderMock.mock.results[0].value
+				);
+				expect(result).toStrictEqual(expected.tokenInfo);
+			});
+		};
+
+		const fetchTokenInfoTests = [
+			{
+				description: 'returns token info for a 6-decimal ERC20 token',
+				config: { token: usdcToken },
+				expected: { tokenInfo: createExpectedTokenInfo(usdcToken) }
+			},
+			{
+				description: 'returns token info for an 18-decimal ERC20 token',
+				config: { token: daiToken },
+				expected: { tokenInfo: createExpectedTokenInfo(daiToken) }
+			}
+		];
+
+		fetchTokenInfoTests.forEach(test => {
+			runFetchTokenInfoTest(test.description, test.config, test.expected);
 		});
 	});
 
 	describe('fetchTokenInfos', () => {
 		it('returns a token info map for multiple token ids', async () => {
 			// Arrange:
-			const tokenA = '0xTokenA';
-			const tokenB = '0xTokenB';
-			const tokenIds = [tokenA, tokenB];
-
-			const decimalsByToken = {
-				[tokenA]: 6,
-				[tokenB]: 18
+			const contractsByAddress = {
+				[usdcToken.address]: createContractFixture(usdcToken),
+				[daiToken.address]: createContractFixture(daiToken)
 			};
-			const symbolsByToken = {
-				[tokenA]: 'USDC',
-				[tokenB]: 'DAI'
-			};
-
-			createContractMock.mockImplementation((tokenAddress /*, abi, provider */) => ({
-				decimals: jest.fn().mockResolvedValue(decimalsByToken[tokenAddress]),
-				symbol: jest.fn().mockResolvedValue(symbolsByToken[tokenAddress])
-			}));
-
+			createContractMock.mockImplementation(tokenAddress => contractsByAddress[tokenAddress]);
 			const service = new TokenService();
+			const tokenIds = [usdcToken.address, daiToken.address];
 
 			// Act:
-			const result = await service.fetchTokenInfos(networkProperties, tokenIds);
+			const result = await service.fetchTokenInfos(mainnetNetworkProperties, tokenIds);
 
 			// Assert:
-			expect(createEthereumJrpcProviderMock).toHaveBeenCalledTimes(tokenIds.length);
 			expect(createContractMock).toHaveBeenCalledTimes(tokenIds.length);
-
-			const expectedResult = {
-				[tokenA.toLowerCase()]: { id: tokenA.toLowerCase(), name: 'USDC', divisibility: 6 },
-				[tokenB.toLowerCase()]: { id: tokenB.toLowerCase(), name: 'DAI', divisibility: 18 }
-			};
-			expect(result).toStrictEqual(expectedResult);
+			expect(result).toStrictEqual({
+				[usdcToken.address.toLowerCase()]: createExpectedTokenInfo(usdcToken),
+				[daiToken.address.toLowerCase()]: createExpectedTokenInfo(daiToken)
+			});
 		});
 	});
 });

@@ -23,14 +23,16 @@ export class AccountService {
 		const erc20Abi = [
 			'function balanceOf(address) view returns (uint256)',
 			'function decimals() view returns (uint8)',
-			'function symbol() view returns (string)'
+			'function symbol() view returns (string)',
+			'function name() view returns (string)'
 		];
 		const erc20TokensFetches = erc20TokensAddresses.map(async tokenAddress => {
 			const contract = createContract(tokenAddress, erc20Abi, provider);
-			const [balanceRaw, decimals, symbol] = await Promise.all([
+			const [balanceRaw, decimals, symbol, name] = await Promise.all([
 				contract.balanceOf(address),
 				contract.decimals(),
-				contract.symbol()
+				contract.symbol(),
+				contract.name()
 			]);
 			const divisibility = Number(decimals);
 			const amount = absoluteToRelativeAmount(balanceRaw.toString(), divisibility);
@@ -38,7 +40,8 @@ export class AccountService {
 			return {
 				id: tokenAddress.toLowerCase(),
 				amount,
-				name: symbol,
+				name: name,
+				ticker: symbol,
 				divisibility
 			};
 		});
@@ -55,6 +58,7 @@ export class AccountService {
 				{
 					id: networkProperties.networkCurrency.id,
 					name: networkProperties.networkCurrency.name,
+					ticker: networkProperties.networkCurrency.ticker,
 					divisibility: networkProperties.networkCurrency.divisibility,
 					amount: balance
 				},

@@ -1,4 +1,4 @@
-import { NETWORK_CURRENCY_DIVISIBILITY, NETWORK_CURRENCY_ID, NETWORK_CURRENCY_NAME } from '../constants';
+import { NETWORK_CURRENCY_DIVISIBILITY, NETWORK_CURRENCY_ID, NETWORK_CURRENCY_NAME, NETWORK_CURRENCY_TICKER } from '../constants';
 import { chainIdToNetworkIdentifier, createTransactionFeeMultipliers, createWebSocketUrl, makeEthereumJrpcCall } from '../utils';
 import { ApiError } from 'wallet-common-core';
 
@@ -57,6 +57,7 @@ export class NetworkService {
 			transactionFees: createTransactionFeeMultipliers(NETWORK_CURRENCY_DIVISIBILITY, feeHistory),
 			networkCurrency: {
 				name: NETWORK_CURRENCY_NAME,
+				ticker: NETWORK_CURRENCY_TICKER,
 				id: NETWORK_CURRENCY_ID,
 				divisibility: NETWORK_CURRENCY_DIVISIBILITY
 			}

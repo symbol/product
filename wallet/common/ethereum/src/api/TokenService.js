@@ -17,17 +17,24 @@ export class TokenService {
 		const erc20Abi = [
 			'function balanceOf(address) view returns (uint256)',
 			'function decimals() view returns (uint8)',
-			'function symbol() view returns (string)'
+			'function symbol() view returns (string)',
+			'function name() view returns (string)'
 		];
+
+		if (tokenId.toLowerCase() === networkProperties.networkCurrency.id.toLowerCase())
+			return { ...networkProperties.networkCurrency};
+
 		const contract = createContract(tokenId, erc20Abi, provider);
-		const [decimals, symbol] = await Promise.all([
+		const [decimals, symbol, name] = await Promise.all([
 			contract.decimals(),
-			contract.symbol()
+			contract.symbol(),
+			contract.name()
 		]);
 
 		return {
 			id: tokenId.toLowerCase(),
-			name: symbol,
+			name: name,
+			ticker: symbol,
 			divisibility: Number(decimals)
 		};
 	};

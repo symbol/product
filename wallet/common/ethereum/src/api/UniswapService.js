@@ -1,3 +1,4 @@
+import { TokenService } from './TokenService';
 import { createContract, createEthereumJrpcProvider } from '../utils';
 
 /** @typedef {import('../types/Token').TokenInfo} TokenInfo */
@@ -17,12 +18,6 @@ import { createContract, createEthereumJrpcProvider } from '../utils';
  * @property {number} fee - Pool fee tier (e.g. 3000 = 0.3%).
  */
 
-const ERC20_ABI = [
-	'function decimals() view returns (uint8)',
-	'function symbol() view returns (string)',
-	'function name() view returns (string)'
-];
-
 const QUOTER_EXACT_INPUT_SINGLE_SIGNATURE =
 	// eslint-disable-next-line max-len
 	'function quoteExactInputSingle(tuple(address tokenIn, address tokenOut, uint256 amountIn, uint24 fee, uint160 sqrtPriceLimitX96)) external returns (uint256 amountOut)';
@@ -40,32 +35,12 @@ export class UniswapService {
 	 * @returns {Promise<UniswapPoolTokenInfos>} Token info for both pool sides.
 	 */
 	fetchPoolTokenInfos = async (networkProperties, nativeTokenId, wrappedTokenId) => {
-		const provider = createEthereumJrpcProvider(networkProperties);
-		const nativeContract = createContract(nativeTokenId, ERC20_ABI, provider);
-		const wrappedContract = createContract(wrappedTokenId, ERC20_ABI, provider);
-
-		const [nativeName, nativeSymbol, nativeDecimals, wrappedName, wrappedSymbol, wrappedDecimals] = await Promise.all([
-			nativeContract.name(),
-			nativeContract.symbol(),
-			nativeContract.decimals(),
-			wrappedContract.name(),
-			wrappedContract.symbol(),
-			wrappedContract.decimals()
-		]);
+		const tokenService = new TokenService();
+		const tokenInfos = await tokenService.fetchTokenInfos(networkProperties, [nativeTokenId, wrappedTokenId]);
 
 		return {
-			nativeTokenInfo: {
-				id: nativeTokenId.toLowerCase(),
-				name: nativeName,
-				ticker: nativeSymbol,
-				divisibility: Number(nativeDecimals)
-			},
-			wrappedTokenInfo: {
-				id: wrappedTokenId.toLowerCase(),
-				name: wrappedName,
-				ticker: wrappedSymbol,
-				divisibility: Number(wrappedDecimals)
-			}
+			nativeTokenInfo: tokenInfos[nativeTokenId.toLowerCase()],
+			wrappedTokenInfo: tokenInfos[wrappedTokenId.toLowerCase()]
 		};
 	};
 
