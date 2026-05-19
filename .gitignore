@@ -8,6 +8,7 @@
 *.vcxproj.filters
 .vscode/
 .idea/
+.codex/
 
 # MacOS
 .DS_Store
