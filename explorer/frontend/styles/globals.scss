@@ -145,11 +145,11 @@ a {
 
 .stripes {
 	& > *:nth-child(even) {
-		background-color: #fcfcfc;
+		background-color: $color-background-stripe-even;
 	}
 
 	& > *:hover {
-		background-color: #fafafa;
+		background-color: $color-background-stripe-hover;
 		transition: color 250ms;
 	}
 }

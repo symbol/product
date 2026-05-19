@@ -295,5 +295,10 @@
 	"footer_link_techRef": "Tehnična Referencija",
 	"footer_link_docs": "Dokumentacija",
 	"footer_link_faucet": "XEM Faucet",
-	"footer_link_supernode": "Programma Supernody"
+	"footer_link_supernode": "Programma Supernody",
+	"field_chainHeight": "Vysota Cěpa",
+	"field_finalizationHeight": "Finalizovana Vysota",
+	"field_epoch": "Epoha",
+	"value_eta": "ETA",
+	"value_remainingBlocks": "{{remainingBlocks}} blokov ostalo"
 }

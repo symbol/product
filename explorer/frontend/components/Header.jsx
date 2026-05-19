@@ -8,7 +8,7 @@ import ValueAccount from './ValueAccount';
 import { search } from '@/api/search';
 import { BACKEND_HEALTH_ERROR, STORAGE_KEY } from '@/constants';
 import styles from '@/styles/components/Header.module.scss';
-import { createPageHref, formatDate, useStorage, useToggle } from '@/utils';
+import { createAssetURL, createPageHref, formatDate, useStorage, useToggle } from '@/utils';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
@@ -168,7 +168,7 @@ const Header = ({ backendStatus }) => {
 		<div className={styles.headerWrapper}>
 			<header className={styles.header}>
 				<div className={styles.headerLogo}>
-					<Image src="/images/logo-nem.png" fill alt="Logo" />
+					<Image src={createAssetURL('/images/logo.png')} fill alt="Logo" />
 				</div>
 
 				<div className={styles.headerRightSection}>

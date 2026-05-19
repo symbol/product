@@ -1,18 +1,20 @@
 import { fetchBlockPage } from '@/api/blocks';
 import { fetchBlockStats, fetchMarketData, fetchNodeStats, fetchTransactionChart, fetchTransactionStats } from '@/api/stats';
 import { fetchTransactionPage } from '@/api/transactions';
+import AdditionalSections from '@/components/AdditionalSections';
 import ChartLine from '@/components/ChartLine';
-import CustomImage from '@/components/CustomImage';
 import Field from '@/components/Field';
 import RecentBlocks from '@/components/RecentBlocks';
 import RecentTransactions from '@/components/RecentTransactions';
 import Section from '@/components/Section';
 import Separator from '@/components/Separator';
 import ValuePrice from '@/components/ValuePrice';
+import config from '@/config';
 import { TRANSACTION_CHART_TYPE } from '@/constants';
 import styles from '@/styles/pages/Home.module.scss';
 import { numberToShortString, truncateDecimals, useAsyncCall } from '@/utils';
 import { formatTransactionChart, numberToString } from '@/utils/common';
+import { pageConfig } from '@/variants';
 import Head from 'next/head';
 import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
@@ -82,6 +84,7 @@ const Home = ({
 				<title>Home</title>
 			</Head>
 			<RecentBlocks data={blocks.data} onTransactionListRequest={fetchBlockTransactions} />
+			<AdditionalSections sections={pageConfig.home.additionalSections} />
 			<Section>
 				<div className="layout-flex-row-mobile-col">
 					<div className="layout-grid-row layout-flex-fill">
@@ -108,7 +111,7 @@ const Home = ({
 						</div>
 						<div className="layout-flex-col layout-flex-fill">
 							<Field title={t('field_circulatingSupply')} textAlign="right">
-								{numberToString(marketData.circulatingSupply)} XEM
+								{numberToString(marketData.circulatingSupply)} {config.NATIVE_MOSAIC_TICKER}
 							</Field>
 							<Field title={t('field_marketCap')} textAlign="right">
 								${numberToShortString(marketData.marketCap)}
@@ -119,7 +122,9 @@ const Home = ({
 					<div className="layout-grid-row layout-flex-fill">
 						<div className="layout-flex-col layout-flex-fill">
 							<Field title={t('field_totalNodes')}>{nodeStats.total}</Field>
-							<Field title={t('field_supernodes')}>{nodeStats.supernodes}</Field>
+							{pageConfig.home.showSupernodeCount && (
+								<Field title={t('field_supernodes')}>{nodeStats.supernodes}</Field>
+							)}
 						</div>
 					</div>
 				</div>

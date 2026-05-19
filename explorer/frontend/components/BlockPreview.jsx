@@ -58,7 +58,7 @@ const BlockCube = ({ data }) => {
 				<div className={styles.height}>{height}</div>
 				<div>{transactionCount} TXs.</div>
 			</div>
-			<Field title={t('field_totalFee')}>
+			<Field title={t('field_totalFee')} titleClassName={styles.feeTitle}>
 				<ValueMosaic className={styles.fee} isNative amount={totalFee} />
 			</Field>
 		</>

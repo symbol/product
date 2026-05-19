@@ -49,8 +49,12 @@ const AppComponent = ({ Component, pageProps, appConfig }) => {
 	// Fetch backend status
 	const [backendStatus, setBackendStatus] = useState(null);
 	const fetchBackendStatus = async () => {
-		const backendStatus = await fetchBackendHealthStatus();
-		setBackendStatus(backendStatus);
+		try {
+			const backendStatus = await fetchBackendHealthStatus();
+			setBackendStatus(backendStatus);
+		} catch {
+			setBackendStatus(null);
+		}
 	};
 	useEffect(() => {
 		fetchBackendStatus();

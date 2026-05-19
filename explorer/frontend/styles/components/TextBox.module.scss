@@ -17,7 +17,9 @@
 .input {
 	flex: 1;
 	width: 100%;
+	color: $color-textbox-text;
 	font: $font-input-text;
+	background: transparent;
 	border: none;
 
 	&::placeholder {

@@ -295,5 +295,10 @@
 	"footer_link_techRef": "Technical Reference",
 	"footer_link_docs": "Documentation",
 	"footer_link_faucet": "XEM Faucet",
-	"footer_link_supernode": "Supernode Program"
+	"footer_link_supernode": "Supernode Program",
+	"field_chainHeight": "Chain Height",
+	"field_finalizationHeight": "Finalization Height",
+	"field_epoch": "Epoch",
+	"value_eta": "ETA",
+	"value_remainingBlocks": "{{remainingBlocks}} blocks remaining"
 }

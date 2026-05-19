@@ -2,52 +2,52 @@ import CustomImage from './CustomImage';
 import config from '@/config';
 import styles from '@/styles/components/Footer.module.scss';
 import layoutStyles from '@/styles/pages/Layout.module.scss';
+import { createAssetURL } from '@/utils';
 import { usePathname } from 'next/navigation';
 import { useTranslation } from 'next-i18next';
 
-const socialLinks = [
-	{
-		name: 'GitHub',
-		icon: '/images/social/github.svg',
-		href: config.SOCIAL_URL_GITHUB
-	},
-	{
-		name: 'Discord',
-		icon: '/images/social/discord.svg',
-		href: config.SOCIAL_URL_DISCORD
-	},
-	{
-		name: 'Twitter',
-		icon: '/images/social/twitter.svg',
-		href: config.SOCIAL_URL_TWITTER
-	}
-];
-
-const resourcesLinks = [
-	{
-		text: 'footer_link_techRef',
-		href: config.FOOTER_URL_TECHNICAL_REFERENCE
-	},
-	{
-		text: 'footer_link_docs',
-		href: config.FOOTER_URL_DOCS
-	}
-];
-
-const productsLinks = [
-	{
-		text: 'footer_link_faucet',
-		href: config.FOOTER_URL_FAUCET
-	},
-	{
-		text: 'footer_link_supernode',
-		href: config.FOOTER_URL_SUPERNODE_PROGRAM
-	}
-];
-
-
 const Footer = () => {
 	const { t } = useTranslation();
+
+	const socialLinks = [
+		{
+			name: 'GitHub',
+			icon: '/images/social/github.svg',
+			href: config.SOCIAL_URL_GITHUB
+		},
+		{
+			name: 'Discord',
+			icon: '/images/social/discord.svg',
+			href: config.SOCIAL_URL_DISCORD
+		},
+		{
+			name: 'Twitter',
+			icon: '/images/social/twitter.svg',
+			href: config.SOCIAL_URL_TWITTER
+		}
+	];
+
+	const resourcesLinks = [
+		{
+			text: 'footer_link_techRef',
+			href: config.FOOTER_URL_TECHNICAL_REFERENCE
+		},
+		{
+			text: 'footer_link_docs',
+			href: config.FOOTER_URL_DOCS
+		}
+	];
+
+	const productsLinks = [
+		{
+			text: 'footer_link_faucet',
+			href: config.FOOTER_URL_FAUCET
+		},
+		{
+			text: 'footer_link_supernode',
+			href: config.FOOTER_URL_SUPERNODE_PROGRAM
+		}
+	];
 	const pathname = usePathname();
 	const isFooterWithInfoShown = pathname === '/';
 
@@ -56,12 +56,12 @@ const Footer = () => {
 			<div className={layoutStyles.contentContainer}>
 				{!isFooterWithInfoShown && (
 					<div className={styles.footerSimplified}>
-						<CustomImage className={styles.footerLogo} src="/images/logo-nem-outline.svg" alt="NEM" />
+						<CustomImage className={styles.footerLogo} src={createAssetURL('/images/logo-outline.svg')} alt="Logo" />
 					</div>
 				)}
 				{isFooterWithInfoShown && (
 					<div className={`${layoutStyles.contentContainerInner} ${styles.footerInner}`}>
-						<CustomImage className={styles.footerLogo} src="/images/logo-nem-outline.svg" alt="NEM" />
+						<CustomImage className={styles.footerLogo} src={createAssetURL('/images/logo-outline.svg')} alt="Logo" />
 						<div className={styles.footerLinksContainer}>
 							<div className={styles.footerLinks}>
 								<h7 className={styles.title}>{t('footer_title_section_1')}</h7>

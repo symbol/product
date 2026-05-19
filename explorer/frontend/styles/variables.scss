@@ -1,95 +1,108 @@
 // Colors
-$color-background-main: #eef5f9;
-$color-background-card: #fff;
-$color-background-header: #f5f9fbee;
-$color-background-navigation: #f5f9fbee;
-$color-border-navigation: #eef5f9;
-$color-background-footer: #f5f9fbee;
-$color-background-mosaic: rgba(25, 41, 97, 5%);
-$color-background-tooltip: #0b0118;
-$color-primary: #50b9ad;
-$color-primary-light: rgba(79, 185, 172, 12%);
-$color-secondary: #fab700;
-$color-text-body: #0b0118;
-$color-text-footer: #fff;
-$color-text-link: #0d155c;
-$color-text-link-hover: #0d155c;
-$color-text-tooltip: #fff;
-$color-text-textbox-placeholder: #a8a6a6;
-$color-text-button: #fff;
-$color-tab-active: #0b0118;
-$color-tab-inactive: #a8a6a6;
-$color-filter-active: #fff;
-$color-filter-inactive: #50b9ad;
-$color-info: #66b7e7;
-$color-success: #4cc773;
-$color-warning: #fab700;
-$color-warning-light: #FFE7AE;
-$color-danger: #b94f4f;
-$color-amount-incoming: rgba(79, 185, 172, 12%);
-$color-amount-outgoing: rgba(185, 79, 79, 12%);
-$color-textbox-border: #50b9ad;
-$color-textbox-bg: #fff;
-$color-button-bg: #50b9ad;
+$color-background-main: #eef5f9 !default;
+$color-background-card: #fff !default;
+$color-background-header: #f5f9fbee !default;
+$color-background-navigation: #f5f9fbee !default;
+$color-border-navigation: #eef5f9 !default;
+$color-background-footer: #f5f9fbee !default;
+$color-background-mosaic: rgba(25, 41, 97, 5%) !default;
+$color-background-tooltip: #0b0118 !default;
+$layout-background-image: url('/images/bg-tree-left.png'), url('/images/bg-tree-right.png') !default;
+$layout-background-position: top left, bottom right !default;
+$layout-background-size: 50.41rem 50.33rem, 24.25rem 49.92rem !default;
+$color-background-stripe-even: #fcfcfc !default;
+$color-background-stripe-hover: #fafafa !default;
+$color-primary: #50b9ad !default;
+$color-primary-light: rgba(79, 185, 172, 12%) !default;
+$color-secondary: #fab700 !default;
+$color-text-body: #0b0118 !default;
+$color-text-footer: #fff !default;
+$color-text-link: #0d155c !default;
+$color-text-link-hover: #0d155c !default;
+$color-text-tooltip: #fff !default;
+$color-text-textbox-placeholder: #a8a6a6 !default;
+$color-textbox-text: #0b0118 !default;
+$color-text-button: #fff !default;
+$color-tab-active: #0b0118 !default;
+$color-tab-inactive: #a8a6a6 !default;
+$color-filter-active: #fff !default;
+$color-filter-inactive: #50b9ad !default;
+$color-info: #66b7e7 !default;
+$color-success: #4cc773 !default;
+$color-warning: #fab700 !default;
+$color-warning-light: #FFE7AE !default;
+$color-danger: #b94f4f !default;
+$color-amount-incoming: rgba(79, 185, 172, 12%) !default;
+$color-amount-outgoing: rgba(185, 79, 79, 12%) !default;
+$color-textbox-border: #50b9ad !default;
+$color-textbox-bg: #fff !default;
+$color-button-bg: #50b9ad !default;
+$color-block-cube-front: #50b9ad !default;
+$color-block-cube-top: #038c7c !default;
+$color-block-cube-right: #016a5e !default;
+$color-block-cube-text: #fff !default;
+$color-separator-line-neutral: #f3f4f7 !default;
+$color-separator-line-accent: #50b9ad !default;
+$color-text-empty-table: rgba(11, 1, 24, 70%) !default;
 
 // Borders
-$border-radius-card: 1rem;
-$border-radius-label: 1rem;
-$border-radius-input: 0.33rem;
-$border-radius-chip: 0.5rem;
-$border-radius-filter: 1.5rem;
-$border-radius-button: 0.083rem;
-$border-width-textbox: 0.083rem;
+$border-radius-card: 1rem !default;
+$border-radius-label: 1rem !default;
+$border-radius-input: 0.33rem !default;
+$border-radius-chip: 0.5rem !default;
+$border-radius-filter: 1.5rem !default;
+$border-radius-button: 0.083rem !default;
+$border-width-textbox: 0.083rem !default;
 
 // Typography
-$font-body: 400 1rem / 133.33% 'Nunito Sans', sans-serif;
-$font-body-bold: 700 1rem / 133.33% 'Nunito Sans', sans-serif;
-$font-body-monospace: 400 1rem / 133.33% 'Courier Prime', monospace;
-$font-h1: 400 / 4.66rem 'Abhaya Libre', 'PT Serif', serif;
-$font-h2: 400 3.25rem / 4rem 'Abhaya Libre', 'PT Serif', serif;
-$font-h3: 400 2.66rem / 3.33rem 'Abhaya Libre', 'PT Serif', serif;
-$font-h4: 700 1.5rem / 1.7rem 'Nunito Sans', sans-serif;
-$font-title: 700 1rem / 133.33% 'Nunito Sans', sans-serif;
-$font-highlighted: 700 2.08rem / 2rem 'Nunito Sans', sans-serif;
-$font-tab: 700 1rem / 133.33% 'Nunito Sans', sans-serif;
-$font-nav: 700 1rem / 133.33% 'Nunito Sans', sans-serif;
-$font-input-placeholder: 700 1rem / 133.33% 'Nunito Sans', sans-serif;
-$font-input-text: 400 1rem / 133.33% 'Nunito Sans', sans-serif;
-$font-button: 700 1rem / 133.33% 'Nunito Sans', sans-serif;
+$font-body: 400 1rem / 133.33% 'Nunito Sans', sans-serif !default;
+$font-body-bold: 700 1rem / 133.33% 'Nunito Sans', sans-serif !default;
+$font-body-monospace: 400 1rem / 133.33% 'Courier Prime', monospace !default;
+$font-h1: 400 / 4.66rem 'Abhaya Libre', 'PT Serif', serif !default;
+$font-h2: 400 3.25rem / 4rem 'Abhaya Libre', 'PT Serif', serif !default;
+$font-h3: 400 2.66rem / 3.33rem 'Abhaya Libre', 'PT Serif', serif !default;
+$font-h4: 700 1.5rem / 1.7rem 'Nunito Sans', sans-serif !default;
+$font-title: 700 1rem / 133.33% 'Nunito Sans', sans-serif !default;
+$font-highlighted: 700 2.08rem / 2rem 'Nunito Sans', sans-serif !default;
+$font-tab: 700 1rem / 133.33% 'Nunito Sans', sans-serif !default;
+$font-nav: 700 1rem / 133.33% 'Nunito Sans', sans-serif !default;
+$font-input-placeholder: 700 1rem / 133.33% 'Nunito Sans', sans-serif !default;
+$font-input-text: 400 1rem / 133.33% 'Nunito Sans', sans-serif !default;
+$font-button: 700 1rem / 133.33% 'Nunito Sans', sans-serif !default;
 
 // Spacings General
-$spacing-base: calc(1rem / 3 * 2);
-$spacing-padding: $spacing-base * 3;
-$spacing-fields: $spacing-base * 2;
-$spacing-card-gap: $spacing-base * 3;
-$spacing-section-gap: $spacing-base * 4;
-$spacing-header-height: $spacing-base * 8;
-$spacing-navigation-height: $spacing-base * 8;
-$spacing-heading-margin: $spacing-base;
-$spacing-textbox-height: $spacing-base * 4.75;
+$spacing-base: calc(1rem / 3 * 2) !default;
+$spacing-padding: $spacing-base * 3 !default;
+$spacing-fields: $spacing-base * 2 !default;
+$spacing-card-gap: $spacing-base * 3 !default;
+$spacing-section-gap: $spacing-base * 4 !default;
+$spacing-header-height: $spacing-base * 8 !default;
+$spacing-navigation-height: $spacing-base * 8 !default;
+$spacing-heading-margin: $spacing-base !default;
+$spacing-textbox-height: $spacing-base * 4.75 !default;
 
 // Spacings Large
-$spacing-content-container-width-large: $spacing-base * 152;
-$spacing-content-container-margin-large: $spacing-base * 3;
-$multiplier-font-large: 14px;
+$spacing-content-container-width-large: $spacing-base * 152 !default;
+$spacing-content-container-margin-large: $spacing-base * 3 !default;
+$multiplier-font-large: 14px !default;
 
 // Spacings Desktop
-$spacing-content-container-width-desktop: $spacing-base * 152;
-$spacing-content-container-margin-desktop: $spacing-base * 3;
-$multiplier-font-desktop: 0.833vw;
+$spacing-content-container-width-desktop: $spacing-base * 152 !default;
+$spacing-content-container-margin-desktop: $spacing-base * 3 !default;
+$multiplier-font-desktop: 0.833vw !default;
 
 // Spacings Laptop
-$spacing-content-container-width-laptop: $spacing-base * 152;
-$spacing-content-container-margin-laptop: $spacing-base * 3;
-$multiplier-font-laptop: 0.95vw;
+$spacing-content-container-width-laptop: $spacing-base * 152 !default;
+$spacing-content-container-margin-laptop: $spacing-base * 3 !default;
+$multiplier-font-laptop: 0.95vw !default;
 
 // Spacings Mobile
-$spacing-content-container-width-mobile: 100%;
-$spacing-content-container-margin-mobile: $spacing-base * 2;
-$multiplier-font-mobile: 10px;
+$spacing-content-container-width-mobile: 100% !default;
+$spacing-content-container-margin-mobile: $spacing-base * 2 !default;
+$multiplier-font-mobile: 10px !default;
 
 // Breakpoints
-$screen-large: '(min-width: 2000px)';
-$screen-desktop: '(max-width: 1999.8px) and (min-width: 1440px)';
-$screen-laptop: '(max-width: 1439.8px) and (min-width: 768px)';
-$screen-mobile: '(max-width: 767.8px)';
+$screen-large: '(min-width: 2000px)' !default;
+$screen-desktop: '(max-width: 1999.8px) and (min-width: 1440px)' !default;
+$screen-laptop: '(max-width: 1439.8px) and (min-width: 768px)' !default;
+$screen-mobile: '(max-width: 767.8px)' !default;

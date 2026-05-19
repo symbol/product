@@ -1,5 +1,5 @@
 class NamespaceView:
-	def __init__(self, root_namespace, owner, registered_height, registered_timestamp, expiration_height, sub_namespaces):
+	def __init__(self, root_namespace, owner, registered_height, registered_timestamp, expiration_height, sub_namespaces, mosaics):
 		"""Create Namespace view."""
 
 		# pylint: disable=too-many-arguments,too-many-positional-arguments
@@ -10,6 +10,7 @@ class NamespaceView:
 		self.registered_timestamp = registered_timestamp
 		self.expiration_height = expiration_height
 		self.sub_namespaces = sub_namespaces
+		self.mosaics = mosaics
 
 	def __eq__(self, other):
 		return isinstance(other, NamespaceView) and all([
@@ -18,7 +19,8 @@ class NamespaceView:
 			self.registered_height == other.registered_height,
 			self.registered_timestamp == other.registered_timestamp,
 			self.expiration_height == other.expiration_height,
-			self.sub_namespaces == other.sub_namespaces
+			self.sub_namespaces == other.sub_namespaces,
+			self.mosaics == other.mosaics
 		])
 
 	def to_dict(self):
@@ -30,5 +32,6 @@ class NamespaceView:
 			'registeredHeight': self.registered_height,
 			'registeredTimestamp': self.registered_timestamp,
 			'expirationHeight': self.expiration_height,
-			'subNamespaces': self.sub_namespaces
+			'subNamespaces': self.sub_namespaces,
+			'mosaics': self.mosaics
 		}

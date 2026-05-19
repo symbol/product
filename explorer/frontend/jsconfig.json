@@ -10,6 +10,8 @@
 			"@/pages/*": ["pages/*"],
 			"@/public/*": ["public/*"],
 			"@/styles/*": ["styles/*"],
+			"@/variants": ["variants"],
+			"@/variants/*": ["variants/*"],
 			"@/utils": ["utils"],
 			"@/utils/*": ["utils/*"]
 		}

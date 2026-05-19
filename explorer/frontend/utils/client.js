@@ -53,6 +53,28 @@ export const createPageHref = (pageName, parameter) => {
 };
 
 /**
+ * Creates a platform-aware public asset URL.
+ * NEM keeps using the legacy public paths; Symbol assets live under /symbol.
+ * @param {string} path - public asset path
+ * @param {object} appConfig - runtime config
+ * @returns {string} public asset URL
+ */
+export const createAssetURL = (path, appConfig = {}) => {
+	const runtimeConfig = typeof window !== 'undefined' ? window.appConfig || {} : {};
+	const platform = appConfig.PLATFORM || runtimeConfig.PLATFORM || process.env.NEXT_PUBLIC_PLATFORM || 'nem';
+
+	if (platform === 'symbol')
+		return `/symbol${path.replace('/images/logo-nem', '/images/logo')}`;
+
+	if (path === '/images/logo.png')
+		return '/images/logo-nem.png';
+	if (path === '/images/logo-outline.svg')
+		return '/images/logo-nem-outline.svg';
+
+	return path;
+};
+
+/**
  * Handles navigation item click. Prevents navigation if disabled.
  * @param {Event} event - click event
  * @param {Function} onClick - click handler

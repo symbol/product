@@ -137,7 +137,8 @@ class NemDatabase(DatabaseConnectionPool):
 			registered_height,
 			registered_timestamp,
 			expiration_height,
-			sub_namespaces
+			sub_namespaces,
+			mosaics
 		) = result
 
 		return NamespaceView(
@@ -146,7 +147,8 @@ class NemDatabase(DatabaseConnectionPool):
 			registered_height=registered_height,
 			registered_timestamp=str(registered_timestamp),
 			expiration_height=expiration_height,
-			sub_namespaces=sub_namespaces
+			sub_namespaces=sub_namespaces,
+			mosaics=mosaics
 		)
 
 	def _create_mosaic_view(self, result):  # pylint: disable=too-many-locals
@@ -340,11 +342,23 @@ class NemDatabase(DatabaseConnectionPool):
 				owner,
 				registered_height,
 				b.timestamp AS registered_timestamp,
-				expiration_height ,
-				sub_namespaces
+				expiration_height,
+				sub_namespaces,
+				COALESCE(mosaics_agg.mosaics, '[]'::json) AS mosaics
 			FROM namespaces n
-			left join blocks b
-				on n.registered_height = b.height
+			LEFT JOIN blocks b
+				ON n.registered_height = b.height
+			LEFT JOIN LATERAL (
+				SELECT json_agg(json_build_object(
+					'namespaceName', m.namespace_name,
+					'mosaicRegisteredHeight', m.registered_height,
+					'mosaicRegisteredTimestamp', mb.timestamp,
+					'totalSupply', m.total_supply
+				)) AS mosaics
+				FROM mosaics m
+				LEFT JOIN blocks mb ON mb.height = m.registered_height
+				WHERE m.root_namespace = n.root_namespace
+			) mosaics_agg ON true
 			{where_condition}
 			{order_condition}
 			{limit_condition}
@@ -414,7 +428,7 @@ class NemDatabase(DatabaseConnectionPool):
 				SELECT json_agg(json_build_object(
 				'namespace_name', tm.namespace_name,
 				'quantity', tm.quantity,
-				'divisibility', mo.divisibility)) AS mosaics
+				'divisibility', COALESCE(mo.divisibility, 6))) AS mosaics
 			FROM transactions_mosaic tm
 			LEFT JOIN mosaics mo
 				ON mo.namespace_name = tm.namespace_name

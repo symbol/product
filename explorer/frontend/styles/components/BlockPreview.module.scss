@@ -67,18 +67,18 @@
 .blockCube {
 	@extend %block-cube-base;
 
-	background: #50b9ad;
+	background: $color-block-cube-front;
 
 	&::before {
 		@extend %block-cube-base-before;
 
-		background: #038c7c;
+		background: $color-block-cube-top;
 	}
 
 	&::after {
 		@extend %block-cube-base-after;
 
-		background: #016a5e;
+		background: $color-block-cube-right;
 	}
 }
 
@@ -119,6 +119,10 @@
 	& img {
 		filter: invert(1);
 	}
+}
+
+.feeTitle {
+	color: $color-block-cube-text !important;
 }
 
 .blockCard {

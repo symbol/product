@@ -56,7 +56,7 @@ export const createTryFetchInfoFunction =
 			try {
 				return await func(...args);
 			} catch (error) {
-				if (error.response?.data.status === 400 || error.response?.data.status === 404)
+				if ([400, 404, 409].includes(error.response?.status) || [400, 404, 409].includes(error.response?.data?.status))
 					return null;
 
 				throw error;

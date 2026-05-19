@@ -301,5 +301,10 @@
 	"footer_link_techRef": "技術リファレンス",
 	"footer_link_docs": "ドキュメント",
 	"footer_link_faucet": "XEMファウセット",
-	"footer_link_supernode": "スーパーノードプログラム"
+	"footer_link_supernode": "スーパーノードプログラム",
+	"field_chainHeight": "チェーン高",
+	"field_finalizationHeight": "ファイナライズ高",
+	"field_epoch": "エポック",
+	"value_eta": "ETA",
+	"value_remainingBlocks": "残り{{remainingBlocks}}ブロック"
 }
