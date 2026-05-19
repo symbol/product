@@ -68,7 +68,7 @@ const Pairs = {
 		quoterAddress: QUOTER_ADDRESS,
 		swapRouterAddress: SWAP_ROUTER,
 		poolFee: UNISWAP_POOL_FEE
-	}),
+	})
 };
 
 const bridges = [
