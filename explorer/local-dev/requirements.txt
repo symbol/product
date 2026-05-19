@@ -1,0 +1,16 @@
+# Combined local development dependencies for explorer/puller, explorer/rest and explorer/nodewatch.
+# The service requirements pin different psycopg2-binary patch versions, so local dev uses 2.9.11.
+aiohttp==3.13.3
+APScheduler==3.11.2
+Flask[async]==3.1.2
+asgiref>=3.2
+psycopg2-binary==2.9.11
+symbol-lightapi~=0.0.9
+symbol-sdk-python==3.3.0
+zenlog==1.1
+Path==17.1.1
+flask_cors==6.0.2
+aiolimiter~=1.2.1
+pandas==3.0.1
+plotly==5.24.1
+

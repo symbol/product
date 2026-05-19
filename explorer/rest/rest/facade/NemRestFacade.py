@@ -153,6 +153,22 @@ class NemRestFacade:
 
 		return transaction.to_dict() if transaction else None
 
+	def get_transactions(self, pagination, filters):
+		"""Gets transaction pagination."""
+
+		parsed_filters = {}
+		for key in ['senderAddress', 'recipientAddress']:
+			if filters.get(key):
+				parsed_filters[key] = Address(filters[key])
+
+		for key in ['height', 'transactionType']:
+			if filters.get(key) is not None:
+				parsed_filters[key] = int(filters[key])
+
+		transactions = self.nem_db.get_transactions(pagination, parsed_filters)
+
+		return [transaction.to_dict() for transaction in transactions]
+
 	def get_transaction_statistics(self):
 		"""Gets transaction statistics."""
 

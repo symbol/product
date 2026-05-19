@@ -710,6 +710,40 @@ class NemDatabase(DatabaseConnectionPool):
 
 		return self._create_transaction_view(transaction, inner_transaction) if transaction else None
 
+	def get_transactions(self, pagination, filters):
+		"""Gets transactions pagination in database."""
+
+		sql = self._generate_transaction_sql_query()
+		where_conditions = ['t.is_inner = false']
+		params = []
+
+		if filters.get('height') is not None:
+			where_conditions.append('t.height = %s')
+			params.append(filters['height'])
+
+		if filters.get('senderAddress'):
+			where_conditions.append('t.sender_address = %s')
+			params.append(filters['senderAddress'].bytes)
+
+		if filters.get('recipientAddress'):
+			where_conditions.append('t.recipient_address = %s')
+			params.append(filters['recipientAddress'].bytes)
+
+		if filters.get('transactionType') is not None:
+			where_conditions.append('t.transaction_type = %s')
+			params.append(filters['transactionType'])
+
+		sql += f' WHERE {" AND ".join(where_conditions)}'
+		sql += ' ORDER BY t.height DESC, t.id DESC LIMIT %s OFFSET %s'
+		params.extend([pagination.limit, pagination.offset])
+
+		with self.connection() as connection:
+			cursor = connection.cursor()
+			cursor.execute(sql, params)
+			results = cursor.fetchall()
+
+			return [self._create_transaction_view(TransactionRecord(*result), None) for result in results]
+
 	def get_transaction_statistics(self):
 		"""Gets transaction statistics from database."""
 

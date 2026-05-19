@@ -1,0 +1,26 @@
+[
+  {
+    "endpoint": {
+      "host": "localhost",
+      "port": 7890,
+      "protocol": "http"
+    },
+    "extraData": {
+      "balance": 0,
+      "finalizedHeight": 0,
+      "height": 25601
+    },
+    "identity": {
+      "name": "local-testnet-node",
+      "public-key": "af2f28baaa45e782514a75cbe0c6a5c40015660393e06ed4fcd8b5d81e17c774"
+    },
+    "metaData": {
+      "application": null,
+      "features": 1,
+      "networkId": -104,
+      "platform": "local docker",
+      "version": "0.6.102"
+    }
+  }
+]
+

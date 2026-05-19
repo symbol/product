@@ -21,9 +21,12 @@ node_modules/
 npm-*.log*
 _data/
 .next/
+.env
+.env.local
 
 # python
 .python-version
+.venv*/
 __pycache__/
 *.egg-info/
 build/

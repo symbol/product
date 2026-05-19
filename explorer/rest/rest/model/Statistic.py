@@ -50,7 +50,8 @@ class StatisticTransactionView:
 		return {
 			'total': self.total_transactions,
 			'last24Hours': self.transaction_last_24_hours,
-			'last30Days': self.transaction_last_30_days
+			'last30Days': self.transaction_last_30_days,
+			'last30Day': self.transaction_last_30_days
 		}
 
 

@@ -250,15 +250,70 @@ def setup_nem_routes(app, nem_api_facade):  # pylint: disable=too-many-statement
 
 		return jsonify(result)
 
+	@app.route('/api/nem/transactions')
+	def api_get_nem_transactions():
+		try:
+			limit = int(request.args.get('limit', 10))
+			offset = int(request.args.get('offset', 0))
+			filters = {
+				'height': request.args.get('height', '').strip() or None,
+				'senderAddress': request.args.get('senderAddress', '').strip() or None,
+				'recipientAddress': request.args.get('recipientAddress', '').strip() or None,
+				'transactionType': request.args.get('transactionType', '').strip() or None
+			}
+
+			if limit < 0 or offset < 0:
+				raise ValueError('Limit and offset must be greater than or equal to 0')
+			if filters['height'] is not None and int(filters['height']) < 1:
+				raise ValueError('Height must be greater than or equal to 1')
+			for key in ['senderAddress', 'recipientAddress']:
+				if filters[key] and not nem_api_facade.nem_db.network.is_valid_address_string(filters[key]):
+					raise ValueError(f'Invalid {key} format')
+
+		except ValueError as error:
+			abort(400, error)
+
+		return jsonify(nem_api_facade.get_transactions(Pagination(limit, offset), filters))
+
+	@app.route('/api/nem/transactions/unconfirmed')
+	def api_get_nem_unconfirmed_transactions():
+		return jsonify([])
+
 	@app.route('/api/nem/transaction/statistics')
 	def api_get_nem_transaction_statistics():
 		return jsonify(nem_api_facade.get_transaction_statistics())
 
+	@app.route('/api/nem/transaction/daily')
+	def api_get_nem_transaction_daily_statistics():
+		result = _get_nem_transaction_statistics_by_date_range('DAY')
+		return jsonify([
+			{
+				'date': item['period'],
+				'totalTransactions': item['totalTransactions']
+			}
+			for item in result['data']
+		])
+
+	@app.route('/api/nem/transaction/monthly')
+	def api_get_nem_transaction_monthly_statistics():
+		result = _get_nem_transaction_statistics_by_date_range('MONTH')
+		return jsonify([
+			{
+				'month': item['period'],
+				'totalTransactions': item['totalTransactions']
+			}
+			for item in result['data']
+		])
+
 	@app.route('/api/nem/transaction/statistics/range')
 	def api_get_nem_transaction_statistics_by_date_range():  # pylint: disable=invalid-name
+		period_type = request.args.get('periodType', '').strip().upper()
+
+		return jsonify(_get_nem_transaction_statistics_by_date_range(period_type))
+
+	def _get_nem_transaction_statistics_by_date_range(period_type):
 		start_date = request.args.get('startDate', '').strip()
 		end_date = request.args.get('endDate', '').strip()
-		period_type = request.args.get('periodType', '').strip().upper()
 
 		if not start_date or not end_date or not period_type:
 			abort(400, 'startDate, endDate and period type are required')
@@ -275,7 +330,7 @@ def setup_nem_routes(app, nem_api_facade):  # pylint: disable=too-many-statement
 		except ValueError as error:
 			abort(400, error)
 
-		return jsonify(nem_api_facade.get_transaction_statistics_by_date_range(start_date, end_date, period_type))
+		return nem_api_facade.get_transaction_statistics_by_date_range(start_date, end_date, period_type)
 
 
 def setup_error_handlers(app):
