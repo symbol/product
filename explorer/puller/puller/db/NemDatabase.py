@@ -243,7 +243,7 @@ class NemDatabase(DatabaseConnection):
 				id serial PRIMARY KEY,
 				transaction_id int NOT NULL,
 				namespace_name varchar(146),
-				quantity numeric,
+				quantity bigint,
 				FOREIGN KEY (transaction_id) REFERENCES transactions(id)
 				ON DELETE CASCADE
 			)

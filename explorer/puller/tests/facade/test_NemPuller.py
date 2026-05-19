@@ -1120,11 +1120,11 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 			transfer.timestamp,
 			transfer.deadline,
 			transfer.signature,
-			200000,
+			1999999,
 			transfer.recipient,
 			transfer.message,
 			[
-				Mosaic('namespace.test', 1000000),
+				Mosaic('namespace.test', 20),
 				Mosaic('nem.xem', 8000000)
 			]
 		)
@@ -1139,14 +1139,8 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 		mock_insert_transaction.assert_called_once()
 		insert_transaction_mosaic_calls = mock_insert_transaction_mosaic.call_args_list
 		expected_mosaics = [
-			Mosaic(
-				'namespace.test',
-				200000
-			),
-			Mosaic(
-				'nem.xem',
-				1600000
-			)
+			Mosaic('namespace.test', 39),
+			Mosaic('nem.xem', 15999992)
 		]
 		for index, mosaic in enumerate(expected_mosaics):
 			self.assertEqual(insert_transaction_mosaic_calls[index][0], (

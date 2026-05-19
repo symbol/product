@@ -467,7 +467,7 @@ class NemPuller:
 		if transaction.transaction_type == TransactionType.TRANSFER.value:
 			if transaction.mosaics:
 				for mosaic in transaction.mosaics:
-					mosaic_amount = mosaic.quantity * transaction.amount / (10 ** 6)
+					mosaic_amount = mosaic.quantity * transaction.amount // (10 ** 6)
 					self.nem_db.insert_transaction_mosaic(
 						cursor,
 						transaction_id,
