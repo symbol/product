@@ -23,7 +23,7 @@ describe('variants/symbol/api/blocks', () => {
 	});
 
 	describe('fetchBlockPage', () => {
-		it('maps statement count from block meta and block reward from inflation receipt', async () => {
+		it('maps statement count from block meta and block reward from inflation receipts in the searched height range', async () => {
 			// Arrange:
 			const searchCriteria = {
 				pageNumber: 2,
@@ -46,6 +46,22 @@ describe('variants/symbol/api/blocks', () => {
 							size: '456',
 							timestamp: '0'
 						}
+					},
+					{
+						meta: {
+							hash: '6BCD',
+							statementsCount: 2,
+							totalFee: '222222',
+							totalTransactionsCount: 4
+						},
+						block: {
+							difficulty: '30000000000000',
+							height: '1235',
+							signature: 'BCDE',
+							signerPublicKey: 'PUBLIC_KEY_2',
+							size: '789',
+							timestamp: '1000'
+						}
 					}
 				]
 			};
@@ -53,11 +69,40 @@ describe('variants/symbol/api/blocks', () => {
 				data: [
 					{
 						statement: {
+							height: '1234',
 							receipts: [
 								{
 									type: 20803,
 									mosaicId: '72C0212E67A08BCE',
 									amount: '123456'
+								}
+							]
+						}
+					},
+					{
+						statement: {
+							height: '1235',
+							receipts: [
+								{
+									type: 20803,
+									mosaicId: '72C0212E67A08BCE',
+									amount: '200000'
+								},
+								{
+									type: 20803,
+									mosaicId: '72C0212E67A08BCE',
+									amount: '300000'
+								}
+							]
+						}
+					},
+					{
+						statement: {
+							receipts: [
+								{
+									type: 8515,
+									mosaicId: '72C0212E67A08BCE',
+									amount: '999999'
 								}
 							]
 						}
@@ -88,6 +133,20 @@ describe('variants/symbol/api/blocks', () => {
 						statementCount: 7,
 						blockReward: 0.123456,
 						isFinalized: true
+					},
+					{
+						difficulty: '30.00',
+						hash: '6BCD',
+						height: 1235,
+						signature: 'BCDE',
+						size: 789,
+						timestamp: '2021-03-16T00:06:26.000Z',
+						harvester: 'PUBLIC_KEY_2',
+						totalFee: 0.222222,
+						transactionCount: 4,
+						statementCount: 2,
+						blockReward: 0.5,
+						isFinalized: false
 					}
 				],
 				pageNumber: 2
@@ -107,8 +166,9 @@ describe('variants/symbol/api/blocks', () => {
 			);
 			expect(makeRequest).toHaveBeenNthCalledWith(
 				3,
-				'/api/symbol-node/statements/transaction?height=1234&receiptType=20803'
+				'/api/symbol-node/statements/transaction?fromHeight=1234&toHeight=1235&receiptType=20803&pageSize=100'
 			);
+			expect(makeRequest).toHaveBeenCalledTimes(3);
 			expect(result).toEqual(expectedResult);
 		});
 

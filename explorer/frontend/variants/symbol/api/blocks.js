@@ -17,13 +17,33 @@ const getBlockDTO = data => data?.block ? data : { block: data, meta: data?.meta
 const getReceipts = response =>
 	(Array.isArray(response?.data) ? response.data : []).flatMap(item => item.statement?.receipts || []);
 
-const fetchBlockReward = async height => {
-	const response = await fetchSymbolNode(`statements/transaction?height=${height}&receiptType=${INFLATION_RECEIPT_TYPE}`);
-	const amount = getReceipts(response)
-		.filter(receipt => Number(receipt.type) === INFLATION_RECEIPT_TYPE)
-		.reduce((sum, receipt) => sum + Number(receipt.amount || 0), 0);
+const getStatementHeight = item => Number(item.statement?.height || item.meta?.height || item.height || 0);
 
-	return absoluteToRelative(amount);
+const fetchBlockRewardsByHeight = async blocks => {
+	const blockHeights = blocks
+		.filter(block => block.statementCount)
+		.map(block => block.height);
+
+	if (!blockHeights.length)
+		return {};
+
+	const fromHeight = Math.min(...blockHeights);
+	const toHeight = Math.max(...blockHeights);
+	const response = await fetchSymbolNode(
+		`statements/transaction?fromHeight=${fromHeight}&toHeight=${toHeight}&receiptType=${INFLATION_RECEIPT_TYPE}&pageSize=100`
+	);
+
+	return (Array.isArray(response?.data) ? response.data : []).reduce((rewardsByHeight, item) => {
+		const height = getStatementHeight(item);
+		const amount = getReceipts({ data: [item] })
+			.filter(receipt => Number(receipt.type) === INFLATION_RECEIPT_TYPE)
+			.reduce((sum, receipt) => sum + Number(receipt.amount || 0), 0);
+
+		if (height && amount)
+			rewardsByHeight[height] = absoluteToRelative((rewardsByHeight[height] || 0) + amount);
+
+		return rewardsByHeight;
+	}, {});
 };
 
 const fetchLatestFinalizedBlockHeight = async () => {
@@ -60,11 +80,12 @@ export const fetchBlockPage = async searchParams => {
 	const pageNumber = Number(searchParams?.pageNumber || 1);
 	const page = createSymbolPage(response, pageNumber, blockInfoFromDTO);
 	const latestFinalizedBlockHeight = await fetchLatestFinalizedBlockHeight();
-	const data = await Promise.all(page.data.map(async block => ({
+	const blockRewardsByHeight = await fetchBlockRewardsByHeight(page.data);
+	const data = page.data.map(block => ({
 		...block,
-		blockReward: block.statementCount ? await fetchBlockReward(block.height) : 0,
+		blockReward: blockRewardsByHeight[block.height] || 0,
 		isFinalized: block.height <= latestFinalizedBlockHeight
-	})));
+	}));
 
 	return {
 		...page,
