@@ -883,8 +883,8 @@ class NemDatabase(DatabaseConnectionPool):
 
 		return mosaic_records
 
-	def _build_transaction_record(self, transaction):
-		"""Converts a connector transaction response into a database-style transaction record."""
+	def _build_unconfirmed_transaction_record(self, transaction):
+		"""Converts a connector unconfirmed transaction response into a database-style transaction record."""
 
 		payload = None
 		recipient_address = None
@@ -967,11 +967,11 @@ class NemDatabase(DatabaseConnectionPool):
 			}
 
 		return TransactionRecord(
-			transaction_hash=bytes.fromhex(transaction.transaction_hash) if transaction.transaction_hash else None,
+			transaction_hash=None,
 			transaction_type=transaction.transaction_type,
 			from_address=self.network.public_key_to_address(transaction.sender).bytes,
 			fee=transaction.fee,
-			height=transaction.height,
+			height=0,
 			timestamp=self._convert_timestamp_to_datetime(transaction.timestamp),
 			deadline=self._convert_timestamp_to_datetime(transaction.deadline),
 			signature=bytes.fromhex(transaction.signature) if transaction.signature else None,
@@ -1006,13 +1006,13 @@ class NemDatabase(DatabaseConnectionPool):
 
 		for transaction in transactions:
 			if transaction.transaction_type == TransactionType.MULTISIG.value:
-				inner_transaction = self._build_transaction_record(transaction.other_transaction)
+				inner_transaction = self._build_unconfirmed_transaction_record(transaction.other_transaction)
 			else:
 				inner_transaction = None
 
 			unconfirmed_transactions.append(
 				self._create_transaction_view(
-					self._build_transaction_record(transaction),
+					self._build_unconfirmed_transaction_record(transaction),
 					inner_transaction
 				)
 			)
