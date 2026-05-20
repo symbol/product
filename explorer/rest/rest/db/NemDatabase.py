@@ -897,7 +897,7 @@ class NemDatabase(DatabaseConnectionPool):
 					'is_plain': transaction.message.is_plain,
 				} if transaction.message else None
 			}
-			recipient_address = transaction.recipient.bytes if transaction.recipient else None
+			recipient_address = transaction.recipient.bytes
 			amount = transaction.amount
 			mosaics = self._create_unconfirmed_mosaic_records(transaction.mosaics)
 		elif transaction.transaction_type == TransactionType.ACCOUNT_KEY_LINK.value:
@@ -938,7 +938,7 @@ class NemDatabase(DatabaseConnectionPool):
 				'parent': transaction.parent,
 				'namespace': transaction.namespace
 			}
-			recipient_address = transaction.rental_fee_sink
+			recipient_address = transaction.rental_fee_sink.bytes
 		elif transaction.transaction_type == TransactionType.MOSAIC_DEFINITION.value:
 			payload = {
 				'creation_fee': transaction.creation_fee,
@@ -958,7 +958,7 @@ class NemDatabase(DatabaseConnectionPool):
 					'recipient': str(transaction.levy.recipient)
 				} if transaction.levy else None
 			}
-			recipient_address = transaction.creation_fee_sink
+			recipient_address = transaction.creation_fee_sink.bytes
 		elif transaction.transaction_type == TransactionType.MOSAIC_SUPPLY_CHANGE.value:
 			payload = {
 				'namespace_name': transaction.namespace_name,
