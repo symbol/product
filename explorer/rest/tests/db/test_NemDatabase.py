@@ -78,11 +78,11 @@ NEM_CONNECTOR_UNCONFIRMED_TRANSACTIONS = [
 		timestamp=73397,
 		deadline=83397,
 		signature='0' * 128,
-		amount=1000000,
+		amount=1999999,
 		recipient=Address('NCOPERAWEWCD4A34NP5UQCCKEX44MW4SL3QYJYS5'),
 		mosaics=[
-			Mosaic(namespace_name='nem.xem', quantity=1000000),
-			Mosaic(namespace_name='root.mosaic', quantity=1000000),
+			Mosaic(namespace_name='nem.xem', quantity=8000000),
+			Mosaic(namespace_name='root.mosaic', quantity=20),
 		],
 		message=Message(
 			payload='test message',
@@ -220,11 +220,11 @@ UNCONFIRMED_TRANSACTION_VIEWS = [
 			},
 			{
 				'namespace': 'nem.xem',
-				'amount': 1.0
+				'amount': 15.999992
 			},
 			{
 				'namespace': 'root.mosaic',
-				'amount': 1000000.0
+				'amount': 39.0
 			}
 		]
 	),

@@ -1,3 +1,4 @@
+# pylint: disable=too-many-lines
 from binascii import hexlify
 
 from symbolchain.CryptoTypes import PublicKey
@@ -858,26 +859,25 @@ class NemDatabase(DatabaseConnectionPool):
 	def _convert_timestamp_to_datetime(self, timestamp):
 		return self.network.datetime_converter.to_datetime(timestamp).strftime('%Y-%m-%d %H:%M:%S')
 
-	def _create_unconfirmed_mosaic_records(self, mosaics):
+	def _create_unconfirmed_mosaic_records(self, mosaics, amount):
 		if not mosaics:
 			# create default nem.xem mosaic record for v1 transfer transaction
 			return [
 				{
 					'namespace_name': 'nem.xem',
-					'quantity': 1000000,
+					'quantity': amount,
 					'divisibility': 6
 				}
 			]
 
 		mosaic_names = [mosaic.namespace_name for mosaic in mosaics]
 		divisibility_map = self._get_mosaic_divisibility_by_names(mosaic_names)
-
 		mosaic_records = []
 		for mosaic in mosaics:
 			namespace_name = mosaic.namespace_name
 			mosaic_records.append({
 				'namespace_name': namespace_name,
-				'quantity': mosaic.quantity,
+				'quantity': mosaic.quantity * amount // (10 ** 6),
 				'divisibility': divisibility_map.get(namespace_name, 0)
 			})
 
@@ -888,7 +888,6 @@ class NemDatabase(DatabaseConnectionPool):
 
 		payload = None
 		recipient_address = None
-		amount = None
 		mosaics = None
 		if transaction.transaction_type == TransactionType.TRANSFER.value:
 			payload = {
@@ -898,8 +897,7 @@ class NemDatabase(DatabaseConnectionPool):
 				} if transaction.message else None
 			}
 			recipient_address = transaction.recipient.bytes
-			amount = transaction.amount
-			mosaics = self._create_unconfirmed_mosaic_records(transaction.mosaics)
+			mosaics = self._create_unconfirmed_mosaic_records(transaction.mosaics, transaction.amount)
 		elif transaction.transaction_type == TransactionType.ACCOUNT_KEY_LINK.value:
 			payload = {
 				'mode': transaction.mode,
@@ -977,7 +975,6 @@ class NemDatabase(DatabaseConnectionPool):
 			signature=bytes.fromhex(transaction.signature) if transaction.signature else None,
 			to_address=recipient_address,
 			payload=payload,
-			amount=amount,
 			mosaics=mosaics
 		)
 
