@@ -38,13 +38,37 @@ export const formatDate = (dateStr, translate, config = {}) => {
 		return 0 <= num && 10 > num ? '0' + num : num + '';
 	};
 
-	const dateObj = type === 'local' ? dateToLocalDate(dateStr) : new Date(dateStr);
-	const seconds = addZero(dateObj.getSeconds());
-	const minutes = addZero(dateObj.getMinutes());
-	const hour = addZero(dateObj.getHours());
-	const month = 'function' === typeof translate ? translate('month_' + months[dateObj.getMonth()]) : months[dateObj.getMonth()];
-	const day = dateObj.getDate();
-	const year = dateObj.getFullYear();
+	const toDateString = value => `${value}`;
+	const hasTimezone = value => /(?:z|[+-]\d{2}:?\d{2})$/i.test(toDateString(value));
+	const parseUTCDate = value => {
+		const dateString = toDateString(value);
+
+		return new Date(hasTimezone(dateString) ? dateString : `${dateString.replace(' ', 'T')}Z`);
+	};
+	const parseLocalDate = value => hasTimezone(value) ? new Date(value) : dateToLocalDate(value);
+	const isUTC = type === 'UTC';
+	const dateObj = isUTC ? parseUTCDate(dateStr) : 'local' === type ? parseLocalDate(dateStr) : new Date(dateStr);
+	const seconds = addZero(isUTC ? dateObj.getUTCSeconds() : dateObj.getSeconds());
+	const minutes = addZero(isUTC ? dateObj.getUTCMinutes() : dateObj.getMinutes());
+	const hour = addZero(isUTC ? dateObj.getUTCHours() : dateObj.getHours());
+	const monthIndex = isUTC ? dateObj.getUTCMonth() : dateObj.getMonth();
+	const month = 'function' === typeof translate ? translate('month_' + months[monthIndex]) : months[monthIndex];
+	const day = isUTC ? dateObj.getUTCDate() : dateObj.getDate();
+	const year = isUTC ? dateObj.getUTCFullYear() : dateObj.getFullYear();
+
+	const dateFormat = 'function' === typeof translate ? translate('date_format') : null;
+
+	if (dateFormat === 'YYYY/MM/DD') {
+		const paddedMonth = addZero(monthIndex + 1);
+		const paddedDay = addZero(day);
+		let formattedDate = `${year}/${paddedMonth}`;
+
+		formattedDate += hasDays ? `/${paddedDay}` : '';
+		formattedDate += hasTime ? ` ${hour}:${minutes}` : '';
+		formattedDate += hasTime && hasSeconds ? `:${seconds}` : '';
+
+		return formattedDate;
+	}
 
 	let formattedDate = `${month}`;
 	formattedDate += hasDays ? ` ${day}` : '';

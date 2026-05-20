@@ -9,8 +9,10 @@ import Separator from '@/components/Separator';
 import Table from '@/components/Table';
 import ValueAccount from '@/components/ValueAccount';
 import ValueBlockHeight from '@/components/ValueBlockHeight';
+import ValueBlockHeightFinalization from '@/components/ValueBlockHeightFinalization';
 import ValueMosaic from '@/components/ValueMosaic';
 import ValueTimestamp from '@/components/ValueTimestamp';
+import config from '@/config';
 import styles from '@/styles/pages/Home.module.scss';
 import { usePagination } from '@/utils';
 import Head from 'next/head';
@@ -33,12 +35,14 @@ export const getServerSideProps = async ({ locale }) => {
 const Blocks = ({ blocks, stats }) => {
 	const { t } = useTranslation();
 	const { requestNextPage, data, isLoading, isError, pageNumber, isLastPage } = usePagination(fetchBlockPage, blocks);
+	const isSymbol = config.PLATFORM === 'symbol';
 
 	const tableColumns = [
 		{
 			key: 'height',
 			size: '8rem',
-			renderValue: value => <ValueBlockHeight value={value} />
+			renderValue: (value, row) =>
+				isSymbol ? <ValueBlockHeightFinalization value={value} isFinalized={row.isFinalized} /> : <ValueBlockHeight value={value} />
 		},
 		{
 			key: 'harvester',
@@ -49,6 +53,19 @@ const Blocks = ({ blocks, stats }) => {
 			key: 'transactionCount',
 			size: '6.67rem'
 		},
+		...(isSymbol
+			? [
+				{
+					key: 'statementCount',
+					size: '6.67rem'
+				},
+				{
+					key: 'blockReward',
+					size: '7rem',
+					renderValue: value => <ValueMosaic amount={value} isNative />
+				}
+			]
+			: []),
 		{
 			key: 'totalFee',
 			size: '7rem',
@@ -80,9 +97,11 @@ const Blocks = ({ blocks, stats }) => {
 					<Separator className="no-mobile" />
 					<div className="layout-grid-row layout-flex-fill">
 						<div className="layout-flex-col layout-flex-fill">
-							<Field title={t('field_averageFee')}>{t('value_averageFee', { value: stats.blockFee })}</Field>
+							<Field title={t('field_averageFee')}>
+								{t('value_averageFee', { value: stats.blockFee, ticker: config.NATIVE_MOSAIC_TICKER })}
+							</Field>
 						</div>
-						<ChartLine data={stats.blockFeeChart} name={t('chart_series_fee')} />
+						<ChartLine data={stats.blockFeeChart} name={t('chart_series_fee', { ticker: config.NATIVE_MOSAIC_TICKER })} />
 					</div>
 					<Separator className="no-mobile" />
 					<div className="layout-grid-row layout-flex-fill">
@@ -97,7 +116,14 @@ const Blocks = ({ blocks, stats }) => {
 				<Table
 					data={data}
 					columns={tableColumns}
-					renderItemMobile={data => <ItemBlockMobile data={data} />}
+					renderItemMobile={data => (
+						<ItemBlockMobile
+							data={data}
+							isFinalizationShown={isSymbol}
+							isStatementCountShown={isSymbol}
+							isBlockRewardShown={isSymbol}
+						/>
+					)}
 					isLoading={isLoading}
 					isLastPage={isLastPage}
 					isError={isError}

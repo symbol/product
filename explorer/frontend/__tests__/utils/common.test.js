@@ -62,6 +62,53 @@ describe('utils/common', () => {
 			runFormatDateTest(timestamp, config, expectedResult);
 		});
 
+		it('formats date with Japanese date format', () => {
+			// Arrange:
+			const timestamp = '2024-03-30 01:06:25';
+			const config = {
+				hasTime: true
+			};
+			const mockTranslate = jest.fn().mockImplementation(key => ('date_format' === key ? 'YYYY/MM/DD' : `translated_${key}`));
+
+			// Act:
+			const result = formatDate(timestamp, mockTranslate, config);
+
+			// Assert:
+			expect(result).toBe('2024/03/30 01:06');
+		});
+
+		it('formats UTC date with UTC getters', () => {
+			// Arrange:
+			const timestamp = '2024-03-30T01:06:25.000Z';
+			const config = {
+				hasTime: true,
+				type: 'UTC'
+			};
+			const mockTranslate = jest.fn().mockImplementation(key => ('date_format' === key ? 'YYYY/MM/DD' : `translated_${key}`));
+
+			// Act:
+			const result = formatDate(timestamp, mockTranslate, config);
+
+			// Assert:
+			expect(result).toBe('2024/03/30 01:06');
+		});
+
+		it('formats UTC date string in local timezone when configured', () => {
+			// Arrange:
+			const timestamp = '2024-03-30 01:06:25';
+			const config = {
+				hasTime: true,
+				type: 'local'
+			};
+			const mockTranslate = jest.fn().mockImplementation(key => ('date_format' === key ? 'YYYY/MM/DD' : `translated_${key}`));
+
+			// Act:
+			const result = formatDate(timestamp, mockTranslate, config);
+
+			// Assert:
+			expect(result).toBe('2024/03/29 22:26');
+		});
+
 		it('formats date with tme and seconds', () => {
 			// Arrange:
 			const timestamp = '1999-12-31 23:59:59';

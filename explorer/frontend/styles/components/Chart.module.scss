@@ -21,6 +21,40 @@
 	animation-name: fade-in;
 	animation-duration: 250ms;
 	animation-timing-function: linear;
+
+	/* stylelint-disable selector-pseudo-class-no-unknown */
+	:global(.apexcharts-tooltip) {
+		color: $color-text-tooltip !important;
+		background: $color-background-tooltip !important;
+		border: 1px solid $color-primary !important;
+		box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 35%) !important;
+	}
+
+	:global(.apexcharts-tooltip-title) {
+		color: $color-text-tooltip !important;
+		background: $color-background-tooltip !important;
+		border-bottom-color: $color-primary !important;
+	}
+
+	:global(.apexcharts-tooltip-text),
+	:global(.apexcharts-tooltip-y-group),
+	:global(.apexcharts-tooltip-series-group),
+	:global(.apexcharts-tooltip-text-y-label),
+	:global(.apexcharts-tooltip-text-y-value) {
+		color: $color-text-tooltip !important;
+	}
+
+	:global(.apexcharts-xaxistooltip) {
+		color: $color-text-tooltip !important;
+		background: $color-background-tooltip !important;
+		border-color: $color-primary !important;
+	}
+
+	:global(.apexcharts-xaxistooltip::before),
+	:global(.apexcharts-xaxistooltip::after) {
+		border-bottom-color: $color-background-tooltip !important;
+	}
+	/* stylelint-enable selector-pseudo-class-no-unknown */
 }
 
 .chartDonut {

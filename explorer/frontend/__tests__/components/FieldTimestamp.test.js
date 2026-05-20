@@ -12,7 +12,13 @@ jest.mock('@/utils', () => {
 
 describe('FieldTimestamp', () => {
 	describe('expiration status', () => {
-		const runTest = (timestampType, expectedInitialTitle, expectedTypeAfterClick, expectedTitleAfterClick) => {
+		const runTest = (
+			timestampType,
+			expectedInitialTitle,
+			expectedTypeAfterClick,
+			expectedTitleAfterClick,
+			expectedIconSrc
+		) => {
 			// Arrange:
 			const value = 123456;
 			const setNewType = jest.fn();
@@ -26,6 +32,7 @@ describe('FieldTimestamp', () => {
 			// Assert:
 			expect(screen.getByText(expectedInitialTitle)).toBeInTheDocument();
 			expect(screen.queryByText(expectedTitleAfterClick)).toBeNull();
+			expect(screen.getByAltText('Switch')).toHaveAttribute('src', expectedIconSrc);
 			expect(setNewType).not.toHaveBeenCalled();
 
 			// Act:
@@ -42,9 +49,10 @@ describe('FieldTimestamp', () => {
 			const expectedInitialTitle = 'field_timestampUTC';
 			const expectedTypeAfterClick = 'local';
 			const expectedTitleAfterClick = 'field_timestampLocal';
+			const expectedIconSrc = '/images/icon-switch.svg';
 
 			// Act + Assert:
-			runTest(timestampType, expectedInitialTitle, expectedTypeAfterClick, expectedTitleAfterClick);
+			runTest(timestampType, expectedInitialTitle, expectedTypeAfterClick, expectedTitleAfterClick, expectedIconSrc);
 		});
 
 		test('switches to UTC time', () => {
@@ -53,9 +61,10 @@ describe('FieldTimestamp', () => {
 			const expectedInitialTitle = 'field_timestampLocal';
 			const expectedTypeAfterClick = 'UTC';
 			const expectedTitleAfterClick = 'field_timestampUTC';
+			const expectedIconSrc = '/images/icon-switch-2.svg';
 
 			// Act + Assert:
-			runTest(timestampType, expectedInitialTitle, expectedTypeAfterClick, expectedTitleAfterClick);
+			runTest(timestampType, expectedInitialTitle, expectedTypeAfterClick, expectedTitleAfterClick, expectedIconSrc);
 		});
 	});
 });
