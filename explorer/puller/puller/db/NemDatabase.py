@@ -148,7 +148,6 @@ class NemDatabase(DatabaseConnection):
 				mosaics jsonb DEFAULT '[]'::jsonb,
 				harvested_fees bigint DEFAULT 0,
 				harvested_blocks bigint DEFAULT 0,
-				status varchar(8) DEFAULT NULL,
 				remote_status varchar(12) DEFAULT NULL,
 				last_harvested_height bigint DEFAULT 0,
 				min_cosignatories int DEFAULT NULL,
@@ -304,13 +303,12 @@ class NemDatabase(DatabaseConnection):
 				vested_balance,
 				mosaics,
 				harvested_blocks,
-				status,
 				remote_status,
 				min_cosignatories,
 				cosignatory_of,
 				cosignatories
 			)
-			VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+			VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
 			ON CONFLICT (address)
 			DO UPDATE SET
 				remote_address = EXCLUDED.remote_address,
@@ -319,7 +317,6 @@ class NemDatabase(DatabaseConnection):
 				vested_balance = EXCLUDED.vested_balance,
 				mosaics = EXCLUDED.mosaics,
 				harvested_blocks = EXCLUDED.harvested_blocks,
-				status = EXCLUDED.status,
 				remote_status = EXCLUDED.remote_status,
 				min_cosignatories = EXCLUDED.min_cosignatories,
 				cosignatory_of = EXCLUDED.cosignatory_of,
@@ -334,7 +331,6 @@ class NemDatabase(DatabaseConnection):
 				account_info.vested_balance,
 				json.dumps(account_info.mosaics),
 				account_info.harvested_blocks,
-				account_info.status,
 				account_info.remote_status,
 				account_info.min_cosignatories,
 				[address.bytes for address in account_info.cosignatory_of] if len(account_info.cosignatory_of) > 0 else None,
