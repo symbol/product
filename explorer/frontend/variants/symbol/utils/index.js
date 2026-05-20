@@ -25,11 +25,12 @@ export const createSymbolPage = (response, pageNumber, formatter) => {
 	return createPage(data, pageNumber, formatter);
 };
 
-export const fetchSymbolNode = path => {
-	if (typeof window !== 'undefined')
-		return makeRequest(`/api/symbol-node/${path}`);
+export const fetchSymbolNode = (path, options) => {
+	const url = typeof window !== 'undefined'
+		? `/api/symbol-node/${path}`
+		: createSymbolApiUrl(path);
 
-	return makeRequest(createSymbolApiUrl(path));
+	return options ? makeRequest(url, options) : makeRequest(url);
 };
 
 export const symbolTimestampToDate = timestamp => {

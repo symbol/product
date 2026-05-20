@@ -31,11 +31,11 @@ const Table = ({
 
 	const renderRow = (row, index) => (
 		<div className={dataRowStyle} key={'tr' + index}>
-			{columns.map((item, index) => (
-				<div className={dataCellStyle} style={{ width: item.size }} key={'td' + index}>
-					{item.renderValue ? item.renderValue(row[item.key], row) : row[item.key]}
-				</div>
-			))}
+				{columns.map((item, index) => (
+					<div className={dataCellStyle} style={{ width: item.size, minWidth: 0 }} key={'td' + index}>
+						{item.renderValue ? item.renderValue(row[item.key], row) : row[item.key]}
+					</div>
+				))}
 		</div>
 	);
 	const renderMobileListItem = (item, index) => (
@@ -48,10 +48,10 @@ const Table = ({
 		<div className={styles.table}>
 			{!isHeaderHidden && (
 				<div className={headerRowStyle}>
-					{columns.map((item, index) => (
-						<div className={headerCellStyle} style={{ width: item.size }} key={'th' + index}>
-							{item.renderTitle ? item.renderTitle(item.key) : t(`table_field_${item.key}`)}
-						</div>
+						{columns.map((item, index) => (
+							<div className={headerCellStyle} style={{ width: item.size, minWidth: 0 }} key={'th' + index}>
+								{item.renderTitle ? item.renderTitle(item.key) : t(`table_field_${item.key}`)}
+							</div>
 					))}
 				</div>
 			)}

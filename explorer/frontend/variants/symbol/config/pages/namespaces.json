@@ -1,0 +1,6 @@
+{
+	"showSubNamespaceCount": false,
+	"showReadableNamespaceName": true,
+	"showNamespaceFilter": true,
+	"namespaceIdColumnTitleKey": "table_field_namespaceId"
+}

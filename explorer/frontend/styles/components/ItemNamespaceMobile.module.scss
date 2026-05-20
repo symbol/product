@@ -6,20 +6,29 @@
 	gap: $spacing-base * 2;
 	width: 100%;
 
-	.mainSection {
-		display: flex;
-		flex-direction: row;
-		gap: $spacing-base;
-		width: 100%;
-
-		.info {
+		.mainSection {
+			align-items: flex-start;
 			display: flex;
-			flex: 1;
-			flex-direction: column;
+			flex-direction: row;
+			gap: $spacing-base;
+			justify-content: space-between;
+			width: 100%;
 
-			.name {
-				font: $font-body-bold;
+			.info {
+				display: flex;
+				flex: 1;
+				flex-direction: column;
+				min-width: 0;
+
+				.name {
+					font: $font-body-bold;
+				}
+
+				.namespaceName {
+					font: $font-body;
+					font-size: 0.83rem;
+					overflow-wrap: anywhere;
+				}
 			}
 		}
-	}
 }
