@@ -226,7 +226,7 @@
 	"section_feesBreakdown": "Fees Breakdown",
 	"table_field_amount": "Amount",
 	"table_field_fee": "Fee",
-	"table_field_blockReward": "Block Reward",
+	"table_field_blockReward": "Reward",
 	"table_field_harvester": "Harvester",
 	"table_field_hash": "Hash",
 	"table_field_height": "Height",

@@ -15,6 +15,7 @@ import ValueTimestamp from '@/components/ValueTimestamp';
 import config from '@/config';
 import styles from '@/styles/pages/Home.module.scss';
 import { usePagination } from '@/utils';
+import { pageConfig } from '@/variants';
 import Head from 'next/head';
 import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
@@ -35,14 +36,15 @@ export const getServerSideProps = async ({ locale }) => {
 const Blocks = ({ blocks, stats }) => {
 	const { t } = useTranslation();
 	const { requestNextPage, data, isLoading, isError, pageNumber, isLastPage } = usePagination(fetchBlockPage, blocks);
-	const isSymbol = config.PLATFORM === 'symbol';
 
 	const tableColumns = [
 		{
 			key: 'height',
 			size: '8rem',
 			renderValue: (value, row) =>
-				isSymbol ? <ValueBlockHeightFinalization value={value} isFinalized={row.isFinalized} /> : <ValueBlockHeight value={value} />
+				pageConfig.blocks.showFinalization
+					? <ValueBlockHeightFinalization value={value} isFinalized={row.isFinalized} />
+					: <ValueBlockHeight value={value} />
 		},
 		{
 			key: 'harvester',
@@ -53,12 +55,16 @@ const Blocks = ({ blocks, stats }) => {
 			key: 'transactionCount',
 			size: '6.67rem'
 		},
-		...(isSymbol
+		...(pageConfig.blocks.showStatementCount
 			? [
 				{
 					key: 'statementCount',
 					size: '6.67rem'
-				},
+				}
+			]
+			: []),
+		...(pageConfig.blocks.showBlockReward
+			? [
 				{
 					key: 'blockReward',
 					size: '7rem',
@@ -119,9 +125,9 @@ const Blocks = ({ blocks, stats }) => {
 					renderItemMobile={data => (
 						<ItemBlockMobile
 							data={data}
-							isFinalizationShown={isSymbol}
-							isStatementCountShown={isSymbol}
-							isBlockRewardShown={isSymbol}
+							isFinalizationShown={pageConfig.blocks.showFinalization}
+							isStatementCountShown={pageConfig.blocks.showStatementCount}
+							isBlockRewardShown={pageConfig.blocks.showBlockReward}
 						/>
 					)}
 					isLoading={isLoading}

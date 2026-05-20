@@ -6,6 +6,7 @@ import * as BlockService from '@/api/blocks';
 import * as StatsService from '@/api/stats';
 import config from '@/config';
 import BlockList, { getServerSideProps } from '@/pages/blocks/index';
+import { pageConfig } from '@/variants';
 import { render, screen } from '@testing-library/react';
 
 const mockT = jest.fn(key => ('date_format' === key ? 'YYYY/MM/DD' : key));
@@ -32,19 +33,25 @@ jest.mock('@/api/stats', () => {
 
 describe('BlockList', () => {
 	const originalTicker = config.NATIVE_MOSAIC_TICKER;
-	const originalPlatform = config.PLATFORM;
+	const originalShowFinalization = pageConfig.blocks.showFinalization;
+	const originalShowStatementCount = pageConfig.blocks.showStatementCount;
+	const originalShowBlockReward = pageConfig.blocks.showBlockReward;
 
 	beforeEach(() => {
 		setDevice('desktop');
 		mockT.mockClear();
 		mockT.mockImplementation(key => ('date_format' === key ? 'YYYY/MM/DD' : key));
 		config.NATIVE_MOSAIC_TICKER = originalTicker;
-		config.PLATFORM = originalPlatform;
+		pageConfig.blocks.showFinalization = originalShowFinalization;
+		pageConfig.blocks.showStatementCount = originalShowStatementCount;
+		pageConfig.blocks.showBlockReward = originalShowBlockReward;
 	});
 
 	afterEach(() => {
 		config.NATIVE_MOSAIC_TICKER = originalTicker;
-		config.PLATFORM = originalPlatform;
+		pageConfig.blocks.showFinalization = originalShowFinalization;
+		pageConfig.blocks.showStatementCount = originalShowStatementCount;
+		pageConfig.blocks.showBlockReward = originalShowBlockReward;
 	});
 
 	describe('getServerSideProps', () => {
@@ -135,7 +142,9 @@ describe('BlockList', () => {
 
 		it('renders statement count column for Symbol blocks', () => {
 			// Arrange:
-			config.PLATFORM = 'symbol';
+			pageConfig.blocks.showFinalization = true;
+			pageConfig.blocks.showStatementCount = true;
+			pageConfig.blocks.showBlockReward = true;
 			const statementCount = 123;
 			const blockReward = 999;
 			const blocks = [{ ...blockPageResult.data[0], statementCount, blockReward, isFinalized: true }];
@@ -153,7 +162,7 @@ describe('BlockList', () => {
 
 		it('renders pending finalization icon for unfinalized Symbol blocks', () => {
 			// Arrange:
-			config.PLATFORM = 'symbol';
+			pageConfig.blocks.showFinalization = true;
 			const blocks = [{ ...blockPageResult.data[0], isFinalized: false }];
 
 			// Act:
@@ -166,7 +175,9 @@ describe('BlockList', () => {
 		it('renders Symbol block details on mobile', () => {
 			// Arrange:
 			setDevice('mobile');
-			config.PLATFORM = 'symbol';
+			pageConfig.blocks.showFinalization = true;
+			pageConfig.blocks.showStatementCount = true;
+			pageConfig.blocks.showBlockReward = true;
 			const statementCount = 321;
 			const blockReward = 456;
 			const blocks = [{ ...blockPageResult.data[0], statementCount, blockReward, isFinalized: true }];
@@ -183,6 +194,11 @@ describe('BlockList', () => {
 		});
 
 		it('does not render block reward column for NEM blocks', () => {
+			// Arrange:
+			pageConfig.blocks.showFinalization = false;
+			pageConfig.blocks.showStatementCount = false;
+			pageConfig.blocks.showBlockReward = false;
+
 			// Act:
 			render(<BlockList blocks={blockPageResult.data} stats={blockStatisticsResult} />);
 
@@ -195,6 +211,9 @@ describe('BlockList', () => {
 		it('does not render Symbol block details on NEM mobile', () => {
 			// Arrange:
 			setDevice('mobile');
+			pageConfig.blocks.showFinalization = false;
+			pageConfig.blocks.showStatementCount = false;
+			pageConfig.blocks.showBlockReward = false;
 
 			// Act:
 			render(<BlockList blocks={blockPageResult.data} stats={blockStatisticsResult} />);
