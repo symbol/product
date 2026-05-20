@@ -248,7 +248,7 @@ class NemDatabase(DatabaseConnectionPool):
 			height=transaction.height,
 			timestamp=str(transaction.timestamp),
 			deadline=str(transaction.deadline),
-			signature=_format_bytes(transaction.signature) if transaction.signature else None
+			signature=_format_bytes(transaction.signature)
 		)
 
 	@staticmethod
