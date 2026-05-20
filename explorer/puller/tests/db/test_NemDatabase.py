@@ -84,7 +84,6 @@ TRANSACTIONS = [
 		fee=150000,
 		timestamp='2015-03-29 00:06:25+00:00',
 		deadline='2015-03-29 20:34:19+00:00',
-		amount=2000000,
 		signature=(
 			'1b81379847241e45da86b27911e5c9a9192ec04f644d98019657d32838b49c14'
 			'3eaa4815a3028b80f9affdbf0b94cd620f7a925e02783dda67b8627b69ddf70e'
@@ -688,7 +687,6 @@ class NemDatabaseTest(unittest.TestCase):
 					timestamp,
 					deadline,
 					encode(signature, 'hex'),
-					amount,
 					is_inner,
 					payload
 				FROM transactions
@@ -711,7 +709,6 @@ class NemDatabaseTest(unittest.TestCase):
 			datetime.datetime(2015, 3, 29, 0, 6, 25),
 			datetime.datetime(2015, 3, 29, 20, 34, 19),
 			TRANSACTIONS[0].signature,
-			2000000,
 			False,
 			'{}'
 		))

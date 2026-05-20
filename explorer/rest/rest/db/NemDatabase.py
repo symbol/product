@@ -212,7 +212,7 @@ class NemDatabase(DatabaseConnectionPool):
 		)
 
 	def _create_transaction_view(self, transaction, inner_transaction=None):
-		value = self._build_transaction_payload(transaction.transaction_type, transaction.payload, transaction.amount, transaction.mosaics)
+		value = self._build_transaction_payload(transaction.transaction_type, transaction.payload, transaction.mosaics)
 		embedded_transaction = []
 		from_address = _format_address_bytes_to_string(transaction.from_address)
 		to_address = _format_address_bytes_to_string(transaction.to_address) if transaction.to_address else None
@@ -232,7 +232,6 @@ class NemDatabase(DatabaseConnectionPool):
 				'value': self._build_transaction_payload(
 					inner_transaction.transaction_type,
 					inner_transaction.payload,
-					inner_transaction.amount,
 					inner_transaction.mosaics
 				),
 			})
@@ -245,7 +244,7 @@ class NemDatabase(DatabaseConnectionPool):
 			from_address=from_address,
 			to_address=to_address,
 			value=value,
-			embedded_transactions=embedded_transaction if embedded_transaction else None,
+			embedded_transactions=embedded_transaction or None,
 			fee=_format_xem_relative(transaction.fee),
 			height=transaction.height,
 			timestamp=str(transaction.timestamp),
@@ -392,10 +391,10 @@ class NemDatabase(DatabaseConnectionPool):
 		'''
 
 	@staticmethod
-	def _generate_transaction_sql_query():
+	def _generate_transaction_sql_query(where_condition='', order_condition='', limit_condition=''):
 		"""Base transaction query."""
 
-		return '''
+		return f'''
 			SELECT
 				t.transaction_hash,
 				t.transaction_type,
@@ -407,7 +406,6 @@ class NemDatabase(DatabaseConnectionPool):
 				t.signature,
 				t.recipient_address as to_address,
 				t.payload,
-				t.amount,
 				COALESCE(m.mosaics, '[]'::json) AS mosaics
 			FROM transactions t
 			LEFT JOIN LATERAL (
@@ -420,6 +418,9 @@ class NemDatabase(DatabaseConnectionPool):
 				ON mo.namespace_name = tm.namespace_name
 			WHERE tm.transaction_id = t.id
 			) m ON true
+			{where_condition}
+			{order_condition}
+			{limit_condition}
 		'''
 
 	def _get_account(self, where_condition, query_bytes):
@@ -623,7 +624,7 @@ class NemDatabase(DatabaseConnectionPool):
 
 			return [self._create_mosaic_rich_list_view(result) for result in results]
 
-	def _build_transaction_payload(self, transaction_type, payload, amount, mosaics):
+	def _build_transaction_payload(self, transaction_type, payload, mosaics):
 		"""Builds transaction payload based on transaction type."""
 
 		value = []
@@ -637,19 +638,10 @@ class NemDatabase(DatabaseConnectionPool):
 					},
 				})
 
-			if mosaics:
-				multiplier = 0 if amount == 0 else _format_xem_relative(amount)
-				for mosaic in mosaics:
-					mosaic_amount = mosaic['quantity'] * multiplier
-
-					value.append({
-						'namespace': mosaic['namespace_name'],
-						'amount': _format_relative(mosaic_amount, mosaic['divisibility'])
-					})
-			else:
+			for mosaic in mosaics:
 				value.append({
-					'namespace': 'nem.xem',
-					'amount': _format_xem_relative(amount)
+					'namespace': mosaic['namespace_name'],
+					'amount': _format_relative(mosaic['quantity'], mosaic['divisibility'])
 				})
 		elif transaction_type == TransactionType.ACCOUNT_KEY_LINK.value:
 			value.append({
@@ -687,9 +679,10 @@ class NemDatabase(DatabaseConnectionPool):
 	def _get_transaction_query(self, transaction_hash, is_inner=False):
 		"""Gets transaction by where clause."""
 
-		sql = self._generate_transaction_sql_query()
-		sql += ' WHERE t.transaction_hash = %s AND t.is_inner = %s'
-		params = ('\\x' + transaction_hash, is_inner)
+		where_condition = ' WHERE t.transaction_hash = %s AND t.is_inner = %s'
+		sql = self._generate_transaction_sql_query(where_condition=where_condition)
+
+		params = ['\\x' + transaction_hash, is_inner]
 
 		with self.connection() as connection:
 			cursor = connection.cursor()
@@ -764,3 +757,103 @@ class NemDatabase(DatabaseConnectionPool):
 			results = cursor.fetchall()
 
 			return self._create_transaction_date_range_statistic_view(results, period_type)
+
+	def _get_transactions(self, params, where_condition='', order_condition='', limit_condition=''):
+		"""Gets transactions by where clause."""
+
+		sql = self._generate_transaction_sql_query(
+			where_condition=where_condition,
+			order_condition=order_condition,
+			limit_condition=limit_condition
+		)
+
+		with self.connection() as connection:
+			cursor = connection.cursor()
+			cursor.execute(sql, params)
+			results = cursor.fetchall()
+
+			return [TransactionRecord(*result) for result in results]
+
+	def _get_inner_transactions(self, transaction_hashes):
+		"""Gets inner transactions by transaction hashes."""
+
+		if not transaction_hashes:
+			return []
+
+		where_condition = ' WHERE t.transaction_hash IN %s AND t.is_inner = true'
+		order_condition = ' ORDER BY t.height DESC'
+		params = [tuple('\\x' + tx_hash for tx_hash in transaction_hashes)]
+
+		return self._get_transactions(
+			params,
+			where_condition=where_condition,
+			order_condition=order_condition
+		)
+
+	def get_transactions(self, pagination, sort, transaction_query):
+		"""Gets transactions pagination."""
+
+		where_condition = ' WHERE t.is_inner = False '
+		order_condition = f' ORDER BY t.height {sort}'
+		limit_condition = ' LIMIT %s OFFSET %s'
+
+		filter_params = []
+
+		if transaction_query.height:
+			where_condition += ' AND t.height = %s'
+			filter_params.append(transaction_query.height)
+
+		if transaction_query.transaction_types:
+			where_condition += ' AND t.transaction_type IN %s'
+			filter_params.append(tuple(transaction_query.transaction_types))
+
+		if transaction_query.address:
+			where_condition += ' AND (t.sender_address = %s OR t.recipient_address = %s)'
+			filter_params.extend([transaction_query.address.bytes, transaction_query.address.bytes])
+		else:
+			if transaction_query.sender_address:
+				where_condition += ' AND t.sender_address = %s'
+				filter_params.append(transaction_query.sender_address.bytes)
+
+			if transaction_query.recipient_address:
+				where_condition += ' AND t.recipient_address = %s'
+				filter_params.append(transaction_query.recipient_address.bytes)
+
+		if transaction_query.mosaic:
+			where_condition += (
+				' AND t.transaction_type = %s'
+				' AND EXISTS (SELECT 1 FROM transactions_mosaic tm WHERE tm.transaction_id = t.id AND tm.namespace_name = %s) '
+			)
+
+			filter_params.extend([TransactionType.TRANSFER.value, transaction_query.mosaic])
+
+		params = filter_params + [pagination.limit, pagination.offset]
+
+		transactions = self._get_transactions(
+			params,
+			where_condition=where_condition,
+			order_condition=order_condition,
+			limit_condition=limit_condition
+		)
+
+		inner_transaction_hashes = [
+			transaction.payload['inner_hash']
+			for transaction in transactions
+			if transaction.transaction_type == TransactionType.MULTISIG.value
+		]
+
+		if inner_transaction_hashes:
+			inner_transactions = self._get_inner_transactions(inner_transaction_hashes)
+			inner_transaction_map = {
+				_format_bytes(inner_transaction.transaction_hash).lower(): inner_transaction for inner_transaction in inner_transactions
+			}
+
+			return [
+				self._create_transaction_view(
+					transaction,
+					inner_transaction_map.get(transaction.payload.get('inner_hash'))
+				)
+				for transaction in transactions
+			]
+
+		return [self._create_transaction_view(transaction) for transaction in transactions]

@@ -10,6 +10,7 @@ from symbolchain.nc import TransactionType
 from symbolchain.nem.Network import Address, Network
 from symbollightapi.connector.NemConnector import NemConnector
 from symbollightapi.model.Exceptions import NodeException
+from symbollightapi.model.Transaction import Mosaic
 from zenlog import log
 
 from puller.db.NemDatabase import NemDatabase
@@ -71,7 +72,6 @@ TransactionRecord = namedtuple('TransactionRecord', [
 	'timestamp',
 	'deadline',
 	'signature',
-	'amount',
 	'transaction_type',
 	'is_inner',
 	'sender_address',
@@ -368,7 +368,6 @@ class NemPuller:
 
 		payload = None
 		recipient_address = None
-		amount = None
 		if transaction.transaction_type == TransactionType.TRANSFER.value:
 			payload = {
 				'message': {
@@ -377,7 +376,6 @@ class NemPuller:
 				} if transaction.message else None
 			}
 			recipient_address = transaction.recipient
-			amount = transaction.amount
 		elif transaction.transaction_type == TransactionType.ACCOUNT_KEY_LINK.value:
 			payload = {
 				'mode': transaction.mode,
@@ -451,7 +449,6 @@ class NemPuller:
 			fee=transaction.fee,
 			timestamp=self._convert_timestamp_to_datetime(transaction.timestamp),
 			deadline=self._convert_timestamp_to_datetime(transaction.deadline),
-			amount=amount,
 			signature=transaction.signature,
 			transaction_type=transaction.transaction_type,
 			is_inner=is_inner,
@@ -467,9 +464,22 @@ class NemPuller:
 		transaction_record = self._build_transaction_record(transaction, is_inner)
 		transaction_id = self.nem_db.insert_transaction(cursor, transaction_record)
 
-		if transaction.transaction_type == TransactionType.TRANSFER.value and transaction.mosaics:
-			for mosaic in transaction.mosaics:
-				self.nem_db.insert_transaction_mosaic(cursor, transaction_id, mosaic)
+		if transaction.transaction_type == TransactionType.TRANSFER.value:
+			if transaction.mosaics:
+				for mosaic in transaction.mosaics:
+					mosaic_amount = mosaic.quantity * transaction.amount // (10 ** 6)
+					self.nem_db.insert_transaction_mosaic(
+						cursor,
+						transaction_id,
+						Mosaic(mosaic.namespace_name, mosaic_amount)
+					)
+			else:
+				# handle v1 transfer transaction
+				self.nem_db.insert_transaction_mosaic(
+					cursor,
+					transaction_id,
+					Mosaic('nem.xem', transaction.amount)
+				)
 		elif transaction.transaction_type == TransactionType.NAMESPACE_REGISTRATION.value:
 			self._process_namespace(cursor, transaction, block_height)
 		elif transaction.transaction_type == TransactionType.MOSAIC_DEFINITION.value:
