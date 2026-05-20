@@ -230,7 +230,6 @@ class NemDatabase(DatabaseConnection):
 				timestamp timestamp NOT NULL,
 				deadline timestamp NOT NULL,
 				signature bytea,
-				amount bigint,
 				is_inner boolean DEFAULT false,
 				payload jsonb
 			)
@@ -493,11 +492,10 @@ class NemDatabase(DatabaseConnection):
 				timestamp,
 				deadline,
 				signature,
-				amount,
 				is_inner,
 				payload
 			)
-			VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+			VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
 			RETURNING id
 			''',
 			(
@@ -511,7 +509,6 @@ class NemDatabase(DatabaseConnection):
 				transaction.timestamp,
 				transaction.deadline,
 				unhexlify(transaction.signature) if transaction.signature else None,
-				transaction.amount,
 				transaction.is_inner,
 				json.dumps(transaction.payload) if transaction.payload else None
 			)
