@@ -16,14 +16,17 @@ const Table = ({
 	isLastPage,
 	isLastColumnAligned,
 	isHeaderHidden,
-	isColumnsStacked
+	isColumnsStacked,
+	isHeaderSticky = true
 }) => {
 	const { t } = useTranslation('common');
 	const isMobile = useMediaQuery('(max-width: 767.8px)');
 	const isMobileTableVisible = isMobile && !!renderItemMobile;
 	const isDesktopTableVisible = !isMobile || !isMobileTableVisible;
 	const desktopTableStyle = !renderItemMobile ? styles.dataMobile : '';
-	const headerRowStyle = `${styles.header} ${isColumnsStacked ? styles.header_stacked : ''}`;
+	const headerRowStyle = `${styles.header} ${isColumnsStacked ? styles.header_stacked : ''} ${
+		!isHeaderSticky ? styles.header_static : ''
+	}`;
 	const headerCellStyle = `${styles.headerCell} ${isLastColumnAligned && styles.headerCell_aligned}`;
 	const dataRowStyle = `${styles.dataRow} ${isColumnsStacked ? styles.dataRow_stacked : ''}`;
 	const dataCellStyle = isLastColumnAligned ? styles.dataCell_aligned : '';
@@ -31,11 +34,11 @@ const Table = ({
 
 	const renderRow = (row, index) => (
 		<div className={dataRowStyle} key={'tr' + index}>
-				{columns.map((item, index) => (
-					<div className={dataCellStyle} style={{ width: item.size, minWidth: 0 }} key={'td' + index}>
-						{item.renderValue ? item.renderValue(row[item.key], row) : row[item.key]}
-					</div>
-				))}
+			{columns.map((item, index) => (
+				<div className={dataCellStyle} style={{ width: item.size, minWidth: 0 }} key={'td' + index}>
+					{item.renderValue ? item.renderValue(row[item.key], row) : row[item.key]}
+				</div>
+			))}
 		</div>
 	);
 	const renderMobileListItem = (item, index) => (
@@ -48,10 +51,10 @@ const Table = ({
 		<div className={styles.table}>
 			{!isHeaderHidden && (
 				<div className={headerRowStyle}>
-						{columns.map((item, index) => (
-							<div className={headerCellStyle} style={{ width: item.size, minWidth: 0 }} key={'th' + index}>
-								{item.renderTitle ? item.renderTitle(item.key) : t(`table_field_${item.key}`)}
-							</div>
+					{columns.map((item, index) => (
+						<div className={headerCellStyle} style={{ width: item.size, minWidth: 0 }} key={'th' + index}>
+							{item.renderTitle ? item.renderTitle(item.key) : t(`table_field_${item.key}`)}
+						</div>
 					))}
 				</div>
 			)}

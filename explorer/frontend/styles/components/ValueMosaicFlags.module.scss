@@ -1,0 +1,18 @@
+@import '../variables';
+
+.valueMosaicFlags {
+	display: flex;
+	flex-direction: row;
+	gap: $spacing-base / 2;
+	align-items: center;
+	min-height: $spacing-base * 3;
+}
+
+.icon {
+	width: $spacing-base * 3;
+	height: $spacing-base * 3;
+}
+
+.tooltip {
+	display: flex;
+}

@@ -25,6 +25,11 @@
 		}
 	}
 
+	.header_static {
+		position: relative;
+		top: auto;
+	}
+
 	.header_stacked {
 		justify-content: flex-start;
 	}

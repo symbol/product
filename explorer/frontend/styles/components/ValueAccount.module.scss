@@ -5,6 +5,8 @@
 	flex-direction: row;
 	gap: $spacing-base / 2;
 	align-items: center;
+	min-width: 0;
+	max-width: 100%;
 	font: $font-body-monospace;
 }
 
@@ -18,6 +20,8 @@
 	flex-direction: row;
 	gap: $spacing-base / 2;
 	align-items: center;
+	min-width: 0;
+	max-width: 100%;
 }
 
 .containerLeft {

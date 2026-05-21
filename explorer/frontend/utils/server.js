@@ -63,9 +63,24 @@ export const createTryFetchInfoFunction =
 			}
 		};
 
+const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+const getRetryAfterDelay = retryAfter => {
+	const retryAfterSeconds = Number(retryAfter);
+
+	return Number.isFinite(retryAfterSeconds)
+		? retryAfterSeconds * 1000
+		: null;
+};
+
 // Makes HTTP requests.
 export const makeRequest = async (url, options = {}) => {
-	const { timeout = config.REQUEST_TIMEOUT, method = 'get' } = options;
+	const {
+		timeout = config.REQUEST_TIMEOUT,
+		method = 'get',
+		retryCount = 2,
+		retryDelay = 250
+	} = options;
 	const axiosOptions = {
 		method,
 		url,
@@ -76,7 +91,22 @@ export const makeRequest = async (url, options = {}) => {
 	if (options.headers)
 		axiosOptions.headers = options.headers;
 
-	const response = await axios(axiosOptions);
+	let attempt = 0;
 
-	return response.data;
+	while (true) {
+		try {
+			const response = await axios(axiosOptions);
+
+			return response.data;
+		} catch (error) {
+			const status = error.response?.status;
+
+			if (status !== 429 || attempt >= retryCount)
+				throw error;
+
+			const retryAfterDelay = getRetryAfterDelay(error.response?.headers?.['retry-after']);
+			await sleep(retryAfterDelay ?? retryDelay);
+			attempt++;
+		}
+	}
 };

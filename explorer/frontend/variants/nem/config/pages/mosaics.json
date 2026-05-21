@@ -1,0 +1,10 @@
+{
+	"nameColumnTitleKey": "table_field_name",
+	"showAlias": false,
+	"showValue": false,
+	"showFlags": false,
+	"showRegistration": true,
+	"showExpiration": false,
+	"showStatus": true,
+	"showCreated": true
+}

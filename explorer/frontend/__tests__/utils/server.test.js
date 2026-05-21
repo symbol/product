@@ -259,5 +259,45 @@ describe('utils/server', () => {
 			expect(result).toBe(expectedResult);
 			expect(mockAxios).toHaveBeenCalledWith(expectedOptions);
 		});
+
+		it('retries requests that are rate limited', async () => {
+			// Arrange:
+			mockAxios
+				.mockRejectedValueOnce({
+					response: {
+						status: 429
+					}
+				})
+				.mockResolvedValueOnce(axiosReturnValue);
+			const expectedOptions = {
+				method: 'get',
+				url,
+				data: undefined,
+				timeout: 5000
+			};
+
+			// Act:
+			const result = await makeRequest(url, { retryDelay: 0 });
+
+			// Assert:
+			expect(result).toBe(axiosReturnValue.data);
+			expect(mockAxios).toHaveBeenCalledTimes(2);
+			expect(mockAxios).toHaveBeenNthCalledWith(1, expectedOptions);
+			expect(mockAxios).toHaveBeenNthCalledWith(2, expectedOptions);
+		});
+
+		it('throws rate limit errors after retry count is exhausted', async () => {
+			// Arrange:
+			const error = {
+				response: {
+					status: 429
+				}
+			};
+			mockAxios.mockRejectedValue(error);
+
+			// Act + Assert:
+			await expect(makeRequest(url, { retryCount: 1, retryDelay: 0 })).rejects.toBe(error);
+			expect(mockAxios).toHaveBeenCalledTimes(2);
+		});
 	});
 });
