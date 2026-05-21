@@ -33,7 +33,7 @@ const Blocks = ({ namespaces }) => {
 	const namespaceFilterConfig = [
 		{
 			name: 'isRecent',
-			title: t('filter_recent'),
+			title: t('filter_latest'),
 			type: 'boolean',
 			off: ['isAddressAlias', 'isMosaicAlias', 'isRoot', 'isSub']
 		},

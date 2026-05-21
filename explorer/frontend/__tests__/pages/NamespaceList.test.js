@@ -134,7 +134,7 @@ describe('NamespaceList', () => {
 			fireEvent.click(screen.getByText('filter_addressAlias'));
 
 			// Assert:
-			expect(screen.getByText('filter_recent')).toBeInTheDocument();
+			expect(screen.getByText('filter_latest')).toBeInTheDocument();
 			expect(screen.getByText('filter_mosaicAlias')).toBeInTheDocument();
 			expect(screen.getByText('filter_rootNamespace')).toBeInTheDocument();
 			expect(screen.getByText('filter_subNamespace')).toBeInTheDocument();
@@ -149,7 +149,7 @@ describe('NamespaceList', () => {
 			render(<NamespaceList namespaces={namespacePageResult.data} />);
 
 			// Assert:
-			expect(screen.queryByText('filter_recent')).toBeNull();
+			expect(screen.queryByText('filter_latest')).toBeNull();
 			expect(screen.queryByText('filter_addressAlias')).toBeNull();
 		});
 
