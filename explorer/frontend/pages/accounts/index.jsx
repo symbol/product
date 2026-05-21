@@ -12,8 +12,10 @@ import Table from '@/components/Table';
 import ValueAccount from '@/components/ValueAccount';
 import ValueMosaic from '@/components/ValueMosaic';
 import styles from '@/styles/pages/Home.module.scss';
-import { formatAccountCSV, usePagination } from '@/utils';
+import { createPageHref, usePagination } from '@/utils';
+import { pageConfig } from '@/variants';
 import Head from 'next/head';
+import Link from 'next/link';
 import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 
@@ -30,6 +32,20 @@ export const getServerSideProps = async ({ locale }) => {
 	};
 };
 
+const formatNamespaceCSVValue = namespaces => (namespaces?.length ? namespaces.join(', ') : 'N/A');
+
+export const formatAccountListCSV = (row, translate) => ({
+	[translate('table_field_address')]: row.address,
+	...(pageConfig.accounts.showNamespace
+		? {
+			[translate('table_field_namespace')]: formatNamespaceCSVValue(row.namespaces)
+		}
+		: {}),
+	[translate('table_field_description')]: row.description,
+	[translate('table_field_balance')]: row.balance,
+	[translate('table_field_importance')]: row.importance
+});
+
 const Accounts = ({ preloadedData, stats }) => {
 	const { t } = useTranslation();
 	const { requestNextPage, data, isLoading, isError, isLastPage, filter, changeFilter } = usePagination(fetchAccountPage, preloadedData);
@@ -40,6 +56,27 @@ const Accounts = ({ preloadedData, stats }) => {
 			size: '30rem',
 			renderValue: value => <ValueAccount address={value} size="sm" />
 		},
+		...(pageConfig.accounts.showNamespace
+			? [
+				{
+					key: 'namespaces',
+					size: '16rem',
+					renderTitle: () => t('table_field_namespace'),
+					renderValue: value => (
+						<span className={styles.tableValueWrap}>
+							{value?.length
+								? value.map((namespace, index) => (
+									<span key={namespace}>
+										{index ? ', ' : ''}
+										<Link href={createPageHref('namespaces', namespace)}>{namespace}</Link>
+									</span>
+								))
+								: 'N/A'}
+						</span>
+					)
+				}
+			]
+			: []),
 		{
 			key: 'description',
 			size: '21rem'
@@ -56,16 +93,35 @@ const Accounts = ({ preloadedData, stats }) => {
 		}
 	];
 	const filterConfig = [
-		{
-			name: 'isLatest',
-			title: t('filter_latest'),
-			type: 'boolean'
-		},
-		{
-			name: 'isActiveHarvesting',
-			title: t('filter_activeHarvesting'),
-			type: 'boolean'
-		}
+		...(pageConfig.accounts.showLatestFilter
+			? [
+				{
+					name: 'isLatest',
+					title: t('filter_latest'),
+					type: 'boolean',
+					off: ['isRichList']
+				}
+			]
+			: []),
+		...(pageConfig.accounts.showRichListFilter
+			? [
+				{
+					name: 'isRichList',
+					title: t('filter_richList'),
+					type: 'boolean',
+					off: ['isLatest']
+				}
+			]
+			: []),
+		...(pageConfig.accounts.showActiveHarvestingFilter
+			? [
+				{
+					name: 'isActiveHarvesting',
+					title: t('filter_activeHarvesting'),
+					type: 'boolean'
+				}
+			]
+			: [])
 	];
 
 	return (
@@ -99,12 +155,14 @@ const Accounts = ({ preloadedData, stats }) => {
 				<div className="layout-flex-col">
 					<div className="layout-flex-row-mobile-col">
 						<Filter data={filterConfig} value={filter} isDisabled={isLoading} onChange={changeFilter} search={search} />
-						<ButtonCSV data={data} fileName="accounts" format={row => formatAccountCSV(row, t)} />
+						<ButtonCSV data={data} fileName="accounts" format={row => formatAccountListCSV(row, t)} />
 					</div>
 					<Table
 						data={data}
 						columns={tableColumns}
-						renderItemMobile={data => <ItemAccountMobile data={data} />}
+						renderItemMobile={data => (
+							<ItemAccountMobile data={data} showHarvesting={pageConfig.accounts.showActiveHarvestingFilter} />
+						)}
 						isLoading={isLoading}
 						isError={isError}
 						isLastPage={isLastPage}

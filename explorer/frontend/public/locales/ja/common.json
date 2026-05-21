@@ -146,6 +146,7 @@
 	"chart_name_total_harvesting": "総ハーベスティング\nアカウント数",
 
 	"filter_latest": "最新",
+	"filter_richList": "リッチリスト",
 	"filter_activeHarvesting": "アクティブハーベスティング",
 	"filter_service": "サービス",
 	"filter_from": "送信者",
@@ -246,6 +247,7 @@
 	"table_field_type": "タイプ",
 	"table_field_address": "アドレス",
 	"table_field_name": "名前",
+	"table_field_namespace": "ネームスペース",
 	"table_field_namespaceId": "ネームスペースID",
 	"table_field_description": "説明",
 	"table_field_balance": "残高",

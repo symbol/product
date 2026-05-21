@@ -3,19 +3,63 @@ import config from '@/config';
 import { createTryFetchInfoFunction } from '@/utils/server';
 
 const ZERO_PUBLIC_KEY = '0'.repeat(64);
+const ACCOUNT_NAMESPACE_LOOKUP_ERROR_STATUSES = [400, 404, 409];
 
-const accountInfoFromDTO = data => {
+const parseNetworkAmount = value => Number(`${value || ''}`.replace(/'/g, ''));
+
+const fetchTotalChainImportance = async () => {
+	const networkProperties = await fetchSymbolNode('network/properties');
+	const totalChainImportance = parseNetworkAmount(networkProperties.chain?.totalChainImportance);
+
+	if (!totalChainImportance)
+		throw new Error('Missing totalChainImportance network property');
+
+	return totalChainImportance;
+};
+
+const fetchAccountNamespaces = async addresses => {
+	const uniqueAddresses = [...new Set(addresses)].filter(address => !!address);
+
+	if (!uniqueAddresses.length)
+		return {};
+
+	try {
+		const response = await fetchSymbolNode('namespaces/account/names', {
+			method: 'POST',
+			body: JSON.stringify({
+				addresses: uniqueAddresses
+			}),
+			headers: {
+				'Content-Type': 'application/json'
+			}
+		});
+
+		return Object.fromEntries((response.accountNames || []).map(item => [hexToSymbolAddress(item.address), item.names || []]));
+	} catch (error) {
+		if (
+			ACCOUNT_NAMESPACE_LOOKUP_ERROR_STATUSES.includes(error.response?.status)
+			|| ACCOUNT_NAMESPACE_LOOKUP_ERROR_STATUSES.includes(error.response?.data?.status)
+		)
+			return {};
+
+		throw error;
+	}
+};
+
+const accountInfoFromDTO = (data, accountNamespaces = {}, totalChainImportance) => {
 	const account = data.account || {};
 	const mosaics = account.mosaics || [];
 	const nativeMosaic = mosaics[0];
+	const address = hexToSymbolAddress(account.address);
 
 	return {
-		address: hexToSymbolAddress(account.address),
+		address,
 		publicKey: account.publicKey === ZERO_PUBLIC_KEY ? null : (account.publicKey || null),
 		description: null,
+		namespaces: accountNamespaces[address] || [],
 		balance: absoluteToRelative(nativeMosaic?.amount || 0),
 		vestedBalance: 0,
-		importance: (Number(account.importance || 0) / 9000000000000000) * 100,
+		importance: (Number(account.importance || 0) / totalChainImportance) * 100,
 		mosaics: mosaics.map(m => ({
 			id: m.id,
 			name: m.id === config.NATIVE_MOSAIC_ID ? config.NATIVE_MOSAIC_TICKER : m.id,
@@ -35,22 +79,41 @@ const accountInfoFromDTO = data => {
 };
 
 export const fetchAccountPage = async searchParams => {
-	const { isLatest, isActiveHarvesting, ...cleanParams } = { ...(searchParams || {}) };
+	const cleanParams = { ...(searchParams || {}) };
+	const { isLatest, isRichList } = cleanParams;
+
+	delete cleanParams.isLatest;
+	delete cleanParams.isActiveHarvesting;
+	delete cleanParams.isRichList;
+
+	if (isLatest)
+		cleanParams.orderBy = 'id';
+
+	if (isRichList) {
+		cleanParams.orderBy = 'balance';
+		cleanParams.mosaicId = config.NATIVE_MOSAIC_ID;
+	}
+
 	const url = createSymbolSearchURL('accounts', cleanParams);
 	const response = await fetchSymbolNode(url.replace(`${config.SYMBOL_NODE_URL}/`, ''));
 	const pageNumber = Number(searchParams?.pageNumber || 1);
+	const addresses = (response.data || []).map(data => hexToSymbolAddress(data.account?.address));
+	const totalChainImportance = await fetchTotalChainImportance();
+	const accountNamespaces = await fetchAccountNamespaces(addresses);
 
-	return createSymbolPage(response, pageNumber, accountInfoFromDTO);
+	return createSymbolPage(response, pageNumber, data => accountInfoFromDTO(data, accountNamespaces, totalChainImportance));
 };
 
 export const fetchAccountInfo = createTryFetchInfoFunction(async address => {
 	const data = await fetchSymbolNode(`accounts/${hexToSymbolAddress(address)}`);
+	const totalChainImportance = await fetchTotalChainImportance();
 
-	return accountInfoFromDTO(data);
+	return accountInfoFromDTO(data, {}, totalChainImportance);
 });
 
 export const fetchAccountInfoByPublicKey = createTryFetchInfoFunction(async publicKey => {
 	const data = await fetchSymbolNode(`accounts/${publicKey}`);
+	const totalChainImportance = await fetchTotalChainImportance();
 
-	return accountInfoFromDTO(data);
+	return accountInfoFromDTO(data, {}, totalChainImportance);
 });

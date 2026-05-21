@@ -209,9 +209,7 @@ describe('variants/symbol/api/namespaces', () => {
 			});
 
 			// Assert:
-			expect(makeRequest).toHaveBeenCalledWith(
-				'/api/symbol-node/namespaces?pageNumber=3&pageSize=10&order=desc&aliasType=2'
-			);
+			expect(makeRequest).toHaveBeenCalledWith('/api/symbol-node/namespaces?pageNumber=3&pageSize=10&order=desc&aliasType=2');
 		});
 
 		it('fetches namespaces filtered by mosaic alias', async () => {
@@ -226,9 +224,7 @@ describe('variants/symbol/api/namespaces', () => {
 			});
 
 			// Assert:
-			expect(makeRequest).toHaveBeenCalledWith(
-				'/api/symbol-node/namespaces?pageNumber=1&pageSize=10&order=desc&aliasType=1'
-			);
+			expect(makeRequest).toHaveBeenCalledWith('/api/symbol-node/namespaces?pageNumber=1&pageSize=10&order=desc&aliasType=1');
 		});
 
 		it('fetches root and sub namespaces with registration type filters', async () => {
@@ -263,9 +259,7 @@ describe('variants/symbol/api/namespaces', () => {
 			});
 
 			// Assert:
-			expect(makeRequest).toHaveBeenCalledWith(
-				'/api/symbol-node/namespaces?pageNumber=1&pageSize=10&order=desc&registrationType=0'
-			);
+			expect(makeRequest).toHaveBeenCalledWith('/api/symbol-node/namespaces?pageNumber=1&pageSize=10&order=desc&registrationType=0');
 		});
 	});
 
@@ -307,6 +301,51 @@ describe('variants/symbol/api/namespaces', () => {
 				}
 			});
 			expect(result.namespaceName).toBe('pppplllll');
+		});
+
+		it('fetches namespace info by resolving a namespace name to its namespace id', async () => {
+			// Arrange:
+			const response = {
+				namespace: {
+					registrationType: 1,
+					depth: 2,
+					level0: 'C440B80BCE158950',
+					level1: 'CC5FD5CF9AB1A84A',
+					ownerAddress: '983FF5A219FBACA421FD33D8B7C2BF6A75F961A0FD90B356',
+					startHeight: '6357',
+					endHeight: '5194037'
+				}
+			};
+			const namespaceNamesResponse = [
+				{
+					id: 'C440B80BCE158950',
+					name: 'pasomi'
+				},
+				{
+					id: 'CC5FD5CF9AB1A84A',
+					name: 'pasomi.sn'
+				}
+			];
+			const makeRequest = jest.spyOn(utils, 'makeRequest');
+			makeRequest.mockResolvedValueOnce(response);
+			makeRequest.mockResolvedValueOnce(namespaceNamesResponse);
+
+			// Act:
+			const result = await fetchNamespaceInfo('pasomi.sn');
+
+			// Assert:
+			expect(makeRequest).toHaveBeenNthCalledWith(1, '/api/symbol-node/namespaces/CC5FD5CF9AB1A84A');
+			expect(makeRequest).toHaveBeenNthCalledWith(2, '/api/symbol-node/namespaces/names', {
+				method: 'POST',
+				body: JSON.stringify({
+					namespaceIds: ['C440B80BCE158950', 'CC5FD5CF9AB1A84A']
+				}),
+				headers: {
+					'Content-Type': 'application/json'
+				}
+			});
+			expect(result.id).toBe('CC5FD5CF9AB1A84A');
+			expect(result.namespaceName).toBe('pasomi.sn');
 		});
 	});
 });

@@ -4,7 +4,7 @@ import ValueMosaic from './ValueMosaic';
 import styles from '@/styles/components/ItemAccountMobile.module.scss';
 import { createPageHref } from '@/utils';
 
-const ItemAccountMobile = ({ data }) => {
+const ItemAccountMobile = ({ data, showHarvesting = true }) => {
 	const { address, balance, isHarvestingActive, isMultisig } = data;
 	const multisigLabelStyle = !isMultisig && styles.label__hidden;
 	const harvestingLabelStyle = !isHarvestingActive && styles.label__hidden;
@@ -17,7 +17,7 @@ const ItemAccountMobile = ({ data }) => {
 				<div className="layout-flex-row">
 					<ValueMosaic isNative isTickerShown amount={balance} />
 					<div className={styles.labels}>
-						<ValueLabel type="harvesting" className={harvestingLabelStyle} />
+						{showHarvesting && <ValueLabel type="harvesting" className={harvestingLabelStyle} />}
 						<ValueLabel type="multisig" className={multisigLabelStyle} />
 					</div>
 				</div>

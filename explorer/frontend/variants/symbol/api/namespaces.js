@@ -12,6 +12,69 @@ const NAMESPACE_REGISTRATION_TYPE = {
 	SUB: 1
 };
 
+const NAMESPACE_ID_PATTERN = /^[0-9A-Fa-f]{16}$/;
+const NAMESPACE_FLAG = 1n << 63n;
+
+const uint32ToBytes = value => new Uint8Array([
+	value & 0xFF,
+	(value >> 8) & 0xFF,
+	(value >> 16) & 0xFF,
+	(value >> 24) & 0xFF
+]);
+
+const digestToBigInt = digest => {
+	let result = 0n;
+
+	for (let i = 0; 8 > i; ++i)
+		result += BigInt(digest[i]) << BigInt(8 * i);
+
+	return result;
+};
+
+const isValidNamespaceName = name => {
+	const isAlphanum = character => ('a' <= character && 'z' >= character) || ('0' <= character && '9' >= character);
+
+	if (!name || !isAlphanum(name[0]))
+		return false;
+
+	for (let i = 0; i < name.length; ++i) {
+		const character = name[i];
+
+		if (!isAlphanum(character) && '_' !== character && '-' !== character)
+			return false;
+	}
+
+	return true;
+};
+
+const generateNamespaceId = async (name, parentNamespaceId = 0n) => {
+	const { createHash } = await import('crypto');
+	const hash = createHash('sha3-256');
+
+	hash.update(uint32ToBytes(Number(parentNamespaceId & 0xFFFFFFFFn)));
+	hash.update(uint32ToBytes(Number((parentNamespaceId >> 32n) & 0xFFFFFFFFn)));
+	hash.update(new TextEncoder().encode(name));
+
+	return digestToBigInt(hash.digest()) | NAMESPACE_FLAG;
+};
+
+const namespaceIdFromName = async name => {
+	if (NAMESPACE_ID_PATTERN.test(name))
+		return name.toUpperCase();
+
+	const namespaceNames = name.split('.');
+
+	if (!namespaceNames.every(isValidNamespaceName))
+		return name;
+
+	let namespaceId = 0n;
+
+	for (const namespaceName of namespaceNames)
+		namespaceId = await generateNamespaceId(namespaceName, namespaceId);
+
+	return namespaceId.toString(16).toUpperCase().padStart(16, '0');
+};
+
 const getNamespaceId = data => {
 	const namespace = data.namespace || {};
 
@@ -129,7 +192,8 @@ export const fetchNamespacePage = async searchParams => {
 };
 
 export const fetchNamespaceInfo = createTryFetchInfoFunction(async id => {
-	const data = await fetchSymbolNode(`namespaces/${id}`);
+	const namespaceId = await namespaceIdFromName(id);
+	const data = await fetchSymbolNode(`namespaces/${namespaceId}`);
 	const namespaceNames = await fetchNamespaceNames(getNamespaceIds(data));
 
 	return namespaceInfoFromDTO(data, namespaceNames);
