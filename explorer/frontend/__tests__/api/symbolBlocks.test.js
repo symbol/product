@@ -206,5 +206,39 @@ describe('variants/symbol/api/blocks', () => {
 			expect(result.data[0].blockReward).toBe(0);
 			expect(result.data[0].isFinalized).toBe(false);
 		});
+
+		it('can skip block reward and finalization side requests', async () => {
+			// Arrange:
+			const response = {
+				data: [
+					{
+						meta: {
+							hash: '5A9D',
+							statementsCount: 7,
+							totalFee: '123456',
+							totalTransactionsCount: 3
+						},
+						block: {
+							height: '1234',
+							timestamp: '0'
+						}
+					}
+				]
+			};
+			const makeRequest = jest.spyOn(utils, 'makeRequest');
+			makeRequest.mockResolvedValueOnce(response);
+
+			// Act:
+			const result = await fetchBlockPage({
+				includeBlockRewards: false,
+				includeFinalization: false
+			});
+
+			// Assert:
+			expect(makeRequest).toHaveBeenCalledTimes(1);
+			expect(makeRequest).toHaveBeenCalledWith('/api/symbol-node/blocks?pageNumber=1&pageSize=10&order=desc&orderBy=height');
+			expect(result.data[0].blockReward).toBe(0);
+			expect(result.data[0].isFinalized).toBe(false);
+		});
 	});
 });

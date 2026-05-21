@@ -29,9 +29,9 @@ const fetchBlockRewardsByHeight = async blocks => {
 
 	const fromHeight = Math.min(...blockHeights);
 	const toHeight = Math.max(...blockHeights);
-	const response = await fetchSymbolNode(
-		`statements/transaction?fromHeight=${fromHeight}&toHeight=${toHeight}&receiptType=${INFLATION_RECEIPT_TYPE}&pageSize=100`
-	);
+	const statementsPath =
+		`statements/transaction?fromHeight=${fromHeight}&toHeight=${toHeight}&receiptType=${INFLATION_RECEIPT_TYPE}&pageSize=100`;
+	const response = await fetchSymbolNode(statementsPath);
 
 	return (Array.isArray(response?.data) ? response.data : []).reduce((rewardsByHeight, item) => {
 		const height = getStatementHeight(item);
@@ -75,16 +75,21 @@ const blockInfoFromDTO = data => {
 };
 
 export const fetchBlockPage = async searchParams => {
-	const url = createSymbolSearchURL('blocks', searchParams, { orderBy: 'height' });
+	const {
+		includeBlockRewards = true,
+		includeFinalization = true,
+		...blockSearchParams
+	} = searchParams || {};
+	const url = createSymbolSearchURL('blocks', blockSearchParams, { orderBy: 'height' });
 	const response = await fetchSymbolNode(url.replace(`${config.SYMBOL_NODE_URL}/`, ''));
-	const pageNumber = Number(searchParams?.pageNumber || 1);
+	const pageNumber = Number(blockSearchParams.pageNumber || 1);
 	const page = createSymbolPage(response, pageNumber, blockInfoFromDTO);
-	const latestFinalizedBlockHeight = await fetchLatestFinalizedBlockHeight();
-	const blockRewardsByHeight = await fetchBlockRewardsByHeight(page.data);
+	const latestFinalizedBlockHeight = includeFinalization ? await fetchLatestFinalizedBlockHeight() : 0;
+	const blockRewardsByHeight = includeBlockRewards ? await fetchBlockRewardsByHeight(page.data) : {};
 	const data = page.data.map(block => ({
 		...block,
 		blockReward: blockRewardsByHeight[block.height] || 0,
-		isFinalized: block.height <= latestFinalizedBlockHeight
+		isFinalized: includeFinalization ? block.height <= latestFinalizedBlockHeight : false
 	}));
 
 	return {

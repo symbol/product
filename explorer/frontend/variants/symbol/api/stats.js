@@ -17,7 +17,7 @@ export const fetchAccountStats = async () => ({
 export const fetchTransactionChart = async () => [];
 
 export const fetchTransactionStats = async () => {
-	const blocks = (await fetchBlockPage({ pageSize: 100 })).data;
+	const blocks = (await fetchBlockPage({ pageSize: 100, includeBlockRewards: false, includeFinalization: false })).data;
 	const totalTransactionCount = blocks.reduce((sum, item) => sum + item.transactionCount, 0);
 
 	return {
@@ -29,7 +29,7 @@ export const fetchTransactionStats = async () => {
 };
 
 export const fetchBlockStats = async () => {
-	const blockPage = await fetchBlockPage({ pageSize: 241 });
+	const blockPage = await fetchBlockPage({ pageSize: 241, includeBlockRewards: false, includeFinalization: false });
 	const blocks = blockPage.data.slice(0, -1);
 	const blockTimeChart = blocks
 		.map((block, index) => [
