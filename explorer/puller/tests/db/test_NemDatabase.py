@@ -50,7 +50,6 @@ ACCOUNTS = [
 		99999,
 		[],
 		10,
-		'LOCKED',
 		'INACTIVE',
 		None,
 		[],
@@ -125,7 +124,6 @@ class NemDatabaseTest(unittest.TestCase):
 				mosaics,
 				harvested_fees,
 				harvested_blocks,
-				status,
 				remote_status,
 				last_harvested_height,
 				min_cosignatories,
@@ -330,7 +328,6 @@ class NemDatabaseTest(unittest.TestCase):
 			[],
 			0,
 			10,
-			'LOCKED',
 			'INACTIVE',
 			0,
 			None,
@@ -372,7 +369,6 @@ class NemDatabaseTest(unittest.TestCase):
 			[],
 			0,
 			10,
-			'LOCKED',
 			'INACTIVE',
 			0,
 			None,
@@ -414,7 +410,7 @@ class NemDatabaseTest(unittest.TestCase):
 
 		# Assert:
 		self.assertEqual(result[7], 750000)  # harvested_fees
-		self.assertEqual(result[11], 20)      # last_harvested_height
+		self.assertEqual(result[10], 20)      # last_harvested_height
 
 	def test_can_insert_namespace(self):
 		# Arrange:

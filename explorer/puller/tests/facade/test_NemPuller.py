@@ -665,6 +665,14 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 			'TADMEHCFJD45GPTDL4HZP2LJLZVAZRLYWY2K4OOH'
 		})
 
+	@staticmethod
+	def _exclude_account_status(account):
+		return {
+			key: value
+			for key, value in vars(account).items()
+			if key != 'status'  # Exclude status from the record
+		}
+
 	@patch('puller.facade.NemPuller.NemConnector.account_info')
 	@patch('puller.facade.NemPuller.NemConnector.account_mosaics')
 	@patch('puller.facade.NemPuller.NemDatabase.upsert_account')
@@ -694,7 +702,7 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 					'quantity': 8000000
 				}],
 				remote_address=None,
-				**vars(NEM_CONNECTOR_RESPONSE_ACCOUNT_INFO)
+				**self._exclude_account_status(NEM_CONNECTOR_RESPONSE_ACCOUNT_INFO)
 			)
 		)
 
@@ -747,7 +755,7 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 					'quantity': 0
 				}],
 				remote_address=None,
-				**vars(account)
+				**self._exclude_account_status(account)
 			),
 		))
 		self.assertEqual(upsert_account_calls[1][0], (
@@ -758,7 +766,7 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 					'quantity': 1000000
 				}],
 				remote_address=account.address,
-				**vars(remote_account)
+				**self._exclude_account_status(remote_account)
 			),
 		))
 

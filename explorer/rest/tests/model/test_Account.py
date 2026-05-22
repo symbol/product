@@ -16,7 +16,6 @@ class AccountTest(unittest.TestCase):
 			mosaics=[],
 			harvested_fees=1234.567890,
 			harvested_blocks=100,
-			status='LOCKED',
 			remote_status='ACTIVE',
 			last_harvested_height=1000,
 			min_cosignatories=None,
@@ -43,7 +42,6 @@ class AccountTest(unittest.TestCase):
 		self.assertEqual([], account_view.mosaics)
 		self.assertEqual(1234.567890, account_view.harvested_fees)
 		self.assertEqual(100, account_view.harvested_blocks)
-		self.assertEqual('LOCKED', account_view.status)
 		self.assertEqual('ACTIVE', account_view.remote_status)
 		self.assertEqual(1000, account_view.last_harvested_height)
 		self.assertIsNone(account_view.min_cosignatories)
@@ -68,7 +66,6 @@ class AccountTest(unittest.TestCase):
 			'mosaics': [],
 			'harvestedFees': 1234.567890,
 			'harvestedBlocks': 100,
-			'status': 'LOCKED',
 			'remoteStatus': 'ACTIVE',
 			'lastHarvestedHeight': 1000,
 			'minCosignatories': None,
@@ -93,7 +90,6 @@ class AccountTest(unittest.TestCase):
 		self.assertNotEqual(account_view, self._create_default_account_view(('mosaics', [{'id': 'test'}])))
 		self.assertNotEqual(account_view, self._create_default_account_view(('harvested_fees', 5000.0)))
 		self.assertNotEqual(account_view, self._create_default_account_view(('harvested_blocks', 99999)))
-		self.assertNotEqual(account_view, self._create_default_account_view(('status', 'UNLOCKED')))
 		self.assertNotEqual(account_view, self._create_default_account_view(('remote_status', 'INACTIVE')))
 		self.assertNotEqual(account_view, self._create_default_account_view(('last_harvested_height', 500000)))
 		self.assertNotEqual(account_view, self._create_default_account_view(('min_cosignatories', 2)))
