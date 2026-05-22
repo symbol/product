@@ -10,7 +10,6 @@ class AccountView:  # pylint: disable=too-many-locals,too-many-instance-attribut
 		mosaics,
 		harvested_fees,
 		harvested_blocks,
-		status,
 		remote_status,
 		last_harvested_height,
 		min_cosignatories,
@@ -30,7 +29,6 @@ class AccountView:  # pylint: disable=too-many-locals,too-many-instance-attribut
 		self.mosaics = mosaics
 		self.harvested_fees = harvested_fees
 		self.harvested_blocks = harvested_blocks
-		self.status = status
 		self.remote_status = remote_status
 		self.last_harvested_height = last_harvested_height
 		self.min_cosignatories = min_cosignatories
@@ -48,7 +46,6 @@ class AccountView:  # pylint: disable=too-many-locals,too-many-instance-attribut
 			self.mosaics == other.mosaics,
 			self.harvested_fees == other.harvested_fees,
 			self.harvested_blocks == other.harvested_blocks,
-			self.status == other.status,
 			self.remote_status == other.remote_status,
 			self.last_harvested_height == other.last_harvested_height,
 			self.min_cosignatories == other.min_cosignatories,
@@ -69,7 +66,6 @@ class AccountView:  # pylint: disable=too-many-locals,too-many-instance-attribut
 			'mosaics': self.mosaics,
 			'harvestedFees': self.harvested_fees,
 			'harvestedBlocks': self.harvested_blocks,
-			'status': self.status,
 			'remoteStatus': self.remote_status,
 			'lastHarvestedHeight': self.last_harvested_height,
 			'minCosignatories': self.min_cosignatories,

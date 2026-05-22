@@ -45,7 +45,6 @@ Account = namedtuple('Account', [
 	'vested_balance',
 	'mosaics',
 	'harvested_blocks',
-	'status',
 	'remote_status',
 	'min_cosignatories',
 	'cosignatory_of',
@@ -135,7 +134,6 @@ ACCOUNTS = [
 		99999,
 		[{'quantity': 1000000, 'namespace': 'nem.xem'}, {'quantity': 10, 'namespace': 'root.mosaic'}],
 		10,
-		'LOCKED',
 		'INACTIVE',
 		None,
 		None,
@@ -149,7 +147,6 @@ ACCOUNTS = [
 		99999,
 		[{'quantity': 3000000, 'namespace': 'nem.xem'}, {'quantity': 15, 'namespace': 'root.mosaic'}],
 		15,
-		'LOCKED',
 		'ACTIVE',
 		None,
 		None,
@@ -483,7 +480,6 @@ ACCOUNT_VIEWS = [
 		}],
 		harvested_fees=0.0,
 		harvested_blocks=ACCOUNTS[0].harvested_blocks,
-		status=ACCOUNTS[0].status,
 		remote_status=ACCOUNTS[0].remote_status,
 		last_harvested_height=0,
 		min_cosignatories=ACCOUNTS[0].min_cosignatories,
@@ -506,7 +502,6 @@ ACCOUNT_VIEWS = [
 		}],
 		harvested_fees=0.0,
 		harvested_blocks=ACCOUNTS[1].harvested_blocks,
-		status=ACCOUNTS[1].status,
 		remote_status=ACCOUNTS[1].remote_status,
 		last_harvested_height=0,
 		min_cosignatories=ACCOUNTS[1].min_cosignatories,
@@ -968,13 +963,12 @@ def initialize_database(db_config, network_name):
 					vested_balance,
 					mosaics,
 					harvested_blocks,
-					status,
 					remote_status,
 					min_cosignatories,
 					cosignatory_of,
 					cosignatories
 				)
-				VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+				VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
 				''', (
 					account.address.bytes,
 					account.public_key.bytes if account.public_key else None,
@@ -984,7 +978,6 @@ def initialize_database(db_config, network_name):
 					account.vested_balance,
 					json.dumps(account.mosaics),
 					account.harvested_blocks,
-					account.status,
 					account.remote_status,
 					account.min_cosignatories,
 					[address.bytes for address in account.cosignatory_of] if account.cosignatory_of else None,
