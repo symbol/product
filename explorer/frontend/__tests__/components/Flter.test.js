@@ -15,8 +15,16 @@ beforeAll(() => {
 	jest.spyOn(utils, 'useDebounce').mockImplementation(callback => {
 		return callback;
 	});
-	jest.spyOn(utils, 'useDataManager').mockImplementation(callback => {
-		return [callback];
+	jest.spyOn(utils, 'useDataManager').mockImplementation((callback, defaultData, onError) => {
+		const call = async (...args) => {
+			try {
+				return await callback(...args);
+			} catch (error) {
+				onError?.(error);
+			}
+		};
+
+		return [call];
 	});
 });
 
@@ -348,6 +356,202 @@ describe('Filter', () => {
 
 			// Act + Assert:
 			await runFilterOptionsTest(searchResponse, filterToPress, shouldUseSearch, expectedTextList);
+		});
+
+		it('selects labeled transaction type option by value', async () => {
+			// Arrange:
+			const changeFilter = jest.fn();
+			const labeledFilterConfig = [
+				{
+					name: 'type',
+					title: 'filter_type',
+					type: 'transaction-type',
+					options: [
+						{
+							label: 'Aggregate',
+							value: 'AGGREGATE'
+						}
+					]
+				}
+			];
+
+			// Act:
+			render(<Filter
+				isSelectedItemsShown
+				data={labeledFilterConfig}
+				isDisabled={false}
+				value={{}}
+				onChange={changeFilter}
+				search={jest.fn()}
+			/>);
+			fireEvent.click(screen.getByRole('button', { name: 'filter_type' }));
+			await waitFor(() => expect(screen.getByRole('dialog')).toBeInTheDocument());
+			fireEvent.click(screen.getByText('Aggregate'));
+
+			// Assert:
+			expect(changeFilter).toHaveBeenCalledWith({
+				type: 'AGGREGATE'
+			});
+		});
+
+		it('renders labeled transaction type option with configured icon', async () => {
+			// Arrange:
+			const changeFilter = jest.fn();
+			const labeledFilterConfig = [
+				{
+					name: 'type',
+					title: 'filter_type',
+					type: 'transaction-type',
+					options: [
+						{
+							label: 'Aggregate',
+							value: 'AGGREGATE',
+							iconSrc: '/images/transaction/aggregate.svg'
+						}
+					]
+				}
+			];
+
+			// Act:
+			render(<Filter
+				isSelectedItemsShown
+				data={labeledFilterConfig}
+				isDisabled={false}
+				value={{}}
+				onChange={changeFilter}
+				search={jest.fn()}
+			/>);
+			fireEvent.click(screen.getByRole('button', { name: 'filter_type' }));
+			await waitFor(() => expect(screen.getByRole('dialog')).toBeInTheDocument());
+
+			// Assert:
+			expect(screen.getByAltText('Aggregate')).toBeInTheDocument();
+			expect(screen.getByText('Aggregate')).toBeInTheDocument();
+		});
+
+		it('uses filter-specific search result creator', async () => {
+			// Arrange:
+			const changeFilter = jest.fn();
+			const search = jest.fn();
+			const resolvedAddress = 'TCNAOT3ZKSU45DVFCV3RHMTWHDKL4VS3LG33ELY';
+			const createSearchResult = jest.fn(() => ({
+				address: resolvedAddress,
+				value: 'resolved-filter-value'
+			}));
+			const directSearchFilterConfig = [
+				{
+					name: 'to',
+					title: 'filter_to',
+					type: 'account',
+					isSearchEnabled: true,
+					createSearchResult,
+					options: []
+				}
+			];
+
+			// Act:
+			render(<Filter
+				isSelectedItemsShown
+				data={directSearchFilterConfig}
+				isDisabled={false}
+				value={{}}
+				onChange={changeFilter}
+				search={search}
+			/>);
+			fireEvent.click(screen.getByRole('button', { name: 'filter_to' }));
+			await waitFor(() => expect(screen.getByRole('dialog')).toBeInTheDocument());
+			fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'recipient-search-text' } });
+			await waitFor(() => expect(createSearchResult).toHaveBeenCalledWith('recipient-search-text'));
+			await waitFor(() => expect(screen.getByText(resolvedAddress)).toBeInTheDocument(), { timeout: 3000 });
+			fireEvent.click(screen.getByText(resolvedAddress));
+
+			// Assert:
+			expect(createSearchResult).toHaveBeenCalledWith('recipient-search-text');
+			expect(search).not.toHaveBeenCalled();
+			expect(changeFilter).toHaveBeenCalledWith({
+				to: 'resolved-filter-value'
+			});
+		}, 5000);
+
+		it('uses filter-specific mosaic search result creator and waits for option selection', async () => {
+			// Arrange:
+			const changeFilter = jest.fn();
+			const search = jest.fn();
+			const resolvedMosaicId = '72C0212E67A08BCE';
+			const createSearchResult = jest.fn(() => ({
+				id: resolvedMosaicId,
+				name: 'symbol.xym'
+			}));
+			const directSearchFilterConfig = [
+				{
+					name: 'mosaic',
+					title: 'filter_mosaic',
+					type: 'mosaic',
+					isSearchEnabled: true,
+					createSearchResult,
+					options: []
+				}
+			];
+
+			// Act:
+			render(<Filter
+				isSelectedItemsShown
+				data={directSearchFilterConfig}
+				isDisabled={false}
+				value={{}}
+				onChange={changeFilter}
+				search={search}
+			/>);
+			fireEvent.click(screen.getByRole('button', { name: 'filter_mosaic' }));
+			await waitFor(() => expect(screen.getByRole('dialog')).toBeInTheDocument());
+			fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'symbol.xym' } });
+			await waitFor(() => expect(createSearchResult).toHaveBeenCalledWith('symbol.xym'));
+			await waitFor(() => expect(screen.getByText('symbol.xym')).toBeInTheDocument(), { timeout: 3000 });
+
+			// Assert:
+			expect(changeFilter).not.toHaveBeenCalled();
+
+			// Act:
+			fireEvent.click(screen.getByText('symbol.xym'));
+
+			// Assert:
+			expect(search).not.toHaveBeenCalled();
+			expect(changeFilter).toHaveBeenCalledWith({
+				mosaic: resolvedMosaicId
+			});
+		}, 5000);
+
+		it('reports filter-specific search errors', async () => {
+			// Arrange:
+			const searchError = new Error('INVALID_TRANSACTION_RECIPIENT_SEARCH_FORMAT');
+			const onSearchError = jest.fn();
+			const directSearchFilterConfig = [
+				{
+					name: 'to',
+					title: 'filter_to',
+					type: 'account',
+					isSearchEnabled: true,
+					createSearchResult: jest.fn().mockRejectedValue(searchError),
+					onSearchError,
+					options: []
+				}
+			];
+
+			// Act:
+			render(<Filter
+				isSelectedItemsShown
+				data={directSearchFilterConfig}
+				isDisabled={false}
+				value={{}}
+				onChange={jest.fn()}
+				search={jest.fn()}
+			/>);
+			fireEvent.click(screen.getByRole('button', { name: 'filter_to' }));
+			await waitFor(() => expect(screen.getByRole('dialog')).toBeInTheDocument());
+			fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'invalid-recipient' } });
+
+			// Assert:
+			await waitFor(() => expect(onSearchError).toHaveBeenCalledWith(searchError));
 		});
 	});
 });

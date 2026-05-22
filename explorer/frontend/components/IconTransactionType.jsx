@@ -1,8 +1,9 @@
 import CustomImage from './CustomImage';
 import { TRANSACTION_TYPE } from '@/constants';
 import styles from '@/styles/components/IconTransactionType.module.scss';
+import { pageConfig } from '@/variants';
 
-const iconTypeMap = {
+const defaultIconTypeMap = {
 	[TRANSACTION_TYPE.TRANSFER]: '/images/transaction/transfer.svg',
 	[TRANSACTION_TYPE.MOSAIC_CREATION]: '/images/transaction/mosaic-creation.svg',
 	[TRANSACTION_TYPE.MOSAIC_SUPPLY_CHANGE]: '/images/transaction/mosaic.svg',
@@ -12,8 +13,24 @@ const iconTypeMap = {
 	[TRANSACTION_TYPE.MULTISIG]: '/images/transaction/aggregate.svg'
 };
 
+export const getTransactionIconSrc = (value, transactionsConfig = pageConfig.transactions) => {
+	const iconTypeMap = {
+		...defaultIconTypeMap,
+		...(transactionsConfig?.iconTypeMap || {})
+	};
+
+	return iconTypeMap[value] || '/images/icon-transaction.svg';
+};
+
 const IconTransactionType = ({ value, className, style }) => {
-	return <CustomImage src={iconTypeMap[value]} className={`${styles.iconTransactionType} ${className}`} style={style} alt={value} />;
+	return (
+		<CustomImage
+			src={getTransactionIconSrc(value)}
+			className={`${styles.iconTransactionType} ${className}`}
+			style={style}
+			alt={value}
+		/>
+	);
 };
 
 export default IconTransactionType;

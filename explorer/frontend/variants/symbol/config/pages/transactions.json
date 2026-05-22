@@ -1,0 +1,85 @@
+{
+	"isDirectBlockSearchEnabled": true,
+	"isDirectMosaicSearchEnabled": true,
+	"isDirectRecipientSearchEnabled": true,
+	"isDirectSignerSearchEnabled": true,
+	"iconTypeMap": {
+		"ACCOUNT_KEY_LINK": "/images/transaction/account-link.svg",
+		"NODE_KEY_LINK": "/images/transaction/account-link.svg",
+		"AGGREGATE_COMPLETE": "/images/transaction/aggregate-complete.svg",
+		"AGGREGATE_BONDED": "/images/transaction/aggregate.svg",
+		"VOTING_KEY_LINK": "/images/transaction/account-link.svg",
+		"VRF_KEY_LINK": "/images/transaction/account-link.svg",
+		"HASH_LOCK": "/images/transaction/lock.svg",
+		"SECRET_LOCK": "/images/transaction/lock.svg",
+		"SECRET_PROOF": "/images/transaction/lock.svg",
+		"ACCOUNT_METADATA": "/images/transaction/metadata.svg",
+		"MOSAIC_METADATA": "/images/transaction/metadata.svg",
+		"NAMESPACE_METADATA": "/images/transaction/metadata.svg",
+		"MOSAIC_DEFINITION": "/images/transaction/mosaic.svg",
+		"MOSAIC_SUPPLY_CHANGE": "/images/transaction/mosaic.svg",
+		"MOSAIC_SUPPLY_REVOCATION": "/images/transaction/revoke.svg",
+		"MULTISIG_ACCOUNT_MODIFICATION": "/images/transaction/account-multisig.svg",
+		"ADDRESS_ALIAS": "/images/transaction/namespace.svg",
+		"MOSAIC_ALIAS": "/images/transaction/namespace.svg",
+		"NAMESPACE_REGISTRATION": "/images/transaction/namespace.svg",
+		"ACCOUNT_ADDRESS_RESTRICTION": "/images/transaction/restriction.svg",
+		"ACCOUNT_MOSAIC_RESTRICTION": "/images/transaction/restriction.svg",
+		"ACCOUNT_OPERATION_RESTRICTION": "/images/transaction/restriction.svg",
+		"MOSAIC_ADDRESS_RESTRICTION": "/images/transaction/restriction.svg",
+		"MOSAIC_GLOBAL_RESTRICTION": "/images/transaction/restriction.svg",
+		"TRANSFER": "/images/transaction/transfer.svg"
+	},
+	"typeFilterOptions": [
+		{
+			"label": "Transfer",
+			"iconSrc": "/images/transaction/transfer.svg",
+			"value": "TRANSFER"
+		},
+		{
+			"label": "Account",
+			"iconSrc": "/images/transaction/account.svg",
+			"value": "ACCOUNT"
+		},
+		{
+			"label": "Aggregate",
+			"iconSrc": "/images/transaction/aggregate.svg",
+			"value": "AGGREGATE"
+		},
+		{
+			"label": "Alias",
+			"iconSrc": "/images/transaction/namespace.svg",
+			"value": "ALIAS"
+		},
+		{
+			"label": "Metadata",
+			"iconSrc": "/images/transaction/metadata.svg",
+			"value": "METADATA"
+		},
+		{
+			"label": "Mosaic",
+			"iconSrc": "/images/transaction/mosaic.svg",
+			"value": "MOSAIC"
+		},
+		{
+			"label": "Namespace",
+			"iconSrc": "/images/transaction/namespace.svg",
+			"value": "NAMESPACE"
+		},
+		{
+			"label": "Restriction",
+			"iconSrc": "/images/transaction/restriction.svg",
+			"value": "RESTRICTION"
+		},
+		{
+			"label": "Secret",
+			"iconSrc": "/images/transaction/lock.svg",
+			"value": "SECRET"
+		},
+		{
+			"label": "Key Link",
+			"iconSrc": "/images/transaction/account-link.svg",
+			"value": "KEY_LINK"
+		}
+	]
+}

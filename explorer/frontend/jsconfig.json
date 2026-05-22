@@ -13,7 +13,8 @@
 			"@/variants": ["variants"],
 			"@/variants/*": ["variants/*"],
 			"@/utils": ["utils"],
-			"@/utils/*": ["utils/*"]
+			"@/utils/*": ["utils/*"],
+			"symbol-sdk/symbol": ["node_modules/symbol-sdk/src/symbol/index.js"]
 		}
 	},
 	"exclude": ["**/node_modules/*", "**/build/*", "**/scripts/*"]

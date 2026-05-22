@@ -1,6 +1,12 @@
 import { search } from '@/api/search';
 import { fetchTransactionChart, fetchTransactionStats } from '@/api/stats';
-import { fetchTransactionPage } from '@/api/transactions';
+import {
+	fetchTransactionPage,
+	resolveTransactionBlockSearch,
+	resolveTransactionMosaicSearch,
+	resolveTransactionRecipientSearch,
+	resolveTransactionSignerSearch
+} from '@/api/transactions';
 import ButtonCSV from '@/components/ButtonCSV';
 import ChartColumns from '@/components/ChartColumns';
 import Field from '@/components/Field';
@@ -26,9 +32,11 @@ import {
 	usePagination,
 	useStorage
 } from '@/utils';
+import { pageConfig } from '@/variants';
 import Head from 'next/head';
 import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
+import { toast } from 'react-toastify';
 
 export const getServerSideProps = async ({ locale }) => {
 	const transactionsPage = await fetchTransactionPage();
@@ -44,7 +52,7 @@ export const getServerSideProps = async ({ locale }) => {
 };
 
 const TransactionInfo = ({ preloadedData, stats }) => {
-	const { t } = useTranslation();
+	const { t, i18n } = useTranslation();
 	const [contacts] = useStorage(STORAGE_KEY.ADDRESS_BOOK, []);
 	const { requestNextPage, data, isLoading, isLastPage, isError, filter, changeFilter } = usePagination(
 		fetchTransactionPage,
@@ -53,6 +61,13 @@ const TransactionInfo = ({ preloadedData, stats }) => {
 	const chart = useFilter(fetchTransactionChart, [], true);
 	const chartType = transactionChartFilterToType(chart.filter);
 	const formattedChartData = formatTransactionChart(chart.data, chartType, t);
+	const transactionTypeFilterOptions = (pageConfig.transactions?.typeFilterOptions || Object.values(TRANSACTION_TYPE))
+		.map(option => typeof option === 'string' ? { type: option } : option);
+	const isDirectBlockSearchEnabled = pageConfig.transactions?.isDirectBlockSearchEnabled;
+	const isDirectMosaicSearchEnabled = pageConfig.transactions?.isDirectMosaicSearchEnabled;
+	const isDirectRecipientSearchEnabled = pageConfig.transactions?.isDirectRecipientSearchEnabled;
+	const isDirectSignerSearchEnabled = pageConfig.transactions?.isDirectSignerSearchEnabled;
+	const translateToast = key => i18n.t(key, { ns: 'common' });
 
 	const tableColumns = [
 		{
@@ -100,7 +115,7 @@ const TransactionInfo = ({ preloadedData, stats }) => {
 			title: t('filter_type'),
 			conflicts: ['mosaic', 'to'],
 			type: 'transaction-type',
-			options: Object.values(TRANSACTION_TYPE).map(type => ({ type }))
+			options: transactionTypeFilterOptions
 		},
 		{
 			name: 'from',
@@ -108,7 +123,15 @@ const TransactionInfo = ({ preloadedData, stats }) => {
 			type: 'account',
 			conflicts: [],
 			isSearchEnabled: true,
-			options: contacts
+			...(isDirectSignerSearchEnabled && {
+				createSearchResult: resolveTransactionSignerSearch,
+				onSearchError: error => toast.error(translateToast(
+					error.message === 'TRANSACTION_SIGNER_PUBLIC_KEY_NOT_FOUND'
+						? 'message_transactionSignerPublicKeyNotFound'
+						: 'message_invalidTransactionSignerSearch'
+				))
+			}),
+			options: isDirectSignerSearchEnabled ? [] : contacts
 		},
 		{
 			name: 'to',
@@ -116,6 +139,10 @@ const TransactionInfo = ({ preloadedData, stats }) => {
 			type: 'account',
 			conflicts: ['types'],
 			isSearchEnabled: true,
+			...(isDirectRecipientSearchEnabled && {
+				createSearchResult: resolveTransactionRecipientSearch,
+				onSearchError: () => toast.error(translateToast('message_invalidTransactionRecipientSearch'))
+			}),
 			options: contacts
 		},
 		{
@@ -123,14 +150,26 @@ const TransactionInfo = ({ preloadedData, stats }) => {
 			title: t('filter_mosaic'),
 			type: 'mosaic',
 			conflicts: ['types'],
-			isSearchEnabled: true
+			isSearchEnabled: true,
+			...(isDirectMosaicSearchEnabled && {
+				createSearchResult: resolveTransactionMosaicSearch,
+				onSearchError: error => toast.error(translateToast(
+					error.message === 'TRANSACTION_MOSAIC_ALIAS_NOT_FOUND'
+						? 'message_nothingFound'
+						: 'message_invalidTransactionMosaicSearch'
+				))
+			})
 		},
 		{
 			name: 'height',
 			title: t('filter_block'),
 			type: 'block',
 			conflicts: [],
-			isSearchEnabled: true
+			isSearchEnabled: true,
+			...(isDirectBlockSearchEnabled && {
+				createSearchResult: resolveTransactionBlockSearch,
+				onSearchError: () => toast.error(translateToast('message_invalidTransactionBlockSearch'))
+			})
 		}
 	];
 

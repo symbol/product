@@ -27,7 +27,11 @@ const createNemApi = () => ({
 	fetchMarketData: call(() => import('./nem/api/stats'), 'fetchMarketData'),
 	fetchPriceByDate: call(() => import('./nem/api/stats'), 'fetchPriceByDate'),
 	fetchTransactionPage: call(() => import('./nem/api/transactions'), 'fetchTransactionPage'),
-	fetchTransactionInfo: call(() => import('./nem/api/transactions'), 'fetchTransactionInfo')
+	fetchTransactionInfo: call(() => import('./nem/api/transactions'), 'fetchTransactionInfo'),
+	resolveTransactionBlockSearch: call(() => import('./nem/api/transactions'), 'resolveTransactionBlockSearch'),
+	resolveTransactionMosaicSearch: call(() => import('./nem/api/transactions'), 'resolveTransactionMosaicSearch'),
+	resolveTransactionRecipientSearch: call(() => import('./nem/api/transactions'), 'resolveTransactionRecipientSearch'),
+	resolveTransactionSignerSearch: call(() => import('./nem/api/transactions'), 'resolveTransactionSignerSearch')
 });
 
 const createSymbolApi = () => ({
@@ -52,7 +56,11 @@ const createSymbolApi = () => ({
 	fetchMarketData: call(() => import('./symbol/api/stats'), 'fetchMarketData'),
 	fetchPriceByDate: call(() => import('./symbol/api/stats'), 'fetchPriceByDate'),
 	fetchTransactionPage: call(() => import('./symbol/api/transactions'), 'fetchTransactionPage'),
-	fetchTransactionInfo: call(() => import('./symbol/api/transactions'), 'fetchTransactionInfo')
+	fetchTransactionInfo: call(() => import('./symbol/api/transactions'), 'fetchTransactionInfo'),
+	resolveTransactionBlockSearch: call(() => import('./symbol/api/transactions'), 'resolveTransactionBlockSearch'),
+	resolveTransactionMosaicSearch: call(() => import('./symbol/api/transactions'), 'resolveTransactionMosaicSearch'),
+	resolveTransactionRecipientSearch: call(() => import('./symbol/api/transactions'), 'resolveTransactionRecipientSearch'),
+	resolveTransactionSignerSearch: call(() => import('./symbol/api/transactions'), 'resolveTransactionSignerSearch')
 });
 
 const loadNemVariant = () => {

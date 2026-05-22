@@ -158,15 +158,21 @@ a {
 	top: $spacing-header-height;
 }
 
+.Toastify__toast {
+	color: $color-text-body;
+	background: $color-background-card;
+}
+
 :root {
 	--toastify-color-info: #{$color-info};
 	--toastify-color-success: #{$color-success};
 	--toastify-color-warning: #{$color-warning};
 	--toastify-color-error: #{$color-danger};
 	--toastify-toast-width: 20rem;
-	--toastify-toast-background: #fff;
+	--toastify-toast-background: #{$color-background-card};
 	--toastify-toast-min-height: 2rem;
 	--toastify-toast-max-height: 5rem;
+	--toastify-text-color-light: #{$color-text-body};
 }
 
 .disable-scroll {

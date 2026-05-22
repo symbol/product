@@ -26,6 +26,7 @@ import ValueTransactionType from '@/components/ValueTransactionType';
 import { STORAGE_KEY, TRANSACTION_TYPE } from '@/constants';
 import styles from '@/styles/pages/AccountInfo.module.scss';
 import { formatMosaicCSV, formatTransactionCSV, useClientSideFilter, usePagination, useStorage, useUserCurrencyAmount } from '@/utils';
+import { pageConfig } from '@/variants';
 import Head from 'next/head';
 import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
@@ -58,6 +59,8 @@ const AccountInfo = ({ accountInfo, preloadedTransactions }) => {
 	const transactionPagination = usePagination(fetchTransactionPage, preloadedTransactions, { address });
 	const mosaics = useClientSideFilter(accountInfo.mosaics);
 	const isMultisigSectionShown = accountInfo.isMultisig || accountInfo.cosignatoryOf.length > 0;
+	const transactionTypeFilterOptions = (pageConfig.transactions?.typeFilterOptions || Object.values(TRANSACTION_TYPE))
+		.map(option => typeof option === 'string' ? { type: option } : option);
 
 	const mosaicFilterConfig = [
 		{
@@ -126,7 +129,7 @@ const AccountInfo = ({ accountInfo, preloadedTransactions }) => {
 			title: t('filter_type'),
 			conflicts: ['mosaic', 'to'],
 			type: 'transaction-type',
-			options: Object.values(TRANSACTION_TYPE).map(type => ({ type }))
+			options: transactionTypeFilterOptions
 		},
 		{
 			name: 'from',

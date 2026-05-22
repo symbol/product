@@ -12,6 +12,76 @@ jest.mock('@/contexts/ConfigContext', () => ({
 	useConfig: jest.fn()
 }));
 
+jest.mock('symbol-sdk', () => ({
+	Hash256: {
+		zero: jest.fn(() => '0'.repeat(64))
+	},
+	PublicKey: jest.fn().mockImplementation(function (value) {
+		this.value = value;
+	})
+}));
+
+const base32Encode = bytes => {
+	const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+	let bits = 0;
+	let value = 0;
+	let output = '';
+
+	bytes.forEach(byte => {
+		value = (value << 8) | byte;
+		bits += 8;
+
+		while (5 <= bits) {
+			output += alphabet[(value >>> (bits - 5)) & 31];
+			bits -= 5;
+		}
+	});
+
+	if (0 < bits)
+		output += alphabet[(value << (5 - bits)) & 31];
+
+	return output;
+};
+
+const hexToBytes = hex => new Uint8Array(hex.match(/.{2}/g).map(byte => parseInt(byte, 16)));
+
+jest.mock('symbol-sdk/symbol', () => {
+	function Network() {}
+
+	Network.NETWORKS = [
+		{
+			identifier: 152,
+			publicKeyToAddress: () => ({
+				toString: () => 'TCNAOT3ZKSU45DVFCV3RHMTWHDKL4VS3LG33ELY'
+			})
+		}
+	];
+
+	return {
+		Address: {
+			fromDecodedAddressHexString: hex => ({
+				toString: () => base32Encode(hexToBytes(hex))
+			})
+		},
+		generateNamespacePath: name => {
+			const namespaceIds = {
+				'pasomi.sn': [0xC440B80BCE158950n, 0xCC5FD5CF9AB1A84An],
+				'symbol.xym': [0xA95F1F8A96159516n, 0xE74B99BA41F4AFEEn],
+				'tes1.sub1': [0xC308F07908B26A58n, 0xDAF0482B1DA42F1En]
+			};
+
+			if (namespaceIds[name])
+				return namespaceIds[name];
+
+			if (/^[a-z0-9][a-z0-9_-]*(\.[a-z0-9][a-z0-9_-]*)*$/.test(name))
+				return [0xA000000000000001n];
+
+			throw new Error(`fully qualified name is invalid due to invalid part name (${name})`);
+		},
+		Network
+	};
+});
+
 // React 18 scheduler expects MessageChannel which jsdom environment lacks.
 window.MessageChannel = jest.fn().mockImplementation(() => {
 	let onmessage;

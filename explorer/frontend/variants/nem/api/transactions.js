@@ -101,6 +101,27 @@ export const fetchTransactionInfo = createTryFetchInfoFunction(async hash => {
 	};
 });
 
+export const resolveTransactionRecipientSearch = async text => ({
+	address: `${text}`.trim().toUpperCase()
+});
+
+export const resolveTransactionSignerSearch = async text => ({
+	address: `${text}`.trim().toUpperCase()
+});
+
+export const resolveTransactionBlockSearch = async text => ({
+	height: `${text}`.trim()
+});
+
+export const resolveTransactionMosaicSearch = async text => {
+	const id = `${text}`.trim();
+
+	return {
+		id,
+		name: id
+	};
+};
+
 /**
  * Maps the transaction from the DTO.
  * @param {object} data - raw data from response

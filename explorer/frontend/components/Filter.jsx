@@ -22,7 +22,7 @@ const renderItem = (item, type, onSelect) => {
 				size="md"
 				isNavigationDisabled
 				isCopyDisabled
-				onClick={() => onSelect(item.address, item)}
+				onClick={() => onSelect(item.value || item.address, item)}
 			/>
 		);
 	case 'block':
@@ -47,8 +47,9 @@ const renderItem = (item, type, onSelect) => {
 		);
 	case 'transaction-type':
 		return (
-			<div onClick={() => onSelect(item.type, item)}>
-				<ValueTransactionType value={item.type} />
+			<div className={styles.transactionTypeOption} onClick={() => onSelect(item.value || item.type, item)}>
+				{item.iconSrc && <CustomImage src={item.iconSrc} className={styles.transactionTypeIcon} alt={item.label || item.type} />}
+				{item.label || <ValueTransactionType value={item.type} hideIcon={!!item.iconSrc} />}
 			</div>
 		);
 	default:
@@ -56,7 +57,18 @@ const renderItem = (item, type, onSelect) => {
 	}
 };
 
-const FilterModal = ({ isVisible, title, type, isSearchEnabled, options, onSearchRequest, onClose, onSelect }) => {
+const FilterModal = ({
+	isVisible,
+	title,
+	type,
+	isSearchEnabled,
+	options,
+	createSearchResult,
+	onSearchError,
+	onSearchRequest,
+	onClose,
+	onSelect
+}) => {
 	const [text, setText] = useState('');
 	const [searchResult, setSearchResult] = useState(null);
 	const [search, isLoading] = useDataManager(async text => {
@@ -66,7 +78,21 @@ const FilterModal = ({ isVisible, title, type, isSearchEnabled, options, onSearc
 		else
 			setSearchResult(null);
 	});
-	const [delayedSearch] = useDebounce(text => search(text));
+	const searchDirectly = async text => {
+		setSearchResult(null);
+
+		try {
+			setSearchResult(await createSearchResult(text));
+		} catch (error) {
+			onSearchError?.(error);
+		}
+	};
+	const [delayedSearch] = useDebounce(text => {
+		if (createSearchResult)
+			searchDirectly(text);
+		else
+			search(text);
+	});
 	const handleSearchTextChange = text => {
 		setText(text);
 		delayedSearch(text);
@@ -82,7 +108,7 @@ const FilterModal = ({ isVisible, title, type, isSearchEnabled, options, onSearc
 		case 'mosaic':
 			return item.name;
 		case 'transaction-type':
-			return item.type;
+			return item.value || item.type;
 		default:
 			return index;
 		}
@@ -229,6 +255,8 @@ const Filter = ({ isSelectedItemsShown, data, value, search, isDisabled, onChang
 				type={expandedFilter?.type}
 				isSearchEnabled={expandedFilter?.isSearchEnabled}
 				options={expandedFilter?.options || []}
+				createSearchResult={expandedFilter?.createSearchResult}
+				onSearchError={expandedFilter?.onSearchError}
 				onClose={() => setExpandedFilter(null)}
 				onSelect={handleFilterSelection}
 				onSearchRequest={search}

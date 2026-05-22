@@ -1,14 +1,28 @@
+/* eslint-disable import/no-deprecated */
 import config from '@/config';
 import { createPage, createSearchCriteria, makeRequest } from '@/utils/server';
-
-const BASE32_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+import { Hash256, PublicKey } from 'symbol-sdk';
+import { Address, Network } from 'symbol-sdk/symbol';
 
 export const createSymbolApiUrl = path => `${config.SYMBOL_NODE_URL}/${path}`;
+
+const createURLSearchParams = values => {
+	const params = new URLSearchParams();
+
+	Object.entries(values).forEach(([key, value]) => {
+		if (Array.isArray(value))
+			value.forEach(item => params.append(key, item));
+		else
+			params.append(key, value);
+	});
+
+	return params;
+};
 
 export const createSymbolSearchURL = (path, searchParams = {}, additionalParams = {}) => {
 	const { pageNumber, pageSize, filter } = createSearchCriteria(searchParams);
 	const symbolPageSize = Math.min(pageSize, 100);
-	const params = new URLSearchParams({
+	const params = createURLSearchParams({
 		pageNumber,
 		pageSize: symbolPageSize,
 		order: filter.order || 'desc',
@@ -40,41 +54,31 @@ export const symbolTimestampToDate = timestamp => {
 
 export const absoluteToRelative = amount => Number(amount || 0) / Math.pow(10, config.NATIVE_MOSAIC_DIVISIBILITY || 0);
 
-const base32Encode = bytes => {
-	let bits = 0;
-	let value = 0;
-	let output = '';
-
-	bytes.forEach(byte => {
-		value = (value << 8) | byte;
-		bits += 8;
-
-		while (5 <= bits) {
-			output += BASE32_ALPHABET[(value >>> (bits - 5)) & 31];
-			bits -= 5;
-		}
-	});
-
-	if (0 < bits)
-		output += BASE32_ALPHABET[(value << (5 - bits)) & 31];
-
-	return output;
-};
-
 export const hexToSymbolAddress = hex => {
 	if (!/^[0-9A-Fa-f]{48}$/.test(hex))
 		return hex;
 
-	const bytes = new Uint8Array(hex.match(/.{2}/g).map(byte => parseInt(byte, 16)));
-
-	return base32Encode(bytes);
+	return Address.fromDecodedAddressHexString(hex).toString();
 };
 
+export const isSymbolAddress = value => /^[A-Z2-7]{39}$/i.test(`${value}`.trim().replace(/-/g, ''));
+
+export const isSymbolPublicKey = value => /^[0-9A-Fa-f]{64}$/.test(`${value}`.trim());
+
 export const publicKeyToSymbolAddress = publicKeyHex => {
-	if (!/^[0-9A-Fa-f]{64}$/.test(publicKeyHex))
+	if (!isSymbolPublicKey(publicKeyHex))
 		return publicKeyHex;
 
-	return publicKeyHex;
+	const networkIdentifier = Number(config.SYMBOL_NETWORK_IDENTIFIER);
+	const network = Network.NETWORKS.find(item => item.identifier === networkIdentifier) ||
+		new Network(
+			'custom',
+			networkIdentifier,
+			new Date(Number(config.SYMBOL_EPOCH_ADJUSTMENT || 0) * 1000),
+			Hash256.zero()
+		);
+
+	return network.publicKeyToAddress(new PublicKey(publicKeyHex)).toString();
 };
 
 export const unsupportedSymbolFeature = feature => {
