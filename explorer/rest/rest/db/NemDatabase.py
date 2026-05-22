@@ -1,3 +1,4 @@
+# pylint: disable=too-many-lines
 from binascii import hexlify
 
 from symbolchain.CryptoTypes import PublicKey
@@ -219,7 +220,7 @@ class NemDatabase(DatabaseConnectionPool):
 			value = None
 			embedded_transaction.append({
 				'initiator': _format_address_bytes_to_string(transaction.from_address),
-				'transactionHash': _format_bytes(inner_transaction.transaction_hash),
+				'transactionHash': _format_bytes(inner_transaction.transaction_hash) if inner_transaction.transaction_hash else None,
 				'transactionType': TransactionType(inner_transaction.transaction_type).name,
 				'signatures': [{
 					'fee': _format_xem_relative(signature['fee']),
@@ -237,7 +238,7 @@ class NemDatabase(DatabaseConnectionPool):
 			to_address = _format_address_bytes_to_string(inner_transaction.to_address) if inner_transaction.to_address else None
 
 		return TransactionView(
-			transaction_hash=_format_bytes(transaction.transaction_hash),
+			transaction_hash=_format_bytes(transaction.transaction_hash) if transaction.transaction_hash else None,
 			transaction_type=TransactionType(transaction.transaction_type).name,
 			from_address=from_address,
 			to_address=to_address,
@@ -854,3 +855,163 @@ class NemDatabase(DatabaseConnectionPool):
 			]
 
 		return [self._create_transaction_view(transaction) for transaction in transactions]
+
+	def _convert_timestamp_to_datetime(self, timestamp):
+		return self.network.datetime_converter.to_datetime(timestamp).strftime('%Y-%m-%d %H:%M:%S')
+
+	def _create_unconfirmed_mosaic_records(self, mosaics, amount):
+		if not mosaics:
+			# create default nem.xem mosaic record for v1 transfer transaction
+			return [
+				{
+					'namespace_name': 'nem.xem',
+					'quantity': amount,
+					'divisibility': 6
+				}
+			]
+
+		mosaic_names = [mosaic.namespace_name for mosaic in mosaics]
+		divisibility_map = self._get_mosaic_divisibility_by_names(mosaic_names)
+		mosaic_records = []
+		for mosaic in mosaics:
+			namespace_name = mosaic.namespace_name
+			mosaic_records.append({
+				'namespace_name': namespace_name,
+				'quantity': mosaic.quantity * amount // (10 ** 6),
+				'divisibility': divisibility_map.get(namespace_name, 0)
+			})
+
+		return mosaic_records
+
+	def _build_unconfirmed_transaction_record(self, transaction):
+		"""Converts a connector unconfirmed transaction response into a database-style transaction record."""
+
+		payload = None
+		recipient_address = None
+		mosaics = None
+		if transaction.transaction_type == TransactionType.TRANSFER.value:
+			payload = {
+				'message': {
+					'payload': transaction.message.payload,
+					'is_plain': transaction.message.is_plain,
+				} if transaction.message else None
+			}
+			recipient_address = transaction.recipient.bytes
+			mosaics = self._create_unconfirmed_mosaic_records(transaction.mosaics, transaction.amount)
+		elif transaction.transaction_type == TransactionType.ACCOUNT_KEY_LINK.value:
+			payload = {
+				'mode': transaction.mode,
+				'remote_account': str(transaction.remote_account)
+			}
+		elif transaction.transaction_type == TransactionType.MULTISIG_ACCOUNT_MODIFICATION.value:
+			payload = {
+				'min_cosignatories': transaction.min_cosignatories,
+				'modifications': [
+					{
+						'modification_type': modification.modification_type,
+						'cosignatory_account': str(modification.cosignatory_account)
+					}
+					for modification in transaction.modifications
+				]
+			}
+		elif transaction.transaction_type == TransactionType.MULTISIG.value:
+			payload = {
+				'inner_hash': transaction.inner_hash,
+				'signatures': [
+					{
+						'transaction_type': signature.transaction_type,
+						'timestamp': self._convert_timestamp_to_datetime(signature.timestamp),
+						'deadline': self._convert_timestamp_to_datetime(signature.deadline),
+						'fee': signature.fee,
+						'other_hash': signature.other_hash,
+						'other_account': str(signature.other_account),
+						'sender': str(signature.sender),
+						'signature': signature.signature
+					} for signature in transaction.signatures
+				]
+			}
+		elif transaction.transaction_type == TransactionType.NAMESPACE_REGISTRATION.value:
+			payload = {
+				'rental_fee': transaction.rental_fee,
+				'parent': transaction.parent,
+				'namespace': transaction.namespace
+			}
+			recipient_address = transaction.rental_fee_sink.bytes
+		elif transaction.transaction_type == TransactionType.MOSAIC_DEFINITION.value:
+			payload = {
+				'creation_fee': transaction.creation_fee,
+				'creator': str(transaction.sender),
+				'description': transaction.description,
+				'namespace_name': transaction.namespace_name,
+				'mosaic_properties': {
+					'divisibility': transaction.properties.divisibility,
+					'initial_supply': transaction.properties.initial_supply,
+					'supply_mutable': transaction.properties.supply_mutable,
+					'transferable': transaction.properties.transferable
+				},
+				'levy': {
+					'type': transaction.levy.type,
+					'namespace_name': transaction.levy.namespace_name,
+					'fee': transaction.levy.fee,
+					'recipient': str(transaction.levy.recipient)
+				} if transaction.levy else None
+			}
+			recipient_address = transaction.creation_fee_sink.bytes
+		elif transaction.transaction_type == TransactionType.MOSAIC_SUPPLY_CHANGE.value:
+			payload = {
+				'namespace_name': transaction.namespace_name,
+				'supply_type': transaction.supply_type,
+				'delta': transaction.delta
+			}
+
+		return TransactionRecord(
+			transaction_hash=None,
+			transaction_type=transaction.transaction_type,
+			from_address=self.network.public_key_to_address(transaction.sender).bytes,
+			fee=transaction.fee,
+			height=0,
+			timestamp=self._convert_timestamp_to_datetime(transaction.timestamp),
+			deadline=self._convert_timestamp_to_datetime(transaction.deadline),
+			signature=bytes.fromhex(transaction.signature) if transaction.signature else None,
+			to_address=recipient_address,
+			payload=payload,
+			mosaics=mosaics
+		)
+
+	def _get_mosaic_divisibility_by_names(self, names):
+		"""Gets mosaic by namespace name in database."""
+
+		sql = '''
+			SELECT
+				m.namespace_name,
+				m.divisibility
+			FROM mosaics m
+			WHERE m.namespace_name IN %s
+			'''
+
+		with self.connection() as connection:
+			cursor = connection.cursor()
+			cursor.execute(sql, (tuple(names),))
+			results = cursor.fetchall()
+
+			return {result[0]: result[1] for result in results}
+
+	def get_unconfirmed_transactions(self, transactions):
+		"""Gets unconfirmed transactions."""
+
+		unconfirmed_transactions = []
+
+		for transaction in transactions:
+			if transaction.transaction_type == TransactionType.MULTISIG.value:
+				inner_transaction = self._build_unconfirmed_transaction_record(transaction.other_transaction)
+			else:
+				inner_transaction = None
+
+			unconfirmed_transactions.append(
+				self._create_transaction_view(
+					self._build_unconfirmed_transaction_record(transaction),
+					inner_transaction
+				)
+			)
+
+		return unconfirmed_transactions

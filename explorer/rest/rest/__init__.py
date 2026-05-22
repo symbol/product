@@ -353,6 +353,12 @@ def setup_nem_routes(app, nem_api_facade):  # pylint: disable=too-many-statement
 
 		return jsonify(results)
 
+	@app.route('/api/nem/transactions/unconfirmed')
+	async def api_get_nem_transactions_unconfirmed():
+		result = await nem_api_facade.get_unconfirmed_transactions()
+
+		return jsonify(result)
+
 
 def setup_error_handlers(app):
 	@app.errorhandler(404)
