@@ -1,5 +1,5 @@
 import asyncio
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 from symbollightapi.model.Exceptions import NodeException
 
@@ -255,6 +255,21 @@ class TestNemRestFacade(DatabaseTestBase):  # pylint: disable=too-many-public-me
 		self.assertEqual(EXPECTED_BLOCK_2['timestamp'], result['lastDBSyncedAt'])
 		self.assertEqual(EXPECTED_BLOCK_2['height'], result['lastDBHeight'])
 		self.assertEqual([{'type': 'synchronization', 'message': 'Connection refused'}], result['errors'])
+
+	# endregion
+
+	# region unconfirmed transactions
+
+	@patch('rest.facade.NemRestFacade.NemConnector.get_unconfirmed_transactions')
+	def test_can_retrieve_empty_unconfirmed_transactions(self, mock_get_unconfirmed_transactions):
+		# Arrange:
+		mock_get_unconfirmed_transactions.return_value = AsyncMock(return_value=[])
+
+		# Act:
+		result = asyncio.run(self.nem_rest_facade.get_unconfirmed_transactions())
+
+		# Assert:
+		self.assertEqual([], result)
 
 	# endregion
 

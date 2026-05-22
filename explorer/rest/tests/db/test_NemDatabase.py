@@ -1,5 +1,24 @@
+from symbolchain.CryptoTypes import PublicKey
+from symbolchain.nem.Network import Address
+from symbollightapi.model.Transaction import (
+	AccountKeyLinkTransaction,
+	CosignSignatureTransaction,
+	Message,
+	Modification,
+	Mosaic,
+	MosaicDefinitionTransaction,
+	MosaicLevy,
+	MosaicProperties,
+	MosaicSupplyChangeTransaction,
+	MultisigAccountModificationTransaction,
+	MultisigTransaction,
+	NamespaceRegistrationTransaction,
+	TransferTransaction
+)
+
 from rest import Pagination, Sorting
 from rest.db.NemDatabase import NemDatabase
+from rest.model.Transaction import TransactionView
 
 from ..test.DatabaseTestUtils import (
 	ACCOUNT_STATISTIC_VIEW,
@@ -38,6 +57,248 @@ EXPECTED_MOSAIC_VIEW_1 = MOSAIC_VIEWS[0]
 EXPECTED_MOSAIC_VIEW_2 = MOSAIC_VIEWS[1]
 
 EXPECTED_MOSAIC_VIEW_3 = MOSAIC_VIEWS[2]
+
+NEM_CONNECTOR_UNCONFIRMED_TRANSACTIONS = [
+	AccountKeyLinkTransaction(
+		transaction_hash=None,
+		height=0,
+		sender=PublicKey('22df5f43ee3739a10c346b3ec2d3878668c5514696be425f9067d3a11c777f1d'),
+		fee=150000,
+		timestamp=73397,
+		deadline=83397,
+		signature='0' * 128,
+		mode=1,
+		remote_account=PublicKey('7195f4d7a40ad7e31958ae96c4afed002962229675a4cae8dc8a18e290618981')
+	),
+	TransferTransaction(
+		transaction_hash=None,
+		height=0,
+		sender=PublicKey('22df5f43ee3739a10c346b3ec2d3878668c5514696be425f9067d3a11c777f1d'),
+		fee=150000,
+		timestamp=73397,
+		deadline=83397,
+		signature='0' * 128,
+		amount=1999999,
+		recipient=Address('NCOPERAWEWCD4A34NP5UQCCKEX44MW4SL3QYJYS5'),
+		mosaics=[
+			Mosaic(namespace_name='nem.xem', quantity=8000000),
+			Mosaic(namespace_name='root.mosaic', quantity=20),
+		],
+		message=Message(
+			payload='test message',
+			is_plain=1
+		)
+	),
+	MultisigAccountModificationTransaction(
+		transaction_hash=None,
+		height=0,
+		sender=PublicKey('22df5f43ee3739a10c346b3ec2d3878668c5514696be425f9067d3a11c777f1d'),
+		fee=150000,
+		timestamp=73397,
+		deadline=83397,
+		signature='0' * 128,
+		min_cosignatories=2,
+		modifications=[
+			Modification(1, PublicKey('1fbdbdde28daf828245e4533765726f0b7790e0b7146e2ce205df3e86366980b')),
+			Modification(1, PublicKey('f94e8702eb1943b23570b1b83be1b81536df35538978820e98bfce8f999e2d37'))
+		]
+	),
+	NamespaceRegistrationTransaction(
+		transaction_hash=None,
+		height=0,
+		sender=PublicKey('22df5f43ee3739a10c346b3ec2d3878668c5514696be425f9067d3a11c777f1d'),
+		fee=150000,
+		timestamp=73397,
+		deadline=83397,
+		signature='0' * 128,
+		rental_fee_sink=Address('NAMESPACEWH4MKFMBCVFERDPOOP4FK7MTBXDPZZA'),
+		rental_fee=100000000,
+		parent=None,
+		namespace='namespace'
+	),
+	MosaicDefinitionTransaction(
+		transaction_hash=None,
+		height=0,
+		sender=PublicKey('22df5f43ee3739a10c346b3ec2d3878668c5514696be425f9067d3a11c777f1d'),
+		fee=150000,
+		timestamp=73397,
+		deadline=83397,
+		signature='0' * 128,
+		creation_fee=10000000,
+		creation_fee_sink=Address('NBMOSAICOD4F54EE5CDMR23CCBGOAM2XSIUX6TRS'),
+		creator=PublicKey('22df5f43ee3739a10c346b3ec2d3878668c5514696be425f9067d3a11c777f1d'),
+		description='NEM namespace test',
+		properties=MosaicProperties(4, 3100000, False, True),
+		levy=MosaicLevy(500, Address('NBRYCNWZINEVNITUESKUMFIENWKYCRUGNFZV25AV'), 1, 'nem.xem'),
+		namespace_name='namespace.test'
+	),
+	MosaicSupplyChangeTransaction(
+		transaction_hash=None,
+		height=0,
+		sender=PublicKey('22df5f43ee3739a10c346b3ec2d3878668c5514696be425f9067d3a11c777f1d'),
+		fee=150000,
+		timestamp=73397,
+		deadline=83397,
+		signature='0' * 128,
+		supply_type=2,
+		delta=500000,
+		namespace_name='namespace.test'
+	),
+	MultisigTransaction(
+		transaction_hash=None,
+		height=0,
+		sender=PublicKey('aa455d831430872feb0c6ae14265209182546c985a321c501be7fdc96ed04757'),
+		fee=500000,
+		timestamp=73397,
+		deadline=83397,
+		signature='0' * 128,
+		signatures=[
+			CosignSignatureTransaction(
+				timestamp=261593985,
+				other_hash='0' * 64,
+				other_account=Address('NAGJG3QFWYZ37LMI7IQPSGQNYADGSJZGJRD2DIYA'),
+				sender=PublicKey('ae6754c70b7e3ba0c51617c8f9efd462d0bf680d45e09c3444e817643d277826'),
+				fee=500000,
+				deadline=261680385,
+				signature='0' * 128
+			)
+		],
+		other_transaction=TransferTransaction(
+			transaction_hash=None,
+			height=None,
+			sender=PublicKey('fbae41931de6a0cc25153781321f3de0806c7ba9a191474bb9a838118c8de4d3'),
+			fee=750000,
+			timestamp=73397,
+			deadline=83397,
+			signature=None,
+			amount=150000000000,
+			recipient=Address('NBUH72UCGBIB64VYTAAJ7QITJ62BLISFFQOHVP65'),
+			mosaics=None,
+			message=None
+		),
+		inner_hash='0' * 64
+	)
+]
+
+
+def _create_unconfirmed_transaction_view(transaction_type, to_address, value):
+	return TransactionView(
+		transaction_hash=None,
+		transaction_type=transaction_type,
+		from_address='NBKQWJJGPOHL462DBVMTYOAERXGG2BOS5WFSIGHT',
+		to_address=to_address,
+		value=value,
+		embedded_transactions=None,
+		fee=0.15,
+		height=0,
+		timestamp='2015-03-29 20:29:42',
+		deadline='2015-03-29 23:16:22',
+		signature='0' * 128
+	)
+
+
+UNCONFIRMED_TRANSACTION_VIEWS = [
+	_create_unconfirmed_transaction_view(
+		transaction_type='ACCOUNT_KEY_LINK',
+		to_address=None,
+		value=[
+			{
+				'mode': 1,
+				'remoteAccount': '7195F4D7A40AD7E31958AE96C4AFED002962229675A4CAE8DC8A18E290618981'
+			}
+		]
+	),
+	_create_unconfirmed_transaction_view(
+		transaction_type='TRANSFER',
+		to_address='NCOPERAWEWCD4A34NP5UQCCKEX44MW4SL3QYJYS5',
+		value=[
+			{
+				'message': {
+					'isPlain': 1,
+					'payload': 'test message'
+				}
+			},
+			{
+				'namespace': 'nem.xem',
+				'amount': 15.999992
+			},
+			{
+				'namespace': 'root.mosaic',
+				'amount': 39.0
+			}
+		]
+	),
+	_create_unconfirmed_transaction_view(
+		transaction_type='MULTISIG_ACCOUNT_MODIFICATION',
+		to_address=None,
+		value=[{
+			'minCosignatories': 2,
+			'modifications': [
+				{
+					'cosignatoryAccount': 'NADMEHCFJD45GPTDL4HZP2LJLZVAZRLYWYPNEMLY',
+					'modificationType': 1
+				},
+				{
+					'cosignatoryAccount': 'NANIBAXPVLBP37YXSGREVD77NXIFZML5FDE7F3ZN',
+					'modificationType': 1
+				}
+			]
+		}]
+	),
+	_create_unconfirmed_transaction_view(
+		transaction_type='NAMESPACE_REGISTRATION',
+		to_address='NAMESPACEWH4MKFMBCVFERDPOOP4FK7MTBXDPZZA',
+		value=[{
+			'sinkFee': 100.0,
+			'parent': None,
+			'namespaceName': 'namespace'
+		}]
+	),
+	_create_unconfirmed_transaction_view(
+		transaction_type='MOSAIC_DEFINITION',
+		to_address='NBMOSAICOD4F54EE5CDMR23CCBGOAM2XSIUX6TRS',
+		value=[{
+			'sinkFee': 10.0,
+			'mosaicNamespaceName': 'namespace.test'
+		}]
+	),
+	_create_unconfirmed_transaction_view(
+		transaction_type='MOSAIC_SUPPLY_CHANGE',
+		to_address=None,
+		value=[{
+			'supplyType': 2,
+			'delta': 500000,
+			'namespaceName': 'namespace.test'
+		}]
+	),
+	TransactionView(
+		transaction_hash=None,
+		transaction_type='MULTISIG',
+		from_address='NAGJG3QFWYZ37LMI7IQPSGQNYADGSJZGJRD2DIYA',
+		to_address='NBUH72UCGBIB64VYTAAJ7QITJ62BLISFFQOHVP65',
+		value=None,
+		embedded_transactions=[{
+			'initiator': 'NCTWKWGD564GIQQCZ5X5TC4YM46VXWLT3QWD5NLZ',
+			'transactionHash': None,
+			'transactionType': 'TRANSFER',
+			'signatures': [{
+				'fee': 0.5,
+				'signature': '0' * 128,
+				'signer': 'NBEM6SFOHU5PORIGAVG3NNJIMCG73R2TWEEIDAZ5'
+			}],
+			'fee': 0.75,
+			'value': [{
+				'namespace': 'nem.xem',
+				'amount': 150000.0
+			}]
+		}],
+		fee=0.5,
+		height=0,
+		timestamp='2015-03-29 20:29:42',
+		deadline='2015-03-29 23:16:22',
+		signature='0' * 128
+	)
+]
 
 # endregion
 
@@ -437,5 +698,16 @@ class NemDatabaseTest(DatabaseTestBase):  # pylint: disable=too-many-public-meth
 		self._assert_can_query_transactions_with_filter(
 			Pagination(10, 0), 'desc', self._make_transaction_query(mosaic='nonexistent.mosaic'), []
 		)
+
+	# endregion
+
+	# region unconfirmed transactions
+
+	def test_can_format_unconfirmed_transaction(self):
+		# Act:
+		unconfirmed_transaction_views = self.nem_db.get_unconfirmed_transactions(NEM_CONNECTOR_UNCONFIRMED_TRANSACTIONS)
+
+		# Assert:
+		self.assertEqual(UNCONFIRMED_TRANSACTION_VIEWS, unconfirmed_transaction_views)
 
 	# endregion
