@@ -98,7 +98,7 @@ TRANSACTIONS = [
 # endregion
 
 
-class NemDatabaseTest(unittest.TestCase):
+class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
 
 	def setUp(self):
 		self.postgresql = testing.postgresql.Postgresql()
@@ -366,6 +366,103 @@ class NemDatabaseTest(unittest.TestCase):
 			'0.1234560000',
 			2000000,
 			99999,
+			[],
+			0,
+			10,
+			'INACTIVE',
+			0,
+			None,
+			None,
+			None)
+		)
+
+	def test_can_get_accounts_for_refresh(self):
+		# Arrange:
+		accounts = [
+			ACCOUNTS[0]._replace(
+				address=Address('TBZWVEKB2XMTO4F3RAOEIBWRBMPQ5N23G56ZJM4I'),
+				balance=1000000,
+				vested_balance=0,
+				importance=0
+			),
+			ACCOUNTS[0]._replace(
+				address=Address('TCJLCZSOQ6RGWHTPSV2DW467WZSHK4NBSITND4OF'),
+				balance=0,
+				vested_balance=1000000,
+				importance=0
+			),
+			ACCOUNTS[0]._replace(
+				address=Address('TALICE6XEEEOBFJVY3ZCENZ7WBG6LB4KB7P7KMQX'),
+				balance=0,
+				vested_balance=0,
+				importance=0.1
+			),
+			ACCOUNTS[0]._replace(
+				address=Address('TBEM6SFOHU5PORIGAVG3NNJIMCG73R2TWH35O2VF'),
+				balance=0,
+				vested_balance=0,
+				importance=0
+			)
+		]
+
+		with NemDatabase(self.db_config) as nem_database:
+			nem_database.create_tables()
+
+			cursor = nem_database.connection.cursor()
+			for account in accounts:
+				nem_database.upsert_account(cursor, account)
+
+			nem_database.connection.commit()
+
+			# Act:
+			first_batch = nem_database.get_accounts_for_refresh(2, 0)
+			second_batch = nem_database.get_accounts_for_refresh(2, first_batch[-1].id)
+
+		# Assert:
+		self.assertEqual([str(account.address) for account in first_batch], [
+			'TBZWVEKB2XMTO4F3RAOEIBWRBMPQ5N23G56ZJM4I',
+			'TCJLCZSOQ6RGWHTPSV2DW467WZSHK4NBSITND4OF'
+		])
+		self.assertEqual([str(account.address) for account in second_batch], [
+			'TALICE6XEEEOBFJVY3ZCENZ7WBG6LB4KB7P7KMQX'
+		])
+
+	def test_can_update_vested_balance_and_importance(self):
+		# Arrange:
+		with NemDatabase(self.db_config) as nem_database:
+			nem_database.create_tables()
+
+			cursor = nem_database.connection.cursor()
+
+			nem_database.upsert_account(
+				cursor,
+				ACCOUNTS[0]
+			)
+
+			# Act:
+			nem_database.update_vested_balance_and_importance(
+				cursor,
+				ACCOUNTS[0]._replace(
+					importance=0.654321,
+					balance=2000000,
+					vested_balance=88888,
+					remote_status='ACTIVE',
+					harvested_blocks=99
+				)
+			)
+
+			nem_database.connection.commit()
+			result = self._fetch_account_from_db(cursor, ACCOUNTS[0].address)
+
+		# Assert:
+		self.assertIsNotNone(result)
+		self.assertEqual(result, (
+			ACCOUNTS[0].address.bytes.hex(),
+			ACCOUNTS[0].public_key.bytes.hex(),
+			None,
+			'0.6543210000',
+			1000000,
+			88888,
 			[],
 			0,
 			10,
