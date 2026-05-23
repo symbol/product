@@ -26,6 +26,7 @@ from symbollightapi.model.Transaction import (
 	TransferTransaction
 )
 
+from puller.db.NemDatabase import AccountRefreshRecord
 from puller.facade.NemPuller import AccountRecord, DatabaseConfig, MosaicRecord, NamespaceRecord, NemPuller, TransactionRecord
 
 # region test data
@@ -791,6 +792,65 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 			59200000,
 			3
 		))
+
+	@patch('puller.facade.NemPuller.NemPuller._retry_get_account_info')
+	@patch('puller.facade.NemPuller.NemDatabase.get_accounts_for_refresh')
+	@patch('puller.facade.NemPuller.NemDatabase.update_vested_balance_and_importance')
+	def test_can_refresh_accounts_in_batches(
+		self,
+		mock_update_vested_balance_and_importance,  # pylint: disable=invalid-name
+		mock_get_accounts_for_refresh,
+		mock_retry_get_account_info
+	):
+		# Arrange:
+		cursor = Mock()
+		self.puller.nem_db.connection = Mock()
+		self.puller.nem_db.connection.cursor.return_value = cursor
+
+		account_1 = AccountRefreshRecord(1, Address('TBZWVEKB2XMTO4F3RAOEIBWRBMPQ5N23G56ZJM4I'))
+		account_2 = AccountRefreshRecord(2, Address('TCJLCZSOQ6RGWHTPSV2DW467WZSHK4NBSITND4OF'))
+		account_3 = AccountRefreshRecord(5, Address('TALICE6XEEEOBFJVY3ZCENZ7WBG6LB4KB7P7KMQX'))
+
+		mock_get_accounts_for_refresh.side_effect = [
+			[account_1, account_2],
+			[account_3],
+			[]
+		]
+
+		account_info_1 = Mock()
+		account_info_2 = Mock()
+		account_info_3 = Mock()
+
+		mock_retry_get_account_info.side_effect = [
+			account_info_1,
+			account_info_2,
+			account_info_3
+		]
+
+		# Act:
+		result = asyncio.run(self.puller.refresh_accounts(2))
+
+		# Assert:
+		self.assertEqual(result, 3)
+
+		get_accounts_for_refresh_calls = mock_get_accounts_for_refresh.call_args_list
+		self.assertEqual(len(get_accounts_for_refresh_calls), 3)
+		self.assertEqual(get_accounts_for_refresh_calls[0][0], (2, 0))
+		self.assertEqual(get_accounts_for_refresh_calls[1][0], (2, 2))
+		self.assertEqual(get_accounts_for_refresh_calls[2][0], (2, 5))
+
+		retry_get_account_info_calls = mock_retry_get_account_info.call_args_list
+		self.assertEqual(len(retry_get_account_info_calls), 3)
+		self.assertEqual(retry_get_account_info_calls[0][0], (str(account_1.address),))
+		self.assertEqual(retry_get_account_info_calls[1][0], (str(account_2.address),))
+		self.assertEqual(retry_get_account_info_calls[2][0], (str(account_3.address),))
+
+		update_account_calls = mock_update_vested_balance_and_importance.call_args_list
+		self.assertEqual(len(update_account_calls), 3)
+		self.assertEqual(update_account_calls[0][0], (cursor, account_info_1))
+		self.assertEqual(update_account_calls[1][0], (cursor, account_info_2))
+		self.assertEqual(update_account_calls[2][0], (cursor, account_info_3))
+		self.assertEqual(self.puller.nem_db.connection.commit.call_count, 2)
 
 	@patch('puller.facade.NemPuller.NemDatabase.upsert_namespace')
 	def test_can_process_root_namespace(self, mock_upsert_namespace):
