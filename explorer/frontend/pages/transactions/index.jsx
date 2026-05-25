@@ -19,8 +19,15 @@ import Table from '@/components/Table';
 import ValueAccount from '@/components/ValueAccount';
 import ValueList from '@/components/ValueList';
 import ValueMosaic from '@/components/ValueMosaic';
+import ValueTransactionAliasAction from '@/components/ValueTransactionAliasAction';
+import ValueTransactionMessage from '@/components/ValueTransactionMessage';
 import ValueTransactionHash from '@/components/ValueTransactionHash';
+import ValueTransactionNamespaceRegistration from '@/components/ValueTransactionNamespaceRegistration';
+import ValueTransactionProof from '@/components/ValueTransactionProof';
+import ValueTransactionRestrictionAction from '@/components/ValueTransactionRestrictionAction';
+import ValueTransactionSupplyAction from '@/components/ValueTransactionSupplyAction';
 import ValueTransactionType from '@/components/ValueTransactionType';
+import config from '@/config';
 import { STORAGE_KEY, TRANSACTION_TYPE } from '@/constants';
 import styles from '@/styles/pages/TransactionList.module.scss';
 import {
@@ -67,7 +74,22 @@ const TransactionInfo = ({ preloadedData, stats }) => {
 	const isDirectMosaicSearchEnabled = pageConfig.transactions?.isDirectMosaicSearchEnabled;
 	const isDirectRecipientSearchEnabled = pageConfig.transactions?.isDirectRecipientSearchEnabled;
 	const isDirectSignerSearchEnabled = pageConfig.transactions?.isDirectSignerSearchEnabled;
+	const isTransferNonNativeMosaicValueHidden = pageConfig.transactions?.isTransferNonNativeMosaicValueHidden;
+	const transactionValueTypeGroups = pageConfig.transactions?.valueTypeGroups || {};
 	const translateToast = key => i18n.t(key, { ns: 'common' });
+	const normalizeMosaicId = id => `${id || ''}`.replace(/^0x/i, '').toUpperCase();
+	const isNativeMosaic = mosaicId => normalizeMosaicId(mosaicId) === normalizeMosaicId(config.NATIVE_MOSAIC_ID);
+	const isTransactionTypeInGroup = (group, type) => (transactionValueTypeGroups[group] || []).includes(type);
+	const isTransactionValueMosaicDetailsHidden = transaction => isTransactionTypeInGroup('mosaicDetailsHidden', transaction.type);
+	const isMosaicDetailsHidden = (transaction, mosaic) =>
+		isTransferNonNativeMosaicValueHidden && isTransactionValueMosaicDetailsHidden(transaction) && !isNativeMosaic(mosaic.id);
+	const isAliasTransaction = type => isTransactionTypeInGroup('aliasAction', type);
+	const isAccountRestrictionActionTransaction = type => isTransactionTypeInGroup('restrictionAction', type);
+	const isMosaicSupplyChangeTransaction = type => isTransactionTypeInGroup('mosaicSupplyAction', type);
+	const isNamespaceRegistrationTransaction = type => isTransactionTypeInGroup('namespaceRegistration', type);
+	const isSecretLockTransaction = type => isTransactionTypeInGroup('secretLock', type);
+	const isSecretProofTransaction = type => isTransactionTypeInGroup('secretProof', type);
+	const isKeyLinkTransaction = type => isTransactionTypeInGroup('keyLinkAction', type);
 
 	const tableColumns = [
 		{
@@ -93,13 +115,40 @@ const TransactionInfo = ({ preloadedData, stats }) => {
 		{
 			key: 'value',
 			size: '20rem',
-			renderValue: value => (
-				<ValueList
-					data={value}
-					max={2}
-					direction="column"
-					renderItem={item => <ValueMosaic mosaicId={item.id} mosaicName={item.name} amount={item.amount} isTickerShown />}
-				/>
+			renderValue: (value, transaction) => (
+				<div className={styles.valueCell}>
+					{isAliasTransaction(transaction.type) ? (
+						<ValueTransactionAliasAction action={transaction.aliasAction} />
+					) : isKeyLinkTransaction(transaction.type) ? (
+						<ValueTransactionAliasAction action={transaction.linkAction} />
+					) : isAccountRestrictionActionTransaction(transaction.type) ? (
+						<ValueTransactionRestrictionAction action={transaction.restrictionAction} />
+					) : isMosaicSupplyChangeTransaction(transaction.type) ? (
+						<ValueTransactionSupplyAction action={transaction.supplyAction} />
+					) : isNamespaceRegistrationTransaction(transaction.type) ? (
+						<ValueTransactionNamespaceRegistration namespaceRegistration={transaction.namespaceRegistration} />
+					) : isSecretLockTransaction(transaction.type) ? (
+						<ValueTransactionProof proof={transaction.secret} />
+					) : isSecretProofTransaction(transaction.type) ? (
+						<ValueTransactionProof proof={transaction.proof} />
+					) : (
+						<ValueList
+							data={value}
+							max={2}
+							direction="column"
+							renderItem={item => (
+								<ValueMosaic
+									mosaicId={item.id}
+									mosaicName={item.name}
+									amount={item.amount}
+									isTickerShown
+									isDetailsHidden={isMosaicDetailsHidden(transaction, item)}
+								/>
+							)}
+						/>
+					)}
+					{transaction.type === TRANSACTION_TYPE.TRANSFER && <ValueTransactionMessage message={transaction.message} />}
+				</div>
 			)
 		},
 		{
@@ -125,11 +174,13 @@ const TransactionInfo = ({ preloadedData, stats }) => {
 			isSearchEnabled: true,
 			...(isDirectSignerSearchEnabled && {
 				createSearchResult: resolveTransactionSignerSearch,
-				onSearchError: error => toast.error(translateToast(
-					error.message === 'TRANSACTION_SIGNER_PUBLIC_KEY_NOT_FOUND'
+				onSearchError: error => {
+					const messageKey = error.message === 'TRANSACTION_SIGNER_PUBLIC_KEY_NOT_FOUND'
 						? 'message_transactionSignerPublicKeyNotFound'
-						: 'message_invalidTransactionSignerSearch'
-				))
+						: 'message_invalidTransactionSignerSearch';
+
+					toast.error(translateToast(messageKey));
+				}
 			}),
 			options: isDirectSignerSearchEnabled ? [] : contacts
 		},
@@ -153,11 +204,13 @@ const TransactionInfo = ({ preloadedData, stats }) => {
 			isSearchEnabled: true,
 			...(isDirectMosaicSearchEnabled && {
 				createSearchResult: resolveTransactionMosaicSearch,
-				onSearchError: error => toast.error(translateToast(
-					error.message === 'TRANSACTION_MOSAIC_ALIAS_NOT_FOUND'
+				onSearchError: error => {
+					const messageKey = error.message === 'TRANSACTION_MOSAIC_ALIAS_NOT_FOUND'
 						? 'message_nothingFound'
-						: 'message_invalidTransactionMosaicSearch'
-				))
+						: 'message_invalidTransactionMosaicSearch';
+
+					toast.error(translateToast(messageKey));
+				}
 			})
 		},
 		{

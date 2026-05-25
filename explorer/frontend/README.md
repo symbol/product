@@ -30,8 +30,6 @@ These variables are exposed to the browser, meaning they can be accessed both on
 
 - **`NEXT_PUBLIC_NATIVE_MOSAIC_DIVISIBILITY`**: Native mosaic divisibility. Example: `6`.
 
-- **`NEXT_PUBLIC_SYMBOL_NATIVE_MOSAIC_ALIAS_IDS`**: Comma-separated Symbol native mosaic alias IDs. Example: `E74B99BA41F4AFEE,C831FEBDC7B33C16`.
-
 - **`NEXT_PUBLIC_BLOCKCHAIN_UNWIND_LIMIT`**: Blockchain unwind limit. Example: `360`.
 
 - **`NEXT_PUBLIC_REQUEST_TIMEOUT`**: The timeout duration (in milliseconds) for network requests made by the application. Example: `60000` (60 seconds).

@@ -3,6 +3,40 @@
 	"isDirectMosaicSearchEnabled": true,
 	"isDirectRecipientSearchEnabled": true,
 	"isDirectSignerSearchEnabled": true,
+	"isTransferNonNativeMosaicValueHidden": true,
+	"valueTypeGroups": {
+		"mosaicDetailsHidden": [
+			"TRANSFER",
+			"HASH_LOCK"
+		],
+		"aliasAction": [
+			"ADDRESS_ALIAS",
+			"MOSAIC_ALIAS"
+		],
+		"keyLinkAction": [
+			"ACCOUNT_KEY_LINK",
+			"NODE_KEY_LINK",
+			"VOTING_KEY_LINK",
+			"VRF_KEY_LINK"
+		],
+		"restrictionAction": [
+			"ACCOUNT_ADDRESS_RESTRICTION",
+			"ACCOUNT_MOSAIC_RESTRICTION",
+			"ACCOUNT_OPERATION_RESTRICTION"
+		],
+		"mosaicSupplyAction": [
+			"MOSAIC_SUPPLY_CHANGE"
+		],
+		"namespaceRegistration": [
+			"NAMESPACE_REGISTRATION"
+		],
+		"secretLock": [
+			"SECRET_LOCK"
+		],
+		"secretProof": [
+			"SECRET_PROOF"
+		]
+	},
 	"iconTypeMap": {
 		"ACCOUNT_KEY_LINK": "/images/transaction/account-link.svg",
 		"NODE_KEY_LINK": "/images/transaction/account-link.svg",

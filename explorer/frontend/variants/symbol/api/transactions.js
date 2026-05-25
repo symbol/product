@@ -15,8 +15,32 @@ import { createTryFetchInfoFunction } from '@/utils/server';
 
 const ZERO_PUBLIC_KEY = '0'.repeat(64);
 const MOSAIC_ID_PATTERN = /^[0-9A-Fa-f]{16}$/;
+const ALIAS_ACTION = {
+	UNLINK: 0,
+	LINK: 1
+};
+const LINK_ACTION = {
+	UNLINK: 0,
+	LINK: 1
+};
+const MOSAIC_SUPPLY_CHANGE_ACTION = {
+	DECREASE: 0,
+	INCREASE: 1
+};
+const NAMESPACE_REGISTRATION_TYPE = {
+	ROOT: 0,
+	SUB: 1
+};
 const MOSAIC_ALIAS_TYPE = 1;
-const SYMBOL_TRANSACTION_TYPE = {
+const SYMBOL_MESSAGE_TYPE = {
+	PLAIN: 'plain',
+	ENCRYPTED: 'encrypted',
+	DELEGATED_HARVESTING_PERSISTENT: 'delegatedHarvestingPersistent',
+	RAW: 'raw'
+};
+const DELEGATED_HARVESTING_PERSISTENT_MARKER = 'FE2A8061577301E2';
+const DELEGATED_HARVESTING_PERSISTENT_PAYLOAD_LENGTH = 264;
+export const SYMBOL_TRANSACTION_TYPE = {
 	ACCOUNT_KEY_LINK: 'ACCOUNT_KEY_LINK',
 	NODE_KEY_LINK: 'NODE_KEY_LINK',
 	AGGREGATE_COMPLETE: 'AGGREGATE_COMPLETE',
@@ -135,33 +159,218 @@ const transactionTypeFilterMap = {
 const normalizeMosaicId = id => String(id || '').replace(/^0x/i, '').replace(/'/g, '').toUpperCase();
 const isMosaicId = id => MOSAIC_ID_PATTERN.test(normalizeMosaicId(id));
 const normalizeNamespaceSearchText = text => String(text || '').trim().replace(/\s+/g, '').toLowerCase();
-const isNativeMosaicId = id => {
-	const normalizedId = normalizeMosaicId(id);
-	const nativeMosaicAliasIds = (config.SYMBOL_NATIVE_MOSAIC_ALIAS_IDS || []).map(normalizeMosaicId);
+const isNativeMosaicId = id => normalizeMosaicId(id) === normalizeMosaicId(config.NATIVE_MOSAIC_ID);
 
-	return normalizedId === normalizeMosaicId(config.NATIVE_MOSAIC_ID) || nativeMosaicAliasIds.includes(normalizedId);
+const hexToBytes = hex => {
+	const normalizedHex = `${hex || ''}`.replace(/\s+/g, '');
+	if (!normalizedHex || normalizedHex.length % 2 || /[^0-9A-Fa-f]/.test(normalizedHex))
+		return new Uint8Array();
+
+	return new Uint8Array(normalizedHex.match(/.{2}/g).map(byte => parseInt(byte, 16)));
+};
+
+const decodeMessagePayload = payload => new TextDecoder().decode(hexToBytes(payload));
+
+const getMessagePayload = message => {
+	if (typeof message === 'string')
+		return message;
+
+	return message?.payload || '';
+};
+
+const normalizeMessagePayload = payload => `${payload || ''}`.replace(/^0x/i, '').replace(/\s+/g, '').toUpperCase();
+
+const messageFromDTO = message => {
+	if (!message)
+		return '';
+
+	const payload = normalizeMessagePayload(getMessagePayload(message));
+	if (!payload)
+		return '';
+
+	if (['00', '01'].includes(payload))
+		return '';
+
+	if (
+		payload.length === DELEGATED_HARVESTING_PERSISTENT_PAYLOAD_LENGTH
+		&& payload.startsWith(DELEGATED_HARVESTING_PERSISTENT_MARKER)
+	)
+		return {
+			type: SYMBOL_MESSAGE_TYPE.DELEGATED_HARVESTING_PERSISTENT,
+			text: payload
+		};
+
+	const marker = payload.slice(0, 2);
+
+	if (marker === '00')
+		return {
+			type: SYMBOL_MESSAGE_TYPE.PLAIN,
+			text: decodeMessagePayload(payload.slice(2))
+		};
+
+	if (marker === '01')
+		return {
+			type: SYMBOL_MESSAGE_TYPE.ENCRYPTED
+		};
+
+	return {
+		type: SYMBOL_MESSAGE_TYPE.RAW,
+		text: payload
+	};
 };
 
 const mosaicFromDTO = mosaic => {
 	const id = mosaic.id || config.NATIVE_MOSAIC_ID;
+	const amount = mosaic.amount === undefined || mosaic.amount === null ? null : absoluteToRelative(mosaic.amount);
 
 	return {
 		id,
 		name: isNativeMosaicId(id) ? config.NATIVE_MOSAIC_TICKER : id,
-		amount: absoluteToRelative(mosaic.amount || 0)
+		amount
 	};
+};
+
+const aliasActionFromDTO = aliasAction => {
+	const action = Number(aliasAction);
+
+	if (action === ALIAS_ACTION.LINK)
+		return 'link';
+
+	if (action === ALIAS_ACTION.UNLINK)
+		return 'unlink';
+
+	return '';
+};
+
+const linkActionFromDTO = linkAction => {
+	const action = Number(linkAction);
+
+	if (action === LINK_ACTION.LINK)
+		return 'link';
+
+	if (action === LINK_ACTION.UNLINK)
+		return 'unlink';
+
+	return '';
+};
+
+const supplyActionFromDTO = (transaction, type) => {
+	if (type !== SYMBOL_TRANSACTION_TYPE.MOSAIC_SUPPLY_CHANGE)
+		return '';
+
+	const action = Number(transaction.action);
+
+	if (action === MOSAIC_SUPPLY_CHANGE_ACTION.INCREASE)
+		return 'increase';
+
+	if (action === MOSAIC_SUPPLY_CHANGE_ACTION.DECREASE)
+		return 'decrease';
+
+	return '';
+};
+
+const restrictionActionFromDTO = (transaction, type) => {
+	if (![
+		SYMBOL_TRANSACTION_TYPE.ACCOUNT_ADDRESS_RESTRICTION,
+		SYMBOL_TRANSACTION_TYPE.ACCOUNT_MOSAIC_RESTRICTION,
+		SYMBOL_TRANSACTION_TYPE.ACCOUNT_OPERATION_RESTRICTION
+	].includes(type))
+		return null;
+
+	const added = transaction.restrictionAdditions?.length || 0;
+	const removed = transaction.restrictionDeletions?.length || 0;
+
+	if (!added && !removed)
+		return null;
+
+	return {
+		added,
+		removed
+	};
+};
+
+const namespaceRegistrationFromDTO = (transaction, type) => {
+	if (type !== SYMBOL_TRANSACTION_TYPE.NAMESPACE_REGISTRATION || !transaction.name)
+		return null;
+
+	const registrationType = Number(transaction.registrationType) === NAMESPACE_REGISTRATION_TYPE.SUB ? 'sub' : 'root';
+
+	return {
+		id: transaction.id,
+		name: transaction.name,
+		registrationType
+	};
+};
+
+const proofFromDTO = (transaction, type) => {
+	if (type !== SYMBOL_TRANSACTION_TYPE.SECRET_PROOF)
+		return null;
+
+	return transaction.proof || null;
+};
+
+const secretFromDTO = (transaction, type) => {
+	if (type !== SYMBOL_TRANSACTION_TYPE.SECRET_LOCK)
+		return null;
+
+	return transaction.secret || null;
+};
+
+const mosaicsFromDTO = (transaction, type) => {
+	if (type === SYMBOL_TRANSACTION_TYPE.HASH_LOCK && transaction.mosaicId)
+		return [
+			{
+				id: transaction.mosaicId,
+				amount: transaction.amount
+			}
+		];
+
+	if (type === SYMBOL_TRANSACTION_TYPE.HASH_LOCK && transaction.mosaic)
+		return [transaction.mosaic];
+
+	if (type === SYMBOL_TRANSACTION_TYPE.MOSAIC_DEFINITION && transaction.id)
+		return [
+			{
+				id: transaction.id
+			}
+		];
+
+	if (type === SYMBOL_TRANSACTION_TYPE.MOSAIC_SUPPLY_REVOCATION && transaction.mosaicId)
+		return [
+			{
+				id: transaction.mosaicId
+			}
+		];
+
+	if (type === SYMBOL_TRANSACTION_TYPE.MOSAIC_GLOBAL_RESTRICTION && transaction.mosaicId)
+		return [
+			{
+				id: transaction.mosaicId
+			}
+		];
+
+	return transaction.mosaics || [];
 };
 
 const transactionInfoFromDTO = data => {
 	const transaction = data.transaction || {};
 	const meta = data.meta || {};
-	const value = (transaction.mosaics || []).map(mosaicFromDTO);
+	const type = transactionTypeMap[transaction.type] || transaction.type;
+	const mosaics = mosaicsFromDTO(transaction, type);
+	const value = mosaics.map(mosaicFromDTO);
 	const nativeTransfer = value.find(item => isNativeMosaicId(item.id));
+	const aliasAction = aliasActionFromDTO(transaction.aliasAction);
+	const linkAction = linkActionFromDTO(transaction.linkAction);
+	const supplyAction = supplyActionFromDTO(transaction, type);
+	const restrictionAction = restrictionActionFromDTO(transaction, type);
+	const namespaceRegistration = namespaceRegistrationFromDTO(transaction, type);
+	const proof = proofFromDTO(transaction, type);
+	const secret = secretFromDTO(transaction, type);
 
 	return {
 		hash: meta.hash,
 		height: Number(meta.height || 0),
-		type: transactionTypeMap[transaction.type] || transaction.type,
+		type,
 		sender: transaction.signerAddress
 			? hexToSymbolAddress(transaction.signerAddress)
 			: publicKeyToSymbolAddress(transaction.signerPublicKey),
@@ -170,7 +379,14 @@ const transactionInfoFromDTO = data => {
 		amount: nativeTransfer?.amount || 0,
 		fee: absoluteToRelative(transaction.maxFee || 0),
 		timestamp: symbolTimestampToDate(transaction.deadline || 0),
-		message: transaction.message || ''
+		...(aliasAction && { aliasAction }),
+		...(linkAction && { linkAction }),
+		...(supplyAction && { supplyAction }),
+		...(restrictionAction && { restrictionAction }),
+		...(namespaceRegistration && { namespaceRegistration }),
+		...(proof && { proof }),
+		...(secret && { secret }),
+		message: messageFromDTO(transaction.message)
 	};
 };
 

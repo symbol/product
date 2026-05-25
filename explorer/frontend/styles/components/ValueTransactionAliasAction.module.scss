@@ -1,0 +1,12 @@
+@import '../variables';
+
+.valueTransactionAliasAction {
+	display: inline-flex;
+	align-items: center;
+	width: fit-content;
+	padding: 0 $spacing-base / 2;
+	color: $color-text-body;
+	font: $font-body-bold;
+	background: $color-background-mosaic;
+	border-radius: $border-radius-chip;
+}

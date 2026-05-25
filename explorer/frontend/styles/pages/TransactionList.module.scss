@@ -7,3 +7,9 @@
 .statsSection {
 	max-width: $spacing-base * 42;
 }
+
+.valueCell {
+	display: flex;
+	gap: $spacing-base;
+	align-items: flex-start;
+}

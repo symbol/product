@@ -1,0 +1,53 @@
+@import '../variables';
+
+.valueTransactionMessage {
+	position: relative;
+	display: inline-flex;
+	flex-shrink: 0;
+	align-items: center;
+	width: fit-content;
+	padding: 0 $spacing-base / 2;
+	overflow: hidden;
+	background: $color-background-mosaic;
+	border-radius: $border-radius-chip;
+	outline: none;
+
+	.icon {
+		width: 1.2rem;
+		height: 1.2rem;
+	}
+}
+
+.tooltip {
+	position: fixed;
+	z-index: 1000;
+	display: flex;
+	flex-direction: column;
+	gap: $spacing-base / 2;
+	width: max-content;
+	max-width: $spacing-base * 30;
+	padding: $spacing-base;
+	color: $color-text-tooltip;
+	font: $font-body;
+	text-align: left;
+	overflow-wrap: anywhere;
+	pointer-events: none;
+	background-color: #332d43;
+	border: 0.08rem solid $color-separator-line-neutral;
+	border-radius: $spacing-base;
+	box-shadow: 0 1rem 2rem #0003;
+}
+
+.row {
+	display: flex;
+	flex-direction: column;
+	gap: $spacing-base / 4;
+}
+
+.label {
+	font: $font-body-bold;
+}
+
+.content {
+	white-space: pre-wrap;
+}

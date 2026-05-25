@@ -1,0 +1,25 @@
+@import '../variables';
+
+.valueTransactionNamespaceRegistration {
+	display: inline-flex;
+	gap: $spacing-base / 2;
+	align-items: center;
+	width: fit-content;
+	max-width: 100%;
+	padding: 0 $spacing-base / 2;
+	overflow: hidden;
+	color: $color-text-body;
+	font: $font-body-bold;
+	background: $color-background-mosaic;
+	border-radius: $border-radius-chip;
+}
+
+.type {
+	flex: 0 0 auto;
+}
+
+.name {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}

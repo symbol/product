@@ -34,4 +34,10 @@
 		width: 1rem;
 		height: 1rem;
 	}
+
+	.valueCell {
+		display: flex;
+		gap: $spacing-base;
+		align-items: flex-start;
+	}
 }

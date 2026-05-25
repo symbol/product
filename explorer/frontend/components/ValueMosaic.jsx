@@ -16,7 +16,8 @@ const ValueMosaic = ({
 	size,
 	onClick,
 	isNavigationDisabled,
-	isTickerShown
+	isTickerShown,
+	isDetailsHidden
 }) => {
 	let displayedName;
 	let imageSrc;
@@ -31,6 +32,7 @@ const ValueMosaic = ({
 	const isAmountExist = !isNaN(amount) && amount !== null;
 	const [integer, decimal] = isAmountExist ? amount.toString().split('.') : ['-'];
 	const finalMosaicId = isNative ? config.NATIVE_MOSAIC_ID : mosaicId;
+	const disabledNavigationClass = isNavigationDisabled ? styles.disabledNavigation : '';
 
 	if (finalMosaicId === config.NATIVE_MOSAIC_ID) {
 		displayedName = isTickerShown ? config.NATIVE_MOSAIC_TICKER : '';
@@ -42,13 +44,16 @@ const ValueMosaic = ({
 		title = amount ? `${amount} ${mosaicName}` : '';
 	}
 
+	if (isDetailsHidden)
+		title = '';
+
 	const handleClick = e => {
 		handleNavigationItemClick(e, onClick, finalMosaicId, isNavigationDisabled);
 	};
 
 	return size === 'md' ? (
 		<Link
-			className={`${styles.valueMosaic} ${styles.containerMd} ${className}`}
+			className={`${styles.valueMosaic} ${styles.containerMd} ${disabledNavigationClass} ${className}`}
 			href={createPageHref('mosaics', finalMosaicId)}
 			title={title}
 			onClick={handleClick}
@@ -62,16 +67,20 @@ const ValueMosaic = ({
 	) : (
 		<Link
 			href={createPageHref('mosaics', finalMosaicId)}
-			className={`${styles.valueMosaic} ${directionStyle} ${className}`}
+			className={`${styles.valueMosaic} ${directionStyle} ${disabledNavigationClass} ${className}`}
 			title={title}
 			onClick={handleClick}
 		>
 			<CustomImage src={imageSrc} className={styles.icon} alt="Mosaic" />
-			<div className={styles.amount}>
-				{isAmountExist && <div>{numberToString(integer)}</div>}
-				{!!decimal && <div className={styles.decimal}>.{decimal}</div>}
-			</div>
-			{!!displayedName && <div>{displayedName}</div>}
+			{!isDetailsHidden && (
+				<>
+					<div className={styles.amount}>
+						{isAmountExist && <div>{numberToString(integer)}</div>}
+						{!!decimal && <div className={styles.decimal}>.{decimal}</div>}
+					</div>
+					{!!displayedName && <div>{displayedName}</div>}
+				</>
+			)}
 		</Link>
 	);
 };

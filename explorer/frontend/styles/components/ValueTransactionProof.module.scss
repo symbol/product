@@ -1,0 +1,9 @@
+@import '../variables';
+
+.valueTransactionProof {
+	display: inline-block;
+	max-width: 100%;
+	overflow-wrap: anywhere;
+	color: $color-text-body;
+	font: $font-body-monospace;
+}
