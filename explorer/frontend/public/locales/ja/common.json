@@ -130,6 +130,7 @@
 	"field_namespaceExpiration_description": "ネームスペースが利用可能な確認されたブロック数",
 
 	"field_balance": "残高",
+	"field_finalizedHeight": "ファイナライズ高",
 	"field_address": "アドレス",
 	"field_account_names": "名前",
 	"field_account_names_description": "名前またはネームスペースは、アドレスの代わりに使用できる人間が読める文字列です",
@@ -279,6 +280,7 @@
 	"table_field_status": "ステータス",
 	"table_field_version": "バージョン",
 	"table_field_endpoint": "エンドポイント",
+	"table_field_finalizedHeight": "ファイナライズ高",
 	"transactionType_ACCOUNT_KEY_LINK": "アカウントキーリンク",
 	"transactionType_NODE_KEY_LINK": "ノードキーリンク",
 	"transactionType_AGGREGATE_COMPLETE": "アグリゲート完了",

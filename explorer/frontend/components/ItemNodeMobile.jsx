@@ -1,13 +1,14 @@
 import Avatar from './Avatar';
 import Field from './Field';
+import ValueMosaic from './ValueMosaic';
 import styles from '@/styles/components/ItemNodeMobile.module.scss';
 import { createPageHref } from '@/utils';
 import Link from 'next/link';
 import { useTranslation } from 'next-i18next';
 
-const ItemNodeMobile = ({ data }) => {
+const ItemNodeMobile = ({ data, showAddress }) => {
 	const { t } = useTranslation();
-	const { name, endpoint, version, height, mainPublicKey } = data;
+	const { address, name, endpoint, balance, version, height, finalizedHeight, mainPublicKey } = data;
 
 	return (
 		<div className={styles.itemNodeMobile}>
@@ -18,12 +19,27 @@ const ItemNodeMobile = ({ data }) => {
 					<div>{endpoint}</div>
 				</div>
 			</Link>
+			{showAddress && (
+				<div className="layout-flex-row">
+					<Field title={t('field_address')}>
+						{address}
+					</Field>
+				</div>
+			)}
 			<div className="layout-flex-row">
+				<Field title={t('field_balance')}>
+					<ValueMosaic isNative amount={balance} />
+				</Field>
 				<Field title={t('field_height')}>
 					{height}
 				</Field>
+			</div>
+			<div className="layout-flex-row">
 				<Field title={t('field_version')} textAlign="right">
 					{version}
+				</Field>
+				<Field title={t('field_finalizedHeight')} textAlign="right">
+					{finalizedHeight}
 				</Field>
 			</div>
 		</div>

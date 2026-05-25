@@ -28,6 +28,7 @@ const nodeInfoFromDTO = data => ({
 	name: data.name,
 	version: data.version,
 	height: data.height,
+	finalizedHeight: data.finalizedHeight,
 	mainPublicKey: data.mainPublicKey,
 	nodePublicKey: data.nodePublicKey,
 	balance: data.balance,
