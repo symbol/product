@@ -254,6 +254,16 @@ class NemDatabase(DatabaseConnection):
 			'''
 		)
 
+		# Create Account remarks table
+		cursor.execute(
+			'''
+			CREATE TABLE IF NOT EXISTS account_remarks (
+				address bytea PRIMARY KEY,
+				remarks varchar NOT NULL
+			)
+			'''
+		)
+
 		self._create_table_indexes(cursor)
 
 		self.connection.commit()

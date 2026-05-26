@@ -203,13 +203,14 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 			results = cursor.fetchall()
 
 		# Assert:
-		self.assertEqual(len(results), 6)
-		self.assertEqual(results[0][0], 'accounts')
-		self.assertEqual(results[1][0], 'blocks')
-		self.assertEqual(results[2][0], 'mosaics')
-		self.assertEqual(results[3][0], 'namespaces')
-		self.assertEqual(results[4][0], 'transactions')
-		self.assertEqual(results[5][0], 'transactions_mosaic')
+		self.assertEqual(len(results), 7)
+		self.assertEqual(results[0][0], 'account_remarks')
+		self.assertEqual(results[1][0], 'accounts')
+		self.assertEqual(results[2][0], 'blocks')
+		self.assertEqual(results[3][0], 'mosaics')
+		self.assertEqual(results[4][0], 'namespaces')
+		self.assertEqual(results[5][0], 'transactions')
+		self.assertEqual(results[6][0], 'transactions_mosaic')
 
 	def test_can_insert_block(self):
 		# Arrange:
