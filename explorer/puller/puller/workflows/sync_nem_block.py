@@ -13,6 +13,7 @@ def parse_args():
 	parser.add_argument('--nem-node', help='NEM node(local) url', default='http://localhost:7890')
 	parser.add_argument('--network', help='mainnet or testnet', choices=['mainnet', 'testnet'], default='mainnet')
 	parser.add_argument('--db-config', help='database config file *.ini', default='config.ini')
+	parser.add_argument('--account-remarks', help='optional account remarks seed JSON file')
 	return parser.parse_args()
 
 
@@ -26,6 +27,9 @@ async def main():
 
 	with facade.nem_db as databases:
 		databases.create_tables()
+
+		if args.account_remarks:
+			databases.seed_account_remarks(args.account_remarks)
 
 		db_height = databases.get_current_height()
 		chain_height = await facade.nem_connector.chain_height()

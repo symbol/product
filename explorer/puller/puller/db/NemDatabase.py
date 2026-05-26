@@ -4,6 +4,8 @@ from collections import namedtuple
 
 from symbolchain.nem.Network import Address
 
+from symbolchain.nem.Network import Address
+
 from .DatabaseConnection import DatabaseConnection
 
 AccountRefreshRecord = namedtuple('AccountRefreshRecord', ['id', 'address'])
@@ -265,6 +267,33 @@ class NemDatabase(DatabaseConnection):
 		)
 
 		self._create_table_indexes(cursor)
+
+		self.connection.commit()
+
+	def seed_account_remarks(self, seed_path):
+		"""Seeds account remarks table."""
+
+		cursor = self.connection.cursor()
+
+		with open(seed_path, 'rt', encoding='utf8') as seed_file:
+			account_remarks = json.load(seed_file)
+
+		for account_remark in account_remarks:
+			cursor.execute(
+				'''
+				INSERT INTO account_remarks (
+					address,
+					remarks
+				)
+				VALUES (%s, %s)
+				ON CONFLICT (address)
+				DO UPDATE SET
+					remarks = EXCLUDED.remarks
+				''', (
+					Address(account_remark['address']).bytes,
+					account_remark['remarks']
+				)
+			)
 
 		self.connection.commit()
 
