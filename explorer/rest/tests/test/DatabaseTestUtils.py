@@ -484,7 +484,8 @@ ACCOUNT_VIEWS = [
 		last_harvested_height=0,
 		min_cosignatories=ACCOUNTS[0].min_cosignatories,
 		cosignatory_of=ACCOUNTS[0].cosignatory_of,
-		cosignatories=ACCOUNTS[0].cosignatories
+		cosignatories=ACCOUNTS[0].cosignatories,
+		remarks=ADDRESS_REMARKS[0].remarks
 	),
 	AccountView(
 		address=str(ACCOUNTS[1].address),
@@ -506,7 +507,8 @@ ACCOUNT_VIEWS = [
 		last_harvested_height=0,
 		min_cosignatories=ACCOUNTS[1].min_cosignatories,
 		cosignatory_of=ACCOUNTS[1].cosignatory_of,
-		cosignatories=ACCOUNTS[1].cosignatories
+		cosignatories=ACCOUNTS[1].cosignatories,
+		remarks=ADDRESS_REMARKS[1].remarks
 	)
 ]
 

@@ -20,7 +20,8 @@ class AccountTest(unittest.TestCase):
 			last_harvested_height=1000,
 			min_cosignatories=None,
 			cosignatory_of=[],
-			cosignatories=[]
+			cosignatories=[],
+			remarks='Test remark'
 		)
 
 		if override:
@@ -47,6 +48,7 @@ class AccountTest(unittest.TestCase):
 		self.assertIsNone(account_view.min_cosignatories)
 		self.assertEqual([], account_view.cosignatory_of)
 		self.assertEqual([], account_view.cosignatories)
+		self.assertEqual('Test remark', account_view.remarks)
 
 	def test_can_convert_to_simple_dict(self):
 		# Arrange:
@@ -70,7 +72,8 @@ class AccountTest(unittest.TestCase):
 			'lastHarvestedHeight': 1000,
 			'minCosignatories': None,
 			'cosignatoryOf': [],
-			'cosignatories': []
+			'cosignatories': [],
+			'remarks': 'Test remark'
 		}, account_view_dict)
 
 	def test_eq_is_supported(self):
@@ -95,3 +98,4 @@ class AccountTest(unittest.TestCase):
 		self.assertNotEqual(account_view, self._create_default_account_view(('min_cosignatories', 2)))
 		self.assertNotEqual(account_view, self._create_default_account_view(('cosignatory_of', ['ADDRESS1'])))
 		self.assertNotEqual(account_view, self._create_default_account_view(('cosignatories', ['ADDRESS2'])))
+		self.assertNotEqual(account_view, self._create_default_account_view(('remarks', 'Different remark')))
