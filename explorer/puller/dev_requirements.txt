@@ -1,4 +1,4 @@
-cffi==1.15.1
+cffi==2.0.0
 pytest==9.0.3
 pytest-aiohttp==1.0.4
 coverage>=6.3
