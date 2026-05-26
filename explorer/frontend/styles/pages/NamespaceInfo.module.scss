@@ -8,12 +8,52 @@
 	max-width: 32rem;
 
 	.firstSectionCard {
-		height: 21rem;
+		min-height: 21rem;
 	}
 }
 
 .secondSectionCard {
-	height: 21rem;
+	min-height: 21rem;
+}
+
+.namespaceValue {
+	max-width: 100%;
+	overflow-wrap: anywhere;
+	word-break: break-word;
+}
+
+.namespaceIdValue {
+	font: $font-body-bold;
+}
+
+.metadataValue {
+	display: block;
+	max-width: 100%;
+	white-space: pre-wrap;
+	overflow-wrap: anywhere;
+	word-break: break-word;
+}
+
+.metadataAddress {
+	align-items: flex-start;
+
+	a {
+		min-width: 0;
+		overflow-wrap: anywhere;
+		word-break: break-word;
+	}
+
+	> div:last-child {
+		flex-wrap: wrap;
+		align-items: flex-start;
+		min-width: 0;
+	}
+}
+
+.receiptMosaic {
+	max-width: 100%;
+	overflow-wrap: anywhere;
+	word-break: break-word;
 }
 
 @media #{$screen-mobile} {

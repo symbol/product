@@ -1,6 +1,14 @@
 {
 	"showSubNamespaceCount": false,
 	"showReadableNamespaceName": true,
+	"showSubNamespaces": false,
+	"showNamespaceAliasFields": true,
+	"showNamespaceMosaicSection": false,
+	"showNamespaceLevelSection": true,
+	"showNamespaceMetadataSection": true,
+	"showNamespaceReceiptSection": true,
+	"showNamespaceRegistrationTimestamp": false,
 	"showNamespaceFilter": true,
+	"namespaceIdFieldTitleKey": "table_field_namespaceId",
 	"namespaceIdColumnTitleKey": "table_field_namespaceId"
 }

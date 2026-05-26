@@ -31,6 +31,16 @@ export const fetchNamespaceInfo = createTryFetchInfoFunction(async id => {
 	return namespaceInfoFromDTO(namespace);
 });
 
+export const fetchNamespaceMetadataPage = async () => ({
+	data: [],
+	pageNumber: 1
+});
+
+export const fetchNamespaceReceiptPage = async () => ({
+	data: [],
+	pageNumber: 1
+});
+
 /**
  * Maps the namespace info from the DTO.
  * @param {object} data - raw data from response

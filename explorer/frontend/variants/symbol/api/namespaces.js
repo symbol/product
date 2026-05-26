@@ -1,11 +1,20 @@
-import { createSymbolPage, createSymbolSearchURL, fetchSymbolNode, hexToSymbolAddress } from '../utils';
+import { absoluteToRelative, createSymbolPage, createSymbolSearchURL, fetchSymbolNode, hexToSymbolAddress } from '../utils';
 import config from '@/config';
 import { createTryFetchInfoFunction } from '@/utils/server';
 import { generateNamespacePath } from 'symbol-sdk/symbol';
 
 const NAMESPACE_ALIAS_TYPE = {
+	NONE: 0,
 	MOSAIC: 1,
 	ADDRESS: 2
+};
+
+const METADATA_TYPE = {
+	NAMESPACE: 2
+};
+
+const RECEIPT_TYPE = {
+	NAMESPACE_RENTAL_FEE: 4942
 };
 
 const NAMESPACE_REGISTRATION_TYPE = {
@@ -15,6 +24,15 @@ const NAMESPACE_REGISTRATION_TYPE = {
 
 const NAMESPACE_ID_PATTERN = /^[0-9A-Fa-f]{16}$/;
 const formatNamespaceId = namespaceId => namespaceId.toString(16).toUpperCase().padStart(16, '0');
+
+const hexToUtf8 = value => {
+	if (!value || !/^(?:[0-9A-Fa-f]{2})+$/.test(value))
+		return '';
+
+	const bytes = new Uint8Array(value.match(/.{2}/g).map(byte => parseInt(byte, 16)));
+
+	return new TextDecoder('utf-8', { fatal: false }).decode(bytes);
+};
 
 export const namespaceIdFromName = async name => {
 	if (NAMESPACE_ID_PATTERN.test(name))
@@ -57,6 +75,24 @@ const getNamespaceName = (data, namespaceNames) => {
 	}, '');
 };
 
+const getNamespaceLevelName = (namespaceId, namespaceNames) => {
+	const namespaceName = namespaceNames[namespaceId];
+
+	return namespaceName ? namespaceName.split('.').pop() : null;
+};
+
+const getNamespaceLevels = (data, namespaceNames) => {
+	const namespaceIds = getNamespaceIds(data);
+
+	return namespaceIds
+		.map((namespaceId, index) => ({
+			name: getNamespaceLevelName(namespaceId, namespaceNames),
+			namespaceId,
+			parentId: index ? namespaceIds[index - 1] : null
+		}))
+		.reverse();
+};
+
 const fetchNamespaceNames = async namespaceIds => {
 	const uniqueNamespaceIds = [...new Set(namespaceIds)];
 
@@ -83,11 +119,38 @@ const fetchNamespaceNames = async namespaceIds => {
 	}
 };
 
+const aliasInfoFromDTO = alias => {
+	const aliasType = Number(alias?.type || NAMESPACE_ALIAS_TYPE.NONE);
+
+	switch (aliasType) {
+	case NAMESPACE_ALIAS_TYPE.MOSAIC:
+		return {
+			aliasType: 'mosaic',
+			aliasMosaicId: alias.mosaicId || null,
+			aliasAddress: null
+		};
+	case NAMESPACE_ALIAS_TYPE.ADDRESS:
+		return {
+			aliasType: 'address',
+			aliasMosaicId: null,
+			aliasAddress: alias.address ? hexToSymbolAddress(alias.address) : null
+		};
+	case NAMESPACE_ALIAS_TYPE.NONE:
+	default:
+		return {
+			aliasType: 'none',
+			aliasMosaicId: null,
+			aliasAddress: null
+		};
+	}
+};
+
 const namespaceInfoFromDTO = (data, namespaceNames = {}) => {
 	const namespace = data.namespace || {};
 	const startHeight = Number(namespace.startHeight || 0);
 	const endHeight = Number(namespace.endHeight || 0);
 	const isRoot = namespace.registrationType === 0;
+	const aliasInfo = aliasInfoFromDTO(namespace.alias);
 
 	// Resolve the most specific namespace ID for this entry
 	const namespaceId = getNamespaceId(data);
@@ -96,6 +159,8 @@ const namespaceInfoFromDTO = (data, namespaceNames = {}) => {
 		name: namespaceId,
 		id: namespaceId,
 		namespaceName: getNamespaceName(data, namespaceNames),
+		namespaceLevels: getNamespaceLevels(data, namespaceNames),
+		...aliasInfo,
 		creator: hexToSymbolAddress(namespace.ownerAddress),
 		registrationHeight: startHeight,
 		expirationHeight: endHeight || null,
@@ -103,6 +168,38 @@ const namespaceInfoFromDTO = (data, namespaceNames = {}) => {
 		subNamespaceCount: isRoot ? 0 : null,
 		subNamespaces: [],
 		namespaceMosaics: []
+	};
+};
+
+const namespaceMetadataEntryFromDTO = data => {
+	const metadataEntry = data.metadataEntry || {};
+
+	return {
+		scopedMetadataKey: metadataEntry.scopedMetadataKey?.toUpperCase() || null,
+		senderAddress: hexToSymbolAddress(metadataEntry.sourceAddress),
+		targetAddress: hexToSymbolAddress(metadataEntry.targetAddress),
+		value: hexToUtf8(metadataEntry.value)
+	};
+};
+
+const getStatementReceipts = response =>
+	(Array.isArray(response?.data) ? response.data : []).flatMap(item => item.statement?.receipts || []);
+
+const isNativeMosaicId = mosaicId => `${mosaicId}`.toUpperCase() === `${config.NATIVE_MOSAIC_ID}`.toUpperCase();
+
+const namespaceRentalFeeReceiptFromDTO = receipt => {
+	const mosaicId = receipt.mosaicId;
+
+	return {
+		version: Number(receipt.version || 0),
+		type: 'namespaceRentalFee',
+		to: hexToSymbolAddress(receipt.recipientAddress),
+		mosaic: {
+			id: mosaicId,
+			name: mosaicId,
+			amount: isNativeMosaicId(mosaicId) ? absoluteToRelative(receipt.amount || 0) : receipt.amount,
+			isNative: isNativeMosaicId(mosaicId)
+		}
 	};
 };
 
@@ -152,3 +249,37 @@ export const fetchNamespaceInfo = createTryFetchInfoFunction(async id => {
 
 	return namespaceInfoFromDTO(data, namespaceNames);
 });
+
+export const fetchNamespaceMetadataPage = async searchParams => {
+	const namespaceId = await namespaceIdFromName(searchParams.targetId);
+	const metadataSearchParams = {
+		...searchParams,
+		targetId: namespaceId,
+		metadataType: METADATA_TYPE.NAMESPACE,
+		pageSize: 10
+	};
+	const url = createSymbolSearchURL('metadata', metadataSearchParams);
+	const response = await fetchSymbolNode(url.replace(`${config.SYMBOL_NODE_URL}/`, ''));
+	const pageNumber = Number(searchParams?.pageNumber || 1);
+
+	return createSymbolPage(response, pageNumber, namespaceMetadataEntryFromDTO);
+};
+
+export const fetchNamespaceReceiptPage = async searchParams => {
+	const receiptSearchParams = {
+		...searchParams,
+		receiptType: RECEIPT_TYPE.NAMESPACE_RENTAL_FEE,
+		pageSize: 10
+	};
+	const url = createSymbolSearchURL('statements/transaction', receiptSearchParams);
+	const response = await fetchSymbolNode(url.replace(`${config.SYMBOL_NODE_URL}/`, ''));
+	const receipts = getStatementReceipts(response)
+		.filter(receipt => Number(receipt.type) === RECEIPT_TYPE.NAMESPACE_RENTAL_FEE)
+		.map(namespaceRentalFeeReceiptFromDTO);
+	const pageNumber = Number(searchParams?.pageNumber || 1);
+
+	return {
+		data: receipts,
+		pageNumber
+	};
+};
