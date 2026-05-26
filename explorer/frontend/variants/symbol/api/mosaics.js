@@ -105,6 +105,7 @@ export const fetchMosaicPage = async searchParams => {
 
 export const fetchMosaicInfo = createTryFetchInfoFunction(async id => {
 	const data = await fetchSymbolNode(`mosaics/${id}`);
+	const mosaicNames = await fetchMosaicNames([data.mosaic?.id]);
 
-	return mosaicInfoFromDTO(data);
+	return mosaicInfoFromDTO(data, mosaicNames);
 });

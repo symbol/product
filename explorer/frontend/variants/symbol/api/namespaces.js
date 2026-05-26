@@ -1,4 +1,6 @@
-import { absoluteToRelative, createSymbolPage, createSymbolSearchURL, fetchSymbolNode, hexToSymbolAddress } from '../utils';
+import { createSymbolPage, createSymbolSearchURL, fetchSymbolNode, hexToSymbolAddress } from '../utils';
+import { fetchMetadataPage, METADATA_TYPE } from './metadata';
+import { fetchRentalFeeReceiptPage } from './receipts';
 import config from '@/config';
 import { createTryFetchInfoFunction } from '@/utils/server';
 import { generateNamespacePath } from 'symbol-sdk/symbol';
@@ -9,14 +11,6 @@ const NAMESPACE_ALIAS_TYPE = {
 	ADDRESS: 2
 };
 
-const METADATA_TYPE = {
-	NAMESPACE: 2
-};
-
-const RECEIPT_TYPE = {
-	NAMESPACE_RENTAL_FEE: 4942
-};
-
 const NAMESPACE_REGISTRATION_TYPE = {
 	ROOT: 0,
 	SUB: 1
@@ -24,15 +18,6 @@ const NAMESPACE_REGISTRATION_TYPE = {
 
 const NAMESPACE_ID_PATTERN = /^[0-9A-Fa-f]{16}$/;
 const formatNamespaceId = namespaceId => namespaceId.toString(16).toUpperCase().padStart(16, '0');
-
-const hexToUtf8 = value => {
-	if (!value || !/^(?:[0-9A-Fa-f]{2})+$/.test(value))
-		return '';
-
-	const bytes = new Uint8Array(value.match(/.{2}/g).map(byte => parseInt(byte, 16)));
-
-	return new TextDecoder('utf-8', { fatal: false }).decode(bytes);
-};
 
 export const namespaceIdFromName = async name => {
 	if (NAMESPACE_ID_PATTERN.test(name))
@@ -171,38 +156,6 @@ const namespaceInfoFromDTO = (data, namespaceNames = {}) => {
 	};
 };
 
-const namespaceMetadataEntryFromDTO = data => {
-	const metadataEntry = data.metadataEntry || {};
-
-	return {
-		scopedMetadataKey: metadataEntry.scopedMetadataKey?.toUpperCase() || null,
-		senderAddress: hexToSymbolAddress(metadataEntry.sourceAddress),
-		targetAddress: hexToSymbolAddress(metadataEntry.targetAddress),
-		value: hexToUtf8(metadataEntry.value)
-	};
-};
-
-const getStatementReceipts = response =>
-	(Array.isArray(response?.data) ? response.data : []).flatMap(item => item.statement?.receipts || []);
-
-const isNativeMosaicId = mosaicId => `${mosaicId}`.toUpperCase() === `${config.NATIVE_MOSAIC_ID}`.toUpperCase();
-
-const namespaceRentalFeeReceiptFromDTO = receipt => {
-	const mosaicId = receipt.mosaicId;
-
-	return {
-		version: Number(receipt.version || 0),
-		type: 'namespaceRentalFee',
-		to: hexToSymbolAddress(receipt.recipientAddress),
-		mosaic: {
-			id: mosaicId,
-			name: mosaicId,
-			amount: isNativeMosaicId(mosaicId) ? absoluteToRelative(receipt.amount || 0) : receipt.amount,
-			isNative: isNativeMosaicId(mosaicId)
-		}
-	};
-};
-
 const createNamespaceSearchParams = (searchParams = {}) => {
 	const namespaceSearchParams = {
 		...searchParams,
@@ -255,31 +208,10 @@ export const fetchNamespaceMetadataPage = async searchParams => {
 	const metadataSearchParams = {
 		...searchParams,
 		targetId: namespaceId,
-		metadataType: METADATA_TYPE.NAMESPACE,
-		pageSize: 10
+		metadataType: METADATA_TYPE.NAMESPACE
 	};
-	const url = createSymbolSearchURL('metadata', metadataSearchParams);
-	const response = await fetchSymbolNode(url.replace(`${config.SYMBOL_NODE_URL}/`, ''));
-	const pageNumber = Number(searchParams?.pageNumber || 1);
 
-	return createSymbolPage(response, pageNumber, namespaceMetadataEntryFromDTO);
+	return fetchMetadataPage(metadataSearchParams);
 };
 
-export const fetchNamespaceReceiptPage = async searchParams => {
-	const receiptSearchParams = {
-		...searchParams,
-		receiptType: RECEIPT_TYPE.NAMESPACE_RENTAL_FEE,
-		pageSize: 10
-	};
-	const url = createSymbolSearchURL('statements/transaction', receiptSearchParams);
-	const response = await fetchSymbolNode(url.replace(`${config.SYMBOL_NODE_URL}/`, ''));
-	const receipts = getStatementReceipts(response)
-		.filter(receipt => Number(receipt.type) === RECEIPT_TYPE.NAMESPACE_RENTAL_FEE)
-		.map(namespaceRentalFeeReceiptFromDTO);
-	const pageNumber = Number(searchParams?.pageNumber || 1);
-
-	return {
-		data: receipts,
-		pageNumber
-	};
-};
+export const fetchNamespaceReceiptPage = async searchParams => fetchRentalFeeReceiptPage(searchParams);

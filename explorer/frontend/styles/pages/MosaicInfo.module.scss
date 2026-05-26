@@ -18,6 +18,20 @@
 	min-height: 33rem;
 }
 
+.restrictionList {
+	max-height: 32rem;
+	overflow: auto;
+}
+
+.restrictionValue {
+	overflow-wrap: anywhere;
+}
+
+.metadataAddress,
+.metadataValue {
+	overflow-wrap: anywhere;
+}
+
 @media #{$screen-mobile} {
 	.firstSection {
 		max-width: 100%;

@@ -1013,13 +1013,60 @@ describe('variants/symbol/api/transactions', () => {
 			await fetchTransactionPage({
 				pageNumber: 2,
 				pageSize: 50,
-				mosaic: '72C0212E67A08BCE'
+				mosaic: '72C0212E67A08BCE',
+				mosaicDivisibility: 6
 			});
 
 			// Assert:
 			expect(makeRequest).toHaveBeenCalledWith(
-				'/api/symbol-node/transactions/confirmed?pageNumber=2&pageSize=50&order=desc&orderBy=id&transferMosaicId=72C0212E67A08BCE'
+				'/api/symbol-node/transactions/confirmed?pageNumber=2&pageSize=50&order=desc&orderBy=id&transferMosaicId=72C0212E67A08BCE&embedded=true'
 			);
+		});
+
+		it('maps embedded mosaic transfer aggregate hash to transaction hash', async () => {
+			// Arrange:
+			const makeRequest = jest.spyOn(utils, 'makeRequest');
+			makeRequest.mockResolvedValueOnce({
+				data: [
+					{
+						meta: {
+							aggregateHash: '7A02C84BFA2780677EAA1E8CC5DC479CA689088AD02CAB4A42BBDA3583507094',
+							height: '3407535'
+						},
+						transaction: {
+							signerPublicKey: 'D37854BE384C56C444E0CFA4C962706408DCD58A03373BC350A4D56249D7A7F5',
+							type: 16724,
+							recipientAddress: '98DF870BFA637FB4BC09B95605CF3BF0C23A5C1D42A4D88B',
+							mosaics: [
+								{
+									id: '6F7904E6DF09D21D',
+									amount: '100'
+								}
+							]
+						}
+					}
+				]
+			});
+
+			// Act:
+			const result = await fetchTransactionPage({
+				mosaic: '6F7904E6DF09D21D',
+				mosaicDivisibility: 2
+			});
+
+			// Assert:
+			expect(result.data[0]).toEqual(expect.objectContaining({
+				hash: '7A02C84BFA2780677EAA1E8CC5DC479CA689088AD02CAB4A42BBDA3583507094',
+				height: 3407535,
+				type: 'TRANSFER',
+				value: [
+					{
+						id: '6F7904E6DF09D21D',
+						name: '6F7904E6DF09D21D',
+						amount: 1
+					}
+				]
+			}));
 		});
 	});
 

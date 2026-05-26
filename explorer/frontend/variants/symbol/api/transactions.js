@@ -40,6 +40,8 @@ const SYMBOL_MESSAGE_TYPE = {
 };
 const DELEGATED_HARVESTING_PERSISTENT_MARKER = 'FE2A8061577301E2';
 const DELEGATED_HARVESTING_PERSISTENT_PAYLOAD_LENGTH = 264;
+const absoluteToRelativeByDivisibility = (amount, divisibility = config.NATIVE_MOSAIC_DIVISIBILITY) =>
+	Number(amount || 0) / Math.pow(10, Number(divisibility ?? config.NATIVE_MOSAIC_DIVISIBILITY) || 0);
 export const SYMBOL_TRANSACTION_TYPE = {
 	ACCOUNT_KEY_LINK: 'ACCOUNT_KEY_LINK',
 	NODE_KEY_LINK: 'NODE_KEY_LINK',
@@ -219,9 +221,11 @@ const messageFromDTO = message => {
 	};
 };
 
-const mosaicFromDTO = mosaic => {
+const mosaicFromDTO = (mosaic, divisibility) => {
 	const id = mosaic.id || config.NATIVE_MOSAIC_ID;
-	const amount = mosaic.amount === undefined || mosaic.amount === null ? null : absoluteToRelative(mosaic.amount);
+	const amount = mosaic.amount === undefined || mosaic.amount === null
+		? null
+		: absoluteToRelativeByDivisibility(mosaic.amount, divisibility);
 
 	return {
 		id,
@@ -352,12 +356,19 @@ const mosaicsFromDTO = (transaction, type) => {
 	return transaction.mosaics || [];
 };
 
-const transactionInfoFromDTO = data => {
+const transactionInfoFromDTO = (data, mosaicDivisibilityMap = {}) => {
 	const transaction = data.transaction || {};
 	const meta = data.meta || {};
 	const type = transactionTypeMap[transaction.type] || transaction.type;
 	const mosaics = mosaicsFromDTO(transaction, type);
-	const value = mosaics.map(mosaicFromDTO);
+	const value = mosaics.map(mosaic => {
+		const mosaicId = mosaic.id || config.NATIVE_MOSAIC_ID;
+		const divisibility = Object.prototype.hasOwnProperty.call(mosaicDivisibilityMap, mosaicId)
+			? mosaicDivisibilityMap[mosaicId]
+			: undefined;
+
+		return mosaicFromDTO(mosaic, divisibility);
+	});
 	const nativeTransfer = value.find(item => isNativeMosaicId(item.id));
 	const aliasAction = aliasActionFromDTO(transaction.aliasAction);
 	const linkAction = linkActionFromDTO(transaction.linkAction);
@@ -368,7 +379,7 @@ const transactionInfoFromDTO = data => {
 	const secret = secretFromDTO(transaction, type);
 
 	return {
-		hash: meta.hash,
+		hash: meta.hash || meta.aggregateHash,
 		height: Number(meta.height || 0),
 		type,
 		sender: transaction.signerAddress
@@ -393,6 +404,8 @@ const transactionInfoFromDTO = data => {
 const createTransactionSearchParams = (searchParams = {}) => {
 	const filter = { ...searchParams };
 
+	delete filter.mosaicDivisibility;
+
 	if (filter.types) {
 		const matchingTypes = transactionTypeFilterMap[filter.types] || [filter.types];
 		const matchingTypeCodes = matchingTypes.map(type => transactionTypeCodeMap[type] || type);
@@ -416,6 +429,7 @@ const createTransactionSearchParams = (searchParams = {}) => {
 
 	if (filter.mosaic) {
 		filter.transferMosaicId = filter.mosaic;
+		filter.embedded = 'true';
 		delete filter.mosaic;
 	}
 
@@ -425,12 +439,15 @@ const createTransactionSearchParams = (searchParams = {}) => {
 export const fetchTransactionPage = async searchParams => {
 	const filter = createTransactionSearchParams(searchParams);
 	const path = filter.group === 'unconfirmed' ? 'transactions/unconfirmed' : 'transactions/confirmed';
+	const mosaicDivisibilityMap = filter.transferMosaicId && searchParams?.mosaicDivisibility !== undefined
+		? { [filter.transferMosaicId]: searchParams.mosaicDivisibility }
+		: {};
 	delete filter.group;
 	const url = createSymbolSearchURL(path, filter, { orderBy: 'id' });
 	const response = await fetchSymbolNode(url.replace(`${config.SYMBOL_NODE_URL}/`, ''));
 	const pageNumber = Number(searchParams?.pageNumber || 1);
 
-	return createSymbolPage(response, pageNumber, transactionInfoFromDTO);
+	return createSymbolPage(response, pageNumber, data => transactionInfoFromDTO(data, mosaicDivisibilityMap));
 };
 
 export const fetchTransactionInfo = createTryFetchInfoFunction(async hash => {

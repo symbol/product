@@ -5,9 +5,13 @@ import { transactionPageResult } from '../test-utils/transactions';
 import * as AccountService from '@/api/accounts';
 import * as BlockService from '@/api/blocks';
 import * as MosaicService from '@/api/mosaics';
+import * as MosaicMetadataService from '@/api/mosaicMetadata';
+import * as MosaicReceiptService from '@/api/mosaicReceipts';
+import * as MosaicRestrictionService from '@/api/mosaicRestrictions';
 import * as TransactionService from '@/api/transactions';
 import MosaicInfo, { getServerSideProps } from '@/pages/mosaics/[id]';
 import * as utils from '@/utils';
+import { pageConfig } from '@/variants';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 
 jest.mock('@/api/accounts', () => {
@@ -31,6 +35,27 @@ jest.mock('@/api/mosaics', () => {
 	};
 });
 
+jest.mock('@/api/mosaicMetadata', () => {
+	return {
+		__esModule: true,
+		...jest.requireActual('@/api/mosaicMetadata')
+	};
+});
+
+jest.mock('@/api/mosaicReceipts', () => {
+	return {
+		__esModule: true,
+		...jest.requireActual('@/api/mosaicReceipts')
+	};
+});
+
+jest.mock('@/api/mosaicRestrictions', () => {
+	return {
+		__esModule: true,
+		...jest.requireActual('@/api/mosaicRestrictions')
+	};
+});
+
 jest.mock('@/api/transactions', () => {
 	return {
 		__esModule: true,
@@ -39,6 +64,17 @@ jest.mock('@/api/transactions', () => {
 });
 
 describe('MosaicInfo', () => {
+	const originalMosaicConfig = { ...pageConfig.mosaics };
+
+	beforeEach(() => {
+		Object.assign(pageConfig.mosaics, originalMosaicConfig);
+	});
+
+	afterEach(() => {
+		Object.assign(pageConfig.mosaics, originalMosaicConfig);
+		jest.restoreAllMocks();
+	});
+
 	describe('getServerSideProps', () => {
 		const runTest = async (mosaicInfo, expectedResult) => {
 			// Arrange:
@@ -108,6 +144,325 @@ describe('MosaicInfo', () => {
 			expect(screen.getByText(mosaicNameText)).toBeInTheDocument();
 			expect(screen.getByText(pageSectionText)).toBeInTheDocument();
 			expect(screen.getByText(creatorText)).toBeInTheDocument();
+		});
+
+		it('renders Symbol mosaic id, aliases, and all flags without created fields', () => {
+			// Arrange:
+			Object.assign(pageConfig.mosaics, {
+				nameColumnTitleKey: 'table_field_mosaicId',
+				showAlias: true,
+				showCreated: false,
+				showFlags: true,
+				showNamespaceDetail: false,
+				showRegistrationHeightDetail: false,
+				showUnlimitedExpirationProgress: true
+			});
+			const mosaicInfo = {
+				...mosaicInfoResult,
+				id: '6F7904E6DF09D21D',
+				name: '6F7904E6DF09D21D',
+				aliasNames: ['symbol.alias'],
+				isTransferable: true,
+				isSupplyMutable: false,
+				isRestrictable: true,
+				isRevokable: true
+			};
+			jest.spyOn(BlockService, 'fetchChainHight').mockImplementation(() => 10000);
+
+			// Act:
+			render(<MosaicInfo mosaicInfo={mosaicInfo} />);
+
+			// Assert:
+			expect(screen.getByText('table_field_mosaicId')).toBeInTheDocument();
+			expect(screen.getByText('6F7904E6DF09D21D')).toBeInTheDocument();
+			expect(screen.getByText('table_field_alias')).toBeInTheDocument();
+			expect(screen.getByText('symbol.alias')).toHaveAttribute('href', '/namespaces/symbol.alias');
+			expect(screen.queryByText('field_created')).not.toBeInTheDocument();
+			expect(screen.queryByText('No description')).not.toBeInTheDocument();
+			expect(screen.getByText('label_transferable')).toBeInTheDocument();
+			expect(screen.getByText('label_supplyMutable')).toBeInTheDocument();
+			expect(screen.getByText('label_restrictable')).toBeInTheDocument();
+			expect(screen.getByText('label_revokable')).toBeInTheDocument();
+			expect(screen.getByText('label_transferable').previousSibling.childNodes[0]).toHaveAttribute('alt', 'true');
+			expect(screen.getByText('label_supplyMutable').previousSibling.childNodes[0]).toHaveAttribute('alt', 'false');
+			expect(screen.getByText('label_restrictable').previousSibling.childNodes[0]).toHaveAttribute('alt', 'true');
+			expect(screen.getByText('label_revokable').previousSibling.childNodes[0]).toHaveAttribute('alt', 'true');
+		});
+
+		it('renders Symbol mosaic detail fields without namespace and direct registration height', async () => {
+			// Arrange:
+			Object.assign(pageConfig.mosaics, {
+				showNamespaceDetail: false,
+				showRegistrationHeightDetail: false,
+				showUnlimitedExpirationProgress: true
+			});
+			const mosaicInfo = {
+				...mosaicInfoResult,
+				supply: 10000,
+				divisibility: 2,
+				creator: 'TCJFUWF6GIGFDZAR3DFFWJB33HWPHKRZIESUVY',
+				registrationHeight: 3391646,
+				namespaceRegistrationHeight: null,
+				namespaceExpirationHeight: null,
+				isUnlimitedDuration: true
+			};
+			jest.spyOn(BlockService, 'fetchChainHight').mockImplementation(() => 3391646);
+
+			// Act:
+			render(<MosaicInfo mosaicInfo={mosaicInfo} />);
+
+			// Assert:
+			expect(screen.queryByText('field_mosaic_namespace')).not.toBeInTheDocument();
+			expect(screen.getByText('field_supply')).toBeInTheDocument();
+			expect(screen.getByText('10000')).toBeInTheDocument();
+			expect(screen.getByText('field_divisibility')).toBeInTheDocument();
+			expect(screen.getByText('2')).toBeInTheDocument();
+			expect(screen.getByText('field_creator')).toBeInTheDocument();
+			expect(screen.getByText(mosaicInfo.creator)).toBeInTheDocument();
+			expect(screen.queryByText('field_namespaceExpiration')).not.toBeInTheDocument();
+			expect(screen.getByText('field_expiration')).toBeInTheDocument();
+			await waitFor(() => expect(screen.getAllByText('Infinity')).toHaveLength(2));
+			expect(screen.getByText('field_registrationHeight')).toBeInTheDocument();
+			expect(screen.getByText('3391646')).toBeInTheDocument();
+			expect(screen.getByText('field_expirationHeight')).toBeInTheDocument();
+			expect(screen.queryByText('field_namespaceRegistrationHeight')).not.toBeInTheDocument();
+			expect(screen.queryByText('field_namespaceExpirationHeight')).not.toBeInTheDocument();
+		});
+
+		it('renders Symbol mosaic restriction list above distribution', async () => {
+			// Arrange:
+			Object.assign(pageConfig.mosaics, {
+				showRestrictionList: true
+			});
+			jest.spyOn(BlockService, 'fetchChainHight').mockImplementation(() => 10000);
+			jest.spyOn(MosaicRestrictionService, 'fetchMosaicRestrictionPage')
+				.mockResolvedValueOnce({
+					data: [
+						{
+							compositeHash: 'GLOBAL_COMPOSITE_HASH',
+							entryType: 'Mosaic Global Restriction',
+							restrictions: '6F7904E6DF09D21D Key 790526 Greater Than Or Equal 2'
+						}
+					],
+					pageNumber: 1
+				})
+				.mockResolvedValueOnce({
+					data: [
+						{
+							compositeHash: 'ADDRESS_COMPOSITE_HASH',
+							entryType: 'Mosaic Address Restriction',
+							targetAddress: 'TCJFUWF6GIGFDZAR3DFFWJB33HWPHKRZIESUVY',
+							restrictions: '790526: 10'
+						}
+					],
+					pageNumber: 1
+				});
+			const mosaicInfo = {
+				...mosaicInfoResult,
+				id: '6F7904E6DF09D21D'
+			};
+
+			// Act:
+			render(<MosaicInfo mosaicInfo={mosaicInfo} />);
+
+			// Assert:
+			expect(screen.getByText('section_mosaicRestrictionList').compareDocumentPosition(screen.getByText('section_distribution')))
+				.toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+			expect(screen.getByText('tab_mosaicGlobalRestriction')).toBeInTheDocument();
+			expect(screen.getByText('tab_mosaicAddressRestriction')).toBeInTheDocument();
+			await waitFor(() => expect(screen.getByText('GLOBAL_COMPOSITE_HASH')).toBeInTheDocument());
+			expect(screen.getByText('Mosaic Global Restriction')).toBeInTheDocument();
+			expect(screen.getByText('6F7904E6DF09D21D Key 790526 Greater Than Or Equal 2')).toBeInTheDocument();
+			fireEvent.click(screen.getByText('tab_mosaicAddressRestriction'));
+			await waitFor(() => expect(screen.getByText('ADDRESS_COMPOSITE_HASH')).toBeInTheDocument());
+			expect(screen.getByText('Mosaic Address Restriction')).toBeInTheDocument();
+			expect(screen.getByText('TCJFUWF6GIGFDZAR3DFFWJB33HWPHKRZIESUVY')).toBeInTheDocument();
+			expect(screen.getByText('790526: 10')).toBeInTheDocument();
+			expect(MosaicRestrictionService.fetchMosaicRestrictionPage).toHaveBeenNthCalledWith(1, {
+				pageNumber: 1,
+				mosaicId: '6F7904E6DF09D21D',
+				type: 1
+			});
+			expect(MosaicRestrictionService.fetchMosaicRestrictionPage).toHaveBeenNthCalledWith(2, {
+				pageNumber: 1,
+				mosaicId: '6F7904E6DF09D21D',
+				type: 0
+			});
+		});
+
+		it('renders Symbol mosaic metadata entries below restriction list', async () => {
+			// Arrange:
+			Object.assign(pageConfig.mosaics, {
+				showMetadataEntries: true,
+				showRestrictionList: true
+			});
+			jest.spyOn(BlockService, 'fetchChainHight').mockImplementation(() => 10000);
+			jest.spyOn(MosaicRestrictionService, 'fetchMosaicRestrictionPage').mockResolvedValue({
+				data: [],
+				pageNumber: 1
+			});
+			jest.spyOn(MosaicMetadataService, 'fetchMosaicMetadataPage').mockResolvedValue({
+				data: [
+					{
+						scopedMetadataKey: '0000676E69746172',
+						senderAddress: 'TDB5G2EV5WFLBQVCN5JYJWOK2UPTOCKO2X7QEEA',
+						targetAddress: 'TBR2EFNIGLKXKWYUOWN2YY7P2LC7QQLPOPPUB6A',
+						value: '<script>alert(1)</script>'
+					}
+				],
+				pageNumber: 1
+			});
+			const mosaicInfo = {
+				...mosaicInfoResult,
+				id: '37E190650E56B5A7'
+			};
+
+			// Act:
+			render(<MosaicInfo mosaicInfo={mosaicInfo} />);
+
+			// Assert:
+			expect(screen.getByText('section_mosaicRestrictionList').compareDocumentPosition(screen.getByText('section_metadataEntries')))
+				.toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+			expect(screen.getByText('section_metadataEntries').compareDocumentPosition(screen.getByText('section_distribution')))
+				.toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+			await waitFor(() => expect(screen.getByText('0000676E69746172')).toBeInTheDocument());
+			expect(screen.getByText('table_field_senderAddress')).toBeInTheDocument();
+			expect(screen.getByText('table_field_targetAddress')).toBeInTheDocument();
+			expect(screen.getByText('table_field_value')).toBeInTheDocument();
+			expect(screen.getByText('TDB5G2EV5WFLBQVCN5JYJWOK2UPTOCKO2X7QEEA')).toBeInTheDocument();
+			expect(screen.getByText('TBR2EFNIGLKXKWYUOWN2YY7P2LC7QQLPOPPUB6A')).toBeInTheDocument();
+			expect(screen.getByText('<script>alert(1)</script>')).toBeInTheDocument();
+			expect(MosaicMetadataService.fetchMosaicMetadataPage).toHaveBeenCalledWith({
+				pageNumber: 1,
+				targetId: '37E190650E56B5A7'
+			});
+		});
+
+		it('renders Symbol mosaic balance transfer receipts below metadata entries', async () => {
+			// Arrange:
+			Object.assign(pageConfig.mosaics, {
+				showBalanceTransferReceipt: true,
+				showMetadataEntries: true
+			});
+			jest.spyOn(BlockService, 'fetchChainHight').mockImplementation(() => 10000);
+			jest.spyOn(MosaicMetadataService, 'fetchMosaicMetadataPage').mockResolvedValue({
+				data: [],
+				pageNumber: 1
+			});
+			jest.spyOn(MosaicReceiptService, 'fetchMosaicReceiptPage').mockResolvedValue({
+				data: [
+					{
+						version: 1,
+						type: 'mosaicRentalFee',
+						to: 'TB3DHDY4YDE4CNMARLYFZ7USU2OLAI4QFS4IZ6Q',
+						mosaic: {
+							id: '72C0212E67A08BCE',
+							name: '72C0212E67A08BCE',
+							amount: 172.8,
+							isNative: true
+						}
+					}
+				],
+				pageNumber: 1
+			});
+			jest.spyOn(MosaicReceiptService, 'fetchMosaicArtifactExpiryReceiptPage').mockResolvedValue({
+				data: [],
+				pageNumber: 1
+			});
+			const mosaicInfo = {
+				...mosaicInfoResult,
+				registrationHeight: 3407435
+			};
+
+			// Act:
+			render(<MosaicInfo mosaicInfo={mosaicInfo} />);
+
+			// Assert:
+			expect(screen.getByText('section_metadataEntries').compareDocumentPosition(screen.getByText('section_balanceTransferReceipt')))
+				.toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+			expect(screen.getByText('section_balanceTransferReceipt').compareDocumentPosition(screen.getByText('section_distribution')))
+				.toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+			await waitFor(() => expect(screen.getByText('receiptType_mosaicRentalFee')).toBeInTheDocument());
+			expect(screen.getByText('1')).toBeInTheDocument();
+			expect(screen.getByText('TB3DHDY4YDE4CNMARLYFZ7USU2OLAI4QFS4IZ6Q')).toBeInTheDocument();
+			expect(screen.getByText('172')).toBeInTheDocument();
+			expect(screen.getByText('.8')).toBeInTheDocument();
+			expect(MosaicReceiptService.fetchMosaicReceiptPage).toHaveBeenCalledWith({
+				pageNumber: 1,
+				height: 3407435
+			});
+		});
+
+		it('renders Symbol mosaic artifact expiry receipts below balance transfer receipts when results exist', async () => {
+			// Arrange:
+			Object.assign(pageConfig.mosaics, {
+				showArtifactExpiryReceipt: true,
+				showBalanceTransferReceipt: true
+			});
+			jest.spyOn(BlockService, 'fetchChainHight').mockImplementation(() => 10000);
+			jest.spyOn(MosaicReceiptService, 'fetchMosaicReceiptPage').mockResolvedValue({
+				data: [],
+				pageNumber: 1
+			});
+			jest.spyOn(MosaicReceiptService, 'fetchMosaicArtifactExpiryReceiptPage').mockResolvedValue({
+				data: [
+					{
+						version: 1,
+						type: 'mosaicExpired',
+						artifactId: '54521A62D14B4558'
+					}
+				],
+				pageNumber: 1
+			});
+			const mosaicInfo = {
+				...mosaicInfoResult,
+				namespaceExpirationHeight: 3396665
+			};
+
+			// Act:
+			render(<MosaicInfo mosaicInfo={mosaicInfo} />);
+
+			// Assert:
+			await waitFor(() => expect(screen.getByText('section_artifactExpiryReceipt')).toBeInTheDocument());
+			expect(screen.getByText('section_balanceTransferReceipt').compareDocumentPosition(screen.getByText('section_artifactExpiryReceipt')))
+				.toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+			expect(screen.getByText('section_artifactExpiryReceipt').compareDocumentPosition(screen.getByText('section_distribution')))
+				.toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+			expect(screen.getByText('receiptType_mosaicExpired')).toBeInTheDocument();
+			expect(screen.getByText('54521A62D14B4558')).toBeInTheDocument();
+			expect(MosaicReceiptService.fetchMosaicArtifactExpiryReceiptPage).toHaveBeenCalledWith({
+				pageNumber: 1,
+				height: 3396665
+			});
+		});
+
+		it('does not render Symbol mosaic artifact expiry receipts when there are no results or the request fails', async () => {
+			// Arrange:
+			Object.assign(pageConfig.mosaics, {
+				showArtifactExpiryReceipt: true
+			});
+			jest.spyOn(BlockService, 'fetchChainHight').mockImplementation(() => 10000);
+			const fetchMosaicArtifactExpiryReceiptPage = jest.spyOn(MosaicReceiptService, 'fetchMosaicArtifactExpiryReceiptPage');
+			fetchMosaicArtifactExpiryReceiptPage
+				.mockResolvedValueOnce({
+					data: [],
+					pageNumber: 1
+				})
+				.mockRejectedValueOnce(new Error('failed'));
+			const mosaicInfo = {
+				...mosaicInfoResult,
+				namespaceExpirationHeight: 3396665
+			};
+
+			// Act + Assert:
+			const { unmount } = render(<MosaicInfo mosaicInfo={mosaicInfo} />);
+			await waitFor(() => expect(fetchMosaicArtifactExpiryReceiptPage).toHaveBeenCalledTimes(1));
+			expect(screen.queryByText('section_artifactExpiryReceipt')).not.toBeInTheDocument();
+			unmount();
+
+			render(<MosaicInfo mosaicInfo={mosaicInfo} />);
+			await waitFor(() => expect(fetchMosaicArtifactExpiryReceiptPage).toHaveBeenCalledTimes(2));
+			expect(screen.queryByText('section_artifactExpiryReceipt')).not.toBeInTheDocument();
 		});
 	});
 

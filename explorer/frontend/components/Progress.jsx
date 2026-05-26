@@ -6,7 +6,7 @@ const colorMap = {
 	danger: '#B94F4F'
 };
 
-const Progress = ({ titleLeft, titleRight, valueLeft, valueRight, value, className, onClick, type }) => {
+const Progress = ({ titleLeft, titleRight, valueLeft, valueRight, valueRightText, value, className, onClick, type }) => {
 	const progressPercentage = ((value - valueLeft) * 100) / (valueRight - valueLeft);
 	const progressStyle = {
 		width: `${progressPercentage < 0 ? 0 : progressPercentage}%`,
@@ -18,7 +18,7 @@ const Progress = ({ titleLeft, titleRight, valueLeft, valueRight, value, classNa
 			<div className={styles.fields}>
 				<Field title={titleLeft}>{valueLeft}</Field>
 				<Field title={titleRight} textAlign="right">
-					{valueRight}
+					{valueRightText || valueRight}
 				</Field>
 			</div>
 			<div className={styles.progress}>

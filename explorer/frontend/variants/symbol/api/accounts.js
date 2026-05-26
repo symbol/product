@@ -6,6 +6,8 @@ const ZERO_PUBLIC_KEY = '0'.repeat(64);
 const ACCOUNT_NAMESPACE_LOOKUP_ERROR_STATUSES = [400, 404, 409];
 
 const parseNetworkAmount = value => Number(`${value || ''}`.replace(/'/g, ''));
+const absoluteToRelativeByDivisibility = (amount, divisibility = config.NATIVE_MOSAIC_DIVISIBILITY) =>
+	Number(amount || 0) / Math.pow(10, divisibility || 0);
 
 const fetchTotalChainImportance = async () => {
 	const networkProperties = await fetchSymbolNode('network/properties');
@@ -46,10 +48,12 @@ const fetchAccountNamespaces = async addresses => {
 	}
 };
 
-const accountInfoFromDTO = (data, accountNamespaces = {}, totalChainImportance) => {
+const accountInfoFromDTO = (data, accountNamespaces = {}, totalChainImportance, balanceMosaicId, balanceMosaicDivisibility) => {
 	const account = data.account || {};
 	const mosaics = account.mosaics || [];
-	const nativeMosaic = mosaics[0];
+	const balanceMosaic = balanceMosaicId
+		? mosaics.find(mosaic => mosaic.id === balanceMosaicId)
+		: mosaics[0];
 	const address = hexToSymbolAddress(account.address);
 
 	return {
@@ -57,7 +61,9 @@ const accountInfoFromDTO = (data, accountNamespaces = {}, totalChainImportance) 
 		publicKey: account.publicKey === ZERO_PUBLIC_KEY ? null : (account.publicKey || null),
 		description: null,
 		namespaces: accountNamespaces[address] || [],
-		balance: absoluteToRelative(nativeMosaic?.amount || 0),
+		balance: balanceMosaicId
+			? absoluteToRelativeByDivisibility(balanceMosaic?.amount || 0, balanceMosaicDivisibility)
+			: absoluteToRelative(balanceMosaic?.amount || 0),
 		vestedBalance: 0,
 		importance: (Number(account.importance || 0) / totalChainImportance) * 100,
 		mosaics: mosaics.map(m => ({
@@ -80,11 +86,19 @@ const accountInfoFromDTO = (data, accountNamespaces = {}, totalChainImportance) 
 
 export const fetchAccountPage = async searchParams => {
 	const cleanParams = { ...(searchParams || {}) };
-	const { isLatest, isRichList } = cleanParams;
+	const { isLatest, isRichList, mosaicDivisibility } = cleanParams;
 
 	delete cleanParams.isLatest;
 	delete cleanParams.isActiveHarvesting;
 	delete cleanParams.isRichList;
+	delete cleanParams.mosaicDivisibility;
+
+	if (cleanParams.mosaic) {
+		cleanParams.mosaicId = cleanParams.mosaic;
+		delete cleanParams.mosaic;
+		cleanParams.orderBy = 'balance';
+		cleanParams.order = 'desc';
+	}
 
 	if (isLatest)
 		cleanParams.orderBy = 'id';
@@ -101,7 +115,13 @@ export const fetchAccountPage = async searchParams => {
 	const totalChainImportance = await fetchTotalChainImportance();
 	const accountNamespaces = await fetchAccountNamespaces(addresses);
 
-	return createSymbolPage(response, pageNumber, data => accountInfoFromDTO(data, accountNamespaces, totalChainImportance));
+	return createSymbolPage(response, pageNumber, data => accountInfoFromDTO(
+		data,
+		accountNamespaces,
+		totalChainImportance,
+		cleanParams.mosaicId,
+		mosaicDivisibility
+	));
 };
 
 export const fetchAccountInfo = createTryFetchInfoFunction(async address => {

@@ -251,6 +251,49 @@ describe('variants/symbol/api/accounts', () => {
 			expect(makeRequest).toHaveBeenNthCalledWith(1, expectedUrl);
 			expect(makeRequest).toHaveBeenNthCalledWith(2, '/api/symbol-node/network/properties');
 		});
+
+		it('fetches mosaic holder accounts ordered by target mosaic balance', async () => {
+			// Arrange:
+			const targetMosaicId = '6F7904E6DF09D21D';
+			const makeRequest = jest.spyOn(utils, 'makeRequest');
+			makeRequest.mockResolvedValueOnce({
+				data: [
+					{
+						account: {
+							address: 'TALICE2GMA34VQ75JZDLEA5DR55VBILN4F6A3BY',
+							publicKey: 'A'.repeat(64),
+							importance: '0',
+							mosaics: [
+								{
+									id: config.NATIVE_MOSAIC_ID,
+									amount: '1234567'
+								},
+								{
+									id: targetMosaicId,
+									amount: '500000'
+								}
+							]
+						}
+					}
+				]
+			});
+			makeRequest.mockResolvedValueOnce(networkPropertiesResponse);
+			makeRequest.mockResolvedValueOnce({ accountNames: [] });
+
+			// Act:
+			const result = await fetchAccountPage({
+				pageNumber: 2,
+				mosaic: targetMosaicId,
+				mosaicDivisibility: 2
+			});
+
+			// Assert:
+			expect(makeRequest).toHaveBeenNthCalledWith(
+				1,
+				'/api/symbol-node/accounts?pageNumber=2&pageSize=10&order=desc&mosaicId=6F7904E6DF09D21D&orderBy=balance'
+			);
+			expect(result.data[0].balance).toBe(5000);
+		});
 	});
 
 	describe('fetchAccountInfo', () => {
