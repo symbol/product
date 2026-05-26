@@ -1,5 +1,7 @@
 import datetime
+import json
 import unittest
+from pathlib import Path
 
 import psycopg2
 import testing.postgresql
@@ -211,6 +213,43 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 		self.assertEqual(results[4][0], 'namespaces')
 		self.assertEqual(results[5][0], 'transactions')
 		self.assertEqual(results[6][0], 'transactions_mosaic')
+
+	def test_can_seed_account_remarks(self):
+		# Arrange:
+		account_remarks_path = Path(__file__).resolve().parents[1] / 'resources' / 'test_remarks.json'
+
+		with open(account_remarks_path, 'rt', encoding='utf8') as seed_file:
+			account_remarks = json.load(seed_file)
+
+		with NemDatabase(self.db_config) as nem_database:
+			nem_database.create_tables()
+			cursor = nem_database.connection.cursor()
+
+			# Act:
+			nem_database.seed_account_remarks(account_remarks_path)
+
+			cursor.execute(
+				'''
+				SELECT
+					encode(address, 'hex'),
+					remarks
+				FROM account_remarks
+				ORDER BY address
+				'''
+			)
+
+			results = cursor.fetchall()
+
+		# Assert:
+		expected_results = sorted(
+			(
+				Address(account_remark['address']).bytes.hex(),
+				account_remark['remarks']
+			)
+			for account_remark in account_remarks
+		)
+
+		self.assertEqual(expected_results, sorted(results))
 
 	def test_can_insert_block(self):
 		# Arrange:
