@@ -25,7 +25,7 @@ export const fetchAccountPage = async searchParams => {
 	}
 
 	if (searchCriteria.filter.mosaic) {
-		searchCriteria.filter = { namespaceName: searchCriteria.filter.mosaic };
+		searchCriteria.filter = { namespace_name: searchCriteria.filter.mosaic };
 		url = createSearchURL(createApiUrl('mosaic/rich/list'), searchCriteria);
 	} else {
 		url = createSearchURL(createApiUrl('accounts'), searchCriteria);

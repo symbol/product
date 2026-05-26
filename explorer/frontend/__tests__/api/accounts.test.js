@@ -38,7 +38,7 @@ describe('api/accounts', () => {
 				pageSize: 123,
 				mosaic: 'custom.mosaic'
 			};
-			const expectedURL = 'https://explorer.backend/mosaic/rich/list?limit=123&offset=123&namespaceName=custom.mosaic';
+			const expectedURL = 'https://explorer.backend/mosaic/rich/list?limit=123&offset=123&namespace_name=custom.mosaic';
 			const expectedResult = accountPageMosaicFilterResult;
 
 			// Act + Assert:
