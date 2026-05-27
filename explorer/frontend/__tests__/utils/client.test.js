@@ -1,4 +1,4 @@
-import { copyToClipboard, createPageHref, handleNavigationItemClick } from '@/utils/client';
+import { copyToClipboard, createAssetURL, createPageHref, handleNavigationItemClick } from '@/utils/client';
 
 describe('utils/client', () => {
 	describe('copyToClipboard', () => {
@@ -237,6 +237,30 @@ describe('utils/client', () => {
 
 			// Act + Assert:
 			runHandleNavigationItemClickTest(isNavigationDisabled, onClick, shouldCallOnClick, shouldCallPreventDefault);
+		});
+	});
+
+	describe('createAssetURL', () => {
+		it('keeps legacy NEM asset paths by default', () => {
+			// Act:
+			const result = createAssetURL('/images/icon-copy.png', { PLATFORM: 'nem' });
+
+			// Assert:
+			expect(result).toBe('/images/icon-copy.png');
+		});
+
+		it('maps generic logo names to legacy NEM logo assets', () => {
+			// Act + Assert:
+			expect(createAssetURL('/images/logo.png', { PLATFORM: 'nem' })).toBe('/images/logo-nem.png');
+			expect(createAssetURL('/images/logo-outline.svg', { PLATFORM: 'nem' })).toBe('/images/logo-nem-outline.svg');
+		});
+
+		it('maps image assets into the Symbol public asset directory', () => {
+			// Act:
+			const result = createAssetURL('/images/logo-nem-outline.svg', { PLATFORM: 'symbol' });
+
+			// Assert:
+			expect(result).toBe('/symbol/images/logo-outline.svg');
 		});
 	});
 });

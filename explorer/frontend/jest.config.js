@@ -34,7 +34,10 @@ const customJestConfig = {
 	coveragePathIgnorePatterns: ['/test-utils/'],
 	clearMocks: true,
 	coverageProvider: 'babel',
-	moduleNameMapper: mapPathsToModuleNameMapper(),
+	moduleNameMapper: {
+		...mapPathsToModuleNameMapper(),
+		'^@noble/hashes/sha3.js$': '<rootDir>/__tests__/test-utils/sha3.js'
+	},
 	transform: {},
 	resetMocks: true,
 	restoreMocks: true,

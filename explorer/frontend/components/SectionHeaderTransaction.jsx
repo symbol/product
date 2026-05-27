@@ -10,7 +10,7 @@ const SectionHeaderTransaction = ({ height, timestamp }) => {
 			<CustomImage className={styles.icon} src="/images/icon-transaction-header-block.svg" alt="Block" />
 			<div>
 				<div className={styles.title}>{height}</div>
-				<ValueTimestamp value={timestamp} hasTime />
+				{!!timestamp && <ValueTimestamp value={timestamp} hasTime />}
 			</div>
 		</Link>
 	);

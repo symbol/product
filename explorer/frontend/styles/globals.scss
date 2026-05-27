@@ -27,10 +27,7 @@ body,
 	@extend %fill;
 
 	color: $color-text-body;
-	font-weight: 400;
-	font-size: 12px;
-	font-family: 'Nunito Sans', sans-serif;
-	line-height: 16px;
+	font: $font-body;
 	background-color: $color-background-main;
 }
 
@@ -43,23 +40,31 @@ body {
 }
 
 h1 {
+	color: $color-text-h1;
 	font: $font-h1;
+	text-transform: $text-transform-h1;
 	margin-block: 0;
 }
 
 h2 {
+	color: $color-text-h2;
 	font: $font-h2;
+	text-transform: $text-transform-h2;
 	margin-block: 0;
 }
 
 h3 {
+	color: $color-text-h3;
 	font: $font-h3;
+	text-transform: $text-transform-h3;
 	margin-block: 0;
 }
 
 h4 {
 	margin: 0;
+	color: $color-text-h4;
 	font: $font-h4;
+	text-transform: $text-transform-h4;
 	margin-block: 0;
 }
 
@@ -145,11 +150,11 @@ a {
 
 .stripes {
 	& > *:nth-child(even) {
-		background-color: #fcfcfc;
+		background-color: $color-background-stripe-even;
 	}
 
 	& > *:hover {
-		background-color: #fafafa;
+		background-color: $color-background-stripe-hover;
 		transition: color 250ms;
 	}
 }
@@ -164,7 +169,7 @@ a {
 	--toastify-color-warning: #{$color-warning};
 	--toastify-color-error: #{$color-danger};
 	--toastify-toast-width: 20rem;
-	--toastify-toast-background: #fff;
+	--toastify-toast-background: #{$color-background-card};
 	--toastify-toast-min-height: 2rem;
 	--toastify-toast-max-height: 5rem;
 }

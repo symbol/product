@@ -21,7 +21,7 @@ const TransactionPreview = ({ type, group, signer, hash, timestamp, amount, bloc
 				<div className={styles.type}>{typeText}</div>
 				{!!hash && <ValueTransactionHash value={hash} />}
 				{isUnconfirmed && <span>{t('value_transactionConfirmationTime', { value: blockTime })}</span>}
-				{!isUnconfirmed && <ValueAge value={timestamp} />}
+				{!isUnconfirmed && !!timestamp && <ValueAge value={timestamp} />}
 			</div>
 			<div className={styles.amount}>
 				<ValueMosaic isNative amount={amount} />

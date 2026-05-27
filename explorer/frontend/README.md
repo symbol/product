@@ -13,6 +13,7 @@ frontend/
 ├── pages/            # Website pages .
 ├── public/           # Images, fonts and other static assets
 ├── styles/           # Global SCSS files
+├── variants/         # Chain-specific frontend adapters and theme configuration
 └── utils/            # Utility functions and helpers
 ```
 
@@ -24,17 +25,19 @@ All environment variables listed below are required for both development and pro
 
 These variables are exposed to the browser, meaning they can be accessed both on the server and in the client-side code
 
-- **`NATIVE_MOSAIC_ID`**: Native mosaic ID. Example: `nem.xem`.
+- **`PLATFORM`** / **`NEXT_PUBLIC_PLATFORM`**: Explorer variant. Supported values: `nem`, `symbol`. Defaults to `nem`.
 
-- **`NATIVE_MOSAIC_TICKER`**: Native mosaic ticker. Example: `XEM`.
+- **`NATIVE_MOSAIC_ID`** / **`NEXT_PUBLIC_NATIVE_MOSAIC_ID`**: Native mosaic ID. Example: `nem.xem`.
 
-- **`NATIVE_MOSAIC_DIVISIBILITY`**: Native mosaic divisibility. Example: `6`.
+- **`NATIVE_MOSAIC_TICKER`** / **`NEXT_PUBLIC_NATIVE_MOSAIC_TICKER`**: Native mosaic ticker. Example: `XEM`.
 
-- **`BLOCKCHAIN_UNWIND_LIMIT`**: Blockchain unwind limit. Example: `360`.
+- **`NATIVE_MOSAIC_DIVISIBILITY`** / **`NEXT_PUBLIC_NATIVE_MOSAIC_DIVISIBILITY`**: Native mosaic divisibility. Example: `6`.
 
-- **`REQUEST_TIMEOUT`**: The timeout duration (in milliseconds) for network requests made by the application. Example: `15000` (15 seconds).
+- **`BLOCKCHAIN_UNWIND_LIMIT`** / **`NEXT_PUBLIC_BLOCKCHAIN_UNWIND_LIMIT`**: Blockchain unwind limit. Example: `360`.
 
-- **`API_BASE_URL`**: Explorer REST API endpoint. Example: `http://explorer-backend.com:4000/api/nem`.
+- **`REQUEST_TIMEOUT`** / **`NEXT_PUBLIC_REQUEST_TIMEOUT`**: The timeout duration (in milliseconds) for network requests made by the application. Example: `15000` (15 seconds).
+
+- **`API_BASE_URL`** / **`NEXT_PUBLIC_API_BASE_URL`**: Explorer REST API endpoint. Example: `http://explorer-backend.com:4000/api/nem`.
 
 - **`SUPERNODE_API_URL`**: Supernodes API endpoint. Example: `https://nem.io/supernode/api`.
 
