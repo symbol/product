@@ -2,7 +2,7 @@ import { fetchBackendHealthStatus } from '@/api/health';
 import Footer from '@/components/Footer';
 import Header from '@/components/Header';
 import PageLoadingIndicator from '@/components/PageLoadingIndicator';
-import config from '@/config';
+import config, { serializeAppConfig } from '@/config';
 import { STORAGE_KEY } from '@/constants';
 import { ConfigProvider } from '@/contexts/ConfigContext';
 import styles from '@/styles/pages/Layout.module.scss';
@@ -59,7 +59,7 @@ const AppComponent = ({ Component, pageProps, appConfig }) => {
 
 	return (
 		<div className={styles.wrapper}>
-			<script dangerouslySetInnerHTML={{ __html: `window.appConfig = ${JSON.stringify(appConfig)};` }} />
+			<script dangerouslySetInnerHTML={{ __html: `window.appConfig = ${serializeAppConfig(appConfig)};` }} />
 			<ConfigProvider>
 				<Header backendStatus={backendStatus} />
 				<ToastContainer autoClose={2000} className="toast-container" hideProgressBar pauseOnHover />
