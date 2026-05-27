@@ -297,4 +297,122 @@ describe('variants/symbol/api', () => {
 			pageNumber: 1
 		});
 	});
+
+	it('maps Symbol accounts/search responses into Explorer account rows', async () => {
+		// Arrange:
+		const { makeRequest } = require('@/utils/server');
+		const { fetchAccountPage } = require('@/variants/symbol/api/accounts');
+		const response = {
+			data: [
+				{
+					account: {
+						address: '981308B3321751BD49DF567C2A928893BB3F9097AA354A84',
+						addressHeight: '3410446',
+						publicKey: '2121257F481EBAB9000D10BDEDB5670EEF83D4AEA552BDC208B55F619752F777',
+						importance: '4500000000000000',
+						mosaics: [
+							{
+								id: 'E74B99BA41F4AFEE',
+								amount: '500000000'
+							},
+							{
+								id: '85BBEA6CC462B244',
+								amount: '25'
+							}
+						],
+						supplementalPublicKeys: {
+							linked: {
+								publicKey: 'E16D2700853345E7A565F35AFB195C4CF19602B64BCE47BC375F3DA353AE04D9'
+							}
+						}
+					}
+				}
+			],
+			pagination: {
+				pageNumber: 2,
+				pageSize: 1
+			}
+		};
+		makeRequest.mockResolvedValue(response);
+
+		// Act:
+		const result = await fetchAccountPage({
+			order: 'asc',
+			pageNumber: 2,
+			pageSize: 25
+		});
+
+		// Assert:
+		expect(makeRequest).toHaveBeenCalledWith('/api/symbol-node/accounts?pageNumber=2&pageSize=25&order=asc');
+		expect(result).toEqual({
+			data: [
+				{
+					remoteAddress: null,
+					address: 'TAJQRMZSC5I32SO7KZ6CVEUISO5T7EEXVI2UVBA',
+					publicKey: '2121257F481EBAB9000D10BDEDB5670EEF83D4AEA552BDC208B55F619752F777',
+					description: null,
+					balance: 500,
+					vestedBalance: 0,
+					mosaics: [
+						{
+							name: 'XYM',
+							id: 'E74B99BA41F4AFEE',
+							amount: 500,
+							isCreatedByAccount: false
+						},
+						{
+							name: '85BBEA6CC462B244',
+							id: '85BBEA6CC462B244',
+							amount: 0.000025,
+							isCreatedByAccount: false
+						}
+					],
+					importance: 50,
+					harvestedBlocks: null,
+					harvestedFees: null,
+					height: 3410446,
+					minCosignatories: 0,
+					cosignatoryOf: [],
+					cosignatories: [],
+					isMultisig: false,
+					isHarvestingActive: true
+				}
+			],
+			pageNumber: 2
+		});
+	});
+
+	it('maps Symbol account info responses with zero public keys and missing mosaics', async () => {
+		// Arrange:
+		const { makeRequest } = require('@/utils/server');
+		const { fetchAccountInfo, fetchAccountInfoByPublicKey } = require('@/variants/symbol/api/accounts');
+		const response = {
+			account: {
+				address: '98EC86FADAAEAACDC3C4119003D4547BF95119602B48D374',
+				publicKey: '0000000000000000000000000000000000000000000000000000000000000000'
+			}
+		};
+		makeRequest.mockResolvedValue(response);
+
+		// Act:
+		const accountByAddress = await fetchAccountInfo('TDWINDW2V2VM3Q6ECDIAHVKUPP4VCGLAFNE5G5A');
+		const accountByPublicKey = await fetchAccountInfoByPublicKey('0000000000000000000000000000000000000000000000000000000000000000');
+
+		// Assert:
+		expect(makeRequest).toHaveBeenNthCalledWith(1, '/api/symbol-node/accounts/TDWINDW2V2VM3Q6ECDIAHVKUPP4VCGLAFNE5G5A');
+		expect(makeRequest).toHaveBeenNthCalledWith(
+			2,
+			'/api/symbol-node/accounts/0000000000000000000000000000000000000000000000000000000000000000'
+		);
+		expect(accountByAddress).toMatchObject({
+			address: 'TDWIN6W2V2VM3Q6ECGIAHVCUPP4VCGLAFNENG5A',
+			publicKey: null,
+			balance: 0,
+			mosaics: [],
+			importance: 0,
+			height: null,
+			isHarvestingActive: false
+		});
+		expect(accountByPublicKey).toEqual(accountByAddress);
+	});
 });
