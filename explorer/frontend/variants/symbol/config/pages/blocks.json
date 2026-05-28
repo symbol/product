@@ -1,5 +1,9 @@
 {
 	"showFinalization": true,
 	"showStatementCount": true,
-	"showBlockReward": true
+	"showBlockReward": true,
+	"showBlockType": true,
+	"showBlockExtendedDetails": true,
+	"showBlockMerkleInfo": true,
+	"showBlockReceipts": true
 }

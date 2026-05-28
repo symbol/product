@@ -5,10 +5,13 @@
 	flex-direction: row;
 	gap: $spacing-base / 2;
 	align-items: center;
+	width: 100%;
+	min-width: 0;
 	max-width: 100%;
 }
 
 .text {
+	min-width: 0;
 	max-width: 100%;
 	overflow: hidden;
 	white-space: nowrap;

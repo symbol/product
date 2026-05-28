@@ -11,7 +11,11 @@ const ReactApexChart = dynamic(() => import('react-apexcharts'), { ssr: false })
 
 const MAX_DATA_LENGTH = 400;
 
-const Tooltip = ({ fee }) => <ValueMosaic isNative amount={fee} />;
+const Tooltip = ({ fee }) => (
+	<div className={styles.tooltip}>
+		<ValueMosaic isNative amount={fee} isNavigationDisabled />
+	</div>
+);
 
 const ValueTransactionSquares = ({ data = [], isTransactionPreviewEnabled, isLoading, className }) => {
 	const { t } = useTranslation('common');

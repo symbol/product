@@ -8,6 +8,17 @@
 	animation-name: fade-in;
 	animation-duration: 250ms;
 	animation-timing-function: linear;
+
+	/* stylelint-disable selector-pseudo-class-no-unknown */
+	:global(.apexcharts-tooltip) {
+		z-index: 10 !important;
+		overflow: visible !important;
+		background: transparent !important;
+		border: 0 !important;
+		box-shadow: none !important;
+		opacity: 1 !important;
+	}
+	/* stylelint-enable selector-pseudo-class-no-unknown */
 }
 
 .emptyDataMessage {
@@ -34,6 +45,24 @@
 	animation-name: fade-in;
 	animation-duration: 250ms;
 	animation-timing-function: linear;
+}
+
+.tooltip {
+	padding: $spacing-base;
+	color: $color-text-tooltip;
+	background-color: $color-background-tooltip;
+	border-radius: $border-radius-chip;
+	box-shadow: 0 0.3rem 1.5rem rgba(0, 0, 0, 25%);
+
+	& a {
+		padding: 0;
+		color: $color-text-tooltip;
+		background: transparent;
+	}
+
+	& img {
+		filter: brightness(0) invert(1);
+	}
 }
 
 .selectedTransaction {

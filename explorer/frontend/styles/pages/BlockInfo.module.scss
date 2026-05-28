@@ -13,11 +13,31 @@
 }
 
 .secondSectionCard {
-	height: 36rem;
+	min-height: 36rem;
 }
 
 .valueTransactionSquares {
 	height: 18rem;
+}
+
+.merkleRoots {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: $spacing-fields $spacing-padding;
+	min-width: 0;
+}
+
+.merkleRoot {
+	min-width: 0;
+}
+
+.merkleRootTitle {
+	font: $font-title;
+}
+
+.merkleSeparator {
+	height: 1px;
+	background-color: $color-separator-line-neutral;
 }
 
 @media #{$screen-mobile} {
@@ -31,5 +51,9 @@
 
 	.secondSectionCard {
 		height: auto;
+	}
+
+	.merkleRoots {
+		grid-template-columns: 1fr;
 	}
 }

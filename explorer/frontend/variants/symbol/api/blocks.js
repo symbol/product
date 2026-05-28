@@ -11,6 +11,22 @@ import config from '@/config';
 import { createTryFetchInfoFunction } from '@/utils/server';
 
 const INFLATION_RECEIPT_TYPE = 20803;
+const BLOCK_TYPE_NAMES = {
+	32835: 'Nemesis Block',
+	33091: 'Normal Block',
+	33347: 'Importance Block'
+};
+const STATE_HASH_SUB_CACHE_MERKLE_ROOT_KEYS = [
+	'accountState',
+	'namespace',
+	'mosaic',
+	'multisig',
+	'hashLockInfo',
+	'secretLookInfo',
+	'accountRestriction',
+	'mosaicRestriction',
+	'metadata'
+];
 
 const getBlockDTO = data => data?.block ? data : { block: data, meta: data?.meta || {} };
 
@@ -57,20 +73,34 @@ const blockInfoFromDTO = data => {
 	const block = dto.block || {};
 	const meta = dto.meta || {};
 	const difficulty = Number(block.difficulty || 0);
+	const blockType = BLOCK_TYPE_NAMES[Number(block.type)];
+	const stateHashSubCacheMerkleRoots = STATE_HASH_SUB_CACHE_MERKLE_ROOT_KEYS.reduce((roots, key, index) => ({
+		...roots,
+		[key]: meta.stateHashSubCacheMerkleRoots?.[index] || null
+	}), {});
 
 	return {
-		hash: meta.hash || block.hash,
+		hash: block.hash || meta.hash,
 		height: Number(block.height || 0),
 		signature: block.signature,
 		size: Number(block.size || 0),
 		timestamp: symbolTimestampToDate(block.timestamp || 0),
-		harvester: block.beneficiaryAddress
-			? hexToSymbolAddress(block.beneficiaryAddress)
-			: publicKeyToSymbolAddress(block.signerPublicKey),
+		harvester: publicKeyToSymbolAddress(block.signerPublicKey),
+		beneficiaryAddress: block.beneficiaryAddress ? hexToSymbolAddress(block.beneficiaryAddress) : null,
 		totalFee: absoluteToRelative(meta.totalFee || 0),
-		transactionCount: Number(meta.totalTransactionsCount || meta.transactionsCount || 0),
+		transactionCount: Number(meta.transactionsCount ?? meta.totalTransactionsCount ?? 0),
 		statementCount: Number(meta.statementsCount || 0),
-		difficulty: difficulty ? ((difficulty / Math.pow(10, 14)) * 100).toFixed(2) : 0
+		rawDifficulty: `${block.difficulty || 0}`,
+		feeMultiplier: Number(block.feeMultiplier || 0),
+		proofGamma: block.proofGamma,
+		proofScalar: block.proofScalar,
+		proofVerificationHash: block.proofVerificationHash,
+		stateHash: block.stateHash,
+		stateHashSubCacheMerkleRoots,
+		receiptsHash: block.receiptsHash || block.receiptHash,
+		transactionsHash: block.transactionsHash || block.transactionHash,
+		difficulty: difficulty ? ((difficulty / Math.pow(10, 14)) * 100).toFixed(2) : 0,
+		...(blockType && { blockType })
 	};
 };
 
@@ -106,6 +136,12 @@ export const fetchChainHight = async () => {
 
 export const fetchBlockInfo = createTryFetchInfoFunction(async height => {
 	const block = await fetchSymbolNode(`blocks/${height}`);
+	const chainInfo = await fetchSymbolNode('chain/info');
+	const latestFinalizedBlockHeight = Number(chainInfo.latestFinalizedBlock?.height || 0);
+	const blockInfo = blockInfoFromDTO(block);
 
-	return blockInfoFromDTO(block);
+	return {
+		...blockInfo,
+		isFinalized: blockInfo.height <= latestFinalizedBlockHeight
+	};
 });

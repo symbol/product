@@ -1,6 +1,6 @@
 import config from '@/config';
 import * as utils from '@/utils/server';
-import { fetchBlockPage } from '@/variants/symbol/api/blocks';
+import { fetchBlockInfo, fetchBlockPage } from '@/variants/symbol/api/blocks';
 
 jest.mock('@/utils/server', () => {
 	return {
@@ -35,6 +35,17 @@ describe('variants/symbol/api/blocks', () => {
 						meta: {
 							hash: '5A9D',
 							statementsCount: 7,
+							stateHashSubCacheMerkleRoots: [
+								'ACCOUNT_STATE_ROOT',
+								'NAMESPACE_ROOT',
+								'MOSAIC_ROOT',
+								'MULTISIG_ROOT',
+								'HASH_LOCK_ROOT',
+								'SECRET_LOCK_ROOT',
+								'ACCOUNT_RESTRICTION_ROOT',
+								'MOSAIC_RESTRICTION_ROOT',
+								'METADATA_ROOT'
+							],
 							totalFee: '123456',
 							totalTransactionsCount: 3
 						},
@@ -44,7 +55,15 @@ describe('variants/symbol/api/blocks', () => {
 							signature: 'ABCD',
 							signerPublicKey: 'PUBLIC_KEY',
 							size: '456',
-							timestamp: '0'
+							timestamp: '0',
+							type: 33091,
+							feeMultiplier: 100,
+							proofGamma: 'GAMMA_1',
+							proofScalar: 'SCALAR_1',
+							proofVerificationHash: 'VERIFY_1',
+							stateHash: 'STATE_HASH_1',
+							receiptsHash: 'RECEIPTS_HASH_1',
+							transactionsHash: 'TRANSACTIONS_HASH_1'
 						}
 					},
 					{
@@ -60,7 +79,16 @@ describe('variants/symbol/api/blocks', () => {
 							signature: 'BCDE',
 							signerPublicKey: 'PUBLIC_KEY_2',
 							size: '789',
-							timestamp: '1000'
+							timestamp: '1000',
+							type: 33347,
+							beneficiaryAddress: 'BENEFICIARY_2',
+							feeMultiplier: 200,
+							proofGamma: 'GAMMA_2',
+							proofScalar: 'SCALAR_2',
+							proofVerificationHash: 'VERIFY_2',
+							stateHash: 'STATE_HASH_2',
+							receiptHash: 'RECEIPTS_HASH_2',
+							transactionHash: 'TRANSACTIONS_HASH_2'
 						}
 					}
 				]
@@ -128,9 +156,30 @@ describe('variants/symbol/api/blocks', () => {
 						size: 456,
 						timestamp: '2021-03-16T00:06:25.000Z',
 						harvester: 'PUBLIC_KEY',
+						beneficiaryAddress: null,
 						totalFee: 0.123456,
 						transactionCount: 3,
 						statementCount: 7,
+						rawDifficulty: '20000000000000',
+						feeMultiplier: 100,
+						proofGamma: 'GAMMA_1',
+						proofScalar: 'SCALAR_1',
+						proofVerificationHash: 'VERIFY_1',
+						stateHash: 'STATE_HASH_1',
+						stateHashSubCacheMerkleRoots: {
+							accountState: 'ACCOUNT_STATE_ROOT',
+							namespace: 'NAMESPACE_ROOT',
+							mosaic: 'MOSAIC_ROOT',
+							multisig: 'MULTISIG_ROOT',
+							hashLockInfo: 'HASH_LOCK_ROOT',
+							secretLookInfo: 'SECRET_LOCK_ROOT',
+							accountRestriction: 'ACCOUNT_RESTRICTION_ROOT',
+							mosaicRestriction: 'MOSAIC_RESTRICTION_ROOT',
+							metadata: 'METADATA_ROOT'
+						},
+						receiptsHash: 'RECEIPTS_HASH_1',
+						transactionsHash: 'TRANSACTIONS_HASH_1',
+						blockType: 'Normal Block',
 						blockReward: 0.123456,
 						isFinalized: true
 					},
@@ -142,9 +191,30 @@ describe('variants/symbol/api/blocks', () => {
 						size: 789,
 						timestamp: '2021-03-16T00:06:26.000Z',
 						harvester: 'PUBLIC_KEY_2',
+						beneficiaryAddress: 'BENEFICIARY_2',
 						totalFee: 0.222222,
 						transactionCount: 4,
 						statementCount: 2,
+						rawDifficulty: '30000000000000',
+						feeMultiplier: 200,
+						proofGamma: 'GAMMA_2',
+						proofScalar: 'SCALAR_2',
+						proofVerificationHash: 'VERIFY_2',
+						stateHash: 'STATE_HASH_2',
+						stateHashSubCacheMerkleRoots: {
+							accountState: null,
+							namespace: null,
+							mosaic: null,
+							multisig: null,
+							hashLockInfo: null,
+							secretLookInfo: null,
+							accountRestriction: null,
+							mosaicRestriction: null,
+							metadata: null
+						},
+						receiptsHash: 'RECEIPTS_HASH_2',
+						transactionsHash: 'TRANSACTIONS_HASH_2',
+						blockType: 'Importance Block',
 						blockReward: 0.5,
 						isFinalized: false
 					}
@@ -239,6 +309,88 @@ describe('variants/symbol/api/blocks', () => {
 			expect(makeRequest).toHaveBeenCalledWith('/api/symbol-node/blocks?pageNumber=1&pageSize=10&order=desc&orderBy=height');
 			expect(result.data[0].blockReward).toBe(0);
 			expect(result.data[0].isFinalized).toBe(false);
+		});
+	});
+
+	describe('fetchBlockInfo', () => {
+		it('maps block type and finalization status from Symbol block and chain info', async () => {
+			// Arrange:
+			const response = {
+				meta: {
+					hash: '5A9D',
+					statementsCount: 1,
+					stateHashSubCacheMerkleRoots: [
+						'ACCOUNT_STATE_ROOT',
+						'NAMESPACE_ROOT',
+						'MOSAIC_ROOT',
+						'MULTISIG_ROOT',
+						'HASH_LOCK_ROOT',
+						'SECRET_LOCK_ROOT',
+						'ACCOUNT_RESTRICTION_ROOT',
+						'MOSAIC_RESTRICTION_ROOT',
+						'METADATA_ROOT'
+					],
+					totalFee: '123456',
+					totalTransactionsCount: 3
+				},
+				block: {
+					difficulty: '20000000000000',
+					height: '1234',
+					signature: 'ABCD',
+					signerPublicKey: 'PUBLIC_KEY',
+					size: '456',
+					timestamp: '0',
+					type: 32835,
+					beneficiaryAddress: 'BENEFICIARY',
+					feeMultiplier: 100,
+					proofGamma: 'GAMMA',
+					proofScalar: 'SCALAR',
+					proofVerificationHash: 'VERIFY',
+					stateHash: 'STATE_HASH',
+					receiptsHash: 'RECEIPTS_HASH',
+					transactionsHash: 'TRANSACTIONS_HASH'
+				}
+			};
+			const chainInfoResponse = {
+				latestFinalizedBlock: {
+					height: '1234'
+				}
+			};
+			const makeRequest = jest.spyOn(utils, 'makeRequest');
+			makeRequest.mockResolvedValueOnce(response);
+			makeRequest.mockResolvedValueOnce(chainInfoResponse);
+
+			// Act:
+			const result = await fetchBlockInfo(1234);
+
+			// Assert:
+			expect(makeRequest).toHaveBeenNthCalledWith(1, '/api/symbol-node/blocks/1234');
+			expect(makeRequest).toHaveBeenNthCalledWith(2, '/api/symbol-node/chain/info');
+			expect(result).toMatchObject({
+				harvester: 'PUBLIC_KEY',
+				beneficiaryAddress: 'BENEFICIARY',
+				rawDifficulty: '20000000000000',
+				feeMultiplier: 100,
+				proofGamma: 'GAMMA',
+				proofScalar: 'SCALAR',
+				proofVerificationHash: 'VERIFY',
+				stateHash: 'STATE_HASH',
+				stateHashSubCacheMerkleRoots: {
+					accountState: 'ACCOUNT_STATE_ROOT',
+					namespace: 'NAMESPACE_ROOT',
+					mosaic: 'MOSAIC_ROOT',
+					multisig: 'MULTISIG_ROOT',
+					hashLockInfo: 'HASH_LOCK_ROOT',
+					secretLookInfo: 'SECRET_LOCK_ROOT',
+					accountRestriction: 'ACCOUNT_RESTRICTION_ROOT',
+					mosaicRestriction: 'MOSAIC_RESTRICTION_ROOT',
+					metadata: 'METADATA_ROOT'
+				},
+				receiptsHash: 'RECEIPTS_HASH',
+				transactionsHash: 'TRANSACTIONS_HASH',
+				blockType: 'Nemesis Block',
+				isFinalized: true
+			});
 		});
 	});
 });

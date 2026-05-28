@@ -8,14 +8,18 @@ import ValueMosaic from './ValueMosaic';
 import ValueTransactionSquares from './ValueTransactionSquares';
 import styles from '@/styles/components/BlockPreview.module.scss';
 import { createPageHref } from '@/utils';
+import { pageConfig } from '@/variants';
 import Link from 'next/link';
 import { useTranslation } from 'next-i18next';
 import { useEffect, useState } from 'react';
 
 const BlockExpanded = ({ data, transactions, isNext, isTransactionSquaresRendered, onClose }) => {
-	const { height, timestamp, totalFee } = data;
+	const { height, timestamp, totalFee, blockType, isFinalized } = data;
 	const { t } = useTranslation();
 	const href = createPageHref('blocks', height);
+	const isFinalizationShown = pageConfig.blocks.showFinalization;
+	const statusType = isFinalizationShown && isFinalized ? 'finalized' : isNext ? 'pending' : 'created';
+	const statusText = isFinalizationShown && isFinalized ? t('label_finalized') : isNext ? t('label_pending') : t('label_created');
 
 	return (
 		<div className="layout-flex-col-fields">
@@ -28,8 +32,7 @@ const BlockExpanded = ({ data, transactions, isNext, isTransactionSquaresRendere
 			</Field>
 			<div className="layout-grid-row">
 				<Field title={t('field_status')}>
-					{isNext && <ValueLabel text={t('label_pending')} type="pending" />}
-					{!isNext && <ValueLabel text={t('label_created')} type="created" />}
+					<ValueLabel text={statusText} type={statusType} />
 				</Field>
 				<FieldTimestamp value={timestamp} hasTime hasSeconds />
 			</div>
@@ -37,6 +40,11 @@ const BlockExpanded = ({ data, transactions, isNext, isTransactionSquaresRendere
 				<Field title={t('field_totalFee')}>
 					<ValueMosaic isNative amount={totalFee} />
 				</Field>
+				{pageConfig.blocks.showBlockType && (
+					<Field title={t('field_blockType')}>
+						{blockType}
+					</Field>
+				)}
 			</div>
 			<Field title={t('field_transactionFees')}>
 				{isTransactionSquaresRendered && <ValueTransactionSquares data={transactions} />}

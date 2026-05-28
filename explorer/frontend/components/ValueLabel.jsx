@@ -3,6 +3,7 @@ import styles from '@/styles/components/ValueLabel.module.scss';
 
 const iconsMap = {
 	created: '/images/icon-label-true.svg',
+	finalized: '/images/icon-label-confirmed.svg',
 	safe: '/images/icon-label-confirmed.svg',
 	confirmed: '/images/icon-label-confirmed.svg',
 	true: '/images/icon-label-true.svg',
@@ -15,6 +16,7 @@ const iconsMap = {
 };
 const styleMap = {
 	created: styles.success,
+	finalized: styles.success,
 	safe: styles.success,
 	confirmed: styles.success,
 	true: styles.success,
