@@ -1,3 +1,5 @@
+const UINT64_MAX = BigInt('18446744073709551615');
+
 /**
  * Enum of supported parameter type identifiers.
  * Each key maps to a handler in {@link ParameterTypeHandlers}.
@@ -53,7 +55,16 @@ export const ParameterTypeHandlers = {
 	},
 	[ParameterType.UINT64_STRING]: {
 		parse: value => value,
-		validate: value => typeof value === 'string' && /^\d+$/.test(value)
+		validate: value => {
+			if (typeof value !== 'string' || !/^\d+$/.test(value)) 
+				return false;
+			
+			try {
+				return BigInt(value) <= UINT64_MAX;
+			} catch {
+				return false;
+			}
+		}
 	},
 	[ParameterType.DECIMAL_STRING]: {
 		parse: value => value,
