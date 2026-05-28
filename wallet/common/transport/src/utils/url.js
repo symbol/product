@@ -136,12 +136,12 @@ const parseQueryParameters = queryString => {
 			throw new Error(`Failed to decode query parameter key: "${rawKey}"`);
 		}
 
-		const decodedValue = safeDecodeURIComponent(rawValue);
 		const isEmptyKey = !decodedKey;
 
 		if (isEmptyKey)
-			continue;
+			throw new Error('Query parameter key cannot be empty');
 
+		const decodedValue = safeDecodeURIComponent(rawValue);
 		parameters[decodedKey] = decodedValue;
 	}
 
