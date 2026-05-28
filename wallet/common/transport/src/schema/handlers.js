@@ -58,7 +58,7 @@ export const ParameterTypeHandlers = {
 		validate: value => {
 			if (typeof value !== 'string' || !/^\d+$/.test(value)) 
 				return false;
-			
+
 			try {
 				return BigInt(value) <= UINT64_MAX;
 			} catch {
@@ -72,6 +72,6 @@ export const ParameterTypeHandlers = {
 	},
 	[ParameterType.URL]: {
 		parse: value => value,
-		validate: value => typeof value === 'string' && /^https?:\/\/.+/.test(value)
+		validate: value => typeof value === 'string' && /^[a-zA-Z][a-zA-Z0-9+\-.]*:(\/\/[^\s]+|[^\s/][^\s]*)$/.test(value)
 	}
 };
