@@ -129,7 +129,13 @@ const parseQueryParameters = queryString => {
 			? pair.slice(equalSignIndex + 1)
 			: '';
 
-		const decodedKey = safeDecodeURIComponent(rawKey);
+		let decodedKey;
+		try {
+			decodedKey = decodeURIComponent(rawKey.replace(/\+/g, ' '));
+		} catch {
+			throw new Error(`Failed to decode query parameter key: "${rawKey}"`);
+		}
+
 		const decodedValue = safeDecodeURIComponent(rawValue);
 		const isEmptyKey = !decodedKey;
 
