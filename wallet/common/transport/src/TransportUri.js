@@ -30,27 +30,29 @@ export class TransportUri {
         
 		const isInvalidScheme = protocol !== URI_SCHEME;
         
-		if (isInvalidScheme)
-		{throw new ParseError(
+		if (isInvalidScheme) {
+			throw new ParseError(
 			`Invalid URI scheme: expected "${URI_SCHEME}", got "${protocol}"`,
 			uri
-		);}
+			);
+		}
 
 		const isUnsupportedVersion = version !== PROTOCOL_VERSION;
         
-		if (isUnsupportedVersion)
-		{throw new ParseError(
+		if (isUnsupportedVersion) {
+			throw new ParseError(
 			`Unsupported protocol version: expected "${PROTOCOL_VERSION}", got "${version}"`,
 			uri
-		);}
-
+			);
+		}
 		const isMissingPathSegments = !actionType || !method;
         
-		if (isMissingPathSegments)
-		{throw new ParseError(
+		if (isMissingPathSegments) {
+			throw new ParseError(
 			'Invalid URI structure: missing action type or method',
 			uri
-		);}
+			);
+		}
 
 		const ActionClass = getActionClass(actionType, method);
 		const isActionNotFound = !ActionClass;
