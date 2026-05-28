@@ -32,7 +32,7 @@ class SyncNemBlockTest(unittest.TestCase):
 	@patch('puller.workflows.sync_nem_block.parse_args')
 	def _run_main_test(self, mock_parse_args, mock_nem_puller, db_height, account_remarks=None):  # pylint: disable=no-self-use
 		# Arrange:
-		mock_parse_args.return_value = create_main_args()
+		mock_parse_args.return_value = create_main_args(account_remarks=account_remarks)
 		mock_facade, mock_db = create_facade_with_mock_db(mock_nem_puller)
 
 		mock_connector = Mock()
