@@ -43,6 +43,9 @@ class NemDatabase(DatabaseConnectionPool):
 		super().__init__(db_config)
 		self.network = network
 
+	def _format_public_key_to_address(self, public_key):
+		return str(self.network.public_key_to_address(PublicKey(public_key)))
+
 	def _create_block_view(self, result):
 		(
 			height,
@@ -65,7 +68,7 @@ class NemDatabase(DatabaseConnectionPool):
 			difficulty=difficulty,
 			block_hash=_format_bytes(block_hash),
 			beneficiary=_format_address_bytes_to_string(beneficiary),
-			signer=str(self.network.public_key_to_address(PublicKey(signer))),
+			signer=self._format_public_key_to_address(signer),
 			signature=_format_bytes(signature),
 			size=size
 		)
@@ -180,7 +183,7 @@ class NemDatabase(DatabaseConnectionPool):
 		return MosaicView(
 			namespace_name=namespace_name,
 			description=description,
-			creator=str(self.network.public_key_to_address(PublicKey(creator))),
+			creator=self._format_public_key_to_address(creator),
 			mosaic_registered_height=mosaic_registered_height,
 			mosaic_registered_timestamp=str(mosaic_registered_timestamp),
 			initial_supply=initial_supply,
@@ -227,7 +230,7 @@ class NemDatabase(DatabaseConnectionPool):
 				'signatures': [{
 					'fee': _format_xem_relative(signature['fee']),
 					'signature': signature['signature'],
-					'signer': str(self.network.public_key_to_address(PublicKey(signature['sender'])))
+					'signer': self._format_public_key_to_address(signature['sender'])
 				} for signature in transaction.payload['signatures']],
 				'fee': _format_xem_relative(inner_transaction.fee),
 				'value': self._build_transaction_payload(
@@ -655,7 +658,7 @@ class NemDatabase(DatabaseConnectionPool):
 			value.append({
 				'minCosignatories': payload['min_cosignatories'],
 				'modifications': [{
-					'cosignatoryAccount': str(self.network.public_key_to_address(PublicKey(modification['cosignatory_account']))),
+					'cosignatoryAccount': self._format_public_key_to_address(modification['cosignatory_account']),
 					'modificationType': modification['modification_type']
 				} for modification in payload['modifications']]
 			})
