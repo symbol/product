@@ -473,10 +473,14 @@ ACCOUNT_VIEWS = [
 		vested_balance=0.099999,
 		mosaics=[{
 			'namespace_name': 'nem.xem',
-			'quantity': 1000000
+			'quantity': 1000000,
+			'creator': 'NBFWZ4IVRHEIBRCGHLYDS62FSFTBM3VDFA7E6LSQ',
+			'divisibility': 6
 		}, {
 			'namespace_name': 'root.mosaic',
-			'quantity': 10
+			'quantity': 10,
+			'creator': 'NBFWZ4IVRHEIBRCGHLYDS62FSFTBM3VDFA7E6LSQ',
+			'divisibility': 0
 		}],
 		harvested_fees=0.0,
 		harvested_blocks=ACCOUNTS[0].harvested_blocks,
@@ -496,10 +500,14 @@ ACCOUNT_VIEWS = [
 		vested_balance=0.099999,
 		mosaics=[{
 			'namespace_name': 'nem.xem',
-			'quantity': 3000000
+			'quantity': 3000000,
+			'creator': 'NBFWZ4IVRHEIBRCGHLYDS62FSFTBM3VDFA7E6LSQ',
+			'divisibility': 6
 		}, {
 			'namespace_name': 'root.mosaic',
-			'quantity': 15
+			'quantity': 15,
+			'creator': 'NBFWZ4IVRHEIBRCGHLYDS62FSFTBM3VDFA7E6LSQ',
+			'divisibility': 0
 		}],
 		harvested_fees=0.0,
 		harvested_blocks=ACCOUNTS[1].harvested_blocks,

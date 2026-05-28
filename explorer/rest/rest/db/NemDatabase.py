@@ -73,8 +73,7 @@ class NemDatabase(DatabaseConnectionPool):
 			size=size
 		)
 
-	@staticmethod
-	def _create_account_view(result):  # pylint: disable=too-many-locals
+	def _create_account_view(self, result):  # pylint: disable=too-many-locals
 		(
 			address,
 			public_key,
@@ -101,8 +100,10 @@ class NemDatabase(DatabaseConnectionPool):
 			balance=_format_xem_relative(balance),
 			vested_balance=_format_xem_relative(vested_balance),
 			mosaics=[{
-				'namespace_name': mosaic['namespace'],
+				'namespace_name': mosaic['namespace_name'],
 				'quantity': mosaic['quantity'],
+				'creator': self._format_public_key_to_address(mosaic['creator']),
+				'divisibility': mosaic['divisibility'],
 			} for mosaic in mosaics],
 			harvested_fees=_format_xem_relative(harvested_fees),
 			harvested_blocks=harvested_blocks,
@@ -296,7 +297,7 @@ class NemDatabase(DatabaseConnectionPool):
 				importance::float,
 				balance,
 				vested_balance,
-				mosaics,
+				COALESCE(am.mosaics, '[]'::json) AS mosaics,
 				harvested_fees,
 				harvested_blocks,
 				remote_status,
@@ -308,6 +309,17 @@ class NemDatabase(DatabaseConnectionPool):
 			FROM accounts a
 			LEFT JOIN account_remark ar
 				ON ar.address = a.address
+			LEFT JOIN LATERAL (
+				SELECT json_agg(json_build_object(
+					'namespace_name', mosaic.item->>'namespace_name',
+					'quantity', (mosaic.item->>'quantity')::bigint,
+					'creator', encode(m.creator, 'hex'),
+					'divisibility', m.divisibility
+				) ORDER BY mosaic.ordinality) AS mosaics
+				FROM jsonb_array_elements(a.mosaics) WITH ORDINALITY AS mosaic(item, ordinality)
+				LEFT JOIN mosaics m
+					ON m.namespace_name = mosaic.item->>'namespace_name'
+			) am ON true
 			{where_condition}
 			{order_condition}
 			{limit_condition}
