@@ -10,15 +10,15 @@ A cross-application communication protocol for Symbol wallet. Provides structure
 src/
 ├── TransportUri.js              # Main entry point for URI parsing
 ├── TransportActionRegistry.js   # Registry for action class lookup
-├── constants.js                 # Protocol constants
 ├── errors.js                    # Custom error classes
 ├── index.js                     # Public API exports
-├── actions                      # Action classes
+├── actions/                     # Action classes
+├── protocol/
+│   └── constants.js             # Protocol constants
 ├── schema/
 │   ├── index.js                 # Schema exports
 │   ├── handlers.js              # Type handlers (parse/validate)
 │   └── parameters.js            # Reusable parameter definitions
-├── types                        # JSDoc type definitions          
 └── utils/
     ├── index.js                 # Utils exports
     ├── parse.js                 # Raw parameter parsing
@@ -29,7 +29,7 @@ src/
 
 ## Requirements
 
-- Node.js v20.11.0
+- Node.js v22.x.x (LTS)
 
 ## Installation
 
@@ -103,13 +103,13 @@ import { TransportUri, ShareAccountAddressUri } from 'wallet-common-transport';
 
 // Parse a URI string into an action instance
 const action = TransportUri.createFromString(
-  'web+symbol://v1/share/accountAddress?chainId=abc&networkId=mainnet&address=xyz'
+  'web+symbol://v1/share/accountAddress?chainId=abc&networkIdentifier=mainnet&address=xyz'
 );
 
 // Access parsed parameters
-console.log(action.chainId);     // 'abc'
-console.log(action.networkId);   // 'mainnet'
-console.log(action.address);     // 'xyz'
+console.log(action.chainId);             // 'abc'
+console.log(action.networkIdentifier);   // 'mainnet'
+console.log(action.address);             // 'xyz'
 
 // Convert back to URI string
 const uriString = action.toTransportString();
@@ -134,7 +134,7 @@ import { ShareAccountAddressUri } from 'wallet-common-transport';
 // Create from parameters
 const action = new ShareAccountAddressUri({
   chainId: 'abc',
-  networkId: 'mainnet',
+  networkIdentifier: 'mainnet',
   address: 'xyz',
   name: 'My Account' // optional
 });
@@ -143,14 +143,14 @@ const action = new ShareAccountAddressUri({
 const actionFromJson = ShareAccountAddressUri.fromJSON({
   parameters: {
     chainId: 'abc',
-    networkId: 'mainnet',
+    networkIdentifier: 'mainnet',
     address: 'xyz'
   }
 });
 
 // Generate URI string
 const uri = action.toTransportString();
-// Result: 'web+symbol://v1/share/accountAddress?chainId=abc&networkId=mainnet&address=xyz'
+// Result: 'web+symbol://v1/share/accountAddress?chainId=abc&networkIdentifier=mainnet&address=xyz'
 ```
 
 ### Error Handling
@@ -170,7 +170,7 @@ try {
   if (error instanceof ParseError) {
     console.error('Invalid URI format:', error.message);
   } else if (error instanceof ValidationError) {
-    console.error('Invalid parameters:', error.getFullMessage());
+    console.error('Invalid parameters:', error.message);
   } else if (error instanceof UnsupportedActionError) {
     console.error('Unknown action:', error.actionType, error.method);
   }
