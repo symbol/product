@@ -299,6 +299,29 @@ class NemPuller:
 				last_height
 			)
 
+	async def refresh_accounts(self, batch_size):
+		"""Refresh vested balance and importance for stored accounts."""
+
+		cursor = self.nem_db.connection.cursor()
+		last_account_id = 0
+		total_refreshed = 0
+
+		while True:
+			accounts = self.nem_db.get_accounts_for_refresh(batch_size, last_account_id)
+			if not accounts:
+				break
+
+			for account in accounts:
+				account_info = await self._retry_get_account_info(str(account.address))
+				self.nem_db.update_vested_balance_and_importance(cursor, account_info)
+				last_account_id = account.id
+				total_refreshed += 1
+
+			self.nem_db.connection.commit()
+			log.info(f'Refreshed {len(accounts)} accounts in current batch, {total_refreshed} total')
+
+		return total_refreshed
+
 	def _process_root_namespace(self, cursor, transaction, block_height):
 		"""Process root namespace data."""
 
