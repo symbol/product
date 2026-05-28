@@ -15,6 +15,7 @@ import { PROTOCOL_VERSION, URI_SCHEME } from '../protocol/constants';
  */
 export const createTransportUri = (actionType, method, parameters) => {
 	const queryString = encodeQueryParameters(parameters);
+	const query = queryString ? `?${queryString}` : '';
     
-	return `${URI_SCHEME}://${PROTOCOL_VERSION}/${actionType}/${method}?${queryString}`;
+	return `${URI_SCHEME}://${PROTOCOL_VERSION}/${actionType}/${method}${query}`;
 };
