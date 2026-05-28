@@ -235,7 +235,7 @@ class NemPuller:
 
 		return [
 			{
-				'namespace': f'{mosaic.mosaic_id[0]}.{mosaic.mosaic_id[1]}',
+				'namespace_name': f'{mosaic.mosaic_id[0]}.{mosaic.mosaic_id[1]}',
 				'quantity': mosaic.quantity
 			}
 			for mosaic in account_mosaics

@@ -603,7 +603,7 @@ class NemDatabase(DatabaseConnectionPool):
 						LEFT JOIN account_remark ar
 							ON ar.address = a.address
 						CROSS JOIN LATERAL jsonb_array_elements(a.mosaics) AS mosaic
-						WHERE (mosaic->>'namespace') = %s AND (mosaic->>'quantity')::bigint > 0
+						WHERE (mosaic->>'namespace_name') = %s AND (mosaic->>'quantity')::bigint > 0
 				)
 				SELECT
 					ml.address,
