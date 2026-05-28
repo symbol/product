@@ -4,8 +4,6 @@ from collections import namedtuple
 
 from symbolchain.nem.Network import Address
 
-from symbolchain.nem.Network import Address
-
 from .DatabaseConnection import DatabaseConnection
 
 AccountRefreshRecord = namedtuple('AccountRefreshRecord', ['id', 'address'])
