@@ -25,15 +25,21 @@ export class TransportUri {
      * @throws {ValidationError} If parameter validation fails
      */
 	static createFromString(uri) {
-		const { protocol, pathSegments, queryParameters } = extractUrlParts(uri);
-		const [version, actionType, method] = pathSegments;
+		let protocol, pathSegments, queryParameters;
+
+		try {
+			({ protocol, pathSegments, queryParameters } = extractUrlParts(uri));
+		} catch (e) {
+			throw new ParseError(e.message, uri);
+		}
         
+		const [version, actionType, method] = pathSegments;	
 		const isInvalidScheme = protocol !== URI_SCHEME;
         
 		if (isInvalidScheme) {
 			throw new ParseError(
-			`Invalid URI scheme: expected "${URI_SCHEME}", got "${protocol}"`,
-			uri
+				`Invalid URI scheme: expected "${URI_SCHEME}", got "${protocol}"`,
+				uri
 			);
 		}
 
@@ -41,16 +47,16 @@ export class TransportUri {
         
 		if (isUnsupportedVersion) {
 			throw new ParseError(
-			`Unsupported protocol version: expected "${PROTOCOL_VERSION}", got "${version}"`,
-			uri
+				`Unsupported protocol version: expected "${PROTOCOL_VERSION}", got "${version}"`,
+				uri
 			);
 		}
 		const isMissingPathSegments = !actionType || !method;
         
 		if (isMissingPathSegments) {
 			throw new ParseError(
-			'Invalid URI structure: missing action type or method',
-			uri
+				'Invalid URI structure: missing action type or method',
+				uri
 			);
 		}
 
