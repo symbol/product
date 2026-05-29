@@ -22,7 +22,7 @@ import { parseQr } from '@/app/utils';
 /**
  * Parses a QR code / transport URI string into a transport URI action instance.
  * @param {string} input - Transport URI string to parse (e.g. From a QR code scan).
- * @returns {ParseStringResult} Result object containing the parsed action instance or the error.
+ * @returns {ParseStringResult} Result object containing the parsed action instance and the error.
  */
 export const parseString = input => {
 	let transportUri = null;

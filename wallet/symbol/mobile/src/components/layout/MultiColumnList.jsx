@@ -13,7 +13,7 @@ const DEFAULT_PADDING = 'm';
  * @param {Array} props.data - Array of items to render.
  * @param {function(object): React.ReactNode} props.renderItem - Function to render each item, receives { item, index }.
  * @param {function(object): string} props.keyExtractor - Function to extract unique key from item.
- *  * @param {function|React.ReactNode} [props.renderHeader] - Component rendered before the list.
+ * @param {function():React.ReactNode|React.ReactNode} [props.renderHeader] - Component rendered before the list.
  * @param {number} [props.columns=2] - Number of columns in the grid.
  * @param {string} [props.gap='s'] - Gap size between columns and rows.
  * @param {string} [props.paddingX='m'] - Horizontal padding for the list content.
