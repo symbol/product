@@ -1,5 +1,6 @@
 import { Icon, StyledText } from '@/app/components';
 import { MessageType } from '@/app/constants';
+import { $t } from '@/app/localization';
 import { Colors, Sizes } from '@/app/styles';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
@@ -27,10 +28,10 @@ export const MessageView = ({ message }) => {
 
 	if (message.type === MessageType.ENCRYPTED_TEXT) {
 		iconName = iconMap.encrypted;
-		label = 'Encrypted Message';
+		label = $t('c_messageView_label_encrypted');
 	} else if (message.type !== MessageType.PLAIN_TEXT) {
 		iconName = iconMap.raw;
-		label = 'Data';
+		label = $t('c_messageView_label_rawData');
 	}
 
 	const isTextVisible = Boolean(message.text);
