@@ -24,7 +24,7 @@ import { parseQr } from '@/app/utils';
  * @param {string} input - Transport URI string to parse (e.g. From a QR code scan).
  * @returns {ParseStringResult} Result object containing the parsed action instance and the error.
  */
-export const parseString = input => {
+export const tryParseString = input => {
 	let transportUri = null;
 	let error = null;
 

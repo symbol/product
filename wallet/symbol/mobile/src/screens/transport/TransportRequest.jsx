@@ -4,7 +4,7 @@ import {
 	createRequestDetailsViewModel, 
 	createTransportAlertData, 
 	createWalletActions, 
-	parseString, 
+	tryParseString, 
 	validateTransportObject 
 } from './utils';
 import { Header } from '@/app/app/components';
@@ -29,7 +29,7 @@ export const TransportRequest = ({ route }) => {
 	const { currentAccount, networkIdentifier, networkProperties } = walletController;
 
 	// Parse string
-	const { transportUri: transportUriObject, error } = parseString(transportUri);
+	const { transportUri: transportUriObject, error } = tryParseString(transportUri);
 
 	// Parse error alert
 	const walletChains = useSupportedChains();
