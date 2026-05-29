@@ -20,6 +20,13 @@
 	word-break: break-all;
 }
 
+.heightFields,
+.versionFields {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: $spacing-padding;
+}
+
 @media #{$screen-mobile} {
 	.firstSection {
 		max-width: 100%;

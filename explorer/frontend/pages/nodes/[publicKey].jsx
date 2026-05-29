@@ -1,6 +1,7 @@
 import { fetchNodeList } from '@/api/nodes';
 import Avatar from '@/components/Avatar';
 import Field from '@/components/Field';
+import NodeMap from '@/components/NodeMap';
 import Section from '@/components/Section';
 import ValueCopy from '@/components/ValueCopy';
 import ValueMosaic from '@/components/ValueMosaic';
@@ -62,18 +63,31 @@ const NodeInfo = ({ nodeInfo }) => {
 						<Field title={t('field_nodePublicKey')}>
 							<ValueCopy value={nodeInfo.nodePublicKey} />
 						</Field>
-						<Field title={t('field_height')}>
-							{nodeInfo.height}
-						</Field>
-						<Field title={t('field_version')}>
-							{nodeInfo.version}
-						</Field>
+						<div className={styles.heightFields}>
+							<Field title={t('field_height')}>
+								{nodeInfo.height}
+							</Field>
+							<Field title={t('field_finalizedHeight')}>
+								{nodeInfo.finalizedHeight}
+							</Field>
+						</div>
+						<div className={styles.versionFields}>
+							<Field title={t('field_version')}>
+								{nodeInfo.version}
+							</Field>
+							<Field title={t('field_restVersion')}>
+								{nodeInfo.restVersion || '-'}
+							</Field>
+						</div>
 						<Field title={t('field_balance')}>
 							<ValueMosaic isNative amount={nodeInfo.balance} />
 						</Field>
 					</div>
 				</Section>
 			</div>
+			<Section title={t('section_nodeLocation')}>
+				<NodeMap nodes={[nodeInfo]} showRoles={pageConfig.nodes.showRoles} />
+			</Section>
 		</div>
 	);
 };

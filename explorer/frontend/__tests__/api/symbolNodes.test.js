@@ -39,6 +39,7 @@ describe('variants/symbol/api/nodes', () => {
 				mainPublicKey: 'A'.repeat(64),
 				name: 'symbol-node',
 				nodePublicKey: 'B'.repeat(64),
+				restVersion: '2.4.4',
 				roles: 3,
 				version: '1.0.3.8'
 			}
@@ -67,6 +68,7 @@ describe('variants/symbol/api/nodes', () => {
 				mainPublicKey: 'A'.repeat(64),
 				name: 'symbol-node',
 				nodePublicKey: 'B'.repeat(64),
+				restVersion: '2.4.4',
 				roles: 3,
 				version: '1.0.3.8'
 			}
@@ -115,6 +117,7 @@ describe('variants/symbol/api/nodes', () => {
 				mainPublicKey: 'D'.repeat(64),
 				name: 'peer-node',
 				nodePublicKey: 'C'.repeat(64),
+				restVersion: '2.4.4',
 				roles: 3,
 				version: '1.0.3.8'
 			}

@@ -110,7 +110,7 @@ const Nodes = ({ nodes }) => {
 			<Section>
 				<div className="layout-flex-col">
 					{pageConfig.nodes.showRoles && <Filter data={roleFilterConfig} value={filter} onChange={setFilter} />}
-					<NodeMap nodes={visibleNodes} />
+					<NodeMap nodes={visibleNodes} showRoles={pageConfig.nodes.showRoles} />
 					<Table
 						data={visibleNodes}
 						columns={nodeTableColumns}

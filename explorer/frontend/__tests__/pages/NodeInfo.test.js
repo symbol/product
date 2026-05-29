@@ -18,10 +18,15 @@ describe('NodeInfo', () => {
 		balance: 123.456789,
 		endpoint: 'https://symbol.example:3001',
 		finalizedHeight: 1230,
+		geoLocation: {
+			lat: 50,
+			lon: 6
+		},
 		height: 1234,
 		mainPublicKey: 'A'.repeat(64),
 		name: 'symbol-node',
 		nodePublicKey: 'B'.repeat(64),
+		restVersion: '2.4.4',
 		roles: 3,
 		version: '1.0.3.8'
 	};
@@ -75,6 +80,16 @@ describe('NodeInfo', () => {
 			expect(screen.getByText('Peer API Node')).toBeInTheDocument();
 			expect(screen.getByText('symbol-node')).toBeInTheDocument();
 			expect(screen.getByText('https://symbol.example:3001')).toBeInTheDocument();
+			expect(screen.getByText('field_height')).toBeInTheDocument();
+			expect(screen.getByText('1234')).toBeInTheDocument();
+			expect(screen.getByText('field_finalizedHeight')).toBeInTheDocument();
+			expect(screen.getByText('1230')).toBeInTheDocument();
+			expect(screen.getByText('field_version')).toBeInTheDocument();
+			expect(screen.getByText('1.0.3.8')).toBeInTheDocument();
+			expect(screen.getByText('field_restVersion')).toBeInTheDocument();
+			expect(screen.getByText('2.4.4')).toBeInTheDocument();
+			expect(screen.getByText('section_nodeLocation')).toBeInTheDocument();
+			expect(screen.getByTestId('node-map')).toBeInTheDocument();
 		});
 
 		it('does not render node role when disabled by variant config', () => {

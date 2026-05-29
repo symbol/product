@@ -33,5 +33,6 @@ const nodeInfoFromDTO = data => ({
 	nodePublicKey: data.nodePublicKey,
 	balance: data.balance,
 	geoLocation: data.geoLocation,
+	restVersion: data.restVersion,
 	roles: data.roles
 });

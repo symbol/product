@@ -12,10 +12,10 @@ const escapeHtml = value => `${value ?? ''}`
 	.replace(/"/g, '&quot;')
 	.replace(/'/g, '&#39;');
 
-const createPopupHtml = nodes => nodes.map(node => `
+const createPopupHtml = (nodes, showRoles) => nodes.map(node => `
 	<div class="${styles.popupNode}">
 		<div class="${styles.popupName}">${escapeHtml(node.name)}</div>
-		<div>${escapeHtml(formatNodeRoles(node.roles))}</div>
+		${showRoles ? `<div>${escapeHtml(formatNodeRoles(node.roles))}</div>` : ''}
 		<div>${escapeHtml(node.endpoint)}</div>
 	</div>
 `).join('');
@@ -39,7 +39,7 @@ const createNodeGroups = nodes => Object.values(nodes.reduce((groups, node) => {
 	return groups;
 }, {}));
 
-const NodeMap = ({ nodes }) => {
+const NodeMap = ({ nodes, showRoles = false }) => {
 	const { t } = useTranslation();
 	const containerRef = useRef(null);
 	const mapRef = useRef(null);
@@ -97,7 +97,7 @@ const NodeMap = ({ nodes }) => {
 						fillOpacity: 0.9
 					});
 
-				marker.bindPopup(createPopupHtml(group.nodes));
+				marker.bindPopup(createPopupHtml(group.nodes, showRoles));
 				marker.addTo(layerRef.current);
 			});
 
@@ -114,7 +114,7 @@ const NodeMap = ({ nodes }) => {
 		return () => {
 			isMounted = false;
 		};
-	}, [nodeGroups]);
+	}, [nodeGroups, showRoles]);
 
 	useEffect(() => () => {
 		mapRef.current?.remove();
