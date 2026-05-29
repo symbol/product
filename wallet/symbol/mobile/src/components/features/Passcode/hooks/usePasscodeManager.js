@@ -101,7 +101,6 @@ export const usePasscodeManager = ({ mode, onSuccess }) => {
 
 			return result;
 		},
-		shouldShowErrorPopup: false,
 		onError: () => passcodeInput.clear()
 	});
 
@@ -110,7 +109,6 @@ export const usePasscodeManager = ({ mode, onSuccess }) => {
 			await passcodeManager.create(inputPasscode);
 			onSuccess();
 		},
-		shouldShowErrorPopup: false,
 		onError: () => {
 			passcodeInput.clear();
 			passcodeConfirmInput.clear();
