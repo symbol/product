@@ -117,7 +117,8 @@ export const Harvesting = () => {
 	const isButtonDisabled = isFeesLoading
 		|| isLoading
 		|| isPendingTransaction
-		|| (actionType === HarvestingAction.START && !nodeUrl);
+		|| (actionType === HarvestingAction.START
+			&& !nodeUrl);
 
 	// Initialization and loading subscription
 	const loadAll = useCallback(() => {
