@@ -1,6 +1,6 @@
 
+import { TransactionGroup } from '@/app/constants';
 import { $t } from '@/app/localization';
-import { TransactionGroup } from '@/app/types/Transaction';
 import { formatDate } from '@/app/utils';
 
 /** @typedef {import('@/app/types/Transaction').Transaction} Transaction */

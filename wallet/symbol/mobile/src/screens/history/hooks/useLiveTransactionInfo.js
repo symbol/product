@@ -1,6 +1,5 @@
-import { REFRESH_TRANSACTION_DETAILS_INTERVAL } from '@/app/constants';
+import { REFRESH_TRANSACTION_DETAILS_INTERVAL, TransactionGroup } from '@/app/constants';
 import { useAsyncManager, useTimer } from '@/app/hooks';
-import { TransactionGroup } from '@/app/types/Transaction';
 
 /** @typedef {import('@/app/types/Transaction').Transaction} Transaction */
 /** @typedef {import('@/app/types/Wallet').WalletController} WalletController */

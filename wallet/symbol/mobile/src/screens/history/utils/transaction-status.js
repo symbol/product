@@ -1,5 +1,5 @@
+import { TransactionGroup } from '@/app/constants';
 import { $t } from '@/app/localization';
-import { TransactionGroup } from '@/app/types/Transaction';
 
 /** @typedef {import('@/app/types/ColorVariants').SemanticRoleColorVariants} SemanticRoleColorVariants */
 

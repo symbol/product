@@ -1,6 +1,6 @@
+import { TransactionGroup } from '@/app/constants';
 import { useTimer } from '@/app/hooks';
 import { useState } from 'react';
-import { TransactionGroup } from 'wallet-common-core/src/constants';
 
 const TRANSACTION_POLLING_INTERVAL_MS = 1000;
 

@@ -1,7 +1,7 @@
+import { TransactionGroup } from '@/app/constants';
 import { $t } from '@/app/localization';
 import { CosignStatus } from '@/app/screens/history/types/Cosignature';
 import { SemanticRoleColorVariant } from '@/app/types/ColorVariants';
-import { TransactionGroup } from '@/app/types/Transaction';
 import { 
 	isTransactionAwaitingSignatureByAccount as isTransactionAwaitingSignatureByAccountSdk 
 } from 'wallet-common-symbol/src/utils/transaction';

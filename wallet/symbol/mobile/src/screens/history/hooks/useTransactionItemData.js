@@ -5,7 +5,7 @@ import {
 	getTransactionTypeText,
 	isTransactionAwaitingSignatureByAccount
 } from '../utils';
-import { TransactionGroup } from '@/app/types/Transaction';
+import { TransactionGroup } from '@/app/constants';
 import { useMemo } from 'react';
 
 /** @typedef {import('@/app/types/Transaction').Transaction} Transaction */

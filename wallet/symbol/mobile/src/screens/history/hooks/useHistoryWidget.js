@@ -1,6 +1,5 @@
-import { DB_UPDATE_LATENCY_AFTER_ANNOUNCE } from '@/app/constants';
+import { DB_UPDATE_LATENCY_AFTER_ANNOUNCE, TransactionGroup } from '@/app/constants';
 import { useAsyncManager, useTransactionListener, useWalletListener } from '@/app/hooks';
-import { TransactionGroup } from 'wallet-common-core/src/constants';
 
 /** @typedef {import('@/app/types/Wallet').WalletController} WalletController */
 /** @typedef {import('@/app/types/Transaction').Transaction} Transaction */

@@ -1,5 +1,5 @@
+import { TransactionAnnounceGroup } from '@/app/constants';
 import { useAsyncManager, usePasscode, useToggle } from '@/app/hooks';
-import { TransactionAnnounceGroup } from '@/app/types/Transaction';
 import { handleError } from '@/app/utils';
 import { useCallback, useState } from 'react';
 
