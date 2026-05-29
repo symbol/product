@@ -23,7 +23,6 @@ const keyToTypeMap = {
 		'cosignatoryAdditions',
 		'cosignatoryDeletions',
 		'receivedCosignatures',
-		'addressDeletions',
 		'multisigAddresses',
 		'multisigAddress'
 	],
