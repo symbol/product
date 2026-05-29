@@ -99,5 +99,39 @@
                 }
             }
         }
+    },
+    "bridge": {
+        "bridgeEthereumWrapped": {
+            "mainnet": {
+                "bridgeUrl": "https://bridge.symbol.tools/ethereum-wrapped"
+            },
+            "testnet": {
+                "bridgeUrl": "https://bridge.symbol.tools/testnet/ethereum-wrapped"
+            }
+        },
+        "bridgeEthereumNative": {
+            "mainnet": {
+                "bridgeUrl": "https://bridge.symbol.tools/ethereum-native"
+            },
+            "testnet": {
+                "bridgeUrl": "https://bridge.symbol.tools/testnet/ethereum-native"
+            }
+        },
+        "uniswapWrapped": {
+            "mainnet": {
+                "quoterAddress": "0x01eEE36F73aC548c45aD7A6D623fB37fA2221767",
+                "routerAddress": "0xc50f6b8AcBc6C5852A44371ef31b52122F43c349",
+                "wethAddress": "0x3a8c1bd531b5c1aefbb9ebc3e021c1251cf4ccb1",
+                "wxymAddress": "0x5e8343a455f03109b737b6d8b410e4ecce998cda",
+                "poolFee": 3000
+            },
+            "testnet": {
+                "quoterAddress": "0x01eEE36F73aC548c45aD7A6D623fB37fA2221767",
+                "routerAddress": "0xc50f6b8AcBc6C5852A44371ef31b52122F43c349",
+                "wethAddress": "0x3a8c1bd531b5c1aefbb9ebc3e021c1251cf4ccb1",
+                "wxymAddress": "0x5e8343a455f03109b737b6d8b410e4ecce998cda",
+                "poolFee": 3000
+            }
+        }
     }
 }

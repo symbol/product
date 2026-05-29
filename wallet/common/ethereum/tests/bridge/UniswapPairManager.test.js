@@ -11,6 +11,25 @@ const WRAPPED_TOKEN_ID = '0x5e8343a455f03109b737b6d8b410e4ecce998cda';
 const QUOTER_ADDRESS = '0xb27308f9f90d607463bb33ea1bebb41c27ce5ab6';
 const SWAP_ROUTER_ADDRESS = '0xe592427a0aece92de3edee1f18e0157c05861564';
 const POOL_FEE = 3000;
+
+const networkConfigs = {
+	testnet: {
+		nativeTokenId: NATIVE_TOKEN_ID,
+		wrappedTokenId: WRAPPED_TOKEN_ID,
+		wethTokenId: WETH_TOKEN_ID,
+		quoterAddress: QUOTER_ADDRESS,
+		swapRouterAddress: SWAP_ROUTER_ADDRESS,
+		poolFee: POOL_FEE
+	},
+	mainnet: {
+		nativeTokenId: NATIVE_TOKEN_ID,
+		wrappedTokenId: WRAPPED_TOKEN_ID,
+		wethTokenId: WETH_TOKEN_ID,
+		quoterAddress: QUOTER_ADDRESS,
+		swapRouterAddress: SWAP_ROUTER_ADDRESS,
+		poolFee: POOL_FEE
+	}
+};
 const FIXED_NOW_MS = 1700000000000;
 const FIXED_NOW_S = Math.floor(FIXED_NOW_MS / 1000);
 const DEFAULT_DEADLINE_SECONDS = 600;
@@ -65,6 +84,7 @@ const fee = { maxFee: '20000000000', gasLimit: '200000' };
 
 const createWalletControllerMock = (overrides = {}) => ({
 	isWalletReady: true,
+	networkIdentifier: 'testnet',
 	networkProperties,
 	currentAccount,
 	...overrides
@@ -90,12 +110,7 @@ const createManager = (overrides = {}) => {
 		walletController,
 		uniswapApi,
 		transactionApi,
-		nativeTokenId: NATIVE_TOKEN_ID,
-		wethTokenId: WETH_TOKEN_ID,
-		wrappedTokenId: WRAPPED_TOKEN_ID,
-		quoterAddress: QUOTER_ADDRESS,
-		swapRouterAddress: SWAP_ROUTER_ADDRESS,
-		poolFee: POOL_FEE,
+		configs: networkConfigs,
 		mode: 'wrap',
 		...overrides.managerOptions
 	});
@@ -103,6 +118,17 @@ const createManager = (overrides = {}) => {
 	return {
 		manager, walletController, uniswapApi, transactionApi
 	};
+};
+
+const ethNativeNetworkConfigs = {
+	testnet: {
+		...networkConfigs.testnet,
+		nativeTokenId: NETWORK_CURRENCY_ID
+	},
+	mainnet: {
+		...networkConfigs.mainnet,
+		nativeTokenId: NETWORK_CURRENCY_ID
+	}
 };
 
 const createEthNativeManager = (overrides = {}) => {
@@ -116,12 +142,7 @@ const createEthNativeManager = (overrides = {}) => {
 		walletController,
 		uniswapApi,
 		transactionApi,
-		nativeTokenId: NETWORK_CURRENCY_ID,
-		wethTokenId: WETH_TOKEN_ID,
-		wrappedTokenId: WRAPPED_TOKEN_ID,
-		quoterAddress: QUOTER_ADDRESS,
-		swapRouterAddress: SWAP_ROUTER_ADDRESS,
-		poolFee: POOL_FEE,
+		configs: ethNativeNetworkConfigs,
 		mode: 'wrap',
 		...overrides.managerOptions
 	});
@@ -170,22 +191,7 @@ describe('bridge/UniswapPairManager', () => {
 			expect(() => createManager({ managerOptions: { mode: 'unwrap' } })).not.toThrow();
 		});
 
-		it('throws when nativeTokenId is ETH and wethTokenId is not provided', () => {
-			// Arrange & Act & Assert:
-			expect(() => new UniswapPairManager({
-				walletController: createWalletControllerMock(),
-				uniswapApi: createUniswapApiMock(),
-				transactionApi: createTransactionApiMock(),
-				nativeTokenId: NETWORK_CURRENCY_ID,
-				wrappedTokenId: WRAPPED_TOKEN_ID,
-				quoterAddress: QUOTER_ADDRESS,
-				swapRouterAddress: SWAP_ROUTER_ADDRESS,
-				poolFee: POOL_FEE,
-				mode: 'wrap'
-			})).toThrow();
-		});
-
-		it('does not throw when nativeTokenId is ETH and wethTokenId is provided', () => {
+		it('does not throw when nativeTokenId in configs is NETWORK_CURRENCY_ID', () => {
 			// Arrange & Act & Assert:
 			expect(() => createEthNativeManager()).not.toThrow();
 		});

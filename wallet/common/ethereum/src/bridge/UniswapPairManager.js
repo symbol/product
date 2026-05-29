@@ -8,6 +8,17 @@ const DEFAULT_TRANSACTION_DEADLINE_SECONDS = 600;
 /** @typedef {import('../types/Token').TokenInfo} TokenInfo */
 /** @typedef {import('../api/UniswapService').UniswapService} UniswapService */
 /** @typedef {import('../api/TransactionService').TransactionService} TransactionService */
+/** @typedef {import('wallet-common-core/src/types/Network').NetworkMap<UniswapNetworkConfig>} UniswapNetworkConfigMap */
+
+/**
+ * @typedef {Object} UniswapNetworkConfig
+ * @property {string} nativeTokenId - Token identifier or token contract address.
+ * @property {string} wrappedTokenId - Token identifier or token contract address.
+ * @property {string} wethTokenId - WETH token contract address.
+ * @property {string} quoterAddress - Uniswap V3 Quoter contract address.
+ * @property {string} swapRouterAddress - Uniswap V3 SwapRouter contract address.
+ * @property {number} poolFee - Pool fee tier in hundredths of a bip (e.g. 3000 = 0.3%).
+ */
 
 /**
  * @typedef {Object} UniswapEstimation
@@ -31,23 +42,8 @@ export class UniswapPairManager {
 	/** @type {TransactionService} */
 	#transactionApi;
 
-	/** @type {string} */
-	#nativeTokenId;
-
-	/** @type {string} */
-	#wrappedTokenId;
-
-	/** @type {string} */
-	#wethTokenId;
-
-	/** @type {string} */
-	#quoterAddress;
-
-	/** @type {string} */
-	#swapRouterAddress;
-
-	/** @type {number} */
-	#poolFee;
+	/** @type {UniswapNetworkConfigMap} */
+	#configs;
 
 	/** @type {string} */
 	#mode;
@@ -65,23 +61,13 @@ export class UniswapPairManager {
 	 * @param {WalletController} options.walletController - Ethereum wallet controller instance.
 	 * @param {UniswapService} options.uniswapApi - Uniswap API service for on-chain quote and token info calls.
 	 * @param {TransactionService} options.transactionApi - Transaction API service for nonce fetching.
-	 * @param {string} options.nativeTokenId - ERC20 contract address of the "native" token (tokenIn for WRAP mode, e.g. WETH).
-	 * @param {string} options.wrappedTokenId - ERC20 contract address of the "wrapped" token (tokenOut for WRAP mode, e.g. WXYM).
-	 * @param {string} options.wethTokenId - ERC20 contract address of the WETH token.
-	 * @param {string} options.quoterAddress - Uniswap V3 Quoter contract address.
-	 * @param {string} options.swapRouterAddress - Uniswap V3 SwapRouter contract address.
-	 * @param {number} options.poolFee - Pool fee tier in hundredths of a bip (e.g. 3000 = 0.3%).
+	 * @param {UniswapNetworkConfigMap} options.configs - Per-network Uniswap configuration map (keyed by network identifier).
 	 */
 	constructor(options) {
 		this.#walletController = options.walletController;
 		this.#uniswapApi = options.uniswapApi;
 		this.#transactionApi = options.transactionApi;
-		this.#nativeTokenId = options.nativeTokenId.toLowerCase();
-		this.#wrappedTokenId = options.wrappedTokenId.toLowerCase();
-		this.#wethTokenId = options.wethTokenId.toLowerCase();
-		this.#quoterAddress = normalizeAddress(options.quoterAddress);
-		this.#swapRouterAddress = normalizeAddress(options.swapRouterAddress);
-		this.#poolFee = options.poolFee;
+		this.#configs = options.configs;
 		this.#nativeTokenInfo = null;
 		this.#wrappedTokenInfo = null;
 
@@ -89,6 +75,10 @@ export class UniswapPairManager {
 			throw new Error(`Invalid swap mode: ${options.mode}. Must be 'wrap' or 'unwrap'`);
 
 		this.#mode = options.mode;
+	}
+
+	get #networkConfig() {
+		return this.#configs[this.#walletController.networkIdentifier];
 	}
 
 	/**
@@ -191,10 +181,11 @@ export class UniswapPairManager {
 	 */
 	load = async () => {
 		const { networkProperties } = this.#walletController;
+		const { nativeTokenId, wrappedTokenId } = this.#networkConfig;
 		const { nativeTokenInfo, wrappedTokenInfo } = await this.#uniswapApi.fetchPoolTokenInfos(
 			networkProperties,
-			this.#nativeTokenId,
-			this.#wrappedTokenId
+			nativeTokenId.toLowerCase(),
+			wrappedTokenId.toLowerCase()
 		);
 
 		this.#nativeTokenInfo = nativeTokenInfo;
@@ -223,14 +214,16 @@ export class UniswapPairManager {
 		const amountInAbsolute = relativeToAbsoluteAmount(amount, sourceTokenInfo.divisibility);
 		const { networkCurrency } = networkProperties;
 
-		const amountOutAbsolute = await this.#uniswapApi.quoteExactInputSingle(networkProperties, this.#quoterAddress, {
-			tokenInId: sourceTokenInfo.id === networkCurrency.id ? this.#wethTokenId : sourceTokenInfo.id,
-			tokenOutId: targetTokenInfo.id === networkCurrency.id ? this.#wethTokenId : targetTokenInfo.id,
+		const { wethTokenId, quoterAddress, poolFee } = this.#networkConfig;
+		const wethId = wethTokenId.toLowerCase();
+		const amountOutAbsolute = await this.#uniswapApi.quoteExactInputSingle(networkProperties, normalizeAddress(quoterAddress), {
+			tokenInId: sourceTokenInfo.id === networkCurrency.id ? wethId : sourceTokenInfo.id,
+			tokenOutId: targetTokenInfo.id === networkCurrency.id ? wethId : targetTokenInfo.id,
 			amountIn: amountInAbsolute,
-			fee: this.#poolFee
+			fee: poolFee
 		});
 
-		const feeAbsolute = BigInt(amountOutAbsolute) * BigInt(this.#poolFee) / 1_000_000n;
+		const feeAbsolute = BigInt(amountOutAbsolute) * BigInt(poolFee) / 1_000_000n;
 
 		return {
 			receiveAmount: absoluteToRelativeAmount(amountOutAbsolute, targetTokenInfo.divisibility),
@@ -271,12 +264,15 @@ export class UniswapPairManager {
 
 		const nonce = await this.#transactionApi.fetchTransactionNonce(networkProperties, currentAccount.address);
 
+		const { wethTokenId, swapRouterAddress, poolFee } = this.#networkConfig;
+		const normalizedRouterAddress = normalizeAddress(swapRouterAddress);
+
 		const approveTransaction = {
 			type: TransactionType.ERC_20_APPROVE,
 			signerPublicKey: currentAccount.publicKey,
 			signerAddress: normalizeAddress(currentAccount.address),
 			tokenId: tokenIn.id,
-			spenderAddress: this.#swapRouterAddress,
+			spenderAddress: normalizedRouterAddress,
 			amount,
 			divisibility: tokenIn.divisibility,
 			fee
@@ -287,7 +283,7 @@ export class UniswapPairManager {
 			signerPublicKey: currentAccount.publicKey,
 			signerAddress: normalizeAddress(currentAccount.address),
 			recipientAddress: normalizeAddress(recipientAddress),
-			routerAddress: this.#swapRouterAddress,
+			routerAddress: normalizedRouterAddress,
 			sourceToken: {
 				...tokenIn,
 				amount
@@ -296,8 +292,8 @@ export class UniswapPairManager {
 				...tokenOut,
 				amount: amountOutMinimum
 			},
-			wethTokenId: this.#wethTokenId,
-			poolFee: this.#poolFee,
+			wethTokenId: wethTokenId.toLowerCase(),
+			poolFee,
 			deadline: Math.floor(Date.now() / 1000) + deadlineSeconds,
 			sqrtPriceLimitX96: 0,
 			fee
