@@ -19,6 +19,3 @@ export const LoseAccessWarningTypes = [
 	SymbolTransactionType.ACCOUNT_MOSAIC_RESTRICTION,
 	SymbolTransactionType.ACCOUNT_OPERATION_RESTRICTION
 ];
-
-export const DB_UPDATE_LATENCY_AFTER_ANNOUNCE = 1000;
-export const REFRESH_TRANSACTION_DETAILS_INTERVAL = 10000;

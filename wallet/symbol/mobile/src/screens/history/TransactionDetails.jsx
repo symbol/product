@@ -16,11 +16,11 @@ import {
 	StyledText,
 	TableView
 } from '@/app/components';
+import { DB_UPDATE_LATENCY_AFTER_ANNOUNCE } from '@/app/constants';
 import { useWalletController } from '@/app/hooks';
 import { PlatformUtils } from '@/app/lib/platform/PlatformUtils';
 import { $t } from '@/app/localization';
 import { AmountBreakdown, TransactionGraphic } from '@/app/screens/history/components';
-import { DB_UPDATE_LATENCY_AFTER_ANNOUNCE } from '@/app/screens/history/constants';
 import { useCosignFlow, useLiveTransactionInfo } from '@/app/screens/history/hooks';
 import { CosignStatus } from '@/app/screens/history/types/Cosignature';
 import {

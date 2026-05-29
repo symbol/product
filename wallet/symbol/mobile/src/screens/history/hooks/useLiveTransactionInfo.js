@@ -1,5 +1,5 @@
+import { REFRESH_TRANSACTION_DETAILS_INTERVAL } from '@/app/constants';
 import { useAsyncManager, useTimer } from '@/app/hooks';
-import { REFRESH_TRANSACTION_DETAILS_INTERVAL } from '@/app/screens/history/constants';
 import { TransactionGroup } from '@/app/types/Transaction';
 
 /** @typedef {import('@/app/types/Transaction').Transaction} Transaction */
