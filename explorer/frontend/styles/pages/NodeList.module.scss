@@ -1,0 +1,18 @@
+@import '../variables';
+
+.wrapper {
+	height: 100%;
+}
+
+.stats {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+	gap: $spacing-padding;
+	margin-bottom: $spacing-padding;
+}
+
+.tableValueWrap {
+	display: block;
+	max-width: 100%;
+	overflow-wrap: anywhere;
+}

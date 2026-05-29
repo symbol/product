@@ -2,13 +2,13 @@ import Avatar from './Avatar';
 import Field from './Field';
 import ValueMosaic from './ValueMosaic';
 import styles from '@/styles/components/ItemNodeMobile.module.scss';
-import { createPageHref } from '@/utils';
+import { createPageHref, formatNodeRoles } from '@/utils';
 import Link from 'next/link';
 import { useTranslation } from 'next-i18next';
 
-const ItemNodeMobile = ({ data, showAddress }) => {
+const ItemNodeMobile = ({ data, showAddress, showRoles }) => {
 	const { t } = useTranslation();
-	const { address, name, endpoint, balance, version, height, finalizedHeight, mainPublicKey } = data;
+	const { address, name, endpoint, balance, version, height, finalizedHeight, mainPublicKey, roles } = data;
 
 	return (
 		<div className={styles.itemNodeMobile}>
@@ -16,7 +16,7 @@ const ItemNodeMobile = ({ data, showAddress }) => {
 				<Avatar type="node" size="md" />
 				<div className={styles.info}>
 					<div className={styles.name}>{name}</div>
-					<div>{endpoint}</div>
+					<div>{showRoles ? formatNodeRoles(roles, t) : endpoint}</div>
 				</div>
 			</Link>
 			{showAddress && (

@@ -29,6 +29,12 @@ describe('variants/symbol/api/nodes', () => {
 				balance: 123.456789,
 				endpoint: 'https://symbol.example:3001',
 				finalizedHeight: 1230,
+				geoLocation: {
+					city: 'Dusseldorf',
+					country: 'Germany',
+					lat: 50.0,
+					lon: 6.0
+				},
 				height: 1234,
 				mainPublicKey: 'A'.repeat(64),
 				name: 'symbol-node',
@@ -51,6 +57,12 @@ describe('variants/symbol/api/nodes', () => {
 				balance: 123.456789,
 				endpoint: 'https://symbol.example:3001',
 				finalizedHeight: 1230,
+				geoLocation: {
+					city: 'Dusseldorf',
+					country: 'Germany',
+					lat: 50.0,
+					lon: 6.0
+				},
 				height: 1234,
 				mainPublicKey: 'A'.repeat(64),
 				name: 'symbol-node',
@@ -98,6 +110,7 @@ describe('variants/symbol/api/nodes', () => {
 				balance: 987.654321,
 				endpoint: 'https://peer.example:3001',
 				finalizedHeight: 4560,
+				geoLocation: undefined,
 				height: 4567,
 				mainPublicKey: 'D'.repeat(64),
 				name: 'peer-node',

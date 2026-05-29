@@ -36,3 +36,6 @@ dist/
 
 # other build artifacts
 _generated/
+
+# local nodewatch generated secrets
+explorer/nodewatch/puller/cert/

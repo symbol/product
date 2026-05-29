@@ -52,6 +52,12 @@ const renderItem = (item, type, onSelect) => {
 				{item.label || <ValueTransactionType value={item.type} hideIcon={!!item.iconSrc} />}
 			</div>
 		);
+	case 'node-role':
+		return (
+			<div className={styles.transactionTypeOption} onClick={() => onSelect(item.value, item)}>
+				{item.label}
+			</div>
+		);
 	default:
 		return item;
 	}
@@ -109,6 +115,8 @@ const FilterModal = ({
 			return item.name;
 		case 'transaction-type':
 			return item.value || item.type;
+		case 'node-role':
+			return item.value;
 		default:
 			return index;
 		}
@@ -205,7 +213,8 @@ const Filter = ({ isSelectedItemsShown, data, value, search, isDisabled, onChang
 		changeFilterValue(filter, null);
 	};
 
-	const isFilterModalShown = ['account', 'block', 'mosaic', 'transaction-type'].some(value => value === expandedFilter?.type);
+	const modalFilterTypes = ['account', 'block', 'mosaic', 'transaction-type', 'node-role'];
+	const isFilterModalShown = modalFilterTypes.some(value => value === expandedFilter?.type);
 
 	useEffect(() => {
 		setSelectedItems(selectedItems => {

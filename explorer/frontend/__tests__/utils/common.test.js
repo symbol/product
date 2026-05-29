@@ -10,6 +10,7 @@ import {
 	formatBlockCSV,
 	formatDate,
 	formatMosaicCSV,
+	formatNodeRoles,
 	formatTransactionCSV,
 	formatTransactionChart,
 	getRootNamespaceName,
@@ -405,6 +406,32 @@ describe('utils/common', () => {
 
 			// Act + Assert:
 			runArrayToTextTest(value, expectedResult);
+		});
+	});
+
+	describe('formatNodeRoles', () => {
+		it('formats known node role flag combinations', () => {
+			expect(formatNodeRoles(1)).toBe('Peer Node');
+			expect(formatNodeRoles(2)).toBe('API Node');
+			expect(formatNodeRoles(3)).toBe('Peer API Node');
+			expect(formatNodeRoles(4)).toBe('Voting Node');
+			expect(formatNodeRoles(5)).toBe('Peer Voting Node');
+			expect(formatNodeRoles(6)).toBe('API Voting Node');
+			expect(formatNodeRoles(7)).toBe('Peer API Voting Node');
+		});
+
+		it('preserves unknown node role flags', () => {
+			// Act:
+			const result = formatNodeRoles(11);
+
+			// Assert:
+			expect(result).toBe('Peer API Node, 8');
+		});
+
+		it('returns placeholder when node roles are missing', () => {
+			// Act + Assert:
+			expect(formatNodeRoles(null)).toBe('-');
+			expect(formatNodeRoles(undefined)).toBe('-');
 		});
 	});
 

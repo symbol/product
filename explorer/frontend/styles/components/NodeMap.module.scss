@@ -1,0 +1,86 @@
+@import '../variables';
+
+.nodeMap {
+	position: relative;
+	z-index: 0;
+	width: 100%;
+	min-width: 0;
+	margin-bottom: $spacing-padding;
+	overflow: hidden;
+	border-radius: $border-radius-card;
+	isolation: isolate;
+	contain: paint;
+}
+
+.map {
+	position: relative;
+	z-index: 0;
+	width: 100%;
+	height: 34rem;
+	overflow: hidden;
+	background: $color-background-card;
+	border-radius: $border-radius-card;
+	clip-path: inset(0 round $border-radius-card);
+	contain: paint;
+
+	/* stylelint-disable selector-pseudo-class-no-unknown */
+	:global(.leaflet-control-attribution),
+	:global(.leaflet-popup-content-wrapper),
+	:global(.leaflet-popup-tip) {
+		color: $color-text-body;
+		background: $color-background-card;
+	}
+
+	:global(.leaflet-popup-content) {
+		max-width: 18rem;
+		overflow-wrap: anywhere;
+	}
+	/* stylelint-enable selector-pseudo-class-no-unknown */
+}
+
+.clusterMarker {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 2.8rem !important;
+	height: 2.8rem !important;
+	margin: 0 !important;
+	color: #fff;
+	font: $font-body-bold;
+	background: #5a2bd6;
+	border: 0.34rem solid #7d49df;
+	border-radius: 50%;
+	box-shadow: 0 0.16rem 0.5rem rgba(0, 0, 0, 30%);
+}
+
+.popupNode {
+	display: flex;
+	flex-direction: column;
+	gap: $spacing-base / 2;
+	margin-bottom: $spacing-base;
+	font: $font-body;
+}
+
+.popupNode:last-child {
+	margin-bottom: 0;
+}
+
+.popupName {
+	font: $font-body-bold;
+}
+
+.emptyMap {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	height: 12rem;
+	color: $color-text-empty-table;
+	font: $font-body;
+	background: $color-background-card;
+}
+
+@media #{$screen-mobile} {
+	.map {
+		height: 24rem;
+	}
+}

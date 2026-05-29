@@ -50,6 +50,7 @@ const nodeInfoFromDTO = data => {
 		mainPublicKey,
 		nodePublicKey: data.nodePublicKey,
 		balance: data.balance ?? extraData.balance,
+		geoLocation: data.geoLocation,
 		roles: data.roles
 	};
 };

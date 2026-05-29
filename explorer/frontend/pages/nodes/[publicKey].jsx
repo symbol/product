@@ -5,6 +5,8 @@ import Section from '@/components/Section';
 import ValueCopy from '@/components/ValueCopy';
 import ValueMosaic from '@/components/ValueMosaic';
 import styles from '@/styles/pages/NodeInfo.module.scss';
+import { formatNodeRoles } from '@/utils';
+import { pageConfig } from '@/variants';
 import Head from 'next/head';
 import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
@@ -45,6 +47,11 @@ const NodeInfo = ({ nodeInfo }) => {
 						<Field title={t('field_endpoint')}>
 							<ValueCopy value={nodeInfo.endpoint} />
 						</Field>
+						{pageConfig.nodes.showRoles && (
+							<Field title={t('field_roles')}>
+								{formatNodeRoles(nodeInfo.roles)}
+							</Field>
+						)}
 					</div>
 				</Section>
 				<Section className="layout-align-end" cardClassName={styles.secondSectionCard}>

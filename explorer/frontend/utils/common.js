@@ -224,6 +224,36 @@ export const arrayToText = value => {
 };
 
 /**
+ * Formats Symbol node role bit flags.
+ * @param {number} roles - Node roles bit flags.
+ * @returns {string} Formatted role list.
+ */
+export const formatNodeRoles = roles => {
+	if (!isNumeric(roles))
+		return '-';
+
+	const roleValue = Number(roles);
+	const roleLabels = {
+		1: 'Peer Node',
+		2: 'API Node',
+		3: 'Peer API Node',
+		4: 'Voting Node',
+		5: 'Peer Voting Node',
+		6: 'API Voting Node',
+		7: 'Peer API Voting Node'
+	};
+	const knownRoleMask = 7;
+	const unknownRoles = roleValue & ~knownRoleMask;
+	const knownRoles = roleValue & knownRoleMask;
+	const knownRoleText = roleLabels[knownRoles];
+
+	if (unknownRoles && knownRoleText)
+		return `${knownRoleText}, ${unknownRoles}`;
+
+	return knownRoleText || `${unknownRoles}` || '-';
+};
+
+/**
  * Extracts root namespace name from the namespace name.
  * @param {string} namespaceName - Namespace name.
  * @returns {string} Root namespace name.

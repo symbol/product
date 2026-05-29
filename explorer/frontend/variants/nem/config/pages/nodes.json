@@ -1,3 +1,4 @@
 {
-	"showAddress": false
+	"showAddress": false,
+	"showRoles": false
 }
