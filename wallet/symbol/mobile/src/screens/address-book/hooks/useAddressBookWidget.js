@@ -10,7 +10,7 @@
 /**
  * Return type of the useAddressBookWidget hook.
  * @typedef {object} UseAddressBookWidgetReturnType
- * @property {boolean} isVisible - Whether the widget should be shown (true when contacts exist).
+ * @property {boolean} isVisible - Whether the widget should be shown.
  * @property {AddressBookWidgetProps} props - Props to pass to the AddressBookWidget component.
  */
 
@@ -25,7 +25,7 @@ export const useAddressBookWidget = walletController => {
 	const contacts = addressBook.whiteList;
 
 	return {
-		isVisible: true,
+		isVisible: true, // field added for the consistency with other widgets. Always visible.
 		props: {
 			contacts
 		}
