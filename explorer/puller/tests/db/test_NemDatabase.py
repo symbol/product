@@ -206,7 +206,7 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 
 		# Assert:
 		self.assertEqual(len(results), 7)
-		self.assertEqual(results[0][0], 'account_remarks')
+		self.assertEqual(results[0][0], 'account_remark')
 		self.assertEqual(results[1][0], 'accounts')
 		self.assertEqual(results[2][0], 'blocks')
 		self.assertEqual(results[3][0], 'mosaics')
@@ -214,26 +214,26 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 		self.assertEqual(results[5][0], 'transactions')
 		self.assertEqual(results[6][0], 'transactions_mosaic')
 
-	def test_can_seed_account_remarks(self):
+	def test_can_seed_account_remark(self):
 		# Arrange:
-		account_remarks_path = Path(__file__).resolve().parents[1] / 'resources' / 'test_remarks.json'
+		account_remark_path = Path(__file__).resolve().parents[1] / 'resources' / 'test_remark.json'
 
-		with open(account_remarks_path, 'rt', encoding='utf8') as seed_file:
-			account_remarks = json.load(seed_file)
+		with open(account_remark_path, 'rt', encoding='utf8') as seed_file:
+			account_remark = json.load(seed_file)
 
 		with NemDatabase(self.db_config) as nem_database:
 			nem_database.create_tables()
 			cursor = nem_database.connection.cursor()
 
 			# Act:
-			nem_database.seed_account_remarks(account_remarks_path)
+			nem_database.seed_account_remark(account_remark_path)
 
 			cursor.execute(
 				'''
 				SELECT
 					encode(address, 'hex'),
-					remarks
-				FROM account_remarks
+					remark
+				FROM account_remark
 				ORDER BY address
 				'''
 			)
@@ -243,10 +243,10 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 		# Assert:
 		expected_results = sorted(
 			(
-				Address(account_remark['address']).bytes.hex(),
-				account_remark['remarks']
+				Address(account['address']).bytes.hex(),
+				account['remark']
 			)
-			for account_remark in account_remarks
+			for account in account_remark
 		)
 
 		self.assertEqual(expected_results, sorted(results))

@@ -1,39 +1,39 @@
 [
 	{
 		"address": "NDHEJKXY6YK7JGRFQT2L7P3O5VMUGR4BWKQNVXXQ",
-		"remarks": "Binance cold wallet"
+		"remark": "Binance cold wallet"
 	},
 	{
 		"address": "NBCOABQGPNI356MN3Y2VGW3Q2MQ5GNBLTVU64OXU",
-		"remarks": "Binance hot wallet"
+		"remark": "Binance hot wallet"
 	},
 	{
 		"address": "NC64UFOWRO6AVMWFV2BFX2NT6W2GURK2EOX6FFMZ",
-		"remarks": "Binance hot wallet"
+		"remark": "Binance hot wallet"
 	},
 	{
 		"address": "NDBRUFE7R5OANEDE43VCTMUVRHTI6XZ7TQFVNTMU",
-		"remarks": "Binance hot wallet"
+		"remark": "Binance hot wallet"
 	},
 	{
 		"address": "NDV3DTJVBQRUPHYQRWRP4Q7IRRDN3CAPUFGZ7UXI",
-		"remarks": "Kuna hot wallet"
+		"remark": "Kuna hot wallet"
 	},
 	{
 		"address": "NCES7OKBYZRCSTSNRX45H6E67J6OXABKNT6IRD2P",
-		"remarks": "Zaif cold wallet"
+		"remark": "Zaif cold wallet"
 	},
 	{
 		"address": "NA2P5F6DHPZMUJMKR2E2HNBFHDQVC3YRYNPFEH3V",
-		"remarks": "Coincheck"
+		"remark": "Coincheck"
 	},
 	{
 		"address": "NCYAVMNQOZ3MZETEBD34ACMAX3S57WUSWAZWY3DW",
-		"remarks": "OKex"
+		"remark": "OKex"
 	},
 	{
 		"address": "NBRT3YQTVHLTYBDUXH2HHURI5KCYDWRWJ63YWIGG",
-		"remarks": "YoBit"
+		"remark": "YoBit"
 	},
 	{
 		"address": "NDEVPOSK4OMR4PRTLYFHX4W5QTOND7TZDT2DTU4Q",

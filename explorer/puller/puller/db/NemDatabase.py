@@ -254,12 +254,12 @@ class NemDatabase(DatabaseConnection):
 			'''
 		)
 
-		# Create Account remarks table
+		# Create Account remark table
 		cursor.execute(
 			'''
-			CREATE TABLE IF NOT EXISTS account_remarks (
+			CREATE TABLE IF NOT EXISTS account_remark (
 				address bytea PRIMARY KEY,
-				remarks varchar NOT NULL
+				remark varchar NOT NULL
 			)
 			'''
 		)
@@ -268,28 +268,28 @@ class NemDatabase(DatabaseConnection):
 
 		self.connection.commit()
 
-	def seed_account_remarks(self, seed_path):
-		"""Seeds account remarks table."""
+	def seed_account_remark(self, seed_path):
+		"""Seeds account remark table."""
 
 		cursor = self.connection.cursor()
 
 		with open(seed_path, 'rt', encoding='utf8') as seed_file:
-			account_remarks = json.load(seed_file)
+			account_remark = json.load(seed_file)
 
-		for account_remark in account_remarks:
+		for account in account_remark:
 			cursor.execute(
 				'''
-				INSERT INTO account_remarks (
+				INSERT INTO account_remark (
 					address,
-					remarks
+					remark
 				)
 				VALUES (%s, %s)
 				ON CONFLICT (address)
 				DO UPDATE SET
-					remarks = EXCLUDED.remarks
+					remark = EXCLUDED.remark
 				''', (
-					Address(account_remark['address']).bytes,
-					account_remark['remarks']
+					Address(account['address']).bytes,
+					account['remark']
 				)
 			)
 

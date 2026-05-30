@@ -12,12 +12,12 @@ def assert_common_args(test_case, args, network='mainnet', db_config='config.ini
 	test_case.assertEqual(args.db_config, db_config)
 
 
-def create_main_args(batch_size=None, account_remarks=None):
+def create_main_args(batch_size=None, account_remark=None):
 	args = Mock()
 	args.nem_node = 'http://localhost:7890'
 	args.network = 'testnet'
 	args.db_config = 'test_config.ini'
-	args.account_remarks = account_remarks
+	args.account_remark = account_remark
 
 	if None is not batch_size:
 		args.batch_size = batch_size

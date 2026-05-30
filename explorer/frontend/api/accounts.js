@@ -66,7 +66,7 @@ const accountInfoFromDTO = data => ({
 	remoteAddress: data.remoteAddress || null,
 	address: data.address,
 	publicKey: data.publicKey || null,
-	description: data.remarks || null,
+	description: data.remark || null,
 	balance: data.balance,
 	vestedBalance: data.vestedBalance || 0,
 	mosaics:

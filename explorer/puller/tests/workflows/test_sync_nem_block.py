@@ -30,9 +30,9 @@ class SyncNemBlockTest(unittest.TestCase):
 
 	@patch('puller.workflows.sync_nem_block.NemPuller')
 	@patch('puller.workflows.sync_nem_block.parse_args')
-	def _run_main_test(self, mock_parse_args, mock_nem_puller, db_height, account_remarks=None):  # pylint: disable=no-self-use
+	def _run_main_test(self, mock_parse_args, mock_nem_puller, db_height, account_remark=None):  # pylint: disable=no-self-use
 		# Arrange:
-		mock_parse_args.return_value = create_main_args(account_remarks=account_remarks)
+		mock_parse_args.return_value = create_main_args(account_remark=account_remark)
 		mock_facade, mock_db = create_facade_with_mock_db(mock_nem_puller)
 
 		mock_connector = Mock()
@@ -49,10 +49,10 @@ class SyncNemBlockTest(unittest.TestCase):
 		# Assert:
 		mock_nem_puller.assert_called_once_with('http://localhost:7890', 'test_config.ini', 'testnet')
 		mock_db.create_tables.assert_called_once()
-		if account_remarks:
-			mock_db.seed_account_remarks.assert_called_once_with(account_remarks)
+		if account_remark:
+			mock_db.seed_account_remark.assert_called_once_with(account_remark)
 		else:
-			mock_db.seed_account_remarks.assert_not_called()
+			mock_db.seed_account_remark.assert_not_called()
 		mock_db.get_current_height.assert_called_once()
 		mock_connector.chain_height.assert_called_once()
 		mock_facade.sync_blocks.assert_called_once_with(1, 10)
@@ -73,6 +73,6 @@ class SyncNemBlockTest(unittest.TestCase):
 		# Assert:
 		mock_facade.sync_nemesis_block.assert_not_called()
 
-	def test_can_seed_account_remarks_when_configured(self):
+	def test_can_seed_account_remark_when_configured(self):
 		# Act:
-		self._run_main_test(db_height=1, account_remarks='test_remarks.json')  # pylint: disable=no-value-for-parameter
+		self._run_main_test(db_height=1, account_remark='test_remark.json')  # pylint: disable=no-value-for-parameter

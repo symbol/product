@@ -15,7 +15,7 @@ class AccountView:  # pylint: disable=too-many-locals,too-many-instance-attribut
 		min_cosignatories,
 		cosignatory_of,
 		cosignatories,
-		remarks
+		remark
 	):
 		"""Create account view."""
 
@@ -35,7 +35,7 @@ class AccountView:  # pylint: disable=too-many-locals,too-many-instance-attribut
 		self.min_cosignatories = min_cosignatories
 		self.cosignatory_of = cosignatory_of
 		self.cosignatories = cosignatories
-		self.remarks = remarks
+		self.remark = remark
 
 	def __eq__(self, other):
 		return isinstance(other, AccountView) and all([
@@ -53,7 +53,7 @@ class AccountView:  # pylint: disable=too-many-locals,too-many-instance-attribut
 			self.min_cosignatories == other.min_cosignatories,
 			self.cosignatory_of == other.cosignatory_of,
 			self.cosignatories == other.cosignatories,
-			self.remarks == other.remarks
+			self.remark == other.remark
 		])
 
 	def to_dict(self):
@@ -74,5 +74,5 @@ class AccountView:  # pylint: disable=too-many-locals,too-many-instance-attribut
 			'minCosignatories': self.min_cosignatories,
 			'cosignatoryOf': self.cosignatory_of,
 			'cosignatories': self.cosignatories,
-			'remarks': self.remarks
+			'remark': self.remark
 		}

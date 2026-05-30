@@ -20,7 +20,7 @@ export const accountPageResponse = [
 			}
 		],
 		publicKey: '63D2E7B4F5479B0BF67AC34B0656F4A265B039CE66BF6CA9BDD7C196365D8E23',
-		remarks: null,
+		remark: null,
 		remoteAddress: null,
 		vestedBalance: 1976248388.92861
 	},
@@ -44,7 +44,7 @@ export const accountPageResponse = [
 			}
 		],
 		publicKey: 'A47BF27A383D184C0630214E355EECF0859FEED161E1750E1AB9B624A874CE25',
-		remarks: null,
+		remark: null,
 		remoteAddress: null,
 		vestedBalance: 47667842.689628
 	},
@@ -77,7 +77,7 @@ export const accountPageResponse = [
 			}
 		],
 		publicKey: '299052827E844957710D15FE848B931294907F4B840367873E226A73F9DA1386',
-		remarks: null,
+		remark: null,
 		remoteAddress: null,
 		vestedBalance: 309678959.414188
 	},
@@ -115,7 +115,7 @@ export const accountPageResponse = [
 			}
 		],
 		publicKey: '75F1CF09EEFF5E2376C5929D8EA9D8DA171AC5C718655560EBEB6353343045BD',
-		remarks: null,
+		remark: null,
 		remoteAddress: null,
 		vestedBalance: 656023166.883842
 	},
@@ -148,7 +148,7 @@ export const accountPageResponse = [
 			}
 		],
 		publicKey: '94A4F3B28CD7A8BCB2D756ED29E04EC5191147235605E998AA17F93C407F6645',
-		remarks: null,
+		remark: null,
 		remoteAddress: null,
 		vestedBalance: 58820555.132005
 	},
@@ -181,7 +181,7 @@ export const accountPageResponse = [
 			}
 		],
 		publicKey: 'DEE852011049D890E97DD4F1D4D7F76824C16854578DADA9918BF943FBF5CC13',
-		remarks: null,
+		remark: null,
 		remoteAddress: null,
 		vestedBalance: 2420611957.02233
 	},
@@ -205,7 +205,7 @@ export const accountPageResponse = [
 			}
 		],
 		publicKey: null,
-		remarks: null,
+		remark: null,
 		remoteAddress: null,
 		vestedBalance: 404352001.1
 	},
@@ -242,7 +242,7 @@ export const accountPageResponse = [
 			}
 		],
 		publicKey: 'DC688C1D4BA7BA64109B3EEFA936171084DD5375FF9645D0F63A5F23FE0DA4B7',
-		remarks: null,
+		remark: null,
 		remoteAddress: null,
 		vestedBalance: 41354396.865779
 	},
@@ -266,7 +266,7 @@ export const accountPageResponse = [
 			}
 		],
 		publicKey: '3D265614B8C92A63871C3413949ED803A80E1DE4FB960D7BB30D44AE7B5E3C79',
-		remarks: null,
+		remark: null,
 		remoteAddress: null,
 		vestedBalance: 374786609.398084
 	},
@@ -295,7 +295,7 @@ export const accountPageResponse = [
 			}
 		],
 		publicKey: 'A6BDD40A571C87BA43260AA904BDD6CF02F121B5EB9885A8C008725558CFE2E5',
-		remarks: null,
+		remark: null,
 		remoteAddress: null,
 		vestedBalance: 463794056.513013
 	}
@@ -894,7 +894,7 @@ export const accountInfoResponse = {
 		}
 	],
 	publicKey: '019B4EDDAEFA086A328EB907ECBC5ED0EABD6BBB6F3BA25B22A310CB5917A808',
-	remarks: 'Description text',
+	remark: 'Description text',
 	remoteAddress: null,
 	vestedBalance: 0
 };
