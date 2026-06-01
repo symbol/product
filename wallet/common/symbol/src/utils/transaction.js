@@ -319,15 +319,11 @@ export const signTransaction = (networkIdentifier, transaction, privateKey, cosi
 		throw new SdkError('Cosignatures can only be added to aggregate transactions');
 
 	if (cosignaturePrivateKeys.length > 0) {
-		const transactionHashBytes = facade.hashTransaction(transactionObject).bytes;
+		const transactionHash = facade.hashTransaction(transactionObject);
 		transactionObject.cosignatures = cosignaturePrivateKeys.map(cosignerPrivateKey => {
 			const cosignerKeyPair = new SymbolFacade.KeyPair(new PrivateKey(cosignerPrivateKey));
-			const cosignature = new models.Cosignature();
-			cosignature.version = 0n;
-			cosignature.signerPublicKey = new models.PublicKey(cosignerKeyPair.publicKey.bytes);
-			cosignature.signature = new models.Signature(cosignerKeyPair.sign(transactionHashBytes).bytes);
 			
-			return cosignature;
+			return SymbolFacade.cosignTransactionHash(cosignerKeyPair, transactionHash, false);
 		});
 	}
 
