@@ -1,6 +1,6 @@
-import { createSymbolPage, createSymbolSearchURL, fetchSymbolNode, hexToSymbolAddress } from '../utils';
-import { fetchMetadataPage, METADATA_TYPE } from './metadata';
+import { METADATA_TYPE, fetchMetadataPage } from './metadata';
 import { fetchRentalFeeReceiptPage } from './receipts';
+import { createSymbolPage, createSymbolSearchURL, fetchSymbolNode, hexToSymbolAddress } from '../utils';
 import config from '@/config';
 import { createTryFetchInfoFunction } from '@/utils/server';
 import { generateNamespacePath } from 'symbol-sdk/symbol';
@@ -148,6 +148,7 @@ const namespaceInfoFromDTO = (data, namespaceNames = {}) => {
 		...aliasInfo,
 		creator: hexToSymbolAddress(namespace.ownerAddress),
 		registrationHeight: startHeight,
+		registrationType: isRoot ? 'root' : 'sub',
 		expirationHeight: endHeight || null,
 		isUnlimitedDuration: false,
 		subNamespaceCount: isRoot ? 0 : null,

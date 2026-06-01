@@ -1,4 +1,4 @@
-import { fetchMetadataPage, METADATA_TYPE } from './metadata';
+import { METADATA_TYPE, fetchMetadataPage } from './metadata';
 
 export const fetchMosaicMetadataPage = async searchParams => fetchMetadataPage({
 	...searchParams,

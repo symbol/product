@@ -1,6 +1,6 @@
 import { STORAGE_KEY } from '@/constants';
 import _ from 'lodash';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 // Makes an async call. Handles the loading and error states.
 export const useDataManager = (callback, defaultData, onError, defaultLoadingState = false) => {
@@ -25,21 +25,30 @@ export const useDataManager = (callback, defaultData, onError, defaultLoadingSta
 };
 
 // Makes a pagination calls. Handles the loading and error states.
-export const usePagination = (callback, defaultData, defaultFilter = {}) => {
+export const usePagination = (callback, defaultData = [], defaultFilter = {}) => {
+	const initialData = defaultData || [];
 	const [filter, setFilter] = useState(defaultFilter);
 	const [isLoading, setIsLoading] = useState(false);
 	const [isError, setIsError] = useState(false);
 	const [isLastPage, setIsLastPage] = useState(false);
-	const [pageNumber, setPageNumber] = useState(1);
-	const [data, setData] = useState(defaultData);
+	const [pageNumber, setPageNumber] = useState(initialData.length ? 1 : 0);
+	const [data, setData] = useState(initialData);
+	const isRequestInFlight = useRef(false);
+	const requestId = useRef(0);
 
-	const call = (pageNumber, filter, data) => {
+	const call = useCallback((pageNumber, filter, data, isForced = false) => {
+		if (isRequestInFlight.current && !isForced)
+			return;
+
+		const currentRequestId = requestId.current + 1;
+		requestId.current = currentRequestId;
+		isRequestInFlight.current = true;
 		setIsError(false);
 		setIsLoading(true);
 		setTimeout(async () => {
 			try {
 				const { data: currentData, pageNumber: currentPageNumber } = await callback({ pageNumber: pageNumber, ...filter });
-				if (currentPageNumber === pageNumber) {
+				if (requestId.current === currentRequestId && currentPageNumber === pageNumber) {
 					setData([...data, ...currentData]);
 					setPageNumber(currentPageNumber);
 					setIsLastPage(currentData.length === 0);
@@ -47,11 +56,16 @@ export const usePagination = (callback, defaultData, defaultFilter = {}) => {
 			} catch (error) {
 				// eslint-disable-next-line no-console
 				console.error('[Pagination] Error:', error);
-				setIsError(true);
+				if (requestId.current === currentRequestId)
+					setIsError(true);
+			} finally {
+				if (requestId.current === currentRequestId) {
+					isRequestInFlight.current = false;
+					setIsLoading(false);
+				}
 			}
-			setIsLoading(false);
 		});
-	};
+	}, [callback]);
 
 	const initialRequest = () => {
 		setFilter(defaultFilter);
@@ -59,20 +73,23 @@ export const usePagination = (callback, defaultData, defaultFilter = {}) => {
 		setIsError(false);
 		setIsLastPage(false);
 		setPageNumber(1);
-		setData(defaultData);
-		call(1, defaultFilter, defaultData);
+		setData(initialData);
+		call(1, defaultFilter, initialData, true);
 	};
 
-	const requestNextPage = () => {
+	const requestNextPage = useCallback(() => {
+		if (isLoading || isLastPage || isRequestInFlight.current)
+			return;
+
 		const nextPageNumber = pageNumber + 1;
 		call(nextPageNumber, filter, data);
-	};
+	}, [call, data, filter, isLastPage, isLoading, pageNumber]);
 
 	const changeFilter = filter => {
 		setData([]);
 		setPageNumber(0);
 		setFilter(filter);
-		call(1, filter, []);
+		call(1, filter, [], true);
 	};
 
 	const clearFilter = () => {

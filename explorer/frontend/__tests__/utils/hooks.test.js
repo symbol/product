@@ -271,6 +271,83 @@ describe('utils/hooks', () => {
 			expect(result.current.isLastPage).toBe(false);
 			expect(result.current.pageNumber).toBe(1);
 		});
+
+		it('does not request the next page more than once while a page is loading', async () => {
+			// Arrange:
+			let resolvePage;
+			const callback = jest.fn().mockImplementation(() => new Promise(resolve => {
+				resolvePage = resolve;
+			}));
+			const defaultData = page1.data;
+
+			// Act:
+			const { result } = renderHook(() => usePagination(callback, defaultData));
+			act(() => {
+				result.current.requestNextPage();
+				result.current.requestNextPage();
+			});
+
+			act(() => {
+				jest.runOnlyPendingTimers();
+			});
+
+			// Assert:
+			expect(callback).toHaveBeenCalledTimes(1);
+			expect(callback).toHaveBeenCalledWith({ pageNumber: 2 });
+
+			// Act:
+			act(() => {
+				resolvePage(page2);
+			});
+			await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+			// Assert:
+			expect(result.current.data).toStrictEqual([...page1.data, ...page2.data]);
+			expect(result.current.pageNumber).toBe(2);
+		});
+
+		it('requests page 1 first when no page data is preloaded', async () => {
+			// Arrange:
+			const callback = jest.fn().mockImplementation(() => Promise.resolve(page1));
+			const defaultData = [];
+
+			// Act:
+			const { result } = renderHook(() => usePagination(callback, defaultData));
+			act(() => {
+				result.current.requestNextPage();
+			});
+
+			act(() => {
+				jest.runAllTimers();
+			});
+			await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+			// Assert:
+			expect(callback).toHaveBeenCalledWith({ pageNumber: 1 });
+			expect(result.current.data).toStrictEqual(page1.data);
+			expect(result.current.pageNumber).toBe(1);
+		});
+
+		it('treats omitted default data as an empty preloaded page', async () => {
+			// Arrange:
+			const callback = jest.fn().mockImplementation(() => Promise.resolve(page1));
+
+			// Act:
+			const { result } = renderHook(() => usePagination(callback));
+			act(() => {
+				result.current.requestNextPage();
+			});
+
+			act(() => {
+				jest.runAllTimers();
+			});
+			await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+			// Assert:
+			expect(callback).toHaveBeenCalledWith({ pageNumber: 1 });
+			expect(result.current.data).toStrictEqual(page1.data);
+			expect(result.current.pageNumber).toBe(1);
+		});
 	});
 
 	describe('useClientSidePagination', () => {

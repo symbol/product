@@ -19,15 +19,34 @@ import Link from 'next/link';
 import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 
+const emptyAccountPage = { data: [] };
+
+const fetchInitialAccountPage = async () => {
+	try {
+		return await fetchAccountPage();
+	} catch (error) {
+		if (error.response?.status !== 429)
+			throw error;
+
+		// eslint-disable-next-line no-console
+		console.error('[AccountList] Initial account page fetch failed:', error);
+
+		return emptyAccountPage;
+	}
+};
+
 export const getServerSideProps = async ({ locale }) => {
-	const page = await fetchAccountPage();
-	const stats = await fetchAccountStats();
+	const [page, stats, translations] = await Promise.all([
+		fetchInitialAccountPage(),
+		fetchAccountStats(),
+		serverSideTranslations(locale, ['common'])
+	]);
 
 	return {
 		props: {
 			preloadedData: page.data,
 			stats,
-			...(await serverSideTranslations(locale, ['common']))
+			...translations
 		}
 	};
 };

@@ -2,8 +2,15 @@ import { createSymbolPage, createSymbolSearchURL, fetchSymbolNode, hexToSymbolAd
 import config from '@/config';
 
 export const METADATA_TYPE = {
+	ACCOUNT: 0,
 	MOSAIC: 1,
 	NAMESPACE: 2
+};
+
+const metadataTypeLabels = {
+	[METADATA_TYPE.ACCOUNT]: 'account',
+	[METADATA_TYPE.MOSAIC]: 'mosaic',
+	[METADATA_TYPE.NAMESPACE]: 'namespace'
 };
 
 export const hexToUtf8 = value => {
@@ -20,6 +27,8 @@ const metadataEntryFromDTO = data => {
 
 	return {
 		scopedMetadataKey: metadataEntry.scopedMetadataKey?.toUpperCase() || null,
+		targetId: metadataEntry.targetId || null,
+		metadataType: metadataTypeLabels[metadataEntry.metadataType] || metadataEntry.metadataType,
 		senderAddress: hexToSymbolAddress(metadataEntry.sourceAddress),
 		targetAddress: hexToSymbolAddress(metadataEntry.targetAddress),
 		value: hexToUtf8(metadataEntry.value)

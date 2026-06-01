@@ -1,3 +1,4 @@
+import { namespaceIdFromName } from './namespaces';
 import {
 	absoluteToRelative,
 	createSymbolPage,
@@ -9,7 +10,6 @@ import {
 	publicKeyToSymbolAddress,
 	symbolTimestampToDate
 } from '../utils';
-import { namespaceIdFromName } from './namespaces';
 import config from '@/config';
 import { createTryFetchInfoFunction } from '@/utils/server';
 
@@ -197,23 +197,23 @@ const messageFromDTO = message => {
 		payload.length === DELEGATED_HARVESTING_PERSISTENT_PAYLOAD_LENGTH
 		&& payload.startsWith(DELEGATED_HARVESTING_PERSISTENT_MARKER)
 	)
-		return {
-			type: SYMBOL_MESSAGE_TYPE.DELEGATED_HARVESTING_PERSISTENT,
-			text: payload
-		};
+	{return {
+		type: SYMBOL_MESSAGE_TYPE.DELEGATED_HARVESTING_PERSISTENT,
+		text: payload
+	};}
 
 	const marker = payload.slice(0, 2);
 
 	if (marker === '00')
-		return {
-			type: SYMBOL_MESSAGE_TYPE.PLAIN,
-			text: decodeMessagePayload(payload.slice(2))
-		};
+	{return {
+		type: SYMBOL_MESSAGE_TYPE.PLAIN,
+		text: decodeMessagePayload(payload.slice(2))
+	};}
 
 	if (marker === '01')
-		return {
-			type: SYMBOL_MESSAGE_TYPE.ENCRYPTED
-		};
+	{return {
+		type: SYMBOL_MESSAGE_TYPE.ENCRYPTED
+	};}
 
 	return {
 		type: SYMBOL_MESSAGE_TYPE.RAW,
@@ -322,36 +322,36 @@ const secretFromDTO = (transaction, type) => {
 
 const mosaicsFromDTO = (transaction, type) => {
 	if (type === SYMBOL_TRANSACTION_TYPE.HASH_LOCK && transaction.mosaicId)
-		return [
-			{
-				id: transaction.mosaicId,
-				amount: transaction.amount
-			}
-		];
+	{return [
+		{
+			id: transaction.mosaicId,
+			amount: transaction.amount
+		}
+	];}
 
 	if (type === SYMBOL_TRANSACTION_TYPE.HASH_LOCK && transaction.mosaic)
 		return [transaction.mosaic];
 
 	if (type === SYMBOL_TRANSACTION_TYPE.MOSAIC_DEFINITION && transaction.id)
-		return [
-			{
-				id: transaction.id
-			}
-		];
+	{return [
+		{
+			id: transaction.id
+		}
+	];}
 
 	if (type === SYMBOL_TRANSACTION_TYPE.MOSAIC_SUPPLY_REVOCATION && transaction.mosaicId)
-		return [
-			{
-				id: transaction.mosaicId
-			}
-		];
+	{return [
+		{
+			id: transaction.mosaicId
+		}
+	];}
 
 	if (type === SYMBOL_TRANSACTION_TYPE.MOSAIC_GLOBAL_RESTRICTION && transaction.mosaicId)
-		return [
-			{
-				id: transaction.mosaicId
-			}
-		];
+	{return [
+		{
+			id: transaction.mosaicId
+		}
+	];}
 
 	return transaction.mosaics || [];
 };
@@ -485,19 +485,19 @@ export const resolveTransactionSignerSearch = async text => {
 		const publicKey = data.account?.publicKey;
 
 		if (isSymbolPublicKey(publicKey) && publicKey !== ZERO_PUBLIC_KEY)
-			return {
-				address: query,
-				value: publicKey
-			};
+		{return {
+			address: query,
+			value: publicKey
+		};}
 
 		throw new Error('TRANSACTION_SIGNER_PUBLIC_KEY_NOT_FOUND');
 	}
 
 	if (isSymbolPublicKey(query))
-		return {
-			address: publicKeyToSymbolAddress(query),
-			value: query
-		};
+	{return {
+		address: publicKeyToSymbolAddress(query),
+		value: query
+	};}
 
 	throw new Error('INVALID_TRANSACTION_SIGNER_SEARCH_FORMAT');
 };
@@ -535,10 +535,10 @@ export const resolveTransactionMosaicSearch = async text => {
 	const mosaicId = normalizeMosaicId(alias.mosaicId);
 
 	if (Number(alias.type) === MOSAIC_ALIAS_TYPE && isMosaicId(mosaicId))
-		return {
-			id: mosaicId,
-			name: namespaceName
-		};
+	{return {
+		id: mosaicId,
+		name: namespaceName
+	};}
 
 	throw new Error('TRANSACTION_MOSAIC_ALIAS_NOT_FOUND');
 };

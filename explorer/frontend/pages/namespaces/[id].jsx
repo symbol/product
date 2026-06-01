@@ -51,7 +51,9 @@ export const getServerSideProps = async ({ locale, params }) => {
 const NamespaceInfo = ({ namespaceInfo, metadataEntries = [], balanceTransferReceipts = [] }) => {
 	const { t } = useTranslation();
 	const metadataPagination = usePagination(fetchNamespaceMetadataPage, metadataEntries, { targetId: namespaceInfo.id });
-	const receiptPagination = usePagination(fetchNamespaceReceiptPage, balanceTransferReceipts, { height: namespaceInfo.registrationHeight });
+	const receiptPagination = usePagination(fetchNamespaceReceiptPage, balanceTransferReceipts, {
+		height: namespaceInfo.registrationHeight
+	});
 	const [chainHeight, setChainHeight] = useState(0);
 	const [expirationText, setExpirationText] = useState(null);
 	const [progressType, setProgressType] = useState('');
@@ -200,7 +202,9 @@ const NamespaceInfo = ({ namespaceInfo, metadataEntries = [], balanceTransferRec
 							</Field>
 						)}
 						<Field title={t(pageConfig.namespaces.namespaceIdFieldTitleKey)}>
-							<div className={`${styles.namespaceValue} ${styles.namespaceIdValue} value-highlighted`}>{namespaceInfo.id}</div>
+							<div className={`${styles.namespaceValue} ${styles.namespaceIdValue} value-highlighted`}>
+								{namespaceInfo.id}
+							</div>
 						</Field>
 						{pageConfig.namespaces.showNamespaceRegistrationTimestamp && (
 							<FieldTimestamp title={t('field_created')} value={namespaceInfo.registrationTimestamp} hasTime />

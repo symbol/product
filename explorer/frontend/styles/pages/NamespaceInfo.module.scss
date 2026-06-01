@@ -18,8 +18,8 @@
 
 .namespaceValue {
 	max-width: 100%;
-	overflow-wrap: anywhere;
 	word-break: break-word;
+	overflow-wrap: anywhere;
 }
 
 .namespaceIdValue {
@@ -30,8 +30,8 @@
 	display: block;
 	max-width: 100%;
 	white-space: pre-wrap;
-	overflow-wrap: anywhere;
 	word-break: break-word;
+	overflow-wrap: anywhere;
 }
 
 .metadataAddress {
@@ -39,8 +39,8 @@
 
 	a {
 		min-width: 0;
-		overflow-wrap: anywhere;
 		word-break: break-word;
+		overflow-wrap: anywhere;
 	}
 
 	> div:last-child {
@@ -52,8 +52,8 @@
 
 .receiptMosaic {
 	max-width: 100%;
-	overflow-wrap: anywhere;
 	word-break: break-word;
+	overflow-wrap: anywhere;
 }
 
 @media #{$screen-mobile} {

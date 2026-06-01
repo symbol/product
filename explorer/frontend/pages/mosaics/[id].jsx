@@ -1,9 +1,9 @@
 import { fetchAccountPage } from '@/api/accounts';
 import { fetchChainHight } from '@/api/blocks';
-import { fetchMosaicInfo } from '@/api/mosaics';
 import { fetchMosaicMetadataPage } from '@/api/mosaicMetadata';
 import { fetchMosaicArtifactExpiryReceiptPage, fetchMosaicReceiptPage } from '@/api/mosaicReceipts';
 import { fetchMosaicRestrictionPage } from '@/api/mosaicRestrictions';
+import { fetchMosaicInfo } from '@/api/mosaics';
 import { fetchTransactionPage } from '@/api/transactions';
 import Avatar from '@/components/Avatar';
 import Field from '@/components/Field';
@@ -90,6 +90,12 @@ const MosaicInfo = ({ mosaicInfo, preloadedTransactions, preloadedAccounts }) =>
 		: mosaicInfo.registrationHeight;
 	const progressExpirationHeight = mosaicInfo.isUnlimitedDuration ? Infinity : mosaicInfo.namespaceExpirationHeight;
 	const progressExpirationHeightText = mosaicInfo.isUnlimitedDuration ? 'Infinity' : mosaicInfo.namespaceExpirationHeight;
+	const expirationFieldTitle = t(pageConfig.mosaics.showNamespaceDetail ? 'field_namespaceExpiration' : 'field_expiration');
+	const progressTitleLeft = t(pageConfig.mosaics.showNamespaceDetail ? 'field_namespaceRegistrationHeight' : 'field_registrationHeight');
+	const progressTitleRight = t(pageConfig.mosaics.showNamespaceDetail ? 'field_namespaceExpirationHeight' : 'field_expirationHeight');
+	const isArtifactExpiryReceiptShown = pageConfig.mosaics.showArtifactExpiryReceipt
+		&& !artifactExpiryPagination.isError
+		&& !!artifactExpiryPagination.data.length;
 
 	const accountsTableColumns = [
 		{
@@ -346,13 +352,13 @@ const MosaicInfo = ({ mosaicInfo, preloadedTransactions, preloadedAccounts }) =>
 								<Link href={createPageHref('blocks', mosaicInfo.registrationHeight)}>{mosaicInfo.registrationHeight}</Link>
 							</Field>
 						)}
-						<Field title={t(pageConfig.mosaics.showNamespaceDetail ? 'field_namespaceExpiration' : 'field_expiration')} description={t('field_mosaicNamespaceExpiration_description')}>
+						<Field title={expirationFieldTitle} description={t('field_mosaicNamespaceExpiration_description')}>
 							{nullableValueToText(expirationText)}
 						</Field>
 						{isExpirationProgressShown && (
 							<Progress
-								titleLeft={t(pageConfig.mosaics.showNamespaceDetail ? 'field_namespaceRegistrationHeight' : 'field_registrationHeight')}
-								titleRight={t(pageConfig.mosaics.showNamespaceDetail ? 'field_namespaceExpirationHeight' : 'field_expirationHeight')}
+								titleLeft={progressTitleLeft}
+								titleRight={progressTitleRight}
 								valueLeft={progressRegistrationHeight}
 								valueRight={progressExpirationHeight}
 								valueRightText={progressExpirationHeightText}
@@ -444,7 +450,7 @@ const MosaicInfo = ({ mosaicInfo, preloadedTransactions, preloadedAccounts }) =>
 					/>
 				</Section>
 			)}
-			{pageConfig.mosaics.showArtifactExpiryReceipt && !artifactExpiryPagination.isError && !!artifactExpiryPagination.data.length && (
+			{isArtifactExpiryReceiptShown && (
 				<Section title={t('section_artifactExpiryReceipt')}>
 					<Table
 						data={artifactExpiryPagination.data}

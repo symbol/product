@@ -31,11 +31,11 @@
 	font: $font-body;
 	text-align: left;
 	overflow-wrap: anywhere;
-	pointer-events: none;
 	background-color: #332d43;
 	border: 0.08rem solid $color-separator-line-neutral;
 	border-radius: $spacing-base;
 	box-shadow: 0 1rem 2rem #0003;
+	pointer-events: none;
 }
 
 .row {

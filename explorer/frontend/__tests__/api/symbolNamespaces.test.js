@@ -107,6 +107,7 @@ describe('variants/symbol/api/namespaces', () => {
 						aliasAddress: null,
 						creator: 'OWNER_ADDRESS',
 						registrationHeight: 100,
+						registrationType: 'root',
 						expirationHeight: 200,
 						isUnlimitedDuration: false,
 						subNamespaceCount: 0,
@@ -134,6 +135,7 @@ describe('variants/symbol/api/namespaces', () => {
 						aliasAddress: null,
 						creator: 'OWNER_ADDRESS_2',
 						registrationHeight: 120,
+						registrationType: 'sub',
 						expirationHeight: 220,
 						isUnlimitedDuration: false,
 						subNamespaceCount: null,
@@ -190,6 +192,7 @@ describe('variants/symbol/api/namespaces', () => {
 				aliasAddress: null,
 				creator: 'OWNER_ADDRESS',
 				registrationHeight: 100,
+				registrationType: 'root',
 				expirationHeight: 200,
 				isUnlimitedDuration: false,
 				subNamespaceCount: 0,
@@ -533,13 +536,14 @@ describe('variants/symbol/api/namespaces', () => {
 			});
 
 			// Assert:
-			expect(makeRequest).toHaveBeenCalledWith(
-				'/api/symbol-node/metadata?pageNumber=2&pageSize=10&order=desc&targetId=FDB25189E8A1A5CE&metadataType=2'
-			);
+			const expectedUrl = '/api/symbol-node/metadata?pageNumber=2&pageSize=10&order=desc&targetId=FDB25189E8A1A5CE&metadataType=2';
+			expect(makeRequest).toHaveBeenCalledWith(expectedUrl);
 			expect(result).toEqual({
 				data: [
 					{
 						scopedMetadataKey: 'BB3026E7612A769F',
+						targetId: 'FDB25189E8A1A5CE',
+						metadataType: 'namespace',
 						senderAddress: 'TB3DHDY4YDE4CNMARLYFZ7USU2OLAI4QFS4IZ6Q',
 						targetAddress: 'TB3DHDY4YDE4CNMARLYFZ7USU2OLAI4QFS4IZ6Q',
 						value: 'This is a sample mosaic'
@@ -609,9 +613,9 @@ describe('variants/symbol/api/namespaces', () => {
 			});
 
 			// Assert:
-			expect(makeRequest).toHaveBeenCalledWith(
-				'/api/symbol-node/statements/transaction?pageNumber=2&pageSize=10&order=desc&height=3407435&receiptType=4942'
-			);
+			const expectedUrl = '/api/symbol-node/statements/transaction?pageNumber=2&pageSize=10&order=desc'
+				+ '&height=3407435&receiptType=4942';
+			expect(makeRequest).toHaveBeenCalledWith(expectedUrl);
 			expect(result).toEqual({
 				data: [
 					{

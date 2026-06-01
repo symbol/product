@@ -170,8 +170,7 @@ describe('TransactionList', () => {
 			expect(screen.queryByText('custom.mosaic')).not.toBeInTheDocument();
 			expect(screen.queryByText('20')).not.toBeInTheDocument();
 			const customMosaicImage = screen.getAllByAltText('Mosaic').find(image =>
-				image.getAttribute('src') === '/images/icon-mosaic-custom.svg'
-			);
+				image.getAttribute('src') === '/images/icon-mosaic-custom.svg');
 			expect(customMosaicImage).toBeInTheDocument();
 			expect(customMosaicImage.closest('a')).toHaveAttribute('href', '/mosaics/custom.mosaic');
 		});

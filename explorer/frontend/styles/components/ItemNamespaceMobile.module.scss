@@ -7,10 +7,10 @@
 	width: 100%;
 
 		.mainSection {
-			align-items: flex-start;
 			display: flex;
 			flex-direction: row;
 			gap: $spacing-base;
+			align-items: flex-start;
 			justify-content: space-between;
 			width: 100%;
 

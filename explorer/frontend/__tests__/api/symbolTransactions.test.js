@@ -1,5 +1,6 @@
 import config from '@/config';
 import * as utils from '@/utils/server';
+import { namespaceIdFromName } from '@/variants/symbol/api/namespaces';
 import {
 	fetchTransactionPage,
 	resolveTransactionBlockSearch,
@@ -7,7 +8,6 @@ import {
 	resolveTransactionRecipientSearch,
 	resolveTransactionSignerSearch
 } from '@/variants/symbol/api/transactions';
-import { namespaceIdFromName } from '@/variants/symbol/api/namespaces';
 
 jest.mock('@/utils/server', () => {
 	return {
@@ -957,9 +957,8 @@ describe('variants/symbol/api/transactions', () => {
 			});
 
 			// Assert:
-			expect(makeRequest).toHaveBeenCalledWith(
-				'/api/symbol-node/transactions/confirmed?pageNumber=2&pageSize=50&order=desc&orderBy=id&recipientAddress=TCNAOT3ZKSU45DVFCV3RHMTWHDKL4VS3LG33ELY'
-			);
+			expect(makeRequest).toHaveBeenCalledWith('/api/symbol-node/transactions/confirmed?pageNumber=2&pageSize=50&order=desc'
+					+ '&orderBy=id&recipientAddress=TCNAOT3ZKSU45DVFCV3RHMTWHDKL4VS3LG33ELY');
 		});
 
 		it('maps from public key filter to Symbol REST signerPublicKey query parameter', async () => {
@@ -977,9 +976,8 @@ describe('variants/symbol/api/transactions', () => {
 			});
 
 			// Assert:
-			expect(makeRequest).toHaveBeenCalledWith(
-				`/api/symbol-node/transactions/confirmed?pageNumber=2&pageSize=50&order=desc&orderBy=id&signerPublicKey=${'B'.repeat(64)}`
-			);
+			expect(makeRequest).toHaveBeenCalledWith('/api/symbol-node/transactions/confirmed?pageNumber=2&pageSize=50&order=desc'
+					+ `&orderBy=id&signerPublicKey=${'B'.repeat(64)}`);
 		});
 
 		it('passes block height filter to Symbol REST height query parameter', async () => {
@@ -997,9 +995,8 @@ describe('variants/symbol/api/transactions', () => {
 			});
 
 			// Assert:
-			expect(makeRequest).toHaveBeenCalledWith(
-				'/api/symbol-node/transactions/confirmed?pageNumber=2&pageSize=50&order=desc&orderBy=id&height=123456'
-			);
+			expect(makeRequest).toHaveBeenCalledWith('/api/symbol-node/transactions/confirmed?pageNumber=2&pageSize=50&order=desc'
+					+ '&orderBy=id&height=123456');
 		});
 
 		it('maps mosaic filter to Symbol REST transferMosaicId query parameter', async () => {
@@ -1018,9 +1015,8 @@ describe('variants/symbol/api/transactions', () => {
 			});
 
 			// Assert:
-			expect(makeRequest).toHaveBeenCalledWith(
-				'/api/symbol-node/transactions/confirmed?pageNumber=2&pageSize=50&order=desc&orderBy=id&transferMosaicId=72C0212E67A08BCE&embedded=true'
-			);
+			expect(makeRequest).toHaveBeenCalledWith('/api/symbol-node/transactions/confirmed?pageNumber=2&pageSize=50&order=desc'
+					+ '&orderBy=id&transferMosaicId=72C0212E67A08BCE&embedded=true');
 		});
 
 		it('maps embedded mosaic transfer aggregate hash to transaction hash', async () => {
@@ -1110,7 +1106,8 @@ describe('variants/symbol/api/transactions', () => {
 
 		it('throws for invalid recipient input format', async () => {
 			// Act + Assert:
-			await expect(resolveTransactionRecipientSearch('invalid-recipient')).rejects.toThrow('INVALID_TRANSACTION_RECIPIENT_SEARCH_FORMAT');
+			await expect(resolveTransactionRecipientSearch('invalid-recipient'))
+				.rejects.toThrow('INVALID_TRANSACTION_RECIPIENT_SEARCH_FORMAT');
 		});
 	});
 

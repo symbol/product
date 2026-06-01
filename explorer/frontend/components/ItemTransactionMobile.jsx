@@ -5,8 +5,8 @@ import ValueList from './ValueList';
 import ValueMosaic from './ValueMosaic';
 import ValueTimestamp from './ValueTimestamp';
 import ValueTransactionAliasAction from './ValueTransactionAliasAction';
-import ValueTransactionMessage from './ValueTransactionMessage';
 import ValueTransactionHash from './ValueTransactionHash';
+import ValueTransactionMessage from './ValueTransactionMessage';
 import ValueTransactionNamespaceRegistration from './ValueTransactionNamespaceRegistration';
 import ValueTransactionProof from './ValueTransactionProof';
 import ValueTransactionRestrictionAction from './ValueTransactionRestrictionAction';
@@ -45,7 +45,9 @@ const ItemTransactionMobile = ({ data, isTimestampShown }) => {
 	const isTransactionTypeInGroup = group => (transactionValueTypeGroups[group] || []).includes(type);
 	const isTransactionValueMosaicDetailsHidden = isTransactionTypeInGroup('mosaicDetailsHidden');
 	const isMosaicDetailsHidden = mosaic =>
-		pageConfig.transactions?.isTransferNonNativeMosaicValueHidden && isTransactionValueMosaicDetailsHidden && !isNativeMosaic(mosaic.id);
+		pageConfig.transactions?.isTransferNonNativeMosaicValueHidden
+		&& isTransactionValueMosaicDetailsHidden
+		&& !isNativeMosaic(mosaic.id);
 	const isAliasTransaction = isTransactionTypeInGroup('aliasAction');
 	const isAccountRestrictionActionTransaction = isTransactionTypeInGroup('restrictionAction');
 	const isMosaicSupplyChangeTransaction = isTransactionTypeInGroup('mosaicSupplyAction');

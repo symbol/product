@@ -6,7 +6,9 @@ import * as AccountService from '@/api/accounts';
 import * as StatsService from '@/api/stats';
 import AccountList, { formatAccountListCSV, getServerSideProps } from '@/pages/accounts/index';
 import { pageConfig } from '@/variants';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
+/* eslint-disable import/no-unresolved */
+import { mockAllIsIntersecting } from 'react-intersection-observer/test-utils';
 
 jest.mock('@/api/accounts', () => {
 	return {
@@ -27,6 +29,7 @@ describe('AccountList', () => {
 
 	afterEach(() => {
 		Object.assign(pageConfig.accounts, originalAccountsConfig);
+		jest.restoreAllMocks();
 	});
 
 	describe('getServerSideProps', () => {
@@ -51,6 +54,49 @@ describe('AccountList', () => {
 			expect(fetchAccountPage).toHaveBeenCalledWith();
 			expect(fetchAccountStats).toHaveBeenCalledWith();
 			expect(result).toEqual(expectedResult);
+		});
+
+		it('returns page with empty account list when initial account fetch is rate limited', async () => {
+			// Arrange:
+			const locale = 'en';
+			const fetchAccountPage = jest.spyOn(AccountService, 'fetchAccountPage');
+			fetchAccountPage.mockRejectedValue({
+				response: {
+					status: 429
+				}
+			});
+			const fetchAccountStats = jest.spyOn(StatsService, 'fetchAccountStats');
+			fetchAccountStats.mockResolvedValue(accountStatisticsResult);
+
+			// Act:
+			const result = await getServerSideProps({ locale });
+
+			// Assert:
+			expect(fetchAccountPage).toHaveBeenCalledWith();
+			expect(fetchAccountStats).toHaveBeenCalledWith();
+			expect(result).toEqual({
+				props: {
+					preloadedData: [],
+					stats: accountStatisticsResult
+				}
+			});
+		});
+
+		it('throws non-rate-limit account fetch errors during initial account fetch', async () => {
+			// Arrange:
+			const locale = 'en';
+			const error = {
+				response: {
+					status: 500
+				}
+			};
+			const fetchAccountPage = jest.spyOn(AccountService, 'fetchAccountPage');
+			fetchAccountPage.mockRejectedValue(error);
+			const fetchAccountStats = jest.spyOn(StatsService, 'fetchAccountStats');
+			fetchAccountStats.mockResolvedValue(accountStatisticsResult);
+
+			// Act + Assert:
+			await expect(getServerSideProps({ locale })).rejects.toBe(error);
 		});
 	});
 
@@ -162,6 +208,19 @@ describe('AccountList', () => {
 			expect(screen.getByText('filter_latest')).toBeInTheDocument();
 			expect(screen.getByText('filter_richList')).toBeInTheDocument();
 			expect(screen.queryByText('filter_activeHarvesting')).not.toBeInTheDocument();
+		});
+
+		it('requests page 1 after initial account list fallback renders empty data', async () => {
+			// Arrange:
+			const fetchAccountPage = jest.spyOn(AccountService, 'fetchAccountPage');
+			fetchAccountPage.mockResolvedValue(accountPageResult);
+
+			// Act:
+			render(<AccountList preloadedData={[]} stats={accountStatisticsResult} />);
+			mockAllIsIntersecting(true);
+
+			// Assert:
+			await waitFor(() => expect(fetchAccountPage).toHaveBeenCalledWith({ pageNumber: 1 }));
 		});
 	});
 

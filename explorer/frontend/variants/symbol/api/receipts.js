@@ -19,7 +19,7 @@ const receiptTypeNames = {
 };
 
 const rentalFeeReceiptFromDTO = receipt => {
-	const mosaicId = receipt.mosaicId;
+	const {mosaicId} = receipt;
 	const isNative = isNativeMosaicId(mosaicId);
 
 	return {

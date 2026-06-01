@@ -42,10 +42,10 @@ const ValueTransactionMessage = ({ message, isFocusable = true }) => {
 		const rect = ref.current?.getBoundingClientRect();
 
 		if (rect)
-			setTooltipPosition({
-				top: rect.bottom + 6,
-				left: rect.left
-			});
+		{setTooltipPosition({
+			top: rect.bottom + 6,
+			left: rect.left
+		});}
 	};
 	const hideTooltip = () => setTooltipPosition(null);
 	const tooltip = (

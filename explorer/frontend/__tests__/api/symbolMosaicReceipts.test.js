@@ -60,9 +60,8 @@ describe('variants/symbol/api/mosaicReceipts', () => {
 		});
 
 		// Assert:
-		expect(makeRequest).toHaveBeenCalledWith(
-			'/api/symbol-node/statements/transaction?pageNumber=2&pageSize=10&order=desc&height=3407435&receiptType=4685'
-		);
+		expect(makeRequest).toHaveBeenCalledWith('/api/symbol-node/statements/transaction?pageNumber=2&pageSize=10'
+			+ '&order=desc&height=3407435&receiptType=4685');
 		expect(result).toEqual({
 			data: [
 				{
@@ -122,9 +121,8 @@ describe('variants/symbol/api/mosaicReceipts', () => {
 		});
 
 		// Assert:
-		expect(makeRequest).toHaveBeenCalledWith(
-			'/api/symbol-node/statements/transaction?pageNumber=2&pageSize=10&order=desc&height=3396665&receiptType=16717'
-		);
+		expect(makeRequest).toHaveBeenCalledWith('/api/symbol-node/statements/transaction?pageNumber=2&pageSize=10'
+			+ '&order=desc&height=3396665&receiptType=16717');
 		expect(result).toEqual({
 			data: [
 				{

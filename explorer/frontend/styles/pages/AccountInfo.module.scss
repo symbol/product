@@ -28,6 +28,60 @@
 	}
 }
 
+.ownedNamespacesSectionCard {
+	height: 27rem;
+
+	.ownedNamespacesTable {
+		height: 20rem;
+		overflow-y: auto;
+	}
+}
+
+.metadataEntriesSectionCard {
+	height: 31rem;
+
+	.metadataEntriesTable {
+		height: 22rem;
+		overflow-y: auto;
+	}
+}
+
+.receiptSectionCard {
+	height: 27rem;
+
+	.receiptTable {
+		height: 20rem;
+		overflow-y: auto;
+	}
+}
+
+.harvestedBlockSectionCard {
+	height: 27rem;
+
+	.harvestedBlockTable {
+		height: 20rem;
+		overflow-y: auto;
+	}
+}
+
+.hashLockSectionCard {
+	height: 27rem;
+
+	.hashLockTable {
+		height: 20rem;
+		overflow-y: auto;
+	}
+}
+
+.secretLockSectionCard {
+	height: 27rem;
+
+	.secretLockTable {
+		height: 20rem;
+		overflow-y: auto;
+	}
+}
+
 @media #{$screen-mobile} {
 	.firstSection {
 		max-width: 100%;
@@ -48,5 +102,29 @@
 			height: auto;
 			max-height: 30rem;
 		}
+	}
+
+	.ownedNamespacesSectionCard {
+		height: 27rem;
+	}
+
+	.metadataEntriesSectionCard {
+		height: 31rem;
+	}
+
+	.receiptSectionCard {
+		height: 27rem;
+	}
+
+	.harvestedBlockSectionCard {
+		height: 27rem;
+	}
+
+	.hashLockSectionCard {
+		height: 27rem;
+	}
+
+	.secretLockSectionCard {
+		height: 27rem;
 	}
 }

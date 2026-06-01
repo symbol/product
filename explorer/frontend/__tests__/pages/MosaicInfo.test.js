@@ -4,10 +4,10 @@ import { mosaicInfoResult } from '../test-utils/mosaics';
 import { transactionPageResult } from '../test-utils/transactions';
 import * as AccountService from '@/api/accounts';
 import * as BlockService from '@/api/blocks';
-import * as MosaicService from '@/api/mosaics';
 import * as MosaicMetadataService from '@/api/mosaicMetadata';
 import * as MosaicReceiptService from '@/api/mosaicReceipts';
 import * as MosaicRestrictionService from '@/api/mosaicRestrictions';
+import * as MosaicService from '@/api/mosaics';
 import * as TransactionService from '@/api/transactions';
 import MosaicInfo, { getServerSideProps } from '@/pages/mosaics/[id]';
 import * as utils from '@/utils';
@@ -424,9 +424,12 @@ describe('MosaicInfo', () => {
 
 			// Assert:
 			await waitFor(() => expect(screen.getByText('section_artifactExpiryReceipt')).toBeInTheDocument());
-			expect(screen.getByText('section_balanceTransferReceipt').compareDocumentPosition(screen.getByText('section_artifactExpiryReceipt')))
+			const balanceTransferReceiptSection = screen.getByText('section_balanceTransferReceipt');
+			const artifactExpiryReceiptSection = screen.getByText('section_artifactExpiryReceipt');
+
+			expect(balanceTransferReceiptSection.compareDocumentPosition(artifactExpiryReceiptSection))
 				.toBe(Node.DOCUMENT_POSITION_FOLLOWING);
-			expect(screen.getByText('section_artifactExpiryReceipt').compareDocumentPosition(screen.getByText('section_distribution')))
+			expect(artifactExpiryReceiptSection.compareDocumentPosition(screen.getByText('section_distribution')))
 				.toBe(Node.DOCUMENT_POSITION_FOLLOWING);
 			expect(screen.getByText('receiptType_mosaicExpired')).toBeInTheDocument();
 			expect(screen.getByText('54521A62D14B4558')).toBeInTheDocument();

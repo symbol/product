@@ -40,6 +40,7 @@ const mosaicRestrictionFromDTO = data => {
 	return {
 		compositeHash: entry.compositeHash,
 		entryType: getEntryTypeText(entryType),
+		mosaicId: entry.mosaicId,
 		targetAddress: isGlobalRestriction ? null : hexToSymbolAddress(entry.targetAddress),
 		restrictions: (entry.restrictions || [])
 			.map(item => (isGlobalRestriction ? formatGlobalRestriction(item, entry.mosaicId) : formatAddressRestriction(item)))
@@ -52,7 +53,7 @@ export const fetchMosaicRestrictionPage = async searchParams => {
 	const entryType = Number(type);
 	const url = createSymbolSearchURL('restrictions/mosaic', {
 		...restParams,
-		mosaicId,
+		...(mosaicId !== undefined ? { mosaicId } : {}),
 		type
 	});
 	const response = await fetchSymbolNode(url.replace(`${config.SYMBOL_NODE_URL}/`, ''));

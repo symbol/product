@@ -1,9 +1,9 @@
 import config from '@/config';
 import * as utils from '@/utils/server';
 import {
-	fetchMosaicRestrictionPage,
 	MOSAIC_ADDRESS_RESTRICTION_TYPE,
-	MOSAIC_GLOBAL_RESTRICTION_TYPE
+	MOSAIC_GLOBAL_RESTRICTION_TYPE,
+	fetchMosaicRestrictionPage
 } from '@/variants/symbol/api/mosaicRestrictions';
 
 jest.mock('@/utils/server', () => {
@@ -68,14 +68,14 @@ describe('variants/symbol/api/mosaicRestrictions', () => {
 		});
 
 		// Assert:
-		expect(makeRequest).toHaveBeenCalledWith(
-			'/api/symbol-node/restrictions/mosaic?pageNumber=2&pageSize=20&order=desc&mosaicId=6F7904E6DF09D21D&type=1'
-		);
+		const expectedUrl = '/api/symbol-node/restrictions/mosaic?pageNumber=2&pageSize=20&order=desc&mosaicId=6F7904E6DF09D21D&type=1';
+		expect(makeRequest).toHaveBeenCalledWith(expectedUrl);
 		expect(result).toEqual({
 			data: [
 				{
 					compositeHash: 'E349F147BE1CEEC44DC63FF90552553DF5300FC71E91B33553660AF9B935ADE6',
 					entryType: 'Mosaic Global Restriction',
+					mosaicId: '6F7904E6DF09D21D',
 					targetAddress: null,
 					restrictions: '6F7904E6DF09D21D Key 790526 Greater Than Or Equal 2'
 				}
@@ -122,18 +122,42 @@ describe('variants/symbol/api/mosaicRestrictions', () => {
 		});
 
 		// Assert:
-		expect(makeRequest).toHaveBeenCalledWith(
-			'/api/symbol-node/restrictions/mosaic?pageNumber=1&pageSize=10&order=desc&mosaicId=6F7904E6DF09D21D&type=0'
-		);
+		const expectedUrl = '/api/symbol-node/restrictions/mosaic?pageNumber=1&pageSize=10&order=desc&mosaicId=6F7904E6DF09D21D&type=0';
+		expect(makeRequest).toHaveBeenCalledWith(expectedUrl);
 		expect(result).toEqual({
 			data: [
 				{
 					compositeHash: 'B50AFD8BE2EBE8DF7EFC67DCEEC50BE6F589FD6C3D6DBD558706633824B92968',
 					entryType: 'Mosaic Address Restriction',
+					mosaicId: '6F7904E6DF09D21D',
 					targetAddress: 'TAH6AUTPU3ZYTGNDWTHTLKJIUQ4R2RRAMNFAEWQ',
 					restrictions: '790526: 10'
 				}
 			],
+			pageNumber: 1
+		});
+	});
+
+	it('fetches mosaic address restrictions by target address without mosaic id', async () => {
+		// Arrange:
+		const response = {
+			data: []
+		};
+		const makeRequest = jest.spyOn(utils, 'makeRequest');
+		makeRequest.mockResolvedValueOnce(response);
+
+		// Act:
+		const result = await fetchMosaicRestrictionPage({
+			targetAddress: 'TCJFUWF6GIGFDZAR3DFFWJB33HWPHKRZIESUVY',
+			type: MOSAIC_ADDRESS_RESTRICTION_TYPE
+		});
+
+		// Assert:
+		const expectedUrl = '/api/symbol-node/restrictions/mosaic?pageNumber=1&pageSize=10&order=desc'
+			+ '&targetAddress=TCJFUWF6GIGFDZAR3DFFWJB33HWPHKRZIESUVY&type=0';
+		expect(makeRequest).toHaveBeenCalledWith(expectedUrl);
+		expect(result).toEqual({
+			data: [],
 			pageNumber: 1
 		});
 	});
