@@ -73,7 +73,7 @@ Mosaic = namedtuple('Mosaic', [
 	'levy_fee',
 	'levy_recipient'
 ])
-AddressRemarks = namedtuple('Address_Remarks', ['address', 'remarks'])
+AddressRemark = namedtuple('Address_Remark', ['address', 'remark'])
 Transaction = namedtuple('Transaction', [
 	'transaction_hash',
 	'height',
@@ -229,11 +229,11 @@ MOSAICS = [
 ]
 
 ADDRESS_REMARKS = [
-	AddressRemarks(
+	AddressRemark(
 		Address('NAGHXD63C4V6REWGXCVKJ2SBS3GUAXGTRQZQXPRO'),
 		'Test remark A'
 	),
-	AddressRemarks(
+	AddressRemark(
 		Address('NBFWZ4IVRHEIBRCGHLYDS62FSFTBM3VDFA7E6LSQ'),
 		'Test remark B'
 	)
@@ -484,7 +484,8 @@ ACCOUNT_VIEWS = [
 		last_harvested_height=0,
 		min_cosignatories=ACCOUNTS[0].min_cosignatories,
 		cosignatory_of=ACCOUNTS[0].cosignatory_of,
-		cosignatories=ACCOUNTS[0].cosignatories
+		cosignatories=ACCOUNTS[0].cosignatories,
+		remark=ADDRESS_REMARKS[0].remark
 	),
 	AccountView(
 		address=str(ACCOUNTS[1].address),
@@ -506,7 +507,8 @@ ACCOUNT_VIEWS = [
 		last_harvested_height=0,
 		min_cosignatories=ACCOUNTS[1].min_cosignatories,
 		cosignatory_of=ACCOUNTS[1].cosignatory_of,
-		cosignatories=ACCOUNTS[1].cosignatories
+		cosignatories=ACCOUNTS[1].cosignatories,
+		remark=ADDRESS_REMARKS[1].remark
 	)
 ]
 
@@ -892,10 +894,10 @@ def initialize_database(db_config, network_name):
 
 		cursor.execute(
 			'''
-			CREATE TABLE IF NOT EXISTS account_remarks (
+			CREATE TABLE IF NOT EXISTS account_remark (
 				id serial PRIMARY KEY,
 				address bytea UNIQUE,
-				remarks varchar NOT NULL
+				remark varchar NOT NULL
 			)
 			'''
 		)
@@ -1043,17 +1045,17 @@ def initialize_database(db_config, network_name):
 				)
 			)
 
-		for address_remark in ADDRESS_REMARKS:
+		for address in ADDRESS_REMARKS:
 			cursor.execute(
 				'''
-				INSERT INTO account_remarks (
+				INSERT INTO account_remark (
 					address,
-					remarks
+					remark
 				)
 				VALUES (%s, %s)
 				''', (
-					address_remark.address.bytes,
-					address_remark.remarks
+					address.address.bytes,
+					address.remark
 				)
 			)
 

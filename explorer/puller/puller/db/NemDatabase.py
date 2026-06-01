@@ -254,7 +254,44 @@ class NemDatabase(DatabaseConnection):
 			'''
 		)
 
+		# Create Account remark table
+		cursor.execute(
+			'''
+			CREATE TABLE IF NOT EXISTS account_remark (
+				address bytea PRIMARY KEY,
+				remark varchar NOT NULL
+			)
+			'''
+		)
+
 		self._create_table_indexes(cursor)
+
+		self.connection.commit()
+
+	def seed_account_remark(self, seed_path):
+		"""Seeds account remark table."""
+
+		cursor = self.connection.cursor()
+
+		with open(seed_path, 'rt', encoding='utf8') as seed_file:
+			account_remark = json.load(seed_file)
+
+		for account in account_remark:
+			cursor.execute(
+				'''
+				INSERT INTO account_remark (
+					address,
+					remark
+				)
+				VALUES (%s, %s)
+				ON CONFLICT (address)
+				DO UPDATE SET
+					remark = EXCLUDED.remark
+				''', (
+					Address(account['address']).bytes,
+					account['remark']
+				)
+			)
 
 		self.connection.commit()
 

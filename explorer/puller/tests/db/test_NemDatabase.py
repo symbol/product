@@ -1,5 +1,7 @@
 import datetime
+import json
 import unittest
+from pathlib import Path
 
 import psycopg2
 import testing.postgresql
@@ -203,13 +205,51 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 			results = cursor.fetchall()
 
 		# Assert:
-		self.assertEqual(len(results), 6)
-		self.assertEqual(results[0][0], 'accounts')
-		self.assertEqual(results[1][0], 'blocks')
-		self.assertEqual(results[2][0], 'mosaics')
-		self.assertEqual(results[3][0], 'namespaces')
-		self.assertEqual(results[4][0], 'transactions')
-		self.assertEqual(results[5][0], 'transactions_mosaic')
+		self.assertEqual(len(results), 7)
+		self.assertEqual(results[0][0], 'account_remark')
+		self.assertEqual(results[1][0], 'accounts')
+		self.assertEqual(results[2][0], 'blocks')
+		self.assertEqual(results[3][0], 'mosaics')
+		self.assertEqual(results[4][0], 'namespaces')
+		self.assertEqual(results[5][0], 'transactions')
+		self.assertEqual(results[6][0], 'transactions_mosaic')
+
+	def test_can_seed_account_remark(self):
+		# Arrange:
+		account_remark_path = Path(__file__).resolve().parents[1] / 'resources' / 'test_remark.json'
+
+		with open(account_remark_path, 'rt', encoding='utf8') as seed_file:
+			account_remark = json.load(seed_file)
+
+		with NemDatabase(self.db_config) as nem_database:
+			nem_database.create_tables()
+			cursor = nem_database.connection.cursor()
+
+			# Act:
+			nem_database.seed_account_remark(account_remark_path)
+
+			cursor.execute(
+				'''
+				SELECT
+					encode(address, 'hex'),
+					remark
+				FROM account_remark
+				ORDER BY address
+				'''
+			)
+
+			results = cursor.fetchall()
+
+		# Assert:
+		expected_results = sorted(
+			(
+				Address(account['address']).bytes.hex(),
+				account['remark']
+			)
+			for account in account_remark
+		)
+
+		self.assertEqual(expected_results, sorted(results))
 
 	def test_can_insert_block(self):
 		# Arrange:
