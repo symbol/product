@@ -18,14 +18,12 @@ export const TransactionType = {
 
 export const ChainId = {
 	MAIN_NET: 1,
-	TESTNET: 3151908,
-	SEPOLIA: 11155111
+	TESTNET: 11155111
 };
 
 export const NetworkIdentifier = {
 	MAIN_NET: 'mainnet',
-	TESTNET: 'testnet',
-	SEPOLIA: 'sepolia'
+	TESTNET: 'testnet'
 };
 
 export const NETWORK_CURRENCY_TICKER = 'ETH';
