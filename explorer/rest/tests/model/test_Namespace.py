@@ -12,7 +12,14 @@ class NamespaceTest(unittest.TestCase):
 			registered_height=100,
 			registered_timestamp='2015-03-29 20:39:21',
 			expiration_height=525700,
-			sub_namespaces=['namespace.sub_1', 'namespace.sub_2']
+			sub_namespaces=['namespace.sub_1', 'namespace.sub_2'],
+			mosaics=[{
+				'namespace_name': 'namespace.mosaic',
+				'total_supply': 1000000,
+				'divisibility': 6,
+				'registered_height': 100,
+				'registered_timestamp': '2015-03-29 20:39:21'
+			}]
 		)
 
 		if override:
@@ -31,6 +38,13 @@ class NamespaceTest(unittest.TestCase):
 		self.assertEqual('2015-03-29 20:39:21', namespace_view.registered_timestamp)
 		self.assertEqual(525700, namespace_view.expiration_height)
 		self.assertEqual(['namespace.sub_1', 'namespace.sub_2'], namespace_view.sub_namespaces)
+		self.assertEqual([{
+			'namespace_name': 'namespace.mosaic',
+			'total_supply': 1000000,
+			'divisibility': 6,
+			'registered_height': 100,
+			'registered_timestamp': '2015-03-29 20:39:21'
+		}], namespace_view.mosaics)
 
 	def test_can_convert_to_simple_dict(self):
 		# Arrange:
@@ -46,7 +60,14 @@ class NamespaceTest(unittest.TestCase):
 			'registeredHeight': 100,
 			'registeredTimestamp': '2015-03-29 20:39:21',
 			'expirationHeight': 525700,
-			'subNamespaces': ['namespace.sub_1', 'namespace.sub_2']
+			'subNamespaces': ['namespace.sub_1', 'namespace.sub_2'],
+			'mosaics': [{
+				'namespaceName': 'namespace.mosaic',
+				'totalSupply': 1000000,
+				'divisibility': 6,
+				'registeredHeight': 100,
+				'registeredTimestamp': '2015-03-29 20:39:21'
+			}]
 		}, namespace_view_dict)
 
 	def test_eq_is_supported(self):
@@ -63,3 +84,4 @@ class NamespaceTest(unittest.TestCase):
 		self.assertNotEqual(namespace_view, self._create_default_namespace_view(('registered_timestamp', 'timestamp')))
 		self.assertNotEqual(namespace_view, self._create_default_namespace_view(('expiration_height', 525701)))
 		self.assertNotEqual(namespace_view, self._create_default_namespace_view(('sub_namespaces', ['namespace.sub_3'])))
+		self.assertNotEqual(namespace_view, self._create_default_namespace_view(('mosaics', [])))
