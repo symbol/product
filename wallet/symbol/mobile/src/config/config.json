@@ -75,18 +75,17 @@
             "ticker": "ETH",
             "nodeList": {
                 "testnet": [
-                    "https://erigon.symboltest.net:8545"
+                    "https://erigon-sepolia.symboltest.net:8545"
                 ],
                 "mainnet": []
             },
             "explorerURL": {
-                "testnet": "http://otterscan.symboltest.net",
+                "testnet": "https://sepolia.etherscan.io",
                 "mainnet": ""
             },
             "erc20TokensAddresses": {
                 "testnet": [
-                    "0x5e8343a455f03109b737b6d8b410e4ecce998cda",
-                    "0x3a8c1bd531b5c1aefbb9ebc3e021c1251cf4ccb1"
+                    "0xac461bf5a6554e8406f58b192d83aeea695e229b"
                 ],
                 "mainnet": []
             },
@@ -126,10 +125,10 @@
                 "poolFee": 3000
             },
             "testnet": {
-                "quoterAddress": "0x01eEE36F73aC548c45aD7A6D623fB37fA2221767",
-                "routerAddress": "0xc50f6b8AcBc6C5852A44371ef31b52122F43c349",
-                "wethAddress": "0x3a8c1bd531b5c1aefbb9ebc3e021c1251cf4ccb1",
-                "wxymAddress": "0x5e8343a455f03109b737b6d8b410e4ecce998cda",
+                "quoterAddress": "0xEd1f6473345F45b75F8179591dd5bA1888cf2FB3",
+                "routerAddress": "0x3bFA4769FB09eefC5a80d6E87c3B9C650f7Ae48E",
+                "wethAddress": "0xfff9976782d46cc05630d1f6ebab18b2324d6b14",
+                "wxymAddress": "0xac461bf5a6554e8406f58b192d83aeea695e229b",
                 "poolFee": 3000
             }
         }
