@@ -5,7 +5,7 @@ const MOSAIC_GLOBAL_RESTRICTION_TYPE = 1;
 const MOSAIC_ADDRESS_RESTRICTION_TYPE = 0;
 const SELF_REFERENCE_MOSAIC_ID = '0000000000000000';
 
-const restrictionTypeLabels = {
+export const restrictionTypeLabels = {
 	0: 'No Restriction',
 	1: 'Equal',
 	2: 'Not Equal',

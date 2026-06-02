@@ -8,12 +8,49 @@
 	max-width: 32rem;
 
 	.firstSectionCard {
-		height: 27rem;
+		min-height: 27rem;
 	}
 }
 
 .secondSectionCard {
-	height: 27rem;
+	min-height: 27rem;
+}
+
+.transactionDetailContent {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: $spacing-padding;
+	align-items: start;
+}
+
+.transactionDetailFields {
+	justify-self: end;
+	width: 100%;
+	min-width: 0;
+}
+
+.aggregateTransactionDetailContent {
+	display: flex;
+	flex-direction: column;
+	gap: $spacing-padding;
+	min-width: 0;
+}
+
+.aggregateInnerTransactionsLabel {
+	font: $font-body-bold;
+}
+
+.aggregateTransactionType {
+	font-size: 1.2rem;
+}
+
+.transactionGraphicPanel {
+	min-width: 0;
+}
+
+.transactionGraphicPanelFull {
+	grid-column: 1 / -1;
+	min-width: 0;
 }
 
 @media #{$screen-mobile} {
@@ -27,5 +64,9 @@
 
 	.secondSectionCard {
 		height: auto;
+	}
+
+	.transactionDetailContent {
+		grid-template-columns: 1fr;
 	}
 }

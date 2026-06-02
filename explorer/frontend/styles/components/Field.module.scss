@@ -1,6 +1,8 @@
 @import '../variables';
 
 .field {
+	min-width: 0;
+
 	.title {
 		font: $font-title;
 
@@ -42,6 +44,10 @@
 				visibility: visible;
 			}
 		}
+	}
+
+	.value {
+		min-width: 0;
 	}
 }
 

@@ -6,7 +6,17 @@ import { createPageHref, handleNavigationItemClick, truncateString, useStorage }
 import Link from 'next/link';
 import { useState } from 'react';
 
-const ValueAccount = ({ address, size, raw, position, className, isNavigationDisabled, isCopyDisabled, onClick }) => {
+const ValueAccount = ({
+	address,
+	size,
+	raw,
+	position,
+	className,
+	isNavigationDisabled,
+	isCopyDisabled,
+	isAddressTruncated = true,
+	onClick
+}) => {
 	const [name, setName] = useState();
 	useStorage(STORAGE_KEY.ADDRESS_BOOK, [], addressBook => {
 		const name = addressBook.find(item => item.address === address)?.name;
@@ -36,7 +46,11 @@ const ValueAccount = ({ address, size, raw, position, className, isNavigationDis
 				<>
 					<Avatar type="account" value={address} size={size} />
 					<div className={styles.addressContainer}>
-						<Link className={textStyle} href={createPageHref('accounts', address)} onClick={handleClick}>
+						<Link
+							className={`${textStyle} ${isAddressTruncated ? '' : styles.addressFull}`}
+							href={createPageHref('accounts', address)}
+							onClick={handleClick}
+						>
 							{displayedText}
 						</Link>
 						{!isCopyDisabled && <ButtonCopy value={address} />}

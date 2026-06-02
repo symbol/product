@@ -1,4 +1,9 @@
 {
+	"transactionHashPattern": "^[0-9A-Fa-f]{64}$",
+	"aggregateTransactionTypes": [
+		"AGGREGATE_COMPLETE",
+		"AGGREGATE_BONDED"
+	],
 	"isDirectBlockSearchEnabled": true,
 	"isDirectMosaicSearchEnabled": true,
 	"isDirectRecipientSearchEnabled": true,

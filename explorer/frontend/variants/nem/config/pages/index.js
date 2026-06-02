@@ -4,6 +4,7 @@ import home from './home.json';
 import mosaics from './mosaics.json';
 import namespaces from './namespaces.json';
 import nodes from './nodes.json';
+import transactions from './transactions.json';
 
 const pageConfig = {
 	accounts,
@@ -11,7 +12,8 @@ const pageConfig = {
 	home,
 	mosaics,
 	namespaces,
-	nodes
+	nodes,
+	transactions
 };
 
 export default pageConfig;

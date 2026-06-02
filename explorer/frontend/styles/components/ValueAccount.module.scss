@@ -29,6 +29,13 @@
 		white-space: nowrap;
 		text-overflow: ellipsis;
 	}
+
+	& a.addressFull {
+		overflow: visible;
+		white-space: normal;
+		text-overflow: clip;
+		overflow-wrap: anywhere;
+	}
 }
 
 .containerLeft {

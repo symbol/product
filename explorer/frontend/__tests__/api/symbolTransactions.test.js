@@ -2,7 +2,9 @@ import config from '@/config';
 import * as utils from '@/utils/server';
 import { namespaceIdFromName } from '@/variants/symbol/api/namespaces';
 import {
+	fetchTransactionInfo,
 	fetchTransactionPage,
+	normalizeTransactionDetail,
 	resolveTransactionBlockSearch,
 	resolveTransactionMosaicSearch,
 	resolveTransactionRecipientSearch,
@@ -1062,6 +1064,1087 @@ describe('variants/symbol/api/transactions', () => {
 						amount: 1
 					}
 				]
+			}));
+		});
+	});
+
+	describe('fetchTransactionInfo', () => {
+		const hash = 'A'.repeat(64);
+		const signerPublicKey = 'B'.repeat(64);
+		const signature = 'C'.repeat(128);
+
+		it('does not call the node for an invalid hash', async () => {
+			// Arrange:
+			const makeRequest = jest.spyOn(utils, 'makeRequest');
+
+			// Act:
+			const result = await fetchTransactionInfo('INVALID_HASH');
+
+			// Assert:
+			expect(result).toBeNull();
+			expect(makeRequest).not.toHaveBeenCalled();
+		});
+
+		it('uses confirmed endpoint and effective fee for confirmed transactions', async () => {
+			// Arrange:
+			const makeRequest = jest.spyOn(utils, 'makeRequest');
+			makeRequest
+				.mockResolvedValueOnce({ group: 'confirmed', code: 'Success', hash })
+				.mockResolvedValueOnce({
+					meta: {
+						hash,
+						height: '123'
+					},
+					transaction: {
+						deadline: '1000',
+						maxFee: '999999',
+						signature,
+						signerPublicKey,
+						size: 100,
+						type: 16724,
+						version: 1
+					}
+				})
+				.mockResolvedValueOnce({
+					block: {
+						feeMultiplier: 25,
+						timestamp: '2000'
+					}
+				});
+
+			// Act:
+			const result = await fetchTransactionInfo(hash);
+
+			// Assert:
+			expect(makeRequest).toHaveBeenNthCalledWith(1, `/api/symbol-node/transactionStatus/${hash}`);
+			expect(makeRequest).toHaveBeenNthCalledWith(2, `/api/symbol-node/transactions/confirmed/${hash}`);
+			expect(makeRequest).toHaveBeenNthCalledWith(3, '/api/symbol-node/blocks/123');
+			expect(result.group).toBe('confirmed');
+			expect(result.info.effectiveFee).toBe(0.0025);
+			expect(result.info.maxFee).toBeNull();
+		});
+
+		it('uses unconfirmed endpoint and max fee for unconfirmed transactions', async () => {
+			// Arrange:
+			const makeRequest = jest.spyOn(utils, 'makeRequest');
+			makeRequest
+				.mockResolvedValueOnce({ group: 'unconfirmed', code: 'Success', hash })
+				.mockResolvedValueOnce({
+					meta: {
+						hash
+					},
+					transaction: {
+						deadline: '1000',
+						maxFee: '1500000',
+						signature,
+						signerPublicKey,
+						type: 16724,
+						version: 1
+					}
+				});
+
+			// Act:
+			const result = await fetchTransactionInfo(hash);
+
+			// Assert:
+			expect(makeRequest).toHaveBeenNthCalledWith(1, `/api/symbol-node/transactionStatus/${hash}`);
+			expect(makeRequest).toHaveBeenNthCalledWith(2, `/api/symbol-node/transactions/unconfirmed/${hash}`);
+			expect(result.group).toBe('unconfirmed');
+			expect(result.info.effectiveFee).toBeNull();
+			expect(result.info.maxFee).toBe(1.5);
+		});
+
+		it('fetches mosaic divisibility for mosaic supply revocation transaction detail', async () => {
+			// Arrange:
+			const mosaicId = '4E806F3E44AC0FCB';
+			const makeRequest = jest.spyOn(utils, 'makeRequest');
+			makeRequest
+				.mockResolvedValueOnce({ group: 'confirmed', code: 'Success', hash })
+				.mockResolvedValueOnce({
+					meta: {
+						hash,
+						height: '123'
+					},
+					transaction: {
+						amount: '12345',
+						deadline: '1000',
+						maxFee: '999999',
+						mosaicId,
+						signature,
+						signerPublicKey,
+						sourceAddress: '98B61B0F19BC2E87B50DED3276F7F977942F284AEBA08C26',
+						type: 17229,
+						version: 1
+					}
+				})
+				.mockResolvedValueOnce({
+					block: {
+						feeMultiplier: 25,
+						timestamp: '2000'
+					}
+				})
+				.mockResolvedValueOnce({
+					mosaic: {
+						divisibility: 2,
+						id: mosaicId
+					}
+				});
+
+			// Act:
+			const result = await fetchTransactionInfo(hash);
+
+			// Assert:
+			expect(makeRequest).toHaveBeenNthCalledWith(4, `/api/symbol-node/mosaics/${mosaicId}`);
+			expect(result.detail.mosaics[0].amount).toBe(123.45);
+			expect(result.graphic.transactions[0].mosaics[0].amount).toBe(123.45);
+		});
+
+		it('requests hash lock only for aggregate bonded transactions', async () => {
+			// Arrange:
+			const makeRequest = jest.spyOn(utils, 'makeRequest');
+			makeRequest
+				.mockResolvedValueOnce({ group: 'partial', code: 'Success', hash })
+				.mockResolvedValueOnce({
+					meta: {
+						hash
+					},
+					transaction: {
+						cosignatures: [
+							{
+								signature,
+								signerPublicKey
+							}
+						],
+						deadline: '1000',
+						maxFee: '2000000',
+						signature,
+						signerPublicKey,
+						transactions: [
+							{
+								signerPublicKey,
+								type: 16724
+							}
+						],
+						type: 16961,
+						version: 1
+					}
+				})
+				.mockResolvedValueOnce({
+					lock: {
+						amount: '10000000',
+						endHeight: '456',
+						mosaicId: '72C0212E67A08BCE',
+						ownerAddress: '98B61B0F19BC2E87B50DED3276F7F977942F284AEBA08C26',
+						status: 0
+					}
+				});
+
+			// Act:
+			const result = await fetchTransactionInfo(hash);
+
+			// Assert:
+			expect(makeRequest).toHaveBeenNthCalledWith(2, `/api/symbol-node/transactions/partial/${hash}`);
+			expect(makeRequest).toHaveBeenNthCalledWith(3, `/api/symbol-node/lock/hash/${hash}`);
+			expect(result.detail.transactionType).toBe('AGGREGATE_BONDED');
+			expect(result.aggregate.innerTransactions).toHaveLength(1);
+			expect(result.aggregate.cosignatures).toHaveLength(1);
+			expect(result.hashLock.endHeight).toBe(456);
+		});
+
+		it('does not request hash lock for aggregate complete transactions', async () => {
+			// Arrange:
+			const makeRequest = jest.spyOn(utils, 'makeRequest');
+			makeRequest
+				.mockResolvedValueOnce({ group: 'confirmed', code: 'Success', hash })
+				.mockResolvedValueOnce({
+					meta: {
+						hash,
+						height: '789',
+						feeMultiplier: 1
+					},
+					transaction: {
+						deadline: '1000',
+						maxFee: '2000000',
+						signature,
+						signerPublicKey,
+						size: 100,
+						transactions: [],
+						type: 16705,
+						version: 1
+					}
+				})
+				.mockResolvedValueOnce({
+					block: {
+						timestamp: '2000'
+					}
+				});
+
+			// Act:
+			const result = await fetchTransactionInfo(hash);
+
+			// Assert:
+			expect(makeRequest).toHaveBeenCalledTimes(3);
+			expect(result.detail.transactionType).toBe('AGGREGATE_COMPLETE');
+			expect(result.hashLock).toBeUndefined();
+		});
+
+		it('resolves missing address alias namespace name for transaction detail', async () => {
+			// Arrange:
+			const makeRequest = jest.spyOn(utils, 'makeRequest');
+			makeRequest
+				.mockResolvedValueOnce({ group: 'confirmed', code: 'Success', hash })
+				.mockResolvedValueOnce({
+					meta: {
+						hash,
+						height: '123'
+					},
+					transaction: {
+						address: '98B61B0F19BC2E87B50DED3276F7F977942F284AEBA08C26',
+						aliasAction: 1,
+						deadline: '1000',
+						maxFee: '999999',
+						namespaceId: 'D47D7DC85A201C13',
+						signature,
+						signerPublicKey,
+						type: 16974,
+						version: 1
+					}
+				})
+				.mockResolvedValueOnce({
+					block: {
+						feeMultiplier: 25,
+						timestamp: '2000'
+					}
+				})
+				.mockResolvedValueOnce([
+					{
+						id: 'D47D7DC85A201C13',
+						name: 'alias.name'
+					}
+				]);
+
+			// Act:
+			const result = await fetchTransactionInfo(hash);
+
+			// Assert:
+			expect(makeRequest).toHaveBeenNthCalledWith(4, '/api/symbol-node/namespaces/names', {
+				method: 'POST',
+				body: JSON.stringify({
+					namespaceIds: ['D47D7DC85A201C13']
+				}),
+				headers: {
+					'Content-Type': 'application/json'
+				}
+			});
+			expect(result.detail.namespaceName).toBe('alias.name');
+			expect(result.graphic.transactions[0].namespaceName).toBe('alias.name');
+		});
+
+		it('resolves missing namespace metadata namespace name for transaction detail', async () => {
+			// Arrange:
+			const makeRequest = jest.spyOn(utils, 'makeRequest');
+			makeRequest
+				.mockResolvedValueOnce({ group: 'confirmed', code: 'Success', hash })
+				.mockResolvedValueOnce({
+					meta: {
+						hash,
+						height: '123'
+					},
+					transaction: {
+						deadline: '1000',
+						maxFee: '999999',
+						scopedMetadataKey: 'BB3026E7612A769F',
+						signature,
+						signerPublicKey,
+						targetNamespaceId: '85BBEA6CC462B244',
+						type: 17220,
+						value: 'namespace metadata',
+						valueSizeDelta: 18,
+						version: 1
+					}
+				})
+				.mockResolvedValueOnce({
+					block: {
+						feeMultiplier: 25,
+						timestamp: '2000'
+					}
+				})
+				.mockResolvedValueOnce([
+					{
+						id: '85BBEA6CC462B244',
+						name: 'root.namespace'
+					}
+				]);
+
+			// Act:
+			const result = await fetchTransactionInfo(hash);
+
+			// Assert:
+			expect(makeRequest).toHaveBeenNthCalledWith(4, '/api/symbol-node/namespaces/names', {
+				method: 'POST',
+				body: JSON.stringify({
+					namespaceIds: ['85BBEA6CC462B244']
+				}),
+				headers: {
+					'Content-Type': 'application/json'
+				}
+			});
+			expect(result.detail.namespaceName).toBe('root.namespace');
+			expect(result.graphic.transactions[0].namespaceName).toBe('root.namespace');
+		});
+
+		it('omits undefined optional properties from the server-side view model', async () => {
+			// Arrange:
+			const makeRequest = jest.spyOn(utils, 'makeRequest');
+			makeRequest
+				.mockResolvedValueOnce({ group: 'partial', code: 'Success', hash })
+				.mockResolvedValueOnce({
+					meta: {
+						hash
+					},
+					transaction: {
+						deadline: '1000',
+						maxFee: '2000000',
+						signature,
+						signerPublicKey,
+						transactions: [
+							{
+								signerPublicKey,
+								type: 16724
+							}
+						],
+						type: 16961,
+						version: 1
+					}
+				})
+				.mockResolvedValueOnce(null);
+
+			// Act:
+			const result = await fetchTransactionInfo(hash);
+
+			// Assert:
+			const firstGraphic = result.aggregate.innerTransactions[0].graphic;
+
+			expect(Object.prototype.hasOwnProperty.call(firstGraphic, 'recipient')).toBe(false);
+			expect(Object.prototype.hasOwnProperty.call(firstGraphic, 'message')).toBe(false);
+			expect(JSON.parse(JSON.stringify(result))).toEqual(result);
+		});
+	});
+
+	describe('normalizeTransactionDetail', () => {
+		it('includes transactionType in voting key link detail', () => {
+			// Act:
+			const result = normalizeTransactionDetail({
+				hash: 'A'.repeat(64),
+				status: { group: 'confirmed', code: 'Success' },
+				transactionDto: {
+					meta: {
+						hash: 'A'.repeat(64)
+					},
+					transaction: {
+						endEpoch: 100,
+						linkAction: 1,
+						linkedPublicKey: 'D'.repeat(64),
+						signerPublicKey: 'B'.repeat(64),
+						startEpoch: 10,
+						type: 16707,
+						version: 1
+					}
+				}
+			});
+
+			// Assert:
+			expect(result.detail).toEqual(expect.objectContaining({
+				transactionType: 'VOTING_KEY_LINK',
+				linkAction: 'link',
+				linkedPublicKey: 'D'.repeat(64),
+				startEpoch: 10,
+				endEpoch: 100
+			}));
+		});
+
+		it.each([
+			[16716, 'ACCOUNT_KEY_LINK'],
+			[16972, 'NODE_KEY_LINK'],
+			[16707, 'VOTING_KEY_LINK'],
+			[16963, 'VRF_KEY_LINK']
+		])('uses linked account address as %s graphic target account', (type, transactionType) => {
+			// Act:
+			const result = normalizeTransactionDetail({
+				hash: 'A'.repeat(64),
+				status: { group: 'confirmed', code: 'Success' },
+				transactionDto: {
+					meta: {
+						hash: 'A'.repeat(64)
+					},
+					transaction: {
+						endEpoch: 100,
+						linkAction: 1,
+						linkedPublicKey: 'D'.repeat(64),
+						signerAddress: '98B61B0F19BC2E87B50DED3276F7F977942F284AEBA08C26',
+						startEpoch: 10,
+						type,
+						version: 1
+					}
+				}
+			});
+
+			// Assert:
+			expect(result.detail).toEqual(expect.objectContaining({
+				transactionType,
+				address: result.detail.linkedAccountAddress
+			}));
+			expect(result.graphic.transactions[0].targetAccount).toBe(result.detail.linkedAccountAddress);
+			expect(result.detail.linkedAccountAddress).not.toBe(result.info.signer);
+			expect(result.graphic.transactions[0].startEpoch).toBe(10);
+			expect(result.graphic.transactions[0].endEpoch).toBe(100);
+		});
+
+		it('maps hash lock hash and lock duration into transaction graphic detail', () => {
+			// Act:
+			const result = normalizeTransactionDetail({
+				hash: 'A'.repeat(64),
+				status: { group: 'confirmed', code: 'Success' },
+				transactionDto: {
+					meta: {
+						hash: 'A'.repeat(64)
+					},
+					transaction: {
+						amount: '10000000',
+						duration: '480',
+						hash: 'B'.repeat(64),
+						mosaicId: '72C0212E67A08BCE',
+						signerPublicKey: 'C'.repeat(64),
+						type: 16712,
+						version: 1
+					}
+				}
+			});
+
+			// Assert:
+			expect(result.detail).toEqual(expect.objectContaining({
+				transactionType: 'HASH_LOCK',
+				duration: '480',
+				hash: 'B'.repeat(64)
+			}));
+			expect(result.graphic.transactions[0]).toEqual(expect.objectContaining({
+				type: 'HASH_LOCK',
+				duration: '480',
+				hash: 'B'.repeat(64),
+				lockDuration: '480'
+			}));
+		});
+
+		it('maps multisig account modification approval and removal deltas into transaction graphic detail', () => {
+			// Act:
+			const result = normalizeTransactionDetail({
+				hash: 'A'.repeat(64),
+				status: { group: 'confirmed', code: 'Success' },
+				transactionDto: {
+					meta: {
+						hash: 'A'.repeat(64)
+					},
+					transaction: {
+						addressAdditions: ['98B61B0F19BC2E87B50DED3276F7F977942F284AEBA08C26'],
+						addressDeletions: ['985F83583B77AB88E212A025B0C707963C092D0A02A625CA'],
+						minApprovalDelta: 2,
+						minRemovalDelta: 3,
+						signerPublicKey: 'B'.repeat(64),
+						type: 16725,
+						version: 1
+					}
+				}
+			});
+
+			// Assert:
+			expect(result.detail).toEqual(expect.objectContaining({
+				transactionType: 'MULTISIG_ACCOUNT_MODIFICATION',
+				minApprovalDelta: 2,
+				minRemovalDelta: 3,
+				addressAdditions: ['TC3BWDYZXQXIPNIN5UZHN57ZO6KC6KCK5OQIYJQ'],
+				addressDeletions: ['TBPYGWB3O6VYRYQSUAS3BRYHSY6ASLIKAKTCLSQ']
+			}));
+			expect(result.graphic.transactions[0]).toEqual(expect.objectContaining({
+				type: 'MULTISIG_ACCOUNT_MODIFICATION',
+				minApprovalDelta: 2,
+				minRemovalDelta: 3,
+				cosignatoryAdditions: ['TC3BWDYZXQXIPNIN5UZHN57ZO6KC6KCK5OQIYJQ'],
+				cosignatoryDeletions: ['TBPYGWB3O6VYRYQSUAS3BRYHSY6ASLIKAKTCLSQ']
+			}));
+			expect(result.graphic.transactions[0]).not.toHaveProperty('minCosignatories');
+		});
+
+		it('maps address alias target address and namespace fields into transaction graphic detail', () => {
+			// Act:
+			const result = normalizeTransactionDetail({
+				hash: 'A'.repeat(64),
+				status: { group: 'confirmed', code: 'Success' },
+				transactionDto: {
+					meta: {
+						hash: 'A'.repeat(64)
+					},
+					transaction: {
+						address: '98B61B0F19BC2E87B50DED3276F7F977942F284AEBA08C26',
+						aliasAction: 1,
+						namespaceId: 'D47D7DC85A201C13',
+						namespaceName: 'alias.name',
+						signerPublicKey: 'B'.repeat(64),
+						type: 16974,
+						version: 1
+					}
+				}
+			});
+
+			// Assert:
+			expect(result.detail).toEqual(expect.objectContaining({
+				transactionType: 'ADDRESS_ALIAS',
+				address: result.graphic.transactions[0].recipient,
+				namespaceId: 'D47D7DC85A201C13',
+				namespaceName: 'alias.name'
+			}));
+			expect(result.graphic.transactions[0]).toEqual(expect.objectContaining({
+				aliasAction: 'link',
+				namespaceId: 'D47D7DC85A201C13',
+				namespaceName: 'alias.name'
+			}));
+		});
+
+		it('maps namespace registration namespace name to transaction graphic sink', () => {
+			// Act:
+			const result = normalizeTransactionDetail({
+				hash: 'A'.repeat(64),
+				status: { group: 'confirmed', code: 'Success' },
+				transactionDto: {
+					meta: {
+						hash: 'A'.repeat(64)
+					},
+					transaction: {
+						duration: '1000',
+						id: '88A058DAA0940608',
+						name: 'rootnamespace.subnamespace',
+						parentId: '88A058DAA0940608',
+						registrationType: 1,
+						rentalFeeSink: '98B61B0F19BC2E87B50DED3276F7F977942F284AEBA08C26',
+						signerPublicKey: 'B'.repeat(64),
+						type: 16718,
+						version: 1
+					}
+				}
+			});
+
+			// Assert:
+			expect(result.detail).toEqual(expect.objectContaining({
+				transactionType: 'NAMESPACE_REGISTRATION',
+				namespaceId: '88A058DAA0940608',
+				namespaceName: 'rootnamespace.subnamespace',
+				parentId: '88A058DAA0940608',
+				duration: '1000'
+			}));
+			expect(result.graphic.transactions[0]).toEqual(expect.objectContaining({
+				recipient: undefined,
+				targetNamespace: {
+					id: '88A058DAA0940608',
+					name: 'rootnamespace.subnamespace'
+				},
+				parentId: '88A058DAA0940608',
+				duration: '1000'
+			}));
+		});
+
+		it('maps account address restriction target and restriction fields into transaction graphic detail', () => {
+			// Act:
+			const result = normalizeTransactionDetail({
+				hash: 'A'.repeat(64),
+				status: { group: 'confirmed', code: 'Success' },
+				transactionDto: {
+					meta: {
+						hash: 'A'.repeat(64)
+					},
+					transaction: {
+						restrictionAdditions: ['98B61B0F19BC2E87B50DED3276F7F977942F284AEBA08C26'],
+						restrictionDeletions: [],
+						restrictionFlags: 32769,
+						signerPublicKey: 'B'.repeat(64),
+						type: 16720,
+						version: 1
+					}
+				}
+			});
+
+			// Assert:
+			expect(result.detail).toEqual(expect.objectContaining({
+				transactionType: 'ACCOUNT_ADDRESS_RESTRICTION',
+				restrictionType: 'Block Incoming Address',
+				restrictionAddressAdditions: ['TC3BWDYZXQXIPNIN5UZHN57ZO6KC6KCK5OQIYJQ']
+			}));
+			expect(result.detail).not.toHaveProperty('restrictionMosaicAdditions');
+			expect(result.detail).not.toHaveProperty('restrictionOperationAdditions');
+			expect(result.graphic.transactions[0]).toEqual(expect.objectContaining({
+				targetAccount: 'TCNAOT3ZKSU45DVFCV3RHMTWHDKL4VS3LG33ELY',
+				restrictionType: 'Block Incoming Address',
+				restrictionAddressAdditions: ['TC3BWDYZXQXIPNIN5UZHN57ZO6KC6KCK5OQIYJQ']
+			}));
+		});
+
+		it('maps account mosaic restriction target and restriction fields into transaction graphic detail', () => {
+			// Act:
+			const result = normalizeTransactionDetail({
+				hash: 'A'.repeat(64),
+				status: { group: 'confirmed', code: 'Success' },
+				transactionDto: {
+					meta: {
+						hash: 'A'.repeat(64)
+					},
+					transaction: {
+						restrictionAdditions: ['72C0212E67A08BCE'],
+						restrictionDeletions: [],
+						restrictionFlags: 32770,
+						signerPublicKey: 'B'.repeat(64),
+						type: 16976,
+						version: 1
+					}
+				}
+			});
+
+			// Assert:
+			expect(result.detail).toEqual(expect.objectContaining({
+				transactionType: 'ACCOUNT_MOSAIC_RESTRICTION',
+				restrictionType: 'Block Incoming Mosaic',
+				restrictionMosaicAdditions: ['72C0212E67A08BCE']
+			}));
+			expect(result.graphic.transactions[0]).toEqual(expect.objectContaining({
+				targetAccount: 'TCNAOT3ZKSU45DVFCV3RHMTWHDKL4VS3LG33ELY',
+				restrictionType: 'Block Incoming Mosaic',
+				restrictionMosaicAdditions: ['72C0212E67A08BCE']
+			}));
+		});
+
+		it('maps account operation restriction target and enum values into transaction graphic detail', () => {
+			// Act:
+			const result = normalizeTransactionDetail({
+				hash: 'A'.repeat(64),
+				status: { group: 'confirmed', code: 'Success' },
+				transactionDto: {
+					meta: {
+						hash: 'A'.repeat(64)
+					},
+					transaction: {
+						restrictionAdditions: [16724, 16712],
+						restrictionDeletions: [16978],
+						restrictionFlags: 32772,
+						signerPublicKey: 'B'.repeat(64),
+						type: 17232,
+						version: 1
+					}
+				}
+			});
+
+			// Assert:
+			expect(result.detail).toEqual(expect.objectContaining({
+				transactionType: 'ACCOUNT_OPERATION_RESTRICTION',
+				restrictionType: 'Block Incoming Operation',
+				restrictionOperationAdditions: ['TRANSFER', 'HASH_LOCK'],
+				restrictionOperationDeletions: ['SECRET_PROOF']
+			}));
+			expect(result.graphic.transactions[0]).toEqual(expect.objectContaining({
+				targetAccount: 'TCNAOT3ZKSU45DVFCV3RHMTWHDKL4VS3LG33ELY',
+				restrictionType: 'Block Incoming Operation',
+				restrictionOperationAdditions: ['TRANSFER', 'HASH_LOCK'],
+				restrictionOperationDeletions: ['SECRET_PROOF']
+			}));
+		});
+
+		it('maps mosaic alias mosaic id into transaction graphic detail', () => {
+			// Act:
+			const result = normalizeTransactionDetail({
+				hash: 'A'.repeat(64),
+				status: { group: 'confirmed', code: 'Success' },
+				transactionDto: {
+					meta: {
+						hash: 'A'.repeat(64)
+					},
+					transaction: {
+						aliasAction: 1,
+						mosaicId: '72C0212E67A08BCE',
+						namespaceId: 'D47D7DC85A201C13',
+						namespaceName: 'alias.mosaic',
+						signerPublicKey: 'B'.repeat(64),
+						type: 17230,
+						version: 1
+					}
+				}
+			});
+
+			// Assert:
+			expect(result.detail).toEqual(expect.objectContaining({
+				transactionType: 'MOSAIC_ALIAS',
+				mosaicId: '72C0212E67A08BCE',
+				namespaceName: 'alias.mosaic'
+			}));
+			expect(result.graphic.transactions[0]).toEqual(expect.objectContaining({
+				aliasAction: 'link',
+				mosaicId: '72C0212E67A08BCE',
+				namespaceName: 'alias.mosaic'
+			}));
+		});
+
+		it('maps mosaic definition flags to transaction graphic detail', () => {
+			// Act:
+			const result = normalizeTransactionDetail({
+				hash: 'A'.repeat(64),
+				status: { group: 'confirmed', code: 'Success' },
+				transactionDto: {
+					meta: {
+						hash: 'A'.repeat(64)
+					},
+					transaction: {
+						divisibility: 6,
+						duration: '0',
+						flags: 14,
+						id: '72C0212E67A08BCE',
+						nonce: {
+							value: 12345
+						},
+						signerPublicKey: 'B'.repeat(64),
+						type: 16717,
+						version: 1
+					}
+				}
+			});
+
+			// Assert:
+			expect(result.detail).toEqual(expect.objectContaining({
+				transactionType: 'MOSAIC_DEFINITION',
+				mosaicId: '72C0212E67A08BCE',
+				divisibility: 6,
+				duration: '0',
+				nonce: 12345,
+				supplyMutable: false,
+				transferable: true,
+				restrictable: true,
+				revokable: true
+			}));
+			expect(result.graphic.transactions[0]).toEqual(expect.objectContaining({
+				targetMosaic: {
+					id: '72C0212E67A08BCE',
+					name: '72C0212E67A08BCE'
+				},
+				divisibility: 6,
+				duration: '0',
+				nonce: 12345,
+				supplyMutable: false,
+				transferable: true,
+				restrictable: true,
+				revokable: true
+			}));
+		});
+
+		it('maps mosaic supply change action and delta to transaction graphic detail', () => {
+			// Act:
+			const result = normalizeTransactionDetail({
+				hash: 'A'.repeat(64),
+				status: { group: 'confirmed', code: 'Success' },
+				transactionDto: {
+					meta: {
+						hash: 'A'.repeat(64)
+					},
+					transaction: {
+						action: 1,
+						delta: '100',
+						mosaicId: '72C0212E67A08BCE',
+						signerPublicKey: 'B'.repeat(64),
+						type: 16973,
+						version: 1
+					}
+				}
+			});
+
+			// Assert:
+			expect(result.detail).toEqual(expect.objectContaining({
+				transactionType: 'MOSAIC_SUPPLY_CHANGE',
+				action: 'increase',
+				delta: '100',
+				mosaicId: '72C0212E67A08BCE'
+			}));
+			expect(result.graphic.transactions[0]).toEqual(expect.objectContaining({
+				targetMosaic: {
+					id: '72C0212E67A08BCE',
+					name: '72C0212E67A08BCE'
+				},
+				delta: '100',
+				supplyAction: 1
+			}));
+		});
+
+		it('maps mosaic supply revocation transaction graphic sender and recipient', () => {
+			// Arrange:
+			const mosaicId = '4E806F3E44AC0FCB';
+
+			// Act:
+			const result = normalizeTransactionDetail({
+				hash: 'A'.repeat(64),
+				status: { group: 'confirmed', code: 'Success' },
+				mosaicDivisibilityMap: {
+					[mosaicId]: 2
+				},
+				transactionDto: {
+					meta: {
+						hash: 'A'.repeat(64)
+					},
+					transaction: {
+						amount: '12345',
+						mosaicId,
+						signerPublicKey: 'B'.repeat(64),
+						sourceAddress: '98B61B0F19BC2E87B50DED3276F7F977942F284AEBA08C26',
+						type: 17229,
+						version: 1
+					}
+				}
+			});
+
+			// Assert:
+			expect(result.detail).toEqual(expect.objectContaining({
+				transactionType: 'MOSAIC_SUPPLY_REVOCATION',
+				address: 'TC3BWDYZXQXIPNIN5UZHN57ZO6KC6KCK5OQIYJQ',
+				mosaics: [
+					expect.objectContaining({
+						mosaicId,
+						amount: 123.45
+					})
+				]
+			}));
+			expect(result.graphic.transactions[0]).toEqual(expect.objectContaining({
+				sender: 'TC3BWDYZXQXIPNIN5UZHN57ZO6KC6KCK5OQIYJQ',
+				recipient: 'TCNAOT3ZKSU45DVFCV3RHMTWHDKL4VS3LG33ELY',
+				address: 'TC3BWDYZXQXIPNIN5UZHN57ZO6KC6KCK5OQIYJQ',
+				mosaics: [
+					expect.objectContaining({
+						id: mosaicId,
+						amount: 123.45
+					})
+				]
+			}));
+		});
+
+		it('maps mosaic address restriction transaction graphic detail', () => {
+			// Act:
+			const result = normalizeTransactionDetail({
+				hash: 'A'.repeat(64),
+				status: { group: 'confirmed', code: 'Success' },
+				transactionDto: {
+					meta: {
+						hash: 'A'.repeat(64)
+					},
+					transaction: {
+						mosaicAliasNames: ['alias.mosaic'],
+						mosaicId: '72C0212E67A08BCE',
+						newRestrictionValue: '100',
+						previousRestrictionValue: '0',
+						restrictionKey: '123',
+						signerPublicKey: 'B'.repeat(64),
+						targetAddress: '98B61B0F19BC2E87B50DED3276F7F977942F284AEBA08C26',
+						type: 16977,
+						version: 1
+					}
+				}
+			});
+
+			// Assert:
+			expect(result.detail).toEqual(expect.objectContaining({
+				transactionType: 'MOSAIC_ADDRESS_RESTRICTION',
+				mosaicId: '72C0212E67A08BCE',
+				mosaicAliasNames: ['alias.mosaic'],
+				targetAddress: 'TC3BWDYZXQXIPNIN5UZHN57ZO6KC6KCK5OQIYJQ'
+			}));
+			expect(result.graphic.transactions[0]).toEqual(expect.objectContaining({
+				targetMosaic: {
+					id: '72C0212E67A08BCE',
+					name: '72C0212E67A08BCE'
+				},
+				mosaicAliasNames: ['alias.mosaic'],
+				targetAddress: 'TC3BWDYZXQXIPNIN5UZHN57ZO6KC6KCK5OQIYJQ'
+			}));
+		});
+
+		it('maps mosaic global restriction transaction graphic detail', () => {
+			// Act:
+			const result = normalizeTransactionDetail({
+				hash: 'A'.repeat(64),
+				status: { group: 'confirmed', code: 'Success' },
+				transactionDto: {
+					meta: {
+						hash: 'A'.repeat(64)
+					},
+					transaction: {
+						mosaicId: '72C0212E67A08BCE',
+						newRestrictionType: 6,
+						newRestrictionValue: '100',
+						previousRestrictionType: 0,
+						previousRestrictionValue: '0',
+						referenceMosaicId: '0000000000000000',
+						restrictionKey: '123',
+						signerPublicKey: 'B'.repeat(64),
+						type: 16721,
+						version: 1
+					}
+				}
+			});
+
+			// Assert:
+			expect(result.detail).toEqual(expect.objectContaining({
+				transactionType: 'MOSAIC_GLOBAL_RESTRICTION',
+				mosaicId: '72C0212E67A08BCE',
+				referenceMosaicId: '72C0212E67A08BCE',
+				previousRestrictionType: 'No Restriction',
+				newRestrictionType: 'Greater Than Or Equal'
+			}));
+			expect(result.graphic.transactions[0]).toEqual(expect.objectContaining({
+				targetMosaic: {
+					id: '72C0212E67A08BCE',
+					name: '72C0212E67A08BCE'
+				},
+				referenceMosaicId: '72C0212E67A08BCE',
+				previousRestrictionType: 'No Restriction',
+				newRestrictionType: 'Greater Than Or Equal'
+			}));
+		});
+
+		it('keeps metadata text as escaped React text input data, not HTML', () => {
+			// Act:
+			const result = normalizeTransactionDetail({
+				hash: 'A'.repeat(64),
+				status: { group: 'confirmed', code: 'Success' },
+				transactionDto: {
+					meta: {
+						hash: 'A'.repeat(64)
+					},
+					transaction: {
+						scopedMetadataKey: '1',
+						signerPublicKey: 'B'.repeat(64),
+						targetAddress: '98B61B0F19BC2E87B50DED3276F7F977942F284AEBA08C26',
+						type: 16708,
+						value: '<strong>metadata</strong>',
+						valueSizeDelta: 8,
+						version: 1
+					}
+				}
+			});
+
+			// Assert:
+			expect(result.detail.valueDelta).toBe('<strong>metadata</strong>');
+			expect(result.graphic.transactions[0].targetAddress).toBe(result.detail.targetAddress);
+			expect(result.graphic.transactions[0].scopedMetadataKey).toBe('1');
+			expect(result.graphic.transactions[0].valueDelta).toBe('<strong>metadata</strong>');
+			expect(result.graphic.transactions[0].valueSizeDelta).toBe(8);
+		});
+
+		it('maps mosaic metadata target mosaic and linked namespace names into transaction graphic detail', () => {
+			// Act:
+			const result = normalizeTransactionDetail({
+				hash: 'A'.repeat(64),
+				status: { group: 'confirmed', code: 'Success' },
+				transactionDto: {
+					meta: {
+						hash: 'A'.repeat(64)
+					},
+					transaction: {
+						scopedMetadataKey: 'BB3026E7612A769F',
+						signerPublicKey: 'B'.repeat(64),
+						targetMosaicAliasNames: ['alias.mosaic'],
+						targetMosaicId: '72C0212E67A08BCE',
+						type: 16964,
+						value: 'mosaic metadata',
+						valueSizeDelta: 15,
+						version: 1
+					}
+				}
+			});
+
+			// Assert:
+			expect(result.detail).toEqual(expect.objectContaining({
+				transactionType: 'MOSAIC_METADATA',
+				targetMosaicId: '72C0212E67A08BCE',
+				targetMosaicAliasNames: ['alias.mosaic'],
+				valueDelta: 'mosaic metadata',
+				valueSizeDelta: 15
+			}));
+			expect(result.graphic.transactions[0]).toEqual(expect.objectContaining({
+				targetMosaic: {
+					id: '72C0212E67A08BCE',
+					name: '72C0212E67A08BCE'
+				},
+				targetMosaicAliasNames: ['alias.mosaic']
+			}));
+		});
+
+		it('maps namespace metadata target namespace and name into transaction graphic detail', () => {
+			// Act:
+			const result = normalizeTransactionDetail({
+				hash: 'A'.repeat(64),
+				status: { group: 'confirmed', code: 'Success' },
+				transactionDto: {
+					meta: {
+						hash: 'A'.repeat(64)
+					},
+					transaction: {
+						namespaceName: 'root.namespace',
+						scopedMetadataKey: 'BB3026E7612A769F',
+						signerPublicKey: 'B'.repeat(64),
+						targetNamespaceId: '85BBEA6CC462B244',
+						type: 17220,
+						value: 'namespace metadata',
+						valueSizeDelta: 18,
+						version: 1
+					}
+				}
+			});
+
+			// Assert:
+			expect(result.detail).toEqual(expect.objectContaining({
+				transactionType: 'NAMESPACE_METADATA',
+				targetNamespaceId: '85BBEA6CC462B244',
+				namespaceName: 'root.namespace',
+				valueDelta: 'namespace metadata',
+				valueSizeDelta: 18
+			}));
+			expect(result.graphic.transactions[0].targetNamespace).toEqual({
+				id: '85BBEA6CC462B244',
+				name: '85BBEA6CC462B244'
+			});
+			expect(result.graphic.transactions[0].namespaceName).toBe('root.namespace');
+		});
+
+		it('maps Secret Proof hash algorithm code to the existing display key', () => {
+			// Act:
+			const result = normalizeTransactionDetail({
+				hash: 'A'.repeat(64),
+				status: { group: 'confirmed', code: 'Success' },
+				transactionDto: {
+					meta: {
+						hash: 'A'.repeat(64)
+					},
+					transaction: {
+						hashAlgorithm: 2,
+						proof: 'AEAA',
+						recipientAddress: '98B61B0F19BC2E87B50DED3276F7F977942F284AEBA08C26',
+						secret: '2F2929A09DA25C7E2412128955D0BF073B1C2AA08BB6F254DC5E7BF9C323CE9A',
+						signerPublicKey: 'B'.repeat(64),
+						type: 16978,
+						version: 1
+					}
+				}
+			});
+
+			// Assert:
+			expect(result.detail).toEqual(expect.objectContaining({
+				transactionType: 'SECRET_PROOF',
+				hashAlgorithm: 'hash256',
+				proof: 'AEAA'
+			}));
+			expect(result.graphic.transactions[0]).toEqual(expect.objectContaining({
+				hashAlgorithm: 'hash256',
+				secret: '2F2929A09DA25C7E2412128955D0BF073B1C2AA08BB6F254DC5E7BF9C323CE9A',
+				proof: 'AEAA'
 			}));
 		});
 	});
