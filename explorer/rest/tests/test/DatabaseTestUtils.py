@@ -132,7 +132,7 @@ ACCOUNTS = [
 		0.123456,
 		1000000,
 		99999,
-		[{'quantity': 1000000, 'namespace': 'nem.xem'}, {'quantity': 10, 'namespace': 'root.mosaic'}],
+		[{'quantity': 1000000, 'namespace_name': 'nem.xem'}, {'quantity': 10, 'namespace_name': 'root.mosaic'}],
 		10,
 		'INACTIVE',
 		None,
@@ -145,7 +145,7 @@ ACCOUNTS = [
 		0.123456,
 		3000000,
 		99999,
-		[{'quantity': 3000000, 'namespace': 'nem.xem'}, {'quantity': 15, 'namespace': 'root.mosaic'}],
+		[{'quantity': 3000000, 'namespace_name': 'nem.xem'}, {'quantity': 15, 'namespace_name': 'root.mosaic'}],
 		15,
 		'ACTIVE',
 		None,
@@ -473,10 +473,14 @@ ACCOUNT_VIEWS = [
 		vested_balance=0.099999,
 		mosaics=[{
 			'namespace_name': 'nem.xem',
-			'quantity': 1000000
+			'quantity': 1000000,
+			'creator': 'NBFWZ4IVRHEIBRCGHLYDS62FSFTBM3VDFA7E6LSQ',
+			'divisibility': 6
 		}, {
 			'namespace_name': 'root.mosaic',
-			'quantity': 10
+			'quantity': 10,
+			'creator': 'NBFWZ4IVRHEIBRCGHLYDS62FSFTBM3VDFA7E6LSQ',
+			'divisibility': 0
 		}],
 		harvested_fees=0.0,
 		harvested_blocks=ACCOUNTS[0].harvested_blocks,
@@ -496,10 +500,14 @@ ACCOUNT_VIEWS = [
 		vested_balance=0.099999,
 		mosaics=[{
 			'namespace_name': 'nem.xem',
-			'quantity': 3000000
+			'quantity': 3000000,
+			'creator': 'NBFWZ4IVRHEIBRCGHLYDS62FSFTBM3VDFA7E6LSQ',
+			'divisibility': 6
 		}, {
 			'namespace_name': 'root.mosaic',
-			'quantity': 15
+			'quantity': 15,
+			'creator': 'NBFWZ4IVRHEIBRCGHLYDS62FSFTBM3VDFA7E6LSQ',
+			'divisibility': 0
 		}],
 		harvested_fees=0.0,
 		harvested_blocks=ACCOUNTS[1].harvested_blocks,

@@ -699,7 +699,7 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 			cursor,
 			AccountRecord(
 				mosaics=[{
-					'namespace': 'nem.xem',
+					'namespace_name': 'nem.xem',
 					'quantity': 8000000
 				}],
 				remote_address=None,
@@ -752,7 +752,7 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 			cursor,
 			AccountRecord(
 				mosaics=[{
-					'namespace': 'nem.xem',
+					'namespace_name': 'nem.xem',
 					'quantity': 0
 				}],
 				remote_address=None,
@@ -763,7 +763,7 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 			cursor,
 			AccountRecord(
 				mosaics=[{
-					'namespace': 'nem.xem',
+					'namespace_name': 'nem.xem',
 					'quantity': 1000000
 				}],
 				remote_address=account.address,
