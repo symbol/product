@@ -561,7 +561,14 @@ NAMESPACE_VIEWS = [
 		registered_height=NAMESPACES[0].registered_height,
 		registered_timestamp=BLOCKS[0].timestamp,
 		expiration_height=NAMESPACES[0].expiration_height,
-		sub_namespaces=NAMESPACES[0].sub_namespaces
+		sub_namespaces=NAMESPACES[0].sub_namespaces,
+		mosaics=[{
+			'namespace_name': MOSAICS[0].namespace_name,
+			'total_supply': MOSAICS[0].total_supply,
+			'divisibility': MOSAICS[0].divisibility,
+			'registered_height': MOSAICS[0].registered_height,
+			'registered_timestamp': BLOCKS[0].timestamp
+		}]
 	),
 	NamespaceView(
 		root_namespace=NAMESPACES[1].root_namespace,
@@ -569,7 +576,20 @@ NAMESPACE_VIEWS = [
 		registered_height=NAMESPACES[1].registered_height,
 		registered_timestamp=BLOCKS[1].timestamp,
 		expiration_height=NAMESPACES[1].expiration_height,
-		sub_namespaces=NAMESPACES[1].sub_namespaces
+		sub_namespaces=NAMESPACES[1].sub_namespaces,
+		mosaics=[{
+			'namespace_name': MOSAICS[2].namespace_name,
+			'total_supply': MOSAICS[2].total_supply,
+			'divisibility': MOSAICS[2].divisibility,
+			'registered_height': MOSAICS[2].registered_height,
+			'registered_timestamp': BLOCKS[1].timestamp
+		}, {
+			'namespace_name': MOSAICS[1].namespace_name,
+			'total_supply': MOSAICS[1].total_supply,
+			'divisibility': MOSAICS[1].divisibility,
+			'registered_height': MOSAICS[1].registered_height,
+			'registered_timestamp': BLOCKS[1].timestamp
+		}]
 	),
 	NamespaceView(
 		root_namespace=NAMESPACES[2].root_namespace,
@@ -577,7 +597,8 @@ NAMESPACE_VIEWS = [
 		registered_height=NAMESPACES[2].registered_height,
 		registered_timestamp=BLOCKS[1].timestamp,
 		expiration_height=NAMESPACES[2].expiration_height,
-		sub_namespaces=NAMESPACES[2].sub_namespaces
+		sub_namespaces=NAMESPACES[2].sub_namespaces,
+		mosaics=[]
 	)
 ]
 
