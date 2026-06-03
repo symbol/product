@@ -86,7 +86,8 @@ class NemDatabase(DatabaseConnectionPool):
 			last_harvested_height,
 			min_cosignatories,
 			cosignatory_of,
-			cosignatories
+			cosignatories,
+			remark
 		) = result
 
 		return AccountView(
@@ -106,7 +107,8 @@ class NemDatabase(DatabaseConnectionPool):
 			last_harvested_height=last_harvested_height,
 			min_cosignatories=min_cosignatories,
 			cosignatory_of=[_format_address_bytes_to_string(address) for address in cosignatory_of] if cosignatory_of else None,
-			cosignatories=[_format_address_bytes_to_string(address) for address in cosignatories] if cosignatories else None
+			cosignatories=[_format_address_bytes_to_string(address) for address in cosignatories] if cosignatories else None,
+			remark=remark
 		)
 
 	@staticmethod
@@ -285,7 +287,7 @@ class NemDatabase(DatabaseConnectionPool):
 
 		return f'''
 			SELECT
-				address,
+				a.address,
 				public_key,
 				remote_address,
 				importance::float,
@@ -298,8 +300,11 @@ class NemDatabase(DatabaseConnectionPool):
 				last_harvested_height,
 				min_cosignatories,
 				cosignatory_of,
-				cosignatories
-			FROM accounts
+				cosignatories,
+				ar.remark
+			FROM accounts a
+			LEFT JOIN account_remark ar
+				ON ar.address = a.address
 			{where_condition}
 			{order_condition}
 			{limit_condition}
@@ -472,7 +477,7 @@ class NemDatabase(DatabaseConnectionPool):
 	def get_account_by_address(self, address):
 		"""Gets account by address."""
 
-		where_condition = 'WHERE address = %s'
+		where_condition = 'WHERE a.address = %s'
 
 		return self._get_account(where_condition, address.bytes)
 
@@ -591,18 +596,18 @@ class NemDatabase(DatabaseConnectionPool):
 			WITH mosaic_list AS (
 					SELECT
 						a.address,
-						ar.remarks,
+						ar.remark,
 						(mosaic->>'quantity')::bigint as balance
 					FROM
 						accounts a
-						LEFT JOIN account_remarks ar
+						LEFT JOIN account_remark ar
 							ON ar.address = a.address
 						CROSS JOIN LATERAL jsonb_array_elements(a.mosaics) AS mosaic
 						WHERE (mosaic->>'namespace') = %s AND (mosaic->>'quantity')::bigint > 0
 				)
 				SELECT
 					ml.address,
-					ml.remarks,
+					ml.remark,
 					ml.balance,
 					m.divisibility
 				FROM

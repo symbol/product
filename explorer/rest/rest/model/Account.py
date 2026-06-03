@@ -14,7 +14,8 @@ class AccountView:  # pylint: disable=too-many-locals,too-many-instance-attribut
 		last_harvested_height,
 		min_cosignatories,
 		cosignatory_of,
-		cosignatories
+		cosignatories,
+		remark
 	):
 		"""Create account view."""
 
@@ -34,6 +35,7 @@ class AccountView:  # pylint: disable=too-many-locals,too-many-instance-attribut
 		self.min_cosignatories = min_cosignatories
 		self.cosignatory_of = cosignatory_of
 		self.cosignatories = cosignatories
+		self.remark = remark
 
 	def __eq__(self, other):
 		return isinstance(other, AccountView) and all([
@@ -50,7 +52,8 @@ class AccountView:  # pylint: disable=too-many-locals,too-many-instance-attribut
 			self.last_harvested_height == other.last_harvested_height,
 			self.min_cosignatories == other.min_cosignatories,
 			self.cosignatory_of == other.cosignatory_of,
-			self.cosignatories == other.cosignatories
+			self.cosignatories == other.cosignatories,
+			self.remark == other.remark
 		])
 
 	def to_dict(self):
@@ -70,5 +73,6 @@ class AccountView:  # pylint: disable=too-many-locals,too-many-instance-attribut
 			'lastHarvestedHeight': self.last_harvested_height,
 			'minCosignatories': self.min_cosignatories,
 			'cosignatoryOf': self.cosignatory_of,
-			'cosignatories': self.cosignatories
+			'cosignatories': self.cosignatories,
+			'remark': self.remark
 		}

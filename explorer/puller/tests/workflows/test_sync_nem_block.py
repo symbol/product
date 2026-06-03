@@ -1,60 +1,39 @@
 import asyncio
 import unittest
-from collections import namedtuple
 from unittest.mock import AsyncMock, Mock, patch
 
-from puller.workflows.sync_nem_block import main, parse_args
+from workflow_test_utils import assert_common_args, create_facade_with_mock_db, create_main_args, parse_args_with_argv
 
-DatabaseConfig = namedtuple('DatabaseConfig', ['database', 'user', 'password', 'host', 'port'])
+from puller.workflows.sync_nem_block import main, parse_args
 
 
 class SyncNemBlockTest(unittest.TestCase):
 
 	def test_parse_args_with_defaults(self):
 		# Arrange + Act:
-		with patch('sys.argv', ['sync_nem_block.py']):
-			args = parse_args()
+		args = parse_args_with_argv('sync_nem_block.py', parse_args)
 
 		# Assert:
-		self.assertEqual(args.nem_node, 'http://localhost:7890')
-		self.assertEqual(args.network, 'mainnet')
-		self.assertEqual(args.db_config, 'config.ini')
+		assert_common_args(self, args)
 
 	def test_parse_args_with_custom_values(self):
-		# Arrange:
-		test_args = [
+		# Arrange + Act:
+		args = parse_args_with_argv(
 			'sync_nem_block.py',
+			parse_args,
 			'--nem-node', 'http://localhost:7890',
 			'--network', 'testnet',
-			'--db-config', 'test_config.ini'
-		]
-
-		# Act:
-		with patch('sys.argv', test_args):
-			args = parse_args()
+			'--db-config', 'test_config.ini')
 
 		# Assert:
-		self.assertEqual(args.nem_node, 'http://localhost:7890')
-		self.assertEqual(args.network, 'testnet')
-		self.assertEqual(args.db_config, 'test_config.ini')
+		assert_common_args(self, args, 'testnet', 'test_config.ini')
 
 	@patch('puller.workflows.sync_nem_block.NemPuller')
 	@patch('puller.workflows.sync_nem_block.parse_args')
-	def _run_main_test(self, mock_parse_args, mock_nem_puller, db_height):  # pylint: disable=no-self-use
+	def _run_main_test(self, mock_parse_args, mock_nem_puller, db_height, account_remark=None):  # pylint: disable=no-self-use
 		# Arrange:
-		mock_args = Mock()
-		mock_args.nem_node = 'http://localhost:7890'
-		mock_args.network = 'testnet'
-		mock_args.db_config = 'test_config.ini'
-		mock_parse_args.return_value = mock_args
-
-		mock_facade = Mock()
-		mock_nem_puller.return_value = mock_facade
-
-		mock_db = Mock()
-		mock_facade.nem_db = mock_db
-		mock_facade.nem_db.__enter__ = Mock(return_value=mock_db)
-		mock_facade.nem_db.__exit__ = Mock(return_value=None)
+		mock_parse_args.return_value = create_main_args(account_remark=account_remark)
+		mock_facade, mock_db = create_facade_with_mock_db(mock_nem_puller)
 
 		mock_connector = Mock()
 		mock_facade.nem_connector = mock_connector
@@ -70,6 +49,10 @@ class SyncNemBlockTest(unittest.TestCase):
 		# Assert:
 		mock_nem_puller.assert_called_once_with('http://localhost:7890', 'test_config.ini', 'testnet')
 		mock_db.create_tables.assert_called_once()
+		if account_remark:
+			mock_db.seed_account_remark.assert_called_once_with(account_remark)
+		else:
+			mock_db.seed_account_remark.assert_not_called()
 		mock_db.get_current_height.assert_called_once()
 		mock_connector.chain_height.assert_called_once()
 		mock_facade.sync_blocks.assert_called_once_with(1, 10)
@@ -89,3 +72,7 @@ class SyncNemBlockTest(unittest.TestCase):
 
 		# Assert:
 		mock_facade.sync_nemesis_block.assert_not_called()
+
+	def test_can_seed_account_remark_when_configured(self):
+		# Act:
+		self._run_main_test(db_height=1, account_remark='test_remark.json')  # pylint: disable=no-value-for-parameter
