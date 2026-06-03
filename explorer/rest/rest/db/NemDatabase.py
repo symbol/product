@@ -43,6 +43,9 @@ class NemDatabase(DatabaseConnectionPool):
 		super().__init__(db_config)
 		self.network = network
 
+	def _format_public_key_to_address(self, public_key):
+		return str(self.network.public_key_to_address(PublicKey(public_key)))
+
 	def _create_block_view(self, result):
 		(
 			height,
@@ -65,13 +68,12 @@ class NemDatabase(DatabaseConnectionPool):
 			difficulty=difficulty,
 			block_hash=_format_bytes(block_hash),
 			beneficiary=_format_address_bytes_to_string(beneficiary),
-			signer=str(self.network.public_key_to_address(PublicKey(signer))),
+			signer=self._format_public_key_to_address(signer),
 			signature=_format_bytes(signature),
 			size=size
 		)
 
-	@staticmethod
-	def _create_account_view(result):  # pylint: disable=too-many-locals
+	def _create_account_view(self, result):  # pylint: disable=too-many-locals
 		(
 			address,
 			public_key,
@@ -98,8 +100,10 @@ class NemDatabase(DatabaseConnectionPool):
 			balance=_format_xem_relative(balance),
 			vested_balance=_format_xem_relative(vested_balance),
 			mosaics=[{
-				'namespace_name': mosaic['namespace'],
+				'namespace_name': mosaic['namespace_name'],
 				'quantity': mosaic['quantity'],
+				'creator': self._format_public_key_to_address(mosaic['creator']),
+				'divisibility': mosaic['divisibility'],
 			} for mosaic in mosaics],
 			harvested_fees=_format_xem_relative(harvested_fees),
 			harvested_blocks=harvested_blocks,
@@ -180,7 +184,7 @@ class NemDatabase(DatabaseConnectionPool):
 		return MosaicView(
 			namespace_name=namespace_name,
 			description=description,
-			creator=str(self.network.public_key_to_address(PublicKey(creator))),
+			creator=self._format_public_key_to_address(creator),
 			mosaic_registered_height=mosaic_registered_height,
 			mosaic_registered_timestamp=str(mosaic_registered_timestamp),
 			initial_supply=initial_supply,
@@ -227,7 +231,7 @@ class NemDatabase(DatabaseConnectionPool):
 				'signatures': [{
 					'fee': _format_xem_relative(signature['fee']),
 					'signature': signature['signature'],
-					'signer': str(self.network.public_key_to_address(PublicKey(signature['sender'])))
+					'signer': self._format_public_key_to_address(signature['sender'])
 				} for signature in transaction.payload['signatures']],
 				'fee': _format_xem_relative(inner_transaction.fee),
 				'value': self._build_transaction_payload(
@@ -293,7 +297,7 @@ class NemDatabase(DatabaseConnectionPool):
 				importance::float,
 				balance,
 				vested_balance,
-				mosaics,
+				COALESCE(am.mosaics, '[]'::json) AS mosaics,
 				harvested_fees,
 				harvested_blocks,
 				remote_status,
@@ -305,6 +309,17 @@ class NemDatabase(DatabaseConnectionPool):
 			FROM accounts a
 			LEFT JOIN account_remark ar
 				ON ar.address = a.address
+			LEFT JOIN LATERAL (
+				SELECT json_agg(json_build_object(
+					'namespace_name', mosaic.item->>'namespace_name',
+					'quantity', (mosaic.item->>'quantity')::bigint,
+					'creator', encode(m.creator, 'hex'),
+					'divisibility', m.divisibility
+				) ORDER BY mosaic.ordinality) AS mosaics
+				FROM jsonb_array_elements(a.mosaics) WITH ORDINALITY AS mosaic(item, ordinality)
+				LEFT JOIN mosaics m
+					ON m.namespace_name = mosaic.item->>'namespace_name'
+			) am ON true
 			{where_condition}
 			{order_condition}
 			{limit_condition}
@@ -603,7 +618,7 @@ class NemDatabase(DatabaseConnectionPool):
 						LEFT JOIN account_remark ar
 							ON ar.address = a.address
 						CROSS JOIN LATERAL jsonb_array_elements(a.mosaics) AS mosaic
-						WHERE (mosaic->>'namespace') = %s AND (mosaic->>'quantity')::bigint > 0
+						WHERE (mosaic->>'namespace_name') = %s AND (mosaic->>'quantity')::bigint > 0
 				)
 				SELECT
 					ml.address,
@@ -655,7 +670,7 @@ class NemDatabase(DatabaseConnectionPool):
 			value.append({
 				'minCosignatories': payload['min_cosignatories'],
 				'modifications': [{
-					'cosignatoryAccount': str(self.network.public_key_to_address(PublicKey(modification['cosignatory_account']))),
+					'cosignatoryAccount': self._format_public_key_to_address(modification['cosignatory_account']),
 					'modificationType': modification['modification_type']
 				} for modification in payload['modifications']]
 			})
