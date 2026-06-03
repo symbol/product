@@ -35,9 +35,11 @@ export class TransactionService {
 	fetchAccountTransactions = async (networkProperties, account, searchCriteria = {}) => {
 		const { pageSize = 15 } = searchCriteria;
 		const provider = createEthereumJrpcProvider(networkProperties);
+
+		const latestBlock = await provider.getBlockNumber();
 		const { txs: transactionDTOs } = await provider.send('ots_searchTransactionsBefore', [
 			account.address,
-			0,
+			latestBlock + 1,
 			pageSize
 		]);
 
