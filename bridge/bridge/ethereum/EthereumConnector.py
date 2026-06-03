@@ -239,7 +239,7 @@ class EthereumConnector(BasicConnector):
 		"""Gets incoming transactions for the specified account."""
 
 		if start_id is None:
-			start_id = await self.finalized_chain_height()
+			start_id = await self.chain_height() + 1
 
 		request_json = make_rpc_request_json('ots_searchTransactionsBefore', [str(account_address), start_id, 25])
 		result_json = await self._post_rpc(request_json)
