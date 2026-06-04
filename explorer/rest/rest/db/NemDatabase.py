@@ -76,6 +76,7 @@ class NemDatabase(DatabaseConnectionPool):
 	def _create_account_view(self, result):  # pylint: disable=too-many-locals
 		(
 			address,
+			height,
 			public_key,
 			remote_address,
 			importance,
@@ -94,6 +95,7 @@ class NemDatabase(DatabaseConnectionPool):
 
 		return AccountView(
 			address=_format_address_bytes_to_string(address),
+			height=height,
 			public_key=str(PublicKey(public_key)) if public_key else None,
 			remote_address=_format_address_bytes_to_string(remote_address) if remote_address else None,
 			importance=importance,
@@ -300,6 +302,7 @@ class NemDatabase(DatabaseConnectionPool):
 		return f'''
 			SELECT
 				a.address,
+				a.height,
 				public_key,
 				remote_address,
 				importance::float,

@@ -38,6 +38,7 @@ Block = namedtuple(
 )
 Account = namedtuple('Account', [
 	'address',
+	'height',
 	'public_key',
 	'remote_address',
 	'importance',
@@ -127,6 +128,7 @@ BLOCKS = [
 ACCOUNTS = [
 	Account(
 		Address('NAGHXD63C4V6REWGXCVKJ2SBS3GUAXGTRQZQXPRO'),
+		1,
 		PublicKey('b88221939ac920484753c738fafda87e82ff04b5e370c9456d85a0f12c6a5cca'),
 		None,
 		0.123456,
@@ -140,6 +142,7 @@ ACCOUNTS = [
 		None),
 	Account(
 		Address('NBFWZ4IVRHEIBRCGHLYDS62FSFTBM3VDFA7E6LSQ'),
+		2,
 		PublicKey('a5f06d59b97aa40c82afb941a61fb6483bdb7491805cdb9dc47d92136983b9a5'),
 		None,
 		0.123456,
@@ -466,6 +469,7 @@ BLOCK_VIEWS = [
 ACCOUNT_VIEWS = [
 	AccountView(
 		address=str(ACCOUNTS[0].address),
+		height=ACCOUNTS[0].height,
 		public_key=str(ACCOUNTS[0].public_key) if ACCOUNTS[0].public_key else None,
 		remote_address=None,
 		importance=0.123456,
@@ -493,6 +497,7 @@ ACCOUNT_VIEWS = [
 	),
 	AccountView(
 		address=str(ACCOUNTS[1].address),
+		height=ACCOUNTS[1].height,
 		public_key=str(ACCOUNTS[1].public_key) if ACCOUNTS[1].public_key else None,
 		remote_address=None,
 		importance=0.123456,
@@ -851,6 +856,7 @@ def initialize_database(db_config, network_name):
 			CREATE TABLE IF NOT EXISTS accounts (
 				id serial PRIMARY KEY,
 				address bytea NOT NULL UNIQUE,
+				height bigint NOT NULL,
 				public_key bytea,
 				remote_address bytea,
 				importance decimal(20, 10) DEFAULT 0,
@@ -987,6 +993,7 @@ def initialize_database(db_config, network_name):
 				'''
 				INSERT INTO accounts (
 					address,
+					height,
 					public_key,
 					remote_address,
 					importance,
@@ -999,9 +1006,10 @@ def initialize_database(db_config, network_name):
 					cosignatory_of,
 					cosignatories
 				)
-				VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+				VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
 				''', (
 					account.address.bytes,
+					account.height,
 					account.public_key.bytes if account.public_key else None,
 					account.remote_address.bytes if account.remote_address else None,
 					account.importance,
