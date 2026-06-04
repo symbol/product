@@ -412,8 +412,11 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 			))
 
 			call_args = mock_process_account_batch.call_args_list[0]
-			addresses = call_args[0][1]
-			self.assertEqual(len(addresses), 19)
+			address_heights = call_args[0][1]
+			self.assertEqual(len(address_heights), 19)
+			self.assertIn(1, address_heights.values())
+			self.assertIn(2, address_heights.values())
+			self.assertIn(3, address_heights.values())
 
 			self.assertEqual(mock_process_transactions.call_count, 3)
 			process_transactions_calls = mock_process_transactions.call_args_list
@@ -685,12 +688,12 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 		]
 
 		cursor = Mock()
-		addresses = {
-			str(NEM_CONNECTOR_RESPONSE_ACCOUNT_INFO.address),
+		address_heights = {
+			str(NEM_CONNECTOR_RESPONSE_ACCOUNT_INFO.address): 3,
 		}
 
 		# Act:
-		asyncio.run(self.puller._process_account_batch(cursor, addresses))  # pylint: disable=protected-access
+		asyncio.run(self.puller._process_account_batch(cursor, address_heights))  # pylint: disable=protected-access
 
 		# Assert:
 		mock_account_info.assert_called_once_with(str(NEM_CONNECTOR_RESPONSE_ACCOUNT_INFO.address), False)
@@ -698,6 +701,7 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 		mock_upsert_account.assert_called_once_with(
 			cursor,
 			AccountRecord(
+				registered_height=3,
 				mosaics=[{
 					'namespace_name': 'nem.xem',
 					'quantity': 8000000
@@ -728,12 +732,12 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 		]
 
 		cursor = Mock()
-		addresses = {
-			str(account.address),
+		address_heights = {
+			str(account.address): 3,
 		}
 
 		# Act:
-		asyncio.run(self.puller._process_account_batch(cursor, addresses))  # pylint: disable=protected-access
+		asyncio.run(self.puller._process_account_batch(cursor, address_heights))  # pylint: disable=protected-access
 
 		# Assert:
 		account_info_calls = mock_account_info.call_args_list
@@ -751,6 +755,7 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 		self.assertEqual(upsert_account_calls[0][0], (
 			cursor,
 			AccountRecord(
+				registered_height=3,
 				mosaics=[{
 					'namespace_name': 'nem.xem',
 					'quantity': 0
@@ -762,6 +767,7 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 		self.assertEqual(upsert_account_calls[1][0], (
 			cursor,
 			AccountRecord(
+				registered_height=3,
 				mosaics=[{
 					'namespace_name': 'nem.xem',
 					'quantity': 1000000
