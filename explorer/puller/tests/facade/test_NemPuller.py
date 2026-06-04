@@ -701,7 +701,7 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 		mock_upsert_account.assert_called_once_with(
 			cursor,
 			AccountRecord(
-				registered_height=3,
+				height=3,
 				mosaics=[{
 					'namespace_name': 'nem.xem',
 					'quantity': 8000000
@@ -755,7 +755,7 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 		self.assertEqual(upsert_account_calls[0][0], (
 			cursor,
 			AccountRecord(
-				registered_height=3,
+				height=3,
 				mosaics=[{
 					'namespace_name': 'nem.xem',
 					'quantity': 0
@@ -767,7 +767,7 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 		self.assertEqual(upsert_account_calls[1][0], (
 			cursor,
 			AccountRecord(
-				registered_height=3,
+				height=3,
 				mosaics=[{
 					'namespace_name': 'nem.xem',
 					'quantity': 1000000

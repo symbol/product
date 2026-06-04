@@ -119,7 +119,7 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 			'''
 			SELECT
 				encode(address, 'hex'),
-				registered_height,
+				height,
 				encode(public_key, 'hex'),
 				encode(remote_address, 'hex'),
 				importance::TEXT,
@@ -420,7 +420,7 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 			None)
 		)
 
-	def test_account_registered_height_remains_unchanged_on_update(self):
+	def test_account_height_remains_unchanged_on_update(self):
 		# Arrange:
 		with NemDatabase(self.db_config) as nem_database:
 			nem_database.create_tables()
@@ -436,7 +436,7 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 			# Act:
 			nem_database.upsert_account(
 				cursor,
-				ACCOUNTS[0]._replace(registered_height=3)
+				ACCOUNTS[0]._replace(height=3)
 			)
 
 			nem_database.connection.commit()

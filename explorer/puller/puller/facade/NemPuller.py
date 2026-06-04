@@ -29,7 +29,7 @@ BlockRecord = namedtuple('BlockRecord', [
 ])
 AccountRecord = namedtuple('AccountRecord', [
 	'address',
-	'registered_height',
+	'height',
 	'public_key',
 	'remote_address',
 	'importance',
@@ -243,12 +243,12 @@ class NemPuller:
 		]
 
 	@staticmethod
-	def _create_account_record(account_info, mosaics_json, registered_height, remote_address=None):
+	def _create_account_record(account_info, mosaics_json, height, remote_address=None):
 		"""Create AccountRecord from account info and mosaics."""
 
 		return AccountRecord(
 			account_info.address,
-			registered_height,
+			height,
 			account_info.public_key,
 			remote_address,
 			account_info.importance,
@@ -271,12 +271,12 @@ class NemPuller:
 		log.info(f'Processing batch of {len(address_heights)} addresses')
 
 		# Fetch account info for all addresses (both new and existing)
-		for address, registered_height in address_heights.items():
+		for address, height in address_heights.items():
 			account_info = await self._retry_get_account_info(address)
 			account_mosaics = await self._retry_get_account_mosaics(address)
 
 			mosaics_json = self._convert_mosaics_to_json(account_mosaics)
-			account = self._create_account_record(account_info, mosaics_json, registered_height)
+			account = self._create_account_record(account_info, mosaics_json, height)
 
 			self.nem_db.upsert_account(cursor, account)
 
@@ -286,7 +286,7 @@ class NemPuller:
 				main_account_mosaics = await self._retry_get_account_mosaics(str(main_account_info.address))
 
 				main_mosaics_json = self._convert_mosaics_to_json(main_account_mosaics)
-				main_account = self._create_account_record(main_account_info, main_mosaics_json, registered_height, remote_address=account.address)
+				main_account = self._create_account_record(main_account_info, main_mosaics_json, height, remote_address=account.address)
 
 				self.nem_db.upsert_account(cursor, main_account)
 
