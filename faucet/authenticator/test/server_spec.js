@@ -1,16 +1,27 @@
 const twitterController = require('../src/controllers');
-const server = require('../src/server');
+const createServer = require('../src/server');
 const { expect } = require('chai');
 const { stub, restore } = require('sinon');
 const supertest = require('supertest');
 
 describe('Server', () => {
+	let server = {};
+
+	beforeEach(async () => {
+		server = createServer();
+		await server.ready();
+	});
+
+	afterEach(async () => {
+		await server.close();
+	});
+
 	const assertGetErrorCode500 = async (functionStub, endpoint) => {
 		// Arrange:
 		functionStub.throws();
 
 		// Act:
-		const response = await supertest(server)
+		const response = await supertest(server.server)
 			.get(endpoint)
 			.set('Accept', 'application/json');
 
@@ -35,7 +46,7 @@ describe('Server', () => {
 			}));
 
 			// Act:
-			const response = await supertest(server)
+			const response = await supertest(server.server)
 				.get('/twitter/auth')
 				.set('Accept', 'application/json');
 
@@ -72,7 +83,7 @@ describe('Server', () => {
 			userAccessStub.returns(Promise.resolve(userInfo));
 
 			// Act:
-			const response = await supertest(server)
+			const response = await supertest(server.server)
 				.get('/twitter/verify?oauthToken=token&oauthTokenSecret=secret&oauthVerifier=verifier')
 				.set('Accept', 'application/json');
 
