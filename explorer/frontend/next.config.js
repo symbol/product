@@ -6,6 +6,24 @@ loadEnvConfig(__dirname);
 
 const PLATFORM = process.env.NEXT_PUBLIC_PLATFORM || process.env.PLATFORM || 'nem';
 
+const webpack = function (config, { isServer }) {
+	if (!isServer)
+		config.resolve.alias['symbol-crypto-wasm-node'] = path.resolve(__dirname, 'utils/symbol-wasm-stub.js');
+	config.resolve.alias['bitcore-mnemonic'] = path.resolve(__dirname, 'utils/bitcore-mnemonic-stub.js');
+
+	return config;
+};
+
+const normalizeResourcePath = loaderContext => (loaderContext.resourcePath || '').replace(/\\/g, '/');
+
+const additionalData = function (content, loaderContext) {
+	const normalizedPath = normalizeResourcePath(loaderContext);
+	if (normalizedPath.endsWith('/styles/variables.scss') || normalizedPath.includes('/variants/'))
+		return content;
+
+	return `@import "variants/${PLATFORM}/styles/variables.scss";\n${content}`;
+};
+
 module.exports = {
 	output: 'standalone',
 	reactStrictMode: true,
@@ -31,27 +49,13 @@ module.exports = {
 			'bitcore-mnemonic': './utils/bitcore-mnemonic-stub.js'
 		}
 	},
-	webpack: (config, { isServer }) => {
-		if (!isServer)
-			config.resolve.alias['symbol-crypto-wasm-node'] = path.resolve(__dirname, 'utils/symbol-wasm-stub.js');
-		config.resolve.alias['bitcore-mnemonic'] = path.resolve(__dirname, 'utils/bitcore-mnemonic-stub.js');
-
-		return config;
-	},
+	webpack,
 	i18n: i18nConfig.i18n,
 	eslint: {
 		ignoreDuringBuilds: true
 	},
 	sassOptions: {
 		includePaths: [path.join(__dirname, 'styles')],
-		additionalData: (content, loaderContext) => {
-			const resourcePath = loaderContext.resourcePath || '';
-			const normalizedPath = resourcePath.replace(/\\/g, '/');
-
-			if (normalizedPath.endsWith('/styles/variables.scss') || normalizedPath.includes('/variants/'))
-				return content;
-
-			return `@import "variants/${PLATFORM}/styles/variables.scss";\n${content}`;
-		}
+		additionalData
 	}
 };

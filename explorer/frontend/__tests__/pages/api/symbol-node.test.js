@@ -88,6 +88,103 @@ describe('pages/api/symbol-node', () => {
 		});
 	});
 
+	it('forwards block orderBy queries allowed by the Symbol shell', async () => {
+		// Arrange:
+		const request = {
+			method: 'GET',
+			query: {
+				path: ['blocks'],
+				orderBy: 'height'
+			}
+		};
+		const response = createResponse();
+		axios.mockResolvedValue({
+			status: 200,
+			data: {
+				data: []
+			}
+		});
+
+		// Act:
+		await handler(request, response);
+
+		// Assert:
+		expect(axios).toHaveBeenCalledWith({
+			method: 'get',
+			url: 'https://symbol.node/blocks?orderBy=height',
+			timeout: 1234
+		});
+	});
+
+	it('forwards account search queries allowed by the Symbol shell', async () => {
+		// Arrange:
+		const request = {
+			method: 'GET',
+			query: {
+				path: ['accounts'],
+				order: 'asc',
+				pageNumber: '3',
+				pageSize: '50'
+			}
+		};
+		const response = createResponse();
+		axios.mockResolvedValue({
+			status: 200,
+			data: {
+				data: []
+			}
+		});
+
+		// Act:
+		await handler(request, response);
+
+		// Assert:
+		expect(axios).toHaveBeenCalledWith({
+			method: 'get',
+			url: 'https://symbol.node/accounts?order=asc&pageNumber=3&pageSize=50',
+			timeout: 1234
+		});
+	});
+
+	it('forwards mosaic and namespace search queries allowed by the Symbol shell', async () => {
+		// Arrange:
+		const response = createResponse();
+		axios.mockResolvedValue({
+			status: 200,
+			data: {
+				data: []
+			}
+		});
+
+		// Act:
+		await handler({
+			method: 'GET',
+			query: {
+				path: ['mosaics'],
+				order: 'desc'
+			}
+		}, response);
+		await handler({
+			method: 'GET',
+			query: {
+				path: ['namespaces'],
+				pageSize: '25'
+			}
+		}, response);
+
+		// Assert:
+		expect(axios).toHaveBeenNthCalledWith(1, {
+			method: 'get',
+			url: 'https://symbol.node/mosaics?order=desc',
+			timeout: 1234
+		});
+		expect(axios).toHaveBeenNthCalledWith(2, {
+			method: 'get',
+			url: 'https://symbol.node/namespaces?pageSize=25',
+			timeout: 1234
+		});
+	});
+
 	it('forwards the transaction query parameters used by the Symbol shell', async () => {
 		// Arrange:
 		const request = {
@@ -136,6 +233,26 @@ describe('pages/api/symbol-node', () => {
 		expect(response.setHeader).toHaveBeenCalledWith('Allow', 'GET');
 		expect(response.status).toHaveBeenCalledWith(405);
 		expect(response.json).toHaveBeenCalledWith({ message: 'Method not allowed.' });
+	});
+
+	it('rejects requests when the Symbol node URL is not configured', async () => {
+		// Arrange:
+		process.env = {};
+		const request = {
+			method: 'GET',
+			query: {
+				path: ['blocks']
+			}
+		};
+		const response = createResponse();
+
+		// Act:
+		await handler(request, response);
+
+		// Assert:
+		expect(axios).not.toHaveBeenCalled();
+		expect(response.status).toHaveBeenCalledWith(500);
+		expect(response.json).toHaveBeenCalledWith({ message: 'Symbol node URL is not configured.' });
 	});
 
 	it('rejects paths outside the Symbol shell allowlist', async () => {
@@ -195,5 +312,99 @@ describe('pages/api/symbol-node', () => {
 		expect(axios).not.toHaveBeenCalled();
 		expect(response.status).toHaveBeenCalledWith(400);
 		expect(response.json).toHaveBeenCalledWith({ message: 'Symbol node query is not allowed.' });
+	});
+
+	it('rejects malformed query values', async () => {
+		// Arrange:
+		const request = {
+			method: 'GET',
+			query: {
+				path: ['blocks'],
+				pageNumber: '0'
+			}
+		};
+		const response = createResponse();
+
+		// Act:
+		await handler(request, response);
+
+		// Assert:
+		expect(axios).not.toHaveBeenCalled();
+		expect(response.status).toHaveBeenCalledWith(400);
+		expect(response.json).toHaveBeenCalledWith({ message: 'Symbol node query is not allowed.' });
+	});
+
+	it('rejects malformed typed query values', async () => {
+		// Arrange:
+		const malformedQueries = [
+			{
+				path: ['blocks'],
+				pageSize: '0'
+			},
+			{
+				path: ['blocks'],
+				order: 'sideways'
+			},
+			{
+				path: ['blocks'],
+				orderBy: 'timestamp'
+			},
+			{
+				path: ['transactions', 'confirmed'],
+				height: '0'
+			}
+		];
+
+		// Act:
+		for (const query of malformedQueries)
+			await handler({ method: 'GET', query }, createResponse());
+
+		// Assert:
+		expect(axios).not.toHaveBeenCalled();
+	});
+
+	it('forwards Symbol node error responses', async () => {
+		// Arrange:
+		const request = {
+			method: 'GET',
+			query: {
+				path: ['blocks', '1']
+			}
+		};
+		const response = createResponse();
+		axios.mockRejectedValue({
+			response: {
+				status: 404,
+				data: {
+					code: 'ResourceNotFound'
+				}
+			}
+		});
+
+		// Act:
+		await handler(request, response);
+
+		// Assert:
+		expect(response.status).toHaveBeenCalledWith(404);
+		expect(response.json).toHaveBeenCalledWith({ code: 'ResourceNotFound' });
+	});
+
+	it('returns 500 for Symbol node network errors', async () => {
+		// Arrange:
+		const request = {
+			method: 'GET',
+			query: {
+				path: ['blocks', '1']
+			}
+		};
+		const response = createResponse();
+		axios.mockRejectedValue(new Error('network failed'));
+
+		// Act:
+		await handler(request, response);
+
+		// Assert:
+		expect(response.status).toHaveBeenCalledWith(500);
+		expect(response.json).toHaveBeenCalledWith({ message: 'network failed' });
 	});
 });

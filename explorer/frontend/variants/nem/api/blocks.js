@@ -21,10 +21,6 @@ export const fetchBlockPage = async searchParams => {
 	return createPage(blocks, searchCriteria.pageNumber, blockInfoFromDTO);
 };
 
-/**
- * Fetches the chain height.
- * @returns {Promise<number>} the chain height
- */
 export const fetchChainHight = async () => {
 	const blockPage = await fetchBlockPage({ pageSize: 1 });
 

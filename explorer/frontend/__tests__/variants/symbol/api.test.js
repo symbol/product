@@ -169,6 +169,53 @@ describe('variants/symbol/api', () => {
 		expect(result.pageNumber).toBe(response.pagination.pageNumber);
 	});
 
+	it('maps Symbol transaction fallback fields', async () => {
+		// Arrange:
+		const { makeRequest } = require('@/utils/server');
+		const { fetchTransactionInfo } = require('@/variants/symbol/api/transactions');
+		makeRequest.mockResolvedValue({
+			meta: {
+				hash: 'A'.repeat(64),
+				height: '12'
+			},
+			transaction: {
+				type: 65535,
+				signerAddress: '981308B3321751BD49DF567C2A928893BB3F9097AA354A84',
+				timestamp: '112593604952',
+				maxFee: '0',
+				mosaics: [
+					{
+						amount: '123000000'
+					}
+				]
+			}
+		});
+
+		// Act:
+		const result = await fetchTransactionInfo('A'.repeat(64));
+
+		// Assert:
+		expect(result).toEqual({
+			hash: 'A'.repeat(64),
+			height: 12,
+			type: 65535,
+			signer: 'TAJQRMZSC5I32SO7KZ6CVEUISO5T7EEXVI2UVBA',
+			sender: 'TAJQRMZSC5I32SO7KZ6CVEUISO5T7EEXVI2UVBA',
+			recipient: null,
+			value: [
+				{
+					id: 'E74B99BA41F4AFEE',
+					name: 'XYM',
+					amount: 123
+				}
+			],
+			amount: 123,
+			fee: 0,
+			timestamp: '2026-05-27T01:07:51.952Z',
+			message: ''
+		});
+	});
+
 	it('maps all supported Symbol transaction types', async () => {
 		// Arrange:
 		const { TRANSACTION_TYPE } = require('@/constants');
@@ -277,6 +324,39 @@ describe('variants/symbol/api', () => {
 		});
 	});
 
+	it('queries unconfirmed Symbol transactions with supported filters', async () => {
+		// Arrange:
+		const { makeRequest } = require('@/utils/server');
+		const { fetchTransactionPage } = require('@/variants/symbol/api/transactions');
+		makeRequest.mockResolvedValue({
+			data: [],
+			pagination: {
+				pageNumber: 3,
+				pageSize: 50
+			}
+		});
+
+		// Act:
+		const result = await fetchTransactionPage({
+			group: 'unconfirmed',
+			address: 'TARDV42KTAIZEF64EQT4NXT7K55DHWBEFIXVJQY',
+			height: 3410446,
+			order: 'asc',
+			pageNumber: 3,
+			pageSize: 250
+		});
+
+		// Assert:
+		const expectedUrl = '/api/symbol-node/transactions/unconfirmed'
+			+ '?pageNumber=3&pageSize=100&order=asc&orderBy=id'
+			+ '&address=TARDV42KTAIZEF64EQT4NXT7K55DHWBEFIXVJQY&height=3410446';
+		expect(makeRequest).toHaveBeenCalledWith(expectedUrl);
+		expect(result).toEqual({
+			data: [],
+			pageNumber: 3
+		});
+	});
+
 	it('returns an empty account page for unsupported temporary Symbol node proxy filters', async () => {
 		// Arrange:
 		const { makeRequest } = require('@/utils/server');
@@ -295,6 +375,25 @@ describe('variants/symbol/api', () => {
 		expect(result).toEqual({
 			data: [],
 			pageNumber: 1
+		});
+	});
+
+	it('preserves the requested page number for unsupported account filters', async () => {
+		// Arrange:
+		const { makeRequest } = require('@/utils/server');
+		const { fetchAccountPage } = require('@/variants/symbol/api/accounts');
+
+		// Act:
+		const result = await fetchAccountPage({
+			isLatest: true,
+			pageNumber: 4
+		});
+
+		// Assert:
+		expect(makeRequest).not.toHaveBeenCalled();
+		expect(result).toEqual({
+			data: [],
+			pageNumber: 4
 		});
 	});
 
@@ -414,5 +513,91 @@ describe('variants/symbol/api', () => {
 			isHarvestingActive: false
 		});
 		expect(accountByPublicKey).toEqual(accountByAddress);
+	});
+
+	it('maps the transaction types that are shared with NEM names', async () => {
+		// Arrange:
+		const { makeRequest } = require('@/utils/server');
+		const { fetchTransactionPage } = require('@/variants/symbol/api/transactions');
+		const response = {
+			data: [16705, 16973, 16718, 17230].map((type, index) => ({
+				meta: {
+					hash: `HASH${index}`,
+					height: `${index + 1}`
+				},
+				transaction: {
+					type,
+					signerPublicKey: '81EA7C15E7EC06261C9F654F54EAC4748CFCF00E09A8FE47779ACD14A7602004'
+				}
+			}))
+		};
+		makeRequest.mockResolvedValue(response);
+
+		// Act:
+		const result = await fetchTransactionPage();
+
+		// Assert:
+		expect(result.data.map(transaction => transaction.type)).toEqual([
+			'AGGREGATE_COMPLETE',
+			'MOSAIC_SUPPLY_CHANGE',
+			'NAMESPACE_REGISTRATION',
+			'MOSAIC_ALIAS'
+		]);
+	});
+
+	it('returns null for unsupported Symbol transaction search resolvers', async () => {
+		// Arrange:
+		const {
+			resolveTransactionBlockSearch,
+			resolveTransactionMosaicSearch,
+			resolveTransactionRecipientSearch,
+			resolveTransactionSignerSearch
+		} = require('@/variants/symbol/api/transactions');
+
+		// Act + Assert:
+		await expect(resolveTransactionBlockSearch()).resolves.toBeNull();
+		await expect(resolveTransactionMosaicSearch()).resolves.toBeNull();
+		await expect(resolveTransactionRecipientSearch()).resolves.toBeNull();
+		await expect(resolveTransactionSignerSearch()).resolves.toBeNull();
+	});
+
+	it('uses Symbol utility fallbacks and unsupported feature errors', async () => {
+		// Arrange:
+		const { makeRequest } = require('@/utils/server');
+		const {
+			createSymbolSearchURL,
+			createSymbolPage,
+			fetchSymbolNode,
+			hexToSymbolAddress,
+			publicKeyToSymbolAddress,
+			unsupportedSymbolFeature
+		} = require('@/variants/symbol/utils');
+		makeRequest.mockResolvedValue({ ok: true });
+
+		// Act:
+		const fetched = await fetchSymbolNode('chain/info');
+		const emptyPage = createSymbolPage({}, 7, item => item);
+		const searchUrl = createSymbolSearchURL('blocks', {
+			order: 'asc',
+			pageNumber: 2,
+			pageSize: 250
+		}, {
+			orderBy: 'height'
+		});
+
+		// Assert:
+		expect(makeRequest).toHaveBeenCalledWith('/api/symbol-node/chain/info');
+		expect(fetched).toEqual({ ok: true });
+		expect(searchUrl).toBe('https://symbol.node/blocks?pageNumber=2&pageSize=100&order=asc&orderBy=height');
+		expect(emptyPage).toEqual({
+			data: [],
+			pageNumber: 7
+		});
+		expect(hexToSymbolAddress('not-hex')).toBe('not-hex');
+		expect(publicKeyToSymbolAddress('not-public-key')).toBe('not-public-key');
+		const publicKey = '81EA7C15E7EC06261C9F654F54EAC4748CFCF00E09A8FE47779ACD14A7602004';
+		expect(publicKeyToSymbolAddress(publicKey)).toBe('TARDV42KTAIZEF64EQT4NXT7K55DHWBEFIXVJQY');
+		const expectedErrorMessage = 'Symbol metadata search is not implemented yet in the frontend adapter.';
+		expect(() => unsupportedSymbolFeature('metadata search')).toThrow(expectedErrorMessage);
 	});
 });

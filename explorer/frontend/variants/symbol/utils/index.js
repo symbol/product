@@ -11,15 +11,17 @@ export const createSymbolNodePath = url => url.replace(`${getSymbolNodeUrl()}/`,
 
 export const createSymbolSearchURL = (path, searchParams = {}, additionalParams = {}) => {
 	const { pageNumber, pageSize, filter } = createSearchCriteria(searchParams);
-	const params = new URLSearchParams({
-		pageNumber,
-		pageSize: Math.min(pageSize, 100),
-		order: filter.order || 'desc',
-		...additionalParams,
-		...filter
-	}).toString();
+	const params = new URLSearchParams();
+	params.set('pageNumber', pageNumber);
+	params.set('pageSize', Math.min(pageSize, 100));
+	params.set('order', filter.order || 'desc');
+	[additionalParams, filter].forEach(paramsSource => {
+		Object.entries(paramsSource).forEach(([key, value]) => {
+			params.set(key, value);
+		});
+	});
 
-	return `${createSymbolApiUrl(path)}?${params}`;
+	return `${createSymbolApiUrl(path)}?${params.toString()}`;
 };
 
 export const createSymbolPage = (response, pageNumber, formatter) => {
@@ -73,7 +75,7 @@ export const hexToSymbolAddress = hex => {
 	return base32Encode(bytes);
 };
 
-export const publicKeyToSymbolAddress = publicKeyHex => {
+export const publicKeyToSymbolAddress = function (publicKeyHex) {
 	if (!/^[0-9A-Fa-f]{64}$/.test(publicKeyHex || ''))
 		return publicKeyHex;
 
@@ -82,7 +84,6 @@ export const publicKeyToSymbolAddress = publicKeyHex => {
 	const partTwoHash = new Ripemd160().update(partOneHash).digest();
 	const version = new Uint8Array([Number(config.SYMBOL_NETWORK_IDENTIFIER), ...partTwoHash]);
 	const checksum = sha3_256(version).subarray(0, 3);
-
 	return base32Encode(new Uint8Array([...version, ...checksum]));
 };
 
