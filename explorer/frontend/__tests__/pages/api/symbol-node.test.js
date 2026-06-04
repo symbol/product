@@ -118,6 +118,39 @@ describe('pages/api/symbol-node', () => {
 		});
 	});
 
+	it('forwards the inflation receipt statement query used by Symbol block rewards', async () => {
+		// Arrange:
+		const request = {
+			method: 'GET',
+			query: {
+				path: ['statements', 'transaction'],
+				fromHeight: '1234',
+				toHeight: '1235',
+				receiptType: '20803',
+				pageSize: '1000'
+			}
+		};
+		const response = createResponse();
+		axios.mockResolvedValue({
+			status: 200,
+			data: {
+				data: []
+			}
+		});
+
+		// Act:
+		await handler(request, response);
+
+		// Assert:
+		expect(axios).toHaveBeenCalledWith({
+			method: 'get',
+			url: 'https://symbol.node/statements/transaction?fromHeight=1234&toHeight=1235&receiptType=20803&pageSize=100',
+			timeout: 1234
+		});
+		expect(response.status).toHaveBeenCalledWith(200);
+		expect(response.json).toHaveBeenCalledWith({ data: [] });
+	});
+
 	it('rejects non-GET requests', async () => {
 		// Arrange:
 		const request = {

@@ -7,6 +7,7 @@ const allowedPathPatterns = [
 	/^mosaics(?:\/[^/]+)?$/,
 	/^namespaces(?:\/[^/]+)?$/,
 	/^node\/peers$/,
+	/^statements\/transaction$/,
 	/^transactions\/(?:confirmed|unconfirmed)(?:\/[^/]+)?$/
 ];
 
@@ -31,6 +32,10 @@ const allowedQueryParamEntries = [
 	{
 		pattern: /^transactions\/(?:confirmed|unconfirmed)$/,
 		params: new Set([...allowedSearchQueryParams, 'address', 'height', 'orderBy'])
+	},
+	{
+		pattern: /^statements\/transaction$/,
+		params: new Set(['fromHeight', 'toHeight', 'receiptType', 'pageSize'])
 	}
 ];
 
@@ -80,6 +85,17 @@ const createAllowedQuery = (pathStr, queryParams) => {
 				return null;
 
 			query.set(key, String(parsedHeight));
+		} else if (['fromHeight', 'toHeight'].includes(key)) {
+			const parsedHeight = getPositiveInteger(value);
+			if (!parsedHeight)
+				return null;
+
+			query.set(key, String(parsedHeight));
+		} else if ('receiptType' === key) {
+			if ('20803' !== value)
+				return null;
+
+			query.set(key, value);
 		} else {
 			query.set(key, value);
 		}

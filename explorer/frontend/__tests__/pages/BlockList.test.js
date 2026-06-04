@@ -5,6 +5,7 @@ import { blockStatisticsResult } from '../test-utils/stats';
 import * as BlockService from '@/api/blocks';
 import * as StatsService from '@/api/stats';
 import BlockList, { getServerSideProps } from '@/pages/blocks/index';
+import { pageConfig } from '@/variants';
 import { render, screen } from '@testing-library/react';
 
 jest.mock('@/api/blocks', () => {
@@ -48,6 +49,12 @@ describe('BlockList', () => {
 	});
 
 	describe('page', () => {
+		afterEach(() => {
+			pageConfig.blocks.showFinalization = false;
+			pageConfig.blocks.showStatementCount = false;
+			pageConfig.blocks.showBlockReward = false;
+		});
+
 		const runTest = () => {
 			// Arrange:
 			const pageSectionText = 'section_blocks';
@@ -74,6 +81,53 @@ describe('BlockList', () => {
 
 			// Act + Assert:
 			runTest();
+		});
+
+		it('renders Symbol block-list columns on desktop when enabled by page config', () => {
+			// Arrange:
+			pageConfig.blocks.showFinalization = true;
+			pageConfig.blocks.showStatementCount = true;
+			pageConfig.blocks.showBlockReward = true;
+			const blocks = [
+				{
+					...blockPageResult.data[0],
+					blockReward: 1.25,
+					isFinalized: true,
+					statementCount: 2
+				}
+			];
+
+			// Act:
+			render(<BlockList blocks={blocks} stats={blockStatisticsResult} />);
+
+			// Assert:
+			expect(screen.getByText('table_field_statementCount')).toBeInTheDocument();
+			expect(screen.getByText('table_field_blockReward')).toBeInTheDocument();
+			expect(screen.getByAltText('Finalized block')).toBeInTheDocument();
+		});
+
+		it('renders Symbol block-list fields on mobile when enabled by page config', () => {
+			// Arrange:
+			setDevice('mobile');
+			pageConfig.blocks.showFinalization = true;
+			pageConfig.blocks.showStatementCount = true;
+			pageConfig.blocks.showBlockReward = true;
+			const blocks = [
+				{
+					...blockPageResult.data[0],
+					blockReward: 1.25,
+					isFinalized: false,
+					statementCount: 2
+				}
+			];
+
+			// Act:
+			render(<BlockList blocks={blocks} stats={blockStatisticsResult} />);
+
+			// Assert:
+			expect(screen.getAllByText('table_field_statementCount')).toHaveLength(2);
+			expect(screen.getAllByText('table_field_blockReward')).toHaveLength(2);
+			expect(screen.getByAltText('Unfinalized block')).toBeInTheDocument();
 		});
 	});
 });
