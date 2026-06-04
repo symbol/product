@@ -336,8 +336,28 @@ def test_api_nem_accounts_applies_sorted_by_balance_asc(client):  # pylint: disa
 	_assert_get_api_nem_accounts(client, 200, [ACCOUNT_VIEWS[0].to_dict(), ACCOUNT_VIEWS[1].to_dict()], sort_field='BALANCE', sort_order='ASC')
 
 
+def test_api_nem_accounts_applies_sorted_by_height_desc(client):  # pylint: disable=redefined-outer-name, invalid-name
+	_assert_get_api_nem_accounts(
+		client,
+		200,
+		[ACCOUNT_VIEWS[1].to_dict(), ACCOUNT_VIEWS[0].to_dict()],
+		sort_field='HEIGHT',
+		sort_order='DESC'
+	)
+
+
+def test_api_nem_accounts_applies_sorted_by_height_asc(client):  # pylint: disable=redefined-outer-name, invalid-name
+	_assert_get_api_nem_accounts(
+		client,
+		200,
+		[ACCOUNT_VIEWS[0].to_dict(), ACCOUNT_VIEWS[1].to_dict()],
+		sort_field='HEIGHT',
+		sort_order='ASC'
+	)
+
+
 def test_api_nem_accounts_invalid_sort_field(client):  # pylint: disable=redefined-outer-name, invalid-name
-	_assert_get_nem_accounts_bad_request(client, 'Sort field must be BALANCE', sort_field='INVALID')
+	_assert_get_nem_accounts_bad_request(client, 'Sort field must be BALANCE or HEIGHT', sort_field='INVALID')
 
 
 def test_api_nem_accounts_invalid_sort_order(client):  # pylint: disable=redefined-outer-name, invalid-name
