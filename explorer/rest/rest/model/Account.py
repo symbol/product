@@ -2,6 +2,7 @@ class AccountView:  # pylint: disable=too-many-locals,too-many-instance-attribut
 	def __init__(
 		self,
 		address,
+		height,
 		public_key,
 		remote_address,
 		importance,
@@ -22,6 +23,7 @@ class AccountView:  # pylint: disable=too-many-locals,too-many-instance-attribut
 		# pylint: disable=too-many-arguments,too-many-positional-arguments
 
 		self.address = address
+		self.height = height
 		self.public_key = public_key
 		self.remote_address = remote_address
 		self.importance = importance
@@ -40,6 +42,7 @@ class AccountView:  # pylint: disable=too-many-locals,too-many-instance-attribut
 	def __eq__(self, other):
 		return isinstance(other, AccountView) and all([
 			self.address == other.address,
+			self.height == other.height,
 			self.public_key == other.public_key,
 			self.remote_address == other.remote_address,
 			self.importance == other.importance,
@@ -61,6 +64,7 @@ class AccountView:  # pylint: disable=too-many-locals,too-many-instance-attribut
 
 		return {
 			'address': self.address,
+			'height': self.height,
 			'publicKey': self.public_key,
 			'remoteAddress': self.remote_address,
 			'importance': self.importance,
