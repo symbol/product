@@ -3,7 +3,7 @@ import ClaimDatabase from '../src/database/ClaimDatabase.js';
 import DatabaseConnection from '../src/database/DatabaseConnection.js';
 import nemFacade from '../src/facade/nemFacade.js';
 import symbolFacade from '../src/facade/symbolFacade.js';
-import createRestifyServer from '../src/server.js';
+import createFastifyServer from '../src/server.js';
 import { expect } from 'chai';
 import { restore, stub } from 'sinon';
 import supertest from 'supertest';
@@ -19,7 +19,12 @@ describe('Server', () => {
 
 		await claimDatabase.createTable();
 
-		server = createRestifyServer(claimDatabase);
+		server = createFastifyServer(claimDatabase);
+		await server.ready();
+	});
+
+	afterEach(async () => {
+		await server.close();
 	});
 
 	// decoded jwt payload
@@ -36,7 +41,7 @@ describe('Server', () => {
 			+ 'tffb1g17SetxmC5cPuQ8nZrrUzRf_nBlcA_ydKUUv6U';
 
 	const createRequest = (url, body, authToken) => {
-		const request = supertest(server)
+		const request = supertest(server.server)
 			.post(url)
 			.set('Accept', 'application/json')
 			.send(body);
@@ -233,7 +238,7 @@ describe('Server', () => {
 	describe('OPTIONS /claim/xem', () => {
 		it('responds 204 when preflight request', async () => {
 			// Act:
-			const response = await supertest(server)
+			const response = await supertest(server.server)
 				.options('/claim/xem');
 
 			// Assert:
@@ -258,7 +263,7 @@ describe('Server', () => {
 
 		it('responds 200 with config and faucet balance', async () => {
 			// Act:
-			const response = await supertest(server).get(url);
+			const response = await supertest(server.server).get(url);
 
 			// Assert:
 			expect(response.status).to.be.equal(200);

@@ -11,7 +11,7 @@
 
 ## Overview
 
-Faucet backend service built with NodeJS and Restify. It allows users to request testnet [XEM](https://testnet-explorer.nemtool.com) and [XYM](https://testnet.symbol.fyi) for development.
+Faucet backend service built with Node.js and Fastify. It allows users to request testnet [XEM](https://testnet-explorer.nemtool.com) and [XYM](https://testnet.symbol.fyi) for development.
 
 ## Repository layout
 
@@ -26,7 +26,7 @@ Faucet backend service built with NodeJS and Restify. It allows users to request
 
 ## Requirement
 
-Node.js LTS
+Node.js 24 LTS (recommended)
 
 ## Usage
 

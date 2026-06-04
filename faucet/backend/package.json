@@ -15,27 +15,27 @@
   "author": "Symbol Contributors <contributors@symbol.dev>",
   "license": "ISC",
   "dependencies": {
-    "axios": "^1.4.0",
-    "dotenv": "^17.0.1",
-    "jsonwebtoken": "^9.0.1",
-    "restify": "^11.1.0",
-    "restify-errors": "^8.0.2",
-    "sqlite3": "^5.1.6",
-    "symbol-sdk": "^3.2.1",
-    "winston": "^3.10.0"
+    "@fastify/cors": "^11.2.0",
+    "axios": "^1.17.0",
+    "dotenv": "^17.4.2",
+    "fastify": "^5.8.5",
+    "jsonwebtoken": "^9.0.3",
+    "sqlite3": "^6.0.1",
+    "symbol-sdk": "^3.3.1",
+    "winston": "^3.19.0"
   },
   "devDependencies": {
     "assert-plus": "^1.0.0",
-    "axios-mock-adapter": "^2.0.0",
+    "axios-mock-adapter": "^2.1.0",
     "c8": "^11.0.0",
-    "chai": "^6.0.1",
-    "chai-as-promised": "^8.0.0",
+    "chai": "^6.2.2",
+    "chai-as-promised": "^8.0.2",
     "eslint": "^8.46.0",
     "eslint-config-airbnb": "^19.0.4",
-    "mocha": "^11.0.1",
-    "nodemon": "^3.0.1",
+    "mocha": "^11.7.6",
+    "nodemon": "^3.1.14",
     "sinon": "^22.0.0",
-    "sinon-chai": "^4.0.0",
-    "supertest": "^7.0.0"
+    "sinon-chai": "^4.0.1",
+    "supertest": "^7.2.2"
   }
 }
