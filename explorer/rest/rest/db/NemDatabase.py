@@ -142,7 +142,8 @@ class NemDatabase(DatabaseConnectionPool):
 			registered_height,
 			registered_timestamp,
 			expiration_height,
-			sub_namespaces
+			sub_namespaces,
+			mosaics
 		) = result
 
 		return NamespaceView(
@@ -151,7 +152,14 @@ class NemDatabase(DatabaseConnectionPool):
 			registered_height=registered_height,
 			registered_timestamp=str(registered_timestamp),
 			expiration_height=expiration_height,
-			sub_namespaces=sub_namespaces
+			sub_namespaces=sub_namespaces,
+			mosaics=[{
+				'namespace_name': mosaic['namespace_name'],
+				'total_supply': mosaic['total_supply'],
+				'divisibility': mosaic['divisibility'],
+				'registered_height': mosaic['registered_height'],
+				'registered_timestamp': mosaic['registered_timestamp']
+			} for mosaic in mosaics]
 		)
 
 	def _create_mosaic_view(self, result):  # pylint: disable=too-many-locals
@@ -358,10 +366,24 @@ class NemDatabase(DatabaseConnectionPool):
 				registered_height,
 				b.timestamp AS registered_timestamp,
 				expiration_height ,
-				sub_namespaces
+				sub_namespaces,
+				COALESCE(m.mosaics, '[]'::json) AS mosaics
 			FROM namespaces n
-			left join blocks b
+			LEFT JOIN blocks b
 				on n.registered_height = b.height
+			LEFT JOIN LATERAL (
+				SELECT json_agg(json_build_object(
+					'namespace_name', ms.namespace_name,
+					'total_supply', ms.total_supply,
+					'divisibility', ms.divisibility,
+					'registered_height', ms.registered_height,
+					'registered_timestamp', mb.timestamp::text
+				) ORDER BY ms.namespace_name) AS mosaics
+				FROM mosaics ms
+				LEFT JOIN blocks mb
+					ON ms.registered_height = mb.height
+				WHERE ms.root_namespace = n.root_namespace
+			) m ON true
 			{where_condition}
 			{order_condition}
 			{limit_condition}
