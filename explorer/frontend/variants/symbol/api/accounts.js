@@ -63,7 +63,6 @@ const accountInfoFromDTO = data => {
 export const fetchAccountPage = async searchParams => {
 	if (hasUnsupportedSearchParams(searchParams))
 		return emptyPage(searchParams);
-
 	const url = createSymbolSearchURL('accounts', pickSearchParams(searchParams));
 	const response = await fetchSymbolNode(createSymbolNodePath(url));
 	const pageNumber = Number(searchParams?.pageNumber || 1);

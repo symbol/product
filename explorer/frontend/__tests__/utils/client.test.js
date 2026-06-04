@@ -262,5 +262,25 @@ describe('utils/client', () => {
 			// Assert:
 			expect(result).toBe('/symbol/images/logo-outline.svg');
 		});
+
+		it('uses runtime and environment platform fallbacks', () => {
+			// Arrange:
+			const originalPlatform = window.appConfig.PLATFORM;
+			window.appConfig.PLATFORM = 'symbol';
+
+			// Act + Assert:
+			expect(createAssetURL('/images/logo.png')).toBe('/symbol/images/logo.png');
+
+			// Arrange:
+			delete window.appConfig.PLATFORM;
+			process.env.NEXT_PUBLIC_PLATFORM = 'symbol';
+
+			// Act + Assert:
+			expect(createAssetURL('/images/icon-copy.png')).toBe('/symbol/images/icon-copy.png');
+
+			// Cleanup:
+			window.appConfig.PLATFORM = originalPlatform;
+			process.env.NEXT_PUBLIC_PLATFORM = 'nem';
+		});
 	});
 });

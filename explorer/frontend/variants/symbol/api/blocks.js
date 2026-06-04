@@ -18,10 +18,11 @@ const getReceipts = response =>
 	(Array.isArray(response?.data) ? response.data : []).flatMap(item => item.statement?.receipts || []);
 
 const getStatementHeight = item => Number(item.statement?.height || item.meta?.height || item.height || 0);
+const hasStatementCount = block => block.statementCount;
 
 const fetchBlockRewardsByHeight = async blocks => {
 	const blockHeights = blocks
-		.filter(block => block.statementCount)
+		.filter(hasStatementCount)
 		.map(block => block.height);
 
 	if (!blockHeights.length)
@@ -74,10 +75,8 @@ const blockInfoFromDTO = data => {
 		totalFee: absoluteToRelative(meta.totalFee || 0),
 		transactionCount: Number(meta.totalTransactionsCount ?? meta.transactionsCount ?? 0),
 		statementCount: Number(meta.statementsCount || 0),
-		difficulty: difficulty ? ((difficulty / Math.pow(10, 14)) * 100).toFixed(2) : 0
-	};
+		difficulty: difficulty ? ((difficulty / Math.pow(10, 14)) * 100).toFixed(2) : 0 };
 };
-
 export const fetchBlockPage = async searchParams => {
 	const {
 		includeBlockRewards = true,

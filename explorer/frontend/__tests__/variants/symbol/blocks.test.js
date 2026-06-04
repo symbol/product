@@ -1,7 +1,7 @@
 import '@testing-library/jest-dom';
 import config from '@/config';
 import * as utils from '@/utils/server';
-import { fetchBlockPage } from '@/variants/symbol/api/blocks';
+import { fetchBlockInfo, fetchBlockPage, fetchChainHight } from '@/variants/symbol/api/blocks';
 
 jest.mock('@/utils/server', () => ({
 	__esModule: true,
@@ -199,6 +199,72 @@ describe('variants/symbol/api/blocks', () => {
 		expect(makeRequest).toHaveBeenCalledWith('/api/symbol-node/blocks?pageNumber=1&pageSize=10&order=desc&orderBy=height');
 		expect(result.data[0].blockReward).toBe(0);
 		expect(result.data[0].isFinalized).toBe(false);
+	});
+
+	it('skips block reward lookup when no block has statements', async () => {
+		// Arrange:
+		const makeRequest = jest.spyOn(utils, 'makeRequest');
+		makeRequest.mockResolvedValueOnce({
+			data: [
+				{
+					meta: {
+						hash: '5A9D',
+						totalTransactionsCount: 3
+					},
+					block: {
+						height: '1234',
+						timestamp: '0'
+					}
+				}
+			]
+		});
+		makeRequest.mockResolvedValueOnce({
+			latestFinalizedBlock: {
+				height: '1234'
+			}
+		});
+
+		// Act:
+		const result = await fetchBlockPage();
+
+		// Assert:
+		expect(makeRequest).toHaveBeenCalledTimes(2);
+		expect(result.data[0].blockReward).toBe(0);
+		expect(result.data[0].isFinalized).toBe(true);
+	});
+
+	it('fetches chain height and block info', async () => {
+		// Arrange:
+		const makeRequest = jest.spyOn(utils, 'makeRequest');
+		makeRequest.mockResolvedValueOnce({
+			height: '9876'
+		});
+		makeRequest.mockResolvedValueOnce({
+			meta: {
+				hash: '5A9D',
+				totalFee: '123456',
+				totalTransactionsCount: 3
+			},
+			block: {
+				height: '1234',
+				signerPublicKey: 'PUBLIC_KEY',
+				timestamp: '0'
+			}
+		});
+
+		// Act:
+		const chainHeight = await fetchChainHight();
+		const blockInfo = await fetchBlockInfo(1234);
+
+		// Assert:
+		expect(chainHeight).toBe(9876);
+		expect(blockInfo).toEqual(expect.objectContaining({
+			hash: '5A9D',
+			height: 1234,
+			harvester: 'PUBLIC_KEY',
+			totalFee: 0.123456,
+			transactionCount: 3
+		}));
 	});
 });
 

@@ -73,7 +73,6 @@ export const createAssetURL = (path, appConfig = {}) => {
 
 	return path;
 };
-
 /**
  * Handles navigation item click. Prevents navigation if disabled.
  * @param {Event} event - click event
