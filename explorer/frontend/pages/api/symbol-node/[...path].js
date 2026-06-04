@@ -12,31 +12,20 @@ const allowedPathPatterns = [
 ];
 
 const allowedSearchQueryParams = new Set(['order', 'pageNumber', 'pageSize']);
+const createAllowedQueryParamEntry = (pattern, params) => ({ pattern, params });
 const allowedQueryParamEntries = [
-	{
-		pattern: /^blocks$/,
-		params: new Set([...allowedSearchQueryParams, 'orderBy'])
-	},
-	{
-		pattern: /^accounts$/,
-		params: allowedSearchQueryParams
-	},
-	{
-		pattern: /^mosaics$/,
-		params: allowedSearchQueryParams
-	},
-	{
-		pattern: /^namespaces$/,
-		params: allowedSearchQueryParams
-	},
-	{
-		pattern: /^transactions\/(?:confirmed|unconfirmed)$/,
-		params: new Set([...allowedSearchQueryParams, 'address', 'height', 'orderBy'])
-	},
-	{
-		pattern: /^statements\/transaction$/,
-		params: new Set(['fromHeight', 'toHeight', 'receiptType', 'pageSize'])
-	}
+	createAllowedQueryParamEntry(/^blocks$/, new Set([...allowedSearchQueryParams, 'orderBy'])),
+	createAllowedQueryParamEntry(/^accounts$/, allowedSearchQueryParams),
+	createAllowedQueryParamEntry(/^mosaics$/, allowedSearchQueryParams),
+	createAllowedQueryParamEntry(/^namespaces$/, allowedSearchQueryParams),
+	createAllowedQueryParamEntry(
+		/^transactions\/(?:confirmed|unconfirmed)$/,
+		new Set([...allowedSearchQueryParams, 'address', 'height', 'orderBy'])
+	),
+	createAllowedQueryParamEntry(
+		/^statements\/transaction$/,
+		new Set(['fromHeight', 'toHeight', 'receiptType', 'pageSize'])
+	)
 ];
 
 const isAllowedPath = pathStr => /^[A-Za-z0-9/_-]+$/.test(pathStr) && allowedPathPatterns.some(pattern => pattern.test(pathStr));
@@ -49,6 +38,65 @@ const getPositiveInteger = value => {
 	return Number.isInteger(parsedValue) && 0 < parsedValue ? parsedValue : null;
 };
 
+const trySetAllowedQueryParam = (query, key, value) => {
+	if ('pageSize' === key) {
+		const parsedPageSize = getPositiveInteger(value);
+		if (!parsedPageSize)
+			return false;
+
+		query.set(key, String(Math.min(parsedPageSize, 100)));
+		return true;
+	}
+	if ('pageNumber' === key) {
+		const parsedPageNumber = getPositiveInteger(value);
+		if (!parsedPageNumber)
+			return false;
+
+		query.set(key, String(parsedPageNumber));
+		return true;
+	}
+	if ('order' === key) {
+		if (!['asc', 'desc'].includes(value))
+			return false;
+
+		query.set(key, value);
+		return true;
+	}
+	if ('orderBy' === key) {
+		if (!['height', 'id'].includes(value))
+			return false;
+
+		query.set(key, value);
+		return true;
+	}
+	if ('height' === key) {
+		const parsedHeight = getPositiveInteger(value);
+		if (!parsedHeight)
+			return false;
+
+		query.set(key, String(parsedHeight));
+		return true;
+	}
+	if (['fromHeight', 'toHeight'].includes(key)) {
+		const parsedHeight = getPositiveInteger(value);
+		if (!parsedHeight)
+			return false;
+
+		query.set(key, String(parsedHeight));
+		return true;
+	}
+	if ('receiptType' === key) {
+		if ('20803' !== value)
+			return false;
+
+		query.set(key, value);
+		return true;
+	}
+
+	query.set(key, value);
+	return true;
+};
+
 const createAllowedQuery = (pathStr, queryParams) => {
 	const query = new URLSearchParams();
 	const allowedQueryParams = getAllowedQueryParams(pathStr);
@@ -57,48 +105,8 @@ const createAllowedQuery = (pathStr, queryParams) => {
 		if (!allowedQueryParams.has(key) || Array.isArray(value) || 'string' !== typeof value || 256 < value.length)
 			return null;
 
-		if ('pageSize' === key) {
-			const parsedPageSize = getPositiveInteger(value);
-			if (!parsedPageSize)
-				return null;
-
-			query.set(key, String(Math.min(parsedPageSize, 100)));
-		} else if ('pageNumber' === key) {
-			const parsedPageNumber = getPositiveInteger(value);
-			if (!parsedPageNumber)
-				return null;
-
-			query.set(key, String(parsedPageNumber));
-		} else if ('order' === key) {
-			if (!['asc', 'desc'].includes(value))
-				return null;
-
-			query.set(key, value);
-		} else if ('orderBy' === key) {
-			if (!['height', 'id'].includes(value))
-				return null;
-
-			query.set(key, value);
-		} else if ('height' === key) {
-			const parsedHeight = getPositiveInteger(value);
-			if (!parsedHeight)
-				return null;
-
-			query.set(key, String(parsedHeight));
-		} else if (['fromHeight', 'toHeight'].includes(key)) {
-			const parsedHeight = getPositiveInteger(value);
-			if (!parsedHeight)
-				return null;
-
-			query.set(key, String(parsedHeight));
-		} else if ('receiptType' === key) {
-			if ('20803' !== value)
-				return null;
-
-			query.set(key, value);
-		} else {
-			query.set(key, value);
-		}
+		if (!trySetAllowedQueryParam(query, key, value))
+			return null;
 	}
 
 	return query.toString();
