@@ -1,3 +1,4 @@
+const { getImageLocalPatterns } = require('./next-config/images');
 const i18nConfig = require('./next-i18next.config.js'); // eslint-disable-line import/extensions
 const path = require('path');
 const { loadEnvConfig } = require('@next/env');
@@ -42,14 +43,7 @@ module.exports = {
 		scrollRestoration: true
 	},
 	images: {
-		localPatterns: [
-			{
-				pathname: '/images/**'
-			},
-			{
-				pathname: '/symbol/images/**'
-			}
-		]
+		localPatterns: getImageLocalPatterns(PLATFORM)
 	},
 	i18n: i18nConfig.i18n,
 	eslint: {

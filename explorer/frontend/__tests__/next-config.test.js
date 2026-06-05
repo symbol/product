@@ -61,6 +61,36 @@ describe('next.config', () => {
 			.toThrow('NEXT_PUBLIC_PLATFORM or PLATFORM must be set to either "nem" or "symbol".');
 	});
 
+	it('configures NEM image paths with common and NEM asset locations', () => {
+		// Act:
+		const nextConfig = loadNextConfig({ NEXT_PUBLIC_PLATFORM: 'nem' });
+
+		// Assert:
+		expect(nextConfig.images.localPatterns).toEqual([
+			{
+				pathname: '/images/**'
+			},
+			{
+				pathname: '/nem/images/**'
+			}
+		]);
+	});
+
+	it('configures Symbol image paths with common and Symbol asset locations', () => {
+		// Act:
+		const nextConfig = loadNextConfig({ NEXT_PUBLIC_PLATFORM: 'symbol' });
+
+		// Assert:
+		expect(nextConfig.images.localPatterns).toEqual([
+			{
+				pathname: '/images/**'
+			},
+			{
+				pathname: '/symbol/images/**'
+			}
+		]);
+	});
+
 	it('injects the selected variant variables into shared SCSS files', () => {
 		// Arrange:
 		const nextConfig = loadNextConfig({ NEXT_PUBLIC_PLATFORM: 'symbol' });
