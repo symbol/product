@@ -7,7 +7,7 @@ import { accounts } from './wallet';
 const { alice, bob, carol } = accounts;
 
 // Outgoing XEM transfer: the native amount is negated because the current account is the sender.
-// The message payload is normalized to the wallet's internal format (1-byte type marker prepended).
+// The message payload is the raw on-chain message bytes (no type marker).
 export const outgoingTransfer = {
 	type: 257,
 	timestamp: 1682039643000,
@@ -22,9 +22,10 @@ export const outgoingTransfer = {
 	signerPublicKey: alice.publicKey,
 	recipientAddress: bob.address,
 	message: {
-		type: 1,
+		type: 'plain',
 		text: 'Good luck!',
-		payload: '01476f6f64206c75636b21'
+		payload: '476f6f64206c75636b21',
+		native: { type: 1 }
 	},
 	mosaics: [{
 		id: 'nem.xem',
@@ -85,7 +86,7 @@ export const mosaicTransfer = {
 	amount: '0'
 };
 
-// Encrypted transfer: text is null for encrypted messages; the payload keeps the type-2 marker.
+// Encrypted transfer: text is null for encrypted messages; payload is the raw on-chain encrypted bytes.
 export const encryptedTransfer = {
 	type: 257,
 	timestamp: 1682039885000,
@@ -100,9 +101,10 @@ export const encryptedTransfer = {
 	signerPublicKey: alice.publicKey,
 	recipientAddress: bob.address,
 	message: {
-		type: 2,
+		type: 'encrypted',
 		text: null,
-		payload: '02deadbeefcafe'
+		payload: 'deadbeefcafe',
+		native: { type: 2 }
 	},
 	mosaics: [{
 		id: 'nem.xem',
