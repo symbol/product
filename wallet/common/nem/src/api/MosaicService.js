@@ -50,7 +50,7 @@ export class MosaicService {
 
 		const fetchNamespaceDefinitions = Object.entries(namespaceGroups).map(async ([namespaceId, ids]) => {
 			try {
-				const endpoint = `${networkProperties.nodeUrl}/mosaic/definition/page?namespace=${namespaceId}&pageSize=100`;
+				const endpoint = `${networkProperties.nodeUrl}/namespace/mosaic/definition/page?namespace=${namespaceId}&pageSize=100`;
 				const response = await this.#makeRequest(endpoint);
 
 				for (const wrapper of (response.data || [])) {
@@ -76,18 +76,19 @@ export class MosaicService {
 	 * @returns {Promise<Mosaic[]>}
 	 */
 	fetchAccountMosaics = async (networkProperties, address) => {
-		const [mosaicsDTO, definitionsDTO] = await Promise.all([
-			this.#makeRequest(`${networkProperties.nodeUrl}/account/mosaic/owned?address=${address}`),
-			this.#makeRequest(`${networkProperties.nodeUrl}/account/mosaic/owned/definition?address=${address}`)
-		]);
+		const mosaicsDTO = await this.#makeRequest(`${networkProperties.nodeUrl}/account/mosaic/owned?address=${address}`);
+		const ownedMosaics = mosaicsDTO.data || [];
 
-		const mosaicInfos = Object.fromEntries(definitionsDTO.data.map(wrapper => {
-			const info = mosaicInfoFromDTO(wrapper.mosaic || wrapper);
+		// Resolve definitions for the owned mosaic ids by their namespace. The native currency (nem.xem) has
+		// no on-chain mosaic definition, so seed its info from networkProperties.networkCurrency.
+		const mosaicIds = ownedMosaics.map(mosaic => mosaicIdFromRaw(mosaic.mosaicId));
+		const mosaicInfos = await this.fetchMosaicInfos(networkProperties, mosaicIds);
 
-			return [info.id, info];
-		}));
+		const { mosaicId: nativeId, name: nativeName, divisibility: nativeDivisibility } = networkProperties.networkCurrency;
+		if (mosaicIds.includes(nativeId) && !mosaicInfos[nativeId])
+			mosaicInfos[nativeId] = { id: nativeId, name: nativeName, divisibility: nativeDivisibility };
 
-		return mosaicListFromDTO(mosaicsDTO.data, mosaicInfos);
+		return mosaicListFromDTO(ownedMosaics, mosaicInfos);
 	};
 }
 

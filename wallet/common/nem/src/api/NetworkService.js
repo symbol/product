@@ -4,7 +4,7 @@ import {
 	BLOCK_GENERATION_TARGET_TIME,
 	FEE_PER_MESSAGE_CHUNK,
 	FEE_PER_MOSAIC,
-	MIN_FEE,
+	MOSAIC_DEFINITION_CREATION_FEE,
 	NEM_EPOCH,
 	NEM_WS_PATH,
 	NETWORK_CURRENCY_DIVISIBILITY,
@@ -59,7 +59,9 @@ export class NetworkService {
 			this.#makeRequest(`${nodeUrl}/time-sync/network-time`)
 		]);
 
-		const networkTypeId = nodeInfo.metaData.networkId;
+		// NIS serializes metaData.networkId as a signed byte (testnet 0x98 -> -104); normalize to the
+		// unsigned byte value so networkTypeToIdentifier matches NetworkType (0x68 -> 104, 0x98 -> 152).
+		const networkTypeId = nodeInfo.metaData.networkId & 0xFF;
 		const networkIdentifier = networkTypeToIdentifier(networkTypeId);
 		const chainHeight = parseInt(chainInfo.height);
 
@@ -72,19 +74,23 @@ export class NetworkService {
 			blockGenerationTargetTime: BLOCK_GENERATION_TARGET_TIME,
 			epochAdjustment: Math.floor(NEM_EPOCH / 1000),
 			networkTime: networkTime.sendTimeStamp,
-			// NEM fees are deterministic protocol constants; assemble the chain's fee schedule
-			// here so the fee calculation logic reads it from networkProperties (see utils/fee.js).
+			// NEM fees are deterministic protocol constants; assemble the chain's on-chain fee
+			// schedule here so the fee calculation logic reads it from networkProperties (utils/fee.js).
 			transactionFees: {
-				minFee: MIN_FEE,
 				baseFee: BASE_FEE,
 				perMosaicFee: FEE_PER_MOSAIC,
 				perMessageChunkFee: FEE_PER_MESSAGE_CHUNK,
 				aggregateModificationFee: AGGREGATE_MODIFICATION_FEE,
-				rootNamespaceFee: ROOT_NAMESPACE_FEE,
-				subNamespaceFee: SUB_NAMESPACE_FEE,
 				xemTierAmount: XEM_TIER_AMOUNT,
 				xemFeePerTier: XEM_FEE_PER_TIER,
 				xemTransferFeeMax: XEM_TRANSFER_FEE_MAX
+			},
+			// Rental / creation fees are paid to a dedicated fee sink separately from the transaction
+			// fee (NEM NIS API Documentation fee table), so they are exposed apart from transactionFees.
+			rentalFees: {
+				rootNamespaceFee: ROOT_NAMESPACE_FEE,
+				subNamespaceFee: SUB_NAMESPACE_FEE,
+				mosaicDefinitionFee: MOSAIC_DEFINITION_CREATION_FEE
 			},
 			networkCurrency: {
 				name: NETWORK_CURRENCY_NAME,

@@ -30,7 +30,7 @@ export class NamespaceService {
 	 * @returns {Promise<Namespace>}
 	 */
 	fetchNamespaceInfo = async (networkProperties, namespaceId) => {
-		const url = `${networkProperties.nodeUrl}/namespace/${namespaceId}`;
+		const url = `${networkProperties.nodeUrl}/namespace?namespace=${namespaceId}`;
 		const response = await this.#makeRequest(url);
 		
 		return namespaceFromDTO(response);

@@ -61,6 +61,9 @@ export class TransactionService {
 	 * @returns {Promise<Transaction>}
 	 */
 	fetchAccountTransaction = async (networkProperties, currentAccount, hash) => {
+		// NOTE: /transaction/get?hash= is not part of the official NEM NIS API documentation (NIS lookup is
+		// account-scoped: /account/transfers/all?address=&hash= + /account/unconfirmedTransactions). This
+		// relies on a NIS deployment that exposes /transaction/get; revisit if targeting stock NIS.
 		const url = `${networkProperties.nodeUrl}/transaction/get?hash=${hash}`;
 		const transactionDTO = await this.#makeRequest(url);
 		const transactions = await this.resolveTransactionDTOs(
@@ -80,6 +83,8 @@ export class TransactionService {
 	 */
 	fetchTransactionStatus = async (networkProperties, hash) => {
 		try {
+			// NOTE: /transaction/get is not in the official NEM docs and this method has no account address
+			// to use the documented account-scoped lookups — relies on a NIS deployment exposing it.
 			await this.#makeRequest(`${networkProperties.nodeUrl}/transaction/get?hash=${hash}`);
 			
 			return { group: TransactionGroup.CONFIRMED };
@@ -126,15 +131,20 @@ export class TransactionService {
 	};
 
 	announceTransactionToNode = async (nodeUrl, signedTransaction, group = TransactionAnnounceGroup.DEFAULT) => {
+		// NEM announces every transaction through a single endpoint; a cosignature is itself a
+		// transaction (cosignature_v1) and is announced the same way — there is no dedicated route.
 		const endpointMap = {
 			[TransactionAnnounceGroup.DEFAULT]: '/transaction/announce',
-			[TransactionAnnounceGroup.COSIGNATURE]: '/transaction/announce/cosignature'
+			[TransactionAnnounceGroup.COSIGNATURE]: '/transaction/announce'
 		};
 		const endpoint = endpointMap[group] ?? endpointMap[TransactionAnnounceGroup.DEFAULT];
 		try {
-			return await this.#makeRequest(`${nodeUrl}${endpoint}`, { 
-				method: 'POST', 
-				body: signedTransaction.dto 
+			return await this.#makeRequest(`${nodeUrl}${endpoint}`, {
+				method: 'POST',
+				body: JSON.stringify(signedTransaction.dto),
+				headers: {
+					'Content-Type': 'application/json'
+				}
 			});
 		} catch (error) {
 			throw new ApiError(`Failed to announce transaction: ${error.message}`);
