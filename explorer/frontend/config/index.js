@@ -63,8 +63,11 @@ export const createPublicAppConfig = () => ({
 	...getVariantConfig()
 });
 
+export const serializeAppConfig = appConfig => JSON.stringify(appConfig).replace(/</g, '\\u003c');
+
 const publicAppConfig = createPublicAppConfig();
 
 const isClientSide = typeof window !== 'undefined';
+const getClientAppConfig = () => window.appConfig || window['__NEXT_DATA__']?.props?.appConfig || publicAppConfig;
 
-export default isClientSide ? window.appConfig : publicAppConfig;
+export default isClientSide ? getClientAppConfig() : publicAppConfig;

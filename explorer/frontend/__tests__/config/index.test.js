@@ -67,4 +67,44 @@ describe('config', () => {
 			PLATFORM: 'catapult'
 		})).toThrow('NEXT_PUBLIC_PLATFORM or PLATFORM must be set to either "nem" or "symbol".');
 	});
+
+	it('uses Next app config on client before the inline appConfig script executes', () => {
+		// Arrange:
+		const originalAppConfig = window.appConfig;
+		const originalNextData = window['__NEXT_DATA__'];
+		delete window.appConfig;
+		window['__NEXT_DATA__'] = {
+			props: {
+				appConfig: {
+					PLATFORM: 'nem',
+					SOCIAL_URL_GITHUB: 'https://github.com/symbol'
+				}
+			}
+		};
+		jest.resetModules();
+
+		// Act:
+		const config = require('@/config').default;
+
+		// Assert:
+		expect(config.SOCIAL_URL_GITHUB).toBe('https://github.com/symbol');
+
+		// Cleanup:
+		window.appConfig = originalAppConfig;
+		window['__NEXT_DATA__'] = originalNextData;
+	});
+
+	it('escapes app config before injecting it into the inline bootstrap script', () => {
+		// Arrange:
+		const { serializeAppConfig } = require('@/config');
+
+		// Act:
+		const serializedConfig = serializeAppConfig({
+			SOCIAL_URL_GITHUB: '</script><script>alert(1)</script>'
+		});
+
+		// Assert:
+		expect(serializedConfig).toBe('{"SOCIAL_URL_GITHUB":"\\u003c/script>\\u003cscript>alert(1)\\u003c/script>"}');
+		expect(serializedConfig).not.toContain('</script>');
+	});
 });
