@@ -1,4 +1,4 @@
-import { fetchChainHight } from '@/api/blocks';
+import { fetchChainHeight } from '@/api/blocks';
 import { fetchNamespacePage } from '@/api/namespaces';
 import ItemNamespaceMobile from '@/components/ItemNamespaceMobile';
 import Section from '@/components/Section';
@@ -27,7 +27,7 @@ export const getServerSideProps = async ({ locale }) => {
 const Blocks = ({ namespaces }) => {
 	const { t } = useTranslation();
 	const { requestNextPage, data, isLoading, pageNumber, isLastPage, isError } = usePagination(fetchNamespacePage, namespaces);
-	const chainHeight = useAsyncCall(fetchChainHight, 0);
+	const chainHeight = useAsyncCall(fetchChainHeight, 0);
 
 	const tableColumns = [
 		{

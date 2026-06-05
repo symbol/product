@@ -98,7 +98,7 @@ describe('MosaicInfo', () => {
 			const pageSectionText = 'section_mosaic';
 			const mosaicNameText = mosaicInfo.name;
 			const creatorText = mosaicInfo.creator;
-			const spy = jest.spyOn(BlockService, 'fetchChainHight');
+			const spy = jest.spyOn(BlockService, 'fetchChainHeight');
 			spy.mockImplementation(() => 10000);
 
 			// Act:
@@ -119,7 +119,7 @@ describe('MosaicInfo', () => {
 				namespaceExpirationHeight,
 				isUnlimitedDuration
 			};
-			const spy = jest.spyOn(BlockService, 'fetchChainHight');
+			const spy = jest.spyOn(BlockService, 'fetchChainHeight');
 			spy.mockImplementation(() => chainHeight);
 
 			// Act:
@@ -166,7 +166,7 @@ describe('MosaicInfo', () => {
 	describe('mosaic flags', () => {
 		const runFlagTest = async (mosaicInfo, expectedLabelText, expectedIconAlt) => {
 			// Arrange:
-			jest.spyOn(BlockService, 'fetchChainHight').mockImplementation(() => 1000);
+			jest.spyOn(BlockService, 'fetchChainHeight').mockImplementation(() => 1000);
 
 			// Act:
 			render(<MosaicInfo mosaicInfo={mosaicInfo} />);
@@ -234,7 +234,7 @@ describe('MosaicInfo', () => {
 	describe('mosaic distribution', () => {
 		const runDistributionTest = async (tabToPress, expectedTextList) => {
 			// Arrange:
-			jest.spyOn(BlockService, 'fetchChainHight').mockImplementation(() => 1);
+			jest.spyOn(BlockService, 'fetchChainHeight').mockImplementation(() => 1);
 			const mosaicInfo = mosaicInfoResult;
 			const preloadedTransactions = transactionPageResult.data;
 			const preloadedAccounts = accountPageResult.data;
@@ -286,7 +286,7 @@ describe('MosaicInfo', () => {
 	describe('mosaic description', () => {
 		const runDescriptionTest = (mosaicInfo, expectedText) => {
 			// Arrange:
-			jest.spyOn(BlockService, 'fetchChainHight').mockImplementation(() => 1);
+			jest.spyOn(BlockService, 'fetchChainHeight').mockImplementation(() => 1);
 
 			// Act:
 			render(<MosaicInfo mosaicInfo={mosaicInfo} />);

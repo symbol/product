@@ -1,4 +1,4 @@
-import { fetchBlockInfo, fetchChainHight } from '@/api/blocks';
+import { fetchBlockInfo, fetchChainHeight } from '@/api/blocks';
 import { fetchTransactionPage } from '@/api/transactions';
 import Field from '@/components/Field';
 import FieldTimestamp from '@/components/FieldTimestamp';
@@ -45,7 +45,7 @@ const BlockInfo = ({ blockInfo }) => {
 		[]
 	);
 	const transactionPagination = useClientSidePagination(transactionInitialPagination.data);
-	const chainHeight = useAsyncCall(fetchChainHight, 0);
+	const chainHeight = useAsyncCall(fetchChainHeight, 0);
 	const isSafeBlock = chainHeight > 0 && chainHeight - blockInfo.height > config.BLOCKCHAIN_UNWIND_LIMIT;
 
 	const tableColumns = [

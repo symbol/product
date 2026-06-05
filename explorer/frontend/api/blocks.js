@@ -25,7 +25,7 @@ export const fetchBlockPage = async searchParams => {
  * Fetches the chain height.
  * @returns {Promise<number>} the chain height
  */
-export const fetchChainHight = async () => {
+export const fetchChainHeight = async () => {
 	const blockPage = await fetchBlockPage({ pageSize: 1 });
 
 	return blockPage.data[0].height;

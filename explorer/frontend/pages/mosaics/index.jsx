@@ -1,4 +1,4 @@
-import { fetchChainHight } from '@/api/blocks';
+import { fetchChainHeight } from '@/api/blocks';
 import { fetchMosaicPage } from '@/api/mosaics';
 import FieldTimestamp from '@/components/FieldTimestamp';
 import ItemMosaicMobile from '@/components/ItemMosaicMobile';
@@ -29,7 +29,7 @@ export const getServerSideProps = async ({ locale }) => {
 const Mosaics = ({ mosaics }) => {
 	const { t } = useTranslation();
 	const { requestNextPage, data, isLoading, isLastPage, isError } = usePagination(fetchMosaicPage, mosaics);
-	const chainHeight = useAsyncCall(fetchChainHight, 0);
+	const chainHeight = useAsyncCall(fetchChainHeight, 0);
 
 	const tableColumns = [
 		{

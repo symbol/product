@@ -1,4 +1,4 @@
-import { fetchChainHight } from '@/api/blocks';
+import { fetchChainHeight } from '@/api/blocks';
 import { fetchNamespaceInfo } from '@/api/namespaces';
 import Avatar from '@/components/Avatar';
 import Field from '@/components/Field';
@@ -68,8 +68,8 @@ const NamespaceInfo = ({ namespaceInfo }) => {
 	];
 
 	useEffect(() => {
-		const fetchChainHeight = async () => {
-			const chainHeight = await fetchChainHight();
+		const loadChainHeight = async () => {
+			const chainHeight = await fetchChainHeight();
 			const expireIn = namespaceInfo.expirationHeight - chainHeight;
 			const isExpired = expireIn < 0;
 			const expirationText = namespaceInfo.isUnlimitedDuration
@@ -82,7 +82,7 @@ const NamespaceInfo = ({ namespaceInfo }) => {
 			setExpirationText(expirationText);
 			setProgressType(progressType);
 		};
-		fetchChainHeight();
+		loadChainHeight();
 	}, [namespaceInfo]);
 
 	return (

@@ -69,7 +69,7 @@ describe('NamespaceInfo', () => {
 			const namespaceNameText = namespaceInfo.name;
 			const mosaicNameText = namespaceInfo.namespaceMosaics[0].data[0].name;
 			const creatorText = namespaceInfo.creator;
-			const spy = jest.spyOn(BlockService, 'fetchChainHight');
+			const spy = jest.spyOn(BlockService, 'fetchChainHeight');
 			spy.mockImplementation(() => 10000);
 
 			// Act:
@@ -93,7 +93,7 @@ describe('NamespaceInfo', () => {
 				expirationHeight,
 				isUnlimitedDuration
 			};
-			const spy = jest.spyOn(BlockService, 'fetchChainHight');
+			const spy = jest.spyOn(BlockService, 'fetchChainHeight');
 			spy.mockImplementation(() => chainHeight);
 
 			// Act:

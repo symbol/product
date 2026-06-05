@@ -1,5 +1,5 @@
 import { fetchAccountPage } from '@/api/accounts';
-import { fetchChainHight } from '@/api/blocks';
+import { fetchChainHeight } from '@/api/blocks';
 import { fetchMosaicInfo } from '@/api/mosaics';
 import { fetchTransactionPage } from '@/api/transactions';
 import Avatar from '@/components/Avatar';
@@ -116,8 +116,8 @@ const MosaicInfo = ({ mosaicInfo, preloadedTransactions, preloadedAccounts }) =>
 	];
 
 	useEffect(() => {
-		const fetchChainHeight = async () => {
-			const chainHeight = await fetchChainHight();
+		const loadChainHeight = async () => {
+			const chainHeight = await fetchChainHeight();
 			const expireIn = mosaicInfo.namespaceExpirationHeight - chainHeight;
 			const isExpired = expireIn < 0;
 			const expirationText = mosaicInfo.isUnlimitedDuration
@@ -130,7 +130,7 @@ const MosaicInfo = ({ mosaicInfo, preloadedTransactions, preloadedAccounts }) =>
 			setExpirationText(expirationText);
 			setProgressType(progressType);
 		};
-		fetchChainHeight();
+		loadChainHeight();
 		accountPagination.initialRequest();
 		transactionPagination.initialRequest();
 	}, [mosaicInfo]);

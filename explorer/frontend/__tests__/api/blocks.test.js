@@ -1,6 +1,6 @@
 import { runApiTest } from '../test-utils/api';
 import { blockInfoResponse, blockInfoResult, blockPageResponse, blockPageResult } from '../test-utils/blocks';
-import { fetchBlockInfo, fetchBlockPage, fetchChainHight } from '@/api/blocks';
+import { fetchBlockInfo, fetchBlockPage, fetchChainHeight } from '@/api/blocks';
 
 jest.mock('@/utils/server', () => {
 	return {
@@ -37,7 +37,7 @@ describe('api/blocks', () => {
 		});
 	});
 
-	describe('fetchChainHight', () => {
+	describe('fetchChainHeight', () => {
 		it('fetch chain height', async () => {
 			// Arrange:
 			const params = null;
@@ -45,7 +45,7 @@ describe('api/blocks', () => {
 			const expectedResult = 4695085;
 
 			// Act + Assert:
-			await runApiTest(fetchChainHight, params, blockPageResponse, expectedURL, expectedResult);
+			await runApiTest(fetchChainHeight, params, blockPageResponse, expectedURL, expectedResult);
 		});
 	});
 });
