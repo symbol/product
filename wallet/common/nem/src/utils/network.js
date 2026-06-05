@@ -1,8 +1,8 @@
 import { BLOCK_GENERATION_TARGET_TIME, NetworkIdentifier, NetworkType } from '../constants';
 
 /**
- * Converts a NEM network type byte to a network identifier string.
- * @param {number} networkType - The network type (104 for mainnet, 152 for testnet).
+ * Converts a network type to a network identifier.
+ * @param {number} networkType - The network type.
  * @returns {string} The network identifier.
  */
 export const networkTypeToIdentifier = networkType => {

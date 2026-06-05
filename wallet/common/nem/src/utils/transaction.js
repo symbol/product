@@ -1,14 +1,13 @@
 import { transactionToNem } from './transaction-to-nem';
 import {
 	BASE_FEE,
-	MessageType,
 	NEM_EPOCH,
 	NETWORK_CURRENCY_DIVISIBILITY,
 	NETWORK_CURRENCY_ID,
 	SINGLE_TRANSACTION_DEADLINE_HOURS,
 	TransactionType
 } from '../constants';
-import { PrivateKey, PublicKey, utils } from 'symbol-sdk';
+import { PrivateKey, PublicKey } from 'symbol-sdk';
 import { MessageEncoder, NemFacade } from 'symbol-sdk/nem';
 import { SdkError, TransactionBundle } from 'wallet-common-core';
 
@@ -80,27 +79,25 @@ export const isIncomingTransaction = (transaction, currentAccount) =>
 	transaction.recipientAddress === currentAccount.address;
 
 /**
- * Encodes a plain text message as a NEM message payload hex string.
- * Prepends the PlainText type byte (0x01).
+ * Encodes a plain text message as a NEM message payload hex string (the raw on-chain message bytes).
  * @param {string} messageText - The plain text message to encode.
  * @returns {string} The encoded message payload hex string.
  */
 export const encodePlainMessage = messageText => {
 	const bytes = new TextEncoder().encode(messageText);
 	
-	return Buffer.from([MessageType.PLAIN_TEXT, ...bytes]).toString('hex');
+	return Buffer.from(bytes).toString('hex');
 };
 
 /**
- * Decodes a plain text message from a NEM message payload hex string.
- * Skips the leading type byte.
+ * Decodes a plain text message from a NEM message payload hex string (the raw on-chain message bytes).
  * @param {string} messagePayloadHex - The message payload hex string.
  * @returns {string} The decoded plain text message.
  */
 export const decodePlainMessage = messagePayloadHex => {
 	const bytes = Buffer.from(messagePayloadHex, 'hex');
-	
-	return bytes.slice(1).toString('utf-8');
+
+	return bytes.toString('utf-8');
 };
 
 /**
@@ -116,9 +113,7 @@ export const encryptMessage = (messageText, recipientPublicKey, privateKey) => {
 	const messageBytes = Buffer.from(messageText, 'utf-8');
 	const encodedBytes = messageEncoder.encodeDeprecated(new PublicKey(recipientPublicKey), messageBytes);
 
-	// Prepend the encrypted-message type byte (0x02) to match the NEM protocol message payload format,
-	// consistent with encodePlainMessage prepending 0x01 for plain text.
-	return Buffer.from([MessageType.ENCRYPTED_TEXT, ...encodedBytes]).toString('hex');
+	return Buffer.from(encodedBytes).toString('hex');
 };
 
 /**
@@ -131,9 +126,7 @@ export const encryptMessage = (messageText, recipientPublicKey, privateKey) => {
 export const decryptMessage = (encryptedMessageHex, senderOrRecipientPublicKey, privateKey) => {
 	const keyPair = new NemFacade.KeyPair(new PrivateKey(privateKey));
 	const messageEncoder = new MessageEncoder(keyPair);
-	// Skip the leading type byte (0x02) that is part of the NEM message payload format,
-	// consistent with decodePlainMessage skipping 0x01 for plain text.
-	const encodedBytes = Buffer.from(encryptedMessageHex, 'hex').slice(1);
+	const encodedBytes = Buffer.from(encryptedMessageHex, 'hex');
 	const { message } = messageEncoder.tryDecodeDeprecated(
 		new PublicKey(senderOrRecipientPublicKey),
 		encodedBytes
@@ -166,15 +159,15 @@ export const signTransaction = (networkIdentifier, transaction, privateKey) => {
 
 	const signature = facade.signTransaction(keyPair, nemTransaction);
 	const hash = facade.hashTransaction(nemTransaction);
-	const serialized = nemTransaction.serialize();
+
+	// The announce `data` must be the non-verifiable serialization (without the signature field). The SDK's
+	// attachSignature returns the `{ data, signature }` payload NIS expects; raw serialize() embeds an empty
+	// signature field that shifts every later field, so NIS rejects the transaction (no recipient).
+	const dto = JSON.parse(facade.transactionFactory.constructor.attachSignature(nemTransaction, signature));
 
 	return {
 		hash: hash.toString(),
-		payload: utils.uint8ToHex(serialized),
-		dto: {
-			data: utils.uint8ToHex(serialized),
-			signature: signature.toString()
-		}
+		dto
 	};
 };
 
@@ -223,15 +216,11 @@ export const cosignTransaction = (transaction, privateKey) => {
 
 	const signature = facade.signTransaction(keyPair, cosignatureTransaction);
 	const cosignHash = facade.hashTransaction(cosignatureTransaction);
-	const serialized = cosignatureTransaction.serialize();
+	const dto = JSON.parse(facade.transactionFactory.constructor.attachSignature(cosignatureTransaction, signature));
 
 	return {
 		hash: cosignHash.toString(),
 		signerPublicKey: keyPair.publicKey.toString(),
-		payload: utils.uint8ToHex(serialized),
-		dto: {
-			data: utils.uint8ToHex(serialized),
-			signature: signature.toString()
-		}
+		dto
 	};
 };

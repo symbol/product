@@ -1,7 +1,7 @@
 import { addressFromPublicKey } from './account';
 import { getMosaicAmount, mosaicIdFromRaw, mosaicListFromDTO } from './mosaic';
 import { decodePlainMessage, isIncomingTransaction, isOutgoingTransaction, nemTimestampToDate } from './transaction';
-import { MessageType, NETWORK_CURRENCY_ID, TransactionType } from '../constants';
+import { MessageType, NETWORK_CURRENCY_ID, NativeMessageType, TransactionType, nativeToCommonMessageType } from '../constants';
 import { absoluteToRelativeAmount } from 'wallet-common-core';
 
 /** @typedef {import('../types/Account').PublicAccount} PublicAccount */
@@ -121,14 +121,15 @@ const transferTransactionFromDTO = (transactionDTO, config) => {
 	};
 
 	if (transaction.message?.payload) {
-		const { type, payload } = transaction.message;
-		// NEM message payloads omit the type-marker byte that the wallet's internal format expects, so prepend it.
-		const normalizedPayload = `${type.toString(16).padStart(2, '0')}${payload}`;
+		const nativeType = transaction.message.type;
+		const { payload } = transaction.message;
+		const text = nativeType === NativeMessageType.PlainText ? decodePlainMessage(payload) : null;
 
 		transactionBody.message = {
-			type,
-			text: type === MessageType.PLAIN_TEXT ? decodePlainMessage(normalizedPayload) : null,
-			payload: normalizedPayload
+			type: nativeToCommonMessageType[nativeType] ?? MessageType.RAW,
+			text,
+			payload,
+			native: { type: nativeType }
 		};
 	}
 
