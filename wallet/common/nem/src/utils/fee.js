@@ -1,7 +1,10 @@
 import {
-	MESSAGE_TYPE_PREFIX_LENGTH,
+	MAX_MOSAIC_QUANTITY,
+	MESSAGE_FEE_CHUNK_SIZE,
 	NETWORK_CURRENCY_DIVISIBILITY,
-	TransactionType
+	SMALL_BUSINESS_MOSAIC_MAX_SUPPLY,
+	TransactionType,
+	XEM_EQUIVALENT_NUMERATOR
 } from '../constants';
 import { absoluteToRelativeAmount, relativeToAbsoluteAmount } from 'wallet-common-core';
 
@@ -43,14 +46,9 @@ export const createTransactionFeeTiers = (networkProperties, amount) => {
 	};
 };
 
-// Private constants for the mosaic fee formula (NEM API docs).
-const MAX_MOSAIC_QUANTITY = 9_000_000_000_000_000n;
-const XEM_EQUIVALENT_NUMERATOR = 8_999_999_999n;
-const SMALL_BUSINESS_MOSAIC_MAX_SUPPLY = 10_000;
-
 /**
  * Calculates the absolute fee in microXEM for a single non-native mosaic in a transfer.
- * Implements the NEM API docs formula:
+ * Implements the NEM NIS API Documentation formula:
  *   xemEquivalent = floor((8,999,999,999 * q) / (s * 10^d))
  *   supplyRelatedAdjustment = floor(0.8 * ln(9,000,000,000,000,000 / (s * 10^d)))
  *   unweightedFee = max(1, floor(xemEquivalent / 10,000) - supplyRelatedAdjustment)
@@ -97,7 +95,8 @@ const calculateSingleMosaicFeeAbsolute = (mosaic, defaultDivisibility, fees) => 
 
 /**
  * Calculates the absolute fee in microXEM for a transfer transaction (NEM Technical Reference §4.1).
- * fee = XEM-amount fee + per-mosaic fee + message fee, floored at fees.minFee.
+ * fee = XEM-amount fee + per-mosaic fee + message fee. Each part is a multiple of the 0.05 XEM fee
+ * unit; the XEM-amount part is floored at one unit when XEM is actually transferred.
  * @param {number|string} xemAmount - Native XEM amount transferred, in relative (whole-XEM) units.
  * @param {Mosaic[]} mosaics - Non-native mosaics attached to the transfer.
  * @param {number} divisibility - Default divisibility for mosaics lacking their own.
@@ -107,27 +106,32 @@ const calculateSingleMosaicFeeAbsolute = (mosaic, defaultDivisibility, fees) => 
  * @private
  */
 const calculateTransferFeeAbsolute = (xemAmount, mosaics, divisibility, messagePayloadHex, fees) => {
-	// Micro XEM are ignored per NEM Technical Reference §4; work in whole XEM.
+	// Micro XEM are ignored per the NEM NIS API Documentation fee table ("All calculation are done with
+	// rounded amounts of XEM"); work in whole XEM.
 	const wholeXemAmount = Math.floor(Number(xemAmount) || 0);
 
-	// XEM-based fee: 0.05 XEM per 10,000 XEM, capped at 1.25 XEM (NEM Technical Reference §4.1).
-	// No minimum is applied to the XEM component; the overall minimum is fees.minFee.
-	const xemFee = Math.min(
-		Math.floor(wholeXemAmount / fees.xemTierAmount) * fees.xemFeePerTier,
-		fees.xemTransferFeeMax
-	);
+	// XEM-amount fee: 0.05 XEM per commenced 10,000 XEM transferred, capped at 1.25 XEM
+	// (NEM Technical Reference §4.1; NEM NIS API Documentation fee table: 45,000 XEM → 0.20, 500,000 XEM → 1.25).
+	// An actual XEM transfer is floored at one 0.05 XEM unit; a transfer that carries no native XEM
+	// (mosaic-only or message-only) has no XEM-amount fee — only the mosaic and message fees apply.
+	const xemFee = wholeXemAmount > 0
+		? Math.min(Math.max(1, Math.floor(wholeXemAmount / fees.xemTierAmount)) * fees.xemFeePerTier, fees.xemTransferFeeMax)
+		: 0;
 
 	const mosaicFee = (mosaics || []).reduce((sum, mosaic) => sum + calculateSingleMosaicFeeAbsolute(mosaic, divisibility, fees), 0);
 
-	// The payload carries a 1-byte type marker (see encodePlainMessage) that is not part of the
-	// on-chain message bytes, so exclude it when sizing the fee.
+	// payload is the raw on-chain message bytes (no wallet-internal type marker), so its byte length is
+	// the message length used for the fee.
 	const messageLength = messagePayloadHex
-		? Math.max(0, (messagePayloadHex.length / 2) - MESSAGE_TYPE_PREFIX_LENGTH)
+		? messagePayloadHex.length / 2
 		: 0;
-	// Per NEM Technical Reference §4.1: (floor(messageLength / 32) + 1) commenced 32-byte chunks.
-	const messageFee = messageLength > 0 ? (Math.floor(messageLength / 32) + 1) * fees.perMessageChunkFee : 0;
+	// Message fee per NEM Technical Reference §4.1: 0.05 XEM per commenced 32-byte chunk,
+	// i.e. (floor(messageLength / 32) + 1) chunks.
+	const messageFee = messageLength > 0
+		? (Math.floor(messageLength / MESSAGE_FEE_CHUNK_SIZE) + 1) * fees.perMessageChunkFee
+		: 0;
 
-	return Math.max(xemFee + mosaicFee + messageFee, fees.minFee);
+	return xemFee + mosaicFee + messageFee;
 };
 
 /**
@@ -146,37 +150,52 @@ const calculateFeeAbsolute = (transaction, networkCurrency, fees) => {
 	switch (transaction.type) {
 	case TransactionType.TRANSFER: {
 		const xemAmount = transaction.mosaics?.find(m => m.id === nativeMosaicId)?.amount || 0;
-		// Exclude the native XEM mosaic from the per-mosaic fee; its cost is covered by the XEM amount fee.
+		// Exclude the native XEM mosaic from the per-mosaic fee; its cost is covered by the XEM-amount fee.
 		const nonNativeMosaics = transaction.mosaics?.filter(m => m.id !== nativeMosaicId) || [];
 		return calculateTransferFeeAbsolute(xemAmount, nonNativeMosaics, effectiveDivisibility, transaction.message?.payload, fees);
 	}
 	case TransactionType.MULTISIG: {
-		// Multisig wrapper fee (0.15 XEM) plus the fee of the wrapped inner transaction (NEM Tech Ref §4.3.3).
+		// Multisig wrapper fee (0.15 XEM) added to the fee of the wrapped inner transaction
+		// (NEM Technical Reference §4.3.3).
 		const innerFee = transaction.innerTransaction
 			? calculateFeeAbsolute(transaction.innerTransaction, networkCurrency, fees)
 			: 0;
 		return fees.baseFee + innerFee;
 	}
 	case TransactionType.MULTISIG_ACCOUNT_MODIFICATION:
-		// Flat fee of 0.5 XEM regardless of modifications (NEM Tech Ref §4.3.1).
+		// Aggregate modification: flat 0.5 XEM regardless of the modifications (NEM Technical Reference §4.3.1).
 		return fees.aggregateModificationFee;
-	case TransactionType.NAMESPACE_REGISTRATION:
-		// Base fee (0.15 XEM) plus namespace rental: 100 XEM for root, 10 XEM for sub-namespace.
-		return fees.baseFee + (transaction.parentId ? fees.subNamespaceFee : fees.rootNamespaceFee);
-	case TransactionType.IMPORTANCE_TRANSFER:
 	case TransactionType.ACCOUNT_KEY_LINK:
+		// Importance transfer / account key link: 0.15 XEM (NEM Technical Reference §4.2).
+		return fees.baseFee;
 	case TransactionType.MULTISIG_COSIGNATURE:
+		// Multisig signature transaction: 0.15 XEM (NEM Technical Reference §4.3.2).
+		return fees.baseFee;
+	case TransactionType.NAMESPACE_REGISTRATION:
+		// Provision namespace transaction fee: 0.15 XEM. The root (100 XEM) / sub (10 XEM) namespace
+		// rental is paid separately to the rental fee sink (see networkProperties.rentalFees), so it
+		// is not part of the transaction fee (NEM NIS API Documentation fee table).
+		return fees.baseFee;
 	case TransactionType.MOSAIC_DEFINITION:
+		// Mosaic definition creation transaction fee: 0.15 XEM. The 10 XEM creation fee is paid
+		// separately to the creation fee sink (networkProperties.rentalFees.mosaicDefinitionFee),
+		// so it is not part of the transaction fee (NEM NIS API Documentation).
+		return fees.baseFee;
 	case TransactionType.MOSAIC_SUPPLY_CHANGE:
+		// Mosaic supply change transaction: 0.15 XEM (NEM NIS API Documentation fee table).
+		return fees.baseFee;
 	default:
 		return fees.baseFee;
 	}
 };
 
 /**
- * Calculates the fee for a given transaction based on its type and content.
- * Handles all NEM transaction types per the NEM Technical Reference §4 and NEM API docs.
- * For MULTISIG, the fee includes the wrapper fee (0.15 XEM) plus the inner transaction fee.
+ * Calculates the on-chain transaction fee for a given transaction based on its type and content.
+ * Handles all NEM transaction types per the NEM Technical Reference §4 and the NEM NIS API
+ * Documentation fee table. For MULTISIG, the fee includes the wrapper fee (0.15 XEM) plus the inner
+ * transaction fee.
+ * Namespace and mosaic-definition rental/creation fees are paid separately to a fee sink
+ * (networkProperties.rentalFees) and are NOT included here.
  * The fee schedule is read from networkProperties.transactionFees (assembled by NetworkService).
  * @param {Transaction} transaction - The transaction object (fee field not required).
  * @param {NetworkProperties} networkProperties - The network properties (transactionFees, networkCurrency).
