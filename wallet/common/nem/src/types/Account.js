@@ -52,3 +52,5 @@
  * @property {string[]} multisigAddresses
  * @property {number} minApproval
  */
+
+export default {};

@@ -5,3 +5,5 @@
  * @property {number} height - Creation height.
  * @property {string} owner - Owner address.
  */
+
+export default {};

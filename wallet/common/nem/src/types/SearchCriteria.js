@@ -9,3 +9,5 @@
 /**
  * @typedef {TransactionSearchCriteria} SearchCriteria
  */
+
+export default {};

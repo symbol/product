@@ -16,6 +16,7 @@
  * @property {number} epochAdjustment - Unix timestamp of NEM epoch in seconds.
  * @property {number} networkTime - NEM network time (ms since NEM epoch).
  * @property {NemTransactionFees} transactionFees
+ * @property {RentalFees} rentalFees
  * @property {NetworkCurrency} networkCurrency
  */
 
@@ -25,13 +26,10 @@
  * from the fee constants. Free-shape per chain — consumed only by the fee calculation
  * logic (utils/fee.js).
  * @typedef {object} NemTransactionFees
- * @property {number} minFee - Minimum flat fee applied to every transaction.
- * @property {number} baseFee - Base flat fee shared by several transaction types.
+ * @property {number} baseFee - Base flat fee shared by several transaction types (0.15 XEM).
  * @property {number} perMosaicFee - Fee per non-native mosaic attached to a transfer.
  * @property {number} perMessageChunkFee - Fee per 32-byte message payload chunk.
  * @property {number} aggregateModificationFee - Multisig account modification fee.
- * @property {number} rootNamespaceFee - Root namespace provisioning rental fee.
- * @property {number} subNamespaceFee - Sub-namespace provisioning rental fee.
  * @property {number} xemTierAmount - Whole-XEM amount per transfer fee tier.
  * @property {number} xemFeePerTier - Fee added per completed XEM tier.
  * @property {number} xemTransferFeeMax - Maximum XEM transfer fee component.
@@ -43,10 +41,12 @@
  */
 
 /**
+ * Rental / creation fees in absolute microXEM. These are paid to a dedicated fee sink, separately
+ * from and in addition to the on-chain transaction fee (NEM NIS API Documentation fee table).
  * @typedef {object} RentalFees
- * @property {number} rootNamespaceFee
- * @property {number} childNamespaceFee
- * @property {number} mosaicFee
+ * @property {number} rootNamespaceFee - Root namespace provisioning rental fee (100 XEM).
+ * @property {number} subNamespaceFee - Sub-namespace provisioning rental fee (10 XEM).
+ * @property {number} mosaicDefinitionFee - Mosaic definition creation fee (10 XEM).
  */
 
 /**
@@ -68,3 +68,5 @@
  * @property {TransactionFeeTier} medium - The medium fee.
  * @property {TransactionFeeTier} slow - The minimum acceptable fee.
  */
+
+export default {};
