@@ -119,6 +119,24 @@ describe('next.config', () => {
 		expect(result).not.toContain('color: #eef5f9;');
 	});
 
+	it('keeps Symbol SCSS variables when the variant import is prepended before shared variables', () => {
+		// Arrange:
+		const scss = [
+			'@import "variants/symbol/styles/variables.scss";',
+			'@import "./variables";',
+			'.test { color: $color-background-main; font-family: $font-family-body; }'
+		].join('\n');
+
+		// Act:
+		const result = compileScss(scss);
+
+		// Assert:
+		expect(result).toContain('color: #1b0a29;');
+		expect(result).toContain('font-family: "Protipo-Regular", sans-serif;');
+		expect(result).not.toContain('color: #eef5f9;');
+		expect(result).not.toContain('font-family: Nunito Sans, sans-serif;');
+	});
+
 	it('prepends variant variables when a shared SCSS file does not import shared variables', () => {
 		// Arrange:
 		const nextConfig = loadNextConfig({ NEXT_PUBLIC_PLATFORM: 'symbol' });

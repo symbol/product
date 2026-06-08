@@ -34,11 +34,11 @@ const ValueMosaic = ({
 
 	if (finalMosaicId === config.NATIVE_MOSAIC_ID) {
 		displayedName = isTickerShown ? config.NATIVE_MOSAIC_TICKER : '';
-		imageSrc = '/images/icon-mosaic-native.svg';
+		imageSrc = config.NATIVE_MOSAIC_ICON_SRC || '/images/icon-mosaic-native.svg';
 		title = amount ? `${amount} ${config.NATIVE_MOSAIC_TICKER}` : '';
 	} else {
 		displayedName = mosaicName;
-		imageSrc = '/images/icon-mosaic-custom.svg';
+		imageSrc = config.CUSTOM_MOSAIC_ICON_SRC || '/images/icon-mosaic-custom.svg';
 		title = amount ? `${amount} ${mosaicName}` : '';
 	}
 

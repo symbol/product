@@ -10,6 +10,7 @@ $color-background-mosaic: rgba(241, 243, 244, 15%);
 $color-background-tooltip: #0b0118;
 $layout-background-image: none;
 $layout-background-position: 0 0;
+$layout-background-repeat: no-repeat;
 $layout-background-size: auto;
 $color-background-stripe-even: #221c31;
 $color-background-stripe-hover: #413c4f;
@@ -91,6 +92,7 @@ $border-width-tab: $spacing-base / 4;
 
 // Typography
 $font-body: 400 1rem / 133.33% 'Protipo-Regular', sans-serif;
+$font-family-body: 'Protipo-Regular', sans-serif;
 $font-body-bold: 700 1rem / 133.33% 'Protipo-Bold', sans-serif;
 $font-body-monospace: 700 1rem / 133.33% 'Carbon-Bold', 'JetBrainsMono-Bold', monospace;
 $font-h1: 800 / 4.66rem 'SofiaSansCondensed-ExtraBold', sans-serif;

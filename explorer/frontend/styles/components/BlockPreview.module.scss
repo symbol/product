@@ -37,7 +37,7 @@
 	height: 15.33rem;
 	margin: 1.33rem 1.33rem 0 0;
 	padding: $spacing-base;
-	color: #fff;
+	color: $color-block-cube-text;
 	cursor: pointer;
 	transition: all 0.25s;
 }
@@ -67,36 +67,36 @@
 .blockCube {
 	@extend %block-cube-base;
 
-	background: #50b9ad;
+	background: $color-block-cube-front;
 
 	&::before {
 		@extend %block-cube-base-before;
 
-		background: #038c7c;
+		background: $color-block-cube-top;
 	}
 
 	&::after {
 		@extend %block-cube-base-after;
 
-		background: #016a5e;
+		background: $color-block-cube-right;
 	}
 }
 
 .blockCubeNext {
 	@extend %block-cube-base;
 
-	background: #d1a11f;
+	background: $color-block-next-cube-front;
 
 	&::before {
 		@extend %block-cube-base-before;
 
-		background: #a47e13;
+		background: $color-block-next-cube-top;
 	}
 
 	&::after {
 		@extend %block-cube-base-after;
 
-		background: #6d5208;
+		background: $color-block-next-cube-right;
 	}
 }
 

@@ -56,12 +56,12 @@ const Footer = () => {
 			<div className={layoutStyles.contentContainer}>
 				{!isFooterWithInfoShown && (
 					<div className={styles.footerSimplified}>
-						<CustomImage className={styles.footerLogo} src="/images/logo-nem-outline.svg" alt="NEM" />
+						<CustomImage className={styles.footerLogo} src={config.FOOTER_LOGO_SRC} alt={config.FOOTER_LOGO_ALT} />
 					</div>
 				)}
 				{isFooterWithInfoShown && (
 					<div className={`${layoutStyles.contentContainerInner} ${styles.footerInner}`}>
-						<CustomImage className={styles.footerLogo} src="/images/logo-nem-outline.svg" alt="NEM" />
+						<CustomImage className={styles.footerLogo} src={config.FOOTER_LOGO_SRC} alt={config.FOOTER_LOGO_ALT} />
 						<div className={styles.footerLinksContainer}>
 							<div className={styles.footerLinks}>
 								<h7 className={styles.title}>{t('footer_title_section_1')}</h7>

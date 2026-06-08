@@ -27,6 +27,10 @@
 	height: 3.75rem;
 	margin: auto 0;
 	user-select: none;
+
+	& img {
+		object-fit: contain;
+	}
 }
 
 .searchBar {

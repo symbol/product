@@ -29,7 +29,7 @@ body,
 	color: $color-text-body;
 	font-weight: 400;
 	font-size: 12px;
-	font-family: 'Nunito Sans', sans-serif;
+	font-family: $font-family-body;
 	line-height: 16px;
 	background-color: $color-background-main;
 }
@@ -167,6 +167,55 @@ a {
 	--toastify-toast-background: #fff;
 	--toastify-toast-min-height: 2rem;
 	--toastify-toast-max-height: 5rem;
+}
+
+html[data-platform='symbol'] {
+	--color-background-main: #1b0a29;
+	--color-background-card: #221c31;
+	--color-background-header: #1a1a1a;
+	--color-background-navigation: #1a1a1a;
+	--color-border-navigation: #1a1a1a;
+	--color-background-footer: #000;
+	--color-background-mosaic: rgba(241, 243, 244, 15%);
+	--color-background-tooltip: #0b0118;
+	--color-primary: #26c3f2;
+	--color-primary-light: #26c2f227;
+	--color-secondary: #b429fa;
+	--color-text-body: #fff;
+	--color-text-footer: #fff;
+	--color-text-link: #a7e2f4;
+	--color-text-link-hover: #26c3f2;
+	--color-text-tooltip: #fff;
+	--color-text-textbox-placeholder: #858585;
+	--color-text-button: #221c31;
+	--color-tab-active: #26c3f2;
+	--color-tab-inactive: #858585;
+	--color-filter-active: #221c31;
+	--color-filter-inactive: #26c3f2;
+	--color-info: #9ed1fa;
+	--color-success: #b3e6b3;
+	--color-warning: #f7c06e;
+	--color-warning-light: rgba(247, 192, 110, 20%);
+	--color-danger: #f99;
+	--color-amount-incoming: #b3e6b3;
+	--color-amount-outgoing: #f99;
+	--color-textbox-border: #b429fa;
+	--color-textbox-bg: #1b0a29;
+	--color-button-bg: #26c3f2;
+	--color-block-cube-front: #b429fa;
+	--color-block-cube-top: #7413a4;
+	--color-block-cube-right: #590e7f;
+	--color-block-next-cube-front: #26c3f2;
+	--color-block-next-cube-top: #1593bb;
+	--color-block-next-cube-right: #0f6f8f;
+	--color-block-cube-text: #ffffffa6;
+	--font-family-body: 'Protipo-Regular', sans-serif;
+	--font-family-heading: 'SofiaSansCondensed-ExtraBold', sans-serif;
+	--font-family-monospace: 'Carbon-Bold', 'JetBrainsMono-Bold', monospace;
+	--layout-background-image: none;
+	--layout-background-position: 0 0;
+	--layout-background-repeat: no-repeat;
+	--layout-background-size: auto;
 }
 
 .disable-scroll {

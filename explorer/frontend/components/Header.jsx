@@ -6,6 +6,7 @@ import SearchBar from './SearchBar';
 import TextBox from './TextBox';
 import ValueAccount from './ValueAccount';
 import { search } from '@/api/search';
+import config from '@/config';
 import { BACKEND_HEALTH_ERROR, STORAGE_KEY } from '@/constants';
 import styles from '@/styles/components/Header.module.scss';
 import { createPageHref, formatDate, useStorage, useToggle } from '@/utils';
@@ -167,8 +168,14 @@ const Header = ({ backendStatus }) => {
 	return (
 		<div className={styles.headerWrapper}>
 			<header className={styles.header}>
-				<div className={styles.headerLogo}>
-					<Image src="/images/logo-nem.png" fill alt="Logo" />
+				<div
+					className={styles.headerLogo}
+					style={{
+						width: config.HEADER_LOGO_WIDTH,
+						height: config.HEADER_LOGO_HEIGHT
+					}}
+				>
+					<Image src={config.HEADER_LOGO_SRC} fill alt={config.HEADER_LOGO_ALT} />
 				</div>
 
 				<div className={styles.headerRightSection}>

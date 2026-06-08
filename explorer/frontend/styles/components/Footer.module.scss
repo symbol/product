@@ -35,8 +35,12 @@
 	}
 
 	.footerLogo {
-		width: $spacing-base * 4;
+		width: $spacing-base * 10;
 		height: $spacing-base * 4;
+
+		& img {
+			object-fit: contain;
+		}
 	}
 
 	.footerLinksContainer {
@@ -91,7 +95,7 @@
 		}
 
 		.footerLogo {
-			width: $spacing-base * 5;
+			width: $spacing-base * 12;
 			height: $spacing-base * 5;
 		}
 

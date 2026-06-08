@@ -35,6 +35,11 @@ describe('config', () => {
 		expect(config.NATIVE_MOSAIC_TICKER).toBe('XEM');
 		expect(config.NATIVE_MOSAIC_DIVISIBILITY).toBe(6);
 		expect(config.API_BASE_URL).toBe('https://legacy.backend');
+		expect(config.HEADER_LOGO_SRC).toBe('/images/logo-nem.png');
+		expect(config.FOOTER_LOGO_SRC).toBe('/images/logo-nem-outline.svg');
+		expect(config.NATIVE_MOSAIC_ICON_SRC).toBe('/images/icon-mosaic-native.svg');
+		expect(config.CUSTOM_MOSAIC_ICON_SRC).toBe('/images/icon-mosaic-custom.svg');
+		expect(config.BACKEND_HEALTH_CHECK_ENABLED).toBe(true);
 	});
 
 	it('prefers NEXT_PUBLIC environment variable names', () => {
@@ -55,6 +60,12 @@ describe('config', () => {
 		expect(config.NATIVE_MOSAIC_TICKER).toBe('XYM');
 		expect(config.NATIVE_MOSAIC_DIVISIBILITY).toBe(6);
 		expect(config.API_BASE_URL).toBe('https://symbol.backend');
+		expect(config.HEADER_LOGO_SRC).toBe('/symbol/images/logo-symbol.png');
+		expect(config.HEADER_LOGO_ALT).toBe('Symbol');
+		expect(config.FOOTER_LOGO_SRC).toBe('/symbol/images/logo-symbol.png');
+		expect(config.NATIVE_MOSAIC_ICON_SRC).toBe('/symbol/images/icon-mosaic-native.svg');
+		expect(config.CUSTOM_MOSAIC_ICON_SRC).toBe('/symbol/images/icon-mosaic-custom.svg');
+		expect(config.BACKEND_HEALTH_CHECK_ENABLED).toBe(false);
 		expect(config.SYMBOL_NODE_URL).toBeUndefined();
 	});
 
