@@ -6,6 +6,8 @@ export const healthSyncErrorResponse = {
 		}
 	],
 	isHealthy: false,
-	lastBlockHeight: 94539,
-	lastSyncedAt: '2025-05-15 19:53:27'
+	lastDBHeight: 94539,
+	lastDBSyncedAt: '2025-05-15 19:53:27',
+	nodeHeight: 649261,
+	nodeUp: false
 };

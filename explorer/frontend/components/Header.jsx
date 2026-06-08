@@ -152,7 +152,7 @@ const Header = ({ backendStatus }) => {
 		if (!backendSyncError)
 			return t('message_healthGenericError');
 
-		const lastSyncedAtDateText = formatDate(backendStatus.lastSyncedAt, t, {
+		const lastSyncedAtDateText = formatDate(backendStatus.lastDBSyncedAt, t, {
 			type: 'local',
 			hasTime: true,
 			hasSeconds: true
@@ -160,7 +160,7 @@ const Header = ({ backendStatus }) => {
 
 		return t('message_healthSyncError', {
 			lastSyncedAt: lastSyncedAtDateText,
-			lastBlockHeight: backendStatus.lastBlockHeight
+			lastBlockHeight: backendStatus.lastDBHeight
 		});
 	};
 
