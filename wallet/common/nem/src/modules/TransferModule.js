@@ -50,7 +50,8 @@ export class TransferModule {
 	 * @param {object[]} options.mosaics - Mosaics to transfer.
 	 * @param {string} [options.message] - Message text.
 	 * @param {boolean} [options.isEncrypted] - Whether to encrypt the message.
-	 * @param {boolean} [options.isMultisig] - Whether to wrap in a multisig transaction.
+	 * @param {string} [options.senderPublicKey] - Sender (multisig account) public key. When it differs from the
+	 * current account, the transfer is wrapped in a multisig transaction signed by the current account (cosignatory).
 	 * @param {object} [options.fee] - The fee object. If omitted, defaults to 0.
 	 * @param {string} [password] - Wallet password (required for encrypted messages).
 	 * @returns {Promise<TransactionBundle>}
@@ -61,11 +62,12 @@ export class TransferModule {
 			mosaics,
 			message,
 			isEncrypted,
-			isMultisig,
 			fee
 		} = options;
 
 		const { currentAccount, networkProperties } = this.#walletController;
+		const senderPublicKey = options.senderPublicKey || currentAccount.publicKey;
+		const isMultisig = senderPublicKey !== currentAccount.publicKey;
 
 		if (!isNemAddress(recipientAddress)) {
 			throw new ControllerError(
@@ -97,7 +99,7 @@ export class TransferModule {
 
 		const transferTransaction = {
 			type: TransactionType.TRANSFER,
-			signerPublicKey: currentAccount.publicKey,
+			signerPublicKey: senderPublicKey,
 			recipientAddress,
 			mosaics: mosaics || [],
 			message: messagePayload,
