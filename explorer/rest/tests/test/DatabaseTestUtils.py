@@ -562,7 +562,7 @@ TRANSACTION_MONTH_STATISTIC_VIEW = StatisticTransactionDateRangeView(
 NAMESPACE_VIEWS = [
 	NamespaceView(
 		root_namespace=NAMESPACES[0].root_namespace,
-		owner=str(NAMESPACES[0].owner),
+		owner='NBFWZ4IVRHEIBRCGHLYDS62FSFTBM3VDFA7E6LSQ',
 		registered_height=NAMESPACES[0].registered_height,
 		registered_timestamp=BLOCKS[0].timestamp,
 		expiration_height=NAMESPACES[0].expiration_height,
@@ -577,7 +577,7 @@ NAMESPACE_VIEWS = [
 	),
 	NamespaceView(
 		root_namespace=NAMESPACES[1].root_namespace,
-		owner=str(NAMESPACES[1].owner),
+		owner='NBFWZ4IVRHEIBRCGHLYDS62FSFTBM3VDFA7E6LSQ',
 		registered_height=NAMESPACES[1].registered_height,
 		registered_timestamp=BLOCKS[1].timestamp,
 		expiration_height=NAMESPACES[1].expiration_height,
@@ -598,7 +598,7 @@ NAMESPACE_VIEWS = [
 	),
 	NamespaceView(
 		root_namespace=NAMESPACES[2].root_namespace,
-		owner=str(NAMESPACES[2].owner),
+		owner='NBFWZ4IVRHEIBRCGHLYDS62FSFTBM3VDFA7E6LSQ',
 		registered_height=NAMESPACES[2].registered_height,
 		registered_timestamp=BLOCKS[1].timestamp,
 		expiration_height=NAMESPACES[2].expiration_height,

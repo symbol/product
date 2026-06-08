@@ -136,8 +136,7 @@ class NemDatabase(DatabaseConnectionPool):
 			total_importance=float(total_importance)
 		)
 
-	@staticmethod
-	def _create_namespace_view(result):
+	def _create_namespace_view(self, result):
 		(
 			root_namespace,
 			owner,
@@ -150,7 +149,7 @@ class NemDatabase(DatabaseConnectionPool):
 
 		return NamespaceView(
 			root_namespace=root_namespace,
-			owner=str(PublicKey(owner)),
+			owner=self._format_public_key_to_address(owner),
 			registered_height=registered_height,
 			registered_timestamp=str(registered_timestamp),
 			expiration_height=expiration_height,
