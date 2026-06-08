@@ -41,6 +41,9 @@ builds:
   - name: Wallet Common Symbol
     path: wallet/common/symbol
 
+  - name: Wallet Common Transport
+    path: wallet/common/transport
+
   - name: Wallet Symbol Mobile
     path: wallet/symbol/mobile
 
