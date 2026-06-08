@@ -1,33 +1,36 @@
 const { config, validateConfiguration } = require('./config');
 const twitterRoute = require('./routers');
 const { version } = require('../package');
-const restify = require('restify');
+const cors = require('@fastify/cors');
+const fastify = require('fastify');
 
-const server = restify.createServer({
-	name: 'Twitter Auth Service',
-	version
-});
+const createServer = () => {
+	const server = fastify({
+		logger: false
+	});
 
-server.use(restify.plugins.acceptParser('application/json'));
-server.use(restify.plugins.bodyParser());
-server.use(restify.plugins.queryParser({ mapParams: true }));
+	server.register(cors, {
+		origin: '*',
+		methods: ['GET'],
+		allowedHeaders: ['Content-Type']
+	});
 
-// Setup cross domain access
-server.use((req, res, next) => {
-	res.header('Access-Control-Allow-Origin', '*');
-	res.header('Access-Control-Allow-Headers', 'Content-Type');
-	res.header('Access-Control-Allow-Methods', 'GET');
-	next();
-});
+	validateConfiguration(config);
 
-validateConfiguration(config);
+	// Setup Route
+	twitterRoute(server);
 
-// Setup Route
-twitterRoute(server);
+	return server;
+};
 
-server.listen(config.port, () => {
+const server = createServer();
+
+server.listen({
+	port: config.port,
+	host: '0.0.0.0'
+}).then(address => {
 	// eslint-disable-next-line no-console
-	console.info('%s listening at %s', server.name, server.url);
+	console.info('Twitter Auth Service v%s listening at %s', version, address);
 });
 
-module.exports = server;
+module.exports = createServer;

@@ -10,7 +10,7 @@
 
 ## Overview
 
-Twitter authenticator is independent microservices built with NodeJS and Restify. It issue jwt auth token, and use the token to request testnet tokens.
+Twitter authenticator is independent microservices built with Node.js and Fastify. It issue jwt auth token, and use the token to request testnet tokens.
 
 ## Repository layout
 
@@ -23,7 +23,7 @@ Twitter authenticator is independent microservices built with NodeJS and Restify
 
 ## Requirement
 
-Node.js LTS
+Node.js 24 LTS (recommended)
 
 ## Installation
 
