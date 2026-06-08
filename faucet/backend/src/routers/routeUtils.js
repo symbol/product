@@ -1,6 +1,6 @@
 import { config } from '../config/index.js';
+import HttpError from '../errors/httpError.js';
 import helper from '../utils/helper.js';
-import restifyErrors from 'restify-errors';
 
 const claim = async (protocolFacade, {
 	recipientAddress,
@@ -24,7 +24,7 @@ const claim = async (protocolFacade, {
 	});
 
 	if ('' !== error)
-		return new restifyErrors.BadRequestError(error);
+		throw new HttpError(400, 'BadRequest', error);
 
 	// Announce Transfer Transaction
 	const transactionHash = await protocolFacade.transfer(transferAmount, recipientAddress);
@@ -37,43 +37,36 @@ const claim = async (protocolFacade, {
 };
 
 const routeUtils = {
-	claimRoute: async (req, res, next, protocolFacade) => {
-		const twitterUsername = req.body.twitterHandle;
-		const recipientAddress = req.body.address;
-		const transferAmount = helper.toAbsoluteAmount((parseFloat(req.body.amount).toFixed(config.mosaicDivisibility) || 0));
+	claimRoute: async (request, protocolFacade) => {
+		const twitterUsername = request.body.twitterHandle;
+		const recipientAddress = request.body.address;
+		const transferAmount = helper.toAbsoluteAmount((parseFloat(request.body.amount).toFixed(config.mosaicDivisibility) || 0));
 
-		if (!protocolFacade.isValidAddress(recipientAddress)) {
-			res.send(new restifyErrors.BadRequestError('error_address_invalid'));
-			return next(false);
-		}
+		if (!protocolFacade.isValidAddress(recipientAddress))
+			throw new HttpError(400, 'BadRequest', 'error_address_invalid');
 
-		const result = await claim(protocolFacade, {
+		const response = await claim(protocolFacade, {
 			recipientAddress,
 			transferAmount
 		});
 
-		if (result instanceof Error)
-			return next(result);
-
-		res.send(result);
-
-		// Return result for database insertion
 		return {
-			address: recipientAddress,
-			amount: transferAmount,
-			twitterHandle: twitterUsername
+			response,
+			claimRecord: {
+				address: recipientAddress,
+				amount: transferAmount,
+				twitterHandle: twitterUsername
+			}
 		};
 	},
 
-	configAndBalanceRoute: async (res, next, protocolFacade) => {
+	configAndBalanceRoute: async protocolFacade => {
 		const faucetBalance = await protocolFacade.getAccountBalance(protocolFacade.faucetAddress());
 
-		res.send({
+		return {
 			...protocolFacade.config(),
 			faucetBalance
-		});
-
-		return next(false);
+		};
 	}
 };
 

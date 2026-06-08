@@ -3,25 +3,19 @@ import symbolFacade from '../facade/symbolFacade.js';
 
 const symbolRoute = {
 	register: (server, claimDatabase, authentication) => {
-		server.post('/claim/xym', authentication, (req, res, next) => {
-			routeUtils.claimRoute(req, res, next, symbolFacade).then(result => {
-				if (result) {
-					const { address, amount, twitterHandle } = result;
+		server.post('/claim/xym', { preHandler: authentication }, async request => {
+			const { response, claimRecord } = await routeUtils.claimRoute(request, symbolFacade);
 
-					// Add claimed record into database
-					claimDatabase.insertClaimed({
-						address,
-						amount,
-						twitterHandle,
-						protocol: 'Symbol'
-					});
-				}
+			// Add claimed record into database
+			await claimDatabase.insertClaimed({
+				...claimRecord,
+				protocol: 'Symbol'
 			});
+
+			return response;
 		});
 
-		server.get('/config/xym', (req, res, next) => {
-			routeUtils.configAndBalanceRoute(res, next, symbolFacade);
-		});
+		server.get('/config/xym', async () => routeUtils.configAndBalanceRoute(symbolFacade));
 	}
 };
 

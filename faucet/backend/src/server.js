@@ -1,57 +1,50 @@
 import { config, validateConfiguration } from './config/index.js';
 import ClaimDatabase from './database/ClaimDatabase.js';
 import DatabaseConnection from './database/DatabaseConnection.js';
+import HttpError from './errors/httpError.js';
 import logger from './logger.js';
 import registerFaucet from './routers/index.js';
 import helper from './utils/helper.js';
+import cors from '@fastify/cors';
+import Fastify from 'fastify';
 import jwt from 'jsonwebtoken';
-import restify from 'restify';
-import restifyErrors from 'restify-errors';
 
-const createRestifyServer = db => {
-	const server = restify.createServer({
-		name: 'Faucet Backend Service',
-		version: '1.0.0'
+const createFastifyServer = db => {
+	const server = Fastify({
+		logger: false
 	});
 
-	// Setup cross domain access
-	server.pre((req, res, next) => {
-		if ('OPTIONS' !== req.method)
-			return next();
-
-		res.header('access-control-allow-origin', '*');
-		res.header('access-control-allow-methods', 'POST, OPTIONS');
-		res.header('access-control-allow-headers', 'Content-Type, authToken');
-
-		return res.send(204);
+	server.register(cors, {
+		origin: '*',
+		methods: ['POST', 'OPTIONS'],
+		allowedHeaders: ['Content-Type', 'authToken'],
+		strictPreflight: false
 	});
-
-	server.use((req, res, next) => {
-		res.header('access-control-allow-origin', '*');
-		res.header('vary', 'origin');
-		return next();
-	});
-
-	server.use(restify.plugins.acceptParser('application/json'));
-	server.use(restify.plugins.bodyParser());
-	server.use(restify.plugins.queryParser({ mapParams: true }));
 
 	validateConfiguration(config);
 
-	const authentication = (req, res, next) => {
-		const authToken = req.header('authToken');
+	const authentication = async request => {
+		const authToken = request.headers.authtoken;
 
 		try {
 			const { createdAt, followersCount } = jwt.verify(authToken, config.jwtSecret);
 
-			if (helper.checkTwitterAccount(createdAt, followersCount))
-				next();
-			else
-				next(new restifyErrors.ForbiddenError('error_twitter_requirement_fail'));
+			if (!helper.checkTwitterAccount(createdAt, followersCount))
+				throw new HttpError(403, 'Forbidden', 'error_twitter_requirement_fail');
 		} catch (error) {
-			next(new restifyErrors.ForbiddenError('error_authentication_fail'));
+			if (error instanceof HttpError)
+				throw error;
+
+			throw new HttpError(403, 'Forbidden', 'error_authentication_fail');
 		}
 	};
+
+	server.setErrorHandler((error, request, reply) => {
+		if (error.statusCode && error.code)
+			reply.code(error.statusCode).send({ code: error.code, message: error.message });
+		else
+			reply.code(error.statusCode || 500).send({ code: 'Internal', message: error.message });
+	});
 
 	// Setup Route + Middleware
 	registerFaucet.register(server, db, authentication);
@@ -59,23 +52,26 @@ const createRestifyServer = db => {
 	return server;
 };
 
-// Setup Database
-const databaseConnection = new DatabaseConnection(`${config.dbPath}`);
-const claimDatabase = new ClaimDatabase(databaseConnection.connection);
+const start = async () => {
+	// Setup Database
+	const databaseConnection = new DatabaseConnection(`${config.dbPath}`);
+	const claimDatabase = new ClaimDatabase(databaseConnection.connection);
 
-claimDatabase.createTable();
+	await claimDatabase.createTable();
 
-// Setup Restify Server
-const restifyServer = createRestifyServer(claimDatabase);
+	// Setup Fastify Server
+	const fastifyServer = createFastifyServer(claimDatabase);
+	await fastifyServer.listen({ port: config.port, host: '0.0.0.0' });
 
-restifyServer.listen(config.port, () => {
-	logger.info(`${restifyServer.name} listening at ${restifyServer.url}`);
-});
+	logger.info(`Faucet Backend Service listening at ${fastifyServer.server.address().address}:${fastifyServer.server.address().port}`);
 
-// Close connection for restifyServer and database
-process.on('SIGINT', () => {
-	restifyServer.close();
-	databaseConnection.close();
-});
+	// Close connection for fastifyServer and database
+	process.on('SIGINT', async () => {
+		await fastifyServer.close();
+		databaseConnection.close();
+	});
+};
 
-export default createRestifyServer;
+start();
+
+export default createFastifyServer;
