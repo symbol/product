@@ -7,6 +7,7 @@ import {
 	MOSAIC_DEFINITION_CREATION_FEE,
 	NEM_EPOCH,
 	NEM_WS_PATH,
+	NEM_WS_PORT,
 	NETWORK_CURRENCY_DIVISIBILITY,
 	NETWORK_CURRENCY_ID,
 	NETWORK_CURRENCY_NAME,
@@ -67,7 +68,7 @@ export class NetworkService {
 
 		return {
 			nodeUrl,
-			wsUrl: nodeUrl.replace(/^http/, 'ws') + NEM_WS_PATH,
+			wsUrl: `${nodeUrl.replace(/^http/, 'ws').split(':').slice(0, 2).join(':')}:${NEM_WS_PORT}${NEM_WS_PATH}`,
 			networkIdentifier,
 			generationHash: '',
 			chainHeight,

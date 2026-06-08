@@ -22,8 +22,11 @@ export const SINGLE_TRANSACTION_DEADLINE_HOURS = 2;
  */
 export const MULTISIG_TRANSACTION_DEADLINE_HOURS = 24;
 
-/** NEM WebSocket endpoint path appended to the node URL. */
-export const NEM_WS_PATH = '/w/messages/websocket';
+/** NEM NIS WebSocket port. NIS serves the REST API on 7890 and the SockJS/STOMP WebSocket on a separate 7778. */
+export const NEM_WS_PORT = 7778;
+
+/** NEM NIS SockJS base path. The Listener appends the per-connection `/{server}/{session}/websocket` segment. */
+export const NEM_WS_PATH = '/w/messages';
 
 // NEM native currency (XEM) constants.
 
