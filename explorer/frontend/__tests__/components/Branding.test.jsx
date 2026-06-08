@@ -1,6 +1,10 @@
 /* eslint-disable @next/next/no-img-element */
 import { render, screen } from '@testing-library/react';
 
+let mockPathname = '/blocks';
+let mockUseStorage = jest.fn((key, initialValue) => [initialValue, jest.fn()]);
+let mockUseToggle = jest.fn(initialValue => [initialValue, jest.fn()]);
+
 jest.mock('@/config', () => ({
 	__esModule: true,
 	default: {
@@ -47,7 +51,7 @@ jest.mock('next/router', () => ({
 }));
 
 jest.mock('next/navigation', () => ({
-	usePathname: () => '/blocks'
+	usePathname: () => mockPathname
 }));
 
 jest.mock('next-i18next', () => ({
@@ -75,8 +79,8 @@ jest.mock('@/utils', () => ({
 		nodes: '/nodes'
 	}[pageName]),
 	formatDate: () => 'formatted date',
-	useStorage: jest.fn((key, initialValue) => [initialValue, jest.fn()]),
-	useToggle: jest.fn(initialValue => [initialValue, jest.fn()])
+	useStorage: (key, initialValue) => mockUseStorage(key, initialValue),
+	useToggle: initialValue => mockUseToggle(initialValue)
 }));
 
 jest.mock('@/components/CustomImage', () => {
@@ -89,7 +93,7 @@ jest.mock('@/components/CustomImage', () => {
 });
 
 jest.mock('@/components/Dropdown', () => ({
-	Dropdown: () => <select aria-label="dropdown" />
+	Dropdown: ({ value, onChange }) => <select aria-label="dropdown" value={value} onChange={event => onChange(event.target.value)} />
 }));
 
 jest.mock('@/components/Field', () => {
@@ -138,6 +142,12 @@ jest.mock('@/components/ValueAccount', () => {
 });
 
 describe('branding', () => {
+	beforeEach(() => {
+		mockPathname = '/blocks';
+		mockUseStorage = jest.fn((key, initialValue) => [initialValue, jest.fn()]);
+		mockUseToggle = jest.fn(initialValue => [initialValue, jest.fn()]);
+	});
+
 	it('renders the Symbol logo in the header from variant config', () => {
 		// Arrange:
 		const Header = require('@/components/Header').default;
@@ -162,5 +172,50 @@ describe('branding', () => {
 
 		// Assert:
 		expect(screen.getByAltText('Symbol')).toHaveAttribute('src', '/symbol/images/logo-symbol.png');
+	});
+
+	it('renders full footer links with the Symbol logo on the home page', () => {
+		// Arrange:
+		mockPathname = '/';
+		const Footer = require('@/components/Footer').default;
+
+		// Act:
+		render(<Footer />);
+
+		// Assert:
+		expect(screen.getByAltText('Symbol')).toHaveAttribute('src', '/symbol/images/logo-symbol.png');
+		expect(screen.getByRole('link', { name: 'footer_link_techRef' })).toHaveAttribute('href', 'https://docs.example/tech');
+		expect(screen.getByRole('link', { name: 'footer_link_docs' })).toHaveAttribute('href', 'https://docs.example');
+		expect(screen.getByRole('link', { name: 'footer_link_faucet' })).toHaveAttribute('href', 'https://faucet.example');
+		expect(screen.getByRole('link', { name: 'footer_link_supernode' })).toHaveAttribute('href', 'https://supernode.example');
+		expect(screen.getByRole('link', { name: 'GitHub' })).toHaveAttribute('href', 'https://github.com/symbol');
+		expect(screen.getByRole('link', { name: 'Discord' })).toHaveAttribute('href', 'https://discord.example');
+		expect(screen.getByRole('link', { name: 'Twitter' })).toHaveAttribute('href', 'https://twitter.example');
+	});
+
+	it('renders profile controls when the header profile modal is open', () => {
+		// Arrange:
+		mockUseToggle = jest.fn()
+			.mockReturnValueOnce([true, jest.fn()])
+			.mockReturnValueOnce([false, jest.fn()])
+			.mockReturnValueOnce([false, jest.fn()]);
+		mockUseStorage = jest.fn((key, initialValue) => {
+			if (Array.isArray(initialValue))
+				return [[{ name: 'Alice', address: 'TA'.padEnd(40, 'A') }], jest.fn()];
+
+			return [initialValue, jest.fn()];
+		});
+		const Header = require('@/components/Header').default;
+
+		// Act:
+		render(<Header />);
+
+		// Assert:
+		expect(screen.getByText('Language')).toBeInTheDocument();
+		expect(screen.getByText('Currency')).toBeInTheDocument();
+		expect(screen.getByText('Address Book')).toBeInTheDocument();
+		expect(screen.getByText('Alice')).toBeInTheDocument();
+		expect(screen.getByText('TA'.padEnd(40, 'A'))).toBeInTheDocument();
+		expect(screen.getAllByAltText('Add')).toHaveLength(1);
 	});
 });
