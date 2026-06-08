@@ -90,6 +90,12 @@ coverage:
         flags:
           - wallet-common-symbol
 
+      wallet-common-transport:
+        target: auto
+        threshold: 1%
+        flags:
+          - wallet-common-transport
+
       wallet-symbol-mobile:
         target: auto
         threshold: 1%
@@ -171,6 +177,11 @@ flags:
   wallet-common-symbol:
     paths:
       - wallet/common/symbol
+    carryforward: true
+
+  wallet-common-transport:
+    paths:
+      - wallet/common/transport
     carryforward: true
 
   wallet-symbol-mobile:
