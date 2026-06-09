@@ -13,6 +13,21 @@ import { absoluteToRelativeAmount, relativeToAbsoluteAmount } from 'wallet-commo
 /** @typedef {import('../types/Network').NemTransactionFees} NemTransactionFees */
 /** @typedef {import('../types/Network').NetworkProperties} NetworkProperties */
 
+
+const bigIntMax = (a, b) => (a > b ? a : b);
+const bigIntMin = (a, b) => (a < b ? a : b);
+
+/**
+ * Asserts a fee input amount is non-negative.
+ * @param {string|number} amount - The relative amount to validate.
+ * @returns {void}
+ * @private
+ */
+const assertNonNegativeAmount = amount => {
+	if (String(amount).startsWith('-'))
+		throw new Error(`Cannot calculate a fee for a negative amount: "${amount}"`);
+};
+
 /**
  * Creates a fee object for a transaction.
  * @param {object} networkProperties - The network properties.
@@ -59,40 +74,45 @@ export const createTransactionFeeTiers = (networkProperties, amount) => {
  * @param {Mosaic} mosaic - The mosaic being transferred (relative amount, divisibility, supply).
  * @param {number} [defaultDivisibility] - Divisibility to use when the mosaic lacks its own.
  * @param {NemTransactionFees} fees - The NEM fee schedule (absolute microXEM).
- * @returns {number} Absolute fee in microXEM for this single mosaic.
+ * @returns {bigint} Absolute fee in microXEM for this single mosaic.
  * @private
  */
 const calculateSingleMosaicFeeAbsolute = (mosaic, defaultDivisibility, fees) => {
 	const divisibility = mosaic.divisibility ?? defaultDivisibility ?? NETWORK_CURRENCY_DIVISIBILITY;
 	const { supply } = mosaic;
+	const perMosaicFee = BigInt(fees.perMosaicFee);
 
 	// Small business mosaic: divisibility 0, supply ≤ 10,000 → flat 0.05 XEM per transfer.
 	if (divisibility === 0 && supply != null && supply <= SMALL_BUSINESS_MOSAIC_MAX_SUPPLY)
-		return fees.perMosaicFee;
+		return perMosaicFee;
 
 	// Without supply info, fall back to the simplified flat fee.
 	if (supply == null)
-		return fees.perMosaicFee;
+		return perMosaicFee;
 
-	// Full mosaic fee formula. Use BigInt arithmetic to avoid precision loss on large products.
+	assertNonNegativeAmount(mosaic.amount);
+
+	// Full mosaic fee formula. BigInt keeps the quantity products exact regardless of supply/divisibility.
 	const absoluteQuantity = BigInt(relativeToAbsoluteAmount(mosaic.amount, divisibility));
 	const totalMosaicQuantity = BigInt(supply) * (10n ** BigInt(divisibility));
 
 	// Guard against malformed DTOs where supply was 0 — avoids BigInt division by zero.
 	if (totalMosaicQuantity === 0n)
-		return fees.perMosaicFee;
+		return perMosaicFee;
 
-	// XEM equivalent in whole XEM units: floor((8,999,999,999 * q) / (s * 10^d)).
-	const xemEquivalent = Number((XEM_EQUIVALENT_NUMERATOR * absoluteQuantity) / totalMosaicQuantity);
+	// XEM equivalent in whole XEM units: floor((8,999,999,999 * q) / (s * 10^d)) — exact BigInt division.
+	const xemEquivalent = (XEM_EQUIVALENT_NUMERATOR * absoluteQuantity) / totalMosaicQuantity;
 
-	// Supply-related adjustment: floor(0.8 * ln(maxMosaicQuantity / totalMosaicQuantity)).
-	const supplyRelatedAdjustment = Math.floor(0.8 * Math.log(Number(MAX_MOSAIC_QUANTITY) / Number(totalMosaicQuantity)));
+	// Supply-related adjustment: floor(0.8 * ln(maxMosaicQuantity / totalMosaicQuantity)). This term is an
+	// intrinsically floating logarithm, so it is computed in Number and then folded back into BigInt.
+	const supplyAdjustment = Math.floor(0.8 * Math.log(Number(MAX_MOSAIC_QUANTITY) / Number(totalMosaicQuantity)));
+	const supplyRelatedAdjustment = BigInt(supplyAdjustment);
 
 	// Unweighted fee in fee-units (1 unit = perMosaicFee = 0.05 XEM).
-	const xemFeeUnits = Math.floor(xemEquivalent / fees.xemTierAmount);
-	const unweightedFee = Math.max(1, xemFeeUnits - supplyRelatedAdjustment);
-	
-	return unweightedFee * fees.perMosaicFee;
+	const xemFeeUnits = xemEquivalent / BigInt(fees.xemTierAmount);
+	const unweightedFee = bigIntMax(1n, xemFeeUnits - supplyRelatedAdjustment);
+
+	return unweightedFee * perMosaicFee;
 };
 
 /**
@@ -104,23 +124,30 @@ const calculateSingleMosaicFeeAbsolute = (mosaic, defaultDivisibility, fees) => 
  * @param {number} divisibility - Default divisibility for mosaics lacking their own.
  * @param {string} [messagePayloadHex] - Encoded message payload hex (incl. 1-byte type marker), if any.
  * @param {NemTransactionFees} fees - The NEM fee schedule (absolute microXEM).
- * @returns {number} Absolute fee in microXEM.
+ * @returns {bigint} Absolute fee in microXEM.
  * @private
  */
 const calculateTransferFeeAbsolute = (xemAmount, mosaics, divisibility, messagePayloadHex, fees) => {
+	assertNonNegativeAmount(xemAmount);
+
 	// Micro XEM are ignored per the NEM NIS API Documentation fee table ("All calculation are done with
-	// rounded amounts of XEM"); work in whole XEM.
-	const wholeXemAmount = Math.floor(Number(xemAmount) || 0);
+	// rounded amounts of XEM"). Truncate to whole XEM via an integer-string conversion (divisibility 0)
+	// so the native amount never passes through a float.
+	const wholeXemAmount = BigInt(relativeToAbsoluteAmount(xemAmount, 0));
 
 	// XEM-amount fee: 0.05 XEM per commenced 10,000 XEM transferred, capped at 1.25 XEM
 	// (NEM Technical Reference §4.1; NEM NIS API Documentation fee table: 45,000 XEM → 0.20, 500,000 XEM → 1.25).
 	// An actual XEM transfer is floored at one 0.05 XEM unit; a transfer that carries no native XEM
 	// (mosaic-only or message-only) has no XEM-amount fee — only the mosaic and message fees apply.
-	const xemFee = wholeXemAmount > 0
-		? Math.min(Math.max(1, Math.floor(wholeXemAmount / fees.xemTierAmount)) * fees.xemFeePerTier, fees.xemTransferFeeMax)
-		: 0;
+	const xemTiers = wholeXemAmount > 0n
+		? bigIntMax(1n, wholeXemAmount / BigInt(fees.xemTierAmount))
+		: 0n;
+	const xemFee = bigIntMin(xemTiers * BigInt(fees.xemFeePerTier), BigInt(fees.xemTransferFeeMax));
 
-	const mosaicFee = (mosaics || []).reduce((sum, mosaic) => sum + calculateSingleMosaicFeeAbsolute(mosaic, divisibility, fees), 0);
+	const mosaicFee = (mosaics || []).reduce(
+		(sum, mosaic) => sum + calculateSingleMosaicFeeAbsolute(mosaic, divisibility, fees),
+		0n
+	);
 
 	// payload is the raw on-chain message bytes (no wallet-internal type marker), so its byte length is
 	// the message length used for the fee.
@@ -130,8 +157,8 @@ const calculateTransferFeeAbsolute = (xemAmount, mosaics, divisibility, messageP
 	// Message fee per NEM Technical Reference §4.1: 0.05 XEM per commenced 32-byte chunk,
 	// i.e. (floor(messageLength / 32) + 1) chunks.
 	const messageFee = messageLength > 0
-		? (Math.floor(messageLength / MESSAGE_FEE_CHUNK_SIZE) + 1) * fees.perMessageChunkFee
-		: 0;
+		? BigInt(Math.floor(messageLength / MESSAGE_FEE_CHUNK_SIZE) + 1) * BigInt(fees.perMessageChunkFee)
+		: 0n;
 
 	return xemFee + mosaicFee + messageFee;
 };
@@ -142,24 +169,25 @@ const calculateTransferFeeAbsolute = (xemAmount, mosaics, divisibility, messageP
  * @param {Transaction} transaction - The transaction to price.
  * @param {object} networkCurrency - The networkCurrency descriptor (mosaicId, divisibility).
  * @param {NemTransactionFees} fees - The NEM fee schedule (absolute microXEM).
- * @returns {number} Absolute fee in microXEM.
+ * @returns {bigint} Absolute fee in microXEM.
  * @private
  */
 const calculateFeeAbsolute = (transaction, networkCurrency, fees) => {
 	const { mosaicId: nativeMosaicId, divisibility } = networkCurrency;
 	const effectiveDivisibility = divisibility ?? NETWORK_CURRENCY_DIVISIBILITY;
+	const baseFee = BigInt(fees.baseFee);
 
 	switch (transaction.type) {
 	case TransactionType.TRANSFER: {
-		const xemAmount = transaction.mosaics?.find(m => m.id === nativeMosaicId)?.amount || 0;
+		const xemAmount = transaction.mosaics?.find(m => m.id === nativeMosaicId)?.amount || '0';
 		// Exclude the native XEM mosaic from the per-mosaic fee; its cost is covered by the XEM-amount fee.
 		const nonNativeMosaics = transaction.mosaics?.filter(m => m.id !== nativeMosaicId) || [];
-		
+
 		return calculateTransferFeeAbsolute(
-			xemAmount, 
-			nonNativeMosaics, 
-			effectiveDivisibility, 
-			transaction.message?.payload, 
+			xemAmount,
+			nonNativeMosaics,
+			effectiveDivisibility,
+			transaction.message?.payload,
 			fees
 		);
 	}
@@ -168,34 +196,34 @@ const calculateFeeAbsolute = (transaction, networkCurrency, fees) => {
 		// (NEM Technical Reference §4.3.3).
 		const innerFee = transaction.innerTransaction
 			? calculateFeeAbsolute(transaction.innerTransaction, networkCurrency, fees)
-			: 0;
-		
-		return fees.baseFee + innerFee;
+			: 0n;
+
+		return baseFee + innerFee;
 	}
 	case TransactionType.MULTISIG_ACCOUNT_MODIFICATION:
 		// Aggregate modification: flat 0.5 XEM regardless of the modifications (NEM Technical Reference §4.3.1).
-		return fees.aggregateModificationFee;
+		return BigInt(fees.aggregateModificationFee);
 	case TransactionType.ACCOUNT_KEY_LINK:
 		// Importance transfer / account key link: 0.15 XEM (NEM Technical Reference §4.2).
-		return fees.baseFee;
+		return baseFee;
 	case TransactionType.MULTISIG_COSIGNATURE:
 		// Multisig signature transaction: 0.15 XEM (NEM Technical Reference §4.3.2).
-		return fees.baseFee;
+		return baseFee;
 	case TransactionType.NAMESPACE_REGISTRATION:
 		// Provision namespace transaction fee: 0.15 XEM. The root (100 XEM) / sub (10 XEM) namespace
 		// rental is paid separately to the rental fee sink (see networkProperties.rentalFees), so it
 		// is not part of the transaction fee (NEM NIS API Documentation fee table).
-		return fees.baseFee;
+		return baseFee;
 	case TransactionType.MOSAIC_DEFINITION:
 		// Mosaic definition creation transaction fee: 0.15 XEM. The 10 XEM creation fee is paid
 		// separately to the creation fee sink (networkProperties.rentalFees.mosaicDefinitionFee),
 		// so it is not part of the transaction fee (NEM NIS API Documentation).
-		return fees.baseFee;
+		return baseFee;
 	case TransactionType.MOSAIC_SUPPLY_CHANGE:
 		// Mosaic supply change transaction: 0.15 XEM (NEM NIS API Documentation fee table).
-		return fees.baseFee;
+		return baseFee;
 	default:
-		return fees.baseFee;
+		return baseFee;
 	}
 };
 

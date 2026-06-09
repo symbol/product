@@ -13,6 +13,16 @@ const smallBusinessMosaic = { id: 'biz.token', amount: '5', divisibility: 0, sup
 // A non-native mosaic carrying supply/divisibility metadata, priced with the full per-mosaic fee formula.
 const supplyBearingMosaic = { id: 'test.token', amount: '5', divisibility: 2, supply: 10000 };
 
+// A mosaic at the top of the valid NEM range (entire max supply transferred). Its quantity products
+// (supply · 10^divisibility ≈ 9e15) sit at the edge of Number's exact-integer range, so the BigInt
+// formula is what keeps the result exact here.
+const maxSupplyMosaic = { id: 'test.token', amount: '8999999999', divisibility: 6, supply: 8999999999 };
+
+// A mosaic carrying a negative (directed) amount — rejected by the fee calculator.
+const negativeMosaic = { id: 'test.token', amount: '-5', divisibility: 2, supply: 10000 };
+
+const NEGATIVE_AMOUNT_ERROR = 'Cannot calculate a fee for a negative amount';
+
 // Transfers carrying a 10-byte and a 33-byte message payload (hex) → one and two 32-byte fee chunks.
 const transferWithShortMessage = {
 	type: TransactionType.TRANSFER,
@@ -115,6 +125,24 @@ describe('utils/fee', () => {
 				config: { transaction: { type: TransactionType.TRANSFER, mosaics: [supplyBearingMosaic] } },
 				expected: { fee: '21.55' }
 			},
+			{
+				description: 'prices a max-supply mosaic transfer exactly via BigInt',
+				config: { transaction: { type: TransactionType.TRANSFER, mosaics: [maxSupplyMosaic] } },
+				expected: { fee: '44999.95' }
+			},
+			{
+				description: 'sums the per-mosaic fee across multiple non-native mosaics',
+				config: {
+					transaction: {
+						type: TransactionType.TRANSFER,
+						mosaics: [
+							{ id: 'a.token', amount: '5', divisibility: 2 },
+							{ id: 'b.token', amount: '3', divisibility: 2 }
+						]
+					}
+				},
+				expected: { fee: '0.1' }
+			},
 			// Non-transfer transaction types.
 			{
 				description: 'prices a multisig wrapper as the base fee plus the inner transaction fee',
@@ -164,5 +192,23 @@ describe('utils/fee', () => {
 		];
 
 		calculateTransactionFeeTests.forEach(test => runCalculateTransactionFeeTest(test.description, test.config, test.expected));
+
+		const negativeAmountTests = [
+			{
+				description: 'throws for a negative native XEM amount',
+				transaction: { type: TransactionType.TRANSFER, mosaics: [nativeMosaic('-10')] }
+			},
+			{
+				description: 'throws for a negative non-native mosaic amount',
+				transaction: { type: TransactionType.TRANSFER, mosaics: [negativeMosaic] }
+			}
+		];
+
+		negativeAmountTests.forEach(({ description, transaction }) => {
+			it(description, () => {
+				// Act & Assert:
+				expect(() => calculateTransactionFee(transaction, networkProperties)).toThrow(NEGATIVE_AMOUNT_ERROR);
+			});
+		});
 	});
 });
