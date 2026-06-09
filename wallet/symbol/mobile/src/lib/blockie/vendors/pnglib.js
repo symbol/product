@@ -37,9 +37,9 @@ const BASE64_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz012345
 
 /**
  * Write string data to buffer at specified offset.
- * @param {string[]} buffer - The buffer array to write to
- * @param {number} offset - Starting offset in the buffer
- * @param {...string} dataChunks - String data chunks to write
+ * @param {string[]} buffer - The buffer array to write to.
+ * @param {number} offset - Starting offset in the buffer.
+ * @param {...string} dataChunks - String data chunks to write.
  */
 const writeToBuffer = (buffer, offset, ...dataChunks) => {
 	let currentOffset = offset;
@@ -51,8 +51,8 @@ const writeToBuffer = (buffer, offset, ...dataChunks) => {
 
 /**
  * Convert a 16-bit word to a 2-byte big-endian string.
- * @param {number} word - The 16-bit value
- * @returns {string} Two-character string representation
+ * @param {number} word - The 16-bit value.
+ * @returns {string} Two-character string representation.
  */
 const wordToBytesBigEndian = word => {
 	return String.fromCharCode((word >> 8) & 255, word & 255);
@@ -60,8 +60,8 @@ const wordToBytesBigEndian = word => {
 
 /**
  * Convert a 32-bit word to a 4-byte big-endian string.
- * @param {number} word - The 32-bit value
- * @returns {string} Four-character string representation
+ * @param {number} word - The 32-bit value.
+ * @returns {string} Four-character string representation.
  */
 const doubleWordToBytesBigEndian = word => {
 	return String.fromCharCode(
@@ -74,8 +74,8 @@ const doubleWordToBytesBigEndian = word => {
 
 /**
  * Convert a 16-bit word to a 2-byte little-endian string.
- * @param {number} word - The 16-bit value
- * @returns {string} Two-character string representation
+ * @param {number} word - The 16-bit value.
+ * @returns {string} Two-character string representation.
  */
 const wordToBytesLittleEndian = word => {
 	return String.fromCharCode(word & 255, (word >> 8) & 255);
@@ -83,7 +83,7 @@ const wordToBytesLittleEndian = word => {
 
 /**
  * Generate CRC32 lookup table.
- * @returns {number[]} CRC32 lookup table with 256 entries
+ * @returns {number[]} CRC32 lookup table with 256 entries.
  */
 const generateCrc32Table = () => {
 	const table = new Array(256);
@@ -104,10 +104,10 @@ const generateCrc32Table = () => {
 
 /**
  * Calculate CRC32 checksum for a PNG chunk and write it to the buffer.
- * @param {string[]} buffer - The PNG buffer
- * @param {number} chunkOffset - Offset of the chunk in the buffer
- * @param {number} chunkSize - Size of the chunk
- * @param {number[]} crcTable - Pre-computed CRC32 lookup table
+ * @param {string[]} buffer - The PNG buffer.
+ * @param {number} chunkOffset - Offset of the chunk in the buffer.
+ * @param {number} chunkSize - Size of the chunk.
+ * @param {number[]} crcTable - Pre-computed CRC32 lookup table.
  */
 const writeCrc32Checksum = (buffer, chunkOffset, chunkSize, crcTable) => {
 	let crc = -1;
@@ -127,9 +127,9 @@ const writeCrc32Checksum = (buffer, chunkOffset, chunkSize, crcTable) => {
 export class PngImage {
 	/**
      * Create a new PNG image.
-     * @param {number} width - Image width in pixels
-     * @param {number} height - Image height in pixels
-     * @param {number} colorDepth - Number of colors in the palette
+     * @param {number} width - Image width in pixels.
+     * @param {number} height - Image height in pixels.
+     * @param {number} colorDepth - Number of colors in the palette.
      */
 	constructor(width, height, colorDepth) {
 		this.width = width;
@@ -256,9 +256,9 @@ export class PngImage {
 
 	/**
      * Calculate the buffer index for a pixel at given coordinates.
-     * @param {number} x - X coordinate (can be -1 for row filter byte)
-     * @param {number} y - Y coordinate
-     * @returns {number} Buffer index
+     * @param {number} x - X coordinate (can be -1 for row filter byte).
+     * @param {number} y - Y coordinate.
+     * @returns {number} Buffer index.
      */
 	getPixelIndex(x, y) {
 		const pixelOffset = (y * (this.width + 1)) + x + 1;
@@ -269,11 +269,11 @@ export class PngImage {
 
 	/**
      * Register a color in the palette and return its index.
-     * @param {number} red - Red component (0-255)
-     * @param {number} green - Green component (0-255)
-     * @param {number} blue - Blue component (0-255)
-     * @param {number} [alpha=255] - Alpha component (0-255)
-     * @returns {string} Single character representing the palette index
+     * @param {number} red - Red component (0-255).
+     * @param {number} green - Green component (0-255).
+     * @param {number} blue - Blue component (0-255).
+     * @param {number} [alpha=255] - Alpha component (0-255).
+     * @returns {string} Single character representing the palette index.
      */
 	registerColor(red, green, blue, alpha = 255) {
 		const colorKey = (((((alpha << 8) | red) << 8) | green) << 8) | blue;
@@ -300,7 +300,7 @@ export class PngImage {
 	/**
      * Calculate Adler32 checksum and finalize the PNG.
      * @private
-     * @returns {string} Complete PNG data as a string
+     * @returns {string} Complete PNG data as a string.
      */
 	_finalize() {
 		// Compute Adler32 checksum
@@ -343,7 +343,7 @@ export class PngImage {
 
 	/**
      * Get the PNG data as a raw string.
-     * @returns {string} PNG data
+     * @returns {string} PNG data.
      */
 	getData() {
 		return this._finalize();
@@ -351,7 +351,7 @@ export class PngImage {
 
 	/**
      * Get the PNG data as a Base64-encoded string.
-     * @returns {string} Base64-encoded PNG data
+     * @returns {string} Base64-encoded PNG data.
      */
 	getBase64() {
 		const pngData = this._finalize();

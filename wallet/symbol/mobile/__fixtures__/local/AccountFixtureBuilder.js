@@ -20,9 +20,9 @@ export class AccountFixtureBuilder {
 	 * Creates an account fixture with default data for the specified chain and network.
 	 * Used data from the fixture list.
 	 * 
-	 * @param {string} chainName - chain name the account belongs to.
-	 * @param {'mainnet' | 'testnet'} networkIdentifier - network identifier the account belongs to.
-	 * @param {number} index - account item index in the fixture list (eg. 0, 1, 2, ...).
+	 * @param {string} chainName - Chain name the account belongs to.
+	 * @param {'mainnet' | 'testnet'} networkIdentifier - Network identifier the account belongs to.
+	 * @param {number} index - Account item index in the fixture list (eg. 0, 1, 2, ...).
 	 * @returns {AccountFixtureBuilder}
 	 */
 	static createWithAccount = (chainName, networkIdentifier, index) => {
@@ -37,7 +37,7 @@ export class AccountFixtureBuilder {
 	/**
 	 * Creates an account fixture with the provided data.
 	 * 
-	 * @param {import('wallet-common-core/src/types/Account').WalletAccount} data - account data.
+	 * @param {import('wallet-common-core/src/types/Account').WalletAccount} data - Account data.
 	 * @returns {AccountFixtureBuilder}
 	 */
 	static createWithData = data => {

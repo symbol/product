@@ -5,7 +5,9 @@ export const RouteName = {
 	CreateWallet: 'CreateWallet',
 	ImportWallet: 'ImportWallet',
 	Home: 'Home',
+	Actions: 'Actions',
 	History: 'History',
+	TransactionDetails: 'TransactionDetails',
 	Assets: 'Assets',
 	TokenDetails: 'TokenDetails',
 	AccountDetails: 'AccountDetails',
@@ -20,7 +22,18 @@ export const RouteName = {
 	BridgeAccountList: 'BridgeAccountList',
 	BridgeAccountDetails: 'BridgeAccountDetails',
 	BridgeSwap: 'BridgeSwap',
-	BridgeSwapDetails: 'BridgeSwapDetails'
+	BridgeSwapDetails: 'BridgeSwapDetails',
+	MultisigAccountList: 'MultisigAccountList',
+	MultisigAccountDetails: 'MultisigAccountDetails',
+	CreateMultisigAccount: 'CreateMultisigAccount',
+	ModifyMultisigAccount: 'ModifyMultisigAccount',
+	ContactList: 'ContactList',
+	ContactDetails: 'ContactDetails',
+	CreateContact: 'CreateContact',
+	EditContact: 'EditContact',
+	Harvesting: 'Harvesting',
+	Scan: 'Scan',
+	TransportRequest: 'TransportRequest'
 };
 
 export const RouterFlow = {
@@ -31,7 +44,7 @@ export const RouterFlow = {
 export const DEEP_LINKING_PREFIX = 'web+symbol://';
 
 export const SCREEN_BACKGROUND_COLOR = 'transparent';
-export const TRANSITION_ANIMATION = 'fade';
+export const TRANSITION_ANIMATION = 'none';
 export const HEADER_BACKGROUND_COLOR = Colors.Components.titlebar.background;
 export const HEADER_TINT_COLOR = Colors.Components.main.text;
 export const HEADER_TITLE_TEXT = Typography.Semantic.title.m;

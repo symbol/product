@@ -1,5 +1,5 @@
 /**
- * Mapping of render types to their corresponding object keys
+ * Mapping of render types to their corresponding object keys.
  */
 const keyToTypeMap = {
 	account: [
@@ -8,6 +8,8 @@ const keyToTypeMap = {
 		'sender',
 		'recipient',
 		'signerAddress',
+		'senderAddress',
+		'transactionInitiator',
 		'linkedAccountAddress',
 		'targetAddress',
 		'sourceAddress',
@@ -17,9 +19,12 @@ const keyToTypeMap = {
 		'restrictionAddressAdditions',
 		'restrictionAddressDeletions',
 		'addressAdditions',
-		'receivedCosignatures',
 		'addressDeletions',
-		'multisigAddresses'
+		'cosignatoryAdditions',
+		'cosignatoryDeletions',
+		'receivedCosignatures',
+		'multisigAddresses',
+		'multisigAddress'
 	],
 	copy: [
 		'id',
@@ -69,6 +74,11 @@ const keyToTypeMap = {
 		'restrictionOperationAdditions',
 		'restrictionOperationDeletions'
 	],
+	delta: [
+		'minApprovalDelta',
+		'minRemovalDelta',
+		'delta'
+	],
 	translate: [
 		'registrationType',
 		'aliasAction',
@@ -81,7 +91,7 @@ const keyToTypeMap = {
 };
 
 /**
- * Reverse mapping: key -> type for O(1) lookup
+ * Reverse mapping: key -> type for O(1) lookup.
  */
 const buildKeyTypeIndex = () => {
 	const index = {};
@@ -98,17 +108,17 @@ const buildKeyTypeIndex = () => {
 const keyTypeIndex = buildKeyTypeIndex();
 
 /**
- * Gets the render type for a given object key
- * @param {string} key - Object key
- * @returns {string} Render type
+ * Gets the render type for a given object key.
+ * @param {string} key - Object key.
+ * @returns {string} Render type.
  */
 const getTypeForKey = key => keyTypeIndex[key] ?? 'text';
 
 /**
  * Converts an object to table data format for TableView component.
  * Automatically determines the row type based on the object keys.
- * @param {object} obj - Key-value pairs object to convert
- * @returns {import('@/app/types/Table').TableRow[]} Array of table row objects
+ * @param {object} obj - Key-value pairs object to convert.
+ * @returns {import('@/app/types/Table').TableRow[]} Array of table row objects.
  */
 export const objectToTableData = obj => {
 	if (!obj || typeof obj !== 'object') 

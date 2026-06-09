@@ -1,10 +1,12 @@
 import moment from 'moment';
 
+/** @typedef {import('@/app/types/Network').NetworkIdentifier} NetworkIdentifier */
+
 /**
  * Returns the amount in network currency text.
  * @param {number} amount - Mosaic amount.
  * @param {import('../types/Price').Price} price - The price object.
- * @param {string} networkIdentifier - Network identifier.
+ * @param {NetworkIdentifier} networkIdentifier - Network identifier.
  * @returns {string} The network currency amount text.
  */
 export const getUserCurrencyAmountText = (amount, price, networkIdentifier) => {
@@ -18,10 +20,10 @@ export const getUserCurrencyAmountText = (amount, price, networkIdentifier) => {
 };
 
 /**
- * Truncate amount string to the specified divisibility without rounding
- * @param {string} amount - The amount string (e.g. "123.456789")
- * @param {number} divisibility - The number of decimal places to keep
- * @returns {string} The truncated amount string
+ * Truncate amount string to the specified divisibility without rounding.
+ * @param {string} amount - The amount string (e.g. "123.456789").
+ * @param {number} divisibility - The number of decimal places to keep.
+ * @returns {string} The truncated amount string.
  */
 export const formatAmountInput = (amount, divisibility) => {
 	if (!amount)
@@ -47,7 +49,7 @@ export const formatAmountInput = (amount, divisibility) => {
 /**
  * Formats a date string to a readable format.
  * @param {string} dateStr - The date string.
- * @param {Function} translate - The translation function.
+ * @param {function(string): string} translate - The translation function.
  * @param {boolean} [showTime] - Whether to show the time.
  * @returns {string} The formatted date string.
  */

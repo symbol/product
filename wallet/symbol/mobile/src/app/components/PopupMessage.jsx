@@ -12,9 +12,8 @@ const flashMessageTextStyle = {
 };
 
 /**
- * Popup message component
- * 
- * @returns {React.ReactNode} Popup message component
+ * Popup message component.
+ * @returns {React.ReactNode} Popup message component.
  */
 export const PopupMessage = () => {
 	return (

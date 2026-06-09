@@ -3,7 +3,6 @@ import { AccountFixtureBuilder } from '__fixtures__/local/AccountFixtureBuilder'
 import { NetworkPropertiesFixtureBuilder } from '__fixtures__/local/NetworkPropertiesFixtureBuilder';
 import { ScreenTester } from '__tests__/ScreenTester';
 import { mockLocalization, mockRouter, mockWalletController } from '__tests__/mock-helpers';
-import { runScreenNavigationTest } from '__tests__/screen-tests';
 import { WalletAccountType } from 'wallet-common-core/src/constants';
 
 // Mocks
@@ -16,6 +15,7 @@ jest.mock('@/app/lib/platform/PlatformUtils', () => ({
 }));
 
 jest.mock('@/app/screens/account/hooks', () => ({
+	...jest.requireActual('@/app/screens/account/hooks'),
 	useSeedAccountBalances: jest.fn(() => ({
 		accountBalances: {},
 		refetch: jest.fn()
@@ -29,6 +29,7 @@ const CURRENT_NETWORK_IDENTIFIER = 'testnet';
 const TICKER = 'XYM';
 const VALID_ACCOUNT_NAME = 'My Account';
 const LONG_ACCOUNT_NAME = 'This name is way too long for validation';
+const VALID_PRIVATE_KEY = '40C56A968FB0E551966FD958055EB6634D3AC0372745AFF442460FF20FA13202';
 
 // Screen Text
 
@@ -37,7 +38,7 @@ const SCREEN_TEXT = {
 	textNameTitle: 's_addAccount_name_title',
 	textSelectTitle: 's_addAccount_select_title',
 	textDescription: 's_addAccount_seed_description',
-	inputNameLabel: 's_addAccount_name_input',
+	inputNameLabel: 'input_name',
 
 	// Account Card
 	textCardTitleAccount: 'c_accountCard_title_account',
@@ -46,9 +47,14 @@ const SCREEN_TEXT = {
 
 	// Buttons
 	buttonAddExternalAccount: 'button_addExternalAccount',
+	buttonConfirm: 'button_confirm',
 
 	// Default Account Names (with index placeholder)
 	textDefaultAccountName: 's_addAccount_seed_name_default',
+
+	// External Account Dialog
+	textExternalAccountDialogTitle: 's_addAccount_privateKey_dialog_title',
+	inputPrivateKeyLabel: 'input_privateKey',
 
 	// Validation Errors
 	textValidationNameTooLong: 'validation_error_account_name_long'
@@ -122,7 +128,8 @@ const mockWalletControllerConfigured = (overrides = {}) => {
 				fetchAccountBalance: jest.fn().mockResolvedValue('0')
 			}
 		},
-		addSeedAccount: overrides.addSeedAccount ?? jest.fn().mockResolvedValue()
+		addSeedAccount: overrides.addSeedAccount ?? jest.fn().mockResolvedValue(),
+		addExternalAccount: overrides.addExternalAccount ?? jest.fn().mockResolvedValue()
 	});
 };
 
@@ -328,12 +335,67 @@ describe('screens/account/AddSeedAccount', () => {
 		});
 	});
 
-	runScreenNavigationTest(AddSeedAccount, {
-		navigationActions: [
+	describe('external account dialog', () => {
+		const runExternalAccountDialogTest = (description, config, expected) => {
+			it(description, async () => {
+				// Arrange:
+				const addExternalAccountMock = jest.fn().mockResolvedValue();
+				mockWalletControllerConfigured({ addExternalAccount: addExternalAccountMock });
+				const screenTester = new ScreenTester(AddSeedAccount);
+
+				// Act:
+				screenTester.pressButton(SCREEN_TEXT.buttonAddExternalAccount);
+				screenTester.inputText(SCREEN_TEXT.inputNameLabel, config.nameToEnter, 1);
+				screenTester.inputText(SCREEN_TEXT.inputPrivateKeyLabel, config.privateKeyToEnter);
+
+				// Assert:
+				if (expected.isConfirmDisabled) {
+					screenTester.expectButtonDisabled(SCREEN_TEXT.buttonConfirm);
+				} else {
+					screenTester.pressButton(SCREEN_TEXT.buttonConfirm);
+					await screenTester.waitForTimer();
+					expect(addExternalAccountMock).toHaveBeenCalledWith(expected.account);
+				}
+			});
+		};
+
+		const externalAccountDialogTests = [
 			{
-				buttonText: SCREEN_TEXT.buttonAddExternalAccount,
-				actionName: 'goToAddExternalAccount'
+				description: 'submits external account with valid name and private key',
+				config: { 
+					nameToEnter: VALID_ACCOUNT_NAME, 
+					privateKeyToEnter: VALID_PRIVATE_KEY 
+				},
+				expected: {
+					isConfirmDisabled: false,
+					account: {
+						type: WalletAccountType.EXTERNAL,
+						name: VALID_ACCOUNT_NAME,
+						privateKey: VALID_PRIVATE_KEY,
+						networkIdentifier: CURRENT_NETWORK_IDENTIFIER
+					}
+				}
+			},
+			{
+				description: 'disables confirm button when account name is too long',
+				config: { 
+					nameToEnter: LONG_ACCOUNT_NAME, 
+					privateKeyToEnter: VALID_PRIVATE_KEY 
+				},
+				expected: { isConfirmDisabled: true }
+			},
+			{
+				description: 'disables confirm button when private key is invalid',
+				config: { 
+					nameToEnter: VALID_ACCOUNT_NAME, 
+					privateKeyToEnter: 'INVALID_KEY' 
+				},
+				expected: { isConfirmDisabled: true }
 			}
-		]
+		];
+
+		externalAccountDialogTests.forEach(test => {
+			runExternalAccountDialogTest(test.description, test.config, test.expected);
+		});
 	});
 });

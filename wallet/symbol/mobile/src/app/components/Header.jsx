@@ -13,7 +13,6 @@ const ADDRESS_TRUNCATE_END = 3;
 
 /**
  * Truncates an address string for display.
- *
  * @param {string} address - The full address string.
  * @returns {string} The truncated address.
  */
@@ -30,13 +29,11 @@ const truncateAddress = address => {
 /**
  * Header component. Displays the app header with account selector and settings button.
  * Provides navigation to settings and account selection functionality.
- *
- * @param {object} props - Component props
+ * @param {object} props - Component props.
  * @param {object} props.currentAccount - The currently selected account object.
  * @param {string} props.currentAccount.address - The account address.
  * @param {string} props.currentAccount.name - The account display name.
- *
- * @returns {React.ReactNode} Header component
+ * @returns {React.ReactNode} Header component.
  */
 export const Header = ({ currentAccount }) => {
 	// Derived values

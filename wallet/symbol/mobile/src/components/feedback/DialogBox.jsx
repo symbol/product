@@ -7,9 +7,11 @@ import React, { useEffect, useState } from 'react';
 import { Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+/** @typedef {import('@/app/types/ColorVariants').Generic2ColorVariants} Generic2ColorVariants */
+
 /**
  * Dialog box types configuration
- * Maps dialog type to its button configuration
+ * Maps dialog type to its button configuration.
  */
 const DIALOG_TYPE_CONFIG = {
 	prompt: (onSuccess, onCancel, isPromptValueValid, promptValue) => [
@@ -53,19 +55,19 @@ const DIALOG_TYPE_CONFIG = {
 };
 
 /**
- * DialogButton component
+ * DialogButton component.
  *
  * Internal button component for DialogBox.
- *
- * @param {object} props - Component props
+ * @param {object} props - Component props.
  * @param {string} props.type - Button type. Determines the display text.
- * @param {'primary'|'secondary'} props.variant='primary' - Button style variant.
- * @param {function} props.onPress - Callback when button is pressed.
+ * @param {Generic2ColorVariants} props.variant - Button style variant.
+ * @param {boolean} [props.isDisabled=false] - Disables the button if true.
+ * @param {function(): void} props.onPress - Callback when button is pressed.
  */
-const DialogButton = ({ type, variant, onPress }) => {
+const DialogButton = ({ type, variant, isDisabled = false, onPress }) => {
 	const variantStyleMap = {
-		primary: styles.buttonPrimary,
-		secondary: styles.buttonSecondary
+		primary: !isDisabled ? styles.buttonPrimary : styles.buttonPrimary__disabled,
+		secondary: !isDisabled ? styles.buttonSecondary : styles.buttonSecondary__disabled
 	};
 	const typeTextMap = {
 		ok: $t('button_ok'),
@@ -78,8 +80,8 @@ const DialogButton = ({ type, variant, onPress }) => {
 
 	return (
 		<View style={styles.buttonWrapper}>
-			<TouchableOpacity onPress={onPress} style={[styles.button, buttonStyle]}>
-				<Text style={styles.buttonText}>{text}</Text>
+			<TouchableOpacity onPress={onPress} style={[styles.button, buttonStyle]} disabled={isDisabled}>
+				<Text style={buttonStyle}>{text}</Text>
 			</TouchableOpacity>
 		</View>
 	);
@@ -88,8 +90,7 @@ const DialogButton = ({ type, variant, onPress }) => {
 /**
  * DialogBox component. A modal dialog component supporting various interaction types including
  * alerts, confirmations, acceptances, and prompts with optional input validation.
- *
- * @param {object} props - Component props
+ * @param {object} props - Component props.
  * @param {boolean} props.isVisible - Controls the visibility of the dialog.
  * @param {boolean} [props.isDisabled=false] - Disables all buttons if true.
  * @param {'alert'|'confirm'|'accept'|'prompt'} [props.type='alert'] - Dialog type determining button configuration.
@@ -97,12 +98,11 @@ const DialogButton = ({ type, variant, onPress }) => {
  * @param {string} [props.text] - Dialog body text or prompt label.
  * @param {React.ReactNode} [props.children] - Additional children elements.
  * @param {Array} [props.promptValidators] - Validation rules for prompt input.
- * @param {function} props.onSuccess - Callback when primary action is triggered.
- * @param {function} [props.onCancel] - Callback when cancel action is triggered.
+ * @param {function(): void} props.onSuccess - Callback when primary action is triggered.
+ * @param {function(): void} [props.onCancel] - Callback when cancel action is triggered.
  * @param {object} [props.style] - Additional styles for the modal container.
  * @param {object} [props.contentContainerStyle] - Additional styles for the content area.
- *
- * @returns {React.ReactNode} DialogBox component
+ * @returns {React.ReactNode} DialogBox component.
  */
 export const DialogBox = props => {
 	const {
@@ -175,15 +175,15 @@ export const DialogBox = props => {
 							)}
 						</View>
 						<View style={styles.buttonContainer}>
-							{!isDisabled &&
-								buttons.map((button, index) => (
-									<DialogButton
-										key={`dialog-btn-${index}`}
-										type={button.type}
-										variant={button.variant}
-										onPress={button.handler}
-									/>
-								))}
+							{buttons.map((button, index) => (
+								<DialogButton
+									key={`dialog-btn-${index}`}
+									isDisabled={isDisabled && button.type !== 'cancel'}
+									type={button.type}
+									variant={button.variant}
+									onPress={button.handler}
+								/>
+							))}
 						</View>
 					</View>
 				</SafeAreaView>
@@ -239,13 +239,23 @@ const styles = StyleSheet.create({
 		flexDirection: 'row'
 	},
 	buttonPrimary: {
-		backgroundColor: Colors.Components.buttonCardEmbedded.primary.default.background
+		...Typography.Semantic.button.m,
+		backgroundColor: Colors.Components.buttonCardEmbedded.primary.default.background,
+		color: Colors.Components.buttonCardEmbedded.primary.default.text
+	},
+	buttonPrimary__disabled: {
+		...Typography.Semantic.button.m,
+		backgroundColor: Colors.Components.buttonCardEmbedded.primary.disabled.background,
+		color: Colors.Components.buttonCardEmbedded.primary.disabled.text
 	},
 	buttonSecondary: {
-		backgroundColor: Colors.Components.buttonCardEmbedded.neutral.default.background
-	},
-	buttonText: {
 		...Typography.Semantic.button.m,
-		color: Colors.Components.buttonCardEmbedded.primary.default.text
+		backgroundColor: Colors.Components.buttonCardEmbedded.neutral.default.background,
+		color: Colors.Components.buttonCardEmbedded.neutral.default.text
+	},
+	buttonSecondary__disabled: {
+		...Typography.Semantic.button.m,
+		backgroundColor: Colors.Components.buttonCardEmbedded.neutral.disabled.background,
+		color: Colors.Components.buttonCardEmbedded.neutral.disabled.text
 	}
 });

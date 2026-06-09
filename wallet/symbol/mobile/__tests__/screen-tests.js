@@ -6,9 +6,9 @@ import React from 'react';
  * Helper function to test screen navigation actions.
  * 
  * @param {React.Component} Screen - The screen component to test.
- * @param {Object} config - Configuration object for the test.
+ * @param {object} config - Configuration object for the test.
  * @param {Array<{buttonText: string, actionName: string}>} config.navigationActions - Navigation actions to test.
- * @param {Object} [config.props] - Optional props to pass to the screen component.
+ * @param {object} [config.props] - Optional props to pass to the screen component.
  */
 export const runScreenNavigationTest = (Screen, config) => {
 	const { navigationActions, props = {} } = config;

@@ -1,11 +1,12 @@
 import { loadWalletController } from './wallet-controller';
 import { walletControllers } from '@/app/lib/controller';
 
+/** @typedef {import('@/app/types/Network').ChainName} ChainName */
 /** @typedef {import('@/app/types/Wallet').WalletController} WalletController */
 
 /**
  * Gets a wallet controller by chain name from additional controllers.
- * @param {string} chainName - The blockchain name.
+ * @param {ChainName} chainName - The blockchain name.
  * @returns {WalletController|undefined} The wallet controller.
  */
 const getWalletController = chainName => {
@@ -14,7 +15,7 @@ const getWalletController = chainName => {
 
 /**
  * Generates an account from the main wallet's mnemonic for a given chain.
- * @param {string} chainName - The blockchain name.
+ * @param {ChainName} chainName - The blockchain name.
  * @returns {Promise<void>}
  */
 export const generateFromMnemonic = async chainName => {
@@ -30,7 +31,7 @@ export const generateFromMnemonic = async chainName => {
 
 /**
  * Imports an account using a private key for a given chain.
- * @param {string} chainName - The blockchain name.
+ * @param {ChainName} chainName - The blockchain name.
  * @param {string} privateKey - The private key to import.
  * @returns {Promise<void>}
  */
@@ -46,7 +47,7 @@ export const importFromPrivateKey = async (chainName, privateKey) => {
 
 /**
  * Removes an account for a given chain by clearing the wallet controller.
- * @param {string} chainName - The blockchain name.
+ * @param {ChainName} chainName - The blockchain name.
  * @returns {Promise<void>}
  */
 export const removeAccount = async chainName => {

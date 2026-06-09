@@ -20,12 +20,10 @@ const BALANCE_CHANGE_ANIMATION_DURATION = 250;
 
 /**
  * RemoveButton component. Renders a touchable icon button for removing or hiding an account.
- *
- * @param {object} props - Component props
+ * @param {object} props - Component props.
  * @param {string} props.type - Account type to determine which icon to display.
- * @param {function} props.onPress - Callback when button is pressed.
- *
- * @returns {React.ReactNode} RemoveButton component
+ * @param {function(): void} props.onPress - Callback when button is pressed.
+ * @returns {React.ReactNode} RemoveButton component.
  */
 const RemoveButton = ({ type, onPress }) => {
 	const iconName = type === WalletAccountType.EXTERNAL ? 'delete' : 'hide';
@@ -51,12 +49,10 @@ const formatBalanceChange = value => {
 
 /**
  * BalanceChangeBadge component. Displays an animated badge showing balance change amount.
- *
- * @param {object} props - Component props
+ * @param {object} props - Component props.
  * @param {string} props.value - Balance change value to display.
  * @param {string} props.ticker - Currency ticker symbol.
- *
- * @returns {React.ReactNode} BalanceChangeBadge component
+ * @returns {React.ReactNode} BalanceChangeBadge component.
  */
 const BalanceChangeBadge = ({ value, ticker }) => {
 	const formattedValue = formatBalanceChange(value);
@@ -74,8 +70,7 @@ const BalanceChangeBadge = ({ value, ticker }) => {
 /**
  * AccountCard component. Displays account information including name, balance, and address
  * with optional loading state, active/inactive styling, and remove functionality.
- *
- * @param {object} props - Component props
+ * @param {object} props - Component props.
  * @param {string} props.address - Account address to display.
  * @param {string} props.balance - Account balance amount.
  * @param {string} [props.balanceChange] - Recent balance change amount (optional).
@@ -83,9 +78,8 @@ const BalanceChangeBadge = ({ value, ticker }) => {
  * @param {boolean} [props.isLoading=false] - Whether the card is in a loading state.
  * @param {boolean} [props.isActive=false] - Whether the card is currently active/selected.
  * @param {string} [props.accountType] - Account type.
- * @param {function} [props.onRemove] - Callback when remove button is pressed.
- *
- * @returns {React.ReactNode} AccountCard component
+ * @param {function(): void} [props.onRemove] - Callback when remove button is pressed.
+ * @returns {React.ReactNode} AccountCard component.
  */
 export const AccountCard = props => {
 	const {

@@ -70,6 +70,7 @@ export const TransactionGroup = {
 export const REQUIRED_API_METHODS = [
 	'account.fetchAccountInfo',
 	'transaction.fetchAccountTransactions',
+	'transaction.fetchAccountTransaction',
 	'transaction.fetchTransactionStatus',
 	'transaction.announceTransaction',
 	'transaction.announceTransactionBundle',

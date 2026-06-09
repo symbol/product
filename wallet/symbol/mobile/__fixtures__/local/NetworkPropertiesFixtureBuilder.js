@@ -15,7 +15,7 @@ export class NetworkPropertiesFixtureBuilder {
 	/**
 	 * Creates a network properties fixture with the provided data.
 	 * 
-	 * @param {import('wallet-common-core/src/types/Network').NetworkProperties} data - network properties data.
+	 * @param {import('wallet-common-core/src/types/Network').NetworkProperties} data - Network properties data.
 	 */
 	constructor(data) {
 		this._data = { ...data };
@@ -34,8 +34,8 @@ export class NetworkPropertiesFixtureBuilder {
 	 * Creates an network properties fixture with default data for the specified chain and network.
 	 * Used data from the fixture list.
 	 * 
-	 * @param {string} chainName - chain name.
-	 * @param {'mainnet' | 'testnet'} networkIdentifier - network identifier.
+	 * @param {string} chainName - Chain name.
+	 * @param {'mainnet' | 'testnet'} networkIdentifier - Network identifier.
 	 * @returns {NetworkPropertiesFixtureBuilder}
 	 */
 	static createWithType = (chainName, networkIdentifier) => {
@@ -50,7 +50,7 @@ export class NetworkPropertiesFixtureBuilder {
 	/**
 	 * Creates an network properties fixture with the provided data.
 	 * 
-	 * @param {import('wallet-common-core/src/types/Network').NetworkProperties} data - network properties data.
+	 * @param {import('wallet-common-core/src/types/Network').NetworkProperties} data - Network properties data.
 	 * @returns {NetworkPropertiesFixtureBuilder}
 	 */
 	static createWithData = data => {

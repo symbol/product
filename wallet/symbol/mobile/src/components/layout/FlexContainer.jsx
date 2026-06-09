@@ -4,19 +4,17 @@ import { View } from 'react-native';
 
 /**
  * FlexContainer component. A flexible container component with configurable alignment options, direction, and space filling capabilities.
- * 
- * @param {object} props - Component props
- * @param {boolean} [props.center=false] - Center content both vertically and horizontally
- * @param {boolean} [props.left=false] - Align content to the left
- * @param {boolean} [props.right=false] - Align content to the right
- * @param {boolean} [props.top=false] - Align content to the top
- * @param {boolean} [props.bottom=false] - Align content to the bottom
- * @param {'row' | 'column'} [props.direction='column'] - Flex direction
- * @param {boolean} [props.fill=false] - Fill available space
- * @param {object} [props.style] - Additional styles for the container
- * @param {React.ReactNode} props.children - Child components
- * 
- * @returns {React.ReactNode} Flexible container component
+ * @param {object} props - Component props.
+ * @param {boolean} [props.center=false] - Center content both vertically and horizontally.
+ * @param {boolean} [props.left=false] - Align content to the left.
+ * @param {boolean} [props.right=false] - Align content to the right.
+ * @param {boolean} [props.top=false] - Align content to the top.
+ * @param {boolean} [props.bottom=false] - Align content to the bottom.
+ * @param {'row' | 'column'} [props.direction='column'] - Flex direction.
+ * @param {boolean} [props.fill=false] - Fill available space.
+ * @param {object} [props.style] - Additional styles for the container.
+ * @param {React.ReactNode} props.children - Child components.
+ * @returns {React.ReactNode} Flexible container component.
  */
 export const FlexContainer = ({
 	center = false,

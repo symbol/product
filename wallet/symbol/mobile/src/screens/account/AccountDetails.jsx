@@ -1,9 +1,23 @@
-import { ButtonPlain, Card, DialogBox, PasscodeView, Screen, Spacer, Stack, TableView } from '@/app/components';
+import { 
+	AccountInfoCard, 
+	ButtonPlain, 
+	Card, 
+	DialogBox, 
+	Divider, 
+	PasscodeView, 
+	Screen, 
+	SendReceiveButtons, 
+	Spacer, 
+	Stack, 
+	StyledText, 
+	TableView 
+} from '@/app/components';
 import { config } from '@/app/config';
 import { usePasscode, useToggle, useWalletController } from '@/app/hooks';
 import { PlatformUtils } from '@/app/lib/platform/PlatformUtils';
 import { $t } from '@/app/localization';
-import { createExplorerAccountUrl } from '@/app/utils';
+import { Router } from '@/app/router/Router';
+import { createAccountAddressQr, createExplorerAccountUrl } from '@/app/utils';
 import React, { useState } from 'react';
 import { constants } from 'wallet-common-core';
 
@@ -30,6 +44,14 @@ export const AccountDetails = () => {
 	const faucetUrl = `${config.faucetURL}/?recipient=${currentAccount.address}`;
 	const openFaucet = () => PlatformUtils.openLink(faucetUrl);
 
+	// Send/Receive buttons
+	const receiveQrData = createAccountAddressQr({
+		address: currentAccount.address,
+		chainName,
+		networkIdentifier
+	});
+	const hasMultisigSendWarning = currentAccountInfo?.isMultisig;
+
 	// Private key reveal
 	const [isPrivateKeyDialogShown, togglePrivateKeyDialog] = useToggle(false);
 	const [privateKey, setPrivateKey] = useState('');
@@ -43,28 +65,13 @@ export const AccountDetails = () => {
 	// Info table data
 	const tableData = [
 		{
-			title: 'address',
-			value: currentAccount.address,
-			type: 'copy'
-		},
-		{
 			title: 'publicKey',
 			value: currentAccount.publicKey,
 			type: 'copy'
 		},
 		{
-			title: 'chainName',
-			value: chainName,
-			type: 'text'
-		},
-		{
 			title: 'networkIdentifier',
 			value: currentAccount.networkIdentifier,
-			type: 'text'
-		},
-		{
-			title: 'name',
-			value: currentAccount.name,
 			type: 'text'
 		},
 		{
@@ -94,43 +101,63 @@ export const AccountDetails = () => {
 		<Screen>
 			<Screen.Upper>
 				<Spacer>
-					<Card>
-						<Spacer>
-							<TableView
-								data={tableData}
-								addressBook={walletController.modules.addressBook}
-								walletAccounts={walletController.accounts}
+					<Stack gap="l">
+						<Stack>
+							<AccountInfoCard
+								address={currentAccount.address}
+								name={currentAccount.name}
 								chainName={chainName}
-								networkIdentifier={networkIdentifier}
-								translate={$t}
-								isTitleTranslatable
 							/>
-						</Spacer>
-					</Card>
-				</Spacer>
-			</Screen.Upper>
-			<Screen.Bottom>
-				<Spacer>
-					<Stack>
-						{isTestnet && (
+							<SendReceiveButtons
+								accountAddress={currentAccount.address}
+								chainName={chainName}
+								receiveQrData={receiveQrData}
+								onSendPress={Router.goToSend}
+								hasMultisigSendWarning={hasMultisigSendWarning}
+							/>
+						</Stack>
+						<Stack gap="s">
+							<StyledText type="title">
+								{$t('s_accountDetails_accountInfo_title')}
+							</StyledText>
+							<Card>
+								<Spacer>
+									<TableView
+										data={tableData}
+										addressBook={walletController.modules.addressBook}
+										walletAccounts={walletController.accounts}
+										chainName={chainName}
+										networkIdentifier={networkIdentifier}
+										translate={$t}
+										isTitleTranslatable
+									/>
+								</Spacer>
+							</Card>
+						</Stack>
+						<Divider />
+						<Stack>
+							{isTestnet && (
+								<ButtonPlain
+									icon="faucet"
+									text={$t('button_faucet')}
+									onPress={openFaucet}
+								/>
+							)}
 							<ButtonPlain
-								icon="faucet"
-								text={$t('button_faucet')}
-								onPress={openFaucet}
+								icon="block-explorer"
+								text={$t('button_openTransactionInExplorer')}
+								onPress={openBlockExplorer}
 							/>
-						)}
-						<ButtonPlain
-							icon="block-explorer"
-							text={$t('button_openTransactionInExplorer')}
-							onPress={openBlockExplorer}
-						/>
-						<ButtonPlain
-							icon="key"
-							text={$t('button_revealPrivateKey')}
-							onPress={() => privateKeyPasscode.show()}
-						/>
+							<ButtonPlain
+								icon="key"
+								text={$t('button_revealPrivateKey')}
+								onPress={() => privateKeyPasscode.show()}
+							/>
+						</Stack>
 					</Stack>
 				</Spacer>
+			</Screen.Upper>
+			<Screen.Modals>
 				<DialogBox
 					type="alert"
 					title={$t('dialog_sensitive')}
@@ -139,7 +166,7 @@ export const AccountDetails = () => {
 					onSuccess={togglePrivateKeyDialog}
 				/>
 				<PasscodeView {...privateKeyPasscode.props} />
-			</Screen.Bottom>
+			</Screen.Modals>
 		</Screen >
 	);
 };

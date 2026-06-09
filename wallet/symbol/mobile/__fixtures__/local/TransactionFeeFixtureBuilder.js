@@ -67,7 +67,7 @@ export class TransactionFeeFixtureBuilder {
 	/**
      * Creates a transaction fee fixture with the provided data.
      * 
-     * @param {import('wallet-common-core/src/types/Transaction').TransactionFeeTiers | object} data - transaction fee data.
+     * @param {import('wallet-common-core/src/types/Transaction').TransactionFeeTiers | object} data - Transaction fee data.
      * @param {'symbol' | 'ethereum'} [chainName] - Chain name.
      * @param {'mainnet' | 'testnet'} [networkIdentifier] - Network identifier.
      */
@@ -131,7 +131,7 @@ export class TransactionFeeFixtureBuilder {
 	/**
      * Creates a transaction fee fixture with the provided data.
      * 
-     * @param {import('wallet-common-core/src/types/Transaction').TransactionFeeTiers | object} data - transaction fee data.
+     * @param {import('wallet-common-core/src/types/Transaction').TransactionFeeTiers | object} data - Transaction fee data.
      * @param {'symbol' | 'ethereum'} [chainName='symbol'] - Chain name.
      * @param {'mainnet' | 'testnet'} [networkIdentifier='testnet'] - Network identifier.
      * @returns {TransactionFeeFixtureBuilder}

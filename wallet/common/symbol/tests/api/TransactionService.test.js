@@ -215,15 +215,19 @@ describe('TransactionService', () => {
 		});
 	});
 
-	describe('fetchTransactionInfo', () => {
-		const runFetchTransactionInfoTest = async (config, expectedResult) => {
+	describe('fetchAccountTransaction', () => {
+		const runFetchAccountTransactionTest = async (config, expectedResult) => {
 			// Arrange:
 			const { group, hash, dtoResponse } = config;
-			const url = `${networkProperties.nodeUrl}/transactions/${group}/${hash}`;
-			const expectedCalls = [{ url, options: undefined, response: dtoResponse }];
+			const statusUrl = `${networkProperties.nodeUrl}/transactionStatus/${hash}`;
+			const transactionUrl = `${networkProperties.nodeUrl}/transactions/${group}/${hash}`;
+			const expectedCalls = [
+				{ url: statusUrl, options: undefined, response: { group } },
+				{ url: transactionUrl, options: undefined, response: dtoResponse }
+			];
 			jest.spyOn(transactionService, 'resolveTransactionDTOs').mockResolvedValueOnce([{ mapped: true }]);
 			const functionToTest = () =>
-				transactionService.fetchTransactionInfo(hash, { group, currentAccount, networkProperties });
+				transactionService.fetchAccountTransaction(networkProperties, currentAccount, hash);
 
 			// Act & Assert:
 			await runApiTest(mockMakeRequest, functionToTest, expectedCalls, expectedResult);
@@ -237,7 +241,7 @@ describe('TransactionService', () => {
 			const expectedResult = { mapped: true };
 
 			// Act & Assert:
-			await runFetchTransactionInfoTest({ group, hash, dtoResponse }, expectedResult);
+			await runFetchAccountTransactionTest({ group, hash, dtoResponse }, expectedResult);
 		});
 	});
 
@@ -411,27 +415,43 @@ describe('TransactionService', () => {
 	});
 
 	describe('announceTransactionBundle', () => {
-		it('uses announceTransactionsSequentially with PARTIAL for MULTISIG_TRANSFER', async () => {
-			// Arrange:
-			const bundle = {
-				metadata: { type: TransactionBundleType.MULTISIG_TRANSFER },
-				transactions: [createSignedTransaction('p1', 'H1'), createSignedTransaction('p2', 'H2')]
-			};
-			const spySequential = jest
-				.spyOn(transactionService, 'announceTransactionsSequentially')
-				.mockResolvedValue();
+		const multisigBundleCases = [
+			{
+				description: 'uses announceTransactionsSequentially with PARTIAL for MULTISIG_TRANSFER',
+				bundleType: TransactionBundleType.MULTISIG_TRANSFER
+			},
+			{
+				description: 'uses announceTransactionsSequentially with PARTIAL for MULTISIG_ACCOUNT_MODIFICATION',
+				bundleType: TransactionBundleType.MULTISIG_ACCOUNT_MODIFICATION
+			}
+		];
 
-			// Act:
-			await transactionService.announceTransactionBundle(networkProperties, bundle);
+		const runAnnounceTransactionBundleMultisigTest = async (description, config) => {
+			it(description, async () => {
+				// Arrange:
+				const { bundleType } = config;
+				const bundle = {
+					metadata: { type: bundleType },
+					transactions: [createSignedTransaction('p1', 'H1'), createSignedTransaction('p2', 'H2')]
+				};
+				const spySequential = jest
+					.spyOn(transactionService, 'announceTransactionsSequentially')
+					.mockResolvedValue();
 
-			// Assert:
-			expect(spySequential).toHaveBeenCalledTimes(1);
-			expect(spySequential).toHaveBeenCalledWith(
-				networkProperties,
-				bundle.transactions,
-				TransactionAnnounceGroup.PARTIAL
-			);
-		});
+				// Act:
+				await transactionService.announceTransactionBundle(networkProperties, bundle);
+
+				// Assert:
+				expect(spySequential).toHaveBeenCalledTimes(1);
+				expect(spySequential).toHaveBeenCalledWith(
+					networkProperties,
+					bundle.transactions,
+					TransactionAnnounceGroup.PARTIAL
+				);
+			});
+		};
+
+		multisigBundleCases.forEach(({ description, ...config }) => runAnnounceTransactionBundleMultisigTest(description, config));
 
 		it('announces each transaction with DEFAULT group when not multisig', async () => {
 			// Arrange:

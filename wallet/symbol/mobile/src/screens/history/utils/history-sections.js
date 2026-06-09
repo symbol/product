@@ -3,6 +3,11 @@ import { $t } from '@/app/localization';
 import { Colors } from '@/app/styles';
 import { FilterType } from '@/app/types/Filter';
 
+/** @typedef {import('@/app/types/Transaction').Transaction} Transaction */
+
+/**
+ * Section type identifiers.
+ */
 export const SectionType = {
 	TRANSACTIONS: 'transactions',
 	RECEIPTS: 'receipts'
@@ -10,7 +15,7 @@ export const SectionType = {
 
 /**
  * Returns the filter configuration for the history screen.
- * @returns {Array} Filter configuration array
+ * @returns {object[]} Filter configuration array.
  */
 export const getHistoryFilterConfig = () => [
 	{
@@ -56,13 +61,14 @@ export const getHistoryFilterConfig = () => [
 
 /**
  * Creates a section object for the SectionList.
- * @param {string} title - Section title
- * @param {string} group - Transaction group identifier
- * @param {Array} data - Section data
- * @param {object} [titleStyle] - Optional title style
- * @returns {object} Section configuration
+ * @param {string} title - Section title.
+ * @param {string} group - Transaction group identifier.
+ * @param {Transaction[] | object[]} data - Section data.
+ * @param {object} [titleStyle] - Optional title style.
+ * @returns {object} Section configuration.
  */
 export const createSection = (title, group, data, titleStyle = null) => ({
+	key: group,
 	title,
 	group,
 	data,
@@ -79,13 +85,13 @@ export const SECTION_TITLE_STYLES = {
 
 /**
  * Builds sections array from transaction and receipt data.
- * @param {object} params - Parameters object
- * @param {Array} params.partial - Partial transactions
- * @param {Array} params.unconfirmed - Unconfirmed transactions
- * @param {Array} params.confirmed - Confirmed transactions
- * @param {Array} params.harvested - Harvested receipts
- * @param {boolean} params.isHarvestedMode - Whether showing harvested mode
- * @returns {Array} Sections array for SectionList
+ * @param {object} params - Parameters object.
+ * @param {Transaction[]} params.partial - Partial transactions.
+ * @param {Transaction[]} params.unconfirmed - Unconfirmed transactions.
+ * @param {Transaction[]} params.confirmed - Confirmed transactions.
+ * @param {object[]} params.harvested - Harvested receipts.
+ * @param {boolean} params.isHarvestedMode - Whether showing harvested mode.
+ * @returns {object[]} Sections array for SectionList.
  */
 export const buildHistorySections = ({
 	partial,

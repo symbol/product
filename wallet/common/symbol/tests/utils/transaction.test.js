@@ -1,8 +1,15 @@
-import { TransactionType } from '../../src/constants';
+import {
+	EMPTY_AGGREGATE_HASH,
+	HASH_LOCK_AMOUNT,
+	HASH_LOCK_DURATION,
+	TransactionBundleType,
+	TransactionType
+} from '../../src/constants';
 import {
 	calculateTransactionFees,
 	calculateTransactionSize,
 	cosignTransaction,
+	createTransactionFee,
 	decodePlainMessage,
 	decryptMessage,
 	encodeDelegatedHarvestingMessage,
@@ -18,12 +25,14 @@ import {
 	removeAllowedTransactions,
 	removeBlockedTransactions,
 	signTransaction,
+	signTransactionBundle,
 	transactionToPayload
 } from '../../src/utils';
 import { networkProperties } from '../__fixtures__/local/network';
 import { payloads } from '../__fixtures__/local/payloads';
 import { walletTransactions } from '../__fixtures__/local/transactions';
 import { currentAccount, walletStorageAccounts } from '../__fixtures__/local/wallet';
+import { TransactionBundle } from 'wallet-common-core';
 
 const DELEGATED_HARVESTING_MESSAGE_TYPE = 254;
 const ACCOUNT_KEY_LINK_TRANSACTION_TYPE = 16716;
@@ -455,6 +464,44 @@ describe('utils/transaction', () => {
 			// Assert:
 			expect(result).toStrictEqual(expectedResult);
 		});
+
+		it('returns the signed aggregate transaction with cosignatures when cosignaturePrivateKeys is provided', () => {
+			// Arrange:
+			const transaction = walletTransactions[1]; // Aggregate complete transaction
+			const { privateKey } = walletStorageAccounts.testnet[0];
+			const cosignaturePrivateKeys = [
+				walletStorageAccounts.testnet[1].privateKey,
+				walletStorageAccounts.testnet[2].privateKey
+			];
+
+			// Act:
+			const result = signTransaction(networkProperties.networkIdentifier, transaction, privateKey, cosignaturePrivateKeys);
+
+			// Assert:
+			expect(result).toHaveProperty('hash');
+			expect(result).toHaveProperty('dto');
+			expect(result.dto).toHaveProperty('payload');
+			// The payload should contain the cosignatures (each cosignature is 104 bytes = 208 hex chars)
+			// Verify the payload is longer than it would be without cosignatures
+			const resultWithoutCosignatures = signTransaction(networkProperties.networkIdentifier, transaction, privateKey, []);
+			expect(result.dto.payload.length).toBeGreaterThan(resultWithoutCosignatures.dto.payload.length);
+			// Each cosignature adds 104 bytes (208 hex chars): 8 (version) + 32 (publicKey) + 64 (signature)
+			const expectedAdditionalLength = cosignaturePrivateKeys.length * 208;
+			expect(result.dto.payload.length - resultWithoutCosignatures.dto.payload.length).toBe(expectedAdditionalLength);
+		});
+
+		it('throws when cosignaturePrivateKeys are provided for non-aggregate transactions', () => {
+			// Arrange:
+			const transaction = walletTransactions[0]; // Non-aggregate transaction (namespace registration)
+			const { privateKey } = walletStorageAccounts.testnet[0];
+			const cosignaturePrivateKeys = [
+				walletStorageAccounts.testnet[1].privateKey
+			];
+
+			// Act & Assert:
+			expect(() => signTransaction(networkProperties.networkIdentifier, transaction, privateKey, cosignaturePrivateKeys))
+				.toThrow('Cosignatures can only be added to aggregate transactions');
+		});
 	});
 
 	describe('cosignTransaction', () => {
@@ -480,6 +527,104 @@ describe('utils/transaction', () => {
 			// Assert:
 			expect(result).toStrictEqual(expectedResult);
 		});
+	});
+
+	describe('signTransactionBundle', () => {
+		const signerAccount = walletStorageAccounts.testnet[0];
+		const cosignerAccount = walletStorageAccounts.testnet[1];
+
+		// Fixed deadlines (computed for a known reference point, independent of system time)
+		const HASH_LOCK_DEADLINE = { timestamp: 1_700_007_200_000, adjusted: 32_756_733_000 };
+		const AGGREGATE_BONDED_DEADLINE = { timestamp: 1_700_172_800_000, adjusted: 32_922_333_000 };
+
+		const createMultisigBundle = (bundleType, cosignaturePrivateKeys = []) => {
+			const innerTransfer = {
+				type: TransactionType.TRANSFER,
+				signerPublicKey: signerAccount.publicKey,
+				recipientAddress: cosignerAccount.address,
+				mosaics: []
+			};
+			const hashLockTx = {
+				type: TransactionType.HASH_LOCK,
+				signerPublicKey: signerAccount.publicKey,
+				mosaic: {
+					id: networkProperties.networkCurrency.mosaicId,
+					amount: HASH_LOCK_AMOUNT,
+					divisibility: networkProperties.networkCurrency.divisibility
+				},
+				lockedAmount: HASH_LOCK_AMOUNT,
+				duration: HASH_LOCK_DURATION,
+				fee: createTransactionFee(networkProperties, '0'),
+				deadline: HASH_LOCK_DEADLINE,
+				aggregateHash: EMPTY_AGGREGATE_HASH
+			};
+			const aggregateBondedTx = {
+				type: TransactionType.AGGREGATE_BONDED,
+				innerTransactions: [innerTransfer],
+				signerPublicKey: signerAccount.publicKey,
+				signerAddress: signerAccount.address,
+				fee: createTransactionFee(networkProperties, '0'),
+				deadline: AGGREGATE_BONDED_DEADLINE
+			};
+
+			return new TransactionBundle([hashLockTx, aggregateBondedTx], { type: bundleType, cosignaturePrivateKeys });
+		};
+
+		it('signs each transaction for non-multisig bundle', () => {
+			// Arrange:
+			const metadata = { type: TransactionBundleType.DEFAULT };
+			const bundle = new TransactionBundle([walletTransactions[0]], metadata);
+
+			// Act:
+			const result = signTransactionBundle(networkProperties.networkIdentifier, bundle, signerAccount.privateKey);
+
+			// Assert:
+			expect(result).toBeInstanceOf(TransactionBundle);
+			expect(result.metadata).toStrictEqual(metadata);
+			expect(result.transactions).toHaveLength(1);
+			expect(result.transactions[0]).toHaveProperty('hash');
+			expect(result.transactions[0]).toHaveProperty('dto.payload');
+		});
+
+		const multisigBundleCases = [
+			{
+				description: 'signs hashLock and aggregateBonded transactions for MULTISIG_TRANSFER bundle',
+				bundleType: TransactionBundleType.MULTISIG_TRANSFER
+			},
+			{
+				description: 'signs hashLock and aggregateBonded transactions for MULTISIG_ACCOUNT_MODIFICATION bundle',
+				bundleType: TransactionBundleType.MULTISIG_ACCOUNT_MODIFICATION
+			}
+		];
+
+		const runSignTransactionBundleMultisigTest = (description, config) => {
+			it(description, () => {
+				// Arrange:
+				const { bundleType } = config;
+				const cosignaturePrivateKeys = [cosignerAccount.privateKey];
+				const bundle = createMultisigBundle(bundleType, cosignaturePrivateKeys);
+
+				// Act:
+				const result = signTransactionBundle(
+					networkProperties.networkIdentifier,
+					bundle,
+					signerAccount.privateKey
+				);
+
+				// Assert:
+				expect(result).toBeInstanceOf(TransactionBundle);
+				expect(result.metadata).toStrictEqual({ type: bundleType, cosignaturePrivateKeys });
+				expect(result.transactions).toHaveLength(2);
+				const [signedHashLock, signedAggregateBonded] = result.transactions;
+				expect(signedHashLock).toHaveProperty('hash');
+				expect(signedHashLock).toHaveProperty('dto.payload');
+				expect(signedAggregateBonded).toHaveProperty('hash');
+				expect(signedAggregateBonded).toHaveProperty('dto.payload');
+				expect(signedHashLock.dto.payload).toContain(signedAggregateBonded.hash);
+			});
+		};
+
+		multisigBundleCases.forEach(({ description, ...config }) => runSignTransactionBundleMultisigTest(description, config));
 	});
 
 	describe('calculateTransactionSize', () => {

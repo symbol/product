@@ -11,23 +11,37 @@ import {
 	TextBox,
 	TransactionScreenTemplate
 } from '@/app/components';
-import { MessageType } from '@/app/constants';
-import { useAsyncManager, useDebounce, useProp, useToggle, useTransactionFees, useWalletController } from '@/app/hooks';
+import { useDebounce, useTransactionFees, useWalletController } from '@/app/hooks';
 import { $t } from '@/app/localization';
 import { Router } from '@/app/router/Router';
-import { formatAmountInput, getAccountKnownInfo, getAvailableBalance, objectToTableData, showError } from '@/app/utils';
+import { useSendFormState, useSendTransaction, useSenderInfo } from '@/app/screens/send/hooks';
+import {
+	calculateTokenAvailableBalance,
+	createSenderOptions,
+	filterActiveTokens,
+	getSelectedTokenPrice
+} from '@/app/screens/send/utils';
+import { formatAmountInput } from '@/app/utils';
 import React, { useEffect, useMemo, useState } from 'react';
 import Animated, { FadeInDown, FadeOut } from 'react-native-reanimated';
-import { constants as symbolConstants } from 'wallet-common-symbol';
 
-const CHAINS_THAT_HAVE_MESSAGE_FIELD = ['symbol', 'nem'];
+/** @typedef {import('@/app/screens/send/types/Send').SendRouteParams} SendRouteParams */
+/** @typedef {import('@/app/screens/send/types/Send').SenderOption} SenderOption */
+/** @typedef {import('@/app/types/Token').Token} Token */
+
+const CHAINS_WITH_MESSAGE_SUPPORT = ['symbol', 'nem'];
 
 /**
- * Send screen component. This screen allows users to send tokens to recipient addresses,
+ * Send screen component. Allows users to send tokens to recipient addresses,
  * supporting multisig accounts, message attachments with encryption options, and dynamic fee
  * selection for efficient transaction processing.
+ * @param {object} props - Component props.
+ * @param {object} props.route - React Navigation route object.
+ * @param {SendRouteParams} [props.route.params] - Route parameters.
+ * @returns {React.ReactNode} Send component.
  */
 export const Send = props => {
+	// Route & Controller Setup
 	const { route } = props;
 	const walletController = useWalletController(route.params?.chainName);
 	const {
@@ -45,59 +59,100 @@ export const Send = props => {
 	} = walletController;
 	const currentAccountInfo = walletController.currentAccountInfo || {};
 	const walletAccounts = accounts[networkIdentifier];
-	const hasMessageField = CHAINS_THAT_HAVE_MESSAGE_FIELD.includes(walletController.chainName);
+	const hasMessageField = CHAINS_WITH_MESSAGE_SUPPORT.includes(walletController.chainName);
 
-	// UI state
-	const [senderOptions, setSenderOptions] = useState([]);
-	const [senderTokenList, setSenderTokenList] = useState([]);
-	const [isAmountValid, setAmountValid] = useState(false);
-	const [isRecipientValid, setRecipientValid] = useState(false);
+	// Form State
+	const {
+		senderAddress,
+		recipientAddress,
+		selectedTokenId,
+		amount,
+		messageText,
+		isMessageEncrypted: isMessageEncryptedValue,
+		transactionSpeed,
+		isAmountValid,
+		isRecipientValid,
+		changeSenderAddress,
+		changeRecipientAddress,
+		changeSelectedTokenId,
+		changeAmount,
+		changeMessageText,
+		toggleMessageEncrypted,
+		changeTransactionSpeed,
+		changeAmountValidity,
+		changeRecipientValidity
+	} = useSendFormState({
+		defaultSenderAddress: currentAccount.address,
+		routeParams: route.params
+	});
 
-	// Form inputs
-	const [senderAddress, setSenderAddress] = useProp(currentAccount.address);
-	const [recipientAddress, setRecipientAddress] = useProp(route.params?.recipientAddress, '');
-	const [selectedTokenId, setSelectedTokenId] = useProp(route.params?.tokenId, null);
-	const [amount, setAmount] = useProp(route.params?.amount, '0');
-	const [messageText, setMessageText] = useProp(route.params?.message?.text, '');
-	const [isMessageEncryptedCheckboxValue, toggleMessageEncrypted] = useToggle(false);
-	const [speed, setSpeed] = useState('medium');
+	// Sender Info Management
+	const {
+		senderTokenList,
+		senderPublicKey,
+		isLoading: isSenderInfoLoading
+	} = useSenderInfo({
+		walletController,
+		senderAddress,
+		selectedTokenId,
+		onTokenIdChange: changeSelectedTokenId
+	});
 
-	// Derived properties
+	// Sender Options (for multisig)
+	const [senderOptions, setSenderOptions] = useState(/** @type {SenderOption[]} */ ([]));
 	const isAccountCosignatoryOfMultisig = currentAccountInfo.multisigAddresses?.length > 0;
-	const isMultisigTransfer = senderAddress !== currentAccount.address;
-	const nativeTokenId = networkProperties?.networkCurrency?.id || networkProperties?.networkCurrency?.mosaicId;
-	const tokenListFiltered = senderTokenList.filter(item => item.endHeight > chainHeight || !item.duration);
 
-	// Form fields
-	const [senderPublicKey, setSenderPublicKey] = useProp(currentAccount.publicKey);
+	useEffect(() => {
+		if (isAccountCosignatoryOfMultisig) {
+			const senderAddresses = [currentAccount.address, ...currentAccountInfo.multisigAddresses];
+			const options = createSenderOptions(senderAddresses, {
+				walletAccounts,
+				addressBook,
+				chainName: walletController.chainName,
+				networkIdentifier: walletController.networkIdentifier
+			});
+
+			setSenderOptions(options);
+		}
+	}, [isStateReady, currentAccount, currentAccountInfo.multisigAddresses]);
+
+	// Derived Token Data
+	const nativeTokenId = networkProperties?.networkCurrency?.id || networkProperties?.networkCurrency?.mosaicId;
+	const tokenListFiltered = filterActiveTokens(senderTokenList, chainHeight);
 	const selectedToken = senderTokenList.find(token => token.id === selectedTokenId) || senderTokenList[0];
-	const tokens = selectedToken
-		? [{
+	const isMultisigTransfer = senderAddress !== currentAccount.address;
+	const isMessageEncrypted = isMultisigTransfer ? false : isMessageEncryptedValue;
+
+	/** @type {Token[]} */
+	const tokens = useMemo(() => {
+		if (!selectedToken)
+			return [];
+
+		return [{
 			...selectedToken,
 			amount: formatAmountInput(amount, selectedToken.divisibility)
-		}]
-		: [];
-	const isMessageEncrypted = isMultisigTransfer ? false : isMessageEncryptedCheckboxValue;
+		}];
+	}, [selectedToken, amount]);
 
-	// Create transaction
-	const createTransaction = async () => {
-		const transactionBundle = await walletController.modules.transfer.createTransaction({
-			senderAddress,
-			senderPublicKey,
-			recipientAddress,
-			tokens,
-			mosaics: tokens,
-			messageText,
-			isMessageEncrypted
-		});
+	// Transaction Creation
+	const {
+		createTransaction,
+		getTransactionPreviewTable
+	} = useSendTransaction({
+		walletController,
+		senderAddress,
+		senderPublicKey,
+		recipientAddress,
+		tokens,
+		messageText,
+		isMessageEncrypted
+	});
 
-		return transactionBundle;
-	};
-
-	// Calculate transaction fees
+	// Transaction Fees
 	const transactionFeesManager = useTransactionFees(createTransaction, walletController);
 	const transactionFees = transactionFeesManager.data;
 	const calculateTransactionFeesSafely = useDebounce(transactionFeesManager.call, 2000);
+
 	useEffect(() => {
 		if (isRecipientValid && isAmountValid && selectedTokenId && isWalletReady)
 			calculateTransactionFeesSafely();
@@ -113,124 +168,24 @@ export const Send = props => {
 		senderPublicKey
 	]);
 
-	// Get transaction preview data for confirmation dialog
-	const getTransactionPreviewTable = transaction => {
-		if (symbolConstants.TransactionType.HASH_LOCK === transaction.type) {
-			const hashLockData = {
-				type: transaction.type,
-				description: $t('form_transfer_hash_lock_description', {
-					lockedAmount: transaction.lockedAmount,
-					duration: transaction.duration
-				}),
-				fee: transaction.fee
-			};
+	// Display Data
+	const availableBalance = useMemo(
+		() => calculateTokenAvailableBalance(selectedToken, nativeTokenId, transactionFees, transactionSpeed),
+		[selectedToken, nativeTokenId, transactionFees, transactionSpeed]
+	);
 
-			return objectToTableData(hashLockData);
-		}
+	const tokenPrice = getSelectedTokenPrice(selectedTokenId, nativeTokenId, price);
 
-		const transfer = transaction.innerTransactions ? transaction.innerTransactions[0] : transaction;
-
-		const data = {
-			type: transfer.type,
-			sender: transfer.signerAddress,
-			recipientAddress: transfer.recipientAddress
-		};
-
-		if (transfer.message) {
-			data.messageText = transfer.message.text;
-			data.isMessageEncrypted = transfer.message.type === MessageType.ENCRYPTED_TEXT;
-		}
-
-		data.mosaics = transfer.mosaics ?? transfer.tokens;
-		data.fee = transaction.fee;
-
-		return objectToTableData(data);
-	};
-
-	// Max amount for input field
-	const availableBalance = useMemo(() => {
-		if (!selectedTokenId || !selectedToken?.amount)
-			return '0';
-
-		if (!transactionFees)
-			return selectedToken.amount;
-
-		return getAvailableBalance(
-			selectedToken,
-			nativeTokenId,
-			transactionFees,
-			speed
-		);
-	}, [selectedTokenId, selectedToken?.amount, transactionFees, speed]);
-
-	// Token price for input field
-	const getTokenPrice = () => {
-		const isSelectedNativeToken = selectedTokenId === nativeTokenId;
-		return isSelectedNativeToken ? price : null;
-	};
-
-	// Update sender address list when wallet is ready
-	useEffect(() => {
-		if (isAccountCosignatoryOfMultisig) {
-			const senderAddresses = [currentAccount.address, ...currentAccountInfo.multisigAddresses];
-			const senderAddressOptions = senderAddresses.map(address => {
-				const knownInfo = getAccountKnownInfo(address, {
-					walletAccounts,
-					addressBook,
-					chainName: walletController.chainName,
-					networkIdentifier: walletController.networkIdentifier
-				});
-
-				return {
-					value: address,
-					label: knownInfo.name || address
-				};
-			});
-			setSenderOptions(senderAddressOptions);
-		}
-	}, [isStateReady, currentAccount, currentAccountInfo.multisigAddresses]);
-
-	// Update token list and sender public key when sender address changes
-	const updateSenderInfo = (tokens, publicKey) => {
-		const preferredToken = tokens.find(token => token.id === selectedTokenId);
-		setSenderTokenList(tokens);
-		setSelectedTokenId(preferredToken?.id || tokens[0]?.id || null);
-		setSenderPublicKey(publicKey);
-	};
-
-	const senderInfoManager = useAsyncManager({
-		callback: async sender => {
-			const { mosaics, tokens, publicKey } = await walletController.networkApi.account.fetchAccountInfo(networkProperties, sender);
-			const tokenList = (tokens && tokens.length) ? tokens : (mosaics || []);
-			updateSenderInfo(tokenList, publicKey);
-		},
-		onError: e => {
-			showError(e);
-			updateSenderInfo([], '');
-		}
-	});
-
-	useEffect(() => {
-		setSelectedTokenId(null);
-		const currentTokens = (currentAccountInfo.tokens && currentAccountInfo.tokens.length)
-			? currentAccountInfo.tokens
-			: (currentAccountInfo.mosaics || []);
-
-		if (currentAccount.address === senderAddress)
-			updateSenderInfo(currentTokens, currentAccount.publicKey);
-		else
-			senderInfoManager.call(senderAddress);
-	}, [currentAccount, currentAccountInfo.mosaics, currentAccountInfo.tokens, senderAddress]);
-
-	// Loading and validation state
-	const isLoading = !isWalletReady || senderInfoManager.isLoading;
-	const isSendButtonDisabled = !isNetworkConnectionReady 
-		|| !isRecipientValid 
+	// Derived State
+	const isLoading = !isWalletReady || isSenderInfoLoading;
+	const isSendButtonDisabled = !isNetworkConnectionReady
+		|| !isRecipientValid
 		|| !isAmountValid
-		|| !tokens.length 
-		|| !transactionFees 
+		|| !tokens.length
+		|| !transactionFees
 		|| transactionFeesManager.isLoading;
 
+	// Render
 	return (
 		<TransactionScreenTemplate
 			isLoading={isLoading}
@@ -242,7 +197,7 @@ export const Send = props => {
 			onComplete={Router.goBack}
 			walletController={walletController}
 			transactionFeeTiers={transactionFees}
-			transactionFeeTierLevel={speed}
+			transactionFeeTierLevel={transactionSpeed}
 		>
 			<Spacer>
 				<Stack>
@@ -256,7 +211,7 @@ export const Send = props => {
 							label={$t('input_sender')}
 							value={senderAddress}
 							list={senderOptions}
-							onChange={setSenderAddress}
+							onChange={changeSenderAddress}
 						/>
 					)}
 					<InputAddress
@@ -266,8 +221,8 @@ export const Send = props => {
 						accounts={walletAccounts}
 						chainName={walletController.chainName}
 						networkIdentifier={walletController.networkIdentifier}
-						onChange={setRecipientAddress}
-						onValidityChange={setRecipientValid}
+						onChange={changeRecipientAddress}
+						onValidityChange={changeRecipientValidity}
 					/>
 					<SelectToken
 						label={$t('form_transfer_input_mosaic')}
@@ -275,22 +230,22 @@ export const Send = props => {
 						tokens={tokenListFiltered}
 						chainName={walletController.chainName}
 						networkIdentifier={walletController.networkIdentifier}
-						onChange={setSelectedTokenId}
+						onChange={changeSelectedTokenId}
 					/>
 					<InputAmount
 						label={$t('form_transfer_input_amount')}
 						availableBalance={availableBalance}
-						price={getTokenPrice()}
+						price={tokenPrice}
 						networkIdentifier={networkIdentifier}
 						value={amount}
-						onChange={setAmount}
-						onValidityChange={setAmountValid}
+						onChange={changeAmount}
+						onValidityChange={changeAmountValidity}
 					/>
 					{hasMessageField && (
 						<TextBox
 							label={$t('form_transfer_input_message')}
 							value={messageText}
-							onChange={setMessageText}
+							onChange={changeMessageText}
 						/>
 					)}
 					{!isMultisigTransfer && hasMessageField && (
@@ -304,10 +259,10 @@ export const Send = props => {
 						<Animated.View entering={FadeInDown} exiting={FadeOut}>
 							<FeeSelector
 								title={$t('form_transfer_input_fee')}
-								value={speed}
+								value={transactionSpeed}
 								feeTiers={transactionFees}
 								ticker={ticker}
-								onChange={setSpeed}
+								onChange={changeTransactionSpeed}
 							/>
 						</Animated.View>
 					)}

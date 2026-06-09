@@ -2,11 +2,10 @@ import { PasscodeMode } from '@/app/constants';
 import { useCallback, useState } from 'react';
 
 /**
- * Hook to launch the PasscodeView component.
- *
+ * React hook to launch the PasscodeView component.
  * @param {object} params - The parameters.
- * @param {function} params.onSuccess - The success callback.
- * @param {function} [params.onCancel] - The cancel callback.
+ * @param {function(): void} params.onSuccess - The success callback.
+ * @param {function(): void} [params.onCancel] - The cancel callback.
  * @param {'create' | 'verify'} [type] - The type of passcode action.
  * @returns {object} The passcode controller with show function and PasscodeView props.
  */

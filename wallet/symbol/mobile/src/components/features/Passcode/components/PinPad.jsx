@@ -3,7 +3,7 @@ import { Colors, Sizes, Typography } from '@/app/styles';
 import React, { useCallback } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-const BUTTON_SIZE = Sizes.Semantic.controlHeight.m;
+const BUTTON_SIZE = Sizes.Semantic.circleControlSize.xl;
 const BUTTON_GAP = Sizes.Semantic.layoutSpacing.m;
 const PIN_PAD_WIDTH = (BUTTON_SIZE * 3) + (BUTTON_GAP * 2);
 const BUTTON_COLOR_DEFAULT = Colors.Components.buttonSolid.secondary.default.background;
@@ -50,11 +50,9 @@ const PinPadButton = ({ isDisabled, value, onPress }) => {
 
 /**
  * PinPad component. A numeric keypad for passcode entry.
- *
  * @param {object} props - Component props.
- * @param {function} props.onKeyPress - Callback when a number key is pressed.
- * @param {function} props.onDelete - Callback when delete key is pressed.
- * 
+ * @param {function(string): void} props.onKeyPress - Callback when a number key is pressed.
+ * @param {function(): void} props.onDelete - Callback when delete key is pressed.
  * @returns {React.ReactNode} The pin pad component.
  */
 export const PinPad = ({ isDisabled, onKeyPress, onDelete }) => {

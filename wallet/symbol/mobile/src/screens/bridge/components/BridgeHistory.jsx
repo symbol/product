@@ -1,4 +1,14 @@
-import { Amount, Icon, ListItemContainer, Stack, StatusRow, StyledText, TokenAvatar, TransactionAvatar } from '@/app/components';
+import { 
+	Amount, 
+	AnimatedListItem, 
+	Icon, 
+	ListItemContainer, 
+	Stack, 
+	StatusRow, 
+	StyledText, 
+	TokenAvatar, 
+	TransactionAvatar 
+} from '@/app/components';
 import { $t } from '@/app/localization';
 import { BRIDGE_HISTORY_PAGE_SIZE } from '@/app/screens/bridge/constants';
 import { BridgeRequestStatus } from '@/app/screens/bridge/types/Bridge';
@@ -10,6 +20,7 @@ import { StyleSheet, View } from 'react-native';
 /** @typedef {import('@/app/screens/bridge/types/Bridge').BridgeRequest} BridgeRequest */
 /** @typedef {import('@/app/types/Token').TokenInfo} TokenInfo */
 /** @typedef {import('@/app/types/Network').NetworkIdentifier} NetworkIdentifier */
+/** @typedef {import('@/app/types/Network').ChainName} ChainName */
 
 const ICON_NAME = 'swap';
 const PENDING_COLOR = Colors.Semantic.role.warning.default;
@@ -64,13 +75,13 @@ const getAmount = (data, networkIdentifier) => {
 
 /**
  * SwapChains component. Displays source and target chain with token avatars.
- * @param {Object} props - Component props.
- * @param {string} props.sourceChainName - Source chain name.
- * @param {string} props.targetChainName - Target chain name.
+ * @param {object} props - Component props.
+ * @param {ChainName} props.sourceChainName - Source chain name.
+ * @param {ChainName} props.targetChainName - Target chain name.
  * @param {TokenInfo} props.sourceTokenInfo - Source token info.
  * @param {TokenInfo} props.targetTokenInfo - Target token info.
  * @param {NetworkIdentifier} props.networkIdentifier - Network identifier.
- * @returns {import('react').ReactNode} SwapChains component
+ * @returns {import('react').ReactNode} SwapChains component.
  */
 const SwapChains = ({ sourceChainName, targetChainName, sourceTokenInfo, targetTokenInfo, networkIdentifier }) => {
 	const { imageId: sourceImageId } = getTokenKnownInfo(
@@ -113,11 +124,11 @@ const SwapChains = ({ sourceChainName, targetChainName, sourceTokenInfo, targetT
 
 /**
  * SwapListItem component. Displays a single bridge history item with status and amount.
- * @param {Object} props - Component props.
+ * @param {object} props - Component props.
  * @param {BridgeRequest} props.data - Bridge request data.
  * @param {NetworkIdentifier} props.networkIdentifier - Network identifier.
  * @param {(data: BridgeRequest) => void} props.onPress - Press handler.
- * @returns {import('react').ReactNode} SwapListItem component
+ * @returns {import('react').ReactNode} SwapListItem component.
  */
 const SwapListItem = ({ data, networkIdentifier, onPress }) => {
 	const action = $t('transactionDescriptor_swap');
@@ -193,11 +204,11 @@ const SwapListItem = ({ data, networkIdentifier, onPress }) => {
 
 /**
  * BridgeHistory component. Displays a list of recent bridge transaction history items.
- * @param {Object} props - Component props.
+ * @param {object} props - Component props.
  * @param {BridgeRequest[]} props.history - Array of bridge request history items.
  * @param {NetworkIdentifier} props.networkIdentifier - Network identifier for resolving token info.
  * @param {(data: BridgeRequest) => void} props.onItemPress - Handler for item press.
- * @returns {import('react').ReactNode} BridgeHistory component
+ * @returns {import('react').ReactNode} BridgeHistory component.
  */
 export const BridgeHistory = ({ history, networkIdentifier, onItemPress }) => {
 	const isPageSizeMessageVisible = history.length === BRIDGE_HISTORY_PAGE_SIZE;
@@ -207,12 +218,13 @@ export const BridgeHistory = ({ history, networkIdentifier, onItemPress }) => {
 		<Stack gap="l">
 			<Stack gap="s">
 				{history.map(item => (
-					<SwapListItem
-						key={item.requestTransaction.hash}
-						data={item}
-						networkIdentifier={networkIdentifier}
-						onPress={onItemPress}
-					/>
+					<AnimatedListItem key={item.requestTransaction.hash}>
+						<SwapListItem
+							data={item}
+							networkIdentifier={networkIdentifier}
+							onPress={onItemPress}
+						/>
+					</AnimatedListItem>
 				))}
 			</Stack>
 			<StyledText type="label" style={styles.pageSizeMessage}>

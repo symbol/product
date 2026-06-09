@@ -13,12 +13,10 @@ import { constants } from 'wallet-common-core';
 const { NetworkConnectionStatus } = constants;
 
 /**
- * Network connection status bar component
- * 
- * @param {object} props - Component props
- * @param {string} props.networkStatus - Current network connection status
- * 
- * @returns {React.ReactNode} Network connection status bar component
+ * Network connection status bar component.
+ * @param {object} props - Component props.
+ * @param {string} props.networkStatus - Current network connection status.
+ * @returns {React.ReactNode} Network connection status bar component.
  */
 export const NetworkConnectionStatusBar = ({ networkStatus }) => {
 	const statusTextMap = {
@@ -62,7 +60,7 @@ const styles = StyleSheet.create({
 		alignItems: 'center'
 	},
 	text: {
-		...Typography.Semantic.bodyBold.s,
+		...Typography.Semantic.bodyBold.xs,
 		color: Colors.Components.networkConnectionStatus.default.text
 	}
 });

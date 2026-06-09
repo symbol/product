@@ -49,6 +49,7 @@ export const TransactionType = {
 export const TransactionBundleType = {
 	DEFAULT: 'default',
 	MULTISIG_TRANSFER: 'multisig-transfer',
+	MULTISIG_ACCOUNT_MODIFICATION: 'multisig-account-modification',
 	DELEGATED_HARVESTING: 'delegated-harvesting'
 };
 
@@ -232,3 +233,9 @@ export const MosaicFlags = {
 	RESTRICTABLE: 4,
 	REVOKABLE: 8
 };
+
+export const SINGLE_TRANSACTION_DEADLINE_HOURS = 2;
+export const MULTISIG_TRANSACTION_DEADLINE_HOURS = 48;
+export const EMPTY_AGGREGATE_HASH = '0000000000000000000000000000000000000000000000000000000000000000';
+export const HASH_LOCK_AMOUNT = '10';
+export const HASH_LOCK_DURATION = 1000;

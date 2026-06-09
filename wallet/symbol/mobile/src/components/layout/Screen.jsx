@@ -7,17 +7,15 @@ import { Image, KeyboardAvoidingView, RefreshControl, ScrollView, StyleSheet, Vi
 /**
  * Screen component. A layout component for screen content with support for scrolling, loading
  * indicators, background images, and pull-to-refresh functionality.
- * 
- * @param {object} props - Component props
- * @param {boolean} props.isScrollDisabled - Disable scrolling if true
- * @param {boolean} props.isLoading - Show loading indicator if true
- * @param {string} props.backgroundImageSrc - Background image source
- * @param {function} props.renderLoading - Custom render function for loading indicator
+ * @param {object} props - Component props.
+ * @param {boolean} props.isScrollDisabled - Disable scrolling if true.
+ * @param {boolean} props.isLoading - Show loading indicator if true.
+ * @param {string} props.backgroundImageSrc - Background image source.
+ * @param {function(): React.ReactNode} props.renderLoading - Custom render function for loading indicator.
  * @param {import('@/app/types/RefreshConfig').RefreshConfig} [props.refresh] - Optional configuration for
  * pull-to-refresh. If not provided, pull-to-refresh is disabled.
- * @param {React.ReactNode} props.children - Child components
- * 
- * @returns {React.ReactNode} Screen layout component
+ * @param {React.ReactNode} props.children - Child components.
+ * @returns {React.ReactNode} Screen layout component.
  */
 export const Screen = ({ isScrollDisabled, isLoading, backgroundImageSrc, renderLoading, refresh, children }) => {
 	const ContentContainer = isScrollDisabled ? View : ScrollView;
@@ -29,6 +27,7 @@ export const Screen = ({ isScrollDisabled, isLoading, backgroundImageSrc, render
 	let upper = null;
 	let bottom = null;
 	let modals = null;
+	let background = null;
 	React.Children.forEach(children, child => {
 		if (!child)
 			return;
@@ -44,9 +43,12 @@ export const Screen = ({ isScrollDisabled, isLoading, backgroundImageSrc, render
 
 		if (child.type === Screen.Modals)
 			modals = child.props.children;
+
+		if (child.type === Screen.Background)
+			background = child.props.children;
 	});
 
-	const isSectioned = Boolean(header || upper || bottom || modals);
+	const isSectioned = Boolean(header || upper || bottom || modals || background);
 
 	return (
 		<View style={styles.root}>
@@ -54,6 +56,11 @@ export const Screen = ({ isScrollDisabled, isLoading, backgroundImageSrc, render
 				<Image source={backgroundImageSrc} style={styles.backgroundImage} />
 			)}
 			<KeyboardAvoidingView style={styles.contentContainer} enabled={isKeyboardAvoidingViewEnabled} behavior="padding">
+				{background && (
+					<View style={styles.backgroundContainer}>
+						{background}
+					</View>
+				)}
 				{header}
 				<ContentContainer
 					style={styles.contentContainer}
@@ -95,6 +102,7 @@ Screen.Header = props => { return props.children; };
 Screen.Upper = props => { return props.children; };
 Screen.Bottom = props => { return props.children; };
 Screen.Modals = props => { return props.children; };
+Screen.Background = props => { return props.children; };
 
 const styles = StyleSheet.create({
 	root: {
@@ -129,5 +137,12 @@ const styles = StyleSheet.create({
 		width: '100%',
 		height: '100%',
 		resizeMode: 'cover'
+	},
+	backgroundContainer: {
+		position: 'absolute',
+		top: 0,
+		left: 0,
+		width: '100%',
+		height: '100%'
 	}
 });

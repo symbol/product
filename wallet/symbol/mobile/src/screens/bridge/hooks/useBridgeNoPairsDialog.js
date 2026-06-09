@@ -15,7 +15,7 @@ const shouldShowNoPairsDialog = pairsStatus => {
 
 /**
  * Return type for useBridgeNoPairsDialog hook.
- * @typedef {Object} UseBridgeNoPairsDialogReturnType
+ * @typedef {object} UseBridgeNoPairsDialogReturnType
  * @property {boolean} isVisible - Whether the dialog is visible.
  * @property {() => void} onSuccess - Handler for success action (navigates to account list).
  * @property {() => void} onCancel - Handler for cancel action (navigates back).
@@ -25,7 +25,7 @@ const shouldShowNoPairsDialog = pairsStatus => {
 /**
  * React hook for managing the "no pairs available" dialog visibility and actions.
  * Shows dialog when no bridge pairs are available and handles navigation.
- * @param {Object} params - Hook parameters.
+ * @param {object} params - Hook parameters.
  * @param {BridgePairsStatusType} params.pairsStatus - Current pairs status.
  * @returns {UseBridgeNoPairsDialogReturnType}
  */

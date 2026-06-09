@@ -6,8 +6,7 @@ import { StatusBar as ReactStatusBar } from 'react-native';
  * System status bar component. 
  * The strip underneath the system notification bar.
  * Colored to match the app theme.
- * 
- * @returns {React.ReactNode} System status bar component
+ * @returns {React.ReactNode} System status bar component.
  */
 export const SystemStatusBar = () => {
 	return (

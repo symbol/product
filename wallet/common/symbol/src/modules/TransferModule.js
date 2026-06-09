@@ -1,4 +1,13 @@
-import { MessageType, TransactionBundleType, TransactionType } from '../constants';
+import { 
+	EMPTY_AGGREGATE_HASH, 
+	HASH_LOCK_AMOUNT, 
+	HASH_LOCK_DURATION,
+	MULTISIG_TRANSACTION_DEADLINE_HOURS,
+	MessageType,
+	SINGLE_TRANSACTION_DEADLINE_HOURS,
+	TransactionBundleType,
+	TransactionType
+} from '../constants';
 import {
 	addressFromPublicKey,
 	calculateTransactionSize,
@@ -15,12 +24,6 @@ import { ControllerError, TransactionBundle } from 'wallet-common-core';
 
 /** @typedef {import('../types/Transaction').Transaction} Transaction */
 /** @typedef {import('../types/Network').TransactionFees} TransactionFees */
-
-const SINGLE_TRANSACTION_DEADLINE_HOURS = 2;
-const MULTISIG_TRANSACTION_DEADLINE_HOURS = 48;
-const EMPTY_AGGREGATE_HASH = '0000000000000000000000000000000000000000000000000000000000000000';
-const HASH_LOCK_AMOUNT = '10';
-const HASH_LOCK_DURATION = 1000;
 
 export class TransferModule {
 	static name = 'transfer';

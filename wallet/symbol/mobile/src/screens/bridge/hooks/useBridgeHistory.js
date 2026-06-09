@@ -8,7 +8,7 @@ const FETCH_INTERVAL = 10000;
 
 /**
  * Return type for useBridgeHistory hook.
- * @typedef {Object} UseBridgeHistoryReturnType
+ * @typedef {object} UseBridgeHistoryReturnType
  * @property {BridgeRequest[]} history - Array of recent bridge requests.
  * @property {boolean} isHistoryLoading - Whether history is being fetched.
  * @property {() => Promise<void>} refreshHistory - Refreshes the history data.
@@ -18,7 +18,7 @@ const FETCH_INTERVAL = 10000;
 /**
  * React hook for fetching and auto-refreshing bridge transaction history.
  * Periodically polls for new history entries at a fixed interval.
- * @param {Object} params - Hook parameters.
+ * @param {object} params - Hook parameters.
  * @param {BridgeManager|null} params.bridge - The bridge manager instance.
  * @returns {UseBridgeHistoryReturnType}
  */

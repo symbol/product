@@ -1,18 +1,19 @@
 import { useState } from 'react';
 
 /**
- * @typedef {Object} PasscodeInput
+ * Passcode input state and key-press handlers.
+ * @typedef {object} PasscodeInput
  * @property {string} value - The current passcode value.
- * @property {function} inputKey - Function to input a key.
- * @property {function} backspace - Function to delete the last key.
- * @property {function} clear - Function to clear the passcode.
+ * @property {function(string): void} inputKey - Function to input a key.
+ * @property {function(): void} backspace - Function to delete the last key.
+ * @property {function(): void} clear - Function to clear the passcode.
  */
 
 /**
- * Hook for managing passcode input state.
+ * React hook for managing passcode input state.
  * @param {object} params - Hook parameters.
  * @param {number} params.length - Length of the passcode.
- * @param {function} params.onComplete - Callback when passcode input is complete.
+ * @param {function(): void} params.onComplete - Callback when passcode input is complete.
  * @returns {PasscodeInput} - Passcode input state and handlers.
  */
 export const usePasscodeInput = ({ length, onComplete }) => {

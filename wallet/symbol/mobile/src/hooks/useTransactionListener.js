@@ -5,14 +5,14 @@ const { ControllerEventName } = constants;
 /** @typedef {import('wallet-common-core').WalletController} WalletController */
 
 /**
- * Hook that sets up listeners for transaction-related events on multiple wallet controllers.
- *
- * @param {Object} options - Hook options.
+ * React hook that sets up listeners for transaction-related events on multiple wallet controllers.
+ * @param {object} options - Hook options.
  * @param {WalletController[]} options.walletControllers - Array of wallet controller instances to listen to.
- * @param {Function} [options.onTransactionConfirmed] - Callback invoked when a transaction is successfully confirmed.
- * @param {Function} [options.onTransactionUnconfirmed] - Callback invoked when a transaction is announced but not yet confirmed.
- * @param {Function} [options.onTransactionPartial] - Callback invoked when a partial transaction is announced.
- * @param {Function} [options.onTransactionError] - Callback invoked when a transaction encounters an error.
+ * @param {function(object): void} [options.onTransactionConfirmed] - Callback invoked when a transaction is successfully confirmed.
+ * @param {function(object): void} [options.onTransactionUnconfirmed] - Callback invoked when a transaction is announced 
+ * but not yet confirmed.
+ * @param {function(object): void} [options.onTransactionPartial] - Callback invoked when a partial transaction is announced.
+ * @param {function(Error): void} [options.onTransactionError] - Callback invoked when a transaction encounters an error.
  *   Receives the error details as its first parameter.
  * @param {Array} [options.deps=[]] - Dependency array for the useEffect hook to control when listeners are re-registered.
  * @returns {void}

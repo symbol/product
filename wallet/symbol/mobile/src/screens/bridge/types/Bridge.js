@@ -3,9 +3,11 @@
 /** @typedef {import('@/app/types/Token').Token} Token */
 /** @typedef {import('@/app/types/Token').TokenInfo} TokenInfo */
 /** @typedef {import('@/app/types/Network').NetworkIdentifier} NetworkIdentifier */
+/** @typedef {import('@/app/types/Network').ChainName} ChainName */
 /** @typedef {import('wallet-common-core/src/lib/bridge/BridgeManager').BridgeManager} BridgeManager */
 /** @typedef {import('wallet-common-core/src/types/Bridge').BridgeEstimation} BridgeEstimation */
 /** @typedef {import('wallet-common-core/src/types/Bridge').BridgeRequest} BridgeRequest */
+/** @typedef {import('@/app/types/ColorVariants').SemanticRoleColorVariants} SemanticRoleColorVariants */
 
 /**
  * Bridge operation mode.
@@ -14,7 +16,7 @@
 
 /**
  * Token with balance information for swap operations.
- * @typedef {Object} SwapToken
+ * @typedef {object} SwapToken
  * @property {string} id - Token identifier.
  * @property {string} name - Token name.
  * @property {string} amount - Token balance amount in relative units.
@@ -22,16 +24,16 @@
 
 /**
  * Represents one side of a swap operation (source or target).
- * @typedef {Object} SwapSide
+ * @typedef {object} SwapSide
  * @property {SwapToken} token - The token being swapped with balance.
- * @property {string} chainName - The name of the blockchain network (e.g., 'symbol').
+ * @property {ChainName} chainName - The name of the blockchain network (e.g., 'symbol').
  * @property {NetworkIdentifier} networkIdentifier - The identifier for the network (e.g., 'mainnet').
  * @property {WalletController} walletController - The wallet controller associated with this swap side.
  */
 
 /**
  * Represents a pair of swappable tokens from different chains.
- * @typedef {Object} SwapPair
+ * @typedef {object} SwapPair
  * @property {SwapSide} source - The source swap side.
  * @property {SwapSide} target - The target swap side.
  * @property {BridgeManager} bridge - The bridge manager for this swap pair.
@@ -40,8 +42,8 @@
 
 /**
  * Account information for bridge operations.
- * @typedef {Object} BridgeAccountDisplayData
- * @property {string} chainName - The blockchain name.
+ * @typedef {object} BridgeAccountDisplayData
+ * @property {ChainName} chainName - The blockchain name.
  * @property {string} ticker - The native currency ticker symbol.
  * @property {boolean} isActive - Whether the account is active.
  * @property {WalletAccount|null} account - The account object or null if not active.
@@ -52,7 +54,7 @@
 
 /**
  * Account data for swap side details display.
- * @typedef {Object} ResolvedAccountData
+ * @typedef {object} ResolvedAccountData
  * @property {string} address - The account address.
  * @property {string|null} name - The account name.
  * @property {string|null} imageId - The account avatar image identifier.
@@ -60,7 +62,7 @@
 
 /**
  * Token data for swap side details display.
- * @typedef {Object} ResolvedTokenData
+ * @typedef {object} ResolvedTokenData
  * @property {string} name - The token name.
  * @property {string|null} ticker - The token ticker symbol.
  * @property {string|null} imageId - The token image identifier.
@@ -69,8 +71,8 @@
 
 /**
  * Formatted data for displaying swap source or target details.
- * @typedef {Object} SwapSideDisplayData
- * @property {string} chainName - The blockchain name.
+ * @typedef {object} SwapSideDisplayData
+ * @property {ChainName} chainName - The blockchain name.
  * @property {NetworkIdentifier} networkIdentifier - The network identifier.
  * @property {ResolvedTokenData} token - Token information.
  * @property {ResolvedAccountData|null} account - Account information.
@@ -79,15 +81,15 @@
 
 /**
  * Swap status display information.
- * @typedef {Object} SwapStatusDisplayData
- * @property {string} variant - Status color variant (e.g., 'warning', 'success', 'danger').
+ * @typedef {object} SwapStatusDisplayData
+ * @property {SemanticRoleColorVariants} variant - Status color variant (e.g., 'warning', 'success', 'danger').
  * @property {string} iconName - Status icon name.
  * @property {string} text - Status text label.
  */
 
 /**
  * Swap status caption display information.
- * @typedef {Object} SwapStatusCaptionDisplayData
+ * @typedef {object} SwapStatusCaptionDisplayData
  * @property {boolean} isVisible - Whether the caption should be visible.
  * @property {string|null} text - Caption text.
  * @property {string|null} textStyle - Text style identifier.

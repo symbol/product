@@ -20,6 +20,7 @@ const defaultParameters = {
 		},
 		transaction: {
 			fetchAccountTransactions: jest.fn().mockResolvedValue([]),
+			fetchAccountTransaction: jest.fn().mockResolvedValue(),
 			fetchTransactionStatus: jest.fn().mockResolvedValue({}),
 			announceTransaction: jest.fn().mockResolvedValue(),
 			announceTransactionBundle: jest.fn().mockResolvedValue()
@@ -432,7 +433,7 @@ describe('WalletController', () => {
 			expect(walletController._state.walletAccounts).toStrictEqual(expectedWalletAccounts);
 			if (shouldRemoveFromExternalKeystore) {
 				expect(walletController._keystores.external.removeAccount)
-					.toHaveBeenCalledWith(accountToRemove.networkIdentifier, accountToRemove.publicKey, password);
+					.toHaveBeenCalledWith(accountToRemove.publicKey, accountToRemove.networkIdentifier, password);
 			} else {
 				expect(walletController._keystores.external.removeAccount)
 					.not.toHaveBeenCalled();
@@ -658,24 +659,40 @@ describe('WalletController', () => {
 				controllerMethodName: 'fetchTransactionStatus',
 				controllerMethodArguments: ['hash-123'],
 				apiNamespaceName: 'transaction',
-				apiMethodName: 'fetchTransactionStatus'
+				apiMethodName: 'fetchTransactionStatus',
+				createApiMethodArgs: wc => [wc.networkProperties, 'hash-123']
+			},
+			{
+				controllerMethodName: 'fetchAccountTransaction',
+				controllerMethodArguments: ['hash-123'],
+				apiNamespaceName: 'transaction',
+				apiMethodName: 'fetchAccountTransaction',
+				createApiMethodArgs: wc => [wc.networkProperties, wc.currentAccount, 'hash-123']
 			},
 			{
 				controllerMethodName: 'announceSignedTransaction',
 				controllerMethodArguments: ['signed-transaction-object', 'group'],
 				apiNamespaceName: 'transaction',
-				apiMethodName: 'announceTransaction'
+				apiMethodName: 'announceTransaction',
+				createApiMethodArgs: wc => [wc.networkProperties, 'signed-transaction-object', 'group']
 			},
 			{
 				controllerMethodName: 'announceSignedTransactionBundle',
 				controllerMethodArguments: ['signed-transaction-bundle-object', 'group'],
 				apiNamespaceName: 'transaction',
-				apiMethodName: 'announceTransactionBundle'
+				apiMethodName: 'announceTransactionBundle',
+				createApiMethodArgs: wc => [wc.networkProperties, 'signed-transaction-bundle-object', 'group']
 			}
 		];
 		const runNetworkApiProxyTests = async config => {
 			// Arrange:
-			const { controllerMethodName, controllerMethodArguments, apiNamespaceName, apiMethodName } = config;
+			const {
+				controllerMethodName,
+				controllerMethodArguments,
+				apiNamespaceName,
+				apiMethodName,
+				createApiMethodArgs
+			} = config;
 			describe(`${controllerMethodName}()`, () => {
 				it(`calls api.${apiNamespaceName}.${apiMethodName}() with correct arguments`, async () => {
 					walletController._state = cloneDeep(filledState);
@@ -689,7 +706,7 @@ describe('WalletController', () => {
 					// Assert:
 					expect(result).toStrictEqual(expectedReturnValue);
 					expect(walletController._api[apiNamespaceName][apiMethodName])
-						.toHaveBeenCalledWith(walletController._state.networkProperties, ...controllerMethodArguments);
+						.toHaveBeenCalledWith(...createApiMethodArgs(walletController));
 				});
 			});
 		};

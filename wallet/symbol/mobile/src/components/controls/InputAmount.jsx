@@ -6,22 +6,22 @@ import { getUserCurrencyAmountText, validateAmount } from '@/app/utils';
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
 
+/** @typedef {import('@/app/types/Network').NetworkIdentifier} NetworkIdentifier */
+
 /**
  * InputAmount component. An input field for entering cryptocurrency amounts, featuring validation,
  * real-time price conversion display, available balance information, and a max amount selection
  * with confirmation dialog.
- *
  * @param {object} props - Component props.
  * @param {string} props.label - Label for the input field.
  * @param {string} props.value - Current amount input value.
  * @param {import('@/app/types/Price').Price} [props.price] - Token price for currency conversion display.
- * @param {string} [props.networkIdentifier] - Network identifier for price formatting.
+ * @param {NetworkIdentifier} [props.networkIdentifier] - Network identifier for price formatting.
  * @param {string} [props.availableBalance] - Available balance to show and set as max.
- * @param {function} props.onChange - Callback when input value changes.
- * @param {function} props.onValidityChange - Callback when validity state changes.
+ * @param {function(string): void} props.onChange - Callback when input value changes.
+ * @param {function(boolean): void} props.onValidityChange - Callback when validity state changes.
  * @param {Array} [props.extraValidators=[]] - Additional validators to apply.
- *
- * @returns {React.ReactNode} InputAmount component
+ * @returns {React.ReactNode} InputAmount component.
  */
 export const InputAmount = props => {
 	const { label, value, price, networkIdentifier, availableBalance, onChange, onValidityChange, extraValidators = [] } = props;

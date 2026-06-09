@@ -1,8 +1,8 @@
 import { TokenListItem } from './components';
 import { useAssetsData } from './hooks';
 import { Header } from '@/app/app/components';
-import { AccountView, CopyButtonContainer, FilteredListScreenTemplate } from '@/app/components';
-import { useWalletController } from '@/app/hooks';
+import { AccountView, CopyButtonContainer, FilteredListScreenTemplate, Spacer, StyledText } from '@/app/components';
+import { useInit, useRefresh, useWalletController, useWalletRefreshLifecycle } from '@/app/hooks';
 import { Router } from '@/app/router/Router';
 import React, { useCallback } from 'react';
 
@@ -10,26 +10,36 @@ import React, { useCallback } from 'react';
  * Assets screen component. Displays a filterable list of tokens/mosaics across all connected
  * wallet accounts grouped by chain. Supports filtering by expired and created tokens, and
  * allows navigation to token details screen.
- * @returns {React.ReactNode} Assets component
+ * @returns {React.ReactNode} Assets component.
  */
 export const Assets = () => {
 	const walletController = useWalletController();
 	const {
 		networkIdentifier,
 		networkProperties,
-		currentAccount
+		currentAccount,
+		isWalletReady
 	} = walletController;
 
+	// Data fetching
 	const {
 		sections,
 		filter,
 		setFilter,
 		filterConfig,
 		isLoading,
-		isRefreshing,
-		isPageLoading,
-		refresh
-	} = useAssetsData({ walletController });
+		load,
+		reset
+	} = useAssetsData();
+
+	// Refresh lifecycle
+	useWalletRefreshLifecycle({
+		walletController,
+		onRefresh: load,
+		onClear: reset
+	});
+	const { refresh, isRefreshing } = useRefresh(load, isLoading);
+	useInit(load, isWalletReady);
 
 	const renderScreenHeader = useCallback(() => (
 		<Header currentAccount={currentAccount} />
@@ -40,20 +50,37 @@ export const Assets = () => {
 	}, []);
 
 	const renderSectionHeader = useCallback(({ section }) => (
-		<CopyButtonContainer value={section.address} isStretched>
-			<AccountView
-				address={section.address}
-				name={section.chainName}
-			/>
-		</CopyButtonContainer>
+		<>
+			{Boolean(section.title) && (
+				<Spacer 
+					x="none" 
+					top={section.hasTopMargin ? 's' : 'none'} 
+					bottom="s"
+				>
+					<StyledText type="title">
+						{section.title}
+					</StyledText>
+				</Spacer>
+			)}
+			<CopyButtonContainer value={section.address} isStretched>
+				<AccountView
+					address={section.address}
+					name={section.name}
+				/>
+			</CopyButtonContainer>
+		</>
 	), []);
 
 	const renderItem = useCallback(({ item, section }) => {
 		const handleTokenPress = token => {
-			Router.goToTokenDetails({ params: { 
-				chainName: section.chainName, 
-				tokenId: token.id 
-			}});
+			Router.goToTokenDetails({
+				params: {
+					chainName: section.chainName,
+					accountAddress: section.address,
+					tokenId: token.id,
+					preloadedData: token
+				}
+			});
 		};
 
 		return (
@@ -77,7 +104,6 @@ export const Assets = () => {
 			onFilterChange={setFilter}
 			isLoading={isLoading}
 			isRefreshing={isRefreshing}
-			isPageLoading={isPageLoading}
 			onRefresh={refresh}
 			keyExtractor={keyExtractor}
 			renderScreenHeader={renderScreenHeader}

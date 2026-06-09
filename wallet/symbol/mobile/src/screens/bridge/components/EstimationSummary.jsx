@@ -12,7 +12,7 @@ import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 /**
  * EstimationSummary component. Displays swap estimation details including send amount,
  * transaction fee, bridge fee, and expected receive amount.
- * @param {Object} props - Component props.
+ * @param {object} props - Component props.
  * @param {string} props.sendAmount - Amount being sent.
  * @param {string} props.transactionFeeAmount - Transaction fee amount.
  * @param {BridgeEstimation|null} props.estimation - Bridge estimation data.
@@ -20,7 +20,7 @@ import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
  * @param {SwapToken|null} props.targetToken - Target token info.
  * @param {NetworkCurrency|null} props.sourceNetworkCurrency - Source network native currency info.
  * @param {boolean} props.isLoading - Whether estimation is loading.
- * @returns {React.ReactNode} EstimationSummary component
+ * @returns {React.ReactNode} EstimationSummary component.
  */
 export const EstimationSummary = ({
 	sendAmount,

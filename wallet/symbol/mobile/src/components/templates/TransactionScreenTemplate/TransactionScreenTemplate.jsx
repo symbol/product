@@ -15,30 +15,32 @@ import React, { useState } from 'react';
 
 const TRANSACTION_SEND_EXECUTION_DELAY_MS = 2000;
 
+/** @typedef {import('@/app/types/Transaction').TransactionBundle} TransactionBundle */
+/** @typedef {import('@/app/types/Wallet').WalletController} WalletController */
+/** @typedef {import('@/app/types/RefreshConfig').RefreshConfig} RefreshConfig */
+
 /**
  * TransactionScreenTemplate component. A reusable template component for sending transactions,
  * featuring confirmation dialogs, status tracking, and multisig account warnings.
- * 
  * @param {object} props - The component props.
  * @param {boolean} props.isLoading - Loading state for the entire screen.
  * @param {boolean} props.isSendButtonDisabled - Whether the send button is disabled.
  * @param {boolean} props.isMultisigAccount - Whether the current account is a multisig account.
  * @param {string[]} props.accountCosignatories - List of cosignatories if multisig.
  * @param {React.ReactNode} props.children - The form fields to render inside the screen.
- * @param {function} props.createTransaction - Callback to create the transaction object.
- * @param {function} props.getConfirmationPreview - Returns data for confirmation preview table.
- * @param {function} [props.onCreateTransactionError] - Handler for transaction creation errors.
- * @param {function} [props.onSendSuccess] - Handler for successful transaction send.
- * @param {function} [props.onSendError] - Handler for transaction send errors.
- * @param {function} props.onComplete - Called when the process is complete.
- * @param {import('wallet-common-core/src/lib/controller/WalletController').WalletController} props.walletController
+ * @param {function(): Promise<TransactionBundle>} props.createTransaction - Callback to create the transaction object.
+ * @param {function(): Array} props.getConfirmationPreview - Returns data for confirmation preview table.
+ * @param {function(Error): void} [props.onCreateTransactionError] - Handler for transaction creation errors.
+ * @param {function(): void} [props.onSendSuccess] - Handler for successful transaction send.
+ * @param {function(Error): void} [props.onSendError] - Handler for transaction send errors.
+ * @param {function(): void} props.onComplete - Called when the process is complete.
+ * @param {WalletController} props.walletController - The wallet controller instance.
  * @param {boolean} [props.isCustomSendButtonUsed] - Whether a custom send button is used.
- * @param {import('@/app/types/RefreshConfig').RefreshConfig} [props.refresh] - Refresh control.
+ * @param {RefreshConfig} [props.refresh] - Refresh control.
  * @param {string} [props.confirmDialogTitle] - Title for the confirmation dialog.
  * @param {string} [props.confirmDialogText] - Text for the confirmation dialog body.
  * @param {React.Node} [props.modals] - Additional modals to be rendered.
- * 
- * @returns {React.Node} rendered TransactionScreenTemplate component
+ * @returns {React.Node} Rendered TransactionScreenTemplate component.
  */
 export const TransactionScreenTemplate = props => {
 	const {

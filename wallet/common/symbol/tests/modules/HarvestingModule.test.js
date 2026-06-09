@@ -3,7 +3,7 @@ import { addressFromPublicKey, createDeadline, createTransactionFee } from '../.
 import { accountInfoNonMultisig } from '../__fixtures__/local/account';
 import { harvestedBlocks } from '../__fixtures__/local/harvesting';
 import { networkProperties } from '../__fixtures__/local/network';
-import { currentAccount } from '../__fixtures__/local/wallet';
+import { currentAccount, networkIdentifiers } from '../__fixtures__/local/wallet';
 import { expect, jest } from '@jest/globals';
 import { ControllerError, TransactionBundle } from 'wallet-common-core';
 
@@ -36,9 +36,23 @@ const createAccountInfoWithNoKeys = () => ({
 	linkedKeys: {}
 });
 
+const createStoredHarvestingStatuses = (networkIdentifier, address, status) => ({
+	mainnet: {},
+	testnet: {},
+	[networkIdentifier]: { [address]: status }
+});
+
+const createStoredHarvestingSummaries = (networkIdentifier, address, summary) => ({
+	mainnet: {},
+	testnet: {},
+	[networkIdentifier]: { [address]: summary }
+});
+
 describe('HarvestingModule', () => {
 	let harvestingModule;
 	let api;
+	let onStateChange;
+	let persistentStorageInterface;
 	let walletController;
 
 	beforeEach(() => {
@@ -59,11 +73,34 @@ describe('HarvestingModule', () => {
 			getCurrentAccountPrivateKey: jest.fn()
 		};
 
+		persistentStorageInterface = {
+			getItem: jest.fn().mockResolvedValue(null),
+			setItem: jest.fn().mockResolvedValue(undefined),
+			removeItem: jest.fn().mockResolvedValue(undefined)
+		};
+
+		onStateChange = jest.fn();
+
 		harvestingModule = new HarvestingModule();
-		harvestingModule.init({ walletController, api });
+		harvestingModule.init({
+			walletController,
+			api,
+			persistentStorageInterface,
+			networkIdentifiers,
+			onStateChange
+		});
+
+		harvestingModule._persistentStorageRepository.getHarvestingStatuses = jest.fn();
+		harvestingModule._persistentStorageRepository.setHarvestingStatuses = jest.fn();
+		harvestingModule._persistentStorageRepository.getHarvestingSummaries = jest.fn();
+		harvestingModule._persistentStorageRepository.setHarvestingSummaries = jest.fn();
 
 		jest.spyOn(Date, 'now').mockReturnValue(FIXED_NOW_MS);
 		jest.clearAllMocks();
+	});
+
+	afterEach(() => {
+		jest.restoreAllMocks();
 	});
 
 	it('has correct static name', () => {
@@ -71,11 +108,94 @@ describe('HarvestingModule', () => {
 		expect(HarvestingModule.name).toBe('harvesting');
 	});
 
+	describe('initial state', () => {
+		it('status getter returns null initially', () => {
+			// Assert:
+			expect(harvestingModule.status).toBeNull();
+		});
+
+		it('summary getter returns null initially', () => {
+			// Assert:
+			expect(harvestingModule.summary).toBeNull();
+		});
+	});
+
+	describe('loadCache()', () => {
+		it('loads harvesting status and summary from persistent storage', async () => {
+			// Arrange:
+			const storedStatus = { status: 'ACTIVE', nodeUrl: 'https://node.example.com:3001' };
+			const storedSummary = {
+				latestAmount: '12.5',
+				latestHeight: 123,
+				latestDate: '2024-01-01',
+				amountPer30Days: '40.5',
+				blocksHarvestedPer30Days: 5
+			};
+			const storedStatuses = createStoredHarvestingStatuses('testnet', currentAccount.address, storedStatus);
+			const storedSummaries = createStoredHarvestingSummaries('testnet', currentAccount.address, storedSummary);
+
+			harvestingModule._persistentStorageRepository.getHarvestingStatuses.mockResolvedValue(storedStatuses);
+			harvestingModule._persistentStorageRepository.getHarvestingSummaries.mockResolvedValue(storedSummaries);
+
+			// Act:
+			await harvestingModule.loadCache();
+
+			// Assert:
+			expect(harvestingModule._persistentStorageRepository.getHarvestingStatuses).toHaveBeenCalled();
+			expect(harvestingModule._persistentStorageRepository.getHarvestingSummaries).toHaveBeenCalled();
+			expect(harvestingModule.status).toStrictEqual(storedStatus);
+			expect(harvestingModule.summary).toStrictEqual(storedSummary);
+			expect(onStateChange).toHaveBeenCalled();
+		});
+
+		it('initializes empty state when no cached harvesting data exists', async () => {
+			// Arrange:
+			harvestingModule._persistentStorageRepository.getHarvestingStatuses.mockResolvedValue(null);
+			harvestingModule._persistentStorageRepository.getHarvestingSummaries.mockResolvedValue(null);
+
+			// Act:
+			await harvestingModule.loadCache();
+
+			// Assert:
+			expect(harvestingModule.status).toBeNull();
+			expect(harvestingModule.summary).toBeNull();
+			expect(onStateChange).toHaveBeenCalled();
+		});
+	});
+
+	describe('clear()', () => {
+		it('resets cached state to default values', async () => {
+			// Arrange:
+			const storedStatus = { status: 'ACTIVE', nodeUrl: 'https://node.example.com:3001' };
+			const storedSummary = {
+				latestAmount: '12.5',
+				latestHeight: 123,
+				latestDate: '2024-01-01',
+				amountPer30Days: '40.5',
+				blocksHarvestedPer30Days: 5
+			};
+			const storedStatuses = createStoredHarvestingStatuses('testnet', currentAccount.address, storedStatus);
+			const storedSummaries = createStoredHarvestingSummaries('testnet', currentAccount.address, storedSummary);
+
+			harvestingModule._persistentStorageRepository.getHarvestingStatuses.mockResolvedValue(storedStatuses);
+			harvestingModule._persistentStorageRepository.getHarvestingSummaries.mockResolvedValue(storedSummaries);
+			await harvestingModule.loadCache();
+
+			// Act:
+			harvestingModule.clear();
+
+			// Assert:
+			expect(harvestingModule.status).toBeNull();
+			expect(harvestingModule.summary).toBeNull();
+		});
+	});
+
 	describe('fetchStatus()', () => {
-		it('fetches harvesting status for current account', async () => {
+		it('fetches harvesting status for current account and updates cache', async () => {
 			// Arrange:
 			const mockStatus = { isActive: true, nodePublicKey: 'ABCDEF', error: null };
 			api.harvesting.fetchStatus.mockResolvedValue(mockStatus);
+			harvestingModule._persistentStorageRepository.getHarvestingStatuses.mockResolvedValue({ testnet: {}, mainnet: {} });
 
 			// Act:
 			const result = await harvestingModule.fetchStatus();
@@ -84,6 +204,12 @@ describe('HarvestingModule', () => {
 			expect(result).toStrictEqual(mockStatus);
 			expect(api.harvesting.fetchStatus).toHaveBeenCalledTimes(1);
 			expect(api.harvesting.fetchStatus).toHaveBeenCalledWith(networkProperties, currentAccount);
+			expect(harvestingModule._persistentStorageRepository.setHarvestingStatuses).toHaveBeenCalledWith({
+				testnet: { [currentAccount.address]: mockStatus },
+				mainnet: {}
+			});
+			expect(harvestingModule.status).toStrictEqual(mockStatus);
+			expect(onStateChange).toHaveBeenCalled();
 		});
 	});
 
@@ -124,7 +250,7 @@ describe('HarvestingModule', () => {
 	});
 
 	describe('fetchSummary()', () => {
-		it('fetches harvesting summary for current account', async () => {
+		it('fetches harvesting summary for current account and updates cache', async () => {
 			// Arrange:
 			const mockSummary = {
 				totalBlocks: 123,
@@ -132,6 +258,7 @@ describe('HarvestingModule', () => {
 				lastBlockHeight: '2637258'
 			};
 			api.harvesting.fetchSummary.mockResolvedValue(mockSummary);
+			harvestingModule._persistentStorageRepository.getHarvestingSummaries.mockResolvedValue({ testnet: {}, mainnet: {} });
 
 			// Act:
 			const result = await harvestingModule.fetchSummary();
@@ -140,6 +267,12 @@ describe('HarvestingModule', () => {
 			expect(result).toStrictEqual(mockSummary);
 			expect(api.harvesting.fetchSummary).toHaveBeenCalledTimes(1);
 			expect(api.harvesting.fetchSummary).toHaveBeenCalledWith(networkProperties, currentAccount.address);
+			expect(harvestingModule._persistentStorageRepository.setHarvestingSummaries).toHaveBeenCalledWith({
+				testnet: { [currentAccount.address]: mockSummary },
+				mainnet: {}
+			});
+			expect(harvestingModule.summary).toStrictEqual(mockSummary);
+			expect(onStateChange).toHaveBeenCalled();
 		});
 	});
 

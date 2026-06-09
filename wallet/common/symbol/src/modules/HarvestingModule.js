@@ -1,7 +1,13 @@
 import { LinkAction, LinkActionMessage, MessageType, TransactionBundleType, TransactionType } from '../constants';
 import { addressFromPublicKey, createDeadline, createTransactionFee, encodeDelegatedHarvestingMessage, generateKeyPair } from '../utils';
 import { shuffle } from 'lodash';
-import { ControllerError, TransactionBundle } from 'wallet-common-core';
+import { 
+	ControllerError, 
+	PersistentStorageRepository, 
+	TransactionBundle, 
+	cloneNetworkObjectMap, 
+	createNetworkMap 
+} from 'wallet-common-core';
 
 /** @typedef {import('../types/Harvesting').HarvestingSummary} HarvestingSummary */
 /** @typedef {import('../types/Harvesting').HarvestedBlock} HarvestedBlock */
@@ -9,32 +15,106 @@ import { ControllerError, TransactionBundle } from 'wallet-common-core';
 /** @typedef {import('../types/SearchCriteria').HarvestedBlockSearchCriteria} HarvestedBlockSearchCriteria */
 /** @typedef {import('../types/Transaction').Transaction} Transaction */
 
+const createDefaultState = networkIdentifiers => ({
+	statuses: createNetworkMap(() => ({}), networkIdentifiers),
+	summaries: createNetworkMap(() => ({}), networkIdentifiers)
+});
+
 export class HarvestingModule {
 	static name = 'harvesting';
 	#walletController;
 	#api;
+	#networkIdentifiers;
+	#onStateChange;
+	_persistentStorageRepository;
+	_state;
 
 	constructor() { }
 
+	/**
+	 * Initializes the module with the wallet controller and API.
+	 * @param {Object} options - The initialization options.
+	 * @param {Object} options.walletController - The wallet controller instance.
+	 * @param {Object} options.api - The API instance for network calls.
+	 * @param {Object} options.persistentStorageInterface - The persistent storage interface.
+	 * @param {string[]} options.networkIdentifiers - Array of network identifiers.
+	 * @param {Function} [options.onStateChange] - Callback for state changes.
+	 */
 	init = options => {
 		this.#walletController = options.walletController;
 		this.#api = options.api;
+		this.#networkIdentifiers = options.networkIdentifiers;
+		this.#onStateChange = options.onStateChange;
+		this._persistentStorageRepository = new PersistentStorageRepository(options.persistentStorageInterface);
+		this._state = createDefaultState(options.networkIdentifiers);
 	};
 
-	loadCache = async () => { };
+	loadCache = async () => {
+		const statuses = await this.#loadHarvestingStatuses();
+		const summaries = await this.#loadHarvestingSummaries();
 
-	resetState = () => { };
+		this.resetState();
 
-	clear = () => { };
+		this.#setState(() => {
+			this._state.statuses = statuses;
+			this._state.summaries = summaries;
+		});
+	};
+
+	resetState = () => {
+		this._state = createDefaultState(this.#networkIdentifiers);
+	};
+
+	clear = () => {
+		this.resetState();
+	};
+
+	#setState = callback => {
+		callback.bind(this);
+		callback();
+
+		this.#onStateChange?.();
+	};
+
+	/**
+	 * Gets the cached harvesting status for the current account on the current network.
+	 * @returns {HarvestingStatus|null} The cached harvesting status.
+	 */
+	get status() {
+		const { networkIdentifier, currentAccount } = this.#walletController;
+		const networkStatuses = this._state.statuses[networkIdentifier];
+
+		if (!currentAccount)
+			return null;
+
+		return networkStatuses[currentAccount.address] || null;
+	}
+
+	/**
+	 * Gets the cached harvesting summary for the current account on the current network.
+	 * @returns {HarvestingSummary|null} The cached harvesting summary.
+	 */
+	get summary() {
+		const { networkIdentifier, currentAccount } = this.#walletController;
+		const networkSummaries = this._state.summaries[networkIdentifier];
+
+		if (!currentAccount)
+			return null;
+
+		return networkSummaries[currentAccount.address] || null;
+	}
 
 	/**
 	 * Fetches the harvesting status of the current account.
 	 * @returns {Promise<HarvestingStatus>} - The harvesting status.
 	 */
 	fetchStatus = async () => {
-		const { currentAccount, networkProperties } = this.#walletController;
+		const { currentAccount, networkIdentifier, networkProperties } = this.#walletController;
+		const status = await this.#api.harvesting.fetchStatus(networkProperties, currentAccount);
 
-		return this.#api.harvesting.fetchStatus(networkProperties, currentAccount);
+		await this.#updateCachedHarvestingStatus(status, networkIdentifier, currentAccount.address);
+
+		return status;
 	};
 
 	/**
@@ -65,10 +145,87 @@ export class HarvestingModule {
 	 * @returns {Promise<HarvestingSummary>} - The harvesting summary.
 	 */
 	fetchSummary = async () => {
-		const { currentAccount, networkProperties } = this.#walletController;
+		const { currentAccount, networkIdentifier, networkProperties } = this.#walletController;
 		const { address } = currentAccount;
+		const summary = await this.#api.harvesting.fetchSummary(networkProperties, address);
 
-		return this.#api.harvesting.fetchSummary(networkProperties, address);
+		await this.#updateCachedHarvestingSummary(summary, networkIdentifier, address);
+
+		return summary;
+	};
+
+	/**
+	 * Updates the cached harvesting status for a specific wallet account.
+	 * @param {HarvestingStatus} status - The harvesting status to cache.
+	 * @param {string} networkIdentifier - The network identifier for which to update the cache.
+	 * @param {string} currentAccountAddress - The address of the current wallet account.
+	 * @returns {Promise<void>}
+	 */
+	#updateCachedHarvestingStatus = async (status, networkIdentifier, currentAccountAddress) => {
+		const allStatuses = await this.#loadHarvestingStatuses();
+
+		if (!allStatuses[networkIdentifier])
+			allStatuses[networkIdentifier] = {};
+
+		allStatuses[networkIdentifier][currentAccountAddress] = status;
+
+		await this._persistentStorageRepository.setHarvestingStatuses(allStatuses);
+
+		this.#setState(() => {
+			this._state.statuses = allStatuses;
+		});
+	};
+
+	/**
+	 * Updates the cached harvesting summary for a specific wallet account.
+	 * @param {HarvestingSummary} summary - The harvesting summary to cache.
+	 * @param {string} networkIdentifier - The network identifier for which to update the cache.
+	 * @param {string} currentAccountAddress - The address of the current wallet account.
+	 * @returns {Promise<void>}
+	 */
+	#updateCachedHarvestingSummary = async (summary, networkIdentifier, currentAccountAddress) => {
+		const allSummaries = await this.#loadHarvestingSummaries();
+
+		if (!allSummaries[networkIdentifier])
+			allSummaries[networkIdentifier] = {};
+
+		allSummaries[networkIdentifier][currentAccountAddress] = summary;
+
+		await this._persistentStorageRepository.setHarvestingSummaries(allSummaries);
+
+		this.#setState(() => {
+			this._state.summaries = allSummaries;
+		});
+	};
+
+	/**
+	 * Loads harvesting statuses from persistent storage.
+	 * @returns {Promise<Object>} The harvesting statuses map.
+	 */
+	#loadHarvestingStatuses = async () => {
+		const statuses = await this._persistentStorageRepository.getHarvestingStatuses();
+		const defaultState = createDefaultState(this.#networkIdentifiers);
+
+		return cloneNetworkObjectMap(
+			statuses,
+			this.#networkIdentifiers,
+			defaultState.statuses
+		);
+	};
+
+	/**
+	 * Loads harvesting summaries from persistent storage.
+	 * @returns {Promise<Object>} The harvesting summaries map.
+	 */
+	#loadHarvestingSummaries = async () => {
+		const summaries = await this._persistentStorageRepository.getHarvestingSummaries();
+		const defaultState = createDefaultState(this.#networkIdentifiers);
+
+		return cloneNetworkObjectMap(
+			summaries,
+			this.#networkIdentifiers,
+			defaultState.summaries
+		);
 	};
 
 	/**

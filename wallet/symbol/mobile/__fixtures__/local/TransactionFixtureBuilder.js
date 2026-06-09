@@ -43,7 +43,7 @@ export class TransactionFixtureBuilder {
 	/**
      * Creates a transaction fixture with the provided data.
      * 
-     * @param {object} data - transaction data.
+     * @param {object} data - Transaction data.
      */
 	constructor(data) {
 		this._data = { ...data };
@@ -62,8 +62,8 @@ export class TransactionFixtureBuilder {
      * Creates a transaction fixture with default data.
      * Uses AccountFixtureBuilder to populate signer information.
      * 
-     * @param {string} [chainName='symbol'] - chain name.
-     * @param {'mainnet' | 'testnet'} [networkIdentifier='testnet'] - network identifier.
+     * @param {string} [chainName='symbol'] - Chain name.
+     * @param {'mainnet' | 'testnet'} [networkIdentifier='testnet'] - Network identifier.
      * @returns {TransactionFixtureBuilder}
      */
 	static createDefault = (chainName = 'symbol', networkIdentifier = 'testnet') => {
@@ -81,7 +81,7 @@ export class TransactionFixtureBuilder {
 	/**
      * Creates a transaction fixture with the provided data.
      * 
-     * @param {object} data - transaction data.
+     * @param {object} data - Transaction data.
      * @returns {TransactionFixtureBuilder}
      */
 	static createWithData = data => {

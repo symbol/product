@@ -332,9 +332,9 @@ describe('components/TransactionStatusDialog', () => {
 				const screenTester = new ScreenTester(TransactionStatusDialog, props);
 
 				// Assert:
-				if (expected.isVisible) 
+				if (expected.isVisible)
 					screenTester.expectText([SCREEN_TEXT.buttonViewInExplorer]);
-				else 
+				else
 					screenTester.notExpectText([SCREEN_TEXT.buttonViewInExplorer]);
 			});
 		};
@@ -389,7 +389,7 @@ describe('components/TransactionStatusDialog', () => {
 				...ScenarioConfig.ANNOUNCED,
 				signedTransactionHashes: [TEST_HASHES.single[0]]
 			});
-			const expectedUrl = 
+			const expectedUrl =
 				`https://explorer.${NETWORK_CONFIG.chainName}.${NETWORK_CONFIG.networkIdentifier}/tx/${TEST_HASHES.single[0]}`;
 
 			// Act:
@@ -412,60 +412,60 @@ describe('components/TransactionStatusDialog', () => {
 				});
 
 				// Act:
-				const { queryByText } = render(<TransactionStatusDialog {...props} />);
-				const closeButton = queryByText(SCREEN_TEXT.buttonOk);
+				const screenTester = new ScreenTester(TransactionStatusDialog, props);
 
-				// Assert:
-				if (expected.isButtonVisible) {
-					expect(closeButton).toBeTruthy();
-					fireEvent.press(closeButton);
-					expect(onCloseMock).toHaveBeenCalledTimes(1);
+				if (expected.isButtonDisabled) {
+					// Assert:
+					screenTester.expectButtonDisabled(SCREEN_TEXT.buttonOk);
 				} else {
-					expect(closeButton).toBeNull();
+					screenTester.pressButton(SCREEN_TEXT.buttonOk);
+
+					// Assert:
+					expect(onCloseMock).toHaveBeenCalledTimes(1);
 				}
 			});
 		};
 
 		const closeButtonTests = [
 			{
-				description: 'close button is hidden when creating transaction',
+				description: 'close button is disabled when creating transaction',
 				config: { scenario: ScenarioConfig.CREATING },
-				expected: { isButtonVisible: false }
+				expected: { isButtonDisabled: true }
 			},
 			{
-				description: 'close button is hidden when signing transaction',
+				description: 'close button is disabled when signing transaction',
 				config: { scenario: ScenarioConfig.SIGNING },
-				expected: { isButtonVisible: false }
+				expected: { isButtonDisabled: true }
 			},
 			{
-				description: 'close button is hidden when announcing transaction',
+				description: 'close button is disabled when announcing transaction',
 				config: { scenario: ScenarioConfig.ANNOUNCING },
-				expected: { isButtonVisible: false }
+				expected: { isButtonDisabled: true }
 			},
 			{
 				description: 'close button is visible and triggers callback when announced',
 				config: { scenario: ScenarioConfig.ANNOUNCED },
-				expected: { isButtonVisible: true }
+				expected: { isButtonDisabled: false }
 			},
 			{
 				description: 'close button is visible and triggers callback when confirmed',
 				config: { scenario: ScenarioConfig.CONFIRMED },
-				expected: { isButtonVisible: true }
+				expected: { isButtonDisabled: false }
 			},
 			{
 				description: 'close button is visible and triggers callback on create error',
 				config: { scenario: ScenarioConfig.CREATE_ERROR },
-				expected: { isButtonVisible: true }
+				expected: { isButtonDisabled: false }
 			},
 			{
 				description: 'close button is visible and triggers callback on sign error',
 				config: { scenario: ScenarioConfig.SIGN_ERROR },
-				expected: { isButtonVisible: true }
+				expected: { isButtonDisabled: false }
 			},
 			{
 				description: 'close button is visible and triggers callback on announce error',
 				config: { scenario: ScenarioConfig.ANNOUNCE_ERROR },
-				expected: { isButtonVisible: true }
+				expected: { isButtonDisabled: false }
 			}
 		];
 
@@ -484,7 +484,7 @@ describe('components/TransactionStatusDialog', () => {
 				const screenTester = new ScreenTester(TransactionStatusDialog, props);
 
 				// Assert:
-				if (expected.errorMessage) 
+				if (expected.errorMessage)
 					screenTester.expectText([expected.errorMessage]);
 			});
 		};

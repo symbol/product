@@ -1,20 +1,20 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 /**
- * @typedef {Object} SeedAccountBalance
+ * Balance and loading state for a single seed account.
+ * @typedef {object} SeedAccountBalance
  * @property {string} balance - Current account balance. Relative amount (as string).
  * @property {boolean} isLoading - Whether the balance is currently being fetched.
  */
 
 /**
- * Hook to fetch and manage account balances for seed accounts.
+ * React hook to fetch and manage account balances for seed accounts.
  * Returns balances with loading states.
- *
- * @param {Object} options - Hook options.
+ * @param {object} options - Hook options.
  * @param {Array} options.seedAccounts - Array of seed accounts to fetch balances for.
- * @param {Object} options.networkProperties - Network properties.
- * @param {Object} options.networkApi - Network API instance.
- * @returns {Object} Object containing accountBalances map and refetch function.
+ * @param {object} options.networkProperties - Network properties.
+ * @param {object} options.networkApi - Network API instance.
+ * @returns {object} Object containing accountBalances map and refetch function.
  */
 export const useSeedAccountBalances = ({ seedAccounts, networkProperties, networkApi }) => {
 	const [balanceMap, setBalanceMap] = useState({});
@@ -65,7 +65,7 @@ export const useSeedAccountBalances = ({ seedAccounts, networkProperties, networ
 
 		setBalanceMap(newBalanceMap);
 		setLoadingMap(newLoadingMap);
-	}, [seedAccounts, networkApi, networkProperties]);
+	}, [seedAccounts, networkApi, networkProperties?.networkIdentifier]);
 
 	// Calculate formatted balances
 	const accountBalances = useMemo(() => {

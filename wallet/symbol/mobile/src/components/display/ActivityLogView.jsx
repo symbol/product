@@ -9,13 +9,12 @@ const BASE_ANIMATION_DELAY = 750;
 
 /**
  * Displays the step indicator icon/loader for an activity item.
- * 
- * @param {object} props - Component props
- * @param {string} props.icon - Icon name to display
- * @param {import('@/app/types/Action').ActionStatus} props.status - Current status of the activity
- * @param {import('@/app/types/Action').ActionStatus} props.nextStatus - Status of the next activity item
- * @param {boolean} props.isLast - Whether this is the last item
- * @param {number} props.index - Index of the activity item
+ * @param {object} props - Component props.
+ * @param {string} props.icon - Icon name to display.
+ * @param {import('@/app/types/Action').ActionStatus} props.status - Current status of the activity.
+ * @param {import('@/app/types/Action').ActionStatus} props.nextStatus - Status of the next activity item.
+ * @param {boolean} props.isLast - Whether this is the last item.
+ * @param {number} props.index - Index of the activity item.
  */
 const ActivityStep = ({ icon, status, nextStatus, isLast, index }) => {
 	const colorStylePending = {
@@ -66,12 +65,11 @@ const ActivityStep = ({ icon, status, nextStatus, isLast, index }) => {
 
 /**
  * Displays a single activity item in the transaction send log.
- * 
- * @param {object} props - Component props
- * @param {import('@/app/types/ActivityLog').ActivityLogItem} props.item - Activity item data
- * @param {import('@/app/types/Action').ActionStatus} props.nextItemStatus - Status of the next activity item
- * @param {number} props.index - Index of the activity item
- * @param {boolean} props.isLast - Whether this is the last item
+ * @param {object} props - Component props.
+ * @param {import('@/app/types/ActivityLog').ActivityLogItem} props.item - Activity item data.
+ * @param {import('@/app/types/Action').ActionStatus} props.nextItemStatus - Status of the next activity item.
+ * @param {number} props.index - Index of the activity item.
+ * @param {boolean} props.isLast - Whether this is the last item.
  */
 const ActivityItem = ({ item, nextItemStatus, index, isLast }) => {
 	const textColorStyle = item.status === ActivityStatus.ERROR
@@ -106,12 +104,10 @@ const ActivityItem = ({ item, nextItemStatus, index, isLast }) => {
 /**
  * ActivityLogView component. A component for displaying a sequential list of activity items,
  * each with an icon, title, and optional caption.
- *
- * @param {object} props - Component props
- * @param {import('@/app/types/ActivityLog').ActivityLogItem[]} props.data - Array of activity items to display
- * @param {object} [props.style] - Additional styles for the root container
- *
- * @returns {React.ReactNode} ActivityLogView component
+ * @param {object} props - Component props.
+ * @param {import('@/app/types/ActivityLog').ActivityLogItem[]} props.data - Array of activity items to display.
+ * @param {object} [props.style] - Additional styles for the root container.
+ * @returns {React.ReactNode} ActivityLogView component.
  */
 export const ActivityLogView = ({ data, style }) => {
 	return (

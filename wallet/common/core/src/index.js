@@ -6,6 +6,7 @@ import { ExternalAccountKeystore } from './lib/keystore/ExternalAccountKeystore'
 import { MnemonicKeystore } from './lib/keystore/MnemonicKeystore';
 // Storage
 import { StorageInterface } from './lib/storage/StorageInterface';
+import { PersistentStorageRepository } from './lib/storage/PersistentStorageRepository';
 // Modules
 import { AddressBookModule } from './lib/modules/AddressBookModule';
 import { BridgeModule } from './lib/modules/BridgeModule';
@@ -19,7 +20,7 @@ import {
 	relativeToAbsoluteAmount, 
 	safeOperationWithRelativeAmounts 
 } from './utils/convert';
-import { createNetworkMap } from './utils/network';
+import { cloneNetworkArrayMap, cloneNetworkObjectMap, createNetworkMap } from './utils/network';
 // Constants
 import * as constants from './constants';
 // Errors
@@ -47,12 +48,15 @@ export {
 	MnemonicKeystore,
 	ExternalAccountKeystore,
 	StorageInterface,
+	PersistentStorageRepository,
 	absoluteToRelativeAmount,
 	relativeToAbsoluteAmount,
 	safeOperationWithRelativeAmounts,
 	base32ToHex, 
 	hexToBase32,
 	createNetworkMap,
+	cloneNetworkArrayMap,
+	cloneNetworkObjectMap,
 	constants,
 	AddressBookModule,
 	BridgeModule,

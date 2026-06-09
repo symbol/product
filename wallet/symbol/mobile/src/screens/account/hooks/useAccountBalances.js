@@ -2,7 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { safeOperationWithRelativeAmounts } from 'wallet-common-core';
 
 /**
- * @typedef {Object} AccountBalance
+ * Balance entry for an account, including the change delta and loading state.
+ * @typedef {object} AccountBalance
  * @property {string} balance - Current account balance. Relative amount (as string).
  * @property {string} balanceChange - Difference between current and cached balance. Relative amount (as string).
  * @property {boolean} isLoading - Whether the balance is currently being fetched.
@@ -10,7 +11,6 @@ import { safeOperationWithRelativeAmounts } from 'wallet-common-core';
 
 /**
  * Calculates balance change between current and cached values.
- * 
  * @param {string} currentBalance - The current fetched balance.
  * @param {string} cachedBalance - The previously cached balance.
  * @param {number} divisibility - Network currency divisibility.
@@ -25,11 +25,10 @@ const calculateBalanceChange = (currentBalance, cachedBalance, divisibility) => 
 };
 
 /**
- * Hook to fetch and manage account balances for all accounts in a network.
+ * React hook to fetch and manage account balances for all accounts in a network.
  * Returns balances with loading states and balance change calculations.
- *
  * @param {import('wallet-common-core').WalletController} walletController - The wallet controller instance.
- * @returns {Object} Object containing accountBalances map and refetch function.
+ * @returns {object} Object containing accountBalances map and refetch function.
  */
 export const useAccountBalances = walletController => {
 	const {
@@ -148,7 +147,7 @@ export const useAccountBalances = walletController => {
 	// Fetch balances only when the set of accounts changes (not on reorder)
 	useEffect(() => {
 		fetchBalances();
-	}, [accountsKey, networkApi, networkProperties]);
+	}, [accountsKey, networkApi, networkIdentifier]);
 
 	return {
 		accountBalances

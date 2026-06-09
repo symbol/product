@@ -29,16 +29,18 @@ import React, { useCallback, useEffect, useRef } from 'react';
 
 const TRANSACTION_SPEED = 'medium';
 
+/** @typedef {import('@/app/types/Network').ChainName} ChainName */
+
 /**
  * BridgeSwap screen component. Provides the main interface for performing token swaps
  * between different blockchains. Users can select source and target tokens, enter amounts,
  * view fee estimations, and execute bridge transactions. Includes swap history display
  * and handles cases when no bridge pairs are available.
- * @param {Object} props - Component props.
- * @param {Object} props.route - React Navigation route object.
- * @param {Object} props.route.params - Route parameters.
- * @param {string} props.route.params.chainName - Default source chain name.
- * @returns {React.ReactNode} BridgeSwap component
+ * @param {object} props - Component props.
+ * @param {object} props.route - React Navigation route object.
+ * @param {object} props.route.params - Route parameters.
+ * @param {ChainName} props.route.params.chainName - Default source chain name.
+ * @returns {React.ReactNode} BridgeSwap component.
  */
 export const BridgeSwap = props => {
 	// Ref to hold createTransaction for use in useTransactionFees before it's defined

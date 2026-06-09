@@ -12,19 +12,20 @@ const ANIMATION_DELAY = 1000;
 const PROGRESS_HEIGHT = Sizes.Semantic.spacing.xs;
 
 /**
- * @typedef {Object} ExpirationProgressProps
- * @property {number} endHeight - Block height when token expires
- * @property {number} startHeight - Block height when token was created
- * @property {number} chainHeight - Current blockchain height
- * @property {number} blockGenerationTargetTime - Average block generation time in seconds
- * @property {import('react-native').ViewStyle} [style] - Optional container style
+ * Props for the ExpirationProgress component.
+ * @typedef {object} ExpirationProgressProps
+ * @property {number} endHeight - Block height when token expires.
+ * @property {number} startHeight - Block height when token was created.
+ * @property {number} chainHeight - Current blockchain height.
+ * @property {number} blockGenerationTargetTime - Average block generation time in seconds.
+ * @property {import('react-native').ViewStyle} [style] - Optional container style.
  */
 
 /**
  * ExpirationProgress component. Displays animated progress bar showing token expiration status
  * with color-coded warning states and remaining time text.
- * @param {ExpirationProgressProps} props - Component props
- * @returns {React.ReactNode} ExpirationProgress component
+ * @param {ExpirationProgressProps} props - Component props.
+ * @returns {React.ReactNode} ExpirationProgress component.
  */
 export const ExpirationProgress = ({ endHeight, startHeight, chainHeight, blockGenerationTargetTime, style }) => {
 	// Expiration percentage calculation
@@ -77,7 +78,7 @@ const styles = StyleSheet.create({
 	progressBarOuter: {
 		width: '100%',
 		height: PROGRESS_HEIGHT,
-		backgroundColor: Colors.Semantic.background.tertiary.darker,
+		backgroundColor: Colors.Components.progress.background,
 		overflow: 'hidden',
 		borderRadius: Sizes.Semantic.borderRadius.round
 	},
@@ -89,12 +90,12 @@ const styles = StyleSheet.create({
 		height: '100%'
 	},
 	progress__normal: {
-		backgroundColor: Colors.Semantic.role.secondary.default
+		backgroundColor: Colors.Components.progress.bar.default
 	},
 	progress__warning: {
-		backgroundColor: Colors.Semantic.role.warning.default
+		backgroundColor: Colors.Components.progress.bar.warning
 	},
 	progress__expired: {
-		backgroundColor: Colors.Semantic.role.danger.default
+		backgroundColor: Colors.Components.progress.bar.danger
 	}
 });

@@ -10,13 +10,11 @@ const PLACEHOLDER_TEXT = Array(PLACEHOLDER_LENGTH).fill('*').join('');
 /**
  * MnemonicView component. A display component for mnemonic phrases, featuring show/hide toggle
  * functionality and a copy button when the phrase is revealed.
- *
- * @param {object} props - Component props
+ * @param {object} props - Component props.
  * @param {boolean} props.isShown - Whether the mnemonic is visible. - Whether the copy button is disabled.
  * @param {string} props.mnemonic - The mnemonic phrase to display.
- * @param {function} props.onShowPress - Callback when the show button is pressed.
- * 
- * @returns {React.ReactNode} MnemonicView component
+ * @param {function(): void} props.onShowPress - Callback when the show button is pressed.
+ * @returns {React.ReactNode} MnemonicView component.
  */
 export const MnemonicView = ({ isShown, mnemonic, onShowPress }) => {
 	const placeholder = PLACEHOLDER_TEXT;

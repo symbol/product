@@ -1,40 +1,58 @@
 import {
 	Alert,
 	Amount,
-	Button,
 	Card,
 	Divider,
 	Field,
 	FlexContainer,
 	Screen,
+	SendReceiveButtons,
 	Spacer,
 	Stack,
 	StyledText,
 	TableView,
 	TokenAvatar
 } from '@/app/components';
-import { useWalletController } from '@/app/hooks';
+import { useAsyncManager, useWalletController } from '@/app/hooks';
 import { $t } from '@/app/localization';
 import { Router } from '@/app/router/Router';
 import { ExpirationProgress } from '@/app/screens/assets/components';
 import { getExpirationData, getTokenDisplayInfo } from '@/app/screens/assets/utils';
 import { Colors } from '@/app/styles';
+import { createTransactionQr } from '@/app/utils';
 import React from 'react';
+
+/** @typedef {import('@/app/types/Network').ChainName} ChainName */
 
 /**
  * TokenDetails screen component. Displays detailed information about a specific token including
  * balance, creator, supply, divisibility, and expiration status. Allows sending tokens if not expired.
- * @param {{ route: { params: { chainName: string, tokenId: string } } }} props - Component props
- * @returns {React.ReactNode} TokenDetails component
+ * @param {object} props - Component props.
+ * @param {object} props.route - React Navigation route object.
+ * @param {object} props.route.params - Route parameters.
+ * @param {ChainName} props.route.params.chainName - The blockchain name.
+ * @param {string} props.route.params.tokenId - The token identifier.
+ * @param {string} props.route.params.accountAddress - The owner account address.
+ * @param {object} [props.route.params.preloadedData] - Preloaded token data to avoid initial fetch.
+ * @returns {React.ReactNode} TokenDetails component.
  */
 export const TokenDetails = ({ route }) => {
-	const { chainName, tokenId } = route.params;
+	const { chainName, tokenId, accountAddress, preloadedData } = route.params;
 	const walletController = useWalletController(chainName);
-	const { networkIdentifier, currentAccount, currentAccountInfo, networkProperties } = walletController;
+	const { networkIdentifier, networkProperties } = walletController;
 
-	// Find token in wallet
-	const tokens = currentAccountInfo?.tokens || currentAccountInfo?.mosaics || [];
-	const token = tokens.find(t => t.id === tokenId);
+	// Fetch data
+	const dataManager = useAsyncManager({
+		callback: async () => {
+			const accountInfo = await walletController.networkApi.account.fetchAccountInfo(networkProperties, accountAddress);
+
+			const tokens = accountInfo.tokens ?? accountInfo.mosaics ?? [];
+
+			return tokens.find(token => token.id === tokenId);
+		},
+		defaultData: preloadedData
+	});
+	const token = dataManager.data;
 
 	// Token display data
 	const {
@@ -57,7 +75,7 @@ export const TokenDetails = ({ route }) => {
 		}
 	];
 
-	if (token.creator === currentAccount.address) {
+	if (token.creator === accountAddress) {
 		tableData.push({
 			title: 'supply',
 			value: token.supply,
@@ -87,16 +105,25 @@ export const TokenDetails = ({ route }) => {
 		alertText
 	} = getExpirationData(token, networkProperties);
 
-	// Send button
-	const openSendScreen = () => Router.goToSend({ params: { chainName, tokenId } });
+	// Send/Receive buttons
+	const receiveQrData = createTransactionQr({
+		recipientAddress: accountAddress,
+		chainName,
+		networkIdentifier,
+		tokenId
+	});
+	const openSendScreen = () => Router.goToSend({
+		params: {
+			chainName,
+			tokenId,
+			senderAddress: accountAddress
+		}
+	});
 
-	// Refresh data
-	const refresh = () => walletController.fetchAccountInfo();
-
-	const isSendButtonDisabled = isTokenExpired;
+	const isSendReceiveButtonsDisabled = isTokenExpired;
 
 	return (
-		<Screen refresh={{ onRefresh: refresh }}>
+		<Screen refresh={{ onRefresh: dataManager.call, isRefreshing: dataManager.isLoading }}>
 			<Screen.Upper>
 				<Spacer>
 					<Stack>
@@ -116,6 +143,14 @@ export const TokenDetails = ({ route }) => {
 								</Stack>
 							</Spacer>
 						</Card>
+						<SendReceiveButtons
+							tokenName={name}
+							accountAddress={accountAddress}
+							chainName={chainName}
+							receiveQrData={receiveQrData}
+							onSendPress={openSendScreen}
+							isDisabled={isSendReceiveButtonsDisabled}
+						/>
 						<Card>
 							<Spacer>
 								<TableView
@@ -166,17 +201,6 @@ export const TokenDetails = ({ route }) => {
 					</Stack>
 				</Spacer>
 			</Screen.Upper>
-			<Screen.Bottom>
-				<Spacer>
-					<Stack>
-						<Button
-							isDisabled={isSendButtonDisabled}
-							text={$t('button_send')}
-							onPress={openSendScreen}
-						/>
-					</Stack>
-				</Spacer>
-			</Screen.Bottom>
 		</Screen>
 	);
 };

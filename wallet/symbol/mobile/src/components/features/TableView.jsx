@@ -1,18 +1,22 @@
 import { AccountView, BooleanView, CopyButtonContainer, Field, MessageView, Stack, StyledText, TokenView } from '@/app/components';
 import { $t } from '@/app/localization';
-import { getAccountKnownInfo, getTokenKnownInfo } from '@/app/utils';
+import { createTokenDisplayData, getAccountKnownInfo } from '@/app/utils';
 import React, { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-/**
- * @typedef {import('@/app/types/Table').TableRow} TableRow
- */
+/** @typedef {import('@/app/types/Table').TableRow} TableRow */
+/** @typedef {import('@/app/types/Network').NetworkIdentifier} NetworkIdentifier */
+/** @typedef {import('@/app/types/Network').ChainName} ChainName */
 
 /**
- * Resolves known info for account and token rows
- * @param {TableRow[]} data - Array of table rows
- * @param {object} options - Resolution options
- * @returns {Map<string, object>} Map of resolved info by value
+ * Resolves known info for account and token rows.
+ * @param {TableRow[]} data - Array of table rows.
+ * @param {object} options - Resolution options.
+ * @param {object} options.addressBook - Address book data.
+ * @param {object} options.walletAccounts - Wallet accounts data.
+ * @param {ChainName} options.chainName - Chain name.
+ * @param {NetworkIdentifier} options.networkIdentifier - Network identifier.
+ * @returns {Map<string, *>} Map of resolved info by value.
  */
 const useResolvedData = (data, options) => {
 	const { addressBook, walletAccounts, chainName, networkIdentifier } = options;
@@ -39,7 +43,8 @@ const useResolvedData = (data, options) => {
 
 				if ((row.type === 'token' || row.type === 'fee') && value) {
 					const tokenId = value.id ?? value.token?.id ?? value;
-					const info = getTokenKnownInfo(chainName, networkIdentifier, tokenId);
+					const tokenData = value.token ?? value;
+					const info = createTokenDisplayData(tokenData, chainName, networkIdentifier);
 					resolved.set(tokenId, info);
 				}
 			}
@@ -50,12 +55,12 @@ const useResolvedData = (data, options) => {
 };
 
 /**
- * Renders a single row based on its type
- * @param {TableRow} row - Row data
- * @param {Map<string, object>} resolvedData - Map of resolved known info
- * @param {function} translate - Translation function
- * @param {string|number} [key] - Optional key for list rendering
- * @returns {React.ReactNode} Row content
+ * Renders a single row based on its type.
+ * @param {TableRow} row - Row data.
+ * @param {Map<string, *>} resolvedData - Map of resolved known info.
+ * @param {function(string): string} translate - Translation function.
+ * @param {string|number} [key] - Optional key for list rendering.
+ * @returns {React.ReactNode} Row content.
  */
 const renderRowValue = (row, resolvedData, translate, key) => {
 	const isArrayValue = Array.isArray(row.value);
@@ -89,7 +94,6 @@ const renderRowValue = (row, resolvedData, translate, key) => {
 				key={key}
 				name={resolvedData.get(row.value.id ?? row.value)?.name ?? row.value.name}
 				amount={row.value.amount}
-				ticker={resolvedData.get(row.value.id ?? row.value)?.ticker}
 				imageId={resolvedData.get(row.value.id ?? row.value)?.imageId}
 			/>
 		);
@@ -99,7 +103,6 @@ const renderRowValue = (row, resolvedData, translate, key) => {
 				key={key}
 				name={resolvedData.get(row.value.token?.id ?? row.value.token)?.name ?? row.value.token.name}
 				amount={row.value.token.amount}
-				ticker={resolvedData.get(row.value.token?.id ?? row.value.token)?.ticker}
 				imageId={resolvedData.get(row.value.token?.id ?? row.value.token)?.imageId}
 			/>
 		);
@@ -121,6 +124,15 @@ const renderRowValue = (row, resolvedData, translate, key) => {
 				text={translate(`data_${row.value ? 'encrypted' : 'unencrypted'}`)}
 			/>
 		);
+	case 'delta':
+		return (
+			<StyledText key={key}>
+				{translate(
+					'data_delta_' + (row.value > 0 ? 'increase' : row.value < 0 ? 'decrease' : 'unchanged'), 
+					{ delta: Math.abs(row.value) }
+				)}
+			</StyledText>
+		);
 	case 'copy':
 		return (
 			<CopyButtonContainer key={key} isStretched value={row.value}>
@@ -139,18 +151,16 @@ const renderRowValue = (row, resolvedData, translate, key) => {
  * TableView component. A component for displaying structured data in a tabular format, supporting
  * various row types such as accounts, tokens, messages, and booleans with appropriate visual
  * representations.
- *
- * @param {object} props - Component props
- * @param {object} [props.style] - Additional styles for the root container
- * @param {TableRow[]} props.data - Array of row objects to display
- * @param {object} [props.addressBook] - Address book instance for resolving account names
- * @param {Array} [props.walletAccounts] - List of wallet accounts for resolving account names
- * @param {string} [props.chainName] - Blockchain name (e.g., 'symbol')
- * @param {string} [props.networkIdentifier] - Network identifier (e.g., 'mainnet')
- * @param {boolean} [props.isTitleTranslatable=false] - Whether row titles should be translated
- * @param {boolean} [props.showEmptyArrays=false] - Whether to show rows with empty array values
- *
- * @returns {React.ReactNode} Table view component
+ * @param {object} props - Component props.
+ * @param {object} [props.style] - Additional styles for the root container.
+ * @param {TableRow[]} props.data - Array of row objects to display.
+ * @param {object} [props.addressBook] - Address book instance for resolving account names.
+ * @param {Array} [props.walletAccounts] - List of wallet accounts for resolving account names.
+ * @param {ChainName} [props.chainName] - Blockchain name (e.g., 'symbol').
+ * @param {NetworkIdentifier} [props.networkIdentifier] - Network identifier (e.g., 'mainnet').
+ * @param {boolean} [props.isTitleTranslatable=false] - Whether row titles should be translated.
+ * @param {boolean} [props.showEmptyArrays=false] - Whether to show rows with empty array values.
+ * @returns {React.ReactNode} TableView component.
  */
 export const TableView = ({
 	style,
@@ -162,6 +172,9 @@ export const TableView = ({
 	isTitleTranslatable = false,
 	showEmptyArrays = false
 }) => {
+	if (!data || !Array.isArray(data))
+		throw new Error(`TableView: "data" prop must be a valid array of rows. Received: ${typeof data}`);
+
 	const translate = $t;
 	const resolvedData = useResolvedData(data, {
 		addressBook,
@@ -169,9 +182,6 @@ export const TableView = ({
 		chainName,
 		networkIdentifier
 	});
-
-	if (!data || !Array.isArray(data))
-		return null;
 
 	const shouldRenderRow = row => {
 		const isArrayValue = Array.isArray(row.value);

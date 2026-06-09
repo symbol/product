@@ -1,4 +1,4 @@
-import { PASSCODE_LOCKOUT_DURATION_MS, PASSCODE_MAX_FAILED_ATTEMPTS, PASSCODE_PIN_LENGTH } from '@/app/constants';
+import { PASSCODE_LOCKOUT_DURATION, PASSCODE_MAX_FAILED_ATTEMPTS, PASSCODE_PIN_LENGTH } from '@/app/constants';
 import { PasscodeManager } from '@/app/lib/passcode/PasscodeManager';
 
 // Mocks
@@ -81,7 +81,7 @@ const setupConsecutiveFailures = async count => {
 };
 
 const setupActiveLockout = async (durationMultiplier = 1) => {
-	const futureTime = Date.now() + (durationMultiplier * PASSCODE_LOCKOUT_DURATION_MS);
+	const futureTime = Date.now() + (durationMultiplier * PASSCODE_LOCKOUT_DURATION);
 	await mockSecureStorage.setItem(StorageKey.LOCKOUT_UNTIL, String(futureTime));
 };
 
@@ -434,7 +434,7 @@ describe('lib/PasscodeManager', () => {
 				expect(result.isValid).toBe(false);
 				expect(result.isLocked).toBe(true);
 				expect(result.remainingAttempts).toBe(0);
-				expect(result.lockoutUntil).toBe(beforeTime + PASSCODE_LOCKOUT_DURATION_MS);
+				expect(result.lockoutUntil).toBe(beforeTime + PASSCODE_LOCKOUT_DURATION);
 				Date.now.mockRestore();
 			});
 
@@ -453,7 +453,7 @@ describe('lib/PasscodeManager', () => {
 				expect(mockSecureStorage.setItem).toHaveBeenCalledWith(StorageKey.CONSECUTIVE_FAILURES, '2');
 				expect(mockSecureStorage.setItem).toHaveBeenCalledWith(
 					StorageKey.LOCKOUT_UNTIL,
-					String(beforeTime + PASSCODE_LOCKOUT_DURATION_MS)
+					String(beforeTime + PASSCODE_LOCKOUT_DURATION)
 				);
 				Date.now.mockRestore();
 			});
@@ -466,7 +466,7 @@ describe('lib/PasscodeManager', () => {
 				await setupConsecutiveFailures(2);
 				const beforeTime = 5000;
 				jest.spyOn(Date, 'now').mockReturnValue(beforeTime);
-				const expectedLockoutTime = beforeTime + (2 * PASSCODE_LOCKOUT_DURATION_MS);
+				const expectedLockoutTime = beforeTime + (2 * PASSCODE_LOCKOUT_DURATION);
 
 				// Act:
 				const result = await passcodeManager.verify(INVALID_PASSCODE);
@@ -634,7 +634,7 @@ describe('lib/PasscodeManager', () => {
 				const consecutiveFailures = 3;
 				const beforeTime = 4000;
 				jest.spyOn(Date, 'now').mockReturnValue(beforeTime);
-				const expectedLockoutTime = beforeTime + (3 * PASSCODE_LOCKOUT_DURATION_MS);
+				const expectedLockoutTime = beforeTime + (3 * PASSCODE_LOCKOUT_DURATION);
 
 				// Act:
 				const lockoutUntil = await passcodeManager.setLockout(consecutiveFailures);
@@ -760,12 +760,12 @@ describe('lib/PasscodeManager', () => {
 			expect(lockStatus.consecutiveFailures).toBe(1);
 
 			// Act: Simulate lockout expiry and second lockout
-			Date.now.mockReturnValue(mockNow + PASSCODE_LOCKOUT_DURATION_MS + 1000);
+			Date.now.mockReturnValue(mockNow + PASSCODE_LOCKOUT_DURATION + 1000);
 			const secondLockoutResult = await passcodeManager.verify(INVALID_PASSCODE);
 
 			// Assert: Second lockout with duration multiplied by consecutive failures
 			expect(secondLockoutResult.isLocked).toBe(true);
-			expect(secondLockoutResult.lockoutUntil).toBe(mockNow + PASSCODE_LOCKOUT_DURATION_MS + 1000 + PASSCODE_LOCKOUT_DURATION_MS);
+			expect(secondLockoutResult.lockoutUntil).toBe(mockNow + PASSCODE_LOCKOUT_DURATION + 1000 + PASSCODE_LOCKOUT_DURATION);
 			lockStatus = await passcodeManager.getLockStatus();
 			expect(lockStatus.consecutiveFailures).toBe(2);
 

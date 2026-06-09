@@ -50,7 +50,8 @@
     "symbol-sdk": "3.3.0",
     "wallet-common-core": "file:../../common/core",
     "wallet-common-ethereum": "file:../../common/ethereum",
-    "wallet-common-symbol": "file:../../common/symbol"
+    "wallet-common-symbol": "file:../../common/symbol",
+    "wallet-common-transport": "file:../../common/transport"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

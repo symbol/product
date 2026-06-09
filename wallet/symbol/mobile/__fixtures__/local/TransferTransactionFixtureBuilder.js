@@ -16,7 +16,7 @@ export class TransferTransactionFixtureBuilder extends TransactionFixtureBuilder
 	/**
 	 * Creates a transfer transaction fixture.
 	 * 
-	 * @param {object} data - combined base + transfer data.
+	 * @param {object} data - Combined base + transfer data.
 	 */
 	constructor(data) {
 		super(data);
@@ -42,8 +42,8 @@ export class TransferTransactionFixtureBuilder extends TransactionFixtureBuilder
 	 * Creates a transfer transaction fixture with default data.
 	 * Uses AccountFixtureBuilder for signer/recipient and TokenFixtureBuilder for mosaics.
 	 * 
-	 * @param {string} [chainName='symbol'] - chain name.
-	 * @param {'mainnet' | 'testnet'} [networkIdentifier='testnet'] - network identifier.
+	 * @param {string} [chainName='symbol'] - Chain name.
+	 * @param {'mainnet' | 'testnet'} [networkIdentifier='testnet'] - Network identifier.
 	 * @returns {TransferTransactionFixtureBuilder}
 	 */
 	static createDefault = (chainName = 'symbol', networkIdentifier = 'testnet') => {
@@ -77,7 +77,7 @@ export class TransferTransactionFixtureBuilder extends TransactionFixtureBuilder
 	/**
 	 * Creates a transfer transaction fixture with the provided data.
 	 * 
-	 * @param {object} data - full transaction data.
+	 * @param {object} data - Full transaction data.
 	 * @returns {TransferTransactionFixtureBuilder}
 	 */
 	static createWithData = data => {

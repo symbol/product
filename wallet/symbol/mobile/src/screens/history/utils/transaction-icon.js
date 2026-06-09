@@ -1,5 +1,9 @@
 import { SymbolTransactionType } from '@/app/constants';
 
+/**
+ * Maps transaction types to their corresponding icon names.
+ * @type {Record<number, string>}
+ */
 const transactionTypeToIconMap = {
 	[SymbolTransactionType.AGGREGATE_COMPLETE]: 'aggregate',
 	[SymbolTransactionType.AGGREGATE_BONDED]: 'aggregate',
@@ -30,7 +34,7 @@ const transactionTypeToIconMap = {
 
 /**
  * Gets the icon name for a transaction based on its type.
- * @param {number} type - Transaction type
- * @returns {string} Icon name
+ * @param {number} type - Transaction type number.
+ * @returns {string} Icon name.
  */
 export const getTransactionIconName = type => transactionTypeToIconMap[type] ?? 'default';

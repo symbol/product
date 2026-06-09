@@ -3,15 +3,13 @@ import React, { Fragment } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 /**
- * Steps component
+ * Steps component.
  *
  * Renders a horizontal progress indicator made of circles and connecting lines.
- *
  * @param {object} props - Component props.
  * @param {number} props.stepsCount - Total number of steps.
  * @param {number} props.currentStep - 1-based index of the current step.
- * 
- * @returns {React.ReactNode} Steps component
+ * @returns {React.ReactNode} Steps component.
  */
 export const Steps = ({ stepsCount, currentStep }) => {
 	const currentIndex = currentStep - 1;

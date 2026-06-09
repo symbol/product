@@ -52,7 +52,9 @@ export const accountInfoMultisig = {
 		'TAKECYAYMTEZFI34GGQ3H2ERHMGH5VK6YNV7UMA',
 		'TCIJPF5OR3VGANQNOYMPEVQJ622UORYPAYODVJA'
 	],
-	'multisigAddresses': []
+	'multisigAddresses': [],
+	'minApproval': 1,
+	'minRemoval': 2
 };
 
 export const accountInfoCosigner = {
@@ -71,7 +73,9 @@ export const accountInfoCosigner = {
 	'cosignatories': [],
 	'multisigAddresses': [
 		'TAMYTGVH3UEVZRQSD64LGSMPKNTKMASOIDNYROI'
-	]
+	],
+	'minApproval': 0,
+	'minRemoval': 0
 };
 
 export const multisigInfo = {

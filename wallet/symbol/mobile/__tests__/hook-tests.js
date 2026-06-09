@@ -5,10 +5,10 @@ import { act } from 'react';
  * Runs contract tests for a given hook.
  * 
  * @param {Function} hook - The custom React hook to be tested.
- * @param {Object} options - The options for the contract test.
- * @param {Object} options.props - The props to be passed to the hook.
+ * @param {object} options - The options for the contract test.
+ * @param {object} options.props - The props to be passed to the hook.
  * @param {boolean} [options.waitAsyncEffects=false] - Whether to wait for async effects to resolve before assertions.
- * @param {Object} options.contract - The contract defining the expected fields and their types.
+ * @param {object} options.contract - The contract defining the expected fields and their types.
  * 
  * @example
  * runHookContractTest(useMyCustomHook, {

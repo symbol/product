@@ -12,7 +12,7 @@ export class TokenFixtureBuilder {
 	/**
 	 * Creates a token fixture with the provided data.
 	 * 
-	 * @param {import('wallet-common-core/src/types/Token').Token} data - token data.
+	 * @param {import('wallet-common-core/src/types/Token').Token} data - Token data.
 	 */
 	constructor(data) {
 		this._data = { ...data };
@@ -31,8 +31,8 @@ export class TokenFixtureBuilder {
 	 * Creates an Token fixture with default data for the specified chain and network.
 	 * Used data from the fixture list.
 	 * 
-	 * @param {string} chainName - chain name the Token belongs to.
-	 * @param {'mainnet' | 'testnet'} networkIdentifier - network identifier the Token belongs to.
+	 * @param {string} chainName - Chain name the Token belongs to.
+	 * @param {'mainnet' | 'testnet'} networkIdentifier - Network identifier the Token belongs to.
 	 * @param {number} index - Token item index in the fixture list (eg. 0, 1, 2, ...).
 	 * @returns {TokenFixtureBuilder}
 	 */

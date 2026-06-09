@@ -27,7 +27,14 @@ export const Semantic = {
 		xxl: Primitives.spacing400 // 32px
 	},
 	controlHeight: {
+		s: Primitives.spacing400, // 32px
 		m: Primitives.spacing600 // 48px
+	},
+	circleControlSize: {
+		s: Primitives.spacing300, // 24px
+		m: Primitives.spacing400, // 32px
+		l: Primitives.spacing600, // 48px,
+		xl: Primitives.spacing800 // 64px
 	},
 	selectHeight: {
 		m: Primitives.spacing500 // 40px
@@ -35,7 +42,8 @@ export const Semantic = {
 	avatarHeight: {
 		s: Primitives.spacing300, // 24px
 		m: Primitives.spacing400, // 32px
-		l: Primitives.spacing500  // 40px
+		l: Primitives.spacing500,  // 40px
+		xl: Primitives.spacing600  // 48px
 	},
 	layoutPadding: {
 		none: Primitives.spacing0, // 0px
@@ -61,20 +69,26 @@ export const Semantic = {
 	},
 	navigationMenuHeight: {
 		m: Primitives.spacing700 // 56px
+	},
+	iconSize: {
+		xxs: Primitives.spacing150, // 12px message type, boolean, widget header icon (was 14)
+		xs: Primitives.spacing200, // 16px - button copy, transaction send activity icon  
+		// 18 - transaction graphic action, checkbox inner icon, edit button, button plain
+		s: Primitives.spacing250, // 20 - close button icon close
+		m: Primitives.spacing300, // 24px -standard - tx type, navigation, transaction graphic target icon
+		l: Primitives.spacing400, // 32px - transaction send activity circle wrapper, settings items icons,
+		// 36 - icon asset
+		xl: Primitives.spacing500 // 40px - token icon bridge
+		// 48px - transaction graphic target wrapper, avatar md
+	},
+	qrCodeSize: {
+		s: Primitives.spacing100 * 12, // 96px
+		m: Primitives.spacing100 * 32, // 256px
+		l: Primitives.spacing100 * 48 // 384px
 	}
 };
 
 export const Component = {
-	circleButton: {
-		m: {
-			surface: {
-				size: Primitives.spacing600 // 48px
-			},
-			icon: {
-				size: Primitives.spacing300 // 24px
-			}
-		}
-	},
 	circleIcon: {
 		s: {
 			surface: {
