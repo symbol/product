@@ -11,7 +11,8 @@ const transformIgnoreModules = [
 	'make-plural',
 	'wallet-common-core',
 	'wallet-common-symbol',
-	'wallet-common-ethereum'
+	'wallet-common-ethereum',
+	'wallet-common-transport'
 ];
 
 const assetFileExtensions = [
