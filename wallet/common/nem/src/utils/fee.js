@@ -39,6 +39,7 @@ export const createTransactionFee = (networkProperties, amount) => {
  */
 export const createTransactionFeeTiers = (networkProperties, amount) => {
 	const tier = createTransactionFee(networkProperties, amount);
+	
 	return {
 		fast: tier,
 		medium: tier,
@@ -90,6 +91,7 @@ const calculateSingleMosaicFeeAbsolute = (mosaic, defaultDivisibility, fees) => 
 	// Unweighted fee in fee-units (1 unit = perMosaicFee = 0.05 XEM).
 	const xemFeeUnits = Math.floor(xemEquivalent / fees.xemTierAmount);
 	const unweightedFee = Math.max(1, xemFeeUnits - supplyRelatedAdjustment);
+	
 	return unweightedFee * fees.perMosaicFee;
 };
 
@@ -152,7 +154,14 @@ const calculateFeeAbsolute = (transaction, networkCurrency, fees) => {
 		const xemAmount = transaction.mosaics?.find(m => m.id === nativeMosaicId)?.amount || 0;
 		// Exclude the native XEM mosaic from the per-mosaic fee; its cost is covered by the XEM-amount fee.
 		const nonNativeMosaics = transaction.mosaics?.filter(m => m.id !== nativeMosaicId) || [];
-		return calculateTransferFeeAbsolute(xemAmount, nonNativeMosaics, effectiveDivisibility, transaction.message?.payload, fees);
+		
+		return calculateTransferFeeAbsolute(
+			xemAmount, 
+			nonNativeMosaics, 
+			effectiveDivisibility, 
+			transaction.message?.payload, 
+			fees
+		);
 	}
 	case TransactionType.MULTISIG: {
 		// Multisig wrapper fee (0.15 XEM) added to the fee of the wrapped inner transaction
@@ -160,6 +169,7 @@ const calculateFeeAbsolute = (transaction, networkCurrency, fees) => {
 		const innerFee = transaction.innerTransaction
 			? calculateFeeAbsolute(transaction.innerTransaction, networkCurrency, fees)
 			: 0;
+		
 		return fees.baseFee + innerFee;
 	}
 	case TransactionType.MULTISIG_ACCOUNT_MODIFICATION:
@@ -205,5 +215,6 @@ export const calculateTransactionFee = (transaction, networkProperties) => {
 	const { networkCurrency, transactionFees } = networkProperties;
 	const effectiveDivisibility = networkCurrency.divisibility ?? NETWORK_CURRENCY_DIVISIBILITY;
 	const absoluteFee = calculateFeeAbsolute(transaction, networkCurrency, transactionFees);
+	
 	return absoluteToRelativeAmount(absoluteFee, effectiveDivisibility);
 };
