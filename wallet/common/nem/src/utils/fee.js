@@ -244,5 +244,5 @@ export const calculateTransactionFee = (transaction, networkProperties) => {
 	const effectiveDivisibility = networkCurrency.divisibility ?? NETWORK_CURRENCY_DIVISIBILITY;
 	const absoluteFee = calculateFeeAbsolute(transaction, networkCurrency, transactionFees);
 	
-	return absoluteToRelativeAmount(absoluteFee, effectiveDivisibility);
+	return absoluteToRelativeAmount(absoluteFee.toString(), effectiveDivisibility);
 };
