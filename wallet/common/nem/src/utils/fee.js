@@ -117,7 +117,7 @@ const calculateSingleMosaicFeeAbsolute = (mosaic, defaultDivisibility, fees) => 
 
 /**
  * Calculates the absolute fee in microXEM for a transfer transaction (NEM Technical Reference §4.1).
- * fee = XEM-amount fee + per-mosaic fee + message fee. Each part is a multiple of the 0.05 XEM fee
+ * Fee = XEM-amount fee + per-mosaic fee + message fee. Each part is a multiple of the 0.05 XEM fee
  * unit; the XEM-amount part is floored at one unit when XEM is actually transferred.
  * @param {number|string} xemAmount - Native XEM amount transferred, in relative (whole-XEM) units.
  * @param {Mosaic[]} mosaics - Non-native mosaics attached to the transfer.

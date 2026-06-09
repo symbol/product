@@ -6,7 +6,7 @@ import { NamespaceService } from './NamespaceService';
 import { NetworkService } from './NetworkService';
 import { TransactionService } from './TransactionService';
 /**
- * @typedef {Object} Config
+ * @typedef {object} Config
  * @property {string} marketDataURL - The URL for fetching market data.
  * @property {string[]} marketCurrencies - The list of currencies for market data.
  * @property {Object.<string, string>} nodewatchURL - Map of networkIdentifier (key) to node watch service URL (value).

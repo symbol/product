@@ -8,6 +8,7 @@ import { ApiError, NotFoundError } from 'wallet-common-core';
 /** @typedef {import('../types/Transaction').Transaction} Transaction */
 /** @typedef {import('../types/Network').NetworkProperties} NetworkProperties */
 /** @typedef {import('../types/Account').PublicAccount} PublicAccount */
+/** @typedef {import('../types/SearchCriteria').TransactionSearchCriteria} TransactionSearchCriteria */
 
 export class TransactionService {
 	#api;
@@ -20,10 +21,10 @@ export class TransactionService {
 
 	/**
 	 * Fetches transactions for an account.
-	 * @param {NetworkProperties} networkProperties
-	 * @param {PublicAccount} currentAccount
-	 * @param {object} [searchCriteria]
-	 * @returns {Promise<Transaction[]>}
+	 * @param {NetworkProperties} networkProperties - Network properties.
+	 * @param {PublicAccount} currentAccount - The account whose transactions are fetched.
+	 * @param {TransactionSearchCriteria} [searchCriteria] - Group, pagination and direction filter.
+	 * @returns {Promise<Transaction[]>} The account transactions.
 	 */
 	fetchAccountTransactions = async (networkProperties, currentAccount, searchCriteria = {}) => {
 		const { group = TransactionGroup.CONFIRMED, filter, pageNumber = 1, pageSize = 15 } = searchCriteria;
@@ -55,15 +56,12 @@ export class TransactionService {
 
 	/**
 	 * Fetches a single transaction by hash.
-	 * @param {NetworkProperties} networkProperties
-	 * @param {PublicAccount} currentAccount
-	 * @param {string} hash
-	 * @returns {Promise<Transaction>}
+	 * @param {NetworkProperties} networkProperties - Network properties.
+	 * @param {PublicAccount} currentAccount - The account the transaction is resolved against.
+	 * @param {string} hash - The transaction hash.
+	 * @returns {Promise<Transaction>} The transaction.
 	 */
 	fetchAccountTransaction = async (networkProperties, currentAccount, hash) => {
-		// NOTE: /transaction/get?hash= is not part of the official NEM NIS API documentation (NIS lookup is
-		// account-scoped: /account/transfers/all?address=&hash= + /account/unconfirmedTransactions). This
-		// relies on a NIS deployment that exposes /transaction/get; revisit if targeting stock NIS.
 		const url = `${networkProperties.nodeUrl}/transaction/get?hash=${hash}`;
 		const transactionDTO = await this.#makeRequest(url);
 		const transactions = await this.resolveTransactionDTOs(
@@ -77,14 +75,12 @@ export class TransactionService {
 
 	/**
 	 * Fetches the confirmation status of a transaction.
-	 * @param {NetworkProperties} networkProperties
-	 * @param {string} hash
-	 * @returns {Promise<{ group: string }>}
+	 * @param {NetworkProperties} networkProperties - Network properties.
+	 * @param {string} hash - The transaction hash.
+	 * @returns {Promise<{ group: string }>} The transaction group (confirmed or unconfirmed).
 	 */
 	fetchTransactionStatus = async (networkProperties, hash) => {
 		try {
-			// NOTE: /transaction/get is not in the official NEM docs and this method has no account address
-			// to use the documented account-scoped lookups — relies on a NIS deployment exposing it.
 			await this.#makeRequest(`${networkProperties.nodeUrl}/transaction/get?hash=${hash}`);
 			
 			return { group: TransactionGroup.CONFIRMED };
@@ -98,19 +94,19 @@ export class TransactionService {
 
 	/**
 	 * Announces a signed transaction to the network.
-	 * @param {NetworkProperties} networkProperties
-	 * @param {object} signedTransaction
-	 * @param {string} [group]
-	 * @returns {Promise<object>}
+	 * @param {NetworkProperties} networkProperties - Network properties.
+	 * @param {object} signedTransaction - The signed transaction with its announce dto.
+	 * @param {string} [group] - The announce group (default or cosignature).
+	 * @returns {Promise<object>} The node announce response.
 	 */
 	announceTransaction = async (networkProperties, signedTransaction, group = TransactionAnnounceGroup.DEFAULT) =>
 		this.announceTransactionToNode(networkProperties.nodeUrl, signedTransaction, group);
 
 	/**
 	 * Announces all transactions in a TransactionBundle.
-	 * @param {NetworkProperties} networkProperties
-	 * @param {import('wallet-common-core').TransactionBundle} transactionBundle
-	 * @returns {Promise<object[]>}
+	 * @param {NetworkProperties} networkProperties - Network properties.
+	 * @param {import('wallet-common-core').TransactionBundle} transactionBundle - The signed transaction bundle.
+	 * @returns {Promise<object[]>} The node announce responses, one per transaction.
 	 */
 	announceTransactionBundle = async (networkProperties, transactionBundle) => {
 		const { transactions, metadata } = transactionBundle;
@@ -130,6 +126,13 @@ export class TransactionService {
 		return Promise.all(announceAll);
 	};
 
+	/**
+	 * Announces a signed transaction to a specific node.
+	 * @param {string} nodeUrl - The node URL.
+	 * @param {object} signedTransaction - The signed transaction with its announce dto.
+	 * @param {string} [group] - The announce group (default or cosignature).
+	 * @returns {Promise<object>} The node announce response.
+	 */
 	announceTransactionToNode = async (nodeUrl, signedTransaction, group = TransactionAnnounceGroup.DEFAULT) => {
 		// NEM announces every transaction through a single endpoint; a cosignature is itself a
 		// transaction (cosignature_v1) and is announced the same way — there is no dedicated route.
@@ -151,6 +154,12 @@ export class TransactionService {
 		}
 	};
 
+	/**
+	 * Resolves the mosaic infos referenced by a list of transaction DTOs.
+	 * @param {NetworkProperties} networkProperties - Network properties.
+	 * @param {object[]} transactionDTOs - The transaction DTOs to resolve.
+	 * @returns {Promise<Record<string, object>>} The mosaic id to info map (empty when nothing to resolve).
+	 */
 	resolveTransactionData = async (networkProperties, transactionDTOs) => {
 		const { mosaicIds } = getUnresolvedIdsFromTransactionDTOs(transactionDTOs);
 		
@@ -160,6 +169,13 @@ export class TransactionService {
 		return this.#api.mosaic.fetchMosaicInfos(networkProperties, mosaicIds);
 	};
 
+	/**
+	 * Maps a list of transaction DTOs to Transaction objects, resolving their referenced mosaics first.
+	 * @param {NetworkProperties} networkProperties - Network properties.
+	 * @param {object[]} transactionDTOs - The transaction DTOs to map.
+	 * @param {PublicAccount} currentAccount - The account used to derive the directed amount.
+	 * @returns {Promise<Transaction[]>} The mapped transactions.
+	 */
 	resolveTransactionDTOs = async (networkProperties, transactionDTOs, currentAccount) => {
 		const mosaicInfos = await this.resolveTransactionData(networkProperties, transactionDTOs);
 		

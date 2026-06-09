@@ -121,7 +121,7 @@ export class Listener {
 
 	/**
 	 * Subscribes to newly added transactions for the account. NEM NIS only exposes confirmed and
-	 * unconfirmed channels, so any other group (e.g. partial) is silently ignored rather than throwing,
+	 * unconfirmed channels, so any other group (e.g. Partial) is silently ignored rather than throwing,
 	 * keeping the shared NetworkManager subscribe loop from breaking on an unsupported group.
 	 * @param {'confirmed' | 'unconfirmed'} group - The transaction group.
 	 * @param {function({ hash: string }): void} callback - The callback function.

@@ -189,8 +189,8 @@ export const signTransactionBundle = (networkIdentifier, transactionBundle, priv
 
 /**
  * Creates and signs a NEM multisig cosignature transaction.
- * Unlike Symbol, a NEM cosignature is itself a transaction, so its deadline is created from the network
- * time at cosign time (via createDeadline) rather than being a detached signature over the hash.
+ * A NEM cosignature is itself a transaction (NEM Technical Reference §4.3.2), so its deadline is created
+ * from the network time at cosign time (via createDeadline).
  * @param {object} transaction - The transaction to cosign. Must contain `hash`, `multisigAccountAddress`,
  * `networkIdentifier`, and `networkTime`.
  * @param {string} privateKey - The cosigner's private key.

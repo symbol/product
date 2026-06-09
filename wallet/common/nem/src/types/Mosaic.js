@@ -11,7 +11,6 @@
 /**
  * @typedef {MosaicInfo} Mosaic
  * @property {string} amount - The mosaic relative amount.
- * @property {string} name - Mosaic display name (defaults to the mosaic id).
  */
 
 export default {};

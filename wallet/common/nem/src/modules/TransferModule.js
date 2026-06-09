@@ -54,7 +54,7 @@ export class TransferModule {
 	 * current account, the transfer is wrapped in a multisig transaction signed by the current account (cosignatory).
 	 * @param {object} [options.fee] - The fee object. If omitted, defaults to 0.
 	 * @param {string} [password] - Wallet password (required for encrypted messages).
-	 * @returns {Promise<TransactionBundle>}
+	 * @returns {Promise<TransactionBundle>} The unsigned transfer (or multisig-wrapped transfer) bundle.
 	 */
 	createTransaction = async (options, password) => {
 		const {

@@ -12,9 +12,9 @@ export class NamespaceService {
 
 	/**
 	 * Fetches namespaces owned by an account.
-	 * @param {NetworkProperties} networkProperties
-	 * @param {string} address
-	 * @returns {Promise<Namespace[]>}
+	 * @param {NetworkProperties} networkProperties - Network properties.
+	 * @param {string} address - The account address.
+	 * @returns {Promise<Namespace[]>} The namespaces owned by the account.
 	 */
 	fetchAccountNamespaces = async (networkProperties, address) => {
 		const url = `${networkProperties.nodeUrl}/account/namespace/page?address=${address}`;
@@ -25,9 +25,9 @@ export class NamespaceService {
 
 	/**
 	 * Fetches a single namespace info by ID.
-	 * @param {NetworkProperties} networkProperties
-	 * @param {string} namespaceId
-	 * @returns {Promise<Namespace>}
+	 * @param {NetworkProperties} networkProperties - Network properties.
+	 * @param {string} namespaceId - The fully-qualified namespace id.
+	 * @returns {Promise<Namespace>} The namespace info.
 	 */
 	fetchNamespaceInfo = async (networkProperties, namespaceId) => {
 		const url = `${networkProperties.nodeUrl}/namespace?namespace=${namespaceId}`;
@@ -38,9 +38,9 @@ export class NamespaceService {
 
 	/**
 	 * Fetches namespace infos for a list of IDs.
-	 * @param {NetworkProperties} networkProperties
-	 * @param {string[]} namespaceIds
-	 * @returns {Promise<Record<string, Namespace>>}
+	 * @param {NetworkProperties} networkProperties - Network properties.
+	 * @param {string[]} namespaceIds - The namespace ids to resolve.
+	 * @returns {Promise<Record<string, Namespace>>} The namespace infos keyed by id (unknown ids are omitted).
 	 */
 	fetchNamespaceInfos = async (networkProperties, namespaceIds) => {
 		const results = {};

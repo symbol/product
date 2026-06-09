@@ -8,15 +8,15 @@ export class MarketService {
 	}
 
 	/**
-	 * @typedef {Object} MarketData
-	 * @property {number} CNY - Price in Chinese Yuan
-	 * @property {number} EUR - Price in Euro
-	 * @property {number} GBP - Price in British Pound
-	 * @property {number} JPY - Price in Japanese Yen
-	 * @property {number} KRW - Price in South Korean Won
-	 * @property {number} UAH - Price in Ukrainian Hryvnia
-	 * @property {number} USD - Price in US Dollar
-	 * @property {number} requestTimestamp - Timestamp of the request
+	 * @typedef {object} MarketData
+	 * @property {number} CNY - Price in Chinese Yuan.
+	 * @property {number} EUR - Price in Euro.
+	 * @property {number} GBP - Price in British Pound.
+	 * @property {number} JPY - Price in Japanese Yen.
+	 * @property {number} KRW - Price in South Korean Won.
+	 * @property {number} UAH - Price in Ukrainian Hryvnia.
+	 * @property {number} USD - Price in US Dollar.
+	 * @property {number} requestTimestamp - Timestamp of the request.
 	 */
 
 	/**

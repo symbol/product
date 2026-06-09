@@ -18,9 +18,9 @@ export class MosaicService {
 
 	/**
 	 * Fetches mosaic info for a single mosaic ID.
-	 * @param {NetworkProperties} networkProperties
-	 * @param {string} mosaicId
-	 * @returns {Promise<MosaicInfo>}
+	 * @param {NetworkProperties} networkProperties - Network properties.
+	 * @param {string} mosaicId - The mosaic id ('namespace.name').
+	 * @returns {Promise<MosaicInfo>} The mosaic info, or undefined when the mosaic is unknown.
 	 */
 	fetchMosaicInfo = async (networkProperties, mosaicId) => {
 		const mosaicInfos = await this.fetchMosaicInfos(networkProperties, [mosaicId]);
@@ -31,9 +31,9 @@ export class MosaicService {
 	/**
 	 * Fetches mosaic infos for a list of mosaic IDs.
 	 * Groups IDs by namespace and queries /mosaic/definition/page per namespace.
-	 * @param {NetworkProperties} networkProperties
-	 * @param {string[]} mosaicIds
-	 * @returns {Promise<Record<string, MosaicInfo>>}
+	 * @param {NetworkProperties} networkProperties - Network properties.
+	 * @param {string[]} mosaicIds - The mosaic ids to resolve.
+	 * @returns {Promise<Record<string, MosaicInfo>>} The mosaic infos keyed by mosaic id (unknown ids are omitted).
 	 */
 	fetchMosaicInfos = async (networkProperties, mosaicIds) => {
 		if (!mosaicIds.length)
@@ -71,9 +71,9 @@ export class MosaicService {
 
 	/**
 	 * Fetches owned mosaics for an account.
-	 * @param {NetworkProperties} networkProperties
-	 * @param {string} address
-	 * @returns {Promise<Mosaic[]>}
+	 * @param {NetworkProperties} networkProperties - Network properties.
+	 * @param {string} address - The account address.
+	 * @returns {Promise<Mosaic[]>} The account's mosaics with resolved amounts and metadata.
 	 */
 	fetchAccountMosaics = async (networkProperties, address) => {
 		const mosaicsDTO = await this.#makeRequest(`${networkProperties.nodeUrl}/account/mosaic/owned?address=${address}`);

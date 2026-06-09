@@ -66,12 +66,14 @@
  * @property {Array} [cosignatures]
  * @property {number} [linkAction] - Importance transfer: LinkAction code (1=activate, 2=deactivate).
  * @property {string} [remotePublicKey] - Importance transfer: the remote (delegated) account public key.
+ * @property {string} [remoteAccountAddress] - Importance transfer: address derived from the remote account public key.
  * @property {MultisigModification[]} [modifications] - Multisig account modification: cosignatory changes.
  * @property {number} [minApprovalDelta] - Multisig account modification (v2): change to the minimum cosignatories.
  * @property {string} [otherTransactionHash] - Cosignature: hash of the cosigned inner transaction.
  * @property {string} [multisigAccountAddress] - Cosignature: address of the multisig account.
  * @property {string} [namespaceName] - Namespace registration: the new namespace part.
  * @property {string|null} [parentName] - Namespace registration: parent namespace, or null for a root namespace.
+ * @property {string} [namespaceId] - Namespace registration: fully-qualified namespace id ('parent.name' or 'name').
  * @property {string} [rentalFeeSink] - Namespace / mosaic definition: address of the rental or creation fee sink.
  * @property {object} [rentalFee] - Namespace / mosaic definition: rental or creation fee token, paid to the fee sink.
  * @property {MosaicDefinition} [mosaicDefinition] - Mosaic definition: the mosaic being defined.

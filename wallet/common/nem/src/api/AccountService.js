@@ -18,9 +18,9 @@ export class AccountService {
 
 	/**
 	 * Fetches account information from the node.
-	 * @param {NetworkProperties} networkProperties
-	 * @param {string} address
-	 * @returns {Promise<AccountInfo>}
+	 * @param {NetworkProperties} networkProperties - Network properties.
+	 * @param {string} address - The account address.
+	 * @returns {Promise<AccountInfo>} The account info (a default empty info when the account is unknown).
 	 */
 	fetchAccountInfo = async (networkProperties, address) => {
 		let accountData;
@@ -68,8 +68,8 @@ export class AccountService {
 
 	/**
 	 * Fetches the native currency balance of an account.
-	 * @param {NetworkProperties} networkProperties
-	 * @param {string} address
+	 * @param {NetworkProperties} networkProperties - Network properties.
+	 * @param {string} address - The account address.
 	 * @returns {Promise<string>} The relative balance amount.
 	 */
 	fetchAccountBalance = async (networkProperties, address) => {
@@ -80,9 +80,9 @@ export class AccountService {
 
 	/**
 	 * Fetches multisig info of an account.
-	 * @param {NetworkProperties} networkProperties
-	 * @param {string} address
-	 * @returns {Promise<MultisigAccountInfo>}
+	 * @param {NetworkProperties} networkProperties - Network properties.
+	 * @param {string} address - The account address.
+	 * @returns {Promise<MultisigAccountInfo>} The multisig cosignatories, multisig parents and approval threshold.
 	 */
 	fetchMultisigInfo = async (networkProperties, address) => {
 		const { account, meta } = await this.#makeRequest(`${networkProperties.nodeUrl}/account/get?address=${address}`);

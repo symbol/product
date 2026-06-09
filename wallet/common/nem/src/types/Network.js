@@ -9,7 +9,7 @@
  * @typedef {object} NetworkInfo
  * @property {string} nodeUrl
  * @property {string} wsUrl
- * @property {string} networkIdentifier - 'mainnet' | 'testnet'
+ * @property {string} networkIdentifier - 'mainnet' | 'testnet'.
  * @property {string} generationHash
  * @property {number} chainHeight
  * @property {number} blockGenerationTargetTime - Seconds.
