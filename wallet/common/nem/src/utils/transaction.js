@@ -8,7 +8,7 @@ import {
 	TransactionType
 } from '../constants';
 import { PrivateKey, PublicKey } from 'symbol-sdk';
-import { MessageEncoder, NemFacade } from 'symbol-sdk/nem';
+import { MessageEncoder, NemFacade, models } from 'symbol-sdk/nem';
 import { SdkError, TransactionBundle } from 'wallet-common-core';
 
 /** @typedef {import('../types/Transaction').SignedTransaction} SignedTransaction */
@@ -111,9 +111,9 @@ export const encryptMessage = (messageText, recipientPublicKey, privateKey) => {
 	const keyPair = new NemFacade.KeyPair(new PrivateKey(privateKey));
 	const messageEncoder = new MessageEncoder(keyPair);
 	const messageBytes = Buffer.from(messageText, 'utf-8');
-	const encodedBytes = messageEncoder.encodeDeprecated(new PublicKey(recipientPublicKey), messageBytes);
+	const encoded = messageEncoder.encodeDeprecated(new PublicKey(recipientPublicKey), messageBytes);
 
-	return Buffer.from(encodedBytes).toString('hex');
+	return Buffer.from(encoded.message).toString('hex');
 };
 
 /**
@@ -126,11 +126,13 @@ export const encryptMessage = (messageText, recipientPublicKey, privateKey) => {
 export const decryptMessage = (encryptedMessageHex, senderOrRecipientPublicKey, privateKey) => {
 	const keyPair = new NemFacade.KeyPair(new PrivateKey(privateKey));
 	const messageEncoder = new MessageEncoder(keyPair);
-	const encodedBytes = Buffer.from(encryptedMessageHex, 'hex');
-	const { message } = messageEncoder.tryDecodeDeprecated(
-		new PublicKey(senderOrRecipientPublicKey),
-		encodedBytes
-	);
+	const encodedMessage = new models.Message();
+	encodedMessage.messageType = models.MessageType.ENCRYPTED;
+	encodedMessage.message = new Uint8Array(Buffer.from(encryptedMessageHex, 'hex'));
+	const { isDecoded, message } = messageEncoder.tryDecode(new PublicKey(senderOrRecipientPublicKey), encodedMessage);
+
+	if (!isDecoded)
+		throw new SdkError('Failed to decrypt the message');
 
 	return Buffer.from(message).toString('utf-8');
 };
