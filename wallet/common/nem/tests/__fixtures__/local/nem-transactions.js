@@ -20,7 +20,7 @@ const ZERO_SIGNATURE = '0'.repeat(128);
 const BOB_RECIPIENT_HEX = '544332353341434B5057434C514C5345524435564A474F49574F4C4246485952444F58364B465737';
 const ALICE_ADDRESS_HEX = '544334374D43333654524151375A525748545937324832423341454B434C4D4C5446564E59334D34';
 
-// NEM fee sinks (testnet) from the SDK descriptor examples, with their address-bytes hex.
+// NEM fee sinks (testnet).
 const NAMESPACE_FEE_SINK = 'TAMESPACEWH4MKFMBCVFERDPOOP4FK7MTDJEYP35';
 const NAMESPACE_FEE_SINK_HEX = '54414D4553504143455748344D4B464D42435646455244504F4F5034464B374D54444A4559503335';
 const MOSAIC_FEE_SINK = 'TBMOSAICOD4F54EE5CDMR23CCBGOAM2XSJBR5OLC';
@@ -35,10 +35,10 @@ const ALICE_NAME_HEX = '616C696365';
 const TOKEN_NAME_HEX = '746F6B656E';
 const VOUCHERS_NAME_HEX = '766F756368657273';
 
-// Creation timestamp and expiry deadlines in NEM seconds; standard = +2h, multisig = +48h.
+// Creation timestamp and expiry deadlines in NEM seconds; standard = +2h, multisig = +24h.
 const TIMESTAMP = 254452058;
 const STANDARD_DEADLINE = TIMESTAMP + (2 * 3600);
-const MULTISIG_DEADLINE = TIMESTAMP + (48 * 3600);
+const MULTISIG_DEADLINE = TIMESTAMP + (24 * 3600);
 
 // Wallet deadline objects as produced by createDeadline at compose time (adjusted = SDK-ready NEM seconds).
 const standardDeadline = {
@@ -140,7 +140,7 @@ const transferWithMosaicJson = {
 	}]
 };
 
-// Multisig wrapper around an inner XEM transfer. The wrapper uses the 48h multisig deadline, and the
+// Multisig wrapper around an inner XEM transfer. The wrapper uses the 24h multisig deadline, and the
 // inner transaction is embedded as a non-verifiable transaction (no signature).
 const multisigTransfer = {
 	type: 4100,

@@ -1,9 +1,5 @@
 import { accounts } from './wallet';
 
-// Expected wallet Transaction objects produced by transactionFromDTO for each DTO in
-// `transactionDTOs`. Each case is a named constant collected into `walletTransactions`,
-// index-aligned with the api fixture.
-
 const { alice, bob, carol } = accounts;
 
 // Outgoing XEM transfer: the native amount is negated because the current account is the sender.
@@ -171,7 +167,7 @@ export const multisigTransfer = {
 	message: null
 };
 
-// Importance transfer: an unmodeled type maps to the shared base transaction shape only.
+// Importance transfer.
 export const importanceTransfer = {
 	type: 2049,
 	timestamp: 1682040085000,
