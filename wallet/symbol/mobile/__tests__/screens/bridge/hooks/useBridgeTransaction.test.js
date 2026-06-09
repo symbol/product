@@ -24,11 +24,6 @@ const targetAccount = AccountFixtureBuilder
 	.createWithAccount('ethereum', NETWORK_IDENTIFIER, 0)
 	.build();
 
-const sourceToken = TokenFixtureBuilder
-	.createWithToken(CHAIN_NAME, NETWORK_IDENTIFIER, 0)
-	.setAmount('200')
-	.build();
-
 const transferToken = TokenFixtureBuilder
 	.createWithToken(CHAIN_NAME, NETWORK_IDENTIFIER, 0)
 	.setAmount(AMOUNT)
@@ -52,10 +47,6 @@ const bridgeTransaction = TransactionFixtureBuilder
 
 const transactionBundle = new TransactionBundle([bridgeTransaction]);
 
-const bridge = {
-	createTransactionForStep: jest.fn().mockResolvedValue(transactionBundle)
-};
-
 const sourceWalletController = createWalletControllerMock({
 	currentAccount: sourceAccount
 });
@@ -64,11 +55,14 @@ const targetWalletController = createWalletControllerMock({
 	currentAccount: targetAccount
 });
 
-const targetSide = {
-	chainName: 'ethereum',
-	networkIdentifier: NETWORK_IDENTIFIER,
-	token: sourceToken,
-	walletController: targetWalletController
+const stepPair = {
+	createTransaction: jest.fn().mockResolvedValue(transactionBundle),
+	sourceWalletController,
+	targetWalletController
+};
+
+const bridge = {
+	getPairForStep: jest.fn().mockReturnValue(stepPair)
 };
 
 // Hook Helpers
@@ -76,7 +70,6 @@ const targetSide = {
 const createHookParams = overrides => ({
 	bridge,
 	walletController: sourceWalletController,
-	target: targetSide,
 	amount: AMOUNT,
 	...overrides
 });
@@ -109,14 +102,14 @@ describe('hooks/useBridgeTransaction', () => {
 			});
 
 			// Assert:
-			expect(bridge.createTransactionForStep).toHaveBeenCalledWith(0, {
+			expect(stepPair.createTransaction).toHaveBeenCalledWith({
 				recipientAddress: targetAccount.address,
 				amount: AMOUNT,
 				amountOutMinimum: undefined
 			});
 			expect(createdBundle).toStrictEqual(transactionBundle);
 			expect(sections).toStrictEqual([{
-				id: 'section_0',
+				id: 'section_0_0',
 				title: '',
 				chainName: sourceWalletController.chainName,
 				networkIdentifier: sourceWalletController.networkIdentifier,

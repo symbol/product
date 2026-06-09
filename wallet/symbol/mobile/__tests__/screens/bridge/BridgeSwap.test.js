@@ -22,6 +22,8 @@ jest.mock('@/app/screens/bridge/hooks', () => ({
 	useBridgeHistory: jest.fn(),
 	useBridgeNoPairsDialog: jest.fn(),
 	useBridgeTransaction: jest.fn(),
+	useBridgeTransactionWorkflow:
+		jest.requireActual('@/app/screens/bridge/hooks/useBridgeTransactionWorkflow').useBridgeTransactionWorkflow,
 	useEstimation: jest.fn(),
 	useSwapSelector: jest.fn()
 }));
@@ -155,13 +157,22 @@ const ethereumWalletController = createWalletControllerMock({
 
 // Bridge Fixtures
 
+const bridgeStepPair = {
+	sourceWalletController: symbolWalletController,
+	targetWalletController: ethereumWalletController,
+	sourceTokenInfo: tokenXym,
+	targetTokenInfo: tokenWxym
+};
+
 const bridgeMock = {
 	id: BRIDGE_ID_XYM_TO_WXYM,
+	steps: 1,
 	isReady: true,
 	estimateRequest: jest.fn().mockResolvedValue({
 		bridgeFee: '1',
 		receiveAmount: PAYOUT_AMOUNT
 	}),
+	getPairForStep: jest.fn().mockReturnValue(bridgeStepPair),
 	createTransaction: jest.fn(),
 	fetchRecentHistory: jest.fn().mockResolvedValue([])
 };
@@ -288,6 +299,7 @@ const createUseSwapSelectorMock = (overrides = {}) => ({
 
 const createUseBridgeAmountMock = (overrides = {}) => ({
 	amount: '0',
+	amountInput: '0',
 	isAmountValid: true,
 	availableBalance: '1000',
 	changeAmount: jest.fn(),
@@ -303,7 +315,7 @@ const createUseBridgeTransactionMock = (overrides = {}) => ({
 });
 
 const createUseEstimationMock = (overrides = {}) => ({
-	estimation: null,
+	estimations: null,
 	estimate: jest.fn(),
 	clearEstimation: jest.fn(),
 	isLoading: false,
@@ -386,11 +398,21 @@ describe('screens/bridge/BridgeSwap', () => {
 				signTransactionBundle: signTransactionBundleMock,
 				announceSignedTransactionBundle: announceSignedTransactionBundleMock
 			});
-			
+
+			// The transaction workflow signs and announces through the step pair's source wallet controller
+			const bridge = {
+				...bridgeMock,
+				getPairForStep: jest.fn().mockReturnValue({
+					...bridgeStepPair,
+					sourceWalletController: walletController
+				})
+			};
+
 			setupMocks({
 				walletController,
 				useSwapSelector: {
 					isReady: true,
+					bridge,
 					source: swapSideSymbolXym,
 					target: swapSideEthereumWxym,
 					sourceList: [swapSideSymbolXym, swapSideEthereumEth],
@@ -400,6 +422,7 @@ describe('screens/bridge/BridgeSwap', () => {
 				},
 				useBridgeAmount: {
 					amount: '100',
+					amountInput: '100',
 					isAmountValid: true,
 					availableBalance: '1000'
 				},
@@ -407,7 +430,7 @@ describe('screens/bridge/BridgeSwap', () => {
 					createTransaction: createTransactionMock
 				},
 				useEstimation: {
-					estimation: estimationResult,
+					estimations: [estimationResult],
 					isLoading: false
 				},
 				useTransactionFees: {

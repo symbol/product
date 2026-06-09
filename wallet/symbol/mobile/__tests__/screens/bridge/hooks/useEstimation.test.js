@@ -52,7 +52,7 @@ describe('hooks/useEstimation', () => {
 		props: [createHookParams()],
 		contract: {
 			estimate: 'function',
-			estimation: 'object',
+			estimations: 'object',
 			clearEstimation: 'function',
 			isLoading: 'boolean'
 		}
@@ -73,7 +73,7 @@ describe('hooks/useEstimation', () => {
 			// Assert:
 			await hookTester.waitFor(() => {
 				expect(bridgeManager.estimateRequest).toHaveBeenCalledWith(expectedAmount);
-				expect(hookTester.currentResult.estimation).toStrictEqual(estimationData);
+				expect(hookTester.currentResult.estimations).toStrictEqual([estimationData]);
 				expect(hookTester.currentResult.isLoading).toBe(false);
 			});
 		});

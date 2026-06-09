@@ -200,7 +200,7 @@ describe('screens/bridge/BridgeAccountDetails', () => {
 			const openLinkMock = mockLink();
 			mockWalletControllerConfigured();
 			const screenTester = new ScreenTester(BridgeAccountDetails, createRouteProps());
-			const expectedUrl = `http://otterscan.symboltest.net/address/${ethereumAccount.address}`;
+			const expectedUrl = `https://sepolia.etherscan.io/address/${ethereumAccount.address}`;
 
 			// Act:
 			screenTester.pressButton(SCREEN_TEXT.buttonOpenExplorer);

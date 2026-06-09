@@ -7,6 +7,25 @@ import { TokenFixtureBuilder } from '__fixtures__/local/TokenFixtureBuilder';
 import { ScreenTester } from '__tests__/ScreenTester';
 import { createWalletControllerMock, mockLink, mockLocalization, mockWalletController } from '__tests__/mock-helpers';
 
+// Mocks
+
+const mockBridges = [];
+const mockMainWalletController = { networkIdentifier: 'testnet' };
+const mockEthereumWalletController = { networkIdentifier: 'testnet' };
+
+jest.mock('@/app/lib/controller', () => ({
+	default: mockMainWalletController,
+	symbolWalletController: mockMainWalletController,
+	ethereumWalletController: mockEthereumWalletController,
+	walletControllers: {
+		main: mockMainWalletController,
+		additional: [mockEthereumWalletController]
+	},
+	get bridges() {
+		return mockBridges;
+	}
+}));
+
 // Constants
 
 const CHAIN_NAME_SYMBOL = 'symbol';
@@ -165,8 +184,8 @@ const createRouteProps = preloadedData => ({
 // Setup
 
 const setupBridgeMock = () => {
-	const controllers = require('@/app/lib/controller');
-	controllers.bridges = [bridgeMock];
+	mockBridges.length = 0;
+	mockBridges.push(bridgeMock);
 };
 
 describe('screens/bridge/BridgeSwapDetails', () => {
@@ -285,7 +304,7 @@ describe('screens/bridge/BridgeSwapDetails', () => {
 			{
 				description: 'opens payout transaction explorer when press second link',
 				config: { linkIndex: 1 },
-				expected: { url: `http://otterscan.symboltest.net/tx/${PAYOUT_TRANSACTION_HASH}` }
+				expected: { url: `https://sepolia.etherscan.io/tx/${PAYOUT_TRANSACTION_HASH}` }
 			}
 		];
 

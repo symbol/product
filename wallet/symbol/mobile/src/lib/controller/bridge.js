@@ -3,10 +3,10 @@ import { ethereumBridgeHelper } from './ethereum/bridge';
 import { ethereumWalletController } from './ethereum/controller';
 import { symbolBridgeHelper } from './symbol/bridge';
 import { symbolWalletController } from './symbol/controller';
+import { config } from '@/app/config';
 import { makeRequest } from '@/app/utils';
 import { BridgePairManager, SwapWorkflowManager } from 'wallet-common-core';
 import { UniswapPairManager, constants } from 'wallet-common-ethereum';
-import { config } from '@/app/config';
 
 const Pairs = {
 	XYM_wXYM: new BridgePairManager({

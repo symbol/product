@@ -246,6 +246,8 @@ const createBridgeManagerMock = (scenario = BridgeScenario.FULLY_READY, override
 
 	const sourceWalletController = isWrap ? nativeWalletController : wrappedWalletController;
 	const targetWalletController = isWrap ? wrappedWalletController : nativeWalletController;
+	const sourceTokenInfo = isWrap ? nativeTokenInfo : wrappedTokenInfo;
+	const targetTokenInfo = isWrap ? wrappedTokenInfo : nativeTokenInfo;
 
 	return {
 		id: BRIDGE_ID,
@@ -256,6 +258,8 @@ const createBridgeManagerMock = (scenario = BridgeScenario.FULLY_READY, override
 		targetWalletController,
 		nativeTokenInfo,
 		wrappedTokenInfo,
+		sourceTokenInfo,
+		targetTokenInfo,
 		load: overrides.load ?? jest.fn().mockResolvedValue(),
 		isEnabled: true,
 		isReady: true,
