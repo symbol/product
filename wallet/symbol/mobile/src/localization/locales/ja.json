@@ -315,6 +315,7 @@
     "transactionDescriptionShort_aggregateHarvesting": "ハーベスティングの構成",
     "transactionDescriptionShort_namespaceRegistration": "Register %{name}",
     "transactionDescriptionShort_alias": "Link %{name} | to %{target}",
+    "transactionDescriptionShort_aliasUnlink": "Unlink %{name} | from %{target}",
     "transactionDescriptionShort_mosaic": "モザイク %{id}",
     "transactionDescriptionShort_mosaicRestriction": "モザイク %{id}",
     "transactionDescriptionShort_hashLock": "期限 %{duration} blocks",

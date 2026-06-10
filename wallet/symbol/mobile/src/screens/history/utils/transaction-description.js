@@ -1,4 +1,4 @@
-import { SymbolTransactionType } from '@/app/constants';
+import { AliasAction, AliasActionMessage, SymbolTransactionType } from '@/app/constants';
 import { $t } from '@/app/localization';
 import { getAccountKnownInfo } from '@/app/utils';
 import {
@@ -72,6 +72,16 @@ const getAggregateDescription = transaction => {
 };
 
 /**
+ * Gets the localization key for an alias transaction description based on its action.
+ * @param {Transaction} transaction - Alias transaction object.
+ * @returns {string} Localization key.
+ */
+const getAliasDescriptionKey = transaction =>
+	transaction.aliasAction === AliasActionMessage[AliasAction.Unlink]
+		? 'transactionDescriptionShort_aliasUnlink'
+		: 'transactionDescriptionShort_alias';
+
+/**
  * Gets the description text for a transaction.
  * @param {Transaction} transaction - Transaction object.
  * @param {WalletAccount} currentAccount - Current account.
@@ -94,11 +104,11 @@ export const getTransactionDescription = (transaction, currentAccount, resolveOp
 	case SymbolTransactionType.ADDRESS_ALIAS: {
 		const knownInfo = getAccountKnownInfo(transaction.address, resolveOptions);
 		const displayName = knownInfo?.name ?? transaction.address;
-		return $t('transactionDescriptionShort_alias', { target: displayName, name: transaction.namespaceName });
+		return $t(getAliasDescriptionKey(transaction), { target: displayName, name: transaction.namespaceName });
 	}
 
 	case SymbolTransactionType.MOSAIC_ALIAS:
-		return $t('transactionDescriptionShort_alias', { target: transaction.mosaicId, name: transaction.namespaceName });
+		return $t(getAliasDescriptionKey(transaction), { target: transaction.mosaicId, name: transaction.namespaceName });
 
 	case SymbolTransactionType.MOSAIC_DEFINITION:
 	case SymbolTransactionType.MOSAIC_SUPPLY_CHANGE:

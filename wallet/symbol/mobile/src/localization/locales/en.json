@@ -363,6 +363,7 @@
     "transactionDescriptionShort_aggregateHarvesting": "Harvesting configuration",
     "transactionDescriptionShort_namespaceRegistration": "Register %{name}",
     "transactionDescriptionShort_alias": "Link %{name} | to %{target}",
+    "transactionDescriptionShort_aliasUnlink": "Unlink %{name} | from %{target}",
     "transactionDescriptionShort_mosaic": "Mosaic %{id}",
     "transactionDescriptionShort_mosaicRestriction": "Mosaic %{id}",
     "transactionDescriptionShort_hashLock": "Duration %{duration} blocks",

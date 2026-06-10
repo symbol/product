@@ -315,6 +315,7 @@
     "transactionDescriptionShort_aggregateHarvesting": "Налаштування харвестингу",
     "transactionDescriptionShort_namespaceRegistration": "Реєстрація %{name}",
     "transactionDescriptionShort_alias": "Прив'язка %{name} | до %{target}",
+    "transactionDescriptionShort_aliasUnlink": "Відв'язка %{name} | від %{target}",
     "transactionDescriptionShort_mosaic": "Мозаїка %{id}",
     "transactionDescriptionShort_mosaicRestriction": "Мозаїка %{id}",
     "transactionDescriptionShort_hashLock": "Тривалість %{duration} блоків",

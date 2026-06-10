@@ -315,6 +315,7 @@
     "transactionDescriptionShort_aggregateHarvesting": "收割配置",
     "transactionDescriptionShort_namespaceRegistration": "注册 %{name}",
     "transactionDescriptionShort_alias": "连结  %{name} | 至 %{target}",
+    "transactionDescriptionShort_aliasUnlink": "解除连结 %{name} | 自 %{target}",
     "transactionDescriptionShort_mosaic": "马赛克 %{id}",
     "transactionDescriptionShort_mosaicRestriction": "马赛克 %{id}",
     "transactionDescriptionShort_hashLock": "持续 %{duration} 区块",

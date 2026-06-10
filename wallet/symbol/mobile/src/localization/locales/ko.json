@@ -315,6 +315,7 @@
     "transactionDescriptionShort_aggregateHarvesting": "하베스팅 설정",
     "transactionDescriptionShort_namespaceRegistration": "%{name} 등록",
     "transactionDescriptionShort_alias": "%{target}에 %{name}을 연결",
+    "transactionDescriptionShort_aliasUnlink": "%{target}에서 %{name}을 연결 해제",
     "transactionDescriptionShort_mosaic": "모자이크 %{id}",
     "transactionDescriptionShort_mosaicRestriction": "모자이크 %{id}",
     "transactionDescriptionShort_hashLock": "기간 %{duration} 블록",
