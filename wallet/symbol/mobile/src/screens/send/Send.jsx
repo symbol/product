@@ -22,7 +22,7 @@ import {
 	filterActiveTokens,
 	getSelectedTokenPrice
 } from '@/app/screens/send/utils';
-import { formatAmountInput } from '@/app/utils';
+import { formatAmountInput, validateRecipient } from '@/app/utils';
 import React, { useEffect, useMemo, useState } from 'react';
 import Animated, { FadeInDown, FadeOut } from 'react-native-reanimated';
 
@@ -228,6 +228,7 @@ export const Send = props => {
 						accounts={walletAccounts}
 						chainName={walletController.chainName}
 						networkIdentifier={walletController.networkIdentifier}
+						extraValidators={[validateRecipient(walletController.chainName)]}
 						onChange={changeRecipientAddress}
 						onValidityChange={changeRecipientValidity}
 					/>
