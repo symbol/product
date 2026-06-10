@@ -338,8 +338,13 @@ async def _assert_can_query_incoming_transactions(server, start_id, expected_sta
 		*([start_id] if start_id else []))
 
 	# Assert:
-	assert [f'{server.make_url("")}/'] == server.mock.urls
+	additional_expected_request_json_payloads = []
+	if start_id is None:
+		additional_expected_request_json_payloads = [make_rpc_request_json('eth_blockNumber', [])]
+
+	assert [f'{server.make_url("")}/'] * (1 + len(additional_expected_request_json_payloads)) == server.mock.urls
 	assert [
+		*additional_expected_request_json_payloads,
 		make_rpc_request_json('ots_searchTransactionsBefore', ['0xB668a7Cdc62108fAC00F65E1690591B67A1eF7c9', expected_start_id, 25])
 	] == server.mock.request_json_payloads
 
@@ -355,8 +360,8 @@ async def _assert_can_query_incoming_transactions(server, start_id, expected_sta
 	] == transactions
 
 
-async def test_can_query_incoming_transactions_from_beginning(server):  # pylint: disable=redefined-outer-name
-	await _assert_can_query_incoming_transactions(server, None, 0)
+async def test_can_query_incoming_transactions_with_autodetected_start_id(server):  # pylint: disable=redefined-outer-name
+	await _assert_can_query_incoming_transactions(server, None, 0xAB124)
 
 
 async def test_can_query_incoming_transactions_with_custom_start_id(server):  # pylint: disable=redefined-outer-name
