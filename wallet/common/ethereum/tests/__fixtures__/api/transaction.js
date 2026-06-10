@@ -1,9 +1,7 @@
 /* eslint-disable max-len */
 import { accounts } from '../local/wallet';
 
-// Raw Ethereum JSON-RPC transaction DTOs as returned by eth_getTransactionByHash. Each transaction
-// type is defined as a named constant and then collected into `transactionResponses`, index-aligned
-// with the expected `decodedTransactions` fixture, mirroring the NEM transaction-dtos layout.
+// Raw Ethereum JSON-RPC transaction DTOs as returned by eth_getTransactionByHash.
 
 const signerAddress = accounts.alice.address;
 
