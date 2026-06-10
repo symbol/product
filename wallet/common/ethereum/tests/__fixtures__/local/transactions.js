@@ -1,244 +1,72 @@
 /* eslint-disable max-len */
-import { ethers } from 'ethers';
+import { accounts } from './wallet';
 
-const erc20Interface = new ethers.Interface([
-	'function transfer(address to, uint256 value) public returns (bool)'
-]);
-const swapRouterInterface = new ethers.Interface([
-	'function exactInputSingle(tuple(address tokenIn, address tokenOut, uint24 fee, address recipient, uint256 deadline, uint256 amountIn, uint256 amountOutMinimum, uint160 sqrtPriceLimitX96)) payable returns (uint256 amountOut)'
-]);
-const signerPublicKey = '0x04d180bfa90bb100d21df55b10cc535b392e87d595593afa9de219f4bd006bd2893d80827f43c47794029a8b4218699e65d837a6beb95b5b2f95a31b52f3e93b13';
-const signerAddress = '0xb1b2145b7d2ba5ab20ee0bcb0f7fad08a1bfc7a4';
-const recipientAddress1 = '0xc5d9cf0ee687e357aea5d26592f8bc9fe32abaa2';
-const recipientAddress2 = '0xe61c8ba605b4a808dd8138c990e941feae532307';
-const erc20ContractAddress = '0x6fe1f90116fd1225c4b713a6efb3f87dce77b445';
+const { alice: signerAccount, bob: recipientAccount, carol: secondRecipientAccount } = accounts;
+
+const erc20TokenAddress = '0x6fe1f90116fd1225c4b713a6efb3f87dce77b445';
 const swapRouterAddress = '0xe592427a0aece92de3edee1f18e0157c05861564';
-const nativeTokenAddress = '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2';
-const wrappedTokenAddress = '0x5e8343a455f03109b737b6d8b410e4ecce998cda';
-const chainId = 11155111;
+const wethTokenAddress = '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2';
+const targetTokenAddress = '0x5e8343a455f03109b737b6d8b410e4ecce998cda';
+
+// Bridge message payload (the base32 recipient on the destination chain, appended to the ERC-20 call data).
 const bridgePayload = '982C69A051A72BFBE31AEDA7250AC6C747B7570B3E9C00B6';
 const swapDeadline = 1700000600;
+const chainId = 11155111;
+
+// EIP-1559 fee multiplier shared by the app transactions below.
 const baseFee = {
 	gasLimit: 21000,
 	maxFeePerGas: '3',
 	maxPriorityFeePerGas: '1'
 };
 
-export const walletTransactions = [
-	{
-		type: 1,
-		signerPublicKey,
-		signerAddress,
-		recipientAddress: recipientAddress1,
-		tokens: [
-			{
-				id: 'ETH',
-				amount: '1.5',
-				divisibility: 18
-			}
-		],
-		nonce: 0,
-		fee: baseFee
-	},
-	{
-		type: 2,
-		signerPublicKey,
-		signerAddress,
-		recipientAddress: recipientAddress2,
-		tokens: [
-			{
-				id: erc20ContractAddress,
-				amount: '10',
-				divisibility: 6
-			}
-		],
-		nonce: 1,
-		fee: baseFee
-	},
-	{
-		type: 3,
-		signerPublicKey,
-		signerAddress,
-		recipientAddress: recipientAddress2,
-		tokens: [
-			{
-				id: erc20ContractAddress,
-				amount: '0.02',
-				divisibility: 6
-			}
-		],
-		message: {
-			payload: bridgePayload
-		},
-		nonce: 2,
-		fee: baseFee
-	}
-];
+//
+// App transactions (input to transactionToEthereum / signTransaction).
+//
 
-export const ethereumTransactions = [
-	{
-		from: signerAddress,
-		to: recipientAddress1,
-		value: 1500000000000000000n,
-		gasLimit: 21000n,
-		maxFeePerGas: 3000000000000000000n,
-		maxPriorityFeePerGas: 1000000000000000000n,
-		chainId,
-		nonce: 0
-	},
-	{
-		from: signerAddress,
-		to: erc20ContractAddress,
-		value: 0n,
-		data: erc20Interface.encodeFunctionData('transfer', [
-			recipientAddress2,
-			10000000n
-		]),
-		gasLimit: 21000n,
-		maxFeePerGas: 3000000000000000000n,
-		maxPriorityFeePerGas: 1000000000000000000n,
-		chainId,
-		nonce: 1
-	},
-	{
-		from: signerAddress,
-		to: erc20ContractAddress,
-		value: 0n,
-		data: erc20Interface.encodeFunctionData('transfer', [
-			recipientAddress2,
-			20000n
-		]) + bridgePayload,
-		gasLimit: 21000n,
-		maxFeePerGas: 3000000000000000000n,
-		maxPriorityFeePerGas: 1000000000000000000n,
-		chainId,
-		nonce: 2
-	}
-];
-
-export const signedTransactions = [
-	{
-		'dto': '0x02f87d83aa36a780880de0b6b3a76400008829a2241af62c000082520894c5d9cf0ee687e357aea5d26592f8bc9fe32abaa28814d1120d7b16000080c080a0648b0375d694423c264933c5205c5605f19c8db37e6ee341102bd74845a62b30a015aaa2dc659e8b549e1f89ec878b580de4e9e87348bfe304448133102c9f8757',
-		'hash': '0x7a14851195f4d9b0c6864113d463aecc23142371b21be72f9987dec40e555ad9'
-	},
-	{
-		'dto': '0x02f8ba83aa36a701880de0b6b3a76400008829a2241af62c0000825208946fe1f90116fd1225c4b713a6efb3f87dce77b44580b844a9059cbb000000000000000000000000e61c8ba605b4a808dd8138c990e941feae5323070000000000000000000000000000000000000000000000000000000000989680c080a02287c6336f32017df0afe05a64a56a35c795d4813dbefc06eba0d7ebe466269da023b444df5d1bd40c62cc5a4ebb0517790c9e1eae0214984a86c7619764cbd63f',
-		'hash': '0x5cf58324f64f38323da82a42d35dc6eee80b2b07ac2b5cf27947fc1c21f28476'
-	},
-	{
-		'dto': '0x02f8d283aa36a702880de0b6b3a76400008829a2241af62c0000825208946fe1f90116fd1225c4b713a6efb3f87dce77b44580b85ca9059cbb000000000000000000000000e61c8ba605b4a808dd8138c990e941feae5323070000000000000000000000000000000000000000000000000000000000004e20982c69a051a72bfbe31aeda7250ac6c747b7570b3e9c00b6c080a0d06292ae340bdecb705c47ba15aa741196381ef300cce22a07cf65e4ceccf99fa01df99dac0d954361cbb0f247fd0e7d794015593eceb0c051d21a13b90c17d493',
-		'hash': '0xfbdc855ceab8421ddf99e5b56f3f721536206bb373abbd5770f65d41187f800b'
-	}
-];
-
-
-export const etherTransaction = {
-	'height': '251023',
-	'hash': '0x03adaec8595e907da0d19ad354ca4b67f94ddf79c79e40ad8b37a5ee3b1e7478',
-	'nonce': '19',
-	'signerAddress': signerAddress,
-	'fee': {
-		'gasLimit': '21000',
-		'maxFeePerGas': '0.00000000000000001',
-		'maxPriorityFeePerGas': '0',
-		'token': {
-			'amount': '0.00000000000021',
-			'id': 'ETH',
-			'name': 'ETH',
-			'divisibility': 18
-		}
-	},
-	'timestamp': 1759844024000,
-	'type': 1,
-	'tokens': [
-		{
-			'name': 'ETH',
-			'id': 'ETH',
-			'divisibility': 18,
-			'amount': '0.1979990999942376'
-		}
-	],
-	'recipientAddress': '0xcef7462dbdca4c19b66012c70d1541a33606e9ad'
+// Native ETH transfer (TransactionType.TRANSFER).
+export const transferTransaction = {
+	type: 1,
+	signerPublicKey: signerAccount.publicKey,
+	signerAddress: signerAccount.address,
+	recipientAddress: recipientAccount.address,
+	tokens: [{ id: 'ETH', amount: '1.5', divisibility: 18 }],
+	nonce: 0,
+	fee: baseFee
 };
 
-export const erc20Transaction = {
-	'height': '251181',
-	'hash': '0xc778bb5dac6ab4b4c881cbe62941c152f39819ede4fe85517d237def2da0af3e',
-	'nonce': '20',
-	'signerAddress': signerAddress,
-	'fee': {
-		'gasLimit': '40069',
-		'maxFeePerGas': '0.000000000000000014',
-		'maxPriorityFeePerGas': '0',
-		'token': {
-			'amount': '0.000000000000560966',
-			'id': 'ETH',
-			'name': 'ETH',
-			'divisibility': 18
-		}
-	},
-	'timestamp': 1759845920000,
-	'type': 2,
-	'tokens': [
-		{
-			'id': '0x5e8343a455f03109b737b6d8b410e4ecce998cda',
-			'name': 'wXYM',
-			'divisibility': 6,
-			'amount': '12'
-		}
-	],
-	'recipientAddress': '0xcef7462dbdca4c19b66012c70d1541a33606e9ad'
+// ERC-20 token transfer (TransactionType.ERC_20_TRANSFER).
+export const erc20TransferTransaction = {
+	type: 2,
+	signerPublicKey: signerAccount.publicKey,
+	signerAddress: signerAccount.address,
+	recipientAddress: secondRecipientAccount.address,
+	tokens: [{ id: erc20TokenAddress, amount: '10', divisibility: 6 }],
+	nonce: 1,
+	fee: baseFee
 };
 
-export const bridgeTransaction = {
-	'height': '249648',
-	'hash': '0x3a99098a33bf68fcf41476dcf6adf58320700c7695d27fc4722b42d3bc118478',
-	'nonce': '18',
-	'signerAddress': signerAddress,
-	'fee': {
-		'gasLimit': '45908',
-		'maxFeePerGas': '0.00000000000000001',
-		'maxPriorityFeePerGas': '0',
-		'token': {
-			'amount': '0.00000000000045908',
-			'id': 'ETH',
-			'name': 'ETH',
-			'divisibility': 18
-		}
-	},
-	'timestamp': 1759827524000,
-	'type': 3,
-	'tokens': [
-		{
-			'id': '0x5e8343a455f03109b737b6d8b410e4ecce998cda',
-			'name': 'wXYM',
-			'divisibility': 6,
-			'amount': '0.02'
-		}
-	],
-	'recipientAddress': '0x9b5b717fec711af80050986d1306d5c8fb9fa953',
-	'message': {
-		'payload': '982C69A051A72BFBE31AEDA7250AC6C747B7570B3E9C00B6',
-		'text': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ'
-	}
+// ERC-20 transfer carrying a bridge message payload (TransactionType.ERC_20_BRIDGE_TRANSFER).
+export const erc20BridgeTransferTransaction = {
+	type: 3,
+	signerPublicKey: signerAccount.publicKey,
+	signerAddress: signerAccount.address,
+	recipientAddress: secondRecipientAccount.address,
+	tokens: [{ id: erc20TokenAddress, amount: '0.02', divisibility: 6 }],
+	message: { payload: bridgePayload },
+	nonce: 2,
+	fee: baseFee
 };
 
-export const uniswapWalletTransaction = {
+// Uniswap swap with an ERC-20 source token (TransactionType.UNISWAP_SWAP).
+export const uniswapSwapTransaction = {
 	type: 4,
-	signerPublicKey,
-	signerAddress,
-	recipientAddress: signerAddress,
+	signerPublicKey: signerAccount.publicKey,
+	signerAddress: signerAccount.address,
+	recipientAddress: signerAccount.address,
 	routerAddress: swapRouterAddress,
-	sourceToken: {
-		id: nativeTokenAddress,
-		amount: '1',
-		divisibility: 18
-	},
-	targetToken: {
-		id: wrappedTokenAddress,
-		amount: '0',
-		divisibility: 6
-	},
+	sourceToken: { id: wethTokenAddress, amount: '1', divisibility: 18 },
+	targetToken: { id: targetTokenAddress, amount: '0', divisibility: 6 },
 	poolFee: 3000,
 	deadline: swapDeadline,
 	sqrtPriceLimitX96: 0,
@@ -246,68 +74,234 @@ export const uniswapWalletTransaction = {
 	fee: baseFee
 };
 
-export const uniswapEthereumTransaction = {
-	from: signerAddress,
-	to: swapRouterAddress,
-	value: 0n,
-	data: swapRouterInterface.encodeFunctionData('exactInputSingle', [{
-		tokenIn: nativeTokenAddress,
-		tokenOut: wrappedTokenAddress,
-		fee: 3000,
-		recipient: signerAddress,
-		deadline: swapDeadline,
-		amountIn: 1000000000000000000n,
-		amountOutMinimum: 0n,
-		sqrtPriceLimitX96: 0n
-	}]),
-	gasLimit: 21000n,
-	maxFeePerGas: 3000000000000000000n,
-	maxPriorityFeePerGas: 1000000000000000000n,
-	chainId,
-	nonce: 3
-};
-
-export const uniswapNativeEthWalletTransaction = {
+// Uniswap swap with native ETH as the source token, wrapped to WETH (TransactionType.UNISWAP_SWAP).
+export const uniswapNativeSwapTransaction = {
 	type: 4,
-	signerPublicKey,
-	signerAddress,
-	recipientAddress: signerAddress,
+	signerPublicKey: signerAccount.publicKey,
+	signerAddress: signerAccount.address,
+	recipientAddress: signerAccount.address,
 	routerAddress: swapRouterAddress,
-	sourceToken: {
-		id: 'eth',
-		amount: '0.001',
-		divisibility: 18
-	},
-	targetToken: {
-		id: wrappedTokenAddress,
-		amount: '0',
-		divisibility: 6
-	},
+	sourceToken: { id: 'eth', amount: '0.001', divisibility: 18 },
+	targetToken: { id: targetTokenAddress, amount: '0', divisibility: 6 },
 	poolFee: 3000,
 	deadline: swapDeadline,
 	sqrtPriceLimitX96: 0,
-	nonce: 7,
+	nonce: 4,
 	fee: baseFee,
-	wethTokenId: nativeTokenAddress
+	wethTokenId: wethTokenAddress
 };
 
-export const uniswapNativeEthEthereumTransaction = {
-	from: signerAddress,
-	to: swapRouterAddress,
-	value: 1000000000000000n,
-	data: swapRouterInterface.encodeFunctionData('exactInputSingle', [{
-		tokenIn: nativeTokenAddress,
-		tokenOut: wrappedTokenAddress,
-		fee: 3000,
-		recipient: signerAddress,
-		deadline: swapDeadline,
-		amountIn: 1000000000000000n,
-		amountOutMinimum: 0n,
-		sqrtPriceLimitX96: 0n
-	}]),
+// ERC-20 spending approval (TransactionType.ERC_20_APPROVE).
+export const erc20ApproveTransaction = {
+	type: 5,
+	signerPublicKey: signerAccount.publicKey,
+	signerAddress: signerAccount.address,
+	tokenId: erc20TokenAddress,
+	spenderAddress: swapRouterAddress,
+	amount: '10',
+	divisibility: 6,
+	nonce: 5,
+	fee: baseFee
+};
+
+export const walletTransactions = [
+	transferTransaction,
+	erc20TransferTransaction,
+	erc20BridgeTransferTransaction,
+	uniswapSwapTransaction,
+	uniswapNativeSwapTransaction,
+	erc20ApproveTransaction
+];
+
+//
+// Expected ethers-format transactions, index-aligned with walletTransactions.
+//
+
+const baseEthereumFee = {
 	gasLimit: 21000n,
 	maxFeePerGas: 3000000000000000000n,
-	maxPriorityFeePerGas: 1000000000000000000n,
-	chainId,
-	nonce: 7
+	maxPriorityFeePerGas: 1000000000000000000n
 };
+
+export const transferEthereumTransaction = {
+	from: signerAccount.address,
+	chainId,
+	nonce: 0,
+	...baseEthereumFee,
+	to: recipientAccount.address,
+	value: 1500000000000000000n
+};
+
+export const erc20TransferEthereumTransaction = {
+	from: signerAccount.address,
+	chainId,
+	nonce: 1,
+	...baseEthereumFee,
+	to: erc20TokenAddress,
+	value: 0n,
+	data: '0xa9059cbb000000000000000000000000c5d9cf0ee687e357aea5d26592f8bc9fe32abaa20000000000000000000000000000000000000000000000000000000000989680'
+};
+
+export const erc20BridgeTransferEthereumTransaction = {
+	from: signerAccount.address,
+	chainId,
+	nonce: 2,
+	...baseEthereumFee,
+	to: erc20TokenAddress,
+	value: 0n,
+	data: '0xa9059cbb000000000000000000000000c5d9cf0ee687e357aea5d26592f8bc9fe32abaa20000000000000000000000000000000000000000000000000000000000004e20982C69A051A72BFBE31AEDA7250AC6C747B7570B3E9C00B6'
+};
+
+export const uniswapSwapEthereumTransaction = {
+	from: signerAccount.address,
+	chainId,
+	nonce: 3,
+	...baseEthereumFee,
+	to: swapRouterAddress,
+	value: 0n,
+	data: '0x414bf389000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc20000000000000000000000005e8343a455f03109b737b6d8b410e4ecce998cda0000000000000000000000000000000000000000000000000000000000000bb8000000000000000000000000b1b2145b7d2ba5ab20ee0bcb0f7fad08a1bfc7a4000000000000000000000000000000000000000000000000000000006553f3580000000000000000000000000000000000000000000000000de0b6b3a764000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
+};
+
+export const uniswapNativeSwapEthereumTransaction = {
+	from: signerAccount.address,
+	chainId,
+	nonce: 4,
+	...baseEthereumFee,
+	to: swapRouterAddress,
+	value: 1000000000000000n,
+	data: '0x414bf389000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc20000000000000000000000005e8343a455f03109b737b6d8b410e4ecce998cda0000000000000000000000000000000000000000000000000000000000000bb8000000000000000000000000b1b2145b7d2ba5ab20ee0bcb0f7fad08a1bfc7a4000000000000000000000000000000000000000000000000000000006553f35800000000000000000000000000000000000000000000000000038d7ea4c6800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
+};
+
+export const erc20ApproveEthereumTransaction = {
+	from: signerAccount.address,
+	chainId,
+	nonce: 5,
+	...baseEthereumFee,
+	to: erc20TokenAddress,
+	value: 0n,
+	data: '0x095ea7b3000000000000000000000000e592427a0aece92de3edee1f18e0157c058615640000000000000000000000000000000000000000000000000000000000989680'
+};
+
+export const ethereumTransactions = [
+	transferEthereumTransaction,
+	erc20TransferEthereumTransaction,
+	erc20BridgeTransferEthereumTransaction,
+	uniswapSwapEthereumTransaction,
+	uniswapNativeSwapEthereumTransaction,
+	erc20ApproveEthereumTransaction
+];
+
+//
+// Expected signed transactions (RLP-encoded dto + hash), index-aligned with walletTransactions.
+//
+
+export const signedTransactions = [
+	{
+		dto: '0x02f87d83aa36a780880de0b6b3a76400008829a2241af62c00008252089438f3fa5dfb5359f8425bc90b4ebdeaf96d0670c48814d1120d7b16000080c080a00c4b4f84714ddc35b9abfe7b36a90be48d24ba8a199a8db6d55d7237712b3fb5a05da5cb428a8c4eb964f98f94d86ba7b3b44d385f94b08684f1f8d213284c91de',
+		hash: '0xb02d9a981e0fc48f9da5a529a264129554f987d803a2d936b949318073b9ce31'
+	},
+	{
+		dto: '0x02f8ba83aa36a701880de0b6b3a76400008829a2241af62c0000825208946fe1f90116fd1225c4b713a6efb3f87dce77b44580b844a9059cbb000000000000000000000000c5d9cf0ee687e357aea5d26592f8bc9fe32abaa20000000000000000000000000000000000000000000000000000000000989680c001a0a851bae5436f8e0d0ba7a55842e6303c2a233c50b086be30bd78e577a43834daa054ed86ca052666330a264eda5443e5b5c640282782258018f63783c962e05db8',
+		hash: '0xa8f1686a6eb04257be450ccd0e2af6aee4bcb676e833d84dbe3daf57a5acc564'
+	},
+	{
+		dto: '0x02f8d283aa36a702880de0b6b3a76400008829a2241af62c0000825208946fe1f90116fd1225c4b713a6efb3f87dce77b44580b85ca9059cbb000000000000000000000000c5d9cf0ee687e357aea5d26592f8bc9fe32abaa20000000000000000000000000000000000000000000000000000000000004e20982c69a051a72bfbe31aeda7250ac6c747b7570b3e9c00b6c080a07414665e7820103044e726541c047196064ccf18e0f756ab677f7cc7fa7d22a8a01804540be3841421d8c995d51927162a7b6c0917b1ad99b467ad77f4927c6bdf',
+		hash: '0x7c5c11f0dbf22a5c243d80f37316df9a74f60bc4948e5f72852e716bc5bbad67'
+	},
+	{
+		dto: '0x02f9017b83aa36a703880de0b6b3a76400008829a2241af62c000082520894e592427a0aece92de3edee1f18e0157c0586156480b90104414bf389000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc20000000000000000000000005e8343a455f03109b737b6d8b410e4ecce998cda0000000000000000000000000000000000000000000000000000000000000bb8000000000000000000000000b1b2145b7d2ba5ab20ee0bcb0f7fad08a1bfc7a4000000000000000000000000000000000000000000000000000000006553f3580000000000000000000000000000000000000000000000000de0b6b3a764000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000c080a06ed7b6c38bfad14db25eb1e1803a28ba608e8312586345f266a625abb9431bd6a00f4cb54f7275c8ec9166274db8281bc84c4b8b7c0c661f13e446bfbc454ba2d8',
+		hash: '0x1c9868ab790d387d2fee9b4e689d67ae808292a091c14be403f34b6dba69d1cd'
+	},
+	{
+		dto: '0x02f9018283aa36a704880de0b6b3a76400008829a2241af62c000082520894e592427a0aece92de3edee1f18e0157c0586156487038d7ea4c68000b90104414bf389000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc20000000000000000000000005e8343a455f03109b737b6d8b410e4ecce998cda0000000000000000000000000000000000000000000000000000000000000bb8000000000000000000000000b1b2145b7d2ba5ab20ee0bcb0f7fad08a1bfc7a4000000000000000000000000000000000000000000000000000000006553f35800000000000000000000000000000000000000000000000000038d7ea4c6800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000c001a0406273e7ded00929b5334f400d3f2e1bfce42ad6a79f60bc7206619d93919e6fa054e3ee62d85af276dab6412a242a1f6711146ab5a248ab31fc0f5d93a03fee7a',
+		hash: '0xd36aa53f289929f79beb19049a69ddec9369527bc7a1a094224a4916a8f22638'
+	},
+	{
+		dto: '0x02f8ba83aa36a705880de0b6b3a76400008829a2241af62c0000825208946fe1f90116fd1225c4b713a6efb3f87dce77b44580b844095ea7b3000000000000000000000000e592427a0aece92de3edee1f18e0157c058615640000000000000000000000000000000000000000000000000000000000989680c080a0733b08907dcc81cda46b938f8224e89dedff8dc23fcc3328495ad240bd0d035aa0331e7096941e780f1fcb950d56a720beaeae6c019c470ad5a346bfb66720ee40',
+		hash: '0x771674b9568095f6ea636be28aae244cc3a45bf96d4065fdfbc3893cb44ae751'
+	}
+];
+
+//
+// Expected app transactions decoded from API DTOs (output of transactionFromDTO),
+// index-aligned with the `transactionResponses` fixture.
+//
+
+const etherRecipientAddress = '0xcef7462dbdca4c19b66012c70d1541a33606e9ad';
+const bridgeRecipientAddress = '0x9b5b717fec711af80050986d1306d5c8fb9fa953';
+
+export const etherTransaction = {
+	height: '251023',
+	hash: '0x03adaec8595e907da0d19ad354ca4b67f94ddf79c79e40ad8b37a5ee3b1e7478',
+	nonce: '19',
+	signerAddress: signerAccount.address,
+	fee: {
+		gasLimit: '21000',
+		maxFeePerGas: '0.00000000000000001',
+		maxPriorityFeePerGas: '0',
+		token: {
+			amount: '0.00000000000021',
+			id: 'ETH',
+			name: 'ETH',
+			divisibility: 18
+		}
+	},
+	timestamp: 1759844024000,
+	type: 1,
+	tokens: [{ name: 'ETH', id: 'ETH', divisibility: 18, amount: '0.1979990999942376' }],
+	recipientAddress: etherRecipientAddress
+};
+
+export const erc20Transaction = {
+	height: '251181',
+	hash: '0xc778bb5dac6ab4b4c881cbe62941c152f39819ede4fe85517d237def2da0af3e',
+	nonce: '20',
+	signerAddress: signerAccount.address,
+	fee: {
+		gasLimit: '40069',
+		maxFeePerGas: '0.000000000000000014',
+		maxPriorityFeePerGas: '0',
+		token: {
+			amount: '0.000000000000560966',
+			id: 'ETH',
+			name: 'ETH',
+			divisibility: 18
+		}
+	},
+	timestamp: 1759845920000,
+	type: 2,
+	tokens: [{ id: targetTokenAddress, name: 'wXYM', divisibility: 6, amount: '12' }],
+	recipientAddress: etherRecipientAddress
+};
+
+export const bridgeTransaction = {
+	height: '249648',
+	hash: '0x3a99098a33bf68fcf41476dcf6adf58320700c7695d27fc4722b42d3bc118478',
+	nonce: '18',
+	signerAddress: signerAccount.address,
+	fee: {
+		gasLimit: '45908',
+		maxFeePerGas: '0.00000000000000001',
+		maxPriorityFeePerGas: '0',
+		token: {
+			amount: '0.00000000000045908',
+			id: 'ETH',
+			name: 'ETH',
+			divisibility: 18
+		}
+	},
+	timestamp: 1759827524000,
+	type: 3,
+	tokens: [{ id: targetTokenAddress, name: 'wXYM', divisibility: 6, amount: '0.02' }],
+	recipientAddress: bridgeRecipientAddress,
+	message: {
+		payload: '982C69A051A72BFBE31AEDA7250AC6C747B7570B3E9C00B6',
+		text: 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ'
+	}
+};
+
+export const decodedTransactions = [
+	etherTransaction,
+	erc20Transaction,
+	bridgeTransaction
+];

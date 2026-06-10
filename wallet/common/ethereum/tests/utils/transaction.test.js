@@ -1,135 +1,180 @@
 import {
-	createFee,
+	decodePlainMessage,
+	encodePlainMessage,
 	isIncomingTransaction,
 	isOutgoingTransaction,
 	normalizeTransactionHash,
-	signTransaction
+	signTransaction,
+	signTransactionBundle
 } from '../../src/utils';
-import { networkCurrency } from '../__fixtures__/local/network';
 import { signedTransactions, walletTransactions } from '../__fixtures__/local/transactions';
-import { currentNetworkIdentifier, walletStorageAccounts } from '../__fixtures__/local/wallet';
+import { accounts, currentNetworkIdentifier } from '../__fixtures__/local/wallet';
+import { TransactionBundle } from 'wallet-common-core';
+
+// Constants
+
+const networkIdentifier = currentNetworkIdentifier;
+const { alice: signerAccount, bob: recipientAccount } = accounts;
+const MESSAGE_TEXT = 'Good luck!';
+const MESSAGE_PAYLOAD = '476f6f64206c75636b21';
+
+// Human-readable labels for each walletTransactions entry, index-aligned with signedTransactions.
+const transactionTypeLabels = [
+	'native ETH transfer',
+	'ERC-20 transfer',
+	'ERC-20 bridge transfer',
+	'Uniswap swap',
+	'native Uniswap swap',
+	'ERC-20 approval'
+];
 
 describe('utils/transaction', () => {
+	describe('normalizeTransactionHash', () => {
+		const runNormalizeTransactionHashTest = (description, config, expected) => {
+			it(description, () => {
+				// Act:
+				const result = normalizeTransactionHash(config.hash);
+
+				// Assert:
+				expect(result).toBe(expected.result);
+			});
+		};
+
+		const normalizedHash = '0xa1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2';
+
+		const normalizeTransactionHashTests = [
+			{
+				description: 'prepends 0x and lowercases a hash without a prefix',
+				config: { hash: 'A1B2C3D4E5F6A1B2C3D4E5F6A1B2C3D4E5F6A1B2C3D4E5F6A1B2C3D4E5F6A1B2' },
+				expected: { result: normalizedHash }
+			},
+			{
+				description: 'lowercases a hash that already has the 0x prefix',
+				config: { hash: '0xA1B2C3D4E5F6A1B2C3D4E5F6A1B2C3D4E5F6A1B2C3D4E5F6A1B2C3D4E5F6A1B2' },
+				expected: { result: normalizedHash }
+			},
+			{
+				description: 'returns an already normalized hash unchanged',
+				config: { hash: normalizedHash },
+				expected: { result: normalizedHash }
+			}
+		];
+
+		normalizeTransactionHashTests.forEach(test => runNormalizeTransactionHashTest(test.description, test.config, test.expected));
+
+		it('throws a TypeError when the hash is not a string', () => {
+			// Act & Assert:
+			[123, null, undefined].forEach(input => expect(() => normalizeTransactionHash(input)).toThrow(TypeError));
+		});
+	});
+
 	describe('isOutgoingTransaction', () => {
-		it('returns true when signer matches current account', () => {
-			const account = walletStorageAccounts[currentNetworkIdentifier][0];
-			const tx = {
-				signerAddress: account.address,
-				recipientAddress: walletStorageAccounts[currentNetworkIdentifier][1].address
-			};
+		const runIsOutgoingTransactionTest = (description, config, expected) => {
+			it(description, () => {
+				// Act:
+				const result = isOutgoingTransaction(config.transaction, signerAccount);
 
-			expect(isOutgoingTransaction(tx, { address: account.address })).toBe(true);
-		});
+				// Assert:
+				expect(result).toBe(expected.result);
+			});
+		};
 
-		it('returns false when signer differs from current account', () => {
-			const account = walletStorageAccounts[currentNetworkIdentifier][0];
-			const tx = {
-				signerAddress: walletStorageAccounts[currentNetworkIdentifier][1].address,
-				recipientAddress: account.address
-			};
+		const isOutgoingTransactionTests = [
+			{
+				description: 'returns true when the signer address matches the current account',
+				config: { transaction: { signerAddress: signerAccount.address } },
+				expected: { result: true }
+			},
+			{
+				description: 'returns false when the signer address does not match the current account',
+				config: { transaction: { signerAddress: recipientAccount.address } },
+				expected: { result: false }
+			}
+		];
 
-			expect(isOutgoingTransaction(tx, { address: account.address })).toBe(false);
-		});
+		isOutgoingTransactionTests.forEach(test => runIsOutgoingTransactionTest(test.description, test.config, test.expected));
 	});
 
 	describe('isIncomingTransaction', () => {
-		it('returns true when recipient matches current account', () => {
-			const account = walletStorageAccounts[currentNetworkIdentifier][0];
-			const tx = {
-				signerAddress: walletStorageAccounts[currentNetworkIdentifier][1].address,
-				recipientAddress: account.address
-			};
+		const runIsIncomingTransactionTest = (description, config, expected) => {
+			it(description, () => {
+				// Act:
+				const result = isIncomingTransaction(config.transaction, signerAccount);
 
-			expect(isIncomingTransaction(tx, { address: account.address })).toBe(true);
-		});
+				// Assert:
+				expect(result).toBe(expected.result);
+			});
+		};
 
-		it('returns false when recipient differs from current account', () => {
-			const account = walletStorageAccounts[currentNetworkIdentifier][0];
-			const tx = {
-				signerAddress: account.address,
-				recipientAddress: walletStorageAccounts[currentNetworkIdentifier][1].address
-			};
+		const isIncomingTransactionTests = [
+			{
+				description: 'returns true when the recipient address matches the current account',
+				config: { transaction: { recipientAddress: signerAccount.address } },
+				expected: { result: true }
+			},
+			{
+				description: 'returns false when the recipient address does not match the current account',
+				config: { transaction: { recipientAddress: recipientAccount.address } },
+				expected: { result: false }
+			}
+		];
 
-			expect(isIncomingTransaction(tx, { address: account.address })).toBe(false);
+		isIncomingTransactionTests.forEach(test => runIsIncomingTransactionTest(test.description, test.config, test.expected));
+	});
+
+	describe('encodePlainMessage', () => {
+		it('encodes plain text as a hex message payload', () => {
+			// Act:
+			const result = encodePlainMessage(MESSAGE_TEXT);
+
+			// Assert:
+			expect(result).toBe(MESSAGE_PAYLOAD);
 		});
 	});
 
-	describe('createFee', () => {
-		it('creates fee object and computes totalAmount via helper', () => {
-			const feeMultiplier = { maxFeePerGas: '3', maxPriorityFeePerGas: '1' };
-			const gasLimit = '1000';
+	describe('decodePlainMessage', () => {
+		it('decodes a hex message payload back to plain text', () => {
+			// Act:
+			const result = decodePlainMessage(MESSAGE_PAYLOAD);
 
-			const fee = createFee(feeMultiplier, gasLimit, networkCurrency);
-
-			expect(fee).toEqual({
-				gasLimit,
-				maxFeePerGas: '3',
-				maxPriorityFeePerGas: '1',
-				token: {
-					...networkCurrency,
-					amount: '3000'
-				}
-			});
+			// Assert:
+			expect(result).toBe(MESSAGE_TEXT);
 		});
 	});
 
 	describe('signTransaction', () => {
-		it('signs transaction and returns dto + hash', async () => {
-			const { privateKey } = walletStorageAccounts[currentNetworkIdentifier][0];
-			const inputs = walletTransactions;
-			const expectedOutputs = signedTransactions;
+		const runSignTransactionTest = (description, config, expected) => {
+			it(description, async () => {
+				// Act:
+				const result = await signTransaction(networkIdentifier, config.transaction, signerAccount.privateKey);
 
-			// Act & Assert:
-			for (let i = 0; i < inputs.length; i++) {
-				const result = await signTransaction(currentNetworkIdentifier, inputs[i], privateKey);
+				// Assert:
+				expect(result).toStrictEqual(expected.signedTransaction);
+			});
+		};
 
-				expect(result).toStrictEqual(expectedOutputs[i]);
-			}
-		});
+		const signTransactionTests = walletTransactions.map((transaction, index) => ({
+			description: `signs a ${transactionTypeLabels[index]} into its dto and hash`,
+			config: { transaction },
+			expected: { signedTransaction: signedTransactions[index] }
+		}));
+
+		signTransactionTests.forEach(test => runSignTransactionTest(test.description, test.config, test.expected));
 	});
 
-	describe('normalizeTransactionHash', () => {
-		it('prepends 0x and lowercases hash without prefix', () => {
+	describe('signTransactionBundle', () => {
+		it('signs every transaction in the bundle and preserves the metadata', async () => {
 			// Arrange:
-			const hash = 'A1B2C3D4E5F6A1B2C3D4E5F6A1B2C3D4E5F6A1B2C3D4E5F6A1B2C3D4E5F6A1B2';
-			const expectedResult = '0xa1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2';
+			const metadata = { type: 'default' };
+			const transactionBundle = new TransactionBundle(walletTransactions, metadata);
 
 			// Act:
-			const result = normalizeTransactionHash(hash);
+			const result = await signTransactionBundle(networkIdentifier, transactionBundle, signerAccount.privateKey);
 
 			// Assert:
-			expect(result).toBe(expectedResult);
-		});
-
-		it('lowercases hash that already has 0x prefix', () => {
-			// Arrange:
-			const hash = '0xA1B2C3D4E5F6A1B2C3D4E5F6A1B2C3D4E5F6A1B2C3D4E5F6A1B2C3D4E5F6A1B2';
-			const expectedResult = '0xa1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2';
-
-			// Act:
-			const result = normalizeTransactionHash(hash);
-
-			// Assert:
-			expect(result).toBe(expectedResult);
-		});
-
-		it('returns already normalized hash unchanged', () => {
-			// Arrange:
-			const hash = '0xa1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2';
-
-			// Act:
-			const result = normalizeTransactionHash(hash);
-
-			// Assert:
-			expect(result).toBe(hash);
-		});
-
-		it('throws TypeError when hash is not a string', () => {
-			// Act & Assert:
-			expect(() => normalizeTransactionHash(123)).toThrow(TypeError);
-			expect(() => normalizeTransactionHash(null)).toThrow(TypeError);
-			expect(() => normalizeTransactionHash(undefined)).toThrow(TypeError);
+			expect(result).toBeInstanceOf(TransactionBundle);
+			expect(result.metadata).toStrictEqual(metadata);
+			expect(result.transactions).toStrictEqual(signedTransactions);
 		});
 	});
 });
-
