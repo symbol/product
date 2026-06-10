@@ -1,3 +1,4 @@
+import { HarvestingAction } from '@/app/screens/harvesting/types/Harvesting';
 import { objectToTableData } from '@/app/utils';
 import { useCallback } from 'react';
 
@@ -19,9 +20,10 @@ import { useCallback } from 'react';
  * @param {object} params - Hook parameters.
  * @param {MainWalletController} params.walletController - The wallet controller instance.
  * @param {string} [params.selectedNodeUrl] - Selected node URL for starting harvesting.
+ * @param {string|null} [params.actionType] - Current harvesting action ('start' or 'stop').
  * @returns {UseHarvestingTransactionReturnType}
  */
-export const useHarvestingTransaction = ({ walletController, selectedNodeUrl }) => {
+export const useHarvestingTransaction = ({ walletController, selectedNodeUrl, actionType }) => {
 	const { modules, networkApi } = walletController;
 
 	/**
@@ -54,6 +56,9 @@ export const useHarvestingTransaction = ({ walletController, selectedNodeUrl }) 
 	 * @returns {TransactionConfirmationDialogSection[]}
 	 */
 	const getConfirmationPreview = useCallback(() => {
+		if (actionType === HarvestingAction.STOP)
+			return [];
+
 		const { chainName, networkIdentifier, modules: { addressBook }, accounts } = walletController;
 
 		return [{
@@ -65,7 +70,7 @@ export const useHarvestingTransaction = ({ walletController, selectedNodeUrl }) 
 			walletAccounts: accounts,
 			tableData: objectToTableData({ nodeUrl: selectedNodeUrl })
 		}];
-	}, [walletController, selectedNodeUrl]);
+	}, [walletController, selectedNodeUrl, actionType]);
 
 	return {
 		createStartTransaction,

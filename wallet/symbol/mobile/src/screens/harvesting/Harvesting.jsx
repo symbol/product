@@ -89,7 +89,7 @@ export const Harvesting = () => {
 		createStartTransaction,
 		createStopTransaction,
 		getConfirmationPreview
-	} = useHarvestingTransaction({ walletController, selectedNodeUrl: nodeUrl });
+	} = useHarvestingTransaction({ walletController, selectedNodeUrl: nodeUrl, actionType });
 	const createTransaction = useCallback(async () => {
 		if (actionType === HarvestingAction.START)
 			return createStartTransaction();

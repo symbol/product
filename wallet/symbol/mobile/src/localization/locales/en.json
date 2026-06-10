@@ -577,6 +577,7 @@
     "s_harvesting_confirm_start_title": "Start Harvesting?",
     "s_harvesting_confirm_start_description": "Depending on your account's importance score and the node's free harvesting slots, your request might not be granted.\nAlso, please note that nodes may remove accounts from their harvesting slots at any time.\nIn these cases you need to switch to a different node and repeat the Delegated Harvesting activation process. Transaction fees paid for the activation will not be refunded.",
     "s_harvesting_confirm_stop_title": "Stop Harvesting?",
+    "s_harvesting_confirm_stop_description": "Stopping this will cease the harvesting activity for your account on this node. You can restart the harvesting again at any time.",
     "s_harvesting_warning_balance": "Insufficient balance, the account needs to hold at least 10 000 XYM to start delegated harvesting.",
     "s_harvesting_warning_importance": "Your account have enough balance to start delegated harvesting but the importance score is still equal to 0. Importance recalculation might take up to 12h.",
     "s_harvesting_warning_node_down": "Looks like the harvesting node is down. Please check the status again later or restart the harvesting.",
