@@ -1,10 +1,6 @@
 # pylint: disable=too-many-lines
 from binascii import hexlify
 
-from symbolchain.CryptoTypes import PublicKey
-from symbolchain.nc import TransactionType
-from symbolchain.nem.Network import Address
-
 from rest.model.nem.Account import AccountView
 from rest.model.nem.Block import BlockView
 from rest.model.nem.Mosaic import MosaicRichListView, MosaicView
@@ -16,6 +12,9 @@ from rest.model.nem.Statistic import (
 	StatisticTransactionView
 )
 from rest.model.nem.Transaction import TransactionRecord, TransactionView
+from symbolchain.CryptoTypes import PublicKey
+from symbolchain.nc import TransactionType
+from symbolchain.nem.Network import Address
 
 from .DatabaseConnection import DatabaseConnectionPool
 

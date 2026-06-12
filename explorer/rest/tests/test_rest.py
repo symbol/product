@@ -5,9 +5,8 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 import testing.postgresql
-from symbollightapi.model.Exceptions import NodeException
-
 from rest import create_app
+from symbollightapi.model.Exceptions import NodeException
 
 from .test.DatabaseTestUtils import (
 	ACCOUNT_STATISTIC_VIEW,
