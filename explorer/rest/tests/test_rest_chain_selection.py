@@ -12,13 +12,13 @@ def test_create_app_requires_rest_chain():
 			create_app()
 
 
-def test_create_app_rejects_unsupported_rest_chain():
+def test_rejects_unsupported_chain():
 	with patch('rest.load_rest_config', side_effect=lambda app: app.config.update(REST_CHAIN='symbol')):
 		with pytest.raises(ValueError, match='Unsupported REST_CHAIN "symbol". Supported values: nem'):
 			create_app()
 
 
-def test_create_app_registers_only_selected_chain():
+def test_registers_selected_chain():
 	facade = Mock(name='facade')
 	setup_facade = Mock(return_value=facade)
 	setup_routes = Mock()
@@ -32,7 +32,7 @@ def test_create_app_registers_only_selected_chain():
 	setup_routes.assert_called_once_with(app, facade)
 
 
-def test_load_rest_config_loads_envvar_config(monkeypatch, tmp_path):
+def test_loads_envvar_config(monkeypatch, tmp_path):
 	config_path = tmp_path / 'app.config'
 	config_path.write_text('REST_CHAIN="nem"\n', encoding='utf8')
 	app = Flask(__name__)
@@ -43,7 +43,7 @@ def test_load_rest_config_loads_envvar_config(monkeypatch, tmp_path):
 	assert 'nem' == app.config['REST_CHAIN']
 
 
-def test_error_handlers_return_json_responses():
+def test_error_handlers_json():
 	app = Flask(__name__)
 	setup_error_handlers(app)
 
