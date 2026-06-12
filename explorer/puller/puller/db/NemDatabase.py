@@ -145,6 +145,7 @@ class NemDatabase(DatabaseConnection):
 			CREATE TABLE IF NOT EXISTS accounts (
 				id serial PRIMARY KEY,
 				address bytea NOT NULL UNIQUE,
+				height bigint NOT NULL,
 				public_key bytea,
 				remote_address bytea,
 				importance decimal(20, 10) DEFAULT 0,
@@ -357,6 +358,7 @@ class NemDatabase(DatabaseConnection):
 			'''
 			INSERT INTO accounts (
 				address,
+				height,
 				public_key,
 				remote_address,
 				importance,
@@ -369,7 +371,7 @@ class NemDatabase(DatabaseConnection):
 				cosignatory_of,
 				cosignatories
 			)
-			VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+			VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
 			ON CONFLICT (address)
 			DO UPDATE SET
 				remote_address = EXCLUDED.remote_address,
@@ -385,6 +387,7 @@ class NemDatabase(DatabaseConnection):
 				updated_at = CURRENT_TIMESTAMP
 			''', (
 				account_info.address.bytes,
+				account_info.height,
 				account_info.public_key.bytes if account_info.public_key else None,
 				account_info.remote_address.bytes if account_info.remote_address else None,
 				account_info.importance,

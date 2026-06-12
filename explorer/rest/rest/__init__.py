@@ -147,8 +147,8 @@ def setup_nem_routes(app, nem_api_facade):  # pylint: disable=too-many-statement
 				raise ValueError('Limit and offset must be greater than or equal to 0')
 			if sort_order not in ['ASC', 'DESC']:
 				raise ValueError('Sort order must be either ASC or DESC')
-			if sort_field not in ['BALANCE']:
-				raise ValueError('Sort field must be BALANCE')
+			if sort_field not in ['BALANCE', 'HEIGHT']:
+				raise ValueError('Sort field must be BALANCE or HEIGHT')
 
 		except ValueError as error:
 			abort(400, error)

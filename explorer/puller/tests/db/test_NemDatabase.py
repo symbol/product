@@ -45,6 +45,7 @@ BLOCKS = [
 ACCOUNTS = [
 	AccountRecord(
 		Address('TBZWVEKB2XMTO4F3RAOEIBWRBMPQ5N23G56ZJM4I'),
+		1,
 		PublicKey('5451f450416d214b14f0375ce06c3451eeb784f7bcd25ae1072ba7e403940a58'),
 		None,
 		0.123456,
@@ -118,6 +119,7 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 			'''
 			SELECT
 				encode(address, 'hex'),
+				height,
 				encode(public_key, 'hex'),
 				encode(remote_address, 'hex'),
 				importance::TEXT,
@@ -360,6 +362,7 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 		self.assertIsNotNone(result)
 		self.assertEqual(result, (
 			ACCOUNTS[0].address.bytes.hex(),
+			1,
 			ACCOUNTS[0].public_key.bytes.hex(),
 			None,
 			'0.1234560000',
@@ -401,6 +404,7 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 		self.assertIsNotNone(result)
 		self.assertEqual(result, (
 			ACCOUNTS[0].address.bytes.hex(),
+			1,
 			ACCOUNTS[0].public_key.bytes.hex(),
 			None,
 			'0.1234560000',
@@ -415,6 +419,31 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 			None,
 			None)
 		)
+
+	def test_account_height_remains_unchanged_on_update(self):
+		# Arrange:
+		with NemDatabase(self.db_config) as nem_database:
+			nem_database.create_tables()
+
+			cursor = nem_database.connection.cursor()
+
+			# insert initial account
+			nem_database.upsert_account(
+				cursor,
+				ACCOUNTS[0]
+			)
+
+			# Act:
+			nem_database.upsert_account(
+				cursor,
+				ACCOUNTS[0]._replace(height=3)
+			)
+
+			nem_database.connection.commit()
+			result = self._fetch_account_from_db(cursor, ACCOUNTS[0].address)
+
+		# Assert:
+		self.assertEqual(result[1], 1)
 
 	def test_can_get_accounts_for_refresh(self):
 		# Arrange:
@@ -498,6 +527,7 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 		self.assertIsNotNone(result)
 		self.assertEqual(result, (
 			ACCOUNTS[0].address.bytes.hex(),
+			1,
 			ACCOUNTS[0].public_key.bytes.hex(),
 			None,
 			'0.6543210000',
@@ -546,8 +576,8 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 			result = self._fetch_account_from_db(cursor, ACCOUNTS[0].address)
 
 		# Assert:
-		self.assertEqual(result[7], 750000)  # harvested_fees
-		self.assertEqual(result[10], 20)      # last_harvested_height
+		self.assertEqual(result[8], 750000)  # harvested_fees
+		self.assertEqual(result[11], 20)      # last_harvested_height
 
 	def test_can_insert_namespace(self):
 		# Arrange:

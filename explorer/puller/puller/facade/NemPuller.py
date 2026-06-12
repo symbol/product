@@ -29,6 +29,7 @@ BlockRecord = namedtuple('BlockRecord', [
 ])
 AccountRecord = namedtuple('AccountRecord', [
 	'address',
+	'height',
 	'public_key',
 	'remote_address',
 	'importance',
@@ -242,11 +243,12 @@ class NemPuller:
 		]
 
 	@staticmethod
-	def _create_account_record(account_info, mosaics_json, remote_address=None):
+	def _create_account_record(account_info, mosaics_json, height, remote_address=None):
 		"""Create AccountRecord from account info and mosaics."""
 
 		return AccountRecord(
 			account_info.address,
+			height,
 			account_info.public_key,
 			remote_address,
 			account_info.importance,
@@ -260,21 +262,21 @@ class NemPuller:
 			account_info.cosignatories
 		)
 
-	async def _process_account_batch(self, cursor, addresses):
+	async def _process_account_batch(self, cursor, address_heights):
 		"""
 		Process a batch of addresses: fetch account info, mosaics, and upsert.
 		Updates both new and existing accounts with latest information.
 		"""
 
-		log.info(f'Processing batch of {len(addresses)} addresses')
+		log.info(f'Processing batch of {len(address_heights)} addresses')
 
 		# Fetch account info for all addresses (both new and existing)
-		for address in addresses:
+		for address, height in address_heights.items():
 			account_info = await self._retry_get_account_info(address)
 			account_mosaics = await self._retry_get_account_mosaics(address)
 
 			mosaics_json = self._convert_mosaics_to_json(account_mosaics)
-			account = self._create_account_record(account_info, mosaics_json)
+			account = self._create_account_record(account_info, mosaics_json, height)
 
 			self.nem_db.upsert_account(cursor, account)
 
@@ -284,9 +286,17 @@ class NemPuller:
 				main_account_mosaics = await self._retry_get_account_mosaics(str(main_account_info.address))
 
 				main_mosaics_json = self._convert_mosaics_to_json(main_account_mosaics)
-				main_account = self._create_account_record(main_account_info, main_mosaics_json, remote_address=account.address)
+				main_account = self._create_account_record(main_account_info, main_mosaics_json, height, remote_address=account.address)
 
 				self.nem_db.upsert_account(cursor, main_account)
+
+	@staticmethod
+	def _add_pending_addresses(pending_addresses, addresses, height):
+		"""Adds addresses to pending account processing with their earliest recovered height."""
+
+		for address in addresses:
+			if address not in pending_addresses:
+				pending_addresses[address] = height
 
 	def _process_harvested_fees(self, cursor, accounts_harvested_fee):  # pylint: disable=no-self-use
 		"""Process harvested fees for accounts."""
@@ -539,7 +549,7 @@ class NemPuller:
 		self._process_block(cursor, nemesis_block)
 
 		addresses = self._extract_addresses_from_block(nemesis_block)
-		await self._process_account_batch(cursor, addresses)
+		await self._process_account_batch(cursor, {address: nemesis_block.height for address in addresses})
 
 		self._process_transactions(cursor, nemesis_block.transactions, nemesis_block.height)
 
@@ -552,7 +562,7 @@ class NemPuller:
 
 		cursor = self.nem_db.connection.cursor()
 		processed = 0
-		pending_addresses = set()
+		pending_addresses = {}
 		accounts_harvested_fee = {}
 
 		log.info('DB writer thread started')
@@ -578,7 +588,7 @@ class NemPuller:
 
 			# Extract addresses for account processing
 			addresses = self._extract_addresses_from_block(block)
-			pending_addresses.update(addresses)
+			self._add_pending_addresses(pending_addresses, addresses, block.height)
 
 			# Track beneficiary harvested fees
 			current_fees, _ = accounts_harvested_fee.get(block.beneficiary, (0, 0))
