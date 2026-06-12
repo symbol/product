@@ -1,6 +1,6 @@
 import { AliasAction, AliasActionMessage, SymbolTransactionType } from '@/app/constants';
 import { $t } from '@/app/localization';
-import { getAccountKnownInfo } from '@/app/utils';
+import { getAccountKnownInfo, getTransactionTypeTranslationKey } from '@/app/utils';
 import {
 	isAggregateTransaction,
 	isHarvestingServiceTransaction,
@@ -56,14 +56,17 @@ const getTransferDescription = (transaction, currentAccount, resolveOptions) => 
 /**
  * Gets the description for an aggregate transaction.
  * @param {Transaction} transaction - Transaction object.
+ * @param {ChainName} chainName - Chain name, used to namespace the descriptor key.
  * @returns {string} Aggregate description.
  */
-const getAggregateDescription = transaction => {
+const getAggregateDescription = (transaction, chainName) => {
 	if (isHarvestingServiceTransaction(transaction))
 		return $t('transactionDescriptionShort_aggregateHarvesting');
 
 	const firstTransactionType = transaction.innerTransactions[0]?.type;
-	const innerTypeText = firstTransactionType ? $t(`transactionDescriptor_${firstTransactionType}`) : '';
+	const innerTypeText = firstTransactionType
+		? $t(getTransactionTypeTranslationKey(firstTransactionType, chainName))
+		: '';
 	const count = transaction.innerTransactions.length - 1;
 
 	return count
@@ -92,7 +95,7 @@ export const getTransactionDescription = (transaction, currentAccount, resolveOp
 	const { type } = transaction;
 
 	if (isAggregateTransaction(transaction))
-		return getAggregateDescription(transaction);
+		return getAggregateDescription(transaction, resolveOptions.chainName);
 
 	switch (type) {
 	case SymbolTransactionType.TRANSFER:

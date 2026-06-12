@@ -56,9 +56,9 @@ const SCREEN_TEXT = {
 	textStatusUnconfirmed: 'transactionStatus_unconfirmed',
 
 	// Transaction types
-	textTransactionTransferOutgoing: 'transactionDescriptor_16724_outgoing',
-	textTransactionAggregateBonded: 'transactionDescriptor_16961',
-	textTransactionMultisigAccountModification: 'transactionDescriptor_16725',
+	textTransactionTransferOutgoing: 'transactionDescriptor_symbol_16724_outgoing',
+	textTransactionAggregateBonded: 'transactionDescriptor_symbol_16961',
+	textTransactionMultisigAccountModification: 'transactionDescriptor_symbol_16725',
 
 	// Cosign alerts
 	textAlertSigned: 's_transactionDetails_cosignAlert_signed',

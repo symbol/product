@@ -5,5 +5,6 @@ export * from './network';
 export * from './qr';
 export * from './table';
 export * from './token';
+export * from './transaction';
 export * from './ui';
 export * from './validators';

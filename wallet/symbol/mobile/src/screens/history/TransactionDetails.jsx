@@ -69,7 +69,7 @@ export const TransactionDetails = ({ route }) => {
 	const nativeCurrencyTokenId = networkProperties?.networkCurrency?.id || networkProperties?.networkCurrency?.mosaicId;
 
 	// Main details
-	const transactionTypeText = getTransactionTypeText(transaction, currentAccount);
+	const transactionTypeText = getTransactionTypeText(transaction, currentAccount, chainName);
 	const statusDisplayData = getTransactionStatus(status.group);
 	const dateText = getTransactionDateText(transaction, status.group);
 

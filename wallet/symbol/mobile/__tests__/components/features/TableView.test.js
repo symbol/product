@@ -25,7 +25,8 @@ jest.mock('@/app/utils', () => ({
 		const name = info.name ?? token.name ?? token.id;
 		const nameText = !info.ticker ? name : `${name} • ${info.ticker}`;
 		return { name: nameText, ticker: info.ticker, imageId: info.imageId };
-	}
+	},
+	getTransactionTypeTranslationKey: (type, chainName) => `transactionDescriptor_${chainName}_${type}`
 }));
 
 describe('components/TableView', () => {
@@ -230,6 +231,34 @@ describe('components/TableView', () => {
 				},
 				expected: {
 					visibleTexts: ['Status', 'data_pending']
+				}
+			},
+			{
+				description: 'renders transactionType row type for symbol chain',
+				config: {
+					props: {
+						chainName: 'symbol',
+						data: [
+							{ title: 'Type', type: 'transactionType', value: 16724 }
+						]
+					}
+				},
+				expected: {
+					visibleTexts: ['Type', 'transactionDescriptor_symbol_16724']
+				}
+			},
+			{
+				description: 'renders transactionType row type namespaced per chain',
+				config: {
+					props: {
+						chainName: 'ethereum',
+						data: [
+							{ title: 'Type', type: 'transactionType', value: 1 }
+						]
+					}
+				},
+				expected: {
+					visibleTexts: ['Type', 'transactionDescriptor_ethereum_1']
 				}
 			}
 		];

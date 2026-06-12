@@ -46,16 +46,16 @@ const SCREEN_TEXT = {
 	textFilterClear: 'button_clear',
 
 	// Filter options
-	textFilterOptionTransfer: 'transactionDescriptor_16724',
-	textFilterOptionAggregateBonded: 'transactionDescriptor_16961',
-	textFilterOptionAggregateComplete: 'transactionDescriptor_16705',
+	textFilterOptionTransfer: 'transactionDescriptor_symbol_16724',
+	textFilterOptionAggregateBonded: 'transactionDescriptor_symbol_16961',
+	textFilterOptionAggregateComplete: 'transactionDescriptor_symbol_16705',
 
 	// Transaction statuses
 	textAwaitingSignature: 'transactionDescriptionShort_awaitingAccountSignature',
 
 	// Transaction types for item verification
-	textTransactionOutgoing: 'transactionDescriptor_16724_outgoing',
-	textTransactionIncoming: 'transactionDescriptor_16724_incoming',
+	textTransactionOutgoing: 'transactionDescriptor_symbol_16724_outgoing',
+	textTransactionIncoming: 'transactionDescriptor_symbol_16724_incoming',
 
 	// Receipt types
 	textReceiptHarvestingReward: 'receiptDescriptor_harvestingReward'

@@ -6,6 +6,7 @@ import {
 } from '@/app/screens/history/types/TransactionGraphic';
 import { createAccountDisplayData } from '@/app/utils/account';
 import { createTokenDisplayData, getNativeCurrencyToken, hasNonNativeCurrencyTokens } from '@/app/utils/token';
+import { getTransactionTypeTranslationKey } from '@/app/utils/transaction';
 
 /** @typedef {import('@/app/screens/history/types/TransactionGraphic').TransactionGraphicArrowCaption} TransactionGraphicArrowCaption */
 /** @typedef {import('@/app/screens/history/types/TransactionGraphic').TransactionGraphicData} TransactionGraphicData */
@@ -50,9 +51,9 @@ const transactionGraphicConfigMap = {
 	[SymbolTransactionType.TRANSFER]: {
 		targetType: TransactionGraphicAvatarType.ACCOUNT,
 		targetFields: { addressField: 'recipientAddress' },
-		typeTextKey: tx => {
+		typeTextKey: (tx, chainName) => {
 			if (tx.message?.isDelegatedHarvestingMessage)
-				return `transactionDescriptor_${tx.type}_harvesting`;
+				return `${getTransactionTypeTranslationKey(tx.type, chainName)}_harvesting`;
 
 			return null;
 		},
@@ -420,17 +421,18 @@ const createArrowCaptions = (transaction, captionConfigs, options) => {
  * Gets formatted type text for the transaction.
  * @param {Transaction} transaction - The transaction.
  * @param {TransactionGraphicConfig} [config] - The graphic configuration.
+ * @param {ChainName} [chainName] - Chain name, used to namespace the descriptor key.
  * @returns {string} Formatted type text.
  */
-const getTypeText = (transaction, config) => {
+const getTypeText = (transaction, config, chainName) => {
 	let customKey;
 	if (config?.typeTextKey)
-		customKey = config.typeTextKey(transaction);
+		customKey = config.typeTextKey(transaction, chainName);
 
 	if (customKey)
 		return $t(customKey);
 
-	return $t(`transactionDescriptor_${transaction.type}`);
+	return $t(getTransactionTypeTranslationKey(transaction.type, chainName));
 };
 
 
@@ -442,7 +444,7 @@ const getTypeText = (transaction, config) => {
  */
 export const createTransactionGraphicData = (transaction, options) => {
 	const config = transactionGraphicConfigMap[transaction.type];
-	const typeText = getTypeText(transaction, config);
+	const typeText = getTypeText(transaction, config, options.chainName);
 
 	// Fallback for unsupported transaction types
 	if (!config) {
