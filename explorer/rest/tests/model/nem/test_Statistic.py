@@ -1,6 +1,6 @@
 import unittest
 
-from rest.model.Statistic import (
+from rest.model.nem.Statistic import (
 	StatisticAccountView,
 	StatisticTransactionDateRangeDataView,
 	StatisticTransactionDateRangeView,

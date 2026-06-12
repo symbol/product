@@ -1,6 +1,6 @@
 import unittest
 
-from rest.model.Namespace import NamespaceView
+from rest.model.nem.Namespace import NamespaceView
 
 
 class NamespaceTest(unittest.TestCase):

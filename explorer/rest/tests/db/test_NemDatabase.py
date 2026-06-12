@@ -18,7 +18,7 @@ from symbollightapi.model.Transaction import (
 
 from rest import Pagination, Sorting
 from rest.db.NemDatabase import NemDatabase
-from rest.model.Transaction import TransactionView
+from rest.model.nem.Transaction import TransactionView
 
 from ..test.DatabaseTestUtils import (
 	ACCOUNT_STATISTIC_VIEW,

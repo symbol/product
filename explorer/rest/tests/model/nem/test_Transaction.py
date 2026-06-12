@@ -1,6 +1,6 @@
 import unittest
 
-from rest.model.Transaction import TransactionView
+from rest.model.nem.Transaction import TransactionView
 
 
 class TransactionViewTest(unittest.TestCase):

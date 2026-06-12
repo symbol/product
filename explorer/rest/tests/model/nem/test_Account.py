@@ -1,6 +1,6 @@
 import unittest
 
-from rest.model.Account import AccountView
+from rest.model.nem.Account import AccountView
 
 
 class AccountTest(unittest.TestCase):
