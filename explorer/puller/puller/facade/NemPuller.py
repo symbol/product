@@ -252,8 +252,8 @@ class NemPuller:
 			account_info.public_key,
 			remote_address,
 			account_info.importance,
-			account_info.balance,
-			account_info.vested_balance,
+			account_info.balance * (10 ** 6),  # convert from relative to absolute
+			account_info.vested_balance * (10 ** 6),  # convert from relative to absolute
 			mosaics_json,
 			account_info.harvested_blocks,
 			account_info.remote_status,
