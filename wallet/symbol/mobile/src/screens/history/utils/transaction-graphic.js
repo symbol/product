@@ -6,7 +6,7 @@ import {
 } from '@/app/screens/history/types/TransactionGraphic';
 import { createAccountDisplayData } from '@/app/utils/account';
 import { createTokenDisplayData, getNativeCurrencyToken, hasNonNativeCurrencyTokens } from '@/app/utils/token';
-import { getTransactionTypeTranslationKey } from '@/app/utils/transaction';
+import { getSignedSupplyDelta, getTransactionTypeTranslationKey } from '@/app/utils/transaction';
 
 /** @typedef {import('@/app/screens/history/types/TransactionGraphic').TransactionGraphicArrowCaption} TransactionGraphicArrowCaption */
 /** @typedef {import('@/app/screens/history/types/TransactionGraphic').TransactionGraphicData} TransactionGraphicData */
@@ -104,7 +104,11 @@ const transactionGraphicConfigMap = {
 		targetType: TransactionGraphicAvatarType.TOKEN,
 		targetFields: { valueField: 'mosaicId' },
 		arrowCaptions: [
-			{ type: CaptionType.TEXT, field: 'delta' }
+			{
+				type: CaptionType.TEXT,
+				field: 'delta',
+				format: (_, tx) => `${getSignedSupplyDelta(tx)}`
+			}
 		]
 	},
 	[SymbolTransactionType.MOSAIC_SUPPLY_REVOCATION]: {

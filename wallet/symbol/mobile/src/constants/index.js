@@ -32,7 +32,13 @@ export { TransactionType as SymbolTransactionType } from 'wallet-common-symbol/s
 export { TransactionType as EthereumTransactionType } from 'wallet-common-ethereum/src/constants';
 
 export { TransactionGroup } from 'wallet-common-core/src/constants';
-export { TransactionAnnounceGroup, AliasAction, AliasActionMessage } from 'wallet-common-symbol/src/constants';
+export {
+	TransactionAnnounceGroup,
+	AliasAction,
+	AliasActionMessage,
+	MosaicSupplyChangeAction,
+	MosaicSupplyChangeActionMessage
+} from 'wallet-common-symbol/src/constants';
 
 export const DB_UPDATE_LATENCY_AFTER_ANNOUNCE = 1000;
 export const REFRESH_TRANSACTION_DETAILS_INTERVAL = 10000;

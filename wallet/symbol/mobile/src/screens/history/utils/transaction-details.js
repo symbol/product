@@ -1,6 +1,6 @@
 import { EthereumTransactionType, SymbolTransactionType } from '@/app/constants';
 import { createTransactionGraphicData } from '@/app/screens/history/utils/transaction-graphic';
-import { objectToTableData } from '@/app/utils';
+import { getSignedSupplyDelta, objectToTableData } from '@/app/utils';
 import { omit } from 'lodash';
 
 const TRANSFER_TYPES = [
@@ -72,10 +72,16 @@ export const createTransactionSpecificTableData = transaction => {
 	let finalData = specificData;
 	if (TRANSFER_TYPES.includes(transaction.type)) {
 		const { signerAddress, recipientAddress, ...rest } = specificData;
-		finalData = { 
-			senderAddress: signerAddress, 
+		finalData = {
+			senderAddress: signerAddress,
 			recipientAddress,
 			...rest
+		};
+	}
+	else if (transaction.type === SymbolTransactionType.MOSAIC_SUPPLY_CHANGE) {
+		finalData = {
+			...omit(specificData, ['action']),
+			delta: getSignedSupplyDelta(transaction)
 		};
 	}
 
