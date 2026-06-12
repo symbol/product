@@ -68,6 +68,7 @@ def app(database):  # pylint: disable=redefined-outer-name, unused-argument
 
 		with open(file_name, 'wt', encoding='utf8') as config_file:
 			print(f'creating config file {file_name}...')
+			config_file.write('REST_CHAIN="nem"\n')
 			config_file.write(f'DATABASE_CONFIG_FILEPATH="{db_config_path}"\n')
 			config_file.write('NETWORK_NAME="mainnet"\n')
 			config_file.flush()
