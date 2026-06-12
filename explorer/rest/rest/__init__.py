@@ -1,5 +1,6 @@
 from flask import Flask, jsonify
 from flask_cors import CORS
+
 from rest.model.common import Pagination, Sorting
 from rest.routes.nem import setup_nem_facade, setup_nem_routes
 

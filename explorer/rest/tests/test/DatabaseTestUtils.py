@@ -5,6 +5,9 @@ from binascii import unhexlify
 from collections import namedtuple
 
 import testing.postgresql
+from symbolchain.CryptoTypes import PublicKey
+from symbolchain.nem.Network import Address, Network
+
 from rest.db.NemDatabase import NemDatabase
 from rest.model.nem.Account import AccountView
 from rest.model.nem.Block import BlockView
@@ -17,8 +20,6 @@ from rest.model.nem.Statistic import (
 	StatisticTransactionView
 )
 from rest.model.nem.Transaction import TransactionQuery, TransactionView
-from symbolchain.CryptoTypes import PublicKey
-from symbolchain.nem.Network import Address, Network
 
 Block = namedtuple(
 	'Block',

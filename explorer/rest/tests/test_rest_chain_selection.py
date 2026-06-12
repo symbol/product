@@ -2,6 +2,7 @@ from unittest.mock import Mock, patch
 
 import pytest
 from flask import Flask, abort
+
 from rest import create_app, load_rest_config, setup_error_handlers
 
 

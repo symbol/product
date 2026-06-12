@@ -1,6 +1,3 @@
-from rest import Pagination, Sorting
-from rest.db.NemDatabase import NemDatabase
-from rest.model.nem.Transaction import TransactionView
 from symbolchain.CryptoTypes import PublicKey
 from symbolchain.nem.Network import Address
 from symbollightapi.model.Transaction import (
@@ -18,6 +15,10 @@ from symbollightapi.model.Transaction import (
 	NamespaceRegistrationTransaction,
 	TransferTransaction
 )
+
+from rest import Pagination, Sorting
+from rest.db.NemDatabase import NemDatabase
+from rest.model.nem.Transaction import TransactionView
 
 from ..test.DatabaseTestUtils import (
 	ACCOUNT_STATISTIC_VIEW,
