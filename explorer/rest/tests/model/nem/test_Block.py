@@ -1,6 +1,6 @@
 import unittest
 
-from rest.model.Block import BlockView
+from rest.model.nem.Block import BlockView
 
 
 class BlockTest(unittest.TestCase):
