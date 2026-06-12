@@ -6,7 +6,8 @@ import {
 	isRestrictableFlag,
 	isRevokableFlag,
 	isSupplyMutableFlag,
-	isTransferableFlag
+	isTransferableFlag,
+	mosaicNonceToHex
 } from './mosaic';
 import { 
 	createTransactionFee, 
@@ -277,7 +278,7 @@ const mosaicDefinitionTransactionFromSymbol = (transaction, config) => {
 		mosaicId: mapId(transaction.id),
 		divisibility: transaction.divisibility,
 		duration: Number(transaction.duration),
-		nonce: transaction.nonce.value,
+		nonce: mosaicNonceToHex(transaction.nonce.value),
 		isSupplyMutable: isSupplyMutableFlag(transaction.flags.value),
 		isTransferable: isTransferableFlag(transaction.flags.value),
 		isRestrictable: isRestrictableFlag(transaction.flags.value),

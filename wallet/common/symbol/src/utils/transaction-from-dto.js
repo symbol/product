@@ -6,7 +6,8 @@ import {
 	isRestrictableFlag,
 	isRevokableFlag,
 	isSupplyMutableFlag,
-	isTransferableFlag
+	isTransferableFlag,
+	mosaicNonceToHex
 } from './mosaic';
 import { networkTypeToIdentifier } from './network';
 import {
@@ -300,7 +301,7 @@ const mosaicDefinitionTransactionFromDTO = (transactionDTO, config) => {
 		mosaicId: transaction.id,
 		divisibility: transaction.divisibility,
 		duration: Number(transaction.duration),
-		nonce: transaction.nonce,
+		nonce: mosaicNonceToHex(transaction.nonce),
 		isSupplyMutable: isSupplyMutableFlag(transaction.flags),
 		isTransferable: isTransferableFlag(transaction.flags),
 		isRestrictable: isRestrictableFlag(transaction.flags),

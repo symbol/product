@@ -1,3 +1,4 @@
+import { mosaicNonceFromHex } from './mosaic';
 import {
 	AddressRestrictionFlag,
 	AddressRestrictionFlagMessage,
@@ -269,7 +270,7 @@ const mosaicDefinitionTransactionToSymbol = (transaction, config) => {
 		deadline: mapDeadline(transaction.deadline),
 		duration: BigInt(transaction.duration),
 		flags: flags.join(' '),
-		nonce: transaction.nonce,
+		nonce: mosaicNonceFromHex(transaction.nonce),
 		divisibility: transaction.divisibility
 	};
 
