@@ -49,6 +49,7 @@ class SyncNemBlockTest(unittest.TestCase):
 		# Assert:
 		mock_nem_puller.assert_called_once_with('http://localhost:7890', 'test_config.ini', 'testnet')
 		mock_db.create_tables.assert_called_once()
+		mock_db.seed_network_currency.assert_called_once()
 		if account_remark:
 			mock_db.seed_account_remark.assert_called_once_with(account_remark)
 		else:

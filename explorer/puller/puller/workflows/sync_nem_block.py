@@ -27,6 +27,7 @@ async def main():
 
 	with facade.nem_db as databases:
 		databases.create_tables()
+		databases.seed_network_currency()
 
 		if args.account_remark:
 			databases.seed_account_remark(args.account_remark)
