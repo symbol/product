@@ -1,42 +1,56 @@
-from unittest.mock import Mock, patch
-
 import pytest
-from flask import Flask, abort
+from flask import Flask, abort, jsonify
 
+import rest
 from rest import create_app, load_rest_config, setup_error_handlers
 
 
-def test_create_app_requires_rest_chain():
-	with patch('rest.load_rest_config'):
-		with pytest.raises(ValueError, match='REST_CHAIN is required'):
-			create_app()
+def _write_rest_config(monkeypatch, tmp_path, contents):
+	config_path = tmp_path / 'app.config'
+	config_path.write_text(contents, encoding='utf8')
+	monkeypatch.setenv('EXPLORER_REST_SETTINGS', str(config_path))
 
 
-def test_rejects_unsupported_chain():
-	with patch('rest.load_rest_config', side_effect=lambda app: app.config.update(REST_CHAIN='symbol')):
-		with pytest.raises(ValueError, match='Unsupported REST_CHAIN "symbol". Supported values: nem'):
-			create_app()
+def test_create_app_requires_rest_chain(monkeypatch, tmp_path):
+	_write_rest_config(monkeypatch, tmp_path, '')
+
+	with pytest.raises(ValueError, match='REST_CHAIN is required'):
+		create_app()
 
 
-def test_registers_selected_chain():
-	facade = Mock(name='facade')
-	setup_facade = Mock(return_value=facade)
-	setup_routes = Mock()
+def test_rejects_unsupported_chain(monkeypatch, tmp_path):
+	_write_rest_config(monkeypatch, tmp_path, 'REST_CHAIN="symbol"\n')
 
-	with patch.dict('rest.REST_CHAIN_HANDLERS', {'nem': (setup_facade, setup_routes)}, clear=True):
-		with patch('rest.load_rest_config', side_effect=lambda app: app.config.update(REST_CHAIN='nem')):
-			app = create_app()
+	with pytest.raises(ValueError, match='Unsupported REST_CHAIN "symbol". Supported values: nem'):
+		create_app()
 
-	assert app is not None
-	setup_facade.assert_called_once_with(app)
-	setup_routes.assert_called_once_with(app, facade)
+
+def test_registers_selected_chain(monkeypatch, tmp_path):
+	def setup_test_facade(app):
+		return {'chain': app.config['REST_CHAIN']}
+
+	def setup_test_routes(app, test_api_facade):
+		@app.route('/api/test/status')
+		def api_test_status():
+			return jsonify({
+				'chain': test_api_facade['chain']
+			})
+
+	_write_rest_config(monkeypatch, tmp_path, 'REST_CHAIN="test"\n')
+	monkeypatch.setitem(rest.REST_CHAIN_HANDLERS, 'test', (setup_test_facade, setup_test_routes))
+
+	client = create_app().test_client()
+	response = client.get('/api/test/status')
+
+	assert 200 == response.status_code
+	assert {
+		'chain': 'test'
+	} == response.json
 
 
 def test_loads_envvar_config(monkeypatch, tmp_path):
-	config_path = tmp_path / 'app.config'
-	config_path.write_text('REST_CHAIN="nem"\n', encoding='utf8')
 	app = Flask(__name__)
-	monkeypatch.setenv('EXPLORER_REST_SETTINGS', str(config_path))
+	_write_rest_config(monkeypatch, tmp_path, 'REST_CHAIN="nem"\n')
 
 	load_rest_config(app)
 
