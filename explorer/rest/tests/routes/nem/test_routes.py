@@ -9,7 +9,7 @@ from symbollightapi.model.Exceptions import NodeException
 
 from rest import create_app
 
-from .test.DatabaseTestUtils import (
+from ...test.DatabaseTestUtils import (
 	ACCOUNT_STATISTIC_VIEW,
 	ACCOUNT_VIEWS,
 	BLOCK_VIEWS,

@@ -216,7 +216,7 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 
 	def test_can_seed_account_remark(self):
 		# Arrange:
-		account_remark_path = Path(__file__).resolve().parents[1] / 'resources' / 'test_remark.json'
+		account_remark_path = Path(__file__).resolve().parents[1] / 'resources' / 'nem' / 'test_remark.json'
 
 		with open(account_remark_path, 'rt', encoding='utf8') as seed_file:
 			account_remark = json.load(seed_file)
