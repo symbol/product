@@ -19,28 +19,28 @@ class NemDatabase(DatabaseConnection):
 		# Create indexes for accounts table
 		cursor.execute(
 			'''
-			CREATE INDEX IF NOT EXISTS idx_accounts_address
+			CREATE INDEX IF NOT EXISTS accounts_address_idx
 				ON accounts (address)
 			'''
 		)
 
 		cursor.execute(
 			'''
-			CREATE INDEX IF NOT EXISTS idx_accounts_balance
+			CREATE INDEX IF NOT EXISTS accounts_balance_idx
 				ON accounts(balance DESC);
 			'''
 		)
 
 		cursor.execute(
 			'''
-			CREATE INDEX IF NOT EXISTS idx_accounts_public_key
+			CREATE INDEX IF NOT EXISTS accounts_public_key_idx
 				ON accounts (public_key)
 			'''
 		)
 
 		cursor.execute(
 			'''
-			CREATE INDEX IF NOT EXISTS idx_accounts_mosaics_gin
+			CREATE INDEX IF NOT EXISTS accounts_mosaics_idx
 				ON accounts USING GIN (mosaics)
 			'''
 		)
@@ -48,13 +48,13 @@ class NemDatabase(DatabaseConnection):
 		# Create indexes for blocks table
 		cursor.execute(
 			'''
-			CREATE INDEX IF NOT EXISTS idx_blocks_height_desc ON blocks(height DESC);
+			CREATE INDEX IF NOT EXISTS blocks_height_idx ON blocks(height DESC);
 			'''
 		)
 
 		cursor.execute(
 			'''
-			CREATE INDEX IF NOT EXISTS idx_blocks_timestamp
+			CREATE INDEX IF NOT EXISTS blocks_timestamp_idx
 				ON blocks(timestamp)
 			'''
 		)
@@ -62,7 +62,7 @@ class NemDatabase(DatabaseConnection):
 		# Create indexes for namespaces table
 		cursor.execute(
 			'''
-			CREATE INDEX IF NOT EXISTS idx_namespaces_root_namespace
+			CREATE INDEX IF NOT EXISTS namespaces_root_namespace_idx
 				ON namespaces (root_namespace)
 			'''
 		)
@@ -70,7 +70,7 @@ class NemDatabase(DatabaseConnection):
 		# Create indexes for mosaics table
 		cursor.execute(
 			'''
-			CREATE INDEX IF NOT EXISTS idx_mosaic_name
+			CREATE INDEX IF NOT EXISTS mosaics_namespace_name_idx
 				ON mosaics (namespace_name)
 			'''
 		)
@@ -78,21 +78,21 @@ class NemDatabase(DatabaseConnection):
 		# Create indexes for transactions table
 		cursor.execute(
 			'''
-			CREATE INDEX IF NOT EXISTS idx_transactions_hash
+			CREATE INDEX IF NOT EXISTS transactions_transaction_hash_idx
 				ON transactions (transaction_hash)
 			'''
 		)
 
 		cursor.execute(
 			'''
-			CREATE INDEX IF NOT EXISTS idx_transaction_type
+			CREATE INDEX IF NOT EXISTS transactions_transaction_type_idx
 				ON transactions (transaction_type)
 			'''
 		)
 
 		cursor.execute(
 			'''
-			CREATE INDEX IF NOT EXISTS idx_transaction_height
+			CREATE INDEX IF NOT EXISTS transactions_height_is_inner_false_idx
 				ON transactions(height DESC)
 				WHERE is_inner = false
 			'''
@@ -100,21 +100,21 @@ class NemDatabase(DatabaseConnection):
 
 		cursor.execute(
 			'''
-			CREATE INDEX IF NOT EXISTS idx_tx_recipient
+			CREATE INDEX IF NOT EXISTS transactions_recipient_address_idx
 				ON transactions(recipient_address)
 			'''
 		)
 
 		cursor.execute(
 			'''
-			CREATE INDEX IF NOT EXISTS idx_tx_sender_address
+			CREATE INDEX IF NOT EXISTS transactions_sender_address_idx
 				ON transactions(sender_address)
 			'''
 		)
 
 		cursor.execute(
 			'''
-			CREATE INDEX IF NOT EXISTS idx_tx_is_inner
+			CREATE INDEX IF NOT EXISTS transactions_is_inner_idx
 				ON transactions(is_inner)
 			'''
 		)
@@ -122,14 +122,14 @@ class NemDatabase(DatabaseConnection):
 		# Create indexes for transactions_mosaic table
 		cursor.execute(
 			'''
-			CREATE INDEX IF NOT EXISTS idx_mosaic_tx_i
+			CREATE INDEX IF NOT EXISTS transactions_mosaic_transaction_id_idx
 				ON transactions_mosaic(transaction_id)
 			'''
 		)
 
 		cursor.execute(
 			'''
-			CREATE INDEX IF NOT EXISTS idx_mosaic_lookup
+			CREATE INDEX IF NOT EXISTS transactions_mosaic_namespace_name_idx
 				ON transactions_mosaic(namespace_name)
 			'''
 		)
@@ -145,20 +145,21 @@ class NemDatabase(DatabaseConnection):
 			CREATE TABLE IF NOT EXISTS accounts (
 				id serial PRIMARY KEY,
 				address bytea NOT NULL UNIQUE,
+				height bigint NOT NULL,
 				public_key bytea,
 				remote_address bytea,
-				importance decimal(20, 10) DEFAULT 0,
-				balance bigint DEFAULT 0,
-				vested_balance bigint DEFAULT 0,
-				mosaics jsonb DEFAULT '[]'::jsonb,
-				harvested_fees bigint DEFAULT 0,
-				harvested_blocks bigint DEFAULT 0,
-				remote_status varchar(12) DEFAULT NULL,
-				last_harvested_height bigint DEFAULT 0,
-				min_cosignatories int DEFAULT NULL,
-				cosignatory_of bytea[] DEFAULT NULL,
-				cosignatories bytea[] DEFAULT NULL,
-				updated_at timestamp DEFAULT CURRENT_TIMESTAMP
+				importance decimal(20, 10) NOT NULL,
+				balance bigint NOT NULL,
+				vested_balance bigint NOT NULL,
+				mosaics jsonb NOT NULL,
+				harvested_fees bigint NOT NULL DEFAULT 0,
+				harvested_blocks bigint NOT NULL,
+				remote_status varchar(12),
+				last_harvested_height bigint NOT NULL DEFAULT 0,
+				min_cosignatories int,
+				cosignatory_of bytea[],
+				cosignatories bytea[],
+				updated_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 			)
 			'''
 		)
@@ -170,14 +171,14 @@ class NemDatabase(DatabaseConnection):
 				id serial PRIMARY KEY,
 				height bigint NOT NULL UNIQUE,
 				timestamp timestamp NOT NULL,
-				total_fee bigint DEFAULT 0,
-				total_transactions int DEFAULT 0,
+				total_fee bigint NOT NULL,
+				total_transactions int NOT NULL,
 				difficulty bigint NOT NULL,
 				hash bytea NOT NULL,
 				beneficiary bytea NOT NULL,
 				signer bytea NOT NULL,
 				signature bytea NOT NULL,
-				size bigint DEFAULT 0
+				size bigint NOT NULL
 			)
 			'''
 		)
@@ -191,7 +192,7 @@ class NemDatabase(DatabaseConnection):
 				owner bytea NOT NULL,
 				registered_height bigint NOT NULL,
 				expiration_height bigint NOT NULL,
-				sub_namespaces VARCHAR(146)[] DEFAULT '{}'
+				sub_namespaces VARCHAR(146)[] NOT NULL DEFAULT '{}'
 			)
 			'''
 		)
@@ -203,14 +204,14 @@ class NemDatabase(DatabaseConnection):
 				id serial PRIMARY KEY,
 				root_namespace varchar(16) NOT NULL,
 				namespace_name varchar(146) NOT NULL UNIQUE,
-				description varchar(512),
+				description varchar(512) NOT NULL,
 				creator bytea NOT NULL,
 				registered_height bigint NOT NULL,
-				initial_supply bigint,
-				total_supply bigint,
+				initial_supply bigint NOT NULL,
+				total_supply bigint NOT NULL,
 				divisibility int NOT NULL,
-				supply_mutable boolean,
-				transferable boolean,
+				supply_mutable boolean NOT NULL,
+				transferable boolean NOT NULL,
 				levy_type int,
 				levy_namespace_name varchar(146),
 				levy_fee bigint,
@@ -230,11 +231,11 @@ class NemDatabase(DatabaseConnection):
 				sender_public_key bytea NOT NULL,
 				sender_address bytea NOT NULL,
 				recipient_address bytea,
-				fee bigint DEFAULT 0,
+				fee bigint NOT NULL,
 				timestamp timestamp NOT NULL,
 				deadline timestamp NOT NULL,
 				signature bytea,
-				is_inner boolean DEFAULT false,
+				is_inner boolean NOT NULL,
 				payload jsonb
 			)
 			'''
@@ -246,8 +247,8 @@ class NemDatabase(DatabaseConnection):
 			CREATE TABLE IF NOT EXISTS transactions_mosaic (
 				id serial PRIMARY KEY,
 				transaction_id int NOT NULL,
-				namespace_name varchar(146),
-				quantity bigint,
+				namespace_name varchar(146) NOT NULL,
+				quantity bigint NOT NULL,
 				FOREIGN KEY (transaction_id) REFERENCES transactions(id)
 				ON DELETE CASCADE
 			)
@@ -357,6 +358,7 @@ class NemDatabase(DatabaseConnection):
 			'''
 			INSERT INTO accounts (
 				address,
+				height,
 				public_key,
 				remote_address,
 				importance,
@@ -369,7 +371,7 @@ class NemDatabase(DatabaseConnection):
 				cosignatory_of,
 				cosignatories
 			)
-			VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+			VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
 			ON CONFLICT (address)
 			DO UPDATE SET
 				remote_address = EXCLUDED.remote_address,
@@ -385,6 +387,7 @@ class NemDatabase(DatabaseConnection):
 				updated_at = CURRENT_TIMESTAMP
 			''', (
 				account_info.address.bytes,
+				account_info.height,
 				account_info.public_key.bytes if account_info.public_key else None,
 				account_info.remote_address.bytes if account_info.remote_address else None,
 				account_info.importance,

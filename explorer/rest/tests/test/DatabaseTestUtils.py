@@ -38,6 +38,7 @@ Block = namedtuple(
 )
 Account = namedtuple('Account', [
 	'address',
+	'height',
 	'public_key',
 	'remote_address',
 	'importance',
@@ -127,6 +128,7 @@ BLOCKS = [
 ACCOUNTS = [
 	Account(
 		Address('NAGHXD63C4V6REWGXCVKJ2SBS3GUAXGTRQZQXPRO'),
+		1,
 		PublicKey('b88221939ac920484753c738fafda87e82ff04b5e370c9456d85a0f12c6a5cca'),
 		None,
 		0.123456,
@@ -140,6 +142,7 @@ ACCOUNTS = [
 		None),
 	Account(
 		Address('NBFWZ4IVRHEIBRCGHLYDS62FSFTBM3VDFA7E6LSQ'),
+		2,
 		PublicKey('a5f06d59b97aa40c82afb941a61fb6483bdb7491805cdb9dc47d92136983b9a5'),
 		None,
 		0.123456,
@@ -466,6 +469,7 @@ BLOCK_VIEWS = [
 ACCOUNT_VIEWS = [
 	AccountView(
 		address=str(ACCOUNTS[0].address),
+		height=ACCOUNTS[0].height,
 		public_key=str(ACCOUNTS[0].public_key) if ACCOUNTS[0].public_key else None,
 		remote_address=None,
 		importance=0.123456,
@@ -493,6 +497,7 @@ ACCOUNT_VIEWS = [
 	),
 	AccountView(
 		address=str(ACCOUNTS[1].address),
+		height=ACCOUNTS[1].height,
 		public_key=str(ACCOUNTS[1].public_key) if ACCOUNTS[1].public_key else None,
 		remote_address=None,
 		importance=0.123456,
@@ -851,21 +856,22 @@ def initialize_database(db_config, network_name):
 			CREATE TABLE IF NOT EXISTS accounts (
 				id serial PRIMARY KEY,
 				address bytea NOT NULL UNIQUE,
+				height bigint NOT NULL,
 				public_key bytea,
 				remote_address bytea,
-				importance decimal(20, 10) DEFAULT 0,
-				balance bigint DEFAULT 0,
-				vested_balance bigint DEFAULT 0,
-				mosaics jsonb DEFAULT '[]'::jsonb,
-				harvested_fees bigint DEFAULT 0,
-				harvested_blocks bigint DEFAULT 0,
-				status varchar(8) DEFAULT NULL,
-				remote_status varchar(12) DEFAULT NULL,
-				last_harvested_height bigint DEFAULT 0,
-				min_cosignatories int DEFAULT NULL,
-				cosignatory_of bytea[] DEFAULT NULL,
-				cosignatories bytea[] DEFAULT NULL,
-				updated_at timestamp DEFAULT CURRENT_TIMESTAMP
+				importance decimal(20, 10) NOT NULL,
+				balance bigint NOT NULL,
+				vested_balance bigint NOT NULL,
+				mosaics jsonb NOT NULL,
+				harvested_fees bigint NOT NULL DEFAULT 0,
+				harvested_blocks bigint NOT NULL,
+				status varchar(8),
+				remote_status varchar(12),
+				last_harvested_height bigint NOT NULL DEFAULT 0,
+				min_cosignatories int,
+				cosignatory_of bytea[],
+				cosignatories bytea[],
+				updated_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 			)
 			'''
 		)
@@ -875,14 +881,14 @@ def initialize_database(db_config, network_name):
 				id serial NOT NULL PRIMARY KEY,
 				height bigint NOT NULL,
 				timestamp timestamp NOT NULL,
-				total_fee bigint DEFAULT 0,
-				total_transactions int DEFAULT 0,
+				total_fee bigint NOT NULL,
+				total_transactions int NOT NULL,
 				difficulty bigInt NOT NULL,
 				hash bytea NOT NULL,
 				beneficiary bytea NOT NULL,
 				signer bytea NOT NULL,
 				signature bytea NOT NULL,
-				size bigint DEFAULT 0
+				size bigint NOT NULL
 		)
 		''')
 
@@ -894,7 +900,7 @@ def initialize_database(db_config, network_name):
 				owner bytea NOT NULL,
 				registered_height bigint NOT NULL,
 				expiration_height bigint NOT NULL,
-				sub_namespaces VARCHAR(146)[] DEFAULT '{}'
+				sub_namespaces VARCHAR(146)[] NOT NULL DEFAULT '{}'
 			)
 			'''
 		)
@@ -905,14 +911,14 @@ def initialize_database(db_config, network_name):
 				id serial PRIMARY KEY,
 				root_namespace varchar(16) NOT NULL,
 				namespace_name varchar(146) NOT NULL UNIQUE,
-				description varchar(512),
+				description varchar(512) NOT NULL,
 				creator bytea NOT NULL,
 				registered_height bigint NOT NULL,
-				initial_supply bigint,
-				total_supply bigint,
+				initial_supply bigint NOT NULL,
+				total_supply bigint NOT NULL,
 				divisibility int NOT NULL,
-				supply_mutable boolean,
-				transferable boolean,
+				supply_mutable boolean NOT NULL,
+				transferable boolean NOT NULL,
 				levy_type int,
 				levy_namespace_name varchar(146),
 				levy_fee bigint,
@@ -924,8 +930,7 @@ def initialize_database(db_config, network_name):
 		cursor.execute(
 			'''
 			CREATE TABLE IF NOT EXISTS account_remark (
-				id serial PRIMARY KEY,
-				address bytea UNIQUE,
+				address bytea PRIMARY KEY,
 				remark varchar NOT NULL
 			)
 			'''
@@ -941,11 +946,11 @@ def initialize_database(db_config, network_name):
 				sender_public_key bytea NOT NULL,
 				sender_address bytea NOT NULL,
 				recipient_address bytea,
-				fee bigint DEFAULT 0,
+				fee bigint NOT NULL,
 				timestamp timestamp NOT NULL,
 				deadline timestamp NOT NULL,
 				signature bytea,
-				is_inner boolean DEFAULT false,
+				is_inner boolean NOT NULL,
 				payload jsonb
 			)
 			'''
@@ -956,8 +961,8 @@ def initialize_database(db_config, network_name):
 			CREATE TABLE IF NOT EXISTS transactions_mosaic (
 				id serial PRIMARY KEY,
 				transaction_id int NOT NULL,
-				namespace_name varchar(146),
-				quantity numeric
+				namespace_name varchar(146) NOT NULL,
+				quantity bigint NOT NULL
 			)
 			'''
 		)
@@ -987,6 +992,7 @@ def initialize_database(db_config, network_name):
 				'''
 				INSERT INTO accounts (
 					address,
+					height,
 					public_key,
 					remote_address,
 					importance,
@@ -999,9 +1005,10 @@ def initialize_database(db_config, network_name):
 					cosignatory_of,
 					cosignatories
 				)
-				VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+				VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
 				''', (
 					account.address.bytes,
+					account.height,
 					account.public_key.bytes if account.public_key else None,
 					account.remote_address.bytes if account.remote_address else None,
 					account.importance,
