@@ -814,6 +814,12 @@ def test_api_transactions_applies_sender_address(client):  # pylint: disable=red
 	], senderAddress='NBNR6XNZQIGQVXII6L3FPJTUGF6NFGLZHBN52R3V')
 
 
+def test_api_transactions_applies_sender_public_key(client):  # pylint: disable=redefined-outer-name, invalid-name
+	_assert_get_api_nem_transactions(client, 200, [
+		TRANSACTIONS_VIEWS[2].to_dict()
+	], senderPublicKey='9ca54cd15edf88a9df9173375d4a0d706f7a9ddcf57d7547dff8110ddd2adeb9')
+
+
 def test_api_transactions_applies_recipient_address(client):  # pylint: disable=redefined-outer-name, invalid-name
 	_assert_get_api_nem_transactions(client, 200, [
 		TRANSACTIONS_VIEWS[5].to_dict(),
