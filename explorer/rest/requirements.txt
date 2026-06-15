@@ -5,6 +5,6 @@ psycopg2-binary==2.9.12
 symbol-sdk-python==3.3.1
 zenlog==1.1
 Path==17.1.1
-flask_cors==6.0.3
+flask_cors==6.0.5
 symbol-lightapi~=0.0.9
 aiolimiter~=1.2.1
