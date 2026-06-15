@@ -629,11 +629,10 @@ describe('TransferModule', () => {
 			);
 		});
 
-		it('attempts to decrypt plain incoming message (current behavior)', async () => {
+		it('returns the raw payload for a plain message without decrypting', async () => {
 			// Arrange:
 			const password = 'ignored';
 			const transaction = createIncomingPlainTransfer();
-			const expectedResult = `DEC(${transaction.message.payload})-with-${transaction.signerPublicKey}`;
 
 			// Act & Assert:
 			await runGetDecryptedMessageTextTest(
@@ -642,13 +641,8 @@ describe('TransferModule', () => {
 					password
 				},
 				{
-					result: expectedResult,
-					shouldFetchRecipientInfo: false,
-					decryptCalledWith: {
-						payload: transaction.message.payload,
-						publicKey: transaction.signerPublicKey,
-						password
-					}
+					result: transaction.message.payload,
+					shouldFetchRecipientInfo: false
 				}
 			);
 		});

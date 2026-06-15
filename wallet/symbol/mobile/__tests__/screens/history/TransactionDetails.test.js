@@ -38,6 +38,8 @@ const TRANSACTION_TIMESTAMP = 1684265310994;
 const TRANSFER_XYM_AMOUNT = '1234';
 const TRANSFER_CUSTOM_TOKEN_AMOUNT = '56.78';
 const TRANSFER_MESSAGE_TEXT = 'Test transfer message';
+const ENCRYPTED_MESSAGE_PAYLOAD = '0100AABBCCDDEEFF';
+const DECRYPTED_MESSAGE_TEXT = 'Secret decrypted message';
 
 // Screen Text
 
@@ -138,6 +140,17 @@ const transferTransaction = TransferTransactionFixtureBuilder
 	.setRecipientAddress(recipientAccount.address)
 	.setMosaics([tokenXym, tokenCustom])
 	.setPlainMessage(TRANSFER_MESSAGE_TEXT)
+	.setAmount(`-${TRANSFER_XYM_AMOUNT}`)
+	.build();
+
+const encryptedTransferTransaction = TransferTransactionFixtureBuilder
+	.createDefault(CHAIN_NAME, NETWORK_IDENTIFIER)
+	.setHash(TRANSACTION_HASH)
+	.setTimestamp(TRANSACTION_TIMESTAMP)
+	.setSigner(currentAccount)
+	.setRecipientAddress(recipientAccount.address)
+	.setMosaics([tokenXym])
+	.setEncryptedMessage(ENCRYPTED_MESSAGE_PAYLOAD)
 	.setAmount(`-${TRANSFER_XYM_AMOUNT}`)
 	.build();
 
@@ -330,6 +343,54 @@ describe('screens/history/TransactionDetails', () => {
 
 			// Assert:
 			screenTester.expectText(expectedTexts, true);
+		});
+	});
+
+	describe('encrypted message', () => {
+		it('decrypts and renders the message text for an encrypted transfer', async () => {
+			// Arrange:
+			const getDecryptedMessageText = jest.fn().mockResolvedValue(DECRYPTED_MESSAGE_TEXT);
+			setupMocks({
+				modules: {
+					addressBook: addressBookWithContacts,
+					transfer: { getDecryptedMessageText }
+				},
+				fetchAccountTransaction: jest.fn().mockResolvedValue(encryptedTransferTransaction)
+			});
+			const props = createRouteProps(encryptedTransferTransaction);
+
+			// Act:
+			const screenTester = new ScreenTester(TransactionDetails, props);
+			await screenTester.waitForTimer();
+			await screenTester.waitForTimer();
+
+			// Assert:
+			expect(getDecryptedMessageText).toHaveBeenCalledWith(encryptedTransferTransaction);
+			screenTester.expectText([DECRYPTED_MESSAGE_TEXT], true);
+			screenTester.notExpectText([SCREEN_TEXT.textMessageEncryptedLabel]);
+		});
+
+		it('keeps the encrypted label and shows no text when decryption fails', async () => {
+			// Arrange:
+			const getDecryptedMessageText = jest.fn().mockRejectedValue(new Error('decrypt failed'));
+			setupMocks({
+				modules: {
+					addressBook: addressBookWithContacts,
+					transfer: { getDecryptedMessageText }
+				},
+				fetchAccountTransaction: jest.fn().mockResolvedValue(encryptedTransferTransaction)
+			});
+			const props = createRouteProps(encryptedTransferTransaction);
+
+			// Act:
+			const screenTester = new ScreenTester(TransactionDetails, props);
+			await screenTester.waitForTimer();
+			await screenTester.waitForTimer();
+
+			// Assert:
+			expect(getDecryptedMessageText).toHaveBeenCalled();
+			screenTester.expectText([SCREEN_TEXT.textMessageEncryptedLabel], true);
+			screenTester.notExpectText([DECRYPTED_MESSAGE_TEXT]);
 		});
 	});
 
