@@ -2,12 +2,12 @@
 export const DocumentHead = () => (
 	<>
 		<meta charSet="utf-8" />
-		<link rel="icon" href="/favicon.ico" />
+		<link rel="icon" href="/nem/favicon.ico" />
 		<meta name="format-detection" content="telephone=no" />
 		<meta name="theme-color" content="#F5F9FB" />
 		<meta name="description" content="NEM Block Explorer" />
-		<link rel="apple-touch-icon" href="/logo192.png" />
-		<link rel="manifest" href="/manifest.json" />
+		<link rel="apple-touch-icon" href="/nem/images/logo192.png" />
+		<link rel="manifest" href="/nem/manifest.json" />
 		<link rel="preconnect" href="https://fonts.googleapis.com" />
 		<link
 			// eslint-disable-next-line max-len

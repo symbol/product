@@ -1,0 +1,20 @@
+{
+	"short_name": "Symbol",
+	"name": "Symbol",
+	"icons": [
+		{
+			"src": "/symbol/images/icon-symbol-192.png",
+			"type": "image/png",
+			"sizes": "192x192"
+		},
+		{
+			"src": "/symbol/images/icon-symbol-512.png",
+			"type": "image/png",
+			"sizes": "512x512"
+		}
+	],
+	"start_url": ".",
+	"display": "standalone",
+	"theme_color": "#1B0A29",
+	"background_color": "#ffffff"
+}
