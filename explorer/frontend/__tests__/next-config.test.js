@@ -119,6 +119,26 @@ describe('next.config', () => {
 		expect(result).not.toContain('color: #eef5f9;');
 	});
 
+	it('resolves NEM SCSS variables after shared variables are loaded', () => {
+		// Arrange:
+		const nextConfig = loadNextConfig({ NEXT_PUBLIC_PLATFORM: 'nem' });
+		const sourceScss = [
+			'@import "./variables";',
+			'.test { color: $color-background-main; font-family: $font-family-body; }'
+		].join('\n');
+		const scss = nextConfig.sassOptions.additionalData(sourceScss, {
+			resourcePath: '/workspace/styles/globals.scss'
+		});
+
+		// Act:
+		const result = compileScss(scss);
+
+		// Assert:
+		expect(result).toContain('color: #eef5f9;');
+		expect(result).toContain('font-family: "Nunito Sans", sans-serif;');
+		expect(result).not.toContain('color: #fff;');
+	});
+
 	it('does not emit duplicate runtime Symbol CSS variable overrides from globals', () => {
 		// Arrange:
 		const nextConfig = loadNextConfig({ NEXT_PUBLIC_PLATFORM: 'symbol' });
@@ -153,6 +173,23 @@ describe('next.config', () => {
 		expect(result).toContain('font-family: "Protipo-Regular", sans-serif;');
 		expect(result).not.toContain('color: #eef5f9;');
 		expect(result).not.toContain('font-family: Nunito Sans, sans-serif;');
+	});
+
+	it('keeps NEM SCSS variables when the variant import is prepended before shared variables', () => {
+		// Arrange:
+		const scss = [
+			'@import "variants/nem/styles/variables.scss";',
+			'@import "./variables";',
+			'.test { color: $color-background-main; font-family: $font-family-body; }'
+		].join('\n');
+
+		// Act:
+		const result = compileScss(scss);
+
+		// Assert:
+		expect(result).toContain('color: #eef5f9;');
+		expect(result).toContain('font-family: "Nunito Sans", sans-serif;');
+		expect(result).not.toContain('color: #fff;');
 	});
 
 	it('prepends variant variables when a shared SCSS file does not import shared variables', () => {

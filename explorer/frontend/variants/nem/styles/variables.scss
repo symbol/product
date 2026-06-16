@@ -1,1 +1,50 @@
-// NEM uses the shared default theme from styles/variables.scss.
+// Colors
+$color-background-main: #eef5f9;
+$color-background-header: #f5f9fbee;
+$color-background-navigation: #f5f9fbee;
+$color-border-navigation: #eef5f9;
+$color-background-footer: #f5f9fbee;
+$color-background-mosaic: rgba(25, 41, 97, 5%);
+$color-primary: #50b9ad;
+$color-primary-light: rgba(79, 185, 172, 12%);
+$color-secondary: #fab700;
+$color-text-body: #0b0118;
+$color-text-link: #0d155c;
+$color-text-link-hover: #0d155c;
+$color-text-textbox-placeholder: #a8a6a6;
+$color-tab-active: #0b0118;
+$color-tab-inactive: #a8a6a6;
+$color-filter-inactive: #50b9ad;
+$color-warning: #fab700;
+$color-warning-light: #FFE7AE;
+$color-amount-incoming: rgba(79, 185, 172, 12%);
+$color-textbox-border: #50b9ad;
+$color-button-bg: #50b9ad;
+$color-block-cube-front: #50b9ad;
+$color-block-cube-top: #038c7c;
+$color-block-cube-right: #016a5e;
+$color-block-next-cube-front: #d1a11f;
+$color-block-next-cube-top: #a47e13;
+$color-block-next-cube-right: #6d5208;
+$font-family-body: 'Nunito Sans', sans-serif;
+$font-family-heading: 'Abhaya Libre', 'PT Serif', serif;
+$font-family-monospace: 'Courier Prime', monospace;
+$layout-background-image: url('/images/bg-tree-left.png'), url('/images/bg-tree-right.png');
+$layout-background-position: top left, bottom right;
+$layout-background-size: 50.41rem 50.33rem, 24.25rem 49.92rem;
+
+// Typography
+$font-body: 400 1rem / 133.33% $font-family-body;
+$font-body-bold: 700 1rem / 133.33% $font-family-body;
+$font-body-monospace: 400 1rem / 133.33% $font-family-monospace;
+$font-h1: 400 / 4.66rem $font-family-heading;
+$font-h2: 400 3.25rem / 4rem $font-family-heading;
+$font-h3: 400 2.66rem / 3.33rem $font-family-heading;
+$font-h4: 700 1.5rem / 1.7rem $font-family-body;
+$font-title: 700 1rem / 133.33% $font-family-body;
+$font-highlighted: 700 2.08rem / 2rem $font-family-body;
+$font-tab: 700 1rem / 133.33% $font-family-body;
+$font-nav: 700 1rem / 133.33% $font-family-body;
+$font-input-placeholder: 700 1rem / 133.33% $font-family-body;
+$font-input-text: 400 1rem / 133.33% $font-family-body;
+$font-button: 700 1rem / 133.33% $font-family-body;
