@@ -57,8 +57,7 @@ describe('next.config', () => {
 		})).toThrow('NEXT_PUBLIC_PLATFORM or PLATFORM must be set to either "nem" or "symbol".');
 		expect(() => loadNextConfig({ NEXT_PUBLIC_PLATFORM: 'catapult' }).sassOptions.additionalData('$color: red;', {
 			resourcePath: '/workspace/styles/globals.scss'
-		}))
-			.toThrow('NEXT_PUBLIC_PLATFORM or PLATFORM must be set to either "nem" or "symbol".');
+		})).toThrow('NEXT_PUBLIC_PLATFORM or PLATFORM must be set to either "nem" or "symbol".');
 	});
 
 	it('configures NEM image paths with common and NEM asset locations', () => {

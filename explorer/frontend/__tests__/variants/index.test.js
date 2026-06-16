@@ -29,23 +29,29 @@ describe('variants', () => {
 	it('loads NEM variant when requested', () => {
 		// Act:
 		const { variant, api, pageConfig, DocumentHead } = loadVariant('nem');
+		const nemAPI = require('@/variants/nem/api');
+		const { DocumentHead: NemDocumentHead } = require('@/variants/nem/DocumentHead');
+		const { pageConfig: nemPageConfig } = require('@/variants/nem/config');
 
 		// Assert:
 		expect(variant.platform).toBe('nem');
-		expect(api.fetchBlockPage).toEqual(expect.any(Function));
-		expect(pageConfig.home.showSupernodeCount).toBe(true);
-		expect(DocumentHead).toEqual(expect.any(Function));
+		expect(api).toBe(nemAPI);
+		expect(pageConfig).toBe(nemPageConfig);
+		expect(DocumentHead).toBe(NemDocumentHead);
 	});
 
 	it('loads Symbol variant when requested', () => {
 		// Act:
 		const { variant, api, pageConfig, DocumentHead } = loadVariant('symbol');
+		const symbolAPI = require('@/variants/symbol/api');
+		const { DocumentHead: SymbolDocumentHead } = require('@/variants/symbol/DocumentHead');
+		const { pageConfig: symbolPageConfig } = require('@/variants/symbol/config');
 
 		// Assert:
 		expect(variant.platform).toBe('symbol');
-		expect(api.fetchBlockPage).toEqual(expect.any(Function));
-		expect(pageConfig.home.showSupernodeCount).toBe(false);
-		expect(DocumentHead).toEqual(expect.any(Function));
+		expect(api).toBe(symbolAPI);
+		expect(pageConfig).toBe(symbolPageConfig);
+		expect(DocumentHead).toBe(SymbolDocumentHead);
 	});
 
 	it('dispatches API calls through the selected variant module', async () => {
