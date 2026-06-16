@@ -16,22 +16,24 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-ARG PLATFORM=nem
+ARG PLATFORM
 ENV NEXT_PUBLIC_PLATFORM=$PLATFORM
 ENV PLATFORM=$PLATFORM
 ENV NEXT_TELEMETRY_DISABLED 1
 
-RUN npm run build
+RUN test -n "$PLATFORM" && npm run build
 
 # Production image, copy all the files and run next
 FROM base AS runner
 WORKDIR /app
 
-ARG PLATFORM=nem
+ARG PLATFORM
 ENV NODE_ENV production
 ENV NEXT_PUBLIC_PLATFORM=$PLATFORM
 ENV PLATFORM=$PLATFORM
 ENV NEXT_TELEMETRY_DISABLED 1
+
+RUN test -n "$PLATFORM"
 
 # Create 'nodejs' group and 'nextjs' user before setting permissions
 RUN addgroup --system --gid 1001 nodejs
