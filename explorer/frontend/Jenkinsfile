@@ -3,6 +3,7 @@ defaultCiPipeline {
 	instanceSize = 'medium'
 
 	environment = 'javascript'
+	dockerArgs = '-e FRONTEND_BUILD_PLATFORMS=nem,symbol'
 
 	packageId = 'explorer-frontend'
 
