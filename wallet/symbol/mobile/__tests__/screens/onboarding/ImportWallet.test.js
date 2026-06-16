@@ -1,3 +1,4 @@
+import { NetworkIdentifier } from '@/app/constants';
 import { ImportWallet } from '@/app/screens/onboarding/ImportWallet';
 import * as optinModule from '@/app/screens/onboarding/utils/optin';
 import { mnemonic } from '__fixtures__/local/wallet';
@@ -27,6 +28,12 @@ jest.mock('wallet-common-symbol', () => {
 
 const TEST_MNEMONIC = mnemonic;
 const DEFAULT_ACCOUNT_NAME = 's_importWallet_defaultAccountName';
+const OPT_IN_ACCOUNT_NAME = 'Opt-in Account';
+
+const optInAccount = {
+	publicKey: 'A5F900591244C3F0054F5AB0684D351296D695CDCD6526189913D7C5D76C449E',
+	privateKey: 'E8F32E723DECF4051AEFAC8E2C93C9C5B214313817CDB01A1494B917C8436B35'
+};
 
 const SCREEN_TEXT = {
 	textScreenTitle: 's_importWallet_title',
@@ -73,6 +80,36 @@ describe('screens/onboarding/ImportWallet', () => {
 			mnemonic: TEST_MNEMONIC,
 			name: accountName,
 			accountPerNetworkCount: 10
+		});
+		expect(walletControllerMock.addExternalAccount).not.toHaveBeenCalled();
+	});
+
+	it('adds the opt-in account as an external account when the mnemonic is in the opt-in list', async () => {
+		// Arrange:
+		jest.spyOn(optinModule, 'getOptinAccountFromMnemonic').mockResolvedValue(optInAccount);
+		mockPasscode();
+		const walletControllerMock = mockWalletController();
+		const buttonNextText = SCREEN_TEXT.buttonNext;
+		const mnemonicInputLabel = SCREEN_TEXT.inputMnemonicLabel;
+		const accountName = DEFAULT_ACCOUNT_NAME;
+		const screenTester = new ScreenTester(ImportWallet);
+
+		// Act:
+		screenTester.inputText(mnemonicInputLabel, TEST_MNEMONIC);
+		screenTester.pressButton(buttonNextText);
+		await screenTester.waitForTimer();
+		await screenTester.waitForTimer();
+
+		// Assert:
+		expect(walletControllerMock.saveMnemonicAndGenerateAccounts).toHaveBeenCalledWith({
+			mnemonic: TEST_MNEMONIC,
+			name: accountName,
+			accountPerNetworkCount: 10
+		});
+		expect(walletControllerMock.addExternalAccount).toHaveBeenCalledWith({
+			privateKey: optInAccount.privateKey,
+			name: OPT_IN_ACCOUNT_NAME,
+			networkIdentifier: NetworkIdentifier.MAIN_NET
 		});
 	});
 

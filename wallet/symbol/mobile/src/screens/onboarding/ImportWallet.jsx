@@ -1,6 +1,6 @@
 import { getOptinAccountFromMnemonic } from './utils/optin';
 import { Button, ButtonClose, FlexContainer, PasscodeView, Screen, Spacer, Stack, StyledText, SymbolLogo } from '@/app/components';
-import { MAX_SEED_ACCOUNTS_PER_NETWORK } from '@/app/constants';
+import { MAX_SEED_ACCOUNTS_PER_NETWORK, NetworkIdentifier } from '@/app/constants';
 import { useAsyncManager, usePasscode, useWalletController } from '@/app/hooks';
 import { $t } from '@/app/localization';
 import { Router } from '@/app/router/Router';
@@ -29,15 +29,15 @@ export const ImportWallet = () => {
 
 	// Save mnemonic in the wallet
 	const saveMnemonicManager = useAsyncManager({
-		callback: async () => {
+		callback: async optInAccount => {
 			await walletController.saveMnemonicAndGenerateAccounts({
 				mnemonic: mnemonic.trim(),
 				name: accountName,
 				accountPerNetworkCount: MAX_SEED_ACCOUNTS_PER_NETWORK
 			});
-			if (optinManager.data) {
+			if (optInAccount) {
 				await walletController.addExternalAccount({
-					privateKey: optinManager.data.privateKey,
+					privateKey: optInAccount.privateKey,
 					name: 'Opt-in Account',
 					networkIdentifier: NetworkIdentifier.MAIN_NET
 				});
@@ -51,10 +51,10 @@ export const ImportWallet = () => {
 	// Check if the mnemonic corresponds to an opt-in account
 	const optinManager = useAsyncManager({
 		callback: () => getOptinAccountFromMnemonic(mnemonic),
-		onSuccess: () => {
+		onSuccess: optInAccount => {
 			setLoadingStep(4);
 			setTimeout(() => {
-				saveMnemonicManager.call();
+				saveMnemonicManager.call(optInAccount);
 			}, 500);
 		}
 	});
