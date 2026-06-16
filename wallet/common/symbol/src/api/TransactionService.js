@@ -126,6 +126,8 @@ export class TransactionService {
 				signedTransactionBundle.transactions,
 				TransactionAnnounceGroup.PARTIAL
 			);
+
+			return;
 		}
 
 		await Promise.all(signedTransactionBundle.transactions.map(signedTransaction =>
