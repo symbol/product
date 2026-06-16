@@ -5,23 +5,23 @@ let mockPathname = '/blocks';
 let mockUseStorage = jest.fn((key, initialValue) => [initialValue, jest.fn()]);
 let mockUseToggle = jest.fn(initialValue => [initialValue, jest.fn()]);
 
+const mockFooterConfig = {
+	SOCIAL_URL_GITHUB: 'https://github.com/symbol',
+	SOCIAL_URL_DISCORD: 'https://discord.example',
+	SOCIAL_URL_TWITTER: 'https://twitter.example',
+	FOOTER_URL_TECHNICAL_REFERENCE: 'https://docs.example/tech',
+	FOOTER_URL_DOCS: 'https://docs.example',
+	FOOTER_URL_FAUCET: 'https://faucet.example',
+	FOOTER_URL_SUPERNODE_PROGRAM: 'https://supernode.example'
+};
+const mockConfig = {
+	...jest.requireActual('@/variants/symbol/config').config,
+	...mockFooterConfig
+};
+
 jest.mock('@/config', () => ({
 	__esModule: true,
-	default: {
-		HEADER_LOGO_SRC: '/symbol/images/logo-symbol.png',
-		HEADER_LOGO_ALT: 'Symbol',
-		HEADER_LOGO_WIDTH: '10rem',
-		HEADER_LOGO_HEIGHT: '2.56rem',
-		FOOTER_LOGO_SRC: '/symbol/images/logo-symbol.png',
-		FOOTER_LOGO_ALT: 'Symbol',
-		SOCIAL_URL_GITHUB: 'https://github.com/symbol',
-		SOCIAL_URL_DISCORD: 'https://discord.example',
-		SOCIAL_URL_TWITTER: 'https://twitter.example',
-		FOOTER_URL_TECHNICAL_REFERENCE: 'https://docs.example/tech',
-		FOOTER_URL_DOCS: 'https://docs.example',
-		FOOTER_URL_FAUCET: 'https://faucet.example',
-		FOOTER_URL_SUPERNODE_PROGRAM: 'https://supernode.example'
-	}
+	default: mockConfig
 }));
 
 jest.mock('next/image', () => {
@@ -156,10 +156,10 @@ describe('branding', () => {
 		const { container } = render(<Header />);
 
 		// Assert:
-		expect(screen.getByAltText('Symbol')).toHaveAttribute('src', '/symbol/images/logo-symbol.png');
+		expect(screen.getByAltText(mockConfig.HEADER_LOGO_ALT)).toHaveAttribute('src', mockConfig.HEADER_LOGO_SRC);
 		expect(container.querySelector('header > div')).toHaveStyle({
-			width: '10rem',
-			height: '2.56rem'
+			width: mockConfig.HEADER_LOGO_WIDTH,
+			height: mockConfig.HEADER_LOGO_HEIGHT
 		});
 	});
 
@@ -171,7 +171,7 @@ describe('branding', () => {
 		render(<Footer />);
 
 		// Assert:
-		expect(screen.getByAltText('Symbol')).toHaveAttribute('src', '/symbol/images/logo-symbol.png');
+		expect(screen.getByAltText(mockConfig.FOOTER_LOGO_ALT)).toHaveAttribute('src', mockConfig.FOOTER_LOGO_SRC);
 	});
 
 	it('renders full footer links with the Symbol logo on the home page', () => {
@@ -183,14 +183,20 @@ describe('branding', () => {
 		render(<Footer />);
 
 		// Assert:
-		expect(screen.getByAltText('Symbol')).toHaveAttribute('src', '/symbol/images/logo-symbol.png');
-		expect(screen.getByRole('link', { name: 'footer_link_techRef' })).toHaveAttribute('href', 'https://docs.example/tech');
-		expect(screen.getByRole('link', { name: 'footer_link_docs' })).toHaveAttribute('href', 'https://docs.example');
-		expect(screen.getByRole('link', { name: 'footer_link_faucet' })).toHaveAttribute('href', 'https://faucet.example');
-		expect(screen.getByRole('link', { name: 'footer_link_supernode' })).toHaveAttribute('href', 'https://supernode.example');
-		expect(screen.getByRole('link', { name: 'GitHub' })).toHaveAttribute('href', 'https://github.com/symbol');
-		expect(screen.getByRole('link', { name: 'Discord' })).toHaveAttribute('href', 'https://discord.example');
-		expect(screen.getByRole('link', { name: 'Twitter' })).toHaveAttribute('href', 'https://twitter.example');
+		expect(screen.getByAltText(mockConfig.FOOTER_LOGO_ALT)).toHaveAttribute('src', mockConfig.FOOTER_LOGO_SRC);
+		expect(screen.getByRole('link', { name: 'footer_link_techRef' })).toHaveAttribute(
+			'href',
+			mockConfig.FOOTER_URL_TECHNICAL_REFERENCE
+		);
+		expect(screen.getByRole('link', { name: 'footer_link_docs' })).toHaveAttribute('href', mockConfig.FOOTER_URL_DOCS);
+		expect(screen.getByRole('link', { name: 'footer_link_faucet' })).toHaveAttribute('href', mockConfig.FOOTER_URL_FAUCET);
+		expect(screen.getByRole('link', { name: 'footer_link_supernode' })).toHaveAttribute(
+			'href',
+			mockConfig.FOOTER_URL_SUPERNODE_PROGRAM
+		);
+		expect(screen.getByRole('link', { name: 'GitHub' })).toHaveAttribute('href', mockConfig.SOCIAL_URL_GITHUB);
+		expect(screen.getByRole('link', { name: 'Discord' })).toHaveAttribute('href', mockConfig.SOCIAL_URL_DISCORD);
+		expect(screen.getByRole('link', { name: 'Twitter' })).toHaveAttribute('href', mockConfig.SOCIAL_URL_TWITTER);
 	});
 
 	it('renders profile controls when the header profile modal is open', () => {
