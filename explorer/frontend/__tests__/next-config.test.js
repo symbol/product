@@ -1,4 +1,5 @@
 const { spawnSync } = require('child_process');
+const fs = require('fs');
 const path = require('path');
 
 jest.mock('@next/env', () => ({
@@ -116,6 +117,24 @@ describe('next.config', () => {
 		// Assert:
 		expect(result).toContain('color: #1b0a29;');
 		expect(result).not.toContain('color: #eef5f9;');
+	});
+
+	it('does not emit duplicate runtime Symbol CSS variable overrides from globals', () => {
+		// Arrange:
+		const nextConfig = loadNextConfig({ NEXT_PUBLIC_PLATFORM: 'symbol' });
+		const globalsScss = fs.readFileSync(path.resolve(__dirname, '../styles/globals.scss'), 'utf8');
+		const scss = nextConfig.sassOptions.additionalData(globalsScss, {
+			resourcePath: '/workspace/styles/globals.scss'
+		});
+
+		// Act:
+		const result = compileScss(scss);
+
+		// Assert:
+		expect(result).toContain('background-color: #1b0a29;');
+		expect(result).not.toContain('html[data-platform=symbol]');
+		expect(result).not.toContain('--color-background-main');
+		expect(result).not.toContain('--font-family-body');
 	});
 
 	it('keeps Symbol SCSS variables when the variant import is prepended before shared variables', () => {
