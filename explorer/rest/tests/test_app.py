@@ -4,6 +4,7 @@ import pytest
 from flask import Flask, abort, jsonify
 
 from rest import create_app, load_rest_config, setup_error_handlers
+from rest.routes.symbol import setup_symbol_routes
 
 
 def _write_rest_config(config_path, contents):
@@ -40,14 +41,14 @@ def test_create_app_requires_rest_chain(rest_config_path):
 
 def test_rejects_unsupported_chain(rest_config_path):
 	# Arrange:
-	_write_rest_config(rest_config_path, 'REST_CHAIN="symbol"\n')
+	_write_rest_config(rest_config_path, 'REST_CHAIN="unknown"\n')
 
 	# Act:
 	with pytest.raises(ValueError) as exception_info:
 		create_app()
 
 	# Assert:
-	assert 'Unsupported REST_CHAIN "symbol". Supported values: nem' == str(exception_info.value)
+	assert 'Unsupported REST_CHAIN "unknown". Supported values: nem, symbol' == str(exception_info.value)
 
 
 def test_registers_selected_chain(rest_config_path):
@@ -117,3 +118,63 @@ def test_error_handlers_json():
 		'message': 'invalid input',
 		'status': 400
 	} == bad_request_response.json
+
+
+def _create_test_chain_handlers():
+	def setup_nem_test_facade(_):
+		return {}
+
+	def setup_nem_test_routes(app, _):
+		@app.route('/api/nem/test')
+		def api_nem_test():
+			return jsonify({'chain': 'nem'})
+
+	def setup_symbol_test_facade(_):
+		return {}
+
+	def setup_symbol_test_routes(app, _):
+		@app.route('/api/symbol/test')
+		def api_symbol_test():
+			return jsonify({'chain': 'symbol'})
+
+	return {
+		'nem': (setup_nem_test_facade, setup_nem_test_routes),
+		'symbol': (setup_symbol_test_facade, setup_symbol_test_routes)
+	}
+
+
+def test_symbol_chain_routes_only(rest_config_path):
+	_write_rest_config(rest_config_path, 'REST_CHAIN="symbol"\n')
+
+	client = create_app(rest_chain_handlers=_create_test_chain_handlers()).test_client()
+
+	assert 200 == client.get('/api/symbol/test').status_code
+	assert 404 == client.get('/api/nem/test').status_code
+
+
+def test_nem_chain_routes_only(rest_config_path):
+	_write_rest_config(rest_config_path, 'REST_CHAIN="nem"\n')
+
+	client = create_app(rest_chain_handlers=_create_test_chain_handlers()).test_client()
+
+	assert 200 == client.get('/api/nem/test').status_code
+	assert 404 == client.get('/api/symbol/test').status_code
+
+
+def test_symbol_health_route():
+	class SymbolHealthFacade:
+		@staticmethod
+		def get_health():
+			return {
+				'isHealthy': True,
+				'errors': []
+			}
+
+	app = Flask(__name__)
+	setup_symbol_routes(app, SymbolHealthFacade())
+
+	response = app.test_client().get('/api/symbol/health')
+
+	assert 200 == response.status_code
+	assert response.json['isHealthy']
+	assert [] == response.json['errors']
