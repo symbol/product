@@ -9,15 +9,16 @@ REST_CHAIN_HANDLERS = {
 }
 
 
-def create_app():
+def create_app(rest_chain_handlers=None):
 	app = Flask(__name__)
+	rest_chain_handlers = REST_CHAIN_HANDLERS if rest_chain_handlers is None else rest_chain_handlers
 
 	CORS(app)
 
 	setup_error_handlers(app)
 	load_rest_config(app)
 
-	setup_facade, setup_routes = _get_rest_chain_handlers(app.config.get('REST_CHAIN'))
+	setup_facade, setup_routes = _get_rest_chain_handlers(app.config.get('REST_CHAIN'), rest_chain_handlers)
 	api_facade = setup_facade(app)
 	setup_routes(app, api_facade)
 
@@ -30,18 +31,18 @@ def load_rest_config(app):
 	app.config.from_envvar('EXPLORER_REST_SETTINGS')
 
 
-def _get_rest_chain_handlers(rest_chain):
+def _get_rest_chain_handlers(rest_chain, rest_chain_handlers):
 	"""Gets the facade and route setup handlers for the selected chain."""
 
 	if not rest_chain:
 		raise ValueError('REST_CHAIN is required')
 
 	rest_chain = rest_chain.lower()
-	if rest_chain not in REST_CHAIN_HANDLERS:
-		supported_chains = ', '.join(sorted(REST_CHAIN_HANDLERS.keys()))
+	if rest_chain not in rest_chain_handlers:
+		supported_chains = ', '.join(sorted(rest_chain_handlers.keys()))
 		raise ValueError(f'Unsupported REST_CHAIN "{rest_chain}". Supported values: {supported_chains}')
 
-	return REST_CHAIN_HANDLERS[rest_chain]
+	return rest_chain_handlers[rest_chain]
 
 
 def setup_error_handlers(app):
