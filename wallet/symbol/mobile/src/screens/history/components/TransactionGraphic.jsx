@@ -69,7 +69,7 @@ const Avatar = ({ type, imageId, accountAddress }) => {
 const ArrowCaption = ({ value, type }) => {
 	if (type === 'text') {
 		return (
-			<StyledText type="label" size='s'>
+			<StyledText type="label" size='s' numberOfLines={1} ellipsizeMode="middle">
 				{value}
 			</StyledText>
 		);

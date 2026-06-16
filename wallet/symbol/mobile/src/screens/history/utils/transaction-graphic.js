@@ -5,6 +5,7 @@ import {
 	TransactionGraphicAvatarType
 } from '@/app/screens/history/types/TransactionGraphic';
 import { createAccountDisplayData } from '@/app/utils/account';
+import { truncateMiddle } from '@/app/utils/format';
 import { createTokenDisplayData, getNativeCurrencyToken, hasNonNativeCurrencyTokens } from '@/app/utils/token';
 import { getSignedSupplyDelta, getTransactionTypeTranslationKey } from '@/app/utils/transaction';
 
@@ -15,6 +16,16 @@ import { getSignedSupplyDelta, getTransactionTypeTranslationKey } from '@/app/ut
 /** @typedef {import('@/app/types/Network').NetworkIdentifier} NetworkIdentifier */
 /** @typedef {import('@/app/types/Network').ChainName} ChainName */
 /** @typedef {import('@/app/types/Account').WalletAccount} WalletAccount */
+
+const SECRET_CAPTION_TRUNCATE_START = 8;
+const SECRET_CAPTION_TRUNCATE_END = 8;
+
+/**
+ * Truncates a secret hash for display inside the transaction graphic arrow caption.
+ * @param {string} secret - The full secret hash.
+ * @returns {string} The truncated secret.
+ */
+const formatSecretCaption = secret => truncateMiddle(secret, SECRET_CAPTION_TRUNCATE_START, SECRET_CAPTION_TRUNCATE_END);
 
 /**
  * Target field configuration for extracting target data from a transaction.
@@ -235,14 +246,14 @@ const transactionGraphicConfigMap = {
 		targetType: TransactionGraphicAvatarType.LOCK,
 		targetFields: {},
 		arrowCaptions: [
-			{ type: CaptionType.TEXT, field: 'secret' }
+			{ type: CaptionType.TEXT, field: 'secret', format: formatSecretCaption }
 		]
 	},
 	[SymbolTransactionType.SECRET_PROOF]: {
 		targetType: TransactionGraphicAvatarType.LOCK,
 		targetFields: {},
 		arrowCaptions: [
-			{ type: CaptionType.TEXT, field: 'secret' }
+			{ type: CaptionType.TEXT, field: 'secret', format: formatSecretCaption }
 		]
 	},
 	[SymbolTransactionType.ACCOUNT_METADATA]: {

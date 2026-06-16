@@ -47,6 +47,23 @@ export const formatAmountInput = (amount, divisibility) => {
 };
 
 /**
+ * Truncates a string in the middle with an ellipsis, keeping the start and end.
+ * Returns the original string when truncating would not make it shorter.
+ * @param {string} value - The string to truncate.
+ * @param {number} startLength - The number of leading characters to keep.
+ * @param {number} endLength - The number of trailing characters to keep.
+ * @returns {string} The truncated string.
+ */
+export const truncateMiddle = (value, startLength, endLength) => {
+	const ellipsis = '...';
+
+	if (!value || value.length <= startLength + endLength + ellipsis.length)
+		return value;
+
+	return `${value.slice(0, startLength)}${ellipsis}${value.slice(-endLength)}`;
+};
+
+/**
  * Formats a date string to a readable format.
  * @param {string} dateStr - The date string.
  * @param {function(string): string} translate - The translation function.
