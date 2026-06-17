@@ -4,7 +4,6 @@ import { transactionPageResult } from '../test-utils/transactions';
 import {
 	arrayToText,
 	createExpirationLabel,
-	createMosaicName,
 	decodeTransactionMessage,
 	formatAccountCSV,
 	formatBlockCSV,
@@ -395,21 +394,6 @@ describe('utils/common', () => {
 
 			// Act + Assert:
 			runGetRootNamespaceNameTest(value, expectedResult);
-		});
-	});
-
-	describe('createMosaicName', () => {
-		it('returns mosaic name using 2 strings separated with dot', () => {
-			// Arrange:
-			const namespaceId = 'namespace';
-			const mosaicId = 'mosaic';
-			const expectedResult = 'namespace.mosaic';
-
-			// Act:
-			const result = createMosaicName(namespaceId, mosaicId);
-
-			// Assert:
-			expect(result).toBe(expectedResult);
 		});
 	});
 

@@ -14,8 +14,7 @@ export const namespacePageResponse = [
 		mosaics: [
 			{
 				divisibility: 3,
-				mosaicName: 'watacoin',
-				namespaceName: 'holo',
+				namespaceName: 'holo.watacoin',
 				registeredHeight: 4661037,
 				registeredTimestamp: '2024-03-06 04:58:02',
 				totalSupply: 10000000
@@ -41,8 +40,7 @@ export const namespacePageResponse = [
 		mosaics: [
 			{
 				divisibility: 3,
-				mosaicName: 'shone',
-				namespaceName: 'arustest',
+				namespaceName: 'arustest.shone',
 				registeredHeight: 4470272,
 				registeredTimestamp: '2023-10-24 14:13:46',
 				totalSupply: 1024
@@ -68,8 +66,7 @@ export const namespacePageResponse = [
 		mosaics: [
 			{
 				divisibility: 5,
-				mosaicName: 'kanikani',
-				namespaceName: 'asch',
+				namespaceName: 'asch.kanikani',
 				registeredHeight: 4351460,
 				registeredTimestamp: '2023-08-02 08:55:15',
 				totalSupply: 100
@@ -86,8 +83,7 @@ export const namespacePageResponse = [
 		mosaics: [
 			{
 				divisibility: 4,
-				mosaicName: 'renge',
-				namespaceName: 'renge',
+				namespaceName: 'renge.renge',
 				registeredHeight: 4311611,
 				registeredTimestamp: '2023-07-05 11:11:11',
 				totalSupply: 3100000
@@ -104,8 +100,7 @@ export const namespacePageResponse = [
 		mosaics: [
 			{
 				divisibility: 0,
-				mosaicName: 'koko',
-				namespaceName: 'koko',
+				namespaceName: 'koko.koko',
 				registeredHeight: 4293313,
 				registeredTimestamp: '2023-06-22 15:54:26',
 				totalSupply: 9999999
@@ -122,8 +117,7 @@ export const namespacePageResponse = [
 		mosaics: [
 			{
 				divisibility: 0,
-				mosaicName: 'whatizit',
-				namespaceName: 'gammarat',
+				namespaceName: 'gammarat.whatizit',
 				registeredHeight: 4189717,
 				registeredTimestamp: '2023-04-11 02:16:17',
 				totalSupply: 1
@@ -361,8 +355,7 @@ export const namespaceInfoResponse = {
 	mosaics: [
 		{
 			divisibility: 0,
-			mosaicName: 'm1',
-			namespaceName: 'vygvai',
+			namespaceName: 'vygvai.m1',
 			registeredHeight: 3505774,
 			registeredTimestamp: '2021-12-17 14:26:18',
 			totalSupply: 100000
