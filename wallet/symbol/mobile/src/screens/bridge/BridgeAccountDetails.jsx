@@ -69,7 +69,14 @@ export const BridgeAccountDetails = ({ route }) => {
 
 	// Handlers
 	const handleTokenPress = token => {
-		Router.goToTokenDetails({ params: { chainName, tokenId: token.id, preloadedData: token } });
+		Router.goToTokenDetails({ 
+			params: { 
+				chainName, 
+				tokenId: token.id, 
+				accountAddress: currentAccount.address, 
+				preloadedData: token 
+			} 
+		});
 	};
 
 	return (
