@@ -1,6 +1,6 @@
 import unittest
 
-from rest.model.Mosaic import MosaicRichListView, MosaicView
+from rest.model.nem.Mosaic import MosaicRichListView, MosaicView
 
 
 class MosaicTest(unittest.TestCase):

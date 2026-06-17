@@ -9,17 +9,17 @@ from symbolchain.CryptoTypes import PublicKey
 from symbolchain.nem.Network import Address, Network
 
 from rest.db.NemDatabase import NemDatabase
-from rest.model.Account import AccountView
-from rest.model.Block import BlockView
-from rest.model.Mosaic import MosaicRichListView, MosaicView
-from rest.model.Namespace import NamespaceView
-from rest.model.Statistic import (
+from rest.model.nem.Account import AccountView
+from rest.model.nem.Block import BlockView
+from rest.model.nem.Mosaic import MosaicRichListView, MosaicView
+from rest.model.nem.Namespace import NamespaceView
+from rest.model.nem.Statistic import (
 	StatisticAccountView,
 	StatisticTransactionDateRangeDataView,
 	StatisticTransactionDateRangeView,
 	StatisticTransactionView
 )
-from rest.model.Transaction import TransactionQuery, TransactionView
+from rest.model.nem.Transaction import TransactionQuery, TransactionView
 
 Block = namedtuple(
 	'Block',

@@ -9,7 +9,7 @@ from symbollightapi.model.Exceptions import NodeException
 
 from rest import create_app
 
-from .test.DatabaseTestUtils import (
+from ...test.DatabaseTestUtils import (
 	ACCOUNT_STATISTIC_VIEW,
 	ACCOUNT_VIEWS,
 	BLOCK_VIEWS,
@@ -68,6 +68,7 @@ def app(database):  # pylint: disable=redefined-outer-name, unused-argument
 
 		with open(file_name, 'wt', encoding='utf8') as config_file:
 			print(f'creating config file {file_name}...')
+			config_file.write('REST_CHAIN="nem"\n')
 			config_file.write(f'DATABASE_CONFIG_FILEPATH="{db_config_path}"\n')
 			config_file.write('NETWORK_NAME="mainnet"\n')
 			config_file.flush()
@@ -831,6 +832,12 @@ def test_api_transactions_applies_sender_address(client):  # pylint: disable=red
 	_assert_get_api_nem_transactions(client, 200, [
 		TRANSACTIONS_VIEWS[2].to_dict()
 	], senderAddress='NBNR6XNZQIGQVXII6L3FPJTUGF6NFGLZHBN52R3V')
+
+
+def test_api_transactions_applies_sender_public_key(client):  # pylint: disable=redefined-outer-name, invalid-name
+	_assert_get_api_nem_transactions(client, 200, [
+		TRANSACTIONS_VIEWS[2].to_dict()
+	], senderPublicKey='9ca54cd15edf88a9df9173375d4a0d706f7a9ddcf57d7547dff8110ddd2adeb9')
 
 
 def test_api_transactions_applies_recipient_address(client):  # pylint: disable=redefined-outer-name, invalid-name
