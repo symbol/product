@@ -19,20 +19,6 @@ export const generateNonce = () => {
 };
 
 /**
- * Converts a mosaic nonce number to an uppercase hex string, zero-padded to the uint32 width (8 digits).
- * @param {number} nonce - The mosaic nonce.
- * @returns {string} The nonce as a hex string.
- */
-export const mosaicNonceToHex = nonce => nonce.toString(16).toUpperCase().padStart(8, '0');
-
-/**
- * Converts a mosaic nonce hex string back to a number.
- * @param {string} hex - The mosaic nonce hex string.
- * @returns {number} The mosaic nonce.
- */
-export const mosaicNonceFromHex = hex => parseInt(hex, 16);
-
-/**
  * Gets the mosaic amount from a mosaic list.
  * @param {Mosaic[]} mosaicList - The list of mosaics.
  * @param {string} mosaicId - The mosaic id.

@@ -66,7 +66,8 @@ export const createTransactionSpecificTableData = transaction => {
 		'signerPublicKey',
 		'sourceAddress',
 		'lockedAmount',
-		'aggregateHash'
+		'aggregateHash',
+		'nonce'
 	]);
 
 	let finalData = specificData;
