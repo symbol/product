@@ -1,5 +1,4 @@
 import ipaddress
-import os
 import socket
 from urllib.parse import urlparse
 
@@ -112,30 +111,26 @@ class SymbolNodeConfig:
 		if not node_url:
 			return None
 
-		scheme, host, port, base_url = _normalize_base_url(node_url)
-		allowed_hosts = _normalize_allowed_hosts(app_config.get('SYMBOL_NODE_ALLOWED_HOSTS'))
-		normalized_host = f'{host}:{port}'
-
-		if normalized_host not in allowed_hosts:
-			raise SymbolNodeConfigError('Configured Symbol node host is not in SYMBOL_NODE_ALLOWED_HOSTS')
-		if _is_metadata_service_host(host):
-			raise SymbolNodeConfigError('Metadata service Symbol node host is not allowed')
-
-		return cls(
-			scheme=scheme,
-			host=host,
-			port=port,
-			base_url=base_url,
-			allowed_hosts=frozenset(allowed_hosts),
-			allow_private=_parse_bool(app_config.get('SYMBOL_NODE_ALLOW_PRIVATE', 'false')),
-			allow_loopback=_parse_bool(app_config.get('SYMBOL_NODE_ALLOW_LOOPBACK', 'false')),
-			timeout_seconds=_parse_positive_int('SYMBOL_NODE_REQUEST_TIMEOUT_SECONDS', app_config.get('SYMBOL_NODE_REQUEST_TIMEOUT_SECONDS', 10))
-		)
+		return cls._from_values(app_config)
 
 	@classmethod
-	def from_env(cls, node_url):
+	def from_url(cls, node_url, **kwargs):
+		"""Creates a node config from an explicit node URL."""
+
+		_, host, port, _ = _normalize_base_url(node_url)
+		return cls._from_values({
+			'SYMBOL_NODE_URL': node_url,
+			'SYMBOL_NODE_ALLOWED_HOSTS': f'{host}:{port}',
+			'SYMBOL_NODE_ALLOW_PRIVATE': kwargs.get('allow_private', False),
+			'SYMBOL_NODE_ALLOW_LOOPBACK': kwargs.get('allow_loopback', False),
+			'SYMBOL_NODE_REQUEST_TIMEOUT_SECONDS': kwargs.get('timeout_seconds', 10)
+		})
+
+	@classmethod
+	def _from_values(cls, values):
+		node_url = values.get('SYMBOL_NODE_URL')
 		scheme, host, port, base_url = _normalize_base_url(node_url)
-		allowed_hosts = _normalize_allowed_hosts(os.environ.get('SYMBOL_NODE_ALLOWED_HOSTS'))
+		allowed_hosts = _normalize_allowed_hosts(values.get('SYMBOL_NODE_ALLOWED_HOSTS'))
 		normalized_host = f'{host}:{port}'
 
 		if normalized_host not in allowed_hosts:
@@ -149,9 +144,9 @@ class SymbolNodeConfig:
 			port=port,
 			base_url=base_url,
 			allowed_hosts=frozenset(allowed_hosts),
-			allow_private=_parse_bool(os.environ.get('SYMBOL_NODE_ALLOW_PRIVATE', 'false')),
-			allow_loopback=_parse_bool(os.environ.get('SYMBOL_NODE_ALLOW_LOOPBACK', 'false')),
-			timeout_seconds=_parse_positive_int('SYMBOL_NODE_REQUEST_TIMEOUT_SECONDS', os.environ.get('SYMBOL_NODE_REQUEST_TIMEOUT_SECONDS', 10))
+			allow_private=_parse_bool(values.get('SYMBOL_NODE_ALLOW_PRIVATE', 'false')),
+			allow_loopback=_parse_bool(values.get('SYMBOL_NODE_ALLOW_LOOPBACK', 'false')),
+			timeout_seconds=_parse_positive_int('SYMBOL_NODE_REQUEST_TIMEOUT_SECONDS', values.get('SYMBOL_NODE_REQUEST_TIMEOUT_SECONDS', 10))
 		)
 
 	def assert_request_allowed(self, request_url):

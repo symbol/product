@@ -1,5 +1,6 @@
+from contextlib import nullcontext
 from unittest import TestCase
-from unittest.mock import MagicMock, Mock
+from unittest.mock import Mock
 
 from rest.db.SymbolDatabase import SymbolDatabase
 
@@ -10,11 +11,8 @@ class TestSymbolDatabase(TestCase):
 		cursor = Mock()
 		cursor.fetchone.return_value = (1,)
 		connection = Mock()
-		connection.cursor.return_value = MagicMock()
-		connection.cursor.return_value.__enter__.return_value = cursor
-		database.connection = Mock()
-		database.connection.return_value = MagicMock()
-		database.connection.return_value.__enter__.return_value = connection
+		connection.cursor.return_value = nullcontext(cursor)
+		database.connection = Mock(return_value=nullcontext(connection))
 
 		result = database.check_connection()
 

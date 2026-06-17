@@ -1,5 +1,3 @@
-from unittest.mock import patch
-
 import pytest
 
 from rest.model.symbol.NodeConfig import SymbolNodeConfig, SymbolNodeConfigError
@@ -16,34 +14,12 @@ def _base_config(**overrides):
 	return config
 
 
-def _mock_address(address):
-	return [(None, None, None, None, (address, 3000))]
-
-
 def test_missing_node_url():
 	assert SymbolNodeConfig.from_app_config({}) is None
 
 
 def test_normalizes_node_config():
-	node_config = SymbolNodeConfig.from_app_config(_base_config())
-
-	assert 'http' == node_config.scheme
-	assert 'localhost' == node_config.host
-	assert 3000 == node_config.port
-	assert 'http://localhost:3000' == node_config.base_url
-	assert frozenset({'localhost:3000'}) == node_config.allowed_hosts
-	assert node_config.allow_loopback
-	assert not node_config.allow_private
-	assert 10 == node_config.timeout_seconds
-
-
-def test_normalizes_env_node_config(monkeypatch):
-	monkeypatch.setenv('SYMBOL_NODE_ALLOWED_HOSTS', 'localhost:3000')
-	monkeypatch.setenv('SYMBOL_NODE_ALLOW_PRIVATE', 'false')
-	monkeypatch.setenv('SYMBOL_NODE_ALLOW_LOOPBACK', 'true')
-	monkeypatch.setenv('SYMBOL_NODE_REQUEST_TIMEOUT_SECONDS', '15')
-
-	node_config = SymbolNodeConfig.from_env('http://localhost:3000')
+	node_config = SymbolNodeConfig.from_app_config(_base_config(SYMBOL_NODE_REQUEST_TIMEOUT_SECONDS='15'))
 
 	assert 'http' == node_config.scheme
 	assert 'localhost' == node_config.host
@@ -55,18 +31,27 @@ def test_normalizes_env_node_config(monkeypatch):
 	assert 15 == node_config.timeout_seconds
 
 
-def test_rejects_env_unlisted_host(monkeypatch):
-	monkeypatch.setenv('SYMBOL_NODE_ALLOWED_HOSTS', 'example.com:3000')
+def test_normalizes_url_node_config():
+	node_config = SymbolNodeConfig.from_url(
+		'http://localhost:3000',
+		allow_private=True,
+		allow_loopback=True,
+		timeout_seconds=15
+	)
 
-	with pytest.raises(SymbolNodeConfigError, match='Configured Symbol node host is not in SYMBOL_NODE_ALLOWED_HOSTS'):
-		SymbolNodeConfig.from_env('http://localhost:3000')
+	assert 'http' == node_config.scheme
+	assert 'localhost' == node_config.host
+	assert 3000 == node_config.port
+	assert 'http://localhost:3000' == node_config.base_url
+	assert frozenset({'localhost:3000'}) == node_config.allowed_hosts
+	assert node_config.allow_private
+	assert node_config.allow_loopback
+	assert 15 == node_config.timeout_seconds
 
 
-def test_rejects_env_metadata_host(monkeypatch):
-	monkeypatch.setenv('SYMBOL_NODE_ALLOWED_HOSTS', '169.254.169.254:3000')
-
+def test_rejects_url_metadata_host():
 	with pytest.raises(SymbolNodeConfigError, match='Metadata service Symbol node host is not allowed'):
-		SymbolNodeConfig.from_env('http://169.254.169.254:3000')
+		SymbolNodeConfig.from_url('http://169.254.169.254:3000')
 
 
 def test_accepts_boolean_config_values():
@@ -148,10 +133,12 @@ def test_rejects_metadata_service_host():
 
 
 def test_allows_matching_request_target():
-	node_config = SymbolNodeConfig.from_app_config(_base_config())
+	node_config = SymbolNodeConfig.from_app_config(_base_config(
+		SYMBOL_NODE_URL='http://127.0.0.1:3000',
+		SYMBOL_NODE_ALLOWED_HOSTS='127.0.0.1:3000'
+	))
 
-	with patch('rest.model.symbol.NodeConfig.socket.getaddrinfo', return_value=_mock_address('127.0.0.1')):
-		assert 'http://localhost:3000' == node_config.assert_request_allowed('http://localhost:3000')
+	assert 'http://127.0.0.1:3000' == node_config.assert_request_allowed('http://127.0.0.1:3000')
 
 
 def test_rejects_different_target():
@@ -188,45 +175,45 @@ def test_rejects_metadata_target():
 
 
 def test_rejects_loopback_without_flag():
-	node_config = SymbolNodeConfig.from_app_config(_base_config(SYMBOL_NODE_ALLOW_LOOPBACK='false'))
+	node_config = SymbolNodeConfig.from_app_config(_base_config(
+		SYMBOL_NODE_URL='http://127.0.0.1:3000',
+		SYMBOL_NODE_ALLOWED_HOSTS='127.0.0.1:3000',
+		SYMBOL_NODE_ALLOW_LOOPBACK='false'
+	))
 
-	with patch('rest.model.symbol.NodeConfig.socket.getaddrinfo', return_value=_mock_address('127.0.0.1')):
-		with pytest.raises(SymbolNodeConfigError, match='Loopback Symbol node address requires SYMBOL_NODE_ALLOW_LOOPBACK=true'):
-			node_config.assert_request_allowed('http://localhost:3000')
+	with pytest.raises(SymbolNodeConfigError, match='Loopback Symbol node address requires SYMBOL_NODE_ALLOW_LOOPBACK=true'):
+		node_config.assert_request_allowed('http://127.0.0.1:3000')
 
 
 def test_rejects_private_without_flag():
 	node_config = SymbolNodeConfig.from_app_config(_base_config(
-		SYMBOL_NODE_URL='http://symbol.internal:3000',
-		SYMBOL_NODE_ALLOWED_HOSTS='symbol.internal:3000'
+		SYMBOL_NODE_URL='http://10.0.0.5:3000',
+		SYMBOL_NODE_ALLOWED_HOSTS='10.0.0.5:3000'
 	))
 
-	with patch('rest.model.symbol.NodeConfig.socket.getaddrinfo', return_value=_mock_address('10.0.0.5')):
-		with pytest.raises(SymbolNodeConfigError, match='Private Symbol node address requires SYMBOL_NODE_ALLOW_PRIVATE=true'):
-			node_config.assert_request_allowed('http://symbol.internal:3000')
+	with pytest.raises(SymbolNodeConfigError, match='Private Symbol node address requires SYMBOL_NODE_ALLOW_PRIVATE=true'):
+		node_config.assert_request_allowed('http://10.0.0.5:3000')
 
 
 def test_allows_private_with_flag():
 	node_config = SymbolNodeConfig.from_app_config(_base_config(
-		SYMBOL_NODE_URL='http://symbol.internal:3000',
-		SYMBOL_NODE_ALLOWED_HOSTS='symbol.internal:3000',
+		SYMBOL_NODE_URL='http://10.0.0.5:3000',
+		SYMBOL_NODE_ALLOWED_HOSTS='10.0.0.5:3000',
 		SYMBOL_NODE_ALLOW_PRIVATE='true'
 	))
 
-	with patch('rest.model.symbol.NodeConfig.socket.getaddrinfo', return_value=_mock_address('10.0.0.5')):
-		assert 'http://symbol.internal:3000' == node_config.assert_request_allowed('http://symbol.internal:3000')
+	assert 'http://10.0.0.5:3000' == node_config.assert_request_allowed('http://10.0.0.5:3000')
 
 
 def test_rejects_forbidden_address():
 	node_config = SymbolNodeConfig.from_app_config(_base_config(
-		SYMBOL_NODE_URL='http://symbol.internal:3000',
-		SYMBOL_NODE_ALLOWED_HOSTS='symbol.internal:3000',
+		SYMBOL_NODE_URL='http://169.254.1.1:3000',
+		SYMBOL_NODE_ALLOWED_HOSTS='169.254.1.1:3000',
 		SYMBOL_NODE_ALLOW_PRIVATE='true'
 	))
 
-	with patch('rest.model.symbol.NodeConfig.socket.getaddrinfo', return_value=_mock_address('169.254.169.254')):
-		with pytest.raises(SymbolNodeConfigError, match='Resolved Symbol node address is not allowed'):
-			node_config.assert_request_allowed('http://symbol.internal:3000')
+	with pytest.raises(SymbolNodeConfigError, match='Resolved Symbol node address is not allowed'):
+		node_config.assert_request_allowed('http://169.254.1.1:3000')
 
 
 def test_to_dict_hides_allowlist():

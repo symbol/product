@@ -15,7 +15,7 @@ DatabaseConfig = namedtuple('DatabaseConfig', ['database', 'user', 'password', '
 class SymbolPuller:
 	"""Facade for pulling data from Symbol network."""
 
-	def __init__(self, node_url, config_file, network_type='mainnet'):
+	def __init__(self, node_url, config_file, network_type='mainnet', node_config=None):
 		"""Creates a Symbol puller facade object."""
 
 		config = configparser.ConfigParser()
@@ -29,7 +29,7 @@ class SymbolPuller:
 		network = Network.MAINNET if network_type == 'mainnet' else Network.TESTNET
 
 		self.symbol_db = SymbolDatabase(DatabaseConfig(**db_config))
-		self.node_config = SymbolNodeConfig.from_env(node_url)
+		self.node_config = node_config or SymbolNodeConfig.from_url(node_url)
 		symbol_node_endpoint = self.node_config.assert_request_allowed(self.node_config.base_url)
 		self._symbol_connector = SymbolConnector(symbol_node_endpoint)
 		self._symbol_connector.timeout_seconds = self.node_config.timeout_seconds
