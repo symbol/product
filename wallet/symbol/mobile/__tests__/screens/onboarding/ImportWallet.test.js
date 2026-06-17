@@ -1,4 +1,5 @@
 import { NetworkIdentifier } from '@/app/constants';
+import { PlatformUtils } from '@/app/lib/platform/PlatformUtils';
 import { ImportWallet } from '@/app/screens/onboarding/ImportWallet';
 import * as optinModule from '@/app/screens/onboarding/utils/optin';
 import { mnemonic } from '__fixtures__/local/wallet';
@@ -111,6 +112,26 @@ describe('screens/onboarding/ImportWallet', () => {
 			name: OPT_IN_ACCOUNT_NAME,
 			networkIdentifier: NetworkIdentifier.MAIN_NET
 		});
+	});
+
+	it('dismisses the keyboard before showing the passcode when the next button is pressed', async () => {
+		// Arrange:
+		jest.spyOn(optinModule, 'getOptinAccountFromMnemonic').mockResolvedValue(null);
+		const dismissKeyboardMock = jest.spyOn(PlatformUtils, 'dismissKeyboard').mockImplementation(() => {});
+		mockPasscode();
+		mockWalletController();
+		const buttonNextText = SCREEN_TEXT.buttonNext;
+		const mnemonicInputLabel = SCREEN_TEXT.inputMnemonicLabel;
+		const screenTester = new ScreenTester(ImportWallet);
+
+		// Act:
+		screenTester.inputText(mnemonicInputLabel, TEST_MNEMONIC);
+		screenTester.pressButton(buttonNextText);
+		await screenTester.waitForTimer();
+		await screenTester.waitForTimer();
+
+		// Assert:
+		expect(dismissKeyboardMock).toHaveBeenCalledTimes(1);
 	});
 
 	runScreenNavigationTest(ImportWallet, {

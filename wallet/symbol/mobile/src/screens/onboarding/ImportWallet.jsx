@@ -2,6 +2,7 @@ import { getOptinAccountFromMnemonic } from './utils/optin';
 import { Button, ButtonClose, FlexContainer, PasscodeView, Screen, Spacer, Stack, StyledText, SymbolLogo } from '@/app/components';
 import { MAX_SEED_ACCOUNTS_PER_NETWORK, NetworkIdentifier } from '@/app/constants';
 import { useAsyncManager, usePasscode, useWalletController } from '@/app/hooks';
+import { PlatformUtils } from '@/app/lib/platform/PlatformUtils';
 import { $t } from '@/app/localization';
 import { Router } from '@/app/router/Router';
 import { MnemonicInput } from '@/app/screens/onboarding/components/MnemonicInput';
@@ -70,6 +71,7 @@ export const ImportWallet = () => {
 	// Initiate the flow by creating a passcode
 	const passcode = usePasscode({ onSuccess: startLoading }, 'create');
 	const handleButtonPress = () => {
+		PlatformUtils.dismissKeyboard();
 		passcode.show();
 	};
 
