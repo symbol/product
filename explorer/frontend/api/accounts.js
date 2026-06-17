@@ -76,7 +76,7 @@ const accountInfoFromDTO = data => ({
 			amount: item.quantity,
 			isCreatedByAccount: item.creator === data.address
 		})) || [],
-	importance: data.importance ? +data.importance * 100 : null,
+	importance: +data.importance * 100 || 0,
 	harvestedBlocks: data.harvestedBlocks || null,
 	harvestedFees: data.harvestedFees || null,
 	height: data.height || null,
