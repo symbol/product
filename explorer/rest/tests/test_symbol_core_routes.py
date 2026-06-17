@@ -174,3 +174,26 @@ def test_symbol_facade_node_error(symbol_database_config):
 			'message': 'Symbol node URL is not configured'
 		}
 	] == health['errors']
+
+
+def test_rest_env_removes_missing(monkeypatch):
+	monkeypatch.delenv('EXPLORER_REST_SETTINGS', raising=False)
+
+	with tempfile.TemporaryDirectory() as temp_directory:
+		config_path = Path(temp_directory) / 'app.config'
+
+		with _rest_settings_env(config_path):
+			assert str(config_path) == os.environ['EXPLORER_REST_SETTINGS']
+
+	assert 'EXPLORER_REST_SETTINGS' not in os.environ
+
+
+def test_external_postgres_config(monkeypatch):
+	monkeypatch.setenv('EXPLORER_TEST_POSTGRES_HOST', 'postgres.example')
+	monkeypatch.setenv('EXPLORER_TEST_POSTGRES_DATABASE', 'symbol_test')
+	monkeypatch.setenv('EXPLORER_TEST_POSTGRES_USER', 'symbol_user')
+	monkeypatch.setenv('EXPLORER_TEST_POSTGRES_PASSWORD', 'symbol_password')
+	monkeypatch.setenv('EXPLORER_TEST_POSTGRES_PORT', '15432')
+
+	with PostgresTestDatabase() as db_config:
+		assert DatabaseConfig('symbol_test', 'symbol_user', 'symbol_password', 'postgres.example', '15432') == db_config

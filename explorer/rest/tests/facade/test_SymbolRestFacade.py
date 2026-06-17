@@ -1,21 +1,23 @@
 from unittest import TestCase
-from unittest.mock import Mock
 
 from psycopg2 import OperationalError
 
 from rest.facade.SymbolRestFacade import SymbolRestFacade
-from rest.model.symbol.NodeConfig import SymbolNodeConfigError
+from rest.model.symbol.NodeConfig import SymbolNodeConfig, SymbolNodeConfigError
 
 from ..test.PostgresTestUtils import PostgresTestDatabase, create_unreachable_db_config
 
+_NODE_URL = 'http://127.0.0.1:3000'
+
 
 def _create_node_config():
-	node_config = Mock(spec=['to_dict', 'assert_request_allowed'])
-	node_config.base_url = 'http://localhost:3000'
-	node_config.to_dict.return_value = {'baseUrl': node_config.base_url}
-	node_config.assert_request_allowed.return_value = node_config.base_url
+	return SymbolNodeConfig.from_url(_NODE_URL, allow_loopback=True)
 
-	return node_config
+
+class _FailingSymbolDatabase:
+	@staticmethod
+	def check_connection():
+		raise OperationalError('database unavailable')
 
 
 class TestSymbolRestFacade(TestCase):
@@ -52,7 +54,12 @@ class TestSymbolRestFacade(TestCase):
 			self.assertTrue(facade.is_configured())
 			self.assertEqual({
 				'isConfigured': True,
-				'node': {'baseUrl': 'http://localhost:3000'}
+				'node': {
+					'baseUrl': _NODE_URL,
+					'allowPrivate': False,
+					'allowLoopback': True,
+					'timeoutSeconds': 10
+				}
 			}, facade.get_core_status())
 			health = facade.get_health()
 			self.assertTrue(health['isHealthy'])
@@ -64,8 +71,7 @@ class TestSymbolRestFacade(TestCase):
 	def test_reports_database_error(self):
 		node_config = _create_node_config()
 		facade = SymbolRestFacade(db_config=None, node_config=node_config)
-		facade.symbol_db = Mock()
-		facade.symbol_db.check_connection.side_effect = OperationalError('database unavailable')
+		facade.symbol_db = _FailingSymbolDatabase()
 
 		self.assertEqual({
 			'isHealthy': False,
@@ -118,10 +124,9 @@ class TestSymbolRestFacade(TestCase):
 		node_config = _create_node_config()
 		facade = SymbolRestFacade(db_config=None, node_config=node_config)
 
-		result = facade.validate_node_request_target('http://localhost:3000')
+		result = facade.validate_node_request_target(_NODE_URL)
 
-		self.assertEqual('http://localhost:3000', result)
-		node_config.assert_request_allowed.assert_called_once_with('http://localhost:3000')
+		self.assertEqual(_NODE_URL, result)
 
 	def test_rejects_node_request_validation_when_node_config_is_missing(self):
 		facade = SymbolRestFacade()
