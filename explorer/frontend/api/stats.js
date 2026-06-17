@@ -65,7 +65,7 @@ export const fetchTransactionStats = async () => {
 	return {
 		averagePerBlock,
 		total: stats.total,
-		last30Day: stats.last30Day,
+		last30Days: stats.last30Days,
 		last24Hours: stats.last24Hours
 	};
 };

@@ -9,7 +9,7 @@ export const accountStatisticsResponse = {
 
 export const transactionStatisticsResponse = {
 	last24Hours: 630,
-	last30Day: 17457,
+	last30Days: 17457,
 	total: 10667593
 };
 
@@ -508,7 +508,7 @@ export const blockStatisticsResult = {
 export const transactionStatisticsResult = {
 	averagePerBlock: 1,
 	total: 10667593,
-	last30Day: 17457,
+	last30Days: 17457,
 	last24Hours: 630
 };
 
