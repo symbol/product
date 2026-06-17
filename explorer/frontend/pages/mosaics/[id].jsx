@@ -158,7 +158,9 @@ const MosaicInfo = ({ mosaicInfo, preloadedTransactions, preloadedAccounts }) =>
 				<Section className="layout-align-end" cardClassName={styles.secondSectionCard}>
 					<div className="layout-flex-col-fields">
 						<Field title={t('field_mosaic_namespace')} description={t('field_mosaic_namespace_description')}>
-							<Link href={createPageHref('namespaces', mosaicInfo.rootNamespaceName)}>{mosaicInfo.namespaceName.split('.').slice(0, -1).join('.') || mosaicInfo.namespaceName}</Link>
+							<Link href={createPageHref('namespaces', mosaicInfo.rootNamespaceName)}>
+								{mosaicInfo.namespaceName.split('.').slice(0, -1).join('.') || mosaicInfo.namespaceName}
+							</Link>
 						</Field>
 						<Field title={t('field_supply')} description={t('field_supply_description')}>
 							{mosaicInfo.supply}
