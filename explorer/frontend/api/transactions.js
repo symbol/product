@@ -160,27 +160,39 @@ const formatBaseTransaction = (data, filter) => {
 	};
 };
 
-const formatTransferTransaction = (data, filter) => {
-	const { mosaic } = filter;
-	const mosaics = data.value
+const extractTransferTransactionValue = value => {
+	let message = null;
+	const mosaics = value
 		.filter(item => item.hasOwnProperty('amount') && item.hasOwnProperty('namespace'))
 		.map(item => ({
 			id: item.namespace,
 			name: item.namespace,
 			amount: item.amount
-		}))
-		.sort((x, y) => (x.id == mosaic ? -1 : y.id == mosaic ? 1 : 0));
-	const nativeMosaicTransfer = mosaics.find(item => item.id === config.NATIVE_MOSAIC_ID);
-	const rawMessage = data.value.find(item => item.hasOwnProperty('message'))?.message;
-	const value = [...mosaics];
-	let message = null;
+		}));
+
+	const rawMessage = value.find(item => item.hasOwnProperty('message'))?.message;
 
 	if (rawMessage?.payload) {
 		message = {
-			type: rawMessage.is_plain ? 'plain' : 'raw',
-			text: rawMessage.is_plain ? decodeTransactionMessage(rawMessage.payload) : rawMessage.payload
+			type: rawMessage.isPlain ? 'plain' : 'raw',
+			text: rawMessage.isPlain ? decodeTransactionMessage(rawMessage.payload) : rawMessage.payload
 		};
 	}
+
+	return {
+		mosaics,
+		message
+	};
+};
+
+const formatTransferTransaction = (data, filter) => {
+	const { mosaic } = filter;
+	const { mosaics, message } = extractTransferTransactionValue(data.value);
+
+	mosaics.sort((x, y) => (x.id == mosaic ? -1 : y.id == mosaic ? 1 : 0));
+
+	const nativeMosaicTransfer = mosaics.find(item => item.id === config.NATIVE_MOSAIC_ID);
+	const value = [...mosaics];
 
 	return {
 		...formatBaseTransaction(data, filter),
@@ -322,15 +334,19 @@ const formatAccountKeyLink = (data, filter) => {
 };
 
 const formatMultisigTransaction = (data, filter) => {
+	const embeddedTransaction = data.embeddedTransactions[0];
 	const rawEmbeddedTransaction = {
 		...data,
-		transactionType: data.embeddedTransactions[0].transactionType,
-		fee: data.embeddedTransactions[0].fee
+		transactionType: embeddedTransaction.transactionType,
+		fee: embeddedTransaction.fee
 	};
-	if (rawEmbeddedTransaction.transactionType === TRANSACTION_TYPE.TRANSFER)
-		rawEmbeddedTransaction.value = [{ message: data.embeddedTransactions[0].message }, data.embeddedTransactions[0].mosaics];
-	else
+	if (rawEmbeddedTransaction.transactionType === TRANSACTION_TYPE.TRANSFER) {
+		const { mosaics, message } = extractTransferTransactionValue(embeddedTransaction.value);
+
+		rawEmbeddedTransaction.value = embeddedTransaction.value || [{ message: message }, mosaics];
+	} else {
 		rawEmbeddedTransaction.value = data.embeddedTransactions;
+	}
 
 	const formattedTransaction = formatBaseTransaction(data, filter);
 	const formattedEmbeddedTransaction = transactionFromDTO(rawEmbeddedTransaction, filter.address);
@@ -339,7 +355,7 @@ const formatMultisigTransaction = (data, filter) => {
 	const multisigFee = truncateDecimals(formattedTransaction.fee, config.NATIVE_MOSAIC_DIVISIBILITY);
 	const embeddedTransactionsFee = truncateDecimals(formattedEmbeddedTransaction.fee, config.NATIVE_MOSAIC_DIVISIBILITY);
 	const signaturesFee = truncateDecimals(
-		data.embeddedTransactions[0].signatures.reduce((total, signature) => total + signature.fee, 0),
+		embeddedTransaction.signatures.reduce((total, signature) => total + signature.fee, 0),
 		config.NATIVE_MOSAIC_DIVISIBILITY
 	);
 	const feesBreakdownData = {
@@ -358,8 +374,8 @@ const formatMultisigTransaction = (data, filter) => {
 
 	return {
 		...formattedTransaction,
-		signatures: data.embeddedTransactions[0].signatures,
-		signer: data.embeddedTransactions[0].initiator,
+		signatures: embeddedTransaction.signatures,
+		signer: embeddedTransaction.initiator,
 		amount: formattedEmbeddedTransaction.amount,
 		value: formattedEmbeddedTransaction.value,
 		body: formattedEmbeddedTransaction.body,
