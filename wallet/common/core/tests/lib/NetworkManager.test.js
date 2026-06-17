@@ -304,4 +304,72 @@ describe('NetworkManager', () => {
 			runChainListenerTest(test.description, test.config, test.expected);
 		});
 	});
+
+	describe('Chain Listener teardown', () => {
+		const accountAddress = 'TCF3372B2Y5NFO2NXI7ZEOB625YJ63J6B5R5QYQ';
+		const properties = { networkIdentifier: testNetworkIdentifier, nodeUrl: nodeUrl1 };
+
+		const createListenerMock = () => ({
+			open: jest.fn().mockResolvedValue(undefined),
+			close: jest.fn().mockResolvedValue(undefined),
+			listenAddedTransactions: jest.fn(),
+			listenRemovedTransactions: jest.fn(),
+			listenTransactionError: jest.fn()
+		});
+
+		it('waits for the previous listener to close before creating a replacement', async () => {
+			// Arrange:
+			let resolvePreviousClose;
+			const previousListener = createListenerMock();
+			previousListener.close = jest.fn(() => new Promise(resolve => {
+				resolvePreviousClose = resolve;
+			}));
+			const replacementListener = createListenerMock();
+			mockApi.listener.createListener
+				.mockReturnValueOnce(previousListener)
+				.mockReturnValueOnce(replacementListener);
+			manager.init(testNetworkIdentifier, properties);
+			manager._state.networkConnectionStatus = NetworkConnectionStatus.CONNECTED;
+			manager.setListenAddress(accountAddress);
+			await manager.restartChainListener();
+
+			// Act:
+			const restartPromise = manager.restartChainListener();
+			await Promise.resolve();
+
+			// Assert: blocked on the previous close, replacement not created yet
+			expect(previousListener.close).toHaveBeenCalledTimes(1);
+			expect(mockApi.listener.createListener).toHaveBeenCalledTimes(1);
+
+			// Act: let the previous listener finish closing
+			resolvePreviousClose();
+			await restartPromise;
+
+			// Assert: replacement created only after the previous listener closed
+			expect(mockApi.listener.createListener).toHaveBeenCalledTimes(2);
+			expect(manager._state.chainListener).toBe(replacementListener);
+		});
+
+		it('does not accumulate listeners across repeated connection jobs', async () => {
+			// Arrange:
+			mockApi.network.fetchNetworkInfo.mockResolvedValue(properties);
+			mockApi.network.fetchNodeList.mockResolvedValue([nodeUrl1]);
+			const firstListener = createListenerMock();
+			const secondListener = createListenerMock();
+			mockApi.listener.createListener
+				.mockReturnValueOnce(firstListener)
+				.mockReturnValueOnce(secondListener);
+			manager.init(testNetworkIdentifier, properties, nodeUrl1);
+			manager.setListenAddress(accountAddress);
+
+			// Act:
+			await manager.runConnectionJob();
+			await manager.runConnectionJob();
+
+			// Assert: the stale listener is closed and only the latest one is retained
+			expect(mockApi.listener.createListener).toHaveBeenCalledTimes(2);
+			expect(firstListener.close).toHaveBeenCalledTimes(1);
+			expect(manager._state.chainListener).toBe(secondListener);
+		});
+	});
 });

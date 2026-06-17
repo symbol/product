@@ -152,8 +152,9 @@ describe('api/Listener', () => {
 			// Assert:
 			expect(listener.wsProvider).toBeNull();
 			expect(listener.jrpcProvider).toBeNull();
-			// removeAllListeners and destroy called
+			// removeAllListeners and destroy called so the underlying websocket is closed
 			expect(WebSocketProviderMock.mock.instances[0].removeAllListeners).toHaveBeenCalled();
+			expect(WebSocketProviderMock.mock.instances[0].destroy).toHaveBeenCalled();
 		});
 
 		it('does nothing when wsProvider is not set', async () => {
@@ -179,6 +180,7 @@ describe('api/Listener', () => {
 			await listener.close();
 
 			// Assert:
+			expect(WebSocketProviderMock.mock.instances[0].destroy).toHaveBeenCalled();
 			expect(listener.wsProvider).toBeNull();
 			expect(listener.jrpcProvider).toBeNull();
 		});
