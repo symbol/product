@@ -39,17 +39,21 @@ export const fetchTransactionChart = async filter => {
 		const startDate = new Date();
 		startDate.setDate(startDate.getDate() - 90);
 		const startDateString = startDate.toISOString().slice(0, 10);
-		const response = await makeRequest(createApiUrl(`transaction/daily?startDate=${startDateString}&endDate=${endDateString}`));
+		const statisticsUrl = 'transaction/statistics/range'
+			+ `?startDate=${startDateString}&endDate=${endDateString}&periodType=day`;
+		const response = await makeRequest(createApiUrl(statisticsUrl));
 
-		return response.map(item => [item.date, item.totalTransactions]);
+		return response.data.map(item => [item.period, item.totalTransactions]);
 	}
 	case 'monthly': {
 		const startDate = new Date();
 		startDate.setMonth(startDate.getMonth() - 48);
 		const startDateString = startDate.toISOString().slice(0, 10);
-		const response = await makeRequest(createApiUrl(`transaction/monthly?startDate=${startDateString}&endDate=${endDateString}`));
+		const statisticsUrl = 'transaction/statistics/range'
+			+ `?startDate=${startDateString}&endDate=${endDateString}&periodType=month`;
+		const response = await makeRequest(createApiUrl(statisticsUrl));
 
-		return response.map(item => [`${item.month}-01`, item.totalTransactions]);
+		return response.data.map(item => [`${item.period}-01`, item.totalTransactions]);
 	}
 	default:
 		return (await fetchBlockPage({ pageSize: 240 })).data.map(item => [item.height, item.transactionCount]).reverse();
