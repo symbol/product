@@ -22,8 +22,7 @@ describe('next.config', () => {
 		};
 		if (!('NEXT_PUBLIC_PLATFORM' in env))
 			delete process.env.NEXT_PUBLIC_PLATFORM;
-		if (!('PLATFORM' in env))
-			delete process.env.PLATFORM;
+		delete process.env.PLATFORM;
 
 		return require('../next.config');
 	};
@@ -55,10 +54,17 @@ describe('next.config', () => {
 		// Act + Assert:
 		expect(() => loadNextConfig({}).sassOptions.additionalData('$color: red;', {
 			resourcePath: '/workspace/styles/globals.scss'
-		})).toThrow('NEXT_PUBLIC_PLATFORM or PLATFORM must be set to either "nem" or "symbol".');
+		})).toThrow('NEXT_PUBLIC_PLATFORM must be set to either "nem" or "symbol".');
 		expect(() => loadNextConfig({ NEXT_PUBLIC_PLATFORM: 'catapult' }).sassOptions.additionalData('$color: red;', {
 			resourcePath: '/workspace/styles/globals.scss'
-		})).toThrow('NEXT_PUBLIC_PLATFORM or PLATFORM must be set to either "nem" or "symbol".');
+		})).toThrow('NEXT_PUBLIC_PLATFORM must be set to either "nem" or "symbol".');
+	});
+
+	it('does not use the legacy PLATFORM environment variable', () => {
+		// Act + Assert:
+		expect(() => loadNextConfig({ PLATFORM: 'nem' }).sassOptions.additionalData('$color: red;', {
+			resourcePath: '/workspace/styles/globals.scss'
+		})).toThrow('NEXT_PUBLIC_PLATFORM must be set to either "nem" or "symbol".');
 	});
 
 	it('configures NEM image paths with common and NEM asset locations', () => {

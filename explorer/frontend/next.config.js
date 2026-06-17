@@ -5,12 +5,12 @@ const { loadEnvConfig } = require('@next/env');
 
 loadEnvConfig(__dirname);
 
-const PLATFORM = process.env.NEXT_PUBLIC_PLATFORM || process.env.PLATFORM;
+const PLATFORM = process.env.NEXT_PUBLIC_PLATFORM;
 const VALID_PLATFORMS = ['nem', 'symbol'];
 
 const getPlatform = () => {
 	if (!VALID_PLATFORMS.includes(PLATFORM))
-		throw new Error('NEXT_PUBLIC_PLATFORM or PLATFORM must be set to either "nem" or "symbol".');
+		throw new Error('NEXT_PUBLIC_PLATFORM must be set to either "nem" or "symbol".');
 
 	return PLATFORM;
 };

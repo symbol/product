@@ -22,8 +22,21 @@ describe('variants', () => {
 
 	it('requires an explicit supported platform', () => {
 		// Act + Assert:
-		expect(() => loadVariant()).toThrow('NEXT_PUBLIC_PLATFORM or PLATFORM must be set to either "nem" or "symbol".');
-		expect(() => loadVariant('catapult')).toThrow('NEXT_PUBLIC_PLATFORM or PLATFORM must be set to either "nem" or "symbol".');
+		expect(() => loadVariant()).toThrow('NEXT_PUBLIC_PLATFORM must be set to either "nem" or "symbol".');
+		expect(() => loadVariant('catapult')).toThrow('NEXT_PUBLIC_PLATFORM must be set to either "nem" or "symbol".');
+	});
+
+	it('does not use the legacy PLATFORM environment variable', () => {
+		// Arrange:
+		jest.resetModules();
+		process.env = {
+			...originalEnv,
+			PLATFORM: 'nem'
+		};
+		delete process.env.NEXT_PUBLIC_PLATFORM;
+
+		// Act + Assert:
+		expect(() => require('@/variants')).toThrow('NEXT_PUBLIC_PLATFORM must be set to either "nem" or "symbol".');
 	});
 
 	it('loads NEM variant when requested', () => {

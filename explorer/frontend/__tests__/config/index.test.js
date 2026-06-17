@@ -15,18 +15,39 @@ describe('config', () => {
 		Object.keys(process.env)
 			.filter(key => key.startsWith('NEXT_PUBLIC_') && !(key in env))
 			.forEach(key => delete process.env[key]);
+		[
+			'PLATFORM',
+			'NATIVE_MOSAIC_ID',
+			'NATIVE_MOSAIC_TICKER',
+			'NATIVE_MOSAIC_DIVISIBILITY',
+			'API_BASE_URL'
+		].forEach(key => {
+			if (!(key in env))
+				delete process.env[key];
+		});
 
 		return require('@/config').createPublicAppConfig();
 	};
 
-	it('uses legacy environment variable names', () => {
+	it('ignores legacy environment variable names', () => {
 		// Act:
-		const config = loadPublicConfig({
+		expect(() => loadPublicConfig({
 			PLATFORM: 'nem',
 			NATIVE_MOSAIC_ID: 'nem.xem',
 			NATIVE_MOSAIC_TICKER: 'XEM',
 			NATIVE_MOSAIC_DIVISIBILITY: '6',
 			API_BASE_URL: 'https://legacy.backend'
+		})).toThrow('NEXT_PUBLIC_PLATFORM must be set to either "nem" or "symbol".');
+	});
+
+	it('uses NEXT_PUBLIC environment variable names', () => {
+		// Act:
+		const config = loadPublicConfig({
+			NEXT_PUBLIC_PLATFORM: 'nem',
+			NEXT_PUBLIC_NATIVE_MOSAIC_ID: 'nem.xem',
+			NEXT_PUBLIC_NATIVE_MOSAIC_TICKER: 'XEM',
+			NEXT_PUBLIC_NATIVE_MOSAIC_DIVISIBILITY: '6',
+			NEXT_PUBLIC_API_BASE_URL: 'https://public.backend'
 		});
 
 		// Assert:
@@ -34,7 +55,7 @@ describe('config', () => {
 		expect(config.NATIVE_MOSAIC_ID).toBe('nem.xem');
 		expect(config.NATIVE_MOSAIC_TICKER).toBe('XEM');
 		expect(config.NATIVE_MOSAIC_DIVISIBILITY).toBe(6);
-		expect(config.API_BASE_URL).toBe('https://legacy.backend');
+		expect(config.API_BASE_URL).toBe('https://public.backend');
 		expect(config.HEADER_LOGO_SRC).toBe('/images/logo-nem.png');
 		expect(config.FOOTER_LOGO_SRC).toBe('/images/logo-nem-outline.svg');
 		expect(config.NATIVE_MOSAIC_ICON_SRC).toBe('/images/icon-mosaic-native.svg');
@@ -42,11 +63,9 @@ describe('config', () => {
 		expect(config.BACKEND_HEALTH_CHECK_ENABLED).toBe(true);
 	});
 
-	it('prefers NEXT_PUBLIC environment variable names', () => {
+	it('uses Symbol NEXT_PUBLIC environment variable names', () => {
 		// Act:
 		const config = loadPublicConfig({
-			PLATFORM: 'symbol',
-			NATIVE_MOSAIC_ID: 'symbol.xym',
 			NEXT_PUBLIC_PLATFORM: 'symbol',
 			NEXT_PUBLIC_NATIVE_MOSAIC_ID: '72C0212E67A08BCE',
 			NEXT_PUBLIC_NATIVE_MOSAIC_TICKER: 'XYM',
@@ -73,10 +92,10 @@ describe('config', () => {
 		// Act + Assert:
 		expect(() => loadPublicConfig({
 			NATIVE_MOSAIC_ID: 'nem.xem'
-		})).toThrow('NEXT_PUBLIC_PLATFORM or PLATFORM must be set to either "nem" or "symbol".');
+		})).toThrow('NEXT_PUBLIC_PLATFORM must be set to either "nem" or "symbol".');
 		expect(() => loadPublicConfig({
-			PLATFORM: 'catapult'
-		})).toThrow('NEXT_PUBLIC_PLATFORM or PLATFORM must be set to either "nem" or "symbol".');
+			NEXT_PUBLIC_PLATFORM: 'catapult'
+		})).toThrow('NEXT_PUBLIC_PLATFORM must be set to either "nem" or "symbol".');
 	});
 
 	it('uses Next app config on client before the inline appConfig script executes', () => {

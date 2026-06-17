@@ -2,12 +2,12 @@
 
 set -ex
 
-if [ -n "${NEXT_PUBLIC_PLATFORM:-}" ] || [ -n "${PLATFORM:-}" ]; then
-	BUILD_PLATFORMS="${NEXT_PUBLIC_PLATFORM:-$PLATFORM}"
+if [ -n "${NEXT_PUBLIC_PLATFORM:-}" ]; then
+	BUILD_PLATFORMS="$NEXT_PUBLIC_PLATFORM"
 elif [ -n "${FRONTEND_BUILD_PLATFORMS:-}" ]; then
 	BUILD_PLATFORMS="$FRONTEND_BUILD_PLATFORMS"
 else
-	echo "NEXT_PUBLIC_PLATFORM, PLATFORM, or FRONTEND_BUILD_PLATFORMS must specify nem or symbol" >&2
+	echo "NEXT_PUBLIC_PLATFORM or FRONTEND_BUILD_PLATFORMS must specify nem or symbol" >&2
 	exit 1
 fi
 
@@ -19,7 +19,6 @@ for BUILD_PLATFORM in "${BUILD_PLATFORM_LIST[@]}"; do
 	fi
 
 	export NEXT_PUBLIC_PLATFORM="$BUILD_PLATFORM"
-	export PLATFORM="$BUILD_PLATFORM"
 
 	npm run build
 done

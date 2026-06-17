@@ -20,14 +20,14 @@ const variants = {
 	}
 };
 
-const getPlatform = () => process.env.NEXT_PUBLIC_PLATFORM || process.env.PLATFORM;
+const getPlatform = () => process.env.NEXT_PUBLIC_PLATFORM;
 
 const loadVariant = () => {
 	const platform = getPlatform();
 	const selectedVariant = variants[platform];
 
 	if (!selectedVariant)
-		throw new Error('NEXT_PUBLIC_PLATFORM or PLATFORM must be set to either "nem" or "symbol".');
+		throw new Error('NEXT_PUBLIC_PLATFORM must be set to either "nem" or "symbol".');
 
 	return selectedVariant;
 };
