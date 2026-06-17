@@ -47,7 +47,9 @@ describe('api/TransactionService', () => {
 			// Arrange:
 			const transactionDTOs = [{ hash: '0x1' }, { hash: '0x2' }];
 			const resolvedTransactions = [{ id: 'tx1' }, { id: 'tx2' }];
+			const latestBlock = 10880893;
 			const provider = {
+				getBlockNumber: jest.fn().mockResolvedValue(latestBlock),
 				send: jest.fn().mockResolvedValue({ txs: transactionDTOs })
 			};
 			createEthereumJrpcProviderMock.mockReturnValue(provider);
@@ -66,7 +68,7 @@ describe('api/TransactionService', () => {
 			expect(createEthereumJrpcProviderMock).toHaveBeenCalledWith(networkProperties);
 			expect(provider.send).toHaveBeenCalledWith('ots_searchTransactionsBefore', [
 				currentAccount.address,
-				0,
+				latestBlock + 1,
 				pageSize
 			]);
 			expect(resolveSpy).toHaveBeenCalledWith(networkProperties, transactionDTOs, currentAccount);
@@ -75,7 +77,11 @@ describe('api/TransactionService', () => {
 
 		it('uses default pageSize when not provided', async () => {
 			// Arrange:
-			const provider = { send: jest.fn().mockResolvedValue({ txs: [] }) };
+			const latestBlock = 10880893;
+			const provider = {
+				getBlockNumber: jest.fn().mockResolvedValue(latestBlock),
+				send: jest.fn().mockResolvedValue({ txs: [] })
+			};
 			createEthereumJrpcProviderMock.mockReturnValue(provider);
 
 			const service = createService();
@@ -87,7 +93,7 @@ describe('api/TransactionService', () => {
 			// Assert:
 			expect(provider.send).toHaveBeenCalledWith('ots_searchTransactionsBefore', [
 				currentAccount.address,
-				0,
+				latestBlock + 1,
 				15
 			]);
 		});

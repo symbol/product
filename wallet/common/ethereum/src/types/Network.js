@@ -13,8 +13,9 @@
 
 /**
  * @typedef {Object} NetworkCurrency
- * @property {string} name - Token symbol ('ETH').
- * @property {string} id - Token identifier ('ETH').
+ * @property {string} name - Token symbol ('Ether').
+ * @property {string} ticker - Token ticker ('ETH').
+ * @property {string} id - Token identifier ('eth').
  * @property {number} divisibility - Token divisibility (18).
  */
 

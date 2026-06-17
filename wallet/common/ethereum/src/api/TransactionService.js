@@ -1,6 +1,11 @@
+import { TransactionType } from '../constants';
 import { createEthereumJrpcProvider, getUnresolvedIdsFromTransactionDTOs, transactionFromDTO, transactionToEthereum } from '../utils';
 import { ApiError } from 'wallet-common-core';
 import { TransactionGroup } from 'wallet-common-core/src/constants';
+
+// Uniswap V3 swaps require a prior ERC-20 approve, so estimateGas always fails in isolation.
+// Use a conservative fixed gas limit that covers typical V3 exactInputSingle calls.
+const UNISWAP_SWAP_GAS_LIMIT = '300000';
 
 /** @typedef {import('../types/Account').PublicAccount} PublicAccount */
 /** @typedef {import('../types/Mosaic').MosaicInfo} MosaicInfo */
@@ -30,9 +35,11 @@ export class TransactionService {
 	fetchAccountTransactions = async (networkProperties, account, searchCriteria = {}) => {
 		const { pageSize = 15 } = searchCriteria;
 		const provider = createEthereumJrpcProvider(networkProperties);
+
+		const latestBlock = await provider.getBlockNumber();
 		const { txs: transactionDTOs } = await provider.send('ots_searchTransactionsBefore', [
 			account.address,
-			0,
+			latestBlock + 1,
 			pageSize
 		]);
 
@@ -123,6 +130,9 @@ export class TransactionService {
 	 * @returns {Promise<string>} - The estimated gas limit amount.
 	 */
 	estimateTransactionGasLimit = async (networkProperties, transaction) => {
+		if (transaction.type === TransactionType.UNISWAP_SWAP)
+			return UNISWAP_SWAP_GAS_LIMIT;
+
 		const provider = createEthereumJrpcProvider(networkProperties);
 		const ethereumTransaction = transactionToEthereum(transaction, {
 			networkIdentifier: networkProperties.networkIdentifier

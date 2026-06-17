@@ -94,3 +94,9 @@ export const networkIdentifiers = ['mainnet', 'testnet'];
 export const currentNetworkIdentifier = 'testnet';
 
 export const currentAccount = walletStorageAccounts[currentNetworkIdentifier][0];
+
+export const accounts = {
+	alice: walletStorageAccounts[currentNetworkIdentifier][0],
+	bob: walletStorageAccounts[currentNetworkIdentifier][1],
+	carol: walletStorageAccounts[currentNetworkIdentifier][2]
+};

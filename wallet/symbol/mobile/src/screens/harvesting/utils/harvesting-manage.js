@@ -67,7 +67,7 @@ export const createConfirmationDialogData = actionType => {
 
 	return {
 		title: $t('s_harvesting_confirm_stop_title'),
-		text: ''
+		text: $t('s_harvesting_confirm_stop_description')
 	};
 };
 

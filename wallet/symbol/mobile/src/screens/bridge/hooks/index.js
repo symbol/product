@@ -4,5 +4,6 @@ export * from './useBridgeAmount';
 export * from './useBridgeHistory';
 export * from './useBridgeNoPairsDialog';
 export * from './useBridgeTransaction';
+export * from './useBridgeTransactionWorkflow';
 export * from './useEstimation';
 export * from './useSwapSelector';

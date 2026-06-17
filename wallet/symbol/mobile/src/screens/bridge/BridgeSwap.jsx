@@ -5,10 +5,11 @@ import {
 	useBridgeHistory,
 	useBridgeNoPairsDialog,
 	useBridgeTransaction,
+	useBridgeTransactionWorkflow,
 	useEstimation,
 	useSwapSelector
 } from './hooks';
-import { validateEstimation } from './utils';
+import { createTransactionProgressViewModel, validateEstimation } from './utils';
 import {
 	Button,
 	ButtonCircle,
@@ -43,7 +44,7 @@ const TRANSACTION_SPEED = 'medium';
  * @returns {React.ReactNode} BridgeSwap component.
  */
 export const BridgeSwap = props => {
-	// Ref to hold createTransaction for use in useTransactionFees before it's defined
+	// Ref to break createTransaction ↔ useBridgeAmount circular dependency
 	const createTransactionRef = useRef(() => Promise.resolve(null));
 
 	// Load bridges and subscribe to changes
@@ -59,7 +60,6 @@ export const BridgeSwap = props => {
 	const {
 		isReady,
 		bridge,
-		mode,
 		source,
 		target,
 		sourceList,
@@ -71,7 +71,7 @@ export const BridgeSwap = props => {
 
 	const sourceWalletController = useWalletController(source?.chainName);
 
-	// Transaction fees (moved before useBridgeAmount to avoid undefined reference)
+	// Transaction fees
 	const {
 		data: transactionFees,
 		isLoading: isFeesLoading,
@@ -84,6 +84,7 @@ export const BridgeSwap = props => {
 	// Amount and validation
 	const {
 		amount,
+		amountInput,
 		isAmountValid,
 		availableBalance,
 		changeAmount,
@@ -91,23 +92,35 @@ export const BridgeSwap = props => {
 		reset
 	} = useBridgeAmount({ source, transactionFees, transactionFeeTierLevel: TRANSACTION_SPEED });
 
-	// Transaction creation and preview
-	const {
-		createTransaction,
-		getTransactionPreviewTable
-	} = useBridgeTransaction({ bridgeId: bridge?.id, source, target, amount });
-
-	// Update ref to point to actual createTransaction
-	createTransactionRef.current = createTransaction;
-
 	// Estimation summary
 	const {
-		estimation,
+		estimations,
 		estimate,
 		clearEstimation,
 		isLoading:
         isEstimationLoading
-	} = useEstimation({ bridge, mode, amount });
+	} = useEstimation({ bridge, amount });
+
+	// Transaction creation and preview
+	const {
+		createTransaction,
+		getConfirmationPreview
+	} = useBridgeTransaction({ bridge, target, amount, estimations, walletController: sourceWalletController });
+
+	// Update ref to break circular dependency with useTransactionFees
+	createTransactionRef.current = createTransaction;
+
+	// Transaction workflow
+	const workflow = useBridgeTransactionWorkflow({
+		bridge,
+		createTransaction,
+		walletController: sourceWalletController,
+		transactionFeeTiers: transactionFees,
+		transactionFeeTierLevel: TRANSACTION_SPEED
+	});
+
+	// Transaction progress view model
+	const transactionProgressViewModel = createTransactionProgressViewModel(workflow);
 
 	// Recent history
 	const { history } = useBridgeHistory({ bridge });
@@ -161,10 +174,11 @@ export const BridgeSwap = props => {
 		<TransactionScreenTemplate
 			isSendButtonDisabled={isButtonDisabled}
 			isLoading={false}
-			createTransaction={createTransaction}
-			getConfirmationPreview={getTransactionPreviewTable}
+			getConfirmationPreview={getConfirmationPreview}
 			onComplete={handleTransactionSendComplete}
 			walletController={sourceWalletController}
+			workflow={workflow}
+			transactionProgressViewModel={transactionProgressViewModel}
 			isCustomSendButtonUsed={true}
 			confirmDialogTitle={$t('s_bridge_swap_dialog_confirm_title')}
 			confirmDialogText={$t('s_bridge_swap_dialog_confirm_text', {
@@ -174,8 +188,6 @@ export const BridgeSwap = props => {
 				targetToken: target?.token.name,
 				targetChain: target?.chainName
 			})}
-			transactionFeeTiers={transactionFees}
-			transactionFeeTierLevel={TRANSACTION_SPEED}
 			modals={(
 				<>
 					<DialogBox
@@ -212,15 +224,15 @@ export const BridgeSwap = props => {
 						<InputAmount
 							label={$t('form_transfer_input_amount')}
 							availableBalance={availableBalance}
-							value={amount}
-							extraValidators={[validateEstimation(estimation)]}
+							value={amountInput}
+							extraValidators={[validateEstimation(estimations)]}
 							onChange={changeAmount}
 							onValidityChange={changeAmountValidity}
 						/>
 						<EstimationSummary
 							sendAmount={amount}
 							transactionFeeAmount={transactionFeeAmount}
-							estimation={estimation}
+							estimations={estimations}
 							sourceToken={source?.token}
 							targetToken={target?.token}
 							sourceNetworkCurrency={sourceWalletController?.networkProperties?.networkCurrency}

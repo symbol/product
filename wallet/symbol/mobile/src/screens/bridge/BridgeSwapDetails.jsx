@@ -25,22 +25,11 @@ export const BridgeSwapDetails = ({ route }) => {
 	const bridge = bridges.find(b => b.id === bridgeId);
 
 	const data = preloadedData;
-	const { sourceChainName, targetChainName } = data;
 
 	const status = getSwapStatus(data.requestStatus, data.payoutStatus);
 
-	const sourceWalletController =
-        bridge.nativeWalletController.chainName === sourceChainName
-        	? bridge.nativeWalletController
-        	: bridge.wrappedWalletController;
-
-	const targetWalletController =
-        bridge.nativeWalletController.chainName === targetChainName
-        	? bridge.nativeWalletController
-        	: bridge.wrappedWalletController;
-
-	const sourceData = getSwapSourceData(data, sourceWalletController);
-	const targetData = getSwapTargetData(data, targetWalletController);
+	const sourceData = getSwapSourceData(data, bridge.sourceWalletController);
+	const targetData = getSwapTargetData(data, bridge.targetWalletController);
 
 	const activityLog = buildActivityLog({
 		requestStatus: data.requestStatus,

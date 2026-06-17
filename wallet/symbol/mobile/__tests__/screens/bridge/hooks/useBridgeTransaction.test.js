@@ -6,12 +6,12 @@ import { HookTester } from '__tests__/HookTester';
 import { runHookContractTest } from '__tests__/hook-tests';
 import { createWalletControllerMock } from '__tests__/mock-helpers';
 import { act } from '@testing-library/react-native';
+import { TransactionBundle } from 'wallet-common-core'; // eslint-disable-line import/order
 
 // Constants
 
 const CHAIN_NAME = 'symbol';
 const NETWORK_IDENTIFIER = 'testnet';
-const BRIDGE_ID = 'symbol-xym-ethereum-wxym';
 const AMOUNT = '25';
 
 // Fixtures
@@ -22,11 +22,6 @@ const sourceAccount = AccountFixtureBuilder
 
 const targetAccount = AccountFixtureBuilder
 	.createWithAccount('ethereum', NETWORK_IDENTIFIER, 0)
-	.build();
-
-const sourceToken = TokenFixtureBuilder
-	.createWithToken(CHAIN_NAME, NETWORK_IDENTIFIER, 0)
-	.setAmount('200')
 	.build();
 
 const transferToken = TokenFixtureBuilder
@@ -50,41 +45,31 @@ const bridgeTransaction = TransactionFixtureBuilder
 	})
 	.build();
 
-const bridgeModule = {
-	createTransaction: jest.fn().mockResolvedValue(bridgeTransaction)
-};
+const transactionBundle = new TransactionBundle([bridgeTransaction]);
 
 const sourceWalletController = createWalletControllerMock({
-	currentAccount: sourceAccount,
-	modules: {
-		bridge: bridgeModule
-	}
+	currentAccount: sourceAccount
 });
 
 const targetWalletController = createWalletControllerMock({
 	currentAccount: targetAccount
 });
 
-const sourceSide = {
-	chainName: CHAIN_NAME,
-	networkIdentifier: NETWORK_IDENTIFIER,
-	token: sourceToken,
-	walletController: sourceWalletController
+const stepPair = {
+	createTransaction: jest.fn().mockResolvedValue(transactionBundle),
+	sourceWalletController,
+	targetWalletController
 };
 
-const targetSide = {
-	chainName: 'ethereum',
-	networkIdentifier: NETWORK_IDENTIFIER,
-	token: sourceToken,
-	walletController: targetWalletController
+const bridge = {
+	getPairForStep: jest.fn().mockReturnValue(stepPair)
 };
 
 // Hook Helpers
 
 const createHookParams = overrides => ({
-	bridgeId: BRIDGE_ID,
-	source: sourceSide,
-	target: targetSide,
+	bridge,
+	walletController: sourceWalletController,
 	amount: AMOUNT,
 	...overrides
 });
@@ -98,38 +83,45 @@ describe('hooks/useBridgeTransaction', () => {
 		props: [createHookParams()],
 		contract: {
 			createTransaction: 'function',
-			getTransactionPreviewTable: 'function'
+			getConfirmationPreview: 'function'
 		}
 	});
 
 	describe('initialization', () => {
-		it('creates transaction using initialized params and builds preview rows', async () => {
+		it('creates transaction using initialized params and builds confirmation sections', async () => {
 			// Arrange:
 			const params = createHookParams();
-			const expectedTransactionData = {
-				bridgeId: BRIDGE_ID,
-				recipientAddress: targetAccount.address,
-				amount: AMOUNT
-			};
-			let createdTransaction;
-			let previewTable;
+			let createdBundle;
+			let sections;
 
 			// Act:
 			const hookTester = new HookTester(useBridgeTransaction, [params]);
 			await act(async () => {
-				createdTransaction = await hookTester.currentResult.createTransaction();
-				previewTable = hookTester.currentResult.getTransactionPreviewTable(createdTransaction);
+				createdBundle = await hookTester.currentResult.createTransaction();
+				sections = hookTester.currentResult.getConfirmationPreview(createdBundle);
 			});
 
 			// Assert:
-			expect(bridgeModule.createTransaction).toHaveBeenCalledWith(expectedTransactionData);
-			expect(createdTransaction).toStrictEqual(bridgeTransaction);
-			expect(previewTable).toStrictEqual([
-				{ type: 'account', value: bridgeTransaction.signerAddress, title: 'signerAddress' },
-				{ type: 'account', value: bridgeTransaction.message.text, title: 'recipientAddress' },
-				{ type: 'token', value: bridgeTransaction.mosaics, title: 'mosaics' },
-				{ type: 'fee', value: bridgeTransaction.fee, title: 'fee' }
-			]);
+			expect(stepPair.createTransaction).toHaveBeenCalledWith({
+				recipientAddress: targetAccount.address,
+				amount: AMOUNT,
+				amountOutMinimum: undefined
+			});
+			expect(createdBundle).toStrictEqual(transactionBundle);
+			expect(sections).toStrictEqual([{
+				id: 'section_0_0',
+				title: '',
+				chainName: sourceWalletController.chainName,
+				networkIdentifier: sourceWalletController.networkIdentifier,
+				addressBook: sourceWalletController.modules.addressBook,
+				walletAccounts: sourceWalletController.accounts,
+				tableData: [
+					{ type: 'account', value: bridgeTransaction.signerAddress, title: 'signerAddress' },
+					{ type: 'account', value: bridgeTransaction.message.text, title: 'recipientAddress' },
+					{ type: 'token', value: bridgeTransaction.mosaics, title: 'tokens' },
+					{ type: 'fee', value: bridgeTransaction.fee, title: 'fee' }
+				]
+			}]);
 		});
 	});
 });

@@ -185,35 +185,24 @@ describe('api/Listener', () => {
 	});
 
 	describe('listenAddedTransactions (UNCONFIRMED)', () => {
-		it('invokes callback when pending tx is from the account', async () => {
+		it('does not subscribe to the pending stream', async () => {
 			// Arrange:
-			const txHash = '0xHASH';
-			const provider = {
-				getTransaction: jest.fn().mockResolvedValue({
-					hash: txHash,
-					from: accountAddress,
-					to: '0xSomeone'
-				})
-			};
+			const provider = { getTransaction: jest.fn() };
 			createEthereumJrpcProviderMock.mockReturnValue(provider);
 			const listener = createListener();
 			await listener.open();
 			const callback = jest.fn();
-			listener.listenAddedTransactions(TransactionGroup.UNCONFIRMED, callback);
 
 			// Act:
-			listener.wsProvider.emit('pending', txHash);
-			await Promise.resolve();
+			listener.listenAddedTransactions(TransactionGroup.UNCONFIRMED, callback);
 
 			// Assert:
-			expect(provider.getTransaction).toHaveBeenCalledWith(txHash);
-			expect(callback).toHaveBeenCalledWith({ hash: txHash });
+			expect(listener.wsProvider.on).not.toHaveBeenCalledWith('pending', expect.any(Function));
 		});
 
-		it('does nothing when getTransaction returns null', async () => {
+		it('does not fetch transactions or invoke callback when a pending tx is emitted', async () => {
 			// Arrange:
-			const txHash = '0xNULL';
-			const provider = { getTransaction: jest.fn().mockResolvedValue(null) };
+			const provider = { getTransaction: jest.fn() };
 			createEthereumJrpcProviderMock.mockReturnValue(provider);
 			const listener = createListener();
 			await listener.open();
@@ -221,35 +210,12 @@ describe('api/Listener', () => {
 			listener.listenAddedTransactions(TransactionGroup.UNCONFIRMED, callback);
 
 			// Act:
-			listener.wsProvider.emit('pending', txHash);
+			listener.wsProvider.emit('pending', '0xHASH');
 			await Promise.resolve();
 
 			// Assert:
+			expect(provider.getTransaction).not.toHaveBeenCalled();
 			expect(callback).not.toHaveBeenCalled();
-		});
-
-		it('invokes callback when pending tx is to the account', async () => {
-			// Arrange:
-			const txHash = '0xHASH2';
-			const provider = {
-				getTransaction: jest.fn().mockResolvedValue({
-					hash: txHash,
-					from: '0xOther',
-					to: accountAddress
-				})
-			};
-			createEthereumJrpcProviderMock.mockReturnValue(provider);
-			const listener = createListener();
-			await listener.open();
-			const callback = jest.fn();
-			listener.listenAddedTransactions(TransactionGroup.UNCONFIRMED, callback);
-
-			// Act:
-			listener.wsProvider.emit('pending', txHash);
-			await Promise.resolve();
-
-			// Assert:
-			expect(callback).toHaveBeenCalledWith({ hash: txHash });
 		});
 	});
 

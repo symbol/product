@@ -73,26 +73,12 @@ export class Listener {
 
 	/**
 	 * Subscribe to new transactions.
-	 * @param {'confirmed' | 'unconfirmed' | 'partial'} group - The transaction group.
+	 * @param {'confirmed'} group - The transaction group.
 	 * @param {function({ hash: string }): void} callback - The callback function.
 	 */
 	listenAddedTransactions(group, callback) {
 		if (group === TransactionGroup.CONFIRMED)
 			this._listenConfirmedTransactions(callback);
-		else if (group === TransactionGroup.UNCONFIRMED)
-			this._listenPendingTransactions(callback);
-	}
-
-	_listenPendingTransactions(callback) {
-		this.wsProvider.on('pending', async transactionHash => {
-			const transaction = await this.jrpcProvider.getTransaction(transactionHash);
-
-			if (!transaction)
-				return;
-
-			if (isAccountRelatedTransaction(transaction, this.accountAddress))
-				callback({ hash: transaction.hash });
-		});
 	}
 
 	_listenConfirmedTransactions(callback) {

@@ -4,6 +4,7 @@ import { ListenerService } from './ListenerService';
 import { NetworkService } from './NetworkService';
 import { TokenService } from './TokenService';
 import { TransactionService } from './TransactionService';
+import { UniswapService } from './UniswapService';
 
 /**
  * @typedef {object} Config
@@ -42,6 +43,10 @@ export class Api {
      */
 	transaction;
 
+	/**
+     * @type {UniswapService}
+     */
+	uniswap;
 
 	/**
      * Creates an instance of EthereumApi.
@@ -60,5 +65,6 @@ export class Api {
 		this.network = new NetworkService(propagatedOptions);
 		this.token = new TokenService(propagatedOptions);
 		this.transaction = new TransactionService(propagatedOptions);
+		this.uniswap = new UniswapService();
 	}
 }
