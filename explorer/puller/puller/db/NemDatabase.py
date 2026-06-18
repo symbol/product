@@ -269,10 +269,8 @@ class NemDatabase(DatabaseConnection):
 
 		self.connection.commit()
 
-	def seed_network_currency(self):
+	def seed_network_currency(self, cursor, signer):
 		"""Seeds NEM network currency metadata."""
-
-		cursor = self.connection.cursor()
 
 		cursor.execute(
 			'''
@@ -288,7 +286,7 @@ class NemDatabase(DatabaseConnection):
 			''',
 			(
 				'nem',
-				bytes(32),  # zero public key
+				signer.bytes,
 				1,
 				9223372036854775807  # max bigint value to represent no expiration
 			)
@@ -316,7 +314,7 @@ class NemDatabase(DatabaseConnection):
 				'nem',
 				'nem.xem',
 				'network currency',
-				bytes(32),  # zero public key
+				signer.bytes,
 				1,
 				8999999999,
 				8999999999,

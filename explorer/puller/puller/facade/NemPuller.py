@@ -552,6 +552,8 @@ class NemPuller:
 
 		cursor = self.nem_db.connection.cursor()
 
+		self.nem_db.seed_network_currency(cursor, nemesis_block.signer)
+
 		self._process_block(cursor, nemesis_block)
 
 		addresses = self._extract_addresses_from_block(nemesis_block)

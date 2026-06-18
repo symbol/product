@@ -260,14 +260,14 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 			cursor = nem_database.connection.cursor()
 
 			# Act:
-			nem_database.seed_network_currency()
+			nem_database.seed_network_currency(cursor, BLOCKS[0].signer)
 			result = self._fetch_namespace_from_db(cursor, 'nem')
 
 		# Assert:
 		self.assertIsNotNone(result)
 		self.assertEqual(result, (
 			'nem',
-			'0' * 64,
+			BLOCKS[0].signer.bytes.hex(),
 			1,
 			9223372036854775807,
 			[]
@@ -280,7 +280,7 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 			cursor = nem_database.connection.cursor()
 
 			# Act:
-			nem_database.seed_network_currency()
+			nem_database.seed_network_currency(cursor, BLOCKS[0].signer)
 			result = self._fetch_mosaic_from_db(cursor, 'nem.xem')
 
 		# Assert:
@@ -289,7 +289,7 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 			'nem',
 			'nem.xem',
 			'network currency',
-			'0' * 64,
+			BLOCKS[0].signer.bytes.hex(),
 			1,
 			8999999999,
 			8999999999,
@@ -309,8 +309,8 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 			cursor = nem_database.connection.cursor()
 
 			# Act:
-			nem_database.seed_network_currency()
-			nem_database.seed_network_currency()
+			nem_database.seed_network_currency(cursor, BLOCKS[0].signer)
+			nem_database.seed_network_currency(cursor, PublicKey('0' * 64))
 
 			namespace_result = self._fetch_namespace_from_db(cursor, 'nem')
 			mosaic_result = self._fetch_mosaic_from_db(cursor, 'nem.xem')
@@ -326,7 +326,7 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 		self.assertEqual(1, mosaic_count)
 		self.assertEqual(namespace_result, (
 			'nem',
-			'0' * 64,
+			BLOCKS[0].signer.bytes.hex(),
 			1,
 			9223372036854775807,
 			[]
@@ -335,7 +335,7 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 			'nem',
 			'nem.xem',
 			'network currency',
-			'0' * 64,
+			BLOCKS[0].signer.bytes.hex(),
 			1,
 			8999999999,
 			8999999999,
