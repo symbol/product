@@ -1,3 +1,14 @@
+import { VARIANT } from '@/app/variants/active';
+
+/**
+ * Creates a URL for a static asset served from the active variant's public subdirectory.
+ * Variant-specific assets live under `public/<variant>/...`, so a shared reference such as
+ * `/images/logo.png` resolves to `/<variant>/images/logo.png`.
+ * @param {string} url - asset path relative to the variant public subdirectory (leading slash).
+ * @returns {string} the variant-scoped asset URL.
+ */
+export const createAssetURL = url => `/${VARIANT}${url}`;
+
 /**
  * Handles copying a text string to clipboard.
  * @param {string} text - text to copy

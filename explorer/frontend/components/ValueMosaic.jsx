@@ -1,9 +1,10 @@
 import Avatar from './Avatar';
 import CustomImage from './CustomImage';
-import config from '@/config';
-import { ACCOUNT_STATE_CHANGE_ACTION, TRANSACTION_DIRECTION } from '@/constants';
-import styles from '@/styles/components/ValueMosaic.module.scss';
-import { createPageHref, handleNavigationItemClick, numberToString } from '@/utils';
+import config from '@/app/config';
+import { ACCOUNT_STATE_CHANGE_ACTION, TRANSACTION_DIRECTION } from '@/app/constants';
+import styles from '@/app/styles/components/ValueMosaic.module.scss';
+import { createAssetURL } from '@/app/utils';
+import { createPageHref, handleNavigationItemClick, numberToString } from '@/app/utils';
 import Link from 'next/link';
 
 const ValueMosaic = ({
@@ -34,11 +35,11 @@ const ValueMosaic = ({
 
 	if (finalMosaicId === config.NATIVE_MOSAIC_ID) {
 		displayedName = isTickerShown ? config.NATIVE_MOSAIC_TICKER : '';
-		imageSrc = '/images/icon-mosaic-native.svg';
+		imageSrc = createAssetURL('/images/icon-mosaic-native.svg');
 		title = amount ? `${amount} ${config.NATIVE_MOSAIC_TICKER}` : '';
 	} else {
 		displayedName = mosaicName;
-		imageSrc = '/images/icon-mosaic-custom.svg';
+		imageSrc = createAssetURL('/images/icon-mosaic-custom.svg');
 		title = amount ? `${amount} ${mosaicName}` : '';
 	}
 

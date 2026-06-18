@@ -7,8 +7,9 @@ import ValueBlockHeight from './ValueBlockHeight';
 import ValueMosaic from './ValueMosaic';
 import ValueNamespace from './ValueNamespace';
 import ValueTransaction from './ValueTransaction';
-import styles from '@/styles/components/SearchBar.module.scss';
-import { useDataManager, useDebounce } from '@/utils';
+import styles from '@/app/styles/components/SearchBar.module.scss';
+import { createAssetURL } from '@/app/utils';
+import { useDataManager, useDebounce } from '@/app/utils';
 import { useTranslation } from 'next-i18next';
 import { useEffect, useState } from 'react';
 
@@ -100,7 +101,7 @@ const SearchBar = ({ className, modalClassName, onSearchRequest }) => {
 			</Modal>
 			<TextBox
 				className={`${styles.textBox} ${className}`}
-				iconSrc="/images/icon-search.svg"
+				iconSrc={createAssetURL('/images/icon-search.svg')}
 				placeholder={t('field_search')}
 				value={text}
 				onChange={setText}

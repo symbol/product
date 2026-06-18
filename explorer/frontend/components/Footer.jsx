@@ -1,24 +1,25 @@
 import CustomImage from './CustomImage';
-import config from '@/config';
-import styles from '@/styles/components/Footer.module.scss';
-import layoutStyles from '@/styles/pages/Layout.module.scss';
+import config from '@/app/config';
+import styles from '@/app/styles/components/Footer.module.scss';
+import layoutStyles from '@/app/styles/pages/Layout.module.scss';
+import { createAssetURL } from '@/app/utils';
 import { usePathname } from 'next/navigation';
 import { useTranslation } from 'next-i18next';
 
 const socialLinks = [
 	{
 		name: 'GitHub',
-		icon: '/images/social/github.svg',
+		icon: createAssetURL('/images/social/github.svg'),
 		href: config.SOCIAL_URL_GITHUB
 	},
 	{
 		name: 'Discord',
-		icon: '/images/social/discord.svg',
+		icon: createAssetURL('/images/social/discord.svg'),
 		href: config.SOCIAL_URL_DISCORD
 	},
 	{
 		name: 'Twitter',
-		icon: '/images/social/twitter.svg',
+		icon: createAssetURL('/images/social/twitter.svg'),
 		href: config.SOCIAL_URL_TWITTER
 	}
 ];
@@ -56,12 +57,12 @@ const Footer = () => {
 			<div className={layoutStyles.contentContainer}>
 				{!isFooterWithInfoShown && (
 					<div className={styles.footerSimplified}>
-						<CustomImage className={styles.footerLogo} src="/images/logo-nem-outline.svg" alt="NEM" />
+						<CustomImage className={styles.footerLogo} src={createAssetURL('/images/logo-outline.svg')} alt="NEM" />
 					</div>
 				)}
 				{isFooterWithInfoShown && (
 					<div className={`${layoutStyles.contentContainerInner} ${styles.footerInner}`}>
-						<CustomImage className={styles.footerLogo} src="/images/logo-nem-outline.svg" alt="NEM" />
+						<CustomImage className={styles.footerLogo} src={createAssetURL('/images/logo-outline.svg')} alt="NEM" />
 						<div className={styles.footerLinksContainer}>
 							<div className={styles.footerLinks}>
 								<h7 className={styles.title}>{t('footer_title_section_1')}</h7>

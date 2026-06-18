@@ -1,5 +1,6 @@
-import styles from '@/styles/components/ButtonCopy.module.scss';
-import { copyToClipboard } from '@/utils';
+import styles from '@/app/styles/components/ButtonCopy.module.scss';
+import { createAssetURL } from '@/app/utils';
+import { copyToClipboard } from '@/app/utils';
 import Image from 'next/image';
 import { useTranslation } from 'next-i18next';
 import { toast } from 'react-toastify';
@@ -18,7 +19,7 @@ const ButtonCopy = ({ value, className }) => {
 
 	return (
 		<div className={`${styles.buttonCopy} ${className}`} onClick={handleCopy}>
-			<Image src="/images/icon-copy.png" fill alt="Copy" />
+			<Image src={createAssetURL('/images/icon-copy.png')} fill alt="Copy" />
 		</div>
 	);
 };
