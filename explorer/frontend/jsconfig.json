@@ -2,16 +2,18 @@
 	"compilerOptions": {
 		"baseUrl": ".",
 		"paths": {
-			"@/api/*": ["api/*"],
-			"@/components/*": ["components/*"],
-			"@/config": ["config/index.js"],
-			"@/constants": ["constants/index.js"],
-			"@/contexts/*": ["contexts/*"],
-			"@/pages/*": ["pages/*"],
-			"@/public/*": ["public/*"],
-			"@/styles/*": ["styles/*"],
-			"@/utils": ["utils"],
-			"@/utils/*": ["utils/*"]
+			"@/app/api/*": ["api/*"],
+			"@/app/components/*": ["components/*"],
+			"@/app/config": ["config/index.js"],
+			"@/app/constants": ["constants/index.js"],
+			"@/app/contexts/*": ["contexts/*"],
+			"@/app/pages/*": ["pages/*"],
+			"@/app/public/*": ["public/*"],
+			"@/app/styles/*": ["styles/*"],
+			"@/app/utils": ["utils"],
+			"@/app/utils/*": ["utils/*"],
+			"@/app/variants/*": ["variants/*"],
+			"@/app/active-variant/*": ["variants/nem/*"]
 		}
 	},
 	"exclude": ["**/node_modules/*", "**/build/*", "**/scripts/*"]
