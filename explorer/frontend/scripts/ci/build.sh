@@ -2,4 +2,7 @@
 
 set -ex
 
-npm run build
+for variant in ${EXPLORER_VARIANTS:-nem symbol}; do
+	rm -rf .next
+	npm run "build:${variant}"
+done

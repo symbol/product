@@ -8,6 +8,9 @@ defaultCiPipeline {
 
 	publisher = 'docker'
 	dockerImageName = 'symbolplatform/explorer-frontend'
+	// The Dockerfile requires the build-time variant; the published image is the NEM variant.
+	// (Symbol ships from its own pipeline once it has a real data layer.)
+	dockerBuildArgs = '--build-arg NEXT_PUBLIC_EXPLORER_VARIANT=nem .'
 
 	codeCoverageTool = 'c8'
 	minimumCodeCoverage = 95
