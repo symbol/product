@@ -6,14 +6,39 @@ This project is a NEM blockchain explorer built using the Next.js framework. It 
 
 ```plaintext
 frontend/
-├── api/              # Functions for interacting with internal and external APIs
+├── api/              # Stable API interface; each module delegates to the active variant
 ├── components/       # Reusable React components
 ├── config/           # Configuration for the project
 ├── constants/        # Global constants used throughout the application
 ├── pages/            # Website pages .
-├── public/           # Images, fonts and other static assets
+├── public/           # Static assets, with per-variant subdirectories (public/<variant>/...)
 ├── styles/           # Global SCSS files
-└── utils/            # Utility functions and helpers
+├── utils/            # Utility functions and helpers
+└── variants/         # Per-variant overrides (api, styles, config, components, DocumentHead)
+```
+
+## Variants (multi-explorer)
+
+This project builds a generic, protocol-agnostic explorer that can be compiled for multiple
+blockchain **variants** (currently `nem` and `symbol`) from one codebase. The shared application
+(routing, pages, components, hooks) lives at the top level; everything protocol-specific lives
+under `variants/<variant>/` (API/data layer, theme tokens, page configuration, branding,
+document head, and variant-only sections) and is resolved through `variants/` (the registry).
+
+The active variant is selected at **build time** with the public environment variable
+**`NEXT_PUBLIC_EXPLORER_VARIANT`** (`nem` | `symbol`). It is build-time because the
+SCSS theme is compiled per variant; all other configuration stays runtime (injected via
+`window.appConfig`). Each variant therefore produces its own build/image.
+
+```bash
+# Build and run the NEM variant
+NEXT_PUBLIC_EXPLORER_VARIANT=nem npm run build && NEXT_PUBLIC_EXPLORER_VARIANT=nem npm run start
+
+# Build and run the Symbol variant
+NEXT_PUBLIC_EXPLORER_VARIANT=symbol npm run build && NEXT_PUBLIC_EXPLORER_VARIANT=symbol npm run start
+
+# Per-variant Docker image
+docker build --build-arg NEXT_PUBLIC_EXPLORER_VARIANT=symbol -t explorer-frontend-symbol .
 ```
 
 ## Environment Variables
@@ -159,9 +184,14 @@ npm run lint:fix
 
 1. Make sure you are in the explorer/frontend directory.
 
-2. Build the Docker image:
+2. Build the Docker image. The `NEXT_PUBLIC_EXPLORER_VARIANT` build arg is required (the build
+   fails fast if it is missing):
 ```bash
-docker build -t symbolplatform/explorer-frontend .
+# NEM
+docker build --build-arg NEXT_PUBLIC_EXPLORER_VARIANT=nem -t symbolplatform/explorer-frontend .
+
+# Symbol
+docker build --build-arg NEXT_PUBLIC_EXPLORER_VARIANT=symbol -t symbolplatform/explorer-frontend-symbol .
 ```
 
 ## Running the Docker Container
