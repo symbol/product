@@ -3,7 +3,7 @@
     "discordURL": "https://discord.gg/NMA9YQ55td",
     "githubURL": "https://github.com/symbol",
     "twitterURL": "https://twitter.com/thesymbolchain",
-    "marketDataURL": "https://min-api.cryptocompare.com/data/price",
+    "marketDataURL": "https://api.coingecko.com/api/v3/simple/price",
     "marketCurrencies": [
         "USD",
         "CNY",

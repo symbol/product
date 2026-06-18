@@ -1,3 +1,5 @@
+const SYMBOL_COIN_ID = 'symbol';
+
 export class MarketService {
 	#config;
 	#makeRequest;
@@ -24,12 +26,13 @@ export class MarketService {
 	 * @returns {Promise<MarketData>} The current XYM price in various currencies
 	 */
 	fetchPrices = async () => {
-		const symbols = this.#config.marketCurrencies.join(',');
-		const url = `${this.#config.marketDataURL}?fsym=XYM&tsyms=${symbols}`;
+		const currencies = this.#config.marketCurrencies.map(currency => currency.toLowerCase()).join(',');
+		const url = `${this.#config.marketDataURL}?ids=${SYMBOL_COIN_ID}&vs_currencies=${currencies}`;
 		const response = await this.#makeRequest(url);
+		const prices = response[SYMBOL_COIN_ID] || {};
 		const tickers = ['CNY', 'EUR', 'GBP', 'JPY', 'KRW', 'UAH', 'USD'];
 		const marketData = tickers.reduce((acc, ticker) => {
-			acc[ticker] = response[ticker];
+			acc[ticker] = prices[ticker.toLowerCase()];
 			return acc;
 		}, {});
 

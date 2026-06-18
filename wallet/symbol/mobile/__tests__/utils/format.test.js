@@ -1,4 +1,4 @@
-import { truncateMiddle } from '@/app/utils/format';
+import { getUserCurrencyAmountText, truncateMiddle } from '@/app/utils/format';
 
 const LONG_SECRET = '0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF';
 
@@ -46,5 +46,57 @@ describe('utils/format', () => {
 		];
 
 		tests.forEach(test => runTruncateMiddleTest(test.description, test.config, test.expected));
+	});
+
+	describe('getUserCurrencyAmountText', () => {
+		const runGetUserCurrencyAmountTextTest = (description, config, expected) => {
+			it(description, () => {
+				// Arrange:
+				const { amount, price, networkIdentifier } = config;
+
+				// Act:
+				const result = getUserCurrencyAmountText(amount, price, networkIdentifier);
+
+				// Assert:
+				expect(result).toBe(expected.result);
+			});
+		};
+
+		const price = { value: 0.5, currency: 'USD' };
+
+		const tests = [
+			{
+				description: 'formats the converted amount on mainnet',
+				config: { amount: 1000, price, networkIdentifier: 'mainnet' },
+				expected: { result: '~500.00 USD' }
+			},
+			{
+				description: 'returns a zero amount when the balance is empty',
+				config: { amount: 0, price, networkIdentifier: 'mainnet' },
+				expected: { result: '0.00 USD' }
+			},
+			{
+				description: 'returns an empty string on non-mainnet networks',
+				config: { amount: 1000, price, networkIdentifier: 'testnet' },
+				expected: { result: '' }
+			},
+			{
+				description: 'returns an empty string when the price is missing',
+				config: { amount: 1000, price: null, networkIdentifier: 'mainnet' },
+				expected: { result: '' }
+			},
+			{
+				description: 'returns an empty string when the price value is undefined',
+				config: { amount: 1000, price: { value: undefined, currency: 'USD' }, networkIdentifier: 'mainnet' },
+				expected: { result: '' }
+			},
+			{
+				description: 'returns an empty string when the price value is not a finite number',
+				config: { amount: 1000, price: { value: NaN, currency: 'USD' }, networkIdentifier: 'mainnet' },
+				expected: { result: '' }
+			}
+		];
+
+		tests.forEach(test => runGetUserCurrencyAmountTextTest(test.description, test.config, test.expected));
 	});
 });

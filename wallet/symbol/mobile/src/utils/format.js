@@ -10,7 +10,7 @@ import moment from 'moment';
  * @returns {string} The network currency amount text.
  */
 export const getUserCurrencyAmountText = (amount, price, networkIdentifier) => {
-	if (networkIdentifier !== 'mainnet' || !price) 
+	if (networkIdentifier !== 'mainnet' || !price || !Number.isFinite(price.value))
 		return '';
 
 	if (!amount)
