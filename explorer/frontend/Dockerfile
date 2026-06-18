@@ -16,6 +16,12 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
+# Build-time variant selector; theme is compiled per variant.
+ARG NEXT_PUBLIC_EXPLORER_VARIANT
+RUN test -n "$NEXT_PUBLIC_EXPLORER_VARIANT" \
+	|| (echo 'ERROR: build-arg NEXT_PUBLIC_EXPLORER_VARIANT is required' && exit 1)
+ENV NEXT_PUBLIC_EXPLORER_VARIANT=$NEXT_PUBLIC_EXPLORER_VARIANT
+
 ENV NEXT_TELEMETRY_DISABLED 1
 
 RUN npm run build

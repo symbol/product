@@ -1,3 +1,13 @@
 /node_modules
 
 /build
+/.next
+/coverage
+
+/__tests__
+
+.env
+.env.*
+
+.DS_Store
+npm-debug.log*
