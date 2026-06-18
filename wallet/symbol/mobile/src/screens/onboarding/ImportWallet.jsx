@@ -1,6 +1,5 @@
-import { getOptinAccountFromMnemonic } from './utils/optin';
 import { Button, ButtonClose, FlexContainer, PasscodeView, Screen, Spacer, Stack, StyledText, SymbolLogo } from '@/app/components';
-import { MAX_SEED_ACCOUNTS_PER_NETWORK, NetworkIdentifier } from '@/app/constants';
+import { MAX_SEED_ACCOUNTS_PER_NETWORK } from '@/app/constants';
 import { useAsyncManager, usePasscode, useWalletController } from '@/app/hooks';
 import { PlatformUtils } from '@/app/lib/platform/PlatformUtils';
 import { $t } from '@/app/localization';
@@ -20,8 +19,7 @@ export const ImportWallet = () => {
 		$t('s_importWallet_loading_step1'),
 		$t('s_importWallet_loading_step2'),
 		$t('s_importWallet_loading_step3'),
-		$t('s_importWallet_loading_step4'),
-		$t('s_importWallet_loading_step5')
+		$t('s_importWallet_loading_step4')
 	];
 
 	// Mnemonic state
@@ -30,33 +28,15 @@ export const ImportWallet = () => {
 
 	// Save mnemonic in the wallet
 	const saveMnemonicManager = useAsyncManager({
-		callback: async optInAccount => {
+		callback: async () => {
 			await walletController.saveMnemonicAndGenerateAccounts({
 				mnemonic: mnemonic.trim(),
 				name: accountName,
 				accountPerNetworkCount: MAX_SEED_ACCOUNTS_PER_NETWORK
 			});
-			if (optInAccount) {
-				await walletController.addExternalAccount({
-					privateKey: optInAccount.privateKey,
-					name: 'Opt-in Account',
-					networkIdentifier: NetworkIdentifier.MAIN_NET
-				});
-			}
 		},
 		onSuccess: () => {
-			setLoadingStep(5);
-		}
-	});
-
-	// Check if the mnemonic corresponds to an opt-in account
-	const optinManager = useAsyncManager({
-		callback: () => getOptinAccountFromMnemonic(mnemonic),
-		onSuccess: optInAccount => {
 			setLoadingStep(4);
-			setTimeout(() => {
-				saveMnemonicManager.call(optInAccount);
-			}, 500);
 		}
 	});
 
@@ -65,7 +45,7 @@ export const ImportWallet = () => {
 		setIsLoading(true);
 		setTimeout(() => setLoadingStep(2), 500);
 		setTimeout(() => setLoadingStep(3), 1000);
-		setTimeout(optinManager.call, 1500);
+		setTimeout(saveMnemonicManager.call, 1500);
 	};
 
 	// Initiate the flow by creating a passcode

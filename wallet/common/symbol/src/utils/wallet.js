@@ -1,8 +1,5 @@
-import { NetworkIdentifier } from '../constants';
 import { Bip32 } from 'symbol-sdk';
 import { SymbolFacade } from 'symbol-sdk/symbol';
-
-const OPT_IN_CURVE = 'secp256k1';
 
 /**
  * Generates a random mnemonic phrase.
@@ -43,15 +40,4 @@ export const createPrivateKeysFromMnemonic = (mnemonic, indexes, networkIdentifi
 	});
 
 	return privateKeys;
-};
-
-/**
- * Creates an opt-in private key from a mnemonic phrase.
- * @param {string} mnemonic - The mnemonic phrase used to generate the private key.
- * @returns {string|null} The opt-in private key if it is whitelisted, otherwise null.
- */
-export const createOptInPrivateKeyFromMnemonic = mnemonic => {
-	const [optInPrivateKey] = createPrivateKeysFromMnemonic(mnemonic.trim(), [0], NetworkIdentifier.MAIN_NET, OPT_IN_CURVE);
-
-	return optInPrivateKey;
 };
