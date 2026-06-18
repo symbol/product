@@ -1,0 +1,124 @@
+// Colors
+$color-background-main: #1b0a29;
+$color-background-card: #221c31;
+$color-background-header: #1a1a1a;
+$color-background-navigation: #1a1a1a;
+$color-border-navigation: #1a1a1a;
+$color-background-footer: #000;
+$color-background-mosaic: rgba(241, 243, 244, 15%);
+$color-background-tooltip: #0b0118;
+$color-primary: #26c3f2;
+$color-primary-light: rgba(38, 195, 242, 15%);
+$color-secondary: #b429fa;
+$color-text-body: #fff;
+$color-text-footer: #fff;
+$color-text-link: #a7e2f4;
+$color-text-link-hover: #26c3f2;
+$color-text-tooltip: #fff;
+$color-chart-tooltip-bg: #0b0118;
+$color-chart-tooltip-text: #fff;
+$color-text-textbox-placeholder: #858585;
+$color-text-button: #221c31;
+$color-tab-active: #26c3f2;
+$color-tab-inactive: #858585;
+$color-tab-line-active: #26c3f2;
+$color-filter-active: #221c31;
+$color-filter-inactive: #26c3f2;
+$color-info: #9ed1fa;
+$color-success: #b3e6b3;
+$color-warning: #f7c06e;
+$color-warning-light: rgba(247, 192, 110, 20%);
+$color-danger: #f99;
+$color-amount-incoming: rgba(179, 230, 179, 12%);
+$color-amount-outgoing: rgba(255, 153, 153, 12%);
+$color-textbox-border: #b429fa;
+$color-textbox-bg: #1b0a29;
+$color-textbox-text: #fff;
+$color-button-bg: #26c3f2;
+$color-background-card-accent: #221c31;
+$color-text-title: #858585;
+$color-text-table-title: #858585;
+$color-text-empty-table: rgba(241, 243, 244, 45%);
+$color-separator-line-neutral: #413c4f;
+$color-separator-line-accent: #413c4f;
+$color-modal-overlay: rgba(0, 0, 0, 70%);
+$color-block-cube-front: #b429fa;
+$color-block-cube-top: #7413a4;
+$color-block-cube-right: #590e7f;
+$color-block-cube-text: rgba(255, 255, 255, 65%);
+$filter-block-fee-icon: none;
+
+// Headings (consumed by globals: variant-specific heading colour and casing)
+$color-heading: #b429fa;
+$text-transform-heading: uppercase;
+$text-transform-title: uppercase;
+
+// Borders
+$border-radius-card: 1rem;
+$border-radius-label: 1rem;
+$border-radius-input: 0.33rem;
+$border-radius-chip: 0.5rem;
+$border-radius-filter: 1.5rem;
+$border-radius-button: 0.083rem;
+$border-width-textbox: 0.083rem;
+
+// Typography
+$font-family-base: 'Protipo-Regular', sans-serif;
+$font-body: 400 1rem / 133.33% 'Protipo-Regular', sans-serif;
+$font-body-bold: 700 1rem / 133.33% 'Protipo-Bold', sans-serif;
+$font-body-monospace: 700 1rem / 133.33% 'Carbon-Bold', 'JetBrainsMono-Bold', monospace;
+$font-h1: 800 / 4.66rem 'SofiaSansCondensed-ExtraBold', sans-serif;
+$font-h2: 800 3.25rem / 4rem 'SofiaSansCondensed-ExtraBold', sans-serif;
+$font-h3: 800 2.66rem / 3.33rem 'SofiaSansCondensed-ExtraBold', sans-serif;
+$font-h4: 800 1.5rem / 1.7rem 'SofiaSansCondensed-ExtraBold', sans-serif;
+$font-title: 800 1rem / 133.33% 'Carbon-Bold', 'JetBrainsMono-Bold', monospace;
+$font-label: 400 1rem / 133.33% 'Protipo-Regular', sans-serif;
+$font-mosaic-amount: 400 1rem / 133.33% 'Protipo-Regular', sans-serif;
+$font-highlighted: 800 2.08rem / 2rem 'SofiaSansCondensed-ExtraBold', sans-serif;
+$font-tab: 700 1rem / 133.33% 'Carbon-Bold', 'JetBrainsMono-Bold', monospace;
+$font-nav: 700 1rem / 133.33% 'Carbon-Bold', 'JetBrainsMono-Bold', monospace;
+$font-input-placeholder: 700 1rem / 133.33% 'Carbon-Bold', 'JetBrainsMono-Bold', monospace;
+$font-input-text: 400 1rem / 133.33% 'Protipo-Regular', sans-serif;
+$font-button: 800 1rem / 133.33% 'SofiaSansCondensed-ExtraBold', sans-serif;
+
+// Spacings General
+$spacing-base: calc(1rem / 3 * 2);
+$spacing-padding: $spacing-base * 3;
+$spacing-fields: $spacing-base * 2;
+$spacing-card-gap: $spacing-base * 3;
+$spacing-section-gap: $spacing-base * 4;
+$spacing-header-height: $spacing-base * 8;
+$spacing-navigation-height: $spacing-base * 8;
+$spacing-heading-margin: $spacing-base;
+$spacing-textbox-height: $spacing-base * 4.75;
+
+// Spacings Large
+$spacing-content-container-width-large: $spacing-base * 152;
+$spacing-content-container-margin-large: $spacing-base * 3;
+$multiplier-font-large: 14px;
+
+// Spacings Desktop
+$spacing-content-container-width-desktop: $spacing-base * 152;
+$spacing-content-container-margin-desktop: $spacing-base * 3;
+$multiplier-font-desktop: 0.833vw;
+
+// Spacings Laptop
+$spacing-content-container-width-laptop: $spacing-base * 152;
+$spacing-content-container-margin-laptop: $spacing-base * 3;
+$multiplier-font-laptop: 0.95vw;
+
+// Spacings Mobile
+$spacing-content-container-width-mobile: 100%;
+$spacing-content-container-margin-mobile: $spacing-base * 2;
+$multiplier-font-mobile: 10px;
+
+// Breakpoints
+$screen-large: '(min-width: 2000px)';
+$screen-desktop: '(max-width: 1999.8px) and (min-width: 1440px)';
+$screen-laptop: '(max-width: 1439.8px) and (min-width: 768px)';
+$screen-mobile: '(max-width: 767.8px)';
+
+// Layout background (Symbol uses a flat dark backdrop, no decorative tree image)
+$layout-background-image: none;
+$layout-background-position: center;
+$layout-background-size: cover;
