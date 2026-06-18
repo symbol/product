@@ -29,7 +29,7 @@ body,
 	color: $color-text-body;
 	font-weight: 400;
 	font-size: 12px;
-	font-family: 'Nunito Sans', sans-serif;
+	font-family: $font-family-base;
 	line-height: 16px;
 	background-color: $color-background-main;
 }
@@ -43,23 +43,31 @@ body {
 }
 
 h1 {
+	color: $color-heading;
 	font: $font-h1;
+	text-transform: $text-transform-heading;
 	margin-block: 0;
 }
 
 h2 {
+	color: $color-heading;
 	font: $font-h2;
+	text-transform: $text-transform-heading;
 	margin-block: 0;
 }
 
 h3 {
+	color: $color-heading;
 	font: $font-h3;
+	text-transform: $text-transform-heading;
 	margin-block: 0;
 }
 
 h4 {
 	margin: 0;
+	color: $color-heading;
 	font: $font-h4;
+	text-transform: $text-transform-heading;
 	margin-block: 0;
 }
 
@@ -173,6 +181,21 @@ a {
 	overflow: hidden;
 }
 
+// apexcharts chart tooltips (transaction-squares and line charts). Themed per variant so they
+// stay readable on the dark Symbol theme (white text on a dark popover); !important overrides
+// apexcharts' injected light-theme styles.
+.apexcharts-tooltip {
+	color: $color-chart-tooltip-text !important;
+	background: $color-chart-tooltip-bg !important;
+	border-color: $color-chart-tooltip-bg !important;
+}
+
+.apexcharts-tooltip-title {
+	color: $color-chart-tooltip-text !important;
+	background: $color-chart-tooltip-bg !important;
+	border-color: $color-chart-tooltip-bg !important;
+}
+
 @media #{$screen-large} {
 	html,
 	body,
@@ -219,8 +242,6 @@ a {
 		display: none;
 	}
 }
-
-// Animations & Transitions
 
 @keyframes fade-in {
 	from {

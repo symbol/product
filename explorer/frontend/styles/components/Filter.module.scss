@@ -39,6 +39,7 @@
 	.text {
 		color: $color-filter-inactive;
 		font: $font-tab;
+		text-transform: $text-transform-title;
 	}
 
 	.textActive {
