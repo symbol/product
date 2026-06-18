@@ -81,6 +81,12 @@ TransactionRecord = namedtuple('TransactionRecord', [
 DatabaseConfig = namedtuple('DatabaseConfig', ['database', 'user', 'password', 'host', 'port'])
 
 
+def _format_xem_absolute(relative_amount):
+	"""Convert relative XEM amount to absolute."""
+
+	return relative_amount * (10 ** 6)
+
+
 class NemPuller:
 	"""Facade for pulling data from NEM network."""
 
@@ -252,8 +258,8 @@ class NemPuller:
 			account_info.public_key,
 			remote_address,
 			account_info.importance,
-			account_info.balance,
-			account_info.vested_balance,
+			_format_xem_absolute(account_info.balance),
+			_format_xem_absolute(account_info.vested_balance),
 			mosaics_json,
 			account_info.harvested_blocks,
 			account_info.remote_status,
@@ -545,6 +551,8 @@ class NemPuller:
 		nemesis_block = await self.nem_connector.get_block(1)
 
 		cursor = self.nem_db.connection.cursor()
+
+		self.nem_db.seed_network_currency(cursor, nemesis_block.signer)
 
 		self._process_block(cursor, nemesis_block)
 

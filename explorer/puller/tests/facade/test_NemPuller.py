@@ -303,7 +303,14 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 	@patch('puller.facade.NemPuller.NemConnector.account_info')
 	@patch('puller.facade.NemPuller.NemConnector.account_mosaics')
 	@patch('puller.facade.NemPuller.NemPuller._process_transactions')
-	def test_can_sync_nemesis_block(self, mock_process_transactions, mock_account_mosaics, mock_account_info, mock_get_block):
+	@patch('puller.facade.NemPuller.NemDatabase.seed_network_currency')
+	def test_can_sync_nemesis_block(  # pylint: disable=too-many-arguments, too-many-positional-arguments
+		self,
+		mock_seed_network_currency,
+		mock_process_transactions,
+		mock_account_mosaics,
+		mock_account_info,
+		mock_get_block):
 		# Arrange:
 		sender_address = Address('TALICE6XEEEOBFJVY3ZCENZ7WBG6LB4KB7P7KMQX')
 		recipient_address = Address('NCOPERAWEWCD4A34NP5UQCCKEX44MW4SL3QYJYS5')
@@ -345,6 +352,8 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 				[sender_address.bytes.hex(), recipient_address.bytes.hex(), signer_address.bytes.hex()],
 				[row[0] for row in account_results],
 			)
+			mock_seed_network_currency.assert_called_once()
+			self.assertEqual(mock_seed_network_currency.call_args[0][1], NEM_CONNECTOR_RESPONSE_BLOCKS[0].signer)
 			self.assertEqual(mock_process_transactions.call_count, 1)
 			self.assertEqual(mock_process_transactions.call_args[0][1], NEM_CONNECTOR_RESPONSE_BLOCKS[0].transactions)
 			self.assertEqual(mock_process_transactions.call_args[0][2], NEM_CONNECTOR_RESPONSE_BLOCKS[0].height)

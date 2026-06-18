@@ -101,7 +101,7 @@ TRANSACTIONS = [
 # endregion
 
 
-class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
+class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods, too-many-lines
 
 	def setUp(self):
 		self.postgresql = testing.postgresql.Postgresql()
@@ -252,6 +252,101 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 		)
 
 		self.assertEqual(expected_results, sorted(results))
+
+	def test_can_seed_network_currency_namespace(self):
+		# Arrange:
+		with NemDatabase(self.db_config) as nem_database:
+			nem_database.create_tables()
+			cursor = nem_database.connection.cursor()
+
+			# Act:
+			nem_database.seed_network_currency(cursor, BLOCKS[0].signer)
+			result = self._fetch_namespace_from_db(cursor, 'nem')
+
+		# Assert:
+		self.assertIsNotNone(result)
+		self.assertEqual(result, (
+			'nem',
+			BLOCKS[0].signer.bytes.hex(),
+			1,
+			9223372036854775807,
+			[]
+		))
+
+	def test_can_seed_network_currency_mosaic(self):
+		# Arrange:
+		with NemDatabase(self.db_config) as nem_database:
+			nem_database.create_tables()
+			cursor = nem_database.connection.cursor()
+
+			# Act:
+			nem_database.seed_network_currency(cursor, BLOCKS[0].signer)
+			result = self._fetch_mosaic_from_db(cursor, 'nem.xem')
+
+		# Assert:
+		self.assertIsNotNone(result)
+		self.assertEqual(result, (
+			'nem',
+			'nem.xem',
+			'network currency',
+			BLOCKS[0].signer.bytes.hex(),
+			1,
+			8999999999,
+			8999999999,
+			6,
+			False,
+			True,
+			None,
+			None,
+			None,
+			None
+		))
+
+	def test_seed_network_currency_does_not_overwrite_existing_records(self):
+		# Arrange:
+		with NemDatabase(self.db_config) as nem_database:
+			nem_database.create_tables()
+			cursor = nem_database.connection.cursor()
+
+			# Act:
+			nem_database.seed_network_currency(cursor, BLOCKS[0].signer)
+			nem_database.seed_network_currency(cursor, PublicKey('0' * 64))
+
+			namespace_result = self._fetch_namespace_from_db(cursor, 'nem')
+			mosaic_result = self._fetch_mosaic_from_db(cursor, 'nem.xem')
+
+			cursor.execute('SELECT COUNT(*) FROM namespaces WHERE root_namespace = %s', ('nem',))
+			namespace_count = cursor.fetchone()[0]
+
+			cursor.execute('SELECT COUNT(*) FROM mosaics WHERE namespace_name = %s', ('nem.xem',))
+			mosaic_count = cursor.fetchone()[0]
+
+		# Assert:
+		self.assertEqual(1, namespace_count)
+		self.assertEqual(1, mosaic_count)
+		self.assertEqual(namespace_result, (
+			'nem',
+			BLOCKS[0].signer.bytes.hex(),
+			1,
+			9223372036854775807,
+			[]
+		))
+		self.assertEqual(mosaic_result, (
+			'nem',
+			'nem.xem',
+			'network currency',
+			BLOCKS[0].signer.bytes.hex(),
+			1,
+			8999999999,
+			8999999999,
+			6,
+			False,
+			True,
+			None,
+			None,
+			None,
+			None
+		))
 
 	def test_can_insert_block(self):
 		# Arrange:
