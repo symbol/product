@@ -26,14 +26,13 @@ import {
 	fetchPriceByDate,
 	fetchTransactionChart,
 	fetchTransactionStats
-} from '@/api/stats';
-import config from '@/config';
-import * as utils from '@/utils/server';
+} from '@/app/api/stats';
+import * as utils from '@/app/utils/server';
 
-jest.mock('@/utils/server', () => {
+jest.mock('@/app/utils/server', () => {
 	return {
 		__esModule: true,
-		...jest.requireActual('@/utils/server')
+		...jest.requireActual('@/app/utils/server')
 	};
 });
 

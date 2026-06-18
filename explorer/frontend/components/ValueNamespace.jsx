@@ -1,7 +1,7 @@
 import Avatar from './Avatar';
 import CustomImage from './CustomImage';
-import styles from '@/styles/components/ValueNamespace.module.scss';
-import { createPageHref, handleNavigationItemClick } from '@/utils';
+import styles from '@/app/styles/components/ValueNamespace.module.scss';
+import { createPageHref, handleNavigationItemClick } from '@/app/utils';
 import Link from 'next/link';
 
 const ValueNamespace = ({ namespaceName, namespaceId, className, size, onClick, isNavigationDisabled }) => {

@@ -1,13 +1,9 @@
-// jest-dom adds custom jest matchers for asserting on DOM nodes.
-// allows you to do things like:
-// expect(element).toHaveTextContent(/react/i)
-// learn more: https://github.com/testing-library/jest-dom
 import '@testing-library/jest-dom';
 import { setDevice } from './__tests__/test-utils/device';
 import { TextEncoder, TextDecoder } from 'util';
 import 'react-intersection-observer/test-utils';
 
-jest.mock('@/contexts/ConfigContext', () => ({
+jest.mock('@/app/contexts/ConfigContext', () => ({
 	__esModule: true,
 	useConfig: jest.fn()
 }));
@@ -53,7 +49,7 @@ window.appConfig = envMock;
 Object.assign(global, { TextDecoder, TextEncoder });
 
 const mockConfigContext = () => {
-	const ConfigContext = require('@/contexts/ConfigContext');
+	const ConfigContext = require('@/app/contexts/ConfigContext');
 	jest.spyOn(ConfigContext, 'useConfig').mockReturnValue({
 		knownAccounts: {}
 	});

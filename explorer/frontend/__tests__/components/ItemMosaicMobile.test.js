@@ -1,5 +1,5 @@
 import '@testing-library/jest-dom';
-import ItemMosaicMobile from '@/components/ItemMosaicMobile';
+import ItemMosaicMobile from '@/app/components/ItemMosaicMobile';
 import { render, screen } from '@testing-library/react';
 
 describe('ItemMosaicMobile', () => {

@@ -1,7 +1,7 @@
 import ButtonClose from './ButtonClose';
 import Modal from './Modal';
-import styles from '@/styles/components/ValueList.module.scss';
-import { arrayToText, useToggle } from '@/utils';
+import styles from '@/app/styles/components/ValueList.module.scss';
+import { arrayToText, useToggle } from '@/app/utils';
 import { useTranslation } from 'next-i18next';
 
 const ValueList = ({ className, data = [], direction, max, title, renderItem }) => {

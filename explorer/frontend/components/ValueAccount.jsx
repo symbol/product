@@ -1,8 +1,8 @@
-import Avatar from '@/components/Avatar';
-import ButtonCopy from '@/components/ButtonCopy';
-import { STORAGE_KEY } from '@/constants';
-import styles from '@/styles/components/ValueAccount.module.scss';
-import { createPageHref, handleNavigationItemClick, truncateString, useStorage } from '@/utils';
+import Avatar from '@/app/components/Avatar';
+import ButtonCopy from '@/app/components/ButtonCopy';
+import { STORAGE_KEY } from '@/app/constants';
+import styles from '@/app/styles/components/ValueAccount.module.scss';
+import { createPageHref, handleNavigationItemClick, truncateString, useStorage } from '@/app/utils';
 import Link from 'next/link';
 import { useState } from 'react';
 

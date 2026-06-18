@@ -19,7 +19,7 @@ import {
 	transactionChartFilterToType,
 	truncateDecimals,
 	truncateString
-} from '@/utils/common';
+} from '@/app/utils/common';
 
 beforeEach(() => {
 	Date.prototype.getTimezoneOffset = function () {

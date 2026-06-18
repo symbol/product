@@ -1,4 +1,4 @@
-import { TRANSACTION_CHART_TYPE } from '@/constants';
+import { TRANSACTION_CHART_TYPE } from '@/app/constants';
 
 /**
  * Checks if the value is numeric.

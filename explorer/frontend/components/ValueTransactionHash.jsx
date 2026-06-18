@@ -1,6 +1,6 @@
-import ButtonCopy from '@/components/ButtonCopy';
-import styles from '@/styles/components/ValueTransactionHash.module.scss';
-import { createPageHref, truncateString } from '@/utils';
+import ButtonCopy from '@/app/components/ButtonCopy';
+import styles from '@/app/styles/components/ValueTransactionHash.module.scss';
+import { createPageHref, truncateString } from '@/app/utils';
 import Link from 'next/link';
 
 const ValueTransactionHash = ({ value }) => {

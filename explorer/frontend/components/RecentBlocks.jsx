@@ -1,5 +1,5 @@
 import BlockPreview from './BlockPreview';
-import styles from '@/styles/components/RecentBlocks.module.scss';
+import styles from '@/app/styles/components/RecentBlocks.module.scss';
 import { createRef, useRef, useState } from 'react';
 
 const RecentBlocks = ({ data, onTransactionListRequest }) => {

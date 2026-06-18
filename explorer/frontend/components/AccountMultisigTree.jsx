@@ -1,6 +1,6 @@
 import Avatar from './Avatar';
-import styles from '@/styles/components/AccountMultisigTree.module.scss';
-import { createPageHref } from '@/utils';
+import styles from '@/app/styles/components/AccountMultisigTree.module.scss';
+import { createPageHref } from '@/app/utils';
 import Link from 'next/link';
 
 const AccountMultisigTree = ({ address, cosignatories, cosignatoryOf }) => {

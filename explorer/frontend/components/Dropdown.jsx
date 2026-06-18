@@ -1,4 +1,4 @@
-import styles from '@/styles/components/Dropdown.module.scss';
+import styles from '@/app/styles/components/Dropdown.module.scss';
 import { useState } from 'react';
 
 export const Dropdown = props => {

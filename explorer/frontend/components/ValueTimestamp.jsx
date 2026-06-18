@@ -1,5 +1,5 @@
 import { formatDate, useStorage } from '../utils';
-import { STORAGE_KEY } from '@/constants';
+import { STORAGE_KEY } from '@/app/constants';
 import { useTranslation } from 'next-i18next';
 
 const ValueTimestamp = ({ className, value, hasTime, hasSeconds, hasDays }) => {

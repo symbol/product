@@ -7,12 +7,12 @@ import {
 	accountPageResult
 } from '../test-utils/accounts';
 import { runApiTest } from '../test-utils/api';
-import { fetchAccountInfo, fetchAccountInfoByPublicKey, fetchAccountPage } from '@/api/accounts';
+import { fetchAccountInfo, fetchAccountInfoByPublicKey, fetchAccountPage } from '@/app/api/accounts';
 
-jest.mock('@/utils/server', () => {
+jest.mock('@/app/utils/server', () => {
 	return {
 		__esModule: true,
-		...jest.requireActual('@/utils/server')
+		...jest.requireActual('@/app/utils/server')
 	};
 });
 

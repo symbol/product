@@ -1,13 +1,13 @@
 import '@testing-library/jest-dom';
-import Filter from '@/components/Filter';
-import { TRANSACTION_TYPE } from '@/constants';
-import * as utils from '@/utils';
+import Filter from '@/app/components/Filter';
+import { TRANSACTION_TYPE } from '@/app/constants';
+import * as utils from '@/app/utils';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 
-jest.mock('@/utils', () => {
+jest.mock('@/app/utils', () => {
 	return {
 		__esModule: true,
-		...jest.requireActual('@/utils')
+		...jest.requireActual('@/app/utils')
 	};
 });
 

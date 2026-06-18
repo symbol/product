@@ -1,4 +1,4 @@
-import { dateToLocalDate } from '@/utils';
+import { dateToLocalDate } from '@/app/utils';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/router';
 

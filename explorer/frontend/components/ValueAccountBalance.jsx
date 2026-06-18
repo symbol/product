@@ -1,6 +1,6 @@
-import config from '@/config';
-import styles from '@/styles/components/ValueAccountBalance.module.scss';
-import { numberToShortString, numberToString, truncateDecimals } from '@/utils';
+import config from '@/app/config';
+import styles from '@/app/styles/components/ValueAccountBalance.module.scss';
+import { numberToShortString, numberToString, truncateDecimals } from '@/app/utils';
 
 const ValueAccountBalance = ({ value, valueInUserCurrency, userCurrency }) => {
 	const userCurrencyText = userCurrency.toUpperCase();

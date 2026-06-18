@@ -1,5 +1,5 @@
 import LoadingIndicator from './LoadingIndicator';
-import styles from '@/styles/components/TablePageLoader.module.scss';
+import styles from '@/app/styles/components/TablePageLoader.module.scss';
 import { useEffect } from 'react';
 import { useInView } from 'react-intersection-observer';
 

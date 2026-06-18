@@ -1,5 +1,5 @@
-import config from '@/config';
-import styles from '@/styles/components/ValueAccountBalance.module.scss';
+import config from '@/app/config';
+import styles from '@/app/styles/components/ValueAccountBalance.module.scss';
 
 const ValueDescription = ({ value }) => {
 	return (

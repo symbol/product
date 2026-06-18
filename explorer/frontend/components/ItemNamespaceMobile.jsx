@@ -3,8 +3,8 @@ import Field from './Field';
 import ValueAccount from './ValueAccount';
 import ValueLabel from './ValueLabel';
 import ValueTimestamp from './ValueTimestamp';
-import styles from '@/styles/components/ItemNamespaceMobile.module.scss';
-import { createExpirationLabel, createPageHref } from '@/utils';
+import styles from '@/app/styles/components/ItemNamespaceMobile.module.scss';
+import { createExpirationLabel, createPageHref } from '@/app/utils';
 import Link from 'next/link';
 import { useTranslation } from 'next-i18next';
 

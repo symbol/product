@@ -1,4 +1,5 @@
-import styles from '@/styles/components/Chart.module.scss';
+import styles from '@/app/styles/components/Chart.module.scss';
+import { styleVariables } from '@/app/variants/styles';
 import dynamic from 'next/dynamic';
 
 const ReactApexChart = dynamic(() => import('react-apexcharts'), { ssr: false });
@@ -33,7 +34,7 @@ const ChartLine = ({ data, name }) => {
 		dataLabels: {
 			enabled: false
 		},
-		colors: ['#50B9AD'],
+		colors: [styleVariables.colorChartLine],
 		stroke: {
 			curve: 'smooth',
 			width: 1

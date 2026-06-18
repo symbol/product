@@ -1,4 +1,4 @@
-import config from '@/config';
+import config from '@/app/config';
 import axios from 'axios';
 
 // Creates search criteria from search parameters.

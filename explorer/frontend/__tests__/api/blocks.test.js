@@ -1,11 +1,11 @@
 import { runApiTest } from '../test-utils/api';
 import { blockInfoResponse, blockInfoResult, blockPageResponse, blockPageResult } from '../test-utils/blocks';
-import { fetchBlockInfo, fetchBlockPage, fetchChainHight } from '@/api/blocks';
+import { fetchBlockInfo, fetchBlockPage, fetchChainHight } from '@/app/api/blocks';
 
-jest.mock('@/utils/server', () => {
+jest.mock('@/app/utils/server', () => {
 	return {
 		__esModule: true,
-		...jest.requireActual('@/utils/server')
+		...jest.requireActual('@/app/utils/server')
 	};
 });
 

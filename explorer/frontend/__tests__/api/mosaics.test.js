@@ -1,11 +1,11 @@
 import { runApiTest } from '../test-utils/api';
 import { mosaicInfoResponse, mosaicInfoResult, mosaicPageResponse, mosaicPageResult } from '../test-utils/mosaics';
-import { fetchMosaicInfo, fetchMosaicPage } from '@/api/mosaics';
+import { fetchMosaicInfo, fetchMosaicPage } from '@/app/api/mosaics';
 
-jest.mock('@/utils/server', () => {
+jest.mock('@/app/utils/server', () => {
 	return {
 		__esModule: true,
-		...jest.requireActual('@/utils/server')
+		...jest.requireActual('@/app/utils/server')
 	};
 });
 

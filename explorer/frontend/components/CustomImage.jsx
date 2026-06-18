@@ -1,4 +1,4 @@
-import styles from '@/styles/components/CustomImage.module.scss';
+import styles from '@/app/styles/components/CustomImage.module.scss';
 import Image from 'next/image';
 
 const CustomImage = ({ alt, src, className, style, onClick }) => (

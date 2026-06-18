@@ -1,5 +1,12 @@
 import { error404Response } from '../test-utils/api';
-import { createApiUrl, createPage, createSearchCriteria, createSearchURL, createTryFetchInfoFunction, makeRequest } from '@/utils/server';
+import {
+	createApiUrl,
+	createPage,
+	createSearchCriteria,
+	createSearchURL,
+	createTryFetchInfoFunction,
+	makeRequest
+} from '@/app/utils/server';
 import mockAxios from 'jest-mock-axios';
 
 afterEach(() => {

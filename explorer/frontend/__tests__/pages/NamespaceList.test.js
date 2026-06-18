@@ -1,21 +1,21 @@
 import '@testing-library/jest-dom';
 import { setDevice } from '../test-utils/device';
 import { namespacePageResult } from '../test-utils/namespaces';
-import * as NamespaceService from '@/api/namespaces';
-import NamespaceList, { getServerSideProps } from '@/pages/namespaces/index';
+import * as NamespaceService from '@/app/api/namespaces';
+import NamespaceList, { getServerSideProps } from '@/app/pages/namespaces/index';
 import { render, screen } from '@testing-library/react';
 
-jest.mock('@/api/namespaces', () => {
+jest.mock('@/app/api/namespaces', () => {
 	return {
 		__esModule: true,
-		...jest.requireActual('@/api/namespaces')
+		...jest.requireActual('@/app/api/namespaces')
 	};
 });
 
-jest.mock('@/api/stats', () => {
+jest.mock('@/app/api/stats', () => {
 	return {
 		__esModule: true,
-		...jest.requireActual('@/api/stats')
+		...jest.requireActual('@/app/api/stats')
 	};
 });
 

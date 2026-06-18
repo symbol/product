@@ -3,8 +3,8 @@ import Field from './Field';
 import ValueAccount from './ValueAccount';
 import ValueMosaic from './ValueMosaic';
 import ValueTimestamp from './ValueTimestamp';
-import styles from '@/styles/components/ItemBlockMobile.module.scss';
-import { createPageHref } from '@/utils';
+import styles from '@/app/styles/components/ItemBlockMobile.module.scss';
+import { createPageHref } from '@/app/utils';
 import Link from 'next/link';
 import { useTranslation } from 'next-i18next';
 

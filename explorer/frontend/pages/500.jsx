@@ -1,5 +1,5 @@
-import styles from '@/styles/pages/500.module.scss';
-import { createPageHref } from '@/utils';
+import styles from '@/app/styles/pages/500.module.scss';
+import { createPageHref } from '@/app/utils';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useTranslation } from 'next-i18next';

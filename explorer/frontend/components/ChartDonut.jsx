@@ -1,11 +1,12 @@
-import styles from '@/styles/components/Chart.module.scss';
+import styles from '@/app/styles/components/Chart.module.scss';
+import { styleVariables } from '@/app/variants/styles';
 import dynamic from 'next/dynamic';
 
 const ReactApexChart = dynamic(() => import('react-apexcharts'), { ssr: false });
 
 const ChartDonut = ({ data, name, label }) => {
-	const colorMain = '#50B9AD';
-	const colorEnd = '#E9F6F5';
+	const colorMain = styleVariables.colorChartDonutMain;
+	const colorEnd = styleVariables.colorChartDonutBackground;
 	const colors = [...Array(Math.max(data.length - 1, 0)).fill(colorMain), colorEnd];
 	const series = data.map(item => item[0]);
 	const options = {
@@ -33,6 +34,7 @@ const ChartDonut = ({ data, name, label }) => {
 		},
 		colors,
 		stroke: {
+			colors: [styleVariables.colorChartDonutStroke],
 			curve: 'smooth',
 			width: 1
 		},

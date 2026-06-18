@@ -1,5 +1,5 @@
 import '@testing-library/jest-dom';
-import ItemNamespaceMobile from '@/components/ItemNamespaceMobile';
+import ItemNamespaceMobile from '@/app/components/ItemNamespaceMobile';
 import { render, screen } from '@testing-library/react';
 
 describe('ItemNamespaceMobile', () => {

@@ -9,7 +9,7 @@ import {
 	useStorage,
 	useToggle,
 	useUserCurrencyAmount
-} from '@/utils/hooks';
+} from '@/app/utils/hooks';
 import { act, renderHook, waitFor } from '@testing-library/react';
 
 beforeAll(() => {

@@ -2,22 +2,22 @@ import '@testing-library/jest-dom';
 import { blockPageResult } from '../test-utils/blocks';
 import { setDevice } from '../test-utils/device';
 import { blockStatisticsResult } from '../test-utils/stats';
-import * as BlockService from '@/api/blocks';
-import * as StatsService from '@/api/stats';
-import BlockList, { getServerSideProps } from '@/pages/blocks/index';
+import * as BlockService from '@/app/api/blocks';
+import * as StatsService from '@/app/api/stats';
+import BlockList, { getServerSideProps } from '@/app/pages/blocks/index';
 import { render, screen } from '@testing-library/react';
 
-jest.mock('@/api/blocks', () => {
+jest.mock('@/app/api/blocks', () => {
 	return {
 		__esModule: true,
-		...jest.requireActual('@/api/blocks')
+		...jest.requireActual('@/app/api/blocks')
 	};
 });
 
-jest.mock('@/api/stats', () => {
+jest.mock('@/app/api/stats', () => {
 	return {
 		__esModule: true,
-		...jest.requireActual('@/api/stats')
+		...jest.requireActual('@/app/api/stats')
 	};
 });
 

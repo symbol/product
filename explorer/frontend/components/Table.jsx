@@ -1,4 +1,4 @@
-import styles from '@/styles/components/Table.module.scss';
+import styles from '@/app/styles/components/Table.module.scss';
 import dynamic from 'next/dynamic';
 import { useTranslation } from 'next-i18next';
 import { useMediaQuery } from 'usehooks-ts';

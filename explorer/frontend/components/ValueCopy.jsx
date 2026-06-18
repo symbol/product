@@ -1,5 +1,5 @@
-import ButtonCopy from '@/components/ButtonCopy';
-import styles from '@/styles/components/ValueCopy.module.scss';
+import ButtonCopy from '@/app/components/ButtonCopy';
+import styles from '@/app/styles/components/ValueCopy.module.scss';
 
 const ValueCopy = ({ className, value }) => {
 	const isValueExist = value !== null;
