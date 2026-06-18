@@ -38,7 +38,7 @@ def _external_db_config():
 	return DatabaseConfig(
 		os.environ.get('EXPLORER_TEST_POSTGRES_DATABASE', 'postgres'),
 		os.environ.get('EXPLORER_TEST_POSTGRES_USER', 'postgres'),
-		os.environ.get('EXPLORER_TEST_POSTGRES_PASSWORD', ''),
+		'',
 		host,
 		os.environ.get('EXPLORER_TEST_POSTGRES_PORT', '5432')
 	)

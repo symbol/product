@@ -28,7 +28,7 @@ def _create_config_file(config_dir, include_symbol_db=True, database_config=None
 			db_config_file.write('[symbol_db]\n')
 			db_config_file.write(f'database = {database_config.database}\n')
 			db_config_file.write(f'user = {database_config.user}\n')
-			db_config_file.write(f'password = {database_config.password}\n')
+			db_config_file.write('password = \n')
 			db_config_file.write(f'host = {database_config.host}\n')
 			db_config_file.write(f'port = {database_config.port}\n')
 
@@ -192,8 +192,7 @@ def test_external_postgres_config(monkeypatch):
 	monkeypatch.setenv('EXPLORER_TEST_POSTGRES_HOST', 'postgres.example')
 	monkeypatch.setenv('EXPLORER_TEST_POSTGRES_DATABASE', 'symbol_test')
 	monkeypatch.setenv('EXPLORER_TEST_POSTGRES_USER', 'symbol_user')
-	monkeypatch.setenv('EXPLORER_TEST_POSTGRES_PASSWORD', 'symbol_password')
 	monkeypatch.setenv('EXPLORER_TEST_POSTGRES_PORT', '15432')
 
 	with PostgresTestDatabase() as db_config:
-		assert DatabaseConfig('symbol_test', 'symbol_user', 'symbol_password', 'postgres.example', '15432') == db_config
+		assert DatabaseConfig('symbol_test', 'symbol_user', '', 'postgres.example', '15432') == db_config
