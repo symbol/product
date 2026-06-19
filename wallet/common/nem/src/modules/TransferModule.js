@@ -8,6 +8,7 @@ import {
 	TransactionType
 } from '../constants';
 import {
+	calculateTotalTransactionFee,
 	calculateTransactionFee,
 	createDeadline,
 	createTransactionFee,
@@ -17,7 +18,7 @@ import {
 	isNemAddress,
 	isOutgoingTransaction
 } from '../utils';
-import { ControllerError, TransactionBundle, absoluteToRelativeAmount } from 'wallet-common-core';
+import { ControllerError, TransactionBundle } from 'wallet-common-core';
 
 /** @typedef {import('../types/Network').TransactionFees} TransactionFees */
 /** @typedef {import('../types/Transaction').Transaction} Transaction */
@@ -69,7 +70,7 @@ export class TransferModule {
 		const senderPublicKey = options.senderPublicKey || currentAccount.publicKey;
 		const isMultisig = senderPublicKey !== currentAccount.publicKey;
 
-		if (!isNemAddress(recipientAddress)) {
+		if (!isNemAddress(recipientAddress, networkProperties.networkIdentifier)) {
 			throw new ControllerError(
 				'error_transfer_invalid_recipient',
 				`Invalid NEM recipient address: "${recipientAddress}"`
@@ -109,23 +110,20 @@ export class TransferModule {
 
 		if (isMultisig) {
 			// NEM serializes a fee on BOTH the multisig wrapper and the wrapped transaction, and the
-			// network charges the sum to the multisig account (NEM Technical Reference §4.3.3): a flat 0.15 XEM
-			// wrapper fee ADDED to the usual transfer fee. Assigning the same combined fee to both
-			// would double-charge, so price each part independently. NEM fees are deterministic.
+			// network charges the sum to the multisig account (NEM Technical Reference §4.3.3).
 			const innerFeeAmount = calculateTransactionFee(transferTransaction, networkProperties);
 			transferTransaction.fee = createTransactionFee(networkProperties, innerFeeAmount);
 
-			const wrapperFeeAmount = absoluteToRelativeAmount(
-				networkProperties.transactionFees.baseFee,
-				networkProperties.networkCurrency.divisibility
-			);
 			const outerTransaction = {
 				type: TransactionType.MULTISIG,
 				signerPublicKey: currentAccount.publicKey,
 				innerTransaction: transferTransaction,
-				fee: createTransactionFee(networkProperties, wrapperFeeAmount),
+				fee: createTransactionFee(networkProperties, '0'),
 				deadline: createDeadline(networkProperties.networkTime, MULTISIG_TRANSACTION_DEADLINE_HOURS)
 			};
+			const wrapperFeeAmount = calculateTransactionFee(outerTransaction, networkProperties);
+			outerTransaction.fee = createTransactionFee(networkProperties, wrapperFeeAmount);
+
 			return new TransactionBundle([outerTransaction], { type: TransactionBundleType.MULTISIG_TRANSFER });
 		}
 
@@ -143,7 +141,8 @@ export class TransferModule {
 		const { networkProperties } = this.#walletController;
 
 		return transactionBundle.transactions.map(transaction => {
-			const feeAmount = calculateTransactionFee(transaction, networkProperties);
+			const feeAmount = calculateTotalTransactionFee(transaction, networkProperties);
+
 			return createTransactionFeeTiers(networkProperties, feeAmount);
 		});
 	};

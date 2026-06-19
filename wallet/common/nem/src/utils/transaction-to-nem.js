@@ -38,12 +38,11 @@ const textEncoder = new TextEncoder();
 const mapSignerPublicKey = signerPublicKey =>
 	signerPublicKey || '0000000000000000000000000000000000000000000000000000000000000000';
 
-const mapFee = fee => BigInt(relativeToAbsoluteAmount(fee.token.amount, fee.token.divisibility));
+const mapFee = fee => (fee?.token ? BigInt(relativeToAbsoluteAmount(fee.token.amount, fee.token.divisibility)) : 0n);
 
-const mapDeadline = deadline => ({
-	timestamp: deadline.adjusted.timestamp,
-	deadline: deadline.adjusted.deadline
-});
+const mapDeadline = deadline => (deadline
+	? { timestamp: deadline.adjusted.timestamp, deadline: deadline.adjusted.deadline }
+	: { timestamp: 0, deadline: 0 });
 
 const mapMessage = message => ({
 	messageType: message.native.type,

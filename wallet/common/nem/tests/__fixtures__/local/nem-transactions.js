@@ -142,7 +142,7 @@ const transferWithMosaicJson = {
 
 // Multisig wrapper around an inner XEM transfer. The wrapper uses the 24h multisig deadline, and the
 // inner transaction is embedded as a non-verifiable transaction (no signature).
-const multisigTransfer = {
+export const multisigTransfer = {
 	type: 4100,
 	signerPublicKey: bob.publicKey,
 	fee: createFee('0.15'),
@@ -183,7 +183,7 @@ const multisigTransferJson = {
 };
 
 // Importance transfer (delegated harvesting), modelled by the SDK as an account key link.
-const importanceTransfer = {
+export const importanceTransfer = {
 	type: 2049,
 	signerPublicKey: alice.publicKey,
 	fee: createFee('0.15'),
@@ -206,7 +206,7 @@ const importanceTransferJson = {
 };
 
 // Multisig account modification uses the latest v2 descriptor; omitting the delta defaults it to 0.
-const multisigModification = {
+export const multisigModification = {
 	type: 4097,
 	signerPublicKey: alice.publicKey,
 	fee: createFee('0.5'),
@@ -257,7 +257,7 @@ const multisigModificationWithDeltaJson = {
 };
 
 // Cosignature: a standalone transaction signing the hash of a pending multisig transaction.
-const cosignature = {
+export const cosignature = {
 	type: 4098,
 	signerPublicKey: bob.publicKey,
 	fee: createFee('0.15'),
@@ -280,7 +280,7 @@ const cosignatureJson = {
 };
 
 // Root namespace provisioning: rental fee is 100 XEM and there is no parent.
-const namespaceRoot = {
+export const namespaceRoot = {
 	type: 8193,
 	signerPublicKey: alice.publicKey,
 	fee: createFee('0.15'),
@@ -332,7 +332,7 @@ const namespaceSubJson = {
 };
 
 // Mosaic definition without a levy: properties are byte-encoded name/value pairs.
-const mosaicDefinition = {
+export const mosaicDefinition = {
 	type: 16385,
 	signerPublicKey: alice.publicKey,
 	fee: createFee('0.15'),
@@ -415,7 +415,7 @@ const mosaicDefinitionWithLevyJson = {
 };
 
 // Mosaic supply change: increase the supply of a mosaic by a delta.
-const mosaicSupplyChange = {
+export const mosaicSupplyChange = {
 	type: 16386,
 	signerPublicKey: alice.publicKey,
 	fee: createFee('0.15'),

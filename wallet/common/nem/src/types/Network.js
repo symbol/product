@@ -15,24 +15,8 @@
  * @property {number} blockGenerationTargetTime - Seconds.
  * @property {number} epochAdjustment - Unix timestamp of NEM epoch in seconds.
  * @property {number} networkTime - NEM network time (ms since NEM epoch).
- * @property {NemTransactionFees} transactionFees
  * @property {RentalFees} rentalFees
  * @property {NetworkCurrency} networkCurrency
- */
-
-/**
- * NEM fee schedule in absolute microXEM. NEM1 fees are deterministic protocol constants
- * rather than node-derived per-byte multipliers, so NetworkService assembles this object
- * from the fee constants. Free-shape per chain — consumed only by the fee calculation
- * logic (utils/fee.js).
- * @typedef {object} NemTransactionFees
- * @property {number} baseFee - Base flat fee shared by several transaction types (0.15 XEM).
- * @property {number} perMosaicFee - Fee per non-native mosaic attached to a transfer.
- * @property {number} perMessageChunkFee - Fee per 32-byte message payload chunk.
- * @property {number} aggregateModificationFee - Multisig account modification fee.
- * @property {number} xemTierAmount - Whole-XEM amount per transfer fee tier.
- * @property {number} xemFeePerTier - Fee added per completed XEM tier.
- * @property {number} xemTransferFeeMax - Maximum XEM transfer fee component.
  */
 
 /**

@@ -7,15 +7,6 @@ export const networkProperties = {
 		mosaicId: 'nem.xem',
 		divisibility: 6
 	},
-	transactionFees: {
-		baseFee: 150000,
-		perMosaicFee: 50000,
-		perMessageChunkFee: 50000,
-		aggregateModificationFee: 500000,
-		xemTierAmount: 10000,
-		xemFeePerTier: 50000,
-		xemTransferFeeMax: 1250000
-	},
 	rentalFees: {
 		rootNamespaceFee: 100000000,
 		subNamespaceFee: 10000000,

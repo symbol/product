@@ -1,6 +1,5 @@
 import { transactionToNem } from './transaction-to-nem';
 import {
-	BASE_FEE,
 	NEM_EPOCH,
 	NETWORK_CURRENCY_DIVISIBILITY,
 	NETWORK_CURRENCY_ID,
@@ -8,7 +7,7 @@ import {
 	TransactionType
 } from '../constants';
 import { PrivateKey, PublicKey } from 'symbol-sdk';
-import { MessageEncoder, NemFacade, models } from 'symbol-sdk/nem';
+import { MessageEncoder, NemFacade, calculateTransactionFee, models } from 'symbol-sdk/nem';
 import { SdkError, TransactionBundle } from 'wallet-common-core';
 
 /** @typedef {import('../types/Transaction').SignedTransaction} SignedTransaction */
@@ -206,15 +205,16 @@ export const cosignTransaction = (transaction, privateKey) => {
 	const keyPair = new NemFacade.KeyPair(new PrivateKey(privateKey));
 	const { adjusted } = createDeadline(networkTime);
 
-	const cosignatureTransaction = facade.transactionFactory.create({
+	const cosignatureDescriptor = {
 		type: 'cosignature_v1',
 		signerPublicKey: keyPair.publicKey.toString(),
-		fee: BigInt(BASE_FEE),
 		timestamp: adjusted.timestamp,
 		deadline: adjusted.deadline,
 		multisigAccountAddress,
 		otherTransactionHash: hash
-	});
+	};
+	const fee = calculateTransactionFee(facade.transactionFactory.create({ ...cosignatureDescriptor, fee: 0n }));
+	const cosignatureTransaction = facade.transactionFactory.create({ ...cosignatureDescriptor, fee });
 
 	const signature = facade.signTransaction(keyPair, cosignatureTransaction);
 	const cosignHash = facade.hashTransaction(cosignatureTransaction);

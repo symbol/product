@@ -1,23 +1,14 @@
 import {
-	AGGREGATE_MODIFICATION_FEE,
-	BASE_FEE,
 	BLOCK_GENERATION_TARGET_TIME,
-	FEE_PER_MESSAGE_CHUNK,
-	FEE_PER_MOSAIC,
-	MOSAIC_DEFINITION_CREATION_FEE,
 	NEM_EPOCH,
 	NEM_WS_PATH,
 	NEM_WS_PORT,
 	NETWORK_CURRENCY_DIVISIBILITY,
 	NETWORK_CURRENCY_ID,
-	NETWORK_CURRENCY_NAME,
-	ROOT_NAMESPACE_FEE,
-	SUB_NAMESPACE_FEE,
-	XEM_FEE_PER_TIER,
-	XEM_TIER_AMOUNT,
-	XEM_TRANSFER_FEE_MAX
+	NETWORK_CURRENCY_NAME
 } from '../constants';
 import { networkTypeToIdentifier } from '../utils';
+import { calculateMosaicRentalFee, calculateNamespaceRentalFee } from 'symbol-sdk/nem';
 
 /** @typedef {import('../types/Network').NetworkInfo} NetworkInfo */
 /** @typedef {import('../types/Network').NetworkProperties} NetworkProperties */
@@ -75,23 +66,10 @@ export class NetworkService {
 			blockGenerationTargetTime: BLOCK_GENERATION_TARGET_TIME,
 			epochAdjustment: Math.floor(NEM_EPOCH / 1000),
 			networkTime: networkTime.sendTimeStamp,
-			// NEM fees are deterministic protocol constants; assemble the chain's on-chain fee
-			// schedule here so the fee calculation logic reads it from networkProperties (utils/fee.js).
-			transactionFees: {
-				baseFee: BASE_FEE,
-				perMosaicFee: FEE_PER_MOSAIC,
-				perMessageChunkFee: FEE_PER_MESSAGE_CHUNK,
-				aggregateModificationFee: AGGREGATE_MODIFICATION_FEE,
-				xemTierAmount: XEM_TIER_AMOUNT,
-				xemFeePerTier: XEM_FEE_PER_TIER,
-				xemTransferFeeMax: XEM_TRANSFER_FEE_MAX
-			},
-			// Rental / creation fees are paid to a dedicated fee sink separately from the transaction
-			// fee (NEM NIS API Documentation fee table), so they are exposed apart from transactionFees.
 			rentalFees: {
-				rootNamespaceFee: ROOT_NAMESPACE_FEE,
-				subNamespaceFee: SUB_NAMESPACE_FEE,
-				mosaicDefinitionFee: MOSAIC_DEFINITION_CREATION_FEE
+				rootNamespaceFee: Number(calculateNamespaceRentalFee(true)),
+				subNamespaceFee: Number(calculateNamespaceRentalFee(false)),
+				mosaicDefinitionFee: Number(calculateMosaicRentalFee())
 			},
 			networkCurrency: {
 				name: NETWORK_CURRENCY_NAME,

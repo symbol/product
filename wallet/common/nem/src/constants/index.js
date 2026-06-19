@@ -39,87 +39,8 @@ export const NETWORK_CURRENCY_ID = 'nem.xem';
 /** Decimal divisibility of the NEM native currency. */
 export const NETWORK_CURRENCY_DIVISIBILITY = 6;
 
-// On-chain transaction fee constants in absolute microXEM. NEM1 fees are deterministic
-// protocol constants (not node-derived per-byte multipliers). Values follow the fee table in
-// the NEM NIS API Documentation ("minimum fees for each transaction type") and the NEM Technical
-// Reference §4. Every fee is a multiple of the 0.05 XEM fee unit.
-
-/**
- * NEM fee unit and minimum transfer fee: 0.05 XEM (NEM Technical Reference §4.1).
- * Every NEM fee is a multiple of this unit and the XEM-amount transfer fee is floored at one
- * unit. Also used as the default fee for a transfer descriptor with no explicit fee.
- */
-export const MIN_FEE = 50_000;
-
-/**
- * Fee unit charged per non-native mosaic attached to a transfer: 0.05 XEM.
- * This is the per-mosaic weight (feeUnit) in the mosaic transfer fee formula and the flat fee
- * for a small business mosaic (NEM NIS API Documentation, transfer transaction fee table).
- */
-export const FEE_PER_MOSAIC = 50_000;
-
-/**
- * Fee per commenced 32 bytes of message payload: 0.05 XEM
- * (NEM Technical Reference §4.1: 0.05 XEM per commenced 32 message bytes).
- */
-export const FEE_PER_MESSAGE_CHUNK = 50_000;
-
-/** Message bytes priced per fee chunk: 32 (NEM Technical Reference §4.1). */
-export const MESSAGE_FEE_CHUNK_SIZE = 32;
-
-/**
- * Base flat transaction fee shared by several NEM transaction types: 0.15 XEM
- * (NEM NIS API Documentation fee table). Applies to: importance transfer / account key link
- * (NEM Technical Reference §4.2), multisig wrapper (§4.3.3), multisig cosignature (§4.3.2),
- * namespace provisioning, mosaic definition and mosaic supply change transactions.
- */
-export const BASE_FEE = 150_000;
-
-/**
- * Fee for an aggregate (multisig account) modification transaction: 0.5 XEM, flat regardless of
- * the number of modifications (NEM Technical Reference §4.3.1; NEM NIS API Documentation fee table).
- */
-export const AGGREGATE_MODIFICATION_FEE = 500_000;
-
-// XEM transfer fee scaling constants (NEM Technical Reference §4.1; NEM NIS API Documentation
-// transfer transaction fee table). Worked examples: 45,000 XEM → 0.20 XEM, 500,000 XEM → 1.25 XEM.
-
-/** XEM amount per fee tier in the transfer fee calculation: 10,000 XEM. */
-export const XEM_TIER_AMOUNT = 10_000;
-
-/** Fee added per completed 10,000 XEM tier: 0.05 XEM. */
-export const XEM_FEE_PER_TIER = 50_000;
-
-/** Maximum XEM-amount transfer fee component: 1.25 XEM (capped at 25 tiers of 0.05 XEM). */
-export const XEM_TRANSFER_FEE_MAX = 1_250_000;
-
-// Mosaic transfer fee formula constants (NEM NIS API Documentation, transfer transaction fee
-// table, "Fees for transferring a mosaic to another account").
-
-/** Maximum possible quantity of any mosaic, in smallest units: 9,000,000,000,000,000. */
-export const MAX_MOSAIC_QUANTITY = 9_000_000_000_000_000n;
-
-/** Numerator used to derive a mosaic's XEM-equivalent value in the transfer fee formula. */
-export const XEM_EQUIVALENT_NUMERATOR = 8_999_999_999n;
-
-/** Maximum supply of a small business mosaic (divisibility 0), which pays a flat per-mosaic fee: 10,000. */
-export const SMALL_BUSINESS_MOSAIC_MAX_SUPPLY = 10_000;
-
-// Rental / creation fees in absolute microXEM. These are NOT the transaction fee: they are paid
-// to a dedicated rental or creation fee sink in a separate field of the transaction, in addition
-// to the BASE_FEE transaction fee (NEM NIS API Documentation fee table and "Mosaic definition" §).
-
-/** Rental fee for provisioning a root namespace: 100 XEM (NEM NIS API Documentation fee table). */
-export const ROOT_NAMESPACE_FEE = 100_000_000;
-
-/** Rental fee for provisioning a sub-namespace: 10 XEM (NEM NIS API Documentation fee table). */
-export const SUB_NAMESPACE_FEE = 10_000_000;
-
-/**
- * Creation fee for a mosaic definition: 10 XEM, paid to the creation fee sink to discourage
- * squatting (NEM NIS API Documentation, "The fee for creating a mosaic definition is 10 XEM").
- */
-export const MOSAIC_DEFINITION_CREATION_FEE = 10_000_000;
+/** NEM XEM total supply (8,999,999,999 XEM). */
+export const NETWORK_CURRENCY_SUPPLY = 8_999_999_999n;
 
 export const TransactionGroup = {
 	CONFIRMED: 'confirmed',
