@@ -1,13 +1,18 @@
+import { Api } from '../../src/api';
 import { accountNamespaceDTO, namespaceInfoDTO } from '../__fixtures__/api/namespace-dtos';
 import { namespace } from '../__fixtures__/local/namespace';
 import { networkProperties } from '../__fixtures__/local/network';
-import { runApiServiceTest } from '../test-utils';
+import { createMakeRequestMock, runApiServiceTest } from '../test-utils';
+import { NotFoundError } from 'wallet-common-core';
 
 // Constants
 
 const NODE_URL = networkProperties.nodeUrl;
 const NAMESPACE_ID = namespace.id;
+const UNKNOWN_NAMESPACE_ID = 'unknown';
 const OWNER_ADDRESS = namespace.owner;
+
+const namespaceUrl = namespaceId => `${NODE_URL}/namespace?namespace=${namespaceId}`;
 
 describe('api/NamespaceService', () => {
 	describe('fetchAccountNamespaces', () => {
@@ -29,7 +34,7 @@ describe('api/NamespaceService', () => {
 	describe('fetchNamespaceInfo', () => {
 		it('maps a single namespace fetched by id', async () => {
 			// Arrange:
-			const requestMap = { [`${NODE_URL}/namespace?namespace=${NAMESPACE_ID}`]: namespaceInfoDTO };
+			const requestMap = { [namespaceUrl(NAMESPACE_ID)]: namespaceInfoDTO };
 
 			// Act & Assert:
 			await runApiServiceTest({
@@ -41,16 +46,45 @@ describe('api/NamespaceService', () => {
 	});
 
 	describe('fetchNamespaceInfos', () => {
-		it('maps a list of namespace ids to a namespace map keyed by id', async () => {
+		const runFetchNamespaceInfosTest = (description, config, expected) => {
+			it(description, async () => {
+				// Act & Assert:
+				await runApiServiceTest({
+					requestMap: config.requestMap,
+					call: api => api.namespace.fetchNamespaceInfos(networkProperties, config.namespaceIds),
+					expected: expected.namespaceInfos
+				});
+			});
+		};
+
+		const fetchNamespaceInfosTests = [
+			{
+				description: 'maps a list of namespace ids to a namespace map keyed by id',
+				config: { namespaceIds: [NAMESPACE_ID], requestMap: { [namespaceUrl(NAMESPACE_ID)]: namespaceInfoDTO } },
+				expected: { namespaceInfos: { [NAMESPACE_ID]: namespace } }
+			},
+			{
+				description: 'omits namespaces that are not found and keeps the resolved ones',
+				config: {
+					namespaceIds: [NAMESPACE_ID, UNKNOWN_NAMESPACE_ID],
+					requestMap: {
+						[namespaceUrl(NAMESPACE_ID)]: namespaceInfoDTO,
+						[namespaceUrl(UNKNOWN_NAMESPACE_ID)]: new NotFoundError('Namespace not found')
+					}
+				},
+				expected: { namespaceInfos: { [NAMESPACE_ID]: namespace } }
+			}
+		];
+
+		fetchNamespaceInfosTests.forEach(test => runFetchNamespaceInfosTest(test.description, test.config, test.expected));
+
+		it('rethrows errors that are not a not-found', async () => {
 			// Arrange:
-			const requestMap = { [`${NODE_URL}/namespace?namespace=${NAMESPACE_ID}`]: namespaceInfoDTO };
+			const makeRequest = createMakeRequestMock({ [namespaceUrl(NAMESPACE_ID)]: new Error('Node unreachable') });
+			const api = new Api({ makeRequest });
 
 			// Act & Assert:
-			await runApiServiceTest({
-				requestMap,
-				call: api => api.namespace.fetchNamespaceInfos(networkProperties, [NAMESPACE_ID]),
-				expected: { [NAMESPACE_ID]: namespace }
-			});
+			await expect(api.namespace.fetchNamespaceInfos(networkProperties, [NAMESPACE_ID])).rejects.toThrow('Node unreachable');
 		});
 	});
 });

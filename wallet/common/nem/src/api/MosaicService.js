@@ -4,6 +4,7 @@ import {
 	mosaicInfoFromDTO,
 	mosaicListFromDTO
 } from '../utils';
+import { NotFoundError } from 'wallet-common-core';
 
 /** @typedef {import('../types/Mosaic').Mosaic} Mosaic */
 /** @typedef {import('../types/Mosaic').MosaicInfo} MosaicInfo */
@@ -33,7 +34,7 @@ export class MosaicService {
 	 * Groups IDs by namespace and queries /mosaic/definition/page per namespace.
 	 * @param {NetworkProperties} networkProperties - Network properties.
 	 * @param {string[]} mosaicIds - The mosaic ids to resolve.
-	 * @returns {Promise<Record<string, MosaicInfo>>} The mosaic infos keyed by mosaic id (unknown ids are omitted).
+	 * @returns {Promise<Record<string, MosaicInfo>>} The mosaic infos keyed by id (not-found ids omitted; other failures propagate).
 	 */
 	fetchMosaicInfos = async (networkProperties, mosaicIds) => {
 		if (!mosaicIds.length)
@@ -49,20 +50,27 @@ export class MosaicService {
 		const mosaicInfos = {};
 
 		const fetchNamespaceDefinitions = Object.entries(namespaceGroups).map(async ([namespaceId, ids]) => {
+			const endpoint = `${networkProperties.nodeUrl}/namespace/mosaic/definition/page?namespace=${namespaceId}&pageSize=100`;
+
+			let response;
 			try {
-				const endpoint = `${networkProperties.nodeUrl}/namespace/mosaic/definition/page?namespace=${namespaceId}&pageSize=100`;
-				const response = await this.#makeRequest(endpoint);
+				response = await this.#makeRequest(endpoint);
+			} catch (error) {
+				if (error instanceof NotFoundError || error.statusCode === 404)
+					return;
 
-				for (const wrapper of (response.data || [])) {
-					const definition = wrapper.mosaic || wrapper;
-					const id = mosaicIdFromRaw(definition.id);
-					
-					if (!ids.includes(id))
-						continue;
+				throw error;
+			}
 
-					mosaicInfos[id] = mosaicInfoFromDTO(definition);
-				}
-			} catch {}
+			for (const wrapper of (response.data || [])) {
+				const definition = wrapper.mosaic || wrapper;
+				const id = mosaicIdFromRaw(definition.id);
+
+				if (!ids.includes(id))
+					continue;
+
+				mosaicInfos[id] = mosaicInfoFromDTO(definition);
+			}
 		});
 		await Promise.all(fetchNamespaceDefinitions);
 

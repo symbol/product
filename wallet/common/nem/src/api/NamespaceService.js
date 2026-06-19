@@ -1,4 +1,5 @@
 import { namespaceFromDTO } from '../utils';
+import { NotFoundError } from 'wallet-common-core';
 
 /** @typedef {import('../types/Namespace').Namespace} Namespace */
 /** @typedef {import('../types/Network').NetworkProperties} NetworkProperties */
@@ -40,14 +41,19 @@ export class NamespaceService {
 	 * Fetches namespace infos for a list of IDs.
 	 * @param {NetworkProperties} networkProperties - Network properties.
 	 * @param {string[]} namespaceIds - The namespace ids to resolve.
-	 * @returns {Promise<Record<string, Namespace>>} The namespace infos keyed by id (unknown ids are omitted).
+	 * @returns {Promise<Record<string, Namespace>>} The namespace infos keyed by id (not-found ids are omitted; other failures propagate).
 	 */
 	fetchNamespaceInfos = async (networkProperties, namespaceIds) => {
 		const results = {};
 		const fetchAll = namespaceIds.map(async id => {
 			try {
 				results[id] = await this.fetchNamespaceInfo(networkProperties, id);
-			} catch {}
+			} catch (error) {
+				if (error instanceof NotFoundError || error.statusCode === 404)
+					return;
+
+				throw error;
+			}
 		});
 		await Promise.all(fetchAll);
 		
