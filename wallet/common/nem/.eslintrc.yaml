@@ -27,10 +27,6 @@ rules:
   jsdoc/no-undefined-types: 1
   import/named: off
   import/namespace: off
-  import/no-unresolved:
-    - 2
-    - ignore:
-      - '^symbol-sdk/'
   prefer-destructuring:
     - error
     - VariableDeclarator:
