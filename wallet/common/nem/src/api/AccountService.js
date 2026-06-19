@@ -17,6 +17,15 @@ export class AccountService {
 	}
 
 	/**
+	 * Fetches the raw account data from the node.
+	 * @param {NetworkProperties} networkProperties - Network properties.
+	 * @param {string} address - The account address.
+	 * @returns {Promise<object>} The raw account data containing the account and its meta.
+	 */
+	#fetchAccountData = (networkProperties, address) =>
+		this.#makeRequest(`${networkProperties.nodeUrl}/account/get?address=${address}`);
+
+	/**
 	 * Fetches account information from the node.
 	 * @param {NetworkProperties} networkProperties - Network properties.
 	 * @param {string} address - The account address.
@@ -25,7 +34,7 @@ export class AccountService {
 	fetchAccountInfo = async (networkProperties, address) => {
 		let accountData;
 		try {
-			accountData = await this.#makeRequest(`${networkProperties.nodeUrl}/account/get?address=${address}`);
+			accountData = await this.#fetchAccountData(networkProperties, address);
 		} catch (error) {
 			if (error instanceof NotFoundError || error.statusCode === 404) {
 				return {
@@ -73,7 +82,7 @@ export class AccountService {
 	 * @returns {Promise<string>} The relative balance amount.
 	 */
 	fetchAccountBalance = async (networkProperties, address) => {
-		const { account } = await this.#makeRequest(`${networkProperties.nodeUrl}/account/get?address=${address}`);
+		const { account } = await this.#fetchAccountData(networkProperties, address);
 
 		return absoluteToRelativeAmount(account.balance, networkProperties.networkCurrency.divisibility);
 	};
@@ -85,7 +94,7 @@ export class AccountService {
 	 * @returns {Promise<MultisigAccountInfo>} The multisig cosignatories, multisig parents and approval threshold.
 	 */
 	fetchMultisigInfo = async (networkProperties, address) => {
-		const { account, meta } = await this.#makeRequest(`${networkProperties.nodeUrl}/account/get?address=${address}`);
+		const { account, meta } = await this.#fetchAccountData(networkProperties, address);
 
 		return {
 			cosignatories: extractAddressFromList(meta.cosignatories),
