@@ -15,7 +15,6 @@ import {
 	createTransactionFeeTiers,
 	encodePlainMessage,
 	isIncomingTransaction,
-	isNemAddress,
 	isOutgoingTransaction
 } from '../utils';
 import { ControllerError, TransactionBundle } from 'wallet-common-core';
@@ -69,13 +68,6 @@ export class TransferModule {
 		const { currentAccount, networkProperties } = this.#walletController;
 		const senderPublicKey = options.senderPublicKey || currentAccount.publicKey;
 		const isMultisig = senderPublicKey !== currentAccount.publicKey;
-
-		if (!isNemAddress(recipientAddress, networkProperties.networkIdentifier)) {
-			throw new ControllerError(
-				'error_transfer_invalid_recipient',
-				`Invalid NEM recipient address: "${recipientAddress}"`
-			);
-		}
 
 		let messagePayload = null;
 		if (message) {

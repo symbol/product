@@ -19,7 +19,6 @@ import { ControllerError, TransactionBundle } from 'wallet-common-core';
 const { bob, carol } = accounts;
 const RECIPIENT_ADDRESS = bob.address;
 const MULTISIG_PUBLIC_KEY = carol.publicKey;
-const INVALID_ADDRESS = 'NOT-A-NEM-ADDRESS';
 
 const singleDeadline = createDeadline(networkProperties.networkTime, SINGLE_TRANSACTION_DEADLINE_HOURS);
 const multisigDeadline = createDeadline(networkProperties.networkTime, MULTISIG_TRANSACTION_DEADLINE_HOURS);
@@ -231,23 +230,6 @@ describe('modules/TransferModule', () => {
 						fee: createFee('0.15'),
 						deadline: multisigDeadline
 					}], { type: TransactionBundleType.MULTISIG_TRANSFER }),
-					shouldFetchRecipientInfo: false
-				}
-			},
-			{
-				description: 'throws when the recipient address is invalid',
-				config: {
-					options: {
-						recipientAddress: INVALID_ADDRESS,
-						mosaics: nativeMosaics('10'),
-						fee: createFee('0.1')
-					}
-				},
-				expected: {
-					error: new ControllerError(
-						'error_transfer_invalid_recipient',
-						`Invalid NEM recipient address: "${INVALID_ADDRESS}"`
-					),
 					shouldFetchRecipientInfo: false
 				}
 			},
