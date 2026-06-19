@@ -1,6 +1,7 @@
 import { NetworkIdentifier } from '../constants';
 import { PrivateKey, PublicKey } from 'symbol-sdk';
 import { Address, NemFacade, Network } from 'symbol-sdk/nem';
+import { SdkError } from 'wallet-common-core';
 
 /** @typedef {import('../types/Account').KeyPair} KeyPair */
 /** @typedef {import('../types/Account').PublicAccount} PublicAccount */
@@ -180,7 +181,7 @@ export const isPublicKey = stringToTest => {
 /**
  * Checks if a given string is a valid NEM address.
  * @param {string} address - The address to test.
- * @param {string} [networkIdentifier] - The network identifier (optional).
+ * @param {string} networkIdentifier - The network identifier.
  * @returns {boolean} A boolean indicating if the string is a valid NEM address.
  */
 export const isNemAddress = (address, networkIdentifier) => {
@@ -191,15 +192,10 @@ export const isNemAddress = (address, networkIdentifier) => {
 		[NetworkIdentifier.MAIN_NET]: Network.MAINNET,
 		[NetworkIdentifier.TEST_NET]: Network.TESTNET
 	};
+	const network = networkMap[networkIdentifier];
 
-	if (networkIdentifier) {
-		const isValidNetworkAddress = networkMap[networkIdentifier]?.isValidAddressString(address);
+	if (!network)
+		throw new SdkError(`Cannot verify NEM address. Provided invalid network identifier: ${networkIdentifier}`);
 
-		return isValidNetworkAddress || false;
-	}
-
-	const isValidMainnetAddress = Network.MAINNET.isValidAddressString(address);
-	const isValidTestnetAddress = Network.TESTNET.isValidAddressString(address);
-
-	return isValidMainnetAddress || isValidTestnetAddress;
+	return network.isValidAddressString(address);
 };

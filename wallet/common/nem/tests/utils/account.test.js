@@ -348,17 +348,12 @@ describe('utils/account', () => {
 		const isNemAddressTests = [
 			{
 				description: 'returns true for a valid testnet address',
-				config: { input: testnetAccount.address },
+				config: { input: testnetAccount.address, networkIdentifier: NetworkIdentifier.TEST_NET },
 				expected: { result: true }
 			},
 			{
 				description: 'returns true for a valid mainnet address',
-				config: { input: mainnetAccount.address },
-				expected: { result: true }
-			},
-			{
-				description: 'returns true when the address matches the provided network',
-				config: { input: testnetAccount.address, networkIdentifier: NetworkIdentifier.TEST_NET },
+				config: { input: mainnetAccount.address, networkIdentifier: NetworkIdentifier.MAIN_NET },
 				expected: { result: true }
 			},
 			{
@@ -367,22 +362,23 @@ describe('utils/account', () => {
 				expected: { result: false }
 			},
 			{
-				description: 'returns false when the provided network identifier is unknown',
-				config: { input: testnetAccount.address, networkIdentifier: 'UNKNOWN_NETWORK' },
-				expected: { result: false }
-			},
-			{
 				description: 'returns false for a non-address string',
-				config: { input: 'invalid' },
+				config: { input: 'invalid', networkIdentifier: NetworkIdentifier.TEST_NET },
 				expected: { result: false }
 			},
 			{
 				description: 'returns false for non-string inputs',
-				config: { inputs: nonStringInputs },
+				config: { inputs: nonStringInputs, networkIdentifier: NetworkIdentifier.TEST_NET },
 				expected: { result: false }
 			}
 		];
 
 		isNemAddressTests.forEach(test => runIsNemAddressTest(test.description, test.config, test.expected));
+
+		it('throws an SdkError when the provided network identifier is unknown', () => {
+			// Act & Assert:
+			expect(() => isNemAddress(testnetAccount.address, 'UNKNOWN_NETWORK'))
+				.toThrow('Cannot verify NEM address. Provided invalid network identifier: UNKNOWN_NETWORK');
+		});
 	});
 });
