@@ -20,7 +20,7 @@ src/
 
 ## Requirements
 
-- Node.js v20.11.0
+- Node.js v22
 
 ## Installation
 
