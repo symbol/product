@@ -25,7 +25,7 @@ export const fetchAccountPage = async searchParams => {
 	}
 
 	if (searchCriteria.filter.mosaic) {
-		searchCriteria.filter = { namespaceName: searchCriteria.filter.mosaic };
+		searchCriteria.filter = { namespace_name: searchCriteria.filter.mosaic };
 		url = createSearchURL(createApiUrl('mosaic/rich/list'), searchCriteria);
 	} else {
 		url = createSearchURL(createApiUrl('accounts'), searchCriteria);
@@ -76,7 +76,7 @@ const accountInfoFromDTO = data => ({
 			amount: item.quantity,
 			isCreatedByAccount: item.creator === data.address
 		})) || [],
-	importance: data.importance ? +data.importance * 100 : null,
+	importance: +data.importance * 100 || 0,
 	harvestedBlocks: data.harvestedBlocks || null,
 	harvestedFees: data.harvestedFees || null,
 	height: data.height || null,

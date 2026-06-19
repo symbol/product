@@ -210,16 +210,6 @@ export const arrayToText = value => {
 export const getRootNamespaceName = namespaceName => namespaceName.split('.')[0];
 
 /**
- * Creates mosaic name.
- * @param {string} namespaceId - Namespace id.
- * @param {string} mosaicId - Mosaic id.
- * @returns {string} Mosaic name.
- * @example
- * createMosaicName('nem', 'xem'); // "nem.xem"
- */
-export const createMosaicName = (namespaceId, mosaicId) => `${namespaceId}.${mosaicId}`;
-
-/**
  * Transforms transaction data row for CSV export.
  * @param {object} row - Data row.
  * @param {Function} translate - Translation function.

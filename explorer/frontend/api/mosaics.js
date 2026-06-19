@@ -1,4 +1,4 @@
-import { createMosaicName, getRootNamespaceName } from '@/utils/common';
+import { getRootNamespaceName } from '@/utils/common';
 import { createApiUrl, createPage, createSearchCriteria, createSearchURL, createTryFetchInfoFunction, makeRequest } from '@/utils/server';
 
 /**
@@ -37,8 +37,8 @@ export const fetchMosaicInfo = createTryFetchInfoFunction(async id => {
  * @returns {object} mapped mosaic info
  */
 const mosaicInfoFromDTO = data => ({
-	id: createMosaicName(data.namespaceName, data.mosaicName),
-	name: createMosaicName(data.namespaceName, data.mosaicName),
+	id: data.namespaceName,
+	name: data.namespaceName,
 	namespaceName: data.namespaceName,
 	rootNamespaceName: getRootNamespaceName(data.namespaceName),
 	creator: data.creator,
@@ -46,8 +46,8 @@ const mosaicInfoFromDTO = data => ({
 	divisibility: data.divisibility,
 	initialSupply: data.initialSupply,
 	supply: data.totalSupply,
-	registrationHeight: data.registeredHeight,
-	registrationTimestamp: data.registeredTimestamp,
+	registrationHeight: data.mosaicRegisteredHeight,
+	registrationTimestamp: data.mosaicRegisteredTimestamp,
 	namespaceRegistrationHeight: data.rootNamespaceRegisteredHeight,
 	namespaceExpirationHeight: data.rootNamespaceExpirationHeight,
 	namespaceExpirationTimestamp: data.rootNamespaceRegisteredTimestamp,
@@ -57,7 +57,7 @@ const mosaicInfoFromDTO = data => ({
 	levy: data.levyFee
 		? {
 			fee: data.levyFee,
-			mosaic: data.levyNamespace,
+			mosaic: data.levyNamespaceName,
 			recipient: data.levyRecipient,
 			type: data.levyType
 		  }

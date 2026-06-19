@@ -87,8 +87,10 @@ describe('api/stats', () => {
 			// Arrange:
 			const functionToTest = fetchTransactionChart;
 			const args = [{ isPerDay: true }];
+			const statisticsUrl = 'https://explorer.backend/transaction/statistics/range'
+				+ '?startDate=2024-03-15&endDate=2024-06-13&periodType=day';
 			const responseMap = {
-				'https://explorer.backend/transaction/daily?startDate=2024-03-15&endDate=2024-06-13': dailyTransactionChartResponse
+				[statisticsUrl]: dailyTransactionChartResponse
 			};
 			const expectedResult = dailyTransactionChartResult;
 
@@ -100,8 +102,10 @@ describe('api/stats', () => {
 			// Arrange:
 			const functionToTest = fetchTransactionChart;
 			const args = [{ isPerMonth: true }];
+			const statisticsUrl = 'https://explorer.backend/transaction/statistics/range'
+				+ '?startDate=2020-06-13&endDate=2024-06-13&periodType=month';
 			const responseMap = {
-				'https://explorer.backend/transaction/monthly?startDate=2020-06-13&endDate=2024-06-13': monthlyTransactionChartResponse
+				[statisticsUrl]: monthlyTransactionChartResponse
 			};
 			const expectedResult = monthlyTransactionChartResult;
 

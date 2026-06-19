@@ -9,7 +9,7 @@ export const accountStatisticsResponse = {
 
 export const transactionStatisticsResponse = {
 	last24Hours: 630,
-	last30Day: 17457,
+	last30Days: 17457,
 	total: 10667593
 };
 
@@ -429,17 +429,23 @@ export const priceByDateResponse = {
 	}
 };
 
-export const monthlyTransactionChartResponse = [
-	{ month: '2024-04', totalTransactions: 13779 },
-	{ month: '2024-05', totalTransactions: 11287 },
-	{ month: '2024-06', totalTransactions: 11983 }
-];
+export const monthlyTransactionChartResponse = {
+	data:[
+		{ period: '2024-04', totalTransactions: 13779 },
+		{ period: '2024-05', totalTransactions: 11287 },
+		{ period: '2024-06', totalTransactions: 11983 }
+	],
+	periodType: 'month'
+};
 
-export const dailyTransactionChartResponse = [
-	{ date: '2024-05-27', totalTransactions: 393 },
-	{ date: '2024-05-28', totalTransactions: 352 },
-	{ date: '2024-05-29', totalTransactions: 355 }
-];
+export const dailyTransactionChartResponse = {
+	data:[
+		{ period: '2024-05-27', totalTransactions: 393 },
+		{ period: '2024-05-28', totalTransactions: 352 },
+		{ period: '2024-05-29', totalTransactions: 355 }
+	],
+	periodType: 'day'
+} ;
 
 export const accountStatisticsResult = {
 	total: 984546,
@@ -508,7 +514,7 @@ export const blockStatisticsResult = {
 export const transactionStatisticsResult = {
 	averagePerBlock: 1,
 	total: 10667593,
-	last30Day: 17457,
+	last30Days: 17457,
 	last24Hours: 630
 };
 
