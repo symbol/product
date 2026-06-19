@@ -8,7 +8,7 @@ const nemEpochDate = new Date(Network.MAINNET.datetimeConverter.epoch);
 export const NEM_EPOCH = nemEpochDate.getTime();
 
 /**
- * NEM1 block generation target time in seconds (NEM Technical Reference, §7.3).
+ * NEM block generation target time in seconds (NEM Technical Reference, §7.3).
  * Both mainnet and testnet share this protocol constant.
  */
 export const BLOCK_GENERATION_TARGET_TIME = 60;
@@ -73,7 +73,7 @@ export const nativeToCommonMessageType = {
 };
 
 /**
- * NEM1 transaction type codes, matching the symbol-sdk NEM TransactionType enum values.
+ * NEM transaction type codes, matching the symbol-sdk NEM TransactionType enum values.
  * ACCOUNT_KEY_LINK (2049) is the SDK name for the NEM "importance transfer" transaction
  * (NEM Technical Reference §4.2).
  */

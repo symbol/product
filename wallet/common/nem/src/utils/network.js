@@ -32,7 +32,7 @@ export const networkIdentifierToNetworkType = networkIdentifier => {
 
 /**
  * Parses the block generation target time in seconds.
- * Falls back to the NEM1 protocol constant when no value is provided.
+ * Falls back to the NEM protocol constant when no value is provided.
  * @param {number|string} value - The raw block generation target time value.
  * @returns {number} The time in seconds.
  */
