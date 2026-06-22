@@ -69,6 +69,9 @@ const SCREEN_TEXT = {
 	// Safety warning
 	textSafetyWarning: 's_transactionDetails_safetyWarning_description',
 
+	// Message
+	textMessageEncryptedLabel: 'c_messageView_label_encrypted',
+
 	// Dialog titles and text
 	textDialogConfirmTitle: 's_transactionDetails_cosignDialog_confirm_title',
 	textDialogConfirmText: 's_transactionDetails_cosignDialog_confirm_text',
@@ -208,6 +211,25 @@ const aggregateBondedWithMultisigModification = AggregateTransactionFixtureBuild
 	.setInnerTransactions([innerMultisigAccountModification])
 	.build();
 
+// Mosaic Supply Change Transaction Fixtures
+
+const MOSAIC_SUPPLY_DELTA = 4242;
+const MOSAIC_SUPPLY_CHANGE_MOSAIC_ID = '0E2B031D9C83906D';
+
+const createMosaicSupplyChangeTransaction = action => ({
+	type: SymbolTransactionType.MOSAIC_SUPPLY_CHANGE,
+	hash: TRANSACTION_HASH,
+	timestamp: TRANSACTION_TIMESTAMP,
+	signerAddress: currentAccount.address,
+	signerPublicKey: currentAccount.publicKey,
+	mosaicId: MOSAIC_SUPPLY_CHANGE_MOSAIC_ID,
+	action,
+	delta: MOSAIC_SUPPLY_DELTA
+});
+
+const mosaicSupplyIncreaseTransaction = createMosaicSupplyChangeTransaction('Increase');
+const mosaicSupplyDecreaseTransaction = createMosaicSupplyChangeTransaction('Decrease');
+
 // Address Book Configurations
 
 const addressBookWithContacts = createAddressBookMock([recipientContact, otherSignerContact]);
@@ -225,7 +247,10 @@ const createWalletControllerConfig = (overrides = {}) => ({
 		[NETWORK_IDENTIFIER]: walletAccounts
 	},
 	modules: {
-		addressBook: addressBookWithContacts
+		addressBook: addressBookWithContacts,
+		transfer: {
+			getDecryptedMessageText: jest.fn().mockResolvedValue(DECRYPTED_MESSAGE_TEXT)
+		}
 	},
 	fetchTransactionStatus: jest.fn().mockResolvedValue({ group: TransactionGroup.CONFIRMED }),
 	fetchAccountTransaction: jest.fn().mockImplementation(hash => 
@@ -391,6 +416,47 @@ describe('screens/history/TransactionDetails', () => {
 			expect(getDecryptedMessageText).toHaveBeenCalled();
 			screenTester.expectText([SCREEN_TEXT.textMessageEncryptedLabel], true);
 			screenTester.notExpectText([DECRYPTED_MESSAGE_TEXT]);
+		});
+	});
+
+	describe('mosaic supply change transactions', () => {
+		const runMosaicSupplyChangeTest = (description, config, expected) => {
+			it(description, () => {
+				// Arrange:
+				setupMocks();
+				const props = createRouteProps(config.transaction);
+
+				// Act:
+				const screenTester = new ScreenTester(TransactionDetails, props);
+
+				// Assert:
+				screenTester.expectText(expected.visibleTexts, true);
+				if (expected.notVisibleTexts?.length)
+					screenTester.notExpectText(expected.notVisibleTexts);
+			});
+		};
+
+		const mosaicSupplyChangeTests = [
+			{
+				description: 'renders a decrease as "Decrease by" with a negative delta',
+				config: { transaction: mosaicSupplyDecreaseTransaction },
+				expected: {
+					visibleTexts: ['data_delta_decrease', `-${MOSAIC_SUPPLY_DELTA}`],
+					notVisibleTexts: ['data_delta_increase']
+				}
+			},
+			{
+				description: 'renders an increase as "Increase by" with a positive delta',
+				config: { transaction: mosaicSupplyIncreaseTransaction },
+				expected: {
+					visibleTexts: ['data_delta_increase', `${MOSAIC_SUPPLY_DELTA}`],
+					notVisibleTexts: ['data_delta_decrease']
+				}
+			}
+		];
+
+		mosaicSupplyChangeTests.forEach(test => {
+			runMosaicSupplyChangeTest(test.description, test.config, test.expected);
 		});
 	});
 
