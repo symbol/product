@@ -10,6 +10,7 @@ from rest import create_app, setup_symbol_facade
 from rest.facade.SymbolRestFacade import SymbolRestFacade
 from rest.model.common import DatabaseConfig
 
+from .test import PostgresTestUtils as postgres_test_utils
 from .test.PostgresTestUtils import PostgresTestDatabase, create_unreachable_db_config
 
 
@@ -188,6 +189,18 @@ def test_rest_env_removes_missing(monkeypatch):
 	assert 'EXPLORER_REST_SETTINGS' not in os.environ
 
 
+def test_rest_env_restores_existing(monkeypatch):
+	monkeypatch.setenv('EXPLORER_REST_SETTINGS', 'previous.config')
+
+	with tempfile.TemporaryDirectory() as temp_directory:
+		config_path = Path(temp_directory) / 'app.config'
+
+		with _rest_settings_env(config_path):
+			assert str(config_path) == os.environ['EXPLORER_REST_SETTINGS']
+
+	assert 'previous.config' == os.environ['EXPLORER_REST_SETTINGS']
+
+
 def test_external_postgres_config(monkeypatch):
 	monkeypatch.setenv('EXPLORER_TEST_POSTGRES_HOST', 'postgres.example')
 	monkeypatch.setenv('EXPLORER_TEST_POSTGRES_DATABASE', 'symbol_test')
@@ -196,3 +209,30 @@ def test_external_postgres_config(monkeypatch):
 
 	with PostgresTestDatabase() as db_config:
 		assert DatabaseConfig('symbol_test', 'symbol_user', '', 'postgres.example', '15432') == db_config
+
+
+def test_testing_postgresql_fallback(monkeypatch):
+	class FakePostgresql:
+		def __init__(self):
+			self.stopped = False
+
+		@staticmethod
+		def dsn():
+			return {
+				'database': 'generated',
+				'user': 'postgres',
+				'host': '127.0.0.1',
+				'port': '5432'
+			}
+
+		def stop(self):
+			self.stopped = True
+
+	monkeypatch.delenv('EXPLORER_TEST_POSTGRES_HOST', raising=False)
+	fake_postgresql = FakePostgresql()
+	monkeypatch.setattr(postgres_test_utils.testing.postgresql, 'Postgresql', lambda: fake_postgresql)
+
+	with PostgresTestDatabase() as db_config:
+		assert DatabaseConfig('generated', 'postgres', '', '127.0.0.1', '5432') == db_config
+
+	assert fake_postgresql.stopped

@@ -14,6 +14,19 @@ def _base_config(**overrides):
 	return config
 
 
+def _assert_rejects_node_url(node_url, expected_message):
+	with pytest.raises(SymbolNodeConfigError, match=expected_message):
+		SymbolNodeConfig.from_app_config(_base_config(SYMBOL_NODE_URL=node_url))
+
+
+def _assert_rejects_allowed_hosts(
+	allowed_hosts,
+	expected_message='SYMBOL_NODE_ALLOWED_HOSTS entries must be exact host:port values'
+):
+	with pytest.raises(SymbolNodeConfigError, match=expected_message):
+		SymbolNodeConfig.from_app_config(_base_config(SYMBOL_NODE_ALLOWED_HOSTS=allowed_hosts))
+
+
 def test_missing_node_url():
 	assert SymbolNodeConfig.from_app_config({}) is None
 
@@ -49,6 +62,28 @@ def test_normalizes_url_node_config():
 	assert 15 == node_config.timeout_seconds
 
 
+def test_defaults_http_port():
+	node_config = SymbolNodeConfig.from_app_config(_base_config(
+		SYMBOL_NODE_URL='http://localhost',
+		SYMBOL_NODE_ALLOWED_HOSTS='localhost:80'
+	))
+
+	assert 80 == node_config.port
+	assert 'http://localhost:80' == node_config.base_url
+	assert frozenset({'localhost:80'}) == node_config.allowed_hosts
+
+
+def test_defaults_https_port():
+	node_config = SymbolNodeConfig.from_app_config(_base_config(
+		SYMBOL_NODE_URL='https://localhost',
+		SYMBOL_NODE_ALLOWED_HOSTS='localhost:443'
+	))
+
+	assert 443 == node_config.port
+	assert 'https://localhost:443' == node_config.base_url
+	assert frozenset({'localhost:443'}) == node_config.allowed_hosts
+
+
 def test_rejects_url_metadata_host():
 	with pytest.raises(SymbolNodeConfigError, match='Metadata service Symbol node host is not allowed'):
 		SymbolNodeConfig.from_url('http://169.254.169.254:3000')
@@ -82,30 +117,56 @@ def test_rejects_bad_positive_int(config_key, config_value):
 		SymbolNodeConfig.from_app_config(_base_config(**{config_key: config_value}))
 
 
-@pytest.mark.parametrize('node_url', [
-	'ftp://localhost:3000',
-	'http://user@localhost:3000',
-	'http://localhost:3000/path',
-	'http://localhost:3000?x=1',
-	'http://localhost:3000#fragment',
-	'http:///missing-host'
-])
-def test_rejects_invalid_base_urls(node_url):
-	with pytest.raises(SymbolNodeConfigError):
-		SymbolNodeConfig.from_app_config(_base_config(SYMBOL_NODE_URL=node_url))
+def test_rejects_unsupported_url_scheme():
+	_assert_rejects_node_url('ftp://localhost:3000', 'Symbol node URL scheme must be http or https')
 
 
-@pytest.mark.parametrize('allowed_hosts', [
-	'',
-	'http://localhost:3000',
-	'localhost',
-	'localhost:*',
-	'localhost:abc',
-	'localhost:3000/path'
-])
-def test_rejects_invalid_allowed_hosts(allowed_hosts):
-	with pytest.raises(SymbolNodeConfigError):
-		SymbolNodeConfig.from_app_config(_base_config(SYMBOL_NODE_ALLOWED_HOSTS=allowed_hosts))
+def test_rejects_url_userinfo():
+	_assert_rejects_node_url('http://user@localhost:3000', 'Symbol node URL must not include userinfo')
+
+
+def test_rejects_url_path_prefix():
+	_assert_rejects_node_url('http://localhost:3000/path', 'Symbol node URL must not include a path prefix')
+
+
+def test_rejects_url_query():
+	_assert_rejects_node_url('http://localhost:3000?x=1', 'Symbol node URL must not include query or fragment')
+
+
+def test_rejects_url_fragment():
+	_assert_rejects_node_url('http://localhost:3000#fragment', 'Symbol node URL must not include query or fragment')
+
+
+def test_rejects_url_missing_host():
+	_assert_rejects_node_url('http:///missing-host', 'Symbol node URL must include a host')
+
+
+def test_rejects_url_non_numeric_port():
+	_assert_rejects_node_url('http://localhost:abc', 'Symbol node URL port must be numeric')
+
+
+def test_rejects_missing_allowed_hosts():
+	_assert_rejects_allowed_hosts('', 'SYMBOL_NODE_ALLOWED_HOSTS is required')
+
+
+def test_rejects_allowed_hosts_with_scheme():
+	_assert_rejects_allowed_hosts('http://localhost:3000')
+
+
+def test_rejects_allowed_hosts_without_port():
+	_assert_rejects_allowed_hosts('localhost')
+
+
+def test_rejects_allowed_hosts_with_wildcard():
+	_assert_rejects_allowed_hosts('localhost:*')
+
+
+def test_rejects_allowed_hosts_with_non_numeric_port():
+	_assert_rejects_allowed_hosts('localhost:abc')
+
+
+def test_rejects_allowed_hosts_with_path():
+	_assert_rejects_allowed_hosts('localhost:3000/path')
 
 
 def test_rejects_empty_allowed_hosts():
@@ -181,7 +242,10 @@ def test_rejects_loopback_without_flag():
 		SYMBOL_NODE_ALLOW_LOOPBACK='false'
 	))
 
-	with pytest.raises(SymbolNodeConfigError, match='Loopback Symbol node address requires SYMBOL_NODE_ALLOW_LOOPBACK=true'):
+	with pytest.raises(
+		SymbolNodeConfigError,
+		match='Loopback Symbol node address requires SYMBOL_NODE_ALLOW_LOOPBACK=true'
+	):
 		node_config.assert_request_allowed('http://127.0.0.1:3000')
 
 

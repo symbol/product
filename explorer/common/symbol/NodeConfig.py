@@ -46,7 +46,10 @@ def _normalize_base_url(node_url):
 	if parsed_url.path not in ('', '/'):
 		raise SymbolNodeConfigError('Symbol node URL must not include a path prefix')
 
-	port = parsed_url.port or (443 if 'https' == parsed_url.scheme else 80)
+	try:
+		port = parsed_url.port or (443 if 'https' == parsed_url.scheme else 80)
+	except ValueError as error:
+		raise SymbolNodeConfigError('Symbol node URL port must be numeric') from error
 	host = parsed_url.hostname.lower()
 
 	return parsed_url.scheme, host, port, f'{parsed_url.scheme}://{host}:{port}'
@@ -146,7 +149,10 @@ class SymbolNodeConfig:
 			allowed_hosts=frozenset(allowed_hosts),
 			allow_private=_parse_bool(values.get('SYMBOL_NODE_ALLOW_PRIVATE', 'false')),
 			allow_loopback=_parse_bool(values.get('SYMBOL_NODE_ALLOW_LOOPBACK', 'false')),
-			timeout_seconds=_parse_positive_int('SYMBOL_NODE_REQUEST_TIMEOUT_SECONDS', values.get('SYMBOL_NODE_REQUEST_TIMEOUT_SECONDS', 10))
+			timeout_seconds=_parse_positive_int(
+				'SYMBOL_NODE_REQUEST_TIMEOUT_SECONDS',
+				values.get('SYMBOL_NODE_REQUEST_TIMEOUT_SECONDS', 10)
+			)
 		)
 
 	def assert_request_allowed(self, request_url):

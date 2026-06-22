@@ -5,7 +5,7 @@ from psycopg2 import OperationalError
 from rest.facade.SymbolRestFacade import SymbolRestFacade
 from rest.model.symbol.NodeConfig import SymbolNodeConfig, SymbolNodeConfigError
 
-from ..test.PostgresTestUtils import PostgresTestDatabase, create_unreachable_db_config
+from ..test.PostgresTestUtils import create_unreachable_db_config
 
 _NODE_URL = 'http://127.0.0.1:3000'
 
@@ -18,6 +18,18 @@ class _FailingSymbolDatabase:
 	@staticmethod
 	def check_connection():
 		raise OperationalError('database unavailable')
+
+
+class _HealthySymbolDatabase:
+	@staticmethod
+	def check_connection():
+		return True
+
+
+def _create_configured_facade(config_error=None):
+	facade = SymbolRestFacade(db_config=None, node_config=_create_node_config(), config_error=config_error)
+	facade.symbol_db = _HealthySymbolDatabase()
+	return facade
 
 
 class TestSymbolRestFacade(TestCase):
@@ -45,28 +57,36 @@ class TestSymbolRestFacade(TestCase):
 			]
 		}, result)
 
-	def test_reports_healthy_core_when_database_and_node_config_are_available(self):
-		node_config = _create_node_config()
+	def test_reports_configured_core_status_when_dependencies_are_available(self):
+		facade = _create_configured_facade()
 
-		with PostgresTestDatabase() as db_config:
-			facade = SymbolRestFacade(db_config=db_config, node_config=node_config)
+		result = facade.get_core_status()
 
-			self.assertTrue(facade.is_configured())
-			self.assertEqual({
-				'isConfigured': True,
-				'node': {
-					'baseUrl': _NODE_URL,
-					'allowPrivate': False,
-					'allowLoopback': True,
-					'timeoutSeconds': 10
-				}
-			}, facade.get_core_status())
-			health = facade.get_health()
-			self.assertTrue(health['isHealthy'])
-			self.assertTrue(health['dbUp'])
-			self.assertTrue(health['nodeConfigured'])
-			self.assertFalse(health['backendSynced'])
-			self.assertEqual([], health['errors'])
+		self.assertTrue(facade.is_configured())
+		self.assertEqual({
+			'isConfigured': True,
+			'node': {
+				'baseUrl': _NODE_URL,
+				'allowPrivate': False,
+				'allowLoopback': True,
+				'timeoutSeconds': 10
+			}
+		}, result)
+
+	def test_reports_healthy_core_when_dependencies_are_available(self):
+		facade = _create_configured_facade()
+
+		result = facade.get_health()
+
+		self.assertEqual({
+			'isHealthy': True,
+			'dbUp': True,
+			'nodeConfigured': True,
+			'backendSynced': False,
+			'lastDBSyncedAt': None,
+			'lastDBHeight': None,
+			'errors': []
+		}, result)
 
 	def test_reports_database_error(self):
 		node_config = _create_node_config()
@@ -107,18 +127,23 @@ class TestSymbolRestFacade(TestCase):
 		self.assertNotIn('connection refused', str(facade.get_health()))
 
 	def test_reports_configuration_error(self):
-		node_config = _create_node_config()
+		facade = _create_configured_facade(config_error=ValueError('bad config'))
 
-		with PostgresTestDatabase() as db_config:
-			facade = SymbolRestFacade(db_config=db_config, node_config=node_config, config_error=ValueError('bad config'))
+		result = facade.get_health()
 
-			result = facade.get_health()
-
-			self.assertFalse(result['isHealthy'])
-			self.assertEqual([{
+		self.assertFalse(facade.is_configured())
+		self.assertEqual({
+			'isHealthy': False,
+			'dbUp': True,
+			'nodeConfigured': True,
+			'backendSynced': False,
+			'lastDBSyncedAt': None,
+			'lastDBHeight': None,
+			'errors': [{
 				'type': 'configuration',
 				'message': 'bad config'
-			}], result['errors'])
+			}]
+		}, result)
 
 	def test_validates_node_request_target(self):
 		node_config = _create_node_config()
