@@ -10,7 +10,6 @@ from rest import create_app, setup_symbol_facade
 from rest.facade.SymbolRestFacade import SymbolRestFacade
 from rest.model.common import DatabaseConfig
 
-from .test import PostgresTestUtils as postgres_test_utils
 from .test.PostgresTestUtils import PostgresTestDatabase, create_unreachable_db_config
 from .test.SymbolHealthTestUtils import create_symbol_health
 
@@ -50,17 +49,32 @@ def _create_app_config(config_dir, db_config_path):
 
 
 @contextmanager
-def _rest_settings_env(config_path):
-	previous_value = os.environ.get('EXPLORER_REST_SETTINGS')
-	os.environ['EXPLORER_REST_SETTINGS'] = str(config_path)
+def _temporary_env_values(values):
+	previous_values = {
+		name: os.environ.get(name)
+		for name in values
+	}
 
 	try:
+		for name, value in values.items():
+			if value is None:
+				os.environ.pop(name, None)
+			else:
+				os.environ[name] = value
+
 		yield
 	finally:
-		if previous_value is None:
-			os.environ.pop('EXPLORER_REST_SETTINGS', None)
-		else:
-			os.environ['EXPLORER_REST_SETTINGS'] = previous_value
+		for name, previous_value in previous_values.items():
+			if previous_value is None:
+				os.environ.pop(name, None)
+			else:
+				os.environ[name] = previous_value
+
+
+@contextmanager
+def _rest_settings_env(config_path):
+	with _temporary_env_values({'EXPLORER_REST_SETTINGS': str(config_path)}):
+		yield
 
 
 @pytest.fixture(name='symbol_database_config', scope='module')
@@ -174,41 +188,42 @@ def test_symbol_facade_node_error(symbol_database_config):
 	] == health['errors']
 
 
-def test_rest_env_removes_missing(monkeypatch):
-	monkeypatch.delenv('EXPLORER_REST_SETTINGS', raising=False)
-
+def test_rest_env_removes_missing():
 	with tempfile.TemporaryDirectory() as temp_directory:
 		config_path = Path(temp_directory) / 'app.config'
 
-		with _rest_settings_env(config_path):
-			assert str(config_path) == os.environ['EXPLORER_REST_SETTINGS']
+		with _temporary_env_values({'EXPLORER_REST_SETTINGS': None}):
+			with _rest_settings_env(config_path):
+				assert str(config_path) == os.environ['EXPLORER_REST_SETTINGS']
 
-	assert 'EXPLORER_REST_SETTINGS' not in os.environ
+			assert 'EXPLORER_REST_SETTINGS' not in os.environ
 
 
-def test_rest_env_restores_existing(monkeypatch):
-	monkeypatch.setenv('EXPLORER_REST_SETTINGS', 'previous.config')
-
+def test_rest_env_restores_existing():
 	with tempfile.TemporaryDirectory() as temp_directory:
 		config_path = Path(temp_directory) / 'app.config'
 
-		with _rest_settings_env(config_path):
-			assert str(config_path) == os.environ['EXPLORER_REST_SETTINGS']
+		with _temporary_env_values({'EXPLORER_REST_SETTINGS': 'previous.config'}):
+			with _rest_settings_env(config_path):
+				assert str(config_path) == os.environ['EXPLORER_REST_SETTINGS']
 
-	assert 'previous.config' == os.environ['EXPLORER_REST_SETTINGS']
-
-
-def test_external_postgres_config(monkeypatch):
-	monkeypatch.setenv('EXPLORER_TEST_POSTGRES_HOST', 'postgres.example')
-	monkeypatch.setenv('EXPLORER_TEST_POSTGRES_DATABASE', 'symbol_test')
-	monkeypatch.setenv('EXPLORER_TEST_POSTGRES_USER', 'symbol_user')
-	monkeypatch.setenv('EXPLORER_TEST_POSTGRES_PORT', '15432')
-
-	with PostgresTestDatabase() as db_config:
-		assert DatabaseConfig('symbol_test', 'symbol_user', '', 'postgres.example', '15432') == db_config
+			assert 'previous.config' == os.environ['EXPLORER_REST_SETTINGS']
 
 
-def test_testing_postgresql_fallback(monkeypatch):
+def test_external_postgres_config():
+	postgres_env = {
+		'EXPLORER_TEST_POSTGRES_HOST': 'postgres.example',
+		'EXPLORER_TEST_POSTGRES_DATABASE': 'symbol_test',
+		'EXPLORER_TEST_POSTGRES_USER': 'symbol_user',
+		'EXPLORER_TEST_POSTGRES_PORT': '15432'
+	}
+
+	with _temporary_env_values(postgres_env):
+		with PostgresTestDatabase() as db_config:
+			assert DatabaseConfig('symbol_test', 'symbol_user', '', 'postgres.example', '15432') == db_config
+
+
+def test_testing_postgresql_fallback():
 	class FakePostgresql:
 		def __init__(self):
 			self.stopped = False
@@ -225,11 +240,10 @@ def test_testing_postgresql_fallback(monkeypatch):
 		def stop(self):
 			self.stopped = True
 
-	monkeypatch.delenv('EXPLORER_TEST_POSTGRES_HOST', raising=False)
 	fake_postgresql = FakePostgresql()
-	monkeypatch.setattr(postgres_test_utils.testing.postgresql, 'Postgresql', lambda: fake_postgresql)
 
-	with PostgresTestDatabase() as db_config:
-		assert DatabaseConfig('generated', 'postgres', '', '127.0.0.1', '5432') == db_config
+	with _temporary_env_values({'EXPLORER_TEST_POSTGRES_HOST': None}):
+		with PostgresTestDatabase(postgresql_factory=lambda: fake_postgresql) as db_config:
+			assert DatabaseConfig('generated', 'postgres', '', '127.0.0.1', '5432') == db_config
 
 	assert fake_postgresql.stopped

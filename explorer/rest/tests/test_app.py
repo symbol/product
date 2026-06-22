@@ -13,17 +13,32 @@ def _write_rest_config(config_path, contents):
 
 
 @contextmanager
-def _rest_settings_env(config_path):
-	previous_rest_settings = os.environ.get('EXPLORER_REST_SETTINGS')
-	os.environ['EXPLORER_REST_SETTINGS'] = str(config_path)
+def _temporary_env_values(values):
+	previous_values = {
+		name: os.environ.get(name)
+		for name in values
+	}
 
 	try:
+		for name, value in values.items():
+			if value is None:
+				os.environ.pop(name, None)
+			else:
+				os.environ[name] = value
+
 		yield
 	finally:
-		if previous_rest_settings is None:
-			os.environ.pop('EXPLORER_REST_SETTINGS', None)
-		else:
-			os.environ['EXPLORER_REST_SETTINGS'] = previous_rest_settings
+		for name, previous_value in previous_values.items():
+			if previous_value is None:
+				os.environ.pop(name, None)
+			else:
+				os.environ[name] = previous_value
+
+
+@contextmanager
+def _rest_settings_env(config_path):
+	with _temporary_env_values({'EXPLORER_REST_SETTINGS': str(config_path)}):
+		yield
 
 
 @pytest.fixture(name='rest_config_path')
@@ -99,30 +114,30 @@ def test_loads_envvar_config(rest_config_path):
 	assert 'nem' == app.config['REST_CHAIN']
 
 
-def test_rest_env_removes_missing(monkeypatch, tmp_path):
+def test_rest_env_removes_missing(tmp_path):
 	# Arrange:
-	monkeypatch.delenv('EXPLORER_REST_SETTINGS', raising=False)
 	config_path = tmp_path / 'app.config'
 
 	# Act:
-	with _rest_settings_env(config_path):
-		assert str(config_path) == os.environ['EXPLORER_REST_SETTINGS']
+	with _temporary_env_values({'EXPLORER_REST_SETTINGS': None}):
+		with _rest_settings_env(config_path):
+			assert str(config_path) == os.environ['EXPLORER_REST_SETTINGS']
 
-	# Assert:
-	assert 'EXPLORER_REST_SETTINGS' not in os.environ
+		# Assert:
+		assert 'EXPLORER_REST_SETTINGS' not in os.environ
 
 
-def test_rest_env_restores_existing(monkeypatch, tmp_path):
+def test_rest_env_restores_existing(tmp_path):
 	# Arrange:
-	monkeypatch.setenv('EXPLORER_REST_SETTINGS', 'previous.config')
 	config_path = tmp_path / 'app.config'
 
 	# Act:
-	with _rest_settings_env(config_path):
-		assert str(config_path) == os.environ['EXPLORER_REST_SETTINGS']
+	with _temporary_env_values({'EXPLORER_REST_SETTINGS': 'previous.config'}):
+		with _rest_settings_env(config_path):
+			assert str(config_path) == os.environ['EXPLORER_REST_SETTINGS']
 
-	# Assert:
-	assert 'previous.config' == os.environ['EXPLORER_REST_SETTINGS']
+		# Assert:
+		assert 'previous.config' == os.environ['EXPLORER_REST_SETTINGS']
 
 
 def _create_error_handler_client():

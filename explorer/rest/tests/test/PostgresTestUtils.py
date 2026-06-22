@@ -8,15 +8,16 @@ from rest.model.common import DatabaseConfig
 class PostgresTestDatabase:
 	"""Provides a test PostgreSQL database from Docker/env or testing.postgresql."""
 
-	def __init__(self):
+	def __init__(self, postgresql_factory=testing.postgresql.Postgresql):
 		self.postgresql = None
+		self.postgresql_factory = postgresql_factory
 
 	def __enter__(self):
 		external_db_config = _external_db_config()
 		if external_db_config:
 			return external_db_config
 
-		self.postgresql = testing.postgresql.Postgresql()
+		self.postgresql = self.postgresql_factory()
 		return DatabaseConfig(**self.postgresql.dsn(), password='')
 
 	def __exit__(self, *_):
