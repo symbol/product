@@ -12,6 +12,7 @@ from rest.model.common import DatabaseConfig
 
 from .test import PostgresTestUtils as postgres_test_utils
 from .test.PostgresTestUtils import PostgresTestDatabase, create_unreachable_db_config
+from .test.SymbolHealthTestUtils import create_symbol_health
 
 
 def _create_config_file(config_dir, include_symbol_db=True, database_config=None):
@@ -78,15 +79,11 @@ def test_symbol_health_with_database(symbol_database_config):
 			response = create_app().test_client().get('/api/symbol/health')
 
 	assert 200 == response.status_code
-	assert {
-		'isHealthy': True,
-		'dbUp': True,
-		'nodeConfigured': True,
-		'backendSynced': False,
-		'lastDBSyncedAt': None,
-		'lastDBHeight': None,
-		'errors': []
-	} == response.json
+	assert create_symbol_health(
+		isHealthy=True,
+		dbUp=True,
+		nodeConfigured=True,
+	) == response.json
 
 
 def test_symbol_facade_config(symbol_database_config):

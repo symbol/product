@@ -99,7 +99,7 @@ def test_loads_envvar_config(rest_config_path):
 	assert 'nem' == app.config['REST_CHAIN']
 
 
-def test_rest_settings_env_removes_missing(monkeypatch, tmp_path):
+def test_rest_env_removes_missing(monkeypatch, tmp_path):
 	# Arrange:
 	monkeypatch.delenv('EXPLORER_REST_SETTINGS', raising=False)
 	config_path = tmp_path / 'app.config'
@@ -112,7 +112,7 @@ def test_rest_settings_env_removes_missing(monkeypatch, tmp_path):
 	assert 'EXPLORER_REST_SETTINGS' not in os.environ
 
 
-def test_rest_settings_env_restores_existing(monkeypatch, tmp_path):
+def test_rest_env_restores_existing(monkeypatch, tmp_path):
 	# Arrange:
 	monkeypatch.setenv('EXPLORER_REST_SETTINGS', 'previous.config')
 	config_path = tmp_path / 'app.config'
@@ -151,7 +151,7 @@ def test_not_found_handler_returns_json():
 	} == not_found_response.json
 
 
-def test_bad_request_handler_returns_json():
+def test_bad_request_json():
 	# Arrange:
 	client = _create_error_handler_client()
 

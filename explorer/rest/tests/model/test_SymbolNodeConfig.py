@@ -149,19 +149,19 @@ def test_rejects_missing_allowed_hosts():
 	_assert_rejects_allowed_hosts('', 'SYMBOL_NODE_ALLOWED_HOSTS is required')
 
 
-def test_rejects_allowed_hosts_with_scheme():
+def test_rejects_allowlist_scheme():
 	_assert_rejects_allowed_hosts('http://localhost:3000')
 
 
-def test_rejects_allowed_hosts_without_port():
+def test_rejects_allowlist_no_port():
 	_assert_rejects_allowed_hosts('localhost')
 
 
-def test_rejects_allowed_hosts_with_wildcard():
+def test_rejects_allowlist_wildcard():
 	_assert_rejects_allowed_hosts('localhost:*')
 
 
-def test_rejects_allowed_hosts_with_non_numeric_port():
+def test_rejects_allowlist_bad_port():
 	_assert_rejects_allowed_hosts('localhost:abc')
 
 

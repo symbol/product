@@ -6,6 +6,7 @@ from rest.facade.SymbolRestFacade import SymbolRestFacade
 from rest.model.symbol.NodeConfig import SymbolNodeConfig, SymbolNodeConfigError
 
 from ..test.PostgresTestUtils import create_unreachable_db_config
+from ..test.SymbolHealthTestUtils import create_symbol_health
 
 _NODE_URL = 'http://127.0.0.1:3000'
 
@@ -38,14 +39,8 @@ class TestSymbolRestFacade(TestCase):
 
 		result = facade.get_health()
 
-		self.assertEqual({
-			'isHealthy': False,
-			'dbUp': False,
-			'nodeConfigured': False,
-			'backendSynced': False,
-			'lastDBSyncedAt': None,
-			'lastDBHeight': None,
-			'errors': [
+		self.assertEqual(create_symbol_health(
+			errors=[
 				{
 					'type': 'configuration',
 					'message': 'Symbol database is not configured'
@@ -55,7 +50,7 @@ class TestSymbolRestFacade(TestCase):
 					'message': 'Symbol node URL is not configured'
 				}
 			]
-		}, result)
+		), result)
 
 	def test_reports_configured_core_status_when_dependencies_are_available(self):
 		facade = _create_configured_facade()
@@ -78,33 +73,24 @@ class TestSymbolRestFacade(TestCase):
 
 		result = facade.get_health()
 
-		self.assertEqual({
-			'isHealthy': True,
-			'dbUp': True,
-			'nodeConfigured': True,
-			'backendSynced': False,
-			'lastDBSyncedAt': None,
-			'lastDBHeight': None,
-			'errors': []
-		}, result)
+		self.assertEqual(create_symbol_health(
+			isHealthy=True,
+			dbUp=True,
+			nodeConfigured=True,
+		), result)
 
 	def test_reports_database_error(self):
 		node_config = _create_node_config()
 		facade = SymbolRestFacade(db_config=None, node_config=node_config)
 		facade.symbol_db = _FailingSymbolDatabase()
 
-		self.assertEqual({
-			'isHealthy': False,
-			'dbUp': False,
-			'nodeConfigured': True,
-			'backendSynced': False,
-			'lastDBSyncedAt': None,
-			'lastDBHeight': None,
-			'errors': [{
+		self.assertEqual(create_symbol_health(
+			nodeConfigured=True,
+			errors=[{
 				'type': 'database',
 				'message': 'Symbol database is unavailable'
 			}]
-		}, facade.get_health())
+		), facade.get_health())
 
 	def test_reports_database_initialization_error(self):
 		node_config = _create_node_config()
@@ -112,18 +98,13 @@ class TestSymbolRestFacade(TestCase):
 		facade = SymbolRestFacade(db_config=create_unreachable_db_config(), node_config=node_config)
 
 		self.assertFalse(facade.is_configured())
-		self.assertEqual({
-			'isHealthy': False,
-			'dbUp': False,
-			'nodeConfigured': True,
-			'backendSynced': False,
-			'lastDBSyncedAt': None,
-			'lastDBHeight': None,
-			'errors': [{
+		self.assertEqual(create_symbol_health(
+			nodeConfigured=True,
+			errors=[{
 				'type': 'database',
 				'message': 'Symbol database is unavailable'
 			}]
-		}, facade.get_health())
+		), facade.get_health())
 		self.assertNotIn('connection refused', str(facade.get_health()))
 
 	def test_reports_configuration_error(self):
@@ -132,18 +113,14 @@ class TestSymbolRestFacade(TestCase):
 		result = facade.get_health()
 
 		self.assertFalse(facade.is_configured())
-		self.assertEqual({
-			'isHealthy': False,
-			'dbUp': True,
-			'nodeConfigured': True,
-			'backendSynced': False,
-			'lastDBSyncedAt': None,
-			'lastDBHeight': None,
-			'errors': [{
+		self.assertEqual(create_symbol_health(
+			dbUp=True,
+			nodeConfigured=True,
+			errors=[{
 				'type': 'configuration',
 				'message': 'bad config'
 			}]
-		}, result)
+		), result)
 
 	def test_validates_node_request_target(self):
 		node_config = _create_node_config()

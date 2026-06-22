@@ -166,19 +166,19 @@ def test_rejects_url_non_numeric_port():
 	_assert_rejects_node_url('http://localhost:abc', 'Symbol node URL port must be numeric')
 
 
-def test_rejects_allowed_hosts_without_port():
+def test_rejects_allowlist_no_port():
 	_assert_rejects_allowed_hosts('localhost')
 
 
-def test_rejects_allowed_hosts_with_scheme():
+def test_rejects_allowlist_scheme():
 	_assert_rejects_allowed_hosts('http://localhost:3000')
 
 
-def test_rejects_allowed_hosts_with_wildcard():
+def test_rejects_allowlist_wildcard():
 	_assert_rejects_allowed_hosts('localhost:*')
 
 
-def test_rejects_allowed_hosts_with_non_numeric_port():
+def test_rejects_allowlist_bad_port():
 	_assert_rejects_allowed_hosts('localhost:abc')
 
 
