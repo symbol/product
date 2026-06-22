@@ -1,7 +1,14 @@
 import { addressFromPublicKey } from './account';
-import { getMosaicAmount, mosaicIdFromRaw, mosaicListFromDTO } from './mosaic';
+import { getMosaicAmount, getMosaicProperty, mosaicIdFromRaw, mosaicListFromDTO } from './mosaic';
 import { decodePlainMessage, isIncomingTransaction, isOutgoingTransaction, nemTimestampToDate } from './transaction';
-import { MessageType, NETWORK_CURRENCY_ID, NativeMessageType, TransactionType, nativeToCommonMessageType } from '../constants';
+import {
+	MessageType,
+	MosaicPropertyName,
+	NETWORK_CURRENCY_ID,
+	NativeMessageType,
+	TransactionType,
+	nativeToCommonMessageType
+} from '../constants';
 import { absoluteToRelativeAmount } from 'wallet-common-core';
 
 /** @typedef {import('../types/Account').PublicAccount} PublicAccount */
@@ -57,6 +64,27 @@ const resolveTransferAmount = (transactionBody, nativeMosaicAmount, currentAccou
 	return `${-nativeMosaicAmount}`;
 };
 
+// Reads the mosaic definition property array ([{ name, value }]) into the typed MosaicProperties shape.
+const mapMosaicProperties = properties => ({
+	divisibility: parseInt(getMosaicProperty(properties, MosaicPropertyName.DIVISIBILITY)),
+	initialSupply: parseInt(getMosaicProperty(properties, MosaicPropertyName.INITIAL_SUPPLY)),
+	supplyMutable: getMosaicProperty(properties, MosaicPropertyName.SUPPLY_MUTABLE) === 'true',
+	transferable: getMosaicProperty(properties, MosaicPropertyName.TRANSFERABLE) !== 'false'
+});
+
+// NIS serializes an absent mosaic levy as an empty object; only a populated levy carries a recipient.
+const levyFromDTO = levy => {
+	if (!levy?.recipient)
+		return null;
+
+	return {
+		type: levy.type,
+		recipientAddress: levy.recipient,
+		mosaicId: mosaicIdFromRaw(levy.mosaicId),
+		fee: levy.fee
+	};
+};
+
 /**
  * Converts a NEM transaction DTO to a transaction object.
  * @param {object} transactionDTO - The transaction DTO to convert.
@@ -71,10 +99,22 @@ export const transactionFromDTO = (transactionDTO, config) => {
 	const baseTransaction = baseTransactionFromDTO(transactionDTO, config);
 
 	switch (transactionDTO.transaction?.type ?? transactionDTO.type) {
-	case TransactionType.MULTISIG:
-		return multisigTransactionFromDTO(transactionDTO, config);
 	case TransactionType.TRANSFER:
 		return transferTransactionFromDTO(transactionDTO, config);
+	case TransactionType.ACCOUNT_KEY_LINK:
+		return accountKeyLinkTransactionFromDTO(transactionDTO, config);
+	case TransactionType.MULTISIG_ACCOUNT_MODIFICATION:
+		return multisigAccountModificationTransactionFromDTO(transactionDTO, config);
+	case TransactionType.MULTISIG_COSIGNATURE:
+		return cosignatureTransactionFromDTO(transactionDTO, config);
+	case TransactionType.MULTISIG:
+		return multisigTransactionFromDTO(transactionDTO, config);
+	case TransactionType.NAMESPACE_REGISTRATION:
+		return namespaceRegistrationTransactionFromDTO(transactionDTO, config);
+	case TransactionType.MOSAIC_DEFINITION:
+		return mosaicDefinitionTransactionFromDTO(transactionDTO, config);
+	case TransactionType.MOSAIC_SUPPLY_CHANGE:
+		return mosaicSupplyChangeTransactionFromDTO(transactionDTO, config);
 	}
 
 	return baseTransaction;
@@ -168,6 +208,95 @@ const multisigTransactionFromDTO = (transactionDTO, config) => {
 		amount: innerTransaction?.amount ?? '0',
 		cosignatures,
 		message: innerTransaction?.message || null
+	};
+};
+
+const accountKeyLinkTransactionFromDTO = (transactionDTO, config) => {
+	const { transaction } = transactionDTO;
+	const { networkProperties } = config;
+	const baseTransaction = baseTransactionFromDTO(transactionDTO, config);
+	const remotePublicKey = transaction.remoteAccount;
+
+	return {
+		...baseTransaction,
+		linkAction: transaction.mode,
+		remotePublicKey,
+		remoteAccountAddress: addressFromPublicKey(remotePublicKey, networkProperties.networkIdentifier)
+	};
+};
+
+const multisigAccountModificationTransactionFromDTO = (transactionDTO, config) => {
+	const { transaction } = transactionDTO;
+	const baseTransaction = baseTransactionFromDTO(transactionDTO, config);
+	const modifications = (transaction.modifications || []).map(modification => ({
+		modificationType: modification.modificationType,
+		cosignatoryPublicKey: modification.cosignatoryAccount
+	}));
+
+	return {
+		...baseTransaction,
+		modifications,
+		minApprovalDelta: transaction.minCosignatories?.relativeChange ?? 0
+	};
+};
+
+const cosignatureTransactionFromDTO = (transactionDTO, config) => {
+	const { transaction } = transactionDTO;
+	const baseTransaction = baseTransactionFromDTO(transactionDTO, config);
+
+	return {
+		...baseTransaction,
+		otherTransactionHash: transaction.otherHash?.data ?? null,
+		multisigAccountAddress: transaction.otherAccount || null
+	};
+};
+
+const namespaceRegistrationTransactionFromDTO = (transactionDTO, config) => {
+	const { transaction } = transactionDTO;
+	const { networkProperties } = config;
+	const baseTransaction = baseTransactionFromDTO(transactionDTO, config);
+	const namespaceName = transaction.newPart;
+	const parentName = transaction.parent ?? null;
+
+	return {
+		...baseTransaction,
+		namespaceName,
+		parentName,
+		namespaceId: parentName ? `${parentName}.${namespaceName}` : namespaceName,
+		rentalFeeSink: transaction.rentalFeeSink,
+		rentalFee: absoluteToRelativeAmount(transaction.rentalFee, networkProperties.networkCurrency.divisibility)
+	};
+};
+
+const mosaicDefinitionTransactionFromDTO = (transactionDTO, config) => {
+	const { transaction } = transactionDTO;
+	const { networkProperties } = config;
+	const baseTransaction = baseTransactionFromDTO(transactionDTO, config);
+	const { mosaicDefinition } = transaction;
+
+	return {
+		...baseTransaction,
+		mosaicDefinition: {
+			id: mosaicIdFromRaw(mosaicDefinition.id),
+			ownerPublicKey: mosaicDefinition.creator,
+			description: mosaicDefinition.description,
+			properties: mapMosaicProperties(mosaicDefinition.properties),
+			levy: levyFromDTO(mosaicDefinition.levy)
+		},
+		rentalFeeSink: transaction.creationFeeSink,
+		rentalFee: absoluteToRelativeAmount(transaction.creationFee, networkProperties.networkCurrency.divisibility)
+	};
+};
+
+const mosaicSupplyChangeTransactionFromDTO = (transactionDTO, config) => {
+	const { transaction } = transactionDTO;
+	const baseTransaction = baseTransactionFromDTO(transactionDTO, config);
+
+	return {
+		...baseTransaction,
+		mosaicId: mosaicIdFromRaw(transaction.mosaicId),
+		action: transaction.supplyType,
+		delta: transaction.delta
 	};
 };
 

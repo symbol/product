@@ -49,7 +49,7 @@ export const getMosaicAmount = (mosaicList, mosaicId) => {
  * @param {string} [defaultValue] - The value returned when the property is absent.
  * @returns {string} The property value, or the default value.
  */
-const getMosaicProperty = (properties, propertyName, defaultValue = '0') =>
+export const getMosaicProperty = (properties, propertyName, defaultValue = '0') =>
 	properties?.find(property => property.name === propertyName)?.value ?? defaultValue;
 
 /**
