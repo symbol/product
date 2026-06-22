@@ -197,7 +197,7 @@ describe('api/TransactionService', () => {
 				networkIdentifier: networkProperties.networkIdentifier
 			});
 			expect(provider.estimateGas).toHaveBeenCalledWith(ethTx);
-			// 123456 estimate + 50% safety margin = 148147
+			// 123456 estimate + 20% safety margin = 148147
 			expect(result).toBe('148147');
 		});
 
