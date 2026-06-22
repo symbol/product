@@ -176,7 +176,7 @@ describe('api/TransactionService', () => {
 	});
 
 	describe('estimateTransactionGasLimit', () => {
-		it('estimates gas and returns as string', async () => {
+		it('estimates gas and returns it with a safety margin as string', async () => {
 			// Arrange:
 			const transaction = { kind: 'transfer', to: '0xabc' };
 			const ethTx = { to: '0xabc', data: '0x' };
@@ -197,7 +197,8 @@ describe('api/TransactionService', () => {
 				networkIdentifier: networkProperties.networkIdentifier
 			});
 			expect(provider.estimateGas).toHaveBeenCalledWith(ethTx);
-			expect(result).toBe('123456');
+			// 123456 estimate + 50% safety margin = 148147
+			expect(result).toBe('148147');
 		});
 
 		it('throws ApiError when estimation fails', async () => {
