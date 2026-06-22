@@ -1,13 +1,10 @@
 import { symbolNetworkApi } from './api';
-import { symbolBridgeHelper } from './bridge';
 import { symbolWalletSdk } from './sdk';
 import { config } from '@/app/config';
 import { PersistentStorageInterface } from '@/app/lib/storage/PersistentStorageInterface';
 import { SecureStorageInterface } from '@/app/lib/storage/SecureStorageInterface';
-import { makeRequest } from '@/app/utils';
 import {
 	AddressBookModule,
-	BridgeModule,
 	ExternalAccountKeystore,
 	LocalizationModule,
 	MarketModule,
@@ -27,11 +24,7 @@ const modules = [
 	new MultisigModule(),
 	new TransferModule(),
 	new LocalizationModule(),
-	new HarvestingModule(),
-	new BridgeModule({
-		makeRequest,
-		bridgeHelper: symbolBridgeHelper
-	})
+	new HarvestingModule()
 ];
 
 /**

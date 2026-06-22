@@ -177,7 +177,7 @@ const TransactionInfo = ({ preloadedData, stats }) => {
 							<div title={stats.total}>{numberToShortString(stats.total)}</div>
 						</Field>
 						<Field title={t('field_transactions30Days')}>
-							<div title={stats.last30Day}>{numberToShortString(stats.last30Day)}</div>
+							<div title={stats.last30Days}>{numberToShortString(stats.last30Days)}</div>
 						</Field>
 						<Field title={t('field_transactions24Hours')}>
 							<div title={stats.last24Hours}>{numberToShortString(stats.last24Hours)}</div>

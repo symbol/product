@@ -5,13 +5,18 @@ export const TransactionStatusStep = {
 	CONFIRM: 'confirm'
 };
 
-export const TransactionStatusInfoType = {
-	SENDING: 'sending',
-	CONFIRMED: 'confirmed',
+export const TransactionWorkflowStatus = {
+	IDLE: 'idle',
+	CREATING: 'creating',
 	CREATE_ERROR: 'create_error',
+	CREATED: 'created',
+	SIGNING: 'signing',
 	SIGN_ERROR: 'sign_error',
+	SIGNED: 'signed',
+	ANNOUNCING: 'announcing',
 	ANNOUNCE_ERROR: 'announce_error',
+	ANNOUNCED: 'announced',
+	CONFIRMED: 'confirmed',
 	FAILED_TRANSACTIONS: 'failed_transactions',
-	PARTIAL: 'partial',
-	CONFIRMING: 'confirming'
+	PARTIAL: 'partial'
 };

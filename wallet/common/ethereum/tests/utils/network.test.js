@@ -7,8 +7,7 @@ describe('utils/network', () => {
 			// Arrange:
 			const networkIdentifiersAndExpectedChainIds = [
 				{ networkIdentifier: 'mainnet', expectedChainId: 1 },
-				{ networkIdentifier: 'testnet', expectedChainId: 3151908 },
-				{ networkIdentifier: 'sepolia', expectedChainId: 11155111 }
+				{ networkIdentifier: 'testnet', expectedChainId: 11155111 }
 			];
 
 			networkIdentifiersAndExpectedChainIds.map(({ networkIdentifier, expectedChainId }) => {
@@ -31,8 +30,7 @@ describe('utils/network', () => {
 			// Arrange:
 			const chainIdsAndExpectedIdentifiers = [
 				{ chainId: 1, expectedIdentifier: 'mainnet' },
-				{ chainId: 3151908, expectedIdentifier: 'testnet' },
-				{ chainId: 11155111, expectedIdentifier: 'sepolia' }
+				{ chainId: 11155111, expectedIdentifier: 'testnet' }
 			];
 
 			chainIdsAndExpectedIdentifiers.map(({ chainId, expectedIdentifier }) => {

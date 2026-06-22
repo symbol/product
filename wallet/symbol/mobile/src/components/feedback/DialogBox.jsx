@@ -1,4 +1,4 @@
-import { Stack, StyledText, TextBox } from '@/app/components';
+import { StyledText, TextBox } from '@/app/components';
 import { useValidation } from '@/app/hooks';
 import { PlatformUtils } from '@/app/lib/platform/PlatformUtils';
 import { $t } from '@/app/localization';
@@ -152,19 +152,17 @@ export const DialogBox = props => {
 				<SafeAreaView style={styles.safeArea}>
 					<View style={[styles.modal, style]}>
 						<View style={[styles.content, contentContainerStyle]}>
-							<Stack>
-								<StyledText type="title">
-									{title}
+							<StyledText type="title">
+								{title}
+							</StyledText>
+							{!!text && !isPrompt && (
+								<StyledText type="body">
+									{text}
 								</StyledText>
-								{!!text && !isPrompt && (
-									<StyledText type="body">
-										{text}
-									</StyledText>
-								)}
-								<ScrollView>
-									{children}
-								</ScrollView>
-							</Stack>
+							)}
+							<ScrollView style={styles.scrollArea}>
+								{children}
+							</ScrollView>
 							{isPrompt && (
 								<TextBox
 									label={text}
@@ -219,6 +217,10 @@ const styles = StyleSheet.create({
 	},
 	content: {
 		padding: Sizes.Semantic.layoutPadding.m,
+		flexShrink: 1,
+		gap: Sizes.Semantic.layoutSpacing.m
+	},
+	scrollArea: {
 		flexShrink: 1
 	},
 	buttonContainer: {

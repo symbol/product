@@ -49,24 +49,24 @@ export const tokens = {
 		mainnet: [
 			{
 				name: 'ETH',
-				id: 'ETH',
+				id: 'eth',
 				divisibility: 18
 			},
 			{
 				name: 'WXYM',
-				id: '0x5E8343A455F03109B737B6D8b410e4ECCE998cdA',
+				id: '0x5e8343a455f03109b737b6d8b410e4ecce998cda',
 				divisibility: 6
 			}
 		],
 		testnet: [
 			{
 				name: 'ETH',
-				id: 'ETH',
+				id: 'eth',
 				divisibility: 18
 			},
 			{
 				name: 'WXYM',
-				id: '0x5E8343A455F03109B737B6D8b410e4ECCE998cdA',
+				id: '0xac461bf5a6554e8406f58b192d83aeea695e229b',
 				divisibility: 6
 			}
 		]

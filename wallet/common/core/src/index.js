@@ -9,7 +9,6 @@ import { StorageInterface } from './lib/storage/StorageInterface';
 import { PersistentStorageRepository } from './lib/storage/PersistentStorageRepository';
 // Modules
 import { AddressBookModule } from './lib/modules/AddressBookModule';
-import { BridgeModule } from './lib/modules/BridgeModule';
 import { LocalizationModule } from './lib/modules/LocalizationModule';
 import { MarketModule } from './lib/modules/MarketModule';
 // Utils
@@ -39,7 +38,8 @@ import {
 import { SdkError } from './error/SdkError';
 import { WalletError } from './error/WalletError';
 // Other
-import { BridgeManager } from './lib/bridge/BridgeManager';
+import { BridgePairManager } from './lib/bridge/BridgePairManager';
+import { SwapWorkflowManager } from './lib/bridge/SwapWorkflowManager';
 import { TransactionBundle } from './lib/models/TransactionBundle';
 
 
@@ -59,7 +59,6 @@ export {
 	cloneNetworkObjectMap,
 	constants,
 	AddressBookModule,
-	BridgeModule,
 	LocalizationModule,
 	MarketModule,
 
@@ -76,6 +75,7 @@ export {
 	SdkError,
 	WalletError,
 
-	BridgeManager,
+	BridgePairManager,
+	SwapWorkflowManager,
 	TransactionBundle
 };

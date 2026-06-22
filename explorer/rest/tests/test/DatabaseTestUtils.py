@@ -133,7 +133,7 @@ ACCOUNTS = [
 		None,
 		0.123456,
 		1000000,
-		99999,
+		99999000000,
 		[{'quantity': 1000000, 'namespace_name': 'nem.xem'}, {'quantity': 10, 'namespace_name': 'root.mosaic'}],
 		10,
 		'INACTIVE',
@@ -147,7 +147,7 @@ ACCOUNTS = [
 		None,
 		0.123456,
 		3000000,
-		99999,
+		99999000000,
 		[{'quantity': 3000000, 'namespace_name': 'nem.xem'}, {'quantity': 15, 'namespace_name': 'root.mosaic'}],
 		15,
 		'ACTIVE',
@@ -474,7 +474,7 @@ ACCOUNT_VIEWS = [
 		remote_address=None,
 		importance=0.123456,
 		balance=1.0,
-		vested_balance=0.099999,
+		vested_balance=99999,
 		mosaics=[{
 			'namespace_name': 'nem.xem',
 			'quantity': 1000000,
@@ -502,7 +502,7 @@ ACCOUNT_VIEWS = [
 		remote_address=None,
 		importance=0.123456,
 		balance=3.0,
-		vested_balance=0.099999,
+		vested_balance=99999,
 		mosaics=[{
 			'namespace_name': 'nem.xem',
 			'quantity': 3000000,
@@ -562,7 +562,7 @@ TRANSACTION_MONTH_STATISTIC_VIEW = StatisticTransactionDateRangeView(
 NAMESPACE_VIEWS = [
 	NamespaceView(
 		root_namespace=NAMESPACES[0].root_namespace,
-		owner=str(NAMESPACES[0].owner),
+		owner='NBFWZ4IVRHEIBRCGHLYDS62FSFTBM3VDFA7E6LSQ',
 		registered_height=NAMESPACES[0].registered_height,
 		registered_timestamp=BLOCKS[0].timestamp,
 		expiration_height=NAMESPACES[0].expiration_height,
@@ -577,7 +577,7 @@ NAMESPACE_VIEWS = [
 	),
 	NamespaceView(
 		root_namespace=NAMESPACES[1].root_namespace,
-		owner=str(NAMESPACES[1].owner),
+		owner='NBFWZ4IVRHEIBRCGHLYDS62FSFTBM3VDFA7E6LSQ',
 		registered_height=NAMESPACES[1].registered_height,
 		registered_timestamp=BLOCKS[1].timestamp,
 		expiration_height=NAMESPACES[1].expiration_height,
@@ -598,7 +598,7 @@ NAMESPACE_VIEWS = [
 	),
 	NamespaceView(
 		root_namespace=NAMESPACES[2].root_namespace,
-		owner=str(NAMESPACES[2].owner),
+		owner='NBFWZ4IVRHEIBRCGHLYDS62FSFTBM3VDFA7E6LSQ',
 		registered_height=NAMESPACES[2].registered_height,
 		registered_timestamp=BLOCKS[1].timestamp,
 		expiration_height=NAMESPACES[2].expiration_height,

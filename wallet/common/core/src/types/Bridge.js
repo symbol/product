@@ -3,10 +3,8 @@
 
 /** 
  * @typedef {object} BridgeHelper
- * @property {function} createTransaction - Function to create bridge transaction
- * signature (options) => Promise<object>
- * @property {function} fetchTokenInfo - Function to fetch token by id
- * signature (networkProperties, tokenId) => Promise<TokenInfo>
+ * @property {function(object): Promise<object>} createTransaction - Creates a bridge transaction.
+ * @property {function(object, string): Promise<TokenInfo>} fetchTokenInfo - Fetches token info by id.
  */
 
 /**
@@ -48,11 +46,13 @@
 /**
  * @typedef {object} BridgeRequest
  * @property {string} type - Request type, either 'wrap' or 'unwrap'
+ * @property {string} [requestStatus] - Request confirmation status: 'confirmed' for locally-detected
+ * pending requests. Not present on API-fetched requests.
  * @property {string} sourceChainName - Source chain name the request was made on
  * @property {string} targetChainName - Target chain name the payout will be made on
  * @property {TokenInfo} sourceTokenInfo - Source token information
  * @property {TokenInfo} targetTokenInfo - Payout token information
- * @property {number} payoutStatus - Payout status
+ * @property {number} [payoutStatus] - Payout processing status. Not present on locally-detected pending requests.
  * @property {string} [payoutConversionRate] - Conversion rate applied to the payout amount
  * in relative units
  * @property {string} [payoutTotalFee] - Total fee deducted from the payout amount in relative units
@@ -63,6 +63,11 @@
 /**
  * @typedef {object} BridgeError
  * @property {string} type - Request type, either 'wrap' or 'unwrap'
+ * @property {'error'} requestStatus - Always 'error' for bridge error items.
+ * @property {string} sourceChainName - Source chain name the request was made on.
+ * @property {string} targetChainName - Target chain name the payout was intended for.
+ * @property {TokenInfo} sourceTokenInfo - Source token information.
+ * @property {TokenInfo} targetTokenInfo - Target token information.
  * @property {string} errorMessage - Error message.
  * @property {RequestTransaction} requestTransaction - Transaction that caused the error.
  */

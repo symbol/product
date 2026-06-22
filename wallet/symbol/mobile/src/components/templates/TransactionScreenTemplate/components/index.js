@@ -1,2 +1,2 @@
 export * from './TransactionConfirmationDialog';
-export * from './TransactionStatusDialog';
+export * from './TransactionProgressDialog';

@@ -12,9 +12,6 @@ export const chainIdToNetworkIdentifier = chainId => {
 	if (chainId === ChainId.TESTNET)
 		return NetworkIdentifier.TESTNET;
 
-	if (chainId === ChainId.SEPOLIA)
-		return NetworkIdentifier.SEPOLIA;
-
 	throw new Error(`Unsupported chain ID "${chainId}"`);
 };
 
@@ -29,9 +26,6 @@ export const networkIdentifierToChainId = networkIdentifier => {
 
 	if (networkIdentifier === NetworkIdentifier.TESTNET)
 		return ChainId.TESTNET;
-
-	if (networkIdentifier === NetworkIdentifier.SEPOLIA)
-		return ChainId.SEPOLIA;
 
 	throw new Error(`Unsupported network identifier "${networkIdentifier}"`);
 };

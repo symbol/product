@@ -183,14 +183,6 @@ export const transactionPageResponse = [
 			{
 				fee: 0.13,
 				initiator: 'ND2RSOCXYGMABR6LESAW5ENC22Z34G3IL63ABALN',
-				message: {
-					is_plain: 1,
-					payload: '36303032373838'
-				},
-				mosaics: {
-					amount: 13200.0,
-					namespace: 'nem.xem'
-				},
 				signatures: [
 					{
 						fee: 0.17,
@@ -199,7 +191,19 @@ export const transactionPageResponse = [
 						signer: 'NDIVJFQIJR3VWXJRDSNFK6U37HM4DZNORXI3IRTV'
 					}
 				],
-				transactionType: 'TRANSFER'
+				transactionType: 'TRANSFER',
+				value: [
+					{
+						message: {
+							isPlain: 1,
+							payload: '36303032373838'
+						}
+					},
+					{
+						amount: 13200.0,
+						namespace: 'nem.xem'
+					}
+				]
 			}
 		],
 		fee: 0.15,
@@ -250,7 +254,7 @@ export const transactionPageResponse = [
 		value: [
 			{
 				message: {
-					is_plain: 1,
+					isPlain: 1,
 					payload: '4e44373253574a474841374c3745434b4947574535474c50534e35505952365333475a5a4f514243'
 				}
 			},
@@ -297,7 +301,7 @@ export const transactionPageResponse = [
 		value: [
 			{
 				message: {
-					is_plain: 1,
+					isPlain: 1,
 					payload: '63393937376530313532323964313964'
 				}
 			},
@@ -388,7 +392,7 @@ export const transactionPageResponse = [
 		value: [
 			{
 				message: {
-					is_plain: 1,
+					isPlain: 1,
 					payload: '66313666343666393661643165313931'
 				}
 			},
@@ -425,7 +429,7 @@ export const transactionPageResponse = [
 		value: [
 			{
 				message: {
-					is_plain: 1,
+					isPlain: 1,
 					payload: '3130313033393034'
 				}
 			},
@@ -472,7 +476,7 @@ export const transactionPageResponse = [
 		value: [
 			{
 				message: {
-					is_plain: 0,
+					isPlain: 0,
 					payload: 'raw-message'
 				}
 			},
@@ -2287,14 +2291,6 @@ export const transactionInfoResponse = {
 		{
 			fee: 0.13,
 			initiator: 'NANEWEN4LPV4CSDLFW3OPFUC57LQQDEFY5QDLHAG',
-			message: {
-				is_plain: 1,
-				payload: '3130383832313135'
-			},
-			mosaics: {
-				amount: 7,
-				namespace: 'nem.xem'
-			},
 			signatures: [
 				{
 					fee: 0.17,
@@ -2303,7 +2299,19 @@ export const transactionInfoResponse = {
 					signer: 'NCQME4TROE2LM2SE53WYZMECOQZEPPKMQ27TZEN2'
 				}
 			],
-			transactionType: 'TRANSFER'
+			transactionType: 'TRANSFER',
+			value: [
+				{
+					message: {
+						isPlain: 1,
+						payload: '3130383832313135'
+					}
+				},
+				{
+					amount: 7,
+					namespace: 'nem.xem'
+				}
+			]
 		}
 	],
 	fee: 0.15,

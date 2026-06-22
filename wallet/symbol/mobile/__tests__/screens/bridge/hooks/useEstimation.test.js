@@ -1,5 +1,4 @@
 import { useEstimation } from '@/app/screens/bridge/hooks/useEstimation';
-import { BridgeMode } from '@/app/screens/bridge/types/Bridge';
 import { TokenFixtureBuilder } from '__fixtures__/local/TokenFixtureBuilder';
 import { HookTester } from '__tests__/HookTester';
 import { runHookContractTest } from '__tests__/hook-tests';
@@ -33,14 +32,13 @@ const estimationData = {
 };
 
 const bridgeManager = {
-	estimateRequest: jest.fn().mockResolvedValue(estimationData)
+	estimateRequest: jest.fn().mockResolvedValue([estimationData])
 };
 
 // Hook Helpers
 
 const createHookParams = overrides => ({
 	bridge: bridgeManager,
-	mode: BridgeMode.WRAP,
 	amount: AMOUNT,
 	...overrides
 });
@@ -54,7 +52,7 @@ describe('hooks/useEstimation', () => {
 		props: [createHookParams()],
 		contract: {
 			estimate: 'function',
-			estimation: 'object',
+			estimations: 'object',
 			clearEstimation: 'function',
 			isLoading: 'boolean'
 		}
@@ -64,7 +62,6 @@ describe('hooks/useEstimation', () => {
 		it('initializes estimation flow with provided bridge and request params', async () => {
 			// Arrange:
 			const params = createHookParams();
-			const expectedMode = BridgeMode.WRAP;
 			const expectedAmount = AMOUNT;
 
 			// Act:
@@ -75,8 +72,8 @@ describe('hooks/useEstimation', () => {
 
 			// Assert:
 			await hookTester.waitFor(() => {
-				expect(bridgeManager.estimateRequest).toHaveBeenCalledWith(expectedMode, expectedAmount);
-				expect(hookTester.currentResult.estimation).toStrictEqual(estimationData);
+				expect(bridgeManager.estimateRequest).toHaveBeenCalledWith(expectedAmount);
+				expect(hookTester.currentResult.estimations).toStrictEqual([estimationData]);
 				expect(hookTester.currentResult.isLoading).toBe(false);
 			});
 		});

@@ -12,7 +12,7 @@ import { ControllerEventName } from 'wallet-common-core/src/constants';
 
 // Mocks
 
-const mockLoadWalletController = jest.fn().mockResolvedValue(undefined);
+const mockLoadWalletController = jest.fn().mockResolvedValue();
 
 jest.mock('@/app/screens/bridge/utils', () => ({
 	loadWalletController: (...args) => mockLoadWalletController(...args)
@@ -231,34 +231,35 @@ const createBridgeWalletController = (baseController, state, currentAccountInfo 
 		loadCache: jest.fn().mockResolvedValue(),
 		connectToNetwork: jest.fn().mockResolvedValue(),
 		fetchAccountInfo: jest.fn().mockResolvedValue(),
-		selectNetwork: jest.fn().mockResolvedValue(),
-		on: jest.fn(),
-		removeListener: jest.fn()
-	}, {
-		bindUseWalletController: false
+		selectNetwork: jest.fn().mockResolvedValue()
 	});
 };
 
 const createBridgeManagerMock = (scenario = BridgeScenario.FULLY_READY, overrides = {}) => {
+	const mode = overrides.mode ?? BridgeMode.WRAP;
+	const isWrap = mode === BridgeMode.WRAP;
+
 	const nativeWalletController = overrides.nativeWalletController
-		?? createBridgeWalletController(
-			nativeBaseController,
-			scenario.nativeState,
-			scenario.nativeAccountInfo
-		);
+		?? createBridgeWalletController(nativeBaseController, scenario.nativeState, scenario.nativeAccountInfo);
 	const wrappedWalletController = overrides.wrappedWalletController
-		?? createBridgeWalletController(
-			wrappedBaseController,
-			scenario.wrappedState,
-			scenario.wrappedAccountInfo
-		);
+		?? createBridgeWalletController(wrappedBaseController, scenario.wrappedState, scenario.wrappedAccountInfo);
+
+	const sourceWalletController = isWrap ? nativeWalletController : wrappedWalletController;
+	const targetWalletController = isWrap ? wrappedWalletController : nativeWalletController;
+	const sourceTokenInfo = isWrap ? nativeTokenInfo : wrappedTokenInfo;
+	const targetTokenInfo = isWrap ? wrappedTokenInfo : nativeTokenInfo;
 
 	return {
 		id: BRIDGE_ID,
+		mode,
 		nativeWalletController,
 		wrappedWalletController,
+		sourceWalletController,
+		targetWalletController,
 		nativeTokenInfo,
 		wrappedTokenInfo,
+		sourceTokenInfo,
+		targetTokenInfo,
 		load: overrides.load ?? jest.fn().mockResolvedValue(),
 		isEnabled: true,
 		isReady: true,
@@ -330,9 +331,12 @@ describe('hooks/useBridge', () => {
 	});
 
 	describe('swap pairs', () => {
-		it('creates two pairs per ready bridge (wrap + unwrap)', async () => {
+		it('creates one pair per ready bridge', async () => {
 			// Arrange:
-			setBridges([createBridgeManagerMock(BridgeScenario.FULLY_READY)]);
+			setBridges([
+				createBridgeManagerMock(BridgeScenario.FULLY_READY),
+				createBridgeManagerMock(BridgeScenario.FULLY_READY, { mode: BridgeMode.UNWRAP })
+			]);
 
 			// Act:
 			const hookTester = await createUseBridgeHookTester();
@@ -346,14 +350,14 @@ describe('hooks/useBridge', () => {
 		const runSwapDirectionTest = (description, mode, expected) => {
 			it(description, async () => {
 				// Arrange:
-				setBridges([createBridgeManagerMock(BridgeScenario.FULLY_READY)]);
+				setBridges([createBridgeManagerMock(BridgeScenario.FULLY_READY, { mode })]);
 
 				// Act:
 				const hookTester = await createUseBridgeHookTester();
 
 				// Assert:
 				await hookTester.waitFor(() => {
-					const pair = hookTester.currentResult.pairs.find(item => item.mode === mode);
+					const pair = hookTester.currentResult.pairs.find(item => item.source.chainName === expected.sourceChainName);
 					expect(pair).toBeDefined();
 					expect(pair.source.chainName).toBe(expected.sourceChainName);
 					expect(pair.target.chainName).toBe(expected.targetChainName);
@@ -393,11 +397,11 @@ describe('hooks/useBridge', () => {
 
 			// Assert:
 			await hookTester.waitFor(() => {
-				const wrapPair = hookTester.currentResult.pairs.find(item => item.mode === BridgeMode.WRAP);
-				expect(wrapPair.source.token.id).toBe(nativeTokenInfo.id);
-				expect(wrapPair.source.token.amount).toBe(BalanceValue.NATIVE);
-				expect(wrapPair.target.token.id).toBe(wrappedTokenInfo.id);
-				expect(wrapPair.target.token.amount).toBe(BalanceValue.WRAPPED);
+				const pair = hookTester.currentResult.pairs[0];
+				expect(pair.source.token.id).toBe(nativeTokenInfo.id);
+				expect(pair.source.token.amount).toBe(BalanceValue.NATIVE);
+				expect(pair.target.token.id).toBe(wrappedTokenInfo.id);
+				expect(pair.target.token.amount).toBe(BalanceValue.WRAPPED);
 			});
 		});
 
@@ -410,9 +414,9 @@ describe('hooks/useBridge', () => {
 
 			// Assert:
 			await hookTester.waitFor(() => {
-				const wrapPair = hookTester.currentResult.pairs.find(item => item.mode === BridgeMode.WRAP);
-				expect(wrapPair.source.token.amount).toBe(BalanceValue.NATIVE);
-				expect(wrapPair.target.token.amount).toBe(BalanceValue.WRAPPED);
+				const pair = hookTester.currentResult.pairs[0];
+				expect(pair.source.token.amount).toBe(BalanceValue.NATIVE);
+				expect(pair.target.token.amount).toBe(BalanceValue.WRAPPED);
 			});
 		});
 
@@ -425,8 +429,8 @@ describe('hooks/useBridge', () => {
 
 			// Assert:
 			await hookTester.waitFor(() => {
-				const wrapPair = hookTester.currentResult.pairs.find(item => item.mode === BridgeMode.WRAP);
-				expect(wrapPair.source.token.amount).toBe(BalanceValue.ZERO);
+				const pair = hookTester.currentResult.pairs[0];
+				expect(pair.source.token.amount).toBe(BalanceValue.ZERO);
 			});
 		});
 
@@ -440,10 +444,10 @@ describe('hooks/useBridge', () => {
 
 			// Assert:
 			await hookTester.waitFor(() => {
-				const wrapPair = hookTester.currentResult.pairs.find(item => item.mode === BridgeMode.WRAP);
-				expect(wrapPair.bridge).toBe(bridge);
-				expect(wrapPair.source.walletController).toBe(bridge.nativeWalletController);
-				expect(wrapPair.target.walletController).toBe(bridge.wrappedWalletController);
+				const pair = hookTester.currentResult.pairs[0];
+				expect(pair.bridge).toBe(bridge);
+				expect(pair.source.walletController).toBe(bridge.sourceWalletController);
+				expect(pair.target.walletController).toBe(bridge.targetWalletController);
 			});
 		});
 
@@ -472,7 +476,7 @@ describe('hooks/useBridge', () => {
 
 			// Assert:
 			await hookTester.waitFor(() => {
-				expect(hookTester.currentResult.pairs).toHaveLength(4);
+				expect(hookTester.currentResult.pairs).toHaveLength(2);
 			});
 		});
 	});

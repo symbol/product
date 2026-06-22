@@ -136,8 +136,7 @@ class NemDatabase(DatabaseConnectionPool):
 			total_importance=float(total_importance)
 		)
 
-	@staticmethod
-	def _create_namespace_view(result):
+	def _create_namespace_view(self, result):
 		(
 			root_namespace,
 			owner,
@@ -150,7 +149,7 @@ class NemDatabase(DatabaseConnectionPool):
 
 		return NamespaceView(
 			root_namespace=root_namespace,
-			owner=str(PublicKey(owner)),
+			owner=self._format_public_key_to_address(owner),
 			registered_height=registered_height,
 			registered_timestamp=str(registered_timestamp),
 			expiration_height=expiration_height,
@@ -557,7 +556,7 @@ class NemDatabase(DatabaseConnectionPool):
 					COUNT(*) FILTER (WHERE balance > 0) AS accounts_with_balance,
 					COUNT(*) FILTER (WHERE harvested_blocks > 0) AS harvested_accounts,
 					COALESCE(SUM(importance), 0) AS total_importance,
-					COUNT(*) FILTER (WHERE vested_balance > 10000) AS eligible_harvest_accounts
+					COUNT(*) FILTER (WHERE vested_balance > 10000000000) AS eligible_harvest_accounts
 				FROM accounts
 			''')
 			result = cursor.fetchone()

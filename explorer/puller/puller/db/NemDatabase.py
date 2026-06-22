@@ -269,6 +269,63 @@ class NemDatabase(DatabaseConnection):
 
 		self.connection.commit()
 
+	def seed_network_currency(self, cursor, signer):
+		"""Seeds NEM network currency metadata."""
+
+		cursor.execute(
+			'''
+			INSERT INTO namespaces (
+				root_namespace,
+				owner,
+				registered_height,
+				expiration_height
+			)
+			VALUES (%s, %s, %s, %s)
+			ON CONFLICT (root_namespace)
+			DO NOTHING
+			''',
+			(
+				'nem',
+				signer.bytes,
+				1,
+				9223372036854775807  # max bigint value to represent no expiration
+			)
+		)
+
+		cursor.execute(
+			'''
+			INSERT INTO mosaics (
+				root_namespace,
+				namespace_name,
+				description,
+				creator,
+				registered_height,
+				initial_supply,
+				total_supply,
+				divisibility,
+				supply_mutable,
+				transferable
+			)
+			VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+			ON CONFLICT (namespace_name)
+			DO NOTHING
+			''',
+			(
+				'nem',
+				'nem.xem',
+				'network currency',
+				signer.bytes,
+				1,
+				8999999999,
+				8999999999,
+				6,
+				False,
+				True
+			)
+		)
+
+		self.connection.commit()
+
 	def seed_account_remark(self, seed_path):
 		"""Seeds account remark table."""
 
