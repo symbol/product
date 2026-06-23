@@ -12,7 +12,7 @@ class SymbolDatabase(DatabaseConnection):
 			'''
 			CREATE TABLE IF NOT EXISTS symbol_sync_state (
 				id int PRIMARY KEY DEFAULT 1,
-				status varchar(32) NOT NULL DEFAULT 'initialized',
+				status varchar(32) NOT NULL,
 				chain_height bigint,
 				finalized_height bigint,
 				finalized_hash bytea,

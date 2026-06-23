@@ -33,7 +33,7 @@ class SymbolPuller:
 		symbol_node_endpoint = self.node_config.assert_request_allowed(self.node_config.base_url)
 		self._symbol_connector = SymbolConnector(symbol_node_endpoint)
 		self._symbol_connector.timeout_seconds = self.node_config.timeout_seconds
-		self.symbol_facade = SymbolFacade(str(network))
+		self.symbol_facade = SymbolFacade(network)
 
 	def validate_node_request_target(self, request_url):
 		"""Validates a future Symbol node request target against security policy."""

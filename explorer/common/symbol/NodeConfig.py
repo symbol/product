@@ -11,10 +11,11 @@ def _parse_bool(value):
 	if isinstance(value, bool):
 		return value
 
-	if str(value).lower() == 'true':
+	normalized_value = str(value).lower()
+	if normalized_value == 'true':
 		return True
 
-	if str(value).lower() == 'false':
+	if normalized_value == 'false':
 		return False
 
 	raise SymbolNodeConfigError('Boolean config values must be either true or false')
@@ -47,36 +48,14 @@ def _normalize_base_url(node_url):
 		raise SymbolNodeConfigError('Symbol node URL must not include a path prefix')
 
 	try:
-		port = parsed_url.port or (443 if 'https' == parsed_url.scheme else 80)
+		port = parsed_url.port
 	except ValueError as error:
 		raise SymbolNodeConfigError('Symbol node URL port must be numeric') from error
+	if port is None:
+		raise SymbolNodeConfigError('Symbol node URL must include an explicit port')
 	host = parsed_url.hostname.lower()
 
 	return parsed_url.scheme, host, port, f'{parsed_url.scheme}://{host}:{port}'
-
-
-def _normalize_allowed_hosts(raw_allowed_hosts):
-	if not raw_allowed_hosts:
-		raise SymbolNodeConfigError('SYMBOL_NODE_ALLOWED_HOSTS is required')
-
-	allowed_hosts = set()
-	for entry in str(raw_allowed_hosts).split(','):
-		entry = entry.strip().lower()
-		if not entry:
-			continue
-		if '://' in entry or '/' in entry or '?' in entry or '#' in entry or '*' in entry:
-			raise SymbolNodeConfigError('SYMBOL_NODE_ALLOWED_HOSTS entries must be exact host:port values')
-
-		host, separator, port = entry.rpartition(':')
-		if not separator or not host or not port.isdigit():
-			raise SymbolNodeConfigError('SYMBOL_NODE_ALLOWED_HOSTS entries must be exact host:port values')
-
-		allowed_hosts.add(f'{host}:{int(port)}')
-
-	if not allowed_hosts:
-		raise SymbolNodeConfigError('SYMBOL_NODE_ALLOWED_HOSTS is required')
-
-	return allowed_hosts
 
 
 def _is_metadata_service_host(host):
@@ -103,7 +82,6 @@ class SymbolNodeConfig:
 		self.host = kwargs['host']
 		self.port = kwargs['port']
 		self.base_url = kwargs['base_url']
-		self.allowed_hosts = kwargs['allowed_hosts']
 		self.allow_private = kwargs.get('allow_private', False)
 		self.allow_loopback = kwargs.get('allow_loopback', False)
 		self.timeout_seconds = kwargs.get('timeout_seconds', 10)
@@ -120,10 +98,8 @@ class SymbolNodeConfig:
 	def from_url(cls, node_url, **kwargs):
 		"""Creates a node config from an explicit node URL."""
 
-		_, host, port, _ = _normalize_base_url(node_url)
 		return cls._from_values({
 			'SYMBOL_NODE_URL': node_url,
-			'SYMBOL_NODE_ALLOWED_HOSTS': f'{host}:{port}',
 			'SYMBOL_NODE_ALLOW_PRIVATE': kwargs.get('allow_private', False),
 			'SYMBOL_NODE_ALLOW_LOOPBACK': kwargs.get('allow_loopback', False),
 			'SYMBOL_NODE_REQUEST_TIMEOUT_SECONDS': kwargs.get('timeout_seconds', 10)
@@ -133,11 +109,7 @@ class SymbolNodeConfig:
 	def _from_values(cls, values):
 		node_url = values.get('SYMBOL_NODE_URL')
 		scheme, host, port, base_url = _normalize_base_url(node_url)
-		allowed_hosts = _normalize_allowed_hosts(values.get('SYMBOL_NODE_ALLOWED_HOSTS'))
-		normalized_host = f'{host}:{port}'
 
-		if normalized_host not in allowed_hosts:
-			raise SymbolNodeConfigError('Configured Symbol node host is not in SYMBOL_NODE_ALLOWED_HOSTS')
 		if _is_metadata_service_host(host):
 			raise SymbolNodeConfigError('Metadata service Symbol node host is not allowed')
 
@@ -146,7 +118,6 @@ class SymbolNodeConfig:
 			host=host,
 			port=port,
 			base_url=base_url,
-			allowed_hosts=frozenset(allowed_hosts),
 			allow_private=_parse_bool(values.get('SYMBOL_NODE_ALLOW_PRIVATE', 'false')),
 			allow_loopback=_parse_bool(values.get('SYMBOL_NODE_ALLOW_LOOPBACK', 'false')),
 			timeout_seconds=_parse_positive_int(
@@ -159,8 +130,6 @@ class SymbolNodeConfig:
 		scheme, host, port, base_url = _normalize_base_url(request_url)
 		if (scheme, host, port) != (self.scheme, self.host, self.port):
 			raise SymbolNodeConfigError('Symbol node request target does not match configured base URL')
-		if f'{host}:{port}' not in self.allowed_hosts:
-			raise SymbolNodeConfigError('Symbol node request target is not allowed')
 		if _is_metadata_service_host(host):
 			raise SymbolNodeConfigError('Metadata service Symbol node host is not allowed')
 

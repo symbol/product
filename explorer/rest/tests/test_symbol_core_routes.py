@@ -41,7 +41,6 @@ def _create_app_config(config_dir, db_config_path):
 	with open(app_config_path, 'wt', encoding='utf8') as app_config_file:
 		app_config_file.write(f'DATABASE_CONFIG_FILEPATH="{db_config_path}"\n')
 		app_config_file.write('SYMBOL_NODE_URL="http://localhost:3000"\n')
-		app_config_file.write('SYMBOL_NODE_ALLOWED_HOSTS="localhost:3000"\n')
 		app_config_file.write('SYMBOL_NODE_ALLOW_LOOPBACK="true"\n')
 		app_config_file.write('SYMBOL_NODE_ALLOW_PRIVATE="false"\n')
 
@@ -114,16 +113,16 @@ def test_symbol_facade_config(symbol_database_config):
 	assert 'http://localhost:3000' == facade.node_config.base_url
 
 
-def test_symbol_facade_envvar(symbol_database_config):
+def test_symbol_facade_envvar():
 	with tempfile.TemporaryDirectory() as temp_directory:
-		db_config_path = _create_config_file(temp_directory, database_config=symbol_database_config)
+		db_config_path = _create_config_file(temp_directory, include_symbol_db=False)
 		app_config_path = _create_app_config(temp_directory, db_config_path)
 		app = Flask(__name__)
 
 		with _rest_settings_env(app_config_path):
 			facade = setup_symbol_facade(app)
 
-	assert facade.is_configured()
+	assert not facade.is_configured()
 	assert 'http://localhost:3000' == facade.node_config.base_url
 
 
@@ -163,13 +162,13 @@ def test_symbol_facade_db_error():
 	assert 'connection refused' not in str(health)
 
 
-def test_symbol_facade_node_error(symbol_database_config):
+def test_symbol_facade_node_error():
 	with tempfile.TemporaryDirectory() as temp_directory:
-		db_config_path = _create_config_file(temp_directory, database_config=symbol_database_config)
+		db_config_path = _create_config_file(temp_directory, include_symbol_db=False)
 		app_config_path = _create_app_config(temp_directory, db_config_path)
 		app = Flask(__name__)
 		app.config.from_pyfile(app_config_path)
-		app.config['SYMBOL_NODE_ALLOWED_HOSTS'] = 'example.com:3000'
+		app.config['SYMBOL_NODE_URL'] = 'http://localhost'
 
 		facade = setup_symbol_facade(app)
 
@@ -179,7 +178,11 @@ def test_symbol_facade_node_error(symbol_database_config):
 	assert [
 		{
 			'type': 'configuration',
-			'message': 'Configured Symbol node host is not in SYMBOL_NODE_ALLOWED_HOSTS'
+			'message': 'Symbol node URL must include an explicit port'
+		},
+		{
+			'type': 'configuration',
+			'message': 'Symbol database is not configured'
 		},
 		{
 			'type': 'configuration',

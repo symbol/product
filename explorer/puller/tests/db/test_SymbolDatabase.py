@@ -16,6 +16,8 @@ class TestSymbolDatabase(TestCase):
 
 		self.assertEqual(1, cursor.execute.call_count)
 		self.assertIn('CREATE TABLE IF NOT EXISTS symbol_sync_state', cursor.execute.call_args[0][0])
+		self.assertIn('status varchar(32) NOT NULL', cursor.execute.call_args[0][0])
+		self.assertNotIn("DEFAULT 'initialized'", cursor.execute.call_args[0][0])
 		self.assertNotIn('symbol_blocks', cursor.execute.call_args[0][0])
 		connection.commit.assert_called_once_with()
 

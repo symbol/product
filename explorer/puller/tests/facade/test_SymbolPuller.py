@@ -8,9 +8,6 @@ from puller.facade.SymbolPuller import SymbolPuller
 from puller.model.symbol.NodeConfig import SymbolNodeConfig
 
 _NODE_URL = 'http://127.0.0.1:3000'
-_NODE_HOST = '127.0.0.1:3000'
-
-
 def _create_db_config(config_dir, include_symbol_db=True):
 	db_config_path = Path(config_dir) / 'db_config.ini'
 	with open(db_config_path, 'wt', encoding='utf8') as db_config_file:
@@ -55,7 +52,6 @@ class TestSymbolPuller(TestCase):
 			puller = _create_symbol_puller(db_config_path, 'testnet', request_timeout_seconds=15)
 
 		self.assertEqual(_NODE_URL, puller.node_config.base_url)
-		self.assertEqual(frozenset({_NODE_HOST}), puller.node_config.allowed_hosts)
 		self.assertEqual('testnet', puller.symbol_facade.network.name)
 		self.assertEqual('symbol', puller.symbol_db.db_config.database)
 		self.assertIsNone(puller.symbol_db.connection)
