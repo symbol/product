@@ -8,7 +8,17 @@ import { InternalServerError, InvalidRequestError, NetworkRequestError, NotFound
  * @returns {Promise} The request response.
  */
 export const makeRequest = async (url, options) => {
-	const response = await fetch(url, options);
+	if (!url || url.startsWith('undefined') || url.startsWith('null'))
+		throw new NetworkRequestError(`Invalid request URL: "${url}"`);
+
+	let response;
+
+	try {
+		response = await fetch(url, options);
+	} catch (error) {
+		// A transport-level failure (no connection, unreachable host, aborted request) rejects here
+		throw new NetworkRequestError(error.message);
+	}
 
 	const rawText = await response.text();
 

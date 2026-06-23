@@ -90,6 +90,31 @@ describe('utils/network', () => {
 		});
 	});
 
+	describe('transport failures', () => {
+		it('throws a coded NetworkRequestError when fetch rejects at the transport level', async () => {
+			// Arrange:
+			global.fetch.mockRejectedValue(new TypeError('Network request failed'));
+
+			// Act & Assert:
+			await expect(makeRequest('https://example.com', {})).rejects.toMatchObject({
+				name: 'NetworkRequestError',
+				code: 'error_network_request_error'
+			});
+		});
+
+		const runInvalidUrlTest = (description, url) => {
+			it(description, async () => {
+				// Act & Assert:
+				await expect(makeRequest(url, {})).rejects.toThrow(NetworkRequestError);
+				expect(global.fetch).not.toHaveBeenCalled();
+			});
+		};
+
+		runInvalidUrlTest('throws NetworkRequestError without calling fetch when the URL host is undefined', 'undefined/accounts/abc');
+		runInvalidUrlTest('throws NetworkRequestError without calling fetch when the URL host is null', 'null/accounts/abc');
+		runInvalidUrlTest('throws NetworkRequestError without calling fetch when the URL is empty', '');
+	});
+
 	describe('error message extraction', () => {
 		const runErrorMessageTest = (description, config, expected) => {
 			it(description, async () => {

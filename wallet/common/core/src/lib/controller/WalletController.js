@@ -311,7 +311,7 @@ export class WalletController {
 	 * @returns {boolean} - True if network connection is ready, false otherwise.
 	 */
 	get isNetworkConnectionReady() {
-		return this.networkStatus === NetworkConnectionStatus.CONNECTED;
+		return this.networkStatus === NetworkConnectionStatus.CONNECTED && !!this._state.networkProperties?.nodeUrl;
 	}
 
 	/**
@@ -952,12 +952,12 @@ export class WalletController {
 	 * @private
 	 */
 	_handleNetworkPropertiesUpdate = async networkProperties => {
-		await this._persistentStorageRepository.setNetworkProperties(networkProperties);
 		this.#setState(() => {
 			this._state.networkProperties = networkProperties;
 		});
-
 		this._emit(ControllerEventName.NETWORK_PROPERTIES_CHANGE, networkProperties);
+
+		await this._persistentStorageRepository.setNetworkProperties(networkProperties);
 	};
 
 	/**
