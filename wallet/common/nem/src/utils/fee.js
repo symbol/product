@@ -1,3 +1,4 @@
+import { mosaicIdToRaw } from './mosaic';
 import { transactionToNem } from './transaction-to-nem';
 import { NETWORK_CURRENCY_SUPPLY, TransactionType } from '../constants';
 import { calculateTransactionFee as calculateNemTransactionFee } from 'symbol-sdk/nem';
@@ -48,7 +49,7 @@ export const createTransactionFeeTiers = (networkProperties, amount) => {
  * @private
  */
 const mosaicIdToLookupKey = id => {
-	const [namespaceId, name] = id.split('.');
+	const { namespaceId, name } = mosaicIdToRaw(id);
 
 	return `${namespaceId}:${name}`;
 };

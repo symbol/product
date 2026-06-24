@@ -1,3 +1,4 @@
+import { mosaicIdToRaw } from './mosaic';
 import {
 	LinkAction,
 	MosaicPropertyName,
@@ -50,7 +51,7 @@ const mapMessage = message => ({
 });
 
 const mapMosaicId = id => {
-	const [namespaceId, name] = id.split('.');
+	const { namespaceId, name } = mosaicIdToRaw(id);
 
 	return {
 		namespaceId: { name: textEncoder.encode(namespaceId) },

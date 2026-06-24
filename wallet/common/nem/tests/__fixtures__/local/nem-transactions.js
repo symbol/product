@@ -140,6 +140,39 @@ const transferWithMosaicJson = {
 	}]
 };
 
+// Transfer carrying a sub-namespace mosaic ('makoto.metals.silver').
+const transferWithSubNamespaceMosaic = {
+	type: 257,
+	signerPublicKey: alice.publicKey,
+	recipientAddress: bob.address,
+	mosaics: [{ id: 'makoto.metals.silver', name: 'makoto.metals.silver', amount: '5', divisibility: 2 }],
+	message: null,
+	fee: createFee('0.2'),
+	deadline: standardDeadline
+};
+
+const transferWithSubNamespaceMosaicJson = {
+	type: 257,
+	version: 2,
+	network: 152,
+	timestamp: TIMESTAMP,
+	signerPublicKey: ALICE_PUBLIC_KEY,
+	signature: ZERO_SIGNATURE,
+	fee: '200000',
+	deadline: STANDARD_DEADLINE,
+	recipientAddress: BOB_RECIPIENT_HEX,
+	amount: '1000000',
+	mosaics: [{
+		mosaic: {
+			mosaicId: {
+				namespaceId: { name: '6D616B6F746F2E6D6574616C73' },
+				name: '73696C766572'
+			},
+			amount: '500'
+		}
+	}]
+};
+
 // Multisig wrapper around an inner XEM transfer. The wrapper uses the 24h multisig deadline, and the
 // inner transaction is embedded as a non-verifiable transaction (no signature).
 export const multisigTransfer = {
@@ -482,6 +515,11 @@ export const transactionToNemCases = [
 	{ name: 'transfer (XEM only)', transaction: transferXem, expected: transferXemJson },
 	{ name: 'transfer with plain message', transaction: transferWithMessage, expected: transferWithMessageJson },
 	{ name: 'transfer with mosaic', transaction: transferWithMosaic, expected: transferWithMosaicJson },
+	{
+		name: 'transfer with sub-namespace mosaic',
+		transaction: transferWithSubNamespaceMosaic,
+		expected: transferWithSubNamespaceMosaicJson
+	},
 	{ name: 'multisig transfer', transaction: multisigTransfer, expected: multisigTransferJson },
 	{ name: 'importance transfer', transaction: importanceTransfer, expected: importanceTransferJson },
 	{ name: 'multisig account modification (default delta)', transaction: multisigModification, expected: multisigModificationJson },

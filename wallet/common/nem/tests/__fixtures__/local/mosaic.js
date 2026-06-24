@@ -8,6 +8,14 @@ export const mosaicInfos = {
 		supply: 10000,
 		isSupplyMutable: false,
 		isTransferable: true
+	},
+	'makoto.metals.silver': {
+		id: 'makoto.metals.silver',
+		name: 'makoto.metals.silver',
+		divisibility: 2,
+		supply: 10000,
+		isSupplyMutable: false,
+		isTransferable: true
 	}
 };
 

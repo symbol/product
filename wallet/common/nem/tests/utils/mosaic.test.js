@@ -49,15 +49,39 @@ describe('utils/mosaic', () => {
 	});
 
 	describe('mosaicIdToRaw', () => {
-		it('splits a mosaic id string into a raw mosaic id object', () => {
-			// Arrange:
-			const expectedRawMosaicId = { namespaceId: 'nem', name: 'xem' };
+		const runMosaicIdToRawTest = (description, config, expected) => {
+			it(description, () => {
+				// Act:
+				const result = mosaicIdToRaw(config.mosaicId);
 
-			// Act:
-			const result = mosaicIdToRaw('nem.xem');
+				// Assert:
+				expect(result).toStrictEqual(expected.rawMosaicId);
+			});
+		};
 
-			// Assert:
-			expect(result).toStrictEqual(expectedRawMosaicId);
+		const mosaicIdToRawTests = [
+			{
+				description: 'splits a root-namespace mosaic id into a raw mosaic id object',
+				config: { mosaicId: 'nem.xem' },
+				expected: { rawMosaicId: { namespaceId: 'nem', name: 'xem' } }
+			},
+			{
+				description: 'keeps the dotted namespace of a sub-namespace mosaic id',
+				config: { mosaicId: 'makoto.metals.silver' },
+				expected: { rawMosaicId: { namespaceId: 'makoto.metals', name: 'silver' } }
+			},
+			{
+				description: 'keeps the dotted namespace of a three-part sub-namespace mosaic id',
+				config: { mosaicId: 'makoto.metals.silver.coin' },
+				expected: { rawMosaicId: { namespaceId: 'makoto.metals.silver', name: 'coin' } }
+			}
+		];
+
+		mosaicIdToRawTests.forEach(test => runMosaicIdToRawTest(test.description, test.config, test.expected));
+
+		it('throws when the mosaic id has no namespace separator', () => {
+			// Act & Assert:
+			expect(() => mosaicIdToRaw('xem')).toThrow('Failed to parse mosaic id. Invalid mosaic id: xem.');
 		});
 	});
 

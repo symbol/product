@@ -31,6 +31,7 @@ const createMessage = byteLength => ({ payload: '00'.repeat(byteLength), native:
 // without supply metadata that cannot be priced.
 const smallBusinessMosaic = { id: 'biz.token', amount: '5', divisibility: 0, supply: 10000 };
 const supplyBearingMosaic = { id: 'test.token', amount: '5', divisibility: 2, supply: 10000 };
+const subNamespaceMosaic = { id: 'makoto.metals.silver', amount: '5', divisibility: 2, supply: 10000 };
 const maxSupplyMosaic = { id: 'test.token', amount: '8999999999', divisibility: 6, supply: 8999999999 };
 const unpriceableMosaic = { id: 'test.token', amount: '5', divisibility: 2 };
 
@@ -129,6 +130,11 @@ describe('utils/fee', () => {
 			{
 				description: 'prices a transferred mosaic with the full per-mosaic fee formula',
 				config: { transaction: createTransfer({ mosaics: [supplyBearingMosaic] }) },
+				expected: { fee: '0.35' }
+			},
+			{
+				description: 'prices a transferred sub-namespace mosaic with the full per-mosaic fee formula',
+				config: { transaction: createTransfer({ mosaics: [subNamespaceMosaic] }) },
 				expected: { fee: '0.35' }
 			},
 			{

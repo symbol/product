@@ -1,5 +1,5 @@
 import { Api } from '../../src/api';
-import { mosaicDefinitionDTO, ownedMosaicDTOs } from '../__fixtures__/api/mosaic-dtos';
+import { mosaicDefinitionDTO, ownedMosaicDTOs, subNamespaceMosaicDefinitionDTO } from '../__fixtures__/api/mosaic-dtos';
 import { accountMosaics, mosaicInfos } from '../__fixtures__/local/mosaic';
 import { networkProperties } from '../__fixtures__/local/network';
 import { walletStorageAccounts } from '../__fixtures__/local/wallet';
@@ -11,10 +11,12 @@ import { NotFoundError } from 'wallet-common-core';
 const NODE_URL = networkProperties.nodeUrl;
 const ADDRESS = walletStorageAccounts.testnet[0].address;
 const MOSAIC_ID = 'test.token';
+const SUB_NAMESPACE_MOSAIC_ID = 'makoto.metals.silver';
 
 // A mosaic definition page response groups its mosaics under a `mosaic` wrapper.
 const definitionPageUrl = namespaceId => `${NODE_URL}/namespace/mosaic/definition/page?namespace=${namespaceId}&pageSize=100`;
 const testTokenDefinitionPage = { data: [{ mosaic: mosaicDefinitionDTO }] };
+const silverDefinitionPage = { data: [{ mosaic: subNamespaceMosaicDefinitionDTO }] };
 
 describe('api/MosaicService', () => {
 	describe('fetchMosaicInfos', () => {
@@ -34,6 +36,14 @@ describe('api/MosaicService', () => {
 				description: 'resolves mosaic infos by querying the definition page per namespace',
 				config: { mosaicIds: [MOSAIC_ID], requestMap: { [definitionPageUrl('test')]: testTokenDefinitionPage } },
 				expected: { mosaicInfos: { [MOSAIC_ID]: mosaicInfos[MOSAIC_ID] } }
+			},
+			{
+				description: 'resolves a sub-namespace mosaic by querying its full dotted namespace',
+				config: {
+					mosaicIds: [SUB_NAMESPACE_MOSAIC_ID],
+					requestMap: { [definitionPageUrl('makoto.metals')]: silverDefinitionPage }
+				},
+				expected: { mosaicInfos: { [SUB_NAMESPACE_MOSAIC_ID]: mosaicInfos[SUB_NAMESPACE_MOSAIC_ID] } }
 			},
 			{
 				description: 'omits mosaics whose definition page is not found',

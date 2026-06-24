@@ -18,13 +18,19 @@ export const mosaicIdFromRaw = rawMosaicId => {
 
 /**
  * Converts a mosaic id string to a raw NEM mosaic id object.
- * @param {string} mosaicId - The mosaic id string (e.g. 'nem.xem').
+ * @param {string} mosaicId - The mosaic id string (e.g. 'nem.xem' or 'root.sub.name').
  * @returns {{ namespaceId: string, name: string }} The raw mosaic id object.
  */
 export const mosaicIdToRaw = mosaicId => {
-	const [namespaceId, name] = mosaicId.split('.');
+	const separatorIndex = mosaicId.lastIndexOf('.');
 
-	return { namespaceId, name };
+	if (separatorIndex === -1)
+		throw new ApiError(`Failed to parse mosaic id. Invalid mosaic id: ${mosaicId}.`);
+
+	return {
+		namespaceId: mosaicId.slice(0, separatorIndex),
+		name: mosaicId.slice(separatorIndex + 1)
+	};
 };
 
 /**
