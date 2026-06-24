@@ -1,12 +1,12 @@
 import configparser
 from pathlib import Path
 
+from common.symbol.NodeConfig import SymbolNodeConfiguration, SymbolNodeConfigurationError
 from flask import jsonify
 from zenlog import log
 
 from rest.facade.SymbolRestFacade import SymbolRestFacade
 from rest.model.common import DatabaseConfig
-from rest.model.symbol.NodeConfig import SymbolNodeConfig, SymbolNodeConfigError
 
 
 def setup_symbol_facade(app):
@@ -20,25 +20,20 @@ def setup_symbol_facade(app):
 
 	config.read(db_path)
 
-	db_params = None
-	if config.has_section('symbol_db'):
-		symbol_db_config = config['symbol_db']
-		db_params = DatabaseConfig(
-			symbol_db_config['database'],
-			symbol_db_config['user'],
-			symbol_db_config['password'],
-			symbol_db_config['host'],
-			symbol_db_config['port']
-		)
+	symbol_db_config = config['symbol_db']
+	db_params = DatabaseConfig(
+		symbol_db_config['database'],
+		symbol_db_config['user'],
+		symbol_db_config['password'],
+		symbol_db_config['host'],
+		symbol_db_config['port']
+	)
+	node_config = SymbolNodeConfiguration.from_app_config(app.config)
+	if not node_config:
+		raise SymbolNodeConfigurationError('Symbol node URL is not configured')
+	node_config.assert_request_allowed(node_config.base_url)
 
-	try:
-		node_config = SymbolNodeConfig.from_app_config(app.config)
-		config_error = None
-	except SymbolNodeConfigError as error:
-		node_config = None
-		config_error = error
-
-	return SymbolRestFacade(db_params, node_config, config_error)
+	return SymbolRestFacade(db_params, node_config)
 
 
 def setup_symbol_routes(app, symbol_api_facade):

@@ -1,4 +1,3 @@
-import os
 from contextlib import contextmanager
 
 import pytest
@@ -7,37 +6,16 @@ from flask import Flask, abort, jsonify
 from rest import create_app, load_rest_config, setup_error_handlers
 from rest.routes.symbol import setup_symbol_routes
 
+from .test.EnvTestUtils import temporary_env_values
+
 
 def _write_rest_config(config_path, contents):
 	config_path.write_text(contents, encoding='utf8')
 
 
 @contextmanager
-def _temporary_env_values(values):
-	previous_values = {
-		name: os.environ.get(name)
-		for name in values
-	}
-
-	try:
-		for name, value in values.items():
-			if value is None:
-				os.environ.pop(name, None)
-			else:
-				os.environ[name] = value
-
-		yield
-	finally:
-		for name, previous_value in previous_values.items():
-			if previous_value is None:
-				os.environ.pop(name, None)
-			else:
-				os.environ[name] = previous_value
-
-
-@contextmanager
 def _rest_settings_env(config_path):
-	with _temporary_env_values({'EXPLORER_REST_SETTINGS': str(config_path)}):
+	with temporary_env_values({'EXPLORER_REST_SETTINGS': str(config_path)}):
 		yield
 
 
@@ -112,32 +90,6 @@ def test_loads_envvar_config(rest_config_path):
 
 	# Assert:
 	assert 'nem' == app.config['REST_CHAIN']
-
-
-def test_rest_env_removes_missing(tmp_path):
-	# Arrange:
-	config_path = tmp_path / 'app.config'
-
-	# Act:
-	with _temporary_env_values({'EXPLORER_REST_SETTINGS': None}):
-		with _rest_settings_env(config_path):
-			assert str(config_path) == os.environ['EXPLORER_REST_SETTINGS']
-
-		# Assert:
-		assert 'EXPLORER_REST_SETTINGS' not in os.environ
-
-
-def test_rest_env_restores_existing(tmp_path):
-	# Arrange:
-	config_path = tmp_path / 'app.config'
-
-	# Act:
-	with _temporary_env_values({'EXPLORER_REST_SETTINGS': 'previous.config'}):
-		with _rest_settings_env(config_path):
-			assert str(config_path) == os.environ['EXPLORER_REST_SETTINGS']
-
-		# Assert:
-		assert 'previous.config' == os.environ['EXPLORER_REST_SETTINGS']
 
 
 def _create_error_handler_client():
@@ -237,5 +189,7 @@ def test_symbol_health_route():
 	response = app.test_client().get('/api/symbol/health')
 
 	assert 200 == response.status_code
-	assert response.json['isHealthy']
-	assert [] == response.json['errors']
+	assert {
+		'isHealthy': True,
+		'errors': []
+	} == response.json

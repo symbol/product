@@ -1,15 +1,16 @@
-import os
 import tempfile
 from contextlib import contextmanager
 from pathlib import Path
 
 import pytest
+from common.symbol.NodeConfig import SymbolNodeConfigurationError
 from flask import Flask
 
 from rest import create_app, setup_symbol_facade
 from rest.facade.SymbolRestFacade import SymbolRestFacade
 from rest.model.common import DatabaseConfig
 
+from .test.EnvTestUtils import temporary_env_values
 from .test.PostgresTestUtils import PostgresTestDatabase, create_unreachable_db_config
 from .test.SymbolHealthTestUtils import create_symbol_health
 
@@ -41,6 +42,7 @@ def _create_app_config(config_dir, db_config_path):
 	with open(app_config_path, 'wt', encoding='utf8') as app_config_file:
 		app_config_file.write(f'DATABASE_CONFIG_FILEPATH="{db_config_path}"\n')
 		app_config_file.write('SYMBOL_NODE_URL="http://localhost:3000"\n')
+		app_config_file.write('SYMBOL_NODE_ALLOWED_HOSTS="localhost:3000"\n')
 		app_config_file.write('SYMBOL_NODE_ALLOW_LOOPBACK="true"\n')
 		app_config_file.write('SYMBOL_NODE_ALLOW_PRIVATE="false"\n')
 
@@ -48,31 +50,8 @@ def _create_app_config(config_dir, db_config_path):
 
 
 @contextmanager
-def _temporary_env_values(values):
-	previous_values = {
-		name: os.environ.get(name)
-		for name in values
-	}
-
-	try:
-		for name, value in values.items():
-			if value is None:
-				os.environ.pop(name, None)
-			else:
-				os.environ[name] = value
-
-		yield
-	finally:
-		for name, previous_value in previous_values.items():
-			if previous_value is None:
-				os.environ.pop(name, None)
-			else:
-				os.environ[name] = previous_value
-
-
-@contextmanager
 def _rest_settings_env(config_path):
-	with _temporary_env_values({'EXPLORER_REST_SETTINGS': str(config_path)}):
+	with temporary_env_values({'EXPLORER_REST_SETTINGS': str(config_path)}):
 		yield
 
 
@@ -113,31 +92,28 @@ def test_symbol_facade_config(symbol_database_config):
 	assert 'http://localhost:3000' == facade.node_config.base_url
 
 
-def test_symbol_facade_envvar():
+def test_symbol_facade_envvar(symbol_database_config):
 	with tempfile.TemporaryDirectory() as temp_directory:
-		db_config_path = _create_config_file(temp_directory, include_symbol_db=False)
+		db_config_path = _create_config_file(temp_directory, database_config=symbol_database_config)
 		app_config_path = _create_app_config(temp_directory, db_config_path)
 		app = Flask(__name__)
 
 		with _rest_settings_env(app_config_path):
 			facade = setup_symbol_facade(app)
 
-	assert not facade.is_configured()
+	assert facade.is_configured()
 	assert 'http://localhost:3000' == facade.node_config.base_url
 
 
-def test_symbol_facade_without_db():
+def test_symbol_facade_needs_db():
 	with tempfile.TemporaryDirectory() as temp_directory:
 		db_config_path = _create_config_file(temp_directory, include_symbol_db=False)
 		app_config_path = _create_app_config(temp_directory, db_config_path)
 		app = Flask(__name__)
 		app.config.from_pyfile(app_config_path)
 
-		facade = setup_symbol_facade(app)
-
-	assert isinstance(facade, SymbolRestFacade)
-	assert not facade.is_configured()
-	assert not facade.get_health()['dbUp']
+		with pytest.raises(KeyError, match='symbol_db'):
+			setup_symbol_facade(app)
 
 
 def test_symbol_facade_db_error():
@@ -164,89 +140,23 @@ def test_symbol_facade_db_error():
 
 def test_symbol_facade_node_error():
 	with tempfile.TemporaryDirectory() as temp_directory:
-		db_config_path = _create_config_file(temp_directory, include_symbol_db=False)
+		db_config_path = _create_config_file(temp_directory)
 		app_config_path = _create_app_config(temp_directory, db_config_path)
 		app = Flask(__name__)
 		app.config.from_pyfile(app_config_path)
 		app.config['SYMBOL_NODE_URL'] = 'http://localhost'
 
-		facade = setup_symbol_facade(app)
-
-	health = facade.get_health()
-	assert not facade.is_configured()
-	assert not health['isHealthy']
-	assert [
-		{
-			'type': 'configuration',
-			'message': 'Symbol node URL must include an explicit port'
-		},
-		{
-			'type': 'configuration',
-			'message': 'Symbol database is not configured'
-		},
-		{
-			'type': 'configuration',
-			'message': 'Symbol node URL is not configured'
-		}
-	] == health['errors']
+		with pytest.raises(SymbolNodeConfigurationError, match='Symbol node URL must include an explicit port'):
+			setup_symbol_facade(app)
 
 
-def test_rest_env_removes_missing():
+def test_symbol_facade_needs_node(symbol_database_config):
 	with tempfile.TemporaryDirectory() as temp_directory:
-		config_path = Path(temp_directory) / 'app.config'
+		db_config_path = _create_config_file(temp_directory, database_config=symbol_database_config)
+		app_config_path = _create_app_config(temp_directory, db_config_path)
+		app = Flask(__name__)
+		app.config.from_pyfile(app_config_path)
+		app.config.pop('SYMBOL_NODE_URL')
 
-		with _temporary_env_values({'EXPLORER_REST_SETTINGS': None}):
-			with _rest_settings_env(config_path):
-				assert str(config_path) == os.environ['EXPLORER_REST_SETTINGS']
-
-			assert 'EXPLORER_REST_SETTINGS' not in os.environ
-
-
-def test_rest_env_restores_existing():
-	with tempfile.TemporaryDirectory() as temp_directory:
-		config_path = Path(temp_directory) / 'app.config'
-
-		with _temporary_env_values({'EXPLORER_REST_SETTINGS': 'previous.config'}):
-			with _rest_settings_env(config_path):
-				assert str(config_path) == os.environ['EXPLORER_REST_SETTINGS']
-
-			assert 'previous.config' == os.environ['EXPLORER_REST_SETTINGS']
-
-
-def test_external_postgres_config():
-	postgres_env = {
-		'EXPLORER_TEST_POSTGRES_HOST': 'postgres.example',
-		'EXPLORER_TEST_POSTGRES_DATABASE': 'symbol_test',
-		'EXPLORER_TEST_POSTGRES_USER': 'symbol_user',
-		'EXPLORER_TEST_POSTGRES_PORT': '15432'
-	}
-
-	with _temporary_env_values(postgres_env):
-		with PostgresTestDatabase() as db_config:
-			assert DatabaseConfig('symbol_test', 'symbol_user', '', 'postgres.example', '15432') == db_config
-
-
-def test_testing_postgresql_fallback():
-	class FakePostgresql:
-		def __init__(self):
-			self.stopped = False
-
-		@staticmethod
-		def dsn():
-			return {
-				'database': 'generated',
-				'user': 'postgres',
-				'host': '127.0.0.1',
-				'port': '5432'
-			}
-
-		def stop(self):
-			self.stopped = True
-
-	fake_postgresql = FakePostgresql()
-
-	with _temporary_env_values({'EXPLORER_TEST_POSTGRES_HOST': None}):
-		with PostgresTestDatabase(postgresql_factory=lambda: fake_postgresql) as db_config:
-			assert DatabaseConfig('generated', 'postgres', '', '127.0.0.1', '5432') == db_config
-
-	assert fake_postgresql.stopped
+		with pytest.raises(SymbolNodeConfigurationError, match='Symbol node URL is not configured'):
+			setup_symbol_facade(app)

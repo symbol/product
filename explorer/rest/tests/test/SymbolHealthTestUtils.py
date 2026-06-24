@@ -1,4 +1,6 @@
 def create_symbol_health(**overrides):
+	"""Creates an expected Symbol health response for tests."""
+
 	health = {
 		'isHealthy': False,
 		'dbUp': False,
