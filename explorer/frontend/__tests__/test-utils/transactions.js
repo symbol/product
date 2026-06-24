@@ -163,7 +163,13 @@ export const transactionPageResponse = [
 						signer: 'NDIVJFQIJR3VWXJRDSNFK6U37HM4DZNORXI3IRTV'
 					}
 				],
-				transactionType: 'NAMESPACE_REGISTRATION'
+				transactionType: 'NAMESPACE_REGISTRATION',
+				value: [
+					{
+						namespaceName: 'holo',
+						sinkFee: 100.0
+					}
+				]
 			}
 		],
 		fee: 0.15,
@@ -794,10 +800,12 @@ export const transactionPageResult = {
 			signature:
 				'7A4F8F82B6A144E568F5B33DE055D35E9F8D3EE2FC200F0DE9D2571DF5957FF942B8E5A99ED1726D3F459218CF9F27EA3F264011B04122BB9E3E391E72EE930D',
 			fee: 0.45,
+			amount: 100,
 			value: [
 				{
 					id: 'nem.xem',
-					name: 'nem.xem'
+					name: 'nem.xem',
+					amount: 100
 				}
 			],
 			body: [
@@ -805,7 +813,11 @@ export const transactionPageResult = {
 					type: 'NAMESPACE_REGISTRATION',
 					sender: 'NCLT5BCPEVF5EZOS3OJOCL4DWSTJM4EFFF7A5MPG',
 					recipient: 'NCYAVMNQOZ3MZETEBD34ACMAX3S57WUSWAZWY3DW',
-					namespace: {}
+					namespace: {
+						name: 'holo',
+						id: 'holo'
+					},
+					rentalFee: 100
 				}
 			],
 			signatures: [
@@ -1754,10 +1766,12 @@ export const transactionAccountPageResult = {
 			signature:
 				'7A4F8F82B6A144E568F5B33DE055D35E9F8D3EE2FC200F0DE9D2571DF5957FF942B8E5A99ED1726D3F459218CF9F27EA3F264011B04122BB9E3E391E72EE930D',
 			fee: 0.45,
+			amount: 100,
 			value: [
 				{
 					id: 'nem.xem',
-					name: 'nem.xem'
+					name: 'nem.xem',
+					amount: 100
 				}
 			],
 			body: [
@@ -1765,7 +1779,11 @@ export const transactionAccountPageResult = {
 					type: 'NAMESPACE_REGISTRATION',
 					sender: 'NCLT5BCPEVF5EZOS3OJOCL4DWSTJM4EFFF7A5MPG',
 					recipient: 'NCYAVMNQOZ3MZETEBD34ACMAX3S57WUSWAZWY3DW',
-					namespace: {}
+					namespace: {
+						name: 'holo',
+						id: 'holo'
+					},
+					rentalFee: 100
 				}
 			],
 			signatures: [
