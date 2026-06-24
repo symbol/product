@@ -12,7 +12,7 @@
 	},
 	"dependencies": {
 		"resolve-local-dependencies": "^1.0.2",
-		"symbol-sdk": "^3.3.0",
+		"symbol-sdk": "^3.3.2",
 		"wallet-common-core": "file:../core"
 	},
 	"devDependencies": {
