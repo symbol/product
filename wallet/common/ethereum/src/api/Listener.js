@@ -70,7 +70,6 @@ export class Listener {
 		this.jrpcProvider = null;
 
 		try {
-			await wsProvider.removeAllListeners();
 			await wsProvider.destroy();
 		} catch {
 			// Ignore errors while tearing down a connection that is already closing.
