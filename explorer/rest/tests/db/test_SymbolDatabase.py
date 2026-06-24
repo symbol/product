@@ -1,20 +1,18 @@
-from contextlib import nullcontext
-from unittest import TestCase
-from unittest.mock import Mock
+import unittest
 
 from rest.db.SymbolDatabase import SymbolDatabase
 
+from ..test.PostgresTestUtils import PostgresTestDatabase
 
-class TestSymbolDatabase(TestCase):
+
+class SymbolDatabaseTest(unittest.TestCase):
 	def test_check_connection_executes_select_one(self):
-		database = SymbolDatabase.__new__(SymbolDatabase)
-		cursor = Mock()
-		cursor.fetchone.return_value = (1,)
-		connection = Mock()
-		connection.cursor.return_value = nullcontext(cursor)
-		database.connection = Mock(return_value=nullcontext(connection))
+		# Arrange:
+		with PostgresTestDatabase() as db_config:
+			database = SymbolDatabase(db_config)
 
-		result = database.check_connection()
+			# Act:
+			result = database.check_connection()
 
+		# Assert:
 		self.assertTrue(result)
-		cursor.execute.assert_called_once_with('SELECT 1')

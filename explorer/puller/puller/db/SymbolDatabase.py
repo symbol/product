@@ -10,9 +10,25 @@ class SymbolDatabase(DatabaseConnection):
 		cursor = self.connection.cursor()
 		cursor.execute(
 			'''
+			DO $$
+			BEGIN
+				CREATE TYPE symbol_sync_state_status AS ENUM (
+					'initialized',
+					'healthy',
+					'repairing',
+					'unhealthy'
+				);
+			EXCEPTION
+				WHEN duplicate_object THEN NULL;
+			END
+			$$
+			'''
+		)
+		cursor.execute(
+			'''
 			CREATE TABLE IF NOT EXISTS symbol_sync_state (
 				id int PRIMARY KEY DEFAULT 1,
-				status varchar(32) NOT NULL,
+				status symbol_sync_state_status NOT NULL,
 				chain_height bigint,
 				finalized_height bigint,
 				finalized_hash bytea,
