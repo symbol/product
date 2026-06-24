@@ -111,7 +111,7 @@ export const TransactionScreenTemplate = props => {
 	const handleActivityClose = () => {
 		setIsStatusDialogVisible(false);
 		resetAll();
-		onComplete?.();
+		createSafeInteraction(() => onComplete?.())();
 	};
 
 	// Send Button Props
