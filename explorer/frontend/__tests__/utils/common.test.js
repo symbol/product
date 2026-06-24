@@ -412,7 +412,8 @@ describe('utils/common', () => {
 		it('returns formatted data row containing transaction info', () => {
 			// Arrange:
 			const formatter = formatTransactionCSV;
-			const dataRow = transactionPageResult.data[15];
+			const dataRow = transactionPageResult.data.find(item =>
+				item.hash === '455DEFE751CBD146A094F4717219E6687ED49A838D028D95E4C5F52938E0B285');
 			const expectedResult = {
 				translated_table_field_type: 'translated_transactionType_TRANSFER',
 				translated_table_field_sender: 'NBFQ6XFBKB3DHJCFDKCMJI5MZ53HFQ56AKDLY4JK',

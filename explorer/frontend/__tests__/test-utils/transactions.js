@@ -218,7 +218,7 @@ export const transactionPageResponse = [
 			'7A4F8F82B6A144E568F5B33DE055D35E9F8D3EE2FC200F0DE9D2571DF5957FF942B8E5A99ED1726D3F459218CF9F27EA3F264011B04122BB9E3E391E72EE930D',
 		timestamp: '2024-03-29 13:45:29',
 		toAddress: 'NCYAVMNQOZ3MZETEBD34ACMAX3S57WUSWAZWY3DW',
-		transactionHash: '6675175F8339DA8350E4F29B1B6224B12417983720DAC55BC256C2362D471F75',
+		transactionHash: '5C03FB14113E6E41F3FD40426793F766A02F784F1C41462F2CB0102519C25B83',
 		transactionType: 'MULTISIG',
 		value: null
 	},
@@ -850,7 +850,7 @@ export const transactionPageResult = {
 		{
 			type: 'MULTISIG',
 			group: 'confirmed',
-			hash: '6675175F8339DA8350E4F29B1B6224B12417983720DAC55BC256C2362D471F75',
+			hash: '5C03FB14113E6E41F3FD40426793F766A02F784F1C41462F2CB0102519C25B83',
 			timestamp: '2024-03-29 13:45:29',
 			deadline: '2024-03-29 14:06:28',
 			signer: 'ND2RSOCXYGMABR6LESAW5ENC22Z34G3IL63ABALN',
@@ -1818,60 +1818,6 @@ export const transactionAccountPageResult = {
 			group: 'confirmed',
 			hash: '6675175F8339DA8350E4F29B1B6224B12417983720DAC55BC256C2362D471F75',
 			timestamp: '2024-03-29 13:45:29',
-			deadline: '2024-03-29 14:06:28',
-			signer: 'ND2RSOCXYGMABR6LESAW5ENC22Z34G3IL63ABALN',
-			sender: 'NCLT5BCPEVF5EZOS3OJOCL4DWSTJM4EFFF7A5MPG',
-			recipient: 'NCYAVMNQOZ3MZETEBD34ACMAX3S57WUSWAZWY3DW',
-			account: 'NCLT5BCPEVF5EZOS3OJOCL4DWSTJM4EFFF7A5MPG',
-			direction: null,
-			height: 4694401,
-			signature:
-				'7A4F8F82B6A144E568F5B33DE055D35E9F8D3EE2FC200F0DE9D2571DF5957FF942B8E5A99ED1726D3F459218CF9F27EA3F264011B04122BB9E3E391E72EE930D',
-			fee: 0.43,
-			amount: 0,
-			value: [],
-			body: [
-				{
-					type: 'MULTISIG_ACCOUNT_MODIFICATION',
-					sender: 'NCLT5BCPEVF5EZOS3OJOCL4DWSTJM4EFFF7A5MPG',
-					targetAccount: 'NCLT5BCPEVF5EZOS3OJOCL4DWSTJM4EFFF7A5MPG',
-					cosignatoryAdditions: ['NDK3QVT3N42HFL6NMGTRGFRJE74NP2KSNZH26EDT'],
-					cosignatoryDeletions: [],
-					minCosignatories: 1
-				}
-			],
-			signatures: [
-				{
-					fee: 0.15,
-					signature:
-						'31acdafac004c7045247cf3c57eb06e7f504af5dbaa3dc427ee39ddc6bc1365947b42bd18bb8c79c2c86dc8faf3e31aacfe289112649bc0920dfc73f178b7f07',
-					signer: 'NDIVJFQIJR3VWXJRDSNFK6U37HM4DZNORXI3IRTV'
-				}
-			],
-			feesBreakdown: [
-				{
-					type: 'multisigFee',
-					amount: 0.15
-				},
-				{
-					type: 'embeddedTransactionsFee',
-					amount: 0.13
-				},
-				{
-					type: 'signaturesFee',
-					amount: 0.15
-				},
-				{
-					type: 'totalFee',
-					amount: 0.43
-				}
-			]
-		},
-		{
-			type: 'MULTISIG',
-			group: 'confirmed',
-			hash: '6675175F8339DA8350E4F29B1B6224B12417983720DAC55BC256C2362D471F75',
-			timestamp: '2024-03-29 13:45:29',
 			deadline: '2024-03-29 14:06:29',
 			signer: 'ND2RSOCXYGMABR6LESAW5ENC22Z34G3IL63ABALN',
 			sender: 'NCLT5BCPEVF5EZOS3OJOCL4DWSTJM4EFFF7A5MPG',
@@ -2451,6 +2397,12 @@ export const transactionAccountPageResult = {
 	],
 	pageNumber: 3
 };
+
+transactionAccountPageResult.data.splice(
+	transactionAccountPageResult.data.findIndex(item => item.hash === '6675175F8339DA8350E4F29B1B6224B12417983720DAC55BC256C2362D471F75'),
+	0,
+	transactionPageResult.data.find(item => item.hash === '5C03FB14113E6E41F3FD40426793F766A02F784F1C41462F2CB0102519C25B83')
+);
 
 export const transactionInfoResponse = {
 	deadline: '2024-03-29 19:13:31',
