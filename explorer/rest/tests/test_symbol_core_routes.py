@@ -1,17 +1,14 @@
 import tempfile
-from contextlib import contextmanager
 from pathlib import Path
 
 import pytest
-from common.symbol.NodeConfig import SymbolNodeConfigurationError
-from flask import Flask
+from common.symbol.NodeConfiguration import SymbolNodeConfigurationError
+from common.tests.PostgresTestUtils import PostgresTestDatabase, create_unreachable_db_configuration
 
-from rest import create_app, setup_symbol_facade
-from rest.facade.SymbolRestFacade import SymbolRestFacade
+from rest import create_app
 from rest.model.common import DatabaseConfig
 
-from .test.EnvTestUtils import temporary_env_values
-from .test.PostgresTestUtils import PostgresTestDatabase, create_unreachable_db_config
+from .test.EnvTestUtils import rest_settings_env
 from .test.SymbolHealthTestUtils import create_symbol_health
 
 
@@ -37,22 +34,18 @@ def _create_config_file(config_dir, include_symbol_db=True, database_config=None
 	return db_config_path
 
 
-def _create_app_config(config_dir, db_config_path):
+def _create_app_config(config_dir, db_config_path, symbol_node_url='http://localhost:3000'):
 	app_config_path = Path(config_dir) / 'app.config'
 	with open(app_config_path, 'wt', encoding='utf8') as app_config_file:
+		app_config_file.write('REST_CHAIN="symbol"\n')
 		app_config_file.write(f'DATABASE_CONFIG_FILEPATH="{db_config_path}"\n')
-		app_config_file.write('SYMBOL_NODE_URL="http://localhost:3000"\n')
+		if symbol_node_url:
+			app_config_file.write(f'SYMBOL_NODE_URL="{symbol_node_url}"\n')
 		app_config_file.write('SYMBOL_NODE_ALLOWED_HOSTS="localhost:3000"\n')
 		app_config_file.write('SYMBOL_NODE_ALLOW_LOOPBACK="true"\n')
 		app_config_file.write('SYMBOL_NODE_ALLOW_PRIVATE="false"\n')
 
 	return app_config_path
-
-
-@contextmanager
-def _rest_settings_env(config_path):
-	with temporary_env_values({'EXPLORER_REST_SETTINGS': str(config_path)}):
-		yield
 
 
 @pytest.fixture(name='symbol_database_config', scope='module')
@@ -62,101 +55,72 @@ def fixture_symbol_database_config():
 
 
 def test_symbol_health_with_database(symbol_database_config):
+	# Arrange:
 	with tempfile.TemporaryDirectory() as temp_directory:
 		db_config_path = _create_config_file(temp_directory, database_config=symbol_database_config)
 		app_config_path = _create_app_config(temp_directory, db_config_path)
-		app_config_path.write_text(f'REST_CHAIN="symbol"\n{app_config_path.read_text(encoding="utf8")}', encoding='utf8')
 
-		with _rest_settings_env(app_config_path):
+		with rest_settings_env(app_config_path):
+			# Act:
 			response = create_app().test_client().get('/api/symbol/health')
 
+	# Assert:
 	assert 200 == response.status_code
 	assert create_symbol_health(
 		isHealthy=True,
-		dbUp=True,
-		nodeConfigured=True,
+		dbUp=True
 	) == response.json
 
 
-def test_symbol_facade_config(symbol_database_config):
-	with tempfile.TemporaryDirectory() as temp_directory:
-		db_config_path = _create_config_file(temp_directory, database_config=symbol_database_config)
-		app_config_path = _create_app_config(temp_directory, db_config_path)
-		app = Flask(__name__)
-		app.config.from_pyfile(app_config_path)
-
-		facade = setup_symbol_facade(app)
-
-	assert isinstance(facade, SymbolRestFacade)
-	assert facade.is_configured()
-	assert 'http://localhost:3000' == facade.node_config.base_url
-
-
-def test_symbol_facade_envvar(symbol_database_config):
-	with tempfile.TemporaryDirectory() as temp_directory:
-		db_config_path = _create_config_file(temp_directory, database_config=symbol_database_config)
-		app_config_path = _create_app_config(temp_directory, db_config_path)
-		app = Flask(__name__)
-
-		with _rest_settings_env(app_config_path):
-			facade = setup_symbol_facade(app)
-
-	assert facade.is_configured()
-	assert 'http://localhost:3000' == facade.node_config.base_url
-
-
-def test_symbol_facade_needs_db():
+def test_setup_requires_symbol_db():
+	# Arrange:
 	with tempfile.TemporaryDirectory() as temp_directory:
 		db_config_path = _create_config_file(temp_directory, include_symbol_db=False)
 		app_config_path = _create_app_config(temp_directory, db_config_path)
-		app = Flask(__name__)
-		app.config.from_pyfile(app_config_path)
 
-		with pytest.raises(KeyError, match='symbol_db'):
-			setup_symbol_facade(app)
+		with rest_settings_env(app_config_path):
+			# Act + Assert:
+			with pytest.raises(KeyError, match='symbol_db'):
+				create_app()
 
 
-def test_symbol_facade_db_error():
+def test_health_reports_db_error():
+	# Arrange:
 	with tempfile.TemporaryDirectory() as temp_directory:
-		db_config_path = _create_config_file(temp_directory, database_config=create_unreachable_db_config())
+		db_config_path = _create_config_file(temp_directory, database_config=create_unreachable_db_configuration())
 		app_config_path = _create_app_config(temp_directory, db_config_path)
-		app = Flask(__name__)
-		app.config.from_pyfile(app_config_path)
 
-		facade = setup_symbol_facade(app)
+		with rest_settings_env(app_config_path):
+			# Act:
+			response = create_app().test_client().get('/api/symbol/health')
 
-	health = facade.get_health()
-	assert isinstance(facade, SymbolRestFacade)
-	assert not facade.is_configured()
-	assert not health['isHealthy']
-	assert not health['dbUp']
-	assert health['nodeConfigured']
-	assert [{
+	# Assert:
+	assert 200 == response.status_code
+	assert create_symbol_health(errors=[{
 		'type': 'database',
 		'message': 'Symbol database is unavailable'
-	}] == health['errors']
-	assert 'connection refused' not in str(health)
+	}]) == response.json
 
 
-def test_symbol_facade_node_error():
+def test_setup_rejects_bad_node_url():
+	# Arrange:
 	with tempfile.TemporaryDirectory() as temp_directory:
 		db_config_path = _create_config_file(temp_directory)
-		app_config_path = _create_app_config(temp_directory, db_config_path)
-		app = Flask(__name__)
-		app.config.from_pyfile(app_config_path)
-		app.config['SYMBOL_NODE_URL'] = 'http://localhost'
+		app_config_path = _create_app_config(temp_directory, db_config_path, symbol_node_url='http://localhost')
 
-		with pytest.raises(SymbolNodeConfigurationError, match='Symbol node URL must include an explicit port'):
-			setup_symbol_facade(app)
+		with rest_settings_env(app_config_path):
+			# Act + Assert:
+			with pytest.raises(SymbolNodeConfigurationError, match='Symbol node URL must include an explicit port'):
+				create_app()
 
 
-def test_symbol_facade_needs_node(symbol_database_config):
+def test_setup_requires_node_url(symbol_database_config):
+	# Arrange:
 	with tempfile.TemporaryDirectory() as temp_directory:
 		db_config_path = _create_config_file(temp_directory, database_config=symbol_database_config)
-		app_config_path = _create_app_config(temp_directory, db_config_path)
-		app = Flask(__name__)
-		app.config.from_pyfile(app_config_path)
-		app.config.pop('SYMBOL_NODE_URL')
+		app_config_path = _create_app_config(temp_directory, db_config_path, symbol_node_url=None)
 
-		with pytest.raises(SymbolNodeConfigurationError, match='Symbol node URL is not configured'):
-			setup_symbol_facade(app)
+		with rest_settings_env(app_config_path):
+			# Act + Assert:
+			with pytest.raises(SymbolNodeConfigurationError, match='Symbol node URL is not configured'):
+				create_app()

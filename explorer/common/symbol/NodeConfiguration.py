@@ -1,6 +1,9 @@
 import ipaddress
 import socket
+from collections import namedtuple
 from urllib.parse import urlparse
+
+NormalizedNode = namedtuple('NormalizedNode', ['scheme', 'host', 'port', 'base_url'])
 
 
 class SymbolNodeConfigurationError(ValueError):
@@ -55,7 +58,7 @@ def _normalize_base_url(node_url):
 		raise SymbolNodeConfigurationError('Symbol node URL must include an explicit port')
 	host = parsed_url.hostname.lower()
 
-	return parsed_url.scheme, host, port, f'{parsed_url.scheme}://{host}:{port}'
+	return NormalizedNode(parsed_url.scheme, host, port, f'{parsed_url.scheme}://{host}:{port}')
 
 
 def _normalize_allowed_hosts(raw_allowed_hosts):
@@ -117,7 +120,7 @@ class SymbolNodeConfiguration:
 
 		node_url = app_config.get('SYMBOL_NODE_URL')
 		if not node_url:
-			return None
+			raise SymbolNodeConfigurationError('Symbol node URL is not configured')
 
 		return cls._from_values(app_config)
 
@@ -125,32 +128,41 @@ class SymbolNodeConfiguration:
 	def from_url(cls, node_url, **kwargs):
 		"""Creates a node config from an explicit node URL."""
 
-		_, host, port, _ = _normalize_base_url(node_url)
-		return cls._from_values({
-			'SYMBOL_NODE_URL': node_url,
-			'SYMBOL_NODE_ALLOWED_HOSTS': f'{host}:{port}',
-			'SYMBOL_NODE_ALLOW_PRIVATE': kwargs.get('allow_private', False),
-			'SYMBOL_NODE_ALLOW_LOOPBACK': kwargs.get('allow_loopback', False),
-			'SYMBOL_NODE_REQUEST_TIMEOUT_SECONDS': kwargs.get('timeout_seconds', 10)
-		})
+		normalized_node = _normalize_base_url(node_url)
+		return cls._from_normalized_values(
+			normalized_node,
+			{
+				'SYMBOL_NODE_ALLOWED_HOSTS': f'{normalized_node.host}:{normalized_node.port}',
+				'SYMBOL_NODE_ALLOW_PRIVATE': kwargs.get('allow_private', False),
+				'SYMBOL_NODE_ALLOW_LOOPBACK': kwargs.get('allow_loopback', False),
+				'SYMBOL_NODE_REQUEST_TIMEOUT_SECONDS': kwargs.get('timeout_seconds', 10)
+			}
+		)
 
 	@classmethod
 	def _from_values(cls, values):
 		node_url = values.get('SYMBOL_NODE_URL')
-		scheme, host, port, base_url = _normalize_base_url(node_url)
+		normalized_node = _normalize_base_url(node_url)
+		return cls._from_normalized_values(
+			normalized_node,
+			values
+		)
+
+	@classmethod
+	def _from_normalized_values(cls, normalized_node, values):
 		allowed_hosts = _normalize_allowed_hosts(values.get('SYMBOL_NODE_ALLOWED_HOSTS'))
-		normalized_host = f'{host}:{port}'
+		normalized_host = f'{normalized_node.host}:{normalized_node.port}'
 
 		if normalized_host not in allowed_hosts:
 			raise SymbolNodeConfigurationError('Configured Symbol node host is not in SYMBOL_NODE_ALLOWED_HOSTS')
-		if _is_metadata_service_host(host):
+		if _is_metadata_service_host(normalized_node.host):
 			raise SymbolNodeConfigurationError('Metadata service Symbol node host is not allowed')
 
 		return cls(
-			scheme=scheme,
-			host=host,
-			port=port,
-			base_url=base_url,
+			scheme=normalized_node.scheme,
+			host=normalized_node.host,
+			port=normalized_node.port,
+			base_url=normalized_node.base_url,
 			allowed_hosts=frozenset(allowed_hosts),
 			allow_private=_parse_bool(values.get('SYMBOL_NODE_ALLOW_PRIVATE', 'false')),
 			allow_loopback=_parse_bool(values.get('SYMBOL_NODE_ALLOW_LOOPBACK', 'false')),

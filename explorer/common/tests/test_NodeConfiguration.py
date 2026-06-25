@@ -1,5 +1,5 @@
 import pytest
-from common.symbol.NodeConfig import SymbolNodeConfiguration, SymbolNodeConfigurationError
+from common.symbol.NodeConfiguration import SymbolNodeConfiguration, SymbolNodeConfigurationError
 
 
 def _base_config(**overrides):
@@ -26,11 +26,12 @@ def _assert_rejects_allowed_hosts(allowed_hosts):
 		SymbolNodeConfiguration.from_app_config(_base_config(SYMBOL_NODE_ALLOWED_HOSTS=allowed_hosts))
 
 
-def test_missing_node_url_returns_none():
-	assert SymbolNodeConfiguration.from_app_config({}) is None
+def test_rejects_missing_node_url():
+	with pytest.raises(SymbolNodeConfigurationError, match='Symbol node URL is not configured'):
+		SymbolNodeConfiguration.from_app_config({})
 
 
-def test_app_config_normalizes():
+def test_app_config_normalizes_node():
 	node_config = SymbolNodeConfiguration.from_app_config(_base_config(SYMBOL_NODE_REQUEST_TIMEOUT_SECONDS='15'))
 
 	assert 'http' == node_config.scheme
@@ -43,7 +44,7 @@ def test_app_config_normalizes():
 	assert 15 == node_config.timeout_seconds
 
 
-def test_url_normalizes():
+def test_from_url_allows_origin():
 	node_config = SymbolNodeConfiguration.from_url(
 		'http://localhost:3000',
 		allow_private=True,
@@ -61,7 +62,7 @@ def test_url_normalizes():
 	assert 15 == node_config.timeout_seconds
 
 
-def test_to_dict_hides_allowlist():
+def test_to_dict_hides_allowed_hosts():
 	node_config = SymbolNodeConfiguration.from_app_config(_base_config(
 		SYMBOL_NODE_ALLOW_PRIVATE=True,
 		SYMBOL_NODE_ALLOW_LOOPBACK=True
@@ -90,7 +91,7 @@ def test_rejects_unlisted_host():
 		SymbolNodeConfiguration.from_app_config(_base_config(SYMBOL_NODE_ALLOWED_HOSTS='example.com:3000'))
 
 
-def test_skips_empty_allowlist_entries():
+def test_skips_empty_allowed_hosts():
 	node_config = SymbolNodeConfiguration.from_app_config(_base_config(SYMBOL_NODE_ALLOWED_HOSTS='localhost:3000,'))
 
 	assert frozenset({'localhost:3000'}) == node_config.allowed_hosts
@@ -103,7 +104,7 @@ def test_skips_empty_allowlist_entries():
 	'localhost:abc',
 	'localhost:3000/path'
 ])
-def test_rejects_bad_allowlist_entries(allowed_hosts):
+def test_rejects_bad_allowed_hosts(allowed_hosts):
 	_assert_rejects_allowed_hosts(allowed_hosts)
 
 
@@ -127,7 +128,7 @@ def test_rejects_metadata_url():
 		SymbolNodeConfiguration.from_url('http://169.254.169.254:3000')
 
 
-def test_rejects_metadata_app_config():
+def test_rejects_metadata_config():
 	with pytest.raises(SymbolNodeConfigurationError, match='Metadata service Symbol node host is not allowed'):
 		SymbolNodeConfiguration.from_app_config(_base_config(
 			SYMBOL_NODE_URL='http://169.254.169.254:3000',
@@ -135,14 +136,19 @@ def test_rejects_metadata_app_config():
 		))
 
 
-def test_accepts_boolean_config_values():
+@pytest.mark.parametrize(('private_config_value', 'loopback_config_value', 'expected_private', 'expected_loopback'), [
+	(True, 'false', True, False),
+	('true', 'false', True, False),
+	('false', 'true', False, True),
+])
+def test_accepts_boolean_config_values(private_config_value, loopback_config_value, expected_private, expected_loopback):
 	node_config = SymbolNodeConfiguration.from_app_config(_base_config(
-		SYMBOL_NODE_ALLOW_PRIVATE=True,
-		SYMBOL_NODE_ALLOW_LOOPBACK='false'
+		SYMBOL_NODE_ALLOW_PRIVATE=private_config_value,
+		SYMBOL_NODE_ALLOW_LOOPBACK=loopback_config_value
 	))
 
-	assert node_config.allow_private
-	assert not node_config.allow_loopback
+	assert expected_private == node_config.allow_private
+	assert expected_loopback == node_config.allow_loopback
 
 
 def test_rejects_bad_boolean_config():
@@ -176,7 +182,7 @@ def test_rejects_different_target():
 		node_config.assert_request_allowed('http://localhost:3001')
 
 
-def test_rejects_removed_request_target():
+def test_rejects_unallowed_target():
 	node_config = SymbolNodeConfiguration(
 		scheme='http',
 		host='localhost',
@@ -225,7 +231,7 @@ def test_allows_private_with_flag():
 	assert 'http://10.0.0.5:3000' == node_config.assert_request_allowed('http://10.0.0.5:3000')
 
 
-def test_rejects_link_local():
+def test_rejects_link_local_address():
 	node_config = SymbolNodeConfiguration.from_url('http://169.254.1.1:3000', allow_private=True)
 
 	with pytest.raises(SymbolNodeConfigurationError, match='Resolved Symbol node address is not allowed'):
