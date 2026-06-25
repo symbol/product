@@ -5,10 +5,15 @@ const { loadEnvConfig } = require('@next/env');
 // next.config.js runs before Next loads .env files, so load them here first.
 loadEnvConfig(__dirname);
 
+// Common tokens (spacings, breakpoints) shared by every variant.
+const commonStylesPath = path.join(__dirname, 'styles');
+const commonVariablesPath = path.join(commonStylesPath, 'variables.scss').split(path.sep).join('/');
+
 // The active variant is a build-time switch because aliases and SCSS tokens are compiled per variant.
 const VARIANT = process.env.NEXT_PUBLIC_EXPLORER_VARIANT;
 const variantStylesPath = path.join(__dirname, 'variants', VARIANT, 'styles');
 const variantVariablesPath = path.join(variantStylesPath, 'variables.scss').split(path.sep).join('/');
+
 // Turbopack resolveAlias entries are project-root relative.
 const variantAlias = `./variants/${VARIANT}`;
 
@@ -34,9 +39,9 @@ module.exports = {
 		}
 	},
 	sassOptions: {
-		// Inject the selected variant's SCSS tokens into every stylesheet.
-		additionalData: `@import "${variantVariablesPath}";`,
-		includePaths: [__dirname, variantStylesPath, path.join(__dirname, 'styles')]
+		// Inject the common tokens then the selected variant's SCSS tokens into every stylesheet.
+		additionalData: `@import "${commonVariablesPath}"; @import "${variantVariablesPath}";`,
+		includePaths: [__dirname, commonStylesPath, variantStylesPath]
 	},
 	eslint: {
 		ignoreDuringBuilds: true

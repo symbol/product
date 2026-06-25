@@ -1,5 +1,38 @@
-// Theme tokens ($color-*, $font-*, $spacing-*, breakpoints, ...) are injected per variant at
-// build time via `sassOptions.additionalData` in next.config.js — see
-// `variants/<variant>/styles/variables.scss`. This file is intentionally left without
-// declarations so that the existing `@import '../variables';` in component and page modules
-// keeps resolving while the actual values come from the active variant.
+// Theme tokens are injected per variant at build time from `variants/<variant>/styles/variables.scss`.
+
+// Spacings General
+$spacing-base: calc(1rem / 3 * 2);
+$spacing-padding: $spacing-base * 3;
+$spacing-fields: $spacing-base * 2;
+$spacing-card-gap: $spacing-base * 3;
+$spacing-section-gap: $spacing-base * 4;
+$spacing-header-height: $spacing-base * 8;
+$spacing-navigation-height: $spacing-base * 8;
+$spacing-heading-margin: $spacing-base;
+$spacing-textbox-height: $spacing-base * 4.75;
+
+// Spacings Large
+$spacing-content-container-width-large: $spacing-base * 152;
+$spacing-content-container-margin-large: $spacing-base * 3;
+$multiplier-font-large: 14px;
+
+// Spacings Desktop
+$spacing-content-container-width-desktop: $spacing-base * 152;
+$spacing-content-container-margin-desktop: $spacing-base * 3;
+$multiplier-font-desktop: 0.833vw;
+
+// Spacings Laptop
+$spacing-content-container-width-laptop: $spacing-base * 152;
+$spacing-content-container-margin-laptop: $spacing-base * 3;
+$multiplier-font-laptop: 0.95vw;
+
+// Spacings Mobile
+$spacing-content-container-width-mobile: 100%;
+$spacing-content-container-margin-mobile: $spacing-base * 2;
+$multiplier-font-mobile: 10px;
+
+// Breakpoints
+$screen-large: '(min-width: 2000px)';
+$screen-desktop: '(max-width: 1999.8px) and (min-width: 1440px)';
+$screen-laptop: '(max-width: 1439.8px) and (min-width: 768px)';
+$screen-mobile: '(max-width: 767.8px)';
