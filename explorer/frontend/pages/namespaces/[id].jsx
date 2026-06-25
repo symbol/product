@@ -42,6 +42,7 @@ const NamespaceInfo = ({ namespaceInfo }) => {
 	const [chainHeight, setChainHeight] = useState(0);
 	const [expirationText, setExpirationText] = useState(null);
 	const [progressType, setProgressType] = useState('');
+	const isExpirationShown = !namespaceInfo.isUnlimitedDuration;
 
 	const tableColumns = [
 		{
@@ -111,14 +112,16 @@ const NamespaceInfo = ({ namespaceInfo }) => {
 						<Field title={t('field_expiration')} description={t('field_namespaceExpiration_description')}>
 							{nullableValueToText(expirationText)}
 						</Field>
-						<Progress
-							titleLeft={t('field_registrationHeight')}
-							titleRight={t('field_expirationHeight')}
-							valueLeft={namespaceInfo.registrationHeight}
-							valueRight={namespaceInfo.expirationHeight}
-							value={chainHeight}
-							type={progressType}
-						/>
+						{isExpirationShown && (
+							<Progress
+								titleLeft={t('field_registrationHeight')}
+								titleRight={t('field_expirationHeight')}
+								valueLeft={namespaceInfo.registrationHeight}
+								valueRight={namespaceInfo.expirationHeight}
+								value={chainHeight}
+								type={progressType}
+							/>
+						)}
 					</div>
 				</Section>
 			</div>

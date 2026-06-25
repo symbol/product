@@ -288,7 +288,7 @@ class NemDatabase(DatabaseConnection):
 				'nem',
 				signer.bytes,
 				1,
-				9223372036854775807  # max bigint value to represent no expiration
+				0  # no expiration
 			)
 		)
 

@@ -134,6 +134,7 @@ describe('NamespaceInfo', () => {
 
 			// Act + Assert:
 			await runStatusTest(chainHeight, expirationHeight, isUnlimitedDuration, expectedText);
+			expect(screen.queryByText('field_expirationHeight')).not.toBeInTheDocument();
 		});
 	});
 });
