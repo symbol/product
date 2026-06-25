@@ -335,21 +335,18 @@ const formatAccountKeyLink = (data, filter) => {
 
 const formatMultisigTransaction = (data, filter) => {
 	const embeddedTransaction = data.embeddedTransactions[0];
-	const rawEmbeddedTransaction = {
+	const flatEmbeddedTransaction = {
 		...data,
-		transactionType: embeddedTransaction.transactionType,
-		fee: embeddedTransaction.fee
+		...embeddedTransaction
 	};
-	if (rawEmbeddedTransaction.transactionType === TRANSACTION_TYPE.TRANSFER) {
+	if (flatEmbeddedTransaction.transactionType === TRANSACTION_TYPE.TRANSFER) {
 		const { mosaics, message } = extractTransferTransactionValue(embeddedTransaction.value);
 
-		rawEmbeddedTransaction.value = embeddedTransaction.value || [{ message: message }, mosaics];
-	} else {
-		rawEmbeddedTransaction.value = data.embeddedTransactions;
+		flatEmbeddedTransaction.value = embeddedTransaction.value || [{ message: message }, ...mosaics];
 	}
 
 	const formattedTransaction = formatBaseTransaction(data, filter);
-	const formattedEmbeddedTransaction = transactionFromDTO(rawEmbeddedTransaction, filter.address);
+	const formattedEmbeddedTransaction = transactionFromDTO(flatEmbeddedTransaction, filter);
 
 	// Fees breakdown
 	const multisigFee = truncateDecimals(formattedTransaction.fee, config.NATIVE_MOSAIC_DIVISIBILITY);
