@@ -38,6 +38,9 @@ builds:
   - name: Wallet Common Ethereum
     path: wallet/common/ethereum
 
+  - name: Wallet Common NEM
+    path: wallet/common/nem
+
   - name: Wallet Common Symbol
     path: wallet/common/symbol
 

@@ -18,6 +18,7 @@ It includes our optin manager.
 | [@tools/vanity](tools/vanity) | [![lint][tools-vanity-lint]][tools-vanity-job] | | [![test][tools-vanity-test]][tools-vanity-job]| [![][tools-vanity-cov]][tools-vanity-cov-link] |
 | [@wallet/common-core](wallet/common/core) | [![lint][wallet-common-core-lint]][wallet-common-core-job] | | [![test][wallet-common-core-test]][wallet-common-core-job]| [![][wallet-common-core-cov]][wallet-common-core-cov-link] |
 | [@wallet/common-ethereum](wallet/common/ethereum) | [![lint][wallet-common-ethereum-lint]][wallet-common-ethereum-job] | | [![test][wallet-common-ethereum-test]][wallet-common-ethereum-job]| [![][wallet-common-ethereum-cov]][wallet-common-ethereum-cov-link] |
+| [@wallet/common-nem](wallet/common/nem) | [![lint][wallet-common-nem-lint]][wallet-common-nem-job] | | [![test][wallet-common-nem-test]][wallet-common-nem-job]| [![][wallet-common-nem-cov]][wallet-common-nem-cov-link] |
 | [@wallet/common-symbol](wallet/common/symbol) | [![lint][wallet-common-symbol-lint]][wallet-common-symbol-job] | | [![test][wallet-common-symbol-test]][wallet-common-symbol-job]| [![][wallet-common-symbol-cov]][wallet-common-symbol-cov-link] |
 | [@wallet/common-transport](wallet/common/transport) | [![lint][wallet-common-transport-lint]][wallet-common-transport-job] | | [![test][wallet-common-transport-test]][wallet-common-transport-job]| [![][wallet-common-transport-cov]][wallet-common-transport-cov-link] |
 | [@wallet/symbol/mobile](wallet/symbol/mobile) | [![lint][wallet-symbol-mobile-lint]][wallet-symbol-mobile-job] | | [![test][wallet-symbol-mobile-test]][wallet-symbol-mobile-job]| [![][wallet-symbol-mobile-cov]][wallet-symbol-mobile-cov-link] |
@@ -109,6 +110,12 @@ Detailed version can be seen on [codecov.io][product-cov-link].
 [wallet-common-ethereum-test]: https://jenkins.symbolsyndicate.us/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Fwallet-common-ethereum%2Fdev%2F&config=wallet-common-ethereum-test
 [wallet-common-ethereum-cov]: https://codecov.io/gh/symbol/product/branch/dev/graph/badge.svg?token=SSYYBMK0M7&flag=wallet-common-ethereum
 [wallet-common-ethereum-cov-link]: https://codecov.io/gh/symbol/product/tree/dev/wallet/common/ethereum
+
+[wallet-common-nem-job]: https://jenkins.symbolsyndicate.us/blue/organizations/jenkins/Symbol%2Fgenerated%2Fproduct%2Fwallet-common-nem/activity?branch=dev
+[wallet-common-nem-lint]: https://jenkins.symbolsyndicate.us/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Fwallet-common-nem%2Fdev%2F&config=wallet-common-nem-lint
+[wallet-common-nem-test]: https://jenkins.symbolsyndicate.us/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Fwallet-common-nem%2Fdev%2F&config=wallet-common-nem-test
+[wallet-common-nem-cov]: https://codecov.io/gh/symbol/product/branch/dev/graph/badge.svg?token=SSYYBMK0M7&flag=wallet-common-nem
+[wallet-common-nem-cov-link]: https://codecov.io/gh/symbol/product/tree/dev/wallet/common/nem
 
 [wallet-common-symbol-job]: https://jenkins.symbolsyndicate.us/blue/organizations/jenkins/Symbol%2Fgenerated%2Fproduct%2Fwallet-common-symbol/activity?branch=dev
 [wallet-common-symbol-lint]: https://jenkins.symbolsyndicate.us/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Fwallet-common-symbol%2Fdev%2F&config=wallet-common-symbol-lint

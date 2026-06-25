@@ -84,6 +84,12 @@ coverage:
         flags:
           - wallet-common-ethereum
 
+      wallet-common-nem:
+        target: auto
+        threshold: 1%
+        flags:
+          - wallet-common-nem
+
       wallet-common-symbol:
         target: auto
         threshold: 1%
@@ -172,6 +178,11 @@ flags:
   wallet-common-ethereum:
     paths:
       - wallet/common/ethereum
+    carryforward: true
+
+  wallet-common-nem:
+    paths:
+      - wallet/common/nem
     carryforward: true
 
   wallet-common-symbol:

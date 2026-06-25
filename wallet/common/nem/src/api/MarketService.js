@@ -1,0 +1,42 @@
+export class MarketService {
+	#config;
+	#makeRequest;
+
+	constructor(options) {
+		this.#config = options.config;
+		this.#makeRequest = options.makeRequest;
+	}
+
+	/**
+	 * @typedef {object} MarketData
+	 * @property {number} CNY - Price in Chinese Yuan.
+	 * @property {number} EUR - Price in Euro.
+	 * @property {number} GBP - Price in British Pound.
+	 * @property {number} JPY - Price in Japanese Yen.
+	 * @property {number} KRW - Price in South Korean Won.
+	 * @property {number} UAH - Price in Ukrainian Hryvnia.
+	 * @property {number} USD - Price in US Dollar.
+	 * @property {number} requestTimestamp - Timestamp of the request.
+	 */
+
+	/**
+	 * Fetches XEM market prices in multiple currencies.
+	 * @returns {Promise<MarketData>} Price map with requestTimestamp.
+	 */
+	fetchPrices = async () => {
+		const symbols = this.#config.marketCurrencies.join(',');
+		const url = `${this.#config.marketDataURL}?fsym=XEM&tsyms=${symbols}`;
+		const response = await this.#makeRequest(url);
+		const tickers = ['CNY', 'EUR', 'GBP', 'JPY', 'KRW', 'UAH', 'USD'];
+		const marketData = tickers.reduce((acc, ticker) => {
+			acc[ticker] = response[ticker];
+			return acc;
+		}, {});
+
+		return {
+			...marketData,
+			requestTimestamp: Date.now()
+		};
+	};
+}
+
