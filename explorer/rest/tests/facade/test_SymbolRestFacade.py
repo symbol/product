@@ -1,11 +1,11 @@
 from unittest import TestCase
 
-from common.symbol.NodeConfig import SymbolNodeConfiguration
+from common.symbol.NodeConfiguration import SymbolNodeConfiguration
+from common.tests.PostgresTestUtils import create_unreachable_db_configuration
 from psycopg2 import OperationalError
 
 from rest.facade.SymbolRestFacade import SymbolRestFacade
 
-from ..test.PostgresTestUtils import create_unreachable_db_config
 from ..test.SymbolHealthTestUtils import create_symbol_health
 
 NODE_URL = 'http://127.0.0.1:3000'
@@ -28,7 +28,7 @@ class HealthySymbolDatabase:
 
 
 def _create_configured_facade():
-	facade = SymbolRestFacade(create_unreachable_db_config(), _create_node_config())
+	facade = SymbolRestFacade(create_unreachable_db_configuration(), _create_node_config())
 	facade.symbol_db = HealthySymbolDatabase()
 	facade.db_error = None
 	return facade
@@ -46,7 +46,7 @@ class SymbolRestFacadeTest(TestCase):
 	def test_rejects_missing_node_config(self):
 		# Act + Assert:
 		with self.assertRaisesRegex(ValueError, 'Symbol node configuration is required'):
-			SymbolRestFacade(create_unreachable_db_config(), None)
+			SymbolRestFacade(create_unreachable_db_configuration(), None)
 
 	def test_reports_configured_core_status_when_dependencies_are_available(self):
 		# Arrange:
@@ -77,14 +77,13 @@ class SymbolRestFacadeTest(TestCase):
 		# Assert:
 		self.assertEqual(create_symbol_health(
 			isHealthy=True,
-			dbUp=True,
-			nodeConfigured=True,
+			dbUp=True
 		), result)
 
 	def test_reports_database_error(self):
 		# Arrange:
 		node_config = _create_node_config()
-		facade = SymbolRestFacade(create_unreachable_db_config(), node_config)
+		facade = SymbolRestFacade(create_unreachable_db_configuration(), node_config)
 		facade.symbol_db = FailingSymbolDatabase()
 		facade.db_error = None
 
@@ -94,7 +93,6 @@ class SymbolRestFacadeTest(TestCase):
 		# Assert:
 		self.assertEqual(
 			create_symbol_health(
-				nodeConfigured=True,
 				errors=[{
 					'type': 'database',
 					'message': 'Symbol database is unavailable'
@@ -108,16 +106,14 @@ class SymbolRestFacadeTest(TestCase):
 		node_config = _create_node_config()
 
 		# Act:
-		facade = SymbolRestFacade(db_config=create_unreachable_db_config(), node_config=node_config)
+		facade = SymbolRestFacade(db_config=create_unreachable_db_configuration(), node_config=node_config)
 		result = facade.get_health()
 
 		# Assert:
 		self.assertFalse(facade.is_configured())
 		self.assertEqual(create_symbol_health(
-			nodeConfigured=True,
 			errors=[{
 				'type': 'database',
 				'message': 'Symbol database is unavailable'
 			}]
 		), result)
-		self.assertNotIn('connection refused', str(result))

@@ -64,7 +64,6 @@ class SymbolRestFacade:
 		return {
 			'isHealthy': db_up and not errors,
 			'dbUp': db_up,
-			'nodeConfigured': True,
 			'backendSynced': False,
 			'lastDBSyncedAt': None,
 			'lastDBHeight': None,

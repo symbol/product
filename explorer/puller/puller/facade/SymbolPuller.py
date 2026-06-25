@@ -2,14 +2,14 @@ import configparser
 from collections import namedtuple
 from urllib.parse import urlparse
 
-from common.symbol.NodeConfig import SymbolNodeConfiguration
+from common.symbol.NodeConfiguration import SymbolNodeConfiguration
 from symbolchain.facade.SymbolFacade import SymbolFacade
 from symbolchain.symbol.Network import Network
 from symbollightapi.connector.SymbolConnector import SymbolConnector
 
 from puller.db.SymbolDatabase import SymbolDatabase
 
-DatabaseConfig = namedtuple('DatabaseConfig', ['database', 'user', 'password', 'host', 'port'])
+DatabaseConfiguration = namedtuple('DatabaseConfiguration', ['database', 'user', 'password', 'host', 'port'])
 
 
 def _get_symbol_network(network_type):
@@ -34,12 +34,12 @@ class SymbolPuller:
 
 		network = _get_symbol_network(network_type)
 
-		self.symbol_db = SymbolDatabase(DatabaseConfig(**db_config))
+		self.symbol_db = SymbolDatabase(DatabaseConfiguration(**db_config))
 		self.node_config = node_config or SymbolNodeConfiguration.from_url(node_url)
 		symbol_node_endpoint = self.node_config.assert_request_allowed(self.node_config.base_url)
 		self._symbol_connector = SymbolConnector(symbol_node_endpoint)
 		self._symbol_connector.timeout_seconds = self.node_config.timeout_seconds
-		self.symbol_facade = SymbolFacade(str(network))
+		self.symbol_facade = SymbolFacade(network)
 
 	def validate_node_request_target(self, request_url):
 		"""Validates a future Symbol node request target against security policy."""

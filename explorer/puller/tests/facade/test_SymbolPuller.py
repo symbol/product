@@ -4,7 +4,7 @@ from pathlib import Path
 from unittest import TestCase
 from unittest.mock import AsyncMock, patch
 
-from common.symbol.NodeConfig import SymbolNodeConfiguration
+from common.symbol.NodeConfiguration import SymbolNodeConfiguration
 
 from puller.facade.SymbolPuller import SymbolPuller
 
