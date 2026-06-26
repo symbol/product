@@ -164,7 +164,7 @@ describe('api/stats', () => {
 			const functionToTest = fetchNodeStats;
 			const args = [];
 			const responseMap = {
-				'https://node.list': nodeListResponse,
+				'https://node.list/api/nem/nodes': nodeListResponse,
 				'https://supernode.backend/statistics': supernodeStatisticsResponse
 			};
 			const expectedResult = {

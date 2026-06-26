@@ -10,39 +10,39 @@ const socialLinks = [
 	{
 		name: 'GitHub',
 		icon: createAssetURL('/images/social/github.svg'),
-		href: config.SOCIAL_URL_GITHUB
+		href: config.PUBLIC_SOCIAL_URL_GITHUB
 	},
 	{
 		name: 'Discord',
 		icon: createAssetURL('/images/social/discord.svg'),
-		href: config.SOCIAL_URL_DISCORD
+		href: config.PUBLIC_SOCIAL_URL_DISCORD
 	},
 	{
 		name: 'Twitter',
 		icon: createAssetURL('/images/social/twitter.svg'),
-		href: config.SOCIAL_URL_TWITTER
+		href: config.PUBLIC_SOCIAL_URL_TWITTER
 	}
 ];
 
 const resourcesLinks = [
 	{
 		text: 'footer_link_techRef',
-		href: config.FOOTER_URL_TECHNICAL_REFERENCE
+		href: config.PUBLIC_FOOTER_URL_TECHNICAL_REFERENCE
 	},
 	{
 		text: 'footer_link_docs',
-		href: config.FOOTER_URL_DOCS
+		href: config.PUBLIC_FOOTER_URL_DOCS
 	}
 ];
 
 const productsLinks = [
 	{
 		text: 'footer_link_faucet',
-		href: config.FOOTER_URL_FAUCET
+		href: config.PUBLIC_FOOTER_URL_FAUCET
 	},
 	{
 		text: 'footer_link_supernode',
-		href: config.FOOTER_URL_SUPERNODE_PROGRAM
+		href: config.PUBLIC_FOOTER_URL_SUPERNODE_PROGRAM
 	}
 ];
 

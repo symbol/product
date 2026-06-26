@@ -11,7 +11,7 @@ const ValueAccountBalance = ({ value, valueInUserCurrency, userCurrency }) => {
 	return (
 		<div className={styles.valueAccountBalance}>
 			<div className={styles.value}>{numberToString(value)}</div>
-			<div className={styles.ticker}>{config.NATIVE_MOSAIC_TICKER}</div>
+			<div className={styles.ticker}>{config.PUBLIC_NATIVE_MOSAIC_TICKER}</div>
 			<div className={styles.valueUSD} title={valueInUserCurrencyTitle}>
 				{' '}
 				{valueInUserCurrencyText}

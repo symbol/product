@@ -47,7 +47,7 @@ const AccountAvatar = ({ address }) => {
 
 const MosaicAvatar = ({ mosaicId }) => {
 	const mosaicIdSrcMap = {
-		[config.NATIVE_MOSAIC_ID]: createAssetURL('/images/mosaics/currency.png')
+		[config.PUBLIC_NATIVE_MOSAIC_ID]: createAssetURL('/images/mosaics/currency.png')
 	};
 	const customMosaicSrc = createAssetURL('/images/mosaics/custom.png');
 	const imageSrc = mosaicIdSrcMap[mosaicId] ? mosaicIdSrcMap[mosaicId] : customMosaicSrc;

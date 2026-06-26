@@ -1,5 +1,3 @@
-import config from '@/app/config';
-import { truncateDecimals } from '@/app/utils/common';
 import {
 	createApiUrl,
 	createPage,

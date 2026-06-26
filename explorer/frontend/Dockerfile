@@ -39,6 +39,9 @@ RUN adduser --system --uid 1001 --ingroup nodejs nextjs
 
 COPY --from=builder /app/public ./public
 
+# next-i18next loads this config from the working directory at runtime;
+COPY --from=builder /app/next-i18next.config.js ./next-i18next.config.js
+
 # Set the correct permission for prerender cache
 RUN mkdir .next
 RUN chown nextjs:nodejs .next

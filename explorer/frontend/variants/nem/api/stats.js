@@ -94,7 +94,7 @@ export const fetchBlockStats = async () => {
 			partialSum + item[1], 0) / blockTimeChart.length),
 		blockFee: Number((blockFeeChart.reduce((partialSum, item) =>
 			partialSum + item[1], 0) / blockFeeChart.length
-		).toFixed(config.NATIVE_MOSAIC_DIVISIBILITY)),
+		).toFixed(config.PUBLIC_NATIVE_MOSAIC_DIVISIBILITY)),
 		blockDifficulty: blocks[0].difficulty
 	};
 };
@@ -138,7 +138,7 @@ export const fetchPriceByDate = async (timestamp, currency) => {
 		mm = '0' + mm;
 
 	const formattedDate = dd + '-' + mm + '-' + yyyy;
-	const response = await makeRequest(`${config.HISTORICAL_PRICE_URL}?date=${formattedDate}`);
+	const response = await makeRequest(`${config.PUBLIC_NEM_HISTORICAL_PRICE_URL}?date=${formattedDate}`);
 
 	return response?.market_data?.current_price[currency.toLowerCase()] || null;
 };

@@ -5,16 +5,16 @@ const { loadEnvConfig } = require('@next/env');
 // next.config.js runs before Next loads .env files, so load them here first.
 loadEnvConfig(__dirname);
 
-// Common tokens (spacings, breakpoints) shared by every variant.
+// Shared tokens imported into every variant theme.
 const commonStylesPath = path.join(__dirname, 'styles');
 const commonVariablesPath = path.join(commonStylesPath, 'variables.scss').split(path.sep).join('/');
 
-// The active variant is a build-time switch because aliases and SCSS tokens are compiled per variant.
+// The active variant is selected at build time because aliases and SCSS tokens are compiled per variant.
 const VARIANT = process.env.NEXT_PUBLIC_EXPLORER_VARIANT;
 const variantStylesPath = path.join(__dirname, 'variants', VARIANT, 'styles');
 const variantVariablesPath = path.join(variantStylesPath, 'variables.scss').split(path.sep).join('/');
 
-// Turbopack resolveAlias entries are project-root relative.
+// Turbopack aliases are resolved relative to the project root.
 const variantAlias = `./variants/${VARIANT}`;
 
 module.exports = {
@@ -25,10 +25,8 @@ module.exports = {
 	},
 	i18n: i18nConfig.i18n,
 	turbopack: {
-		// Resolve the @/app/active-variant/* indirection to the selected variant's modules at build
-		// time, so only the active variant is pulled into the app graph and the inactive variant is
-		// left out of the bundle. Mirrored in jest.config.js (moduleNameMapper) for tests; the
-		// contract test reaches every variant through variants/manifest.js, not this alias.
+		// Resolve @/app/active-variant/* to the selected variant's modules at build time so inactive
+		// variants stay out of the bundle. Mirrored in jest.config.js for tests.
 		resolveAlias: {
 			'@/app/active-variant/styles/variables.json': `${variantAlias}/styles/variables.json`,
 			'@/app/active-variant/config/pages': `${variantAlias}/config/pages`,
@@ -39,7 +37,7 @@ module.exports = {
 		}
 	},
 	sassOptions: {
-		// Inject the common tokens then the selected variant's SCSS tokens into every stylesheet.
+		// Inject shared SCSS tokens first, then the active variant's tokens, into every stylesheet.
 		additionalData: `@import "${commonVariablesPath}"; @import "${variantVariablesPath}";`,
 		includePaths: [__dirname, commonStylesPath, variantStylesPath]
 	},

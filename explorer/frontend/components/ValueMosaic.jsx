@@ -31,12 +31,12 @@ const ValueMosaic = ({
 	const directionStyle = directionStyleMap[direction];
 	const isAmountExist = !isNaN(amount) && amount !== null;
 	const [integer, decimal] = isAmountExist ? amount.toString().split('.') : ['-'];
-	const finalMosaicId = isNative ? config.NATIVE_MOSAIC_ID : mosaicId;
+	const finalMosaicId = isNative ? config.PUBLIC_NATIVE_MOSAIC_ID : mosaicId;
 
-	if (finalMosaicId === config.NATIVE_MOSAIC_ID) {
-		displayedName = isTickerShown ? config.NATIVE_MOSAIC_TICKER : '';
+	if (finalMosaicId === config.PUBLIC_NATIVE_MOSAIC_ID) {
+		displayedName = isTickerShown ? config.PUBLIC_NATIVE_MOSAIC_TICKER : '';
 		imageSrc = createAssetURL('/images/icon-mosaic-native.svg');
-		title = amount ? `${amount} ${config.NATIVE_MOSAIC_TICKER}` : '';
+		title = amount ? `${amount} ${config.PUBLIC_NATIVE_MOSAIC_TICKER}` : '';
 	} else {
 		displayedName = mosaicName;
 		imageSrc = createAssetURL('/images/icon-mosaic-custom.svg');

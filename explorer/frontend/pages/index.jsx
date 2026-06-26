@@ -112,7 +112,7 @@ const Home = ({
 						</div>
 						<div className="layout-flex-col layout-flex-fill">
 							<Field title={t('field_circulatingSupply')} textAlign="right">
-								{numberToString(marketData.circulatingSupply)} {config.NATIVE_MOSAIC_TICKER}
+								{numberToString(marketData.circulatingSupply)} {config.PUBLIC_NATIVE_MOSAIC_TICKER}
 							</Field>
 							<Field title={t('field_marketCap')} textAlign="right">
 								${numberToShortString(marketData.marketCap)}

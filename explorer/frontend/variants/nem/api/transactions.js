@@ -230,8 +230,8 @@ const formatMosaicDefinition = (data, filter) => {
 		amount: rentalFee,
 		value: [
 			{
-				id: config.NATIVE_MOSAIC_ID,
-				name: config.NATIVE_MOSAIC_ID,
+				id: config.PUBLIC_NATIVE_MOSAIC_ID,
+				name: config.PUBLIC_NATIVE_MOSAIC_ID,
 				amount: rentalFee
 			}
 		],
@@ -280,8 +280,8 @@ const formatNamespaceRegistration = (data, filter) => {
 		...formatBaseTransaction(data, filter),
 		value: [
 			{
-				id: config.NATIVE_MOSAIC_ID,
-				name: config.NATIVE_MOSAIC_ID,
+				id: config.PUBLIC_NATIVE_MOSAIC_ID,
+				name: config.PUBLIC_NATIVE_MOSAIC_ID,
 				amount: rentalFee
 			}
 		],
@@ -360,8 +360,8 @@ const formatMultisigTransaction = (data, filter) => {
 	const formattedEmbeddedTransaction = transactionFromDTO(flatEmbeddedTransaction, filter);
 
 	// Fees breakdown
-	const multisigFee = truncateDecimals(formattedTransaction.fee, config.NATIVE_MOSAIC_DIVISIBILITY);
-	const embeddedTransactionsFee = truncateDecimals(formattedEmbeddedTransaction.fee, config.NATIVE_MOSAIC_DIVISIBILITY);
+	const multisigFee = truncateDecimals(formattedTransaction.fee, config.PUBLIC_NATIVE_MOSAIC_DIVISIBILITY);
+	const embeddedTransactionsFee = truncateDecimals(formattedEmbeddedTransaction.fee, config.PUBLIC_NATIVE_MOSAIC_DIVISIBILITY);
 	const signaturesFee = truncateDecimals(
 		embeddedTransaction.signatures.reduce((total, signature) => total + signature.fee, 0),
 		config.NATIVE_MOSAIC_DIVISIBILITY
@@ -371,8 +371,8 @@ const formatMultisigTransaction = (data, filter) => {
 		embeddedTransactionsFee,
 		signaturesFee,
 		totalFee: truncateDecimals(
-			(signaturesFee + multisigFee + embeddedTransactionsFee).toPrecision(config.NATIVE_MOSAIC_DIVISIBILITY),
-			config.NATIVE_MOSAIC_DIVISIBILITY
+			(signaturesFee + multisigFee + embeddedTransactionsFee).toPrecision(config.PUBLIC_NATIVE_MOSAIC_DIVISIBILITY),
+			config.PUBLIC_NATIVE_MOSAIC_DIVISIBILITY
 		)
 	};
 	const feesBreakdown = Object.entries(feesBreakdownData).map(([key, value]) => ({

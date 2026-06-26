@@ -6,24 +6,19 @@ import {
 	THEME_STYLESHEET_DIRS
 } from '@/app/variants/contract';
 import { VARIANT_IDS, variants } from '@/app/variants/manifest';
-// Node built-ins via require: the repo's eslint only registers the jsconfig import resolver, so
-// `import` of a core module crashes import/no-deprecated. The SCSS theme tokens live in .scss
-// files, so the contract reads them off disk.
+// Use require for Node built-ins because the repo's import resolver trips on core-module imports.
+// The SCSS theme token contract is verified by reading the source stylesheets from disk.
 const fs = require('fs');
 const path = require('path');
 
-// Every registered variant is taken from the manifest (the single source of truth the resolvers
-// and the build alias derive from), so adding a variant there enforces the contract for it too.
+// Read variants from the manifest so new variants automatically enter this contract.
 
-// SCSS theme tokens
-// The active variant's styles/variables.scss is injected into every stylesheet at build time
-// (next.config.js sassOptions.additionalData). These helpers parse the raw SCSS so the contract
-// can assert every variant declares the tokens the shared stylesheets consume and that the
-// variants stay in sync.
+// Parse raw SCSS to verify that every variant provides the tokens shared styles consume.
+// next.config.js injects styles/variables.scss and the active variant's variables.scss together.
 
 const FRONTEND_ROOT = path.resolve(__dirname, '../../');
 
-// Each variant's theme stylesheet follows this convention (see contract.js THEME_STYLESHEET_DIRS).
+// Each variant declares theme tokens in styles/variables.scss.
 const variantThemeStylesheet = variantId => `variants/${variantId}/styles/variables.scss`;
 
 const readStylesheet = relativePath => fs.readFileSync(path.join(FRONTEND_ROOT, relativePath), 'utf8');
@@ -42,6 +37,7 @@ const collectStylesheets = relativeDir => {
 	});
 };
 
+// Strip comments to avoid false-positive token matches while parsing raw SCSS.
 const stripComments = source => source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
 
 // Token names declared in a stylesheet, e.g. `$color-primary: #fff;` -> 'color-primary'.
@@ -56,15 +52,21 @@ VARIANT_IDS.forEach(variantId => {
 	declaredTokensByVariant[variantId] = parseDeclaredTokens(readStylesheet(variantThemeStylesheet(variantId)));
 });
 
-// Tokens the shared stylesheets consume (referenced minus any locally-declared vars) and which
-// every variant must therefore provide.
-const requiredThemeTokens = new Set();
-THEME_STYLESHEET_DIRS.flatMap(collectStylesheets).forEach(stylesheet => {
-	const source = readStylesheet(stylesheet);
-	const localTokens = parseDeclaredTokens(source);
+// Shared stylesheets consume common tokens from styles/variables.scss and variant tokens from the
+// active variant's variables.scss.
+const sharedStylesheets = THEME_STYLESHEET_DIRS.flatMap(collectStylesheets);
 
-	parseReferencedTokens(source).forEach(token => {
-		if (!localTokens.has(token))
+// Tokens declared in shared styles are already provided centrally, so variants should not redeclare them.
+const sharedDeclaredTokens = new Set();
+sharedStylesheets.forEach(stylesheet => {
+	parseDeclaredTokens(readStylesheet(stylesheet)).forEach(token => sharedDeclaredTokens.add(token));
+});
+
+// Tokens consumed by shared styles but not declared there must be provided by every variant.
+const requiredThemeTokens = new Set();
+sharedStylesheets.forEach(stylesheet => {
+	parseReferencedTokens(readStylesheet(stylesheet)).forEach(token => {
+		if (!sharedDeclaredTokens.has(token))
 			requiredThemeTokens.add(token);
 	});
 });
@@ -166,8 +168,7 @@ describe('variants style variables (json)', () => {
 		// Arrange:
 		const expectedKeys = [...STYLE_VARIABLES_CONTRACT].sort();
 
-		// Act & Assert: each variant's styles/variables.json must hold exactly the contract keys,
-		// so nem and symbol stay in sync (no variable defined in one variant but missing in the other).
+		// Act & Assert: each variant's styles/variables.json must match the shared contract exactly.
 		Object.entries(variants).forEach(([, variant]) => {
 			expect(Object.keys(variant.styleVariables).sort()).toEqual(expectedKeys);
 		});

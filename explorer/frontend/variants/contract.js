@@ -23,7 +23,7 @@
  * @property {Array<{component: string}>} additionalSections - Variant-only sections to inject.
  */
 
-// domain -> required export names.
+// Required exports for each API domain.
 export const API_CONTRACT = {
 	accounts: ['fetchAccountPage', 'fetchAccountInfo', 'fetchAccountInfoByPublicKey'],
 	blocks: ['fetchBlockPage', 'fetchChainHight', 'fetchBlockInfo'],
@@ -57,14 +57,19 @@ export const STYLE_VARIABLES_CONTRACT = [
 	'colorProgressDanger'
 ];
 
-// page -> required config keys.
+// Required config keys by page.
 export const PAGE_CONFIG_CONTRACT = {
 	home: ['showSupernodeCount', 'additionalSections']
 };
 
-// variant id -> required variant-local runtime config keys.
+// Required variant-local runtime config keys, named per config/index.js.
 export const CONFIG_CONTRACT = {
-	nem: ['SUPERNODE_API_URL', 'NODELIST_URL', 'MARKET_DATA_URL', 'HISTORICAL_PRICE_URL'],
+	nem: [
+		'PUBLIC_NEM_BLOCKCHAIN_UNWIND_LIMIT',
+		'PUBLIC_NEM_HISTORICAL_PRICE_URL',
+		'PUBLIC_NEM_SUPERNODE_API_URL',
+		'PUBLIC_NEM_MARKET_DATA_URL'
+	],
 	symbol: []
 };
 
