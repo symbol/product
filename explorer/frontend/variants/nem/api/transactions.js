@@ -202,7 +202,7 @@ const formatTransferTransaction = (data, filter) => {
 
 	mosaics.sort((x, y) => (x.id == mosaic ? -1 : y.id == mosaic ? 1 : 0));
 
-	const nativeMosaicTransfer = mosaics.find(item => item.id === config.NATIVE_MOSAIC_ID);
+	const nativeMosaicTransfer = mosaics.find(item => item.id === config.PUBLIC_NATIVE_MOSAIC_ID);
 	const value = [...mosaics];
 
 	return {
@@ -364,7 +364,7 @@ const formatMultisigTransaction = (data, filter) => {
 	const embeddedTransactionsFee = truncateDecimals(formattedEmbeddedTransaction.fee, config.PUBLIC_NATIVE_MOSAIC_DIVISIBILITY);
 	const signaturesFee = truncateDecimals(
 		embeddedTransaction.signatures.reduce((total, signature) => total + signature.fee, 0),
-		config.NATIVE_MOSAIC_DIVISIBILITY
+		config.PUBLIC_NATIVE_MOSAIC_DIVISIBILITY
 	);
 	const feesBreakdownData = {
 		multisigFee,
