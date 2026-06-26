@@ -1,22 +1,14 @@
-from contextlib import contextmanager
-
 import pytest
 from flask import Flask, abort, jsonify
 
 from rest import create_app, load_rest_config, setup_error_handlers
 from rest.routes.symbol import setup_symbol_routes
 
-from .test.EnvTestUtils import temporary_env_values
+from .test.EnvTestUtils import rest_settings_env
 
 
 def _write_rest_config(config_path, contents):
 	config_path.write_text(contents, encoding='utf8')
-
-
-@contextmanager
-def _rest_settings_env(config_path):
-	with temporary_env_values({'EXPLORER_REST_SETTINGS': str(config_path)}):
-		yield
 
 
 @pytest.fixture(name='rest_config_path')
@@ -24,7 +16,7 @@ def fixture_rest_config_path(tmp_path):
 	config_path = tmp_path / 'app.config'
 	_write_rest_config(config_path, '')
 
-	with _rest_settings_env(config_path):
+	with rest_settings_env(config_path):
 		yield config_path
 
 
@@ -157,24 +149,31 @@ def _create_test_chain_handlers():
 
 
 def test_symbol_chain_routes_only(rest_config_path):
+	# Arrange:
 	_write_rest_config(rest_config_path, 'REST_CHAIN="symbol"\n')
 
+	# Act:
 	client = create_app(rest_chain_handlers=_create_test_chain_handlers()).test_client()
 
+	# Assert:
 	assert 200 == client.get('/api/symbol/test').status_code
 	assert 404 == client.get('/api/nem/test').status_code
 
 
 def test_nem_chain_routes_only(rest_config_path):
+	# Arrange:
 	_write_rest_config(rest_config_path, 'REST_CHAIN="nem"\n')
 
+	# Act:
 	client = create_app(rest_chain_handlers=_create_test_chain_handlers()).test_client()
 
+	# Assert:
 	assert 200 == client.get('/api/nem/test').status_code
 	assert 404 == client.get('/api/symbol/test').status_code
 
 
 def test_symbol_health_route():
+	# Arrange:
 	class SymbolHealthFacade:
 		@staticmethod
 		def get_health():
@@ -186,8 +185,10 @@ def test_symbol_health_route():
 	app = Flask(__name__)
 	setup_symbol_routes(app, SymbolHealthFacade())
 
+	# Act:
 	response = app.test_client().get('/api/symbol/health')
 
+	# Assert:
 	assert 200 == response.status_code
 	assert {
 		'isHealthy': True,

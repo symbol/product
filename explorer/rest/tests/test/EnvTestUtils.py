@@ -25,3 +25,11 @@ def temporary_env_values(values):
 				os.environ.pop(name, None)
 			else:
 				os.environ[name] = previous_value
+
+
+@contextmanager
+def rest_settings_env(config_path):
+	"""Temporarily points EXPLORER_REST_SETTINGS at a test config file."""
+
+	with temporary_env_values({'EXPLORER_REST_SETTINGS': str(config_path)}):
+		yield
