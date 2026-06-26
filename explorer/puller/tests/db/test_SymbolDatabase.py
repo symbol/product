@@ -1,6 +1,6 @@
 import unittest
 
-from PostgresTestUtils import PostgresTestDatabase
+from common.tests.PostgresTestUtils import PostgresTestDatabase
 from psycopg2 import Error as PsycopgError
 
 from puller.db.SymbolDatabase import SymbolDatabase
@@ -104,3 +104,27 @@ class SymbolDatabaseTest(unittest.TestCase):
 
 		# Assert:
 		self.assertTrue(result)
+
+	def test_check_connection_returns_false_when_select_one_returns_different_value(self):
+		# Arrange:
+		class FalseCursor:
+			def execute(self, _statement):
+				pass
+
+			@staticmethod
+			def fetchone():
+				return (0,)
+
+		class FalseConnection:
+			@staticmethod
+			def cursor():
+				return FalseCursor()
+
+		database = SymbolDatabase(self.db_config)
+		database.connection = FalseConnection()
+
+		# Act:
+		result = database.check_connection()
+
+		# Assert:
+		self.assertFalse(result)
