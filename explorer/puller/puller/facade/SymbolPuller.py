@@ -41,11 +41,6 @@ class SymbolPuller:
 		self._symbol_connector.timeout_seconds = self.node_config.timeout_seconds
 		self.symbol_facade = SymbolFacade(network)
 
-	def validate_node_request_target(self, request_url):
-		"""Validates a future Symbol node request target against security policy."""
-
-		return self.node_config.assert_request_allowed(request_url)
-
 	def _validate_symbol_node_path(self, url_path):
 		parsed_url = urlparse(url_path)
 		if parsed_url.scheme or parsed_url.netloc:
@@ -54,7 +49,7 @@ class SymbolPuller:
 			raise ValueError('Symbol node connector paths must not include fragments')
 
 		normalized_path = url_path.lstrip('/')
-		self.validate_node_request_target(self.node_config.base_url)
+		self.node_config.assert_request_allowed(self.node_config.base_url)
 
 		return normalized_path
 

@@ -80,18 +80,6 @@ class SymbolPullerTest(TestCase):
 			with self.assertRaisesRegex(KeyError, 'symbol_db'):
 				_create_symbol_puller(db_config_path)
 
-	def test_validates_node_request_target(self):
-		# Arrange:
-		with tempfile.TemporaryDirectory() as temp_directory:
-			db_config_path = _create_db_config(temp_directory)
-			puller = _create_symbol_puller(db_config_path)
-
-		# Act:
-		result = puller.validate_node_request_target(NODE_URL)
-
-		# Assert:
-		self.assertEqual(NODE_URL, result)
-
 	@patch('puller.facade.SymbolPuller.SymbolConnector')
 	def test_get_symbol_node_validates_target(self, symbol_connector_factory):
 		# Arrange:
