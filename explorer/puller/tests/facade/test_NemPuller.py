@@ -27,7 +27,15 @@ from symbollightapi.model.Transaction import (
 )
 
 from puller.db.NemDatabase import AccountRefreshRecord
-from puller.facade.NemPuller import AccountRecord, DatabaseConfig, MosaicRecord, NamespaceRecord, NemPuller, TransactionRecord
+from puller.facade.NemPuller import (
+	AccountRecord,
+	AccountVestedBalanceRecord,
+	DatabaseConfig,
+	MosaicRecord,
+	NamespaceRecord,
+	NemPuller,
+	TransactionRecord
+)
 
 # region test data
 
@@ -833,8 +841,19 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 		]
 
 		account_info_1 = Mock()
+		account_info_1.address = account_1.address
+		account_info_1.importance = 0.1
+		account_info_1.vested_balance = 6449.201816
+
 		account_info_2 = Mock()
+		account_info_2.address = account_2.address
+		account_info_2.importance = 0.2
+		account_info_2.vested_balance = 1234.000001
+
 		account_info_3 = Mock()
+		account_info_3.address = account_3.address
+		account_info_3.importance = 0.3
+		account_info_3.vested_balance = 0
 
 		mock_retry_get_account_info.side_effect = [
 			account_info_1,
@@ -862,9 +881,18 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 
 		update_account_calls = mock_update_vested_balance_and_importance.call_args_list
 		self.assertEqual(len(update_account_calls), 3)
-		self.assertEqual(update_account_calls[0][0], (cursor, account_info_1))
-		self.assertEqual(update_account_calls[1][0], (cursor, account_info_2))
-		self.assertEqual(update_account_calls[2][0], (cursor, account_info_3))
+		self.assertEqual(update_account_calls[0][0], (
+			cursor,
+			AccountVestedBalanceRecord(account_1.address, 0.1, 6449201816)
+		))
+		self.assertEqual(update_account_calls[1][0], (
+			cursor,
+			AccountVestedBalanceRecord(account_2.address, 0.2, 1234000001)
+		))
+		self.assertEqual(update_account_calls[2][0], (
+			cursor,
+			AccountVestedBalanceRecord(account_3.address, 0.3, 0)
+		))
 		self.assertEqual(self.puller.nem_db.connection.commit.call_count, 2)
 
 	@patch('puller.facade.NemPuller.NemDatabase.upsert_namespace')
