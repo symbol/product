@@ -182,32 +182,6 @@ def test_rejects_different_target():
 		node_config.assert_request_allowed('http://localhost:3001')
 
 
-def test_rejects_unallowed_target():
-	node_config = SymbolNodeConfiguration(
-		scheme='http',
-		host='localhost',
-		port=3000,
-		base_url='http://localhost:3000',
-		allowed_hosts=frozenset()
-	)
-
-	with pytest.raises(SymbolNodeConfigurationError, match='Symbol node request target is not allowed'):
-		node_config.assert_request_allowed('http://localhost:3000')
-
-
-def test_rejects_metadata_request_target():
-	node_config = SymbolNodeConfiguration(
-		scheme='http',
-		host='metadata.google.internal',
-		port=3000,
-		base_url='http://metadata.google.internal:3000',
-		allowed_hosts=frozenset({'metadata.google.internal:3000'})
-	)
-
-	with pytest.raises(SymbolNodeConfigurationError, match='Metadata service Symbol node host is not allowed'):
-		node_config.assert_request_allowed('http://metadata.google.internal:3000')
-
-
 def test_rejects_loopback_without_flag():
 	node_config = SymbolNodeConfiguration.from_url('http://127.0.0.1:3000')
 

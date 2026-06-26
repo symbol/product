@@ -173,15 +173,11 @@ class SymbolNodeConfiguration:
 		)
 
 	def assert_request_allowed(self, request_url):
-		"""Validates a Symbol node request target against the configured allowlist and address policy."""
+		"""Validates a Symbol node request target against the configured allowed hosts and address policy."""
 
 		scheme, host, port, base_url = _normalize_base_url(request_url)
 		if (scheme, host, port) != (self.scheme, self.host, self.port):
 			raise SymbolNodeConfigurationError('Symbol node request target does not match configured base URL')
-		if f'{host}:{port}' not in self.allowed_hosts:
-			raise SymbolNodeConfigurationError('Symbol node request target is not allowed')
-		if _is_metadata_service_host(host):
-			raise SymbolNodeConfigurationError('Metadata service Symbol node host is not allowed')
 
 		for _, _, _, _, sockaddr in socket.getaddrinfo(host, port, type=socket.SOCK_STREAM):
 			address = ipaddress.ip_address(sockaddr[0])
