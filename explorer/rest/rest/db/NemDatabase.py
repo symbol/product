@@ -103,9 +103,8 @@ class NemDatabase(DatabaseConnectionPool):
 			vested_balance=_format_xem_relative(vested_balance),
 			mosaics=[{
 				'namespace_name': mosaic['namespace_name'],
-				'quantity': mosaic['quantity'],
-				'creator': self._format_public_key_to_address(mosaic['creator']),
-				'divisibility': mosaic['divisibility'],
+				'amount': _format_relative(mosaic['quantity'], mosaic['divisibility']),
+				'creator': self._format_public_key_to_address(mosaic['creator'])
 			} for mosaic in mosaics],
 			harvested_fees=_format_xem_relative(harvested_fees),
 			harvested_blocks=harvested_blocks,
