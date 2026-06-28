@@ -15,7 +15,7 @@ export const accountPageResponse = [
 			{
 				namespace_name: 'nem.xem',
 				creator: 'NBBF4PC4RUB7HRKCCVDWFLILUUAO2HRETM34OCQZ',
-				quantity: 2014883839.88001
+				amount: 2014883839.88001
 			}
 		],
 		publicKey: '63D2E7B4F5479B0BF67AC34B0656F4A265B039CE66BF6CA9BDD7C196365D8E23',
@@ -38,7 +38,7 @@ export const accountPageResponse = [
 			{
 				namespace_name: 'nem.xem',
 				creator: 'NBBF4PC4RUB7HRKCCVDWFLILUUAO2HRETM34OCQZ',
-				quantity: 55692075.379926
+				amount: 55692075.379926
 			}
 		],
 		publicKey: 'A47BF27A383D184C0630214E355EECF0859FEED161E1750E1AB9B624A874CE25',
@@ -65,12 +65,12 @@ export const accountPageResponse = [
 			{
 				namespace_name: 'nem.xem',
 				creator: 'NBBF4PC4RUB7HRKCCVDWFLILUUAO2HRETM34OCQZ',
-				quantity: 311173592.240664
+				amount: 311173592.240664
 			},
 			{
 				namespace_name: 'asset.ch0459804891b',
 				creator: 'NAXF4PC4RUB7HRKCCVDWFLILUUAO2HRETM34OCQZ',
-				quantity: 4000000
+				amount: 4000000
 			}
 		],
 		publicKey: '299052827E844957710D15FE848B931294907F4B840367873E226A73F9DA1386',
@@ -97,17 +97,17 @@ export const accountPageResponse = [
 		mosaics: [
 			{
 				namespace_name: 'd.usd',
-				quantity: 4200
+				amount: 4200
 			},
 			{
 				namespace_name: 'nem.xem',
 				creator: 'NBBF4PC4RUB7HRKCCVDWFLILUUAO2HRETM34OCQZ',
-				quantity: 656267445.651187
+				amount: 656267445.651187
 			},
 			{
 				namespace_name: 'asset.ch0459804891b',
 				creator: 'NAXF4PC4RUB7HRKCCVDWFLILUUAO2HRETM34OCQZ',
-				quantity: 44000000
+				amount: 44000000
 			}
 		],
 		publicKey: '75F1CF09EEFF5E2376C5929D8EA9D8DA171AC5C718655560EBEB6353343045BD',
@@ -129,17 +129,17 @@ export const accountPageResponse = [
 		mosaics: [
 			{
 				namespace_name: 'd.usd',
-				quantity: 2100
+				amount: 2100
 			},
 			{
 				namespace_name: 'asset.ch0459804891b',
 				creator: 'NAXF4PC4RUB7HRKCCVDWFLILUUAO2HRETM34OCQZ',
-				quantity: 23000000
+				amount: 23000000
 			},
 			{
 				namespace_name: 'nem.xem',
 				creator: 'NBBF4PC4RUB7HRKCCVDWFLILUUAO2HRETM34OCQZ',
-				quantity: 58820555.132005
+				amount: 58820555.132005
 			}
 		],
 		publicKey: '94A4F3B28CD7A8BCB2D756ED29E04EC5191147235605E998AA17F93C407F6645',
@@ -166,12 +166,12 @@ export const accountPageResponse = [
 			{
 				namespace_name: 'nem.xem',
 				creator: 'NBBF4PC4RUB7HRKCCVDWFLILUUAO2HRETM34OCQZ',
-				quantity: 2420611957.02233
+				amount: 2420611957.02233
 			},
 			{
 				namespace_name: 'asset.ch0459804891b',
 				creator: 'NAXF4PC4RUB7HRKCCVDWFLILUUAO2HRETM34OCQZ',
-				quantity: 2000000
+				amount: 2000000
 			}
 		],
 		publicKey: 'DEE852011049D890E97DD4F1D4D7F76824C16854578DADA9918BF943FBF5CC13',
@@ -194,7 +194,7 @@ export const accountPageResponse = [
 			{
 				namespace_name: 'nem.xem',
 				creator: 'NBBF4PC4RUB7HRKCCVDWFLILUUAO2HRETM34OCQZ',
-				quantity: 404352001.1
+				amount: 404352001.1
 			}
 		],
 		publicKey: null,
@@ -216,21 +216,21 @@ export const accountPageResponse = [
 		mosaics: [
 			{
 				namespace_name: 'pundix.npxs',
-				quantity: 11788.788832
+				amount: 11788.788832
 			},
 			{
 				namespace_name: 'nem.xem',
 				creator: 'NBBF4PC4RUB7HRKCCVDWFLILUUAO2HRETM34OCQZ',
-				quantity: 52865318.484075
+				amount: 52865318.484075
 			},
 			{
 				namespace_name: 'prover.proof',
-				quantity: 0.05
+				amount: 0.05
 			},
 			{
 				namespace_name: 'asset.ch0459804891b',
 				creator: 'NAXF4PC4RUB7HRKCCVDWFLILUUAO2HRETM34OCQZ',
-				quantity: 2000000
+				amount: 2000000
 			}
 		],
 		publicKey: 'DC688C1D4BA7BA64109B3EEFA936171084DD5375FF9645D0F63A5F23FE0DA4B7',
@@ -253,7 +253,7 @@ export const accountPageResponse = [
 			{
 				namespace_name: 'nem.xem',
 				creator: 'NBBF4PC4RUB7HRKCCVDWFLILUUAO2HRETM34OCQZ',
-				quantity: 374786609.434
+				amount: 374786609.434
 			}
 		],
 		publicKey: '3D265614B8C92A63871C3413949ED803A80E1DE4FB960D7BB30D44AE7B5E3C79',
@@ -276,12 +276,12 @@ export const accountPageResponse = [
 			{
 				namespace_name: 'asset.ch0459804891b',
 				creator: 'NAXF4PC4RUB7HRKCCVDWFLILUUAO2HRETM34OCQZ',
-				quantity: 2000000
+				amount: 2000000
 			},
 			{
 				namespace_name: 'nem.xem',
 				creator: 'NBBF4PC4RUB7HRKCCVDWFLILUUAO2HRETM34OCQZ',
-				quantity: 486417141.635
+				amount: 486417141.635
 			}
 		],
 		publicKey: 'A6BDD40A571C87BA43260AA904BDD6CF02F121B5EB9885A8C008725558CFE2E5',
@@ -874,12 +874,12 @@ export const accountInfoResponse = {
 		{
 			namespace_name: 'nem.xem',
 			creator: 'NAXF4PC4RUB7HRKCCVDWFLILUUAO2HRETM34OCQZ',
-			quantity: 539.527798
+			amount: 539.527798
 		},
 		{
 			namespace_name: 'holo.watacoin',
 			creator: 'NDQXKN6REQRVT4WE6WIU2FXQLTJFEHKK5ITD2ZSV',
-			quantity: 10000000
+			amount: 10000000
 		}
 	],
 	publicKey: '019B4EDDAEFA086A328EB907ECBC5ED0EABD6BBB6F3BA25B22A310CB5917A808',
