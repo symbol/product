@@ -62,7 +62,7 @@ const Blocks = ({ namespaces }) => {
 		{
 			key: 'expirationHeight',
 			size: '10rem',
-			renderValue: value => value
+			renderValue: (value, row) => row.isUnlimitedDuration ? t('value_neverExpired') : value
 		}
 	];
 
