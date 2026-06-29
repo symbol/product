@@ -1,4 +1,4 @@
-import { AccountAvatar, Amount, ListItemContainer, StyledText } from '@/app/components';
+import { AccountItem, ListItemContainer } from '@/app/components';
 import { Sizes } from '@/app/styles';
 import { createAccountDisplayData } from '@/app/utils';
 import React from 'react';
@@ -9,17 +9,19 @@ import { StyleSheet, View } from 'react-native';
 /** @typedef {import('@/app/types/Network').ChainName} ChainName */
 
 /**
- * AccountListItem component. Displays an account card with avatar, name, balance,
- * and address information. The name is resolved from wallet accounts and the address book,
- * falling back to the provided default name or the address.
+ * AccountListItem component. A pressable account card ready to render in a list. Wraps AccountItem
+ * with a list item container and a tinted background derived from the account. The name can be
+ * provided explicitly or resolved from wallet accounts and the address book, falling back to the
+ * provided default name or the address. The balance row is omitted when no balance is provided.
  * @param {object} props - Component props.
  * @param {string} props.address - The account address.
- * @param {string} props.balance - The account balance.
- * @param {string} props.ticker - The currency ticker symbol.
+ * @param {string} [props.name] - Explicit display name. When omitted, the name is resolved from the display context.
+ * @param {string} [props.balance] - The account balance. When omitted, the balance row is not rendered.
+ * @param {string} [props.ticker] - The currency ticker symbol.
  * @param {WalletAccount[]} [props.walletAccounts] - The wallet accounts for display names.
  * @param {object} [props.addressBook] - The address book for display names.
- * @param {ChainName} props.chainName - The blockchain name.
- * @param {NetworkIdentifier} props.networkIdentifier - The network identifier.
+ * @param {ChainName} [props.chainName] - The blockchain name.
+ * @param {NetworkIdentifier} [props.networkIdentifier] - The network identifier.
  * @param {string} [props.defaultName] - Fallback name shown when the account name cannot be resolved.
  * @param {React.ReactNode} [props.accessory] - Optional element rendered on the right side of the item.
  * @param {string} [props.accessibilityLabel] - Accessibility label for the pressable item.
@@ -28,6 +30,7 @@ import { StyleSheet, View } from 'react-native';
  */
 export const AccountListItem = ({
 	address,
+	name,
 	balance,
 	ticker,
 	walletAccounts,
@@ -45,7 +48,7 @@ export const AccountListItem = ({
 		chainName,
 		networkIdentifier
 	});
-	const accountNameText = accountDisplay.name ?? defaultName ?? address;
+	const accountNameText = name ?? accountDisplay.name ?? defaultName ?? address;
 
 	return (
 		<ListItemContainer
@@ -54,29 +57,13 @@ export const AccountListItem = ({
 			onPress={onPress}
 		>
 			<View style={[styles.background, { backgroundColor: accountDisplay.color }]} />
-			<View style={styles.iconSection}>
-				<AccountAvatar address={address} size="l" />
-			</View>
-			<View style={styles.contentSection}>
-				<StyledText type="title" size="s">
-					{accountNameText}
-				</StyledText>
-
-				<Amount
-					value={balance}
-					ticker={ticker}
-					size="l"
-				/>
-
-				<StyledText type="label" size="s">
-					{address}
-				</StyledText>
-			</View>
-			{!!accessory && (
-				<View style={styles.accessorySection}>
-					{accessory}
-				</View>
-			)}
+			<AccountItem
+				address={address}
+				name={accountNameText}
+				balance={balance}
+				ticker={ticker}
+				accessory={accessory}
+			/>
 		</ListItemContainer>
 	);
 };
@@ -94,19 +81,5 @@ const styles = StyleSheet.create({
 		bottom: 0,
 		opacity: 0.1,
 		borderRadius: Sizes.Semantic.borderRadius.m
-	},
-	iconSection: {
-		flexDirection: 'column',
-		justifyContent: 'center',
-		paddingRight: Sizes.Semantic.spacing.m
-	},
-	contentSection: {
-		flex: 1,
-		flexDirection: 'column',
-		justifyContent: 'center'
-	},
-	accessorySection: {
-		justifyContent: 'center',
-		paddingLeft: Sizes.Semantic.spacing.m
 	}
 });

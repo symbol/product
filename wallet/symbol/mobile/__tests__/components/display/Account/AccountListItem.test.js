@@ -54,7 +54,7 @@ describe('components/display/Account/AccountListItem', () => {
 			});
 		};
 
-		const tests = [
+		const nameResolutionTests = [
 			{
 				description: 'resolves the name from the wallet accounts',
 				config: { props: {} },
@@ -72,8 +72,62 @@ describe('components/display/Account/AccountListItem', () => {
 			}
 		];
 
-		tests.forEach(test => {
+		nameResolutionTests.forEach(test => {
 			runNameTest(test.description, test.config, test.expected);
+		});
+	});
+
+	describe('explicit name and balance', () => {
+		const runDisplayTest = (description, config, expected) => {
+			it(description, () => {
+				// Arrange:
+				const props = createProps(config.props);
+
+				// Act:
+				const screenTester = new ScreenTester(AccountListItem, props);
+
+				// Assert:
+				if (expected.visibleTexts)
+					screenTester.expectText(expected.visibleTexts);
+
+				if (expected.hiddenTexts)
+					screenTester.notExpectText(expected.hiddenTexts);
+			});
+		};
+
+		const displayTests = [
+			{
+				description: 'uses the explicit name over the resolved one',
+				config: {
+					props: { address: unknownAccount.address, name: 'Explicit Name' }
+				},
+				expected: {
+					visibleTexts: ['Explicit Name', unknownAccount.address]
+				}
+			},
+			{
+				description: 'renders the balance when provided',
+				config: {
+					props: {}
+				},
+				expected: {
+					visibleTexts: [TICKER]
+				}
+			},
+			{
+				description: 'omits the balance row when no balance is provided (contact-style)',
+				config: {
+					props: { name: 'Contact Name', balance: undefined, ticker: undefined }
+				},
+				expected: {
+					visibleTexts: ['Contact Name', knownAccount.address],
+					hiddenTexts: [TICKER]
+				}
+			}
+		];
+
+		displayTests.forEach(test => {
+			runDisplayTest(test.description, test.config, test.expected);
 		});
 	});
 
