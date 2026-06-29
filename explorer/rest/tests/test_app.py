@@ -1,9 +1,10 @@
-import os
-
 import pytest
 from flask import Flask, abort, jsonify
 
 from rest import create_app, load_rest_config, setup_error_handlers
+from rest.routes.symbol import setup_symbol_routes
+
+from .test.EnvTestUtils import rest_settings_env
 
 
 def _write_rest_config(config_path, contents):
@@ -15,15 +16,8 @@ def fixture_rest_config_path(tmp_path):
 	config_path = tmp_path / 'app.config'
 	_write_rest_config(config_path, '')
 
-	previous_rest_settings = os.environ.get('EXPLORER_REST_SETTINGS')
-	os.environ['EXPLORER_REST_SETTINGS'] = str(config_path)
-
-	yield config_path
-
-	if previous_rest_settings is None:
-		os.environ.pop('EXPLORER_REST_SETTINGS', None)
-	else:
-		os.environ['EXPLORER_REST_SETTINGS'] = previous_rest_settings
+	with rest_settings_env(config_path):
+		yield config_path
 
 
 def test_create_app_requires_rest_chain(rest_config_path):
@@ -40,14 +34,14 @@ def test_create_app_requires_rest_chain(rest_config_path):
 
 def test_rejects_unsupported_chain(rest_config_path):
 	# Arrange:
-	_write_rest_config(rest_config_path, 'REST_CHAIN="symbol"\n')
+	_write_rest_config(rest_config_path, 'REST_CHAIN="unknown"\n')
 
 	# Act:
 	with pytest.raises(ValueError) as exception_info:
 		create_app()
 
 	# Assert:
-	assert 'Unsupported REST_CHAIN "symbol". Supported values: nem' == str(exception_info.value)
+	assert 'Unsupported REST_CHAIN "unknown". Supported values: nem, symbol' == str(exception_info.value)
 
 
 def test_registers_selected_chain(rest_config_path):
@@ -90,8 +84,7 @@ def test_loads_envvar_config(rest_config_path):
 	assert 'nem' == app.config['REST_CHAIN']
 
 
-def test_error_handlers_json():
-	# Arrange:
+def _create_error_handler_client():
 	app = Flask(__name__)
 	setup_error_handlers(app)
 
@@ -99,11 +92,15 @@ def test_error_handlers_json():
 	def bad_request():
 		abort(400, 'invalid input')
 
-	client = app.test_client()
+	return app.test_client()
+
+
+def test_not_found_handler_returns_json():
+	# Arrange:
+	client = _create_error_handler_client()
 
 	# Act:
 	not_found_response = client.get('/missing')
-	bad_request_response = client.get('/bad-request')
 
 	# Assert:
 	assert 404 == not_found_response.status_code
@@ -112,8 +109,88 @@ def test_error_handlers_json():
 		'status': 404
 	} == not_found_response.json
 
+
+def test_bad_request_json():
+	# Arrange:
+	client = _create_error_handler_client()
+
+	# Act:
+	bad_request_response = client.get('/bad-request')
+
+	# Assert:
 	assert 400 == bad_request_response.status_code
 	assert {
 		'message': 'invalid input',
 		'status': 400
 	} == bad_request_response.json
+
+
+def _create_test_chain_handlers():
+	def setup_nem_test_facade(_):
+		return {}
+
+	def setup_nem_test_routes(app, _):
+		@app.route('/api/nem/test')
+		def api_nem_test():
+			return jsonify({'chain': 'nem'})
+
+	def setup_symbol_test_facade(_):
+		return {}
+
+	def setup_symbol_test_routes(app, _):
+		@app.route('/api/symbol/test')
+		def api_symbol_test():
+			return jsonify({'chain': 'symbol'})
+
+	return {
+		'nem': (setup_nem_test_facade, setup_nem_test_routes),
+		'symbol': (setup_symbol_test_facade, setup_symbol_test_routes)
+	}
+
+
+def test_symbol_chain_routes_only(rest_config_path):
+	# Arrange:
+	_write_rest_config(rest_config_path, 'REST_CHAIN="symbol"\n')
+
+	# Act:
+	client = create_app(rest_chain_handlers=_create_test_chain_handlers()).test_client()
+
+	# Assert:
+	assert 200 == client.get('/api/symbol/test').status_code
+	assert 404 == client.get('/api/nem/test').status_code
+
+
+def test_nem_chain_routes_only(rest_config_path):
+	# Arrange:
+	_write_rest_config(rest_config_path, 'REST_CHAIN="nem"\n')
+
+	# Act:
+	client = create_app(rest_chain_handlers=_create_test_chain_handlers()).test_client()
+
+	# Assert:
+	assert 200 == client.get('/api/nem/test').status_code
+	assert 404 == client.get('/api/symbol/test').status_code
+
+
+def test_symbol_health_route():
+	# Arrange:
+	class SymbolHealthFacade:
+		@staticmethod
+		def get_health():
+			return {
+				'isHealthy': True,
+				'errors': []
+			}
+
+	app = Flask(__name__)
+	setup_symbol_routes(app, SymbolHealthFacade())
+
+	# Act:
+	response = app.test_client().get('/api/symbol/health')
+
+	# Assert:
+	assert 200 == response.status_code
+	assert {
+		'isHealthy': True,
+		'errors': []
+	} == response.json
