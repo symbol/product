@@ -269,7 +269,7 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 			'nem',
 			BLOCKS[0].signer.bytes.hex(),
 			1,
-			9223372036854775807,
+			0,
 			[]
 		))
 
@@ -328,7 +328,7 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 			'nem',
 			BLOCKS[0].signer.bytes.hex(),
 			1,
-			9223372036854775807,
+			0,
 			[]
 		))
 		self.assertEqual(mosaic_result, (

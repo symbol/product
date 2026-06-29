@@ -69,5 +69,20 @@ describe('NamespaceList', () => {
 			// Act + Assert:
 			runTest();
 		});
+
+		it('renders never expired namespace on desktop', () => {
+			// Arrange:
+			const namespaces = [{
+				...namespacePageResult.data[0],
+				expirationHeight: 0,
+				isUnlimitedDuration: true
+			}];
+
+			// Act:
+			render(<NamespaceList namespaces={namespaces} />);
+
+			// Assert:
+			expect(screen.getByText('value_neverExpired')).toBeInTheDocument();
+		});
 	});
 });

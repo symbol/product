@@ -41,6 +41,7 @@ updates:
       - /faucet/frontend
       - /wallet/common/core
       - /wallet/common/ethereum
+      - /wallet/common/nem
       - /wallet/common/symbol
       - /wallet/common/transport
       - /wallet/symbol/mobile
