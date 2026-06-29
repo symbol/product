@@ -1,4 +1,5 @@
 import {
+	AccountListItem,
 	Alert,
 	Button,
 	ButtonPlain,
@@ -17,7 +18,7 @@ import { useStandardTransactionWorkflow } from '@/app/components/templates/Trans
 import { useAsyncManager, useDebounce, useTransactionFees, useWalletController } from '@/app/hooks';
 import { $t } from '@/app/localization';
 import { Router } from '@/app/router/Router';
-import { CosignatoryList, CosignatureCounter, MultisigAccountListItem } from '@/app/screens/multisig/components';
+import { CosignatoryList, CosignatureCounter } from '@/app/screens/multisig/components';
 import { useCosignatureInput, useMultisigTransaction, useMultisigTransactionState } from '@/app/screens/multisig/hooks';
 import { createCosignatoryInputAlertData } from '@/app/screens/multisig/utils/cosignatory-input-alert';
 import { generateAccount, validateAddress } from '@/app/utils';
@@ -181,7 +182,7 @@ export const CreateMultisigAccount = props => {
 								</StyledText>
 							</Stack>
 							{multisigAccount && (
-								<MultisigAccountListItem
+								<AccountListItem
 									address={multisigAccount.address}
 									balance="0"
 									ticker={ticker}
@@ -189,6 +190,7 @@ export const CreateMultisigAccount = props => {
 									addressBook={addressBook}
 									chainName={chainName}
 									networkIdentifier={networkIdentifier}
+									defaultName={$t('s_multisig_defaultAccountName')}
 								/>
 							)}
 							<ButtonPlain

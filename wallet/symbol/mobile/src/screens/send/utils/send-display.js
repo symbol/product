@@ -1,40 +1,8 @@
-import { getAccountKnownInfo, getAvailableBalance } from '@/app/utils';
+import { getAvailableBalance } from '@/app/utils';
 
 /** @typedef {import('@/app/types/Token').Token} Token */
 /** @typedef {import('@/app/types/Transaction').TransactionFeeTiers} TransactionFeeTiers */
 /** @typedef {import('@/app/types/Transaction').TransactionFeeTierLevel} TransactionFeeTierLevel */
-/** @typedef {import('@/app/types/Account').WalletAccount} WalletAccount */
-/** @typedef {import('@/app/screens/send/types/Send').SenderOption} SenderOption */
-/** @typedef {import('@/app/types/Network').NetworkIdentifier} NetworkIdentifier */
-/** @typedef {import('@/app/types/Network').ChainName} ChainName */
-
-/**
- * Creates sender options for the dropdown from addresses.
- * @param {string[]} addresses - Array of sender addresses.
- * @param {object} options - Options for resolving account names.
- * @param {WalletAccount[]} options.walletAccounts - List of wallet accounts.
- * @param {object} options.addressBook - The address book instance.
- * @param {ChainName} options.chainName - The blockchain name.
- * @param {NetworkIdentifier} options.networkIdentifier - The network identifier.
- * @returns {SenderOption[]} Array of sender options.
- */
-export const createSenderOptions = (addresses, options) => {
-	const { walletAccounts, addressBook, chainName, networkIdentifier } = options;
-
-	return addresses.map(address => {
-		const knownInfo = getAccountKnownInfo(address, {
-			walletAccounts,
-			addressBook,
-			chainName,
-			networkIdentifier
-		});
-
-		return {
-			value: address,
-			label: knownInfo.name || address
-		};
-	});
-};
 
 /**
  * Calculates the available balance for the selected token.

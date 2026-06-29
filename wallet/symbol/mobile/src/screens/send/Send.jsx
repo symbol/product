@@ -1,10 +1,10 @@
 import {
 	Checkbox,
-	Dropdown,
 	FeeSelector,
 	InputAddress,
 	InputAmount,
 	SelectToken,
+	SelectTransactionSender,
 	Spacer,
 	Stack,
 	StyledText,
@@ -12,22 +12,21 @@ import {
 	TransactionScreenTemplate
 } from '@/app/components';
 import { useStandardTransactionWorkflow } from '@/app/components/templates/TransactionScreenTemplate/hooks';
-import { useDebounce, useTransactionFees, useWalletController } from '@/app/hooks';
+import { useDebounce, useInit, useTransactionFees, useWalletController, useWalletRefreshLifecycle } from '@/app/hooks';
 import { $t } from '@/app/localization';
 import { Router } from '@/app/router/Router';
+import { useMultisigAccountList } from '@/app/screens/multisig/hooks';
 import { useSendFormState, useSendTransaction, useSenderInfo } from '@/app/screens/send/hooks';
 import {
 	calculateTokenAvailableBalance,
-	createSenderOptions,
 	filterActiveTokens,
 	getSelectedTokenPrice
 } from '@/app/screens/send/utils';
 import { formatAmountInput, validateRecipient } from '@/app/utils';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import Animated, { FadeInDown, FadeOut } from 'react-native-reanimated';
 
 /** @typedef {import('@/app/screens/send/types/Send').SendRouteParams} SendRouteParams */
-/** @typedef {import('@/app/screens/send/types/Send').SenderOption} SenderOption */
 /** @typedef {import('@/app/types/Token').Token} Token */
 
 const CHAINS_WITH_MESSAGE_SUPPORT = ['symbol', 'nem'];
@@ -49,7 +48,6 @@ export const Send = props => {
 		accounts,
 		modules: { addressBook },
 		currentAccount,
-		isStateReady,
 		isWalletReady,
 		isNetworkConnectionReady,
 		networkProperties,
@@ -100,22 +98,25 @@ export const Send = props => {
 	});
 
 	// Sender Options (for multisig)
-	const [senderOptions, setSenderOptions] = useState(/** @type {SenderOption[]} */ ([]));
+	const hasMultisigSupport = !!walletController.modules.multisig;
 	const isAccountCosignatoryOfMultisig = currentAccountInfo.multisigAddresses?.length > 0;
+	const {
+		data: multisigAccounts,
+		load: loadMultisigAccounts,
+		reset: resetMultisigAccounts
+	} = useMultisigAccountList(walletController);
 
-	useEffect(() => {
-		if (isAccountCosignatoryOfMultisig) {
-			const senderAddresses = [currentAccount.address, ...currentAccountInfo.multisigAddresses];
-			const options = createSenderOptions(senderAddresses, {
-				walletAccounts,
-				addressBook,
-				chainName: walletController.chainName,
-				networkIdentifier: walletController.networkIdentifier
-			});
+	useWalletRefreshLifecycle({
+		walletController,
+		onRefresh: hasMultisigSupport ? loadMultisigAccounts : () => {},
+		onClear: resetMultisigAccounts
+	});
+	useInit(loadMultisigAccounts, isWalletReady && hasMultisigSupport);
 
-			setSenderOptions(options);
-		}
-	}, [isStateReady, currentAccount, currentAccountInfo.multisigAddresses]);
+	const senderCurrentAccount = {
+		address: currentAccount.address,
+		balance: currentAccountInfo.balance ?? '0'
+	};
 
 	// Derived Token Data
 	const nativeTokenId = networkProperties?.networkCurrency?.id || networkProperties?.networkCurrency?.mosaicId;
@@ -213,14 +214,18 @@ export const Send = props => {
 					{isAccountCosignatoryOfMultisig && (
 						<StyledText type="body">{$t('s_send_multisig_description')}</StyledText>
 					)}
-					{isAccountCosignatoryOfMultisig && (
-						<Dropdown
-							label={$t('input_sender')}
-							value={senderAddress}
-							list={senderOptions}
-							onChange={changeSenderAddress}
-						/>
-					)}
+					<SelectTransactionSender
+						label={$t('input_sender')}
+						value={senderAddress}
+						currentAccount={senderCurrentAccount}
+						multisigAccounts={multisigAccounts}
+						ticker={ticker}
+						chainName={walletController.chainName}
+						networkIdentifier={networkIdentifier}
+						walletAccounts={walletAccounts}
+						addressBook={addressBook}
+						onChange={changeSenderAddress}
+					/>
 					<InputAddress
 						label={$t('form_transfer_input_recipient')}
 						value={recipientAddress}

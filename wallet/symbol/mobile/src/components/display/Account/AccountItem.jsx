@@ -1,5 +1,4 @@
-import { AccountAvatar, Amount, ListItemContainer, StyledText } from '@/app/components';
-import { $t } from '@/app/localization';
+import { AccountAvatar, Amount, StyledText } from '@/app/components';
 import { Sizes } from '@/app/styles';
 import { createAccountDisplayData } from '@/app/utils';
 import React from 'react';
@@ -10,17 +9,7 @@ import { StyleSheet, View } from 'react-native';
 /** @typedef {import('@/app/types/Network').ChainName} ChainName */
 
 /**
- * Returns the display name for a multisig account.
- * @param {string|null} name - The account name from address book or wallet.
- * @returns {string} The display name.
- */
-const getAccountNameText = name => {
-	return name ?? $t('s_multisig_defaultAccountName');
-};
-
-/**
- * MultisigAccountListItem component. Displays a multisig account card with avatar,
- * name, balance, and address information.
+ * AccountItem component. Bare account row content.
  * @param {object} props - Component props.
  * @param {string} props.address - The account address.
  * @param {string} props.balance - The account balance.
@@ -29,10 +18,11 @@ const getAccountNameText = name => {
  * @param {object} [props.addressBook] - The address book for display names.
  * @param {ChainName} props.chainName - The blockchain name.
  * @param {NetworkIdentifier} props.networkIdentifier - The network identifier.
- * @param {() => void} [props.onPress] - Callback when the item is pressed.
- * @returns {React.ReactNode} MultisigAccountListItem component.
+ * @param {string} [props.defaultName] - Fallback name shown when the account name cannot be resolved.
+ * @param {React.ReactNode} [props.accessory] - Optional element rendered on the right side of the row.
+ * @returns {React.ReactNode} AccountItem component.
  */
-export const MultisigAccountListItem = ({
+export const AccountItem = ({
 	address,
 	balance,
 	ticker,
@@ -40,7 +30,8 @@ export const MultisigAccountListItem = ({
 	addressBook,
 	chainName,
 	networkIdentifier,
-	onPress
+	defaultName,
+	accessory
 }) => {
 	const accountDisplay = createAccountDisplayData(address, {
 		walletAccounts,
@@ -48,14 +39,10 @@ export const MultisigAccountListItem = ({
 		chainName,
 		networkIdentifier
 	});
-	const accountNameText = getAccountNameText(accountDisplay.name);
+	const accountNameText = accountDisplay.name ?? defaultName ?? address;
 
 	return (
-		<ListItemContainer
-			contentContainerStyle={styles.root}
-			onPress={onPress}
-		>
-			<View style={[styles.background, { backgroundColor: accountDisplay.color }]} />
+		<View style={styles.root}>
 			<View style={styles.iconSection}>
 				<AccountAvatar address={address} size="l" />
 			</View>
@@ -63,7 +50,7 @@ export const MultisigAccountListItem = ({
 				<StyledText type="title" size="s">
 					{accountNameText}
 				</StyledText>
-                
+
 				<Amount
 					value={balance}
 					ticker={ticker}
@@ -74,23 +61,19 @@ export const MultisigAccountListItem = ({
 					{address}
 				</StyledText>
 			</View>
-		</ListItemContainer>
+			{!!accessory && (
+				<View style={styles.accessorySection}>
+					{accessory}
+				</View>
+			)}
+		</View>
 	);
 };
 
 const styles = StyleSheet.create({
 	root: {
-		flexDirection: 'row',
-		width: '100%'
-	},
-	background: {
-		position: 'absolute',
-		top: 0,
-		left: 0,
-		right: 0,
-		bottom: 0,
-		opacity: 0.1,
-		borderRadius: Sizes.Semantic.borderRadius.m
+		flex: 1,
+		flexDirection: 'row'
 	},
 	iconSection: {
 		flexDirection: 'column',
@@ -101,5 +84,9 @@ const styles = StyleSheet.create({
 		flex: 1,
 		flexDirection: 'column',
 		justifyContent: 'center'
+	},
+	accessorySection: {
+		justifyContent: 'center',
+		paddingLeft: Sizes.Semantic.spacing.m
 	}
 });
