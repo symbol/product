@@ -32,6 +32,7 @@ module.exports = {
 			'@/app/active-variant/config/pages': `${variantAlias}/config/pages`,
 			'@/app/active-variant/config': `${variantAlias}/config`,
 			'@/app/active-variant/api': `${variantAlias}/api`,
+			'@/app/active-variant/utils': `${variantAlias}/utils`,
 			'@/app/active-variant/DocumentHead': `${variantAlias}/DocumentHead`,
 			'@/app/active-variant/components': `${variantAlias}/components`
 		}

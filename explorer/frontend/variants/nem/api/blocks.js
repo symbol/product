@@ -14,6 +14,12 @@ import {
  */
 
 /**
+ * @typedef ChainStatus
+ * @property {number} height - the current chain height.
+ * @property {number|null} finalizedHeight - the finalized height (null for NEM, which has no finalization).
+ */
+
+/**
  * Fetches the block page.
  * @param {object} searchParams - search parameters
  * @returns {Promise<Page>} block page
@@ -34,6 +40,17 @@ export const fetchChainHight = async () => {
 	const blockPage = await fetchBlockPage({ pageSize: 1 });
 
 	return blockPage.data[0].height;
+};
+
+/**
+ * Fetches the chain status. NEM has no finalization, so finalizedHeight is always null and finality
+ * is derived from the unwind limit instead (see utils/blocks getBlockStatus).
+ * @returns {Promise<ChainStatus>} the chain status.
+ */
+export const fetchChainStatus = async () => {
+	const height = await fetchChainHight();
+
+	return { height, finalizedHeight: null };
 };
 
 /**

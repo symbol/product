@@ -1,4 +1,4 @@
-import { fetchBlockInfo, fetchChainHight } from '@/app/api/blocks';
+import { fetchBlockInfo, fetchChainStatus } from '@/app/api/blocks';
 import { fetchTransactionPage } from '@/app/api/transactions';
 import Field from '@/app/components/Field';
 import FieldTimestamp from '@/app/components/FieldTimestamp';
@@ -6,14 +6,13 @@ import ItemTransactionMobile from '@/app/components/ItemTransactionMobile';
 import Section from '@/app/components/Section';
 import Table from '@/app/components/Table';
 import ValueAccount from '@/app/components/ValueAccount';
+import ValueBlockStatus from '@/app/components/ValueBlockStatus';
 import ValueCopy from '@/app/components/ValueCopy';
-import ValueLabel from '@/app/components/ValueLabel';
 import ValueList from '@/app/components/ValueList';
 import ValueMosaic from '@/app/components/ValueMosaic';
 import ValueTransactionHash from '@/app/components/ValueTransactionHash';
 import ValueTransactionSquares from '@/app/components/ValueTransactionSquares';
 import ValueTransactionType from '@/app/components/ValueTransactionType';
-import config from '@/app/config';
 import styles from '@/app/styles/pages/BlockInfo.module.scss';
 import { useAsyncCall, useClientSidePagination, usePagination } from '@/app/utils';
 import Head from 'next/head';
@@ -45,8 +44,7 @@ const BlockInfo = ({ blockInfo }) => {
 		[]
 	);
 	const transactionPagination = useClientSidePagination(transactionInitialPagination.data);
-	const chainHeight = useAsyncCall(fetchChainHight, 0);
-	const isSafeBlock = chainHeight > 0 && chainHeight - blockInfo.height > config.PUBLIC_NEM_BLOCKCHAIN_UNWIND_LIMIT;
+	const chainStatus = useAsyncCall(fetchChainStatus, null);
 
 	const tableColumns = [
 		{
@@ -105,8 +103,7 @@ const BlockInfo = ({ blockInfo }) => {
 						</Field>
 						<div className="layout-grid-row">
 							<Field title={t('field_status')}>
-								{!isSafeBlock && <ValueLabel text={t('label_created')} type="created" />}
-								{isSafeBlock && <ValueLabel text={t('label_safe')} type="safe" />}
+								<ValueBlockStatus block={blockInfo} chainStatus={chainStatus} />
 							</Field>
 							<FieldTimestamp value={blockInfo.timestamp} hasTime hasSeconds />
 						</div>

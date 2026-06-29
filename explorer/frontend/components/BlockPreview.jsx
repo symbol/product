@@ -3,7 +3,7 @@ import CustomImage from './CustomImage';
 import Field from './Field';
 import FieldTimestamp from './FieldTimestamp';
 import ValueAge from './ValueAge';
-import ValueLabel from './ValueLabel';
+import ValueBlockStatus from './ValueBlockStatus';
 import ValueMosaic from './ValueMosaic';
 import ValueTransactionSquares from './ValueTransactionSquares';
 import styles from '@/app/styles/components/BlockPreview.module.scss';
@@ -13,7 +13,7 @@ import Link from 'next/link';
 import { useTranslation } from 'next-i18next';
 import { useEffect, useState } from 'react';
 
-const BlockExpanded = ({ data, transactions, isNext, isTransactionSquaresRendered, onClose }) => {
+const BlockExpanded = ({ data, transactions, chainStatus, isTransactionSquaresRendered, onClose }) => {
 	const { height, timestamp, totalFee } = data;
 	const { t } = useTranslation();
 	const href = createPageHref('blocks', height);
@@ -29,8 +29,7 @@ const BlockExpanded = ({ data, transactions, isNext, isTransactionSquaresRendere
 			</Field>
 			<div className="layout-grid-row">
 				<Field title={t('field_status')}>
-					{isNext && <ValueLabel text={t('label_pending')} type="pending" />}
-					{!isNext && <ValueLabel text={t('label_created')} type="created" />}
+					<ValueBlockStatus block={data} chainStatus={chainStatus} />
 				</Field>
 				<FieldTimestamp value={timestamp} hasTime hasSeconds />
 			</div>
@@ -66,7 +65,7 @@ const BlockCube = ({ data }) => {
 	);
 };
 
-const BlockPreview = ({ data, transactions, isNext, isSelected, onClose, onSelect, smallBoxRef, bigBoxRef }) => {
+const BlockPreview = ({ data, transactions, isNext, chainStatus, isSelected, onClose, onSelect, smallBoxRef, bigBoxRef }) => {
 	const { height } = data;
 	const [isTransactionSquaresRendered, setIsTransactionSquaresRendered] = useState(false);
 	const [expandedStyle, setExpandedStyle] = useState('');
@@ -101,6 +100,7 @@ const BlockPreview = ({ data, transactions, isNext, isSelected, onClose, onSelec
 					<BlockExpanded
 						data={data}
 						transactions={transactions}
+						chainStatus={chainStatus}
 						isTransactionSquaresRendered={isTransactionSquaresRendered}
 						onClose={onClose}
 					/>

@@ -26,7 +26,7 @@
 // Required exports for each API domain.
 export const API_CONTRACT = {
 	accounts: ['fetchAccountPage', 'fetchAccountInfo', 'fetchAccountInfoByPublicKey'],
-	blocks: ['fetchBlockPage', 'fetchChainHight', 'fetchBlockInfo'],
+	blocks: ['fetchBlockPage', 'fetchChainHight', 'fetchChainStatus', 'fetchBlockInfo'],
 	health: ['fetchBackendHealthStatus'],
 	mosaics: ['fetchMosaicPage', 'fetchMosaicInfo'],
 	namespaces: ['fetchNamespacePage', 'fetchNamespaceInfo'],
@@ -42,6 +42,11 @@ export const API_CONTRACT = {
 		'fetchPriceByDate'
 	],
 	transactions: ['fetchTransactionPage', 'fetchTransactionInfo']
+};
+
+// Required exports for each variant utils domain.
+export const UTILS_CONTRACT = {
+	blocks: ['getBlockStatus']
 };
 
 // Theme tokens consumed from JavaScript.

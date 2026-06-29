@@ -1,4 +1,4 @@
-import { fetchBlockPage } from '@/app/api/blocks';
+import { fetchBlockPage, fetchChainStatus } from '@/app/api/blocks';
 import { fetchBlockStats, fetchMarketData, fetchNodeStats, fetchTransactionChart, fetchTransactionStats } from '@/app/api/stats';
 import { fetchTransactionPage } from '@/app/api/transactions';
 import { AdditionalSections } from '@/app/components/AdditionalSections';
@@ -76,6 +76,7 @@ const Home = ({
 		DATA_REFRESH_INTERVAL
 	);
 	const blocks = useAsyncCall(fetchBlockPage, preloadedBlocks, DATA_REFRESH_INTERVAL);
+	const chainStatus = useAsyncCall(fetchChainStatus, null, DATA_REFRESH_INTERVAL);
 
 	const fetchBlockTransactions = useCallback(height => fetchTransactionPage({ pageSize: 160, height }), [fetchTransactionPage]);
 
@@ -84,7 +85,7 @@ const Home = ({
 			<Head>
 				<title>Home</title>
 			</Head>
-			<RecentBlocks data={blocks.data} onTransactionListRequest={fetchBlockTransactions} />
+			<RecentBlocks data={blocks.data} chainStatus={chainStatus} onTransactionListRequest={fetchBlockTransactions} />
 			<AdditionalSections sections={pageConfig.home.additionalSections} />
 			<Section>
 				<div className="layout-flex-row-mobile-col">

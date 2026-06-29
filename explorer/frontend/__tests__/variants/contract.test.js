@@ -3,7 +3,8 @@ import {
 	CONFIG_CONTRACT,
 	PAGE_CONFIG_CONTRACT,
 	STYLE_VARIABLES_CONTRACT,
-	THEME_STYLESHEET_DIRS
+	THEME_STYLESHEET_DIRS,
+	UTILS_CONTRACT
 } from '@/app/variants/contract';
 import { VARIANT_IDS, variants } from '@/app/variants/manifest';
 // Use require for Node built-ins because the repo's import resolver trips on core-module imports.
@@ -86,6 +87,22 @@ describe('variants contract', () => {
 				Object.entries(API_CONTRACT).forEach(([domain, functionNames]) => {
 					functionNames.forEach(functionName => {
 						it(`exposes api.${domain}.${functionName}`, () => runApiContractTest(domain, functionName));
+					});
+				});
+			});
+
+			describe('utils surface', () => {
+				const runUtilsContractTest = (domain, functionName) => {
+					// Act:
+					const member = variant.utils[domain]?.[functionName];
+
+					// Assert:
+					expect(typeof member).toBe('function');
+				};
+
+				Object.entries(UTILS_CONTRACT).forEach(([domain, functionNames]) => {
+					functionNames.forEach(functionName => {
+						it(`exposes utils.${domain}.${functionName}`, () => runUtilsContractTest(domain, functionName));
 					});
 				});
 			});

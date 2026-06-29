@@ -1,4 +1,4 @@
-import { fetchBlockPage } from '@/app/api/blocks';
+import { fetchBlockPage, fetchChainStatus } from '@/app/api/blocks';
 import { fetchBlockStats } from '@/app/api/stats';
 import ChartLine from '@/app/components/ChartLine';
 import Field from '@/app/components/Field';
@@ -8,11 +8,11 @@ import Section from '@/app/components/Section';
 import Separator from '@/app/components/Separator';
 import Table from '@/app/components/Table';
 import ValueAccount from '@/app/components/ValueAccount';
-import ValueBlockHeight from '@/app/components/ValueBlockHeight';
+import ValueBlockHeightWithStatus from '@/app/components/ValueBlockHeightWithStatus';
 import ValueMosaic from '@/app/components/ValueMosaic';
 import ValueTimestamp from '@/app/components/ValueTimestamp';
 import styles from '@/app/styles/pages/Home.module.scss';
-import { usePagination } from '@/app/utils';
+import { useAsyncCall, usePagination } from '@/app/utils';
 import Head from 'next/head';
 import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
@@ -33,12 +33,13 @@ export const getServerSideProps = async ({ locale }) => {
 const Blocks = ({ blocks, stats }) => {
 	const { t } = useTranslation();
 	const { requestNextPage, data, isLoading, isError, pageNumber, isLastPage } = usePagination(fetchBlockPage, blocks);
+	const chainStatus = useAsyncCall(fetchChainStatus, null);
 
 	const tableColumns = [
 		{
 			key: 'height',
-			size: '8rem',
-			renderValue: value => <ValueBlockHeight value={value} />
+			size: '10rem',
+			renderValue: (value, row) => <ValueBlockHeightWithStatus block={row} chainStatus={chainStatus} />
 		},
 		{
 			key: 'harvester',
@@ -97,7 +98,7 @@ const Blocks = ({ blocks, stats }) => {
 				<Table
 					data={data}
 					columns={tableColumns}
-					renderItemMobile={data => <ItemBlockMobile data={data} />}
+					renderItemMobile={data => <ItemBlockMobile data={data} chainStatus={chainStatus} />}
 					isLoading={isLoading}
 					isLastPage={isLastPage}
 					isError={isError}

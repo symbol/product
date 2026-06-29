@@ -295,6 +295,7 @@
 	"label_outgoing": "受信者",
 	"label_created": "作成日時",
 	"label_safe": "安全",
+	"label_finalized": "確定済み",
 	"label_confirmed": "確認済み",
 	"label_unconfirmed": "未確認",
 	"label_pending": "保留中",

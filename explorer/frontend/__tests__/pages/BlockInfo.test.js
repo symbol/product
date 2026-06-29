@@ -85,7 +85,7 @@ describe('BlockInfo', () => {
 		const runStatusLabelTest = (chainHeightOffset, expectedShownLabelText, expectedHiddenLabelText) => {
 			// Arrange:
 			const spy = jest.spyOn(utils, 'useAsyncCall');
-			spy.mockImplementation(() => blockInfoResult.height + chainHeightOffset);
+			spy.mockImplementation(() => ({ height: blockInfoResult.height + chainHeightOffset, finalizedHeight: null }));
 
 			// Act:
 			render(<BlockInfo blockInfo={blockInfoResult} />);

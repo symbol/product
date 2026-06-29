@@ -290,6 +290,7 @@
 	"label_outgoing": "Do",
 	"label_created": "Sozdano",
 	"label_safe": "Bezpečno",
+	"label_finalized": "Finalizovano",
 	"label_confirmed": "Podtvrđeno",
 	"label_unconfirmed": "Nepodtvrđeno",
 	"label_pending": "V procesje",

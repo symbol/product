@@ -13,6 +13,19 @@ export const TRANSACTION_DIRECTION = {
 	OUTGOING: 'outgoing'
 };
 
+export const BLOCK_STATUS = {
+	PENDING: 'pending',
+	CREATED: 'created',
+	SAFE: 'safe',
+	FINALIZED: 'finalized'
+};
+
+export const STATUS_ICON_COLOR_VARIANT = {
+	SEMANTIC: 'semantic',
+	BODY: 'body',
+	LINK: 'link'
+};
+
 export const ACCOUNT_STATE_CHANGE_ACTION = {
 	SEND: 'send',
 	RECEIVE: 'receive',

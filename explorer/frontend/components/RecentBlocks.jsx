@@ -2,7 +2,7 @@ import BlockPreview from './BlockPreview';
 import styles from '@/app/styles/components/RecentBlocks.module.scss';
 import { createRef, useRef, useState } from 'react';
 
-const RecentBlocks = ({ data, onTransactionListRequest }) => {
+const RecentBlocks = ({ data, chainStatus, onTransactionListRequest }) => {
 	const containerRef = useRef();
 	const [selectedBlockHeight, setSelectedBlockHeight] = useState(-1);
 	const [transactions, setTransactions] = useState([]);
@@ -56,6 +56,7 @@ const RecentBlocks = ({ data, onTransactionListRequest }) => {
 					<BlockPreview
 						isSelected={selectedBlockHeight === item.height}
 						data={item}
+						chainStatus={chainStatus}
 						transactions={transactions}
 						key={item.height}
 						smallBoxRef={item.smallBoxRef}
