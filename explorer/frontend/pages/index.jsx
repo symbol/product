@@ -100,7 +100,7 @@ const Home = ({
 						<div className="layout-flex-col layout-flex-fill">
 							<Field title={t('field_price')}>
 								<ValuePrice
-									value={truncateDecimals(marketData.price, 3)}
+									value={truncateDecimals(marketData.price, 7)}
 									change={truncateDecimals(marketData.priceChange, 1)}
 								/>
 							</Field>
