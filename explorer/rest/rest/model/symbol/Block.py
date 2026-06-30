@@ -73,7 +73,7 @@ class SymbolBlockView:  # pylint: disable=too-many-instance-attributes
 			'totalFee': _format_total_fee(self.total_fee),
 			'transactionCount': self.transaction_count,
 			'statementCount': self.statement_count,
-			# TODO: Populate from receipt data in the Receipts Core implementation.
+			# Receipts Core will populate block rewards when receipt data is available.
 			'blockReward': None,
 			'isFinalized': self.is_finalized,
 			'difficulty': str(self.difficulty)

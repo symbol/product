@@ -1,3 +1,5 @@
+# pylint: disable=bad-indentation,duplicate-code,protected-access,too-many-lines
+
 import asyncio
 import tempfile
 from contextlib import ExitStack, contextmanager
@@ -6,17 +8,10 @@ from unittest import TestCase
 from unittest.mock import AsyncMock, patch
 
 from common.symbol.NodeConfiguration import SymbolNodeConfiguration
-from common.tests.PostgresTestUtils import (
-    PostgresTestDatabase,
-    drop_symbol_block_tables_if_present
-)
+from common.tests.PostgresTestUtils import PostgresTestDatabase, drop_symbol_block_tables_if_present
 from symbollightapi.model.Exceptions import NodeException
 
-from puller.facade.SymbolPuller import (
-    DatabaseConfiguration,
-    SymbolPuller,
-    SymbolRollbackError
-)
+from puller.facade.SymbolPuller import DatabaseConfiguration, SymbolPuller, SymbolRollbackError
 
 NODE_URL = 'http://127.0.0.1:3000'
 SIGNER_PUBLIC_KEY = (
