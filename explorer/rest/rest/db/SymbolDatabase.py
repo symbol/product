@@ -44,7 +44,17 @@ SYNC_STATE_COLUMNS = [
 	'last_synced_block_hash',
 	'updated_at'
 ]
+LEGACY_SYNC_STATE_COLUMNS = [
+	'status',
+	'chain_height',
+	'finalized_height',
+	'finalized_hash',
+	'last_synced_height',
+	'last_synced_block_hash',
+	'updated_at'
+]
 READABLE_BLOCK_STATUSES = frozenset(['healthy', 'repairing'])
+UNDEFINED_COLUMN_SQLSTATE = '42703'
 
 
 def _bytes_or_none(value):
@@ -58,6 +68,16 @@ def _address(value):
 
 def _is_block_data_readable(sync_state):
 	return bool(sync_state and sync_state.get('status') in READABLE_BLOCK_STATUSES and sync_state.get('last_synced_height'))
+
+
+def _create_sync_state(columns, result):
+	if not result:
+		return None
+
+	sync_state = dict(zip(columns, result))
+	sync_state.setdefault('finalized_epoch', None)
+	sync_state.setdefault('finalized_point', None)
+	return sync_state
 
 
 class SymbolDatabase(DatabaseConnectionPool):
@@ -79,11 +99,16 @@ class SymbolDatabase(DatabaseConnectionPool):
 				try:
 					cursor.execute(f'SELECT {", ".join(SYNC_STATE_COLUMNS)} FROM symbol_sync_state WHERE id = 1')
 					result = cursor.fetchone()
-				except PsycopgError:
+				except PsycopgError as error:
 					connection.rollback()
-					raise
+					if UNDEFINED_COLUMN_SQLSTATE != error.pgcode:
+						raise
 
-				return dict(zip(SYNC_STATE_COLUMNS, result)) if result else None
+					cursor.execute(f'SELECT {", ".join(LEGACY_SYNC_STATE_COLUMNS)} FROM symbol_sync_state WHERE id = 1')
+					result = cursor.fetchone()
+					return _create_sync_state(LEGACY_SYNC_STATE_COLUMNS, result)
+
+				return _create_sync_state(SYNC_STATE_COLUMNS, result)
 
 	def get_block(self, height):
 		"""Gets a Symbol block by height."""

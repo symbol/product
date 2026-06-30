@@ -1,6 +1,7 @@
 from unittest import TestCase
 
 from common.tests.PostgresTestUtils import PostgresTestDatabase, drop_symbol_block_tables_if_present
+from psycopg2 import Error as PsycopgError
 from puller.db.SymbolDatabase import SymbolDatabase as PullerSymbolDatabase
 
 from rest.db.SymbolDatabase import SymbolDatabase
@@ -49,6 +50,88 @@ class FalseConnectionPool:
 class FalseSelectOneSymbolDatabase(SymbolDatabase):
 	def _create_pool(self):
 		return FalseConnectionPool()
+
+
+class UndefinedColumnError(PsycopgError):
+	@property
+	def pgcode(self):
+		return '42703'
+
+
+class LegacySyncStateCursor:
+	def __init__(self, connection):
+		self.connection = connection
+		self.statements = []
+		self.used_legacy_query = False
+
+	def __enter__(self):
+		return self
+
+	def __exit__(self, *_):
+		pass
+
+	def execute(self, statement):
+		self.statements.append(statement)
+		if 'finalized_epoch' in statement:
+			raise UndefinedColumnError('column finalized_epoch does not exist')
+
+		self.used_legacy_query = True
+
+	@staticmethod
+	def fetchone():
+		return (
+			'healthy',
+			10,
+			8,
+			bytes(b'finalized'),
+			10,
+			bytes(b'last'),
+			'2026-01-01'
+		)
+
+
+class LegacySyncStateConnection:
+	def __init__(self):
+		self.cursor_instance = LegacySyncStateCursor(self)
+		self.rollback_count = 0
+
+	def __enter__(self):
+		return self
+
+	def __exit__(self, *_):
+		pass
+
+	def cursor(self):
+		return self.cursor_instance
+
+	def rollback(self):
+		self.rollback_count += 1
+
+
+class LegacySyncStateConnectionPool:
+	def __init__(self):
+		self.connection = LegacySyncStateConnection()
+
+	def getconn(self):
+		return self.connection
+
+	@staticmethod
+	def putconn(_connection):
+		pass
+
+
+class LegacySyncStateSymbolDatabase(SymbolDatabase):
+	def __init__(self):
+		self.pool = LegacySyncStateConnectionPool()
+		super().__init__(DatabaseConfig(
+			'unused',
+			'unused',
+			'',
+			'127.0.0.1',
+			'5432'))
+
+	def _create_pool(self):
+		return self.pool
 
 
 class SymbolDatabaseConnectionTest(TestCase):
@@ -212,6 +295,26 @@ class SymbolDatabaseSyncStateTest(TestCase):
 
 		# Assert:
 		self.assertIsNone(result)
+
+	def test_get_sync_state_defaults_missing_finalization_round_columns(self):
+		# Arrange:
+		database = LegacySyncStateSymbolDatabase()
+
+		# Act:
+		result = database.get_sync_state()
+
+		# Assert:
+		self.assertEqual('healthy', result['status'])
+		self.assertEqual(10, result['chain_height'])
+		self.assertEqual(8, result['finalized_height'])
+		self.assertEqual(bytes(b'finalized'), bytes(result['finalized_hash']))
+		self.assertIsNone(result['finalized_epoch'])
+		self.assertIsNone(result['finalized_point'])
+		self.assertEqual(10, result['last_synced_height'])
+		self.assertEqual(bytes(b'last'), bytes(result['last_synced_block_hash']))
+		self.assertEqual('2026-01-01', result['updated_at'])
+		self.assertEqual(1, database.pool.connection.rollback_count)
+		self.assertTrue(database.pool.connection.cursor_instance.used_legacy_query)
 
 
 class SymbolDatabasePostgresTest(TestCase):
