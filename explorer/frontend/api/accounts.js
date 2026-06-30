@@ -73,7 +73,7 @@ const accountInfoFromDTO = data => ({
 		data.mosaics?.map(item => ({
 			name: item.namespace_name,
 			id: item.namespace_name,
-			amount: item.quantity,
+			amount: item.amount,
 			isCreatedByAccount: item.creator === data.address
 		})) || [],
 	importance: +data.importance * 100 || 0,
