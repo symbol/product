@@ -32,6 +32,18 @@ def create_unreachable_db_configuration():
 	return DatabaseConfiguration('symbol', 'postgres', '', '127.0.0.1', '1')
 
 
+def drop_symbol_block_tables_if_present(database):
+	"""Drops Symbol block synchronization tables from a test database."""
+
+	database.connection.rollback()
+	cursor = database.connection.cursor()
+	cursor.execute('DROP TABLE IF EXISTS symbol_blocks')
+	cursor.execute('DROP TABLE IF EXISTS symbol_sync_state')
+	cursor.execute('DROP TYPE IF EXISTS symbol_sync_state_status')
+	cursor.execute('DROP TYPE IF EXISTS symbol_block_type')
+	database.connection.commit()
+
+
 def _external_db_configuration():
 	host = os.environ.get('EXPLORER_TEST_POSTGRES_HOST')
 	if not host:
