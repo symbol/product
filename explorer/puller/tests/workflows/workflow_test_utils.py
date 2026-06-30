@@ -1,3 +1,4 @@
+from argparse import Namespace
 from unittest.mock import Mock, patch
 
 
@@ -25,6 +26,15 @@ def create_main_args(batch_size=None, account_remark=None):
 	return args
 
 
+def create_symbol_main_args(max_height=3000):
+	return Namespace(
+		symbol_node='http://localhost:7890',
+		network='testnet',
+		db_config='test_config.ini',
+		max_height=max_height
+	)
+
+
 def create_facade_with_mock_db(mock_nem_puller):
 	mock_facade = Mock()
 	mock_nem_puller.return_value = mock_facade
@@ -33,5 +43,17 @@ def create_facade_with_mock_db(mock_nem_puller):
 	mock_facade.nem_db = mock_db
 	mock_facade.nem_db.__enter__ = Mock(return_value=mock_db)
 	mock_facade.nem_db.__exit__ = Mock(return_value=None)
+
+	return mock_facade, mock_db
+
+
+def create_symbol_facade_with_mock_db(mock_symbol_puller):
+	mock_facade = Mock()
+	mock_symbol_puller.return_value = mock_facade
+
+	mock_db = Mock()
+	mock_facade.symbol_db = mock_db
+	mock_facade.symbol_db.__enter__ = Mock(return_value=mock_db)
+	mock_facade.symbol_db.__exit__ = Mock(return_value=None)
 
 	return mock_facade, mock_db
