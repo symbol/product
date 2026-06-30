@@ -40,6 +40,23 @@ class SymbolRestFacade:
 			'node': self.node_config.to_dict()
 		}
 
+	def is_database_available(self):
+		"""Returns whether DB-backed Symbol REST data can be queried."""
+
+		return self.symbol_db is not None
+
+	def is_block_data_available(self):
+		"""Returns whether block-backed Symbol REST data can be queried."""
+
+		if not self.is_database_available():
+			return False
+
+		try:
+			return self.symbol_db.get_block_head_height() is not None
+		except PsycopgError:
+			log.error('Failed to check Symbol block data availability')
+			return False
+
 	def get_health(self):
 		"""Gets health of the Symbol backend core foundation."""
 
@@ -61,11 +78,82 @@ class SymbolRestFacade:
 					'message': DATABASE_UNAVAILABLE_MESSAGE
 				})
 
+		backend_synced = False
+		finalized_height = None
+		last_db_synced_at = None
+		last_db_height = None
+		status = None
+		if db_up and not errors:
+			try:
+				sync_state = self.symbol_db.get_sync_state()
+			except PsycopgError as error:
+				log.error(f'Failed to get Symbol database sync state: {error}')
+				errors.append({
+					'type': 'database',
+					'message': DATABASE_UNAVAILABLE_MESSAGE
+				})
+				sync_state = None
+
+			if sync_state:
+				chain_height = sync_state.get('chain_height')
+				finalized_height = sync_state['finalized_height']
+				last_db_height = sync_state['last_synced_height']
+				last_db_synced_at = sync_state['updated_at'].isoformat() if sync_state['updated_at'] else None
+				status = sync_state['status']
+				backend_synced = 'healthy' == status and last_db_height == chain_height
+				if 'healthy' == status and not backend_synced:
+					errors.append({
+						'type': 'synchronization',
+						'message': f'Symbol database height {last_db_height} does not match chain height {chain_height}'
+					})
+				elif 'unhealthy' == status:
+					errors.append({
+						'type': 'rollback',
+						'message': 'Symbol backend is in an unhealthy rollback state'
+					})
+				elif 'healthy' != status:
+					errors.append({
+						'type': 'synchronization',
+						'message': f'Symbol backend status is {status}'
+					})
+
 		return {
 			'isHealthy': db_up and not errors,
 			'dbUp': db_up,
-			'backendSynced': False,
-			'lastDBSyncedAt': None,
-			'lastDBHeight': None,
+			'finalizedHeight': finalized_height,
+			'backendSynced': backend_synced,
+			'lastDBSyncedAt': last_db_synced_at,
+			'lastDBHeight': last_db_height,
+			'status': status,
 			'errors': errors
 		}
+
+	def get_blocks(self, limit, from_height, sort):
+		"""Gets Symbol blocks."""
+
+		if not self.is_database_available():
+			return None
+
+		try:
+			head_height = self.symbol_db.get_block_head_height()
+			if head_height is None:
+				return None
+
+			blocks = self.symbol_db.get_blocks(limit, from_height, sort)
+			if blocks is None:
+				return None
+
+			return [block.to_dict() for block in blocks]
+		except PsycopgError:
+			log.error('Failed to get Symbol blocks')
+			return None
+
+	def get_block(self, height):
+		"""Gets a Symbol block by height."""
+
+		if not self.is_block_data_available():
+			return None
+
+		block = self.symbol_db.get_block(height)
+
+		return block.to_detail_dict() if block else None

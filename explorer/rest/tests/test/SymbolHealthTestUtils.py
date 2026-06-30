@@ -4,9 +4,11 @@ def create_symbol_health(**overrides):
 	health = {
 		'isHealthy': False,
 		'dbUp': False,
+		'finalizedHeight': None,
 		'backendSynced': False,
 		'lastDBSyncedAt': None,
 		'lastDBHeight': None,
+		'status': None,
 		'errors': []
 	}
 	health.update(overrides)
