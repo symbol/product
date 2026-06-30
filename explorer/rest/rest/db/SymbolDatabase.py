@@ -11,7 +11,7 @@ BLOCK_COLUMNS = '''
 	timestamp,
 	network_timestamp,
 	total_fee,
-	total_transactions_count,
+	transactions_count,
 	statements_count,
 	difficulty,
 	fee_multiplier,

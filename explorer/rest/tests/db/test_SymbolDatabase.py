@@ -267,6 +267,7 @@ class SymbolDatabasePostgresTest(TestCase):
 		self.assertEqual(2, result.height)
 		self.assertTrue(result.is_finalized)
 		self.assertEqual(2000000, result.total_fee)
+		self.assertEqual(2, result.transaction_count)
 
 	def test_can_get_block_from_postgresql_without_finalized_height(self):
 		# Arrange + Act:

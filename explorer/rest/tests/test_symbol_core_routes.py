@@ -111,7 +111,7 @@ def _expected_block_list_item(height, is_finalized):
 		'harvester': 'TBJU67Q5BITMUTRRN6IB4I7FLSDQDWZA34I2PMQ',
 		'beneficiaryAddress': 'TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI',
 		'totalFee': float(height),
-		'transactionCount': height + 10,
+		'transactionCount': height,
 		'statementCount': height,
 		'blockReward': None,
 		'isFinalized': is_finalized,
