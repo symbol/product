@@ -424,6 +424,8 @@ class NemConnector(BasicConnector):
 				'hash': None,
 				'innerHash': None
 			}, 0) for tx in unconfirmed_transactions['data']
+			# skip standalone cosignatures, because already include parent multisig transactions.
+			if TransactionType.MULTISIG_COSIGNATURE.value != tx['type']
 		]
 
 	# endregion

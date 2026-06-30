@@ -42,6 +42,11 @@ AccountRecord = namedtuple('AccountRecord', [
 	'cosignatory_of',
 	'cosignatories'
 ])
+AccountVestedBalanceRecord = namedtuple('AccountVestedBalanceRecord', [
+	'address',
+	'importance',
+	'vested_balance'
+])
 NamespaceRecord = namedtuple('NamespaceRecord', [
 	'root_namespace',
 	'owner',
@@ -268,6 +273,16 @@ class NemPuller:
 			account_info.cosignatories
 		)
 
+	@staticmethod
+	def _create_account_vested_balance_record(account_info):
+		"""Create account vested balance record."""
+
+		return AccountVestedBalanceRecord(
+			account_info.address,
+			account_info.importance,
+			_format_xem_absolute(account_info.vested_balance)
+		)
+
 	async def _process_account_batch(self, cursor, address_heights):
 		"""
 		Process a batch of addresses: fetch account info, mosaics, and upsert.
@@ -329,7 +344,8 @@ class NemPuller:
 
 			for account in accounts:
 				account_info = await self._retry_get_account_info(str(account.address))
-				self.nem_db.update_vested_balance_and_importance(cursor, account_info)
+				account_vested_balance = self._create_account_vested_balance_record(account_info)
+				self.nem_db.update_vested_balance_and_importance(cursor, account_vested_balance)
 				last_account_id = account.id
 				total_refreshed += 1
 
