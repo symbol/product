@@ -401,13 +401,10 @@ def test_symbol_facade_db_error():
 	health = facade.get_health()
 	assert isinstance(facade, SymbolRestFacade)
 	assert not facade.is_configured()
-	assert not health['isHealthy']
-	assert not health['dbUp']
-	assert [{
+	assert create_symbol_health(errors=[{
 		'type': 'database',
 		'message': 'Symbol database is unavailable'
-	}] == health['errors']
-	assert 'connection refused' not in str(health)
+	}]) == health
 
 
 def test_symbol_facade_node_error(symbol_database_config):
