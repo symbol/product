@@ -284,7 +284,6 @@ class SymbolRestFacadeTest(TestCase):  # pylint: disable=too-many-public-methods
 				'message': 'Symbol database is unavailable'
 			}]
 		), result)
-		self.assertNotIn('database unavailable', str(result))
 
 	def test_reports_unconfigured_when_database_initialization_fails(self):
 		# Arrange:
@@ -315,7 +314,6 @@ class SymbolRestFacadeTest(TestCase):  # pylint: disable=too-many-public-methods
 				'message': 'Symbol database is unavailable'
 			}]
 		), result)
-		self.assertNotIn('connection refused', str(result))
 
 	def test_reports_unhealthy_rollback_state(self):
 		# Arrange:

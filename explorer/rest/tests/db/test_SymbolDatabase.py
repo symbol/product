@@ -136,8 +136,6 @@ class SymbolDatabaseBlocksTest(TestCase):
 					finalized_height=2),
 				lambda database: database.get_blocks(0, 1, SortOrder.DESC))
 
-
-class SymbolDatabaseBlockTest(TestCase):
 	def test_get_block_returns_none_when_sync_state_is_unreadable(self):
 		# Arrange + Act:
 		result = _query_symbol_database(
@@ -151,23 +149,9 @@ class SymbolDatabaseBlockTest(TestCase):
 		# Assert:
 		self.assertIsNone(result)
 
-
-class SymbolDatabaseSyncStateTest(TestCase):
-	def test_try_get_sync_state_returns_none_when_row_is_missing(self):
-		# Arrange + Act:
-		result = _query_symbol_database(
-			[],
-			None,
-			lambda database: database.try_get_sync_state())
-
-		# Assert:
-		self.assertIsNone(result)
-
-
-class SymbolDatabasePostgresTest(TestCase):
 	def test_can_get_blocks_from_postgresql_without_cursor(self):
 		# Arrange + Act:
-		result = _get_blocks_from_postgresql(
+		result = _get_blocks(
 			range(1, 4),
 			create_symbol_sync_state(last_synced_height=3, finalized_height=2),
 			{'from_height': None, 'limit': 1, 'sort': SortOrder.DESC})
@@ -178,7 +162,7 @@ class SymbolDatabasePostgresTest(TestCase):
 
 	def test_can_get_blocks_from_postgresql_with_from_height_cursor(self):
 		# Arrange + Act:
-		result = _get_blocks_from_postgresql(
+		result = _get_blocks(
 			range(1, 6),
 			create_symbol_sync_state(last_synced_height=5, finalized_height=3),
 			{'from_height': 4, 'limit': 2, 'sort': SortOrder.DESC})
@@ -191,7 +175,7 @@ class SymbolDatabasePostgresTest(TestCase):
 
 	def test_can_get_blocks_from_postgresql_with_ascending_cursor(self):
 		# Arrange + Act:
-		result = _get_blocks_from_postgresql(
+		result = _get_blocks(
 			range(20, 30),
 			create_symbol_sync_state(
 				last_synced_height=100,
@@ -208,7 +192,7 @@ class SymbolDatabasePostgresTest(TestCase):
 
 	def test_can_get_block_from_postgresql(self):
 		# Arrange + Act:
-		result = _get_block_from_postgresql(
+		result = _get_block(
 			[create_symbol_block(2)],
 			create_symbol_sync_state(last_synced_height=2, finalized_height=2),
 			2)
@@ -221,7 +205,7 @@ class SymbolDatabasePostgresTest(TestCase):
 
 	def test_can_get_block_from_postgresql_without_finalized_height(self):
 		# Arrange + Act:
-		result = _get_block_from_postgresql(
+		result = _get_block(
 			[create_symbol_block(2)],
 			create_symbol_sync_state(
 				last_synced_height=2,
@@ -237,7 +221,7 @@ class SymbolDatabasePostgresTest(TestCase):
 
 	def test_get_importance_fields(self):
 		# Arrange + Act:
-		result = _get_block_from_postgresql(
+		result = _get_block(
 			[create_symbol_importance_block(2)],
 			create_symbol_sync_state(last_synced_height=2, finalized_height=2),
 			2)
@@ -251,7 +235,19 @@ class SymbolDatabasePostgresTest(TestCase):
 			result.previous_importance_block_hash)
 
 
-def _get_blocks_from_postgresql(block_heights, sync_state, query):
+class SymbolDatabaseSyncStateTest(TestCase):
+	def test_try_get_sync_state_returns_none_when_row_is_missing(self):
+		# Arrange + Act:
+		result = _query_symbol_database(
+			[],
+			None,
+			lambda database: database.try_get_sync_state())
+
+		# Assert:
+		self.assertIsNone(result)
+
+
+def _get_blocks(block_heights, sync_state, query):
 	blocks = [create_symbol_block(height) for height in block_heights]
 
 	return _query_symbol_database(
@@ -263,7 +259,7 @@ def _get_blocks_from_postgresql(block_heights, sync_state, query):
 			query['sort']))
 
 
-def _get_block_from_postgresql(blocks, sync_state, height):
+def _get_block(blocks, sync_state, height):
 	return _query_symbol_database(
 		blocks,
 		sync_state,
