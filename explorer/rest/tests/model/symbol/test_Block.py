@@ -5,6 +5,24 @@ from unittest import TestCase
 from rest.model.symbol.Block import SymbolBlockView
 
 
+def _expected_list_dict():
+	return {
+		'height': 2,
+		'hash': '01',
+		'previousHash': '02',
+		'timestamp': '2026-01-02T03:04:05Z',
+		'networkTimestamp': 1234,
+		'harvester': 'TATNE7Q5BITMUTRRN6IB4I7FLSDRDWZA34I2PMQ',
+		'beneficiaryAddress': 'TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI',
+		'totalFee': 1.234567,
+		'transactionCount': 7,
+		'statementCount': 3,
+		'blockReward': None,
+		'isFinalized': True,
+		'difficulty': '100000000000000'
+	}
+
+
 class SymbolBlockViewTest(TestCase):
 	@staticmethod
 	def _create_block_view():
@@ -46,21 +64,7 @@ class SymbolBlockViewTest(TestCase):
 		result = block_view.to_dict()
 
 		# Assert:
-		self.assertEqual({
-			'height': 2,
-			'hash': '01',
-			'previousHash': '02',
-			'timestamp': '2026-01-02T03:04:05Z',
-			'networkTimestamp': 1234,
-			'harvester': 'TATNE7Q5BITMUTRRN6IB4I7FLSDRDWZA34I2PMQ',
-			'beneficiaryAddress': 'TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI',
-			'totalFee': 1.234567,
-			'transactionCount': 7,
-			'statementCount': 3,
-			'blockReward': None,
-			'isFinalized': True,
-			'difficulty': '100000000000000'
-		}, result)
+		self.assertEqual(_expected_list_dict(), result)
 
 	def test_can_convert_to_detail_dict(self):
 		# Arrange:
@@ -70,21 +74,24 @@ class SymbolBlockViewTest(TestCase):
 		result = block_view.to_detail_dict()
 
 		# Assert:
-		self.assertEqual('03', result['signature'])
-		self.assertEqual(456, result['size'])
-		self.assertEqual(100, result['feeMultiplier'])
-		self.assertEqual('04', result['proofGamma'])
-		self.assertEqual('05', result['proofVerificationHash'])
-		self.assertEqual('06', result['proofScalar'])
-		self.assertEqual('07', result['stateHash'])
-		self.assertEqual(['ROOT'], result['stateHashSubCacheMerkleRoots'])
-		self.assertEqual('09', result['receiptsHash'])
-		self.assertEqual('08', result['transactionsHash'])
-		self.assertEqual(4, result['votingEligibleAccountsCount'])
-		self.assertEqual('17', result['harvestingEligibleAccountsCount'])
-		self.assertEqual('19000235663367', result['totalVotingBalance'])
-		self.assertEqual('0A', result['previousImportanceBlockHash'])
-		self.assertEqual('nemesis', result['blockType'])
+		self.assertEqual({
+			**_expected_list_dict(),
+			'signature': '03',
+			'size': 456,
+			'feeMultiplier': 100,
+			'proofGamma': '04',
+			'proofVerificationHash': '05',
+			'proofScalar': '06',
+			'stateHash': '07',
+			'stateHashSubCacheMerkleRoots': ['ROOT'],
+			'receiptsHash': '09',
+			'transactionsHash': '08',
+			'votingEligibleAccountsCount': 4,
+			'harvestingEligibleAccountsCount': '17',
+			'totalVotingBalance': '19000235663367',
+			'previousImportanceBlockHash': '0A',
+			'blockType': 'nemesis'
+		}, result)
 
 	def test_can_convert_empty_state_hash_sub_cache_roots(self):
 		# Arrange:
