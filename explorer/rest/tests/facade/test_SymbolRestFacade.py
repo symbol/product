@@ -246,16 +246,16 @@ class SymbolRestFacadeTest(TestCase):  # pylint: disable=too-many-public-methods
 		result = facade.get_health()
 
 		# Assert:
-		self.assertFalse(result['isHealthy'])
-		self.assertFalse(result['backendSynced'])
-		self.assertEqual(9, result['lastDBHeight'])
-		self.assertEqual('healthy', result['status'])
-		self.assertEqual([{
-			'type': 'synchronization',
-			'message': (
-				'Symbol database height 9 does not match chain height 10'
-			)
-		}], result['errors'])
+		self.assertEqual(create_symbol_health(
+			dbUp=True,
+			finalizedHeight=8,
+			lastDBHeight=9,
+			status='healthy',
+			errors=[{
+				'type': 'synchronization',
+				'message': 'Symbol database height 9 does not match chain height 10'
+			}]
+		), result)
 
 	def test_reports_database_error(self):
 		# Arrange:
@@ -323,11 +323,16 @@ class SymbolRestFacadeTest(TestCase):  # pylint: disable=too-many-public-methods
 		result = facade.get_health()
 
 		# Assert:
-		self.assertFalse(result['isHealthy'])
-		self.assertEqual([{
-			'type': 'rollback',
-			'message': 'Symbol backend is in an unhealthy rollback state'
-		}], result['errors'])
+		self.assertEqual(create_symbol_health(
+			dbUp=True,
+			finalizedHeight=8,
+			lastDBHeight=10,
+			status='unhealthy',
+			errors=[{
+				'type': 'rollback',
+				'message': 'Symbol backend is in an unhealthy rollback state'
+			}]
+		), result)
 
 	def test_reports_repairing_sync_state_as_unhealthy(self):
 		# Arrange:
@@ -337,12 +342,16 @@ class SymbolRestFacadeTest(TestCase):  # pylint: disable=too-many-public-methods
 		result = facade.get_health()
 
 		# Assert:
-		self.assertFalse(result['isHealthy'])
-		self.assertFalse(result['backendSynced'])
-		self.assertEqual([{
-			'type': 'synchronization',
-			'message': 'Symbol backend status is repairing'
-		}], result['errors'])
+		self.assertEqual(create_symbol_health(
+			dbUp=True,
+			finalizedHeight=8,
+			lastDBHeight=9,
+			status='repairing',
+			errors=[{
+				'type': 'synchronization',
+				'message': 'Symbol backend status is repairing'
+			}]
+		), result)
 
 	def test_can_get_blocks(self):
 		# Arrange:
