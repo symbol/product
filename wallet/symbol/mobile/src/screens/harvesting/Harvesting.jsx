@@ -1,12 +1,21 @@
 import {
 	Button,
+	SelectTransactionSender,
 	Spacer,
 	Stack,
 	StyledText,
 	TransactionScreenTemplate
 } from '@/app/components';
 import { useStandardTransactionWorkflow } from '@/app/components/templates/TransactionScreenTemplate/hooks';
-import { useDebounce, useInit, useRefresh, useTransactionFees, useWalletController, useWalletRefreshLifecycle } from '@/app/hooks';
+import {
+	useDebounce,
+	useInit,
+	useRefresh,
+	useTransactionFees,
+	useTransactionSender,
+	useWalletController,
+	useWalletRefreshLifecycle
+} from '@/app/hooks';
 import { $t } from '@/app/localization';
 import { HarvestingForm, HarvestingStatus, HarvestingSummary } from '@/app/screens/harvesting/components';
 import {
@@ -23,7 +32,7 @@ import {
 	createHarvestingStatusViewModel,
 	getActionButtonText
 } from '@/app/screens/harvesting/utils';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
 /**
@@ -33,29 +42,22 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
  */
 export const Harvesting = () => {
 	const walletController = useWalletController();
-	const { ticker, isWalletReady } = walletController;
+	const { ticker, isWalletReady, networkIdentifier, chainName } = walletController;
+	const walletAccounts = walletController.accounts[networkIdentifier];
 
 	// Custom status to feedback pending state after sending start/stop transaction until next status load
 	const [isPendingTransaction, setIsPendingTransaction] = useState(false);
 
-	// Account harvesting info
+	// Sender selection (current or multisig)
 	const {
-		load: loadAccountInfo,
-		isLoading: isAccountInfoLoading,
-		harvestingStatus,
-		isEligible,
-		isAccountBalanceSufficient,
-		isAccountImportanceSufficient,
-		reset: resetAccountInfo
-	} = useHarvestingAccountInfo(walletController);
-
-	// Summary
-	const {
-		summaryViewModel,
-		isLoading: isSummaryLoading,
-		load: loadSummary,
-		reset: resetSummary
-	} = useHarvestingSummary(walletController);
+		options: senderOptions,
+		value: senderAddress,
+		changeValue: setSenderAddress,
+		selectedAccount,
+		isMultisigSelected: isMultisigSender,
+		load: loadSenderOptions,
+		reset: resetSenderOptions
+	} = useTransactionSender(walletController);
 
 	// Node list
 	const {
@@ -71,6 +73,28 @@ export const Harvesting = () => {
 		setNodeUrl,
 		setFeeLevel
 	} = useHarvestingFormState({ nodeUrl: randomNodeUrl });
+
+	// When harvesting from a multisig account, that account is the harvester the inner transactions act on
+	const harvesterAccountInfo = isMultisigSender ? selectedAccount : undefined;
+
+	// Account harvesting info
+	const {
+		load: loadAccountInfo,
+		isLoading: isAccountInfoLoading,
+		harvestingStatus,
+		isEligible,
+		isAccountBalanceSufficient,
+		isAccountImportanceSufficient,
+		reset: resetAccountInfo
+	} = useHarvestingAccountInfo(walletController, selectedAccount);
+
+	// Summary
+	const {
+		summaryViewModel,
+		isLoading: isSummaryLoading,
+		load: loadSummary,
+		reset: resetSummary
+	} = useHarvestingSummary(walletController, senderAddress);
 
 	// View Models
 	const actionConfig = createHarvestingActionConfig(harvestingStatus, isEligible);
@@ -89,7 +113,7 @@ export const Harvesting = () => {
 		createStartTransaction,
 		createStopTransaction,
 		getConfirmationPreview
-	} = useHarvestingTransaction({ walletController, selectedNodeUrl: nodeUrl, actionType });
+	} = useHarvestingTransaction({ walletController, selectedNodeUrl: nodeUrl, actionType, harvesterAccountInfo });
 	const createTransaction = useCallback(async () => {
 		if (actionType === HarvestingAction.START)
 			return createStartTransaction();
@@ -124,16 +148,18 @@ export const Harvesting = () => {
 	// Initialization and loading subscription
 	const loadAll = useCallback(() => {
 		setIsPendingTransaction(false);
+		loadSenderOptions();
 		loadAccountInfo();
 		loadSummary();
 		loadNodes();
-	}, [loadAccountInfo, loadSummary, loadNodes]);
+	}, [loadSenderOptions, loadAccountInfo, loadSummary, loadNodes]);
 	const clearAll = useCallback(() => {
 		setIsPendingTransaction(false);
+		resetSenderOptions();
 		resetAccountInfo();
 		resetSummary();
 		resetNodes();
-	}, [resetAccountInfo, resetSummary, resetNodes]);
+	}, [resetSenderOptions, resetAccountInfo, resetSummary, resetNodes]);
 	useWalletRefreshLifecycle({ 
 		walletController,
 		onRefresh: loadAll,
@@ -141,6 +167,23 @@ export const Harvesting = () => {
 	});
 	const { refresh, isRefreshing } = useRefresh(loadAll, isLoading);
 	useInit(loadAll, isWalletReady);
+
+	// Reload account-scoped data when the selected sender changes (skip the initial mount handled by loadAll)
+	const isInitialSenderRender = useRef(true);
+	useEffect(() => {
+		if (isInitialSenderRender.current) {
+			isInitialSenderRender.current = false;
+
+			return;
+		}
+
+		if (!isWalletReady)
+			return;
+
+		setIsPendingTransaction(false);
+		loadAccountInfo();
+		loadSummary();
+	}, [senderAddress]);
 
 	// Handlers
 	const handleTransactionSendSuccess = useCallback(() => {
@@ -181,10 +224,25 @@ export const Harvesting = () => {
 							</StyledText>
 						</Stack>
 
+						{/* Sender section */}
+						<Stack gap="none">
+							<StyledText type="title">{$t('s_harvesting_account_title')}</StyledText>
+							<SelectTransactionSender
+								value={senderAddress}
+								options={senderOptions}
+								ticker={ticker}
+								chainName={chainName}
+								networkIdentifier={networkIdentifier}
+								walletAccounts={walletAccounts}
+								addressBook={walletController.modules.addressBook}
+								onChange={setSenderAddress}
+							/>
+						</Stack>
+
 						{/* Status section */}
 						<Stack gap="none">
 							<StyledText type="title">
-								{$t('fieldTitle_status')}
+								{$t('s_harvesting_status_title')}
 							</StyledText>
 							<HarvestingStatus
 								statusViewModel={statusViewModel}

@@ -2,7 +2,7 @@ import { useWalletRefreshLifecycle } from '@/app/hooks';
 import { useHarvestingAccountInfo } from '@/app/screens/harvesting/hooks/useHarvestingAccountInfo';
 import { useHarvestingSummary } from '@/app/screens/harvesting/hooks/useHarvestingSummary';
 import { createHarvestingStatusViewModel } from '@/app/screens/harvesting/utils';
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 
 /** @typedef {import('@/app/types/Wallet').MainWalletController} MainWalletController */
 /** @typedef {import('../types/Harvesting').HarvestingWidgetProps} HarvestingWidgetProps */
@@ -23,15 +23,22 @@ import { useCallback } from 'react';
  * @returns {UseHarvestingWidgetReturnType} Widget state and props.
  */
 export const useHarvestingWidget = walletController => {
-	const { ticker } = walletController;
+	const { ticker, currentAccount } = walletController;
+	const currentAccountInfo = walletController.currentAccountInfo || {};
+
+	// The widget always reflects the current account
+	const currentAccountWithInfo = useMemo(
+		() => ({ ...currentAccountInfo, address: currentAccount.address, publicKey: currentAccount.publicKey }),
+		[currentAccountInfo, currentAccount.address, currentAccount.publicKey]
+	);
 
 	// Harvesting status
-	const statusManager = useHarvestingAccountInfo(walletController);
-	const { 
-		harvestingStatus, 
-		isAccountBalanceSufficient, 
-		isAccountImportanceSufficient, 
-		isPendingTransaction 
+	const statusManager = useHarvestingAccountInfo(walletController, currentAccountWithInfo);
+	const {
+		harvestingStatus,
+		isAccountBalanceSufficient,
+		isAccountImportanceSufficient,
+		isPendingTransaction
 	} = statusManager;
 	const statusViewModel = createHarvestingStatusViewModel({
 		harvestingStatus,
@@ -41,7 +48,7 @@ export const useHarvestingWidget = walletController => {
 	});
 
 	// Harvesting summary
-	const summaryManager = useHarvestingSummary(walletController);
+	const summaryManager = useHarvestingSummary(walletController, currentAccount.address);
 	const { summaryViewModel } = summaryManager;
 
 	// Subscribe to wallet events for automatic loading

@@ -22,7 +22,9 @@ describe('screens/onboarding/Home', () => {
 				},
 				harvesting: {
 					fetchSummary: jest.fn().mockResolvedValue(null),
-					fetchStatus: jest.fn().mockResolvedValue(null)
+					fetchStatus: jest.fn().mockResolvedValue(null),
+					getStatus: jest.fn().mockReturnValue(null),
+					getSummary: jest.fn().mockReturnValue(null)
 				}
 			}
 		});

@@ -15,14 +15,15 @@ import { useCallback } from 'react';
  */
 
 /**
- * React hook for fetching and managing harvesting summary data.
+ * React hook for fetching and managing harvesting summary data for the selected account.
  * @param {MainWalletController} walletController - Wallet controller instance.
+ * @param {string} selectedAddress - The selected harvester account address (current or multisig).
  * @returns {UseHarvestingSummaryReturnType}
  */
-export const useHarvestingSummary = walletController => {
+export const useHarvestingSummary = (walletController, selectedAddress) => {
 	const summaryManager = useAsyncManager({
-		callback: async () => walletController.modules.harvesting.fetchSummary(),
-		defaultData: walletController.modules.harvesting.summary
+		callback: async () => walletController.modules.harvesting.fetchSummary(selectedAddress),
+		defaultData: walletController.modules.harvesting.getSummary(selectedAddress)
 	});
 
 	const summaryViewModel = createHarvestingSummaryViewModel(summaryManager.data);

@@ -3,6 +3,7 @@ import { isBalanceSufficient, isImportanceSufficient } from '@/app/screens/harve
 import { useCallback, useState } from 'react';
 
 /** @typedef {import('@/app/types/Wallet').MainWalletController} MainWalletController */
+/** @typedef {import('@/app/types/Account').SymbolAccountInfo} SymbolAccountInfo */
 /** @typedef {import('wallet-common-symbol').HarvestingStatus} HarvestingStatusData */
 
 /**
@@ -18,15 +19,17 @@ import { useCallback, useState } from 'react';
  */
 
 /**
- * React hook for fetching and managing harvesting account information.
+ * React hook for fetching and managing harvesting account information for the selected account.
  * @param {MainWalletController} walletController - The wallet controller instance.
+ * @param {SymbolAccountInfo} selectedAccount - The selected harvester account info (current or multisig).
  * @returns {UseHarvestingAccountInfoReturnType}
  */
-export const useHarvestingAccountInfo = walletController => {
-	const { currentAccountInfo, networkProperties } = walletController;
+export const useHarvestingAccountInfo = (walletController, selectedAccount) => {
+	const { networkProperties } = walletController;
 	const divisibility = networkProperties?.networkCurrency?.divisibility ?? 6;
-	const balance = currentAccountInfo?.balance ?? '0';
-	const importance = currentAccountInfo?.importance ?? 0;
+	const balance = selectedAccount?.balance ?? '0';
+	const importance = selectedAccount?.importance ?? 0;
+	const selectedAddress = selectedAccount?.address;
 
 	// Track if initial data has been loaded
 	const [isInitialLoad, setIsInitialLoad] = useState(true);
@@ -34,11 +37,11 @@ export const useHarvestingAccountInfo = walletController => {
 	// Harvesting status
 	const statusManager = useAsyncManager({
 		callback: async () => {
-			const result = await walletController.modules.harvesting.fetchStatus();
+			const result = await walletController.modules.harvesting.fetchStatus(selectedAccount);
 			setIsInitialLoad(false);
 			return result;
 		},
-		defaultData: walletController.modules.harvesting.status
+		defaultData: walletController.modules.harvesting.getStatus(selectedAddress)
 	});
 
 	const load = useCallback(async () => {
