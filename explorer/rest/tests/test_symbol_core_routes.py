@@ -125,7 +125,6 @@ def _expected_block_detail(height, is_finalized):
 		'signature': f'{height:02X}' * 64,
 		'size': 100 + height,
 		'feeMultiplier': height,
-		'rawDifficulty': str(1000000 + height),
 		'proofGamma': f'{height:02X}' * 32,
 		'proofVerificationHash': f'{height:02X}' * 16,
 		'proofScalar': f'{height:02X}' * 32,
@@ -155,17 +154,27 @@ def test_symbol_health_with_database(symbol_database_config):
 			database_config=symbol_database_config)
 		app_config_path = _create_app_config(temp_directory, db_config_path)
 
-		_create_symbol_block_tables(symbol_database_config)
+		_seed_symbol_block_tables(
+			symbol_database_config,
+			create_symbol_sync_state(last_synced_height=1, finalized_height=1),
+			[])
 		with rest_settings_env(app_config_path):
 			# Act:
 			response = create_app().test_client().get('/api/symbol/health')
 
 	# Assert:
 	assert 200 == response.status_code
+	health = response.json
+	assert health['lastDBSyncedAt']
+	health['lastDBSyncedAt'] = None
 	assert create_symbol_health(
 		isHealthy=True,
-		dbUp=True
-	) == response.json
+		dbUp=True,
+		finalizedHeight=1,
+		backendSynced=True,
+		lastDBHeight=1,
+		status='healthy'
+	) == health
 
 
 def test_symbol_health_reports_db_error(symbol_database_config):
@@ -184,7 +193,6 @@ def test_symbol_health_reports_db_error(symbol_database_config):
 	# Assert:
 	assert 200 == response.status_code
 	assert create_symbol_health(
-		dbUp=True,
 		errors=[{
 			'type': 'database',
 			'message': 'Symbol database is unavailable'
