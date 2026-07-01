@@ -4,77 +4,27 @@ from common.tests.PostgresTestUtils import PostgresTestDatabase, drop_symbol_blo
 from puller.db.SymbolDatabase import SymbolDatabase as PullerSymbolDatabase
 
 from rest.db.SymbolDatabase import SortOrder, SymbolDatabase
-from rest.model.common import DatabaseConfig
 
 from ..test.SymbolBlockTestUtils import create_symbol_block, create_symbol_importance_block, create_symbol_sync_state
 
 
-class FalseCursor:
-	def __enter__(self):
-		return self
-
-	def __exit__(self, *_):
-		pass
-
-	def execute(self, _statement):
-		pass
-
-	@staticmethod
-	def fetchone():
-		return (0,)
-
-
-class FalseConnection:
-	def __enter__(self):
-		return self
-
-	def __exit__(self, *_):
-		pass
-
-	@staticmethod
-	def cursor():
-		return FalseCursor()
-
-
-class FalseConnectionPool:
-	@staticmethod
-	def getconn():
-		return FalseConnection()
-
-	@staticmethod
-	def putconn(_connection):
-		pass
-
-
-class FalseSelectOneSymbolDatabase(SymbolDatabase):
-	def _create_pool(self):
-		return FalseConnectionPool()
-
-
 class SymbolDatabaseConnectionTest(TestCase):
-	def test_check_connection_executes_select_one(self):
+	def test_check_connection_returns_true_when_sync_state_exists(self):
 		# Arrange + Act:
 		result = _query_symbol_database(
 			[],
-			None,
+			create_symbol_sync_state(last_synced_height=1, finalized_height=1),
 			lambda database: database.check_connection())
 
 		# Assert:
 		self.assertTrue(result)
 
-	def test_check_connection_returns_false_for_unexpected_select_one(self):
-		# Arrange:
-		# Last resort: real PostgreSQL cannot make SELECT 1 return 0, so this
-		# covers only the defensive false branch.
-		database = FalseSelectOneSymbolDatabase(DatabaseConfig(
-			'unused',
-			'unused',
-			'',
-			'127.0.0.1',
-			'5432'))
-
-		# Act:
-		result = database.check_connection()
+	def test_check_connection_returns_false_when_sync_state_is_absent(self):
+		# Arrange + Act:
+		result = _query_symbol_database(
+			[],
+			None,
+			lambda database: database.check_connection())
 
 		# Assert:
 		self.assertFalse(result)

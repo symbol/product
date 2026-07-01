@@ -76,12 +76,9 @@ class SymbolDatabase(DatabaseConnectionPool):
 	"""Database access for Symbol Explorer data."""
 
 	def check_connection(self):
-		"""Checks whether the configured Symbol database is reachable."""
+		"""Checks whether the configured Symbol database is reachable and initialized."""
 
-		with self.connection() as connection:
-			with connection.cursor() as cursor:
-				cursor.execute('SELECT 1')
-				return 1 == cursor.fetchone()[0]
+		return self.try_get_sync_state() is not None
 
 	def try_get_sync_state(self):
 		"""Gets the singleton Symbol sync state."""
