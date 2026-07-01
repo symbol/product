@@ -667,7 +667,13 @@ class NemDatabaseTest(DatabaseTestBase):  # pylint: disable=too-many-public-meth
 	def test_can_query_transactions_filtered_by_address_as_recipient(self):
 		self._assert_can_query_transactions_with_filter(
 			Pagination(10, 0), 'desc', self._make_transaction_query(address=TRANSACTIONS[0].recipient_address),
-			[TRANSACTIONS_VIEWS[5], TRANSACTIONS_VIEWS[6], TRANSACTIONS_VIEWS[0], TRANSACTIONS_VIEWS[1]]
+			[
+				TRANSACTIONS_VIEWS[4],
+				TRANSACTIONS_VIEWS[5],
+				TRANSACTIONS_VIEWS[6],
+				TRANSACTIONS_VIEWS[0],
+				TRANSACTIONS_VIEWS[1]
+			]
 		)
 
 	def test_can_query_transactions_filtered_by_sender_address(self):
@@ -679,7 +685,45 @@ class NemDatabaseTest(DatabaseTestBase):  # pylint: disable=too-many-public-meth
 	def test_can_query_transactions_filtered_by_recipient_address(self):
 		self._assert_can_query_transactions_with_filter(
 			Pagination(10, 0), 'desc', self._make_transaction_query(recipient_address=TRANSACTIONS[0].recipient_address),
-			[TRANSACTIONS_VIEWS[5], TRANSACTIONS_VIEWS[6], TRANSACTIONS_VIEWS[0], TRANSACTIONS_VIEWS[1]]
+			[
+				TRANSACTIONS_VIEWS[4],
+				TRANSACTIONS_VIEWS[5],
+				TRANSACTIONS_VIEWS[6],
+				TRANSACTIONS_VIEWS[0],
+				TRANSACTIONS_VIEWS[1]
+			]
+		)
+
+	def test_can_query_multisig_transaction_filtered_by_initiator_address(self):
+		self._assert_can_query_transactions_with_filter(
+			Pagination(10, 0), 'desc', self._make_transaction_query(sender_address=TRANSACTIONS[4].sender_address),
+			[TRANSACTIONS_VIEWS[4]]
+		)
+
+	def test_can_query_multisig_transaction_filtered_by_inner_sender_address(self):
+		self._assert_can_query_transactions_with_filter(
+			Pagination(10, 0), 'desc', self._make_transaction_query(sender_address=TRANSACTIONS[5].sender_address),
+			[
+				TRANSACTIONS_VIEWS[4],
+				TRANSACTIONS_VIEWS[6],
+				TRANSACTIONS_VIEWS[7],
+				TRANSACTIONS_VIEWS[3],
+				TRANSACTIONS_VIEWS[5],
+				TRANSACTIONS_VIEWS[1],
+				TRANSACTIONS_VIEWS[0]
+			]
+		)
+
+	def test_can_query_multisig_transaction_filtered_by_inner_recipient_address(self):
+		self._assert_can_query_transactions_with_filter(
+			Pagination(10, 0), 'desc', self._make_transaction_query(recipient_address=TRANSACTIONS[5].recipient_address),
+			[
+				TRANSACTIONS_VIEWS[4],
+				TRANSACTIONS_VIEWS[5],
+				TRANSACTIONS_VIEWS[6],
+				TRANSACTIONS_VIEWS[0],
+				TRANSACTIONS_VIEWS[1]
+			]
 		)
 
 	def test_can_query_transactions_filtered_by_mosaic_nem_xem(self):
