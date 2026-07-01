@@ -4,6 +4,7 @@ from common.symbol.NodeConfiguration import SymbolNodeConfiguration
 from common.tests.PostgresTestUtils import create_unreachable_db_configuration
 from psycopg2 import OperationalError
 
+from rest.db.SymbolDatabase import SortOrder
 from rest.facade.SymbolRestFacade import SymbolRestFacade
 
 from ..test.SymbolHealthTestUtils import create_symbol_health
@@ -27,7 +28,7 @@ class HealthySymbolDatabase:
 		return True
 
 	@staticmethod
-	def get_sync_state():
+	def try_get_sync_state():
 		return {
 			'status': 'healthy',
 			'chain_height': 10,
@@ -43,7 +44,7 @@ class LaggingSymbolDatabase:
 		return True
 
 	@staticmethod
-	def get_sync_state():
+	def try_get_sync_state():
 		return {
 			'status': 'healthy',
 			'chain_height': 10,
@@ -59,7 +60,7 @@ class UnhealthySymbolDatabase:
 		return True
 
 	@staticmethod
-	def get_sync_state():
+	def try_get_sync_state():
 		return {
 			'status': 'unhealthy',
 			'chain_height': 10,
@@ -75,7 +76,7 @@ class RepairingSymbolDatabase:
 		return True
 
 	@staticmethod
-	def get_sync_state():
+	def try_get_sync_state():
 		return {
 			'status': 'repairing',
 			'chain_height': 10,
@@ -91,7 +92,7 @@ class SyncStateFailingSymbolDatabase:
 		return True
 
 	@staticmethod
-	def get_sync_state():
+	def try_get_sync_state():
 		raise OperationalError('database unavailable')
 
 
@@ -120,9 +121,9 @@ class BlockSymbolDatabase:
 	def get_block_head_height(self):
 		return self.head_height
 
-	def get_blocks(self, limit, from_height, sort):
-		self.limit = limit
+	def get_blocks(self, from_height, limit, sort):
 		self.from_height = from_height
+		self.limit = limit
 		self.sort = sort
 		return self.blocks
 
@@ -137,7 +138,7 @@ class UnavailableBlockSymbolDatabase:
 		raise OperationalError('database unavailable')
 
 	@staticmethod
-	def get_blocks(_limit, _from_height, _sort):
+	def get_blocks(_from_height, _limit, _sort):
 		raise OperationalError('database unavailable')
 
 	@staticmethod
@@ -350,7 +351,7 @@ class SymbolRestFacadeTest(TestCase):  # pylint: disable=too-many-public-methods
 		facade = _create_facade_with_database(BlockSymbolDatabase())
 
 		# Act:
-		result = facade.get_blocks(limit=1, from_height=2, sort='DESC')
+		result = facade.get_blocks(from_height=2, limit=1, sort=SortOrder.DESC)
 
 		# Assert:
 		self.assertEqual([{'height': 1}], result)
@@ -361,12 +362,12 @@ class SymbolRestFacadeTest(TestCase):  # pylint: disable=too-many-public-methods
 		facade = _create_facade_with_database(symbol_db)
 
 		# Act:
-		facade.get_blocks(limit=1, from_height=2, sort='DESC')
+		facade.get_blocks(from_height=2, limit=1, sort=SortOrder.DESC)
 
 		# Assert:
 		self.assertEqual(1, facade.symbol_db.limit)
 		self.assertEqual(2, facade.symbol_db.from_height)
-		self.assertEqual('DESC', facade.symbol_db.sort)
+		self.assertEqual(SortOrder.DESC, facade.symbol_db.sort)
 
 	def test_get_blocks_returns_none_when_database_is_unavailable(self):
 		# Arrange:
@@ -377,7 +378,7 @@ class SymbolRestFacadeTest(TestCase):  # pylint: disable=too-many-public-methods
 		# Act + Assert:
 		self.assertFalse(facade.is_database_available())
 		self.assertIsNone(
-			facade.get_blocks(limit=1, from_height=None, sort='DESC'))
+			facade.get_blocks(from_height=None, limit=1, sort=SortOrder.DESC))
 
 	def test_get_blocks_returns_none_when_backend_data_is_unavailable(self):
 		# Arrange:
@@ -387,7 +388,7 @@ class SymbolRestFacadeTest(TestCase):  # pylint: disable=too-many-public-methods
 		# Act + Assert:
 		self.assertFalse(facade.is_block_data_available())
 		self.assertIsNone(
-			facade.get_blocks(limit=1, from_height=None, sort='DESC'))
+			facade.get_blocks(from_height=None, limit=1, sort=SortOrder.DESC))
 
 	def test_get_blocks_returns_none_when_database_read_fails(self):
 		# Arrange:
@@ -396,7 +397,7 @@ class SymbolRestFacadeTest(TestCase):  # pylint: disable=too-many-public-methods
 		# Act + Assert:
 		self.assertFalse(facade.is_block_data_available())
 		self.assertIsNone(
-			facade.get_blocks(limit=1, from_height=None, sort='DESC'))
+			facade.get_blocks(from_height=None, limit=1, sort=SortOrder.DESC))
 
 	def test_get_blocks_returns_none_when_database_returns_none(self):
 		# Arrange:
@@ -404,7 +405,7 @@ class SymbolRestFacadeTest(TestCase):  # pylint: disable=too-many-public-methods
 
 		# Act + Assert:
 		self.assertIsNone(
-			facade.get_blocks(limit=1, from_height=None, sort='DESC'))
+			facade.get_blocks(from_height=None, limit=1, sort=SortOrder.DESC))
 
 	def test_can_get_block_detail(self):
 		# Arrange:

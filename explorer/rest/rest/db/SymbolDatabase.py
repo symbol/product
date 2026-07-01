@@ -1,4 +1,4 @@
-from psycopg2 import Error as PsycopgError
+from enum import Enum
 
 from rest.model.symbol.Block import SymbolBlockView
 
@@ -44,17 +44,12 @@ SYNC_STATE_COLUMNS = [
 	'last_synced_block_hash',
 	'updated_at'
 ]
-LEGACY_SYNC_STATE_COLUMNS = [
-	'status',
-	'chain_height',
-	'finalized_height',
-	'finalized_hash',
-	'last_synced_height',
-	'last_synced_block_hash',
-	'updated_at'
-]
 READABLE_BLOCK_STATUSES = frozenset(['healthy', 'repairing'])
-UNDEFINED_COLUMN_SQLSTATE = '42703'
+
+
+class SortOrder(str, Enum):
+	ASC = 'ASC'
+	DESC = 'DESC'
 
 
 def _bytes_or_none(value):
@@ -74,10 +69,7 @@ def _create_sync_state(columns, result):
 	if not result:
 		return None
 
-	sync_state = dict(zip(columns, result))
-	sync_state.setdefault('finalized_epoch', None)
-	sync_state.setdefault('finalized_point', None)
-	return sync_state
+	return dict(zip(columns, result))
 
 
 class SymbolDatabase(DatabaseConnectionPool):
@@ -91,29 +83,19 @@ class SymbolDatabase(DatabaseConnectionPool):
 				cursor.execute('SELECT 1')
 				return 1 == cursor.fetchone()[0]
 
-	def get_sync_state(self):
+	def try_get_sync_state(self):
 		"""Gets the singleton Symbol sync state."""
 
 		with self.connection() as connection:
 			with connection.cursor() as cursor:
-				try:
-					cursor.execute(f'SELECT {", ".join(SYNC_STATE_COLUMNS)} FROM symbol_sync_state WHERE id = 1')
-					result = cursor.fetchone()
-				except PsycopgError as error:
-					connection.rollback()
-					if UNDEFINED_COLUMN_SQLSTATE != error.pgcode:
-						raise
-
-					cursor.execute(f'SELECT {", ".join(LEGACY_SYNC_STATE_COLUMNS)} FROM symbol_sync_state WHERE id = 1')
-					result = cursor.fetchone()
-					return _create_sync_state(LEGACY_SYNC_STATE_COLUMNS, result)
-
+				cursor.execute(f'SELECT {", ".join(SYNC_STATE_COLUMNS)} FROM symbol_sync_state WHERE id = 1')
+				result = cursor.fetchone()
 				return _create_sync_state(SYNC_STATE_COLUMNS, result)
 
 	def get_block(self, height):
 		"""Gets a Symbol block by height."""
 
-		sync_state = self.get_sync_state()
+		sync_state = self.try_get_sync_state()
 		if not _is_block_data_readable(sync_state):
 			return None
 
@@ -129,27 +111,26 @@ class SymbolDatabase(DatabaseConnectionPool):
 	def get_block_head_height(self):
 		"""Gets the latest synced height for the block list."""
 
-		sync_state = self.get_sync_state()
+		sync_state = self.try_get_sync_state()
 		if not _is_block_data_readable(sync_state):
 			return None
 
 		return sync_state['last_synced_height']
 
-	def get_blocks(self, limit, from_height, sort):
+	def get_blocks(self, from_height, limit, sort):
 		"""Gets Symbol blocks using fromHeight cursor pagination."""
 
-		sync_state = self.get_sync_state()
+		sync_state = self.try_get_sync_state()
 		if not _is_block_data_readable(sync_state):
 			return None
 
-		head_height = sync_state['last_synced_height']
+		local_height = sync_state['last_synced_height']
 		finalized_height = sync_state['finalized_height']
-		order = sort.upper()
-		if order not in ('ASC', 'DESC'):
+		if not isinstance(sort, SortOrder):
 			raise ValueError('Sort must be either ASC or DESC')
 
-		start_height, end_height = self._calculate_height_range(head_height, limit, from_height, order)
-		if not start_height:
+		start_height, end_height = self._calculate_height_range(local_height, limit, from_height, sort)
+		if start_height is None:
 			return []
 
 		with self.connection() as connection:
@@ -159,33 +140,33 @@ class SymbolDatabase(DatabaseConnectionPool):
 					SELECT {BLOCK_COLUMNS}
 					FROM symbol_blocks
 					WHERE height BETWEEN %s AND %s
-					ORDER BY height {order}
+					ORDER BY height {sort.value}
 					''',
-					(min(start_height, end_height), max(start_height, end_height)))
+					(start_height, end_height))
 				results = cursor.fetchall()
 
 				return [self._create_block_view(result, finalized_height) for result in results]
 
 	@staticmethod
-	def _calculate_height_range(head_height, limit, from_height, sort):
+	def _calculate_height_range(local_height, limit, from_height, sort):
 		if 0 == limit:
 			return None, None
 
 		if from_height is not None and from_height < 1:
 			raise ValueError('fromHeight must be greater than or equal to 1')
 
-		if 'ASC' == sort.upper():
+		if SortOrder.ASC == sort:
 			start_height = from_height or 1
-			if start_height > head_height:
+			if start_height > local_height:
 				return None, None
 
-			return start_height, min(head_height, start_height + limit - 1)
+			return start_height, min(local_height, start_height + limit - 1)
 
-		start_height = from_height or head_height
-		if start_height > head_height or start_height < 1:
+		start_height = from_height or local_height
+		if start_height > local_height or start_height < 1:
 			return None, None
 
-		return start_height, max(1, start_height - limit + 1)
+		return max(1, start_height - limit + 1), start_height
 
 	@staticmethod
 	def _create_block_view(result, finalized_height):

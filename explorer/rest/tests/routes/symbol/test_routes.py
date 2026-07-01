@@ -2,6 +2,7 @@ from flask import Flask
 from psycopg2 import OperationalError
 
 from rest import setup_error_handlers
+from rest.db.SymbolDatabase import SortOrder
 from rest.routes.symbol import setup_symbol_routes
 
 
@@ -26,8 +27,8 @@ class SymbolBlockFacade:
 	def is_block_data_available(self):
 		return self.database_available and self.block_data_available
 
-	def get_blocks(self, limit, from_height, sort):
-		self.blocks_query = (limit, from_height, sort)
+	def get_blocks(self, from_height, limit, sort):
+		self.blocks_query = (from_height, limit, sort)
 		if self.blocks_error:
 			raise self.blocks_error
 
@@ -84,7 +85,7 @@ def test_blocks_uses_cursor_sort():
 	# Assert:
 	assert 200 == response.status_code
 	assert [{'height': 2}] == response.json
-	assert (5, 10, 'ASC') == facade.blocks_query
+	assert (10, 5, SortOrder.ASC) == facade.blocks_query
 
 
 def test_blocks_rejects_limit():

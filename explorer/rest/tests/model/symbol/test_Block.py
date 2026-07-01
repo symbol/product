@@ -73,7 +73,6 @@ class SymbolBlockViewTest(TestCase):
 		self.assertEqual('03', result['signature'])
 		self.assertEqual(456, result['size'])
 		self.assertEqual(100, result['feeMultiplier'])
-		self.assertEqual('100000000000000', result['rawDifficulty'])
 		self.assertEqual('04', result['proofGamma'])
 		self.assertEqual('05', result['proofVerificationHash'])
 		self.assertEqual('06', result['proofScalar'])

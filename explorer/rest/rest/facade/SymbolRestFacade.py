@@ -85,7 +85,7 @@ class SymbolRestFacade:
 		status = None
 		if db_up and not errors:
 			try:
-				sync_state = self.symbol_db.get_sync_state()
+				sync_state = self.symbol_db.try_get_sync_state()
 			except PsycopgError as error:
 				log.error(f'Failed to get Symbol database sync state: {error}')
 				errors.append({
@@ -128,18 +128,18 @@ class SymbolRestFacade:
 			'errors': errors
 		}
 
-	def get_blocks(self, limit, from_height, sort):
+	def get_blocks(self, from_height, limit, sort):
 		"""Gets Symbol blocks."""
 
 		if not self.is_database_available():
 			return None
 
 		try:
-			head_height = self.symbol_db.get_block_head_height()
-			if head_height is None:
+			local_height = self.symbol_db.get_block_head_height()
+			if local_height is None:
 				return None
 
-			blocks = self.symbol_db.get_blocks(limit, from_height, sort)
+			blocks = self.symbol_db.get_blocks(from_height, limit, sort)
 			if blocks is None:
 				return None
 

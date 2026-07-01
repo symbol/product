@@ -87,7 +87,6 @@ class SymbolBlockView:  # pylint: disable=too-many-instance-attributes
 			'signature': _hex(self.signature),
 			'size': self.size,
 			'feeMultiplier': self.fee_multiplier,
-			'rawDifficulty': str(self.difficulty),
 			'proofGamma': _hex(self.proof_gamma),
 			'proofVerificationHash': _hex(self.proof_verification_hash),
 			'proofScalar': _hex(self.proof_scalar),

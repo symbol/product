@@ -6,6 +6,7 @@ from flask import abort, jsonify, request
 from psycopg2 import Error as PsycopgError
 from zenlog import log
 
+from rest.db.SymbolDatabase import SortOrder
 from rest.facade.SymbolRestFacade import SymbolRestFacade
 from rest.model.common import DatabaseConfig
 
@@ -58,7 +59,7 @@ def setup_symbol_routes(app, symbol_api_facade):
 			if not symbol_api_facade.is_block_data_available():
 				return _service_unavailable('Symbol backend data is unavailable')
 
-			result = symbol_api_facade.get_blocks(limit, from_height, sort)
+			result = symbol_api_facade.get_blocks(from_height, limit, SortOrder(sort))
 		except ValueError as error:
 			abort(400, error)
 		except PsycopgError:

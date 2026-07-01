@@ -1,10 +1,9 @@
 from unittest import TestCase
 
 from common.tests.PostgresTestUtils import PostgresTestDatabase, drop_symbol_block_tables_if_present
-from psycopg2 import Error as PsycopgError
 from puller.db.SymbolDatabase import SymbolDatabase as PullerSymbolDatabase
 
-from rest.db.SymbolDatabase import SymbolDatabase
+from rest.db.SymbolDatabase import SortOrder, SymbolDatabase
 from rest.model.common import DatabaseConfig
 
 from ..test.SymbolBlockTestUtils import create_symbol_block, create_symbol_importance_block, create_symbol_sync_state
@@ -50,88 +49,6 @@ class FalseConnectionPool:
 class FalseSelectOneSymbolDatabase(SymbolDatabase):
 	def _create_pool(self):
 		return FalseConnectionPool()
-
-
-class UndefinedColumnError(PsycopgError):
-	@property
-	def pgcode(self):
-		return '42703'
-
-
-class LegacySyncStateCursor:
-	def __init__(self, connection):
-		self.connection = connection
-		self.statements = []
-		self.used_legacy_query = False
-
-	def __enter__(self):
-		return self
-
-	def __exit__(self, *_):
-		pass
-
-	def execute(self, statement):
-		self.statements.append(statement)
-		if 'finalized_epoch' in statement:
-			raise UndefinedColumnError('column finalized_epoch does not exist')
-
-		self.used_legacy_query = True
-
-	@staticmethod
-	def fetchone():
-		return (
-			'healthy',
-			10,
-			8,
-			bytes(b'finalized'),
-			10,
-			bytes(b'last'),
-			'2026-01-01'
-		)
-
-
-class LegacySyncStateConnection:
-	def __init__(self):
-		self.cursor_instance = LegacySyncStateCursor(self)
-		self.rollback_count = 0
-
-	def __enter__(self):
-		return self
-
-	def __exit__(self, *_):
-		pass
-
-	def cursor(self):
-		return self.cursor_instance
-
-	def rollback(self):
-		self.rollback_count += 1
-
-
-class LegacySyncStateConnectionPool:
-	def __init__(self):
-		self.connection = LegacySyncStateConnection()
-
-	def getconn(self):
-		return self.connection
-
-	@staticmethod
-	def putconn(_connection):
-		pass
-
-
-class LegacySyncStateSymbolDatabase(SymbolDatabase):
-	def __init__(self):
-		self.pool = LegacySyncStateConnectionPool()
-		super().__init__(DatabaseConfig(
-			'unused',
-			'unused',
-			'',
-			'127.0.0.1',
-			'5432'))
-
-	def _create_pool(self):
-		return self.pool
 
 
 class SymbolDatabaseConnectionTest(TestCase):
@@ -206,7 +123,7 @@ class SymbolDatabaseBlocksTest(TestCase):
 		result = _query_symbol_database(
 			[],
 			None,
-			lambda database: database.get_blocks(10, None, 'DESC'))
+			lambda database: database.get_blocks(None, 10, SortOrder.DESC))
 
 		# Assert:
 		self.assertIsNone(result)
@@ -216,7 +133,7 @@ class SymbolDatabaseBlocksTest(TestCase):
 		result = _query_symbol_database(
 			[],
 			create_symbol_sync_state(last_synced_height=1, finalized_height=1),
-			lambda database: database.get_blocks(0, None, 'DESC'))
+			lambda database: database.get_blocks(None, 0, SortOrder.DESC))
 
 		# Assert:
 		self.assertEqual([], result)
@@ -226,7 +143,7 @@ class SymbolDatabaseBlocksTest(TestCase):
 		result = _query_symbol_database(
 			[],
 			create_symbol_sync_state(last_synced_height=1, finalized_height=1),
-			lambda database: database.get_blocks(1, 2, 'DESC'))
+			lambda database: database.get_blocks(2, 1, SortOrder.DESC))
 
 		# Assert:
 		self.assertEqual([], result)
@@ -238,7 +155,7 @@ class SymbolDatabaseBlocksTest(TestCase):
 			create_symbol_sync_state(
 				last_synced_height=100,
 				finalized_height=90),
-			lambda database: database.get_blocks(10, 101, 'ASC'))
+			lambda database: database.get_blocks(101, 10, SortOrder.ASC))
 
 		# Assert:
 		self.assertEqual([], result)
@@ -254,7 +171,7 @@ class SymbolDatabaseBlocksTest(TestCase):
 				create_symbol_sync_state(
 					last_synced_height=3,
 					finalized_height=2),
-				lambda database: database.get_blocks(1, None, 'height DESC'))
+				lambda database: database.get_blocks(None, 1, 'height DESC'))
 
 	def test_get_blocks_rejects_invalid_from_height(self):
 		# Arrange + Act + Assert:
@@ -267,7 +184,7 @@ class SymbolDatabaseBlocksTest(TestCase):
 				create_symbol_sync_state(
 					last_synced_height=3,
 					finalized_height=2),
-				lambda database: database.get_blocks(1, 0, 'DESC'))
+				lambda database: database.get_blocks(0, 1, SortOrder.DESC))
 
 
 class SymbolDatabaseBlockTest(TestCase):
@@ -286,35 +203,15 @@ class SymbolDatabaseBlockTest(TestCase):
 
 
 class SymbolDatabaseSyncStateTest(TestCase):
-	def test_get_sync_state_returns_none_when_row_is_missing(self):
+	def test_try_get_sync_state_returns_none_when_row_is_missing(self):
 		# Arrange + Act:
 		result = _query_symbol_database(
 			[],
 			None,
-			lambda database: database.get_sync_state())
+			lambda database: database.try_get_sync_state())
 
 		# Assert:
 		self.assertIsNone(result)
-
-	def test_get_sync_state_defaults_missing_finalization_round_columns(self):
-		# Arrange:
-		database = LegacySyncStateSymbolDatabase()
-
-		# Act:
-		result = database.get_sync_state()
-
-		# Assert:
-		self.assertEqual('healthy', result['status'])
-		self.assertEqual(10, result['chain_height'])
-		self.assertEqual(8, result['finalized_height'])
-		self.assertEqual(bytes(b'finalized'), bytes(result['finalized_hash']))
-		self.assertIsNone(result['finalized_epoch'])
-		self.assertIsNone(result['finalized_point'])
-		self.assertEqual(10, result['last_synced_height'])
-		self.assertEqual(bytes(b'last'), bytes(result['last_synced_block_hash']))
-		self.assertEqual('2026-01-01', result['updated_at'])
-		self.assertEqual(1, database.pool.connection.rollback_count)
-		self.assertTrue(database.pool.connection.cursor_instance.used_legacy_query)
 
 
 class SymbolDatabasePostgresTest(TestCase):
@@ -323,7 +220,7 @@ class SymbolDatabasePostgresTest(TestCase):
 		result = _get_blocks_from_postgresql(
 			range(1, 4),
 			create_symbol_sync_state(last_synced_height=3, finalized_height=2),
-			{'limit': 1, 'from_height': None, 'sort': 'DESC'})
+			{'from_height': None, 'limit': 1, 'sort': SortOrder.DESC})
 
 		# Assert:
 		self.assertEqual([3], [block.height for block in result])
@@ -334,7 +231,7 @@ class SymbolDatabasePostgresTest(TestCase):
 		result = _get_blocks_from_postgresql(
 			range(1, 6),
 			create_symbol_sync_state(last_synced_height=5, finalized_height=3),
-			{'limit': 2, 'from_height': 4, 'sort': 'DESC'})
+			{'from_height': 4, 'limit': 2, 'sort': SortOrder.DESC})
 
 		# Assert:
 		self.assertEqual([4, 3], [block.height for block in result])
@@ -349,7 +246,7 @@ class SymbolDatabasePostgresTest(TestCase):
 			create_symbol_sync_state(
 				last_synced_height=100,
 				finalized_height=25),
-			{'limit': 10, 'from_height': 20, 'sort': 'ASC'})
+			{'from_height': 20, 'limit': 10, 'sort': SortOrder.ASC})
 
 		# Assert:
 		self.assertEqual(
@@ -411,8 +308,8 @@ def _get_blocks_from_postgresql(block_heights, sync_state, query):
 		blocks,
 		sync_state,
 		lambda database: database.get_blocks(
-			query['limit'],
 			query['from_height'],
+			query['limit'],
 			query['sort']))
 
 
