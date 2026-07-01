@@ -175,15 +175,15 @@ class SymbolPuller:
 	def _get_finalized_watermark(chain_info, chain_height):
 		finalized_block = chain_info['latestFinalizedBlock']
 		node_finalized_height = int(finalized_block['height'])
-		is_finalization_capped = node_finalized_height > chain_height
-		finalized_height = min(node_finalized_height, chain_height)
+		if node_finalized_height > chain_height:
+			return chain_height, None, None, None, True
 
 		return (
-			finalized_height,
-			None if is_finalization_capped else bytes.fromhex(finalized_block['hash']),
-			None if is_finalization_capped else finalized_block['finalizationEpoch'],
-			None if is_finalization_capped else finalized_block['finalizationPoint'],
-			is_finalization_capped
+			node_finalized_height,
+			bytes.fromhex(finalized_block['hash']),
+			finalized_block['finalizationEpoch'],
+			finalized_block['finalizationPoint'],
+			False
 		)
 
 	def _get_bounded_sync_state(self, sync_state, chain_height):
