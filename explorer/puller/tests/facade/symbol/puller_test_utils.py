@@ -48,7 +48,8 @@ def _create_symbol_puller(
 	db_config_path,
 	network_type='mainnet',
 	request_timeout_seconds=10,
-	node_url=NODE_URL
+	node_url=NODE_URL,
+	connector=None
 ):
 	node_config = SymbolNodeConfiguration.from_url(
 		node_url,
@@ -60,14 +61,16 @@ def _create_symbol_puller(
 		node_url,
 		db_config_path,
 		network_type,
-		node_config
+		node_config,
+		connector
 	)
 
 
 @contextmanager
 def _temporary_symbol_puller(
 	network_type='mainnet',
-	request_timeout_seconds=10
+	request_timeout_seconds=10,
+	connector=None
 ):
 	with tempfile.TemporaryDirectory() as temp_directory:
 		db_config_path = _create_db_config(temp_directory)
@@ -75,7 +78,8 @@ def _temporary_symbol_puller(
 		yield _create_symbol_puller(
 			db_config_path,
 			network_type,
-			request_timeout_seconds
+			request_timeout_seconds,
+			connector=connector
 		)
 
 
@@ -229,9 +233,10 @@ class _SymbolPullerTestBase(TestCase):
 		)
 		self.db_config = self.exit_stack.enter_context(PostgresTestDatabase())
 		self.config_ini = _create_db_config(self.config_dir, self.db_config)
-		self.puller = _create_symbol_puller(self.config_ini, 'testnet')
-		with self.puller.symbol_db as database:
-			drop_symbol_block_tables_if_present(database)
+		self.puller = self.exit_stack.enter_context(
+			_create_symbol_puller(self.config_ini, 'testnet')
+		)
+		drop_symbol_block_tables_if_present(self.puller.symbol_db)
 
 	def tearDown(self):
 		self.exit_stack.close()
@@ -283,17 +288,16 @@ class _SymbolPullerTestBase(TestCase):
 
 	def _sync_with_connector(self, connector, max_height=None):
 		# Arrange:
-		with self.puller.symbol_db as database:
-			database.create_tables()
-			_set_symbol_connector(self.puller, connector)
+		self.puller.symbol_db.create_tables()
+		_set_symbol_connector(self.puller, connector)
 
-			# Act:
-			asyncio.run(self.puller.sync_block_headers(max_height))
+		# Act:
+		asyncio.run(self.puller.sync_block_headers(max_height))
 
-			return (
-				self._fetch_block_heights(database),
-				database.get_sync_state()
-			)
+		return (
+			self._fetch_block_heights(self.puller.symbol_db),
+			self.puller.symbol_db.get_sync_state()
+		)
 
 	def _assert_sync_rejects_node_response(
 		self,
@@ -303,17 +307,16 @@ class _SymbolPullerTestBase(TestCase):
 		max_height=None
 	):
 		# Arrange:
-		with self.puller.symbol_db as database:
-			database.create_tables()
-			_set_symbol_connector(self.puller, connector)
+		self.puller.symbol_db.create_tables()
+		_set_symbol_connector(self.puller, connector)
 
-			# Act:
-			with self.assertRaisesRegex(error_type, error_message):
-				if max_height is None:
-					asyncio.run(self.puller.sync_block_headers())
-				else:
-					asyncio.run(self.puller.sync_block_headers(max_height))
+		# Act:
+		with self.assertRaisesRegex(error_type, error_message):
+			if max_height is None:
+				asyncio.run(self.puller.sync_block_headers())
+			else:
+				asyncio.run(self.puller.sync_block_headers(max_height))
 
-			# Assert:
-			self.assertEqual([], self._fetch_block_heights(database))
-			self.assertIsNone(database.get_sync_state())
+		# Assert:
+		self.assertEqual([], self._fetch_block_heights(self.puller.symbol_db))
+		self.assertIsNone(self.puller.symbol_db.get_sync_state())

@@ -48,7 +48,7 @@ def _bytes_from_hex_or_none(value):
 class SymbolPuller:
 	"""Facade for pulling data from Symbol network."""
 
-	def __init__(self, node_url, config_file, network_type='mainnet', node_config=None):
+	def __init__(self, node_url, config_file, network_type='mainnet', node_config=None, connector=None):
 		"""Creates a Symbol puller facade object."""
 
 		config = configparser.ConfigParser()
@@ -61,9 +61,16 @@ class SymbolPuller:
 		self.symbol_db = SymbolDatabase(DatabaseConfiguration(**db_config))
 		self.node_config = node_config or SymbolNodeConfiguration.from_url(node_url)
 		symbol_node_endpoint = self.node_config.assert_request_allowed(self.node_config.base_url)
-		self._symbol_connector = SymbolConnector(symbol_node_endpoint)
+		self._symbol_connector = connector or SymbolConnector(symbol_node_endpoint)
 		self._symbol_connector.timeout_seconds = self.node_config.timeout_seconds
 		self.symbol_facade = SymbolFacade(network)
+
+	def __enter__(self):
+		self.symbol_db.__enter__()
+		return self
+
+	def __exit__(self, *args):
+		self.symbol_db.__exit__(*args)
 
 	def _validate_symbol_node_path(self, url_path):
 		parsed_url = urlparse(url_path)

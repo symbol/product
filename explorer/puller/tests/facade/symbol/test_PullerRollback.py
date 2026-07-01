@@ -14,23 +14,22 @@ class SymbolPullerRollbackTest(_SymbolPullerTestBase):
 			{1: [_create_node_block(2), _create_node_block(3)]},
 			{2: _create_node_block(2)}
 		)
-		with self.puller.symbol_db as database:
-			database.create_tables()
-			self._seed_blocks(
-				database,
-				[1, 2, 3],
-				{2: b'local mismatch'.hex()}
-			)
-			database.upsert_sync_state(_create_sync_state())
-			_set_symbol_connector(self.puller, connector)
+		self.puller.symbol_db.create_tables()
+		self._seed_blocks(
+			self.puller.symbol_db,
+			[1, 2, 3],
+			{2: b'local mismatch'.hex()}
+		)
+		self.puller.symbol_db.upsert_sync_state(_create_sync_state())
+		_set_symbol_connector(self.puller, connector)
 
-			# Act:
-			asyncio.run(self.puller.sync_block_headers())
+		# Act:
+		asyncio.run(self.puller.sync_block_headers())
 
-			# Assert:
-			block_heights = self._fetch_block_heights(database)
-			block_hash = self._fetch_block_hash(database, 2)
-			sync_state = database.get_sync_state()
+		# Assert:
+		block_heights = self._fetch_block_heights(self.puller.symbol_db)
+		block_hash = self._fetch_block_hash(self.puller.symbol_db, 2)
+		sync_state = self.puller.symbol_db.get_sync_state()
 
 		self.assertEqual([1, 2, 3], block_heights)
 		self.assertEqual(
@@ -43,43 +42,41 @@ class SymbolPullerRollbackTest(_SymbolPullerTestBase):
 	def test_sync_block_headers_marks_deep_finalized_mismatch_unhealthy(self):
 		# Arrange:
 		connector = FakeConnector(3, {})
-		with self.puller.symbol_db as database:
-			database.create_tables()
-			self._seed_blocks(database, [1], {1: b'local mismatch'.hex()})
-			database.upsert_sync_state(_create_sync_state(
-				finalized_hash=b'old finalized'
-			))
-			_set_symbol_connector(self.puller, connector)
+		self.puller.symbol_db.create_tables()
+		self._seed_blocks(self.puller.symbol_db, [1], {1: b'local mismatch'.hex()})
+		self.puller.symbol_db.upsert_sync_state(_create_sync_state(
+			finalized_hash=b'old finalized'
+		))
+		_set_symbol_connector(self.puller, connector)
 
-			# Act / Assert:
-			with self.assertRaisesRegex(
-				SymbolRollbackError,
-				'Finalized block hash does not match local database'
-			):
-				asyncio.run(self.puller.sync_block_headers())
+		# Act / Assert:
+		with self.assertRaisesRegex(
+			SymbolRollbackError,
+			'Finalized block hash does not match local database'
+		):
+			asyncio.run(self.puller.sync_block_headers())
 
-			# Assert:
-			sync_state = database.get_sync_state()
+		# Assert:
+		sync_state = self.puller.symbol_db.get_sync_state()
 
 		self.assertEqual('unhealthy', sync_state['status'])
 
 	def test_sync_block_headers_marks_missing_finalized_block_unhealthy(self):
 		# Arrange:
 		connector = FakeConnector(3, {})
-		with self.puller.symbol_db as database:
-			database.create_tables()
-			database.upsert_sync_state(_create_sync_state())
-			_set_symbol_connector(self.puller, connector)
+		self.puller.symbol_db.create_tables()
+		self.puller.symbol_db.upsert_sync_state(_create_sync_state())
+		_set_symbol_connector(self.puller, connector)
 
-			# Act / Assert:
-			with self.assertRaisesRegex(
-				SymbolRollbackError,
-				'Finalized block is missing from local database'
-			):
-				asyncio.run(self.puller.sync_block_headers())
+		# Act / Assert:
+		with self.assertRaisesRegex(
+			SymbolRollbackError,
+			'Finalized block is missing from local database'
+		):
+			asyncio.run(self.puller.sync_block_headers())
 
-			# Assert:
-			sync_state = database.get_sync_state()
+		# Assert:
+		sync_state = self.puller.symbol_db.get_sync_state()
 
 		self.assertEqual('unhealthy', sync_state['status'])
 		self.assertEqual(
@@ -97,20 +94,19 @@ class SymbolPullerRollbackTest(_SymbolPullerTestBase):
 			{2: _create_node_block(2), 3: _create_node_block(3)},
 			finalized_height=3
 		)
-		with self.puller.symbol_db as database:
-			database.create_tables()
-			self._seed_blocks(database, [1, 2, 3])
-			database.upsert_sync_state(_create_sync_state(
-				finalized_height=3,
-				finalized_hash=bytes.fromhex(f'{3:064X}')
-			))
-			_set_symbol_connector(self.puller, connector)
+		self.puller.symbol_db.create_tables()
+		self._seed_blocks(self.puller.symbol_db, [1, 2, 3])
+		self.puller.symbol_db.upsert_sync_state(_create_sync_state(
+			finalized_height=3,
+			finalized_hash=bytes.fromhex(f'{3:064X}')
+		))
+		_set_symbol_connector(self.puller, connector)
 
-			# Act:
-			asyncio.run(self.puller.sync_block_headers())
+		# Act:
+		asyncio.run(self.puller.sync_block_headers())
 
-			# Assert:
-			sync_state = database.get_sync_state()
+		# Assert:
+		sync_state = self.puller.symbol_db.get_sync_state()
 
 		self.assertEqual(3, sync_state['last_synced_height'])
 		self.assertEqual(
@@ -127,18 +123,17 @@ class SymbolPullerRollbackTest(_SymbolPullerTestBase):
 			{},
 			{2: _create_node_block(2), 3: _create_node_block(3)}
 		)
-		with self.puller.symbol_db as database:
-			database.create_tables()
-			self._seed_blocks(database, [1, 2, 3])
-			database.upsert_sync_state(_create_sync_state())
-			_set_symbol_connector(self.puller, connector)
+		self.puller.symbol_db.create_tables()
+		self._seed_blocks(self.puller.symbol_db, [1, 2, 3])
+		self.puller.symbol_db.upsert_sync_state(_create_sync_state())
+		_set_symbol_connector(self.puller, connector)
 
-			# Act:
-			asyncio.run(self.puller.sync_block_headers())
+		# Act:
+		asyncio.run(self.puller.sync_block_headers())
 
-			# Assert:
-			block_heights = self._fetch_block_heights(database)
-			sync_state = database.get_sync_state()
+		# Assert:
+		block_heights = self._fetch_block_heights(self.puller.symbol_db)
+		sync_state = self.puller.symbol_db.get_sync_state()
 
 		self.assertEqual([1, 2, 3], block_heights)
 		self.assertEqual(3, sync_state['last_synced_height'])
@@ -150,18 +145,17 @@ class SymbolPullerRollbackTest(_SymbolPullerTestBase):
 			{2: [_create_node_block(3)]},
 			{2: _create_node_block(2)}
 		)
-		with self.puller.symbol_db as database:
-			database.create_tables()
-			self._seed_blocks(database, [1, 2])
-			database.upsert_sync_state(_create_sync_state())
-			_set_symbol_connector(self.puller, connector)
+		self.puller.symbol_db.create_tables()
+		self._seed_blocks(self.puller.symbol_db, [1, 2])
+		self.puller.symbol_db.upsert_sync_state(_create_sync_state())
+		_set_symbol_connector(self.puller, connector)
 
-			# Act:
-			asyncio.run(self.puller.sync_block_headers())
+		# Act:
+		asyncio.run(self.puller.sync_block_headers())
 
-			# Assert:
-			block_heights = self._fetch_block_heights(database)
-			sync_state = database.get_sync_state()
+		# Assert:
+		block_heights = self._fetch_block_heights(self.puller.symbol_db)
+		sync_state = self.puller.symbol_db.get_sync_state()
 
 		self.assertEqual([1, 2, 3], block_heights)
 		self.assertEqual('healthy', sync_state['status'])
@@ -173,18 +167,17 @@ class SymbolPullerRollbackTest(_SymbolPullerTestBase):
 			3,
 			{1: [_create_node_block(2), _create_node_block(3)]}
 		)
-		with self.puller.symbol_db as database:
-			database.create_tables()
-			self._seed_blocks(database, [1, 3])
-			database.upsert_sync_state(_create_sync_state())
-			_set_symbol_connector(self.puller, connector)
+		self.puller.symbol_db.create_tables()
+		self._seed_blocks(self.puller.symbol_db, [1, 3])
+		self.puller.symbol_db.upsert_sync_state(_create_sync_state())
+		_set_symbol_connector(self.puller, connector)
 
-			# Act:
-			asyncio.run(self.puller.sync_block_headers())
+		# Act:
+		asyncio.run(self.puller.sync_block_headers())
 
-			# Assert:
-			block_heights = self._fetch_block_heights(database)
-			sync_state = database.get_sync_state()
+		# Assert:
+		block_heights = self._fetch_block_heights(self.puller.symbol_db)
+		sync_state = self.puller.symbol_db.get_sync_state()
 
 		self.assertEqual([1, 2, 3], block_heights)
 		self.assertEqual('healthy', sync_state['status'])
@@ -216,13 +209,12 @@ class SymbolPullerRollbackTest(_SymbolPullerTestBase):
 	def test_sync_block_headers_rejects_unexpected_height_sequence(self):
 		# Arrange:
 		connector = FakeConnector(2, {0: [_create_node_block(2)]})
-		with self.puller.symbol_db as database:
-			database.create_tables()
-			_set_symbol_connector(self.puller, connector)
+		self.puller.symbol_db.create_tables()
+		_set_symbol_connector(self.puller, connector)
 
-			# Act / Assert:
-			with self.assertRaisesRegex(
-				ValueError,
-				'Unexpected Symbol block height 2; expected 1'
-			):
-				asyncio.run(self.puller.sync_block_headers())
+		# Act / Assert:
+		with self.assertRaisesRegex(
+			ValueError,
+			'Unexpected Symbol block height 2; expected 1'
+		):
+			asyncio.run(self.puller.sync_block_headers())

@@ -62,30 +62,19 @@ class SymbolPullerSyncTest(_SymbolPullerTestBase):
 			previousImportanceBlockHash='86' * 32
 		)]})
 
-		with self.puller.symbol_db as database:
-			database.create_tables()
-			_set_symbol_connector(self.puller, connector)
+		self.puller.symbol_db.create_tables()
+		_set_symbol_connector(self.puller, connector)
 
-			# Act:
-			asyncio.run(self.puller.sync_block_headers())
+		# Act:
+		asyncio.run(self.puller.sync_block_headers())
 
-			# Assert:
-			(
-				voting_eligible,
-				harvesting_eligible,
-				total_voting,
-				previous_importance_hash
-			) = (
-				self._fetch_importance_block_fields(database, 1)
-			)
+		# Assert:
+		result = self._fetch_importance_block_fields(self.puller.symbol_db, 1)
 
-		self.assertEqual(4, voting_eligible)
-		self.assertEqual(17, harvesting_eligible)
-		self.assertEqual(19000235663367, total_voting)
-		self.assertEqual(
-			bytes.fromhex('86' * 32),
-			bytes(previous_importance_hash)
-		)
+		self.assertEqual(4, result[0])
+		self.assertEqual(17, result[1])
+		self.assertEqual(19000235663367, result[2])
+		self.assertEqual(bytes.fromhex('86' * 32), bytes(result[3]))
 
 	def test_sync_block_headers_paginates_by_offset(self):
 		# Arrange:
@@ -159,22 +148,21 @@ class SymbolPullerSyncTest(_SymbolPullerTestBase):
 			{2: [_create_node_block(3), _create_node_block(4)]},
 			{2: _create_node_block(2)}
 		)
-		with self.puller.symbol_db as database:
-			database.create_tables()
-			self._seed_blocks(database, [1, 2])
-			database.upsert_sync_state(_create_sync_state(
-				chain_height=2,
-				last_synced_height=2,
-				last_synced_block_hash=bytes.fromhex(f'{2:064X}')
-			))
-			_set_symbol_connector(self.puller, connector)
+		self.puller.symbol_db.create_tables()
+		self._seed_blocks(self.puller.symbol_db, [1, 2])
+		self.puller.symbol_db.upsert_sync_state(_create_sync_state(
+			chain_height=2,
+			last_synced_height=2,
+			last_synced_block_hash=bytes.fromhex(f'{2:064X}')
+		))
+		_set_symbol_connector(self.puller, connector)
 
-			# Act:
-			asyncio.run(self.puller.sync_block_headers())
+		# Act:
+		asyncio.run(self.puller.sync_block_headers())
 
-			# Assert:
-			block_heights = self._fetch_block_heights(database)
-			sync_state = database.get_sync_state()
+		# Assert:
+		block_heights = self._fetch_block_heights(self.puller.symbol_db)
+		sync_state = self.puller.symbol_db.get_sync_state()
 
 		self.assertEqual([
 			'chain/info',
@@ -194,23 +182,22 @@ class SymbolPullerSyncTest(_SymbolPullerTestBase):
 	def test_sync_block_headers_bounds_existing_sync_state_to_max_height(self):
 		# Arrange:
 		connector = FakeConnector(5, {}, finalized_height=5)
-		with self.puller.symbol_db as database:
-			database.create_tables()
-			self._seed_blocks(database, range(1, 6))
-			database.upsert_sync_state(_create_sync_state(
-				chain_height=5,
-				finalized_height=5,
-				finalized_hash=bytes.fromhex(f'{5:064X}'),
-				last_synced_height=5,
-				last_synced_block_hash=bytes.fromhex(f'{5:064X}')
-			))
-			_set_symbol_connector(self.puller, connector)
+		self.puller.symbol_db.create_tables()
+		self._seed_blocks(self.puller.symbol_db, range(1, 6))
+		self.puller.symbol_db.upsert_sync_state(_create_sync_state(
+			chain_height=5,
+			finalized_height=5,
+			finalized_hash=bytes.fromhex(f'{5:064X}'),
+			last_synced_height=5,
+			last_synced_block_hash=bytes.fromhex(f'{5:064X}')
+		))
+		_set_symbol_connector(self.puller, connector)
 
-			# Act:
-			asyncio.run(self.puller.sync_block_headers(max_height=2))
+		# Act:
+		asyncio.run(self.puller.sync_block_headers(max_height=2))
 
-			# Assert:
-			sync_state = database.get_sync_state()
+		# Assert:
+		sync_state = self.puller.symbol_db.get_sync_state()
 
 		self.assertEqual([
 			'chain/info',
@@ -231,20 +218,19 @@ class SymbolPullerSyncTest(_SymbolPullerTestBase):
 	def test_sync_block_headers_rejects_missing_capped_finalization_hash(self):
 		# Arrange:
 		connector = FakeConnector(5, {}, finalized_height=5)
-		with self.puller.symbol_db as database:
-			database.create_tables()
-			_set_symbol_connector(self.puller, connector)
-			_set_sync_block_pages(
-				self.puller,
-				AsyncMock(return_value=(None, None))
-			)
+		self.puller.symbol_db.create_tables()
+		_set_symbol_connector(self.puller, connector)
+		_set_sync_block_pages(
+			self.puller,
+			AsyncMock(return_value=(None, None))
+		)
 
-			# Act / Assert:
-			with self.assertRaisesRegex(
-				ValueError,
-				'Unable to determine finalized hash for height 2'
-			):
-				asyncio.run(self.puller.sync_block_headers(max_height=2))
+		# Act / Assert:
+		with self.assertRaisesRegex(
+			ValueError,
+			'Unable to determine finalized hash for height 2'
+		):
+			asyncio.run(self.puller.sync_block_headers(max_height=2))
 
-			# Assert:
-			self.assertIsNone(database.get_sync_state())
+		# Assert:
+		self.assertIsNone(self.puller.symbol_db.get_sync_state())
