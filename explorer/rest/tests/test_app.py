@@ -8,18 +8,14 @@ from rest.routes.symbol import setup_symbol_routes
 from .test.EnvTestUtils import rest_settings_env
 
 
-def _write_rest_config(config_path, contents):
-	config_path.write_text(contents, encoding='utf8')
-
-
-def _write_db_config(config_path, contents):
+def _write_config(config_path, contents):
 	config_path.write_text(contents, encoding='utf8')
 
 
 @pytest.fixture(name='rest_config_path')
 def fixture_rest_config_path(tmp_path):
 	config_path = tmp_path / 'app.config'
-	_write_rest_config(config_path, '')
+	_write_config(config_path, '')
 
 	with rest_settings_env(config_path):
 		yield config_path
@@ -27,7 +23,7 @@ def fixture_rest_config_path(tmp_path):
 
 def test_create_app_requires_rest_chain(rest_config_path):
 	# Arrange:
-	_write_rest_config(rest_config_path, '')
+	_write_config(rest_config_path, '')
 
 	# Act:
 	with pytest.raises(ValueError) as exception_info:
@@ -39,7 +35,7 @@ def test_create_app_requires_rest_chain(rest_config_path):
 
 def test_rejects_unsupported_chain(rest_config_path):
 	# Arrange:
-	_write_rest_config(rest_config_path, 'REST_CHAIN="unknown"\n')
+	_write_config(rest_config_path, 'REST_CHAIN="unknown"\n')
 
 	# Act:
 	with pytest.raises(ValueError) as exception_info:
@@ -61,7 +57,7 @@ def test_registers_selected_chain(rest_config_path):
 				'chain': test_api_facade['chain']
 			})
 
-	_write_rest_config(rest_config_path, 'REST_CHAIN="test"\n')
+	_write_config(rest_config_path, 'REST_CHAIN="test"\n')
 	rest_chain_handlers = {
 		'test': (setup_test_facade, setup_test_routes)
 	}
@@ -80,7 +76,7 @@ def test_registers_selected_chain(rest_config_path):
 def test_loads_envvar_config(rest_config_path):
 	# Arrange:
 	app = Flask(__name__)
-	_write_rest_config(rest_config_path, 'REST_CHAIN="nem"\n')
+	_write_config(rest_config_path, 'REST_CHAIN="nem"\n')
 
 	# Act:
 	load_rest_config(app)
@@ -164,7 +160,7 @@ class SymbolHealthFacade:
 
 def test_symbol_chain_routes_only(rest_config_path):
 	# Arrange:
-	_write_rest_config(rest_config_path, 'REST_CHAIN="symbol"\n')
+	_write_config(rest_config_path, 'REST_CHAIN="symbol"\n')
 
 	# Act:
 	client = create_app(
@@ -178,7 +174,7 @@ def test_symbol_chain_routes_only(rest_config_path):
 
 def test_nem_chain_routes_only(rest_config_path):
 	# Arrange:
-	_write_rest_config(rest_config_path, 'REST_CHAIN="nem"\n')
+	_write_config(rest_config_path, 'REST_CHAIN="nem"\n')
 
 	# Act:
 	client = create_app(
@@ -209,8 +205,8 @@ def test_symbol_health_route():
 def test_symbol_db_config_required(rest_config_path, tmp_path):
 	# Arrange:
 	db_config_path = tmp_path / 'db.ini'
-	_write_db_config(db_config_path, '[nem_db]\ndatabase = nem\n')
-	_write_rest_config(rest_config_path, f'''
+	_write_config(db_config_path, '[nem_db]\ndatabase = nem\n')
+	_write_config(rest_config_path, f'''
 REST_CHAIN="symbol"
 DATABASE_CONFIG_FILEPATH="{db_config_path}"
 SYMBOL_NODE_URL="http://localhost:3000"
@@ -229,7 +225,7 @@ SYMBOL_NODE_ALLOW_LOOPBACK="true"
 def test_symbol_node_url_required(rest_config_path, tmp_path):
 	# Arrange:
 	db_config_path = tmp_path / 'db.ini'
-	_write_db_config(db_config_path, '''
+	_write_config(db_config_path, '''
 [symbol_db]
 database = symbol
 user = postgres
@@ -237,7 +233,7 @@ password =
 host = 127.0.0.1
 port = 5432
 ''')
-	_write_rest_config(rest_config_path, f'''
+	_write_config(rest_config_path, f'''
 REST_CHAIN="symbol"
 DATABASE_CONFIG_FILEPATH="{db_config_path}"
 ''')
@@ -253,7 +249,7 @@ DATABASE_CONFIG_FILEPATH="{db_config_path}"
 def test_bad_symbol_node_config(rest_config_path, tmp_path):
 	# Arrange:
 	db_config_path = tmp_path / 'db.ini'
-	_write_db_config(db_config_path, '''
+	_write_config(db_config_path, '''
 [symbol_db]
 database = symbol
 user = postgres
@@ -261,7 +257,7 @@ password =
 host = 127.0.0.1
 port = 5432
 ''')
-	_write_rest_config(rest_config_path, f'''
+	_write_config(rest_config_path, f'''
 REST_CHAIN="symbol"
 DATABASE_CONFIG_FILEPATH="{db_config_path}"
 SYMBOL_NODE_URL="http://localhost"
