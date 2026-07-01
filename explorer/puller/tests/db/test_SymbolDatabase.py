@@ -443,7 +443,11 @@ class SymbolDatabaseTest(TestCase):
 	def test_can_get_block_hashes(self):
 		# Arrange:
 		database = self._create_database()
-		database.upsert_blocks([_create_block(1), _create_block(2)])
+		database.upsert_blocks([
+			_create_block(1),
+			_create_block(2),
+			_create_block(3)
+		])
 
 		# Act:
 		block_hashes = database.get_block_hashes(1, 2)
@@ -511,12 +515,11 @@ class SymbolDatabaseTest(TestCase):
 			'''
 		)
 		result = cursor.fetchone()
-		row_count, block_hash, total_fee, raw_payload = result
 
-		self.assertEqual(1, row_count)
-		self.assertEqual('updated hash', block_hash)
-		self.assertEqual(100, total_fee)
-		self.assertEqual({'height': 1}, raw_payload)
+		self.assertEqual(1, result[0])
+		self.assertEqual('updated hash', result[1])
+		self.assertEqual(100, result[2])
+		self.assertEqual({'height': 1}, result[3])
 
 	def test_rejects_duplicate_block_hash_for_different_heights(self):
 		# Arrange:
