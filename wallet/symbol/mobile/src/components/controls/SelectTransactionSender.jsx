@@ -17,6 +17,13 @@ import Animated, { FadeIn } from 'react-native-reanimated';
  * @property {string} balance - The account balance.
  */
 
+/**
+ * The accounts a transaction can be sent from.
+ * @typedef {object} SenderOptions
+ * @property {SenderAccount} current - The current account (address and balance).
+ * @property {SymbolAccountInfo[]} multisigAccounts - The multisig accounts the current account can send from.
+ */
+
 const SenderTab = {
 	CURRENT: 'current',
 	MULTISIG: 'multisig'
@@ -30,8 +37,7 @@ const SenderTab = {
  * @param {object} props - Component props.
  * @param {string} [props.label] - Label displayed above the selector.
  * @param {string} props.value - The currently selected sender address.
- * @param {SenderAccount} props.currentAccount - The current account (address and balance).
- * @param {SymbolAccountInfo[]} props.multisigAccounts - The multisig accounts the current account can send from.
+ * @param {SenderOptions} props.options - The selectable sender accounts (current and multisig).
  * @param {string} props.ticker - The native currency ticker symbol.
  * @param {ChainName} props.chainName - The blockchain name.
  * @param {NetworkIdentifier} props.networkIdentifier - The network identifier.
@@ -44,8 +50,7 @@ export const SelectTransactionSender = props => {
 	const {
 		label,
 		value,
-		currentAccount,
-		multisigAccounts,
+		options,
 		ticker,
 		chainName,
 		networkIdentifier,
@@ -53,17 +58,18 @@ export const SelectTransactionSender = props => {
 		addressBook,
 		onChange
 	} = props;
+	const { current, multisigAccounts } = options;
 
 	const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
 	// Derived state
 	const hasMultisigAccounts = multisigAccounts.length > 0;
-	const isMultisigSelected = value !== currentAccount.address;
+	const isMultisigSelected = value !== current.address;
 	const activeTab = isMultisigSelected ? SenderTab.MULTISIG : SenderTab.CURRENT;
 	const multisigDefaultName = $t('s_multisig_defaultAccountName');
 	const selectedAccount = isMultisigSelected
-		? multisigAccounts.find(account => account.address === value) || currentAccount
-		: currentAccount;
+		? multisigAccounts.find(account => account.address === value) || current
+		: current;
 
 	// Shared display props for account items
 	const accountDisplayProps = {
@@ -81,7 +87,7 @@ export const SelectTransactionSender = props => {
 	const handleTabChange = tab => {
 		if (tab === SenderTab.CURRENT) {
 			closeDropdown();
-			onChange(currentAccount.address);
+			onChange(current.address);
 
 			return;
 		}
@@ -93,8 +99,8 @@ export const SelectTransactionSender = props => {
 
 	// Tab options
 	const tabList = [
-		{ value: SenderTab.CURRENT, label: $t('s_send_sender_currentAccount') },
-		{ value: SenderTab.MULTISIG, label: $t('s_send_sender_multisigAccount') }
+		{ value: SenderTab.CURRENT, label: $t('c_selectTransactionSender_currentAccount') },
+		{ value: SenderTab.MULTISIG, label: $t('c_selectTransactionSender_multisigAccount') }
 	];
 
 	// Dropdown options and renderer
@@ -139,7 +145,7 @@ export const SelectTransactionSender = props => {
 				onPress={handleItemPress}
 			/>
 			<DropdownModal
-				title={$t('s_send_sender_selectTitle')}
+				title={$t('c_selectTransactionSender_selectTitle')}
 				value={value}
 				list={dropdownList}
 				isOpen={isDropdownOpen}

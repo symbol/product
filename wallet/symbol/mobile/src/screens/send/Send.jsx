@@ -12,10 +12,16 @@ import {
 	TransactionScreenTemplate
 } from '@/app/components';
 import { useStandardTransactionWorkflow } from '@/app/components/templates/TransactionScreenTemplate/hooks';
-import { useDebounce, useInit, useTransactionFees, useWalletController, useWalletRefreshLifecycle } from '@/app/hooks';
+import {
+	useDebounce,
+	useInit,
+	useTransactionFees,
+	useTransactionSender,
+	useWalletController,
+	useWalletRefreshLifecycle
+} from '@/app/hooks';
 import { $t } from '@/app/localization';
 import { Router } from '@/app/router/Router';
-import { useMultisigAccountList } from '@/app/screens/multisig/hooks';
 import { useSendFormState, useSendTransaction, useSenderInfo } from '@/app/screens/send/hooks';
 import {
 	calculateTokenAvailableBalance,
@@ -46,8 +52,6 @@ export const Send = props => {
 	const walletController = useWalletController(route.params?.chainName);
 	const {
 		accounts,
-		modules: { addressBook },
-		currentAccount,
 		isWalletReady,
 		isNetworkConnectionReady,
 		networkProperties,
@@ -60,9 +64,20 @@ export const Send = props => {
 	const walletAccounts = accounts[networkIdentifier];
 	const hasMessageField = CHAINS_WITH_MESSAGE_SUPPORT.includes(walletController.chainName);
 
+	// Sender selection (current or multisig)
+	const {
+		options: senderOptions,
+		value: senderAddress,
+		changeValue: changeSenderAddress,
+		isMultisigSelected: isMultisigTransfer,
+		load: loadSenderOptions,
+		reset: resetSenderOptions
+	} = useTransactionSender(walletController, { initialAddress: route.params?.senderAddress });
+	useWalletRefreshLifecycle({ walletController, onRefresh: loadSenderOptions, onClear: resetSenderOptions });
+	useInit(loadSenderOptions, isWalletReady);
+
 	// Form State
 	const {
-		senderAddress,
 		recipientAddress,
 		selectedTokenId,
 		amount,
@@ -71,7 +86,6 @@ export const Send = props => {
 		transactionSpeed,
 		isAmountValid,
 		isRecipientValid,
-		changeSenderAddress,
 		changeRecipientAddress,
 		changeSelectedTokenId,
 		changeAmount,
@@ -81,7 +95,6 @@ export const Send = props => {
 		changeAmountValidity,
 		changeRecipientValidity
 	} = useSendFormState({
-		defaultSenderAddress: currentAccount.address,
 		routeParams: route.params
 	});
 
@@ -97,32 +110,10 @@ export const Send = props => {
 		onTokenIdChange: changeSelectedTokenId
 	});
 
-	// Sender Options (for multisig)
-	const hasMultisigSupport = !!walletController.modules.multisig;
-	const isAccountCosignatoryOfMultisig = currentAccountInfo.multisigAddresses?.length > 0;
-	const {
-		data: multisigAccounts,
-		load: loadMultisigAccounts,
-		reset: resetMultisigAccounts
-	} = useMultisigAccountList(walletController);
-
-	useWalletRefreshLifecycle({
-		walletController,
-		onRefresh: hasMultisigSupport ? loadMultisigAccounts : () => {},
-		onClear: resetMultisigAccounts
-	});
-	useInit(loadMultisigAccounts, isWalletReady && hasMultisigSupport);
-
-	const senderCurrentAccount = {
-		address: currentAccount.address,
-		balance: currentAccountInfo.balance ?? '0'
-	};
-
 	// Derived Token Data
 	const nativeTokenId = networkProperties?.networkCurrency?.id || networkProperties?.networkCurrency?.mosaicId;
 	const tokenListFiltered = filterActiveTokens(senderTokenList, chainHeight);
 	const selectedToken = senderTokenList.find(token => token.id === selectedTokenId) || senderTokenList[0];
-	const isMultisigTransfer = senderAddress !== currentAccount.address;
 	const isMessageEncrypted = isMultisigTransfer ? false : isMessageEncryptedValue;
 
 	/** @type {Token[]} */
@@ -208,70 +199,85 @@ export const Send = props => {
 			workflow={workflow}
 		>
 			<Spacer>
-				<Stack>
-					<StyledText type="title">{$t('form_transfer_title')}</StyledText>
-					<StyledText type="body">{$t('s_send_description')}</StyledText>
-					{isAccountCosignatoryOfMultisig && (
-						<StyledText type="body">{$t('s_send_multisig_description')}</StyledText>
-					)}
-					<SelectTransactionSender
-						label={$t('input_sender')}
-						value={senderAddress}
-						currentAccount={senderCurrentAccount}
-						multisigAccounts={multisigAccounts}
-						ticker={ticker}
-						chainName={walletController.chainName}
-						networkIdentifier={networkIdentifier}
-						walletAccounts={walletAccounts}
-						addressBook={addressBook}
-						onChange={changeSenderAddress}
-					/>
-					<InputAddress
-						label={$t('form_transfer_input_recipient')}
-						value={recipientAddress}
-						addressBook={walletController.modules.addressBook}
-						accounts={walletAccounts}
-						chainName={walletController.chainName}
-						networkIdentifier={walletController.networkIdentifier}
-						extraValidators={[validateRecipient(walletController.chainName)]}
-						onChange={changeRecipientAddress}
-						onValidityChange={changeRecipientValidity}
-					/>
-					<SelectToken
-						label={$t('form_transfer_input_mosaic')}
-						value={selectedTokenId}
-						tokens={tokenListFiltered}
-						chainName={walletController.chainName}
-						networkIdentifier={walletController.networkIdentifier}
-						onChange={changeSelectedTokenId}
-					/>
-					<InputAmount
-						label={$t('form_transfer_input_amount')}
-						availableBalance={availableBalance}
-						price={tokenPrice}
-						networkIdentifier={networkIdentifier}
-						value={amount}
-						onChange={changeAmount}
-						onValidityChange={changeAmountValidity}
-					/>
+				<Stack gap="l">
+					<Stack gap="none">
+						<StyledText type="title">{$t('s_send_title')}</StyledText>
+						<StyledText type="body">{$t('s_send_description')}</StyledText>
+					</Stack>
+					<Stack gap="none">
+						<StyledText type="title" size="s">{$t('s_send_from_title')}</StyledText>
+						<SelectTransactionSender
+							value={senderAddress}
+							options={senderOptions}
+							ticker={ticker}
+							chainName={walletController.chainName}
+							networkIdentifier={networkIdentifier}
+							walletAccounts={walletAccounts}
+							addressBook={walletController.modules.addressBook}
+							onChange={changeSenderAddress}
+						/>
+					</Stack>
+					<Stack gap="none">
+						<StyledText type="title" size="s">{$t('s_send_to_title')}</StyledText>
+						<InputAddress
+							label={$t('input_recipient')}
+							value={recipientAddress}
+							addressBook={walletController.modules.addressBook}
+							accounts={walletAccounts}
+							chainName={walletController.chainName}
+							networkIdentifier={walletController.networkIdentifier}
+							extraValidators={[validateRecipient(walletController.chainName)]}
+							onChange={changeRecipientAddress}
+							onValidityChange={changeRecipientValidity}
+						/>
+					</Stack>
+					<Stack gap="none">
+						<StyledText type="title" size="s">{$t('s_send_token_title')}</StyledText>
+						<Stack gap="s">
+							<SelectToken
+								label={$t('input_mosaic')}
+								value={selectedTokenId}
+								tokens={tokenListFiltered}
+								chainName={walletController.chainName}
+								networkIdentifier={walletController.networkIdentifier}
+								onChange={changeSelectedTokenId}
+							/>
+							<InputAmount
+								label={$t('input_amount')}
+								availableBalance={availableBalance}
+								price={tokenPrice}
+								networkIdentifier={networkIdentifier}
+								value={amount}
+								onChange={changeAmount}
+								onValidityChange={changeAmountValidity}
+							/>
+						</Stack>
+					</Stack>
+					
 					{hasMessageField && (
-						<TextBox
-							label={$t('form_transfer_input_message')}
-							value={messageText}
-							onChange={changeMessageText}
-						/>
+						<Stack gap="none">
+							<StyledText type="title" size="s">{$t('s_send_message_title')}</StyledText>
+							<Stack gap="s">
+								<TextBox
+									label={$t('input_message')}
+									value={messageText}
+									onChange={changeMessageText}
+								/>
+								{!isMultisigTransfer && (
+									<Checkbox
+										text={$t('input_encrypted')}
+										value={isMessageEncrypted}
+										onChange={toggleMessageEncrypted}
+									/>
+								)}
+							</Stack>
+						</Stack>
 					)}
-					{!isMultisigTransfer && hasMessageField && (
-						<Checkbox
-							text={$t('form_transfer_input_encrypted')}
-							value={isMessageEncrypted}
-							onChange={toggleMessageEncrypted}
-						/>
-					)}
+
 					{!!transactionFees && (
 						<Animated.View entering={FadeInDown} exiting={FadeOut}>
 							<FeeSelector
-								title={$t('form_transfer_input_fee')}
+								title={$t('input_feeSpeed')}
 								value={transactionSpeed}
 								feeTiers={transactionFees}
 								ticker={ticker}

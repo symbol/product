@@ -12,6 +12,7 @@ export * from './useRefresh';
 export * from './useTimer';
 export * from './useToggle';
 export * from './useTransactionFees';
+export * from './useTransactionSender';
 export * from './useTransactionListener';
 export * from './useValidation';
 export * from './useWalletController';

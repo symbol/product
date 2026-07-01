@@ -19,23 +19,22 @@ const PRICE = 0.05;
 
 const SCREEN_TEXT = {
 	// Screen content
-	textTitle: 'form_transfer_title',
+	textTitle: 's_send_title',
 	textDescription: 's_send_description',
-	textMultisigDescription: 's_send_multisig_description',
 
 	// Input labels
-	inputRecipientLabel: 'form_transfer_input_recipient',
-	inputMosaicLabel: 'form_transfer_input_mosaic',
-	inputAmountLabel: 'form_transfer_input_amount',
-	inputMessageLabel: 'form_transfer_input_message',
+	inputRecipientLabel: 'input_recipient',
+	inputMosaicLabel: 'input_mosaic',
+	inputAmountLabel: 'input_amount',
+	inputMessageLabel: 'input_message',
 	inputSenderLabel: 'input_sender',
 
 	// Sender selector tabs
-	senderTabCurrentAccount: 's_send_sender_currentAccount',
-	senderTabMultisigAccount: 's_send_sender_multisigAccount',
+	senderTabCurrentAccount: 'c_selectTransactionSender_currentAccount',
+	senderTabMultisigAccount: 'c_selectTransactionSender_multisigAccount',
 
 	// Checkbox
-	checkboxEncrypted: 'form_transfer_input_encrypted',
+	checkboxEncrypted: 'input_encrypted',
 
 	// Buttons
 	buttonSend: 'button_send'
@@ -337,7 +336,6 @@ describe('screens/send/Send', () => {
 			await screenTester.waitForTimer();
 
 			// Assert:
-			screenTester.expectText([SCREEN_TEXT.textMultisigDescription]);
 			screenTester.expectText([SCREEN_TEXT.senderTabCurrentAccount, SCREEN_TEXT.senderTabMultisigAccount]);
 			screenTester.expectText([currentAccount.name]);
 		});
@@ -354,7 +352,6 @@ describe('screens/send/Send', () => {
 			await screenTester.waitForTimer();
 
 			// Assert:
-			screenTester.notExpectText([SCREEN_TEXT.textMultisigDescription]);
 			screenTester.notExpectText([SCREEN_TEXT.senderTabCurrentAccount, SCREEN_TEXT.senderTabMultisigAccount]);
 			screenTester.expectText([currentAccount.name]);
 		});

@@ -14,9 +14,9 @@ const TICKER = 'XYM';
 
 const SCREEN_TEXT = {
 	label: 'input_sender',
-	tabCurrentAccount: 's_send_sender_currentAccount',
-	tabMultisigAccount: 's_send_sender_multisigAccount',
-	dropdownTitle: 's_send_sender_selectTitle',
+	tabCurrentAccount: 'c_selectTransactionSender_currentAccount',
+	tabMultisigAccount: 'c_selectTransactionSender_multisigAccount',
+	dropdownTitle: 'c_selectTransactionSender_selectTitle',
 	defaultMultisigName: 's_multisig_defaultAccountName'
 };
 
@@ -53,11 +53,10 @@ const createMockAddressBook = (overrides = {}) => ({
 
 // Props
 
-const createProps = (overrides = {}) => ({
+const createProps = ({ multisigAccounts = [], ...overrides } = {}) => ({
 	label: SCREEN_TEXT.label,
 	value: currentAccount.address,
-	currentAccount: senderCurrentAccount,
-	multisigAccounts: [],
+	options: { current: senderCurrentAccount, multisigAccounts },
 	ticker: TICKER,
 	chainName: CHAIN_NAME,
 	networkIdentifier: NETWORK_IDENTIFIER,
