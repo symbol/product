@@ -64,6 +64,7 @@ class SymbolPuller:
 		self._symbol_connector = connector or SymbolConnector(symbol_node_endpoint)
 		self._symbol_connector.timeout_seconds = self.node_config.timeout_seconds
 		self.symbol_facade = SymbolFacade(network)
+		self._retry_delay = 2
 
 	def __enter__(self):
 		self.symbol_db.__enter__()
@@ -109,7 +110,8 @@ class SymbolPuller:
 		normalized_path = self._validate_symbol_node_path(url_path)
 		return await self._retry_operation(
 			lambda: self._symbol_connector.get(normalized_path, property_name, not_found_as_error),
-			f'fetching Symbol node path {normalized_path}'
+			f'fetching Symbol node path {normalized_path}',
+			delay=self._retry_delay
 		)
 
 	async def post_symbol_node(self, url_path, request_payload, property_name=None, not_found_as_error=True):
@@ -118,7 +120,8 @@ class SymbolPuller:
 		normalized_path = self._validate_symbol_node_path(url_path)
 		return await self._retry_operation(
 			lambda: self._symbol_connector.post(normalized_path, request_payload, property_name, not_found_as_error),
-			f'posting Symbol node path {normalized_path}'
+			f'posting Symbol node path {normalized_path}',
+			delay=self._retry_delay
 		)
 
 	async def sync_block_headers(self, max_height=None):

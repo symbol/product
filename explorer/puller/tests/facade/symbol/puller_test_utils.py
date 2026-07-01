@@ -16,7 +16,7 @@ SIGNER_PUBLIC_KEY = (
 BENEFICIARY_ADDRESS = '9889432DE263BB8FE88444A4DA28D3609BD8BB8FAE18AE95'
 
 
-def _create_db_config(config_dir, db_config=None, include_symbol_db=True):
+def create_db_config(config_dir, db_config=None, include_symbol_db=True):
 	db_config = db_config or DatabaseConfiguration(
 		'symbol',
 		'postgres',
@@ -44,7 +44,7 @@ def _create_db_config(config_dir, db_config=None, include_symbol_db=True):
 	return db_config_path
 
 
-def _create_symbol_puller(
+def create_symbol_puller(
 	db_config_path,
 	network_type='mainnet',
 	request_timeout_seconds=10,
@@ -67,15 +67,15 @@ def _create_symbol_puller(
 
 
 @contextmanager
-def _temporary_symbol_puller(
+def temporary_symbol_puller(
 	network_type='mainnet',
 	request_timeout_seconds=10,
 	connector=None
 ):
 	with tempfile.TemporaryDirectory() as temp_directory:
-		db_config_path = _create_db_config(temp_directory)
+		db_config_path = create_db_config(temp_directory)
 
-		yield _create_symbol_puller(
+		yield create_symbol_puller(
 			db_config_path,
 			network_type,
 			request_timeout_seconds,
@@ -232,9 +232,9 @@ class _SymbolPullerTestBase(TestCase):
 			tempfile.TemporaryDirectory()
 		)
 		self.db_config = self.exit_stack.enter_context(PostgresTestDatabase())
-		self.config_ini = _create_db_config(self.config_dir, self.db_config)
+		self.config_ini = create_db_config(self.config_dir, self.db_config)
 		self.puller = self.exit_stack.enter_context(
-			_create_symbol_puller(self.config_ini, 'testnet')
+			create_symbol_puller(self.config_ini, 'testnet')
 		)
 		drop_symbol_block_tables_if_present(self.puller.symbol_db)
 
