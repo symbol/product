@@ -7,6 +7,7 @@ from unittest import TestCase
 from common.tests.PostgresTestUtils import PostgresTestDatabase, drop_symbol_block_tables_if_present
 from psycopg2 import Error as PsycopgError
 from psycopg2.extras import Json
+from symbolchain.sc import BlockType
 
 from puller.db.SymbolDatabase import SymbolDatabase
 
@@ -37,7 +38,7 @@ def _create_block(height, block_hash=None, **overrides):
 		'statements_count': height + 1,
 		'difficulty': 100000 + height,
 		'fee_multiplier': height,
-		'block_type': 32835,
+		'block_type': BlockType.NEMESIS.value,
 		'signer_public_key': f'signer key {height}'.encode('utf8'),
 		'signer_address': f'signer address {height}'.encode('utf8'),
 		'beneficiary_address': f'beneficiary {height}'.encode('utf8'),
