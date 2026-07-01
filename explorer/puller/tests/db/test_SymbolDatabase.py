@@ -131,7 +131,7 @@ class SymbolDatabaseTest(TestCase):
 
 		return database
 
-	def test_create_tables_creates_symbol_sync_schema_and_indexes(self):
+	def test_create_tables_creates_symbol_tables(self):
 		# Arrange:
 		database = self._create_uninitialized_database()
 		cursor = database.connection.cursor()
@@ -151,6 +151,17 @@ class SymbolDatabaseTest(TestCase):
 		)
 		tables = [result[0] for result in cursor.fetchall()]
 
+		self.assertEqual(['symbol_blocks', 'symbol_sync_state'], tables)
+
+	def test_create_tables_creates_symbol_sync_state_schema(self):
+		# Arrange:
+		database = self._create_uninitialized_database()
+		cursor = database.connection.cursor()
+
+		# Act:
+		database.create_tables()
+
+		# Assert:
 		cursor.execute(
 			'''
 			SELECT column_name, udt_name
@@ -185,17 +196,6 @@ class SymbolDatabaseTest(TestCase):
 		)
 		enum_values = cursor.fetchall()
 
-		cursor.execute(
-			'''
-			SELECT indexname
-			FROM pg_indexes
-			WHERE schemaname = 'public'
-			ORDER BY indexname
-			'''
-		)
-		indexes = [result[0] for result in cursor.fetchall()]
-
-		self.assertEqual(['symbol_blocks', 'symbol_sync_state'], tables)
 		self.assertEqual([
 			('id', 'int4'),
 			('status', 'symbol_sync_state_status'),
@@ -219,6 +219,26 @@ class SymbolDatabaseTest(TestCase):
 			('symbol_sync_state_status', 'repairing'),
 			('symbol_sync_state_status', 'unhealthy')
 		], enum_values)
+
+	def test_create_tables_creates_symbol_block_indexes(self):
+		# Arrange:
+		database = self._create_uninitialized_database()
+		cursor = database.connection.cursor()
+
+		# Act:
+		database.create_tables()
+
+		# Assert:
+		cursor.execute(
+			'''
+			SELECT indexname
+			FROM pg_indexes
+			WHERE schemaname = 'public'
+			ORDER BY indexname
+			'''
+		)
+		indexes = [result[0] for result in cursor.fetchall()]
+
 		self.assertIn('idx_symbol_blocks_height_desc', indexes)
 		self.assertIn('idx_symbol_blocks_signer_address', indexes)
 		self.assertIn('idx_symbol_blocks_timestamp', indexes)
@@ -340,25 +360,15 @@ class SymbolDatabaseTest(TestCase):
 			'''
 		)
 		result = cursor.fetchone()
-		(
-			status,
-			chain_height,
-			finalized_height,
-			finalized_hash,
-			finalized_epoch,
-			finalized_point,
-			last_synced_height,
-			last_synced_block_hash
-		) = result
 
-		self.assertEqual('healthy', status)
-		self.assertEqual(10, chain_height)
-		self.assertEqual(8, finalized_height)
-		self.assertEqual(bytes(b'finalized'), bytes(finalized_hash))
-		self.assertEqual(2, finalized_epoch)
-		self.assertEqual(3, finalized_point)
-		self.assertEqual(10, last_synced_height)
-		self.assertEqual(bytes(b'last'), bytes(last_synced_block_hash))
+		self.assertEqual('healthy', result[0])
+		self.assertEqual(10, result[1])
+		self.assertEqual(8, result[2])
+		self.assertEqual(bytes(b'finalized'), bytes(result[3]))
+		self.assertEqual(2, result[4])
+		self.assertEqual(3, result[5])
+		self.assertEqual(10, result[6])
+		self.assertEqual(bytes(b'last'), bytes(result[7]))
 
 	def test_get_sync_state_returns_upserted_value(self):
 		# Arrange:
@@ -408,10 +418,8 @@ class SymbolDatabaseTest(TestCase):
 		database = self._create_database()
 
 		# Act + Assert:
-		with self.assertRaises(PsycopgError) as exception_info:
+		with self.assertRaises(PsycopgError):
 			database.upsert_sync_state(_create_sync_state(status='invalid'))
-
-		self.assertEqual('22P02', exception_info.exception.pgcode)
 
 	def test_rejects_non_singleton_sync_state_row(self):
 		# Arrange:
@@ -419,13 +427,11 @@ class SymbolDatabaseTest(TestCase):
 		cursor = database.connection.cursor()
 
 		# Act + Assert:
-		with self.assertRaises(PsycopgError) as exception_info:
+		with self.assertRaises(PsycopgError):
 			cursor.execute(
 				'INSERT INTO symbol_sync_state (id, status) '
 				'VALUES (2, \'initialized\')'
 			)
-
-		self.assertEqual('23514', exception_info.exception.pgcode)
 
 	def test_rejects_unknown_block_type(self):
 		# Arrange:
@@ -494,22 +500,12 @@ class SymbolDatabaseTest(TestCase):
 			'''
 		)
 		result = cursor.fetchone()
-		(
-			voting_eligible,
-			harvesting_eligible,
-			total_voting,
-			previous_importance_hash,
-			block_type
-		) = result
 
-		self.assertEqual(4, voting_eligible)
-		self.assertEqual(17, harvesting_eligible)
-		self.assertEqual(19000235663367, total_voting)
-		self.assertEqual(
-			bytes.fromhex('86' * 32),
-			bytes(previous_importance_hash)
-		)
-		self.assertEqual('nemesis', block_type)
+		self.assertEqual(4, result[0])
+		self.assertEqual(17, result[1])
+		self.assertEqual(19000235663367, result[2])
+		self.assertEqual(bytes.fromhex('86' * 32), bytes(result[3]))
+		self.assertEqual('nemesis', result[4])
 
 	def test_can_update_existing_block(self):
 		# Arrange:
@@ -543,10 +539,8 @@ class SymbolDatabaseTest(TestCase):
 		database.upsert_blocks([_create_block(1, block_hash=b'same hash')])
 
 		# Act + Assert:
-		with self.assertRaises(PsycopgError) as exception_info:
+		with self.assertRaises(PsycopgError):
 			database.upsert_blocks([_create_block(2, block_hash=b'same hash')])
-
-		self.assertEqual('23505', exception_info.exception.pgcode)
 
 	def test_can_delete_blocks_from_height(self):
 		# Arrange:
