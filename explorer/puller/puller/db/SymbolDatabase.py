@@ -108,11 +108,9 @@ class SymbolDatabase(DatabaseConnection):
 		self.connection.commit()
 
 	def check_connection(self):
-		"""Checks whether the configured Symbol database is reachable."""
+		"""Checks whether the configured Symbol database is reachable and initialized."""
 
-		cursor = self.connection.cursor()
-		cursor.execute('SELECT 1')
-		return 1 == cursor.fetchone()[0]
+		return self.get_sync_state() is not None
 
 	def get_sync_state(self):
 		"""Gets the singleton Symbol sync state."""

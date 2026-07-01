@@ -3,7 +3,6 @@ import datetime
 from collections import namedtuple
 from contextlib import ExitStack
 from unittest import TestCase
-from unittest.mock import MagicMock
 
 from common.tests.PostgresTestUtils import PostgresTestDatabase, drop_symbol_block_tables_if_present
 from psycopg2 import Error as PsycopgError
@@ -76,31 +75,6 @@ def _create_sync_state(**overrides):
 	sync_state.update(overrides)
 
 	return sync_state
-
-
-class SymbolDatabaseCheckConnectionFallbackTest(TestCase):
-	def test_check_connection_returns_false_when_select_one_returns_zero(self):
-		# Arrange:
-		# Last resort: real PostgreSQL cannot make SELECT 1 return 0, so this
-		# keeps the defensive false branch covered without replacing the
-		# wrapper's integration tests.
-		cursor = MagicMock()
-		cursor.fetchone.return_value = (0,)
-		database = SymbolDatabase(DatabaseConfig(
-			'unused',
-			'unused',
-			'',
-			'127.0.0.1',
-			'5432'))
-		database.connection = MagicMock()
-		database.connection.cursor.return_value = cursor
-
-		# Act:
-		result = database.check_connection()
-
-		# Assert:
-		self.assertFalse(result)
-		cursor.execute.assert_called_once_with('SELECT 1')
 
 
 class SymbolDatabaseTest(TestCase):
@@ -315,7 +289,18 @@ class SymbolDatabaseTest(TestCase):
 			('UNIQUE', 'hash')
 		], key_constraints)
 
-	def test_check_connection_executes_select_one(self):
+	def test_check_connection_returns_true_when_sync_state_exists(self):
+		# Arrange:
+		database = self._create_database()
+		database.upsert_sync_state(_create_sync_state())
+
+		# Act:
+		result = database.check_connection()
+
+		# Assert:
+		self.assertTrue(result)
+
+	def test_check_connection_returns_false_when_sync_state_is_absent(self):
 		# Arrange:
 		database = self._create_database()
 
@@ -323,7 +308,7 @@ class SymbolDatabaseTest(TestCase):
 		result = database.check_connection()
 
 		# Assert:
-		self.assertTrue(result)
+		self.assertFalse(result)
 
 	def test_get_sync_state_returns_none_when_empty(self):
 		# Arrange:
