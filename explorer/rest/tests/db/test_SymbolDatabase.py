@@ -322,12 +322,10 @@ def _get_block_from_postgresql(blocks, sync_state, height):
 
 def _query_symbol_database(blocks, sync_state, query_database):
 	with PostgresTestDatabase() as db_config:
-		created_tables = False
 		with PullerSymbolDatabase(db_config) as puller_database:
 			try:
 				drop_symbol_block_tables_if_present(puller_database)
 				puller_database.create_tables()
-				created_tables = True
 				if sync_state:
 					puller_database.upsert_sync_state(sync_state)
 				puller_database.upsert_blocks(blocks)
@@ -338,5 +336,4 @@ def _query_symbol_database(blocks, sync_state, query_database):
 				finally:
 					database._pool.closeall()  # pylint: disable=protected-access
 			finally:
-				if created_tables:
-					drop_symbol_block_tables_if_present(puller_database)
+				drop_symbol_block_tables_if_present(puller_database)
