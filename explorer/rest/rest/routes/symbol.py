@@ -36,6 +36,15 @@ def setup_symbol_facade(app):
 
 
 def setup_symbol_routes(app, symbol_api_facade):
+	def _run_block_query(query_fn, error_log):
+		if not symbol_api_facade.is_block_data_available():
+			return _service_unavailable('Symbol backend data is unavailable'), None
+		try:
+			return None, query_fn()
+		except PsycopgError:
+			log.error(error_log)
+			return _service_unavailable('Symbol backend data is unavailable'), None
+
 	@app.route('/api/symbol/health')
 	def api_get_symbol_health():
 		return jsonify(symbol_api_facade.get_health())
@@ -55,16 +64,14 @@ def setup_symbol_routes(app, symbol_api_facade):
 				raise ValueError('fromHeight must be greater than or equal to 1')
 			if sort not in ['ASC', 'DESC']:
 				raise ValueError('Sort must be either ASC or DESC')
-
-			if not symbol_api_facade.is_block_data_available():
-				return _service_unavailable('Symbol backend data is unavailable')
-
-			result = symbol_api_facade.get_blocks(from_height, limit, SortOrder(sort))
 		except ValueError as error:
 			abort(400, error)
-		except PsycopgError:
-			log.error('Failed to get Symbol blocks')
-			return _service_unavailable('Symbol backend data is unavailable')
+
+		error, result = _run_block_query(
+			lambda: symbol_api_facade.get_blocks(from_height, limit, SortOrder(sort)),
+			'Failed to get Symbol blocks')
+		if error:
+			return error
 
 		if result is None:
 			return _service_unavailable('Symbol backend data is unavailable')
@@ -78,14 +85,11 @@ def setup_symbol_routes(app, symbol_api_facade):
 		except ValueError as error:
 			abort(400, error)
 
-		if not symbol_api_facade.is_block_data_available():
-			return _service_unavailable('Symbol backend data is unavailable')
-
-		try:
-			result = symbol_api_facade.get_block(height)
-		except PsycopgError:
-			log.error('Failed to get Symbol block')
-			return _service_unavailable('Symbol backend data is unavailable')
+		error, result = _run_block_query(
+			lambda: symbol_api_facade.get_block(height),
+			'Failed to get Symbol block')
+		if error:
+			return error
 
 		if not result:
 			abort(404)
