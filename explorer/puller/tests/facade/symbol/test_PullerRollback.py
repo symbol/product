@@ -137,6 +137,10 @@ class SymbolPullerRollbackTest(_SymbolPullerTestBase):
 
 		self.assertEqual([1, 2, 3], block_heights)
 		self.assertEqual(3, sync_state['last_synced_height'])
+		self.assertEqual(
+			['chain/info', 'network/properties', 'blocks/2', 'blocks/3'],
+			connector.paths
+		)
 
 	def test_sync_block_headers_repairs_missing_unfinalized_block_hash(self):
 		# Arrange:
