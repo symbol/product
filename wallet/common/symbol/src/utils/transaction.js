@@ -1,5 +1,14 @@
 import { transactionToSymbol } from './transaction-to-symbol';
-import { MessageType, TransactionBundleType, TransactionType } from '../constants';
+import {
+	EMPTY_AGGREGATE_HASH,
+	HASH_LOCK_AMOUNT,
+	HASH_LOCK_DURATION,
+	MULTISIG_BUNDLE_TYPES,
+	MULTISIG_TRANSACTION_DEADLINE_HOURS,
+	MessageType,
+	SINGLE_TRANSACTION_DEADLINE_HOURS,
+	TransactionType
+} from '../constants';
 import { Hash256, PrivateKey, PublicKey, utils } from 'symbol-sdk';
 import { MessageEncoder, SymbolFacade, models } from 'symbol-sdk/symbol';
 import { SdkError, TransactionBundle, absoluteToRelativeAmount } from 'wallet-common-core';
@@ -176,20 +185,63 @@ export const decodePlainMessage = messagePayloadHex => {
 
 /**
  * Creates a delegated harvesting request message.
- * @param {string} privateKey - Current account private key.
+ * The persistent harvesting delegation payload is encrypted with a random ephemeral key towards the
+ * node public key, so the harvester account's own key is not required. The node associates the
+ * delegation with the account that signs the carrying transfer transaction. This keeps the message
+ * usable for multisig accounts, which have no private key available in the wallet.
  * @param {string} nodePublicKey - Node public key to delegate harvesting to.
  * @param {string} remotePrivateKey - The remote account private key.
  * @param {string} vrfPrivateKey - VRF private key.
  * @returns {string} The resulting payload HEX string.
  */
-export const encodeDelegatedHarvestingMessage = (privateKey, nodePublicKey, remotePrivateKey, vrfPrivateKey) => {
-	const keyPair = new SymbolFacade.KeyPair(new PrivateKey(privateKey));
-	const messageEncoder = new MessageEncoder(keyPair);
+export const encodeDelegatedHarvestingMessage = (nodePublicKey, remotePrivateKey, vrfPrivateKey) => {
+	const ephemeralKeyPair = new SymbolFacade.KeyPair(PrivateKey.random());
+	const messageEncoder = new MessageEncoder(ephemeralKeyPair);
 	const remoteKeyPair = new SymbolFacade.KeyPair(new PrivateKey(remotePrivateKey));
 	const vrfKeyPair = new SymbolFacade.KeyPair(new PrivateKey(vrfPrivateKey));
 	const encodedBytes = messageEncoder.encodePersistentHarvestingDelegation(new PublicKey(nodePublicKey), remoteKeyPair, vrfKeyPair);
 
 	return Buffer.from(encodedBytes).toString('hex');
+};
+
+/**
+ * Wraps inner transactions in an aggregate bonded + hash lock bundle for multisig announcement.
+ * @param {Transaction[]} innerTransactions - The inner transactions signed by the multisig account.
+ * @param {object} options - The bundle options.
+ * @param {PublicAccount} options.currentAccount - The initiating cosignatory account.
+ * @param {NetworkProperties} options.networkProperties - The network properties.
+ * @param {object} options.metadata - The bundle metadata. Must contain a `type`.
+ * @returns {TransactionBundle} The hash lock + aggregate bonded transaction bundle.
+ */
+export const createMultisigAggregateBundle = (innerTransactions, options) => {
+	const { currentAccount, networkProperties, metadata } = options;
+	const transactionFee = createTransactionFee(networkProperties, '0');
+
+	const hashLockTransaction = {
+		type: TransactionType.HASH_LOCK,
+		signerPublicKey: currentAccount.publicKey,
+		mosaic: {
+			id: networkProperties.networkCurrency.mosaicId,
+			amount: HASH_LOCK_AMOUNT,
+			divisibility: networkProperties.networkCurrency.divisibility
+		},
+		lockedAmount: HASH_LOCK_AMOUNT,
+		duration: HASH_LOCK_DURATION,
+		fee: transactionFee,
+		deadline: createDeadline(SINGLE_TRANSACTION_DEADLINE_HOURS, networkProperties.epochAdjustment),
+		aggregateHash: EMPTY_AGGREGATE_HASH
+	};
+
+	const aggregateBondedTransaction = {
+		type: TransactionType.AGGREGATE_BONDED,
+		innerTransactions,
+		signerPublicKey: currentAccount.publicKey,
+		signerAddress: currentAccount.address,
+		fee: transactionFee,
+		deadline: createDeadline(MULTISIG_TRANSACTION_DEADLINE_HOURS, networkProperties.epochAdjustment)
+	};
+
+	return new TransactionBundle([hashLockTransaction, aggregateBondedTransaction], metadata);
 };
 
 /**
@@ -256,12 +308,7 @@ export const removeAllowedTransactions = (transactions, blackList) => {
  * @returns {TransactionBundle} The signed transaction bundle.
  */
 export const signTransactionBundle = (networkIdentifier, transactionBundle, privateKey) => {
-	const multisigTypes = [
-		TransactionBundleType.MULTISIG_TRANSFER, 
-		TransactionBundleType.MULTISIG_ACCOUNT_MODIFICATION
-	];
-
-	if (multisigTypes.includes(transactionBundle.metadata.type)) {
+	if (MULTISIG_BUNDLE_TYPES.includes(transactionBundle.metadata.type)) {
 		// Sign aggregate bonded transaction
 		const aggregateBondedTransaction = transactionBundle.transactions.find(tx => tx.type === TransactionType.AGGREGATE_BONDED);
 		const { cosignaturePrivateKeys = [] } = transactionBundle.metadata;

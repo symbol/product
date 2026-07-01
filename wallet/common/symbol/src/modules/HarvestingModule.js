@@ -1,5 +1,12 @@
 import { LinkAction, LinkActionMessage, MessageType, TransactionBundleType, TransactionType } from '../constants';
-import { addressFromPublicKey, createDeadline, createTransactionFee, encodeDelegatedHarvestingMessage, generateKeyPair } from '../utils';
+import {
+	addressFromPublicKey,
+	createDeadline,
+	createMultisigAggregateBundle,
+	createTransactionFee,
+	encodeDelegatedHarvestingMessage,
+	generateKeyPair
+} from '../utils';
 import { shuffle } from 'lodash';
 import { 
 	ControllerError, 
@@ -14,6 +21,8 @@ import {
 /** @typedef {import('../types/Harvesting').HarvestingStatus} HarvestingStatus */
 /** @typedef {import('../types/SearchCriteria').HarvestedBlockSearchCriteria} HarvestedBlockSearchCriteria */
 /** @typedef {import('../types/Transaction').Transaction} Transaction */
+/** @typedef {import('../types/Account').HarvesterAccountInfo} HarvesterAccountInfo */
+/** @typedef {import('../types/Account').PublicAccount} PublicAccount */
 
 const createDefaultState = networkIdentifiers => ({
 	statuses: createNetworkMap(() => ({}), networkIdentifiers),
@@ -77,42 +86,62 @@ export class HarvestingModule {
 	};
 
 	/**
+	 * Gets the cached harvesting status for a given account address on the current network.
+	 * @param {string} [address] - The account address. Defaults to the current account.
+	 * @returns {HarvestingStatus|null} The cached harvesting status.
+	 */
+	getStatus = address => {
+		const { networkIdentifier } = this.#walletController;
+		const networkStatuses = this._state.statuses[networkIdentifier];
+
+		if (!address)
+			return null;
+
+		return networkStatuses[address] || null;
+	};
+
+	/**
 	 * Gets the cached harvesting status for the current account on the current network.
 	 * @returns {HarvestingStatus|null} The cached harvesting status.
 	 */
 	get status() {
-		const { networkIdentifier, currentAccount } = this.#walletController;
-		const networkStatuses = this._state.statuses[networkIdentifier];
+		return this.getStatus(this.#walletController.currentAccount?.address);
+	}
 
-		if (!currentAccount)
+	/**
+	 * Gets the cached harvesting summary for a given account address on the current network.
+	 * @param {string} [address] - The account address. Defaults to the current account.
+	 * @returns {HarvestingSummary|null} The cached harvesting summary.
+	 */
+	getSummary = address => {
+		const { networkIdentifier } = this.#walletController;
+		const networkSummaries = this._state.summaries[networkIdentifier];
+
+		if (!address)
 			return null;
 
-		return networkStatuses[currentAccount.address] || null;
-	}
+		return networkSummaries[address] || null;
+	};
 
 	/**
 	 * Gets the cached harvesting summary for the current account on the current network.
 	 * @returns {HarvestingSummary|null} The cached harvesting summary.
 	 */
 	get summary() {
-		const { networkIdentifier, currentAccount } = this.#walletController;
-		const networkSummaries = this._state.summaries[networkIdentifier];
-
-		if (!currentAccount)
-			return null;
-
-		return networkSummaries[currentAccount.address] || null;
+		return this.getSummary(this.#walletController.currentAccount?.address);
 	}
 
 	/**
-	 * Fetches the harvesting status of the current account.
+	 * Fetches the harvesting status of the current account or a given account.
+	 * @param {PublicAccount} [account] - The account to fetch the status for. Defaults to the current account.
 	 * @returns {Promise<HarvestingStatus>} - The harvesting status.
 	 */
-	fetchStatus = async () => {
-		const { currentAccount, networkIdentifier, networkProperties } = this.#walletController;
-		const status = await this.#api.harvesting.fetchStatus(networkProperties, currentAccount);
+	fetchStatus = async account => {
+		const { networkIdentifier, networkProperties } = this.#walletController;
+		const targetAccount = account ?? this.#walletController.currentAccount;
+		const status = await this.#api.harvesting.fetchStatus(networkProperties, targetAccount);
 
-		await this.#updateCachedHarvestingStatus(status, networkIdentifier, currentAccount.address);
+		await this.#updateCachedHarvestingStatus(status, networkIdentifier, targetAccount.address);
 
 		return status;
 	};
@@ -141,15 +170,16 @@ export class HarvestingModule {
 	};
 
 	/**
-	 * Fetches the harvesting summary of current account.
+	 * Fetches the harvesting summary of the current account or a given account.
+	 * @param {string} [address] - The account address. Defaults to the current account.
 	 * @returns {Promise<HarvestingSummary>} - The harvesting summary.
 	 */
-	fetchSummary = async () => {
-		const { currentAccount, networkIdentifier, networkProperties } = this.#walletController;
-		const { address } = currentAccount;
-		const summary = await this.#api.harvesting.fetchSummary(networkProperties, address);
+	fetchSummary = async address => {
+		const { networkIdentifier, networkProperties } = this.#walletController;
+		const targetAddress = address ?? this.#walletController.currentAccount.address;
+		const summary = await this.#api.harvesting.fetchSummary(networkProperties, targetAddress);
 
-		await this.#updateCachedHarvestingSummary(summary, networkIdentifier, address);
+		await this.#updateCachedHarvestingSummary(summary, networkIdentifier, targetAddress);
 
 		return summary;
 	};
@@ -229,21 +259,20 @@ export class HarvestingModule {
 	};
 
 	/**
-	 * Prepares the transaction to start harvesting for the current account.
+	 * Prepares the transaction to start harvesting for the current account or a multisig account.
 	 * Aggregate transaction includes linking the VRF and remote keys, and sending a request to the node.
 	 * If the keys are already linked, they will be unlinked first.
 	 * @param {object} options - The transaction options.
 	 * @param {string} options.nodePublicKey - The public key of the node.
-	 * @param {number} [options.fee] - The transaction fee.
-	 * @param {string} [password] - The wallet password.
+	 * @param {HarvesterAccountInfo} [options.harvesterAccountInfo] - The harvester account info when harvesting
+	 *   from a multisig account. Defaults to the current account.
 	 * @returns {Promise<TransactionBundle>} - The transaction to start harvesting.
 	 */
-	createStartHarvestingTransaction = async (options, password) => {
-		const { nodePublicKey, fee } = options;
-		const currentAccountPrivateKey = await this.#walletController.getCurrentAccountPrivateKey(password);
-		const { currentAccount, currentAccountInfo, networkIdentifier, networkProperties } = this.#walletController;
-		const accountPublicKey = currentAccount.publicKey;
-		const { linkedKeys } = currentAccountInfo;
+	createStartHarvestingTransaction = async options => {
+		const { nodePublicKey, harvesterAccountInfo } = options;
+		const { networkIdentifier } = this.#walletController;
+		const harvester = this.#resolveHarvester(harvesterAccountInfo);
+		const { publicKey: harvesterPublicKey, linkedKeys } = harvester;
 		const nodeAddress = addressFromPublicKey(nodePublicKey, networkIdentifier);
 
 		const vrfAccount = generateKeyPair(networkIdentifier);
@@ -256,7 +285,7 @@ export class HarvestingModule {
 				type: TransactionType.VRF_KEY_LINK,
 				linkAction: LinkActionMessage[LinkAction.Unlink],
 				linkedPublicKey: linkedKeys.vrfPublicKey,
-				signerPublicKey: accountPublicKey
+				signerPublicKey: harvesterPublicKey
 			});
 		}
 		if (linkedKeys.linkedPublicKey) {
@@ -264,7 +293,7 @@ export class HarvestingModule {
 				type: TransactionType.ACCOUNT_KEY_LINK,
 				linkAction: LinkActionMessage[LinkAction.Unlink],
 				linkedPublicKey: linkedKeys.linkedPublicKey,
-				signerPublicKey: accountPublicKey
+				signerPublicKey: harvesterPublicKey
 			});
 		}
 		if (linkedKeys.nodePublicKey) {
@@ -272,7 +301,7 @@ export class HarvestingModule {
 				type: TransactionType.NODE_KEY_LINK,
 				linkAction: LinkActionMessage[LinkAction.Unlink],
 				linkedPublicKey: linkedKeys.nodePublicKey,
-				signerPublicKey: accountPublicKey
+				signerPublicKey: harvesterPublicKey
 			});
 		}
 
@@ -281,63 +310,53 @@ export class HarvestingModule {
 			type: TransactionType.VRF_KEY_LINK,
 			linkAction: LinkActionMessage[LinkAction.Link],
 			linkedPublicKey: vrfAccount.publicKey,
-			signerPublicKey: accountPublicKey
+			signerPublicKey: harvesterPublicKey
 		});
 		transactions.push({
 			type: TransactionType.ACCOUNT_KEY_LINK,
 			linkAction: LinkActionMessage[LinkAction.Link],
 			linkedPublicKey: remoteAccount.publicKey,
-			signerPublicKey: accountPublicKey
+			signerPublicKey: harvesterPublicKey
 		});
 		transactions.push({
 			type: TransactionType.NODE_KEY_LINK,
 			linkAction: LinkActionMessage[LinkAction.Link],
 			linkedPublicKey: nodePublicKey,
-			signerPublicKey: accountPublicKey
+			signerPublicKey: harvesterPublicKey
 		});
 
-		// Request node for harvesting
+		// Request node for harvesting.
 		transactions.push({
 			type: TransactionType.TRANSFER,
 			mosaics: [],
 			message: {
 				type: MessageType.DelegatedHarvesting,
 				payload: encodeDelegatedHarvestingMessage(
-					currentAccountPrivateKey,
 					nodePublicKey,
 					remoteAccount.privateKey,
 					vrfAccount.privateKey
 				),
 				text: ''
 			},
-			signerPublicKey: accountPublicKey,
+			signerPublicKey: harvesterPublicKey,
 			recipientAddress: nodeAddress
 		});
 
-		// Prepare aggregate transaction
-		const aggregateTransaction = {
-			type: TransactionType.AGGREGATE_COMPLETE,
-			innerTransactions: transactions,
-			signerPublicKey: accountPublicKey,
-			fee: fee ?? createTransactionFee(networkProperties, '0'),
-			deadline: createDeadline(2, networkProperties.epochAdjustment)
-		};
-
-		return new TransactionBundle([aggregateTransaction], { type: TransactionBundleType.DELEGATED_HARVESTING });
+		return this.#createHarvestingBundle(transactions, { isMultisig: harvester.isMultisig });
 	};
 
 	/**
-	 * Prepares the transaction to stop harvesting for the current account.
+	 * Prepares the transaction to stop harvesting for the current account or a multisig account.
 	 * Aggregate transaction includes unlinking the VRF and remote keys.
 	 * @param {object} [options] - The transaction options.
-	 * @param {number} [options.fee] - The transaction fee.
+	 * @param {HarvesterAccountInfo} [options.harvesterAccountInfo] - The harvester account info when stopping
+	 *   harvesting for a multisig account. Defaults to the current account.
 	 * @returns {TransactionBundle} - The transaction to stop harvesting.
 	 */
 	createStopHarvestingTransaction = (options = {}) => {
-		const { currentAccount, currentAccountInfo, networkProperties } = this.#walletController;
-		const accountPublicKey = currentAccount.publicKey;
-		const { linkedKeys } = currentAccountInfo;
-		const { fee } = options;
+		const { harvesterAccountInfo } = options;
+		const harvester = this.#resolveHarvester(harvesterAccountInfo);
+		const { publicKey: harvesterPublicKey, linkedKeys } = harvester;
 		const transactions = [];
 
 		// Unlink supplemental key
@@ -346,7 +365,7 @@ export class HarvestingModule {
 				type: TransactionType.VRF_KEY_LINK,
 				linkAction: LinkActionMessage[LinkAction.Unlink],
 				linkedPublicKey: linkedKeys.vrfPublicKey,
-				signerPublicKey: accountPublicKey
+				signerPublicKey: harvesterPublicKey
 			});
 		}
 		if (linkedKeys.linkedPublicKey) {
@@ -354,7 +373,7 @@ export class HarvestingModule {
 				type: TransactionType.ACCOUNT_KEY_LINK,
 				linkAction: LinkActionMessage[LinkAction.Unlink],
 				linkedPublicKey: linkedKeys.linkedPublicKey,
-				signerPublicKey: accountPublicKey
+				signerPublicKey: harvesterPublicKey
 			});
 		}
 		if (linkedKeys.nodePublicKey) {
@@ -362,7 +381,7 @@ export class HarvestingModule {
 				type: TransactionType.NODE_KEY_LINK,
 				linkAction: LinkActionMessage[LinkAction.Unlink],
 				linkedPublicKey: linkedKeys.nodePublicKey,
-				signerPublicKey: accountPublicKey
+				signerPublicKey: harvesterPublicKey
 			});
 		}
 
@@ -374,12 +393,52 @@ export class HarvestingModule {
 			);
 		}
 
-		// Prepare aggregate transaction
+		return this.#createHarvestingBundle(transactions, { isMultisig: harvester.isMultisig });
+	};
+
+	/**
+	 * Resolves the harvester account context. When a multisig account distinct from the current
+	 * account is provided, harvesting acts on that multisig account; otherwise on the current account.
+	 * @param {HarvesterAccountInfo} [harvesterAccountInfo] - The multisig account info, if any.
+	 * @returns {{ isMultisig: boolean, publicKey: string, linkedKeys: object }} The harvester context.
+	 */
+	#resolveHarvester = harvesterAccountInfo => {
+		const { currentAccount, currentAccountInfo } = this.#walletController;
+		const isMultisig = !!harvesterAccountInfo && harvesterAccountInfo.address !== currentAccount.address;
+
+		return {
+			isMultisig,
+			publicKey: isMultisig ? harvesterAccountInfo.publicKey : currentAccount.publicKey,
+			linkedKeys: (isMultisig ? harvesterAccountInfo.linkedKeys : currentAccountInfo.linkedKeys) || {}
+		};
+	};
+
+	/**
+	 * Wraps the harvesting inner transactions into the final bundle.
+	 * @param {Transaction[]} innerTransactions - The key-link and transfer transactions.
+	 * @param {object} options - The bundle options.
+	 * @param {boolean} options.isMultisig - Whether the harvester is a multisig account.
+	 * @returns {TransactionBundle} The harvesting transaction bundle.
+	 */
+	#createHarvestingBundle = (innerTransactions, { isMultisig }) => {
+		const { currentAccount, networkProperties } = this.#walletController;
+
+		if (isMultisig) {
+			return createMultisigAggregateBundle(innerTransactions, {
+				currentAccount,
+				networkProperties,
+				metadata: {
+					type: TransactionBundleType.MULTISIG_DELEGATED_HARVESTING,
+					cosignaturePrivateKeys: []
+				}
+			});
+		}
+
 		const aggregateTransaction = {
 			type: TransactionType.AGGREGATE_COMPLETE,
-			innerTransactions: transactions,
-			signerPublicKey: accountPublicKey,
-			fee: fee ?? createTransactionFee(networkProperties, '0'),
+			innerTransactions,
+			signerPublicKey: currentAccount.publicKey,
+			fee: createTransactionFee(networkProperties, '0'),
 			deadline: createDeadline(2, networkProperties.epochAdjustment)
 		};
 

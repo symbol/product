@@ -1,9 +1,20 @@
-import { LinkAction, LinkActionMessage, MessageType, TransactionBundleType, TransactionType } from '../../src/constants';
+import {
+	EMPTY_AGGREGATE_HASH,
+	HASH_LOCK_AMOUNT,
+	HASH_LOCK_DURATION,
+	LinkAction,
+	LinkActionMessage,
+	MULTISIG_TRANSACTION_DEADLINE_HOURS,
+	MessageType,
+	SINGLE_TRANSACTION_DEADLINE_HOURS,
+	TransactionBundleType,
+	TransactionType
+} from '../../src/constants';
 import { addressFromPublicKey, createDeadline, createTransactionFee } from '../../src/utils';
-import { accountInfoNonMultisig } from '../__fixtures__/local/account';
+import { accountInfoMultisig, accountInfoNonMultisig } from '../__fixtures__/local/account';
 import { harvestedBlocks } from '../__fixtures__/local/harvesting';
 import { networkProperties } from '../__fixtures__/local/network';
-import { currentAccount, networkIdentifiers } from '../__fixtures__/local/wallet';
+import { currentAccount, networkIdentifiers, walletStorageAccounts } from '../__fixtures__/local/wallet';
 import { expect, jest } from '@jest/globals';
 import { ControllerError, TransactionBundle } from 'wallet-common-core';
 
@@ -16,15 +27,6 @@ const { HarvestingModule } = await import('../../src/modules/HarvestingModule');
 
 const FIXED_NOW_MS = 1_700_000_000_000;
 
-const createFee = amount => ({
-	token: {
-		id: networkProperties.networkCurrency.mosaicId,
-		amount,
-		divisibility: networkProperties.networkCurrency.divisibility,
-		name: networkProperties.networkCurrency.name
-	}
-});
-
 const nodeList = [
 	'https://node-1.example.com:3001',
 	'https://node-2.example.com:3001',
@@ -35,6 +37,13 @@ const createAccountInfoWithNoKeys = () => ({
 	...accountInfoNonMultisig,
 	linkedKeys: {}
 });
+
+// A multisig account the current account is a cosignatory of (distinct address from the current account).
+const multisigHarvesterAccountInfo = {
+	...accountInfoMultisig,
+	address: walletStorageAccounts.testnet[1].address,
+	publicKey: walletStorageAccounts.testnet[1].publicKey
+};
 
 const createStoredHarvestingStatuses = (networkIdentifier, address, status) => ({
 	mainnet: {},
@@ -348,53 +357,6 @@ describe('HarvestingModule', () => {
 			);
 		});
 
-		it('creates aggregate unlink transactions with provided fee', async () => {
-			// Arrange:
-			const customFee = createFee('1.5');
-			const { linkedKeys } = accountInfoNonMultisig;
-			const unlinkVrf = {
-				type: TransactionType.VRF_KEY_LINK,
-				linkAction: LinkActionMessage[LinkAction.Unlink],
-				linkedPublicKey: linkedKeys.vrfPublicKey,
-				signerPublicKey: currentAccount.publicKey
-			};
-			const unlinkRemote = {
-				type: TransactionType.ACCOUNT_KEY_LINK,
-				linkAction: LinkActionMessage[LinkAction.Unlink],
-				linkedPublicKey: linkedKeys.linkedPublicKey,
-				signerPublicKey: currentAccount.publicKey
-			};
-			const unlinkNode = {
-				type: TransactionType.NODE_KEY_LINK,
-				linkAction: LinkActionMessage[LinkAction.Unlink],
-				linkedPublicKey: linkedKeys.nodePublicKey,
-				signerPublicKey: currentAccount.publicKey
-			};
-
-			const expectedAggregate = {
-				type: TransactionType.AGGREGATE_COMPLETE,
-				innerTransactions: [unlinkVrf, unlinkRemote, unlinkNode],
-				signerPublicKey: currentAccount.publicKey,
-				fee: customFee,
-				deadline: createDeadline(2, networkProperties.epochAdjustment)
-			};
-			const expectedResult = new TransactionBundle(
-				[expectedAggregate],
-				{ type: TransactionBundleType.DELEGATED_HARVESTING }
-			);
-
-			// Act & Assert:
-			await runCreateStopHarvestingTransactionTest(
-				{
-					currentAccountInfo: accountInfoNonMultisig,
-					options: { fee: customFee }
-				},
-				{
-					result: expectedResult
-				}
-			);
-		});
-
 		it('throws when there are no keys to unlink', async () => {
 			// Arrange:
 			const expectedError = new ControllerError(
@@ -413,20 +375,82 @@ describe('HarvestingModule', () => {
 				}
 			);
 		});
+
+		it('creates aggregate bonded + hash lock bundle when stopping for a multisig account', async () => {
+			// Arrange:
+			const multisigAccountInfo = multisigHarvesterAccountInfo;
+			const { linkedKeys } = multisigAccountInfo;
+			const multisigPublicKey = multisigAccountInfo.publicKey;
+			const defaultFee = createTransactionFee(networkProperties, '0');
+			const unlinkVrf = {
+				type: TransactionType.VRF_KEY_LINK,
+				linkAction: LinkActionMessage[LinkAction.Unlink],
+				linkedPublicKey: linkedKeys.vrfPublicKey,
+				signerPublicKey: multisigPublicKey
+			};
+			const unlinkRemote = {
+				type: TransactionType.ACCOUNT_KEY_LINK,
+				linkAction: LinkActionMessage[LinkAction.Unlink],
+				linkedPublicKey: linkedKeys.linkedPublicKey,
+				signerPublicKey: multisigPublicKey
+			};
+			const unlinkNode = {
+				type: TransactionType.NODE_KEY_LINK,
+				linkAction: LinkActionMessage[LinkAction.Unlink],
+				linkedPublicKey: linkedKeys.nodePublicKey,
+				signerPublicKey: multisigPublicKey
+			};
+			const hashLock = {
+				type: TransactionType.HASH_LOCK,
+				signerPublicKey: currentAccount.publicKey,
+				mosaic: {
+					id: networkProperties.networkCurrency.mosaicId,
+					amount: HASH_LOCK_AMOUNT,
+					divisibility: networkProperties.networkCurrency.divisibility
+				},
+				lockedAmount: HASH_LOCK_AMOUNT,
+				duration: HASH_LOCK_DURATION,
+				fee: defaultFee,
+				deadline: createDeadline(SINGLE_TRANSACTION_DEADLINE_HOURS, networkProperties.epochAdjustment),
+				aggregateHash: EMPTY_AGGREGATE_HASH
+			};
+			const aggregateBonded = {
+				type: TransactionType.AGGREGATE_BONDED,
+				innerTransactions: [unlinkVrf, unlinkRemote, unlinkNode],
+				signerPublicKey: currentAccount.publicKey,
+				signerAddress: currentAccount.address,
+				fee: defaultFee,
+				deadline: createDeadline(MULTISIG_TRANSACTION_DEADLINE_HOURS, networkProperties.epochAdjustment)
+			};
+			const expectedResult = new TransactionBundle(
+				[hashLock, aggregateBonded],
+				{ type: TransactionBundleType.MULTISIG_DELEGATED_HARVESTING, cosignaturePrivateKeys: [] }
+			);
+
+			// Act & Assert:
+			await runCreateStopHarvestingTransactionTest(
+				{
+					currentAccountInfo: accountInfoNonMultisig,
+					options: { harvesterAccountInfo: multisigAccountInfo }
+				},
+				{
+					result: expectedResult
+				}
+			);
+		});
 	});
 
 	describe('createStartHarvestingTransaction()', () => {
 		const runCreateStartHarvestingTransactionTest = async (config, expected) => {
 			// Arrange:
-			const { currentAccountInfo, options, password } = config;
+			const { currentAccountInfo, options } = config;
 			walletController.currentAccountInfo = currentAccountInfo;
-			walletController.getCurrentAccountPrivateKey.mockResolvedValue(currentAccount.privateKey);
 
 			// Act:
 			let error;
 			let result;
 			try {
-				result = await harvestingModule.createStartHarvestingTransaction(options, password);
+				result = await harvestingModule.createStartHarvestingTransaction(options);
 			} catch (e) {
 				error = e;
 			}
@@ -518,8 +542,6 @@ describe('HarvestingModule', () => {
 				);
 
 				expect(result.toJSON()).toStrictEqual(expectedResult.toJSON());
-				expect(walletController.getCurrentAccountPrivateKey).toHaveBeenCalledTimes(1);
-				expect(walletController.getCurrentAccountPrivateKey).toHaveBeenCalledWith(password);
 			}
 		};
 
@@ -527,15 +549,13 @@ describe('HarvestingModule', () => {
 			// Arrange:
 			const nodePublicKey = '26BB5F23FAE6E93798D170E971250963F025048928478825FC0F51A394C30987';
 			const options = { nodePublicKey };
-			const password = 'pwd';
 			const expectedFee = createTransactionFee(networkProperties, '0');
 
 			// Act & Assert:
 			await runCreateStartHarvestingTransactionTest(
 				{
 					currentAccountInfo: accountInfoNonMultisig,
-					options,
-					password
+					options
 				},
 				{
 					fee: expectedFee
@@ -543,12 +563,11 @@ describe('HarvestingModule', () => {
 			);
 		});
 
-		it('creates link + delegated harvesting transfer with provided fee when no keys are linked', async () => {
+		it('creates link + delegated harvesting transfer with default fee when no keys are linked', async () => {
 			// Arrange:
 			const nodePublicKey = '26BB5F23FAE6E93798D170E971250963F025048928478825FC0F51A394C30987';
-			const customFee = createFee('1.2501');
-			const options = { nodePublicKey, fee: customFee };
-			const password = 'secret';
+			const options = { nodePublicKey };
+			const expectedFee = createTransactionFee(networkProperties, '0');
 			const accountInfoWithNoKeys = {
 				...accountInfoNonMultisig,
 				linkedKeys: {}
@@ -558,13 +577,52 @@ describe('HarvestingModule', () => {
 			await runCreateStartHarvestingTransactionTest(
 				{
 					currentAccountInfo: accountInfoWithNoKeys,
-					options,
-					password
+					options
 				},
 				{
-					fee: customFee
+					fee: expectedFee
 				}
 			);
+		});
+
+		it('creates aggregate bonded + hash lock bundle when starting for a multisig account', async () => {
+			// Arrange:
+			const nodePublicKey = '26BB5F23FAE6E93798D170E971250963F025048928478825FC0F51A394C30987';
+			const multisigAccountInfo = multisigHarvesterAccountInfo;
+			const multisigPublicKey = multisigAccountInfo.publicKey;
+			walletController.currentAccountInfo = accountInfoNonMultisig;
+
+			// Act:
+			const result = await harvestingModule.createStartHarvestingTransaction({
+				nodePublicKey,
+				harvesterAccountInfo: multisigAccountInfo
+			});
+
+			// Assert:
+			expect(result.metadata).toStrictEqual({
+				type: TransactionBundleType.MULTISIG_DELEGATED_HARVESTING,
+				cosignaturePrivateKeys: []
+			});
+
+			const [hashLock, aggregateBonded] = result.transactions;
+			expect(hashLock.type).toBe(TransactionType.HASH_LOCK);
+			expect(hashLock.signerPublicKey).toBe(currentAccount.publicKey);
+			expect(aggregateBonded.type).toBe(TransactionType.AGGREGATE_BONDED);
+			expect(aggregateBonded.signerPublicKey).toBe(currentAccount.publicKey);
+			expect(aggregateBonded.signerAddress).toBe(currentAccount.address);
+
+			// All inner transactions are signed by the multisig account
+			const { innerTransactions } = aggregateBonded;
+			innerTransactions.forEach(transaction => expect(transaction.signerPublicKey).toBe(multisigPublicKey));
+
+			// Unlinks for the 3 currently-linked multisig keys, 3 new links, then the request transfer
+			const unlinks = innerTransactions.filter(tx => tx.linkAction === LinkActionMessage[LinkAction.Unlink]);
+			const links = innerTransactions.filter(tx => tx.linkAction === LinkActionMessage[LinkAction.Link]);
+			const transfer = innerTransactions.find(tx => tx.type === TransactionType.TRANSFER);
+			expect(unlinks).toHaveLength(3);
+			expect(links).toHaveLength(3);
+			expect(transfer.message.type).toBe(MessageType.DelegatedHarvesting);
+			expect(transfer.recipientAddress).toBe(addressFromPublicKey(nodePublicKey, networkProperties.networkIdentifier));
 		});
 	});
 });
