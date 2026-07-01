@@ -44,7 +44,7 @@ async def main():
 	node_config = _create_node_config(args.symbol_node)
 	puller = SymbolPuller(args.symbol_node, args.db_config, args.network, node_config)
 
-	with puller.symbol_db:
+	with puller:
 		puller.symbol_db.create_tables()
 		await puller.sync_block_headers(args.max_height)
 

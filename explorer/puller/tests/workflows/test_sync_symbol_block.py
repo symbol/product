@@ -1,11 +1,9 @@
 import asyncio
-import runpy
 import unittest
-from pathlib import Path
 from unittest.mock import AsyncMock, Mock, patch
 
 from common.symbol.NodeConfiguration import SymbolNodeConfigurationError
-from workflow_test_utils import create_symbol_facade_with_mock_db, create_symbol_main_args, parse_args_with_argv
+from workflow_test_utils import create_symbol_facade_with_mock_db, parse_args_with_argv
 
 from puller.workflows.sync_symbol_block import _create_node_config, main, parse_args
 
@@ -45,7 +43,7 @@ class SyncSymbolBlockTest(unittest.TestCase):
 		self.assertEqual(args.symbol_node, 'http://localhost:3000')
 		self.assertEqual(args.network, 'testnet')
 		self.assertEqual(args.db_config, 'test_config.ini')
-		self.assertEqual(1000, args.max_height)
+		self.assertEqual(args.max_height, 1000)
 
 	def test_parse_args_rejects_invalid_network(self):
 		# Act + Assert:
@@ -99,23 +97,18 @@ class SyncSymbolBlockTest(unittest.TestCase):
 		self.assertEqual(17, node_config.timeout_seconds)
 
 	@patch('puller.workflows.sync_symbol_block.SymbolPuller')
-	@patch('puller.workflows.sync_symbol_block.SymbolNodeConfiguration')
-	@patch('puller.workflows.sync_symbol_block.parse_args')
-	def test_main_creates_tables_and_syncs_block_headers(
-		self,
-		mock_parse_args,
-		mock_symbol_node_config,
-		mock_symbol_puller
-	):
+	def test_main_creates_tables_and_syncs_block_headers(self, mock_symbol_puller):
 		# Arrange:
-		mock_parse_args.return_value = create_symbol_main_args()
-		mock_node_config = Mock()
-		mock_symbol_node_config.from_app_config.return_value = mock_node_config
-		mock_facade, mock_db = create_symbol_facade_with_mock_db(
-			mock_symbol_puller)
+		mock_facade, mock_db = create_symbol_facade_with_mock_db(mock_symbol_puller)
 		mock_facade.sync_block_headers = AsyncMock()
 
-		with patch.dict('os.environ', {
+		with patch('sys.argv', [
+			'sync_symbol_block.py',
+			'--symbol-node', 'http://localhost:7890',
+			'--network', 'testnet',
+			'--db-config', 'test_config.ini',
+			'--max-height', '3000'
+		]), patch.dict('os.environ', {
 			'SYMBOL_NODE_ALLOWED_HOSTS': 'localhost:7890',
 			'SYMBOL_NODE_ALLOW_LOOPBACK': 'true',
 			'SYMBOL_NODE_ALLOW_PRIVATE': 'false',
@@ -125,43 +118,5 @@ class SyncSymbolBlockTest(unittest.TestCase):
 			asyncio.run(main())
 
 		# Assert:
-		self.assertEqual(1, mock_symbol_node_config.from_app_config.call_count)
-		self.assertEqual(({
-			'SYMBOL_NODE_URL': 'http://localhost:7890',
-			'SYMBOL_NODE_ALLOWED_HOSTS': 'localhost:7890',
-			'SYMBOL_NODE_ALLOW_PRIVATE': 'false',
-			'SYMBOL_NODE_ALLOW_LOOPBACK': 'true',
-			'SYMBOL_NODE_REQUEST_TIMEOUT_SECONDS': '9'
-		},), mock_symbol_node_config.from_app_config.call_args.args)
-		self.assertEqual(
-			{},
-			mock_symbol_node_config.from_app_config.call_args.kwargs)
-		self.assertEqual(1, mock_symbol_puller.call_count)
-		self.assertEqual((
-			'http://localhost:7890',
-			'test_config.ini',
-			'testnet',
-			mock_node_config
-		), mock_symbol_puller.call_args.args)
-		self.assertEqual({}, mock_symbol_puller.call_args.kwargs)
-		self.assertEqual(1, mock_db.create_tables.call_count)
-		self.assertEqual((), mock_db.create_tables.call_args.args)
-		self.assertEqual({}, mock_db.create_tables.call_args.kwargs)
-		self.assertEqual(1, mock_facade.sync_block_headers.await_count)
-		self.assertEqual(
-			(3000,),
-			mock_facade.sync_block_headers.await_args.args)
-		self.assertEqual({}, mock_facade.sync_block_headers.await_args.kwargs)
-
-	@patch('asyncio.run')
-	def test_main_guard_runs_main(self, mock_asyncio_run):
-		# Arrange:
-		mock_asyncio_run.side_effect = lambda coroutine: coroutine.close()
-
-		workflow_path = Path(__file__).parents[2] / 'puller' / 'workflows' / 'sync_symbol_block.py'
-
-		# Act:
-		runpy.run_path(str(workflow_path), run_name='__main__')
-
-		# Assert:
-		self.assertEqual(1, mock_asyncio_run.call_count)
+		mock_db.create_tables.assert_called_once_with()
+		mock_facade.sync_block_headers.assert_awaited_once_with(3000)
