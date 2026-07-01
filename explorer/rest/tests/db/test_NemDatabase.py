@@ -32,8 +32,9 @@ from ..test.DatabaseTestUtils import (
 	TRANSACTION_MONTH_STATISTIC_VIEW,
 	TRANSACTION_STATISTIC_VIEW,
 	TRANSACTIONS,
-	TRANSACTIONS_VIEWS,
-	DatabaseTestBase
+	DatabaseTestBase,
+	transaction_view as expected_transaction_view,
+	transaction_views
 )
 
 # region test data
@@ -523,56 +524,56 @@ class NemDatabaseTest(DatabaseTestBase):  # pylint: disable=too-many-public-meth
 		transaction_view = self.nem_db.get_transaction_by_hash('0' * 63 + '1')
 
 		# Assert:
-		self.assertEqual(TRANSACTIONS_VIEWS[0], transaction_view)
+		self.assertEqual(expected_transaction_view('1'), transaction_view)
 
 	def test_can_query_transfer_v2_by_hash(self):
 		# Act:
 		transaction_view = self.nem_db.get_transaction_by_hash('0' * 63 + '2')
 
 		# Assert:
-		self.assertEqual(TRANSACTIONS_VIEWS[1], transaction_view)
+		self.assertEqual(expected_transaction_view('2'), transaction_view)
 
 	def test_can_query_account_link_by_hash(self):
 		# Act:
 		transaction_view = self.nem_db.get_transaction_by_hash('0' * 63 + '3')
 
 		# Assert:
-		self.assertEqual(TRANSACTIONS_VIEWS[2], transaction_view)
+		self.assertEqual(expected_transaction_view('3'), transaction_view)
 
 	def test_can_query_multisig_account_modification_by_hash(self):
 		# Act:
 		transaction_view = self.nem_db.get_transaction_by_hash('0' * 63 + '4')
 
 		# Assert:
-		self.assertEqual(TRANSACTIONS_VIEWS[3], transaction_view)
+		self.assertEqual(expected_transaction_view('4'), transaction_view)
 
 	def test_can_query_multisig_by_hash(self):
 		# Act:
 		transaction_view = self.nem_db.get_transaction_by_hash('0' * 63 + '5')
 
 		# Assert:
-		self.assertEqual(TRANSACTIONS_VIEWS[4], transaction_view)
+		self.assertEqual(expected_transaction_view('5'), transaction_view)
 
 	def test_can_query_namespace_registration_by_hash(self):
 		# Act:
 		transaction_view = self.nem_db.get_transaction_by_hash('0' * 63 + '7')
 
 		# Assert:
-		self.assertEqual(TRANSACTIONS_VIEWS[5], transaction_view)
+		self.assertEqual(expected_transaction_view('7'), transaction_view)
 
 	def test_can_query_mosaic_definition_by_hash(self):
 		# Act:
 		transaction_view = self.nem_db.get_transaction_by_hash('0' * 63 + '8')
 
 		# Assert:
-		self.assertEqual(TRANSACTIONS_VIEWS[6], transaction_view)
+		self.assertEqual(expected_transaction_view('8'), transaction_view)
 
 	def test_can_query_mosaic_supply_change_by_hash(self):
 		# Act:
 		transaction_view = self.nem_db.get_transaction_by_hash('0' * 63 + '9')
 
 		# Assert:
-		self.assertEqual(TRANSACTIONS_VIEWS[7], transaction_view)
+		self.assertEqual(expected_transaction_view('9'), transaction_view)
 
 	# endregion
 
@@ -620,29 +621,29 @@ class NemDatabaseTest(DatabaseTestBase):  # pylint: disable=too-many-public-meth
 
 	def test_can_query_transactions_filtered_limit_offset_0(self):
 		self._assert_can_query_transactions_with_filter(
-			Pagination(1, 0), 'desc', self._make_transaction_query(), [TRANSACTIONS_VIEWS[2]]
+			Pagination(1, 0), 'desc', self._make_transaction_query(), transaction_views('3')
 		)
 
 	def test_can_query_transactions_filtered_limit_offset_1(self):
 		self._assert_can_query_transactions_with_filter(
-			Pagination(2, 1), 'desc', self._make_transaction_query(), [TRANSACTIONS_VIEWS[2], TRANSACTIONS_VIEWS[4]]
+			Pagination(2, 1), 'desc', self._make_transaction_query(), transaction_views('3', '5')
 		)
 
 	def test_can_query_transactions_sorted_by_height_asc(self):
 		self._assert_can_query_transactions_with_filter(
-			Pagination(10, 0), 'asc', self._make_transaction_query(), list(TRANSACTIONS_VIEWS)
+			Pagination(10, 0), 'asc', self._make_transaction_query(), transaction_views('1', '2', '3', '4', '5', '7', '8', '9')
 		)
 
 	def test_can_query_transactions_sorted_by_height_desc(self):
 		self._assert_can_query_transactions_with_filter(
 			Pagination(3, 0), 'desc', self._make_transaction_query(),
-			[TRANSACTIONS_VIEWS[3], TRANSACTIONS_VIEWS[2], TRANSACTIONS_VIEWS[4]]
+			transaction_views('4', '3', '5')
 		)
 
 	def test_can_query_transactions_filtered_by_height(self):
 		self._assert_can_query_transactions_with_filter(
 			Pagination(10, 0), 'desc', self._make_transaction_query(height=1),
-			[TRANSACTIONS_VIEWS[0], TRANSACTIONS_VIEWS[1]]
+			transaction_views('1', '2')
 		)
 
 	def test_can_query_transactions_filtered_by_nonexistent_height(self):
@@ -655,43 +656,31 @@ class NemDatabaseTest(DatabaseTestBase):  # pylint: disable=too-many-public-meth
 		self._assert_can_query_transactions_with_filter(
 			Pagination(10, 0), 'desc',
 			self._make_transaction_query(transaction_types=[257, 2049]),
-			[TRANSACTIONS_VIEWS[2], TRANSACTIONS_VIEWS[0], TRANSACTIONS_VIEWS[1]]
+			transaction_views('3', '1', '2')
 		)
 
 	def test_can_query_transactions_filtered_by_address_as_sender(self):
 		self._assert_can_query_transactions_with_filter(
 			Pagination(2, 0), 'desc', self._make_transaction_query(address=TRANSACTIONS[2].sender_address),
-			[TRANSACTIONS_VIEWS[2]]
+			transaction_views('3')
 		)
 
 	def test_can_query_transactions_filtered_by_address_as_recipient(self):
 		self._assert_can_query_transactions_with_filter(
 			Pagination(10, 0), 'desc', self._make_transaction_query(address=TRANSACTIONS[0].recipient_address),
-			[
-				TRANSACTIONS_VIEWS[4],
-				TRANSACTIONS_VIEWS[5],
-				TRANSACTIONS_VIEWS[6],
-				TRANSACTIONS_VIEWS[0],
-				TRANSACTIONS_VIEWS[1]
-			]
+			transaction_views('5', '7', '8', '1', '2')
 		)
 
 	def test_can_query_transactions_filtered_by_sender_address(self):
 		self._assert_can_query_transactions_with_filter(
 			Pagination(10, 0), 'desc', self._make_transaction_query(sender_address=TRANSACTIONS[2].sender_address),
-			[TRANSACTIONS_VIEWS[2]]
+			transaction_views('3')
 		)
 
 	def test_can_query_transactions_filtered_by_recipient_address(self):
 		self._assert_can_query_transactions_with_filter(
 			Pagination(10, 0), 'desc', self._make_transaction_query(recipient_address=TRANSACTIONS[0].recipient_address),
-			[
-				TRANSACTIONS_VIEWS[4],
-				TRANSACTIONS_VIEWS[5],
-				TRANSACTIONS_VIEWS[6],
-				TRANSACTIONS_VIEWS[0],
-				TRANSACTIONS_VIEWS[1]
-			]
+			transaction_views('5', '7', '8', '1', '2')
 		)
 
 	def test_can_exclude_multisig_transaction_for_initiator_account_from_address_filter(self):
@@ -705,39 +694,25 @@ class NemDatabaseTest(DatabaseTestBase):  # pylint: disable=too-many-public-meth
 	def test_can_query_multisig_transaction_filtered_by_inner_sender_address(self):
 		self._assert_can_query_transactions_with_filter(
 			Pagination(10, 0), 'desc', self._make_transaction_query(sender_address=TRANSACTIONS[5].sender_address),
-			[
-				TRANSACTIONS_VIEWS[4],
-				TRANSACTIONS_VIEWS[6],
-				TRANSACTIONS_VIEWS[7],
-				TRANSACTIONS_VIEWS[3],
-				TRANSACTIONS_VIEWS[5],
-				TRANSACTIONS_VIEWS[1],
-				TRANSACTIONS_VIEWS[0]
-			]
+			transaction_views('5', '8', '9', '4', '7', '2', '1')
 		)
 
 	def test_can_query_multisig_transaction_filtered_by_inner_recipient_address(self):
 		self._assert_can_query_transactions_with_filter(
 			Pagination(10, 0), 'desc', self._make_transaction_query(recipient_address=TRANSACTIONS[5].recipient_address),
-			[
-				TRANSACTIONS_VIEWS[4],
-				TRANSACTIONS_VIEWS[5],
-				TRANSACTIONS_VIEWS[6],
-				TRANSACTIONS_VIEWS[0],
-				TRANSACTIONS_VIEWS[1]
-			]
+			transaction_views('5', '7', '8', '1', '2')
 		)
 
 	def test_can_query_transactions_filtered_by_mosaic_nem_xem(self):
 		self._assert_can_query_transactions_with_filter(
 			Pagination(10, 0), 'desc', self._make_transaction_query(mosaic='nem.xem'),
-			[TRANSACTIONS_VIEWS[0], TRANSACTIONS_VIEWS[1]]
+			transaction_views('1', '2')
 		)
 
 	def test_can_query_transactions_filtered_by_mosaic_other(self):
 		self._assert_can_query_transactions_with_filter(
 			Pagination(10, 0), 'desc', self._make_transaction_query(mosaic='root.mosaic'),
-			[TRANSACTIONS_VIEWS[1]]
+			transaction_views('2')
 		)
 
 	def test_can_query_transactions_filtered_by_nonexistent_mosaic(self):

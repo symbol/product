@@ -19,9 +19,11 @@ from ...test.DatabaseTestUtils import (
 	TRANSACTION_DAILY_STATISTIC_VIEW,
 	TRANSACTION_MONTH_STATISTIC_VIEW,
 	TRANSACTION_STATISTIC_VIEW,
-	TRANSACTIONS_VIEWS,
 	DatabaseConfig,
-	initialize_database
+	initialize_database,
+	transaction_dict,
+	transaction_dicts,
+	transaction_view
 )
 
 DATABASE_CONFIG_INI = 'db_config.ini'
@@ -641,11 +643,11 @@ def test_api_mosaic_rich_list_applies_offset(client):  # pylint: disable=redefin
 
 def test_api_nem_transaction_by_hash(client):  # pylint: disable=redefined-outer-name
 	# Act:
-	response = client.get('/api/nem/transaction/' + TRANSACTIONS_VIEWS[0].transaction_hash)
+	response = client.get('/api/nem/transaction/' + transaction_view('1').transaction_hash)
 
 	# Assert:
 	_assert_status_code_and_headers(response, 200)
-	assert TRANSACTIONS_VIEWS[0].to_dict() == response.json
+	assert transaction_dict('1') == response.json
 
 
 def test_api_nem_transaction_by_hash_invalid_hash(client):  # pylint: disable=redefined-outer-name, invalid-name
@@ -761,91 +763,43 @@ def _assert_get_api_nem_transactions(client, expected_status_code, expected_resu
 
 
 def test_api_transactions_without_params(client):  # pylint: disable=redefined-outer-name
-	_assert_get_api_nem_transactions(client, 200, [
-		TRANSACTIONS_VIEWS[7].to_dict(),
-		TRANSACTIONS_VIEWS[5].to_dict(),
-		TRANSACTIONS_VIEWS[6].to_dict(),
-		TRANSACTIONS_VIEWS[2].to_dict(),
-		TRANSACTIONS_VIEWS[3].to_dict(),
-		TRANSACTIONS_VIEWS[4].to_dict(),
-		TRANSACTIONS_VIEWS[1].to_dict(),
-		TRANSACTIONS_VIEWS[0].to_dict()
-	])
+	_assert_get_api_nem_transactions(client, 200, transaction_dicts('9', '7', '8', '3', '4', '5', '2', '1'))
 
 
 def test_api_transactions_applies_limit(client):  # pylint: disable=redefined-outer-name
-	_assert_get_api_nem_transactions(client, 200, [TRANSACTIONS_VIEWS[2].to_dict()], limit=1)
+	_assert_get_api_nem_transactions(client, 200, transaction_dicts('3'), limit=1)
 
 
 def test_api_transactions_applies_offset(client):  # pylint: disable=redefined-outer-name
-	_assert_get_api_nem_transactions(client, 200, [
-		TRANSACTIONS_VIEWS[5].to_dict(),
-		TRANSACTIONS_VIEWS[6].to_dict(),
-		TRANSACTIONS_VIEWS[2].to_dict(),
-		TRANSACTIONS_VIEWS[3].to_dict(),
-		TRANSACTIONS_VIEWS[4].to_dict(),
-		TRANSACTIONS_VIEWS[1].to_dict(),
-		TRANSACTIONS_VIEWS[0].to_dict()
-	], offset=1)
+	_assert_get_api_nem_transactions(client, 200, transaction_dicts('7', '8', '3', '4', '5', '2', '1'), offset=1)
 
 
 def test_api_transactions_applies_sorted_by_height_asc(client):  # pylint: disable=redefined-outer-name, invalid-name
-	_assert_get_api_nem_transactions(client, 200, [
-		TRANSACTIONS_VIEWS[0].to_dict(),
-		TRANSACTIONS_VIEWS[1].to_dict(),
-		TRANSACTIONS_VIEWS[2].to_dict(),
-		TRANSACTIONS_VIEWS[3].to_dict(),
-		TRANSACTIONS_VIEWS[4].to_dict(),
-		TRANSACTIONS_VIEWS[5].to_dict(),
-		TRANSACTIONS_VIEWS[6].to_dict(),
-		TRANSACTIONS_VIEWS[7].to_dict(),
-	], sort='ASC')
+	_assert_get_api_nem_transactions(client, 200, transaction_dicts('1', '2', '3', '4', '5', '7', '8', '9'), sort='ASC')
 
 
 def test_api_transactions_applies_sorted_by_height_desc(client):  # pylint: disable=redefined-outer-name, invalid-name
-	_assert_get_api_nem_transactions(client, 200, [
-		TRANSACTIONS_VIEWS[7].to_dict(),
-		TRANSACTIONS_VIEWS[5].to_dict(),
-		TRANSACTIONS_VIEWS[6].to_dict(),
-		TRANSACTIONS_VIEWS[2].to_dict(),
-		TRANSACTIONS_VIEWS[3].to_dict(),
-		TRANSACTIONS_VIEWS[4].to_dict(),
-		TRANSACTIONS_VIEWS[1].to_dict(),
-		TRANSACTIONS_VIEWS[0].to_dict()
-	], sort='DESC')
+	_assert_get_api_nem_transactions(client, 200, transaction_dicts('9', '7', '8', '3', '4', '5', '2', '1'), sort='DESC')
 
 
 def test_api_transactions_applies_height(client):  # pylint: disable=redefined-outer-name
-	_assert_get_api_nem_transactions(client, 200, [
-		TRANSACTIONS_VIEWS[0].to_dict(),
-		TRANSACTIONS_VIEWS[1].to_dict()
-	], height=1)
+	_assert_get_api_nem_transactions(client, 200, transaction_dicts('1', '2'), height=1)
 
 
 def test_api_transactions_applies_transaction_types(client):  # pylint: disable=redefined-outer-name, invalid-name
-	_assert_get_api_nem_transactions(client, 200, [
-		TRANSACTIONS_VIEWS[2].to_dict(),
-		TRANSACTIONS_VIEWS[0].to_dict(),
-		TRANSACTIONS_VIEWS[1].to_dict()
-	], transactionTypes='transfer,account_key_link')
+	_assert_get_api_nem_transactions(client, 200, transaction_dicts('3', '1', '2'), transactionTypes='transfer,account_key_link')
 
 
 def test_api_transactions_applies_address(client):  # pylint: disable=redefined-outer-name, invalid-name
-	_assert_get_api_nem_transactions(client, 200, [
-		TRANSACTIONS_VIEWS[2].to_dict()
-	], address='NBNR6XNZQIGQVXII6L3FPJTUGF6NFGLZHBN52R3V')
+	_assert_get_api_nem_transactions(client, 200, transaction_dicts('3'), address='NBNR6XNZQIGQVXII6L3FPJTUGF6NFGLZHBN52R3V')
 
 
 def test_api_transactions_applies_sender_address(client):  # pylint: disable=redefined-outer-name, invalid-name
-	_assert_get_api_nem_transactions(client, 200, [
-		TRANSACTIONS_VIEWS[2].to_dict()
-	], senderAddress='NBNR6XNZQIGQVXII6L3FPJTUGF6NFGLZHBN52R3V')
+	_assert_get_api_nem_transactions(client, 200, transaction_dicts('3'), senderAddress='NBNR6XNZQIGQVXII6L3FPJTUGF6NFGLZHBN52R3V')
 
 
 def test_api_transactions_applies_sender_public_key(client):  # pylint: disable=redefined-outer-name, invalid-name
-	_assert_get_api_nem_transactions(client, 200, [
-		TRANSACTIONS_VIEWS[2].to_dict()
-	], senderPublicKey='9ca54cd15edf88a9df9173375d4a0d706f7a9ddcf57d7547dff8110ddd2adeb9')
+	_assert_get_api_nem_transactions(client, 200, transaction_dicts('3'), senderPublicKey='9ca54cd15edf88a9df9173375d4a0d706f7a9ddcf57d7547dff8110ddd2adeb9')
 
 
 def test_api_transactions_excludes_multisig_for_initiator_from_address_filter(client):  # pylint: disable=redefined-outer-name, invalid-name
@@ -854,45 +808,23 @@ def test_api_transactions_excludes_multisig_for_initiator_from_address_filter(cl
 
 
 def test_api_transactions_applies_recipient_address(client):  # pylint: disable=redefined-outer-name, invalid-name
-	_assert_get_api_nem_transactions(client, 200, [
-		TRANSACTIONS_VIEWS[4].to_dict(),
-		TRANSACTIONS_VIEWS[5].to_dict(),
-		TRANSACTIONS_VIEWS[6].to_dict(),
-		TRANSACTIONS_VIEWS[0].to_dict(),
-		TRANSACTIONS_VIEWS[1].to_dict()
-	], recipientAddress='NBFWZ4IVRHEIBRCGHLYDS62FSFTBM3VDFA7E6LSQ')
+	_assert_get_api_nem_transactions(client, 200, transaction_dicts('5', '7', '8', '1', '2'), recipientAddress='NBFWZ4IVRHEIBRCGHLYDS62FSFTBM3VDFA7E6LSQ')
 
 
 def test_api_transactions_applies_multisig_inner_sender_address(client):  # pylint: disable=redefined-outer-name, invalid-name
-	_assert_get_api_nem_transactions(client, 200, [
-		TRANSACTIONS_VIEWS[4].to_dict(),
-		TRANSACTIONS_VIEWS[6].to_dict(),
-		TRANSACTIONS_VIEWS[7].to_dict(),
-		TRANSACTIONS_VIEWS[3].to_dict(),
-		TRANSACTIONS_VIEWS[5].to_dict(),
-		TRANSACTIONS_VIEWS[1].to_dict(),
-		TRANSACTIONS_VIEWS[0].to_dict()
-	], senderAddress='NALICEPFLZQRZGPRIJTMJOCPWDNECXTNNG7QLSG3')
+	_assert_get_api_nem_transactions(client, 200, transaction_dicts('5', '8', '9', '4', '7', '2', '1'), senderAddress='NALICEPFLZQRZGPRIJTMJOCPWDNECXTNNG7QLSG3')
 
 
 def test_api_transactions_applies_mosaic(client):  # pylint: disable=redefined-outer-name
-	_assert_get_api_nem_transactions(client, 200, [
-		TRANSACTIONS_VIEWS[1].to_dict()
-	], mosaic='root.mosaic')
+	_assert_get_api_nem_transactions(client, 200, transaction_dicts('2'), mosaic='root.mosaic')
 
 
 def test_api_transactions_applies_address_ignore_other(client):  # pylint: disable=redefined-outer-name, invalid-name
-	_assert_get_api_nem_transactions(client, 200, [
-		TRANSACTIONS_VIEWS[2].to_dict()
-	], address='NBNR6XNZQIGQVXII6L3FPJTUGF6NFGLZHBN52R3V', senderAddress='NALICEPFLZQRZGPRIJTMJOCPWDNECXTNNG7QLSG3')
+	_assert_get_api_nem_transactions(client, 200, transaction_dicts('3'), address='NBNR6XNZQIGQVXII6L3FPJTUGF6NFGLZHBN52R3V', senderAddress='NALICEPFLZQRZGPRIJTMJOCPWDNECXTNNG7QLSG3')
 
-	_assert_get_api_nem_transactions(client, 200, [
-		TRANSACTIONS_VIEWS[2].to_dict()
-	], address='NBNR6XNZQIGQVXII6L3FPJTUGF6NFGLZHBN52R3V', recipientAddress='NALICEPFLZQRZGPRIJTMJOCPWDNECXTNNG7QLSG3')
+	_assert_get_api_nem_transactions(client, 200, transaction_dicts('3'), address='NBNR6XNZQIGQVXII6L3FPJTUGF6NFGLZHBN52R3V', recipientAddress='NALICEPFLZQRZGPRIJTMJOCPWDNECXTNNG7QLSG3')
 
-	_assert_get_api_nem_transactions(client, 200, [
-		TRANSACTIONS_VIEWS[2].to_dict()
-	], address='NBNR6XNZQIGQVXII6L3FPJTUGF6NFGLZHBN52R3V', senderPublicKey='f9bd190dd0c364261f5c8a74870cc7f7374e631352293c62ecc437657e5de2cd')
+	_assert_get_api_nem_transactions(client, 200, transaction_dicts('3'), address='NBNR6XNZQIGQVXII6L3FPJTUGF6NFGLZHBN52R3V', senderPublicKey='f9bd190dd0c364261f5c8a74870cc7f7374e631352293c62ecc437657e5de2cd')
 
 
 def _assert_transaction_invalid_params(client, expected_message, **query_params):  # pylint: disable=redefined-outer-name

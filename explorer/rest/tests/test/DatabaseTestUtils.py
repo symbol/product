@@ -837,6 +837,24 @@ TRANSACTIONS_VIEWS = [
 	),
 ]
 
+TRANSACTION_VIEWS_BY_HASH = {transaction_view.transaction_hash: transaction_view for transaction_view in TRANSACTIONS_VIEWS}
+
+
+def transaction_view(transaction_hash_suffix):
+	return TRANSACTION_VIEWS_BY_HASH['0' * 63 + transaction_hash_suffix]
+
+
+def transaction_views(*transaction_hash_suffixes):
+	return [transaction_view(transaction_hash_suffix) for transaction_hash_suffix in transaction_hash_suffixes]
+
+
+def transaction_dict(transaction_hash_suffix):
+	return transaction_view(transaction_hash_suffix).to_dict()
+
+
+def transaction_dicts(*transaction_hash_suffixes):
+	return [view.to_dict() for view in transaction_views(*transaction_hash_suffixes)]
+
 # endregion
 
 
