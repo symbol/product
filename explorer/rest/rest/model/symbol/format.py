@@ -4,11 +4,7 @@ XYM_DIVISIBILITY = 6
 
 
 def _format_timestamp(timestamp):
-	if hasattr(timestamp, 'isoformat'):
-		formatted_timestamp = timestamp.isoformat()
-		return formatted_timestamp.replace('+00:00', 'Z') if timestamp.tzinfo else f'{formatted_timestamp}Z'
-
-	return str(timestamp).replace(' ', 'T')
+	return timestamp.strftime('%Y-%m-%dT%H:%M:%SZ')
 
 
 def _hex_or_none(value):

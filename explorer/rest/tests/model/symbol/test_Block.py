@@ -104,17 +104,6 @@ class SymbolBlockViewTest(TestCase):
 		# Assert:
 		self.assertEqual([], result['stateHashSubCacheMerkleRoots'])
 
-	def test_can_format_string_timestamp(self):
-		# Arrange:
-		block_view = self._create_block_view()
-		block_view.timestamp = '2026-01-02 03:04:05'
-
-		# Act:
-		result = block_view.to_dict()
-
-		# Assert:
-		self.assertEqual('2026-01-02T03:04:05', result['timestamp'])
-
 	def test_can_format_naive_datetime_as_utc(self):
 		# Arrange:
 		block_view = self._create_block_view()
