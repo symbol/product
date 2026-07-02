@@ -17,6 +17,7 @@ from puller.db.SymbolDatabase import SymbolDatabase
 
 DatabaseConfiguration = namedtuple('DatabaseConfiguration', ['database', 'user', 'password', 'host', 'port'])
 BLOCK_PAGE_SIZE = 100
+BLOCK_PAGE_FETCH_CONCURRENCY = 10
 
 
 def _get_symbol_network(network_type):
@@ -250,33 +251,39 @@ class SymbolPuller:
 	async def _sync_block_pages(self, start_height, chain_height, epoch_adjustment_seconds):
 		last_synced_height = None
 		last_synced_block_hash = None
-		offset = start_height - 1
+		all_offsets = range(start_height - 1, chain_height, BLOCK_PAGE_SIZE)
 
-		while offset < chain_height:
-			blocks = await self._get_block_page(offset)
-			if not blocks:
-				raise ValueError(f'Expected Symbol blocks at offset {offset} before chain height {chain_height}')
+		for batch_start in range(0, len(all_offsets), BLOCK_PAGE_FETCH_CONCURRENCY):
+			batch_offsets = all_offsets[batch_start:batch_start + BLOCK_PAGE_FETCH_CONCURRENCY]
+			pages = await asyncio.gather(*[self._get_block_page(offset) for offset in batch_offsets])
 
-			rows = [
-				self._create_block_row(block, epoch_adjustment_seconds)
-				for block in blocks
-				if int(block['block']['height']) <= chain_height
-			]
-			if not rows:
-				raise ValueError(f'Symbol block page at offset {offset} does not contain blocks at or below chain height {chain_height}')
+			batch_rows = []
+			for offset, blocks in zip(batch_offsets, pages):
+				if not blocks:
+					raise ValueError(f'Expected Symbol blocks at offset {offset} before chain height {chain_height}')
 
-			self._validate_block_page(rows, offset + 1)
-			last_row = rows[-1]
-			if len(blocks) < BLOCK_PAGE_SIZE and last_row['height'] < chain_height:
-				raise ValueError(f'Short Symbol block page ended at height {last_row["height"]} before chain height {chain_height}')
+				rows = [
+					self._create_block_row(block, epoch_adjustment_seconds)
+					for block in blocks
+					if int(block['block']['height']) <= chain_height
+				]
+				if not rows:
+					raise ValueError(f'Symbol block page at offset {offset} does not contain blocks at or below chain height {chain_height}')
 
-			self.symbol_db.upsert_blocks(rows)
-			last_synced_height = last_row['height']
-			last_synced_block_hash = last_row['hash']
-			offset += BLOCK_PAGE_SIZE
+				self._validate_block_page(rows, offset + 1)
+				last_row = rows[-1]
+				if len(blocks) < BLOCK_PAGE_SIZE and last_row['height'] < chain_height:
+					raise ValueError(f'Short Symbol block page ended at height {last_row["height"]} before chain height {chain_height}')
 
-			if len(blocks) < BLOCK_PAGE_SIZE:
-				break
+				batch_rows.extend(rows)
+				last_synced_height = last_row['height']
+				last_synced_block_hash = last_row['hash']
+
+				if len(blocks) < BLOCK_PAGE_SIZE:
+					self.symbol_db.upsert_blocks(batch_rows)
+					return last_synced_height, last_synced_block_hash
+
+			self.symbol_db.upsert_blocks(batch_rows)
 
 		return last_synced_height, last_synced_block_hash
 

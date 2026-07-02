@@ -96,6 +96,59 @@ class SymbolPullerSyncTest(_SymbolPullerTestBase):
 		)
 		self.assertEqual(101, sync_state['last_synced_height'])
 
+	def test_sync_block_headers_fetches_multiple_pages_in_single_batch(self):
+		# Arrange: 3 pages (offsets 0, 100, 200) within one batch
+		first_page = [_create_node_block(height) for height in range(1, 101)]
+		second_page = [_create_node_block(height) for height in range(101, 201)]
+		third_page = [_create_node_block(201)]
+		connector = FakeConnector(
+			201,
+			{0: first_page, 100: second_page, 200: third_page}
+		)
+
+		# Act:
+		block_heights, sync_state = self._sync_with_connector(connector)
+
+		# Assert:
+		self.assertIn(
+			'blocks?pageSize=100&offset=0&orderBy=height',
+			connector.paths
+		)
+		self.assertIn(
+			'blocks?pageSize=100&offset=100&orderBy=height',
+			connector.paths
+		)
+		self.assertIn(
+			'blocks?pageSize=100&offset=200&orderBy=height',
+			connector.paths
+		)
+		self.assertEqual(list(range(1, 202)), block_heights)
+		self.assertEqual(201, sync_state['last_synced_height'])
+
+	def test_sync_block_headers_splits_into_multiple_batches(self):
+		# Arrange: 11 pages (offsets 0..1000) requires 2 batches when concurrency=10;
+		# last page is short so the early-return path in batch 2 is exercised
+		from puller.facade.SymbolPuller import BLOCK_PAGE_FETCH_CONCURRENCY
+
+		total_pages = BLOCK_PAGE_FETCH_CONCURRENCY + 1
+		chain_height = total_pages * 100 - 50
+		pages = {
+			offset: [
+				_create_node_block(height)
+				for height in range(offset + 1, min(offset + 101, chain_height + 1))
+			]
+			for offset in range(0, chain_height, 100)
+		}
+		connector = FakeConnector(chain_height, pages)
+
+		# Act:
+		block_heights, sync_state = self._sync_with_connector(connector)
+
+		# Assert:
+		self.assertEqual(list(range(1, chain_height + 1)), block_heights)
+		self.assertEqual(chain_height, sync_state['last_synced_height'])
+		self.assertEqual('healthy', sync_state['status'])
+
 	def test_sync_block_headers_stops_at_max_height(self):
 		# Arrange:
 		connector = FakeConnector(
