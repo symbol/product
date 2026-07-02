@@ -154,6 +154,10 @@ class SymbolRestFacade:
 		if not self.is_block_data_available():
 			return None
 
-		block = self.symbol_db.get_block(height)
+		try:
+			block = self.symbol_db.get_block(height)
+		except PsycopgError:
+			log.error('Failed to get Symbol block')
+			return None
 
 		return block.to_detail_dict() if block else None

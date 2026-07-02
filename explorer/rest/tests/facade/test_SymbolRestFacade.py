@@ -437,11 +437,10 @@ class SymbolRestFacadeTest(TestCase):  # pylint: disable=too-many-public-methods
 		# Act + Assert:
 		self.assertIsNone(facade.get_block(1))
 
-	def test_get_block_raises_when_database_read_fails(self):
+	def test_get_block_returns_none_when_database_read_fails(self):
 		# Arrange:
 		facade = _create_facade_with_database(BlockReadFailingSymbolDatabase())
 
 		# Act + Assert:
 		self.assertTrue(facade.is_block_data_available())
-		with self.assertRaisesRegex(OperationalError, 'database unavailable'):
-			facade.get_block(1)
+		self.assertIsNone(facade.get_block(1))
