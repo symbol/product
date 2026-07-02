@@ -35,7 +35,7 @@ beforeEach(() => {
 
 describe('AccountInfo', () => {
 	describe('getServerSideProps', () => {
-		const runTest = async (accountInfo, expectedResult) => {
+		const runTest = async (accountInfo, expectedResult, isTransactionPageFetched) => {
 			// Arrange:
 			const locale = 'en';
 			const params = { address: accountInfoResult.address };
@@ -49,7 +49,10 @@ describe('AccountInfo', () => {
 
 			// Assert:
 			expect(fetchAccountInfo).toHaveBeenCalledWith(params.address);
-			expect(fetchTransactionPage).toHaveBeenCalledWith({ address: params.address });
+			if (isTransactionPageFetched)
+				expect(fetchTransactionPage).toHaveBeenCalledWith({ address: params.address });
+			else
+				expect(fetchTransactionPage).not.toHaveBeenCalled();
 			expect(result).toEqual(expectedResult);
 		};
 
@@ -64,10 +67,10 @@ describe('AccountInfo', () => {
 			};
 
 			// Act + Assert:
-			await runTest(accountInfo, expectedResult);
+			await runTest(accountInfo, expectedResult, true);
 		});
 
-		it('returns not found', async () => {
+		it('returns not found without fetching transactions', async () => {
 			// Arrange:
 			const accountInfo = null;
 			const expectedResult = {
@@ -75,7 +78,7 @@ describe('AccountInfo', () => {
 			};
 
 			// Act + Assert:
-			await runTest(accountInfo, expectedResult);
+			await runTest(accountInfo, expectedResult, false);
 		});
 	});
 

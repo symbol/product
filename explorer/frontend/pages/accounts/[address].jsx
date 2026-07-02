@@ -32,13 +32,14 @@ import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 
 export const getServerSideProps = async ({ locale, params }) => {
 	const accountInfo = await fetchAccountInfo(params.address);
-	const transactionsPage = await fetchTransactionPage({ address: params.address });
 
 	if (!accountInfo) {
 		return {
 			notFound: true
 		};
 	}
+
+	const transactionsPage = await fetchTransactionPage({ address: params.address });
 
 	return {
 		props: {
