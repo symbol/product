@@ -1,6 +1,4 @@
-from rest.model.symbol.format import (
-	_format_timestamp, _hex_or_none, _hex, _str_or_none, _format_total_fee
-)
+from rest.model.symbol.format import _format_timestamp, _format_total_fee, _hex, _hex_or_none, _str_or_none
 
 
 class SymbolBlockView:  # pylint: disable=too-many-instance-attributes
