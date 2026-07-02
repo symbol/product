@@ -134,19 +134,15 @@ class SymbolRestFacade:
 		if not self.is_database_available():
 			return None
 
-		try:
-			local_height = self.symbol_db.get_block_head_height()
-			if local_height is None:
-				return None
-
-			blocks = self.symbol_db.get_blocks(from_height, limit, sort)
-			if blocks is None:
-				return None
-
-			return [block.to_dict() for block in blocks]
-		except PsycopgError:
-			log.error('Failed to get Symbol blocks')
+		local_height = self.symbol_db.get_block_head_height()
+		if local_height is None:
 			return None
+
+		blocks = self.symbol_db.get_blocks(from_height, limit, sort)
+		if blocks is None:
+			return None
+
+		return [block.to_dict() for block in blocks]
 
 	def get_block(self, height):
 		"""Gets a Symbol block by height."""
@@ -154,10 +150,6 @@ class SymbolRestFacade:
 		if not self.is_block_data_available():
 			return None
 
-		try:
-			block = self.symbol_db.get_block(height)
-		except PsycopgError:
-			log.error('Failed to get Symbol block')
-			return None
+		block = self.symbol_db.get_block(height)
 
 		return block.to_detail_dict() if block else None

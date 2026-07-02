@@ -132,30 +132,6 @@ class BlockSymbolDatabase:
 		return BlockView() if 1 == height else None
 
 
-class UnavailableBlockSymbolDatabase:
-	@staticmethod
-	def get_block_head_height():
-		raise OperationalError('database unavailable')
-
-	@staticmethod
-	def get_blocks(_from_height, _limit, _sort):
-		raise OperationalError('database unavailable')
-
-	@staticmethod
-	def get_block(_height):
-		raise OperationalError('database unavailable')
-
-
-class BlockReadFailingSymbolDatabase:
-	@staticmethod
-	def get_block_head_height():
-		return 1
-
-	@staticmethod
-	def get_block(_height):
-		raise OperationalError('database unavailable')
-
-
 def _create_configured_facade():
 	facade = SymbolRestFacade(
 		create_unreachable_db_configuration(),
@@ -397,15 +373,6 @@ class SymbolRestFacadeTest(TestCase):  # pylint: disable=too-many-public-methods
 		self.assertIsNone(
 			facade.get_blocks(from_height=None, limit=1, sort=SortOrder.DESC))
 
-	def test_get_blocks_returns_none_when_database_read_fails(self):
-		# Arrange:
-		facade = _create_facade_with_database(UnavailableBlockSymbolDatabase())
-
-		# Act + Assert:
-		self.assertFalse(facade.is_block_data_available())
-		self.assertIsNone(
-			facade.get_blocks(from_height=None, limit=1, sort=SortOrder.DESC))
-
 	def test_get_blocks_returns_none_when_database_returns_none(self):
 		# Arrange:
 		facade = _create_facade_with_database(BlockSymbolDatabase(blocks=None))
@@ -435,12 +402,4 @@ class SymbolRestFacadeTest(TestCase):  # pylint: disable=too-many-public-methods
 			_create_node_config())
 
 		# Act + Assert:
-		self.assertIsNone(facade.get_block(1))
-
-	def test_get_block_returns_none_when_database_read_fails(self):
-		# Arrange:
-		facade = _create_facade_with_database(BlockReadFailingSymbolDatabase())
-
-		# Act + Assert:
-		self.assertTrue(facade.is_block_data_available())
 		self.assertIsNone(facade.get_block(1))
