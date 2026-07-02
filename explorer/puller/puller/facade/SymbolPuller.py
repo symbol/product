@@ -49,7 +49,14 @@ def _bytes_from_hex_or_none(value):
 class SymbolPuller:
 	"""Facade for pulling data from Symbol network."""
 
-	def __init__(self, node_url, config_file, network_type='mainnet', node_config=None, connector=None):
+	def __init__(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+		self,
+		node_url,
+		config_file,
+		network_type='mainnet',
+		node_config=None,
+		connector=None
+	):
 		"""Creates a Symbol puller facade object."""
 
 		config = configparser.ConfigParser()

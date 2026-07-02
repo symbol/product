@@ -5,15 +5,15 @@ from puller.facade.SymbolPuller import BLOCK_PAGE_FETCH_CONCURRENCY
 
 from .puller_test_utils import (
 	FakeConnector,
-	_create_node_block,
-	_create_sync_state,
-	_set_symbol_connector,
+	SymbolPullerTestBase,
 	_set_sync_block_pages,
-	_SymbolPullerTestBase
+	create_node_block,
+	create_sync_state,
+	set_symbol_connector
 )
 
 
-class SymbolPullerSyncTest(_SymbolPullerTestBase):
+class SymbolPullerSyncTest(SymbolPullerTestBase):
 
 	def test_sync_block_headers_pulls_chain_info_network_properties_and_blocks(
 		self
@@ -21,7 +21,7 @@ class SymbolPullerSyncTest(_SymbolPullerTestBase):
 		# Arrange:
 		connector = FakeConnector(
 			2,
-			{0: [_create_node_block(1), _create_node_block(2)]}
+			{0: [create_node_block(1), create_node_block(2)]}
 		)
 
 		# Act:
@@ -38,7 +38,7 @@ class SymbolPullerSyncTest(_SymbolPullerTestBase):
 		# Arrange:
 		connector = FakeConnector(
 			2,
-			{0: [_create_node_block(1), _create_node_block(2)]}
+			{0: [create_node_block(1), create_node_block(2)]}
 		)
 
 		# Act:
@@ -56,7 +56,7 @@ class SymbolPullerSyncTest(_SymbolPullerTestBase):
 
 	def test_sync_block_headers_persists_importance_block_fields(self):
 		# Arrange:
-		connector = FakeConnector(1, {0: [_create_node_block(
+		connector = FakeConnector(1, {0: [create_node_block(
 			1,
 			votingEligibleAccountsCount=4,
 			harvestingEligibleAccountsCount='17',
@@ -64,8 +64,7 @@ class SymbolPullerSyncTest(_SymbolPullerTestBase):
 			previousImportanceBlockHash='86' * 32
 		)]})
 
-		self.puller.symbol_db.create_tables()
-		_set_symbol_connector(self.puller, connector)
+		set_symbol_connector(self.puller, connector)
 
 		# Act:
 		asyncio.run(self.puller.sync_block_headers())
@@ -80,8 +79,8 @@ class SymbolPullerSyncTest(_SymbolPullerTestBase):
 
 	def test_sync_block_headers_paginates_by_offset(self):
 		# Arrange:
-		first_page = [_create_node_block(height) for height in range(1, 101)]
-		second_page = [_create_node_block(101)]
+		first_page = [create_node_block(height) for height in range(1, 101)]
+		second_page = [create_node_block(101)]
 		connector = FakeConnector(101, {0: first_page, 100: second_page})
 
 		# Act:
@@ -100,9 +99,9 @@ class SymbolPullerSyncTest(_SymbolPullerTestBase):
 
 	def test_sync_block_headers_fetches_multiple_pages_in_single_batch(self):
 		# Arrange: 3 pages (offsets 0, 100, 200) within one batch
-		first_page = [_create_node_block(height) for height in range(1, 101)]
-		second_page = [_create_node_block(height) for height in range(101, 201)]
-		third_page = [_create_node_block(201)]
+		first_page = [create_node_block(height) for height in range(1, 101)]
+		second_page = [create_node_block(height) for height in range(101, 201)]
+		third_page = [create_node_block(201)]
 		connector = FakeConnector(
 			201,
 			{0: first_page, 100: second_page, 200: third_page}
@@ -124,6 +123,7 @@ class SymbolPullerSyncTest(_SymbolPullerTestBase):
 			'blocks?pageSize=100&offset=200&orderBy=height',
 			connector.paths
 		)
+		self.assertEqual(5, len(connector.paths))
 		self.assertEqual(list(range(1, 202)), block_heights)
 		self.assertEqual(201, sync_state['last_synced_height'])
 
@@ -134,8 +134,11 @@ class SymbolPullerSyncTest(_SymbolPullerTestBase):
 		chain_height = total_pages * 100 - 50
 		pages = {
 			offset: [
-				_create_node_block(height)
-				for height in range(offset + 1, min(offset + 101, chain_height + 1))
+				create_node_block(height)
+				for height in range(
+					offset + 1,
+					min(offset + 101, chain_height + 1)
+				)
 			]
 			for offset in range(0, chain_height, 100)
 		}
@@ -145,6 +148,7 @@ class SymbolPullerSyncTest(_SymbolPullerTestBase):
 		block_heights, sync_state = self._sync_with_connector(connector)
 
 		# Assert:
+		self.assertEqual(13, len(connector.paths))
 		self.assertEqual(list(range(1, chain_height + 1)), block_heights)
 		self.assertEqual(chain_height, sync_state['last_synced_height'])
 		self.assertEqual('healthy', sync_state['status'])
@@ -153,7 +157,7 @@ class SymbolPullerSyncTest(_SymbolPullerTestBase):
 		# Arrange:
 		connector = FakeConnector(
 			101,
-			{0: [_create_node_block(height) for height in range(1, 101)]}
+			{0: [create_node_block(height) for height in range(1, 101)]}
 		)
 
 		# Act:
@@ -177,7 +181,7 @@ class SymbolPullerSyncTest(_SymbolPullerTestBase):
 		# Arrange:
 		connector = FakeConnector(
 			5,
-			{0: [_create_node_block(height) for height in range(1, 6)]},
+			{0: [create_node_block(height) for height in range(1, 6)]},
 			finalized_height=5
 		)
 
@@ -198,17 +202,16 @@ class SymbolPullerSyncTest(_SymbolPullerTestBase):
 		# Arrange:
 		connector = FakeConnector(
 			4,
-			{2: [_create_node_block(3), _create_node_block(4)]},
-			{2: _create_node_block(2)}
+			{2: [create_node_block(3), create_node_block(4)]},
+			{2: create_node_block(2)}
 		)
-		self.puller.symbol_db.create_tables()
 		self._seed_blocks(self.puller.symbol_db, [1, 2])
-		self.puller.symbol_db.upsert_sync_state(_create_sync_state(
+		self.puller.symbol_db.upsert_sync_state(create_sync_state(
 			chain_height=2,
 			last_synced_height=2,
 			last_synced_block_hash=bytes.fromhex(f'{2:064X}')
 		))
-		_set_symbol_connector(self.puller, connector)
+		set_symbol_connector(self.puller, connector)
 
 		# Act:
 		asyncio.run(self.puller.sync_block_headers())
@@ -235,16 +238,15 @@ class SymbolPullerSyncTest(_SymbolPullerTestBase):
 	def test_sync_block_headers_bounds_existing_sync_state_to_max_height(self):
 		# Arrange:
 		connector = FakeConnector(5, {}, finalized_height=5)
-		self.puller.symbol_db.create_tables()
 		self._seed_blocks(self.puller.symbol_db, range(1, 6))
-		self.puller.symbol_db.upsert_sync_state(_create_sync_state(
+		self.puller.symbol_db.upsert_sync_state(create_sync_state(
 			chain_height=5,
 			finalized_height=5,
 			finalized_hash=bytes.fromhex(f'{5:064X}'),
 			last_synced_height=5,
 			last_synced_block_hash=bytes.fromhex(f'{5:064X}')
 		))
-		_set_symbol_connector(self.puller, connector)
+		set_symbol_connector(self.puller, connector)
 
 		# Act:
 		asyncio.run(self.puller.sync_block_headers(max_height=2))
@@ -271,8 +273,7 @@ class SymbolPullerSyncTest(_SymbolPullerTestBase):
 	def test_sync_block_headers_rejects_missing_capped_finalization_hash(self):
 		# Arrange:
 		connector = FakeConnector(5, {}, finalized_height=5)
-		self.puller.symbol_db.create_tables()
-		_set_symbol_connector(self.puller, connector)
+		set_symbol_connector(self.puller, connector)
 		_set_sync_block_pages(
 			self.puller,
 			AsyncMock(return_value=(None, None))

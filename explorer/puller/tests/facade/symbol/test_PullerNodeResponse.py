@@ -3,14 +3,14 @@ from symbollightapi.model.Exceptions import NodeException
 from .puller_test_utils import (
 	FakeConnector,
 	ResponseConnector,
+	SymbolPullerTestBase,
 	_create_chain_info,
 	_create_network_properties,
-	_create_node_block,
-	_SymbolPullerTestBase
+	create_node_block
 )
 
 
-class SymbolPullerNodeResponseTest(_SymbolPullerTestBase):
+class SymbolPullerNodeResponseTest(SymbolPullerTestBase):
 
 	def test_rejects_missing_chain_height(self):
 		# Arrange:
@@ -40,7 +40,7 @@ class SymbolPullerNodeResponseTest(_SymbolPullerTestBase):
 
 	def test_rejects_missing_block_hash(self):
 		# Arrange:
-		block = _create_node_block(1)
+		block = create_node_block(1)
 		del block['meta']['hash']
 		connector = FakeConnector(1, {0: [block]})
 
@@ -49,7 +49,7 @@ class SymbolPullerNodeResponseTest(_SymbolPullerTestBase):
 
 	def _assert_rejects_missing_block_field(self, container, field_name):
 		# Arrange:
-		block = _create_node_block(1)
+		block = create_node_block(1)
 		del block[container][field_name]
 		connector = FakeConnector(1, {0: [block]})
 
@@ -98,7 +98,7 @@ class SymbolPullerNodeResponseTest(_SymbolPullerTestBase):
 
 	def test_rejects_malformed_block_height(self):
 		# Arrange:
-		block = _create_node_block(1)
+		block = create_node_block(1)
 		block['block']['height'] = 'not-a-height'
 		connector = FakeConnector(1, {0: [block]})
 
@@ -160,7 +160,7 @@ class SymbolPullerNodeResponseTest(_SymbolPullerTestBase):
 		# Arrange:
 		connector = FakeConnector(
 			3,
-			{0: [_create_node_block(1), _create_node_block(2)]}
+			{0: [create_node_block(1), create_node_block(2)]}
 		)
 
 		# Act / Assert:

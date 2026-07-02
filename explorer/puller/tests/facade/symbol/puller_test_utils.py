@@ -57,13 +57,16 @@ def create_symbol_puller(
 		timeout_seconds=request_timeout_seconds
 	)
 
-	return SymbolPuller(
+	puller = SymbolPuller(
 		node_url,
 		db_config_path,
 		network_type,
 		node_config,
 		connector
 	)
+	puller._retry_delay = 0  # pylint: disable=protected-access
+
+	return puller
 
 
 @contextmanager
@@ -83,15 +86,10 @@ def temporary_symbol_puller(
 		)
 
 
-def _set_symbol_connector(puller, connector):
+def set_symbol_connector(puller, connector):
 	# Keep protected connector replacement in one helper so sync tests can use
 	# deterministic Symbol node responses.
 	puller._symbol_connector = connector  # pylint: disable=protected-access
-
-
-def _set_retry_delay(puller, retry_delay):
-	# Keep retries fast in unit tests without exposing retry policy as public API.
-	puller._retry_delay = retry_delay  # pylint: disable=protected-access
 
 
 def _set_sync_block_pages(puller, sync_block_pages):
@@ -107,7 +105,7 @@ def _create_block_row(puller, node_block, epoch_adjustment_seconds):
 	)
 
 
-def _create_node_block(
+def create_node_block(
 	height,
 	block_hash=None,
 	previous_hash=None,
@@ -152,7 +150,7 @@ def _create_node_block(
 	return node_block
 
 
-def _create_sync_state(**overrides):
+def create_sync_state(**overrides):
 	sync_state = {
 		'status': 'healthy',
 		'chain_height': 3,
@@ -230,7 +228,7 @@ class ResponseConnector:
 		return self.responses[url_path]
 
 
-class _SymbolPullerTestBase(TestCase):
+class SymbolPullerTestBase(TestCase):
 	def setUp(self):
 		self.exit_stack = ExitStack()
 		self.config_dir = self.exit_stack.enter_context(
@@ -242,6 +240,7 @@ class _SymbolPullerTestBase(TestCase):
 			create_symbol_puller(self.config_ini, 'testnet')
 		)
 		drop_symbol_block_tables_if_present(self.puller.symbol_db)
+		self.puller.symbol_db.create_tables()
 
 	def tearDown(self):
 		self.exit_stack.close()
@@ -281,7 +280,7 @@ class _SymbolPullerTestBase(TestCase):
 		rows = [
 			_create_block_row(
 				self.puller,
-				_create_node_block(
+				create_node_block(
 					height,
 					block_hash=block_hashes.get(height)
 				),
@@ -293,8 +292,7 @@ class _SymbolPullerTestBase(TestCase):
 
 	def _sync_with_connector(self, connector, max_height=None):
 		# Arrange:
-		self.puller.symbol_db.create_tables()
-		_set_symbol_connector(self.puller, connector)
+		set_symbol_connector(self.puller, connector)
 
 		# Act:
 		asyncio.run(self.puller.sync_block_headers(max_height))
@@ -312,8 +310,7 @@ class _SymbolPullerTestBase(TestCase):
 		max_height=None
 	):
 		# Arrange:
-		self.puller.symbol_db.create_tables()
-		_set_symbol_connector(self.puller, connector)
+		set_symbol_connector(self.puller, connector)
 
 		# Act:
 		with self.assertRaisesRegex(error_type, error_message):
