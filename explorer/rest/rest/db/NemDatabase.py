@@ -864,10 +864,14 @@ class NemDatabase(DatabaseConnectionPool):
 			where_condition += ' AND t.transaction_type IN %s'
 			filter_params.append(tuple(transaction_query.transaction_types))
 
+		# Exclude multisig wrappers when matching by initiator.
+		non_multisig_sender_filter = f'(t.transaction_type != {TransactionType.MULTISIG.value} AND t.sender_address = %s)'
+
 		if transaction_query.address:
 			multisig_inner_filter = self._create_multisig_inner_filter('(it.sender_address = %s OR it.recipient_address = %s)')
 			where_condition += (
-				' AND (t.sender_address = %s OR t.recipient_address = %s'
+				f' AND ({non_multisig_sender_filter}'
+				' OR t.recipient_address = %s'
 				f'{multisig_inner_filter})'
 			)
 			filter_params.extend([
@@ -880,7 +884,7 @@ class NemDatabase(DatabaseConnectionPool):
 			if transaction_query.sender_address:
 				multisig_inner_filter = self._create_multisig_inner_filter('it.sender_address = %s')
 				where_condition += (
-					' AND (t.sender_address = %s'
+					f' AND ({non_multisig_sender_filter}'
 					f'{multisig_inner_filter})'
 				)
 				filter_params.extend([
