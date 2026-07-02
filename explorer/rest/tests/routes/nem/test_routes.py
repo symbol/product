@@ -648,7 +648,7 @@ def test_api_nem_transaction_by_hash(client):  # pylint: disable=redefined-outer
 	assert TRANSACTIONS_VIEWS[0].to_dict() == response.json
 
 
-def test_api_nem_transaction_by_hash_invalid_hash(client):  # pylint: disable=redefined-outer-name
+def test_api_nem_transaction_by_hash_invalid_hash(client):  # pylint: disable=redefined-outer-name, invalid-name
 	# Act:
 	response = client.get('/api/nem/transaction/XXX')
 
