@@ -694,10 +694,12 @@ class NemDatabaseTest(DatabaseTestBase):  # pylint: disable=too-many-public-meth
 			]
 		)
 
-	def test_can_query_multisig_transaction_filtered_by_initiator_address(self):
+	def test_can_exclude_multisig_transaction_for_initiator_account_from_address_filter(self):
 		self._assert_can_query_transactions_with_filter(
-			Pagination(10, 0), 'desc', self._make_transaction_query(sender_address=TRANSACTIONS[4].sender_address),
-			[TRANSACTIONS_VIEWS[4]]
+			Pagination(10, 0), 'desc', self._make_transaction_query(address=TRANSACTIONS[4].sender_address), []
+		)
+		self._assert_can_query_transactions_with_filter(
+			Pagination(10, 0), 'desc', self._make_transaction_query(sender_address=TRANSACTIONS[4].sender_address), []
 		)
 
 	def test_can_query_multisig_transaction_filtered_by_inner_sender_address(self):

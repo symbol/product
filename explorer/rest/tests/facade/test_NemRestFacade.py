@@ -537,14 +537,22 @@ class TestNemRestFacade(DatabaseTestBase):  # pylint: disable=too-many-public-me
 			expected_transactions=[EXPECTED_TRANSACTION_3]
 		)
 
-	def test_can_retrieve_multisig_transaction_filtered_by_initiator_public_key(self):
+	def test_can_exclude_multisig_transaction_for_initiator_account_from_address_filter(self):
 		self._assert_can_retrieve_transactions(
 			pagination=Pagination(10, 0),
 			sort='DESC',
 			transaction_query=self._make_transaction_query(
-				sender='8D07F90FB4BBE7715FA327C926770166A11BE2E494A970605F2E12557F66C9B9'
+				address='NANEMOABLAGR72AZ2RV3V4ZHDCXW25XQ73O7OBT5'
 			),
-			expected_transactions=[EXPECTED_TRANSACTION_5]
+			expected_transactions=[]
+		)
+		self._assert_can_retrieve_transactions(
+			pagination=Pagination(10, 0),
+			sort='DESC',
+			transaction_query=self._make_transaction_query(
+				sender_address='NANEMOABLAGR72AZ2RV3V4ZHDCXW25XQ73O7OBT5'
+			),
+			expected_transactions=[]
 		)
 
 	def test_can_retrieve_transactions_filtered_by_recipient_address(self):
@@ -571,16 +579,6 @@ class TestNemRestFacade(DatabaseTestBase):  # pylint: disable=too-many-public-me
 				sender_address='NBNR6XNZQIGQVXII6L3FPJTUGF6NFGLZHBN52R3V'
 			),
 			expected_transactions=[EXPECTED_TRANSACTION_3]
-		)
-
-	def test_can_retrieve_multisig_transaction_filtered_by_initiator_address(self):
-		self._assert_can_retrieve_transactions(
-			pagination=Pagination(10, 0),
-			sort='DESC',
-			transaction_query=self._make_transaction_query(
-				sender_address='NANEMOABLAGR72AZ2RV3V4ZHDCXW25XQ73O7OBT5'
-			),
-			expected_transactions=[EXPECTED_TRANSACTION_5]
 		)
 
 	def test_can_retrieve_multisig_transaction_filtered_by_inner_sender_address(self):

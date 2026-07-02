@@ -848,10 +848,9 @@ def test_api_transactions_applies_sender_public_key(client):  # pylint: disable=
 	], senderPublicKey='9ca54cd15edf88a9df9173375d4a0d706f7a9ddcf57d7547dff8110ddd2adeb9')
 
 
-def test_api_transactions_applies_multisig_initiator_public_key(client):  # pylint: disable=redefined-outer-name, invalid-name
-	_assert_get_api_nem_transactions(client, 200, [
-		TRANSACTIONS_VIEWS[4].to_dict()
-	], senderPublicKey='8D07F90FB4BBE7715FA327C926770166A11BE2E494A970605F2E12557F66C9B9')
+def test_api_transactions_excludes_multisig_for_initiator_from_address_filter(client):  # pylint: disable=redefined-outer-name, invalid-name
+	_assert_get_api_nem_transactions(client, 200, [], address='NANEMOABLAGR72AZ2RV3V4ZHDCXW25XQ73O7OBT5')
+	_assert_get_api_nem_transactions(client, 200, [], senderAddress='NANEMOABLAGR72AZ2RV3V4ZHDCXW25XQ73O7OBT5')
 
 
 def test_api_transactions_applies_recipient_address(client):  # pylint: disable=redefined-outer-name, invalid-name
@@ -865,9 +864,7 @@ def test_api_transactions_applies_recipient_address(client):  # pylint: disable=
 
 
 def test_api_transactions_applies_multisig_initiator_address(client):  # pylint: disable=redefined-outer-name, invalid-name
-	_assert_get_api_nem_transactions(client, 200, [
-		TRANSACTIONS_VIEWS[4].to_dict()
-	], senderAddress='NANEMOABLAGR72AZ2RV3V4ZHDCXW25XQ73O7OBT5')
+	_assert_get_api_nem_transactions(client, 200, [], senderAddress='NANEMOABLAGR72AZ2RV3V4ZHDCXW25XQ73O7OBT5')
 
 
 def test_api_transactions_applies_multisig_inner_sender_address(client):  # pylint: disable=redefined-outer-name, invalid-name
