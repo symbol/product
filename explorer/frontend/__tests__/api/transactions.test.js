@@ -68,6 +68,20 @@ describe('api/transactions', () => {
 			await runApiTest(fetchTransactionPage, searchCriteria, transactionPageResponse, expectedURL, expectedResult);
 		});
 
+		it('fetch transaction page with "types" filter', async () => {
+			// Arrange:
+			const searchCriteria = {
+				pageNumber: 3,
+				types: 'MULTISIG_ACCOUNT_MODIFICATION'
+			};
+			// eslint-disable-next-line max-len
+			const expectedURL = 'https://explorer.backend/transactions?limit=10&offset=20&transactionTypes=MULTISIG_ACCOUNT_MODIFICATION';
+			const expectedResult = transactionPageResult;
+
+			// Act + Assert:
+			await runApiTest(fetchTransactionPage, searchCriteria, transactionPageResponse, expectedURL, expectedResult);
+		});
+
 		it('fetch transaction page for specific account with "to" filter', async () => {
 			// Arrange:
 			const searchCriteria = {
