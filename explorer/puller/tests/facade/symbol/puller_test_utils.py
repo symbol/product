@@ -89,6 +89,11 @@ def _set_symbol_connector(puller, connector):
 	puller._symbol_connector = connector  # pylint: disable=protected-access
 
 
+def _set_retry_delay(puller, retry_delay):
+	# Keep retries fast in unit tests without exposing retry policy as public API.
+	puller._retry_delay = retry_delay  # pylint: disable=protected-access
+
+
 def _set_sync_block_pages(puller, sync_block_pages):
 	# Patch the private page sync step only for hard-to-reach error branches.
 	puller._sync_block_pages = sync_block_pages  # pylint: disable=protected-access

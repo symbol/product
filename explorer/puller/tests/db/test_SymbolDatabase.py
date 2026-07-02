@@ -78,7 +78,7 @@ def _create_sync_state(**overrides):
 	return sync_state
 
 
-class SymbolDatabaseTest(TestCase):
+class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 	def setUp(self):
 		self.exit_stack = ExitStack()
 		self.db_config = self.exit_stack.enter_context(PostgresTestDatabase())

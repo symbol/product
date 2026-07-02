@@ -7,7 +7,14 @@ from symbollightapi.model.Exceptions import NodeException
 
 from puller.facade.SymbolPuller import SymbolPuller
 
-from .puller_test_utils import NODE_URL, ResponseConnector, create_db_config, create_symbol_puller, temporary_symbol_puller
+from .puller_test_utils import (
+	NODE_URL,
+	ResponseConnector,
+	_set_retry_delay,
+	create_db_config,
+	create_symbol_puller,
+	temporary_symbol_puller
+)
 
 
 class SymbolPullerTest(TestCase):
@@ -142,7 +149,7 @@ class SymbolPullerTest(TestCase):
 			{'ok': True}
 		])
 		with temporary_symbol_puller(connector=connector) as puller:
-			puller._retry_delay = 0
+			_set_retry_delay(puller, 0)
 
 			# Act:
 			result = asyncio.run(puller.post_symbol_node(
@@ -162,7 +169,7 @@ class SymbolPullerTest(TestCase):
 			{'ok': True}
 		])
 		with temporary_symbol_puller(connector=connector) as puller:
-			puller._retry_delay = 0
+			_set_retry_delay(puller, 0)
 
 			# Act:
 			result = asyncio.run(puller.get_symbol_node('/chain/info'))
@@ -178,7 +185,7 @@ class SymbolPullerTest(TestCase):
 			side_effect=NodeException('Connection refused')
 		)
 		with temporary_symbol_puller(connector=connector) as puller:
-			puller._retry_delay = 0
+			_set_retry_delay(puller, 0)
 
 			# Act / Assert:
 			with self.assertRaisesRegex(NodeException, 'Connection refused'):
@@ -198,7 +205,7 @@ class SymbolPullerTest(TestCase):
 			{'data': [], 'pagination': {'pageNumber': 1, 'pageSize': 100}}
 		])
 		with temporary_symbol_puller(connector=connector) as puller:
-			puller._retry_delay = 0
+			_set_retry_delay(puller, 0)
 
 			# Act:
 			result = asyncio.run(puller.get_symbol_node(

@@ -1,6 +1,6 @@
 import asyncio
 import unittest
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import AsyncMock, patch
 
 from common.symbol.NodeConfiguration import SymbolNodeConfigurationError
 from workflow_test_utils import create_symbol_facade_with_mock_db, parse_args_with_argv
@@ -118,5 +118,5 @@ class SyncSymbolBlockTest(unittest.TestCase):
 			asyncio.run(main())
 
 		# Assert:
-		mock_db.create_tables.assert_called_once_with()
+		self.assertEqual(1, mock_db.create_tables.call_count)
 		mock_facade.sync_block_headers.assert_awaited_once_with(3000)

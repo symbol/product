@@ -1,6 +1,8 @@
 import asyncio
 from unittest.mock import AsyncMock
 
+from puller.facade.SymbolPuller import BLOCK_PAGE_FETCH_CONCURRENCY
+
 from .puller_test_utils import (
 	FakeConnector,
 	_create_node_block,
@@ -128,8 +130,6 @@ class SymbolPullerSyncTest(_SymbolPullerTestBase):
 	def test_sync_block_headers_splits_into_multiple_batches(self):
 		# Arrange: 11 pages (offsets 0..1000) requires 2 batches when concurrency=10;
 		# last page is short so the early-return path in batch 2 is exercised
-		from puller.facade.SymbolPuller import BLOCK_PAGE_FETCH_CONCURRENCY
-
 		total_pages = BLOCK_PAGE_FETCH_CONCURRENCY + 1
 		chain_height = total_pages * 100 - 50
 		pages = {
