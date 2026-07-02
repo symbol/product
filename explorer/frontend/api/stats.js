@@ -113,14 +113,14 @@ export const fetchNodeStats = async () => {
 
 export const fetchMarketData = async () => {
 	const response = await makeRequest(config.MARKET_DATA_URL);
-	const data = response.RAW.XEM.USD;
+	const data = response[0];
 
 	return {
-		price: data.PRICE,
-		priceChange: data.CHANGEPCTDAY,
-		volume: data.VOLUME24HOUR,
-		circulatingSupply: data.CIRCULATINGSUPPLY,
-		marketCap: data.MKTCAP,
+		price: data.current_price,
+		priceChange: data.price_change_percentage_24h,
+		volume: data.total_volume,
+		circulatingSupply: data.circulating_supply,
+		marketCap: data.market_cap,
 		treasury: 0
 	};
 };

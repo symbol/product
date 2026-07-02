@@ -638,7 +638,20 @@ async def server(aiohttp_client):  # pylint: disable=too-many-statements
 							'message': {},
 							'version': 1744830465,
 							'signer': '8d07f90fb4bbe7715fa327c926770166a11be2e494a970605f2e12557f66c9b9'
-						},]
+						},
+						{
+							'timeStamp': 73398,
+							'otherHash': {
+								'data': '3245a17360c60c0c4b84e81d9401dd97cb86e84c7e72f29ae20ebfa117801117'
+							},
+							'otherAccount': 'TDJ3OZUV3VCGUUFGQLAIZRT4ISDZC4X2MZAZP534',
+							'signature': '1' * 128,
+							'fee': 150000,
+							'type': 4098,
+							'deadline': 83398,
+							'version': 1744830465,
+							'signer': '210e8bf27aef3f4890f8442c1ca5cab740aa2eebff7faae74a128d16a29deb42'
+						}]
 				}
 			})
 

@@ -477,14 +477,12 @@ ACCOUNT_VIEWS = [
 		vested_balance=99999,
 		mosaics=[{
 			'namespace_name': 'nem.xem',
-			'quantity': 1000000,
-			'creator': 'NBFWZ4IVRHEIBRCGHLYDS62FSFTBM3VDFA7E6LSQ',
-			'divisibility': 6
+			'amount': 1.0,
+			'creator': 'NBFWZ4IVRHEIBRCGHLYDS62FSFTBM3VDFA7E6LSQ'
 		}, {
 			'namespace_name': 'root.mosaic',
-			'quantity': 10,
-			'creator': 'NBFWZ4IVRHEIBRCGHLYDS62FSFTBM3VDFA7E6LSQ',
-			'divisibility': 0
+			'amount': 10.0,
+			'creator': 'NBFWZ4IVRHEIBRCGHLYDS62FSFTBM3VDFA7E6LSQ'
 		}],
 		harvested_fees=0.0,
 		harvested_blocks=ACCOUNTS[0].harvested_blocks,
@@ -505,14 +503,12 @@ ACCOUNT_VIEWS = [
 		vested_balance=99999,
 		mosaics=[{
 			'namespace_name': 'nem.xem',
-			'quantity': 3000000,
-			'creator': 'NBFWZ4IVRHEIBRCGHLYDS62FSFTBM3VDFA7E6LSQ',
-			'divisibility': 6
+			'amount': 3.0,
+			'creator': 'NBFWZ4IVRHEIBRCGHLYDS62FSFTBM3VDFA7E6LSQ'
 		}, {
 			'namespace_name': 'root.mosaic',
-			'quantity': 15,
-			'creator': 'NBFWZ4IVRHEIBRCGHLYDS62FSFTBM3VDFA7E6LSQ',
-			'divisibility': 0
+			'amount': 15.0,
+			'creator': 'NBFWZ4IVRHEIBRCGHLYDS62FSFTBM3VDFA7E6LSQ'
 		}],
 		harvested_fees=0.0,
 		harvested_blocks=ACCOUNTS[1].harvested_blocks,
