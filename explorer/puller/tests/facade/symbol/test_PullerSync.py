@@ -1,15 +1,21 @@
 import asyncio
 from unittest.mock import AsyncMock
 
-from puller.facade.SymbolPuller import BLOCK_PAGE_FETCH_CONCURRENCY
+from symbolchain.sc import ReceiptType
+from symbollightapi.model.Exceptions import NodeException
+
+from puller.facade.SymbolPuller import BLOCK_PAGE_FETCH_CONCURRENCY, STATEMENT_PAGE_SIZE
 
 from .puller_test_utils import (
 	FakeConnector,
+	ResponseConnector,
 	SymbolPullerTestBase,
 	create_node_block,
+	create_statement_item,
 	create_sync_state,
 	set_symbol_connector,
 	set_sync_block_pages,
+	statement_path,
 	transaction_path
 )
 
@@ -33,7 +39,8 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):
 			'chain/info',
 			'network/properties',
 			'blocks?pageSize=100&offset=0&orderBy=height',
-			transaction_path(1, 2)
+			transaction_path(1, 2),
+			statement_path(1, 2)
 		], connector.paths)
 
 	def test_sync_block_headers_persists_synced_block_watermark(self):
@@ -171,7 +178,8 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):
 			'chain/info',
 			'network/properties',
 			'blocks?pageSize=100&offset=0&orderBy=height',
-			transaction_path(1, 2)
+			transaction_path(1, 2),
+			statement_path(1, 2)
 		], connector.paths)
 		self.assertEqual([1, 2], block_heights)
 		self.assertEqual('healthy', sync_state['status'])
@@ -226,7 +234,8 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):
 			'network/properties',
 			'blocks/2',
 			'blocks?pageSize=100&offset=2&orderBy=height',
-			transaction_path(3, 4)
+			transaction_path(3, 4),
+			statement_path(3, 4)
 		], connector.paths)
 		self.assertEqual([1, 2, 3, 4], block_heights)
 		self.assertEqual('healthy', sync_state['status'])
@@ -287,6 +296,113 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):
 			'Unable to determine finalized hash for height 2'
 		):
 			asyncio.run(self.puller.sync_block_headers(max_height=2))
+
+		# Assert:
+		self.assertIsNone(self.puller.symbol_db.get_sync_state())
+
+	def test_get_receipt_rows_by_height_groups_rows_after_reading_all_pages(self):
+		# Arrange:
+		first_page = [
+			create_statement_item(1, 10),
+			create_statement_item(2, 20),
+			*[
+				create_statement_item(3, index, ReceiptType.ADDRESS_ALIAS_RESOLUTION.value)
+				for index in range(STATEMENT_PAGE_SIZE - 2)
+			]
+		]
+		connector = ResponseConnector({
+			statement_path(1, 3, 1): {'data': first_page},
+			statement_path(1, 3, 2): {'data': [create_statement_item(2, 30)]}
+		})
+		set_symbol_connector(self.puller, connector)
+
+		# Act:
+		rows_by_height = asyncio.run(self.puller._get_receipt_rows_by_height(1, 3))  # pylint: disable=protected-access
+
+		# Assert:
+		self.assertEqual([
+			statement_path(1, 3, 1),
+			statement_path(1, 3, 2)
+		], connector.paths)
+		self.assertEqual([1, 2], sorted(rows_by_height.keys()))
+		self.assertEqual([10], [row['amount'] for row in rows_by_height[1]])
+		self.assertEqual([20, 30], [row['amount'] for row in rows_by_height[2]])
+
+	def test_sync_receipts_for_batch_upserts_empty_heights_and_queries_batch_range(self):
+		# Arrange:
+		connector = ResponseConnector({
+			statement_path(5, 7): {'data': [create_statement_item(6, 600)]}
+		})
+		self._seed_blocks(self.puller.symbol_db, [5, 6, 7])
+		set_symbol_connector(self.puller, connector)
+		block_rows = [
+			{'height': 5},
+			{'height': 6},
+			{'height': 7}
+		]
+
+		# Act:
+		asyncio.run(self.puller._sync_receipts_for_batch(block_rows))  # pylint: disable=protected-access
+
+		# Assert:
+		self.assertEqual([statement_path(5, 7)], connector.paths)
+		self.assertEqual([
+			(6, ReceiptType.INFLATION.value, 'inflation', 6, 0, '72C0212E67A08BCE', 600)
+		], self._fetch_receipts(self.puller.symbol_db))
+		self.assertEqual(0, self._fetch_block_reward(self.puller.symbol_db, 5))
+		self.assertEqual(600, self._fetch_block_reward(self.puller.symbol_db, 6))
+		self.assertEqual(0, self._fetch_block_reward(self.puller.symbol_db, 7))
+
+	def test_calculate_block_reward_sums_only_inflation_receipts(self):
+		# Arrange:
+		receipts = [
+			{'receipt_type': ReceiptType.INFLATION.value, 'amount': 11},
+			{'receipt_type': ReceiptType.HARVEST_FEE.value, 'amount': 100},
+			{'receipt_type': ReceiptType.INFLATION.value, 'amount': 22}
+		]
+
+		# Act:
+		block_reward = self.puller._calculate_block_reward(receipts)  # pylint: disable=protected-access
+
+		# Assert:
+		self.assertEqual(33, block_reward)
+
+	def test_calculate_block_reward_returns_zero_when_inflation_receipts_are_absent(self):
+		# Arrange:
+		receipts = [
+			{'receipt_type': ReceiptType.HARVEST_FEE.value, 'amount': 100}
+		]
+
+		# Act:
+		block_reward = self.puller._calculate_block_reward(receipts)  # pylint: disable=protected-access
+
+		# Assert:
+		self.assertEqual(0, block_reward)
+
+	def test_sync_block_headers_does_not_advance_watermark_when_receipt_range_fetch_fails(self):
+		# Arrange:
+		connector = ResponseConnector({
+			'chain/info': {
+				'height': '1',
+				'latestFinalizedBlock': {
+					'finalizationEpoch': 4,
+					'finalizationPoint': 5,
+					'height': '1',
+					'hash': f'{1:064X}'
+				}
+			},
+			'network/properties': {'network': {'epochAdjustment': '100s'}},
+			'blocks?pageSize=100&offset=0&orderBy=height': {'data': [create_node_block(1)]},
+			statement_path(1, 1): {
+				'code': 'InternalError',
+				'message': 'statement range failed'
+			}
+		})
+		set_symbol_connector(self.puller, connector)
+
+		# Act / Assert:
+		with self.assertRaisesRegex(NodeException, 'InternalError: statement range failed'):
+			asyncio.run(self.puller.sync_block_headers())
 
 		# Assert:
 		self.assertIsNone(self.puller.symbol_db.get_sync_state())

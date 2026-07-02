@@ -29,6 +29,7 @@ __pycache__/
 build/
 dist/
 *.mo
+.coverage
 
 # other build artifacts
 _generated/

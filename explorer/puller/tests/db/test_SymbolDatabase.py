@@ -7,6 +7,7 @@ from unittest import TestCase
 from common.tests.PostgresTestUtils import PostgresTestDatabase, drop_symbol_block_tables_if_present
 from psycopg2 import Error as PsycopgError
 from psycopg2.extras import Json
+from symbolchain.sc import ReceiptType
 
 from puller.db.SymbolDatabase import SymbolDatabase
 
@@ -79,6 +80,27 @@ def _create_sync_state(**overrides):
 	return sync_state
 
 
+def _create_receipt(height, receipt_type=ReceiptType.INFLATION.value, **overrides):
+	receipt = {
+		'height': height,
+		'receipt_type': receipt_type,
+		'receipt_group': 'inflation',
+		'version': 1,
+		'source_primary_id': 0,
+		'source_secondary_id': 0,
+		'sender_address': None,
+		'recipient_address': None,
+		'target_address': None,
+		'mosaic_id': '72C0212E67A08BCE',
+		'amount': 100,
+		'artifact_id': None,
+		'raw_payload': {'type': receipt_type}
+	}
+	receipt.update(overrides)
+
+	return receipt
+
+
 class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 	def setUp(self):
 		self.exit_stack = ExitStack()
@@ -129,6 +151,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 
 		self.assertEqual([
 			'symbol_blocks',
+			'symbol_receipts',
 			'symbol_sync_state',
 			'symbol_transaction_addresses',
 			'symbol_transaction_mosaics',
@@ -225,6 +248,72 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		self.assertIn('idx_symbol_blocks_signer_address', indexes)
 		self.assertIn('idx_symbol_blocks_timestamp', indexes)
 
+	def test_create_tables_creates_symbol_receipt_indexes(self):
+		# Arrange:
+		database = self._create_uninitialized_database()
+		cursor = database.connection.cursor()
+
+		# Act:
+		database.create_tables()
+
+		# Assert:
+		cursor.execute(
+			'''
+			SELECT indexname, indexdef
+			FROM pg_indexes
+			WHERE schemaname = 'public'
+				AND tablename = 'symbol_receipts'
+			ORDER BY indexname
+			'''
+		)
+		indexes = cursor.fetchall()
+
+		self.assertEqual([
+			(
+				'idx_symbol_receipts_group_height',
+				'CREATE INDEX idx_symbol_receipts_group_height ON public.symbol_receipts USING btree (receipt_group, height DESC)'
+			),
+			(
+				'idx_symbol_receipts_height_type',
+				'CREATE INDEX idx_symbol_receipts_height_type ON public.symbol_receipts USING btree (height DESC, receipt_type)'
+			),
+			(
+				'idx_symbol_receipts_mosaic',
+				'CREATE INDEX idx_symbol_receipts_mosaic ON public.symbol_receipts USING btree (mosaic_id)'
+			),
+			(
+				'idx_symbol_receipts_recipient_group_height',
+				'CREATE INDEX idx_symbol_receipts_recipient_group_height ON public.symbol_receipts '
+				'USING btree (recipient_address, receipt_group, height DESC)'
+			),
+			(
+				'idx_symbol_receipts_sender_group_height',
+				'CREATE INDEX idx_symbol_receipts_sender_group_height ON public.symbol_receipts '
+				'USING btree (sender_address, receipt_group, height DESC)'
+			),
+			(
+				'idx_symbol_receipts_target',
+				'CREATE INDEX idx_symbol_receipts_target ON public.symbol_receipts USING btree (target_address)'
+			),
+			(
+				'idx_symbol_receipts_target_group_height',
+				'CREATE INDEX idx_symbol_receipts_target_group_height ON public.symbol_receipts '
+				'USING btree (target_address, receipt_group, height DESC)'
+			),
+			(
+				'idx_symbol_receipts_target_type_height',
+				'CREATE INDEX idx_symbol_receipts_target_type_height ON public.symbol_receipts USING btree (target_address, receipt_type, height DESC)'
+			),
+			(
+				'idx_symbol_receipts_type_height',
+				'CREATE INDEX idx_symbol_receipts_type_height ON public.symbol_receipts USING btree (receipt_type, height DESC)'
+			),
+			(
+				'symbol_receipts_pkey',
+				'CREATE UNIQUE INDEX symbol_receipts_pkey ON public.symbol_receipts USING btree (id)'
+			)
+		], indexes)
+
 	def test_create_tables_creates_symbol_block_columns_and_constraints(self):
 		# Arrange:
 		database = self._create_uninitialized_database()
@@ -288,6 +377,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			('harvesting_eligible_accounts_count', 'int4', 'YES', None),
 			('total_voting_balance', 'int8', 'YES', None),
 			('previous_importance_block_hash', 'bytea', 'YES', None),
+			('block_reward', 'numeric', 'YES', None),
 			('raw_payload', 'jsonb', 'NO', None),
 			('created_at', 'timestamp', 'NO', 'CURRENT_TIMESTAMP'),
 			('updated_at', 'timestamp', 'NO', 'CURRENT_TIMESTAMP')
@@ -513,6 +603,61 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		sequences = cursor.fetchall()
 
 		self.assertEqual([('symbol_transaction_list_sequence_seq',)], sequences)
+
+	def test_create_tables_creates_symbol_receipt_columns_and_constraints(self):
+		# Arrange:
+		database = self._create_uninitialized_database()
+		cursor = database.connection.cursor()
+
+		# Act:
+		database.create_tables()
+
+		# Assert:
+		cursor.execute(
+			'''
+			SELECT column_name, udt_name, is_nullable, column_default
+			FROM information_schema.columns
+			WHERE table_name = 'symbol_receipts'
+			ORDER BY ordinal_position
+			'''
+		)
+		columns = cursor.fetchall()
+
+		cursor.execute(
+			'''
+			SELECT constraint_type, column_name
+			FROM information_schema.table_constraints
+			JOIN information_schema.key_column_usage USING (
+				constraint_name,
+				table_schema,
+				table_name
+			)
+			WHERE table_name = 'symbol_receipts'
+			ORDER BY constraint_type, column_name
+			'''
+		)
+		key_constraints = cursor.fetchall()
+
+		self.assertEqual([
+			('id', 'int8', 'NO', "nextval('symbol_receipts_id_seq'::regclass)"),
+			('height', 'int8', 'NO', None),
+			('receipt_type', 'int4', 'NO', None),
+			('receipt_group', 'varchar', 'NO', None),
+			('version', 'int4', 'NO', None),
+			('source_primary_id', 'int8', 'YES', None),
+			('source_secondary_id', 'int8', 'YES', None),
+			('sender_address', 'bytea', 'YES', None),
+			('recipient_address', 'bytea', 'YES', None),
+			('target_address', 'bytea', 'YES', None),
+			('mosaic_id', 'varchar', 'YES', None),
+			('amount', 'numeric', 'NO', '0'),
+			('artifact_id', 'varchar', 'YES', None),
+			('raw_payload', 'jsonb', 'NO', None)
+		], columns)
+		self.assertEqual([
+			('FOREIGN KEY', 'height'),
+			('PRIMARY KEY', 'id')
+		], key_constraints)
 
 	def test_check_connection_returns_true_when_sync_state_exists(self):
 		# Arrange:
@@ -752,6 +897,67 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		with self.assertRaises(PsycopgError):
 			database.upsert_blocks([_create_block(2, block_hash=b'same hash')])
 
+	def test_rejects_receipt_without_existing_block(self):
+		# Arrange:
+		database = self._create_database()
+
+		# Act + Assert:
+		with self.assertRaises(PsycopgError):
+			database.upsert_receipts_for_height(7, [_create_receipt(7)], 100)
+
+	def test_upsert_receipts_for_height_replaces_rows_and_updates_block_reward(self):
+		# Arrange:
+		database = self._create_database()
+		database.upsert_blocks([_create_block(1), _create_block(2)])
+		database.upsert_receipts_for_height(1, [
+			_create_receipt(1, amount=50),
+			_create_receipt(1, receipt_type=ReceiptType.MOSAIC_EXPIRED.value, receipt_group='artifactExpiry', mosaic_id=None, amount=0)
+		], 50)
+
+		# Act:
+		database.upsert_receipts_for_height(1, [
+			_create_receipt(1, amount=75, raw_payload={'type': ReceiptType.INFLATION.value, 'amount': '75'})
+		], 75)
+
+		# Assert:
+		cursor = database.connection.cursor()
+		cursor.execute(
+			'''
+			SELECT height, receipt_type, receipt_group, source_primary_id, source_secondary_id, mosaic_id, amount, raw_payload
+			FROM symbol_receipts
+			ORDER BY id
+			'''
+		)
+		receipts = cursor.fetchall()
+		cursor.execute('SELECT block_reward FROM symbol_blocks WHERE height = 1')
+		block_reward = cursor.fetchone()[0]
+
+		self.assertEqual([
+			(1, ReceiptType.INFLATION.value, 'inflation', 0, 0, '72C0212E67A08BCE', 75, {'type': ReceiptType.INFLATION.value, 'amount': '75'})
+		], [
+			(height, receipt_type, receipt_group, source_primary_id, source_secondary_id, mosaic_id, int(amount), raw_payload)
+			for height, receipt_type, receipt_group, source_primary_id, source_secondary_id, mosaic_id, amount, raw_payload in receipts
+		])
+		self.assertEqual(75, int(block_reward))
+
+	def test_upsert_receipts_for_height_stores_empty_height_with_zero_reward(self):
+		# Arrange:
+		database = self._create_database()
+		database.upsert_blocks([_create_block(1)])
+
+		# Act:
+		database.upsert_receipts_for_height(1, [], 0)
+
+		# Assert:
+		cursor = database.connection.cursor()
+		cursor.execute('SELECT COUNT(*) FROM symbol_receipts')
+		receipt_count = cursor.fetchone()[0]
+		cursor.execute('SELECT block_reward FROM symbol_blocks WHERE height = 1')
+		block_reward = cursor.fetchone()[0]
+
+		self.assertEqual(0, receipt_count)
+		self.assertEqual(0, int(block_reward))
+
 	def test_can_delete_blocks_from_height(self):
 		# Arrange:
 		database = self._create_database()
@@ -760,6 +966,8 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			_create_block(2),
 			_create_block(3)
 		])
+		database.upsert_receipts_for_height(2, [_create_receipt(2)], 100)
+		database.upsert_receipts_for_height(3, [_create_receipt(3)], 100)
 
 		# Act:
 		database.delete_blocks_from_height(2)
@@ -767,9 +975,12 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		# Assert:
 		cursor = database.connection.cursor()
 		cursor.execute('SELECT height FROM symbol_blocks ORDER BY height')
-		results = cursor.fetchall()
+		block_results = cursor.fetchall()
+		cursor.execute('SELECT height FROM symbol_receipts ORDER BY height')
+		receipt_results = cursor.fetchall()
 
-		self.assertEqual([(1,)], results)
+		self.assertEqual([(1,)], block_results)
+		self.assertEqual([], receipt_results)
 
 	def test_upsert_transactions_for_height_computes_effective_fee(self):
 		# Arrange:
@@ -1010,6 +1221,8 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			mosaic_rows=[{'mosaic_id': '1111111111111111', 'amount': 10, 'role': 'transfer', 'position': 0}],
 			address_rows=[{'address': b'rollbacked address', 'role': 'signer'}]
 		)])
+		database.upsert_receipts_for_height(2, [_create_receipt(2)], 100)
+		database.upsert_receipts_for_height(3, [_create_receipt(3)], 100)
 
 		# Act:
 		database.repair_rollback_from_height(2, _create_sync_state(
@@ -1028,12 +1241,15 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		mosaic_results = cursor.fetchall()
 		cursor.execute('SELECT height, encode(address, \'escape\'), role FROM symbol_transaction_addresses ORDER BY height')
 		address_results = cursor.fetchall()
+		cursor.execute('SELECT height FROM symbol_receipts ORDER BY height')
+		receipt_results = cursor.fetchall()
 		sync_state = database.get_sync_state()
 
 		self.assertEqual([(1,)], block_results)
 		self.assertEqual([(1, 'hash-kept')], transaction_results)
 		self.assertEqual([(1, '2222222222222222', 20, 'transfer')], mosaic_results)
 		self.assertEqual([(1, 'kept address', 'signer')], address_results)
+		self.assertEqual([], receipt_results)
 		self.assertEqual('repairing', sync_state['status'])
 		self.assertEqual(1, sync_state['last_synced_height'])
 		self.assertEqual(

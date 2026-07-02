@@ -1,6 +1,6 @@
 import asyncio
 import configparser
-from collections import namedtuple
+from collections import defaultdict, namedtuple
 from urllib.parse import urlparse
 
 from common.symbol.NodeConfiguration import SymbolNodeConfiguration
@@ -12,11 +12,13 @@ from zenlog import log
 
 from puller.db.SymbolDatabase import SymbolDatabase
 from puller.model.symbol.Block import create_block_row
+from puller.model.symbol.Receipt import INFLATION_RECEIPT_TYPE, create_receipt_rows
 from puller.model.symbol.Transaction import create_transaction_row
 
 DatabaseConfiguration = namedtuple('DatabaseConfiguration', ['database', 'user', 'password', 'host', 'port'])
 MAX_PAGE_SIZE = 100
 BLOCK_PAGE_FETCH_CONCURRENCY = 10
+STATEMENT_PAGE_SIZE = 100
 
 
 def _get_symbol_network(network_type):
@@ -279,9 +281,11 @@ class SymbolPuller:
 
 				if len(blocks) < MAX_PAGE_SIZE:
 					await self._sync_block_batch(batch_rows, epoch_adjustment_seconds)
+					await self._sync_receipts_for_batch(batch_rows)
 					return last_synced_height, last_synced_block_hash
 
 			await self._sync_block_batch(batch_rows, epoch_adjustment_seconds)
+			await self._sync_receipts_for_batch(batch_rows)
 
 		return last_synced_height, last_synced_block_hash
 
@@ -325,6 +329,39 @@ class SymbolPuller:
 			raise ValueError('Malformed Symbol block page response')
 
 		return response['data']
+
+	async def _get_receipt_rows_by_height(self, start_height, end_height):
+		statement_items = []
+		page_number = 1
+		while True:
+			response = await self.get_symbol_node(
+				f'/statements/transaction?fromHeight={start_height}&toHeight={end_height}'
+				f'&pageSize={STATEMENT_PAGE_SIZE}&pageNumber={page_number}'
+			)
+			items = response['data']
+			statement_items.extend(items)
+			if len(items) < STATEMENT_PAGE_SIZE:
+				break
+
+			page_number += 1
+
+		rows_by_height = defaultdict(list)
+		for statement_item in statement_items:
+			for row in create_receipt_rows(statement_item):
+				rows_by_height[row['height']].append(row)
+
+		return dict(rows_by_height)
+
+	@staticmethod
+	def _calculate_block_reward(receipts):
+		return sum(receipt['amount'] for receipt in receipts if INFLATION_RECEIPT_TYPE == receipt['receipt_type'])
+
+	async def _sync_receipts_for_batch(self, block_rows):
+		rows_by_height = await self._get_receipt_rows_by_height(block_rows[0]['height'], block_rows[-1]['height'])
+		for row in block_rows:
+			receipt_rows = rows_by_height.get(row['height'], [])
+			block_reward = self._calculate_block_reward(receipt_rows)
+			self.symbol_db.upsert_receipts_for_height(row['height'], receipt_rows, block_reward)
 
 	@staticmethod
 	def _parse_epoch_adjustment(network_properties):
