@@ -80,7 +80,7 @@ def _create_sync_state(**overrides):
 	return sync_state
 
 
-def _create_receipt(height, receipt_type=ReceiptType.INFLATION.value, **overrides):
+def _create_receipt(height, receipt_type='inflation', **overrides):
 	receipt = {
 		'height': height,
 		'receipt_type': receipt_type,
@@ -94,7 +94,7 @@ def _create_receipt(height, receipt_type=ReceiptType.INFLATION.value, **override
 		'mosaic_id': '72C0212E67A08BCE',
 		'amount': 100,
 		'artifact_id': None,
-		'raw_payload': {'type': receipt_type}
+		'raw_payload': {'type': ReceiptType.INFLATION.value}
 	}
 	receipt.update(overrides)
 
@@ -187,20 +187,6 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		)
 		status_type, status_default = cursor.fetchone()
 
-		cursor.execute(
-			'''
-			SELECT pg_type.typname, enumlabel
-			FROM pg_enum
-			JOIN pg_type ON pg_type.oid = pg_enum.enumtypid
-			WHERE pg_type.typname IN (
-				'symbol_block_type',
-				'symbol_sync_state_status'
-			)
-			ORDER BY pg_type.typname, enumsortorder
-			'''
-		)
-		enum_values = cursor.fetchall()
-
 		self.assertEqual([
 			('id', 'int4'),
 			('status', 'symbol_sync_state_status'),
@@ -215,10 +201,53 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		], sync_state_columns)
 		self.assertEqual('symbol_sync_state_status', status_type)
 		self.assertIsNone(status_default)
+
+	def test_create_tables_creates_enum_types(self):
+		# Arrange:
+		database = self._create_uninitialized_database()
+		cursor = database.connection.cursor()
+
+		# Act:
+		database.create_tables()
+
+		# Assert:
+		cursor.execute(
+			'''
+			SELECT pg_type.typname, enumlabel
+			FROM pg_enum
+			JOIN pg_type ON pg_type.oid = pg_enum.enumtypid
+			WHERE pg_type.typname IN (
+				'symbol_block_type',
+				'symbol_receipt_group',
+				'symbol_receipt_type',
+				'symbol_sync_state_status'
+			)
+			ORDER BY pg_type.typname, enumsortorder
+			'''
+		)
+		enum_values = cursor.fetchall()
+
 		self.assertEqual([
 			('symbol_block_type', 'nemesis'),
 			('symbol_block_type', 'importance'),
 			('symbol_block_type', 'normal'),
+			('symbol_receipt_group', 'balanceChange'),
+			('symbol_receipt_group', 'balanceTransfer'),
+			('symbol_receipt_group', 'artifactExpiry'),
+			('symbol_receipt_group', 'inflation'),
+			('symbol_receipt_type', 'mosaicRentalFee'),
+			('symbol_receipt_type', 'namespaceRentalFee'),
+			('symbol_receipt_type', 'harvestFee'),
+			('symbol_receipt_type', 'lockHashCompleted'),
+			('symbol_receipt_type', 'lockHashExpired'),
+			('symbol_receipt_type', 'lockSecretCompleted'),
+			('symbol_receipt_type', 'lockSecretExpired'),
+			('symbol_receipt_type', 'lockHashCreated'),
+			('symbol_receipt_type', 'lockSecretCreated'),
+			('symbol_receipt_type', 'mosaicExpired'),
+			('symbol_receipt_type', 'namespaceExpired'),
+			('symbol_receipt_type', 'namespaceDeleted'),
+			('symbol_receipt_type', 'inflation'),
 			('symbol_sync_state_status', 'initialized'),
 			('symbol_sync_state_status', 'healthy'),
 			('symbol_sync_state_status', 'repairing'),
@@ -641,8 +670,8 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		self.assertEqual([
 			('id', 'int8', 'NO', "nextval('symbol_receipts_id_seq'::regclass)"),
 			('height', 'int8', 'NO', None),
-			('receipt_type', 'int4', 'NO', None),
-			('receipt_group', 'varchar', 'NO', None),
+			('receipt_type', 'symbol_receipt_type', 'NO', None),
+			('receipt_group', 'symbol_receipt_group', 'NO', None),
 			('version', 'int4', 'NO', None),
 			('source_primary_id', 'int8', 'YES', None),
 			('source_secondary_id', 'int8', 'YES', None),
@@ -905,13 +934,31 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		with self.assertRaises(PsycopgError):
 			database.upsert_receipts_for_height(7, [_create_receipt(7)], 100)
 
+	def test_rejects_invalid_receipt_type(self):
+		# Arrange:
+		database = self._create_database()
+		database.upsert_blocks([_create_block(1)])
+
+		# Act + Assert:
+		with self.assertRaises(PsycopgError):
+			database.upsert_receipts_for_height(1, [_create_receipt(1, receipt_type='invalid')], 100)
+
+	def test_rejects_invalid_receipt_group(self):
+		# Arrange:
+		database = self._create_database()
+		database.upsert_blocks([_create_block(1)])
+
+		# Act + Assert:
+		with self.assertRaises(PsycopgError):
+			database.upsert_receipts_for_height(1, [_create_receipt(1, receipt_group='invalid')], 100)
+
 	def test_upsert_receipts_for_height_replaces_rows_and_updates_block_reward(self):
 		# Arrange:
 		database = self._create_database()
 		database.upsert_blocks([_create_block(1), _create_block(2)])
 		database.upsert_receipts_for_height(1, [
 			_create_receipt(1, amount=50),
-			_create_receipt(1, receipt_type=ReceiptType.MOSAIC_EXPIRED.value, receipt_group='artifactExpiry', mosaic_id=None, amount=0)
+			_create_receipt(1, receipt_type='mosaicExpired', receipt_group='artifactExpiry', mosaic_id=None, amount=0)
 		], 50)
 
 		# Act:
@@ -933,7 +980,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		block_reward = cursor.fetchone()[0]
 
 		self.assertEqual([
-			(1, ReceiptType.INFLATION.value, 'inflation', 0, 0, '72C0212E67A08BCE', 75, {'type': ReceiptType.INFLATION.value, 'amount': '75'})
+			(1, 'inflation', 'inflation', 0, 0, '72C0212E67A08BCE', 75, {'type': ReceiptType.INFLATION.value, 'amount': '75'})
 		], [
 			(height, receipt_type, receipt_group, source_primary_id, source_secondary_id, mosaic_id, int(amount), raw_payload)
 			for height, receipt_type, receipt_group, source_primary_id, source_secondary_id, mosaic_id, amount, raw_payload in receipts

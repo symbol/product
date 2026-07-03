@@ -1,8 +1,6 @@
 # pylint: disable=duplicate-code
 import asyncio
 
-from symbolchain.sc import ReceiptType
-
 from puller.facade.SymbolPuller import SymbolRollbackError
 
 from ...test.SymbolTestConstants import RECIPIENT_ADDRESS, SIGNER_ADDRESS
@@ -82,7 +80,7 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):
 		)
 		self.puller.symbol_db.upsert_receipts_for_height(2, [{
 			'height': 2,
-			'receipt_type': ReceiptType.INFLATION.value,
+			'receipt_type': 'inflation',
 			'receipt_group': 'inflation',
 			'version': 1,
 			'source_primary_id': 0,
@@ -113,8 +111,8 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):
 			block_hash
 		)
 		self.assertEqual([
-			(2, ReceiptType.INFLATION.value, 'inflation', 2, 0, '72C0212E67A08BCE', 222),
-			(3, ReceiptType.INFLATION.value, 'inflation', 3, 0, '72C0212E67A08BCE', 333)
+			(2, 'inflation', 'inflation', 2, 0, '72C0212E67A08BCE', 222),
+			(3, 'inflation', 'inflation', 3, 0, '72C0212E67A08BCE', 333)
 		], receipts)
 		self.assertEqual('healthy', sync_state['status'])
 		self.assertEqual(3, sync_state['last_synced_height'])

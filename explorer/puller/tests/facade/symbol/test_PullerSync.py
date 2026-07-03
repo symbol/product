@@ -351,7 +351,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):
 		# Assert:
 		self.assertEqual([statement_path(5, 7)], connector.paths)
 		self.assertEqual([
-			(6, ReceiptType.INFLATION.value, 'inflation', 6, 0, '72C0212E67A08BCE', 600)
+			(6, 'inflation', 'inflation', 6, 0, '72C0212E67A08BCE', 600)
 		], self._fetch_receipts(self.puller.symbol_db))
 		self.assertEqual(0, self._fetch_block_reward(self.puller.symbol_db, 5))
 		self.assertEqual(600, self._fetch_block_reward(self.puller.symbol_db, 6))
@@ -360,9 +360,9 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):
 	def test_calculate_block_reward_sums_only_inflation_receipts(self):
 		# Arrange:
 		receipts = [
-			{'receipt_type': ReceiptType.INFLATION.value, 'amount': 11},
-			{'receipt_type': ReceiptType.HARVEST_FEE.value, 'amount': 100},
-			{'receipt_type': ReceiptType.INFLATION.value, 'amount': 22}
+			{'receipt_type': 'inflation', 'amount': 11},
+			{'receipt_type': 'harvestFee', 'amount': 100},
+			{'receipt_type': 'inflation', 'amount': 22}
 		]
 
 		# Act:
@@ -374,7 +374,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):
 	def test_calculate_block_reward_returns_zero_when_inflation_receipts_are_absent(self):
 		# Arrange:
 		receipts = [
-			{'receipt_type': ReceiptType.HARVEST_FEE.value, 'amount': 100}
+			{'receipt_type': 'harvestFee', 'amount': 100}
 		]
 
 		# Act:

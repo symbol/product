@@ -18,13 +18,28 @@ ARTIFACT_EXPIRY_RECEIPT_TYPES = (
 	ReceiptType.NAMESPACE_EXPIRED,
 	ReceiptType.NAMESPACE_DELETED
 )
+RECEIPT_TYPE_LABELS = {
+	ReceiptType.MOSAIC_RENTAL_FEE.value: 'mosaicRentalFee',
+	ReceiptType.NAMESPACE_RENTAL_FEE.value: 'namespaceRentalFee',
+	ReceiptType.HARVEST_FEE.value: 'harvestFee',
+	ReceiptType.LOCK_HASH_COMPLETED.value: 'lockHashCompleted',
+	ReceiptType.LOCK_HASH_EXPIRED.value: 'lockHashExpired',
+	ReceiptType.LOCK_SECRET_COMPLETED.value: 'lockSecretCompleted',
+	ReceiptType.LOCK_SECRET_EXPIRED.value: 'lockSecretExpired',
+	ReceiptType.LOCK_HASH_CREATED.value: 'lockHashCreated',
+	ReceiptType.LOCK_SECRET_CREATED.value: 'lockSecretCreated',
+	ReceiptType.MOSAIC_EXPIRED.value: 'mosaicExpired',
+	ReceiptType.NAMESPACE_EXPIRED.value: 'namespaceExpired',
+	ReceiptType.NAMESPACE_DELETED.value: 'namespaceDeleted',
+	ReceiptType.INFLATION.value: 'inflation'
+}
 RECEIPT_TYPE_GROUPS = {
 	**{receipt_type.value: 'balanceChange' for receipt_type in BALANCE_CHANGE_RECEIPT_TYPES},
 	**{receipt_type.value: 'balanceTransfer' for receipt_type in BALANCE_TRANSFER_RECEIPT_TYPES},
 	**{receipt_type.value: 'artifactExpiry' for receipt_type in ARTIFACT_EXPIRY_RECEIPT_TYPES},
 	ReceiptType.INFLATION.value: 'inflation'
 }
-INFLATION_RECEIPT_TYPE = ReceiptType.INFLATION.value
+INFLATION_RECEIPT_TYPE = RECEIPT_TYPE_LABELS[ReceiptType.INFLATION.value]
 
 
 def _address_bytes_or_none(value):
@@ -40,7 +55,7 @@ def _create_base_receipt_row(statement, source, receipt):
 
 	return {
 		'height': int(statement['height']),
-		'receipt_type': receipt_type,
+		'receipt_type': RECEIPT_TYPE_LABELS[receipt_type],
 		'receipt_group': RECEIPT_TYPE_GROUPS[receipt_type],
 		'version': int(receipt['version']),
 		'source_primary_id': int(source['primaryId']),

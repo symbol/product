@@ -1,8 +1,9 @@
+# pylint: disable=duplicate-code
 from unittest import TestCase
 
 from symbolchain.sc import ReceiptType
 
-from puller.model.symbol.Receipt import INFLATION_RECEIPT_TYPE, RECEIPT_TYPE_GROUPS, create_receipt_rows
+from puller.model.symbol.Receipt import INFLATION_RECEIPT_TYPE, RECEIPT_TYPE_GROUPS, RECEIPT_TYPE_LABELS, create_receipt_rows
 
 TARGET_ADDRESS = '98' * 24
 SENDER_ADDRESS = '99' * 24
@@ -39,7 +40,25 @@ class ReceiptTest(TestCase):
 			ReceiptType.NAMESPACE_DELETED.value: 'artifactExpiry',
 			ReceiptType.INFLATION.value: 'inflation'
 		}, RECEIPT_TYPE_GROUPS)
-		self.assertEqual(ReceiptType.INFLATION.value, INFLATION_RECEIPT_TYPE)
+
+	def test_receipt_type_labels_maps_supported_types_to_documented_labels(self):
+		# Arrange / Act / Assert:
+		self.assertEqual({
+			ReceiptType.MOSAIC_RENTAL_FEE.value: 'mosaicRentalFee',
+			ReceiptType.NAMESPACE_RENTAL_FEE.value: 'namespaceRentalFee',
+			ReceiptType.HARVEST_FEE.value: 'harvestFee',
+			ReceiptType.LOCK_HASH_COMPLETED.value: 'lockHashCompleted',
+			ReceiptType.LOCK_HASH_EXPIRED.value: 'lockHashExpired',
+			ReceiptType.LOCK_SECRET_COMPLETED.value: 'lockSecretCompleted',
+			ReceiptType.LOCK_SECRET_EXPIRED.value: 'lockSecretExpired',
+			ReceiptType.LOCK_HASH_CREATED.value: 'lockHashCreated',
+			ReceiptType.LOCK_SECRET_CREATED.value: 'lockSecretCreated',
+			ReceiptType.MOSAIC_EXPIRED.value: 'mosaicExpired',
+			ReceiptType.NAMESPACE_EXPIRED.value: 'namespaceExpired',
+			ReceiptType.NAMESPACE_DELETED.value: 'namespaceDeleted',
+			ReceiptType.INFLATION.value: 'inflation'
+		}, RECEIPT_TYPE_LABELS)
+		self.assertEqual('inflation', INFLATION_RECEIPT_TYPE)
 
 	def test_create_receipt_rows_populates_balance_change_fields(self):
 		# Arrange:
@@ -57,7 +76,7 @@ class ReceiptTest(TestCase):
 		# Assert:
 		self.assertEqual([{
 			'height': 12,
-			'receipt_type': ReceiptType.HARVEST_FEE.value,
+			'receipt_type': 'harvestFee',
 			'receipt_group': 'balanceChange',
 			'version': 1,
 			'source_primary_id': 7,
@@ -103,7 +122,7 @@ class ReceiptTest(TestCase):
 		# Assert:
 		self.assertEqual([{
 			'height': 12,
-			'receipt_type': ReceiptType.MOSAIC_RENTAL_FEE.value,
+			'receipt_type': 'mosaicRentalFee',
 			'receipt_group': 'balanceTransfer',
 			'version': 1,
 			'source_primary_id': 7,
@@ -131,7 +150,7 @@ class ReceiptTest(TestCase):
 		# Assert:
 		self.assertEqual([{
 			'height': 12,
-			'receipt_type': ReceiptType.NAMESPACE_EXPIRED.value,
+			'receipt_type': 'namespaceExpired',
 			'receipt_group': 'artifactExpiry',
 			'version': 1,
 			'source_primary_id': 7,
@@ -160,7 +179,7 @@ class ReceiptTest(TestCase):
 		# Assert:
 		self.assertEqual([{
 			'height': 12,
-			'receipt_type': ReceiptType.INFLATION.value,
+			'receipt_type': 'inflation',
 			'receipt_group': 'inflation',
 			'version': 1,
 			'source_primary_id': 7,

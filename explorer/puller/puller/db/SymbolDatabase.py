@@ -1,6 +1,7 @@
 from psycopg2.extras import Json
 
 from puller.model.symbol.Block import BLOCK_TYPE_VALUES
+from puller.model.symbol.Receipt import RECEIPT_TYPE_LABELS
 from puller.model.symbol.Transaction import MESSAGE_TYPE_LABELS, TRANSACTION_TYPE_LABELS
 
 from .DatabaseConnection import DatabaseConnection
@@ -16,6 +17,8 @@ SYNC_STATE_COLUMNS = [
 	'last_synced_block_hash'
 ]
 
+SYMBOL_RECEIPT_TYPE_VALUES = tuple(RECEIPT_TYPE_LABELS.values())
+SYMBOL_RECEIPT_GROUP_VALUES = ('balanceChange', 'balanceTransfer', 'artifactExpiry', 'inflation')
 SYNC_STATE_STATUS_VALUES = ('initialized', 'healthy', 'repairing', 'unhealthy')
 SYMBOL_TRANSACTION_TYPE_VALUES = tuple(TRANSACTION_TYPE_LABELS.values())
 SYMBOL_TRANSACTION_MOSAIC_ROLE_VALUES = ('transfer', 'hash_lock', 'secret_lock', 'revocation', 'restriction', 'definition')
@@ -115,8 +118,8 @@ SYMBOL_TRANSACTION_ADDRESS_DEFINITIONS = [
 SYMBOL_RECEIPT_DEFINITIONS = [
 	'id bigserial PRIMARY KEY',
 	'height bigint NOT NULL REFERENCES symbol_blocks(height)',
-	'receipt_type int NOT NULL',
-	'receipt_group varchar NOT NULL',
+	'receipt_type symbol_receipt_type NOT NULL',
+	'receipt_group symbol_receipt_group NOT NULL',
 	'version int NOT NULL',
 	'source_primary_id bigint',
 	'source_secondary_id bigint',
@@ -167,6 +170,8 @@ class SymbolDatabase(DatabaseConnection):
 
 		cursor = self.connection.cursor()
 		_create_enum_type(cursor, 'symbol_block_type', BLOCK_TYPE_VALUES)
+		_create_enum_type(cursor, 'symbol_receipt_type', SYMBOL_RECEIPT_TYPE_VALUES)
+		_create_enum_type(cursor, 'symbol_receipt_group', SYMBOL_RECEIPT_GROUP_VALUES)
 		_create_enum_type(cursor, 'symbol_sync_state_status', SYNC_STATE_STATUS_VALUES)
 		_create_enum_type(cursor, 'symbol_transaction_type', SYMBOL_TRANSACTION_TYPE_VALUES)
 		_create_enum_type(cursor, 'symbol_transaction_mosaic_role', SYMBOL_TRANSACTION_MOSAIC_ROLE_VALUES)
