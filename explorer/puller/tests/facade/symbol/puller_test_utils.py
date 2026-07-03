@@ -92,7 +92,7 @@ def set_symbol_connector(puller, connector):
 	puller._symbol_connector = connector  # pylint: disable=protected-access
 
 
-def _set_sync_block_pages(puller, sync_block_pages):
+def set_sync_block_pages(puller, sync_block_pages):
 	# Patch the private page sync step only for hard-to-reach error branches.
 	puller._sync_block_pages = sync_block_pages  # pylint: disable=protected-access
 
@@ -166,7 +166,7 @@ def create_sync_state(**overrides):
 	return sync_state
 
 
-def _create_chain_info(chain_height=1, finalized_height=1):
+def create_chain_info(chain_height=1, finalized_height=1):
 	return {
 		'height': str(chain_height),
 		'latestFinalizedBlock': {
@@ -178,7 +178,7 @@ def _create_chain_info(chain_height=1, finalized_height=1):
 	}
 
 
-def _create_network_properties(epoch_adjustment='100s'):
+def create_network_properties(epoch_adjustment='100s'):
 	return {'network': {'epochAdjustment': epoch_adjustment}}
 
 
@@ -199,9 +199,9 @@ class FakeConnector:
 	async def get(self, url_path, *_):
 		self.paths.append(url_path)
 		if 'chain/info' == url_path:
-			return _create_chain_info(self.chain_height, self.finalized_height)
+			return create_chain_info(self.chain_height, self.finalized_height)
 		if 'network/properties' == url_path:
-			return _create_network_properties()
+			return create_network_properties()
 		if url_path.startswith('blocks/'):
 			height = int(url_path.removeprefix('blocks/'))
 			return self.block_by_height[height]

@@ -6,10 +6,10 @@ from puller.facade.SymbolPuller import BLOCK_PAGE_FETCH_CONCURRENCY
 from .puller_test_utils import (
 	FakeConnector,
 	SymbolPullerTestBase,
-	_set_sync_block_pages,
 	create_node_block,
 	create_sync_state,
-	set_symbol_connector
+	set_symbol_connector,
+	set_sync_block_pages
 )
 
 
@@ -274,7 +274,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):
 		# Arrange:
 		connector = FakeConnector(5, {}, finalized_height=5)
 		set_symbol_connector(self.puller, connector)
-		_set_sync_block_pages(
+		set_sync_block_pages(
 			self.puller,
 			AsyncMock(return_value=(None, None))
 		)

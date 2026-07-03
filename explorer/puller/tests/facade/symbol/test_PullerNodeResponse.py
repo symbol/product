@@ -4,8 +4,8 @@ from .puller_test_utils import (
 	FakeConnector,
 	ResponseConnector,
 	SymbolPullerTestBase,
-	_create_chain_info,
-	_create_network_properties,
+	create_chain_info,
+	create_network_properties,
 	create_node_block
 )
 
@@ -14,11 +14,11 @@ class SymbolPullerNodeResponseTest(SymbolPullerTestBase):
 
 	def test_rejects_missing_chain_height(self):
 		# Arrange:
-		chain_info = _create_chain_info()
+		chain_info = create_chain_info()
 		del chain_info['height']
 		connector = ResponseConnector({
 			'chain/info': chain_info,
-			'network/properties': _create_network_properties()
+			'network/properties': create_network_properties()
 		})
 
 		# Act / Assert:
@@ -27,7 +27,7 @@ class SymbolPullerNodeResponseTest(SymbolPullerTestBase):
 	def test_rejects_missing_epoch_adjustment(self):
 		# Arrange:
 		connector = ResponseConnector({
-			'chain/info': _create_chain_info(),
+			'chain/info': create_chain_info(),
 			'network/properties': {'network': {}}
 		})
 
@@ -112,8 +112,8 @@ class SymbolPullerNodeResponseTest(SymbolPullerTestBase):
 	def test_rejects_symbol_node_api_error_response(self):
 		# Arrange:
 		connector = ResponseConnector({
-			'chain/info': _create_chain_info(),
-			'network/properties': _create_network_properties(),
+			'chain/info': create_chain_info(),
+			'network/properties': create_network_properties(),
 			'blocks?pageSize=100&offset=0&orderBy=height': {
 				'code': 'InvalidArgument',
 				'message': 'offset has an invalid format'
@@ -130,8 +130,8 @@ class SymbolPullerNodeResponseTest(SymbolPullerTestBase):
 	def test_rejects_malformed_block_page_response(self):
 		# Arrange:
 		connector = ResponseConnector({
-			'chain/info': _create_chain_info(),
-			'network/properties': _create_network_properties(),
+			'chain/info': create_chain_info(),
+			'network/properties': create_network_properties(),
 			'blocks?pageSize=100&offset=0&orderBy=height': {
 				'pagination': {'pageNumber': 1, 'pageSize': 100}
 			}
