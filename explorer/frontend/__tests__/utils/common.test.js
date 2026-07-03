@@ -11,6 +11,7 @@ import {
 	formatMosaicCSV,
 	formatTransactionCSV,
 	formatTransactionChart,
+	formatTransactionsPerBlock,
 	getRootNamespaceName,
 	nullableValueToText,
 	numberToShortString,
@@ -220,6 +221,39 @@ describe('utils/common', () => {
 			runTruncateDecimalsTest(value3, decimal3, expectedResult3);
 			runTruncateDecimalsTest(value4, decimal4, expectedResult4);
 			runTruncateDecimalsTest(value5, decimal5, expectedResult5);
+		});
+	});
+
+	describe('formatTransactionsPerBlock', () => {
+		const runFormatTransactionsPerBlockTest = (value, expectedResult) => {
+			// Act:
+			const result = formatTransactionsPerBlock(value);
+
+			//Assert:
+			expect(result).toBe(expectedResult);
+		};
+
+		it('keeps two decimals for values below one', () => {
+			runFormatTransactionsPerBlockTest(0.0042, 0);
+			runFormatTransactionsPerBlockTest(0.2, 0.2);
+			runFormatTransactionsPerBlockTest(0.239, 0.23);
+		});
+
+		it('keeps one decimal for values between one and five', () => {
+			runFormatTransactionsPerBlockTest(1, 1);
+			runFormatTransactionsPerBlockTest(2.37, 2.3);
+			runFormatTransactionsPerBlockTest(4.99, 4.9);
+		});
+
+		it('rounds to an integer for values of five or more', () => {
+			runFormatTransactionsPerBlockTest(5, 5);
+			runFormatTransactionsPerBlockTest(12.6, 13);
+			runFormatTransactionsPerBlockTest(120.4, 120);
+		});
+
+		it('returns an empty string for non-numeric values', () => {
+			runFormatTransactionsPerBlockTest(NaN, '');
+			runFormatTransactionsPerBlockTest(undefined, '');
 		});
 	});
 

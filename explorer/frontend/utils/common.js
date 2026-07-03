@@ -138,6 +138,29 @@ export const truncateDecimals = (num, decimal) => {
 };
 
 /**
+ * Formats an average transaction-per-block value with precision that scales down as the value grows.
+ * Small averages keep decimals to avoid overstating low activity, while larger ones are shown as integers.
+ * @param {number} num - Average value.
+ * @returns {number} Formatted average.
+ * @example
+ * formatTransactionsPerBlock(0.0042); // 0
+ * formatTransactionsPerBlock(2.37); // 2.3
+ * formatTransactionsPerBlock(12.6); // 13
+ */
+export const formatTransactionsPerBlock = num => {
+	if (!isNumeric(num))
+		return '';
+
+	if (num < 1)
+		return truncateDecimals(num, 2);
+
+	if (num < 5)
+		return truncateDecimals(num, 1);
+
+	return Math.round(num);
+};
+
+/**
  * Truncates a string.
  * @param {string} str - String.
  * @param {string} type - Type.

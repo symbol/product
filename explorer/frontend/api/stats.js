@@ -2,7 +2,7 @@ import { fetchAccountPage } from './accounts';
 import { fetchBlockPage } from './blocks';
 import { fetchNodeList } from './nodes';
 import config from '@/config';
-import { transactionChartFilterToType, truncateDecimals } from '@/utils/common';
+import { formatTransactionsPerBlock, transactionChartFilterToType, truncateDecimals } from '@/utils/common';
 import { createApiUrl, makeRequest } from '@/utils/server';
 
 export const fetchAccountStats = async () => {
@@ -64,7 +64,7 @@ export const fetchTransactionStats = async () => {
 	const stats = await makeRequest(createApiUrl('transaction/statistics'));
 	const blocks = (await fetchBlockPage({ pageSize: 240 })).data;
 	const total240Blocks = blocks.reduce((partialSum, block) => partialSum + block.transactionCount, 0);
-	const averagePerBlock = blocks.length ? truncateDecimals(total240Blocks / blocks.length, 2) : 0;
+	const averagePerBlock = blocks.length ? formatTransactionsPerBlock(total240Blocks / blocks.length) : 0;
 
 	return {
 		averagePerBlock,
