@@ -874,12 +874,7 @@ class NemDatabase(DatabaseConnectionPool):
 				' OR t.recipient_address = %s'
 				f'{multisig_inner_filter})'
 			)
-			filter_params.extend([
-				transaction_query.address.bytes,
-				transaction_query.address.bytes,
-				transaction_query.address.bytes,
-				transaction_query.address.bytes
-			])
+			filter_params.extend([transaction_query.address.bytes] * 4)
 		else:
 			if transaction_query.sender_address:
 				multisig_inner_filter = self._create_multisig_inner_filter('it.sender_address = %s')
@@ -887,10 +882,7 @@ class NemDatabase(DatabaseConnectionPool):
 					f' AND ({non_multisig_sender_filter}'
 					f'{multisig_inner_filter})'
 				)
-				filter_params.extend([
-					transaction_query.sender_address.bytes,
-					transaction_query.sender_address.bytes
-				])
+				filter_params.extend([transaction_query.sender_address.bytes] * 2)
 
 			if transaction_query.recipient_address:
 				multisig_inner_filter = self._create_multisig_inner_filter('it.recipient_address = %s')
@@ -898,10 +890,7 @@ class NemDatabase(DatabaseConnectionPool):
 					' AND (t.recipient_address = %s'
 					f'{multisig_inner_filter})'
 				)
-				filter_params.extend([
-					transaction_query.recipient_address.bytes,
-					transaction_query.recipient_address.bytes
-				])
+				filter_params.extend([transaction_query.recipient_address.bytes] * 2)
 
 		if transaction_query.mosaic:
 			where_condition += (
