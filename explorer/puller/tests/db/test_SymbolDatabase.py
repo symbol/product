@@ -7,7 +7,6 @@ from unittest import TestCase
 from common.tests.PostgresTestUtils import PostgresTestDatabase, drop_symbol_block_tables_if_present
 from psycopg2 import Error as PsycopgError
 from psycopg2.extras import Json
-from symbolchain.sc import BlockType
 
 from puller.db.SymbolDatabase import SymbolDatabase
 
@@ -38,7 +37,7 @@ def _create_block(height, block_hash=None, **overrides):
 		'statements_count': height + 1,
 		'difficulty': 100000 + height,
 		'fee_multiplier': height,
-		'block_type': BlockType.NEMESIS.value,
+		'block_type': 'nemesis',
 		'signer_public_key': f'signer key {height}'.encode('utf8'),
 		'signer_address': f'signer address {height}'.encode('utf8'),
 		'beneficiary_address': f'beneficiary {height}'.encode('utf8'),
@@ -419,16 +418,13 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 				'VALUES (2, \'initialized\')'
 			)
 
-	def test_rejects_unknown_block_type(self):
+	def test_rejects_invalid_block_type(self):
 		# Arrange:
 		database = self._create_database()
 
 		# Act + Assert:
-		with self.assertRaisesRegex(
-			ValueError,
-			'Unsupported Symbol block type 1'
-		):
-			database.upsert_blocks([_create_block(1, block_type=1)])
+		with self.assertRaises(PsycopgError):
+			database.upsert_blocks([_create_block(1, block_type='invalid')])
 
 	def test_can_get_block_hash(self):
 		# Arrange:
