@@ -88,6 +88,7 @@ jest.mock('@/app/screens', () => {
 		CreateMultisigAccount: createMockScreen('CreateMultisigAccount'),
 		ModifyMultisigAccount: createMockScreen('ModifyMultisigAccount'),
 		Harvesting: createMockScreen('Harvesting'),
+		CreateMosaic: createMockScreen('CreateMosaic'),
 		Scan: createMockScreen('Scan'),
 		TransportRequest: createMockScreen('TransportRequest'),
 		Send: createMockScreen('Send'),
@@ -220,6 +221,11 @@ const NAVIGATION_SCREENS_CONFIG = [
 	},
 	{
 		screenName: 'Harvesting',
+		shouldReset: false,
+		hasParams: true
+	},
+	{
+		screenName: 'CreateMosaic',
 		shouldReset: false,
 		hasParams: true
 	}

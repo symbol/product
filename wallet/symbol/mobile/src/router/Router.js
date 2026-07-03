@@ -117,6 +117,9 @@ export class Router {
 	static goToHarvesting(params) {
 		navigationRef.navigate(RouteName.Harvesting, parseNavigationParams(params));
 	}
+	static goToCreateMosaic(params) {
+		navigationRef.navigate(RouteName.CreateMosaic, parseNavigationParams(params));
+	}
 	static goToScan(params) {
 		navigationRef.navigate(RouteName.Scan, parseNavigationParams(params));
 	}

@@ -96,6 +96,7 @@ export const RouterView = ({ isActive, flow }) => (
 							<Stack.Screen name={RouteName.CreateMultisigAccount} component={screens.CreateMultisigAccount} />
 							<Stack.Screen name={RouteName.ModifyMultisigAccount} component={screens.ModifyMultisigAccount} />
 							<Stack.Screen name={RouteName.Harvesting} component={screens.Harvesting} />
+							<Stack.Screen name={RouteName.CreateMosaic} component={screens.CreateMosaic} />
 							<Stack.Screen name={RouteName.Settings} component={screens.Settings} />
 							<Stack.Screen name={RouteName.SettingsAbout} component={screens.SettingsAbout} />
 							<Stack.Screen name={RouteName.SettingsNetwork} component={screens.SettingsNetwork} />

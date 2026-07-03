@@ -50,6 +50,12 @@ export const Actions = () => {
 			onPress: Router.goToSend
 		},
 		{
+			title: $t('s_actions_createMosaic_title'),
+			description: $t('s_actions_createMosaic_description'),
+			imageSource: require('@/app/assets/images/art/symbol-ascii.png'),
+			onPress: Router.goToCreateMosaic
+		},
+		{
 			title: $t('s_actions_bridge_title'),
 			description: $t('s_actions_bridge_description'),
 			imageSource: require('@/app/assets/images/art/bridge.png'),

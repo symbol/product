@@ -42,6 +42,9 @@ export { ModifyMultisigAccount } from './multisig/ModifyMultisigAccount';
 // Harvesting
 export { Harvesting } from './harvesting/Harvesting';
 
+// Mosaic
+export { CreateMosaic } from './mosaic/CreateMosaic';
+
 // Transport
 export { Scan } from './transport/Scan';
 export { TransportRequest } from './transport/TransportRequest';
