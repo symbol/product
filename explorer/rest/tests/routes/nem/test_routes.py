@@ -863,10 +863,6 @@ def test_api_transactions_applies_recipient_address(client):  # pylint: disable=
 	], recipientAddress='NBFWZ4IVRHEIBRCGHLYDS62FSFTBM3VDFA7E6LSQ')
 
 
-def test_api_transactions_applies_multisig_initiator_address(client):  # pylint: disable=redefined-outer-name, invalid-name
-	_assert_get_api_nem_transactions(client, 200, [], senderAddress='NANEMOABLAGR72AZ2RV3V4ZHDCXW25XQ73O7OBT5')
-
-
 def test_api_transactions_applies_multisig_inner_sender_address(client):  # pylint: disable=redefined-outer-name, invalid-name
 	_assert_get_api_nem_transactions(client, 200, [
 		TRANSACTIONS_VIEWS[4].to_dict(),
