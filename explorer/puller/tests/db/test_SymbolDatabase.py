@@ -1,4 +1,4 @@
-# pylint: disable=duplicate-code
+# pylint: disable=duplicate-code,too-many-lines
 import datetime
 from collections import namedtuple
 from contextlib import ExitStack
@@ -9,6 +9,8 @@ from psycopg2 import Error as PsycopgError
 from psycopg2.extras import Json
 
 from puller.db.SymbolDatabase import SymbolDatabase
+
+from ..test.SymbolTransactionTestUtils import create_transaction_entry
 
 DatabaseConfig = namedtuple(
 	'DatabaseConfig',
@@ -119,13 +121,19 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			SELECT table_name
 			FROM information_schema.tables
 			WHERE table_schema = 'public'
-				AND table_name IN ('symbol_blocks', 'symbol_sync_state')
+				AND table_name LIKE 'symbol_%'
 			ORDER BY table_name
 			'''
 		)
 		tables = [result[0] for result in cursor.fetchall()]
 
-		self.assertEqual(['symbol_blocks', 'symbol_sync_state'], tables)
+		self.assertEqual([
+			'symbol_blocks',
+			'symbol_sync_state',
+			'symbol_transaction_addresses',
+			'symbol_transaction_mosaics',
+			'symbol_transactions'
+		], tables)
 
 	def test_create_tables_creates_symbol_sync_state_schema(self):
 		# Arrange:
@@ -288,6 +296,194 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			('PRIMARY KEY', 'height'),
 			('UNIQUE', 'hash')
 		], key_constraints)
+
+	def test_create_tables_creates_symbol_transaction_columns_and_constraints(self):
+		# Arrange:
+		database = self._create_uninitialized_database()
+		cursor = database.connection.cursor()
+
+		# Act:
+		database.create_tables()
+
+		# Assert:
+		cursor.execute(
+			'''
+			SELECT column_name, udt_name, is_nullable, column_default
+			FROM information_schema.columns
+			WHERE table_name = 'symbol_transactions'
+			ORDER BY ordinal_position
+			'''
+		)
+		columns = cursor.fetchall()
+
+		cursor.execute(
+			'''
+			SELECT constraint_type, column_name
+			FROM information_schema.table_constraints
+			JOIN information_schema.key_column_usage USING (
+				constraint_name,
+				table_schema,
+				table_name
+			)
+			WHERE table_name = 'symbol_transactions'
+			ORDER BY constraint_type, column_name
+			'''
+		)
+		key_constraints = cursor.fetchall()
+
+		self.assertEqual([
+			('id', 'int8', 'NO', "nextval('symbol_transactions_id_seq'::regclass)"),
+			('node_id', 'text', 'YES', None),
+			('transaction_key', 'text', 'NO', None),
+			('hash', 'bytea', 'YES', None),
+			('aggregate_hash', 'bytea', 'YES', None),
+			('embedded_index', 'int4', 'YES', None),
+			('is_embedded', 'bool', 'NO', None),
+			('group', 'symbol_transaction_group', 'NO', None),
+			('height', 'int8', 'NO', None),
+			('list_sequence', 'int8', 'YES', None),
+			('timestamp', 'timestamp', 'NO', None),
+			('type', 'int4', 'NO', None),
+			('type_name', 'symbol_transaction_type', 'NO', None),
+			('signer_public_key', 'bytea', 'NO', None),
+			('signer_address', 'bytea', 'NO', None),
+			('recipient_address', 'bytea', 'YES', None),
+			('target_address', 'bytea', 'YES', None),
+			('deadline', 'timestamp', 'YES', None),
+			('network_deadline', 'int8', 'YES', None),
+			('max_fee', 'int8', 'YES', None),
+			('effective_fee', 'int8', 'YES', None),
+			('size', 'int8', 'YES', None),
+			('message_type', 'varchar', 'YES', None),
+			('message_payload', 'text', 'YES', None),
+			('body', 'jsonb', 'YES', None),
+			('raw_payload', 'jsonb', 'NO', None),
+			('created_at', 'timestamp', 'NO', 'CURRENT_TIMESTAMP'),
+			('updated_at', 'timestamp', 'NO', 'CURRENT_TIMESTAMP')
+		], columns)
+		self.assertEqual([
+			('FOREIGN KEY', 'height'),
+			('PRIMARY KEY', 'id'),
+			('UNIQUE', 'node_id'),
+			('UNIQUE', 'transaction_key')
+		], key_constraints)
+
+	def test_create_tables_creates_symbol_transaction_child_columns_and_constraints(self):
+		# Arrange:
+		database = self._create_uninitialized_database()
+		cursor = database.connection.cursor()
+
+		# Act:
+		database.create_tables()
+
+		# Assert:
+		cursor.execute(
+			'''
+			SELECT table_name, column_name, udt_name, is_nullable
+			FROM information_schema.columns
+			WHERE table_name IN ('symbol_transaction_mosaics', 'symbol_transaction_addresses')
+			ORDER BY table_name, ordinal_position
+			'''
+		)
+		columns = cursor.fetchall()
+
+		cursor.execute(
+			'''
+			SELECT table_name, constraint_type, column_name
+			FROM information_schema.table_constraints
+			JOIN information_schema.key_column_usage USING (
+				constraint_name,
+				table_schema,
+				table_name
+			)
+			WHERE table_name IN ('symbol_transaction_mosaics', 'symbol_transaction_addresses')
+			ORDER BY table_name, constraint_type, column_name
+			'''
+		)
+		key_constraints = cursor.fetchall()
+
+		self.assertEqual([
+			('symbol_transaction_addresses', 'transaction_id', 'int8', 'NO'),
+			('symbol_transaction_addresses', 'height', 'int8', 'NO'),
+			('symbol_transaction_addresses', 'address', 'bytea', 'NO'),
+			('symbol_transaction_addresses', 'role', 'symbol_transaction_address_role', 'NO'),
+			('symbol_transaction_mosaics', 'transaction_id', 'int8', 'NO'),
+			('symbol_transaction_mosaics', 'height', 'int8', 'NO'),
+			('symbol_transaction_mosaics', 'mosaic_id', 'varchar', 'NO'),
+			('symbol_transaction_mosaics', 'amount', 'int8', 'NO'),
+			('symbol_transaction_mosaics', 'role', 'symbol_transaction_mosaic_role', 'NO'),
+			('symbol_transaction_mosaics', 'position', 'int4', 'NO')
+		], columns)
+		self.assertEqual([
+			('symbol_transaction_addresses', 'FOREIGN KEY', 'height'),
+			('symbol_transaction_addresses', 'FOREIGN KEY', 'transaction_id'),
+			('symbol_transaction_addresses', 'PRIMARY KEY', 'address'),
+			('symbol_transaction_addresses', 'PRIMARY KEY', 'role'),
+			('symbol_transaction_addresses', 'PRIMARY KEY', 'transaction_id'),
+			('symbol_transaction_mosaics', 'FOREIGN KEY', 'height'),
+			('symbol_transaction_mosaics', 'FOREIGN KEY', 'transaction_id'),
+			('symbol_transaction_mosaics', 'PRIMARY KEY', 'mosaic_id'),
+			('symbol_transaction_mosaics', 'PRIMARY KEY', 'position'),
+			('symbol_transaction_mosaics', 'PRIMARY KEY', 'role'),
+			('symbol_transaction_mosaics', 'PRIMARY KEY', 'transaction_id')
+		], key_constraints)
+
+	def test_create_tables_creates_symbol_transaction_indexes(self):
+		# Arrange:
+		database = self._create_uninitialized_database()
+		cursor = database.connection.cursor()
+
+		# Act:
+		database.create_tables()
+
+		# Assert:
+		cursor.execute(
+			'''
+			SELECT indexname
+			FROM pg_indexes
+			WHERE schemaname = 'public'
+				AND indexname LIKE 'idx_symbol_transaction%'
+			ORDER BY indexname
+			'''
+		)
+		indexes = [result[0] for result in cursor.fetchall()]
+
+		self.assertEqual([
+			'idx_symbol_transaction_addresses_address_height',
+			'idx_symbol_transaction_addresses_height',
+			'idx_symbol_transaction_mosaics_mosaic_height',
+			'idx_symbol_transaction_mosaics_mosaic_role_height',
+			'idx_symbol_transactions_aggregate_hash',
+			'idx_symbol_transactions_hash',
+			'idx_symbol_transactions_height_desc',
+			'idx_symbol_transactions_list_sequence_desc',
+			'idx_symbol_transactions_recipient_height',
+			'idx_symbol_transactions_signer_address',
+			'idx_symbol_transactions_signer_height',
+			'idx_symbol_transactions_timestamp',
+			'idx_symbol_transactions_type_height'
+		], indexes)
+
+	def test_create_tables_creates_symbol_transaction_list_sequence(self):
+		# Arrange:
+		database = self._create_uninitialized_database()
+		cursor = database.connection.cursor()
+
+		# Act:
+		database.create_tables()
+
+		# Assert:
+		cursor.execute(
+			'''
+			SELECT relname
+			FROM pg_class
+			WHERE relkind = 'S'
+				AND relname = 'symbol_transaction_list_sequence_seq'
+			'''
+		)
+		sequences = cursor.fetchall()
+
+		self.assertEqual([('symbol_transaction_list_sequence_seq',)], sequences)
 
 	def test_check_connection_returns_true_when_sync_state_exists(self):
 		# Arrange:
@@ -546,6 +742,186 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 
 		self.assertEqual([(1,)], results)
 
+	def test_upsert_transactions_for_height_computes_effective_fee(self):
+		# Arrange:
+		database = self._create_database()
+		cursor = database.connection.cursor()
+		database.upsert_blocks([_create_block(2, fee_multiplier=2)])
+
+		# Act:
+		database.upsert_transactions_for_height(2, [
+			create_transaction_entry(2, 'top-level', max_fee=100, size=3),
+			create_transaction_entry(2, 'embedded', is_embedded=True)
+		])
+
+		# Assert:
+		cursor.execute(
+			'''
+			SELECT transaction_key, effective_fee
+			FROM symbol_transactions
+			ORDER BY id
+			'''
+		)
+		results = cursor.fetchall()
+
+		self.assertEqual([
+			('top-level', 6),
+			('embedded', None)
+		], results)
+
+	def test_upsert_transactions_for_height_replaces_parent_and_child_rows(self):
+		# Arrange:
+		database = self._create_database()
+		cursor = database.connection.cursor()
+		database.upsert_blocks([_create_block(1), _create_block(2)])
+		database.upsert_transactions_for_height(1, [create_transaction_entry(
+			1,
+			'old',
+			mosaic_rows=[{
+				'mosaic_id': '1111111111111111',
+				'amount': 10,
+				'role': 'transfer',
+				'position': 0
+			}],
+			address_rows=[{
+				'address': b'old address',
+				'role': 'signer'
+			}]
+		)])
+
+		# Act:
+		database.upsert_transactions_for_height(1, [create_transaction_entry(
+			1,
+			'new',
+			mosaic_rows=[{
+				'mosaic_id': '2222222222222222',
+				'amount': 20,
+				'role': 'definition',
+				'position': 0
+			}],
+			address_rows=[{
+				'address': b'new address',
+				'role': 'recipient'
+			}]
+		)])
+
+		# Assert:
+		cursor.execute('SELECT transaction_key FROM symbol_transactions ORDER BY transaction_key')
+		transaction_results = cursor.fetchall()
+		cursor.execute('SELECT mosaic_id, amount, role FROM symbol_transaction_mosaics ORDER BY mosaic_id')
+		mosaic_results = cursor.fetchall()
+		cursor.execute('SELECT encode(address, \'escape\'), role FROM symbol_transaction_addresses ORDER BY role')
+		address_results = cursor.fetchall()
+
+		self.assertEqual([('new',)], transaction_results)
+		self.assertEqual([('2222222222222222', 20, 'definition')], mosaic_results)
+		self.assertEqual([('new address', 'recipient')], address_results)
+
+	def test_upsert_transactions_for_height_assigns_list_sequence_to_top_level_rows(self):
+		# Arrange:
+		database = self._create_database()
+		cursor = database.connection.cursor()
+		database.upsert_blocks([_create_block(1), _create_block(2)])
+
+		# Act:
+		database.upsert_transactions_for_height(1, [
+			create_transaction_entry(1, 'first'),
+			create_transaction_entry(1, 'embedded', is_embedded=True),
+			create_transaction_entry(1, 'second')
+		])
+		database.upsert_transactions_for_height(2, [
+			create_transaction_entry(2, 'third')
+		])
+
+		# Assert:
+		cursor.execute(
+			'''
+			SELECT transaction_key, list_sequence
+			FROM symbol_transactions
+			ORDER BY id
+			'''
+		)
+		results = cursor.fetchall()
+
+		self.assertEqual('first', results[0][0])
+		self.assertEqual('embedded', results[1][0])
+		self.assertEqual('second', results[2][0])
+		self.assertEqual('third', results[3][0])
+		self.assertIsNone(results[1][1])
+		self.assertLess(results[0][1], results[2][1])
+		self.assertLess(results[2][1], results[3][1])
+
+	def test_upsert_transactions_for_height_rejects_missing_block_height(self):
+		# Arrange:
+		database = self._create_database()
+
+		# Act + Assert:
+		with self.assertRaises(PsycopgError):
+			database.upsert_transactions_for_height(7, [create_transaction_entry(7)])
+
+	def test_upsert_transactions_for_height_rejects_duplicate_transaction_key(self):
+		# Arrange:
+		database = self._create_database()
+		database.upsert_blocks([_create_block(1)])
+
+		# Act + Assert:
+		with self.assertRaises(PsycopgError):
+			database.upsert_transactions_for_height(1, [
+				create_transaction_entry(1, 'duplicate'),
+				create_transaction_entry(1, 'duplicate', node_id='different-node-id')
+			])
+
+	def test_upsert_transactions_for_height_persists_body_and_raw_payload(self):
+		# Arrange:
+		database = self._create_database()
+		cursor = database.connection.cursor()
+		database.upsert_blocks([_create_block(1)])
+
+		# Act:
+		database.upsert_transactions_for_height(1, [create_transaction_entry(
+			1,
+			body={'field': 'value'},
+			raw_payload={'meta': {'height': '1'}}
+		)])
+
+		# Assert:
+		cursor.execute('SELECT body, raw_payload FROM symbol_transactions')
+		result = cursor.fetchone()
+
+		self.assertEqual({'field': 'value'}, result[0])
+		self.assertEqual({'meta': {'height': '1'}}, result[1])
+
+	def test_delete_blocks_from_height_deletes_transaction_family_rows(self):
+		# Arrange:
+		database = self._create_database()
+		cursor = database.connection.cursor()
+		database.upsert_blocks([_create_block(1), _create_block(2), _create_block(3)])
+		database.upsert_transactions_for_height(1, [create_transaction_entry(1, 'kept')])
+		database.upsert_transactions_for_height(2, [create_transaction_entry(
+			2,
+			'deleted',
+			mosaic_rows=[{'mosaic_id': '1111111111111111', 'amount': 10, 'role': 'transfer', 'position': 0}],
+			address_rows=[{'address': b'deleted address', 'role': 'signer'}]
+		)])
+
+		# Act:
+		database.delete_blocks_from_height(2)
+
+		# Assert:
+		cursor.execute('SELECT transaction_key FROM symbol_transactions ORDER BY transaction_key')
+		transaction_results = cursor.fetchall()
+		cursor.execute('SELECT COUNT(*) FROM symbol_transaction_mosaics')
+		mosaic_count = cursor.fetchone()[0]
+		cursor.execute('SELECT COUNT(*) FROM symbol_transaction_addresses')
+		address_count = cursor.fetchone()[0]
+		cursor.execute('SELECT height FROM symbol_blocks ORDER BY height')
+		block_results = cursor.fetchall()
+
+		self.assertEqual([('kept',)], transaction_results)
+		self.assertEqual(0, mosaic_count)
+		self.assertEqual(0, address_count)
+		self.assertEqual([(1,)], block_results)
+
 	def test_can_repair_rollback_from_height_in_one_transaction(self):
 		# Arrange:
 		database = self._create_database()
@@ -554,6 +930,12 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			_create_block(2),
 			_create_block(3)
 		])
+		database.upsert_transactions_for_height(2, [create_transaction_entry(
+			2,
+			'rollbacked',
+			mosaic_rows=[{'mosaic_id': '1111111111111111', 'amount': 10, 'role': 'transfer', 'position': 0}],
+			address_rows=[{'address': b'rollbacked address', 'role': 'signer'}]
+		)])
 
 		# Act:
 		database.repair_rollback_from_height(2, _create_sync_state(
@@ -566,9 +948,18 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		cursor = database.connection.cursor()
 		cursor.execute('SELECT height FROM symbol_blocks ORDER BY height')
 		block_results = cursor.fetchall()
+		cursor.execute('SELECT COUNT(*) FROM symbol_transactions')
+		transaction_count = cursor.fetchone()[0]
+		cursor.execute('SELECT COUNT(*) FROM symbol_transaction_mosaics')
+		mosaic_count = cursor.fetchone()[0]
+		cursor.execute('SELECT COUNT(*) FROM symbol_transaction_addresses')
+		address_count = cursor.fetchone()[0]
 		sync_state = database.get_sync_state()
 
 		self.assertEqual([(1,)], block_results)
+		self.assertEqual(0, transaction_count)
+		self.assertEqual(0, mosaic_count)
+		self.assertEqual(0, address_count)
 		self.assertEqual('repairing', sync_state['status'])
 		self.assertEqual(1, sync_state['last_synced_height'])
 		self.assertEqual(

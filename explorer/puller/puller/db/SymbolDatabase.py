@@ -1,4 +1,7 @@
+from psycopg2.extras import Json
+
 from puller.model.symbol.Block import BLOCK_TYPE_VALUES
+from puller.model.symbol.Transaction import TRANSACTION_TYPE_LABELS
 
 from .DatabaseConnection import DatabaseConnection
 
@@ -14,6 +17,10 @@ SYNC_STATE_COLUMNS = [
 ]
 
 SYNC_STATE_STATUS_VALUES = ('initialized', 'healthy', 'repairing', 'unhealthy')
+SYMBOL_TRANSACTION_TYPE_VALUES = tuple(TRANSACTION_TYPE_LABELS.values())
+SYMBOL_TRANSACTION_GROUP_VALUES = ('confirmed',)
+SYMBOL_TRANSACTION_MOSAIC_ROLE_VALUES = ('transfer', 'hash_lock', 'secret_lock', 'revocation', 'restriction', 'definition')
+SYMBOL_TRANSACTION_ADDRESS_ROLE_VALUES = ('signer', 'recipient', 'target', 'sender', 'cosignatory', 'mosaic_owner')
 SYMBOL_SYNC_STATE_DEFINITIONS = [
 	'id int PRIMARY KEY DEFAULT 1',
 	'status symbol_sync_state_status NOT NULL',
@@ -60,6 +67,52 @@ SYMBOL_BLOCK_DEFINITIONS = [
 	'created_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP',
 	'updated_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP'
 ]
+SYMBOL_TRANSACTION_DEFINITIONS = [
+	'id bigserial PRIMARY KEY',
+	'node_id text UNIQUE',
+	'transaction_key text NOT NULL UNIQUE',
+	'hash bytea',
+	'aggregate_hash bytea',
+	'embedded_index int',
+	'is_embedded boolean NOT NULL',
+	'"group" symbol_transaction_group NOT NULL',
+	'height bigint NOT NULL REFERENCES symbol_blocks(height)',
+	'list_sequence bigint',
+	'timestamp timestamp NOT NULL',
+	'type int NOT NULL',
+	'type_name symbol_transaction_type NOT NULL',
+	'signer_public_key bytea NOT NULL',
+	'signer_address bytea NOT NULL',
+	'recipient_address bytea',
+	'target_address bytea',
+	'deadline timestamp',
+	'network_deadline bigint',
+	'max_fee bigint',
+	'effective_fee bigint',
+	'size bigint',
+	'message_type varchar',
+	'message_payload text',
+	'body jsonb',
+	'raw_payload jsonb NOT NULL',
+	'created_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP',
+	'updated_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP'
+]
+SYMBOL_TRANSACTION_MOSAIC_DEFINITIONS = [
+	'transaction_id bigint NOT NULL REFERENCES symbol_transactions(id)',
+	'height bigint NOT NULL REFERENCES symbol_blocks(height)',
+	'mosaic_id varchar(16) NOT NULL',
+	'amount bigint NOT NULL',
+	'role symbol_transaction_mosaic_role NOT NULL',
+	'position int NOT NULL',
+	'PRIMARY KEY (transaction_id, mosaic_id, role, position)'
+]
+SYMBOL_TRANSACTION_ADDRESS_DEFINITIONS = [
+	'transaction_id bigint NOT NULL REFERENCES symbol_transactions(id)',
+	'height bigint NOT NULL REFERENCES symbol_blocks(height)',
+	'address bytea NOT NULL',
+	'role symbol_transaction_address_role NOT NULL',
+	'PRIMARY KEY (transaction_id, address, role)'
+]
 
 
 def _create_enum_type(cursor, name, values):
@@ -89,11 +142,58 @@ class SymbolDatabase(DatabaseConnection):
 		cursor = self.connection.cursor()
 		_create_enum_type(cursor, 'symbol_block_type', BLOCK_TYPE_VALUES)
 		_create_enum_type(cursor, 'symbol_sync_state_status', SYNC_STATE_STATUS_VALUES)
+		_create_enum_type(cursor, 'symbol_transaction_type', SYMBOL_TRANSACTION_TYPE_VALUES)
+		_create_enum_type(cursor, 'symbol_transaction_group', SYMBOL_TRANSACTION_GROUP_VALUES)
+		_create_enum_type(cursor, 'symbol_transaction_mosaic_role', SYMBOL_TRANSACTION_MOSAIC_ROLE_VALUES)
+		_create_enum_type(cursor, 'symbol_transaction_address_role', SYMBOL_TRANSACTION_ADDRESS_ROLE_VALUES)
 		_create_table(cursor, 'symbol_sync_state', SYMBOL_SYNC_STATE_DEFINITIONS)
 		_create_table(cursor, 'symbol_blocks', SYMBOL_BLOCK_DEFINITIONS)
+		cursor.execute('CREATE SEQUENCE IF NOT EXISTS symbol_transaction_list_sequence_seq')
+		_create_table(cursor, 'symbol_transactions', SYMBOL_TRANSACTION_DEFINITIONS)
+		_create_table(cursor, 'symbol_transaction_mosaics', SYMBOL_TRANSACTION_MOSAIC_DEFINITIONS)
+		_create_table(cursor, 'symbol_transaction_addresses', SYMBOL_TRANSACTION_ADDRESS_DEFINITIONS)
 		cursor.execute('CREATE INDEX IF NOT EXISTS idx_symbol_blocks_height_desc ON symbol_blocks(height DESC)')
 		cursor.execute('CREATE INDEX IF NOT EXISTS idx_symbol_blocks_timestamp ON symbol_blocks(timestamp)')
 		cursor.execute('CREATE INDEX IF NOT EXISTS idx_symbol_blocks_signer_address ON symbol_blocks(signer_address)')
+		cursor.execute('''
+			CREATE INDEX IF NOT EXISTS idx_symbol_transactions_height_desc
+			ON symbol_transactions(height DESC, id DESC)
+			WHERE is_embedded = false
+		''')
+		cursor.execute('''
+			CREATE INDEX IF NOT EXISTS idx_symbol_transactions_list_sequence_desc
+			ON symbol_transactions(list_sequence DESC)
+			WHERE is_embedded = false
+		''')
+		cursor.execute('''
+			CREATE INDEX IF NOT EXISTS idx_symbol_transactions_type_height
+			ON symbol_transactions(type, height DESC, id DESC)
+		''')
+		cursor.execute('''
+			CREATE INDEX IF NOT EXISTS idx_symbol_transactions_signer_height
+			ON symbol_transactions(signer_public_key, height DESC, id DESC)
+		''')
+		cursor.execute('CREATE INDEX IF NOT EXISTS idx_symbol_transactions_signer_address ON symbol_transactions(signer_address)')
+		cursor.execute('''
+			CREATE INDEX IF NOT EXISTS idx_symbol_transactions_recipient_height
+			ON symbol_transactions(recipient_address, height DESC, id DESC)
+		''')
+		cursor.execute('CREATE INDEX IF NOT EXISTS idx_symbol_transactions_hash ON symbol_transactions(hash)')
+		cursor.execute('CREATE INDEX IF NOT EXISTS idx_symbol_transactions_aggregate_hash ON symbol_transactions(aggregate_hash)')
+		cursor.execute('CREATE INDEX IF NOT EXISTS idx_symbol_transactions_timestamp ON symbol_transactions(timestamp)')
+		cursor.execute('''
+			CREATE INDEX IF NOT EXISTS idx_symbol_transaction_mosaics_mosaic_height
+			ON symbol_transaction_mosaics(mosaic_id, height DESC, transaction_id)
+		''')
+		cursor.execute('''
+			CREATE INDEX IF NOT EXISTS idx_symbol_transaction_mosaics_mosaic_role_height
+			ON symbol_transaction_mosaics(mosaic_id, role, height DESC, transaction_id)
+		''')
+		cursor.execute('''
+			CREATE INDEX IF NOT EXISTS idx_symbol_transaction_addresses_address_height
+			ON symbol_transaction_addresses(address, height DESC, transaction_id)
+		''')
+		cursor.execute('CREATE INDEX IF NOT EXISTS idx_symbol_transaction_addresses_height ON symbol_transaction_addresses(height)')
 		self.connection.commit()
 
 	def check_connection(self):
@@ -184,6 +284,9 @@ class SymbolDatabase(DatabaseConnection):
 		"""Deletes blocks from the supplied height for rollback repair."""
 
 		cursor = self.connection.cursor()
+		cursor.execute('DELETE FROM symbol_transaction_mosaics WHERE height >= %s', (height,))
+		cursor.execute('DELETE FROM symbol_transaction_addresses WHERE height >= %s', (height,))
+		cursor.execute('DELETE FROM symbol_transactions WHERE height >= %s', (height,))
 		cursor.execute('DELETE FROM symbol_blocks WHERE height >= %s', (height,))
 		self.connection.commit()
 
@@ -191,9 +294,129 @@ class SymbolDatabase(DatabaseConnection):
 		"""Deletes rollbacked blocks and updates sync state in one transaction."""
 
 		cursor = self.connection.cursor()
+		cursor.execute('DELETE FROM symbol_transaction_mosaics WHERE height >= %s', (height,))
+		cursor.execute('DELETE FROM symbol_transaction_addresses WHERE height >= %s', (height,))
+		cursor.execute('DELETE FROM symbol_transactions WHERE height >= %s', (height,))
 		cursor.execute('DELETE FROM symbol_blocks WHERE height >= %s', (height,))
 		self._execute_upsert_sync_state(cursor, sync_state)
 		self.connection.commit()
+
+	def upsert_transactions_for_height(self, height, transaction_entries):
+		"""Replaces persisted Symbol transactions and child index rows for one height."""
+
+		cursor = self.connection.cursor()
+		cursor.execute('DELETE FROM symbol_transaction_mosaics WHERE height = %s', (height,))
+		cursor.execute('DELETE FROM symbol_transaction_addresses WHERE height = %s', (height,))
+		cursor.execute('DELETE FROM symbol_transactions WHERE height = %s', (height,))
+		for entry in transaction_entries:
+			transaction_id = self._insert_transaction(cursor, entry)
+			for mosaic_row in entry['mosaic_rows']:
+				cursor.execute(
+					'''
+					INSERT INTO symbol_transaction_mosaics (
+						transaction_id,
+						height,
+						mosaic_id,
+						amount,
+						role,
+						position
+					)
+					VALUES (%(transaction_id)s, %(height)s, %(mosaic_id)s, %(amount)s, %(role)s, %(position)s)
+					''',
+					{
+						**mosaic_row,
+						'transaction_id': transaction_id,
+						'height': entry['height']
+					})
+			for address_row in entry['address_rows']:
+				cursor.execute(
+					'''
+					INSERT INTO symbol_transaction_addresses (
+						transaction_id,
+						height,
+						address,
+						role
+					)
+					VALUES (%(transaction_id)s, %(height)s, %(address)s, %(role)s)
+					''',
+					{
+						**address_row,
+						'transaction_id': transaction_id,
+						'height': entry['height']
+					})
+
+		self.connection.commit()
+
+	@staticmethod
+	def _insert_transaction(cursor, transaction):
+		params = {
+			**transaction,
+			'body': Json(transaction['body']),
+			'raw_payload': Json(transaction['raw_payload'])
+		}
+		cursor.execute(
+			'''
+			INSERT INTO symbol_transactions (
+				node_id,
+				transaction_key,
+				hash,
+				aggregate_hash,
+				embedded_index,
+				is_embedded,
+				"group",
+				height,
+				list_sequence,
+				timestamp,
+				type,
+				type_name,
+				signer_public_key,
+				signer_address,
+				recipient_address,
+				target_address,
+				deadline,
+				network_deadline,
+				max_fee,
+				effective_fee,
+				size,
+				message_type,
+				message_payload,
+				body,
+				raw_payload,
+				updated_at
+			)
+			VALUES (
+				%(node_id)s,
+				%(transaction_key)s,
+				%(hash)s,
+				%(aggregate_hash)s,
+				%(embedded_index)s,
+				%(is_embedded)s,
+				%(group)s,
+				%(height)s,
+				CASE WHEN %(is_embedded)s THEN NULL ELSE nextval('symbol_transaction_list_sequence_seq') END,
+				%(timestamp)s,
+				%(type)s,
+				%(type_name)s,
+				%(signer_public_key)s,
+				%(signer_address)s,
+				%(recipient_address)s,
+				%(target_address)s,
+				%(deadline)s,
+				%(network_deadline)s,
+				%(max_fee)s,
+				LEAST(%(max_fee)s, %(size)s * (SELECT fee_multiplier FROM symbol_blocks WHERE height = %(height)s)),
+				%(size)s,
+				%(message_type)s,
+				%(message_payload)s,
+				%(body)s,
+				%(raw_payload)s,
+				CURRENT_TIMESTAMP
+			)
+			RETURNING id
+			''',
+			params)
+
+		return cursor.fetchone()[0]
 
 	def upsert_blocks(self, blocks):
 		"""Upserts Symbol block rows."""

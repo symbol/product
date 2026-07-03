@@ -8,10 +8,11 @@ import testing.postgresql
 from symbolchain.CryptoTypes import PublicKey
 from symbolchain.nem.Network import Address
 from symbollightapi.model.Transaction import Mosaic
-from test_DatabaseConnection import DatabaseConfig
 
 from puller.db.NemDatabase import NemDatabase
 from puller.facade.NemPuller import AccountRecord, BlockRecord, MosaicRecord, NamespaceRecord, TransactionRecord
+
+from .test_DatabaseConnection import DatabaseConfig
 
 # region test data
 

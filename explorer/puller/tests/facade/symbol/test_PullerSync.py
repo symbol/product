@@ -9,7 +9,8 @@ from .puller_test_utils import (
 	create_node_block,
 	create_sync_state,
 	set_symbol_connector,
-	set_sync_block_pages
+	set_sync_block_pages,
+	transaction_path
 )
 
 
@@ -31,7 +32,8 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):
 		self.assertEqual([
 			'chain/info',
 			'network/properties',
-			'blocks?pageSize=100&offset=0&orderBy=height'
+			'blocks?pageSize=100&offset=0&orderBy=height',
+			transaction_path(1, 2)
 		], connector.paths)
 
 	def test_sync_block_headers_persists_synced_block_watermark(self):
@@ -123,7 +125,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):
 			'blocks?pageSize=100&offset=200&orderBy=height',
 			connector.paths
 		)
-		self.assertEqual(5, len(connector.paths))  # chain/info + network/properties + 3 block pages
+		self.assertEqual(6, len(connector.paths))
 		self.assertEqual(list(range(1, 202)), block_heights)
 		self.assertEqual(201, sync_state['last_synced_height'])
 
@@ -148,7 +150,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):
 		block_heights, sync_state = self._sync_with_connector(connector)
 
 		# Assert:
-		self.assertEqual(13, len(connector.paths))  # chain/info + network/properties + 11 block pages
+		self.assertEqual(15, len(connector.paths))
 		self.assertEqual(list(range(1, chain_height + 1)), block_heights)
 		self.assertEqual(chain_height, sync_state['last_synced_height'])
 		self.assertEqual('healthy', sync_state['status'])
@@ -170,7 +172,8 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):
 		self.assertEqual([
 			'chain/info',
 			'network/properties',
-			'blocks?pageSize=100&offset=0&orderBy=height'
+			'blocks?pageSize=100&offset=0&orderBy=height',
+			transaction_path(1, 2)
 		], connector.paths)
 		self.assertEqual([1, 2], block_heights)
 		self.assertEqual('healthy', sync_state['status'])
@@ -224,7 +227,8 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):
 			'chain/info',
 			'network/properties',
 			'blocks/2',
-			'blocks?pageSize=100&offset=2&orderBy=height'
+			'blocks?pageSize=100&offset=2&orderBy=height',
+			transaction_path(3, 4)
 		], connector.paths)
 		self.assertEqual([1, 2, 3, 4], block_heights)
 		self.assertEqual('healthy', sync_state['status'])

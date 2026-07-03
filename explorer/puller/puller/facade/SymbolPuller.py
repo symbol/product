@@ -12,9 +12,11 @@ from zenlog import log
 
 from puller.db.SymbolDatabase import SymbolDatabase
 from puller.model.symbol.Block import create_block_row
+from puller.model.symbol.Transaction import create_transaction_row
 
 DatabaseConfiguration = namedtuple('DatabaseConfiguration', ['database', 'user', 'password', 'host', 'port'])
 BLOCK_PAGE_SIZE = 100
+TRANSACTION_PAGE_SIZE = 100
 BLOCK_PAGE_FETCH_CONCURRENCY = 10
 
 
@@ -278,11 +280,43 @@ class SymbolPuller:
 
 				if len(blocks) < BLOCK_PAGE_SIZE:
 					self.symbol_db.upsert_blocks(batch_rows)
+					await self._sync_transactions_for_batch(batch_rows, epoch_adjustment_seconds)
 					return last_synced_height, last_synced_block_hash
 
 			self.symbol_db.upsert_blocks(batch_rows)
+			await self._sync_transactions_for_batch(batch_rows, epoch_adjustment_seconds)
 
 		return last_synced_height, last_synced_block_hash
+
+	async def _sync_transactions_for_batch(self, block_rows, epoch_adjustment_seconds):
+		rows_by_height = await self._get_transaction_rows_by_height(
+			block_rows[0]['height'],
+			block_rows[-1]['height'],
+			epoch_adjustment_seconds
+		)
+		for row in block_rows:
+			self.symbol_db.upsert_transactions_for_height(row['height'], rows_by_height.get(row['height'], []))
+
+	async def _get_transaction_rows_by_height(self, start_height, end_height, epoch_adjustment_seconds):
+		rows_by_height = {}
+		page_number = 1
+		while True:
+			response = await self.get_symbol_node(
+				f'/transactions/confirmed?fromHeight={start_height}&toHeight={end_height}'
+				f'&pageSize={TRANSACTION_PAGE_SIZE}&pageNumber={page_number}&order=asc&embedded=true'
+			)
+			if not isinstance(response, dict) or 'data' not in response:
+				raise ValueError('Malformed Symbol transaction page response')
+
+			items = response['data']
+			for item in items:
+				row = create_transaction_row(item, self.symbol_facade.network, epoch_adjustment_seconds)
+				rows_by_height.setdefault(row['height'], []).append(row)
+
+			if len(items) < TRANSACTION_PAGE_SIZE:
+				return rows_by_height
+
+			page_number += 1
 
 	async def _get_block_page(self, offset):
 		response = await self.get_symbol_node(f'/blocks?pageSize={BLOCK_PAGE_SIZE}&offset={offset}&orderBy=height')
