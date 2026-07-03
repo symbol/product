@@ -122,12 +122,14 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):
 		# Assert:
 		block_paths = [path for path in connector.paths if path.startswith('blocks?')]
 		transaction_paths = [path for path in connector.paths if path.startswith('transactions/confirmed?')]
+		statement_paths = [path for path in connector.paths if path.startswith('statements/transaction?')]
 		self.assertEqual([
 			'blocks?pageSize=100&offset=0&orderBy=height',
 			'blocks?pageSize=100&offset=100&orderBy=height',
 			'blocks?pageSize=100&offset=200&orderBy=height'
 		], block_paths)
 		self.assertEqual(1, len(transaction_paths))
+		self.assertEqual([statement_path(1, 201)], statement_paths)
 		self.assertEqual(list(range(1, 202)), block_heights)
 		self.assertEqual(201, sync_state['last_synced_height'])
 
@@ -154,8 +156,10 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):
 		# Assert:
 		block_paths = [path for path in connector.paths if path.startswith('blocks?')]
 		transaction_paths = [path for path in connector.paths if path.startswith('transactions/confirmed?')]
+		statement_paths = [path for path in connector.paths if path.startswith('statements/transaction?')]
 		self.assertEqual(11, len(block_paths))
 		self.assertEqual(2, len(transaction_paths))
+		self.assertEqual([statement_path(1, 1000), statement_path(1001, chain_height)], statement_paths)
 		self.assertEqual(list(range(1, chain_height + 1)), block_heights)
 		self.assertEqual(chain_height, sync_state['last_synced_height'])
 		self.assertEqual('healthy', sync_state['status'])
