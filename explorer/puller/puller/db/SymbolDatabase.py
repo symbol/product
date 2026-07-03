@@ -66,7 +66,7 @@ SYMBOL_BLOCK_DEFINITIONS = [
 	'harvesting_eligible_accounts_count int',
 	'total_voting_balance bigint',
 	'previous_importance_block_hash bytea',
-	'block_reward numeric',
+	'block_reward int',
 	'raw_payload jsonb NOT NULL',
 	'created_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP',
 	'updated_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP'
@@ -127,7 +127,7 @@ SYMBOL_RECEIPT_DEFINITIONS = [
 	'recipient_address bytea',
 	'target_address bytea',
 	'mosaic_id varchar(16)',
-	'amount numeric NOT NULL DEFAULT 0',
+	'amount bigint NOT NULL DEFAULT 0',
 	'artifact_id varchar(16)',
 	'raw_payload jsonb NOT NULL'
 ]

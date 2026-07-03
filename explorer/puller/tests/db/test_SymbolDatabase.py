@@ -406,7 +406,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			('harvesting_eligible_accounts_count', 'int4', 'YES', None),
 			('total_voting_balance', 'int8', 'YES', None),
 			('previous_importance_block_hash', 'bytea', 'YES', None),
-			('block_reward', 'numeric', 'YES', None),
+			('block_reward', 'int4', 'YES', None),
 			('raw_payload', 'jsonb', 'NO', None),
 			('created_at', 'timestamp', 'NO', 'CURRENT_TIMESTAMP'),
 			('updated_at', 'timestamp', 'NO', 'CURRENT_TIMESTAMP')
@@ -679,7 +679,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			('recipient_address', 'bytea', 'YES', None),
 			('target_address', 'bytea', 'YES', None),
 			('mosaic_id', 'varchar', 'YES', None),
-			('amount', 'numeric', 'NO', '0'),
+			('amount', 'int8', 'NO', '0'),
 			('artifact_id', 'varchar', 'YES', None),
 			('raw_payload', 'jsonb', 'NO', None)
 		], columns)
@@ -981,11 +981,8 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 
 		self.assertEqual([
 			(1, 'inflation', 'inflation', 0, 0, '72C0212E67A08BCE', 75, {'type': ReceiptType.INFLATION.value, 'amount': '75'})
-		], [
-			(height, receipt_type, receipt_group, source_primary_id, source_secondary_id, mosaic_id, int(amount), raw_payload)
-			for height, receipt_type, receipt_group, source_primary_id, source_secondary_id, mosaic_id, amount, raw_payload in receipts
-		])
-		self.assertEqual(75, int(block_reward))
+		], receipts)
+		self.assertEqual(75, block_reward)
 
 	def test_upsert_receipts_for_height_stores_empty_height_with_zero_reward(self):
 		# Arrange:
@@ -1003,7 +1000,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		block_reward = cursor.fetchone()[0]
 
 		self.assertEqual(0, receipt_count)
-		self.assertEqual(0, int(block_reward))
+		self.assertEqual(0, block_reward)
 
 	def test_can_delete_blocks_from_height(self):
 		# Arrange:
