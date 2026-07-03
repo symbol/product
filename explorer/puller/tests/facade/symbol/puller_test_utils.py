@@ -8,7 +8,7 @@ from common.symbol.NodeConfiguration import SymbolNodeConfiguration
 from common.tests.PostgresTestUtils import PostgresTestDatabase, drop_symbol_block_tables_if_present
 from symbolchain.sc import ReceiptType, TransactionType
 
-from puller.facade.SymbolPuller import STATEMENT_PAGE_SIZE, DatabaseConfiguration, SymbolPuller
+from puller.facade.SymbolPuller import MAX_PAGE_SIZE, DatabaseConfiguration, SymbolPuller
 from puller.model.symbol.Block import create_block_row
 from tests.test.SymbolTestConstants import BENEFICIARY_ADDRESS, RECIPIENT_ADDRESS, SIGNER_PUBLIC_KEY
 
@@ -206,7 +206,7 @@ def transaction_path(start_height, end_height, page_number=1):
 def statement_path(start_height, end_height, page_number=1):
 	return (
 		f'statements/transaction?fromHeight={start_height}&toHeight={end_height}'
-		f'&pageSize={STATEMENT_PAGE_SIZE}&pageNumber={page_number}'
+		f'&pageSize={MAX_PAGE_SIZE}&pageNumber={page_number}'
 	)
 
 

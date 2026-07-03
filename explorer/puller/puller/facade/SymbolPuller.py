@@ -18,7 +18,6 @@ from puller.model.symbol.Transaction import create_transaction_row
 DatabaseConfiguration = namedtuple('DatabaseConfiguration', ['database', 'user', 'password', 'host', 'port'])
 MAX_PAGE_SIZE = 100
 BLOCK_PAGE_FETCH_CONCURRENCY = 10
-STATEMENT_PAGE_SIZE = 100
 
 
 def _get_symbol_network(network_type):
@@ -336,11 +335,11 @@ class SymbolPuller:
 		while True:
 			response = await self.get_symbol_node(
 				f'/statements/transaction?fromHeight={start_height}&toHeight={end_height}'
-				f'&pageSize={STATEMENT_PAGE_SIZE}&pageNumber={page_number}'
+				f'&pageSize={MAX_PAGE_SIZE}&pageNumber={page_number}'
 			)
 			items = response['data']
 			statement_items.extend(items)
-			if len(items) < STATEMENT_PAGE_SIZE:
+			if len(items) < MAX_PAGE_SIZE:
 				break
 
 			page_number += 1

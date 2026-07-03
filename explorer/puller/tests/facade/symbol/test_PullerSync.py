@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock
 from symbolchain.sc import ReceiptType
 from symbollightapi.model.Exceptions import NodeException
 
-from puller.facade.SymbolPuller import BLOCK_PAGE_FETCH_CONCURRENCY, STATEMENT_PAGE_SIZE
+from puller.facade.SymbolPuller import BLOCK_PAGE_FETCH_CONCURRENCY, MAX_PAGE_SIZE
 
 from .puller_test_utils import (
 	FakeConnector,
@@ -311,7 +311,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):
 			create_statement_item(2, 20),
 			*[
 				create_statement_item(3, index, ReceiptType.ADDRESS_ALIAS_RESOLUTION.value)
-				for index in range(STATEMENT_PAGE_SIZE - 2)
+				for index in range(MAX_PAGE_SIZE - 2)
 			]
 		]
 		connector = ResponseConnector({
