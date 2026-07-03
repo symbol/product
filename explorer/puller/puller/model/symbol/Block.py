@@ -4,6 +4,8 @@ from psycopg2.extras import Json
 from symbolchain.CryptoTypes import PublicKey
 from symbolchain.symbol.Network import Address
 
+from puller.model.symbol.format import bytes_from_hex_or_none, int_or_none
+
 BLOCK_TYPE_LABELS = {
 	32835: 'nemesis',
 	33347: 'importance',
@@ -17,14 +19,6 @@ def _block_type_label(block_type):
 		return BLOCK_TYPE_LABELS[int(block_type)]
 	except (KeyError, TypeError, ValueError) as exception:
 		raise ValueError(f'Unsupported Symbol block type {block_type}') from exception
-
-
-def _int_or_none(value):
-	return int(value) if value is not None else None
-
-
-def _bytes_from_hex_or_none(value):
-	return bytes.fromhex(value) if value else None
 
 
 def create_block_row(node_block, epoch_adjustment_seconds, network):
@@ -60,9 +54,9 @@ def create_block_row(node_block, epoch_adjustment_seconds, network):
 		'transactions_hash': bytes.fromhex(block['transactionsHash']),
 		'receipts_hash': bytes.fromhex(block['receiptsHash']),
 		'state_hash_sub_cache_roots': Json(meta['stateHashSubCacheMerkleRoots']),
-		'voting_eligible_accounts_count': _int_or_none(block.get('votingEligibleAccountsCount')),
-		'harvesting_eligible_accounts_count': _int_or_none(block.get('harvestingEligibleAccountsCount')),
-		'total_voting_balance': _int_or_none(block.get('totalVotingBalance')),
-		'previous_importance_block_hash': _bytes_from_hex_or_none(block.get('previousImportanceBlockHash')),
+		'voting_eligible_accounts_count': int_or_none(block.get('votingEligibleAccountsCount')),
+		'harvesting_eligible_accounts_count': int_or_none(block.get('harvestingEligibleAccountsCount')),
+		'total_voting_balance': int_or_none(block.get('totalVotingBalance')),
+		'previous_importance_block_hash': bytes_from_hex_or_none(block.get('previousImportanceBlockHash')),
 		'raw_payload': Json(node_block)
 	}
