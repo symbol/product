@@ -64,4 +64,24 @@ describe('MosaicService', () => {
 			expect(result).toStrictEqual(expectedResult);
 		});
 	});
+
+	describe('fetchAccountMosaics', () => {
+		it('fetches the mosaics created by an account', async () => {
+			// Arrange:
+			const creatorAddress = 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ';
+			mockMakeRequest.mockResolvedValueOnce({ data: mosaicInfosResponse });
+			mockApi.namespace.fetchMosaicNames.mockResolvedValueOnce(mosaicNames);
+			const expectedResult = Object.values(mosaicInfos);
+			const expectedEndpoint =
+				`${networkProperties.nodeUrl}/mosaics?pageNumber=1&pageSize=100&order=desc&ownerAddress=${creatorAddress}`;
+
+			// Act:
+			const result = await mosaicService.fetchAccountMosaics(networkProperties, creatorAddress);
+
+			// Assert:
+			expect(mockMakeRequest).toHaveBeenCalledWith(expectedEndpoint);
+			expect(mockApi.namespace.fetchMosaicNames).toHaveBeenCalledWith(networkProperties, Object.keys(mosaicInfos));
+			expect(result).toStrictEqual(expectedResult);
+		});
+	});
 });

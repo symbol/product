@@ -1,4 +1,6 @@
+import { addressFromRaw } from './account';
 import { MosaicFlags } from '../constants';
+import { Address, generateMosaicId } from 'symbol-sdk/symbol';
 import { ApiError, absoluteToRelativeAmount } from 'wallet-common-core';
 import * as Crypto from 'crypto';
 
@@ -16,6 +18,45 @@ export const generateNonce = () => {
 	const nonce = new Uint8Array(bytes);
 
 	return new Uint32Array(nonce.buffer)[0];
+};
+
+/**
+ * Derives the mosaic id from the owner address and nonce, matching the value the network assigns to the
+ * mosaic definition transaction. Used to reference a freshly created mosaic in the paired supply change.
+ * @param {string} ownerAddress - The mosaic creator address.
+ * @param {number} nonce - The mosaic nonce.
+ * @returns {string} The mosaic id.
+ */
+export const mosaicIdFromNonce = (ownerAddress, nonce) => {
+	const mosaicId = generateMosaicId(new Address(ownerAddress), nonce);
+
+	return mosaicId.toString(16).toUpperCase().padStart(16, '0');
+};
+
+/**
+ * Formats a mosaic node DTO into mosaic info. Names are left empty and resolved separately.
+ * @param {object} mosaic - The mosaic node from the API response.
+ * @returns {MosaicInfo} The mosaic info.
+ */
+export const mosaicInfoFromDTO = mosaic => {
+	const duration = parseInt(mosaic.duration);
+	const startHeight = parseInt(mosaic.startHeight);
+
+	return {
+		id: mosaic.id,
+		divisibility: mosaic.divisibility,
+		names: [],
+		duration,
+		startHeight,
+		endHeight: startHeight + duration,
+		isUnlimitedDuration: duration === 0,
+		creator: addressFromRaw(mosaic.ownerAddress),
+		supply: absoluteToRelativeAmount(parseInt(mosaic.supply), mosaic.divisibility),
+		isSupplyMutable: isSupplyMutableFlag(mosaic.flags),
+		isTransferable: isTransferableFlag(mosaic.flags),
+		isRestrictable: isRestrictableFlag(mosaic.flags),
+		isRevokable: isRevokableFlag(mosaic.flags)
+	};
 };
 
 /**

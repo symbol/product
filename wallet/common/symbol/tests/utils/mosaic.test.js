@@ -5,8 +5,12 @@ import {
 	isRestrictableFlag,
 	isRevokableFlag,
 	isSupplyMutableFlag,
-	isTransferableFlag
+	isTransferableFlag,
+	mosaicIdFromNonce,
+	mosaicInfoFromDTO
 } from '../../src/utils';
+import { mosaicInfosResponse } from '../__fixtures__/api/mosaic-infos-response';
+import { mosaicInfos } from '../__fixtures__/local/mosaic';
 import { generateBitCombinations } from '../test-utils';
 
 const SUPPLY_MUTABLE_FLAG = 1;
@@ -378,6 +382,39 @@ describe('utils/mosaic', () => {
 
 			// Act & Assert:
 			runMosaicFlagsTest(flags, expectedResult, isRevokableFlag);
+		});
+	});
+
+	describe('mosaicIdFromNonce', () => {
+		const ownerAddress = 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ';
+		const testCases = [
+			{ description: 'derives the mosaic id from the owner address and nonce', nonce: 12345, expectedMosaicId: '619284EB8A8505DA' },
+			{ description: 'derives the mosaic id for a zero nonce', nonce: 0, expectedMosaicId: '64CC999288ED1BB9' }
+		];
+
+		testCases.forEach(({ description, nonce, expectedMosaicId }) => it(description, () => {
+			// Act:
+			const result = mosaicIdFromNonce(ownerAddress, nonce);
+
+			// Assert:
+			expect(result).toBe(expectedMosaicId);
+		}));
+	});
+
+	describe('mosaicInfoFromDTO', () => {
+		it('formats a mosaic node DTO into mosaic info with empty names', () => {
+			// Arrange:
+			const mosaicDTO = mosaicInfosResponse[0].mosaic;
+			const expectedResult = {
+				...mosaicInfos[mosaicDTO.id],
+				names: []
+			};
+
+			// Act:
+			const result = mosaicInfoFromDTO(mosaicDTO);
+
+			// Assert:
+			expect(result).toStrictEqual(expectedResult);
 		});
 	});
 });
