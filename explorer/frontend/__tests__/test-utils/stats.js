@@ -435,7 +435,7 @@ export const blockStatisticsResult = {
 };
 
 export const transactionStatisticsResult = {
-	averagePerBlock: 1,
+	averagePerBlock: 0.2,
 	total: 10667593,
 	last30Days: 17457,
 	last24Hours: 630
