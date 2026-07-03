@@ -64,7 +64,7 @@ export const fetchTransactionStats = async () => {
 	const stats = await makeRequest(createApiUrl('transaction/statistics'));
 	const blocks = (await fetchBlockPage({ pageSize: 240 })).data;
 	const total240Blocks = blocks.reduce((partialSum, block) => partialSum + block.transactionCount, 0);
-	const averagePerBlock = Math.ceil(total240Blocks / blocks.length);
+	const averagePerBlock = blocks.length ? truncateDecimals(total240Blocks / blocks.length, 2) : 0;
 
 	return {
 		averagePerBlock,
