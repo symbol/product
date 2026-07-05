@@ -201,7 +201,7 @@ NEM_CONNECTOR_UNCONFIRMED_TRANSACTIONS = [
 ]
 
 
-def _create_unconfirmed_transaction_view(transaction_type, to_address, value):
+def _create_unconfirmed_transaction_view(transaction_type, to_address, value, size, schema_version=1):
 	return TransactionView(
 		transaction_hash=None,
 		transaction_type=transaction_type,
@@ -213,7 +213,9 @@ def _create_unconfirmed_transaction_view(transaction_type, to_address, value):
 		height=0,
 		timestamp='2015-03-29 20:29:42',
 		deadline='2015-03-29 23:16:22',
-		signature='0' * 128
+		signature='0' * 128,
+		size=size,
+		schema_version=schema_version
 	)
 
 
@@ -226,7 +228,8 @@ UNCONFIRMED_TRANSACTION_VIEWS = [
 				'mode': 1,
 				'remoteAccount': '7195F4D7A40AD7E31958AE96C4AFED002962229675A4CAE8DC8A18E290618981'
 			}
-		]
+		],
+		size=168
 	),
 	_create_unconfirmed_transaction_view(
 		transaction_type='TRANSFER',
@@ -246,7 +249,9 @@ UNCONFIRMED_TRANSACTION_VIEWS = [
 				'namespace': 'root.mosaic',
 				'amount': 39.0
 			}
-		]
+		],
+		size=202,
+		schema_version=2
 	),
 	_create_unconfirmed_transaction_view(
 		transaction_type='MULTISIG_ACCOUNT_MODIFICATION',
@@ -263,7 +268,8 @@ UNCONFIRMED_TRANSACTION_VIEWS = [
 					'modificationType': 1
 				}
 			]
-		}]
+		}],
+		size=220
 	),
 	_create_unconfirmed_transaction_view(
 		transaction_type='NAMESPACE_REGISTRATION',
@@ -272,7 +278,8 @@ UNCONFIRMED_TRANSACTION_VIEWS = [
 			'sinkFee': 100.0,
 			'parent': None,
 			'namespaceName': 'namespace'
-		}]
+		}],
+		size=197
 	),
 	_create_unconfirmed_transaction_view(
 		transaction_type='MOSAIC_DEFINITION',
@@ -280,7 +287,8 @@ UNCONFIRMED_TRANSACTION_VIEWS = [
 		value=[{
 			'sinkFee': 10.0,
 			'mosaicNamespaceName': 'namespace.test'
-		}]
+		}],
+		size=464
 	),
 	_create_unconfirmed_transaction_view(
 		transaction_type='MOSAIC_SUPPLY_CHANGE',
@@ -289,7 +297,8 @@ UNCONFIRMED_TRANSACTION_VIEWS = [
 			'supplyType': 2,
 			'delta': 500000,
 			'namespaceName': 'namespace.test'
-		}]
+		}],
+		size=165
 	),
 	TransactionView(
 		transaction_hash=None,
@@ -316,7 +325,9 @@ UNCONFIRMED_TRANSACTION_VIEWS = [
 		height=0,
 		timestamp='2015-03-29 20:29:42',
 		deadline='2015-03-29 23:16:22',
-		signature='0' * 128
+		signature='0' * 128,
+		size=468,
+		schema_version=1
 	)
 ]
 
