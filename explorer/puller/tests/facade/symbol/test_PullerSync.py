@@ -123,7 +123,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):
 			'blocks?pageSize=100&offset=200&orderBy=height',
 			connector.paths
 		)
-		self.assertEqual(5, len(connector.paths))
+		self.assertEqual(5, len(connector.paths))  # chain/info + network/properties + 3 block pages
 		self.assertEqual(list(range(1, 202)), block_heights)
 		self.assertEqual(201, sync_state['last_synced_height'])
 
@@ -148,7 +148,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):
 		block_heights, sync_state = self._sync_with_connector(connector)
 
 		# Assert:
-		self.assertEqual(13, len(connector.paths))
+		self.assertEqual(13, len(connector.paths))  # chain/info + network/properties + 11 block pages
 		self.assertEqual(list(range(1, chain_height + 1)), block_heights)
 		self.assertEqual(chain_height, sync_state['last_synced_height'])
 		self.assertEqual('healthy', sync_state['status'])
