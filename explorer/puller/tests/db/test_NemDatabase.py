@@ -95,7 +95,9 @@ TRANSACTIONS = [
 		is_inner=False,
 		sender_address=Address('TCJLCZSOQ6RGWHTPSV2DW467WZSHK4NBSITND4OF'),
 		recipient_address=Address('TBZWVEKB2XMTO4F3RAOEIBWRBMPQ5N23G56ZJM4I'),
-		payload='{}'
+		payload='{}',
+		size=184,
+		schema_version=1
 	)
 ]
 
@@ -982,7 +984,9 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 					deadline,
 					encode(signature, 'hex'),
 					is_inner,
-					payload
+					payload,
+					size,
+					schema_version
 				FROM transactions
 				WHERE id = %s
 				''',
@@ -1004,7 +1008,9 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 			datetime.datetime(2015, 3, 29, 20, 34, 19),
 			TRANSACTIONS[0].signature,
 			False,
-			'{}'
+			'{}',
+			184,
+			1
 		))
 
 	def test_insert_transaction_mosaic(self):
