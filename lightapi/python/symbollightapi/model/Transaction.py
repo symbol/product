@@ -23,7 +23,9 @@ class Transaction:
 		timestamp,
 		deadline,
 		signature,
-		transaction_type
+		size,
+		schema_version,
+		transaction_type,
 	):
 		"""Create Transaction model."""
 
@@ -37,6 +39,8 @@ class Transaction:
 		self.deadline = deadline
 		self.signature = signature
 		self.transaction_type = transaction_type
+		self.size = size
+		self.schema_version = schema_version
 
 	def __eq__(self, other):
 		return isinstance(other, Transaction) and all([
@@ -47,7 +51,9 @@ class Transaction:
 			self.timestamp == other.timestamp,
 			self.deadline == other.deadline,
 			self.signature == other.signature,
-			self.transaction_type == other.transaction_type
+			self.transaction_type == other.transaction_type,
+			self.size == other.size,
+			self.schema_version == other.schema_version
 		])
 
 
@@ -61,6 +67,8 @@ class TransferTransaction(Transaction):
 		timestamp,
 		deadline,
 		signature,
+		size,
+		schema_version,
 		amount,
 		recipient,
 		message,
@@ -78,6 +86,8 @@ class TransferTransaction(Transaction):
 			timestamp,
 			deadline,
 			signature,
+			size,
+			schema_version,
 			TransactionType.TRANSFER.value
 		)
 
@@ -106,6 +116,8 @@ class AccountKeyLinkTransaction(Transaction):
 		timestamp,
 		deadline,
 		signature,
+		size,
+		schema_version,
 		mode,
 		remote_account
 	):
@@ -121,6 +133,8 @@ class AccountKeyLinkTransaction(Transaction):
 			timestamp,
 			deadline,
 			signature,
+			size,
+			schema_version,
 			TransactionType.ACCOUNT_KEY_LINK.value
 		)
 
@@ -145,6 +159,8 @@ class MultisigAccountModificationTransaction(Transaction):
 		timestamp,
 		deadline,
 		signature,
+		size,
+		schema_version,
 		min_cosignatories,
 		modifications
 	):
@@ -160,6 +176,8 @@ class MultisigAccountModificationTransaction(Transaction):
 			timestamp,
 			deadline,
 			signature,
+			size,
+			schema_version,
 			TransactionType.MULTISIG_ACCOUNT_MODIFICATION.value
 		)
 
@@ -184,6 +202,8 @@ class MultisigTransaction(Transaction):
 		timestamp,
 		deadline,
 		signature,
+		size,
+		schema_version,
 		signatures,
 		other_transaction,
 		inner_hash
@@ -200,6 +220,8 @@ class MultisigTransaction(Transaction):
 			timestamp,
 			deadline,
 			signature,
+			size,
+			schema_version,
 			TransactionType.MULTISIG.value
 		)
 
@@ -262,6 +284,8 @@ class NamespaceRegistrationTransaction(Transaction):
 		timestamp,
 		deadline,
 		signature,
+		size,
+		schema_version,
 		rental_fee_sink,
 		rental_fee,
 		parent,
@@ -279,6 +303,8 @@ class NamespaceRegistrationTransaction(Transaction):
 			timestamp,
 			deadline,
 			signature,
+			size,
+			schema_version,
 			TransactionType.NAMESPACE_REGISTRATION.value
 		)
 
@@ -307,6 +333,8 @@ class MosaicDefinitionTransaction(Transaction):
 		timestamp,
 		deadline,
 		signature,
+		size,
+		schema_version,
 		creation_fee,
 		creation_fee_sink,
 		creator,
@@ -327,6 +355,8 @@ class MosaicDefinitionTransaction(Transaction):
 			timestamp,
 			deadline,
 			signature,
+			size,
+			schema_version,
 			TransactionType.MOSAIC_DEFINITION.value
 		)
 
@@ -361,6 +391,8 @@ class MosaicSupplyChangeTransaction(Transaction):
 		timestamp,
 		deadline,
 		signature,
+		size,
+		schema_version,
 		supply_type,
 		delta,
 		namespace_name
@@ -377,6 +409,8 @@ class MosaicSupplyChangeTransaction(Transaction):
 			timestamp,
 			deadline,
 			signature,
+			size,
+			schema_version,
 			TransactionType.MOSAIC_SUPPLY_CHANGE.value
 		)
 
@@ -454,7 +488,7 @@ class TransactionHandler:
 			]
 		}
 
-	def _map_multisig_transaction_args(self, tx_json, inner_hash):
+	def _map_multisig_transaction_args(self, tx_json, inner_hash, inner_size, inner_schema_version):
 
 		other_transaction = tx_json['otherTrans']
 
@@ -468,6 +502,8 @@ class TransactionHandler:
 			'timestamp': other_transaction['timeStamp'],
 			'deadline': other_transaction['deadline'],
 			'signature': None,
+			'size': inner_size,
+			'schema_version': inner_schema_version,
 		}
 
 		return {
