@@ -374,6 +374,9 @@ class NemConnector(BasicConnector):
 
 		tx_json = transaction['tx']
 		tx_type = tx_json['type']
+		nem_calculator = NemBlockCalculator()
+		size = nem_calculator.calculate_transaction_size(tx_json)
+		schema_version = tx_json['version'] & 0xFF
 
 		# Define common arguments for all transactions
 		common_args = {
@@ -384,12 +387,19 @@ class NemConnector(BasicConnector):
 			'timestamp': tx_json['timeStamp'],
 			'deadline': tx_json['deadline'],
 			'signature': tx_json['signature'],
+			'size': size,
+			'schema_version': schema_version
 		}
 
 		specific_args = {}
 
 		if TransactionType.MULTISIG.value == tx_type:
-			specific_args = TransactionHandler().map[tx_type](tx_json, transaction['innerHash'])
+			inner_transaction_json = tx_json['otherTrans']
+			specific_args = TransactionHandler().map[tx_type](
+				tx_json,
+				transaction['innerHash'],
+				nem_calculator.calculate_transaction_size(inner_transaction_json),
+				inner_transaction_json['version'] & 0xFF)
 		else:
 			specific_args = TransactionHandler().map[tx_type](tx_json)
 
