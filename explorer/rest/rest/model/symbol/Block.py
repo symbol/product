@@ -1,4 +1,4 @@
-from rest.model.symbol.format import _format_timestamp, _format_total_fee, _hex, _hex_or_none, _str_or_none
+from rest.model.symbol.format import format_timestamp, format_xym_amount, str_or_none, to_hex, to_hex_or_none
 
 
 class SymbolBlockView:  # pylint: disable=too-many-instance-attributes
@@ -38,13 +38,13 @@ class SymbolBlockView:  # pylint: disable=too-many-instance-attributes
 
 		return {
 			'height': self.height,
-			'hash': _hex(self.block_hash),
-			'previousHash': _hex(self.previous_hash),
-			'timestamp': _format_timestamp(self.timestamp),
+			'hash': to_hex(self.block_hash),
+			'previousHash': to_hex(self.previous_hash),
+			'timestamp': format_timestamp(self.timestamp),
 			'networkTimestamp': self.network_timestamp,
 			'harvester': self.harvester,
 			'beneficiaryAddress': self.beneficiary_address,
-			'totalFee': _format_total_fee(self.total_fee),
+			'totalFee': format_xym_amount(self.total_fee),
 			'transactionCount': self.transaction_count,
 			'statementCount': self.statement_count,
 			# Receipts Core will populate block rewards when receipt data is available.
@@ -58,19 +58,19 @@ class SymbolBlockView:  # pylint: disable=too-many-instance-attributes
 
 		return {
 			**self.to_dict(),
-			'signature': _hex(self.signature),
+			'signature': to_hex(self.signature),
 			'size': self.size,
 			'feeMultiplier': self.fee_multiplier,
-			'proofGamma': _hex(self.proof_gamma),
-			'proofVerificationHash': _hex(self.proof_verification_hash),
-			'proofScalar': _hex(self.proof_scalar),
-			'stateHash': _hex(self.state_hash),
+			'proofGamma': to_hex(self.proof_gamma),
+			'proofVerificationHash': to_hex(self.proof_verification_hash),
+			'proofScalar': to_hex(self.proof_scalar),
+			'stateHash': to_hex(self.state_hash),
 			'stateHashSubCacheMerkleRoots': self.state_hash_sub_cache_roots,
-			'receiptsHash': _hex(self.receipts_hash),
-			'transactionsHash': _hex(self.transactions_hash),
+			'receiptsHash': to_hex(self.receipts_hash),
+			'transactionsHash': to_hex(self.transactions_hash),
 			'votingEligibleAccountsCount': self.voting_eligible_accounts_count,
-			'harvestingEligibleAccountsCount': _str_or_none(self.harvesting_eligible_accounts_count),
-			'totalVotingBalance': _str_or_none(self.total_voting_balance),
-			'previousImportanceBlockHash': _hex_or_none(self.previous_importance_block_hash),
+			'harvestingEligibleAccountsCount': str_or_none(self.harvesting_eligible_accounts_count),
+			'totalVotingBalance': str_or_none(self.total_voting_balance),
+			'previousImportanceBlockHash': to_hex_or_none(self.previous_importance_block_hash),
 			'blockType': self.block_type
 		}

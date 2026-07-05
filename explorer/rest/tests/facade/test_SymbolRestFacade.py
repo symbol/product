@@ -1,7 +1,9 @@
 from unittest import TestCase
+from unittest.mock import MagicMock
 
 from common.symbol.NodeConfiguration import SymbolNodeConfiguration
 from common.tests.PostgresTestUtils import create_unreachable_db_configuration
+from psycopg2 import Error as PsycopgError
 from psycopg2 import OperationalError
 
 from rest.db.SymbolDatabase import SortOrder
@@ -381,6 +383,15 @@ class SymbolRestFacadeTest(TestCase):  # pylint: disable=too-many-public-methods
 		self.assertIsNone(
 			facade.get_blocks(from_height=None, limit=1, sort=SortOrder.DESC))
 
+	def test_get_blocks_raises_when_database_read_fails(self):
+		# Arrange:
+		facade = _create_facade_with_database(BlockSymbolDatabase())
+		setattr(facade.symbol_db, 'get_block_head_height', MagicMock(side_effect=PsycopgError()))
+
+		# Act + Assert:
+		with self.assertRaises(PsycopgError):
+			facade.get_blocks(1, 10, SortOrder.DESC)
+
 	def test_can_get_block_detail(self):
 		# Arrange:
 		facade = _create_facade_with_database(BlockSymbolDatabase())
@@ -403,3 +414,13 @@ class SymbolRestFacadeTest(TestCase):  # pylint: disable=too-many-public-methods
 
 		# Act + Assert:
 		self.assertIsNone(facade.get_block(1))
+
+	def test_get_block_raises_when_database_read_fails(self):
+		# Arrange:
+		facade = _create_facade_with_database(BlockSymbolDatabase())
+		setattr(facade.symbol_db, 'get_block', MagicMock(side_effect=PsycopgError()))
+		setattr(facade.symbol_db, 'get_block_head_height', MagicMock(return_value=10))
+
+		# Act + Assert:
+		with self.assertRaises(PsycopgError):
+			facade.get_block(1)
