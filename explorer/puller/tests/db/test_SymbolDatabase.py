@@ -461,6 +461,39 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			'idx_symbol_transactions_type_height'
 		], indexes)
 
+	def test_create_tables_creates_symbol_transaction_partial_indexes_with_predicate(self):
+		# Arrange:
+		database = self._create_uninitialized_database()
+		cursor = database.connection.cursor()
+
+		# Act:
+		database.create_tables()
+
+		# Assert:
+		cursor.execute(
+			'''
+			SELECT indexname, indexdef
+			FROM pg_indexes
+			WHERE schemaname = 'public'
+				AND indexname IN ('idx_symbol_transactions_height_desc', 'idx_symbol_transactions_list_sequence_desc')
+			ORDER BY indexname
+			'''
+		)
+		indexes = cursor.fetchall()
+
+		self.assertEqual([
+			(
+				'idx_symbol_transactions_height_desc',
+				'CREATE INDEX idx_symbol_transactions_height_desc ON public.symbol_transactions USING btree '
+				'(height DESC, id DESC) WHERE (is_embedded = false)'
+			),
+			(
+				'idx_symbol_transactions_list_sequence_desc',
+				'CREATE INDEX idx_symbol_transactions_list_sequence_desc ON public.symbol_transactions USING btree '
+				'(list_sequence DESC) WHERE (is_embedded = false)'
+			)
+		], indexes)
+
 	def test_create_tables_creates_symbol_transaction_list_sequence(self):
 		# Arrange:
 		database = self._create_uninitialized_database()
