@@ -22,6 +22,7 @@ import { absoluteToRelativeAmount } from 'wallet-common-core';
  * @param {object} params - Hook parameters.
  * @param {WalletController} params.walletController - The wallet controller instance.
  * @param {string} [params.senderPublicKey] - The mosaic creator public key. Defaults to the current account.
+ * @param {number} params.nonce - The mosaic nonce.
  * @param {string} params.supply - The mosaic initial supply in relative units.
  * @param {string} params.divisibility - The mosaic divisibility.
  * @param {string} params.duration - The mosaic duration in blocks.
@@ -32,6 +33,7 @@ import { absoluteToRelativeAmount } from 'wallet-common-core';
 export const useMosaicTransaction = ({
 	walletController,
 	senderPublicKey,
+	nonce,
 	supply,
 	divisibility,
 	duration,
@@ -45,6 +47,7 @@ export const useMosaicTransaction = ({
 	const createMosaicTransaction = async () => {
 		const transactionBundle = walletController.modules.token.createTransaction({
 			senderPublicKey,
+			nonce,
 			initialSupply: supply,
 			divisibility: Number(divisibility),
 			duration: isNeverExpiring ? MOSAIC_NEVER_EXPIRING_DURATION : Number(duration),

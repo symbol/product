@@ -47,6 +47,7 @@ export class TokenModule {
 	 * and aggregate bonded transactions instead.
 	 * @param {object} options - The token creation options.
 	 * @param {string} [options.senderPublicKey] - The creator public key. Defaults to the current account.
+	 * @param {number} [options.nonce] - The mosaic nonce. Defaults to a freshly generated one.
 	 * @param {string} options.initialSupply - The initial supply in relative units.
 	 * @param {number} options.divisibility - The token divisibility.
 	 * @param {number} options.duration - The token duration in blocks. 0 means unlimited.
@@ -59,7 +60,7 @@ export class TokenModule {
 	createTransaction = options => {
 		const { initialSupply, divisibility, duration } = options;
 		const { senderPublicKey, senderAddress, isMultisig } = this.#resolveSender(options.senderPublicKey);
-		const nonce = generateNonce();
+		const nonce = options.nonce ?? generateNonce();
 		const mosaicId = mosaicIdFromNonce(senderAddress, nonce);
 
 		const definitionTransaction = {

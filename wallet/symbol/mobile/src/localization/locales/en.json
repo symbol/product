@@ -530,6 +530,54 @@
     "s_mosaicCreation_durationDays": "~%{duration} days",
     "s_mosaicCreation_confirm_title": "Confirm Transaction",
     "s_mosaicCreation_confirm_text": "You are about to create a new mosaic with an initial supply of %{supply} and a divisibility of %{divisibility}.",
+    "s_mosaicCreation_quantity_title": "Quantity",
+    "s_mosaicCreation_quantity_description": "Setups the total amount of token to be issued and how many decimal places the token supports.",
+    "s_mosaicCreation_totalSupply_label": "Total supply",
+    "s_mosaicCreation_smallestSend_label": "Smallest you can send",
+    "s_mosaicCreation_smallestSend_whole": "1 (whole tokens only)",
+    "s_mosaicCreation_decimalsNote": "Decimals are permanent. Supply can change later if you allow it.",
+    "s_mosaicCreation_decimalPlaces_label": "Decimal places",
+    "s_mosaicCreation_decimalsHint_whole": "= whole tokens",
+    "s_mosaicCreation_decimalsHint": {
+        "one": "= %{count} decimal",
+        "other": "= %{count} decimals"
+    },
+    "s_mosaicCreation_namePlaceholder": "New Mosaic",
+    "s_mosaicCreation_flags_title": "Flags",
+    "s_mosaicCreation_duration_expiresCheckbox": "This token expires",
+    "s_mosaicCreation_duration_blocksInputLabel": "Duration in blocks",
+    "s_mosaicCreation_expiration_title": "Token expiration in",
+    "s_mosaicCreation_expiration_permanent": "This token never expires — its supply exists permanently.",
+    "s_mosaicCreation_durationUnit_blocksChip": "Exact Blocks",
+    "s_mosaicCreation_durationUnit_minutes": "Minutes",
+    "s_mosaicCreation_durationUnit_hours": "Hours",
+    "s_mosaicCreation_durationUnit_days": "Days",
+    "s_mosaicCreation_durationUnit_months": "Months",
+    "s_mosaicCreation_durationUnit_years": "Years",
+    "s_mosaicCreation_durationAmount_blocks": {
+        "one": "%{value} block",
+        "other": "%{value} blocks"
+    },
+    "s_mosaicCreation_durationAmount_minutes": {
+        "one": "%{count} minute",
+        "other": "%{count} minutes"
+    },
+    "s_mosaicCreation_durationAmount_hours": {
+        "one": "%{count} hour",
+        "other": "%{count} hours"
+    },
+    "s_mosaicCreation_durationAmount_days": {
+        "one": "%{count} day",
+        "other": "%{count} days"
+    },
+    "s_mosaicCreation_durationAmount_months": {
+        "one": "%{count} month",
+        "other": "%{count} months"
+    },
+    "s_mosaicCreation_durationAmount_years": {
+        "one": "%{count} year",
+        "other": "%{count} years"
+    },
     "s_scan_mnemonic_description": "This QR-code contains mnemonic backup phrase. If you wish to import it, you should first logout from current wallet (Settings -> Logout).",
     "s_scan_account_description": "This QR-code contains account. Please select an action below.",
     "s_scan_account_wrongNetwork_description": "This QR-code contains account from different network. Please switch a network type in the Settings and try again.",
@@ -773,9 +821,13 @@
     "validation_error_insufficientLiquidity_generic": "Amount too high",
     "validation_error_estimation_unavailable": "Can't estimate. Try again",
     "validation_error_already_exists": "Already exists",
-    "validation_error_mosaic_supply": "Should be a number from 1 to 9999999999",
+    "validation_error_mosaic_supply_low": "Supply must be at least %{min}",
+    "validation_error_mosaic_supply_high": "Supply can't exceed %{max}",
+    "validation_error_mosaic_supply_decimals": "Up to %{divisibility} decimal places allowed",
+    "validation_error_mosaic_supply_whole": "Supply must be a whole number",
     "validation_error_mosaic_divisibility": "Should be a number from 0 to 6",
-    "validation_error_mosaic_duration": "Invalid duration",
+    "validation_error_mosaic_duration_low": "Duration must be at least %{min} block",
+    "validation_error_mosaic_duration_high": "Duration can't exceed %{max} blocks (~10 years)",
     "warning_multisig_title": "Multisig Account",
     "warning_multisig_body": "To send transactions from this account, please announce it from cosignature account!",
     "message_emptyList": "Nothing to show",

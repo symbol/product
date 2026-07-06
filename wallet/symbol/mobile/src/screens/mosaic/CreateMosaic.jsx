@@ -1,6 +1,7 @@
 import {
 	Button,
 	Checkbox,
+	Divider,
 	FeeSelector,
 	SelectTransactionSender,
 	Spacer,
@@ -21,17 +22,47 @@ import {
 } from '@/app/hooks';
 import { $t } from '@/app/localization';
 import { Router } from '@/app/router/Router';
-import { MosaicFlagList } from '@/app/screens/mosaic/components';
-import { useCreateMosaicFormState, useMosaicTransaction } from '@/app/screens/mosaic/hooks';
 import {
-	calculateMosaicDurationDays,
-	validateMosaicDivisibility,
+	ExpirationSummaryCard,
+	InputDuration,
+	MosaicFlagList,
+	MosaicPreviewCard,
+	SelectDivisibility
+} from '@/app/screens/mosaic/components';
+import { useCreateMosaicFormState, useMosaicIdentity, useMosaicTransaction } from '@/app/screens/mosaic/hooks';
+import {
+	getExpiryPrefillDuration,
+	parseDurationBlocks,
 	validateMosaicDuration,
 	validateMosaicSupply
 } from '@/app/screens/mosaic/utils';
 import { validateRequired } from '@/app/utils';
 import React, { useEffect } from 'react';
-import Animated, { FadeInDown, FadeOut } from 'react-native-reanimated';
+import Animated, { FadeInDown, FadeInUp, FadeOut, FadeOutUp, withDelay, withTiming } from 'react-native-reanimated';
+
+// Layout animation for the expiry toggle: the duration inputs fade in/out while the flags section
+// below slides to its new position instead of jumping. Mirrors the Home screen's WidgetAnimatedWrapper —
+// downward moves (making room) start immediately, upward moves (closing the gap) wait for the exit fade.
+const ENTERING_ANIMATION_DELAY = 250;
+const LAYOUT_ANIMATION_DURATION = 300;
+const LAYOUT_ANIMATION_DELAY = 250;
+
+const CustomLayout = values => {
+	'worklet';
+	const isMovingDown = values.currentOriginY < values.targetOriginY;
+	const timingConfig = { duration: LAYOUT_ANIMATION_DURATION };
+
+	return {
+		animations: {
+			originY: isMovingDown
+				? withTiming(values.targetOriginY, timingConfig)
+				: withDelay(LAYOUT_ANIMATION_DELAY, withTiming(values.targetOriginY, timingConfig))
+		},
+		initialValues: {
+			originY: values.currentOriginY
+		}
+	};
+};
 
 /**
  * CreateMosaic screen component. Provides the interface for creating a new mosaic (token)
@@ -82,20 +113,24 @@ export const CreateMosaic = () => {
 		reset: resetForm
 	} = useCreateMosaicFormState();
 
-	// Validation
-	const divisibilityErrorMessage = useValidation(divisibility, [validateRequired(), validateMosaicDivisibility()], $t);
-	const supplyErrorMessage = useValidation(supply, [validateRequired(), validateMosaicSupply()], $t);
+	// Validation. Divisibility needs no validation, as the tab selector only offers allowed values.
+	// The supply limits depend on the divisibility, so it is passed into the supply validator.
+	const supplyErrorMessage = useValidation(supply, [validateRequired(), validateMosaicSupply(divisibility)], $t);
 	const durationValidationMessage = useValidation(duration, [validateRequired(), validateMosaicDuration()], $t);
 	const durationErrorMessage = isNeverExpiring ? undefined : durationValidationMessage;
-	const isFormValid = !divisibilityErrorMessage && !supplyErrorMessage && !durationErrorMessage;
+	const isFormValid = !supplyErrorMessage && !durationErrorMessage;
 
 	// When creating from a multisig account, that account is the mosaic creator
 	const senderPublicKey = isMultisigSender ? selectedAccount?.publicKey : undefined;
+
+	// Mosaic identity. The nonce is generated once so the derived mosaic id stays stable across the create flow.
+	const { nonce, mosaicId, regenerate: regenerateMosaicIdentity } = useMosaicIdentity(senderAddress);
 
 	// Transaction creation and preview
 	const { createMosaicTransaction, getConfirmationPreview } = useMosaicTransaction({
 		walletController,
 		senderPublicKey,
+		nonce,
 		supply,
 		divisibility,
 		duration,
@@ -117,16 +152,23 @@ export const CreateMosaic = () => {
 
 	// Derived state
 	const blockGenerationTargetTime = networkProperties?.blockGenerationTargetTime;
-	const isDurationHintVisible = !isNeverExpiring && !durationErrorMessage && !!blockGenerationTargetTime;
-	const durationDays = calculateMosaicDurationDays(duration, blockGenerationTargetTime);
 	const isButtonDisabled = !isNetworkConnectionReady
 		|| !isFormValid
 		|| isFeesLoading
 		|| !transactionFees;
 
 	// Handlers
+	const handleExpiryToggle = isExpiring => {
+		toggleNeverExpiring();
+
+		// Marking the token as expiring with no value yet pre-fills a safe one-year lifetime.
+		if (isExpiring && parseDurationBlocks(duration) === null)
+			changeDuration(getExpiryPrefillDuration(blockGenerationTargetTime));
+	};
+
 	const handleTransactionSendComplete = () => {
 		resetForm();
+		regenerateMosaicIdentity();
 		Router.goToHome();
 	};
 
@@ -182,79 +224,90 @@ export const CreateMosaic = () => {
 							/>
 						</Stack>
 
-						{/* Divisibility section */}
+						<Divider />
+
+						{/* Quantity section */}
 						<Stack gap="s">
 							<Stack gap="none">
-								<StyledText type="title" size="s">
-									{$t('s_mosaicCreation_divisibility_title')}
+								<StyledText type="title" size="m">
+									{$t('s_mosaicCreation_quantity_title')}
 								</StyledText>
-								<StyledText type="body">
-									{$t('s_mosaicCreation_divisibility_description')}
+								<StyledText>
+									{$t('s_mosaicCreation_quantity_description')}
 								</StyledText>
 							</Stack>
-							<TextBox
-								label={$t('input_divisibility')}
-								keyboardType="number-pad"
-								errorMessage={divisibilityErrorMessage}
-								value={divisibility}
-								onChange={changeDivisibility}
-							/>
+							<Stack gap="m">
+								<MosaicPreviewCard
+									supply={supply}
+									divisibility={divisibility}
+									mosaicId={mosaicId}
+								/>
+								<SelectDivisibility
+									value={divisibility}
+									onChange={changeDivisibility}
+								/>
+								<TextBox
+									label={$t('s_mosaicCreation_totalSupply_label')}
+									keyboardType="decimal-pad"
+									errorMessage={supplyErrorMessage}
+									value={supply}
+									onChange={changeSupply}
+								/>
+							</Stack>
 						</Stack>
 
-						{/* Supply section */}
-						<Stack gap="s">
-							<Stack gap="none">
-								<StyledText type="title" size="s">
-									{$t('s_mosaicCreation_supply_title')}
-								</StyledText>
-								<StyledText type="body">
-									{$t('s_mosaicCreation_supply_description')}
-								</StyledText>
-							</Stack>
-							<TextBox
-								label={$t('input_supply')}
-								keyboardType="number-pad"
-								errorMessage={supplyErrorMessage}
-								value={supply}
-								onChange={changeSupply}
-							/>
-						</Stack>
+						<Divider />
 
 						{/* Duration section */}
-						<Stack gap="s">
+						<Stack gap="l">
 							<Stack gap="none">
-								<StyledText type="title" size="s">
+								<StyledText type="title" size="m">
 									{$t('s_mosaicCreation_duration_title')}
 								</StyledText>
 								<StyledText type="body">
 									{$t('s_mosaicCreation_duration_description')}
 								</StyledText>
 							</Stack>
-							<TextBox
-								label={$t('input_duration')}
-								keyboardType="number-pad"
-								isDisabled={isNeverExpiring}
-								errorMessage={durationErrorMessage}
-								value={duration}
-								onChange={changeDuration}
-							/>
-							{isDurationHintVisible && (
-								<StyledText type="body">
-									{$t('s_mosaicCreation_durationDays', { duration: durationDays })}
-								</StyledText>
-							)}
 							<Checkbox
-								text={$t('s_mosaicCreation_duration_checkbox')}
-								value={isNeverExpiring}
-								onChange={toggleNeverExpiring}
+								text={$t('s_mosaicCreation_duration_expiresCheckbox')}
+								value={!isNeverExpiring}
+								onChange={handleExpiryToggle}
 							/>
+							<ExpirationSummaryCard
+								duration={duration}
+								blockGenerationTargetTime={blockGenerationTargetTime}
+								isNeverExpiring={isNeverExpiring}
+							/>
+							{!isNeverExpiring && (
+								<Animated.View
+									entering={FadeInUp.delay(ENTERING_ANIMATION_DELAY)}
+									exiting={FadeOutUp}
+								>
+									<InputDuration
+										duration={duration}
+										blockGenerationTargetTime={blockGenerationTargetTime}
+										errorMessage={durationErrorMessage}
+										onDurationChange={changeDuration}
+									/>
+								</Animated.View>
+							)}
 						</Stack>
 
-						{/* Flags sections */}
-						<MosaicFlagList
-							flags={flags}
-							onFlagToggle={toggleFlag}
-						/>
+						{/* Flags section */}
+						<Animated.View layout={CustomLayout}>
+							<Stack gap="l">
+								<Divider />
+								<Stack gap="s">
+									<StyledText type="title" size="m">
+										{$t('s_mosaicCreation_flags_title')}
+									</StyledText>
+									<MosaicFlagList
+										flags={flags}
+										onFlagToggle={toggleFlag}
+									/>
+								</Stack>
+							</Stack>
+						</Animated.View>
 
 						{/* Fee selector */}
 						{!!transactionFees && (

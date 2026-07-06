@@ -20,6 +20,18 @@ import { useCallback, useState } from 'react';
 const sanitizeIntegerInput = value => value.replace(/[^0-9]/g, '');
 
 /**
+ * Keeps digits and a single decimal separator in a relative-amount input value. A comma is normalized to a
+ * dot and any extra separators are folded into the fractional part so the value stays parseable.
+ * @param {string} value - The raw input value.
+ * @returns {string} The sanitized value.
+ */
+const sanitizeDecimalInput = value => {
+	const [integerPart, ...fractionalParts] = value.replace(/,/g, '.').replace(/[^0-9.]/g, '').split('.');
+
+	return fractionalParts.length ? `${integerPart}.${fractionalParts.join('')}` : integerPart;
+};
+
+/**
  * Return type for useCreateMosaicFormState hook.
  * @typedef {object} UseCreateMosaicFormStateReturnType
  * @property {string} divisibility - The mosaic divisibility input value.
@@ -53,7 +65,7 @@ export const useCreateMosaicFormState = () => {
 	const [transactionSpeed, setTransactionSpeed] = useState(DEFAULT_TRANSACTION_SPEED);
 
 	const changeDivisibility = useCallback(value => setDivisibility(sanitizeIntegerInput(value)), []);
-	const changeSupply = useCallback(value => setSupply(sanitizeIntegerInput(value)), []);
+	const changeSupply = useCallback(value => setSupply(sanitizeDecimalInput(value)), []);
 	const changeDuration = useCallback(value => setDuration(sanitizeIntegerInput(value)), []);
 	const toggleNeverExpiring = useCallback(() => setNeverExpiring(value => !value), []);
 	const toggleFlag = useCallback(flagName => {

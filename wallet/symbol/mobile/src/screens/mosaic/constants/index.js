@@ -22,8 +22,23 @@ export const MOSAIC_NEVER_EXPIRING_DURATION = 0;
 
 export const MOSAIC_DIVISIBILITY_MIN = 0;
 export const MOSAIC_DIVISIBILITY_MAX = 6;
-export const MOSAIC_SUPPLY_MIN = 1;
-export const MOSAIC_SUPPLY_MAX = 9999999999;
+
+// The network caps a mosaic supply in absolute (atomic) units, independent of divisibility. The relative
+// supply limit shown to the user is therefore MOSAIC_MAX_ATOMIC_UNITS / 10^divisibility, and the smallest
+// valid supply is a single atomic unit. Kept as strings because the max (9 * 10^15) sits at the edge of
+// Number.MAX_SAFE_INTEGER and is compared with BigInt.
+export const MOSAIC_MAX_ATOMIC_UNITS = '9000000000000000';
+export const MOSAIC_MIN_ATOMIC_UNITS = '1';
+
 export const MOSAIC_DURATION_MIN = 1;
 // 3650 days (the network mosaic duration limit) of 30 second blocks.
 export const MOSAIC_DURATION_MAX = 10512000;
+
+// Frozen time conventions for the duration builder. A month is defined as a twelfth of a 365-day
+// year so that "12 months" always equals "1 year" exactly. Block counts are never precomputed:
+// they are derived from the live network block time.
+export const SECONDS_PER_MINUTE = 60;
+export const SECONDS_PER_HOUR = 3600;
+export const SECONDS_PER_DAY = 86400;
+export const SECONDS_PER_YEAR = 365 * SECONDS_PER_DAY;
+export const SECONDS_PER_MONTH = SECONDS_PER_YEAR / 12;

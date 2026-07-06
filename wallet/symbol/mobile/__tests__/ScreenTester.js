@@ -91,7 +91,7 @@ export class ScreenTester {
 		const { getByLabelText} = this.renderer;
 		const element = getByLabelText(label);
 
-		expect(element.props.accessibilityValue).toBe(expectedValue);
+		expect(element.props.accessibilityValue).toEqual(expectedValue);
 	};
 
 	/**
