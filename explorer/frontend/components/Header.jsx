@@ -117,18 +117,20 @@ const Header = ({ backendStatus }) => {
 		setContacts(updatedContacts);
 	};
 	const addAddress = () => {
-		if (address.length < 40)
-			return toast.error('Incorrect address');
-		if (name.length === 0)
-			return toast.error('Name should not be empty');
-		if (name.length > 15)
-			return toast.error('Name should be up to 15 characters');
-		if (contacts.some(userAddress => userAddress.address === address))
-			return toast.error('Address already added');
-		if (contacts.some(userAddress => userAddress.name === name))
-			return toast.error('Address with such Name already added');
+		const normalizedAddress = address.replace(/-/g, '').trim().toUpperCase();
 
-		setContacts([...contacts, { address, name }]);
+		if (!/^[A-Z2-7]{40}$/.test(normalizedAddress))
+			return toast.error(t('message_addressBook_incorrectAddress'));
+		if (name.length === 0)
+			return toast.error(t('message_addressBook_nameEmpty'));
+		if (name.length > 15)
+			return toast.error(t('message_addressBook_nameTooLong'));
+		if (contacts.some(userAddress => userAddress.address === normalizedAddress))
+			return toast.error(t('message_addressBook_addressAlreadyAdded'));
+		if (contacts.some(userAddress => userAddress.name === name))
+			return toast.error(t('message_addressBook_nameAlreadyAdded'));
+
+		setContacts([...contacts, { address: normalizedAddress, name }]);
 		setAddress('');
 		setName('');
 		toggleAddContact();
@@ -180,16 +182,16 @@ const Header = ({ backendStatus }) => {
 					{!isAddContactOpen && (
 						<div className="layout-flex-col">
 							<div>
-								<h4>Language</h4>
+								<h4>{t('section_language')}</h4>
 								<Dropdown options={languages} value={userLanguage} onChange={selectLanguage} />
 							</div>
 							<div>
-								<h4>Currency</h4>
+								<h4>{t('section_currency')}</h4>
 								<Dropdown options={currencies} value={userCurrency} onChange={setUserCurrency} />
 							</div>
 							<div>
-								<h4>Address Book</h4>
-								Give accounts names to easily identify them through the explorer.
+								<h4>{t('section_addressBook')}</h4>
+								{t('field_addressBook_description')}
 							</div>
 							<div className={styles.contactList}>
 								{contacts.map((item, index) => (
@@ -200,7 +202,7 @@ const Header = ({ backendStatus }) => {
 												<CustomImage
 													src="/images/icon-delete.png"
 													className={styles.buttonRemove}
-													alt="Remove"
+													alt={t('button_remove')}
 													onClick={() => removeContact(item)}
 												/>
 											</div>
@@ -212,23 +214,23 @@ const Header = ({ backendStatus }) => {
 					)}
 					{!isAddContactOpen && (
 						<div className={styles.buttonAddContainer} onClick={toggleAddContact}>
-							<CustomImage src="/images/icon-account-add.png" className={styles.buttonAddIcon} alt="Add" />
+							<CustomImage src="/images/icon-account-add.png" className={styles.buttonAddIcon} alt={t('button_add')} />
 						</div>
 					)}
 					{isAddContactOpen && (
 						<div className="layout-flex-col-fields">
-							<Field title="Address">
+							<Field title={t('field_address')}>
 								<TextBox value={address} onChange={setAddress} />
 							</Field>
-							<Field title="Name">
+							<Field title={t('field_name')}>
 								<TextBox value={name} onChange={setName} />
 							</Field>
 							<div className="layout-flex-row">
 								<div className={styles.button} onClick={addAddress}>
-									Add
+									{t('button_add')}
 								</div>
 								<div className={styles.button} onClick={dismissNewContact}>
-									Cancel
+									{t('button_cancel')}
 								</div>
 							</div>
 						</div>
