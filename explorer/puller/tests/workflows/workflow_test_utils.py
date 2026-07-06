@@ -35,3 +35,15 @@ def create_facade_with_mock_db(mock_nem_puller):
 	mock_facade.nem_db.__exit__ = Mock(return_value=None)
 
 	return mock_facade, mock_db
+
+
+def create_symbol_facade_with_mock_db(mock_symbol_puller):
+	mock_facade = Mock()
+	mock_symbol_puller.return_value = mock_facade
+	mock_facade.__enter__ = Mock(return_value=mock_facade)
+	mock_facade.__exit__ = Mock(return_value=None)
+
+	mock_db = Mock()
+	mock_facade.symbol_db = mock_db
+
+	return mock_facade, mock_db

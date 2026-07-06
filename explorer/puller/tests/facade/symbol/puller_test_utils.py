@@ -1,0 +1,324 @@
+import asyncio
+import tempfile
+from contextlib import ExitStack, contextmanager
+from pathlib import Path
+from unittest import TestCase
+
+from common.symbol.NodeConfiguration import SymbolNodeConfiguration
+from common.tests.PostgresTestUtils import PostgresTestDatabase, drop_symbol_block_tables_if_present
+
+from puller.facade.SymbolPuller import DatabaseConfiguration, SymbolPuller
+
+NODE_URL = 'http://127.0.0.1:3000'
+SIGNER_PUBLIC_KEY = (
+	'76E94661562762111FF7E592B00398554973396D8A4B922F3E3D139892F7C35C'
+)
+BENEFICIARY_ADDRESS = '9889432DE263BB8FE88444A4DA28D3609BD8BB8FAE18AE95'
+
+
+def create_db_config(config_dir, db_config=None, include_symbol_db=True):
+	db_config = db_config or DatabaseConfiguration(
+		'symbol',
+		'postgres',
+		'',
+		'127.0.0.1',
+		5433
+	)
+	db_config_path = Path(config_dir) / 'db_config.ini'
+	with open(db_config_path, 'wt', encoding='utf8') as db_config_file:
+		db_config_file.write('[nem_db]\n')
+		db_config_file.write('database = nem\n')
+		db_config_file.write('user = postgres\n')
+		db_config_file.write('password = \n')
+		db_config_file.write('host = 127.0.0.1\n')
+		db_config_file.write('port = 5432\n')
+
+		if include_symbol_db:
+			db_config_file.write('[symbol_db]\n')
+			db_config_file.write(f'database = {db_config.database}\n')
+			db_config_file.write(f'user = {db_config.user}\n')
+			db_config_file.write('password = \n')
+			db_config_file.write(f'host = {db_config.host}\n')
+			db_config_file.write(f'port = {db_config.port}\n')
+
+	return db_config_path
+
+
+def create_symbol_puller(
+	db_config_path,
+	network_type='mainnet',
+	request_timeout_seconds=10,
+	node_url=NODE_URL,
+	connector=None
+):
+	node_config = SymbolNodeConfiguration.from_url(
+		node_url,
+		allow_loopback=True,
+		timeout_seconds=request_timeout_seconds
+	)
+
+	puller = SymbolPuller(
+		node_url,
+		db_config_path,
+		network_type,
+		node_config,
+		connector
+	)
+	puller._retry_delay = 0  # pylint: disable=protected-access
+
+	return puller
+
+
+@contextmanager
+def temporary_symbol_puller(
+	network_type='mainnet',
+	request_timeout_seconds=10,
+	connector=None
+):
+	with tempfile.TemporaryDirectory() as temp_directory:
+		db_config_path = create_db_config(temp_directory)
+
+		yield create_symbol_puller(
+			db_config_path,
+			network_type,
+			request_timeout_seconds,
+			connector=connector
+		)
+
+
+def set_symbol_connector(puller, connector):
+	# Keep protected connector replacement in one helper so sync tests can use
+	# deterministic Symbol node responses.
+	puller._symbol_connector = connector  # pylint: disable=protected-access
+
+
+def set_sync_block_pages(puller, sync_block_pages):
+	# Patch the private page sync step only for hard-to-reach error branches.
+	puller._sync_block_pages = sync_block_pages  # pylint: disable=protected-access
+
+
+def _create_block_row(puller, node_block, epoch_adjustment_seconds):
+	# Reuse production normalization instead of duplicating row construction.
+	return puller._create_block_row(  # pylint: disable=protected-access
+		node_block,
+		epoch_adjustment_seconds
+	)
+
+
+def create_node_block(
+	height,
+	block_hash=None,
+	previous_hash=None,
+	**block_overrides
+):
+	block_hash = block_hash or f'{height:064X}'
+	previous_hash = previous_hash or f'{height - 1:064X}'
+
+	node_block = {
+		'meta': {
+			'hash': block_hash,
+			'totalFee': str(height * 1000),
+			'totalTransactionsCount': height + 10,
+			'transactionsCount': height,
+			'statementsCount': height + 1,
+			'stateHashSubCacheMerkleRoots': ['A' * 64]
+		},
+		'block': {
+			'size': 100 + height,
+			'signature': '1' * 128,
+			'signerPublicKey': SIGNER_PUBLIC_KEY,
+			'version': 1,
+			'network': 152,
+			'type': 32835,
+			'height': str(height),
+			'timestamp': str(height * 1000),
+			'difficulty': str(100000 + height),
+			'proofGamma': '2' * 64,
+			'proofVerificationHash': '3' * 32,
+			'proofScalar': '4' * 64,
+			'previousBlockHash': previous_hash,
+			'transactionsHash': '5' * 64,
+			'receiptsHash': '6' * 64,
+			'stateHash': '7' * 64,
+			'beneficiaryAddress': BENEFICIARY_ADDRESS,
+			'feeMultiplier': height
+		},
+		'id': str(height)
+	}
+	node_block['block'].update(block_overrides)
+
+	return node_block
+
+
+def create_sync_state(**overrides):
+	sync_state = {
+		'status': 'healthy',
+		'chain_height': 3,
+		'finalized_height': 1,
+		'finalized_hash': bytes.fromhex(f'{1:064X}'),
+		'finalized_epoch': 1,
+		'finalized_point': 1,
+		'last_synced_height': 3,
+		'last_synced_block_hash': bytes.fromhex(f'{3:064X}')
+	}
+	sync_state.update(overrides)
+
+	return sync_state
+
+
+def create_chain_info(chain_height=1, finalized_height=1):
+	return {
+		'height': str(chain_height),
+		'latestFinalizedBlock': {
+			'finalizationEpoch': 4,
+			'finalizationPoint': 5,
+			'height': str(finalized_height),
+			'hash': f'{finalized_height:064X}'
+		}
+	}
+
+
+def create_network_properties(epoch_adjustment='100s'):
+	return {'network': {'epochAdjustment': epoch_adjustment}}
+
+
+class FakeConnector:
+	def __init__(
+		self,
+		chain_height,
+		pages,
+		block_by_height=None,
+		finalized_height=1
+	):
+		self.chain_height = chain_height
+		self.pages = pages
+		self.block_by_height = block_by_height or {}
+		self.finalized_height = finalized_height
+		self.paths = []
+
+	async def get(self, url_path, *_):
+		self.paths.append(url_path)
+		if 'chain/info' == url_path:
+			return create_chain_info(self.chain_height, self.finalized_height)
+		if 'network/properties' == url_path:
+			return create_network_properties()
+		if url_path.startswith('blocks/'):
+			height = int(url_path.removeprefix('blocks/'))
+			return self.block_by_height[height]
+		if url_path.startswith('blocks?pageSize=100&offset='):
+			offset = int(url_path.split('offset=')[1].split('&')[0])
+			return {
+				'data': self.pages[offset],
+				'pagination': {
+					'pageSize': 100,
+					'offset': offset
+				}
+			}
+
+		raise KeyError(url_path)
+
+
+class ResponseConnector:
+	def __init__(self, responses):
+		self.responses = responses
+		self.paths = []
+
+	async def get(self, url_path, *_):
+		self.paths.append(url_path)
+		return self.responses[url_path]
+
+
+class SymbolPullerTestBase(TestCase):
+	def setUp(self):
+		self.exit_stack = ExitStack()
+		self.config_dir = self.exit_stack.enter_context(
+			tempfile.TemporaryDirectory()
+		)
+		self.db_config = self.exit_stack.enter_context(PostgresTestDatabase())
+		self.config_ini = create_db_config(self.config_dir, self.db_config)
+		self.puller = self.exit_stack.enter_context(
+			create_symbol_puller(self.config_ini, 'testnet')
+		)
+		drop_symbol_block_tables_if_present(self.puller.symbol_db)
+		self.puller.symbol_db.create_tables()
+
+	def tearDown(self):
+		self.exit_stack.close()
+
+	@staticmethod
+	def _fetch_block_heights(database):
+		cursor = database.connection.cursor()
+		cursor.execute('SELECT height FROM symbol_blocks ORDER BY height')
+
+		return [row[0] for row in cursor.fetchall()]
+
+	@staticmethod
+	def _fetch_block_hash(database, height):
+		cursor = database.connection.cursor()
+		cursor.execute(
+			'SELECT hash FROM symbol_blocks WHERE height = %s',
+			(height,)
+		)
+
+		return bytes(cursor.fetchone()[0])
+
+	@staticmethod
+	def _fetch_importance_block_fields(database, height):
+		cursor = database.connection.cursor()
+		cursor.execute(
+			'SELECT voting_eligible_accounts_count, '
+			'harvesting_eligible_accounts_count, total_voting_balance, '
+			'previous_importance_block_hash FROM symbol_blocks '
+			'WHERE height = %s',
+			(height,)
+		)
+
+		return cursor.fetchone()
+
+	def _seed_blocks(self, database, heights, block_hashes=None):
+		block_hashes = block_hashes or {}
+		rows = [
+			_create_block_row(
+				self.puller,
+				create_node_block(
+					height,
+					block_hash=block_hashes.get(height)
+				),
+				100
+			)
+			for height in heights
+		]
+		database.upsert_blocks(rows)
+
+	def _sync_with_connector(self, connector, max_height=None):
+		# Arrange:
+		set_symbol_connector(self.puller, connector)
+
+		# Act:
+		asyncio.run(self.puller.sync_block_headers(max_height))
+
+		return (
+			self._fetch_block_heights(self.puller.symbol_db),
+			self.puller.symbol_db.get_sync_state()
+		)
+
+	def _assert_sync_rejects_node_response(
+		self,
+		connector,
+		error_type,
+		error_message,
+		max_height=None
+	):
+		# Arrange:
+		set_symbol_connector(self.puller, connector)
+
+		# Act:
+		with self.assertRaisesRegex(error_type, error_message):
+			if max_height is None:
+				asyncio.run(self.puller.sync_block_headers())
+			else:
+				asyncio.run(self.puller.sync_block_headers(max_height))
+
+		# Assert:
+		self.assertEqual([], self._fetch_block_heights(self.puller.symbol_db))
+		self.assertIsNone(self.puller.symbol_db.get_sync_state())

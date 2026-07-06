@@ -1,4 +1,5 @@
 import pytest
+from common.symbol.NodeConfiguration import SymbolNodeConfigurationError
 from flask import Flask, abort, jsonify
 
 from rest import create_app, load_rest_config, setup_error_handlers
@@ -7,14 +8,14 @@ from rest.routes.symbol import setup_symbol_routes
 from .test.EnvTestUtils import rest_settings_env
 
 
-def _write_rest_config(config_path, contents):
+def _write_config(config_path, contents):
 	config_path.write_text(contents, encoding='utf8')
 
 
 @pytest.fixture(name='rest_config_path')
 def fixture_rest_config_path(tmp_path):
 	config_path = tmp_path / 'app.config'
-	_write_rest_config(config_path, '')
+	_write_config(config_path, '')
 
 	with rest_settings_env(config_path):
 		yield config_path
@@ -22,7 +23,7 @@ def fixture_rest_config_path(tmp_path):
 
 def test_create_app_requires_rest_chain(rest_config_path):
 	# Arrange:
-	_write_rest_config(rest_config_path, '')
+	_write_config(rest_config_path, '')
 
 	# Act:
 	with pytest.raises(ValueError) as exception_info:
@@ -34,14 +35,14 @@ def test_create_app_requires_rest_chain(rest_config_path):
 
 def test_rejects_unsupported_chain(rest_config_path):
 	# Arrange:
-	_write_rest_config(rest_config_path, 'REST_CHAIN="unknown"\n')
+	_write_config(rest_config_path, 'REST_CHAIN="unknown"\n')
 
 	# Act:
 	with pytest.raises(ValueError) as exception_info:
 		create_app()
 
 	# Assert:
-	assert 'Unsupported REST_CHAIN "unknown". Supported values: nem, symbol' == str(exception_info.value)
+	assert str(exception_info.value) == 'Unsupported REST_CHAIN "unknown". Supported values: nem, symbol'
 
 
 def test_registers_selected_chain(rest_config_path):
@@ -56,7 +57,7 @@ def test_registers_selected_chain(rest_config_path):
 				'chain': test_api_facade['chain']
 			})
 
-	_write_rest_config(rest_config_path, 'REST_CHAIN="test"\n')
+	_write_config(rest_config_path, 'REST_CHAIN="test"\n')
 	rest_chain_handlers = {
 		'test': (setup_test_facade, setup_test_routes)
 	}
@@ -75,7 +76,7 @@ def test_registers_selected_chain(rest_config_path):
 def test_loads_envvar_config(rest_config_path):
 	# Arrange:
 	app = Flask(__name__)
-	_write_rest_config(rest_config_path, 'REST_CHAIN="nem"\n')
+	_write_config(rest_config_path, 'REST_CHAIN="nem"\n')
 
 	# Act:
 	load_rest_config(app)
@@ -148,12 +149,23 @@ def _create_test_chain_handlers():
 	}
 
 
+class SymbolHealthFacade:
+	@staticmethod
+	def get_health():
+		return {
+			'isHealthy': True,
+			'errors': []
+		}
+
+
 def test_symbol_chain_routes_only(rest_config_path):
 	# Arrange:
-	_write_rest_config(rest_config_path, 'REST_CHAIN="symbol"\n')
+	_write_config(rest_config_path, 'REST_CHAIN="symbol"\n')
 
 	# Act:
-	client = create_app(rest_chain_handlers=_create_test_chain_handlers()).test_client()
+	client = create_app(
+		rest_chain_handlers=_create_test_chain_handlers()
+	).test_client()
 
 	# Assert:
 	assert 200 == client.get('/api/symbol/test').status_code
@@ -162,10 +174,12 @@ def test_symbol_chain_routes_only(rest_config_path):
 
 def test_nem_chain_routes_only(rest_config_path):
 	# Arrange:
-	_write_rest_config(rest_config_path, 'REST_CHAIN="nem"\n')
+	_write_config(rest_config_path, 'REST_CHAIN="nem"\n')
 
 	# Act:
-	client = create_app(rest_chain_handlers=_create_test_chain_handlers()).test_client()
+	client = create_app(
+		rest_chain_handlers=_create_test_chain_handlers()
+	).test_client()
 
 	# Assert:
 	assert 200 == client.get('/api/nem/test').status_code
@@ -174,14 +188,6 @@ def test_nem_chain_routes_only(rest_config_path):
 
 def test_symbol_health_route():
 	# Arrange:
-	class SymbolHealthFacade:
-		@staticmethod
-		def get_health():
-			return {
-				'isHealthy': True,
-				'errors': []
-			}
-
 	app = Flask(__name__)
 	setup_symbol_routes(app, SymbolHealthFacade())
 
@@ -194,3 +200,74 @@ def test_symbol_health_route():
 		'isHealthy': True,
 		'errors': []
 	} == response.json
+
+
+def test_symbol_db_config_required(rest_config_path, tmp_path):
+	# Arrange:
+	db_config_path = tmp_path / 'db.ini'
+	_write_config(db_config_path, '[nem_db]\ndatabase = nem\n')
+	_write_config(rest_config_path, f'''
+REST_CHAIN="symbol"
+DATABASE_CONFIG_FILEPATH="{db_config_path}"
+SYMBOL_NODE_URL="http://localhost:3000"
+SYMBOL_NODE_ALLOWED_HOSTS="localhost:3000"
+SYMBOL_NODE_ALLOW_LOOPBACK="true"
+''')
+
+	# Act:
+	with pytest.raises(KeyError) as exception_info:
+		create_app()
+
+	# Assert:
+	assert 'symbol_db' == exception_info.value.args[0]
+
+
+def test_symbol_node_url_required(rest_config_path, tmp_path):
+	# Arrange:
+	db_config_path = tmp_path / 'db.ini'
+	_write_config(db_config_path, '''
+[symbol_db]
+database = symbol
+user = postgres
+password =
+host = 127.0.0.1
+port = 5432
+''')
+	_write_config(rest_config_path, f'''
+REST_CHAIN="symbol"
+DATABASE_CONFIG_FILEPATH="{db_config_path}"
+''')
+
+	# Act:
+	with pytest.raises(SymbolNodeConfigurationError) as exception_info:
+		create_app()
+
+	# Assert:
+	assert 'Symbol node URL is not configured' == str(exception_info.value)
+
+
+def test_bad_symbol_node_config(rest_config_path, tmp_path):
+	# Arrange:
+	db_config_path = tmp_path / 'db.ini'
+	_write_config(db_config_path, '''
+[symbol_db]
+database = symbol
+user = postgres
+password =
+host = 127.0.0.1
+port = 5432
+''')
+	_write_config(rest_config_path, f'''
+REST_CHAIN="symbol"
+DATABASE_CONFIG_FILEPATH="{db_config_path}"
+SYMBOL_NODE_URL="http://localhost"
+SYMBOL_NODE_ALLOWED_HOSTS="localhost:80"
+SYMBOL_NODE_ALLOW_LOOPBACK="true"
+''')
+
+	# Act:
+	with pytest.raises(SymbolNodeConfigurationError) as exception_info:
+		create_app()
+
+	# Assert:
+	assert str(exception_info.value) == 'Symbol node URL must include an explicit port'
