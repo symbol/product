@@ -295,6 +295,7 @@
 	"label_confirmed": "Confirmed",
 	"label_unconfirmed": "Unconfirmed",
 	"label_pending": "Pending",
+	"label_awaitingCosignatures": "Awaiting cosignatures",
 	"label_multisig": "Multisig",
 	"label_harvesting": "Harvesting",
 	"label_transferable": "Transferable",
