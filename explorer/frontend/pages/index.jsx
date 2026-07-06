@@ -119,7 +119,7 @@ const Home = ({
 					<div className="layout-grid-row layout-flex-fill">
 						<div className="layout-flex-col layout-flex-fill">
 							<Field title={t('field_totalNodes')}>{nodeStats.total}</Field>
-							{nodeStats.supernodes != null && (
+							{nodeStats.supernodes !== null && (
 								<Field title={t('field_supernodes')}>{nodeStats.supernodes}</Field>
 							)}
 						</div>
