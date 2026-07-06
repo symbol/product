@@ -10,14 +10,9 @@ from symbolchain.sc import TransactionType
 
 from puller.facade.SymbolPuller import DatabaseConfiguration, SymbolPuller
 from puller.model.symbol.Block import create_block_row
+from tests.test.SymbolTestConstants import BENEFICIARY_ADDRESS, RECIPIENT_ADDRESS, SIGNER_PUBLIC_KEY
 
 NODE_URL = 'http://127.0.0.1:3000'
-SIGNER_PUBLIC_KEY = (
-	'76E94661562762111FF7E592B00398554973396D8A4B922F3E3D139892F7C35C'
-)
-BENEFICIARY_ADDRESS = '9889432DE263BB8FE88444A4DA28D3609BD8BB8FAE18AE95'
-SIGNER_ADDRESS = '9889432DE263BB8FE88444A4DA28D3609BD8BB8FAE18AE95'
-RECIPIENT_ADDRESS = '98AE1234567890ABCDEF1234567890ABCDEF1234567890AB'
 
 
 def create_db_config(config_dir, db_config=None, include_symbol_db=True):

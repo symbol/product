@@ -1,10 +1,13 @@
-from datetime import datetime, timezone
-
 from psycopg2.extras import Json
-from symbolchain.CryptoTypes import PublicKey
 from symbolchain.symbol.Network import Address
 
-from puller.model.symbol.format import bytes_from_hex_or_none, int_or_none
+from puller.model.symbol.format import (
+	address_from_public_key,
+	bytes_from_hex_or_none,
+	int_or_none,
+	label_for_type,
+	timestamp_from_network_value
+)
 
 BLOCK_TYPE_LABELS = {
 	32835: 'nemesis',
@@ -12,18 +15,6 @@ BLOCK_TYPE_LABELS = {
 	33091: 'normal'
 }
 BLOCK_TYPE_VALUES = tuple(BLOCK_TYPE_LABELS.values())
-
-
-def _block_type_label(block_type):
-	try:
-		numeric_type = int(block_type)
-	except (TypeError, ValueError) as exception:
-		raise ValueError(f'Unsupported Symbol block type {block_type}') from exception
-
-	if numeric_type not in BLOCK_TYPE_LABELS:
-		raise ValueError(f'Unsupported Symbol block type {block_type}')
-
-	return BLOCK_TYPE_LABELS[numeric_type]
 
 
 def create_block_row(node_block, epoch_adjustment_seconds, network):
@@ -38,7 +29,7 @@ def create_block_row(node_block, epoch_adjustment_seconds, network):
 		'height': int(block['height']),
 		'hash': bytes.fromhex(meta['hash']),
 		'previous_hash': bytes.fromhex(block['previousBlockHash']),
-		'timestamp': datetime.fromtimestamp(epoch_adjustment_seconds + network_timestamp / 1000, timezone.utc),
+		'timestamp': timestamp_from_network_value(network_timestamp, epoch_adjustment_seconds),
 		'network_timestamp': network_timestamp,
 		'total_fee': int(meta['totalFee']),
 		'transactions_count': int(meta['transactionsCount']),
@@ -46,9 +37,9 @@ def create_block_row(node_block, epoch_adjustment_seconds, network):
 		'statements_count': int(meta['statementsCount']),
 		'difficulty': int(block['difficulty']),
 		'fee_multiplier': block['feeMultiplier'],
-		'block_type': _block_type_label(block['type']),
+		'block_type': label_for_type(BLOCK_TYPE_LABELS, block['type'], 'block'),
 		'signer_public_key': signer_public_key,
-		'signer_address': network.public_key_to_address(PublicKey(signer_public_key)).bytes,
+		'signer_address': address_from_public_key(signer_public_key, network),
 		'beneficiary_address': Address(bytes.fromhex(block['beneficiaryAddress'])).bytes,
 		'signature': bytes.fromhex(block['signature']),
 		'size': int(block['size']),

@@ -7,10 +7,7 @@ from symbolchain.sc import BlockType
 from symbolchain.symbol.Network import Network
 
 from puller.model.symbol.Block import create_block_row
-
-SIGNER_PUBLIC_KEY = '76E94661562762111FF7E592B00398554973396D8A4B922F3E3D139892F7C35C'
-SIGNER_ADDRESS = '9889432DE263BB8FE88444A4DA28D3609BD8BB8FAE18AE95'
-BENEFICIARY_ADDRESS = '9889432DE263BB8FE88444A4DA28D3609BD8BB8FAE18AE95'
+from tests.test.SymbolTestConstants import BENEFICIARY_ADDRESS, SIGNER_ADDRESS, SIGNER_PUBLIC_KEY
 
 
 def _create_node_block(height, **block_overrides):

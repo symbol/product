@@ -13,10 +13,8 @@ from puller.model.symbol.Transaction import (
 	create_transaction_mosaic_rows,
 	create_transaction_row
 )
+from tests.test.SymbolTestConstants import RECIPIENT_ADDRESS, SIGNER_ADDRESS, SIGNER_PUBLIC_KEY
 
-SIGNER_PUBLIC_KEY = '76E94661562762111FF7E592B00398554973396D8A4B922F3E3D139892F7C35C'
-SIGNER_ADDRESS = '9889432DE263BB8FE88444A4DA28D3609BD8BB8FAE18AE95'
-RECIPIENT_ADDRESS = '98AE1234567890ABCDEF1234567890ABCDEF1234567890AB'
 TARGET_ADDRESS = '98AB1234567890ABCDEF1234567890ABCDEF1234567890AB'
 SOURCE_ADDRESS = '98AC1234567890ABCDEF1234567890ABCDEF1234567890AB'
 ALIAS_ADDRESS = '98AD1234567890ABCDEF1234567890ABCDEF1234567890AB'
@@ -214,7 +212,7 @@ class TransactionTest(TestCase):  # pylint: disable=too-many-public-methods
 			]
 		}, row)
 
-	def test_transaction_type_labels_are_built_from_sdk_enum(self):
+	def test_sdk_enum_values_build_transaction_labels(self):
 		transactions = {
 			TransactionType.TRANSFER.value: _create_transaction(),
 			TransactionType.AGGREGATE_COMPLETE.value: _create_top_level_transaction(TransactionType.AGGREGATE_COMPLETE.value),

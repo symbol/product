@@ -1,16 +1,9 @@
-from datetime import datetime, timezone
-
-from symbolchain.CryptoTypes import PublicKey
 from symbolchain.sc import TransactionType
 
-
-def _camel_case_enum_name(name):
-	parts = name.lower().split('_')
-	return parts[0] + ''.join(part.capitalize() for part in parts[1:])
-
+from puller.model.symbol.format import address_from_public_key, camel_case_enum_name, label_for_type, timestamp_from_network_value
 
 TRANSACTION_TYPE_LABELS = {
-	transaction_type.value: _camel_case_enum_name(transaction_type.name)
+	transaction_type.value: camel_case_enum_name(transaction_type.name)
 	for transaction_type in TransactionType
 }
 MESSAGE_TYPE_LABELS = {
@@ -26,17 +19,6 @@ BODY_EXCLUDED_FIELDS = frozenset({
 	'type',
 	'message'
 })
-
-
-def _timestamp_from_network_value(value, epoch_adjustment_seconds):
-	return datetime.fromtimestamp(epoch_adjustment_seconds + int(value) / 1000, timezone.utc)
-
-
-def _transaction_type_label(transaction_type):
-	try:
-		return TRANSACTION_TYPE_LABELS[int(transaction_type)]
-	except (KeyError, TypeError, ValueError) as exception:
-		raise ValueError(f'Unsupported Symbol transaction type {transaction_type}') from exception
 
 
 def _bytes_from_transaction_field(transaction, field_name):
@@ -161,7 +143,7 @@ def create_transaction_address_rows(transaction_type, transaction, signer_addres
 
 	if transaction_type in (TransactionType.AGGREGATE_COMPLETE.value, TransactionType.AGGREGATE_BONDED.value):
 		rows.extend({
-			'address': network.public_key_to_address(PublicKey(bytes.fromhex(cosignature['signerPublicKey']))).bytes,
+			'address': address_from_public_key(bytes.fromhex(cosignature['signerPublicKey']), network),
 			'role': 'cosignatory'
 		} for cosignature in transaction.get('cosignatures', []))
 
@@ -216,7 +198,7 @@ def _top_level_or_embedded_fields(meta, transaction, is_embedded, epoch_adjustme
 		'hash': bytes.fromhex(meta['hash']),
 		'aggregate_hash': None,
 		'embedded_index': None,
-		'deadline': _timestamp_from_network_value(network_deadline, epoch_adjustment_seconds),
+		'deadline': timestamp_from_network_value(network_deadline, epoch_adjustment_seconds),
 		'network_deadline': network_deadline,
 		'max_fee': int(transaction['maxFee']),
 		'size': int(transaction['size'])
@@ -231,16 +213,16 @@ def create_transaction_row(item, network, epoch_adjustment_seconds):
 	is_embedded = 'aggregateHash' in meta
 	transaction_type = int(transaction['type'])
 	signer_public_key = bytes.fromhex(transaction['signerPublicKey'])
-	signer_address = network.public_key_to_address(PublicKey(signer_public_key)).bytes
+	signer_address = address_from_public_key(signer_public_key, network)
 	message_type, message_payload = _parse_message(transaction)
 	variable_fields = _top_level_or_embedded_fields(meta, transaction, is_embedded, epoch_adjustment_seconds)
 
 	return {
 		'is_embedded': is_embedded,
 		'height': int(meta['height']),
-		'timestamp': _timestamp_from_network_value(meta['timestamp'], epoch_adjustment_seconds),
+		'timestamp': timestamp_from_network_value(meta['timestamp'], epoch_adjustment_seconds),
 		'type': transaction_type,
-		'type_name': _transaction_type_label(transaction_type),
+		'type_name': label_for_type(TRANSACTION_TYPE_LABELS, transaction_type, 'transaction'),
 		'signer_public_key': signer_public_key,
 		'signer_address': signer_address,
 		'recipient_address': bytes.fromhex(transaction['recipientAddress']) if 'recipientAddress' in transaction else None,

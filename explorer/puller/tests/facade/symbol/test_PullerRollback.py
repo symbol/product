@@ -3,10 +3,9 @@ import asyncio
 
 from puller.facade.SymbolPuller import SymbolRollbackError
 
+from ...test.SymbolTestConstants import RECIPIENT_ADDRESS, SIGNER_ADDRESS
 from ...test.SymbolTransactionTestUtils import create_transaction_entry
 from .puller_test_utils import (
-	RECIPIENT_ADDRESS,
-	SIGNER_ADDRESS,
 	FakeConnector,
 	SymbolPullerTestBase,
 	create_node_block,
