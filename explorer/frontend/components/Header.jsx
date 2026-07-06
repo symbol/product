@@ -191,7 +191,7 @@ const Header = ({ backendStatus }) => {
 							</div>
 							<div>
 								<h4>{t('section_addressBook')}</h4>
-								{t('field_addressBook_description')}
+								{t('section_addressBook_description')}
 							</div>
 							<div className={styles.contactList}>
 								{contacts.map((item, index) => (

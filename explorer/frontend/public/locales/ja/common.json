@@ -131,7 +131,6 @@
 
 	"field_balance": "残高",
 	"field_address": "アドレス",
-	"field_addressBook_description": "アカウントに名前を付けると、エクスプローラー上で簡単に識別できます。",
 	"field_account_names": "名前",
 	"field_account_names_description": "名前またはネームスペースは、アドレスの代わりに使用できる人間が読める文字列です",
 	"field_publicKey": "公開鍵",
@@ -209,6 +208,7 @@
 	"section_blocks": "ブロック",
 	"section_account": "アカウント",
 	"section_addressBook": "アドレス帳",
+	"section_addressBook_description": "アカウントに名前を付けると、エクスプローラー上で簡単に識別できます。",
 	"section_language": "言語",
 	"section_currency": "表示通貨",
 	"section_accounts": "アカウント",
