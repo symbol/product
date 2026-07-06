@@ -33,6 +33,10 @@ export const fetchTransactionPage = async searchParams => {
 		updatedFilter.recipientAddress = updatedFilter.to;
 		delete updatedFilter.to;
 	}
+	if (updatedFilter.types) {
+		updatedFilter.transactionTypes = updatedFilter.types;
+		delete updatedFilter.types;
+	}
 	searchCriteria.filter = updatedFilter;
 
 	let url;

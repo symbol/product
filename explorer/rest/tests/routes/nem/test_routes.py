@@ -648,6 +648,14 @@ def test_api_nem_transaction_by_hash(client):  # pylint: disable=redefined-outer
 	assert TRANSACTIONS_VIEWS[0].to_dict() == response.json
 
 
+def test_api_nem_transaction_by_hash_invalid_hash(client):  # pylint: disable=redefined-outer-name, invalid-name
+	# Act:
+	response = client.get('/api/nem/transaction/XXX')
+
+	# Assert:
+	_assert_status_code_400(response, 'Invalid transaction hash format')
+
+
 # endregion
 
 # region /account/statistics

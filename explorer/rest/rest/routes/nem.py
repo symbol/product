@@ -3,7 +3,7 @@ from datetime import date
 from pathlib import Path
 
 from flask import abort, jsonify, request
-from symbolchain.CryptoTypes import PublicKey
+from symbolchain.CryptoTypes import Hash256, PublicKey
 from symbolchain.nc import TransactionType
 from zenlog import log
 
@@ -230,6 +230,11 @@ def setup_nem_routes(app, nem_api_facade):  # pylint: disable=too-many-statement
 
 	@app.route('/api/nem/transaction/<transaction_hash>')
 	def api_get_nem_transaction_by_hash(transaction_hash):
+		try:
+			Hash256(transaction_hash)
+		except ValueError:
+			abort(400, 'Invalid transaction hash format')
+
 		result = nem_api_facade.get_transaction_by_hash(transaction_hash)
 
 		if not result:

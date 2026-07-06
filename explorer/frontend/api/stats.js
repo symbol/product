@@ -2,7 +2,7 @@ import { fetchAccountPage } from './accounts';
 import { fetchBlockPage } from './blocks';
 import { fetchNodeList } from './nodes';
 import config from '@/config';
-import { transactionChartFilterToType, truncateDecimals } from '@/utils/common';
+import { formatTransactionsPerBlock, transactionChartFilterToType, truncateDecimals } from '@/utils/common';
 import { createApiUrl, makeRequest } from '@/utils/server';
 
 export const fetchAccountStats = async () => {
@@ -64,7 +64,7 @@ export const fetchTransactionStats = async () => {
 	const stats = await makeRequest(createApiUrl('transaction/statistics'));
 	const blocks = (await fetchBlockPage({ pageSize: 240 })).data;
 	const total240Blocks = blocks.reduce((partialSum, block) => partialSum + block.transactionCount, 0);
-	const averagePerBlock = Math.ceil(total240Blocks / blocks.length);
+	const averagePerBlock = blocks.length ? formatTransactionsPerBlock(total240Blocks / blocks.length) : 0;
 
 	return {
 		averagePerBlock,
@@ -100,14 +100,15 @@ export const fetchBlockStats = async () => {
 };
 
 export const fetchNodeStats = async () => {
-	const [nodewatchResponse, supernodeResponse] = await Promise.all([
-		fetchNodeList(),
-		makeRequest(`${config.SUPERNODE_API_URL}/statistics`)
-	]);
+	const nodewatchResponse = await fetchNodeList();
+	const supernodeApiUrl = config.SUPERNODE_API_URL?.trim();
+	const supernodes = supernodeApiUrl
+		? (await makeRequest(`${supernodeApiUrl}/statistics`)).participantCount
+		: null;
 
 	return {
 		total: nodewatchResponse.length,
-		supernodes: supernodeResponse.participantCount
+		supernodes
 	};
 };
 
