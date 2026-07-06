@@ -105,8 +105,6 @@ def _top_level_transaction_body(transaction):
 def _expected_top_level_row(item, **overrides):
 	transaction = item['transaction']
 	expected = {
-		'node_id': item['id'],
-		'transaction_key': 'A' * 64,
 		'hash': bytes.fromhex('A' * 64),
 		'aggregate_hash': None,
 		'embedded_index': None,
@@ -180,8 +178,6 @@ class TransactionTest(TestCase):  # pylint: disable=too-many-public-methods
 
 		# Assert:
 		self.assertEqual({
-			'node_id': 'embedded-id',
-			'transaction_key': f'{"B" * 64}:2',
 			'hash': None,
 			'aggregate_hash': bytes.fromhex('B' * 64),
 			'embedded_index': 2,

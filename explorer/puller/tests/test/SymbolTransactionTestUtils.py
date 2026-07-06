@@ -5,13 +5,11 @@ from symbolchain.sc import TransactionType
 from puller.model.symbol.Transaction import TRANSACTION_TYPE_LABELS
 
 
-def create_transaction_entry(height, transaction_key=None, is_embedded=False, **overrides):
-	transaction_key = transaction_key or f'transaction-key-{height}'
+def create_transaction_entry(height, key=None, is_embedded=False, **overrides):
+	key = key or f'transaction-key-{height}'
 	transaction = {
-		'node_id': f'node-{transaction_key}',
-		'transaction_key': transaction_key,
-		'hash': None if is_embedded else f'hash-{transaction_key}'.encode('utf8'),
-		'aggregate_hash': b'aggregate-hash' if is_embedded else None,
+		'hash': None if is_embedded else f'hash-{key}'.encode('utf8'),
+		'aggregate_hash': f'aggregate-hash-{key}'.encode('utf8') if is_embedded else None,
 		'embedded_index': 0 if is_embedded else None,
 		'is_embedded': is_embedded,
 		'group': 'confirmed',
@@ -29,8 +27,8 @@ def create_transaction_entry(height, transaction_key=None, is_embedded=False, **
 		'size': None if is_embedded else 3,
 		'message_type': None,
 		'message_payload': None,
-		'body': {'height': height, 'transaction_key': transaction_key},
-		'raw_payload': {'id': transaction_key},
+		'body': {'height': height, 'key': key},
+		'raw_payload': {'id': key},
 		'mosaic_rows': [],
 		'address_rows': []
 	}

@@ -110,8 +110,13 @@ class SymbolPullerTransactionSyncTest(SymbolPullerTestBase):
 		# Assert:
 		self.assertEqual([1, 2, 3], sorted(rows_by_height.keys()))
 		self.assertEqual(TRANSACTION_PAGE_SIZE - 1, len(rows_by_height[1]))
-		self.assertEqual(['aggregate', 'embedded'], [row['node_id'] for row in rows_by_height[2]])
-		self.assertEqual(['height-3'], [row['node_id'] for row in rows_by_height[3]])
+		self.assertEqual([
+			(bytes.fromhex('A' * 64), None, None),
+			(None, bytes.fromhex('A' * 64), 0)
+		], [(row['hash'], row['aggregate_hash'], row['embedded_index']) for row in rows_by_height[2]])
+		self.assertEqual([
+			(bytes.fromhex('C' * 64), None, None)
+		], [(row['hash'], row['aggregate_hash'], row['embedded_index']) for row in rows_by_height[3]])
 
 	def test_sync_transactions_for_batch_writes_empty_rows_for_heights_without_transactions(self):
 		# Arrange:
@@ -130,11 +135,11 @@ class SymbolPullerTransactionSyncTest(SymbolPullerTestBase):
 
 		# Assert:
 		self.assertEqual([
-			(1, ['transaction-1']),
+			(1, [bytes.fromhex(f'{1:064X}')]),
 			(2, []),
-			(3, ['height-3'])
+			(3, [bytes.fromhex('C' * 64)])
 		], [
-			(height, [row['node_id'] for row in transaction_rows])
+			(height, [row['hash'] for row in transaction_rows])
 			for height, transaction_rows in transaction_database.calls
 		])
 

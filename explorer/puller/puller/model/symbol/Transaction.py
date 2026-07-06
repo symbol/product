@@ -205,7 +205,6 @@ def _top_level_or_embedded_fields(meta, transaction, is_embedded, epoch_adjustme
 			'hash': None,
 			'aggregate_hash': bytes.fromhex(meta['aggregateHash']),
 			'embedded_index': embedded_index,
-			'transaction_key': f'{meta["aggregateHash"]}:{embedded_index}',
 			'deadline': None,
 			'network_deadline': None,
 			'max_fee': None,
@@ -217,7 +216,6 @@ def _top_level_or_embedded_fields(meta, transaction, is_embedded, epoch_adjustme
 		'hash': bytes.fromhex(meta['hash']),
 		'aggregate_hash': None,
 		'embedded_index': None,
-		'transaction_key': meta['hash'],
 		'deadline': _timestamp_from_network_value(network_deadline, epoch_adjustment_seconds),
 		'network_deadline': network_deadline,
 		'max_fee': int(transaction['maxFee']),
@@ -238,7 +236,6 @@ def create_transaction_row(item, network, epoch_adjustment_seconds):
 	variable_fields = _top_level_or_embedded_fields(meta, transaction, is_embedded, epoch_adjustment_seconds)
 
 	return {
-		'node_id': item['id'],
 		'is_embedded': is_embedded,
 		'group': 'confirmed',
 		'height': int(meta['height']),

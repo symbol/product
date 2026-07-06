@@ -333,8 +333,6 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 
 		self.assertEqual([
 			('id', 'int8', 'NO', "nextval('symbol_transactions_id_seq'::regclass)"),
-			('node_id', 'text', 'YES', None),
-			('transaction_key', 'text', 'NO', None),
 			('hash', 'bytea', 'YES', None),
 			('aggregate_hash', 'bytea', 'YES', None),
 			('embedded_index', 'int4', 'YES', None),
@@ -353,8 +351,8 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			('network_deadline', 'int8', 'YES', None),
 			('max_fee', 'int8', 'YES', None),
 			('effective_fee', 'int8', 'YES', None),
-			('size', 'int8', 'YES', None),
-			('message_type', 'varchar', 'YES', None),
+			('size', 'int4', 'YES', None),
+			('message_type', 'symbol_transaction_message_type', 'YES', None),
 			('message_payload', 'text', 'YES', None),
 			('body', 'jsonb', 'YES', None),
 			('raw_payload', 'jsonb', 'NO', None),
@@ -364,8 +362,9 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		self.assertEqual([
 			('FOREIGN KEY', 'height'),
 			('PRIMARY KEY', 'id'),
-			('UNIQUE', 'node_id'),
-			('UNIQUE', 'transaction_key')
+			('UNIQUE', 'aggregate_hash'),
+			('UNIQUE', 'embedded_index'),
+			('UNIQUE', 'hash')
 		], key_constraints)
 
 	def test_create_tables_creates_symbol_transaction_child_columns_and_constraints(self):
@@ -453,8 +452,6 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			'idx_symbol_transaction_addresses_height',
 			'idx_symbol_transaction_mosaics_mosaic_height',
 			'idx_symbol_transaction_mosaics_mosaic_role_height',
-			'idx_symbol_transactions_aggregate_hash',
-			'idx_symbol_transactions_hash',
 			'idx_symbol_transactions_height_desc',
 			'idx_symbol_transactions_list_sequence_desc',
 			'idx_symbol_transactions_recipient_height',
@@ -757,7 +754,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		# Assert:
 		cursor.execute(
 			'''
-			SELECT transaction_key, effective_fee
+			SELECT encode(hash, 'escape'), effective_fee
 			FROM symbol_transactions
 			ORDER BY id
 			'''
@@ -765,8 +762,8 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		results = cursor.fetchall()
 
 		self.assertEqual([
-			('top-level', 6),
-			('embedded', None)
+			('hash-top-level', 6),
+			(None, None)
 		], results)
 
 	def test_upsert_transactions_for_height_replaces_parent_and_child_rows(self):
@@ -806,14 +803,14 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		)])
 
 		# Assert:
-		cursor.execute('SELECT transaction_key FROM symbol_transactions ORDER BY transaction_key')
+		cursor.execute('SELECT encode(hash, \'escape\') FROM symbol_transactions')
 		transaction_results = cursor.fetchall()
 		cursor.execute('SELECT mosaic_id, amount, role FROM symbol_transaction_mosaics ORDER BY mosaic_id')
 		mosaic_results = cursor.fetchall()
 		cursor.execute('SELECT encode(address, \'escape\'), role FROM symbol_transaction_addresses ORDER BY role')
 		address_results = cursor.fetchall()
 
-		self.assertEqual([('new',)], transaction_results)
+		self.assertEqual([('hash-new',)], transaction_results)
 		self.assertEqual([('2222222222222222', 20, 'definition')], mosaic_results)
 		self.assertEqual([('new address', 'recipient')], address_results)
 
@@ -836,17 +833,17 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		# Assert:
 		cursor.execute(
 			'''
-			SELECT transaction_key, list_sequence
+			SELECT encode(COALESCE(hash, aggregate_hash), 'escape'), list_sequence
 			FROM symbol_transactions
 			ORDER BY id
 			'''
 		)
 		results = cursor.fetchall()
 
-		self.assertEqual('first', results[0][0])
-		self.assertEqual('embedded', results[1][0])
-		self.assertEqual('second', results[2][0])
-		self.assertEqual('third', results[3][0])
+		self.assertEqual('hash-first', results[0][0])
+		self.assertEqual('aggregate-hash-embedded', results[1][0])
+		self.assertEqual('hash-second', results[2][0])
+		self.assertEqual('hash-third', results[3][0])
 		self.assertIsNone(results[1][1])
 		self.assertLess(results[0][1], results[2][1])
 		self.assertLess(results[2][1], results[3][1])
@@ -859,7 +856,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		with self.assertRaises(PsycopgError):
 			database.upsert_transactions_for_height(7, [create_transaction_entry(7)])
 
-	def test_upsert_transactions_for_height_rejects_duplicate_transaction_key(self):
+	def test_upsert_transactions_for_height_rejects_duplicate_hash(self):
 		# Arrange:
 		database = self._create_database()
 		database.upsert_blocks([_create_block(1)])
@@ -868,7 +865,19 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		with self.assertRaises(PsycopgError):
 			database.upsert_transactions_for_height(1, [
 				create_transaction_entry(1, 'duplicate'),
-				create_transaction_entry(1, 'duplicate', node_id='different-node-id')
+				create_transaction_entry(1, 'duplicate')
+			])
+
+	def test_upsert_transactions_for_height_rejects_duplicate_embedded_position(self):
+		# Arrange:
+		database = self._create_database()
+		database.upsert_blocks([_create_block(1)])
+
+		# Act + Assert:
+		with self.assertRaises(PsycopgError):
+			database.upsert_transactions_for_height(1, [
+				create_transaction_entry(1, 'duplicate', is_embedded=True),
+				create_transaction_entry(1, 'duplicate', is_embedded=True)
 			])
 
 	def test_upsert_transactions_for_height_persists_body_and_raw_payload(self):
@@ -908,7 +917,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		database.delete_blocks_from_height(2)
 
 		# Assert:
-		cursor.execute('SELECT transaction_key FROM symbol_transactions ORDER BY transaction_key')
+		cursor.execute('SELECT encode(hash, \'escape\') FROM symbol_transactions')
 		transaction_results = cursor.fetchall()
 		cursor.execute('SELECT COUNT(*) FROM symbol_transaction_mosaics')
 		mosaic_count = cursor.fetchone()[0]
@@ -917,7 +926,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		cursor.execute('SELECT height FROM symbol_blocks ORDER BY height')
 		block_results = cursor.fetchall()
 
-		self.assertEqual([('kept',)], transaction_results)
+		self.assertEqual([('hash-kept',)], transaction_results)
 		self.assertEqual(0, mosaic_count)
 		self.assertEqual(0, address_count)
 		self.assertEqual([(1,)], block_results)

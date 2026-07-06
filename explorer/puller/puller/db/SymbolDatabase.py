@@ -1,7 +1,7 @@
 from psycopg2.extras import Json
 
 from puller.model.symbol.Block import BLOCK_TYPE_VALUES
-from puller.model.symbol.Transaction import TRANSACTION_TYPE_LABELS
+from puller.model.symbol.Transaction import MESSAGE_TYPE_LABELS, TRANSACTION_TYPE_LABELS
 
 from .DatabaseConnection import DatabaseConnection
 
@@ -21,6 +21,7 @@ SYMBOL_TRANSACTION_TYPE_VALUES = tuple(TRANSACTION_TYPE_LABELS.values())
 SYMBOL_TRANSACTION_GROUP_VALUES = ('confirmed',)
 SYMBOL_TRANSACTION_MOSAIC_ROLE_VALUES = ('transfer', 'hash_lock', 'secret_lock', 'revocation', 'restriction', 'definition')
 SYMBOL_TRANSACTION_ADDRESS_ROLE_VALUES = ('signer', 'recipient', 'target', 'sender', 'cosignatory', 'mosaic_owner')
+SYMBOL_TRANSACTION_MESSAGE_TYPE_VALUES = tuple(MESSAGE_TYPE_LABELS.values())
 SYMBOL_SYNC_STATE_DEFINITIONS = [
 	'id int PRIMARY KEY DEFAULT 1',
 	'status symbol_sync_state_status NOT NULL',
@@ -69,9 +70,7 @@ SYMBOL_BLOCK_DEFINITIONS = [
 ]
 SYMBOL_TRANSACTION_DEFINITIONS = [
 	'id bigserial PRIMARY KEY',
-	'node_id text UNIQUE',
-	'transaction_key text NOT NULL UNIQUE',
-	'hash bytea',
+	'hash bytea UNIQUE',
 	'aggregate_hash bytea',
 	'embedded_index int',
 	'is_embedded boolean NOT NULL',
@@ -89,13 +88,14 @@ SYMBOL_TRANSACTION_DEFINITIONS = [
 	'network_deadline bigint',
 	'max_fee bigint',
 	'effective_fee bigint',
-	'size bigint',
-	'message_type varchar',
+	'size int',
+	'message_type symbol_transaction_message_type',
 	'message_payload text',
 	'body jsonb',
 	'raw_payload jsonb NOT NULL',
 	'created_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP',
-	'updated_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP'
+	'updated_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP',
+	'UNIQUE (aggregate_hash, embedded_index)'
 ]
 SYMBOL_TRANSACTION_MOSAIC_DEFINITIONS = [
 	'transaction_id bigint NOT NULL REFERENCES symbol_transactions(id)',
@@ -146,6 +146,7 @@ class SymbolDatabase(DatabaseConnection):
 		_create_enum_type(cursor, 'symbol_transaction_group', SYMBOL_TRANSACTION_GROUP_VALUES)
 		_create_enum_type(cursor, 'symbol_transaction_mosaic_role', SYMBOL_TRANSACTION_MOSAIC_ROLE_VALUES)
 		_create_enum_type(cursor, 'symbol_transaction_address_role', SYMBOL_TRANSACTION_ADDRESS_ROLE_VALUES)
+		_create_enum_type(cursor, 'symbol_transaction_message_type', SYMBOL_TRANSACTION_MESSAGE_TYPE_VALUES)
 		_create_table(cursor, 'symbol_sync_state', SYMBOL_SYNC_STATE_DEFINITIONS)
 		_create_table(cursor, 'symbol_blocks', SYMBOL_BLOCK_DEFINITIONS)
 		cursor.execute('CREATE SEQUENCE IF NOT EXISTS symbol_transaction_list_sequence_seq')
@@ -178,8 +179,6 @@ class SymbolDatabase(DatabaseConnection):
 			CREATE INDEX IF NOT EXISTS idx_symbol_transactions_recipient_height
 			ON symbol_transactions(recipient_address, height DESC, id DESC)
 		''')
-		cursor.execute('CREATE INDEX IF NOT EXISTS idx_symbol_transactions_hash ON symbol_transactions(hash)')
-		cursor.execute('CREATE INDEX IF NOT EXISTS idx_symbol_transactions_aggregate_hash ON symbol_transactions(aggregate_hash)')
 		cursor.execute('CREATE INDEX IF NOT EXISTS idx_symbol_transactions_timestamp ON symbol_transactions(timestamp)')
 		cursor.execute('''
 			CREATE INDEX IF NOT EXISTS idx_symbol_transaction_mosaics_mosaic_height
@@ -357,8 +356,6 @@ class SymbolDatabase(DatabaseConnection):
 		cursor.execute(
 			'''
 			INSERT INTO symbol_transactions (
-				node_id,
-				transaction_key,
 				hash,
 				aggregate_hash,
 				embedded_index,
@@ -385,8 +382,6 @@ class SymbolDatabase(DatabaseConnection):
 				updated_at
 			)
 			VALUES (
-				%(node_id)s,
-				%(transaction_key)s,
 				%(hash)s,
 				%(aggregate_hash)s,
 				%(embedded_index)s,

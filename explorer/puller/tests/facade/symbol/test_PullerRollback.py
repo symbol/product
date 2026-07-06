@@ -23,13 +23,13 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):
 		cursor = database.connection.cursor()
 		cursor.execute(
 			'''
-			SELECT height, node_id, transaction_key
+			SELECT height, hash
 			FROM symbol_transactions
 			ORDER BY height, id
 			'''
 		)
 
-		return cursor.fetchall()
+		return [(height, bytes(hash_value) if hash_value is not None else None) for height, hash_value in cursor.fetchall()]
 
 	@staticmethod
 	def _fetch_transaction_mosaic_rows(database):
@@ -115,7 +115,6 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):
 		self.puller.symbol_db.upsert_transactions_for_height(2, [create_transaction_entry(
 			2,
 			'old-transaction',
-			node_id='old-node',
 			mosaic_rows=[{
 				'mosaic_id': '1111111111111111',
 				'amount': 10,
@@ -139,7 +138,7 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):
 		address_rows = self._fetch_transaction_address_rows(self.puller.symbol_db)
 
 		self.assertEqual([
-			(2, 'replacement-transaction', replacement_transaction_hash)
+			(2, bytes.fromhex(replacement_transaction_hash))
 		], transaction_rows)
 		self.assertEqual([
 			('E74B99BA41F4AFEE', 2000, 'transfer')
@@ -184,8 +183,8 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):
 		second_sync_rows = self._fetch_transaction_rows(self.puller.symbol_db)
 
 		self.assertEqual([
-			(2, 'transaction-2', f'{2:064X}'),
-			(3, 'transaction-3', f'{3:064X}')
+			(2, bytes.fromhex(f'{2:064X}')),
+			(3, bytes.fromhex(f'{3:064X}'))
 		], first_sync_rows)
 		self.assertEqual(first_sync_rows, second_sync_rows)
 
