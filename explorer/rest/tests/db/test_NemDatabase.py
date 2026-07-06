@@ -1,3 +1,4 @@
+# pylint: disable=unexpected-keyword-arg
 from symbolchain.CryptoTypes import PublicKey
 from symbolchain.nem.Network import Address
 from symbollightapi.model.Transaction import (
