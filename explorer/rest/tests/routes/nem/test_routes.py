@@ -18,12 +18,14 @@ from ...test.DatabaseTestUtils import (
 	NAMESPACE_VIEWS,
 	TRANSACTION_DAILY_STATISTIC_VIEW,
 	TRANSACTION_MONTH_STATISTIC_VIEW,
+	TRANSACTION_NAMES_FILTERED_BY_MULTISIG_INNER_SENDER,
+	TRANSACTION_NAMES_SORTED_BY_HEIGHT_ASC,
 	TRANSACTION_STATISTIC_VIEW,
 	DatabaseConfig,
 	initialize_database,
 	transaction_dict,
 	transaction_dicts,
-	transaction_view
+	transaction_hash
 )
 
 DATABASE_CONFIG_INI = 'db_config.ini'
@@ -643,11 +645,11 @@ def test_api_mosaic_rich_list_applies_offset(client):  # pylint: disable=redefin
 
 def test_api_nem_transaction_by_hash(client):  # pylint: disable=redefined-outer-name
 	# Act:
-	response = client.get('/api/nem/transaction/' + transaction_view('1').transaction_hash)
+	response = client.get('/api/nem/transaction/' + transaction_hash('transfer'))
 
 	# Assert:
 	_assert_status_code_and_headers(response, 200)
-	assert transaction_dict('1') == response.json
+	assert transaction_dict('transfer') == response.json
 
 
 def test_api_nem_transaction_by_hash_invalid_hash(client):  # pylint: disable=redefined-outer-name, invalid-name
@@ -763,68 +765,131 @@ def _assert_get_api_nem_transactions(client, expected_status_code, expected_resu
 
 
 def test_api_transactions_without_params(client):  # pylint: disable=redefined-outer-name
-	_assert_get_api_nem_transactions(client, 200, transaction_dicts('9', '7', '8', '3', '4', '5', '2', '1'))
+	_assert_get_api_nem_transactions(client, 200, transaction_dicts(
+		'mosaic_supply_change',
+		'namespace_registration',
+		'mosaic_definition',
+		'account_key_link',
+		'multisig_account_modification',
+		'multisig',
+		'transfer_v2',
+		'transfer'
+	))
 
 
 def test_api_transactions_applies_limit(client):  # pylint: disable=redefined-outer-name
-	_assert_get_api_nem_transactions(client, 200, transaction_dicts('3'), limit=1)
+	_assert_get_api_nem_transactions(client, 200, transaction_dicts('account_key_link'), limit=1)
 
 
 def test_api_transactions_applies_offset(client):  # pylint: disable=redefined-outer-name
-	_assert_get_api_nem_transactions(client, 200, transaction_dicts('7', '8', '3', '4', '5', '2', '1'), offset=1)
+	_assert_get_api_nem_transactions(client, 200, transaction_dicts(
+		'namespace_registration',
+		'mosaic_definition',
+		'account_key_link',
+		'multisig_account_modification',
+		'multisig',
+		'transfer_v2',
+		'transfer'
+	), offset=1)
 
 
 def test_api_transactions_applies_sorted_by_height_asc(client):  # pylint: disable=redefined-outer-name, invalid-name
-	_assert_get_api_nem_transactions(client, 200, transaction_dicts('1', '2', '3', '4', '5', '7', '8', '9'), sort='ASC')
+	_assert_get_api_nem_transactions(client, 200, transaction_dicts(*TRANSACTION_NAMES_SORTED_BY_HEIGHT_ASC), sort='ASC')
 
 
 def test_api_transactions_applies_sorted_by_height_desc(client):  # pylint: disable=redefined-outer-name, invalid-name
-	_assert_get_api_nem_transactions(client, 200, transaction_dicts('9', '7', '8', '3', '4', '5', '2', '1'), sort='DESC')
+	_assert_get_api_nem_transactions(client, 200, transaction_dicts(
+		'mosaic_supply_change',
+		'namespace_registration',
+		'mosaic_definition',
+		'account_key_link',
+		'multisig_account_modification',
+		'multisig',
+		'transfer_v2',
+		'transfer'
+	), sort='DESC')
 
 
 def test_api_transactions_applies_height(client):  # pylint: disable=redefined-outer-name
-	_assert_get_api_nem_transactions(client, 200, transaction_dicts('1', '2'), height=1)
+	_assert_get_api_nem_transactions(client, 200, transaction_dicts('transfer', 'transfer_v2'), height=1)
 
 
 def test_api_transactions_applies_transaction_types(client):  # pylint: disable=redefined-outer-name, invalid-name
-	_assert_get_api_nem_transactions(client, 200, transaction_dicts('3', '1', '2'), transactionTypes='transfer,account_key_link')
+	_assert_get_api_nem_transactions(client, 200, transaction_dicts(
+		'account_key_link',
+		'transfer',
+		'transfer_v2'
+	), transactionTypes='transfer,account_key_link')
 
 
 def test_api_transactions_applies_address(client):  # pylint: disable=redefined-outer-name, invalid-name
-	_assert_get_api_nem_transactions(client, 200, transaction_dicts('3'), address='NBNR6XNZQIGQVXII6L3FPJTUGF6NFGLZHBN52R3V')
+	_assert_get_api_nem_transactions(
+		client,
+		200,
+		transaction_dicts('account_key_link'),
+		address='NBNR6XNZQIGQVXII6L3FPJTUGF6NFGLZHBN52R3V'
+	)
 
 
 def test_api_transactions_applies_sender_address(client):  # pylint: disable=redefined-outer-name, invalid-name
-	_assert_get_api_nem_transactions(client, 200, transaction_dicts('3'), senderAddress='NBNR6XNZQIGQVXII6L3FPJTUGF6NFGLZHBN52R3V')
+	_assert_get_api_nem_transactions(
+		client,
+		200,
+		transaction_dicts('account_key_link'),
+		senderAddress='NBNR6XNZQIGQVXII6L3FPJTUGF6NFGLZHBN52R3V'
+	)
 
 
 def test_api_transactions_applies_sender_public_key(client):  # pylint: disable=redefined-outer-name, invalid-name
-	_assert_get_api_nem_transactions(client, 200, transaction_dicts('3'), senderPublicKey='9ca54cd15edf88a9df9173375d4a0d706f7a9ddcf57d7547dff8110ddd2adeb9')
+	_assert_get_api_nem_transactions(
+		client,
+		200,
+		transaction_dicts('account_key_link'),
+		senderPublicKey='9ca54cd15edf88a9df9173375d4a0d706f7a9ddcf57d7547dff8110ddd2adeb9'
+	)
 
 
 def test_api_transactions_excludes_multisig_for_initiator_from_address_filter(client):  # pylint: disable=redefined-outer-name, invalid-name
-	_assert_get_api_nem_transactions(client, 200, [], address='NANEMOABLAGR72AZ2RV3V4ZHDCXW25XQ73O7OBT5')
-	_assert_get_api_nem_transactions(client, 200, [], senderAddress='NANEMOABLAGR72AZ2RV3V4ZHDCXW25XQ73O7OBT5')
+	_assert_get_api_nem_transactions(client, 200, transaction_dicts(), address='NANEMOABLAGR72AZ2RV3V4ZHDCXW25XQ73O7OBT5')
+	_assert_get_api_nem_transactions(client, 200, transaction_dicts(), senderAddress='NANEMOABLAGR72AZ2RV3V4ZHDCXW25XQ73O7OBT5')
 
 
 def test_api_transactions_applies_recipient_address(client):  # pylint: disable=redefined-outer-name, invalid-name
-	_assert_get_api_nem_transactions(client, 200, transaction_dicts('5', '7', '8', '1', '2'), recipientAddress='NBFWZ4IVRHEIBRCGHLYDS62FSFTBM3VDFA7E6LSQ')
+	_assert_get_api_nem_transactions(client, 200, transaction_dicts(
+		'multisig',
+		'namespace_registration',
+		'mosaic_definition',
+		'transfer',
+		'transfer_v2'
+	), recipientAddress='NBFWZ4IVRHEIBRCGHLYDS62FSFTBM3VDFA7E6LSQ')
 
 
 def test_api_transactions_applies_multisig_inner_sender_address(client):  # pylint: disable=redefined-outer-name, invalid-name
-	_assert_get_api_nem_transactions(client, 200, transaction_dicts('5', '8', '9', '4', '7', '2', '1'), senderAddress='NALICEPFLZQRZGPRIJTMJOCPWDNECXTNNG7QLSG3')
+	_assert_get_api_nem_transactions(
+		client,
+		200,
+		transaction_dicts(*TRANSACTION_NAMES_FILTERED_BY_MULTISIG_INNER_SENDER),
+		senderAddress='NALICEPFLZQRZGPRIJTMJOCPWDNECXTNNG7QLSG3'
+	)
 
 
 def test_api_transactions_applies_mosaic(client):  # pylint: disable=redefined-outer-name
-	_assert_get_api_nem_transactions(client, 200, transaction_dicts('2'), mosaic='root.mosaic')
+	_assert_get_api_nem_transactions(client, 200, transaction_dicts('transfer_v2'), mosaic='root.mosaic')
 
 
 def test_api_transactions_applies_address_ignore_other(client):  # pylint: disable=redefined-outer-name, invalid-name
-	_assert_get_api_nem_transactions(client, 200, transaction_dicts('3'), address='NBNR6XNZQIGQVXII6L3FPJTUGF6NFGLZHBN52R3V', senderAddress='NALICEPFLZQRZGPRIJTMJOCPWDNECXTNNG7QLSG3')
-
-	_assert_get_api_nem_transactions(client, 200, transaction_dicts('3'), address='NBNR6XNZQIGQVXII6L3FPJTUGF6NFGLZHBN52R3V', recipientAddress='NALICEPFLZQRZGPRIJTMJOCPWDNECXTNNG7QLSG3')
-
-	_assert_get_api_nem_transactions(client, 200, transaction_dicts('3'), address='NBNR6XNZQIGQVXII6L3FPJTUGF6NFGLZHBN52R3V', senderPublicKey='f9bd190dd0c364261f5c8a74870cc7f7374e631352293c62ecc437657e5de2cd')
+	for query_params in [
+		{'senderAddress': 'NALICEPFLZQRZGPRIJTMJOCPWDNECXTNNG7QLSG3'},
+		{'recipientAddress': 'NALICEPFLZQRZGPRIJTMJOCPWDNECXTNNG7QLSG3'},
+		{'senderPublicKey': 'f9bd190dd0c364261f5c8a74870cc7f7374e631352293c62ecc437657e5de2cd'}
+	]:
+		_assert_get_api_nem_transactions(
+			client,
+			200,
+			transaction_dicts('account_key_link'),
+			address='NBNR6XNZQIGQVXII6L3FPJTUGF6NFGLZHBN52R3V',
+			**query_params
+		)
 
 
 def _assert_transaction_invalid_params(client, expected_message, **query_params):  # pylint: disable=redefined-outer-name

@@ -15,6 +15,7 @@ from ..test.DatabaseTestUtils import (
 	NAMESPACE_VIEWS,
 	TRANSACTION_DAILY_STATISTIC_VIEW,
 	TRANSACTION_MONTH_STATISTIC_VIEW,
+	TRANSACTION_NAMES_FILTERED_BY_MULTISIG_INNER_SENDER,
 	TRANSACTION_STATISTIC_VIEW,
 	DatabaseTestBase,
 	transaction_dict,
@@ -417,7 +418,7 @@ class TestNemRestFacade(DatabaseTestBase):  # pylint: disable=too-many-public-me
 	def test_can_retrieve_transaction_by_hash(self):
 		self._assert_can_retrieve_transaction_by_hash(
 			transaction_hash='0' * 63 + '1',
-			expected_transaction=transaction_dict('1')
+			expected_transaction=transaction_dict('transfer')
 		)
 
 	def test_returns_none_for_nonexistent_transaction_hash(self):
@@ -463,19 +464,19 @@ class TestNemRestFacade(DatabaseTestBase):  # pylint: disable=too-many-public-me
 		self.assertEqual(EXPECTED_TRANSACTION_MONTH_STATISTICS, transaction_statistics)
 	# region transactions
 
-	def _assert_can_retrieve_transactions(self, pagination, sort, transaction_query, expected_transactions):
+	def _assert_can_retrieve_transactions(self, pagination, sort, transaction_query, expected_transaction_names):
 		# Act:
 		transactions = self.nem_rest_facade.get_transactions(pagination, sort, transaction_query)
 
 		# Assert:
-		self.assertEqual(expected_transactions, transactions)
+		self.assertEqual(transaction_dicts(*expected_transaction_names), transactions)
 
 	def test_can_retrieve_transactions_filtered_by_limit(self):
 		self._assert_can_retrieve_transactions(
 			pagination=Pagination(1, 0),
 			sort='DESC',
 			transaction_query=self._make_transaction_query(),
-			expected_transactions=transaction_dicts('3')
+			expected_transaction_names=('account_key_link', )
 		)
 
 	def test_can_retrieve_transactions_filtered_by_offset(self):
@@ -483,7 +484,7 @@ class TestNemRestFacade(DatabaseTestBase):  # pylint: disable=too-many-public-me
 			pagination=Pagination(1, 1),
 			sort='DESC',
 			transaction_query=self._make_transaction_query(),
-			expected_transactions=transaction_dicts('4')
+			expected_transaction_names=('multisig_account_modification', )
 		)
 
 	def test_can_retrieve_transactions_filtered_by_height(self):
@@ -493,7 +494,7 @@ class TestNemRestFacade(DatabaseTestBase):  # pylint: disable=too-many-public-me
 			transaction_query=self._make_transaction_query(
 				height=1
 			),
-			expected_transactions=transaction_dicts('1', '2')
+			expected_transaction_names=('transfer', 'transfer_v2')
 		)
 
 	def test_can_retrieve_transactions_sorted_by_height_desc(self):
@@ -501,7 +502,7 @@ class TestNemRestFacade(DatabaseTestBase):  # pylint: disable=too-many-public-me
 			pagination=Pagination(2, 0),
 			sort='DESC',
 			transaction_query=self._make_transaction_query(),
-			expected_transactions=transaction_dicts('3', '4')
+			expected_transaction_names=('account_key_link', 'multisig_account_modification')
 		)
 
 	def test_can_retrieve_transactions_sorted_by_height_asc(self):
@@ -509,7 +510,7 @@ class TestNemRestFacade(DatabaseTestBase):  # pylint: disable=too-many-public-me
 			pagination=Pagination(2, 0),
 			sort='ASC',
 			transaction_query=self._make_transaction_query(),
-			expected_transactions=transaction_dicts('2', '1')
+			expected_transaction_names=('transfer_v2', 'transfer')
 		)
 
 	def test_can_retrieve_transactions_filtered_by_sender_public_key(self):
@@ -519,7 +520,7 @@ class TestNemRestFacade(DatabaseTestBase):  # pylint: disable=too-many-public-me
 			transaction_query=self._make_transaction_query(
 				sender='9ca54cd15edf88a9df9173375d4a0d706f7a9ddcf57d7547dff8110ddd2adeb9'
 			),
-			expected_transactions=transaction_dicts('3')
+			expected_transaction_names=('account_key_link', )
 		)
 
 	def test_can_exclude_multisig_transaction_for_initiator_account_from_address_filter(self):
@@ -529,7 +530,7 @@ class TestNemRestFacade(DatabaseTestBase):  # pylint: disable=too-many-public-me
 			transaction_query=self._make_transaction_query(
 				address='NANEMOABLAGR72AZ2RV3V4ZHDCXW25XQ73O7OBT5'
 			),
-			expected_transactions=[]
+			expected_transaction_names=()
 		)
 		self._assert_can_retrieve_transactions(
 			pagination=Pagination(10, 0),
@@ -537,7 +538,7 @@ class TestNemRestFacade(DatabaseTestBase):  # pylint: disable=too-many-public-me
 			transaction_query=self._make_transaction_query(
 				sender_address='NANEMOABLAGR72AZ2RV3V4ZHDCXW25XQ73O7OBT5'
 			),
-			expected_transactions=[]
+			expected_transaction_names=()
 		)
 
 	def test_can_retrieve_transactions_filtered_by_recipient_address(self):
@@ -547,7 +548,7 @@ class TestNemRestFacade(DatabaseTestBase):  # pylint: disable=too-many-public-me
 			transaction_query=self._make_transaction_query(
 				recipient_address='NBFWZ4IVRHEIBRCGHLYDS62FSFTBM3VDFA7E6LSQ'
 			),
-			expected_transactions=transaction_dicts('5', '7', '8', '1', '2')
+			expected_transaction_names=('multisig', 'namespace_registration', 'mosaic_definition', 'transfer', 'transfer_v2')
 		)
 
 	def test_can_retrieve_transactions_filtered_by_sender_address(self):
@@ -557,7 +558,7 @@ class TestNemRestFacade(DatabaseTestBase):  # pylint: disable=too-many-public-me
 			transaction_query=self._make_transaction_query(
 				sender_address='NBNR6XNZQIGQVXII6L3FPJTUGF6NFGLZHBN52R3V'
 			),
-			expected_transactions=transaction_dicts('3')
+			expected_transaction_names=('account_key_link', )
 		)
 
 	def test_can_retrieve_multisig_transaction_filtered_by_inner_sender_address(self):
@@ -567,7 +568,7 @@ class TestNemRestFacade(DatabaseTestBase):  # pylint: disable=too-many-public-me
 			transaction_query=self._make_transaction_query(
 				sender_address='NALICEPFLZQRZGPRIJTMJOCPWDNECXTNNG7QLSG3'
 			),
-			expected_transactions=transaction_dicts('5', '8', '9', '4', '7', '2', '1')
+			expected_transaction_names=TRANSACTION_NAMES_FILTERED_BY_MULTISIG_INNER_SENDER
 		)
 
 	def test_can_retrieve_transactions_filtered_by_transaction_types(self):
@@ -577,7 +578,7 @@ class TestNemRestFacade(DatabaseTestBase):  # pylint: disable=too-many-public-me
 			transaction_query=self._make_transaction_query(
 				transaction_types=[257, 2049]
 			),
-			expected_transactions=transaction_dicts('3', '1', '2')
+			expected_transaction_names=('account_key_link', 'transfer', 'transfer_v2')
 		)
 
 	def test_can_retrieve_transactions_filtered_by_mosaic(self):
@@ -587,7 +588,7 @@ class TestNemRestFacade(DatabaseTestBase):  # pylint: disable=too-many-public-me
 			transaction_query=self._make_transaction_query(
 				mosaic='root.mosaic'
 			),
-			expected_transactions=transaction_dicts('2')
+			expected_transaction_names=('transfer_v2', )
 		)
 
 	# endregion
