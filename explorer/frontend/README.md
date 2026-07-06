@@ -36,7 +36,7 @@ These variables are exposed to the browser, meaning they can be accessed both on
 
 - **`API_BASE_URL`**: Explorer REST API endpoint. Example: `http://explorer-backend.com:4000/api/nem`.
 
-- **`SUPERNODE_API_URL`**: Supernodes API endpoint. Example: `https://nem.io/supernode/api`.
+- **`SUPERNODE_API_URL`**: Supernodes API endpoint. Example: `https://nem.io/supernode/api`. When omitted, the home page hides the supernodes metric.
 
 - **`NODELIST_URL`**: Node list endpoint. Example: `https://nodewatch.symbol.tools/api/nem/nodes`.
 

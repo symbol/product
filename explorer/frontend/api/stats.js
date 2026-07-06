@@ -100,14 +100,15 @@ export const fetchBlockStats = async () => {
 };
 
 export const fetchNodeStats = async () => {
-	const [nodewatchResponse, supernodeResponse] = await Promise.all([
-		fetchNodeList(),
-		makeRequest(`${config.SUPERNODE_API_URL}/statistics`)
-	]);
+	const nodewatchResponse = await fetchNodeList();
+	const supernodeApiUrl = config.SUPERNODE_API_URL?.trim();
+	const supernodes = supernodeApiUrl
+		? (await makeRequest(`${supernodeApiUrl}/statistics`)).participantCount
+		: null;
 
 	return {
 		total: nodewatchResponse.length,
-		supernodes: supernodeResponse.participantCount
+		supernodes
 	};
 };
 
