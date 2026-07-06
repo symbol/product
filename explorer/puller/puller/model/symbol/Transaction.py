@@ -237,7 +237,6 @@ def create_transaction_row(item, network, epoch_adjustment_seconds):
 
 	return {
 		'is_embedded': is_embedded,
-		'group': 'confirmed',
 		'height': int(meta['height']),
 		'timestamp': _timestamp_from_network_value(meta['timestamp'], epoch_adjustment_seconds),
 		'type': transaction_type,

@@ -12,7 +12,6 @@ def create_transaction_entry(height, key=None, is_embedded=False, **overrides):
 		'aggregate_hash': f'aggregate-hash-{key}'.encode('utf8') if is_embedded else None,
 		'embedded_index': 0 if is_embedded else None,
 		'is_embedded': is_embedded,
-		'group': 'confirmed',
 		'height': height,
 		'timestamp': datetime.datetime(2026, 1, 1, 0, height, tzinfo=datetime.timezone.utc),
 		'type': TransactionType.TRANSFER.value,

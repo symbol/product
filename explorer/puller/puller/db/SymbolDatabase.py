@@ -18,7 +18,6 @@ SYNC_STATE_COLUMNS = [
 
 SYNC_STATE_STATUS_VALUES = ('initialized', 'healthy', 'repairing', 'unhealthy')
 SYMBOL_TRANSACTION_TYPE_VALUES = tuple(TRANSACTION_TYPE_LABELS.values())
-SYMBOL_TRANSACTION_GROUP_VALUES = ('confirmed',)
 SYMBOL_TRANSACTION_MOSAIC_ROLE_VALUES = ('transfer', 'hash_lock', 'secret_lock', 'revocation', 'restriction', 'definition')
 SYMBOL_TRANSACTION_ADDRESS_ROLE_VALUES = ('signer', 'recipient', 'target', 'sender', 'cosignatory', 'mosaic_owner')
 SYMBOL_TRANSACTION_MESSAGE_TYPE_VALUES = tuple(MESSAGE_TYPE_LABELS.values())
@@ -74,7 +73,6 @@ SYMBOL_TRANSACTION_DEFINITIONS = [
 	'aggregate_hash bytea',
 	'embedded_index int',
 	'is_embedded boolean NOT NULL',
-	'"group" symbol_transaction_group NOT NULL',
 	'height bigint NOT NULL REFERENCES symbol_blocks(height)',
 	'list_sequence bigint',
 	'timestamp timestamp NOT NULL',
@@ -143,7 +141,6 @@ class SymbolDatabase(DatabaseConnection):
 		_create_enum_type(cursor, 'symbol_block_type', BLOCK_TYPE_VALUES)
 		_create_enum_type(cursor, 'symbol_sync_state_status', SYNC_STATE_STATUS_VALUES)
 		_create_enum_type(cursor, 'symbol_transaction_type', SYMBOL_TRANSACTION_TYPE_VALUES)
-		_create_enum_type(cursor, 'symbol_transaction_group', SYMBOL_TRANSACTION_GROUP_VALUES)
 		_create_enum_type(cursor, 'symbol_transaction_mosaic_role', SYMBOL_TRANSACTION_MOSAIC_ROLE_VALUES)
 		_create_enum_type(cursor, 'symbol_transaction_address_role', SYMBOL_TRANSACTION_ADDRESS_ROLE_VALUES)
 		_create_enum_type(cursor, 'symbol_transaction_message_type', SYMBOL_TRANSACTION_MESSAGE_TYPE_VALUES)
@@ -360,7 +357,6 @@ class SymbolDatabase(DatabaseConnection):
 				aggregate_hash,
 				embedded_index,
 				is_embedded,
-				"group",
 				height,
 				list_sequence,
 				timestamp,
@@ -386,7 +382,6 @@ class SymbolDatabase(DatabaseConnection):
 				%(aggregate_hash)s,
 				%(embedded_index)s,
 				%(is_embedded)s,
-				%(group)s,
 				%(height)s,
 				CASE WHEN %(is_embedded)s THEN NULL ELSE nextval('symbol_transaction_list_sequence_seq') END,
 				%(timestamp)s,

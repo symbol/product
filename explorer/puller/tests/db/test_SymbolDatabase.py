@@ -337,7 +337,6 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			('aggregate_hash', 'bytea', 'YES', None),
 			('embedded_index', 'int4', 'YES', None),
 			('is_embedded', 'bool', 'NO', None),
-			('group', 'symbol_transaction_group', 'NO', None),
 			('height', 'int8', 'NO', None),
 			('list_sequence', 'int8', 'YES', None),
 			('timestamp', 'timestamp', 'NO', None),
