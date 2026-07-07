@@ -1,5 +1,7 @@
 from symbolchain.sc import ReceiptType
 
+from puller.model.symbol.format import bytes_from_hex_or_none, str_or_none
+
 BALANCE_CHANGE_RECEIPT_TYPES = (
 	ReceiptType.HARVEST_FEE,
 	ReceiptType.LOCK_HASH_CREATED,
@@ -42,14 +44,6 @@ RECEIPT_TYPE_GROUPS = {
 INFLATION_RECEIPT_TYPE = RECEIPT_TYPE_LABELS[ReceiptType.INFLATION.value]
 
 
-def _address_bytes_or_none(value):
-	return bytes.fromhex(value) if value else None
-
-
-def _str_or_none(value):
-	return str(value) if value is not None else None
-
-
 def _create_base_receipt_row(statement, source, receipt):
 	receipt_type = int(receipt['type'])
 
@@ -71,7 +65,7 @@ def _create_base_receipt_row(statement, source, receipt):
 
 
 def _add_mosaic_fields(row, receipt):
-	row['mosaic_id'] = _str_or_none(receipt.get('mosaicId'))
+	row['mosaic_id'] = str_or_none(receipt.get('mosaicId'))
 	row['amount'] = int(receipt.get('amount', 0))
 
 
@@ -89,15 +83,15 @@ def create_receipt_rows(statement_item):
 		row = _create_base_receipt_row(statement, source, receipt)
 		if 'balanceChange' == row['receipt_group']:
 			_add_mosaic_fields(row, receipt)
-			row['target_address'] = _address_bytes_or_none(receipt.get('targetAddress'))
+			row['target_address'] = bytes_from_hex_or_none(receipt.get('targetAddress'))
 		elif 'balanceTransfer' == row['receipt_group']:
 			_add_mosaic_fields(row, receipt)
-			row['sender_address'] = _address_bytes_or_none(receipt.get('senderAddress'))
-			row['recipient_address'] = _address_bytes_or_none(receipt.get('recipientAddress'))
+			row['sender_address'] = bytes_from_hex_or_none(receipt.get('senderAddress'))
+			row['recipient_address'] = bytes_from_hex_or_none(receipt.get('recipientAddress'))
 		elif 'inflation' == row['receipt_group']:
 			_add_mosaic_fields(row, receipt)
 		elif 'artifactExpiry' == row['receipt_group']:
-			row['artifact_id'] = _str_or_none(receipt.get('artifactId'))
+			row['artifact_id'] = str_or_none(receipt.get('artifactId'))
 
 		rows.append(row)
 

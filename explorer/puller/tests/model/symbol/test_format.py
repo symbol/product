@@ -9,6 +9,7 @@ from puller.model.symbol.format import (
 	camel_case_enum_name,
 	int_or_none,
 	label_for_type,
+	str_or_none,
 	timestamp_from_network_value
 )
 from tests.test.SymbolTestConstants import SIGNER_ADDRESS, SIGNER_PUBLIC_KEY
@@ -25,6 +26,11 @@ class SymbolFormatTest(TestCase):
 		self.assertEqual(bytes.fromhex('0a0b'), bytes_from_hex_or_none('0a0b'))
 		self.assertIsNone(bytes_from_hex_or_none(None))
 		self.assertIsNone(bytes_from_hex_or_none(''))
+
+	def test_can_convert_optional_str(self):
+		# Act + Assert:
+		self.assertEqual('123', str_or_none(123))
+		self.assertIsNone(str_or_none(None))
 
 	def test_can_camel_case_multi_word_enum_name(self):
 		# Act + Assert:
