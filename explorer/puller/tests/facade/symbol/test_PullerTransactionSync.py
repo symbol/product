@@ -1,6 +1,6 @@
 import asyncio
 
-from puller.facade.SymbolPuller import TRANSACTION_PAGE_SIZE
+from puller.facade.SymbolPuller import MAX_PAGE_SIZE
 
 from .puller_test_utils import (
 	FakeConnector,
@@ -61,7 +61,7 @@ class SymbolPullerTransactionSyncTest(SymbolPullerTestBase):
 		# Arrange:
 		first_page = [
 			create_node_transaction(1, transaction_hash=f'{index:064X}', transaction_id=f'transaction-{index}')
-			for index in range(TRANSACTION_PAGE_SIZE)
+			for index in range(MAX_PAGE_SIZE)
 		]
 		connector = FakeConnector(1, {}, transactions_by_path={
 			transaction_path(1, 1): {'data': first_page},
@@ -77,14 +77,14 @@ class SymbolPullerTransactionSyncTest(SymbolPullerTestBase):
 			transaction_path(1, 1),
 			transaction_path(1, 1, 2)
 		], connector.paths)
-		self.assertEqual(TRANSACTION_PAGE_SIZE + 1, len(rows_by_height[1]))
+		self.assertEqual(MAX_PAGE_SIZE + 1, len(rows_by_height[1]))
 
 	def test_get_transaction_rows_by_height_groups_rows_across_page_boundaries(self):
 		# Arrange:
 		aggregate_hash = 'A' * 64
 		first_page = [
 			create_node_transaction(1, transaction_hash=f'{index:064X}', transaction_id=f'height-1-{index}')
-			for index in range(TRANSACTION_PAGE_SIZE - 1)
+			for index in range(MAX_PAGE_SIZE - 1)
 		]
 		first_page.append(create_node_transaction(
 			2,
@@ -109,7 +109,7 @@ class SymbolPullerTransactionSyncTest(SymbolPullerTestBase):
 
 		# Assert:
 		self.assertEqual([1, 2, 3], sorted(rows_by_height.keys()))
-		self.assertEqual(TRANSACTION_PAGE_SIZE - 1, len(rows_by_height[1]))
+		self.assertEqual(MAX_PAGE_SIZE - 1, len(rows_by_height[1]))
 		self.assertEqual([
 			(bytes.fromhex('A' * 64), None, None),
 			(None, bytes.fromhex('A' * 64), 0)

@@ -15,8 +15,7 @@ from puller.model.symbol.Block import create_block_row
 from puller.model.symbol.Transaction import create_transaction_row
 
 DatabaseConfiguration = namedtuple('DatabaseConfiguration', ['database', 'user', 'password', 'host', 'port'])
-BLOCK_PAGE_SIZE = 100
-TRANSACTION_PAGE_SIZE = 100
+MAX_PAGE_SIZE = 100
 BLOCK_PAGE_FETCH_CONCURRENCY = 10
 
 
@@ -250,7 +249,7 @@ class SymbolPuller:
 	async def _sync_block_pages(self, start_height, chain_height, epoch_adjustment_seconds):
 		last_synced_height = None
 		last_synced_block_hash = None
-		all_offsets = range(start_height - 1, chain_height, BLOCK_PAGE_SIZE)
+		all_offsets = range(start_height - 1, chain_height, MAX_PAGE_SIZE)
 
 		for batch_start in range(0, len(all_offsets), BLOCK_PAGE_FETCH_CONCURRENCY):
 			batch_offsets = all_offsets[batch_start:batch_start + BLOCK_PAGE_FETCH_CONCURRENCY]
@@ -271,14 +270,14 @@ class SymbolPuller:
 
 				self._validate_block_page(rows, offset + 1)
 				last_row = rows[-1]
-				if len(blocks) < BLOCK_PAGE_SIZE and last_row['height'] < chain_height:
+				if len(blocks) < MAX_PAGE_SIZE and last_row['height'] < chain_height:
 					raise ValueError(f'Short Symbol block page ended at height {last_row["height"]} before chain height {chain_height}')
 
 				batch_rows.extend(rows)
 				last_synced_height = last_row['height']
 				last_synced_block_hash = last_row['hash']
 
-				if len(blocks) < BLOCK_PAGE_SIZE:
+				if len(blocks) < MAX_PAGE_SIZE:
 					self.symbol_db.upsert_blocks(batch_rows)
 					await self._sync_transactions_for_batch(batch_rows, epoch_adjustment_seconds)
 					return last_synced_height, last_synced_block_hash
@@ -303,7 +302,7 @@ class SymbolPuller:
 		while True:
 			response = await self.get_symbol_node(
 				f'/transactions/confirmed?fromHeight={start_height}&toHeight={end_height}'
-				f'&pageSize={TRANSACTION_PAGE_SIZE}&pageNumber={page_number}&order=asc&embedded=true'
+				f'&pageSize={MAX_PAGE_SIZE}&pageNumber={page_number}&order=asc&embedded=true'
 			)
 			if not isinstance(response, dict) or 'data' not in response:
 				raise ValueError('Malformed Symbol transaction page response')
@@ -313,13 +312,13 @@ class SymbolPuller:
 				row = create_transaction_row(item, self.symbol_facade.network, epoch_adjustment_seconds)
 				rows_by_height.setdefault(row['height'], []).append(row)
 
-			if len(items) < TRANSACTION_PAGE_SIZE:
+			if len(items) < MAX_PAGE_SIZE:
 				return rows_by_height
 
 			page_number += 1
 
 	async def _get_block_page(self, offset):
-		response = await self.get_symbol_node(f'/blocks?pageSize={BLOCK_PAGE_SIZE}&offset={offset}&orderBy=height')
+		response = await self.get_symbol_node(f'/blocks?pageSize={MAX_PAGE_SIZE}&offset={offset}&orderBy=height')
 		if not isinstance(response, dict) or 'data' not in response:
 			raise ValueError('Malformed Symbol block page response')
 
