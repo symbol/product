@@ -1463,7 +1463,7 @@ export const transactionPageResult = {
 						}
 					],
 					message: {
-						type: 'raw',
+						type: 'encrypted',
 						text: 'raw-message'
 					}
 				}
@@ -2349,7 +2349,7 @@ export const transactionAccountPageResult = {
 						}
 					],
 					message: {
-						type: 'raw',
+						type: 'encrypted',
 						text: 'raw-message'
 					}
 				}
