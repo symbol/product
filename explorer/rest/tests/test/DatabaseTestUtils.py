@@ -837,6 +837,60 @@ TRANSACTIONS_VIEWS = [
 	),
 ]
 
+TRANSACTION_HASHES = {
+	'transfer': '0' * 63 + '1',
+	'transfer_v2': '0' * 63 + '2',
+	'account_key_link': '0' * 63 + '3',
+	'multisig_account_modification': '0' * 63 + '4',
+	'multisig': '0' * 63 + '5',
+	'namespace_registration': '0' * 63 + '7',
+	'mosaic_definition': '0' * 63 + '8',
+	'mosaic_supply_change': '0' * 63 + '9'
+}
+
+TRANSACTION_NAMES_SORTED_BY_HEIGHT_ASC = (
+	'transfer',
+	'transfer_v2',
+	'account_key_link',
+	'multisig_account_modification',
+	'multisig',
+	'namespace_registration',
+	'mosaic_definition',
+	'mosaic_supply_change'
+)
+
+TRANSACTION_NAMES_FILTERED_BY_MULTISIG_INNER_SENDER = (
+	'multisig',
+	'mosaic_definition',
+	'mosaic_supply_change',
+	'multisig_account_modification',
+	'namespace_registration',
+	'transfer_v2',
+	'transfer'
+)
+
+TRANSACTION_VIEWS_BY_HASH = {transaction_view.transaction_hash: transaction_view for transaction_view in TRANSACTIONS_VIEWS}
+
+
+def transaction_hash(transaction_name):
+	return TRANSACTION_HASHES[transaction_name]
+
+
+def transaction_view(transaction_name):
+	return TRANSACTION_VIEWS_BY_HASH[transaction_hash(transaction_name)]
+
+
+def transaction_views(*transaction_names):
+	return [transaction_view(transaction_name) for transaction_name in transaction_names]
+
+
+def transaction_dict(transaction_name):
+	return transaction_view(transaction_name).to_dict()
+
+
+def transaction_dicts(*transaction_names):
+	return [view.to_dict() for view in transaction_views(*transaction_names)]
+
 # endregion
 
 
