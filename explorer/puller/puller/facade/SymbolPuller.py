@@ -1,5 +1,6 @@
 import asyncio
 import configparser
+import uuid
 from collections import defaultdict, namedtuple
 from datetime import datetime, timedelta, timezone
 from urllib.parse import urlparse
@@ -24,6 +25,7 @@ MAX_PAGE_SIZE = 100
 ACCOUNT_BATCH_FETCH_SIZE = MAX_PAGE_SIZE
 BLOCK_PAGE_FETCH_CONCURRENCY = 10
 DEFAULT_MAX_REQUESTS_PER_SECOND = 20
+ACCOUNT_PAGE_SIZE = 100
 
 
 def _get_symbol_network(network_type):
@@ -573,6 +575,75 @@ class SymbolPuller:
 	def _is_harvested_block_within_active_window(harvested_block_timestamp):
 		cutoff_timestamp = datetime.now(timezone.utc) - timedelta(days=HARVESTING_ACTIVE_WINDOW_DAYS)
 		return harvested_block_timestamp >= cutoff_timestamp
+
+	async def refresh_accounts(self):  # pylint: disable=too-many-locals
+		"""Refreshes the full Symbol account population snapshot and current-state account rows."""
+
+		refresh_run_id = str(uuid.uuid4())
+		started_at = datetime.now(timezone.utc)
+		try:
+			chain_info = await self.get_symbol_node('/chain/info')
+			snapshot_height = int(chain_info['height'])
+			native_mosaic_id, native_mosaic_divisibility = await self._get_native_mosaic_info()
+			cutoff_timestamp = started_at - timedelta(days=HARVESTING_ACTIVE_WINDOW_DAYS)
+			recently_harvesting_addresses = self.symbol_db.get_recently_harvesting_addresses(cutoff_timestamp)
+			self.symbol_db.upsert_account_refresh_state({
+				'status': 'refreshing',
+				'last_started_at': started_at,
+				'last_scanned_page': None,
+				'last_error': None
+			})
+
+			account_search_order = 0
+			page_number = 1
+			while True:
+				response = await self.get_symbol_node(
+					f'/accounts?pageSize={ACCOUNT_PAGE_SIZE}&pageNumber={page_number}&orderBy=id&order=desc')
+				if not isinstance(response, dict) or 'data' not in response:
+					raise ValueError('Malformed Symbol accounts page response')
+
+				items = response['data']
+				account_entries = []
+				for item in items:
+					account_row, mosaic_rows = create_account_row(
+						item,
+						self.symbol_facade.network,
+						snapshot_height,
+						native_mosaic_id,
+						native_mosaic_divisibility)
+					account_row['is_harvesting_active'] = account_row['address'] in recently_harvesting_addresses
+					account_entries.append({
+						'refresh_run_id': refresh_run_id,
+						'account_search_id': item['id'],
+						'account_search_order': account_search_order,
+						'account_row': account_row,
+						'mosaic_rows': mosaic_rows,
+						'snapshot_height': snapshot_height,
+						'snapshot_at': started_at
+					})
+					account_search_order += 1
+
+				self.symbol_db.upsert_account_refresh_page(account_entries, page_number)
+				if len(items) < ACCOUNT_PAGE_SIZE:
+					break
+
+				page_number += 1
+
+			self.symbol_db.update_account_importance_rates(refresh_run_id)
+			self.symbol_db.rebuild_account_list_ranks(refresh_run_id, native_mosaic_id)
+			self.symbol_db.upsert_account_refresh_state({
+				'status': 'healthy',
+				'last_successful_run_id': refresh_run_id,
+				'last_completed_at': datetime.now(timezone.utc),
+				'last_completed_height': snapshot_height,
+				'last_error': None
+			})
+		except Exception as exception:
+			self.symbol_db.upsert_account_refresh_state({
+				'status': 'unhealthy',
+				'last_error': str(exception)
+			})
+			raise
 
 	@staticmethod
 	def _validate_block_page(rows, expected_start_height):

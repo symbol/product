@@ -25,6 +25,16 @@ SYMBOL_TRANSACTION_TYPE_VALUES = tuple(TRANSACTION_TYPE_LABELS.values())
 SYMBOL_TRANSACTION_MOSAIC_ROLE_VALUES = ('transfer', 'hash_lock', 'secret_lock', 'revocation', 'restriction', 'definition')
 SYMBOL_TRANSACTION_ADDRESS_ROLE_VALUES = ('signer', 'recipient', 'target', 'sender', 'cosignatory', 'mosaic_owner')
 SYMBOL_TRANSACTION_MESSAGE_TYPE_VALUES = tuple(MESSAGE_TYPE_LABELS.values())
+ACCOUNT_REFRESH_STATE_STATUS_VALUES = ('healthy', 'refreshing', 'stale', 'unhealthy')
+ACCOUNT_REFRESH_STATE_COLUMNS = [
+	'last_successful_run_id',
+	'last_started_at',
+	'last_completed_at',
+	'last_completed_height',
+	'last_scanned_page',
+	'status',
+	'last_error'
+]
 SYMBOL_SYNC_STATE_DEFINITIONS = [
 	'id int PRIMARY KEY DEFAULT 1',
 	'status symbol_sync_state_status NOT NULL',
@@ -72,6 +82,18 @@ SYMBOL_BLOCK_DEFINITIONS = [
 	'created_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP',
 	'updated_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP'
 ]
+SYMBOL_ACCOUNT_REFRESH_STATE_DEFINITIONS = [
+	'id int PRIMARY KEY DEFAULT 1',
+	'last_successful_run_id varchar',
+	'last_started_at timestamp',
+	'last_completed_at timestamp',
+	'last_completed_height bigint',
+	'last_scanned_page int',
+	"status symbol_account_refresh_state_status NOT NULL DEFAULT 'healthy'",
+	'last_error text',
+	'updated_at timestamp DEFAULT CURRENT_TIMESTAMP',
+	'CONSTRAINT symbol_account_refresh_state_singleton CHECK (id = 1)'
+]
 SYMBOL_ACCOUNT_DEFINITIONS = [
 	'address bytea PRIMARY KEY',
 	'address_text varchar(39) UNIQUE NOT NULL',
@@ -106,6 +128,40 @@ SYMBOL_MULTISIG_DEFINITIONS = [
 	"cosignatory_addresses bytea[] NOT NULL DEFAULT '{}'",
 	"multisig_addresses bytea[] NOT NULL DEFAULT '{}'",
 	'updated_at_height bigint NOT NULL'
+]
+SYMBOL_ACCOUNT_REFRESH_ACCOUNT_DEFINITIONS = [
+	'refresh_run_id varchar NOT NULL',
+	'address bytea NOT NULL',
+	'address_text varchar(39) NOT NULL',
+	'account_search_id varchar NOT NULL',
+	'account_search_order bigint NOT NULL',
+	'public_key bytea',
+	'account_type symbol_account_type',
+	'importance bigint NOT NULL',
+	'importance_percentage numeric NOT NULL DEFAULT 0',
+	'snapshot_height bigint NOT NULL',
+	'snapshot_at timestamp NOT NULL',
+	'PRIMARY KEY (refresh_run_id, address)'
+]
+SYMBOL_ACCOUNT_REFRESH_MOSAIC_DEFINITIONS = [
+	'refresh_run_id varchar NOT NULL',
+	'address bytea NOT NULL',
+	'mosaic_id varchar(16) NOT NULL',
+	'amount bigint NOT NULL',
+	'snapshot_height bigint NOT NULL',
+	'snapshot_at timestamp NOT NULL',
+	'PRIMARY KEY (refresh_run_id, address, mosaic_id)'
+]
+SYMBOL_ACCOUNT_LIST_RANK_DEFINITIONS = [
+	'refresh_run_id varchar NOT NULL',
+	'rank_scope varchar NOT NULL',
+	'rank bigint NOT NULL',
+	'address bytea NOT NULL',
+	'sort_value_numeric numeric',
+	'sort_value_text text',
+	'mosaic_id varchar(16)',
+	'updated_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP',
+	'PRIMARY KEY (refresh_run_id, rank_scope, rank)'
 ]
 SYMBOL_TRANSACTION_DEFINITIONS = [
 	'id bigserial PRIMARY KEY',
@@ -209,6 +265,7 @@ class SymbolDatabase(DatabaseConnection):
 		_create_enum_type(cursor, 'symbol_block_type', BLOCK_TYPE_VALUES)
 		_create_enum_type(cursor, 'symbol_receipt_type', SYMBOL_RECEIPT_TYPE_VALUES)
 		_create_enum_type(cursor, 'symbol_receipt_group', SYMBOL_RECEIPT_GROUP_VALUES)
+		_create_enum_type(cursor, 'symbol_account_refresh_state_status', ACCOUNT_REFRESH_STATE_STATUS_VALUES)
 		_create_enum_type(cursor, 'symbol_sync_state_status', SYNC_STATE_STATUS_VALUES)
 		_create_enum_type(cursor, 'symbol_transaction_type', SYMBOL_TRANSACTION_TYPE_VALUES)
 		_create_enum_type(cursor, 'symbol_transaction_mosaic_role', SYMBOL_TRANSACTION_MOSAIC_ROLE_VALUES)
@@ -216,9 +273,13 @@ class SymbolDatabase(DatabaseConnection):
 		_create_enum_type(cursor, 'symbol_transaction_message_type', SYMBOL_TRANSACTION_MESSAGE_TYPE_VALUES)
 		_create_table(cursor, 'symbol_sync_state', SYMBOL_SYNC_STATE_DEFINITIONS)
 		_create_table(cursor, 'symbol_blocks', SYMBOL_BLOCK_DEFINITIONS)
+		_create_table(cursor, 'symbol_account_refresh_state', SYMBOL_ACCOUNT_REFRESH_STATE_DEFINITIONS)
 		_create_table(cursor, 'symbol_accounts', SYMBOL_ACCOUNT_DEFINITIONS)
 		_create_table(cursor, 'symbol_account_mosaics', SYMBOL_ACCOUNT_MOSAIC_DEFINITIONS)
 		_create_table(cursor, 'symbol_multisig', SYMBOL_MULTISIG_DEFINITIONS)
+		_create_table(cursor, 'symbol_account_refresh_accounts', SYMBOL_ACCOUNT_REFRESH_ACCOUNT_DEFINITIONS)
+		_create_table(cursor, 'symbol_account_refresh_mosaics', SYMBOL_ACCOUNT_REFRESH_MOSAIC_DEFINITIONS)
+		_create_table(cursor, 'symbol_account_list_ranks', SYMBOL_ACCOUNT_LIST_RANK_DEFINITIONS)
 		cursor.execute('CREATE SEQUENCE IF NOT EXISTS symbol_transaction_list_sequence_seq')
 		_create_table(cursor, 'symbol_transactions', SYMBOL_TRANSACTION_DEFINITIONS)
 		_create_table(cursor, 'symbol_transaction_mosaics', SYMBOL_TRANSACTION_MOSAIC_DEFINITIONS)
@@ -233,6 +294,30 @@ class SymbolDatabase(DatabaseConnection):
 		cursor.execute('CREATE INDEX IF NOT EXISTS idx_symbol_accounts_eligible ON symbol_accounts(is_eligible_for_harvesting)')
 		cursor.execute('CREATE INDEX IF NOT EXISTS idx_symbol_account_mosaics_address ON symbol_account_mosaics(address)')
 		cursor.execute('CREATE INDEX IF NOT EXISTS idx_symbol_account_mosaics_mosaic ON symbol_account_mosaics(mosaic_id)')
+		cursor.execute(
+			'CREATE INDEX IF NOT EXISTS idx_symbol_account_refresh_accounts_importance_desc '
+			'ON symbol_account_refresh_accounts(refresh_run_id, importance_percentage DESC, address)')
+		cursor.execute(
+			'CREATE INDEX IF NOT EXISTS idx_symbol_account_refresh_accounts_search_order '
+			'ON symbol_account_refresh_accounts(refresh_run_id, account_search_order ASC, address)')
+		cursor.execute(
+			'CREATE INDEX IF NOT EXISTS idx_symbol_account_refresh_accounts_search_id '
+			'ON symbol_account_refresh_accounts(refresh_run_id, account_search_id, address)')
+		cursor.execute(
+			'CREATE INDEX IF NOT EXISTS idx_symbol_account_refresh_accounts_address_text '
+			'ON symbol_account_refresh_accounts(refresh_run_id, address_text)')
+		cursor.execute(
+			'CREATE INDEX IF NOT EXISTS idx_symbol_account_refresh_mosaics_mosaic_amount_desc '
+			'ON symbol_account_refresh_mosaics(refresh_run_id, mosaic_id, amount DESC, address)')
+		cursor.execute(
+			'CREATE INDEX IF NOT EXISTS idx_symbol_account_refresh_mosaics_address '
+			'ON symbol_account_refresh_mosaics(refresh_run_id, address)')
+		cursor.execute(
+			'CREATE INDEX IF NOT EXISTS idx_symbol_account_list_ranks_page '
+			'ON symbol_account_list_ranks(refresh_run_id, rank_scope, rank)')
+		cursor.execute(
+			'CREATE INDEX IF NOT EXISTS idx_symbol_account_list_ranks_address '
+			'ON symbol_account_list_ranks(refresh_run_id, rank_scope, address)')
 		cursor.execute('''
 			CREATE INDEX IF NOT EXISTS idx_symbol_transactions_height_desc
 			ON symbol_transactions(height DESC, id DESC)
@@ -333,6 +418,53 @@ class SymbolDatabase(DatabaseConnection):
 				sync_state['last_synced_height'],
 				sync_state['last_synced_block_hash']
 			])
+
+	def get_account_refresh_state(self):
+		"""Gets the singleton Symbol account refresh state."""
+
+		cursor = self.connection.cursor()
+		cursor.execute(f'SELECT {", ".join(ACCOUNT_REFRESH_STATE_COLUMNS)} FROM symbol_account_refresh_state WHERE id = 1')
+		result = cursor.fetchone()
+
+		return dict(zip(ACCOUNT_REFRESH_STATE_COLUMNS, result)) if result else None
+
+	def upsert_account_refresh_state(self, refresh_state):
+		"""Upserts supplied fields on the singleton Symbol account refresh state."""
+
+		cursor = self.connection.cursor()
+		self._execute_upsert_account_refresh_state(cursor, refresh_state)
+		self.connection.commit()
+
+	@staticmethod
+	def _execute_upsert_account_refresh_state(cursor, refresh_state):
+		columns = list(refresh_state.keys())
+		column_names = ', '.join(columns)
+		value_placeholders = ', '.join([f'%({column})s' for column in columns])
+		update_assignments = ', '.join([f'{column} = EXCLUDED.{column}' for column in columns])
+
+		cursor.execute(
+			f'''
+			INSERT INTO symbol_account_refresh_state (id, {column_names}, updated_at)
+			VALUES (1, {value_placeholders}, CURRENT_TIMESTAMP)
+			ON CONFLICT (id) DO UPDATE SET
+				{update_assignments},
+				updated_at = CURRENT_TIMESTAMP
+			''',
+			refresh_state)
+
+	def get_recently_harvesting_addresses(self, cutoff_timestamp):
+		"""Gets distinct beneficiary addresses that harvested blocks at or after the cutoff timestamp."""
+
+		cursor = self.connection.cursor()
+		cursor.execute(
+			'''
+			SELECT DISTINCT beneficiary_address
+			FROM symbol_blocks
+			WHERE timestamp >= %s
+			''',
+			(cutoff_timestamp,))
+
+		return {bytes(row[0]) for row in cursor.fetchall()}
 
 	def upsert_account_current_state(
 		self,
@@ -480,6 +612,254 @@ class SymbolDatabase(DatabaseConnection):
 			multisig_row_or_none)
 		self.connection.commit()
 
+	def insert_account_refresh_snapshot_rows(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+		self,
+		refresh_run_id,
+		account_search_id,
+		account_search_order,
+		account_row,
+		mosaic_rows,
+		snapshot_height,
+		snapshot_at
+	):
+		"""Inserts or replaces one account's immutable refresh snapshot rows for a run."""
+
+		cursor = self.connection.cursor()
+		self._execute_insert_account_refresh_snapshot_rows(
+			cursor,
+			refresh_run_id,
+			account_search_id,
+			account_search_order,
+			account_row,
+			mosaic_rows,
+			snapshot_height,
+			snapshot_at)
+		self.connection.commit()
+
+	@staticmethod
+	def _execute_insert_account_refresh_snapshot_rows(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+		cursor,
+		refresh_run_id,
+		account_search_id,
+		account_search_order,
+		account_row,
+		mosaic_rows,
+		snapshot_height,
+		snapshot_at
+	):
+		cursor.execute(
+			'''
+			INSERT INTO symbol_account_refresh_accounts (
+				refresh_run_id,
+				address,
+				address_text,
+				account_search_id,
+				account_search_order,
+				public_key,
+				account_type,
+				importance,
+				importance_percentage,
+				snapshot_height,
+				snapshot_at
+			)
+			VALUES (
+				%(refresh_run_id)s,
+				%(address)s,
+				%(address_text)s,
+				%(account_search_id)s,
+				%(account_search_order)s,
+				%(public_key)s,
+				%(account_type)s,
+				%(importance)s,
+				%(importance_percentage)s,
+				%(snapshot_height)s,
+				%(snapshot_at)s
+			)
+			ON CONFLICT (refresh_run_id, address) DO UPDATE SET
+				address_text = EXCLUDED.address_text,
+				account_search_id = EXCLUDED.account_search_id,
+				account_search_order = EXCLUDED.account_search_order,
+				public_key = EXCLUDED.public_key,
+				account_type = EXCLUDED.account_type,
+				importance = EXCLUDED.importance,
+				importance_percentage = EXCLUDED.importance_percentage,
+				snapshot_height = EXCLUDED.snapshot_height,
+				snapshot_at = EXCLUDED.snapshot_at
+			''',
+			{
+				**account_row,
+				'refresh_run_id': refresh_run_id,
+				'account_search_id': account_search_id,
+				'account_search_order': account_search_order,
+				'snapshot_height': snapshot_height,
+				'snapshot_at': snapshot_at
+			})
+		cursor.execute(
+			'''
+			DELETE FROM symbol_account_refresh_mosaics
+			WHERE refresh_run_id = %s AND address = %s
+			''',
+			(refresh_run_id, account_row['address']))
+		for mosaic_row in mosaic_rows:
+			cursor.execute(
+				'''
+				INSERT INTO symbol_account_refresh_mosaics (
+					refresh_run_id,
+					address,
+					mosaic_id,
+					amount,
+					snapshot_height,
+					snapshot_at
+				)
+				VALUES (
+					%(refresh_run_id)s,
+					%(address)s,
+					%(mosaic_id)s,
+					%(amount)s,
+					%(snapshot_height)s,
+					%(snapshot_at)s
+				)
+				''',
+				{
+					**mosaic_row,
+					'refresh_run_id': refresh_run_id,
+					'snapshot_height': snapshot_height,
+					'snapshot_at': snapshot_at
+				})
+
+	def upsert_account_refresh_page(self, account_entries, last_scanned_page):
+		"""Upserts one account refresh page's current-state rows, snapshot rows, and diagnostic cursor in one transaction."""
+
+		cursor = self.connection.cursor()
+		for entry in account_entries:
+			self._execute_upsert_account_current_state(
+				cursor,
+				entry['account_row'],
+				entry['mosaic_rows'],
+				overwrite_importance_percentage=False,
+				overwrite_is_harvesting_active=True)
+			self._execute_insert_account_refresh_snapshot_rows(
+				cursor,
+				entry['refresh_run_id'],
+				entry['account_search_id'],
+				entry['account_search_order'],
+				entry['account_row'],
+				entry['mosaic_rows'],
+				entry['snapshot_height'],
+				entry['snapshot_at'])
+		self._execute_upsert_account_refresh_state(cursor, {'last_scanned_page': last_scanned_page})
+		self.connection.commit()
+
+	def update_account_importance_rates(self, refresh_run_id):
+		"""Updates snapshot and current-state importance percentages for a completed account refresh run."""
+
+		cursor = self.connection.cursor()
+		cursor.execute(
+			'''
+			SELECT COALESCE(SUM(importance), 0)
+			FROM symbol_account_refresh_accounts
+			WHERE refresh_run_id = %s
+			''',
+			(refresh_run_id,))
+		total_importance = cursor.fetchone()[0]
+		cursor.execute(
+			'''
+			UPDATE symbol_account_refresh_accounts
+			SET importance_percentage = CASE
+				WHEN %s = 0 THEN 0
+				ELSE importance::numeric / %s::numeric
+			END
+			WHERE refresh_run_id = %s
+			''',
+			(total_importance, total_importance, refresh_run_id))
+		cursor.execute(
+			'''
+			UPDATE symbol_accounts
+			SET importance_percentage = snapshot.importance_percentage,
+				updated_at = CURRENT_TIMESTAMP
+			FROM symbol_account_refresh_accounts snapshot
+			WHERE symbol_accounts.address = snapshot.address
+				AND snapshot.refresh_run_id = %s
+			''',
+			(refresh_run_id,))
+		self.connection.commit()
+
+	def rebuild_account_list_ranks(self, refresh_run_id, native_mosaic_id):
+		"""Rebuilds account list rank scopes for one account refresh run."""
+
+		cursor = self.connection.cursor()
+		cursor.execute('DELETE FROM symbol_account_list_ranks WHERE refresh_run_id = %s', (refresh_run_id,))
+		cursor.execute(
+			'''
+			INSERT INTO symbol_account_list_ranks (
+				refresh_run_id,
+				rank_scope,
+				rank,
+				address,
+				sort_value_numeric,
+				sort_value_text,
+				mosaic_id
+			)
+			SELECT
+				refresh_run_id,
+				'ID',
+				ROW_NUMBER() OVER (ORDER BY account_search_order ASC, address) - 1,
+				address,
+				NULL,
+				account_search_id,
+				NULL
+			FROM symbol_account_refresh_accounts
+			WHERE refresh_run_id = %s
+			''',
+			(refresh_run_id,))
+		cursor.execute(
+			'''
+			INSERT INTO symbol_account_list_ranks (
+				refresh_run_id,
+				rank_scope,
+				rank,
+				address,
+				sort_value_numeric,
+				sort_value_text,
+				mosaic_id
+			)
+			SELECT
+				refresh_run_id,
+				'IMPORTANCE',
+				ROW_NUMBER() OVER (ORDER BY importance_percentage DESC, address) - 1,
+				address,
+				importance_percentage,
+				NULL,
+				NULL
+			FROM symbol_account_refresh_accounts
+			WHERE refresh_run_id = %s
+			''',
+			(refresh_run_id,))
+		cursor.execute(
+			'''
+			INSERT INTO symbol_account_list_ranks (
+				refresh_run_id,
+				rank_scope,
+				rank,
+				address,
+				sort_value_numeric,
+				sort_value_text,
+				mosaic_id
+			)
+			SELECT
+				refresh_run_id,
+				%s,
+				ROW_NUMBER() OVER (ORDER BY amount DESC, address) - 1,
+				address,
+				amount,
+				NULL,
+				%s
+			FROM symbol_account_refresh_mosaics
+			WHERE refresh_run_id = %s AND mosaic_id = %s
+			''',
+			(f'BALANCE:{native_mosaic_id}', native_mosaic_id, refresh_run_id, native_mosaic_id))
+		self.connection.commit()
+
 	def get_block_hash(self, height):
 		"""Gets a block hash by height."""
 
@@ -509,6 +889,7 @@ class SymbolDatabase(DatabaseConnection):
 
 		cursor = self.connection.cursor()
 		self._delete_rollback_affected_rows_from_height(cursor, height)
+		self._stale_mark_account_refresh_state_if_needed(cursor, height)
 		self.connection.commit()
 
 	def repair_rollback_from_height(self, height, sync_state):
@@ -516,6 +897,7 @@ class SymbolDatabase(DatabaseConnection):
 
 		cursor = self.connection.cursor()
 		self._delete_rollback_affected_rows_from_height(cursor, height)
+		self._stale_mark_account_refresh_state_if_needed(cursor, height)
 		self._execute_upsert_sync_state(cursor, sync_state)
 		self.connection.commit()
 
@@ -685,6 +1067,17 @@ class SymbolDatabase(DatabaseConnection):
 			'UPDATE symbol_blocks SET block_reward = %s, updated_at = CURRENT_TIMESTAMP WHERE height = %s',
 			(block_reward, height))
 		self.connection.commit()
+
+	@staticmethod
+	def _stale_mark_account_refresh_state_if_needed(cursor, fork_height):
+		cursor.execute(
+			'''
+			UPDATE symbol_account_refresh_state
+			SET status = 'stale',
+				updated_at = CURRENT_TIMESTAMP
+			WHERE id = 1 AND last_completed_height >= %s AND status != 'stale'
+			''',
+			(fork_height,))
 
 	def upsert_blocks(self, blocks):
 		"""Upserts Symbol block rows."""

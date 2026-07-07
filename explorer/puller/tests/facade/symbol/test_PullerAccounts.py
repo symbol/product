@@ -8,6 +8,7 @@ from symbollightapi.model.Exceptions import NodeException
 
 from puller.facade.SymbolPuller import ACCOUNT_BATCH_FETCH_SIZE
 from puller.model.symbol.Account import create_account_row
+from puller.model.symbol.Block import create_block_row
 
 from .puller_test_utils import (
 	BENEFICIARY_ADDRESS,
@@ -25,13 +26,34 @@ from .puller_test_utils import (
 )
 
 
-class MalformedAccountsConnector(FakeConnector):
+class MalformedAccountsBatchConnector(FakeConnector):
 	async def post(self, url_path, request_payload, *_):
 		self.paths.append(url_path)
 		if 'accounts' == url_path:
 			return {'data': []}
 
 		raise KeyError(url_path)
+
+
+def _address_hex(index):
+	return f'98{index:046X}'
+
+
+class FailingAccountsConnector(FakeConnector):
+	async def get(self, url_path, *args):
+		if url_path.startswith('accounts?pageSize=100&pageNumber=2'):
+			raise RuntimeError('page 2 failed')
+
+		return await super().get(url_path, *args)
+
+
+class MalformedAccountsConnector(FakeConnector):
+	async def get(self, url_path, *args):
+		if url_path.startswith('accounts?pageSize=100&pageNumber=1'):
+			self.paths.append(url_path)
+			return {'pagination': {'pageNumber': 1}}
+
+		return await super().get(url_path, *args)
 
 
 class SymbolPullerAccountsTest(SymbolPullerTestBase):
@@ -308,7 +330,7 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):
 
 	def test_refresh_dirty_accounts_for_batch_rejects_malformed_accounts_batch_response(self):
 		# Arrange:
-		connector = MalformedAccountsConnector(1, {0: [self._create_block(1)]})
+		connector = MalformedAccountsBatchConnector(1, {0: [self._create_block(1)]})
 
 		# Act / Assert:
 		self._assert_sync_rejects_node_response(connector, ValueError, 'Malformed Symbol accounts batch response')
@@ -444,6 +466,145 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):
 		self.assertEqual(1, connector.paths.count('network/properties'))
 		self.assertEqual(1, connector.paths.count(f'mosaics/{NATIVE_MOSAIC_ID}'))
 
+	def test_refresh_accounts_pages_all_accounts_and_assigns_search_order_across_pages(self):
+		# Arrange:
+		page1 = [create_account_item(_address_hex(index), f'id-{index}', importance=str(index + 1)) for index in range(100)]
+		page2 = [create_account_item(_address_hex(100), 'id-100', importance='101')]
+		connector = FakeConnector(101, {}, account_pages={1: page1, 2: page2})
+		set_symbol_connector(self.puller, connector)
+
+		# Act:
+		asyncio.run(self.puller.refresh_accounts())
+
+		# Assert:
+		cursor = self.puller.symbol_db.connection.cursor()
+		cursor.execute(
+			'''
+			SELECT account_search_id, account_search_order
+			FROM symbol_account_refresh_accounts
+			ORDER BY account_search_order
+			'''
+		)
+		results = cursor.fetchall()
+
+		self.assertEqual(101, len(results))
+		self.assertEqual(('id-0', 0), results[0])
+		self.assertEqual(('id-99', 99), results[99])
+		self.assertEqual(('id-100', 100), results[100])
+		self.assertEqual([
+			'chain/info',
+			'network/properties',
+			f'mosaics/{NATIVE_MOSAIC_ID}',
+			'accounts?pageSize=100&pageNumber=1&orderBy=id&order=desc',
+			'accounts?pageSize=100&pageNumber=2&orderBy=id&order=desc'
+		], connector.paths)
+
+	def test_refresh_accounts_can_restart_with_new_successful_run(self):
+		# Arrange:
+		page = [create_account_item(_address_hex(1), 'id-1', importance='10')]
+		connector = FakeConnector(1, {}, account_pages={1: page})
+		set_symbol_connector(self.puller, connector)
+
+		# Act:
+		asyncio.run(self.puller.refresh_accounts())
+		first_run_id = self.puller.symbol_db.get_account_refresh_state()['last_successful_run_id']
+		asyncio.run(self.puller.refresh_accounts())
+		second_run_id = self.puller.symbol_db.get_account_refresh_state()['last_successful_run_id']
+
+		# Assert:
+		cursor = self.puller.symbol_db.connection.cursor()
+		cursor.execute('SELECT COUNT(*) FROM symbol_account_refresh_accounts WHERE refresh_run_id = %s', (second_run_id,))
+		account_count = cursor.fetchone()[0]
+		cursor.execute('SELECT COUNT(*) FROM symbol_account_refresh_mosaics WHERE refresh_run_id = %s', (second_run_id,))
+		mosaic_count = cursor.fetchone()[0]
+		cursor.execute(
+			'''
+			SELECT rank_scope, COUNT(*)
+			FROM symbol_account_list_ranks
+			WHERE refresh_run_id = %s
+			GROUP BY rank_scope
+			ORDER BY rank_scope
+			''',
+			(second_run_id,))
+		rank_counts = cursor.fetchall()
+
+		self.assertNotEqual(first_run_id, second_run_id)
+		self.assertEqual(1, account_count)
+		self.assertEqual(1, mosaic_count)
+		self.assertEqual([
+			(f'BALANCE:{NATIVE_MOSAIC_ID}', 1),
+			('ID', 1),
+			('IMPORTANCE', 1)
+		], rank_counts)
+
+	def test_refresh_accounts_rejects_malformed_accounts_page_response(self):
+		# Arrange:
+		connector = MalformedAccountsConnector(1, {})
+		set_symbol_connector(self.puller, connector)
+
+		# Act / Assert:
+		with self.assertRaisesRegex(ValueError, 'Malformed Symbol accounts page response'):
+			asyncio.run(self.puller.refresh_accounts())
+
+		# Assert:
+		self.assertEqual('unhealthy', self.puller.symbol_db.get_account_refresh_state()['status'])
+
+	def test_refresh_accounts_recomputes_harvesting_active_for_every_visited_account(self):
+		# Arrange:
+		active_address = _address_hex(1)
+		inactive_address = _address_hex(2)
+		account_row, mosaic_rows = self._create_current_account_row(inactive_address, importance='100')
+		account_row['is_harvesting_active'] = True
+		self.puller.symbol_db.upsert_account_current_state(account_row, mosaic_rows)
+		self.puller.symbol_db.upsert_blocks([
+			self._create_block_row(1, active_address, datetime.now(timezone.utc) - timedelta(days=1)),
+			self._create_block_row(2, inactive_address, datetime.now(timezone.utc) - timedelta(days=8))
+		])
+		connector = FakeConnector(2, {}, account_pages={
+			1: [
+				create_account_item(active_address, 'active', importance='100'),
+				create_account_item(inactive_address, 'inactive', importance='100')
+			]
+		})
+		set_symbol_connector(self.puller, connector)
+
+		# Act:
+		asyncio.run(self.puller.refresh_accounts())
+
+		# Assert:
+		cursor = self.puller.symbol_db.connection.cursor()
+		cursor.execute('SELECT address, is_harvesting_active FROM symbol_accounts ORDER BY address')
+
+		self.assertEqual([
+			(bytes.fromhex(active_address), True),
+			(bytes.fromhex(inactive_address), False)
+		], [(bytes(address), is_active) for address, is_active in cursor.fetchall()])
+
+	def test_refresh_accounts_marks_failed_run_unhealthy_without_changing_previous_successful_run(self):
+		# Arrange:
+		self.puller.symbol_db.upsert_account_refresh_state({
+			'status': 'healthy',
+			'last_successful_run_id': 'previous-run',
+			'last_completed_height': 10
+		})
+		page1 = [create_account_item(_address_hex(index), f'id-{index}') for index in range(100)]
+		connector = FailingAccountsConnector(101, {}, account_pages={1: page1})
+		set_symbol_connector(self.puller, connector)
+
+		# Act / Assert:
+		with self.assertRaisesRegex(RuntimeError, 'page 2 failed'):
+			asyncio.run(self.puller.refresh_accounts())
+
+		# Assert:
+		state = self.puller.symbol_db.get_account_refresh_state()
+		cursor = self.puller.symbol_db.connection.cursor()
+		cursor.execute('SELECT COUNT(*) FROM symbol_account_refresh_accounts')
+
+		self.assertEqual('previous-run', state['last_successful_run_id'])
+		self.assertEqual('unhealthy', state['status'])
+		self.assertEqual('page 2 failed', state['last_error'])
+		self.assertEqual((100,), cursor.fetchone())
+
 	def _create_current_account_row(self, address_hex=BENEFICIARY_ADDRESS, **overrides):
 		return create_account_row(
 			create_account_item(address_hex, **overrides),
@@ -451,3 +612,10 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):
 			1,
 			NATIVE_MOSAIC_ID,
 			6)
+
+	def _create_block_row(self, height, beneficiary_address, timestamp):
+		return create_block_row(
+			create_node_block(height, beneficiaryAddress=beneficiary_address),
+			0,
+			self.puller.symbol_facade.network
+		) | {'timestamp': timestamp}
