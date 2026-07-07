@@ -90,7 +90,7 @@ NEM_CONNECTOR_UNCONFIRMED_TRANSACTIONS = [
 		],
 		message=Message(
 			payload='test message',
-			is_plain=1
+			is_plain=True
 		)
 	),
 	MultisigAccountModificationTransaction(
@@ -218,7 +218,7 @@ UNCONFIRMED_TRANSACTION_VIEWS = [
 		value=[
 			{
 				'message': {
-					'isPlain': 1,
+					'isPlain': True,
 					'payload': 'test message'
 				}
 			},

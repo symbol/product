@@ -67,6 +67,7 @@
 	"field_transaction_block": "Blok",
 	"field_transaction_block_description": "Blok kotoryj soderži transakciju",
 	"field_message": "Poslanje",
+	"field_messageEncrypted": "Šifrovana věsť",
 	"field_mosaics": "Mozaiki",
 	"field_signaturesFee": "Podpisy",
 	"field_multisigFee": "Multisignatura Transakcija",

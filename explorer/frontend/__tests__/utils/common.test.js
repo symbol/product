@@ -5,6 +5,7 @@ import {
 	arrayToText,
 	createExpirationLabel,
 	decodeTransactionMessage,
+	formatTransferMessage,
 	formatAccountCSV,
 	formatBlockCSV,
 	formatDate,
@@ -522,6 +523,29 @@ describe('utils/common', () => {
 
 			// Assert:
 			expect(result).toBe(expectedResult);
+		});
+	});
+
+	describe('formatTransferMessage', () => {
+		it('returns decoded plain text for plain messages', () => {
+			expect(formatTransferMessage(true, '48656c6c6f')).toEqual({
+				type: 'plain',
+				text: 'Hello'
+			});
+		});
+
+		it('returns hex label for plain messages with fe prefix', () => {
+			expect(formatTransferMessage(true, 'feABCD1234')).toEqual({
+				type: 'hex',
+				text: 'HEX: ABCD1234'
+			});
+		});
+
+		it('returns encrypted payload for non-plain messages', () => {
+			expect(formatTransferMessage(false, 'A1B2C3D4')).toEqual({
+				type: 'encrypted',
+				text: 'A1B2C3D4'
+			});
 		});
 	});
 

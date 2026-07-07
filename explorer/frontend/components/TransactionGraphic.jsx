@@ -78,7 +78,11 @@ const TransactionGraphic = ({ transactions }) => {
 								/>
 							</Field>
 						)}
-						{!!item.message && <Field title={t('field_message')}>{item.message.text}</Field>}
+						{!!item.message && (
+							<Field title={item.message.type === 'encrypted' ? t('field_messageEncrypted') : t('field_message')}>
+								{item.message.text}
+							</Field>
+						)}
 
 						{/* Mosaic Definition */}
 						{!!item.mosaic && (

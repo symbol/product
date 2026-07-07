@@ -310,6 +310,27 @@ export const decodeTransactionMessage = text => {
 };
 
 /**
+ * Formats a transfer message for display.
+ * @param {boolean} isPlain - Whether the message is plain text.
+ * @param {string} payload - Raw message payload hex string.
+ * @returns {{ type: 'plain'|'hex'|'encrypted', text: string }|null} Formatted message.
+ */
+export const formatTransferMessage = (isPlain, payload) => {
+	if (!payload)
+		return null;
+
+	if (!isPlain)
+		return { type: 'encrypted', text: payload };
+
+	const normalizedPayload = payload.toLowerCase();
+
+	if (normalizedPayload.startsWith('fe'))
+		return { type: 'hex', text: `HEX: ${payload.slice(2)}` };
+
+	return { type: 'plain', text: decodeTransactionMessage(payload) };
+};
+
+/**
  * Converts transaction chart filter to type.
  * @param {object} filter - Transaction chart filter.
  * @param {boolean} filter.isPerDay - The daily transaction chart.
