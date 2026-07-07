@@ -251,6 +251,27 @@ class SymbolPullerTest(TestCase):
 		)
 		self.assertEqual(2, connector.get.await_count)
 
+	def test_get_symbol_node_retries_non_not_found_api_error_when_not_found_is_allowed(self):
+		# Arrange:
+		connector = MagicMock()
+		connector.get = AsyncMock(side_effect=[
+			{
+				'code': 'InvalidArgument',
+				'message': 'offset has an invalid format'
+			},
+			{'data': []}
+		])
+		with temporary_symbol_puller(connector=connector) as puller:
+			# Act:
+			result = asyncio.run(puller.get_symbol_node(
+				'/blocks?pageSize=100&offset=bad&orderBy=height',
+				not_found_as_error=False
+			))
+
+		# Assert:
+		self.assertEqual({'data': []}, result)
+		self.assertEqual(2, connector.get.await_count)
+
 	def test_symbol_node_path_must_be_relative(self):
 		# Arrange:
 		connector = MagicMock()

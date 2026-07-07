@@ -6,6 +6,7 @@ from puller.facade.SymbolPuller import SymbolRollbackError
 from ...test.SymbolTestConstants import RECIPIENT_ADDRESS, SIGNER_ADDRESS
 from ...test.SymbolTransactionTestUtils import create_transaction_entry
 from .puller_test_utils import (
+	NATIVE_MOSAIC_ID,
 	FakeConnector,
 	SymbolPullerTestBase,
 	create_node_block,
@@ -314,7 +315,7 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):
 		self.assertEqual([1, 2, 3], block_heights)
 		self.assertEqual(3, sync_state['last_synced_height'])
 		self.assertEqual(
-			['chain/info', 'network/properties', 'blocks/2', 'blocks/3'],
+			['chain/info', 'network/properties', f'mosaics/{NATIVE_MOSAIC_ID}', 'blocks/2', 'blocks/3'],
 			connector.paths
 		)
 

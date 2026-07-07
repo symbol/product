@@ -2,20 +2,25 @@
 import datetime
 from collections import namedtuple
 from contextlib import ExitStack
+from decimal import Decimal
 from unittest import TestCase
 
 from common.tests.PostgresTestUtils import PostgresTestDatabase, drop_symbol_block_tables_if_present
 from psycopg2 import Error as PsycopgError
 from psycopg2.extras import Json
 from symbolchain.sc import ReceiptType
+from symbolchain.symbol.Network import Network
 
 from puller.db.SymbolDatabase import SymbolDatabase
+from puller.model.symbol.Account import create_account_row
 
 from ..test.SymbolTransactionTestUtils import create_transaction_entry
 
 DatabaseConfig = namedtuple(
 	'DatabaseConfig',
 	['database', 'user', 'password', 'host', 'port'])
+ADDRESS1 = '9889432DE263BB8FE88444A4DA28D3609BD8BB8FAE18AE95'
+NATIVE_MOSAIC_ID = '72C0212E67A08BCE'
 
 
 def _create_block(height, block_hash=None, **overrides):
@@ -104,6 +109,32 @@ def _create_receipt(height, receipt_type='inflation', **overrides):
 	return receipt
 
 
+def _create_account_item(address_hex=ADDRESS1, item_id='account-id', importance='100', native_amount='20000000000', **account_overrides):
+	account = {
+		'address': address_hex,
+		'addressHeight': '7',
+		'publicKey': '0' * 64,
+		'accountType': 0,
+		'supplementalPublicKeys': {},
+		'activityBuckets': [],
+		'mosaics': [{'id': NATIVE_MOSAIC_ID, 'amount': native_amount}],
+		'importance': importance,
+		'importanceHeight': '6'
+	}
+	account.update(account_overrides)
+
+	return {'account': account, 'id': item_id}
+
+
+def _create_account_row(address_hex=ADDRESS1, observed_height=10, **item_overrides):
+	return create_account_row(
+		_create_account_item(address_hex, **item_overrides),
+		Network.TESTNET,
+		observed_height,
+		NATIVE_MOSAIC_ID,
+		6)
+
+
 class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 	def setUp(self):
 		self.exit_stack = ExitStack()
@@ -153,13 +184,109 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		tables = [result[0] for result in cursor.fetchall()]
 
 		self.assertEqual([
+			'symbol_account_mosaics',
+			'symbol_accounts',
 			'symbol_blocks',
+			'symbol_multisig',
 			'symbol_receipts',
 			'symbol_sync_state',
 			'symbol_transaction_addresses',
 			'symbol_transaction_mosaics',
 			'symbol_transactions'
 		], tables)
+
+	def test_create_tables_creates_symbol_account_enum_types(self):
+		# Arrange:
+		database = self._create_uninitialized_database()
+		cursor = database.connection.cursor()
+
+		# Act:
+		database.create_tables()
+
+		# Assert:
+		cursor.execute(
+			'''
+			SELECT pg_type.typname, enumlabel
+			FROM pg_enum
+			JOIN pg_type ON pg_type.oid = pg_enum.enumtypid
+			WHERE pg_type.typname = 'symbol_account_type'
+			ORDER BY pg_type.typname, enumsortorder
+			'''
+		)
+
+		self.assertEqual([
+			('symbol_account_type', 'unlinked'),
+			('symbol_account_type', 'main'),
+			('symbol_account_type', 'remote'),
+			('symbol_account_type', 'remoteUnlinked')
+		], cursor.fetchall())
+
+	def test_create_tables_creates_symbol_account_current_state_columns(self):
+		# Arrange:
+		database = self._create_uninitialized_database()
+		cursor = database.connection.cursor()
+
+		# Act:
+		database.create_tables()
+
+		# Assert:
+		cursor.execute(
+			'''
+			SELECT column_name, udt_name, is_nullable
+			FROM information_schema.columns
+			WHERE table_name = 'symbol_accounts'
+			ORDER BY ordinal_position
+			'''
+		)
+
+		self.assertEqual([
+			('address', 'bytea', 'NO'),
+			('address_text', 'varchar', 'NO'),
+			('public_key', 'bytea', 'YES'),
+			('account_type', 'symbol_account_type', 'YES'),
+			('address_height', 'int8', 'YES'),
+			('importance', 'int8', 'NO'),
+			('importance_percentage', 'numeric', 'NO'),
+			('is_harvesting_active', 'bool', 'YES'),
+			('is_eligible_for_harvesting', 'bool', 'YES'),
+			('linked_public_key', 'bytea', 'YES'),
+			('node_public_key', 'bytea', 'YES'),
+			('vrf_public_key', 'bytea', 'YES'),
+			('voting_public_keys', 'jsonb', 'NO'),
+			('activity_buckets', 'jsonb', 'NO'),
+			('raw_payload', 'jsonb', 'NO'),
+			('first_seen_height', 'int8', 'YES'),
+			('last_seen_height', 'int8', 'NO'),
+			('updated_at', 'timestamp', 'NO')
+		], cursor.fetchall())
+
+	def test_create_tables_creates_symbol_account_indexes(self):
+		# Arrange:
+		database = self._create_uninitialized_database()
+		cursor = database.connection.cursor()
+
+		# Act:
+		database.create_tables()
+
+		# Assert:
+		cursor.execute(
+			'''
+			SELECT indexname
+			FROM pg_indexes
+			WHERE schemaname = 'public'
+				AND indexname LIKE 'idx_symbol_account%'
+			ORDER BY indexname
+			'''
+		)
+
+		self.assertEqual([
+			'idx_symbol_account_mosaics_address',
+			'idx_symbol_account_mosaics_mosaic',
+			'idx_symbol_accounts_address_height',
+			'idx_symbol_accounts_eligible',
+			'idx_symbol_accounts_harvesting',
+			'idx_symbol_accounts_importance_desc'
+		], [row[0] for row in cursor.fetchall()])
 
 	def test_create_tables_creates_symbol_sync_state_schema(self):
 		# Arrange:
@@ -819,6 +946,149 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 				'INSERT INTO symbol_sync_state (id, status) '
 				'VALUES (2, \'initialized\')'
 			)
+
+	def test_can_upsert_account_current_state_and_replace_mosaics(self):
+		# Arrange:
+		database = self._create_database()
+		account_row, mosaic_rows = _create_account_row()
+		updated_account_row, updated_mosaic_rows = _create_account_row(
+			observed_height=20,
+			native_amount='30000000000',
+			importance='200')
+
+		# Act:
+		database.upsert_account_current_state(account_row, mosaic_rows)
+		database.upsert_account_current_state(updated_account_row, updated_mosaic_rows)
+
+		# Assert:
+		cursor = database.connection.cursor()
+		cursor.execute(
+			'''
+			SELECT importance, first_seen_height, last_seen_height
+			FROM symbol_accounts
+			WHERE address = %s
+			''',
+			(bytes.fromhex(ADDRESS1),))
+		account_result = cursor.fetchone()
+		cursor.execute(
+			'''
+			SELECT mosaic_id, amount, updated_at_height
+			FROM symbol_account_mosaics
+			WHERE address = %s
+			''',
+			(bytes.fromhex(ADDRESS1),))
+		mosaic_results = cursor.fetchall()
+
+		self.assertEqual((200, 10, 20), account_result)
+		self.assertEqual([(NATIVE_MOSAIC_ID, 30000000000, 20)], mosaic_results)
+
+	def test_upsert_account_current_state_preserves_importance_percentage_when_not_overwriting(self):
+		# Arrange:
+		database = self._create_database()
+		account_row, mosaic_rows = _create_account_row()
+		account_row['importance_percentage'] = Decimal('0.75')
+		updated_account_row, updated_mosaic_rows = _create_account_row(importance='200')
+
+		# Act:
+		database.upsert_account_current_state(account_row, mosaic_rows)
+		database.upsert_account_current_state(
+			updated_account_row,
+			updated_mosaic_rows,
+			overwrite_importance_percentage=False)
+
+		# Assert:
+		cursor = database.connection.cursor()
+		cursor.execute('SELECT importance, importance_percentage FROM symbol_accounts WHERE address = %s', (bytes.fromhex(ADDRESS1),))
+
+		self.assertEqual((200, Decimal('0.75')), cursor.fetchone())
+
+	def test_upsert_account_current_state_preserves_harvesting_active_when_not_overwriting(self):
+		# Arrange:
+		database = self._create_database()
+		account_row, mosaic_rows = _create_account_row()
+		account_row['is_harvesting_active'] = False
+		updated_account_row, updated_mosaic_rows = _create_account_row()
+		updated_account_row['is_harvesting_active'] = True
+
+		# Act:
+		database.upsert_account_current_state(account_row, mosaic_rows)
+		database.upsert_account_current_state(
+			updated_account_row,
+			updated_mosaic_rows,
+			overwrite_is_harvesting_active=False)
+
+		# Assert:
+		cursor = database.connection.cursor()
+		cursor.execute('SELECT is_harvesting_active FROM symbol_accounts WHERE address = %s', (bytes.fromhex(ADDRESS1),))
+
+		self.assertEqual((False,), cursor.fetchone())
+
+	def test_can_upsert_and_delete_multisig(self):
+		# Arrange:
+		database = self._create_database()
+		account_row, mosaic_rows = _create_account_row()
+		database.upsert_account_current_state(account_row, mosaic_rows)
+		multisig_row = {
+			'address': bytes.fromhex(ADDRESS1),
+			'min_approval': 2,
+			'min_removal': 1,
+			'cosignatory_addresses': [bytes.fromhex('AA' * 24)],
+			'multisig_addresses': [bytes.fromhex('BB' * 24)],
+			'updated_at_height': 50
+		}
+
+		# Act:
+		database.upsert_multisig(bytes.fromhex(ADDRESS1), multisig_row)
+		database.upsert_multisig(bytes.fromhex(ADDRESS1), None)
+
+		# Assert:
+		cursor = database.connection.cursor()
+		cursor.execute('SELECT COUNT(*) FROM symbol_multisig WHERE address = %s', (bytes.fromhex(ADDRESS1),))
+
+		self.assertEqual((0,), cursor.fetchone())
+
+	def test_can_update_existing_multisig(self):
+		# Arrange:
+		database = self._create_database()
+		account_row, mosaic_rows = _create_account_row()
+		database.upsert_account_current_state(account_row, mosaic_rows)
+		first_multisig_row = {
+			'address': bytes.fromhex(ADDRESS1),
+			'min_approval': 2,
+			'min_removal': 1,
+			'cosignatory_addresses': [bytes.fromhex('AA' * 24)],
+			'multisig_addresses': [bytes.fromhex('BB' * 24)],
+			'updated_at_height': 50
+		}
+		second_multisig_row = {
+			'address': bytes.fromhex(ADDRESS1),
+			'min_approval': 3,
+			'min_removal': 2,
+			'cosignatory_addresses': [bytes.fromhex('CC' * 24)],
+			'multisig_addresses': [bytes.fromhex('DD' * 24)],
+			'updated_at_height': 60
+		}
+
+		# Act:
+		database.upsert_multisig(bytes.fromhex(ADDRESS1), first_multisig_row)
+		database.upsert_multisig(bytes.fromhex(ADDRESS1), second_multisig_row)
+
+		# Assert:
+		cursor = database.connection.cursor()
+		cursor.execute(
+			'''
+			SELECT min_approval, min_removal, cosignatory_addresses, multisig_addresses, updated_at_height
+			FROM symbol_multisig
+			WHERE address = %s
+			''',
+			(bytes.fromhex(ADDRESS1),))
+		result = cursor.fetchone()
+
+		self.assertEqual(3, result[0])
+		self.assertEqual(2, result[1])
+		self.assertEqual([bytes.fromhex('CC' * 24)], [bytes(value) for value in result[2]])
+		self.assertEqual([bytes.fromhex('DD' * 24)], [bytes(value) for value in result[3]])
+		self.assertEqual(60, result[4])
 
 	def test_rejects_invalid_block_type(self):
 		# Arrange:

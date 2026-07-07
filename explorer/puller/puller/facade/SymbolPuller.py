@@ -1,6 +1,7 @@
 import asyncio
 import configparser
 from collections import defaultdict, namedtuple
+from datetime import datetime, timedelta, timezone
 from urllib.parse import urlparse
 
 from common.symbol.NodeConfiguration import SymbolNodeConfiguration
@@ -12,6 +13,7 @@ from zenlog import log
 
 from puller.db.SymbolDatabase import SymbolDatabase
 from puller.facade.RequestRateLimiter import RequestRateLimiter
+from puller.model.symbol.Account import HARVESTING_ACTIVE_WINDOW_DAYS, create_account_row, create_multisig_row
 from puller.model.symbol.Block import create_block_row
 from puller.model.symbol.Receipt import INFLATION_RECEIPT_TYPE, create_receipt_rows
 from puller.model.symbol.Transaction import create_transaction_row
@@ -35,9 +37,16 @@ class SymbolRollbackError(RuntimeError):
 	"""Raised when Symbol rollback repair is outside the safe Backend2 scope."""
 
 
-def _raise_if_node_error(response):
+def _raise_if_node_error(response, allow_not_found=False):
 	if isinstance(response, dict) and 'code' in response and 'message' in response:
+		if allow_not_found and 'ResourceNotFound' == response.get('code'):
+			return
+
 		raise NodeException(f'{response["code"]}: {response["message"]}')
+
+
+def _is_not_found_response(response):
+	return isinstance(response, dict) and 'ResourceNotFound' == response.get('code')
 
 
 class SymbolPuller:
@@ -70,6 +79,7 @@ class SymbolPuller:
 		self.symbol_facade = SymbolFacade(network)
 		self._retry_delay = 2
 		self._rate_limiter = rate_limiter or RequestRateLimiter(max_requests_per_second)
+		self._native_mosaic_info = None
 
 	def __enter__(self):
 		self.symbol_db.__enter__()
@@ -90,14 +100,14 @@ class SymbolPuller:
 
 		return normalized_path
 
-	async def _retry_operation(self, operation, description, retries=3):
+	async def _retry_operation(self, operation, description, retries=3, not_found_as_error=True):
 		"""Retries a Symbol node operation with exponential backoff."""
 
 		for attempt_index in range(retries):
 			try:
 				await self._rate_limiter.wait_for_turn()
 				response = await operation()
-				_raise_if_node_error(response)
+				_raise_if_node_error(response, allow_not_found=not not_found_as_error)
 				return response
 			except NodeException as error:
 				attempt = attempt_index + 1
@@ -115,7 +125,8 @@ class SymbolPuller:
 		normalized_path = self._validate_symbol_node_path(url_path)
 		return await self._retry_operation(
 			lambda: self._symbol_connector.get(normalized_path, property_name, not_found_as_error),
-			f'fetching Symbol node path {normalized_path}'
+			f'fetching Symbol node path {normalized_path}',
+			not_found_as_error=not_found_as_error
 		)
 
 	async def post_symbol_node(self, url_path, request_payload, property_name=None, not_found_as_error=True):
@@ -124,10 +135,11 @@ class SymbolPuller:
 		normalized_path = self._validate_symbol_node_path(url_path)
 		return await self._retry_operation(
 			lambda: self._symbol_connector.post(normalized_path, request_payload, property_name, not_found_as_error),
-			f'posting Symbol node path {normalized_path}'
+			f'posting Symbol node path {normalized_path}',
+			not_found_as_error=not_found_as_error
 		)
 
-	async def sync_block_headers(self, max_height=None):
+	async def sync_block_headers(self, max_height=None):  # pylint: disable=too-many-locals
 		"""Synchronizes Symbol block headers from the configured node."""
 
 		chain_info = await self.get_symbol_node('/chain/info')
@@ -137,6 +149,7 @@ class SymbolPuller:
 			self._get_finalized_watermark(chain_info, chain_height)
 		)
 		epoch_adjustment_seconds = self._parse_epoch_adjustment(network_properties)
+		native_mosaic_id, native_mosaic_divisibility = await self._get_native_mosaic_info(network_properties)
 		sync_state = self._get_bounded_sync_state(self.symbol_db.get_sync_state(), chain_height)
 		if is_finalization_capped and sync_state and sync_state['last_synced_height'] >= finalized_height:
 			finalized_hash = self.symbol_db.get_block_hash(finalized_height)
@@ -145,7 +158,12 @@ class SymbolPuller:
 		if not start_height:
 			start_height = (sync_state['last_synced_height'] + 1) if sync_state and sync_state['last_synced_height'] else 1
 
-		last_synced_height, last_synced_block_hash = await self._sync_block_pages(start_height, chain_height, epoch_adjustment_seconds)
+		last_synced_height, last_synced_block_hash = await self._sync_block_pages(
+			start_height,
+			chain_height,
+			epoch_adjustment_seconds,
+			native_mosaic_id,
+			native_mosaic_divisibility)
 		if last_synced_height is None and sync_state:
 			last_synced_height = sync_state['last_synced_height']
 			last_synced_block_hash = sync_state['last_synced_block_hash']
@@ -250,7 +268,14 @@ class SymbolPuller:
 		})
 		return height
 
-	async def _sync_block_pages(self, start_height, chain_height, epoch_adjustment_seconds):
+	async def _sync_block_pages(  # pylint: disable=too-many-arguments,too-many-positional-arguments,too-many-locals
+		self,
+		start_height,
+		chain_height,
+		epoch_adjustment_seconds,
+		native_mosaic_id,
+		native_mosaic_divisibility
+	):
 		last_synced_height = None
 		last_synced_block_hash = None
 		all_offsets = range(start_height - 1, chain_height, MAX_PAGE_SIZE)
@@ -283,9 +308,11 @@ class SymbolPuller:
 
 				if len(blocks) < MAX_PAGE_SIZE:
 					await self._sync_block_batch(batch_rows, epoch_adjustment_seconds)
+					await self._refresh_dirty_accounts_for_batch(batch_rows, native_mosaic_id, native_mosaic_divisibility)
 					return last_synced_height, last_synced_block_hash
 
 			await self._sync_block_batch(batch_rows, epoch_adjustment_seconds)
+			await self._refresh_dirty_accounts_for_batch(batch_rows, native_mosaic_id, native_mosaic_divisibility)
 
 		return last_synced_height, last_synced_block_hash
 
@@ -372,6 +399,76 @@ class SymbolPuller:
 		raw_epoch_adjustment = network_properties['network']['epochAdjustment']
 		raw_epoch_adjustment = str(raw_epoch_adjustment)
 		return int(raw_epoch_adjustment[:-1] if raw_epoch_adjustment.endswith('s') else raw_epoch_adjustment)
+
+	async def _get_native_mosaic_info(self, network_properties=None):
+		"""Gets and memoizes the native mosaic id and divisibility for this puller instance."""
+
+		if self._native_mosaic_info:
+			return self._native_mosaic_info
+
+		network_properties = network_properties or await self.get_symbol_node('/network/properties')
+		native_mosaic_id = network_properties['chain']['currencyMosaicId'].replace('0x', '').replace("'", '').upper()
+		mosaic_definition = await self.get_symbol_node(f'/mosaics/{native_mosaic_id}')
+		self._native_mosaic_info = (native_mosaic_id, int(mosaic_definition['mosaic']['divisibility']))
+
+		return self._native_mosaic_info
+
+	async def _refresh_dirty_accounts_for_batch(self, block_rows, native_mosaic_id, native_mosaic_divisibility):
+		"""Refreshes beneficiary current-state account rows touched by a synced block batch."""
+
+		latest_block_by_beneficiary = {}
+		for row in block_rows:
+			current_row = latest_block_by_beneficiary.get(row['beneficiary_address'])
+			if not current_row or (row['timestamp'], row['height']) > (current_row['timestamp'], current_row['height']):
+				latest_block_by_beneficiary[row['beneficiary_address']] = row
+
+		observed_height = max(row['height'] for row in block_rows)
+		for address, block_row in sorted(latest_block_by_beneficiary.items()):
+			await self._refresh_account_current_state(
+				address,
+				observed_height=observed_height,
+				native_mosaic_id=native_mosaic_id,
+				native_mosaic_divisibility=native_mosaic_divisibility,
+				harvested_block_timestamp=block_row['timestamp'])
+
+	async def _refresh_account_current_state(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+		self,
+		address,
+		observed_height,
+		native_mosaic_id,
+		native_mosaic_divisibility,
+		harvested_block_timestamp
+	):
+		"""Refreshes one Symbol account current-state row and its multisig row from the configured node."""
+
+		address_text = str(self.symbol_facade.network.address_class(address))
+		item = await self.get_symbol_node(f'/accounts/{address_text}')
+		account_row, mosaic_rows = create_account_row(
+			item,
+			self.symbol_facade.network,
+			observed_height,
+			native_mosaic_id,
+			native_mosaic_divisibility)
+
+		overwrite_is_harvesting_active = self._is_harvested_block_within_active_window(harvested_block_timestamp)
+		if overwrite_is_harvesting_active:
+			account_row['is_harvesting_active'] = True
+
+		self.symbol_db.upsert_account_current_state(
+			account_row,
+			mosaic_rows,
+			overwrite_importance_percentage=False,
+			overwrite_is_harvesting_active=overwrite_is_harvesting_active)
+
+		response = await self.get_symbol_node(f'/account/{address_text}/multisig', not_found_as_error=False)
+		self.symbol_db.upsert_multisig(
+			address,
+			None if _is_not_found_response(response) else create_multisig_row(address, response['multisig'], observed_height))
+
+	@staticmethod
+	def _is_harvested_block_within_active_window(harvested_block_timestamp):
+		cutoff_timestamp = datetime.now(timezone.utc) - timedelta(days=HARVESTING_ACTIVE_WINDOW_DAYS)
+		return harvested_block_timestamp >= cutoff_timestamp
 
 	@staticmethod
 	def _validate_block_page(rows, expected_start_height):
