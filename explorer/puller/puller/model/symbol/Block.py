@@ -16,9 +16,14 @@ BLOCK_TYPE_VALUES = tuple(BLOCK_TYPE_LABELS.values())
 
 def _block_type_label(block_type):
 	try:
-		return BLOCK_TYPE_LABELS[int(block_type)]
-	except (KeyError, TypeError, ValueError) as exception:
+		numeric_type = int(block_type)
+	except (TypeError, ValueError) as exception:
 		raise ValueError(f'Unsupported Symbol block type {block_type}') from exception
+
+	if numeric_type not in BLOCK_TYPE_LABELS:
+		raise ValueError(f'Unsupported Symbol block type {block_type}')
+
+	return BLOCK_TYPE_LABELS[numeric_type]
 
 
 def create_block_row(node_block, epoch_adjustment_seconds, network):

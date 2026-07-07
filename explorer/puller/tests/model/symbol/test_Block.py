@@ -146,3 +146,11 @@ class BlockTest(TestCase):
 		# Act + Assert:
 		with self.assertRaisesRegex(ValueError, 'Unsupported Symbol block type 1'):
 			create_block_row(node_block, 100, Network.TESTNET)
+
+	def test_create_block_row_rejects_non_numeric_block_type(self):
+		# Arrange:
+		node_block = _create_node_block(1, type='invalid')
+
+		# Act + Assert:
+		with self.assertRaisesRegex(ValueError, 'Unsupported Symbol block type invalid'):
+			create_block_row(node_block, 100, Network.TESTNET)
