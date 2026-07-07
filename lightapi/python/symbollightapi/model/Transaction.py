@@ -1,7 +1,7 @@
 from collections import namedtuple
 
 from symbolchain.CryptoTypes import PublicKey
-from symbolchain.nc import TransactionType
+from symbolchain.nc import MessageType, TransactionType
 from symbolchain.nem.Network import Address
 
 from ..model.Exceptions import UnknownTransactionType
@@ -447,7 +447,7 @@ class TransactionHandler:
 		if message:
 			message = Message(
 				message['payload'],
-				message['type']
+				message.get('type') == MessageType.PLAIN.value
 			)
 		else:
 			message = None
