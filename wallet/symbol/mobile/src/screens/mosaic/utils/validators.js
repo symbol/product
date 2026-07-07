@@ -10,15 +10,15 @@ import {
 import { absoluteToRelativeAmount, relativeToAbsoluteAmount } from 'wallet-common-core';
 
 /**
- * A validation failure result: a localization message key with optional interpolation values.
+ * A validation failure: a localization message key with optional interpolation values.
  * @typedef {object} ValidationError
  * @property {string} key - The localization message key.
  * @property {object} [params] - The values interpolated into the localized message.
  */
 
 /**
- * Counts the fractional digits of a numeric input value (the digits after the decimal separator).
- * @param {string} value - The numeric input value.
+ * Counts the digits after the decimal separator of a numeric value (e.g. "1.23" has 2).
+ * @param {string} value - The numeric value.
  * @returns {number} The number of fractional digits.
  */
 const countFractionalDigits = value => {
@@ -28,22 +28,19 @@ const countFractionalDigits = value => {
 };
 
 /**
- * Validates the mosaic initial supply. The supply is entered in relative units, so its limits depend on the
- * divisibility: the amount is scaled by 10^divisibility to atomic units and must land within the network
- * range of one atomic unit to MOSAIC_MAX_ATOMIC_UNITS. It may not carry more fractional digits than the
- * divisibility, otherwise it would be silently truncated when scaled.
- * @param {string|number} divisibility - The selected mosaic divisibility.
- * @returns {function(string): (ValidationError|undefined)} The validator function.
+ * Creates a validator for the initial supply at a given divisibility. The supply may not carry more
+ * decimal places than the divisibility, and once scaled to atomic units must fall within the allowed range.
+ * @param {string|number} divisibility - The mosaic divisibility.
+ * @returns {(supply: string) => ValidationError|undefined} The supply validator.
  */
 export const validateMosaicSupply = divisibility => supply => {
 	const divisibilityValue = Number(divisibility);
 
-	// The fractional-digit check must run before relativeToAbsoluteAmount, which silently truncates
-	// the extra fractional digits and would make this error unreachable.
-	if (countFractionalDigits(supply) > divisibilityValue)
-	{return divisibilityValue === MOSAIC_DIVISIBILITY_MIN
-		? { key: 'validation_error_mosaic_supply_whole' }
-		: { key: 'validation_error_mosaic_supply_decimals', params: { divisibility: divisibilityValue } };}
+	if (countFractionalDigits(supply) > divisibilityValue) {
+		return divisibilityValue === MOSAIC_DIVISIBILITY_MIN
+			? { key: 'validation_error_mosaic_supply_whole' }
+			: { key: 'validation_error_mosaic_supply_decimals', params: { divisibility: divisibilityValue } };
+	}
 
 	const absoluteSupply = BigInt(relativeToAbsoluteAmount(supply, divisibilityValue));
 
@@ -58,9 +55,9 @@ export const validateMosaicSupply = divisibility => supply => {
 };
 
 /**
- * Validates the mosaic duration in blocks. Only runs for expiring mosaics; the value must be a whole number
- * of blocks between MOSAIC_DURATION_MIN and MOSAIC_DURATION_MAX (the network 10 year limit).
- * @returns {function(string): (ValidationError|undefined)} The validator function.
+ * Creates a validator for the duration in blocks, applied only to expiring mosaics. The value must be a
+ * whole number of blocks within the allowed range.
+ * @returns {(duration: string) => ValidationError|undefined} The duration validator.
  */
 export const validateMosaicDuration = () => duration => {
 	const blocks = Number(duration);

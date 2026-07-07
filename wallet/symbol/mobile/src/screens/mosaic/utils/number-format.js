@@ -1,18 +1,21 @@
 /**
- * Formats the integer part of a numeric string for display: falls back to "0" when empty, strips
- * insignificant leading zeros and inserts thousand-group spaces.
- * @param {string} integerPart - The integer portion of the numeric string.
+ * Groups the integer part of a numeric string into thousands with spaces, dropping insignificant
+ * leading zeros and falling back to "0" when empty.
+ * @param {string} integerPart - The integer digits of a numeric string.
  * @returns {string} The grouped integer digits.
+ * @example
+ * formatIntegerGroups('0001234567'); // '1 234 567'
  */
 export const formatIntegerGroups = integerPart =>
 	(integerPart.replace(/^0+(?=\d)/, '') || '0').replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
 
 /**
- * Formats a numeric value with thousand-group spaces on the integer part, preserving any fractional
- * part (e.g. "1234567.89" -> "1 234 567.89"). Expects a canonical value (digits with at most one dot),
- * as produced by the sanitized form state or by converting a number to a string.
- * @param {string|number} value - The canonical numeric value.
+ * Groups the integer part of a numeric value into thousands with spaces, keeping any fractional part
+ * unchanged. Expects a canonical value: digits with at most one decimal dot.
+ * @param {string|number} value - The numeric value to format.
  * @returns {string} The grouped number text.
+ * @example
+ * formatNumberGroups('1234567.89'); // '1 234 567.89'
  */
 export const formatNumberGroups = value => {
 	const [integerPart, fractionalPart] = String(value).split('.');

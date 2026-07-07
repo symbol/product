@@ -19,6 +19,7 @@
  * @property {string} labelKey - The localization key for the unit label shown on selector controls.
  * @property {string} amountKey - The localization key for the pluralized unit amount (e.g. "1 minute", "6 months").
  * @property {number} seconds - The unit length in seconds.
+ * @property {number} maxCount - The largest whole count offered for this unit.
  */
 
 /**
