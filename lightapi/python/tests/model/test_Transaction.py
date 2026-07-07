@@ -411,36 +411,32 @@ class TransactionFactoryTest(unittest.TestCase):
 
 
 class TransactionHandlerTest(unittest.TestCase):
-	def test_map_transfer_args_sets_is_plain_true_when_message_type_is_1(self):
-		# Arrange:
+	@staticmethod
+	def _map_transfer(message):
 		tx_json = {
 			'amount': 1,
 			'recipient': 'NCOPERAWEWCD4A34NP5UQCCKEX44MW4SL3QYJYS5',
-			'message': {
-				'payload': '48656C6C6F',
-				'type': MessageType.PLAIN.value
-			}
+			'message': message
 		}
+		return TransactionHandler().map[TransactionType.TRANSFER.value](tx_json)
 
-		# Act:
-		mapped_args = TransactionHandler._map_transfer_args(tx_json)
+	def test_maps_plain_message_type_to_is_plain_true(self):
+		# Arrange + Act:
+		mapped_args = self._map_transfer({'payload': '48656C6C6F', 'type': MessageType.PLAIN.value})
 
 		# Assert:
 		self.assertEqual(Message('48656C6C6F', True), mapped_args['message'])
 
-	def test_map_transfer_args_sets_is_plain_false_for_non_plain_type(self):
-		# Arrange:
-		tx_json = {
-			'amount': 1,
-			'recipient': 'NCOPERAWEWCD4A34NP5UQCCKEX44MW4SL3QYJYS5',
-			'message': {
-				'payload': 'ABCD',
-				'type': MessageType.ENCRYPTED.value
-			}
-		}
-
-		# Act:
-		mapped_args = TransactionHandler._map_transfer_args(tx_json)
+	def test_maps_encrypted_message_type_to_is_plain_false(self):
+		# Arrange + Act:
+		mapped_args = self._map_transfer({'payload': 'ABCD', 'type': MessageType.ENCRYPTED.value})
 
 		# Assert:
 		self.assertEqual(Message('ABCD', False), mapped_args['message'])
+
+	def test_maps_missing_message_to_none(self):
+		# Arrange + Act:
+		mapped_args = self._map_transfer(None)
+
+		# Assert:
+		self.assertIsNone(mapped_args['message'])
