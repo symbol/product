@@ -31,7 +31,7 @@ import {
 } from '@/app/screens/mosaic/components';
 import { useCreateMosaicFormState, useMosaicIdentity, useMosaicTransaction } from '@/app/screens/mosaic/hooks';
 import {
-	getExpiryPrefillDuration,
+	getDefaultDurationInputValue,
 	parseDurationBlocks,
 	validateMosaicDuration,
 	validateMosaicSupply
@@ -40,9 +40,7 @@ import { validateRequired } from '@/app/utils';
 import React, { useEffect } from 'react';
 import Animated, { FadeInDown, FadeInUp, FadeOut, FadeOutUp, withDelay, withTiming } from 'react-native-reanimated';
 
-// Layout animation for the expiry toggle: the duration inputs fade in/out while the flags section
-// below slides to its new position instead of jumping. Mirrors the Home screen's WidgetAnimatedWrapper —
-// downward moves (making room) start immediately, upward moves (closing the gap) wait for the exit fade.
+
 const ENTERING_ANIMATION_DELAY = 250;
 const LAYOUT_ANIMATION_DURATION = 300;
 const LAYOUT_ANIMATION_DELAY = 250;
@@ -89,7 +87,6 @@ export const CreateMosaic = () => {
 		value: senderAddress,
 		changeValue: changeSenderAddress,
 		selectedAccount,
-		isMultisigSelected: isMultisigSender,
 		load: loadSenderOptions,
 		reset: resetSenderOptions
 	} = useTransactionSender(walletController);
@@ -113,15 +110,11 @@ export const CreateMosaic = () => {
 		reset: resetForm
 	} = useCreateMosaicFormState();
 
-	// Validation. Divisibility needs no validation, as the tab selector only offers allowed values.
-	// The supply limits depend on the divisibility, so it is passed into the supply validator.
+	// Validation
 	const supplyErrorMessage = useValidation(supply, [validateRequired(), validateMosaicSupply(divisibility)], $t);
 	const durationValidationMessage = useValidation(duration, [validateRequired(), validateMosaicDuration()], $t);
 	const durationErrorMessage = isNeverExpiring ? undefined : durationValidationMessage;
 	const isFormValid = !supplyErrorMessage && !durationErrorMessage;
-
-	// When creating from a multisig account, that account is the mosaic creator
-	const senderPublicKey = isMultisigSender ? selectedAccount?.publicKey : undefined;
 
 	// Mosaic identity. The nonce is generated once so the derived mosaic id stays stable across the create flow.
 	const { nonce, mosaicId, regenerate: regenerateMosaicIdentity } = useMosaicIdentity(senderAddress);
@@ -129,7 +122,7 @@ export const CreateMosaic = () => {
 	// Transaction creation and preview
 	const { createMosaicTransaction, getConfirmationPreview } = useMosaicTransaction({
 		walletController,
-		senderPublicKey,
+		senderPublicKey: selectedAccount?.publicKey,
 		nonce,
 		supply,
 		divisibility,
@@ -148,7 +141,7 @@ export const CreateMosaic = () => {
 	useEffect(() => {
 		if (isWalletReady && isFormValid)
 			calculateFeesSafely();
-	}, [isWalletReady, isFormValid, divisibility, supply, duration, isNeverExpiring, flags, senderPublicKey]);
+	}, [isWalletReady, isFormValid, divisibility, supply, duration, isNeverExpiring, flags, selectedAccount?.publicKey]);
 
 	// Derived state
 	const blockGenerationTargetTime = networkProperties?.blockGenerationTargetTime;
@@ -163,7 +156,7 @@ export const CreateMosaic = () => {
 
 		// Marking the token as expiring with no value yet pre-fills a safe one-year lifetime.
 		if (isExpiring && parseDurationBlocks(duration) === null)
-			changeDuration(getExpiryPrefillDuration(blockGenerationTargetTime));
+			changeDuration(getDefaultDurationInputValue(blockGenerationTargetTime));
 	};
 
 	const handleTransactionSendComplete = () => {

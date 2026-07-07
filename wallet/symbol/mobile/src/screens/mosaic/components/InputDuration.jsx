@@ -10,10 +10,9 @@ import {
 	SECONDS_PER_YEAR
 } from '@/app/screens/mosaic/constants';
 import {
-	blocksToUnitCount,
 	getBlockCountText,
 	parseDurationBlocks,
-	toDurationFormValue,
+	snapBlocksToUnitNearestValue,
 	unitCountToBlocks
 } from '@/app/screens/mosaic/utils';
 import { Colors, Sizes, Typography } from '@/app/styles';
@@ -23,9 +22,6 @@ import { FlatList } from 'react-native-gesture-handler';
 
 /** @typedef {import('@/app/screens/mosaic/types/Mosaic').DurationUnit} DurationUnit */
 
-// The "blocks" chip selects raw on-chain entry (a text box); every other chip selects a human unit
-// whose whole-number counts are offered through a dropdown. Counts run up to one of the next unit
-// (60 minutes, 24 hours, 30 days, 12 months) and cap at the 10 year network maximum.
 const BLOCKS_UNIT_KEY = 'blocks';
 const DURATION_UNITS = [
 	{
@@ -68,8 +64,7 @@ const UNIT_CHIP_KEYS = [BLOCKS_UNIT_KEY, ...DURATION_UNITS.map(unit => unit.key)
 const CHIP_HEIGHT = Sizes.Semantic.controlHeight.s;
 
 /**
- * Returns the localized chip label for a unit key. The "blocks" chip has its own label,
- * every other chip reuses the human unit label.
+ * Returns the localized chip label for a unit key.
  * @param {string} key - The unit key.
  * @returns {string} The chip label text.
  */
@@ -78,7 +73,7 @@ const getUnitChipLabel = key => key === BLOCKS_UNIT_KEY
 	: $t(DURATION_UNITS.find(unit => unit.key === key).labelKey);
 
 /**
- * Returns the unit amount text with the correct plural form (e.g. "1 month", "6 months").
+ * Returns the unit amount text with the correct plural form.
  * @param {number} count - The amount of units.
  * @param {DurationUnit} unit - The duration unit.
  * @returns {string} The unit amount text.
@@ -94,10 +89,15 @@ const getUnitAmountText = (count, unit) => $t(unit.amountKey, { count });
  */
 const buildUnitOptions = (unit, blockGenerationTargetTime) => {
 	const options = [];
+
+	if (!blockGenerationTargetTime)
+		return options;
+
 	for (let count = 1; count <= unit.maxCount; count++) {
 		const blocks = unitCountToBlocks(count, unit, blockGenerationTargetTime);
-		if (blocks === null || blocks < MOSAIC_DURATION_MIN || blocks > MOSAIC_DURATION_MAX)
-			continue;
+		
+		if (blocks < MOSAIC_DURATION_MIN || blocks > MOSAIC_DURATION_MAX)
+			throw new Error(`Computed block count ${blocks} for ${count} ${unit.key} is out of range.`);
 
 		options.push({
 			value: String(blocks),
@@ -184,9 +184,9 @@ const DurationOptionRow = ({ option }) => (
  * @param {string|number} [props.blockGenerationTargetTime] - The network block time in seconds.
  * @param {string} [props.errorMessage] - Validation error shown under the blocks text box.
  * @param {function(string): void} props.onDurationChange - Callback fired with the new duration value.
- * @returns {React.ReactNode} DurationValueField component.
+ * @returns {React.ReactNode} DurationInputOrSelect component.
  */
-const DurationValueField = ({ unitKey, unit, duration, blockGenerationTargetTime, errorMessage, onDurationChange }) => {
+const DurationInputOrSelect = ({ unitKey, unit, duration, blockGenerationTargetTime, errorMessage, onDurationChange }) => {
 	if (unitKey === BLOCKS_UNIT_KEY) {
 		return (
 			<TextBox
@@ -234,25 +234,19 @@ export const InputDuration = ({ duration, blockGenerationTargetTime, errorMessag
 
 	const handleUnitSelect = nextUnitKey => {
 		setUnitKey(nextUnitKey);
-		if (nextUnitKey === BLOCKS_UNIT_KEY)
+		
+		if (nextUnitKey === BLOCKS_UNIT_KEY || !blockGenerationTargetTime)
 			return;
 
-		// Without the block time the unit options cannot be built, so the current value is left untouched.
-		if (!Number(blockGenerationTargetTime))
-			return;
-
-		// Snap the current value to the nearest whole count of the chosen unit so the dropdown
-		// always has a matching option; an empty or invalid value snaps to a single unit.
 		const nextUnit = DURATION_UNITS.find(unit => unit.key === nextUnitKey);
-		const rawCount = blocks === null ? 1 : blocksToUnitCount(blocks, nextUnit, blockGenerationTargetTime);
-		const count = Math.min(Math.max(Math.round(rawCount), 1), nextUnit.maxCount);
-		onDurationChange(toDurationFormValue(unitCountToBlocks(count, nextUnit, blockGenerationTargetTime)));
+		const snappedBlockDuration = snapBlocksToUnitNearestValue(blocks, nextUnit, blockGenerationTargetTime);
+		onDurationChange(snappedBlockDuration);
 	};
 
 	return (
 		<View style={styles.root}>
 			<UnitChipRow activeUnitKey={unitKey} onSelect={handleUnitSelect} />
-			<DurationValueField
+			<DurationInputOrSelect
 				unitKey={unitKey}
 				unit={selectedUnit}
 				duration={duration}

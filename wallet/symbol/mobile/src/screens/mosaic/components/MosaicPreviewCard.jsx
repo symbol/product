@@ -8,13 +8,6 @@ import Animated, { FadeIn } from 'react-native-reanimated';
 
 const ICON_CIRCLE_SIZE = Sizes.Semantic.avatarHeight.l;
 
-// Monospace digits slightly enlarged to the large body size for the amount preview.
-const heroDigitTypography = {
-	...Typography.Semantic.mnemonic.m,
-	fontSize: Typography.Semantic.body.m.fontSize,
-	lineHeight: Typography.Semantic.body.m.lineHeight
-};
-
 /**
  * Returns the smallest sendable amount text, spelled out for the indivisible case.
  * @param {number} divisibility - The mosaic divisibility.
@@ -85,6 +78,13 @@ export const MosaicPreviewCard = ({ supply, divisibility, mosaicId }) => {
 			</View>
 		</Card>
 	);
+};
+
+// Monospace digits slightly enlarged to the large body size for the amount preview.
+const heroDigitTypography = {
+	...Typography.Semantic.mnemonic.m,
+	fontSize: Typography.Semantic.body.m.fontSize,
+	lineHeight: Typography.Semantic.body.m.lineHeight
 };
 
 const styles = StyleSheet.create({
