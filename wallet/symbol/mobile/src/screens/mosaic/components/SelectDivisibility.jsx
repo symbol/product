@@ -33,7 +33,7 @@ const getDecimalsHintText = divisibility => {
  * SelectDivisibility component. The mosaic divisibility (decimal places) selector: a labelled tab
  * row offering every allowed value, with a live hint describing the current selection.
  * @param {object} props - Component props.
- * @param {string} props.value - The current divisibility input value.
+ * @param {string|number} props.value - The current divisibility input value.
  * @param {function(string): void} props.onChange - Callback fired with the new divisibility value.
  * @returns {React.ReactNode} SelectDivisibility component.
  */

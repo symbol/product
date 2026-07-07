@@ -1,4 +1,4 @@
-import { formatNumberGroups } from './mosaic-display';
+import { formatNumberGroups } from './number-format';
 import { $t } from '@/app/localization';
 import { MOSAIC_DURATION_MAX, MOSAIC_DURATION_MIN, SECONDS_PER_YEAR } from '@/app/screens/mosaic/constants';
 

@@ -1,4 +1,5 @@
-import { formatNumberGroups, getSmallestFractionText } from './mosaic-display';
+import { getSmallestFractionText } from './mosaic-supply';
+import { formatNumberGroups } from './number-format';
 import {
 	MOSAIC_DIVISIBILITY_MIN,
 	MOSAIC_DURATION_MAX,
