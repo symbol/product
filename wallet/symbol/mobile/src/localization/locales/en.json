@@ -534,7 +534,7 @@
     "s_mosaicCreation_quantity_description": "Setups the total amount of token to be issued and how many decimal places the token supports.",
     "s_mosaicCreation_totalSupply_label": "Total supply",
     "s_mosaicCreation_smallestSend_label": "Smallest you can send",
-    "s_mosaicCreation_smallestSend_whole": "1 (whole tokens only)",
+    "s_mosaicCreation_smallestSend_whole": "(whole tokens only)",
     "s_mosaicCreation_decimalsNote": "Decimals are permanent. Supply can change later if you allow it.",
     "s_mosaicCreation_decimalPlaces_label": "Decimal places",
     "s_mosaicCreation_decimalsHint_whole": "= whole tokens",

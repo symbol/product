@@ -1,20 +1,48 @@
 import { Card, Divider, Icon, StyledText } from '@/app/components';
 import { $t } from '@/app/localization';
 import { createSupplyDisplayData, getSmallestFractionText } from '@/app/screens/mosaic/utils';
-import { Colors, Sizes, Typography } from '@/app/styles';
+import { Colors, Sizes } from '@/app/styles';
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
 const ICON_CIRCLE_SIZE = Sizes.Semantic.avatarHeight.l;
 
 /**
- * Returns the smallest sendable amount text, spelled out for the indivisible case.
- * @param {number} divisibility - The mosaic divisibility.
- * @returns {string} The smallest sendable amount text.
+ * SupplyAmount component. Renders the total supply preview digits: the entered amount in full with the
+ * unused decimal capacity dimmed in the accent color. The decimal separator and zero padding are shown
+ * only when the mosaic is divisible.
+ * @param {object} props - Component props.
+ * @param {string} props.integer - The grouped integer part of the supply.
+ * @param {string} props.enteredFraction - The fractional digits the user entered.
+ * @param {string} props.paddingFraction - The unused decimal-capacity zero padding.
+ * @param {number} props.divisibility - The mosaic divisibility.
+ * @returns {React.ReactNode} SupplyAmount component.
  */
-const getSmallestSendText = divisibility =>
-	divisibility > 0 ? getSmallestFractionText(divisibility) : $t('s_mosaicCreation_smallestSend_whole');
+const SupplyAmount = ({ integer, enteredFraction, paddingFraction, divisibility }) => {
+	const separatorStyle = enteredFraction ? undefined : styles.amountCapacity;
+
+	return (
+		<View style={styles.amountRow}>
+			<StyledText bold>{integer}</StyledText>
+			{divisibility > 0 && (
+				<Animated.View
+					key={divisibility}
+					entering={FadeIn}
+					style={styles.amountRow}
+				>
+					<StyledText bold style={separatorStyle}>.</StyledText>
+					{!!enteredFraction && (
+						<StyledText bold>{enteredFraction}</StyledText>
+					)}
+					{!!paddingFraction && (
+						<StyledText bold style={styles.amountCapacity}>{paddingFraction}</StyledText>
+					)}
+				</Animated.View>
+			)}
+		</View>
+	);
+};
 
 /**
  * MosaicPreviewCard component. A read-only receipt of the mosaic being created: the identity row
@@ -23,13 +51,23 @@ const getSmallestSendText = divisibility =>
  * and a note that the decimal places are permanent.
  * @param {object} props - Component props.
  * @param {string} props.supply - The mosaic supply input value in relative units.
- * @param {string} props.divisibility - The current divisibility input value.
+ * @param {string|number} props.divisibility - The current divisibility input value.
  * @param {string} [props.mosaicId] - The derived mosaic id, when the creator is known.
  * @returns {React.ReactNode} MosaicPreviewCard component.
  */
 export const MosaicPreviewCard = ({ supply, divisibility, mosaicId }) => {
 	const divisibilityValue = Number(divisibility);
-	const { integer, enteredFraction, paddingFraction } = createSupplyDisplayData(supply, divisibilityValue);
+	const supplyDisplay = createSupplyDisplayData(supply, divisibilityValue);
+	const smallestSendText = getSmallestFractionText(divisibilityValue);
+	const totalSupplyLabel = $t('s_mosaicCreation_totalSupply_label');
+	const smallestSendLabel = $t('s_mosaicCreation_smallestSend_label');
+
+	const supplyValueText = divisibilityValue > 0
+		? `${supplyDisplay.integer}.${supplyDisplay.enteredFraction}${supplyDisplay.paddingFraction}`
+		: supplyDisplay.integer;
+	const smallestSendValueText = divisibilityValue === 0
+		? `${smallestSendText} ${$t('s_mosaicCreation_smallestSend_whole')}`
+		: smallestSendText;
 
 	return (
 		<Card style={styles.card}>
@@ -47,44 +85,50 @@ export const MosaicPreviewCard = ({ supply, divisibility, mosaicId }) => {
 						</StyledText>
 					)}
 				</View>
-				<View style={styles.amountColumn}>
+				<View
+					style={styles.amountColumn}
+					accessible
+					accessibilityLabel={`${totalSupplyLabel} ${supplyValueText}`}
+				>
 					<StyledText type="label" size="s" style={styles.mutedText}>
-						{$t('s_mosaicCreation_totalSupply_label')}
+						{totalSupplyLabel}
 					</StyledText>
-					<View style={styles.amountRow}>
-						<Text style={styles.amountInteger}>{integer}</Text>
-						{divisibilityValue > 0 && (
-							<Animated.View key={divisibilityValue} entering={FadeIn} style={styles.amountRow}>
-								<Text style={enteredFraction ? styles.amountInteger : styles.amountDecimals}>.</Text>
-								{!!enteredFraction && <Text style={styles.amountInteger}>{enteredFraction}</Text>}
-								{!!paddingFraction && <Text style={styles.amountDecimals}>{paddingFraction}</Text>}
-							</Animated.View>
-						)}
-					</View>
+					<SupplyAmount
+						integer={supplyDisplay.integer}
+						enteredFraction={supplyDisplay.enteredFraction}
+						paddingFraction={supplyDisplay.paddingFraction}
+						divisibility={divisibilityValue}
+					/>
 				</View>
 			</View>
 			<Divider />
-			<View style={styles.detailRow}>
+			<View
+				style={styles.detailRow}
+				accessible
+				accessibilityLabel={`${smallestSendLabel} ${smallestSendValueText}`}
+			>
 				<StyledText type="body" size="s" style={styles.mutedText}>
-					{$t('s_mosaicCreation_smallestSend_label')}
+					{smallestSendLabel}
 				</StyledText>
-				<Text style={styles.smallestSendText}>{getSmallestSendText(divisibilityValue)}</Text>
+				<View style={styles.fractionRow}>
+					<StyledText bold>
+						{smallestSendText}
+					</StyledText>
+					{divisibilityValue === 0 && (
+						<StyledText size="s">
+							{$t('s_mosaicCreation_smallestSend_whole')}
+						</StyledText>
+					)}
+				</View>
 			</View>
 			<View style={styles.permanentNote}>
 				<Icon name="info-circle" size="xxs" />
-				<StyledText type="body" size="s" style={styles.permanentNoteText}>
+				<StyledText type="body" size="s" style={[styles.mutedText, styles.permanentNoteText]}>
 					{$t('s_mosaicCreation_decimalsNote')}
 				</StyledText>
 			</View>
 		</Card>
 	);
-};
-
-// Monospace digits slightly enlarged to the large body size for the amount preview.
-const heroDigitTypography = {
-	...Typography.Semantic.mnemonic.m,
-	fontSize: Typography.Semantic.body.m.fontSize,
-	lineHeight: Typography.Semantic.body.m.lineHeight
 };
 
 const styles = StyleSheet.create({
@@ -118,12 +162,7 @@ const styles = StyleSheet.create({
 		flexDirection: 'row',
 		alignItems: 'baseline'
 	},
-	amountInteger: {
-		...heroDigitTypography,
-		color: Colors.Semantic.content.primary.default
-	},
-	amountDecimals: {
-		...heroDigitTypography,
+	amountCapacity: {
 		color: Colors.Semantic.role.secondary.weaker
 	},
 	detailRow: {
@@ -131,9 +170,10 @@ const styles = StyleSheet.create({
 		justifyContent: 'space-between',
 		alignItems: 'center'
 	},
-	smallestSendText: {
-		...Typography.Semantic.mnemonic.m,
-		color: Colors.Semantic.content.primary.default
+	fractionRow: {
+		flexDirection: 'row',
+		alignItems: 'baseline',
+		gap: Sizes.Semantic.spacing.s
 	},
 	mutedText: {
 		color: Colors.Semantic.content.primary.muted
@@ -144,7 +184,6 @@ const styles = StyleSheet.create({
 		gap: Sizes.Semantic.spacing.s
 	},
 	permanentNoteText: {
-		flex: 1,
-		color: Colors.Semantic.content.primary.muted
+		flex: 1
 	}
 });
