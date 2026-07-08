@@ -213,15 +213,16 @@ class TransactionTest(TestCase):  # pylint: disable=too-many-public-methods
 		}, row)
 
 	def test_sdk_enum_values_build_transaction_labels(self):
-		transactions = {
-			TransactionType.TRANSFER.value: _create_transaction(),
-			TransactionType.AGGREGATE_COMPLETE.value: _create_top_level_transaction(TransactionType.AGGREGATE_COMPLETE.value),
-			TransactionType.MOSAIC_DEFINITION.value: _create_top_level_transaction(
+		transactions = [
+			(TransactionType.TRANSFER.value, _create_transaction(), 'transfer'),
+			(TransactionType.AGGREGATE_COMPLETE.value, _create_top_level_transaction(TransactionType.AGGREGATE_COMPLETE.value), 'aggregateComplete'),
+			(
 				TransactionType.MOSAIC_DEFINITION.value,
-				id='1111111111111111'
+				_create_top_level_transaction(TransactionType.MOSAIC_DEFINITION.value, id='1111111111111111'),
+				'mosaicDefinition'
 			)
-		}
-		for transaction_type, transaction in transactions.items():
+		]
+		for transaction_type, transaction, expected_label in transactions:
 			with self.subTest(transaction_type=transaction_type):
 				# Arrange:
 				item = _create_item(transaction)
@@ -230,7 +231,7 @@ class TransactionTest(TestCase):  # pylint: disable=too-many-public-methods
 				row = create_transaction_row(item, Network.TESTNET, 100)
 
 				# Assert:
-				self.assertEqual(TRANSACTION_TYPE_LABELS[transaction_type], row['type_name'])
+				self.assertEqual(expected_label, row['type_name'])
 
 	def _assert_message_parsing(self, message, expected_type, expected_payload):
 		# Arrange:
