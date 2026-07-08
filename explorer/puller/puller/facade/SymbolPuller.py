@@ -443,6 +443,7 @@ class SymbolPuller:
 
 		address_text = str(self.symbol_facade.network.address_class(address))
 		item = await self.get_symbol_node(f'/accounts/{address_text}')
+		multisig_response = await self.get_symbol_node(f'/account/{address_text}/multisig', not_found_as_error=False)
 		account_row, mosaic_rows = create_account_row(
 			item,
 			self.symbol_facade.network,
@@ -459,11 +460,9 @@ class SymbolPuller:
 			mosaic_rows,
 			overwrite_importance_percentage=False,
 			overwrite_is_harvesting_active=overwrite_is_harvesting_active)
-
-		response = await self.get_symbol_node(f'/account/{address_text}/multisig', not_found_as_error=False)
 		self.symbol_db.upsert_multisig(
 			address,
-			None if _is_not_found_response(response) else create_multisig_row(address, response['multisig'], observed_height))
+			None if _is_not_found_response(multisig_response) else create_multisig_row(address, multisig_response['multisig'], observed_height))
 
 	@staticmethod
 	def _is_harvested_block_within_active_window(harvested_block_timestamp):

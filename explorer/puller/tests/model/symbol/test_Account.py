@@ -4,7 +4,6 @@ from psycopg2.extras import Json
 from symbolchain.symbol.Network import Network
 
 from puller.model.symbol.Account import (
-	ACCOUNT_TYPE_LABELS,
 	HARVESTING_ELIGIBLE_MAX_NATIVE_BALANCE,
 	HARVESTING_ELIGIBLE_MIN_NATIVE_BALANCE,
 	create_account_row,
@@ -55,7 +54,7 @@ class AccountTest(TestCase):
 			'address': bytes.fromhex(ADDRESS),
 			'address_text': str(Network.TESTNET.address_class(bytes.fromhex(ADDRESS))),
 			'public_key': bytes.fromhex('1' * 64),
-			'account_type': ACCOUNT_TYPE_LABELS[0],
+			'account_type': 'unlinked',
 			'address_height': 11,
 			'importance': 123,
 			'importance_percentage': 0,
@@ -101,7 +100,7 @@ class AccountTest(TestCase):
 		# Assert:
 		self.assertEqual(1234, account_row['address_height'])
 
-	def _assert_account_type_maps_to_label(self, account_type):
+	def _assert_account_type_maps_to_label(self, account_type, expected_label):
 		# Arrange:
 		item = _create_account_item(accountType=account_type)
 
@@ -109,19 +108,19 @@ class AccountTest(TestCase):
 		account_row, _ = create_account_row(item, Network.TESTNET, 99, NATIVE_MOSAIC_ID, DIVISIBILITY)
 
 		# Assert:
-		self.assertEqual(ACCOUNT_TYPE_LABELS[account_type], account_row['account_type'])
+		self.assertEqual(expected_label, account_row['account_type'])
 
 	def test_create_account_row_maps_account_type_unlinked(self):
-		self._assert_account_type_maps_to_label(0)
+		self._assert_account_type_maps_to_label(0, 'unlinked')
 
 	def test_create_account_row_maps_account_type_main(self):
-		self._assert_account_type_maps_to_label(1)
+		self._assert_account_type_maps_to_label(1, 'main')
 
 	def test_create_account_row_maps_account_type_remote(self):
-		self._assert_account_type_maps_to_label(2)
+		self._assert_account_type_maps_to_label(2, 'remote')
 
 	def test_create_account_row_maps_account_type_remote_unlinked(self):
-		self._assert_account_type_maps_to_label(3)
+		self._assert_account_type_maps_to_label(3, 'remoteUnlinked')
 
 	def test_create_account_row_rejects_unknown_account_type(self):
 		# Arrange:

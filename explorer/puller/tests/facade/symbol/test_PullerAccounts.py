@@ -1,6 +1,8 @@
 import asyncio
 from datetime import datetime, timedelta, timezone
 
+from symbollightapi.model.Exceptions import NodeException
+
 from puller.model.symbol.Account import create_account_row
 
 from .puller_test_utils import (
@@ -9,6 +11,7 @@ from .puller_test_utils import (
 	FakeConnector,
 	SymbolPullerTestBase,
 	create_account_item,
+	create_node_block,
 	set_symbol_connector
 )
 
@@ -29,83 +32,67 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):
 
 		return cursor.fetchone()
 
+	def _fetch_account_count(self, address_hex=BENEFICIARY_ADDRESS):
+		cursor = self.puller.symbol_db.connection.cursor()
+		cursor.execute(
+			'SELECT COUNT(*) FROM symbol_accounts WHERE address = %s',
+			(bytes.fromhex(address_hex),))
+
+		return cursor.fetchone()[0]
+
+	@staticmethod
+	def _raw_network_timestamp(days_ago=0):
+		return str(int(((datetime.now(timezone.utc) - timedelta(days=days_ago)).timestamp() - 100) * 1000))
+
+	def _create_block(self, height, days_ago=0):
+		return create_node_block(height, timestamp=self._raw_network_timestamp(days_ago))
+
+	def _sync_blocks(self, blocks, account_item=None, multisig_by_address=None):
+		address_text = self._address_text()
+		connector = FakeConnector(
+			max(int(block['block']['height']) for block in blocks),
+			{0: blocks},
+			account_by_address={address_text: account_item or create_account_item()},
+			multisig_by_address=multisig_by_address)
+
+		self._sync_with_connector(connector)
+
+		return connector
+
 	def test_refresh_dirty_accounts_for_batch_upserts_beneficiary_account_once_per_batch(self):
 		# Arrange:
 		address_text = self._address_text()
-		connector = FakeConnector(
-			1,
-			{},
-			account_by_address={address_text: create_account_item(importance='321')}
-		)
-		set_symbol_connector(self.puller, connector)
-		block_rows = [
-			{
-				'height': 1,
-				'beneficiary_address': bytes.fromhex(BENEFICIARY_ADDRESS),
-				'timestamp': datetime.now(timezone.utc) - timedelta(days=8)
-			},
-			{
-				'height': 2,
-				'beneficiary_address': bytes.fromhex(BENEFICIARY_ADDRESS),
-				'timestamp': datetime.now(timezone.utc)
-			}
-		]
+		blocks = [self._create_block(1), self._create_block(2)]
 
 		# Act:
-		asyncio.run(self.puller._refresh_dirty_accounts_for_batch(block_rows, NATIVE_MOSAIC_ID, 6))  # pylint: disable=protected-access
+		connector = self._sync_blocks(blocks, create_account_item(importance='321'))
 
 		# Assert:
 		self.assertEqual(1, connector.paths.count(f'accounts/{address_text}'))
 		self.assertEqual((321, 0, True, True, 2), self._fetch_account_current_state())
 
-	def test_refresh_dirty_accounts_for_batch_uses_latest_beneficiary_block_when_recent_block_is_first(self):
+	def test_refresh_dirty_accounts_for_batch_uses_latest_beneficiary_block_when_recent_block_is_second(self):
 		# Arrange:
-		address_text = self._address_text()
-		connector = FakeConnector(
-			1,
-			{},
-			account_by_address={address_text: create_account_item(importance='321')}
-		)
-		set_symbol_connector(self.puller, connector)
-		block_rows = [
-			{
-				'height': 2,
-				'beneficiary_address': bytes.fromhex(BENEFICIARY_ADDRESS),
-				'timestamp': datetime.now(timezone.utc)
-			},
-			{
-				'height': 1,
-				'beneficiary_address': bytes.fromhex(BENEFICIARY_ADDRESS),
-				'timestamp': datetime.now(timezone.utc) - timedelta(days=8)
-			}
-		]
+		account_row, mosaic_rows = self._create_current_account_row()
+		account_row['is_harvesting_active'] = False
+		self.puller.symbol_db.upsert_account_current_state(account_row, mosaic_rows)
+		blocks = [self._create_block(1, days_ago=8), self._create_block(2)]
 
 		# Act:
-		asyncio.run(self.puller._refresh_dirty_accounts_for_batch(block_rows, NATIVE_MOSAIC_ID, 6))  # pylint: disable=protected-access
+		self._sync_blocks(blocks, create_account_item(importance='321'))
 
 		# Assert:
-		self.assertEqual(1, connector.paths.count(f'accounts/{address_text}'))
 		self.assertEqual((321, 0, True, True, 2), self._fetch_account_current_state())
 
 	def test_refresh_dirty_accounts_for_batch_preserves_importance_percentage(self):
 		# Arrange:
-		address_text = self._address_text()
 		account_row, mosaic_rows = self._create_current_account_row(importance='100')
 		account_row['importance_percentage'] = 0.5
 		self.puller.symbol_db.upsert_account_current_state(account_row, mosaic_rows)
-		connector = FakeConnector(
-			1,
-			{},
-			account_by_address={address_text: create_account_item(importance='200')}
-		)
-		set_symbol_connector(self.puller, connector)
+		blocks = [self._create_block(1)]
 
 		# Act:
-		asyncio.run(self.puller._refresh_dirty_accounts_for_batch([{  # pylint: disable=protected-access
-			'height': 3,
-			'beneficiary_address': bytes.fromhex(BENEFICIARY_ADDRESS),
-			'timestamp': datetime.now(timezone.utc)
-		}], NATIVE_MOSAIC_ID, 6))
+		self._sync_blocks(blocks, create_account_item(importance='200'))
 
 		# Assert:
 		self.assertEqual(200, self._fetch_account_current_state()[0])
@@ -113,23 +100,13 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):
 
 	def test_refresh_dirty_accounts_for_batch_leaves_old_harvesting_active_value_unchanged(self):
 		# Arrange:
-		address_text = self._address_text()
 		account_row, mosaic_rows = self._create_current_account_row()
 		account_row['is_harvesting_active'] = False
 		self.puller.symbol_db.upsert_account_current_state(account_row, mosaic_rows)
-		connector = FakeConnector(
-			1,
-			{},
-			account_by_address={address_text: create_account_item(importance='200')}
-		)
-		set_symbol_connector(self.puller, connector)
+		blocks = [self._create_block(1, days_ago=8)]
 
 		# Act:
-		asyncio.run(self.puller._refresh_dirty_accounts_for_batch([{  # pylint: disable=protected-access
-			'height': 3,
-			'beneficiary_address': bytes.fromhex(BENEFICIARY_ADDRESS),
-			'timestamp': datetime.now(timezone.utc) - timedelta(days=8)
-		}], NATIVE_MOSAIC_ID, 6))
+		self._sync_blocks(blocks, create_account_item(importance='200'))
 
 		# Assert:
 		self.assertEqual(False, self._fetch_account_current_state()[2])
@@ -137,27 +114,20 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):
 	def test_refresh_dirty_accounts_for_batch_upserts_multisig(self):
 		# Arrange:
 		address_text = self._address_text()
-		connector = FakeConnector(
-			1,
-			{},
-			account_by_address={address_text: create_account_item()},
-			multisig_by_address={address_text: {
+		blocks = [self._create_block(1)]
+		multisig_by_address = {
+			address_text: {
 				'multisig': {
 					'minApproval': 2,
 					'minRemoval': 1,
 					'cosignatoryAddresses': ['AA' * 24],
 					'multisigAddresses': ['BB' * 24]
 				}
-			}}
-		)
-		set_symbol_connector(self.puller, connector)
+			}
+		}
 
 		# Act:
-		asyncio.run(self.puller._refresh_dirty_accounts_for_batch([{  # pylint: disable=protected-access
-			'height': 3,
-			'beneficiary_address': bytes.fromhex(BENEFICIARY_ADDRESS),
-			'timestamp': datetime.now(timezone.utc)
-		}], NATIVE_MOSAIC_ID, 6))
+		self._sync_blocks(blocks, multisig_by_address=multisig_by_address)
 
 		# Assert:
 		cursor = self.puller.symbol_db.connection.cursor()
@@ -171,7 +141,6 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):
 
 	def test_refresh_dirty_accounts_for_batch_deletes_multisig_when_node_returns_not_found(self):
 		# Arrange:
-		address_text = self._address_text()
 		account_row, mosaic_rows = self._create_current_account_row()
 		self.puller.symbol_db.upsert_account_current_state(account_row, mosaic_rows)
 		self.puller.symbol_db.upsert_multisig(bytes.fromhex(BENEFICIARY_ADDRESS), {
@@ -182,19 +151,10 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):
 			'multisig_addresses': [],
 			'updated_at_height': 2
 		})
-		connector = FakeConnector(
-			1,
-			{},
-			account_by_address={address_text: create_account_item()}
-		)
-		set_symbol_connector(self.puller, connector)
+		blocks = [self._create_block(1)]
 
 		# Act:
-		asyncio.run(self.puller._refresh_dirty_accounts_for_batch([{  # pylint: disable=protected-access
-			'height': 3,
-			'beneficiary_address': bytes.fromhex(BENEFICIARY_ADDRESS),
-			'timestamp': datetime.now(timezone.utc)
-		}], NATIVE_MOSAIC_ID, 6))
+		self._sync_blocks(blocks)
 
 		# Assert:
 		cursor = self.puller.symbol_db.connection.cursor()
@@ -202,19 +162,34 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):
 
 		self.assertEqual((0,), cursor.fetchone())
 
-	def test_get_native_mosaic_info_is_memoized(self):
+	def test_refresh_dirty_accounts_for_batch_does_not_upsert_account_when_multisig_fetch_fails(self):
 		# Arrange:
-		connector = FakeConnector(1, {})
+		address_text = self._address_text()
+		connector = FakeConnector(
+			1,
+			{0: [self._create_block(1)]},
+			account_by_address={address_text: create_account_item()},
+			multisig_by_address={address_text: {'code': 'InternalError', 'message': 'boom'}})
 		set_symbol_connector(self.puller, connector)
 
-		# Act:
-		first_result = asyncio.run(self.puller._get_native_mosaic_info())  # pylint: disable=protected-access
-		second_result = asyncio.run(self.puller._get_native_mosaic_info())  # pylint: disable=protected-access
+		# Act / Assert:
+		with self.assertRaisesRegex(NodeException, 'InternalError: boom'):
+			asyncio.run(self.puller.sync_block_headers())
 
 		# Assert:
-		self.assertEqual((NATIVE_MOSAIC_ID, 6), first_result)
-		self.assertEqual(first_result, second_result)
-		self.assertEqual(['network/properties', f'mosaics/{NATIVE_MOSAIC_ID}'], connector.paths)
+		self.assertEqual(0, self._fetch_account_count())
+
+	def test_get_native_mosaic_info_is_memoized(self):
+		# Arrange:
+		connector = FakeConnector(1, {0: [self._create_block(1)]})
+
+		# Act:
+		self._sync_with_connector(connector)
+		self._sync_with_connector(connector)
+
+		# Assert:
+		self.assertEqual(2, connector.paths.count('network/properties'))
+		self.assertEqual(1, connector.paths.count(f'mosaics/{NATIVE_MOSAIC_ID}'))
 
 	def _create_current_account_row(self, address_hex=BENEFICIARY_ADDRESS, **overrides):
 		return create_account_row(

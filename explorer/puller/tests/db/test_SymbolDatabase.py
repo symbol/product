@@ -982,6 +982,26 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		self.assertEqual((200, 10, 20), account_result)
 		self.assertEqual([(NATIVE_MOSAIC_ID, 30000000000, 20)], mosaic_results)
 
+	def test_upsert_account_current_state_clears_existing_mosaics_when_replaced_with_empty_list(self):
+		# Arrange:
+		database = self._create_database()
+		account_row, mosaic_rows = _create_account_row()
+		updated_account_row, updated_mosaic_rows = _create_account_row(
+			observed_height=20,
+			mosaics=[])
+
+		# Act:
+		database.upsert_account_current_state(account_row, mosaic_rows)
+		database.upsert_account_current_state(updated_account_row, updated_mosaic_rows)
+
+		# Assert:
+		cursor = database.connection.cursor()
+		cursor.execute(
+			'SELECT COUNT(*) FROM symbol_account_mosaics WHERE address = %s',
+			(bytes.fromhex(ADDRESS1),))
+
+		self.assertEqual((0,), cursor.fetchone())
+
 	def test_upsert_account_current_state_preserves_importance_percentage_when_not_overwriting(self):
 		# Arrange:
 		database = self._create_database()

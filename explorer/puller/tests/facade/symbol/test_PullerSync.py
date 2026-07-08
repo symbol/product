@@ -23,6 +23,38 @@ from .puller_test_utils import (
 
 
 class SymbolPullerSyncTest(SymbolPullerTestBase):
+	def _assert_sync_request_counts(self, connector, block_page_count, batch_count):
+		# Assert:
+		block_paths = [
+			path for path in connector.paths
+			if path.startswith('blocks?pageSize=100&offset=')
+		]
+		transaction_paths = [
+			path for path in connector.paths
+			if path.startswith('transactions/confirmed?')
+		]
+		statement_paths = [
+			path for path in connector.paths
+			if path.startswith('statements/transaction?')
+		]
+		account_paths = [
+			path for path in connector.paths
+			if path.startswith('accounts/')
+		]
+		multisig_paths = [
+			path for path in connector.paths
+			if path.startswith('account/') and path.endswith('/multisig')
+		]
+
+		self.assertEqual(1, connector.paths.count('chain/info'))
+		self.assertEqual(1, connector.paths.count('network/properties'))
+		self.assertEqual(1, connector.paths.count(f'mosaics/{NATIVE_MOSAIC_ID}'))
+		self.assertEqual(block_page_count, len(block_paths))
+		self.assertEqual(batch_count, len(transaction_paths))
+		self.assertEqual(batch_count, len(statement_paths))
+		self.assertEqual(batch_count, len(account_paths))
+		self.assertEqual(batch_count, len(multisig_paths))
+		self.assertEqual(3 + block_page_count + 4 * batch_count, len(connector.paths))
 
 	def test_sync_block_headers_pulls_chain_info_network_properties_and_blocks(
 		self
@@ -126,20 +158,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):
 		block_heights, sync_state = self._sync_with_connector(connector)
 
 		# Assert:
-		block_paths = [path for path in connector.paths if path.startswith('blocks?')]
-		transaction_paths = [path for path in connector.paths if path.startswith('transactions/confirmed?')]
-		statement_paths = [path for path in connector.paths if path.startswith('statements/transaction?')]
-		account_paths = [path for path in connector.paths if path.startswith('accounts/')]
-		multisig_paths = [path for path in connector.paths if path.startswith('account/') and path.endswith('/multisig')]
-		self.assertEqual([
-			'blocks?pageSize=100&offset=0&orderBy=height',
-			'blocks?pageSize=100&offset=100&orderBy=height',
-			'blocks?pageSize=100&offset=200&orderBy=height'
-		], block_paths)
-		self.assertEqual([transaction_path(1, 201)], transaction_paths)
-		self.assertEqual([statement_path(1, 201)], statement_paths)
-		self.assertEqual(1, len(account_paths))
-		self.assertEqual(1, len(multisig_paths))
+		self._assert_sync_request_counts(connector, block_page_count=3, batch_count=1)
 		self.assertEqual(list(range(1, 202)), block_heights)
 		self.assertEqual(201, sync_state['last_synced_height'])
 
@@ -164,16 +183,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):
 		block_heights, sync_state = self._sync_with_connector(connector)
 
 		# Assert:
-		block_paths = [path for path in connector.paths if path.startswith('blocks?')]
-		transaction_paths = [path for path in connector.paths if path.startswith('transactions/confirmed?')]
-		statement_paths = [path for path in connector.paths if path.startswith('statements/transaction?')]
-		account_paths = [path for path in connector.paths if path.startswith('accounts/')]
-		multisig_paths = [path for path in connector.paths if path.startswith('account/') and path.endswith('/multisig')]
-		self.assertEqual(11, len(block_paths))
-		self.assertEqual(2, len(transaction_paths))
-		self.assertEqual([statement_path(1, 1000), statement_path(1001, chain_height)], statement_paths)
-		self.assertEqual(2, len(account_paths))
-		self.assertEqual(2, len(multisig_paths))
+		self._assert_sync_request_counts(connector, block_page_count=11, batch_count=2)
 		self.assertEqual(list(range(1, chain_height + 1)), block_heights)
 		self.assertEqual(chain_height, sync_state['last_synced_height'])
 		self.assertEqual('healthy', sync_state['status'])
