@@ -120,8 +120,10 @@ class SymbolPullerTransactionSyncTest(SymbolPullerTestBase):
 			(bytes.fromhex('C' * 64), None, None)
 		], [(row['hash'], row['aggregate_hash'], row['embedded_index']) for row in rows_by_height[3]])
 
-	def test_sync_block_batch_writes_empty_rows_for_heights_without_transactions(self):
-		# Arrange:
+	def test_sync_block_batch_calls_upsert_for_every_height_even_without_transactions(self):
+		# Arrange: height 2 has no transactions, but must still be passed to upsert_transactions_for_height
+		# so that any stale data from a previously-synced (since-replaced) block at that height is cleared.
+		# See test_upsert_transactions_for_height_clears_existing_rows_when_replaced_with_empty_list.
 		connector = FakeConnector(3, {}, transactions_by_path={
 			transaction_path(1, 3): {
 				'data': [create_node_transaction(1), create_node_transaction(3, transaction_hash='C' * 64, transaction_id='height-3')]

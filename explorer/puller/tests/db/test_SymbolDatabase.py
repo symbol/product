@@ -846,6 +846,33 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		self.assertEqual([('2222222222222222', 20, 'definition')], mosaic_results)
 		self.assertEqual([('new address', 'recipient')], address_results)
 
+	def test_upsert_transactions_for_height_clears_existing_rows_when_replaced_with_empty_list(self):
+		# Arrange:
+		database = self._create_database()
+		cursor = database.connection.cursor()
+		database.upsert_blocks([_create_block(1)])
+		database.upsert_transactions_for_height(1, [create_transaction_entry(
+			1,
+			'stale',
+			mosaic_rows=[{'mosaic_id': '1111111111111111', 'amount': 10, 'role': 'transfer', 'position': 0}],
+			address_rows=[{'address': b'stale address', 'role': 'signer'}]
+		)])
+
+		# Act:
+		database.upsert_transactions_for_height(1, [])
+
+		# Assert:
+		cursor.execute('SELECT COUNT(*) FROM symbol_transactions')
+		transaction_count = cursor.fetchone()[0]
+		cursor.execute('SELECT COUNT(*) FROM symbol_transaction_mosaics')
+		mosaic_count = cursor.fetchone()[0]
+		cursor.execute('SELECT COUNT(*) FROM symbol_transaction_addresses')
+		address_count = cursor.fetchone()[0]
+
+		self.assertEqual(0, transaction_count)
+		self.assertEqual(0, mosaic_count)
+		self.assertEqual(0, address_count)
+
 	def test_upsert_transactions_for_height_assigns_list_sequence_to_top_level_rows(self):
 		# Arrange:
 		database = self._create_database()
