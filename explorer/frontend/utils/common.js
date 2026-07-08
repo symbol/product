@@ -309,17 +309,19 @@ export const decodeTransactionMessage = text => {
 	return Buffer.from(text, 'hex').toString();
 };
 
+const NEM_PLAIN_MESSAGE_TYPE = 1;
+
 /**
  * Formats a transfer message for display.
- * @param {boolean} isPlain - Whether the message is plain text.
+ * @param {number} messageType - NEM transfer message type.
  * @param {string} payload - Raw message payload hex string.
  * @returns {{ type: 'plain'|'hex'|'encrypted', text: string }|null} Formatted message.
  */
-export const formatTransferMessage = (isPlain, payload) => {
+export const formatTransferMessage = (messageType, payload) => {
 	if (!payload)
 		return null;
 
-	if (!isPlain)
+	if (messageType !== NEM_PLAIN_MESSAGE_TYPE)
 		return { type: 'encrypted', text: payload };
 
 	const normalizedPayload = payload.toLowerCase();

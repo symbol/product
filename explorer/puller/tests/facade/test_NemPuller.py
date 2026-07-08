@@ -55,7 +55,7 @@ NEM_CONNECTOR_RESPONSE_BLOCKS = [
 				'68c0b63e46ff125f43314014d324ac032d2c82996a6e47068b251f1d71fdd001',
 				180000040000000,
 				Address('NCOPERAWEWCD4A34NP5UQCCKEX44MW4SL3QYJYS5'),
-				Message('476f6f64206c75636b21', True),
+				Message('476f6f64206c75636b21', 1),
 				None
 			),
 		],
@@ -112,7 +112,7 @@ NEM_CONNECTOR_RESPONSE_BLOCKS = [
 				'68c0b63e46ff125f43314014d324ac032d2c82996a6e47068b251f1d71fdd001',
 				180000040000000,
 				Address('NCOPERAWEWCD4A34NP5UQCCKEX44MW4SL3QYJYS5'),
-				Message('476f6f64206c75636b21', True),
+				Message('476f6f64206c75636b21', 1),
 				None
 			),
 			MultisigAccountModificationTransaction(
@@ -1057,7 +1057,7 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 			transaction, {
 				'message': {
 					'payload': '476f6f64206c75636b21',
-					'is_plain': True
+					'type': 1
 				}
 			},
 			recipient_address=transaction.recipient

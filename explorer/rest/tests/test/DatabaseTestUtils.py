@@ -274,7 +274,7 @@ TRANSACTIONS = [
 		payload={
 			'message': {
 				'payload': 'Test message',
-				'is_plain': True
+				'type': 1
 			}
 		}
 	),
@@ -703,7 +703,7 @@ TRANSACTIONS_VIEWS = [
 		value=[
 			{
 				'message': {
-					'isPlain': True,
+					'type': 1,
 					'payload': 'Test message'
 				}
 			},

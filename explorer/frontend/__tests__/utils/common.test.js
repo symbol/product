@@ -532,7 +532,7 @@ describe('utils/common', () => {
 			const payload = '48656c6c6f';
 
 			// Act:
-			const result = formatTransferMessage(true, payload);
+			const result = formatTransferMessage(1, payload);
 
 			// Assert:
 			expect(result).toEqual({
@@ -546,7 +546,7 @@ describe('utils/common', () => {
 			const payload = 'feABCD1234';
 
 			// Act:
-			const result = formatTransferMessage(true, payload);
+			const result = formatTransferMessage(1, payload);
 
 			// Assert:
 			expect(result).toEqual({
@@ -560,7 +560,7 @@ describe('utils/common', () => {
 			const payload = 'A1B2C3D4';
 
 			// Act:
-			const result = formatTransferMessage(false, payload);
+			const result = formatTransferMessage(2, payload);
 
 			// Assert:
 			expect(result).toEqual({
