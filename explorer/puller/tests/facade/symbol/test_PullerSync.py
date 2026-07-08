@@ -336,6 +336,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):
 	def test_sync_block_batch_upserts_empty_heights_and_queries_batch_range(self):
 		# Arrange:
 		connector = ResponseConnector({
+			transaction_path(5, 7): {'data': []},
 			statement_path(5, 7): {'data': [create_statement_item(6, 600)]}
 		})
 		self._seed_blocks(self.puller.symbol_db, [5, 6, 7])
@@ -349,7 +350,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):
 		asyncio.run(self.puller._sync_block_batch(block_rows, 100))  # pylint: disable=protected-access
 
 		# Assert:
-		self.assertEqual([statement_path(5, 7)], connector.paths)
+		self.assertEqual([transaction_path(5, 7), statement_path(5, 7)], connector.paths)
 		self.assertEqual([
 			(6, 'inflation', 'inflation', 6, 0, '72C0212E67A08BCE', 600)
 		], self._fetch_receipts(self.puller.symbol_db))
@@ -371,6 +372,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):
 			},
 			'network/properties': {'network': {'epochAdjustment': '100s'}},
 			'blocks?pageSize=100&offset=0&orderBy=height': {'data': [create_node_block(1)]},
+			transaction_path(1, 1): {'data': []},
 			statement_path(1, 1): {'pagination': {'pageNumber': 1}}
 		})
 
@@ -421,6 +423,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):
 			},
 			'network/properties': {'network': {'epochAdjustment': '100s'}},
 			'blocks?pageSize=100&offset=0&orderBy=height': {'data': [create_node_block(1)]},
+			transaction_path(1, 1): {'data': []},
 			statement_path(1, 1): {
 				'code': 'InternalError',
 				'message': 'statement range failed'
