@@ -31,7 +31,7 @@ COMMON_ARGS = {
 		'1b81379847241e45da86b27911e5c9a9192ec04f644d98019657d32838b49c14'
 		'3eaa4815a3028b80f9affdbf0b94cd620f7a925e02783dda67b8627b69ddf70e',
 	'size': 168,
-	'schema_version': 1,
+	'version': 1,
 }
 
 TRANSFER_TRANSACTION_ARGS = {
@@ -73,7 +73,7 @@ MULTISIG_TRANSACTION_ARGS = {
 		fee=8000000,
 		signature=None,
 		size=184,
-		schema_version=1,
+		version=1,
 		transaction_hash=None,
 		height=None,
 		sender='22df5f43ee3739a10c346b3ec2d3878668c5514696be425f9067d3a11c777f1d'
@@ -117,7 +117,7 @@ class BaseTransactionTest(unittest.TestCase):
 		('deadline', 73977),
 		('signature', 'signature'),
 		('size', 200),
-		('schema_version', 2),
+		('version', 2),
 		('transaction_type', 123),
 	]
 
@@ -301,7 +301,7 @@ class TransactionFactoryTest(unittest.TestCase):
 		self.assertEqual(COMMON_ARGS['deadline'], transaction.deadline)
 		self.assertEqual(COMMON_ARGS['signature'], transaction.signature)
 		self.assertEqual(COMMON_ARGS['size'], transaction.size)
-		self.assertEqual(COMMON_ARGS['schema_version'], transaction.schema_version)
+		self.assertEqual(COMMON_ARGS['version'], transaction.version)
 
 	def test_create_transfer_transaction(self):
 		# Arrange + Act:

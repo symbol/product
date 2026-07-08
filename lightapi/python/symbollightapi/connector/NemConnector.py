@@ -376,7 +376,7 @@ class NemConnector(BasicConnector):
 		tx_type = tx_json['type']
 		nem_calculator = NemBlockCalculator()
 		size = nem_calculator.calculate_transaction_size(tx_json)
-		schema_version = tx_json['version'] & 0xFF
+		version = tx_json['version'] & 0xFF
 
 		# Define common arguments for all transactions
 		common_args = {
@@ -388,7 +388,7 @@ class NemConnector(BasicConnector):
 			'deadline': tx_json['deadline'],
 			'signature': tx_json['signature'],
 			'size': size,
-			'schema_version': schema_version
+			'version': version
 		}
 
 		specific_args = {}
