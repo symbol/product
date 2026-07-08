@@ -123,6 +123,19 @@ describe('AccountInfo', () => {
 			expect(screen.queryByText(descriptionText)).not.toBeInTheDocument();
 			expect(screen.getByText(noDescriptionText)).toBeInTheDocument();
 		});
+
+		it('renders remote account address when linked account exists', () => {
+			// Arrange:
+			const remoteAddress = 'NANQPLR63Z4ONDR3X6JQAC2HQCVPKI4ZDQ6OG6M4';
+			const accountInfoWithRemoteAccount = { ...accountInfoResult, remoteAddress };
+
+			// Act:
+			render(<AccountInfo accountInfo={accountInfoWithRemoteAccount} preloadedTransactions={[]} />);
+
+			// Assert:
+			expect(screen.getByText('field_remoteAccount')).toBeInTheDocument();
+			expect(screen.getByText(remoteAddress)).toBeInTheDocument();
+		});
 	});
 
 	describe('account transactions', () => {

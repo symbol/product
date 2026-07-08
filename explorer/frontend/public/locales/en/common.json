@@ -118,6 +118,7 @@
 	"field_sink": "Sink",
 	"field_targetMosaic": "Target Mosaic",
 	"field_targetAccount": "Target Account",
+	"field_remoteAccount": "Remote Account",
 	"field_mosaic_names_description": "Names or namespaces are human-readable text strings that can be used in place of an mosaic ID",
 	"field_mosaic_namespace_description": "Linked namespace name",
 	"field_supply_description": "The number of mosaics that currently exists",

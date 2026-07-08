@@ -692,6 +692,7 @@ class NemDatabase(DatabaseConnectionPool):
 			value.append({
 				'mode': payload['mode'],
 				'remoteAccount': payload['remote_account'],
+				'remoteAddress': self._format_public_key_to_address(payload['remote_account'])
 			})
 		elif transaction_type == TransactionType.MULTISIG_ACCOUNT_MODIFICATION.value:
 			value.append({
