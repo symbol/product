@@ -278,21 +278,23 @@ class SymbolPuller:
 				last_synced_block_hash = last_row['hash']
 
 				if len(blocks) < MAX_PAGE_SIZE:
-					self.symbol_db.upsert_blocks(batch_rows)
-					await self._sync_transactions_for_batch(batch_rows, epoch_adjustment_seconds)
+					await self._sync_block_batch(batch_rows, epoch_adjustment_seconds)
 					return last_synced_height, last_synced_block_hash
 
-			self.symbol_db.upsert_blocks(batch_rows)
-			await self._sync_transactions_for_batch(batch_rows, epoch_adjustment_seconds)
+			await self._sync_block_batch(batch_rows, epoch_adjustment_seconds)
 
 		return last_synced_height, last_synced_block_hash
 
-	async def _sync_transactions_for_batch(self, block_rows, epoch_adjustment_seconds):
-		rows_by_height = await self._get_transaction_rows_by_height(
-			block_rows[0]['height'],
-			block_rows[-1]['height'],
+	async def _sync_block_batch(self, batch_rows, epoch_adjustment_seconds):
+		transaction_rows_by_height = await self._get_transaction_rows_by_height(
+			batch_rows[0]['height'],
+			batch_rows[-1]['height'],
 			epoch_adjustment_seconds
 		)
+		self.symbol_db.upsert_blocks(batch_rows)
+		self._upsert_transactions_for_batch(batch_rows, transaction_rows_by_height)
+
+	def _upsert_transactions_for_batch(self, block_rows, rows_by_height):
 		for row in block_rows:
 			self.symbol_db.upsert_transactions_for_height(row['height'], rows_by_height.get(row['height'], []))
 

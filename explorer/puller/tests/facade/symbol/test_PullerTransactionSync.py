@@ -16,10 +16,14 @@ from .puller_test_utils import (
 
 class FakeTransactionDatabase:
 	def __init__(self):
+		self.block_calls = []
 		self.calls = []
 
 	def __exit__(self, *_):
 		return None
+
+	def upsert_blocks(self, block_rows):
+		self.block_calls.append(block_rows)
 
 	def upsert_transactions_for_height(self, height, transaction_rows):
 		self.calls.append((height, transaction_rows))
@@ -46,16 +50,14 @@ class SymbolPullerTransactionSyncTest(SymbolPullerTestBase):
 
 	def test_get_transaction_rows_by_height_rejects_malformed_page_response(self):
 		# Arrange:
-		connector = FakeConnector(1, {}, transactions_by_path={
+		connector = FakeConnector(1, {0: [create_node_block(1)]}, transactions_by_path={
 			transaction_path(1, 1): {
 				'pagination': {'pageNumber': 1}
 			}
 		})
-		set_symbol_connector(self.puller, connector)
 
 		# Act + Assert:
-		with self.assertRaisesRegex(ValueError, 'Malformed Symbol transaction page response'):
-			asyncio.run(self.puller._get_transaction_rows_by_height(1, 1, 100))  # pylint: disable=protected-access
+		self._assert_sync_rejects_node_response(connector, ValueError, 'Malformed Symbol transaction page response')
 
 	def test_get_transaction_rows_by_height_continues_after_full_page(self):
 		# Arrange:
@@ -118,7 +120,7 @@ class SymbolPullerTransactionSyncTest(SymbolPullerTestBase):
 			(bytes.fromhex('C' * 64), None, None)
 		], [(row['hash'], row['aggregate_hash'], row['embedded_index']) for row in rows_by_height[3]])
 
-	def test_sync_transactions_for_batch_writes_empty_rows_for_heights_without_transactions(self):
+	def test_sync_block_batch_writes_empty_rows_for_heights_without_transactions(self):
 		# Arrange:
 		connector = FakeConnector(3, {}, transactions_by_path={
 			transaction_path(1, 3): {
@@ -131,7 +133,7 @@ class SymbolPullerTransactionSyncTest(SymbolPullerTestBase):
 		block_rows = [{'height': 1}, {'height': 2}, {'height': 3}]
 
 		# Act:
-		asyncio.run(self.puller._sync_transactions_for_batch(block_rows, 100))  # pylint: disable=protected-access
+		asyncio.run(self.puller._sync_block_batch(block_rows, 100))  # pylint: disable=protected-access
 
 		# Assert:
 		self.assertEqual([
@@ -143,7 +145,7 @@ class SymbolPullerTransactionSyncTest(SymbolPullerTestBase):
 			for height, transaction_rows in transaction_database.calls
 		])
 
-	def test_sync_transactions_for_batch_queries_exact_batch_range(self):
+	def test_sync_block_batch_queries_exact_batch_range(self):
 		# Arrange:
 		connector = FakeConnector(12, {}, transactions_by_path={
 			transaction_path(10, 12): {'data': []}
@@ -153,7 +155,7 @@ class SymbolPullerTransactionSyncTest(SymbolPullerTestBase):
 		block_rows = [{'height': 10}, {'height': 11}, {'height': 12}]
 
 		# Act:
-		asyncio.run(self.puller._sync_transactions_for_batch(block_rows, 100))  # pylint: disable=protected-access
+		asyncio.run(self.puller._sync_block_batch(block_rows, 100))  # pylint: disable=protected-access
 
 		# Assert:
 		self.assertEqual([transaction_path(10, 12)], connector.paths)
