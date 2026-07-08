@@ -1,12 +1,12 @@
 from collections import namedtuple
 
 from symbolchain.CryptoTypes import PublicKey
-from symbolchain.nc import MessageType, TransactionType
+from symbolchain.nc import TransactionType
 from symbolchain.nem.Network import Address
 
 from ..model.Exceptions import UnknownTransactionType
 
-Message = namedtuple('Message', ['payload', 'is_plain'])
+Message = namedtuple('Message', ['payload', 'type'])
 Mosaic = namedtuple('Mosaic', ['namespace_name', 'quantity'])
 Modification = namedtuple('Modification', ['modification_type', 'cosignatory_account'])
 MosaicLevy = namedtuple('MosaicLevy', ['fee', 'recipient', 'type', 'namespace_name'])
@@ -447,7 +447,7 @@ class TransactionHandler:
 		if message:
 			message = Message(
 				message['payload'],
-				message.get('type') == MessageType.PLAIN.value
+				message['type']
 			)
 		else:
 			message = None

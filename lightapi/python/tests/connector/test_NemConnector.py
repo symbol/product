@@ -6,7 +6,7 @@ import pytest
 from aiohttp import web
 from symbolchain.CryptoTypes import Hash256, PublicKey
 from symbolchain.facade.NemFacade import NemFacade
-from symbolchain.nc import Signature
+from symbolchain.nc import MessageType, Signature
 from symbolchain.nem.Network import Address, Network
 
 from symbollightapi.connector.NemConnector import NemConnector
@@ -1273,7 +1273,7 @@ EXPECTED_BLOCK_2 = Block(
 			1,
 			180000040000000,
 			Address('NCOPERAWEWCD4A34NP5UQCCKEX44MW4SL3QYJYS5'),
-			Message('476f6f64206c75636b21', True),
+			Message('476f6f64206c75636b21', MessageType.PLAIN.value),
 			None
 		),
 		MultisigAccountModificationTransaction(

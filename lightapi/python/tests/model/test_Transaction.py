@@ -420,19 +420,19 @@ class TransactionHandlerTest(unittest.TestCase):
 		}
 		return TransactionHandler().map[TransactionType.TRANSFER.value](tx_json)
 
-	def test_maps_plain_message_type_to_is_plain_true(self):
+	def test_maps_plain_message_type(self):
 		# Arrange + Act:
 		mapped_args = self._map_transfer({'payload': '48656C6C6F', 'type': MessageType.PLAIN.value})
 
 		# Assert:
-		self.assertEqual(Message('48656C6C6F', True), mapped_args['message'])
+		self.assertEqual(Message('48656C6C6F', MessageType.PLAIN.value), mapped_args['message'])
 
-	def test_maps_encrypted_message_type_to_is_plain_false(self):
+	def test_maps_encrypted_message_type(self):
 		# Arrange + Act:
 		mapped_args = self._map_transfer({'payload': 'ABCD', 'type': MessageType.ENCRYPTED.value})
 
 		# Assert:
-		self.assertEqual(Message('ABCD', False), mapped_args['message'])
+		self.assertEqual(Message('ABCD', MessageType.ENCRYPTED.value), mapped_args['message'])
 
 	def test_maps_missing_message_to_none(self):
 		# Arrange + Act:
