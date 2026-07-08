@@ -8,6 +8,7 @@ from common.symbol.NodeConfiguration import SymbolNodeConfiguration
 from common.tests.PostgresTestUtils import PostgresTestDatabase, drop_symbol_block_tables_if_present
 
 from puller.facade.SymbolPuller import DatabaseConfiguration, SymbolPuller
+from puller.model.symbol.Block import create_block_row
 
 NODE_URL = 'http://127.0.0.1:3000'
 SIGNER_PUBLIC_KEY = (
@@ -95,14 +96,6 @@ def set_symbol_connector(puller, connector):
 def set_sync_block_pages(puller, sync_block_pages):
 	# Patch the private page sync step only for hard-to-reach error branches.
 	puller._sync_block_pages = sync_block_pages  # pylint: disable=protected-access
-
-
-def _create_block_row(puller, node_block, epoch_adjustment_seconds):
-	# Reuse production normalization instead of duplicating row construction.
-	return puller._create_block_row(  # pylint: disable=protected-access
-		node_block,
-		epoch_adjustment_seconds
-	)
 
 
 def create_node_block(
@@ -278,13 +271,13 @@ class SymbolPullerTestBase(TestCase):
 	def _seed_blocks(self, database, heights, block_hashes=None):
 		block_hashes = block_hashes or {}
 		rows = [
-			_create_block_row(
-				self.puller,
+			create_block_row(
 				create_node_block(
 					height,
 					block_hash=block_hashes.get(height)
 				),
-				100
+				100,
+				self.puller.symbol_facade.network
 			)
 			for height in heights
 		]

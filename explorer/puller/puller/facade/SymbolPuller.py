@@ -1,19 +1,17 @@
 import asyncio
 import configparser
 from collections import namedtuple
-from datetime import datetime, timezone
 from urllib.parse import urlparse
 
 from common.symbol.NodeConfiguration import SymbolNodeConfiguration
-from psycopg2.extras import Json
-from symbolchain.CryptoTypes import PublicKey
 from symbolchain.facade.SymbolFacade import SymbolFacade
-from symbolchain.symbol.Network import Address, Network
+from symbolchain.symbol.Network import Network
 from symbollightapi.connector.SymbolConnector import SymbolConnector
 from symbollightapi.model.Exceptions import NodeException
 from zenlog import log
 
 from puller.db.SymbolDatabase import SymbolDatabase
+from puller.model.symbol.Block import create_block_row
 
 DatabaseConfiguration = namedtuple('DatabaseConfiguration', ['database', 'user', 'password', 'host', 'port'])
 BLOCK_PAGE_SIZE = 100
@@ -36,14 +34,6 @@ class SymbolRollbackError(RuntimeError):
 def _raise_if_node_error(response):
 	if isinstance(response, dict) and 'code' in response and 'message' in response:
 		raise NodeException(f'{response["code"]}: {response["message"]}')
-
-
-def _int_or_none(value):
-	return int(value) if value is not None else None
-
-
-def _bytes_from_hex_or_none(value):
-	return bytes.fromhex(value) if value else None
 
 
 class SymbolPuller:
@@ -270,7 +260,7 @@ class SymbolPuller:
 					raise ValueError(f'Expected Symbol blocks at offset {offset} before chain height {chain_height}')
 
 				rows = [
-					self._create_block_row(block, epoch_adjustment_seconds)
+					create_block_row(block, epoch_adjustment_seconds, self.symbol_facade.network)
 					for block in blocks
 					if int(block['block']['height']) <= chain_height
 				]
@@ -306,44 +296,6 @@ class SymbolPuller:
 		raw_epoch_adjustment = network_properties['network']['epochAdjustment']
 		raw_epoch_adjustment = str(raw_epoch_adjustment)
 		return int(raw_epoch_adjustment[:-1] if raw_epoch_adjustment.endswith('s') else raw_epoch_adjustment)
-
-	def _create_block_row(self, node_block, epoch_adjustment_seconds):
-		block = node_block['block']
-		meta = node_block['meta']
-		signer_public_key = bytes.fromhex(block['signerPublicKey'])
-		network_timestamp = int(block['timestamp'])
-
-		return {
-			'height': int(block['height']),
-			'hash': bytes.fromhex(meta['hash']),
-			'previous_hash': bytes.fromhex(block['previousBlockHash']),
-			'timestamp': datetime.fromtimestamp(epoch_adjustment_seconds + network_timestamp / 1000, timezone.utc),
-			'network_timestamp': network_timestamp,
-			'total_fee': int(meta['totalFee']),
-			'transactions_count': int(meta['transactionsCount']),
-			'total_transactions_count': int(meta['totalTransactionsCount']),
-			'statements_count': int(meta['statementsCount']),
-			'difficulty': int(block['difficulty']),
-			'fee_multiplier': block['feeMultiplier'],
-			'block_type': int(block['type']),
-			'signer_public_key': signer_public_key,
-			'signer_address': self.symbol_facade.network.public_key_to_address(PublicKey(signer_public_key)).bytes,
-			'beneficiary_address': Address(bytes.fromhex(block['beneficiaryAddress'])).bytes,
-			'signature': bytes.fromhex(block['signature']),
-			'size': int(block['size']),
-			'proof_gamma': bytes.fromhex(block['proofGamma']),
-			'proof_verification_hash': bytes.fromhex(block['proofVerificationHash']),
-			'proof_scalar': bytes.fromhex(block['proofScalar']),
-			'state_hash': bytes.fromhex(block['stateHash']),
-			'transactions_hash': bytes.fromhex(block['transactionsHash']),
-			'receipts_hash': bytes.fromhex(block['receiptsHash']),
-			'state_hash_sub_cache_roots': Json(meta['stateHashSubCacheMerkleRoots']),
-			'voting_eligible_accounts_count': _int_or_none(block.get('votingEligibleAccountsCount')),
-			'harvesting_eligible_accounts_count': _int_or_none(block.get('harvestingEligibleAccountsCount')),
-			'total_voting_balance': _int_or_none(block.get('totalVotingBalance')),
-			'previous_importance_block_hash': _bytes_from_hex_or_none(block.get('previousImportanceBlockHash')),
-			'raw_payload': Json(node_block)
-		}
 
 	@staticmethod
 	def _validate_block_page(rows, expected_start_height):

@@ -1,3 +1,5 @@
+from puller.model.symbol.Block import BLOCK_TYPE_VALUES
+
 from .DatabaseConnection import DatabaseConnection
 
 SYNC_STATE_COLUMNS = [
@@ -11,12 +13,6 @@ SYNC_STATE_COLUMNS = [
 	'last_synced_block_hash'
 ]
 
-BLOCK_TYPE_LABELS = {
-	32835: 'nemesis',
-	33347: 'importance',
-	33091: 'normal'
-}
-BLOCK_TYPE_VALUES = tuple(BLOCK_TYPE_LABELS.values())
 SYNC_STATE_STATUS_VALUES = ('initialized', 'healthy', 'repairing', 'unhealthy')
 SYMBOL_SYNC_STATE_DEFINITIONS = [
 	'id int PRIMARY KEY DEFAULT 1',
@@ -42,13 +38,13 @@ SYMBOL_BLOCK_DEFINITIONS = [
 	'total_transactions_count int NOT NULL',
 	'statements_count int NOT NULL',
 	'difficulty bigint NOT NULL',
-	'fee_multiplier bigint NOT NULL',
+	'fee_multiplier int NOT NULL',
 	'block_type symbol_block_type NOT NULL',
 	'signer_public_key bytea NOT NULL',
 	'signer_address bytea NOT NULL',
 	'beneficiary_address bytea NOT NULL',
 	'signature bytea NOT NULL',
-	'size bigint NOT NULL',
+	'size int NOT NULL',
 	'proof_gamma bytea NOT NULL',
 	'proof_verification_hash bytea NOT NULL',
 	'proof_scalar bytea NOT NULL',
@@ -56,7 +52,7 @@ SYMBOL_BLOCK_DEFINITIONS = [
 	'transactions_hash bytea NOT NULL',
 	'receipts_hash bytea NOT NULL',
 	"state_hash_sub_cache_roots jsonb NOT NULL DEFAULT '[]'::jsonb",
-	'voting_eligible_accounts_count bigint',
+	'voting_eligible_accounts_count int',
 	'harvesting_eligible_accounts_count int',
 	'total_voting_balance bigint',
 	'previous_importance_block_hash bytea',
@@ -64,13 +60,6 @@ SYMBOL_BLOCK_DEFINITIONS = [
 	'created_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP',
 	'updated_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP'
 ]
-
-
-def _block_type_label(block_type):
-	try:
-		return BLOCK_TYPE_LABELS[int(block_type)]
-	except (KeyError, TypeError, ValueError) as exception:
-		raise ValueError(f'Unsupported Symbol block type {block_type}') from exception
 
 
 def _create_enum_type(cursor, name, values):
@@ -211,7 +200,6 @@ class SymbolDatabase(DatabaseConnection):
 
 		cursor = self.connection.cursor()
 		for block in blocks:
-			block_params = {**block, 'block_type': _block_type_label(block['block_type'])}
 			cursor.execute(
 				'''
 				INSERT INTO symbol_blocks (
@@ -309,5 +297,5 @@ class SymbolDatabase(DatabaseConnection):
 					raw_payload = EXCLUDED.raw_payload,
 					updated_at = CURRENT_TIMESTAMP
 				''',
-				block_params)
+				block)
 		self.connection.commit()

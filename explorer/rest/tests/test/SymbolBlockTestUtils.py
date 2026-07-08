@@ -31,7 +31,7 @@ def create_symbol_block(height, **overrides):
 		'statements_count': height,
 		'difficulty': 1000000 + height,
 		'fee_multiplier': height,
-		'block_type': 32835,
+		'block_type': 'nemesis',
 		'signer_public_key': bytes([height]) * 32,
 		'signer_address': bytes.fromhex('98534F7E1D0A26CA4E316F901E23E55C8701DB20DF11A7B2'),
 		'beneficiary_address': bytes.fromhex('9889432DE263BB8FE88444A4DA28D3609BD8BB8FAE18AE95'),
