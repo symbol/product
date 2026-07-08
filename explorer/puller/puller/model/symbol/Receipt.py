@@ -41,6 +41,7 @@ RECEIPT_TYPE_GROUPS = {
 	**{receipt_type.value: 'artifactExpiry' for receipt_type in ARTIFACT_EXPIRY_RECEIPT_TYPES},
 	ReceiptType.INFLATION.value: 'inflation'
 }
+assert set(RECEIPT_TYPE_LABELS) == set(RECEIPT_TYPE_GROUPS), 'RECEIPT_TYPE_LABELS and RECEIPT_TYPE_GROUPS must cover the same receipt types'
 INFLATION_RECEIPT_TYPE = RECEIPT_TYPE_LABELS[ReceiptType.INFLATION.value]
 
 
