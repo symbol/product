@@ -13,7 +13,7 @@ MosaicLevy = namedtuple('MosaicLevy', ['fee', 'recipient', 'type', 'namespace_na
 MosaicProperties = namedtuple('MosaicProperties', ['divisibility', 'initial_supply', 'supply_mutable', 'transferable'])
 
 
-class Transaction:
+class Transaction:  # pylint: disable=too-many-instance-attributes
 	def __init__(
 		self,
 		transaction_hash,
@@ -345,7 +345,7 @@ class MosaicDefinitionTransaction(Transaction):
 	):
 		"""Create MosaicDefinitionTransaction model."""
 
-		# pylint: disable=too-many-arguments,too-many-positional-arguments
+		# pylint: disable=too-many-arguments,too-many-positional-arguments,too-many-locals
 
 		super().__init__(
 			transaction_hash,
