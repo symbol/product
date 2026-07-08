@@ -1265,6 +1265,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			mosaic_rows=[{'mosaic_id': '1111111111111111', 'amount': 10, 'role': 'transfer', 'position': 0}],
 			address_rows=[{'address': b'rollbacked address', 'role': 'signer'}]
 		)])
+		database.upsert_receipts_for_height(1, [_create_receipt(1)], 100)
 		database.upsert_receipts_for_height(2, [_create_receipt(2)], 100)
 		database.upsert_receipts_for_height(3, [_create_receipt(3)], 100)
 
@@ -1287,13 +1288,16 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		address_results = cursor.fetchall()
 		cursor.execute('SELECT height FROM symbol_receipts ORDER BY height')
 		receipt_results = cursor.fetchall()
+		cursor.execute('SELECT height, block_reward FROM symbol_blocks ORDER BY height')
+		block_reward_results = cursor.fetchall()
 		sync_state = database.get_sync_state()
 
 		self.assertEqual([(1,)], block_results)
 		self.assertEqual([(1, 'hash-kept')], transaction_results)
 		self.assertEqual([(1, '2222222222222222', 20, 'transfer')], mosaic_results)
 		self.assertEqual([(1, 'kept address', 'signer')], address_results)
-		self.assertEqual([], receipt_results)
+		self.assertEqual([(1,)], receipt_results)
+		self.assertEqual([(1, 100)], block_reward_results)
 		self.assertEqual('repairing', sync_state['status'])
 		self.assertEqual(1, sync_state['last_synced_height'])
 		self.assertEqual(
