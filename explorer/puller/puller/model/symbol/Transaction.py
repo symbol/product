@@ -37,17 +37,7 @@ def _address_rows_for_fields(transaction, role, field_names):
 
 
 def _unique_address_rows(rows):
-	seen = set()
-	unique_rows = []
-	for row in rows:
-		key = (row['address'], row['role'])
-		if key in seen:
-			continue
-
-		seen.add(key)
-		unique_rows.append(row)
-
-	return unique_rows
+	return list({(row['address'], row['role']): row for row in rows}.values())
 
 
 def create_transaction_mosaic_rows(transaction_type, transaction):
