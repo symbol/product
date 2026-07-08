@@ -6,7 +6,7 @@ from symbolchain.nem.Network import Address
 
 from ..model.Exceptions import UnknownTransactionType
 
-Message = namedtuple('Message', ['payload', 'is_plain'])
+Message = namedtuple('Message', ['payload', 'type'])
 Mosaic = namedtuple('Mosaic', ['namespace_name', 'quantity'])
 Modification = namedtuple('Modification', ['modification_type', 'cosignatory_account'])
 MosaicLevy = namedtuple('MosaicLevy', ['fee', 'recipient', 'type', 'namespace_name'])

@@ -1,6 +1,6 @@
 import unittest
 
-from symbolchain.nc import TransactionType
+from symbolchain.nc import MessageType, TransactionType
 
 from symbollightapi.model.Exceptions import UnknownTransactionType
 from symbollightapi.model.Transaction import (
@@ -17,6 +17,7 @@ from symbollightapi.model.Transaction import (
 	MultisigTransaction,
 	NamespaceRegistrationTransaction,
 	TransactionFactory,
+	TransactionHandler,
 	TransferTransaction
 )
 
@@ -407,3 +408,35 @@ class TransactionFactoryTest(unittest.TestCase):
 		# Arrange + Act:
 		with self.assertRaises(UnknownTransactionType):
 			TransactionFactory.create_transaction(123, COMMON_ARGS, {})
+
+
+class TransactionHandlerTest(unittest.TestCase):
+	@staticmethod
+	def _map_transfer(message):
+		tx_json = {
+			'amount': 1,
+			'recipient': 'NCOPERAWEWCD4A34NP5UQCCKEX44MW4SL3QYJYS5',
+			'message': message
+		}
+		return TransactionHandler().map[TransactionType.TRANSFER.value](tx_json)
+
+	def test_maps_plain_message_type(self):
+		# Arrange + Act:
+		mapped_args = self._map_transfer({'payload': '48656C6C6F', 'type': MessageType.PLAIN.value})
+
+		# Assert:
+		self.assertEqual(Message('48656C6C6F', MessageType.PLAIN.value), mapped_args['message'])
+
+	def test_maps_encrypted_message_type(self):
+		# Arrange + Act:
+		mapped_args = self._map_transfer({'payload': 'ABCD', 'type': MessageType.ENCRYPTED.value})
+
+		# Assert:
+		self.assertEqual(Message('ABCD', MessageType.ENCRYPTED.value), mapped_args['message'])
+
+	def test_maps_missing_message_to_none(self):
+		# Arrange + Act:
+		mapped_args = self._map_transfer(None)
+
+		# Assert:
+		self.assertIsNone(mapped_args['message'])
