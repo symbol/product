@@ -18,6 +18,7 @@ from symbollightapi.model.NodeInfo import NodeInfo
 from symbollightapi.model.Transaction import (
 	AccountKeyLinkTransaction,
 	CosignSignatureTransaction,
+	Message,
 	MosaicDefinitionTransaction,
 	MosaicSupplyChangeTransaction,
 	MultisigAccountModificationTransaction,
@@ -1272,7 +1273,7 @@ EXPECTED_BLOCK_2 = Block(
 			1,
 			180000040000000,
 			Address('NCOPERAWEWCD4A34NP5UQCCKEX44MW4SL3QYJYS5'),
-			('476f6f64206c75636b21', 1),
+			Message('476f6f64206c75636b21', True),
 			None
 		),
 		MultisigAccountModificationTransaction(
