@@ -5,6 +5,7 @@ from symbolchain.sc import ReceiptType
 from symbollightapi.model.Exceptions import NodeException
 
 from puller.facade.SymbolPuller import BLOCK_PAGE_FETCH_CONCURRENCY, MAX_PAGE_SIZE
+from puller.model.symbol.Block import create_block_row
 
 from .puller_test_utils import (
 	FakeConnector,
@@ -332,7 +333,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):
 		self.assertEqual([10], [row['amount'] for row in rows_by_height[1]])
 		self.assertEqual([20, 30], [row['amount'] for row in rows_by_height[2]])
 
-	def test_sync_receipts_for_batch_upserts_empty_heights_and_queries_batch_range(self):
+	def test_sync_block_batch_upserts_empty_heights_and_queries_batch_range(self):
 		# Arrange:
 		connector = ResponseConnector({
 			statement_path(5, 7): {'data': [create_statement_item(6, 600)]}
@@ -340,13 +341,12 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):
 		self._seed_blocks(self.puller.symbol_db, [5, 6, 7])
 		set_symbol_connector(self.puller, connector)
 		block_rows = [
-			{'height': 5},
-			{'height': 6},
-			{'height': 7}
+			create_block_row(create_node_block(height), 100, self.puller.symbol_facade.network)
+			for height in [5, 6, 7]
 		]
 
 		# Act:
-		asyncio.run(self.puller._sync_receipts_for_batch(block_rows))  # pylint: disable=protected-access
+		asyncio.run(self.puller._sync_block_batch(block_rows, 100))  # pylint: disable=protected-access
 
 		# Assert:
 		self.assertEqual([statement_path(5, 7)], connector.paths)
@@ -356,6 +356,30 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):
 		self.assertEqual(0, self._fetch_block_reward(self.puller.symbol_db, 5))
 		self.assertEqual(600, self._fetch_block_reward(self.puller.symbol_db, 6))
 		self.assertEqual(0, self._fetch_block_reward(self.puller.symbol_db, 7))
+
+	def test_sync_block_headers_rejects_malformed_statement_page_response(self):
+		# Arrange:
+		connector = ResponseConnector({
+			'chain/info': {
+				'height': '1',
+				'latestFinalizedBlock': {
+					'finalizationEpoch': 4,
+					'finalizationPoint': 5,
+					'height': '1',
+					'hash': f'{1:064X}'
+				}
+			},
+			'network/properties': {'network': {'epochAdjustment': '100s'}},
+			'blocks?pageSize=100&offset=0&orderBy=height': {'data': [create_node_block(1)]},
+			statement_path(1, 1): {'pagination': {'pageNumber': 1}}
+		})
+
+		# Act / Assert:
+		self._assert_sync_rejects_node_response(
+			connector,
+			ValueError,
+			'Malformed Symbol statement page response'
+		)
 
 	def test_calculate_block_reward_sums_only_inflation_receipts(self):
 		# Arrange:
@@ -409,4 +433,5 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):
 			asyncio.run(self.puller.sync_block_headers())
 
 		# Assert:
+		self.assertEqual([], self._fetch_block_heights(self.puller.symbol_db))
 		self.assertIsNone(self.puller.symbol_db.get_sync_state())

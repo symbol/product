@@ -280,11 +280,9 @@ class SymbolPuller:
 
 				if len(blocks) < MAX_PAGE_SIZE:
 					await self._sync_block_batch(batch_rows, epoch_adjustment_seconds)
-					await self._sync_receipts_for_batch(batch_rows)
 					return last_synced_height, last_synced_block_hash
 
 			await self._sync_block_batch(batch_rows, epoch_adjustment_seconds)
-			await self._sync_receipts_for_batch(batch_rows)
 
 		return last_synced_height, last_synced_block_hash
 
@@ -294,8 +292,10 @@ class SymbolPuller:
 			batch_rows[-1]['height'],
 			epoch_adjustment_seconds
 		)
+		receipt_rows_by_height = await self._get_receipt_rows_by_height(batch_rows[0]['height'], batch_rows[-1]['height'])
 		self.symbol_db.upsert_blocks(batch_rows)
 		self._upsert_transactions_for_batch(batch_rows, transaction_rows_by_height)
+		self._upsert_receipts_for_batch(batch_rows, receipt_rows_by_height)
 
 	def _upsert_transactions_for_batch(self, block_rows, rows_by_height):
 		for row in block_rows:
@@ -337,6 +337,9 @@ class SymbolPuller:
 				f'/statements/transaction?fromHeight={start_height}&toHeight={end_height}'
 				f'&pageSize={MAX_PAGE_SIZE}&pageNumber={page_number}'
 			)
+			if not isinstance(response, dict) or 'data' not in response:
+				raise ValueError('Malformed Symbol statement page response')
+
 			items = response['data']
 			statement_items.extend(items)
 			if len(items) < MAX_PAGE_SIZE:
@@ -355,8 +358,7 @@ class SymbolPuller:
 	def _calculate_block_reward(receipts):
 		return sum(receipt['amount'] for receipt in receipts if INFLATION_RECEIPT_TYPE == receipt['receipt_type'])
 
-	async def _sync_receipts_for_batch(self, block_rows):
-		rows_by_height = await self._get_receipt_rows_by_height(block_rows[0]['height'], block_rows[-1]['height'])
+	def _upsert_receipts_for_batch(self, block_rows, rows_by_height):
 		for row in block_rows:
 			receipt_rows = rows_by_height.get(row['height'], [])
 			block_reward = self._calculate_block_reward(receipt_rows)
