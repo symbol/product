@@ -118,6 +118,7 @@
 	"field_sink": "Sink",
 	"field_targetMosaic": "Ciljny Mozaik",
 	"field_targetAccount": "Ciljny Account",
+	"field_remoteAccount": "Daleky Account",
 	"field_mosaic_names_description": "Imena abo namespaces sut’ čitljive tekstove koje možut zaměniti ID mozaika.",
 	"field_mosaic_namespace_description": "Svězany naziv namespace",
 	"field_supply_description": "Čislo mozaikov koje egzistuju v te moment",

@@ -119,6 +119,7 @@
 	"field_targetMosaic": "対象モザイク",
 	"field_targetAccount": "対象アカウント",
 
+	"field_remoteAccount": "リモートアカウント",
 	"field_mosaic_names_description": "名前またはネームスペースは、モザイクIDの代わりに使用できる人間が読める文字列です",
 	"field_mosaic_namespace_description": "リンクされたネームスペース名",
 	"field_supply_description": "現在存在するモザイクの数",

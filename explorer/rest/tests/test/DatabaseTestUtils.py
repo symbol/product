@@ -754,7 +754,8 @@ TRANSACTIONS_VIEWS = [
 		to_address=None,
 		value=[{
 			'mode': 1,
-			'remoteAccount': 'a5f06d59b97aa40c82afb941a61fb6483bdb7491805cdb9dc47d92136983b9a5'
+			'remoteAccount': 'a5f06d59b97aa40c82afb941a61fb6483bdb7491805cdb9dc47d92136983b9a5',
+			'remoteAddress': 'NBFWZ4IVRHEIBRCGHLYDS62FSFTBM3VDFA7E6LSQ'
 		}],
 		embedded_transactions=None,
 		fee=0.15,

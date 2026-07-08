@@ -146,6 +146,11 @@ const TransactionGraphic = ({ transactions }) => {
 								<ValueCopy value={item.publicKey} />
 							</Field>
 						)}
+						{!!item.remoteAccount && (
+							<Field title={t('field_remoteAccount')}>
+								<ValueAccount address={item.remoteAccount} size="md" />
+							</Field>
+						)}
 					</div>
 				</div>
 			))}

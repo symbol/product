@@ -188,6 +188,11 @@ const AccountInfo = ({ accountInfo, preloadedTransactions }) => {
 						<Field title={t('field_publicKey')} description={t('field_publicKey_description')}>
 							<ValueCopy value={accountInfo.publicKey} />
 						</Field>
+						{!!accountInfo.remoteAddress && (
+							<Field title={t('field_remoteAccount')}>
+								<ValueAccount address={accountInfo.remoteAddress} size="md" />
+							</Field>
+						)}
 						<Field title={t('field_height')} description={t('field_account_height_description')}>
 							<ValueBlockHeight value={accountInfo.height} />
 						</Field>
