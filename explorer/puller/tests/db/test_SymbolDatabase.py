@@ -366,7 +366,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			('UNIQUE', 'hash')
 		], key_constraints)
 
-	def test_create_tables_creates_symbol_transaction_child_columns_and_constraints(self):
+	def test_create_tables_creates_symbol_transaction_child_table_columns_and_constraints(self):
 		# Arrange:
 		database = self._create_uninitialized_database()
 		cursor = database.connection.cursor()
@@ -971,6 +971,12 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			_create_block(2),
 			_create_block(3)
 		])
+		database.upsert_transactions_for_height(1, [create_transaction_entry(
+			1,
+			'kept',
+			mosaic_rows=[{'mosaic_id': '2222222222222222', 'amount': 20, 'role': 'transfer', 'position': 0}],
+			address_rows=[{'address': b'kept address', 'role': 'signer'}]
+		)])
 		database.upsert_transactions_for_height(2, [create_transaction_entry(
 			2,
 			'rollbacked',
@@ -989,18 +995,18 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		cursor = database.connection.cursor()
 		cursor.execute('SELECT height FROM symbol_blocks ORDER BY height')
 		block_results = cursor.fetchall()
-		cursor.execute('SELECT COUNT(*) FROM symbol_transactions')
-		transaction_count = cursor.fetchone()[0]
-		cursor.execute('SELECT COUNT(*) FROM symbol_transaction_mosaics')
-		mosaic_count = cursor.fetchone()[0]
-		cursor.execute('SELECT COUNT(*) FROM symbol_transaction_addresses')
-		address_count = cursor.fetchone()[0]
+		cursor.execute('SELECT height, encode(hash, \'escape\') FROM symbol_transactions ORDER BY height')
+		transaction_results = cursor.fetchall()
+		cursor.execute('SELECT height, mosaic_id, amount, role FROM symbol_transaction_mosaics ORDER BY height')
+		mosaic_results = cursor.fetchall()
+		cursor.execute('SELECT height, encode(address, \'escape\'), role FROM symbol_transaction_addresses ORDER BY height')
+		address_results = cursor.fetchall()
 		sync_state = database.get_sync_state()
 
 		self.assertEqual([(1,)], block_results)
-		self.assertEqual(0, transaction_count)
-		self.assertEqual(0, mosaic_count)
-		self.assertEqual(0, address_count)
+		self.assertEqual([(1, 'hash-kept')], transaction_results)
+		self.assertEqual([(1, '2222222222222222', 20, 'transfer')], mosaic_results)
+		self.assertEqual([(1, 'kept address', 'signer')], address_results)
 		self.assertEqual('repairing', sync_state['status'])
 		self.assertEqual(1, sync_state['last_synced_height'])
 		self.assertEqual(
