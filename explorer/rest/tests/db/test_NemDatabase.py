@@ -30,11 +30,15 @@ from ..test.DatabaseTestUtils import (
 	NAMESPACE_VIEWS,
 	TRANSACTION_DAILY_STATISTIC_VIEW,
 	TRANSACTION_MONTH_STATISTIC_VIEW,
+	TRANSACTION_NAMES_FILTERED_BY_MULTISIG_INNER_SENDER,
+	TRANSACTION_NAMES_SORTED_BY_HEIGHT_ASC,
 	TRANSACTION_STATISTIC_VIEW,
 	TRANSACTIONS,
-	TRANSACTIONS_VIEWS,
-	DatabaseTestBase
+	DatabaseTestBase,
+	transaction_hash
 )
+from ..test.DatabaseTestUtils import transaction_view as expected_transaction_view
+from ..test.DatabaseTestUtils import transaction_views
 
 # region test data
 
@@ -520,59 +524,59 @@ class NemDatabaseTest(DatabaseTestBase):  # pylint: disable=too-many-public-meth
 
 	def test_can_query_transfer_by_hash(self):
 		# Act:
-		transaction_view = self.nem_db.get_transaction_by_hash('0' * 63 + '1')
+		transaction_view = self.nem_db.get_transaction_by_hash(transaction_hash('transfer'))
 
 		# Assert:
-		self.assertEqual(TRANSACTIONS_VIEWS[0], transaction_view)
+		self.assertEqual(expected_transaction_view('transfer'), transaction_view)
 
 	def test_can_query_transfer_v2_by_hash(self):
 		# Act:
-		transaction_view = self.nem_db.get_transaction_by_hash('0' * 63 + '2')
+		transaction_view = self.nem_db.get_transaction_by_hash(transaction_hash('transfer_v2'))
 
 		# Assert:
-		self.assertEqual(TRANSACTIONS_VIEWS[1], transaction_view)
+		self.assertEqual(expected_transaction_view('transfer_v2'), transaction_view)
 
 	def test_can_query_account_link_by_hash(self):
 		# Act:
-		transaction_view = self.nem_db.get_transaction_by_hash('0' * 63 + '3')
+		transaction_view = self.nem_db.get_transaction_by_hash(transaction_hash('account_key_link'))
 
 		# Assert:
-		self.assertEqual(TRANSACTIONS_VIEWS[2], transaction_view)
+		self.assertEqual(expected_transaction_view('account_key_link'), transaction_view)
 
 	def test_can_query_multisig_account_modification_by_hash(self):
 		# Act:
-		transaction_view = self.nem_db.get_transaction_by_hash('0' * 63 + '4')
+		transaction_view = self.nem_db.get_transaction_by_hash(transaction_hash('multisig_account_modification'))
 
 		# Assert:
-		self.assertEqual(TRANSACTIONS_VIEWS[3], transaction_view)
+		self.assertEqual(expected_transaction_view('multisig_account_modification'), transaction_view)
 
 	def test_can_query_multisig_by_hash(self):
 		# Act:
-		transaction_view = self.nem_db.get_transaction_by_hash('0' * 63 + '5')
+		transaction_view = self.nem_db.get_transaction_by_hash(transaction_hash('multisig'))
 
 		# Assert:
-		self.assertEqual(TRANSACTIONS_VIEWS[4], transaction_view)
+		self.assertEqual(expected_transaction_view('multisig'), transaction_view)
 
 	def test_can_query_namespace_registration_by_hash(self):
 		# Act:
-		transaction_view = self.nem_db.get_transaction_by_hash('0' * 63 + '7')
+		transaction_view = self.nem_db.get_transaction_by_hash(transaction_hash('namespace_registration'))
 
 		# Assert:
-		self.assertEqual(TRANSACTIONS_VIEWS[5], transaction_view)
+		self.assertEqual(expected_transaction_view('namespace_registration'), transaction_view)
 
 	def test_can_query_mosaic_definition_by_hash(self):
 		# Act:
-		transaction_view = self.nem_db.get_transaction_by_hash('0' * 63 + '8')
+		transaction_view = self.nem_db.get_transaction_by_hash(transaction_hash('mosaic_definition'))
 
 		# Assert:
-		self.assertEqual(TRANSACTIONS_VIEWS[6], transaction_view)
+		self.assertEqual(expected_transaction_view('mosaic_definition'), transaction_view)
 
 	def test_can_query_mosaic_supply_change_by_hash(self):
 		# Act:
-		transaction_view = self.nem_db.get_transaction_by_hash('0' * 63 + '9')
+		transaction_view = self.nem_db.get_transaction_by_hash(transaction_hash('mosaic_supply_change'))
 
 		# Assert:
-		self.assertEqual(TRANSACTIONS_VIEWS[7], transaction_view)
+		self.assertEqual(expected_transaction_view('mosaic_supply_change'), transaction_view)
 
 	# endregion
 
@@ -611,43 +615,43 @@ class NemDatabaseTest(DatabaseTestBase):  # pylint: disable=too-many-public-meth
 		self.assertEqual(TRANSACTION_MONTH_STATISTIC_VIEW, transaction_statistics)
 	# region transactions
 
-	def _assert_can_query_transactions_with_filter(self, pagination, sort, transaction_query, expected_transactions):
+	def _assert_can_query_transactions_with_filter(self, pagination, sort, transaction_query, expected_transaction_names):
 		# Act:
 		transactions_view = self.nem_db.get_transactions(pagination, sort, transaction_query)
 
 		# Assert:
-		self.assertEqual(expected_transactions, transactions_view)
+		self.assertEqual(transaction_views(*expected_transaction_names), transactions_view)
 
 	def test_can_query_transactions_filtered_limit_offset_0(self):
 		self._assert_can_query_transactions_with_filter(
-			Pagination(1, 0), 'desc', self._make_transaction_query(), [TRANSACTIONS_VIEWS[2]]
+			Pagination(1, 0), 'desc', self._make_transaction_query(), ('account_key_link', )
 		)
 
 	def test_can_query_transactions_filtered_limit_offset_1(self):
 		self._assert_can_query_transactions_with_filter(
-			Pagination(2, 1), 'desc', self._make_transaction_query(), [TRANSACTIONS_VIEWS[2], TRANSACTIONS_VIEWS[4]]
+			Pagination(2, 1), 'desc', self._make_transaction_query(), ('account_key_link', 'multisig')
 		)
 
 	def test_can_query_transactions_sorted_by_height_asc(self):
 		self._assert_can_query_transactions_with_filter(
-			Pagination(10, 0), 'asc', self._make_transaction_query(), list(TRANSACTIONS_VIEWS)
+			Pagination(10, 0), 'asc', self._make_transaction_query(), TRANSACTION_NAMES_SORTED_BY_HEIGHT_ASC
 		)
 
 	def test_can_query_transactions_sorted_by_height_desc(self):
 		self._assert_can_query_transactions_with_filter(
 			Pagination(3, 0), 'desc', self._make_transaction_query(),
-			[TRANSACTIONS_VIEWS[3], TRANSACTIONS_VIEWS[2], TRANSACTIONS_VIEWS[4]]
+			('multisig_account_modification', 'account_key_link', 'multisig')
 		)
 
 	def test_can_query_transactions_filtered_by_height(self):
 		self._assert_can_query_transactions_with_filter(
 			Pagination(10, 0), 'desc', self._make_transaction_query(height=1),
-			[TRANSACTIONS_VIEWS[0], TRANSACTIONS_VIEWS[1]]
+			('transfer', 'transfer_v2')
 		)
 
 	def test_can_query_transactions_filtered_by_nonexistent_height(self):
 		self._assert_can_query_transactions_with_filter(
-			Pagination(10, 0), 'desc', self._make_transaction_query(height=999), []
+			Pagination(10, 0), 'desc', self._make_transaction_query(height=999), ()
 		)
 
 	def test_can_query_transactions_filtered_by_multiple_transaction_types(self):
@@ -655,48 +659,69 @@ class NemDatabaseTest(DatabaseTestBase):  # pylint: disable=too-many-public-meth
 		self._assert_can_query_transactions_with_filter(
 			Pagination(10, 0), 'desc',
 			self._make_transaction_query(transaction_types=[257, 2049]),
-			[TRANSACTIONS_VIEWS[2], TRANSACTIONS_VIEWS[0], TRANSACTIONS_VIEWS[1]]
+			('account_key_link', 'transfer', 'transfer_v2')
 		)
 
 	def test_can_query_transactions_filtered_by_address_as_sender(self):
 		self._assert_can_query_transactions_with_filter(
 			Pagination(2, 0), 'desc', self._make_transaction_query(address=TRANSACTIONS[2].sender_address),
-			[TRANSACTIONS_VIEWS[2]]
+			('account_key_link', )
 		)
 
 	def test_can_query_transactions_filtered_by_address_as_recipient(self):
 		self._assert_can_query_transactions_with_filter(
 			Pagination(10, 0), 'desc', self._make_transaction_query(address=TRANSACTIONS[0].recipient_address),
-			[TRANSACTIONS_VIEWS[5], TRANSACTIONS_VIEWS[6], TRANSACTIONS_VIEWS[0], TRANSACTIONS_VIEWS[1]]
+			('multisig', 'namespace_registration', 'mosaic_definition', 'transfer', 'transfer_v2')
 		)
 
 	def test_can_query_transactions_filtered_by_sender_address(self):
 		self._assert_can_query_transactions_with_filter(
 			Pagination(10, 0), 'desc', self._make_transaction_query(sender_address=TRANSACTIONS[2].sender_address),
-			[TRANSACTIONS_VIEWS[2]]
+			('account_key_link', )
 		)
 
 	def test_can_query_transactions_filtered_by_recipient_address(self):
 		self._assert_can_query_transactions_with_filter(
 			Pagination(10, 0), 'desc', self._make_transaction_query(recipient_address=TRANSACTIONS[0].recipient_address),
-			[TRANSACTIONS_VIEWS[5], TRANSACTIONS_VIEWS[6], TRANSACTIONS_VIEWS[0], TRANSACTIONS_VIEWS[1]]
+			('multisig', 'namespace_registration', 'mosaic_definition', 'transfer', 'transfer_v2')
+		)
+
+	def test_can_exclude_multisig_transaction_for_initiator_account_from_address_filter(self):
+		self._assert_can_query_transactions_with_filter(
+			Pagination(10, 0), 'desc', self._make_transaction_query(address=TRANSACTIONS[4].sender_address), ()
+		)
+		self._assert_can_query_transactions_with_filter(
+			Pagination(10, 0), 'desc', self._make_transaction_query(sender_address=TRANSACTIONS[4].sender_address), ()
+		)
+
+	def test_can_query_multisig_transaction_filtered_by_inner_sender_address(self):
+		self._assert_can_query_transactions_with_filter(
+			Pagination(10, 0), 'desc',
+			self._make_transaction_query(sender_address=TRANSACTIONS[5].sender_address),
+			TRANSACTION_NAMES_FILTERED_BY_MULTISIG_INNER_SENDER
+		)
+
+	def test_can_query_multisig_transaction_filtered_by_inner_recipient_address(self):
+		self._assert_can_query_transactions_with_filter(
+			Pagination(10, 0), 'desc', self._make_transaction_query(recipient_address=TRANSACTIONS[5].recipient_address),
+			('multisig', 'namespace_registration', 'mosaic_definition', 'transfer', 'transfer_v2')
 		)
 
 	def test_can_query_transactions_filtered_by_mosaic_nem_xem(self):
 		self._assert_can_query_transactions_with_filter(
 			Pagination(10, 0), 'desc', self._make_transaction_query(mosaic='nem.xem'),
-			[TRANSACTIONS_VIEWS[0], TRANSACTIONS_VIEWS[1]]
+			('transfer', 'transfer_v2')
 		)
 
 	def test_can_query_transactions_filtered_by_mosaic_other(self):
 		self._assert_can_query_transactions_with_filter(
 			Pagination(10, 0), 'desc', self._make_transaction_query(mosaic='root.mosaic'),
-			[TRANSACTIONS_VIEWS[1]]
+			('transfer_v2', )
 		)
 
 	def test_can_query_transactions_filtered_by_nonexistent_mosaic(self):
 		self._assert_can_query_transactions_with_filter(
-			Pagination(10, 0), 'desc', self._make_transaction_query(mosaic='nonexistent.mosaic'), []
+			Pagination(10, 0), 'desc', self._make_transaction_query(mosaic='nonexistent.mosaic'), ()
 		)
 
 	# endregion

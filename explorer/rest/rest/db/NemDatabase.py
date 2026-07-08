@@ -831,6 +831,22 @@ class NemDatabase(DatabaseConnectionPool):
 			order_condition=order_condition
 		)
 
+	@staticmethod
+	def _create_multisig_inner_filter(address_condition):
+		"""Creates a filter for multisig inner transactions."""
+
+		return (
+			' OR ('
+			f' t.transaction_type = {TransactionType.MULTISIG.value}'
+			' AND EXISTS ('
+			' SELECT 1 FROM transactions it'
+			' WHERE it.is_inner = true'
+			" AND it.transaction_hash = decode(t.payload->>'inner_hash', 'hex')"
+			f' AND {address_condition}'
+			' )'
+			' )'
+		)
+
 	def get_transactions(self, pagination, sort, transaction_query):
 		"""Gets transactions pagination."""
 
@@ -848,17 +864,33 @@ class NemDatabase(DatabaseConnectionPool):
 			where_condition += ' AND t.transaction_type IN %s'
 			filter_params.append(tuple(transaction_query.transaction_types))
 
+		# Exclude multisig wrappers when matching by initiator.
+		non_multisig_sender_filter = f'(t.transaction_type != {TransactionType.MULTISIG.value} AND t.sender_address = %s)'
+
 		if transaction_query.address:
-			where_condition += ' AND (t.sender_address = %s OR t.recipient_address = %s)'
-			filter_params.extend([transaction_query.address.bytes, transaction_query.address.bytes])
+			multisig_inner_filter = self._create_multisig_inner_filter('(it.sender_address = %s OR it.recipient_address = %s)')
+			where_condition += (
+				f' AND ({non_multisig_sender_filter}'
+				' OR t.recipient_address = %s'
+				f'{multisig_inner_filter})'
+			)
+			filter_params.extend([transaction_query.address.bytes] * 4)
 		else:
 			if transaction_query.sender_address:
-				where_condition += ' AND t.sender_address = %s'
-				filter_params.append(transaction_query.sender_address.bytes)
+				multisig_inner_filter = self._create_multisig_inner_filter('it.sender_address = %s')
+				where_condition += (
+					f' AND ({non_multisig_sender_filter}'
+					f'{multisig_inner_filter})'
+				)
+				filter_params.extend([transaction_query.sender_address.bytes] * 2)
 
 			if transaction_query.recipient_address:
-				where_condition += ' AND t.recipient_address = %s'
-				filter_params.append(transaction_query.recipient_address.bytes)
+				multisig_inner_filter = self._create_multisig_inner_filter('it.recipient_address = %s')
+				where_condition += (
+					' AND (t.recipient_address = %s'
+					f'{multisig_inner_filter})'
+				)
+				filter_params.extend([transaction_query.recipient_address.bytes] * 2)
 
 		if transaction_query.mosaic:
 			where_condition += (

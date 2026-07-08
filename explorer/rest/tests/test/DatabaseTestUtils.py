@@ -320,14 +320,14 @@ TRANSACTIONS = [
 	Transaction(  # Multisig transaction
 		transaction_hash='0' * 63 + '5',
 		height=2,
-		sender_public_key=PublicKey('f9bd190dd0c364261f5c8a74870cc7f7374e631352293c62ecc437657e5de2cd'),
+		sender_public_key=PublicKey('8D07F90FB4BBE7715FA327C926770166A11BE2E494A970605F2E12557F66C9B9'),
 		fee=150000,
 		timestamp='2015-03-29 00:06:25',
 		deadline='2015-03-29 20:34:19',
 		signature='0' * 128,
 		transaction_type=4100,
 		is_inner=False,
-		sender_address=Address('NALICEPFLZQRZGPRIJTMJOCPWDNECXTNNG7QLSG3'),
+		sender_address=Address('NANEMOABLAGR72AZ2RV3V4ZHDCXW25XQ73O7OBT5'),
 		recipient_address=None,
 		payload={
 			'inner_hash': '0' * 63 + '6',
@@ -765,7 +765,7 @@ TRANSACTIONS_VIEWS = [
 		to_address=str(TRANSACTIONS[5].recipient_address),
 		value=None,
 		embedded_transactions=[{
-			'initiator': 'NALICEPFLZQRZGPRIJTMJOCPWDNECXTNNG7QLSG3',
+			'initiator': 'NANEMOABLAGR72AZ2RV3V4ZHDCXW25XQ73O7OBT5',
 			'transactionHash': '0' * 63 + '6',
 			'transactionType': 'TRANSFER',
 			'signatures': [{
@@ -836,6 +836,60 @@ TRANSACTIONS_VIEWS = [
 		signature=TRANSACTIONS[8].signature.upper()
 	),
 ]
+
+TRANSACTION_HASHES = {
+	'transfer': '0' * 63 + '1',
+	'transfer_v2': '0' * 63 + '2',
+	'account_key_link': '0' * 63 + '3',
+	'multisig_account_modification': '0' * 63 + '4',
+	'multisig': '0' * 63 + '5',
+	'namespace_registration': '0' * 63 + '7',
+	'mosaic_definition': '0' * 63 + '8',
+	'mosaic_supply_change': '0' * 63 + '9'
+}
+
+TRANSACTION_NAMES_SORTED_BY_HEIGHT_ASC = (
+	'transfer',
+	'transfer_v2',
+	'account_key_link',
+	'multisig_account_modification',
+	'multisig',
+	'namespace_registration',
+	'mosaic_definition',
+	'mosaic_supply_change'
+)
+
+TRANSACTION_NAMES_FILTERED_BY_MULTISIG_INNER_SENDER = (
+	'multisig',
+	'mosaic_definition',
+	'mosaic_supply_change',
+	'multisig_account_modification',
+	'namespace_registration',
+	'transfer_v2',
+	'transfer'
+)
+
+TRANSACTION_VIEWS_BY_HASH = {transaction_view.transaction_hash: transaction_view for transaction_view in TRANSACTIONS_VIEWS}
+
+
+def transaction_hash(transaction_name):
+	return TRANSACTION_HASHES[transaction_name]
+
+
+def transaction_view(transaction_name):
+	return TRANSACTION_VIEWS_BY_HASH[transaction_hash(transaction_name)]
+
+
+def transaction_views(*transaction_names):
+	return [transaction_view(transaction_name) for transaction_name in transaction_names]
+
+
+def transaction_dict(transaction_name):
+	return transaction_view(transaction_name).to_dict()
+
+
+def transaction_dicts(*transaction_names):
+	return [view.to_dict() for view in transaction_views(*transaction_names)]
 
 # endregion
 
