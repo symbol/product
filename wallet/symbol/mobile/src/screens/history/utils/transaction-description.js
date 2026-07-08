@@ -1,6 +1,6 @@
-import { SymbolTransactionType } from '@/app/constants';
+import { AliasAction, AliasActionMessage, SymbolTransactionType } from '@/app/constants';
 import { $t } from '@/app/localization';
-import { getAccountKnownInfo } from '@/app/utils';
+import { getAccountKnownInfo, getTransactionTypeTranslationKey } from '@/app/utils';
 import {
 	isAggregateTransaction,
 	isHarvestingServiceTransaction,
@@ -56,20 +56,33 @@ const getTransferDescription = (transaction, currentAccount, resolveOptions) => 
 /**
  * Gets the description for an aggregate transaction.
  * @param {Transaction} transaction - Transaction object.
+ * @param {ChainName} chainName - Chain name, used to namespace the descriptor key.
  * @returns {string} Aggregate description.
  */
-const getAggregateDescription = transaction => {
+const getAggregateDescription = (transaction, chainName) => {
 	if (isHarvestingServiceTransaction(transaction))
 		return $t('transactionDescriptionShort_aggregateHarvesting');
 
 	const firstTransactionType = transaction.innerTransactions[0]?.type;
-	const innerTypeText = firstTransactionType ? $t(`transactionDescriptor_${firstTransactionType}`) : '';
+	const innerTypeText = firstTransactionType
+		? $t(getTransactionTypeTranslationKey(firstTransactionType, chainName))
+		: '';
 	const count = transaction.innerTransactions.length - 1;
 
 	return count
 		? $t('transactionDescriptionShort_aggregateMultiple', { type: innerTypeText, count })
 		: innerTypeText;
 };
+
+/**
+ * Gets the localization key for an alias transaction description based on its action.
+ * @param {Transaction} transaction - Alias transaction object.
+ * @returns {string} Localization key.
+ */
+const getAliasDescriptionKey = transaction =>
+	transaction.aliasAction === AliasActionMessage[AliasAction.Unlink]
+		? 'transactionDescriptionShort_aliasUnlink'
+		: 'transactionDescriptionShort_alias';
 
 /**
  * Gets the description text for a transaction.
@@ -82,7 +95,7 @@ export const getTransactionDescription = (transaction, currentAccount, resolveOp
 	const { type } = transaction;
 
 	if (isAggregateTransaction(transaction))
-		return getAggregateDescription(transaction);
+		return getAggregateDescription(transaction, resolveOptions.chainName);
 
 	switch (type) {
 	case SymbolTransactionType.TRANSFER:
@@ -94,11 +107,11 @@ export const getTransactionDescription = (transaction, currentAccount, resolveOp
 	case SymbolTransactionType.ADDRESS_ALIAS: {
 		const knownInfo = getAccountKnownInfo(transaction.address, resolveOptions);
 		const displayName = knownInfo?.name ?? transaction.address;
-		return $t('transactionDescriptionShort_alias', { target: displayName, name: transaction.namespaceName });
+		return $t(getAliasDescriptionKey(transaction), { target: displayName, name: transaction.namespaceName });
 	}
 
 	case SymbolTransactionType.MOSAIC_ALIAS:
-		return $t('transactionDescriptionShort_alias', { target: transaction.mosaicId, name: transaction.namespaceName });
+		return $t(getAliasDescriptionKey(transaction), { target: transaction.mosaicId, name: transaction.namespaceName });
 
 	case SymbolTransactionType.MOSAIC_DEFINITION:
 	case SymbolTransactionType.MOSAIC_SUPPLY_CHANGE:

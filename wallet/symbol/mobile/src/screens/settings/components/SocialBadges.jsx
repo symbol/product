@@ -73,7 +73,7 @@ const styles = StyleSheet.create({
 		flexDirection: 'row'
 	},
 	badge: {
-		width: Sizes.Semantic.spacing.m * 16,
+		flex: 1,
 		height: Sizes.Semantic.spacing.m * 16
 	},
 	image: {

@@ -109,9 +109,12 @@ const erc20ApproveTransactionToEthereum = (transaction, config) => {
 
 const SWAP_ROUTER_EXACT_INPUT_SINGLE_SIGNATURE =
 	// eslint-disable-next-line max-len
-	'function exactInputSingle(tuple(address tokenIn, address tokenOut, uint24 fee, address recipient, uint256 deadline, uint256 amountIn, uint256 amountOutMinimum, uint160 sqrtPriceLimitX96)) payable returns (uint256 amountOut)';
+	'function exactInputSingle(tuple(address tokenIn, address tokenOut, uint24 fee, address recipient, uint256 amountIn, uint256 amountOutMinimum, uint160 sqrtPriceLimitX96)) payable returns (uint256 amountOut)';
 
-const SWAP_ROUTER_ABI = [SWAP_ROUTER_EXACT_INPUT_SINGLE_SIGNATURE];
+const SWAP_ROUTER_MULTICALL_SIGNATURE =
+	'function multicall(uint256 deadline, bytes[] data) payable returns (bytes[] results)';
+
+const SWAP_ROUTER_ABI = [SWAP_ROUTER_EXACT_INPUT_SINGLE_SIGNATURE, SWAP_ROUTER_MULTICALL_SIGNATURE];
 
 const uniswapSwapToEthereum = (transaction, config) => {
 	const baseTransaction = createBaseEthereumTransaction(transaction, config.networkIdentifier);
@@ -128,19 +131,20 @@ const uniswapSwapToEthereum = (transaction, config) => {
 		tokenIn = transaction.wethTokenId;
 	};
 
+	const exactInputSingleData = routerInterface.encodeFunctionData('exactInputSingle', [{
+		tokenIn,
+		tokenOut: transaction.targetToken.id,
+		fee: transaction.poolFee,
+		recipient: transaction.recipientAddress,
+		amountIn: BigInt(absoluteAmountIn),
+		amountOutMinimum: BigInt(absoluteAmountOut),
+		sqrtPriceLimitX96: BigInt(transaction.sqrtPriceLimitX96)
+	}]);
+
 	return {
 		...baseTransaction,
 		to: transaction.routerAddress,
 		value,
-		data: routerInterface.encodeFunctionData('exactInputSingle', [{
-			tokenIn,
-			tokenOut: transaction.targetToken.id,
-			fee: transaction.poolFee,
-			recipient: transaction.recipientAddress,
-			deadline: transaction.deadline,
-			amountIn: BigInt(absoluteAmountIn),
-			amountOutMinimum: BigInt(absoluteAmountOut),
-			sqrtPriceLimitX96: BigInt(transaction.sqrtPriceLimitX96)
-		}])
+		data: routerInterface.encodeFunctionData('multicall', [transaction.deadline, [exactInputSingleData]])
 	};
 };

@@ -417,11 +417,11 @@ describe('TransactionService', () => {
 	describe('announceTransactionBundle', () => {
 		const multisigBundleCases = [
 			{
-				description: 'uses announceTransactionsSequentially with PARTIAL for MULTISIG_TRANSFER',
+				description: 'announces MULTISIG_TRANSFER via sequential PARTIAL only, without re-announcing via DEFAULT',
 				bundleType: TransactionBundleType.MULTISIG_TRANSFER
 			},
 			{
-				description: 'uses announceTransactionsSequentially with PARTIAL for MULTISIG_ACCOUNT_MODIFICATION',
+				description: 'announces MULTISIG_ACCOUNT_MODIFICATION via sequential PARTIAL only, without re-announcing via DEFAULT',
 				bundleType: TransactionBundleType.MULTISIG_ACCOUNT_MODIFICATION
 			}
 		];
@@ -437,6 +437,9 @@ describe('TransactionService', () => {
 				const spySequential = jest
 					.spyOn(transactionService, 'announceTransactionsSequentially')
 					.mockResolvedValue();
+				const spyAnnounce = jest
+					.spyOn(transactionService, 'announceTransaction')
+					.mockResolvedValue();
 
 				// Act:
 				await transactionService.announceTransactionBundle(networkProperties, bundle);
@@ -448,6 +451,7 @@ describe('TransactionService', () => {
 					bundle.transactions,
 					TransactionAnnounceGroup.PARTIAL
 				);
+				expect(spyAnnounce).not.toHaveBeenCalled();
 			});
 		};
 

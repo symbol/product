@@ -1,4 +1,4 @@
-import { TransactionType } from '../constants';
+import { GAS_LIMIT_SAFETY_MARGIN_PERCENTAGE, TransactionType } from '../constants';
 import { createEthereumJrpcProvider, getUnresolvedIdsFromTransactionDTOs, transactionFromDTO, transactionToEthereum } from '../utils';
 import { ApiError } from 'wallet-common-core';
 import { TransactionGroup } from 'wallet-common-core/src/constants';
@@ -6,6 +6,11 @@ import { TransactionGroup } from 'wallet-common-core/src/constants';
 // Uniswap V3 swaps require a prior ERC-20 approve, so estimateGas always fails in isolation.
 // Use a conservative fixed gas limit that covers typical V3 exactInputSingle calls.
 const UNISWAP_SWAP_GAS_LIMIT = '300000';
+
+// eth_estimateGas may underestimate the required gas for some contract calls 
+// (for example due to internal calls, proxy contracts, or EIP-150 gas forwarding). 
+// Apply a safety margin to reduce the chance of on-chain out-of-gas reverts.
+const applyGasLimitSafetyMargin = gasLimit => gasLimit + ((gasLimit * GAS_LIMIT_SAFETY_MARGIN_PERCENTAGE) / 100n);
 
 /** @typedef {import('../types/Account').PublicAccount} PublicAccount */
 /** @typedef {import('../types/Mosaic').MosaicInfo} MosaicInfo */
@@ -141,7 +146,7 @@ export class TransactionService {
 		try {
 			const gasLimit = await provider.estimateGas(ethereumTransaction);
 
-			return gasLimit.toString();
+			return applyGasLimitSafetyMargin(gasLimit).toString();
 		} catch (error) {
 			throw new ApiError(`Gas limit estimation failed: ${error.message}`);
 		}

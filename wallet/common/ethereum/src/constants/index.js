@@ -30,3 +30,8 @@ export const NETWORK_CURRENCY_TICKER = 'ETH';
 export const NETWORK_CURRENCY_NAME = 'Ether';
 export const NETWORK_CURRENCY_ID = 'eth';
 export const NETWORK_CURRENCY_DIVISIBILITY = 18;
+
+// Percentage added to eth_estimateGas results to reduce the risk of out-of-gas failures 
+// caused by gas estimation underestimating some contract executions. 
+// This only increases the transaction's gas limit (execution cap); unused gas is not charged.
+export const GAS_LIMIT_SAFETY_MARGIN_PERCENTAGE = 20n;

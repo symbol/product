@@ -68,6 +68,25 @@ export const validateAddress = chainName => str => {
 };
 
 /**
+ * Returns a validator that checks whether a value is a valid recipient for the send form on the given blockchain.
+ * Only Ethereum recipients are validated, since the Symbol input also accepts namespace names (not just addresses).
+ * On Ethereum only a valid Ethereum address is accepted.
+ * @param {ChainName} chainName - The blockchain name (e.g., 'symbol', 'ethereum').
+ * @returns {function(string): string|undefined} Validator function.
+ */
+export const validateRecipient = chainName => str => {
+	if (chainName !== 'ethereum')
+		return;
+
+	const trimmedStr = str.trim();
+
+	if (isAddress(trimmedStr, chainName))
+		return;
+
+	return 'validation_error_address_invalid';
+};
+
+/**
  * Returns a validator that checks whether a value is a valid private key for the given blockchain.
  * @param {ChainName} chainName - The blockchain name (e.g., 'symbol', 'ethereum').
  * @returns {function(string): string|undefined} Validator function.

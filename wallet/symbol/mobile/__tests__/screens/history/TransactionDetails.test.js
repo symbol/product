@@ -38,6 +38,8 @@ const TRANSACTION_TIMESTAMP = 1684265310994;
 const TRANSFER_XYM_AMOUNT = '1234';
 const TRANSFER_CUSTOM_TOKEN_AMOUNT = '56.78';
 const TRANSFER_MESSAGE_TEXT = 'Test transfer message';
+const ENCRYPTED_MESSAGE_PAYLOAD = '0100AABBCCDDEEFF';
+const DECRYPTED_MESSAGE_TEXT = 'Secret decrypted message';
 
 // Screen Text
 
@@ -56,9 +58,9 @@ const SCREEN_TEXT = {
 	textStatusUnconfirmed: 'transactionStatus_unconfirmed',
 
 	// Transaction types
-	textTransactionTransferOutgoing: 'transactionDescriptor_16724_outgoing',
-	textTransactionAggregateBonded: 'transactionDescriptor_16961',
-	textTransactionMultisigAccountModification: 'transactionDescriptor_16725',
+	textTransactionTransferOutgoing: 'transactionDescriptor_symbol_16724_outgoing',
+	textTransactionAggregateBonded: 'transactionDescriptor_symbol_16961',
+	textTransactionMultisigAccountModification: 'transactionDescriptor_symbol_16725',
 
 	// Cosign alerts
 	textAlertSigned: 's_transactionDetails_cosignAlert_signed',
@@ -66,6 +68,9 @@ const SCREEN_TEXT = {
 
 	// Safety warning
 	textSafetyWarning: 's_transactionDetails_safetyWarning_description',
+
+	// Message
+	textMessageEncryptedLabel: 'c_messageView_label_encrypted',
 
 	// Dialog titles and text
 	textDialogConfirmTitle: 's_transactionDetails_cosignDialog_confirm_title',
@@ -141,6 +146,17 @@ const transferTransaction = TransferTransactionFixtureBuilder
 	.setAmount(`-${TRANSFER_XYM_AMOUNT}`)
 	.build();
 
+const encryptedTransferTransaction = TransferTransactionFixtureBuilder
+	.createDefault(CHAIN_NAME, NETWORK_IDENTIFIER)
+	.setHash(TRANSACTION_HASH)
+	.setTimestamp(TRANSACTION_TIMESTAMP)
+	.setSigner(currentAccount)
+	.setRecipientAddress(recipientAccount.address)
+	.setMosaics([tokenXym])
+	.setEncryptedMessage(ENCRYPTED_MESSAGE_PAYLOAD)
+	.setAmount(`-${TRANSFER_XYM_AMOUNT}`)
+	.build();
+
 // Inner Transaction Fixtures
 
 const innerTransferFromCurrentAccount = TransferTransactionFixtureBuilder
@@ -195,6 +211,25 @@ const aggregateBondedWithMultisigModification = AggregateTransactionFixtureBuild
 	.setInnerTransactions([innerMultisigAccountModification])
 	.build();
 
+// Mosaic Supply Change Transaction Fixtures
+
+const MOSAIC_SUPPLY_DELTA = 4242;
+const MOSAIC_SUPPLY_CHANGE_MOSAIC_ID = '0E2B031D9C83906D';
+
+const createMosaicSupplyChangeTransaction = action => ({
+	type: SymbolTransactionType.MOSAIC_SUPPLY_CHANGE,
+	hash: TRANSACTION_HASH,
+	timestamp: TRANSACTION_TIMESTAMP,
+	signerAddress: currentAccount.address,
+	signerPublicKey: currentAccount.publicKey,
+	mosaicId: MOSAIC_SUPPLY_CHANGE_MOSAIC_ID,
+	action,
+	delta: MOSAIC_SUPPLY_DELTA
+});
+
+const mosaicSupplyIncreaseTransaction = createMosaicSupplyChangeTransaction('Increase');
+const mosaicSupplyDecreaseTransaction = createMosaicSupplyChangeTransaction('Decrease');
+
 // Address Book Configurations
 
 const addressBookWithContacts = createAddressBookMock([recipientContact, otherSignerContact]);
@@ -212,7 +247,10 @@ const createWalletControllerConfig = (overrides = {}) => ({
 		[NETWORK_IDENTIFIER]: walletAccounts
 	},
 	modules: {
-		addressBook: addressBookWithContacts
+		addressBook: addressBookWithContacts,
+		transfer: {
+			getDecryptedMessageText: jest.fn().mockResolvedValue(DECRYPTED_MESSAGE_TEXT)
+		}
 	},
 	fetchTransactionStatus: jest.fn().mockResolvedValue({ group: TransactionGroup.CONFIRMED }),
 	fetchAccountTransaction: jest.fn().mockImplementation(hash => 
@@ -330,6 +368,95 @@ describe('screens/history/TransactionDetails', () => {
 
 			// Assert:
 			screenTester.expectText(expectedTexts, true);
+		});
+	});
+
+	describe('encrypted message', () => {
+		it('decrypts and renders the message text for an encrypted transfer', async () => {
+			// Arrange:
+			const getDecryptedMessageText = jest.fn().mockResolvedValue(DECRYPTED_MESSAGE_TEXT);
+			setupMocks({
+				modules: {
+					addressBook: addressBookWithContacts,
+					transfer: { getDecryptedMessageText }
+				},
+				fetchAccountTransaction: jest.fn().mockResolvedValue(encryptedTransferTransaction)
+			});
+			const props = createRouteProps(encryptedTransferTransaction);
+
+			// Act:
+			const screenTester = new ScreenTester(TransactionDetails, props);
+			await screenTester.waitForTimer();
+			await screenTester.waitForTimer();
+
+			// Assert:
+			expect(getDecryptedMessageText).toHaveBeenCalledWith(encryptedTransferTransaction);
+			screenTester.expectText([DECRYPTED_MESSAGE_TEXT], true);
+			screenTester.notExpectText([SCREEN_TEXT.textMessageEncryptedLabel]);
+		});
+
+		it('keeps the encrypted label and shows no text when decryption fails', async () => {
+			// Arrange:
+			const getDecryptedMessageText = jest.fn().mockRejectedValue(new Error('decrypt failed'));
+			setupMocks({
+				modules: {
+					addressBook: addressBookWithContacts,
+					transfer: { getDecryptedMessageText }
+				},
+				fetchAccountTransaction: jest.fn().mockResolvedValue(encryptedTransferTransaction)
+			});
+			const props = createRouteProps(encryptedTransferTransaction);
+
+			// Act:
+			const screenTester = new ScreenTester(TransactionDetails, props);
+			await screenTester.waitForTimer();
+			await screenTester.waitForTimer();
+
+			// Assert:
+			expect(getDecryptedMessageText).toHaveBeenCalled();
+			screenTester.expectText([SCREEN_TEXT.textMessageEncryptedLabel], true);
+			screenTester.notExpectText([DECRYPTED_MESSAGE_TEXT]);
+		});
+	});
+
+	describe('mosaic supply change transactions', () => {
+		const runMosaicSupplyChangeTest = (description, config, expected) => {
+			it(description, () => {
+				// Arrange:
+				setupMocks();
+				const props = createRouteProps(config.transaction);
+
+				// Act:
+				const screenTester = new ScreenTester(TransactionDetails, props);
+
+				// Assert:
+				screenTester.expectText(expected.visibleTexts, true);
+				if (expected.notVisibleTexts?.length)
+					screenTester.notExpectText(expected.notVisibleTexts);
+			});
+		};
+
+		const mosaicSupplyChangeTests = [
+			{
+				description: 'renders a decrease as "Decrease by" with a negative delta',
+				config: { transaction: mosaicSupplyDecreaseTransaction },
+				expected: {
+					visibleTexts: ['data_delta_decrease', `-${MOSAIC_SUPPLY_DELTA}`],
+					notVisibleTexts: ['data_delta_increase']
+				}
+			},
+			{
+				description: 'renders an increase as "Increase by" with a positive delta',
+				config: { transaction: mosaicSupplyIncreaseTransaction },
+				expected: {
+					visibleTexts: ['data_delta_increase', `${MOSAIC_SUPPLY_DELTA}`],
+					notVisibleTexts: ['data_delta_decrease']
+				}
+			}
+		];
+
+		mosaicSupplyChangeTests.forEach(test => {
+			runMosaicSupplyChangeTest(test.description, test.config, test.expected);
 		});
 	});
 

@@ -1,6 +1,6 @@
 import { AccountView, BooleanView, CopyButtonContainer, Field, MessageView, Stack, StyledText, TokenView } from '@/app/components';
 import { $t } from '@/app/localization';
-import { createTokenDisplayData, getAccountKnownInfo } from '@/app/utils';
+import { createTokenDisplayData, getAccountKnownInfo, getTransactionTypeTranslationKey } from '@/app/utils';
 import React, { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 
@@ -59,10 +59,11 @@ const useResolvedData = (data, options) => {
  * @param {TableRow} row - Row data.
  * @param {Map<string, *>} resolvedData - Map of resolved known info.
  * @param {function(string): string} translate - Translation function.
+ * @param {ChainName} [chainName] - Chain name, used to resolve chain-specific row values.
  * @param {string|number} [key] - Optional key for list rendering.
  * @returns {React.ReactNode} Row content.
  */
-const renderRowValue = (row, resolvedData, translate, key) => {
+const renderRowValue = (row, resolvedData, translate, chainName, key) => {
 	const isArrayValue = Array.isArray(row.value);
 
 	if (isArrayValue && row.value.length > 0) {
@@ -70,6 +71,7 @@ const renderRowValue = (row, resolvedData, translate, key) => {
 			{ ...row, value },
 			resolvedData,
 			translate,
+			chainName,
 			`${row.title}-${index}`
 		));
 	}
@@ -139,6 +141,8 @@ const renderRowValue = (row, resolvedData, translate, key) => {
 				<StyledText>{row.value}</StyledText>
 			</CopyButtonContainer>
 		);
+	case 'transactionType':
+		return <StyledText key={key}>{translate(getTransactionTypeTranslationKey(row.value, chainName))}</StyledText>;
 	case 'translate':
 		return <StyledText key={key}>{translate(`data_${row.value}`)}</StyledText>;
 	case 'text':
@@ -204,7 +208,7 @@ export const TableView = ({
 				{data.map((row, index) => (
 					shouldRenderRow(row) && (
 						<Field title={getTitleText(row.title)} key={`${row.title}-${index}`}>
-							{renderRowValue(row, resolvedData, translate)}
+							{renderRowValue(row, resolvedData, translate, chainName)}
 						</Field>
 					)
 				))}

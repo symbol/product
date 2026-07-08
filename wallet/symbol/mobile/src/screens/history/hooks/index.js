@@ -1,4 +1,5 @@
 export * from './useCosignFlow';
+export * from './useDecryptedTransaction';
 export * from './useHistoryData';
 export * from './useHistoryWidget';
 export * from './useLiveTransactionInfo';

@@ -15,13 +15,17 @@ export const absoluteToRelativeAmount = (absoluteAmount, divisibility) => {
 	if (divisibility < 0)
 		throw new Error('Divisibility must be a non-negative integer');
 
-	const absoluteString = trimLeadingZeros(String(absoluteAmount));
+	// Split off a leading sign before padding/slicing so digit math operates on the magnitude only.
+	const rawString = String(absoluteAmount);
+	const isNegative = rawString.startsWith('-');
+	const magnitude = trimLeadingZeros(isNegative ? rawString.slice(1) : rawString);
+	const sign = isNegative && magnitude !== '0' ? '-' : '';
 
 	if (divisibility === 0)
-		return absoluteString;
+		return `${sign}${magnitude}`;
 
 	// Ensure there are at least (divisibility + 1) digits to safely split integer/fractional parts
-	const padded = absoluteString.padStart(divisibility + 1, '0');
+	const padded = magnitude.padStart(divisibility + 1, '0');
 
 	// Everything before the last "divisibility" digits is the integer part
 	const integerPart = padded.slice(0, -divisibility);
@@ -32,7 +36,7 @@ export const absoluteToRelativeAmount = (absoluteAmount, divisibility) => {
 	// Remove insignificant trailing zeros from the fractional part
 	const fractionalPart = trimTrailingZeros(fractionalPartRaw);
 
-	return fractionalPart ? `${integerPart}.${fractionalPart}` : integerPart;
+	return fractionalPart ? `${sign}${integerPart}.${fractionalPart}` : `${sign}${integerPart}`;
 };
 
 /**

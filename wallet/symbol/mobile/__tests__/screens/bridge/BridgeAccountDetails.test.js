@@ -171,6 +171,7 @@ describe('screens/bridge/BridgeAccountDetails', () => {
 				params: {
 					chainName: CHAIN_NAME,
 					tokenId: tokenEth.id,
+					accountAddress: ethereumAccount.address,
 					preloadedData: tokenEth
 				}
 			});

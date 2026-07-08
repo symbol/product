@@ -1,6 +1,6 @@
 import { MarketService } from '../../src/api/MarketService';
 import { runApiTest } from '../test-utils';
-import { expect, jest } from '@jest/globals';
+import { jest } from '@jest/globals';
 
 describe('MarketService', () => {
 	let marketService;
@@ -9,100 +9,119 @@ describe('MarketService', () => {
 		marketCurrencies: ['USD', 'EUR', 'JPY', 'GBP', 'KRW', 'CNY', 'UAH'],
 		marketDataURL: 'https://market.example.tld/data'
 	};
+	const mockNow = 1_700_000_000_000;
 
 	beforeEach(() => {
 		mockMakeRequest = jest.fn();
-		marketService = new MarketService({
-			config: baseConfig,
-			makeRequest: mockMakeRequest
-		});
 		jest.clearAllMocks();
+		jest.spyOn(Date, 'now').mockReturnValue(mockNow);
+	});
+
+	afterEach(() => {
+		jest.restoreAllMocks();
 	});
 
 	describe('fetchPrices', () => {
-		it('builds URL from config and returns prices with timestamp', async () => {
-			// Arrange:
-			const response = {
-				USD: 0.031,
-				EUR: 0.029,
-				JPY: 4.5,
-				GBP: 0.025,
-				KRW: 41.2,
-				CNY: 0.22,
-				UAH: 1.2
-			};
-			const expectedUrl = `${baseConfig.marketDataURL}?fsym=XYM&tsyms=${baseConfig.marketCurrencies.join(',')}`;
-			const mockNow = 1_700_000_000_000;
-			jest.spyOn(Date, 'now').mockReturnValue(mockNow);
+		const runFetchPricesTest = (description, config, expected) => {
+			it(description, async () => {
+				// Arrange:
+				const marketCurrencies = config.marketCurrencies || baseConfig.marketCurrencies;
+				marketService = new MarketService({
+					config: { ...baseConfig, marketCurrencies },
+					makeRequest: mockMakeRequest
+				});
+				const requestCurrencies = marketCurrencies.map(currency => currency.toLowerCase()).join(',');
+				const expectedUrl = `${baseConfig.marketDataURL}?ids=symbol&vs_currencies=${requestCurrencies}`;
 
-			// Act & Assert via helper
-			await runApiTest(
-				mockMakeRequest,
-				async () => {
-					const result = await marketService.fetchPrices();
-					expect(result).toEqual({
-						...response,
-						requestTimestamp: mockNow
-					});
-				},
-				[
-					{
-						url: expectedUrl,
-						options: undefined,
-						response
-					}
-				]
-			);
-		});
-
-		it('ignores unexpected fields and preserves only known tickers', async () => {
-			// Arrange:
-			const customConfig = {
-				...baseConfig,
-				marketCurrencies: ['USD', 'EUR'] // URL uses only these; service still maps fixed ticker set
-			};
-			marketService = new MarketService({
-				config: customConfig,
-				makeRequest: mockMakeRequest
+				// Act & Assert:
+				await runApiTest(
+					mockMakeRequest,
+					() => marketService.fetchPrices(),
+					[
+						{
+							url: expectedUrl,
+							options: undefined,
+							response: config.response
+						}
+					],
+					expected.result
+				);
 			});
+		};
 
-			const response = {
-				USD: 0.05,
-				EXTRA: 999 // should be ignored
-			};
-			const expectedUrl = `${customConfig.marketDataURL}?fsym=XYM&tsyms=${customConfig.marketCurrencies.join(',')}`;
-			const mockNow = 1_800_000_000_000;
-			jest.spyOn(Date, 'now').mockReturnValue(mockNow);
-
-			// Act & Assert via helper
-			await runApiTest(
-				mockMakeRequest,
-				async () => {
-					const result = await marketService.fetchPrices();
-
-					// Known tickers exist; USD has value, others are undefined when not present in response
-					expect(result.USD).toBe(0.05);
-					expect(result.EUR).toBeUndefined();
-					expect(result.JPY).toBeUndefined();
-					expect(result.GBP).toBeUndefined();
-					expect(result.KRW).toBeUndefined();
-					expect(result.CNY).toBeUndefined();
-					expect(result.UAH).toBeUndefined();
-
-					// No unexpected fields
-					expect(result.EXTRA).toBeUndefined();
-
-					// Timestamp is provided
-					expect(result.requestTimestamp).toBe(mockNow);
-				},
-				[
-					{
-						url: expectedUrl,
-						options: undefined,
-						response
+		const tests = [
+			{
+				description: 'builds URL from config and returns prices with timestamp',
+				config: {
+					response: {
+						symbol: {
+							usd: 0.031,
+							eur: 0.029,
+							jpy: 4.5,
+							gbp: 0.025,
+							krw: 41.2,
+							cny: 0.22,
+							uah: 1.2
+						}
 					}
-				]
-			);
-		});
+				},
+				expected: {
+					result: {
+						USD: 0.031,
+						EUR: 0.029,
+						JPY: 4.5,
+						GBP: 0.025,
+						KRW: 41.2,
+						CNY: 0.22,
+						UAH: 1.2,
+						requestTimestamp: mockNow
+					}
+				}
+			},
+			{
+				description: 'maps only known tickers and ignores unexpected fields',
+				config: {
+					marketCurrencies: ['USD', 'EUR'],
+					response: {
+						symbol: {
+							usd: 0.05,
+							extra: 999
+						}
+					}
+				},
+				expected: {
+					result: {
+						USD: 0.05,
+						EUR: undefined,
+						JPY: undefined,
+						GBP: undefined,
+						KRW: undefined,
+						CNY: undefined,
+						UAH: undefined,
+						requestTimestamp: mockNow
+					}
+				}
+			},
+			{
+				description: 'returns undefined prices when the coin data is missing from the response',
+				config: {
+					response: {} // empty payload, e.g. coin not found by the market API
+				},
+				expected: {
+					result: {
+						USD: undefined,
+						EUR: undefined,
+						JPY: undefined,
+						GBP: undefined,
+						KRW: undefined,
+						CNY: undefined,
+						UAH: undefined,
+						requestTimestamp: mockNow
+					}
+				}
+			}
+		];
+
+		tests.forEach(test => runFetchPricesTest(test.description, test.config, test.expected));
 	});
 });

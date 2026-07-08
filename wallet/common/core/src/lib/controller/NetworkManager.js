@@ -229,7 +229,11 @@ export class NetworkManager {
 	 * @returns {Promise<void>} - A promise that resolves when the listener is successfully started.
 	 */
 	restartChainListener = async () => {
-		this.stopChainListener();
+		const previousListener = this._state.chainListener;
+		this._state.chainListener = null;
+
+		if (previousListener?.close)
+			await previousListener.close();
 
 		if (this._state.networkConnectionStatus !== NetworkConnectionStatus.CONNECTED || !this._state.listenAddress)
 			return;
