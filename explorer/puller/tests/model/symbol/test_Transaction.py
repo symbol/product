@@ -252,10 +252,13 @@ class TransactionTest(TestCase):  # pylint: disable=too-many-public-methods
 		self._assert_message_parsing('01ABCDEF', 'encrypted', 'ABCDEF')
 
 	def test_create_transaction_row_parses_persistent_delegation_message(self):
-		self._assert_message_parsing('FEABCDEF', 'persistentDelegationHarvesting', 'ABCDEF')
+		self._assert_message_parsing('FE2A8061577301E2ABCDEF', 'persistentDelegationHarvesting', 'ABCDEF')
 
-	def test_create_transaction_row_keeps_payload_when_message_marker_is_unknown(self):
-		self._assert_message_parsing('FFABCDEF', None, 'ABCDEF')
+	def test_create_transaction_row_leaves_message_untouched_when_marker_is_unrecognized(self):
+		self._assert_message_parsing('FFABCDEF', None, 'FFABCDEF')
+
+	def test_create_transaction_row_does_not_parse_partial_delegation_marker(self):
+		self._assert_message_parsing('FE1234', None, 'FE1234')
 
 	def test_create_transaction_row_populates_no_message_fields_when_message_is_absent(self):
 		# Arrange:

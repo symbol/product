@@ -11,6 +11,7 @@ MESSAGE_TYPE_LABELS = {
 	1: 'encrypted',
 	254: 'persistentDelegationHarvesting'
 }
+DELEGATION_MARKER = 'FE2A8061577301E2'
 BODY_EXCLUDED_FIELDS = frozenset({
 	'signerPublicKey',
 	'maxFee',
@@ -154,8 +155,16 @@ def _parse_message(transaction):
 	if not message:
 		return None, None
 
-	message_type = MESSAGE_TYPE_LABELS.get(int(message[:2], 16))
-	return message_type, message[2:]
+	if message.startswith(DELEGATION_MARKER):
+		return MESSAGE_TYPE_LABELS[254], message[len(DELEGATION_MARKER):]
+
+	if '01' == message[:2]:
+		return MESSAGE_TYPE_LABELS[1], message[2:]
+
+	if '00' == message[:2]:
+		return MESSAGE_TYPE_LABELS[0], message[2:]
+
+	return None, message
 
 
 def _target_address(transaction_type, transaction):
