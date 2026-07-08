@@ -1,5 +1,15 @@
 import { InternalServerError, InvalidRequestError, NetworkRequestError, NotFoundError, RateLimitError } from 'wallet-common-core';
 
+// Absolute HTTP(S) URL: an http/https scheme followed by a non-empty host.
+const ABSOLUTE_HTTP_URL_PATTERN = /^https?:\/\/[^/\s]+/i;
+
+/**
+ * Checks whether a value is a well-formed absolute HTTP(S) URL, guarding the network
+ * layer against empty, relative, scheme-less or otherwise malformed request targets.
+ * @param {string} url - The URL to validate.
+ * @returns {boolean} - Whether the URL is a valid absolute HTTP(S) URL.
+ */
+export const isValidRequestUrl = url => ABSOLUTE_HTTP_URL_PATTERN.test(url);
 
 /**
  * Makes an HTTP request.
@@ -8,7 +18,7 @@ import { InternalServerError, InvalidRequestError, NetworkRequestError, NotFound
  * @returns {Promise} The request response.
  */
 export const makeRequest = async (url, options) => {
-	if (!url || url.startsWith('undefined') || url.startsWith('null'))
+	if (!isValidRequestUrl(url))
 		throw new NetworkRequestError(`Invalid request URL: "${url}"`);
 
 	let response;
