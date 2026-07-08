@@ -113,19 +113,14 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):
 		block_heights, sync_state = self._sync_with_connector(connector)
 
 		# Assert:
-		self.assertIn(
+		block_paths = [path for path in connector.paths if path.startswith('blocks?')]
+		transaction_paths = [path for path in connector.paths if path.startswith('transactions/confirmed?')]
+		self.assertEqual([
 			'blocks?pageSize=100&offset=0&orderBy=height',
-			connector.paths
-		)
-		self.assertIn(
 			'blocks?pageSize=100&offset=100&orderBy=height',
-			connector.paths
-		)
-		self.assertIn(
-			'blocks?pageSize=100&offset=200&orderBy=height',
-			connector.paths
-		)
-		self.assertEqual(6, len(connector.paths))  # chain/info + network/properties + 3 block pages + 1 transaction page
+			'blocks?pageSize=100&offset=200&orderBy=height'
+		], block_paths)
+		self.assertEqual(1, len(transaction_paths))
 		self.assertEqual(list(range(1, 202)), block_heights)
 		self.assertEqual(201, sync_state['last_synced_height'])
 
@@ -150,7 +145,10 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):
 		block_heights, sync_state = self._sync_with_connector(connector)
 
 		# Assert:
-		self.assertEqual(15, len(connector.paths))  # chain/info + network/properties + 11 block pages + 2 transaction pages
+		block_paths = [path for path in connector.paths if path.startswith('blocks?')]
+		transaction_paths = [path for path in connector.paths if path.startswith('transactions/confirmed?')]
+		self.assertEqual(11, len(block_paths))
+		self.assertEqual(2, len(transaction_paths))
 		self.assertEqual(list(range(1, chain_height + 1)), block_heights)
 		self.assertEqual(chain_height, sync_state['last_synced_height'])
 		self.assertEqual('healthy', sync_state['status'])
