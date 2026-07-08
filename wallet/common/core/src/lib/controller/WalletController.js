@@ -311,7 +311,7 @@ export class WalletController {
 	 * @returns {boolean} - True if network connection is ready, false otherwise.
 	 */
 	get isNetworkConnectionReady() {
-		return this.networkStatus === NetworkConnectionStatus.CONNECTED && !!this._state.networkProperties?.nodeUrl;
+		return this.networkStatus === NetworkConnectionStatus.CONNECTED;
 	}
 
 	/**

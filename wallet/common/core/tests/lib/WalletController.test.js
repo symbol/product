@@ -885,11 +885,10 @@ describe('WalletController', () => {
 	});
 
 	describe('isNetworkConnectionReady', () => {
-		const runIsNetworkConnectionReadyTest = (description, { networkStatus, nodeUrl }, expectedResult) => {
+		const runIsNetworkConnectionReadyTest = (description, networkStatus, expectedResult) => {
 			it(description, () => {
 				// Arrange:
 				walletController._state.networkStatus = networkStatus;
-				walletController._state.networkProperties = { ...walletController._state.networkProperties, nodeUrl };
 
 				// Act:
 				const result = walletController.isNetworkConnectionReady;
@@ -900,18 +899,23 @@ describe('WalletController', () => {
 		};
 
 		runIsNetworkConnectionReadyTest(
-			'returns true when connected and a node URL is set',
-			{ networkStatus: NetworkConnectionStatus.CONNECTED, nodeUrl: 'http://node.url' },
+			'returns true when the network is connected',
+			NetworkConnectionStatus.CONNECTED,
 			true
 		);
 		runIsNetworkConnectionReadyTest(
-			'returns false when connected but the node URL is missing',
-			{ networkStatus: NetworkConnectionStatus.CONNECTED, nodeUrl: null },
+			'returns false when the network connection is initial',
+			NetworkConnectionStatus.INITIAL,
 			false
 		);
 		runIsNetworkConnectionReadyTest(
-			'returns false when a node URL is set but the network is not connected',
-			{ networkStatus: NetworkConnectionStatus.INITIAL, nodeUrl: 'http://node.url' },
+			'returns false when the network is connecting',
+			NetworkConnectionStatus.CONNECTING,
+			false
+		);
+		runIsNetworkConnectionReadyTest(
+			'returns false when there is no internet connection',
+			NetworkConnectionStatus.NO_INTERNET,
 			false
 		);
 	});
