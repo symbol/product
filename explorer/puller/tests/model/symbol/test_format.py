@@ -47,6 +47,11 @@ class SymbolFormatTest(TestCase):
 		with self.assertRaisesRegex(ValueError, 'Unsupported Symbol widget type 99'):
 			label_for_type({1: 'foo'}, 99, 'widget')
 
+	def test_label_for_type_rejects_non_numeric_value(self):
+		# Act + Assert:
+		with self.assertRaisesRegex(ValueError, 'Unsupported Symbol widget type abc'):
+			label_for_type({1: 'foo'}, 'abc', 'widget')
+
 	def test_can_derive_address_from_public_key(self):
 		# Act + Assert:
 		self.assertEqual(

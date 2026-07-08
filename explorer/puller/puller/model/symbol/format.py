@@ -30,9 +30,14 @@ def label_for_type(labels, type_value, entity_name):
 	"""Looks up a label for a Symbol type code, raising ValueError when unsupported."""
 
 	try:
-		return labels[int(type_value)]
-	except (KeyError, TypeError, ValueError) as exception:
+		numeric_type = int(type_value)
+	except (TypeError, ValueError) as exception:
 		raise ValueError(f'Unsupported Symbol {entity_name} type {type_value}') from exception
+
+	if numeric_type not in labels:
+		raise ValueError(f'Unsupported Symbol {entity_name} type {type_value}')
+
+	return labels[numeric_type]
 
 
 def timestamp_from_network_value(value, epoch_adjustment_seconds):
