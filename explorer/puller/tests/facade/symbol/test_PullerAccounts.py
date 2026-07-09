@@ -1,5 +1,6 @@
 import asyncio
 from datetime import datetime, timedelta, timezone
+from decimal import Decimal
 
 from symbollightapi.model.Exceptions import NodeException
 
@@ -95,8 +96,7 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):
 		self._sync_blocks(blocks, create_account_item(importance='200'))
 
 		# Assert:
-		self.assertEqual(200, self._fetch_account_current_state()[0])
-		self.assertEqual(0.5, float(self._fetch_account_current_state()[1]))
+		self.assertEqual((200, Decimal('0.5'), True, True, 1), self._fetch_account_current_state())
 
 	def test_refresh_dirty_accounts_for_batch_leaves_old_harvesting_active_value_unchanged(self):
 		# Arrange:
@@ -177,6 +177,7 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):
 			asyncio.run(self.puller.sync_block_headers())
 
 		# Assert:
+		self.assertEqual([], self._fetch_block_heights(self.puller.symbol_db))
 		self.assertEqual(0, self._fetch_account_count())
 
 	def test_get_native_mosaic_info_is_memoized(self):

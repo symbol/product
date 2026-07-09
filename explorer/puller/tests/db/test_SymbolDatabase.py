@@ -13,6 +13,7 @@ from symbolchain.symbol.Network import Network
 
 from puller.db.SymbolDatabase import SymbolDatabase
 from puller.model.symbol.Account import create_account_row
+from tests.facade.symbol.puller_test_utils import NATIVE_MOSAIC_ID, create_account_item
 
 from ..test.SymbolTransactionTestUtils import create_transaction_entry
 
@@ -20,7 +21,6 @@ DatabaseConfig = namedtuple(
 	'DatabaseConfig',
 	['database', 'user', 'password', 'host', 'port'])
 ADDRESS1 = '9889432DE263BB8FE88444A4DA28D3609BD8BB8FAE18AE95'
-NATIVE_MOSAIC_ID = '72C0212E67A08BCE'
 
 
 def _create_block(height, block_hash=None, **overrides):
@@ -109,26 +109,10 @@ def _create_receipt(height, receipt_type='inflation', **overrides):
 	return receipt
 
 
-def _create_account_item(address_hex=ADDRESS1, item_id='account-id', importance='100', native_amount='20000000000', **account_overrides):
-	account = {
-		'address': address_hex,
-		'addressHeight': '7',
-		'publicKey': '0' * 64,
-		'accountType': 0,
-		'supplementalPublicKeys': {},
-		'activityBuckets': [],
-		'mosaics': [{'id': NATIVE_MOSAIC_ID, 'amount': native_amount}],
-		'importance': importance,
-		'importanceHeight': '6'
-	}
-	account.update(account_overrides)
-
-	return {'account': account, 'id': item_id}
-
 
 def _create_account_row(address_hex=ADDRESS1, observed_height=10, **item_overrides):
 	return create_account_row(
-		_create_account_item(address_hex, **item_overrides),
+		create_account_item(address_hex, **item_overrides),
 		Network.TESTNET,
 		observed_height,
 		NATIVE_MOSAIC_ID,
@@ -953,7 +937,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		account_row, mosaic_rows = _create_account_row()
 		updated_account_row, updated_mosaic_rows = _create_account_row(
 			observed_height=20,
-			native_amount='30000000000',
+			mosaics=[{'id': NATIVE_MOSAIC_ID, 'amount': '30000000000'}],
 			importance='200')
 
 		# Act:
@@ -1043,6 +1027,28 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 
 		self.assertEqual((False,), cursor.fetchone())
 
+	def test_can_upsert_account_current_state_and_overwrite_importance_percentage_and_harvesting_active(self):
+		# Arrange:
+		database = self._create_database()
+		account_row, mosaic_rows = _create_account_row()
+		account_row['importance_percentage'] = Decimal('0.5')
+		account_row['is_harvesting_active'] = False
+		updated_account_row, updated_mosaic_rows = _create_account_row(importance='200')
+		updated_account_row['importance_percentage'] = Decimal('0.9')
+		updated_account_row['is_harvesting_active'] = True
+
+		# Act:
+		database.upsert_account_current_state(account_row, mosaic_rows)
+		database.upsert_account_current_state(updated_account_row, updated_mosaic_rows)
+
+		# Assert:
+		cursor = database.connection.cursor()
+		cursor.execute(
+			'SELECT importance, importance_percentage, is_harvesting_active FROM symbol_accounts WHERE address = %s',
+			(bytes.fromhex(ADDRESS1),))
+
+		self.assertEqual((200, Decimal('0.9'), True), cursor.fetchone())
+
 	def test_can_upsert_and_delete_multisig(self):
 		# Arrange:
 		database = self._create_database()
@@ -1059,10 +1065,34 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 
 		# Act:
 		database.upsert_multisig(bytes.fromhex(ADDRESS1), multisig_row)
-		database.upsert_multisig(bytes.fromhex(ADDRESS1), None)
 
 		# Assert:
 		cursor = database.connection.cursor()
+		cursor.execute(
+			'''
+			SELECT min_approval, min_removal, cosignatory_addresses, multisig_addresses
+			FROM symbol_multisig
+			WHERE address = %s
+			''',
+			(bytes.fromhex(ADDRESS1),))
+		result = cursor.fetchone()
+
+		self.assertEqual((
+			multisig_row['min_approval'],
+			multisig_row['min_removal'],
+			multisig_row['cosignatory_addresses'],
+			multisig_row['multisig_addresses']
+		), (
+			result[0],
+			result[1],
+			[bytes(value) for value in result[2]],
+			[bytes(value) for value in result[3]]
+		))
+
+		# Act:
+		database.upsert_multisig(bytes.fromhex(ADDRESS1), None)
+
+		# Assert:
 		cursor.execute('SELECT COUNT(*) FROM symbol_multisig WHERE address = %s', (bytes.fromhex(ADDRESS1),))
 
 		self.assertEqual((0,), cursor.fetchone())
