@@ -4,22 +4,41 @@ from decimal import Decimal
 
 from symbollightapi.model.Exceptions import NodeException
 
+from puller.facade.SymbolPuller import ACCOUNT_BATCH_FETCH_SIZE
 from puller.model.symbol.Account import create_account_row
 
 from .puller_test_utils import (
 	BENEFICIARY_ADDRESS,
 	NATIVE_MOSAIC_ID,
+	RECIPIENT_ADDRESS,
 	FakeConnector,
 	SymbolPullerTestBase,
 	create_account_item,
 	create_node_block,
-	set_symbol_connector
+	create_node_transaction,
+	set_symbol_connector,
+	transaction_path
 )
+
+
+class MalformedAccountsConnector(FakeConnector):
+	async def post(self, url_path, request_payload, *_):
+		self.paths.append(url_path)
+		if 'accounts' == url_path:
+			return {'data': []}
+
+		raise KeyError(url_path)
 
 
 class SymbolPullerAccountsTest(SymbolPullerTestBase):
 	def _address_text(self, address_hex=BENEFICIARY_ADDRESS):
 		return str(self.puller.symbol_facade.network.address_class(bytes.fromhex(address_hex)))
+
+	def _account_by_address_text(self, *address_hex_values):
+		return {
+			self._address_text(address_hex): create_account_item(address_hex=address_hex)
+			for address_hex in address_hex_values
+		}
 
 	def _fetch_account_current_state(self, address_hex=BENEFICIARY_ADDRESS):
 		cursor = self.puller.symbol_db.connection.cursor()
@@ -45,8 +64,8 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):
 	def _raw_network_timestamp(days_ago=0):
 		return str(int(((datetime.now(timezone.utc) - timedelta(days=days_ago)).timestamp() - 100) * 1000))
 
-	def _create_block(self, height, days_ago=0):
-		return create_node_block(height, timestamp=self._raw_network_timestamp(days_ago))
+	def _create_block(self, height, days_ago=0, **block_overrides):
+		return create_node_block(height, timestamp=self._raw_network_timestamp(days_ago), **block_overrides)
 
 	def _sync_blocks(self, blocks, account_item=None, multisig_by_address=None):
 		address_text = self._address_text()
@@ -69,8 +88,121 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):
 		connector = self._sync_blocks(blocks, create_account_item(importance='321'))
 
 		# Assert:
-		self.assertEqual(1, connector.paths.count(f'accounts/{address_text}'))
+		self.assertEqual(1, connector.paths.count('accounts'))
+		self.assertEqual([{'addresses': [address_text]}], connector.post_payloads)
 		self.assertEqual((321, 0, True, True, 2), self._fetch_account_current_state())
+
+	def test_refresh_dirty_accounts_for_batch_updates_transaction_participant_without_overwriting_harvesting_active(self):
+		# Arrange:
+		account_row, mosaic_rows = self._create_current_account_row(address_hex=RECIPIENT_ADDRESS, importance='100')
+		account_row['is_harvesting_active'] = False
+		self.puller.symbol_db.upsert_account_current_state(account_row, mosaic_rows)
+		connector = FakeConnector(
+			1,
+			{0: [self._create_block(1, days_ago=8)]},
+			transactions_by_path={
+				transaction_path(1, 1): {'data': [create_node_transaction(1)]}
+			},
+			account_by_address=self._account_by_address_text(BENEFICIARY_ADDRESS, RECIPIENT_ADDRESS))
+
+		# Act:
+		self._sync_with_connector(connector)
+
+		# Assert:
+		self.assertEqual(
+			(100, 0, False, True, 1),
+			self._fetch_account_current_state(RECIPIENT_ADDRESS))
+
+	def test_refresh_dirty_accounts_for_batch_prefers_beneficiary_timestamp_when_address_is_also_transaction_participant(self):
+		# Arrange:
+		connector = FakeConnector(
+			1,
+			{0: [self._create_block(1)]},
+			transactions_by_path={
+				transaction_path(1, 1): {'data': [create_node_transaction(1)]}
+			},
+			account_by_address=self._account_by_address_text(BENEFICIARY_ADDRESS, RECIPIENT_ADDRESS))
+
+		# Act:
+		self._sync_with_connector(connector)
+
+		# Assert:
+		self.assertEqual(True, self._fetch_account_current_state()[2])
+
+	def test_refresh_dirty_accounts_for_batch_deduplicates_repeated_transaction_participant_addresses(self):
+		# Arrange:
+		participant_address_text = self._address_text(BENEFICIARY_ADDRESS)
+		beneficiary_address = '980101010101010101010101010101010101010101010101'
+		connector = FakeConnector(
+			1,
+			{0: [self._create_block(1, beneficiaryAddress=beneficiary_address)]},
+			transactions_by_path={
+				transaction_path(1, 1): {
+					'data': [
+						create_node_transaction(
+							1,
+							transaction_hash=f'{index:064X}',
+							transaction_id=f'transaction-{index}',
+							recipientAddress=BENEFICIARY_ADDRESS)
+						for index in range(2)
+					]
+				}
+			},
+			account_by_address=self._account_by_address_text(beneficiary_address, BENEFICIARY_ADDRESS))
+
+		# Act:
+		self._sync_with_connector(connector)
+
+		# Assert:
+		self.assertEqual(1, connector.paths.count('accounts'))
+		self.assertEqual(1, connector.post_payloads[0]['addresses'].count(participant_address_text))
+
+	def test_refresh_dirty_accounts_for_batch_chunks_account_fetches(self):
+		# Arrange:
+		participant_addresses = [
+			f'98{index:046X}'
+			for index in range(1, ACCOUNT_BATCH_FETCH_SIZE + 2)
+		]
+		transactions = [
+			create_node_transaction(
+				1,
+				transaction_hash=f'{index:064X}',
+				transaction_id=f'transaction-{index}',
+				recipientAddress=address)
+			for index, address in enumerate(participant_addresses)
+		]
+		connector = FakeConnector(
+			1,
+			{0: [self._create_block(1)]},
+			transactions_by_path={
+				transaction_path(1, 1): {'data': transactions[:ACCOUNT_BATCH_FETCH_SIZE]},
+				transaction_path(1, 1, 2): {'data': transactions[ACCOUNT_BATCH_FETCH_SIZE:]}
+			})
+
+		# Act:
+		self._sync_with_connector(connector)
+
+		# Assert:
+		self.assertEqual(2, connector.paths.count('accounts'))
+		self.assertEqual([ACCOUNT_BATCH_FETCH_SIZE, 2], [len(payload['addresses']) for payload in connector.post_payloads])
+
+	def test_refresh_dirty_accounts_for_batch_rejects_malformed_accounts_batch_response(self):
+		# Arrange:
+		connector = MalformedAccountsConnector(1, {0: [self._create_block(1)]})
+
+		# Act / Assert:
+		self._assert_sync_rejects_node_response(connector, ValueError, 'Malformed Symbol accounts batch response')
+
+	def test_refresh_dirty_accounts_for_batch_rejects_missing_accounts_batch_item(self):
+		# Arrange:
+		address_text = self._address_text()
+		connector = FakeConnector(
+			1,
+			{0: [self._create_block(1)]},
+			account_by_address={address_text: create_account_item(address_hex=RECIPIENT_ADDRESS)})
+
+		# Act / Assert:
+		self._assert_sync_rejects_node_response(connector, ValueError, 'Missing Symbol accounts batch item for address')
 
 	def test_refresh_dirty_accounts_for_batch_uses_latest_beneficiary_block_when_recent_block_is_second(self):
 		# Arrange:

@@ -20,6 +20,7 @@ from puller.model.symbol.Transaction import create_transaction_row
 
 DatabaseConfiguration = namedtuple('DatabaseConfiguration', ['database', 'user', 'password', 'host', 'port'])
 MAX_PAGE_SIZE = 100
+ACCOUNT_BATCH_FETCH_SIZE = MAX_PAGE_SIZE
 BLOCK_PAGE_FETCH_CONCURRENCY = 10
 DEFAULT_MAX_REQUESTS_PER_SECOND = 20
 
@@ -323,17 +324,24 @@ class SymbolPuller:
 		native_mosaic_id,
 		native_mosaic_divisibility
 	):
-		dirty_account_rows = await self._fetch_dirty_accounts_for_batch(batch_rows, native_mosaic_id, native_mosaic_divisibility)
-		await self._sync_block_batch(batch_rows, epoch_adjustment_seconds)
-		self._write_dirty_accounts_for_batch(dirty_account_rows)
-
-	async def _sync_block_batch(self, batch_rows, epoch_adjustment_seconds):
 		transaction_rows_by_height = await self._get_transaction_rows_by_height(
 			batch_rows[0]['height'],
 			batch_rows[-1]['height'],
 			epoch_adjustment_seconds
 		)
 		receipt_rows_by_height = await self._get_receipt_rows_by_height(batch_rows[0]['height'], batch_rows[-1]['height'])
+		dirty_addresses = self._collect_dirty_addresses_for_batch(batch_rows, transaction_rows_by_height)
+		observed_height = max(row['height'] for row in batch_rows)
+		dirty_account_rows = await self._fetch_dirty_accounts_for_batch(
+			dirty_addresses,
+			observed_height,
+			native_mosaic_id,
+			native_mosaic_divisibility)
+		self._sync_block_batch(batch_rows, transaction_rows_by_height, receipt_rows_by_height)
+		self._write_dirty_accounts_for_batch(dirty_account_rows)
+
+	def _sync_block_batch(self, batch_rows, transaction_rows_by_height, receipt_rows_by_height):
+		"""Writes previously-fetched block, transaction, and receipt rows for one batch."""
 
 		self.symbol_db.upsert_blocks(batch_rows)
 		self._upsert_transactions_for_batch(batch_rows, transaction_rows_by_height)
@@ -425,24 +433,92 @@ class SymbolPuller:
 
 		return self._native_mosaic_info
 
-	async def _fetch_dirty_accounts_for_batch(self, block_rows, native_mosaic_id, native_mosaic_divisibility):
-		"""Fetches beneficiary current-state account rows touched by a synced block batch."""
+	@staticmethod
+	def _collect_dirty_addresses_for_batch(block_rows, transaction_rows_by_height):
+		"""Collects unique dirty addresses touched by synced block beneficiaries and transaction participants."""
 
+		dirty_addresses = {}
 		latest_block_by_beneficiary = {}
 		for row in block_rows:
 			current_row = latest_block_by_beneficiary.get(row['beneficiary_address'])
 			if not current_row or (row['timestamp'], row['height']) > (current_row['timestamp'], current_row['height']):
 				latest_block_by_beneficiary[row['beneficiary_address']] = row
 
-		observed_height = max(row['height'] for row in block_rows)
+		for address, block_row in latest_block_by_beneficiary.items():
+			dirty_addresses[address] = {
+				'is_beneficiary': True,
+				'harvested_block_timestamp': block_row['timestamp']
+			}
+
+		for transaction_rows in transaction_rows_by_height.values():
+			for transaction_row in transaction_rows:
+				for address_row in transaction_row['address_rows']:
+					address = address_row['address']
+					if address not in dirty_addresses:
+						dirty_addresses[address] = {
+							'is_beneficiary': False,
+							'harvested_block_timestamp': None
+						}
+
+		return dirty_addresses
+
+	async def _fetch_dirty_accounts_for_batch(  # pylint: disable=too-many-arguments,too-many-positional-arguments,too-many-locals
+		self,
+		dirty_addresses,
+		observed_height,
+		native_mosaic_id,
+		native_mosaic_divisibility
+	):
+		"""Fetches current-state account and multisig rows touched by a synced block batch."""
+
+		sorted_addresses = sorted(dirty_addresses.keys())
+		address_text_by_address = {
+			address: str(self.symbol_facade.network.address_class(address))
+			for address in sorted_addresses
+		}
+
+		account_items_by_address = {}
+		for chunk_start in range(0, len(sorted_addresses), ACCOUNT_BATCH_FETCH_SIZE):
+			chunk = sorted_addresses[chunk_start:chunk_start + ACCOUNT_BATCH_FETCH_SIZE]
+			response = await self.post_symbol_node('/accounts', {
+				'addresses': [address_text_by_address[address] for address in chunk]
+			})
+			if not isinstance(response, list):
+				raise ValueError('Malformed Symbol accounts batch response')
+			for item in response:
+				account_items_by_address[bytes.fromhex(item['account']['address'])] = item
+
 		dirty_account_rows = []
-		for address, block_row in sorted(latest_block_by_beneficiary.items()):
-			dirty_account_rows.append(await self._fetch_account_current_state(
-				address,
-				observed_height=observed_height,
-				native_mosaic_id=native_mosaic_id,
-				native_mosaic_divisibility=native_mosaic_divisibility,
-				harvested_block_timestamp=block_row['timestamp']))
+		for address in sorted_addresses:
+			address_text = address_text_by_address[address]
+			if address not in account_items_by_address:
+				raise ValueError(f'Missing Symbol accounts batch item for address {address_text}')
+
+			item = account_items_by_address[address]
+			multisig_response = await self.get_symbol_node(f'/account/{address_text}/multisig', not_found_as_error=False)
+			account_row, mosaic_rows = create_account_row(
+				item,
+				self.symbol_facade.network,
+				observed_height,
+				native_mosaic_id,
+				native_mosaic_divisibility)
+
+			dirty_info = dirty_addresses[address]
+			overwrite_is_harvesting_active = dirty_info['is_beneficiary'] and self._is_harvested_block_within_active_window(
+				dirty_info['harvested_block_timestamp'])
+			if overwrite_is_harvesting_active:
+				account_row['is_harvesting_active'] = True
+
+			dirty_account_rows.append({
+				'address': address,
+				'account_row': account_row,
+				'mosaic_rows': mosaic_rows,
+				'overwrite_is_harvesting_active': overwrite_is_harvesting_active,
+				'multisig_row': None if _is_not_found_response(multisig_response) else create_multisig_row(
+					address,
+					multisig_response['multisig'],
+					observed_height)
+			})
 
 		return dirty_account_rows
 
@@ -458,41 +534,6 @@ class SymbolPuller:
 			self.symbol_db.upsert_multisig(
 				dirty_account_row['address'],
 				dirty_account_row['multisig_row'])
-
-	async def _fetch_account_current_state(  # pylint: disable=too-many-arguments,too-many-positional-arguments
-		self,
-		address,
-		observed_height,
-		native_mosaic_id,
-		native_mosaic_divisibility,
-		harvested_block_timestamp
-	):
-		"""Fetches one Symbol account current-state row and its multisig row from the configured node."""
-
-		address_text = str(self.symbol_facade.network.address_class(address))
-		item = await self.get_symbol_node(f'/accounts/{address_text}')
-		multisig_response = await self.get_symbol_node(f'/account/{address_text}/multisig', not_found_as_error=False)
-		account_row, mosaic_rows = create_account_row(
-			item,
-			self.symbol_facade.network,
-			observed_height,
-			native_mosaic_id,
-			native_mosaic_divisibility)
-
-		overwrite_is_harvesting_active = self._is_harvested_block_within_active_window(harvested_block_timestamp)
-		if overwrite_is_harvesting_active:
-			account_row['is_harvesting_active'] = True
-
-		return {
-			'address': address,
-			'account_row': account_row,
-			'mosaic_rows': mosaic_rows,
-			'overwrite_is_harvesting_active': overwrite_is_harvesting_active,
-			'multisig_row': None if _is_not_found_response(multisig_response) else create_multisig_row(
-				address,
-				multisig_response['multisig'],
-				observed_height)
-		}
 
 	@staticmethod
 	def _is_harvested_block_within_active_window(harvested_block_timestamp):

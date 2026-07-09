@@ -7,6 +7,7 @@ from unittest import TestCase
 from common.symbol.NodeConfiguration import SymbolNodeConfiguration
 from common.tests.PostgresTestUtils import PostgresTestDatabase, drop_symbol_block_tables_if_present
 from symbolchain.sc import ReceiptType, TransactionType
+from symbolchain.symbol.Network import Network
 
 from puller.facade.SymbolPuller import MAX_PAGE_SIZE, DatabaseConfiguration, SymbolPuller
 from puller.model.symbol.Block import create_block_row
@@ -292,6 +293,15 @@ def create_account_item(address_hex=BENEFICIARY_ADDRESS, item_id='account-id', *
 	return {'account': account, 'id': item_id}
 
 
+class PostPath(str):
+	"""A str subclass that also carries the POST request payload, so connector.paths stays a flat path list."""
+
+	def __new__(cls, url_path, request_payload):
+		path = super().__new__(cls, url_path)
+		path.request_payload = request_payload
+		return path
+
+
 class FakeConnector:
 	def __init__(  # pylint: disable=too-many-arguments,too-many-positional-arguments
 		self,
@@ -313,6 +323,14 @@ class FakeConnector:
 		self.account_by_address = account_by_address or {}
 		self.multisig_by_address = multisig_by_address or {}
 		self.paths = []
+
+	@property
+	def post_payloads(self):
+		return [
+			path.request_payload
+			for path in self.paths
+			if hasattr(path, 'request_payload')
+		]
 
 	async def get(self, url_path, *_):  # pylint: disable=too-many-return-statements
 		self.paths.append(url_path)
@@ -351,6 +369,18 @@ class FakeConnector:
 				'code': 'ResourceNotFound',
 				'message': f'no resource exists with id {address_text}'
 			})
+
+		raise KeyError(url_path)
+
+	async def post(self, url_path, request_payload, *_):
+		self.paths.append(PostPath(url_path, request_payload))
+		if 'accounts' == url_path:
+			return [
+				self.account_by_address.get(
+					address_text,
+					create_account_item(address_hex=Network.TESTNET.address_class(address_text).bytes.hex().upper()))
+				for address_text in request_payload['addresses']
+			]
 
 		raise KeyError(url_path)
 

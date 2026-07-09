@@ -39,7 +39,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):
 		]
 		account_paths = [
 			path for path in connector.paths
-			if path.startswith('accounts/')
+			if 'accounts' == path
 		]
 		multisig_paths = [
 			path for path in connector.paths
@@ -75,10 +75,10 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):
 			'network/properties',
 			f'mosaics/{NATIVE_MOSAIC_ID}',
 			'blocks?pageSize=100&offset=0&orderBy=height',
-			f'accounts/{beneficiary_address_text}',
-			f'account/{beneficiary_address_text}/multisig',
 			transaction_path(1, 2),
-			statement_path(1, 2)
+			statement_path(1, 2),
+			'accounts',
+			f'account/{beneficiary_address_text}/multisig'
 		], connector.paths)
 
 	def test_sync_block_headers_persists_synced_block_watermark(self):
@@ -208,10 +208,10 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):
 			'network/properties',
 			f'mosaics/{NATIVE_MOSAIC_ID}',
 			'blocks?pageSize=100&offset=0&orderBy=height',
-			f'accounts/{beneficiary_address_text}',
-			f'account/{beneficiary_address_text}/multisig',
 			transaction_path(1, 2),
-			statement_path(1, 2)
+			statement_path(1, 2),
+			'accounts',
+			f'account/{beneficiary_address_text}/multisig'
 		], connector.paths)
 		self.assertEqual([1, 2], block_heights)
 		self.assertEqual('healthy', sync_state['status'])
@@ -268,10 +268,10 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):
 			f'mosaics/{NATIVE_MOSAIC_ID}',
 			'blocks/2',
 			'blocks?pageSize=100&offset=2&orderBy=height',
-			f'accounts/{beneficiary_address_text}',
-			f'account/{beneficiary_address_text}/multisig',
 			transaction_path(3, 4),
-			statement_path(3, 4)
+			statement_path(3, 4),
+			'accounts',
+			f'account/{beneficiary_address_text}/multisig'
 		], connector.paths)
 		self.assertEqual([1, 2, 3, 4], block_heights)
 		self.assertEqual('healthy', sync_state['status'])
