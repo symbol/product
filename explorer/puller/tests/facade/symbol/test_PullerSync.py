@@ -129,7 +129,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):
 			'blocks?pageSize=100&offset=100&orderBy=height',
 			'blocks?pageSize=100&offset=200&orderBy=height'
 		], block_paths)
-		self.assertEqual(1, len(transaction_paths))
+		self.assertEqual([transaction_path(1, 201)], transaction_paths)
 		self.assertEqual([statement_path(1, 201)], statement_paths)
 		self.assertEqual(list(range(1, 202)), block_heights)
 		self.assertEqual(201, sync_state['last_synced_height'])
