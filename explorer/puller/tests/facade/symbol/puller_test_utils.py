@@ -6,15 +6,13 @@ from unittest import TestCase
 
 from common.symbol.NodeConfiguration import SymbolNodeConfiguration
 from common.tests.PostgresTestUtils import PostgresTestDatabase, drop_symbol_block_tables_if_present
+from symbolchain.sc import TransactionType
 
 from puller.facade.SymbolPuller import DatabaseConfiguration, SymbolPuller
 from puller.model.symbol.Block import create_block_row
+from tests.test.SymbolTestConstants import BENEFICIARY_ADDRESS, RECIPIENT_ADDRESS, SIGNER_PUBLIC_KEY
 
 NODE_URL = 'http://127.0.0.1:3000'
-SIGNER_PUBLIC_KEY = (
-	'76E94661562762111FF7E592B00398554973396D8A4B922F3E3D139892F7C35C'
-)
-BENEFICIARY_ADDRESS = '9889432DE263BB8FE88444A4DA28D3609BD8BB8FAE18AE95'
 
 
 def create_db_config(config_dir, db_config=None, include_symbol_db=True):
@@ -143,6 +141,68 @@ def create_node_block(
 	return node_block
 
 
+def create_node_transaction(height, transaction_hash=None, transaction_id=None, **transaction_overrides):
+	transaction_hash = transaction_hash or f'{height:064X}'
+	transaction = {
+		'size': 152,
+		'signature': '1' * 128,
+		'signerPublicKey': SIGNER_PUBLIC_KEY,
+		'version': 1,
+		'network': 152,
+		'type': TransactionType.TRANSFER.value,
+		'maxFee': '1000',
+		'deadline': '2000',
+		'recipientAddress': RECIPIENT_ADDRESS,
+		'mosaics': [{'id': 'E74B99BA41F4AFEE', 'amount': str(height * 1000)}]
+	}
+	transaction.update(transaction_overrides)
+
+	return {
+		'meta': {
+			'height': str(height),
+			'hash': transaction_hash,
+			'merkleComponentHash': transaction_hash,
+			'index': 0,
+			'timestamp': str(height * 1000),
+			'feeMultiplier': 5
+		},
+		'transaction': transaction,
+		'id': transaction_id or f'transaction-{height}'
+	}
+
+
+def create_embedded_node_transaction(height, aggregate_hash, embedded_index, transaction_id=None, **transaction_overrides):
+	transaction = {
+		'signerPublicKey': SIGNER_PUBLIC_KEY,
+		'version': 1,
+		'network': 152,
+		'type': TransactionType.TRANSFER.value,
+		'recipientAddress': RECIPIENT_ADDRESS,
+		'mosaics': [{'id': 'E74B99BA41F4AFEE', 'amount': str(height * 1000)}]
+	}
+	transaction.update(transaction_overrides)
+
+	return {
+		'meta': {
+			'height': str(height),
+			'aggregateHash': aggregate_hash,
+			'aggregateId': f'aggregate-{height}',
+			'index': embedded_index,
+			'timestamp': str(height * 1000),
+			'feeMultiplier': 5
+		},
+		'transaction': transaction,
+		'id': transaction_id or f'embedded-{height}-{embedded_index}'
+	}
+
+
+def transaction_path(start_height, end_height, page_number=1):
+	return (
+		f'transactions/confirmed?fromHeight={start_height}&toHeight={end_height}'
+		f'&pageSize=100&pageNumber={page_number}&order=asc&embedded=true'
+	)
+
+
 def create_sync_state(**overrides):
 	sync_state = {
 		'status': 'healthy',
@@ -181,12 +241,14 @@ class FakeConnector:
 		chain_height,
 		pages,
 		block_by_height=None,
-		finalized_height=1
-	):
+		finalized_height=1,
+		transactions_by_path=None
+	):  # pylint: disable=too-many-arguments,too-many-positional-arguments
 		self.chain_height = chain_height
 		self.pages = pages
 		self.block_by_height = block_by_height or {}
 		self.finalized_height = finalized_height
+		self.transactions_by_path = transactions_by_path or {}
 		self.paths = []
 
 	async def get(self, url_path, *_):
@@ -207,6 +269,12 @@ class FakeConnector:
 					'offset': offset
 				}
 			}
+		if url_path.startswith('transactions/confirmed?'):
+			response = self.transactions_by_path.get(url_path, {'data': []})
+			if isinstance(response, Exception):
+				raise response
+
+			return response
 
 		raise KeyError(url_path)
 
