@@ -307,32 +307,37 @@ class SymbolPuller:
 				last_synced_block_hash = last_row['hash']
 
 				if len(blocks) < MAX_PAGE_SIZE:
-					await self._sync_block_batch(batch_rows, epoch_adjustment_seconds, native_mosaic_id, native_mosaic_divisibility)
+					await self._sync_block_batch_with_dirty_accounts(
+						batch_rows, epoch_adjustment_seconds, native_mosaic_id, native_mosaic_divisibility)
 					return last_synced_height, last_synced_block_hash
 
-			await self._sync_block_batch(batch_rows, epoch_adjustment_seconds, native_mosaic_id, native_mosaic_divisibility)
+			await self._sync_block_batch_with_dirty_accounts(
+				batch_rows, epoch_adjustment_seconds, native_mosaic_id, native_mosaic_divisibility)
 
 		return last_synced_height, last_synced_block_hash
 
-	async def _sync_block_batch(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+	async def _sync_block_batch_with_dirty_accounts(  # pylint: disable=too-many-arguments,too-many-positional-arguments
 		self,
 		batch_rows,
 		epoch_adjustment_seconds,
 		native_mosaic_id,
 		native_mosaic_divisibility
 	):
+		dirty_account_rows = await self._fetch_dirty_accounts_for_batch(batch_rows, native_mosaic_id, native_mosaic_divisibility)
+		await self._sync_block_batch(batch_rows, epoch_adjustment_seconds)
+		self._write_dirty_accounts_for_batch(dirty_account_rows)
+
+	async def _sync_block_batch(self, batch_rows, epoch_adjustment_seconds):
 		transaction_rows_by_height = await self._get_transaction_rows_by_height(
 			batch_rows[0]['height'],
 			batch_rows[-1]['height'],
 			epoch_adjustment_seconds
 		)
 		receipt_rows_by_height = await self._get_receipt_rows_by_height(batch_rows[0]['height'], batch_rows[-1]['height'])
-		dirty_account_rows = await self._fetch_dirty_accounts_for_batch(batch_rows, native_mosaic_id, native_mosaic_divisibility)
 
 		self.symbol_db.upsert_blocks(batch_rows)
 		self._upsert_transactions_for_batch(batch_rows, transaction_rows_by_height)
 		self._upsert_receipts_for_batch(batch_rows, receipt_rows_by_height)
-		self._write_dirty_accounts_for_batch(dirty_account_rows)
 
 	def _upsert_transactions_for_batch(self, block_rows, rows_by_height):
 		for row in block_rows:
