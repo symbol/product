@@ -113,6 +113,26 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):
 			(100, 0, False, True, 1),
 			self._fetch_account_current_state(RECIPIENT_ADDRESS))
 
+	def test_refresh_dirty_accounts_for_batch_ignores_namespace_alias_transaction_participant(self):
+		# Arrange:
+		alias_address = '99065A28385EB5AE88000000000000000000000000000000'
+		beneficiary_address_text = self._address_text()
+		connector = FakeConnector(
+			1,
+			{0: [self._create_block(1)]},
+			transactions_by_path={
+				transaction_path(1, 1): {
+					'data': [create_node_transaction(1, recipientAddress=alias_address)]
+				}
+			},
+			account_by_address=self._account_by_address_text(BENEFICIARY_ADDRESS))
+
+		# Act:
+		self._sync_with_connector(connector)
+
+		# Assert:
+		self.assertEqual([{'addresses': [beneficiary_address_text]}], connector.post_payloads)
+
 	def test_refresh_dirty_accounts_for_batch_prefers_beneficiary_timestamp_when_address_is_also_transaction_participant(self):
 		# Arrange:
 		connector = FakeConnector(

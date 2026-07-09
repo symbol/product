@@ -6,7 +6,7 @@ from urllib.parse import urlparse
 
 from common.symbol.NodeConfiguration import SymbolNodeConfiguration
 from symbolchain.facade.SymbolFacade import SymbolFacade
-from symbolchain.symbol.Network import Network
+from symbolchain.symbol.Network import Address, Network
 from symbollightapi.connector.SymbolConnector import SymbolConnector
 from symbollightapi.model.Exceptions import NodeException
 from zenlog import log
@@ -454,7 +454,7 @@ class SymbolPuller:
 			for transaction_row in transaction_rows:
 				for address_row in transaction_row['address_rows']:
 					address = address_row['address']
-					if address not in dirty_addresses:
+					if address not in dirty_addresses and not Address(address).is_alias():
 						dirty_addresses[address] = {
 							'is_beneficiary': False,
 							'harvested_block_timestamp': None
