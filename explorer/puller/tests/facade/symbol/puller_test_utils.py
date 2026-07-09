@@ -370,7 +370,7 @@ class SymbolPullerTestBase(TestCase):
 		cursor.execute('SELECT block_reward FROM symbol_blocks WHERE height = %s', (height,))
 
 		result = cursor.fetchone()
-		return result[0] if result and result[0] is not None else None
+		return result[0] if result else None
 
 	@staticmethod
 	def _fetch_receipts(database):
