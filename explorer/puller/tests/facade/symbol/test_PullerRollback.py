@@ -78,6 +78,8 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):
 			[1, 2, 3],
 			{2: b'local mismatch'.hex()}
 		)
+		# amount=999 here is a stale value that must be replaced by the real amount=222
+		# after repair — the full-list assertion below fails if this row survives.
 		self.puller.symbol_db.upsert_receipts_for_height(2, [{
 			'height': 2,
 			'receipt_type': 'inflation',
