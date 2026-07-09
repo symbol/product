@@ -1,6 +1,6 @@
 from psycopg2.extras import Json
 
-from puller.model.symbol.format import bytes_from_hex_or_none
+from puller.model.symbol.format import bytes_from_hex_or_none, label_for_type
 
 ACCOUNT_TYPE_LABELS = {
 	0: 'unlinked',
@@ -42,7 +42,7 @@ def create_account_row(item, network, observed_height, native_mosaic_id, native_
 		'address': address,
 		'address_text': str(network.address_class(address)),
 		'public_key': _public_key_from_hex(account['publicKey']),
-		'account_type': ACCOUNT_TYPE_LABELS[int(account['accountType'])],
+		'account_type': label_for_type(ACCOUNT_TYPE_LABELS, account['accountType'], 'account'),
 		'address_height': int(account['addressHeight']),
 		'importance': int(account['importance']),
 		'importance_percentage': 0,

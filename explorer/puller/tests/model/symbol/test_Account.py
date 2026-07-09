@@ -127,7 +127,15 @@ class AccountTest(TestCase):
 		item = _create_account_item(accountType=4)
 
 		# Act / Assert:
-		with self.assertRaises(KeyError):
+		with self.assertRaisesRegex(ValueError, 'Unsupported Symbol account type 4'):
+			create_account_row(item, Network.TESTNET, 99, NATIVE_MOSAIC_ID, DIVISIBILITY)
+
+	def test_create_account_row_rejects_non_numeric_account_type(self):
+		# Arrange:
+		item = _create_account_item(accountType='invalid')
+
+		# Act / Assert:
+		with self.assertRaisesRegex(ValueError, 'Unsupported Symbol account type invalid'):
 			create_account_row(item, Network.TESTNET, 99, NATIVE_MOSAIC_ID, DIVISIBILITY)
 
 	def _assert_harvesting_eligibility(self, native_balance_raw, expected):
