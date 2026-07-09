@@ -227,9 +227,9 @@ class ReceiptTest(TestCase):
 
 		# Assert:
 		self.assertEqual([
-			(7, 3),
-			(7, 3)
+			(12, 7, 3),
+			(12, 7, 3)
 		], [
-			(row['source_primary_id'], row['source_secondary_id'])
+			(row['height'], row['source_primary_id'], row['source_secondary_id'])
 			for row in rows
 		])
