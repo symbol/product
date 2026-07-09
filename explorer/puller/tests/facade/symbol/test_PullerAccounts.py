@@ -512,30 +512,45 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):
 		second_run_id = self.puller.symbol_db.get_account_refresh_state()['last_successful_run_id']
 
 		# Assert:
+		expected_address = bytes.fromhex(_address_hex(1))
+		expected_mosaic_amount = int(page[0]['account']['mosaics'][0]['amount'])
 		cursor = self.puller.symbol_db.connection.cursor()
-		cursor.execute('SELECT COUNT(*) FROM symbol_account_refresh_accounts WHERE refresh_run_id = %s', (second_run_id,))
-		account_count = cursor.fetchone()[0]
-		cursor.execute('SELECT COUNT(*) FROM symbol_account_refresh_mosaics WHERE refresh_run_id = %s', (second_run_id,))
-		mosaic_count = cursor.fetchone()[0]
 		cursor.execute(
 			'''
-			SELECT rank_scope, COUNT(*)
-			FROM symbol_account_list_ranks
+			SELECT address
+			FROM symbol_account_refresh_accounts
 			WHERE refresh_run_id = %s
-			GROUP BY rank_scope
-			ORDER BY rank_scope
 			''',
 			(second_run_id,))
-		rank_counts = cursor.fetchall()
+		account_results = cursor.fetchall()
+		cursor.execute(
+			'''
+			SELECT address, mosaic_id, amount
+			FROM symbol_account_refresh_mosaics
+			WHERE refresh_run_id = %s
+			''',
+			(second_run_id,))
+		mosaic_results = cursor.fetchall()
+		cursor.execute(
+			'''
+			SELECT rank_scope, address
+			FROM symbol_account_list_ranks
+			WHERE refresh_run_id = %s
+			ORDER BY rank_scope, rank
+			''',
+			(second_run_id,))
+		rank_results = cursor.fetchall()
 
 		self.assertNotEqual(first_run_id, second_run_id)
-		self.assertEqual(1, account_count)
-		self.assertEqual(1, mosaic_count)
+		self.assertEqual([(expected_address,)], [(bytes(address),) for address, in account_results])
 		self.assertEqual([
-			(f'BALANCE:{NATIVE_MOSAIC_ID}', 1),
-			('ID', 1),
-			('IMPORTANCE', 1)
-		], rank_counts)
+			(expected_address, NATIVE_MOSAIC_ID, expected_mosaic_amount)
+		], [(bytes(address), mosaic_id, amount) for address, mosaic_id, amount in mosaic_results])
+		self.assertEqual([
+			(f'BALANCE:{NATIVE_MOSAIC_ID}', expected_address),
+			('ID', expected_address),
+			('IMPORTANCE', expected_address)
+		], [(rank_scope, bytes(address)) for rank_scope, address in rank_results])
 
 	def test_refresh_accounts_rejects_malformed_accounts_page_response(self):
 		# Arrange:

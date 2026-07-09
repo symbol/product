@@ -1397,20 +1397,36 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		database.repair_rollback_from_height(10, _create_sync_state(status='repairing', last_synced_height=9))
 
 		# Assert:
+		expected_address = bytes.fromhex(ADDRESS1)
+		expected_mosaic_row = mosaic_rows[0]
 		cursor = database.connection.cursor()
-		counts = []
-		for table_name in (
-			'symbol_accounts',
-			'symbol_account_mosaics',
-			'symbol_multisig',
-			'symbol_account_refresh_accounts',
-			'symbol_account_refresh_mosaics',
-			'symbol_account_list_ranks'
-		):
-			cursor.execute(f'SELECT COUNT(*) FROM {table_name}')
-			counts.append(cursor.fetchone()[0])
+		cursor.execute('SELECT address FROM symbol_accounts')
+		account_results = cursor.fetchall()
+		cursor.execute('SELECT address, mosaic_id, amount FROM symbol_account_mosaics')
+		mosaic_results = cursor.fetchall()
+		cursor.execute('SELECT address, min_approval, min_removal FROM symbol_multisig')
+		multisig_results = cursor.fetchall()
+		cursor.execute('SELECT refresh_run_id, account_search_id, address FROM symbol_account_refresh_accounts')
+		refresh_account_results = cursor.fetchall()
+		cursor.execute('SELECT refresh_run_id, address, mosaic_id, amount FROM symbol_account_refresh_mosaics')
+		refresh_mosaic_results = cursor.fetchall()
 
-		self.assertEqual([1, 1, 1, 1, 1, 3], counts)
+		self.assertEqual([(expected_address,)], [(bytes(address),) for address, in account_results])
+		self.assertEqual(
+			[(expected_address, expected_mosaic_row['mosaic_id'], expected_mosaic_row['amount'])],
+			[(bytes(address), mosaic_id, amount) for address, mosaic_id, amount in mosaic_results])
+		self.assertEqual(
+			[(expected_address, 1, 1)],
+			[(bytes(address), min_approval, min_removal) for address, min_approval, min_removal in multisig_results])
+		self.assertEqual(
+			[('run-1', 'id-1', expected_address)],
+			[(run_id, account_search_id, bytes(address)) for run_id, account_search_id, address in refresh_account_results])
+		self.assertEqual(
+			[('run-1', expected_address, expected_mosaic_row['mosaic_id'], expected_mosaic_row['amount'])],
+			[(run_id, bytes(address), mosaic_id, amount) for run_id, address, mosaic_id, amount in refresh_mosaic_results])
+		self.assertEqual([(0, expected_address)], self._fetch_rank_addresses(database, 'ID'))
+		self.assertEqual([(0, expected_address)], self._fetch_rank_addresses(database, 'IMPORTANCE'))
+		self.assertEqual([(0, expected_address)], self._fetch_rank_addresses(database, f'BALANCE:{NATIVE_MOSAIC_ID}'))
 
 	def test_rejects_invalid_block_type(self):
 		# Arrange:
