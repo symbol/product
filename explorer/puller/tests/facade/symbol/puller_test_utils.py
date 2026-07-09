@@ -6,9 +6,9 @@ from unittest import TestCase
 
 from common.symbol.NodeConfiguration import SymbolNodeConfiguration
 from common.tests.PostgresTestUtils import PostgresTestDatabase, drop_symbol_block_tables_if_present
-from symbolchain.sc import TransactionType
+from symbolchain.sc import ReceiptType, TransactionType
 
-from puller.facade.SymbolPuller import DatabaseConfiguration, SymbolPuller
+from puller.facade.SymbolPuller import MAX_PAGE_SIZE, DatabaseConfiguration, SymbolPuller
 from puller.model.symbol.Block import create_block_row
 from tests.test.SymbolTestConstants import BENEFICIARY_ADDRESS, RECIPIENT_ADDRESS, SIGNER_PUBLIC_KEY
 
@@ -203,6 +203,30 @@ def transaction_path(start_height, end_height, page_number=1):
 	)
 
 
+def statement_path(start_height, end_height, page_number=1):
+	return (
+		f'statements/transaction?fromHeight={start_height}&toHeight={end_height}'
+		f'&pageSize={MAX_PAGE_SIZE}&pageNumber={page_number}'
+	)
+
+
+def create_statement_item(height, amount, receipt_type=ReceiptType.INFLATION.value):
+	return {
+		'statement': {
+			'height': str(height),
+			'source': {'primaryId': height, 'secondaryId': 0},
+			'receipts': [{
+				'version': 1,
+				'type': receipt_type,
+				'mosaicId': '72C0212E67A08BCE',
+				'amount': str(amount)
+			}]
+		},
+		'id': f'statement-{height}-{amount}',
+		'meta': {'timestamp': '0'}
+	}
+
+
 def create_sync_state(**overrides):
 	sync_state = {
 		'status': 'healthy',
@@ -236,19 +260,21 @@ def create_network_properties(epoch_adjustment='100s'):
 
 
 class FakeConnector:
-	def __init__(
+	def __init__(  # pylint: disable=too-many-arguments,too-many-positional-arguments
 		self,
 		chain_height,
 		pages,
 		block_by_height=None,
 		finalized_height=1,
-		transactions_by_path=None
+		transactions_by_path=None,
+		statement_pages=None
 	):  # pylint: disable=too-many-arguments,too-many-positional-arguments
 		self.chain_height = chain_height
 		self.pages = pages
 		self.block_by_height = block_by_height or {}
 		self.finalized_height = finalized_height
 		self.transactions_by_path = transactions_by_path or {}
+		self.statement_pages = statement_pages or {}
 		self.paths = []
 
 	async def get(self, url_path, *_):
@@ -275,6 +301,8 @@ class FakeConnector:
 				raise response
 
 			return response
+		if url_path.startswith('statements/transaction?'):
+			return self.statement_pages.get(url_path, {'data': []})
 
 		raise KeyError(url_path)
 
@@ -335,6 +363,34 @@ class SymbolPullerTestBase(TestCase):
 		)
 
 		return cursor.fetchone()
+
+	@staticmethod
+	def _fetch_block_reward(database, height):
+		cursor = database.connection.cursor()
+		cursor.execute('SELECT block_reward FROM symbol_blocks WHERE height = %s', (height,))
+
+		result = cursor.fetchone()
+		return result[0] if result else None
+
+	@staticmethod
+	def _fetch_receipts(database):
+		cursor = database.connection.cursor()
+		cursor.execute(
+			'''
+			SELECT
+				height,
+				receipt_type,
+				receipt_group,
+				source_primary_id,
+				source_secondary_id,
+				mosaic_id,
+				amount
+			FROM symbol_receipts
+			ORDER BY height, id
+			'''
+		)
+
+		return cursor.fetchall()
 
 	def _seed_blocks(self, database, heights, block_hashes=None):
 		block_hashes = block_hashes or {}

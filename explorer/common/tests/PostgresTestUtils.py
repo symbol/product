@@ -40,6 +40,7 @@ def drop_symbol_block_tables_if_present(database):
 	cursor.execute('DROP TABLE IF EXISTS symbol_transaction_mosaics')
 	cursor.execute('DROP TABLE IF EXISTS symbol_transaction_addresses')
 	cursor.execute('DROP TABLE IF EXISTS symbol_transactions')
+	cursor.execute('DROP TABLE IF EXISTS symbol_receipts')
 	cursor.execute('DROP TABLE IF EXISTS symbol_blocks')
 	cursor.execute('DROP TABLE IF EXISTS symbol_sync_state')
 	cursor.execute('DROP SEQUENCE IF EXISTS symbol_transaction_list_sequence_seq')

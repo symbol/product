@@ -10,6 +10,7 @@ from .puller_test_utils import (
 	create_node_transaction,
 	create_sync_state,
 	set_symbol_connector,
+	statement_path,
 	transaction_path
 )
 
@@ -27,6 +28,9 @@ class FakeTransactionDatabase:
 
 	def upsert_transactions_for_height(self, height, transaction_rows):
 		self.calls.append((height, transaction_rows))
+
+	def upsert_receipts_for_height(self, height, receipt_rows, block_reward):
+		pass
 
 
 class SymbolPullerTransactionSyncTest(SymbolPullerTestBase):
@@ -160,7 +164,7 @@ class SymbolPullerTransactionSyncTest(SymbolPullerTestBase):
 		asyncio.run(self.puller._sync_block_batch(block_rows, 100))  # pylint: disable=protected-access
 
 		# Assert:
-		self.assertEqual([transaction_path(10, 12)], connector.paths)
+		self.assertEqual([transaction_path(10, 12), statement_path(10, 12)], connector.paths)
 
 	def test_sync_block_headers_keeps_existing_watermark_when_transaction_fetch_fails(self):
 		# Arrange:

@@ -10,8 +10,10 @@ from .puller_test_utils import (
 	SymbolPullerTestBase,
 	create_node_block,
 	create_node_transaction,
+	create_statement_item,
 	create_sync_state,
 	set_symbol_connector,
+	statement_path,
 	transaction_path
 )
 
@@ -61,13 +63,38 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):
 		connector = FakeConnector(
 			3,
 			{1: [create_node_block(2), create_node_block(3)]},
-			{2: create_node_block(2)}
+			{2: create_node_block(2)},
+			statement_pages={
+				statement_path(2, 3): {
+					'data': [
+						create_statement_item(2, 222),
+						create_statement_item(3, 333)
+					]
+				}
+			}
 		)
 		self._seed_blocks(
 			self.puller.symbol_db,
 			[1, 2, 3],
 			{2: b'local mismatch'.hex()}
 		)
+		# amount=999 here is a stale value that must be replaced by the real amount=222
+		# after repair — the full-list assertion below fails if this row survives.
+		self.puller.symbol_db.upsert_receipts_for_height(2, [{
+			'height': 2,
+			'receipt_type': 'inflation',
+			'receipt_group': 'inflation',
+			'version': 1,
+			'source_primary_id': 0,
+			'source_secondary_id': 0,
+			'sender_address': None,
+			'recipient_address': None,
+			'target_address': None,
+			'mosaic_id': '72C0212E67A08BCE',
+			'amount': 999,
+			'artifact_id': None,
+			'raw_payload': {'amount': '999'}
+		}], 999)
 		self.puller.symbol_db.upsert_sync_state(create_sync_state())
 		set_symbol_connector(self.puller, connector)
 
@@ -77,6 +104,7 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):
 		# Assert:
 		block_heights = self._fetch_block_heights(self.puller.symbol_db)
 		block_hash = self._fetch_block_hash(self.puller.symbol_db, 2)
+		receipts = self._fetch_receipts(self.puller.symbol_db)
 		sync_state = self.puller.symbol_db.get_sync_state()
 
 		self.assertEqual([1, 2, 3], block_heights)
@@ -84,6 +112,10 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):
 			bytes.fromhex(f'{2:064X}'),
 			block_hash
 		)
+		self.assertEqual([
+			(2, 'inflation', 'inflation', 2, 0, '72C0212E67A08BCE', 222),
+			(3, 'inflation', 'inflation', 3, 0, '72C0212E67A08BCE', 333)
+		], receipts)
 		self.assertEqual('healthy', sync_state['status'])
 		self.assertEqual(3, sync_state['last_synced_height'])
 

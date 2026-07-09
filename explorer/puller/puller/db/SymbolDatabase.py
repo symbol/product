@@ -1,6 +1,7 @@
 from psycopg2.extras import Json
 
 from puller.model.symbol.Block import BLOCK_TYPE_VALUES
+from puller.model.symbol.Receipt import RECEIPT_TYPE_LABELS
 from puller.model.symbol.Transaction import MESSAGE_TYPE_LABELS, TRANSACTION_TYPE_LABELS
 
 from .DatabaseConnection import DatabaseConnection
@@ -16,6 +17,8 @@ SYNC_STATE_COLUMNS = [
 	'last_synced_block_hash'
 ]
 
+SYMBOL_RECEIPT_TYPE_VALUES = tuple(RECEIPT_TYPE_LABELS.values())
+SYMBOL_RECEIPT_GROUP_VALUES = ('balanceChange', 'balanceTransfer', 'artifactExpiry', 'inflation')
 SYNC_STATE_STATUS_VALUES = ('initialized', 'healthy', 'repairing', 'unhealthy')
 SYMBOL_TRANSACTION_TYPE_VALUES = tuple(TRANSACTION_TYPE_LABELS.values())
 SYMBOL_TRANSACTION_MOSAIC_ROLE_VALUES = ('transfer', 'hash_lock', 'secret_lock', 'revocation', 'restriction', 'definition')
@@ -63,6 +66,7 @@ SYMBOL_BLOCK_DEFINITIONS = [
 	'harvesting_eligible_accounts_count int',
 	'total_voting_balance bigint',
 	'previous_importance_block_hash bytea',
+	'block_reward int',
 	'raw_payload jsonb NOT NULL',
 	'created_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP',
 	'updated_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP'
@@ -111,6 +115,33 @@ SYMBOL_TRANSACTION_ADDRESS_DEFINITIONS = [
 	'role symbol_transaction_address_role NOT NULL',
 	'PRIMARY KEY (transaction_id, address, role)'
 ]
+SYMBOL_RECEIPT_DEFINITIONS = [
+	'id bigserial PRIMARY KEY',
+	'height bigint NOT NULL REFERENCES symbol_blocks(height)',
+	'receipt_type symbol_receipt_type NOT NULL',
+	'receipt_group symbol_receipt_group NOT NULL',
+	'version int NOT NULL',
+	'source_primary_id bigint',
+	'source_secondary_id bigint',
+	'sender_address bytea',
+	'recipient_address bytea',
+	'target_address bytea',
+	'mosaic_id varchar(16)',
+	'amount bigint NOT NULL DEFAULT 0',
+	'artifact_id varchar(16)',
+	'raw_payload jsonb NOT NULL'
+]
+SYMBOL_RECEIPT_INDEXES = [
+	'CREATE INDEX IF NOT EXISTS idx_symbol_receipts_height_type ON symbol_receipts(height DESC, receipt_type)',
+	'CREATE INDEX IF NOT EXISTS idx_symbol_receipts_type_height ON symbol_receipts(receipt_type, height DESC)',
+	'CREATE INDEX IF NOT EXISTS idx_symbol_receipts_group_height ON symbol_receipts(receipt_group, height DESC)',
+	'CREATE INDEX IF NOT EXISTS idx_symbol_receipts_target ON symbol_receipts(target_address)',
+	'CREATE INDEX IF NOT EXISTS idx_symbol_receipts_target_group_height ON symbol_receipts(target_address, receipt_group, height DESC)',
+	'CREATE INDEX IF NOT EXISTS idx_symbol_receipts_target_type_height ON symbol_receipts(target_address, receipt_type, height DESC)',
+	'CREATE INDEX IF NOT EXISTS idx_symbol_receipts_sender_group_height ON symbol_receipts(sender_address, receipt_group, height DESC)',
+	'CREATE INDEX IF NOT EXISTS idx_symbol_receipts_recipient_group_height ON symbol_receipts(recipient_address, receipt_group, height DESC)',
+	'CREATE INDEX IF NOT EXISTS idx_symbol_receipts_mosaic ON symbol_receipts(mosaic_id)'
+]
 
 
 def _create_enum_type(cursor, name, values):
@@ -139,6 +170,8 @@ class SymbolDatabase(DatabaseConnection):
 
 		cursor = self.connection.cursor()
 		_create_enum_type(cursor, 'symbol_block_type', BLOCK_TYPE_VALUES)
+		_create_enum_type(cursor, 'symbol_receipt_type', SYMBOL_RECEIPT_TYPE_VALUES)
+		_create_enum_type(cursor, 'symbol_receipt_group', SYMBOL_RECEIPT_GROUP_VALUES)
 		_create_enum_type(cursor, 'symbol_sync_state_status', SYNC_STATE_STATUS_VALUES)
 		_create_enum_type(cursor, 'symbol_transaction_type', SYMBOL_TRANSACTION_TYPE_VALUES)
 		_create_enum_type(cursor, 'symbol_transaction_mosaic_role', SYMBOL_TRANSACTION_MOSAIC_ROLE_VALUES)
@@ -150,6 +183,7 @@ class SymbolDatabase(DatabaseConnection):
 		_create_table(cursor, 'symbol_transactions', SYMBOL_TRANSACTION_DEFINITIONS)
 		_create_table(cursor, 'symbol_transaction_mosaics', SYMBOL_TRANSACTION_MOSAIC_DEFINITIONS)
 		_create_table(cursor, 'symbol_transaction_addresses', SYMBOL_TRANSACTION_ADDRESS_DEFINITIONS)
+		_create_table(cursor, 'symbol_receipts', SYMBOL_RECEIPT_DEFINITIONS)
 		cursor.execute('CREATE INDEX IF NOT EXISTS idx_symbol_blocks_height_desc ON symbol_blocks(height DESC)')
 		cursor.execute('CREATE INDEX IF NOT EXISTS idx_symbol_blocks_timestamp ON symbol_blocks(timestamp)')
 		cursor.execute('CREATE INDEX IF NOT EXISTS idx_symbol_blocks_signer_address ON symbol_blocks(signer_address)')
@@ -190,6 +224,8 @@ class SymbolDatabase(DatabaseConnection):
 			ON symbol_transaction_addresses(address, height DESC, transaction_id)
 		''')
 		cursor.execute('CREATE INDEX IF NOT EXISTS idx_symbol_transaction_addresses_height ON symbol_transaction_addresses(height)')
+		for index_sql in SYMBOL_RECEIPT_INDEXES:
+			cursor.execute(index_sql)
 		self.connection.commit()
 
 	def check_connection(self):
@@ -296,6 +332,7 @@ class SymbolDatabase(DatabaseConnection):
 		cursor.execute('DELETE FROM symbol_transaction_mosaics WHERE height >= %s', (height,))
 		cursor.execute('DELETE FROM symbol_transaction_addresses WHERE height >= %s', (height,))
 		cursor.execute('DELETE FROM symbol_transactions WHERE height >= %s', (height,))
+		cursor.execute('DELETE FROM symbol_receipts WHERE height >= %s', (height,))
 		cursor.execute('DELETE FROM symbol_blocks WHERE height >= %s', (height,))
 
 	def upsert_transactions_for_height(self, height, transaction_entries):
@@ -408,6 +445,51 @@ class SymbolDatabase(DatabaseConnection):
 			params)
 
 		return cursor.fetchone()[0]
+
+	def upsert_receipts_for_height(self, height, receipts, block_reward):
+		"""Replaces receipts for a height and updates its block reward."""
+
+		cursor = self.connection.cursor()
+		cursor.execute('DELETE FROM symbol_receipts WHERE height = %s', (height,))
+		for receipt in receipts:
+			cursor.execute(
+				'''
+				INSERT INTO symbol_receipts (
+					height,
+					receipt_type,
+					receipt_group,
+					version,
+					source_primary_id,
+					source_secondary_id,
+					sender_address,
+					recipient_address,
+					target_address,
+					mosaic_id,
+					amount,
+					artifact_id,
+					raw_payload
+				)
+				VALUES (
+					%(height)s,
+					%(receipt_type)s,
+					%(receipt_group)s,
+					%(version)s,
+					%(source_primary_id)s,
+					%(source_secondary_id)s,
+					%(sender_address)s,
+					%(recipient_address)s,
+					%(target_address)s,
+					%(mosaic_id)s,
+					%(amount)s,
+					%(artifact_id)s,
+					%(raw_payload)s
+				)
+				''',
+				{**receipt, 'raw_payload': Json(receipt['raw_payload'])})
+		cursor.execute(
+			'UPDATE symbol_blocks SET block_reward = %s, updated_at = CURRENT_TIMESTAMP WHERE height = %s',
+			(block_reward, height))
+		self.connection.commit()
 
 	def upsert_blocks(self, blocks):
 		"""Upserts Symbol block rows."""

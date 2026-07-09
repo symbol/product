@@ -13,6 +13,11 @@ def bytes_from_hex_or_none(value):
 	return bytes.fromhex(value) if value else None
 
 
+def str_or_none(value):
+	"""Converts an optional value to a str."""
+	return str(value) if value is not None else None
+
+
 def address_from_public_key(public_key, network):
 	"""Derives a Symbol address from raw public key bytes using the given network."""
 
