@@ -471,6 +471,9 @@ class TransactionTest(TestCase):  # pylint: disable=too-many-public-methods
 		])
 
 	def test_create_transaction_row_leaves_scalar_target_address_empty_for_list_target_type(self):
+		# ACCOUNT_ADDRESS_RESTRICTION has list-based targets (restrictionAdditions/restrictionDeletions,
+		# handled via address_rows with role='target'), so the scalar target_address column must stay
+		# None instead of arbitrarily picking one address from the list.
 		# Arrange:
 		item = _create_item(_create_top_level_transaction(
 			TransactionType.ACCOUNT_ADDRESS_RESTRICTION.value,
