@@ -1,3 +1,4 @@
+# pylint: disable=too-many-lines
 from psycopg2.extras import Json
 
 from puller.model.symbol.Account import ACCOUNT_TYPE_VALUES
@@ -257,7 +258,7 @@ def _create_table(cursor, name, definitions):
 class SymbolDatabase(DatabaseConnection):
 	"""Database containing Symbol blockchain data."""
 
-	def create_tables(self):
+	def create_tables(self):  # pylint: disable=too-many-statements
 		"""Creates Symbol block synchronization tables."""
 
 		cursor = self.connection.cursor()

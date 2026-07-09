@@ -1277,9 +1277,12 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 
 	@staticmethod
 	def _seed_account_refresh_snapshot_for_ranks(database):
-		account_row1, mosaic_rows1 = _create_account_row(ADDRESS1, importance='100', native_amount='300')
-		account_row2, mosaic_rows2 = _create_account_row(ADDRESS2, importance='300', native_amount='100')
-		account_row3, mosaic_rows3 = _create_account_row(ADDRESS3, importance='200', native_amount='200')
+		account_row1, mosaic_rows1 = _create_account_row(
+			ADDRESS1, importance='100', mosaics=[{'id': NATIVE_MOSAIC_ID, 'amount': '300'}])
+		account_row2, mosaic_rows2 = _create_account_row(
+			ADDRESS2, importance='300', mosaics=[{'id': NATIVE_MOSAIC_ID, 'amount': '100'}])
+		account_row3, mosaic_rows3 = _create_account_row(
+			ADDRESS3, importance='200', mosaics=[{'id': NATIVE_MOSAIC_ID, 'amount': '200'}])
 		for account_row, mosaic_rows in ((account_row1, mosaic_rows1), (account_row2, mosaic_rows2), (account_row3, mosaic_rows3)):
 			database.upsert_account_current_state(account_row, mosaic_rows)
 		snapshot_at = datetime.datetime(2026, 1, 1)
