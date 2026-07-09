@@ -167,7 +167,7 @@ export class TransferModule {
 
 		const { message, recipientAddress, signerPublicKey } = transaction;
 
-		if (!message.type === MessageType.EncryptedText)
+		if (message.type !== MessageType.EncryptedText)
 			return message.payload;
 
 		if (isIncomingTransaction(transaction, currentAccount))

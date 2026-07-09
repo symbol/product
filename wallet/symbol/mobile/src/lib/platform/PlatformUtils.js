@@ -1,6 +1,6 @@
 // import Clipboard from '@react-native-community/clipboard';
 // Remove after fix https://github.com/react-native-clipboard/clipboard/issues/71
-import { Clipboard, Linking, Platform, Vibration } from 'react-native';
+import { Clipboard, Keyboard, Linking, Platform, Vibration } from 'react-native';
 export class PlatformUtils {
 	/**
 	 * Copies the given string to the clipboard.
@@ -25,6 +25,13 @@ export class PlatformUtils {
 	static vibrate() {
 		if (PlatformUtils.getOS() === 'android') 
 			Vibration.vibrate(2);
+	}
+
+	/**
+	 * Dismisses the on-screen software keyboard and blurs the focused input.
+	 */
+	static dismissKeyboard() {
+		Keyboard.dismiss();
 	}
 
 	/**

@@ -6,7 +6,7 @@ import pytest
 from aiohttp import web
 from symbolchain.CryptoTypes import Hash256, PublicKey
 from symbolchain.facade.NemFacade import NemFacade
-from symbolchain.nc import Signature
+from symbolchain.nc import MessageType, Signature
 from symbolchain.nem.Network import Address, Network
 
 from symbollightapi.connector.NemConnector import NemConnector
@@ -18,6 +18,7 @@ from symbollightapi.model.NodeInfo import NodeInfo
 from symbollightapi.model.Transaction import (
 	AccountKeyLinkTransaction,
 	CosignSignatureTransaction,
+	Message,
 	MosaicDefinitionTransaction,
 	MosaicSupplyChangeTransaction,
 	MultisigAccountModificationTransaction,
@@ -1254,6 +1255,8 @@ EXPECTED_BLOCK_2 = Block(
 			83397,
 			'1b81379847241e45da86b27911e5c9a9192ec04f644d98019657d32838b49c14'
 			'3eaa4815a3028b80f9affdbf0b94cd620f7a925e02783dda67b8627b69ddf70e',
+			168,
+			1,
 			1,
 			PublicKey('7195f4d7a40ad7e31958ae96c4afed002962229675a4cae8dc8a18e290618981')
 		),
@@ -1266,9 +1269,11 @@ EXPECTED_BLOCK_2 = Block(
 			83397,
 			'e0cc7f71e353ca0aaf2f009d74aeac5f97d4796b0f08c009058fb33d93c2e8ca'
 			'68c0b63e46ff125f43314014d324ac032d2c82996a6e47068b251f1d71fdd001',
+			202,
+			1,
 			180000040000000,
 			Address('NCOPERAWEWCD4A34NP5UQCCKEX44MW4SL3QYJYS5'),
-			('476f6f64206c75636b21', 1),
+			Message('476f6f64206c75636b21', MessageType.PLAIN.value),
 			None
 		),
 		MultisigAccountModificationTransaction(
@@ -1280,6 +1285,8 @@ EXPECTED_BLOCK_2 = Block(
 			83397,
 			'81ff2235f9ad6f3f8adbc16051bf8691a45ee5ddcace4d6260ce9a2ae63dba59'
 			'4f2b486f25451a1f90da7f0e312d9e8570e4bc03798e58d19dec86feb4152307',
+			220,
+			1,
 			2,
 			[
 				(1, PublicKey('1fbdbdde28daf828245e4533765726f0b7790e0b7146e2ce205df3e86366980b')),
@@ -1295,6 +1302,8 @@ EXPECTED_BLOCK_2 = Block(
 			83397,
 			'9fc70720d0333d7d8f9eb14ef45ce45a846d37e79cf7a4244b4db36dcb0d3dfe'
 			'0170daefbf4d30f92f343110a6f03a14aedcf7913e465a4a1cc199639169410a',
+			197,
+			1,
 			Address('NAMESPACEWH4MKFMBCVFERDPOOP4FK7MTBXDPZZA'),
 			100000000,
 			None,
@@ -1309,6 +1318,8 @@ EXPECTED_BLOCK_2 = Block(
 			83397,
 			'a80ccd44955ded7d35ee3aa011bfafd3f30cc746f63cb59a9d02171f908a0f4a'
 			'0294fcbba0b2838acd184daf1d9ae3c0f645308b442547156364192cd3d2d605',
+			464,
+			1,
 			10000000,
 			Address('NBMOSAICOD4F54EE5CDMR23CCBGOAM2XSIUX6TRS'),
 			PublicKey('a700809530e5428066807ec0d34859c52e260fc60634aaac13e3972dcfc08736'),
@@ -1326,6 +1337,8 @@ EXPECTED_BLOCK_2 = Block(
 			83397,
 			'7fef5a89a1c6c98347b8d488a8dd28902e8422680f917c28f3ef0100d394b91c'
 			'd85f7cdfd7bdcd6f0cb8089ae9d4e6ef24a8caca35d1cfec7e33c9ccab5e1503',
+			165,
+			1,
 			2,
 			500000,
 			'namespace.test'
@@ -1339,6 +1352,8 @@ EXPECTED_BLOCK_2 = Block(
 			83397,
 			'0e7112b029e030d2d1c7dff79c88a29812f7254422d80e37a7aac5228fff5706'
 			'133500b0119a1327cab8787416b5873cc873e3181066c46cb2b108c5da10d90f',
+			468,
+			1,
 			[
 				CosignSignatureTransaction(
 					261593985,
@@ -1359,6 +1374,8 @@ EXPECTED_BLOCK_2 = Block(
 				73397,
 				83397,
 				None,
+				184,
+				1,
 				150000000000,
 				Address('NBUH72UCGBIB64VYTAAJ7QITJ62BLISFFQOHVP65'),
 				None,
@@ -1448,6 +1465,8 @@ async def test_unconfirmed_transactions(server):  # pylint: disable=redefined-ou
 			timestamp=73397,
 			deadline=83397,
 			signature='0' * 128,
+			size=184,
+			version=1,
 			amount=1000000,
 			recipient=Address('NCOPERAWEWCD4A34NP5UQCCKEX44MW4SL3QYJYS5'),
 			mosaics=None,

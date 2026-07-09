@@ -102,21 +102,21 @@ class NemBlockCalculator:
 
 		return builder_method(tx_json)
 
-	def _lookup_transaction_name(self, tx_type_value, schema_version):  # pylint: disable=no-self-use
+	def _lookup_transaction_name(self, tx_type_value, version):  # pylint: disable=no-self-use
 		"""Resolves transaction names expected by the SDK factory."""
 
 		tx_type = TransactionType(tx_type_value)
-		transaction_name = TransactionFactory.lookup_transaction_name(tx_type, schema_version)
+		transaction_name = TransactionFactory.lookup_transaction_name(tx_type, version)
 
 		return transaction_name
 
 	def _build_transfer_transaction(self, tx_json):
 		"""Builds a transfer transaction."""
 
-		schema_version = tx_json['version'] & 0xFF
+		version = tx_json['version'] & 0xFF
 
 		transaction = {
-			'type': self._lookup_transaction_name(tx_json['type'], schema_version),
+			'type': self._lookup_transaction_name(tx_json['type'], version),
 		}
 
 		message_json = tx_json.get('message')
@@ -143,10 +143,10 @@ class NemBlockCalculator:
 	def _build_account_key_link_transaction(self, tx_json):
 		"""Builds an account key link transaction."""
 
-		schema_version = tx_json['version'] & 0xFF
+		version = tx_json['version'] & 0xFF
 
 		transaction = {
-			'type': self._lookup_transaction_name(tx_json['type'], schema_version),
+			'type': self._lookup_transaction_name(tx_json['type'], version),
 		}
 
 		return transaction
@@ -154,10 +154,10 @@ class NemBlockCalculator:
 	def _build_multisig_account_modification_transaction(self, tx_json):
 		"""Builds a multisig account modification transaction."""
 
-		schema_version = tx_json['version'] & 0xFF
+		version = tx_json['version'] & 0xFF
 
 		transaction = {
-			'type': self._lookup_transaction_name(tx_json['type'], schema_version),
+			'type': self._lookup_transaction_name(tx_json['type'], version),
 			'modifications': [
 				{
 					'modification': {
@@ -168,7 +168,7 @@ class NemBlockCalculator:
 			]
 		}
 
-		if schema_version == 2:
+		if version == 2:
 			min_cosignatories = tx_json['minCosignatories']
 			transaction['min_approval_delta'] = min_cosignatories.get('relativeChange', 0)
 
@@ -177,10 +177,10 @@ class NemBlockCalculator:
 	def _build_namespace_registration_transaction(self, tx_json):
 		"""Builds a namespace registration transaction."""
 
-		schema_version = tx_json['version'] & 0xFF
+		version = tx_json['version'] & 0xFF
 
 		transaction = {
-			'type': self._lookup_transaction_name(tx_json['type'], schema_version),
+			'type': self._lookup_transaction_name(tx_json['type'], version),
 			'name': tx_json['newPart']
 		}
 
@@ -192,11 +192,11 @@ class NemBlockCalculator:
 	def _build_mosaic_definition_transaction(self, tx_json):
 		"""Builds a mosaic definition transaction."""
 
-		schema_version = tx_json['version'] & 0xFF
+		version = tx_json['version'] & 0xFF
 		mosaic_definition = tx_json['mosaicDefinition']
 
 		transaction = {
-			'type': self._lookup_transaction_name(tx_json['type'], schema_version),
+			'type': self._lookup_transaction_name(tx_json['type'], version),
 			'mosaic_definition': {
 				'id': {
 					'namespace_id': {'name': mosaic_definition['id']['namespaceId'].encode('utf8')},
@@ -228,12 +228,12 @@ class NemBlockCalculator:
 	def _build_mosaic_supply_change_transaction(self, tx_json):
 		"""Builds a mosaic supply change transaction."""
 
-		schema_version = tx_json['version'] & 0xFF
+		version = tx_json['version'] & 0xFF
 
 		mosaic_id = tx_json['mosaicId']
 
 		transaction = {
-			'type': self._lookup_transaction_name(tx_json['type'], schema_version),
+			'type': self._lookup_transaction_name(tx_json['type'], version),
 			'mosaic_id': {
 				'namespace_id': {'name': mosaic_id['namespaceId'].encode('utf8')},
 				'name': mosaic_id['name'].encode('utf8')
@@ -245,10 +245,10 @@ class NemBlockCalculator:
 	def _build_cosignature_transaction(self, tx_json):  # pylint: disable=no-self-use
 		"""Builds a cosignature transaction."""
 
-		schema_version = tx_json['version'] & 0xFF
+		version = tx_json['version'] & 0xFF
 
 		transaction = {
-			'type': f'cosignature_v{schema_version}',
+			'type': f'cosignature_v{version}',
 		}
 
 		return transaction
@@ -256,10 +256,10 @@ class NemBlockCalculator:
 	def _build_multisig_transaction(self, tx_json):
 		"""Builds a multisig transaction."""
 
-		schema_version = tx_json['version'] & 0xFF
+		version = tx_json['version'] & 0xFF
 
 		transaction = {
-			'type': self._lookup_transaction_name(tx_json['type'], schema_version),
+			'type': self._lookup_transaction_name(tx_json['type'], version),
 			'inner_transaction': TransactionFactory.to_non_verifiable_transaction(
 				self.build_transaction(tx_json['otherTrans'])
 			),

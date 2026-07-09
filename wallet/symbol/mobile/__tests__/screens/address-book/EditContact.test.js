@@ -26,7 +26,8 @@ const SCREEN_TEXT = {
 	inputAddressLabel: 'input_address',
 	inputNotesLabel: 'input_notes',
 	buttonSave: 'button_save',
-	textValidationRequired: 'validation_error_field_required'
+	textValidationRequired: 'validation_error_field_required',
+	textValidationAlreadyExists: 'validation_error_already_exists'
 };
 
 // Account Fixtures
@@ -43,9 +44,16 @@ const contactAlice = ContactFixtureBuilder
 	.setNotes('Alice notes')
 	.build();
 
+const contactBob = ContactFixtureBuilder
+	.createWithAccount(CHAIN_NAME, NETWORK_IDENTIFIER, 2)
+	.setName('Bob')
+	.setNotes('Bob notes')
+	.build();
+
 // Contact List Configurations
 
 const contactsWithAlice = [contactAlice];
+const contactsWithAliceAndBob = [contactAlice, contactBob];
 
 // Route Props Factory
 
@@ -202,6 +210,7 @@ describe('screens/address-book/EditContact', () => {
 
 				// Assert:
 				screenTester.expectTextCount(SCREEN_TEXT.textValidationRequired, expected.errorCount);
+				screenTester.expectTextCount(SCREEN_TEXT.textValidationAlreadyExists, expected.alreadyExistsCount);
 				if (expected.isButtonDisabled) 
 					screenTester.expectButtonDisabled(SCREEN_TEXT.buttonSave);
 				 else 
@@ -211,6 +220,21 @@ describe('screens/address-book/EditContact', () => {
 		};
 
 		const validationTests = [
+			{
+				description: 'shows no duplicate validation error when the contact name is left unchanged',
+				config: {
+					addressBookContacts: contactsWithAlice,
+					contactId: contactAlice.id,
+					switchToBlacklist: false,
+					clearNameInput: false,
+					nameToEnter: null
+				},
+				expected: {
+					errorCount: 0,
+					alreadyExistsCount: 0,
+					isButtonDisabled: false
+				}
+			},
 			{
 				description: 'shows 1 validation error when whitelist is selected and name is cleared',
 				config: {
@@ -222,6 +246,7 @@ describe('screens/address-book/EditContact', () => {
 				},
 				expected: {
 					errorCount: 1,
+					alreadyExistsCount: 0,
 					isButtonDisabled: true
 				}
 			},
@@ -236,7 +261,23 @@ describe('screens/address-book/EditContact', () => {
 				},
 				expected: {
 					errorCount: 0,
+					alreadyExistsCount: 0,
 					isButtonDisabled: false
+				}
+			},
+			{
+				description: 'shows duplicate validation error when renamed to another existing contact name',
+				config: {
+					addressBookContacts: contactsWithAliceAndBob,
+					contactId: contactAlice.id,
+					switchToBlacklist: false,
+					clearNameInput: false,
+					nameToEnter: contactBob.name
+				},
+				expected: {
+					errorCount: 0,
+					alreadyExistsCount: 1,
+					isButtonDisabled: true
 				}
 			},
 			{
@@ -250,6 +291,7 @@ describe('screens/address-book/EditContact', () => {
 				},
 				expected: {
 					errorCount: 0,
+					alreadyExistsCount: 0,
 					isButtonDisabled: false
 				}
 			},
@@ -264,6 +306,7 @@ describe('screens/address-book/EditContact', () => {
 				},
 				expected: {
 					errorCount: 0,
+					alreadyExistsCount: 0,
 					isButtonDisabled: false
 				}
 			}
@@ -306,6 +349,26 @@ describe('screens/address-book/EditContact', () => {
 		};
 
 		const saveFlowTests = [
+			{
+				description: 'updates contact notes without changing the existing name',
+				config: {
+					addressBookContacts: contactsWithAlice,
+					contactId: contactAlice.id,
+					switchToBlacklist: false,
+					clearNameInput: false,
+					nameToEnter: null,
+					notesToEnter: UPDATED_CONTACT_NOTES
+				},
+				expected: {
+					contact: {
+						id: contactAlice.id,
+						name: contactAlice.name,
+						address: contactAlice.address,
+						notes: UPDATED_CONTACT_NOTES,
+						isBlackListed: false
+					}
+				}
+			},
 			{
 				description: 'updates whitelist contact with name and notes',
 				config: {

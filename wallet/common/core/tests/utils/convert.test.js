@@ -104,6 +104,48 @@ describe('utils/convert', () => {
 				absoluteAmount: '0000123456',
 				divisibility: 0,
 				expectedResult: '123456'
+			},
+			{
+				testName: 'keeps the sign for a sub-unit negative (-500000, 6) -> "-0.5"',
+				absoluteAmount: '-500000',
+				divisibility: 6,
+				expectedResult: '-0.5'
+			},
+			{
+				testName: 'keeps the sign for a sub-unit negative (-34968, 6) -> "-0.034968"',
+				absoluteAmount: '-34968',
+				divisibility: 6,
+				expectedResult: '-0.034968'
+			},
+			{
+				testName: 'keeps the sign for a tiny negative (-50, 6) -> "-0.00005"',
+				absoluteAmount: '-50',
+				divisibility: 6,
+				expectedResult: '-0.00005'
+			},
+			{
+				testName: 'keeps the sign for a whole negative (-5000000, 6) -> "-5"',
+				absoluteAmount: '-5000000',
+				divisibility: 6,
+				expectedResult: '-5'
+			},
+			{
+				testName: 'keeps the sign for a negative integer (divisibility 0) (-1000, 0) -> "-1000"',
+				absoluteAmount: '-1000',
+				divisibility: 0,
+				expectedResult: '-1000'
+			},
+			{
+				testName: 'normalizes negative zero to "0"',
+				absoluteAmount: '-0',
+				divisibility: 6,
+				expectedResult: '0'
+			},
+			{
+				testName: 'supports BigInt negative input (-5000000n, 6) -> "-5"',
+				absoluteAmount: -5000000n,
+				divisibility: 6,
+				expectedResult: '-5'
 			}
 		];
 
@@ -308,6 +350,20 @@ describe('utils/convert', () => {
 					values: ['12.3400', '12.34'],
 					callback: ops.subtract,
 					expected: '0'
+				},
+				{
+					name: 'subtraction resulting in a sub-unit negative keeps the sign',
+					divisibility: 6,
+					values: ['0.3', '0.8'],
+					callback: ops.subtract,
+					expected: '-0.5'
+				},
+				{
+					name: 'subtraction resulting in a whole negative keeps the sign',
+					divisibility: 2,
+					values: ['1', '3.5'],
+					callback: ops.subtract,
+					expected: '-2.5'
 				}
 			];
 

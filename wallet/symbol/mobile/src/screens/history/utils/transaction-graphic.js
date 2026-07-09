@@ -5,7 +5,9 @@ import {
 	TransactionGraphicAvatarType
 } from '@/app/screens/history/types/TransactionGraphic';
 import { createAccountDisplayData } from '@/app/utils/account';
+import { truncateMiddle } from '@/app/utils/format';
 import { createTokenDisplayData, getNativeCurrencyToken, hasNonNativeCurrencyTokens } from '@/app/utils/token';
+import { getSignedSupplyDelta, getTransactionTypeTranslationKey } from '@/app/utils/transaction';
 
 /** @typedef {import('@/app/screens/history/types/TransactionGraphic').TransactionGraphicArrowCaption} TransactionGraphicArrowCaption */
 /** @typedef {import('@/app/screens/history/types/TransactionGraphic').TransactionGraphicData} TransactionGraphicData */
@@ -14,6 +16,16 @@ import { createTokenDisplayData, getNativeCurrencyToken, hasNonNativeCurrencyTok
 /** @typedef {import('@/app/types/Network').NetworkIdentifier} NetworkIdentifier */
 /** @typedef {import('@/app/types/Network').ChainName} ChainName */
 /** @typedef {import('@/app/types/Account').WalletAccount} WalletAccount */
+
+const SECRET_CAPTION_TRUNCATE_START = 8;
+const SECRET_CAPTION_TRUNCATE_END = 8;
+
+/**
+ * Truncates a secret hash for display inside the transaction graphic arrow caption.
+ * @param {string} secret - The full secret hash.
+ * @returns {string} The truncated secret.
+ */
+const formatSecretCaption = secret => truncateMiddle(secret, SECRET_CAPTION_TRUNCATE_START, SECRET_CAPTION_TRUNCATE_END);
 
 /**
  * Target field configuration for extracting target data from a transaction.
@@ -50,9 +62,9 @@ const transactionGraphicConfigMap = {
 	[SymbolTransactionType.TRANSFER]: {
 		targetType: TransactionGraphicAvatarType.ACCOUNT,
 		targetFields: { addressField: 'recipientAddress' },
-		typeTextKey: tx => {
+		typeTextKey: (tx, chainName) => {
 			if (tx.message?.isDelegatedHarvestingMessage)
-				return `transactionDescriptor_${tx.type}_harvesting`;
+				return `${getTransactionTypeTranslationKey(tx.type, chainName)}_harvesting`;
 
 			return null;
 		},
@@ -103,7 +115,11 @@ const transactionGraphicConfigMap = {
 		targetType: TransactionGraphicAvatarType.TOKEN,
 		targetFields: { valueField: 'mosaicId' },
 		arrowCaptions: [
-			{ type: CaptionType.TEXT, field: 'delta' }
+			{
+				type: CaptionType.TEXT,
+				field: 'delta',
+				format: (_, tx) => `${getSignedSupplyDelta(tx)}`
+			}
 		]
 	},
 	[SymbolTransactionType.MOSAIC_SUPPLY_REVOCATION]: {
@@ -230,14 +246,14 @@ const transactionGraphicConfigMap = {
 		targetType: TransactionGraphicAvatarType.LOCK,
 		targetFields: {},
 		arrowCaptions: [
-			{ type: CaptionType.TEXT, field: 'secret' }
+			{ type: CaptionType.TEXT, field: 'secret', format: formatSecretCaption }
 		]
 	},
 	[SymbolTransactionType.SECRET_PROOF]: {
 		targetType: TransactionGraphicAvatarType.LOCK,
 		targetFields: {},
 		arrowCaptions: [
-			{ type: CaptionType.TEXT, field: 'secret' }
+			{ type: CaptionType.TEXT, field: 'secret', format: formatSecretCaption }
 		]
 	},
 	[SymbolTransactionType.ACCOUNT_METADATA]: {
@@ -420,17 +436,18 @@ const createArrowCaptions = (transaction, captionConfigs, options) => {
  * Gets formatted type text for the transaction.
  * @param {Transaction} transaction - The transaction.
  * @param {TransactionGraphicConfig} [config] - The graphic configuration.
+ * @param {ChainName} [chainName] - Chain name, used to namespace the descriptor key.
  * @returns {string} Formatted type text.
  */
-const getTypeText = (transaction, config) => {
+const getTypeText = (transaction, config, chainName) => {
 	let customKey;
 	if (config?.typeTextKey)
-		customKey = config.typeTextKey(transaction);
+		customKey = config.typeTextKey(transaction, chainName);
 
 	if (customKey)
 		return $t(customKey);
 
-	return $t(`transactionDescriptor_${transaction.type}`);
+	return $t(getTransactionTypeTranslationKey(transaction.type, chainName));
 };
 
 
@@ -442,7 +459,7 @@ const getTypeText = (transaction, config) => {
  */
 export const createTransactionGraphicData = (transaction, options) => {
 	const config = transactionGraphicConfigMap[transaction.type];
-	const typeText = getTypeText(transaction, config);
+	const typeText = getTypeText(transaction, config, options.chainName);
 
 	// Fallback for unsupported transaction types
 	if (!config) {

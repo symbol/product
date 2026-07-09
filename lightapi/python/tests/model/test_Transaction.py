@@ -1,6 +1,6 @@
 import unittest
 
-from symbolchain.nc import TransactionType
+from symbolchain.nc import MessageType, TransactionType
 
 from symbollightapi.model.Exceptions import UnknownTransactionType
 from symbollightapi.model.Transaction import (
@@ -17,6 +17,7 @@ from symbollightapi.model.Transaction import (
 	MultisigTransaction,
 	NamespaceRegistrationTransaction,
 	TransactionFactory,
+	TransactionHandler,
 	TransferTransaction
 )
 
@@ -30,6 +31,8 @@ COMMON_ARGS = {
 	'signature':
 		'1b81379847241e45da86b27911e5c9a9192ec04f644d98019657d32838b49c14'
 		'3eaa4815a3028b80f9affdbf0b94cd620f7a925e02783dda67b8627b69ddf70e',
+	'size': 168,
+	'version': 1,
 }
 
 TRANSFER_TRANSACTION_ARGS = {
@@ -70,6 +73,8 @@ MULTISIG_TRANSACTION_ARGS = {
 		deadline=83397,
 		fee=8000000,
 		signature=None,
+		size=184,
+		version=1,
 		transaction_hash=None,
 		height=None,
 		sender='22df5f43ee3739a10c346b3ec2d3878668c5514696be425f9067d3a11c777f1d'
@@ -112,6 +117,8 @@ class BaseTransactionTest(unittest.TestCase):
 		('timestamp', 83977),
 		('deadline', 73977),
 		('signature', 'signature'),
+		('size', 200),
+		('version', 2),
 		('transaction_type', 123),
 	]
 
@@ -294,6 +301,8 @@ class TransactionFactoryTest(unittest.TestCase):
 		self.assertEqual(COMMON_ARGS['timestamp'], transaction.timestamp)
 		self.assertEqual(COMMON_ARGS['deadline'], transaction.deadline)
 		self.assertEqual(COMMON_ARGS['signature'], transaction.signature)
+		self.assertEqual(COMMON_ARGS['size'], transaction.size)
+		self.assertEqual(COMMON_ARGS['version'], transaction.version)
 
 	def test_create_transfer_transaction(self):
 		# Arrange + Act:
@@ -399,3 +408,35 @@ class TransactionFactoryTest(unittest.TestCase):
 		# Arrange + Act:
 		with self.assertRaises(UnknownTransactionType):
 			TransactionFactory.create_transaction(123, COMMON_ARGS, {})
+
+
+class TransactionHandlerTest(unittest.TestCase):
+	@staticmethod
+	def _map_transfer(message):
+		tx_json = {
+			'amount': 1,
+			'recipient': 'NCOPERAWEWCD4A34NP5UQCCKEX44MW4SL3QYJYS5',
+			'message': message
+		}
+		return TransactionHandler().map[TransactionType.TRANSFER.value](tx_json)
+
+	def test_maps_plain_message_type(self):
+		# Arrange + Act:
+		mapped_args = self._map_transfer({'payload': '48656C6C6F', 'type': MessageType.PLAIN.value})
+
+		# Assert:
+		self.assertEqual(Message('48656C6C6F', MessageType.PLAIN.value), mapped_args['message'])
+
+	def test_maps_encrypted_message_type(self):
+		# Arrange + Act:
+		mapped_args = self._map_transfer({'payload': 'ABCD', 'type': MessageType.ENCRYPTED.value})
+
+		# Assert:
+		self.assertEqual(Message('ABCD', MessageType.ENCRYPTED.value), mapped_args['message'])
+
+	def test_maps_missing_message_to_none(self):
+		# Arrange + Act:
+		mapped_args = self._map_transfer(None)
+
+		# Assert:
+		self.assertIsNone(mapped_args['message'])

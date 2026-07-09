@@ -25,9 +25,21 @@ import { StyleSheet, Text } from 'react-native';
  * @param {TextSize} [props.size='m'] - Text size.
  * @param {ContentColorVariants} [props.variant] - Color variant for the text.
  * @param {boolean} [props.inverse=false] - Whether to use inverse color scheme.
+ * @param {number} [props.numberOfLines] - Maximum number of lines before the text is truncated.
+ * @param {'head'|'middle'|'tail'|'clip'} [props.ellipsizeMode] - Where to place the ellipsis when the text is truncated.
  * @returns {React.ReactNode} StyledText component.
  */
-export const StyledText = ({ children, style, type = 'body', bold = false, size = 'm', variant = 'primary', inverse = false }) => {
+export const StyledText = ({
+	children,
+	style,
+	type = 'body',
+	bold = false,
+	size = 'm',
+	variant = 'primary',
+	inverse = false,
+	numberOfLines,
+	ellipsizeMode
+}) => {
 	const normalizedType = ['title', 'label', 'body'].includes(type) ? type : 'body';
 	const normalizedSize = ['s', 'm', 'l', 'xl'].includes(size) ? size : 'm';
 
@@ -63,7 +75,7 @@ export const StyledText = ({ children, style, type = 'body', bold = false, size 
 	const textColor = Colors.Semantic.content[variant][variantKey];
 
 	return (
-		<Text style={[styles.base, weightStyle, { color: textColor }, style]}>
+		<Text style={[styles.base, weightStyle, { color: textColor }, style]} numberOfLines={numberOfLines} ellipsizeMode={ellipsizeMode}>
 			{children}
 		</Text>
 	);

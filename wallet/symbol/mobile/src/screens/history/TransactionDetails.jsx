@@ -21,7 +21,7 @@ import { useWalletController } from '@/app/hooks';
 import { PlatformUtils } from '@/app/lib/platform/PlatformUtils';
 import { $t } from '@/app/localization';
 import { AmountBreakdown, TransactionGraphic } from '@/app/screens/history/components';
-import { useCosignFlow, useLiveTransactionInfo } from '@/app/screens/history/hooks';
+import { useCosignFlow, useDecryptedTransaction, useLiveTransactionInfo } from '@/app/screens/history/hooks';
 import { CosignStatus } from '@/app/screens/history/types/Cosignature';
 import {
 	createAmountBreakdownDisplayData,
@@ -63,13 +63,16 @@ export const TransactionDetails = ({ route }) => {
 
 	// Transaction data with live updates
 	const transactionFetchManager = useLiveTransactionInfo(walletController, preloadedData, group);
-	const { transaction, status } = transactionFetchManager.data;
+	const { transaction: liveTransaction, status } = transactionFetchManager.data;
+
+	// Decrypt the message for transfer transactions carrying an encrypted message
+	const transaction = useDecryptedTransaction(walletController, liveTransaction);
 
 	// Native currency info
 	const nativeCurrencyTokenId = networkProperties?.networkCurrency?.id || networkProperties?.networkCurrency?.mosaicId;
 
 	// Main details
-	const transactionTypeText = getTransactionTypeText(transaction, currentAccount);
+	const transactionTypeText = getTransactionTypeText(transaction, currentAccount, chainName);
 	const statusDisplayData = getTransactionStatus(status.group);
 	const dateText = getTransactionDateText(transaction, status.group);
 

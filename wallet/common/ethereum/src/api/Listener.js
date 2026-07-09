@@ -65,10 +65,15 @@ export class Listener {
 
 		this.SIGINT = true;
 
-		await this.wsProvider.removeAllListeners();
-
+		const { wsProvider } = this;
 		this.wsProvider = null;
 		this.jrpcProvider = null;
+
+		try {
+			await wsProvider.destroy();
+		} catch {
+			// Ignore errors while tearing down a connection that is already closing.
+		}
 	}
 
 	/**

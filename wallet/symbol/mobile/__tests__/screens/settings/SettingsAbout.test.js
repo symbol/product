@@ -60,7 +60,7 @@ describe('screens/settings/SettingsAbout', () => {
 				badgeLabel: 'Link to discord'
 			},
 			expected: {
-				linkUrl: 'https://discord.gg/xymcity'
+				linkUrl: 'https://discord.gg/NMA9YQ55td'
 			}
 		},
 		{

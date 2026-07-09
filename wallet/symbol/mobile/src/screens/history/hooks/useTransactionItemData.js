@@ -55,7 +55,7 @@ export const useTransactionItemData = ({
 		};
 
 		const iconName = getTransactionIconName(transaction.type);
-		const action = getTransactionTypeText(transaction, currentAccount);
+		const action = getTransactionTypeText(transaction, currentAccount, chainName);
 		const description = getTransactionDescription(transaction, currentAccount, resolveOptions);
 		const dateText = isDateHidden ? '' : getTransactionDateText(transaction, group);
 

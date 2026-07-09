@@ -155,11 +155,12 @@ export const isPrivateKey = (value, chainName) => {
  * Checks whether a value is a valid address for the given blockchain.
  * @param {string} value - The value to check.
  * @param {ChainName} chainName - The blockchain name (e.g., 'symbol', 'ethereum').
+ * @param {NetworkIdentifier} [networkIdentifier] - The network identifier (required for Symbol address validation).
  * @returns {boolean} True if the value is a valid address.
  */
-export const isAddress = (value, chainName) => {
+export const isAddress = (value, chainName, networkIdentifier) => {
 	if (chainName === 'symbol')
-		return isSymbolAddress(value);
+		return isSymbolAddress(value, networkIdentifier);
 	
 	if (chainName === 'ethereum')
 		return isEthereumAddress(value);

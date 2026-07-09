@@ -1,7 +1,5 @@
-import { createOptInPrivateKeyFromMnemonic, createPrivateKeysFromMnemonic, generateMnemonic } from '../../src/utils';
+import { createPrivateKeysFromMnemonic, generateMnemonic } from '../../src/utils';
 import { mnemonic, networkIdentifiers, walletStorageAccounts } from '../__fixtures__/local/wallet';
-
-const OPT_IN_PRIVATE_KEY = '8965375F47E64529E6FBBB968764ED8DE64A0973701ABDEEF91A56CA626604B7';
 
 describe('utils/wallet', () => {
 	describe('generateMnemonic', () => {
@@ -32,19 +30,6 @@ describe('utils/wallet', () => {
 				// Assert:
 				expect(result).toEqual(expectedPrivateKeys);
 			});
-		});
-	});
-
-	describe('createOptInPrivateKeyFromMnemonic', () => {
-		it('derives private key from a given mnemonic phrase using the opt-in curve', () => {
-			// Arrange:
-			const expectedResult = OPT_IN_PRIVATE_KEY;
-
-			// Act:
-			const result = createOptInPrivateKeyFromMnemonic(mnemonic);
-
-			// Assert:
-			expect(result).toBe(expectedResult);
 		});
 	});
 });

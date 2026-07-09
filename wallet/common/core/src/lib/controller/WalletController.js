@@ -952,12 +952,12 @@ export class WalletController {
 	 * @private
 	 */
 	_handleNetworkPropertiesUpdate = async networkProperties => {
-		await this._persistentStorageRepository.setNetworkProperties(networkProperties);
 		this.#setState(() => {
 			this._state.networkProperties = networkProperties;
 		});
-
 		this._emit(ControllerEventName.NETWORK_PROPERTIES_CHANGE, networkProperties);
+
+		await this._persistentStorageRepository.setNetworkProperties(networkProperties);
 	};
 
 	/**

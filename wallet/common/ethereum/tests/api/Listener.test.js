@@ -140,7 +140,7 @@ describe('api/Listener', () => {
 	});
 
 	describe('close', () => {
-		it('removes listeners, destroys ws and clears providers', async () => {
+		it('destroys ws provider and clears providers', async () => {
 			// Arrange:
 			createEthereumJrpcProviderMock.mockReturnValue({});
 			const listener = createListener();
@@ -152,8 +152,8 @@ describe('api/Listener', () => {
 			// Assert:
 			expect(listener.wsProvider).toBeNull();
 			expect(listener.jrpcProvider).toBeNull();
-			// removeAllListeners and destroy called
-			expect(WebSocketProviderMock.mock.instances[0].removeAllListeners).toHaveBeenCalled();
+			// destroy() closes the underlying websocket and removes subscriptions internally.
+			expect(WebSocketProviderMock.mock.instances[0].destroy).toHaveBeenCalled();
 		});
 
 		it('does nothing when wsProvider is not set', async () => {
@@ -179,6 +179,7 @@ describe('api/Listener', () => {
 			await listener.close();
 
 			// Assert:
+			expect(WebSocketProviderMock.mock.instances[0].destroy).toHaveBeenCalled();
 			expect(listener.wsProvider).toBeNull();
 			expect(listener.jrpcProvider).toBeNull();
 		});

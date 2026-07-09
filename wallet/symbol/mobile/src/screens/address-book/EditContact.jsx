@@ -56,7 +56,7 @@ export const EditContact = ({ route }) => {
 	const isNameRequired = listType === ContactListType.WHITELIST;
 	const nameErrorMessage = useValidation(name, [
 		validateRequired(isNameRequired),
-		validateUniqueContactName(networkAccounts, addressBook),
+		validateUniqueContactName(networkAccounts, addressBook, contactId),
 		validateAccountName()
 	], $t);
 

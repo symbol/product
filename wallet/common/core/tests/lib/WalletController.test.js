@@ -1,4 +1,5 @@
 import { ExternalAccountKeystore, MnemonicKeystore, WalletController } from '../../src';
+import { ControllerEventName, NetworkConnectionStatus } from '../../src/constants';
 import { cloneDeep } from '../../src/utils/helper';
 import { externalAccounts, externalKeystoreAccounts, networkIdentifiers, seedAccounts, walletAccounts } from '../fixtures/wallet';
 import { defaultState, filledState } from '../fixtures/wallet-controller-state';
@@ -860,6 +861,63 @@ describe('WalletController', () => {
 			// Assert:
 			expect(walletController._networkManager.runConnectionJob).toHaveBeenCalledTimes(1);
 		});
+
+		it('commits networkProperties before emitting NETWORK_CONNECTED', async () => {
+			// Arrange:
+			const nodeUrl = 'http://testnet-node1';
+			const networkInfo = { networkIdentifier: walletController.networkIdentifier, nodeUrl, chainHeight: 100 };
+			walletController._api.network.fetchNetworkInfo.mockResolvedValue(networkInfo);
+
+			let stateAtConnectedEvent;
+			walletController.on(ControllerEventName.NETWORK_CONNECTED, () => {
+				stateAtConnectedEvent = {
+					nodeUrl: walletController.networkProperties.nodeUrl,
+					isNetworkConnectionReady: walletController.isNetworkConnectionReady
+				};
+			});
+
+			// Act:
+			await walletController._networkManager.fetchNetworkProperties(nodeUrl);
+
+			// Assert:
+			expect(stateAtConnectedEvent).toStrictEqual({ nodeUrl, isNetworkConnectionReady: true });
+		});
+	});
+
+	describe('isNetworkConnectionReady', () => {
+		const runIsNetworkConnectionReadyTest = (description, networkStatus, expectedResult) => {
+			it(description, () => {
+				// Arrange:
+				walletController._state.networkStatus = networkStatus;
+
+				// Act:
+				const result = walletController.isNetworkConnectionReady;
+
+				// Assert:
+				expect(result).toBe(expectedResult);
+			});
+		};
+
+		runIsNetworkConnectionReadyTest(
+			'returns true when the network is connected',
+			NetworkConnectionStatus.CONNECTED,
+			true
+		);
+		runIsNetworkConnectionReadyTest(
+			'returns false when the network connection is initial',
+			NetworkConnectionStatus.INITIAL,
+			false
+		);
+		runIsNetworkConnectionReadyTest(
+			'returns false when the network is connecting',
+			NetworkConnectionStatus.CONNECTING,
+			false
+		);
+		runIsNetworkConnectionReadyTest(
+			'returns false when there is no internet connection',
+			NetworkConnectionStatus.NO_INTERNET,
+			false
+		);
 	});
 
 	describe('selectNetwork()', () => {
