@@ -330,7 +330,10 @@ class SymbolPuller:
 			epoch_adjustment_seconds
 		)
 		receipt_rows_by_height = await self._get_receipt_rows_by_height(batch_rows[0]['height'], batch_rows[-1]['height'])
-		dirty_addresses = self._collect_dirty_addresses_for_batch(batch_rows, transaction_rows_by_height)
+		dirty_addresses = self._collect_dirty_addresses_for_batch(
+			batch_rows,
+			transaction_rows_by_height,
+			receipt_rows_by_height)
 		observed_height = max(row['height'] for row in batch_rows)
 		dirty_account_rows = await self._fetch_dirty_accounts_for_batch(
 			dirty_addresses,
@@ -434,8 +437,12 @@ class SymbolPuller:
 		return self._native_mosaic_info
 
 	@staticmethod
-	def _collect_dirty_addresses_for_batch(block_rows, transaction_rows_by_height):
-		"""Collects unique dirty addresses touched by synced block beneficiaries and transaction participants."""
+	def _collect_dirty_addresses_for_batch(  # pylint: disable=too-many-branches
+		block_rows,
+		transaction_rows_by_height,
+		receipt_rows_by_height
+	):
+		"""Collects unique dirty addresses touched by synced block, transaction, and receipt rows."""
 
 		dirty_addresses = {}
 		latest_block_by_beneficiary = {}
@@ -455,6 +462,22 @@ class SymbolPuller:
 				for address_row in transaction_row['address_rows']:
 					address = address_row['address']
 					if address not in dirty_addresses and not Address(address).is_alias():
+						dirty_addresses[address] = {
+							'is_beneficiary': False,
+							'harvested_block_timestamp': None
+						}
+
+		for receipt_rows in receipt_rows_by_height.values():
+			for receipt_row in receipt_rows:
+				if 'balanceChange' == receipt_row['receipt_group']:
+					receipt_addresses = [receipt_row['target_address']]
+				elif 'balanceTransfer' == receipt_row['receipt_group']:
+					receipt_addresses = [receipt_row['sender_address'], receipt_row['recipient_address']]
+				else:
+					continue
+
+				for address in receipt_addresses:
+					if address is not None and address not in dirty_addresses:
 						dirty_addresses[address] = {
 							'is_beneficiary': False,
 							'harvested_block_timestamp': None

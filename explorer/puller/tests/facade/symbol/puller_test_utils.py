@@ -218,17 +218,20 @@ def statement_path(start_height, end_height, page_number=1):
 	)
 
 
-def create_statement_item(height, amount, receipt_type=ReceiptType.INFLATION.value):
+def create_statement_item(height, amount, receipt_type=ReceiptType.INFLATION.value, **receipt_overrides):
+	receipt = {
+		'version': 1,
+		'type': receipt_type,
+		'mosaicId': '72C0212E67A08BCE',
+		'amount': str(amount)
+	}
+	receipt.update(receipt_overrides)
+
 	return {
 		'statement': {
 			'height': str(height),
 			'source': {'primaryId': height, 'secondaryId': 0},
-			'receipts': [{
-				'version': 1,
-				'type': receipt_type,
-				'mosaicId': '72C0212E67A08BCE',
-				'amount': str(amount)
-			}]
+			'receipts': [receipt]
 		},
 		'id': f'statement-{height}-{amount}',
 		'meta': {'timestamp': '0'}

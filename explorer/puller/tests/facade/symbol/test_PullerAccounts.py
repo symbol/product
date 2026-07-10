@@ -2,6 +2,7 @@ import asyncio
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
+from symbolchain.sc import ReceiptType
 from symbollightapi.model.Exceptions import NodeException
 
 from puller.facade.SymbolPuller import ACCOUNT_BATCH_FETCH_SIZE
@@ -16,7 +17,9 @@ from .puller_test_utils import (
 	create_account_item,
 	create_node_block,
 	create_node_transaction,
+	create_statement_item,
 	set_symbol_connector,
+	statement_path,
 	transaction_path
 )
 
@@ -179,6 +182,96 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):
 		self.assertEqual(
 			sorted([beneficiary_address_text, participant_address_text]),
 			sorted(connector.post_payloads[0]['addresses']))
+
+	def test_refresh_dirty_accounts_for_batch_includes_balance_change_receipt_target_address_without_matching_transaction(self):
+		# Arrange:
+		connector = FakeConnector(
+			1,
+			{0: [self._create_block(1)]},
+			statement_pages={
+				statement_path(1, 1): {
+					'data': [create_statement_item(
+						1,
+						100,
+						ReceiptType.LOCK_HASH_EXPIRED.value,
+						targetAddress=RECIPIENT_ADDRESS)]
+				}
+			})
+
+		# Act:
+		self._sync_with_connector(connector)
+
+		# Assert:
+		self.assertEqual(1, self._fetch_account_count(RECIPIENT_ADDRESS))
+
+	def test_refresh_dirty_accounts_for_batch_includes_balance_transfer_receipt_sender_and_recipient_addresses(self):
+		# Arrange:
+		recipient_address = '980202020202020202020202020202020202020202020202'
+		connector = FakeConnector(
+			1,
+			{0: [self._create_block(1)]},
+			statement_pages={
+				statement_path(1, 1): {
+					'data': [create_statement_item(
+						1,
+						100,
+						ReceiptType.MOSAIC_RENTAL_FEE.value,
+						senderAddress=RECIPIENT_ADDRESS,
+						recipientAddress=recipient_address)]
+				}
+			})
+
+		# Act:
+		self._sync_with_connector(connector)
+
+		# Assert:
+		self.assertEqual(
+			sorted([
+				self._address_text(BENEFICIARY_ADDRESS),
+				self._address_text(RECIPIENT_ADDRESS),
+				self._address_text(recipient_address)
+			]),
+			sorted(connector.post_payloads[0]['addresses']))
+
+	def test_refresh_dirty_accounts_for_batch_deduplicates_receipt_target_address_already_dirty_from_beneficiary(self):
+		# Arrange:
+		beneficiary_address_text = self._address_text()
+		connector = FakeConnector(
+			1,
+			{0: [self._create_block(1)]},
+			statement_pages={
+				statement_path(1, 1): {
+					'data': [create_statement_item(
+						1,
+						100,
+						ReceiptType.HARVEST_FEE.value,
+						targetAddress=BENEFICIARY_ADDRESS)]
+				}
+			})
+
+		# Act:
+		self._sync_with_connector(connector)
+
+		# Assert:
+		self.assertEqual(1, connector.paths.count('accounts'))
+		self.assertEqual([{'addresses': [beneficiary_address_text]}], connector.post_payloads)
+
+	def test_refresh_dirty_accounts_for_batch_ignores_receipts_without_address_fields(self):
+		# Arrange:
+		beneficiary_address_text = self._address_text()
+		connector = FakeConnector(
+			1,
+			{0: [self._create_block(1)]},
+			statement_pages={
+				statement_path(1, 1): {'data': [create_statement_item(1, 100)]}
+			})
+
+		# Act:
+		self._sync_with_connector(connector)
+
+		# Assert:
+		self.assertEqual(1, connector.paths.count('accounts'))
+		self.assertEqual([{'addresses': [beneficiary_address_text]}], connector.post_payloads)
 
 	def test_refresh_dirty_accounts_for_batch_chunks_account_fetches(self):
 		# Arrange:
