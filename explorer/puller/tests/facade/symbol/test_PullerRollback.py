@@ -2,6 +2,8 @@
 import asyncio
 
 from puller.facade.SymbolPuller import SymbolRollbackError
+from puller.model.symbol.Namespace import create_alias_name_rows, create_namespace_row
+from tests.test.SymbolNamespaceTestUtils import NAMESPACE_ROOT_ID, NAMESPACE_SUB_ID, create_namespace_item
 
 from ...test.SymbolTestConstants import RECIPIENT_ADDRESS, SIGNER_ADDRESS
 from ...test.SymbolTransactionTestUtils import create_transaction_entry
@@ -20,6 +22,71 @@ from .puller_test_utils import (
 
 
 class SymbolPullerRollbackTest(SymbolPullerTestBase):
+	def _upsert_namespace(self, namespace_item, names_by_id, observed_height):
+		namespace_row = create_namespace_row(namespace_item, names_by_id, observed_height)
+		self.puller.symbol_db.upsert_namespace(
+			namespace_row,
+			create_alias_name_rows(namespace_row, self.puller.symbol_facade.network))
+
+	def _fetch_namespace_rows(self):
+		cursor = self.puller.symbol_db.connection.cursor()
+		cursor.execute(
+			'''
+			SELECT namespace_id, full_name, updated_at_height
+			FROM symbol_namespaces
+			ORDER BY namespace_id
+			''')
+		namespace_rows = cursor.fetchall()
+		cursor.execute(
+			'''
+			SELECT artifact_type, artifact_id, name, updated_at_height
+			FROM symbol_alias_names
+			ORDER BY artifact_type, artifact_id, name
+			''')
+
+		return namespace_rows, cursor.fetchall()
+
+	def test_sync_block_headers_refreshes_namespace_state_at_or_above_rollback_height(self):
+		# Arrange:
+		self._seed_blocks(
+			self.puller.symbol_db,
+			[1, 2, 3],
+			{2: b'local mismatch'.hex()})
+		self.puller.symbol_db.upsert_sync_state(create_sync_state())
+		self._upsert_namespace(
+			create_namespace_item(namespace_id='B95F1F8A96159516', root_id='B95F1F8A96159516'),
+			{'B95F1F8A96159516': 'before-fork'},
+			1)
+		self._upsert_namespace(create_namespace_item(), {NAMESPACE_ROOT_ID: 'root'}, 2)
+		self._upsert_namespace(
+			create_namespace_item(NAMESPACE_SUB_ID, NAMESPACE_ROOT_ID, NAMESPACE_ROOT_ID),
+			{NAMESPACE_ROOT_ID: 'root', NAMESPACE_SUB_ID: 'orphaned'},
+			3)
+		connector = FakeConnector(
+			3,
+			{1: [create_node_block(2), create_node_block(3)]},
+			{2: create_node_block(2)},
+			namespace_by_id={NAMESPACE_ROOT_ID: create_namespace_item()},
+			namespace_names={NAMESPACE_ROOT_ID: 'root'})
+		set_symbol_connector(self.puller, connector)
+
+		# Act:
+		asyncio.run(self.puller.sync_block_headers())
+
+		# Assert:
+		namespace_rows, alias_rows = self._fetch_namespace_rows()
+		self.assertEqual([
+			(NAMESPACE_ROOT_ID, 'root', 1),
+			('B95F1F8A96159516', 'before-fork', 1)
+		], namespace_rows)
+		self.assertEqual([
+			('namespace', NAMESPACE_ROOT_ID, 'root', 1),
+			('namespace', 'B95F1F8A96159516', 'before-fork', 1)
+		], alias_rows)
+		self.assertEqual(1, connector.paths.count(f'namespaces/{NAMESPACE_ROOT_ID}'))
+		self.assertEqual(1, connector.paths.count(f'namespaces/{NAMESPACE_SUB_ID}'))
+		self.assertEqual(1, connector.paths.count('namespaces/names'))
+
 	@staticmethod
 	def _fetch_transaction_rows(database):
 		cursor = database.connection.cursor()

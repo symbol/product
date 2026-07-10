@@ -191,6 +191,30 @@ ACCOUNT_REFRESH_INDEXES = [
 	'CREATE INDEX IF NOT EXISTS idx_symbol_account_list_ranks_address '
 	'ON symbol_account_list_ranks(refresh_run_id, rank_scope, address)'
 ]
+SYMBOL_NAMESPACE_DEFINITIONS = [
+	'namespace_id varchar(16) PRIMARY KEY',
+	'parent_id varchar(16)',
+	'root_id varchar(16) NOT NULL',
+	'name varchar',
+	'full_name varchar UNIQUE',
+	'depth int NOT NULL',
+	'registration_type int NOT NULL',
+	'owner_address bytea NOT NULL',
+	'start_height bigint NOT NULL',
+	'end_height bigint',
+	'alias_type int NOT NULL',
+	'alias_mosaic_id varchar(16)',
+	'alias_address bytea',
+	'raw_payload jsonb NOT NULL',
+	'updated_at_height bigint NOT NULL'
+]
+SYMBOL_ALIAS_NAME_DEFINITIONS = [
+	'artifact_type varchar NOT NULL',
+	'artifact_id varchar NOT NULL',
+	'name varchar NOT NULL',
+	'updated_at_height bigint NOT NULL',
+	'UNIQUE (artifact_type, artifact_id, name)'
+]
 SYMBOL_TRANSACTION_DEFINITIONS = [
 	'id bigserial PRIMARY KEY',
 	'hash bytea UNIQUE',
@@ -312,6 +336,8 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 			cursor.execute(index_sql)
 		for index_sql in ACCOUNT_REFRESH_INDEXES:
 			cursor.execute(index_sql)
+		_create_table(cursor, 'symbol_namespaces', SYMBOL_NAMESPACE_DEFINITIONS)
+		_create_table(cursor, 'symbol_alias_names', SYMBOL_ALIAS_NAME_DEFINITIONS)
 		cursor.execute('CREATE SEQUENCE IF NOT EXISTS symbol_transaction_list_sequence_seq')
 		_create_table(cursor, 'symbol_transactions', SYMBOL_TRANSACTION_DEFINITIONS)
 		_create_table(cursor, 'symbol_transaction_mosaics', SYMBOL_TRANSACTION_MOSAIC_DEFINITIONS)
@@ -363,6 +389,25 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 			ON symbol_transaction_addresses(address, height DESC, transaction_id)
 		''')
 		cursor.execute('CREATE INDEX IF NOT EXISTS idx_symbol_transaction_addresses_height ON symbol_transaction_addresses(height)')
+		cursor.execute(
+			'CREATE INDEX IF NOT EXISTS idx_symbol_namespaces_registration_height '
+			'ON symbol_namespaces(start_height DESC, namespace_id)')
+		cursor.execute('CREATE INDEX IF NOT EXISTS idx_symbol_namespaces_owner_height ON symbol_namespaces(owner_address, start_height DESC)')
+		cursor.execute('CREATE INDEX IF NOT EXISTS idx_symbol_namespaces_alias_height ON symbol_namespaces(alias_type, start_height DESC)')
+		cursor.execute(
+			'CREATE INDEX IF NOT EXISTS idx_symbol_namespaces_alias_registration_height '
+			'ON symbol_namespaces(alias_type, registration_type, start_height DESC)')
+		cursor.execute('CREATE INDEX IF NOT EXISTS idx_symbol_namespaces_parent ON symbol_namespaces(parent_id)')
+		cursor.execute('CREATE INDEX IF NOT EXISTS idx_symbol_namespaces_root ON symbol_namespaces(root_id)')
+		cursor.execute('CREATE INDEX IF NOT EXISTS idx_symbol_namespaces_name ON symbol_namespaces(name)')
+		cursor.execute('CREATE INDEX IF NOT EXISTS idx_symbol_namespaces_end_height ON symbol_namespaces(end_height)')
+		cursor.execute('CREATE INDEX IF NOT EXISTS idx_symbol_namespaces_registration ON symbol_namespaces(registration_type)')
+		cursor.execute('CREATE INDEX IF NOT EXISTS idx_symbol_namespaces_alias_mosaic ON symbol_namespaces(alias_mosaic_id)')
+		cursor.execute('CREATE INDEX IF NOT EXISTS idx_symbol_namespaces_alias_address ON symbol_namespaces(alias_address)')
+		cursor.execute('CREATE INDEX IF NOT EXISTS idx_symbol_namespaces_updated_height ON symbol_namespaces(updated_at_height)')
+		cursor.execute('CREATE INDEX IF NOT EXISTS idx_symbol_alias_names_artifact_id ON symbol_alias_names(artifact_id)')
+		cursor.execute('CREATE INDEX IF NOT EXISTS idx_symbol_alias_names_name ON symbol_alias_names(name)')
+		cursor.execute('CREATE INDEX IF NOT EXISTS idx_symbol_alias_names_updated_height ON symbol_alias_names(updated_at_height)')
 		for index_sql in SYMBOL_RECEIPT_INDEXES:
 			cursor.execute(index_sql)
 		self.connection.commit()
@@ -491,6 +536,62 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 				(cutoff_timestamp,))
 
 			return {bytes(row[0]) for row in cursor.fetchall()}
+
+	def upsert_namespace(self, namespace_row, alias_name_rows):
+		"""Upserts one namespace and replaces the alias-name rows derived from it."""
+
+		cursor = self.connection.cursor()
+		cursor.execute(
+			'''
+			INSERT INTO symbol_namespaces (
+				namespace_id, parent_id, root_id, name, full_name, depth, registration_type, owner_address,
+				start_height, end_height, alias_type, alias_mosaic_id, alias_address, raw_payload, updated_at_height
+			)
+			VALUES (
+				%(namespace_id)s, %(parent_id)s, %(root_id)s, %(name)s, %(full_name)s, %(depth)s, %(registration_type)s,
+				%(owner_address)s, %(start_height)s, %(end_height)s, %(alias_type)s, %(alias_mosaic_id)s, %(alias_address)s,
+				%(raw_payload)s, %(updated_at_height)s
+			)
+			ON CONFLICT (namespace_id) DO UPDATE SET
+				parent_id = EXCLUDED.parent_id, root_id = EXCLUDED.root_id, name = EXCLUDED.name, full_name = EXCLUDED.full_name,
+				depth = EXCLUDED.depth, registration_type = EXCLUDED.registration_type, owner_address = EXCLUDED.owner_address,
+				start_height = EXCLUDED.start_height, end_height = EXCLUDED.end_height, alias_type = EXCLUDED.alias_type,
+				alias_mosaic_id = EXCLUDED.alias_mosaic_id, alias_address = EXCLUDED.alias_address,
+				raw_payload = EXCLUDED.raw_payload, updated_at_height = EXCLUDED.updated_at_height
+			''',
+			{**namespace_row, 'raw_payload': Json(namespace_row['raw_payload'])})
+		cursor.execute('DELETE FROM symbol_alias_names WHERE name = %s', (namespace_row['full_name'],))
+		for alias_name_row in alias_name_rows:
+			cursor.execute(
+				'''
+				INSERT INTO symbol_alias_names (artifact_type, artifact_id, name, updated_at_height)
+				VALUES (%(artifact_type)s, %(artifact_id)s, %(name)s, %(updated_at_height)s)
+				''',
+				alias_name_row)
+		self.connection.commit()
+
+	def delete_namespace(self, namespace_id):
+		"""Deletes one namespace and its derived alias-name rows when it exists."""
+
+		cursor = self.connection.cursor()
+		cursor.execute('SELECT full_name FROM symbol_namespaces WHERE namespace_id = %s', (namespace_id,))
+		result = cursor.fetchone()
+		if not result:
+			return
+
+		cursor.execute('DELETE FROM symbol_alias_names WHERE name = %s', (result[0],))
+		cursor.execute('DELETE FROM symbol_namespaces WHERE namespace_id = %s', (namespace_id,))
+		self.connection.commit()
+
+	def get_namespace_ids_updated_from_height(self, height):  # pylint: disable=invalid-name
+		"""Gets namespace ids whose current state was observed at or after a height."""
+
+		cursor = self.connection.cursor()
+		cursor.execute(
+			'SELECT namespace_id FROM symbol_namespaces WHERE updated_at_height >= %s ORDER BY namespace_id',
+			(height,))
+
+		return [row[0] for row in cursor.fetchall()]
 
 	def upsert_account_current_state(
 		self,

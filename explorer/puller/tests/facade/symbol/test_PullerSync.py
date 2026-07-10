@@ -1,12 +1,13 @@
 import asyncio
 from unittest.mock import AsyncMock
 
-from symbolchain.sc import ReceiptType
+from symbolchain.sc import ReceiptType, TransactionType
 from symbollightapi.model.Exceptions import NodeException
 
 from puller.facade.SymbolPuller import BLOCK_PAGE_FETCH_CONCURRENCY, MAX_PAGE_SIZE
 from puller.model.symbol.Block import create_block_row
 from puller.model.symbol.Receipt import create_receipt_rows
+from tests.test.SymbolNamespaceTestUtils import NAMESPACE_ROOT_ID, create_namespace_item
 
 from .puller_test_utils import (
 	NATIVE_MOSAIC_ID,
@@ -15,6 +16,7 @@ from .puller_test_utils import (
 	SymbolPullerTestBase,
 	create_network_properties,
 	create_node_block,
+	create_node_transaction,
 	create_statement_item,
 	create_sync_state,
 	set_symbol_connector,
@@ -25,6 +27,128 @@ from .puller_test_utils import (
 
 
 class SymbolPullerSyncTest(SymbolPullerTestBase):
+	@staticmethod
+	def _create_namespace_batch_connector():
+		return FakeConnector(
+			1,
+			{0: [create_node_block(1)]},
+			transactions_by_path={
+				transaction_path(1, 1): {
+					'data': [
+						create_node_transaction(
+							1,
+							transaction_hash='A' * 64,
+							transaction_id='namespace-registration',
+							type=TransactionType.NAMESPACE_REGISTRATION.value,
+							id=NAMESPACE_ROOT_ID,
+							name='root',
+							registrationType=0),
+						create_node_transaction(
+							1,
+							transaction_hash='B' * 64,
+							transaction_id='mosaic-alias',
+							type=TransactionType.MOSAIC_ALIAS.value,
+							namespaceId=NAMESPACE_ROOT_ID,
+							mosaicId=NATIVE_MOSAIC_ID,
+							aliasAction=1)
+					]
+				}
+			},
+			namespace_by_id={
+				NAMESPACE_ROOT_ID: create_namespace_item(alias={'type': 1, 'mosaicId': NATIVE_MOSAIC_ID})
+			},
+			namespace_names={NAMESPACE_ROOT_ID: 'root'})
+
+	def _fetch_namespace_state(self):
+		cursor = self.puller.symbol_db.connection.cursor()
+		cursor.execute(
+			'''
+			SELECT namespace_id, parent_id, root_id, name, full_name, alias_type, alias_mosaic_id, updated_at_height
+			FROM symbol_namespaces
+			ORDER BY namespace_id
+			''')
+		namespace_rows = cursor.fetchall()
+		cursor.execute(
+			'''
+			SELECT artifact_type, artifact_id, name, updated_at_height
+			FROM symbol_alias_names
+			ORDER BY artifact_type, artifact_id, name
+			''')
+
+		return namespace_rows, cursor.fetchall()
+
+	def test_sync_block_headers_persists_dirty_namespace_state_after_registration_and_alias_transactions(self):
+		# Arrange:
+		connector = self._create_namespace_batch_connector()
+
+		# Act:
+		self._sync_with_connector(connector)
+
+		# Assert:
+		namespace_rows, alias_rows = self._fetch_namespace_state()
+		self.assertEqual([
+			(NAMESPACE_ROOT_ID, None, NAMESPACE_ROOT_ID, 'root', 'root', 1, NATIVE_MOSAIC_ID, 1)
+		], namespace_rows)
+		self.assertEqual([
+			('mosaic', NATIVE_MOSAIC_ID, 'root', 1),
+			('namespace', NAMESPACE_ROOT_ID, 'root', 1)
+		], alias_rows)
+		self.assertEqual(1, connector.paths.count(f'namespaces/{NAMESPACE_ROOT_ID}'))
+		self.assertEqual(1, connector.paths.count('namespaces/names'))
+		self.assertEqual([
+			{'addresses': [self._beneficiary_address_text()]},
+			{'namespaceIds': [NAMESPACE_ROOT_ID]}
+		], connector.post_payloads)
+
+	def test_sync_block_headers_converges_namespace_state_when_restarted_from_existing_blocks(self):
+		# Arrange:
+		connector = self._create_namespace_batch_connector()
+		self._sync_with_connector(connector)
+		first_namespace_state = self._fetch_namespace_state()
+		cursor = self.puller.symbol_db.connection.cursor()
+		cursor.execute('DELETE FROM symbol_sync_state')
+		self.puller.symbol_db.connection.commit()
+
+		# Act:
+		self._sync_with_connector(connector)
+
+		# Assert:
+		self.assertEqual(first_namespace_state, self._fetch_namespace_state())
+		self.assertEqual(2, connector.paths.count(f'namespaces/{NAMESPACE_ROOT_ID}'))
+		self.assertEqual(2, connector.paths.count('namespaces/names'))
+
+	def test_sync_block_headers_does_not_write_batch_state_when_namespace_fetch_fails(self):
+		# Arrange:
+		connector = FakeConnector(
+			1,
+			{0: [create_node_block(1)]},
+			transactions_by_path={
+				transaction_path(1, 1): {
+					'data': [create_node_transaction(
+						1,
+						type=TransactionType.NAMESPACE_REGISTRATION.value,
+						id=NAMESPACE_ROOT_ID,
+						name='root',
+						registrationType=0)]
+				}
+			},
+			namespace_by_id={NAMESPACE_ROOT_ID: RuntimeError('namespace fetch failed')})
+
+		# Act:
+		with self.assertRaisesRegex(RuntimeError, 'namespace fetch failed'):
+			self._sync_with_connector(connector)
+
+		# Assert:
+		cursor = self.puller.symbol_db.connection.cursor()
+		cursor.execute('SELECT COUNT(*) FROM symbol_accounts')
+		account_count = cursor.fetchone()[0]
+		cursor.execute('SELECT COUNT(*) FROM symbol_namespaces')
+		namespace_count = cursor.fetchone()[0]
+		self.assertEqual([], self._fetch_block_heights(self.puller.symbol_db))
+		self.assertEqual(0, account_count)
+		self.assertEqual(0, namespace_count)
+		self.assertIsNone(self.puller.symbol_db.get_sync_state())
+
 	def _assert_sync_request_counts(self, connector, block_page_count, batch_count):
 		# Assert:
 		block_paths = [

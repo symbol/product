@@ -326,8 +326,10 @@ class FakeConnector:  # pylint: disable=too-many-instance-attributes
 		multisig_by_address=None,
 		account_pages=None,
 		address_resolutions_by_height=None,
-		mosaic_resolutions_by_height=None
-	):  # pylint: disable=too-many-arguments,too-many-positional-arguments
+		mosaic_resolutions_by_height=None,
+		namespace_by_id=None,
+		namespace_names=None
+		):  # pylint: disable=too-many-arguments,too-many-positional-arguments
 		self.chain_height = chain_height
 		self.pages = pages
 		self.block_by_height = block_by_height or {}
@@ -339,6 +341,8 @@ class FakeConnector:  # pylint: disable=too-many-instance-attributes
 		self.account_pages = account_pages or {}
 		self.address_resolutions_by_height = address_resolutions_by_height or {}
 		self.mosaic_resolutions_by_height = mosaic_resolutions_by_height or {}
+		self.namespace_by_id = namespace_by_id or {}
+		self.namespace_names = namespace_names or {}
 		self.paths = []
 		self.post_payloads_list = []
 
@@ -388,6 +392,16 @@ class FakeConnector:  # pylint: disable=too-many-instance-attributes
 				'data': items[page_start:page_start + MAX_PAGE_SIZE],
 				'pagination': {'pageNumber': page_number, 'pageSize': MAX_PAGE_SIZE}
 			}
+		if url_path.startswith('namespaces/'):
+			namespace_id = url_path.removeprefix('namespaces/')
+			response = self.namespace_by_id.get(namespace_id, {
+				'code': 'ResourceNotFound',
+				'message': f'no resource exists with id {namespace_id}'
+			})
+			if isinstance(response, Exception):
+				raise response
+
+			return response
 		if url_path.startswith('account/') and url_path.endswith('/multisig'):
 			address_text = url_path.removeprefix('account/').removesuffix('/multisig')
 			return self.multisig_by_address.get(address_text, {
@@ -416,6 +430,11 @@ class FakeConnector:  # pylint: disable=too-many-instance-attributes
 					address_text,
 					create_account_item(address_hex=Network.TESTNET.address_class(address_text).bytes.hex().upper()))
 				for address_text in request_payload['addresses']
+			]
+		if 'namespaces/names' == url_path:
+			return [
+				{'id': namespace_id, 'name': self.namespace_names[namespace_id]}
+				for namespace_id in request_payload['namespaceIds']
 			]
 
 		raise KeyError(url_path)

@@ -3,9 +3,17 @@ import tempfile
 from unittest import TestCase
 from unittest.mock import AsyncMock, MagicMock, patch
 
+from symbolchain.sc import TransactionType
 from symbollightapi.model.Exceptions import NodeException
 
 from puller.facade.SymbolPuller import SymbolPuller
+from puller.model.symbol.Receipt import NAMESPACE_DELETED_RECEIPT_TYPE, NAMESPACE_EXPIRED_RECEIPT_TYPE
+from tests.test.SymbolNamespaceTestUtils import (
+	NAMESPACE_ROOT_ID,
+	NAMESPACE_SUB_ID,
+	create_expected_root_namespace_row,
+	create_namespace_item
+)
 
 from .puller_test_utils import NODE_URL, ResponseConnector, create_db_config, create_symbol_puller, temporary_symbol_puller
 
@@ -18,7 +26,167 @@ class CountingRateLimiter:
 		self.call_count += 1
 
 
-class SymbolPullerTest(TestCase):
+class SymbolPullerTest(TestCase):  # pylint: disable=too-many-public-methods
+	def test_fetch_dirty_namespaces_returns_ordered_upsert_and_delete_entries(self):
+		# Arrange:
+		connector = MagicMock()
+		connector.get = AsyncMock(side_effect=[
+			{'code': 'ResourceNotFound', 'message': 'no resource exists with id 0000000000000001'},
+			create_namespace_item()
+		])
+		connector.post = AsyncMock(return_value=[
+			{'id': NAMESPACE_ROOT_ID, 'name': 'root'},
+			{'id': NAMESPACE_ROOT_ID, 'name': 'root'}
+		])
+		with temporary_symbol_puller(connector=connector) as puller:
+			# Act:
+			entries = asyncio.run(puller._fetch_dirty_namespaces(  # pylint: disable=protected-access
+				['0000000000000001', NAMESPACE_ROOT_ID],
+				123))
+
+		# Assert:
+		self.assertEqual([
+			{'namespace_id': '0000000000000001'},
+			{
+				'row': create_expected_root_namespace_row(
+					NAMESPACE_ROOT_ID,
+					'root',
+					'9889432DE263BB8FE88444A4DA28D3609BD8BB8FAE18AE95',
+					create_namespace_item(),
+					123),
+				'alias_rows': [{
+					'artifact_type': 'namespace',
+					'artifact_id': NAMESPACE_ROOT_ID,
+					'name': 'root',
+					'updated_at_height': 123
+				}]
+			}
+		], entries)
+		self.assertEqual(2, connector.get.await_count)
+		connector.post.assert_awaited_once_with('namespaces/names', {'namespaceIds': [NAMESPACE_ROOT_ID]}, None, True)
+
+	def test_fetch_dirty_namespaces_makes_no_node_request_when_namespace_ids_are_empty(self):
+		# Arrange:
+		connector = MagicMock()
+		connector.get = AsyncMock()
+		connector.post = AsyncMock()
+		with temporary_symbol_puller(connector=connector) as puller:
+			# Act:
+			entries = asyncio.run(puller._fetch_dirty_namespaces([], 123))  # pylint: disable=protected-access
+
+		# Assert:
+		self.assertEqual([], entries)
+		self.assertEqual(0, connector.get.await_count)
+		self.assertEqual(0, connector.post.await_count)
+
+	def test_fetch_dirty_namespaces_chunks_unique_level_ids_when_resolving_names(self):
+		# Arrange:
+		namespace_ids = [f'{index:016X}' for index in range(1, 102)]
+		connector = MagicMock()
+		connector.get = AsyncMock(side_effect=[
+			create_namespace_item(namespace_id=namespace_id, root_id=namespace_id)
+			for namespace_id in namespace_ids
+		])
+
+		async def resolve_names(_, request_payload, *__):
+			return [{'id': namespace_id, 'name': f'name-{namespace_id}'} for namespace_id in request_payload['namespaceIds']]
+
+		connector.post = AsyncMock(side_effect=resolve_names)
+		with temporary_symbol_puller(connector=connector) as puller:
+			# Act:
+			entries = asyncio.run(puller._fetch_dirty_namespaces(namespace_ids, 123))  # pylint: disable=protected-access
+
+		# Assert:
+		self.assertEqual(namespace_ids, [entry['row']['namespace_id'] for entry in entries])
+		self.assertEqual(101, connector.get.await_count)
+		self.assertEqual([
+			list(namespace_ids[:100]),
+			list(namespace_ids[100:])
+		], [call.args[1]['namespaceIds'] for call in connector.post.await_args_list])
+
+	def test_fetch_dirty_namespaces_raises_when_names_response_is_malformed(self):
+		# Arrange:
+		connector = MagicMock()
+		connector.get = AsyncMock(return_value=create_namespace_item())
+		connector.post = AsyncMock(return_value={'data': []})
+		with temporary_symbol_puller(connector=connector) as puller:
+			# Act / Assert:
+			with self.assertRaisesRegex(ValueError, 'Malformed Symbol namespace names response'):
+				asyncio.run(puller._fetch_dirty_namespaces([NAMESPACE_ROOT_ID], 123))  # pylint: disable=protected-access
+
+		# Assert:
+		self.assertEqual(1, connector.get.await_count)
+		self.assertEqual(1, connector.post.await_count)
+
+	def test_fetch_dirty_namespaces_resolves_duplicate_ancestor_name_entries(self):
+		# Arrange:
+		connector = MagicMock()
+		connector.get = AsyncMock(return_value=create_namespace_item(
+			namespace_id=NAMESPACE_SUB_ID,
+			root_id=NAMESPACE_ROOT_ID,
+			parent_id=NAMESPACE_ROOT_ID))
+		connector.post = AsyncMock(return_value=[
+			{'id': NAMESPACE_ROOT_ID, 'name': 'root'},
+			{'id': NAMESPACE_SUB_ID, 'name': 'sub', 'parentId': NAMESPACE_ROOT_ID},
+			{'id': NAMESPACE_ROOT_ID, 'name': 'root'}
+		])
+		with temporary_symbol_puller(connector=connector) as puller:
+			# Act:
+			entries = asyncio.run(puller._fetch_dirty_namespaces([NAMESPACE_SUB_ID], 123))  # pylint: disable=protected-access
+
+		# Assert:
+		self.assertEqual('root.sub', entries[0]['row']['full_name'])
+		self.assertEqual('sub', entries[0]['row']['name'])
+		self.assertEqual([
+			{'namespaceIds': [NAMESPACE_ROOT_ID, NAMESPACE_SUB_ID]}
+		], [call.args[1] for call in connector.post.await_args_list])
+
+	def test_collect_dirty_namespace_ids_for_batch_returns_sorted_unique_namespace_ids_from_supported_artifacts(self):
+		# Arrange:
+		transaction_rows_by_height = {
+			1: [
+				{'type': TransactionType.NAMESPACE_REGISTRATION.value, 'body': {'id': '0000000000000002'}},
+				{'type': TransactionType.ADDRESS_ALIAS.value, 'body': {'namespaceId': '0000000000000003', 'aliasAction': 1}},
+				{'type': TransactionType.MOSAIC_ALIAS.value, 'body': {'namespaceId': '0000000000000003', 'aliasAction': 0}},
+				{'type': TransactionType.TRANSFER.value, 'body': {'id': 'ignored'}}
+			],
+			2: [
+				{'type': TransactionType.NAMESPACE_REGISTRATION.value, 'is_embedded': True, 'body': {'id': '0000000000000001'}}
+			]
+		}
+		receipt_rows_by_height = {
+			1: [
+				{'receipt_type': NAMESPACE_EXPIRED_RECEIPT_TYPE, 'artifact_id': '0000000000000004'},
+				{'receipt_type': NAMESPACE_DELETED_RECEIPT_TYPE, 'artifact_id': '0000000000000001'},
+				{'receipt_type': 'mosaicExpired', 'artifact_id': 'ignored'}
+			]
+		}
+
+		# Act:
+		namespace_ids = SymbolPuller._collect_dirty_namespace_ids_for_batch(  # pylint: disable=protected-access
+			transaction_rows_by_height,
+			receipt_rows_by_height)
+
+		# Assert:
+		self.assertEqual([
+			'0000000000000001',
+			'0000000000000002',
+			'0000000000000003',
+			'0000000000000004'
+		], namespace_ids)
+
+	def test_collect_dirty_namespace_ids_for_batch_returns_empty_list_when_batch_contains_no_namespace_artifacts(self):
+		# Arrange:
+		transaction_rows_by_height = {1: [{'type': TransactionType.TRANSFER.value, 'body': {}}]}
+		receipt_rows_by_height = {1: [{'receipt_type': 'mosaicExpired', 'artifact_id': '0000000000000001'}]}
+
+		# Act:
+		namespace_ids = SymbolPuller._collect_dirty_namespace_ids_for_batch(  # pylint: disable=protected-access
+			transaction_rows_by_height,
+			receipt_rows_by_height)
+
+		# Assert:
+		self.assertEqual([], namespace_ids)
 
 	def test_create_default_puller_instance(self):
 		# Arrange / Act:

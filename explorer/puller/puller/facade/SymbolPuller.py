@@ -7,6 +7,7 @@ from urllib.parse import urlparse
 
 from common.symbol.NodeConfiguration import SymbolNodeConfiguration
 from symbolchain.facade.SymbolFacade import SymbolFacade
+from symbolchain.sc import TransactionType
 from symbolchain.symbol.Network import Address, Network
 from symbollightapi.connector.SymbolConnector import SymbolConnector
 from symbollightapi.model.Exceptions import NodeException
@@ -16,7 +17,13 @@ from puller.db.SymbolDatabase import SymbolDatabase
 from puller.facade.RequestRateLimiter import RequestRateLimiter
 from puller.model.symbol.Account import HARVESTING_ACTIVE_WINDOW_DAYS, create_account_row, create_multisig_row
 from puller.model.symbol.Block import create_block_row
-from puller.model.symbol.Receipt import INFLATION_RECEIPT_TYPE, create_receipt_rows
+from puller.model.symbol.Namespace import create_alias_name_rows, create_namespace_row
+from puller.model.symbol.Receipt import (
+	INFLATION_RECEIPT_TYPE,
+	NAMESPACE_DELETED_RECEIPT_TYPE,
+	NAMESPACE_EXPIRED_RECEIPT_TYPE,
+	create_receipt_rows
+)
 from puller.model.symbol.Resolution import is_alias_mosaic_id, select_resolution_entry
 from puller.model.symbol.Transaction import create_transaction_row, unique_address_rows
 
@@ -164,7 +171,9 @@ class SymbolPuller:
 			finalized_hash = self.symbol_db.get_block_hash(finalized_height)
 
 		start_height = await self._repair_unfinalized_rollback(sync_state, finalized_height, finalized_hash)
-		if not start_height:
+		if start_height:
+			await self._refresh_namespaces_updated_from_height(start_height)
+		else:
 			start_height = (sync_state['last_synced_height'] + 1) if sync_state and sync_state['last_synced_height'] else 1
 
 		last_synced_height, last_synced_block_hash = await self._sync_block_pages(
@@ -314,16 +323,16 @@ class SymbolPuller:
 				last_synced_block_hash = last_row['hash']
 
 				if len(blocks) < MAX_PAGE_SIZE:
-					await self._sync_block_batch_with_dirty_accounts(
+					await self._sync_block_batch_with_dirty_state(
 						batch_rows, epoch_adjustment_seconds, native_mosaic_info)
 					return last_synced_height, last_synced_block_hash
 
-			await self._sync_block_batch_with_dirty_accounts(
+			await self._sync_block_batch_with_dirty_state(
 				batch_rows, epoch_adjustment_seconds, native_mosaic_info)
 
 		return last_synced_height, last_synced_block_hash
 
-	async def _sync_block_batch_with_dirty_accounts(
+	async def _sync_block_batch_with_dirty_state(
 		self,
 		batch_rows,
 		epoch_adjustment_seconds,
@@ -345,8 +354,11 @@ class SymbolPuller:
 			dirty_addresses,
 			observed_height,
 			native_mosaic_info)
+		dirty_namespace_ids = self._collect_dirty_namespace_ids_for_batch(transaction_rows_by_height, receipt_rows_by_height)
+		dirty_namespace_entries = await self._fetch_dirty_namespaces(dirty_namespace_ids, observed_height)
 		self._sync_block_batch(batch_rows, transaction_rows_by_height, receipt_rows_by_height)
 		self._write_dirty_accounts_for_batch(dirty_account_rows)
+		self._write_dirty_namespaces(dirty_namespace_entries)
 
 	def _sync_block_batch(self, batch_rows, transaction_rows_by_height, receipt_rows_by_height):
 		"""Writes previously-fetched block, transaction, and receipt rows for one batch.
@@ -645,6 +657,81 @@ class SymbolPuller:
 							}
 
 		return dirty_addresses
+
+	@staticmethod
+	def _collect_dirty_namespace_ids_for_batch(transaction_rows_by_height, receipt_rows_by_height):
+		"""Collects sorted namespace ids whose current state may have changed in a synced batch."""
+
+		dirty_namespace_ids = set()
+		for transaction_rows in transaction_rows_by_height.values():
+			for transaction_row in transaction_rows:
+				if TransactionType.NAMESPACE_REGISTRATION.value == transaction_row['type']:
+					dirty_namespace_ids.add(transaction_row['body']['id'])
+				elif transaction_row['type'] in (TransactionType.ADDRESS_ALIAS.value, TransactionType.MOSAIC_ALIAS.value):
+					dirty_namespace_ids.add(transaction_row['body']['namespaceId'])
+
+		for receipt_rows in receipt_rows_by_height.values():
+			for receipt_row in receipt_rows:
+				if receipt_row['receipt_type'] in (NAMESPACE_EXPIRED_RECEIPT_TYPE, NAMESPACE_DELETED_RECEIPT_TYPE):
+					dirty_namespace_ids.add(receipt_row['artifact_id'])
+
+		return sorted(dirty_namespace_ids)
+
+	async def _fetch_dirty_namespaces(self, namespace_ids, observed_height):
+		"""Fetches current namespace state and names for sorted dirty namespace ids."""
+
+		if not namespace_ids:
+			return []
+
+		found_items_by_namespace_id = {}
+		for namespace_id in namespace_ids:
+			item = await self.get_symbol_node(f'/namespaces/{namespace_id}', not_found_as_error=False)
+			if not _is_not_found_response(item):
+				found_items_by_namespace_id[namespace_id] = item
+
+		level_ids = sorted({
+			item['namespace'][f'level{level_index}']
+			for item in found_items_by_namespace_id.values()
+			for level_index in range(int(item['namespace']['depth']))
+		})
+		names_by_id = {}
+		for chunk_start in range(0, len(level_ids), MAX_PAGE_SIZE):
+			response = await self.post_symbol_node('/namespaces/names', {'namespaceIds': level_ids[chunk_start:chunk_start + MAX_PAGE_SIZE]})
+			if not isinstance(response, list):
+				raise ValueError('Malformed Symbol namespace names response')
+			for name_entry in response:
+				names_by_id[name_entry['id']] = name_entry['name']
+
+		entries = []
+		for namespace_id in namespace_ids:
+			if namespace_id not in found_items_by_namespace_id:
+				entries.append({'namespace_id': namespace_id})
+				continue
+
+			item = found_items_by_namespace_id[namespace_id]
+			row = create_namespace_row(item, names_by_id, observed_height)
+			entries.append({
+				'row': row,
+				'alias_rows': create_alias_name_rows(row, self.symbol_facade.network)
+			})
+
+		return entries
+
+	def _write_dirty_namespaces(self, entries):
+		"""Writes fetched namespace current-state changes after batch chain rows are persisted."""
+
+		for entry in entries:
+			if 'namespace_id' in entry:
+				self.symbol_db.delete_namespace(entry['namespace_id'])
+			else:
+				self.symbol_db.upsert_namespace(entry['row'], entry['alias_rows'])
+
+	async def _refresh_namespaces_updated_from_height(self, fork_height):
+		"""Refreshes namespace state observed on a rolled-back chain segment."""
+
+		namespace_ids = self.symbol_db.get_namespace_ids_updated_from_height(fork_height)
+		entries = await self._fetch_dirty_namespaces(namespace_ids, fork_height - 1)
+		self._write_dirty_namespaces(entries)
 
 	async def _fetch_dirty_accounts_for_batch(  # pylint: disable=too-many-locals
 		self,
