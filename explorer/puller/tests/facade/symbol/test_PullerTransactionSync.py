@@ -10,7 +10,6 @@ from .puller_test_utils import (
 	create_node_transaction,
 	create_sync_state,
 	set_symbol_connector,
-	statement_path,
 	transaction_path
 )
 

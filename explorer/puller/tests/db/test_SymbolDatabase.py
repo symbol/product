@@ -109,7 +109,6 @@ def _create_receipt(height, receipt_type='inflation', **overrides):
 	return receipt
 
 
-
 def _create_account_row(address_hex=ADDRESS1, observed_height=10, **item_overrides):
 	return create_account_row(
 		create_account_item(address_hex, **item_overrides),

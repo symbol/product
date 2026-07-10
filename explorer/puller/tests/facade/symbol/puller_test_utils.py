@@ -302,7 +302,7 @@ class PostPath(str):
 		return path
 
 
-class FakeConnector:
+class FakeConnector:  # pylint: disable=too-many-instance-attributes
 	def __init__(  # pylint: disable=too-many-arguments,too-many-positional-arguments
 		self,
 		chain_height,

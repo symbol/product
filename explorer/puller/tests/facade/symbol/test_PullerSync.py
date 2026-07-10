@@ -6,12 +6,14 @@ from symbollightapi.model.Exceptions import NodeException
 
 from puller.facade.SymbolPuller import BLOCK_PAGE_FETCH_CONCURRENCY, MAX_PAGE_SIZE
 from puller.model.symbol.Block import create_block_row
+from puller.model.symbol.Receipt import create_receipt_rows
 
 from .puller_test_utils import (
 	NATIVE_MOSAIC_ID,
 	FakeConnector,
 	ResponseConnector,
 	SymbolPullerTestBase,
+	create_network_properties,
 	create_node_block,
 	create_statement_item,
 	create_sync_state,
@@ -365,24 +367,19 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):
 		self.assertEqual([10], [row['amount'] for row in rows_by_height[1]])
 		self.assertEqual([20, 30], [row['amount'] for row in rows_by_height[2]])
 
-	def test_sync_block_batch_upserts_empty_heights_and_queries_batch_range(self):
+	def test_sync_block_batch_upserts_empty_heights_and_writes_previously_fetched_receipts(self):
 		# Arrange:
-		connector = ResponseConnector({
-			transaction_path(5, 7): {'data': []},
-			statement_path(5, 7): {'data': [create_statement_item(6, 600)]}
-		})
 		self._seed_blocks(self.puller.symbol_db, [5, 6, 7])
-		set_symbol_connector(self.puller, connector)
 		block_rows = [
 			create_block_row(create_node_block(height), 100, self.puller.symbol_facade.network)
 			for height in [5, 6, 7]
 		]
+		receipt_rows_by_height = {6: create_receipt_rows(create_statement_item(6, 600))}
 
 		# Act:
-		asyncio.run(self.puller._sync_block_batch(block_rows, 100))  # pylint: disable=protected-access
+		self.puller._sync_block_batch(block_rows, {}, receipt_rows_by_height)  # pylint: disable=protected-access
 
 		# Assert:
-		self.assertEqual([transaction_path(5, 7), statement_path(5, 7)], connector.paths)
 		self.assertEqual([
 			(6, 'inflation', 'inflation', 6, 0, '72C0212E67A08BCE', 600)
 		], self._fetch_receipts(self.puller.symbol_db))
@@ -402,7 +399,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):
 					'hash': f'{1:064X}'
 				}
 			},
-			'network/properties': {'network': {'epochAdjustment': '100s'}},
+			'network/properties': create_network_properties(),
 			'blocks?pageSize=100&offset=0&orderBy=height': {'data': [create_node_block(1)]},
 			transaction_path(1, 1): {'data': []},
 			statement_path(1, 1): {'pagination': {'pageNumber': 1}}
@@ -453,7 +450,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):
 					'hash': f'{1:064X}'
 				}
 			},
-			'network/properties': {'network': {'epochAdjustment': '100s'}},
+			'network/properties': create_network_properties(),
 			'blocks?pageSize=100&offset=0&orderBy=height': {'data': [create_node_block(1)]},
 			transaction_path(1, 1): {'data': []},
 			statement_path(1, 1): {
