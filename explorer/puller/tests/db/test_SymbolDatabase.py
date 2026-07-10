@@ -20,19 +20,22 @@ DatabaseConfig = namedtuple(
 
 def _create_block(height, block_hash=None, **overrides):
 	block_hash = block_hash or f'hash {height}'.encode('utf8')
-
-	block = {
-		'height': height,
-		'hash': block_hash,
-		'previous_hash': f'previous {height}'.encode('utf8'),
-		'timestamp': datetime.datetime(
+	timestamp = overrides.pop('timestamp', None)
+	if timestamp is None:
+		timestamp = datetime.datetime(
 			2026,
 			1,
 			1,
 			0,
 			height,
 			tzinfo=datetime.timezone.utc
-		),
+		)
+
+	block = {
+		'height': height,
+		'hash': block_hash,
+		'previous_hash': f'previous {height}'.encode('utf8'),
+		'timestamp': timestamp,
 		'network_timestamp': height * 1000,
 		'total_fee': height * 100,
 		'transactions_count': height,
@@ -383,7 +386,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			('previous_hash', 'bytea', 'NO', None),
 			('timestamp', 'timestamp', 'NO', None),
 			('network_timestamp', 'int8', 'NO', None),
-			('total_fee', 'int4', 'NO', None),
+			('total_fee', 'int8', 'NO', None),
 			('transactions_count', 'int4', 'NO', None),
 			('total_transactions_count', 'int4', 'NO', None),
 			('statements_count', 'int4', 'NO', None),
@@ -891,6 +894,31 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		self.assertEqual(19000235663367, result[2])
 		self.assertEqual(bytes.fromhex('86' * 32), bytes(result[3]))
 		self.assertEqual('nemesis', result[4])
+
+	def test_can_upsert_block_when_total_fee_exceeds_int4(self):
+		# Arrange:
+		database = self._create_database()
+		large_total_fee = 13199992608
+
+		# Act:
+		database.upsert_blocks([_create_block(
+			6224,
+			timestamp=datetime.datetime(2026, 1, 1, tzinfo=datetime.timezone.utc),
+			total_fee=large_total_fee
+		)])
+
+		# Assert:
+		cursor = database.connection.cursor()
+		cursor.execute(
+			'''
+			SELECT total_fee
+			FROM symbol_blocks
+			WHERE height = 6224
+			'''
+		)
+		result = cursor.fetchone()
+
+		self.assertEqual((large_total_fee,), result)
 
 	def test_can_update_existing_block(self):
 		# Arrange:
