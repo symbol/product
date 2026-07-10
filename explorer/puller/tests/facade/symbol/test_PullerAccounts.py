@@ -56,7 +56,7 @@ class MalformedAccountsConnector(FakeConnector):
 		return await super().get(url_path, *args)
 
 
-class SymbolPullerAccountsTest(SymbolPullerTestBase):
+class SymbolPullerAccountsTest(SymbolPullerTestBase):  # pylint: disable=too-many-public-methods
 	@staticmethod
 	def _address_text(address_hex=BENEFICIARY_ADDRESS):
 		return str(Address.from_decoded_address_hex_string(address_hex))
