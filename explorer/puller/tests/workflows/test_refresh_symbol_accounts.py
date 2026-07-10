@@ -1,12 +1,46 @@
 # pylint: disable=duplicate-code
 import asyncio
 import unittest
-from unittest.mock import AsyncMock, patch
+from unittest.mock import patch
 
 from common.symbol.NodeConfiguration import SymbolNodeConfigurationError
-from workflow_test_utils import create_symbol_facade_with_mock_db, parse_args_with_argv
+from workflow_test_utils import parse_args_with_argv
 
 from puller.workflows.refresh_symbol_accounts import _create_node_config, main, parse_args
+
+
+class RecordingSymbolDatabase:
+	def __init__(self):
+		self.create_tables_call_count = 0
+
+	def create_tables(self):
+		self.create_tables_call_count += 1
+
+
+class RecordingSymbolPuller:
+	def __init__(self, *args, **kwargs):
+		self.constructor_args = args
+		self.constructor_kwargs = kwargs
+		self.symbol_db = RecordingSymbolDatabase()
+		self.refresh_accounts_call_count = 0
+
+	def __enter__(self):
+		return self
+
+	def __exit__(self, *_):
+		return None
+
+	async def refresh_accounts(self):
+		self.refresh_accounts_call_count += 1
+
+
+class RecordingSymbolPullerFactory:
+	def __init__(self):
+		self.puller = None
+
+	def __call__(self, *args, **kwargs):
+		self.puller = RecordingSymbolPuller(*args, **kwargs)
+		return self.puller
 
 
 class RefreshSymbolAccountsTest(unittest.TestCase):
@@ -69,24 +103,22 @@ class RefreshSymbolAccountsTest(unittest.TestCase):
 
 	def test_main_creates_tables_and_refreshes_accounts(self):
 		# Arrange:
-		with patch('puller.workflows.refresh_symbol_accounts.SymbolPuller') as mock_symbol_puller:
-			mock_facade, mock_db = create_symbol_facade_with_mock_db(mock_symbol_puller)
-			mock_facade.refresh_accounts = AsyncMock()
-
-			with patch('sys.argv', [
-				'refresh_symbol_accounts.py',
-				'--symbol-node', 'http://localhost:7890',
-				'--network', 'testnet',
-				'--db-config', 'test_config.ini'
-			]), patch.dict('os.environ', {
-				'SYMBOL_NODE_ALLOWED_HOSTS': 'localhost:7890',
-				'SYMBOL_NODE_ALLOW_LOOPBACK': 'true',
-				'SYMBOL_NODE_ALLOW_PRIVATE': 'false',
-				'SYMBOL_NODE_REQUEST_TIMEOUT_SECONDS': '9'
-			}, clear=True):
-				# Act:
-				asyncio.run(main())
+		puller_factory = RecordingSymbolPullerFactory()
+		with patch('sys.argv', [
+			'refresh_symbol_accounts.py',
+			'--symbol-node', 'http://localhost:7890',
+			'--network', 'testnet',
+			'--db-config', 'test_config.ini'
+		]), patch.dict('os.environ', {
+			'SYMBOL_NODE_ALLOWED_HOSTS': 'localhost:7890',
+			'SYMBOL_NODE_ALLOW_LOOPBACK': 'true',
+			'SYMBOL_NODE_ALLOW_PRIVATE': 'false',
+			'SYMBOL_NODE_REQUEST_TIMEOUT_SECONDS': '9'
+		}, clear=True):
+			# Act:
+			asyncio.run(main(puller_factory))
 
 		# Assert:
-		self.assertEqual(1, mock_db.create_tables.call_count)
-		mock_facade.refresh_accounts.assert_awaited_once_with()
+		puller = puller_factory.puller
+		self.assertEqual(1, puller.symbol_db.create_tables_call_count)
+		self.assertEqual(1, puller.refresh_accounts_call_count)

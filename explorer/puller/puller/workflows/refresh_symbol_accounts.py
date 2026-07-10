@@ -29,12 +29,12 @@ def _create_node_config(symbol_node):
 	})
 
 
-async def main():
+async def main(symbol_puller_factory=SymbolPuller):
 	"""Refreshes Symbol account population using configured node and database settings."""
 
 	args = parse_args()
 	node_config = _create_node_config(args.symbol_node)
-	puller = SymbolPuller(args.symbol_node, args.db_config, args.network, node_config)
+	puller = symbol_puller_factory(args.symbol_node, args.db_config, args.network, node_config)
 
 	with puller:
 		puller.symbol_db.create_tables()
