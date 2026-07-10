@@ -175,7 +175,10 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):
 
 		# Assert:
 		self.assertEqual(1, connector.paths.count('accounts'))
-		self.assertEqual(1, connector.post_payloads[0]['addresses'].count(participant_address_text))
+		beneficiary_address_text = self._address_text(beneficiary_address)
+		self.assertEqual(
+			sorted([beneficiary_address_text, participant_address_text]),
+			sorted(connector.post_payloads[0]['addresses']))
 
 	def test_refresh_dirty_accounts_for_batch_chunks_account_fetches(self):
 		# Arrange:

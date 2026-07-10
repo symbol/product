@@ -1048,7 +1048,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 
 		self.assertEqual((200, Decimal('0.9'), True), cursor.fetchone())
 
-	def test_can_upsert_and_delete_multisig(self):
+	def test_can_upsert_multisig(self):
 		# Arrange:
 		database = self._create_database()
 		account_row, mosaic_rows = _create_account_row()
@@ -1088,10 +1088,26 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			[bytes(value) for value in result[3]]
 		))
 
+	def test_upsert_multisig_deletes_when_none(self):
+		# Arrange:
+		database = self._create_database()
+		account_row, mosaic_rows = _create_account_row()
+		database.upsert_account_current_state(account_row, mosaic_rows)
+		multisig_row = {
+			'address': bytes.fromhex(ADDRESS1),
+			'min_approval': 2,
+			'min_removal': 1,
+			'cosignatory_addresses': [bytes.fromhex('AA' * 24)],
+			'multisig_addresses': [bytes.fromhex('BB' * 24)],
+			'updated_at_height': 50
+		}
+		database.upsert_multisig(bytes.fromhex(ADDRESS1), multisig_row)
+
 		# Act:
 		database.upsert_multisig(bytes.fromhex(ADDRESS1), None)
 
 		# Assert:
+		cursor = database.connection.cursor()
 		cursor.execute('SELECT COUNT(*) FROM symbol_multisig WHERE address = %s', (bytes.fromhex(ADDRESS1),))
 
 		self.assertEqual((0,), cursor.fetchone())

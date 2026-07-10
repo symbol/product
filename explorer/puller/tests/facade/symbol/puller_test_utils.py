@@ -360,9 +360,6 @@ class FakeConnector:  # pylint: disable=too-many-instance-attributes
 			return response
 		if url_path.startswith('statements/transaction?'):
 			return self.statement_pages.get(url_path, {'data': []})
-		if url_path.startswith('accounts/'):
-			address_text = url_path.removeprefix('accounts/')
-			return self.account_by_address.get(address_text, create_account_item())
 		if url_path.startswith('account/') and url_path.endswith('/multisig'):
 			address_text = url_path.removeprefix('account/').removesuffix('/multisig')
 			return self.multisig_by_address.get(address_text, {
