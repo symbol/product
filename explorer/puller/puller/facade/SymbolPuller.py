@@ -11,6 +11,7 @@ from symbollightapi.model.Exceptions import NodeException
 from zenlog import log
 
 from puller.db.SymbolDatabase import SymbolDatabase
+from puller.facade.RequestRateLimiter import RequestRateLimiter
 from puller.model.symbol.Block import create_block_row
 from puller.model.symbol.Receipt import INFLATION_RECEIPT_TYPE, create_receipt_rows
 from puller.model.symbol.Transaction import create_transaction_row
@@ -18,6 +19,7 @@ from puller.model.symbol.Transaction import create_transaction_row
 DatabaseConfiguration = namedtuple('DatabaseConfiguration', ['database', 'user', 'password', 'host', 'port'])
 MAX_PAGE_SIZE = 100
 BLOCK_PAGE_FETCH_CONCURRENCY = 10
+DEFAULT_MAX_REQUESTS_PER_SECOND = 20
 
 
 def _get_symbol_network(network_type):
@@ -47,7 +49,9 @@ class SymbolPuller:
 		config_file,
 		network_type='mainnet',
 		node_config=None,
-		connector=None
+		connector=None,
+		max_requests_per_second=DEFAULT_MAX_REQUESTS_PER_SECOND,
+		rate_limiter=None
 	):
 		"""Creates a Symbol puller facade object."""
 
@@ -65,6 +69,7 @@ class SymbolPuller:
 		self._symbol_connector.timeout_seconds = self.node_config.timeout_seconds
 		self.symbol_facade = SymbolFacade(network)
 		self._retry_delay = 2
+		self._rate_limiter = rate_limiter or RequestRateLimiter(max_requests_per_second)
 
 	def __enter__(self):
 		self.symbol_db.__enter__()
@@ -108,6 +113,7 @@ class SymbolPuller:
 		"""Validates and dispatches a Symbol node GET request."""
 
 		normalized_path = self._validate_symbol_node_path(url_path)
+		await self._rate_limiter.wait_for_turn()
 		return await self._retry_operation(
 			lambda: self._symbol_connector.get(normalized_path, property_name, not_found_as_error),
 			f'fetching Symbol node path {normalized_path}',
@@ -118,6 +124,7 @@ class SymbolPuller:
 		"""Validates and dispatches a Symbol node POST request."""
 
 		normalized_path = self._validate_symbol_node_path(url_path)
+		await self._rate_limiter.wait_for_turn()
 		return await self._retry_operation(
 			lambda: self._symbol_connector.post(normalized_path, request_payload, property_name, not_found_as_error),
 			f'posting Symbol node path {normalized_path}',

@@ -10,6 +10,14 @@ from puller.facade.SymbolPuller import SymbolPuller
 from .puller_test_utils import NODE_URL, ResponseConnector, create_db_config, create_symbol_puller, temporary_symbol_puller
 
 
+class CountingRateLimiter:
+	def __init__(self):
+		self.call_count = 0
+
+	async def wait_for_turn(self):
+		self.call_count += 1
+
+
 class SymbolPullerTest(TestCase):
 
 	def test_create_default_puller_instance(self):
@@ -130,6 +138,29 @@ class SymbolPullerTest(TestCase):
 		# Assert:
 		self.assertEqual({'ok': True}, result)
 		connector.post.assert_awaited_once_with('path', {'payload': 1}, 'data', False)
+
+	def test_get_symbol_node_waits_for_rate_limiter_turn(self):
+		# Arrange:
+		connector = ResponseConnector({'chain/info': {'ok': True}})
+		rate_limiter = CountingRateLimiter()
+		with temporary_symbol_puller(connector=connector, rate_limiter=rate_limiter) as puller:
+			# Act:
+			asyncio.run(puller.get_symbol_node('/chain/info'))
+
+		# Assert:
+		self.assertEqual(1, rate_limiter.call_count)
+
+	def test_post_symbol_node_waits_for_rate_limiter_turn(self):
+		# Arrange:
+		connector = MagicMock()
+		connector.post = AsyncMock(return_value={'ok': True})
+		rate_limiter = CountingRateLimiter()
+		with temporary_symbol_puller(connector=connector, rate_limiter=rate_limiter) as puller:
+			# Act:
+			asyncio.run(puller.post_symbol_node('/transactions', {'payload': 'ABCD'}))
+
+		# Assert:
+		self.assertEqual(1, rate_limiter.call_count)
 
 	def test_post_symbol_node_retries_api_error_response(self):
 		# Arrange:

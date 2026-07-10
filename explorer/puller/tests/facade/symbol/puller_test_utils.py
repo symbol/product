@@ -43,12 +43,13 @@ def create_db_config(config_dir, db_config=None, include_symbol_db=True):
 	return db_config_path
 
 
-def create_symbol_puller(
+def create_symbol_puller(  # pylint: disable=too-many-arguments,too-many-positional-arguments
 	db_config_path,
 	network_type='mainnet',
 	request_timeout_seconds=10,
 	node_url=NODE_URL,
-	connector=None
+	connector=None,
+	rate_limiter=None
 ):
 	node_config = SymbolNodeConfiguration.from_url(
 		node_url,
@@ -61,7 +62,9 @@ def create_symbol_puller(
 		db_config_path,
 		network_type,
 		node_config,
-		connector
+		connector,
+		max_requests_per_second=1_000_000,
+		rate_limiter=rate_limiter
 	)
 	puller._retry_delay = 0  # pylint: disable=protected-access
 
@@ -72,7 +75,8 @@ def create_symbol_puller(
 def temporary_symbol_puller(
 	network_type='mainnet',
 	request_timeout_seconds=10,
-	connector=None
+	connector=None,
+	rate_limiter=None
 ):
 	with tempfile.TemporaryDirectory() as temp_directory:
 		db_config_path = create_db_config(temp_directory)
@@ -81,7 +85,8 @@ def temporary_symbol_puller(
 			db_config_path,
 			network_type,
 			request_timeout_seconds,
-			connector=connector
+			connector=connector,
+			rate_limiter=rate_limiter
 		)
 
 

@@ -23,6 +23,7 @@ def parse_args():
 	parser.add_argument('--network', choices=['mainnet', 'testnet'], required=True)
 	parser.add_argument('--db-config', required=True)
 	parser.add_argument('--max-height', type=_positive_int, help='maximum block height to sync for manual validation')
+	parser.add_argument('--max-requests-per-second', type=_positive_int, help='maximum Symbol node requests per second')
 
 	return parser.parse_args()
 
@@ -37,12 +38,16 @@ def _create_node_config(symbol_node):
 	})
 
 
-async def main():
+async def main(symbol_puller_factory=SymbolPuller):
 	"""Synchronizes Symbol block headers."""
 
 	args = parse_args()
 	node_config = _create_node_config(args.symbol_node)
-	puller = SymbolPuller(args.symbol_node, args.db_config, args.network, node_config)
+	puller_kwargs = {}
+	if args.max_requests_per_second is not None:
+		puller_kwargs['max_requests_per_second'] = args.max_requests_per_second
+
+	puller = symbol_puller_factory(args.symbol_node, args.db_config, args.network, node_config, **puller_kwargs)
 
 	with puller:
 		puller.symbol_db.create_tables()
