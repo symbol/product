@@ -200,24 +200,44 @@ const AccountInfo = ({ accountInfo, preloadedTransactions }) => {
 					</div>
 				</Section>
 			</div>
-			<Section title={t('section_accountState')} cardClassName={styles.stateSectionCard}>
-				<div className="layout-flex-col">
-					<div className="layout-flex-row-mobile-col">
-						<Filter
-							data={mosaicFilterConfig}
-							value={mosaics.filter}
-							onChange={mosaics.changeFilter}
-							search={search}
-						/>
-						<ButtonCSV data={mosaics.data} fileName={`mosaics-${address}`} format={row => formatMosaicCSV(row, t)} />
+			<div className="layout-section-row">
+				<Section title={t('section_accountState')} cardClassName={styles.stateSectionCard}>
+					<div className="layout-flex-col">
+						<div className="layout-flex-row-mobile-col">
+							<Filter
+								data={mosaicFilterConfig}
+								value={mosaics.filter}
+								onChange={mosaics.changeFilter}
+								search={search}
+							/>
+							<ButtonCSV data={mosaics.data} fileName={`mosaics-${address}`} format={row => formatMosaicCSV(row, t)} />
+						</div>
+						<div className={styles.stateTable}>
+							{mosaics.data.map((item, key) => (
+								<ValueMosaic
+									size="md"
+									mosaicId={item.id}
+									mosaicName={item.name}
+									amount={item.amount}
+									key={'ownmos' + key} />
+							))}
+						</div>
 					</div>
-					<div className={styles.stateTable}>
-						{mosaics.data.map((item, key) => (
-							<ValueMosaic size="md" mosaicId={item.id} mosaicName={item.name} amount={item.amount} key={'ownmos' + key} />
-						))}
-					</div>
-				</div>
-			</Section>
+				</Section>
+				{accountInfo.harvestedBlocks > 0 && (
+					<Section title={t('section_harvestState')} cardClassName={styles.harvestingSectionCard}>
+						<div className="layout-flex-col-fields">
+							<Field title={t('field_harvestedBlocks')}>{accountInfo.harvestedBlocks}</Field>
+							<Field title={t('field_harvestedFees')}>
+								<ValueMosaic isNative amount={accountInfo.harvestedFees} />
+							</Field>
+							<Field title={t('field_lastHarvestedHeight')}>
+								<ValueBlockHeight value={accountInfo.lastHarvestedHeight} />
+							</Field>
+						</div>
+					</Section>
+				)}
+			</div>
 			{isMultisigSectionShown && (
 				<Section title={t('section_multisig')}>
 					<div className="layout-flex-row-mobile-col">
