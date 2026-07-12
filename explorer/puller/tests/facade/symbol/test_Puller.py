@@ -162,6 +162,22 @@ class SymbolPullerTest(TestCase):
 		# Assert:
 		self.assertEqual(1, rate_limiter.call_count)
 
+	def test_get_symbol_node_waits_for_rate_limiter_turn_on_each_retry(self):
+		# Arrange:
+		connector = MagicMock()
+		connector.get = AsyncMock(side_effect=[
+			NodeException('Connection refused'),
+			{'ok': True}
+		])
+		rate_limiter = CountingRateLimiter()
+		with temporary_symbol_puller(connector=connector, rate_limiter=rate_limiter) as puller:
+			# Act:
+			result = asyncio.run(puller.get_symbol_node('/chain/info'))
+
+		# Assert:
+		self.assertEqual({'ok': True}, result)
+		self.assertEqual(2, rate_limiter.call_count)
+
 	def test_post_symbol_node_retries_api_error_response(self):
 		# Arrange:
 		connector = MagicMock()

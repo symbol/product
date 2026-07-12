@@ -90,12 +90,12 @@ class SymbolPuller:
 
 		return normalized_path
 
-	@staticmethod
-	async def _retry_operation(operation, description, retries=3, delay=2):
+	async def _retry_operation(self, operation, description, retries=3):
 		"""Retries a Symbol node operation with exponential backoff."""
 
 		for attempt_index in range(retries):
 			try:
+				await self._rate_limiter.wait_for_turn()
 				response = await operation()
 				_raise_if_node_error(response)
 				return response
@@ -105,7 +105,7 @@ class SymbolPuller:
 					log.error(f'Failed {description} after {retries} attempts: {error}')
 					raise
 
-				wait_time = delay * (2 ** attempt_index)
+				wait_time = self._retry_delay * (2 ** attempt_index)
 				log.warning(f'Error {description} (attempt {attempt}/{retries}): {error}. Retrying in {wait_time}s...')
 				await asyncio.sleep(wait_time)
 
@@ -113,22 +113,18 @@ class SymbolPuller:
 		"""Validates and dispatches a Symbol node GET request."""
 
 		normalized_path = self._validate_symbol_node_path(url_path)
-		await self._rate_limiter.wait_for_turn()
 		return await self._retry_operation(
 			lambda: self._symbol_connector.get(normalized_path, property_name, not_found_as_error),
-			f'fetching Symbol node path {normalized_path}',
-			delay=self._retry_delay
+			f'fetching Symbol node path {normalized_path}'
 		)
 
 	async def post_symbol_node(self, url_path, request_payload, property_name=None, not_found_as_error=True):
 		"""Validates and dispatches a Symbol node POST request."""
 
 		normalized_path = self._validate_symbol_node_path(url_path)
-		await self._rate_limiter.wait_for_turn()
 		return await self._retry_operation(
 			lambda: self._symbol_connector.post(normalized_path, request_payload, property_name, not_found_as_error),
-			f'posting Symbol node path {normalized_path}',
-			delay=self._retry_delay
+			f'posting Symbol node path {normalized_path}'
 		)
 
 	async def sync_block_headers(self, max_height=None):
