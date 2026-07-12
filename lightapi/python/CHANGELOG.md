@@ -5,7 +5,7 @@ The changelog format is based on [Keep a Changelog](https://keepachangelog.com/e
 
 ## next
 
-## [0.0.10] - 10 Jul-2026
+## [0.0.10] - 13 Jul-2026
 
 ### Added
 - Added transaction `size` and `version` fields when mapping NEM block and unconfirmed transactions.
