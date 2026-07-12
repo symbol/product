@@ -1,7 +1,7 @@
 from unittest import TestCase
 
 from psycopg2.extras import Json
-from symbolchain.symbol.Network import Network
+from symbolchain.symbol.Network import Address, Network
 
 from puller.model.symbol.Account import (
 	HARVESTING_ELIGIBLE_MAX_NATIVE_BALANCE,
@@ -52,7 +52,7 @@ class AccountTest(TestCase):
 		# Assert:
 		self.assertEqual({
 			'address': bytes.fromhex(ADDRESS),
-			'address_text': str(Network.TESTNET.address_class(bytes.fromhex(ADDRESS))),
+			'address_text': str(Address.from_decoded_address_hex_string(ADDRESS)),
 			'public_key': bytes.fromhex('1' * 64),
 			'account_type': 'unlinked',
 			'address_height': 11,
@@ -151,19 +151,19 @@ class AccountTest(TestCase):
 	def test_create_account_row_marks_lower_boundary_balance_as_eligible(self):
 		self._assert_harvesting_eligibility(HARVESTING_ELIGIBLE_MIN_NATIVE_BALANCE * 10 ** DIVISIBILITY, True)
 
-	def test_create_account_row_rejects_balance_one_raw_unit_below_lower_boundary(self):
+	def test_create_account_row_marks_balance_one_raw_unit_below_lower_boundary_as_not_eligible(self):
 		self._assert_harvesting_eligibility(HARVESTING_ELIGIBLE_MIN_NATIVE_BALANCE * 10 ** DIVISIBILITY - 1, False)
 
-	def test_create_account_row_rejects_upper_boundary_balance(self):
+	def test_create_account_row_marks_upper_boundary_balance_as_not_eligible(self):
 		self._assert_harvesting_eligibility(HARVESTING_ELIGIBLE_MAX_NATIVE_BALANCE * 10 ** DIVISIBILITY, False)
 
 	def test_create_account_row_marks_balance_one_raw_unit_below_upper_boundary_as_eligible(self):
 		self._assert_harvesting_eligibility(HARVESTING_ELIGIBLE_MAX_NATIVE_BALANCE * 10 ** DIVISIBILITY - 1, True)
 
-	def test_create_account_row_rejects_zero_balance(self):
+	def test_create_account_row_marks_zero_balance_as_not_eligible(self):
 		self._assert_harvesting_eligibility(0, False)
 
-	def test_create_account_row_rejects_missing_native_mosaic(self):
+	def test_create_account_row_marks_missing_native_mosaic_as_not_eligible(self):
 		# Arrange:
 		item = _create_account_item(mosaics=[{'id': '0000000000000001', 'amount': str(1_000_000 * 10 ** DIVISIBILITY)}])
 
@@ -171,6 +171,17 @@ class AccountTest(TestCase):
 		account_row, _ = create_account_row(item, Network.TESTNET, 99, NATIVE_MOSAIC_ID, DIVISIBILITY)
 
 		# Assert:
+		self.assertFalse(account_row['is_eligible_for_harvesting'])
+
+	def test_create_account_row_returns_empty_mosaic_rows_when_account_has_no_mosaics(self):
+		# Arrange:
+		item = _create_account_item(mosaics=[])
+
+		# Act:
+		account_row, mosaic_rows = create_account_row(item, Network.TESTNET, 99, NATIVE_MOSAIC_ID, DIVISIBILITY)
+
+		# Assert:
+		self.assertEqual([], mosaic_rows)
 		self.assertFalse(account_row['is_eligible_for_harvesting'])
 
 	def test_create_multisig_row_returns_none_for_absent_multisig(self):

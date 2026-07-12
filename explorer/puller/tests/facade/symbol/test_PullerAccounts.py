@@ -3,6 +3,7 @@ from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
 from symbolchain.sc import ReceiptType
+from symbolchain.symbol.Network import Address
 from symbollightapi.model.Exceptions import NodeException
 
 from puller.facade.SymbolPuller import ACCOUNT_BATCH_FETCH_SIZE
@@ -34,8 +35,9 @@ class MalformedAccountsConnector(FakeConnector):
 
 
 class SymbolPullerAccountsTest(SymbolPullerTestBase):
-	def _address_text(self, address_hex=BENEFICIARY_ADDRESS):
-		return str(self.puller.symbol_facade.network.address_class(bytes.fromhex(address_hex)))
+	@staticmethod
+	def _address_text(address_hex=BENEFICIARY_ADDRESS):
+		return str(Address.from_decoded_address_hex_string(address_hex))
 
 	def _account_by_address_text(self, *address_hex_values):
 		return {
@@ -95,10 +97,10 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):
 		self.assertEqual([{'addresses': [address_text]}], connector.post_payloads)
 		self.assertEqual((321, 0, True, True, 2), self._fetch_account_current_state())
 
-	def test_refresh_dirty_accounts_for_batch_updates_transaction_participant_without_overwriting_harvesting_active(self):
+	def test_refresh_dirty_accounts_for_batch_does_not_mark_transaction_participant_as_active_harvester(self):
 		# Arrange:
 		account_row, mosaic_rows = self._create_current_account_row(address_hex=RECIPIENT_ADDRESS, importance='100')
-		account_row['is_harvesting_active'] = False
+		account_row['is_harvesting_active'] = True
 		self.puller.symbol_db.upsert_account_current_state(account_row, mosaic_rows)
 		connector = FakeConnector(
 			1,
@@ -113,7 +115,7 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):
 
 		# Assert:
 		self.assertEqual(
-			(100, 0, False, True, 1),
+			(100, 0, True, True, 1),
 			self._fetch_account_current_state(RECIPIENT_ADDRESS))
 
 	def test_refresh_dirty_accounts_for_batch_ignores_namespace_alias_transaction_participant(self):
@@ -142,23 +144,25 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):
 			1,
 			{0: [self._create_block(1)]},
 			transactions_by_path={
-				transaction_path(1, 1): {'data': [create_node_transaction(1)]}
+				transaction_path(1, 1): {'data': [create_node_transaction(1, recipientAddress=BENEFICIARY_ADDRESS)]}
 			},
-			account_by_address=self._account_by_address_text(BENEFICIARY_ADDRESS, RECIPIENT_ADDRESS))
+			account_by_address=self._account_by_address_text(BENEFICIARY_ADDRESS))
 
 		# Act:
 		self._sync_with_connector(connector)
 
 		# Assert:
+		self.assertEqual(1, connector.paths.count('accounts'))
+		self.assertEqual([{'addresses': [self._address_text()]}], connector.post_payloads)
 		self.assertEqual(True, self._fetch_account_current_state()[2])
 
 	def test_refresh_dirty_accounts_for_batch_deduplicates_repeated_transaction_participant_addresses(self):
 		# Arrange:
+		beneficiary_address_text = self._address_text(RECIPIENT_ADDRESS)
 		participant_address_text = self._address_text(BENEFICIARY_ADDRESS)
-		beneficiary_address = '980101010101010101010101010101010101010101010101'
 		connector = FakeConnector(
 			1,
-			{0: [self._create_block(1, beneficiaryAddress=beneficiary_address)]},
+			{0: [self._create_block(1, beneficiaryAddress=RECIPIENT_ADDRESS)]},
 			transactions_by_path={
 				transaction_path(1, 1): {
 					'data': [
@@ -171,14 +175,13 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):
 					]
 				}
 			},
-			account_by_address=self._account_by_address_text(beneficiary_address, BENEFICIARY_ADDRESS))
+			account_by_address=self._account_by_address_text(RECIPIENT_ADDRESS, BENEFICIARY_ADDRESS))
 
 		# Act:
 		self._sync_with_connector(connector)
 
 		# Assert:
 		self.assertEqual(1, connector.paths.count('accounts'))
-		beneficiary_address_text = self._address_text(beneficiary_address)
 		self.assertEqual(
 			sorted([beneficiary_address_text, participant_address_text]),
 			sorted(connector.post_payloads[0]['addresses']))
@@ -437,7 +440,7 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):
 		self._sync_with_connector(connector)
 
 		# Assert:
-		self.assertEqual(2, connector.paths.count('network/properties'))
+		self.assertEqual(1, connector.paths.count('network/properties'))
 		self.assertEqual(1, connector.paths.count(f'mosaics/{NATIVE_MOSAIC_ID}'))
 
 	def _create_current_account_row(self, address_hex=BENEFICIARY_ADDRESS, **overrides):

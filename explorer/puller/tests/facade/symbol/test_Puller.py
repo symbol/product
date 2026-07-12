@@ -272,6 +272,21 @@ class SymbolPullerTest(TestCase):
 		self.assertEqual({'data': []}, result)
 		self.assertEqual(2, connector.get.await_count)
 
+	def test_get_symbol_node_does_not_retry_resource_not_found_when_not_found_is_allowed(self):
+		# Arrange:
+		connector = MagicMock()
+		connector.get = AsyncMock(return_value={
+			'code': 'ResourceNotFound',
+			'message': 'no resource exists with id foo'
+		})
+		with temporary_symbol_puller(connector=connector) as puller:
+			# Act:
+			result = asyncio.run(puller.get_symbol_node('/account/foo/multisig', not_found_as_error=False))
+
+		# Assert:
+		self.assertEqual({'code': 'ResourceNotFound', 'message': 'no resource exists with id foo'}, result)
+		self.assertEqual(1, connector.get.await_count)
+
 	def test_symbol_node_path_must_be_relative(self):
 		# Arrange:
 		connector = MagicMock()

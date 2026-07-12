@@ -338,7 +338,7 @@ class SymbolDatabase(DatabaseConnection):
 		self,
 		account_row,
 		mosaic_rows,
-		overwrite_importance_percentage=True,
+		overwrite_importance_percentage=False,
 		overwrite_is_harvesting_active=True
 	):
 		"""Upserts one Symbol account current-state row and replaces its current mosaic rows."""
@@ -357,8 +357,8 @@ class SymbolDatabase(DatabaseConnection):
 		cursor,
 		account_row,
 		mosaic_rows,
-		overwrite_importance_percentage,
-		overwrite_is_harvesting_active
+		overwrite_importance_percentage=False,
+		overwrite_is_harvesting_active=True
 	):
 		update_columns = [
 			'address_text',

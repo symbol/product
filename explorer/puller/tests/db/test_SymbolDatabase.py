@@ -1038,7 +1038,10 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 
 		# Act:
 		database.upsert_account_current_state(account_row, mosaic_rows)
-		database.upsert_account_current_state(updated_account_row, updated_mosaic_rows)
+		database.upsert_account_current_state(
+			updated_account_row,
+			updated_mosaic_rows,
+			overwrite_importance_percentage=True)
 
 		# Assert:
 		cursor = database.connection.cursor()
@@ -1069,7 +1072,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		cursor = database.connection.cursor()
 		cursor.execute(
 			'''
-			SELECT min_approval, min_removal, cosignatory_addresses, multisig_addresses
+			SELECT min_approval, min_removal, cosignatory_addresses, multisig_addresses, updated_at_height
 			FROM symbol_multisig
 			WHERE address = %s
 			''',
@@ -1080,12 +1083,14 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			multisig_row['min_approval'],
 			multisig_row['min_removal'],
 			multisig_row['cosignatory_addresses'],
-			multisig_row['multisig_addresses']
+			multisig_row['multisig_addresses'],
+			multisig_row['updated_at_height']
 		), (
 			result[0],
 			result[1],
 			[bytes(value) for value in result[2]],
-			[bytes(value) for value in result[3]]
+			[bytes(value) for value in result[3]],
+			result[4]
 		))
 
 	def test_upsert_multisig_deletes_when_none(self):

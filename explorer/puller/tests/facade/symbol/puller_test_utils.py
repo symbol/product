@@ -7,7 +7,7 @@ from unittest import TestCase
 from common.symbol.NodeConfiguration import SymbolNodeConfiguration
 from common.tests.PostgresTestUtils import PostgresTestDatabase, drop_symbol_block_tables_if_present
 from symbolchain.sc import ReceiptType, TransactionType
-from symbolchain.symbol.Network import Network
+from symbolchain.symbol.Network import Address, Network
 
 from puller.facade.SymbolPuller import MAX_PAGE_SIZE, DatabaseConfiguration, SymbolPuller
 from puller.model.symbol.Block import create_block_row
@@ -296,15 +296,6 @@ def create_account_item(address_hex=BENEFICIARY_ADDRESS, item_id='account-id', *
 	return {'account': account, 'id': item_id}
 
 
-class PostPath(str):
-	"""A str subclass that also carries the POST request payload, so connector.paths stays a flat path list."""
-
-	def __new__(cls, url_path, request_payload):
-		path = super().__new__(cls, url_path)
-		path.request_payload = request_payload
-		return path
-
-
 class FakeConnector:  # pylint: disable=too-many-instance-attributes
 	def __init__(  # pylint: disable=too-many-arguments,too-many-positional-arguments
 		self,
@@ -326,14 +317,11 @@ class FakeConnector:  # pylint: disable=too-many-instance-attributes
 		self.account_by_address = account_by_address or {}
 		self.multisig_by_address = multisig_by_address or {}
 		self.paths = []
+		self.post_payloads_list = []
 
 	@property
 	def post_payloads(self):
-		return [
-			path.request_payload
-			for path in self.paths
-			if hasattr(path, 'request_payload')
-		]
+		return self.post_payloads_list
 
 	async def get(self, url_path, *_):  # pylint: disable=too-many-return-statements
 		self.paths.append(url_path)
@@ -373,7 +361,8 @@ class FakeConnector:  # pylint: disable=too-many-instance-attributes
 		raise KeyError(url_path)
 
 	async def post(self, url_path, request_payload, *_):
-		self.paths.append(PostPath(url_path, request_payload))
+		self.paths.append(url_path)
+		self.post_payloads_list.append(request_payload)
 		if 'accounts' == url_path:
 			return [
 				self.account_by_address.get(
@@ -473,8 +462,9 @@ class SymbolPullerTestBase(TestCase):
 
 		return cursor.fetchall()
 
-	def _beneficiary_address_text(self):
-		return str(self.puller.symbol_facade.network.address_class(bytes.fromhex(BENEFICIARY_ADDRESS)))
+	@staticmethod
+	def _beneficiary_address_text():
+		return str(Address.from_decoded_address_hex_string(BENEFICIARY_ADDRESS))
 
 	def _seed_blocks(self, database, heights, block_hashes=None):
 		block_hashes = block_hashes or {}

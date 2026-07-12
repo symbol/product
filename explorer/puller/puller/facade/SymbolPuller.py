@@ -81,6 +81,7 @@ class SymbolPuller:
 		self._retry_delay = 2
 		self._rate_limiter = rate_limiter or RequestRateLimiter(max_requests_per_second)
 		self._native_mosaic_info = None
+		self._network_properties = None
 
 	def __enter__(self):
 		self.symbol_db.__enter__()
@@ -144,7 +145,7 @@ class SymbolPuller:
 		"""Synchronizes Symbol block headers from the configured node."""
 
 		chain_info = await self.get_symbol_node('/chain/info')
-		network_properties = await self.get_symbol_node('/network/properties')
+		network_properties = await self._get_network_properties()
 		chain_height = self._get_sync_chain_height(int(chain_info['height']), max_height)
 		finalized_height, finalized_hash, finalized_epoch, finalized_point, is_finalization_capped = (
 			self._get_finalized_watermark(chain_info, chain_height)
@@ -344,7 +345,11 @@ class SymbolPuller:
 		self._write_dirty_accounts_for_batch(dirty_account_rows)
 
 	def _sync_block_batch(self, batch_rows, transaction_rows_by_height, receipt_rows_by_height):
-		"""Writes previously-fetched block, transaction, and receipt rows for one batch."""
+		"""Writes previously-fetched block, transaction, and receipt rows for one batch.
+
+		Takes already-fetched rows rather than fetching them itself so all of a batch's network
+		fetches complete before any of its writes begin — a mid-batch failure leaves no partial writes.
+		"""
 
 		self.symbol_db.upsert_blocks(batch_rows)
 		self._upsert_transactions_for_batch(batch_rows, transaction_rows_by_height)
@@ -423,13 +428,21 @@ class SymbolPuller:
 		raw_epoch_adjustment = str(raw_epoch_adjustment)
 		return int(raw_epoch_adjustment[:-1] if raw_epoch_adjustment.endswith('s') else raw_epoch_adjustment)
 
+	async def _get_network_properties(self):
+		"""Gets and memoizes Symbol network properties for this puller instance."""
+
+		if self._network_properties is None:
+			self._network_properties = await self.get_symbol_node('/network/properties')
+
+		return self._network_properties
+
 	async def _get_native_mosaic_info(self, network_properties=None):
 		"""Gets and memoizes the native mosaic id and divisibility for this puller instance."""
 
 		if self._native_mosaic_info:
 			return self._native_mosaic_info
 
-		network_properties = network_properties or await self.get_symbol_node('/network/properties')
+		network_properties = network_properties or await self._get_network_properties()
 		native_mosaic_id = network_properties['chain']['currencyMosaicId'].replace('0x', '').replace("'", '').upper()
 		mosaic_definition = await self.get_symbol_node(f'/mosaics/{native_mosaic_id}')
 		self._native_mosaic_info = (native_mosaic_id, int(mosaic_definition['mosaic']['divisibility']))
