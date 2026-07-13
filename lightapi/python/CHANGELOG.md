@@ -5,6 +5,15 @@ The changelog format is based on [Keep a Changelog](https://keepachangelog.com/e
 
 ## next
 
+## [0.0.10] - 13 Jul-2026
+
+### Added
+- Added transaction `size` and `version` fields when mapping NEM block and unconfirmed transactions.
+
+### Fixed
+- Fixed multisig account modification transaction size calculation when `relativeChange` is missing.
+- Exposed the original NEM transfer message `type` instead of deriving message plain/encrypted state.
+
 ## [0.0.9] - 27 Apr-2026
 
 ### Added
@@ -63,6 +72,7 @@ The changelog format is based on [Keep a Changelog](https://keepachangelog.com/e
 - treat all HTTP statuses less than 400 as success instead of only HTTP statuses 200 and 404 codes
 - OpenSSL libraries names are different on Windows which cause linking to fail; update to select the correct library name.
 
+[0.0.10]: https://github.com/symbol/product/compare/lightapi/python/v0.0.9...lightapi/python/v0.0.10
 [0.0.9]: https://github.com/symbol/product/compare/lightapi/python/v0.0.9...lightapi/python/v0.0.8
 [0.0.8]: https://github.com/symbol/product/compare/lightapi/python/v0.0.7...lightapi/python/v0.0.8
 [0.0.7]: https://github.com/symbol/product/compare/lightapi/python/v0.0.6...lightapi/python/v0.0.7
