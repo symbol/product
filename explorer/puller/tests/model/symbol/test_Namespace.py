@@ -75,23 +75,18 @@ class NamespaceTest(TestCase):
 		row = create_namespace_row(item, {ROOT_ID: 'hoge', SUB_ID: 'fuga', LEAF_ID: 'piyo'}, 123)
 
 		# Assert:
-		self.assertEqual({
-			'namespace_id': LEAF_ID,
-			'parent_id': SUB_ID,
-			'root_id': ROOT_ID,
-			'name': 'piyo',
-			'full_name': 'hoge.fuga.piyo',
-			'depth': 3,
-			'registration_type': 'child',
-			'owner_address': bytes.fromhex(BENEFICIARY_ADDRESS),
-			'start_height': 1,
-			'end_height': None,
-			'alias_type': 'none',
-			'alias_mosaic_id': None,
-			'alias_address': None,
-			'raw_payload': item,
-			'updated_at_height': 123
-		}, row)
+		self.assertEqual(create_expected_root_namespace_row(
+			LEAF_ID,
+			'piyo',
+			BENEFICIARY_ADDRESS,
+			item,
+			123,
+			parent_id=SUB_ID,
+			root_id=ROOT_ID,
+			full_name='hoge.fuga.piyo',
+			depth=3,
+			registration_type='child'
+		), row)
 
 	def test_create_namespace_row_normalizes_address_alias(self):
 		# Arrange:

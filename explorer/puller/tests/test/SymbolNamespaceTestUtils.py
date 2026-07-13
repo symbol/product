@@ -44,10 +44,10 @@ def create_namespace_item(  # pylint: disable=too-many-arguments,too-many-positi
 	return {'meta': {'index': 0, 'active': True}, 'namespace': namespace, 'id': f'node-{level_ids[-1]}'}
 
 
-def create_expected_root_namespace_row(namespace_id, name, owner_address, namespace_item, observed_height):
+def create_expected_root_namespace_row(namespace_id, name, owner_address, namespace_item, observed_height, **overrides):
 	"""Creates the expected normalized row for a root namespace without an alias."""
 
-	return {
+	row = {
 		'namespace_id': namespace_id,
 		'parent_id': None,
 		'root_id': namespace_id,
@@ -64,3 +64,6 @@ def create_expected_root_namespace_row(namespace_id, name, owner_address, namesp
 		'raw_payload': namespace_item,
 		'updated_at_height': observed_height
 	}
+	row.update(overrides)
+
+	return row
