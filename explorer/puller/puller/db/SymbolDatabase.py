@@ -43,7 +43,7 @@ SYMBOL_BLOCK_DEFINITIONS = [
 	'previous_hash bytea NOT NULL',
 	'timestamp timestamp NOT NULL',
 	'network_timestamp bigint NOT NULL',
-	'total_fee int NOT NULL',
+	'total_fee bigint NOT NULL',
 	'transactions_count int NOT NULL',
 	'total_transactions_count int NOT NULL',
 	'statements_count int NOT NULL',
