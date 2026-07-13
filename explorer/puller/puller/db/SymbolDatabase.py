@@ -737,7 +737,6 @@ class SymbolDatabase(DatabaseConnection):
 				cursor,
 				entry['account_row'],
 				entry['mosaic_rows'],
-				overwrite_importance_percentage=False,
 				overwrite_is_harvesting_active=True)
 			self._execute_insert_account_refresh_snapshot_rows(
 				cursor,

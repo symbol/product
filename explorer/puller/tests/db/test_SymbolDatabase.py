@@ -1380,7 +1380,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		# Assert:
 		self.assertEqual('healthy', database.get_account_refresh_state()['status'])
 
-	def test_repair_rollback_does_not_delete_account_refresh_rows(self):
+	def test_repair_rollback_deletes_current_state_but_preserves_account_refresh_rows(self):
 		# Arrange:
 		database = self._create_database()
 		account_row, mosaic_rows = _create_account_row()
@@ -1414,13 +1414,11 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		cursor.execute('SELECT refresh_run_id, address, mosaic_id, amount FROM symbol_account_refresh_mosaics')
 		refresh_mosaic_results = cursor.fetchall()
 
-		self.assertEqual([(expected_address,)], [(bytes(address),) for address, in account_results])
-		self.assertEqual(
-			[(expected_address, expected_mosaic_row['mosaic_id'], expected_mosaic_row['amount'])],
-			[(bytes(address), mosaic_id, amount) for address, mosaic_id, amount in mosaic_results])
-		self.assertEqual(
-			[(expected_address, 1, 1)],
-			[(bytes(address), min_approval, min_removal) for address, min_approval, min_removal in multisig_results])
+		# current-state rows are deleted on rollback (last_seen_height/updated_at_height >= fork_height); they get
+		# repopulated by the next dirty-key touch or account refresh snapshot run, not by rollback repair itself.
+		self.assertEqual([], account_results)
+		self.assertEqual([], mosaic_results)
+		self.assertEqual([], multisig_results)
 		self.assertEqual(
 			[('run-1', 'id-1', expected_address)],
 			[(run_id, account_search_id, bytes(address)) for run_id, account_search_id, address in refresh_account_results])
