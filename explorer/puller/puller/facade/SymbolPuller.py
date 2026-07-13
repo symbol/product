@@ -507,15 +507,15 @@ class SymbolPuller:
 	):
 		"""Fetches current-state account and multisig rows touched by a synced block batch."""
 
-		sorted_addresses = sorted(dirty_addresses.keys())
+		addresses = list(dirty_addresses.keys())
 		address_text_by_address = {
 			address: str(self.symbol_facade.network.address_class(address))
-			for address in sorted_addresses
+			for address in addresses
 		}
 
 		account_items_by_address = {}
-		for chunk_start in range(0, len(sorted_addresses), ACCOUNT_BATCH_FETCH_SIZE):
-			chunk = sorted_addresses[chunk_start:chunk_start + ACCOUNT_BATCH_FETCH_SIZE]
+		for chunk_start in range(0, len(addresses), ACCOUNT_BATCH_FETCH_SIZE):
+			chunk = addresses[chunk_start:chunk_start + ACCOUNT_BATCH_FETCH_SIZE]
 			response = await self.post_symbol_node('/accounts', {
 				'addresses': [address_text_by_address[address] for address in chunk]
 			})
@@ -525,7 +525,7 @@ class SymbolPuller:
 				account_items_by_address[bytes.fromhex(item['account']['address'])] = item
 
 		dirty_account_rows = []
-		for address in sorted_addresses:
+		for address in addresses:
 			address_text = address_text_by_address[address]
 			if address not in account_items_by_address:
 				raise ValueError(f'Missing Symbol accounts batch item for address {address_text}')
