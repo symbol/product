@@ -145,11 +145,11 @@ def _create_namespace_row(namespace_id='A95F1F8A96159516', full_name='root', obs
 		'name': full_name.rsplit('.', maxsplit=1)[-1],
 		'full_name': full_name,
 		'depth': 1,
-		'registration_type': 0,
+		'registration_type': 'root',
 		'owner_address': bytes.fromhex(ADDRESS1),
 		'start_height': 1,
 		'end_height': None,
-		'alias_type': 1,
+		'alias_type': 'mosaic',
 		'alias_mosaic_id': '72C0212E67A08BCE',
 		'alias_address': None,
 		'raw_payload': {'namespace': {'level0': namespace_id}},
@@ -195,7 +195,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			ORDER BY table_name, ordinal_position
 			''')
 		self.assertEqual([
-			('symbol_alias_names', 'artifact_type', 'varchar', 'NO'),
+			('symbol_alias_names', 'artifact_type', 'symbol_alias_artifact_type', 'NO'),
 			('symbol_alias_names', 'artifact_id', 'varchar', 'NO'),
 			('symbol_alias_names', 'name', 'varchar', 'NO'),
 			('symbol_alias_names', 'updated_at_height', 'int8', 'NO'),
@@ -205,11 +205,11 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			('symbol_namespaces', 'name', 'varchar', 'YES'),
 			('symbol_namespaces', 'full_name', 'varchar', 'YES'),
 			('symbol_namespaces', 'depth', 'int4', 'NO'),
-			('symbol_namespaces', 'registration_type', 'int4', 'NO'),
+			('symbol_namespaces', 'registration_type', 'symbol_namespace_registration_type', 'NO'),
 			('symbol_namespaces', 'owner_address', 'bytea', 'NO'),
 			('symbol_namespaces', 'start_height', 'int8', 'NO'),
 			('symbol_namespaces', 'end_height', 'int8', 'YES'),
-			('symbol_namespaces', 'alias_type', 'int4', 'NO'),
+			('symbol_namespaces', 'alias_type', 'symbol_namespace_alias_type', 'NO'),
 			('symbol_namespaces', 'alias_mosaic_id', 'varchar', 'YES'),
 			('symbol_namespaces', 'alias_address', 'bytea', 'YES'),
 			('symbol_namespaces', 'raw_payload', 'jsonb', 'NO'),
@@ -283,7 +283,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		original_row = _create_namespace_row()
 		database.upsert_namespace(original_row, _create_alias_name_rows(original_row))
 		updated_row = _create_namespace_row(
-			alias_type=0,
+			alias_type='none',
 			alias_mosaic_id=None,
 			end_height=100,
 			updated_at_height=20)
@@ -294,7 +294,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		# Assert:
 		cursor = database.connection.cursor()
 		cursor.execute('SELECT end_height, alias_type, alias_mosaic_id, updated_at_height FROM symbol_namespaces')
-		self.assertEqual([(100, 0, None, 20)], cursor.fetchall())
+		self.assertEqual([(100, 'none', None, 20)], cursor.fetchall())
 		cursor.execute(
 			'SELECT artifact_type, artifact_id, name, updated_at_height FROM symbol_alias_names ORDER BY artifact_type')
 		self.assertEqual([
@@ -369,7 +369,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		database.repair_rollback_from_height(2, _create_sync_state(
 			status='repairing',
 			last_synced_height=1,
-			last_synced_block_hash=b'hash 1'))
+			last_synced_block_hash=b'hash 1'), [])
 
 		# Assert:
 		cursor = database.connection.cursor()
@@ -380,6 +380,54 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			('mosaic', '72C0212E67A08BCE', 'root', 2),
 			('namespace', 'A95F1F8A96159516', 'root', 2)
 		], cursor.fetchall())
+
+	def test_repair_rollback_from_height_applies_namespace_upserts_and_deletes_in_same_transaction(self):
+		# Arrange:
+		database = self._create_database()
+		database.upsert_blocks([_create_block(1), _create_block(2)])
+		refreshed_row = _create_namespace_row()
+		deleted_row = _create_namespace_row('B95F1F8A96159516', 'orphaned', 2)
+		database.upsert_namespace(refreshed_row, _create_alias_name_rows(refreshed_row))
+		database.upsert_namespace(deleted_row, _create_alias_name_rows(deleted_row))
+		refreshed_row = _create_namespace_row(
+			alias_type='none',
+			alias_mosaic_id=None,
+			end_height=100,
+			observed_height=1)
+
+		# Act:
+		database.repair_rollback_from_height(2, _create_sync_state(
+			status='repairing',
+			last_synced_height=1,
+			last_synced_block_hash=b'hash 1'), [
+			{'row': refreshed_row, 'alias_rows': _create_alias_name_rows(refreshed_row)},
+			{'namespace_id': deleted_row['namespace_id']}
+		])
+
+		# Assert:
+		cursor = database.connection.cursor()
+		cursor.execute(
+			'''
+			SELECT namespace_id, parent_id, root_id, name, full_name, depth, registration_type,
+				encode(owner_address, 'hex'), start_height, end_height, alias_type, alias_mosaic_id,
+				encode(alias_address, 'hex'), raw_payload, updated_at_height
+			FROM symbol_namespaces
+			ORDER BY namespace_id
+			''')
+		self.assertEqual([(
+			'A95F1F8A96159516', None, 'A95F1F8A96159516', 'root', 'root', 1, 'root',
+			ADDRESS1.lower(), 1, 100, 'none', None, None,
+			{'namespace': {'level0': 'A95F1F8A96159516'}}, 1
+		)], cursor.fetchall())
+		cursor.execute(
+			'SELECT artifact_type, artifact_id, name, updated_at_height FROM symbol_alias_names ORDER BY artifact_type, artifact_id, name')
+		self.assertEqual([
+			('namespace', 'A95F1F8A96159516', 'root', 1)
+		], cursor.fetchall())
+		cursor.execute('SELECT height FROM symbol_blocks ORDER BY height')
+		self.assertEqual([(1,)], cursor.fetchall())
+		self.assertEqual('repairing', database.get_sync_state()['status'])
+		self.assertEqual(1, database.get_sync_state()['last_synced_height'])
 
 	def setUp(self):
 		self.exit_stack = ExitStack()
@@ -477,6 +525,57 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			('symbol_account_type', 'main'),
 			('symbol_account_type', 'remote'),
 			('symbol_account_type', 'remoteUnlinked')
+		], cursor.fetchall())
+
+	def test_create_tables_creates_symbol_namespace_enum_types(self):
+		# Arrange:
+		database = self._create_uninitialized_database()
+		cursor = database.connection.cursor()
+
+		# Act:
+		database.create_tables()
+
+		# Assert:
+		cursor.execute(
+			'''
+			SELECT pg_type.typname, enumlabel
+			FROM pg_enum
+			JOIN pg_type ON pg_type.oid = pg_enum.enumtypid
+			WHERE pg_type.typname IN (
+				'symbol_namespace_registration_type',
+				'symbol_namespace_alias_type'
+			)
+			ORDER BY pg_type.typname, enumsortorder
+			''')
+		self.assertEqual([
+			('symbol_namespace_alias_type', 'none'),
+			('symbol_namespace_alias_type', 'mosaic'),
+			('symbol_namespace_alias_type', 'address'),
+			('symbol_namespace_registration_type', 'root'),
+			('symbol_namespace_registration_type', 'child')
+		], cursor.fetchall())
+
+	def test_create_tables_creates_symbol_alias_artifact_enum_types(self):
+		# Arrange:
+		database = self._create_uninitialized_database()
+		cursor = database.connection.cursor()
+
+		# Act:
+		database.create_tables()
+
+		# Assert:
+		cursor.execute(
+			'''
+			SELECT pg_type.typname, enumlabel
+			FROM pg_enum
+			JOIN pg_type ON pg_type.oid = pg_enum.enumtypid
+			WHERE pg_type.typname = 'symbol_alias_artifact_type'
+			ORDER BY enumsortorder
+			''')
+		self.assertEqual([
+			('symbol_alias_artifact_type', 'mosaic'),
+			('symbol_alias_artifact_type', 'namespace'),
+			('symbol_alias_artifact_type', 'account')
 		], cursor.fetchall())
 
 	def test_create_tables_creates_symbol_account_current_state_columns(self):
@@ -1937,7 +2036,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		})
 
 		# Act:
-		database.repair_rollback_from_height(10, _create_sync_state(status='repairing', last_synced_height=9))
+		database.repair_rollback_from_height(10, _create_sync_state(status='repairing', last_synced_height=9), [])
 
 		# Assert:
 		self.assertEqual('stale', database.get_account_refresh_state()['status'])
@@ -1952,7 +2051,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		})
 
 		# Act:
-		database.repair_rollback_from_height(10, _create_sync_state(status='repairing', last_synced_height=9))
+		database.repair_rollback_from_height(10, _create_sync_state(status='repairing', last_synced_height=9), [])
 
 		# Assert:
 		self.assertEqual('healthy', database.get_account_refresh_state()['status'])
@@ -2000,7 +2099,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		database.finalize_account_refresh('run-1', NATIVE_MOSAIC_ID, 10, datetime.datetime(2026, 1, 1))
 
 		# Act:
-		database.repair_rollback_from_height(10, _create_sync_state(status='repairing', last_synced_height=9))
+		database.repair_rollback_from_height(10, _create_sync_state(status='repairing', last_synced_height=9), [])
 
 		# Assert:
 		expected_address = bytes.fromhex(ADDRESS1)
@@ -2553,7 +2652,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			status='repairing',
 			last_synced_height=1,
 			last_synced_block_hash=b'hash 1'
-		))
+		), [])
 
 		# Assert:
 		cursor = database.connection.cursor()

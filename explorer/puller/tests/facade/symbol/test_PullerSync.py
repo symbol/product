@@ -6,6 +6,7 @@ from symbollightapi.model.Exceptions import NodeException
 
 from puller.facade.SymbolPuller import BLOCK_PAGE_FETCH_CONCURRENCY, MAX_PAGE_SIZE
 from puller.model.symbol.Block import create_block_row
+from puller.model.symbol.Namespace import create_alias_name_rows, create_namespace_row
 from puller.model.symbol.Receipt import create_receipt_rows
 from tests.test.SymbolNamespaceTestUtils import NAMESPACE_ROOT_ID, create_namespace_item
 
@@ -26,7 +27,7 @@ from .puller_test_utils import (
 )
 
 
-class SymbolPullerSyncTest(SymbolPullerTestBase):
+class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-public-methods
 	@staticmethod
 	def _create_namespace_batch_connector():
 		return FakeConnector(
@@ -87,7 +88,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):
 		# Assert:
 		namespace_rows, alias_rows = self._fetch_namespace_state()
 		self.assertEqual([
-			(NAMESPACE_ROOT_ID, None, NAMESPACE_ROOT_ID, 'root', 'root', 1, NATIVE_MOSAIC_ID, 1)
+			(NAMESPACE_ROOT_ID, None, NAMESPACE_ROOT_ID, 'root', 'root', 'mosaic', NATIVE_MOSAIC_ID, 1)
 		], namespace_rows)
 		self.assertEqual([
 			('mosaic', NATIVE_MOSAIC_ID, 'root', 1),
@@ -99,6 +100,35 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):
 			{'addresses': [self._beneficiary_address_text()]},
 			{'namespaceIds': [NAMESPACE_ROOT_ID]}
 		], connector.post_payloads)
+
+	def test_sync_block_headers_deletes_dirty_namespace_state_when_namespace_is_not_found(self):
+		# Arrange:
+		namespace_row = create_namespace_row(create_namespace_item(), {NAMESPACE_ROOT_ID: 'root'}, 0)
+		self.puller.symbol_db.upsert_namespace(namespace_row, create_alias_name_rows(namespace_row))
+		connector = FakeConnector(
+			1,
+			{0: [create_node_block(1)]},
+			transactions_by_path={
+				transaction_path(1, 1): {
+					'data': [create_node_transaction(
+						1,
+						transaction_hash='A' * 64,
+						transaction_id='namespace-registration',
+						type=TransactionType.NAMESPACE_REGISTRATION.value,
+						id=NAMESPACE_ROOT_ID,
+						name='root',
+						registrationType=0)]
+				}
+			})
+
+		# Act:
+		self._sync_with_connector(connector)
+
+		# Assert:
+		self.assertEqual(([], []), self._fetch_namespace_state())
+		self.assertEqual([1], self._fetch_block_heights(self.puller.symbol_db))
+		self.assertEqual(1, connector.paths.count(f'namespaces/{NAMESPACE_ROOT_ID}'))
+		self.assertEqual(0, connector.paths.count('namespaces/names'))
 
 	def test_sync_block_headers_converges_namespace_state_when_restarted_from_existing_blocks(self):
 		# Arrange:

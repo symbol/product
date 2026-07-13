@@ -171,9 +171,7 @@ class SymbolPuller:
 			finalized_hash = self.symbol_db.get_block_hash(finalized_height)
 
 		start_height = await self._repair_unfinalized_rollback(sync_state, finalized_height, finalized_hash)
-		if start_height:
-			await self._refresh_namespaces_updated_from_height(start_height)
-		else:
+		if not start_height:
 			start_height = (sync_state['last_synced_height'] + 1) if sync_state and sync_state['last_synced_height'] else 1
 
 		last_synced_height, last_synced_block_hash = await self._sync_block_pages(
@@ -264,25 +262,32 @@ class SymbolPuller:
 		expected_height = verify_start_height
 		for height, local_hash in self.symbol_db.get_block_hashes(verify_start_height, sync_state['last_synced_height']):
 			if height != expected_height:
-				return self._repair_from_height(expected_height, sync_state)
+				return await self._repair_from_height(expected_height, sync_state)
 
 			remote_block = await self.get_symbol_node(f'/blocks/{height}')
 			if bytes(local_hash) != bytes.fromhex(remote_block['meta']['hash']):
-				return self._repair_from_height(height, sync_state)
+				return await self._repair_from_height(height, sync_state)
 			expected_height += 1
 
 		if expected_height <= sync_state['last_synced_height']:
-			return self._repair_from_height(expected_height, sync_state)
+			return await self._repair_from_height(expected_height, sync_state)
 
 		return None
 
-	def _repair_from_height(self, height, sync_state):
+	async def _repair_from_height(self, height, sync_state):
+		# Unlike account/multisig rows (deleted by the repair and repopulated by the next dirty-key touch or
+		# refresh snapshot run), namespaces have no broad re-dirty signal: only registration or alias
+		# transactions touch a namespace id, and none may recur after a fork. Re-fetch node state before the
+		# repair write and apply it in the same transaction, deleting a namespace only when the node confirms
+		# it is gone.
+		namespace_ids = self.symbol_db.get_namespace_ids_updated_from_height(height)
+		namespace_entries = await self._fetch_dirty_namespaces(namespace_ids, height - 1)
 		self.symbol_db.repair_rollback_from_height(height, {
 			**sync_state,
 			'status': 'repairing',
 			'last_synced_height': height - 1,
 			'last_synced_block_hash': self.symbol_db.get_block_hash(height - 1)
-		})
+		}, namespace_entries)
 		return height
 
 	async def _sync_block_pages(  # pylint: disable=too-many-locals
@@ -660,25 +665,25 @@ class SymbolPuller:
 
 	@staticmethod
 	def _collect_dirty_namespace_ids_for_batch(transaction_rows_by_height, receipt_rows_by_height):
-		"""Collects sorted namespace ids whose current state may have changed in a synced batch."""
+		"""Collects deduplicated namespace ids whose current state may have changed in a synced batch, in first-encounter order."""
 
-		dirty_namespace_ids = set()
+		dirty_namespace_ids = {}
 		for transaction_rows in transaction_rows_by_height.values():
 			for transaction_row in transaction_rows:
 				if TransactionType.NAMESPACE_REGISTRATION.value == transaction_row['type']:
-					dirty_namespace_ids.add(transaction_row['body']['id'])
+					dirty_namespace_ids[transaction_row['body']['id']] = None
 				elif transaction_row['type'] in (TransactionType.ADDRESS_ALIAS.value, TransactionType.MOSAIC_ALIAS.value):
-					dirty_namespace_ids.add(transaction_row['body']['namespaceId'])
+					dirty_namespace_ids[transaction_row['body']['namespaceId']] = None
 
 		for receipt_rows in receipt_rows_by_height.values():
 			for receipt_row in receipt_rows:
 				if receipt_row['receipt_type'] in (NAMESPACE_EXPIRED_RECEIPT_TYPE, NAMESPACE_DELETED_RECEIPT_TYPE):
-					dirty_namespace_ids.add(receipt_row['artifact_id'])
+					dirty_namespace_ids[receipt_row['artifact_id']] = None
 
-		return sorted(dirty_namespace_ids)
+		return list(dirty_namespace_ids)
 
 	async def _fetch_dirty_namespaces(self, namespace_ids, observed_height):
-		"""Fetches current namespace state and names for sorted dirty namespace ids."""
+		"""Fetches current namespace state and names for dirty namespace ids, processing ids in the given order."""
 
 		if not namespace_ids:
 			return []
@@ -689,11 +694,11 @@ class SymbolPuller:
 			if not _is_not_found_response(item):
 				found_items_by_namespace_id[namespace_id] = item
 
-		level_ids = sorted({
-			item['namespace'][f'level{level_index}']
-			for item in found_items_by_namespace_id.values()
-			for level_index in range(int(item['namespace']['depth']))
-		})
+		level_ids = {}
+		for item in found_items_by_namespace_id.values():
+			for level_index in range(int(item['namespace']['depth'])):
+				level_ids[item['namespace'][f'level{level_index}']] = None
+		level_ids = list(level_ids)
 		names_by_id = {}
 		for chunk_start in range(0, len(level_ids), MAX_PAGE_SIZE):
 			response = await self.post_symbol_node('/namespaces/names', {'namespaceIds': level_ids[chunk_start:chunk_start + MAX_PAGE_SIZE]})
@@ -712,7 +717,7 @@ class SymbolPuller:
 			row = create_namespace_row(item, names_by_id, observed_height)
 			entries.append({
 				'row': row,
-				'alias_rows': create_alias_name_rows(row, self.symbol_facade.network)
+				'alias_rows': create_alias_name_rows(row)
 			})
 
 		return entries
@@ -725,13 +730,6 @@ class SymbolPuller:
 				self.symbol_db.delete_namespace(entry['namespace_id'])
 			else:
 				self.symbol_db.upsert_namespace(entry['row'], entry['alias_rows'])
-
-	async def _refresh_namespaces_updated_from_height(self, fork_height):
-		"""Refreshes namespace state observed on a rolled-back chain segment."""
-
-		namespace_ids = self.symbol_db.get_namespace_ids_updated_from_height(fork_height)
-		entries = await self._fetch_dirty_namespaces(namespace_ids, fork_height - 1)
-		self._write_dirty_namespaces(entries)
 
 	async def _fetch_dirty_accounts_for_batch(  # pylint: disable=too-many-locals
 		self,

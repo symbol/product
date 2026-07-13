@@ -26,7 +26,7 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):
 		namespace_row = create_namespace_row(namespace_item, names_by_id, observed_height)
 		self.puller.symbol_db.upsert_namespace(
 			namespace_row,
-			create_alias_name_rows(namespace_row, self.puller.symbol_facade.network))
+			create_alias_name_rows(namespace_row))
 
 	def _fetch_namespace_rows(self):
 		cursor = self.puller.symbol_db.connection.cursor()
@@ -86,6 +86,31 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):
 		self.assertEqual(1, connector.paths.count(f'namespaces/{NAMESPACE_ROOT_ID}'))
 		self.assertEqual(1, connector.paths.count(f'namespaces/{NAMESPACE_SUB_ID}'))
 		self.assertEqual(1, connector.paths.count('namespaces/names'))
+
+	def test_sync_block_headers_leaves_rollback_state_unchanged_when_namespace_fetch_fails(self):
+		# Arrange:
+		self._seed_blocks(
+			self.puller.symbol_db,
+			[1, 2, 3],
+			{2: b'local mismatch'.hex()})
+		self.puller.symbol_db.upsert_sync_state(create_sync_state())
+		self._upsert_namespace(create_namespace_item(), {NAMESPACE_ROOT_ID: 'root'}, 2)
+		original_sync_state = self.puller.symbol_db.get_sync_state()
+		original_namespace_rows = self._fetch_namespace_rows()
+		connector = FakeConnector(
+			3,
+			{},
+			{2: create_node_block(2)},
+			namespace_by_id={NAMESPACE_ROOT_ID: RuntimeError('namespace fetch failed')})
+		set_symbol_connector(self.puller, connector)
+
+		# Act / Assert:
+		with self.assertRaisesRegex(RuntimeError, 'namespace fetch failed'):
+			asyncio.run(self.puller.sync_block_headers())
+
+		self.assertEqual([1, 2, 3], self._fetch_block_heights(self.puller.symbol_db))
+		self.assertEqual(original_sync_state, self.puller.symbol_db.get_sync_state())
+		self.assertEqual(original_namespace_rows, self._fetch_namespace_rows())
 
 	@staticmethod
 	def _fetch_transaction_rows(database):

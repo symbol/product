@@ -141,7 +141,7 @@ class SymbolPullerTest(TestCase):  # pylint: disable=too-many-public-methods
 			{'namespaceIds': [NAMESPACE_ROOT_ID, NAMESPACE_SUB_ID]}
 		], [call.args[1] for call in connector.post.await_args_list])
 
-	def test_collect_dirty_namespace_ids_for_batch_returns_sorted_unique_namespace_ids_from_supported_artifacts(self):
+	def test_collect_dirty_namespace_ids_for_batch_returns_unique_namespace_ids_in_encounter_order(self):
 		# Arrange:
 		transaction_rows_by_height = {
 			1: [
@@ -169,9 +169,9 @@ class SymbolPullerTest(TestCase):  # pylint: disable=too-many-public-methods
 
 		# Assert:
 		self.assertEqual([
-			'0000000000000001',
 			'0000000000000002',
 			'0000000000000003',
+			'0000000000000001',
 			'0000000000000004'
 		], namespace_ids)
 

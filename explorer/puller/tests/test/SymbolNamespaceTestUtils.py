@@ -12,28 +12,36 @@ def create_namespace_item(  # pylint: disable=too-many-arguments,too-many-positi
 	owner_address=BENEFICIARY_ADDRESS,
 	start_height='1',
 	end_height='18446744073709551615',
+	level_ids=None,
 	**namespace_overrides
 ):
-	"""Creates a Symbol node namespace DTO for tests."""
+	"""Creates a Symbol node namespace DTO for tests.
+
+	By default builds a depth-1 or depth-2 item from namespace_id/root_id. Pass
+	level_ids (root-to-leaf order) to build any depth explicitly; when set, it
+	takes precedence over namespace_id/root_id, and the caller is responsible
+	for passing a matching parent_id.
+	"""
 
 	alias = alias or {'type': 0}
-	depth = 1 if namespace_id == root_id else 2
+	if level_ids is None:
+		level_ids = [root_id] if namespace_id == root_id else [root_id, namespace_id]
+	depth = len(level_ids)
 	namespace = {
 		'version': 1,
 		'registrationType': 0 if 1 == depth else 1,
 		'depth': depth,
-		'level0': root_id,
 		'alias': alias,
 		'parentId': parent_id,
 		'ownerAddress': owner_address,
 		'startHeight': start_height,
 		'endHeight': end_height
 	}
-	if 2 == depth:
-		namespace['level1'] = namespace_id
+	for index, level_id in enumerate(level_ids):
+		namespace[f'level{index}'] = level_id
 	namespace.update(namespace_overrides)
 
-	return {'meta': {'index': 0, 'active': True}, 'namespace': namespace, 'id': f'node-{namespace_id}'}
+	return {'meta': {'index': 0, 'active': True}, 'namespace': namespace, 'id': f'node-{level_ids[-1]}'}
 
 
 def create_expected_root_namespace_row(namespace_id, name, owner_address, namespace_item, observed_height):
@@ -46,11 +54,11 @@ def create_expected_root_namespace_row(namespace_id, name, owner_address, namesp
 		'name': name,
 		'full_name': name,
 		'depth': 1,
-		'registration_type': 0,
+		'registration_type': 'root',
 		'owner_address': bytes.fromhex(owner_address),
 		'start_height': 1,
 		'end_height': None,
-		'alias_type': 0,
+		'alias_type': 'none',
 		'alias_mosaic_id': None,
 		'alias_address': None,
 		'raw_payload': namespace_item,

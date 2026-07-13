@@ -5,6 +5,7 @@ from psycopg2.extras import Json
 
 from puller.model.symbol.Account import ACCOUNT_TYPE_VALUES
 from puller.model.symbol.Block import BLOCK_TYPE_VALUES
+from puller.model.symbol.Namespace import NAMESPACE_ALIAS_TYPE_LABELS, NAMESPACE_REGISTRATION_TYPE_LABELS
 from puller.model.symbol.Receipt import RECEIPT_TYPE_LABELS
 from puller.model.symbol.Transaction import MESSAGE_TYPE_LABELS, TRANSACTION_TYPE_LABELS
 
@@ -28,6 +29,9 @@ SYMBOL_TRANSACTION_TYPE_VALUES = tuple(TRANSACTION_TYPE_LABELS.values())
 SYMBOL_TRANSACTION_MOSAIC_ROLE_VALUES = ('transfer', 'hash_lock', 'secret_lock', 'revocation', 'restriction', 'definition')
 SYMBOL_TRANSACTION_ADDRESS_ROLE_VALUES = ('signer', 'recipient', 'target', 'sender', 'cosignatory', 'mosaic_owner')
 SYMBOL_TRANSACTION_MESSAGE_TYPE_VALUES = tuple(MESSAGE_TYPE_LABELS.values())
+SYMBOL_NAMESPACE_REGISTRATION_TYPE_VALUES = tuple(NAMESPACE_REGISTRATION_TYPE_LABELS.values())
+SYMBOL_NAMESPACE_ALIAS_TYPE_VALUES = tuple(NAMESPACE_ALIAS_TYPE_LABELS.values())
+SYMBOL_ALIAS_ARTIFACT_TYPE_VALUES = ('mosaic', 'namespace', 'account')
 ACCOUNT_REFRESH_STATE_STATUS_VALUES = ('healthy', 'refreshing', 'stale', 'unhealthy')
 ACCOUNT_REFRESH_STATE_COLUMNS = [
 	'last_successful_run_id',
@@ -198,18 +202,18 @@ SYMBOL_NAMESPACE_DEFINITIONS = [
 	'name varchar',
 	'full_name varchar UNIQUE',
 	'depth int NOT NULL',
-	'registration_type int NOT NULL',
+	'registration_type symbol_namespace_registration_type NOT NULL',
 	'owner_address bytea NOT NULL',
 	'start_height bigint NOT NULL',
 	'end_height bigint',
-	'alias_type int NOT NULL',
+	'alias_type symbol_namespace_alias_type NOT NULL',
 	'alias_mosaic_id varchar(16)',
 	'alias_address bytea',
 	'raw_payload jsonb NOT NULL',
 	'updated_at_height bigint NOT NULL'
 ]
 SYMBOL_ALIAS_NAME_DEFINITIONS = [
-	'artifact_type varchar NOT NULL',
+	'artifact_type symbol_alias_artifact_type NOT NULL',
 	'artifact_id varchar NOT NULL',
 	'name varchar NOT NULL',
 	'updated_at_height bigint NOT NULL',
@@ -323,6 +327,9 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 		_create_enum_type(cursor, 'symbol_transaction_mosaic_role', SYMBOL_TRANSACTION_MOSAIC_ROLE_VALUES)
 		_create_enum_type(cursor, 'symbol_transaction_address_role', SYMBOL_TRANSACTION_ADDRESS_ROLE_VALUES)
 		_create_enum_type(cursor, 'symbol_transaction_message_type', SYMBOL_TRANSACTION_MESSAGE_TYPE_VALUES)
+		_create_enum_type(cursor, 'symbol_namespace_registration_type', SYMBOL_NAMESPACE_REGISTRATION_TYPE_VALUES)
+		_create_enum_type(cursor, 'symbol_namespace_alias_type', SYMBOL_NAMESPACE_ALIAS_TYPE_VALUES)
+		_create_enum_type(cursor, 'symbol_alias_artifact_type', SYMBOL_ALIAS_ARTIFACT_TYPE_VALUES)
 		_create_table(cursor, 'symbol_sync_state', SYMBOL_SYNC_STATE_DEFINITIONS)
 		_create_table(cursor, 'symbol_blocks', SYMBOL_BLOCK_DEFINITIONS)
 		_create_table(cursor, 'symbol_account_refresh_state', SYMBOL_ACCOUNT_REFRESH_STATE_DEFINITIONS)
@@ -541,6 +548,11 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 		"""Upserts one namespace and replaces the alias-name rows derived from it."""
 
 		cursor = self.connection.cursor()
+		self._execute_upsert_namespace(cursor, namespace_row, alias_name_rows)
+		self.connection.commit()
+
+	@staticmethod
+	def _execute_upsert_namespace(cursor, namespace_row, alias_name_rows):
 		cursor.execute(
 			'''
 			INSERT INTO symbol_namespaces (
@@ -568,12 +580,16 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 				VALUES (%(artifact_type)s, %(artifact_id)s, %(name)s, %(updated_at_height)s)
 				''',
 				alias_name_row)
-		self.connection.commit()
 
 	def delete_namespace(self, namespace_id):
 		"""Deletes one namespace and its derived alias-name rows when it exists."""
 
 		cursor = self.connection.cursor()
+		self._execute_delete_namespace(cursor, namespace_id)
+		self.connection.commit()
+
+	@staticmethod
+	def _execute_delete_namespace(cursor, namespace_id):
 		cursor.execute('SELECT full_name FROM symbol_namespaces WHERE namespace_id = %s', (namespace_id,))
 		result = cursor.fetchone()
 		if not result:
@@ -581,7 +597,6 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 
 		cursor.execute('DELETE FROM symbol_alias_names WHERE name = %s', (result[0],))
 		cursor.execute('DELETE FROM symbol_namespaces WHERE namespace_id = %s', (namespace_id,))
-		self.connection.commit()
 
 	def get_namespace_ids_updated_from_height(self, height):  # pylint: disable=invalid-name
 		"""Gets namespace ids whose current state was observed at or after a height."""
@@ -980,12 +995,17 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 			self._delete_rollback_affected_rows_from_height(cursor, height)
 			self._stale_mark_account_refresh_state_if_needed(cursor, height)
 
-	def repair_rollback_from_height(self, height, sync_state):
-		"""Deletes rollbacked blocks and updates sync state in one transaction."""
+	def repair_rollback_from_height(self, height, sync_state, namespace_entries):
+		"""Repairs rollbacked chain and namespace state and updates sync state in one transaction."""
 
 		with self._database_transaction() as cursor:
 			self._delete_rollback_affected_rows_from_height(cursor, height)
 			self._stale_mark_account_refresh_state_if_needed(cursor, height)
+			for entry in namespace_entries:
+				if 'namespace_id' in entry:
+					self._execute_delete_namespace(cursor, entry['namespace_id'])
+				else:
+					self._execute_upsert_namespace(cursor, entry['row'], entry['alias_rows'])
 			self._execute_upsert_sync_state(cursor, sync_state)
 
 	@staticmethod
