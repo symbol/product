@@ -151,7 +151,7 @@ class SymbolPuller:
 			self._get_finalized_watermark(chain_info, chain_height)
 		)
 		epoch_adjustment_seconds = self._parse_epoch_adjustment(network_properties)
-		native_mosaic_id, native_mosaic_divisibility = await self._get_native_mosaic_info(network_properties)
+		native_mosaic_id, native_mosaic_divisibility = await self._get_native_mosaic_info()
 		sync_state = self._get_bounded_sync_state(self.symbol_db.get_sync_state(), chain_height)
 		if is_finalization_capped and sync_state and sync_state['last_synced_height'] >= finalized_height:
 			finalized_hash = self.symbol_db.get_block_hash(finalized_height)
@@ -436,13 +436,13 @@ class SymbolPuller:
 
 		return self._network_properties
 
-	async def _get_native_mosaic_info(self, network_properties=None):
+	async def _get_native_mosaic_info(self):
 		"""Gets and memoizes the native mosaic id and divisibility for this puller instance."""
 
 		if self._native_mosaic_info:
 			return self._native_mosaic_info
 
-		network_properties = network_properties or await self._get_network_properties()
+		network_properties = await self._get_network_properties()
 		native_mosaic_id = network_properties['chain']['currencyMosaicId'].replace('0x', '').replace("'", '').upper()
 		mosaic_definition = await self.get_symbol_node(f'/mosaics/{native_mosaic_id}')
 		self._native_mosaic_info = (native_mosaic_id, int(mosaic_definition['mosaic']['divisibility']))
