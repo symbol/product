@@ -1,11 +1,45 @@
 import asyncio
 import unittest
-from unittest.mock import AsyncMock, patch
+from unittest.mock import patch
 
 from common.symbol.NodeConfiguration import SymbolNodeConfigurationError
-from workflow_test_utils import create_symbol_facade_with_mock_db, parse_args_with_argv
+from workflow_test_utils import parse_args_with_argv
 
 from puller.workflows.sync_symbol_block import _create_node_config, main, parse_args
+
+
+class RecordingSymbolDatabase:
+	def __init__(self):
+		self.create_tables_call_count = 0
+
+	def create_tables(self):
+		self.create_tables_call_count += 1
+
+
+class RecordingSymbolPuller:
+	def __init__(self, *args, **kwargs):
+		self.constructor_args = args
+		self.constructor_kwargs = kwargs
+		self.symbol_db = RecordingSymbolDatabase()
+		self.synced_max_heights = []
+
+	def __enter__(self):
+		return self
+
+	def __exit__(self, *_):
+		return None
+
+	async def sync_block_headers(self, max_height):
+		self.synced_max_heights.append(max_height)
+
+
+class RecordingSymbolPullerFactory:
+	def __init__(self):
+		self.puller = None
+
+	def __call__(self, *args, **kwargs):
+		self.puller = RecordingSymbolPuller(*args, **kwargs)
+		return self.puller
 
 
 class SyncSymbolBlockTest(unittest.TestCase):
@@ -28,6 +62,7 @@ class SyncSymbolBlockTest(unittest.TestCase):
 		self.assertEqual(args.network, 'mainnet')
 		self.assertEqual(args.db_config, 'config.ini')
 		self.assertIsNone(args.max_height)
+		self.assertIsNone(args.max_requests_per_second)
 
 	def test_parse_args_with_custom_values(self):
 		# Act:
@@ -37,13 +72,15 @@ class SyncSymbolBlockTest(unittest.TestCase):
 			'--symbol-node', 'http://localhost:3000',
 			'--network', 'testnet',
 			'--db-config', 'test_config.ini',
-			'--max-height', '1000')
+			'--max-height', '1000',
+			'--max-requests-per-second', '25')
 
 		# Assert:
 		self.assertEqual(args.symbol_node, 'http://localhost:3000')
 		self.assertEqual(args.network, 'testnet')
 		self.assertEqual(args.db_config, 'test_config.ini')
 		self.assertEqual(args.max_height, 1000)
+		self.assertEqual(args.max_requests_per_second, 25)
 
 	def test_parse_args_rejects_invalid_network(self):
 		# Act + Assert:
@@ -65,6 +102,17 @@ class SyncSymbolBlockTest(unittest.TestCase):
 				'--network', 'testnet',
 				'--db-config', 'test_config.ini',
 				'--max-height', '0')
+
+	def test_parse_args_rejects_invalid_max_requests_per_second(self):
+		# Act + Assert:
+		with self.assertRaises(SystemExit):
+			parse_args_with_argv(
+				'sync_symbol_block.py',
+				parse_args,
+				'--symbol-node', 'http://localhost:3000',
+				'--network', 'testnet',
+				'--db-config', 'test_config.ini',
+				'--max-requests-per-second', '0')
 
 	def test_create_node_config_rejects_missing_allowed_hosts(self):
 		# Arrange:
@@ -96,18 +144,16 @@ class SyncSymbolBlockTest(unittest.TestCase):
 		self.assertFalse(node_config.allow_private)
 		self.assertEqual(17, node_config.timeout_seconds)
 
-	@patch('puller.workflows.sync_symbol_block.SymbolPuller')
-	def test_main_creates_tables_and_syncs_block_headers(self, mock_symbol_puller):
+	def test_main_forwards_custom_max_requests_per_second_to_symbol_puller(self):
 		# Arrange:
-		mock_facade, mock_db = create_symbol_facade_with_mock_db(mock_symbol_puller)
-		mock_facade.sync_block_headers = AsyncMock()
-
+		puller_factory = RecordingSymbolPullerFactory()
 		with patch('sys.argv', [
 			'sync_symbol_block.py',
 			'--symbol-node', 'http://localhost:7890',
 			'--network', 'testnet',
 			'--db-config', 'test_config.ini',
-			'--max-height', '3000'
+			'--max-height', '3000',
+			'--max-requests-per-second', '25'
 		]), patch.dict('os.environ', {
 			'SYMBOL_NODE_ALLOWED_HOSTS': 'localhost:7890',
 			'SYMBOL_NODE_ALLOW_LOOPBACK': 'true',
@@ -115,8 +161,33 @@ class SyncSymbolBlockTest(unittest.TestCase):
 			'SYMBOL_NODE_REQUEST_TIMEOUT_SECONDS': '9'
 		}, clear=True):
 			# Act:
-			asyncio.run(main())
+			asyncio.run(main(puller_factory))
 
 		# Assert:
-		self.assertEqual(1, mock_db.create_tables.call_count)
-		mock_facade.sync_block_headers.assert_awaited_once_with(3000)
+		puller = puller_factory.puller
+		self.assertEqual(25, puller.constructor_kwargs['max_requests_per_second'])
+		self.assertEqual(1, puller.symbol_db.create_tables_call_count)
+		self.assertEqual([3000], puller.synced_max_heights)
+
+	def test_main_uses_symbol_puller_default_max_requests_per_second_when_omitted(self):
+		# Arrange:
+		puller_factory = RecordingSymbolPullerFactory()
+		with patch('sys.argv', [
+			'sync_symbol_block.py',
+			'--symbol-node', 'http://localhost:7890',
+			'--network', 'testnet',
+			'--db-config', 'test_config.ini'
+		]), patch.dict('os.environ', {
+			'SYMBOL_NODE_ALLOWED_HOSTS': 'localhost:7890',
+			'SYMBOL_NODE_ALLOW_LOOPBACK': 'true',
+			'SYMBOL_NODE_ALLOW_PRIVATE': 'false',
+			'SYMBOL_NODE_REQUEST_TIMEOUT_SECONDS': '9'
+		}, clear=True):
+			# Act:
+			asyncio.run(main(puller_factory))
+
+		# Assert:
+		puller = puller_factory.puller
+		self.assertEqual({}, puller.constructor_kwargs)
+		self.assertEqual(1, puller.symbol_db.create_tables_call_count)
+		self.assertEqual([None], puller.synced_max_heights)
