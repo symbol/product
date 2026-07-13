@@ -14,6 +14,7 @@ from symbolchain.symbol.Network import Network
 from puller.db.SymbolDatabase import SymbolDatabase
 from puller.model.symbol.Account import create_account_row
 from tests.facade.symbol.puller_test_utils import NATIVE_MOSAIC_ID, create_account_item
+from tests.test.SymbolTestConstants import RECIPIENT_ADDRESS
 
 from ..test.SymbolTransactionTestUtils import create_transaction_entry
 
@@ -21,6 +22,7 @@ DatabaseConfig = namedtuple(
 	'DatabaseConfig',
 	['database', 'user', 'password', 'host', 'port'])
 ADDRESS1 = '9889432DE263BB8FE88444A4DA28D3609BD8BB8FAE18AE95'
+ADDRESS3 = '98' + '11' * 23
 
 
 def _create_block(height, block_hash=None, **overrides):
@@ -116,6 +118,17 @@ def _create_account_row(address_hex=ADDRESS1, observed_height=10, **item_overrid
 		observed_height,
 		NATIVE_MOSAIC_ID,
 		6)
+
+
+def _create_multisig_row(address_hex, updated_at_height):
+	return {
+		'address': bytes.fromhex(address_hex),
+		'min_approval': 1,
+		'min_removal': 1,
+		'cosignatory_addresses': [],
+		'multisig_addresses': [],
+		'updated_at_height': updated_at_height
+	}
 
 
 class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
@@ -1605,6 +1618,40 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		self.assertEqual(0, address_count)
 		self.assertEqual([(1,)], block_results)
 
+	def test_delete_blocks_from_height_deletes_account_family_rows(self):
+		# Arrange:
+		database = self._create_database()
+		cursor = database.connection.cursor()
+		database.upsert_blocks([_create_block(1), _create_block(2), _create_block(3)])
+		kept_account_row, kept_mosaic_rows = _create_account_row(ADDRESS1, observed_height=1)
+		rollbacked_account_row, rollbacked_mosaic_rows = _create_account_row(RECIPIENT_ADDRESS, observed_height=2)
+		after_fork_account_row, after_fork_mosaic_rows = _create_account_row(ADDRESS3, observed_height=3)
+		database.upsert_account_current_state(kept_account_row, kept_mosaic_rows)
+		database.upsert_account_current_state(rollbacked_account_row, rollbacked_mosaic_rows)
+		database.upsert_account_current_state(after_fork_account_row, after_fork_mosaic_rows)
+		kept_multisig_row = _create_multisig_row(ADDRESS1, 1)
+		rollbacked_multisig_row = _create_multisig_row(RECIPIENT_ADDRESS, 2)
+		after_fork_multisig_row = _create_multisig_row(ADDRESS3, 3)
+		database.upsert_multisig(kept_multisig_row['address'], kept_multisig_row)
+		database.upsert_multisig(rollbacked_multisig_row['address'], rollbacked_multisig_row)
+		database.upsert_multisig(after_fork_multisig_row['address'], after_fork_multisig_row)
+
+		# Act:
+		database.delete_blocks_from_height(2)
+
+		# Assert:
+		cursor.execute('SELECT encode(address, \'hex\'), last_seen_height FROM symbol_accounts ORDER BY address')
+		account_results = cursor.fetchall()
+		cursor.execute(
+			'SELECT encode(address, \'hex\'), mosaic_id, updated_at_height FROM symbol_account_mosaics ORDER BY address, mosaic_id')
+		mosaic_results = cursor.fetchall()
+		cursor.execute('SELECT encode(address, \'hex\'), updated_at_height FROM symbol_multisig ORDER BY address')
+		multisig_results = cursor.fetchall()
+
+		self.assertEqual([(ADDRESS1.lower(), 1)], account_results)
+		self.assertEqual([(ADDRESS1.lower(), NATIVE_MOSAIC_ID, 1)], mosaic_results)
+		self.assertEqual([(ADDRESS1.lower(), 1)], multisig_results)
+
 	def test_can_repair_rollback_from_height_in_one_transaction(self):
 		# Arrange:
 		database = self._create_database()
@@ -1628,6 +1675,10 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		database.upsert_receipts_for_height(1, [_create_receipt(1)], 100)
 		database.upsert_receipts_for_height(2, [_create_receipt(2)], 100)
 		database.upsert_receipts_for_height(3, [_create_receipt(3)], 100)
+		database.upsert_account_current_state(*_create_account_row(ADDRESS1, observed_height=1))
+		database.upsert_account_current_state(*_create_account_row(RECIPIENT_ADDRESS, observed_height=2))
+		database.upsert_multisig(bytes.fromhex(ADDRESS1), _create_multisig_row(ADDRESS1, 1))
+		database.upsert_multisig(bytes.fromhex(RECIPIENT_ADDRESS), _create_multisig_row(RECIPIENT_ADDRESS, 2))
 
 		# Act:
 		database.repair_rollback_from_height(2, _create_sync_state(
@@ -1650,6 +1701,13 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		receipt_results = cursor.fetchall()
 		cursor.execute('SELECT height, block_reward FROM symbol_blocks ORDER BY height')
 		block_reward_results = cursor.fetchall()
+		cursor.execute('SELECT encode(address, \'hex\'), last_seen_height FROM symbol_accounts ORDER BY address')
+		account_results = cursor.fetchall()
+		cursor.execute(
+			'SELECT encode(address, \'hex\'), mosaic_id, updated_at_height FROM symbol_account_mosaics ORDER BY address, mosaic_id')
+		account_mosaic_results = cursor.fetchall()
+		cursor.execute('SELECT encode(address, \'hex\'), updated_at_height FROM symbol_multisig ORDER BY address')
+		multisig_results = cursor.fetchall()
 		sync_state = database.get_sync_state()
 
 		self.assertEqual([(1,)], block_results)
@@ -1658,6 +1716,9 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		self.assertEqual([(1, 'kept address', 'signer')], address_results)
 		self.assertEqual([(1,)], receipt_results)
 		self.assertEqual([(1, 100)], block_reward_results)
+		self.assertEqual([(ADDRESS1.lower(), 1)], account_results)
+		self.assertEqual([(ADDRESS1.lower(), NATIVE_MOSAIC_ID, 1)], account_mosaic_results)
+		self.assertEqual([(ADDRESS1.lower(), 1)], multisig_results)
 		self.assertEqual('repairing', sync_state['status'])
 		self.assertEqual(1, sync_state['last_synced_height'])
 		self.assertEqual(

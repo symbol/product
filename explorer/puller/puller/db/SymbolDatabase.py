@@ -508,24 +508,27 @@ class SymbolDatabase(DatabaseConnection):
 		"""Deletes blocks from the supplied height for rollback repair."""
 
 		cursor = self.connection.cursor()
-		self._delete_blocks_and_transactions_from_height(cursor, height)
+		self._delete_rollback_affected_rows_from_height(cursor, height)
 		self.connection.commit()
 
 	def repair_rollback_from_height(self, height, sync_state):
 		"""Deletes rollbacked blocks and updates sync state in one transaction."""
 
 		cursor = self.connection.cursor()
-		self._delete_blocks_and_transactions_from_height(cursor, height)
+		self._delete_rollback_affected_rows_from_height(cursor, height)
 		self._execute_upsert_sync_state(cursor, sync_state)
 		self.connection.commit()
 
 	@staticmethod
-	def _delete_blocks_and_transactions_from_height(cursor, height):
+	def _delete_rollback_affected_rows_from_height(cursor, height):
 		cursor.execute('DELETE FROM symbol_transaction_mosaics WHERE height >= %s', (height,))
 		cursor.execute('DELETE FROM symbol_transaction_addresses WHERE height >= %s', (height,))
 		cursor.execute('DELETE FROM symbol_transactions WHERE height >= %s', (height,))
 		cursor.execute('DELETE FROM symbol_receipts WHERE height >= %s', (height,))
 		cursor.execute('DELETE FROM symbol_blocks WHERE height >= %s', (height,))
+		cursor.execute('DELETE FROM symbol_multisig WHERE updated_at_height >= %s', (height,))
+		cursor.execute('DELETE FROM symbol_account_mosaics WHERE updated_at_height >= %s', (height,))
+		cursor.execute('DELETE FROM symbol_accounts WHERE last_seen_height >= %s', (height,))
 
 	def upsert_transactions_for_height(self, height, transaction_entries):
 		"""Replaces persisted Symbol transactions and child index rows for one height."""
