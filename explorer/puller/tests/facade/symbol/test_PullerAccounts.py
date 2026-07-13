@@ -97,7 +97,7 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):
 		self.assertEqual([{'addresses': [address_text]}], connector.post_payloads)
 		self.assertEqual((321, 0, True, True, 2), self._fetch_account_current_state())
 
-	def test_refresh_dirty_accounts_for_batch_does_not_mark_transaction_participant_as_active_harvester(self):
+	def test_refresh_dirty_accounts_for_batch_does_not_mark_transaction_participant_as_inactive_harvester(self):
 		# Arrange:
 		account_row, mosaic_rows = self._create_current_account_row(address_hex=RECIPIENT_ADDRESS, importance='100')
 		account_row['is_harvesting_active'] = True
@@ -139,12 +139,14 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):
 		self.assertEqual([{'addresses': [beneficiary_address_text]}], connector.post_payloads)
 
 	def test_refresh_dirty_accounts_for_batch_prefers_beneficiary_timestamp_when_address_is_also_transaction_participant(self):
-		# Arrange:
+		# Arrange: BENEFICIARY_ADDRESS is only a transaction participant at height 1 (old block, outside the
+		# harvesting-active window) and the block beneficiary at height 2 (recent block, inside the window) —
+		# if the wrong source's timestamp were used, is_harvesting_active would come out False.
 		connector = FakeConnector(
-			1,
-			{0: [self._create_block(1)]},
+			2,
+			{0: [self._create_block(1, days_ago=8), self._create_block(2)]},
 			transactions_by_path={
-				transaction_path(1, 1): {'data': [create_node_transaction(1, recipientAddress=BENEFICIARY_ADDRESS)]}
+				transaction_path(1, 2): {'data': [create_node_transaction(1, recipientAddress=BENEFICIARY_ADDRESS)]}
 			},
 			account_by_address=self._account_by_address_text(BENEFICIARY_ADDRESS))
 
@@ -158,24 +160,23 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):
 
 	def test_refresh_dirty_accounts_for_batch_deduplicates_repeated_transaction_participant_addresses(self):
 		# Arrange:
-		beneficiary_address_text = self._address_text(RECIPIENT_ADDRESS)
-		participant_address_text = self._address_text(BENEFICIARY_ADDRESS)
+		beneficiary_address_text = self._address_text(BENEFICIARY_ADDRESS)
+		participant_address_text = self._address_text(RECIPIENT_ADDRESS)
 		connector = FakeConnector(
 			1,
-			{0: [self._create_block(1, beneficiaryAddress=RECIPIENT_ADDRESS)]},
+			{0: [self._create_block(1)]},
 			transactions_by_path={
 				transaction_path(1, 1): {
 					'data': [
 						create_node_transaction(
 							1,
 							transaction_hash=f'{index:064X}',
-							transaction_id=f'transaction-{index}',
-							recipientAddress=BENEFICIARY_ADDRESS)
+							transaction_id=f'transaction-{index}')
 						for index in range(2)
 					]
 				}
 			},
-			account_by_address=self._account_by_address_text(RECIPIENT_ADDRESS, BENEFICIARY_ADDRESS))
+			account_by_address=self._account_by_address_text(BENEFICIARY_ADDRESS, RECIPIENT_ADDRESS))
 
 		# Act:
 		self._sync_with_connector(connector)

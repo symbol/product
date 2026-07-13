@@ -503,54 +503,52 @@ class SymbolPuller:
 	):
 		"""Fetches current-state account and multisig rows touched by a synced block batch."""
 
-		addresses = list(dirty_addresses.keys())
-		address_text_by_address = {
-			address: str(self.symbol_facade.network.address_class(address))
-			for address in addresses
-		}
-
-		account_items_by_address = {}
-		for chunk_start in range(0, len(addresses), ACCOUNT_BATCH_FETCH_SIZE):
-			chunk = addresses[chunk_start:chunk_start + ACCOUNT_BATCH_FETCH_SIZE]
-			response = await self.post_symbol_node('/accounts', {
-				'addresses': [address_text_by_address[address] for address in chunk]
-			})
-			if not isinstance(response, list):
-				raise ValueError('Malformed Symbol accounts batch response')
-			for item in response:
-				account_items_by_address[bytes.fromhex(item['account']['address'])] = item
+		addresses = [self.symbol_facade.network.address_class(address) for address in dirty_addresses.keys()]
 
 		dirty_account_rows = []
-		for address in addresses:
-			address_text = address_text_by_address[address]
-			if address not in account_items_by_address:
-				raise ValueError(f'Missing Symbol accounts batch item for address {address_text}')
-
-			item = account_items_by_address[address]
-			multisig_response = await self.get_symbol_node(f'/account/{address_text}/multisig', not_found_as_error=False)
-			account_row, mosaic_rows = create_account_row(
-				item,
-				self.symbol_facade.network,
-				observed_height,
-				native_mosaic_info.id,
-				native_mosaic_info.divisibility)
-
-			dirty_info = dirty_addresses[address]
-			overwrite_is_harvesting_active = dirty_info['is_beneficiary'] and self._is_harvested_block_within_active_window(
-				dirty_info['harvested_block_timestamp'])
-			if overwrite_is_harvesting_active:
-				account_row['is_harvesting_active'] = True
-
-			dirty_account_rows.append({
-				'address': address,
-				'account_row': account_row,
-				'mosaic_rows': mosaic_rows,
-				'overwrite_is_harvesting_active': overwrite_is_harvesting_active,
-				'multisig_row': None if _is_not_found_response(multisig_response) else create_multisig_row(
-					address,
-					multisig_response['multisig'],
-					observed_height)
+		for chunk_start in range(0, len(addresses), ACCOUNT_BATCH_FETCH_SIZE):
+			chunk = addresses[chunk_start:chunk_start + ACCOUNT_BATCH_FETCH_SIZE]
+			accounts_response = await self.post_symbol_node('/accounts', {
+				'addresses': [str(address) for address in chunk]
 			})
+			if not isinstance(accounts_response, list):
+				raise ValueError('Malformed Symbol accounts batch response')
+			account_items_by_address = {bytes.fromhex(item['account']['address']): item for item in accounts_response}
+
+			multisig_responses = await asyncio.gather(*(
+				self.get_symbol_node(f'/account/{address}/multisig', not_found_as_error=False)
+				for address in chunk
+			))
+
+			for address, multisig_response in zip(chunk, multisig_responses):
+				address_bytes = address.bytes
+				if address_bytes not in account_items_by_address:
+					raise ValueError(f'Missing Symbol accounts batch item for address {address}')
+
+				item = account_items_by_address[address_bytes]
+				account_row, mosaic_rows = create_account_row(
+					item,
+					self.symbol_facade.network,
+					observed_height,
+					native_mosaic_info.id,
+					native_mosaic_info.divisibility)
+
+				dirty_info = dirty_addresses[address_bytes]
+				overwrite_is_harvesting_active = dirty_info['is_beneficiary'] and self._is_harvested_block_within_active_window(
+					dirty_info['harvested_block_timestamp'])
+				if overwrite_is_harvesting_active:
+					account_row['is_harvesting_active'] = True
+
+				dirty_account_rows.append({
+					'address': address_bytes,
+					'account_row': account_row,
+					'mosaic_rows': mosaic_rows,
+					'overwrite_is_harvesting_active': overwrite_is_harvesting_active,
+					'multisig_row': None if _is_not_found_response(multisig_response) else create_multisig_row(
+						address_bytes,
+						multisig_response['multisig'],
+						observed_height)
+				})
 
 		return dirty_account_rows
 
