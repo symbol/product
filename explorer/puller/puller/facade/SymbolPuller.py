@@ -19,6 +19,7 @@ from puller.model.symbol.Receipt import INFLATION_RECEIPT_TYPE, create_receipt_r
 from puller.model.symbol.Transaction import create_transaction_row
 
 DatabaseConfiguration = namedtuple('DatabaseConfiguration', ['database', 'user', 'password', 'host', 'port'])
+NativeMosaicInfo = namedtuple('NativeMosaicInfo', ['id', 'divisibility'])
 MAX_PAGE_SIZE = 100
 ACCOUNT_BATCH_FETCH_SIZE = MAX_PAGE_SIZE
 BLOCK_PAGE_FETCH_CONCURRENCY = 10
@@ -151,7 +152,7 @@ class SymbolPuller:
 			self._get_finalized_watermark(chain_info, chain_height)
 		)
 		epoch_adjustment_seconds = self._parse_epoch_adjustment(network_properties)
-		native_mosaic_id, native_mosaic_divisibility = await self._get_native_mosaic_info()
+		native_mosaic_info = await self._get_native_mosaic_info()
 		sync_state = self._get_bounded_sync_state(self.symbol_db.get_sync_state(), chain_height)
 		if is_finalization_capped and sync_state and sync_state['last_synced_height'] >= finalized_height:
 			finalized_hash = self.symbol_db.get_block_hash(finalized_height)
@@ -164,8 +165,7 @@ class SymbolPuller:
 			start_height,
 			chain_height,
 			epoch_adjustment_seconds,
-			native_mosaic_id,
-			native_mosaic_divisibility)
+			native_mosaic_info)
 		if last_synced_height is None and sync_state:
 			last_synced_height = sync_state['last_synced_height']
 			last_synced_block_hash = sync_state['last_synced_block_hash']
@@ -270,13 +270,12 @@ class SymbolPuller:
 		})
 		return height
 
-	async def _sync_block_pages(  # pylint: disable=too-many-arguments,too-many-positional-arguments,too-many-locals
+	async def _sync_block_pages(  # pylint: disable=too-many-locals
 		self,
 		start_height,
 		chain_height,
 		epoch_adjustment_seconds,
-		native_mosaic_id,
-		native_mosaic_divisibility
+		native_mosaic_info
 	):
 		last_synced_height = None
 		last_synced_block_hash = None
@@ -310,20 +309,19 @@ class SymbolPuller:
 
 				if len(blocks) < MAX_PAGE_SIZE:
 					await self._sync_block_batch_with_dirty_accounts(
-						batch_rows, epoch_adjustment_seconds, native_mosaic_id, native_mosaic_divisibility)
+						batch_rows, epoch_adjustment_seconds, native_mosaic_info)
 					return last_synced_height, last_synced_block_hash
 
 			await self._sync_block_batch_with_dirty_accounts(
-				batch_rows, epoch_adjustment_seconds, native_mosaic_id, native_mosaic_divisibility)
+				batch_rows, epoch_adjustment_seconds, native_mosaic_info)
 
 		return last_synced_height, last_synced_block_hash
 
-	async def _sync_block_batch_with_dirty_accounts(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+	async def _sync_block_batch_with_dirty_accounts(
 		self,
 		batch_rows,
 		epoch_adjustment_seconds,
-		native_mosaic_id,
-		native_mosaic_divisibility
+		native_mosaic_info
 	):
 		transaction_rows_by_height = await self._get_transaction_rows_by_height(
 			batch_rows[0]['height'],
@@ -339,8 +337,7 @@ class SymbolPuller:
 		dirty_account_rows = await self._fetch_dirty_accounts_for_batch(
 			dirty_addresses,
 			observed_height,
-			native_mosaic_id,
-			native_mosaic_divisibility)
+			native_mosaic_info)
 		self._sync_block_batch(batch_rows, transaction_rows_by_height, receipt_rows_by_height)
 		self._write_dirty_accounts_for_batch(dirty_account_rows)
 
@@ -445,7 +442,7 @@ class SymbolPuller:
 		network_properties = await self._get_network_properties()
 		native_mosaic_id = network_properties['chain']['currencyMosaicId'].replace('0x', '').replace("'", '').upper()
 		mosaic_definition = await self.get_symbol_node(f'/mosaics/{native_mosaic_id}')
-		self._native_mosaic_info = (native_mosaic_id, int(mosaic_definition['mosaic']['divisibility']))
+		self._native_mosaic_info = NativeMosaicInfo(native_mosaic_id, int(mosaic_definition['mosaic']['divisibility']))
 
 		return self._native_mosaic_info
 
@@ -498,12 +495,11 @@ class SymbolPuller:
 
 		return dirty_addresses
 
-	async def _fetch_dirty_accounts_for_batch(  # pylint: disable=too-many-arguments,too-many-positional-arguments,too-many-locals
+	async def _fetch_dirty_accounts_for_batch(  # pylint: disable=too-many-locals
 		self,
 		dirty_addresses,
 		observed_height,
-		native_mosaic_id,
-		native_mosaic_divisibility
+		native_mosaic_info
 	):
 		"""Fetches current-state account and multisig rows touched by a synced block batch."""
 
@@ -536,8 +532,8 @@ class SymbolPuller:
 				item,
 				self.symbol_facade.network,
 				observed_height,
-				native_mosaic_id,
-				native_mosaic_divisibility)
+				native_mosaic_info.id,
+				native_mosaic_info.divisibility)
 
 			dirty_info = dirty_addresses[address]
 			overwrite_is_harvesting_active = dirty_info['is_beneficiary'] and self._is_harvested_block_within_active_window(
