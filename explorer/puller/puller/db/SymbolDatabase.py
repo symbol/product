@@ -334,11 +334,10 @@ class SymbolDatabase(DatabaseConnection):
 				sync_state['last_synced_block_hash']
 			])
 
-	def upsert_account_current_state(  # pylint: disable=too-many-arguments
+	def upsert_account_current_state(
 		self,
 		account_row,
 		mosaic_rows,
-		overwrite_importance_percentage=False,
 		overwrite_is_harvesting_active=True
 	):
 		"""Upserts one Symbol account current-state row and replaces its current mosaic rows."""
@@ -348,16 +347,14 @@ class SymbolDatabase(DatabaseConnection):
 			cursor,
 			account_row,
 			mosaic_rows,
-			overwrite_importance_percentage,
 			overwrite_is_harvesting_active)
 		self.connection.commit()
 
 	@staticmethod
-	def _execute_upsert_account_current_state(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+	def _execute_upsert_account_current_state(
 		cursor,
 		account_row,
 		mosaic_rows,
-		overwrite_importance_percentage=False,
 		overwrite_is_harvesting_active=True
 	):
 		update_columns = [
@@ -375,8 +372,6 @@ class SymbolDatabase(DatabaseConnection):
 			'raw_payload',
 			'last_seen_height'
 		]
-		if overwrite_importance_percentage:
-			update_columns.append('importance_percentage')
 		if overwrite_is_harvesting_active:
 			update_columns.append('is_harvesting_active')
 

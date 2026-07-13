@@ -985,7 +985,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 
 		self.assertEqual((0,), cursor.fetchone())
 
-	def test_upsert_account_current_state_preserves_importance_percentage_when_not_overwriting(self):
+	def test_upsert_account_current_state_never_overwrites_importance_percentage(self):
 		# Arrange:
 		database = self._create_database()
 		account_row, mosaic_rows = _create_account_row()
@@ -994,10 +994,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 
 		# Act:
 		database.upsert_account_current_state(account_row, mosaic_rows)
-		database.upsert_account_current_state(
-			updated_account_row,
-			updated_mosaic_rows,
-			overwrite_importance_percentage=False)
+		database.upsert_account_current_state(updated_account_row, updated_mosaic_rows)
 
 		# Assert:
 		cursor = database.connection.cursor()
@@ -1026,30 +1023,25 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 
 		self.assertEqual((False,), cursor.fetchone())
 
-	def test_can_upsert_account_current_state_and_overwrite_importance_percentage_and_harvesting_active(self):
+	def test_can_upsert_account_current_state_and_overwrite_harvesting_active_by_default(self):
 		# Arrange:
 		database = self._create_database()
 		account_row, mosaic_rows = _create_account_row()
-		account_row['importance_percentage'] = Decimal('0.5')
 		account_row['is_harvesting_active'] = False
 		updated_account_row, updated_mosaic_rows = _create_account_row(importance='200')
-		updated_account_row['importance_percentage'] = Decimal('0.9')
 		updated_account_row['is_harvesting_active'] = True
 
 		# Act:
 		database.upsert_account_current_state(account_row, mosaic_rows)
-		database.upsert_account_current_state(
-			updated_account_row,
-			updated_mosaic_rows,
-			overwrite_importance_percentage=True)
+		database.upsert_account_current_state(updated_account_row, updated_mosaic_rows)
 
 		# Assert:
 		cursor = database.connection.cursor()
 		cursor.execute(
-			'SELECT importance, importance_percentage, is_harvesting_active FROM symbol_accounts WHERE address = %s',
+			'SELECT importance, is_harvesting_active FROM symbol_accounts WHERE address = %s',
 			(bytes.fromhex(ADDRESS1),))
 
-		self.assertEqual((200, Decimal('0.9'), True), cursor.fetchone())
+		self.assertEqual((200, True), cursor.fetchone())
 
 	def test_can_upsert_multisig(self):
 		# Arrange:

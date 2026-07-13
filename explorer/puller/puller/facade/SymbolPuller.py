@@ -565,7 +565,6 @@ class SymbolPuller:
 			self.symbol_db.upsert_account_current_state(
 				dirty_account_row['account_row'],
 				dirty_account_row['mosaic_rows'],
-				overwrite_importance_percentage=False,
 				overwrite_is_harvesting_active=dirty_account_row['overwrite_is_harvesting_active'])
 			self.symbol_db.upsert_multisig(
 				dirty_account_row['address'],
