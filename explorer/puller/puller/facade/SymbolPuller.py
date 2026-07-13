@@ -17,10 +17,13 @@ from puller.facade.RequestRateLimiter import RequestRateLimiter
 from puller.model.symbol.Account import HARVESTING_ACTIVE_WINDOW_DAYS, create_account_row, create_multisig_row
 from puller.model.symbol.Block import create_block_row
 from puller.model.symbol.Receipt import INFLATION_RECEIPT_TYPE, create_receipt_rows
-from puller.model.symbol.Transaction import create_transaction_row
+from puller.model.symbol.Resolution import is_alias_mosaic_id, select_resolution_entry
+from puller.model.symbol.Transaction import create_transaction_row, unique_address_rows
 
 DatabaseConfiguration = namedtuple('DatabaseConfiguration', ['database', 'user', 'password', 'host', 'port'])
 NativeMosaicInfo = namedtuple('NativeMosaicInfo', ['id', 'divisibility'])
+TransactionSource = namedtuple('TransactionSource', ['primary_id', 'secondary_id'])
+ResolutionStatements = namedtuple('ResolutionStatements', ['address', 'mosaic'])
 MAX_PAGE_SIZE = 100
 ACCOUNT_BATCH_FETCH_SIZE = MAX_PAGE_SIZE
 BLOCK_PAGE_FETCH_CONCURRENCY = 10
@@ -331,6 +334,7 @@ class SymbolPuller:
 			epoch_adjustment_seconds
 		)
 		receipt_rows_by_height = await self._get_receipt_rows_by_height(batch_rows[0]['height'], batch_rows[-1]['height'])
+		await self._resolve_transaction_rows_for_batch(transaction_rows_by_height)
 		dirty_addresses = self._collect_dirty_addresses_for_batch(
 			batch_rows,
 			transaction_rows_by_height,
@@ -411,6 +415,115 @@ class SymbolPuller:
 
 		return dict(rows_by_height)
 
+	async def _get_resolution_statements(self, kind, height):
+		resolution_entries_by_unresolved = {}
+		page_number = 1
+		while True:
+			response = await self.get_symbol_node(
+				f'/statements/resolutions/{kind}?height={height}&pageSize={MAX_PAGE_SIZE}&pageNumber={page_number}'
+			)
+			if not isinstance(response, dict) or 'data' not in response:
+				raise ValueError(f'Malformed Symbol {kind} resolution page response')
+
+			items = response['data']
+			for item in items:
+				statement = item['statement']
+				resolution_entries_by_unresolved[statement['unresolved'].upper()] = statement['resolutionEntries']
+
+			if len(items) < MAX_PAGE_SIZE:
+				return resolution_entries_by_unresolved
+
+			page_number += 1
+
+	@staticmethod
+	def _transaction_resolution_source(row, top_level_rows_by_hash):
+		if not row['is_embedded']:
+			return TransactionSource(row['block_index'] + 1, 0)
+
+		parent_row = top_level_rows_by_hash.get(row['aggregate_hash'])
+		if parent_row is None:
+			raise ValueError(f'Missing aggregate transaction for embedded transaction at height {row["height"]}')
+
+		return TransactionSource(parent_row['block_index'] + 1, row['embedded_index'] + 1)
+
+	@staticmethod
+	def _resolve_transaction_alias(statements, unresolved, source, kind, height):
+		unresolved_hex = unresolved.hex().upper() if isinstance(unresolved, bytes) else unresolved.upper()
+		if unresolved_hex not in statements:
+			raise ValueError(f'Missing Symbol {kind} resolution at height {height} for unresolved {unresolved_hex}')
+
+		resolved = select_resolution_entry(statements[unresolved_hex], source.primary_id, source.secondary_id)
+		if resolved is None:
+			raise ValueError(f'Missing Symbol {kind} resolution entry at height {height} for unresolved {unresolved_hex}')
+
+		return bytes.fromhex(resolved) if 'address' == kind else resolved
+
+	@staticmethod
+	def _alias_values_for_transaction_rows(transaction_rows):
+		alias_addresses = {
+			address
+			for row in transaction_rows
+			for address in [
+				*(address_row['address'] for address_row in row['address_rows']),
+				row['recipient_address'],
+				row['target_address']
+			]
+			if address is not None and Address(address).is_alias()
+		}
+		alias_mosaic_ids = {
+			mosaic_row['mosaic_id']
+			for row in transaction_rows
+			for mosaic_row in row['mosaic_rows']
+			if is_alias_mosaic_id(mosaic_row['mosaic_id'])
+		}
+		return alias_addresses, alias_mosaic_ids
+
+	def _resolve_transaction_row(self, row, top_level_rows_by_hash, resolution_statements, height):
+		row_has_alias_address = any(Address(address_row['address']).is_alias() for address_row in row['address_rows'])
+		row_has_alias_address = row_has_alias_address or any(
+			address is not None and Address(address).is_alias()
+			for address in (row['recipient_address'], row['target_address'])
+		)
+		row_has_alias_mosaic = any(is_alias_mosaic_id(mosaic_row['mosaic_id']) for mosaic_row in row['mosaic_rows'])
+		if not row_has_alias_address and not row_has_alias_mosaic:
+			return
+
+		source = self._transaction_resolution_source(row, top_level_rows_by_hash)
+		if row_has_alias_address:
+			for address_row in row['address_rows']:
+				if Address(address_row['address']).is_alias():
+					address_row['address'] = self._resolve_transaction_alias(
+						resolution_statements.address, address_row['address'], source, 'address', height)
+			row['address_rows'] = unique_address_rows(row['address_rows'])
+			for field_name in ('recipient_address', 'target_address'):
+				address = row[field_name]
+				if address is not None and Address(address).is_alias():
+					row[field_name] = self._resolve_transaction_alias(
+						resolution_statements.address, address, source, 'address', height)
+
+		if row_has_alias_mosaic:
+			for mosaic_row in row['mosaic_rows']:
+				if is_alias_mosaic_id(mosaic_row['mosaic_id']):
+					mosaic_row['mosaic_id'] = self._resolve_transaction_alias(
+						resolution_statements.mosaic, mosaic_row['mosaic_id'], source, 'mosaic', height)
+
+	async def _resolve_transaction_rows_for_batch(self, transaction_rows_by_height):
+		for height, transaction_rows in transaction_rows_by_height.items():
+			alias_addresses, alias_mosaic_ids = self._alias_values_for_transaction_rows(transaction_rows)
+			if not alias_addresses and not alias_mosaic_ids:
+				continue
+
+			resolution_statements = ResolutionStatements(
+				await self._get_resolution_statements('address', height) if alias_addresses else {},
+				await self._get_resolution_statements('mosaic', height) if alias_mosaic_ids else {})
+			top_level_rows_by_hash = {
+				row['hash']: row
+				for row in transaction_rows
+				if not row['is_embedded']
+			}
+			for row in transaction_rows:
+				self._resolve_transaction_row(row, top_level_rows_by_hash, resolution_statements, height)
+
 	@staticmethod
 	def _calculate_block_reward(receipts):
 		return sum(receipt['amount'] for receipt in receipts if INFLATION_RECEIPT_TYPE == receipt['receipt_type'])
@@ -473,7 +586,7 @@ class SymbolPuller:
 			for transaction_row in transaction_rows:
 				for address_row in transaction_row['address_rows']:
 					address = Address(address_row['address'])
-					if address not in dirty_addresses and not address.is_alias():
+					if address not in dirty_addresses:
 						dirty_addresses[address] = {
 							'is_beneficiary': False,
 							'harvested_block_timestamp': None

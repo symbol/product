@@ -150,7 +150,7 @@ def create_node_block(
 	return node_block
 
 
-def create_node_transaction(height, transaction_hash=None, transaction_id=None, **transaction_overrides):
+def create_node_transaction(height, transaction_hash=None, transaction_id=None, block_index=0, **transaction_overrides):
 	transaction_hash = transaction_hash or f'{height:064X}'
 	transaction = {
 		'size': 152,
@@ -162,7 +162,7 @@ def create_node_transaction(height, transaction_hash=None, transaction_id=None, 
 		'maxFee': '1000',
 		'deadline': '2000',
 		'recipientAddress': RECIPIENT_ADDRESS,
-		'mosaics': [{'id': 'E74B99BA41F4AFEE', 'amount': str(height * 1000)}]
+		'mosaics': [{'id': NATIVE_MOSAIC_ID, 'amount': str(height * 1000)}]
 	}
 	transaction.update(transaction_overrides)
 
@@ -171,7 +171,7 @@ def create_node_transaction(height, transaction_hash=None, transaction_id=None, 
 			'height': str(height),
 			'hash': transaction_hash,
 			'merkleComponentHash': transaction_hash,
-			'index': 0,
+			'index': block_index,
 			'timestamp': str(height * 1000),
 			'feeMultiplier': 5
 		},
@@ -187,7 +187,7 @@ def create_embedded_node_transaction(height, aggregate_hash, embedded_index, tra
 		'network': 152,
 		'type': TransactionType.TRANSFER.value,
 		'recipientAddress': RECIPIENT_ADDRESS,
-		'mosaics': [{'id': 'E74B99BA41F4AFEE', 'amount': str(height * 1000)}]
+		'mosaics': [{'id': NATIVE_MOSAIC_ID, 'amount': str(height * 1000)}]
 	}
 	transaction.update(transaction_overrides)
 
@@ -219,6 +219,10 @@ def statement_path(start_height, end_height, page_number=1):
 	)
 
 
+def resolution_path(kind, height, page_number=1):
+	return f'statements/resolutions/{kind}?height={height}&pageSize={MAX_PAGE_SIZE}&pageNumber={page_number}'
+
+
 def create_statement_item(height, amount, receipt_type=ReceiptType.INFLATION.value, **receipt_overrides):
 	receipt = {
 		'version': 1,
@@ -235,6 +239,18 @@ def create_statement_item(height, amount, receipt_type=ReceiptType.INFLATION.val
 			'receipts': [receipt]
 		},
 		'id': f'statement-{height}-{amount}',
+		'meta': {'timestamp': '0'}
+	}
+
+
+def create_resolution_statement(height, unresolved, entries):
+	return {
+		'statement': {
+			'height': str(height),
+			'unresolved': unresolved,
+			'resolutionEntries': entries
+		},
+		'id': f'resolution-{height}-{unresolved}',
 		'meta': {'timestamp': '0'}
 	}
 
@@ -308,7 +324,9 @@ class FakeConnector:  # pylint: disable=too-many-instance-attributes
 		statement_pages=None,
 		account_by_address=None,
 		multisig_by_address=None,
-		account_pages=None
+		account_pages=None,
+		address_resolutions_by_height=None,
+		mosaic_resolutions_by_height=None
 	):  # pylint: disable=too-many-arguments,too-many-positional-arguments
 		self.chain_height = chain_height
 		self.pages = pages
@@ -319,6 +337,8 @@ class FakeConnector:  # pylint: disable=too-many-instance-attributes
 		self.account_by_address = account_by_address or {}
 		self.multisig_by_address = multisig_by_address or {}
 		self.account_pages = account_pages or {}
+		self.address_resolutions_by_height = address_resolutions_by_height or {}
+		self.mosaic_resolutions_by_height = mosaic_resolutions_by_height or {}
 		self.paths = []
 		self.post_payloads_list = []
 
@@ -326,7 +346,7 @@ class FakeConnector:  # pylint: disable=too-many-instance-attributes
 	def post_payloads(self):
 		return self.post_payloads_list
 
-	async def get(self, url_path, *_):  # pylint: disable=too-many-return-statements
+	async def get(self, url_path, *_):  # pylint: disable=too-many-branches,too-many-return-statements
 		self.paths.append(url_path)
 		if 'chain/info' == url_path:
 			return create_chain_info(self.chain_height, self.finalized_height)
@@ -354,6 +374,17 @@ class FakeConnector:  # pylint: disable=too-many-instance-attributes
 			return response
 		if url_path.startswith('statements/transaction?'):
 			return self.statement_pages.get(url_path, {'data': []})
+		if url_path.startswith('statements/resolutions/'):
+			kind = url_path.removeprefix('statements/resolutions/').split('?')[0]
+			height = int(url_path.split('height=')[1].split('&')[0])
+			page_number = int(url_path.split('pageNumber=')[1].split('&')[0])
+			items_by_height = self.address_resolutions_by_height if 'address' == kind else self.mosaic_resolutions_by_height
+			items = items_by_height.get(height, [])
+			page_start = (page_number - 1) * MAX_PAGE_SIZE
+			return {
+				'data': items[page_start:page_start + MAX_PAGE_SIZE],
+				'pagination': {'pageNumber': page_number, 'pageSize': MAX_PAGE_SIZE}
+			}
 		if url_path.startswith('account/') and url_path.endswith('/multisig'):
 			address_text = url_path.removeprefix('account/').removesuffix('/multisig')
 			return self.multisig_by_address.get(address_text, {
