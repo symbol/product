@@ -67,7 +67,7 @@
 	"field_transaction_block": "Block",
 	"field_transaction_block_description": "The block that contains this transaction",
 	"field_message": "Message",
-	"field_messageEncrypted": "Encrypted message",
+	"field_messageEncrypted": "Message (Encrypted)",
 	"field_mosaics": "Mosaics",
 	"field_signaturesFee": "Signatures",
 	"field_multisigFee": "Multisig Transaction",
