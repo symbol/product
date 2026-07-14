@@ -1,6 +1,6 @@
 import config from '@/app/config';
 import { ACCOUNT_STATE_CHANGE_ACTION, COSIGNATORY_MODIFICATION_ACTION, TRANSACTION_DIRECTION, TRANSACTION_TYPE } from '@/app/constants';
-import { decodeTransactionMessage, truncateDecimals } from '@/app/utils/common';
+import { formatTransferMessage, truncateDecimals } from '@/app/utils/common';
 import {
 	createApiUrl,
 	createPage,
@@ -184,10 +184,7 @@ const extractTransferTransactionValue = value => {
 	const rawMessage = value.find(item => item.hasOwnProperty('message'))?.message;
 
 	if (rawMessage?.payload) {
-		message = {
-			type: rawMessage.isPlain ? 'plain' : 'raw',
-			text: rawMessage.isPlain ? decodeTransactionMessage(rawMessage.payload) : rawMessage.payload
-		};
+		message = formatTransferMessage(rawMessage.type, rawMessage.payload);
 	}
 
 	return {
