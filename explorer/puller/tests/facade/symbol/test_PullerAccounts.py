@@ -1,11 +1,16 @@
+# pylint: disable=duplicate-code,too-many-lines
 import asyncio
+import threading
+import time
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
+from psycopg2 import Error as PsycopgError
 from symbolchain.sc import ReceiptType
 from symbolchain.symbol.Network import Address
 from symbollightapi.model.Exceptions import NodeException
 
+from puller.db.SymbolDatabase import SymbolDatabase
 from puller.facade.SymbolPuller import ACCOUNT_BATCH_FETCH_SIZE
 from puller.model.symbol.Account import create_account_row
 from puller.model.symbol.Block import create_block_row
@@ -39,10 +44,77 @@ def _address_hex(index):
 	return f'98{index:046X}'
 
 
+def _expected_importance_percentage(importance, total_importance):
+	return (Decimal(importance) / Decimal(total_importance)).quantize(Decimal('0.00000000000000000001'))
+
+
 class FailingAccountsConnector(FakeConnector):
 	async def get(self, url_path, *args):
 		if url_path.startswith('accounts?pageSize=100&pageNumber=2'):
 			raise RuntimeError('page 2 failed')
+
+		return await super().get(url_path, *args)
+
+
+class RefreshFailureError(RuntimeError):
+	"""Identifies the refresh operation error independently from state persistence errors."""
+
+
+class FailureStateRecordingError(RuntimeError):
+	"""Identifies the failure-state persistence error in the test adapter."""
+
+
+class RefreshFailureConnector(FakeConnector):
+	def __init__(self, refresh_error):
+		super().__init__(1, {}, account_pages={1: []})
+		self.refresh_error = refresh_error
+
+	async def get(self, url_path, *args):
+		if url_path.startswith('accounts?pageSize=100&pageNumber=1'):
+			raise self.refresh_error
+
+		return await super().get(url_path, *args)
+
+
+class FailureStateRecordingDatabase:
+	def __init__(self, database):
+		self.database = database
+		self.failure_state_errors = []
+
+	def __getattr__(self, name):
+		return getattr(self.database, name)
+
+	def mark_account_refresh_failed(self, last_error):
+		self.failure_state_errors.append(last_error)
+		raise FailureStateRecordingError('failure-state persistence failed')
+
+
+class ReleaseFailureRecordingDatabase:
+	def __init__(self, database):
+		self.database = database
+		self.release_call_count = 0
+
+	def __getattr__(self, name):
+		return getattr(self.database, name)
+
+	def release_account_refresh_lock(self):
+		self.release_call_count += 1
+		raise RuntimeError('lock release failed')
+
+
+class BlockingRefreshConnector(FakeConnector):
+	def __init__(self, refresh_started, allow_refresh, refresh_error=None):
+		super().__init__(1, {}, account_pages={1: []})
+		self.refresh_started = refresh_started
+		self.allow_refresh = allow_refresh
+		self.refresh_error = refresh_error
+
+	async def get(self, url_path, *args):
+		if 'chain/info' == url_path:
+			self.refresh_started.set()
+			self.allow_refresh.wait(1)
+			if self.refresh_error:
+				raise RuntimeError(self.refresh_error)
 
 		return await super().get(url_path, *args)
 
@@ -86,6 +158,69 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):  # pylint: disable=too-man
 			(bytes.fromhex(address_hex),))
 
 		return cursor.fetchone()[0]
+
+	@staticmethod
+	def _create_rollback_sync_state(status='repairing'):
+		return {
+			'status': status,
+			'chain_height': 1,
+			'finalized_height': 0,
+			'finalized_hash': b'finalized',
+			'finalized_epoch': 0,
+			'finalized_point': 0,
+			'last_synced_height': 0,
+			'last_synced_block_hash': b'last'
+		}
+
+	def _run_refresh_while_rollback_waits(self, connector):
+		set_symbol_connector(self.puller, connector)
+		refresh_errors = []
+		rollback_errors = []
+		refresh_finished = threading.Event()
+		rollback_ready = threading.Event()
+		rollback_finished = threading.Event()
+
+		def run_refresh():
+			try:
+				asyncio.run(self.puller.refresh_accounts())
+			except Exception as error:  # pylint: disable=broad-exception-caught
+				refresh_errors.append(error)
+			finally:
+				refresh_finished.set()
+
+		def run_rollback():
+			try:
+				with SymbolDatabase(self.db_config) as database:
+					rollback_ready.set()
+					database.repair_rollback_from_height(1, self._create_rollback_sync_state())
+			except Exception as error:  # pylint: disable=broad-exception-caught
+				rollback_errors.append(error)
+			finally:
+				rollback_finished.set()
+
+		refresh_thread = threading.Thread(target=run_refresh)
+		rollback_thread = threading.Thread(target=run_rollback)
+		refresh_thread.start()
+		rollback_thread_started = False
+		rollback_finished_before_refresh = None
+		try:
+			self.assertTrue(connector.refresh_started.wait(1), 'refresh did not enter the blocking node request')
+			rollback_thread.start()
+			rollback_thread_started = True
+			self.assertTrue(rollback_ready.wait(1), 'rollback session did not become ready')
+			rollback_finished_before_refresh = rollback_finished.is_set()
+			connector.allow_refresh.set()
+			self.assertTrue(refresh_finished.wait(2), 'refresh thread did not finish')
+			self.assertTrue(rollback_finished.wait(2), 'rollback thread did not finish after refresh')
+		finally:
+			connector.allow_refresh.set()
+			refresh_thread.join(2)
+			if rollback_thread_started:
+				rollback_thread.join(2)
+			self.assertFalse(refresh_thread.is_alive(), 'refresh thread remains alive')
+			self.assertFalse(rollback_thread.is_alive(), 'rollback thread remains alive')
+
+		return refresh_errors, rollback_errors, rollback_finished_before_refresh
 
 	@staticmethod
 	def _raw_network_timestamp(days_ago=0):
@@ -498,6 +633,367 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):  # pylint: disable=too-man
 			'accounts?pageSize=100&pageNumber=1&orderBy=id&order=desc',
 			'accounts?pageSize=100&pageNumber=2&orderBy=id&order=desc'
 		], connector.paths)
+
+	def _assert_complete_refresh_state(self, state):
+		# Assert:
+		self.assertEqual('healthy', state['status'])
+		self.assertEqual(2, state['last_scanned_page'])
+		self.assertEqual(101, state['last_completed_height'])
+		self.assertIsNotNone(state['last_started_at'])
+		self.assertIsNotNone(state['last_completed_at'])
+		self.assertIsNone(state['last_error'])
+
+	def _assert_complete_current_state(self):
+		# Assert:
+		cursor = self.puller.symbol_db.connection.cursor()
+		cursor.execute(
+			'''
+			SELECT address, importance, importance_percentage, is_harvesting_active, is_eligible_for_harvesting, last_seen_height
+			FROM symbol_accounts
+			ORDER BY last_seen_height, address
+			''')
+		actual_results = [
+			(bytes(address), importance, importance_percentage, is_active, is_eligible, last_seen_height)
+			for address, importance, importance_percentage, is_active, is_eligible, last_seen_height in cursor.fetchall()
+		]
+		expected_results = [
+			(bytes.fromhex(_address_hex(index)), index + 1, _expected_importance_percentage(index + 1, 5253), False, True, 101)
+			for index in range(100)
+		]
+		expected_results.extend([
+			(bytes.fromhex(_address_hex(100)), 101, _expected_importance_percentage(101, 5253), False, True, 101),
+			(bytes.fromhex(_address_hex(101)), 102, _expected_importance_percentage(102, 5253), False, False, 101)
+		])
+
+		self.assertEqual(expected_results, actual_results)
+
+	def _assert_complete_account_snapshot(self, refresh_run_id):
+		# Assert:
+		cursor = self.puller.symbol_db.connection.cursor()
+		cursor.execute(
+			'''
+			SELECT address, account_search_id, account_search_order, importance, importance_percentage, snapshot_height
+			FROM symbol_account_refresh_accounts
+			WHERE refresh_run_id = %s
+			ORDER BY account_search_order
+			''',
+			(refresh_run_id,))
+		actual_results = [
+			(bytes(address), search_id, search_order, importance, importance_percentage, snapshot_height)
+			for address, search_id, search_order, importance, importance_percentage, snapshot_height in cursor.fetchall()
+		]
+		expected_results = [
+			(bytes.fromhex(_address_hex(index)), f'id-{index}', index, index + 1, _expected_importance_percentage(index + 1, 5253), 101)
+			for index in range(100)
+		]
+		expected_results.extend([
+			(bytes.fromhex(_address_hex(100)), 'id-100', 100, 101, _expected_importance_percentage(101, 5253), 101),
+			(bytes.fromhex(_address_hex(101)), 'id-101', 101, 102, _expected_importance_percentage(102, 5253), 101)
+		])
+
+		self.assertEqual(expected_results, actual_results)
+
+	def _assert_complete_mosaic_snapshot(self, refresh_run_id):
+		# Assert:
+		cursor = self.puller.symbol_db.connection.cursor()
+		cursor.execute(
+			'''
+			SELECT address, mosaic_id, amount
+			FROM symbol_account_refresh_mosaics
+			WHERE refresh_run_id = %s
+			ORDER BY address, mosaic_id
+			''',
+			(refresh_run_id,))
+		actual_results = sorted((bytes(address), mosaic_id, amount) for address, mosaic_id, amount in cursor.fetchall())
+		expected_results = [
+			(bytes.fromhex(_address_hex(index)), NATIVE_MOSAIC_ID, (index + 1) * 20_000 * 10 ** 6)
+			for index in range(100)
+		]
+		expected_results.extend([
+			(bytes.fromhex(_address_hex(100)), NATIVE_MOSAIC_ID, 40_000 * 10 ** 6),
+			(bytes.fromhex(_address_hex(100)), 'E74B99BA41F4AFEE', 2000)
+		])
+
+		self.assertEqual(expected_results, actual_results)
+
+	def _assert_complete_rank_results(self, refresh_run_id):
+		# Assert:
+		expected_rank_addresses = {
+			'ID': [bytes.fromhex(_address_hex(index)) for index in range(102)],
+			'IMPORTANCE': [bytes.fromhex(_address_hex(index)) for index in reversed(range(102))],
+			f'BALANCE:{NATIVE_MOSAIC_ID}': [
+				bytes.fromhex(_address_hex(index))
+				for index in sorted(
+					range(101),
+					key=lambda value: (
+						-(40_000 if 100 == value else (value + 1) * 20_000),
+						_address_hex(value)))
+			]
+		}
+		cursor = self.puller.symbol_db.connection.cursor()
+		for rank_scope, expected_addresses in expected_rank_addresses.items():
+			cursor.execute(
+				'''
+				SELECT rank, address
+				FROM symbol_account_list_ranks
+				WHERE refresh_run_id = %s AND rank_scope = %s
+				ORDER BY rank
+				''',
+				(refresh_run_id, rank_scope))
+			self.assertEqual(
+				list(enumerate(expected_addresses)),
+				[(rank, bytes(address)) for rank, address in cursor.fetchall()])
+
+	def test_refresh_accounts_persists_complete_two_page_snapshot_and_rank_results(self):
+		# Arrange:
+		page1 = [
+			create_account_item(
+				_address_hex(index),
+				f'id-{index}',
+				importance=str(index + 1),
+				mosaics=[{'id': NATIVE_MOSAIC_ID, 'amount': str((index + 1) * 20_000 * 10 ** 6)}])
+			for index in range(100)
+		]
+		page2 = [
+			create_account_item(
+				_address_hex(100),
+				'id-100',
+				importance='101',
+				mosaics=[
+					{'id': NATIVE_MOSAIC_ID, 'amount': str(40_000 * 10 ** 6)},
+					{'id': 'E74B99BA41F4AFEE', 'amount': '2000'}
+				]),
+			create_account_item(
+				_address_hex(101),
+				'id-101',
+				importance='102',
+				mosaics=[])
+		]
+		connector = FakeConnector(101, {}, account_pages={1: page1, 2: page2})
+		set_symbol_connector(self.puller, connector)
+
+		# Act:
+		asyncio.run(self.puller.refresh_accounts())
+
+		# Assert:
+		state = self.puller.symbol_db.get_account_refresh_state()
+		self._assert_complete_refresh_state(state)
+		self._assert_complete_current_state()
+		self._assert_complete_account_snapshot(state['last_successful_run_id'])
+		self._assert_complete_mosaic_snapshot(state['last_successful_run_id'])
+		self._assert_complete_rank_results(state['last_successful_run_id'])
+
+	def test_refresh_accounts_rolls_back_failed_page_and_records_original_database_error(self):
+		# Arrange:
+		self.puller.symbol_db.upsert_account_refresh_state({
+			'status': 'healthy',
+			'last_successful_run_id': 'previous-run',
+			'last_completed_height': 10
+		})
+		invalid_mosaic_item = create_account_item(
+			_address_hex(1),
+			mosaics=[{'id': 'F' * 17, 'amount': '1'}])
+		connector = FakeConnector(1, {}, account_pages={1: [invalid_mosaic_item]})
+		set_symbol_connector(self.puller, connector)
+
+		# Act:
+		with self.assertRaises(PsycopgError) as error_context:
+			asyncio.run(self.puller.refresh_accounts())
+
+		# Assert:
+		state = self.puller.symbol_db.get_account_refresh_state()
+		cursor = self.puller.symbol_db.connection.cursor()
+		cursor.execute('SELECT COUNT(*) FROM symbol_accounts')
+		current_count = cursor.fetchone()
+		cursor.execute('SELECT COUNT(*) FROM symbol_account_refresh_accounts')
+		snapshot_count = cursor.fetchone()
+		self.assertEqual('previous-run', state['last_successful_run_id'])
+		self.assertEqual('unhealthy', state['status'])
+		self.assertEqual(str(error_context.exception), state['last_error'])
+		self.assertEqual((0,), current_count)
+		self.assertEqual((0,), snapshot_count)
+
+	def test_refresh_accounts_preserves_original_error_when_failure_state_recording_fails(self):
+		# Arrange:
+		refresh_error = RefreshFailureError('refresh request failed')
+		connector = RefreshFailureConnector(refresh_error)
+		set_symbol_connector(self.puller, connector)
+		database = self.puller.symbol_db
+		failure_state_database = FailureStateRecordingDatabase(database)
+		self.puller.symbol_db = failure_state_database
+
+		try:
+			# Act:
+			propagated_error = None
+			try:
+				asyncio.run(self.puller.refresh_accounts())
+			except RefreshFailureError as error:
+				propagated_error = error
+		finally:
+			self.puller.symbol_db = database
+
+		# Assert:
+		self.assertIsInstance(propagated_error, RefreshFailureError)
+		self.assertEqual('refresh request failed', str(propagated_error))
+		self.assertIs(refresh_error, propagated_error)
+		self.assertEqual([str(refresh_error)], failure_state_database.failure_state_errors)
+
+	def test_refresh_accounts_holds_lock_until_success_then_allows_rollback(self):
+		# Arrange:
+		connector = BlockingRefreshConnector(threading.Event(), threading.Event())
+		self.puller.symbol_db.upsert_account_refresh_state({'status': 'healthy'})
+
+		# Act:
+		refresh_errors, rollback_errors, rollback_finished_before_refresh = self._run_refresh_while_rollback_waits(connector)
+
+		# Assert:
+		self.assertEqual([], refresh_errors)
+		self.assertEqual([], rollback_errors)
+		self.assertFalse(rollback_finished_before_refresh)
+		self.assertEqual('repairing', self.puller.symbol_db.get_sync_state()['status'])
+
+	def test_refresh_accounts_releases_lock_after_failure_then_allows_rollback(self):
+		# Arrange:
+		connector = BlockingRefreshConnector(threading.Event(), threading.Event(), 'refresh failed')
+		self.puller.symbol_db.upsert_account_refresh_state({'status': 'healthy'})
+
+		# Act:
+		refresh_errors, rollback_errors, rollback_finished_before_refresh = self._run_refresh_while_rollback_waits(connector)
+
+		# Assert:
+		self.assertEqual(1, len(refresh_errors))
+		self.assertIsInstance(refresh_errors[0], RuntimeError)
+		self.assertEqual('refresh failed', str(refresh_errors[0]))
+		self.assertEqual([], rollback_errors)
+		self.assertFalse(rollback_finished_before_refresh)
+		self.assertEqual('unhealthy', self.puller.symbol_db.get_account_refresh_state()['status'])
+		self.assertEqual('repairing', self.puller.symbol_db.get_sync_state()['status'])
+
+	def test_refresh_accounts_preserves_success_when_lock_release_fails(self):
+		# Arrange:
+		connector = FakeConnector(1, {}, account_pages={1: []})
+		set_symbol_connector(self.puller, connector)
+		database = self.puller.symbol_db
+		release_failure_database = ReleaseFailureRecordingDatabase(database)
+		self.puller.symbol_db = release_failure_database
+
+		try:
+			# Act:
+			asyncio.run(self.puller.refresh_accounts())
+			refresh_state = release_failure_database.get_account_refresh_state()
+			release_call_count = release_failure_database.release_call_count
+		finally:
+			self.puller.symbol_db = database
+			database.release_account_refresh_lock()
+
+		# Assert:
+		self.assertEqual('healthy', refresh_state['status'])
+		self.assertEqual(1, release_call_count)
+
+	def test_rollback_re_raises_database_error(self):
+		# Arrange:
+		database = self.exit_stack.enter_context(SymbolDatabase(self.db_config))
+		sync_state = self._create_rollback_sync_state(status='invalid')
+
+		# Act:
+		raised_error = None
+		try:
+			database.repair_rollback_from_height(1, sync_state)
+		except PsycopgError as error:
+			raised_error = error
+
+		# Assert:
+		self.assertIsInstance(raised_error, PsycopgError)
+
+	def test_rollback_failure_releases_lock_for_waiting_refresh(self):  # pylint: disable=too-many-locals,too-many-statements
+		# Arrange:
+		self.puller.symbol_db.upsert_blocks([create_block_row(
+			self._create_block(1),
+			0,
+			self.puller.symbol_facade.network
+		)])
+		row_lock_database = self.exit_stack.enter_context(SymbolDatabase(self.db_config))
+		row_lock_cursor = row_lock_database.connection.cursor()
+		row_lock_cursor.execute('SELECT height FROM symbol_blocks WHERE height = 1 FOR UPDATE')
+		row_lock_result = row_lock_cursor.fetchone()
+
+		rollback_started = threading.Event()
+		rollback_finished = threading.Event()
+		rollback_errors = []
+		refresh_started = threading.Event()
+		refresh_finished = threading.Event()
+		refresh_errors = []
+		allow_refresh = threading.Event()
+		connector = BlockingRefreshConnector(refresh_started, allow_refresh)
+		set_symbol_connector(self.puller, connector)
+
+		def run_rollback():
+			try:
+				with SymbolDatabase(self.db_config) as database:
+					rollback_started.set()
+					database.repair_rollback_from_height(1, self._create_rollback_sync_state(status='invalid'))
+			except Exception as error:  # pylint: disable=broad-exception-caught
+				rollback_errors.append(error)
+			finally:
+				rollback_finished.set()
+
+		def run_refresh():
+			try:
+				asyncio.run(self.puller.refresh_accounts())
+			except Exception as error:  # pylint: disable=broad-exception-caught
+				refresh_errors.append(error)
+			finally:
+				refresh_finished.set()
+
+		rollback_thread = threading.Thread(target=run_rollback)
+		refresh_thread = threading.Thread(target=run_refresh)
+		rollback_thread_started = False
+		refresh_thread_started = False
+		rollback_lock_held = False
+
+		# Act:
+		try:
+			rollback_thread.start()
+			rollback_thread_started = True
+			rollback_started.wait(2)
+			with SymbolDatabase(self.db_config) as lock_probe_database:
+				probe_cursor = lock_probe_database.connection.cursor()
+				lock_wait_deadline = time.monotonic() + 2
+				while time.monotonic() < lock_wait_deadline:
+					probe_cursor.execute("SELECT pg_try_advisory_lock(hashtext('symbol_account_refresh'))")
+					if not probe_cursor.fetchone()[0]:
+						rollback_lock_held = True
+						break
+					probe_cursor.execute("SELECT pg_advisory_unlock(hashtext('symbol_account_refresh'))")
+					threading.Event().wait(0.01)
+			refresh_thread.start()
+			refresh_thread_started = True
+			row_lock_database.connection.rollback()
+			refresh_started.wait(2)
+			allow_refresh.set()
+			rollback_thread.join(2)
+			refresh_thread.join(2)
+		finally:
+			row_lock_database.connection.rollback()
+			allow_refresh.set()
+			if rollback_thread_started:
+				rollback_thread.join(2)
+			if refresh_thread_started:
+				refresh_thread.join(2)
+
+		# Assert:
+		self.assertEqual((1,), row_lock_result)
+		self.assertTrue(rollback_started.is_set())
+		self.assertTrue(rollback_lock_held)
+		self.assertTrue(refresh_started.is_set())
+		self.assertFalse(rollback_thread.is_alive())
+		self.assertFalse(refresh_thread.is_alive())
+		self.assertTrue(rollback_finished.is_set())
+		self.assertEqual(1, len(rollback_errors))
+		self.assertIsInstance(rollback_errors[0], PsycopgError)
+		self.assertTrue(refresh_finished.is_set())
+		self.assertEqual([], refresh_errors)
+		self.assertEqual('healthy', self.puller.symbol_db.get_account_refresh_state()['status'])
 
 	def test_refresh_accounts_can_restart_with_new_successful_run(self):
 		# Arrange:

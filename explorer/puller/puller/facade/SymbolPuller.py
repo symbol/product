@@ -579,9 +579,10 @@ class SymbolPuller:
 	async def refresh_accounts(self):  # pylint: disable=too-many-locals
 		"""Refreshes the full Symbol account population snapshot and current-state account rows."""
 
-		refresh_run_id = str(uuid.uuid4())
-		started_at = datetime.now(timezone.utc)
+		self.symbol_db.acquire_account_refresh_lock()
 		try:
+			refresh_run_id = str(uuid.uuid4())
+			started_at = datetime.now(timezone.utc)
 			chain_info = await self.get_symbol_node('/chain/info')
 			snapshot_height = int(chain_info['height'])
 			native_mosaic_id, native_mosaic_divisibility = await self._get_native_mosaic_info()
@@ -631,19 +632,20 @@ class SymbolPuller:
 
 			self.symbol_db.update_account_importance_rates(refresh_run_id)
 			self.symbol_db.rebuild_account_list_ranks(refresh_run_id, native_mosaic_id)
-			self.symbol_db.upsert_account_refresh_state({
-				'status': 'healthy',
-				'last_successful_run_id': refresh_run_id,
-				'last_completed_at': datetime.now(timezone.utc),
-				'last_completed_height': snapshot_height,
-				'last_error': None
-			})
+			self.symbol_db.activate_account_refresh(refresh_run_id, snapshot_height, datetime.now(timezone.utc))
 		except Exception as exception:
-			self.symbol_db.upsert_account_refresh_state({
-				'status': 'unhealthy',
-				'last_error': str(exception)
-			})
+			try:
+				self.symbol_db.mark_account_refresh_failed(str(exception))
+			except Exception as state_error:  # pylint: disable=broad-exception-caught
+				# Preserve the original refresh failure when failure-state persistence also fails.
+				log.error(f'Failed to record Symbol account refresh failure: {state_error}')
 			raise
+		finally:
+			try:
+				self.symbol_db.release_account_refresh_lock()
+			except Exception as lock_error:  # pylint: disable=broad-exception-caught
+				# Preserve the refresh outcome when lock cleanup fails.
+				log.error(f'Failed to release Symbol account refresh lock: {lock_error}')
 
 	@staticmethod
 	def _validate_block_page(rows, expected_start_height):
