@@ -92,6 +92,7 @@
     "screen_CreateWallet": "Create Wallet",
     "screen_ImportWallet": "Import Wallet",
     "screen_CreateMosaic": "Create Mosaic",
+    "screen_RevokeMosaic": "Revoke Mosaic",
     "screen_Home": "Home",
     "screen_History": "History",
     "screen_Assets": "Assets",

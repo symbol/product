@@ -1,3 +1,15 @@
+/** @typedef {import('@/app/types/Network').ChainName} ChainName */
+
+/**
+ * Route parameters for the RevokeMosaic screen.
+ * @typedef {object} RevokeMosaicRouteParams
+ * @property {ChainName} [chainName] - The blockchain name.
+ * @property {string} tokenId - The mosaic identifier to revoke.
+ * @property {string} [senderAddress] - Pre-selected creator (signer) address.
+ * @property {string} [sourceAddress] - Pre-filled holder address to revoke the mosaic from.
+ * @property {string} [amount] - Pre-filled amount to revoke.
+ */
+
 /**
  * Mosaic feature flags configuration.
  * @typedef {object} MosaicFlags

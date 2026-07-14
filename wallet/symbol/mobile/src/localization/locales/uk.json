@@ -80,6 +80,7 @@
     "screen_CreateWallet": "Створити гаманець",
     "screen_ImportWallet": "Імпортувати гаманець",
     "screen_CreateMosaic": "Створити мозаїку",
+    "screen_RevokeMosaic": "Відкликати мозаїку",
     "screen_Home": "Головна",
     "screen_History": "Історія",
     "screen_Assets": "Активи",

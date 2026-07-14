@@ -32,6 +32,7 @@ export const RouteName = {
 	EditContact: 'EditContact',
 	Harvesting: 'Harvesting',
 	CreateMosaic: 'CreateMosaic',
+	RevokeMosaic: 'RevokeMosaic',
 	Scan: 'Scan',
 	TransportRequest: 'TransportRequest'
 };

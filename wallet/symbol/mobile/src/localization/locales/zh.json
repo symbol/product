@@ -80,6 +80,7 @@
     "screen_CreateWallet": "創建錢包",
     "screen_ImportWallet": "導入錢包",
     "screen_CreateMosaic": "創建馬賽克",
+    "screen_RevokeMosaic": "撤銷馬賽克",
     "screen_Home": "首頁",
     "screen_History": "歷史紀錄",
     "screen_Assets": "資產",

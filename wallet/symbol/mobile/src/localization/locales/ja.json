@@ -80,6 +80,7 @@
     "screen_CreateWallet": "ウォレット作成",
     "screen_ImportWallet": "ウォレットインポート",
     "screen_CreateMosaic": "モザイク作成",
+    "screen_RevokeMosaic": "モザイク回収",
     "screen_Home": "ホーム",
     "screen_History": "履歴",
     "screen_Assets": "アセット",

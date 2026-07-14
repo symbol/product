@@ -1,6 +1,7 @@
 import {
 	Alert,
 	Amount,
+	ButtonPlain,
 	Card,
 	Divider,
 	Field,
@@ -21,6 +22,7 @@ import { getExpirationData, getTokenDisplayInfo } from '@/app/screens/assets/uti
 import { Colors } from '@/app/styles';
 import { createTransactionQr } from '@/app/utils';
 import React from 'react';
+import { isMosaicRevokable } from 'wallet-common-symbol';
 
 /** @typedef {import('@/app/types/Network').ChainName} ChainName */
 
@@ -122,6 +124,16 @@ export const TokenDetails = ({ route }) => {
 
 	const isSendReceiveButtonsDisabled = isTokenExpired;
 
+	// Revoke action
+	const canRevokeMosaic = isMosaicRevokable(token, networkProperties?.chainHeight, accountAddress);
+	const openRevokeScreen = () => Router.goToRevokeMosaic({
+		params: {
+			chainName,
+			tokenId,
+			senderAddress: accountAddress
+		}
+	});
+
 	return (
 		<Screen refresh={{ onRefresh: dataManager.call, isRefreshing: dataManager.isLoading }}>
 			<Screen.Upper>
@@ -197,6 +209,16 @@ export const TokenDetails = ({ route }) => {
 									</Stack>
 								</Spacer>
 							</Card>
+						)}
+						{canRevokeMosaic && (
+							<Stack>
+								<Divider />
+								<ButtonPlain
+									icon="revoke"
+									text={$t('button_revoke')}
+									onPress={openRevokeScreen}
+								/>
+							</Stack>
 						)}
 					</Stack>
 				</Spacer>
