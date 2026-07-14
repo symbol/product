@@ -27,6 +27,7 @@ import {
 	fetchTransactionChart,
 	fetchTransactionStats
 } from '@/app/api/stats';
+import config from '@/app/config';
 import * as utils from '@/app/utils/server';
 
 jest.mock('@/app/utils/server', () => {
@@ -178,12 +179,12 @@ describe('api/stats', () => {
 
 		it('does not fetch supernode statistics when the endpoint is not configured', async () => {
 			// Arrange:
-			const originalSupernodeApiUrl = config.SUPERNODE_API_URL;
-			config.SUPERNODE_API_URL = '';
+			const originalSupernodeApiUrl = config.PUBLIC_NEM_SUPERNODE_API_URL;
+			config.PUBLIC_NEM_SUPERNODE_API_URL = '';
 			const functionToTest = fetchNodeStats;
 			const args = [];
 			const responseMap = {
-				'https://node.list': nodeListResponse
+				'https://node.list/api/nem/nodes': nodeListResponse
 			};
 			const expectedResult = {
 				total: 3,
@@ -193,7 +194,7 @@ describe('api/stats', () => {
 			// Act + Assert:
 			await runStatsTest(functionToTest, args, responseMap, expectedResult);
 
-			config.SUPERNODE_API_URL = originalSupernodeApiUrl;
+			config.PUBLIC_NEM_SUPERNODE_API_URL = originalSupernodeApiUrl;
 		});
 	});
 

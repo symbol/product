@@ -220,7 +220,11 @@ const Header = ({ backendStatus }) => {
 					)}
 					{!isAddContactOpen && (
 						<div className={styles.buttonAddContainer} onClick={toggleAddContact}>
-							<CustomImage src={createAssetURL('/images/icon-account-add.png')} className={styles.buttonAddIcon} alt={t('button_add')} />
+							<CustomImage
+								src={createAssetURL('/images/icon-account-add.png')}
+								className={styles.buttonAddIcon}
+								alt={t('button_add')}
+							/>
 						</div>
 					)}
 					{isAddContactOpen && (

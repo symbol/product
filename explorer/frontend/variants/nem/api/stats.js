@@ -1,9 +1,9 @@
 import { fetchAccountPage } from './accounts';
 import { fetchBlockPage } from './blocks';
 import { fetchNodeList } from './nodes';
-import config from '@/config';
-import { formatTransactionsPerBlock, transactionChartFilterToType, truncateDecimals } from '@/utils/common';
-import { createApiUrl, makeRequest } from '@/utils/server';
+import config from '@/app/config';
+import { formatTransactionsPerBlock, transactionChartFilterToType, truncateDecimals } from '@/app/utils/common';
+import { createApiUrl, makeRequest } from '@/app/utils/server';
 
 export const fetchAccountStats = async () => {
 	const stats = await makeRequest(createApiUrl('account/statistics'));
@@ -101,7 +101,7 @@ export const fetchBlockStats = async () => {
 
 export const fetchNodeStats = async () => {
 	const nodewatchResponse = await fetchNodeList();
-	const supernodeApiUrl = config.SUPERNODE_API_URL?.trim();
+	const supernodeApiUrl = config.PUBLIC_NEM_SUPERNODE_API_URL?.trim();
 	const supernodes = supernodeApiUrl
 		? (await makeRequest(`${supernodeApiUrl}/statistics`)).participantCount
 		: null;
@@ -113,7 +113,7 @@ export const fetchNodeStats = async () => {
 };
 
 export const fetchMarketData = async () => {
-	const response = await makeRequest(config.MARKET_DATA_URL);
+	const response = await makeRequest(config.PUBLIC_NEM_MARKET_DATA_URL);
 	const data = response[0];
 
 	return {
