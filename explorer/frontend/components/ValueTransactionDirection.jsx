@@ -1,5 +1,5 @@
-import { TRANSACTION_DIRECTION } from '@/constants';
-import styles from '@/styles/components/ValueTransactionDirection.module.scss';
+import { TRANSACTION_DIRECTION } from '@/app/constants';
+import styles from '@/app/styles/components/ValueTransactionDirection.module.scss';
 import { useTranslation } from 'next-i18next';
 
 const ValueTransactionDirection = ({ value }) => {

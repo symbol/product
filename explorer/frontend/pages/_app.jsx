@@ -1,12 +1,12 @@
-import { fetchBackendHealthStatus } from '@/api/health';
-import Footer from '@/components/Footer';
-import Header from '@/components/Header';
-import PageLoadingIndicator from '@/components/PageLoadingIndicator';
-import config from '@/config';
-import { STORAGE_KEY } from '@/constants';
-import { ConfigProvider } from '@/contexts/ConfigContext';
-import styles from '@/styles/pages/Layout.module.scss';
-import { useStorage } from '@/utils';
+import { fetchBackendHealthStatus } from '@/app/api/health';
+import Footer from '@/app/components/Footer';
+import Header from '@/app/components/Header';
+import PageLoadingIndicator from '@/app/components/PageLoadingIndicator';
+import { publicAppConfig } from '@/app/config';
+import { STORAGE_KEY } from '@/app/constants';
+import { ConfigProvider } from '@/app/contexts/ConfigContext';
+import styles from '@/app/styles/pages/Layout.module.scss';
+import { useStorage } from '@/app/utils';
 import TimeAgo from 'javascript-time-ago';
 import en from 'javascript-time-ago/locale/en.json';
 import ja from 'javascript-time-ago/locale/ja.json';
@@ -18,7 +18,7 @@ import { appWithTranslation } from 'next-i18next';
 import { memo, useEffect, useRef, useState } from 'react';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import '@/styles/globals.scss';
+import '@/app/styles/globals.scss';
 
 TimeAgo.addDefaultLocale(en);
 TimeAgo.addLocale(uk);
@@ -59,7 +59,7 @@ const AppComponent = ({ Component, pageProps, appConfig }) => {
 
 	return (
 		<div className={styles.wrapper}>
-			<script dangerouslySetInnerHTML={{ __html: `window.appConfig = ${JSON.stringify(appConfig)};` }} />
+			<script dangerouslySetInnerHTML={{ __html: `window.appConfig = ${JSON.stringify(appConfig).replace(/</g, '\\u003c')};` }} />
 			<ConfigProvider>
 				<Header backendStatus={backendStatus} />
 				<ToastContainer autoClose={2000} className="toast-container" hideProgressBar pauseOnHover />
@@ -86,7 +86,7 @@ const AppComponent = ({ Component, pageProps, appConfig }) => {
 AppComponent.getInitialProps = async appContext => {
 	const appProps = await App.getInitialProps(appContext);
 
-	return { ...appProps, appConfig: config };
+	return { ...appProps, appConfig: publicAppConfig };
 };
 
 export default appWithTranslation(AppComponent);

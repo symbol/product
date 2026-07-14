@@ -1,23 +1,37 @@
-const publicAppConfig = {
-	NATIVE_MOSAIC_ID: process.env.NATIVE_MOSAIC_ID,
-	NATIVE_MOSAIC_TICKER: process.env.NATIVE_MOSAIC_TICKER,
-	NATIVE_MOSAIC_DIVISIBILITY: +process.env.NATIVE_MOSAIC_DIVISIBILITY,
-	BLOCKCHAIN_UNWIND_LIMIT: +process.env.BLOCKCHAIN_UNWIND_LIMIT,
-	REQUEST_TIMEOUT: +process.env.REQUEST_TIMEOUT,
-	API_BASE_URL: process.env.API_BASE_URL,
-	SUPERNODE_API_URL: process.env.SUPERNODE_API_URL,
-	NODELIST_URL: process.env.NODELIST_URL,
-	MARKET_DATA_URL: process.env.MARKET_DATA_URL,
-	HISTORICAL_PRICE_URL: process.env.HISTORICAL_PRICE_URL,
-	SOCIAL_URL_TWITTER: process.env.SOCIAL_URL_TWITTER,
-	SOCIAL_URL_GITHUB: process.env.SOCIAL_URL_GITHUB,
-	SOCIAL_URL_DISCORD: process.env.SOCIAL_URL_DISCORD,
-	FOOTER_URL_DOCS: process.env.FOOTER_URL_DOCS,
-	FOOTER_URL_TECHNICAL_REFERENCE: process.env.FOOTER_URL_TECHNICAL_REFERENCE,
-	FOOTER_URL_FAUCET: process.env.FOOTER_URL_FAUCET,
-	FOOTER_URL_SUPERNODE_PROGRAM: process.env.FOOTER_URL_SUPERNODE_PROGRAM
+import { variantConfig } from '@/app/variants/configs';
+
+// Environment variable naming scheme (see README "Environment Variables"):
+//   NEXT_PUBLIC_NAME      build-time, client-visible, common
+//   PUBLIC_NAME           runtime, client-visible, common
+//   NAME                  runtime, server-only, common
+//   PUBLIC_<VARIANT>_NAME runtime, client-visible, variant-scoped
+//   <VARIANT>_NAME        runtime, server-only, variant-scoped
+// `@/app/config` is the single entry point. It merges the active variant's config onto the
+// common config and serializes only PUBLIC_*/NEXT_PUBLIC_* keys into window.appConfig.
+
+const serverAppConfig = {
+	...variantConfig,
+	PUBLIC_API_BASE_URL: process.env.PUBLIC_API_BASE_URL,
+	PUBLIC_REQUEST_TIMEOUT: Number(process.env.PUBLIC_REQUEST_TIMEOUT),
+	PUBLIC_NETWORK_IDENTIFIER: process.env.PUBLIC_NETWORK_IDENTIFIER,
+	PUBLIC_NATIVE_MOSAIC_ID: process.env.PUBLIC_NATIVE_MOSAIC_ID,
+	PUBLIC_NATIVE_MOSAIC_TICKER: process.env.PUBLIC_NATIVE_MOSAIC_TICKER,
+	PUBLIC_NATIVE_MOSAIC_DIVISIBILITY: Number(process.env.PUBLIC_NATIVE_MOSAIC_DIVISIBILITY),
+	PUBLIC_SOCIAL_URL_TWITTER: process.env.PUBLIC_SOCIAL_URL_TWITTER,
+	PUBLIC_SOCIAL_URL_GITHUB: process.env.PUBLIC_SOCIAL_URL_GITHUB,
+	PUBLIC_SOCIAL_URL_DISCORD: process.env.PUBLIC_SOCIAL_URL_DISCORD,
+	PUBLIC_FOOTER_URL_DOCS: process.env.PUBLIC_FOOTER_URL_DOCS,
+	PUBLIC_FOOTER_URL_TECHNICAL_REFERENCE: process.env.PUBLIC_FOOTER_URL_TECHNICAL_REFERENCE,
+	PUBLIC_FOOTER_URL_FAUCET: process.env.PUBLIC_FOOTER_URL_FAUCET,
+	PUBLIC_FOOTER_URL_SUPERNODE_PROGRAM: process.env.PUBLIC_FOOTER_URL_SUPERNODE_PROGRAM,
+	PUBLIC_NODEWATCH_URL: process.env.PUBLIC_NODEWATCH_URL
 };
+
+// Filter out bare, NEM_*, and SYMBOL_* keys so they never reach window.appConfig.
+const isPublicKey = key => key.startsWith('PUBLIC_') || key.startsWith('NEXT_PUBLIC_');
+
+export const publicAppConfig = Object.fromEntries(Object.entries(serverAppConfig).filter(([key]) => isPublicKey(key)));
 
 const isClientSide = typeof window !== 'undefined';
 
-export default isClientSide ? window.appConfig : publicAppConfig;
+export default isClientSide ? (window.appConfig ?? publicAppConfig) : serverAppConfig;

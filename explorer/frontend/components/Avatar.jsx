@@ -1,8 +1,9 @@
 import CustomImage from './CustomImage';
 import IconTransactionType from './IconTransactionType';
-import config from '@/config';
-import { useConfig } from '@/contexts/ConfigContext';
-import styles from '@/styles/components/Avatar.module.scss';
+import config from '@/app/config';
+import { useConfig } from '@/app/contexts/ConfigContext';
+import styles from '@/app/styles/components/Avatar.module.scss';
+import { createAssetURL } from '@/app/utils';
 import makeBlockie from 'ethereum-blockies-base64';
 import { useEffect, useState } from 'react';
 
@@ -24,11 +25,11 @@ const AccountAvatar = ({ address }) => {
 	};
 
 	useEffect(() => {
-		// Check if the account is a known account and set the image and description
+		// Known account: use its stored avatar and description
 		if (knownAccounts && knownAccounts[address]) 
 			setKnownAccountInfo(address);
 		
-		// If the account is not a known account, generate the image using the address
+		// Otherwise generate an identicon from the address
 		else if (knownAccounts) 
 			generateImage(address);
 		
@@ -37,31 +38,33 @@ const AccountAvatar = ({ address }) => {
 	return (
 		<div className={styles.accountImageContainer} title={description}>
 			{!!image && <img src={image} className={styles.accountIdenticon} style={image.style} alt="Account icon background" />}
-			{!isKnownAccount && <CustomImage className={styles.accountIcon} src="/images/icon-account.svg" alt="Account icon" />}
+			{!isKnownAccount && (
+				<CustomImage className={styles.accountIcon} src={createAssetURL('/images/icon-account.svg')} alt="Account icon" />
+			)}
 		</div>
 	);
 };
 
 const MosaicAvatar = ({ mosaicId }) => {
 	const mosaicIdSrcMap = {
-		[config.NATIVE_MOSAIC_ID]: '/images/mosaics/currency.png'
+		[config.PUBLIC_NATIVE_MOSAIC_ID]: createAssetURL('/images/mosaics/currency.png')
 	};
-	const customMosaicSrc = '/images/mosaics/custom.png';
+	const customMosaicSrc = createAssetURL('/images/mosaics/custom.png');
 	const imageSrc = mosaicIdSrcMap[mosaicId] ? mosaicIdSrcMap[mosaicId] : customMosaicSrc;
 
 	return <CustomImage src={imageSrc} className={styles.image} alt="Mosaic" />;
 };
 
 const NamespaceAvatar = () => {
-	return <CustomImage src={'/images/namespaces/namespace.svg'} className={styles.image} alt="Namespace" />;
+	return <CustomImage src={createAssetURL('/images/namespaces/namespace.svg')} className={styles.image} alt="Namespace" />;
 };
 
 const BlockAvatar = () => {
-	return <CustomImage src={'/images/blocks/block.svg'} className={styles.image} alt="Block" />;
+	return <CustomImage src={createAssetURL('/images/blocks/block.svg')} className={styles.image} alt="Block" />;
 };
 
 const NodeAvatar = () => {
-	return <CustomImage src={'/images/nodes/node.svg'} className={styles.image} alt="Node" />;
+	return <CustomImage src={createAssetURL('/images/nodes/node.svg')} className={styles.image} alt="Node" />;
 };
 
 const TransactionAvatar = ({ type }) => {

@@ -1,0 +1,11 @@
+{
+	"colorChartLine": "#26c3f2",
+	"colorChartColumns": "#26c3f2",
+	"colorChartDonutMain": "#26c3f2",
+	"colorChartDonutBackground": "#413c4f",
+	"colorChartDonutStroke": "#221c31",
+	"colorTransactionSquare": "#b3e6b3",
+	"colorTransactionSquareText": "#000",
+	"colorProgressDefault": "#26c3f2",
+	"colorProgressDanger": "#FF9999"
+}

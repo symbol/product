@@ -1,4 +1,4 @@
-import config from '@/config';
+import config from '@/app/config';
 import axios from 'axios';
 
 // Creates search criteria from search parameters.
@@ -16,7 +16,7 @@ export const createSearchCriteria = (searchParams = {}) => {
 };
 
 // Creates an API URL.
-export const createApiUrl = path => `${config.API_BASE_URL}/${path}`;
+export const createApiUrl = path => `${config.PUBLIC_API_BASE_URL}/${path}`;
 
 // Creates a search URL, which uses in fetching paged data.
 export const createSearchURL = (baseURL, searchCriteria) => {
@@ -65,7 +65,7 @@ export const createTryFetchInfoFunction =
 
 // Makes HTTP requests.
 export const makeRequest = async (url, options = {}) => {
-	const { timeout = config.REQUEST_TIMEOUT, method = 'get' } = options;
+	const { timeout = config.PUBLIC_REQUEST_TIMEOUT, method = 'get' } = options;
 
 	const response = await axios({
 		method,

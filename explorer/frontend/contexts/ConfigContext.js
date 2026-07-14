@@ -1,4 +1,4 @@
-import { makeRequest } from '@/utils/server';
+import { makeRequest } from '@/app/utils/server';
 import { createContext, useContext, useEffect, useState } from 'react';
 
 const ConfigContext = createContext({});

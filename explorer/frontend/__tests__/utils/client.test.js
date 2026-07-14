@@ -1,4 +1,4 @@
-import { copyToClipboard, createPageHref, handleNavigationItemClick } from '@/utils/client';
+import { copyToClipboard, createAssetURL, createPageHref, handleNavigationItemClick } from '@/app/utils/client';
 
 describe('utils/client', () => {
 	describe('copyToClipboard', () => {
@@ -237,6 +237,35 @@ describe('utils/client', () => {
 
 			// Act + Assert:
 			runHandleNavigationItemClickTest(isNavigationDisabled, onClick, shouldCallOnClick, shouldCallPreventDefault);
+		});
+	});
+
+	// The test suite targets the reference (nem) variant, so asset URLs are prefixed with /nem.
+	describe('createAssetURL', () => {
+		const runCreateAssetURLTest = (url, expectedResult) => {
+			// Act:
+			const result = createAssetURL(url);
+
+			// Assert:
+			expect(result).toBe(expectedResult);
+		};
+
+		it('prefixes an image path with the active variant', () => {
+			// Arrange:
+			const url = '/images/logo.png';
+			const expectedResult = '/nem/images/logo.png';
+
+			// Act + Assert:
+			runCreateAssetURLTest(url, expectedResult);
+		});
+
+		it('prefixes a root asset with the active variant', () => {
+			// Arrange:
+			const url = '/favicon.ico';
+			const expectedResult = '/nem/favicon.ico';
+
+			// Act + Assert:
+			runCreateAssetURLTest(url, expectedResult);
 		});
 	});
 });

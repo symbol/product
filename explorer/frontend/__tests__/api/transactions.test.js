@@ -10,12 +10,12 @@ import {
 	unsupportedTransactionInfoResponse,
 	unsupportedTransactionInfoResult
 } from '../test-utils/transactions';
-import { fetchTransactionInfo, fetchTransactionPage } from '@/api/transactions';
+import { fetchTransactionInfo, fetchTransactionPage } from '@/app/api/transactions';
 
-jest.mock('@/utils/server', () => {
+jest.mock('@/app/utils/server', () => {
 	return {
 		__esModule: true,
-		...jest.requireActual('@/utils/server')
+		...jest.requireActual('@/app/utils/server')
 	};
 });
 

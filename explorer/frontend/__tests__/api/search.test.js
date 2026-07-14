@@ -4,13 +4,13 @@ import { blockInfoResponse, blockInfoResult } from '../test-utils/blocks';
 import { mosaicInfoResponse, mosaicInfoResult } from '../test-utils/mosaics';
 import { namespaceInfoResponse, namespaceInfoResult } from '../test-utils/namespaces';
 import { transactionInfoResponse, transactionInfoResult } from '../test-utils/transactions';
-import { search } from '@/api/search';
-import * as utils from '@/utils/server';
+import { search } from '@/app/api/search';
+import * as utils from '@/app/utils/server';
 
-jest.mock('@/utils/server', () => {
+jest.mock('@/app/utils/server', () => {
 	return {
 		__esModule: true,
-		...jest.requireActual('@/utils/server')
+		...jest.requireActual('@/app/utils/server')
 	};
 });
 

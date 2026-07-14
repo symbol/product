@@ -1,4 +1,4 @@
-import styles from '@/styles/components/LoadingIndicator.module.scss';
+import styles from '@/app/styles/components/LoadingIndicator.module.scss';
 
 const LoadingIndicator = ({ className }) => (
 	<svg role="status" className={`${styles.spinner} ${className}`} viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">

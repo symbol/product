@@ -5,10 +5,11 @@ import Modal from './Modal';
 import SearchBar from './SearchBar';
 import TextBox from './TextBox';
 import ValueAccount from './ValueAccount';
-import { search } from '@/api/search';
-import { BACKEND_HEALTH_ERROR, STORAGE_KEY } from '@/constants';
-import styles from '@/styles/components/Header.module.scss';
-import { createPageHref, formatDate, useStorage, useToggle } from '@/utils';
+import { search } from '@/app/api/search';
+import { BACKEND_HEALTH_ERROR, STORAGE_KEY } from '@/app/constants';
+import styles from '@/app/styles/components/Header.module.scss';
+import { createAssetURL } from '@/app/utils';
+import { createPageHref, formatDate, useStorage, useToggle } from '@/app/utils';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
@@ -31,37 +32,37 @@ const Header = ({ backendStatus }) => {
 		{
 			text: t('menu_home'),
 			href: createPageHref('home'),
-			iconSrc: '/images/menu/home.svg'
+			iconSrc: createAssetURL('/images/menu/home.svg')
 		},
 		{
 			text: t('menu_blocks'),
 			href: createPageHref('blocks'),
-			iconSrc: '/images/menu/blocks.svg'
+			iconSrc: createAssetURL('/images/menu/blocks.svg')
 		},
 		{
 			text: t('menu_accounts'),
 			href: createPageHref('accounts'),
-			iconSrc: '/images/menu/accounts.svg'
+			iconSrc: createAssetURL('/images/menu/accounts.svg')
 		},
 		{
 			text: t('menu_transactions'),
 			href: createPageHref('transactions'),
-			iconSrc: '/images/menu/transactions.svg'
+			iconSrc: createAssetURL('/images/menu/transactions.svg')
 		},
 		{
 			text: t('menu_mosaics'),
 			href: createPageHref('mosaics'),
-			iconSrc: '/images/menu/mosaics.svg'
+			iconSrc: createAssetURL('/images/menu/mosaics.svg')
 		},
 		{
 			text: t('menu_namespaces'),
 			href: createPageHref('namespaces'),
-			iconSrc: '/images/menu/namespaces.svg'
+			iconSrc: createAssetURL('/images/menu/namespaces.svg')
 		},
 		{
 			text: t('menu_nodes'),
 			href: createPageHref('nodes'),
-			iconSrc: '/images/menu/nodes.svg'
+			iconSrc: createAssetURL('/images/menu/nodes.svg')
 		}
 	];
 	const languages = [
@@ -170,13 +171,18 @@ const Header = ({ backendStatus }) => {
 		<div className={styles.headerWrapper}>
 			<header className={styles.header}>
 				<div className={styles.headerLogo}>
-					<Image src="/images/logo-nem.png" fill alt="Logo" />
+					<Image src={createAssetURL('/images/logo.png')} fill alt="Logo" />
 				</div>
 
 				<div className={styles.headerRightSection}>
 					<div className={styles.headerMenu}>{renderMenu()}</div>
 					<SearchBar className={styles.searchBar} modalClassName={styles.modal} onSearchRequest={search} />
-					<CustomImage className={styles.profileIcon} src="/images/icon-profile.svg" alt="profile" onClick={toggleProfile} />
+					<CustomImage
+						className={styles.profileIcon}
+						src={createAssetURL('/images/icon-profile.svg')}
+						alt="profile"
+						onClick={toggleProfile}
+					/>
 				</div>
 				<Modal className={`${styles.modal} ${styles.modalProfile}`} isVisible={isProfileOpen} onClose={toggleProfile}>
 					{!isAddContactOpen && (
@@ -200,7 +206,7 @@ const Header = ({ backendStatus }) => {
 											<div className="layout-flex-row">
 												<ValueAccount address={item.address} raw size="md" />
 												<CustomImage
-													src="/images/icon-delete.png"
+													src={createAssetURL('/images/icon-delete.png')}
 													className={styles.buttonRemove}
 													alt={t('button_remove')}
 													onClick={() => removeContact(item)}
@@ -214,7 +220,11 @@ const Header = ({ backendStatus }) => {
 					)}
 					{!isAddContactOpen && (
 						<div className={styles.buttonAddContainer} onClick={toggleAddContact}>
-							<CustomImage src="/images/icon-account-add.png" className={styles.buttonAddIcon} alt={t('button_add')} />
+							<CustomImage
+								src={createAssetURL('/images/icon-account-add.png')}
+								className={styles.buttonAddIcon}
+								alt={t('button_add')}
+							/>
 						</div>
 					)}
 					{isAddContactOpen && (

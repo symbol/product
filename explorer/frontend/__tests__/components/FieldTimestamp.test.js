@@ -1,12 +1,12 @@
 import '@testing-library/jest-dom';
-import FieldTimestamp from '@/components/FieldTimestamp';
-import * as utils from '@/utils';
+import FieldTimestamp from '@/app/components/FieldTimestamp';
+import * as utils from '@/app/utils';
 import { fireEvent, render, screen } from '@testing-library/react';
 
-jest.mock('@/utils', () => {
+jest.mock('@/app/utils', () => {
 	return {
 		__esModule: true,
-		...jest.requireActual('@/utils')
+		...jest.requireActual('@/app/utils')
 	};
 });
 

@@ -1,18 +1,21 @@
-import { fetchBlockPage } from '@/api/blocks';
-import { fetchBlockStats, fetchMarketData, fetchNodeStats, fetchTransactionChart, fetchTransactionStats } from '@/api/stats';
-import { fetchTransactionPage } from '@/api/transactions';
-import ChartLine from '@/components/ChartLine';
-import CustomImage from '@/components/CustomImage';
-import Field from '@/components/Field';
-import RecentBlocks from '@/components/RecentBlocks';
-import RecentTransactions from '@/components/RecentTransactions';
-import Section from '@/components/Section';
-import Separator from '@/components/Separator';
-import ValuePrice from '@/components/ValuePrice';
-import { TRANSACTION_CHART_TYPE } from '@/constants';
-import styles from '@/styles/pages/Home.module.scss';
-import { numberToShortString, truncateDecimals, useAsyncCall } from '@/utils';
-import { formatTransactionChart, numberToString } from '@/utils/common';
+import { fetchBlockPage, fetchChainStatus } from '@/app/api/blocks';
+import { fetchBlockStats, fetchMarketData, fetchNodeStats, fetchTransactionChart, fetchTransactionStats } from '@/app/api/stats';
+import { fetchTransactionPage } from '@/app/api/transactions';
+import { AdditionalSections } from '@/app/components/AdditionalSections';
+import ChartLine from '@/app/components/ChartLine';
+import CustomImage from '@/app/components/CustomImage';
+import Field from '@/app/components/Field';
+import RecentBlocks from '@/app/components/RecentBlocks';
+import RecentTransactions from '@/app/components/RecentTransactions';
+import Section from '@/app/components/Section';
+import Separator from '@/app/components/Separator';
+import ValuePrice from '@/app/components/ValuePrice';
+import config from '@/app/config';
+import { TRANSACTION_CHART_TYPE } from '@/app/constants';
+import styles from '@/app/styles/pages/Home.module.scss';
+import { numberToShortString, truncateDecimals, useAsyncCall } from '@/app/utils';
+import { formatTransactionChart, numberToString } from '@/app/utils/common';
+import { pageConfig } from '@/app/variants/page-config';
 import Head from 'next/head';
 import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
@@ -73,6 +76,7 @@ const Home = ({
 		DATA_REFRESH_INTERVAL
 	);
 	const blocks = useAsyncCall(fetchBlockPage, preloadedBlocks, DATA_REFRESH_INTERVAL);
+	const chainStatus = useAsyncCall(fetchChainStatus, null, DATA_REFRESH_INTERVAL);
 
 	const fetchBlockTransactions = useCallback(height => fetchTransactionPage({ pageSize: 160, height }), [fetchTransactionPage]);
 
@@ -81,7 +85,8 @@ const Home = ({
 			<Head>
 				<title>Home</title>
 			</Head>
-			<RecentBlocks data={blocks.data} onTransactionListRequest={fetchBlockTransactions} />
+			<RecentBlocks data={blocks.data} chainStatus={chainStatus} onTransactionListRequest={fetchBlockTransactions} />
+			<AdditionalSections sections={pageConfig.home.additionalSections} />
 			<Section>
 				<div className="layout-flex-row-mobile-col">
 					<div className="layout-grid-row layout-flex-fill">
@@ -108,7 +113,7 @@ const Home = ({
 						</div>
 						<div className="layout-flex-col layout-flex-fill">
 							<Field title={t('field_circulatingSupply')} textAlign="right">
-								{numberToString(marketData.circulatingSupply)} XEM
+								{numberToString(marketData.circulatingSupply)} {config.PUBLIC_NATIVE_MOSAIC_TICKER}
 							</Field>
 							<Field title={t('field_marketCap')} textAlign="right">
 								${numberToShortString(marketData.marketCap)}
@@ -119,7 +124,7 @@ const Home = ({
 					<div className="layout-grid-row layout-flex-fill">
 						<div className="layout-flex-col layout-flex-fill">
 							<Field title={t('field_totalNodes')}>{nodeStats.total}</Field>
-							{nodeStats.supernodes !== null && (
+							{pageConfig.home.showSupernodeCount && nodeStats.supernodes !== null && (
 								<Field title={t('field_supernodes')}>{nodeStats.supernodes}</Field>
 							)}
 						</div>

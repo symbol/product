@@ -1,7 +1,7 @@
 import Avatar from './Avatar';
 import Field from './Field';
-import styles from '@/styles/components/ItemNodeMobile.module.scss';
-import { createPageHref } from '@/utils';
+import styles from '@/app/styles/components/ItemNodeMobile.module.scss';
+import { createPageHref } from '@/app/utils';
 import Link from 'next/link';
 import { useTranslation } from 'next-i18next';
 

@@ -1,5 +1,5 @@
 import Card from './Card';
-import styles from '@/styles/components/Section.module.scss';
+import styles from '@/app/styles/components/Section.module.scss';
 import { useState } from 'react';
 
 const Section = ({ children, title, tabs, className, cardClassName }) => {

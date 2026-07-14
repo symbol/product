@@ -1,9 +1,10 @@
 import Field from './Field';
-import styles from '@/styles/components/Progress.module.scss';
+import styles from '@/app/styles/components/Progress.module.scss';
+import { styleVariables } from '@/app/variants/styles';
 
 const colorMap = {
-	default: '#50B9AD',
-	danger: '#B94F4F'
+	default: styleVariables.colorProgressDefault,
+	danger: styleVariables.colorProgressDanger
 };
 
 const Progress = ({ titleLeft, titleRight, valueLeft, valueRight, value, className, onClick, type }) => {

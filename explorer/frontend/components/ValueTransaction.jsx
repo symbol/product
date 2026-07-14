@@ -1,8 +1,8 @@
 import Avatar from './Avatar';
 import ValueMosaic from './ValueMosaic';
 import ValueTransactionType from './ValueTransactionType';
-import styles from '@/styles/components/ValueTransaction.module.scss';
-import { createPageHref, handleNavigationItemClick, truncateString } from '@/utils';
+import styles from '@/app/styles/components/ValueTransaction.module.scss';
+import { createPageHref, handleNavigationItemClick, truncateString } from '@/app/utils';
 import Link from 'next/link';
 
 const ValueTransaction = ({ value, type, amount, isNavigationDisabled, onClick }) => {

@@ -1,5 +1,5 @@
 import CustomImage from './CustomImage';
-import styles from '@/styles/components/TextBox.module.scss';
+import styles from '@/app/styles/components/TextBox.module.scss';
 
 const TextBox = ({ iconSrc, role, placeholder, value, className, onChange }) => {
 	return (

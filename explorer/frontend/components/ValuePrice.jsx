@@ -1,4 +1,4 @@
-import styles from '@/styles/components/ValuePrice.module.scss';
+import styles from '@/app/styles/components/ValuePrice.module.scss';
 
 const ValuePrice = ({ value, change }) => {
 	const changeText = change < 0 ? `${change}%` : `+${change}%`;

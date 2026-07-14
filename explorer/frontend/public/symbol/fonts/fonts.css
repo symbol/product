@@ -1,0 +1,45 @@
+/* Symbol variant local web fonts. Loaded once via the Symbol DocumentHead
+   (`<link rel="stylesheet" href="/symbol/fonts/fonts.css">`). It lives in public/ (served as a
+   static stylesheet) rather than the SCSS pipeline because Turbopack cannot resolve a
+   per-variant `@import` through sass includePaths. The font-family names below must match the
+   `$font-*` tokens in variants/symbol/styles/variables.scss. */
+
+@font-face {
+	font-weight: 800;
+	font-family: 'SofiaSansCondensed-ExtraBold';
+	font-style: normal;
+	src: url('/symbol/fonts/SofiaSansCondensed-ExtraBold.ttf') format('truetype');
+	font-display: swap;
+}
+
+@font-face {
+	font-weight: 400;
+	font-family: 'Protipo-Regular';
+	font-style: normal;
+	src: url('/symbol/fonts/Protipo-Regular.otf') format('opentype');
+	font-display: swap;
+}
+
+@font-face {
+	font-weight: 700;
+	font-family: 'Protipo-Bold';
+	font-style: normal;
+	src: url('/symbol/fonts/Protipo-Bold.otf') format('opentype');
+	font-display: swap;
+}
+
+@font-face {
+	font-weight: 700;
+	font-family: 'JetBrainsMono-Bold';
+	font-style: normal;
+	src: url('/symbol/fonts/JetBrainsMono-Bold.ttf') format('truetype');
+	font-display: swap;
+}
+
+@font-face {
+	font-weight: 700;
+	font-family: 'Carbon-Bold';
+	font-style: normal;
+	src: url('/symbol/fonts/Carbon-Bold.otf') format('opentype');
+	font-display: swap;
+}

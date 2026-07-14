@@ -3,16 +3,17 @@ import CustomImage from './CustomImage';
 import Field from './Field';
 import FieldTimestamp from './FieldTimestamp';
 import ValueAge from './ValueAge';
-import ValueLabel from './ValueLabel';
+import ValueBlockStatus from './ValueBlockStatus';
 import ValueMosaic from './ValueMosaic';
 import ValueTransactionSquares from './ValueTransactionSquares';
-import styles from '@/styles/components/BlockPreview.module.scss';
-import { createPageHref } from '@/utils';
+import styles from '@/app/styles/components/BlockPreview.module.scss';
+import { createAssetURL } from '@/app/utils';
+import { createPageHref } from '@/app/utils';
 import Link from 'next/link';
 import { useTranslation } from 'next-i18next';
 import { useEffect, useState } from 'react';
 
-const BlockExpanded = ({ data, transactions, isNext, isTransactionSquaresRendered, onClose }) => {
+const BlockExpanded = ({ data, transactions, chainStatus, isTransactionSquaresRendered, onClose }) => {
 	const { height, timestamp, totalFee } = data;
 	const { t } = useTranslation();
 	const href = createPageHref('blocks', height);
@@ -21,15 +22,14 @@ const BlockExpanded = ({ data, transactions, isNext, isTransactionSquaresRendere
 		<div className="layout-flex-col-fields">
 			<ButtonClose className={styles.buttonClose} onClick={onClose} />
 			<Link href={href} className={styles.buttonMore} target="_blank">
-				<CustomImage className={styles.buttonMoreIcon} src="/images/icon-circle-more.png" alt="More" />
+				<CustomImage className={styles.buttonMoreIcon} src={createAssetURL('/images/icon-circle-more.png')} alt="More" />
 			</Link>
 			<Field title={t('field_height')}>
 				<div className="value-highlighted">{height}</div>
 			</Field>
 			<div className="layout-grid-row">
 				<Field title={t('field_status')}>
-					{isNext && <ValueLabel text={t('label_pending')} type="pending" />}
-					{!isNext && <ValueLabel text={t('label_created')} type="created" />}
+					<ValueBlockStatus block={data} chainStatus={chainStatus} />
 				</Field>
 				<FieldTimestamp value={timestamp} hasTime hasSeconds />
 			</div>
@@ -65,13 +65,13 @@ const BlockCube = ({ data }) => {
 	);
 };
 
-const BlockPreview = ({ data, transactions, isNext, isSelected, onClose, onSelect, smallBoxRef, bigBoxRef }) => {
+const BlockPreview = ({ data, transactions, isNext, chainStatus, isSelected, onClose, onSelect, smallBoxRef, bigBoxRef }) => {
 	const { height } = data;
 	const [isTransactionSquaresRendered, setIsTransactionSquaresRendered] = useState(false);
 	const [expandedStyle, setExpandedStyle] = useState('');
 	const cubeClassName = isNext ? styles.blockCubeNext : styles.blockCube;
 	const containerClassName = isSelected ? styles.blockCard : cubeClassName;
-	const iconChainSrc = isNext ? '/images/icon-chain-pending.svg' : '/images/icon-chain.svg';
+	const iconChainSrc = isNext ? createAssetURL('/images/icon-chain-pending.svg') : createAssetURL('/images/icon-chain.svg');
 
 	const handleClick = () => {
 		if (!isSelected) 
@@ -100,6 +100,7 @@ const BlockPreview = ({ data, transactions, isNext, isSelected, onClose, onSelec
 					<BlockExpanded
 						data={data}
 						transactions={transactions}
+						chainStatus={chainStatus}
 						isTransactionSquaresRendered={isTransactionSquaresRendered}
 						onClose={onClose}
 					/>

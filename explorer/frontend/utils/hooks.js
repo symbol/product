@@ -1,4 +1,4 @@
-import { STORAGE_KEY } from '@/constants';
+import { STORAGE_KEY } from '@/app/constants';
 import _ from 'lodash';
 import { useEffect, useState } from 'react';
 

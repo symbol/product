@@ -1,0 +1,8 @@
+@import '../variables';
+
+.valueBlockHeightWithStatus {
+	display: flex;
+	flex-direction: row;
+	gap: $spacing-base / 4;
+	align-items: center;
+}

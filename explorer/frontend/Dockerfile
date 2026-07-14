@@ -16,6 +16,12 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
+# Build-time variant selector; theme is compiled per variant.
+ARG NEXT_PUBLIC_EXPLORER_VARIANT
+RUN test -n "$NEXT_PUBLIC_EXPLORER_VARIANT" \
+	|| (echo 'ERROR: build-arg NEXT_PUBLIC_EXPLORER_VARIANT is required' && exit 1)
+ENV NEXT_PUBLIC_EXPLORER_VARIANT=$NEXT_PUBLIC_EXPLORER_VARIANT
+
 ENV NEXT_TELEMETRY_DISABLED 1
 
 RUN npm run build
@@ -32,6 +38,9 @@ RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 --ingroup nodejs nextjs
 
 COPY --from=builder /app/public ./public
+
+# next-i18next loads this config from the working directory at runtime;
+COPY --from=builder /app/next-i18next.config.js ./next-i18next.config.js
 
 # Set the correct permission for prerender cache
 RUN mkdir .next

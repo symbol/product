@@ -26,14 +26,14 @@ import {
 	fetchPriceByDate,
 	fetchTransactionChart,
 	fetchTransactionStats
-} from '@/api/stats';
-import config from '@/config';
-import * as utils from '@/utils/server';
+} from '@/app/api/stats';
+import config from '@/app/config';
+import * as utils from '@/app/utils/server';
 
-jest.mock('@/utils/server', () => {
+jest.mock('@/app/utils/server', () => {
 	return {
 		__esModule: true,
-		...jest.requireActual('@/utils/server')
+		...jest.requireActual('@/app/utils/server')
 	};
 });
 
@@ -165,7 +165,7 @@ describe('api/stats', () => {
 			const functionToTest = fetchNodeStats;
 			const args = [];
 			const responseMap = {
-				'https://node.list': nodeListResponse,
+				'https://node.list/api/nem/nodes': nodeListResponse,
 				'https://supernode.backend/statistics': supernodeStatisticsResponse
 			};
 			const expectedResult = {
@@ -179,12 +179,12 @@ describe('api/stats', () => {
 
 		it('does not fetch supernode statistics when the endpoint is not configured', async () => {
 			// Arrange:
-			const originalSupernodeApiUrl = config.SUPERNODE_API_URL;
-			config.SUPERNODE_API_URL = '';
+			const originalSupernodeApiUrl = config.PUBLIC_NEM_SUPERNODE_API_URL;
+			config.PUBLIC_NEM_SUPERNODE_API_URL = '';
 			const functionToTest = fetchNodeStats;
 			const args = [];
 			const responseMap = {
-				'https://node.list': nodeListResponse
+				'https://node.list/api/nem/nodes': nodeListResponse
 			};
 			const expectedResult = {
 				total: 3,
@@ -194,7 +194,7 @@ describe('api/stats', () => {
 			// Act + Assert:
 			await runStatsTest(functionToTest, args, responseMap, expectedResult);
 
-			config.SUPERNODE_API_URL = originalSupernodeApiUrl;
+			config.PUBLIC_NEM_SUPERNODE_API_URL = originalSupernodeApiUrl;
 		});
 	});
 

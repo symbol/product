@@ -1,21 +1,21 @@
 import '@testing-library/jest-dom';
 import { blockInfoResult } from '../test-utils/blocks';
-import * as BlockService from '@/api/blocks';
-import BlockInfo, { getServerSideProps } from '@/pages/blocks/[height]';
-import * as utils from '@/utils';
+import * as BlockService from '@/app/api/blocks';
+import BlockInfo, { getServerSideProps } from '@/app/pages/blocks/[height]';
+import * as utils from '@/app/utils';
 import { render, screen } from '@testing-library/react';
 
-jest.mock('@/utils', () => {
+jest.mock('@/app/utils', () => {
 	return {
 		__esModule: true,
-		...jest.requireActual('@/utils')
+		...jest.requireActual('@/app/utils')
 	};
 });
 
-jest.mock('@/api/blocks', () => {
+jest.mock('@/app/api/blocks', () => {
 	return {
 		__esModule: true,
-		...jest.requireActual('@/api/blocks')
+		...jest.requireActual('@/app/api/blocks')
 	};
 });
 
@@ -85,7 +85,7 @@ describe('BlockInfo', () => {
 		const runStatusLabelTest = (chainHeightOffset, expectedShownLabelText, expectedHiddenLabelText) => {
 			// Arrange:
 			const spy = jest.spyOn(utils, 'useAsyncCall');
-			spy.mockImplementation(() => blockInfoResult.height + chainHeightOffset);
+			spy.mockImplementation(() => ({ height: blockInfoResult.height + chainHeightOffset, finalizedHeight: null }));
 
 			// Act:
 			render(<BlockInfo blockInfo={blockInfoResult} />);

@@ -1,5 +1,3 @@
-import { createApiUrl, makeRequest } from '@/utils/server';
+import { api } from '@/app/variants/api';
 
-export const fetchBackendHealthStatus = async () => {
-	return makeRequest(createApiUrl('health'));
-};
+export const { fetchBackendHealthStatus } = api.health;

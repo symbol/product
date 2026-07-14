@@ -1,30 +1,30 @@
 import '@testing-library/jest-dom';
 import { accountInfoResult } from '../test-utils/accounts';
 import { transactionPageResult } from '../test-utils/transactions';
-import * as AccountService from '@/api/accounts';
-import * as TransactionService from '@/api/transactions';
-import AccountInfo, { getServerSideProps } from '@/pages/accounts/[address]';
-import * as utils from '@/utils';
+import * as AccountService from '@/app/api/accounts';
+import * as TransactionService from '@/app/api/transactions';
+import AccountInfo, { getServerSideProps } from '@/app/pages/accounts/[address]';
+import * as utils from '@/app/utils';
 import { render, screen } from '@testing-library/react';
 
-jest.mock('@/utils', () => {
+jest.mock('@/app/utils', () => {
 	return {
 		__esModule: true,
-		...jest.requireActual('@/utils')
+		...jest.requireActual('@/app/utils')
 	};
 });
 
-jest.mock('@/api/transactions', () => {
+jest.mock('@/app/api/transactions', () => {
 	return {
 		__esModule: true,
-		...jest.requireActual('@/api/transactions')
+		...jest.requireActual('@/app/api/transactions')
 	};
 });
 
-jest.mock('@/api/accounts', () => {
+jest.mock('@/app/api/accounts', () => {
 	return {
 		__esModule: true,
-		...jest.requireActual('@/api/accounts')
+		...jest.requireActual('@/app/api/accounts')
 	};
 });
 

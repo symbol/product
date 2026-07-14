@@ -1,5 +1,5 @@
 import '@testing-library/jest-dom';
-import TablePageLoader from '@/components/TablePageLoader';
+import TablePageLoader from '@/app/components/TablePageLoader';
 import { render, screen } from '@testing-library/react';
 /* eslint-disable import/no-unresolved */
 import { mockAllIsIntersecting } from 'react-intersection-observer/test-utils';

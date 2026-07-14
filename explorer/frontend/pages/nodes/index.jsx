@@ -1,9 +1,9 @@
-import { fetchNodeList } from '@/api/nodes';
-import ItemNodeMobile from '@/components/ItemNodeMobile';
-import Section from '@/components/Section';
-import Table from '@/components/Table';
-import styles from '@/styles/pages/Home.module.scss';
-import { createPageHref } from '@/utils';
+import { fetchNodeList } from '@/app/api/nodes';
+import ItemNodeMobile from '@/app/components/ItemNodeMobile';
+import Section from '@/app/components/Section';
+import Table from '@/app/components/Table';
+import styles from '@/app/styles/pages/Home.module.scss';
+import { createPageHref } from '@/app/utils';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useTranslation } from 'next-i18next';

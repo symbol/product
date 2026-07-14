@@ -1,8 +1,8 @@
 import Avatar from './Avatar';
 import ValueLabel from './ValueLabel';
 import ValueMosaic from './ValueMosaic';
-import styles from '@/styles/components/ItemAccountMobile.module.scss';
-import { createPageHref } from '@/utils';
+import styles from '@/app/styles/components/ItemAccountMobile.module.scss';
+import { createPageHref } from '@/app/utils';
 
 const ItemAccountMobile = ({ data }) => {
 	const { address, balance, isHarvestingActive, isMultisig } = data;

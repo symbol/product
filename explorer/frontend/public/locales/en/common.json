@@ -290,6 +290,7 @@
 	"label_outgoing": "To",
 	"label_created": "Created",
 	"label_safe": "Safe",
+	"label_finalized": "Finalized",
 	"label_confirmed": "Confirmed",
 	"label_unconfirmed": "Unconfirmed",
 	"label_pending": "Pending",

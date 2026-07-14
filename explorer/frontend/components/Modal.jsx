@@ -1,5 +1,5 @@
 import Card from './Card';
-import styles from '@/styles/components/Modal.module.scss';
+import styles from '@/app/styles/components/Modal.module.scss';
 import { useEffect } from 'react';
 
 const Modal = ({ children, className, isVisible, onClose }) => {

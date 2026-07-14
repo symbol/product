@@ -18,6 +18,10 @@
 			flex-direction: column;
 
 			.name {
+				display: flex;
+				flex-direction: row;
+				gap: $spacing-base / 4;
+				align-items: center;
 				font: $font-body-bold;
 			}
 		}

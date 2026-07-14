@@ -1,18 +1,18 @@
-import { fetchBlockPage } from '@/api/blocks';
-import { fetchBlockStats } from '@/api/stats';
-import ChartLine from '@/components/ChartLine';
-import Field from '@/components/Field';
-import FieldTimestamp from '@/components/FieldTimestamp';
-import ItemBlockMobile from '@/components/ItemBlockMobile';
-import Section from '@/components/Section';
-import Separator from '@/components/Separator';
-import Table from '@/components/Table';
-import ValueAccount from '@/components/ValueAccount';
-import ValueBlockHeight from '@/components/ValueBlockHeight';
-import ValueMosaic from '@/components/ValueMosaic';
-import ValueTimestamp from '@/components/ValueTimestamp';
-import styles from '@/styles/pages/Home.module.scss';
-import { usePagination } from '@/utils';
+import { fetchBlockPage, fetchChainStatus } from '@/app/api/blocks';
+import { fetchBlockStats } from '@/app/api/stats';
+import ChartLine from '@/app/components/ChartLine';
+import Field from '@/app/components/Field';
+import FieldTimestamp from '@/app/components/FieldTimestamp';
+import ItemBlockMobile from '@/app/components/ItemBlockMobile';
+import Section from '@/app/components/Section';
+import Separator from '@/app/components/Separator';
+import Table from '@/app/components/Table';
+import ValueAccount from '@/app/components/ValueAccount';
+import ValueBlockHeightWithStatus from '@/app/components/ValueBlockHeightWithStatus';
+import ValueMosaic from '@/app/components/ValueMosaic';
+import ValueTimestamp from '@/app/components/ValueTimestamp';
+import styles from '@/app/styles/pages/Home.module.scss';
+import { useAsyncCall, usePagination } from '@/app/utils';
 import Head from 'next/head';
 import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
@@ -33,12 +33,13 @@ export const getServerSideProps = async ({ locale }) => {
 const Blocks = ({ blocks, stats }) => {
 	const { t } = useTranslation();
 	const { requestNextPage, data, isLoading, isError, pageNumber, isLastPage } = usePagination(fetchBlockPage, blocks);
+	const chainStatus = useAsyncCall(fetchChainStatus, null);
 
 	const tableColumns = [
 		{
 			key: 'height',
-			size: '8rem',
-			renderValue: value => <ValueBlockHeight value={value} />
+			size: '10rem',
+			renderValue: (value, row) => <ValueBlockHeightWithStatus block={row} chainStatus={chainStatus} />
 		},
 		{
 			key: 'harvester',
@@ -97,7 +98,7 @@ const Blocks = ({ blocks, stats }) => {
 				<Table
 					data={data}
 					columns={tableColumns}
-					renderItemMobile={data => <ItemBlockMobile data={data} />}
+					renderItemMobile={data => <ItemBlockMobile data={data} chainStatus={chainStatus} />}
 					isLoading={isLoading}
 					isLastPage={isLastPage}
 					isError={isError}

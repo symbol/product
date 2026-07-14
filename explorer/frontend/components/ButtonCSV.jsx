@@ -1,4 +1,4 @@
-import styles from '@/styles/components/ButtonCSV.module.scss';
+import styles from '@/app/styles/components/ButtonCSV.module.scss';
 import { useTranslation } from 'next-i18next';
 import { CSVLink } from 'react-csv';
 

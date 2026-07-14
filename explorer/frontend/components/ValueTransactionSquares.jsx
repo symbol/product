@@ -1,7 +1,8 @@
 import LoadingIndicator from './LoadingIndicator';
 import ValueMosaic from './ValueMosaic';
 import ValueTransaction from './ValueTransaction';
-import styles from '@/styles/components/ValueTransactionSquares.module.scss';
+import styles from '@/app/styles/components/ValueTransactionSquares.module.scss';
+import { styleVariables } from '@/app/variants/styles';
 import dynamic from 'next/dynamic';
 import { useTranslation } from 'next-i18next';
 import { useState } from 'react';
@@ -22,7 +23,7 @@ const ValueTransactionSquares = ({ data = [], isTransactionPreviewEnabled, isLoa
 			data: data.map(item => ({
 				x: `${item.fee}`,
 				y: item.fee,
-				fillColor: '#52B12C'
+				fillColor: styleVariables.colorTransactionSquare
 			}))
 		}
 	];
@@ -31,7 +32,7 @@ const ValueTransactionSquares = ({ data = [], isTransactionPreviewEnabled, isLoa
 			show: false
 		},
 		stroke: {
-			colors: ['rgb(224, 243, 241)']
+			colors: [styleVariables.colorChartDonutStroke]
 		},
 		chart: {
 			width: '100%',
@@ -55,7 +56,10 @@ const ValueTransactionSquares = ({ data = [], isTransactionPreviewEnabled, isLoa
 		dataLabels: {
 			format: 'scale',
 			enabled: true,
-			offsetY: -3
+			offsetY: -3,
+			style: {
+				colors: [styleVariables.colorTransactionSquareText]
+			}
 		},
 		plotOptions: {
 			treemap: {

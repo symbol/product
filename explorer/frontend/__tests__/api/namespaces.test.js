@@ -1,11 +1,11 @@
 import { runApiTest } from '../test-utils/api';
 import { namespaceInfoResponse, namespaceInfoResult, namespacePageResponse, namespacePageResult } from '../test-utils/namespaces';
-import { fetchNamespaceInfo, fetchNamespacePage } from '@/api/namespaces';
+import { fetchNamespaceInfo, fetchNamespacePage } from '@/app/api/namespaces';
 
-jest.mock('@/utils/server', () => {
+jest.mock('@/app/utils/server', () => {
 	return {
 		__esModule: true,
-		...jest.requireActual('@/utils/server')
+		...jest.requireActual('@/app/utils/server')
 	};
 });
 

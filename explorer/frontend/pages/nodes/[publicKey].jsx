@@ -1,10 +1,10 @@
-import { fetchNodeList } from '@/api/nodes';
-import Avatar from '@/components/Avatar';
-import Field from '@/components/Field';
-import Section from '@/components/Section';
-import ValueCopy from '@/components/ValueCopy';
-import ValueMosaic from '@/components/ValueMosaic';
-import styles from '@/styles/pages/NodeInfo.module.scss';
+import { fetchNodeList } from '@/app/api/nodes';
+import Avatar from '@/app/components/Avatar';
+import Field from '@/app/components/Field';
+import Section from '@/app/components/Section';
+import ValueCopy from '@/app/components/ValueCopy';
+import ValueMosaic from '@/app/components/ValueMosaic';
+import styles from '@/app/styles/pages/NodeInfo.module.scss';
 import Head from 'next/head';
 import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';

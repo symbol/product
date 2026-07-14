@@ -2,23 +2,23 @@ import '@testing-library/jest-dom';
 import { setDevice } from '../test-utils/device';
 import { transactionStatisticsResult } from '../test-utils/stats';
 import { transactionPageResult } from '../test-utils/transactions';
-import * as StatsService from '@/api/stats';
-import * as TransactionService from '@/api/transactions';
-import TransactionList, { getServerSideProps } from '@/pages/transactions/index';
-import * as utils from '@/utils';
+import * as StatsService from '@/app/api/stats';
+import * as TransactionService from '@/app/api/transactions';
+import TransactionList, { getServerSideProps } from '@/app/pages/transactions/index';
+import * as utils from '@/app/utils';
 import { render, screen } from '@testing-library/react';
 
-jest.mock('@/api/transactions', () => {
+jest.mock('@/app/api/transactions', () => {
 	return {
 		__esModule: true,
-		...jest.requireActual('@/api/transactions')
+		...jest.requireActual('@/app/api/transactions')
 	};
 });
 
-jest.mock('@/api/stats', () => {
+jest.mock('@/app/api/stats', () => {
 	return {
 		__esModule: true,
-		...jest.requireActual('@/api/stats')
+		...jest.requireActual('@/app/api/stats')
 	};
 });
 

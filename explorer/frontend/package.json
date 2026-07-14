@@ -4,8 +4,17 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "start": "next start",
+    "dev:nem": "env-cmd -f .env.nem next dev",
+    "dev:symbol": "env-cmd -f .env.symbol next dev",
+
     "build": "next build",
+    "build:nem": "env-cmd -f .env.nem next build",
+    "build:symbol": "env-cmd -f .env.symbol next build",
+
+    "start": "next start",
+    "start:nem": "env-cmd -f .env.nem next start",
+    "start:symbol": "env-cmd -f .env.symbol next start",
+    
     "test": "npx jest",
     "test:jenkins": "c8 --reporter=lcov --reporter=text --report-dir=coverage npm run test",
     "eject": "react-scripts eject",
@@ -42,7 +51,8 @@
     "@testing-library/react": "^16.0.0",
     "@testing-library/user-event": "^14.5.2",
     "c8": "^11.0.0",
-    "dotenv": "^17.2.3",
+    "cross-env": "^10.1.0",
+    "env-cmd": "^11.0.0",
     "eslint": "^8.57.1",
     "eslint-config-airbnb": "^19.0.4",
     "eslint-config-next": "15.5.6",

@@ -1,4 +1,4 @@
-import styles from '@/styles/components/PageLoadingIndicator.module.scss';
+import styles from '@/app/styles/components/PageLoadingIndicator.module.scss';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 

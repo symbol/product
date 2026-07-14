@@ -1,28 +1,28 @@
 import '@testing-library/jest-dom';
 import { transactionInfoResult, transactionPageResult } from '../test-utils/transactions';
-import * as TransactionService from '@/api/transactions';
-import TransactionInfo, { getServerSideProps } from '@/pages/transactions/[hash]';
-import * as utils from '@/utils';
+import * as TransactionService from '@/app/api/transactions';
+import TransactionInfo, { getServerSideProps } from '@/app/pages/transactions/[hash]';
+import * as utils from '@/app/utils';
 import { render, screen } from '@testing-library/react';
 
-jest.mock('@/utils', () => {
+jest.mock('@/app/utils', () => {
 	return {
 		__esModule: true,
-		...jest.requireActual('@/utils')
+		...jest.requireActual('@/app/utils')
 	};
 });
 
-jest.mock('@/api/transactions', () => {
+jest.mock('@/app/api/transactions', () => {
 	return {
 		__esModule: true,
-		...jest.requireActual('@/api/transactions')
+		...jest.requireActual('@/app/api/transactions')
 	};
 });
 
-jest.mock('@/api/transactions', () => {
+jest.mock('@/app/api/transactions', () => {
 	return {
 		__esModule: true,
-		...jest.requireActual('@/api/transactions')
+		...jest.requireActual('@/app/api/transactions')
 	};
 });
 

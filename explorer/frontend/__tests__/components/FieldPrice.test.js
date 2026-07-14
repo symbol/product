@@ -1,4 +1,4 @@
-import ValuePrice from '@/components/ValuePrice';
+import ValuePrice from '@/app/components/ValuePrice';
 import { render, screen } from '@testing-library/react';
 
 describe('components/ValuePrice', () => {
