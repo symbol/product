@@ -79,6 +79,7 @@ const accountInfoFromDTO = data => ({
 	importance: +data.importance * 100 || 0,
 	harvestedBlocks: data.harvestedBlocks || null,
 	harvestedFees: data.harvestedFees || null,
+	lastHarvestedHeight: data.lastHarvestedHeight || null,
 	height: data.height || null,
 	minCosignatories: data.minCosignatories || 0,
 	cosignatoryOf: data.cosignatoryOf || [],

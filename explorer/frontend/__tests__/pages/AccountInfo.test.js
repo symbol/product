@@ -123,6 +123,39 @@ describe('AccountInfo', () => {
 			expect(screen.queryByText(descriptionText)).not.toBeInTheDocument();
 			expect(screen.getByText(noDescriptionText)).toBeInTheDocument();
 		});
+
+		it('renders harvesting fields when the account has harvested blocks', () => {
+			// Arrange:
+			const harvestingAccountInfo = {
+				...accountInfoResult,
+				harvestedBlocks: 10,
+				harvestedFees: 1.20,
+				lastHarvestedHeight: 9
+			};
+
+			// Act:
+			render(<AccountInfo accountInfo={harvestingAccountInfo} preloadedTransactions={[]} />);
+
+			// Assert:
+			expect(screen.getByText('section_harvestState')).toBeInTheDocument();
+			expect(screen.getByText('field_harvestedBlocks')).toBeInTheDocument();
+			expect(screen.getByText(harvestingAccountInfo.harvestedBlocks)).toBeInTheDocument();
+			expect(screen.getByText('field_harvestedFees')).toBeInTheDocument();
+			expect(screen.getByTitle(`${harvestingAccountInfo.harvestedFees} XEM`)).toBeInTheDocument();
+			expect(screen.getByText('field_lastHarvestedHeight')).toBeInTheDocument();
+			expect(screen.getByText(harvestingAccountInfo.lastHarvestedHeight)).toBeInTheDocument();
+		});
+
+		it('does not render harvesting fields when the account has no harvested blocks', () => {
+			// Act:
+			render(<AccountInfo accountInfo={accountInfoResult} preloadedTransactions={[]} />);
+
+			// Assert:
+			expect(screen.queryByText('section_harvestState')).not.toBeInTheDocument();
+			expect(screen.queryByText('field_harvestedBlocks')).not.toBeInTheDocument();
+			expect(screen.queryByText('field_harvestedFees')).not.toBeInTheDocument();
+			expect(screen.queryByText('field_lastHarvestedHeight')).not.toBeInTheDocument();
+		});
 	});
 
 	describe('account transactions', () => {
