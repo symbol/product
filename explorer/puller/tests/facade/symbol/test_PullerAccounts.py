@@ -226,8 +226,7 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):  # pylint: disable=too-man
 		cursor = self.puller.symbol_db.connection.cursor()
 		cursor.execute(
 			'''
-			SELECT encode(transaction.recipient_address, 'hex'), encode(address.address, 'hex'), address.role,
-				transaction.body->>'recipientAddress', transaction.raw_payload#>>'{transaction,recipientAddress}'
+			SELECT encode(transaction.recipient_address, 'hex'), encode(address.address, 'hex'), address.role
 			FROM symbol_transactions transaction
 			JOIN symbol_transaction_addresses address ON address.transaction_id = transaction.id
 			WHERE address.role = 'recipient'
@@ -238,9 +237,7 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):  # pylint: disable=too-man
 		self.assertEqual((
 			RECIPIENT_ADDRESS.lower(),
 			RECIPIENT_ADDRESS.lower(),
-			'recipient',
-			alias_address,
-			alias_address
+			'recipient'
 		), cursor.fetchone())
 		self.assertEqual(1, self._fetch_account_count(RECIPIENT_ADDRESS))
 

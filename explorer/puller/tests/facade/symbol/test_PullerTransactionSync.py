@@ -436,6 +436,30 @@ class SymbolPullerTransactionSyncTest(SymbolPullerTestBase):
 			"SELECT encode(address, 'hex'), role FROM symbol_transaction_addresses WHERE role = 'target'")
 		self.assertEqual([(RESOLVED_ADDRESS.lower(), 'target')], cursor.fetchall())
 
+	def test_sync_block_headers_preserves_original_alias_in_transaction_body_and_raw_payload(self):
+		# Arrange:
+		connector = FakeConnector(
+			1,
+			{0: [create_node_block(1)]},
+			transactions_by_path={
+				transaction_path(1, 1): {'data': [create_node_transaction(1, recipientAddress=ALIAS_ADDRESS)]}
+			},
+			address_resolutions_by_height={
+				1: [create_resolution_statement(1, ALIAS_ADDRESS, [_resolution_entry(1, 0, RESOLVED_ADDRESS)])]
+			})
+
+		# Act:
+		self._sync_with_connector(connector)
+
+		# Assert:
+		cursor = self.puller.symbol_db.connection.cursor()
+		cursor.execute(
+			'''
+			SELECT body->>'recipientAddress', raw_payload#>>'{transaction,recipientAddress}'
+			FROM symbol_transactions
+			''')
+		self.assertEqual((ALIAS_ADDRESS, ALIAS_ADDRESS), cursor.fetchone())
+
 	def test_sync_block_headers_converges_resolved_transaction_rows_after_restart(self):
 		# Arrange:
 		connector = FakeConnector(
@@ -458,7 +482,10 @@ class SymbolPullerTransactionSyncTest(SymbolPullerTestBase):
 
 		# Assert:
 		self.assertEqual(first_state, self._fetch_transaction_resolution_state())
-		self.assertEqual(2, self._resolution_paths(connector).count(resolution_path('address', 1)))
+		self.assertEqual([
+			resolution_path('address', 1),
+			resolution_path('address', 1)
+		], self._resolution_paths(connector))
 
 	def test_sync_block_headers_rejects_resolution_without_applicable_entry(self):
 		# Arrange:
