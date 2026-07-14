@@ -462,7 +462,7 @@ class SymbolPuller:
 				latest_block_by_beneficiary[row['beneficiary_address']] = row
 
 		for address, block_row in latest_block_by_beneficiary.items():
-			dirty_addresses[address] = {
+			dirty_addresses[Address(address)] = {
 				'is_beneficiary': True,
 				'harvested_block_timestamp': block_row['timestamp']
 			}
@@ -470,8 +470,8 @@ class SymbolPuller:
 		for transaction_rows in transaction_rows_by_height.values():
 			for transaction_row in transaction_rows:
 				for address_row in transaction_row['address_rows']:
-					address = address_row['address']
-					if address not in dirty_addresses and not Address(address).is_alias():
+					address = Address(address_row['address'])
+					if address not in dirty_addresses and not address.is_alias():
 						dirty_addresses[address] = {
 							'is_beneficiary': False,
 							'harvested_block_timestamp': None
@@ -487,11 +487,13 @@ class SymbolPuller:
 					continue
 
 				for address in receipt_addresses:
-					if address is not None and address not in dirty_addresses:
-						dirty_addresses[address] = {
-							'is_beneficiary': False,
-							'harvested_block_timestamp': None
-						}
+					if address is not None:
+						address = Address(address)
+						if address not in dirty_addresses:
+							dirty_addresses[address] = {
+								'is_beneficiary': False,
+								'harvested_block_timestamp': None
+							}
 
 		return dirty_addresses
 
@@ -503,7 +505,7 @@ class SymbolPuller:
 	):
 		"""Fetches current-state account and multisig rows touched by a synced block batch."""
 
-		addresses = [self.symbol_facade.network.address_class(address) for address in dirty_addresses.keys()]
+		addresses = list(dirty_addresses.keys())
 
 		dirty_account_rows = []
 		for chunk_start in range(0, len(addresses), ACCOUNT_BATCH_FETCH_SIZE):
@@ -513,7 +515,10 @@ class SymbolPuller:
 			})
 			if not isinstance(accounts_response, list):
 				raise ValueError('Malformed Symbol accounts batch response')
-			account_items_by_address = {bytes.fromhex(item['account']['address']): item for item in accounts_response}
+			account_items_by_address = {
+				Address(bytes.fromhex(item['account']['address'])): item
+				for item in accounts_response
+			}
 
 			multisig_responses = await asyncio.gather(*(
 				self.get_symbol_node(f'/account/{address}/multisig', not_found_as_error=False)
@@ -521,11 +526,10 @@ class SymbolPuller:
 			))
 
 			for address, multisig_response in zip(chunk, multisig_responses):
-				address_bytes = address.bytes
-				if address_bytes not in account_items_by_address:
+				if address not in account_items_by_address:
 					raise ValueError(f'Missing Symbol accounts batch item for address {address}')
 
-				item = account_items_by_address[address_bytes]
+				item = account_items_by_address[address]
 				account_row, mosaic_rows = create_account_row(
 					item,
 					self.symbol_facade.network,
@@ -533,12 +537,13 @@ class SymbolPuller:
 					native_mosaic_info.id,
 					native_mosaic_info.divisibility)
 
-				dirty_info = dirty_addresses[address_bytes]
+				dirty_info = dirty_addresses[address]
 				overwrite_is_harvesting_active = dirty_info['is_beneficiary'] and self._is_harvested_block_within_active_window(
 					dirty_info['harvested_block_timestamp'])
 				if overwrite_is_harvesting_active:
 					account_row['is_harvesting_active'] = True
 
+				address_bytes = address.bytes
 				dirty_account_rows.append({
 					'address': address_bytes,
 					'account_row': account_row,
