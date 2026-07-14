@@ -7,12 +7,15 @@ from unittest import TestCase
 from common.symbol.NodeConfiguration import SymbolNodeConfiguration
 from common.tests.PostgresTestUtils import PostgresTestDatabase, drop_symbol_block_tables_if_present
 from symbolchain.sc import ReceiptType, TransactionType
+from symbolchain.symbol.Network import Address, Network
 
 from puller.facade.SymbolPuller import MAX_PAGE_SIZE, DatabaseConfiguration, SymbolPuller
 from puller.model.symbol.Block import create_block_row
 from tests.test.SymbolTestConstants import BENEFICIARY_ADDRESS, RECIPIENT_ADDRESS, SIGNER_PUBLIC_KEY
 
 NODE_URL = 'http://127.0.0.1:3000'
+NATIVE_MOSAIC_ID = '72C0212E67A08BCE'
+NATIVE_MOSAIC_DIVISIBILITY = 6
 
 
 def create_db_config(config_dir, db_config=None, include_symbol_db=True):
@@ -215,17 +218,20 @@ def statement_path(start_height, end_height, page_number=1):
 	)
 
 
-def create_statement_item(height, amount, receipt_type=ReceiptType.INFLATION.value):
+def create_statement_item(height, amount, receipt_type=ReceiptType.INFLATION.value, **receipt_overrides):
+	receipt = {
+		'version': 1,
+		'type': receipt_type,
+		'mosaicId': '72C0212E67A08BCE',
+		'amount': str(amount)
+	}
+	receipt.update(receipt_overrides)
+
 	return {
 		'statement': {
 			'height': str(height),
 			'source': {'primaryId': height, 'secondaryId': 0},
-			'receipts': [{
-				'version': 1,
-				'type': receipt_type,
-				'mosaicId': '72C0212E67A08BCE',
-				'amount': str(amount)
-			}]
+			'receipts': [receipt]
 		},
 		'id': f'statement-{height}-{amount}',
 		'meta': {'timestamp': '0'}
@@ -261,10 +267,36 @@ def create_chain_info(chain_height=1, finalized_height=1):
 
 
 def create_network_properties(epoch_adjustment='100s'):
-	return {'network': {'epochAdjustment': epoch_adjustment}}
+	return {
+		'network': {'epochAdjustment': epoch_adjustment},
+		'chain': {'currencyMosaicId': "0x72C0'212E'67A0'8BCE"}
+	}
 
 
-class FakeConnector:
+def create_mosaic_definition(divisibility=NATIVE_MOSAIC_DIVISIBILITY):
+	return {'mosaic': {'divisibility': divisibility}}
+
+
+def create_account_item(address_hex=BENEFICIARY_ADDRESS, item_id='account-id', **account_overrides):
+	account = {
+		'version': 1,
+		'address': address_hex,
+		'addressHeight': '7',
+		'publicKey': '0' * 64,
+		'publicKeyHeight': '0',
+		'accountType': 0,
+		'supplementalPublicKeys': {},
+		'activityBuckets': [],
+		'mosaics': [{'id': NATIVE_MOSAIC_ID, 'amount': str(20_000 * 10 ** NATIVE_MOSAIC_DIVISIBILITY)}],
+		'importance': '100',
+		'importanceHeight': '6'
+	}
+	account.update(account_overrides)
+
+	return {'account': account, 'id': item_id}
+
+
+class FakeConnector:  # pylint: disable=too-many-instance-attributes
 	def __init__(  # pylint: disable=too-many-arguments,too-many-positional-arguments
 		self,
 		chain_height,
@@ -272,7 +304,9 @@ class FakeConnector:
 		block_by_height=None,
 		finalized_height=1,
 		transactions_by_path=None,
-		statement_pages=None
+		statement_pages=None,
+		account_by_address=None,
+		multisig_by_address=None
 	):  # pylint: disable=too-many-arguments,too-many-positional-arguments
 		self.chain_height = chain_height
 		self.pages = pages
@@ -280,14 +314,23 @@ class FakeConnector:
 		self.finalized_height = finalized_height
 		self.transactions_by_path = transactions_by_path or {}
 		self.statement_pages = statement_pages or {}
+		self.account_by_address = account_by_address or {}
+		self.multisig_by_address = multisig_by_address or {}
 		self.paths = []
+		self.post_payloads_list = []
 
-	async def get(self, url_path, *_):
+	@property
+	def post_payloads(self):
+		return self.post_payloads_list
+
+	async def get(self, url_path, *_):  # pylint: disable=too-many-return-statements
 		self.paths.append(url_path)
 		if 'chain/info' == url_path:
 			return create_chain_info(self.chain_height, self.finalized_height)
 		if 'network/properties' == url_path:
 			return create_network_properties()
+		if f'mosaics/{NATIVE_MOSAIC_ID}' == url_path:
+			return create_mosaic_definition()
 		if url_path.startswith('blocks/'):
 			height = int(url_path.removeprefix('blocks/'))
 			return self.block_by_height[height]
@@ -308,6 +351,25 @@ class FakeConnector:
 			return response
 		if url_path.startswith('statements/transaction?'):
 			return self.statement_pages.get(url_path, {'data': []})
+		if url_path.startswith('account/') and url_path.endswith('/multisig'):
+			address_text = url_path.removeprefix('account/').removesuffix('/multisig')
+			return self.multisig_by_address.get(address_text, {
+				'code': 'ResourceNotFound',
+				'message': f'no resource exists with id {address_text}'
+			})
+
+		raise KeyError(url_path)
+
+	async def post(self, url_path, request_payload, *_):
+		self.paths.append(url_path)
+		self.post_payloads_list.append(request_payload)
+		if 'accounts' == url_path:
+			return [
+				self.account_by_address.get(
+					address_text,
+					create_account_item(address_hex=Network.TESTNET.address_class(address_text).bytes.hex().upper()))
+				for address_text in request_payload['addresses']
+			]
 
 		raise KeyError(url_path)
 
@@ -319,6 +381,9 @@ class ResponseConnector:
 
 	async def get(self, url_path, *_):
 		self.paths.append(url_path)
+		if f'mosaics/{NATIVE_MOSAIC_ID}' == url_path and url_path not in self.responses:
+			return create_mosaic_definition()
+
 		return self.responses[url_path]
 
 
@@ -396,6 +461,10 @@ class SymbolPullerTestBase(TestCase):
 		)
 
 		return cursor.fetchall()
+
+	@staticmethod
+	def _beneficiary_address_text():
+		return str(Address.from_decoded_address_hex_string(BENEFICIARY_ADDRESS))
 
 	def _seed_blocks(self, database, heights, block_hashes=None):
 		block_hashes = block_hashes or {}

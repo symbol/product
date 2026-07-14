@@ -1,23 +1,27 @@
 import asyncio
 import configparser
 from collections import defaultdict, namedtuple
+from datetime import datetime, timedelta, timezone
 from urllib.parse import urlparse
 
 from common.symbol.NodeConfiguration import SymbolNodeConfiguration
 from symbolchain.facade.SymbolFacade import SymbolFacade
-from symbolchain.symbol.Network import Network
+from symbolchain.symbol.Network import Address, Network
 from symbollightapi.connector.SymbolConnector import SymbolConnector
 from symbollightapi.model.Exceptions import NodeException
 from zenlog import log
 
 from puller.db.SymbolDatabase import SymbolDatabase
 from puller.facade.RequestRateLimiter import RequestRateLimiter
+from puller.model.symbol.Account import HARVESTING_ACTIVE_WINDOW_DAYS, create_account_row, create_multisig_row
 from puller.model.symbol.Block import create_block_row
 from puller.model.symbol.Receipt import INFLATION_RECEIPT_TYPE, create_receipt_rows
 from puller.model.symbol.Transaction import create_transaction_row
 
 DatabaseConfiguration = namedtuple('DatabaseConfiguration', ['database', 'user', 'password', 'host', 'port'])
+NativeMosaicInfo = namedtuple('NativeMosaicInfo', ['id', 'divisibility'])
 MAX_PAGE_SIZE = 100
+ACCOUNT_BATCH_FETCH_SIZE = MAX_PAGE_SIZE
 BLOCK_PAGE_FETCH_CONCURRENCY = 10
 DEFAULT_MAX_REQUESTS_PER_SECOND = 20
 
@@ -35,9 +39,16 @@ class SymbolRollbackError(RuntimeError):
 	"""Raised when Symbol rollback repair is outside the safe Backend2 scope."""
 
 
-def _raise_if_node_error(response):
+def _raise_if_node_error(response, allow_not_found=False):
 	if isinstance(response, dict) and 'code' in response and 'message' in response:
+		if allow_not_found and 'ResourceNotFound' == response.get('code'):
+			return
+
 		raise NodeException(f'{response["code"]}: {response["message"]}')
+
+
+def _is_not_found_response(response):
+	return isinstance(response, dict) and 'ResourceNotFound' == response.get('code')
 
 
 class SymbolPuller:
@@ -70,6 +81,8 @@ class SymbolPuller:
 		self.symbol_facade = SymbolFacade(network)
 		self._retry_delay = 2
 		self._rate_limiter = rate_limiter or RequestRateLimiter(max_requests_per_second)
+		self._native_mosaic_info = None
+		self._network_properties = None
 
 	def __enter__(self):
 		self.symbol_db.__enter__()
@@ -90,14 +103,14 @@ class SymbolPuller:
 
 		return normalized_path
 
-	async def _retry_operation(self, operation, description, retries=3):
+	async def _retry_operation(self, operation, description, retries=3, not_found_as_error=True):
 		"""Retries a Symbol node operation with exponential backoff."""
 
 		for attempt_index in range(retries):
 			try:
 				await self._rate_limiter.wait_for_turn()
 				response = await operation()
-				_raise_if_node_error(response)
+				_raise_if_node_error(response, allow_not_found=not not_found_as_error)
 				return response
 			except NodeException as error:
 				attempt = attempt_index + 1
@@ -115,7 +128,8 @@ class SymbolPuller:
 		normalized_path = self._validate_symbol_node_path(url_path)
 		return await self._retry_operation(
 			lambda: self._symbol_connector.get(normalized_path, property_name, not_found_as_error),
-			f'fetching Symbol node path {normalized_path}'
+			f'fetching Symbol node path {normalized_path}',
+			not_found_as_error=not_found_as_error
 		)
 
 	async def post_symbol_node(self, url_path, request_payload, property_name=None, not_found_as_error=True):
@@ -124,19 +138,21 @@ class SymbolPuller:
 		normalized_path = self._validate_symbol_node_path(url_path)
 		return await self._retry_operation(
 			lambda: self._symbol_connector.post(normalized_path, request_payload, property_name, not_found_as_error),
-			f'posting Symbol node path {normalized_path}'
+			f'posting Symbol node path {normalized_path}',
+			not_found_as_error=not_found_as_error
 		)
 
-	async def sync_block_headers(self, max_height=None):
+	async def sync_block_headers(self, max_height=None):  # pylint: disable=too-many-locals
 		"""Synchronizes Symbol block headers from the configured node."""
 
 		chain_info = await self.get_symbol_node('/chain/info')
-		network_properties = await self.get_symbol_node('/network/properties')
+		network_properties = await self._get_network_properties()
 		chain_height = self._get_sync_chain_height(int(chain_info['height']), max_height)
 		finalized_height, finalized_hash, finalized_epoch, finalized_point, is_finalization_capped = (
 			self._get_finalized_watermark(chain_info, chain_height)
 		)
 		epoch_adjustment_seconds = self._parse_epoch_adjustment(network_properties)
+		native_mosaic_info = await self._get_native_mosaic_info()
 		sync_state = self._get_bounded_sync_state(self.symbol_db.get_sync_state(), chain_height)
 		if is_finalization_capped and sync_state and sync_state['last_synced_height'] >= finalized_height:
 			finalized_hash = self.symbol_db.get_block_hash(finalized_height)
@@ -145,7 +161,11 @@ class SymbolPuller:
 		if not start_height:
 			start_height = (sync_state['last_synced_height'] + 1) if sync_state and sync_state['last_synced_height'] else 1
 
-		last_synced_height, last_synced_block_hash = await self._sync_block_pages(start_height, chain_height, epoch_adjustment_seconds)
+		last_synced_height, last_synced_block_hash = await self._sync_block_pages(
+			start_height,
+			chain_height,
+			epoch_adjustment_seconds,
+			native_mosaic_info)
 		if last_synced_height is None and sync_state:
 			last_synced_height = sync_state['last_synced_height']
 			last_synced_block_hash = sync_state['last_synced_block_hash']
@@ -250,7 +270,13 @@ class SymbolPuller:
 		})
 		return height
 
-	async def _sync_block_pages(self, start_height, chain_height, epoch_adjustment_seconds):
+	async def _sync_block_pages(  # pylint: disable=too-many-locals
+		self,
+		start_height,
+		chain_height,
+		epoch_adjustment_seconds,
+		native_mosaic_info
+	):
 		last_synced_height = None
 		last_synced_block_hash = None
 		all_offsets = range(start_height - 1, chain_height, MAX_PAGE_SIZE)
@@ -282,20 +308,46 @@ class SymbolPuller:
 				last_synced_block_hash = last_row['hash']
 
 				if len(blocks) < MAX_PAGE_SIZE:
-					await self._sync_block_batch(batch_rows, epoch_adjustment_seconds)
+					await self._sync_block_batch_with_dirty_accounts(
+						batch_rows, epoch_adjustment_seconds, native_mosaic_info)
 					return last_synced_height, last_synced_block_hash
 
-			await self._sync_block_batch(batch_rows, epoch_adjustment_seconds)
+			await self._sync_block_batch_with_dirty_accounts(
+				batch_rows, epoch_adjustment_seconds, native_mosaic_info)
 
 		return last_synced_height, last_synced_block_hash
 
-	async def _sync_block_batch(self, batch_rows, epoch_adjustment_seconds):
+	async def _sync_block_batch_with_dirty_accounts(
+		self,
+		batch_rows,
+		epoch_adjustment_seconds,
+		native_mosaic_info
+	):
 		transaction_rows_by_height = await self._get_transaction_rows_by_height(
 			batch_rows[0]['height'],
 			batch_rows[-1]['height'],
 			epoch_adjustment_seconds
 		)
 		receipt_rows_by_height = await self._get_receipt_rows_by_height(batch_rows[0]['height'], batch_rows[-1]['height'])
+		dirty_addresses = self._collect_dirty_addresses_for_batch(
+			batch_rows,
+			transaction_rows_by_height,
+			receipt_rows_by_height)
+		observed_height = max(row['height'] for row in batch_rows)
+		dirty_account_rows = await self._fetch_dirty_accounts_for_batch(
+			dirty_addresses,
+			observed_height,
+			native_mosaic_info)
+		self._sync_block_batch(batch_rows, transaction_rows_by_height, receipt_rows_by_height)
+		self._write_dirty_accounts_for_batch(dirty_account_rows)
+
+	def _sync_block_batch(self, batch_rows, transaction_rows_by_height, receipt_rows_by_height):
+		"""Writes previously-fetched block, transaction, and receipt rows for one batch.
+
+		Takes already-fetched rows rather than fetching them itself so all of a batch's network
+		fetches complete before any of its writes begin — a mid-batch failure leaves no partial writes.
+		"""
+
 		self.symbol_db.upsert_blocks(batch_rows)
 		self._upsert_transactions_for_batch(batch_rows, transaction_rows_by_height)
 		self._upsert_receipts_for_batch(batch_rows, receipt_rows_by_height)
@@ -372,6 +424,155 @@ class SymbolPuller:
 		raw_epoch_adjustment = network_properties['network']['epochAdjustment']
 		raw_epoch_adjustment = str(raw_epoch_adjustment)
 		return int(raw_epoch_adjustment[:-1] if raw_epoch_adjustment.endswith('s') else raw_epoch_adjustment)
+
+	async def _get_network_properties(self):
+		"""Gets and memoizes Symbol network properties for this puller instance."""
+
+		if self._network_properties is None:
+			self._network_properties = await self.get_symbol_node('/network/properties')
+
+		return self._network_properties
+
+	async def _get_native_mosaic_info(self):
+		"""Gets and memoizes the native mosaic id and divisibility for this puller instance."""
+
+		if self._native_mosaic_info:
+			return self._native_mosaic_info
+
+		network_properties = await self._get_network_properties()
+		native_mosaic_id = network_properties['chain']['currencyMosaicId'].replace('0x', '').replace("'", '').upper()
+		mosaic_definition = await self.get_symbol_node(f'/mosaics/{native_mosaic_id}')
+		self._native_mosaic_info = NativeMosaicInfo(native_mosaic_id, int(mosaic_definition['mosaic']['divisibility']))
+
+		return self._native_mosaic_info
+
+	@staticmethod
+	def _collect_dirty_addresses_for_batch(  # pylint: disable=too-many-branches
+		block_rows,
+		transaction_rows_by_height,
+		receipt_rows_by_height
+	):
+		"""Collects unique dirty addresses touched by synced block, transaction, and receipt rows."""
+
+		dirty_addresses = {}
+		latest_block_by_beneficiary = {}
+		for row in block_rows:
+			current_row = latest_block_by_beneficiary.get(row['beneficiary_address'])
+			if not current_row or (row['timestamp'], row['height']) > (current_row['timestamp'], current_row['height']):
+				latest_block_by_beneficiary[row['beneficiary_address']] = row
+
+		for address, block_row in latest_block_by_beneficiary.items():
+			dirty_addresses[Address(address)] = {
+				'is_beneficiary': True,
+				'harvested_block_timestamp': block_row['timestamp']
+			}
+
+		for transaction_rows in transaction_rows_by_height.values():
+			for transaction_row in transaction_rows:
+				for address_row in transaction_row['address_rows']:
+					address = Address(address_row['address'])
+					if address not in dirty_addresses and not address.is_alias():
+						dirty_addresses[address] = {
+							'is_beneficiary': False,
+							'harvested_block_timestamp': None
+						}
+
+		for receipt_rows in receipt_rows_by_height.values():
+			for receipt_row in receipt_rows:
+				if 'balanceChange' == receipt_row['receipt_group']:
+					receipt_addresses = [receipt_row['target_address']]
+				elif 'balanceTransfer' == receipt_row['receipt_group']:
+					receipt_addresses = [receipt_row['sender_address'], receipt_row['recipient_address']]
+				else:
+					continue
+
+				for address in receipt_addresses:
+					if address is not None:
+						address = Address(address)
+						if address not in dirty_addresses:
+							dirty_addresses[address] = {
+								'is_beneficiary': False,
+								'harvested_block_timestamp': None
+							}
+
+		return dirty_addresses
+
+	async def _fetch_dirty_accounts_for_batch(  # pylint: disable=too-many-locals
+		self,
+		dirty_addresses,
+		observed_height,
+		native_mosaic_info
+	):
+		"""Fetches current-state account and multisig rows touched by a synced block batch."""
+
+		addresses = list(dirty_addresses.keys())
+
+		dirty_account_rows = []
+		for chunk_start in range(0, len(addresses), ACCOUNT_BATCH_FETCH_SIZE):
+			chunk = addresses[chunk_start:chunk_start + ACCOUNT_BATCH_FETCH_SIZE]
+			accounts_response = await self.post_symbol_node('/accounts', {
+				'addresses': [str(address) for address in chunk]
+			})
+			if not isinstance(accounts_response, list):
+				raise ValueError('Malformed Symbol accounts batch response')
+			account_items_by_address = {
+				Address(bytes.fromhex(item['account']['address'])): item
+				for item in accounts_response
+			}
+
+			multisig_responses = await asyncio.gather(*(
+				self.get_symbol_node(f'/account/{address}/multisig', not_found_as_error=False)
+				for address in chunk
+			))
+
+			for address, multisig_response in zip(chunk, multisig_responses):
+				if address not in account_items_by_address:
+					raise ValueError(f'Missing Symbol accounts batch item for address {address}')
+
+				item = account_items_by_address[address]
+				account_row, mosaic_rows = create_account_row(
+					item,
+					self.symbol_facade.network,
+					observed_height,
+					native_mosaic_info.id,
+					native_mosaic_info.divisibility)
+
+				dirty_info = dirty_addresses[address]
+				overwrite_is_harvesting_active = dirty_info['is_beneficiary'] and self._is_harvested_block_within_active_window(
+					dirty_info['harvested_block_timestamp'])
+				if overwrite_is_harvesting_active:
+					account_row['is_harvesting_active'] = True
+
+				address_bytes = address.bytes
+				dirty_account_rows.append({
+					'address': address_bytes,
+					'account_row': account_row,
+					'mosaic_rows': mosaic_rows,
+					'overwrite_is_harvesting_active': overwrite_is_harvesting_active,
+					'multisig_row': None if _is_not_found_response(multisig_response) else create_multisig_row(
+						address_bytes,
+						multisig_response['multisig'],
+						observed_height)
+				})
+
+		return dirty_account_rows
+
+	def _write_dirty_accounts_for_batch(self, dirty_account_rows):
+		"""Writes fetched dirty account current-state rows after block rows are persisted."""
+
+		for dirty_account_row in dirty_account_rows:
+			self.symbol_db.upsert_account_current_state(
+				dirty_account_row['account_row'],
+				dirty_account_row['mosaic_rows'],
+				overwrite_is_harvesting_active=dirty_account_row['overwrite_is_harvesting_active'])
+			self.symbol_db.upsert_multisig(
+				dirty_account_row['address'],
+				dirty_account_row['multisig_row'])
+
+	@staticmethod
+	def _is_harvested_block_within_active_window(harvested_block_timestamp):
+		cutoff_timestamp = datetime.now(timezone.utc) - timedelta(days=HARVESTING_ACTIVE_WINDOW_DAYS)
+		return harvested_block_timestamp >= cutoff_timestamp
 
 	@staticmethod
 	def _validate_block_page(rows, expected_start_height):

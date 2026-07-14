@@ -6,11 +6,14 @@ from symbollightapi.model.Exceptions import NodeException
 
 from puller.facade.SymbolPuller import BLOCK_PAGE_FETCH_CONCURRENCY, MAX_PAGE_SIZE
 from puller.model.symbol.Block import create_block_row
+from puller.model.symbol.Receipt import create_receipt_rows
 
 from .puller_test_utils import (
+	NATIVE_MOSAIC_ID,
 	FakeConnector,
 	ResponseConnector,
 	SymbolPullerTestBase,
+	create_network_properties,
 	create_node_block,
 	create_statement_item,
 	create_sync_state,
@@ -22,6 +25,38 @@ from .puller_test_utils import (
 
 
 class SymbolPullerSyncTest(SymbolPullerTestBase):
+	def _assert_sync_request_counts(self, connector, block_page_count, batch_count):
+		# Assert:
+		block_paths = [
+			path for path in connector.paths
+			if path.startswith('blocks?pageSize=100&offset=')
+		]
+		transaction_paths = [
+			path for path in connector.paths
+			if path.startswith('transactions/confirmed?')
+		]
+		statement_paths = [
+			path for path in connector.paths
+			if path.startswith('statements/transaction?')
+		]
+		account_paths = [
+			path for path in connector.paths
+			if 'accounts' == path
+		]
+		multisig_paths = [
+			path for path in connector.paths
+			if path.startswith('account/') and path.endswith('/multisig')
+		]
+
+		self.assertEqual(1, connector.paths.count('chain/info'))
+		self.assertEqual(1, connector.paths.count('network/properties'))
+		self.assertEqual(1, connector.paths.count(f'mosaics/{NATIVE_MOSAIC_ID}'))
+		self.assertEqual(block_page_count, len(block_paths))
+		self.assertEqual(batch_count, len(transaction_paths))
+		self.assertEqual(batch_count, len(statement_paths))
+		self.assertEqual(batch_count, len(account_paths))
+		self.assertEqual(batch_count, len(multisig_paths))
+		self.assertEqual(3 + block_page_count + 4 * batch_count, len(connector.paths))
 
 	def test_sync_block_headers_pulls_chain_info_network_properties_and_blocks(
 		self
@@ -36,12 +71,16 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):
 		self._sync_with_connector(connector)
 
 		# Assert:
+		beneficiary_address_text = self._beneficiary_address_text()
 		self.assertEqual([
 			'chain/info',
 			'network/properties',
+			f'mosaics/{NATIVE_MOSAIC_ID}',
 			'blocks?pageSize=100&offset=0&orderBy=height',
 			transaction_path(1, 2),
-			statement_path(1, 2)
+			statement_path(1, 2),
+			'accounts',
+			f'account/{beneficiary_address_text}/multisig'
 		], connector.paths)
 
 	def test_sync_block_headers_persists_synced_block_watermark(self):
@@ -121,16 +160,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):
 		block_heights, sync_state = self._sync_with_connector(connector)
 
 		# Assert:
-		block_paths = [path for path in connector.paths if path.startswith('blocks?')]
-		transaction_paths = [path for path in connector.paths if path.startswith('transactions/confirmed?')]
-		statement_paths = [path for path in connector.paths if path.startswith('statements/transaction?')]
-		self.assertEqual([
-			'blocks?pageSize=100&offset=0&orderBy=height',
-			'blocks?pageSize=100&offset=100&orderBy=height',
-			'blocks?pageSize=100&offset=200&orderBy=height'
-		], block_paths)
-		self.assertEqual([transaction_path(1, 201)], transaction_paths)
-		self.assertEqual([statement_path(1, 201)], statement_paths)
+		self._assert_sync_request_counts(connector, block_page_count=3, batch_count=1)
 		self.assertEqual(list(range(1, 202)), block_heights)
 		self.assertEqual(201, sync_state['last_synced_height'])
 
@@ -155,12 +185,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):
 		block_heights, sync_state = self._sync_with_connector(connector)
 
 		# Assert:
-		block_paths = [path for path in connector.paths if path.startswith('blocks?')]
-		transaction_paths = [path for path in connector.paths if path.startswith('transactions/confirmed?')]
-		statement_paths = [path for path in connector.paths if path.startswith('statements/transaction?')]
-		self.assertEqual(11, len(block_paths))
-		self.assertEqual(2, len(transaction_paths))
-		self.assertEqual([statement_path(1, 1000), statement_path(1001, chain_height)], statement_paths)
+		self._assert_sync_request_counts(connector, block_page_count=11, batch_count=2)
 		self.assertEqual(list(range(1, chain_height + 1)), block_heights)
 		self.assertEqual(chain_height, sync_state['last_synced_height'])
 		self.assertEqual('healthy', sync_state['status'])
@@ -179,12 +204,16 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):
 		)
 
 		# Assert:
+		beneficiary_address_text = self._beneficiary_address_text()
 		self.assertEqual([
 			'chain/info',
 			'network/properties',
+			f'mosaics/{NATIVE_MOSAIC_ID}',
 			'blocks?pageSize=100&offset=0&orderBy=height',
 			transaction_path(1, 2),
-			statement_path(1, 2)
+			statement_path(1, 2),
+			'accounts',
+			f'account/{beneficiary_address_text}/multisig'
 		], connector.paths)
 		self.assertEqual([1, 2], block_heights)
 		self.assertEqual('healthy', sync_state['status'])
@@ -234,13 +263,17 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):
 		block_heights = self._fetch_block_heights(self.puller.symbol_db)
 		sync_state = self.puller.symbol_db.get_sync_state()
 
+		beneficiary_address_text = self._beneficiary_address_text()
 		self.assertEqual([
 			'chain/info',
 			'network/properties',
+			f'mosaics/{NATIVE_MOSAIC_ID}',
 			'blocks/2',
 			'blocks?pageSize=100&offset=2&orderBy=height',
 			transaction_path(3, 4),
-			statement_path(3, 4)
+			statement_path(3, 4),
+			'accounts',
+			f'account/{beneficiary_address_text}/multisig'
 		], connector.paths)
 		self.assertEqual([1, 2, 3, 4], block_heights)
 		self.assertEqual('healthy', sync_state['status'])
@@ -272,7 +305,8 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):
 
 		self.assertEqual([
 			'chain/info',
-			'network/properties'
+			'network/properties',
+			f'mosaics/{NATIVE_MOSAIC_ID}'
 		], connector.paths)
 		self.assertEqual(2, sync_state['chain_height'])
 		self.assertEqual(2, sync_state['finalized_height'])
@@ -333,24 +367,19 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):
 		self.assertEqual([10], [row['amount'] for row in rows_by_height[1]])
 		self.assertEqual([20, 30], [row['amount'] for row in rows_by_height[2]])
 
-	def test_sync_block_batch_upserts_empty_heights_and_queries_batch_range(self):
+	def test_sync_block_batch_upserts_empty_heights_and_writes_previously_fetched_receipts(self):
 		# Arrange:
-		connector = ResponseConnector({
-			transaction_path(5, 7): {'data': []},
-			statement_path(5, 7): {'data': [create_statement_item(6, 600)]}
-		})
 		self._seed_blocks(self.puller.symbol_db, [5, 6, 7])
-		set_symbol_connector(self.puller, connector)
 		block_rows = [
 			create_block_row(create_node_block(height), 100, self.puller.symbol_facade.network)
 			for height in [5, 6, 7]
 		]
+		receipt_rows_by_height = {6: create_receipt_rows(create_statement_item(6, 600))}
 
 		# Act:
-		asyncio.run(self.puller._sync_block_batch(block_rows, 100))  # pylint: disable=protected-access
+		self.puller._sync_block_batch(block_rows, {}, receipt_rows_by_height)  # pylint: disable=protected-access
 
 		# Assert:
-		self.assertEqual([transaction_path(5, 7), statement_path(5, 7)], connector.paths)
 		self.assertEqual([
 			(6, 'inflation', 'inflation', 6, 0, '72C0212E67A08BCE', 600)
 		], self._fetch_receipts(self.puller.symbol_db))
@@ -370,7 +399,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):
 					'hash': f'{1:064X}'
 				}
 			},
-			'network/properties': {'network': {'epochAdjustment': '100s'}},
+			'network/properties': create_network_properties(),
 			'blocks?pageSize=100&offset=0&orderBy=height': {'data': [create_node_block(1)]},
 			transaction_path(1, 1): {'data': []},
 			statement_path(1, 1): {'pagination': {'pageNumber': 1}}
@@ -421,7 +450,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):
 					'hash': f'{1:064X}'
 				}
 			},
-			'network/properties': {'network': {'epochAdjustment': '100s'}},
+			'network/properties': create_network_properties(),
 			'blocks?pageSize=100&offset=0&orderBy=height': {'data': [create_node_block(1)]},
 			transaction_path(1, 1): {'data': []},
 			statement_path(1, 1): {

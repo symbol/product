@@ -1,5 +1,6 @@
 from psycopg2.extras import Json
 
+from puller.model.symbol.Account import ACCOUNT_TYPE_VALUES
 from puller.model.symbol.Block import BLOCK_TYPE_VALUES
 from puller.model.symbol.Receipt import RECEIPT_TYPE_LABELS
 from puller.model.symbol.Transaction import MESSAGE_TYPE_LABELS, TRANSACTION_TYPE_LABELS
@@ -70,6 +71,41 @@ SYMBOL_BLOCK_DEFINITIONS = [
 	'raw_payload jsonb NOT NULL',
 	'created_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP',
 	'updated_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP'
+]
+SYMBOL_ACCOUNT_DEFINITIONS = [
+	'address bytea PRIMARY KEY',
+	'address_text varchar(39) UNIQUE NOT NULL',
+	'public_key bytea UNIQUE',
+	'account_type symbol_account_type',
+	'address_height bigint',
+	'importance bigint NOT NULL DEFAULT 0',
+	'importance_percentage numeric NOT NULL DEFAULT 0',
+	'is_harvesting_active boolean',
+	'is_eligible_for_harvesting boolean',
+	'linked_public_key bytea',
+	'node_public_key bytea',
+	'vrf_public_key bytea',
+	"voting_public_keys jsonb NOT NULL DEFAULT '[]'::jsonb",
+	"activity_buckets jsonb NOT NULL DEFAULT '[]'::jsonb",
+	'raw_payload jsonb NOT NULL',
+	'first_seen_height bigint',
+	'last_seen_height bigint NOT NULL',
+	'updated_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP'
+]
+SYMBOL_ACCOUNT_MOSAIC_DEFINITIONS = [
+	'address bytea NOT NULL REFERENCES symbol_accounts(address)',
+	'mosaic_id varchar(16) NOT NULL',
+	'amount bigint NOT NULL',
+	'updated_at_height bigint NOT NULL',
+	'PRIMARY KEY (address, mosaic_id)'
+]
+SYMBOL_MULTISIG_DEFINITIONS = [
+	'address bytea PRIMARY KEY REFERENCES symbol_accounts(address)',
+	'min_approval int NOT NULL',
+	'min_removal int NOT NULL',
+	"cosignatory_addresses bytea[] NOT NULL DEFAULT '{}'",
+	"multisig_addresses bytea[] NOT NULL DEFAULT '{}'",
+	'updated_at_height bigint NOT NULL'
 ]
 SYMBOL_TRANSACTION_DEFINITIONS = [
 	'id bigserial PRIMARY KEY',
@@ -169,6 +205,7 @@ class SymbolDatabase(DatabaseConnection):
 		"""Creates Symbol block synchronization tables."""
 
 		cursor = self.connection.cursor()
+		_create_enum_type(cursor, 'symbol_account_type', ACCOUNT_TYPE_VALUES)
 		_create_enum_type(cursor, 'symbol_block_type', BLOCK_TYPE_VALUES)
 		_create_enum_type(cursor, 'symbol_receipt_type', SYMBOL_RECEIPT_TYPE_VALUES)
 		_create_enum_type(cursor, 'symbol_receipt_group', SYMBOL_RECEIPT_GROUP_VALUES)
@@ -179,6 +216,9 @@ class SymbolDatabase(DatabaseConnection):
 		_create_enum_type(cursor, 'symbol_transaction_message_type', SYMBOL_TRANSACTION_MESSAGE_TYPE_VALUES)
 		_create_table(cursor, 'symbol_sync_state', SYMBOL_SYNC_STATE_DEFINITIONS)
 		_create_table(cursor, 'symbol_blocks', SYMBOL_BLOCK_DEFINITIONS)
+		_create_table(cursor, 'symbol_accounts', SYMBOL_ACCOUNT_DEFINITIONS)
+		_create_table(cursor, 'symbol_account_mosaics', SYMBOL_ACCOUNT_MOSAIC_DEFINITIONS)
+		_create_table(cursor, 'symbol_multisig', SYMBOL_MULTISIG_DEFINITIONS)
 		cursor.execute('CREATE SEQUENCE IF NOT EXISTS symbol_transaction_list_sequence_seq')
 		_create_table(cursor, 'symbol_transactions', SYMBOL_TRANSACTION_DEFINITIONS)
 		_create_table(cursor, 'symbol_transaction_mosaics', SYMBOL_TRANSACTION_MOSAIC_DEFINITIONS)
@@ -187,6 +227,12 @@ class SymbolDatabase(DatabaseConnection):
 		cursor.execute('CREATE INDEX IF NOT EXISTS idx_symbol_blocks_height_desc ON symbol_blocks(height DESC)')
 		cursor.execute('CREATE INDEX IF NOT EXISTS idx_symbol_blocks_timestamp ON symbol_blocks(timestamp)')
 		cursor.execute('CREATE INDEX IF NOT EXISTS idx_symbol_blocks_signer_address ON symbol_blocks(signer_address)')
+		cursor.execute('CREATE INDEX IF NOT EXISTS idx_symbol_accounts_importance_desc ON symbol_accounts(importance DESC)')
+		cursor.execute('CREATE INDEX IF NOT EXISTS idx_symbol_accounts_address_height ON symbol_accounts(address_height)')
+		cursor.execute('CREATE INDEX IF NOT EXISTS idx_symbol_accounts_harvesting ON symbol_accounts(is_harvesting_active)')
+		cursor.execute('CREATE INDEX IF NOT EXISTS idx_symbol_accounts_eligible ON symbol_accounts(is_eligible_for_harvesting)')
+		cursor.execute('CREATE INDEX IF NOT EXISTS idx_symbol_account_mosaics_address ON symbol_account_mosaics(address)')
+		cursor.execute('CREATE INDEX IF NOT EXISTS idx_symbol_account_mosaics_mosaic ON symbol_account_mosaics(mosaic_id)')
 		cursor.execute('''
 			CREATE INDEX IF NOT EXISTS idx_symbol_transactions_height_desc
 			ON symbol_transactions(height DESC, id DESC)
@@ -288,6 +334,152 @@ class SymbolDatabase(DatabaseConnection):
 				sync_state['last_synced_block_hash']
 			])
 
+	def upsert_account_current_state(
+		self,
+		account_row,
+		mosaic_rows,
+		overwrite_is_harvesting_active=True
+	):
+		"""Upserts one Symbol account current-state row and replaces its current mosaic rows."""
+
+		cursor = self.connection.cursor()
+		self._execute_upsert_account_current_state(
+			cursor,
+			account_row,
+			mosaic_rows,
+			overwrite_is_harvesting_active)
+		self.connection.commit()
+
+	@staticmethod
+	def _execute_upsert_account_current_state(
+		cursor,
+		account_row,
+		mosaic_rows,
+		overwrite_is_harvesting_active=True
+	):
+		update_columns = [
+			'address_text',
+			'public_key',
+			'account_type',
+			'address_height',
+			'importance',
+			'is_eligible_for_harvesting',
+			'linked_public_key',
+			'node_public_key',
+			'vrf_public_key',
+			'voting_public_keys',
+			'activity_buckets',
+			'raw_payload',
+			'last_seen_height'
+		]
+		if overwrite_is_harvesting_active:
+			update_columns.append('is_harvesting_active')
+
+		update_assignments = ', '.join([f'{column} = EXCLUDED.{column}' for column in update_columns])
+		cursor.execute(
+			f'''
+			INSERT INTO symbol_accounts (
+				address,
+				address_text,
+				public_key,
+				account_type,
+				address_height,
+				importance,
+				importance_percentage,
+				is_harvesting_active,
+				is_eligible_for_harvesting,
+				linked_public_key,
+				node_public_key,
+				vrf_public_key,
+				voting_public_keys,
+				activity_buckets,
+				raw_payload,
+				first_seen_height,
+				last_seen_height,
+				updated_at
+			)
+			VALUES (
+				%(address)s,
+				%(address_text)s,
+				%(public_key)s,
+				%(account_type)s,
+				%(address_height)s,
+				%(importance)s,
+				%(importance_percentage)s,
+				%(is_harvesting_active)s,
+				%(is_eligible_for_harvesting)s,
+				%(linked_public_key)s,
+				%(node_public_key)s,
+				%(vrf_public_key)s,
+				%(voting_public_keys)s,
+				%(activity_buckets)s,
+				%(raw_payload)s,
+				%(first_seen_height)s,
+				%(last_seen_height)s,
+				CURRENT_TIMESTAMP
+			)
+			ON CONFLICT (address) DO UPDATE SET
+				{update_assignments},
+				first_seen_height = COALESCE(symbol_accounts.first_seen_height, EXCLUDED.first_seen_height),
+				updated_at = CURRENT_TIMESTAMP
+			''',
+			account_row)
+		cursor.execute('DELETE FROM symbol_account_mosaics WHERE address = %s', (account_row['address'],))
+		for mosaic_row in mosaic_rows:
+			cursor.execute(
+				'''
+				INSERT INTO symbol_account_mosaics (
+					address,
+					mosaic_id,
+					amount,
+					updated_at_height
+				)
+				VALUES (
+					%(address)s,
+					%(mosaic_id)s,
+					%(amount)s,
+					%(updated_at_height)s
+				)
+				''',
+				mosaic_row)
+
+	def upsert_multisig(self, address, multisig_row_or_none):
+		"""Upserts or deletes one Symbol multisig current-state row."""
+
+		cursor = self.connection.cursor()
+		if multisig_row_or_none is None:
+			cursor.execute('DELETE FROM symbol_multisig WHERE address = %s', (address,))
+			self.connection.commit()
+			return
+
+		cursor.execute(
+			'''
+			INSERT INTO symbol_multisig (
+				address,
+				min_approval,
+				min_removal,
+				cosignatory_addresses,
+				multisig_addresses,
+				updated_at_height
+			)
+			VALUES (
+				%(address)s,
+				%(min_approval)s,
+				%(min_removal)s,
+				%(cosignatory_addresses)s,
+				%(multisig_addresses)s,
+				%(updated_at_height)s
+			)
+			ON CONFLICT (address) DO UPDATE SET
+				min_approval = EXCLUDED.min_approval,
+				min_removal = EXCLUDED.min_removal,
+				cosignatory_addresses = EXCLUDED.cosignatory_addresses,
+				multisig_addresses = EXCLUDED.multisig_addresses,
+				updated_at_height = EXCLUDED.updated_at_height
+			''',
+			multisig_row_or_none)
+		self.connection.commit()
+
 	def get_block_hash(self, height):
 		"""Gets a block hash by height."""
 
@@ -316,24 +508,27 @@ class SymbolDatabase(DatabaseConnection):
 		"""Deletes blocks from the supplied height for rollback repair."""
 
 		cursor = self.connection.cursor()
-		self._delete_blocks_and_transactions_from_height(cursor, height)
+		self._delete_rollback_affected_rows_from_height(cursor, height)
 		self.connection.commit()
 
 	def repair_rollback_from_height(self, height, sync_state):
 		"""Deletes rollbacked blocks and updates sync state in one transaction."""
 
 		cursor = self.connection.cursor()
-		self._delete_blocks_and_transactions_from_height(cursor, height)
+		self._delete_rollback_affected_rows_from_height(cursor, height)
 		self._execute_upsert_sync_state(cursor, sync_state)
 		self.connection.commit()
 
 	@staticmethod
-	def _delete_blocks_and_transactions_from_height(cursor, height):
+	def _delete_rollback_affected_rows_from_height(cursor, height):
 		cursor.execute('DELETE FROM symbol_transaction_mosaics WHERE height >= %s', (height,))
 		cursor.execute('DELETE FROM symbol_transaction_addresses WHERE height >= %s', (height,))
 		cursor.execute('DELETE FROM symbol_transactions WHERE height >= %s', (height,))
 		cursor.execute('DELETE FROM symbol_receipts WHERE height >= %s', (height,))
 		cursor.execute('DELETE FROM symbol_blocks WHERE height >= %s', (height,))
+		cursor.execute('DELETE FROM symbol_multisig WHERE updated_at_height >= %s', (height,))
+		cursor.execute('DELETE FROM symbol_account_mosaics WHERE updated_at_height >= %s', (height,))
+		cursor.execute('DELETE FROM symbol_accounts WHERE last_seen_height >= %s', (height,))
 
 	def upsert_transactions_for_height(self, height, transaction_entries):
 		"""Replaces persisted Symbol transactions and child index rows for one height."""

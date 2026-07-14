@@ -10,7 +10,6 @@ from .puller_test_utils import (
 	create_node_transaction,
 	create_sync_state,
 	set_symbol_connector,
-	statement_path,
 	transaction_path
 )
 
@@ -128,18 +127,16 @@ class SymbolPullerTransactionSyncTest(SymbolPullerTestBase):
 		# Arrange: height 2 has no transactions, but must still be passed to upsert_transactions_for_height
 		# so that any stale data from a previously-synced (since-replaced) block at that height is cleared.
 		# See test_upsert_transactions_for_height_clears_existing_rows_when_replaced_with_empty_list.
-		connector = FakeConnector(3, {}, transactions_by_path={
-			transaction_path(1, 3): {
-				'data': [create_node_transaction(1), create_node_transaction(3, transaction_hash='C' * 64, transaction_id='height-3')]
-			}
-		})
 		transaction_database = FakeTransactionDatabase()
 		self.puller.symbol_db = transaction_database
-		set_symbol_connector(self.puller, connector)
 		block_rows = [{'height': 1}, {'height': 2}, {'height': 3}]
+		transaction_rows_by_height = {
+			1: [{'hash': bytes.fromhex(f'{1:064X}')}],
+			3: [{'hash': bytes.fromhex('C' * 64)}]
+		}
 
 		# Act:
-		asyncio.run(self.puller._sync_block_batch(block_rows, 100))  # pylint: disable=protected-access
+		self.puller._sync_block_batch(block_rows, transaction_rows_by_height, {})  # pylint: disable=protected-access
 
 		# Assert:
 		self.assertEqual([
@@ -151,20 +148,29 @@ class SymbolPullerTransactionSyncTest(SymbolPullerTestBase):
 			for height, transaction_rows in transaction_database.calls
 		])
 
-	def test_sync_block_batch_queries_exact_batch_range(self):
+	def test_sync_block_batch_writes_previously_fetched_transactions_for_exact_batch_rows(self):
 		# Arrange:
-		connector = FakeConnector(12, {}, transactions_by_path={
-			transaction_path(10, 12): {'data': []}
-		})
-		self.puller.symbol_db = FakeTransactionDatabase()
-		set_symbol_connector(self.puller, connector)
+		transaction_database = FakeTransactionDatabase()
+		self.puller.symbol_db = transaction_database
 		block_rows = [{'height': 10}, {'height': 11}, {'height': 12}]
+		transaction_rows_by_height = {
+			10: [{'hash': bytes.fromhex('A' * 64)}],
+			12: [{'hash': bytes.fromhex('C' * 64)}]
+		}
 
 		# Act:
-		asyncio.run(self.puller._sync_block_batch(block_rows, 100))  # pylint: disable=protected-access
+		self.puller._sync_block_batch(block_rows, transaction_rows_by_height, {})  # pylint: disable=protected-access
 
 		# Assert:
-		self.assertEqual([transaction_path(10, 12), statement_path(10, 12)], connector.paths)
+		self.assertEqual([block_rows], transaction_database.block_calls)
+		self.assertEqual([
+			(10, [bytes.fromhex('A' * 64)]),
+			(11, []),
+			(12, [bytes.fromhex('C' * 64)])
+		], [
+			(height, [row['hash'] for row in transaction_rows])
+			for height, transaction_rows in transaction_database.calls
+		])
 
 	def test_sync_block_headers_keeps_existing_watermark_when_transaction_fetch_fails(self):
 		# Arrange:
