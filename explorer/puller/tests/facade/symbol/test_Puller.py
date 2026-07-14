@@ -6,6 +6,14 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from symbollightapi.model.Exceptions import NodeException
 
 from puller.facade.SymbolPuller import SymbolPuller
+from puller.model.symbol.Receipt import MOSAIC_EXPIRED_RECEIPT_TYPE, NAMESPACE_DELETED_RECEIPT_TYPE, NAMESPACE_EXPIRED_RECEIPT_TYPE
+from tests.test.SymbolMosaicTestUtils import MOSAIC_ID, create_expected_mosaic_row, create_mosaic_item
+from tests.test.SymbolNamespaceTestUtils import (
+	NAMESPACE_ROOT_ID,
+	NAMESPACE_SUB_ID,
+	create_expected_root_namespace_row,
+	create_namespace_item
+)
 
 from .puller_test_utils import NODE_URL, ResponseConnector, create_db_config, create_symbol_puller, temporary_symbol_puller
 

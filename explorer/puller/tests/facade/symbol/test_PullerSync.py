@@ -17,6 +17,7 @@ from tests.test.SymbolNamespaceTestUtils import (
 	seed_namespace
 )
 from tests.test.SymbolTestConstants import BENEFICIARY_ADDRESS
+from tests.test.SymbolMosaicTestUtils import MOSAIC_ID, create_expected_mosaic_row, create_mosaic_item
 
 from .puller_test_utils import (
 	NATIVE_MOSAIC_ID,

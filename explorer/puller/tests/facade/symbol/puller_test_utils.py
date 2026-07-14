@@ -443,6 +443,17 @@ class FakeConnector:  # pylint: disable=too-many-instance-attributes
 				{'id': namespace_id, 'name': self.namespace_names[namespace_id]}
 				for namespace_id in request_payload['namespaceIds']
 			]
+		if 'mosaics' == url_path:
+			items = []
+			for mosaic_id in request_payload['mosaicIds']:
+				if mosaic_id not in self.mosaics_by_id:
+					continue
+				item = self.mosaics_by_id[mosaic_id]
+				if isinstance(item, Exception):
+					raise item
+				items.append(item)
+
+			return items
 
 		raise KeyError(url_path)
 
@@ -590,6 +601,20 @@ class SymbolPullerTestBase(TestCase):
 			ORDER BY height, id
 			'''
 		)
+
+		return cursor.fetchall()
+
+	@staticmethod
+	def _fetch_mosaic_state(database):
+		cursor = database.connection.cursor()
+		cursor.execute(
+			'''
+			SELECT mosaic_id, encode(owner_address, 'hex'), start_height, duration, expiration_height, supply,
+				divisibility, flags, supply_mutable, transferable, restrictable, revokable, alias_names,
+				raw_payload, updated_at_height
+			FROM symbol_mosaics
+			ORDER BY mosaic_id
+			''')
 
 		return cursor.fetchall()
 

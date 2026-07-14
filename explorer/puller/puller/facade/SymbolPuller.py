@@ -17,9 +17,11 @@ from puller.db.SymbolDatabase import SymbolDatabase
 from puller.facade.RequestRateLimiter import RequestRateLimiter
 from puller.model.symbol.Account import HARVESTING_ACTIVE_WINDOW_DAYS, create_account_row, create_multisig_row
 from puller.model.symbol.Block import create_block_row
+from puller.model.symbol.Mosaic import create_mosaic_row
 from puller.model.symbol.Namespace import create_alias_name_rows, create_namespace_row
 from puller.model.symbol.Receipt import (
 	INFLATION_RECEIPT_TYPE,
+	MOSAIC_EXPIRED_RECEIPT_TYPE,
 	NAMESPACE_DELETED_RECEIPT_TYPE,
 	NAMESPACE_EXPIRED_RECEIPT_TYPE,
 	create_receipt_rows
@@ -276,18 +278,20 @@ class SymbolPuller:
 
 	async def _repair_from_height(self, height, sync_state):
 		# Unlike account/multisig rows (deleted by the repair and repopulated by the next dirty-key touch or
-		# refresh snapshot run), namespaces have no broad re-dirty signal: only registration or alias
-		# transactions touch a namespace id, and none may recur after a fork. Re-fetch node state before the
-		# repair write and apply it in the same transaction, deleting a namespace only when the node confirms
-		# it is gone.
+		# refresh snapshot run), namespaces and mosaics have no broad re-dirty signal: only registration,
+		# alias, supply, or expiry events touch their ids, and none may recur after a fork. Re-fetch node state
+		# before the repair write and apply it in the same transaction, deleting an artifact only when the node
+		# confirms it is gone.
 		namespace_ids = self.symbol_db.get_namespace_ids_updated_from_height(height)
 		namespace_entries = await self._fetch_dirty_namespaces(namespace_ids, height - 1)
+		mosaic_ids = self.symbol_db.get_mosaic_ids_updated_from_height(height)
+		mosaic_entries = await self._fetch_dirty_mosaics(mosaic_ids, height - 1)
 		self.symbol_db.repair_rollback_from_height(height, {
 			**sync_state,
 			'status': 'repairing',
 			'last_synced_height': height - 1,
 			'last_synced_block_hash': self.symbol_db.get_block_hash(height - 1)
-		}, namespace_entries)
+		}, namespace_entries, mosaic_entries)
 		return height
 
 	async def _sync_block_pages(  # pylint: disable=too-many-locals
@@ -364,6 +368,8 @@ class SymbolPuller:
 			receipt_rows_by_height)
 		dirty_namespace_ids = self._expand_dirty_namespace_ids(direct_dirty_namespace_ids)
 		dirty_namespace_entries = await self._fetch_dirty_namespaces(dirty_namespace_ids, observed_height)
+		dirty_mosaic_ids = self._collect_dirty_mosaic_ids_for_batch(transaction_rows_by_height, receipt_rows_by_height)
+		dirty_mosaic_entries = await self._fetch_dirty_mosaics(dirty_mosaic_ids, observed_height)
 		self._sync_block_batch(batch_rows, transaction_rows_by_height, receipt_rows_by_height)
 		self._write_dirty_accounts_for_batch(dirty_account_rows)
 		self.symbol_db.apply_namespace_entries(dirty_namespace_entries)
