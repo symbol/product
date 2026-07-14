@@ -1,6 +1,7 @@
+import { formatTransferMessage } from '../utils/transactions';
 import config from '@/app/config';
 import { ACCOUNT_STATE_CHANGE_ACTION, COSIGNATORY_MODIFICATION_ACTION, TRANSACTION_DIRECTION, TRANSACTION_TYPE } from '@/app/constants';
-import { formatTransferMessage, truncateDecimals } from '@/app/utils/common';
+import { truncateDecimals } from '@/app/utils/common';
 import {
 	createApiUrl,
 	createPage,
@@ -183,9 +184,8 @@ const extractTransferTransactionValue = value => {
 
 	const rawMessage = value.find(item => item.hasOwnProperty('message'))?.message;
 
-	if (rawMessage?.payload) {
+	if (rawMessage?.payload)
 		message = formatTransferMessage(rawMessage.type, rawMessage.payload);
-	}
 
 	return {
 		mosaics,
