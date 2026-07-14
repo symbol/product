@@ -277,27 +277,107 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			'idx_symbol_namespaces_updated_height'
 		], [row[0] for row in cursor.fetchall()])
 
-	def test_upsert_namespace_replaces_stale_alias_rows_and_updates_current_state(self):
+	def test_upsert_namespace_persists_fresh_namespace_and_full_alias_row_set(self):
 		# Arrange:
 		database = self._create_database()
-		original_row = _create_namespace_row()
-		database.upsert_namespace(original_row, _create_alias_name_rows(original_row))
-		updated_row = _create_namespace_row(
-			alias_type='none',
-			alias_mosaic_id=None,
-			end_height=100,
-			updated_at_height=20)
+		namespace_row = _create_namespace_row()
+		alias_name_rows = _create_alias_name_rows(namespace_row)
 
 		# Act:
-		database.upsert_namespace(updated_row, _create_alias_name_rows(updated_row))
+		database.upsert_namespace(namespace_row, alias_name_rows)
 
 		# Assert:
 		cursor = database.connection.cursor()
-		cursor.execute('SELECT end_height, alias_type, alias_mosaic_id, updated_at_height FROM symbol_namespaces')
-		self.assertEqual([(100, 'none', None, 20)], cursor.fetchall())
+		cursor.execute(
+			'''
+			SELECT namespace_id, parent_id, root_id, name, full_name, depth, registration_type,
+				encode(owner_address, 'hex'), start_height, end_height, alias_type, alias_mosaic_id,
+				encode(alias_address, 'hex'), raw_payload, updated_at_height
+			FROM symbol_namespaces
+			''')
+		self.assertEqual([(
+			'A95F1F8A96159516', None, 'A95F1F8A96159516', 'root', 'root', 1, 'root',
+			ADDRESS1.lower(), 1, None, 'mosaic', '72C0212E67A08BCE', None,
+			{'namespace': {'level0': 'A95F1F8A96159516'}}, 10
+		)], cursor.fetchall())
 		cursor.execute(
 			'SELECT artifact_type, artifact_id, name, updated_at_height FROM symbol_alias_names ORDER BY artifact_type')
 		self.assertEqual([
+			('mosaic', '72C0212E67A08BCE', 'root', 10),
+			('namespace', 'A95F1F8A96159516', 'root', 10)
+		], cursor.fetchall())
+
+	def test_upsert_namespace_updates_every_non_key_column_while_retaining_namespace_key(self):
+		# Arrange:
+		database = self._create_database()
+		database.upsert_namespace(_create_namespace_row(), _create_alias_name_rows(_create_namespace_row()))
+		updated_row = _create_namespace_row(
+			parent_id='A95F1F8A96159516',
+			root_id='E74B99BA41F4AFEE',
+			name='child',
+			full_name='root.child',
+			depth=2,
+			registration_type='child',
+			owner_address=bytes.fromhex(ADDRESS2),
+			start_height=7,
+			end_height=100,
+			alias_type='address',
+			alias_mosaic_id=None,
+			alias_address=bytes.fromhex(ADDRESS3),
+			raw_payload={'namespace': {'level0': 'E74B99BA41F4AFEE', 'level1': 'A95F1F8A96159516'}},
+			updated_at_height=20)
+		updated_alias_rows = [{
+			'artifact_type': 'namespace',
+			'artifact_id': updated_row['namespace_id'],
+			'name': updated_row['full_name'],
+			'updated_at_height': updated_row['updated_at_height']
+		}]
+
+		# Act:
+		database.upsert_namespace(updated_row, updated_alias_rows)
+
+		# Assert:
+		cursor = database.connection.cursor()
+		cursor.execute(
+			'''
+			SELECT namespace_id, parent_id, root_id, name, full_name, depth, registration_type,
+				encode(owner_address, 'hex'), start_height, end_height, alias_type, alias_mosaic_id,
+				encode(alias_address, 'hex'), raw_payload, updated_at_height
+			FROM symbol_namespaces
+			''')
+		self.assertEqual([(
+			'A95F1F8A96159516', 'A95F1F8A96159516', 'E74B99BA41F4AFEE', 'child', 'root.child', 2, 'child',
+			ADDRESS2.lower(), 7, 100, 'address', None, ADDRESS3.lower(),
+			{'namespace': {'level0': 'E74B99BA41F4AFEE', 'level1': 'A95F1F8A96159516'}}, 20
+		)], cursor.fetchall())
+
+	def test_upsert_namespace_replaces_stale_mosaic_and_account_alias_rows(self):
+		# Arrange:
+		database = self._create_database()
+		original_row = _create_namespace_row()
+		database.upsert_namespace(original_row, [
+			{'artifact_type': 'namespace', 'artifact_id': original_row['namespace_id'], 'name': original_row['full_name'], 'updated_at_height': 10},
+			{'artifact_type': 'mosaic', 'artifact_id': 'mosaic-a', 'name': original_row['full_name'], 'updated_at_height': 10},
+			{'artifact_type': 'account', 'artifact_id': 'account-a', 'name': original_row['full_name'], 'updated_at_height': 10}
+		])
+		other_row = _create_namespace_row('E74B99BA41F4AFEE', 'other')
+		database.upsert_namespace(other_row, _create_alias_name_rows(other_row))
+		updated_row = _create_namespace_row(alias_mosaic_id='mosaic-b', updated_at_height=20)
+
+		# Act:
+		database.upsert_namespace(updated_row, [
+			{'artifact_type': 'namespace', 'artifact_id': updated_row['namespace_id'], 'name': updated_row['full_name'], 'updated_at_height': 20},
+			{'artifact_type': 'mosaic', 'artifact_id': 'mosaic-b', 'name': updated_row['full_name'], 'updated_at_height': 20}
+		])
+
+		# Assert:
+		cursor = database.connection.cursor()
+		cursor.execute(
+			'SELECT artifact_type, artifact_id, name, updated_at_height FROM symbol_alias_names ORDER BY name, artifact_type, artifact_id')
+		self.assertEqual([
+			('mosaic', '72C0212E67A08BCE', 'other', 10),
+			('namespace', 'E74B99BA41F4AFEE', 'other', 10),
+			('mosaic', 'mosaic-b', 'root', 20),
 			('namespace', 'A95F1F8A96159516', 'root', 20)
 		], cursor.fetchall())
 

@@ -100,6 +100,11 @@ def set_symbol_connector(puller, connector):
 	puller._symbol_connector = connector  # pylint: disable=protected-access
 
 
+def set_symbol_rate_limiter(puller, rate_limiter):
+	# Keep injected rate-limiter replacement in one helper for deterministic request tests.
+	puller._rate_limiter = rate_limiter  # pylint: disable=protected-access
+
+
 def set_sync_block_pages(puller, sync_block_pages):
 	# Patch the private page sync step only for hard-to-reach error branches.
 	puller._sync_block_pages = sync_block_pages  # pylint: disable=protected-access
@@ -345,6 +350,7 @@ class FakeConnector:  # pylint: disable=too-many-instance-attributes
 		self.namespace_names = namespace_names or {}
 		self.paths = []
 		self.post_payloads_list = []
+		self.post_requests = []
 
 	@property
 	def post_payloads(self):
@@ -424,6 +430,7 @@ class FakeConnector:  # pylint: disable=too-many-instance-attributes
 	async def post(self, url_path, request_payload, *_):
 		self.paths.append(url_path)
 		self.post_payloads_list.append(request_payload)
+		self.post_requests.append((url_path, request_payload))
 		if 'accounts' == url_path:
 			return [
 				self.account_by_address.get(

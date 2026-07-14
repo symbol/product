@@ -689,10 +689,14 @@ class SymbolPuller:
 			return []
 
 		found_items_by_namespace_id = {}
-		for namespace_id in namespace_ids:
-			item = await self.get_symbol_node(f'/namespaces/{namespace_id}', not_found_as_error=False)
-			if not _is_not_found_response(item):
-				found_items_by_namespace_id[namespace_id] = item
+		for chunk_start in range(0, len(namespace_ids), MAX_PAGE_SIZE):
+			chunk = namespace_ids[chunk_start:chunk_start + MAX_PAGE_SIZE]
+			for namespace_id, item in zip(chunk, await asyncio.gather(*(
+				self.get_symbol_node(f'/namespaces/{namespace_id}', not_found_as_error=False)
+				for namespace_id in chunk
+			))):
+				if not _is_not_found_response(item):
+					found_items_by_namespace_id[namespace_id] = item
 
 		level_ids = {}
 		for item in found_items_by_namespace_id.values():

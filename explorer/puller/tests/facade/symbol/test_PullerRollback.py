@@ -83,9 +83,19 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):
 			('namespace', NAMESPACE_ROOT_ID, 'root', 1),
 			('namespace', 'B95F1F8A96159516', 'before-fork', 1)
 		], alias_rows)
-		self.assertEqual(1, connector.paths.count(f'namespaces/{NAMESPACE_ROOT_ID}'))
-		self.assertEqual(1, connector.paths.count(f'namespaces/{NAMESPACE_SUB_ID}'))
-		self.assertEqual(1, connector.paths.count('namespaces/names'))
+		namespace_detail_paths = [
+			path for path in connector.paths
+			if path.startswith('namespaces/') and path != 'namespaces/names'
+		]
+		namespace_names_payloads = [
+			payload for path, payload in connector.post_requests
+			if 'namespaces/names' == path
+		]
+		self.assertEqual([
+			f'namespaces/{NAMESPACE_ROOT_ID}',
+			f'namespaces/{NAMESPACE_SUB_ID}'
+		], namespace_detail_paths)
+		self.assertEqual([{'namespaceIds': [NAMESPACE_ROOT_ID]}], namespace_names_payloads)
 
 	def test_sync_block_headers_leaves_rollback_state_unchanged_when_namespace_fetch_fails(self):
 		# Arrange:
