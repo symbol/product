@@ -674,7 +674,7 @@ class NemDatabase(DatabaseConnectionPool):
 			if payload['message']:
 				value.append({
 					'message': {
-						'isPlain': payload['message']['is_plain'],
+						'type': payload['message']['type'],
 						'payload': payload['message']['payload']
 					},
 				})
@@ -968,7 +968,7 @@ class NemDatabase(DatabaseConnectionPool):
 			payload = {
 				'message': {
 					'payload': transaction.message.payload,
-					'is_plain': transaction.message.is_plain,
+					'type': transaction.message.type,
 				} if transaction.message else None
 			}
 			recipient_address = transaction.recipient.bytes

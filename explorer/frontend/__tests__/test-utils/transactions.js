@@ -240,7 +240,7 @@ export const transactionPageResponse = [
 				value: [
 					{
 						message: {
-							isPlain: 1,
+							type: 1,
 							payload: '36303032373838'
 						}
 					},
@@ -299,7 +299,7 @@ export const transactionPageResponse = [
 		value: [
 			{
 				message: {
-					isPlain: 1,
+					type: 1,
 					payload: '4e44373253574a474841374c3745434b4947574535474c50534e35505952365333475a5a4f514243'
 				}
 			},
@@ -346,7 +346,7 @@ export const transactionPageResponse = [
 		value: [
 			{
 				message: {
-					isPlain: 1,
+					type: 1,
 					payload: '63393937376530313532323964313964'
 				}
 			},
@@ -437,7 +437,7 @@ export const transactionPageResponse = [
 		value: [
 			{
 				message: {
-					isPlain: 1,
+					type: 1,
 					payload: '66313666343666393661643165313931'
 				}
 			},
@@ -474,7 +474,7 @@ export const transactionPageResponse = [
 		value: [
 			{
 				message: {
-					isPlain: 1,
+					type: 1,
 					payload: '3130313033393034'
 				}
 			},
@@ -521,7 +521,7 @@ export const transactionPageResponse = [
 		value: [
 			{
 				message: {
-					isPlain: 0,
+					type: 2,
 					payload: 'raw-message'
 				}
 			},
@@ -1463,7 +1463,7 @@ export const transactionPageResult = {
 						}
 					],
 					message: {
-						type: 'raw',
+						type: 'encrypted',
 						text: 'raw-message'
 					}
 				}
@@ -2349,7 +2349,7 @@ export const transactionAccountPageResult = {
 						}
 					],
 					message: {
-						type: 'raw',
+						type: 'encrypted',
 						text: 'raw-message'
 					}
 				}
@@ -2422,7 +2422,7 @@ export const transactionInfoResponse = {
 			value: [
 				{
 					message: {
-						isPlain: 1,
+						type: 1,
 						payload: '3130383832313135'
 					}
 				},

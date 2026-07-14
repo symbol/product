@@ -425,7 +425,7 @@ class NemPuller:
 			payload = {
 				'message': {
 					'payload': transaction.message.payload,
-					'is_plain': transaction.message.is_plain,
+					'type': transaction.message.type,
 				} if transaction.message else None
 			}
 			recipient_address = transaction.recipient
