@@ -44,4 +44,10 @@
  * @property {string} name - Mosaic linked namespace name or id.
  */
 
+/**
+ * @typedef {Object} MosaicOwner
+ * @property {string} address - The holder account address.
+ * @property {string} amount - The held amount in relative units.
+ */
+
 export default {};

@@ -19,6 +19,7 @@ import { TransactionBundle, relativeToAbsoluteAmount } from 'wallet-common-core'
 
 /** @typedef {import('../types/Transaction').Transaction} Transaction */
 /** @typedef {import('../types/Mosaic').MosaicInfo} MosaicInfo */
+/** @typedef {import('../types/Mosaic').MosaicOwner} MosaicOwner */
 /** @typedef {import('../types/Network').TransactionFees} TransactionFees */
 /** @typedef {import('../types/SearchCriteria').SearchCriteria} SearchCriteria */
 
@@ -168,6 +169,18 @@ export class TokenModule {
 		const targetAddress = address ?? currentAccount.address;
 
 		return this.#api.mosaic.fetchAccountMosaics(networkProperties, targetAddress, searchCriteria);
+	};
+
+	/**
+	 * Fetches the list of accounts holding a given token.
+	 * @param {string} mosaicId - The token id.
+	 * @param {SearchCriteria} [searchCriteria] - Pagination params.
+	 * @returns {Promise<MosaicOwner[]>} The token owners with their held amounts in relative units.
+	 */
+	fetchMosaicOwners = async (mosaicId, searchCriteria) => {
+		const { networkProperties } = this.#walletController;
+
+		return this.#api.mosaic.fetchMosaicOwners(networkProperties, mosaicId, searchCriteria);
 	};
 
 	/**

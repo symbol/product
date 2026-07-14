@@ -108,3 +108,14 @@ export const mosaicNames = {
 	'1213766D49458631': ['custom-3'],
 	'699E9532708D2FB8': ['custom-4']
 };
+
+export const mosaicOwners = [
+	{
+		address: 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
+		amount: '15000'
+	},
+	{
+		address: 'TCQ3FQ6U4X3KPOGJBINSYPKOL5QHDAUTUS24NVY',
+		amount: '2500'
+	}
+];

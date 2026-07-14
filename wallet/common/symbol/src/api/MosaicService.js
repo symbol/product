@@ -1,8 +1,10 @@
-import { createSearchUrl, mosaicInfoFromDTO } from '../utils';
+import { addressFromRaw, createSearchUrl, getMosaicAmount, mosaicInfoFromDTO } from '../utils';
 import _ from 'lodash';
+import { absoluteToRelativeAmount } from 'wallet-common-core';
 
 /** @typedef {import('../types/Mosaic').Mosaic} Mosaic */
 /** @typedef {import('../types/Mosaic').MosaicInfo} MosaicInfo */
+/** @typedef {import('../types/Mosaic').MosaicOwner} MosaicOwner */
 /** @typedef {import('../types/Network').NetworkProperties} NetworkProperties */
 /** @typedef {import('../types/SearchCriteria').SearchCriteria} SearchCriteria */
 
@@ -106,5 +108,48 @@ export class MosaicService {
 			...mosaicInfo,
 			names: mosaicNames[mosaicInfo.id] || []
 		}));
+	};
+
+	/**
+	 * Fetches the list of accounts holding a given mosaic from the node.
+	 * @param {NetworkProperties} networkProperties - Network properties.
+	 * @param {string} mosaicId - The mosaic id to search holders for.
+	 * @param {SearchCriteria} [searchCriteria] - Search criteria.
+	 * @returns {Promise<MosaicOwner[]>} - The mosaic owners with their held amounts in relative units.
+	 */
+	fetchMosaicOwners = async (networkProperties, mosaicId, searchCriteria) => {
+		const endpoint = createSearchUrl(networkProperties.nodeUrl, '/accounts', searchCriteria, {
+			mosaicId
+		});
+		const { data } = await this.#makeRequest(endpoint);
+
+		if (!data.length)
+			return [];
+
+		const divisibility = await this.#fetchMosaicDivisibility(networkProperties, mosaicId);
+
+		return data.map(accountDTO => ({
+			address: addressFromRaw(accountDTO.account.address),
+			amount: absoluteToRelativeAmount(getMosaicAmount(accountDTO.account.mosaics, mosaicId), divisibility)
+		}));
+	};
+
+	/**
+	 * Fetches the divisibility of a single mosaic directly from the node, skipping name and namespace resolution.
+	 * @param {NetworkProperties} networkProperties - Network properties.
+	 * @param {string} mosaicId - The mosaic id.
+	 * @returns {Promise<number>} - The mosaic divisibility.
+	 */
+	#fetchMosaicDivisibility = async (networkProperties, mosaicId) => {
+		const endpoint = `${networkProperties.nodeUrl}/mosaics`;
+		const [mosaicInfoDTO] = await this.#makeRequest(endpoint, {
+			method: 'POST',
+			body: JSON.stringify({ mosaicIds: [mosaicId] }),
+			headers: {
+				'Content-Type': 'application/json'
+			}
+		});
+
+		return mosaicInfoDTO.mosaic.divisibility;
 	};
 }
