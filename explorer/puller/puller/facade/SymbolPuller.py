@@ -615,7 +615,6 @@ class SymbolPuller:
 						account_row['is_harvesting_active'] = account_row['address'] in recently_harvesting_addresses
 						account_entries.append({
 							'refresh_run_id': refresh_run_id,
-							'account_search_id': item['id'],
 							'account_search_order': account_search_order,
 							'account_row': account_row,
 							'mosaic_rows': mosaic_rows,

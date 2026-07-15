@@ -145,7 +145,6 @@ SYMBOL_ACCOUNT_REFRESH_ACCOUNT_DEFINITIONS = [
 	'refresh_run_id varchar NOT NULL',
 	'address bytea NOT NULL',
 	'address_text varchar(39) NOT NULL',
-	'account_search_id varchar NOT NULL',
 	'account_search_order bigint NOT NULL',
 	'public_key bytea',
 	'account_type symbol_account_type',
@@ -173,7 +172,6 @@ SYMBOL_ACCOUNT_LIST_RANK_DEFINITIONS = [
 	'rank bigint NOT NULL',
 	'address bytea NOT NULL',
 	'sort_value_numeric numeric',
-	'sort_value_text text',
 	'mosaic_id varchar(16)',
 	'updated_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP',
 	'PRIMARY KEY (refresh_run_id, rank_scope, rank)'
@@ -183,8 +181,6 @@ ACCOUNT_REFRESH_INDEXES = [
 	'ON symbol_account_refresh_accounts(refresh_run_id, importance_percentage DESC, address)',
 	'CREATE INDEX IF NOT EXISTS idx_symbol_account_refresh_accounts_search_order '
 	'ON symbol_account_refresh_accounts(refresh_run_id, account_search_order ASC, address)',
-	'CREATE INDEX IF NOT EXISTS idx_symbol_account_refresh_accounts_search_id '
-	'ON symbol_account_refresh_accounts(refresh_run_id, account_search_id, address)',
 	'CREATE INDEX IF NOT EXISTS idx_symbol_account_refresh_accounts_address_text '
 	'ON symbol_account_refresh_accounts(refresh_run_id, address_text)',
 	'CREATE INDEX IF NOT EXISTS idx_symbol_account_refresh_mosaics_mosaic_amount_desc '
@@ -672,7 +668,6 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 	def _execute_insert_account_refresh_snapshot_rows(  # pylint: disable=too-many-arguments,too-many-positional-arguments
 		cursor,
 		refresh_run_id,
-		account_search_id,
 		account_search_order,
 		account_row,
 		mosaic_rows,
@@ -685,7 +680,6 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 				refresh_run_id,
 				address,
 				address_text,
-				account_search_id,
 				account_search_order,
 				public_key,
 				account_type,
@@ -698,7 +692,6 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 				%(refresh_run_id)s,
 				%(address)s,
 				%(address_text)s,
-				%(account_search_id)s,
 				%(account_search_order)s,
 				%(public_key)s,
 				%(account_type)s,
@@ -709,7 +702,6 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 			)
 			ON CONFLICT (refresh_run_id, address) DO UPDATE SET
 				address_text = EXCLUDED.address_text,
-				account_search_id = EXCLUDED.account_search_id,
 				account_search_order = EXCLUDED.account_search_order,
 				public_key = EXCLUDED.public_key,
 				account_type = EXCLUDED.account_type,
@@ -721,7 +713,6 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 			{
 				**account_row,
 				'refresh_run_id': refresh_run_id,
-				'account_search_id': account_search_id,
 				'account_search_order': account_search_order,
 				'snapshot_height': snapshot_height,
 				'snapshot_at': snapshot_at
@@ -772,7 +763,6 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 				self._execute_insert_account_refresh_snapshot_rows(
 					cursor,
 					entry['refresh_run_id'],
-					entry['account_search_id'],
 					entry['account_search_order'],
 					entry['account_row'],
 					entry['mosaic_rows'],
@@ -812,7 +802,6 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 					rank,
 					address,
 					sort_value_numeric,
-					sort_value_text,
 					mosaic_id
 				)
 				SELECT
@@ -821,7 +810,6 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 					ROW_NUMBER() OVER (ORDER BY account_search_order ASC, address) - 1,
 					address,
 					NULL,
-					account_search_id,
 					NULL
 				FROM symbol_account_refresh_accounts
 				WHERE refresh_run_id = %s
@@ -835,7 +823,6 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 					rank,
 					address,
 					sort_value_numeric,
-					sort_value_text,
 					mosaic_id
 				)
 				SELECT
@@ -844,7 +831,6 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 					ROW_NUMBER() OVER (ORDER BY importance_percentage DESC, address) - 1,
 					address,
 					importance_percentage,
-					NULL,
 					NULL
 				FROM symbol_account_refresh_accounts
 				WHERE refresh_run_id = %s
@@ -858,7 +844,6 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 					rank,
 					address,
 					sort_value_numeric,
-					sort_value_text,
 					mosaic_id
 				)
 				SELECT
@@ -867,7 +852,6 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 					ROW_NUMBER() OVER (ORDER BY amount DESC, address) - 1,
 					address,
 					amount,
-					NULL,
 					%s
 				FROM symbol_account_refresh_mosaics
 				WHERE refresh_run_id = %s AND mosaic_id = %s

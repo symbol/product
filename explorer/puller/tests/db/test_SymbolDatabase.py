@@ -305,7 +305,6 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			'idx_symbol_account_mosaics_mosaic',
 			'idx_symbol_account_refresh_accounts_address_text',
 			'idx_symbol_account_refresh_accounts_importance_desc',
-			'idx_symbol_account_refresh_accounts_search_id',
 			'idx_symbol_account_refresh_accounts_search_order',
 			'idx_symbol_account_refresh_mosaics_address',
 			'idx_symbol_account_refresh_mosaics_mosaic_amount_desc',
@@ -385,7 +384,6 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			('refresh_run_id', 'varchar', 'NO', None),
 			('address', 'bytea', 'NO', None),
 			('address_text', 'varchar', 'NO', None),
-			('account_search_id', 'varchar', 'NO', None),
 			('account_search_order', 'int8', 'NO', None),
 			('public_key', 'bytea', 'YES', None),
 			('account_type', 'symbol_account_type', 'YES', None),
@@ -484,7 +482,6 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			('rank', 'int8', 'NO', None),
 			('address', 'bytea', 'NO', None),
 			('sort_value_numeric', 'numeric', 'YES', None),
-			('sort_value_text', 'text', 'YES', None),
 			('mosaic_id', 'varchar', 'YES', None),
 			('updated_at', 'timestamp', 'NO', 'CURRENT_TIMESTAMP')
 		], cursor.fetchall())
@@ -1559,11 +1556,11 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 
 		# Act:
 		_insert_account_refresh_snapshot_rows(database, {
-			'refresh_run_id': 'run-1', 'account_search_id': 'id-1', 'account_search_order': 0,
+			'refresh_run_id': 'run-1', 'account_search_order': 0,
 			'account_row': account_row1, 'mosaic_rows': mosaic_rows1, 'snapshot_height': 10, 'snapshot_at': snapshot_at
 		})
 		_insert_account_refresh_snapshot_rows(database, {
-			'refresh_run_id': 'run-1', 'account_search_id': 'id-2', 'account_search_order': 1,
+			'refresh_run_id': 'run-1', 'account_search_order': 1,
 			'account_row': account_row2, 'mosaic_rows': mosaic_rows2, 'snapshot_height': 10, 'snapshot_at': snapshot_at
 		})
 		database.finalize_account_refresh('run-1', NATIVE_MOSAIC_ID, 10, snapshot_at)
@@ -1600,7 +1597,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		account_row, mosaic_rows = _create_account_row(importance='0')
 		database.upsert_account_current_state(account_row, mosaic_rows)
 		_insert_account_refresh_snapshot_rows(database, {
-			'refresh_run_id': 'run-1', 'account_search_id': 'id-1', 'account_search_order': 0,
+			'refresh_run_id': 'run-1', 'account_search_order': 0,
 			'account_row': account_row, 'mosaic_rows': mosaic_rows, 'snapshot_height': 10,
 			'snapshot_at': datetime.datetime(2026, 1, 1)
 		})
@@ -1625,15 +1622,15 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			database.upsert_account_current_state(account_row, mosaic_rows)
 		snapshot_at = datetime.datetime(2026, 1, 1)
 		_insert_account_refresh_snapshot_rows(database, {
-			'refresh_run_id': 'run-1', 'account_search_id': 'id-1', 'account_search_order': 2,
+			'refresh_run_id': 'run-1', 'account_search_order': 2,
 			'account_row': account_row1, 'mosaic_rows': mosaic_rows1, 'snapshot_height': 10, 'snapshot_at': snapshot_at
 		})
 		_insert_account_refresh_snapshot_rows(database, {
-			'refresh_run_id': 'run-1', 'account_search_id': 'id-2', 'account_search_order': 0,
+			'refresh_run_id': 'run-1', 'account_search_order': 0,
 			'account_row': account_row2, 'mosaic_rows': mosaic_rows2, 'snapshot_height': 10, 'snapshot_at': snapshot_at
 		})
 		_insert_account_refresh_snapshot_rows(database, {
-			'refresh_run_id': 'run-1', 'account_search_id': 'id-3', 'account_search_order': 1,
+			'refresh_run_id': 'run-1', 'account_search_order': 1,
 			'account_row': account_row3, 'mosaic_rows': mosaic_rows3, 'snapshot_height': 10, 'snapshot_at': snapshot_at
 		})
 
@@ -1704,7 +1701,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		database.upsert_account_current_state(account_row, mosaic_rows)
 		account_row['importance_percentage'] = Decimal('0.123')
 		_insert_account_refresh_snapshot_rows(database, {
-			'refresh_run_id': 'run-1', 'account_search_id': 'id-1', 'account_search_order': 0,
+			'refresh_run_id': 'run-1', 'account_search_order': 0,
 			'account_row': account_row, 'mosaic_rows': mosaic_rows, 'snapshot_height': 10,
 			'snapshot_at': datetime.datetime(2026, 1, 1)
 		})
@@ -1719,8 +1716,8 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		cursor.execute(
 			'''
 			INSERT INTO symbol_account_list_ranks (
-				refresh_run_id, rank_scope, rank, address, sort_value_numeric, sort_value_text, mosaic_id
-			) VALUES ('run-1', 'ID', 0, %s, NULL, 'old-id', NULL)
+				refresh_run_id, rank_scope, rank, address, sort_value_numeric, mosaic_id
+			) VALUES ('run-1', 'ID', 0, %s, NULL, NULL)
 			''',
 			(bytes.fromhex(ADDRESS1),))
 		database.connection.commit()
@@ -1736,11 +1733,11 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			('run-1',))
 		self.assertEqual((Decimal('0.123'),), cursor.fetchone())
 		cursor.execute(
-			'SELECT rank_scope, rank, address, sort_value_text FROM symbol_account_list_ranks WHERE refresh_run_id = %s',
+			'SELECT rank_scope, rank, address FROM symbol_account_list_ranks WHERE refresh_run_id = %s',
 			('run-1',))
-		self.assertEqual([('ID', 0, bytes.fromhex(ADDRESS1), 'old-id')], [
-			(rank_scope, rank, bytes(address), sort_value_text)
-			for rank_scope, rank, address, sort_value_text in cursor.fetchall()])
+		self.assertEqual([('ID', 0, bytes.fromhex(ADDRESS1))], [
+			(rank_scope, rank, bytes(address))
+			for rank_scope, rank, address in cursor.fetchall()])
 		cursor.execute('SELECT importance_percentage FROM symbol_accounts WHERE address = %s', (bytes.fromhex(ADDRESS1),))
 		self.assertEqual((Decimal('0.456'),), cursor.fetchone())
 		state = database.get_account_refresh_state()
@@ -1814,7 +1811,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			'updated_at_height': 10
 		})
 		_insert_account_refresh_snapshot_rows(database, {
-			'refresh_run_id': 'run-1', 'account_search_id': 'id-1', 'account_search_order': 0,
+			'refresh_run_id': 'run-1', 'account_search_order': 0,
 			'account_row': account_row, 'mosaic_rows': mosaic_rows, 'snapshot_height': 10,
 			'snapshot_at': datetime.datetime(2026, 1, 1)
 		})
@@ -1833,7 +1830,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		mosaic_results = cursor.fetchall()
 		cursor.execute('SELECT address, min_approval, min_removal FROM symbol_multisig')
 		multisig_results = cursor.fetchall()
-		cursor.execute('SELECT refresh_run_id, account_search_id, address FROM symbol_account_refresh_accounts')
+		cursor.execute('SELECT refresh_run_id, address, account_search_order FROM symbol_account_refresh_accounts')
 		refresh_account_results = cursor.fetchall()
 		cursor.execute('SELECT refresh_run_id, address, mosaic_id, amount FROM symbol_account_refresh_mosaics')
 		refresh_mosaic_results = cursor.fetchall()
@@ -1844,8 +1841,9 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		self.assertEqual([], mosaic_results)
 		self.assertEqual([], multisig_results)
 		self.assertEqual(
-			[('run-1', 'id-1', expected_address)],
-			[(run_id, account_search_id, bytes(address)) for run_id, account_search_id, address in refresh_account_results])
+			[('run-1', expected_address, 0)],
+			[(run_id, bytes(address), account_search_order)
+				for run_id, address, account_search_order in refresh_account_results])
 		self.assertEqual(
 			[('run-1', expected_address, expected_mosaic_row['mosaic_id'], expected_mosaic_row['amount'])],
 			[(run_id, bytes(address), mosaic_id, amount) for run_id, address, mosaic_id, amount in refresh_mosaic_results])

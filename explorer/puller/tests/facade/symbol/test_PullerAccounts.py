@@ -607,8 +607,14 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):  # pylint: disable=too-man
 
 	def test_refresh_accounts_pages_all_accounts_and_assigns_search_order_across_pages(self):
 		# Arrange:
-		page1 = [create_account_item(_address_hex(index), f'id-{index}', importance=str(index + 1)) for index in range(100)]
-		page2 = [create_account_item(_address_hex(100), 'id-100', importance='101')]
+		page1 = []
+		for index in range(100):
+			item = create_account_item(_address_hex(index), f'id-{index}', importance=str(index + 1))
+			item.pop('id')
+			page1.append(item)
+		page2_item = create_account_item(_address_hex(100), 'id-100', importance='101')
+		page2_item.pop('id')
+		page2 = [page2_item]
 		connector = FakeConnector(101, {}, account_pages={1: page1, 2: page2})
 		set_symbol_connector(self.puller, connector)
 
@@ -619,17 +625,17 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):  # pylint: disable=too-man
 		cursor = self.puller.symbol_db.connection.cursor()
 		cursor.execute(
 			'''
-			SELECT account_search_id, account_search_order
+			SELECT address, account_search_order
 			FROM symbol_account_refresh_accounts
 			ORDER BY account_search_order
-			'''
+		'''
 		)
-		results = cursor.fetchall()
+		results = [(bytes(address), search_order) for address, search_order in cursor.fetchall()]
 
 		self.assertEqual(101, len(results))
-		self.assertEqual(('id-0', 0), results[0])
-		self.assertEqual(('id-99', 99), results[99])
-		self.assertEqual(('id-100', 100), results[100])
+		self.assertEqual((bytes.fromhex(_address_hex(0)), 0), results[0])
+		self.assertEqual((bytes.fromhex(_address_hex(99)), 99), results[99])
+		self.assertEqual((bytes.fromhex(_address_hex(100)), 100), results[100])
 		self.assertEqual([
 			'chain/info',
 			'network/properties',
@@ -676,23 +682,23 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):  # pylint: disable=too-man
 		cursor = self.puller.symbol_db.connection.cursor()
 		cursor.execute(
 			'''
-			SELECT address, account_search_id, account_search_order, importance, importance_percentage, snapshot_height
+			SELECT address, account_search_order, importance, importance_percentage, snapshot_height
 			FROM symbol_account_refresh_accounts
 			WHERE refresh_run_id = %s
 			ORDER BY account_search_order
 			''',
 			(refresh_run_id,))
 		actual_results = [
-			(bytes(address), search_id, search_order, importance, importance_percentage, snapshot_height)
-			for address, search_id, search_order, importance, importance_percentage, snapshot_height in cursor.fetchall()
+			(bytes(address), search_order, importance, importance_percentage, snapshot_height)
+			for address, search_order, importance, importance_percentage, snapshot_height in cursor.fetchall()
 		]
 		expected_results = [
-			(bytes.fromhex(_address_hex(index)), f'id-{index}', index, index + 1, _expected_importance_percentage(index + 1, 5253), 101)
+			(bytes.fromhex(_address_hex(index)), index, index + 1, _expected_importance_percentage(index + 1, 5253), 101)
 			for index in range(100)
 		]
 		expected_results.extend([
-			(bytes.fromhex(_address_hex(100)), 'id-100', 100, 101, _expected_importance_percentage(101, 5253), 101),
-			(bytes.fromhex(_address_hex(101)), 'id-101', 101, 102, _expected_importance_percentage(102, 5253), 101)
+			(bytes.fromhex(_address_hex(100)), 100, 101, _expected_importance_percentage(101, 5253), 101),
+			(bytes.fromhex(_address_hex(101)), 101, 102, _expected_importance_percentage(102, 5253), 101)
 		])
 
 		self.assertEqual(expected_results, actual_results)
@@ -1012,42 +1018,68 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):  # pylint: disable=too-man
 			cursor = self.puller.symbol_db.connection.cursor()
 			cursor.execute(
 				'''
-				SELECT address
+				SELECT refresh_run_id, address, account_search_order
 				FROM symbol_account_refresh_accounts
 				WHERE refresh_run_id = %s
+				ORDER BY account_search_order
 				''',
 				(refresh_run_id,))
-			account_results = cursor.fetchall()
+			account_results = [
+				(run_id, bytes(address), account_search_order)
+				for run_id, address, account_search_order in cursor.fetchall()
+			]
 			cursor.execute(
 				'''
-				SELECT address, mosaic_id, amount
+				SELECT refresh_run_id, address, mosaic_id, amount
 				FROM symbol_account_refresh_mosaics
 				WHERE refresh_run_id = %s
+				ORDER BY address, mosaic_id
 				''',
 				(refresh_run_id,))
-			mosaic_results = cursor.fetchall()
+			mosaic_results = [
+				(run_id, bytes(address), mosaic_id, amount)
+				for run_id, address, mosaic_id, amount in cursor.fetchall()
+			]
 			cursor.execute(
 				'''
-				SELECT rank_scope, address
+				SELECT refresh_run_id, rank_scope, rank, address
 				FROM symbol_account_list_ranks
 				WHERE refresh_run_id = %s
 				ORDER BY rank_scope, rank
 				''',
 				(refresh_run_id,))
-			return account_results, mosaic_results, cursor.fetchall()
+			rank_results = [
+				(run_id, rank_scope, rank, bytes(address))
+				for run_id, rank_scope, rank, address in cursor.fetchall()
+			]
+			return account_results, mosaic_results, rank_results
 
-		account_results, mosaic_results, rank_results = fetch_run_results(second_run_id)
+		first_results = fetch_run_results(first_run_id)
+		second_results = fetch_run_results(second_run_id)
 
 		self.assertNotEqual(first_run_id, second_run_id)
-		self.assertEqual([(expected_address,)], [(bytes(address),) for address, in account_results])
-		self.assertEqual([
-			(expected_address, NATIVE_MOSAIC_ID, expected_mosaic_amount)
-		], [(bytes(address), mosaic_id, amount) for address, mosaic_id, amount in mosaic_results])
-		self.assertEqual([
-			(f'BALANCE:{NATIVE_MOSAIC_ID}', expected_address),
-			('ID', expected_address),
-			('IMPORTANCE', expected_address)
-		], [(rank_scope, bytes(address)) for rank_scope, address in rank_results])
+		expected_account_results = [(first_run_id, expected_address, 0)]
+		expected_mosaic_results = [
+			(first_run_id, expected_address, NATIVE_MOSAIC_ID, expected_mosaic_amount)
+		]
+		expected_rank_results = [
+			(first_run_id, f'BALANCE:{NATIVE_MOSAIC_ID}', 0, expected_address),
+			(first_run_id, 'ID', 0, expected_address),
+			(first_run_id, 'IMPORTANCE', 0, expected_address)
+		]
+		self.assertEqual(
+			(expected_account_results, expected_mosaic_results, expected_rank_results),
+			first_results)
+		expected_account_results[0] = (second_run_id, expected_address, 0)
+		expected_mosaic_results[0] = (second_run_id, expected_address, NATIVE_MOSAIC_ID, expected_mosaic_amount)
+		expected_rank_results = [
+			(second_run_id, f'BALANCE:{NATIVE_MOSAIC_ID}', 0, expected_address),
+			(second_run_id, 'ID', 0, expected_address),
+			(second_run_id, 'IMPORTANCE', 0, expected_address)
+		]
+		self.assertEqual(
+			(expected_account_results, expected_mosaic_results, expected_rank_results),
+			second_results)
 
 	def test_refresh_accounts_rejects_malformed_accounts_page_response(self):
 		# Arrange:
