@@ -46,7 +46,8 @@ export const API_CONTRACT = {
 
 // Required exports for each variant utils domain.
 export const UTILS_CONTRACT = {
-	blocks: ['getBlockStatus']
+	blocks: ['getBlockStatus'],
+	transactions: ['isTransactionAwaitingSignatures']
 };
 
 // Theme tokens consumed from JavaScript.

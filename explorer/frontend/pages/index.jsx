@@ -136,7 +136,7 @@ const Home = ({
 					<RecentTransactions data={latestTransactions.data} />
 				</Section>
 				<Section title={t('section_pendingTransactions')}>
-					<RecentTransactions data={pendingTransactions.data} blockTime={blockTime} group="unconfirmed" />
+					<RecentTransactions data={pendingTransactions.data} blockTime={blockTime} />
 				</Section>
 			</div>
 		</div>
