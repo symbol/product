@@ -27,6 +27,7 @@ ResolutionStatements = namedtuple('ResolutionStatements', ['address', 'mosaic'])
 MAX_PAGE_SIZE = 100
 ACCOUNT_BATCH_FETCH_SIZE = MAX_PAGE_SIZE
 BLOCK_PAGE_FETCH_CONCURRENCY = 10
+RESOLUTION_FETCH_CONCURRENCY = 10
 DEFAULT_MAX_REQUESTS_PER_SECOND = 20
 ACCOUNT_PAGE_SIZE = 100
 
@@ -507,15 +508,35 @@ class SymbolPuller:
 					mosaic_row['mosaic_id'] = self._resolve_transaction_alias(
 						resolution_statements.mosaic, mosaic_row['mosaic_id'], source, 'mosaic', height)
 
-	async def _resolve_transaction_rows_for_batch(self, transaction_rows_by_height):
+	async def _resolve_transaction_rows_for_batch(self, transaction_rows_by_height):  # pylint: disable=too-many-locals
+		resolution_requests = []
+		resolution_statements_by_height = {}
 		for height, transaction_rows in transaction_rows_by_height.items():
 			alias_addresses, alias_mosaic_ids = self._alias_values_for_transaction_rows(transaction_rows)
 			if not alias_addresses and not alias_mosaic_ids:
 				continue
 
-			resolution_statements = ResolutionStatements(
-				await self._get_resolution_statements('address', height) if alias_addresses else {},
-				await self._get_resolution_statements('mosaic', height) if alias_mosaic_ids else {})
+			resolution_statements_by_height[height] = ResolutionStatements({}, {})
+			if alias_addresses:
+				resolution_requests.append((height, 'address'))
+			if alias_mosaic_ids:
+				resolution_requests.append((height, 'mosaic'))
+
+		for batch_start in range(0, len(resolution_requests), RESOLUTION_FETCH_CONCURRENCY):
+			batch_requests = resolution_requests[batch_start:batch_start + RESOLUTION_FETCH_CONCURRENCY]
+			batch_statements = await asyncio.gather(*(
+				self._get_resolution_statements(kind, height)
+				for height, kind in batch_requests
+			))
+			for (height, kind), statements in zip(batch_requests, batch_statements):
+				resolution_statements_by_height[height] = resolution_statements_by_height[height]._replace(
+					**{kind: statements})
+
+		for height, transaction_rows in transaction_rows_by_height.items():
+			if height not in resolution_statements_by_height:
+				continue
+
+			resolution_statements = resolution_statements_by_height[height]
 			top_level_rows_by_hash = {
 				row['hash']: row
 				for row in transaction_rows

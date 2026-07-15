@@ -374,10 +374,13 @@ class FakeConnector:  # pylint: disable=too-many-instance-attributes
 			return response
 		if url_path.startswith('statements/transaction?'):
 			return self.statement_pages.get(url_path, {'data': []})
-		if url_path.startswith('statements/resolutions/'):
-			kind = url_path.removeprefix('statements/resolutions/').split('?')[0]
-			height = int(url_path.split('height=')[1].split('&')[0])
-			page_number = int(url_path.split('pageNumber=')[1].split('&')[0])
+		resolution_match = re.fullmatch(
+			rf'statements/resolutions/(address|mosaic)\?height=(\d+)&pageSize={MAX_PAGE_SIZE}&pageNumber=(\d+)',
+			url_path)
+		if resolution_match:
+			kind, height_text, page_number_text = resolution_match.groups()
+			height = int(height_text)
+			page_number = int(page_number_text)
 			items_by_height = self.address_resolutions_by_height if 'address' == kind else self.mosaic_resolutions_by_height
 			items = items_by_height.get(height, [])
 			page_start = (page_number - 1) * MAX_PAGE_SIZE

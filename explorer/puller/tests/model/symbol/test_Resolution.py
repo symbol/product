@@ -11,6 +11,13 @@ def _entry(primary_id, secondary_id, resolved=None):
 
 
 class ResolutionTest(TestCase):
+	def _assert_is_alias_mosaic_id(self, value, expected):
+		# Act:
+		actual = is_alias_mosaic_id(value)
+
+		# Assert:
+		self.assertEqual(expected, actual)
+
 	def _assert_selects_entry(self, entries, primary_id, secondary_id, expected):
 		# Act:
 		resolved = select_resolution_entry(entries, primary_id, secondary_id)
@@ -47,7 +54,7 @@ class ResolutionTest(TestCase):
 		self._assert_selects_entry([_entry(5, 6), _entry(7, 0)], 5, 0, None)
 
 	def test_is_alias_mosaic_id_returns_true_for_namespace_id(self):
-		self.assertEqual(True, is_alias_mosaic_id('E74B99BA41F4AFEE'))
+		self._assert_is_alias_mosaic_id('E74B99BA41F4AFEE', True)
 
 	def test_is_alias_mosaic_id_returns_false_for_mosaic_id(self):
-		self.assertEqual(False, is_alias_mosaic_id('72C0212E67A08BCE'))
+		self._assert_is_alias_mosaic_id('72C0212E67A08BCE', False)

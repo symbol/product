@@ -2,7 +2,7 @@ import asyncio
 
 from symbolchain.sc import TransactionType
 
-from puller.facade.SymbolPuller import MAX_PAGE_SIZE
+from puller.facade.SymbolPuller import MAX_PAGE_SIZE, RESOLUTION_FETCH_CONCURRENCY
 
 from .puller_test_utils import (
 	FakeConnector,
@@ -40,6 +40,25 @@ class MalformedResolutionConnector(FakeConnector):
 		return await super().get(url_path, *args)
 
 
+class ResolutionConcurrencyConnector(FakeConnector):
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		self.active_resolution_requests = 0
+		self.max_resolution_requests = 0
+
+	async def get(self, url_path, *args):
+		if not url_path.startswith('statements/resolutions/'):
+			return await super().get(url_path, *args)
+
+		self.active_resolution_requests += 1
+		self.max_resolution_requests = max(self.max_resolution_requests, self.active_resolution_requests)
+		try:
+			await asyncio.sleep(0.01)
+			return await super().get(url_path, *args)
+		finally:
+			self.active_resolution_requests -= 1
+
+
 class FakeTransactionDatabase:
 	def __init__(self):
 		self.block_calls = []
@@ -59,23 +78,6 @@ class FakeTransactionDatabase:
 
 
 class SymbolPullerTransactionSyncTest(SymbolPullerTestBase):
-	def _fetch_transaction_resolution_state(self):
-		cursor = self.puller.symbol_db.connection.cursor()
-		cursor.execute(
-			'''
-			SELECT encode(transaction.hash, 'hex'), encode(transaction.aggregate_hash, 'hex'), transaction.embedded_index,
-				encode(transaction.recipient_address, 'hex'), encode(transaction.target_address, 'hex'),
-				address.role, encode(address.address, 'hex')
-			FROM symbol_transactions transaction
-			JOIN symbol_transaction_addresses address ON address.transaction_id = transaction.id
-			ORDER BY transaction.is_embedded, transaction.hash, transaction.embedded_index, address.role, address.address
-			''')
-
-		return cursor.fetchall()
-
-	@staticmethod
-	def _resolution_paths(connector):
-		return [path for path in connector.paths if path.startswith('statements/resolutions/')]
 
 	def test_get_transaction_rows_by_height_stops_after_short_page(self):
 		# Arrange:
@@ -243,6 +245,26 @@ class SymbolPullerTransactionSyncTest(SymbolPullerTestBase):
 		self.assertEqual(1, sync_state['last_synced_height'])
 		self.assertEqual(bytes.fromhex(f'{1:064X}'), bytes(sync_state['last_synced_block_hash']))
 
+
+class SymbolPullerTransactionAliasResolutionTest(SymbolPullerTestBase):
+	def _fetch_transaction_resolution_state(self):
+		cursor = self.puller.symbol_db.connection.cursor()
+		cursor.execute(
+			'''
+			SELECT encode(transaction.hash, 'hex'), encode(transaction.aggregate_hash, 'hex'), transaction.embedded_index,
+				encode(transaction.recipient_address, 'hex'), encode(transaction.target_address, 'hex'),
+				address.role, encode(address.address, 'hex')
+			FROM symbol_transactions transaction
+			JOIN symbol_transaction_addresses address ON address.transaction_id = transaction.id
+			ORDER BY transaction.is_embedded, transaction.hash, transaction.embedded_index, address.role, address.address
+			''')
+
+		return cursor.fetchall()
+
+	@staticmethod
+	def _resolution_paths(connector):
+		return [path for path in connector.paths if path.startswith('statements/resolutions/')]
+
 	def test_sync_block_headers_resolves_embedded_metadata_target_address_from_parent_source(self):
 		# Arrange:
 		aggregate_hash = 'A' * 64
@@ -317,6 +339,41 @@ class SymbolPullerTransactionSyncTest(SymbolPullerTestBase):
 		self.assertEqual((RESOLVED_MOSAIC_ID, 123, 'transfer'), cursor.fetchone())
 		self.assertEqual([resolution_path('mosaic', 1)], self._resolution_paths(connector))
 
+	def test_sync_block_headers_resolves_address_and_mosaic_aliases_from_same_transaction(self):
+		# Arrange:
+		connector = FakeConnector(
+			1,
+			{0: [create_node_block(1)]},
+			transactions_by_path={
+				transaction_path(1, 1): {'data': [create_node_transaction(
+					1,
+					recipientAddress=ALIAS_ADDRESS,
+					mosaics=[{'id': ALIAS_MOSAIC_ID, 'amount': '123'}])]}},
+			address_resolutions_by_height={
+				1: [create_resolution_statement(
+					1, ALIAS_ADDRESS, [_resolution_entry(1, 0, RESOLVED_ADDRESS)])]},
+			mosaic_resolutions_by_height={
+				1: [create_resolution_statement(
+					1, ALIAS_MOSAIC_ID, [_resolution_entry(1, 0, RESOLVED_MOSAIC_ID)])]})
+		set_symbol_connector(self.puller, connector)
+
+		# Act:
+		asyncio.run(self.puller.sync_block_headers())
+
+		# Assert:
+		cursor = self.puller.symbol_db.connection.cursor()
+		cursor.execute(
+			'''
+			SELECT encode(transaction.recipient_address, 'hex'), mosaic.mosaic_id, mosaic.amount, mosaic.role
+			FROM symbol_transactions transaction
+			JOIN symbol_transaction_mosaics mosaic ON mosaic.transaction_id = transaction.id
+			''')
+		self.assertEqual((RESOLVED_ADDRESS.lower(), RESOLVED_MOSAIC_ID, 123, 'transfer'), cursor.fetchone())
+		self.assertEqual([
+			resolution_path('address', 1),
+			resolution_path('mosaic', 1)
+		], self._resolution_paths(connector))
+
 	def test_sync_block_headers_skips_resolution_requests_when_batch_has_no_aliases(self):
 		# Arrange:
 		connector = FakeConnector(
@@ -351,6 +408,32 @@ class SymbolPullerTransactionSyncTest(SymbolPullerTestBase):
 		# Assert:
 		self.assertEqual([resolution_path('address', 2)], self._resolution_paths(connector))
 
+	def test_sync_block_headers_resolves_all_aliases_across_bounded_resolution_batches(self):
+		# Arrange:
+		heights = list(range(1, RESOLUTION_FETCH_CONCURRENCY + 2))
+		connector = ResolutionConcurrencyConnector(
+			heights[-1],
+			{0: [create_node_block(height) for height in heights]},
+			transactions_by_path={transaction_path(1, heights[-1]): {'data': [
+				create_node_transaction(height, recipientAddress=ALIAS_ADDRESS)
+				for height in heights
+			]}},
+			address_resolutions_by_height={
+				height: [create_resolution_statement(
+					height, ALIAS_ADDRESS, [_resolution_entry(1, 0, RESOLVED_ADDRESS)])]
+				for height in heights
+			})
+
+		# Act:
+		self._sync_with_connector(connector)
+
+		# Assert:
+		cursor = self.puller.symbol_db.connection.cursor()
+		cursor.execute("SELECT height, encode(recipient_address, 'hex') FROM symbol_transactions ORDER BY height")
+		self.assertEqual([(height, RESOLVED_ADDRESS.lower()) for height in heights], cursor.fetchall())
+		self.assertEqual([resolution_path('address', height) for height in heights], self._resolution_paths(connector))
+		self.assertEqual(RESOLUTION_FETCH_CONCURRENCY, connector.max_resolution_requests)
+
 	def test_sync_block_headers_writes_nothing_when_alias_statement_is_missing(self):
 		# Arrange:
 		connector = FakeConnector(
@@ -360,10 +443,11 @@ class SymbolPullerTransactionSyncTest(SymbolPullerTestBase):
 				transaction_path(1, 1): {'data': [create_node_transaction(1, recipientAddress=ALIAS_ADDRESS)]}
 			})
 
-		# Act + Assert:
+		# Act:
 		with self.assertRaisesRegex(ValueError, f'height 1.*{ALIAS_ADDRESS}'):
 			self._sync_with_connector(connector)
 
+		# Assert:
 		cursor = self.puller.symbol_db.connection.cursor()
 		cursor.execute('SELECT COUNT(*) FROM symbol_transactions')
 		transaction_count = cursor.fetchone()[0]
