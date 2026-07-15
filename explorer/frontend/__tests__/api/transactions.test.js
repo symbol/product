@@ -11,7 +11,7 @@ import {
 	unsupportedTransactionInfoResult
 } from '../test-utils/transactions';
 import { fetchTransactionInfo, fetchTransactionPage } from '@/app/api/transactions';
-import * as serverUtils from '@/utils/server';
+import * as serverUtils from '@/app/utils/server';
 
 jest.mock('@/app/utils/server', () => {
 	return {
