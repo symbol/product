@@ -3,7 +3,7 @@ import IconTransactionType from './IconTransactionType';
 import ValueAge from './ValueAge';
 import ValueMosaic from './ValueMosaic';
 import ValueTransactionHash from './ValueTransactionHash';
-import { TRANSACTION_TYPE } from '@/constants';
+import { TRANSACTION_TYPE } from '@/app/constants';
 import styles from '@/app/styles/components/RecentTransactions.module.scss';
 import { createAssetURL } from '@/app/utils';
 import { useTranslation } from 'next-i18next';
