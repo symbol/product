@@ -295,6 +295,7 @@
 	"label_confirmed": "Podtvrđeno",
 	"label_unconfirmed": "Nepodtvrđeno",
 	"label_pending": "V procesje",
+	"label_awaitingCosignatures": "Čekanje kosignatur",
 	"label_multisig": "Multisig",
 	"label_harvesting": "Žnjenje",
 	"label_transferable": "Transferabelno",

@@ -16,7 +16,7 @@ describe('variants/nem/utils/transactions', () => {
 			});
 		});
 
-		it('returns hex label for plain messages with fe prefix', () => {
+		it('returns raw hex label for plain messages with fe prefix', () => {
 			// Arrange:
 			const payload = 'feABCD1234';
 
@@ -25,7 +25,7 @@ describe('variants/nem/utils/transactions', () => {
 
 			// Assert:
 			expect(result).toEqual({
-				type: 'hex',
+				type: 'raw',
 				text: 'HEX: ABCD1234'
 			});
 		});

@@ -7,7 +7,7 @@ import ValueAccount from '@/app/components/ValueAccount';
 import ValueMosaic from '@/app/components/ValueMosaic';
 import ValueNamespace from '@/app/components/ValueNamespace';
 import ValueTransactionType from '@/app/components/ValueTransactionType';
-import { KEY_LINK_ACTION, SUPPLY_CHANGE_ACTION, TRANSACTION_TYPE } from '@/app/constants';
+import { KEY_LINK_ACTION, MESSAGE_TYPE, SUPPLY_CHANGE_ACTION, TRANSACTION_TYPE } from '@/app/constants';
 import styles from '@/app/styles/components/TransactionGraphic.module.scss';
 import { createAssetURL } from '@/app/utils';
 import { useTranslation } from 'next-i18next';
@@ -79,7 +79,7 @@ const TransactionGraphic = ({ transactions }) => {
 							</Field>
 						)}
 						{!!item.message && (
-							<Field title={item.message.type === 'encrypted' ? t('field_messageEncrypted') : t('field_message')}>
+							<Field title={item.message.type === MESSAGE_TYPE.ENCRYPTED ? t('field_messageEncrypted') : t('field_message')}>
 								{item.message.text}
 							</Field>
 						)}

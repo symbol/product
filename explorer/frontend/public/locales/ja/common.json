@@ -300,6 +300,7 @@
 	"label_confirmed": "確認済み",
 	"label_unconfirmed": "未確認",
 	"label_pending": "保留中",
+	"label_awaitingCosignatures": "連署待ち",
 	"label_multisig": "マルチシグ",
 	"label_harvesting": "ハーベスティング",
 	"label_transferable": "転送可能",

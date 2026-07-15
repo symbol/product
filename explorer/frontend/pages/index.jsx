@@ -11,7 +11,7 @@ import Section from '@/app/components/Section';
 import Separator from '@/app/components/Separator';
 import ValuePrice from '@/app/components/ValuePrice';
 import config from '@/app/config';
-import { TRANSACTION_CHART_TYPE } from '@/app/constants';
+import { TRANSACTION_CHART_TYPE, TRANSACTION_GROUP } from '@/app/constants';
 import styles from '@/app/styles/pages/Home.module.scss';
 import { numberToShortString, truncateDecimals, useAsyncCall } from '@/app/utils';
 import { formatTransactionChart, numberToString } from '@/app/utils/common';
@@ -27,7 +27,7 @@ export const getServerSideProps = async ({ locale }) => {
 	const [blocksPage, latestTransactionsPage, pendingTransactionsPage] = await Promise.all([
 		fetchBlockPage({ pageSize: 50 }),
 		fetchTransactionPage({ pageSize: 5 }),
-		fetchTransactionPage({ pageSize: 5, group: 'unconfirmed' })
+		fetchTransactionPage({ pageSize: 5, group: TRANSACTION_GROUP.UNCONFIRMED })
 	]);
 	const [marketDataPromise, transactionStatsPromise, nodeStatsPromise, transactionChartPromise, blockStatsPromise] =
 		await Promise.allSettled([
@@ -71,7 +71,7 @@ const Home = ({
 		DATA_REFRESH_INTERVAL
 	);
 	const pendingTransactions = useAsyncCall(
-		() => fetchTransactionPage({ pageSize: 5, group: 'unconfirmed' }),
+		() => fetchTransactionPage({ pageSize: 5, group: TRANSACTION_GROUP.UNCONFIRMED }),
 		preloadedPendingTransactions,
 		DATA_REFRESH_INTERVAL
 	);
@@ -136,7 +136,7 @@ const Home = ({
 					<RecentTransactions data={latestTransactions.data} />
 				</Section>
 				<Section title={t('section_pendingTransactions')}>
-					<RecentTransactions data={pendingTransactions.data} blockTime={blockTime} group="unconfirmed" />
+					<RecentTransactions data={pendingTransactions.data} blockTime={blockTime} />
 				</Section>
 			</div>
 		</div>

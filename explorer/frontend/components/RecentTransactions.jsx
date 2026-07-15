@@ -3,15 +3,18 @@ import IconTransactionType from './IconTransactionType';
 import ValueAge from './ValueAge';
 import ValueMosaic from './ValueMosaic';
 import ValueTransactionHash from './ValueTransactionHash';
+import { TRANSACTION_GROUP } from '@/app/constants';
 import styles from '@/app/styles/components/RecentTransactions.module.scss';
 import { createAssetURL } from '@/app/utils';
+import { utils } from '@/app/variants/utils';
 import { useTranslation } from 'next-i18next';
 
 const TransactionPreview = ({ type, group, signer, hash, timestamp, amount, blockTime }) => {
 	const { t } = useTranslation();
 	const typeText = t(`transactionType_${type}`);
 	const labelSenderText = t('table_field_sender');
-	const isUnconfirmed = group === 'unconfirmed';
+	const isUnconfirmed = group !== TRANSACTION_GROUP.CONFIRMED;
+	const isAwaitingSignatures = utils.transactions.isTransactionAwaitingSignatures({ type, group });
 	const title = `${typeText}\n${labelSenderText}: ${signer}`;
 
 	return (
@@ -23,7 +26,10 @@ const TransactionPreview = ({ type, group, signer, hash, timestamp, amount, bloc
 			<div className={styles.info}>
 				<div className={styles.type}>{typeText}</div>
 				{!!hash && <ValueTransactionHash value={hash} />}
-				{isUnconfirmed && <span>{t('value_transactionConfirmationTime', { value: blockTime })}</span>}
+				{isUnconfirmed && !isAwaitingSignatures && (
+					<span>{t('value_transactionConfirmationTime', { value: blockTime })}</span>
+				)}
+				{isAwaitingSignatures && <span>{t('label_awaitingCosignatures')}</span>}
 				{!isUnconfirmed && <ValueAge value={timestamp} />}
 			</div>
 			<div className={styles.amount}>
@@ -33,7 +39,7 @@ const TransactionPreview = ({ type, group, signer, hash, timestamp, amount, bloc
 	);
 };
 
-const RecentTransactions = ({ data, blockTime, group }) => {
+const RecentTransactions = ({ data, blockTime }) => {
 	const { t } = useTranslation('common');
 
 	return (
@@ -42,7 +48,7 @@ const RecentTransactions = ({ data, blockTime, group }) => {
 				<TransactionPreview
 					type={item.type}
 					signer={item.signer}
-					group={group}
+					group={item.group}
 					hash={item.hash}
 					deadline={item.deadline}
 					timestamp={item.timestamp}

@@ -12,7 +12,7 @@ import ValueCopy from '@/app/components/ValueCopy';
 import ValueLabel from '@/app/components/ValueLabel';
 import ValueMosaic from '@/app/components/ValueMosaic';
 import ValueTransactionType from '@/app/components/ValueTransactionType';
-import { STORAGE_KEY, TRANSACTION_TYPE } from '@/app/constants';
+import { STORAGE_KEY, TRANSACTION_GROUP, TRANSACTION_TYPE } from '@/app/constants';
 import styles from '@/app/styles/pages/TransactionInfo.module.scss';
 import { nullableValueToText, numberToShortString, truncateDecimals, useStorage, useUserCurrencyAmount } from '@/app/utils';
 import Head from 'next/head';
@@ -123,8 +123,12 @@ const TransactionInfo = ({ transactionInfo }) => {
 						</Field>
 						<div className="layout-grid-row">
 							<Field title={t('field_status')}>
-								{transactionInfo.group === 'confirmed' && <ValueLabel text={t('label_confirmed')} type="confirmed" />}
-								{transactionInfo.group === 'unconfirmed' && <ValueLabel text={t('label_unconfirmed')} type="pending" />}
+								{transactionInfo.group === TRANSACTION_GROUP.CONFIRMED && (
+									<ValueLabel text={t('label_confirmed')} type="confirmed" />
+								)}
+								{transactionInfo.group === TRANSACTION_GROUP.UNCONFIRMED && (
+									<ValueLabel text={t('label_unconfirmed')} type="pending" />
+								)}
 							</Field>
 							<FieldTimestamp value={transactionInfo.timestamp} hasTime />
 						</div>

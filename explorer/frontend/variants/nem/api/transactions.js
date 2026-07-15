@@ -1,3 +1,4 @@
+import { NEM_TRANSACTION_GROUP } from '../constants';
 import { formatTransferMessage } from '../utils/transactions';
 import config from '@/app/config';
 import { ACCOUNT_STATE_CHANGE_ACTION, COSIGNATORY_MODIFICATION_ACTION, TRANSACTION_DIRECTION, TRANSACTION_TYPE } from '@/app/constants';
@@ -48,7 +49,7 @@ export const fetchTransactionPage = async searchParams => {
 	searchCriteria.filter = updatedFilter;
 
 	let url;
-	if (updatedFilter.group === 'unconfirmed') {
+	if (updatedFilter.group === NEM_TRANSACTION_GROUP.UNCONFIRMED) {
 		delete updatedFilter.group;
 		url = createSearchURL(createApiUrl('transactions/unconfirmed'), searchCriteria);
 	} else {
@@ -149,7 +150,7 @@ const formatBaseTransaction = (data, filter) => {
 
 	return {
 		type: data.transactionType,
-		group: group || 'confirmed',
+		group: group || NEM_TRANSACTION_GROUP.CONFIRMED,
 		hash: data.transactionHash,
 		timestamp: data.timestamp,
 		deadline: data.deadline,
