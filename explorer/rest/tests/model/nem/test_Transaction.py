@@ -22,7 +22,9 @@ class TransactionViewTest(unittest.TestCase):
 			height=1000,
 			timestamp='2015-03-29 00:06:25',
 			deadline='2015-03-29 00:21:25',
-			signature='0' * 128
+			signature='0' * 128,
+			size=184,
+			version=1
 		)
 
 		if override:
@@ -46,6 +48,8 @@ class TransactionViewTest(unittest.TestCase):
 		self.assertEqual('2015-03-29 00:06:25', transaction_view.timestamp)
 		self.assertEqual('2015-03-29 00:21:25', transaction_view.deadline)
 		self.assertEqual('0' * 128, transaction_view.signature)
+		self.assertEqual(184, transaction_view.size)
+		self.assertEqual(1, transaction_view.version)
 
 	def test_can_convert_to_simple_dict(self):
 		# Arrange:
@@ -67,6 +71,8 @@ class TransactionViewTest(unittest.TestCase):
 			'timestamp': '2015-03-29 00:06:25',
 			'deadline': '2015-03-29 00:21:25',
 			'signature': '0' * 128,
+			'size': 184,
+			'schemaVersion': 1,
 		}, transaction_view_dict)
 
 	def test_eq_is_supported(self):
@@ -88,3 +94,5 @@ class TransactionViewTest(unittest.TestCase):
 		self.assertNotEqual(transaction_view, self._create_default_transaction_view(('timestamp', '2015-03-29 01:06:25')))
 		self.assertNotEqual(transaction_view, self._create_default_transaction_view(('deadline', '2015-03-29 01:21:25')))
 		self.assertNotEqual(transaction_view, self._create_default_transaction_view(('signature', 'ABCDEF0123456789ABCDEF0123456789')))
+		self.assertNotEqual(transaction_view, self._create_default_transaction_view(('size', 200)))
+		self.assertNotEqual(transaction_view, self._create_default_transaction_view(('version', 2)))

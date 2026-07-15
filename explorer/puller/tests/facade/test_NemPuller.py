@@ -1,3 +1,4 @@
+# pylint: disable=too-many-function-args
 import asyncio
 import datetime
 import tempfile
@@ -1128,7 +1129,9 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 			is_inner=False,
 			sender_address=self.puller.nem_facade.network.public_key_to_address(transaction.sender),
 			recipient_address=recipient_address,
-			payload=payload
+			payload=payload,
+			size=transaction.size,
+			version=transaction.version
 		))
 
 	def test_can_build_transaction_record_transfer(self):

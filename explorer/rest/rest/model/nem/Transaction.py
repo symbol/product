@@ -22,7 +22,9 @@ TransactionRecord = namedtuple('TransactionRecord', [
 	'signature',
 	'to_address',
 	'payload',
-	'mosaics'
+	'mosaics',
+	'size',
+	'version'
 ])
 
 
@@ -39,7 +41,9 @@ class TransactionView:  # pylint: disable=too-many-instance-attributes, too-many
 		height,
 		timestamp,
 		deadline,
-		signature
+		signature,
+		size,
+		version
 	):
 		"""Create transaction list view."""
 
@@ -56,6 +60,8 @@ class TransactionView:  # pylint: disable=too-many-instance-attributes, too-many
 		self.timestamp = timestamp
 		self.deadline = deadline
 		self.signature = signature
+		self.size = size
+		self.version = version
 
 	def __eq__(self, other):
 		return isinstance(other, TransactionView) and all([
@@ -69,7 +75,9 @@ class TransactionView:  # pylint: disable=too-many-instance-attributes, too-many
 			self.height == other.height,
 			self.timestamp == other.timestamp,
 			self.deadline == other.deadline,
-			self.signature == other.signature
+			self.signature == other.signature,
+			self.size == other.size,
+			self.version == other.version
 		])
 
 	def to_dict(self):
@@ -87,4 +95,6 @@ class TransactionView:  # pylint: disable=too-many-instance-attributes, too-many
 			'timestamp': self.timestamp,
 			'deadline': self.deadline,
 			'signature': self.signature,
+			'size': self.size,
+			'schemaVersion': self.version,
 		}
