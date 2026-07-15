@@ -727,6 +727,8 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 			83397,
 			'e0cc7f71e353ca0aaf2f009d74aeac5f97d4796b0f08c009058fb33d93c2e8ca'
 			'68c0b63e46ff125f43314014d324ac032d2c82996a6e47068b251f1d71fdd001',
+			202,
+			2,
 			1999999,
 			recipient,
 			None,
