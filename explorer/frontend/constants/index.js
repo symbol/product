@@ -16,8 +16,7 @@ export const MESSAGE_TYPE = {
 
 export const TRANSACTION_GROUP = {
 	CONFIRMED: 'confirmed',
-	UNCONFIRMED: 'unconfirmed',
-	PARTIAL: 'partial'
+	UNCONFIRMED: 'unconfirmed'
 };
 
 export const TRANSACTION_DIRECTION = {

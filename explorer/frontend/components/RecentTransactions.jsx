@@ -13,7 +13,7 @@ const TransactionPreview = ({ type, group, signer, hash, timestamp, amount, bloc
 	const { t } = useTranslation();
 	const typeText = t(`transactionType_${type}`);
 	const labelSenderText = t('table_field_sender');
-	const isUnconfirmed = [TRANSACTION_GROUP.UNCONFIRMED, TRANSACTION_GROUP.PARTIAL].includes(group);
+	const isUnconfirmed = group !== TRANSACTION_GROUP.CONFIRMED;
 	const isAwaitingSignatures = utils.transactions.isTransactionAwaitingSignatures({ type, group });
 	const title = `${typeText}\n${labelSenderText}: ${signer}`;
 
