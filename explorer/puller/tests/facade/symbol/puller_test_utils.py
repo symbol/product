@@ -1,4 +1,5 @@
 import asyncio
+import re
 import tempfile
 from contextlib import ExitStack, contextmanager
 from pathlib import Path
@@ -359,8 +360,9 @@ class FakeConnector:  # pylint: disable=too-many-instance-attributes
 				'code': 'ResourceNotFound',
 				'message': f'no resource exists with id {address_text}'
 			})
-		if url_path.startswith('accounts?pageSize=100&pageNumber='):
-			page_number = int(url_path.split('pageNumber=')[1].split('&')[0])
+		match = re.fullmatch(r'accounts\?pageSize=100&pageNumber=(\d+)&orderBy=id&order=desc', url_path)
+		if match:
+			page_number = int(match.group(1))
 			return {
 				'data': self.account_pages.get(page_number, []),
 				'pagination': {

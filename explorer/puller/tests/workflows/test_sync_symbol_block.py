@@ -1,61 +1,23 @@
 import asyncio
 import unittest
-from unittest.mock import patch
 
-from common.symbol.NodeConfiguration import SymbolNodeConfigurationError
-from workflow_test_utils import parse_args_with_argv
+from workflow_test_utils import RecordingSymbolPullerFactory, create_symbol_environment
 
-from puller.workflows.sync_symbol_block import _create_node_config, main, parse_args
-
-
-class RecordingSymbolDatabase:
-	def __init__(self):
-		self.create_tables_call_count = 0
-
-	def create_tables(self):
-		self.create_tables_call_count += 1
-
-
-class RecordingSymbolPuller:
-	def __init__(self, *args, **kwargs):
-		self.constructor_args = args
-		self.constructor_kwargs = kwargs
-		self.symbol_db = RecordingSymbolDatabase()
-		self.synced_max_heights = []
-
-	def __enter__(self):
-		return self
-
-	def __exit__(self, *_):
-		return None
-
-	async def sync_block_headers(self, max_height):
-		self.synced_max_heights.append(max_height)
-
-
-class RecordingSymbolPullerFactory:
-	def __init__(self):
-		self.puller = None
-
-	def __call__(self, *args, **kwargs):
-		self.puller = RecordingSymbolPuller(*args, **kwargs)
-		return self.puller
+from puller.workflows.sync_symbol_block import main, parse_args
 
 
 class SyncSymbolBlockTest(unittest.TestCase):
 	def test_parse_args_requires_node_network_and_db_config(self):
 		# Act + Assert:
 		with self.assertRaises(SystemExit):
-			parse_args_with_argv('sync_symbol_block.py', parse_args)
+			parse_args([])
 
 	def test_parse_args_with_required_values(self):
 		# Act:
-		args = parse_args_with_argv(
-			'sync_symbol_block.py',
-			parse_args,
+		args = parse_args([
 			'--symbol-node', 'http://localhost:3000',
 			'--network', 'mainnet',
-			'--db-config', 'config.ini')
+			'--db-config', 'config.ini'])
 
 		# Assert:
 		self.assertEqual(args.symbol_node, 'http://localhost:3000')
@@ -66,14 +28,12 @@ class SyncSymbolBlockTest(unittest.TestCase):
 
 	def test_parse_args_with_custom_values(self):
 		# Act:
-		args = parse_args_with_argv(
-			'sync_symbol_block.py',
-			parse_args,
+		args = parse_args([
 			'--symbol-node', 'http://localhost:3000',
 			'--network', 'testnet',
 			'--db-config', 'test_config.ini',
 			'--max-height', '1000',
-			'--max-requests-per-second', '25')
+			'--max-requests-per-second', '25'])
 
 		# Assert:
 		self.assertEqual(args.symbol_node, 'http://localhost:3000')
@@ -85,83 +45,43 @@ class SyncSymbolBlockTest(unittest.TestCase):
 	def test_parse_args_rejects_invalid_network(self):
 		# Act + Assert:
 		with self.assertRaises(SystemExit):
-			parse_args_with_argv(
-				'sync_symbol_block.py',
-				parse_args,
+			parse_args([
 				'--symbol-node', 'http://localhost:3000',
 				'--db-config', 'test_config.ini',
-				'--network', 'main')
+				'--network', 'main'])
 
 	def test_parse_args_rejects_invalid_max_height(self):
 		# Act + Assert:
 		with self.assertRaises(SystemExit):
-			parse_args_with_argv(
-				'sync_symbol_block.py',
-				parse_args,
+			parse_args([
 				'--symbol-node', 'http://localhost:3000',
 				'--network', 'testnet',
 				'--db-config', 'test_config.ini',
-				'--max-height', '0')
+				'--max-height', '0'])
 
 	def test_parse_args_rejects_invalid_max_requests_per_second(self):
 		# Act + Assert:
 		with self.assertRaises(SystemExit):
-			parse_args_with_argv(
-				'sync_symbol_block.py',
-				parse_args,
+			parse_args([
 				'--symbol-node', 'http://localhost:3000',
 				'--network', 'testnet',
 				'--db-config', 'test_config.ini',
-				'--max-requests-per-second', '0')
-
-	def test_create_node_config_rejects_missing_allowed_hosts(self):
-		# Arrange:
-		with patch.dict('os.environ', {}, clear=True):
-			# Act + Assert:
-			with self.assertRaisesRegex(
-				SymbolNodeConfigurationError,
-				'SYMBOL_NODE_ALLOWED_HOSTS is required'
-			):
-				_create_node_config('http://localhost:7890')
-
-	def test_create_node_config_uses_symbol_node_environment(self):
-		# Arrange:
-		with patch.dict('os.environ', {
-			'SYMBOL_NODE_ALLOWED_HOSTS': 'localhost:7890',
-			'SYMBOL_NODE_ALLOW_LOOPBACK': 'true',
-			'SYMBOL_NODE_ALLOW_PRIVATE': 'false',
-			'SYMBOL_NODE_REQUEST_TIMEOUT_SECONDS': '17'
-		}, clear=True):
-			# Act:
-			node_config = _create_node_config('http://localhost:7890')
-
-		# Assert:
-		self.assertEqual('http://localhost:7890', node_config.base_url)
-		self.assertEqual(
-			frozenset({'localhost:7890'}),
-			node_config.allowed_hosts)
-		self.assertTrue(node_config.allow_loopback)
-		self.assertFalse(node_config.allow_private)
-		self.assertEqual(17, node_config.timeout_seconds)
+				'--max-requests-per-second', '0'])
 
 	def test_main_forwards_custom_max_requests_per_second_to_symbol_puller(self):
 		# Arrange:
 		puller_factory = RecordingSymbolPullerFactory()
-		with patch('sys.argv', [
-			'sync_symbol_block.py',
+		argv = [
 			'--symbol-node', 'http://localhost:7890',
 			'--network', 'testnet',
 			'--db-config', 'test_config.ini',
 			'--max-height', '3000',
 			'--max-requests-per-second', '25'
-		]), patch.dict('os.environ', {
-			'SYMBOL_NODE_ALLOWED_HOSTS': 'localhost:7890',
-			'SYMBOL_NODE_ALLOW_LOOPBACK': 'true',
-			'SYMBOL_NODE_ALLOW_PRIVATE': 'false',
-			'SYMBOL_NODE_REQUEST_TIMEOUT_SECONDS': '9'
-		}, clear=True):
-			# Act:
-			asyncio.run(main(puller_factory))
+		]
+		environment = create_symbol_environment('9')
+
+		# Act:
+		asyncio.run(main(puller_factory, argv, environment))
 
 		# Assert:
 		puller = puller_factory.puller
@@ -172,19 +92,15 @@ class SyncSymbolBlockTest(unittest.TestCase):
 	def test_main_uses_symbol_puller_default_max_requests_per_second_when_omitted(self):
 		# Arrange:
 		puller_factory = RecordingSymbolPullerFactory()
-		with patch('sys.argv', [
-			'sync_symbol_block.py',
+		argv = [
 			'--symbol-node', 'http://localhost:7890',
 			'--network', 'testnet',
 			'--db-config', 'test_config.ini'
-		]), patch.dict('os.environ', {
-			'SYMBOL_NODE_ALLOWED_HOSTS': 'localhost:7890',
-			'SYMBOL_NODE_ALLOW_LOOPBACK': 'true',
-			'SYMBOL_NODE_ALLOW_PRIVATE': 'false',
-			'SYMBOL_NODE_REQUEST_TIMEOUT_SECONDS': '9'
-		}, clear=True):
-			# Act:
-			asyncio.run(main(puller_factory))
+		]
+		environment = create_symbol_environment('9')
+
+		# Act:
+		asyncio.run(main(puller_factory, argv, environment))
 
 		# Assert:
 		puller = puller_factory.puller

@@ -35,3 +35,58 @@ def create_facade_with_mock_db(mock_nem_puller):
 	mock_facade.nem_db.__exit__ = Mock(return_value=None)
 
 	return mock_facade, mock_db
+
+
+class RecordingSymbolDatabase:
+	def __init__(self):
+		self.create_tables_call_count = 0
+
+	def create_tables(self):
+		self.create_tables_call_count += 1
+
+
+class RecordingSymbolPuller:
+	def __init__(self, *args, **kwargs):
+		self.constructor_args = args
+		self.constructor_kwargs = kwargs
+		self.symbol_db = RecordingSymbolDatabase()
+		self.refresh_accounts_call_count = 0
+		self.synced_max_heights = []
+
+	def __enter__(self):
+		return self
+
+	def __exit__(self, *_):
+		return None
+
+	async def refresh_accounts(self):
+		self.refresh_accounts_call_count += 1
+
+	async def sync_block_headers(self, max_height):
+		self.synced_max_heights.append(max_height)
+
+
+class RecordingSymbolPullerFactory:
+	def __init__(self):
+		self.puller = None
+
+	def __call__(self, *args, **kwargs):
+		self.puller = RecordingSymbolPuller(*args, **kwargs)
+		return self.puller
+
+
+def create_symbol_environment(request_timeout_seconds='17'):
+	return {
+		'SYMBOL_NODE_ALLOWED_HOSTS': 'localhost:7890',
+		'SYMBOL_NODE_ALLOW_LOOPBACK': 'true',
+		'SYMBOL_NODE_ALLOW_PRIVATE': 'false',
+		'SYMBOL_NODE_REQUEST_TIMEOUT_SECONDS': request_timeout_seconds
+	}
+
+
+def assert_symbol_node_config(test_case, node_config):
+	test_case.assertEqual('http://localhost:7890', node_config.base_url)
+	test_case.assertEqual(frozenset({'localhost:7890'}), node_config.allowed_hosts)
+	test_case.assertTrue(node_config.allow_loopback)
+	test_case.assertFalse(node_config.allow_private)
+	test_case.assertEqual(17, node_config.timeout_seconds)

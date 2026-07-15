@@ -2,6 +2,7 @@
 import asyncio
 import threading
 import time
+from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
@@ -97,7 +98,10 @@ class ReleaseFailureRecordingDatabase:
 	def __getattr__(self, name):
 		return getattr(self.database, name)
 
-	def release_account_refresh_lock(self):
+	@contextmanager
+	def account_refresh_lock(self):
+		with self.database.account_refresh_lock():
+			yield
 		self.release_call_count += 1
 		raise RuntimeError('lock release failed')
 
@@ -643,7 +647,7 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):  # pylint: disable=too-man
 		self.assertIsNotNone(state['last_completed_at'])
 		self.assertIsNone(state['last_error'])
 
-	def _assert_complete_current_state(self):
+	def _assert_complete_current_account_state(self):
 		# Assert:
 		cursor = self.puller.symbol_db.connection.cursor()
 		cursor.execute(
@@ -732,6 +736,7 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):  # pylint: disable=too-man
 		}
 		cursor = self.puller.symbol_db.connection.cursor()
 		for rank_scope, expected_addresses in expected_rank_addresses.items():
+			expected_rank_address_pairs = list(enumerate(expected_addresses))  # rank is 0-based
 			cursor.execute(
 				'''
 				SELECT rank, address
@@ -741,7 +746,7 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):  # pylint: disable=too-man
 				''',
 				(refresh_run_id, rank_scope))
 			self.assertEqual(
-				list(enumerate(expected_addresses)),
+				expected_rank_address_pairs,
 				[(rank, bytes(address)) for rank, address in cursor.fetchall()])
 
 	def test_refresh_accounts_persists_complete_two_page_snapshot_and_rank_results(self):
@@ -778,7 +783,7 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):  # pylint: disable=too-man
 		# Assert:
 		state = self.puller.symbol_db.get_account_refresh_state()
 		self._assert_complete_refresh_state(state)
-		self._assert_complete_current_state()
+		self._assert_complete_current_account_state()
 		self._assert_complete_account_snapshot(state['last_successful_run_id'])
 		self._assert_complete_mosaic_snapshot(state['last_successful_run_id'])
 		self._assert_complete_rank_results(state['last_successful_run_id'])
@@ -824,18 +829,13 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):  # pylint: disable=too-man
 
 		try:
 			# Act:
-			propagated_error = None
-			try:
+			with self.assertRaisesRegex(RefreshFailureError, 'refresh request failed') as context:
 				asyncio.run(self.puller.refresh_accounts())
-			except RefreshFailureError as error:
-				propagated_error = error
 		finally:
 			self.puller.symbol_db = database
 
 		# Assert:
-		self.assertIsInstance(propagated_error, RefreshFailureError)
-		self.assertEqual('refresh request failed', str(propagated_error))
-		self.assertIs(refresh_error, propagated_error)
+		self.assertIs(refresh_error, context.exception)
 		self.assertEqual([str(refresh_error)], failure_state_database.failure_state_errors)
 
 	def test_refresh_accounts_holds_lock_until_success_then_allows_rollback(self):
@@ -869,7 +869,7 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):  # pylint: disable=too-man
 		self.assertEqual('unhealthy', self.puller.symbol_db.get_account_refresh_state()['status'])
 		self.assertEqual('repairing', self.puller.symbol_db.get_sync_state()['status'])
 
-	def test_refresh_accounts_preserves_success_when_lock_release_fails(self):
+	def test_refresh_accounts_propagates_lock_release_failure_after_success(self):
 		# Arrange:
 		connector = FakeConnector(1, {}, account_pages={1: []})
 		set_symbol_connector(self.puller, connector)
@@ -878,13 +878,13 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):  # pylint: disable=too-man
 		self.puller.symbol_db = release_failure_database
 
 		try:
-			# Act:
-			asyncio.run(self.puller.refresh_accounts())
+			# Act + Assert:
+			with self.assertRaisesRegex(RuntimeError, 'lock release failed'):
+				asyncio.run(self.puller.refresh_accounts())
 			refresh_state = release_failure_database.get_account_refresh_state()
 			release_call_count = release_failure_database.release_call_count
 		finally:
 			self.puller.symbol_db = database
-			database.release_account_refresh_lock()
 
 		# Assert:
 		self.assertEqual('healthy', refresh_state['status'])
@@ -896,14 +896,8 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):  # pylint: disable=too-man
 		sync_state = self._create_rollback_sync_state(status='invalid')
 
 		# Act:
-		raised_error = None
-		try:
+		with self.assertRaises(PsycopgError):
 			database.repair_rollback_from_height(1, sync_state)
-		except PsycopgError as error:
-			raised_error = error
-
-		# Assert:
-		self.assertIsInstance(raised_error, PsycopgError)
 
 	def test_rollback_failure_releases_lock_for_waiting_refresh(self):  # pylint: disable=too-many-locals,too-many-statements
 		# Arrange:
@@ -1002,40 +996,47 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):  # pylint: disable=too-man
 		set_symbol_connector(self.puller, connector)
 
 		# Act:
-		asyncio.run(self.puller.refresh_accounts())
-		first_run_id = self.puller.symbol_db.get_account_refresh_state()['last_successful_run_id']
-		asyncio.run(self.puller.refresh_accounts())
-		second_run_id = self.puller.symbol_db.get_account_refresh_state()['last_successful_run_id']
+		run_ids = []
+		for _ in range(2):
+			asyncio.run(self.puller.refresh_accounts())
+			run_ids.append(self.puller.symbol_db.get_account_refresh_state()['last_successful_run_id'])
+
+		first_run_id = run_ids[0]
+		second_run_id = run_ids[1]
 
 		# Assert:
 		expected_address = bytes.fromhex(_address_hex(1))
 		expected_mosaic_amount = int(page[0]['account']['mosaics'][0]['amount'])
-		cursor = self.puller.symbol_db.connection.cursor()
-		cursor.execute(
-			'''
-			SELECT address
-			FROM symbol_account_refresh_accounts
-			WHERE refresh_run_id = %s
-			''',
-			(second_run_id,))
-		account_results = cursor.fetchall()
-		cursor.execute(
-			'''
-			SELECT address, mosaic_id, amount
-			FROM symbol_account_refresh_mosaics
-			WHERE refresh_run_id = %s
-			''',
-			(second_run_id,))
-		mosaic_results = cursor.fetchall()
-		cursor.execute(
-			'''
-			SELECT rank_scope, address
-			FROM symbol_account_list_ranks
-			WHERE refresh_run_id = %s
-			ORDER BY rank_scope, rank
-			''',
-			(second_run_id,))
-		rank_results = cursor.fetchall()
+
+		def fetch_run_results(refresh_run_id):
+			cursor = self.puller.symbol_db.connection.cursor()
+			cursor.execute(
+				'''
+				SELECT address
+				FROM symbol_account_refresh_accounts
+				WHERE refresh_run_id = %s
+				''',
+				(refresh_run_id,))
+			account_results = cursor.fetchall()
+			cursor.execute(
+				'''
+				SELECT address, mosaic_id, amount
+				FROM symbol_account_refresh_mosaics
+				WHERE refresh_run_id = %s
+				''',
+				(refresh_run_id,))
+			mosaic_results = cursor.fetchall()
+			cursor.execute(
+				'''
+				SELECT rank_scope, address
+				FROM symbol_account_list_ranks
+				WHERE refresh_run_id = %s
+				ORDER BY rank_scope, rank
+				''',
+				(refresh_run_id,))
+			return account_results, mosaic_results, cursor.fetchall()
+
+		account_results, mosaic_results, rank_results = fetch_run_results(second_run_id)
 
 		self.assertNotEqual(first_run_id, second_run_id)
 		self.assertEqual([(expected_address,)], [(bytes(address),) for address, in account_results])
@@ -1068,8 +1069,8 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):  # pylint: disable=too-man
 		account_row['is_harvesting_active'] = True
 		self.puller.symbol_db.upsert_account_current_state(account_row, mosaic_rows)
 		self.puller.symbol_db.upsert_blocks([
-			self._create_block_row(1, active_address, datetime.now(timezone.utc) - timedelta(days=1)),
-			self._create_block_row(2, inactive_address, datetime.now(timezone.utc) - timedelta(days=8))
+			self._create_block_row(1, inactive_address, datetime.now(timezone.utc) - timedelta(days=8)),
+			self._create_block_row(2, active_address, datetime.now(timezone.utc) - timedelta(days=1))
 		])
 		connector = FakeConnector(2, {}, account_pages={
 			1: [

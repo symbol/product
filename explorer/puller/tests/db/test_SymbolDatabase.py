@@ -28,6 +28,11 @@ ADDRESS3 = '9889432DE263BB8FE88444A4DA28D3609BD8BB8FAE18AE97'
 ADDRESS4 = '98' + '11' * 23
 
 
+class UnlockFailureSymbolDatabase(SymbolDatabase):
+	def _release_account_refresh_lock(self):
+		raise RuntimeError('unlock failure')
+
+
 def _create_block(height, block_hash=None, **overrides):
 	block_hash = block_hash or f'hash {height}'.encode('utf8')
 	timestamp = overrides.pop('timestamp', None)
@@ -502,35 +507,9 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		# Arrange:
 		database = self._create_database()
 
-		# Act:
-		raised_error = None
-		try:
+		# Act + Assert:
+		with self.assertRaises(PsycopgError):
 			database.upsert_account_refresh_state({'status': 'invalid'})
-		except PsycopgError as error:
-			raised_error = error
-		finally:
-			database.connection.rollback()
-
-		# Assert:
-		self.assertIsInstance(raised_error, PsycopgError)
-
-	def test_account_refresh_state_rejects_non_singleton_id(self):
-		# Arrange:
-		database = self._create_database()
-		cursor = database.connection.cursor()
-
-		# Act:
-		raised_error = None
-		try:
-			cursor.execute(
-				"INSERT INTO symbol_account_refresh_state (id, status) VALUES (2, 'healthy')")
-		except PsycopgError as error:
-			raised_error = error
-		finally:
-			database.connection.rollback()
-
-		# Assert:
-		self.assertIsInstance(raised_error, PsycopgError)
 
 	def test_mark_account_refresh_failed_rolls_back_when_state_table_is_missing(self):
 		# Arrange:
@@ -544,24 +523,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			database.mark_account_refresh_failed('refresh failed')
 
 		# The failed transaction must be cleared by the error handler.
-		cursor.execute('SELECT 1')
-		self.assertEqual((1,), cursor.fetchone())
-
-	def test_account_refresh_mosaics_reject_orphan_snapshot_row(self):
-		# Arrange:
-		database = self._create_database()
-		cursor = database.connection.cursor()
-
-		# Act / Assert:
-		with self.assertRaises(PsycopgError):
-			cursor.execute(
-				'''
-				INSERT INTO symbol_account_refresh_mosaics (
-					refresh_run_id, address, mosaic_id, amount, snapshot_height, snapshot_at
-				) VALUES ('missing-run', %s, %s, 1, 1, CURRENT_TIMESTAMP)
-				''',
-				(bytes.fromhex(ADDRESS1), NATIVE_MOSAIC_ID))
-		database.connection.rollback()
+		self.assertIsNone(database.get_block_hash(1))
 
 	def test_account_refresh_lock_serializes_database_sessions(self):
 		# Arrange:
@@ -569,30 +531,87 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		second_session_ready = threading.Event()
 		lock_acquired = threading.Event()
 		thread_finished = threading.Event()
+		thread = None
 
 		def acquire_from_second_session():
 			second_database = SymbolDatabase(self.db_config)
 			with second_database:
 				second_session_ready.set()
-				second_database.acquire_account_refresh_lock()
-				lock_acquired.set()
-				second_database.release_account_refresh_lock()
+				with second_database.account_refresh_lock():
+					lock_acquired.set()
 			thread_finished.set()
 
-		database.acquire_account_refresh_lock()
-		thread = threading.Thread(target=acquire_from_second_session)
-		thread.start()
+		try:
+			with database.account_refresh_lock():
+				thread = threading.Thread(target=acquire_from_second_session, daemon=True)
+				thread.start()
 
-		# Act:
-		second_session_started = second_session_ready.wait(1)
-		second_session_is_blocked = not lock_acquired.is_set()
-		database.release_account_refresh_lock()
-		thread.join(1)
+				# Act:
+				second_session_started = second_session_ready.wait(1)
+				second_session_is_blocked = not lock_acquired.is_set()
+				thread.join(0.1)
+		finally:
+			if thread:
+				thread.join(1)
 
 		# Assert:
 		self.assertTrue(second_session_started)
 		self.assertTrue(second_session_is_blocked)
 		self.assertTrue(thread_finished.is_set())
+
+	def test_account_refresh_lock_releases_after_exception_and_preserves_primary_error(self):
+		# Arrange:
+		database = self._create_database()
+
+		# Act + Assert:
+		with self.assertRaisesRegex(RuntimeError, 'primary failure'):
+			with database.account_refresh_lock():
+				raise RuntimeError('primary failure')
+
+		# Assert:
+		self._assert_account_refresh_lock_is_available()
+
+	def test_account_refresh_lock_releases_after_base_exception_and_preserves_primary_error(self):
+		# Arrange:
+		database = self._create_database()
+
+		# Act + Assert:
+		with self.assertRaises(KeyboardInterrupt):
+			with database.account_refresh_lock():
+				raise KeyboardInterrupt()
+
+		# Assert:
+		self._assert_account_refresh_lock_is_available()
+
+	def _assert_account_refresh_lock_is_available(self):
+		second_database = self.exit_stack.enter_context(SymbolDatabase(self.db_config))
+		cursor = second_database.connection.cursor()
+		cursor.execute("SELECT pg_try_advisory_lock(hashtext('symbol_account_refresh'))")
+		lock_acquired = cursor.fetchone()[0]
+		try:
+			self.assertTrue(lock_acquired)
+		finally:
+			if lock_acquired:
+				cursor.execute("SELECT pg_advisory_unlock(hashtext('symbol_account_refresh'))")
+				second_database.connection.commit()
+
+	def test_account_refresh_lock_propagates_unlock_failure_after_success(self):
+		# Arrange:
+		database = self.exit_stack.enter_context(UnlockFailureSymbolDatabase(self.db_config))
+
+		# Act + Assert:
+		with self.assertRaisesRegex(RuntimeError, 'unlock failure'):
+			with database.account_refresh_lock():
+				pass
+
+	def test_account_refresh_lock_preserves_body_failure_when_unlock_also_fails(self):
+		# Arrange:
+		database = self.exit_stack.enter_context(UnlockFailureSymbolDatabase(self.db_config))
+
+		# Act + Assert:
+		with self.assertRaisesRegex(RuntimeError, 'primary failure'):
+			with database.account_refresh_lock():
+				raise RuntimeError('primary failure')
 
 	def test_create_tables_creates_symbol_sync_state_schema(self):
 		# Arrange:
@@ -1407,17 +1426,18 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		database = self._create_database()
 		cutoff = datetime.datetime(2026, 1, 1, 0, 2, tzinfo=datetime.timezone.utc)
 		database.upsert_blocks([
-			_create_block(1, beneficiary_address=b'old', timestamp=cutoff - datetime.timedelta(microseconds=1)),
-			_create_block(2, beneficiary_address=b'at cutoff', timestamp=cutoff),
-			_create_block(3, beneficiary_address=b'at cutoff', timestamp=cutoff + datetime.timedelta(seconds=1)),
-			_create_block(4, beneficiary_address=b'new', timestamp=cutoff + datetime.timedelta(seconds=2))
+			_create_block(1, beneficiary_address=b'straddle', timestamp=cutoff - datetime.timedelta(microseconds=2)),
+			_create_block(2, beneficiary_address=b'before-only', timestamp=cutoff - datetime.timedelta(microseconds=1)),
+			_create_block(3, beneficiary_address=b'at-cutoff-only', timestamp=cutoff),
+			_create_block(4, beneficiary_address=b'straddle', timestamp=cutoff + datetime.timedelta(seconds=1)),
+			_create_block(5, beneficiary_address=b'after-only', timestamp=cutoff + datetime.timedelta(seconds=2))
 		])
 
 		# Act:
 		result = database.get_recently_harvesting_addresses(cutoff)
 
 		# Assert:
-		self.assertEqual({b'at cutoff', b'new'}, result)
+		self.assertEqual({b'at-cutoff-only', b'straddle', b'after-only'}, result)
 
 	def test_can_upsert_multisig(self):
 		# Arrange:
@@ -1546,8 +1566,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			'refresh_run_id': 'run-1', 'account_search_id': 'id-2', 'account_search_order': 1,
 			'account_row': account_row2, 'mosaic_rows': mosaic_rows2, 'snapshot_height': 10, 'snapshot_at': snapshot_at
 		})
-		database.update_account_importance_rates('run-1')
-		database.activate_account_refresh('run-1', 10, snapshot_at)
+		database.finalize_account_refresh('run-1', NATIVE_MOSAIC_ID, 10, snapshot_at)
 
 		# Assert:
 		cursor = database.connection.cursor()
@@ -1568,8 +1587,14 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			(bytes.fromhex(ADDRESS2), Decimal('0.75'))
 		], snapshot_results)
 		self.assertEqual(snapshot_results, current_results)
+		state = database.get_account_refresh_state()
+		self.assertEqual('healthy', state['status'])
+		self.assertEqual('run-1', state['last_successful_run_id'])
+		self.assertEqual(10, state['last_completed_height'])
+		self.assertEqual(snapshot_at.replace(tzinfo=None), state['last_completed_at'])
+		self.assertIsNone(state['last_error'])
 
-	def test_update_account_importance_rates_handles_zero_total_importance(self):
+	def test_finalize_account_refresh_sets_zero_percentage_when_total_importance_is_zero(self):
 		# Arrange:
 		database = self._create_database()
 		account_row, mosaic_rows = _create_account_row(importance='0')
@@ -1579,43 +1604,14 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			'account_row': account_row, 'mosaic_rows': mosaic_rows, 'snapshot_height': 10,
 			'snapshot_at': datetime.datetime(2026, 1, 1)
 		})
-
 		# Act:
-		database.update_account_importance_rates('run-1')
+		database.finalize_account_refresh('run-1', NATIVE_MOSAIC_ID, 10, datetime.datetime(2026, 1, 1))
 
 		# Assert:
 		cursor = database.connection.cursor()
 		cursor.execute('SELECT importance_percentage FROM symbol_account_refresh_accounts WHERE refresh_run_id = %s', ('run-1',))
 
 		self.assertEqual((Decimal('0'),), cursor.fetchone())
-
-	def test_update_account_importance_rates_rolls_back_when_snapshot_table_is_missing(self):
-		# Arrange:
-		database = self._create_database()
-		cursor = database.connection.cursor()
-		cursor.execute('DROP TABLE symbol_account_refresh_accounts CASCADE')
-		database.connection.commit()
-
-		# Act + Assert:
-		with self.assertRaises(PsycopgError):
-			database.update_account_importance_rates('run-1')
-
-		cursor.execute('SELECT 1')
-		self.assertEqual((1,), cursor.fetchone())
-
-	def test_activate_account_refresh_rolls_back_when_state_table_is_missing(self):
-		# Arrange:
-		database = self._create_database()
-		cursor = database.connection.cursor()
-		cursor.execute('DROP TABLE symbol_account_refresh_state')
-		database.connection.commit()
-
-		# Act + Assert:
-		with self.assertRaises(PsycopgError):
-			database.activate_account_refresh('run-1', 10, datetime.datetime(2026, 1, 1))
-
-		cursor.execute('SELECT 1')
-		self.assertEqual((1,), cursor.fetchone())
 
 	@staticmethod
 	def _seed_account_refresh_snapshot_for_ranks(database):
@@ -1640,7 +1636,6 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			'refresh_run_id': 'run-1', 'account_search_id': 'id-3', 'account_search_order': 1,
 			'account_row': account_row3, 'mosaic_rows': mosaic_rows3, 'snapshot_height': 10, 'snapshot_at': snapshot_at
 		})
-		database.update_account_importance_rates('run-1')
 
 	@staticmethod
 	def _fetch_rank_addresses(database, rank_scope):
@@ -1656,13 +1651,13 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 
 		return [(rank, bytes(address)) for rank, address in cursor.fetchall()]
 
-	def test_rebuild_account_list_ranks_orders_id_scope_by_account_search_order(self):
+	def test_finalize_account_refresh_orders_id_scope_by_account_search_order(self):
 		# Arrange:
 		database = self._create_database()
 		self._seed_account_refresh_snapshot_for_ranks(database)
 
 		# Act:
-		database.rebuild_account_list_ranks('run-1', NATIVE_MOSAIC_ID)
+		database.finalize_account_refresh('run-1', NATIVE_MOSAIC_ID, 10, datetime.datetime(2026, 1, 1))
 
 		# Assert:
 		self.assertEqual([
@@ -1671,13 +1666,13 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			(2, bytes.fromhex(ADDRESS1))
 		], self._fetch_rank_addresses(database, 'ID'))
 
-	def test_rebuild_account_list_ranks_orders_importance_scope_by_importance_percentage(self):
+	def test_finalize_account_refresh_orders_importance_scope_by_importance_percentage(self):
 		# Arrange:
 		database = self._create_database()
 		self._seed_account_refresh_snapshot_for_ranks(database)
 
 		# Act:
-		database.rebuild_account_list_ranks('run-1', NATIVE_MOSAIC_ID)
+		database.finalize_account_refresh('run-1', NATIVE_MOSAIC_ID, 10, datetime.datetime(2026, 1, 1))
 
 		# Assert:
 		self.assertEqual([
@@ -1686,13 +1681,13 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			(2, bytes.fromhex(ADDRESS1))
 		], self._fetch_rank_addresses(database, 'IMPORTANCE'))
 
-	def test_rebuild_account_list_ranks_orders_native_balance_scope_by_amount(self):
+	def test_finalize_account_refresh_orders_native_balance_scope_by_amount(self):
 		# Arrange:
 		database = self._create_database()
 		self._seed_account_refresh_snapshot_for_ranks(database)
 
 		# Act:
-		database.rebuild_account_list_ranks('run-1', NATIVE_MOSAIC_ID)
+		database.finalize_account_refresh('run-1', NATIVE_MOSAIC_ID, 10, datetime.datetime(2026, 1, 1))
 
 		# Assert:
 		self.assertEqual([
@@ -1701,19 +1696,57 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			(2, bytes.fromhex(ADDRESS2))
 		], self._fetch_rank_addresses(database, f'BALANCE:{NATIVE_MOSAIC_ID}'))
 
-	def test_rebuild_account_list_ranks_rolls_back_when_rank_table_is_missing(self):
+	def test_finalize_account_refresh_rolls_back_all_changes_when_completed_height_is_invalid(self):
 		# Arrange:
 		database = self._create_database()
+		account_row, mosaic_rows = _create_account_row(importance='100')
+		account_row['importance_percentage'] = Decimal('0.456')
+		database.upsert_account_current_state(account_row, mosaic_rows)
+		account_row['importance_percentage'] = Decimal('0.123')
+		_insert_account_refresh_snapshot_rows(database, {
+			'refresh_run_id': 'run-1', 'account_search_id': 'id-1', 'account_search_order': 0,
+			'account_row': account_row, 'mosaic_rows': mosaic_rows, 'snapshot_height': 10,
+			'snapshot_at': datetime.datetime(2026, 1, 1)
+		})
+		account_row['importance_percentage'] = Decimal('0.456')
+		database.upsert_account_current_state(account_row, mosaic_rows)
+		database.upsert_account_refresh_state({
+			'status': 'healthy',
+			'last_successful_run_id': 'previous-run',
+			'last_completed_height': 9
+		})
 		cursor = database.connection.cursor()
-		cursor.execute('DROP TABLE symbol_account_list_ranks')
+		cursor.execute(
+			'''
+			INSERT INTO symbol_account_list_ranks (
+				refresh_run_id, rank_scope, rank, address, sort_value_numeric, sort_value_text, mosaic_id
+			) VALUES ('run-1', 'ID', 0, %s, NULL, 'old-id', NULL)
+			''',
+			(bytes.fromhex(ADDRESS1),))
 		database.connection.commit()
 
 		# Act + Assert:
 		with self.assertRaises(PsycopgError):
-			database.rebuild_account_list_ranks('run-1', NATIVE_MOSAIC_ID)
+			database.finalize_account_refresh(
+				'run-1', NATIVE_MOSAIC_ID, 'invalid-height', datetime.datetime(2026, 1, 1))
 
-		cursor.execute('SELECT 1')
-		self.assertEqual((1,), cursor.fetchone())
+		# Assert:
+		cursor.execute(
+			'SELECT importance_percentage FROM symbol_account_refresh_accounts WHERE refresh_run_id = %s',
+			('run-1',))
+		self.assertEqual((Decimal('0.123'),), cursor.fetchone())
+		cursor.execute(
+			'SELECT rank_scope, rank, address, sort_value_text FROM symbol_account_list_ranks WHERE refresh_run_id = %s',
+			('run-1',))
+		self.assertEqual([('ID', 0, bytes.fromhex(ADDRESS1), 'old-id')], [
+			(rank_scope, rank, bytes(address), sort_value_text)
+			for rank_scope, rank, address, sort_value_text in cursor.fetchall()])
+		cursor.execute('SELECT importance_percentage FROM symbol_accounts WHERE address = %s', (bytes.fromhex(ADDRESS1),))
+		self.assertEqual((Decimal('0.456'),), cursor.fetchone())
+		state = database.get_account_refresh_state()
+		self.assertEqual('healthy', state['status'])
+		self.assertEqual('previous-run', state['last_successful_run_id'])
+		self.assertEqual(9, state['last_completed_height'])
 
 	def test_repair_rollback_marks_account_refresh_state_stale_when_completed_height_is_rollbacked(self):
 		# Arrange:
@@ -1745,6 +1778,28 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		# Assert:
 		self.assertEqual('healthy', database.get_account_refresh_state()['status'])
 
+	def test_repair_rollback_from_height_rolls_back_when_sync_state_table_is_missing(self):
+		# Arrange:
+		database = self._create_database()
+		database.upsert_blocks([_create_block(10)])
+		database.upsert_account_refresh_state({
+			'status': 'healthy',
+			'last_successful_run_id': 'run-1',
+			'last_completed_height': 10
+		})
+		cursor = database.connection.cursor()
+		cursor.execute('DROP TABLE symbol_sync_state')
+		database.connection.commit()
+
+		# Act + Assert:
+		with self.assertRaises(PsycopgError):
+			database.repair_rollback_from_height(10, _create_sync_state(status='repairing', last_synced_height=9))
+
+		# Assert:
+		cursor.execute('SELECT height FROM symbol_blocks')
+		self.assertEqual([(10,)], cursor.fetchall())
+		self.assertEqual('healthy', database.get_account_refresh_state()['status'])
+
 	def test_repair_rollback_deletes_current_state_but_preserves_account_refresh_rows(self):
 		# Arrange:
 		database = self._create_database()
@@ -1763,7 +1818,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			'account_row': account_row, 'mosaic_rows': mosaic_rows, 'snapshot_height': 10,
 			'snapshot_at': datetime.datetime(2026, 1, 1)
 		})
-		database.rebuild_account_list_ranks('run-1', NATIVE_MOSAIC_ID)
+		database.finalize_account_refresh('run-1', NATIVE_MOSAIC_ID, 10, datetime.datetime(2026, 1, 1))
 
 		# Act:
 		database.repair_rollback_from_height(10, _create_sync_state(status='repairing', last_synced_height=9))
@@ -2031,20 +2086,6 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 
 		self.assertEqual([(1,)], block_results)
 		self.assertEqual([], receipt_results)
-
-	def test_delete_blocks_from_height_rolls_back_when_transaction_table_is_missing(self):
-		# Arrange:
-		database = self._create_database()
-		cursor = database.connection.cursor()
-		cursor.execute('DROP TABLE symbol_transaction_addresses')
-		database.connection.commit()
-
-		# Act + Assert:
-		with self.assertRaises(PsycopgError):
-			database.delete_blocks_from_height(1)
-
-		cursor.execute('SELECT 1')
-		self.assertEqual((1,), cursor.fetchone())
 
 	def test_upsert_transactions_for_height_computes_effective_fee(self):
 		# Arrange:

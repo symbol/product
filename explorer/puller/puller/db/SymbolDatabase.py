@@ -1,5 +1,8 @@
 # pylint: disable=too-many-lines
+from contextlib import contextmanager
+
 from psycopg2.extras import Json
+from zenlog import log
 
 from puller.model.symbol.Account import ACCOUNT_TYPE_VALUES
 from puller.model.symbol.Block import BLOCK_TYPE_VALUES
@@ -175,6 +178,24 @@ SYMBOL_ACCOUNT_LIST_RANK_DEFINITIONS = [
 	'updated_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP',
 	'PRIMARY KEY (refresh_run_id, rank_scope, rank)'
 ]
+ACCOUNT_REFRESH_INDEXES = [
+	'CREATE INDEX IF NOT EXISTS idx_symbol_account_refresh_accounts_importance_desc '
+	'ON symbol_account_refresh_accounts(refresh_run_id, importance_percentage DESC, address)',
+	'CREATE INDEX IF NOT EXISTS idx_symbol_account_refresh_accounts_search_order '
+	'ON symbol_account_refresh_accounts(refresh_run_id, account_search_order ASC, address)',
+	'CREATE INDEX IF NOT EXISTS idx_symbol_account_refresh_accounts_search_id '
+	'ON symbol_account_refresh_accounts(refresh_run_id, account_search_id, address)',
+	'CREATE INDEX IF NOT EXISTS idx_symbol_account_refresh_accounts_address_text '
+	'ON symbol_account_refresh_accounts(refresh_run_id, address_text)',
+	'CREATE INDEX IF NOT EXISTS idx_symbol_account_refresh_mosaics_mosaic_amount_desc '
+	'ON symbol_account_refresh_mosaics(refresh_run_id, mosaic_id, amount DESC, address)',
+	'CREATE INDEX IF NOT EXISTS idx_symbol_account_refresh_mosaics_address '
+	'ON symbol_account_refresh_mosaics(refresh_run_id, address)',
+	'CREATE INDEX IF NOT EXISTS idx_symbol_account_list_ranks_page '
+	'ON symbol_account_list_ranks(refresh_run_id, rank_scope, rank)',
+	'CREATE INDEX IF NOT EXISTS idx_symbol_account_list_ranks_address '
+	'ON symbol_account_list_ranks(refresh_run_id, rank_scope, address)'
+]
 SYMBOL_TRANSACTION_DEFINITIONS = [
 	'id bigserial PRIMARY KEY',
 	'hash bytea UNIQUE',
@@ -294,6 +315,8 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 		_create_table(cursor, 'symbol_account_list_ranks', SYMBOL_ACCOUNT_LIST_RANK_DEFINITIONS)
 		for index_sql in ACCOUNT_REFRESH_STATE_INDEXES:
 			cursor.execute(index_sql)
+		for index_sql in ACCOUNT_REFRESH_INDEXES:
+			cursor.execute(index_sql)
 		cursor.execute('CREATE SEQUENCE IF NOT EXISTS symbol_transaction_list_sequence_seq')
 		_create_table(cursor, 'symbol_transactions', SYMBOL_TRANSACTION_DEFINITIONS)
 		_create_table(cursor, 'symbol_transaction_mosaics', SYMBOL_TRANSACTION_MOSAIC_DEFINITIONS)
@@ -308,30 +331,6 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 		cursor.execute('CREATE INDEX IF NOT EXISTS idx_symbol_accounts_eligible ON symbol_accounts(is_eligible_for_harvesting)')
 		cursor.execute('CREATE INDEX IF NOT EXISTS idx_symbol_account_mosaics_address ON symbol_account_mosaics(address)')
 		cursor.execute('CREATE INDEX IF NOT EXISTS idx_symbol_account_mosaics_mosaic ON symbol_account_mosaics(mosaic_id)')
-		cursor.execute(
-			'CREATE INDEX IF NOT EXISTS idx_symbol_account_refresh_accounts_importance_desc '
-			'ON symbol_account_refresh_accounts(refresh_run_id, importance_percentage DESC, address)')
-		cursor.execute(
-			'CREATE INDEX IF NOT EXISTS idx_symbol_account_refresh_accounts_search_order '
-			'ON symbol_account_refresh_accounts(refresh_run_id, account_search_order ASC, address)')
-		cursor.execute(
-			'CREATE INDEX IF NOT EXISTS idx_symbol_account_refresh_accounts_search_id '
-			'ON symbol_account_refresh_accounts(refresh_run_id, account_search_id, address)')
-		cursor.execute(
-			'CREATE INDEX IF NOT EXISTS idx_symbol_account_refresh_accounts_address_text '
-			'ON symbol_account_refresh_accounts(refresh_run_id, address_text)')
-		cursor.execute(
-			'CREATE INDEX IF NOT EXISTS idx_symbol_account_refresh_mosaics_mosaic_amount_desc '
-			'ON symbol_account_refresh_mosaics(refresh_run_id, mosaic_id, amount DESC, address)')
-		cursor.execute(
-			'CREATE INDEX IF NOT EXISTS idx_symbol_account_refresh_mosaics_address '
-			'ON symbol_account_refresh_mosaics(refresh_run_id, address)')
-		cursor.execute(
-			'CREATE INDEX IF NOT EXISTS idx_symbol_account_list_ranks_page '
-			'ON symbol_account_list_ranks(refresh_run_id, rank_scope, rank)')
-		cursor.execute(
-			'CREATE INDEX IF NOT EXISTS idx_symbol_account_list_ranks_address '
-			'ON symbol_account_list_ranks(refresh_run_id, rank_scope, address)')
 		cursor.execute('''
 			CREATE INDEX IF NOT EXISTS idx_symbol_transactions_height_desc
 			ON symbol_transactions(height DESC, id DESC)
@@ -442,27 +441,42 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 
 		return dict(zip(ACCOUNT_REFRESH_STATE_COLUMNS, result)) if result else None
 
-	def upsert_account_refresh_state(self, refresh_state):
-		"""Upserts supplied fields on the singleton Symbol account refresh state."""
-
+	@contextmanager
+	def _transaction(self):
 		try:
 			cursor = self.connection.cursor()
-			self._execute_upsert_account_refresh_state(cursor, refresh_state)
+			yield cursor
 			self.connection.commit()
 		except Exception:
 			self.connection.rollback()
 			raise
 
-	def acquire_account_refresh_lock(self):
+	def upsert_account_refresh_state(self, refresh_state):
+		"""Upserts supplied fields on the singleton Symbol account refresh state."""
+
+		with self._transaction() as cursor:
+			self._execute_upsert_account_refresh_state(cursor, refresh_state)
+
+	@contextmanager
+	def account_refresh_lock(self):
 		"""Serializes account refresh and rollback operations across processes."""
 
 		cursor = self.connection.cursor()
 		cursor.execute("SELECT pg_advisory_lock(hashtext('symbol_account_refresh'))")
 		self.connection.commit()
+		body_succeeded = False
+		try:
+			yield
+			body_succeeded = True
+		finally:
+			try:
+				self._release_account_refresh_lock()
+			except Exception as unlock_error:  # pylint: disable=broad-exception-caught
+				if body_succeeded:
+					raise
+				log.error(f'Failed to release Symbol account refresh lock: {unlock_error}')
 
-	def release_account_refresh_lock(self):
-		"""Releases the database-backed account refresh lock."""
-
+	def _release_account_refresh_lock(self):
 		self.connection.rollback()
 		cursor = self.connection.cursor()
 		cursor.execute("SELECT pg_advisory_unlock(hashtext('symbol_account_refresh'))")
@@ -471,17 +485,12 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 	def mark_account_refresh_failed(self, last_error):
 		"""Records a failed refresh after clearing any aborted transaction."""
 
-		try:
-			self.connection.rollback()
-			cursor = self.connection.cursor()
+		self.connection.rollback()
+		with self._transaction() as cursor:
 			self._execute_upsert_account_refresh_state(cursor, {
 				'status': 'unhealthy',
 				'last_error': last_error
 			})
-			self.connection.commit()
-		except Exception:
-			self.connection.rollback()
-			raise
 
 	@staticmethod
 	def _execute_upsert_account_refresh_state(cursor, refresh_state):
@@ -522,17 +531,12 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 	):
 		"""Upserts one Symbol account current-state row and replaces its current mosaic rows."""
 
-		try:
-			cursor = self.connection.cursor()
+		with self._transaction() as cursor:
 			self._execute_upsert_account_current_state(
 				cursor,
 				account_row,
 				mosaic_rows,
 				overwrite_is_harvesting_active)
-			self.connection.commit()
-		except Exception:
-			self.connection.rollback()
-			raise
 
 	@staticmethod
 	def _execute_upsert_account_current_state(
@@ -758,8 +762,7 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 	def upsert_account_refresh_page(self, account_entries, last_scanned_page):
 		"""Upserts one account refresh page's current-state rows, snapshot rows, and diagnostic cursor in one transaction."""
 
-		try:
-			cursor = self.connection.cursor()
+		with self._transaction() as cursor:
 			for entry in account_entries:
 				self._execute_upsert_account_current_state(
 					cursor,
@@ -776,16 +779,11 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 					entry['snapshot_height'],
 					entry['snapshot_at'])
 			self._execute_upsert_account_refresh_state(cursor, {'last_scanned_page': last_scanned_page})
-			self.connection.commit()
-		except Exception:
-			self.connection.rollback()
-			raise
 
-	def update_account_importance_rates(self, refresh_run_id):
-		"""Updates snapshot importance percentages for an account refresh run."""
+	def finalize_account_refresh(self, refresh_run_id, native_mosaic_id, completed_height, completed_at):
+		"""Publishes one refresh run: importance rates, list ranks, current-state importance, success marker."""
 
-		try:
-			cursor = self.connection.cursor()
+		with self._transaction() as cursor:
 			cursor.execute(
 				'''
 				SELECT COALESCE(SUM(importance), 0)
@@ -804,43 +802,7 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 				WHERE refresh_run_id = %s
 				''',
 				(total_importance, total_importance, refresh_run_id))
-			self.connection.commit()
-		except Exception:
-			self.connection.rollback()
-			raise
 
-	def activate_account_refresh(self, refresh_run_id, completed_height, completed_at):
-		"""Publishes current-state importance and the successful refresh marker atomically."""
-
-		try:
-			cursor = self.connection.cursor()
-			cursor.execute(
-				'''
-				UPDATE symbol_accounts
-				SET importance_percentage = snapshot.importance_percentage,
-					updated_at = CURRENT_TIMESTAMP
-				FROM symbol_account_refresh_accounts snapshot
-				WHERE symbol_accounts.address = snapshot.address
-					AND snapshot.refresh_run_id = %s
-				''',
-				(refresh_run_id,))
-			self._execute_upsert_account_refresh_state(cursor, {
-				'status': 'healthy',
-				'last_successful_run_id': refresh_run_id,
-				'last_completed_at': completed_at,
-				'last_completed_height': completed_height,
-				'last_error': None
-			})
-			self.connection.commit()
-		except Exception:
-			self.connection.rollback()
-			raise
-
-	def rebuild_account_list_ranks(self, refresh_run_id, native_mosaic_id):
-		"""Rebuilds account list rank scopes for one account refresh run."""
-
-		try:
-			cursor = self.connection.cursor()
 			cursor.execute('DELETE FROM symbol_account_list_ranks WHERE refresh_run_id = %s', (refresh_run_id,))
 			cursor.execute(
 				'''
@@ -911,10 +873,23 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 				WHERE refresh_run_id = %s AND mosaic_id = %s
 				''',
 				(f'BALANCE:{native_mosaic_id}', native_mosaic_id, refresh_run_id, native_mosaic_id))
-			self.connection.commit()
-		except Exception:
-			self.connection.rollback()
-			raise
+			cursor.execute(
+				'''
+				UPDATE symbol_accounts
+				SET importance_percentage = snapshot.importance_percentage,
+					updated_at = CURRENT_TIMESTAMP
+				FROM symbol_account_refresh_accounts snapshot
+				WHERE symbol_accounts.address = snapshot.address
+					AND snapshot.refresh_run_id = %s
+				''',
+				(refresh_run_id,))
+			self._execute_upsert_account_refresh_state(cursor, {
+				'status': 'healthy',
+				'last_successful_run_id': refresh_run_id,
+				'last_completed_at': completed_at,
+				'last_completed_height': completed_height,
+				'last_error': None
+			})
 
 	def get_block_hash(self, height):
 		"""Gets a block hash by height."""
@@ -943,33 +918,19 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 	def delete_blocks_from_height(self, height):
 		"""Deletes blocks from the supplied height for rollback repair."""
 
-		self.acquire_account_refresh_lock()
-		try:
-			cursor = self.connection.cursor()
-			self._delete_rollback_affected_rows_from_height(cursor, height)
-			self._stale_mark_account_refresh_state_if_needed(cursor, height)
-			self.connection.commit()
-		except Exception:
-			self.connection.rollback()
-			raise
-		finally:
-			self.release_account_refresh_lock()
+		with self.account_refresh_lock():
+			with self._transaction() as cursor:
+				self._delete_rollback_affected_rows_from_height(cursor, height)
+				self._stale_mark_account_refresh_state_if_needed(cursor, height)
 
 	def repair_rollback_from_height(self, height, sync_state):
 		"""Deletes rollbacked blocks and updates sync state in one transaction."""
 
-		self.acquire_account_refresh_lock()
-		try:
-			cursor = self.connection.cursor()
-			self._delete_rollback_affected_rows_from_height(cursor, height)
-			self._stale_mark_account_refresh_state_if_needed(cursor, height)
-			self._execute_upsert_sync_state(cursor, sync_state)
-			self.connection.commit()
-		except Exception:
-			self.connection.rollback()
-			raise
-		finally:
-			self.release_account_refresh_lock()
+		with self.account_refresh_lock():
+			with self._transaction() as cursor:
+				self._delete_rollback_affected_rows_from_height(cursor, height)
+				self._stale_mark_account_refresh_state_if_needed(cursor, height)
+				self._execute_upsert_sync_state(cursor, sync_state)
 
 	@staticmethod
 	def _delete_rollback_affected_rows_from_height(cursor, height):
