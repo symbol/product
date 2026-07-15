@@ -190,7 +190,7 @@ const AccountInfo = ({ accountInfo, preloadedTransactions }) => {
 						</Field>
 						{!!accountInfo.remoteAddress && (
 							<Field title={t('field_remoteAccount')}>
-								<ValueAccount address={accountInfo.remoteAddress} size="md" />
+								<ValueAccount address={accountInfo.remoteAddress} size="md" isWrapDisabled />
 							</Field>
 						)}
 						<Field title={t('field_height')} description={t('field_account_height_description')}>

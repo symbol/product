@@ -6,14 +6,14 @@ import { createPageHref, handleNavigationItemClick, truncateString, useStorage }
 import Link from 'next/link';
 import { useState } from 'react';
 
-const ValueAccount = ({ address, size, raw, position, className, isNavigationDisabled, isCopyDisabled, onClick }) => {
+const ValueAccount = ({ address, size, raw, position, className, isNavigationDisabled, isCopyDisabled, isWrapDisabled, onClick }) => {
 	const [name, setName] = useState();
 	useStorage(STORAGE_KEY.ADDRESS_BOOK, [], addressBook => {
 		const name = addressBook.find(item => item.address === address)?.name;
 		setName(name);
 	});
 	let containerStyle = '';
-	const textStyle = size === 'md' ? styles.textMd : '';
+	const textStyle = size === 'md' ? (isWrapDisabled ? styles.textMdNoWrap : styles.textMd) : '';
 	const displayedText = !raw && name ? `${name} (${truncateString(address, 'address-short')})` : address;
 
 	switch (position) {

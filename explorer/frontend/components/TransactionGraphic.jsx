@@ -147,8 +147,8 @@ const TransactionGraphic = ({ transactions }) => {
 							</Field>
 						)}
 						{!!item.remoteAccount && (
-							<Field title={t('field_remoteAccount')}>
-								<ValueAccount address={item.remoteAccount} size="md" />
+							<Field title={t('field_account')}>
+								<ValueAccount address={item.remoteAccount} size="md" isWrapDisabled />
 							</Field>
 						)}
 					</div>
