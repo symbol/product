@@ -238,7 +238,7 @@ class NemDatabase(DatabaseConnection):
 				is_inner boolean NOT NULL,
 				payload jsonb,
 				size int NOT NULL,
-				schema_version int NOT NULL
+				version int NOT NULL
 			)
 			'''
 		)
@@ -653,7 +653,7 @@ class NemDatabase(DatabaseConnection):
 				is_inner,
 				payload,
 				size,
-				schema_version
+				version
 			)
 			VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
 			RETURNING id
@@ -672,7 +672,7 @@ class NemDatabase(DatabaseConnection):
 				transaction.is_inner,
 				json.dumps(transaction.payload) if transaction.payload else None,
 				transaction.size,
-				transaction.schema_version
+				transaction.version
 			)
 		)
 

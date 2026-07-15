@@ -1131,7 +1131,7 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 			recipient_address=recipient_address,
 			payload=payload,
 			size=transaction.size,
-			schema_version=transaction.schema_version
+			version=transaction.version
 		))
 
 	def test_can_build_transaction_record_transfer(self):

@@ -83,7 +83,7 @@ TransactionRecord = namedtuple('TransactionRecord', [
 	'recipient_address',
 	'payload',
 	'size',
-	'schema_version'
+	'version'
 ])
 DatabaseConfig = namedtuple('DatabaseConfig', ['database', 'user', 'password', 'host', 'port'])
 
@@ -520,7 +520,7 @@ class NemPuller:
 			recipient_address=recipient_address,
 			payload=payload,
 			size=transaction.size,
-			schema_version=transaction.schema_version
+			version=transaction.version
 		)
 
 	def _process_transaction(self, cursor, transaction, block_height, is_inner):

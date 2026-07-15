@@ -97,7 +97,7 @@ TRANSACTIONS = [
 		recipient_address=Address('TBZWVEKB2XMTO4F3RAOEIBWRBMPQ5N23G56ZJM4I'),
 		payload='{}',
 		size=184,
-		schema_version=1
+		version=1
 	)
 ]
 
@@ -986,7 +986,7 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 					is_inner,
 					payload,
 					size,
-					schema_version
+					version
 				FROM transactions
 				WHERE id = %s
 				''',
