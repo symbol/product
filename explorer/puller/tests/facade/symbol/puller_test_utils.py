@@ -444,6 +444,9 @@ class FakeConnector:  # pylint: disable=too-many-instance-attributes
 				for namespace_id in request_payload['namespaceIds']
 			]
 		if 'mosaics' == url_path:
+			if self.mosaics_response is not None:
+				return self.mosaics_response
+
 			items = []
 			for mosaic_id in request_payload['mosaicIds']:
 				if mosaic_id not in self.mosaics_by_id:

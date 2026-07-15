@@ -343,7 +343,6 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			)
 		], cursor.fetchall())
 
-	def test_upsert_namespace_persists_fresh_namespace_and_full_alias_row_set(self):
 	def test_create_tables_creates_symbol_mosaic_columns(self):
 		# Arrange:
 		database = self._create_uninitialized_database()
@@ -406,6 +405,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			'idx_symbol_mosaics_updated_height'
 		], [row[0] for row in cursor.fetchall()])
 
+	def test_upsert_namespace_persists_fresh_namespace_and_full_alias_row_set(self):
 		# Arrange:
 		database = self._create_database()
 		namespace_row = _create_namespace_row()
@@ -912,6 +912,20 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			updated_row['owner_address'].hex(), 4, 7, 11, 99, 3, 9, True, False, False, True, ['updated-name'],
 			updated_row['raw_payload'], 456
 		)], cursor.fetchall())
+
+	def test_upsert_mosaic_rolls_back_failed_write_and_keeps_connection_usable(self):
+		# Arrange:
+		database = self._create_database()
+		valid_row = create_expected_mosaic_row(create_mosaic_item(), 123)
+		invalid_row = {**valid_row, 'owner_address': None}
+
+		# Act:
+		with self.assertRaises(PsycopgError):
+			database.upsert_mosaic(invalid_row)
+		database.upsert_mosaic(valid_row)
+
+		# Assert:
+		self.assertEqual(valid_row['mosaic_id'], _fetch_mosaic_state(database)[0][0])
 
 	def test_upsert_namespace_refreshes_existing_mosaic_alias_names(self):
 		# Arrange:
@@ -2792,9 +2806,12 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		original_namespace_state = fetch_namespace_state(database.connection)
 		original_refresh_state = database.get_account_refresh_state()
 		refreshed_row = _create_namespace_row(
-			alias_mosaic_id='mosaic-new',
+			alias_mosaic_id='mosaic-refreshed',
 			raw_payload={'namespace': {'state': 'new'}},
 			observed_height=9)
+		refreshed_mosaic_row = create_expected_mosaic_row(
+			create_mosaic_item(mosaic_id='mosaic-original', supply='99'),
+			9)
 		cursor = database.connection.cursor()
 		cursor.execute('DROP TABLE symbol_sync_state')
 		database.connection.commit()
@@ -2804,13 +2821,13 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			database.repair_rollback_from_height(10, _create_sync_state(status='repairing', last_synced_height=9), [
 				{'row': refreshed_row, 'alias_rows': _create_alias_name_rows(refreshed_row)},
 				{'namespace_id': deleted_row['namespace_id']}
+			], [
+				{'row': refreshed_mosaic_row},
+				{'mosaic_id': 'mosaic-gone'}
 			])
 
 		# Assert:
-		cursor = database.connection.cursor()
-		cursor.execute('SELECT height, hash FROM symbol_blocks ORDER BY height')
-		self.assertEqual([(9, b'hash 9'), (10, b'hash 10')], [
-			(height, bytes(block_hash)) for height, block_hash in cursor.fetchall()])
+		self.assertEqual(original_block_state, _fetch_block_state(database))
 		self.assertEqual(original_refresh_state, database.get_account_refresh_state())
 		self.assertEqual(original_namespace_state, fetch_namespace_state(database.connection))
 

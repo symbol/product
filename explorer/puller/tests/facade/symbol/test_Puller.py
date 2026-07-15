@@ -3,6 +3,7 @@ import tempfile
 from unittest import TestCase
 from unittest.mock import AsyncMock, MagicMock, patch
 
+from symbolchain.sc import TransactionType
 from symbollightapi.model.Exceptions import NodeException
 
 from puller.facade.SymbolPuller import SymbolPuller

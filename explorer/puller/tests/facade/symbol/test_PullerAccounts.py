@@ -789,7 +789,7 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):  # pylint: disable=too-man
 
 		# Act:
 		with self.assertRaises(PsycopgError):
-			database.repair_rollback_from_height(1, sync_state, [])
+			database.repair_rollback_from_height(1, sync_state, [], [])
 
 	def test_refresh_accounts_can_restart_with_new_successful_run(self):  # pylint: disable=too-many-locals
 		# Arrange:
