@@ -8,6 +8,18 @@ export const TRANSACTION_TYPE = {
 	MULTISIG: 'MULTISIG'
 };
 
+export const MESSAGE_TYPE = {
+	PLAIN: 'plain',
+	ENCRYPTED: 'encrypted',
+	RAW: 'raw'
+};
+
+export const TRANSACTION_GROUP = {
+	CONFIRMED: 'confirmed',
+	UNCONFIRMED: 'unconfirmed',
+	PARTIAL: 'partial'
+};
+
 export const TRANSACTION_DIRECTION = {
 	INCOMING: 'incoming',
 	OUTGOING: 'outgoing'

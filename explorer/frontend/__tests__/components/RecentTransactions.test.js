@@ -1,6 +1,6 @@
 import '@testing-library/jest-dom';
 import RecentTransactions from '@/app/components/RecentTransactions';
-import { TRANSACTION_TYPE } from '@/app/constants';
+import { TRANSACTION_GROUP, TRANSACTION_TYPE } from '@/app/constants';
 import { render, screen } from '@testing-library/react';
 import TimeAgo from 'javascript-time-ago';
 import en from 'javascript-time-ago/locale/en.json';
@@ -22,7 +22,7 @@ describe('components/RecentTransactions', () => {
 
 	const runUnconfirmedTest = (type, expectedStatusText, unexpectedStatusText) => {
 		// Arrange:
-		const data = [{ ...baseTransaction, type, group: 'unconfirmed' }];
+		const data = [{ ...baseTransaction, type, group: TRANSACTION_GROUP.UNCONFIRMED }];
 
 		// Act:
 		render(<RecentTransactions data={data} blockTime={blockTime} />);
@@ -43,7 +43,7 @@ describe('components/RecentTransactions', () => {
 
 	it('shows no pending status for confirmed transactions', () => {
 		// Arrange:
-		const data = [{ ...baseTransaction, type: TRANSACTION_TYPE.MULTISIG, group: 'confirmed' }];
+		const data = [{ ...baseTransaction, type: TRANSACTION_TYPE.MULTISIG, group: TRANSACTION_GROUP.CONFIRMED }];
 
 		// Act:
 		render(<RecentTransactions data={data} blockTime={blockTime} />);

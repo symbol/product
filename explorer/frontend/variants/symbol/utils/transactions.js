@@ -1,3 +1,5 @@
+import { SYMBOL_TRANSACTION_GROUP } from '../constants';
+
 /**
  * Checks whether a transaction is waiting for cosignatures before it can confirm. A Symbol
  * aggregate bonded transaction stays in the partial group until the required cosignatures are
@@ -5,4 +7,4 @@
  * @param {{ type: string, group: string }} transaction - the transaction to evaluate.
  * @returns {boolean} true when the transaction is awaiting cosignatures.
  */
-export const isTransactionAwaitingSignatures = transaction => transaction.group === 'partial';
+export const isTransactionAwaitingSignatures = transaction => transaction.group === SYMBOL_TRANSACTION_GROUP.PARTIAL;

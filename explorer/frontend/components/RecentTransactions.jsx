@@ -3,6 +3,7 @@ import IconTransactionType from './IconTransactionType';
 import ValueAge from './ValueAge';
 import ValueMosaic from './ValueMosaic';
 import ValueTransactionHash from './ValueTransactionHash';
+import { TRANSACTION_GROUP } from '@/app/constants';
 import styles from '@/app/styles/components/RecentTransactions.module.scss';
 import { createAssetURL } from '@/app/utils';
 import { utils } from '@/app/variants/utils';
@@ -12,7 +13,7 @@ const TransactionPreview = ({ type, group, signer, hash, timestamp, amount, bloc
 	const { t } = useTranslation();
 	const typeText = t(`transactionType_${type}`);
 	const labelSenderText = t('table_field_sender');
-	const isUnconfirmed = ['unconfirmed', 'partial'].includes(group);
+	const isUnconfirmed = [TRANSACTION_GROUP.UNCONFIRMED, TRANSACTION_GROUP.PARTIAL].includes(group);
 	const isAwaitingSignatures = utils.transactions.isTransactionAwaitingSignatures({ type, group });
 	const title = `${typeText}\n${labelSenderText}: ${signer}`;
 
