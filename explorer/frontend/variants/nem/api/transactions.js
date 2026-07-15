@@ -90,6 +90,8 @@ export const fetchTransactionInfo = createTryFetchInfoFunction(async hash => {
 		});
 	});
 
+    const { body } = transactionInfo;
+
 	const accountStateChange = [];
 
 	Object.keys(accountsStateMap).forEach(address => {
@@ -110,6 +112,7 @@ export const fetchTransactionInfo = createTryFetchInfoFunction(async hash => {
 
 	return {
 		...transactionInfo,
+		body,
 		accountStateChange
 	};
 });
@@ -327,6 +330,7 @@ const formatMultisigAccountModification = (data, filter) => {
 const formatAccountKeyLink = (data, filter) => {
 	const keyLinkAction = data.value[0].mode;
 	const publicKey = data.value[0].remoteAccount;
+	const remoteAccount = data.value[0].remoteAddress || null;
 
 	return {
 		...formatBaseTransaction(data, filter),
@@ -336,7 +340,8 @@ const formatAccountKeyLink = (data, filter) => {
 				sender: data.fromAddress,
 				targetAccount: data.fromAddress,
 				keyLinkAction,
-				publicKey
+				publicKey,
+				...(remoteAccount ? { remoteAccount } : {})
 			}
 		]
 	};
