@@ -66,12 +66,26 @@ class RecordingSymbolPuller:
 		self.synced_max_heights.append(max_height)
 
 
+class FailingRefreshSymbolPuller(RecordingSymbolPuller):
+	async def refresh_accounts(self):
+		raise RuntimeError('refresh failed')
+
+
 class RecordingSymbolPullerFactory:
 	def __init__(self):
 		self.puller = None
 
 	def __call__(self, *args, **kwargs):
 		self.puller = RecordingSymbolPuller(*args, **kwargs)
+		return self.puller
+
+
+class FailingRefreshSymbolPullerFactory:
+	def __init__(self):
+		self.puller = None
+
+	def __call__(self, *args, **kwargs):
+		self.puller = FailingRefreshSymbolPuller(*args, **kwargs)
 		return self.puller
 
 
