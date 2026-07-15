@@ -89,7 +89,7 @@ Transaction = namedtuple('Transaction', [
 	'recipient_address',
 	'payload',
 	'size',
-	'schema_version'
+	'version'
 ])
 TransactionMosaic = namedtuple('Transaction_Mosaic', [
 	'transaction_id',
@@ -261,7 +261,7 @@ TRANSACTIONS = [
 			'message': None
 		},
 		size=184,
-		schema_version=1
+		version=1
 	),
 	Transaction(  # Transfer transaction v2
 		transaction_hash='0' * 63 + '2',
@@ -282,7 +282,7 @@ TRANSACTIONS = [
 			}
 		},
 		size=202,
-		schema_version=2
+		version=2
 	),
 	Transaction(  # Account Link
 		transaction_hash='0' * 63 + '3',
@@ -301,7 +301,7 @@ TRANSACTIONS = [
 			'remote_account': 'a5f06d59b97aa40c82afb941a61fb6483bdb7491805cdb9dc47d92136983b9a5'
 		},
 		size=168,
-		schema_version=1
+		version=1
 	),
 	Transaction(  # Multisig account modification
 		transaction_hash='0' * 63 + '4',
@@ -325,7 +325,7 @@ TRANSACTIONS = [
 			]
 		},
 		size=176,
-		schema_version=1
+		version=1
 	),
 	Transaction(  # Multisig transaction
 		transaction_hash='0' * 63 + '5',
@@ -355,7 +355,7 @@ TRANSACTIONS = [
 			]
 		},
 		size=468,
-		schema_version=1
+		version=1
 	),
 	Transaction(  # inner Transfer transaction
 		transaction_hash='0' * 63 + '6',
@@ -373,7 +373,7 @@ TRANSACTIONS = [
 			'message': None
 		},
 		size=184,
-		schema_version=1
+		version=1
 	),
 	Transaction(  # Namespace registration
 		transaction_hash='0' * 63 + '7',
@@ -393,7 +393,7 @@ TRANSACTIONS = [
 			'namespace': 'namespace'
 		},
 		size=197,
-		schema_version=1
+		version=1
 	),
 	Transaction(  # Mosaic definition
 		transaction_hash='0' * 63 + '8',
@@ -426,7 +426,7 @@ TRANSACTIONS = [
 			}
 		},
 		size=464,
-		schema_version=1
+		version=1
 	),
 	Transaction(  # Mosaic supply change
 		transaction_hash='0' * 63 + '9',
@@ -446,7 +446,7 @@ TRANSACTIONS = [
 			'delta': 1000000
 		},
 		size=165,
-		schema_version=1
+		version=1
 	)
 ]
 
@@ -715,7 +715,7 @@ TRANSACTIONS_VIEWS = [
 		deadline=TRANSACTIONS[0].deadline,
 		signature=TRANSACTIONS[0].signature.upper(),
 		size=TRANSACTIONS[0].size,
-		schema_version=TRANSACTIONS[0].schema_version
+		version=TRANSACTIONS[0].version
 	),
 	TransactionView(
 		transaction_hash='0' * 63 + '2',
@@ -745,7 +745,7 @@ TRANSACTIONS_VIEWS = [
 		deadline=TRANSACTIONS[1].deadline,
 		signature=TRANSACTIONS[1].signature.upper(),
 		size=TRANSACTIONS[1].size,
-		schema_version=TRANSACTIONS[1].schema_version
+		version=TRANSACTIONS[1].version
 	),
 	TransactionView(
 		transaction_hash='0' * 63 + '3',
@@ -763,7 +763,7 @@ TRANSACTIONS_VIEWS = [
 		deadline=TRANSACTIONS[2].deadline,
 		signature=TRANSACTIONS[2].signature.upper(),
 		size=TRANSACTIONS[2].size,
-		schema_version=TRANSACTIONS[2].schema_version
+		version=TRANSACTIONS[2].version
 	),
 	TransactionView(
 		transaction_hash='0' * 63 + '4',
@@ -784,7 +784,7 @@ TRANSACTIONS_VIEWS = [
 		deadline=TRANSACTIONS[3].deadline,
 		signature=TRANSACTIONS[3].signature.upper(),
 		size=TRANSACTIONS[3].size,
-		schema_version=TRANSACTIONS[3].schema_version
+		version=TRANSACTIONS[3].version
 	),
 	TransactionView(
 		transaction_hash='0' * 63 + '5',
@@ -813,7 +813,7 @@ TRANSACTIONS_VIEWS = [
 		deadline=TRANSACTIONS[4].deadline,
 		signature=TRANSACTIONS[4].signature.upper(),
 		size=TRANSACTIONS[4].size,
-		schema_version=TRANSACTIONS[4].schema_version
+		version=TRANSACTIONS[4].version
 	),
 	TransactionView(
 		transaction_hash='0' * 63 + '7',
@@ -832,7 +832,7 @@ TRANSACTIONS_VIEWS = [
 		deadline=TRANSACTIONS[6].deadline,
 		signature=TRANSACTIONS[6].signature.upper(),
 		size=TRANSACTIONS[6].size,
-		schema_version=TRANSACTIONS[6].schema_version
+		version=TRANSACTIONS[6].version
 	),
 	TransactionView(
 		transaction_hash='0' * 63 + '8',
@@ -850,7 +850,7 @@ TRANSACTIONS_VIEWS = [
 		deadline=TRANSACTIONS[7].deadline,
 		signature=TRANSACTIONS[7].signature.upper(),
 		size=TRANSACTIONS[7].size,
-		schema_version=TRANSACTIONS[7].schema_version
+		version=TRANSACTIONS[7].version
 	),
 	TransactionView(
 		transaction_hash='0' * 63 + '9',
@@ -869,7 +869,7 @@ TRANSACTIONS_VIEWS = [
 		deadline=TRANSACTIONS[8].deadline,
 		signature=TRANSACTIONS[8].signature.upper(),
 		size=TRANSACTIONS[8].size,
-		schema_version=TRANSACTIONS[8].schema_version
+		version=TRANSACTIONS[8].version
 	),
 ]
 
@@ -1039,7 +1039,7 @@ def initialize_database(db_config, network_name):
 				is_inner boolean NOT NULL,
 				payload jsonb,
 				size int NOT NULL,
-				schema_version int NOT NULL
+				version int NOT NULL
 			)
 			'''
 		)
@@ -1200,7 +1200,7 @@ def initialize_database(db_config, network_name):
 					is_inner,
 					payload,
 					size,
-					schema_version
+					version
 				)
 				VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
 				''',
@@ -1218,7 +1218,7 @@ def initialize_database(db_config, network_name):
 					transaction.is_inner,
 					json.dumps(transaction.payload) if transaction.payload else None,
 					transaction.size,
-					transaction.schema_version
+					transaction.version
 				)
 			)
 

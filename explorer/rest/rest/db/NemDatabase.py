@@ -264,7 +264,7 @@ class NemDatabase(DatabaseConnectionPool):
 			deadline=str(transaction.deadline),
 			signature=_format_bytes(transaction.signature),
 			size=transaction.size,
-			schema_version=transaction.schema_version
+			version=transaction.version
 		)
 
 	@staticmethod
@@ -451,7 +451,7 @@ class NemDatabase(DatabaseConnectionPool):
 				t.payload,
 				COALESCE(m.mosaics, '[]'::json) AS mosaics,
 				t.size,
-				t.schema_version
+				t.version
 			FROM transactions t
 			LEFT JOIN LATERAL (
 				SELECT json_agg(json_build_object(
@@ -1056,7 +1056,7 @@ class NemDatabase(DatabaseConnectionPool):
 			payload=payload,
 			mosaics=mosaics,
 			size=transaction.size,
-			schema_version=transaction.schema_version
+			version=transaction.version
 		)
 
 	def _get_mosaic_divisibility_by_names(self, names):

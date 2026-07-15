@@ -202,7 +202,7 @@ NEM_CONNECTOR_UNCONFIRMED_TRANSACTIONS = [
 ]
 
 
-def _create_unconfirmed_transaction_view(transaction_type, to_address, value, size, schema_version=1):
+def _create_unconfirmed_transaction_view(transaction_type, to_address, value, size, version=1):
 	return TransactionView(
 		transaction_hash=None,
 		transaction_type=transaction_type,
@@ -216,7 +216,7 @@ def _create_unconfirmed_transaction_view(transaction_type, to_address, value, si
 		deadline='2015-03-29 23:16:22',
 		signature='0' * 128,
 		size=size,
-		schema_version=schema_version
+		version=version
 	)
 
 
@@ -252,7 +252,7 @@ UNCONFIRMED_TRANSACTION_VIEWS = [
 			}
 		],
 		size=202,
-		schema_version=2
+		version=2
 	),
 	_create_unconfirmed_transaction_view(
 		transaction_type='MULTISIG_ACCOUNT_MODIFICATION',
@@ -328,7 +328,7 @@ UNCONFIRMED_TRANSACTION_VIEWS = [
 		deadline='2015-03-29 23:16:22',
 		signature='0' * 128,
 		size=468,
-		schema_version=1
+		version=1
 	)
 ]
 
