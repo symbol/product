@@ -5,9 +5,19 @@ from tests.test.SymbolMosaicTestUtils import create_expected_mosaic_row, create_
 
 
 class MosaicTest(TestCase):
-	def test_create_mosaic_row_normalizes_unlimited_mosaic_and_retains_payload(self):
+	def test_create_mosaic_row_normalizes_unlimited_duration(self):
 		# Arrange:
 		item = create_mosaic_item()
+
+		# Act:
+		row = create_mosaic_row(item, 123)
+
+		# Assert:
+		self.assertEqual(create_expected_mosaic_row(item, 123), row)
+
+	def test_create_mosaic_row_retains_raw_payload(self):
+		# Arrange:
+		item = create_mosaic_item(item_id='A1B2C3D4E5F6071829304A5B')
 
 		# Act:
 		row = create_mosaic_row(item, 123)
