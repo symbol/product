@@ -592,6 +592,41 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 			'TALICE6XEEEOBFJVY3ZCENZ7WBG6LB4KB7P7KMQX'
 		])
 
+	def test_can_get_mosaic_levy_recipients(self):
+		# Arrange:
+		levy_recipient = Address('TBRYCNWZINEVNITUESKUMFIENWKYCRUGNE63PMQQ')
+		mosaics = [
+			MOSAICS[0]._replace(
+				root_namespace='namespace',
+				namespace_name='namespace.test',
+				levy_type=1,
+				levy_namespace_name='nem.xem',
+				levy_fee=500,
+				levy_recipient=levy_recipient
+			),
+			MOSAICS[0]._replace(
+				root_namespace='namespace',
+				namespace_name='namespace.no_levy'
+			)
+		]
+
+		with NemDatabase(self.db_config) as nem_database:
+			nem_database.create_tables()
+
+			cursor = nem_database.connection.cursor()
+			for mosaic in mosaics:
+				nem_database.upsert_mosaic(cursor, mosaic)
+
+			nem_database.connection.commit()
+
+			# Act:
+			empty_results = nem_database.get_mosaic_levy_recipients(cursor, set())
+			results = nem_database.get_mosaic_levy_recipients(cursor, set(['namespace.test', 'namespace.no_levy', 'namespace.missing']))
+
+		# Assert:
+		self.assertEqual(empty_results, [])
+		self.assertEqual([str(result) for result in results], [str(levy_recipient)])
+
 	def test_can_update_vested_balance_and_importance(self):
 		# Arrange:
 		with NemDatabase(self.db_config) as nem_database:

@@ -408,6 +408,26 @@ class NemDatabase(DatabaseConnection):
 		return [AccountRefreshRecord(record[0], Address(record[1])) for record in results]
 
 	@staticmethod
+	def get_mosaic_levy_recipients(cursor, namespace_names):
+		"""Gets levy recipient addresses for mosaics."""
+
+		if not namespace_names:
+			return []
+
+		cursor.execute(
+			'''
+			SELECT levy_recipient
+			FROM mosaics
+			WHERE namespace_name = ANY(%s)
+				AND levy_recipient IS NOT NULL
+			''',
+			(list(namespace_names),)
+		)
+		results = cursor.fetchall()
+
+		return [Address(record[0]) for record in results]
+
+	@staticmethod
 	def upsert_account(cursor, account_info):
 		"""Insert or update account information."""
 

@@ -665,22 +665,29 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 		self.assertEqual(result, mosaics)
 		mock_account_mosaics.assert_called_once_with(address)
 
-	def test_can_extract_addresses_from_block_with_only_signer(self):
+	@patch('puller.facade.NemPuller.NemDatabase.get_mosaic_levy_recipients')
+	def test_can_extract_addresses_from_block_with_only_signer(self, mock_get_mosaic_levy_recipients):
 		# Arrange:
 		block = NEM_CONNECTOR_RESPONSE_BLOCKS[1]
+		cursor = Mock()
+		mock_get_mosaic_levy_recipients.return_value = []
 
 		# Act:
-		addresses = self.puller._extract_addresses_from_block(block)  # pylint: disable=protected-access
+		addresses = self.puller._extract_addresses_from_block(cursor, block)  # pylint: disable=protected-access
 
 		# Assert:
 		self.assertEqual(addresses, {'TALICE6XEEEOBFJVY3ZCENZ7WBG6LB4KB7P7KMQX'})
+		mock_get_mosaic_levy_recipients.assert_called_once_with(cursor, set())
 
-	def test_can_extract_addresses_from_block(self):
+	@patch('puller.facade.NemPuller.NemDatabase.get_mosaic_levy_recipients')
+	def test_can_extract_addresses_from_block(self, mock_get_mosaic_levy_recipients):
 		# Arrange:
 		block = NEM_CONNECTOR_RESPONSE_BLOCKS[2]
+		cursor = Mock()
+		mock_get_mosaic_levy_recipients.return_value = []
 
 		# Act:
-		addresses = self.puller._extract_addresses_from_block(block)  # pylint: disable=protected-access
+		addresses = self.puller._extract_addresses_from_block(cursor, block)  # pylint: disable=protected-access
 
 		# Assert:
 		self.assertEqual(addresses, {
@@ -703,6 +710,59 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 			'TBEM6SFOHU5PORIGAVG3NNJIMCG73R2TWH35O2VF',
 			'TADMEHCFJD45GPTDL4HZP2LJLZVAZRLYWY2K4OOH'
 		})
+		mock_get_mosaic_levy_recipients.assert_called_once_with(cursor, set())
+
+	@patch('puller.facade.NemPuller.NemDatabase.get_mosaic_levy_recipients')
+	def test_can_extract_levy_recipient_addresses_from_transfer_mosaics(self, mock_get_mosaic_levy_recipients):
+		# Arrange:
+		sender = PublicKey('8d07f90fb4bbe7715fa327c926770166a11be2e494a970605f2e12557f66c9b9')
+		recipient = Address('NCOPERAWEWCD4A34NP5UQCCKEX44MW4SL3QYJYS5')
+		levy_recipient = Address('TBRYCNWZINEVNITUESKUMFIENWKYCRUGNE63PMQQ')
+		transaction = TransferTransaction(
+			'd6c9902cfa23dbbdd212d720f86391dd91d215bf77d806f03a6c2dd2e730628a',
+			3,
+			sender,
+			9000000,
+			73397,
+			83397,
+			'e0cc7f71e353ca0aaf2f009d74aeac5f97d4796b0f08c009058fb33d93c2e8ca'
+			'68c0b63e46ff125f43314014d324ac032d2c82996a6e47068b251f1d71fdd001',
+			202,
+			2,
+			1999999,
+			recipient,
+			None,
+			[
+				Mosaic('namespace.test', 20),
+				Mosaic('nem.xem', 8000000)
+			]
+		)
+		block = Block(
+			3,
+			73976,
+			[transaction],
+			300,
+			'1dd9d4d7b6af603d29c082f9aa4e123f07d18154ddbcd7ddc6702491b854c5e4',
+			9000000,
+			recipient,
+			sender,
+			'fdf6a9830e9320af79123f467fcb03d6beab735575ff50eab363d812c5581436'
+			'2ad7be0503db2ee70e60ac3408d83cdbcbd941067a6df703e0c21c7bf389f105',
+			345
+		)
+		cursor = Mock()
+		mock_get_mosaic_levy_recipients.return_value = [levy_recipient]
+
+		# Act:
+		addresses = self.puller._extract_addresses_from_block(cursor, block)  # pylint: disable=protected-access
+
+		# Assert:
+		self.assertEqual(addresses, {
+			str(self.puller.nem_facade.network.public_key_to_address(sender)),
+			str(recipient),
+			str(levy_recipient)
+		})
+		mock_get_mosaic_levy_recipients.assert_called_once_with(cursor, {'namespace.test'})
 
 	@staticmethod
 	def _exclude_account_status(account):
