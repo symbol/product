@@ -219,6 +219,27 @@ SYMBOL_ALIAS_NAME_DEFINITIONS = [
 	'updated_at_height bigint NOT NULL',
 	'UNIQUE (artifact_type, artifact_id, name)'
 ]
+SYMBOL_NAMESPACE_INDEXES = [
+	'CREATE INDEX IF NOT EXISTS idx_symbol_namespaces_registration_height '
+	'ON symbol_namespaces(start_height DESC, namespace_id)',
+	'CREATE INDEX IF NOT EXISTS idx_symbol_namespaces_owner_height '
+	'ON symbol_namespaces(owner_address, start_height DESC)',
+	'CREATE INDEX IF NOT EXISTS idx_symbol_namespaces_alias_height '
+	'ON symbol_namespaces(alias_type, start_height DESC)',
+	'CREATE INDEX IF NOT EXISTS idx_symbol_namespaces_alias_registration_height '
+	'ON symbol_namespaces(alias_type, registration_type, start_height DESC)',
+	'CREATE INDEX IF NOT EXISTS idx_symbol_namespaces_parent ON symbol_namespaces(parent_id)',
+	'CREATE INDEX IF NOT EXISTS idx_symbol_namespaces_root ON symbol_namespaces(root_id)',
+	'CREATE INDEX IF NOT EXISTS idx_symbol_namespaces_name ON symbol_namespaces(name)',
+	'CREATE INDEX IF NOT EXISTS idx_symbol_namespaces_end_height ON symbol_namespaces(end_height)',
+	'CREATE INDEX IF NOT EXISTS idx_symbol_namespaces_registration ON symbol_namespaces(registration_type)',
+	'CREATE INDEX IF NOT EXISTS idx_symbol_namespaces_alias_mosaic ON symbol_namespaces(alias_mosaic_id)',
+	'CREATE INDEX IF NOT EXISTS idx_symbol_namespaces_alias_address ON symbol_namespaces(alias_address)',
+	'CREATE INDEX IF NOT EXISTS idx_symbol_namespaces_updated_height ON symbol_namespaces(updated_at_height)',
+	'CREATE INDEX IF NOT EXISTS idx_symbol_alias_names_artifact_id ON symbol_alias_names(artifact_id)',
+	'CREATE INDEX IF NOT EXISTS idx_symbol_alias_names_name ON symbol_alias_names(name)',
+	'CREATE INDEX IF NOT EXISTS idx_symbol_alias_names_updated_height ON symbol_alias_names(updated_at_height)'
+]
 SYMBOL_TRANSACTION_DEFINITIONS = [
 	'id bigserial PRIMARY KEY',
 	'hash bytea UNIQUE',
@@ -345,6 +366,8 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 			cursor.execute(index_sql)
 		_create_table(cursor, 'symbol_namespaces', SYMBOL_NAMESPACE_DEFINITIONS)
 		_create_table(cursor, 'symbol_alias_names', SYMBOL_ALIAS_NAME_DEFINITIONS)
+		for index_sql in SYMBOL_NAMESPACE_INDEXES:
+			cursor.execute(index_sql)
 		cursor.execute('CREATE SEQUENCE IF NOT EXISTS symbol_transaction_list_sequence_seq')
 		_create_table(cursor, 'symbol_transactions', SYMBOL_TRANSACTION_DEFINITIONS)
 		_create_table(cursor, 'symbol_transaction_mosaics', SYMBOL_TRANSACTION_MOSAIC_DEFINITIONS)
@@ -396,25 +419,6 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 			ON symbol_transaction_addresses(address, height DESC, transaction_id)
 		''')
 		cursor.execute('CREATE INDEX IF NOT EXISTS idx_symbol_transaction_addresses_height ON symbol_transaction_addresses(height)')
-		cursor.execute(
-			'CREATE INDEX IF NOT EXISTS idx_symbol_namespaces_registration_height '
-			'ON symbol_namespaces(start_height DESC, namespace_id)')
-		cursor.execute('CREATE INDEX IF NOT EXISTS idx_symbol_namespaces_owner_height ON symbol_namespaces(owner_address, start_height DESC)')
-		cursor.execute('CREATE INDEX IF NOT EXISTS idx_symbol_namespaces_alias_height ON symbol_namespaces(alias_type, start_height DESC)')
-		cursor.execute(
-			'CREATE INDEX IF NOT EXISTS idx_symbol_namespaces_alias_registration_height '
-			'ON symbol_namespaces(alias_type, registration_type, start_height DESC)')
-		cursor.execute('CREATE INDEX IF NOT EXISTS idx_symbol_namespaces_parent ON symbol_namespaces(parent_id)')
-		cursor.execute('CREATE INDEX IF NOT EXISTS idx_symbol_namespaces_root ON symbol_namespaces(root_id)')
-		cursor.execute('CREATE INDEX IF NOT EXISTS idx_symbol_namespaces_name ON symbol_namespaces(name)')
-		cursor.execute('CREATE INDEX IF NOT EXISTS idx_symbol_namespaces_end_height ON symbol_namespaces(end_height)')
-		cursor.execute('CREATE INDEX IF NOT EXISTS idx_symbol_namespaces_registration ON symbol_namespaces(registration_type)')
-		cursor.execute('CREATE INDEX IF NOT EXISTS idx_symbol_namespaces_alias_mosaic ON symbol_namespaces(alias_mosaic_id)')
-		cursor.execute('CREATE INDEX IF NOT EXISTS idx_symbol_namespaces_alias_address ON symbol_namespaces(alias_address)')
-		cursor.execute('CREATE INDEX IF NOT EXISTS idx_symbol_namespaces_updated_height ON symbol_namespaces(updated_at_height)')
-		cursor.execute('CREATE INDEX IF NOT EXISTS idx_symbol_alias_names_artifact_id ON symbol_alias_names(artifact_id)')
-		cursor.execute('CREATE INDEX IF NOT EXISTS idx_symbol_alias_names_name ON symbol_alias_names(name)')
-		cursor.execute('CREATE INDEX IF NOT EXISTS idx_symbol_alias_names_updated_height ON symbol_alias_names(updated_at_height)')
 		for index_sql in SYMBOL_RECEIPT_INDEXES:
 			cursor.execute(index_sql)
 		self.connection.commit()
@@ -547,9 +551,8 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 	def upsert_namespace(self, namespace_row, alias_name_rows):
 		"""Upserts one namespace and replaces the alias-name rows derived from it."""
 
-		cursor = self.connection.cursor()
-		self._execute_upsert_namespace(cursor, namespace_row, alias_name_rows)
-		self.connection.commit()
+		with self._transaction() as cursor:
+			self._execute_upsert_namespace(cursor, namespace_row, alias_name_rows)
 
 	@staticmethod
 	def _execute_upsert_namespace(cursor, namespace_row, alias_name_rows):
@@ -584,9 +587,8 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 	def delete_namespace(self, namespace_id):
 		"""Deletes one namespace and its derived alias-name rows when it exists."""
 
-		cursor = self.connection.cursor()
-		self._execute_delete_namespace(cursor, namespace_id)
-		self.connection.commit()
+		with self._transaction() as cursor:
+			self._execute_delete_namespace(cursor, namespace_id)
 
 	@staticmethod
 	def _execute_delete_namespace(cursor, namespace_id):
