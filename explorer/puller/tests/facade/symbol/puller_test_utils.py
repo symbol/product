@@ -1,4 +1,5 @@
 import asyncio
+import re
 import tempfile
 from contextlib import ExitStack, contextmanager
 from pathlib import Path
@@ -306,7 +307,8 @@ class FakeConnector:  # pylint: disable=too-many-instance-attributes
 		transactions_by_path=None,
 		statement_pages=None,
 		account_by_address=None,
-		multisig_by_address=None
+		multisig_by_address=None,
+		account_pages=None
 	):  # pylint: disable=too-many-arguments,too-many-positional-arguments
 		self.chain_height = chain_height
 		self.pages = pages
@@ -316,6 +318,7 @@ class FakeConnector:  # pylint: disable=too-many-instance-attributes
 		self.statement_pages = statement_pages or {}
 		self.account_by_address = account_by_address or {}
 		self.multisig_by_address = multisig_by_address or {}
+		self.account_pages = account_pages or {}
 		self.paths = []
 		self.post_payloads_list = []
 
@@ -357,6 +360,16 @@ class FakeConnector:  # pylint: disable=too-many-instance-attributes
 				'code': 'ResourceNotFound',
 				'message': f'no resource exists with id {address_text}'
 			})
+		match = re.fullmatch(r'accounts\?pageSize=100&pageNumber=(\d+)&orderBy=id&order=desc', url_path)
+		if match:
+			page_number = int(match.group(1))
+			return {
+				'data': self.account_pages.get(page_number, []),
+				'pagination': {
+					'pageSize': 100,
+					'pageNumber': page_number
+				}
+			}
 
 		raise KeyError(url_path)
 

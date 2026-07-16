@@ -22,7 +22,9 @@ DatabaseConfig = namedtuple(
 	'DatabaseConfig',
 	['database', 'user', 'password', 'host', 'port'])
 ADDRESS1 = '9889432DE263BB8FE88444A4DA28D3609BD8BB8FAE18AE95'
-ADDRESS3 = '98' + '11' * 23
+ADDRESS2 = '9889432DE263BB8FE88444A4DA28D3609BD8BB8FAE18AE96'
+ADDRESS3 = '9889432DE263BB8FE88444A4DA28D3609BD8BB8FAE18AE97'
+ADDRESS4 = '98' + '11' * 23
 
 
 def _create_block(height, block_hash=None, **overrides):
@@ -131,6 +133,10 @@ def _create_multisig_row(address_hex, updated_at_height):
 	}
 
 
+def _insert_account_refresh_snapshot_rows(database, refresh_entry):
+	database.upsert_account_refresh_page([refresh_entry], last_scanned_page=1)
+
+
 class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 	def setUp(self):
 		self.exit_stack = ExitStack()
@@ -180,7 +186,11 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		tables = [result[0] for result in cursor.fetchall()]
 
 		self.assertEqual([
+			'symbol_account_list_ranks',
 			'symbol_account_mosaics',
+			'symbol_account_refresh_accounts',
+			'symbol_account_refresh_mosaics',
+			'symbol_account_refresh_state',
 			'symbol_accounts',
 			'symbol_blocks',
 			'symbol_multisig',
@@ -205,12 +215,19 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			SELECT pg_type.typname, enumlabel
 			FROM pg_enum
 			JOIN pg_type ON pg_type.oid = pg_enum.enumtypid
-			WHERE pg_type.typname = 'symbol_account_type'
+			WHERE pg_type.typname IN (
+				'symbol_account_type',
+				'symbol_account_refresh_state_status'
+			)
 			ORDER BY pg_type.typname, enumsortorder
 			'''
 		)
 
 		self.assertEqual([
+			('symbol_account_refresh_state_status', 'healthy'),
+			('symbol_account_refresh_state_status', 'refreshing'),
+			('symbol_account_refresh_state_status', 'stale'),
+			('symbol_account_refresh_state_status', 'unhealthy'),
 			('symbol_account_type', 'unlinked'),
 			('symbol_account_type', 'main'),
 			('symbol_account_type', 'remote'),
@@ -276,13 +293,257 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		)
 
 		self.assertEqual([
+			'idx_symbol_account_list_ranks_address',
+			'idx_symbol_account_list_ranks_page',
 			'idx_symbol_account_mosaics_address',
 			'idx_symbol_account_mosaics_mosaic',
+			'idx_symbol_account_refresh_accounts_address_text',
+			'idx_symbol_account_refresh_accounts_importance_desc',
+			'idx_symbol_account_refresh_accounts_search_order',
+			'idx_symbol_account_refresh_mosaics_address',
+			'idx_symbol_account_refresh_mosaics_mosaic_amount_desc',
+			'idx_symbol_account_refresh_state_last_completed_height',
+			'idx_symbol_account_refresh_state_last_successful_run_id',
+			'idx_symbol_account_refresh_state_status',
 			'idx_symbol_accounts_address_height',
 			'idx_symbol_accounts_eligible',
 			'idx_symbol_accounts_harvesting',
 			'idx_symbol_accounts_importance_desc'
 		], [row[0] for row in cursor.fetchall()])
+
+	def test_create_tables_creates_account_refresh_state_schema(self):
+		# Arrange:
+		database = self._create_uninitialized_database()
+		cursor = database.connection.cursor()
+
+		# Act:
+		database.create_tables()
+
+		# Assert:
+		cursor.execute(
+			'''
+			SELECT column_name, udt_name, is_nullable, column_default
+			FROM information_schema.columns
+			WHERE table_name = 'symbol_account_refresh_state'
+			ORDER BY ordinal_position
+			''')
+
+		self.assertEqual([
+			('id', 'int4', 'NO', '1'),
+			('last_successful_run_id', 'varchar', 'YES', None),
+			('last_started_at', 'timestamp', 'YES', None),
+			('last_completed_at', 'timestamp', 'YES', None),
+			('last_completed_height', 'int8', 'YES', None),
+			('last_scanned_page', 'int4', 'YES', None),
+			('status', 'symbol_account_refresh_state_status', 'NO', "'healthy'::symbol_account_refresh_state_status"),
+			('last_error', 'text', 'YES', None),
+			('updated_at', 'timestamp', 'YES', 'CURRENT_TIMESTAMP')
+		], cursor.fetchall())
+
+		cursor.execute(
+			'''
+			SELECT constraint_type, column_name
+			FROM information_schema.table_constraints
+			JOIN information_schema.key_column_usage USING (constraint_name, table_schema, table_name)
+			WHERE table_name = 'symbol_account_refresh_state'
+			ORDER BY constraint_type, column_name
+			''')
+		self.assertEqual([('PRIMARY KEY', 'id')], cursor.fetchall())
+
+		cursor.execute(
+			'''
+			SELECT pg_get_constraintdef(oid)
+			FROM pg_constraint
+			WHERE conrelid = 'symbol_account_refresh_state'::regclass AND contype = 'c'
+			''')
+		self.assertEqual(('CHECK ((id = 1))',), cursor.fetchone())
+
+	def test_create_tables_creates_account_refresh_account_schema(self):
+		# Arrange:
+		database = self._create_uninitialized_database()
+		cursor = database.connection.cursor()
+
+		# Act:
+		database.create_tables()
+
+		# Assert:
+		cursor.execute(
+			'''
+			SELECT column_name, udt_name, is_nullable, column_default
+			FROM information_schema.columns
+			WHERE table_name = 'symbol_account_refresh_accounts'
+			ORDER BY ordinal_position
+			''')
+		self.assertEqual([
+			('refresh_run_id', 'varchar', 'NO', None),
+			('address', 'bytea', 'NO', None),
+			('address_text', 'varchar', 'NO', None),
+			('account_search_order', 'int8', 'NO', None),
+			('public_key', 'bytea', 'YES', None),
+			('account_type', 'symbol_account_type', 'YES', None),
+			('importance', 'int8', 'NO', None),
+			('importance_percentage', 'numeric', 'NO', '0'),
+			('snapshot_height', 'int8', 'NO', None),
+			('snapshot_at', 'timestamp', 'NO', None)
+		], cursor.fetchall())
+
+		cursor.execute(
+			'''
+			SELECT constraint_type, column_name
+			FROM information_schema.table_constraints
+			JOIN information_schema.key_column_usage USING (constraint_name, table_schema, table_name)
+			WHERE table_name = 'symbol_account_refresh_accounts'
+			ORDER BY constraint_type, column_name
+			''')
+		self.assertEqual([
+			('PRIMARY KEY', 'address'),
+			('PRIMARY KEY', 'refresh_run_id')
+		], cursor.fetchall())
+
+	def test_create_tables_creates_account_refresh_mosaic_schema_and_foreign_key(self):
+		# Arrange:
+		database = self._create_uninitialized_database()
+		cursor = database.connection.cursor()
+
+		# Act:
+		database.create_tables()
+
+		# Assert:
+		cursor.execute(
+			'''
+			SELECT column_name, udt_name, is_nullable, column_default
+			FROM information_schema.columns
+			WHERE table_name = 'symbol_account_refresh_mosaics'
+			ORDER BY ordinal_position
+			''')
+		self.assertEqual([
+			('refresh_run_id', 'varchar', 'NO', None),
+			('address', 'bytea', 'NO', None),
+			('mosaic_id', 'varchar', 'NO', None),
+			('amount', 'int8', 'NO', None),
+			('snapshot_height', 'int8', 'NO', None),
+			('snapshot_at', 'timestamp', 'NO', None)
+		], cursor.fetchall())
+
+		cursor.execute(
+			'''
+			SELECT constraint_type, column_name
+			FROM information_schema.table_constraints
+			JOIN information_schema.key_column_usage USING (constraint_name, table_schema, table_name)
+			WHERE table_name = 'symbol_account_refresh_mosaics'
+			ORDER BY constraint_type, column_name
+			''')
+		self.assertEqual([
+			('FOREIGN KEY', 'address'),
+			('FOREIGN KEY', 'refresh_run_id'),
+			('PRIMARY KEY', 'address'),
+			('PRIMARY KEY', 'mosaic_id'),
+			('PRIMARY KEY', 'refresh_run_id')
+		], cursor.fetchall())
+		cursor.execute(
+			'''
+			SELECT conname, pg_get_constraintdef(oid)
+			FROM pg_constraint
+			WHERE conrelid = 'symbol_account_refresh_mosaics'::regclass
+				AND contype = 'f'
+			''')
+		self.assertEqual([
+			(
+				'symbol_account_refresh_mosaics_account_fk',
+				'FOREIGN KEY (refresh_run_id, address) REFERENCES symbol_account_refresh_accounts(refresh_run_id, address)'
+			)
+		], cursor.fetchall())
+
+	def test_create_tables_creates_account_list_rank_schema(self):
+		# Arrange:
+		database = self._create_uninitialized_database()
+		cursor = database.connection.cursor()
+
+		# Act:
+		database.create_tables()
+
+		# Assert:
+		cursor.execute(
+			'''
+			SELECT column_name, udt_name, is_nullable, column_default
+			FROM information_schema.columns
+			WHERE table_name = 'symbol_account_list_ranks'
+			ORDER BY ordinal_position
+			''')
+		self.assertEqual([
+			('refresh_run_id', 'varchar', 'NO', None),
+			('rank_scope', 'varchar', 'NO', None),
+			('rank', 'int8', 'NO', None),
+			('address', 'bytea', 'NO', None),
+			('sort_value_numeric', 'numeric', 'YES', None),
+			('mosaic_id', 'varchar', 'YES', None),
+			('updated_at', 'timestamp', 'NO', 'CURRENT_TIMESTAMP')
+		], cursor.fetchall())
+
+		cursor.execute(
+			'''
+			SELECT constraint_type, column_name
+			FROM information_schema.table_constraints
+			JOIN information_schema.key_column_usage USING (constraint_name, table_schema, table_name)
+			WHERE table_name = 'symbol_account_list_ranks'
+			ORDER BY constraint_type, column_name
+			''')
+		self.assertEqual([
+			('PRIMARY KEY', 'rank'),
+			('PRIMARY KEY', 'rank_scope'),
+			('PRIMARY KEY', 'refresh_run_id')
+		], cursor.fetchall())
+
+	def test_account_refresh_state_rejects_invalid_status(self):
+		# Arrange:
+		database = self._create_database()
+
+		# Act + Assert:
+		with self.assertRaises(PsycopgError):
+			database.upsert_account_refresh_state({'status': 'invalid'})
+
+	def test_get_account_refresh_state_rolls_back_when_state_table_is_missing(self):
+		# Arrange:
+		database = self._create_database()
+		cursor = database.connection.cursor()
+		cursor.execute('DROP TABLE symbol_account_refresh_state')
+		database.connection.commit()
+
+		# Act:
+		with self.assertRaises(PsycopgError):
+			database.get_account_refresh_state()
+
+		# Assert:
+		self.assertIsNone(database.get_block_hash(1))
+
+	def test_mark_account_refresh_failed_rolls_back_when_state_table_is_missing(self):
+		# Arrange:
+		database = self._create_database()
+		cursor = database.connection.cursor()
+		cursor.execute('DROP TABLE symbol_account_refresh_state')
+		database.connection.commit()
+
+		# Act + Assert:
+		with self.assertRaises(PsycopgError):
+			database.mark_account_refresh_failed('refresh failed')
+
+		# The failed transaction must be cleared by the error handler.
+		self.assertIsNone(database.get_block_hash(1))
+
+	def test_get_recently_harvesting_addresses_rolls_back_before_failure_state_recording(self):
+		# Arrange:
+		database = self._create_database()
+		cursor = database.connection.cursor()
+		cursor.execute('DROP TABLE symbol_blocks CASCADE')
+		database.connection.commit()
+
+		# Act:
+		with self.assertRaises(PsycopgError):
+			database.get_recently_harvesting_addresses(datetime.datetime(2026, 1, 1))
+		database.mark_account_refresh_failed('refresh failed')
+
+		# Assert:
+		self.assertEqual('unhealthy', database.get_account_refresh_state()['status'])
 
 	def test_create_tables_creates_symbol_sync_state_schema(self):
 		# Arrange:
@@ -943,6 +1204,28 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 				'VALUES (2, \'initialized\')'
 			)
 
+	def test_can_upsert_account_refresh_state_without_overwriting_successful_run(self):
+		# Arrange:
+		database = self._create_database()
+		database.upsert_account_refresh_state({
+			'status': 'healthy',
+			'last_successful_run_id': 'successful-run',
+			'last_completed_height': 100
+		})
+
+		# Act:
+		database.upsert_account_refresh_state({
+			'status': 'unhealthy',
+			'last_error': 'failed'
+		})
+
+		# Assert:
+		result = database.get_account_refresh_state()
+
+		self.assertEqual('successful-run', result['last_successful_run_id'])
+		self.assertEqual('unhealthy', result['status'])
+		self.assertEqual('failed', result['last_error'])
+
 	def test_can_upsert_account_current_state_and_replace_mosaics(self):
 		# Arrange:
 		database = self._create_database()
@@ -977,6 +1260,20 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 
 		self.assertEqual((200, 10, 20), account_result)
 		self.assertEqual([(NATIVE_MOSAIC_ID, 30000000000, 20)], mosaic_results)
+
+	def test_upsert_account_current_state_rolls_back_when_account_row_is_invalid(self):
+		# Arrange:
+		database = self._create_database()
+		account_row, mosaic_rows = _create_account_row(ADDRESS1)
+		account_row['account_type'] = 'invalid'
+
+		# Act + Assert:
+		with self.assertRaises(PsycopgError):
+			database.upsert_account_current_state(account_row, mosaic_rows)
+
+		cursor = database.connection.cursor()
+		cursor.execute('SELECT COUNT(*) FROM symbol_accounts')
+		self.assertEqual((0,), cursor.fetchone())
 
 	def test_upsert_account_current_state_clears_existing_mosaics_when_replaced_with_empty_list(self):
 		# Arrange:
@@ -1055,6 +1352,24 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			(bytes.fromhex(ADDRESS1),))
 
 		self.assertEqual((200, True), cursor.fetchone())
+
+	def test_get_recently_harvesting_addresses_returns_distinct_addresses_at_or_after_cutoff(self):
+		# Arrange:
+		database = self._create_database()
+		cutoff = datetime.datetime(2026, 1, 1, 0, 2, tzinfo=datetime.timezone.utc)
+		database.upsert_blocks([
+			_create_block(1, beneficiary_address=b'straddle', timestamp=cutoff - datetime.timedelta(microseconds=2)),
+			_create_block(2, beneficiary_address=b'before-only', timestamp=cutoff - datetime.timedelta(microseconds=1)),
+			_create_block(3, beneficiary_address=b'at-cutoff-only', timestamp=cutoff),
+			_create_block(4, beneficiary_address=b'straddle', timestamp=cutoff + datetime.timedelta(seconds=1)),
+			_create_block(5, beneficiary_address=b'after-only', timestamp=cutoff + datetime.timedelta(seconds=2))
+		])
+
+		# Act:
+		result = database.get_recently_harvesting_addresses(cutoff)
+
+		# Assert:
+		self.assertEqual({b'at-cutoff-only', b'straddle', b'after-only'}, result)
 
 	def test_can_upsert_multisig(self):
 		# Arrange:
@@ -1164,6 +1479,314 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		self.assertEqual([bytes.fromhex('CC' * 24)], [bytes(value) for value in result[2]])
 		self.assertEqual([bytes.fromhex('DD' * 24)], [bytes(value) for value in result[3]])
 		self.assertEqual(60, result[4])
+
+	def test_can_insert_snapshot_rows_and_update_importance_percentages(self):
+		# Arrange:
+		database = self._create_database()
+		account_row1, mosaic_rows1 = _create_account_row(ADDRESS1, importance='100')
+		account_row2, mosaic_rows2 = _create_account_row(ADDRESS2, importance='300')
+		for account_row, mosaic_rows in ((account_row1, mosaic_rows1), (account_row2, mosaic_rows2)):
+			database.upsert_account_current_state(account_row, mosaic_rows)
+		snapshot_at = datetime.datetime(2026, 1, 1, tzinfo=datetime.timezone.utc)
+
+		# Act:
+		_insert_account_refresh_snapshot_rows(database, {
+			'refresh_run_id': 'run-1', 'account_search_order': 0,
+			'account_row': account_row1, 'mosaic_rows': mosaic_rows1, 'snapshot_height': 10, 'snapshot_at': snapshot_at
+		})
+		_insert_account_refresh_snapshot_rows(database, {
+			'refresh_run_id': 'run-1', 'account_search_order': 1,
+			'account_row': account_row2, 'mosaic_rows': mosaic_rows2, 'snapshot_height': 10, 'snapshot_at': snapshot_at
+		})
+		database.finalize_account_refresh('run-1', NATIVE_MOSAIC_ID, 10, snapshot_at)
+
+		# Assert:
+		cursor = database.connection.cursor()
+		cursor.execute(
+			'''
+			SELECT address, importance_percentage
+			FROM symbol_account_refresh_accounts
+			WHERE refresh_run_id = 'run-1'
+			ORDER BY address
+			'''
+		)
+		snapshot_results = [(bytes(row[0]), row[1]) for row in cursor.fetchall()]
+		cursor.execute('SELECT address, importance_percentage FROM symbol_accounts ORDER BY address')
+		current_results = [(bytes(row[0]), row[1]) for row in cursor.fetchall()]
+
+		self.assertEqual([
+			(bytes.fromhex(ADDRESS1), Decimal('0.25')),
+			(bytes.fromhex(ADDRESS2), Decimal('0.75'))
+		], snapshot_results)
+		self.assertEqual(snapshot_results, current_results)
+		state = database.get_account_refresh_state()
+		self.assertEqual('healthy', state['status'])
+		self.assertEqual('run-1', state['last_successful_run_id'])
+		self.assertEqual(10, state['last_completed_height'])
+		self.assertEqual(snapshot_at.replace(tzinfo=None), state['last_completed_at'])
+		self.assertIsNone(state['last_error'])
+
+	def test_finalize_account_refresh_sets_zero_percentage_when_total_importance_is_zero(self):
+		# Arrange:
+		database = self._create_database()
+		account_row, mosaic_rows = _create_account_row(importance='0')
+		database.upsert_account_current_state(account_row, mosaic_rows)
+		_insert_account_refresh_snapshot_rows(database, {
+			'refresh_run_id': 'run-1', 'account_search_order': 0,
+			'account_row': account_row, 'mosaic_rows': mosaic_rows, 'snapshot_height': 10,
+			'snapshot_at': datetime.datetime(2026, 1, 1)
+		})
+		# Act:
+		database.finalize_account_refresh('run-1', NATIVE_MOSAIC_ID, 10, datetime.datetime(2026, 1, 1))
+
+		# Assert:
+		cursor = database.connection.cursor()
+		cursor.execute('SELECT importance_percentage FROM symbol_account_refresh_accounts WHERE refresh_run_id = %s', ('run-1',))
+
+		self.assertEqual((Decimal('0'),), cursor.fetchone())
+
+	@staticmethod
+	def _seed_account_refresh_snapshot_for_ranks(database):
+		account_row1, mosaic_rows1 = _create_account_row(
+			ADDRESS1, importance='200', mosaics=[{'id': NATIVE_MOSAIC_ID, 'amount': '300'}])
+		account_row2, mosaic_rows2 = _create_account_row(
+			ADDRESS2, importance='100', mosaics=[{'id': NATIVE_MOSAIC_ID, 'amount': '100'}])
+		account_row3, mosaic_rows3 = _create_account_row(
+			ADDRESS3, importance='300', mosaics=[{'id': NATIVE_MOSAIC_ID, 'amount': '200'}])
+		for account_row, mosaic_rows in ((account_row1, mosaic_rows1), (account_row2, mosaic_rows2), (account_row3, mosaic_rows3)):
+			database.upsert_account_current_state(account_row, mosaic_rows)
+		snapshot_at = datetime.datetime(2026, 1, 1)
+		_insert_account_refresh_snapshot_rows(database, {
+			'refresh_run_id': 'run-1', 'account_search_order': 2,
+			'account_row': account_row1, 'mosaic_rows': mosaic_rows1, 'snapshot_height': 10, 'snapshot_at': snapshot_at
+		})
+		_insert_account_refresh_snapshot_rows(database, {
+			'refresh_run_id': 'run-1', 'account_search_order': 0,
+			'account_row': account_row2, 'mosaic_rows': mosaic_rows2, 'snapshot_height': 10, 'snapshot_at': snapshot_at
+		})
+		_insert_account_refresh_snapshot_rows(database, {
+			'refresh_run_id': 'run-1', 'account_search_order': 1,
+			'account_row': account_row3, 'mosaic_rows': mosaic_rows3, 'snapshot_height': 10, 'snapshot_at': snapshot_at
+		})
+
+	@staticmethod
+	def _fetch_rank_addresses(database, rank_scope):
+		cursor = database.connection.cursor()
+		cursor.execute(
+			'''
+			SELECT rank, address
+			FROM symbol_account_list_ranks
+			WHERE refresh_run_id = 'run-1' AND rank_scope = %s
+			ORDER BY rank
+			''',
+			(rank_scope,))
+
+		return [(rank, bytes(address)) for rank, address in cursor.fetchall()]
+
+	def test_finalize_account_refresh_orders_id_scope_by_account_search_order(self):
+		# Arrange:
+		database = self._create_database()
+		self._seed_account_refresh_snapshot_for_ranks(database)
+
+		# Act:
+		database.finalize_account_refresh('run-1', NATIVE_MOSAIC_ID, 10, datetime.datetime(2026, 1, 1))
+
+		# Assert:
+		self.assertEqual([
+			(0, bytes.fromhex(ADDRESS2)),
+			(1, bytes.fromhex(ADDRESS3)),
+			(2, bytes.fromhex(ADDRESS1))
+		], self._fetch_rank_addresses(database, 'ID'))
+
+	def test_finalize_account_refresh_orders_importance_scope_by_importance_percentage(self):
+		# Arrange:
+		database = self._create_database()
+		self._seed_account_refresh_snapshot_for_ranks(database)
+
+		# Act:
+		database.finalize_account_refresh('run-1', NATIVE_MOSAIC_ID, 10, datetime.datetime(2026, 1, 1))
+
+		# Assert:
+		self.assertEqual([
+			(0, bytes.fromhex(ADDRESS3)),
+			(1, bytes.fromhex(ADDRESS1)),
+			(2, bytes.fromhex(ADDRESS2))
+		], self._fetch_rank_addresses(database, 'IMPORTANCE'))
+
+	def test_finalize_account_refresh_orders_native_balance_scope_by_amount(self):
+		# Arrange:
+		database = self._create_database()
+		self._seed_account_refresh_snapshot_for_ranks(database)
+
+		# Act:
+		database.finalize_account_refresh('run-1', NATIVE_MOSAIC_ID, 10, datetime.datetime(2026, 1, 1))
+
+		# Assert:
+		self.assertEqual([
+			(0, bytes.fromhex(ADDRESS1)),
+			(1, bytes.fromhex(ADDRESS3)),
+			(2, bytes.fromhex(ADDRESS2))
+		], self._fetch_rank_addresses(database, f'BALANCE:{NATIVE_MOSAIC_ID}'))
+
+	def test_finalize_account_refresh_rolls_back_all_changes_when_completed_height_is_invalid(self):
+		# Arrange:
+		database = self._create_database()
+		account_row, mosaic_rows = _create_account_row(importance='100')
+		# 0.123 and 0.456 are rollback sentinels: a successful finalize would recompute
+		# importance / total_importance, which is 100 / 100 = 1 in this fixture.
+		account_row['importance_percentage'] = Decimal('0.456')
+		database.upsert_account_current_state(account_row, mosaic_rows)
+		account_row['importance_percentage'] = Decimal('0.123')
+		_insert_account_refresh_snapshot_rows(database, {
+			'refresh_run_id': 'run-1', 'account_search_order': 0,
+			'account_row': account_row, 'mosaic_rows': mosaic_rows, 'snapshot_height': 10,
+			'snapshot_at': datetime.datetime(2026, 1, 1)
+		})
+		account_row['importance_percentage'] = Decimal('0.456')
+		database.upsert_account_current_state(account_row, mosaic_rows)
+		database.upsert_account_refresh_state({
+			'status': 'healthy',
+			'last_successful_run_id': 'previous-run',
+			'last_completed_height': 9
+		})
+		cursor = database.connection.cursor()
+		cursor.execute(
+			'''
+			INSERT INTO symbol_account_list_ranks (
+				refresh_run_id, rank_scope, rank, address, sort_value_numeric, mosaic_id
+			) VALUES ('run-1', 'ID', 0, %s, NULL, NULL)
+			''',
+			(bytes.fromhex(ADDRESS1),))
+		database.connection.commit()
+
+		# Act + Assert:
+		with self.assertRaises(PsycopgError):
+			database.finalize_account_refresh(
+				'run-1', NATIVE_MOSAIC_ID, 'invalid-height', datetime.datetime(2026, 1, 1))
+
+		# Assert:
+		cursor.execute(
+			'SELECT importance_percentage FROM symbol_account_refresh_accounts WHERE refresh_run_id = %s',
+			('run-1',))
+		self.assertEqual((Decimal('0.123'),), cursor.fetchone())
+		cursor.execute(
+			'SELECT rank_scope, rank, address FROM symbol_account_list_ranks WHERE refresh_run_id = %s',
+			('run-1',))
+		self.assertEqual([('ID', 0, bytes.fromhex(ADDRESS1))], [
+			(rank_scope, rank, bytes(address))
+			for rank_scope, rank, address in cursor.fetchall()])
+		cursor.execute('SELECT importance_percentage FROM symbol_accounts WHERE address = %s', (bytes.fromhex(ADDRESS1),))
+		self.assertEqual((Decimal('0.456'),), cursor.fetchone())
+		state = database.get_account_refresh_state()
+		self.assertEqual('healthy', state['status'])
+		self.assertEqual('previous-run', state['last_successful_run_id'])
+		self.assertEqual(9, state['last_completed_height'])
+
+	def test_repair_rollback_marks_account_refresh_state_stale_when_completed_height_is_rollbacked(self):
+		# Arrange:
+		database = self._create_database()
+		database.upsert_account_refresh_state({
+			'status': 'healthy',
+			'last_successful_run_id': 'run-1',
+			'last_completed_height': 10
+		})
+
+		# Act:
+		database.repair_rollback_from_height(10, _create_sync_state(status='repairing', last_synced_height=9))
+
+		# Assert:
+		self.assertEqual('stale', database.get_account_refresh_state()['status'])
+
+	def test_repair_rollback_leaves_account_refresh_state_when_completed_height_is_before_rollback(self):
+		# Arrange:
+		database = self._create_database()
+		database.upsert_account_refresh_state({
+			'status': 'healthy',
+			'last_successful_run_id': 'run-1',
+			'last_completed_height': 9
+		})
+
+		# Act:
+		database.repair_rollback_from_height(10, _create_sync_state(status='repairing', last_synced_height=9))
+
+		# Assert:
+		self.assertEqual('healthy', database.get_account_refresh_state()['status'])
+
+	def test_repair_rollback_from_height_rolls_back_when_sync_state_table_is_missing(self):
+		# Arrange:
+		database = self._create_database()
+		database.upsert_blocks([_create_block(10)])
+		database.upsert_account_refresh_state({
+			'status': 'healthy',
+			'last_successful_run_id': 'run-1',
+			'last_completed_height': 10
+		})
+		cursor = database.connection.cursor()
+		cursor.execute('DROP TABLE symbol_sync_state')
+		database.connection.commit()
+
+		# Act + Assert:
+		with self.assertRaises(PsycopgError):
+			database.repair_rollback_from_height(10, _create_sync_state(status='repairing', last_synced_height=9))
+
+		# Assert:
+		cursor.execute('SELECT height FROM symbol_blocks')
+		self.assertEqual([(10,)], cursor.fetchall())
+		self.assertEqual('healthy', database.get_account_refresh_state()['status'])
+
+	def test_repair_rollback_deletes_current_state_but_preserves_account_refresh_rows(self):
+		# Arrange:
+		database = self._create_database()
+		account_row, mosaic_rows = _create_account_row()
+		database.upsert_account_current_state(account_row, mosaic_rows)
+		database.upsert_multisig(bytes.fromhex(ADDRESS1), {
+			'address': bytes.fromhex(ADDRESS1),
+			'min_approval': 1,
+			'min_removal': 1,
+			'cosignatory_addresses': [],
+			'multisig_addresses': [],
+			'updated_at_height': 10
+		})
+		_insert_account_refresh_snapshot_rows(database, {
+			'refresh_run_id': 'run-1', 'account_search_order': 0,
+			'account_row': account_row, 'mosaic_rows': mosaic_rows, 'snapshot_height': 10,
+			'snapshot_at': datetime.datetime(2026, 1, 1)
+		})
+		database.finalize_account_refresh('run-1', NATIVE_MOSAIC_ID, 10, datetime.datetime(2026, 1, 1))
+
+		# Act:
+		database.repair_rollback_from_height(10, _create_sync_state(status='repairing', last_synced_height=9))
+
+		# Assert:
+		expected_address = bytes.fromhex(ADDRESS1)
+		expected_mosaic_row = mosaic_rows[0]
+		cursor = database.connection.cursor()
+		cursor.execute('SELECT address FROM symbol_accounts')
+		account_results = cursor.fetchall()
+		cursor.execute('SELECT address, mosaic_id, amount FROM symbol_account_mosaics')
+		mosaic_results = cursor.fetchall()
+		cursor.execute('SELECT address, min_approval, min_removal FROM symbol_multisig')
+		multisig_results = cursor.fetchall()
+		cursor.execute('SELECT refresh_run_id, address, account_search_order FROM symbol_account_refresh_accounts')
+		refresh_account_results = cursor.fetchall()
+		cursor.execute('SELECT refresh_run_id, address, mosaic_id, amount FROM symbol_account_refresh_mosaics')
+		refresh_mosaic_results = cursor.fetchall()
+
+		# current-state rows are deleted on rollback (last_seen_height/updated_at_height >= fork_height); they get
+		# repopulated by the next dirty-key touch or account refresh snapshot run, not by rollback repair itself.
+		self.assertEqual([], account_results)
+		self.assertEqual([], mosaic_results)
+		self.assertEqual([], multisig_results)
+		self.assertEqual(
+			[('run-1', expected_address, 0)],
+			[(run_id, bytes(address), account_search_order)
+				for run_id, address, account_search_order in refresh_account_results])
+		self.assertEqual(
+			[('run-1', expected_address, expected_mosaic_row['mosaic_id'], expected_mosaic_row['amount'])],
+			[(run_id, bytes(address), mosaic_id, amount) for run_id, address, mosaic_id, amount in refresh_mosaic_results])
+		self.assertEqual([(0, expected_address)], self._fetch_rank_addresses(database, 'ID'))
+		self.assertEqual([(0, expected_address)], self._fetch_rank_addresses(database, 'IMPORTANCE'))
+		self.assertEqual([(0, expected_address)], self._fetch_rank_addresses(database, f'BALANCE:{NATIVE_MOSAIC_ID}'))
 
 	def test_rejects_invalid_block_type(self):
 		# Arrange:
@@ -1625,13 +2248,13 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		database.upsert_blocks([_create_block(1), _create_block(2), _create_block(3)])
 		kept_account_row, kept_mosaic_rows = _create_account_row(ADDRESS1, observed_height=1)
 		rollbacked_account_row, rollbacked_mosaic_rows = _create_account_row(RECIPIENT_ADDRESS, observed_height=2)
-		after_fork_account_row, after_fork_mosaic_rows = _create_account_row(ADDRESS3, observed_height=3)
+		after_fork_account_row, after_fork_mosaic_rows = _create_account_row(ADDRESS4, observed_height=3)
 		database.upsert_account_current_state(kept_account_row, kept_mosaic_rows)
 		database.upsert_account_current_state(rollbacked_account_row, rollbacked_mosaic_rows)
 		database.upsert_account_current_state(after_fork_account_row, after_fork_mosaic_rows)
 		kept_multisig_row = _create_multisig_row(ADDRESS1, 1)
 		rollbacked_multisig_row = _create_multisig_row(RECIPIENT_ADDRESS, 2)
-		after_fork_multisig_row = _create_multisig_row(ADDRESS3, 3)
+		after_fork_multisig_row = _create_multisig_row(ADDRESS4, 3)
 		database.upsert_multisig(kept_multisig_row['address'], kept_multisig_row)
 		database.upsert_multisig(rollbacked_multisig_row['address'], rollbacked_multisig_row)
 		database.upsert_multisig(after_fork_multisig_row['address'], after_fork_multisig_row)
