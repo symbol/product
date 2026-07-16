@@ -188,11 +188,6 @@ const AccountInfo = ({ accountInfo, preloadedTransactions }) => {
 						<Field title={t('field_publicKey')} description={t('field_publicKey_description')}>
 							<ValueCopy value={accountInfo.publicKey} />
 						</Field>
-						{!!accountInfo.remoteAddress && (
-							<Field title={t('field_remoteAccount')}>
-								<ValueAccount address={accountInfo.remoteAddress} size="md" isWrapDisabled />
-							</Field>
-						)}
 						<Field title={t('field_height')} description={t('field_account_height_description')}>
 							<ValueBlockHeight value={accountInfo.height} />
 						</Field>
@@ -205,24 +200,58 @@ const AccountInfo = ({ accountInfo, preloadedTransactions }) => {
 					</div>
 				</Section>
 			</div>
-			<Section title={t('section_accountState')} cardClassName={styles.stateSectionCard}>
-				<div className="layout-flex-col">
-					<div className="layout-flex-row-mobile-col">
-						<Filter
-							data={mosaicFilterConfig}
-							value={mosaics.filter}
-							onChange={mosaics.changeFilter}
-							search={search}
-						/>
-						<ButtonCSV data={mosaics.data} fileName={`mosaics-${address}`} format={row => formatMosaicCSV(row, t)} />
-					</div>
-					<div className={styles.stateTable}>
-						{mosaics.data.map((item, key) => (
-							<ValueMosaic size="md" mosaicId={item.id} mosaicName={item.name} amount={item.amount} key={'ownmos' + key} />
-						))}
-					</div>
-				</div>
-			</Section>
+			<Section
+				title={t('section_accountState')}
+				cardClassName={styles.stateSectionCard}
+				tabs={[
+					{
+						label: t('section_assets'),
+						content: (
+							<div className="layout-flex-col">
+								<div className="layout-flex-row-mobile-col">
+									<Filter
+										data={mosaicFilterConfig}
+										value={mosaics.filter}
+										onChange={mosaics.changeFilter}
+										search={search}
+									/>
+									<ButtonCSV
+										data={mosaics.data}
+										fileName={`mosaics-${address}`}
+										format={row => formatMosaicCSV(row, t)}
+									/>
+								</div>
+								<div className={styles.stateTable}>
+									{mosaics.data.map((item, key) => (
+										<ValueMosaic
+											size="md"
+											mosaicId={item.id}
+											mosaicName={item.name}
+											amount={item.amount}
+											key={'ownmos' + key}
+										/>
+									))}
+								</div>
+							</div>
+						)
+					},
+					{
+						label: t('section_linkedKeys'),
+						content: (
+							<div className="layout-flex-col-fields">
+								{!!accountInfo.linkedAddress && (
+									<Field title={t('field_linkedAccount')}>
+										<ValueAccount address={accountInfo.linkedAddress} size="md" isWrapDisabled />
+									</Field>
+								)}
+								{!accountInfo.linkedAddress && (
+									<div className="value-description">No linked keys</div>
+								)}
+							</div>
+						)
+					}
+				]}
+			/>
 			{isMultisigSectionShown && (
 				<Section title={t('section_multisig')}>
 					<div className="layout-flex-row-mobile-col">

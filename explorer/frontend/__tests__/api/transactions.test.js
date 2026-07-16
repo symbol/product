@@ -181,8 +181,8 @@ describe('api/transactions', () => {
 			expect(result.body[0]).toEqual(expect.objectContaining({
 				type: 'ACCOUNT_KEY_LINK',
 				keyLinkAction: 1,
-				publicKey: remotePublicKey,
-				remoteAccount: expectedRemoteAddress
+				linkedPublicKey: remotePublicKey,
+				linkedAddress: expectedRemoteAddress
 			}));
 		});
 	});

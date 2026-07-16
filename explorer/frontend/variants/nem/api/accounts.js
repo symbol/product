@@ -70,7 +70,7 @@ export const fetchAccountInfoByPublicKey = createTryFetchInfoFunction(async publ
  * @returns {object} mapped account info
  */
 const accountInfoFromDTO = data => ({
-	remoteAddress: data.remoteAddress || null,
+	linkedAddress: data.remoteAddress || null,
 	address: data.address,
 	publicKey: data.publicKey || null,
 	description: data.remark || null,
