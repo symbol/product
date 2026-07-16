@@ -2,7 +2,6 @@
 from contextlib import contextmanager
 
 from psycopg2.extras import Json
-from zenlog import log
 
 from puller.model.symbol.Account import ACCOUNT_TYPE_VALUES
 from puller.model.symbol.Block import BLOCK_TYPE_VALUES
@@ -431,14 +430,14 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 	def get_account_refresh_state(self):
 		"""Gets the singleton Symbol account refresh state."""
 
-		cursor = self.connection.cursor()
-		cursor.execute(f'SELECT {", ".join(ACCOUNT_REFRESH_STATE_COLUMNS)} FROM symbol_account_refresh_state WHERE id = 1')
-		result = cursor.fetchone()
+		with self._database_transaction() as cursor:
+			cursor.execute(f'SELECT {", ".join(ACCOUNT_REFRESH_STATE_COLUMNS)} FROM symbol_account_refresh_state WHERE id = 1')
+			result = cursor.fetchone()
 
 		return dict(zip(ACCOUNT_REFRESH_STATE_COLUMNS, result)) if result else None
 
 	@contextmanager
-	def _transaction(self):
+	def _database_transaction(self):
 		try:
 			cursor = self.connection.cursor()
 			yield cursor
@@ -450,39 +449,13 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 	def upsert_account_refresh_state(self, refresh_state):
 		"""Upserts supplied fields on the singleton Symbol account refresh state."""
 
-		with self._transaction() as cursor:
+		with self._database_transaction() as cursor:
 			self._execute_upsert_account_refresh_state(cursor, refresh_state)
 
-	@contextmanager
-	def account_refresh_lock(self):
-		"""Serializes account refresh and rollback operations across processes."""
-
-		cursor = self.connection.cursor()
-		cursor.execute("SELECT pg_advisory_lock(hashtext('symbol_account_refresh'))")
-		self.connection.commit()
-		body_succeeded = False
-		try:
-			yield
-			body_succeeded = True
-		finally:
-			try:
-				self._release_account_refresh_lock()
-			except Exception as unlock_error:  # pylint: disable=broad-exception-caught
-				if body_succeeded:
-					raise
-				log.error(f'Failed to release Symbol account refresh lock: {unlock_error}')
-
-	def _release_account_refresh_lock(self):
-		self.connection.rollback()
-		cursor = self.connection.cursor()
-		cursor.execute("SELECT pg_advisory_unlock(hashtext('symbol_account_refresh'))")
-		self.connection.commit()
-
 	def mark_account_refresh_failed(self, last_error):
-		"""Records a failed refresh after clearing any aborted transaction."""
+		"""Records a failed account refresh."""
 
-		self.connection.rollback()
-		with self._transaction() as cursor:
+		with self._database_transaction() as cursor:
 			self._execute_upsert_account_refresh_state(cursor, {
 				'status': 'unhealthy',
 				'last_error': last_error
@@ -508,16 +481,16 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 	def get_recently_harvesting_addresses(self, cutoff_timestamp):
 		"""Gets distinct beneficiary addresses that harvested blocks at or after the cutoff timestamp."""
 
-		cursor = self.connection.cursor()
-		cursor.execute(
-			'''
-			SELECT DISTINCT beneficiary_address
-			FROM symbol_blocks
-			WHERE timestamp >= %s
-			''',
-			(cutoff_timestamp,))
+		with self._database_transaction() as cursor:
+			cursor.execute(
+				'''
+				SELECT DISTINCT beneficiary_address
+				FROM symbol_blocks
+				WHERE timestamp >= %s
+				''',
+				(cutoff_timestamp,))
 
-		return {bytes(row[0]) for row in cursor.fetchall()}
+			return {bytes(row[0]) for row in cursor.fetchall()}
 
 	def upsert_account_current_state(
 		self,
@@ -527,7 +500,7 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 	):
 		"""Upserts one Symbol account current-state row and replaces its current mosaic rows."""
 
-		with self._transaction() as cursor:
+		with self._database_transaction() as cursor:
 			self._execute_upsert_account_current_state(
 				cursor,
 				account_row,
@@ -753,7 +726,7 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 	def upsert_account_refresh_page(self, account_entries, last_scanned_page):
 		"""Upserts one account refresh page's current-state rows, snapshot rows, and diagnostic cursor in one transaction."""
 
-		with self._transaction() as cursor:
+		with self._database_transaction() as cursor:
 			for entry in account_entries:
 				self._execute_upsert_account_current_state(
 					cursor,
@@ -773,7 +746,7 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 	def finalize_account_refresh(self, refresh_run_id, native_mosaic_id, completed_height, completed_at):
 		"""Publishes one refresh run: importance rates, list ranks, current-state importance, success marker."""
 
-		with self._transaction() as cursor:
+		with self._database_transaction() as cursor:
 			cursor.execute(
 				'''
 				SELECT COALESCE(SUM(importance), 0)
@@ -902,19 +875,17 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 	def delete_blocks_from_height(self, height):
 		"""Deletes blocks from the supplied height for rollback repair."""
 
-		with self.account_refresh_lock():
-			with self._transaction() as cursor:
-				self._delete_rollback_affected_rows_from_height(cursor, height)
-				self._stale_mark_account_refresh_state_if_needed(cursor, height)
+		with self._database_transaction() as cursor:
+			self._delete_rollback_affected_rows_from_height(cursor, height)
+			self._stale_mark_account_refresh_state_if_needed(cursor, height)
 
 	def repair_rollback_from_height(self, height, sync_state):
 		"""Deletes rollbacked blocks and updates sync state in one transaction."""
 
-		with self.account_refresh_lock():
-			with self._transaction() as cursor:
-				self._delete_rollback_affected_rows_from_height(cursor, height)
-				self._stale_mark_account_refresh_state_if_needed(cursor, height)
-				self._execute_upsert_sync_state(cursor, sync_state)
+		with self._database_transaction() as cursor:
+			self._delete_rollback_affected_rows_from_height(cursor, height)
+			self._stale_mark_account_refresh_state_if_needed(cursor, height)
+			self._execute_upsert_sync_state(cursor, sync_state)
 
 	@staticmethod
 	def _delete_rollback_affected_rows_from_height(cursor, height):

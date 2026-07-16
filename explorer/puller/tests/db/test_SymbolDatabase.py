@@ -1,6 +1,5 @@
 # pylint: disable=duplicate-code,too-many-lines
 import datetime
-import threading
 from collections import namedtuple
 from contextlib import ExitStack
 from decimal import Decimal
@@ -26,11 +25,6 @@ ADDRESS1 = '9889432DE263BB8FE88444A4DA28D3609BD8BB8FAE18AE95'
 ADDRESS2 = '9889432DE263BB8FE88444A4DA28D3609BD8BB8FAE18AE96'
 ADDRESS3 = '9889432DE263BB8FE88444A4DA28D3609BD8BB8FAE18AE97'
 ADDRESS4 = '98' + '11' * 23
-
-
-class UnlockFailureSymbolDatabase(SymbolDatabase):
-	def _release_account_refresh_lock(self):
-		raise RuntimeError('unlock failure')
 
 
 def _create_block(height, block_hash=None, **overrides):
@@ -508,6 +502,20 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		with self.assertRaises(PsycopgError):
 			database.upsert_account_refresh_state({'status': 'invalid'})
 
+	def test_get_account_refresh_state_rolls_back_when_state_table_is_missing(self):
+		# Arrange:
+		database = self._create_database()
+		cursor = database.connection.cursor()
+		cursor.execute('DROP TABLE symbol_account_refresh_state')
+		database.connection.commit()
+
+		# Act:
+		with self.assertRaises(PsycopgError):
+			database.get_account_refresh_state()
+
+		# Assert:
+		self.assertIsNone(database.get_block_hash(1))
+
 	def test_mark_account_refresh_failed_rolls_back_when_state_table_is_missing(self):
 		# Arrange:
 		database = self._create_database()
@@ -522,93 +530,20 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		# The failed transaction must be cleared by the error handler.
 		self.assertIsNone(database.get_block_hash(1))
 
-	def test_account_refresh_lock_serializes_database_sessions(self):
+	def test_get_recently_harvesting_addresses_rolls_back_before_failure_state_recording(self):
 		# Arrange:
 		database = self._create_database()
-		second_session_ready = threading.Event()
-		lock_acquired = threading.Event()
-		thread_finished = threading.Event()
-		thread = None
+		cursor = database.connection.cursor()
+		cursor.execute('DROP TABLE symbol_blocks CASCADE')
+		database.connection.commit()
 
-		def acquire_from_second_session():
-			second_database = SymbolDatabase(self.db_config)
-			with second_database:
-				second_session_ready.set()
-				with second_database.account_refresh_lock():
-					lock_acquired.set()
-			thread_finished.set()
-
-		try:
-			with database.account_refresh_lock():
-				thread = threading.Thread(target=acquire_from_second_session, daemon=True)
-				thread.start()
-
-				# Act:
-				second_session_started = second_session_ready.wait(1)
-				second_session_is_blocked = not lock_acquired.is_set()
-				thread.join(0.1)
-		finally:
-			if thread:
-				thread.join(1)
+		# Act:
+		with self.assertRaises(PsycopgError):
+			database.get_recently_harvesting_addresses(datetime.datetime(2026, 1, 1))
+		database.mark_account_refresh_failed('refresh failed')
 
 		# Assert:
-		self.assertTrue(second_session_started)
-		self.assertTrue(second_session_is_blocked)
-		self.assertTrue(thread_finished.is_set())
-
-	def test_account_refresh_lock_releases_after_exception_and_preserves_primary_error(self):
-		# Arrange:
-		database = self._create_database()
-
-		# Act + Assert:
-		with self.assertRaisesRegex(RuntimeError, 'primary failure'):
-			with database.account_refresh_lock():
-				raise RuntimeError('primary failure')
-
-		# Assert:
-		self._assert_account_refresh_lock_is_available()
-
-	def test_account_refresh_lock_releases_after_base_exception_and_preserves_primary_error(self):
-		# Arrange:
-		database = self._create_database()
-
-		# Act + Assert:
-		with self.assertRaises(KeyboardInterrupt):
-			with database.account_refresh_lock():
-				raise KeyboardInterrupt()
-
-		# Assert:
-		self._assert_account_refresh_lock_is_available()
-
-	def _assert_account_refresh_lock_is_available(self):
-		second_database = self.exit_stack.enter_context(SymbolDatabase(self.db_config))
-		cursor = second_database.connection.cursor()
-		cursor.execute("SELECT pg_try_advisory_lock(hashtext('symbol_account_refresh'))")
-		lock_acquired = cursor.fetchone()[0]
-		try:
-			self.assertTrue(lock_acquired)
-		finally:
-			if lock_acquired:
-				cursor.execute("SELECT pg_advisory_unlock(hashtext('symbol_account_refresh'))")
-				second_database.connection.commit()
-
-	def test_account_refresh_lock_propagates_unlock_failure_after_success(self):
-		# Arrange:
-		database = self.exit_stack.enter_context(UnlockFailureSymbolDatabase(self.db_config))
-
-		# Act + Assert:
-		with self.assertRaisesRegex(RuntimeError, 'unlock failure'):
-			with database.account_refresh_lock():
-				pass
-
-	def test_account_refresh_lock_preserves_body_failure_when_unlock_also_fails(self):
-		# Arrange:
-		database = self.exit_stack.enter_context(UnlockFailureSymbolDatabase(self.db_config))
-
-		# Act + Assert:
-		with self.assertRaisesRegex(RuntimeError, 'primary failure'):
-			with database.account_refresh_lock():
-				raise RuntimeError('primary failure')
+		self.assertEqual('unhealthy', database.get_account_refresh_state()['status'])
 
 	def test_create_tables_creates_symbol_sync_state_schema(self):
 		# Arrange:
@@ -1613,11 +1548,11 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 	@staticmethod
 	def _seed_account_refresh_snapshot_for_ranks(database):
 		account_row1, mosaic_rows1 = _create_account_row(
-			ADDRESS1, importance='100', mosaics=[{'id': NATIVE_MOSAIC_ID, 'amount': '300'}])
+			ADDRESS1, importance='200', mosaics=[{'id': NATIVE_MOSAIC_ID, 'amount': '300'}])
 		account_row2, mosaic_rows2 = _create_account_row(
-			ADDRESS2, importance='300', mosaics=[{'id': NATIVE_MOSAIC_ID, 'amount': '100'}])
+			ADDRESS2, importance='100', mosaics=[{'id': NATIVE_MOSAIC_ID, 'amount': '100'}])
 		account_row3, mosaic_rows3 = _create_account_row(
-			ADDRESS3, importance='200', mosaics=[{'id': NATIVE_MOSAIC_ID, 'amount': '200'}])
+			ADDRESS3, importance='300', mosaics=[{'id': NATIVE_MOSAIC_ID, 'amount': '200'}])
 		for account_row, mosaic_rows in ((account_row1, mosaic_rows1), (account_row2, mosaic_rows2), (account_row3, mosaic_rows3)):
 			database.upsert_account_current_state(account_row, mosaic_rows)
 		snapshot_at = datetime.datetime(2026, 1, 1)
@@ -1673,9 +1608,9 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 
 		# Assert:
 		self.assertEqual([
-			(0, bytes.fromhex(ADDRESS2)),
-			(1, bytes.fromhex(ADDRESS3)),
-			(2, bytes.fromhex(ADDRESS1))
+			(0, bytes.fromhex(ADDRESS3)),
+			(1, bytes.fromhex(ADDRESS1)),
+			(2, bytes.fromhex(ADDRESS2))
 		], self._fetch_rank_addresses(database, 'IMPORTANCE'))
 
 	def test_finalize_account_refresh_orders_native_balance_scope_by_amount(self):
@@ -1697,6 +1632,8 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		# Arrange:
 		database = self._create_database()
 		account_row, mosaic_rows = _create_account_row(importance='100')
+		# 0.123 and 0.456 are rollback sentinels: a successful finalize would recompute
+		# importance / total_importance, which is 100 / 100 = 1 in this fixture.
 		account_row['importance_percentage'] = Decimal('0.456')
 		database.upsert_account_current_state(account_row, mosaic_rows)
 		account_row['importance_percentage'] = Decimal('0.123')

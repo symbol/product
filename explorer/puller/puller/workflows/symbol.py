@@ -6,7 +6,11 @@ from puller.workflows import refresh_symbol_accounts, sync_symbol_block
 
 COMMANDS = (
 	('sync-block', 'Synchronize Symbol block headers.', sync_symbol_block),
-	('refresh-accounts', 'Refresh Symbol account statistics population.', refresh_symbol_accounts)
+	(
+		'refresh-accounts',
+		'Refresh Symbol accounts; do not run concurrently with sync-block rollback repair.',
+		refresh_symbol_accounts
+	)
 )
 
 

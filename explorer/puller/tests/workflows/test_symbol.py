@@ -1,3 +1,4 @@
+# pylint: disable=invalid-name
 import asyncio
 
 import pytest
@@ -21,7 +22,7 @@ def test_help_lists_symbol_commands(capsys):
 		asyncio.run(main(['--help']))
 
 	# Assert:
-	assert exception.value.code == 0
+	assert 0 == exception.value.code
 	output = capsys.readouterr().out
 	assert 'sync-block' in output
 	assert 'refresh-accounts' in output
@@ -33,7 +34,7 @@ def test_no_command_prints_help(capsys):
 		asyncio.run(main([]))
 
 	# Assert:
-	assert exception.value.code == 0
+	assert 0 == exception.value.code
 	output = capsys.readouterr().out
 	assert 'Run a Symbol puller workflow.' in output
 	assert 'sync-block' in output
@@ -46,7 +47,7 @@ def test_unknown_command_is_rejected(capsys):
 		asyncio.run(main(['unknown']))
 
 	# Assert:
-	assert exception.value.code == 2
+	assert 2 == exception.value.code
 	assert 'invalid choice' in capsys.readouterr().err
 
 
@@ -65,7 +66,7 @@ def test_common_argument_required(missing_option, capsys):
 		asyncio.run(main(arguments))
 
 	# Assert:
-	assert exception.value.code == 2
+	assert 2 == exception.value.code
 	assert missing_option in capsys.readouterr().err
 
 
@@ -80,7 +81,7 @@ def test_invalid_network_is_rejected(capsys):
 		]))
 
 	# Assert:
-	assert exception.value.code == 2
+	assert 2 == exception.value.code
 	assert 'invalid choice' in capsys.readouterr().err
 
 
@@ -88,7 +89,7 @@ def test_invalid_network_is_rejected(capsys):
 	'option',
 	['--max-height', '--max-requests-per-second'],
 	ids=['max-height', 'max-requests-per-second'])
-def test_sync_limit_rejected(option, capsys):
+def test_sync_block_rejects_non_positive_limit(option, capsys):
 	# Arrange:
 	arguments = _base_arguments('sync-block')
 
@@ -97,7 +98,7 @@ def test_sync_limit_rejected(option, capsys):
 		asyncio.run(main(arguments + [option, '0']))
 
 	# Assert:
-	assert exception.value.code == 2
+	assert 2 == exception.value.code
 	assert 'must be greater than or equal to 1' in capsys.readouterr().err
 
 
@@ -111,11 +112,23 @@ def test_command_help(command, expected_text, capsys):
 		asyncio.run(main([command, '--help']))
 
 	# Assert:
-	assert exception.value.code == 0
+	assert 0 == exception.value.code
 	assert expected_text in capsys.readouterr().out
 
 
-def test_sync_dispatch_forwards_args():
+def test_refresh_accounts_help_describes_scheduler_non_overlap(capsys):
+	# Act:
+	with pytest.raises(SystemExit) as exception:
+		asyncio.run(main(['refresh-accounts', '--help']))
+
+	# Assert:
+	assert 0 == exception.value.code
+	normalized_output = ' '.join(capsys.readouterr().out.split())
+	assert 'do not run concurrently' in normalized_output
+	assert 'sync-block rollback repair' in normalized_output
+
+
+def test_sync_block_dispatches_with_forwarded_limits_and_config():
 	# Arrange:
 	puller_factory = workflow_test_utils.RecordingSymbolPullerFactory()
 	argv = _base_arguments('sync-block') + ['--max-height', '3000', '--max-requests-per-second', '25']
@@ -126,14 +139,14 @@ def test_sync_dispatch_forwards_args():
 
 	# Assert:
 	puller = puller_factory.puller
-	assert puller.constructor_kwargs == {'max_requests_per_second': 25}
-	assert puller.symbol_db.create_tables_call_count == 1
-	assert puller.synced_max_heights == [3000]
-	assert puller.constructor_args[:3] == ('http://localhost:7890', 'test_config.ini', 'testnet')
-	assert puller.constructor_args[3].base_url == 'http://localhost:7890'
+	assert {'max_requests_per_second': 25} == puller.constructor_kwargs
+	assert 1 == puller.symbol_db.create_tables_call_count
+	assert [3000] == puller.synced_max_heights
+	assert ('http://localhost:7890', 'test_config.ini', 'testnet') == puller.constructor_args[:3]
+	assert 'http://localhost:7890' == puller.constructor_args[3].base_url
 
 
-def test_sync_dispatch_defaults():
+def test_sync_block_dispatches_with_default_limits():
 	# Arrange:
 	puller_factory = workflow_test_utils.RecordingSymbolPullerFactory()
 
@@ -142,10 +155,10 @@ def test_sync_dispatch_defaults():
 
 	# Assert:
 	assert not puller_factory.puller.constructor_kwargs
-	assert puller_factory.puller.synced_max_heights == [None]
+	assert [None] == puller_factory.puller.synced_max_heights
 
 
-def test_refresh_dispatches(caplog):
+def test_refresh_accounts_dispatches_and_logs_completion(caplog):
 	# Arrange:
 	puller_factory = workflow_test_utils.RecordingSymbolPullerFactory()
 	caplog.set_level('INFO')
@@ -155,13 +168,13 @@ def test_refresh_dispatches(caplog):
 
 	# Assert:
 	puller = puller_factory.puller
-	assert puller.refresh_accounts_call_count == 1
-	assert puller.symbol_db.create_tables_call_count == 1
-	assert puller.constructor_args[:3] == ('http://localhost:7890', 'test_config.ini', 'testnet')
+	assert 1 == puller.refresh_accounts_call_count
+	assert 1 == puller.symbol_db.create_tables_call_count
+	assert ('http://localhost:7890', 'test_config.ini', 'testnet') == puller.constructor_args[:3]
 	assert ['Account refresh completed'] == caplog.messages
 
 
-def test_refresh_failure_no_log(caplog):
+def test_refresh_accounts_propagates_failure_without_completion_log(caplog):
 	# Arrange:
 	puller_factory = workflow_test_utils.FailingRefreshSymbolPullerFactory()
 	caplog.set_level('INFO')

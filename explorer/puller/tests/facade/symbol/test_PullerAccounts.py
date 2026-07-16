@@ -1,8 +1,5 @@
 # pylint: disable=duplicate-code,too-many-lines
 import asyncio
-import threading
-import time
-from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
@@ -43,6 +40,10 @@ class MalformedAccountsBatchConnector(FakeConnector):
 
 def _address_hex(index):
 	return f'98{index:046X}'
+
+
+def _strip_id(rest_record):
+	return {key: value for key, value in rest_record.items() if 'id' != key}
 
 
 def _expected_importance_percentage(importance, total_importance):
@@ -88,39 +89,6 @@ class FailureStateRecordingDatabase:
 	def mark_account_refresh_failed(self, last_error):
 		self.failure_state_errors.append(last_error)
 		raise FailureStateRecordingError('failure-state persistence failed')
-
-
-class ReleaseFailureRecordingDatabase:
-	def __init__(self, database):
-		self.database = database
-		self.release_call_count = 0
-
-	def __getattr__(self, name):
-		return getattr(self.database, name)
-
-	@contextmanager
-	def account_refresh_lock(self):
-		with self.database.account_refresh_lock():
-			yield
-		self.release_call_count += 1
-		raise RuntimeError('lock release failed')
-
-
-class BlockingRefreshConnector(FakeConnector):
-	def __init__(self, refresh_started, allow_refresh, refresh_error=None):
-		super().__init__(1, {}, account_pages={1: []})
-		self.refresh_started = refresh_started
-		self.allow_refresh = allow_refresh
-		self.refresh_error = refresh_error
-
-	async def get(self, url_path, *args):
-		if 'chain/info' == url_path:
-			self.refresh_started.set()
-			self.allow_refresh.wait(1)
-			if self.refresh_error:
-				raise RuntimeError(self.refresh_error)
-
-		return await super().get(url_path, *args)
 
 
 class MalformedAccountsConnector(FakeConnector):
@@ -175,56 +143,6 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):  # pylint: disable=too-man
 			'last_synced_height': 0,
 			'last_synced_block_hash': b'last'
 		}
-
-	def _run_refresh_while_rollback_waits(self, connector):
-		set_symbol_connector(self.puller, connector)
-		refresh_errors = []
-		rollback_errors = []
-		refresh_finished = threading.Event()
-		rollback_ready = threading.Event()
-		rollback_finished = threading.Event()
-
-		def run_refresh():
-			try:
-				asyncio.run(self.puller.refresh_accounts())
-			except Exception as error:  # pylint: disable=broad-exception-caught
-				refresh_errors.append(error)
-			finally:
-				refresh_finished.set()
-
-		def run_rollback():
-			try:
-				with SymbolDatabase(self.db_config) as database:
-					rollback_ready.set()
-					database.repair_rollback_from_height(1, self._create_rollback_sync_state())
-			except Exception as error:  # pylint: disable=broad-exception-caught
-				rollback_errors.append(error)
-			finally:
-				rollback_finished.set()
-
-		refresh_thread = threading.Thread(target=run_refresh)
-		rollback_thread = threading.Thread(target=run_rollback)
-		refresh_thread.start()
-		rollback_thread_started = False
-		rollback_finished_before_refresh = None
-		try:
-			self.assertTrue(connector.refresh_started.wait(1), 'refresh did not enter the blocking node request')
-			rollback_thread.start()
-			rollback_thread_started = True
-			self.assertTrue(rollback_ready.wait(1), 'rollback session did not become ready')
-			rollback_finished_before_refresh = rollback_finished.is_set()
-			connector.allow_refresh.set()
-			self.assertTrue(refresh_finished.wait(2), 'refresh thread did not finish')
-			self.assertTrue(rollback_finished.wait(2), 'rollback thread did not finish after refresh')
-		finally:
-			connector.allow_refresh.set()
-			refresh_thread.join(2)
-			if rollback_thread_started:
-				rollback_thread.join(2)
-			self.assertFalse(refresh_thread.is_alive(), 'refresh thread remains alive')
-			self.assertFalse(rollback_thread.is_alive(), 'rollback thread remains alive')
-
-		return refresh_errors, rollback_errors, rollback_finished_before_refresh
 
 	@staticmethod
 	def _raw_network_timestamp(days_ago=0):
@@ -609,12 +527,8 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):  # pylint: disable=too-man
 		# Arrange:
 		page1 = []
 		for index in range(100):
-			item = create_account_item(_address_hex(index), f'id-{index}', importance=str(index + 1))
-			item.pop('id')
-			page1.append(item)
-		page2_item = create_account_item(_address_hex(100), 'id-100', importance='101')
-		page2_item.pop('id')
-		page2 = [page2_item]
+			page1.append(_strip_id(create_account_item(_address_hex(index), f'id-{index}', importance=str(index + 1))))
+		page2 = [_strip_id(create_account_item(_address_hex(100), 'id-100', importance='101'))]
 		connector = FakeConnector(101, {}, account_pages={1: page1, 2: page2})
 		set_symbol_connector(self.puller, connector)
 
@@ -844,58 +758,6 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):  # pylint: disable=too-man
 		self.assertIs(refresh_error, context.exception)
 		self.assertEqual([str(refresh_error)], failure_state_database.failure_state_errors)
 
-	def test_refresh_accounts_holds_lock_until_success_then_allows_rollback(self):
-		# Arrange:
-		connector = BlockingRefreshConnector(threading.Event(), threading.Event())
-		self.puller.symbol_db.upsert_account_refresh_state({'status': 'healthy'})
-
-		# Act:
-		refresh_errors, rollback_errors, rollback_finished_before_refresh = self._run_refresh_while_rollback_waits(connector)
-
-		# Assert:
-		self.assertEqual([], refresh_errors)
-		self.assertEqual([], rollback_errors)
-		self.assertFalse(rollback_finished_before_refresh)
-		self.assertEqual('repairing', self.puller.symbol_db.get_sync_state()['status'])
-
-	def test_refresh_accounts_releases_lock_after_failure_then_allows_rollback(self):
-		# Arrange:
-		connector = BlockingRefreshConnector(threading.Event(), threading.Event(), 'refresh failed')
-		self.puller.symbol_db.upsert_account_refresh_state({'status': 'healthy'})
-
-		# Act:
-		refresh_errors, rollback_errors, rollback_finished_before_refresh = self._run_refresh_while_rollback_waits(connector)
-
-		# Assert:
-		self.assertEqual(1, len(refresh_errors))
-		self.assertIsInstance(refresh_errors[0], RuntimeError)
-		self.assertEqual('refresh failed', str(refresh_errors[0]))
-		self.assertEqual([], rollback_errors)
-		self.assertFalse(rollback_finished_before_refresh)
-		self.assertEqual('unhealthy', self.puller.symbol_db.get_account_refresh_state()['status'])
-		self.assertEqual('repairing', self.puller.symbol_db.get_sync_state()['status'])
-
-	def test_refresh_accounts_propagates_lock_release_failure_after_success(self):
-		# Arrange:
-		connector = FakeConnector(1, {}, account_pages={1: []})
-		set_symbol_connector(self.puller, connector)
-		database = self.puller.symbol_db
-		release_failure_database = ReleaseFailureRecordingDatabase(database)
-		self.puller.symbol_db = release_failure_database
-
-		try:
-			# Act + Assert:
-			with self.assertRaisesRegex(RuntimeError, 'lock release failed'):
-				asyncio.run(self.puller.refresh_accounts())
-			refresh_state = release_failure_database.get_account_refresh_state()
-			release_call_count = release_failure_database.release_call_count
-		finally:
-			self.puller.symbol_db = database
-
-		# Assert:
-		self.assertEqual('healthy', refresh_state['status'])
-		self.assertEqual(1, release_call_count)
-
 	def test_rollback_re_raises_database_error(self):
 		# Arrange:
 		database = self.exit_stack.enter_context(SymbolDatabase(self.db_config))
@@ -905,114 +767,27 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):  # pylint: disable=too-man
 		with self.assertRaises(PsycopgError):
 			database.repair_rollback_from_height(1, sync_state)
 
-	def test_rollback_failure_releases_lock_for_waiting_refresh(self):  # pylint: disable=too-many-locals,too-many-statements
+	def test_refresh_accounts_can_restart_with_new_successful_run(self):  # pylint: disable=too-many-locals
 		# Arrange:
-		self.puller.symbol_db.upsert_blocks([create_block_row(
-			self._create_block(1),
-			0,
-			self.puller.symbol_facade.network
-		)])
-		row_lock_database = self.exit_stack.enter_context(SymbolDatabase(self.db_config))
-		row_lock_cursor = row_lock_database.connection.cursor()
-		row_lock_cursor.execute('SELECT height FROM symbol_blocks WHERE height = 1 FOR UPDATE')
-		row_lock_result = row_lock_cursor.fetchone()
-
-		rollback_started = threading.Event()
-		rollback_finished = threading.Event()
-		rollback_errors = []
-		refresh_started = threading.Event()
-		refresh_finished = threading.Event()
-		refresh_errors = []
-		allow_refresh = threading.Event()
-		connector = BlockingRefreshConnector(refresh_started, allow_refresh)
-		set_symbol_connector(self.puller, connector)
-
-		def run_rollback():
-			try:
-				with SymbolDatabase(self.db_config) as database:
-					rollback_started.set()
-					database.repair_rollback_from_height(1, self._create_rollback_sync_state(status='invalid'))
-			except Exception as error:  # pylint: disable=broad-exception-caught
-				rollback_errors.append(error)
-			finally:
-				rollback_finished.set()
-
-		def run_refresh():
-			try:
-				asyncio.run(self.puller.refresh_accounts())
-			except Exception as error:  # pylint: disable=broad-exception-caught
-				refresh_errors.append(error)
-			finally:
-				refresh_finished.set()
-
-		rollback_thread = threading.Thread(target=run_rollback)
-		refresh_thread = threading.Thread(target=run_refresh)
-		rollback_thread_started = False
-		refresh_thread_started = False
-		rollback_lock_held = False
-
-		# Act:
-		try:
-			rollback_thread.start()
-			rollback_thread_started = True
-			rollback_started.wait(2)
-			with SymbolDatabase(self.db_config) as lock_probe_database:
-				probe_cursor = lock_probe_database.connection.cursor()
-				lock_wait_deadline = time.monotonic() + 2
-				while time.monotonic() < lock_wait_deadline:
-					probe_cursor.execute("SELECT pg_try_advisory_lock(hashtext('symbol_account_refresh'))")
-					if not probe_cursor.fetchone()[0]:
-						rollback_lock_held = True
-						break
-					probe_cursor.execute("SELECT pg_advisory_unlock(hashtext('symbol_account_refresh'))")
-					threading.Event().wait(0.01)
-			refresh_thread.start()
-			refresh_thread_started = True
-			row_lock_database.connection.rollback()
-			refresh_started.wait(2)
-			allow_refresh.set()
-			rollback_thread.join(2)
-			refresh_thread.join(2)
-		finally:
-			row_lock_database.connection.rollback()
-			allow_refresh.set()
-			if rollback_thread_started:
-				rollback_thread.join(2)
-			if refresh_thread_started:
-				refresh_thread.join(2)
-
-		# Assert:
-		self.assertEqual((1,), row_lock_result)
-		self.assertTrue(rollback_started.is_set())
-		self.assertTrue(rollback_lock_held)
-		self.assertTrue(refresh_started.is_set())
-		self.assertFalse(rollback_thread.is_alive())
-		self.assertFalse(refresh_thread.is_alive())
-		self.assertTrue(rollback_finished.is_set())
-		self.assertEqual(1, len(rollback_errors))
-		self.assertIsInstance(rollback_errors[0], PsycopgError)
-		self.assertTrue(refresh_finished.is_set())
-		self.assertEqual([], refresh_errors)
-		self.assertEqual('healthy', self.puller.symbol_db.get_account_refresh_state()['status'])
-
-	def test_refresh_accounts_can_restart_with_new_successful_run(self):
-		# Arrange:
-		page = [create_account_item(_address_hex(1), 'id-1', importance='10')]
+		first_mosaic_amount = 20_000 * 10 ** 6
+		second_mosaic_amount = 30_000 * 10 ** 6
+		page = [create_account_item(
+			_address_hex(1),
+			'id-1',
+			importance='10',
+			mosaics=[{'id': NATIVE_MOSAIC_ID, 'amount': str(first_mosaic_amount)}])]
 		connector = FakeConnector(1, {}, account_pages={1: page})
 		set_symbol_connector(self.puller, connector)
 
 		# Act:
-		run_ids = []
-		for _ in range(2):
-			asyncio.run(self.puller.refresh_accounts())
-			run_ids.append(self.puller.symbol_db.get_account_refresh_state()['last_successful_run_id'])
-
-		first_run_id = run_ids[0]
-		second_run_id = run_ids[1]
+		asyncio.run(self.puller.refresh_accounts())
+		first_run_id = self.puller.symbol_db.get_account_refresh_state()['last_successful_run_id']
+		page[0]['account']['mosaics'][0]['amount'] = str(second_mosaic_amount)
+		asyncio.run(self.puller.refresh_accounts())
+		second_run_id = self.puller.symbol_db.get_account_refresh_state()['last_successful_run_id']
 
 		# Assert:
 		expected_address = bytes.fromhex(_address_hex(1))
-		expected_mosaic_amount = int(page[0]['account']['mosaics'][0]['amount'])
 
 		def fetch_run_results(refresh_run_id):
 			cursor = self.puller.symbol_db.connection.cursor()
@@ -1056,30 +831,46 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):  # pylint: disable=too-man
 
 		first_results = fetch_run_results(first_run_id)
 		second_results = fetch_run_results(second_run_id)
+		cursor = self.puller.symbol_db.connection.cursor()
+		cursor.execute(
+			'''
+			SELECT address, mosaic_id, amount
+			FROM symbol_account_mosaics
+			ORDER BY address, mosaic_id
+			''')
+		current_mosaic_results = [
+			(bytes(address), mosaic_id, amount)
+			for address, mosaic_id, amount in cursor.fetchall()
+		]
 
 		self.assertNotEqual(first_run_id, second_run_id)
-		expected_account_results = [(first_run_id, expected_address, 0)]
-		expected_mosaic_results = [
-			(first_run_id, expected_address, NATIVE_MOSAIC_ID, expected_mosaic_amount)
+		first_expected_account_results = [(first_run_id, expected_address, 0)]
+		first_expected_mosaic_results = [
+			(first_run_id, expected_address, NATIVE_MOSAIC_ID, first_mosaic_amount)
 		]
-		expected_rank_results = [
+		first_expected_rank_results = [
 			(first_run_id, f'BALANCE:{NATIVE_MOSAIC_ID}', 0, expected_address),
 			(first_run_id, 'ID', 0, expected_address),
 			(first_run_id, 'IMPORTANCE', 0, expected_address)
 		]
 		self.assertEqual(
-			(expected_account_results, expected_mosaic_results, expected_rank_results),
+			(first_expected_account_results, first_expected_mosaic_results, first_expected_rank_results),
 			first_results)
-		expected_account_results[0] = (second_run_id, expected_address, 0)
-		expected_mosaic_results[0] = (second_run_id, expected_address, NATIVE_MOSAIC_ID, expected_mosaic_amount)
-		expected_rank_results = [
+		second_expected_account_results = [(second_run_id, expected_address, 0)]
+		second_expected_mosaic_results = [
+			(second_run_id, expected_address, NATIVE_MOSAIC_ID, second_mosaic_amount)
+		]
+		second_expected_rank_results = [
 			(second_run_id, f'BALANCE:{NATIVE_MOSAIC_ID}', 0, expected_address),
 			(second_run_id, 'ID', 0, expected_address),
 			(second_run_id, 'IMPORTANCE', 0, expected_address)
 		]
 		self.assertEqual(
-			(expected_account_results, expected_mosaic_results, expected_rank_results),
+			(second_expected_account_results, second_expected_mosaic_results, second_expected_rank_results),
 			second_results)
+		self.assertEqual(
+			[(expected_address, NATIVE_MOSAIC_ID, second_mosaic_amount)],
+			current_mosaic_results)
 
 	def test_refresh_accounts_rejects_malformed_accounts_page_response(self):
 		# Arrange:
