@@ -141,14 +141,14 @@ const TransactionGraphic = ({ transactions }) => {
 								{item.keyLinkAction === KEY_LINK_ACTION.UNLINK && t('value_keyUnlink')}
 							</Field>
 						)}
-						{!!item.publicKey && (
-							<Field title={t('field_publicKey')}>
-								<ValueCopy value={item.publicKey} />
+						{!!item.linkedPublicKey && (
+							<Field title={t('field_linkedPublicKey')}>
+								<ValueCopy value={item.linkedPublicKey} />
 							</Field>
 						)}
-						{!!item.remoteAccount && (
-							<Field title={t('field_account')}>
-								<ValueAccount address={item.remoteAccount} size="md" isWrapDisabled />
+						{!!item.linkedAddress && (
+							<Field title={t('field_linkedAccount')}>
+								<ValueAccount address={item.linkedAddress} size="md" isWrapDisabled />
 							</Field>
 						)}
 					</div>

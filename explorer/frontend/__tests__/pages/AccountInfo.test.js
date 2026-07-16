@@ -5,7 +5,7 @@ import * as AccountService from '@/app/api/accounts';
 import * as TransactionService from '@/app/api/transactions';
 import AccountInfo, { getServerSideProps } from '@/app/pages/accounts/[address]';
 import * as utils from '@/app/utils';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 
 jest.mock('@/app/utils', () => {
 	return {
@@ -124,17 +124,18 @@ describe('AccountInfo', () => {
 			expect(screen.getByText(noDescriptionText)).toBeInTheDocument();
 		});
 
-		it('renders remote account address when linked account exists', () => {
+		it('renders linked account address when it exists', () => {
 			// Arrange:
-			const remoteAddress = 'NANQPLR63Z4ONDR3X6JQAC2HQCVPKI4ZDQ6OG6M4';
-			const accountInfoWithRemoteAccount = { ...accountInfoResult, remoteAddress };
+			const linkedAddress = 'NANQPLR63Z4ONDR3X6JQAC2HQCVPKI4ZDQ6OG6M4';
+			const accountInfoWithLinkedAccount = { ...accountInfoResult, linkedAddress };
 
 			// Act:
-			render(<AccountInfo accountInfo={accountInfoWithRemoteAccount} preloadedTransactions={[]} />);
+			render(<AccountInfo accountInfo={accountInfoWithLinkedAccount} preloadedTransactions={[]} />);
+			fireEvent.click(screen.getByText('section_linkedKeys'));
 
 			// Assert:
-			expect(screen.getByText('field_remoteAccount')).toBeInTheDocument();
-			expect(screen.getByText(remoteAddress)).toBeInTheDocument();
+			expect(screen.getByText('field_linkedAccount')).toBeInTheDocument();
+			expect(screen.getByText(linkedAddress)).toBeInTheDocument();
 		});
 	});
 
