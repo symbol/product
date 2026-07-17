@@ -169,7 +169,9 @@ const formatBaseTransaction = (data, filter) => {
 				type: data.transactionType,
 				sender
 			}
-		]
+		],
+		size: data.size,
+		version: data.version
 	};
 };
 
