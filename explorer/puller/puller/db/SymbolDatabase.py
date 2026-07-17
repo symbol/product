@@ -657,7 +657,7 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 	def upsert_mosaic(self, mosaic_row):
 		"""Upserts one mosaic current-state row and derives its alias names."""
 
-		with self._transaction() as cursor:
+		with self._database_transaction() as cursor:
 			self._execute_upsert_mosaic(cursor, mosaic_row)
 
 	@staticmethod
@@ -687,7 +687,7 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 	def delete_mosaic(self, mosaic_id):
 		"""Deletes one mosaic current-state row when it exists."""
 
-		with self._transaction() as cursor:
+		with self._database_transaction() as cursor:
 			self._execute_delete_mosaic(cursor, mosaic_id)
 
 	@staticmethod

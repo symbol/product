@@ -319,7 +319,7 @@ def create_account_item(address_hex=BENEFICIARY_ADDRESS, item_id='account-id', *
 
 
 class FakeConnector:  # pylint: disable=too-many-instance-attributes
-	def __init__(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+	def __init__(  # pylint: disable=too-many-arguments,too-many-positional-arguments,too-many-locals
 		self,
 		chain_height,
 		pages,
