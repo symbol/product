@@ -148,7 +148,7 @@ const TransactionGraphic = ({ transactions }) => {
 						)}
 						{!!item.linkedAddress && (
 							<Field title={t('field_linkedAccount')}>
-								<ValueAccount address={item.linkedAddress} size="md" isWrapDisabled />
+								<ValueAccount address={item.linkedAddress} size="sm" />
 							</Field>
 						)}
 					</div>
