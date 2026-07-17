@@ -1,7 +1,10 @@
+from symbolchain.symbol.IdGenerator import is_mosaic_alias
+
+
 def is_alias_mosaic_id(mosaic_id_hex):
 	"""Returns whether a mosaic id encodes a namespace alias."""
 
-	return 0 != int(mosaic_id_hex, 16) & 0x8000000000000000
+	return is_mosaic_alias(int(mosaic_id_hex, 16))
 
 
 def select_resolution_entry(resolution_entries, primary_id, secondary_id):
@@ -33,12 +36,7 @@ def select_resolution_entry(resolution_entries, primary_id, secondary_id):
 		if int(entry['source']['secondaryId']) <= secondary_id
 	]
 	resolved_secondary_id = max(secondary_ids, default=0)
-	entry_at_zero = next((
-		entry
-		for entry in entries_at_primary_id
-		if 0 == int(entry['source']['secondaryId'])
-	), None)
-	if 0 == resolved_secondary_id and 0 != secondary_id and entry_at_zero is None:
+	if 0 == resolved_secondary_id and 0 != secondary_id:
 		previous_primary_ids = [
 			int(entry['source']['primaryId'])
 			for entry in resolution_entries

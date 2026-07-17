@@ -36,9 +36,25 @@ class ResolutionTest(TestCase):
 		entries = [_entry(1, 0), _entry(2, 0), _entry(4, 2), _entry(4, 4), _entry(7, 6)]
 		self._assert_selects_entry(entries, 3, 0, '0200')
 
+	def test_select_resolution_entry_returns_first_entry_when_source_is_between_first_and_second_secondary_ids(self):
+		entries = [_entry(1, 1, 'A'), _entry(1, 4, 'B'), _entry(1, 7, 'C')]
+		self._assert_selects_entry(entries, 1, 2, 'A')
+
+	def test_select_resolution_entry_returns_second_entry_when_source_is_between_second_and_third_secondary_ids(self):
+		entries = [_entry(1, 1, 'A'), _entry(1, 4, 'B'), _entry(1, 7, 'C')]
+		self._assert_selects_entry(entries, 1, 6, 'B')
+
 	def test_select_resolution_entry_falls_back_for_embedded_source_before_first_secondary_id(self):
 		entries = [_entry(1, 0), _entry(2, 0), _entry(5, 6)]
 		self._assert_selects_entry(entries, 5, 3, '0200')
+
+	def test_select_resolution_entry_falls_back_to_last_previous_primary_entry_when_current_primary_has_no_applicable_secondary_id(self):
+		entries = [_entry(1, 1, 'A'), _entry(1, 4, 'B'), _entry(1, 7, 'C'), _entry(2, 4, 'D')]
+		self._assert_selects_entry(entries, 2, 2, 'C')
+
+	def test_select_resolution_entry_falls_back_when_current_primary_has_zero_entry(self):
+		entries = [_entry(1, 0, 'A'), _entry(2, 0, 'B'), _entry(2, 4, 'C')]
+		self._assert_selects_entry(entries, 2, 2, 'A')
 
 	def test_select_resolution_entry_returns_exact_embedded_source(self):
 		entries = [_entry(1, 0), _entry(2, 0), _entry(5, 6)]
