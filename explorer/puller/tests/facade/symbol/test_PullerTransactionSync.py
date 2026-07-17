@@ -3,6 +3,7 @@ import asyncio
 from symbolchain.sc import TransactionType
 
 from puller.facade.SymbolPuller import MAX_PAGE_SIZE, RESOLUTION_FETCH_CONCURRENCY
+from tests.test.SymbolTestConstants import SIGNER_ADDRESS
 
 from .puller_test_utils import (
 	FakeConnector,
@@ -19,6 +20,7 @@ from .puller_test_utils import (
 
 ALIAS_ADDRESS = '99065A28385EB5AE88000000000000000000000000000000'
 SECOND_ALIAS_ADDRESS = '9958E1C2A3ABC3CAF6000000000000000000000000000000'
+DECOY_RESOLVED_ADDRESS = SIGNER_ADDRESS
 RESOLVED_ADDRESS = '9887EE8C9843958C84E0F25FEAF403D880B3D323133972F2'
 ALIAS_MOSAIC_ID = 'E74B99BA41F4AFEE'
 RESOLVED_MOSAIC_ID = '72C0212E67A08BCE'
@@ -36,6 +38,15 @@ class MalformedResolutionConnector(FakeConnector):
 		if url_path.startswith('statements/resolutions/address?'):
 			self.paths.append(url_path)
 			return {'pagination': {'pageNumber': 1}}
+
+		return await super().get(url_path, *args)
+
+
+class NonDictResolutionConnector(FakeConnector):
+	async def get(self, url_path, *args):
+		if url_path.startswith('statements/resolutions/address?'):
+			self.paths.append(url_path)
+			return None
 
 		return await super().get(url_path, *args)
 
@@ -265,6 +276,41 @@ class SymbolPullerTransactionAliasResolutionTest(SymbolPullerTestBase):
 	def _resolution_paths(connector):
 		return [path for path in connector.paths if path.startswith('statements/resolutions/')]
 
+	def test_sync_block_headers_selects_top_level_resolution_entry_from_block_index(self):
+		# Arrange:
+		connector = FakeConnector(
+			1,
+			{0: [create_node_block(1)]},
+			transactions_by_path={
+				transaction_path(1, 1): {'data': [create_node_transaction(
+					1,
+					block_index=1,
+					recipientAddress=ALIAS_ADDRESS)]}
+			},
+			address_resolutions_by_height={
+				1: [create_resolution_statement(
+					1,
+					ALIAS_ADDRESS,
+					[
+						_resolution_entry(1, 0, DECOY_RESOLVED_ADDRESS),
+						_resolution_entry(2, 0, RESOLVED_ADDRESS)
+					])]
+			})
+
+		# Act:
+		self._sync_with_connector(connector)
+
+		# Assert:
+		cursor = self.puller.symbol_db.connection.cursor()
+		cursor.execute(
+			'''
+			SELECT encode(transaction.recipient_address, 'hex'), encode(address.address, 'hex'), address.role
+			FROM symbol_transactions transaction
+			JOIN symbol_transaction_addresses address ON address.transaction_id = transaction.id
+			WHERE address.role = 'recipient'
+			''')
+		self.assertEqual((RESOLVED_ADDRESS.lower(), RESOLVED_ADDRESS.lower(), 'recipient'), cursor.fetchone())
+
 	def test_sync_block_headers_resolves_embedded_metadata_target_address_from_parent_source(self):
 		# Arrange:
 		aggregate_hash = 'A' * 64
@@ -296,7 +342,10 @@ class SymbolPullerTransactionAliasResolutionTest(SymbolPullerTestBase):
 				1: [create_resolution_statement(
 					1,
 					ALIAS_ADDRESS,
-					[_resolution_entry(3, 5, RESOLVED_ADDRESS)])]
+					[
+						_resolution_entry(1, 1, DECOY_RESOLVED_ADDRESS),
+						_resolution_entry(3, 5, RESOLVED_ADDRESS)
+					])]
 			})
 
 		# Act:
@@ -617,6 +666,21 @@ class SymbolPullerTransactionAliasResolutionTest(SymbolPullerTestBase):
 	def test_sync_block_headers_rejects_malformed_resolution_page(self):
 		# Arrange:
 		connector = MalformedResolutionConnector(
+			1,
+			{0: [create_node_block(1)]},
+			transactions_by_path={
+				transaction_path(1, 1): {'data': [create_node_transaction(1, recipientAddress=ALIAS_ADDRESS)]}
+			})
+
+		# Act + Assert:
+		self._assert_sync_rejects_node_response(
+			connector,
+			ValueError,
+			'Malformed Symbol address resolution page response')
+
+	def test_sync_block_headers_rejects_non_dict_resolution_page(self):
+		# Arrange:
+		connector = NonDictResolutionConnector(
 			1,
 			{0: [create_node_block(1)]},
 			transactions_by_path={
