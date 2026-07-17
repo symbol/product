@@ -356,7 +356,7 @@ class FakeConnector:  # pylint: disable=too-many-instance-attributes
 	def post_payloads(self):
 		return self.post_payloads_list
 
-	async def get(self, url_path, *_):  # pylint: disable=too-many-branches,too-many-return-statements
+	async def get(self, url_path, *_):  # pylint: disable=too-many-branches,too-many-return-statements,too-many-locals
 		self.paths.append(url_path)
 		if 'chain/info' == url_path:
 			return create_chain_info(self.chain_height, self.finalized_height)

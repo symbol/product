@@ -551,7 +551,7 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 	def upsert_namespace(self, namespace_row, alias_name_rows):
 		"""Upserts one namespace and replaces the alias-name rows derived from it."""
 
-		with self._transaction() as cursor:
+		with self._database_transaction() as cursor:
 			self._execute_upsert_namespace(cursor, namespace_row, alias_name_rows)
 
 	@staticmethod
@@ -587,7 +587,7 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 	def delete_namespace(self, namespace_id):
 		"""Deletes one namespace and its derived alias-name rows when it exists."""
 
-		with self._transaction() as cursor:
+		with self._database_transaction() as cursor:
 			self._execute_delete_namespace(cursor, namespace_id)
 
 	@staticmethod
