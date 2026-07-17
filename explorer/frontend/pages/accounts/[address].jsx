@@ -241,7 +241,7 @@ const AccountInfo = ({ accountInfo, preloadedTransactions }) => {
 							<div className="layout-flex-col-fields">
 								{!!accountInfo.linkedAddress && (
 									<Field title={t('field_linkedAccount')}>
-										<ValueAccount address={accountInfo.linkedAddress} size="md" isWrapDisabled />
+										<ValueAccount address={accountInfo.linkedAddress} size="sm" />
 									</Field>
 								)}
 								{!accountInfo.linkedAddress && (
