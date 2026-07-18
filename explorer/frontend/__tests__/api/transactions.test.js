@@ -11,6 +11,7 @@ import {
 	unsupportedTransactionInfoResult
 } from '../test-utils/transactions';
 import { fetchTransactionInfo, fetchTransactionPage } from '@/app/api/transactions';
+import * as serverUtils from '@/app/utils/server';
 
 jest.mock('@/app/utils/server', () => {
 	return {
@@ -145,6 +146,44 @@ describe('api/transactions', () => {
 
 			// Act + Assert:
 			await runApiTest(fetchTransactionInfo, params, unsupportedTransactionInfoResponse, expectedURL, expectedResult);
+		});
+
+		it('fetch account key link info with remote account address from transaction payload', async () => {
+			// Arrange:
+			const hash = '0235992BAA8C323ED0D0E74EE6CE97F635D0997493324F01FAB4B470088C6C0F';
+			const transactionURL = `https://explorer.backend/transaction/${hash}`;
+			const remotePublicKey = '64F0C867C52E8D3F7FE478854DBB197646D06041CC16B56595C03A217AF6564B';
+			const expectedRemoteAddress = 'NA6N267O7JIRQY5WQTM4IFUFRMOUJDB5OAOQ777N';
+			const transactionResponse = {
+				deadline: '2015-03-30 08:31:57',
+				embeddedTransactions: null,
+				fee: 6.0,
+				fromAddress: 'NALICE7GX3PF3WAOWVLXFOQ4ZMOBP7GUMNB2RCYQ',
+				height: 2,
+				signature:
+					'84DD349E10D4669F3C727EE7F58DA8077D85455699E95536BBD0255C8708DAB5FD5C008676E29E3486F079927685218EE49F1D37'
+					+ '3FD95F0769B33F06F75B030A',
+				timestamp: '2015-03-29 20:31:57',
+				toAddress: null,
+				transactionHash: hash,
+				transactionType: 'ACCOUNT_KEY_LINK',
+				value: [{ mode: 1, remoteAccount: remotePublicKey, remoteAddress: expectedRemoteAddress }]
+			};
+			const makeRequestSpy = jest.spyOn(serverUtils, 'makeRequest');
+			makeRequestSpy.mockResolvedValueOnce(transactionResponse);
+
+			// Act:
+			const result = await fetchTransactionInfo(hash);
+
+			// Assert:
+			expect(makeRequestSpy).toHaveBeenCalledTimes(1);
+			expect(makeRequestSpy).toHaveBeenNthCalledWith(1, transactionURL);
+			expect(result.body[0]).toEqual(expect.objectContaining({
+				type: 'ACCOUNT_KEY_LINK',
+				keyLinkAction: 1,
+				linkedPublicKey: remotePublicKey,
+				linkedAddress: expectedRemoteAddress
+			}));
 		});
 	});
 });
