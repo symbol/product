@@ -8,7 +8,11 @@ def is_alias_mosaic_id(mosaic_id_hex):
 
 
 def select_resolution_entry(resolution_entries, primary_id, secondary_id):
-	"""Selects the resolution value applicable to a transaction source."""
+	"""Selects the resolution value applicable to a transaction source.
+
+	This ports the official SDK combination of ``Statement.getResolvedFromReceipt``
+	and ``ResolutionStatement.getResolutionEntryById``.
+	"""
 
 	if 1 == len(resolution_entries):
 		return resolution_entries[0]['resolved']
