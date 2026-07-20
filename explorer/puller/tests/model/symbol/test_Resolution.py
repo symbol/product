@@ -25,8 +25,11 @@ class ResolutionTest(TestCase):
 		# Assert:
 		self.assertEqual(expected, resolved)
 
-	def test_select_resolution_entry_returns_single_entry_without_source_comparison(self):
-		self._assert_selects_entry([_entry(4, 2)], 1, 0, '0402')
+	def test_select_resolution_entry_returns_none_when_single_entry_source_is_after_transaction(self):
+		self._assert_selects_entry([_entry(4, 2)], 1, 0, None)
+
+	def test_select_resolution_entry_returns_single_entry_when_source_is_before_transaction(self):
+		self._assert_selects_entry([_entry(1, 0)], 4, 2, '0100')
 
 	def test_select_resolution_entry_returns_last_secondary_entry_from_previous_primary_id(self):
 		entries = [_entry(1, 0), _entry(2, 0), _entry(4, 2), _entry(4, 4), _entry(7, 6)]
@@ -44,17 +47,17 @@ class ResolutionTest(TestCase):
 		entries = [_entry(1, 1, 'A'), _entry(1, 4, 'B'), _entry(1, 7, 'C')]
 		self._assert_selects_entry(entries, 1, 6, 'B')
 
-	def test_select_resolution_entry_falls_back_for_embedded_source_before_first_secondary_id(self):
+	def test_select_resolution_entry_returns_last_applicable_entry_when_current_primary_entries_are_after_source(self):
 		entries = [_entry(1, 0), _entry(2, 0), _entry(5, 6)]
 		self._assert_selects_entry(entries, 5, 3, '0200')
 
-	def test_select_resolution_entry_falls_back_to_last_previous_primary_entry_when_current_primary_has_no_applicable_secondary_id(self):
+	def test_select_resolution_entry_returns_last_applicable_entry_when_current_primary_has_no_applicable_secondary_id(self):
 		entries = [_entry(1, 1, 'A'), _entry(1, 4, 'B'), _entry(1, 7, 'C'), _entry(2, 4, 'D')]
 		self._assert_selects_entry(entries, 2, 2, 'C')
 
-	def test_select_resolution_entry_falls_back_when_current_primary_has_zero_entry(self):
+	def test_select_resolution_entry_returns_same_primary_entry_with_previous_secondary_id(self):
 		entries = [_entry(1, 0, 'A'), _entry(2, 0, 'B'), _entry(2, 4, 'C')]
-		self._assert_selects_entry(entries, 2, 2, 'A')
+		self._assert_selects_entry(entries, 2, 2, 'B')
 
 	def test_select_resolution_entry_returns_exact_embedded_source(self):
 		entries = [_entry(1, 0), _entry(2, 0), _entry(5, 6)]
@@ -63,10 +66,10 @@ class ResolutionTest(TestCase):
 	def test_select_resolution_entry_returns_none_when_no_primary_id_applies(self):
 		self._assert_selects_entry([_entry(2, 0), _entry(5, 6)], 1, 0, None)
 
-	def test_select_resolution_entry_returns_none_when_embedded_fallback_has_no_previous_primary_id(self):
+	def test_select_resolution_entry_returns_none_when_no_entry_source_is_at_or_before_transaction(self):
 		self._assert_selects_entry([_entry(5, 6), _entry(7, 0)], 5, 3, None)
 
-	def test_select_resolution_entry_returns_none_when_top_level_secondary_entry_is_missing(self):
+	def test_select_resolution_entry_returns_none_when_same_primary_entries_are_after_transaction(self):
 		self._assert_selects_entry([_entry(5, 6), _entry(7, 0)], 5, 0, None)
 
 	def test_is_alias_mosaic_id_returns_true_for_namespace_id(self):
