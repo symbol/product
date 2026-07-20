@@ -212,6 +212,7 @@ class NemPuller:
 
 		# Block signer
 		addresses.add(str(self._convert_public_key_to_address(block.signer)))
+		addresses.add(str(block.beneficiary))
 
 		# Block transactions
 		for transaction in block.transactions:
@@ -302,6 +303,10 @@ class NemPuller:
 
 		log.info(f'Processing batch of {len(address_heights)} addresses')
 
+		# Remote links are applied after every account in the batch has been upserted, so the main
+		# account row is guaranteed to exist regardless of processing order within the batch.
+		remote_links = []
+
 		# Fetch account info for all addresses (both new and existing)
 		for address, height in address_heights.items():
 			account_info = await self._retry_get_account_info(address)
@@ -313,14 +318,13 @@ class NemPuller:
 			self.nem_db.upsert_account(cursor, account)
 
 			if 'REMOTE' == account_info.remote_status:
-				# Try fetching forwarded account info if remote status is REMOTE
 				main_account_info = await self._retry_get_account_info(address, forwarded=True)
-				main_account_mosaics = await self._retry_get_account_mosaics(str(main_account_info.address))
+				if main_account_info.address != account.address:
+					remote_address = None if 'DEACTIVATING' == main_account_info.remote_status else account.address
+					remote_links.append((main_account_info.address, remote_address))
 
-				main_mosaics_json = self._convert_mosaics_to_json(main_account_mosaics)
-				main_account = self._create_account_record(main_account_info, main_mosaics_json, height, remote_address=account.address)
-
-				self.nem_db.upsert_account(cursor, main_account)
+		for main_address, remote_address in remote_links:
+			self.nem_db.update_account_remote_address(cursor, main_address, remote_address)
 
 	@staticmethod
 	def _add_pending_addresses(pending_addresses, addresses, height):

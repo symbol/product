@@ -342,12 +342,14 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 		sender_address = Address('TALICE6XEEEOBFJVY3ZCENZ7WBG6LB4KB7P7KMQX')
 		recipient_address = Address('NCOPERAWEWCD4A34NP5UQCCKEX44MW4SL3QYJYS5')
 		signer_address = Address('TBEM6SFOHU5PORIGAVG3NNJIMCG73R2TWH35O2VF')
+		beneficiary_address = Address('TBZWVEKB2XMTO4F3RAOEIBWRBMPQ5N23G56ZJM4I')
 
 		mock_get_block.return_value = NEM_CONNECTOR_RESPONSE_BLOCKS[0]
 		mock_account_info.side_effect = [
 			NemAccountInfo(sender_address),
 			NemAccountInfo(recipient_address),
-			NemAccountInfo(signer_address)
+			NemAccountInfo(signer_address),
+			NemAccountInfo(beneficiary_address)
 		]
 		mock_account_mosaics.return_value = [AccountMosaic(('nem', 'xem'), 0), ]
 
@@ -376,7 +378,12 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 
 			account_results = self._query_fetch_accounts(self.puller)
 			self.assertCountEqual(
-				[sender_address.bytes.hex(), recipient_address.bytes.hex(), signer_address.bytes.hex()],
+				[
+					sender_address.bytes.hex(),
+					recipient_address.bytes.hex(),
+					signer_address.bytes.hex(),
+					beneficiary_address.bytes.hex()
+				],
 				[row[0] for row in account_results],
 			)
 			mock_seed_network_currency.assert_called_once()
@@ -449,7 +456,7 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 
 			call_args = mock_process_account_batch.call_args_list[0]
 			address_heights = call_args[0][1]
-			self.assertEqual(len(address_heights), 19)
+			self.assertEqual(len(address_heights), 21)
 			self.assertIn(1, address_heights.values())
 			self.assertIn(2, address_heights.values())
 			self.assertIn(3, address_heights.values())
@@ -667,7 +674,7 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 		mock_account_mosaics.assert_called_once_with(address)
 
 	@patch('puller.facade.NemPuller.NemDatabase.get_mosaic_levy_recipients')
-	def test_can_extract_addresses_from_block_with_only_signer(self, mock_get_mosaic_levy_recipients):
+	def test_can_extract_addresses_from_block_signer_and_beneficiary(self, mock_get_mosaic_levy_recipients):
 		# Arrange:
 		block = NEM_CONNECTOR_RESPONSE_BLOCKS[1]
 		cursor = Mock()
@@ -677,7 +684,26 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 		addresses = self.puller._extract_addresses_from_block(cursor, block)  # pylint: disable=protected-access
 
 		# Assert:
-		self.assertEqual(addresses, {'TALICE6XEEEOBFJVY3ZCENZ7WBG6LB4KB7P7KMQX'})
+		self.assertEqual(addresses, {
+			'TALICE6XEEEOBFJVY3ZCENZ7WBG6LB4KB7P7KMQX',
+			'TCJLCZSOQ6RGWHTPSV2DW467WZSHK4NBSITND4OF'
+		})
+		mock_get_mosaic_levy_recipients.assert_called_once_with(cursor, set())
+
+	@patch('puller.facade.NemPuller.NemDatabase.get_mosaic_levy_recipients')
+	def test_extract_addresses_does_not_duplicate_beneficiary_equal_to_signer(self, mock_get_mosaic_levy_recipients):
+		# Arrange:
+		signer = PublicKey('f9bd190dd0c364261f5c8a74870cc7f7374e631352293c62ecc437657e5de2cd')
+		signer_address = self.puller._convert_public_key_to_address(signer)  # pylint: disable=protected-access
+		block = Block(9, 78976, [], 100, 'a' * 64, 1000000, signer_address, signer, 'd' * 128, 200)
+		cursor = Mock()
+		mock_get_mosaic_levy_recipients.return_value = []
+
+		# Act:
+		addresses = self.puller._extract_addresses_from_block(cursor, block)  # pylint: disable=protected-access
+
+		# Assert:
+		self.assertEqual(addresses, {str(signer_address)})
 		mock_get_mosaic_levy_recipients.assert_called_once_with(cursor, set())
 
 	@patch('puller.facade.NemPuller.NemDatabase.get_mosaic_levy_recipients')
@@ -709,7 +735,8 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 			'NBRYCNWZINEVNITUESKUMFIENWKYCRUGNFZV25AV',
 			'TANIBAXPVLBP37YXSGREVD77NXIFZML5FANIVEXX',
 			'TBEM6SFOHU5PORIGAVG3NNJIMCG73R2TWH35O2VF',
-			'TADMEHCFJD45GPTDL4HZP2LJLZVAZRLYWY2K4OOH'
+			'TADMEHCFJD45GPTDL4HZP2LJLZVAZRLYWY2K4OOH',
+			'TCJLCZSOQ6RGWHTPSV2DW467WZSHK4NBSITND4OF'
 		})
 		mock_get_mosaic_levy_recipients.assert_called_once_with(cursor, set())
 
@@ -807,25 +834,27 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 			)
 		)
 
+	@patch('puller.facade.NemPuller.NemDatabase.update_account_remote_address')
 	@patch('puller.facade.NemPuller.NemConnector.account_info')
 	@patch('puller.facade.NemPuller.NemConnector.account_mosaics')
 	@patch('puller.facade.NemPuller.NemDatabase.upsert_account')
-	def test_can_process_account_batch_with_remote_status(self, mock_upsert_account, mock_account_mosaics, mock_account_info):
+	def test_can_process_account_batch_with_remote_status(
+		self,
+		mock_upsert_account,
+		mock_account_mosaics,
+		mock_account_info,
+		mock_update_remote_address
+	):
+		# pylint: disable=too-many-arguments,too-many-positional-arguments
 		# Arrange:
 		account = NEM_CONNECTOR_RESPONSE_ACCOUNT_INFO
 		account.remote_status = 'REMOTE'
 
-		remote_account = NemAccountInfo(Address('TBKQWJJGPOHL462DBVMTYOAERXGG2BOS5XRFO2P6'))
+		main_account = NemAccountInfo(Address('TBKQWJJGPOHL462DBVMTYOAERXGG2BOS5XRFO2P6'))
+		main_account.remote_status = 'ACTIVE'
 
-		mock_account_info.side_effect = [
-			account,
-			remote_account
-		]
-
-		mock_account_mosaics.side_effect = [
-			[AccountMosaic(('nem', 'xem'), 0)],
-			[AccountMosaic(('nem', 'xem'), 1000000)]  # for remote account
-		]
+		mock_account_info.side_effect = [account, main_account]
+		mock_account_mosaics.side_effect = [[AccountMosaic(('nem', 'xem'), 0)]]
 
 		cursor = Mock()
 		address_heights = {
@@ -842,13 +871,11 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 		self.assertEqual(account_info_calls[1][0], (str(account.address), True))
 
 		account_mosaics_calls = mock_account_mosaics.call_args_list
-		self.assertEqual(len(account_mosaics_calls), 2)
+		self.assertEqual(len(account_mosaics_calls), 1)
 		self.assertEqual(account_mosaics_calls[0][0], (str(account.address),))
-		self.assertEqual(account_mosaics_calls[1][0], (str(remote_account.address),))
 
-		upsert_account_calls = mock_upsert_account.call_args_list
-		self.assertEqual(len(upsert_account_calls), 2)
-		self.assertEqual(upsert_account_calls[0][0], (
+		self.assertEqual(mock_upsert_account.call_count, 1)
+		self.assertEqual(mock_upsert_account.call_args_list[0][0], (
 			cursor,
 			AccountRecord(
 				height=3,
@@ -860,18 +887,62 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 				**self._exclude_account_status(account)
 			),
 		))
-		self.assertEqual(upsert_account_calls[1][0], (
-			cursor,
-			AccountRecord(
-				height=3,
-				mosaics=[{
-					'namespace_name': 'nem.xem',
-					'quantity': 1000000
-				}],
-				remote_address=account.address,
-				**self._exclude_account_status(remote_account)
-			),
-		))
+
+		mock_update_remote_address.assert_called_once_with(cursor, main_account.address, account.address)
+
+	@patch('puller.facade.NemPuller.NemConnector.account_info')
+	@patch('puller.facade.NemPuller.NemConnector.account_mosaics')
+	@patch('puller.facade.NemPuller.NemDatabase.update_account_remote_address')
+	def test_process_account_batch_clears_remote_link_when_deactivating(
+		self,
+		mock_update_remote_address,
+		mock_account_mosaics,
+		mock_account_info
+	):
+		# Arrange: a link being torn down (main account is DEACTIVATING)
+		account = NEM_CONNECTOR_RESPONSE_ACCOUNT_INFO
+		account.remote_status = 'REMOTE'
+
+		main_account = NemAccountInfo(Address('TBKQWJJGPOHL462DBVMTYOAERXGG2BOS5XRFO2P6'))
+		main_account.remote_status = 'DEACTIVATING'
+
+		mock_account_info.side_effect = [account, main_account]
+		mock_account_mosaics.side_effect = [[AccountMosaic(('nem', 'xem'), 0)]]
+
+		cursor = Mock()
+
+		# Act:
+		asyncio.run(self.puller._process_account_batch(cursor, {str(account.address): 3}))  # pylint: disable=protected-access
+
+		# Assert:
+		mock_update_remote_address.assert_called_once_with(cursor, main_account.address, None)
+
+	@patch('puller.facade.NemPuller.NemConnector.account_info')
+	@patch('puller.facade.NemPuller.NemConnector.account_mosaics')
+	@patch('puller.facade.NemPuller.NemDatabase.update_account_remote_address')
+	def test_process_account_batch_skips_remote_link_when_forwarded_returns_self(
+		self,
+		mock_update_remote_address,
+		mock_account_mosaics,
+		mock_account_info
+	):
+		# Arrange: forwarded lookup returns the account itself (link not active yet)
+		account = NEM_CONNECTOR_RESPONSE_ACCOUNT_INFO
+		account.remote_status = 'REMOTE'
+
+		main_account = NemAccountInfo(account.address)
+		main_account.remote_status = 'REMOTE'
+
+		mock_account_info.side_effect = [account, main_account]
+		mock_account_mosaics.side_effect = [[AccountMosaic(('nem', 'xem'), 0)]]
+
+		cursor = Mock()
+
+		# Act:
+		asyncio.run(self.puller._process_account_batch(cursor, {str(account.address): 3}))  # pylint: disable=protected-access
+
+		# Assert:
+		mock_update_remote_address.assert_not_called()
 
 	@patch('puller.facade.NemPuller.NemDatabase.update_account_harvested_fees')
 	def test_can_process_harvested_fees(self, mock_update_account_harvested_fees):
