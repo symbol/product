@@ -96,5 +96,5 @@ class TransactionView:  # pylint: disable=too-many-instance-attributes, too-many
 			'deadline': self.deadline,
 			'signature': self.signature,
 			'size': self.size,
-			'schemaVersion': self.version,
+			'version': self.version,
 		}

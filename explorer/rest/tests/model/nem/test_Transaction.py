@@ -72,7 +72,7 @@ class TransactionViewTest(unittest.TestCase):
 			'deadline': '2015-03-29 00:21:25',
 			'signature': '0' * 128,
 			'size': 184,
-			'schemaVersion': 1,
+			'version': 1,
 		}, transaction_view_dict)
 
 	def test_eq_is_supported(self):

@@ -2439,13 +2439,15 @@ export const transactionInfoResponse = {
 	fee: 0.15,
 	fromAddress: 'NB2CCC4ZKHX32CF4QU4X22S6LOS765W5A6LDKLJ2',
 	height: 4694676,
+	size: 468,
 	signature:
 		'84FC7751D87ED49EACDA60EE2D5F4B5F8020A32D7593A2E268054BCCC919FCD6DB4F66B35B60E1E0DF8E229B9510090C6A203D7426A7E6F595AEABE98EA3820F',
 	timestamp: '2024-03-29 18:13:31',
 	toAddress: 'NCDZDXLTPSSHGWDGBWCNC67GDM7VU6ZQM4KJLXWZ',
 	transactionHash: '596E3EC601470D9A5FDF966833566390C13D5DB7D24F5C9C712AC2056D7AE255',
 	transactionType: 'MULTISIG',
-	value: null
+	value: null,
+	version: 1
 };
 
 export const transactionInfoResult = {
@@ -2491,6 +2493,8 @@ export const transactionInfoResult = {
 			}
 		}
 	],
+	size: 468,
+	version: 1,
 	signatures: [
 		{
 			fee: 0.17,
@@ -2548,13 +2552,15 @@ export const unsupportedTransactionInfoResponse = {
 	fee: 0.15,
 	fromAddress: 'NB2CCC4ZKHX32CF4QU4X22S6LOS765W5A6LDKLJ2',
 	height: 4694676,
+	size: 184,
 	signature:
 		'84FC7751D87ED49EACDA60EE2D5F4B5F8020A32D7593A2E268054BCCC919FCD6DB4F66B35B60E1E0DF8E229B9510090C6A203D7426A7E6F595AEABE98EA3820F',
 	timestamp: '2024-03-29 18:13:31',
 	toAddress: 'NCDZDXLTPSSHGWDGBWCNC67GDM7VU6ZQM4KJLXWZ',
 	transactionHash: '596E3EC601470D9A5FDF966833566390C13D5DB7D24F5C9C712AC2056D7AE255',
 	transactionType: 'UNKNOWN',
-	value: null
+	value: null,
+	version: 1
 };
 
 export const unsupportedTransactionInfoResult = {
@@ -2578,7 +2584,9 @@ export const unsupportedTransactionInfoResult = {
 	signature:
 		'84FC7751D87ED49EACDA60EE2D5F4B5F8020A32D7593A2E268054BCCC919FCD6DB4F66B35B60E1E0DF8E229B9510090C6A203D7426A7E6F595AEABE98EA3820F',
 	signer: 'NB2CCC4ZKHX32CF4QU4X22S6LOS765W5A6LDKLJ2',
+	size: 184,
 	timestamp: '2024-03-29 18:13:31',
 	type: 'UNKNOWN',
-	value: []
+	value: [],
+	version: 1
 };
