@@ -20,6 +20,15 @@ export const { HarvestingStatus } = constants;
  */
 
 /**
+ * Harvesting eligibility of an account. Each requirement is reported separately,
+ * so the caller can tell the user which one is not met.
+ * @typedef {object} HarvestingEligibility
+ * @property {boolean} isBalanceSufficient - Whether the account balance meets the harvesting minimum.
+ * @property {boolean} isImportanceSufficient - Whether the account importance meets the harvesting minimum.
+ * @property {boolean} isEligible - Whether the account meets every harvesting requirement.
+ */
+
+/**
  * Harvesting status view model.
  * @typedef {object} HarvestingStatusViewModel
  * @property {StatusDisplayConfig} statusDisplay - Status display configuration.

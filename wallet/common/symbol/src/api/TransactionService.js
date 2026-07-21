@@ -1,4 +1,4 @@
-import { TransactionAnnounceGroup, TransactionBundleType, TransactionGroup } from '../constants';
+import { MULTISIG_BUNDLE_TYPES, TransactionAnnounceGroup, TransactionGroup } from '../constants';
 import {
 	createSearchUrl,
 	getUnresolvedIdsFromSymbolTransactions,
@@ -115,12 +115,7 @@ export class TransactionService {
 	 * @returns {Promise<void>} - A promise that resolves when the transaction bundle is announced.
 	 */
 	announceTransactionBundle = async (networkProperties, signedTransactionBundle) => {
-		const multisigTypes = [
-			TransactionBundleType.MULTISIG_TRANSFER,
-			TransactionBundleType.MULTISIG_ACCOUNT_MODIFICATION
-		];
-
-		if (multisigTypes.includes(signedTransactionBundle.metadata.type)) {
+		if (MULTISIG_BUNDLE_TYPES.includes(signedTransactionBundle.metadata.type)) {
 			await this.announceTransactionsSequentially(
 				networkProperties,
 				signedTransactionBundle.transactions,

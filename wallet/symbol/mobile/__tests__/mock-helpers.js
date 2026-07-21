@@ -6,14 +6,40 @@ import { jest } from '@jest/globals';
 import SplashScreen from 'react-native-splash-screen';
 
 /**
+ * Creates a store of the event handlers registered on a wallet controller, so that a test can emit
+ * controller events (account change, new confirmed transaction) to the handlers listening to them.
+ *
+ * @return {object} The event handlers store with addHandler, removeHandler and emit methods.
+ */
+export const createEventHandlersStore = () => {
+	const handlersByEvent = new Map();
+
+	return {
+		addHandler: (eventName, handler) => {
+			const handlers = handlersByEvent.get(eventName) ?? new Set();
+			handlers.add(handler);
+			handlersByEvent.set(eventName, handlers);
+		},
+		removeHandler: (eventName, handler) => {
+			handlersByEvent.get(eventName)?.delete(handler);
+		},
+		emit: eventName => {
+			handlersByEvent.get(eventName)?.forEach(handler => handler());
+		}
+	};
+};
+
+/**
  * Create a mock wallet controller object to simulate wallet controller behavior.
+ * The mock emits controller events to its listeners, via the "emit" method.
  *
  * @param {object} overrides - An object to override specific methods of the wallet controller mock.
  * @param {object} [options] - Mock options.
- * 
+ *
  * @return {import('wallet-common-core').WalletController} The mocked wallet controller.
  */
 export const createWalletControllerMock = (overrides = {}) => {
+	const events = createEventHandlersStore();
 	const walletControllerMock = {
 		chainName: 'symbol',
 		networkApi: {},
@@ -63,8 +89,9 @@ export const createWalletControllerMock = (overrides = {}) => {
 		connectToNetwork: jest.fn(),
 		selectNetwork: jest.fn(),
 		resetState: jest.fn(),
-		on: jest.fn(),
-		removeListener: jest.fn(),
+		on: jest.fn((eventName, handler) => events.addHandler(eventName, handler)),
+		removeListener: jest.fn((eventName, handler) => events.removeHandler(eventName, handler)),
+		emit: events.emit,
 		...overrides
 	};
 

@@ -19,19 +19,22 @@ const PRICE = 0.05;
 
 const SCREEN_TEXT = {
 	// Screen content
-	textTitle: 'form_transfer_title',
+	textTitle: 's_send_title',
 	textDescription: 's_send_description',
-	textMultisigDescription: 's_send_multisig_description',
 
 	// Input labels
-	inputRecipientLabel: 'form_transfer_input_recipient',
-	inputMosaicLabel: 'form_transfer_input_mosaic',
-	inputAmountLabel: 'form_transfer_input_amount',
-	inputMessageLabel: 'form_transfer_input_message',
+	inputRecipientLabel: 'input_recipient',
+	inputMosaicLabel: 'input_mosaic',
+	inputAmountLabel: 'input_amount',
+	inputMessageLabel: 'input_message',
 	inputSenderLabel: 'input_sender',
 
+	// Sender selector tabs
+	senderTabCurrentAccount: 'c_selectTransactionSender_currentAccount',
+	senderTabMultisigAccount: 'c_selectTransactionSender_multisigAccount',
+
 	// Checkbox
-	checkboxEncrypted: 'form_transfer_input_encrypted',
+	checkboxEncrypted: 'input_encrypted',
 
 	// Buttons
 	buttonSend: 'button_send'
@@ -103,6 +106,16 @@ const cosignatoryAccountInfo = AccountInfoFixtureBuilder
 	})
 	.build();
 
+const multisigAccountInfo = AccountInfoFixtureBuilder
+	.createEmpty(CHAIN_NAME, NETWORK_IDENTIFIER)
+	.override({
+		address: multisigAccount.address,
+		publicKey: multisigAccount.publicKey,
+		balance: '5000000',
+		isMultisig: true
+	})
+	.build();
+
 // Transaction Fees Fixtures
 
 const TRANSACTION_FEE_TIER = {
@@ -144,6 +157,12 @@ const createMockTransferModule = (overrides = {}) => ({
 	...overrides
 });
 
+const createMockMultisigModule = (overrides = {}) => ({
+	multisigAccounts: [],
+	fetchData: jest.fn().mockResolvedValue([]),
+	...overrides
+});
+
 const createMockNetworkApi = (overrides = {}) => ({
 	account: {
 		fetchAccountInfo: jest.fn().mockResolvedValue({
@@ -171,16 +190,18 @@ const mockWalletControllerConfigured = (overrides = {}) => {
 		isStateReady: overrides.isStateReady ?? true,
 		isWalletReady: overrides.isWalletReady ?? true,
 		isNetworkConnectionReady: overrides.isNetworkConnectionReady ?? true,
-		modules: {
-			addressBook: createMockAddressBook(overrides.addressBook),
-			transfer: createMockTransferModule(overrides.transfer)
-		},
 		networkApi: createMockNetworkApi(overrides.networkApi),
 		signTransactionBundle: jest.fn().mockResolvedValue({
 			transactions: [{ hash: 'mockHash' }]
 		}),
 		announceSignedTransactionBundle: jest.fn().mockResolvedValue({}),
-		...overrides
+		...overrides,
+		modules: {
+			addressBook: createMockAddressBook(overrides.addressBook),
+			transfer: createMockTransferModule(overrides.transfer),
+			multisig: createMockMultisigModule(overrides.multisig),
+			...overrides.modules
+		}
 	});
 };
 
@@ -302,10 +323,11 @@ describe('screens/send/Send', () => {
 	});
 
 	describe('multisig account', () => {
-		it('shows sender dropdown when account is cosignatory of multisig', async () => {
+		it('shows sender tab selector when account is cosignatory of multisig', async () => {
 			// Arrange:
 			mockWalletControllerConfigured({
-				currentAccountInfo: cosignatoryAccountInfo
+				currentAccountInfo: cosignatoryAccountInfo,
+				multisig: { multisigAccounts: [multisigAccountInfo] }
 			});
 			const props = createRouteProps();
 
@@ -314,11 +336,11 @@ describe('screens/send/Send', () => {
 			await screenTester.waitForTimer();
 
 			// Assert:
-			screenTester.expectText([SCREEN_TEXT.textMultisigDescription]);
+			screenTester.expectText([SCREEN_TEXT.senderTabCurrentAccount, SCREEN_TEXT.senderTabMultisigAccount]);
 			screenTester.expectText([currentAccount.name]);
 		});
 
-		it('does not show sender dropdown for regular account', async () => {
+		it('does not show sender tab selector for regular account', async () => {
 			// Arrange:
 			mockWalletControllerConfigured({
 				currentAccountInfo: regularAccountInfo
@@ -330,8 +352,26 @@ describe('screens/send/Send', () => {
 			await screenTester.waitForTimer();
 
 			// Assert:
-			screenTester.notExpectText([SCREEN_TEXT.textMultisigDescription]);
-			screenTester.notExpectText([SCREEN_TEXT.inputSenderLabel]);
+			screenTester.notExpectText([SCREEN_TEXT.senderTabCurrentAccount, SCREEN_TEXT.senderTabMultisigAccount]);
+			screenTester.expectText([currentAccount.name]);
+		});
+
+		it('renders without crashing on a chain that has no multisig module', async () => {
+			// Arrange:
+			mockWalletControllerConfigured({
+				chainName: 'ethereum',
+				currentAccountInfo: regularAccountInfo,
+				modules: { multisig: undefined }
+			});
+			const props = createRouteProps({ chainName: 'ethereum' });
+
+			// Act:
+			const screenTester = new ScreenTester(Send, props);
+			await screenTester.waitForTimer();
+
+			// Assert:
+			screenTester.expectText([currentAccount.name]);
+			screenTester.notExpectText([SCREEN_TEXT.senderTabCurrentAccount, SCREEN_TEXT.senderTabMultisigAccount]);
 		});
 	});
 

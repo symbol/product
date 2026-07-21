@@ -1,29 +1,36 @@
-import { LinkAction, LinkActionMessage, MessageType, TransactionBundleType, TransactionType } from '../../src/constants';
+import {
+	EMPTY_AGGREGATE_HASH,
+	HASH_LOCK_AMOUNT,
+	HASH_LOCK_DURATION,
+	HarvestingStatus,
+	LinkAction,
+	LinkActionMessage,
+	MULTISIG_TRANSACTION_DEADLINE_HOURS,
+	MessageType,
+	SINGLE_TRANSACTION_DEADLINE_HOURS,
+	TransactionBundleType,
+	TransactionType
+} from '../../src/constants';
 import { addressFromPublicKey, createDeadline, createTransactionFee } from '../../src/utils';
-import { accountInfoNonMultisig } from '../__fixtures__/local/account';
+import { accountInfoMultisig, accountInfoNonMultisig } from '../__fixtures__/local/account';
 import { harvestedBlocks } from '../__fixtures__/local/harvesting';
 import { networkProperties } from '../__fixtures__/local/network';
-import { currentAccount, networkIdentifiers } from '../__fixtures__/local/wallet';
+import { currentAccount, networkIdentifiers, walletStorageAccounts } from '../__fixtures__/local/wallet';
 import { expect, jest } from '@jest/globals';
 import { ControllerError, TransactionBundle } from 'wallet-common-core';
 
 jest.unstable_mockModule('lodash', () => ({
-	shuffle: jest.fn(arr => [...arr].reverse())
+	shuffle: jest.fn(array => [...array].reverse())
 }));
 
 // Import after mocks
 const { HarvestingModule } = await import('../../src/modules/HarvestingModule');
 
-const FIXED_NOW_MS = 1_700_000_000_000;
+// Constants
 
-const createFee = amount => ({
-	token: {
-		id: networkProperties.networkCurrency.mosaicId,
-		amount,
-		divisibility: networkProperties.networkCurrency.divisibility,
-		name: networkProperties.networkCurrency.name
-	}
-});
+const FIXED_NOW_MS = 1_700_000_000_000;
+const NODE_PUBLIC_KEY = '26BB5F23FAE6E93798D170E971250963F025048928478825FC0F51A394C30987';
+const UNCACHED_ADDRESS = walletStorageAccounts.testnet[2].address;
 
 const nodeList = [
 	'https://node-1.example.com:3001',
@@ -31,22 +38,160 @@ const nodeList = [
 	'https://node-3.example.com:3001'
 ];
 
-const createAccountInfoWithNoKeys = () => ({
+// The order the module links and unlinks the supplemental keys in
+const keyLinkOrder = [
+	{ type: TransactionType.VRF_KEY_LINK, field: 'vrfPublicKey' },
+	{ type: TransactionType.ACCOUNT_KEY_LINK, field: 'linkedPublicKey' },
+	{ type: TransactionType.NODE_KEY_LINK, field: 'nodePublicKey' }
+];
+
+// Account Fixtures
+
+// A multisig account the current account harvests for. Its address differs from the current account's,
+// which is what makes the module treat the request as multisig.
+const multisigAccountInfo = {
+	...accountInfoMultisig,
+	address: walletStorageAccounts.testnet[1].address,
+	publicKey: walletStorageAccounts.testnet[1].publicKey
+};
+
+// AccountInfo the node returns for an address it does not know: the account has never sent a transaction,
+// so the network holds no public key for it.
+const inactiveMultisigAccountInfo = {
+	...multisigAccountInfo,
+	publicKey: null,
+	linkedKeys: {
+		linkedPublicKey: null,
+		nodePublicKey: null,
+		vrfPublicKey: null
+	}
+};
+
+const accountInfoWithoutLinkedKeys = {
 	...accountInfoNonMultisig,
 	linkedKeys: {}
-});
+};
 
-const createStoredHarvestingStatuses = (networkIdentifier, address, status) => ({
+// The accounts a harvesting transaction can be created for. An absent address means the current account.
+const harvester = {
+	currentAccount: { accountInfo: accountInfoNonMultisig },
+	currentAccountWithoutLinkedKeys: { accountInfo: accountInfoWithoutLinkedKeys },
+	multisigAccount: { accountInfo: multisigAccountInfo, address: multisigAccountInfo.address },
+	inactiveMultisigAccount: { accountInfo: inactiveMultisigAccountInfo, address: inactiveMultisigAccountInfo.address }
+};
+
+// Harvesting Fixtures
+
+const harvestingStatus = {
+	status: HarvestingStatus.ACTIVE,
+	nodeUrl: 'https://node-1.example.com:3001'
+};
+
+const multisigHarvestingStatus = {
+	status: HarvestingStatus.INACTIVE
+};
+
+const harvestingSummary = {
+	latestAmount: '86.708944',
+	latestHeight: 2637258,
+	latestDate: '2025-08-19T12:31:52.899Z',
+	amountPer30Days: '867.08944',
+	blocksHarvestedPer30Days: 10
+};
+
+const multisigHarvestingSummary = {
+	latestAmount: '12.5',
+	latestHeight: 2600000,
+	latestDate: '2025-08-01T09:15:00.000Z',
+	amountPer30Days: '40.5',
+	blocksHarvestedPer30Days: 5
+};
+
+// Factory Functions
+
+const createStoredHarvestingStatuses = (networkIdentifier, statusesByAddress) => ({
 	mainnet: {},
 	testnet: {},
-	[networkIdentifier]: { [address]: status }
+	[networkIdentifier]: statusesByAddress
 });
 
-const createStoredHarvestingSummaries = (networkIdentifier, address, summary) => ({
+const createStoredHarvestingSummaries = (networkIdentifier, summariesByAddress) => ({
 	mainnet: {},
 	testnet: {},
-	[networkIdentifier]: { [address]: summary }
+	[networkIdentifier]: summariesByAddress
 });
+
+/**
+ * Builds the key link transactions in the order the module produces them,
+ * skipping the keys the account does not hold.
+ */
+const buildKeyLinkTransactions = (linkedKeys, linkAction, signerPublicKey) => keyLinkOrder
+	.filter(({ field }) => !!linkedKeys[field])
+	.map(({ type, field }) => ({
+		type,
+		linkAction: LinkActionMessage[linkAction],
+		linkedPublicKey: linkedKeys[field],
+		signerPublicKey
+	}));
+
+/** Builds the transfer that asks the node to harvest on the account's behalf. */
+const buildHarvestingRequestTransfer = (signerPublicKey, payload) => ({
+	type: TransactionType.TRANSFER,
+	mosaics: [],
+	message: {
+		type: MessageType.DelegatedHarvesting,
+		payload,
+		text: ''
+	},
+	signerPublicKey,
+	recipientAddress: addressFromPublicKey(NODE_PUBLIC_KEY, networkProperties.networkIdentifier)
+});
+
+/** Builds the bundle the module produces for the current account: a single aggregate complete transaction. */
+const buildSingleAccountBundle = innerTransactions => new TransactionBundle(
+	[
+		{
+			type: TransactionType.AGGREGATE_COMPLETE,
+			innerTransactions,
+			signerPublicKey: currentAccount.publicKey,
+			fee: createTransactionFee(networkProperties, '0'),
+			deadline: createDeadline(SINGLE_TRANSACTION_DEADLINE_HOURS, networkProperties.epochAdjustment)
+		}
+	],
+	{ type: TransactionBundleType.DELEGATED_HARVESTING }
+);
+
+/** Builds the bundle the module produces for a multisig account: a hash lock funding an aggregate bonded transaction. */
+const buildMultisigBundle = innerTransactions => {
+	const transactionFee = createTransactionFee(networkProperties, '0');
+	const hashLockTransaction = {
+		type: TransactionType.HASH_LOCK,
+		signerPublicKey: currentAccount.publicKey,
+		mosaic: {
+			id: networkProperties.networkCurrency.mosaicId,
+			amount: HASH_LOCK_AMOUNT,
+			divisibility: networkProperties.networkCurrency.divisibility
+		},
+		lockedAmount: HASH_LOCK_AMOUNT,
+		duration: HASH_LOCK_DURATION,
+		fee: transactionFee,
+		deadline: createDeadline(SINGLE_TRANSACTION_DEADLINE_HOURS, networkProperties.epochAdjustment),
+		aggregateHash: EMPTY_AGGREGATE_HASH
+	};
+	const aggregateBondedTransaction = {
+		type: TransactionType.AGGREGATE_BONDED,
+		innerTransactions,
+		signerPublicKey: currentAccount.publicKey,
+		signerAddress: currentAccount.address,
+		fee: transactionFee,
+		deadline: createDeadline(MULTISIG_TRANSACTION_DEADLINE_HOURS, networkProperties.epochAdjustment)
+	};
+
+	return new TransactionBundle(
+		[hashLockTransaction, aggregateBondedTransaction],
+		{ type: TransactionBundleType.MULTISIG_DELEGATED_HARVESTING, cosignaturePrivateKeys: [] }
+	);
+};
 
 describe('HarvestingModule', () => {
 	let harvestingModule;
@@ -56,12 +201,17 @@ describe('HarvestingModule', () => {
 	let walletController;
 
 	beforeEach(() => {
+		jest.clearAllMocks();
+
 		api = {
 			harvesting: {
 				fetchStatus: jest.fn(),
 				fetchHarvestedBlocks: jest.fn(),
 				fetchNodeList: jest.fn(),
 				fetchSummary: jest.fn()
+			},
+			account: {
+				fetchAccountInfo: jest.fn()
 			}
 		};
 
@@ -90,13 +240,14 @@ describe('HarvestingModule', () => {
 			onStateChange
 		});
 
-		harvestingModule._persistentStorageRepository.getHarvestingStatuses = jest.fn();
+		// Nothing is cached unless a test says otherwise
+		harvestingModule._persistentStorageRepository.getHarvestingStatuses = jest.fn().mockResolvedValue(null);
 		harvestingModule._persistentStorageRepository.setHarvestingStatuses = jest.fn();
-		harvestingModule._persistentStorageRepository.getHarvestingSummaries = jest.fn();
+		harvestingModule._persistentStorageRepository.getHarvestingSummaries = jest.fn().mockResolvedValue(null);
 		harvestingModule._persistentStorageRepository.setHarvestingSummaries = jest.fn();
 
+		// The transaction deadlines are derived from the current time, which is frozen to keep them predictable.
 		jest.spyOn(Date, 'now').mockReturnValue(FIXED_NOW_MS);
-		jest.clearAllMocks();
 	});
 
 	afterEach(() => {
@@ -123,17 +274,8 @@ describe('HarvestingModule', () => {
 	describe('loadCache()', () => {
 		it('loads harvesting status and summary from persistent storage', async () => {
 			// Arrange:
-			const storedStatus = { status: 'ACTIVE', nodeUrl: 'https://node.example.com:3001' };
-			const storedSummary = {
-				latestAmount: '12.5',
-				latestHeight: 123,
-				latestDate: '2024-01-01',
-				amountPer30Days: '40.5',
-				blocksHarvestedPer30Days: 5
-			};
-			const storedStatuses = createStoredHarvestingStatuses('testnet', currentAccount.address, storedStatus);
-			const storedSummaries = createStoredHarvestingSummaries('testnet', currentAccount.address, storedSummary);
-
+			const storedStatuses = createStoredHarvestingStatuses('testnet', { [currentAccount.address]: harvestingStatus });
+			const storedSummaries = createStoredHarvestingSummaries('testnet', { [currentAccount.address]: harvestingSummary });
 			harvestingModule._persistentStorageRepository.getHarvestingStatuses.mockResolvedValue(storedStatuses);
 			harvestingModule._persistentStorageRepository.getHarvestingSummaries.mockResolvedValue(storedSummaries);
 
@@ -143,16 +285,12 @@ describe('HarvestingModule', () => {
 			// Assert:
 			expect(harvestingModule._persistentStorageRepository.getHarvestingStatuses).toHaveBeenCalled();
 			expect(harvestingModule._persistentStorageRepository.getHarvestingSummaries).toHaveBeenCalled();
-			expect(harvestingModule.status).toStrictEqual(storedStatus);
-			expect(harvestingModule.summary).toStrictEqual(storedSummary);
+			expect(harvestingModule.status).toStrictEqual(harvestingStatus);
+			expect(harvestingModule.summary).toStrictEqual(harvestingSummary);
 			expect(onStateChange).toHaveBeenCalled();
 		});
 
 		it('initializes empty state when no cached harvesting data exists', async () => {
-			// Arrange:
-			harvestingModule._persistentStorageRepository.getHarvestingStatuses.mockResolvedValue(null);
-			harvestingModule._persistentStorageRepository.getHarvestingSummaries.mockResolvedValue(null);
-
 			// Act:
 			await harvestingModule.loadCache();
 
@@ -166,17 +304,8 @@ describe('HarvestingModule', () => {
 	describe('clear()', () => {
 		it('resets cached state to default values', async () => {
 			// Arrange:
-			const storedStatus = { status: 'ACTIVE', nodeUrl: 'https://node.example.com:3001' };
-			const storedSummary = {
-				latestAmount: '12.5',
-				latestHeight: 123,
-				latestDate: '2024-01-01',
-				amountPer30Days: '40.5',
-				blocksHarvestedPer30Days: 5
-			};
-			const storedStatuses = createStoredHarvestingStatuses('testnet', currentAccount.address, storedStatus);
-			const storedSummaries = createStoredHarvestingSummaries('testnet', currentAccount.address, storedSummary);
-
+			const storedStatuses = createStoredHarvestingStatuses('testnet', { [currentAccount.address]: harvestingStatus });
+			const storedSummaries = createStoredHarvestingSummaries('testnet', { [currentAccount.address]: harvestingSummary });
 			harvestingModule._persistentStorageRepository.getHarvestingStatuses.mockResolvedValue(storedStatuses);
 			harvestingModule._persistentStorageRepository.getHarvestingSummaries.mockResolvedValue(storedSummaries);
 			await harvestingModule.loadCache();
@@ -190,26 +319,152 @@ describe('HarvestingModule', () => {
 		});
 	});
 
+	describe('getStatus()', () => {
+		const runGetStatusTest = (description, config, expected) => {
+			it(description, async () => {
+				// Arrange:
+				const storedStatuses = createStoredHarvestingStatuses('testnet', {
+					[currentAccount.address]: harvestingStatus,
+					[multisigAccountInfo.address]: multisigHarvestingStatus
+				});
+				harvestingModule._persistentStorageRepository.getHarvestingStatuses.mockResolvedValue(storedStatuses);
+				await harvestingModule.loadCache();
+
+				// Act:
+				const result = harvestingModule.getStatus(config.address);
+
+				// Assert:
+				expect(result).toStrictEqual(expected.status);
+			});
+		};
+
+		const getStatusTests = [
+			{
+				description: 'returns the cached status of the current account',
+				config: { address: currentAccount.address },
+				expected: { status: harvestingStatus }
+			},
+			{
+				description: 'returns the cached status of a multisig account',
+				config: { address: multisigAccountInfo.address },
+				expected: { status: multisigHarvestingStatus }
+			},
+			{
+				description: 'returns null when the account has no cached status',
+				config: { address: UNCACHED_ADDRESS },
+				expected: { status: null }
+			},
+			{
+				description: 'returns null when no address is given',
+				config: {},
+				expected: { status: null }
+			}
+		];
+
+		getStatusTests.forEach(test => {
+			runGetStatusTest(test.description, test.config, test.expected);
+		});
+	});
+
+	describe('getSummary()', () => {
+		const runGetSummaryTest = (description, config, expected) => {
+			it(description, async () => {
+				// Arrange:
+				const storedSummaries = createStoredHarvestingSummaries('testnet', {
+					[currentAccount.address]: harvestingSummary,
+					[multisigAccountInfo.address]: multisigHarvestingSummary
+				});
+				harvestingModule._persistentStorageRepository.getHarvestingSummaries.mockResolvedValue(storedSummaries);
+				await harvestingModule.loadCache();
+
+				// Act:
+				const result = harvestingModule.getSummary(config.address);
+
+				// Assert:
+				expect(result).toStrictEqual(expected.summary);
+			});
+		};
+
+		const getSummaryTests = [
+			{
+				description: 'returns the cached summary of the current account',
+				config: { address: currentAccount.address },
+				expected: { summary: harvestingSummary }
+			},
+			{
+				description: 'returns the cached summary of a multisig account',
+				config: { address: multisigAccountInfo.address },
+				expected: { summary: multisigHarvestingSummary }
+			},
+			{
+				description: 'returns null when the account has no cached summary',
+				config: { address: UNCACHED_ADDRESS },
+				expected: { summary: null }
+			},
+			{
+				description: 'returns null when no address is given',
+				config: {},
+				expected: { summary: null }
+			}
+		];
+
+		getSummaryTests.forEach(test => {
+			runGetSummaryTest(test.description, test.config, test.expected);
+		});
+	});
+
 	describe('fetchStatus()', () => {
-		it('fetches harvesting status for current account and updates cache', async () => {
+		const runFetchStatusTest = (description, config, expected) => {
+			it(description, async () => {
+				// Arrange:
+				api.harvesting.fetchStatus.mockResolvedValue(harvestingStatus);
+
+				// Act:
+				const result = await harvestingModule.fetchStatus(config.account);
+
+				// Assert:
+				expect(result).toStrictEqual(harvestingStatus);
+				expect(api.harvesting.fetchStatus).toHaveBeenCalledTimes(1);
+				expect(api.harvesting.fetchStatus).toHaveBeenCalledWith(networkProperties, expected.account);
+				expect(harvestingModule._persistentStorageRepository.setHarvestingStatuses).toHaveBeenCalledWith({
+					mainnet: {},
+					testnet: { [expected.account.address]: harvestingStatus }
+				});
+				expect(harvestingModule.getStatus(expected.account.address)).toStrictEqual(harvestingStatus);
+				expect(onStateChange).toHaveBeenCalled();
+			});
+		};
+
+		const fetchStatusTests = [
+			{
+				description: 'fetches and caches the status of the current account by default',
+				config: {},
+				expected: { account: currentAccount }
+			},
+			{
+				description: 'fetches and caches the status of a given multisig account',
+				config: { account: multisigAccountInfo },
+				expected: { account: multisigAccountInfo }
+			}
+		];
+
+		fetchStatusTests.forEach(test => {
+			runFetchStatusTest(test.description, test.config, test.expected);
+		});
+
+		it('caches the status per account, keeping the status of the other accounts', async () => {
 			// Arrange:
-			const mockStatus = { isActive: true, nodePublicKey: 'ABCDEF', error: null };
-			api.harvesting.fetchStatus.mockResolvedValue(mockStatus);
-			harvestingModule._persistentStorageRepository.getHarvestingStatuses.mockResolvedValue({ testnet: {}, mainnet: {} });
+			const storedStatuses = createStoredHarvestingStatuses('testnet', { [currentAccount.address]: harvestingStatus });
+			harvestingModule._persistentStorageRepository.getHarvestingStatuses.mockResolvedValue(storedStatuses);
+			await harvestingModule.loadCache();
+			api.harvesting.fetchStatus.mockResolvedValue(multisigHarvestingStatus);
 
 			// Act:
-			const result = await harvestingModule.fetchStatus();
+			await harvestingModule.fetchStatus(multisigAccountInfo);
 
 			// Assert:
-			expect(result).toStrictEqual(mockStatus);
-			expect(api.harvesting.fetchStatus).toHaveBeenCalledTimes(1);
-			expect(api.harvesting.fetchStatus).toHaveBeenCalledWith(networkProperties, currentAccount);
-			expect(harvestingModule._persistentStorageRepository.setHarvestingStatuses).toHaveBeenCalledWith({
-				testnet: { [currentAccount.address]: mockStatus },
-				mainnet: {}
-			});
-			expect(harvestingModule.status).toStrictEqual(mockStatus);
-			expect(onStateChange).toHaveBeenCalled();
+			expect(harvestingModule.getStatus(currentAccount.address)).toStrictEqual(harvestingStatus);
+			expect(harvestingModule.getStatus(multisigAccountInfo.address)).toStrictEqual(multisigHarvestingStatus);
 		});
 	});
 
@@ -234,9 +489,10 @@ describe('HarvestingModule', () => {
 	});
 
 	describe('fetchNodeList()', () => {
-		it('fetches and shuffles node list (order not asserted)', async () => {
-			// Arrange:
+		it('fetches and shuffles the node list', async () => {
+			// Arrange: shuffle is mocked to reverse, so the shuffled order is predictable.
 			api.harvesting.fetchNodeList.mockResolvedValue(nodeList);
+			const expectedNodeList = [...nodeList].reverse();
 
 			// Act:
 			const result = await harvestingModule.fetchNodeList();
@@ -244,327 +500,254 @@ describe('HarvestingModule', () => {
 			// Assert:
 			expect(api.harvesting.fetchNodeList).toHaveBeenCalledTimes(1);
 			expect(api.harvesting.fetchNodeList).toHaveBeenCalledWith(networkProperties.networkIdentifier);
-			expect(result).toEqual(expect.arrayContaining(nodeList));
-			expect(result).toHaveLength(nodeList.length);
+			expect(result).toStrictEqual(expectedNodeList);
 		});
 	});
 
 	describe('fetchSummary()', () => {
-		it('fetches harvesting summary for current account and updates cache', async () => {
-			// Arrange:
-			const mockSummary = {
-				totalBlocks: 123,
-				totalFees: '867.08944',
-				lastBlockHeight: '2637258'
-			};
-			api.harvesting.fetchSummary.mockResolvedValue(mockSummary);
-			harvestingModule._persistentStorageRepository.getHarvestingSummaries.mockResolvedValue({ testnet: {}, mainnet: {} });
+		const runFetchSummaryTest = (description, config, expected) => {
+			it(description, async () => {
+				// Arrange:
+				api.harvesting.fetchSummary.mockResolvedValue(harvestingSummary);
 
-			// Act:
-			const result = await harvestingModule.fetchSummary();
+				// Act:
+				const result = await harvestingModule.fetchSummary(config.address);
 
-			// Assert:
-			expect(result).toStrictEqual(mockSummary);
-			expect(api.harvesting.fetchSummary).toHaveBeenCalledTimes(1);
-			expect(api.harvesting.fetchSummary).toHaveBeenCalledWith(networkProperties, currentAccount.address);
-			expect(harvestingModule._persistentStorageRepository.setHarvestingSummaries).toHaveBeenCalledWith({
-				testnet: { [currentAccount.address]: mockSummary },
-				mainnet: {}
+				// Assert:
+				expect(result).toStrictEqual(harvestingSummary);
+				expect(api.harvesting.fetchSummary).toHaveBeenCalledTimes(1);
+				expect(api.harvesting.fetchSummary).toHaveBeenCalledWith(networkProperties, expected.address);
+				expect(harvestingModule._persistentStorageRepository.setHarvestingSummaries).toHaveBeenCalledWith({
+					mainnet: {},
+					testnet: { [expected.address]: harvestingSummary }
+				});
+				expect(harvestingModule.getSummary(expected.address)).toStrictEqual(harvestingSummary);
+				expect(onStateChange).toHaveBeenCalled();
 			});
-			expect(harvestingModule.summary).toStrictEqual(mockSummary);
-			expect(onStateChange).toHaveBeenCalled();
+		};
+
+		const fetchSummaryTests = [
+			{
+				description: 'fetches and caches the summary of the current account by default',
+				config: {},
+				expected: { address: currentAccount.address }
+			},
+			{
+				description: 'fetches and caches the summary of a given multisig account',
+				config: { address: multisigAccountInfo.address },
+				expected: { address: multisigAccountInfo.address }
+			}
+		];
+
+		fetchSummaryTests.forEach(test => {
+			runFetchSummaryTest(test.description, test.config, test.expected);
 		});
 	});
 
 	describe('createStopHarvestingTransaction()', () => {
-		const runCreateStopHarvestingTransactionTest = async (config, expected) => {
-			// Arrange:
-			const { currentAccountInfo, options } = config;
-			walletController.currentAccountInfo = currentAccountInfo;
+		const runCreateStopHarvestingTransactionTest = (description, config, expected) => {
+			it(description, async () => {
+				// Arrange:
+				api.account.fetchAccountInfo.mockResolvedValue(config.harvester.accountInfo);
 
-			// Act:
-			let error;
-			let result;
-			try {
-				result = await harvestingModule.createStopHarvestingTransaction(options);
-			} catch (e) {
-				error = e;
-			}
+				// Act:
+				const result = await harvestingModule.createStopHarvestingTransaction({
+					harvesterAddress: config.harvester.address
+				});
 
-			// Assert:
-			if (!expected.error && error) {
-				throw error;
-			} else if (expected.error) {
-				expect(error).toBeDefined();
-				expect(error).toStrictEqual(expected.error);
-			} else if (expected.result) {
-				expect(result.toJSON()).toStrictEqual(expected.result.toJSON());
-			}
+				// Assert:
+				const unlinkTransactions = buildKeyLinkTransactions(
+					config.harvester.accountInfo.linkedKeys,
+					LinkAction.Unlink,
+					expected.signerPublicKey
+				);
+				const expectedBundle = expected.buildBundle(unlinkTransactions);
+				expect(result.toJSON()).toStrictEqual(expectedBundle.toJSON());
+			});
 		};
 
-		it('creates aggregate unlink transactions with default fee when keys are linked', async () => {
-			// Arrange:
-			const { linkedKeys } = accountInfoNonMultisig;
-			const unlinkVrf = {
-				type: TransactionType.VRF_KEY_LINK,
-				linkAction: LinkActionMessage[LinkAction.Unlink],
-				linkedPublicKey: linkedKeys.vrfPublicKey,
-				signerPublicKey: currentAccount.publicKey
-			};
-			const unlinkRemote = {
-				type: TransactionType.ACCOUNT_KEY_LINK,
-				linkAction: LinkActionMessage[LinkAction.Unlink],
-				linkedPublicKey: linkedKeys.linkedPublicKey,
-				signerPublicKey: currentAccount.publicKey
-			};
-			const unlinkNode = {
-				type: TransactionType.NODE_KEY_LINK,
-				linkAction: LinkActionMessage[LinkAction.Unlink],
-				linkedPublicKey: linkedKeys.nodePublicKey,
-				signerPublicKey: currentAccount.publicKey
-			};
+		const createStopHarvestingTransactionTests = [
+			{
+				description: 'creates an aggregate complete bundle unlinking the keys of the current account',
+				config: { harvester: harvester.currentAccount },
+				expected: { signerPublicKey: currentAccount.publicKey, buildBundle: buildSingleAccountBundle }
+			},
+			{
+				description: 'creates an aggregate bonded bundle unlinking the keys of a multisig account',
+				config: { harvester: harvester.multisigAccount },
+				expected: { signerPublicKey: multisigAccountInfo.publicKey, buildBundle: buildMultisigBundle }
+			}
+		];
 
-			const expectedAggregate = {
-				type: TransactionType.AGGREGATE_COMPLETE,
-				innerTransactions: [unlinkVrf, unlinkRemote, unlinkNode],
-				signerPublicKey: currentAccount.publicKey,
-				fee: createTransactionFee(networkProperties, '0'),
-				deadline: createDeadline(2, networkProperties.epochAdjustment)
-			};
-			const expectedResult = new TransactionBundle(
-				[expectedAggregate],
-				{ type: TransactionBundleType.DELEGATED_HARVESTING }
-			);
-
-			// Act & Assert:
-			await runCreateStopHarvestingTransactionTest(
-				{
-					currentAccountInfo: accountInfoNonMultisig,
-					options: {}
-				},
-				{
-					result: expectedResult
-				}
-			);
+		createStopHarvestingTransactionTests.forEach(test => {
+			runCreateStopHarvestingTransactionTest(test.description, test.config, test.expected);
 		});
 
-		it('creates aggregate unlink transactions with provided fee', async () => {
-			// Arrange:
-			const customFee = createFee('1.5');
-			const { linkedKeys } = accountInfoNonMultisig;
-			const unlinkVrf = {
-				type: TransactionType.VRF_KEY_LINK,
-				linkAction: LinkActionMessage[LinkAction.Unlink],
-				linkedPublicKey: linkedKeys.vrfPublicKey,
-				signerPublicKey: currentAccount.publicKey
-			};
-			const unlinkRemote = {
-				type: TransactionType.ACCOUNT_KEY_LINK,
-				linkAction: LinkActionMessage[LinkAction.Unlink],
-				linkedPublicKey: linkedKeys.linkedPublicKey,
-				signerPublicKey: currentAccount.publicKey
-			};
-			const unlinkNode = {
-				type: TransactionType.NODE_KEY_LINK,
-				linkAction: LinkActionMessage[LinkAction.Unlink],
-				linkedPublicKey: linkedKeys.nodePublicKey,
-				signerPublicKey: currentAccount.publicKey
-			};
+		const runCreateStopHarvestingTransactionErrorTest = (description, config, expected) => {
+			it(description, async () => {
+				// Arrange:
+				api.account.fetchAccountInfo.mockResolvedValue(config.harvester.accountInfo);
 
-			const expectedAggregate = {
-				type: TransactionType.AGGREGATE_COMPLETE,
-				innerTransactions: [unlinkVrf, unlinkRemote, unlinkNode],
-				signerPublicKey: currentAccount.publicKey,
-				fee: customFee,
-				deadline: createDeadline(2, networkProperties.epochAdjustment)
-			};
-			const expectedResult = new TransactionBundle(
-				[expectedAggregate],
-				{ type: TransactionBundleType.DELEGATED_HARVESTING }
-			);
+				// Act:
+				const promise = harvestingModule.createStopHarvestingTransaction({
+					harvesterAddress: config.harvester.address
+				});
 
-			// Act & Assert:
-			await runCreateStopHarvestingTransactionTest(
-				{
-					currentAccountInfo: accountInfoNonMultisig,
-					options: { fee: customFee }
-				},
-				{
-					result: expectedResult
+				// Assert:
+				await expect(promise).rejects.toStrictEqual(expected.error);
+			});
+		};
+
+		const createStopHarvestingTransactionErrorTests = [
+			{
+				description: 'throws when the harvester holds no keys to unlink',
+				config: { harvester: harvester.currentAccountWithoutLinkedKeys },
+				expected: {
+					error: new ControllerError(
+						'error_harvesting_no_keys_to_unlink',
+						'Failed to create stop harvesting transaction. No keys to unlink.'
+					)
 				}
-			);
+			},
+			{
+				description: 'throws when the multisig harvester has never been active on the network',
+				config: { harvester: harvester.inactiveMultisigAccount },
+				expected: {
+					error: new ControllerError(
+						'error_harvesting_account_no_activity',
+						'Failed to create harvesting transaction. Public key for account '
+							+ `"${inactiveMultisigAccountInfo.address}" does not exist on the network.`
+					)
+				}
+			}
+		];
+
+		createStopHarvestingTransactionErrorTests.forEach(test => {
+			runCreateStopHarvestingTransactionErrorTest(test.description, test.config, test.expected);
 		});
 
-		it('throws when there are no keys to unlink', async () => {
-			// Arrange:
-			const expectedError = new ControllerError(
-				'error_harvesting_no_keys_to_unlink',
-				'Failed to create stop harvesting transaction. No keys to unlink.'
-			);
+		it('unlinks the keys the harvester holds on chain, and not the cached ones', async () => {
+			// Arrange: the cached account info holds the keys of a harvesting session that has already been rotated.
+			const onChainLinkedKeys = {
+				linkedPublicKey: '11111111111111111111111111111111111111111111111111111111111111AA',
+				nodePublicKey: '11111111111111111111111111111111111111111111111111111111111111BB',
+				vrfPublicKey: '11111111111111111111111111111111111111111111111111111111111111CC'
+			};
+			walletController.currentAccountInfo = accountInfoNonMultisig;
+			api.account.fetchAccountInfo.mockResolvedValue({
+				...accountInfoNonMultisig,
+				linkedKeys: onChainLinkedKeys
+			});
 
-			// Act & Assert:
-			await runCreateStopHarvestingTransactionTest(
-				{
-					currentAccountInfo: createAccountInfoWithNoKeys(),
-					options: {}
-				},
-				{
-					error: expectedError
-				}
-			);
+			// Act:
+			const result = await harvestingModule.createStopHarvestingTransaction({});
+
+			// Assert:
+			const [aggregate] = result.transactions;
+			const unlinkedPublicKeys = aggregate.innerTransactions.map(transaction => transaction.linkedPublicKey);
+			expect(api.account.fetchAccountInfo).toHaveBeenCalledWith(networkProperties, currentAccount.address);
+			expect(unlinkedPublicKeys).toStrictEqual([
+				onChainLinkedKeys.vrfPublicKey,
+				onChainLinkedKeys.linkedPublicKey,
+				onChainLinkedKeys.nodePublicKey
+			]);
 		});
 	});
 
 	describe('createStartHarvestingTransaction()', () => {
-		const runCreateStartHarvestingTransactionTest = async (config, expected) => {
-			// Arrange:
-			const { currentAccountInfo, options, password } = config;
-			walletController.currentAccountInfo = currentAccountInfo;
-			walletController.getCurrentAccountPrivateKey.mockResolvedValue(currentAccount.privateKey);
+		const runCreateStartHarvestingTransactionTest = (description, config, expected) => {
+			it(description, async () => {
+				// Arrange:
+				api.account.fetchAccountInfo.mockResolvedValue(config.harvester.accountInfo);
 
-			// Act:
-			let error;
-			let result;
-			try {
-				result = await harvestingModule.createStartHarvestingTransaction(options, password);
-			} catch (e) {
-				error = e;
-			}
+				// Act:
+				const result = await harvestingModule.createStartHarvestingTransaction({
+					nodePublicKey: NODE_PUBLIC_KEY,
+					harvesterAddress: config.harvester.address
+				});
 
-			// Assert:
-			if (!expected.error && error) {
-				throw error;
-			} else if (expected.error) {
-				expect(error).toBeDefined();
-				expect(error).toStrictEqual(expected.error);
-			} else {
-				const [aggregate] = result.transactions;
-				const { innerTransactions } = aggregate;
-				const unlinkTransactions = [];
-				if (currentAccountInfo.linkedKeys?.vrfPublicKey) {
-					unlinkTransactions.push({
-						type: TransactionType.VRF_KEY_LINK,
-						linkAction: LinkActionMessage[LinkAction.Unlink],
-						linkedPublicKey: currentAccountInfo.linkedKeys.vrfPublicKey,
-						signerPublicKey: currentAccount.publicKey
-					});
-				}
-				if (currentAccountInfo.linkedKeys?.linkedPublicKey) {
-					unlinkTransactions.push({
-						type: TransactionType.ACCOUNT_KEY_LINK,
-						linkAction: LinkActionMessage[LinkAction.Unlink],
-						linkedPublicKey: currentAccountInfo.linkedKeys.linkedPublicKey,
-						signerPublicKey: currentAccount.publicKey
-					});
-				}
-				if (currentAccountInfo.linkedKeys?.nodePublicKey) {
-					unlinkTransactions.push({
-						type: TransactionType.NODE_KEY_LINK,
-						linkAction: LinkActionMessage[LinkAction.Unlink],
-						linkedPublicKey: currentAccountInfo.linkedKeys.nodePublicKey,
-						signerPublicKey: currentAccount.publicKey
-					});
-				}
-
-				const linkVrf = innerTransactions.find(tx => tx.type === TransactionType.VRF_KEY_LINK 
-					&& tx.linkAction === LinkActionMessage[LinkAction.Link]);
-				const linkRemote = innerTransactions.find(tx => tx.type === TransactionType.ACCOUNT_KEY_LINK 
-					&& tx.linkAction === LinkActionMessage[LinkAction.Link]);
-				const transfer = innerTransactions.find(tx => tx.type === TransactionType.TRANSFER);
-
-				const expectedInner = [
-					...unlinkTransactions,
-					{
-						type: TransactionType.VRF_KEY_LINK,
-						linkAction: LinkActionMessage[LinkAction.Link],
-						linkedPublicKey: linkVrf.linkedPublicKey,
-						signerPublicKey: currentAccount.publicKey
-					},
-					{
-						type: TransactionType.ACCOUNT_KEY_LINK,
-						linkAction: LinkActionMessage[LinkAction.Link],
-						linkedPublicKey: linkRemote.linkedPublicKey,
-						signerPublicKey: currentAccount.publicKey
-					},
-					{
-						type: TransactionType.NODE_KEY_LINK,
-						linkAction: LinkActionMessage[LinkAction.Link],
-						linkedPublicKey: options.nodePublicKey,
-						signerPublicKey: currentAccount.publicKey
-					},
-					{
-						type: TransactionType.TRANSFER,
-						mosaics: [],
-						message: {
-							type: MessageType.DelegatedHarvesting,
-							payload: transfer.message.payload,
-							text: ''
+				// Assert: the VRF and remote keys are generated per call, so they are read back from the result.
+				const { innerTransactions } = result.transactions.at(-1);
+				const [generatedVrfPublicKey, generatedRemotePublicKey] = innerTransactions
+					.filter(transaction => transaction.linkAction === LinkActionMessage[LinkAction.Link])
+					.map(transaction => transaction.linkedPublicKey);
+				const requestTransfer = innerTransactions.find(transaction => transaction.type === TransactionType.TRANSFER);
+				const expectedBundle = expected.buildBundle([
+					...buildKeyLinkTransactions(
+						config.harvester.accountInfo.linkedKeys,
+						LinkAction.Unlink,
+						expected.signerPublicKey
+					),
+					...buildKeyLinkTransactions(
+						{
+							vrfPublicKey: generatedVrfPublicKey,
+							linkedPublicKey: generatedRemotePublicKey,
+							nodePublicKey: NODE_PUBLIC_KEY
 						},
-						signerPublicKey: currentAccount.publicKey,
-						recipientAddress: addressFromPublicKey(options.nodePublicKey, networkProperties.networkIdentifier)
-					}
-				];
+						LinkAction.Link,
+						expected.signerPublicKey
+					),
+					buildHarvestingRequestTransfer(expected.signerPublicKey, requestTransfer.message.payload)
+				]);
 
-				const expectedAggregate = {
-					type: TransactionType.AGGREGATE_COMPLETE,
-					innerTransactions: expectedInner,
-					signerPublicKey: currentAccount.publicKey,
-					fee: expected.fee,
-					deadline: createDeadline(2, networkProperties.epochAdjustment)
-				};
-				const expectedResult = new TransactionBundle(
-					[expectedAggregate],
-					{ type: TransactionBundleType.DELEGATED_HARVESTING }
-				);
-
-				expect(result.toJSON()).toStrictEqual(expectedResult.toJSON());
-				expect(walletController.getCurrentAccountPrivateKey).toHaveBeenCalledTimes(1);
-				expect(walletController.getCurrentAccountPrivateKey).toHaveBeenCalledWith(password);
-			}
+				expect(result.toJSON()).toStrictEqual(expectedBundle.toJSON());
+			});
 		};
 
-		it('creates unlink + link + delegated harvesting transfer with default fee when keys are already linked', async () => {
-			// Arrange:
-			const nodePublicKey = '26BB5F23FAE6E93798D170E971250963F025048928478825FC0F51A394C30987';
-			const options = { nodePublicKey };
-			const password = 'pwd';
-			const expectedFee = createTransactionFee(networkProperties, '0');
+		const createStartHarvestingTransactionTests = [
+			{
+				description: 'unlinks the current keys, links the new ones and requests the node to harvest',
+				config: { harvester: harvester.currentAccount },
+				expected: { signerPublicKey: currentAccount.publicKey, buildBundle: buildSingleAccountBundle }
+			},
+			{
+				description: 'skips the unlink transactions when the current account holds no keys',
+				config: { harvester: harvester.currentAccountWithoutLinkedKeys },
+				expected: { signerPublicKey: currentAccount.publicKey, buildBundle: buildSingleAccountBundle }
+			},
+			{
+				description: 'creates an aggregate bonded bundle signed by a multisig account',
+				config: { harvester: harvester.multisigAccount },
+				expected: { signerPublicKey: multisigAccountInfo.publicKey, buildBundle: buildMultisigBundle }
+			}
+		];
 
-			// Act & Assert:
-			await runCreateStartHarvestingTransactionTest(
-				{
-					currentAccountInfo: accountInfoNonMultisig,
-					options,
-					password
-				},
-				{
-					fee: expectedFee
-				}
-			);
+		createStartHarvestingTransactionTests.forEach(test => {
+			runCreateStartHarvestingTransactionTest(test.description, test.config, test.expected);
 		});
 
-		it('creates link + delegated harvesting transfer with provided fee when no keys are linked', async () => {
+		it('throws when the multisig harvester has never been active on the network', async () => {
 			// Arrange:
-			const nodePublicKey = '26BB5F23FAE6E93798D170E971250963F025048928478825FC0F51A394C30987';
-			const customFee = createFee('1.2501');
-			const options = { nodePublicKey, fee: customFee };
-			const password = 'secret';
-			const accountInfoWithNoKeys = {
-				...accountInfoNonMultisig,
-				linkedKeys: {}
-			};
-
-			// Act & Assert:
-			await runCreateStartHarvestingTransactionTest(
-				{
-					currentAccountInfo: accountInfoWithNoKeys,
-					options,
-					password
-				},
-				{
-					fee: customFee
-				}
+			const expectedError = new ControllerError(
+				'error_harvesting_account_no_activity',
+				'Failed to create harvesting transaction. Public key for account '
+					+ `"${inactiveMultisigAccountInfo.address}" does not exist on the network.`
 			);
+			api.account.fetchAccountInfo.mockResolvedValue(inactiveMultisigAccountInfo);
+
+			// Act:
+			const promise = harvestingModule.createStartHarvestingTransaction({
+				nodePublicKey: NODE_PUBLIC_KEY,
+				harvesterAddress: inactiveMultisigAccountInfo.address
+			});
+
+			// Assert:
+			await expect(promise).rejects.toStrictEqual(expectedError);
+		});
+
+		it('fetches the harvester account info from the network on every call', async () => {
+			// Arrange:
+			api.account.fetchAccountInfo.mockResolvedValue(multisigAccountInfo);
+
+			// Act:
+			await harvestingModule.createStartHarvestingTransaction({
+				nodePublicKey: NODE_PUBLIC_KEY,
+				harvesterAddress: multisigAccountInfo.address
+			});
+
+			// Assert:
+			expect(api.account.fetchAccountInfo).toHaveBeenCalledTimes(1);
+			expect(api.account.fetchAccountInfo).toHaveBeenCalledWith(networkProperties, multisigAccountInfo.address);
 		});
 	});
 });
