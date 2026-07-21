@@ -744,11 +744,14 @@ class SymbolPullerTransactionAliasResolutionTest(SymbolPullerTestBase):
 				transaction_path(1, 1): {'data': [create_node_transaction(1, recipientAddress=ALIAS_ADDRESS)]}
 			})
 
-		# Act + Assert:
+		# Act:
 		self._assert_sync_rejects_node_response(
 			connector,
 			ValueError,
 			'Malformed Symbol address resolution page response')
+
+		# Assert:
+		self.assertEqual([resolution_path('address', 1)], self._resolution_paths(connector))
 
 	def test_sync_block_headers_rejects_non_dict_address_resolution_page(self):
 		# Arrange:
@@ -759,11 +762,14 @@ class SymbolPullerTransactionAliasResolutionTest(SymbolPullerTestBase):
 				transaction_path(1, 1): {'data': [create_node_transaction(1, recipientAddress=ALIAS_ADDRESS)]}
 			})
 
-		# Act + Assert:
+		# Act:
 		self._assert_sync_rejects_node_response(
 			connector,
 			ValueError,
 			'Malformed Symbol address resolution page response')
+
+		# Assert:
+		self.assertEqual([resolution_path('address', 1)], self._resolution_paths(connector))
 
 	def test_sync_block_headers_rejects_malformed_mosaic_resolution_page(self):
 		# Arrange:
