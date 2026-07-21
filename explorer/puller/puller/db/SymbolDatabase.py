@@ -554,6 +554,20 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 		with self._database_transaction() as cursor:
 			self._execute_upsert_namespace(cursor, namespace_row, alias_name_rows)
 
+	def apply_namespace_entries(self, namespace_entries):
+		"""Applies namespace upsert and delete entries atomically in input order."""
+
+		with self._database_transaction() as cursor:
+			self._execute_namespace_entries(cursor, namespace_entries)
+
+	@staticmethod
+	def _execute_namespace_entries(cursor, namespace_entries):
+		for entry in namespace_entries:
+			if 'namespace_id' in entry:
+				SymbolDatabase._execute_delete_namespace(cursor, entry['namespace_id'])
+			else:
+				SymbolDatabase._execute_upsert_namespace(cursor, entry['row'], entry['alias_rows'])
+
 	@staticmethod
 	def _execute_upsert_namespace(cursor, namespace_row, alias_name_rows):
 		cursor.execute(
@@ -1025,11 +1039,7 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 		with self._database_transaction() as cursor:
 			self._delete_rollback_affected_rows_from_height(cursor, height)
 			self._stale_mark_account_refresh_state_if_needed(cursor, height)
-			for entry in namespace_entries:
-				if 'namespace_id' in entry:
-					self._execute_delete_namespace(cursor, entry['namespace_id'])
-				else:
-					self._execute_upsert_namespace(cursor, entry['row'], entry['alias_rows'])
+			self._execute_namespace_entries(cursor, namespace_entries)
 			self._execute_upsert_sync_state(cursor, sync_state)
 
 	@staticmethod

@@ -1,14 +1,20 @@
 import asyncio
 from unittest.mock import AsyncMock
 
+from psycopg2 import Error as PsycopgError
 from symbolchain.sc import ReceiptType, TransactionType
 from symbollightapi.model.Exceptions import NodeException
 
 from puller.facade.SymbolPuller import BLOCK_PAGE_FETCH_CONCURRENCY, MAX_PAGE_SIZE
 from puller.model.symbol.Block import create_block_row
-from puller.model.symbol.Namespace import create_alias_name_rows, create_namespace_row
 from puller.model.symbol.Receipt import create_receipt_rows
-from tests.test.SymbolNamespaceTestUtils import NAMESPACE_ROOT_ID, NAMESPACE_SUB_ID, create_namespace_item
+from tests.test.SymbolNamespaceTestUtils import (
+	NAMESPACE_ROOT_ID,
+	NAMESPACE_SUB_ID,
+	create_namespace_item,
+	fetch_namespace_state,
+	seed_namespace
+)
 from tests.test.SymbolTestConstants import BENEFICIARY_ADDRESS
 
 from .puller_test_utils import (
@@ -25,7 +31,6 @@ from .puller_test_utils import (
 	create_node_transaction,
 	create_statement_item,
 	create_sync_state,
-	fetch_namespace_state,
 	set_symbol_connector,
 	set_symbol_rate_limiter,
 	set_sync_block_pages,
@@ -67,11 +72,6 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 			},
 			namespace_names={NAMESPACE_ROOT_ID: 'root'})
 
-	def _fetch_namespace_state(self):
-		return fetch_namespace_state(
-			self.puller.symbol_db.connection,
-			'namespace_id, parent_id, root_id, name, full_name, alias_type, alias_mosaic_id, updated_at_height')
-
 	def test_sync_block_headers_persists_dirty_namespace_state_after_registration_and_alias_transactions(self):
 		# Arrange:
 		connector = self._create_namespace_batch_connector()
@@ -80,31 +80,29 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		self._sync_with_connector(connector)
 
 		# Assert:
-		namespace_rows, alias_rows = self._fetch_namespace_state()
+		namespace_rows, alias_rows = fetch_namespace_state(self.puller.symbol_db.connection)
 		self.assertEqual([
-			(NAMESPACE_ROOT_ID, None, NAMESPACE_ROOT_ID, 'root', 'root', 'mosaic', NATIVE_MOSAIC_ID, 1)
+			(
+				NAMESPACE_ROOT_ID, None, NAMESPACE_ROOT_ID, 'root', 'root', 1, 'root',
+				BENEFICIARY_ADDRESS.lower(), 1, None, 'mosaic', NATIVE_MOSAIC_ID, None,
+				create_namespace_item(alias={'type': 1, 'mosaicId': NATIVE_MOSAIC_ID}), 1)
 		], namespace_rows)
 		self.assertEqual([
 			('mosaic', NATIVE_MOSAIC_ID, 'root', 1),
 			('namespace', NAMESPACE_ROOT_ID, 'root', 1)
 		], alias_rows)
-		self.assertEqual(1, connector.paths.count(f'namespaces/{NAMESPACE_ROOT_ID}'))
-		self.assertEqual(1, connector.paths.count('namespaces/names'))
 		self.assertEqual([
 			{'addresses': [self._beneficiary_address_text()]},
 			{'namespaceIds': [NAMESPACE_ROOT_ID]}
 		], connector.post_payloads)
-		self.assertEqual(
-			[f'namespaces/{NAMESPACE_ROOT_ID}'],
-			[path for path in connector.paths if path.startswith('namespaces/') and path != 'namespaces/names'])
-		self.assertEqual(
-			[{'namespaceIds': [NAMESPACE_ROOT_ID]}],
-			[payload for path, payload in connector.post_requests if 'namespaces/names' == path])
+		self._assert_namespace_requests(
+			connector,
+			[NAMESPACE_ROOT_ID],
+			[{'namespaceIds': [NAMESPACE_ROOT_ID]}])
 
 	def test_sync_block_headers_deletes_dirty_namespace_state_when_namespace_is_not_found(self):
 		# Arrange:
-		namespace_row = create_namespace_row(create_namespace_item(), {NAMESPACE_ROOT_ID: 'root'}, 0)
-		self.puller.symbol_db.upsert_namespace(namespace_row, create_alias_name_rows(namespace_row))
+		seed_namespace(self.puller.symbol_db, create_namespace_item(), {NAMESPACE_ROOT_ID: 'root'})
 		connector = FakeConnector(
 			1,
 			{0: [create_node_block(1)]},
@@ -125,18 +123,58 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		self._sync_with_connector(connector)
 
 		# Assert:
-		self.assertEqual(([], []), self._fetch_namespace_state())
+		self.assertEqual(([], []), fetch_namespace_state(self.puller.symbol_db.connection))
 		self.assertEqual([1], self._fetch_block_heights(self.puller.symbol_db))
-		self.assertEqual(
-			[f'namespaces/{NAMESPACE_ROOT_ID}'],
-			[path for path in connector.paths if path.startswith('namespaces/') and path != 'namespaces/names'])
-		self.assertEqual([], [payload for path, payload in connector.post_requests if 'namespaces/names' == path])
+		self._assert_namespace_requests(connector, [NAMESPACE_ROOT_ID], [])
+
+	def test_sync_block_headers_rolls_back_all_namespace_entries_when_later_namespace_write_fails(self):
+		# Arrange:
+		seed_namespace(
+			self.puller.symbol_db,
+			create_namespace_item(alias={'type': 1, 'mosaicId': 'mosaic-a-old'}),
+			{NAMESPACE_ROOT_ID: 'old-a'},
+			0)
+		before_state = fetch_namespace_state(self.puller.symbol_db.connection)
+		connector = FakeConnector(
+			1,
+			{0: [create_node_block(1)]},
+			transactions_by_path={transaction_path(1, 1): {'data': [
+				create_node_transaction(
+					1,
+					transaction_hash='A' * 64,
+					transaction_id='namespace-a-registration',
+					type=TransactionType.NAMESPACE_REGISTRATION.value,
+					id=NAMESPACE_ROOT_ID,
+					name='shared',
+					registrationType=0),
+				create_node_transaction(
+					1,
+					transaction_hash='B' * 64,
+					transaction_id='namespace-b-registration',
+					type=TransactionType.NAMESPACE_REGISTRATION.value,
+					id=NAMESPACE_SUB_ID,
+					name='shared',
+					registrationType=0)
+			]}},
+			namespace_by_id={
+				NAMESPACE_ROOT_ID: create_namespace_item(),
+				NAMESPACE_SUB_ID: create_namespace_item(namespace_id=NAMESPACE_SUB_ID, root_id=NAMESPACE_SUB_ID)
+			},
+			namespace_names={NAMESPACE_ROOT_ID: 'shared', NAMESPACE_SUB_ID: 'shared'})
+
+		# Act:
+		with self.assertRaises(PsycopgError):
+			self._sync_with_connector(connector)
+
+		# Assert:
+		self.assertEqual(before_state, fetch_namespace_state(self.puller.symbol_db.connection))
+		self.assertEqual([1], self._fetch_block_heights(self.puller.symbol_db))
 
 	def test_sync_block_headers_converges_namespace_state_when_restarted_from_existing_blocks(self):
 		# Arrange:
 		connector = self._create_namespace_batch_connector()
 		self._sync_with_connector(connector)
-		first_namespace_state = self._fetch_namespace_state()
+		first_namespace_state = fetch_namespace_state(self.puller.symbol_db.connection)
 		cursor = self.puller.symbol_db.connection.cursor()
 		cursor.execute('DELETE FROM symbol_sync_state')
 		self.puller.symbol_db.connection.commit()
@@ -145,13 +183,11 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		self._sync_with_connector(connector)
 
 		# Assert:
-		self.assertEqual(first_namespace_state, self._fetch_namespace_state())
-		self.assertEqual(
-			[f'namespaces/{NAMESPACE_ROOT_ID}', f'namespaces/{NAMESPACE_ROOT_ID}'],
-			[path for path in connector.paths if path.startswith('namespaces/') and path != 'namespaces/names'])
-		self.assertEqual(
-			[{'namespaceIds': [NAMESPACE_ROOT_ID]}, {'namespaceIds': [NAMESPACE_ROOT_ID]}],
-			[payload for path, payload in connector.post_requests if 'namespaces/names' == path])
+		self.assertEqual(first_namespace_state, fetch_namespace_state(self.puller.symbol_db.connection))
+		self._assert_namespace_requests(
+			connector,
+			[NAMESPACE_ROOT_ID, NAMESPACE_ROOT_ID],
+			[{'namespaceIds': [NAMESPACE_ROOT_ID]}, {'namespaceIds': [NAMESPACE_ROOT_ID]}])
 
 	def test_sync_block_headers_does_not_write_batch_state_when_namespace_fetch_fails(self):
 		# Arrange:
@@ -184,10 +220,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		self.assertEqual(0, account_count)
 		self.assertEqual(0, namespace_count)
 		self.assertIsNone(self.puller.symbol_db.get_sync_state())
-		self.assertEqual(
-			[f'namespaces/{NAMESPACE_ROOT_ID}'],
-			[path for path in connector.paths if path.startswith('namespaces/') and path != 'namespaces/names'])
-		self.assertEqual([], [payload for path, payload in connector.post_requests if 'namespaces/names' == path])
+		self._assert_namespace_requests(connector, [NAMESPACE_ROOT_ID], [])
 
 	def test_sync_block_headers_ignores_unrelated_transaction_and_receipt_for_namespace_refresh(self):
 		# Arrange:
@@ -207,16 +240,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		self._sync_with_connector(connector)
 
 		# Assert:
-		namespace_detail_paths = [
-			path for path in connector.paths
-			if path.startswith('namespaces/') and path != 'namespaces/names'
-		]
-		namespace_names_payloads = [
-			payload for path, payload in connector.post_requests
-			if 'namespaces/names' == path
-		]
-		self.assertEqual([], namespace_detail_paths)
-		self.assertEqual([], namespace_names_payloads)
+		self._assert_namespace_requests(connector, [], [])
 
 	def test_sync_block_headers_makes_no_namespace_requests_for_empty_transaction_and_receipt_batch(self):
 		# Arrange:
@@ -226,16 +250,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		self._sync_with_connector(connector)
 
 		# Assert:
-		namespace_detail_paths = [
-			path for path in connector.paths
-			if path.startswith('namespaces/') and path != 'namespaces/names'
-		]
-		namespace_names_payloads = [
-			payload for path, payload in connector.post_requests
-			if 'namespaces/names' == path
-		]
-		self.assertEqual([], namespace_detail_paths)
-		self.assertEqual([], namespace_names_payloads)
+		self._assert_namespace_requests(connector, [], [])
 
 	def test_sync_block_headers_collects_all_namespace_dirty_sources_in_first_encounter_order(self):
 		# Arrange:
@@ -281,12 +296,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		self._sync_with_connector(connector)
 
 		# Assert:
-		self.assertEqual(
-			[f'namespaces/{namespace_id}' for namespace_id in namespace_ids],
-			[path for path in connector.paths if path.startswith('namespaces/') and path != 'namespaces/names'])
-		self.assertEqual(
-			[{'namespaceIds': namespace_ids}],
-			[payload for path, payload in connector.post_requests if 'namespaces/names' == path])
+		self._assert_namespace_requests(connector, namespace_ids, [{'namespaceIds': namespace_ids}])
 
 	def test_sync_block_headers_resolves_duplicate_and_ancestor_namespace_names(self):
 		# Arrange:
@@ -314,9 +324,10 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		cursor = self.puller.symbol_db.connection.cursor()
 		cursor.execute('SELECT name, full_name FROM symbol_namespaces')
 		self.assertEqual([('sub', 'root.sub')], cursor.fetchall())
-		self.assertEqual(
-			[{'namespaceIds': [NAMESPACE_ROOT_ID, NAMESPACE_SUB_ID]}],
-			[payload for path, payload in connector.post_requests if 'namespaces/names' == path])
+		self._assert_namespace_requests(
+			connector,
+			[NAMESPACE_SUB_ID],
+			[{'namespaceIds': [NAMESPACE_ROOT_ID, NAMESPACE_SUB_ID]}])
 
 	def test_sync_block_headers_rejects_malformed_namespace_names_response_before_writes(self):
 		# Arrange:
@@ -337,12 +348,10 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		# Assert:
 		self.assertEqual([], self._fetch_block_heights(self.puller.symbol_db))
 		self.assertIsNone(self.puller.symbol_db.get_sync_state())
-		self.assertEqual(
-			[f'namespaces/{NAMESPACE_ROOT_ID}'],
-			[path for path in connector.paths if path.startswith('namespaces/') and path != 'namespaces/names'])
-		self.assertEqual(
-			[{'namespaceIds': [NAMESPACE_ROOT_ID]}],
-			[payload for path, payload in connector.post_requests if 'namespaces/names' == path])
+		self._assert_namespace_requests(
+			connector,
+			[NAMESPACE_ROOT_ID],
+			[{'namespaceIds': [NAMESPACE_ROOT_ID]}])
 
 	def test_sync_block_headers_fetches_namespace_details_concurrently_in_bounded_chunks(self):
 		# Arrange:
@@ -373,12 +382,13 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		self.assertEqual(
 			[f'namespaces/{namespace_id}' for namespace_id in namespace_ids],
 			connector.namespace_paths)
-		self.assertEqual(
+		self._assert_namespace_requests(
+			connector,
+			namespace_ids,
 			[
 				{'namespaceIds': namespace_ids[:MAX_PAGE_SIZE]},
 				{'namespaceIds': namespace_ids[MAX_PAGE_SIZE:]}
-			],
-			[payload for path, payload in connector.post_requests if 'namespaces/names' == path])
+			])
 		self.assertGreater(connector.max_in_flight_namespace_requests, 1)
 		self.assertLessEqual(connector.max_in_flight_namespace_requests, MAX_PAGE_SIZE)
 		self.assertEqual(0, connector.in_flight_namespace_requests)

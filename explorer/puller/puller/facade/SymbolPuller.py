@@ -366,7 +366,7 @@ class SymbolPuller:
 		dirty_namespace_entries = await self._fetch_dirty_namespaces(dirty_namespace_ids, observed_height)
 		self._sync_block_batch(batch_rows, transaction_rows_by_height, receipt_rows_by_height)
 		self._write_dirty_accounts_for_batch(dirty_account_rows)
-		self._write_dirty_namespaces(dirty_namespace_entries)
+		self.symbol_db.apply_namespace_entries(dirty_namespace_entries)
 
 	def _sync_block_batch(self, batch_rows, transaction_rows_by_height, receipt_rows_by_height):
 		"""Writes previously-fetched block, transaction, and receipt rows for one batch.
@@ -739,15 +739,6 @@ class SymbolPuller:
 			})
 
 		return entries
-
-	def _write_dirty_namespaces(self, entries):
-		"""Writes fetched namespace current-state changes after batch chain rows are persisted."""
-
-		for entry in entries:
-			if 'namespace_id' in entry:
-				self.symbol_db.delete_namespace(entry['namespace_id'])
-			else:
-				self.symbol_db.upsert_namespace(entry['row'], entry['alias_rows'])
 
 	async def _fetch_dirty_accounts_for_batch(  # pylint: disable=too-many-locals
 		self,

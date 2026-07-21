@@ -14,6 +14,7 @@ from symbolchain.symbol.Network import Network
 from puller.db.SymbolDatabase import SymbolDatabase
 from puller.model.symbol.Account import create_account_row
 from tests.facade.symbol.puller_test_utils import NATIVE_MOSAIC_ID, create_account_item
+from tests.test.SymbolNamespaceTestUtils import fetch_namespace_state
 from tests.test.SymbolTestConstants import RECIPIENT_ADDRESS
 
 from ..test.SymbolTransactionTestUtils import create_transaction_entry
@@ -175,23 +176,6 @@ def _create_alias_name_rows(namespace_row):
 		})
 
 	return rows
-
-
-def _fetch_namespace_state(database):
-	cursor = database.connection.cursor()
-	cursor.execute(
-		'''
-		SELECT namespace_id, parent_id, root_id, name, full_name, depth, registration_type,
-			encode(owner_address, 'hex'), start_height, end_height, alias_type, alias_mosaic_id,
-			encode(alias_address, 'hex'), raw_payload, updated_at_height
-		FROM symbol_namespaces
-		ORDER BY namespace_id
-		''')
-	namespace_rows = cursor.fetchall()
-	cursor.execute(
-		'SELECT artifact_type, artifact_id, name, updated_at_height FROM symbol_alias_names '
-		'ORDER BY artifact_type, artifact_id, name')
-	return namespace_rows, cursor.fetchall()
 
 
 class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
@@ -424,7 +408,119 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 				('namespace', 'A95F1F8A96159516', 'root', 10),
 				('account', 'account-original', 'root', 10)
 			]),
-			_fetch_namespace_state(database))
+			fetch_namespace_state(database.connection))
+
+	def test_apply_namespace_entries_preserves_mixed_upsert_and_delete_input_order(self):
+		# Arrange:
+		database = self._create_database()
+		namespace_a_before = _create_namespace_row(
+			full_name='a',
+			alias_mosaic_id='mosaic-a-old',
+			raw_payload={'namespace': {'state': 'a-before'}},
+			observed_height=1)
+		namespace_b_before = _create_namespace_row(
+			'B95F1F8A96159516',
+			'b',
+			1,
+			alias_mosaic_id='mosaic-b-old',
+			raw_payload={'namespace': {'state': 'b-before'}})
+		database.upsert_namespace(namespace_a_before, [
+			{'artifact_type': 'namespace', 'artifact_id': 'A95F1F8A96159516', 'name': 'a', 'updated_at_height': 1},
+			{'artifact_type': 'mosaic', 'artifact_id': 'mosaic-a-old', 'name': 'a', 'updated_at_height': 1},
+			{'artifact_type': 'account', 'artifact_id': 'account-a-old', 'name': 'a', 'updated_at_height': 1}
+		])
+		database.upsert_namespace(namespace_b_before, [
+			{'artifact_type': 'namespace', 'artifact_id': 'B95F1F8A96159516', 'name': 'b', 'updated_at_height': 1},
+			{'artifact_type': 'mosaic', 'artifact_id': 'mosaic-b-old', 'name': 'b', 'updated_at_height': 1}
+		])
+		namespace_a_after = _create_namespace_row(
+			parent_id='B95F1F8A96159516',
+			root_id='C74B99BA41F4AFEE',
+			name='a',
+			full_name='a',
+			depth=2,
+			registration_type='child',
+			owner_address=bytes.fromhex(ADDRESS2),
+			start_height=7,
+			end_height=100,
+			alias_mosaic_id='mosaic-a-new',
+			raw_payload={'namespace': {'state': 'a-after'}},
+			observed_height=2)
+		namespace_b_after = _create_namespace_row(
+			'B95F1F8A96159516',
+			'b',
+			2,
+			alias_mosaic_id='mosaic-b-new',
+			raw_payload={'namespace': {'state': 'b-after'}})
+		namespace_a_after_alias_rows = [
+			{'artifact_type': 'namespace', 'artifact_id': 'A95F1F8A96159516', 'name': 'a', 'updated_at_height': 2},
+			{'artifact_type': 'mosaic', 'artifact_id': 'mosaic-a-new', 'name': 'a', 'updated_at_height': 2}
+		]
+		namespace_b_after_alias_rows = [
+			{'artifact_type': 'namespace', 'artifact_id': 'B95F1F8A96159516', 'name': 'b', 'updated_at_height': 2},
+			{'artifact_type': 'mosaic', 'artifact_id': 'mosaic-b-new', 'name': 'b', 'updated_at_height': 2}
+		]
+
+		# Act:
+		database.apply_namespace_entries([
+			{'namespace_id': 'A95F1F8A96159516'},
+			{'row': namespace_a_after, 'alias_rows': namespace_a_after_alias_rows},
+			{'row': namespace_b_after, 'alias_rows': namespace_b_after_alias_rows},
+			{'namespace_id': 'B95F1F8A96159516'}
+		])
+
+		# Assert:
+		self.assertEqual(([
+			('A95F1F8A96159516', 'B95F1F8A96159516', 'C74B99BA41F4AFEE', 'a', 'a', 2, 'child',
+				ADDRESS2.lower(), 7, 100, 'mosaic', 'mosaic-a-new', None,
+				{'namespace': {'state': 'a-after'}}, 2)
+		], [
+			('mosaic', 'mosaic-a-new', 'a', 2),
+			('namespace', 'A95F1F8A96159516', 'a', 2)
+		]), fetch_namespace_state(database.connection))
+
+	def test_apply_namespace_entries_accepts_empty_entries(self):
+		# Arrange:
+		database = self._create_database()
+		namespace_row = _create_namespace_row()
+		database.upsert_namespace(namespace_row, _create_alias_name_rows(namespace_row))
+		original_state = fetch_namespace_state(database.connection)
+
+		# Act:
+		database.apply_namespace_entries([])
+
+		# Assert:
+		self.assertEqual(original_state, fetch_namespace_state(database.connection))
+
+	def test_apply_namespace_entries_rolls_back_all_entries_when_later_alias_insert_fails(self):
+		# Arrange:
+		database = self._create_database()
+		original_row = _create_namespace_row(observed_height=1)
+		deleted_row = _create_namespace_row('B95F1F8A96159516', 'gone', 1)
+		database.upsert_namespace(original_row, _create_alias_name_rows(original_row))
+		database.upsert_namespace(deleted_row, _create_alias_name_rows(deleted_row))
+		original_state = fetch_namespace_state(database.connection)
+		updated_row = _create_namespace_row(
+			end_height=100,
+			raw_payload={'namespace': {'state': 'updated'}},
+			observed_height=2)
+		invalid_row = _create_namespace_row('E74B99BA41F4AFEE', 'invalid', 2)
+
+		# Act:
+		with self.assertRaises(PsycopgError):
+			database.apply_namespace_entries([
+				{'row': updated_row, 'alias_rows': _create_alias_name_rows(updated_row)},
+				{'namespace_id': deleted_row['namespace_id']},
+				{'row': invalid_row, 'alias_rows': [{
+					'artifact_type': 'invalid',
+					'artifact_id': 'invalid',
+					'name': 'invalid',
+					'updated_at_height': 2
+				}]}
+			])
+
+		# Assert:
+		self.assertEqual(original_state, fetch_namespace_state(database.connection))
 
 	def test_upsert_namespace_updates_every_non_key_column_while_retaining_namespace_key(self):
 		# Arrange:
@@ -719,6 +815,46 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		self.assertEqual([(1,)], cursor.fetchall())
 		self.assertEqual('repairing', database.get_sync_state()['status'])
 		self.assertEqual(1, database.get_sync_state()['last_synced_height'])
+
+	def test_repair_rollback_rolls_back_namespace_entries_and_chain_state_when_later_alias_insert_fails(self):
+		# Arrange:
+		database = self._create_database()
+		database.upsert_blocks([_create_block(1), _create_block(2)])
+		database.upsert_sync_state(_create_sync_state())
+		original_row = _create_namespace_row(observed_height=2)
+		deleted_row = _create_namespace_row('B95F1F8A96159516', 'gone', 2)
+		database.upsert_namespace(original_row, _create_alias_name_rows(original_row))
+		database.upsert_namespace(deleted_row, _create_alias_name_rows(deleted_row))
+		original_namespace_state = fetch_namespace_state(database.connection)
+		original_sync_state = database.get_sync_state()
+		updated_row = _create_namespace_row(
+			end_height=100,
+			raw_payload={'namespace': {'state': 'updated'}},
+			observed_height=1)
+		invalid_row = _create_namespace_row('E74B99BA41F4AFEE', 'invalid', 1)
+
+		# Act:
+		with self.assertRaises(PsycopgError):
+			database.repair_rollback_from_height(2, _create_sync_state(
+				status='repairing',
+				last_synced_height=1,
+				last_synced_block_hash=b'hash 1'), [
+				{'row': updated_row, 'alias_rows': _create_alias_name_rows(updated_row)},
+				{'namespace_id': deleted_row['namespace_id']},
+				{'row': invalid_row, 'alias_rows': [{
+					'artifact_type': 'invalid',
+					'artifact_id': 'invalid',
+					'name': 'invalid',
+					'updated_at_height': 1
+				}]}
+			])
+
+		# Assert:
+		cursor = database.connection.cursor()
+		cursor.execute('SELECT height FROM symbol_blocks ORDER BY height')
+		self.assertEqual([(1,), (2,)], cursor.fetchall())
+		self.assertEqual(original_namespace_state, fetch_namespace_state(database.connection))
+		self.assertEqual(original_sync_state, database.get_sync_state())
 
 	def setUp(self):
 		self.exit_stack = ExitStack()
@@ -2368,7 +2504,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			raw_payload={'namespace': {'state': 'gone'}})
 		database.upsert_namespace(updated_row, _create_alias_name_rows(updated_row))
 		database.upsert_namespace(deleted_row, _create_alias_name_rows(deleted_row))
-		original_namespace_state = _fetch_namespace_state(database)
+		original_namespace_state = fetch_namespace_state(database.connection)
 		original_refresh_state = database.get_account_refresh_state()
 		refreshed_row = _create_namespace_row(
 			alias_mosaic_id='mosaic-new',
@@ -2391,7 +2527,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		self.assertEqual([(9, b'hash 9'), (10, b'hash 10')], [
 			(height, bytes(block_hash)) for height, block_hash in cursor.fetchall()])
 		self.assertEqual(original_refresh_state, database.get_account_refresh_state())
-		self.assertEqual(original_namespace_state, _fetch_namespace_state(database))
+		self.assertEqual(original_namespace_state, fetch_namespace_state(database.connection))
 
 	def test_repair_rollback_deletes_current_state_but_preserves_account_refresh_rows(self):
 		# Arrange:

@@ -4,8 +4,14 @@ import asyncio
 from symbolchain.symbol.Network import Address
 
 from puller.facade.SymbolPuller import SymbolRollbackError
-from puller.model.symbol.Namespace import create_alias_name_rows, create_namespace_row
-from tests.test.SymbolNamespaceTestUtils import NAMESPACE_ROOT_ID, NAMESPACE_SUB_ID, NAMESPACE_SUB_SUB_ID, create_namespace_item
+from tests.test.SymbolNamespaceTestUtils import (
+	NAMESPACE_ROOT_ID,
+	NAMESPACE_SUB_ID,
+	NAMESPACE_SUB_SUB_ID,
+	create_namespace_item,
+	fetch_namespace_state,
+	seed_namespace
+)
 
 from ...test.SymbolTestConstants import BENEFICIARY_ADDRESS, RECIPIENT_ADDRESS, SIGNER_ADDRESS
 from ...test.SymbolTransactionTestUtils import create_transaction_entry
@@ -17,7 +23,6 @@ from .puller_test_utils import (
 	create_node_transaction,
 	create_statement_item,
 	create_sync_state,
-	fetch_namespace_state,
 	set_symbol_connector,
 	statement_path,
 	transaction_path
@@ -25,12 +30,6 @@ from .puller_test_utils import (
 
 
 class SymbolPullerRollbackTest(SymbolPullerTestBase):
-	def _upsert_namespace(self, namespace_item, names_by_id, observed_height):
-		namespace_row = create_namespace_row(namespace_item, names_by_id, observed_height)
-		self.puller.symbol_db.upsert_namespace(
-			namespace_row,
-			create_alias_name_rows(namespace_row))
-
 	def _fetch_namespace_rows(self):
 		cursor = self.puller.symbol_db.connection.cursor()
 		cursor.execute(
@@ -49,13 +48,6 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):
 
 		return namespace_rows, cursor.fetchall()
 
-	def _fetch_full_namespace_state(self):
-		return fetch_namespace_state(
-			self.puller.symbol_db.connection,
-			'namespace_id, parent_id, root_id, name, full_name, depth, registration_type, '
-			'encode(owner_address, \'hex\'), start_height, end_height, alias_type, alias_mosaic_id, '
-			'encode(alias_address, \'hex\'), raw_payload, updated_at_height')
-
 	def test_sync_block_headers_refreshes_namespace_state_at_or_above_rollback_height(self):
 		# Arrange:
 		self._seed_blocks(
@@ -63,12 +55,14 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):
 			[1, 2, 3],
 			{2: b'local mismatch'.hex()})
 		self.puller.symbol_db.upsert_sync_state(create_sync_state())
-		self._upsert_namespace(
+		seed_namespace(
+			self.puller.symbol_db,
 			create_namespace_item(namespace_id='B95F1F8A96159516', root_id='B95F1F8A96159516'),
 			{'B95F1F8A96159516': 'before-fork'},
 			1)
-		self._upsert_namespace(create_namespace_item(), {NAMESPACE_ROOT_ID: 'root'}, 2)
-		self._upsert_namespace(
+		seed_namespace(self.puller.symbol_db, create_namespace_item(), {NAMESPACE_ROOT_ID: 'root'}, 2)
+		seed_namespace(
+			self.puller.symbol_db,
 			create_namespace_item(NAMESPACE_SUB_ID, NAMESPACE_ROOT_ID, NAMESPACE_ROOT_ID),
 			{NAMESPACE_ROOT_ID: 'root', NAMESPACE_SUB_ID: 'orphaned'},
 			3)
@@ -93,19 +87,10 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):
 			('namespace', NAMESPACE_ROOT_ID, 'root', 1),
 			('namespace', 'B95F1F8A96159516', 'before-fork', 1)
 		], alias_rows)
-		namespace_detail_paths = [
-			path for path in connector.paths
-			if path.startswith('namespaces/') and path != 'namespaces/names'
-		]
-		namespace_names_payloads = [
-			payload for path, payload in connector.post_requests
-			if 'namespaces/names' == path
-		]
-		self.assertEqual([
-			f'namespaces/{NAMESPACE_ROOT_ID}',
-			f'namespaces/{NAMESPACE_SUB_ID}'
-		], namespace_detail_paths)
-		self.assertEqual([{'namespaceIds': [NAMESPACE_ROOT_ID]}], namespace_names_payloads)
+		self._assert_namespace_requests(
+			connector,
+			[NAMESPACE_ROOT_ID, NAMESPACE_SUB_ID],
+			[{'namespaceIds': [NAMESPACE_ROOT_ID]}])
 
 	def test_sync_block_headers_leaves_rollback_state_unchanged_when_namespace_fetch_fails(self):
 		# Arrange:
@@ -114,8 +99,9 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):
 			[1, 2, 3],
 			{2: b'local mismatch'.hex()})
 		self.puller.symbol_db.upsert_sync_state(create_sync_state())
-		self._upsert_namespace(create_namespace_item(), {NAMESPACE_ROOT_ID: 'root'}, 2)
-		self._upsert_namespace(
+		seed_namespace(self.puller.symbol_db, create_namespace_item(), {NAMESPACE_ROOT_ID: 'root'}, 2)
+		seed_namespace(
+			self.puller.symbol_db,
 			create_namespace_item(NAMESPACE_SUB_ID, NAMESPACE_ROOT_ID, NAMESPACE_ROOT_ID),
 			{NAMESPACE_ROOT_ID: 'root', NAMESPACE_SUB_ID: 'child'},
 			2)
@@ -181,16 +167,19 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):
 			namespace_id='B95F1F8A96159516',
 			root_id='B95F1F8A96159516',
 			alias={'type': 1, 'mosaicId': '6BED913FA20223F8'})
-		self._upsert_namespace(root_before_item, {NAMESPACE_ROOT_ID: 'root'}, 2)
-		self._upsert_namespace(
+		seed_namespace(self.puller.symbol_db, root_before_item, {NAMESPACE_ROOT_ID: 'root'}, 2)
+		seed_namespace(
+			self.puller.symbol_db,
 			child_before_item,
 			{NAMESPACE_ROOT_ID: 'root', NAMESPACE_SUB_ID: 'child'},
 			2)
-		self._upsert_namespace(
+		seed_namespace(
+			self.puller.symbol_db,
 			grandchild_before_item,
 			{NAMESPACE_ROOT_ID: 'root', NAMESPACE_SUB_ID: 'child', NAMESPACE_SUB_SUB_ID: 'grandchild'},
 			2)
-		self._upsert_namespace(
+		seed_namespace(
+			self.puller.symbol_db,
 			comparison_item,
 			{'B95F1F8A96159516': 'before-fork'},
 			1)
@@ -212,7 +201,7 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):
 		asyncio.run(self.puller.sync_block_headers())
 
 		# Assert:
-		namespace_rows, alias_rows = self._fetch_full_namespace_state()
+		namespace_rows, alias_rows = fetch_namespace_state(self.puller.symbol_db.connection)
 		self.assertEqual([
 			(NAMESPACE_ROOT_ID, None, NAMESPACE_ROOT_ID, 'root', 'root', 1, 'root',
 				BENEFICIARY_ADDRESS.lower(), 1, 50, 'none', None, None, root_updated_item, 1),
@@ -232,14 +221,10 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):
 			('namespace', NAMESPACE_SUB_ID, 'root.child', 1),
 			('account', str(Address.from_decoded_address_hex_string(BENEFICIARY_ADDRESS)), 'root.child.grandchild', 1)
 		], alias_rows)
-		self.assertEqual([
-			f'namespaces/{NAMESPACE_ROOT_ID}',
-			f'namespaces/{NAMESPACE_SUB_SUB_ID}',
-			f'namespaces/{NAMESPACE_SUB_ID}'
-		], [path for path in connector.paths if path.startswith('namespaces/') and path != 'namespaces/names'])
-		self.assertEqual(
-			[{'namespaceIds': [NAMESPACE_ROOT_ID, NAMESPACE_SUB_ID, NAMESPACE_SUB_SUB_ID]}],
-			[payload for path, payload in connector.post_requests if 'namespaces/names' == path])
+		self._assert_namespace_requests(
+			connector,
+			[NAMESPACE_ROOT_ID, NAMESPACE_SUB_SUB_ID, NAMESPACE_SUB_ID],
+			[{'namespaceIds': [NAMESPACE_ROOT_ID, NAMESPACE_SUB_ID, NAMESPACE_SUB_SUB_ID]}])
 
 	def test_sync_block_headers_deletes_missing_descendants_during_rollback(self):
 		# Arrange:
@@ -248,12 +233,14 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):
 			[1, 2, 3],
 			{2: b'local mismatch'.hex()})
 		self.puller.symbol_db.upsert_sync_state(create_sync_state())
-		self._upsert_namespace(create_namespace_item(), {NAMESPACE_ROOT_ID: 'root'}, 2)
-		self._upsert_namespace(
+		seed_namespace(self.puller.symbol_db, create_namespace_item(), {NAMESPACE_ROOT_ID: 'root'}, 2)
+		seed_namespace(
+			self.puller.symbol_db,
 			create_namespace_item(NAMESPACE_SUB_ID, NAMESPACE_ROOT_ID, NAMESPACE_ROOT_ID),
 			{NAMESPACE_ROOT_ID: 'root', NAMESPACE_SUB_ID: 'child'},
 			2)
-		self._upsert_namespace(
+		seed_namespace(
+			self.puller.symbol_db,
 			create_namespace_item(
 				NAMESPACE_SUB_SUB_ID,
 				NAMESPACE_ROOT_ID,
@@ -279,14 +266,10 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):
 		self.assertEqual([
 			('namespace', NAMESPACE_ROOT_ID, 'root', 1)
 		], self._fetch_namespace_rows()[1])
-		self.assertEqual([
-			f'namespaces/{NAMESPACE_ROOT_ID}',
-			f'namespaces/{NAMESPACE_SUB_SUB_ID}',
-			f'namespaces/{NAMESPACE_SUB_ID}'
-		], [path for path in connector.paths if path.startswith('namespaces/') and path != 'namespaces/names'])
-		self.assertEqual(
-			[{'namespaceIds': [NAMESPACE_ROOT_ID]}],
-			[payload for path, payload in connector.post_requests if 'namespaces/names' == path])
+		self._assert_namespace_requests(
+			connector,
+			[NAMESPACE_ROOT_ID, NAMESPACE_SUB_SUB_ID, NAMESPACE_SUB_ID],
+			[{'namespaceIds': [NAMESPACE_ROOT_ID]}])
 
 	@staticmethod
 	def _fetch_transaction_rows(database):

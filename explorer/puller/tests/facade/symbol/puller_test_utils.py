@@ -110,26 +110,6 @@ def set_sync_block_pages(puller, sync_block_pages):
 	puller._sync_block_pages = sync_block_pages  # pylint: disable=protected-access
 
 
-def fetch_namespace_state(connection, namespace_columns):
-	"""Fetch selected namespace columns and deterministic alias rows from a Symbol database."""
-	cursor = connection.cursor()
-	cursor.execute(
-		f'''
-		SELECT {namespace_columns}
-		FROM symbol_namespaces
-		ORDER BY namespace_id
-		''')
-	namespace_rows = cursor.fetchall()
-	cursor.execute(
-		'''
-		SELECT artifact_type, artifact_id, name, updated_at_height
-		FROM symbol_alias_names
-		ORDER BY artifact_type, artifact_id, name
-		''')
-
-	return namespace_rows, cursor.fetchall()
-
-
 def create_node_block(
 	height,
 	block_hash=None,
@@ -354,7 +334,7 @@ class FakeConnector:  # pylint: disable=too-many-instance-attributes
 		mosaic_resolutions_by_height=None,
 		namespace_by_id=None,
 		namespace_names=None
-		):  # pylint: disable=too-many-arguments,too-many-positional-arguments
+	):  # pylint: disable=too-many-arguments,too-many-positional-arguments
 		self.chain_height = chain_height
 		self.pages = pages
 		self.block_by_height = block_by_height or {}
@@ -643,6 +623,21 @@ class SymbolPullerTestBase(TestCase):
 			self._fetch_block_heights(self.puller.symbol_db),
 			self.puller.symbol_db.get_sync_state()
 		)
+
+	def _assert_namespace_requests(self, connector, expected_namespace_ids, expected_name_payloads):
+		# Assert:
+		namespace_paths = [
+			path for path in connector.paths
+			if path.startswith('namespaces/') and path != 'namespaces/names'
+		]
+		names_payloads = [
+			payload for path, payload in connector.post_requests
+			if 'namespaces/names' == path
+		]
+		self.assertEqual(len(expected_namespace_ids), len(namespace_paths))
+		self.assertEqual([f'namespaces/{namespace_id}' for namespace_id in expected_namespace_ids], namespace_paths)
+		self.assertEqual(len(expected_name_payloads), len(names_payloads))
+		self.assertEqual(expected_name_payloads, names_payloads)
 
 	def _assert_sync_rejects_node_response(
 		self,

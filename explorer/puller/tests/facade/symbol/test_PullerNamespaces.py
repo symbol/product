@@ -2,8 +2,14 @@ from symbolchain.sc import AliasAction, ReceiptType, TransactionType
 from symbolchain.symbol.Network import Address
 
 from puller.facade.SymbolPuller import MAX_PAGE_SIZE
-from puller.model.symbol.Namespace import create_alias_name_rows, create_namespace_row
-from tests.test.SymbolNamespaceTestUtils import NAMESPACE_ROOT_ID, NAMESPACE_SUB_ID, NAMESPACE_SUB_SUB_ID, create_namespace_item
+from tests.test.SymbolNamespaceTestUtils import (
+	NAMESPACE_ROOT_ID,
+	NAMESPACE_SUB_ID,
+	NAMESPACE_SUB_SUB_ID,
+	create_namespace_item,
+	fetch_namespace_state,
+	seed_namespace
+)
 from tests.test.SymbolTestConstants import BENEFICIARY_ADDRESS
 
 from .puller_test_utils import (
@@ -14,7 +20,6 @@ from .puller_test_utils import (
 	create_node_transaction,
 	create_statement_item,
 	create_sync_state,
-	fetch_namespace_state,
 	statement_path,
 	transaction_path
 )
@@ -24,13 +29,6 @@ class SymbolPullerNamespacesTest(SymbolPullerTestBase):
 	COMPARISON_NAMESPACE_ID = 'B95F1F8A96159516'
 	COMPARISON_MOSAIC_ID = '6BED913FA20223F8'
 	COMPARISON_SUB_ID = 'F95F1F8A96159516'
-
-	def _fetch_full_namespace_state(self):
-		return fetch_namespace_state(
-			self.puller.symbol_db.connection,
-			'namespace_id, parent_id, root_id, name, full_name, depth, registration_type, '
-			'encode(owner_address, \'hex\'), start_height, end_height, alias_type, alias_mosaic_id, '
-			'encode(alias_address, \'hex\'), raw_payload, updated_at_height')
 
 	def _fetch_namespace_updated_heights(self):
 		cursor = self.puller.symbol_db.connection.cursor()
@@ -64,10 +62,6 @@ class SymbolPullerNamespacesTest(SymbolPullerTestBase):
 			observed_height
 		)
 
-	def _seed_namespace(self, namespace_item, names_by_id, observed_height=0):
-		namespace_row = create_namespace_row(namespace_item, names_by_id, observed_height)
-		self.puller.symbol_db.upsert_namespace(namespace_row, create_alias_name_rows(namespace_row))
-
 	def _seed_sync_state_before_height(self, height):
 		previous_height = height - 1
 		self._seed_blocks(self.puller.symbol_db, range(1, height))
@@ -96,19 +90,6 @@ class SymbolPullerNamespacesTest(SymbolPullerTestBase):
 			namespace_by_id=namespace_by_id,
 			namespace_names=namespace_names)
 
-	def _assert_namespace_requests(self, connector, expected_namespace_ids, expected_name_payloads):
-		# Assert:
-		namespace_paths = [
-			path for path in connector.paths
-			if path.startswith('namespaces/') and path != 'namespaces/names'
-		]
-		names_payloads = [
-			payload for path, payload in connector.post_requests
-			if 'namespaces/names' == path
-		]
-		self.assertEqual([f'namespaces/{namespace_id}' for namespace_id in expected_namespace_ids], namespace_paths)
-		self.assertEqual(expected_name_payloads, names_payloads)
-
 	def _assert_namespace_sync_requests(self, connector, start_height, sync_height):
 		block_paths = [path for path in connector.paths if path.startswith('blocks?')]
 		transaction_paths = [path for path in connector.paths if path.startswith('transactions/confirmed?')]
@@ -132,40 +113,8 @@ class SymbolPullerNamespacesTest(SymbolPullerTestBase):
 			cursor.execute(f'SELECT * FROM {table_name} ORDER BY {order_by}')
 			state.append(cursor.fetchall())
 
-		state.extend(self._fetch_full_namespace_state())
+		state.extend(fetch_namespace_state(self.puller.symbol_db.connection))
 		return state
-
-	def test_fetch_namespace_state_returns_selected_columns_and_deterministic_alias_rows(self):
-		# Arrange:
-		first_namespace = create_namespace_item(
-			namespace_id=self.COMPARISON_NAMESPACE_ID,
-			root_id=self.COMPARISON_NAMESPACE_ID,
-			name='beta',
-			alias={'type': 1, 'mosaicId': self.COMPARISON_MOSAIC_ID})
-		second_namespace = create_namespace_item(
-			namespace_id=NAMESPACE_ROOT_ID,
-			root_id=NAMESPACE_ROOT_ID,
-			name='alpha',
-			alias={'type': 2, 'address': BENEFICIARY_ADDRESS})
-		self._seed_namespace(first_namespace, {self.COMPARISON_NAMESPACE_ID: 'beta'}, 1)
-		self._seed_namespace(second_namespace, {NAMESPACE_ROOT_ID: 'alpha'}, 2)
-
-		# Act:
-		namespace_rows, alias_rows = fetch_namespace_state(
-			self.puller.symbol_db.connection,
-			'namespace_id, name')
-
-		# Assert:
-		self.assertEqual([
-			(NAMESPACE_ROOT_ID, 'alpha'),
-			(self.COMPARISON_NAMESPACE_ID, 'beta')
-		], namespace_rows)
-		self.assertEqual([
-			('mosaic', self.COMPARISON_MOSAIC_ID, 'beta', 1),
-			('namespace', NAMESPACE_ROOT_ID, 'alpha', 2),
-			('namespace', self.COMPARISON_NAMESPACE_ID, 'beta', 1),
-			('account', str(Address.from_decoded_address_hex_string(BENEFICIARY_ADDRESS)), 'alpha', 2)
-		], alias_rows)
 
 	def test_sync_block_headers_removes_mosaic_alias_when_namespace_is_unlinked(self):
 		# Arrange:
@@ -174,8 +123,8 @@ class SymbolPullerNamespacesTest(SymbolPullerTestBase):
 			namespace_id=self.COMPARISON_NAMESPACE_ID,
 			root_id=self.COMPARISON_NAMESPACE_ID,
 			alias={'type': 1, 'mosaicId': self.COMPARISON_MOSAIC_ID})
-		self._seed_namespace(target_item, {NAMESPACE_ROOT_ID: 'root'})
-		self._seed_namespace(comparison_item, {self.COMPARISON_NAMESPACE_ID: 'other'})
+		seed_namespace(self.puller.symbol_db, target_item, {NAMESPACE_ROOT_ID: 'root'})
+		seed_namespace(self.puller.symbol_db, comparison_item, {self.COMPARISON_NAMESPACE_ID: 'other'})
 		current_item = create_namespace_item(alias={'type': 0})
 		connector = self._create_namespace_sync_connector(
 			[create_node_transaction(
@@ -201,12 +150,12 @@ class SymbolPullerNamespacesTest(SymbolPullerTestBase):
 				(self.COMPARISON_NAMESPACE_ID, self.COMPARISON_NAMESPACE_ID, None, 'other', 'other', 1, 'root', 'mosaic',
 					self.COMPARISON_MOSAIC_ID, None, None),
 				BENEFICIARY_ADDRESS.lower(), 1, comparison_item, 0)
-		], self._fetch_full_namespace_state()[0])
+		], fetch_namespace_state(self.puller.symbol_db.connection)[0])
 		self.assertEqual([
 			('mosaic', self.COMPARISON_MOSAIC_ID, 'other', 0),
 			('namespace', NAMESPACE_ROOT_ID, 'root', 1),
 			('namespace', self.COMPARISON_NAMESPACE_ID, 'other', 0)
-		], self._fetch_full_namespace_state()[1])
+		], fetch_namespace_state(self.puller.symbol_db.connection)[1])
 		self.assertEqual([1], block_heights)
 		self.assertEqual(1, sync_state['last_synced_height'])
 		self._assert_namespace_requests(connector, [NAMESPACE_ROOT_ID], [{'namespaceIds': [NAMESPACE_ROOT_ID]}])
@@ -219,8 +168,8 @@ class SymbolPullerNamespacesTest(SymbolPullerTestBase):
 			namespace_id=self.COMPARISON_NAMESPACE_ID,
 			root_id=self.COMPARISON_NAMESPACE_ID,
 			alias={'type': 0})
-		self._seed_namespace(target_item, {NAMESPACE_ROOT_ID: 'root'})
-		self._seed_namespace(comparison_item, {self.COMPARISON_NAMESPACE_ID: 'other'})
+		seed_namespace(self.puller.symbol_db, target_item, {NAMESPACE_ROOT_ID: 'root'})
+		seed_namespace(self.puller.symbol_db, comparison_item, {self.COMPARISON_NAMESPACE_ID: 'other'})
 		current_item = create_namespace_item(alias={'type': 2, 'address': BENEFICIARY_ADDRESS})
 		connector = self._create_namespace_sync_connector(
 			[
@@ -256,12 +205,12 @@ class SymbolPullerNamespacesTest(SymbolPullerTestBase):
 			self._expected_namespace_row(
 				(self.COMPARISON_NAMESPACE_ID, self.COMPARISON_NAMESPACE_ID, None, 'other', 'other', 1, 'root', 'none', None, None, None),
 				BENEFICIARY_ADDRESS.lower(), 1, comparison_item, 0)
-		], self._fetch_full_namespace_state()[0])
+		], fetch_namespace_state(self.puller.symbol_db.connection)[0])
 		self.assertEqual([
 			('namespace', NAMESPACE_ROOT_ID, 'root', 1),
 			('namespace', self.COMPARISON_NAMESPACE_ID, 'other', 0),
 			('account', str(Address.from_decoded_address_hex_string(BENEFICIARY_ADDRESS)), 'root', 1)
-		], self._fetch_full_namespace_state()[1])
+		], fetch_namespace_state(self.puller.symbol_db.connection)[1])
 		self.assertEqual([1], block_heights)
 		self.assertEqual(1, sync_state['last_synced_height'])
 		self._assert_namespace_requests(connector, [NAMESPACE_ROOT_ID], [{'namespaceIds': [NAMESPACE_ROOT_ID]}])
@@ -282,13 +231,14 @@ class SymbolPullerNamespacesTest(SymbolPullerTestBase):
 		comparison_item = create_namespace_item(
 			namespace_id=self.COMPARISON_NAMESPACE_ID, root_id=self.COMPARISON_NAMESPACE_ID,
 			alias={'type': 1, 'mosaicId': self.COMPARISON_MOSAIC_ID})
-		self._seed_namespace(root_item, {NAMESPACE_ROOT_ID: 'root'}, expiry_height - 1)
-		self._seed_namespace(child_item, {NAMESPACE_ROOT_ID: 'root', NAMESPACE_SUB_ID: 'child'}, expiry_height - 1)
-		self._seed_namespace(
+		seed_namespace(self.puller.symbol_db, root_item, {NAMESPACE_ROOT_ID: 'root'}, expiry_height - 1)
+		seed_namespace(self.puller.symbol_db, child_item, {NAMESPACE_ROOT_ID: 'root', NAMESPACE_SUB_ID: 'child'}, expiry_height - 1)
+		seed_namespace(
+			self.puller.symbol_db,
 			grandchild_item,
 			{NAMESPACE_ROOT_ID: 'root', NAMESPACE_SUB_ID: 'child', NAMESPACE_SUB_SUB_ID: 'grandchild'},
 			expiry_height - 1)
-		self._seed_namespace(comparison_item, {self.COMPARISON_NAMESPACE_ID: 'other'}, expiry_height - 1)
+		seed_namespace(self.puller.symbol_db, comparison_item, {self.COMPARISON_NAMESPACE_ID: 'other'}, expiry_height - 1)
 		for item in (root_item, child_item, grandchild_item):
 			item['meta']['active'] = False
 		connector = self._create_namespace_sync_connector(
@@ -303,7 +253,7 @@ class SymbolPullerNamespacesTest(SymbolPullerTestBase):
 		block_heights, sync_state = self._sync_with_connector(connector)
 
 		# Assert:
-		namespace_rows, alias_rows = self._fetch_full_namespace_state()
+		namespace_rows, alias_rows = fetch_namespace_state(self.puller.symbol_db.connection)
 		self.assertEqual([
 			self._expected_namespace_row(
 				(NAMESPACE_ROOT_ID, NAMESPACE_ROOT_ID, None, 'root', 'root', 1, 'root', 'none', None, None, expiry_height),
@@ -353,13 +303,14 @@ class SymbolPullerNamespacesTest(SymbolPullerTestBase):
 		comparison_item = create_namespace_item(
 			namespace_id=self.COMPARISON_NAMESPACE_ID, root_id=self.COMPARISON_NAMESPACE_ID,
 			alias={'type': 1, 'mosaicId': self.COMPARISON_MOSAIC_ID})
-		self._seed_namespace(root_item, {NAMESPACE_ROOT_ID: 'root'}, deletion_height - 2)
-		self._seed_namespace(child_item, {NAMESPACE_ROOT_ID: 'root', NAMESPACE_SUB_ID: 'child'}, deletion_height - 2)
-		self._seed_namespace(
+		seed_namespace(self.puller.symbol_db, root_item, {NAMESPACE_ROOT_ID: 'root'}, deletion_height - 2)
+		seed_namespace(self.puller.symbol_db, child_item, {NAMESPACE_ROOT_ID: 'root', NAMESPACE_SUB_ID: 'child'}, deletion_height - 2)
+		seed_namespace(
+			self.puller.symbol_db,
 			grandchild_item,
 			{NAMESPACE_ROOT_ID: 'root', NAMESPACE_SUB_ID: 'child', NAMESPACE_SUB_SUB_ID: 'grandchild'},
 			deletion_height - 2)
-		self._seed_namespace(comparison_item, {self.COMPARISON_NAMESPACE_ID: 'other'}, deletion_height - 2)
+		seed_namespace(self.puller.symbol_db, comparison_item, {self.COMPARISON_NAMESPACE_ID: 'other'}, deletion_height - 2)
 		connector = self._create_namespace_sync_connector(
 			[], {}, {},
 			[create_statement_item(deletion_height, 10, ReceiptType.NAMESPACE_DELETED.value, artifactId=NAMESPACE_ROOT_ID)],
@@ -370,7 +321,7 @@ class SymbolPullerNamespacesTest(SymbolPullerTestBase):
 		block_heights, sync_state = self._sync_with_connector(connector)
 
 		# Assert:
-		namespace_rows, alias_rows = self._fetch_full_namespace_state()
+		namespace_rows, alias_rows = fetch_namespace_state(self.puller.symbol_db.connection)
 		self.assertEqual([self._expected_namespace_row(
 			(self.COMPARISON_NAMESPACE_ID, self.COMPARISON_NAMESPACE_ID, None, 'other', 'other', 1, 'root', 'mosaic',
 				self.COMPARISON_MOSAIC_ID, None, None),
@@ -399,13 +350,14 @@ class SymbolPullerNamespacesTest(SymbolPullerTestBase):
 			end_height=str(expiry_height))
 		comparison_item = create_namespace_item(
 			namespace_id=self.COMPARISON_NAMESPACE_ID, root_id=self.COMPARISON_NAMESPACE_ID, alias={'type': 0})
-		self._seed_namespace(root_item, {NAMESPACE_ROOT_ID: 'root'}, expiry_height - 1)
-		self._seed_namespace(child_item, {NAMESPACE_ROOT_ID: 'root', NAMESPACE_SUB_ID: 'child'}, expiry_height - 1)
-		self._seed_namespace(
+		seed_namespace(self.puller.symbol_db, root_item, {NAMESPACE_ROOT_ID: 'root'}, expiry_height - 1)
+		seed_namespace(self.puller.symbol_db, child_item, {NAMESPACE_ROOT_ID: 'root', NAMESPACE_SUB_ID: 'child'}, expiry_height - 1)
+		seed_namespace(
+			self.puller.symbol_db,
 			grandchild_item,
 			{NAMESPACE_ROOT_ID: 'root', NAMESPACE_SUB_ID: 'child', NAMESPACE_SUB_SUB_ID: 'grandchild'},
 			expiry_height - 1)
-		self._seed_namespace(comparison_item, {self.COMPARISON_NAMESPACE_ID: 'other'}, expiry_height - 1)
+		seed_namespace(self.puller.symbol_db, comparison_item, {self.COMPARISON_NAMESPACE_ID: 'other'}, expiry_height - 1)
 		renewed_items = {
 			NAMESPACE_ROOT_ID: create_namespace_item(alias={'type': 0}, end_height='50'),
 			NAMESPACE_SUB_ID: create_namespace_item(
@@ -433,7 +385,7 @@ class SymbolPullerNamespacesTest(SymbolPullerTestBase):
 		block_heights, sync_state = self._sync_with_connector(connector)
 
 		# Assert:
-		namespace_rows, alias_rows = self._fetch_full_namespace_state()
+		namespace_rows, alias_rows = fetch_namespace_state(self.puller.symbol_db.connection)
 		self.assertEqual([
 			self._expected_namespace_row(
 				(NAMESPACE_ROOT_ID, NAMESPACE_ROOT_ID, None, 'root', 'root', 1, 'root', 'none', None, None, 50),
@@ -471,9 +423,10 @@ class SymbolPullerNamespacesTest(SymbolPullerTestBase):
 		grandchild_item = create_namespace_item(
 			namespace_id=NAMESPACE_SUB_SUB_ID, root_id=NAMESPACE_ROOT_ID, parent_id=NAMESPACE_SUB_ID,
 			level_ids=[NAMESPACE_ROOT_ID, NAMESPACE_SUB_ID, NAMESPACE_SUB_SUB_ID])
-		self._seed_namespace(root_item, {NAMESPACE_ROOT_ID: 'root'})
-		self._seed_namespace(child_item, {NAMESPACE_ROOT_ID: 'root', NAMESPACE_SUB_ID: 'child'})
-		self._seed_namespace(
+		seed_namespace(self.puller.symbol_db, root_item, {NAMESPACE_ROOT_ID: 'root'})
+		seed_namespace(self.puller.symbol_db, child_item, {NAMESPACE_ROOT_ID: 'root', NAMESPACE_SUB_ID: 'child'})
+		seed_namespace(
+			self.puller.symbol_db,
 			grandchild_item,
 			{NAMESPACE_ROOT_ID: 'root', NAMESPACE_SUB_ID: 'child', NAMESPACE_SUB_SUB_ID: 'grandchild'})
 		connector = self._create_namespace_sync_connector(
@@ -504,10 +457,6 @@ class SymbolPullerNamespacesTest(SymbolPullerTestBase):
 			connector, [NAMESPACE_ROOT_ID, NAMESPACE_SUB_ID, NAMESPACE_SUB_SUB_ID],
 			[{'namespaceIds': [NAMESPACE_ROOT_ID, NAMESPACE_SUB_ID, NAMESPACE_SUB_SUB_ID]}])
 		self._assert_namespace_sync_requests(connector, 1, 1)
-		self.assertEqual(3, len([
-			path for path in connector.paths
-			if path.startswith('namespaces/') and path != 'namespaces/names']))
-		self.assertEqual(3, len(self._fetch_full_namespace_state()[0]))
 
 	def test_sync_block_headers_preserves_child_first_dirty_order_before_root_expansion(self):
 		# Arrange:
@@ -518,9 +467,10 @@ class SymbolPullerNamespacesTest(SymbolPullerTestBase):
 		grandchild_item = create_namespace_item(
 			namespace_id=NAMESPACE_SUB_SUB_ID, root_id=NAMESPACE_ROOT_ID, parent_id=NAMESPACE_SUB_ID,
 			level_ids=[NAMESPACE_ROOT_ID, NAMESPACE_SUB_ID, NAMESPACE_SUB_SUB_ID])
-		self._seed_namespace(root_item, {NAMESPACE_ROOT_ID: 'root'})
-		self._seed_namespace(child_item, {NAMESPACE_ROOT_ID: 'root', NAMESPACE_SUB_ID: 'child'})
-		self._seed_namespace(
+		seed_namespace(self.puller.symbol_db, root_item, {NAMESPACE_ROOT_ID: 'root'})
+		seed_namespace(self.puller.symbol_db, child_item, {NAMESPACE_ROOT_ID: 'root', NAMESPACE_SUB_ID: 'child'})
+		seed_namespace(
+			self.puller.symbol_db,
 			grandchild_item,
 			{NAMESPACE_ROOT_ID: 'root', NAMESPACE_SUB_ID: 'child', NAMESPACE_SUB_SUB_ID: 'grandchild'})
 		connector = self._create_namespace_sync_connector(
@@ -550,10 +500,7 @@ class SymbolPullerNamespacesTest(SymbolPullerTestBase):
 		self._assert_namespace_requests(
 			connector, [NAMESPACE_SUB_ID, NAMESPACE_ROOT_ID, NAMESPACE_SUB_SUB_ID],
 			[{'namespaceIds': [NAMESPACE_ROOT_ID, NAMESPACE_SUB_ID, NAMESPACE_SUB_SUB_ID]}])
-		self.assertEqual(3, len([
-			path for path in connector.paths
-			if path.startswith('namespaces/') and path != 'namespaces/names']))
-		namespace_rows, alias_rows = self._fetch_full_namespace_state()
+		namespace_rows, alias_rows = fetch_namespace_state(self.puller.symbol_db.connection)
 		self.assertEqual([
 			(NAMESPACE_ROOT_ID, None, NAMESPACE_ROOT_ID, 'root', 'root', 1, 'root',
 				BENEFICIARY_ADDRESS.lower(), 1, None, 'none', None, None, root_item, 1),
@@ -581,12 +528,13 @@ class SymbolPullerNamespacesTest(SymbolPullerTestBase):
 			level_ids=[NAMESPACE_ROOT_ID, NAMESPACE_SUB_ID, NAMESPACE_SUB_SUB_ID])
 		comparison_item = create_namespace_item(
 			namespace_id=self.COMPARISON_NAMESPACE_ID, root_id=self.COMPARISON_NAMESPACE_ID)
-		self._seed_namespace(root_item, {NAMESPACE_ROOT_ID: 'root'})
-		self._seed_namespace(child_item, {NAMESPACE_ROOT_ID: 'root', NAMESPACE_SUB_ID: 'child'})
-		self._seed_namespace(
+		seed_namespace(self.puller.symbol_db, root_item, {NAMESPACE_ROOT_ID: 'root'})
+		seed_namespace(self.puller.symbol_db, child_item, {NAMESPACE_ROOT_ID: 'root', NAMESPACE_SUB_ID: 'child'})
+		seed_namespace(
+			self.puller.symbol_db,
 			grandchild_item,
 			{NAMESPACE_ROOT_ID: 'root', NAMESPACE_SUB_ID: 'child', NAMESPACE_SUB_SUB_ID: 'grandchild'})
-		self._seed_namespace(comparison_item, {self.COMPARISON_NAMESPACE_ID: 'other'})
+		seed_namespace(self.puller.symbol_db, comparison_item, {self.COMPARISON_NAMESPACE_ID: 'other'})
 		connector = self._create_namespace_sync_connector(
 			[create_node_transaction(
 				1,
@@ -623,8 +571,9 @@ class SymbolPullerNamespacesTest(SymbolPullerTestBase):
 			finalized_hash=bytes.fromhex(f'{1:064X}'),
 			last_synced_height=1,
 			last_synced_block_hash=bytes.fromhex(f'{1:064X}')))
-		self._seed_namespace(create_namespace_item(), {NAMESPACE_ROOT_ID: 'root'})
-		self._seed_namespace(
+		seed_namespace(self.puller.symbol_db, create_namespace_item(), {NAMESPACE_ROOT_ID: 'root'})
+		seed_namespace(
+			self.puller.symbol_db,
 			create_namespace_item(
 				namespace_id=NAMESPACE_SUB_ID, root_id=NAMESPACE_ROOT_ID, parent_id=NAMESPACE_ROOT_ID,
 				level_ids=[NAMESPACE_ROOT_ID, NAMESPACE_SUB_ID]),

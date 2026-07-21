@@ -1,3 +1,4 @@
+from puller.model.symbol.Namespace import create_alias_name_rows, create_namespace_row
 from tests.test.SymbolTestConstants import BENEFICIARY_ADDRESS
 
 NAMESPACE_ROOT_ID = 'A95F1F8A96159516'
@@ -68,3 +69,33 @@ def create_expected_root_namespace_row(namespace_id, name, owner_address, namesp
 	row.update(overrides)
 
 	return row
+
+
+def seed_namespace(database, namespace_item, names_by_id, observed_height=0):
+	"""Seeds one namespace and its derived alias rows for test Arrange phases."""
+
+	namespace_row = create_namespace_row(namespace_item, names_by_id, observed_height)
+	database.upsert_namespace(namespace_row, create_alias_name_rows(namespace_row))
+
+
+def fetch_namespace_state(connection):
+	"""Fetches all namespace columns and deterministic alias rows from a Symbol database."""
+
+	cursor = connection.cursor()
+	cursor.execute(
+		'''
+		SELECT namespace_id, parent_id, root_id, name, full_name, depth, registration_type,
+			encode(owner_address, 'hex'), start_height, end_height, alias_type, alias_mosaic_id,
+			encode(alias_address, 'hex'), raw_payload, updated_at_height
+		FROM symbol_namespaces
+		ORDER BY namespace_id
+		''')
+	namespace_rows = cursor.fetchall()
+	cursor.execute(
+		'''
+		SELECT artifact_type, artifact_id, name, updated_at_height
+		FROM symbol_alias_names
+		ORDER BY artifact_type, artifact_id, name
+		''')
+
+	return namespace_rows, cursor.fetchall()
