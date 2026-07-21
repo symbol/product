@@ -2,6 +2,9 @@ builds:
   - name: Bridge
     path: bridge
 
+  - name: Bridge Reporting
+    path: bridge/reporting
+
   - name: Explorer Frontend
     path: explorer/frontend
 
