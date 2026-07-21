@@ -266,14 +266,15 @@ class NemPuller:
 		]
 
 	@staticmethod
-	def _create_account_record(account_info, mosaics_json, height, remote_address=None):
+	def _create_account_record(account_info, mosaics_json, height):
 		"""Create AccountRecord from account info and mosaics."""
 
+		# remote_address is linked separately after the upsert, see _process_account_batch
 		return AccountRecord(
 			account_info.address,
 			height,
 			account_info.public_key,
-			remote_address,
+			None,
 			account_info.importance,
 			_format_xem_absolute(account_info.balance),
 			_format_xem_absolute(account_info.vested_balance),

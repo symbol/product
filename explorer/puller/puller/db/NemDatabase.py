@@ -453,7 +453,6 @@ class NemDatabase(DatabaseConnection):
 			VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
 			ON CONFLICT (address)
 			DO UPDATE SET
-				-- remote_address is owned exclusively by update_account_remote_address;
 				importance = EXCLUDED.importance,
 				balance = EXCLUDED.balance,
 				vested_balance = EXCLUDED.vested_balance,
