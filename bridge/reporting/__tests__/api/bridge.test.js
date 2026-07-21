@@ -1,6 +1,5 @@
 import { buildReportUrl, fetchAllReportRows, fetchBridgeConfiguration, fetchReportPage } from '@/api/bridge';
 import config from '@/config';
-import { createReportTabs } from '@/constants';
 import { makeGetRequest } from '@/utils/server';
 
 jest.mock('@/utils/server');
