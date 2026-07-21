@@ -11,7 +11,8 @@ from puller.model.symbol.Transaction import (
 	TRANSACTION_TYPE_LABELS,
 	create_transaction_address_rows,
 	create_transaction_mosaic_rows,
-	create_transaction_row
+	create_transaction_row,
+	unique_address_rows
 )
 from tests.test.SymbolTestConstants import RECIPIENT_ADDRESS, SIGNER_ADDRESS, SIGNER_PUBLIC_KEY
 
@@ -106,6 +107,7 @@ def _expected_top_level_row(item, **overrides):
 		'hash': bytes.fromhex('A' * 64),
 		'aggregate_hash': None,
 		'embedded_index': None,
+		'block_index': 3,
 		'is_embedded': False,
 		'height': 7,
 		'timestamp': datetime.fromtimestamp(107, timezone.utc),
@@ -178,6 +180,7 @@ class TransactionTest(TestCase):  # pylint: disable=too-many-public-methods
 			'hash': None,
 			'aggregate_hash': bytes.fromhex('B' * 64),
 			'embedded_index': 2,
+			'block_index': None,
 			'is_embedded': True,
 			'height': 7,
 			'timestamp': datetime.fromtimestamp(107, timezone.utc),
@@ -396,6 +399,37 @@ class TransactionTest(TestCase):  # pylint: disable=too-many-public-methods
 		self._assert_address_rows(TransactionType.NAMESPACE_REGISTRATION.value, {}, [
 			{'address': bytes.fromhex(SIGNER_ADDRESS), 'role': 'signer'}
 		])
+
+	def test_unique_address_rows_collapses_duplicate_address_and_role_rows(self):
+		# Arrange:
+		address = bytes.fromhex(TARGET_ADDRESS)
+		rows = [
+			{'address': address, 'role': 'target'},
+			{'address': address, 'role': 'target'}
+		]
+
+		# Act:
+		actual = unique_address_rows(rows)
+
+		# Assert:
+		self.assertEqual([{'address': address, 'role': 'target'}], actual)
+
+	def test_unique_address_rows_keeps_same_address_with_different_roles(self):
+		# Arrange:
+		address = bytes.fromhex(TARGET_ADDRESS)
+		rows = [
+			{'address': address, 'role': 'signer'},
+			{'address': address, 'role': 'recipient'}
+		]
+
+		# Act:
+		actual = unique_address_rows(rows)
+
+		# Assert:
+		self.assertEqual([
+			{'address': address, 'role': 'signer'},
+			{'address': address, 'role': 'recipient'}
+		], actual)
 
 	def test_create_transaction_address_rows_creates_transfer_recipient_row(self):
 		self._assert_address_rows(TransactionType.TRANSFER.value, {'recipientAddress': RECIPIENT_ADDRESS}, [

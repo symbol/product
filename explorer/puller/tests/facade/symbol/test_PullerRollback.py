@@ -173,7 +173,7 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):
 			(2, bytes.fromhex(replacement_transaction_hash))
 		], transaction_rows)
 		self.assertEqual([
-			('E74B99BA41F4AFEE', 2000, 'transfer')
+			(NATIVE_MOSAIC_ID, 2000, 'transfer')
 		], mosaic_rows)
 		self.assertEqual([
 			(SIGNER_ADDRESS.lower(), 'signer'),

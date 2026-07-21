@@ -37,7 +37,9 @@ def _address_rows_for_fields(transaction, role, field_names):
 	]
 
 
-def _unique_address_rows(rows):
+def unique_address_rows(rows):
+	"""Deduplicates transaction address rows by persisted primary-key fields."""
+
 	return list({(row['address'], row['role']): row for row in rows}.values())
 
 
@@ -147,7 +149,7 @@ def create_transaction_address_rows(transaction_type, transaction, signer_addres
 			'role': 'mosaic_owner'
 		})
 
-	return _unique_address_rows(rows)
+	return unique_address_rows(rows)
 
 
 def _parse_message(transaction):
@@ -186,6 +188,7 @@ def _top_level_or_embedded_fields(meta, transaction, is_embedded, epoch_adjustme
 			'hash': None,
 			'aggregate_hash': bytes.fromhex(meta['aggregateHash']),
 			'embedded_index': embedded_index,
+			'block_index': None,
 			'deadline': None,
 			'network_deadline': None,
 			'max_fee': None,
@@ -197,6 +200,7 @@ def _top_level_or_embedded_fields(meta, transaction, is_embedded, epoch_adjustme
 		'hash': bytes.fromhex(meta['hash']),
 		'aggregate_hash': None,
 		'embedded_index': None,
+		'block_index': int(meta['index']),
 		'deadline': timestamp_from_network_value(network_deadline, epoch_adjustment_seconds),
 		'network_deadline': network_deadline,
 		'max_fee': int(transaction['maxFee']),
