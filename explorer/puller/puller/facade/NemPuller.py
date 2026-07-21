@@ -15,6 +15,8 @@ from zenlog import log
 
 from puller.db.NemDatabase import NemDatabase
 
+ACCOUNT_KEY_LINK_MODE_ACTIVATE = 1
+
 BlockRecord = namedtuple('BlockRecord', [
 	'height',
 	'timestamp',
@@ -137,11 +139,11 @@ class NemPuller:
 			delay
 		)
 
-	async def _retry_get_account_info(self, address, forwarded=False, retries=3, delay=2):
+	async def _retry_get_account_info(self, address, retries=3, delay=2):
 		"""Retries fetching account info with exponential backoff."""
 
 		return await self._retry_operation(
-			lambda: self.nem_connector.account_info(address, forwarded),
+			lambda: self.nem_connector.account_info(address),
 			f'fetching account {address[:16]}...',
 			retries,
 			delay
@@ -269,7 +271,6 @@ class NemPuller:
 	def _create_account_record(account_info, mosaics_json, height):
 		"""Create AccountRecord from account info and mosaics."""
 
-		# remote_address is linked separately after the upsert, see _process_account_batch
 		return AccountRecord(
 			account_info.address,
 			height,
@@ -304,10 +305,6 @@ class NemPuller:
 
 		log.info(f'Processing batch of {len(address_heights)} addresses')
 
-		# Remote links are applied after every account in the batch has been upserted, so the main
-		# account row is guaranteed to exist regardless of processing order within the batch.
-		remote_links = []
-
 		# Fetch account info for all addresses (both new and existing)
 		for address, height in address_heights.items():
 			account_info = await self._retry_get_account_info(address)
@@ -317,15 +314,6 @@ class NemPuller:
 			account = self._create_account_record(account_info, mosaics_json, height)
 
 			self.nem_db.upsert_account(cursor, account)
-
-			if 'REMOTE' == account_info.remote_status:
-				main_account_info = await self._retry_get_account_info(address, forwarded=True)
-				if main_account_info.address != account.address:
-					remote_address = None if 'DEACTIVATING' == main_account_info.remote_status else account.address
-					remote_links.append((main_account_info.address, remote_address))
-
-		for main_address, remote_address in remote_links:
-			self.nem_db.update_account_remote_address(cursor, main_address, remote_address)
 
 	@staticmethod
 	def _add_pending_addresses(pending_addresses, addresses, height):
@@ -425,6 +413,17 @@ class NemPuller:
 		)
 
 		self.nem_db.upsert_mosaic(cursor, mosaic)
+
+	def _process_account_key_link(self, cursor, transaction):
+		"""Apply a remote link change announced by an account key link transaction."""
+
+		main_address = self._convert_public_key_to_address(transaction.sender)
+		remote_address = (
+			self._convert_public_key_to_address(transaction.remote_account)
+			if ACCOUNT_KEY_LINK_MODE_ACTIVATE == transaction.mode else None
+		)
+
+		self.nem_db.update_account_remote_address(cursor, main_address, remote_address)
 
 	def _process_mosaic_supply_change(self, cursor, transaction):
 		"""Process mosaic supply change in a block."""
@@ -557,6 +556,8 @@ class NemPuller:
 			self._process_mosaic_definition(cursor, transaction, block_height)
 		elif transaction.transaction_type == TransactionType.MOSAIC_SUPPLY_CHANGE.value:
 			self._process_mosaic_supply_change(cursor, transaction)
+		elif transaction.transaction_type == TransactionType.ACCOUNT_KEY_LINK.value:
+			self._process_account_key_link(cursor, transaction)
 
 		return transaction_id
 
