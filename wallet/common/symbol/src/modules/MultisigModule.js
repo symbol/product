@@ -1,19 +1,12 @@
-import { 
-	EMPTY_AGGREGATE_HASH, 
-	HASH_LOCK_AMOUNT, 
-	HASH_LOCK_DURATION,
-	MULTISIG_TRANSACTION_DEADLINE_HOURS,
-	SINGLE_TRANSACTION_DEADLINE_HOURS,
-	TransactionBundleType,
-	TransactionType
-} from '../constants';
-import { createDeadline, createTransactionFee } from '../utils';
-import { PersistentStorageRepository, TransactionBundle, cloneNetworkObjectMap, createNetworkMap } from 'wallet-common-core';
+import { TransactionBundleType, TransactionType } from '../constants';
+import { createMultisigAggregateBundle } from '../utils';
+import { PersistentStorageRepository, cloneNetworkObjectMap, createNetworkMap } from 'wallet-common-core';
 
 /** @typedef {import('../types/Account').PublicAccount} PublicAccount */
 /** @typedef {import('../types/Account').PrivateAccount} PrivateAccount */
 /** @typedef {import('../types/Account').AccountInfo} AccountInfo */
 /** @typedef {import('../types/Transaction').Transaction} Transaction */
+/** @typedef {import('wallet-common-core').TransactionBundle} TransactionBundle */
 
 const createDefaultState = networkIdentifiers => ({
 	multisigAccounts: createNetworkMap(() => ({}), networkIdentifiers)
@@ -222,39 +215,15 @@ export class MultisigModule {
 	 */
 	#createAggregateBondedBundle = (innerTransaction, multisigAccountPrivateKey) => {
 		const { currentAccount, networkProperties } = this.#walletController;
-		const defaultFee = createTransactionFee(networkProperties, '0');
 
-		const hashLockTransaction = {
-			type: TransactionType.HASH_LOCK,
-			signerPublicKey: currentAccount.publicKey,
-			mosaic: {
-				id: networkProperties.networkCurrency.mosaicId,
-				amount: HASH_LOCK_AMOUNT,
-				divisibility: networkProperties.networkCurrency.divisibility
-			},
-			lockedAmount: HASH_LOCK_AMOUNT,
-			duration: HASH_LOCK_DURATION,
-			fee: defaultFee,
-			deadline: createDeadline(SINGLE_TRANSACTION_DEADLINE_HOURS, networkProperties.epochAdjustment),
-			aggregateHash: EMPTY_AGGREGATE_HASH
-		};
-
-		const aggregateBondedTransaction = {
-			type: TransactionType.AGGREGATE_BONDED,
-			innerTransactions: [innerTransaction],
-			signerPublicKey: currentAccount.publicKey,
-			signerAddress: currentAccount.address,
-			fee: defaultFee,
-			deadline: createDeadline(MULTISIG_TRANSACTION_DEADLINE_HOURS, networkProperties.epochAdjustment)
-		};
-
-		return new TransactionBundle(
-			[hashLockTransaction, aggregateBondedTransaction],
-			{ 
+		return createMultisigAggregateBundle([innerTransaction], {
+			currentAccount,
+			networkProperties,
+			metadata: {
 				type: TransactionBundleType.MULTISIG_ACCOUNT_MODIFICATION,
 				cosignaturePrivateKeys: multisigAccountPrivateKey ? [multisigAccountPrivateKey] : []
 			}
-		);
+		});
 	};
 
 	/**

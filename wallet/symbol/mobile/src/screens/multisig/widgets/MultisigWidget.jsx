@@ -1,7 +1,6 @@
-import { Spacer, Stack, WidgetContainer } from '@/app/components';
+import { AccountListItem, Spacer, Stack, WidgetContainer } from '@/app/components';
 import { $t } from '@/app/localization';
 import { Router } from '@/app/router/Router';
-import { MultisigAccountListItem } from '@/app/screens/multisig/components';
 import React from 'react';
 
 /** @typedef {import('@/app/types/Account').WalletAccount} WalletAccount */
@@ -44,7 +43,7 @@ export const MultisigWidget = ({
 			<Spacer x="s" y="s">
 				<Stack gap="s">
 					{multisigAccountList.map(item => (
-						<MultisigAccountListItem
+						<AccountListItem
 							key={item.address}
 							address={item.address}
 							balance={item.balance}
@@ -53,6 +52,7 @@ export const MultisigWidget = ({
 							addressBook={addressBook}
 							chainName={chainName}
 							networkIdentifier={networkIdentifier}
+							defaultName={$t('s_multisig_defaultAccountName')}
 							onPress={() => handleItemPress(item)}
 						/>
 					))}

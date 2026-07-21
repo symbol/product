@@ -50,8 +50,15 @@ export const TransactionBundleType = {
 	DEFAULT: 'default',
 	MULTISIG_TRANSFER: 'multisig-transfer',
 	MULTISIG_ACCOUNT_MODIFICATION: 'multisig-account-modification',
-	DELEGATED_HARVESTING: 'delegated-harvesting'
+	DELEGATED_HARVESTING: 'delegated-harvesting',
+	MULTISIG_DELEGATED_HARVESTING: 'multisig-delegated-harvesting'
 };
+
+export const MULTISIG_BUNDLE_TYPES = [
+	TransactionBundleType.MULTISIG_TRANSFER,
+	TransactionBundleType.MULTISIG_ACCOUNT_MODIFICATION,
+	TransactionBundleType.MULTISIG_DELEGATED_HARVESTING
+];
 
 export const HarvestingStatus = {
 	INACTIVE: 'inactive',

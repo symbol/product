@@ -294,7 +294,7 @@ export const accountPageResponse = [
 export const accountPageResult = {
 	data: [
 		{
-			remoteAddress: null,
+			linkedAddress: null,
 			address: 'NANEPSBUVE5NLYXCTP52LK3YAOSZUAIVOAD4FGSV',
 			publicKey: '63D2E7B4F5479B0BF67AC34B0656F4A265B039CE66BF6CA9BDD7C196365D8E23',
 			description: null,
@@ -319,7 +319,7 @@ export const accountPageResult = {
 			isHarvestingActive: false
 		},
 		{
-			remoteAddress: null,
+			linkedAddress: null,
 			address: 'NAXB67KOXSIDPNGTOJA35MTNCK4AHB6JE2MJRER7',
 			publicKey: 'A47BF27A383D184C0630214E355EECF0859FEED161E1750E1AB9B624A874CE25',
 			description: null,
@@ -344,7 +344,7 @@ export const accountPageResult = {
 			isHarvestingActive: false
 		},
 		{
-			remoteAddress: null,
+			linkedAddress: null,
 			address: 'NAXF4PC4RUB7HRKCCVDWFLILUUAO2HRETM34OCQZ',
 			publicKey: '299052827E844957710D15FE848B931294907F4B840367873E226A73F9DA1386',
 			description: null,
@@ -379,7 +379,7 @@ export const accountPageResult = {
 			isHarvestingActive: false
 		},
 		{
-			remoteAddress: null,
+			linkedAddress: null,
 			address: 'NA2P5F6DHPZMUJMKR2E2HNBFHDQVC3YRYNPFEH3V',
 			publicKey: '75F1CF09EEFF5E2376C5929D8EA9D8DA171AC5C718655560EBEB6353343045BD',
 			description: null,
@@ -421,7 +421,7 @@ export const accountPageResult = {
 			isHarvestingActive: false
 		},
 		{
-			remoteAddress: null,
+			linkedAddress: null,
 			address: 'NCES7OKBYZRCSTSNRX45H6E67J6OXABKNT6IRD2P',
 			publicKey: '94A4F3B28CD7A8BCB2D756ED29E04EC5191147235605E998AA17F93C407F6645',
 			description: null,
@@ -458,7 +458,7 @@ export const accountPageResult = {
 			isHarvestingActive: false
 		},
 		{
-			remoteAddress: null,
+			linkedAddress: null,
 			address: 'NCHESTYVD2P6P646AMY7WSNG73PCPZDUQNSD6JAK',
 			publicKey: 'DEE852011049D890E97DD4F1D4D7F76824C16854578DADA9918BF943FBF5CC13',
 			description: null,
@@ -493,7 +493,7 @@ export const accountPageResult = {
 			isHarvestingActive: false
 		},
 		{
-			remoteAddress: null,
+			linkedAddress: null,
 			address: 'NCT7LUEQJI3W5BELZVD7SLNUTZEKX4XAEVTRTYQZ',
 			publicKey: null,
 			description: null,
@@ -518,7 +518,7 @@ export const accountPageResult = {
 			isHarvestingActive: false
 		},
 		{
-			remoteAddress: null,
+			linkedAddress: null,
 			address: 'NCYAVMNQOZ3MZETEBD34ACMAX3S57WUSWAZWY3DW',
 			publicKey: 'DC688C1D4BA7BA64109B3EEFA936171084DD5375FF9645D0F63A5F23FE0DA4B7',
 			description: null,
@@ -561,7 +561,7 @@ export const accountPageResult = {
 			isHarvestingActive: false
 		},
 		{
-			remoteAddress: null,
+			linkedAddress: null,
 			address: 'NCZX5HSEAPW4APQIWMADPUXP3EKMLFDDWYACWS3J',
 			publicKey: '3D265614B8C92A63871C3413949ED803A80E1DE4FB960D7BB30D44AE7B5E3C79',
 			description: null,
@@ -586,7 +586,7 @@ export const accountPageResult = {
 			isHarvestingActive: false
 		},
 		{
-			remoteAddress: null,
+			linkedAddress: null,
 			address: 'NDHEJKXY6YK7JGRFQT2L7P3O5VMUGR4BWKQNVXXQ',
 			publicKey: 'A6BDD40A571C87BA43260AA904BDD6CF02F121B5EB9885A8C008725558CFE2E5',
 			description: null,
@@ -676,7 +676,7 @@ export const accountPageMosaicFilterResponse = [
 export const accountPageMosaicFilterResult = {
 	data: [
 		{
-			remoteAddress: null,
+			linkedAddress: null,
 			address: 'NCHESTYVD2P6P646AMY7WSNG73PCPZDUQNSD6JAK',
 			publicKey: null,
 			description: null,
@@ -694,7 +694,7 @@ export const accountPageMosaicFilterResult = {
 			isHarvestingActive: false
 		},
 		{
-			remoteAddress: null,
+			linkedAddress: null,
 			address: 'NANEPSBUVE5NLYXCTP52LK3YAOSZUAIVOAD4FGSV',
 			publicKey: null,
 			description: null,
@@ -712,7 +712,7 @@ export const accountPageMosaicFilterResult = {
 			isHarvestingActive: false
 		},
 		{
-			remoteAddress: null,
+			linkedAddress: null,
 			address: 'NA2P5F6DHPZMUJMKR2E2HNBFHDQVC3YRYNPFEH3V',
 			publicKey: null,
 			description: null,
@@ -730,7 +730,7 @@ export const accountPageMosaicFilterResult = {
 			isHarvestingActive: false
 		},
 		{
-			remoteAddress: null,
+			linkedAddress: null,
 			address: 'NDHEJKXY6YK7JGRFQT2L7P3O5VMUGR4BWKQNVXXQ',
 			publicKey: null,
 			description: null,
@@ -748,7 +748,7 @@ export const accountPageMosaicFilterResult = {
 			isHarvestingActive: false
 		},
 		{
-			remoteAddress: null,
+			linkedAddress: null,
 			address: 'NCT7LUEQJI3W5BELZVD7SLNUTZEKX4XAEVTRTYQZ',
 			publicKey: null,
 			description: null,
@@ -766,7 +766,7 @@ export const accountPageMosaicFilterResult = {
 			isHarvestingActive: false
 		},
 		{
-			remoteAddress: null,
+			linkedAddress: null,
 			address: 'NCZX5HSEAPW4APQIWMADPUXP3EKMLFDDWYACWS3J',
 			publicKey: null,
 			description: null,
@@ -784,7 +784,7 @@ export const accountPageMosaicFilterResult = {
 			isHarvestingActive: false
 		},
 		{
-			remoteAddress: null,
+			linkedAddress: null,
 			address: 'NAXF4PC4RUB7HRKCCVDWFLILUUAO2HRETM34OCQZ',
 			publicKey: null,
 			description: null,
@@ -802,7 +802,7 @@ export const accountPageMosaicFilterResult = {
 			isHarvestingActive: false
 		},
 		{
-			remoteAddress: null,
+			linkedAddress: null,
 			address: 'NCES7OKBYZRCSTSNRX45H6E67J6OXABKNT6IRD2P',
 			publicKey: null,
 			description: null,
@@ -820,7 +820,7 @@ export const accountPageMosaicFilterResult = {
 			isHarvestingActive: false
 		},
 		{
-			remoteAddress: null,
+			linkedAddress: null,
 			address: 'NAXB67KOXSIDPNGTOJA35MTNCK4AHB6JE2MJRER7',
 			publicKey: null,
 			description: null,
@@ -838,7 +838,7 @@ export const accountPageMosaicFilterResult = {
 			isHarvestingActive: false
 		},
 		{
-			remoteAddress: null,
+			linkedAddress: null,
 			address: 'NCYAVMNQOZ3MZETEBD34ACMAX3S57WUSWAZWY3DW',
 			publicKey: null,
 			description: null,
@@ -889,7 +889,7 @@ export const accountInfoResponse = {
 };
 
 export const accountInfoResult = {
-	remoteAddress: null,
+	linkedAddress: null,
 	address: 'NDQXKN6REQRVT4WE6WIU2FXQLTJFEHKK5ITD2ZSV',
 	publicKey: '019B4EDDAEFA086A328EB907ECBC5ED0EABD6BBB6F3BA25B22A310CB5917A808',
 	description: 'Description text',

@@ -1,5 +1,4 @@
 export {
-	createSenderOptions,
 	calculateTokenAvailableBalance,
 	filterActiveTokens,
 	getSelectedTokenPrice

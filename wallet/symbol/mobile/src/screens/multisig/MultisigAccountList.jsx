@@ -1,6 +1,5 @@
-import { MultisigAccountListItem } from './components';
 import { useMultisigAccountList } from './hooks';
-import { ButtonCircle, EmptyListMessage, Screen, ScreenIllustration, Spacer, Stack, StyledText } from '@/app/components';
+import { AccountListItem, ButtonCircle, EmptyListMessage, Screen, ScreenIllustration, Spacer, Stack, StyledText } from '@/app/components';
 import { useInit, useRefresh, useWalletController, useWalletRefreshLifecycle } from '@/app/hooks';
 import { $t } from '@/app/localization';
 import { Router } from '@/app/router/Router';
@@ -75,7 +74,7 @@ export const MultisigAccountList = () => {
 				<Spacer>
 					<Stack gap="s">
 						{multisigAccountList.map(accountInfo => (
-							<MultisigAccountListItem
+							<AccountListItem
 								key={accountInfo.address}
 								address={accountInfo.address}
 								balance={accountInfo.balance}
@@ -84,6 +83,7 @@ export const MultisigAccountList = () => {
 								addressBook={addressBook}
 								chainName={chainName}
 								networkIdentifier={networkIdentifier}
+								defaultName={$t('s_multisig_defaultAccountName')}
 								onPress={() => openAccount(accountInfo)}
 							/>
 						))}

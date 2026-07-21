@@ -1,7 +1,8 @@
+import { useEventCallback } from './useEventCallback';
 import { useTransactionListener } from './useTransactionListener';
 import { useWalletListener } from './useWalletListener';
 import { DB_UPDATE_LATENCY_AFTER_ANNOUNCE } from '@/app/constants';
-import { useCallback, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 
 /** @typedef {import('@/app/types/Wallet').WalletController} WalletController */
 
@@ -20,10 +21,10 @@ import { useCallback, useRef } from 'react';
  * @returns {void}
  */
 export const useWalletRefreshLifecycle = config => {
-	const { 
-		walletController, 
-		onRefresh, 
-		onClear, 
+	const {
+		walletController,
+		onRefresh,
+		onClear,
 		hasPartialListener = false,
 		hasErrorListener = false,
 		hasUnconfirmedListener = false
@@ -32,7 +33,8 @@ export const useWalletRefreshLifecycle = config => {
 	// Ref to track if refresh is scheduled (avoids multiple timeouts)
 	const refreshTimeoutRef = useRef(null);
 
-	const refreshAllWithDelay = useCallback(() => {
+	// Event handlers
+	const handleTransactionStatusChange = useEventCallback(() => {
 		// Clear any existing scheduled refresh
 		if (refreshTimeoutRef.current)
 			clearTimeout(refreshTimeoutRef.current);
@@ -41,25 +43,20 @@ export const useWalletRefreshLifecycle = config => {
 			onRefresh();
 			refreshTimeoutRef.current = null;
 		}, DB_UPDATE_LATENCY_AFTER_ANNOUNCE);
-	}, [onRefresh]);
-	const clearAll = useCallback(() => {
-		if (onClear) 
-			onClear();
-	}, [onClear]);
-
-	// Event handlers
-	const handleTransactionStatusChange = useCallback(() => {
-		refreshAllWithDelay();
-	}, [refreshAllWithDelay]);
-	const handleNetworkConnected = useCallback(() => {
+	});
+	const handleNetworkConnected = useEventCallback(() => {
 		onRefresh();
-	}, [onRefresh]);
-	const handleAccountChange = useCallback(() => {
-		clearAll();
+	});
+	const handleAccountChange = useEventCallback(() => {
+		if (onClear)
+			onClear();
 
 		if (walletController.isWalletReady)
 			onRefresh();
-	}, [clearAll, onRefresh, walletController.isWalletReady]);
+	});
+
+	// Cancel the scheduled refresh when the screen is unmounted
+	useEffect(() => () => clearTimeout(refreshTimeoutRef.current), []);
 
 	// Listen to transaction events
 	useTransactionListener({
@@ -67,13 +64,15 @@ export const useWalletRefreshLifecycle = config => {
 		onTransactionConfirmed: handleTransactionStatusChange,
 		onTransactionPartial: hasPartialListener ? handleTransactionStatusChange : undefined,
 		onTransactionError: hasErrorListener ? handleTransactionStatusChange : undefined,
-		onTransactionUnconfirmed: hasUnconfirmedListener ? handleTransactionStatusChange : undefined
+		onTransactionUnconfirmed: hasUnconfirmedListener ? handleTransactionStatusChange : undefined,
+		deps: [walletController]
 	});
 
 	// Listen to wallet lifecycle events
 	useWalletListener({
 		walletControllers: [walletController],
 		onAccountChange: handleAccountChange,
-		onNetworkConnected: handleNetworkConnected
+		onNetworkConnected: handleNetworkConnected,
+		deps: [walletController]
 	});
 };

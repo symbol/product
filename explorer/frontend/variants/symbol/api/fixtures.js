@@ -71,17 +71,17 @@ export const stubTransactions = [
 
 export const stubAccounts = [
 	{
-		remoteAddress: null, address: 'NANEPSBUVE5NLYXCTP52LK3YAOSZUAIVOAD4FGSV', publicKey: '63D2E7B4F5479B0BF67AC34B0656F4A265B039CE66BF6CA9BDD7C196365D8E23',
+		linkedAddress: null, address: 'NANEPSBUVE5NLYXCTP52LK3YAOSZUAIVOAD4FGSV', publicKey: '63D2E7B4F5479B0BF67AC34B0656F4A265B039CE66BF6CA9BDD7C196365D8E23',
 		description: null, balance: 2014883839.88, vestedBalance: 1976248388.92, mosaics: [{ name: 'symbol.xym', id: 'symbol.xym', isCreatedByAccount: false, amount: 2014883839.88 }],
 		importance: 21.07, harvestedBlocks: 1240, harvestedFees: 12.5, height: 4109488, minCosignatories: 0, cosignatoryOf: [], cosignatories: [], isMultisig: false, isHarvestingActive: true
 	},
 	{
-		remoteAddress: null, address: 'NAXB67KOXSIDPNGTOJA35MTNCK4AHB6JE2MJRER7', publicKey: 'A47BF27A383D184C0630214E355EECF0859FEED161E1750E1AB9B624A874CE25',
+		linkedAddress: null, address: 'NAXB67KOXSIDPNGTOJA35MTNCK4AHB6JE2MJRER7', publicKey: 'A47BF27A383D184C0630214E355EECF0859FEED161E1750E1AB9B624A874CE25',
 		description: null, balance: 55692075.37, vestedBalance: 47667842.68, mosaics: [{ name: 'symbol.xym', id: 'symbol.xym', isCreatedByAccount: false, amount: 55692075.37 }],
 		importance: 0.57, harvestedBlocks: null, harvestedFees: null, height: 4109001, minCosignatories: 0, cosignatoryOf: [], cosignatories: [], isMultisig: false, isHarvestingActive: false
 	},
 	{
-		remoteAddress: null, address: 'NCHESTYVD2P6P646AMY7WSNG73PCPZDUQNSD6JAK', publicKey: 'B47BF27A383D184C0630214E355EECF0859FEED161E1750E1AB9B624A874CE26',
+		linkedAddress: null, address: 'NCHESTYVD2P6P646AMY7WSNG73PCPZDUQNSD6JAK', publicKey: 'B47BF27A383D184C0630214E355EECF0859FEED161E1750E1AB9B624A874CE26',
 		description: null, balance: 980000.5, vestedBalance: 970000.0, mosaics: [{ name: 'symbol.xym', id: 'symbol.xym', isCreatedByAccount: false, amount: 980000.5 }],
 		importance: 23.41, harvestedBlocks: 5400, harvestedFees: 88.2, height: 3990001, minCosignatories: 2, cosignatoryOf: [], cosignatories: ['NADMEHCFJD45GPTDL4HZP2LJLZVAZRLYWYPNEMLY'], isMultisig: true, isHarvestingActive: true
 	}

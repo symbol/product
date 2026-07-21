@@ -19,8 +19,9 @@ import { useCallback } from 'react';
  * @returns {UseMultisigAccountListReturnType}
  */
 export const useMultisigAccountList = walletController => {
+	const multisigModule = walletController.modules.multisig;
 	const dataManager = useAsyncManager({
-		callback: async () => walletController.modules.multisig.fetchData()
+		callback: async () => multisigModule?.fetchData() ?? []
 	});
 
 	const load = useCallback(() => {
@@ -34,7 +35,7 @@ export const useMultisigAccountList = walletController => {
 	return {
 		load,
 		reset,
-		data: walletController.modules.multisig.multisigAccounts,
+		data: multisigModule?.multisigAccounts ?? [],
 		isLoading: dataManager.isLoading
 	};
 };

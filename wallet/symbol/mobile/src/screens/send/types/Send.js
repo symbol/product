@@ -2,13 +2,6 @@
 /** @typedef {import('@/app/types/Token').Token} Token */
 
 /**
- * Dropdown option for selecting sender address.
- * @typedef {object} SenderOption
- * @property {string} value - The sender address.
- * @property {string} label - The display label (name or address).
- */
-
-/**
  * Route parameters for the Send screen.
  * @typedef {object} SendRouteParams
  * @property {ChainName} [chainName] - The blockchain name.

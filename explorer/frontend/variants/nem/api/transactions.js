@@ -169,7 +169,9 @@ const formatBaseTransaction = (data, filter) => {
 				type: data.transactionType,
 				sender
 			}
-		]
+		],
+		size: data.size,
+		version: data.version
 	};
 };
 
@@ -326,7 +328,8 @@ const formatMultisigAccountModification = (data, filter) => {
 
 const formatAccountKeyLink = (data, filter) => {
 	const keyLinkAction = data.value[0].mode;
-	const publicKey = data.value[0].remoteAccount;
+	const linkedPublicKey = data.value[0].remoteAccount;
+	const linkedAddress = data.value[0].remoteAddress;
 
 	return {
 		...formatBaseTransaction(data, filter),
@@ -336,7 +339,8 @@ const formatAccountKeyLink = (data, filter) => {
 				sender: data.fromAddress,
 				targetAccount: data.fromAddress,
 				keyLinkAction,
-				publicKey
+				linkedPublicKey,
+				linkedAddress
 			}
 		]
 	};
