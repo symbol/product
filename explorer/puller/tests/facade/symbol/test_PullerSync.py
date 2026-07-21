@@ -13,7 +13,10 @@ from tests.test.SymbolTestConstants import BENEFICIARY_ADDRESS
 
 from .puller_test_utils import (
 	NATIVE_MOSAIC_ID,
+	BoundedNamespaceDetailConnector,
 	FakeConnector,
+	NamespaceNamesResponseConnector,
+	NoOpRateLimiter,
 	ResponseConnector,
 	SymbolPullerTestBase,
 	create_embedded_node_transaction,
@@ -22,70 +25,13 @@ from .puller_test_utils import (
 	create_node_transaction,
 	create_statement_item,
 	create_sync_state,
+	fetch_namespace_state,
 	set_symbol_connector,
 	set_symbol_rate_limiter,
 	set_sync_block_pages,
 	statement_path,
 	transaction_path
 )
-
-
-class NoOpRateLimiter:
-	@staticmethod
-	async def wait_for_turn():
-		return None
-
-
-class NamespaceNamesResponseConnector(FakeConnector):
-	def __init__(self, *args, names_response, **kwargs):
-		super().__init__(*args, **kwargs)
-		self.names_response = names_response
-
-	async def post(self, url_path, request_payload, *args):
-		if 'namespaces/names' == url_path:
-			self.paths.append(url_path)
-			self.post_payloads_list.append(request_payload)
-			self.post_requests.append((url_path, request_payload))
-			if isinstance(self.names_response, Exception):
-				raise self.names_response
-
-			return self.names_response
-
-		return await super().post(url_path, request_payload, *args)
-
-
-class BoundedNamespaceDetailConnector(FakeConnector):
-	def __init__(self, *args, **kwargs):
-		super().__init__(*args, **kwargs)
-		self.namespace_paths = []
-		self.in_flight_namespace_requests = 0
-		self.max_in_flight_namespace_requests = 0
-		self._namespace_requests_released = asyncio.Event()
-		self._release_scheduled = False
-
-	async def get(self, url_path, *args):
-		if not url_path.startswith('namespaces/'):
-			return await super().get(url_path, *args)
-
-		self.paths.append(url_path)
-		self.namespace_paths.append(url_path)
-		self.in_flight_namespace_requests += 1
-		self.max_in_flight_namespace_requests = max(
-			self.max_in_flight_namespace_requests,
-			self.in_flight_namespace_requests)
-		try:
-			if not self._release_scheduled:
-				self._release_scheduled = True
-				asyncio.get_running_loop().call_soon(self._namespace_requests_released.set)
-			await self._namespace_requests_released.wait()
-
-			response = self.namespace_by_id[url_path.removeprefix('namespaces/')]
-			if isinstance(response, Exception):
-				raise response
-
-			return response
-		finally:
-			self.in_flight_namespace_requests -= 1
 
 
 class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-public-methods
@@ -122,22 +68,9 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 			namespace_names={NAMESPACE_ROOT_ID: 'root'})
 
 	def _fetch_namespace_state(self):
-		cursor = self.puller.symbol_db.connection.cursor()
-		cursor.execute(
-			'''
-			SELECT namespace_id, parent_id, root_id, name, full_name, alias_type, alias_mosaic_id, updated_at_height
-			FROM symbol_namespaces
-			ORDER BY namespace_id
-			''')
-		namespace_rows = cursor.fetchall()
-		cursor.execute(
-			'''
-			SELECT artifact_type, artifact_id, name, updated_at_height
-			FROM symbol_alias_names
-			ORDER BY artifact_type, artifact_id, name
-			''')
-
-		return namespace_rows, cursor.fetchall()
+		return fetch_namespace_state(
+			self.puller.symbol_db.connection,
+			'namespace_id, parent_id, root_id, name, full_name, alias_type, alias_mosaic_id, updated_at_height')
 
 	def test_sync_block_headers_persists_dirty_namespace_state_after_registration_and_alias_transactions(self):
 		# Arrange:

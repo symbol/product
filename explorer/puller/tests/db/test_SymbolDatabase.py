@@ -544,8 +544,8 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		# Arrange:
 		database = self._create_database()
 		for namespace_id, observed_height in [
-			('B95F1F8A96159516', 5),
-			('A95F1F8A96159516', 4),
+			('B95F1F8A96159516', 4),
+			('A95F1F8A96159516', 5),
 			('E74B99BA41F4AFEE', 3)
 		]:
 			row = _create_namespace_row(namespace_id, namespace_id, observed_height)
@@ -556,6 +556,98 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 
 		# Assert:
 		self.assertEqual(['A95F1F8A96159516', 'B95F1F8A96159516'], namespace_ids)
+
+	def test_get_namespace_ids_by_root_ids_returns_only_depth_ordered_descendants_for_requested_roots(self):
+		# Arrange:
+		database = self._create_database()
+		root_id = 'A95F1F8A96159516'
+		first_child_id = 'E74B99BA41F4AFEE'
+		second_child_id = 'F74B99BA41F4AFEE'
+		grandchild_id = 'C74B99BA41F4AFEE'
+		other_root_id = 'B95F1F8A96159516'
+		other_child_id = 'G74B99BA41F4AFEE'
+		unrequested_root_id = 'D95F1F8A96159516'
+		rows = [
+			_create_namespace_row(
+				grandchild_id,
+				'root.child.grandchild',
+				10,
+				parent_id=first_child_id,
+				root_id=root_id,
+				depth=3,
+				registration_type='child'),
+			_create_namespace_row(
+				second_child_id,
+				'root.second-child',
+				10,
+				parent_id=root_id,
+				root_id=root_id,
+				depth=2,
+				registration_type='child'),
+			_create_namespace_row(
+				other_child_id,
+				'other.child',
+				10,
+				parent_id=other_root_id,
+				root_id=other_root_id,
+				depth=2,
+				registration_type='child'),
+			_create_namespace_row(root_id, 'root', 10),
+			_create_namespace_row(
+				first_child_id,
+				'root.child',
+				10,
+				parent_id=root_id,
+				root_id=root_id,
+				depth=2,
+				registration_type='child'),
+			_create_namespace_row(other_root_id, 'other', 10),
+			_create_namespace_row(unrequested_root_id, 'unrequested', 10),
+		]
+		for row in rows:
+			database.upsert_namespace(row, _create_alias_name_rows(row))
+
+		# Act:
+		descendants_by_root = database.get_namespace_ids_by_root_ids([other_root_id, root_id, other_root_id])
+
+		# Assert:
+		self.assertEqual({
+			root_id: [first_child_id, second_child_id, grandchild_id],
+			other_root_id: [other_child_id]
+		}, descendants_by_root)
+
+	def test_get_namespace_ids_by_root_ids_returns_empty_for_empty_input(self):
+		# Arrange:
+		database = self._create_database()
+
+		# Act:
+		descendants_by_root = database.get_namespace_ids_by_root_ids([])
+
+		# Assert:
+		self.assertEqual({}, descendants_by_root)
+
+	def test_get_namespace_ids_by_root_ids_returns_empty_for_child_id(self):
+		# Arrange:
+		database = self._create_database()
+		root_id = 'A95F1F8A96159516'
+		child_id = 'E74B99BA41F4AFEE'
+		root_row = _create_namespace_row(root_id, 'root', 10)
+		child_row = _create_namespace_row(
+			child_id,
+			'root.child',
+			10,
+			parent_id=root_id,
+			root_id=root_id,
+			depth=2,
+			registration_type='child')
+		database.upsert_namespace(root_row, _create_alias_name_rows(root_row))
+		database.upsert_namespace(child_row, _create_alias_name_rows(child_row))
+
+		# Act:
+		descendants_by_root = database.get_namespace_ids_by_root_ids([child_id])
+
+		# Assert:
+		self.assertEqual({}, descendants_by_root)
 
 	def test_repair_rollback_from_height_leaves_namespace_current_state_rows_in_place(self):
 		# Arrange:

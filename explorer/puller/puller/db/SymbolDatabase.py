@@ -610,6 +610,28 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 
 		return [row[0] for row in cursor.fetchall()]
 
+	def get_namespace_ids_by_root_ids(self, root_ids):
+		"""Gets persisted descendant namespace ids grouped by their requested root ids."""
+
+		if not root_ids:
+			return {}
+
+		cursor = self.connection.cursor()
+		cursor.execute(
+			'''
+			SELECT root_id, namespace_id
+			FROM symbol_namespaces
+			WHERE root_id = ANY(%s) AND depth > 1
+			ORDER BY root_id, depth, namespace_id
+			''',
+			(root_ids,))
+
+		descendant_ids_by_root = {}
+		for root_id, namespace_id in cursor.fetchall():
+			descendant_ids_by_root.setdefault(root_id, []).append(namespace_id)
+
+		return descendant_ids_by_root
+
 	def upsert_account_current_state(
 		self,
 		account_row,

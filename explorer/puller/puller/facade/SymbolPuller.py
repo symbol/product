@@ -359,7 +359,10 @@ class SymbolPuller:
 			dirty_addresses,
 			observed_height,
 			native_mosaic_info)
-		dirty_namespace_ids = self._collect_dirty_namespace_ids_for_batch(transaction_rows_by_height, receipt_rows_by_height)
+		direct_dirty_namespace_ids = self._collect_dirty_namespace_ids_for_batch(
+			transaction_rows_by_height,
+			receipt_rows_by_height)
+		dirty_namespace_ids = self._expand_dirty_namespace_ids(direct_dirty_namespace_ids)
 		dirty_namespace_entries = await self._fetch_dirty_namespaces(dirty_namespace_ids, observed_height)
 		self._sync_block_batch(batch_rows, transaction_rows_by_height, receipt_rows_by_height)
 		self._write_dirty_accounts_for_batch(dirty_account_rows)
@@ -681,6 +684,17 @@ class SymbolPuller:
 					dirty_namespace_ids[receipt_row['artifact_id']] = None
 
 		return list(dirty_namespace_ids)
+
+	def _expand_dirty_namespace_ids(self, direct_namespace_ids):
+		"""Adds known descendants of directly dirty roots in stable order."""
+
+		descendant_ids_by_root = self.symbol_db.get_namespace_ids_by_root_ids(direct_namespace_ids)
+		namespace_ids = dict.fromkeys(direct_namespace_ids)
+		for root_id in direct_namespace_ids:
+			for namespace_id in descendant_ids_by_root.get(root_id, []):
+				namespace_ids.setdefault(namespace_id, None)
+
+		return list(namespace_ids)
 
 	async def _fetch_dirty_namespaces(self, namespace_ids, observed_height):
 		"""Fetches current namespace state and names for dirty namespace ids, processing ids in the given order."""

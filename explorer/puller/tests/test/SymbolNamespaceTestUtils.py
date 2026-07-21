@@ -2,6 +2,7 @@ from tests.test.SymbolTestConstants import BENEFICIARY_ADDRESS
 
 NAMESPACE_ROOT_ID = 'A95F1F8A96159516'
 NAMESPACE_SUB_ID = 'E74B99BA41F4AFEE'
+NAMESPACE_SUB_SUB_ID = 'C74B99BA41F4AFEE'
 
 
 def create_namespace_item(  # pylint: disable=too-many-arguments,too-many-positional-arguments

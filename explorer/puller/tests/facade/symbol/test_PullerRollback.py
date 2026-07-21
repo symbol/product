@@ -1,11 +1,13 @@
 # pylint: disable=duplicate-code
 import asyncio
 
+from symbolchain.symbol.Network import Address
+
 from puller.facade.SymbolPuller import SymbolRollbackError
 from puller.model.symbol.Namespace import create_alias_name_rows, create_namespace_row
-from tests.test.SymbolNamespaceTestUtils import NAMESPACE_ROOT_ID, NAMESPACE_SUB_ID, create_namespace_item
+from tests.test.SymbolNamespaceTestUtils import NAMESPACE_ROOT_ID, NAMESPACE_SUB_ID, NAMESPACE_SUB_SUB_ID, create_namespace_item
 
-from ...test.SymbolTestConstants import RECIPIENT_ADDRESS, SIGNER_ADDRESS
+from ...test.SymbolTestConstants import BENEFICIARY_ADDRESS, RECIPIENT_ADDRESS, SIGNER_ADDRESS
 from ...test.SymbolTransactionTestUtils import create_transaction_entry
 from .puller_test_utils import (
 	NATIVE_MOSAIC_ID,
@@ -15,6 +17,7 @@ from .puller_test_utils import (
 	create_node_transaction,
 	create_statement_item,
 	create_sync_state,
+	fetch_namespace_state,
 	set_symbol_connector,
 	statement_path,
 	transaction_path
@@ -45,6 +48,13 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):
 			''')
 
 		return namespace_rows, cursor.fetchall()
+
+	def _fetch_full_namespace_state(self):
+		return fetch_namespace_state(
+			self.puller.symbol_db.connection,
+			'namespace_id, parent_id, root_id, name, full_name, depth, registration_type, '
+			'encode(owner_address, \'hex\'), start_height, end_height, alias_type, alias_mosaic_id, '
+			'encode(alias_address, \'hex\'), raw_payload, updated_at_height')
 
 	def test_sync_block_headers_refreshes_namespace_state_at_or_above_rollback_height(self):
 		# Arrange:
@@ -105,13 +115,19 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):
 			{2: b'local mismatch'.hex()})
 		self.puller.symbol_db.upsert_sync_state(create_sync_state())
 		self._upsert_namespace(create_namespace_item(), {NAMESPACE_ROOT_ID: 'root'}, 2)
+		self._upsert_namespace(
+			create_namespace_item(NAMESPACE_SUB_ID, NAMESPACE_ROOT_ID, NAMESPACE_ROOT_ID),
+			{NAMESPACE_ROOT_ID: 'root', NAMESPACE_SUB_ID: 'child'},
+			2)
 		original_sync_state = self.puller.symbol_db.get_sync_state()
 		original_namespace_rows = self._fetch_namespace_rows()
 		connector = FakeConnector(
 			3,
 			{},
 			{2: create_node_block(2)},
-			namespace_by_id={NAMESPACE_ROOT_ID: RuntimeError('namespace fetch failed')})
+			namespace_by_id={
+				NAMESPACE_ROOT_ID: create_namespace_item(),
+				NAMESPACE_SUB_ID: RuntimeError('namespace fetch failed')})
 		set_symbol_connector(self.puller, connector)
 
 		# Act / Assert:
@@ -121,6 +137,156 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):
 		self.assertEqual([1, 2, 3], self._fetch_block_heights(self.puller.symbol_db))
 		self.assertEqual(original_sync_state, self.puller.symbol_db.get_sync_state())
 		self.assertEqual(original_namespace_rows, self._fetch_namespace_rows())
+
+	def test_sync_block_headers_refreshes_root_and_all_known_descendants_during_rollback(self):
+		# Arrange:
+		self._seed_blocks(
+			self.puller.symbol_db,
+			[1, 2, 3],
+			{2: b'local mismatch'.hex()})
+		self.puller.symbol_db.upsert_sync_state(create_sync_state())
+		root_before_item = create_namespace_item(
+			alias={'type': 1, 'mosaicId': NATIVE_MOSAIC_ID},
+			end_height='5')
+		child_before_item = create_namespace_item(
+			NAMESPACE_SUB_ID,
+			NAMESPACE_ROOT_ID,
+			NAMESPACE_ROOT_ID,
+			alias={'type': 2, 'address': BENEFICIARY_ADDRESS},
+			level_ids=[NAMESPACE_ROOT_ID, NAMESPACE_SUB_ID],
+			end_height='5')
+		grandchild_before_item = create_namespace_item(
+			NAMESPACE_SUB_SUB_ID,
+			NAMESPACE_ROOT_ID,
+			NAMESPACE_SUB_ID,
+			alias={'type': 1, 'mosaicId': '6BED913FA20223F8'},
+			level_ids=[NAMESPACE_ROOT_ID, NAMESPACE_SUB_ID, NAMESPACE_SUB_SUB_ID],
+			end_height='5')
+		root_updated_item = create_namespace_item(end_height='50')
+		child_updated_item = create_namespace_item(
+			NAMESPACE_SUB_ID,
+			NAMESPACE_ROOT_ID,
+			NAMESPACE_ROOT_ID,
+			alias={'type': 1, 'mosaicId': NATIVE_MOSAIC_ID},
+			level_ids=[NAMESPACE_ROOT_ID, NAMESPACE_SUB_ID],
+			end_height='50')
+		grandchild_updated_item = create_namespace_item(
+			NAMESPACE_SUB_SUB_ID,
+			NAMESPACE_ROOT_ID,
+			NAMESPACE_SUB_ID,
+			alias={'type': 2, 'address': BENEFICIARY_ADDRESS},
+			level_ids=[NAMESPACE_ROOT_ID, NAMESPACE_SUB_ID, NAMESPACE_SUB_SUB_ID],
+			end_height='50')
+		comparison_item = create_namespace_item(
+			namespace_id='B95F1F8A96159516',
+			root_id='B95F1F8A96159516',
+			alias={'type': 1, 'mosaicId': '6BED913FA20223F8'})
+		self._upsert_namespace(root_before_item, {NAMESPACE_ROOT_ID: 'root'}, 2)
+		self._upsert_namespace(
+			child_before_item,
+			{NAMESPACE_ROOT_ID: 'root', NAMESPACE_SUB_ID: 'child'},
+			2)
+		self._upsert_namespace(
+			grandchild_before_item,
+			{NAMESPACE_ROOT_ID: 'root', NAMESPACE_SUB_ID: 'child', NAMESPACE_SUB_SUB_ID: 'grandchild'},
+			2)
+		self._upsert_namespace(
+			comparison_item,
+			{'B95F1F8A96159516': 'before-fork'},
+			1)
+		connector = FakeConnector(
+			3,
+			{1: [create_node_block(2), create_node_block(3)]},
+			{2: create_node_block(2)},
+			namespace_by_id={
+				NAMESPACE_ROOT_ID: root_updated_item,
+				NAMESPACE_SUB_ID: child_updated_item,
+				NAMESPACE_SUB_SUB_ID: grandchild_updated_item},
+			namespace_names={
+				NAMESPACE_ROOT_ID: 'root',
+				NAMESPACE_SUB_ID: 'child',
+				NAMESPACE_SUB_SUB_ID: 'grandchild'})
+		set_symbol_connector(self.puller, connector)
+
+		# Act:
+		asyncio.run(self.puller.sync_block_headers())
+
+		# Assert:
+		namespace_rows, alias_rows = self._fetch_full_namespace_state()
+		self.assertEqual([
+			(NAMESPACE_ROOT_ID, None, NAMESPACE_ROOT_ID, 'root', 'root', 1, 'root',
+				BENEFICIARY_ADDRESS.lower(), 1, 50, 'none', None, None, root_updated_item, 1),
+			('B95F1F8A96159516', None, 'B95F1F8A96159516', 'before-fork', 'before-fork', 1, 'root',
+				BENEFICIARY_ADDRESS.lower(), 1, None, 'mosaic', '6BED913FA20223F8', None, comparison_item, 1),
+			(NAMESPACE_SUB_SUB_ID, NAMESPACE_SUB_ID, NAMESPACE_ROOT_ID, 'grandchild', 'root.child.grandchild', 3, 'child',
+				BENEFICIARY_ADDRESS.lower(), 1, 50, 'address', None, BENEFICIARY_ADDRESS.lower(), grandchild_updated_item, 1),
+			(NAMESPACE_SUB_ID, NAMESPACE_ROOT_ID, NAMESPACE_ROOT_ID, 'child', 'root.child', 2, 'child',
+				BENEFICIARY_ADDRESS.lower(), 1, 50, 'mosaic', NATIVE_MOSAIC_ID, None, child_updated_item, 1)
+		], namespace_rows)
+		self.assertEqual([
+			('mosaic', '6BED913FA20223F8', 'before-fork', 1),
+			('mosaic', NATIVE_MOSAIC_ID, 'root.child', 1),
+			('namespace', NAMESPACE_ROOT_ID, 'root', 1),
+			('namespace', 'B95F1F8A96159516', 'before-fork', 1),
+			('namespace', NAMESPACE_SUB_SUB_ID, 'root.child.grandchild', 1),
+			('namespace', NAMESPACE_SUB_ID, 'root.child', 1),
+			('account', str(Address.from_decoded_address_hex_string(BENEFICIARY_ADDRESS)), 'root.child.grandchild', 1)
+		], alias_rows)
+		self.assertEqual([
+			f'namespaces/{NAMESPACE_ROOT_ID}',
+			f'namespaces/{NAMESPACE_SUB_SUB_ID}',
+			f'namespaces/{NAMESPACE_SUB_ID}'
+		], [path for path in connector.paths if path.startswith('namespaces/') and path != 'namespaces/names'])
+		self.assertEqual(
+			[{'namespaceIds': [NAMESPACE_ROOT_ID, NAMESPACE_SUB_ID, NAMESPACE_SUB_SUB_ID]}],
+			[payload for path, payload in connector.post_requests if 'namespaces/names' == path])
+
+	def test_sync_block_headers_deletes_missing_descendants_during_rollback(self):
+		# Arrange:
+		self._seed_blocks(
+			self.puller.symbol_db,
+			[1, 2, 3],
+			{2: b'local mismatch'.hex()})
+		self.puller.symbol_db.upsert_sync_state(create_sync_state())
+		self._upsert_namespace(create_namespace_item(), {NAMESPACE_ROOT_ID: 'root'}, 2)
+		self._upsert_namespace(
+			create_namespace_item(NAMESPACE_SUB_ID, NAMESPACE_ROOT_ID, NAMESPACE_ROOT_ID),
+			{NAMESPACE_ROOT_ID: 'root', NAMESPACE_SUB_ID: 'child'},
+			2)
+		self._upsert_namespace(
+			create_namespace_item(
+				NAMESPACE_SUB_SUB_ID,
+				NAMESPACE_ROOT_ID,
+				NAMESPACE_SUB_ID,
+				level_ids=[NAMESPACE_ROOT_ID, NAMESPACE_SUB_ID, NAMESPACE_SUB_SUB_ID]),
+			{NAMESPACE_ROOT_ID: 'root', NAMESPACE_SUB_ID: 'child', NAMESPACE_SUB_SUB_ID: 'grandchild'},
+			2)
+		connector = FakeConnector(
+			3,
+			{1: [create_node_block(2), create_node_block(3)]},
+			{2: create_node_block(2)},
+			namespace_by_id={NAMESPACE_ROOT_ID: create_namespace_item()},
+			namespace_names={NAMESPACE_ROOT_ID: 'root'})
+		set_symbol_connector(self.puller, connector)
+
+		# Act:
+		asyncio.run(self.puller.sync_block_headers())
+
+		# Assert:
+		self.assertEqual([
+			(NAMESPACE_ROOT_ID, 'root', 1)
+		], self._fetch_namespace_rows()[0])
+		self.assertEqual([
+			('namespace', NAMESPACE_ROOT_ID, 'root', 1)
+		], self._fetch_namespace_rows()[1])
+		self.assertEqual([
+			f'namespaces/{NAMESPACE_ROOT_ID}',
+			f'namespaces/{NAMESPACE_SUB_SUB_ID}',
+			f'namespaces/{NAMESPACE_SUB_ID}'
+		], [path for path in connector.paths if path.startswith('namespaces/') and path != 'namespaces/names'])
+		self.assertEqual(
+			[{'namespaceIds': [NAMESPACE_ROOT_ID]}],
+			[payload for path, payload in connector.post_requests if 'namespaces/names' == path])
 
 	@staticmethod
 	def _fetch_transaction_rows(database):

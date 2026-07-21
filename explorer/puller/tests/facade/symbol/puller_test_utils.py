@@ -110,6 +110,26 @@ def set_sync_block_pages(puller, sync_block_pages):
 	puller._sync_block_pages = sync_block_pages  # pylint: disable=protected-access
 
 
+def fetch_namespace_state(connection, namespace_columns):
+	"""Fetch selected namespace columns and deterministic alias rows from a Symbol database."""
+	cursor = connection.cursor()
+	cursor.execute(
+		f'''
+		SELECT {namespace_columns}
+		FROM symbol_namespaces
+		ORDER BY namespace_id
+		''')
+	namespace_rows = cursor.fetchall()
+	cursor.execute(
+		'''
+		SELECT artifact_type, artifact_id, name, updated_at_height
+		FROM symbol_alias_names
+		ORDER BY artifact_type, artifact_id, name
+		''')
+
+	return namespace_rows, cursor.fetchall()
+
+
 def create_node_block(
 	height,
 	block_hash=None,
@@ -458,6 +478,64 @@ class ResponseConnector:
 			return create_mosaic_definition()
 
 		return self.responses[url_path]
+
+
+class NoOpRateLimiter:
+	@staticmethod
+	async def wait_for_turn():
+		return None
+
+
+class NamespaceNamesResponseConnector(FakeConnector):
+	def __init__(self, *args, names_response, **kwargs):
+		super().__init__(*args, **kwargs)
+		self.names_response = names_response
+
+	async def post(self, url_path, request_payload, *args):
+		if 'namespaces/names' == url_path:
+			self.paths.append(url_path)
+			self.post_payloads_list.append(request_payload)
+			self.post_requests.append((url_path, request_payload))
+			if isinstance(self.names_response, Exception):
+				raise self.names_response
+
+			return self.names_response
+
+		return await super().post(url_path, request_payload, *args)
+
+
+class BoundedNamespaceDetailConnector(FakeConnector):
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		self.namespace_paths = []
+		self.in_flight_namespace_requests = 0
+		self.max_in_flight_namespace_requests = 0
+		self._namespace_requests_released = asyncio.Event()
+		self._release_scheduled = False
+
+	async def get(self, url_path, *args):
+		if not url_path.startswith('namespaces/'):
+			return await super().get(url_path, *args)
+
+		self.paths.append(url_path)
+		self.namespace_paths.append(url_path)
+		self.in_flight_namespace_requests += 1
+		self.max_in_flight_namespace_requests = max(
+			self.max_in_flight_namespace_requests,
+			self.in_flight_namespace_requests)
+		try:
+			if not self._release_scheduled:
+				self._release_scheduled = True
+				asyncio.get_running_loop().call_soon(self._namespace_requests_released.set)
+			await self._namespace_requests_released.wait()
+
+			response = self.namespace_by_id[url_path.removeprefix('namespaces/')]
+			if isinstance(response, Exception):
+				raise response
+
+			return response
+		finally:
+			self.in_flight_namespace_requests -= 1
 
 
 class SymbolPullerTestBase(TestCase):
