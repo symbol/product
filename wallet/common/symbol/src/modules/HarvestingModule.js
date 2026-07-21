@@ -21,7 +21,6 @@ import {
 /** @typedef {import('../types/Harvesting').HarvestingStatus} HarvestingStatus */
 /** @typedef {import('../types/SearchCriteria').HarvestedBlockSearchCriteria} HarvestedBlockSearchCriteria */
 /** @typedef {import('../types/Transaction').Transaction} Transaction */
-/** @typedef {import('../types/Account').HarvesterAccountInfo} HarvesterAccountInfo */
 /** @typedef {import('../types/Account').PublicAccount} PublicAccount */
 
 const createDefaultState = networkIdentifiers => ({
@@ -264,14 +263,14 @@ export class HarvestingModule {
 	 * If the keys are already linked, they will be unlinked first.
 	 * @param {object} options - The transaction options.
 	 * @param {string} options.nodePublicKey - The public key of the node.
-	 * @param {HarvesterAccountInfo} [options.harvesterAccountInfo] - The harvester account info when harvesting
-	 *   from a multisig account. Defaults to the current account.
+	 * @param {string} [options.harvesterAddress] - The address of the harvester account.
+	 *   Defaults to the current account.
 	 * @returns {Promise<TransactionBundle>} - The transaction to start harvesting.
 	 */
 	createStartHarvestingTransaction = async options => {
-		const { nodePublicKey, harvesterAccountInfo } = options;
+		const { nodePublicKey, harvesterAddress } = options;
 		const { networkIdentifier } = this.#walletController;
-		const harvester = this.#resolveHarvester(harvesterAccountInfo);
+		const harvester = await this.#resolveHarvester(harvesterAddress);
 		const { publicKey: harvesterPublicKey, linkedKeys } = harvester;
 		const nodeAddress = addressFromPublicKey(nodePublicKey, networkIdentifier);
 
@@ -349,13 +348,13 @@ export class HarvestingModule {
 	 * Prepares the transaction to stop harvesting for the current account or a multisig account.
 	 * Aggregate transaction includes unlinking the VRF and remote keys.
 	 * @param {object} [options] - The transaction options.
-	 * @param {HarvesterAccountInfo} [options.harvesterAccountInfo] - The harvester account info when stopping
-	 *   harvesting for a multisig account. Defaults to the current account.
-	 * @returns {TransactionBundle} - The transaction to stop harvesting.
+	 * @param {string} [options.harvesterAddress] - The address of the harvester account.
+	 *   Defaults to the current account.
+	 * @returns {Promise<TransactionBundle>} - The transaction to stop harvesting.
 	 */
-	createStopHarvestingTransaction = (options = {}) => {
-		const { harvesterAccountInfo } = options;
-		const harvester = this.#resolveHarvester(harvesterAccountInfo);
+	createStopHarvestingTransaction = async (options = {}) => {
+		const { harvesterAddress } = options;
+		const harvester = await this.#resolveHarvester(harvesterAddress);
 		const { publicKey: harvesterPublicKey, linkedKeys } = harvester;
 		const transactions = [];
 
@@ -397,19 +396,37 @@ export class HarvestingModule {
 	};
 
 	/**
-	 * Resolves the harvester account context. When a multisig account distinct from the current
-	 * account is provided, harvesting acts on that multisig account; otherwise on the current account.
-	 * @param {HarvesterAccountInfo} [harvesterAccountInfo] - The multisig account info, if any.
-	 * @returns {{ isMultisig: boolean, publicKey: string, linkedKeys: object }} The harvester context.
+	 * Resolves the harvester account's context for building key-link transactions. Account info is fetched from the
+	 * network on every call, so the linked keys are always current.
+	 * @param {string} [harvesterAddress] - The harvester account address. Defaults to the current account.
+	 * @returns {Promise<{ isMultisig: boolean, publicKey: string, linkedKeys: object }>} The harvester context.
 	 */
-	#resolveHarvester = harvesterAccountInfo => {
-		const { currentAccount, currentAccountInfo } = this.#walletController;
-		const isMultisig = !!harvesterAccountInfo && harvesterAccountInfo.address !== currentAccount.address;
+	#resolveHarvester = async harvesterAddress => {
+		const { currentAccount, networkProperties } = this.#walletController;
+		const isMultisig = !!harvesterAddress && harvesterAddress !== currentAccount.address;
+		const address = harvesterAddress ?? currentAccount.address;
+		const accountInfo = await this.#api.account.fetchAccountInfo(networkProperties, address);
+		const linkedKeys = accountInfo.linkedKeys || {};
+
+		if (!isMultisig) {
+			return {
+				isMultisig,
+				publicKey: currentAccount.publicKey,
+				linkedKeys
+			};
+		}
+
+		if (!accountInfo.publicKey) {
+			throw new ControllerError(
+				'error_harvesting_account_no_activity',
+				`Failed to create harvesting transaction. Public key for account "${address}" does not exist on the network.`
+			);
+		}
 
 		return {
 			isMultisig,
-			publicKey: isMultisig ? harvesterAccountInfo.publicKey : currentAccount.publicKey,
-			linkedKeys: (isMultisig ? harvesterAccountInfo.linkedKeys : currentAccountInfo.linkedKeys) || {}
+			publicKey: accountInfo.publicKey,
+			linkedKeys
 		};
 	};
 

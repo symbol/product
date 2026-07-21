@@ -3,7 +3,6 @@ import { objectToTableData } from '@/app/utils';
 import { useCallback } from 'react';
 
 /** @typedef {import('@/app/types/Wallet').MainWalletController} MainWalletController */
-/** @typedef {import('@/app/types/Account').HarvesterAccountInfo} HarvesterAccountInfo */
 /** @typedef {import('@/app/types/Transaction').TransactionBundle} TransactionBundle */
 /** @typedef {import('@/app/types/Transaction').TransactionConfirmationDialogSection} TransactionConfirmationDialogSection */
 
@@ -11,7 +10,7 @@ import { useCallback } from 'react';
  * Return type for useHarvestingTransaction hook.
  * @typedef {object} UseHarvestingTransactionReturnType
  * @property {() => Promise<TransactionBundle>} createStartTransaction - Creates start harvesting transaction.
- * @property {() => TransactionBundle} createStopTransaction - Creates stop harvesting transaction.
+ * @property {() => Promise<TransactionBundle>} createStopTransaction - Creates stop harvesting transaction.
  * @property {(transactionBundle: TransactionBundle) => TransactionConfirmationDialogSection[]} getConfirmationPreview
  *   - Generates the transaction confirmation dialog.
  */
@@ -21,12 +20,11 @@ import { useCallback } from 'react';
  * @param {object} params - Hook parameters.
  * @param {MainWalletController} params.walletController - The wallet controller instance.
  * @param {string} [params.selectedNodeUrl] - Selected node URL for starting harvesting.
- * @param {string|null} [params.actionType] - Current harvesting action ('start' or 'stop').
- * @param {HarvesterAccountInfo} [params.harvesterAccountInfo] - The selected multisig account info, when harvesting
- *   from a multisig account. Omitted for the current account.
+ * @param {string|null} params.actionType - Current harvesting action ('start' or 'stop').
+ * @param {string} params.harvesterAddress - The address of the harvester account.
  * @returns {UseHarvestingTransactionReturnType}
  */
-export const useHarvestingTransaction = ({ walletController, selectedNodeUrl, actionType, harvesterAccountInfo }) => {
+export const useHarvestingTransaction = ({ walletController, selectedNodeUrl, actionType, harvesterAddress }) => {
 	const { modules, networkApi } = walletController;
 
 	/**
@@ -41,17 +39,17 @@ export const useHarvestingTransaction = ({ walletController, selectedNodeUrl, ac
 
 		return modules.harvesting.createStartHarvestingTransaction({
 			nodePublicKey: nodeInfo.nodePublicKey,
-			harvesterAccountInfo
+			harvesterAddress
 		});
-	}, [modules.harvesting, networkApi.harvesting, selectedNodeUrl, harvesterAccountInfo]);
+	}, [modules.harvesting, networkApi.harvesting, selectedNodeUrl, harvesterAddress]);
 
 	/**
 	 * Creates a stop harvesting transaction.
 	 * @returns {Promise<TransactionBundle>}
 	 */
 	const createStopTransaction = useCallback(() => {
-		return modules.harvesting.createStopHarvestingTransaction({ harvesterAccountInfo });
-	}, [modules.harvesting, harvesterAccountInfo]);
+		return modules.harvesting.createStopHarvestingTransaction({ harvesterAddress });
+	}, [modules.harvesting, harvesterAddress]);
 
 	/**
 	 * Generates confirmation sections for the transaction confirmation dialog.

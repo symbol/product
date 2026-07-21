@@ -19,8 +19,8 @@ import {
 import { $t } from '@/app/localization';
 import { HarvestingForm, HarvestingStatus, HarvestingSummary } from '@/app/screens/harvesting/components';
 import {
-	useHarvestingAccountInfo,
 	useHarvestingFormState,
+	useHarvestingStatus,
 	useHarvestingSummary,
 	useHarvestingTransaction,
 	useRandomNode
@@ -30,7 +30,8 @@ import {
 	createConfirmationDialogData,
 	createHarvestingActionConfig,
 	createHarvestingStatusViewModel,
-	getActionButtonText
+	getActionButtonText,
+	getHarvestingEligibility
 } from '@/app/screens/harvesting/utils';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -42,7 +43,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
  */
 export const Harvesting = () => {
 	const walletController = useWalletController();
-	const { ticker, isWalletReady, networkIdentifier, chainName } = walletController;
+	const { ticker, isWalletReady, networkIdentifier, chainName, networkProperties } = walletController;
 	const walletAccounts = walletController.accounts[networkIdentifier];
 
 	// Custom status to feedback pending state after sending start/stop transaction until next status load
@@ -54,7 +55,6 @@ export const Harvesting = () => {
 		value: senderAddress,
 		changeValue: setSenderAddress,
 		selectedAccount,
-		isMultisigSelected: isMultisigSender,
 		load: loadSenderOptions,
 		reset: resetSenderOptions
 	} = useTransactionSender(walletController);
@@ -74,19 +74,13 @@ export const Harvesting = () => {
 		setFeeLevel
 	} = useHarvestingFormState({ nodeUrl: randomNodeUrl });
 
-	// When harvesting from a multisig account, that account is the harvester the inner transactions act on
-	const harvesterAccountInfo = isMultisigSender ? selectedAccount : undefined;
-
-	// Account harvesting info
+	// Account harvesting status
 	const {
-		load: loadAccountInfo,
-		isLoading: isAccountInfoLoading,
 		harvestingStatus,
-		isEligible,
-		isAccountBalanceSufficient,
-		isAccountImportanceSufficient,
-		reset: resetAccountInfo
-	} = useHarvestingAccountInfo(walletController, selectedAccount);
+		isLoading: isStatusLoading,
+		load: loadStatus,
+		reset: resetStatus
+	} = useHarvestingStatus(walletController, selectedAccount);
 
 	// Summary
 	const {
@@ -96,13 +90,15 @@ export const Harvesting = () => {
 		reset: resetSummary
 	} = useHarvestingSummary(walletController, senderAddress);
 
+	// Eligibility
+	const eligibility = getHarvestingEligibility(selectedAccount, networkProperties?.networkCurrency?.divisibility);
+
 	// View Models
-	const actionConfig = createHarvestingActionConfig(harvestingStatus, isEligible);
+	const actionConfig = createHarvestingActionConfig(harvestingStatus, eligibility.isEligible);
 	const { actionType, isNodeSelectorVisible, isActionButtonVisible } = actionConfig;
 	const statusViewModel = createHarvestingStatusViewModel({
 		harvestingStatus,
-		isBalanceSufficient: isAccountBalanceSufficient,
-		isImportanceSufficient: isAccountImportanceSufficient,
+		eligibility,
 		isPendingTransaction
 	});
 	const confirmDialogData = createConfirmationDialogData(actionType);
@@ -113,7 +109,7 @@ export const Harvesting = () => {
 		createStartTransaction,
 		createStopTransaction,
 		getConfirmationPreview
-	} = useHarvestingTransaction({ walletController, selectedNodeUrl: nodeUrl, actionType, harvesterAccountInfo });
+	} = useHarvestingTransaction({ walletController, selectedNodeUrl: nodeUrl, actionType, harvesterAddress: senderAddress });
 	const createTransaction = useCallback(async () => {
 		if (actionType === HarvestingAction.START)
 			return createStartTransaction();
@@ -134,11 +130,11 @@ export const Harvesting = () => {
 
 		if (isStartReady || isStopReady)
 			calculateFeesSafely();
-	}, [actionType, nodeUrl, calculateFeesSafely]);
+	}, [actionType, nodeUrl, createTransaction, calculateFeesSafely]);
 
 	// Derived State
 	const isManageSectionVisible = isActionButtonVisible && !isPendingTransaction && !!transactionFees;
-	const isLoading = isAccountInfoLoading || isSummaryLoading;
+	const isLoading = isStatusLoading || isSummaryLoading;
 	const isButtonDisabled = isFeesLoading
 		|| isLoading
 		|| isPendingTransaction
@@ -148,18 +144,19 @@ export const Harvesting = () => {
 	// Initialization and loading subscription
 	const loadAll = useCallback(() => {
 		setIsPendingTransaction(false);
+		walletController.fetchAccountInfo();
 		loadSenderOptions();
-		loadAccountInfo();
+		loadStatus();
 		loadSummary();
 		loadNodes();
-	}, [loadSenderOptions, loadAccountInfo, loadSummary, loadNodes]);
+	}, [walletController, loadSenderOptions, loadStatus, loadSummary, loadNodes]);
 	const clearAll = useCallback(() => {
 		setIsPendingTransaction(false);
 		resetSenderOptions();
-		resetAccountInfo();
+		resetStatus();
 		resetSummary();
 		resetNodes();
-	}, [resetSenderOptions, resetAccountInfo, resetSummary, resetNodes]);
+	}, [resetSenderOptions, resetStatus, resetSummary, resetNodes]);
 	useWalletRefreshLifecycle({ 
 		walletController,
 		onRefresh: loadAll,
@@ -181,7 +178,7 @@ export const Harvesting = () => {
 			return;
 
 		setIsPendingTransaction(false);
-		loadAccountInfo();
+		loadStatus();
 		loadSummary();
 	}, [senderAddress]);
 

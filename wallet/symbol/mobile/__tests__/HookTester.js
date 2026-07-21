@@ -40,6 +40,13 @@ export class HookTester {
 	};
 
 	/**
+	 * Unmounts the hook, running its cleanup effects.
+	 */
+	unmount = () => {
+		this.hookRenderer.unmount();
+	};
+
+	/**
 	 * Expects the current result of the hook to strictly equal the expected value.
 	 * 
 	 * @param {any} expected - The expected value to compare against the current result.

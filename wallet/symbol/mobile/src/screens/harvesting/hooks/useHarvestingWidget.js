@@ -1,7 +1,7 @@
 import { useWalletRefreshLifecycle } from '@/app/hooks';
-import { useHarvestingAccountInfo } from '@/app/screens/harvesting/hooks/useHarvestingAccountInfo';
+import { useHarvestingStatus } from '@/app/screens/harvesting/hooks/useHarvestingStatus';
 import { useHarvestingSummary } from '@/app/screens/harvesting/hooks/useHarvestingSummary';
-import { createHarvestingStatusViewModel } from '@/app/screens/harvesting/utils';
+import { createHarvestingStatusViewModel, getHarvestingEligibility } from '@/app/screens/harvesting/utils';
 import { useCallback, useMemo } from 'react';
 
 /** @typedef {import('@/app/types/Wallet').MainWalletController} MainWalletController */
@@ -23,7 +23,7 @@ import { useCallback, useMemo } from 'react';
  * @returns {UseHarvestingWidgetReturnType} Widget state and props.
  */
 export const useHarvestingWidget = walletController => {
-	const { ticker, currentAccount } = walletController;
+	const { ticker, currentAccount, networkProperties } = walletController;
 	const currentAccountInfo = walletController.currentAccountInfo || {};
 
 	// The widget always reflects the current account
@@ -33,19 +33,10 @@ export const useHarvestingWidget = walletController => {
 	);
 
 	// Harvesting status
-	const statusManager = useHarvestingAccountInfo(walletController, currentAccountWithInfo);
-	const {
-		harvestingStatus,
-		isAccountBalanceSufficient,
-		isAccountImportanceSufficient,
-		isPendingTransaction
-	} = statusManager;
-	const statusViewModel = createHarvestingStatusViewModel({
-		harvestingStatus,
-		isBalanceSufficient: isAccountBalanceSufficient,
-		isImportanceSufficient: isAccountImportanceSufficient,
-		isPendingTransaction
-	});
+	const statusManager = useHarvestingStatus(walletController, currentAccountWithInfo);
+	const { harvestingStatus } = statusManager;
+	const eligibility = getHarvestingEligibility(currentAccountWithInfo, networkProperties?.networkCurrency?.divisibility);
+	const statusViewModel = createHarvestingStatusViewModel({ harvestingStatus, eligibility });
 
 	// Harvesting summary
 	const summaryManager = useHarvestingSummary(walletController, currentAccount.address);
@@ -53,9 +44,10 @@ export const useHarvestingWidget = walletController => {
 
 	// Subscribe to wallet events for automatic loading
 	const loadAll = useCallback(() => {
+		walletController.fetchAccountInfo();
 		statusManager.load();
 		summaryManager.load();
-	}, [statusManager, summaryManager]);
+	}, [walletController, statusManager, summaryManager]);
 	const clearAll = useCallback(() => {
 		statusManager.reset();
 		summaryManager.reset();

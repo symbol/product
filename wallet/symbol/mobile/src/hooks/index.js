@@ -2,6 +2,7 @@ export * from './useAsyncManager';
 export * from './useColorTransition';
 export * from './useDebounce';
 export * from './useDualColorTransition';
+export * from './useEventCallback';
 export * from './useInit';
 export * from './useLoading';
 export * from './usePagination';

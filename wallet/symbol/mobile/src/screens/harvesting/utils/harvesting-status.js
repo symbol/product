@@ -4,8 +4,10 @@ import { HarvestingStatus } from '@/app/screens/harvesting/types/Harvesting';
 import { safeOperationWithRelativeAmounts } from 'wallet-common-core';
 
 /** @typedef {import('wallet-common-symbol').HarvestingStatus} HarvestingStatusData */
+/** @typedef {import('@/app/types/Account').SymbolAccountInfo} SymbolAccountInfo */
 /** @typedef {import('../types/Harvesting').StatusDisplayConfig} StatusDisplayConfig */
 /** @typedef {import('../types/Harvesting').WarningConfig} WarningConfig */
+/** @typedef {import('../types/Harvesting').HarvestingEligibility} HarvestingEligibility */
 /** @typedef {import('../types/Harvesting').HarvestingStatusViewModel} HarvestingStatusViewModel */
 
 /**
@@ -32,24 +34,32 @@ export const isBalanceSufficient = (balance, divisibility) => {
 export const isImportanceSufficient = importance => importance > HARVESTING_ELIGIBILITY_MIN_IMPORTANCE;
 
 /**
- * Checks if account is eligible for harvesting.
- * @param {string} balance - Account balance.
- * @param {number} importance - Account importance.
+ * Checks which harvesting requirements an account meets. The account info is absent while the
+ * selected account is still being resolved, which counts as not eligible.
+ * @param {SymbolAccountInfo} [accountInfo] - Account info of the harvester (current or multisig).
  * @param {number} divisibility - Token divisibility.
- * @returns {boolean} True if eligible.
+ * @returns {HarvestingEligibility} Eligibility of the account.
  */
-export const isEligibleForHarvesting = (balance, importance, divisibility) =>
-	isBalanceSufficient(balance, divisibility) && isImportanceSufficient(importance);
+export const getHarvestingEligibility = (accountInfo, divisibility) => {
+	const isAccountBalanceSufficient = isBalanceSufficient(accountInfo?.balance ?? '0', divisibility);
+	const isAccountImportanceSufficient = isImportanceSufficient(accountInfo?.importance ?? 0);
+	const isEligible = isAccountBalanceSufficient && isAccountImportanceSufficient;
+
+	return {
+		isBalanceSufficient: isAccountBalanceSufficient,
+		isImportanceSufficient: isAccountImportanceSufficient,
+		isEligible
+	};
+};
 
 /**
  * Creates warning configuration based on account eligibility.
  * @param {object} params - Parameters.
  * @param {string} params.status - Harvesting status.
- * @param {boolean} params.isBalanceSufficient - Whether balance is sufficient.
- * @param {boolean} params.isImportanceSufficient - Whether importance is sufficient.
+ * @param {HarvestingEligibility} params.eligibility - Eligibility of the account.
  * @returns {WarningConfig} Warning configuration.
  */
-const createEligibilityWarning = ({ status, isBalanceSufficient, isImportanceSufficient }) => {
+const createEligibilityWarning = ({ status, eligibility }) => {
 	if (status === HarvestingStatus.NODE_UNKNOWN)
 		return { isVisible: true, text: $t('s_harvesting_warning_node_down') };
 
@@ -57,10 +67,10 @@ const createEligibilityWarning = ({ status, isBalanceSufficient, isImportanceSuf
 	if (activeStatuses.includes(status))
 		return { isVisible: false };
 
-	if (!isBalanceSufficient)
+	if (!eligibility.isBalanceSufficient)
 		return { isVisible: true, text: $t('s_harvesting_warning_balance') };
 
-	if (!isImportanceSufficient)
+	if (!eligibility.isImportanceSufficient)
 		return { isVisible: true, text: $t('s_harvesting_warning_importance') };
 
 	return { isVisible: false };
@@ -70,16 +80,14 @@ const createEligibilityWarning = ({ status, isBalanceSufficient, isImportanceSuf
 /**
  * Creates harvesting status view model from API response and account info.
  * @param {object} params - Parameters.
- * @param {HarvestingStatusData|null} params.harvestingStatus - Harvesting status from API.
- * @param {boolean} params.isBalanceSufficient - Whether balance is sufficient.
- * @param {boolean} params.isImportanceSufficient - Whether importance is sufficient.
+ * @param {HarvestingStatusData|null} params.harvestingStatus - Harvesting status of the account.
+ * @param {HarvestingEligibility} params.eligibility - Eligibility of the account.
  * @param {boolean} [params.isPendingTransaction=false] - Whether a transaction is pending.
  * @returns {HarvestingStatusViewModel} View model for rendering.
  */
 export const createHarvestingStatusViewModel = ({
 	harvestingStatus,
-	isBalanceSufficient,
-	isImportanceSufficient,
+	eligibility,
 	isPendingTransaction = false
 }) => {
 	const statusDisplayConfigMap = {
@@ -119,10 +127,18 @@ export const createHarvestingStatusViewModel = ({
 		};
 	}
 
-	const status = harvestingStatus?.status ?? HarvestingStatus.INACTIVE;
-	const nodeUrl = harvestingStatus?.nodeUrl ?? null;
+	if (!harvestingStatus) {
+		return {
+			statusDisplay: statusDisplayConfigMap[HarvestingStatus.NODE_UNKNOWN],
+			warning: { isVisible: false },
+			nodeUrl: null
+		};
+	}
+
+	const { status } = harvestingStatus;
+	const nodeUrl = harvestingStatus.nodeUrl ?? null;
 	const statusDisplay = statusDisplayConfigMap[status] ?? statusDisplayConfigMap[HarvestingStatus.NODE_UNKNOWN];
-	const warning = createEligibilityWarning({ status, isBalanceSufficient, isImportanceSufficient });
+	const warning = createEligibilityWarning({ status, eligibility });
 
 	return {
 		statusDisplay,
