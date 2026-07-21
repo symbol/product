@@ -1,4 +1,4 @@
-import { buildReportUrl, fetchAllReportRows, fetchBridgeConfiguration, fetchReportPage } from '@/api/bridge';
+import { buildBridgeUrl, fetchAllReportRows, fetchBridgeConfiguration, fetchReportPage } from '@/api/bridge';
 import config from '@/config';
 import { makeGetRequest } from '@/utils/server';
 
@@ -20,7 +20,7 @@ describe('bridge API', () => {
 			const criteria = { ...baseCriteria, payoutStatus: 2 };
 
 			// Act:
-			const url = buildReportUrl(criteria);
+			const url = buildBridgeUrl(criteria);
 
 			// Assert:
 			expect(url).toBe('https://bridge.example/wrapped/wrap/requests?offset=0&limit=100&sort=0&payout_status=2');
@@ -31,7 +31,7 @@ describe('bridge API', () => {
 			const address = 'TARDV42KTAIZEF64EQT4NXT7K55DHWBEFIXVJQY';
 
 			// Act:
-			const url = buildReportUrl({ ...baseCriteria, search: address });
+			const url = buildBridgeUrl({ ...baseCriteria, search: address });
 
 			// Assert:
 			expect(url).toContain(`/wrap/requests/${address}?`);
@@ -42,7 +42,7 @@ describe('bridge API', () => {
 			const hash = 'a'.repeat(64);
 
 			// Act:
-			const url = buildReportUrl({ ...baseCriteria, search: `0x${hash}` });
+			const url = buildBridgeUrl({ ...baseCriteria, search: `0x${hash}` });
 
 			// Assert:
 			expect(url).toContain(`/wrap/requests/hash/${hash.toUpperCase()}?`);
@@ -53,7 +53,7 @@ describe('bridge API', () => {
 			const criteria = { ...baseCriteria, resource: 'errors', payoutStatus: 3 };
 
 			// Act:
-			const url = buildReportUrl(criteria);
+			const url = buildBridgeUrl(criteria);
 
 			// Assert:
 			expect(url).not.toContain('payout_status');
@@ -68,10 +68,10 @@ describe('bridge API', () => {
 			};
 
 			// Act:
-			const buildUrl = () => buildReportUrl(criteria);
+			const url = () => buildBridgeUrl(criteria);
 
 			// Assert:
-			expect(buildUrl).toThrow('The native bridge does not support unwrap operations');
+			expect(url).toThrow('The native bridge does not support unwrap operations');
 		});
 
 		it('rejects an invalid address or transaction hash', () => {
@@ -79,10 +79,10 @@ describe('bridge API', () => {
 			const criteria = { ...baseCriteria, search: 'invalid search' };
 
 			// Act:
-			const buildUrl = () => buildReportUrl(criteria);
+			const url = () => buildBridgeUrl(criteria);
 
 			// Assert:
-			expect(buildUrl).toThrow('Invalid address or transaction hash');
+			expect(url).toThrow('Invalid address or transaction hash');
 		});
 	});
 

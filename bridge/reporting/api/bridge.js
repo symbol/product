@@ -40,7 +40,7 @@ const normalizeBaseUrl = baseUrl => (baseUrl || '').replace(/\/$/, '');
  * @throws {Error} If the search value is not a supported address or transaction hash.
  * @throws {Error} If an unwrap report is requested from the native bridge.
  */
-export const buildReportUrl = ({ baseUrl, operation, resource, offset = 0, limit = PAGE_SIZE, search, payoutStatus, sort = 0 }) => {
+export const buildBridgeUrl = ({ baseUrl, operation, resource, offset = 0, limit = PAGE_SIZE, search, payoutStatus, sort = 0 }) => {
 	const normalizedBaseUrl = normalizeBaseUrl(baseUrl);
 	if ('unwrap' === operation && normalizeBaseUrl(config.PUBLIC_BRIDGE_NATIVE_URL) === normalizedBaseUrl)
 		throw new Error('The native bridge does not support unwrap operations');
@@ -78,7 +78,7 @@ export const fetchBridgeConfiguration = async baseUrl => {
  */
 export const fetchReportPage = async criteria => {
 	const { limit = PAGE_SIZE, offset = 0, signal } = criteria;
-	const url = buildReportUrl(criteria);
+	const url = buildBridgeUrl(criteria);
 	const data = await makeGetRequest(url, { signal });
 
 	return {
