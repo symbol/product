@@ -206,31 +206,31 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		# Assert:
 		cursor.execute(
 			'''
-			SELECT table_name, column_name, udt_name, is_nullable
+			SELECT table_name, column_name, udt_name, is_nullable, character_maximum_length
 			FROM information_schema.columns
 			WHERE table_name IN ('symbol_namespaces', 'symbol_alias_names')
 			ORDER BY table_name, ordinal_position
 			''')
 		self.assertEqual([
-			('symbol_alias_names', 'artifact_type', 'symbol_alias_artifact_type', 'NO'),
-			('symbol_alias_names', 'artifact_id', 'varchar', 'NO'),
-			('symbol_alias_names', 'name', 'varchar', 'NO'),
-			('symbol_alias_names', 'updated_at_height', 'int8', 'NO'),
-			('symbol_namespaces', 'namespace_id', 'varchar', 'NO'),
-			('symbol_namespaces', 'parent_id', 'varchar', 'YES'),
-			('symbol_namespaces', 'root_id', 'varchar', 'NO'),
-			('symbol_namespaces', 'name', 'varchar', 'YES'),
-			('symbol_namespaces', 'full_name', 'varchar', 'YES'),
-			('symbol_namespaces', 'depth', 'int4', 'NO'),
-			('symbol_namespaces', 'registration_type', 'symbol_namespace_registration_type', 'NO'),
-			('symbol_namespaces', 'owner_address', 'bytea', 'NO'),
-			('symbol_namespaces', 'start_height', 'int8', 'NO'),
-			('symbol_namespaces', 'end_height', 'int8', 'YES'),
-			('symbol_namespaces', 'alias_type', 'symbol_namespace_alias_type', 'NO'),
-			('symbol_namespaces', 'alias_mosaic_id', 'varchar', 'YES'),
-			('symbol_namespaces', 'alias_address', 'bytea', 'YES'),
-			('symbol_namespaces', 'raw_payload', 'jsonb', 'NO'),
-			('symbol_namespaces', 'updated_at_height', 'int8', 'NO')
+			('symbol_alias_names', 'artifact_type', 'symbol_alias_artifact_type', 'NO', None),
+			('symbol_alias_names', 'artifact_id', 'varchar', 'NO', None),
+			('symbol_alias_names', 'name', 'varchar', 'NO', None),
+			('symbol_alias_names', 'updated_at_height', 'int8', 'NO', None),
+			('symbol_namespaces', 'namespace_id', 'varchar', 'NO', 16),
+			('symbol_namespaces', 'parent_id', 'varchar', 'YES', 16),
+			('symbol_namespaces', 'root_id', 'varchar', 'NO', 16),
+			('symbol_namespaces', 'name', 'varchar', 'YES', None),
+			('symbol_namespaces', 'full_name', 'varchar', 'YES', None),
+			('symbol_namespaces', 'depth', 'int4', 'NO', None),
+			('symbol_namespaces', 'registration_type', 'symbol_namespace_registration_type', 'NO', None),
+			('symbol_namespaces', 'owner_address', 'bytea', 'NO', None),
+			('symbol_namespaces', 'start_height', 'int8', 'NO', None),
+			('symbol_namespaces', 'end_height', 'int8', 'YES', None),
+			('symbol_namespaces', 'alias_type', 'symbol_namespace_alias_type', 'NO', None),
+			('symbol_namespaces', 'alias_mosaic_id', 'varchar', 'YES', 16),
+			('symbol_namespaces', 'alias_address', 'bytea', 'YES', None),
+			('symbol_namespaces', 'raw_payload', 'jsonb', 'NO', None),
+			('symbol_namespaces', 'updated_at_height', 'int8', 'NO', None)
 		], cursor.fetchall())
 
 	def test_create_tables_creates_symbol_namespace_unique_constraints(self):
@@ -269,7 +269,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		# Assert:
 		cursor.execute(
 			'''
-			SELECT indexname
+			SELECT indexname, tablename, indexdef
 			FROM pg_indexes
 			WHERE schemaname = 'public'
 				AND (tablename = 'symbol_namespaces' OR tablename = 'symbol_alias_names')
@@ -277,22 +277,84 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			ORDER BY indexname
 			''')
 		self.assertEqual([
-			'idx_symbol_alias_names_artifact_id',
-			'idx_symbol_alias_names_name',
-			'idx_symbol_alias_names_updated_height',
-			'idx_symbol_namespaces_alias_address',
-			'idx_symbol_namespaces_alias_height',
-			'idx_symbol_namespaces_alias_mosaic',
-			'idx_symbol_namespaces_alias_registration_height',
-			'idx_symbol_namespaces_end_height',
-			'idx_symbol_namespaces_name',
-			'idx_symbol_namespaces_owner_height',
-			'idx_symbol_namespaces_parent',
-			'idx_symbol_namespaces_registration',
-			'idx_symbol_namespaces_registration_height',
-			'idx_symbol_namespaces_root',
-			'idx_symbol_namespaces_updated_height'
-		], [row[0] for row in cursor.fetchall()])
+			(
+				'idx_symbol_alias_names_artifact_id',
+				'symbol_alias_names',
+				'CREATE INDEX idx_symbol_alias_names_artifact_id ON public.symbol_alias_names USING btree (artifact_id)'
+			),
+			(
+				'idx_symbol_alias_names_name',
+				'symbol_alias_names',
+				'CREATE INDEX idx_symbol_alias_names_name ON public.symbol_alias_names USING btree (name)'
+			),
+			(
+				'idx_symbol_alias_names_updated_height',
+				'symbol_alias_names',
+				'CREATE INDEX idx_symbol_alias_names_updated_height ON public.symbol_alias_names USING btree (updated_at_height)'
+			),
+			(
+				'idx_symbol_namespaces_alias_address',
+				'symbol_namespaces',
+				'CREATE INDEX idx_symbol_namespaces_alias_address ON public.symbol_namespaces USING btree (alias_address)'
+			),
+			(
+				'idx_symbol_namespaces_alias_height',
+				'symbol_namespaces',
+				'CREATE INDEX idx_symbol_namespaces_alias_height ON public.symbol_namespaces USING btree (alias_type, start_height DESC)'
+			),
+			(
+				'idx_symbol_namespaces_alias_mosaic',
+				'symbol_namespaces',
+				'CREATE INDEX idx_symbol_namespaces_alias_mosaic ON public.symbol_namespaces USING btree (alias_mosaic_id)'
+			),
+			(
+				'idx_symbol_namespaces_alias_registration_height',
+				'symbol_namespaces',
+				'CREATE INDEX idx_symbol_namespaces_alias_registration_height ON public.symbol_namespaces '
+				'USING btree (alias_type, registration_type, start_height DESC)'
+			),
+			(
+				'idx_symbol_namespaces_end_height',
+				'symbol_namespaces',
+				'CREATE INDEX idx_symbol_namespaces_end_height ON public.symbol_namespaces USING btree (end_height)'
+			),
+			(
+				'idx_symbol_namespaces_name',
+				'symbol_namespaces',
+				'CREATE INDEX idx_symbol_namespaces_name ON public.symbol_namespaces USING btree (name)'
+			),
+			(
+				'idx_symbol_namespaces_owner_height',
+				'symbol_namespaces',
+				'CREATE INDEX idx_symbol_namespaces_owner_height ON public.symbol_namespaces USING btree (owner_address, start_height DESC)'
+			),
+			(
+				'idx_symbol_namespaces_parent',
+				'symbol_namespaces',
+				'CREATE INDEX idx_symbol_namespaces_parent ON public.symbol_namespaces USING btree (parent_id)'
+			),
+			(
+				'idx_symbol_namespaces_registration',
+				'symbol_namespaces',
+				'CREATE INDEX idx_symbol_namespaces_registration ON public.symbol_namespaces USING btree (registration_type)'
+			),
+			(
+				'idx_symbol_namespaces_registration_height',
+				'symbol_namespaces',
+				'CREATE INDEX idx_symbol_namespaces_registration_height ON public.symbol_namespaces '
+				'USING btree (start_height DESC, namespace_id)'
+			),
+			(
+				'idx_symbol_namespaces_root',
+				'symbol_namespaces',
+				'CREATE INDEX idx_symbol_namespaces_root ON public.symbol_namespaces USING btree (root_id)'
+			),
+			(
+				'idx_symbol_namespaces_updated_height',
+				'symbol_namespaces',
+				'CREATE INDEX idx_symbol_namespaces_updated_height ON public.symbol_namespaces USING btree (updated_at_height)'
+			)
+		], cursor.fetchall())
 
 	def test_upsert_namespace_persists_fresh_namespace_and_full_alias_row_set(self):
 		# Arrange:
@@ -478,13 +540,13 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			('namespace', 'A95F1F8A96159516', 'root')
 		], cursor.fetchall())
 
-	def test_get_namespace_ids_updated_from_height_returns_only_matching_sorted_ids(self):
+	def test_get_namespace_ids_updated_from_height_returns_only_matching_ids_sorted_by_namespace_id(self):
 		# Arrange:
 		database = self._create_database()
 		for namespace_id, observed_height in [
-			('E74B99BA41F4AFEE', 3),
+			('B95F1F8A96159516', 5),
 			('A95F1F8A96159516', 4),
-			('B95F1F8A96159516', 5)
+			('E74B99BA41F4AFEE', 3)
 		]:
 			row = _create_namespace_row(namespace_id, namespace_id, observed_height)
 			database.upsert_namespace(row, _create_alias_name_rows(row))

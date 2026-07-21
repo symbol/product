@@ -18,7 +18,7 @@ class CountingRateLimiter:
 		self.call_count += 1
 
 
-class SymbolPullerTest(TestCase):  # pylint: disable=too-many-public-methods
+class SymbolPullerTest(TestCase):
 	def test_create_default_puller_instance(self):
 		# Arrange / Act:
 		with temporary_symbol_puller() as puller:
