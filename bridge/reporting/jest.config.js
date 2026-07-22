@@ -8,5 +8,6 @@ module.exports = createJestConfig({
 		'^@/(.*)$': '<rootDir>/$1'
 	},
 	modulePathIgnorePatterns: ['<rootDir>/.next/'],
+	setupFilesAfterEnv: ['<rootDir>/setupTests.js'],
 	testEnvironment: 'jsdom'
 });
