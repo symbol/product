@@ -207,6 +207,7 @@ const Filter = ({ isSelectedItemsShown, data, value, search, isDisabled, onChang
 						role="button"
 						aria-selected={isFilerActive(item.name)}
 						aria-disabled={!isFilterAvailable(item.name)}
+						title={item.description}
 						onClick={() => !isDisabled && handleFilterPress(item, true)}
 					>
 						<div className={getTextStyle(item.name)}>{item.title}</div>

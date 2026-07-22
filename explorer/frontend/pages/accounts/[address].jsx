@@ -166,7 +166,13 @@ const AccountInfo = ({ accountInfo, preloadedTransactions }) => {
 						<div className="layout-flex-row">
 							<Avatar type="account" value={accountInfo.address} size="xl" />
 							<div className="layout-flex-row-stacked">
-								{accountInfo.isHarvestingActive && <ValueLabel type="harvesting" text={t('label_harvesting')} />}
+								{accountInfo.isHarvestingActive && (
+									<ValueLabel
+										type="harvesting"
+										text={t('label_harvesting')}
+										title={t('label_harvesting_description')}
+									/>
+								)}
 								{accountInfo.isMultisig && <ValueLabel type="multisig" text={t('label_multisig')} />}
 							</div>
 						</div>

@@ -64,6 +64,7 @@ const Accounts = ({ preloadedData, stats }) => {
 		{
 			name: 'isActiveHarvesting',
 			title: t('filter_activeHarvesting'),
+			description: t('filter_activeHarvesting_description'),
 			type: 'boolean'
 		}
 	];
@@ -77,7 +78,9 @@ const Accounts = ({ preloadedData, stats }) => {
 				<div className="layout-flex-row-mobile-col">
 					<div className="layout-flex-col layout-flex-fill">
 						<Field title={t('field_totalAccounts')}>{stats.total}</Field>
-						<Field title={t('field_harvestingAccounts')}>{stats.harvesting}</Field>
+						<Field title={t('field_harvestingAccounts')} description={t('field_harvestingAccounts_description')}>
+							{stats.harvesting}
+						</Field>
 						<Field title={t('field_accountsEligibleForHarvesting')}>{stats.eligibleForHarvesting}</Field>
 					</div>
 					<Separator className="no-mobile" />

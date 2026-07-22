@@ -74,6 +74,7 @@
 	"field_embeddedTransactionsFee": "埋め込み取引",
 	"field_totalAccounts": "総アカウント数",
 	"field_harvestingAccounts": "ハーベストアカウント",
+	"field_harvestingAccounts_description": "過去7日間に少なくとも1つのブロックをハーベストしたアカウントの数です。ハーベスティングを設定しているだけのアカウントや、この期間より前に最後にハーベストしたアカウントは含まれません。",
 	"field_accountsEligibleForHarvesting": "ハーベスト可能なアカウント",
 	"field_name": "名前",
 	"field_id": "ID",
@@ -152,6 +153,7 @@
 
 	"filter_latest": "最新",
 	"filter_activeHarvesting": "アクティブハーベスティング",
+	"filter_activeHarvesting_description": "過去7日間に少なくとも1つのブロックをハーベストしたアカウントのみを表示します。",
 	"filter_service": "サービス",
 	"filter_from": "送信者",
 	"filter_to": "受信者",
@@ -307,6 +309,7 @@
 	"label_awaitingCosignatures": "連署待ち",
 	"label_multisig": "マルチシグ",
 	"label_harvesting": "ハーベスティング",
+	"label_harvesting_description": "このアカウントは過去7日間に少なくとも1つのブロックをハーベストしました。",
 	"label_transferable": "転送可能",
 	"label_supplyMutable": "供給可変",
 	"label_send": "送信",
