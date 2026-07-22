@@ -1,0 +1,16 @@
+extends:
+  - ../../_symbol/linters/javascript/default.eslintrc
+  - eslint-config-next
+  - plugin:import/react
+
+rules:
+  import/extensions:
+    - error
+    - always
+    - js: never
+      jsx: never
+
+settings:
+  import/resolver:
+    jsconfig:
+      config: jsconfig.json

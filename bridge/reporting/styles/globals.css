@@ -1,0 +1,116 @@
+@font-face {
+	font-family: 'Sofia Sans Condensed';
+	font-style: normal;
+	font-weight: 800;
+	src: url('/fonts/SofiaSansCondensed-ExtraBold.ttf') format('truetype');
+	font-display: swap;
+}
+
+@font-face {
+	font-family: 'Protipo';
+	font-style: normal;
+	font-weight: 400;
+	src: url('/fonts/Protipo-Regular.otf') format('opentype');
+	font-display: swap;
+}
+
+@font-face {
+	font-family: 'Protipo';
+	font-style: normal;
+	font-weight: 700;
+	src: url('/fonts/Protipo-Bold.otf') format('opentype');
+	font-display: swap;
+}
+
+@font-face {
+	font-family: 'JetBrains Mono';
+	font-style: normal;
+	font-weight: 700;
+	src: url('/fonts/JetBrainsMono-Bold.ttf') format('truetype');
+	font-display: swap;
+}
+
+:root {
+	--color-ink: #160820;
+	--color-surface: #221c31;
+	--color-surface-raised: #2a2239;
+	--color-deep: #0b0118;
+	--color-cyan: #26c3f2;
+	--color-purple: #b429fa;
+	--color-text: #f7f5fb;
+	--color-muted: #9a93a6;
+	--color-line: #413c4f;
+	--color-success: #8be0a0;
+	--color-danger: #ff929d;
+	--color-warning: #f7c06e;
+	--font-display: 'Sofia Sans Condensed', sans-serif;
+	--font-body: 'Protipo', sans-serif;
+	--font-data: 'JetBrains Mono', monospace;
+}
+
+* {
+	box-sizing: border-box;
+}
+
+html,
+body,
+#__next {
+	min-width: 320px;
+	min-height: 100%;
+	margin: 0;
+}
+
+body {
+	color: var(--color-text);
+	font-family: var(--font-body);
+	background: var(--color-ink);
+}
+
+button,
+input {
+	font: inherit;
+}
+
+button,
+a {
+	-webkit-tap-highlight-color: transparent;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+[tabindex='0']:focus-visible {
+	outline: 2px solid var(--color-cyan);
+	outline-offset: 3px;
+}
+
+::selection {
+	color: var(--color-deep);
+	background: var(--color-cyan);
+}
+
+::-webkit-scrollbar {
+	width: 10px;
+	height: 10px;
+}
+
+::-webkit-scrollbar-track {
+	background: var(--color-deep);
+}
+
+::-webkit-scrollbar-thumb {
+	background: #5e526f;
+	border: 2px solid var(--color-deep);
+	border-radius: 999px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		scroll-behavior: auto !important;
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.01ms !important;
+	}
+}
