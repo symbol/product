@@ -63,12 +63,23 @@ export const buildBridgeUrl = ({ baseUrl, operation, resource, offset = 0, limit
 };
 
 /**
- * Fetches configuration metadata from a bridge API.
- * @param {string} baseUrl Bridge API base URL.
- * @returns {Promise<Object>} Bridge configuration response body.
+ * Fetches configuration metadata for the wrapped and native bridges concurrently.
+ * A bridge configuration is null when its request fails.
+ * @returns {Promise<{wrapped: Object|null, native: Object|null}>} Configuration metadata for each bridge.
  */
-export const fetchBridgeConfiguration = async baseUrl => {
-	return makeGetRequest(normalizeBaseUrl(baseUrl));
+export const fetchBridgeConfiguration = async () => {
+	const wrappedUrl = config.PUBLIC_BRIDGE_WRAPPED_URL;
+	const nativeUrl = config.PUBLIC_BRIDGE_NATIVE_URL;
+
+	const [wrappedResult, nativeResult] = await Promise.allSettled([
+		makeGetRequest(normalizeBaseUrl(wrappedUrl)),
+		makeGetRequest(normalizeBaseUrl(nativeUrl))
+	])
+
+	return {
+		wrapped: wrappedResult.status === 'fulfilled' ? wrappedResult.value : null,
+		native: nativeResult.status === 'fulfilled' ? nativeResult.value : null
+	}
 };
 
 /**

@@ -91,11 +91,19 @@ describe('bridge API', () => {
 		makeGetRequest.mockResolvedValue({ enabled: true });
 
 		// Act:
-		const configuration = await fetchBridgeConfiguration('https://bridge.example/wrapped/');
+		const configuration = await fetchBridgeConfiguration();
 
 		// Assert:
-		expect(configuration).toEqual({ enabled: true });
+		expect(configuration).toEqual({
+			wrapped: {
+				enabled: true
+			},
+			native: {
+				enabled: true
+			}
+		});
 		expect(makeGetRequest).toHaveBeenCalledWith('https://bridge.example/wrapped');
+		expect(makeGetRequest).toHaveBeenCalledWith('https://bridge.example/native');
 	});
 
 	it('returns pages with data', async () => {
