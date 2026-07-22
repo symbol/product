@@ -1,0 +1,7 @@
+const config = {
+	PUBLIC_BRIDGE_WRAPPED_URL: process.env.PUBLIC_BRIDGE_WRAPPED_URL,
+	PUBLIC_BRIDGE_NATIVE_URL: process.env.PUBLIC_BRIDGE_NATIVE_URL,
+	PUBLIC_REQUEST_TIMEOUT: Number(process.env.PUBLIC_REQUEST_TIMEOUT)
+};
+
+export default config;
