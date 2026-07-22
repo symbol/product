@@ -35,6 +35,7 @@ updates:
           - minor
           - patch
     directories:
+      - /bridge/reporting
       - /explorer/frontend
       - /faucet/authenticator
       - /faucet/backend
