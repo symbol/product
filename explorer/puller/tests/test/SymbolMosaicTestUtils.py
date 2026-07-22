@@ -55,3 +55,19 @@ def create_expected_mosaic_row(mosaic_item, observed_height, **overrides):
 	row.update(overrides)
 
 	return row
+
+
+def fetch_mosaic_state(database):
+	"""Fetches the complete persisted mosaic projection in deterministic order."""
+
+	cursor = database.connection.cursor()
+	cursor.execute(
+		'''
+		SELECT mosaic_id, encode(owner_address, 'hex'), start_height, duration, expiration_height, supply,
+			divisibility, flags, supply_mutable, transferable, restrictable, revokable, alias_names,
+			raw_payload, updated_at_height
+		FROM symbol_mosaics
+		ORDER BY mosaic_id
+		''')
+
+	return cursor.fetchall()

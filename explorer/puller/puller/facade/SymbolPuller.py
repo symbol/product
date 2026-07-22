@@ -8,7 +8,6 @@ from urllib.parse import urlparse
 from common.symbol.NodeConfiguration import SymbolNodeConfiguration
 from symbolchain.facade.SymbolFacade import SymbolFacade
 from symbolchain.sc import TransactionType
-from symbolchain.symbol.IdGenerator import is_mosaic_alias
 from symbolchain.symbol.Network import Address, Network
 from symbollightapi.connector.SymbolConnector import SymbolConnector
 from symbollightapi.model.Exceptions import NodeException

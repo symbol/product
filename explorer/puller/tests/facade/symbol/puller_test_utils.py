@@ -608,20 +608,6 @@ class SymbolPullerTestBase(TestCase):
 		return cursor.fetchall()
 
 	@staticmethod
-	def _fetch_mosaic_state(database):
-		cursor = database.connection.cursor()
-		cursor.execute(
-			'''
-			SELECT mosaic_id, encode(owner_address, 'hex'), start_height, duration, expiration_height, supply,
-				divisibility, flags, supply_mutable, transferable, restrictable, revokable, alias_names,
-				raw_payload, updated_at_height
-			FROM symbol_mosaics
-			ORDER BY mosaic_id
-			''')
-
-		return cursor.fetchall()
-
-	@staticmethod
 	def _beneficiary_address_text():
 		return str(Address.from_decoded_address_hex_string(BENEFICIARY_ADDRESS))
 
