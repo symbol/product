@@ -12,6 +12,12 @@ coverage:
         flags:
           - bridge
 
+      bridge-reporting:
+        target: auto
+        threshold: 1%
+        flags:
+          - bridge-reporting
+
       explorer-frontend:
         target: auto
         threshold: 1%
@@ -118,6 +124,11 @@ flags:
   bridge:
     paths:
       - bridge
+    carryforward: true
+
+  bridge-reporting:
+    paths:
+      - bridge/reporting
     carryforward: true
 
   explorer-frontend:

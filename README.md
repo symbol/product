@@ -6,6 +6,7 @@ It includes our optin manager.
 | component | lint | build | test | coverage | package |
 |-----------|------|-------|------|----------| ------- |
 | [@bridge](bridge) | [![lint][bridge-lint]][bridge-job] | | [![test][bridge-test]][bridge-job] | [![][bridge-cov]][bridge-cov-link]
+| [@bridge/reporting](bridge/reporting/) | [![lint][bridge-reporting-lint]][bridge-reporting-job] | | [![test][bridge-reporting-test]][bridge-reporting-job] | [![][bridge-reporting-cov]][bridge-reporting-cov-link]
 | [@explorer/frontend](explorer/frontend) | [![lint][explorer-frontend-lint]][explorer-frontend-job] | | [![test][explorer-frontend-test]][explorer-frontend-job] | [![][explorer-frontend-cov]][explorer-frontend-cov-link]
 | [@explorer/nodewatch](explorer/nodewatch) | [![lint][explorer-nodewatch-lint]][explorer-nodewatch-job] | | [![test][explorer-nodewatch-test]][explorer-nodewatch-job] | [![][explorer-nodewatch-cov]][explorer-nodewatch-cov-link]
 | [@explorer/puller](explorer/puller) | [![lint][explorer-puller-lint]][explorer-puller-job] | | [![test][explorer-puller-test]][explorer-puller-job] | [![][explorer-puller-cov]][explorer-puller-cov-link]
@@ -37,6 +38,12 @@ Detailed version can be seen on [codecov.io][product-cov-link].
 [bridge-test]: https://jenkins.symbolsyndicate.us/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Fbridge%2Fdev%2F&config=bridge-test
 [bridge-cov]: https://codecov.io/gh/symbol/product/branch/dev/graph/badge.svg?token=SSYYBMK0M7&flag=bridge
 [bridge-cov-link]: https://codecov.io/gh/symbol/product/tree/dev/bridge
+
+[bridge-reporting-job]: https://jenkins.symbolsyndicate.us/blue/organizations/jenkins/Symbol%2Fgenerated%2Fproduct%2Fbridge-reporting/activity?branch=dev
+[bridge-reporting-lint]: https://jenkins.symbolsyndicate.us/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Fbridge-reporting%2Fdev%2F&config=bridge-reporting-lint
+[bridge-reporting-test]: https://jenkins.symbolsyndicate.us/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Fbridge-reporting%2Fdev%2F&config=bridge-reporting-test
+[bridge-reporting-cov]: https://codecov.io/gh/symbol/product/branch/dev/graph/badge.svg?token=SSYYBMK0M7&flag=bridge-reporting
+[bridge-reporting-cov-link]: https://codecov.io/gh/symbol/product/tree/dev/bridge/reporting
 
 [explorer-frontend-job]: https://jenkins.symbolsyndicate.us/blue/organizations/jenkins/Symbol%2Fgenerated%2Fproduct%2Fexplorer-frontend/activity?branch=dev
 [explorer-frontend-lint]: https://jenkins.symbolsyndicate.us/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Fexplorer-frontend%2Fdev%2F&config=explorer-frontend-lint
