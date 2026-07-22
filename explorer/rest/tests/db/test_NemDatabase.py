@@ -19,10 +19,12 @@ from symbollightapi.model.Transaction import (
 
 from rest import Pagination, Sorting
 from rest.db.NemDatabase import NemDatabase
+from rest.db.NemHarvestingActivity import HARVESTING_ACTIVE_WINDOW_BLOCKS
 from rest.model.nem.Transaction import TransactionView
 
 from ..test.DatabaseTestUtils import (
 	ACCOUNT_STATISTIC_VIEW,
+	ACCOUNT_STATISTIC_VIEW_WITHOUT_RECENT_HARVEST,
 	ACCOUNT_VIEWS,
 	ACCOUNTS,
 	BLOCK_VIEWS,
@@ -413,6 +415,18 @@ class NemDatabaseTest(DatabaseTestBase):  # pylint: disable=too-many-public-meth
 		# Assert:
 		self.assertEqual(expected_accounts, accounts_view)
 
+	def _advance_chain_tip(self, height):
+		with self.nem_db.connection() as connection:
+			cursor = connection.cursor()
+			cursor.execute(
+				'''
+				INSERT INTO blocks (height, timestamp, total_fee, total_transactions, difficulty, hash, beneficiary, signer, signature, size)
+				SELECT %s, timestamp, total_fee, total_transactions, difficulty, hash, beneficiary, signer, signature, size
+				FROM blocks WHERE height = (SELECT MAX(height) FROM blocks)
+				''',
+				(height,))
+			connection.commit()
+
 	def test_can_query_accounts_filtered_limit(self):
 		self._assert_can_query_accounts(Pagination(1, 0), Sorting('BALANCE', 'desc'), [EXPECTED_ACCOUNT_VIEW_2])
 
@@ -421,6 +435,30 @@ class NemDatabaseTest(DatabaseTestBase):  # pylint: disable=too-many-public-meth
 
 	def test_can_query_accounts_filtered_is_harvesting(self):
 		self._assert_can_query_accounts(Pagination(10, 0), Sorting('BALANCE', 'desc'), [EXPECTED_ACCOUNT_VIEW_2], is_harvesting=True)
+
+	def test_can_query_accounts_filtered_is_harvesting_includes_harvest_at_window_boundary(self):
+		# Arrange:
+		self._advance_chain_tip(ACCOUNTS[1].last_harvested_height + HARVESTING_ACTIVE_WINDOW_BLOCKS - 1)
+
+		# Act + Assert:
+		self._assert_can_query_accounts(Pagination(10, 0), Sorting('BALANCE', 'desc'), [EXPECTED_ACCOUNT_VIEW_2], is_harvesting=True)
+
+	def test_can_query_accounts_filtered_is_harvesting_excludes_harvest_older_than_window(self):
+		# Arrange:
+		self._advance_chain_tip(ACCOUNTS[1].last_harvested_height + HARVESTING_ACTIVE_WINDOW_BLOCKS)
+
+		# Act + Assert:
+		self._assert_can_query_accounts(Pagination(10, 0), Sorting('BALANCE', 'desc'), [], is_harvesting=True)
+
+	def test_can_query_accounts_reports_stale_harvester_as_not_harvesting_active(self):
+		# Arrange:
+		self._advance_chain_tip(ACCOUNTS[1].last_harvested_height + HARVESTING_ACTIVE_WINDOW_BLOCKS)
+
+		# Act:
+		accounts_view = self.nem_db.get_accounts(Pagination(10, 0), Sorting('BALANCE', 'desc'), False)
+
+		# Assert:
+		self.assertEqual([False, False], [account.is_harvesting_active for account in accounts_view])
 
 	def test_can_query_accounts_sorted_by_balance_asc(self):
 		self._assert_can_query_accounts(Pagination(10, 0), Sorting('BALANCE', 'asc'), [EXPECTED_ACCOUNT_VIEW_1, EXPECTED_ACCOUNT_VIEW_2])
@@ -617,6 +655,16 @@ class NemDatabaseTest(DatabaseTestBase):  # pylint: disable=too-many-public-meth
 
 		# Assert:
 		self.assertEqual(ACCOUNT_STATISTIC_VIEW, account_statistics)
+
+	def test_can_query_account_statistics_excluding_harvests_older_than_activity_window(self):
+		# Arrange:
+		self._advance_chain_tip(ACCOUNTS[1].last_harvested_height + HARVESTING_ACTIVE_WINDOW_BLOCKS)
+
+		# Act:
+		account_statistics = self.nem_db.get_account_statistics()
+
+		# Assert:
+		self.assertEqual(ACCOUNT_STATISTIC_VIEW_WITHOUT_RECENT_HARVEST, account_statistics)
 
 	# endregion
 

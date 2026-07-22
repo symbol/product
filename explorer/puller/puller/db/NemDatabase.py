@@ -45,6 +45,13 @@ class NemDatabase(DatabaseConnection):
 			'''
 		)
 
+		cursor.execute(
+			'''
+			CREATE INDEX IF NOT EXISTS accounts_last_harvested_height_idx
+				ON accounts (last_harvested_height DESC)
+			'''
+		)
+
 		# Create indexes for blocks table
 		cursor.execute(
 			'''

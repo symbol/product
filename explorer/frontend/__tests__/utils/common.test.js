@@ -473,7 +473,7 @@ describe('utils/common', () => {
 				translated_table_field_balance: 2014883839.88001,
 				translated_table_field_importance: 21.075431784224506,
 				translated_table_field_isMultisig: 'translated_value_false',
-				translated_table_field_isHarvestingActive: 'translated_value_false',
+				translated_table_field_isHarvestingActive: 'translated_value_true',
 				translated_table_field_description: null
 			};
 

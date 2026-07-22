@@ -13,6 +13,7 @@ class AccountView:  # pylint: disable=too-many-locals,too-many-instance-attribut
 		harvested_blocks,
 		remote_status,
 		last_harvested_height,
+		is_harvesting_active,
 		min_cosignatories,
 		cosignatory_of,
 		cosignatories,
@@ -34,6 +35,7 @@ class AccountView:  # pylint: disable=too-many-locals,too-many-instance-attribut
 		self.harvested_blocks = harvested_blocks
 		self.remote_status = remote_status
 		self.last_harvested_height = last_harvested_height
+		self.is_harvesting_active = is_harvesting_active
 		self.min_cosignatories = min_cosignatories
 		self.cosignatory_of = cosignatory_of
 		self.cosignatories = cosignatories
@@ -53,6 +55,7 @@ class AccountView:  # pylint: disable=too-many-locals,too-many-instance-attribut
 			self.harvested_blocks == other.harvested_blocks,
 			self.remote_status == other.remote_status,
 			self.last_harvested_height == other.last_harvested_height,
+			self.is_harvesting_active == other.is_harvesting_active,
 			self.min_cosignatories == other.min_cosignatories,
 			self.cosignatory_of == other.cosignatory_of,
 			self.cosignatories == other.cosignatories,
@@ -75,6 +78,7 @@ class AccountView:  # pylint: disable=too-many-locals,too-many-instance-attribut
 			'harvestedBlocks': self.harvested_blocks,
 			'remoteStatus': self.remote_status,
 			'lastHarvestedHeight': self.last_harvested_height,
+			'isHarvestingActive': self.is_harvesting_active,
 			'minCosignatories': self.min_cosignatories,
 			'cosignatoryOf': self.cosignatory_of,
 			'cosignatories': self.cosignatories,

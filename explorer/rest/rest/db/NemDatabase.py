@@ -18,6 +18,7 @@ from rest.model.nem.Statistic import (
 from rest.model.nem.Transaction import TransactionRecord, TransactionView
 
 from .DatabaseConnection import DatabaseConnectionPool
+from .NemHarvestingActivity import HARVESTING_ACTIVE_WINDOW_BLOCKS, harvesting_active_cutoff_height
 
 
 def _format_bytes(buffer):
@@ -87,6 +88,7 @@ class NemDatabase(DatabaseConnectionPool):
 			harvested_blocks,
 			remote_status,
 			last_harvested_height,
+			is_harvesting_active,
 			min_cosignatories,
 			cosignatory_of,
 			cosignatories,
@@ -110,6 +112,7 @@ class NemDatabase(DatabaseConnectionPool):
 			harvested_blocks=harvested_blocks,
 			remote_status=remote_status,
 			last_harvested_height=last_harvested_height,
+			is_harvesting_active=is_harvesting_active,
 			min_cosignatories=min_cosignatories,
 			cosignatory_of=[_format_address_bytes_to_string(address) for address in cosignatory_of] if cosignatory_of else None,
 			cosignatories=[_format_address_bytes_to_string(address) for address in cosignatories] if cosignatories else None,
@@ -313,6 +316,7 @@ class NemDatabase(DatabaseConnectionPool):
 				harvested_blocks,
 				remote_status,
 				last_harvested_height,
+				(a.last_harvested_height >= %s) AS is_harvesting_active,
 				min_cosignatories,
 				cosignatory_of,
 				cosignatories,
@@ -468,6 +472,14 @@ class NemDatabase(DatabaseConnectionPool):
 			{limit_condition}
 		'''
 
+	@staticmethod
+	def _read_harvesting_active_cutoff_height(cursor):
+		"""Reads the chain height and converts it into the lowest height that still counts as recent harvesting."""
+
+		cursor.execute('SELECT COALESCE(MAX(height), 0) FROM blocks')
+
+		return harvesting_active_cutoff_height(cursor.fetchone()[0], HARVESTING_ACTIVE_WINDOW_BLOCKS)
+
 	def _get_account(self, where_condition, query_bytes):
 		"""Gets account by where clause."""
 
@@ -475,7 +487,8 @@ class NemDatabase(DatabaseConnectionPool):
 
 		with self.connection() as connection:
 			cursor = connection.cursor()
-			cursor.execute(sql, (query_bytes,))
+			cutoff_height = self._read_harvesting_active_cutoff_height(cursor)
+			cursor.execute(sql, (cutoff_height, query_bytes))
 			result = cursor.fetchone()
 
 			return self._create_account_view(result) if result else None
@@ -533,16 +546,16 @@ class NemDatabase(DatabaseConnectionPool):
 	def get_accounts(self, pagination, sorting, is_harvesting):
 		"""Gets accounts pagination in database."""
 
-		where_condition = " WHERE remote_status = 'ACTIVE' " if is_harvesting else ''
+		where_condition = ' WHERE a.last_harvested_height >= %s ' if is_harvesting else ''
 		order_condition = f' ORDER BY {sorting.field} {sorting.order} '
 		limit_condition = ' LIMIT %s OFFSET %s'
-
-		params = [pagination.limit, pagination.offset]
 
 		sql = self._generate_account_query(limit_condition=limit_condition, order_condition=order_condition, where_condition=where_condition)
 
 		with self.connection() as connection:
 			cursor = connection.cursor()
+			cutoff_height = self._read_harvesting_active_cutoff_height(cursor)
+			params = [cutoff_height] + ([cutoff_height] if is_harvesting else []) + [pagination.limit, pagination.offset]
 			cursor.execute(sql, params)
 			results = cursor.fetchall()
 
@@ -553,15 +566,16 @@ class NemDatabase(DatabaseConnectionPool):
 
 		with self.connection() as connection:
 			cursor = connection.cursor()
+			cutoff_height = self._read_harvesting_active_cutoff_height(cursor)
 			cursor.execute('''
 				SELECT
 					COUNT(*) AS total_accounts,
 					COUNT(*) FILTER (WHERE balance > 0) AS accounts_with_balance,
-					COUNT(*) FILTER (WHERE harvested_blocks > 0) AS harvested_accounts,
+					COUNT(*) FILTER (WHERE last_harvested_height >= %s) AS harvested_accounts,
 					COALESCE(SUM(importance), 0) AS total_importance,
 					COUNT(*) FILTER (WHERE vested_balance > 10000000000) AS eligible_harvest_accounts
 				FROM accounts
-			''')
+			''', (cutoff_height,))
 			result = cursor.fetchone()
 
 			return self._create_account_statistic_view(result)
