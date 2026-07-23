@@ -8,6 +8,7 @@
 		"start": "next start",
 		"test": "jest",
 		"lint": "eslint --ext js,jsx .",
+		"lint:fix": "eslint --ext js,jsx .  --fix",
 		"test:jenkins": "c8 --reporter=lcov --reporter=text --report-dir=coverage npm run test",
 		"version": "echo $npm_package_version"
 	},

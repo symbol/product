@@ -74,12 +74,12 @@ export const fetchBridgeConfiguration = async () => {
 	const [wrappedResult, nativeResult] = await Promise.allSettled([
 		makeGetRequest(normalizeBaseUrl(wrappedUrl)),
 		makeGetRequest(normalizeBaseUrl(nativeUrl))
-	])
+	]);
 
 	return {
-		wrapped: wrappedResult.status === 'fulfilled' ? wrappedResult.value : null,
-		native: nativeResult.status === 'fulfilled' ? nativeResult.value : null
-	}
+		wrapped: 'fulfilled' === wrappedResult.status ? wrappedResult.value : null,
+		native: 'fulfilled' === nativeResult.status ? nativeResult.value : null
+	};
 };
 
 /**
