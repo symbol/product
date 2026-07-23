@@ -120,6 +120,9 @@ export class Router {
 	static goToCreateMosaic(params) {
 		navigationRef.navigate(RouteName.CreateMosaic, parseNavigationParams(params));
 	}
+	static goToModifyMosaic(params) {
+		navigationRef.navigate(RouteName.ModifyMosaic, parseNavigationParams(params));
+	}
 	static goToRevokeMosaic(params) {
 		navigationRef.navigate(RouteName.RevokeMosaic, parseNavigationParams(params));
 	}

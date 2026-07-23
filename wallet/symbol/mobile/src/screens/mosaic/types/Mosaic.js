@@ -11,6 +11,22 @@
  */
 
 /**
+ * Route parameters for the ModifyMosaic screen.
+ * @typedef {object} ModifyMosaicRouteParams
+ * @property {ChainName} [chainName] - The blockchain name.
+ * @property {string} tokenId - The mosaic identifier to modify.
+ * @property {string} [senderAddress] - Pre-selected creator (signer) address.
+ */
+
+/**
+ * The change between a mosaic's current and requested total supply.
+ * @typedef {object} SupplyDeltaData
+ * @property {string} delta - The change magnitude in relative units, always unsigned. Zero when the
+ *   requested supply equals the current one.
+ * @property {number|null} action - The supply change action, or null when the supply is unchanged.
+ */
+
+/**
  * Mosaic feature flags configuration.
  * @typedef {object} MosaicFlags
  * @property {boolean} isSupplyMutable - Whether the supply can be changed after creation.

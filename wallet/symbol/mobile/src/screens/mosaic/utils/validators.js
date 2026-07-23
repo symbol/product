@@ -1,4 +1,4 @@
-import { getSmallestFractionText } from './mosaic-supply';
+import { calculateSupplyDelta, getSmallestFractionText } from './mosaic-supply';
 import { formatNumberGroups } from './number-format';
 import {
 	MOSAIC_DIVISIBILITY_MIN,
@@ -52,6 +52,20 @@ export const validateMosaicSupply = divisibility => supply => {
 
 		return { key: 'validation_error_mosaic_supply_high', params: { max: maxSupply } };
 	}
+};
+
+/**
+ * Creates a validator rejecting a requested supply equal to the current one, since a supply change
+ * transaction with a zero delta would be announced and pay a fee without altering anything.
+ * @param {string} currentSupply - The current total supply in relative units.
+ * @param {number} divisibility - The mosaic divisibility.
+ * @returns {(newSupply: string) => string|undefined} The supply change validator.
+ */
+export const validateSupplyChanged = (currentSupply, divisibility) => newSupply => {
+	const { delta } = calculateSupplyDelta(currentSupply, newSupply, divisibility);
+
+	if (delta === '0')
+		return 'validation_error_mosaic_supply_unchanged';
 };
 
 /**

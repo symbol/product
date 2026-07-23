@@ -22,7 +22,7 @@ import { getExpirationData, getTokenDisplayInfo } from '@/app/screens/assets/uti
 import { Colors } from '@/app/styles';
 import { createTransactionQr } from '@/app/utils';
 import React from 'react';
-import { isMosaicRevokable } from 'wallet-common-symbol';
+import { isMosaicRevokable, isMosaicSupplyModifiable } from 'wallet-common-symbol';
 
 /** @typedef {import('@/app/types/Network').ChainName} ChainName */
 
@@ -124,9 +124,17 @@ export const TokenDetails = ({ route }) => {
 
 	const isSendReceiveButtonsDisabled = isTokenExpired;
 
-	// Revoke action
+	// Mosaic creator actions
 	const canRevokeMosaic = isMosaicRevokable(token, networkProperties?.chainHeight, accountAddress);
+	const canModifyMosaic = isMosaicSupplyModifiable(token, networkProperties?.chainHeight, accountAddress);
 	const openRevokeScreen = () => Router.goToRevokeMosaic({
+		params: {
+			chainName,
+			tokenId,
+			senderAddress: accountAddress
+		}
+	});
+	const openModifyScreen = () => Router.goToModifyMosaic({
 		params: {
 			chainName,
 			tokenId,
@@ -210,14 +218,23 @@ export const TokenDetails = ({ route }) => {
 								</Spacer>
 							</Card>
 						)}
-						{canRevokeMosaic && (
+						{(canRevokeMosaic || canModifyMosaic) && (
 							<Stack>
 								<Divider />
-								<ButtonPlain
-									icon="revoke"
-									text={$t('button_revoke')}
-									onPress={openRevokeScreen}
-								/>
+								{canRevokeMosaic && (
+									<ButtonPlain
+										icon="revoke"
+										text={$t('button_revoke')}
+										onPress={openRevokeScreen}
+									/>
+								)}
+								{canModifyMosaic && (
+									<ButtonPlain
+										icon="edit"
+										text={$t('button_modifyMosaic')}
+										onPress={openModifyScreen}
+									/>
+								)}
 							</Stack>
 						)}
 					</Stack>

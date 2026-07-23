@@ -26,3 +26,22 @@ export const formatNumberGroups = value => {
 
 	return `${groupedInteger}.${fractionalPart}`;
 };
+
+/**
+ * Keeps only digits in a numeric field input value.
+ * @param {string} value - The raw input value.
+ * @returns {string} The sanitized value.
+ */
+export const sanitizeIntegerInput = value => value.replace(/[^0-9]/g, '');
+
+/**
+ * Keeps digits and a single decimal separator in a relative-amount input value. A comma is normalized to a
+ * dot and any extra separators are folded into the fractional part so the value stays parseable.
+ * @param {string} value - The raw input value.
+ * @returns {string} The sanitized value.
+ */
+export const sanitizeDecimalInput = value => {
+	const [integerPart, ...fractionalParts] = value.replace(/,/g, '.').replace(/[^0-9.]/g, '').split('.');
+
+	return fractionalParts.length ? `${integerPart}.${fractionalParts.join('')}` : integerPart;
+};

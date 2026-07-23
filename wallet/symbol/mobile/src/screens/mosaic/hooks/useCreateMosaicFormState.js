@@ -6,30 +6,12 @@ import {
 	DEFAULT_MOSAIC_SUPPLY,
 	DEFAULT_TRANSACTION_SPEED
 } from '@/app/screens/mosaic/constants';
+import { sanitizeDecimalInput, sanitizeIntegerInput } from '@/app/screens/mosaic/utils';
 import { useCallback, useState } from 'react';
 
 /** @typedef {import('@/app/screens/mosaic/types/Mosaic').MosaicFlagName} MosaicFlagName */
 /** @typedef {import('@/app/screens/mosaic/types/Mosaic').MosaicFlags} MosaicFlags */
 /** @typedef {import('@/app/types/Transaction').TransactionFeeTierLevel} TransactionFeeTierLevel */
-
-/**
- * Keeps only digits in a numeric field input value.
- * @param {string} value - The raw input value.
- * @returns {string} The sanitized value.
- */
-const sanitizeIntegerInput = value => value.replace(/[^0-9]/g, '');
-
-/**
- * Keeps digits and a single decimal separator in a relative-amount input value. A comma is normalized to a
- * dot and any extra separators are folded into the fractional part so the value stays parseable.
- * @param {string} value - The raw input value.
- * @returns {string} The sanitized value.
- */
-const sanitizeDecimalInput = value => {
-	const [integerPart, ...fractionalParts] = value.replace(/,/g, '.').replace(/[^0-9.]/g, '').split('.');
-
-	return fractionalParts.length ? `${integerPart}.${fractionalParts.join('')}` : integerPart;
-};
 
 /**
  * Return type for useCreateMosaicFormState hook.

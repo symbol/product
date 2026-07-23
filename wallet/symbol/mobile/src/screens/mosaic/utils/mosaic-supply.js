@@ -1,5 +1,8 @@
-import { formatIntegerGroups } from './number-format';
+import { formatIntegerGroups, formatNumberGroups } from './number-format';
+import { MosaicSupplyChangeAction } from '@/app/constants';
+import { absoluteToRelativeAmount, relativeToAbsoluteAmount } from 'wallet-common-core';
 
+/** @typedef {import('@/app/screens/mosaic/types/Mosaic').SupplyDeltaData} SupplyDeltaData */
 /** @typedef {import('@/app/screens/mosaic/types/Mosaic').SupplyDisplayData} SupplyDisplayData */
 
 /**
@@ -39,4 +42,85 @@ export const createSupplyDisplayData = (supply, divisibility) => {
 		enteredFraction,
 		paddingFraction
 	};
+};
+
+/**
+ * Describes the change between the current and the requested total supply. The two amounts are compared in
+ * absolute (atomic) units with BigInt so a divisible supply is never subject to floating point drift. An
+ * unchanged supply yields a zero delta and no action, which the caller is expected to reject before sending.
+ * @param {string} currentSupply - The current total supply in relative units.
+ * @param {string} newSupply - The requested total supply in relative units.
+ * @param {number} divisibility - The mosaic divisibility.
+ * @returns {SupplyDeltaData} The supply change data.
+ * @example
+ * calculateSupplyDelta('1000', '1500.5', 1); // { delta: '500.5', action: 1 }
+ * calculateSupplyDelta('1000', '1000', 0);   // { delta: '0', action: null }
+ */
+export const calculateSupplyDelta = (currentSupply, newSupply, divisibility) => {
+	const currentAbsoluteSupply = BigInt(relativeToAbsoluteAmount(currentSupply, divisibility));
+	const newAbsoluteSupply = BigInt(relativeToAbsoluteAmount(newSupply, divisibility));
+	const absoluteDelta = newAbsoluteSupply - currentAbsoluteSupply;
+	const isIncrease = absoluteDelta > 0n;
+	const absoluteMagnitude = isIncrease ? absoluteDelta : -absoluteDelta;
+	const changeAction = isIncrease ? MosaicSupplyChangeAction.Increase : MosaicSupplyChangeAction.Decrease;
+
+	return {
+		delta: absoluteToRelativeAmount(absoluteMagnitude.toString(), divisibility),
+		action: absoluteDelta === 0n ? null : changeAction
+	};
+};
+
+/**
+ * Returns the supply delta as signed display text, so an increase stays distinguishable from a decrease of
+ * the same size. A zero delta carries no sign.
+ * @param {string} delta - The supply change magnitude in relative units.
+ * @param {number|null} action - The supply change action, or null when the supply is unchanged.
+ * @returns {string} The signed delta text.
+ * @example
+ * getSupplyDeltaText('1500', 0); // '-1 500'
+ */
+export const getSupplyDeltaText = (delta, action) => {
+	const deltaText = formatNumberGroups(delta);
+
+	if (delta === '0')
+		return deltaText;
+
+	return MosaicSupplyChangeAction.Increase === action ? `+${deltaText}` : `-${deltaText}`;
+};
+
+/**
+ * Returns a supply amount padded to the full divisibility, so amounts listed together keep the same number of
+ * decimals and stay directly comparable.
+ * @param {string} supply - The supply amount in relative units.
+ * @param {number} divisibility - The mosaic divisibility.
+ * @returns {string} The grouped, decimal-padded amount text.
+ * @example
+ * getPaddedSupplyText('1000.5', 3); // '1 000.500'
+ */
+export const getPaddedSupplyText = (supply, divisibility) => {
+	const { integer, enteredFraction, paddingFraction } = createSupplyDisplayData(supply, divisibility);
+
+	if (!divisibility)
+		return integer;
+
+	return `${integer}.${enteredFraction}${paddingFraction}`;
+};
+
+/**
+ * Returns the supply delta as signed text padded to the full divisibility, matching the decimals of the supply
+ * amounts it is shown beside. A zero delta carries no sign.
+ * @param {string} delta - The supply change magnitude in relative units.
+ * @param {number|null} action - The supply change action, or null when the supply is unchanged.
+ * @param {number} divisibility - The mosaic divisibility.
+ * @returns {string} The signed, decimal-padded delta text.
+ * @example
+ * getPaddedSupplyDeltaText('500.5', 1, 3); // '+500.500'
+ */
+export const getPaddedSupplyDeltaText = (delta, action, divisibility) => {
+	const deltaText = getPaddedSupplyText(delta, divisibility);
+
+	if (delta === '0')
+		return deltaText;
+
+	return MosaicSupplyChangeAction.Increase === action ? `+${deltaText}` : `-${deltaText}`;
 };

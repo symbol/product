@@ -31,7 +31,7 @@
  * @property {number} endHeight - Mosaic expiration height.
  * @property {boolean} isUnlimitedDuration - Mosaic unlimited duration flag.
  * @property {string} creator - Mosaic creator address.
- * @property {number} supply - Mosaic total supply.
+ * @property {string} supply - Mosaic total supply in relative units.
  * @property {boolean} isSupplyMutable - Mosaic supply mutable flag.
  * @property {boolean} isTransferable - Mosaic transferable flag.
  * @property {boolean} isRestrictable - Mosaic restrictable flag.

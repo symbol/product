@@ -133,6 +133,22 @@ export const isMosaicRevokable = (mosaic, chainHeight, currentAddress, sourceAdd
 };
 
 /**
+ * Checks if a mosaic total supply can be changed.
+ * @param {Mosaic} mosaic - The mosaic.
+ * @param {number} chainHeight - The chain height.
+ * @param {string} currentAddress - The current account address.
+ * @returns {boolean} True if the mosaic supply can be changed, false otherwise.
+ */
+export const isMosaicSupplyModifiable = (mosaic, chainHeight, currentAddress) => {
+	const hasSupplyMutableFlag = mosaic.isSupplyMutable;
+	const isCreatorCurrentAccount = mosaic.creator === currentAddress;
+	const isMosaicExpired = mosaic.endHeight - chainHeight <= 0;
+	const isMosaicActive = !isMosaicExpired || mosaic.isUnlimitedDuration;
+
+	return hasSupplyMutableFlag && isCreatorCurrentAccount && isMosaicActive;
+};
+
+/**
  * Checks if a mosaic flag is supply mutable.
  * @param {number} flags - The mosaic flags.
  * @returns {boolean} True if the flag is supply mutable, false otherwise.
