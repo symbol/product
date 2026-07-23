@@ -52,7 +52,7 @@ export const Actions = () => {
 		{
 			title: $t('s_actions_createMosaic_title'),
 			description: $t('s_actions_createMosaic_description'),
-			imageSource: require('@/app/assets/images/art/symbol-ascii.png'),
+			imageSource: require('@/app/assets/images/art/mosaic-puzzle.png'),
 			onPress: Router.goToCreateMosaic
 		},
 		{
