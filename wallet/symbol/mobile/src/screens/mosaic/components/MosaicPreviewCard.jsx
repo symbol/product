@@ -1,17 +1,15 @@
-import { Card, Divider, Icon, StyledText } from '@/app/components';
+import { Card, Divider, Field, Icon, StyledText, TokenInfoView } from '@/app/components';
 import { $t } from '@/app/localization';
 import { createSupplyDisplayData, getSmallestFractionText } from '@/app/screens/mosaic/utils';
-import { Colors, Sizes } from '@/app/styles';
+import { Sizes } from '@/app/styles';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
-const ICON_CIRCLE_SIZE = Sizes.Semantic.avatarHeight.l;
-
 /**
  * SupplyAmount component. Renders the total supply preview digits: the entered amount in full with the
- * unused decimal capacity dimmed in the accent color. The decimal separator and zero padding are shown
- * only when the mosaic is divisible.
+ * unused decimal capacity dimmed. The decimal separator and zero padding are shown only when the mosaic
+ * is divisible. The digit groups are announced as one amount, as reading them apart carries no meaning.
  * @param {object} props - Component props.
  * @param {string} props.integer - The grouped integer part of the supply.
  * @param {string} props.enteredFraction - The fractional digits the user entered.
@@ -20,23 +18,25 @@ const ICON_CIRCLE_SIZE = Sizes.Semantic.avatarHeight.l;
  * @returns {React.ReactNode} SupplyAmount component.
  */
 const SupplyAmount = ({ integer, enteredFraction, paddingFraction, divisibility }) => {
-	const separatorStyle = enteredFraction ? undefined : styles.amountCapacity;
+	const isDivisible = divisibility > 0;
+	const separatorVariant = enteredFraction ? 'primary' : 'secondary';
+	const amountText = isDivisible ? `${integer}.${enteredFraction}${paddingFraction}` : integer;
 
 	return (
-		<View style={styles.amountRow}>
-			<StyledText bold>{integer}</StyledText>
-			{divisibility > 0 && (
+		<View style={styles.amountRow} accessible accessibilityLabel={amountText}>
+			<StyledText bold size="l">{integer}</StyledText>
+			{isDivisible && (
 				<Animated.View
 					key={divisibility}
 					entering={FadeIn}
 					style={styles.amountRow}
 				>
-					<StyledText bold style={separatorStyle}>.</StyledText>
+					<StyledText bold size="l" variant={separatorVariant}>.</StyledText>
 					{!!enteredFraction && (
 						<StyledText bold>{enteredFraction}</StyledText>
 					)}
 					{!!paddingFraction && (
-						<StyledText bold style={styles.amountCapacity}>{paddingFraction}</StyledText>
+						<StyledText bold variant="secondary">{paddingFraction}</StyledText>
 					)}
 				</Animated.View>
 			)}
@@ -45,10 +45,9 @@ const SupplyAmount = ({ integer, enteredFraction, paddingFraction, divisibility 
 };
 
 /**
- * MosaicPreviewCard component. A read-only receipt of the mosaic being created: the identity row
- * (icon, name placeholder and derived mosaic id) beside the total supply rendered with the entered
- * amount in full and the unused decimal capacity dimmed, followed by the smallest sendable amount
- * and a note that the decimal places are permanent.
+ * MosaicPreviewCard component. A read-only receipt of the mosaic being created: the token identity above
+ * the total supply, rendered with the entered amount in full and the unused decimal capacity dimmed,
+ * followed by the smallest sendable amount and a note that the decimal places are permanent.
  * @param {object} props - Component props.
  * @param {string} props.supply - The mosaic supply input value in relative units.
  * @param {string|number} props.divisibility - The current divisibility input value.
@@ -57,73 +56,42 @@ const SupplyAmount = ({ integer, enteredFraction, paddingFraction, divisibility 
  */
 export const MosaicPreviewCard = ({ supply, divisibility, mosaicId }) => {
 	const divisibilityValue = Number(divisibility);
+	const isDivisible = divisibilityValue > 0;
 	const supplyDisplay = createSupplyDisplayData(supply, divisibilityValue);
 	const smallestSendText = getSmallestFractionText(divisibilityValue);
-	const totalSupplyLabel = $t('s_mosaicCreation_totalSupply_label');
-	const smallestSendLabel = $t('s_mosaicCreation_smallestSend_label');
-
-	const supplyValueText = divisibilityValue > 0
-		? `${supplyDisplay.integer}.${supplyDisplay.enteredFraction}${supplyDisplay.paddingFraction}`
-		: supplyDisplay.integer;
-	const smallestSendValueText = divisibilityValue === 0
-		? `${smallestSendText} ${$t('s_mosaicCreation_smallestSend_whole')}`
-		: smallestSendText;
+	const wholeTokensText = $t('s_mosaicCreation_smallestSend_whole');
+	const smallestSendValueText = isDivisible ? smallestSendText : `${smallestSendText} ${wholeTokensText}`;
 
 	return (
 		<Card style={styles.card}>
-			<View style={styles.identityRow}>
-				<View style={styles.iconCircle}>
-					<Icon name="token-custom" size="m" />
-				</View>
-				<View style={styles.nameColumn}>
-					<StyledText type="body" bold>
-						{$t('s_mosaicCreation_namePlaceholder')}
-					</StyledText>
-					{!!mosaicId && (
-						<StyledText type="body" size="s" style={styles.mosaicId} numberOfLines={1}>
-							{mosaicId}
-						</StyledText>
-					)}
-				</View>
+			<TokenInfoView
+				name={$t('s_mosaicCreation_namePlaceholder')}
+				id={mosaicId}
+			/>
+			<Field title={$t('s_mosaicCreation_totalSupply_label')} size="s" alignRight>
+				<SupplyAmount
+					integer={supplyDisplay.integer}
+					enteredFraction={supplyDisplay.enteredFraction}
+					paddingFraction={supplyDisplay.paddingFraction}
+					divisibility={divisibilityValue}
+				/>
+			</Field>
+			<Field title={$t('s_mosaicCreation_smallestSend_label')} size="s">
 				<View
-					style={styles.amountColumn}
+					style={styles.smallestSendRow}
 					accessible
-					accessibilityLabel={`${totalSupplyLabel} ${supplyValueText}`}
+					accessibilityLabel={smallestSendValueText}
 				>
-					<StyledText type="label" size="s" style={styles.mutedText}>
-						{totalSupplyLabel}
-					</StyledText>
-					<SupplyAmount
-						integer={supplyDisplay.integer}
-						enteredFraction={supplyDisplay.enteredFraction}
-						paddingFraction={supplyDisplay.paddingFraction}
-						divisibility={divisibilityValue}
-					/>
-				</View>
-			</View>
-			<Divider />
-			<View
-				style={styles.detailRow}
-				accessible
-				accessibilityLabel={`${smallestSendLabel} ${smallestSendValueText}`}
-			>
-				<StyledText type="body" size="s" style={styles.mutedText}>
-					{smallestSendLabel}
-				</StyledText>
-				<View style={styles.fractionRow}>
-					<StyledText bold>
-						{smallestSendText}
-					</StyledText>
-					{divisibilityValue === 0 && (
-						<StyledText size="s">
-							{$t('s_mosaicCreation_smallestSend_whole')}
-						</StyledText>
+					<StyledText bold>{smallestSendText}</StyledText>
+					{!isDivisible && (
+						<StyledText size="s">{wholeTokensText}</StyledText>
 					)}
 				</View>
-			</View>
-			<View style={styles.permanentNote}>
+			</Field>
+			<Divider accent />
+			<View style={styles.noteRow}>
 				<Icon name="info-circle" size="xxs" />
-				<StyledText type="body" size="s" style={[styles.mutedText, styles.permanentNoteText]}>
+				<StyledText size="s" variant="secondary" style={styles.noteText}>
 					{$t('s_mosaicCreation_decimalsNote')}
 				</StyledText>
 			</View>
@@ -136,54 +104,21 @@ const styles = StyleSheet.create({
 		padding: Sizes.Semantic.layoutPadding.m,
 		gap: Sizes.Semantic.spacing.m
 	},
-	identityRow: {
-		flexDirection: 'row',
-		alignItems: 'center',
-		gap: Sizes.Semantic.spacing.m
-	},
-	iconCircle: {
-		width: ICON_CIRCLE_SIZE,
-		height: ICON_CIRCLE_SIZE,
-		borderRadius: Sizes.Semantic.borderRadius.round,
-		backgroundColor: Colors.Semantic.background.tertiary.lighter,
-		justifyContent: 'center',
-		alignItems: 'center'
-	},
-	nameColumn: {
-		flex: 1
-	},
-	mosaicId: {
-		color: Colors.Semantic.content.primary.muted
-	},
-	amountColumn: {
-		alignItems: 'flex-end'
-	},
 	amountRow: {
 		flexDirection: 'row',
 		alignItems: 'baseline'
 	},
-	amountCapacity: {
-		color: Colors.Semantic.role.secondary.weaker
-	},
-	detailRow: {
-		flexDirection: 'row',
-		justifyContent: 'space-between',
-		alignItems: 'center'
-	},
-	fractionRow: {
+	smallestSendRow: {
 		flexDirection: 'row',
 		alignItems: 'baseline',
 		gap: Sizes.Semantic.spacing.s
 	},
-	mutedText: {
-		color: Colors.Semantic.content.primary.muted
-	},
-	permanentNote: {
+	noteRow: {
 		flexDirection: 'row',
 		alignItems: 'center',
 		gap: Sizes.Semantic.spacing.s
 	},
-	permanentNoteText: {
+	noteText: {
 		flex: 1
 	}
 });

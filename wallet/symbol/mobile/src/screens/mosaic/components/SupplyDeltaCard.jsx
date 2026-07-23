@@ -1,4 +1,4 @@
-import { Card, Divider, StyledText, TokenAvatar } from '@/app/components';
+import { Card, Divider, Field, StyledText, TokenInfoView } from '@/app/components';
 import { MosaicSupplyChangeAction } from '@/app/constants';
 import { $t } from '@/app/localization';
 import { getPaddedSupplyDeltaText, getPaddedSupplyText } from '@/app/screens/mosaic/utils';
@@ -27,7 +27,6 @@ import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-na
  * @property {string} [connectorColor] - The color of the connector running down to the next step.
  */
 
-const AVATAR_SIZE = 'm';
 const EMPTY_RATIO = 0;
 const FULL_RATIO = 1;
 
@@ -211,19 +210,16 @@ const SupplyTimeline = ({ steps }) => {
 			</View>
 			<View style={styles.steps}>
 				{steps.map((step, index) => (
-					<View
+					<Field
 						key={step.label}
+						title={step.label}
+						size="s"
 						style={[styles.step, index < lastIndex && styles.step__pitched]}
-						accessible
-						accessibilityLabel={`${step.label} ${step.value}`}
 					>
-						<StyledText type="label" size="s" style={styles.mutedText}>
-							{step.label}
-						</StyledText>
 						<StyledText bold style={step.valueStyle} numberOfLines={1}>
 							{step.value}
 						</StyledText>
-					</View>
+					</Field>
 				))}
 			</View>
 		</View>
@@ -280,16 +276,11 @@ export const SupplyDeltaCard = ({ token, currentSupply, newSupply, delta, action
 	return (
 		<Card style={styles.card}>
 			<View style={styles.identityRow}>
-				<TokenAvatar size={AVATAR_SIZE} />
-				<View style={styles.identityColumn}>
-					<StyledText bold numberOfLines={1}>
-						{token.name}
-					</StyledText>
-					<StyledText type="label" size="s" style={styles.mutedText} numberOfLines={1}>
-						{token.id}
-					</StyledText>
-				</View>
-				<StyledText type="label" size="s" style={styles.mutedText} numberOfLines={1}>
+				<TokenInfoView
+					id={token.id}
+					name={token.name}
+				/>
+				<StyledText size="s" variant="secondary" numberOfLines={1}>
 					{$t('s_modifyMosaic_divisibility_label', { divisibility: token.divisibility })}
 				</StyledText>
 			</View>
@@ -308,10 +299,8 @@ const styles = StyleSheet.create({
 	identityRow: {
 		flexDirection: 'row',
 		alignItems: 'center',
+		justifyContent: 'space-between',
 		gap: Sizes.Semantic.spacing.m
-	},
-	identityColumn: {
-		flex: 1
 	},
 	barTrack: {
 		flexDirection: 'row',
@@ -374,8 +363,5 @@ const styles = StyleSheet.create({
 	},
 	changeValue: {
 		...Typography.Semantic.bodyBold.xl
-	},
-	mutedText: {
-		color: Colors.Semantic.content.primary.muted
 	}
 });
