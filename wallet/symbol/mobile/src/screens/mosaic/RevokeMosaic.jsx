@@ -29,8 +29,7 @@ import Animated, { FadeInDown, FadeOut } from 'react-native-reanimated';
 
 /**
  * RevokeMosaic screen component. Provides the interface for reclaiming a revokable mosaic from a holder
- * account back to its creator on the Symbol network, on behalf of the current account or one of its
- * multisig accounts.
+ * account back to its creator on the Symbol network, on behalf of the current account.
  * @param {object} props - Component props.
  * @param {object} props.route - React Navigation route object.
  * @param {RevokeMosaicRouteParams} props.route.params - Route parameters.
@@ -51,15 +50,14 @@ export const RevokeMosaic = props => {
 	const walletAccounts = accounts[networkIdentifier];
 	const { tokenId } = route.params;
 
-	// Sender selection (creator; current or multisig)
+	// Transaction sender
 	const {
 		options: senderOptions,
 		value: senderAddress,
 		changeValue: changeSenderAddress,
-		selectedAccount,
 		load: loadSenderOptions,
 		reset: resetSenderOptions
-	} = useTransactionSender(walletController, { initialAddress: route.params?.senderAddress });
+	} = useTransactionSender(walletController);
 
 	// Mosaic info
 	const {
@@ -131,7 +129,6 @@ export const RevokeMosaic = props => {
 	// Transaction creation and preview
 	const { createRevokeMosaicTransaction, getConfirmationPreview } = useRevokeMosaicTransaction({
 		walletController,
-		senderPublicKey: selectedAccount?.publicKey,
 		mosaicId: tokenId,
 		divisibility: mosaic?.divisibility,
 		amount,
@@ -148,7 +145,7 @@ export const RevokeMosaic = props => {
 	useEffect(() => {
 		if (isWalletReady && mosaic && isAmountValid && sourceAddress)
 			calculateFeesSafely();
-	}, [isWalletReady, mosaic, isAmountValid, sourceAddress, amount, selectedAccount?.publicKey]);
+	}, [isWalletReady, mosaic, isAmountValid, sourceAddress, amount]);
 
 	// Transaction workflow
 	const workflow = useStandardTransactionWorkflow({
@@ -164,8 +161,7 @@ export const RevokeMosaic = props => {
 		|| !sourceAddress
 		|| !isAmountValid
 		|| !transactionFees
-		|| isFeesLoading
-		|| !selectedAccount?.publicKey;
+		|| isFeesLoading;
 
 	return (
 		<TransactionScreenTemplate
@@ -194,6 +190,7 @@ export const RevokeMosaic = props => {
 							networkIdentifier={networkIdentifier}
 							walletAccounts={walletAccounts}
 							addressBook={walletController.modules.addressBook}
+							isMultisigDisabled
 							onChange={changeSenderAddress}
 						/>
 					</Stack>

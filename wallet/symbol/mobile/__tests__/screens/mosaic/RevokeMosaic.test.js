@@ -17,6 +17,7 @@ const MOSAIC_DIVISIBILITY = 0;
 
 const HOLDER_A_BALANCE = '1000';
 const HOLDER_B_BALANCE = '500';
+const CREATOR_BALANCE = '250';
 const VALID_AMOUNT = '5';
 const EXCESSIVE_AMOUNT = '5000';
 
@@ -88,6 +89,11 @@ const mosaicInfo = {
 const holders = [
 	{ address: holderAccountA.address, amount: HOLDER_A_BALANCE },
 	{ address: holderAccountB.address, amount: HOLDER_B_BALANCE }
+];
+
+const holdersIncludingCreator = [
+	...holders,
+	{ address: currentAccount.address, amount: CREATOR_BALANCE }
 ];
 
 // Mock Revocation Transaction Bundle (returned by the token module)
@@ -239,32 +245,38 @@ describe('screens/mosaic/RevokeMosaic', () => {
 			it(description, async () => {
 				// Arrange:
 				setupMocks({ owners: config.owners });
-				const screenTester = await renderRevokeMosaicScreen({ senderAddress: config.senderAddress });
+				const screenTester = await renderRevokeMosaicScreen();
 
 				// Act:
 				screenTester.presButtonByLabel(SCREEN_TEXT.inputAccountLabel);
 
 				// Assert:
-				screenTester.expectText(expected.presentAddresses);
-				screenTester.notExpectText(expected.absentAddresses);
+				expected.addressCounts.forEach(([address, count]) => screenTester.expectTextCount(address, count));
 			});
 		};
 
+		// The creator is always rendered once in the creator section, so it is counted rather than
+		// asserted absent when checking that it is not offered as a holder option
 		const sourceAccountTests = [
 			{
 				description: 'lists all mosaic holders as selectable options',
-				config: { owners: holders, senderAddress: currentAccount.address },
+				config: { owners: holders },
 				expected: {
-					presentAddresses: [holderAccountA.address, holderAccountB.address],
-					absentAddresses: []
+					addressCounts: [
+						[holderAccountA.address, 1],
+						[holderAccountB.address, 1]
+					]
 				}
 			},
 			{
 				description: 'excludes the creator from the holder options when the creator also holds the mosaic',
-				config: { owners: holders, senderAddress: holderAccountA.address },
+				config: { owners: holdersIncludingCreator },
 				expected: {
-					presentAddresses: [holderAccountB.address],
-					absentAddresses: [holderAccountA.address]
+					addressCounts: [
+						[holderAccountA.address, 1],
+						[holderAccountB.address, 1],
+						[currentAccount.address, 1]
+					]
 				}
 			}
 		];
@@ -445,7 +457,6 @@ describe('screens/mosaic/RevokeMosaic', () => {
 				config: { sourceAddress: holderAccountA.address, amount: VALID_AMOUNT },
 				expected: {
 					transactionOptions: {
-						senderPublicKey: currentAccount.publicKey,
 						mosaicId: MOSAIC_ID,
 						divisibility: MOSAIC_DIVISIBILITY,
 						amount: VALID_AMOUNT,

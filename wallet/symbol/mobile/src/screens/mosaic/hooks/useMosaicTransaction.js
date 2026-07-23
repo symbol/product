@@ -1,4 +1,3 @@
-import { SymbolTransactionType } from '@/app/constants';
 import { $t } from '@/app/localization';
 import { MOSAIC_NEVER_EXPIRING_DURATION } from '@/app/screens/mosaic/constants';
 import { objectToTableData } from '@/app/utils';
@@ -21,7 +20,6 @@ import { absoluteToRelativeAmount } from 'wallet-common-core';
  * React hook for creating mosaic transactions and generating preview data.
  * @param {object} params - Hook parameters.
  * @param {WalletController} params.walletController - The wallet controller instance.
- * @param {string} [params.senderPublicKey] - The mosaic creator public key. Defaults to the current account.
  * @param {number} params.nonce - The mosaic nonce.
  * @param {string} params.supply - The mosaic initial supply in relative units.
  * @param {string} params.divisibility - The mosaic divisibility.
@@ -32,7 +30,6 @@ import { absoluteToRelativeAmount } from 'wallet-common-core';
  */
 export const useMosaicTransaction = ({
 	walletController,
-	senderPublicKey,
 	nonce,
 	supply,
 	divisibility,
@@ -46,7 +43,6 @@ export const useMosaicTransaction = ({
 	 */
 	const createMosaicTransaction = async () => {
 		const transactionBundle = walletController.modules.token.createTransaction({
-			senderPublicKey,
 			nonce,
 			initialSupply: supply,
 			divisibility: Number(divisibility),
@@ -68,19 +64,6 @@ export const useMosaicTransaction = ({
 	const getConfirmationPreview = transactionBundle => {
 		const { chainName, networkIdentifier, modules: { addressBook }, accounts } = walletController;
 		const walletAccounts = accounts;
-
-		const createHashLockTableData = transaction => {
-			const hashLockData = {
-				type: transaction.type,
-				description: $t('form_transfer_hash_lock_description', {
-					lockedAmount: transaction.lockedAmount,
-					duration: transaction.duration
-				}),
-				fee: transaction.fee
-			};
-
-			return objectToTableData(hashLockData);
-		};
 
 		const createMosaicCreationTableData = transaction => {
 			const [definitionTransaction, supplyChangeTransaction] = transaction.innerTransactions;
@@ -104,12 +87,7 @@ export const useMosaicTransaction = ({
 		};
 
 		return transactionBundle.transactions.map((transaction, index) => {
-			let tableData;
-
-			if (SymbolTransactionType.HASH_LOCK === transaction.type)
-				tableData = createHashLockTableData(transaction);
-			else
-				tableData = createMosaicCreationTableData(transaction);
+			const tableData = createMosaicCreationTableData(transaction);
 
 			return {
 				id: `section_${index}`,

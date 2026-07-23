@@ -433,19 +433,6 @@ describe('screens/mosaic/ModifyMosaic', () => {
 		});
 	});
 
-	describe('route params', () => {
-		it('pre-selects the creator from the senderAddress route param', async () => {
-			// Arrange:
-			setupMocks();
-
-			// Act:
-			const screenTester = await renderModifyMosaicScreen({ senderAddress: currentAccount.address });
-
-			// Assert:
-			screenTester.expectText([currentAccount.address], true);
-		});
-	});
-
 	describe('send transaction flow', () => {
 		const runSendTransactionTest = (description, config, expected) => {
 			it(description, async () => {
@@ -481,7 +468,6 @@ describe('screens/mosaic/ModifyMosaic', () => {
 				config: { newSupply: INCREASED_SUPPLY },
 				expected: {
 					transactionOptions: {
-						senderPublicKey: currentAccount.publicKey,
 						mosaicId: MOSAIC_ID,
 						divisibility: MOSAIC_DIVISIBILITY,
 						delta: INCREASE_DELTA,
@@ -494,7 +480,6 @@ describe('screens/mosaic/ModifyMosaic', () => {
 				config: { newSupply: DECREASED_SUPPLY },
 				expected: {
 					transactionOptions: {
-						senderPublicKey: currentAccount.publicKey,
 						mosaicId: MOSAIC_ID,
 						divisibility: MOSAIC_DIVISIBILITY,
 						delta: DECREASE_DELTA,

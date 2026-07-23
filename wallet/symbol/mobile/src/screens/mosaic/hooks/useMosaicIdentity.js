@@ -13,17 +13,17 @@ import { generateNonce, mosaicIdFromNonce } from 'wallet-common-symbol';
 /**
  * React hook that owns the identity of the mosaic being created. The nonce is generated once so that the derived
  * mosaic id stays stable across fee recalculation, signing and announcing, and can be shown on the screen. The mosaic
- * id depends on the creator address, so it is re-derived whenever the sender changes. Call regenerate after a create
+ * id depends on the creator address, so it is re-derived whenever the creator changes. Call regenerate after a create
  * flow completes to avoid reusing a nonce (which would collide with the just-created mosaic).
- * @param {string} [senderAddress] - The mosaic creator address. When absent, the mosaic id is null.
+ * @param {string} [creatorAddress] - The mosaic creator address. When absent, the mosaic id is null.
  * @returns {UseMosaicIdentityReturnType}
  */
-export const useMosaicIdentity = senderAddress => {
+export const useMosaicIdentity = creatorAddress => {
 	const [nonce, setNonce] = useState(generateNonce);
 
 	const mosaicId = useMemo(
-		() => (senderAddress ? mosaicIdFromNonce(senderAddress, nonce) : null),
-		[senderAddress, nonce]
+		() => (creatorAddress ? mosaicIdFromNonce(creatorAddress, nonce) : null),
+		[creatorAddress, nonce]
 	);
 
 	const regenerate = useCallback(() => setNonce(generateNonce()), []);

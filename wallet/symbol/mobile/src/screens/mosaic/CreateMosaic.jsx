@@ -65,12 +65,13 @@ const CustomLayout = values => {
 /**
  * CreateMosaic screen component. Provides the interface for creating a new mosaic (token)
  * on the Symbol network by configuring the divisibility, initial supply, duration and mosaic flags,
- * on behalf of the current account or one of its multisig accounts.
+ * on behalf of the current account.
  * @returns {React.ReactNode} CreateMosaic component.
  */
 export const CreateMosaic = () => {
 	const walletController = useWalletController();
 	const {
+		currentAccount,
 		isWalletReady,
 		isNetworkConnectionReady,
 		networkProperties,
@@ -81,12 +82,11 @@ export const CreateMosaic = () => {
 	const currentAccountInfo = walletController.currentAccountInfo || {};
 	const walletAccounts = walletController.accounts[networkIdentifier];
 
-	// Sender selection (current or multisig)
+	// Transaction sender
 	const {
 		options: senderOptions,
 		value: senderAddress,
 		changeValue: changeSenderAddress,
-		selectedAccount,
 		load: loadSenderOptions,
 		reset: resetSenderOptions
 	} = useTransactionSender(walletController);
@@ -117,12 +117,11 @@ export const CreateMosaic = () => {
 	const isFormValid = !supplyErrorMessage && !durationErrorMessage;
 
 	// Mosaic identity. The nonce is generated once so the derived mosaic id stays stable across the create flow.
-	const { nonce, mosaicId, regenerate: regenerateMosaicIdentity } = useMosaicIdentity(senderAddress);
+	const { nonce, mosaicId, regenerate: regenerateMosaicIdentity } = useMosaicIdentity(currentAccount.address);
 
 	// Transaction creation and preview
 	const { createMosaicTransaction, getConfirmationPreview } = useMosaicTransaction({
 		walletController,
-		senderPublicKey: selectedAccount?.publicKey,
 		nonce,
 		supply,
 		divisibility,
@@ -141,7 +140,7 @@ export const CreateMosaic = () => {
 	useEffect(() => {
 		if (isWalletReady && isFormValid)
 			calculateFeesSafely();
-	}, [isWalletReady, isFormValid, divisibility, supply, duration, isNeverExpiring, flags, selectedAccount?.publicKey]);
+	}, [isWalletReady, isFormValid, divisibility, supply, duration, isNeverExpiring, flags]);
 
 	// Derived state
 	const blockGenerationTargetTime = networkProperties?.blockGenerationTargetTime;
@@ -213,6 +212,7 @@ export const CreateMosaic = () => {
 								networkIdentifier={networkIdentifier}
 								walletAccounts={walletAccounts}
 								addressBook={walletController.modules.addressBook}
+								isMultisigDisabled
 								onChange={changeSenderAddress}
 							/>
 						</Stack>

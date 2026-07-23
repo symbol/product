@@ -58,7 +58,9 @@ const SCREEN_TEXT = {
 	textExpireIn: 's_assets_item_expireIn',
 
 	// Buttons
-	buttonSend: 'button_send'
+	buttonSend: 'button_send',
+	buttonRevoke: 'button_revoke',
+	buttonModify: 'button_modifyMosaic'
 };
 
 // Account Fixtures
@@ -107,6 +109,24 @@ const tokenOwnedByExternalAccount = TokenFixtureBuilder
 	.override({ supply: TOKEN_SUPPLY })
 	.build();
 
+// Tokens the creator is allowed to revoke and to change the supply of
+const createManageableToken = creator => TokenFixtureBuilder
+	.createWithToken(CHAIN_NAME, NETWORK_IDENTIFIER, 1)
+	.setId(TOKEN_ID)
+	.setAmount(TOKEN_AMOUNT)
+	.setDivisibility(TOKEN_DIVISIBILITY)
+	.setCreator(creator)
+	.setIsUnlimitedDuration(true)
+	.override({
+		supply: TOKEN_SUPPLY,
+		isRevokable: true,
+		isSupplyMutable: true
+	})
+	.build();
+
+const manageableTokenOwnedByCurrentAccount = createManageableToken(currentAccount.address);
+const manageableTokenOwnedByExternalAccount = createManageableToken(externalAccount.address);
+
 const tokenWithoutCreator = TokenFixtureBuilder
 	.createWithToken(CHAIN_NAME, NETWORK_IDENTIFIER, 1)
 	.setId(TOKEN_ID)
@@ -141,12 +161,12 @@ const createAccountInfoWithToken = token => AccountInfoFixtureBuilder
 
 // Route Props Factory
 
-const createRouteProps = (tokenId, preloadedData) => ({
+const createRouteProps = (tokenId, preloadedData, accountAddress = currentAccount.address) => ({
 	route: {
 		params: {
 			chainName: CHAIN_NAME,
 			tokenId,
-			accountAddress: currentAccount.address,
+			accountAddress,
 			preloadedData
 		}
 	}
@@ -426,6 +446,100 @@ describe('screens/assets/TokenDetails', () => {
 
 		sendButtonTests.forEach(test => {
 			runSendButtonTest(test.description, test.config, test.expected);
+		});
+	});
+
+	describe('creator actions', () => {
+		const runCreatorActionsTest = (description, config, expected) => {
+			it(description, async () => {
+				// Arrange:
+				const accountInfo = createAccountInfoWithToken(config.token);
+				mockWalletController(createWalletControllerConfig(accountInfo, networkPropertiesActive));
+
+				// Act:
+				const screenTester = new ScreenTester(
+					TokenDetails,
+					createRouteProps(TOKEN_ID, config.token, config.accountAddress)
+				);
+
+				// Assert:
+				if (expected.areActionsRendered)
+					screenTester.expectText([SCREEN_TEXT.buttonRevoke, SCREEN_TEXT.buttonModify]);
+				else
+					screenTester.notExpectText([SCREEN_TEXT.buttonRevoke, SCREEN_TEXT.buttonModify]);
+			});
+		};
+
+		const creatorActionsTests = [
+			{
+				description: 'renders the revoke and modify actions for a token created by the current account',
+				config: {
+					token: manageableTokenOwnedByCurrentAccount,
+					accountAddress: currentAccount.address
+				},
+				expected: { areActionsRendered: true }
+			},
+			{
+				// Only the current account can sign the mosaic management transactions
+				description: 'hides the revoke and modify actions when the token is viewed on behalf of another account',
+				config: {
+					token: manageableTokenOwnedByExternalAccount,
+					accountAddress: externalAccount.address
+				},
+				expected: { areActionsRendered: false }
+			},
+			{
+				description: 'hides the revoke and modify actions for a token created by another account',
+				config: {
+					token: manageableTokenOwnedByExternalAccount,
+					accountAddress: currentAccount.address
+				},
+				expected: { areActionsRendered: false }
+			}
+		];
+
+		creatorActionsTests.forEach(test => {
+			runCreatorActionsTest(test.description, test.config, test.expected);
+		});
+	});
+
+	describe('creator action navigation', () => {
+		const runNavigationTest = (description, config, expected) => {
+			it(description, async () => {
+				// Arrange:
+				const accountInfo = createAccountInfoWithToken(manageableTokenOwnedByCurrentAccount);
+				mockWalletController(createWalletControllerConfig(accountInfo, networkPropertiesActive));
+				const routerMock = mockRouter({ goToRevokeMosaic: jest.fn(), goToModifyMosaic: jest.fn() });
+
+				// Act:
+				const screenTester = new ScreenTester(
+					TokenDetails,
+					createRouteProps(TOKEN_ID, manageableTokenOwnedByCurrentAccount)
+				);
+				screenTester.pressButton(config.button);
+
+				// Assert:
+				expect(routerMock[expected.routerMethod]).toHaveBeenCalledWith({
+					params: { chainName: CHAIN_NAME, tokenId: TOKEN_ID }
+				});
+			});
+		};
+
+		const navigationTests = [
+			{
+				description: 'opens the revoke screen for the token without a pre-selected creator',
+				config: { button: SCREEN_TEXT.buttonRevoke },
+				expected: { routerMethod: 'goToRevokeMosaic' }
+			},
+			{
+				description: 'opens the modify screen for the token without a pre-selected creator',
+				config: { button: SCREEN_TEXT.buttonModify },
+				expected: { routerMethod: 'goToModifyMosaic' }
+			}
+		];
+
+		navigationTests.forEach(test => {
+			runNavigationTest(test.description, test.config, test.expected);
 		});
 	});
 });

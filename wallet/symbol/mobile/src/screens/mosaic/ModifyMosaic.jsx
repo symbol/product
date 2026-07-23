@@ -31,8 +31,7 @@ import Animated, { FadeInDown, FadeOut } from 'react-native-reanimated';
 
 /**
  * ModifyMosaic screen component. Provides the interface for changing the total supply of an existing
- * supply-mutable mosaic on the Symbol network, on behalf of its creator account or one of its multisig
- * accounts.
+ * supply-mutable mosaic on the Symbol network, on behalf of its creator account.
  * @param {object} props - Component props.
  * @param {object} props.route - React Navigation route object.
  * @param {ModifyMosaicRouteParams} props.route.params - Route parameters.
@@ -53,15 +52,14 @@ export const ModifyMosaic = props => {
 	const walletAccounts = accounts[networkIdentifier];
 	const { tokenId } = route.params;
 
-	// Sender selection (creator; current or multisig)
+	// Transaction sender
 	const {
 		options: senderOptions,
 		value: senderAddress,
 		changeValue: changeSenderAddress,
-		selectedAccount,
 		load: loadSenderOptions,
 		reset: resetSenderOptions
-	} = useTransactionSender(walletController, { initialAddress: route.params?.senderAddress });
+	} = useTransactionSender(walletController);
 
 	// Mosaic info
 	const {
@@ -109,7 +107,6 @@ export const ModifyMosaic = props => {
 	// Transaction creation and preview
 	const { createModifyMosaicTransaction, getConfirmationPreview } = useModifyMosaicTransaction({
 		walletController,
-		senderPublicKey: selectedAccount?.publicKey,
 		mosaicId: tokenId,
 		divisibility: mosaic?.divisibility,
 		delta: supplyDelta?.delta,
@@ -126,7 +123,7 @@ export const ModifyMosaic = props => {
 	useEffect(() => {
 		if (isWalletReady && isFormValid)
 			calculateFeesSafely();
-	}, [isWalletReady, isFormValid, newSupply, selectedAccount?.publicKey]);
+	}, [isWalletReady, isFormValid, newSupply]);
 
 	// Transaction workflow
 	const workflow = useStandardTransactionWorkflow({
@@ -155,8 +152,7 @@ export const ModifyMosaic = props => {
 	const isButtonDisabled = !isNetworkConnectionReady
 		|| !isFormValid
 		|| !transactionFees
-		|| isFeesLoading
-		|| !selectedAccount?.publicKey;
+		|| isFeesLoading;
 
 	return (
 		<TransactionScreenTemplate
@@ -187,6 +183,7 @@ export const ModifyMosaic = props => {
 							networkIdentifier={networkIdentifier}
 							walletAccounts={walletAccounts}
 							addressBook={walletController.modules.addressBook}
+							isMultisigDisabled
 							onChange={changeSenderAddress}
 						/>
 					</Stack>
