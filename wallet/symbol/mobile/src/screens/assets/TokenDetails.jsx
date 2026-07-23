@@ -41,7 +41,7 @@ import { isMosaicRevokable, isMosaicSupplyModifiable } from 'wallet-common-symbo
 export const TokenDetails = ({ route }) => {
 	const { chainName, tokenId, accountAddress, preloadedData } = route.params;
 	const walletController = useWalletController(chainName);
-	const { networkIdentifier, networkProperties } = walletController;
+	const { currentAccount, networkIdentifier, networkProperties } = walletController;
 
 	// Fetch data
 	const dataManager = useAsyncManager({
@@ -125,22 +125,14 @@ export const TokenDetails = ({ route }) => {
 	const isSendReceiveButtonsDisabled = isTokenExpired;
 
 	// Mosaic creator actions
-	const canRevokeMosaic = isMosaicRevokable(token, networkProperties?.chainHeight, accountAddress);
-	const canModifyMosaic = isMosaicSupplyModifiable(token, networkProperties?.chainHeight, accountAddress);
-	const openRevokeScreen = () => Router.goToRevokeMosaic({
-		params: {
-			chainName,
-			tokenId,
-			senderAddress: accountAddress
-		}
-	});
-	const openModifyScreen = () => Router.goToModifyMosaic({
-		params: {
-			chainName,
-			tokenId,
-			senderAddress: accountAddress
-		}
-	});
+	const isCurrentAccountCreator = accountAddress === currentAccount.address;
+	const canRevokeMosaic = isCurrentAccountCreator
+		&& isMosaicRevokable(token, networkProperties?.chainHeight, accountAddress);
+	const canModifyMosaic = isCurrentAccountCreator
+		&& isMosaicSupplyModifiable(token, networkProperties?.chainHeight, accountAddress);
+	const isCreatorActionsVisible = canRevokeMosaic || canModifyMosaic;
+	const openRevokeScreen = () => Router.goToRevokeMosaic({ params: { chainName, tokenId } });
+	const openModifyScreen = () => Router.goToModifyMosaic({ params: { chainName, tokenId } });
 
 	return (
 		<Screen refresh={{ onRefresh: dataManager.call, isRefreshing: dataManager.isLoading }}>
@@ -218,7 +210,7 @@ export const TokenDetails = ({ route }) => {
 								</Spacer>
 							</Card>
 						)}
-						{(canRevokeMosaic || canModifyMosaic) && (
+						{isCreatorActionsVisible && (
 							<Stack>
 								<Divider />
 								{canRevokeMosaic && (
