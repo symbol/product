@@ -148,7 +148,7 @@ export const ModifyMosaic = props => {
 	useInit(loadMosaic, isWalletReady);
 
 	// Derived state
-	const isLoading = isMosaicLoading;
+	const isLoading = !isWalletReady || isMosaicLoading;
 	const isButtonDisabled = !isNetworkConnectionReady
 		|| !isFormValid
 		|| !transactionFees
@@ -170,10 +170,6 @@ export const ModifyMosaic = props => {
 			<Spacer>
 				<Stack gap="l">
 					<Stack gap="none">
-						<StyledText type="title">{$t('screen_ModifyMosaic')}</StyledText>
-						<StyledText type="body">{$t('s_modifyMosaic_description')}</StyledText>
-					</Stack>
-					<Stack gap="none">
 						<StyledText type="title" size="s">{$t('s_mosaicCreation_sender_title')}</StyledText>
 						<SelectTransactionSender
 							value={senderAddress}
@@ -188,8 +184,11 @@ export const ModifyMosaic = props => {
 						/>
 					</Stack>
 					<Stack gap="none">
-						<StyledText type="title" size="s">{$t('s_modifyMosaic_supply_title')}</StyledText>
-						<Stack gap="s">
+						<StyledText type="title">{$t('screen_ModifyMosaic')}</StyledText>
+						<StyledText type="body">{$t('s_modifyMosaic_description')}</StyledText>
+					</Stack>
+					<Stack gap="none">
+						<Stack gap="m">
 							{!!supplyDelta && (
 								<SupplyDeltaCard
 									token={token}

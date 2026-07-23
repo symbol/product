@@ -37,7 +37,6 @@ const SCREEN_TEXT = {
 	textScreenTitle: 'screen_ModifyMosaic',
 	textDescription: 's_modifyMosaic_description',
 	textCreatorTitle: 's_mosaicCreation_sender_title',
-	textSupplyTitle: 's_modifyMosaic_supply_title',
 
 	// Supply delta summary
 	textCurrentSupplyLabel: 's_modifyMosaic_currentSupply_label',
@@ -207,14 +206,13 @@ describe('screens/mosaic/ModifyMosaic', () => {
 	});
 
 	describe('render', () => {
-		it('renders the title, description, section titles and the send button', async () => {
+		it('renders the title, description, section title and the send button', async () => {
 			// Arrange:
 			setupMocks();
 			const expectedTexts = [
 				SCREEN_TEXT.textScreenTitle,
 				SCREEN_TEXT.textDescription,
 				SCREEN_TEXT.textCreatorTitle,
-				SCREEN_TEXT.textSupplyTitle,
 				SCREEN_TEXT.textCurrentSupplyLabel,
 				SCREEN_TEXT.textDeltaLabel,
 				SCREEN_TEXT.buttonSend

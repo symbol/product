@@ -177,10 +177,6 @@ export const RevokeMosaic = props => {
 			<Spacer>
 				<Stack gap="l">
 					<Stack gap="none">
-						<StyledText type="title">{$t('screen_RevokeMosaic')}</StyledText>
-						<StyledText type="body">{$t('s_revoke_description')}</StyledText>
-					</Stack>
-					<Stack gap="none">
 						<StyledText type="title" size="s">{$t('s_mosaicCreation_sender_title')}</StyledText>
 						<SelectTransactionSender
 							value={senderAddress}
@@ -193,6 +189,10 @@ export const RevokeMosaic = props => {
 							isMultisigDisabled
 							onChange={changeSenderAddress}
 						/>
+					</Stack>
+					<Stack gap="none">
+						<StyledText type="title">{$t('screen_RevokeMosaic')}</StyledText>
+						<StyledText type="body">{$t('s_revoke_description')}</StyledText>
 					</Stack>
 					<Stack gap="none">
 						<StyledText type="title" size="s">{$t('s_send_from_title')}</StyledText>
