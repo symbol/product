@@ -6,8 +6,8 @@ export const DEFAULT_TRANSACTION_SPEED = 'medium';
 
 /** @type {MosaicFlags} */
 export const DEFAULT_MOSAIC_FLAGS = {
-	isSupplyMutable: true,
 	isTransferable: true,
+	isSupplyMutable: false,
 	isRestrictable: false,
 	isRevokable: false
 };

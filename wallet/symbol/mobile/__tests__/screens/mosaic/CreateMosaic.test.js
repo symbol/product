@@ -472,7 +472,7 @@ describe('screens/mosaic/CreateMosaic', () => {
 						initialSupply: '100',
 						divisibility: 0,
 						duration: MOSAIC_NEVER_EXPIRING_DURATION,
-						isSupplyMutable: true,
+						isSupplyMutable: false,
 						isTransferable: true,
 						isRestrictable: false,
 						isRevokable: false
@@ -493,7 +493,7 @@ describe('screens/mosaic/CreateMosaic', () => {
 						initialSupply: '500',
 						divisibility: 3,
 						duration: 1000,
-						isSupplyMutable: true,
+						isSupplyMutable: false,
 						isTransferable: true,
 						isRestrictable: true,
 						isRevokable: true
@@ -501,7 +501,7 @@ describe('screens/mosaic/CreateMosaic', () => {
 				}
 			},
 			{
-				description: 'creates and sends a limited-duration mosaic with supply mutable and transferable disabled',
+				description: 'creates and sends a limited-duration mosaic with supply mutable enabled and transferable disabled',
 				config: {
 					divisibility: '6',
 					supply: '1',
@@ -514,7 +514,7 @@ describe('screens/mosaic/CreateMosaic', () => {
 						initialSupply: '1',
 						divisibility: 6,
 						duration: 5000,
-						isSupplyMutable: false,
+						isSupplyMutable: true,
 						isTransferable: false,
 						isRestrictable: false,
 						isRevokable: false

@@ -7,16 +7,16 @@ import React from 'react';
 
 const FLAG_SECTIONS = [
 	{
-		flagName: 'isSupplyMutable',
-		titleKey: 's_mosaicCreation_supplyMutable_title',
-		descriptionKey: 's_mosaicCreation_supplyMutable_description',
-		checkboxKey: 's_mosaicCreation_supplyMutable_checkbox'
-	},
-	{
 		flagName: 'isTransferable',
 		titleKey: 's_mosaicCreation_transferable_title',
 		descriptionKey: 's_mosaicCreation_transferable_description',
 		checkboxKey: 's_mosaicCreation_transferable_checkbox'
+	},
+	{
+		flagName: 'isSupplyMutable',
+		titleKey: 's_mosaicCreation_supplyMutable_title',
+		descriptionKey: 's_mosaicCreation_supplyMutable_description',
+		checkboxKey: 's_mosaicCreation_supplyMutable_checkbox'
 	},
 	{
 		flagName: 'isRestrictable',
