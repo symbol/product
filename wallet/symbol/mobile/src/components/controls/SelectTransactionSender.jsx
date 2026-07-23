@@ -33,7 +33,7 @@ const SenderTab = {
  * SelectTransactionSender component. A control for choosing the account a transaction is sent from.
  * When the current account is a cosignatory of multisig accounts, it shows a tab selector to switch
  * between the current account and a multisig account, with a dropdown to pick the multisig account.
- * When there are no multisig accounts, it simply renders the current account.
+ * When there are no multisig accounts, or when multisig is disabled, it simply renders the current account.
  * @param {object} props - Component props.
  * @param {string} [props.label] - Label displayed above the selector.
  * @param {string} props.value - The currently selected sender address.
@@ -43,6 +43,7 @@ const SenderTab = {
  * @param {NetworkIdentifier} props.networkIdentifier - The network identifier.
  * @param {WalletAccount[]} [props.walletAccounts] - Wallet accounts for resolving account names.
  * @param {object} [props.addressBook] - Address book for resolving account names.
+ * @param {boolean} [props.isMultisigDisabled] - Whether to hide the multisig accounts, rendering only the current account.
  * @param {(address: string) => void} props.onChange - Callback when the selected sender changes.
  * @returns {React.ReactNode} SelectTransactionSender component.
  */
@@ -56,15 +57,17 @@ export const SelectTransactionSender = props => {
 		networkIdentifier,
 		walletAccounts,
 		addressBook,
+		isMultisigDisabled,
 		onChange
 	} = props;
-	const { current, multisigAccounts } = options;
+	const { current } = options;
 
 	const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
 	// Derived state
+	const multisigAccounts = isMultisigDisabled ? [] : options.multisigAccounts;
 	const hasMultisigAccounts = multisigAccounts.length > 0;
-	const isMultisigSelected = value !== current.address;
+	const isMultisigSelected = hasMultisigAccounts && value !== current.address;
 	const activeTab = isMultisigSelected ? SenderTab.MULTISIG : SenderTab.CURRENT;
 	const multisigDefaultName = $t('s_multisig_defaultAccountName');
 	const selectedAccount = isMultisigSelected
