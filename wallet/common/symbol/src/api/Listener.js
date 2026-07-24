@@ -97,6 +97,8 @@ export class Listener {
 			payload = { hash: message.data.meta.hash };
 			break;
 		case ListenerChannelName.BLOCK:
+			payload = { height: Number(message.data.block.height) };
+			break;
 		case ListenerChannelName.FINALIZED_BLOCK:
 		case ListenerChannelName.STATUS:
 		case ListenerChannelName.COSIGNATURE:
@@ -164,7 +166,7 @@ export class Listener {
 
 	/**
      * Subscribe to new blocks.
-     * @param {function(Object): void} callback - The callback function.
+     * @param {function({ height: number }): void} callback - The callback function.
      */
 	listenNewBlock(callback) {
 		this.subscribeTo(ListenerChannelName.BLOCK);

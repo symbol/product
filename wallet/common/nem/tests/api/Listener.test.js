@@ -219,10 +219,10 @@ describe('api/Listener', () => {
 				expected: { destination: unconfirmedDestination, payload: { hash: null } }
 			},
 			{
-				description: 'subscribes to new blocks and forwards the raw block payload',
+				description: 'subscribes to new blocks and maps the message to its height',
 				config: {
 					subscribe: (listener, callback) => listener.listenNewBlock(callback),
-					messageBody: { height: networkInfo.chainHeight }
+					messageBody: { height: networkInfo.chainHeight, timeStamp: 100, signature: 'SIG' }
 				},
 				expected: { destination: blockDestination, payload: { height: networkInfo.chainHeight } }
 			},

@@ -1,4 +1,4 @@
-import { NetworkConnectionStatus } from '../../src/constants';
+import { ControllerEventName, NetworkConnectionStatus } from '../../src/constants';
 import { ControllerError } from '../../src/error/ControllerError';
 import { NetworkManager } from '../../src/lib/controller/NetworkManager';
 import { networkIdentifiers } from '../fixtures/wallet';
@@ -302,6 +302,33 @@ describe('NetworkManager', () => {
 
 		chainListenerTests.forEach(test => {
 			runChainListenerTest(test.description, test.config, test.expected);
+		});
+
+		it('subscribes to new blocks and re-emits the payload as a NEW_BLOCK chain event', async () => {
+			// Arrange:
+			const accountAddress = 'TCF3372B2Y5NFO2NXI7ZEOB625YJ63J6B5R5QYQ';
+			const properties = { networkIdentifier: testNetworkIdentifier, nodeUrl: nodeUrl1 };
+			const listenerMock = {
+				open: jest.fn().mockResolvedValue(undefined),
+				close: jest.fn(),
+				listenAddedTransactions: jest.fn(),
+				listenRemovedTransactions: jest.fn(),
+				listenTransactionError: jest.fn(),
+				listenNewBlock: jest.fn()
+			};
+			mockApi.listener.createListener.mockReturnValue(listenerMock);
+			manager.init(testNetworkIdentifier, properties);
+			manager._state.networkConnectionStatus = NetworkConnectionStatus.CONNECTED;
+			manager.setListenAddress(accountAddress);
+			const expectedBlockPayload = { height: 100 };
+
+			// Act:
+			await manager.restartChainListener();
+			const [registeredBlockCallback] = listenerMock.listenNewBlock.mock.calls[0];
+			registeredBlockCallback(expectedBlockPayload);
+
+			// Assert:
+			expect(mockOnChainEvent).toHaveBeenCalledWith(ControllerEventName.NEW_BLOCK, expectedBlockPayload);
 		});
 	});
 

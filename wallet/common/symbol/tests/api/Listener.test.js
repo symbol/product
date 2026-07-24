@@ -204,12 +204,12 @@ describe('Listener', () => {
 	});
 
 	describe('listenNewBlock', () => {
-		it('subscribes and forwards raw block data', async () => {
+		it('subscribes and normalizes the block payload to its height', async () => {
 			await runChannelTest({
 				channel: 'block',
 				subscribe: (listener, cb) => listener.listenNewBlock(cb),
-				messageToEmit: { height: 123, hash: 'B0' },
-				expectedResult: { height: 123, hash: 'B0' }
+				messageToEmit: { block: { height: '123' }, meta: { hash: 'B0' } },
+				expectedResult: { height: 123 }
 			});
 		});
 	});
