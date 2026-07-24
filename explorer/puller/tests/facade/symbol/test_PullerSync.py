@@ -3,6 +3,7 @@ from unittest.mock import AsyncMock
 
 from psycopg2 import Error as PsycopgError
 from symbolchain.sc import ReceiptType, TransactionType
+from symbolchain.symbol.IdGenerator import generate_namespace_id
 from symbollightapi.model.Exceptions import NodeException
 
 from puller.facade.SymbolPuller import BLOCK_PAGE_FETCH_CONCURRENCY, MAX_PAGE_SIZE
@@ -132,12 +133,28 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		self.assertEqual([1], self._fetch_block_heights(self.puller.symbol_db))
 		self._assert_namespace_requests(connector, [NAMESPACE_ROOT_ID], [])
 
-	def test_sync_block_headers_rolls_back_all_namespace_entries_when_later_write_violates_full_name_unique_constraint(self):
+	def test_sync_block_headers_rolls_back_namespace_entries_when_later_write_conflicts_with_stale_full_name(self):
 		# Arrange:
+		first_name = 'first'
+		second_name = 'second'
+		stale_name = 'stale'
+		first_id = f'{generate_namespace_id(first_name):016X}'
+		second_id = f'{generate_namespace_id(second_name):016X}'
+		stale_id = f'{generate_namespace_id(stale_name):016X}'
 		seed_namespace(
 			self.puller.symbol_db,
-			create_namespace_item(alias={'type': 1, 'mosaicId': 'mosaic-a-old'}),
-			{NAMESPACE_ROOT_ID: 'old-a'},
+			create_namespace_item(
+				namespace_id=first_id,
+				root_id=first_id,
+				alias={'type': 1, 'mosaicId': 'mosaic-a-old'}),
+			{first_id: first_name},
+			0)
+		# Seed a stale local row that occupies the second namespace's full name,
+		# allowing valid Node namespace data to trigger a later persistence failure.
+		seed_namespace(
+			self.puller.symbol_db,
+			create_namespace_item(namespace_id=stale_id, root_id=stale_id),
+			{stale_id: second_name},
 			0)
 		before_state = fetch_namespace_state(self.puller.symbol_db.connection)
 		connector = FakeConnector(
@@ -149,24 +166,26 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 					transaction_hash='A' * 64,
 					transaction_id='namespace-a-registration',
 					type=TransactionType.NAMESPACE_REGISTRATION.value,
-					id=NAMESPACE_ROOT_ID,
-					name='shared',
+					id=first_id,
+					name=first_name,
 					registrationType=0),
 				create_node_transaction(
 					1,
 					transaction_hash='B' * 64,
 					transaction_id='namespace-b-registration',
 					type=TransactionType.NAMESPACE_REGISTRATION.value,
-					id=NAMESPACE_SUB_ID,
-					name='shared',
+					id=second_id,
+					name=second_name,
 					registrationType=0)
 			]}},
 			namespace_by_id={
-				NAMESPACE_ROOT_ID: create_namespace_item(),
-				NAMESPACE_SUB_ID: create_namespace_item(namespace_id=NAMESPACE_SUB_ID, root_id=NAMESPACE_SUB_ID)
+				first_id: create_namespace_item(
+					namespace_id=first_id,
+					root_id=first_id,
+					alias={'type': 1, 'mosaicId': 'mosaic-a-new'}),
+				second_id: create_namespace_item(namespace_id=second_id, root_id=second_id)
 			},
-			namespace_names={NAMESPACE_ROOT_ID: 'shared', NAMESPACE_SUB_ID: 'shared'})
-		# Both names are shared so the second namespace upsert violates symbol_namespaces.full_name's unique constraint.
+			namespace_names={first_id: first_name, second_id: second_name})
 
 		# Act:
 		with self.assertRaises(PsycopgError):
@@ -175,6 +194,11 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		# Assert:
 		self.assertEqual(before_state, fetch_namespace_state(self.puller.symbol_db.connection))
 		self.assertEqual([1], self._fetch_block_heights(self.puller.symbol_db))
+		self.assertIsNone(self.puller.symbol_db.get_sync_state())
+		self._assert_namespace_requests(
+			connector,
+			[first_id, second_id],
+			[{'namespaceIds': [first_id, second_id]}])
 
 	def test_sync_block_headers_converges_namespace_state_when_restarted_from_existing_blocks(self):
 		# Arrange:
