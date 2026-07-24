@@ -37,6 +37,9 @@ import {
 } from './error/NetworkError';
 import { SdkError } from './error/SdkError';
 import { WalletError } from './error/WalletError';
+// Cache
+import { RequestCache } from './lib/cache/RequestCache';
+import { createJrpcCacheEntry, createUrlCacheEntry } from './lib/cache/entry';
 // Other
 import { BridgePairManager } from './lib/bridge/BridgePairManager';
 import { SwapWorkflowManager } from './lib/bridge/SwapWorkflowManager';
@@ -74,6 +77,10 @@ export {
 	NetworkRequestError,
 	SdkError,
 	WalletError,
+
+	RequestCache,
+	createUrlCacheEntry,
+	createJrpcCacheEntry,
 
 	BridgePairManager,
 	SwapWorkflowManager,

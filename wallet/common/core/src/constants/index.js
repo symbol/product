@@ -84,6 +84,17 @@ export const MessageType = {
 	RAW: 'raw'
 };
 
+export const HttpMethod = {
+	GET: 'GET',
+	POST: 'POST',
+	PUT: 'PUT'
+};
+
+export const CacheMode = {
+	CACHE: 'cache',
+	DEDUP: 'dedup'
+};
+
 export const REQUIRED_API_METHODS = [
 	'account.fetchAccountInfo',
 	'transaction.fetchAccountTransactions',
