@@ -12,26 +12,31 @@ describe('parseSearchInput', () => {
 		expect(parsedSearch).toEqual({ type: 'address', value: address });
 	});
 
-	it('parse an Ethereum address', () => {
+	it('parse Ethereum addresses with lowercase and uppercase prefixes', () => {
 		// Arrange:
 		const address = '0x0f02eE65e510eA30006e63aAcC668428aD7A998E';
+		const uppercasePrefixAddress = address.replace('0x', '0X');
 
 		// Act:
 		const parsedSearch = parseSearchInput(address);
+		const uppercasePrefixParsedSearch = parseSearchInput(uppercasePrefixAddress);
 
 		// Assert:
 		expect(parsedSearch).toEqual({ type: 'address', value: address });
+		expect(uppercasePrefixParsedSearch).toEqual({ type: 'address', value: uppercasePrefixAddress });
 	});
 
-	it('strips the Ethereum prefix from a transaction hash', () => {
+	it('strips lowercase and uppercase Ethereum prefixes from a transaction hash', () => {
 		// Arrange:
 		const hash = 'a'.repeat(64);
 
 		// Act:
 		const parsedSearch = parseSearchInput(`0x${hash}`);
+		const uppercasePrefixParsedSearch = parseSearchInput(`0X${hash}`);
 
 		// Assert:
 		expect(parsedSearch).toEqual({ type: 'hash', value: hash.toUpperCase() });
+		expect(uppercasePrefixParsedSearch).toEqual({ type: 'hash', value: hash.toUpperCase() });
 	});
 
 	it('accepts an empty filter and rejects invalid text', () => {

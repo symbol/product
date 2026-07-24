@@ -1,5 +1,5 @@
-const TRANSACTION_HASH_PATTERN = /^(?:0x)?[0-9a-fA-F]{64}$/;
-const ETHEREUM_ADDRESS_PATTERN = /^0x[0-9a-fA-F]{40}$/;
+const TRANSACTION_HASH_PATTERN = /^(?:0[xX])?[0-9a-fA-F]{64}$/;
+const ETHEREUM_ADDRESS_PATTERN = /^0[xX][0-9a-fA-F]{40}$/;
 const SYMBOL_ADDRESS_PATTERN = /^[A-Z2-7]{39}$/;
 
 /**
