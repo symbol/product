@@ -75,7 +75,8 @@ const renderTable = ({
 	return {
 		...result,
 		onSortChange,
-		table: screen.getByRole('table')
+		table: screen.getByRole('table'),
+		mobileCard: screen.getByRole('article')
 	};
 };
 
@@ -179,10 +180,9 @@ describe('ReportTable', () => {
 
 	it('renders and formats request mobile card fields', () => {
 		// Arrange:
-		renderTable();
+		const { mobileCard } = renderTable();
 
 		// Act:
-		const mobileCard = screen.getByRole('article');
 		const cardView = within(mobileCard);
 
 		// Assert:
@@ -203,13 +203,12 @@ describe('ReportTable', () => {
 
 	it('renders and formats errors mobile card fields', () => {
 		// Arrange:
-		renderTable({
+		const { mobileCard } = renderTable({
 			rows: [ERROR_ROW],
 			tab: ERROR_TAB
 		});
 
 		// Act:
-		const mobileCard = screen.getByRole('article');
 		const cardView = within(mobileCard);
 
 		// Assert:
@@ -221,5 +220,54 @@ describe('ReportTable', () => {
 		expect(cardView.getByText('CCCCCCCC…CCCCCC')).toHaveAttribute('title', ERROR_ROW.requestTransactionHash);
 		expect(cardView.getByText('1970-01-01 00:00:05 UTC')).toBeInTheDocument();
 		expect(cardView.getByText('Required message is missing')).toBeInTheDocument();
+	});
+
+	it('renders unknown payout status', () => {
+		// Arrange:
+		const row = {
+			...REQUEST_ROW,
+			payoutStatus: 99
+		};
+
+		// Act:
+		renderTable({ rows: [row] });
+
+		// Assert:
+		expect(screen.getAllByText('Unknown')).toHaveLength(2);
+	});
+
+	it('renders values without links when explorer URLs are unavailable', () => {
+		// Arrange:
+		const configuration = {
+			nativeNetwork: { blockchain: 'symbol' },
+			wrappedNetwork: { blockchain: 'ethereum' }
+		};
+		const { table } = renderTable({ configuration });
+
+		// Act:
+		const tableView = within(table);
+		const senderValue = tableView.getByTitle(REQUEST_ROW.senderAddress);
+		const requestValue = tableView.getByTitle(REQUEST_ROW.requestTransactionHash);
+
+		// Assert:
+		expect(senderValue).not.toHaveAttribute('href');
+		expect(requestValue).not.toHaveAttribute('href');
+	});
+
+	it('renders a placeholder when an error message is unavailable', () => {
+		// Arrange:
+		const row = {
+			...ERROR_ROW,
+			errorMessage: null
+		};
+
+		// Act:
+		renderTable({
+			rows: [row],
+			tab: ERROR_TAB
+		});
+
+		// Assert:
+		expect(screen.getAllByText('—')).toHaveLength(2);
 	});
 });
