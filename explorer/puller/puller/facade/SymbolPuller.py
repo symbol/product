@@ -686,7 +686,7 @@ class SymbolPuller:
 		return list(dirty_namespace_ids)
 
 	def _expand_dirty_namespace_ids(self, direct_namespace_ids):
-		"""Adds known descendants of directly dirty roots in stable order."""
+		"""Keeps direct dirty ids in first-encounter order, then appends known descendants of dirty roots."""
 
 		descendant_ids_by_root = self.symbol_db.get_namespace_ids_by_root_ids(direct_namespace_ids)
 		namespace_ids = dict.fromkeys(direct_namespace_ids)

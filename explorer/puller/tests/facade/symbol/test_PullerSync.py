@@ -117,7 +117,12 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 						name='root',
 						registrationType=0)]
 				}
-			})
+			},
+			namespace_by_id={NAMESPACE_ROOT_ID: {
+				'code': 'ResourceNotFound',
+				'message': f'no resource exists with id {NAMESPACE_ROOT_ID}'
+			}}
+		)
 
 		# Act:
 		self._sync_with_connector(connector)
@@ -127,7 +132,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		self.assertEqual([1], self._fetch_block_heights(self.puller.symbol_db))
 		self._assert_namespace_requests(connector, [NAMESPACE_ROOT_ID], [])
 
-	def test_sync_block_headers_rolls_back_all_namespace_entries_when_later_namespace_write_fails(self):
+	def test_sync_block_headers_rolls_back_all_namespace_entries_when_later_write_violates_full_name_unique_constraint(self):
 		# Arrange:
 		seed_namespace(
 			self.puller.symbol_db,
@@ -161,6 +166,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 				NAMESPACE_SUB_ID: create_namespace_item(namespace_id=NAMESPACE_SUB_ID, root_id=NAMESPACE_SUB_ID)
 			},
 			namespace_names={NAMESPACE_ROOT_ID: 'shared', NAMESPACE_SUB_ID: 'shared'})
+		# Both names are shared so the second namespace upsert violates symbol_namespaces.full_name's unique constraint.
 
 		# Act:
 		with self.assertRaises(PsycopgError):
@@ -174,6 +180,12 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		# Arrange:
 		connector = self._create_namespace_batch_connector()
 		self._sync_with_connector(connector)
+		first_sync_namespace_paths = [
+			path for path in connector.paths if path.startswith('namespaces/') and path != 'namespaces/names'
+		]
+		first_sync_names_payloads = [
+			payload for path, payload in connector.post_requests if 'namespaces/names' == path
+		]
 		first_namespace_state = fetch_namespace_state(self.puller.symbol_db.connection)
 		cursor = self.puller.symbol_db.connection.cursor()
 		cursor.execute('DELETE FROM symbol_sync_state')
@@ -181,13 +193,20 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 
 		# Act:
 		self._sync_with_connector(connector)
+		second_sync_namespace_paths = [
+			path for path in connector.paths if path.startswith('namespaces/') and path != 'namespaces/names'
+		][len(first_sync_namespace_paths):]
+		second_sync_names_payloads = [
+			payload for path, payload in connector.post_requests if 'namespaces/names' == path
+		][len(first_sync_names_payloads):]
 
 		# Assert:
 		self.assertEqual(first_namespace_state, fetch_namespace_state(self.puller.symbol_db.connection))
-		self._assert_namespace_requests(
-			connector,
-			[NAMESPACE_ROOT_ID, NAMESPACE_ROOT_ID],
-			[{'namespaceIds': [NAMESPACE_ROOT_ID]}, {'namespaceIds': [NAMESPACE_ROOT_ID]}])
+		# The two identical requests correspond to the initial sync and the resync after sync state deletion.
+		self.assertEqual([f'namespaces/{NAMESPACE_ROOT_ID}'], first_sync_namespace_paths)
+		self.assertEqual([f'namespaces/{NAMESPACE_ROOT_ID}'], second_sync_namespace_paths)
+		self.assertEqual([{'namespaceIds': [NAMESPACE_ROOT_ID]}], first_sync_names_payloads)
+		self.assertEqual([{'namespaceIds': [NAMESPACE_ROOT_ID]}], second_sync_names_payloads)
 
 	def test_sync_block_headers_does_not_write_batch_state_when_namespace_fetch_fails(self):
 		# Arrange:
@@ -254,7 +273,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 
 	def test_sync_block_headers_collects_all_namespace_dirty_sources_in_first_encounter_order(self):
 		# Arrange:
-		namespace_ids = [f'{index:016X}' for index in range(1, 9)]
+		namespace_ids = [f'{index:016X}' for index in (8, 2, 7, 1, 6, 3, 5, 4)]
 		transactions = [
 			create_node_transaction(
 				1,
@@ -316,6 +335,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 				{'id': NAMESPACE_SUB_ID, 'name': 'sub', 'parentId': NAMESPACE_ROOT_ID},
 				{'id': NAMESPACE_ROOT_ID, 'name': 'root'}
 			])
+		# Only the child is dirty; its root name comes from the ancestor entry returned by POST /namespaces/names.
 
 		# Act:
 		self._sync_with_connector(connector)

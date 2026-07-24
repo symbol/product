@@ -362,7 +362,7 @@ class SymbolPullerNamespacesTest(SymbolPullerTestBase):
 			NAMESPACE_ROOT_ID: create_namespace_item(alias={'type': 0}, end_height='50'),
 			NAMESPACE_SUB_ID: create_namespace_item(
 				namespace_id=NAMESPACE_SUB_ID, root_id=NAMESPACE_ROOT_ID, parent_id=NAMESPACE_ROOT_ID,
-				level_ids=[NAMESPACE_ROOT_ID, NAMESPACE_SUB_ID], alias={'type': 0}, end_height='50'),
+				level_ids=[NAMESPACE_ROOT_ID, NAMESPACE_SUB_ID], alias={'type': 1, 'mosaicId': NATIVE_MOSAIC_ID}, end_height='50'),
 			NAMESPACE_SUB_SUB_ID: create_namespace_item(
 				namespace_id=NAMESPACE_SUB_SUB_ID, root_id=NAMESPACE_ROOT_ID, parent_id=NAMESPACE_SUB_ID,
 				level_ids=[NAMESPACE_ROOT_ID, NAMESPACE_SUB_ID, NAMESPACE_SUB_SUB_ID], alias={'type': 0}, end_height='50')
@@ -398,10 +398,12 @@ class SymbolPullerNamespacesTest(SymbolPullerTestBase):
 					'none', None, None, 50),
 				BENEFICIARY_ADDRESS.lower(), 1, renewed_items[NAMESPACE_SUB_SUB_ID], renewal_height),
 			self._expected_namespace_row(
-				(NAMESPACE_SUB_ID, NAMESPACE_ROOT_ID, NAMESPACE_ROOT_ID, 'child', 'root.child', 2, 'child', 'none', None, None, 50),
+				(NAMESPACE_SUB_ID, NAMESPACE_ROOT_ID, NAMESPACE_ROOT_ID, 'child', 'root.child', 2, 'child', 'mosaic',
+					NATIVE_MOSAIC_ID, None, 50),
 				BENEFICIARY_ADDRESS.lower(), 1, renewed_items[NAMESPACE_SUB_ID], renewal_height)
 		], namespace_rows)
 		self.assertEqual([
+			('mosaic', NATIVE_MOSAIC_ID, 'root.child', renewal_height),
 			('namespace', NAMESPACE_ROOT_ID, 'root', renewal_height),
 			('namespace', self.COMPARISON_NAMESPACE_ID, 'other', expiry_height - 1),
 			('namespace', NAMESPACE_SUB_SUB_ID, 'root.child.grandchild', renewal_height),
@@ -414,7 +416,7 @@ class SymbolPullerNamespacesTest(SymbolPullerTestBase):
 			[{'namespaceIds': [NAMESPACE_ROOT_ID, NAMESPACE_SUB_ID, NAMESPACE_SUB_SUB_ID]}])
 		self._assert_namespace_sync_requests(connector, renewal_height, renewal_height)
 
-	def test_sync_block_headers_fetches_root_and_known_descendants_once_when_child_is_directly_dirty(self):
+	def test_sync_block_headers_fetches_each_known_tree_namespace_once_when_root_and_child_are_directly_dirty(self):
 		# Arrange:
 		root_item = create_namespace_item()
 		child_item = create_namespace_item(
@@ -434,7 +436,7 @@ class SymbolPullerNamespacesTest(SymbolPullerTestBase):
 				create_node_transaction(
 					1,
 					transaction_hash='A' * 64,
-					transaction_id='root-renewal',
+					transaction_id='root-registration',
 					type=TransactionType.NAMESPACE_REGISTRATION.value,
 					id=NAMESPACE_ROOT_ID),
 				create_node_transaction(
@@ -486,7 +488,7 @@ class SymbolPullerNamespacesTest(SymbolPullerTestBase):
 				create_node_transaction(
 					1,
 					transaction_hash='B' * 64,
-					transaction_id='root-renewal',
+					transaction_id='root-registration',
 					type=TransactionType.NAMESPACE_REGISTRATION.value,
 					id=NAMESPACE_ROOT_ID)
 			],
@@ -500,21 +502,6 @@ class SymbolPullerNamespacesTest(SymbolPullerTestBase):
 		self._assert_namespace_requests(
 			connector, [NAMESPACE_SUB_ID, NAMESPACE_ROOT_ID, NAMESPACE_SUB_SUB_ID],
 			[{'namespaceIds': [NAMESPACE_ROOT_ID, NAMESPACE_SUB_ID, NAMESPACE_SUB_SUB_ID]}])
-		namespace_rows, alias_rows = fetch_namespace_state(self.puller.symbol_db.connection)
-		self.assertEqual([
-			(NAMESPACE_ROOT_ID, None, NAMESPACE_ROOT_ID, 'root', 'root', 1, 'root',
-				BENEFICIARY_ADDRESS.lower(), 1, None, 'none', None, None, root_item, 1),
-			(NAMESPACE_SUB_SUB_ID, NAMESPACE_SUB_ID, NAMESPACE_ROOT_ID, 'grandchild', 'root.child.grandchild', 3, 'child',
-				BENEFICIARY_ADDRESS.lower(), 1, None, 'none', None, None, grandchild_item, 1),
-			(NAMESPACE_SUB_ID, NAMESPACE_ROOT_ID, NAMESPACE_ROOT_ID, 'child', 'root.child', 2, 'child',
-				BENEFICIARY_ADDRESS.lower(), 1, None, 'mosaic', NATIVE_MOSAIC_ID, None, child_item, 1)
-		], namespace_rows)
-		self.assertEqual([
-			('mosaic', NATIVE_MOSAIC_ID, 'root.child', 1),
-			('namespace', NAMESPACE_ROOT_ID, 'root', 1),
-			('namespace', NAMESPACE_SUB_SUB_ID, 'root.child.grandchild', 1),
-			('namespace', NAMESPACE_SUB_ID, 'root.child', 1)
-		], alias_rows)
 		self._assert_namespace_sync_requests(connector, 1, 1)
 
 	def test_sync_block_headers_does_not_expand_parent_or_siblings_when_child_is_directly_dirty(self):
@@ -598,6 +585,6 @@ class SymbolPullerNamespacesTest(SymbolPullerTestBase):
 		# Assert:
 		self.assertEqual(before_state, self._fetch_blocks_sync_accounts_and_namespaces_state())
 		self.assertEqual([
-			'namespaces/A95F1F8A96159516',
-			'namespaces/E74B99BA41F4AFEE'
+			f'namespaces/{NAMESPACE_ROOT_ID}',
+			f'namespaces/{NAMESPACE_SUB_ID}'
 		], [path for path in connector.paths if path.startswith('namespaces/') and path != 'namespaces/names'])

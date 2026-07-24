@@ -14,7 +14,13 @@ from symbolchain.symbol.Network import Network
 from puller.db.SymbolDatabase import SymbolDatabase
 from puller.model.symbol.Account import create_account_row
 from tests.facade.symbol.puller_test_utils import NATIVE_MOSAIC_ID, create_account_item
-from tests.test.SymbolNamespaceTestUtils import fetch_namespace_state
+from tests.test.SymbolNamespaceTestUtils import (
+	NAMESPACE_ROOT_ID,
+	NAMESPACE_SUB_ID,
+	NAMESPACE_SUB_SUB_ID,
+	create_expected_root_namespace_row,
+	fetch_namespace_state
+)
 from tests.test.SymbolTestConstants import RECIPIENT_ADDRESS
 
 from ..test.SymbolTransactionTestUtils import create_transaction_entry
@@ -138,26 +144,23 @@ def _insert_account_refresh_snapshot_rows(database, refresh_entry):
 	database.upsert_account_refresh_page([refresh_entry], last_scanned_page=1)
 
 
-def _create_namespace_row(namespace_id='A95F1F8A96159516', full_name='root', observed_height=10, **overrides):
-	row = {
-		'namespace_id': namespace_id,
-		'parent_id': None,
-		'root_id': namespace_id,
-		'name': full_name.rsplit('.', maxsplit=1)[-1],
+def _create_namespace_row(namespace_id=NAMESPACE_ROOT_ID, full_name='root', observed_height=10, **overrides):
+	name = overrides.pop('name', full_name.rsplit('.', maxsplit=1)[-1])
+	owner_address = overrides.pop('owner_address', bytes.fromhex(ADDRESS1))
+	row_overrides = {
 		'full_name': full_name,
-		'depth': 1,
-		'registration_type': 'root',
-		'owner_address': bytes.fromhex(ADDRESS1),
-		'start_height': 1,
-		'end_height': None,
 		'alias_type': 'mosaic',
-		'alias_mosaic_id': '72C0212E67A08BCE',
-		'alias_address': None,
-		'raw_payload': {'namespace': {'level0': namespace_id}},
-		'updated_at_height': observed_height
+		'alias_mosaic_id': '72C0212E67A08BCE'
 	}
-	row.update(overrides)
-	return row
+	row_overrides.update(overrides)
+
+	return create_expected_root_namespace_row(
+		namespace_id,
+		name,
+		owner_address.hex(),
+		{'namespace': {'level0': namespace_id}},
+		observed_height,
+		**row_overrides)
 
 
 def _create_alias_name_rows(namespace_row):
@@ -359,15 +362,15 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			FROM symbol_namespaces
 			''')
 		self.assertEqual([(
-			'A95F1F8A96159516', None, 'A95F1F8A96159516', 'root', 'root', 1, 'root',
+			NAMESPACE_ROOT_ID, None, NAMESPACE_ROOT_ID, 'root', 'root', 1, 'root',
 			ADDRESS1.lower(), 1, None, 'mosaic', '72C0212E67A08BCE', None,
-			{'namespace': {'level0': 'A95F1F8A96159516'}}, 10
+			{'namespace': {'level0': NAMESPACE_ROOT_ID}}, 10
 		)], cursor.fetchall())
 		cursor.execute(
 			'SELECT artifact_type, artifact_id, name, updated_at_height FROM symbol_alias_names ORDER BY artifact_type')
 		self.assertEqual([
 			('mosaic', '72C0212E67A08BCE', 'root', 10),
-			('namespace', 'A95F1F8A96159516', 'root', 10)
+			('namespace', NAMESPACE_ROOT_ID, 'root', 10)
 		], cursor.fetchall())
 
 	def test_upsert_namespace_rolls_back_namespace_and_alias_changes_when_alias_insert_fails(self):
@@ -400,12 +403,12 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		# Assert:
 		self.assertEqual(
 			([
-				('A95F1F8A96159516', None, 'A95F1F8A96159516', 'root', 'root', 1, 'root',
+				(NAMESPACE_ROOT_ID, None, NAMESPACE_ROOT_ID, 'root', 'root', 1, 'root',
 					ADDRESS1.lower(), 1, None, 'mosaic', 'mosaic-original', None,
 					{'namespace': {'state': 'original'}}, 10)
 			], [
 				('mosaic', 'mosaic-original', 'root', 10),
-				('namespace', 'A95F1F8A96159516', 'root', 10),
+				('namespace', NAMESPACE_ROOT_ID, 'root', 10),
 				('account', 'account-original', 'root', 10)
 			]),
 			fetch_namespace_state(database.connection))
@@ -425,7 +428,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			alias_mosaic_id='mosaic-b-old',
 			raw_payload={'namespace': {'state': 'b-before'}})
 		database.upsert_namespace(namespace_a_before, [
-			{'artifact_type': 'namespace', 'artifact_id': 'A95F1F8A96159516', 'name': 'a', 'updated_at_height': 1},
+			{'artifact_type': 'namespace', 'artifact_id': NAMESPACE_ROOT_ID, 'name': 'a', 'updated_at_height': 1},
 			{'artifact_type': 'mosaic', 'artifact_id': 'mosaic-a-old', 'name': 'a', 'updated_at_height': 1},
 			{'artifact_type': 'account', 'artifact_id': 'account-a-old', 'name': 'a', 'updated_at_height': 1}
 		])
@@ -435,7 +438,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		])
 		namespace_a_after = _create_namespace_row(
 			parent_id='B95F1F8A96159516',
-			root_id='C74B99BA41F4AFEE',
+			root_id=NAMESPACE_SUB_SUB_ID,
 			name='a',
 			full_name='a',
 			depth=2,
@@ -453,7 +456,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			alias_mosaic_id='mosaic-b-new',
 			raw_payload={'namespace': {'state': 'b-after'}})
 		namespace_a_after_alias_rows = [
-			{'artifact_type': 'namespace', 'artifact_id': 'A95F1F8A96159516', 'name': 'a', 'updated_at_height': 2},
+			{'artifact_type': 'namespace', 'artifact_id': NAMESPACE_ROOT_ID, 'name': 'a', 'updated_at_height': 2},
 			{'artifact_type': 'mosaic', 'artifact_id': 'mosaic-a-new', 'name': 'a', 'updated_at_height': 2}
 		]
 		namespace_b_after_alias_rows = [
@@ -463,7 +466,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 
 		# Act:
 		database.apply_namespace_entries([
-			{'namespace_id': 'A95F1F8A96159516'},
+			{'namespace_id': NAMESPACE_ROOT_ID},
 			{'row': namespace_a_after, 'alias_rows': namespace_a_after_alias_rows},
 			{'row': namespace_b_after, 'alias_rows': namespace_b_after_alias_rows},
 			{'namespace_id': 'B95F1F8A96159516'}
@@ -471,12 +474,12 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 
 		# Assert:
 		self.assertEqual(([
-			('A95F1F8A96159516', 'B95F1F8A96159516', 'C74B99BA41F4AFEE', 'a', 'a', 2, 'child',
+			(NAMESPACE_ROOT_ID, 'B95F1F8A96159516', NAMESPACE_SUB_SUB_ID, 'a', 'a', 2, 'child',
 				ADDRESS2.lower(), 7, 100, 'mosaic', 'mosaic-a-new', None,
 				{'namespace': {'state': 'a-after'}}, 2)
 		], [
 			('mosaic', 'mosaic-a-new', 'a', 2),
-			('namespace', 'A95F1F8A96159516', 'a', 2)
+			('namespace', NAMESPACE_ROOT_ID, 'a', 2)
 		]), fetch_namespace_state(database.connection))
 
 	def test_apply_namespace_entries_accepts_empty_entries(self):
@@ -504,7 +507,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			end_height=100,
 			raw_payload={'namespace': {'state': 'updated'}},
 			observed_height=2)
-		invalid_row = _create_namespace_row('E74B99BA41F4AFEE', 'invalid', 2)
+		invalid_row = _create_namespace_row(NAMESPACE_SUB_ID, 'invalid', 2)
 
 		# Act:
 		with self.assertRaises(PsycopgError):
@@ -522,13 +525,13 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		# Assert:
 		self.assertEqual(original_state, fetch_namespace_state(database.connection))
 
-	def test_upsert_namespace_updates_every_non_key_column_while_retaining_namespace_key(self):
+	def test_upsert_namespace_updates_every_non_key_column_while_retaining_namespace_id(self):
 		# Arrange:
 		database = self._create_database()
 		database.upsert_namespace(_create_namespace_row(), _create_alias_name_rows(_create_namespace_row()))
 		updated_row = _create_namespace_row(
-			parent_id='A95F1F8A96159516',
-			root_id='E74B99BA41F4AFEE',
+			parent_id=NAMESPACE_ROOT_ID,
+			root_id=NAMESPACE_SUB_ID,
 			name='child',
 			full_name='root.child',
 			depth=2,
@@ -539,7 +542,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			alias_type='address',
 			alias_mosaic_id=None,
 			alias_address=bytes.fromhex(ADDRESS3),
-			raw_payload={'namespace': {'level0': 'E74B99BA41F4AFEE', 'level1': 'A95F1F8A96159516'}},
+			raw_payload={'namespace': {'level0': NAMESPACE_SUB_ID, 'level1': NAMESPACE_ROOT_ID}},
 			updated_at_height=20)
 		updated_alias_rows = [{
 			'artifact_type': 'namespace',
@@ -561,9 +564,9 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			FROM symbol_namespaces
 			''')
 		self.assertEqual([(
-			'A95F1F8A96159516', 'A95F1F8A96159516', 'E74B99BA41F4AFEE', 'child', 'root.child', 2, 'child',
+			NAMESPACE_ROOT_ID, NAMESPACE_ROOT_ID, NAMESPACE_SUB_ID, 'child', 'root.child', 2, 'child',
 			ADDRESS2.lower(), 7, 100, 'address', None, ADDRESS3.lower(),
-			{'namespace': {'level0': 'E74B99BA41F4AFEE', 'level1': 'A95F1F8A96159516'}}, 20
+			{'namespace': {'level0': NAMESPACE_SUB_ID, 'level1': NAMESPACE_ROOT_ID}}, 20
 		)], cursor.fetchall())
 
 	def test_upsert_namespace_replaces_stale_mosaic_and_account_alias_rows(self):
@@ -575,7 +578,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			{'artifact_type': 'mosaic', 'artifact_id': 'mosaic-a', 'name': original_row['full_name'], 'updated_at_height': 10},
 			{'artifact_type': 'account', 'artifact_id': 'account-a', 'name': original_row['full_name'], 'updated_at_height': 10}
 		])
-		other_row = _create_namespace_row('E74B99BA41F4AFEE', 'other')
+		other_row = _create_namespace_row(NAMESPACE_SUB_ID, 'other')
 		database.upsert_namespace(other_row, _create_alias_name_rows(other_row))
 		updated_row = _create_namespace_row(alias_mosaic_id='mosaic-b', updated_at_height=20)
 
@@ -591,16 +594,16 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			'SELECT artifact_type, artifact_id, name, updated_at_height FROM symbol_alias_names ORDER BY name, artifact_type, artifact_id')
 		self.assertEqual([
 			('mosaic', '72C0212E67A08BCE', 'other', 10),
-			('namespace', 'E74B99BA41F4AFEE', 'other', 10),
+			('namespace', NAMESPACE_SUB_ID, 'other', 10),
 			('mosaic', 'mosaic-b', 'root', 20),
-			('namespace', 'A95F1F8A96159516', 'root', 20)
+			('namespace', NAMESPACE_ROOT_ID, 'root', 20)
 		], cursor.fetchall())
 
 	def test_delete_namespace_removes_only_its_derived_alias_rows(self):
 		# Arrange:
 		database = self._create_database()
 		deleted_row = _create_namespace_row()
-		kept_row = _create_namespace_row('E74B99BA41F4AFEE', 'other')
+		kept_row = _create_namespace_row(NAMESPACE_SUB_ID, 'other')
 		database.upsert_namespace(deleted_row, _create_alias_name_rows(deleted_row))
 		database.upsert_namespace(kept_row, _create_alias_name_rows(kept_row))
 
@@ -610,11 +613,11 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		# Assert:
 		cursor = database.connection.cursor()
 		cursor.execute('SELECT namespace_id FROM symbol_namespaces ORDER BY namespace_id')
-		self.assertEqual([('E74B99BA41F4AFEE',)], cursor.fetchall())
+		self.assertEqual([(NAMESPACE_SUB_ID,)], cursor.fetchall())
 		cursor.execute('SELECT artifact_type, artifact_id, name FROM symbol_alias_names ORDER BY artifact_type')
 		self.assertEqual([
 			('mosaic', '72C0212E67A08BCE', 'other'),
-			('namespace', 'E74B99BA41F4AFEE', 'other')
+			('namespace', NAMESPACE_SUB_ID, 'other')
 		], cursor.fetchall())
 
 	def test_delete_namespace_is_noop_when_namespace_id_is_missing(self):
@@ -629,11 +632,11 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		# Assert:
 		cursor = database.connection.cursor()
 		cursor.execute('SELECT namespace_id, full_name FROM symbol_namespaces')
-		self.assertEqual([('A95F1F8A96159516', 'root')], cursor.fetchall())
+		self.assertEqual([(NAMESPACE_ROOT_ID, 'root')], cursor.fetchall())
 		cursor.execute('SELECT artifact_type, artifact_id, name FROM symbol_alias_names ORDER BY artifact_type')
 		self.assertEqual([
 			('mosaic', '72C0212E67A08BCE', 'root'),
-			('namespace', 'A95F1F8A96159516', 'root')
+			('namespace', NAMESPACE_ROOT_ID, 'root')
 		], cursor.fetchall())
 
 	def test_get_namespace_ids_updated_from_height_returns_only_matching_ids_sorted_by_namespace_id(self):
@@ -641,8 +644,8 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		database = self._create_database()
 		for namespace_id, observed_height in [
 			('B95F1F8A96159516', 4),
-			('A95F1F8A96159516', 5),
-			('E74B99BA41F4AFEE', 3)
+			(NAMESPACE_ROOT_ID, 5),
+			(NAMESPACE_SUB_ID, 3)
 		]:
 			row = _create_namespace_row(namespace_id, namespace_id, observed_height)
 			database.upsert_namespace(row, _create_alias_name_rows(row))
@@ -651,15 +654,15 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		namespace_ids = database.get_namespace_ids_updated_from_height(4)
 
 		# Assert:
-		self.assertEqual(['A95F1F8A96159516', 'B95F1F8A96159516'], namespace_ids)
+		self.assertEqual([NAMESPACE_ROOT_ID, 'B95F1F8A96159516'], namespace_ids)
 
 	def test_get_namespace_ids_by_root_ids_returns_only_depth_ordered_descendants_for_requested_roots(self):
 		# Arrange:
 		database = self._create_database()
-		root_id = 'A95F1F8A96159516'
-		first_child_id = 'E74B99BA41F4AFEE'
+		root_id = NAMESPACE_ROOT_ID
+		first_child_id = NAMESPACE_SUB_ID
 		second_child_id = 'F74B99BA41F4AFEE'
-		grandchild_id = 'C74B99BA41F4AFEE'
+		grandchild_id = NAMESPACE_SUB_SUB_ID
 		other_root_id = 'B95F1F8A96159516'
 		other_child_id = 'G74B99BA41F4AFEE'
 		unrequested_root_id = 'D95F1F8A96159516'
@@ -725,8 +728,8 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 	def test_get_namespace_ids_by_root_ids_returns_empty_for_child_id(self):
 		# Arrange:
 		database = self._create_database()
-		root_id = 'A95F1F8A96159516'
-		child_id = 'E74B99BA41F4AFEE'
+		root_id = NAMESPACE_ROOT_ID
+		child_id = NAMESPACE_SUB_ID
 		root_row = _create_namespace_row(root_id, 'root', 10)
 		child_row = _create_namespace_row(
 			child_id,
@@ -761,11 +764,11 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		# Assert:
 		cursor = database.connection.cursor()
 		cursor.execute('SELECT namespace_id, full_name, updated_at_height FROM symbol_namespaces')
-		self.assertEqual([('A95F1F8A96159516', 'root', 2)], cursor.fetchall())
+		self.assertEqual([(NAMESPACE_ROOT_ID, 'root', 2)], cursor.fetchall())
 		cursor.execute('SELECT artifact_type, artifact_id, name, updated_at_height FROM symbol_alias_names ORDER BY artifact_type')
 		self.assertEqual([
 			('mosaic', '72C0212E67A08BCE', 'root', 2),
-			('namespace', 'A95F1F8A96159516', 'root', 2)
+			('namespace', NAMESPACE_ROOT_ID, 'root', 2)
 		], cursor.fetchall())
 
 	def test_repair_rollback_from_height_applies_namespace_upserts_and_deletes(self):
@@ -802,14 +805,14 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			ORDER BY namespace_id
 			''')
 		self.assertEqual([(
-			'A95F1F8A96159516', None, 'A95F1F8A96159516', 'root', 'root', 1, 'root',
+			NAMESPACE_ROOT_ID, None, NAMESPACE_ROOT_ID, 'root', 'root', 1, 'root',
 			ADDRESS1.lower(), 1, 100, 'none', None, None,
-			{'namespace': {'level0': 'A95F1F8A96159516'}}, 1
+			{'namespace': {'level0': NAMESPACE_ROOT_ID}}, 1
 		)], cursor.fetchall())
 		cursor.execute(
 			'SELECT artifact_type, artifact_id, name, updated_at_height FROM symbol_alias_names ORDER BY artifact_type, artifact_id, name')
 		self.assertEqual([
-			('namespace', 'A95F1F8A96159516', 'root', 1)
+			('namespace', NAMESPACE_ROOT_ID, 'root', 1)
 		], cursor.fetchall())
 		cursor.execute('SELECT height FROM symbol_blocks ORDER BY height')
 		self.assertEqual([(1,)], cursor.fetchall())
@@ -831,7 +834,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			end_height=100,
 			raw_payload={'namespace': {'state': 'updated'}},
 			observed_height=1)
-		invalid_row = _create_namespace_row('E74B99BA41F4AFEE', 'invalid', 1)
+		invalid_row = _create_namespace_row(NAMESPACE_SUB_ID, 'invalid', 1)
 
 		# Act:
 		with self.assertRaises(PsycopgError):
