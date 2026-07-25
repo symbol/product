@@ -3,7 +3,14 @@ from unittest import TestCase
 
 from symbolchain.sc import ReceiptType
 
-from puller.model.symbol.Receipt import INFLATION_RECEIPT_TYPE, RECEIPT_TYPE_GROUPS, RECEIPT_TYPE_LABELS, create_receipt_rows
+from puller.model.symbol.Receipt import (
+	INFLATION_RECEIPT_TYPE,
+	NAMESPACE_DELETED_RECEIPT_TYPE,
+	NAMESPACE_EXPIRED_RECEIPT_TYPE,
+	RECEIPT_TYPE_GROUPS,
+	RECEIPT_TYPE_LABELS,
+	create_receipt_rows
+)
 
 TARGET_ADDRESS = '98' * 24
 SENDER_ADDRESS = '99' * 24
@@ -59,6 +66,8 @@ class ReceiptTest(TestCase):
 			ReceiptType.INFLATION.value: 'inflation'
 		}, RECEIPT_TYPE_LABELS)
 		self.assertEqual('inflation', INFLATION_RECEIPT_TYPE)
+		self.assertEqual('namespaceExpired', NAMESPACE_EXPIRED_RECEIPT_TYPE)
+		self.assertEqual('namespaceDeleted', NAMESPACE_DELETED_RECEIPT_TYPE)
 
 	def test_create_receipt_rows_populates_balance_change_fields(self):
 		# Arrange:

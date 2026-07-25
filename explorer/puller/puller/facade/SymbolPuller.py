@@ -7,6 +7,7 @@ from urllib.parse import urlparse
 
 from common.symbol.NodeConfiguration import SymbolNodeConfiguration
 from symbolchain.facade.SymbolFacade import SymbolFacade
+from symbolchain.sc import TransactionType
 from symbolchain.symbol.Network import Address, Network
 from symbollightapi.connector.SymbolConnector import SymbolConnector
 from symbollightapi.model.Exceptions import NodeException
@@ -16,7 +17,13 @@ from puller.db.SymbolDatabase import SymbolDatabase
 from puller.facade.RequestRateLimiter import RequestRateLimiter
 from puller.model.symbol.Account import HARVESTING_ACTIVE_WINDOW_DAYS, create_account_row, create_multisig_row
 from puller.model.symbol.Block import create_block_row
-from puller.model.symbol.Receipt import INFLATION_RECEIPT_TYPE, create_receipt_rows
+from puller.model.symbol.Namespace import create_alias_name_rows, create_namespace_row
+from puller.model.symbol.Receipt import (
+	INFLATION_RECEIPT_TYPE,
+	NAMESPACE_DELETED_RECEIPT_TYPE,
+	NAMESPACE_EXPIRED_RECEIPT_TYPE,
+	create_receipt_rows
+)
 from puller.model.symbol.Resolution import is_alias_mosaic_id, select_resolution_entry
 from puller.model.symbol.Transaction import create_transaction_row, unique_address_rows
 
@@ -255,25 +262,32 @@ class SymbolPuller:
 		expected_height = verify_start_height
 		for height, local_hash in self.symbol_db.get_block_hashes(verify_start_height, sync_state['last_synced_height']):
 			if height != expected_height:
-				return self._repair_from_height(expected_height, sync_state)
+				return await self._repair_from_height(expected_height, sync_state)
 
 			remote_block = await self.get_symbol_node(f'/blocks/{height}')
 			if bytes(local_hash) != bytes.fromhex(remote_block['meta']['hash']):
-				return self._repair_from_height(height, sync_state)
+				return await self._repair_from_height(height, sync_state)
 			expected_height += 1
 
 		if expected_height <= sync_state['last_synced_height']:
-			return self._repair_from_height(expected_height, sync_state)
+			return await self._repair_from_height(expected_height, sync_state)
 
 		return None
 
-	def _repair_from_height(self, height, sync_state):
+	async def _repair_from_height(self, height, sync_state):
+		# Unlike account/multisig rows (deleted by the repair and repopulated by the next dirty-key touch or
+		# refresh snapshot run), namespaces have no broad re-dirty signal: only registration or alias
+		# transactions touch a namespace id, and none may recur after a fork. Re-fetch node state before the
+		# repair write and apply it in the same transaction, deleting a namespace only when the node confirms
+		# it is gone.
+		namespace_ids = self.symbol_db.get_namespace_ids_updated_from_height(height)
+		namespace_entries = await self._fetch_dirty_namespaces(namespace_ids, height - 1)
 		self.symbol_db.repair_rollback_from_height(height, {
 			**sync_state,
 			'status': 'repairing',
 			'last_synced_height': height - 1,
 			'last_synced_block_hash': self.symbol_db.get_block_hash(height - 1)
-		})
+		}, namespace_entries)
 		return height
 
 	async def _sync_block_pages(  # pylint: disable=too-many-locals
@@ -314,16 +328,16 @@ class SymbolPuller:
 				last_synced_block_hash = last_row['hash']
 
 				if len(blocks) < MAX_PAGE_SIZE:
-					await self._sync_block_batch_with_dirty_accounts(
+					await self._sync_block_batch_with_dirty_state(
 						batch_rows, epoch_adjustment_seconds, native_mosaic_info)
 					return last_synced_height, last_synced_block_hash
 
-			await self._sync_block_batch_with_dirty_accounts(
+			await self._sync_block_batch_with_dirty_state(
 				batch_rows, epoch_adjustment_seconds, native_mosaic_info)
 
 		return last_synced_height, last_synced_block_hash
 
-	async def _sync_block_batch_with_dirty_accounts(
+	async def _sync_block_batch_with_dirty_state(
 		self,
 		batch_rows,
 		epoch_adjustment_seconds,
@@ -345,8 +359,14 @@ class SymbolPuller:
 			dirty_addresses,
 			observed_height,
 			native_mosaic_info)
+		direct_dirty_namespace_ids = self._collect_dirty_namespace_ids_for_batch(
+			transaction_rows_by_height,
+			receipt_rows_by_height)
+		dirty_namespace_ids = self._expand_dirty_namespace_ids(direct_dirty_namespace_ids)
+		dirty_namespace_entries = await self._fetch_dirty_namespaces(dirty_namespace_ids, observed_height)
 		self._sync_block_batch(batch_rows, transaction_rows_by_height, receipt_rows_by_height)
 		self._write_dirty_accounts_for_batch(dirty_account_rows)
+		self.symbol_db.apply_namespace_entries(dirty_namespace_entries)
 
 	def _sync_block_batch(self, batch_rows, transaction_rows_by_height, receipt_rows_by_height):
 		"""Writes previously-fetched block, transaction, and receipt rows for one batch.
@@ -645,6 +665,85 @@ class SymbolPuller:
 							}
 
 		return dirty_addresses
+
+	@staticmethod
+	def _collect_dirty_namespace_ids_for_batch(transaction_rows_by_height, receipt_rows_by_height):
+		"""Collects deduplicated namespace ids whose current state may have changed in a synced batch, in first-encounter order."""
+
+		dirty_namespace_ids = {}
+		for transaction_rows in transaction_rows_by_height.values():
+			for transaction_row in transaction_rows:
+				if TransactionType.NAMESPACE_REGISTRATION.value == transaction_row['type']:
+					dirty_namespace_ids[transaction_row['body']['id']] = None
+				elif transaction_row['type'] in (TransactionType.ADDRESS_ALIAS.value, TransactionType.MOSAIC_ALIAS.value):
+					dirty_namespace_ids[transaction_row['body']['namespaceId']] = None
+
+		for receipt_rows in receipt_rows_by_height.values():
+			for receipt_row in receipt_rows:
+				if receipt_row['receipt_type'] in (NAMESPACE_EXPIRED_RECEIPT_TYPE, NAMESPACE_DELETED_RECEIPT_TYPE):
+					dirty_namespace_ids[receipt_row['artifact_id']] = None
+
+		return list(dirty_namespace_ids)
+
+	def _expand_dirty_namespace_ids(self, direct_namespace_ids):
+		"""Preserves direct dirty first-encounter order and appends newly discovered root descendants.
+
+		Namespace state is order-independent, but carrying transaction/receipt scan order through root expansion
+		keeps namespace detail request chunks deterministic. A set would make request order implementation-dependent,
+		while sorting would impose an unrelated namespace-ID priority.
+		"""
+
+		descendant_ids_by_root = self.symbol_db.get_namespace_ids_by_root_ids(direct_namespace_ids)
+		namespace_ids = dict.fromkeys(direct_namespace_ids)
+		for root_id in direct_namespace_ids:
+			for namespace_id in descendant_ids_by_root.get(root_id, []):
+				namespace_ids.setdefault(namespace_id, None)
+
+		return list(namespace_ids)
+
+	async def _fetch_dirty_namespaces(self, namespace_ids, observed_height):
+		"""Fetches current namespace state and names for dirty namespace ids, processing ids in the given order."""
+
+		if not namespace_ids:
+			return []
+
+		found_items_by_namespace_id = {}
+		for chunk_start in range(0, len(namespace_ids), MAX_PAGE_SIZE):
+			chunk = namespace_ids[chunk_start:chunk_start + MAX_PAGE_SIZE]
+			for namespace_id, item in zip(chunk, await asyncio.gather(*(
+				self.get_symbol_node(f'/namespaces/{namespace_id}', not_found_as_error=False)
+				for namespace_id in chunk
+			))):
+				if not _is_not_found_response(item):
+					found_items_by_namespace_id[namespace_id] = item
+
+		level_ids = {}
+		for item in found_items_by_namespace_id.values():
+			for level_index in range(int(item['namespace']['depth'])):
+				level_ids[item['namespace'][f'level{level_index}']] = None
+		level_ids = list(level_ids)
+		names_by_id = {}
+		for chunk_start in range(0, len(level_ids), MAX_PAGE_SIZE):
+			response = await self.post_symbol_node('/namespaces/names', {'namespaceIds': level_ids[chunk_start:chunk_start + MAX_PAGE_SIZE]})
+			if not isinstance(response, list):
+				raise ValueError('Malformed Symbol namespace names response')
+			for name_entry in response:
+				names_by_id[name_entry['id']] = name_entry['name']
+
+		entries = []
+		for namespace_id in namespace_ids:
+			if namespace_id not in found_items_by_namespace_id:
+				entries.append({'namespace_id': namespace_id})
+				continue
+
+			item = found_items_by_namespace_id[namespace_id]
+			row = create_namespace_row(item, names_by_id, observed_height)
+			entries.append({
+				'row': row,
+				'alias_rows': create_alias_name_rows(row)
+			})
+
+		return entries
 
 	async def _fetch_dirty_accounts_for_batch(  # pylint: disable=too-many-locals
 		self,
