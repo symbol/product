@@ -162,6 +162,32 @@ describe('ReportTable', () => {
 		expect(sortButton.closest('th')).toHaveAttribute('aria-sort', 'descending');
 	});
 
+	const runDescendingSortTest = (params) => {
+		// Arrange:
+		const { table } = renderTable(params);
+
+		// Act:
+		const sortButton = within(table).getByRole('button', {
+			name: 'Sort by request block height descending'
+		});
+
+		// Assert:
+		expect(sortButton).toHaveTextContent('↑');
+		expect(sortButton.closest('th')).toHaveAttribute('aria-sort', 'ascending');
+	}
+
+	it('renders the descending sort direction for request reports', () => {
+		runDescendingSortTest({sort: 1})
+	});
+
+	it('renders the descending sort direction for error reports', () => {
+		runDescendingSortTest({
+			rows: [ERROR_ROW],
+			sort: 1,
+			tab: ERROR_TAB
+		})
+	});
+
 	it('renders and formats errors report fields', () => {
 		// Arrange:
 		const { table } = renderTable({
@@ -252,6 +278,25 @@ describe('ReportTable', () => {
 		// Assert:
 		expect(senderValue).not.toHaveAttribute('href');
 		expect(requestValue).not.toHaveAttribute('href');
+	});
+
+	it('renders empty title when value is unavailable', () => {
+		// Arrange:
+		const row = {
+			...REQUEST_ROW,
+			payoutConversionRate: null,
+			requestAmount: null,
+			senderAddress: null
+		};
+		const { table } = renderTable({ rows: [row] });
+
+		// Act:
+		const cells = within(table).getAllByRole('cell');
+
+		// Assert:
+		expect(cells[1].firstChild).toHaveAttribute('title', '');
+		expect(cells[3].firstChild).toHaveAttribute('title', '');
+		expect(cells[6].firstChild).toHaveAttribute('title', '');
 	});
 
 	it('renders a placeholder when an error message is unavailable', () => {
