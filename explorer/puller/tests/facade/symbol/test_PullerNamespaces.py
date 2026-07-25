@@ -460,8 +460,10 @@ class SymbolPullerNamespacesTest(SymbolPullerTestBase):
 			[{'namespaceIds': [NAMESPACE_ROOT_ID, NAMESPACE_SUB_ID, NAMESPACE_SUB_SUB_ID]}])
 		self._assert_namespace_sync_requests(connector, 1, 1)
 
-	def test_sync_block_headers_preserves_child_first_dirty_order_before_root_expansion(self):
+	def test_sync_block_headers_keeps_direct_child_before_root_and_appends_grandchild_when_root_expands(self):
 		# Arrange:
+		# The child alias is encountered before root registration, so direct dirty ids are [child, root].
+		# Root expansion rediscovers child and discovers grandchild; first-seen dedup keeps direct order and appends only grandchild.
 		root_item = create_namespace_item()
 		child_item = create_namespace_item(
 			namespace_id=NAMESPACE_SUB_ID, root_id=NAMESPACE_ROOT_ID, parent_id=NAMESPACE_ROOT_ID,

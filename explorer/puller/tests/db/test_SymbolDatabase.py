@@ -464,6 +464,8 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			{'artifact_type': 'mosaic', 'artifact_id': 'mosaic-b-new', 'name': 'b', 'updated_at_height': 2}
 		]
 
+		# The production caller currently emits at most one entry per namespace ID.
+		# Mixed duplicate entries defensively verify input-order processing, where the later entry determines the final state.
 		# Act:
 		database.apply_namespace_entries([
 			{'namespace_id': NAMESPACE_ROOT_ID},
@@ -529,6 +531,8 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		# Arrange:
 		database = self._create_database()
 		database.upsert_namespace(_create_namespace_row(), _create_alias_name_rows(_create_namespace_row()))
+		# Give every non-key column a different value so omissions from ON CONFLICT DO UPDATE are observable,
+		# while namespace_id remains the conflict key.
 		updated_row = _create_namespace_row(
 			parent_id=NAMESPACE_ROOT_ID,
 			root_id=NAMESPACE_SUB_ID,

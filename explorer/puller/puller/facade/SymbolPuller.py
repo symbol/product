@@ -686,7 +686,12 @@ class SymbolPuller:
 		return list(dirty_namespace_ids)
 
 	def _expand_dirty_namespace_ids(self, direct_namespace_ids):
-		"""Keeps direct dirty ids in first-encounter order, then appends known descendants of dirty roots."""
+		"""Preserves direct dirty first-encounter order and appends newly discovered root descendants.
+
+		Namespace state is order-independent, but carrying transaction/receipt scan order through root expansion
+		keeps namespace detail request chunks deterministic. A set would make request order implementation-dependent,
+		while sorting would impose an unrelated namespace-ID priority.
+		"""
 
 		descendant_ids_by_root = self.symbol_db.get_namespace_ids_by_root_ids(direct_namespace_ids)
 		namespace_ids = dict.fromkeys(direct_namespace_ids)
