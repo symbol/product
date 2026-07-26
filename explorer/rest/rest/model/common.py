@@ -1,5 +1,7 @@
 from collections import namedtuple
 
+DEFAULT_HARVESTING_ACTIVE_WINDOW_DAYS = 60
+
 DatabaseConfig = namedtuple('DatabaseConfig', ['database', 'user', 'password', 'host', 'port'])
 Pagination = namedtuple('Pagination', ['limit', 'offset'])
 Sorting = namedtuple('Sorting', ['field', 'order'])

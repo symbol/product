@@ -5,6 +5,7 @@ from symbolchain.CryptoTypes import PublicKey
 from symbolchain.nc import TransactionType
 from symbolchain.nem.Network import Address
 
+from rest.model.common import DEFAULT_HARVESTING_ACTIVE_WINDOW_DAYS
 from rest.model.nem.Account import AccountView
 from rest.model.nem.Block import BlockView
 from rest.model.nem.Mosaic import MosaicRichListView, MosaicView
@@ -18,12 +19,6 @@ from rest.model.nem.Statistic import (
 from rest.model.nem.Transaction import TransactionRecord, TransactionView
 
 from .DatabaseConnection import DatabaseConnectionPool
-from .NemHarvestingActivity import (
-	BLOCK_TARGET_SECONDS,
-	DEFAULT_HARVESTING_ACTIVE_WINDOW_DAYS,
-	harvesting_active_cutoff_height,
-	harvesting_active_window_blocks
-)
 
 
 def _format_bytes(buffer):
@@ -48,7 +43,7 @@ class NemDatabase(DatabaseConnectionPool):
 	def __init__(self, db_config, network, harvesting_active_window_days=DEFAULT_HARVESTING_ACTIVE_WINDOW_DAYS):
 		super().__init__(db_config)
 		self.network = network
-		self._harvesting_active_window_blocks = harvesting_active_window_blocks(BLOCK_TARGET_SECONDS, harvesting_active_window_days)
+		self._harvesting_active_window_days = harvesting_active_window_days
 
 	def _format_public_key_to_address(self, public_key):
 		return str(self.network.public_key_to_address(PublicKey(public_key)))
@@ -479,11 +474,19 @@ class NemDatabase(DatabaseConnectionPool):
 		'''
 
 	def _read_harvesting_active_cutoff_height(self, cursor):
-		"""Reads the chain height and converts it into the lowest height that still counts as recent harvesting."""
+		"""Reads the lowest height that still counts as recent harvesting activity."""
 
-		cursor.execute('SELECT COALESCE(MAX(height), 0) FROM blocks')
+		cursor.execute('''
+			SELECT COALESCE((
+				SELECT height
+				FROM blocks
+				WHERE timestamp >= (SELECT MAX(timestamp) FROM blocks) - make_interval(days => %s)
+				ORDER BY timestamp
+				LIMIT 1
+			), 1)
+		''', (self._harvesting_active_window_days,))
 
-		return harvesting_active_cutoff_height(cursor.fetchone()[0], self._harvesting_active_window_blocks)
+		return cursor.fetchone()[0]
 
 	def _get_account(self, where_condition, query_bytes):
 		"""Gets account by where clause."""

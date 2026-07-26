@@ -7,9 +7,8 @@ from symbolchain.CryptoTypes import Hash256, PublicKey
 from symbolchain.nc import TransactionType
 from zenlog import log
 
-from rest.db.NemHarvestingActivity import DEFAULT_HARVESTING_ACTIVE_WINDOW_DAYS
 from rest.facade.NemRestFacade import NemRestFacade
-from rest.model.common import DatabaseConfig, Pagination, RestConfig, Sorting
+from rest.model.common import DEFAULT_HARVESTING_ACTIVE_WINDOW_DAYS, DatabaseConfig, Pagination, RestConfig, Sorting
 from rest.model.nem.Transaction import TransactionQuery
 
 

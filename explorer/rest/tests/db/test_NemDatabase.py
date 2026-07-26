@@ -1,4 +1,6 @@
 # pylint: disable=unexpected-keyword-arg
+from datetime import timedelta
+
 from symbolchain.CryptoTypes import PublicKey
 from symbolchain.nem.Network import Address
 from symbollightapi.model.Transaction import (
@@ -19,7 +21,7 @@ from symbollightapi.model.Transaction import (
 
 from rest import Pagination, Sorting
 from rest.db.NemDatabase import NemDatabase
-from rest.db.NemHarvestingActivity import DEFAULT_HARVESTING_ACTIVE_WINDOW_BLOCKS
+from rest.model.common import DEFAULT_HARVESTING_ACTIVE_WINDOW_DAYS
 from rest.model.nem.Transaction import TransactionView
 
 from ..test.DatabaseTestUtils import (
@@ -44,6 +46,8 @@ from ..test.DatabaseTestUtils import transaction_view as expected_transaction_vi
 from ..test.DatabaseTestUtils import transaction_views
 
 # region test data
+
+HARVESTING_ACTIVE_WINDOW = timedelta(days=DEFAULT_HARVESTING_ACTIVE_WINDOW_DAYS)
 
 EXPECTED_BLOCK_VIEW_1 = BLOCK_VIEWS[0]
 
@@ -415,16 +419,18 @@ class NemDatabaseTest(DatabaseTestBase):  # pylint: disable=too-many-public-meth
 		# Assert:
 		self.assertEqual(expected_accounts, accounts_view)
 
-	def _advance_chain_tip(self, height):
+	def _advance_chain_tip(self, timestamp_offset):
+		"""Appends a block to the chain tip, offset from the current tip timestamp."""
+
 		with self.nem_db.connection() as connection:
 			cursor = connection.cursor()
 			cursor.execute(
 				'''
 				INSERT INTO blocks (height, timestamp, total_fee, total_transactions, difficulty, hash, beneficiary, signer, signature, size)
-				SELECT %s, timestamp, total_fee, total_transactions, difficulty, hash, beneficiary, signer, signature, size
+				SELECT height + 1, timestamp + %s, total_fee, total_transactions, difficulty, hash, beneficiary, signer, signature, size
 				FROM blocks WHERE height = (SELECT MAX(height) FROM blocks)
 				''',
-				(height,))
+				(timestamp_offset,))
 			connection.commit()
 
 	def test_can_query_accounts_filtered_limit(self):
@@ -437,22 +443,22 @@ class NemDatabaseTest(DatabaseTestBase):  # pylint: disable=too-many-public-meth
 		self._assert_can_query_accounts(Pagination(10, 0), Sorting('BALANCE', 'desc'), [EXPECTED_ACCOUNT_VIEW_2], is_harvesting=True)
 
 	def test_can_query_accounts_filtered_is_harvesting_includes_harvest_at_window_boundary(self):
-		# Arrange:
-		self._advance_chain_tip(ACCOUNTS[1].last_harvested_height + DEFAULT_HARVESTING_ACTIVE_WINDOW_BLOCKS - 1)
+		# Arrange: the block harvested by the account is exactly the oldest one still inside the window
+		self._advance_chain_tip(HARVESTING_ACTIVE_WINDOW)
 
 		# Act + Assert:
 		self._assert_can_query_accounts(Pagination(10, 0), Sorting('BALANCE', 'desc'), [EXPECTED_ACCOUNT_VIEW_2], is_harvesting=True)
 
 	def test_can_query_accounts_filtered_is_harvesting_excludes_harvest_older_than_window(self):
-		# Arrange:
-		self._advance_chain_tip(ACCOUNTS[1].last_harvested_height + DEFAULT_HARVESTING_ACTIVE_WINDOW_BLOCKS)
+		# Arrange: one second more pushes that block out of the window
+		self._advance_chain_tip(HARVESTING_ACTIVE_WINDOW + timedelta(seconds=1))
 
 		# Act + Assert:
 		self._assert_can_query_accounts(Pagination(10, 0), Sorting('BALANCE', 'desc'), [], is_harvesting=True)
 
 	def test_can_query_accounts_reports_stale_harvester_as_not_harvesting_active(self):
 		# Arrange:
-		self._advance_chain_tip(ACCOUNTS[1].last_harvested_height + DEFAULT_HARVESTING_ACTIVE_WINDOW_BLOCKS)
+		self._advance_chain_tip(HARVESTING_ACTIVE_WINDOW + timedelta(seconds=1))
 
 		# Act:
 		accounts_view = self.nem_db.get_accounts(Pagination(10, 0), Sorting('BALANCE', 'desc'), False)
@@ -658,7 +664,7 @@ class NemDatabaseTest(DatabaseTestBase):  # pylint: disable=too-many-public-meth
 
 	def test_can_query_account_statistics_excluding_harvests_older_than_activity_window(self):
 		# Arrange:
-		self._advance_chain_tip(ACCOUNTS[1].last_harvested_height + DEFAULT_HARVESTING_ACTIVE_WINDOW_BLOCKS)
+		self._advance_chain_tip(HARVESTING_ACTIVE_WINDOW + timedelta(seconds=1))
 
 		# Act:
 		account_statistics = self.nem_db.get_account_statistics()
