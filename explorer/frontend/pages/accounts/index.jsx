@@ -11,6 +11,7 @@ import Separator from '@/app/components/Separator';
 import Table from '@/app/components/Table';
 import ValueAccount from '@/app/components/ValueAccount';
 import ValueMosaic from '@/app/components/ValueMosaic';
+import config from '@/app/config';
 import styles from '@/app/styles/pages/Home.module.scss';
 import { formatAccountCSV, usePagination } from '@/app/utils';
 import Head from 'next/head';
@@ -64,7 +65,7 @@ const Accounts = ({ preloadedData, stats }) => {
 		{
 			name: 'isActiveHarvesting',
 			title: t('filter_activeHarvesting'),
-			description: t('filter_activeHarvesting_description'),
+			description: t('filter_activeHarvesting_description', { days: config.PUBLIC_HARVESTING_ACTIVE_WINDOW_DAYS }),
 			type: 'boolean'
 		}
 	];
@@ -78,7 +79,10 @@ const Accounts = ({ preloadedData, stats }) => {
 				<div className="layout-flex-row-mobile-col">
 					<div className="layout-flex-col layout-flex-fill">
 						<Field title={t('field_totalAccounts')}>{stats.total}</Field>
-						<Field title={t('field_harvestingAccounts')} description={t('field_harvestingAccounts_description')}>
+						<Field
+							title={t('field_harvestingAccounts')}
+							description={t('field_harvestingAccounts_description', { days: config.PUBLIC_HARVESTING_ACTIVE_WINDOW_DAYS })}
+						>
 							{stats.harvesting}
 						</Field>
 						<Field title={t('field_accountsEligibleForHarvesting')}>{stats.eligibleForHarvesting}</Field>

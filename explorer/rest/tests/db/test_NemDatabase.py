@@ -19,7 +19,7 @@ from symbollightapi.model.Transaction import (
 
 from rest import Pagination, Sorting
 from rest.db.NemDatabase import NemDatabase
-from rest.db.NemHarvestingActivity import HARVESTING_ACTIVE_WINDOW_BLOCKS
+from rest.db.NemHarvestingActivity import DEFAULT_HARVESTING_ACTIVE_WINDOW_BLOCKS
 from rest.model.nem.Transaction import TransactionView
 
 from ..test.DatabaseTestUtils import (
@@ -438,21 +438,21 @@ class NemDatabaseTest(DatabaseTestBase):  # pylint: disable=too-many-public-meth
 
 	def test_can_query_accounts_filtered_is_harvesting_includes_harvest_at_window_boundary(self):
 		# Arrange:
-		self._advance_chain_tip(ACCOUNTS[1].last_harvested_height + HARVESTING_ACTIVE_WINDOW_BLOCKS - 1)
+		self._advance_chain_tip(ACCOUNTS[1].last_harvested_height + DEFAULT_HARVESTING_ACTIVE_WINDOW_BLOCKS - 1)
 
 		# Act + Assert:
 		self._assert_can_query_accounts(Pagination(10, 0), Sorting('BALANCE', 'desc'), [EXPECTED_ACCOUNT_VIEW_2], is_harvesting=True)
 
 	def test_can_query_accounts_filtered_is_harvesting_excludes_harvest_older_than_window(self):
 		# Arrange:
-		self._advance_chain_tip(ACCOUNTS[1].last_harvested_height + HARVESTING_ACTIVE_WINDOW_BLOCKS)
+		self._advance_chain_tip(ACCOUNTS[1].last_harvested_height + DEFAULT_HARVESTING_ACTIVE_WINDOW_BLOCKS)
 
 		# Act + Assert:
 		self._assert_can_query_accounts(Pagination(10, 0), Sorting('BALANCE', 'desc'), [], is_harvesting=True)
 
 	def test_can_query_accounts_reports_stale_harvester_as_not_harvesting_active(self):
 		# Arrange:
-		self._advance_chain_tip(ACCOUNTS[1].last_harvested_height + HARVESTING_ACTIVE_WINDOW_BLOCKS)
+		self._advance_chain_tip(ACCOUNTS[1].last_harvested_height + DEFAULT_HARVESTING_ACTIVE_WINDOW_BLOCKS)
 
 		# Act:
 		accounts_view = self.nem_db.get_accounts(Pagination(10, 0), Sorting('BALANCE', 'desc'), False)
@@ -658,7 +658,7 @@ class NemDatabaseTest(DatabaseTestBase):  # pylint: disable=too-many-public-meth
 
 	def test_can_query_account_statistics_excluding_harvests_older_than_activity_window(self):
 		# Arrange:
-		self._advance_chain_tip(ACCOUNTS[1].last_harvested_height + HARVESTING_ACTIVE_WINDOW_BLOCKS)
+		self._advance_chain_tip(ACCOUNTS[1].last_harvested_height + DEFAULT_HARVESTING_ACTIVE_WINDOW_BLOCKS)
 
 		# Act:
 		account_statistics = self.nem_db.get_account_statistics()

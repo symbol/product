@@ -15,7 +15,7 @@ class NemRestFacade:
 		"""Creates a facade object."""
 
 		self.network = NetworkLocator.find_by_name(Network.NETWORKS, rest_config.network_name)
-		self.nem_db = NemDatabase(db_config, self.network)
+		self.nem_db = NemDatabase(db_config, self.network, rest_config.harvesting_active_window_days)
 		self.nem_connector = NemConnector(rest_config.node_url, self.network)
 		self.max_lag_blocks = rest_config.max_lag_blocks
 

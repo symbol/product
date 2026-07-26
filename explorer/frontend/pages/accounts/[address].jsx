@@ -23,6 +23,7 @@ import ValueTimestamp from '@/app/components/ValueTimestamp';
 import ValueTransactionDirection from '@/app/components/ValueTransactionDirection';
 import ValueTransactionHash from '@/app/components/ValueTransactionHash';
 import ValueTransactionType from '@/app/components/ValueTransactionType';
+import config from '@/app/config';
 import { STORAGE_KEY, TRANSACTION_TYPE } from '@/app/constants';
 import styles from '@/app/styles/pages/AccountInfo.module.scss';
 import { formatMosaicCSV, formatTransactionCSV, useClientSideFilter, usePagination, useStorage, useUserCurrencyAmount } from '@/app/utils';
@@ -170,7 +171,7 @@ const AccountInfo = ({ accountInfo, preloadedTransactions }) => {
 									<ValueLabel
 										type="harvesting"
 										text={t('label_harvesting')}
-										title={t('label_harvesting_description')}
+										title={t('label_harvesting_description', { days: config.PUBLIC_HARVESTING_ACTIVE_WINDOW_DAYS })}
 									/>
 								)}
 								{accountInfo.isMultisig && <ValueLabel type="multisig" text={t('label_multisig')} />}

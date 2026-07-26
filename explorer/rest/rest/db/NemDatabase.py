@@ -18,7 +18,12 @@ from rest.model.nem.Statistic import (
 from rest.model.nem.Transaction import TransactionRecord, TransactionView
 
 from .DatabaseConnection import DatabaseConnectionPool
-from .NemHarvestingActivity import HARVESTING_ACTIVE_WINDOW_BLOCKS, harvesting_active_cutoff_height
+from .NemHarvestingActivity import (
+	BLOCK_TARGET_SECONDS,
+	DEFAULT_HARVESTING_ACTIVE_WINDOW_DAYS,
+	harvesting_active_cutoff_height,
+	harvesting_active_window_blocks
+)
 
 
 def _format_bytes(buffer):
@@ -40,9 +45,10 @@ def _format_relative(amount, divisibility):
 class NemDatabase(DatabaseConnectionPool):
 	"""Database containing Nem blockchain data."""
 
-	def __init__(self, db_config, network):
+	def __init__(self, db_config, network, harvesting_active_window_days=DEFAULT_HARVESTING_ACTIVE_WINDOW_DAYS):
 		super().__init__(db_config)
 		self.network = network
+		self._harvesting_active_window_blocks = harvesting_active_window_blocks(BLOCK_TARGET_SECONDS, harvesting_active_window_days)
 
 	def _format_public_key_to_address(self, public_key):
 		return str(self.network.public_key_to_address(PublicKey(public_key)))
@@ -472,13 +478,12 @@ class NemDatabase(DatabaseConnectionPool):
 			{limit_condition}
 		'''
 
-	@staticmethod
-	def _read_harvesting_active_cutoff_height(cursor):
+	def _read_harvesting_active_cutoff_height(self, cursor):
 		"""Reads the chain height and converts it into the lowest height that still counts as recent harvesting."""
 
 		cursor.execute('SELECT COALESCE(MAX(height), 0) FROM blocks')
 
-		return harvesting_active_cutoff_height(cursor.fetchone()[0], HARVESTING_ACTIVE_WINDOW_BLOCKS)
+		return harvesting_active_cutoff_height(cursor.fetchone()[0], self._harvesting_active_window_blocks)
 
 	def _get_account(self, where_condition, query_bytes):
 		"""Gets account by where clause."""
