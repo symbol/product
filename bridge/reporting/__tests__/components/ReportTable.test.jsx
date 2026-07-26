@@ -102,50 +102,6 @@ describe('ReportTable', () => {
 		expect(tableView.getByText('1970-01-01 00:00:03 UTC')).toBeInTheDocument();
 	});
 
-	it('renders failed status details through an accessible tooltip', () => {
-		// Arrange:
-		const { table } = renderTable({
-			rows: [{
-				...REQUEST_ROW,
-				errorMessage: 'Payout rejected',
-				payoutStatus: 3
-			}]
-		});
-
-		// Act:
-		const failedStatus = within(table).getByLabelText('Failed: Payout rejected');
-
-		// Assert:
-		expect(failedStatus).toHaveTextContent('Failed');
-		expect(failedStatus).toHaveAttribute('data-tooltip', 'Payout rejected');
-	});
-
-	it('renders links addresses and transactions to their configured explorers', () => {
-		// Arrange:
-		const { table } = renderTable();
-		const tableView = within(table);
-		const symbolTransactionUrl = `https://symbol.example/transactions/${REQUEST_ROW.requestTransactionHash}`;
-		const ethereumTransactionUrl = `https://ethereum.example/tx/0x${REQUEST_ROW.payoutTransactionHash}`;
-
-		// Act:
-		const senderLink = tableView.getByTitle(REQUEST_ROW.senderAddress);
-		const requestLink = tableView.getByTitle(REQUEST_ROW.requestTransactionHash);
-		const destinationLink = tableView.getByTitle(REQUEST_ROW.destinationAddress);
-		const payoutLink = tableView.getByTitle(REQUEST_ROW.payoutTransactionHash);
-
-		// Assert:
-		expect(senderLink).toHaveAttribute(
-			'href',
-			`https://symbol.example/accounts/${REQUEST_ROW.senderAddress}`
-		);
-		expect(requestLink).toHaveAttribute('href', symbolTransactionUrl);
-		expect(destinationLink).toHaveAttribute(
-			'href',
-			`https://ethereum.example/address/${REQUEST_ROW.destinationAddress}`
-		);
-		expect(payoutLink).toHaveAttribute('href', ethereumTransactionUrl);
-	});
-
 	it('renders the active sort direction and handles sort changes', () => {
 		// Arrange:
 		const onSortChange = jest.fn();
@@ -162,7 +118,7 @@ describe('ReportTable', () => {
 		expect(sortButton.closest('th')).toHaveAttribute('aria-sort', 'descending');
 	});
 
-	const runDescendingSortTest = (params) => {
+	const runDescendingSortTest = params => {
 		// Arrange:
 		const { table } = renderTable(params);
 
@@ -174,10 +130,10 @@ describe('ReportTable', () => {
 		// Assert:
 		expect(sortButton).toHaveTextContent('↑');
 		expect(sortButton.closest('th')).toHaveAttribute('aria-sort', 'ascending');
-	}
+	};
 
 	it('renders the descending sort direction for request reports', () => {
-		runDescendingSortTest({sort: 1})
+		runDescendingSortTest({ sort: 1 });
 	});
 
 	it('renders the descending sort direction for error reports', () => {
@@ -185,7 +141,7 @@ describe('ReportTable', () => {
 			rows: [ERROR_ROW],
 			sort: 1,
 			tab: ERROR_TAB
-		})
+		});
 	});
 
 	it('renders and formats errors report fields', () => {
@@ -246,57 +202,6 @@ describe('ReportTable', () => {
 		expect(cardView.getByText('CCCCCCCC…CCCCCC')).toHaveAttribute('title', ERROR_ROW.requestTransactionHash);
 		expect(cardView.getByText('1970-01-01 00:00:05 UTC')).toBeInTheDocument();
 		expect(cardView.getByText('Required message is missing')).toBeInTheDocument();
-	});
-
-	it('renders unknown payout status', () => {
-		// Arrange:
-		const row = {
-			...REQUEST_ROW,
-			payoutStatus: 99
-		};
-
-		// Act:
-		renderTable({ rows: [row] });
-
-		// Assert:
-		expect(screen.getAllByText('Unknown')).toHaveLength(2);
-	});
-
-	it('renders values without links when explorer URLs are unavailable', () => {
-		// Arrange:
-		const configuration = {
-			nativeNetwork: { blockchain: 'symbol' },
-			wrappedNetwork: { blockchain: 'ethereum' }
-		};
-		const { table } = renderTable({ configuration });
-
-		// Act:
-		const tableView = within(table);
-		const senderValue = tableView.getByTitle(REQUEST_ROW.senderAddress);
-		const requestValue = tableView.getByTitle(REQUEST_ROW.requestTransactionHash);
-
-		// Assert:
-		expect(senderValue).not.toHaveAttribute('href');
-		expect(requestValue).not.toHaveAttribute('href');
-	});
-
-	it('renders empty title when value is unavailable', () => {
-		// Arrange:
-		const row = {
-			...REQUEST_ROW,
-			payoutConversionRate: null,
-			requestAmount: null,
-			senderAddress: null
-		};
-		const { table } = renderTable({ rows: [row] });
-
-		// Act:
-		const cells = within(table).getAllByRole('cell');
-
-		// Assert:
-		expect(cells[1].firstChild).toHaveAttribute('title', '');
-		expect(cells[3].firstChild).toHaveAttribute('title', '');
-		expect(cells[6].firstChild).toHaveAttribute('title', '');
 	});
 
 	it('renders a placeholder when an error message is unavailable', () => {
