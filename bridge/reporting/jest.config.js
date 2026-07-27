@@ -7,6 +7,7 @@ module.exports = createJestConfig({
 	moduleNameMapper: {
 		'^@/(.*)$': '<rootDir>/$1'
 	},
+	coverageProvider: 'babel',
 	modulePathIgnorePatterns: ['<rootDir>/.next/'],
 	setupFilesAfterEnv: ['<rootDir>/setupTests.js'],
 	testEnvironment: 'jsdom'
