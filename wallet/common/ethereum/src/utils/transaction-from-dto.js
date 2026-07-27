@@ -33,6 +33,20 @@ export const transactionFromDTO = (transactionDTO, config) => {
 	return transferTransactionFromDTO(transactionDTO, config);
 };
 
+/**
+ * Creates the transaction timestamp in milliseconds. Prefers the timestamp carried by the DTO,
+ * since it spares a block request and stays available after the node prunes the block.
+ * @param {object} transactionDTO - The transaction DTO.
+ * @param {Block} [block] - The block the transaction was included in, when it was fetched separately.
+ * @returns {number|null} The timestamp in milliseconds, or null when neither source provides one.
+ */
+const createTimestamp = (transactionDTO, block) => {
+	if (transactionDTO.blockTimestamp)
+		return Number(BigInt(transactionDTO.blockTimestamp)) * 1000;
+
+	return block ? block.timestamp : null;
+};
+
 const baseTransactionFromDTO = (transactionDTO, config) => {
 	const transaction = {
 		height: transactionDTO.blockNumber ? BigInt(transactionDTO.blockNumber).toString() : null,
@@ -53,10 +67,10 @@ const baseTransactionFromDTO = (transactionDTO, config) => {
 		}, BigInt(transactionDTO.gas).toString(), config.networkProperties.networkCurrency)
 	};
 
-	if (config.blocks && config.blocks[transaction.height]) {
-		const block = config.blocks[transaction.height];
-		transaction.timestamp = block.timestamp;
-	}
+	const timestamp = createTimestamp(transactionDTO, config.blocks?.[transaction.height]);
+
+	if (timestamp !== null)
+		transaction.timestamp = timestamp;
 
 	return transaction;
 };
@@ -112,6 +126,7 @@ const erc20LikeTransactionFromDTO = (transactionDTO, config) => {
 
 /**
  * Extracts unresolved block heights, and token contract addresses from transaction DTOs.
+ * A block is requested only to read its timestamp, so DTOs that already carry one are skipped.
  * @param {object[]} transactionDTOs - The transaction DTOs.
  * @returns {{blockHeights: string[], tokenContractAddresses: string[]}} The unresolved IDs.
  */
@@ -120,7 +135,7 @@ export const getUnresolvedIdsFromTransactionDTOs = transactionDTOs => {
 	const tokenContractAddresses = new Set();
 
 	transactionDTOs.forEach(tx => {
-		if (tx.blockNumber)
+		if (tx.blockNumber && !tx.blockTimestamp)
 			blockHeights.add(BigInt(tx.blockNumber).toString());
 
 		if (tx.input && tx.input.startsWith(ERC_20_TRANSFER_SIGNATURE) && tx.to)
