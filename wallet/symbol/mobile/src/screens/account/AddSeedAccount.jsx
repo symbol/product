@@ -91,7 +91,7 @@ export const AddSeedAccount = () => {
 			<StyledText type="body">{$t('s_addAccount_seed_description')}</StyledText>
 			<ButtonPlain
 				icon="key"
-				text={$t('button_addExternalAccount')}
+				text={$t('button_importAccount')}
 				onPress={externalAccountState.showDialog}
 			/>
 			<StyledText type="title">{$t('s_addAccount_select_title')}</StyledText>

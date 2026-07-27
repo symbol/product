@@ -38,8 +38,8 @@ export const Actions = () => {
 			onPress: Router.goToMultisigAccountList
 		},
 		{
-			title: $t('s_actions_externalAccount_title'),
-			description: $t('s_actions_externalAccount_description'),
+			title: $t('s_actions_bridgeAccounts_title'),
+			description: $t('s_actions_bridgeAccounts_description'),
 			imageSource: require('@/app/assets/images/art/external-accounts.png'),
 			onPress: Router.goToBridgeAccountList
 		},
