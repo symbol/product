@@ -53,7 +53,8 @@ const SCREEN_TEXT = {
 
 	// Dialog
 	textDialogAddCosignatoryTitle: 's_multisig_create_dialog_addCosignatory_title',
-	textDialogConfirmTitle: 's_multisig_create_dialog_confirm_title',
+	textDialogConfirmTitle: 's_multisig_modify_dialog_confirm_title',
+	textDialogConfirmText: 's_multisig_modify_dialog_confirm_text',
 
 	// Default name
 	textDefaultAccountName: 's_multisig_defaultAccountName'
@@ -537,6 +538,25 @@ describe('screens/multisig/ModifyMultisigAccount', () => {
 	});
 
 	describe('send transaction flow', () => {
+		it('shows modification wording in the confirmation dialog', async () => {
+			// Arrange:
+			setupMocks();
+			const props = createRouteProps(multisigAccountInfo.address);
+			const screenTester = new ScreenTester(ModifyMultisigAccount, props);
+			await screenTester.waitForTimer(); // fetch account info
+			await screenTester.waitForTimer(); // fee calculation
+
+			// Act:
+			screenTester.pressButton(SCREEN_TEXT.buttonSend);
+			await screenTester.waitForTimer(); // dialog
+
+			// Assert:
+			screenTester.expectText([
+				SCREEN_TEXT.textDialogConfirmTitle,
+				SCREEN_TEXT.textDialogConfirmText
+			]);
+		});
+
 		it('sends transaction when send button is pressed and confirmed', async () => {
 			// Arrange:
 			const { walletControllerMock } = setupMocks();
