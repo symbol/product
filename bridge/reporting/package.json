@@ -9,7 +9,7 @@
 		"test": "jest",
 		"lint": "eslint --ext js,jsx .",
 		"lint:fix": "eslint --ext js,jsx .  --fix",
-		"test:jenkins": "jest --coverage",
+		"test:jenkins": "jest --coverage --coverageReporters=lcov --coverageReporters=text",
 		"version": "echo $npm_package_version"
 	},
 	"dependencies": {
