@@ -4,6 +4,7 @@ import asyncio
 from symbolchain.symbol.Network import Address
 
 from puller.facade.SymbolPuller import SymbolRollbackError
+from tests.test.SymbolMosaicTestUtils import create_expected_mosaic_row, create_mosaic_item, fetch_mosaic_state
 from tests.test.SymbolNamespaceTestUtils import (
 	NAMESPACE_ROOT_ID,
 	NAMESPACE_SUB_ID,
@@ -129,6 +130,81 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):
 		self.assertEqual([1, 2, 3], self._fetch_block_heights(self.puller.symbol_db))
 		self.assertEqual(original_sync_state, self.puller.symbol_db.get_sync_state())
 		self.assertEqual(original_namespace_rows, self._fetch_namespace_rows())
+
+	def test_sync_block_headers_refreshes_mosaics_at_or_above_rollback_height_and_deletes_fork_only_rows(self):
+		# Arrange:
+		before_fork_id = '0000000000000000'
+		survivor_id = '0000000000000001'
+		fork_only_id = '0000000000000002'
+		self._seed_blocks(
+			self.puller.symbol_db,
+			[1, 2, 3],
+			{2: b'local mismatch'.hex()})
+		self.puller.symbol_db.upsert_sync_state(create_sync_state())
+		self.puller.symbol_db.upsert_mosaic(create_expected_mosaic_row(
+			create_mosaic_item(mosaic_id=before_fork_id),
+			1))
+		self.puller.symbol_db.upsert_mosaic(create_expected_mosaic_row(
+			create_mosaic_item(mosaic_id=survivor_id),
+			2))
+		self.puller.symbol_db.upsert_mosaic(create_expected_mosaic_row(
+			create_mosaic_item(mosaic_id=fork_only_id),
+			3))
+		connector = FakeConnector(
+			3,
+			{1: [create_node_block(2), create_node_block(3)]},
+			{2: create_node_block(2)},
+			mosaics_by_id={survivor_id: create_mosaic_item(mosaic_id=survivor_id)})
+		set_symbol_connector(self.puller, connector)
+
+		# Act:
+		asyncio.run(self.puller.sync_block_headers())
+
+		# Assert:
+		cursor = self.puller.symbol_db.connection.cursor()
+		cursor.execute('SELECT mosaic_id, updated_at_height FROM symbol_mosaics ORDER BY mosaic_id')
+		self.assertEqual([(before_fork_id, 1), (survivor_id, 1)], cursor.fetchall())
+		self.assertEqual(3, self.puller.symbol_db.get_sync_state()['last_synced_height'])
+		self.assertEqual([{'mosaicIds': [survivor_id, fork_only_id]}], [
+			payload for path, payload in connector.post_requests if 'mosaics' == path
+		])
+		self.assertEqual(1, connector.paths.count('mosaics'))
+
+	def test_sync_block_headers_leaves_rollback_state_unchanged_when_mosaic_fetch_fails(self):
+		# Arrange:
+		mosaic_id = '0000000000000001'
+		self._seed_blocks(
+			self.puller.symbol_db,
+			[1, 2, 3],
+			{2: b'local mismatch'.hex()})
+		self.puller.symbol_db.upsert_sync_state(create_sync_state())
+		self.puller.symbol_db.upsert_mosaic(create_expected_mosaic_row(create_mosaic_item(mosaic_id=mosaic_id), 2))
+		seed_namespace(
+			self.puller.symbol_db,
+			create_namespace_item(alias={'type': 1, 'mosaicId': mosaic_id}),
+			{NAMESPACE_ROOT_ID: 'root'},
+			2)
+		original_sync_state = self.puller.symbol_db.get_sync_state()
+		original_mosaic_state = fetch_mosaic_state(self.puller.symbol_db)
+		original_namespace_state = self._fetch_namespace_rows()
+		connector = FakeConnector(
+			3,
+			{},
+			{2: create_node_block(2)},
+			namespace_by_id={NAMESPACE_ROOT_ID: create_namespace_item(alias={'type': 1, 'mosaicId': mosaic_id})},
+			namespace_names={NAMESPACE_ROOT_ID: 'root'},
+			mosaics_by_id={mosaic_id: RuntimeError('mosaic fetch failed')})
+		set_symbol_connector(self.puller, connector)
+
+		# Act / Assert:
+		with self.assertRaisesRegex(RuntimeError, 'mosaic fetch failed'):
+			asyncio.run(self.puller.sync_block_headers())
+
+		# Assert:
+		self.assertEqual([1, 2, 3], self._fetch_block_heights(self.puller.symbol_db))
+		self.assertEqual(original_sync_state, self.puller.symbol_db.get_sync_state())
+		self.assertEqual(original_mosaic_state, fetch_mosaic_state(self.puller.symbol_db))
+		self.assertEqual(original_namespace_state, self._fetch_namespace_rows())
 
 	def test_sync_block_headers_refreshes_orphaned_namespace_state_to_canonical_state_during_rollback(self):
 		# Arrange:

@@ -373,6 +373,7 @@ class SymbolPuller:
 		self._sync_block_batch(batch_rows, transaction_rows_by_height, receipt_rows_by_height)
 		self._write_dirty_accounts_for_batch(dirty_account_rows)
 		self.symbol_db.apply_namespace_entries(dirty_namespace_entries)
+		self._write_dirty_mosaics(dirty_mosaic_entries)
 
 	def _sync_block_batch(self, batch_rows, transaction_rows_by_height, receipt_rows_by_height):
 		"""Writes previously-fetched block, transaction, and receipt rows for one batch.
@@ -750,6 +751,58 @@ class SymbolPuller:
 			})
 
 		return entries
+
+	@staticmethod
+	def _collect_dirty_mosaic_ids_for_batch(transaction_rows_by_height, receipt_rows_by_height):
+		"""Collects deduplicated mosaic ids whose current state may have changed in a synced batch."""
+
+		dirty_mosaic_ids = {}
+		for transaction_rows in transaction_rows_by_height.values():
+			for transaction_row in transaction_rows:
+				if transaction_row['type'] == TransactionType.MOSAIC_DEFINITION.value:
+					dirty_mosaic_ids[transaction_row['body']['id']] = None
+				elif transaction_row['type'] == TransactionType.MOSAIC_SUPPLY_CHANGE.value:
+					dirty_mosaic_ids[transaction_row['mosaic_rows'][0]['mosaic_id']] = None
+
+		for receipt_rows in receipt_rows_by_height.values():
+			for receipt_row in receipt_rows:
+				if receipt_row['receipt_type'] == MOSAIC_EXPIRED_RECEIPT_TYPE:
+					dirty_mosaic_ids[receipt_row['artifact_id']] = None
+
+		return list(dirty_mosaic_ids)
+
+	async def _fetch_dirty_mosaics(self, mosaic_ids, observed_height):
+		"""Fetches current mosaic state in batches and returns ordered upsert/delete entries."""
+
+		if not mosaic_ids:
+			return []
+
+		found_items_by_mosaic_id = {}
+		for chunk_start in range(0, len(mosaic_ids), MAX_PAGE_SIZE):
+			chunk = mosaic_ids[chunk_start:chunk_start + MAX_PAGE_SIZE]
+			response = await self.post_symbol_node('/mosaics', {'mosaicIds': chunk})
+			if not isinstance(response, list):
+				raise ValueError('Malformed Symbol mosaics batch response')
+			for item in response:
+				found_items_by_mosaic_id[item['mosaic']['id']] = item
+
+		entries = []
+		for mosaic_id in mosaic_ids:
+			if mosaic_id not in found_items_by_mosaic_id:
+				entries.append({'mosaic_id': mosaic_id})
+			else:
+				entries.append({'row': create_mosaic_row(found_items_by_mosaic_id[mosaic_id], observed_height)})
+
+		return entries
+
+	def _write_dirty_mosaics(self, entries):
+		"""Writes fetched mosaic current-state changes after namespace rows are persisted."""
+
+		for entry in entries:
+			if 'mosaic_id' in entry:
+				self.symbol_db.delete_mosaic(entry['mosaic_id'])
+			else:
+				self.symbol_db.upsert_mosaic(entry['row'])
 
 	async def _fetch_dirty_accounts_for_batch(  # pylint: disable=too-many-locals
 		self,

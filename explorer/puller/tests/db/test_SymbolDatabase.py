@@ -14,6 +14,7 @@ from symbolchain.symbol.Network import Network
 from puller.db.SymbolDatabase import SymbolDatabase
 from puller.model.symbol.Account import create_account_row
 from tests.facade.symbol.puller_test_utils import NATIVE_MOSAIC_ID, create_account_item
+from tests.test.SymbolMosaicTestUtils import create_expected_mosaic_row, create_mosaic_item, fetch_mosaic_state
 from tests.test.SymbolNamespaceTestUtils import (
 	NAMESPACE_ROOT_ID,
 	NAMESPACE_SUB_ID,
@@ -179,6 +180,12 @@ def _create_alias_name_rows(namespace_row):
 		})
 
 	return rows
+
+
+def _fetch_block_state(database):
+	cursor = database.connection.cursor()
+	cursor.execute('SELECT * FROM symbol_blocks ORDER BY height')
+	return cursor.fetchall()
 
 
 class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
@@ -432,7 +439,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			)
 		], cursor.fetchall())
 
-	def test_create_tables_creates_symbol_mosaic_constraints_and_defaults(self):
+	def test_create_tables_creates_symbol_mosaic_primary_key_constraint(self):
 		# Arrange:
 		database = self._create_uninitialized_database()
 		cursor = database.connection.cursor()
@@ -451,6 +458,15 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			''')
 		self.assertEqual([('PRIMARY KEY', 'mosaic_id')], cursor.fetchall())
 
+	def test_create_tables_creates_symbol_mosaic_alias_names_default(self):
+		# Arrange:
+		database = self._create_uninitialized_database()
+		cursor = database.connection.cursor()
+
+		# Act:
+		database.create_tables()
+
+		# Assert:
 		cursor.execute(
 			'''
 			SELECT is_nullable, column_default
@@ -1210,7 +1226,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 					'name': 'invalid',
 					'updated_at_height': 1
 				}]}
-			])
+			], [])
 
 		# Assert:
 		cursor = database.connection.cursor()
@@ -2868,7 +2884,15 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			raw_payload={'namespace': {'state': 'gone'}})
 		database.upsert_namespace(updated_row, _create_alias_name_rows(updated_row))
 		database.upsert_namespace(deleted_row, _create_alias_name_rows(deleted_row))
+		database.upsert_mosaic(create_expected_mosaic_row(
+			create_mosaic_item(mosaic_id='mosaic-original'),
+			10))
+		database.upsert_mosaic(create_expected_mosaic_row(
+			create_mosaic_item(mosaic_id='mosaic-gone'),
+			10))
 		original_namespace_state = fetch_namespace_state(database.connection)
+		original_mosaic_state = fetch_mosaic_state(database)
+		original_block_state = _fetch_block_state(database)
 		original_refresh_state = database.get_account_refresh_state()
 		refreshed_row = _create_namespace_row(
 			alias_mosaic_id='mosaic-refreshed',
@@ -2895,6 +2919,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		self.assertEqual(original_block_state, _fetch_block_state(database))
 		self.assertEqual(original_refresh_state, database.get_account_refresh_state())
 		self.assertEqual(original_namespace_state, fetch_namespace_state(database.connection))
+		self.assertEqual(original_mosaic_state, fetch_mosaic_state(database))
 
 	def test_repair_rollback_deletes_current_state_but_preserves_account_refresh_rows(self):
 		# Arrange:

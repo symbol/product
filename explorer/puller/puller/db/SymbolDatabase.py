@@ -607,6 +607,14 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 				SymbolDatabase._execute_upsert_namespace(cursor, entry['row'], entry['alias_rows'])
 
 	@staticmethod
+	def _execute_mosaic_entries(cursor, mosaic_entries):
+		for entry in mosaic_entries:
+			if 'mosaic_id' in entry:
+				SymbolDatabase._execute_delete_mosaic(cursor, entry['mosaic_id'])
+			else:
+				SymbolDatabase._execute_upsert_mosaic(cursor, entry['row'])
+
+	@staticmethod
 	def _execute_refresh_mosaic_alias_names(cursor, mosaic_ids):
 		for mosaic_id in mosaic_ids:
 			cursor.execute(
@@ -681,8 +689,6 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 				raw_payload = EXCLUDED.raw_payload, updated_at_height = EXCLUDED.updated_at_height
 			''',
 			{**mosaic_row, 'raw_payload': Json(mosaic_row['raw_payload'])})
-
-		SymbolDatabase._execute_refresh_mosaic_alias_names(cursor, [mosaic_row['mosaic_id']])
 
 	def delete_mosaic(self, mosaic_id):
 		"""Deletes one mosaic current-state row when it exists."""
@@ -1154,6 +1160,7 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 			self._delete_rollback_affected_rows_from_height(cursor, height)
 			self._stale_mark_account_refresh_state_if_needed(cursor, height)
 			self._execute_namespace_entries(cursor, namespace_entries)
+			self._execute_mosaic_entries(cursor, mosaic_entries)
 			self._execute_upsert_sync_state(cursor, sync_state)
 
 	@staticmethod
