@@ -72,7 +72,7 @@
 	user-select: none;
 }
 
-.modal {
+.header .modal {
 	position: absolute;
 	top: $spacing-header-height + $spacing-base;
 	right: $spacing-base * 3;
@@ -178,7 +178,7 @@
 		transform: translate(-50%, -50%);
 	}
 
-	.modal {
+	.header .modal {
 		top: $spacing-header-height + $spacing-base;
 		right: 0;
 		width: 100%;
