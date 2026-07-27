@@ -270,7 +270,7 @@ export const erc20Transaction = {
 	},
 	timestamp: 1759845920000,
 	type: 2,
-	tokens: [{ id: targetTokenAddress, name: 'wXYM', divisibility: 6, amount: '12' }],
+	tokens: [{ id: targetTokenAddress, name: 'bXYM', divisibility: 6, amount: '12' }],
 	recipientAddress: etherRecipientAddress
 };
 
@@ -292,7 +292,7 @@ export const bridgeTransaction = {
 	},
 	timestamp: 1759827524000,
 	type: 3,
-	tokens: [{ id: targetTokenAddress, name: 'wXYM', divisibility: 6, amount: '0.02' }],
+	tokens: [{ id: targetTokenAddress, name: 'bXYM', divisibility: 6, amount: '0.02' }],
 	recipientAddress: bridgeRecipientAddress,
 	message: {
 		payload: '982C69A051A72BFBE31AEDA7250AC6C747B7570B3E9C00B6',

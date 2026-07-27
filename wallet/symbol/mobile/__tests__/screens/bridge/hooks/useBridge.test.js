@@ -40,7 +40,7 @@ jest.mock('@/app/lib/controller', () => ({
 const NATIVE_CHAIN_NAME = 'symbol';
 const WRAPPED_CHAIN_NAME = 'ethereum';
 const NETWORK_IDENTIFIER = 'testnet';
-const BRIDGE_ID = 'symbol-xym-ethereum-wxym';
+const BRIDGE_ID = 'symbol-xym-ethereum-bxym';
 
 const BalanceValue = {
 	ZERO: '0',

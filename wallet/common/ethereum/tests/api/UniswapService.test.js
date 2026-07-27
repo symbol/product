@@ -42,10 +42,10 @@ const xymToken = {
 	decimals: 6
 };
 
-const wxymToken = {
+const bxymToken = {
 	address: WRAPPED_TOKEN_ID,
-	name: 'Wrapped XYM',
-	symbol: 'WXYM',
+	name: 'Bridged XYM',
+	symbol: 'bXYM',
 	decimals: 18
 };
 
@@ -98,22 +98,22 @@ describe('api/UniswapService', () => {
 				description: 'returns token infos for both pool sides with number decimals',
 				config: {
 					nativeToken: { ...xymToken, decimals: 6 },
-					wrappedToken: { ...wxymToken, decimals: 18 }
+					wrappedToken: { ...bxymToken, decimals: 18 }
 				},
 				expected: {
 					nativeTokenInfo: createExpectedTokenInfo(xymToken),
-					wrappedTokenInfo: createExpectedTokenInfo(wxymToken)
+					wrappedTokenInfo: createExpectedTokenInfo(bxymToken)
 				}
 			},
 			{
 				description: 'converts bigint decimals returned by contract to number divisibility',
 				config: {
 					nativeToken: { ...xymToken, decimals: 6n },
-					wrappedToken: { ...wxymToken, decimals: 18n }
+					wrappedToken: { ...bxymToken, decimals: 18n }
 				},
 				expected: {
 					nativeTokenInfo: createExpectedTokenInfo(xymToken),
-					wrappedTokenInfo: createExpectedTokenInfo(wxymToken)
+					wrappedTokenInfo: createExpectedTokenInfo(bxymToken)
 				}
 			}
 		];

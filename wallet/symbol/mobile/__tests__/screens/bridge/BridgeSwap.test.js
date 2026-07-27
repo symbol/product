@@ -34,7 +34,7 @@ jest.mock('@/app/screens/bridge/hooks', () => ({
 const CHAIN_NAME_SYMBOL = 'symbol';
 const CHAIN_NAME_ETHEREUM = 'ethereum';
 const NETWORK_IDENTIFIER = 'testnet';
-const BRIDGE_ID_XYM_TO_WXYM = 'symbol-xym-ethereum-wxym';
+const BRIDGE_ID_XYM_TO_BXYM = 'symbol-xym-ethereum-bxym';
 const PAYOUT_AMOUNT = '99';
 const HISTORY_ITEM_TRANSACTION_HASH = '0C905EB065E6A42029CD1A10E710422761495A63D433535BA6EAA9BCF36AB8B6';
 
@@ -75,7 +75,7 @@ const SCREEN_TEXT = {
 
 	// Token Display Names
 	displayNameTokenXym: 'Symbol • XYM',
-	displayNameTokenWxym: 'Wrapped XYM • wXYM',
+	displayNameTokenBxym: 'Bridged XYM • bXYM',
 	displayNameTokenEth: 'Ether • ETH'
 };
 
@@ -106,12 +106,12 @@ const tokenXym = TokenFixtureBuilder
 	.setAmount('1000')
 	.build();
 
-const tokenWxym = TokenFixtureBuilder
+const tokenBxym = TokenFixtureBuilder
 	.createWithToken(CHAIN_NAME_ETHEREUM, NETWORK_IDENTIFIER, 1)
 	.setAmount('500')
 	.build();
 
-const tokenWxymPayout = TokenFixtureBuilder
+const tokenBxymPayout = TokenFixtureBuilder
 	.createWithToken(CHAIN_NAME_ETHEREUM, NETWORK_IDENTIFIER, 1)
 	.setAmount(PAYOUT_AMOUNT)
 	.build();
@@ -161,11 +161,11 @@ const bridgeStepPair = {
 	sourceWalletController: symbolWalletController,
 	targetWalletController: ethereumWalletController,
 	sourceTokenInfo: tokenXym,
-	targetTokenInfo: tokenWxym
+	targetTokenInfo: tokenBxym
 };
 
 const bridgeMock = {
-	id: BRIDGE_ID_XYM_TO_WXYM,
+	id: BRIDGE_ID_XYM_TO_BXYM,
 	steps: 1,
 	isReady: true,
 	estimateRequest: jest.fn().mockResolvedValue({
@@ -186,8 +186,8 @@ const swapSideSymbolXym = {
 	walletController: symbolWalletController
 };
 
-const swapSideEthereumWxym = {
-	token: tokenWxym,
+const swapSideEthereumBxym = {
+	token: tokenBxym,
 	chainName: CHAIN_NAME_ETHEREUM,
 	networkIdentifier: NETWORK_IDENTIFIER,
 	walletController: ethereumWalletController
@@ -202,9 +202,9 @@ const swapSideEthereumEth = {
 
 // Swap Pair Fixtures
 
-const swapPairXymToWxym = {
+const swapPairXymToBxym = {
 	source: swapSideSymbolXym,
-	target: swapSideEthereumWxym,
+	target: swapSideEthereumBxym,
 	bridge: bridgeMock,
 	mode: BridgeMode.WRAP
 };
@@ -218,7 +218,7 @@ const swapPairXymToEth = {
 
 // Pair Collections
 
-const allPairs = [swapPairXymToWxym, swapPairXymToEth];
+const allPairs = [swapPairXymToBxym, swapPairXymToEth];
 
 // History Fixtures
 
@@ -230,9 +230,9 @@ const historyItem = {
 	sourceChainName: CHAIN_NAME_SYMBOL,
 	targetChainName: CHAIN_NAME_ETHEREUM,
 	sourceTokenInfo: tokenXym,
-	targetTokenInfo: tokenWxym,
+	targetTokenInfo: tokenBxym,
 	payoutTransaction: {
-		token: tokenWxymPayout
+		token: tokenBxymPayout
 	},
 	requestStatus: BridgeRequestStatus.CONFIRMED,
 	payoutStatus: 2
@@ -288,9 +288,9 @@ const createUseSwapSelectorMock = (overrides = {}) => ({
 	bridge: bridgeMock,
 	mode: BridgeMode.WRAP,
 	source: swapSideSymbolXym,
-	target: swapSideEthereumWxym,
+	target: swapSideEthereumBxym,
 	sourceList: [swapSideSymbolXym, swapSideEthereumEth],
-	targetList: [swapSideEthereumWxym, swapSideEthereumEth],
+	targetList: [swapSideEthereumBxym, swapSideEthereumEth],
 	changeSource: jest.fn(),
 	changeTarget: jest.fn(),
 	reverse: jest.fn(),
@@ -414,9 +414,9 @@ describe('screens/bridge/BridgeSwap', () => {
 					isReady: true,
 					bridge,
 					source: swapSideSymbolXym,
-					target: swapSideEthereumWxym,
+					target: swapSideEthereumBxym,
 					sourceList: [swapSideSymbolXym, swapSideEthereumEth],
-					targetList: [swapSideEthereumWxym, swapSideEthereumEth],
+					targetList: [swapSideEthereumBxym, swapSideEthereumEth],
 					changeSource: changeSourceMock,
 					changeTarget: changeTargetMock
 				},
@@ -604,7 +604,7 @@ describe('screens/bridge/BridgeSwap', () => {
 			// Assert:
 			expect(Router.goToBridgeSwapDetails).toHaveBeenCalledWith({
 				params: {
-					bridgeId: BRIDGE_ID_XYM_TO_WXYM,
+					bridgeId: BRIDGE_ID_XYM_TO_BXYM,
 					requestTransactionHash: HISTORY_ITEM_TRANSACTION_HASH,
 					preloadedData: historyItem
 				}

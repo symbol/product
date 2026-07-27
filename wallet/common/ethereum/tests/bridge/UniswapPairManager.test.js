@@ -45,8 +45,8 @@ const nativeTokenInfo = {
 
 const wrappedTokenInfo = {
 	id: WRAPPED_TOKEN_ID,
-	name: 'Wrapped XYM',
-	ticker: 'WXYM',
+	name: 'Bridged XYM',
+	ticker: 'bXYM',
 	divisibility: 6
 };
 

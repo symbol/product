@@ -31,7 +31,7 @@ jest.mock('@/app/lib/controller', () => ({
 const CHAIN_NAME_SYMBOL = 'symbol';
 const CHAIN_NAME_ETHEREUM = 'ethereum';
 const NETWORK_IDENTIFIER = 'testnet';
-const BRIDGE_ID = 'symbol-xym-ethereum-wxym';
+const BRIDGE_ID = 'symbol-xym-ethereum-bxym';
 
 const REQUEST_TRANSACTION_HASH = 'ABC123DEF456789REQUEST';
 const PAYOUT_TRANSACTION_HASH = '0xPAYOUT789ABC123DEF';
@@ -100,7 +100,7 @@ const tokenXym = TokenFixtureBuilder
 	.setAmount('100')
 	.build();
 
-const tokenWxym = TokenFixtureBuilder
+const tokenBxym = TokenFixtureBuilder
 	.createWithToken(CHAIN_NAME_ETHEREUM, NETWORK_IDENTIFIER, 1)
 	.setAmount('99')
 	.build();
@@ -127,7 +127,7 @@ const createBridgeRequestData = (overrides = {}) => ({
 	sourceChainName: CHAIN_NAME_SYMBOL,
 	targetChainName: CHAIN_NAME_ETHEREUM,
 	sourceTokenInfo: tokenXym,
-	targetTokenInfo: tokenWxym,
+	targetTokenInfo: tokenBxym,
 	requestStatus: BridgeRequestStatus.CONFIRMED,
 	payoutStatus: BridgePayoutStatus.COMPLETED,
 	requestTransaction: {

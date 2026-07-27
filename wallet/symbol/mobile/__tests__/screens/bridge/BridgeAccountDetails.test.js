@@ -18,7 +18,7 @@ const CHAIN_NAME = 'ethereum';
 const NETWORK_IDENTIFIER = 'testnet';
 const MOCK_PRIVATE_KEY = 'mockPrivateKey123456789';
 const TOKEN_ETH_AMOUNT = '2.5';
-const TOKEN_WXYM_AMOUNT = '1000';
+const TOKEN_BXYM_AMOUNT = '1000';
 
 // Screen Text
 
@@ -31,7 +31,7 @@ const SCREEN_TEXT = {
 	textTokensTitle: 's_bridge_tokens_title',
 
 	// Token display names
-	displayNameTokenWxym: 'Wrapped XYM • wXYM',
+	displayNameTokenBxym: 'Bridged XYM • bXYM',
 	displayNameTokenEth: 'Ether • ETH',
 
 	// Buttons
@@ -66,16 +66,16 @@ const tokenEth = TokenFixtureBuilder
 	.setAmount(TOKEN_ETH_AMOUNT)
 	.build();
 
-const tokenWxym = TokenFixtureBuilder
+const tokenBxym = TokenFixtureBuilder
 	.createWithToken(CHAIN_NAME, NETWORK_IDENTIFIER, 1)
-	.setAmount(TOKEN_WXYM_AMOUNT)
+	.setAmount(TOKEN_BXYM_AMOUNT)
 	.build();
 
 // Account Info Fixtures
 
 const accountInfoWithTokens = AccountInfoFixtureBuilder
 	.createWithAccount(CHAIN_NAME, NETWORK_IDENTIFIER, 0)
-	.setTokens([tokenEth, tokenWxym])
+	.setTokens([tokenEth, tokenBxym])
 	.build();
 
 // Wallet Controller Mock Factory
@@ -148,8 +148,8 @@ describe('screens/bridge/BridgeAccountDetails', () => {
 			screenTester.expectText([
 				SCREEN_TEXT.textTokensTitle,
 				SCREEN_TEXT.displayNameTokenEth,
-				SCREEN_TEXT.displayNameTokenWxym,
-				TOKEN_WXYM_AMOUNT
+				SCREEN_TEXT.displayNameTokenBxym,
+				TOKEN_BXYM_AMOUNT
 			]);
 		});
 
