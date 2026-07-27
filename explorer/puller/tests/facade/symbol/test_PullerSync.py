@@ -29,6 +29,7 @@ from .puller_test_utils import (
 	ResponseConnector,
 	SymbolPullerTestBase,
 	create_embedded_node_transaction,
+	create_mosaic_expired_statement_item,
 	create_network_properties,
 	create_node_block,
 	create_node_transaction,
@@ -147,6 +148,48 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 			expected_row['updated_at_height']
 		)], fetch_mosaic_state(self.puller.symbol_db))
 		self.assertEqual(1, connector.paths.count('mosaics'))
+
+	def test_sync_block_headers_persists_mosaic_expired_receipt_and_refreshes_mosaic(self):
+		# Arrange:
+		mosaic_item = create_mosaic_item(supply='777', item_id='000000000000000000000001')
+		connector = FakeConnector(
+			1,
+			{0: [create_node_block(1)]},
+			statement_pages={statement_path(1, 1): {'data': [create_mosaic_expired_statement_item(1, MOSAIC_ID)]}},
+			mosaics_by_id={MOSAIC_ID: mosaic_item})
+
+		# Act:
+		self._sync_with_connector(connector)
+
+		# Assert:
+		cursor = self.puller.symbol_db.connection.cursor()
+		cursor.execute(
+			'SELECT receipt_type, receipt_group, artifact_id, mosaic_id, amount FROM symbol_receipts')
+		self.assertEqual([
+			('mosaicExpired', 'artifactExpiry', MOSAIC_ID, None, 0)
+		], cursor.fetchall())
+		self.assertEqual([{'mosaicIds': [MOSAIC_ID]}], [
+			payload for path, payload in connector.post_requests if 'mosaics' == path
+		])
+		self.assertEqual(1, connector.paths.count('mosaics'))
+		expected_row = create_expected_mosaic_row(mosaic_item, 1)
+		self.assertEqual([(
+			expected_row['mosaic_id'],
+			expected_row['owner_address'].hex(),
+			expected_row['start_height'],
+			expected_row['duration'],
+			expected_row['expiration_height'],
+			expected_row['supply'],
+			expected_row['divisibility'],
+			expected_row['flags'],
+			expected_row['supply_mutable'],
+			expected_row['transferable'],
+			expected_row['restrictable'],
+			expected_row['revokable'],
+			[],
+			expected_row['raw_payload'],
+			expected_row['updated_at_height']
+		)], fetch_mosaic_state(self.puller.symbol_db))
 
 	def _assert_alias_supply_change_refreshes_mosaic_state(
 		self, alias_mosaic_id, transaction_items, resolution_entries, original_supply, new_supply

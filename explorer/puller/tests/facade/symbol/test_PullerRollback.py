@@ -30,6 +30,28 @@ from .puller_test_utils import (
 )
 
 
+def _mosaic_state_from_row(row):
+	"""Converts a normalized test row to the complete persisted-state shape."""
+
+	return (
+		row['mosaic_id'],
+		row['owner_address'].hex(),
+		row['start_height'],
+		row['duration'],
+		row['expiration_height'],
+		row['supply'],
+		row['divisibility'],
+		row['flags'],
+		row['supply_mutable'],
+		row['transferable'],
+		row['restrictable'],
+		row['revokable'],
+		[],
+		row['raw_payload'],
+		row['updated_at_height']
+	)
+
+
 class SymbolPullerRollbackTest(SymbolPullerTestBase):
 	def _fetch_namespace_rows(self):
 		cursor = self.puller.symbol_db.connection.cursor()
@@ -141,29 +163,40 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):
 			[1, 2, 3],
 			{2: b'local mismatch'.hex()})
 		self.puller.symbol_db.upsert_sync_state(create_sync_state())
-		self.puller.symbol_db.upsert_mosaic(create_expected_mosaic_row(
-			create_mosaic_item(mosaic_id=before_fork_id),
-			1))
-		self.puller.symbol_db.upsert_mosaic(create_expected_mosaic_row(
-			create_mosaic_item(mosaic_id=survivor_id),
-			2))
-		self.puller.symbol_db.upsert_mosaic(create_expected_mosaic_row(
-			create_mosaic_item(mosaic_id=fork_only_id),
-			3))
+		before_fork_item = create_mosaic_item(
+			mosaic_id=before_fork_id,
+			supply='111',
+			item_id='000000000000000000000002')
+		survivor_item = create_mosaic_item(
+			mosaic_id=survivor_id,
+			supply='222',
+			item_id='000000000000000000000003')
+		fork_only_item = create_mosaic_item(
+			mosaic_id=fork_only_id,
+			supply='333',
+			item_id='000000000000000000000004')
+		self.puller.symbol_db.upsert_mosaic(create_expected_mosaic_row(before_fork_item, 1))
+		self.puller.symbol_db.upsert_mosaic(create_expected_mosaic_row(survivor_item, 2))
+		self.puller.symbol_db.upsert_mosaic(create_expected_mosaic_row(fork_only_item, 3))
+		canonical_survivor_item = create_mosaic_item(
+			mosaic_id=survivor_id,
+			supply='999',
+			item_id='000000000000000000000005')
 		connector = FakeConnector(
 			3,
 			{1: [create_node_block(2), create_node_block(3)]},
 			{2: create_node_block(2)},
-			mosaics_by_id={survivor_id: create_mosaic_item(mosaic_id=survivor_id)})
+			mosaics_by_id={survivor_id: canonical_survivor_item})
 		set_symbol_connector(self.puller, connector)
 
 		# Act:
 		asyncio.run(self.puller.sync_block_headers())
 
 		# Assert:
-		cursor = self.puller.symbol_db.connection.cursor()
-		cursor.execute('SELECT mosaic_id, updated_at_height FROM symbol_mosaics ORDER BY mosaic_id')
-		self.assertEqual([(before_fork_id, 1), (survivor_id, 1)], cursor.fetchall())
+		self.assertEqual([
+			_mosaic_state_from_row(create_expected_mosaic_row(before_fork_item, 1)),
+			_mosaic_state_from_row(create_expected_mosaic_row(canonical_survivor_item, 1))
+		], fetch_mosaic_state(self.puller.symbol_db))
 		self.assertEqual(3, self.puller.symbol_db.get_sync_state()['last_synced_height'])
 		self.assertEqual([{'mosaicIds': [survivor_id, fork_only_id]}], [
 			payload for path, payload in connector.post_requests if 'mosaics' == path

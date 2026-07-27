@@ -5,6 +5,7 @@ from symbolchain.sc import ReceiptType
 
 from puller.model.symbol.Receipt import (
 	INFLATION_RECEIPT_TYPE,
+	MOSAIC_EXPIRED_RECEIPT_TYPE,
 	NAMESPACE_DELETED_RECEIPT_TYPE,
 	NAMESPACE_EXPIRED_RECEIPT_TYPE,
 	RECEIPT_TYPE_GROUPS,
@@ -68,6 +69,10 @@ class ReceiptTest(TestCase):
 		self.assertEqual('inflation', INFLATION_RECEIPT_TYPE)
 		self.assertEqual('namespaceExpired', NAMESPACE_EXPIRED_RECEIPT_TYPE)
 		self.assertEqual('namespaceDeleted', NAMESPACE_DELETED_RECEIPT_TYPE)
+
+	def test_mosaic_expired_receipt_type_is_documented_label(self):
+		# Arrange / Act / Assert:
+		self.assertEqual('mosaicExpired', MOSAIC_EXPIRED_RECEIPT_TYPE)
 
 	def test_create_receipt_rows_populates_balance_change_fields(self):
 		# Arrange:

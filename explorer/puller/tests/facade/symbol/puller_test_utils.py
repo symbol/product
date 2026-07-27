@@ -248,6 +248,24 @@ def create_statement_item(height, amount, receipt_type=ReceiptType.INFLATION.val
 	}
 
 
+def create_mosaic_expired_statement_item(height, mosaic_id):
+	"""Creates a Symbol artifact-expiry statement for a mosaic."""
+
+	return {
+		'statement': {
+			'height': str(height),
+			'source': {'primaryId': height, 'secondaryId': 0},
+			'receipts': [{
+				'version': 1,
+				'type': ReceiptType.MOSAIC_EXPIRED.value,
+				'artifactId': mosaic_id
+			}]
+		},
+		'id': f'statement-{height}-mosaic-expired',
+		'meta': {'timestamp': '0'}
+	}
+
+
 def create_resolution_statement(height, unresolved, entries):
 	return {
 		'statement': {

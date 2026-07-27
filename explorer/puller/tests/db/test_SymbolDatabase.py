@@ -384,6 +384,23 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			('updated_at_height', 'int8', 'NO')
 		], cursor.fetchall())
 
+	def test_create_tables_creates_symbol_mosaic_id_with_expected_length(self):
+		# Arrange:
+		database = self._create_uninitialized_database()
+		cursor = database.connection.cursor()
+
+		# Act:
+		database.create_tables()
+
+		# Assert:
+		cursor.execute(
+			'''
+			SELECT udt_name, character_maximum_length
+			FROM information_schema.columns
+			WHERE table_name = 'symbol_mosaics' AND column_name = 'mosaic_id'
+			''')
+		self.assertEqual([('varchar', 16)], cursor.fetchall())
+
 	def test_create_tables_creates_symbol_mosaic_indexes(self):
 		# Arrange:
 		database = self._create_uninitialized_database()
@@ -941,6 +958,26 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		cursor.execute('SELECT alias_names FROM symbol_mosaics WHERE mosaic_id = %s', (row['mosaic_id'],))
 		self.assertEqual([(['alpha', 'zeta'],)], cursor.fetchall())
 
+	def test_upsert_mosaic_derives_alias_names_only_from_mosaic_alias_rows(self):
+		# Arrange:
+		database = self._create_database()
+		row = create_expected_mosaic_row(create_mosaic_item(), 123)
+		cursor = database.connection.cursor()
+		cursor.execute(
+			'''
+			INSERT INTO symbol_alias_names (artifact_type, artifact_id, name, updated_at_height)
+			VALUES ('mosaic', %s, 'mosaic-name', 123), ('namespace', %s, 'namespace-decoy', 123)
+			''',
+			(row['mosaic_id'], row['mosaic_id']))
+		database.connection.commit()
+
+		# Act:
+		database.upsert_mosaic(row)
+
+		# Assert:
+		cursor.execute('SELECT alias_names FROM symbol_mosaics WHERE mosaic_id = %s', (row['mosaic_id'],))
+		self.assertEqual([(['mosaic-name'],)], cursor.fetchall())
+
 	def test_upsert_mosaic_updates_all_non_key_columns(self):
 		# Arrange:
 		database = self._create_database()
@@ -992,6 +1029,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		# Act:
 		with self.assertRaises(PsycopgError):
 			database.upsert_mosaic(invalid_row)
+		self.assertEqual([], fetch_mosaic_state(database))
 		database.upsert_mosaic(valid_row)
 
 		# Assert:
@@ -1047,6 +1085,24 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		cursor = database.connection.cursor()
 		cursor.execute('SELECT alias_names FROM symbol_mosaics')
 		self.assertEqual([([],)], cursor.fetchall())
+
+	def test_delete_namespace_preserves_other_mosaic_alias_names(self):
+		# Arrange:
+		database = self._create_database()
+		mosaic_row = create_expected_mosaic_row(create_mosaic_item(), 1)
+		database.upsert_mosaic(mosaic_row)
+		deleted_namespace_row = _create_namespace_row(NAMESPACE_ROOT_ID, 'deleted')
+		kept_namespace_row = _create_namespace_row(NAMESPACE_SUB_ID, 'kept')
+		database.upsert_namespace(deleted_namespace_row, _create_alias_name_rows(deleted_namespace_row))
+		database.upsert_namespace(kept_namespace_row, _create_alias_name_rows(kept_namespace_row))
+
+		# Act:
+		database.delete_namespace(deleted_namespace_row['namespace_id'])
+
+		# Assert:
+		cursor = database.connection.cursor()
+		cursor.execute('SELECT mosaic_id, alias_names FROM symbol_mosaics')
+		self.assertEqual([(mosaic_row['mosaic_id'], ['kept'])], cursor.fetchall())
 
 	def test_upsert_namespace_alias_for_missing_mosaic_is_a_noop(self):
 		# Arrange:
@@ -1137,6 +1193,26 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			('mosaic', '72C0212E67A08BCE', 'root', 2),
 			('namespace', NAMESPACE_ROOT_ID, 'root', 2)
 		], cursor.fetchall())
+
+	def test_repair_rollback_from_height_leaves_mosaic_current_state_rows_in_place(self):
+		# Arrange:
+		database = self._create_database()
+		fork_height = 2
+		mosaic_row = create_expected_mosaic_row(
+			create_mosaic_item(mosaic_id='0000000000000001', supply='4321', item_id='fork-survivor'),
+			fork_height)
+		database.upsert_mosaic(mosaic_row)
+		original_mosaic_state = fetch_mosaic_state(database)
+
+		# Act:
+		database.repair_rollback_from_height(
+			fork_height,
+			_create_sync_state(status='repairing', last_synced_height=1, last_synced_block_hash=b'hash 1'),
+			[],
+			[])
+
+		# Assert:
+		self.assertEqual(original_mosaic_state, fetch_mosaic_state(database))
 
 	def test_repair_rollback_from_height_applies_namespace_and_mosaic_changes_in_same_transaction(self):
 		# Arrange:
