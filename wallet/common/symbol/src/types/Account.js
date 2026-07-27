@@ -64,6 +64,14 @@
  */
 
 /**
+ * Minimal account info required to build harvesting transactions.
+ * @typedef {Object} HarvesterAccountInfo
+ * @property {string} address - Account address.
+ * @property {string} publicKey - Account public key, used as the signer of the inner key-link transactions.
+ * @property {LinkedKeys} linkedKeys - Currently linked public keys, unlinked before re-linking.
+ */
+
+/**
  * @typedef {Object} UnresolvedAddressWithLocation
  * @property {string} namespaceId - The unresolved address (namespace id).
  * @property {TransactionLocation} [location] - The transaction location where the unresolved address is found.

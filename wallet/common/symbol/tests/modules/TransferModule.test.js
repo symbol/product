@@ -24,13 +24,7 @@ const createMosaics = () => ([
 	}
 ]);
 
-const createFee = amount => ({
-	token: {
-		id: '72C0212E67A08BCE',
-		amount,
-		divisibility: 6
-	}
-});
+const defaultFee = createTransactionFee(networkProperties, '0');
 
 describe('TransferModule', () => {
 	let transferModule;
@@ -121,13 +115,11 @@ describe('TransferModule', () => {
 		it('creates simple transfer transaction to address with plain message', async () => {
 			// Arrange:
 			const messageText = 'Hello Symbol';
-			const fee = createFee('1');
 			const options = {
 				recipientAddress: recipientAccount.address,
 				mosaics: createMosaics(),
 				messageText,
-				isMessageEncrypted: false,
-				fee
+				isMessageEncrypted: false
 			};
 			const senderPublicKey = currentAccount.publicKey;
 			const senderAddress = currentAccount.address;
@@ -143,7 +135,7 @@ describe('TransferModule', () => {
 					payload: encodePlainMessage(messageText),
 					type: MessageType.PlainText
 				},
-				fee
+				fee: defaultFee
 			};
 			const expectedResult = new TransactionBundle([expectedTransfer], { type: TransactionBundleType.DEFAULT });
 
@@ -160,12 +152,10 @@ describe('TransferModule', () => {
 
 		it('creates simple transfer transaction to address without message', async () => {
 			// Arrange:
-			const fee = createFee('0.5');
 			const options = {
 				recipientAddress: recipientAccount.address,
 				mosaics: createMosaics(),
-				isMessageEncrypted: false,
-				fee
+				isMessageEncrypted: false
 			};
 			const senderPublicKey = currentAccount.publicKey;
 			const senderAddress = currentAccount.address;
@@ -176,7 +166,7 @@ describe('TransferModule', () => {
 				recipientAddress: recipientAccount.address,
 				mosaics: createMosaics(),
 				deadline: createDeadline(2, networkProperties.epochAdjustment),
-				fee
+				fee: defaultFee
 			};
 			const expectedResult = new TransactionBundle([expectedTransfer], { type: TransactionBundleType.DEFAULT });
 
@@ -195,13 +185,11 @@ describe('TransferModule', () => {
 			// Arrange:
 			const aliasName = 'pppplllll.subnamespace';
 			const namespaceIdToResolve = namespaceIdFromName(aliasName.toLowerCase());
-			const fee = createFee('1.2');
 			const options = {
 				recipientAddress: aliasName,
 				mosaics: createMosaics(),
 				messageText: 'Alias transfer',
-				isMessageEncrypted: false,
-				fee
+				isMessageEncrypted: false
 			};
 			const senderPublicKey = currentAccount.publicKey;
 			const senderAddress = currentAccount.address;
@@ -218,7 +206,7 @@ describe('TransferModule', () => {
 					payload: encodePlainMessage('Alias transfer'),
 					type: MessageType.PlainText
 				},
-				fee
+				fee: defaultFee
 			};
 			const expectedResult = new TransactionBundle([expectedTransfer], { type: TransactionBundleType.DEFAULT });
 
@@ -242,13 +230,11 @@ describe('TransferModule', () => {
 		it('creates transfer transaction to address with encrypted message', async () => {
 			// Arrange:
 			const messageText = 'Secret';
-			const fee = createFee('3');
 			const options = {
 				recipientAddress: recipientAccount.address,
 				mosaics: createMosaics(),
 				messageText,
-				isMessageEncrypted: true,
-				fee
+				isMessageEncrypted: true
 			};
 			const senderPublicKey = currentAccount.publicKey;
 			const senderAddress = currentAccount.address;
@@ -264,7 +250,7 @@ describe('TransferModule', () => {
 					payload: `ENC(${messageText})-with-${recipientAccount.publicKey}`,
 					type: MessageType.EncryptedText
 				},
-				fee
+				fee: defaultFee
 			};
 			const expectedResult = new TransactionBundle([expectedTransfer], { type: TransactionBundleType.DEFAULT });
 
@@ -286,13 +272,11 @@ describe('TransferModule', () => {
 
 		it('creates multisig transfer transaction (aggregate bonded + hash lock) when sender differs from current account', async () => {
 			// Arrange:
-			const fee = createFee('2');
 			const options = {
 				senderPublicKey: otherAccount.publicKey,
 				recipientAddress: recipientAccount.address,
 				mosaics: createMosaics(),
-				isMessageEncrypted: false,
-				fee
+				isMessageEncrypted: false
 			};
 			const senderPublicKey = otherAccount.publicKey;
 			const senderAddress = otherAccount.address;
@@ -314,7 +298,7 @@ describe('TransferModule', () => {
 				},
 				lockedAmount: '10',
 				duration: 1000,
-				fee,
+				fee: defaultFee,
 				deadline: createDeadline(2, networkProperties.epochAdjustment),
 				aggregateHash: '0000000000000000000000000000000000000000000000000000000000000000'
 			};
@@ -323,7 +307,7 @@ describe('TransferModule', () => {
 				innerTransactions: [innerTransfer],
 				signerPublicKey: currentAccount.publicKey,
 				signerAddress: currentAccount.address,
-				fee,
+				fee: defaultFee,
 				deadline: createDeadline(48, networkProperties.epochAdjustment)
 			};
 			const expectedResult = new TransactionBundle(
@@ -349,8 +333,7 @@ describe('TransferModule', () => {
 			const options = {
 				recipientAddress: aliasName,
 				mosaics: createMosaics(),
-				isMessageEncrypted: false,
-				fee: createFee('0.1')
+				isMessageEncrypted: false
 			};
 			const expectedError = new ControllerError(
 				'error_transfer_unknown_recipient',
@@ -370,44 +353,6 @@ describe('TransferModule', () => {
 					shouldFetchRecipientInfo: false,
 					shouldResolveAddress: true,
 					namespaceIdToResolve
-				}
-			);
-		});
-
-		it('creates transfer with default fee when fee not provided', async () => {
-			// Arrange:
-			const options = {
-				recipientAddress: recipientAccount.address,
-				mosaics: createMosaics(),
-				messageText: 'No fee provided',
-				isMessageEncrypted: false
-			};
-			const senderPublicKey = currentAccount.publicKey;
-			const senderAddress = currentAccount.address;
-			const defaultFee = createTransactionFee(networkProperties, '0');
-			const expectedTransfer = {
-				type: TransactionType.TRANSFER,
-				signerPublicKey: senderPublicKey,
-				signerAddress: senderAddress,
-				recipientAddress: recipientAccount.address,
-				mosaics: createMosaics(),
-				deadline: createDeadline(2, networkProperties.epochAdjustment),
-				message: {
-					text: 'No fee provided',
-					payload: encodePlainMessage('No fee provided'),
-					type: MessageType.PlainText
-				},
-				fee: defaultFee
-			};
-			const expectedResult = new TransactionBundle([expectedTransfer], { type: TransactionBundleType.DEFAULT });
-
-			// Act & Assert:
-			await runCreateTransactionTest(
-				{ options },
-				{
-					result: expectedResult,
-					shouldFetchRecipientInfo: false,
-					shouldResolveAddress: false
 				}
 			);
 		});

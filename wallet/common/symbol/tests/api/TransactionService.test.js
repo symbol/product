@@ -423,6 +423,10 @@ describe('TransactionService', () => {
 			{
 				description: 'announces MULTISIG_ACCOUNT_MODIFICATION via sequential PARTIAL only, without re-announcing via DEFAULT',
 				bundleType: TransactionBundleType.MULTISIG_ACCOUNT_MODIFICATION
+			},
+			{
+				description: 'announces MULTISIG_DELEGATED_HARVESTING via sequential PARTIAL only, without re-announcing via DEFAULT',
+				bundleType: TransactionBundleType.MULTISIG_DELEGATED_HARVESTING
 			}
 		];
 

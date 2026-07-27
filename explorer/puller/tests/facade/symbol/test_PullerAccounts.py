@@ -22,6 +22,7 @@ from .puller_test_utils import (
 	create_account_item,
 	create_node_block,
 	create_node_transaction,
+	create_resolution_statement,
 	create_statement_item,
 	set_symbol_connector,
 	statement_path,
@@ -197,10 +198,11 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):  # pylint: disable=too-man
 			(100, 0, True, True, 1),
 			self._fetch_account_current_state(RECIPIENT_ADDRESS))
 
-	def test_refresh_dirty_accounts_for_batch_ignores_namespace_alias_transaction_participant(self):
+	def test_refresh_dirty_accounts_for_batch_resolves_namespace_alias_transaction_participant(self):
 		# Arrange:
 		alias_address = '99065A28385EB5AE88000000000000000000000000000000'
 		beneficiary_address_text = self._address_text()
+		resolved_address_text = self._address_text(RECIPIENT_ADDRESS)
 		connector = FakeConnector(
 			1,
 			{0: [self._create_block(1)]},
@@ -209,13 +211,35 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):  # pylint: disable=too-man
 					'data': [create_node_transaction(1, recipientAddress=alias_address)]
 				}
 			},
-			account_by_address=self._account_by_address_text(BENEFICIARY_ADDRESS))
+			account_by_address=self._account_by_address_text(BENEFICIARY_ADDRESS, RECIPIENT_ADDRESS),
+			address_resolutions_by_height={
+				1: [create_resolution_statement(1, alias_address, [{
+					'source': {'primaryId': 1, 'secondaryId': 0},
+					'resolved': RECIPIENT_ADDRESS
+				}])]
+			})
 
 		# Act:
 		self._sync_with_connector(connector)
 
 		# Assert:
-		self.assertEqual([{'addresses': [beneficiary_address_text]}], connector.post_payloads)
+		cursor = self.puller.symbol_db.connection.cursor()
+		cursor.execute(
+			'''
+			SELECT encode(transaction.recipient_address, 'hex'), encode(address.address, 'hex'), address.role
+			FROM symbol_transactions transaction
+			JOIN symbol_transaction_addresses address ON address.transaction_id = transaction.id
+			WHERE address.role = 'recipient'
+			''')
+		self.assertEqual([{
+			'addresses': [beneficiary_address_text, resolved_address_text]
+		}], connector.post_payloads)
+		self.assertEqual((
+			RECIPIENT_ADDRESS.lower(),
+			RECIPIENT_ADDRESS.lower(),
+			'recipient'
+		), cursor.fetchone())
+		self.assertEqual(1, self._fetch_account_count(RECIPIENT_ADDRESS))
 
 	def test_refresh_dirty_accounts_for_batch_prefers_beneficiary_timestamp_when_address_is_also_transaction_participant(self):
 		# Arrange: BENEFICIARY_ADDRESS is only a transaction participant at height 1 (old block, outside the
@@ -765,7 +789,7 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):  # pylint: disable=too-man
 
 		# Act:
 		with self.assertRaises(PsycopgError):
-			database.repair_rollback_from_height(1, sync_state)
+			database.repair_rollback_from_height(1, sync_state, [])
 
 	def test_refresh_accounts_can_restart_with_new_successful_run(self):  # pylint: disable=too-many-locals
 		# Arrange:

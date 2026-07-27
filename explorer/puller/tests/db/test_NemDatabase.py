@@ -543,6 +543,72 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 		# Assert:
 		self.assertEqual(result[1], 1)
 
+	def test_upsert_account_does_not_overwrite_remote_address(self):
+		# Arrange:
+		remote_address = Address('TBKQWJJGPOHL462DBVMTYOAERXGG2BOS5XRFO2P6')
+
+		with NemDatabase(self.db_config) as nem_database:
+			nem_database.create_tables()
+
+			cursor = nem_database.connection.cursor()
+
+			# insert an account that already carries a remote link
+			nem_database.upsert_account(
+				cursor,
+				ACCOUNTS[0]._replace(remote_address=remote_address)
+			)
+
+			# Act:
+			nem_database.upsert_account(
+				cursor,
+				ACCOUNTS[0]._replace(remote_address=None, balance=2000000)
+			)
+
+			nem_database.connection.commit()
+			result = self._fetch_account_from_db(cursor, ACCOUNTS[0].address)
+
+		# Assert:
+		self.assertEqual(result[3], remote_address.bytes.hex())
+		self.assertEqual(result[5], 2000000)
+
+	def test_can_set_account_remote_address(self):
+		# Arrange:
+		remote_address = Address('TBKQWJJGPOHL462DBVMTYOAERXGG2BOS5XRFO2P6')
+
+		with NemDatabase(self.db_config) as nem_database:
+			nem_database.create_tables()
+
+			cursor = nem_database.connection.cursor()
+
+			nem_database.upsert_account(cursor, ACCOUNTS[0])
+
+			# Act:
+			nem_database.update_account_remote_address(cursor, ACCOUNTS[0].address, remote_address)
+			nem_database.connection.commit()
+			result = self._fetch_account_from_db(cursor, ACCOUNTS[0].address)
+
+		# Assert:
+		self.assertEqual(result[3], remote_address.bytes.hex())
+
+	def test_can_clear_account_remote_address(self):
+		# Arrange:
+		remote_address = Address('TBKQWJJGPOHL462DBVMTYOAERXGG2BOS5XRFO2P6')
+
+		with NemDatabase(self.db_config) as nem_database:
+			nem_database.create_tables()
+
+			cursor = nem_database.connection.cursor()
+
+			nem_database.upsert_account(cursor, ACCOUNTS[0]._replace(remote_address=remote_address))
+
+			# Act:
+			nem_database.update_account_remote_address(cursor, ACCOUNTS[0].address, None)
+			nem_database.connection.commit()
+			result = self._fetch_account_from_db(cursor, ACCOUNTS[0].address)
+
+		# Assert:
+		self.assertIsNone(result[3])
+
 	def test_can_get_accounts_for_refresh(self):
 		# Arrange:
 		accounts = [

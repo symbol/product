@@ -342,7 +342,6 @@ describe('utils/transaction', () => {
 	describe('encodeDelegatedHarvestingMessage', () => {
 		it('returns message with delegation marker and correct size', () => {
 			// Arrange:
-			const currentAccount = walletStorageAccounts.testnet[0];
 			const remoteAccount = walletStorageAccounts.testnet[1];
 			const vrfAccount = walletStorageAccounts.testnet[2];
 			const nodeAccount = walletStorageAccounts.testnet[3];
@@ -351,7 +350,6 @@ describe('utils/transaction', () => {
 
 			// Act:
 			const result = encodeDelegatedHarvestingMessage(
-				currentAccount.privateKey,
 				nodeAccount.publicKey,
 				remoteAccount.privateKey,
 				vrfAccount.privateKey
@@ -594,6 +592,10 @@ describe('utils/transaction', () => {
 			{
 				description: 'signs hashLock and aggregateBonded transactions for MULTISIG_ACCOUNT_MODIFICATION bundle',
 				bundleType: TransactionBundleType.MULTISIG_ACCOUNT_MODIFICATION
+			},
+			{
+				description: 'signs hashLock and aggregateBonded transactions for MULTISIG_DELEGATED_HARVESTING bundle',
+				bundleType: TransactionBundleType.MULTISIG_DELEGATED_HARVESTING
 			}
 		];
 

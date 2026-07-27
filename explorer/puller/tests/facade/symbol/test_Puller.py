@@ -19,7 +19,6 @@ class CountingRateLimiter:
 
 
 class SymbolPullerTest(TestCase):
-
 	def test_create_default_puller_instance(self):
 		# Arrange / Act:
 		with temporary_symbol_puller() as puller:

@@ -37,6 +37,8 @@ def drop_symbol_block_tables_if_present(database):
 
 	database.connection.rollback()
 	cursor = database.connection.cursor()
+	cursor.execute('DROP TABLE IF EXISTS symbol_alias_names')
+	cursor.execute('DROP TABLE IF EXISTS symbol_namespaces')
 	cursor.execute('DROP TABLE IF EXISTS symbol_transaction_mosaics')
 	cursor.execute('DROP TABLE IF EXISTS symbol_transaction_addresses')
 	cursor.execute('DROP TABLE IF EXISTS symbol_transactions')
@@ -55,6 +57,9 @@ def drop_symbol_block_tables_if_present(database):
 	cursor.execute('DROP TYPE IF EXISTS symbol_sync_state_status')
 	cursor.execute('DROP TYPE IF EXISTS symbol_block_type')
 	cursor.execute('DROP TYPE IF EXISTS symbol_account_type')
+	cursor.execute('DROP TYPE IF EXISTS symbol_namespace_registration_type')
+	cursor.execute('DROP TYPE IF EXISTS symbol_namespace_alias_type')
+	cursor.execute('DROP TYPE IF EXISTS symbol_alias_artifact_type')
 	database.connection.commit()
 
 

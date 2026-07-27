@@ -100,6 +100,11 @@ def set_symbol_connector(puller, connector):
 	puller._symbol_connector = connector  # pylint: disable=protected-access
 
 
+def set_symbol_rate_limiter(puller, rate_limiter):
+	# Keep injected rate-limiter replacement in one helper for deterministic request tests.
+	puller._rate_limiter = rate_limiter  # pylint: disable=protected-access
+
+
 def set_sync_block_pages(puller, sync_block_pages):
 	# Patch the private page sync step only for hard-to-reach error branches.
 	puller._sync_block_pages = sync_block_pages  # pylint: disable=protected-access
@@ -150,7 +155,7 @@ def create_node_block(
 	return node_block
 
 
-def create_node_transaction(height, transaction_hash=None, transaction_id=None, **transaction_overrides):
+def create_node_transaction(height, transaction_hash=None, transaction_id=None, block_index=0, **transaction_overrides):
 	transaction_hash = transaction_hash or f'{height:064X}'
 	transaction = {
 		'size': 152,
@@ -162,7 +167,7 @@ def create_node_transaction(height, transaction_hash=None, transaction_id=None, 
 		'maxFee': '1000',
 		'deadline': '2000',
 		'recipientAddress': RECIPIENT_ADDRESS,
-		'mosaics': [{'id': 'E74B99BA41F4AFEE', 'amount': str(height * 1000)}]
+		'mosaics': [{'id': NATIVE_MOSAIC_ID, 'amount': str(height * 1000)}]
 	}
 	transaction.update(transaction_overrides)
 
@@ -171,7 +176,7 @@ def create_node_transaction(height, transaction_hash=None, transaction_id=None, 
 			'height': str(height),
 			'hash': transaction_hash,
 			'merkleComponentHash': transaction_hash,
-			'index': 0,
+			'index': block_index,
 			'timestamp': str(height * 1000),
 			'feeMultiplier': 5
 		},
@@ -187,7 +192,7 @@ def create_embedded_node_transaction(height, aggregate_hash, embedded_index, tra
 		'network': 152,
 		'type': TransactionType.TRANSFER.value,
 		'recipientAddress': RECIPIENT_ADDRESS,
-		'mosaics': [{'id': 'E74B99BA41F4AFEE', 'amount': str(height * 1000)}]
+		'mosaics': [{'id': NATIVE_MOSAIC_ID, 'amount': str(height * 1000)}]
 	}
 	transaction.update(transaction_overrides)
 
@@ -219,6 +224,10 @@ def statement_path(start_height, end_height, page_number=1):
 	)
 
 
+def resolution_path(kind, height, page_number=1):
+	return f'statements/resolutions/{kind}?height={height}&pageSize={MAX_PAGE_SIZE}&pageNumber={page_number}'
+
+
 def create_statement_item(height, amount, receipt_type=ReceiptType.INFLATION.value, **receipt_overrides):
 	receipt = {
 		'version': 1,
@@ -235,6 +244,18 @@ def create_statement_item(height, amount, receipt_type=ReceiptType.INFLATION.val
 			'receipts': [receipt]
 		},
 		'id': f'statement-{height}-{amount}',
+		'meta': {'timestamp': '0'}
+	}
+
+
+def create_resolution_statement(height, unresolved, entries):
+	return {
+		'statement': {
+			'height': str(height),
+			'unresolved': unresolved,
+			'resolutionEntries': entries
+		},
+		'id': f'resolution-{height}-{unresolved}',
 		'meta': {'timestamp': '0'}
 	}
 
@@ -308,7 +329,11 @@ class FakeConnector:  # pylint: disable=too-many-instance-attributes
 		statement_pages=None,
 		account_by_address=None,
 		multisig_by_address=None,
-		account_pages=None
+		account_pages=None,
+		address_resolutions_by_height=None,
+		mosaic_resolutions_by_height=None,
+		namespace_by_id=None,
+		namespace_names=None
 	):  # pylint: disable=too-many-arguments,too-many-positional-arguments
 		self.chain_height = chain_height
 		self.pages = pages
@@ -319,14 +344,19 @@ class FakeConnector:  # pylint: disable=too-many-instance-attributes
 		self.account_by_address = account_by_address or {}
 		self.multisig_by_address = multisig_by_address or {}
 		self.account_pages = account_pages or {}
+		self.address_resolutions_by_height = address_resolutions_by_height or {}
+		self.mosaic_resolutions_by_height = mosaic_resolutions_by_height or {}
+		self.namespace_by_id = namespace_by_id or {}
+		self.namespace_names = namespace_names or {}
 		self.paths = []
 		self.post_payloads_list = []
+		self.post_requests = []
 
 	@property
 	def post_payloads(self):
 		return self.post_payloads_list
 
-	async def get(self, url_path, *_):  # pylint: disable=too-many-return-statements
+	async def get(self, url_path, *_):  # pylint: disable=too-many-branches,too-many-return-statements,too-many-locals
 		self.paths.append(url_path)
 		if 'chain/info' == url_path:
 			return create_chain_info(self.chain_height, self.finalized_height)
@@ -354,6 +384,30 @@ class FakeConnector:  # pylint: disable=too-many-instance-attributes
 			return response
 		if url_path.startswith('statements/transaction?'):
 			return self.statement_pages.get(url_path, {'data': []})
+		resolution_match = re.fullmatch(
+			rf'statements/resolutions/(address|mosaic)\?height=(\d+)&pageSize={MAX_PAGE_SIZE}&pageNumber=(\d+)',
+			url_path)
+		if resolution_match:
+			kind, height_text, page_number_text = resolution_match.groups()
+			height = int(height_text)
+			page_number = int(page_number_text)
+			items_by_height = self.address_resolutions_by_height if 'address' == kind else self.mosaic_resolutions_by_height
+			items = items_by_height.get(height, [])
+			page_start = (page_number - 1) * MAX_PAGE_SIZE
+			return {
+				'data': items[page_start:page_start + MAX_PAGE_SIZE],
+				'pagination': {'pageNumber': page_number, 'pageSize': MAX_PAGE_SIZE}
+			}
+		if url_path.startswith('namespaces/'):
+			namespace_id = url_path.removeprefix('namespaces/')
+			response = self.namespace_by_id.get(namespace_id, {
+				'code': 'ResourceNotFound',
+				'message': f'no resource exists with id {namespace_id}'
+			})
+			if isinstance(response, Exception):
+				raise response
+
+			return response
 		if url_path.startswith('account/') and url_path.endswith('/multisig'):
 			address_text = url_path.removeprefix('account/').removesuffix('/multisig')
 			return self.multisig_by_address.get(address_text, {
@@ -376,12 +430,18 @@ class FakeConnector:  # pylint: disable=too-many-instance-attributes
 	async def post(self, url_path, request_payload, *_):
 		self.paths.append(url_path)
 		self.post_payloads_list.append(request_payload)
+		self.post_requests.append((url_path, request_payload))
 		if 'accounts' == url_path:
 			return [
 				self.account_by_address.get(
 					address_text,
 					create_account_item(address_hex=Network.TESTNET.address_class(address_text).bytes.hex().upper()))
 				for address_text in request_payload['addresses']
+			]
+		if 'namespaces/names' == url_path:
+			return [
+				{'id': namespace_id, 'name': self.namespace_names[namespace_id]}
+				for namespace_id in request_payload['namespaceIds']
 			]
 
 		raise KeyError(url_path)
@@ -398,6 +458,64 @@ class ResponseConnector:
 			return create_mosaic_definition()
 
 		return self.responses[url_path]
+
+
+class NoOpRateLimiter:
+	@staticmethod
+	async def wait_for_turn():
+		return None
+
+
+class NamespaceNamesResponseConnector(FakeConnector):
+	def __init__(self, *args, names_response, **kwargs):
+		super().__init__(*args, **kwargs)
+		self.names_response = names_response
+
+	async def post(self, url_path, request_payload, *args):
+		if 'namespaces/names' == url_path:
+			self.paths.append(url_path)
+			self.post_payloads_list.append(request_payload)
+			self.post_requests.append((url_path, request_payload))
+			if isinstance(self.names_response, Exception):
+				raise self.names_response
+
+			return self.names_response
+
+		return await super().post(url_path, request_payload, *args)
+
+
+class BoundedNamespaceDetailConnector(FakeConnector):
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		self.namespace_paths = []
+		self.in_flight_namespace_requests = 0
+		self.max_in_flight_namespace_requests = 0
+		self._namespace_requests_released = asyncio.Event()
+		self._release_scheduled = False
+
+	async def get(self, url_path, *args):
+		if not url_path.startswith('namespaces/'):
+			return await super().get(url_path, *args)
+
+		self.paths.append(url_path)
+		self.namespace_paths.append(url_path)
+		self.in_flight_namespace_requests += 1
+		self.max_in_flight_namespace_requests = max(
+			self.max_in_flight_namespace_requests,
+			self.in_flight_namespace_requests)
+		try:
+			if not self._release_scheduled:
+				self._release_scheduled = True
+				asyncio.get_running_loop().call_soon(self._namespace_requests_released.set)
+			await self._namespace_requests_released.wait()
+
+			response = self.namespace_by_id[url_path.removeprefix('namespaces/')]
+			if isinstance(response, Exception):
+				raise response
+
+			return response
+		finally:
+			self.in_flight_namespace_requests -= 1
 
 
 class SymbolPullerTestBase(TestCase):
@@ -505,6 +623,21 @@ class SymbolPullerTestBase(TestCase):
 			self._fetch_block_heights(self.puller.symbol_db),
 			self.puller.symbol_db.get_sync_state()
 		)
+
+	def _assert_namespace_requests(self, connector, expected_namespace_ids, expected_name_payloads):
+		# Assert:
+		namespace_paths = [
+			path for path in connector.paths
+			if path.startswith('namespaces/') and path != 'namespaces/names'
+		]
+		names_payloads = [
+			payload for path, payload in connector.post_requests
+			if 'namespaces/names' == path
+		]
+		self.assertEqual(len(expected_namespace_ids), len(namespace_paths))
+		self.assertEqual([f'namespaces/{namespace_id}' for namespace_id in expected_namespace_ids], namespace_paths)
+		self.assertEqual(len(expected_name_payloads), len(names_payloads))
+		self.assertEqual(expected_name_payloads, names_payloads)
 
 	def _assert_sync_rejects_node_response(
 		self,

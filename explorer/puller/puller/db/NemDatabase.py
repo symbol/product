@@ -453,7 +453,6 @@ class NemDatabase(DatabaseConnection):
 			VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
 			ON CONFLICT (address)
 			DO UPDATE SET
-				remote_address = EXCLUDED.remote_address,
 				importance = EXCLUDED.importance,
 				balance = EXCLUDED.balance,
 				vested_balance = EXCLUDED.vested_balance,
@@ -478,6 +477,23 @@ class NemDatabase(DatabaseConnection):
 				account_info.min_cosignatories,
 				[address.bytes for address in account_info.cosignatory_of] if len(account_info.cosignatory_of) > 0 else None,
 				[address.bytes for address in account_info.cosignatories] if len(account_info.cosignatories) > 0 else None,
+			)
+		)
+
+	@staticmethod
+	def update_account_remote_address(cursor, address, remote_address):
+		"""Sets or clears the remote (linked) address on a main account."""
+
+		cursor.execute(
+			'''
+			UPDATE accounts
+			SET remote_address = %s,
+				updated_at = CURRENT_TIMESTAMP
+			WHERE address = %s
+			''',
+			(
+				remote_address.bytes if remote_address else None,
+				address.bytes
 			)
 		)
 

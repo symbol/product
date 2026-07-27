@@ -1,8 +1,4 @@
-import { 
-	EMPTY_AGGREGATE_HASH, 
-	HASH_LOCK_AMOUNT, 
-	HASH_LOCK_DURATION,
-	MULTISIG_TRANSACTION_DEADLINE_HOURS,
+import {
 	MessageType,
 	SINGLE_TRANSACTION_DEADLINE_HOURS,
 	TransactionBundleType,
@@ -12,6 +8,7 @@ import {
 	addressFromPublicKey,
 	calculateTransactionSize,
 	createDeadline,
+	createMultisigAggregateBundle,
 	createTransactionFee,
 	createTransactionFeeTiers,
 	encodePlainMessage,
@@ -54,12 +51,11 @@ export class TransferModule {
 	 * @param {object[]} options.mosaics - The mosaics to transfer.
 	 * @param {string} options.messageText - The message text.
 	 * @param {boolean} options.isMessageEncrypted - The message encryption flag.
-	 * @param {number} [options.fee] - The transaction fee.
 	 * @param {string} [password] - The wallet password.
 	 * @returns {TransactionBundle} The transfer transaction bundle.
 	 */
 	createTransaction = async (options, password) => {
-		const { recipientAddress: recipientAddressOrAlias, mosaics, messageText, isMessageEncrypted, fee } = options;
+		const { recipientAddress: recipientAddressOrAlias, mosaics, messageText, isMessageEncrypted } = options;
 		const { currentAccount, networkProperties } = this.#walletController;
 		const senderPublicKey = options.senderPublicKey || currentAccount.publicKey;
 		const senderAddress = addressFromPublicKey(senderPublicKey, networkProperties.networkIdentifier);
@@ -112,38 +108,15 @@ export class TransferModule {
 		// If multisig transaction, return aggregate bonded transaction
 		const isMultisigTransaction = senderPublicKey !== currentAccount.publicKey;
 		if (isMultisigTransaction) {
-			const lockedAmount = HASH_LOCK_AMOUNT;
-			const hashLockTransaction = {
-				type: TransactionType.HASH_LOCK,
-				signerPublicKey: currentAccount.publicKey,
-				mosaic: {
-					id: networkProperties.networkCurrency.mosaicId,
-					amount: lockedAmount,
-					divisibility: networkProperties.networkCurrency.divisibility
-				},
-				lockedAmount,
-				duration: HASH_LOCK_DURATION,
-				fee: fee ?? createTransactionFee(networkProperties, '0'),
-				deadline: createDeadline(SINGLE_TRANSACTION_DEADLINE_HOURS, networkProperties.epochAdjustment),
-				aggregateHash: EMPTY_AGGREGATE_HASH
-			};
-			const aggregateBondedTransaction = {
-				type: TransactionType.AGGREGATE_BONDED,
-				innerTransactions: [transferTransaction],
-				signerPublicKey: currentAccount.publicKey,
-				signerAddress: currentAccount.address,
-				fee: fee ?? createTransactionFee(networkProperties, '0'),
-				deadline: createDeadline(MULTISIG_TRANSACTION_DEADLINE_HOURS, networkProperties.epochAdjustment)
-			};
-
-			return new TransactionBundle(
-				[hashLockTransaction, aggregateBondedTransaction], 
-				{ type: TransactionBundleType.MULTISIG_TRANSFER }
-			);
+			return createMultisigAggregateBundle([transferTransaction], {
+				currentAccount,
+				networkProperties,
+				metadata: { type: TransactionBundleType.MULTISIG_TRANSFER }
+			});
 		}
 
 		// If not a multisig transaction, return transfer transaction
-		transferTransaction.fee = fee ?? createTransactionFee(networkProperties, '0');
+		transferTransaction.fee = createTransactionFee(networkProperties, '0');
 
 		return new TransactionBundle([transferTransaction], { type: TransactionBundleType.DEFAULT });
 	};

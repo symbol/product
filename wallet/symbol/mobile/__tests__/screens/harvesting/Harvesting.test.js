@@ -7,7 +7,8 @@ import { TransactionFeeFixtureBuilder } from '__fixtures__/local/TransactionFeeF
 import { TransactionFixtureBuilder } from '__fixtures__/local/TransactionFixtureBuilder';
 import { ScreenTester } from '__tests__/ScreenTester';
 import { createWalletControllerMock, mockLocalization, mockPasscode, mockRouter, mockWalletController } from '__tests__/mock-helpers';
-import { TransactionBundle } from 'wallet-common-core';
+import { act } from '@testing-library/react-native';
+import { TransactionBundle, constants as coreConstants } from 'wallet-common-core';
 import { constants } from 'wallet-common-symbol';
 
 // Constants
@@ -25,10 +26,15 @@ const SUMMARY_LATEST_DATE = 1684265310994;
 const SUMMARY_AMOUNT_30_DAYS = '150.75';
 const SUMMARY_BLOCKS_30_DAYS = 12;
 const SUMMARY_LATEST_DATE_TEXT = formatDate(SUMMARY_LATEST_DATE, key => key, true);
+const SUMMARY_BLOCK_NUMBER_TEXT = `#${SUMMARY_LATEST_HEIGHT}`;
 
-// Harvesting Status Enum
+const SUMMARY_MULTISIG_LATEST_HEIGHT = 7654321;
+const SUMMARY_MULTISIG_BLOCK_NUMBER_TEXT = `#${SUMMARY_MULTISIG_LATEST_HEIGHT}`;
+
+// Enums
 
 const { HarvestingStatus } = constants;
+const { ControllerEventName } = coreConstants;
 
 // Screen Text
 
@@ -38,7 +44,7 @@ const SCREEN_TEXT = {
 	textScreenDescription: 's_harvesting_description',
 
 	// Status section
-	textStatusTitle: 'fieldTitle_status',
+	textStatusTitle: 's_harvesting_status_title',
 	textStatusActive: 's_harvesting_status_active',
 	textStatusPending: 's_harvesting_status_pending',
 	textStatusInactive: 's_harvesting_status_inactive',
@@ -60,6 +66,11 @@ const SCREEN_TEXT = {
 	textManageTitle: 's_harvesting_manage_title',
 	textNodeUrlField: 'fieldTitle_nodeUrl',
 
+	// Sender selector
+	textSenderTitle: 's_harvesting_account_title',
+	senderTabCurrentAccount: 'c_selectTransactionSender_currentAccount',
+	senderTabMultisigAccount: 'c_selectTransactionSender_multisigAccount',
+
 	// Buttons
 	buttonStart: 'button_start',
 	buttonStop: 'button_stop',
@@ -70,6 +81,10 @@ const SCREEN_TEXT = {
 
 const currentAccount = AccountFixtureBuilder
 	.createWithAccount(CHAIN_NAME, NETWORK_IDENTIFIER, 0)
+	.build();
+
+const multisigAccount = AccountFixtureBuilder
+	.createWithAccount(CHAIN_NAME, NETWORK_IDENTIFIER, 3)
 	.build();
 
 // Network Properties Fixtures
@@ -103,6 +118,17 @@ const accountInfoNoKeys = AccountInfoFixtureBuilder
 	.createWithAccount(CHAIN_NAME, NETWORK_IDENTIFIER, 0)
 	.setBalance('50000')
 	.setImportance(100)
+	.build();
+
+const multisigAccountInfo = AccountInfoFixtureBuilder
+	.createWithAccount(CHAIN_NAME, NETWORK_IDENTIFIER, 3)
+	.setBalance('5000000')
+	.setImportance(100)
+	.override({
+		address: multisigAccount.address,
+		publicKey: multisigAccount.publicKey,
+		isMultisig: true
+	})
 	.build();
 
 // Transaction Fee Fixtures
@@ -153,7 +179,13 @@ const harvestingStatusNodeUnknown = {
 
 // Harvesting Summary Fixtures
 
-const harvestingSummaryEmpty = null;
+const harvestingSummaryEmpty = {
+	latestAmount: 0,
+	latestHeight: null,
+	latestDate: null,
+	amountPer30Days: 0,
+	blocksHarvestedPer30Days: 0
+};
 
 const harvestingSummaryWithData = {
 	latestAmount: SUMMARY_LATEST_AMOUNT,
@@ -163,15 +195,47 @@ const harvestingSummaryWithData = {
 	blocksHarvestedPer30Days: SUMMARY_BLOCKS_30_DAYS
 };
 
+const harvestingSummaryMultisig = {
+	latestAmount: '3.5',
+	latestHeight: SUMMARY_MULTISIG_LATEST_HEIGHT,
+	latestDate: SUMMARY_LATEST_DATE,
+	amountPer30Days: '20.25',
+	blocksHarvestedPer30Days: 4
+};
+
 // Harvesting Module Mock Factory
 
-const createHarvestingModuleMock = (overrides = {}) => ({
-	fetchStatus: jest.fn().mockResolvedValue(overrides.statusResponse ?? harvestingStatusInactive),
-	fetchSummary: jest.fn().mockResolvedValue(overrides.summaryResponse ?? harvestingSummaryEmpty),
-	fetchNodeList: jest.fn().mockResolvedValue(overrides.nodeList ?? [NODE_URL]),
-	createStartHarvestingTransaction: jest.fn().mockReturnValue(transactionBundle),
-	createStopHarvestingTransaction: jest.fn().mockReturnValue(transactionBundle)
-});
+// Like the module, the mock caches the fetched data per account address, and returns the cached data of the
+// requested address. The data of one account can therefore never be read as the data of another
+const createHarvestingModuleMock = (config = {}) => {
+	const {
+		statusByAddress = {},
+		summaryByAddress = {},
+		nodeList = [NODE_URL]
+	} = config;
+	const statusCache = {};
+	const summaryCache = {};
+
+	return {
+		fetchStatus: jest.fn(async account => {
+			const status = statusByAddress[account.address] ?? harvestingStatusInactive;
+			statusCache[account.address] = status;
+
+			return status;
+		}),
+		fetchSummary: jest.fn(async address => {
+			const summary = summaryByAddress[address] ?? harvestingSummaryEmpty;
+			summaryCache[address] = summary;
+
+			return summary;
+		}),
+		fetchNodeList: jest.fn().mockResolvedValue(nodeList),
+		getStatus: jest.fn(address => statusCache[address] ?? null),
+		getSummary: jest.fn(address => summaryCache[address] ?? null),
+		createStartHarvestingTransaction: jest.fn().mockResolvedValue(transactionBundle),
+		createStopHarvestingTransaction: jest.fn().mockResolvedValue(transactionBundle)
+	};
+};
 
 // Network API Mock Factory
 
@@ -189,6 +253,13 @@ const createTransferModuleMock = () => ({
 	calculateTransactionFees: jest.fn().mockResolvedValue(transactionFees)
 });
 
+// Multisig Module Mock Factory
+
+const createMultisigModuleMock = (multisigAccounts = []) => ({
+	multisigAccounts,
+	fetchData: jest.fn().mockResolvedValue(multisigAccounts)
+});
+
 // Setup
 
 const setupMocks = (config = {}) => {
@@ -196,7 +267,10 @@ const setupMocks = (config = {}) => {
 		accountInfo = accountInfoEligible,
 		statusResponse = harvestingStatusInactive,
 		summaryResponse = harvestingSummaryEmpty,
-		nodeList = [NODE_URL]
+		multisigStatusResponse = harvestingStatusInactive,
+		multisigSummaryResponse = harvestingSummaryEmpty,
+		nodeList = [NODE_URL],
+		multisigAccounts = []
 	} = config;
 
 	const walletControllerMock = createWalletControllerMock({
@@ -212,8 +286,19 @@ const setupMocks = (config = {}) => {
 		announceSignedTransactionBundle: jest.fn().mockResolvedValue({}),
 		networkApi: createNetworkApiMock(),
 		modules: {
-			harvesting: createHarvestingModuleMock({ statusResponse, summaryResponse, nodeList }),
-			transfer: createTransferModuleMock()
+			harvesting: createHarvestingModuleMock({
+				statusByAddress: {
+					[currentAccount.address]: statusResponse,
+					[multisigAccount.address]: multisigStatusResponse
+				},
+				summaryByAddress: {
+					[currentAccount.address]: summaryResponse,
+					[multisigAccount.address]: multisigSummaryResponse
+				},
+				nodeList
+			}),
+			transfer: createTransferModuleMock(),
+			multisig: createMultisigModuleMock(multisigAccounts)
 		}
 	});
 
@@ -256,6 +341,44 @@ describe('screens/harvesting/Harvesting', () => {
 
 			// Assert:
 			screenTester.expectText(expectedTexts);
+		});
+	});
+
+	describe('sender selector', () => {
+		const runSenderSelectorTest = (description, config, expected) => {
+			it(description, async () => {
+				// Arrange:
+				setupMocks({ multisigAccounts: config.multisigAccounts });
+
+				// Act:
+				const screenTester = new ScreenTester(Harvesting);
+				await screenTester.waitForTimer(); // initial load
+
+				// Assert:
+				screenTester.expectText([SCREEN_TEXT.textSenderTitle]);
+
+				if (expected.hasMultisigTabs)
+					screenTester.expectText([SCREEN_TEXT.senderTabCurrentAccount, SCREEN_TEXT.senderTabMultisigAccount]);
+				else
+					screenTester.notExpectText([SCREEN_TEXT.senderTabCurrentAccount, SCREEN_TEXT.senderTabMultisigAccount]);
+			});
+		};
+
+		const senderSelectorTests = [
+			{
+				description: 'shows sender tab selector when account is cosignatory of multisig accounts',
+				config: { multisigAccounts: [multisigAccountInfo] },
+				expected: { hasMultisigTabs: true }
+			},
+			{
+				description: 'shows only the current account when there are no multisig accounts',
+				config: { multisigAccounts: [] },
+				expected: { hasMultisigTabs: false }
+			}
+		];
+
+		senderSelectorTests.forEach(test => {
+			runSenderSelectorTest(test.description, test.config, test.expected);
 		});
 	});
 
@@ -406,7 +529,6 @@ describe('screens/harvesting/Harvesting', () => {
 				statusResponse: harvestingStatusActive,
 				summaryResponse: harvestingSummaryWithData
 			});
-			const expectedBlockNumber = `#${SUMMARY_LATEST_HEIGHT}`;
 
 			// Act:
 			const screenTester = new ScreenTester(Harvesting);
@@ -419,7 +541,7 @@ describe('screens/harvesting/Harvesting', () => {
 				SCREEN_TEXT.textSummaryTitle,
 				SCREEN_TEXT.textSummaryBlockLabel,
 				SCREEN_TEXT.textSummary30DaysLabel,
-				expectedBlockNumber,
+				SUMMARY_BLOCK_NUMBER_TEXT,
 				SCREEN_TEXT.textSummaryBlocksCount,
 				SUMMARY_LATEST_DATE_TEXT
 			]);
@@ -507,6 +629,154 @@ describe('screens/harvesting/Harvesting', () => {
 
 		sendTransactionTests.forEach(test => {
 			runSendTransactionTest(test.description, test.config, test.expected);
+		});
+	});
+
+	describe('multisig sender integration', () => {
+		// The current account harvests, the multisig account does not. Their data must never be mixed up
+		const MULTISIG_SENDER_CONFIG = {
+			accountInfo: accountInfoEligible,
+			statusResponse: harvestingStatusActive,
+			summaryResponse: harvestingSummaryWithData,
+			multisigStatusResponse: harvestingStatusInactive,
+			multisigSummaryResponse: harvestingSummaryMultisig,
+			multisigAccounts: [multisigAccountInfo]
+		};
+
+		const createDeferred = () => {
+			let resolveDeferred;
+			const promise = new Promise(resolve => {
+				resolveDeferred = resolve;
+			});
+
+			return { promise, resolve: resolveDeferred };
+		};
+
+		const pressMultisigSender = async screenTester => {
+			screenTester.pressButton(SCREEN_TEXT.senderTabMultisigAccount); // opens the dropdown
+			await screenTester.waitForTimer();
+			screenTester.pressButton(multisigAccountInfo.address); // selects the multisig account
+		};
+
+		const selectMultisigSender = async screenTester => {
+			await pressMultisigSender(screenTester);
+			await screenTester.waitForTimer(); // fetch status and summary of the multisig account
+			await screenTester.waitForTimer(); // recompute fees
+		};
+
+		it('fetches status and summary for the selected multisig account', async () => {
+			// Arrange:
+			const { walletControllerMock } = setupMocks(MULTISIG_SENDER_CONFIG);
+
+			// Act:
+			const screenTester = new ScreenTester(Harvesting);
+			await screenTester.waitForTimer(); // initial load
+			await selectMultisigSender(screenTester);
+
+			// Assert:
+			const { harvesting } = walletControllerMock.modules;
+			expect(harvesting.fetchStatus).toHaveBeenCalledWith(expect.objectContaining({ address: multisigAccountInfo.address }));
+			expect(harvesting.fetchSummary).toHaveBeenCalledWith(multisigAccountInfo.address);
+			screenTester.expectText([SCREEN_TEXT.textStatusInactive, SUMMARY_MULTISIG_BLOCK_NUMBER_TEXT]);
+		});
+
+		it('does not show the status and summary of the current account while the multisig account is loading', async () => {
+			// Arrange:
+			setupMocks(MULTISIG_SENDER_CONFIG);
+			const screenTester = new ScreenTester(Harvesting);
+			await screenTester.waitForTimer(); // initial load
+			await screenTester.waitForTimer(); // fetch status and summary of the current account
+			screenTester.expectText([SCREEN_TEXT.textStatusActive, SUMMARY_BLOCK_NUMBER_TEXT]);
+
+			// Act: select the multisig account, without letting its data load
+			await pressMultisigSender(screenTester);
+
+			// Assert:
+			screenTester.notExpectText([SCREEN_TEXT.textStatusActive, SUMMARY_BLOCK_NUMBER_TEXT]);
+			screenTester.expectText([SCREEN_TEXT.textStatusUnknown]);
+		});
+
+		it('keeps the status and summary of the selected multisig account when a transaction is confirmed', async () => {
+			// Arrange:
+			const { walletControllerMock } = setupMocks(MULTISIG_SENDER_CONFIG);
+			const { harvesting } = walletControllerMock.modules;
+			const screenTester = new ScreenTester(Harvesting);
+			await screenTester.waitForTimer(); // initial load
+			await selectMultisigSender(screenTester);
+			harvesting.fetchStatus.mockClear();
+			harvesting.fetchSummary.mockClear();
+
+			// Act: a confirmed transaction schedules a refresh of the data of the screen
+			await act(async () => {
+				walletControllerMock.emit(ControllerEventName.NEW_TRANSACTION_CONFIRMED);
+			});
+			await screenTester.waitForTimer(); // scheduled refresh
+			await screenTester.waitForTimer(); // fetch status and summary
+
+			// Assert: the refresh loads the selected multisig account, and not the account the screen was mounted with
+			expect(harvesting.fetchStatus).toHaveBeenCalledWith(expect.objectContaining({ address: multisigAccountInfo.address }));
+			expect(harvesting.fetchStatus).not.toHaveBeenCalledWith(expect.objectContaining({ address: currentAccount.address }));
+			expect(harvesting.fetchSummary).toHaveBeenCalledWith(multisigAccountInfo.address);
+			expect(harvesting.fetchSummary).not.toHaveBeenCalledWith(currentAccount.address);
+			screenTester.expectText([SCREEN_TEXT.textStatusInactive, SUMMARY_MULTISIG_BLOCK_NUMBER_TEXT]);
+			screenTester.notExpectText([SCREEN_TEXT.textStatusActive, SUMMARY_BLOCK_NUMBER_TEXT]);
+		});
+
+		it('ignores the response of the current account which arrives after the multisig account is selected', async () => {
+			// Arrange: hold the status of the current account, so that it resolves after the sender is switched
+			const { walletControllerMock } = setupMocks(MULTISIG_SENDER_CONFIG);
+			const { harvesting } = walletControllerMock.modules;
+			const currentAccountStatusFetch = createDeferred();
+			const fetchStatus = harvesting.fetchStatus.getMockImplementation();
+			harvesting.fetchStatus.mockImplementation(async account => {
+				if (account.address === currentAccount.address)
+					await currentAccountStatusFetch.promise;
+
+				return fetchStatus(account);
+			});
+
+			const screenTester = new ScreenTester(Harvesting);
+			await screenTester.waitForTimer(); // initial load, the status of the current account stays pending
+			await selectMultisigSender(screenTester);
+			screenTester.expectText([SCREEN_TEXT.textStatusInactive, SUMMARY_MULTISIG_BLOCK_NUMBER_TEXT]);
+
+			// Act:
+			await act(async () => {
+				currentAccountStatusFetch.resolve();
+			});
+			await screenTester.waitForTimer();
+
+			// Assert:
+			screenTester.expectText([SCREEN_TEXT.textStatusInactive, SUMMARY_MULTISIG_BLOCK_NUMBER_TEXT]);
+			screenTester.notExpectText([SCREEN_TEXT.textStatusActive]);
+		});
+
+		it('sends start harvesting transaction with the selected multisig account as harvester', async () => {
+			// Arrange:
+			const { walletControllerMock } = setupMocks({
+				...MULTISIG_SENDER_CONFIG,
+				statusResponse: harvestingStatusInactive,
+				summaryResponse: harvestingSummaryEmpty
+			});
+			mockRouter({ goToHome: jest.fn() });
+			mockPasscode();
+
+			// Act:
+			const screenTester = new ScreenTester(Harvesting);
+			await screenTester.waitForTimer(); // initial load
+			await selectMultisigSender(screenTester);
+
+			screenTester.pressButton(SCREEN_TEXT.buttonStart);
+			await screenTester.waitForTimer(); // dialog
+			screenTester.pressButton(SCREEN_TEXT.buttonConfirm);
+			await screenTester.waitForTimer(); // passcode
+			await screenTester.waitForTimer(); // sign
+			await screenTester.waitForTimer(); // announce
+
+			// Assert:
+			const { createStartHarvestingTransaction } = walletControllerMock.modules.harvesting;
+			const expectedHarvester = expect.objectContaining({ harvesterAddress: multisigAccountInfo.address });
+			expect(createStartHarvestingTransaction).toHaveBeenCalledWith(expectedHarvester);
 		});
 	});
 });

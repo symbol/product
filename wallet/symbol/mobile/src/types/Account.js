@@ -6,6 +6,8 @@
 
 /** @typedef {import('wallet-common-symbol/src/types/Account').AccountInfo} SymbolAccountInfo */
 
+/** @typedef {import('wallet-common-symbol/src/types/Account').HarvesterAccountInfo} HarvesterAccountInfo */
+
 /** @typedef {import('wallet-common-ethereum/src/types/Account').AccountInfo} EthereumAccountInfo */
 
 /** @typedef {SymbolAccountInfo | EthereumAccountInfo} AccountInfo */
