@@ -228,14 +228,8 @@ def resolution_path(kind, height, page_number=1):
 	return f'statements/resolutions/{kind}?height={height}&pageSize={MAX_PAGE_SIZE}&pageNumber={page_number}'
 
 
-def create_statement_item(height, amount, receipt_type=ReceiptType.INFLATION.value, **receipt_overrides):
-	receipt = {
-		'version': 1,
-		'type': receipt_type,
-		'mosaicId': '72C0212E67A08BCE',
-		'amount': str(amount)
-	}
-	receipt.update(receipt_overrides)
+def create_statement_item(height, receipt, item_id):
+	"""Creates a statement envelope around the supplied receipt without changing it."""
 
 	return {
 		'statement': {
@@ -243,27 +237,47 @@ def create_statement_item(height, amount, receipt_type=ReceiptType.INFLATION.val
 			'source': {'primaryId': height, 'secondaryId': 0},
 			'receipts': [receipt]
 		},
-		'id': f'statement-{height}-{amount}',
+		'id': item_id,
 		'meta': {'timestamp': '0'}
 	}
 
 
-def create_mosaic_expired_statement_item(height, mosaic_id):
-	"""Creates a Symbol artifact-expiry statement for a mosaic."""
+def create_amount_statement_item(
+	height,
+	amount,
+	receipt_type=ReceiptType.INFLATION.value,
+	item_id=None,
+	**receipt_overrides
+):
+	"""Creates a statement item for a receipt carrying mosaic and amount fields."""
 
-	return {
-		'statement': {
-			'height': str(height),
-			'source': {'primaryId': height, 'secondaryId': 0},
-			'receipts': [{
-				'version': 1,
-				'type': ReceiptType.MOSAIC_EXPIRED.value,
-				'artifactId': mosaic_id
-			}]
-		},
-		'id': f'statement-{height}-mosaic-expired',
-		'meta': {'timestamp': '0'}
+	receipt = {
+		'version': 1,
+		'type': receipt_type,
+		'mosaicId': NATIVE_MOSAIC_ID,
+		'amount': str(amount)
 	}
+	receipt.update(receipt_overrides)
+
+	return create_statement_item(
+		height,
+		receipt,
+		item_id or f'statement-{height}-{receipt_type}-{amount}')
+
+
+def create_artifact_expiry_statement(height, receipt_type, artifact_id, item_id=None):
+	"""Creates a statement item for a namespace or mosaic artifact-expiry receipt."""
+
+	receipt = {
+		'version': 1,
+		'type': receipt_type,
+		'artifactId': artifact_id
+	}
+
+	return create_statement_item(
+		height,
+		receipt,
+		item_id or f'statement-{height}-{receipt_type}-{artifact_id}')
 
 
 def create_resolution_statement(height, unresolved, entries):

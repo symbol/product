@@ -1033,7 +1033,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		database.upsert_mosaic(valid_row)
 
 		# Assert:
-		self.assertEqual(valid_row['mosaic_id'], fetch_mosaic_state(database)[0][0])
+		self.assertEqual(valid_row['mosaic_id'], fetch_mosaic_state(database)[0].mosaic_id)
 
 	def test_upsert_namespace_refreshes_existing_mosaic_alias_names(self):
 		# Arrange:

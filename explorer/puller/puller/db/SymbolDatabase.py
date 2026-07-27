@@ -257,7 +257,7 @@ SYMBOL_MOSAIC_DEFINITIONS = [
 	'raw_payload jsonb NOT NULL',
 	'updated_at_height bigint NOT NULL'
 ]
-MOSAIC_ALIAS_NAMES_SQL = '''
+MOSAIC_ALIAS_NAMES_SUBQUERY = '''
 (
 	SELECT COALESCE(jsonb_agg(name ORDER BY name), '[]'::jsonb)
 	FROM symbol_alias_names
@@ -618,7 +618,7 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 	def _execute_refresh_mosaic_alias_names(cursor, mosaic_ids):
 		for mosaic_id in mosaic_ids:
 			cursor.execute(
-				f'UPDATE symbol_mosaics SET alias_names = {MOSAIC_ALIAS_NAMES_SQL} WHERE mosaic_id = %(target_mosaic_id)s',
+				f'UPDATE symbol_mosaics SET alias_names = {MOSAIC_ALIAS_NAMES_SUBQUERY} WHERE mosaic_id = %(target_mosaic_id)s',
 				{'mosaic_id': mosaic_id, 'target_mosaic_id': mosaic_id})
 
 	@staticmethod
@@ -679,13 +679,13 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 			VALUES (
 				%(mosaic_id)s, %(owner_address)s, %(start_height)s, %(duration)s, %(expiration_height)s, %(supply)s,
 				%(divisibility)s, %(flags)s, %(supply_mutable)s, %(transferable)s, %(restrictable)s, %(revokable)s,
-				{MOSAIC_ALIAS_NAMES_SQL}, %(raw_payload)s, %(updated_at_height)s
+				{MOSAIC_ALIAS_NAMES_SUBQUERY}, %(raw_payload)s, %(updated_at_height)s
 			)
 			ON CONFLICT (mosaic_id) DO UPDATE SET
 				owner_address = EXCLUDED.owner_address, start_height = EXCLUDED.start_height, duration = EXCLUDED.duration,
 				expiration_height = EXCLUDED.expiration_height, supply = EXCLUDED.supply, divisibility = EXCLUDED.divisibility,
 				flags = EXCLUDED.flags, supply_mutable = EXCLUDED.supply_mutable, transferable = EXCLUDED.transferable,
-				restrictable = EXCLUDED.restrictable, revokable = EXCLUDED.revokable, alias_names = {MOSAIC_ALIAS_NAMES_SQL},
+				restrictable = EXCLUDED.restrictable, revokable = EXCLUDED.revokable, alias_names = {MOSAIC_ALIAS_NAMES_SUBQUERY},
 				raw_payload = EXCLUDED.raw_payload, updated_at_height = EXCLUDED.updated_at_height
 			''',
 			{**mosaic_row, 'raw_payload': Json(mosaic_row['raw_payload'])})

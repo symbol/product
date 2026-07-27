@@ -4,7 +4,12 @@ import asyncio
 from symbolchain.symbol.Network import Address
 
 from puller.facade.SymbolPuller import SymbolRollbackError
-from tests.test.SymbolMosaicTestUtils import create_expected_mosaic_row, create_mosaic_item, fetch_mosaic_state
+from tests.test.SymbolMosaicTestUtils import (
+	create_expected_mosaic_row,
+	create_mosaic_item,
+	create_persisted_mosaic_state,
+	fetch_mosaic_state
+)
 from tests.test.SymbolNamespaceTestUtils import (
 	NAMESPACE_ROOT_ID,
 	NAMESPACE_SUB_ID,
@@ -20,36 +25,14 @@ from .puller_test_utils import (
 	NATIVE_MOSAIC_ID,
 	FakeConnector,
 	SymbolPullerTestBase,
+	create_amount_statement_item,
 	create_node_block,
 	create_node_transaction,
-	create_statement_item,
 	create_sync_state,
 	set_symbol_connector,
 	statement_path,
 	transaction_path
 )
-
-
-def _mosaic_state_from_row(row):
-	"""Converts a normalized test row to the complete persisted-state shape."""
-
-	return (
-		row['mosaic_id'],
-		row['owner_address'].hex(),
-		row['start_height'],
-		row['duration'],
-		row['expiration_height'],
-		row['supply'],
-		row['divisibility'],
-		row['flags'],
-		row['supply_mutable'],
-		row['transferable'],
-		row['restrictable'],
-		row['revokable'],
-		[],
-		row['raw_payload'],
-		row['updated_at_height']
-	)
 
 
 class SymbolPullerRollbackTest(SymbolPullerTestBase):
@@ -194,8 +177,8 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):
 
 		# Assert:
 		self.assertEqual([
-			_mosaic_state_from_row(create_expected_mosaic_row(before_fork_item, 1)),
-			_mosaic_state_from_row(create_expected_mosaic_row(canonical_survivor_item, 1))
+			create_persisted_mosaic_state(create_expected_mosaic_row(before_fork_item, 1), []),
+			create_persisted_mosaic_state(create_expected_mosaic_row(canonical_survivor_item, 1), [])
 		], fetch_mosaic_state(self.puller.symbol_db))
 		self.assertEqual(3, self.puller.symbol_db.get_sync_state()['last_synced_height'])
 		self.assertEqual([{'mosaicIds': [survivor_id, fork_only_id]}], [
@@ -445,8 +428,8 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):
 			statement_pages={
 				statement_path(2, 3): {
 					'data': [
-						create_statement_item(2, 222),
-						create_statement_item(3, 333)
+						create_amount_statement_item(2, 222),
+						create_amount_statement_item(3, 333)
 					]
 				}
 			}

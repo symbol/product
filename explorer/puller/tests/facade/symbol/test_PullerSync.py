@@ -10,7 +10,13 @@ from symbollightapi.model.Exceptions import NodeException
 from puller.facade.SymbolPuller import BLOCK_PAGE_FETCH_CONCURRENCY, MAX_PAGE_SIZE
 from puller.model.symbol.Block import create_block_row
 from puller.model.symbol.Receipt import create_receipt_rows
-from tests.test.SymbolMosaicTestUtils import MOSAIC_ID, create_expected_mosaic_row, create_mosaic_item, fetch_mosaic_state
+from tests.test.SymbolMosaicTestUtils import (
+	MOSAIC_ID,
+	create_expected_mosaic_row,
+	create_mosaic_item,
+	create_persisted_mosaic_state,
+	fetch_mosaic_state
+)
 from tests.test.SymbolNamespaceTestUtils import (
 	NAMESPACE_ROOT_ID,
 	NAMESPACE_SUB_ID,
@@ -28,8 +34,9 @@ from .puller_test_utils import (
 	NoOpRateLimiter,
 	ResponseConnector,
 	SymbolPullerTestBase,
+	create_amount_statement_item,
+	create_artifact_expiry_statement,
 	create_embedded_node_transaction,
-	create_mosaic_expired_statement_item,
 	create_network_properties,
 	create_node_block,
 	create_node_transaction,
@@ -79,7 +86,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 			namespace_names={NAMESPACE_ROOT_ID: 'root'})
 
 	@staticmethod
-	def _create_mosaic_batch_connector(include_namespace=False, mosaic_fetch=None, mosaics_response=None):
+	def _create_mosaic_definition_sync_connector(include_namespace_alias=False, mosaics_by_id=None, mosaics_response=None):
 		transactions = [create_node_transaction(
 			1,
 			transaction_hash='A' * 64,
@@ -91,9 +98,9 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 			divisibility=6)]
 		connector_arguments = {
 			'transactions_by_path': {transaction_path(1, 1): {'data': transactions}},
-			'mosaics_by_id': mosaic_fetch if mosaic_fetch is not None else {MOSAIC_ID: create_mosaic_item()}
+			'mosaics_by_id': mosaics_by_id if mosaics_by_id is not None else {MOSAIC_ID: create_mosaic_item()}
 		}
-		if include_namespace:
+		if include_namespace_alias:
 			transactions.extend([
 				create_node_transaction(
 					1,
@@ -123,30 +130,14 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 
 	def test_sync_block_headers_persists_dirty_mosaic_definition(self):
 		# Arrange:
-		connector = self._create_mosaic_batch_connector()
+		connector = self._create_mosaic_definition_sync_connector()
 
 		# Act:
 		self._sync_with_connector(connector)
 
 		# Assert:
 		expected_row = create_expected_mosaic_row(create_mosaic_item(), 1)
-		self.assertEqual([(
-			expected_row['mosaic_id'],
-			expected_row['owner_address'].hex(),
-			expected_row['start_height'],
-			expected_row['duration'],
-			expected_row['expiration_height'],
-			expected_row['supply'],
-			expected_row['divisibility'],
-			expected_row['flags'],
-			expected_row['supply_mutable'],
-			expected_row['transferable'],
-			expected_row['restrictable'],
-			expected_row['revokable'],
-			[],
-			expected_row['raw_payload'],
-			expected_row['updated_at_height']
-		)], fetch_mosaic_state(self.puller.symbol_db))
+		self.assertEqual([create_persisted_mosaic_state(expected_row, [])], fetch_mosaic_state(self.puller.symbol_db))
 		self.assertEqual(1, connector.paths.count('mosaics'))
 
 	def test_sync_block_headers_persists_mosaic_expired_receipt_and_refreshes_mosaic(self):
@@ -155,7 +146,8 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		connector = FakeConnector(
 			1,
 			{0: [create_node_block(1)]},
-			statement_pages={statement_path(1, 1): {'data': [create_mosaic_expired_statement_item(1, MOSAIC_ID)]}},
+			statement_pages={statement_path(1, 1): {'data': [create_artifact_expiry_statement(
+				1, ReceiptType.MOSAIC_EXPIRED.value, MOSAIC_ID)]}},
 			mosaics_by_id={MOSAIC_ID: mosaic_item})
 
 		# Act:
@@ -173,23 +165,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		])
 		self.assertEqual(1, connector.paths.count('mosaics'))
 		expected_row = create_expected_mosaic_row(mosaic_item, 1)
-		self.assertEqual([(
-			expected_row['mosaic_id'],
-			expected_row['owner_address'].hex(),
-			expected_row['start_height'],
-			expected_row['duration'],
-			expected_row['expiration_height'],
-			expected_row['supply'],
-			expected_row['divisibility'],
-			expected_row['flags'],
-			expected_row['supply_mutable'],
-			expected_row['transferable'],
-			expected_row['restrictable'],
-			expected_row['revokable'],
-			[],
-			expected_row['raw_payload'],
-			expected_row['updated_at_height']
-		)], fetch_mosaic_state(self.puller.symbol_db))
+		self.assertEqual([create_persisted_mosaic_state(expected_row, [])], fetch_mosaic_state(self.puller.symbol_db))
 
 	def _assert_alias_supply_change_refreshes_mosaic_state(
 		self, alias_mosaic_id, transaction_items, resolution_entries, original_supply, new_supply
@@ -214,8 +190,8 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 
 		# Assert:
 		mosaic_state = fetch_mosaic_state(self.puller.symbol_db)
-		self.assertEqual(new_supply, mosaic_state[0][5])
-		self.assertEqual(1, mosaic_state[0][14])
+		self.assertEqual(new_supply, mosaic_state[0].supply)
+		self.assertEqual(1, mosaic_state[0].updated_at_height)
 		self.assertEqual([{'mosaicIds': [MOSAIC_ID]}], [
 			payload for path, payload in connector.post_requests if 'mosaics' == path
 		])
@@ -276,7 +252,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 	def test_sync_block_headers_deletes_dirty_mosaic_when_batch_response_omits_it(self):
 		# Arrange:
 		self.puller.symbol_db.upsert_mosaic(create_expected_mosaic_row(create_mosaic_item(), 0))
-		connector = self._create_mosaic_batch_connector(mosaic_fetch={})
+		connector = self._create_mosaic_definition_sync_connector(mosaics_by_id={})
 
 		# Act:
 		self._sync_with_connector(connector)
@@ -286,13 +262,13 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 
 	def test_sync_block_headers_writes_namespaces_before_mosaics_for_same_batch_alias(self):
 		# Arrange:
-		connector = self._create_mosaic_batch_connector(include_namespace=True)
+		connector = self._create_mosaic_definition_sync_connector(include_namespace_alias=True)
 
 		# Act:
 		self._sync_with_connector(connector)
 
 		# Assert:
-		self.assertEqual(['root'], fetch_mosaic_state(self.puller.symbol_db)[0][12])
+		self.assertEqual(['root'], fetch_mosaic_state(self.puller.symbol_db)[0].alias_names)
 		self.assertEqual([
 			('namespaces/names', {'namespaceIds': [NAMESPACE_ROOT_ID]}),
 			('mosaics', {'mosaicIds': [MOSAIC_ID]})
@@ -303,7 +279,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 
 	def test_sync_block_headers_rejects_malformed_mosaics_response(self):
 		# Arrange:
-		connector = self._create_mosaic_batch_connector(mosaics_response={'data': []})
+		connector = self._create_mosaic_definition_sync_connector(mosaics_response={'data': []})
 
 		# Act / Assert:
 		self._assert_sync_rejects_node_response(
@@ -316,9 +292,9 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 
 	def test_sync_block_headers_does_not_write_any_batch_state_when_mosaic_fetch_fails(self):
 		# Arrange:
-		connector = self._create_mosaic_batch_connector(
-			include_namespace=True,
-			mosaic_fetch={MOSAIC_ID: RuntimeError('mosaic fetch failed')})
+		connector = self._create_mosaic_definition_sync_connector(
+			include_namespace_alias=True,
+			mosaics_by_id={MOSAIC_ID: RuntimeError('mosaic fetch failed')})
 
 		# Act / Assert:
 		with self.assertRaisesRegex(RuntimeError, 'mosaic fetch failed'):
@@ -343,7 +319,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 
 	def test_sync_block_headers_converges_mosaic_state_when_restarted_from_existing_blocks(self):
 		# Arrange:
-		connector = self._create_mosaic_batch_connector()
+		connector = self._create_mosaic_definition_sync_connector()
 		self._sync_with_connector(connector)
 		first_mosaic_state = fetch_mosaic_state(self.puller.symbol_db)
 		cursor = self.puller.symbol_db.connection.cursor()
@@ -556,11 +532,8 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 			transactions_by_path={transaction_path(1, 1): {'data': [create_node_transaction(
 				1,
 				type=TransactionType.TRANSFER.value)]}},
-			statement_pages={statement_path(1, 1): {'data': [create_statement_item(
-				1,
-				10,
-				ReceiptType.MOSAIC_EXPIRED.value,
-				artifactId='0000000000000001')]}})
+			statement_pages={statement_path(1, 1): {'data': [create_artifact_expiry_statement(
+				1, ReceiptType.MOSAIC_EXPIRED.value, '0000000000000001')]}})
 
 		# Act:
 		self._sync_with_connector(connector)
@@ -604,8 +577,8 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 			type=TransactionType.NAMESPACE_REGISTRATION.value,
 			id=namespace_ids[5]))
 		statement_items = [
-			create_statement_item(1, 10, ReceiptType.NAMESPACE_EXPIRED.value, artifactId=namespace_ids[6]),
-			create_statement_item(1, 11, ReceiptType.NAMESPACE_DELETED.value, artifactId=namespace_ids[7])
+			create_artifact_expiry_statement(1, ReceiptType.NAMESPACE_EXPIRED.value, namespace_ids[6]),
+			create_artifact_expiry_statement(1, ReceiptType.NAMESPACE_DELETED.value, namespace_ids[7])
 		]
 		connector = FakeConnector(
 			1,
@@ -1037,16 +1010,19 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 	def test_get_receipt_rows_by_height_groups_rows_after_reading_all_pages(self):
 		# Arrange:
 		first_page = [
-			create_statement_item(1, 10),
-			create_statement_item(2, 20),
+			create_amount_statement_item(1, 10),
+			create_amount_statement_item(2, 20),
 			*[
-				create_statement_item(3, index, ReceiptType.ADDRESS_ALIAS_RESOLUTION.value)
+				create_statement_item(
+					3,
+					{'version': 1, 'type': ReceiptType.ADDRESS_ALIAS_RESOLUTION.value},
+					f'statement-3-address-alias-{index}')
 				for index in range(MAX_PAGE_SIZE - 2)
 			]
 		]
 		connector = ResponseConnector({
 			statement_path(1, 3, 1): {'data': first_page},
-			statement_path(1, 3, 2): {'data': [create_statement_item(2, 30)]}
+			statement_path(1, 3, 2): {'data': [create_amount_statement_item(2, 30)]}
 		})
 		set_symbol_connector(self.puller, connector)
 
@@ -1069,7 +1045,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 			create_block_row(create_node_block(height), 100, self.puller.symbol_facade.network)
 			for height in [5, 6, 7]
 		]
-		receipt_rows_by_height = {6: create_receipt_rows(create_statement_item(6, 600))}
+		receipt_rows_by_height = {6: create_receipt_rows(create_amount_statement_item(6, 600))}
 
 		# Act:
 		self.puller._sync_block_batch(block_rows, {}, receipt_rows_by_height)  # pylint: disable=protected-access
