@@ -140,8 +140,8 @@ export const ModifyMultisigAccount = props => {
 			walletController={walletController}
 			workflow={workflow}
 			isCustomSendButtonUsed={true}
-			confirmDialogTitle={$t('s_multisig_create_dialog_confirm_title')}
-			confirmDialogText={$t('s_multisig_create_dialog_confirm_text', {
+			confirmDialogTitle={$t('s_multisig_modify_dialog_confirm_title')}
+			confirmDialogText={$t('s_multisig_modify_dialog_confirm_text', {
 				address: accountAddress,
 				cosignatoriesCount
 			})}
