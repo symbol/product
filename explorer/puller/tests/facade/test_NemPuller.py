@@ -400,6 +400,12 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 		mock_get_blocks_after.return_value = NEM_CONNECTOR_RESPONSE_BLOCKS
 		mock_process_account_batch.return_value = AsyncMock()
 
+		# the accumulator is cleared after each flush, so snapshot it at call time
+		captured_address_heights = []
+		mock_process_account_batch.side_effect = lambda _cursor, address_heights: captured_address_heights.append(
+			dict(address_heights)
+		)
+
 		with self.puller.nem_db as databases:
 			databases.create_tables()
 
@@ -454,8 +460,7 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 				2052
 			))
 
-			call_args = mock_process_account_batch.call_args_list[0]
-			address_heights = call_args[0][1]
+			address_heights = captured_address_heights[0]
 			self.assertEqual(len(address_heights), 21)
 			self.assertIn(1, address_heights.values())
 			self.assertIn(2, address_heights.values())
@@ -520,6 +525,12 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 		mock_process_harvested_fees.return_value = Mock()
 		mock_process_transactions.return_value = Mock()
 
+		# the accumulator is cleared after each flush, so snapshot it at call time
+		captured_harvested_fees = []
+		mock_process_harvested_fees.side_effect = lambda _cursor, harvested_fees: captured_harvested_fees.append(
+			dict(harvested_fees)
+		)
+
 		with self.puller.nem_db as databases:
 			databases.create_tables()
 
@@ -542,10 +553,12 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 			actual_calls = [call[0][0] if call[0] else None for call in mock_commit_blocks.call_args_list]
 			self.assertEqual(actual_calls, expected_calls)
 
-			process_harvested_fees_calls = mock_process_harvested_fees.call_args_list
-			self.assertEqual(len(process_harvested_fees_calls), 2)
-			self.assertEqual(process_harvested_fees_calls[0][0][1], ({Address('T' + 'A' * 39): (1000000, 5)}))
-			self.assertEqual(process_harvested_fees_calls[1][0][1], ({Address('T' + 'A' * 39): (1000000, 5)}))
+			# two batch flushes plus a trailing flush for the fifth block
+			self.assertEqual(captured_harvested_fees, [
+				{Address('T' + 'A' * 39): (2000000, 2)},
+				{Address('T' + 'A' * 39): (2000000, 4)},
+				{Address('T' + 'A' * 39): (1000000, 5)}
+			])
 
 			process_transactions_calls = mock_process_transactions.call_args_list
 			self.assertEqual(len(process_transactions_calls), 5)
