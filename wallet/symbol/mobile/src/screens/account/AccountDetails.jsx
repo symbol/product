@@ -2,6 +2,7 @@ import {
 	AccountInfoCard, 
 	ButtonPlain, 
 	Card, 
+	CopyButtonContainer, 
 	DialogBox, 
 	Divider, 
 	PasscodeView, 
@@ -161,10 +162,15 @@ export const AccountDetails = () => {
 				<DialogBox
 					type="alert"
 					title={$t('dialog_sensitive')}
-					text={privateKey}
 					isVisible={isPrivateKeyDialogShown}
 					onSuccess={togglePrivateKeyDialog}
-				/>
+				>
+					<CopyButtonContainer value={privateKey}>
+						<StyledText>
+							{privateKey}
+						</StyledText>
+					</CopyButtonContainer>
+				</DialogBox>
 				<PasscodeView {...privateKeyPasscode.props} />
 			</Screen.Modals>
 		</Screen >

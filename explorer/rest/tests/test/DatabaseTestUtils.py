@@ -47,6 +47,7 @@ Account = namedtuple('Account', [
 	'mosaics',
 	'harvested_blocks',
 	'remote_status',
+	'last_harvested_height',
 	'min_cosignatories',
 	'cosignatory_of',
 	'cosignatories'
@@ -139,6 +140,7 @@ ACCOUNTS = [
 		[{'quantity': 1000000, 'namespace_name': 'nem.xem'}, {'quantity': 10, 'namespace_name': 'root.mosaic'}],
 		10,
 		'INACTIVE',
+		0,
 		None,
 		None,
 		None),
@@ -153,6 +155,7 @@ ACCOUNTS = [
 		[{'quantity': 3000000, 'namespace_name': 'nem.xem'}, {'quantity': 15, 'namespace_name': 'root.mosaic'}],
 		15,
 		'ACTIVE',
+		2,
 		None,
 		None,
 		None)
@@ -507,7 +510,8 @@ ACCOUNT_VIEWS = [
 		harvested_fees=0.0,
 		harvested_blocks=ACCOUNTS[0].harvested_blocks,
 		remote_status=ACCOUNTS[0].remote_status,
-		last_harvested_height=0,
+		last_harvested_height=ACCOUNTS[0].last_harvested_height,
+		is_harvesting_active=False,
 		min_cosignatories=ACCOUNTS[0].min_cosignatories,
 		cosignatory_of=ACCOUNTS[0].cosignatory_of,
 		cosignatories=ACCOUNTS[0].cosignatories,
@@ -533,7 +537,8 @@ ACCOUNT_VIEWS = [
 		harvested_fees=0.0,
 		harvested_blocks=ACCOUNTS[1].harvested_blocks,
 		remote_status=ACCOUNTS[1].remote_status,
-		last_harvested_height=0,
+		last_harvested_height=ACCOUNTS[1].last_harvested_height,
+		is_harvesting_active=True,
 		min_cosignatories=ACCOUNTS[1].min_cosignatories,
 		cosignatory_of=ACCOUNTS[1].cosignatory_of,
 		cosignatories=ACCOUNTS[1].cosignatories,
@@ -544,7 +549,15 @@ ACCOUNT_VIEWS = [
 ACCOUNT_STATISTIC_VIEW = StatisticAccountView(
 	total_accounts=2,
 	accounts_with_balance=2,
-	harvested_accounts=2,
+	harvested_accounts=1,
+	total_importance=0.2469120000,
+	eligible_harvest_accounts=2
+)
+
+ACCOUNT_STATISTIC_VIEW_WITHOUT_RECENT_HARVEST = StatisticAccountView(
+	total_accounts=2,
+	accounts_with_balance=2,
+	harvested_accounts=0,
 	total_importance=0.2469120000,
 	eligible_harvest_accounts=2
 )
@@ -1090,11 +1103,12 @@ def initialize_database(db_config, network_name):
 					mosaics,
 					harvested_blocks,
 					remote_status,
+					last_harvested_height,
 					min_cosignatories,
 					cosignatory_of,
 					cosignatories
 				)
-				VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+				VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
 				''', (
 					account.address.bytes,
 					account.height,
@@ -1106,6 +1120,7 @@ def initialize_database(db_config, network_name):
 					json.dumps(account.mosaics),
 					account.harvested_blocks,
 					account.remote_status,
+					account.last_harvested_height,
 					account.min_cosignatories,
 					[address.bytes for address in account.cosignatory_of] if account.cosignatory_of else None,
 					[address.bytes for address in account.cosignatories] if account.cosignatories else None

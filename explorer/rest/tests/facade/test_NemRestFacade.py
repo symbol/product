@@ -65,7 +65,8 @@ class TestNemRestFacade(DatabaseTestBase):  # pylint: disable=too-many-public-me
 		self.nem_rest_facade = NemRestFacade(self.db_config, RestConfig(
 			network_name='mainnet',
 			node_url='http://localhost:7890',
-			max_lag_blocks=2
+			max_lag_blocks=2,
+			harvesting_active_window_days=7
 		))
 
 	# region block

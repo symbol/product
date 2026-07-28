@@ -688,6 +688,8 @@
     "s_multisig_approvals_description": "Set the number of cosigner approvals required for account actions. Minimum approval defines how many approvals are needed to authorize transactions or add a cosigner. Minimum removal defines how many approvals are required to remove a cosigner.",
     "s_multisig_create_dialog_confirm_title": "Confirm Multisig Creation",
     "s_multisig_create_dialog_confirm_text": "You are about to create a multisig account at %{address} with %{cosignatoriesCount} cosignatories.",
+    "s_multisig_modify_dialog_confirm_title": "Confirm Multisig Modification",
+    "s_multisig_modify_dialog_confirm_text": "You are about to update the multisig account at %{address}. It will have %{cosignatoriesCount} cosignatories.",
     "s_multisig_create_dialog_addCosignatory_title": "Add Cosignatory",
     "s_multisig_cosignatoryAlert_currentAccount_text": "The current account is not included in the cosigner list. As a result, it will lose control over the multisig account and will not be able to approve its transactions.",
     "s_multisig_accountList_title": "My Multisig Accounts",

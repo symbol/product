@@ -19,6 +19,7 @@ class AccountTest(unittest.TestCase):
 			harvested_blocks=100,
 			remote_status='ACTIVE',
 			last_harvested_height=1000,
+			is_harvesting_active=True,
 			min_cosignatories=None,
 			cosignatory_of=[],
 			cosignatories=[],
@@ -47,6 +48,7 @@ class AccountTest(unittest.TestCase):
 		self.assertEqual(100, account_view.harvested_blocks)
 		self.assertEqual('ACTIVE', account_view.remote_status)
 		self.assertEqual(1000, account_view.last_harvested_height)
+		self.assertEqual(True, account_view.is_harvesting_active)
 		self.assertIsNone(account_view.min_cosignatories)
 		self.assertEqual([], account_view.cosignatory_of)
 		self.assertEqual([], account_view.cosignatories)
@@ -73,6 +75,7 @@ class AccountTest(unittest.TestCase):
 			'harvestedBlocks': 100,
 			'remoteStatus': 'ACTIVE',
 			'lastHarvestedHeight': 1000,
+			'isHarvestingActive': True,
 			'minCosignatories': None,
 			'cosignatoryOf': [],
 			'cosignatories': [],
@@ -99,6 +102,7 @@ class AccountTest(unittest.TestCase):
 		self.assertNotEqual(account_view, self._create_default_account_view(('harvested_blocks', 99999)))
 		self.assertNotEqual(account_view, self._create_default_account_view(('remote_status', 'INACTIVE')))
 		self.assertNotEqual(account_view, self._create_default_account_view(('last_harvested_height', 500000)))
+		self.assertNotEqual(account_view, self._create_default_account_view(('is_harvesting_active', False)))
 		self.assertNotEqual(account_view, self._create_default_account_view(('min_cosignatories', 2)))
 		self.assertNotEqual(account_view, self._create_default_account_view(('cosignatory_of', ['ADDRESS1'])))
 		self.assertNotEqual(account_view, self._create_default_account_view(('cosignatories', ['ADDRESS2'])))
