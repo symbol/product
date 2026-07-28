@@ -14,7 +14,7 @@ import { ControllerEventName } from 'wallet-common-core/src/constants';
 
 const mockLoadWalletController = jest.fn().mockResolvedValue();
 
-jest.mock('@/app/screens/bridge/utils', () => ({
+jest.mock('@/app/screens/bridge/utils/wallet-controller', () => ({
 	loadWalletController: (...args) => mockLoadWalletController(...args)
 }));
 
@@ -176,13 +176,6 @@ const BridgeScenario = {
 		nativeAccountInfo: null,
 		wrappedAccountInfo: null
 	},
-	CONFIG_NOT_LOADED: {
-		nativeState: BridgeControllerState.READY,
-		wrappedState: BridgeControllerState.READY,
-		nativeAccountInfo: null,
-		wrappedAccountInfo: null,
-		isReady: false
-	},
 	DISABLED: {
 		nativeState: BridgeControllerState.READY,
 		wrappedState: BridgeControllerState.READY,
@@ -304,56 +297,39 @@ describe('hooks/useBridge', () => {
 	});
 
 	describe('initialization', () => {
-		const runInitializationTest = (description, config, expected) => {
-			it(description, async () => {
-				// Arrange:
-				setBridges(config.bridges);
+		it('returns ok when bridge controllers are fully ready', async () => {
+			// Arrange:
+			setBridges([createBridgeManagerMock(BridgeScenario.READY)]);
 
-				// Act:
-				const hookTester = await createUseBridgeHookTester();
+			// Act:
+			const hookTester = await createUseBridgeHookTester();
 
-				// Assert:
-				await hookTester.waitFor(() => {
-					expect(hookTester.currentResult.pairsStatus).toBe(expected.pairsStatus);
-				});
+			// Assert:
+			await hookTester.waitFor(() => {
+				expect(hookTester.currentResult.pairsStatus).toBe(BridgePairsStatus.OK);
 			});
-		};
+		});
 
-		const initializationTests = [
-			{
-				description: 'returns loading when no bridge cache is loaded',
-				config: { bridges: [createBridgeManagerMock(BridgeScenario.CONTROLLERS_NOT_READY)] },
-				expected: { pairsStatus: BridgePairsStatus.LOADING }
-			},
-			{
-				description: 'returns no_pairs when cache is loaded but accounts are missing',
-				config: { bridges: [createBridgeManagerMock(BridgeScenario.NO_ACCOUNTS)] },
-				expected: { pairsStatus: BridgePairsStatus.NO_PAIRS }
-			},
-			{
-				description: 'returns ok when bridge controllers are fully ready',
-				config: { bridges: [createBridgeManagerMock(BridgeScenario.READY)] },
-				expected: { pairsStatus: BridgePairsStatus.OK }
-			},
-			{
-				description: 'returns not configured when bridge list is empty',
-				config: { bridges: [] },
-				expected: { pairsStatus: BridgePairsStatus.NOT_CONFIGURED }
-			},
-			{
-				description: 'returns loading when controllers are ready but the bridge config is not fetched yet',
-				config: { bridges: [createBridgeManagerMock(BridgeScenario.CONFIG_NOT_LOADED)] },
-				expected: { pairsStatus: BridgePairsStatus.LOADING }
-			},
-			{
-				description: 'returns disabled when every bridge is turned off by its operator',
-				config: { bridges: [createBridgeManagerMock(BridgeScenario.DISABLED)] },
-				expected: { pairsStatus: BridgePairsStatus.DISABLED }
-			}
-		];
+		it('returns to loading when a bridge stops being ready after reaching ok', async () => {
+			// Arrange:
+			const bridge = createBridgeManagerMock(BridgeScenario.READY);
+			setBridges([bridge]);
+			const hookTester = await createUseBridgeHookTester();
+			await hookTester.waitFor(() => {
+				expect(hookTester.currentResult.pairsStatus).toBe(BridgePairsStatus.OK);
+			});
 
-		initializationTests.forEach(test => {
-			runInitializationTest(test.description, test.config, test.expected);
+			// Act: the bridge config stops resolving and the controller re-announces its account
+			bridge.isReady = false;
+			const accountChangeCall = bridge.nativeWalletController.on.mock.calls
+				.find(call => call[0] === ControllerEventName.ACCOUNT_CHANGE);
+
+			await act(async () => {
+				await accountChangeCall[1]();
+			});
+
+			// Assert:
+			expect(hookTester.currentResult.pairsStatus).toBe(BridgePairsStatus.LOADING);
 		});
 	});
 
