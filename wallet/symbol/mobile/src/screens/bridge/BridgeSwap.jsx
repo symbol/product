@@ -99,7 +99,8 @@ export const BridgeSwap = props => {
 		estimate,
 		clearEstimation,
 		isLoading:
-        isEstimationLoading
+        isEstimationLoading,
+		hasFailed: hasEstimationFailed
 	} = useEstimation({ bridge, amount });
 
 	// Transaction creation and preview
@@ -237,7 +238,7 @@ export const BridgeSwap = props => {
 							label={$t('form_transfer_input_amount')}
 							availableBalance={availableBalance}
 							value={amountInput}
-							extraValidators={[validateEstimation(estimations)]}
+							extraValidators={[validateEstimation(estimations, hasEstimationFailed)]}
 							onChange={changeAmount}
 							onValidityChange={changeAmountValidity}
 						/>

@@ -1,3 +1,5 @@
+import { BridgeEstimationErrorCode } from '../../src/constants';
+import { InvalidRequestError } from '../../src/error/NetworkError';
 import { BridgePairManager } from '../../src/lib/bridge/BridgePairManager';
 import { TransactionBundle } from '../../src/lib/models/TransactionBundle';
 import { jest } from '@jest/globals';
@@ -1183,7 +1185,7 @@ describe('bridge/BridgePairManager', () => {
 				}
 			},
 			{
-				description: 'sets isAmountLow error when net amount is negative',
+				description: 'sets amount low error code when net amount is negative',
 				config: {
 					mode: 'wrap',
 					amount: '0.0001',
@@ -1194,7 +1196,7 @@ describe('bridge/BridgePairManager', () => {
 					result: {
 						bridgeFee: '0.0002',
 						receiveAmount: '0',
-						error: { isAmountLow: true }
+						error: { code: BridgeEstimationErrorCode.AMOUNT_LOW }
 					}
 				}
 			}
@@ -1204,18 +1206,80 @@ describe('bridge/BridgePairManager', () => {
 			runEstimateRequestTest(test.description, test.config, test.expected);
 		});
 
-		it('returns isAmountHigh error when bridge estimation reverts with specific message', async () => {
+		const runEstimationApiErrorTest = (description, config, expected) => {
+			it(description, async () => {
+				// Arrange:
+				const mocks = await createLoadedManager();
+				mocks.makeRequest.mockRejectedValueOnce(config.error);
+
+				// Act:
+				const result = await mocks.manager.estimateRequest(config.amount);
+
+				// Assert:
+				expect(result).toStrictEqual({
+					bridgeFee: null,
+					receiveAmount: null,
+					error: { code: expected.errorCode }
+				});
+			});
+		};
+
+		const estimationApiErrorTests = [
+			{
+				description: 'maps REQUEST_LIMIT_EXCEEDED response to the request limit error code',
+				config: {
+					amount: '105.666666',
+					error: new InvalidRequestError(
+						'gross transfer amount 105666666 exceeds max transfer amount 105666660',
+						400,
+						{
+							errorCode: 'REQUEST_LIMIT_EXCEEDED',
+							error: 'gross transfer amount 105666666 exceeds max transfer amount 105666660'
+						}
+					)
+				},
+				expected: { errorCode: BridgeEstimationErrorCode.REQUEST_LIMIT_EXCEEDED }
+			},
+			{
+				description: 'maps DAILY_LIMIT_EXCEEDED response to the daily limit error code',
+				config: {
+					amount: '200',
+					error: new InvalidRequestError(
+						'daily transfer limit is exceeded (105666450 remaining), please try again later',
+						400,
+						{
+							errorCode: 'DAILY_LIMIT_EXCEEDED',
+							error: 'daily transfer limit is exceeded (105666450 remaining), please try again later'
+						}
+					)
+				},
+				expected: { errorCode: BridgeEstimationErrorCode.DAILY_LIMIT_EXCEEDED }
+			},
+			{
+				description: 'maps the payout liquidity revert message to the amount high error code',
+				config: {
+					amount: '99999',
+					error: new Error('eth_estimateGas RPC call failed: execution reverted: ERC20: transfer amount exceeds balance')
+				},
+				expected: { errorCode: BridgeEstimationErrorCode.AMOUNT_HIGH }
+			}
+		];
+
+		estimationApiErrorTests.forEach(test => {
+			runEstimationApiErrorTest(test.description, test.config, test.expected);
+		});
+
+		it('re-throws bridge API errors carrying an unrecognised error code', async () => {
 			// Arrange:
 			const mocks = await createLoadedManager();
-			const gasErrorMessage = 'eth_estimateGas RPC call failed: execution reverted: ERC20: transfer amount exceeds balance';
-			const gasError = new Error(gasErrorMessage);
-			mocks.makeRequest.mockRejectedValueOnce(gasError);
+			const unknownCodeError = new InvalidRequestError('recipient address is not supported', 400, {
+				errorCode: 'UNSUPPORTED_RECIPIENT',
+				error: 'recipient address is not supported'
+			});
+			mocks.makeRequest.mockRejectedValueOnce(unknownCodeError);
 
-			// Act:
-			const result = await mocks.manager.estimateRequest('99999');
-
-			// Assert:
-			expect(result).toStrictEqual({ error: { isAmountHigh: true } });
+			// Act & Assert:
+			await expect(mocks.manager.estimateRequest('1')).rejects.toThrow('recipient address is not supported');
 		});
 
 		it('re-throws unexpected errors from the bridge API', async () => {

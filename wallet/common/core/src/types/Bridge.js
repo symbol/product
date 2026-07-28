@@ -73,17 +73,18 @@
  */
 
 /**
+ * @typedef {object} BridgeEstimationError
+ * @property {string} code - Reason the estimation failed. One of BridgeEstimationErrorCode.
+ */
+
+/**
  * @typedef {object} BridgeEstimation
- * @property {string} bridgeFee - Estimated total bridge fee paid for the bridge operation.
- * Amount is in target receiving currency in relative units.
- * @property {string} receiveAmount - Estimated amount to be received after conversion and fees deducted.
- * Amount is in target receiving currency in relative units.
- * @property {object|null} error - Error object if estimation failed, null otherwise.
+ * @property {string|null} bridgeFee - Estimated total bridge fee paid for the bridge operation.
+ * Amount is in target receiving currency in relative units. Null when the estimation failed.
+ * @property {string|null} receiveAmount - Estimated amount to be received after conversion and fees deducted.
+ * Amount is in target receiving currency in relative units. Null when the estimation failed.
+ * @property {BridgeEstimationError|null} error - Error details if estimation failed, null otherwise.
  * If present, the estimation values should be ignored.
- * @property {boolean} [error.isAmountLow] - True if the provided amount is too low to perform
- * the bridge operation. Most likely the amount is lower than the fee.
- * @property {boolean} [error.isAmountHigh] - True if the provided amount is too high to perform
- * the bridge operation.
  */
 
 export default {};

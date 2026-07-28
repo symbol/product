@@ -137,9 +137,10 @@ export class SwapWorkflowManager {
 
 	/**
 	 * Estimate the output amount for a given input.
-	 * Runs each pair manager's estimateRequest in sequence, passing each step's receiveAmount as the next input.
+	 * Runs each pair manager's estimateRequest in sequence, passing each step's receiveAmount as the next input,
+	 * and stops at the first step that fails.
 	 * @param {string} amount - Input amount in relative units.
-	 * @returns {Promise<Array>} Array of estimation objects, one per step.
+	 * @returns {Promise<Array>} Array of estimation objects, one per step up to and including the first failed one.
 	 */
 	estimateRequest = async amount => {
 		const estimations = [];
@@ -148,6 +149,10 @@ export class SwapWorkflowManager {
 		for (const manager of this.#pairManagers) {
 			const estimation = await manager.estimateRequest(currentAmount);
 			estimations.push(estimation);
+
+			if (estimation.error)
+				break;
+
 			currentAmount = estimation.receiveAmount;
 		}
 

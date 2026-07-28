@@ -54,7 +54,8 @@ describe('hooks/useEstimation', () => {
 			estimate: 'function',
 			estimations: 'object',
 			clearEstimation: 'function',
-			isLoading: 'boolean'
+			isLoading: 'boolean',
+			hasFailed: 'boolean'
 		}
 	});
 
@@ -74,6 +75,30 @@ describe('hooks/useEstimation', () => {
 			await hookTester.waitFor(() => {
 				expect(bridgeManager.estimateRequest).toHaveBeenCalledWith(expectedAmount);
 				expect(hookTester.currentResult.estimations).toStrictEqual([estimationData]);
+				expect(hookTester.currentResult.isLoading).toBe(false);
+				expect(hookTester.currentResult.hasFailed).toBe(false);
+			});
+		});
+	});
+
+	describe('failure', () => {
+		it('reports a failure and holds no estimations when the request is rejected', async () => {
+			// Arrange:
+			const failingBridgeManager = {
+				estimateRequest: jest.fn().mockRejectedValue(new Error('Bridge is unreachable'))
+			};
+			const params = createHookParams({ bridge: failingBridgeManager });
+
+			// Act:
+			const hookTester = new HookTester(useEstimation, [params]);
+			await act(async () => {
+				hookTester.currentResult.estimate().catch(() => {});
+			});
+
+			// Assert:
+			await hookTester.waitFor(() => {
+				expect(hookTester.currentResult.hasFailed).toBe(true);
+				expect(hookTester.currentResult.estimations).toBeNull();
 				expect(hookTester.currentResult.isLoading).toBe(false);
 			});
 		});

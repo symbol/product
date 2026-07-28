@@ -45,6 +45,13 @@ export const ErrorCode = {
 	CONTROLLER_ERROR: 'error_controller'
 };
 
+export const BridgeEstimationErrorCode = {
+	AMOUNT_LOW: 'amount_low',
+	AMOUNT_HIGH: 'amount_high',
+	REQUEST_LIMIT_EXCEEDED: 'request_limit_exceeded',
+	DAILY_LIMIT_EXCEEDED: 'daily_limit_exceeded'
+};
+
 export const NetworkConnectionStatus = {
 	INITIAL: 'initial',
 	CONNECTED: 'connected',

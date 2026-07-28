@@ -1,4 +1,5 @@
 import { BridgeApi } from './BridgeApi';
+import { BridgeEstimationErrorCode } from '../../constants';
 import { absoluteToRelativeAmount, relativeToAbsoluteAmount } from '../../utils/convert';
 import { TransactionBundle } from '../models/TransactionBundle';
 
@@ -31,6 +32,14 @@ const BridgeMode = {
 	WRAP: 'wrap',
 	UNWRAP: 'unwrap'
 };
+
+const bridgeApiErrorCodeMap = {
+	REQUEST_LIMIT_EXCEEDED: BridgeEstimationErrorCode.REQUEST_LIMIT_EXCEEDED,
+	DAILY_LIMIT_EXCEEDED: BridgeEstimationErrorCode.DAILY_LIMIT_EXCEEDED
+};
+
+const BRIDGE_LIQUIDITY_REVERT_MESSAGE =
+	'eth_estimateGas RPC call failed: execution reverted: ERC20: transfer amount exceeds balance';
 
 export class BridgePairManager {
 	/** @type {WalletController} */
@@ -400,18 +409,35 @@ export class BridgePairManager {
 
 			return this.#estimationFromDto(estimationDto, { targetToken });
 		} catch (error) {
-			/* eslint-disable-next-line max-len */
-			const isAmountHighError = error.message === 'eth_estimateGas RPC call failed: execution reverted: ERC20: transfer amount exceeds balance';
+			const errorCode = this.#resolveEstimationErrorCode(error);
 
-			if (!isAmountHighError)
+			if (!errorCode)
 				throw error;
 
 			return {
-				error: {
-					isAmountHigh: true
-				}
+				bridgeFee: null,
+				receiveAmount: null,
+				error: { code: errorCode }
 			};
 		}
+	};
+
+	/**
+	 * Resolve a bridge estimation error code from a failed API call, so limit and liquidity
+	 * rejections become validation state rather than an unhandled failure.
+	 * @param {Error} error - Error thrown by the bridge API.
+	 * @returns {string|null} Estimation error code, or null when the error is not recognised.
+	 */
+	#resolveEstimationErrorCode = error => {
+		const mappedCode = bridgeApiErrorCodeMap[error.body?.errorCode];
+
+		if (mappedCode)
+			return mappedCode;
+
+		if (error.message === BRIDGE_LIQUIDITY_REVERT_MESSAGE)
+			return BridgeEstimationErrorCode.AMOUNT_HIGH;
+
+		return null;
 	};
 
 	/**
@@ -574,7 +600,7 @@ export class BridgePairManager {
 			receiveAmount: isValidAmount
 				? absoluteToRelativeAmount(dto.netAmount, targetToken.divisibility)
 				: '0',
-			error: isValidAmount ? null : { isAmountLow: true }
+			error: isValidAmount ? null : { code: BridgeEstimationErrorCode.AMOUNT_LOW }
 		};
 	}
 

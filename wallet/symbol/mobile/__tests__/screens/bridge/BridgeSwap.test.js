@@ -77,6 +77,9 @@ const SCREEN_TEXT = {
 	// History item
 	textSwapAction: 'transactionDescriptor_swap',
 
+	// Validation
+	textEstimationUnavailable: 'validation_error_estimation_unavailable',
+
 	// Token Display Names
 	displayNameTokenXym: 'Symbol • XYM',
 	displayNameTokenBxym: 'Bridged XYM • bXYM',
@@ -321,9 +324,10 @@ const createUseBridgeTransactionMock = (overrides = {}) => ({
 
 const createUseEstimationMock = (overrides = {}) => ({
 	estimations: null,
-	estimate: jest.fn(),
+	estimate: jest.fn().mockResolvedValue(null),
 	clearEstimation: jest.fn(),
 	isLoading: false,
+	hasFailed: false,
 	...overrides
 });
 
@@ -528,6 +532,40 @@ describe('screens/bridge/BridgeSwap', () => {
 
 			// Assert:
 			screenTester.expectLoadingIndicator();
+			screenTester.expectButtonDisabled(SCREEN_TEXT.buttonSend);
+		});
+	});
+
+	describe('estimation errors', () => {
+		it('warns that the estimation is unavailable when the request failed', () => {
+			// Arrange:
+			setupMocks({
+				useEstimation: {
+					hasFailed: true
+				}
+			});
+
+			// Act:
+			const screenTester = new ScreenTester(BridgeSwap, createDefaultProps());
+
+			// Assert:
+			screenTester.expectText([SCREEN_TEXT.textEstimationUnavailable]);
+		});
+
+		it('disables send button when the amount fails validation', () => {
+			// Arrange:
+			setupMocks({
+				useBridgeAmount: {
+					amount: '100',
+					amountInput: '100',
+					isAmountValid: false
+				}
+			});
+
+			// Act:
+			const screenTester = new ScreenTester(BridgeSwap, createDefaultProps());
+
+			// Assert:
 			screenTester.expectButtonDisabled(SCREEN_TEXT.buttonSend);
 		});
 	});

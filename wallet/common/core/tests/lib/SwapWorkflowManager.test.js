@@ -26,6 +26,8 @@ const createHistoryItem = timestamp => ({ requestTransaction: { timestamp } });
 
 const createEstimation = (receiveAmount, bridgeFee = '0') => ({ receiveAmount, bridgeFee, error: null });
 
+const createFailedEstimation = code => ({ receiveAmount: null, bridgeFee: null, error: { code } });
+
 // Factory functions
 
 const createPairManagerMock = (overrides = {}) => ({
@@ -474,6 +476,23 @@ describe('bridge/SwapWorkflowManager', () => {
 			expect(managerB.estimateRequest).toHaveBeenCalledWith('0.9');
 			expect(managerC.estimateRequest).toHaveBeenCalledWith('0.85');
 			expect(result).toStrictEqual([estimationA, estimationB, estimationC]);
+		});
+
+		it('stops at the first failed step instead of estimating the next one with no input amount', async () => {
+			// Arrange:
+			const failedEstimation = createFailedEstimation('request_limit_exceeded');
+			const estimationB = createEstimation('0.85', '0.05');
+			const managerA = createPairManagerMock({ estimateRequest: jest.fn().mockResolvedValue(failedEstimation) });
+			const managerB = createPairManagerMock({ estimateRequest: jest.fn().mockResolvedValue(estimationB) });
+			const workflow = createWorkflow([managerA, managerB]);
+
+			// Act:
+			const result = await workflow.estimateRequest('1');
+
+			// Assert:
+			expect(managerA.estimateRequest).toHaveBeenCalledWith('1');
+			expect(managerB.estimateRequest).not.toHaveBeenCalled();
+			expect(result).toStrictEqual([failedEstimation]);
 		});
 	});
 
