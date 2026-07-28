@@ -76,14 +76,14 @@ const createSwapPair = bridge => {
 	const sourceAccountTokens = sourceWalletController.currentAccountInfo?.tokens
 		|| sourceWalletController.currentAccountInfo?.mosaics
 		|| [];
-	const sourceTokenBalance = sourceAccountTokens.find(t => t.id === sourceTokenInfo.id)?.amount || '0';
+	const sourceTokenBalance = sourceAccountTokens.find(token => token.id === sourceTokenInfo.id)?.amount || '0';
 
 	const { targetWalletController, targetTokenInfo } = bridge;
 
 	const targetAccountTokens = targetWalletController.currentAccountInfo?.tokens
 		|| targetWalletController.currentAccountInfo?.mosaics
 		|| [];
-	const targetTokenBalance = targetAccountTokens.find(t => t.id === targetTokenInfo.id)?.amount || '0';
+	const targetTokenBalance = targetAccountTokens.find(token => token.id === targetTokenInfo.id)?.amount || '0';
 
 	return {
 		bridge,
@@ -139,11 +139,15 @@ export const useBridge = () => {
 		const bridgesWithLoadedCache = bridges.filter(isBridgeControllersCacheLoaded);
 		const bridgesWithAccounts = bridgesWithLoadedCache.filter(isBridgeControllersHaveAccounts);
 		const bridgesWithNetworkConnection = bridgesWithAccounts.filter(isBridgeControllersNetworkConnected);
+		const loadedBridges = bridgesWithNetworkConnection.filter(bridge => bridge.isReady);
+		const enabledBridges = loadedBridges.filter(bridge => bridge.isEnabled);
 
-		setPairs(createSwapPairs(bridgesWithNetworkConnection));
+		setPairs(createSwapPairs(enabledBridges));
 
 		const hasBridgesWithLoadedCache = bridgesWithLoadedCache.length > 0;
 		const hasBridgesWithAccounts = bridgesWithAccounts.length > 0;
+		const hasLoadedBridges = loadedBridges.length > 0;
+		const hasEnabledBridges = enabledBridges.length > 0;
 
 		const setPairsStatusIfDifferent = newStatus => {
 			if (pairsStatus !== newStatus)
@@ -154,9 +158,13 @@ export const useBridge = () => {
 			setPairsStatusIfDifferent(BridgePairsStatus.NOT_CONFIGURED);
 		else if (!hasBridgesWithLoadedCache)
 			setPairsStatusIfDifferent(BridgePairsStatus.LOADING);
-		else if (hasBridgesWithLoadedCache && !hasBridgesWithAccounts)
+		else if (!hasBridgesWithAccounts)
 			setPairsStatusIfDifferent(BridgePairsStatus.NO_PAIRS);
-		else if (hasBridgesWithLoadedCache && hasBridgesWithAccounts)
+		else if (!hasLoadedBridges)
+			setPairsStatusIfDifferent(BridgePairsStatus.LOADING);
+		else if (!hasEnabledBridges)
+			setPairsStatusIfDifferent(BridgePairsStatus.DISABLED);
+		else
 			setPairsStatusIfDifferent(BridgePairsStatus.OK);
 	};
 

@@ -98,7 +98,7 @@
 
 /**
  * Bridge pairs loading status.
- * @typedef {'not_configured' | 'loading' | 'ok' | 'no_pairs' | 'error'} BridgePairsStatusType
+ * @typedef {'not_configured' | 'loading' | 'ok' | 'no_pairs' | 'disabled' | 'error'} BridgePairsStatusType
  */
 
 /**
@@ -128,6 +128,7 @@ export const BridgePairsStatus = {
 	LOADING: /** @type {BridgePairsStatusType} */ ('loading'),
 	OK: /** @type {BridgePairsStatusType} */ ('ok'),
 	NO_PAIRS: /** @type {BridgePairsStatusType} */ ('no_pairs'),
+	DISABLED: /** @type {BridgePairsStatusType} */ ('disabled'),
 	ERROR: /** @type {BridgePairsStatusType} */ ('error')
 };
 

@@ -239,6 +239,16 @@ describe('bridge/UniswapPairManager', () => {
 			});
 		});
 
+		describe('isEnabled', () => {
+			it('returns true', () => {
+				// Arrange:
+				const { manager } = createManager();
+
+				// Act & Assert:
+				expect(manager.isEnabled).toBe(true);
+			});
+		});
+
 		describe('isReady', () => {
 			const runIsReadyTest = (description, config, expected) => {
 				it(description, async () => {

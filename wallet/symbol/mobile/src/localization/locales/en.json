@@ -601,6 +601,8 @@
     "s_bridge_swap_dialog_confirm_text": "You are about to swap %{amount} of %{sourceToken} on %{sourceChain} network for %{targetToken} on %{targetChain} network.",
     "s_bridge_swap_dialog_noPairs_title": "Activate Bridge Swap",
     "s_bridge_swap_dialog_noPairs_text": "To use Bridge Swap, you need to have account from another network added to your wallet. Proceed to add an account from another network to activate the Bridge Swap feature.",
+    "s_bridge_swap_dialog_disabled_title": "Bridge Swap Unavailable",
+    "s_bridge_swap_dialog_disabled_text": "Bridge Swap is currently turned off by the bridge operator. Please try again later.",
     "s_bridge_summary_title": "Summary",
     "s_bridge_summary_bridgeFee": "Bridge Fee",
     "s_bridge_summary_transactionFee": "Transaction Fee",

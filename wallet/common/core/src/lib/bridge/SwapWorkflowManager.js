@@ -6,6 +6,7 @@
  * @typedef {Object} PairManager
  * @property {string} mode - Fixed swap direction: 'wrap' or 'unwrap'.
  * @property {boolean} isReady - Whether the manager is ready to create transactions.
+ * @property {boolean} isEnabled - Whether the swap this manager performs is enabled by its operator.
  * @property {boolean} hasHistory - Whether the manager tracks transaction history.
  * @property {WalletController} nativeWalletController - Wallet controller for the native side of the pair.
  * @property {WalletController} wrappedWalletController - Wallet controller for the wrapped side of the pair.
@@ -55,7 +56,16 @@ export class SwapWorkflowManager {
 	 * @returns {boolean}
 	 */
 	get isReady() {
-		return this.#pairManagers.every(m => m.isReady);
+		return this.#pairManagers.every(pairManager => pairManager.isReady);
+	}
+
+	/**
+	 * Whether every step of the workflow is enabled. A workflow only has value end to end,
+	 * so a single disabled step disables the whole route.
+	 * @returns {boolean}
+	 */
+	get isEnabled() {
+		return this.#pairManagers.every(pairManager => pairManager.isEnabled);
 	}
 
 	/**
@@ -63,7 +73,7 @@ export class SwapWorkflowManager {
 	 * @returns {boolean}
 	 */
 	get hasHistory() {
-		return this.#pairManagers.some(m => m.hasHistory);
+		return this.#pairManagers.some(pairManager => pairManager.hasHistory);
 	}
 
 	/**
@@ -107,7 +117,7 @@ export class SwapWorkflowManager {
 	 * @returns {Promise<void>}
 	 */
 	load = async () => {
-		await Promise.all(this.#pairManagers.map(m => m.load()));
+		await Promise.all(this.#pairManagers.map(pairManager => pairManager.load()));
 	};
 
 	/**
@@ -117,8 +127,8 @@ export class SwapWorkflowManager {
 	 * @returns {Promise<Array>}
 	 */
 	fetchRecentHistory = async count => {
-		const historicManagers = this.#pairManagers.filter(m => m.hasHistory);
-		const results = await Promise.all(historicManagers.map(m => m.fetchRecentHistory(count)));
+		const historicManagers = this.#pairManagers.filter(pairManager => pairManager.hasHistory);
+		const results = await Promise.all(historicManagers.map(pairManager => pairManager.fetchRecentHistory(count)));
 		const allData = results.flat();
 		const sorted = allData.sort((a, b) => b.requestTransaction.timestamp - a.requestTransaction.timestamp);
 

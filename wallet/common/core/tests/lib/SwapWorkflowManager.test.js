@@ -32,6 +32,7 @@ const createPairManagerMock = (overrides = {}) => ({
 	id: 'default-pair-id',
 	mode: 'wrap',
 	isReady: true,
+	isEnabled: true,
 	hasHistory: true,
 	nativeTokenInfo,
 	wrappedTokenInfo,
@@ -152,6 +153,51 @@ describe('bridge/SwapWorkflowManager', () => {
 
 			isReadyTests.forEach(test => {
 				runIsReadyTest(test.description, test.config, test.expected);
+			});
+		});
+
+		describe('isEnabled', () => {
+			const runIsEnabledTest = (description, config, expected) => {
+				it(description, () => {
+					// Arrange:
+					const pairManagers = config.managerAvailability.map(isEnabled => createPairManagerMock({ isEnabled }));
+					const workflow = createWorkflow(pairManagers);
+
+					// Act & Assert:
+					expect(workflow.isEnabled).toBe(expected.isEnabled);
+				});
+			};
+
+			const isEnabledTests = [
+				{
+					description: 'returns true when the single pair manager is enabled',
+					config: { managerAvailability: [true] },
+					expected: { isEnabled: true }
+				},
+				{
+					description: 'returns false when the single pair manager is disabled',
+					config: { managerAvailability: [false] },
+					expected: { isEnabled: false }
+				},
+				{
+					description: 'returns true when all pair managers are enabled',
+					config: { managerAvailability: [true, true] },
+					expected: { isEnabled: true }
+				},
+				{
+					description: 'returns false when the last pair manager is disabled',
+					config: { managerAvailability: [true, false] },
+					expected: { isEnabled: false }
+				},
+				{
+					description: 'returns false when the first pair manager is disabled',
+					config: { managerAvailability: [false, true] },
+					expected: { isEnabled: false }
+				}
+			];
+
+			isEnabledTests.forEach(test => {
+				runIsEnabledTest(test.description, test.config, test.expected);
 			});
 		});
 

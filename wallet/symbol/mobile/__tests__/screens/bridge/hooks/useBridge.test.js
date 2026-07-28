@@ -167,20 +167,36 @@ const wrappedBaseController = {
 	currentAccount: wrappedAccount
 };
 
+// Describes the situation of a whole bridge: the state of the two wallet controllers it is built on,
+// whether its config has been fetched, and whether its operator has it turned on.
 const BridgeScenario = {
-	FULLY_READY: {
+	READY: {
 		nativeState: BridgeControllerState.READY,
 		wrappedState: BridgeControllerState.READY,
 		nativeAccountInfo: null,
 		wrappedAccountInfo: null
 	},
-	NOT_READY: {
+	CONFIG_NOT_LOADED: {
+		nativeState: BridgeControllerState.READY,
+		wrappedState: BridgeControllerState.READY,
+		nativeAccountInfo: null,
+		wrappedAccountInfo: null,
+		isReady: false
+	},
+	DISABLED: {
+		nativeState: BridgeControllerState.READY,
+		wrappedState: BridgeControllerState.READY,
+		nativeAccountInfo: null,
+		wrappedAccountInfo: null,
+		isEnabled: false
+	},
+	CONTROLLERS_NOT_READY: {
 		nativeState: BridgeControllerState.NOT_READY,
 		wrappedState: BridgeControllerState.NOT_READY,
 		nativeAccountInfo: null,
 		wrappedAccountInfo: null
 	},
-	CACHE_LOADED_NO_ACCOUNTS: {
+	NO_ACCOUNTS: {
 		nativeState: BridgeControllerState.CACHE_LOADED_NO_ACCOUNTS,
 		wrappedState: BridgeControllerState.CACHE_LOADED_NO_ACCOUNTS,
 		nativeAccountInfo: null,
@@ -235,9 +251,10 @@ const createBridgeWalletController = (baseController, state, currentAccountInfo 
 	});
 };
 
-const createBridgeManagerMock = (scenario = BridgeScenario.FULLY_READY, overrides = {}) => {
+const createBridgeManagerMock = (scenario = BridgeScenario.READY, overrides = {}) => {
 	const mode = overrides.mode ?? BridgeMode.WRAP;
 	const isWrap = mode === BridgeMode.WRAP;
+	const isEnabled = scenario.isEnabled ?? true;
 
 	const nativeWalletController = overrides.nativeWalletController
 		?? createBridgeWalletController(nativeBaseController, scenario.nativeState, scenario.nativeAccountInfo);
@@ -261,9 +278,9 @@ const createBridgeManagerMock = (scenario = BridgeScenario.FULLY_READY, override
 		sourceTokenInfo,
 		targetTokenInfo,
 		load: overrides.load ?? jest.fn().mockResolvedValue(),
-		isEnabled: true,
-		isReady: true,
-		config: { enabled: true }
+		isEnabled,
+		isReady: scenario.isReady ?? true,
+		config: { enabled: isEnabled }
 	};
 };
 
@@ -305,23 +322,33 @@ describe('hooks/useBridge', () => {
 		const initializationTests = [
 			{
 				description: 'returns loading when no bridge cache is loaded',
-				config: { bridges: [createBridgeManagerMock(BridgeScenario.NOT_READY)] },
+				config: { bridges: [createBridgeManagerMock(BridgeScenario.CONTROLLERS_NOT_READY)] },
 				expected: { pairsStatus: BridgePairsStatus.LOADING }
 			},
 			{
 				description: 'returns no_pairs when cache is loaded but accounts are missing',
-				config: { bridges: [createBridgeManagerMock(BridgeScenario.CACHE_LOADED_NO_ACCOUNTS)] },
+				config: { bridges: [createBridgeManagerMock(BridgeScenario.NO_ACCOUNTS)] },
 				expected: { pairsStatus: BridgePairsStatus.NO_PAIRS }
 			},
 			{
 				description: 'returns ok when bridge controllers are fully ready',
-				config: { bridges: [createBridgeManagerMock(BridgeScenario.FULLY_READY)] },
+				config: { bridges: [createBridgeManagerMock(BridgeScenario.READY)] },
 				expected: { pairsStatus: BridgePairsStatus.OK }
 			},
 			{
 				description: 'returns not configured when bridge list is empty',
 				config: { bridges: [] },
 				expected: { pairsStatus: BridgePairsStatus.NOT_CONFIGURED }
+			},
+			{
+				description: 'returns loading when controllers are ready but the bridge config is not fetched yet',
+				config: { bridges: [createBridgeManagerMock(BridgeScenario.CONFIG_NOT_LOADED)] },
+				expected: { pairsStatus: BridgePairsStatus.LOADING }
+			},
+			{
+				description: 'returns disabled when every bridge is turned off by its operator',
+				config: { bridges: [createBridgeManagerMock(BridgeScenario.DISABLED)] },
+				expected: { pairsStatus: BridgePairsStatus.DISABLED }
 			}
 		];
 
@@ -334,8 +361,8 @@ describe('hooks/useBridge', () => {
 		it('creates one pair per ready bridge', async () => {
 			// Arrange:
 			setBridges([
-				createBridgeManagerMock(BridgeScenario.FULLY_READY),
-				createBridgeManagerMock(BridgeScenario.FULLY_READY, { mode: BridgeMode.UNWRAP })
+				createBridgeManagerMock(BridgeScenario.READY),
+				createBridgeManagerMock(BridgeScenario.READY, { mode: BridgeMode.UNWRAP })
 			]);
 
 			// Act:
@@ -347,10 +374,40 @@ describe('hooks/useBridge', () => {
 			});
 		});
 
+		it('creates no pair for a bridge turned off by its operator', async () => {
+			// Arrange:
+			setBridges([createBridgeManagerMock(BridgeScenario.DISABLED)]);
+
+			// Act:
+			const hookTester = await createUseBridgeHookTester();
+
+			// Assert:
+			await hookTester.waitFor(() => {
+				expect(hookTester.currentResult.pairs).toHaveLength(0);
+			});
+		});
+
+		it('keeps the pairs of the bridges that are still enabled', async () => {
+			// Arrange:
+			setBridges([
+				createBridgeManagerMock(BridgeScenario.READY),
+				createBridgeManagerMock(BridgeScenario.DISABLED, { mode: BridgeMode.UNWRAP })
+			]);
+
+			// Act:
+			const hookTester = await createUseBridgeHookTester();
+
+			// Assert:
+			await hookTester.waitFor(() => {
+				expect(hookTester.currentResult.pairs).toHaveLength(1);
+				expect(hookTester.currentResult.pairsStatus).toBe(BridgePairsStatus.OK);
+			});
+		});
+
 		const runSwapDirectionTest = (description, mode, expected) => {
 			it(description, async () => {
 				// Arrange:
-				setBridges([createBridgeManagerMock(BridgeScenario.FULLY_READY, { mode })]);
+				setBridges([createBridgeManagerMock(BridgeScenario.READY, { mode })]);
 
 				// Act:
 				const hookTester = await createUseBridgeHookTester();
@@ -422,7 +479,7 @@ describe('hooks/useBridge', () => {
 
 		it('sets zero amount when account has no matching token', async () => {
 			// Arrange:
-			setBridges([createBridgeManagerMock(BridgeScenario.FULLY_READY)]);
+			setBridges([createBridgeManagerMock(BridgeScenario.READY)]);
 
 			// Act:
 			const hookTester = await createUseBridgeHookTester();
@@ -436,7 +493,7 @@ describe('hooks/useBridge', () => {
 
 		it('keeps bridge and wallet-controller references in pair object', async () => {
 			// Arrange:
-			const bridge = createBridgeManagerMock(BridgeScenario.FULLY_READY);
+			const bridge = createBridgeManagerMock(BridgeScenario.READY);
 			setBridges([bridge]);
 
 			// Act:
@@ -467,8 +524,8 @@ describe('hooks/useBridge', () => {
 		it('creates pairs for each ready bridge', async () => {
 			// Arrange:
 			setBridges([
-				createBridgeManagerMock(BridgeScenario.FULLY_READY),
-				createBridgeManagerMock(BridgeScenario.FULLY_READY)
+				createBridgeManagerMock(BridgeScenario.READY),
+				createBridgeManagerMock(BridgeScenario.READY)
 			]);
 
 			// Act:
@@ -484,7 +541,7 @@ describe('hooks/useBridge', () => {
 	describe('wallet and bridge loading', () => {
 		it('loads only not-ready wallet controllers', async () => {
 			// Arrange:
-			const bridge = createBridgeManagerMock(BridgeScenario.NOT_READY);
+			const bridge = createBridgeManagerMock(BridgeScenario.CONTROLLERS_NOT_READY);
 			setBridges([bridge]);
 
 			// Act:
@@ -500,7 +557,7 @@ describe('hooks/useBridge', () => {
 
 		it('does not load already-ready wallet controllers', async () => {
 			// Arrange:
-			setBridges([createBridgeManagerMock(BridgeScenario.FULLY_READY)]);
+			setBridges([createBridgeManagerMock(BridgeScenario.READY)]);
 
 			// Act:
 			const hookTester = await createUseBridgeHookTester();
@@ -514,8 +571,8 @@ describe('hooks/useBridge', () => {
 
 		it('loads only fully-ready bridges', async () => {
 			// Arrange:
-			const readyBridge = createBridgeManagerMock(BridgeScenario.FULLY_READY);
-			const notReadyBridge = createBridgeManagerMock(BridgeScenario.NOT_READY);
+			const readyBridge = createBridgeManagerMock(BridgeScenario.READY);
+			const notReadyBridge = createBridgeManagerMock(BridgeScenario.CONTROLLERS_NOT_READY);
 			setBridges([readyBridge, notReadyBridge]);
 
 			// Act:
@@ -534,7 +591,7 @@ describe('hooks/useBridge', () => {
 				nativeBaseController,
 				BridgeControllerState.NOT_READY
 			);
-			const bridge = createBridgeManagerMock(BridgeScenario.FULLY_READY, {
+			const bridge = createBridgeManagerMock(BridgeScenario.READY, {
 				nativeWalletController: notReadyNativeController
 			});
 			setBridges([bridge]);
@@ -557,7 +614,7 @@ describe('hooks/useBridge', () => {
 
 		it('can manually reload ready bridges', async () => {
 			// Arrange:
-			const bridge = createBridgeManagerMock(BridgeScenario.FULLY_READY);
+			const bridge = createBridgeManagerMock(BridgeScenario.READY);
 			setBridges([bridge]);
 
 			// Act:
@@ -579,8 +636,8 @@ describe('hooks/useBridge', () => {
 	describe('balance fetching', () => {
 		it('fetches account info only for wallet-ready controllers with accounts', async () => {
 			// Arrange:
-			const readyBridge = createBridgeManagerMock(BridgeScenario.FULLY_READY);
-			const noAccountsBridge = createBridgeManagerMock(BridgeScenario.CACHE_LOADED_NO_ACCOUNTS);
+			const readyBridge = createBridgeManagerMock(BridgeScenario.READY);
+			const noAccountsBridge = createBridgeManagerMock(BridgeScenario.NO_ACCOUNTS);
 			setBridges([readyBridge, noAccountsBridge]);
 
 			// Act:
@@ -597,7 +654,7 @@ describe('hooks/useBridge', () => {
 
 		it('can manually refetch balances', async () => {
 			// Arrange:
-			const bridge = createBridgeManagerMock(BridgeScenario.FULLY_READY);
+			const bridge = createBridgeManagerMock(BridgeScenario.READY);
 			setBridges([bridge]);
 
 			// Act:
@@ -622,7 +679,7 @@ describe('hooks/useBridge', () => {
 		const runSubscriptionTest = (description, eventName) => {
 			it(description, async () => {
 				// Arrange:
-				const bridge = createBridgeManagerMock(BridgeScenario.FULLY_READY);
+				const bridge = createBridgeManagerMock(BridgeScenario.READY);
 				setBridges([bridge]);
 
 				// Act:
@@ -658,7 +715,7 @@ describe('hooks/useBridge', () => {
 
 		it('removes all listeners on unmount', async () => {
 			// Arrange:
-			const bridge = createBridgeManagerMock(BridgeScenario.FULLY_READY);
+			const bridge = createBridgeManagerMock(BridgeScenario.READY);
 			setBridges([bridge]);
 
 			// Act:
@@ -685,7 +742,7 @@ describe('hooks/useBridge', () => {
 
 		it('fetches account info when NEW_TRANSACTION_CONFIRMED callback runs', async () => {
 			// Arrange:
-			const bridge = createBridgeManagerMock(BridgeScenario.FULLY_READY);
+			const bridge = createBridgeManagerMock(BridgeScenario.READY);
 			setBridges([bridge]);
 
 			// Act:

@@ -1,6 +1,7 @@
 export * from './useBridge';
 export * from './useBridgeAccounts';
 export * from './useBridgeAmount';
+export * from './useBridgeDisabledDialog';
 export * from './useBridgeHistory';
 export * from './useBridgeNoPairsDialog';
 export * from './useBridgeTransaction';

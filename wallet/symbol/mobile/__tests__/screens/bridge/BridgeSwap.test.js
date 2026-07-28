@@ -19,6 +19,7 @@ jest.mock('@react-navigation/native', () => ({
 jest.mock('@/app/screens/bridge/hooks', () => ({
 	useBridge: jest.fn(),
 	useBridgeAmount: jest.fn(),
+	useBridgeDisabledDialog: jest.fn(),
 	useBridgeHistory: jest.fn(),
 	useBridgeNoPairsDialog: jest.fn(),
 	useBridgeTransaction: jest.fn(),
@@ -57,6 +58,8 @@ const SCREEN_TEXT = {
 	// Dialog
 	textDialogNoPairsTitle: 's_bridge_swap_dialog_noPairs_title',
 	textDialogNoPairsText: 's_bridge_swap_dialog_noPairs_text',
+	textDialogDisabledTitle: 's_bridge_swap_dialog_disabled_title',
+	textDialogDisabledText: 's_bridge_swap_dialog_disabled_text',
 	textDialogConfirmTitle: 's_bridge_swap_dialog_confirm_title',
 	textDialogConfirmText: 's_bridge_swap_dialog_confirm_text',
 
@@ -64,6 +67,7 @@ const SCREEN_TEXT = {
 	buttonSend: 'button_send',
 	buttonConfirm: 'button_confirm',
 	buttonCancel: 'button_cancel',
+	buttonOk: 'button_ok',
 
 	// Accessibility Labels
 	labelSelectSourceToken: 'Select source token',
@@ -264,6 +268,7 @@ const estimationResult = {
 const {
 	useBridge,
 	useBridgeAmount,
+	useBridgeDisabledDialog,
 	useBridgeHistory,
 	useBridgeNoPairsDialog,
 	useBridgeTransaction,
@@ -338,6 +343,13 @@ const createUseBridgeNoPairsDialogMock = (overrides = {}) => ({
 	...overrides
 });
 
+const createUseBridgeDisabledDialogMock = (overrides = {}) => ({
+	isVisible: false,
+	onClose: jest.fn(),
+	onScreenFocus: jest.fn(),
+	...overrides
+});
+
 // Default Props
 
 const createDefaultProps = (overrides = {}) => ({
@@ -361,6 +373,7 @@ const setupMocks = (config = {}) => {
 	useEstimation.mockReturnValue(createUseEstimationMock(config.useEstimation));
 	useBridgeHistory.mockReturnValue(createUseBridgeHistoryMock(config.useBridgeHistory));
 	useBridgeNoPairsDialog.mockReturnValue(createUseBridgeNoPairsDialogMock(config.useBridgeNoPairsDialog));
+	useBridgeDisabledDialog.mockReturnValue(createUseBridgeDisabledDialogMock(config.useBridgeDisabledDialog));
 	
 	mockWalletController(walletController);
 	
@@ -582,6 +595,50 @@ describe('screens/bridge/BridgeSwap', () => {
 
 		noPairsDialogTests.forEach(test => {
 			runNoPairsDialogTest(test.description, test.config, test.expected);
+		});
+	});
+
+	describe('disabled dialog', () => {
+		it('shows the dialog and calls onClose when ok is pressed', async () => {
+			// Arrange: every bridge is turned off by its operator, so there is nothing the user can fix.
+			const onCloseMock = jest.fn();
+
+			setupMocks({
+				useBridge: {
+					pairsStatus: BridgePairsStatus.DISABLED
+				},
+				useBridgeDisabledDialog: {
+					isVisible: true,
+					onClose: onCloseMock
+				}
+			});
+
+			const screenTester = new ScreenTester(BridgeSwap, createDefaultProps());
+
+			// Assert: dialog is visible
+			screenTester.expectText([
+				SCREEN_TEXT.textDialogDisabledTitle,
+				SCREEN_TEXT.textDialogDisabledText
+			]);
+
+			// Act:
+			screenTester.pressButton(SCREEN_TEXT.buttonOk);
+
+			// Assert:
+			expect(onCloseMock).toHaveBeenCalled();
+		});
+
+		it('does not show the dialog when bridges are available', async () => {
+			// Arrange:
+			setupMocks();
+
+			const screenTester = new ScreenTester(BridgeSwap, createDefaultProps());
+
+			// Act & Assert:
+			screenTester.notExpectText([
+				SCREEN_TEXT.textDialogDisabledTitle,
+				SCREEN_TEXT.textDialogDisabledText
+			]);
 		});
 	});
 

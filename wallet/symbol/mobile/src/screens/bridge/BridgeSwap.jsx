@@ -2,6 +2,7 @@ import { BridgeHistory, EstimationSummary, SwapSelector } from './components';
 import {
 	useBridge,
 	useBridgeAmount,
+	useBridgeDisabledDialog,
 	useBridgeHistory,
 	useBridgeNoPairsDialog,
 	useBridgeTransaction,
@@ -128,6 +129,9 @@ export const BridgeSwap = props => {
 	// No pairs popup
 	const noPairsDialogManager = useBridgeNoPairsDialog({ pairsStatus });
 
+	// Bridge turned off by its operator popup
+	const disabledDialogManager = useBridgeDisabledDialog({ pairsStatus });
+
 	// Reload data on tokens or amount change
 	const fetchSwapData = useCallback(() => {
 		if (isReady)
@@ -150,6 +154,7 @@ export const BridgeSwap = props => {
 			await loadWalletControllers();
 			await loadBridges();
 			noPairsDialogManager.onScreenFocus();
+			disabledDialogManager.onScreenFocus();
 			await fetchBalances();
 		})();
 	}, []);
@@ -197,6 +202,13 @@ export const BridgeSwap = props => {
 						type="confirm"
 						onSuccess={noPairsDialogManager.onSuccess}
 						onCancel={noPairsDialogManager.onCancel}
+					/>
+					<DialogBox
+						isVisible={disabledDialogManager.isVisible}
+						title={$t('s_bridge_swap_dialog_disabled_title')}
+						text={$t('s_bridge_swap_dialog_disabled_text')}
+						type="alert"
+						onSuccess={disabledDialogManager.onClose}
 					/>
 					<ButtonCircle isFloating onPress={Router.goToBridgeAccountList} icon="account" />
 				</>

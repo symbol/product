@@ -106,6 +106,14 @@ export class UniswapPairManager {
 	}
 
 	/**
+	 * A Uniswap pool has no operator switch, so this manager is always enabled.
+	 * @returns {boolean}
+	 */
+	get isEnabled() {
+		return true;
+	}
+
+	/**
 	 * Token info for the native side of the swap (tokenIn when mode=wrap).
 	 * Note: both tokens are ERC20 on Ethereum — "native" here is a directional label
 	 * consistent with BridgePairManager's interface, not native-chain currency.
