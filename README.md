@@ -6,7 +6,7 @@ It includes our optin manager.
 | component | lint | build | test | coverage | package |
 |-----------|------|-------|------|----------| ------- |
 | [@bridge](bridge) | [![lint][bridge-lint]][bridge-job] | | [![test][bridge-test]][bridge-job] | [![][bridge-cov]][bridge-cov-link]
-| [@bridge/reporting](bridge/reporting/) | [![lint][bridge-reporting-lint]][bridge-reporting-job] | | [![test][bridge-reporting-test]][bridge-reporting-job] | [![][bridge-reporting-cov]][bridge-reporting-cov-link]
+| [@bridge/reporting](bridge/reporting) | [![lint][bridge-reporting-lint]][bridge-reporting-job] | | [![test][bridge-reporting-test]][bridge-reporting-job] | [![][bridge-reporting-cov]][bridge-reporting-cov-link]
 | [@explorer/frontend](explorer/frontend) | [![lint][explorer-frontend-lint]][explorer-frontend-job] | | [![test][explorer-frontend-test]][explorer-frontend-job] | [![][explorer-frontend-cov]][explorer-frontend-cov-link]
 | [@explorer/nodewatch](explorer/nodewatch) | [![lint][explorer-nodewatch-lint]][explorer-nodewatch-job] | | [![test][explorer-nodewatch-test]][explorer-nodewatch-job] | [![][explorer-nodewatch-cov]][explorer-nodewatch-cov-link]
 | [@explorer/puller](explorer/puller) | [![lint][explorer-puller-lint]][explorer-puller-job] | | [![test][explorer-puller-test]][explorer-puller-job] | [![][explorer-puller-cov]][explorer-puller-cov-link]
