@@ -91,5 +91,5 @@ const accountInfoFromDTO = data => ({
 	cosignatoryOf: data.cosignatoryOf || [],
 	cosignatories: data.cosignatories || [],
 	isMultisig: data.cosignatories?.length > 0,
-	isHarvestingActive: data.harvestRemoteStatus === 'ACTIVE'
+	isHarvestingActive: data.isHarvestingActive || false
 });

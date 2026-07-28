@@ -8,7 +8,7 @@ from symbolchain.nc import TransactionType
 from zenlog import log
 
 from rest.facade.NemRestFacade import NemRestFacade
-from rest.model.common import DatabaseConfig, Pagination, RestConfig, Sorting
+from rest.model.common import DEFAULT_HARVESTING_ACTIVE_WINDOW_DAYS, DatabaseConfig, Pagination, RestConfig, Sorting
 from rest.model.nem.Transaction import TransactionQuery
 
 
@@ -32,7 +32,8 @@ def setup_nem_facade(app):
 	rest_config = RestConfig(
 		app.config.get('NETWORK_NAME', 'mainnet'),
 		app.config.get('NODE_URL', 'http://localhost:7890'),
-		int(app.config.get('MAX_LAG_BLOCKS', 2))
+		int(app.config.get('MAX_LAG_BLOCKS', 2)),
+		int(app.config.get('HARVESTING_ACTIVE_WINDOW_DAYS', DEFAULT_HARVESTING_ACTIVE_WINDOW_DAYS))
 	)
 
 	return NemRestFacade(db_params, rest_config)

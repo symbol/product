@@ -1,10 +1,13 @@
 import Avatar from './Avatar';
 import ValueLabel from './ValueLabel';
 import ValueMosaic from './ValueMosaic';
+import config from '@/app/config';
 import styles from '@/app/styles/components/ItemAccountMobile.module.scss';
 import { createPageHref } from '@/app/utils';
+import { useTranslation } from 'next-i18next';
 
 const ItemAccountMobile = ({ data }) => {
+	const { t } = useTranslation();
 	const { address, balance, isHarvestingActive, isMultisig } = data;
 	const multisigLabelStyle = !isMultisig && styles.label__hidden;
 	const harvestingLabelStyle = !isHarvestingActive && styles.label__hidden;
@@ -17,7 +20,11 @@ const ItemAccountMobile = ({ data }) => {
 				<div className="layout-flex-row">
 					<ValueMosaic isNative isTickerShown amount={balance} />
 					<div className={styles.labels}>
-						<ValueLabel type="harvesting" className={harvestingLabelStyle} />
+						<ValueLabel
+							type="harvesting"
+							className={harvestingLabelStyle}
+							title={t('label_harvesting_description', { days: config.PUBLIC_HARVESTING_ACTIVE_WINDOW_DAYS })}
+						/>
 						<ValueLabel type="multisig" className={multisigLabelStyle} />
 					</div>
 				</div>
