@@ -240,6 +240,41 @@ SYMBOL_NAMESPACE_INDEXES = [
 	'CREATE INDEX IF NOT EXISTS idx_symbol_alias_names_name ON symbol_alias_names(name)',
 	'CREATE INDEX IF NOT EXISTS idx_symbol_alias_names_updated_height ON symbol_alias_names(updated_at_height)'
 ]
+SYMBOL_MOSAIC_DEFINITIONS = [
+	'mosaic_id varchar(16) PRIMARY KEY',
+	'owner_address bytea NOT NULL',
+	'start_height bigint NOT NULL',
+	'duration bigint NOT NULL',
+	'expiration_height bigint',
+	'supply bigint NOT NULL',
+	'divisibility int NOT NULL',
+	'flags int NOT NULL',
+	'supply_mutable boolean NOT NULL',
+	'transferable boolean NOT NULL',
+	'restrictable boolean NOT NULL',
+	'revokable boolean NOT NULL',
+	"alias_names jsonb NOT NULL DEFAULT '[]'::jsonb",
+	'raw_payload jsonb NOT NULL',
+	'updated_at_height bigint NOT NULL'
+]
+MOSAIC_ALIAS_NAMES_SUBQUERY = '''
+(
+	SELECT COALESCE(jsonb_agg(name ORDER BY name), '[]'::jsonb)
+	FROM symbol_alias_names
+	WHERE artifact_type = 'mosaic' AND artifact_id = %(mosaic_id)s
+)
+'''
+SYMBOL_MOSAIC_INDEXES = [
+	'CREATE INDEX IF NOT EXISTS idx_symbol_mosaics_start_height_desc ON symbol_mosaics(start_height DESC, mosaic_id)',
+	'CREATE INDEX IF NOT EXISTS idx_symbol_mosaics_owner ON symbol_mosaics(owner_address)',
+	'CREATE INDEX IF NOT EXISTS idx_symbol_mosaics_expiration ON symbol_mosaics(expiration_height)',
+	'CREATE INDEX IF NOT EXISTS idx_symbol_mosaics_supply ON symbol_mosaics(supply)',
+	'CREATE INDEX IF NOT EXISTS idx_symbol_mosaics_supply_mutable ON symbol_mosaics(supply_mutable)',
+	'CREATE INDEX IF NOT EXISTS idx_symbol_mosaics_transferable ON symbol_mosaics(transferable)',
+	'CREATE INDEX IF NOT EXISTS idx_symbol_mosaics_restrictable ON symbol_mosaics(restrictable)',
+	'CREATE INDEX IF NOT EXISTS idx_symbol_mosaics_revokable ON symbol_mosaics(revokable)',
+	'CREATE INDEX IF NOT EXISTS idx_symbol_mosaics_updated_height ON symbol_mosaics(updated_at_height)'
+]
 SYMBOL_TRANSACTION_DEFINITIONS = [
 	'id bigserial PRIMARY KEY',
 	'hash bytea UNIQUE',
@@ -367,6 +402,9 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 		_create_table(cursor, 'symbol_namespaces', SYMBOL_NAMESPACE_DEFINITIONS)
 		_create_table(cursor, 'symbol_alias_names', SYMBOL_ALIAS_NAME_DEFINITIONS)
 		for index_sql in SYMBOL_NAMESPACE_INDEXES:
+			cursor.execute(index_sql)
+		_create_table(cursor, 'symbol_mosaics', SYMBOL_MOSAIC_DEFINITIONS)
+		for index_sql in SYMBOL_MOSAIC_INDEXES:
 			cursor.execute(index_sql)
 		cursor.execute('CREATE SEQUENCE IF NOT EXISTS symbol_transaction_list_sequence_seq')
 		_create_table(cursor, 'symbol_transactions', SYMBOL_TRANSACTION_DEFINITIONS)
@@ -569,6 +607,21 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 				SymbolDatabase._execute_upsert_namespace(cursor, entry['row'], entry['alias_rows'])
 
 	@staticmethod
+	def _execute_mosaic_entries(cursor, mosaic_entries):
+		for entry in mosaic_entries:
+			if 'mosaic_id' in entry:
+				SymbolDatabase._execute_delete_mosaic(cursor, entry['mosaic_id'])
+			else:
+				SymbolDatabase._execute_upsert_mosaic(cursor, entry['row'])
+
+	@staticmethod
+	def _execute_refresh_mosaic_alias_names(cursor, mosaic_ids):
+		for mosaic_id in mosaic_ids:
+			cursor.execute(
+				f'UPDATE symbol_mosaics SET alias_names = {MOSAIC_ALIAS_NAMES_SUBQUERY} WHERE mosaic_id = %(target_mosaic_id)s',
+				{'mosaic_id': mosaic_id, 'target_mosaic_id': mosaic_id})
+
+	@staticmethod
 	def _execute_upsert_namespace(cursor, namespace_row, alias_name_rows):
 		cursor.execute(
 			'''
@@ -589,7 +642,14 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 				raw_payload = EXCLUDED.raw_payload, updated_at_height = EXCLUDED.updated_at_height
 			''',
 			{**namespace_row, 'raw_payload': Json(namespace_row['raw_payload'])})
-		cursor.execute('DELETE FROM symbol_alias_names WHERE name = %s', (namespace_row['full_name'],))
+		cursor.execute(
+			'DELETE FROM symbol_alias_names WHERE name = %s RETURNING artifact_type, artifact_id',
+			(namespace_row['full_name'],))
+		mosaic_ids = {
+			artifact_id
+			for artifact_type, artifact_id in cursor.fetchall()
+			if 'mosaic' == artifact_type
+		}
 		for alias_name_row in alias_name_rows:
 			cursor.execute(
 				'''
@@ -597,6 +657,58 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 				VALUES (%(artifact_type)s, %(artifact_id)s, %(name)s, %(updated_at_height)s)
 				''',
 				alias_name_row)
+			if 'mosaic' == alias_name_row['artifact_type']:
+				mosaic_ids.add(alias_name_row['artifact_id'])
+
+		SymbolDatabase._execute_refresh_mosaic_alias_names(cursor, mosaic_ids)
+
+	def upsert_mosaic(self, mosaic_row):
+		"""Upserts one mosaic current-state row and derives its alias names."""
+
+		with self._database_transaction() as cursor:
+			self._execute_upsert_mosaic(cursor, mosaic_row)
+
+	@staticmethod
+	def _execute_upsert_mosaic(cursor, mosaic_row):
+		cursor.execute(
+			f'''
+			INSERT INTO symbol_mosaics (
+				mosaic_id, owner_address, start_height, duration, expiration_height, supply, divisibility, flags,
+				supply_mutable, transferable, restrictable, revokable, alias_names, raw_payload, updated_at_height
+			)
+			VALUES (
+				%(mosaic_id)s, %(owner_address)s, %(start_height)s, %(duration)s, %(expiration_height)s, %(supply)s,
+				%(divisibility)s, %(flags)s, %(supply_mutable)s, %(transferable)s, %(restrictable)s, %(revokable)s,
+				{MOSAIC_ALIAS_NAMES_SUBQUERY}, %(raw_payload)s, %(updated_at_height)s
+			)
+			ON CONFLICT (mosaic_id) DO UPDATE SET
+				owner_address = EXCLUDED.owner_address, start_height = EXCLUDED.start_height, duration = EXCLUDED.duration,
+				expiration_height = EXCLUDED.expiration_height, supply = EXCLUDED.supply, divisibility = EXCLUDED.divisibility,
+				flags = EXCLUDED.flags, supply_mutable = EXCLUDED.supply_mutable, transferable = EXCLUDED.transferable,
+				restrictable = EXCLUDED.restrictable, revokable = EXCLUDED.revokable, alias_names = {MOSAIC_ALIAS_NAMES_SUBQUERY},
+				raw_payload = EXCLUDED.raw_payload, updated_at_height = EXCLUDED.updated_at_height
+			''',
+			{**mosaic_row, 'raw_payload': Json(mosaic_row['raw_payload'])})
+
+	def delete_mosaic(self, mosaic_id):
+		"""Deletes one mosaic current-state row when it exists."""
+
+		with self._database_transaction() as cursor:
+			self._execute_delete_mosaic(cursor, mosaic_id)
+
+	@staticmethod
+	def _execute_delete_mosaic(cursor, mosaic_id):
+		cursor.execute('DELETE FROM symbol_mosaics WHERE mosaic_id = %s', (mosaic_id,))
+
+	def get_mosaic_ids_updated_from_height(self, height):
+		"""Gets mosaic ids whose current state was observed at or after a height."""
+
+		cursor = self.connection.cursor()
+		cursor.execute(
+			'SELECT mosaic_id FROM symbol_mosaics WHERE updated_at_height >= %s ORDER BY mosaic_id',
+			(height,))
+
+		return [row[0] for row in cursor.fetchall()]
 
 	def delete_namespace(self, namespace_id):
 		"""Deletes one namespace and its derived alias-name rows when it exists."""
@@ -611,8 +723,16 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 		if not result:
 			return
 
-		cursor.execute('DELETE FROM symbol_alias_names WHERE name = %s', (result[0],))
+		cursor.execute(
+			'DELETE FROM symbol_alias_names WHERE name = %s RETURNING artifact_type, artifact_id',
+			(result[0],))
+		mosaic_ids = {
+			artifact_id
+			for artifact_type, artifact_id in cursor.fetchall()
+			if 'mosaic' == artifact_type
+		}
 		cursor.execute('DELETE FROM symbol_namespaces WHERE namespace_id = %s', (namespace_id,))
+		SymbolDatabase._execute_refresh_mosaic_alias_names(cursor, mosaic_ids)
 
 	def get_namespace_ids_updated_from_height(self, height):  # pylint: disable=invalid-name
 		"""Gets namespace ids whose current state was observed at or after a height."""
@@ -1033,13 +1153,14 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 			self._delete_rollback_affected_rows_from_height(cursor, height)
 			self._stale_mark_account_refresh_state_if_needed(cursor, height)
 
-	def repair_rollback_from_height(self, height, sync_state, namespace_entries):
-		"""Repairs rollbacked chain and namespace state and updates sync state in one transaction."""
+	def repair_rollback_from_height(self, height, sync_state, namespace_entries, mosaic_entries):
+		"""Repairs rollbacked chain, namespace state, and mosaic state in one transaction."""
 
 		with self._database_transaction() as cursor:
 			self._delete_rollback_affected_rows_from_height(cursor, height)
 			self._stale_mark_account_refresh_state_if_needed(cursor, height)
 			self._execute_namespace_entries(cursor, namespace_entries)
+			self._execute_mosaic_entries(cursor, mosaic_entries)
 			self._execute_upsert_sync_state(cursor, sync_state)
 
 	@staticmethod

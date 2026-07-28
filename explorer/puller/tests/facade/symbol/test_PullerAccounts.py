@@ -20,10 +20,10 @@ from .puller_test_utils import (
 	FakeConnector,
 	SymbolPullerTestBase,
 	create_account_item,
+	create_amount_statement_item,
 	create_node_block,
 	create_node_transaction,
 	create_resolution_statement,
-	create_statement_item,
 	set_symbol_connector,
 	statement_path,
 	transaction_path
@@ -297,7 +297,7 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):  # pylint: disable=too-man
 			{0: [self._create_block(1)]},
 			statement_pages={
 				statement_path(1, 1): {
-					'data': [create_statement_item(
+					'data': [create_amount_statement_item(
 						1,
 						100,
 						ReceiptType.LOCK_HASH_EXPIRED.value,
@@ -319,7 +319,7 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):  # pylint: disable=too-man
 			{0: [self._create_block(1)]},
 			statement_pages={
 				statement_path(1, 1): {
-					'data': [create_statement_item(
+					'data': [create_amount_statement_item(
 						1,
 						100,
 						ReceiptType.MOSAIC_RENTAL_FEE.value,
@@ -348,7 +348,7 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):  # pylint: disable=too-man
 			{0: [self._create_block(1)]},
 			statement_pages={
 				statement_path(1, 1): {
-					'data': [create_statement_item(
+					'data': [create_amount_statement_item(
 						1,
 						100,
 						ReceiptType.HARVEST_FEE.value,
@@ -370,7 +370,7 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):  # pylint: disable=too-man
 			1,
 			{0: [self._create_block(1)]},
 			statement_pages={
-				statement_path(1, 1): {'data': [create_statement_item(1, 100)]}
+				statement_path(1, 1): {'data': [create_amount_statement_item(1, 100)]}
 			})
 
 		# Act:
@@ -789,7 +789,7 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):  # pylint: disable=too-man
 
 		# Act:
 		with self.assertRaises(PsycopgError):
-			database.repair_rollback_from_height(1, sync_state, [])
+			database.repair_rollback_from_height(1, sync_state, [], [])
 
 	def test_refresh_accounts_can_restart_with_new_successful_run(self):  # pylint: disable=too-many-locals
 		# Arrange:

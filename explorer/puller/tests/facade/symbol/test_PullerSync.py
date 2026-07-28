@@ -1,14 +1,22 @@
+# pylint: disable=too-many-lines
 import asyncio
 from unittest.mock import AsyncMock
 
 from psycopg2 import Error as PsycopgError
-from symbolchain.sc import ReceiptType, TransactionType
+from symbolchain.sc import MosaicSupplyChangeAction, ReceiptType, TransactionType
 from symbolchain.symbol.IdGenerator import generate_namespace_id
 from symbollightapi.model.Exceptions import NodeException
 
 from puller.facade.SymbolPuller import BLOCK_PAGE_FETCH_CONCURRENCY, MAX_PAGE_SIZE
 from puller.model.symbol.Block import create_block_row
 from puller.model.symbol.Receipt import create_receipt_rows
+from tests.test.SymbolMosaicTestUtils import (
+	MOSAIC_ID,
+	create_expected_mosaic_row,
+	create_mosaic_item,
+	create_persisted_mosaic_state,
+	fetch_mosaic_state
+)
 from tests.test.SymbolNamespaceTestUtils import (
 	NAMESPACE_ROOT_ID,
 	NAMESPACE_SUB_ID,
@@ -26,12 +34,16 @@ from .puller_test_utils import (
 	NoOpRateLimiter,
 	ResponseConnector,
 	SymbolPullerTestBase,
+	create_amount_statement_item,
+	create_artifact_expiry_statement,
 	create_embedded_node_transaction,
 	create_network_properties,
 	create_node_block,
 	create_node_transaction,
+	create_resolution_statement,
 	create_statement_item,
 	create_sync_state,
+	resolution_path,
 	set_symbol_connector,
 	set_symbol_rate_limiter,
 	set_sync_block_pages,
@@ -72,6 +84,255 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 				NAMESPACE_ROOT_ID: create_namespace_item(alias={'type': 1, 'mosaicId': NATIVE_MOSAIC_ID})
 			},
 			namespace_names={NAMESPACE_ROOT_ID: 'root'})
+
+	@staticmethod
+	def _create_mosaic_definition_sync_connector(include_namespace_alias=False, mosaics_by_id=None, mosaics_response=None):
+		transactions = [create_node_transaction(
+			1,
+			transaction_hash='A' * 64,
+			transaction_id='mosaic-definition',
+			type=TransactionType.MOSAIC_DEFINITION.value,
+			id=MOSAIC_ID,
+			duration='0',
+			flags=2,
+			divisibility=6)]
+		connector_arguments = {
+			'transactions_by_path': {transaction_path(1, 1): {'data': transactions}},
+			'mosaics_by_id': mosaics_by_id if mosaics_by_id is not None else {MOSAIC_ID: create_mosaic_item()}
+		}
+		if include_namespace_alias:
+			transactions.extend([
+				create_node_transaction(
+					1,
+					transaction_hash='B' * 64,
+					transaction_id='namespace-registration',
+					type=TransactionType.NAMESPACE_REGISTRATION.value,
+					id=NAMESPACE_ROOT_ID,
+					name='root',
+					registrationType=0),
+				create_node_transaction(
+					1,
+					transaction_hash='C' * 64,
+					transaction_id='mosaic-alias',
+					type=TransactionType.MOSAIC_ALIAS.value,
+					namespaceId=NAMESPACE_ROOT_ID,
+					mosaicId=MOSAIC_ID,
+					aliasAction=1)
+			])
+			connector_arguments.update({
+				'namespace_by_id': {NAMESPACE_ROOT_ID: create_namespace_item(alias={'type': 1, 'mosaicId': MOSAIC_ID})},
+				'namespace_names': {NAMESPACE_ROOT_ID: 'root'}
+			})
+		if mosaics_response is not None:
+			connector_arguments['mosaics_response'] = mosaics_response
+
+		return FakeConnector(1, {0: [create_node_block(1)]}, **connector_arguments)
+
+	def test_sync_block_headers_persists_mosaic_discovered_from_definition_transaction(self):
+		# Arrange:
+		connector = self._create_mosaic_definition_sync_connector()
+
+		# Act:
+		self._sync_with_connector(connector)
+
+		# Assert:
+		expected_row = create_expected_mosaic_row(create_mosaic_item(), 1)
+		self.assertEqual([create_persisted_mosaic_state(expected_row, [])], fetch_mosaic_state(self.puller.symbol_db))
+		self.assertEqual(1, connector.paths.count('mosaics'))
+
+	def test_sync_block_headers_persists_mosaic_expired_receipt_and_refreshes_mosaic(self):
+		# Arrange:
+		mosaic_item = create_mosaic_item(supply='777', item_id='000000000000000000000001')
+		connector = FakeConnector(
+			1,
+			{0: [create_node_block(1)]},
+			statement_pages={statement_path(1, 1): {'data': [create_artifact_expiry_statement(
+				1, ReceiptType.MOSAIC_EXPIRED.value, MOSAIC_ID)]}},
+			mosaics_by_id={MOSAIC_ID: mosaic_item})
+
+		# Act:
+		self._sync_with_connector(connector)
+
+		# Assert:
+		cursor = self.puller.symbol_db.connection.cursor()
+		cursor.execute(
+			'SELECT receipt_type, receipt_group, artifact_id, mosaic_id, amount FROM symbol_receipts')
+		self.assertEqual([
+			('mosaicExpired', 'artifactExpiry', MOSAIC_ID, None, 0)
+		], cursor.fetchall())
+		self.assertEqual([{'mosaicIds': [MOSAIC_ID]}], [
+			payload for path, payload in connector.post_requests if 'mosaics' == path
+		])
+		self.assertEqual(1, connector.paths.count('mosaics'))
+		expected_row = create_expected_mosaic_row(mosaic_item, 1)
+		self.assertEqual([create_persisted_mosaic_state(expected_row, [])], fetch_mosaic_state(self.puller.symbol_db))
+
+	def _assert_alias_supply_change_refreshes_mosaic_state(
+		self, alias_mosaic_id, transaction_items, resolution_entries, original_supply, new_supply
+	):  # pylint: disable=too-many-arguments,too-many-positional-arguments
+		# Arrange:
+		self.puller.symbol_db.upsert_mosaic(create_expected_mosaic_row(
+			create_mosaic_item(supply=str(original_supply)),
+			0))
+		connector = FakeConnector(
+			1,
+			{0: [create_node_block(1)]},
+			transactions_by_path={transaction_path(1, 1): {'data': transaction_items}},
+			mosaic_resolutions_by_height={1: [create_resolution_statement(
+				1,
+				alias_mosaic_id,
+				resolution_entries
+			)]},
+			mosaics_by_id={MOSAIC_ID: create_mosaic_item(supply=str(new_supply))})
+
+		# Act:
+		self._sync_with_connector(connector)
+
+		# Assert:
+		mosaic_state = fetch_mosaic_state(self.puller.symbol_db)
+		self.assertEqual(new_supply, mosaic_state[0].supply)
+		self.assertEqual(1, mosaic_state[0].updated_at_height)
+		self.assertEqual([{'mosaicIds': [MOSAIC_ID]}], [
+			payload for path, payload in connector.post_requests if 'mosaics' == path
+		])
+		self.assertEqual([resolution_path('mosaic', 1)], [
+			path for path in connector.paths if path.startswith('statements/resolutions/mosaic?')
+		])
+
+	def test_sync_block_headers_refreshes_mosaic_supply_for_top_level_alias_supply_change(self):
+		alias_mosaic_id = 'A95F1F8A96159516'
+		original_supply = 987654321
+		supply_delta = 10
+		self._assert_alias_supply_change_refreshes_mosaic_state(
+			alias_mosaic_id,
+			[create_node_transaction(
+				1,
+				transaction_hash='A' * 64,
+				transaction_id='mosaic-supply-change',
+				type=TransactionType.MOSAIC_SUPPLY_CHANGE.value,
+				mosaicId=alias_mosaic_id,
+				delta=str(supply_delta),
+				action=MosaicSupplyChangeAction.INCREASE.value)],
+			[{'source': {'primaryId': 1, 'secondaryId': 0}, 'resolved': MOSAIC_ID}],
+			original_supply,
+			original_supply + supply_delta)
+
+	def test_sync_block_headers_refreshes_mosaic_supply_for_embedded_alias_supply_change(self):
+		alias_mosaic_id = 'A95F1F8A96159516'
+		mosaic_id_at_aggregate_source = '0000000000000002'
+		original_supply = 987654321
+		supply_delta = 10
+		aggregate_hash = 'A' * 64
+		self._assert_alias_supply_change_refreshes_mosaic_state(
+			alias_mosaic_id,
+			[
+				create_node_transaction(
+					1,
+					transaction_hash=aggregate_hash,
+					block_index=0,
+					type=TransactionType.AGGREGATE_COMPLETE.value,
+					transactionsHash='9' * 64,
+					cosignatures=[]),
+				create_embedded_node_transaction(
+					1,
+					aggregate_hash,
+					0,
+					transaction_id='embedded-mosaic-supply-change',
+					type=TransactionType.MOSAIC_SUPPLY_CHANGE.value,
+					mosaicId=alias_mosaic_id,
+					delta=str(supply_delta),
+					action=MosaicSupplyChangeAction.INCREASE.value)
+			],
+			[
+				# The (1, 0) entry proves the embedded transaction uses (1, 1), not its parent aggregate source.
+				{'source': {'primaryId': 1, 'secondaryId': 0}, 'resolved': mosaic_id_at_aggregate_source},
+				{'source': {'primaryId': 1, 'secondaryId': 1}, 'resolved': MOSAIC_ID}
+			],
+			original_supply,
+			original_supply + supply_delta)
+
+	def test_sync_block_headers_deletes_dirty_mosaic_when_batch_response_omits_it(self):
+		# Arrange:
+		self.puller.symbol_db.upsert_mosaic(create_expected_mosaic_row(create_mosaic_item(), 0))
+		connector = self._create_mosaic_definition_sync_connector(mosaics_by_id={})
+
+		# Act:
+		self._sync_with_connector(connector)
+
+		# Assert:
+		self.assertEqual([], fetch_mosaic_state(self.puller.symbol_db))
+
+	def test_sync_block_headers_writes_namespaces_before_mosaics_for_same_batch_alias(self):
+		# Arrange:
+		connector = self._create_mosaic_definition_sync_connector(include_namespace_alias=True)
+
+		# Act:
+		self._sync_with_connector(connector)
+
+		# Assert:
+		self.assertEqual(['root'], fetch_mosaic_state(self.puller.symbol_db)[0].alias_names)
+		self.assertEqual([
+			('namespaces/names', {'namespaceIds': [NAMESPACE_ROOT_ID]}),
+			('mosaics', {'mosaicIds': [MOSAIC_ID]})
+		], [
+			(path, payload) for path, payload in connector.post_requests
+			if path in ('namespaces/names', 'mosaics')
+		])
+
+	def test_sync_block_headers_rejects_malformed_mosaics_response(self):
+		# Arrange:
+		connector = self._create_mosaic_definition_sync_connector(mosaics_response={'data': []})
+
+		# Act / Assert:
+		self._assert_sync_rejects_node_response(
+			connector,
+			ValueError,
+			'Malformed Symbol mosaics batch response')
+
+		# Assert:
+		self.assertEqual(1, connector.paths.count('mosaics'))
+
+	def test_sync_block_headers_does_not_write_any_batch_state_when_mosaic_fetch_fails(self):
+		# Arrange:
+		connector = self._create_mosaic_definition_sync_connector(
+			include_namespace_alias=True,
+			mosaics_by_id={MOSAIC_ID: RuntimeError('mosaic fetch failed')})
+
+		# Act / Assert:
+		with self.assertRaisesRegex(RuntimeError, 'mosaic fetch failed'):
+			self._sync_with_connector(connector)
+
+		# Assert:
+		cursor = self.puller.symbol_db.connection.cursor()
+		cursor.execute('SELECT COUNT(*) FROM symbol_accounts')
+		account_count = cursor.fetchone()[0]
+		cursor.execute('SELECT COUNT(*) FROM symbol_namespaces')
+		namespace_count = cursor.fetchone()[0]
+		cursor.execute('SELECT COUNT(*) FROM symbol_mosaics')
+		mosaic_count = cursor.fetchone()[0]
+		namespace_rows, alias_rows = fetch_namespace_state(self.puller.symbol_db.connection)
+		self.assertEqual([], self._fetch_block_heights(self.puller.symbol_db))
+		self.assertEqual(0, account_count)
+		self.assertEqual(0, namespace_count)
+		self.assertEqual(0, mosaic_count)
+		self.assertEqual([], namespace_rows)
+		self.assertEqual([], alias_rows)
+		self.assertIsNone(self.puller.symbol_db.get_sync_state())
+
+	def test_sync_block_headers_converges_mosaic_state_when_restarted_from_existing_blocks(self):
+		# Arrange:
+		connector = self._create_mosaic_definition_sync_connector()
+		self._sync_with_connector(connector)
+		first_mosaic_state = fetch_mosaic_state(self.puller.symbol_db)
+		cursor = self.puller.symbol_db.connection.cursor()
+		cursor.execute('DELETE FROM symbol_sync_state')
+		self.puller.symbol_db.connection.commit()
+
+		# Act:
+		self._sync_with_connector(connector)
+
+		# Assert:
+		self.assertEqual(first_mosaic_state, fetch_mosaic_state(self.puller.symbol_db))
 
 	def test_sync_block_headers_persists_dirty_namespace_state_after_registration_and_alias_transactions(self):
 		# Arrange:
@@ -273,11 +534,8 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 			transactions_by_path={transaction_path(1, 1): {'data': [create_node_transaction(
 				1,
 				type=TransactionType.TRANSFER.value)]}},
-			statement_pages={statement_path(1, 1): {'data': [create_statement_item(
-				1,
-				10,
-				ReceiptType.MOSAIC_EXPIRED.value,
-				artifactId='0000000000000001')]}})
+			statement_pages={statement_path(1, 1): {'data': [create_artifact_expiry_statement(
+				1, ReceiptType.MOSAIC_EXPIRED.value, '0000000000000001')]}})
 
 		# Act:
 		self._sync_with_connector(connector)
@@ -321,8 +579,8 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 			type=TransactionType.NAMESPACE_REGISTRATION.value,
 			id=namespace_ids[5]))
 		statement_items = [
-			create_statement_item(1, 10, ReceiptType.NAMESPACE_EXPIRED.value, artifactId=namespace_ids[6]),
-			create_statement_item(1, 11, ReceiptType.NAMESPACE_DELETED.value, artifactId=namespace_ids[7])
+			create_artifact_expiry_statement(1, ReceiptType.NAMESPACE_EXPIRED.value, namespace_ids[6]),
+			create_artifact_expiry_statement(1, ReceiptType.NAMESPACE_DELETED.value, namespace_ids[7])
 		]
 		connector = FakeConnector(
 			1,
@@ -754,16 +1012,19 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 	def test_get_receipt_rows_by_height_groups_rows_after_reading_all_pages(self):
 		# Arrange:
 		first_page = [
-			create_statement_item(1, 10),
-			create_statement_item(2, 20),
+			create_amount_statement_item(1, 10),
+			create_amount_statement_item(2, 20),
 			*[
-				create_statement_item(3, index, ReceiptType.ADDRESS_ALIAS_RESOLUTION.value)
+				create_statement_item(
+					3,
+					{'version': 1, 'type': ReceiptType.ADDRESS_ALIAS_RESOLUTION.value},
+					f'statement-3-address-alias-{index}')
 				for index in range(MAX_PAGE_SIZE - 2)
 			]
 		]
 		connector = ResponseConnector({
 			statement_path(1, 3, 1): {'data': first_page},
-			statement_path(1, 3, 2): {'data': [create_statement_item(2, 30)]}
+			statement_path(1, 3, 2): {'data': [create_amount_statement_item(2, 30)]}
 		})
 		set_symbol_connector(self.puller, connector)
 
@@ -786,7 +1047,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 			create_block_row(create_node_block(height), 100, self.puller.symbol_facade.network)
 			for height in [5, 6, 7]
 		]
-		receipt_rows_by_height = {6: create_receipt_rows(create_statement_item(6, 600))}
+		receipt_rows_by_height = {6: create_receipt_rows(create_amount_statement_item(6, 600))}
 
 		# Act:
 		self.puller._sync_block_batch(block_rows, {}, receipt_rows_by_height)  # pylint: disable=protected-access

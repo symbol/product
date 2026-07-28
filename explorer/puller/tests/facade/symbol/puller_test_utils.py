@@ -228,14 +228,8 @@ def resolution_path(kind, height, page_number=1):
 	return f'statements/resolutions/{kind}?height={height}&pageSize={MAX_PAGE_SIZE}&pageNumber={page_number}'
 
 
-def create_statement_item(height, amount, receipt_type=ReceiptType.INFLATION.value, **receipt_overrides):
-	receipt = {
-		'version': 1,
-		'type': receipt_type,
-		'mosaicId': '72C0212E67A08BCE',
-		'amount': str(amount)
-	}
-	receipt.update(receipt_overrides)
+def create_statement_item(height, receipt, item_id):
+	"""Creates a statement envelope around the supplied receipt without changing it."""
 
 	return {
 		'statement': {
@@ -243,9 +237,47 @@ def create_statement_item(height, amount, receipt_type=ReceiptType.INFLATION.val
 			'source': {'primaryId': height, 'secondaryId': 0},
 			'receipts': [receipt]
 		},
-		'id': f'statement-{height}-{amount}',
+		'id': item_id,
 		'meta': {'timestamp': '0'}
 	}
+
+
+def create_amount_statement_item(
+	height,
+	amount,
+	receipt_type=ReceiptType.INFLATION.value,
+	item_id=None,
+	**receipt_overrides
+):
+	"""Creates a statement item for a receipt carrying mosaic and amount fields."""
+
+	receipt = {
+		'version': 1,
+		'type': receipt_type,
+		'mosaicId': NATIVE_MOSAIC_ID,
+		'amount': str(amount)
+	}
+	receipt.update(receipt_overrides)
+
+	return create_statement_item(
+		height,
+		receipt,
+		item_id or f'statement-{height}-{receipt_type}-{amount}')
+
+
+def create_artifact_expiry_statement(height, receipt_type, artifact_id, item_id=None):
+	"""Creates a statement item for a namespace or mosaic artifact-expiry receipt."""
+
+	receipt = {
+		'version': 1,
+		'type': receipt_type,
+		'artifactId': artifact_id
+	}
+
+	return create_statement_item(
+		height,
+		receipt,
+		item_id or f'statement-{height}-{receipt_type}-{artifact_id}')
 
 
 def create_resolution_statement(height, unresolved, entries):
@@ -319,7 +351,7 @@ def create_account_item(address_hex=BENEFICIARY_ADDRESS, item_id='account-id', *
 
 
 class FakeConnector:  # pylint: disable=too-many-instance-attributes
-	def __init__(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+	def __init__(  # pylint: disable=too-many-arguments,too-many-positional-arguments,too-many-locals
 		self,
 		chain_height,
 		pages,
@@ -333,7 +365,9 @@ class FakeConnector:  # pylint: disable=too-many-instance-attributes
 		address_resolutions_by_height=None,
 		mosaic_resolutions_by_height=None,
 		namespace_by_id=None,
-		namespace_names=None
+		namespace_names=None,
+		mosaics_by_id=None,
+		mosaics_response=None
 	):  # pylint: disable=too-many-arguments,too-many-positional-arguments
 		self.chain_height = chain_height
 		self.pages = pages
@@ -348,6 +382,8 @@ class FakeConnector:  # pylint: disable=too-many-instance-attributes
 		self.mosaic_resolutions_by_height = mosaic_resolutions_by_height or {}
 		self.namespace_by_id = namespace_by_id or {}
 		self.namespace_names = namespace_names or {}
+		self.mosaics_by_id = mosaics_by_id or {}
+		self.mosaics_response = mosaics_response
 		self.paths = []
 		self.post_payloads_list = []
 		self.post_requests = []
@@ -443,6 +479,20 @@ class FakeConnector:  # pylint: disable=too-many-instance-attributes
 				{'id': namespace_id, 'name': self.namespace_names[namespace_id]}
 				for namespace_id in request_payload['namespaceIds']
 			]
+		if 'mosaics' == url_path:
+			if self.mosaics_response is not None:
+				return self.mosaics_response
+
+			items = []
+			for mosaic_id in request_payload['mosaicIds']:
+				if mosaic_id not in self.mosaics_by_id:
+					continue
+				item = self.mosaics_by_id[mosaic_id]
+				if isinstance(item, Exception):
+					raise item
+				items.append(item)
+
+			return items
 
 		raise KeyError(url_path)
 

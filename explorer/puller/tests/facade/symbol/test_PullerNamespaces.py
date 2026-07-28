@@ -16,9 +16,9 @@ from .puller_test_utils import (
 	NATIVE_MOSAIC_ID,
 	FakeConnector,
 	SymbolPullerTestBase,
+	create_artifact_expiry_statement,
 	create_node_block,
 	create_node_transaction,
-	create_statement_item,
 	create_sync_state,
 	statement_path,
 	transaction_path
@@ -245,7 +245,8 @@ class SymbolPullerNamespacesTest(SymbolPullerTestBase):
 			[],
 			{NAMESPACE_ROOT_ID: root_item, NAMESPACE_SUB_ID: child_item, NAMESPACE_SUB_SUB_ID: grandchild_item},
 			{NAMESPACE_ROOT_ID: 'root', NAMESPACE_SUB_ID: 'child', NAMESPACE_SUB_SUB_ID: 'grandchild'},
-			[create_statement_item(expiry_height, 10, ReceiptType.NAMESPACE_EXPIRED.value, artifactId=NAMESPACE_ROOT_ID)],
+			[create_artifact_expiry_statement(
+				expiry_height, ReceiptType.NAMESPACE_EXPIRED.value, NAMESPACE_ROOT_ID)],
 			height=expiry_height)
 		self._seed_sync_state_before_height(expiry_height)
 
@@ -313,7 +314,8 @@ class SymbolPullerNamespacesTest(SymbolPullerTestBase):
 		seed_namespace(self.puller.symbol_db, comparison_item, {self.COMPARISON_NAMESPACE_ID: 'other'}, deletion_height - 2)
 		connector = self._create_namespace_sync_connector(
 			[], {}, {},
-			[create_statement_item(deletion_height, 10, ReceiptType.NAMESPACE_DELETED.value, artifactId=NAMESPACE_ROOT_ID)],
+			[create_artifact_expiry_statement(
+				deletion_height, ReceiptType.NAMESPACE_DELETED.value, NAMESPACE_ROOT_ID)],
 			height=deletion_height)
 		self._seed_sync_state_before_height(deletion_height)
 
