@@ -8,7 +8,7 @@ from symbolchain.sc import ReceiptType
 from symbolchain.symbol.Network import Address
 from symbollightapi.model.Exceptions import NodeException
 
-from puller.db.SymbolDatabase import SymbolDatabase
+from puller.db.SymbolDatabase import RollbackRefreshEntries, SymbolDatabase
 from puller.facade.SymbolPuller import ACCOUNT_BATCH_FETCH_SIZE
 from puller.model.symbol.Account import create_account_row
 from puller.model.symbol.Block import create_block_row
@@ -789,7 +789,10 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):  # pylint: disable=too-man
 
 		# Act:
 		with self.assertRaises(PsycopgError):
-			database.repair_rollback_from_height(1, sync_state, [], [])
+			database.repair_rollback_from_height(
+				1,
+				sync_state,
+				RollbackRefreshEntries([], [], []))
 
 	def test_refresh_accounts_can_restart_with_new_successful_run(self):  # pylint: disable=too-many-locals
 		# Arrange:

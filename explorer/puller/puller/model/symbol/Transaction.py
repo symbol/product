@@ -217,6 +217,11 @@ def create_transaction_row(item, network, epoch_adjustment_seconds):
 	transaction_type = int(transaction['type'])
 	signer_public_key = bytes.fromhex(transaction['signerPublicKey'])
 	signer_address = address_from_public_key(signer_public_key, network)
+	metadata_target_id = (
+		transaction['targetMosaicId']
+		if TransactionType.MOSAIC_METADATA.value == transaction_type
+		else None
+	)
 	message_type, message_payload = _parse_message(transaction)
 	variable_fields = _top_level_or_embedded_fields(meta, transaction, is_embedded, epoch_adjustment_seconds)
 
@@ -230,6 +235,7 @@ def create_transaction_row(item, network, epoch_adjustment_seconds):
 		'signer_address': signer_address,
 		'recipient_address': bytes.fromhex(transaction['recipientAddress']) if 'recipientAddress' in transaction else None,
 		'target_address': _target_address(transaction_type, transaction),
+		'metadata_target_id': metadata_target_id,
 		'message_type': message_type,
 		'message_payload': message_payload,
 		'body': {

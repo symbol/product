@@ -1,3 +1,4 @@
+import copy
 # pylint: disable=duplicate-code,too-many-lines
 from datetime import datetime, timezone
 from unittest import TestCase
@@ -117,6 +118,7 @@ def _expected_top_level_row(item, **overrides):
 		'signer_address': bytes.fromhex(SIGNER_ADDRESS),
 		'recipient_address': bytes.fromhex(RECIPIENT_ADDRESS),
 		'target_address': None,
+		'metadata_target_id': None,
 		'deadline': datetime.fromtimestamp(102, timezone.utc),
 		'network_deadline': 2000,
 		'max_fee': 1000,
@@ -190,6 +192,7 @@ class TransactionTest(TestCase):  # pylint: disable=too-many-public-methods
 			'signer_address': bytes.fromhex(SIGNER_ADDRESS),
 			'recipient_address': bytes.fromhex(RECIPIENT_ADDRESS),
 			'target_address': None,
+			'metadata_target_id': None,
 			'deadline': None,
 			'network_deadline': None,
 			'max_fee': None,
@@ -214,6 +217,35 @@ class TransactionTest(TestCase):  # pylint: disable=too-many-public-methods
 				{'address': bytes.fromhex(RECIPIENT_ADDRESS), 'role': 'recipient'}
 			]
 		}, row)
+
+	def test_create_transaction_row_keeps_mosaic_metadata_target_id_non_persisted(self):
+		# Arrange:
+		alias_mosaic_id = 'A95F1F8A96159516'
+		item = _create_embedded_item({
+			'signerPublicKey': SIGNER_PUBLIC_KEY,
+			'version': 1,
+			'network': 152,
+			'type': TransactionType.MOSAIC_METADATA.value,
+			'targetAddress': TARGET_ADDRESS,
+			'targetMosaicId': alias_mosaic_id,
+			'scopedMetadataKey': '0102030405060708',
+			'valueSizeDelta': 5,
+			'value': '68656C6C6F'
+		})
+		expected_raw_payload = copy.deepcopy(item)
+
+		# Act:
+		row = create_transaction_row(item, Network.TESTNET, 100)
+
+		# Assert:
+		self.assertEqual(alias_mosaic_id, row['metadata_target_id'])
+		self.assertEqual([], row['mosaic_rows'])
+		self.assertEqual(True, row['is_embedded'])
+		self.assertEqual(bytes.fromhex('B' * 64), row['aggregate_hash'])
+		self.assertEqual(2, row['embedded_index'])
+		self.assertEqual(expected_raw_payload, row['raw_payload'])
+		self.assertEqual(TARGET_ADDRESS, row['body']['targetAddress'])
+		self.assertEqual(alias_mosaic_id, row['body']['targetMosaicId'])
 
 	def test_sdk_enum_values_build_transaction_labels(self):
 		transactions = [
@@ -474,10 +506,22 @@ class TransactionTest(TestCase):  # pylint: disable=too-many-public-methods
 				transaction_fields = {'targetAddress': TARGET_ADDRESS}
 				if TransactionType.MOSAIC_ADDRESS_RESTRICTION.value == transaction_type:
 					transaction_fields['mosaicId'] = '1111111111111111'
-				item = _create_item(_create_top_level_transaction(
-					transaction_type,
-					**transaction_fields
-				))
+					item = _create_item(_create_top_level_transaction(transaction_type, **transaction_fields))
+				else:
+					transaction_fields['scopedMetadataKey'] = '0102030405060708'
+					transaction_fields['valueSizeDelta'] = 5
+					transaction_fields['value'] = '68656C6C6F'
+					if TransactionType.MOSAIC_METADATA.value == transaction_type:
+						transaction_fields['targetMosaicId'] = '1111111111111111'
+					elif TransactionType.NAMESPACE_METADATA.value == transaction_type:
+						transaction_fields['targetNamespaceId'] = '2222222222222222'
+					item = _create_embedded_item({
+						'signerPublicKey': SIGNER_PUBLIC_KEY,
+						'version': 1,
+						'network': 152,
+						'type': transaction_type,
+						**transaction_fields
+					})
 
 				# Act:
 				row = create_transaction_row(item, Network.TESTNET, 100)

@@ -683,7 +683,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		# Assert:
 		self.assertEqual(
 			[f'namespaces/{namespace_id}' for namespace_id in namespace_ids],
-			connector.namespace_paths)
+			connector.detail_paths)
 		self._assert_namespace_requests(
 			connector,
 			namespace_ids,
@@ -691,9 +691,9 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 				{'namespaceIds': namespace_ids[:MAX_PAGE_SIZE]},
 				{'namespaceIds': namespace_ids[MAX_PAGE_SIZE:]}
 			])
-		self.assertGreater(connector.max_in_flight_namespace_requests, 1)
-		self.assertLessEqual(connector.max_in_flight_namespace_requests, MAX_PAGE_SIZE)
-		self.assertEqual(0, connector.in_flight_namespace_requests)
+		self.assertGreater(connector.max_in_flight_detail_requests, 1)
+		self.assertLessEqual(connector.max_in_flight_detail_requests, MAX_PAGE_SIZE)
+		self.assertEqual(0, connector.in_flight_detail_requests)
 
 	def _assert_sync_request_counts(self, connector, block_page_count, batch_count):
 		# Assert:
