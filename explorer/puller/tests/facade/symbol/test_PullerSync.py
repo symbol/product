@@ -128,7 +128,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 
 		return FakeConnector(1, {0: [create_node_block(1)]}, **connector_arguments)
 
-	def test_sync_block_headers_persists_dirty_mosaic_definition(self):
+	def test_sync_block_headers_persists_mosaic_discovered_from_definition_transaction(self):
 		# Arrange:
 		connector = self._create_mosaic_definition_sync_connector()
 
@@ -219,6 +219,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 
 	def test_sync_block_headers_refreshes_mosaic_supply_for_embedded_alias_supply_change(self):
 		alias_mosaic_id = 'A95F1F8A96159516'
+		mosaic_id_at_aggregate_source = '0000000000000002'
 		original_supply = 987654321
 		supply_delta = 10
 		aggregate_hash = 'A' * 64
@@ -243,7 +244,8 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 					action=MosaicSupplyChangeAction.INCREASE.value)
 			],
 			[
-				{'source': {'primaryId': 1, 'secondaryId': 0}, 'resolved': '0000000000000002'},
+				# The (1, 0) entry proves the embedded transaction uses (1, 1), not its parent aggregate source.
+				{'source': {'primaryId': 1, 'secondaryId': 0}, 'resolved': mosaic_id_at_aggregate_source},
 				{'source': {'primaryId': 1, 'secondaryId': 1}, 'resolved': MOSAIC_ID}
 			],
 			original_supply,

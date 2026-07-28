@@ -69,9 +69,6 @@ class ReceiptTest(TestCase):
 		self.assertEqual('inflation', INFLATION_RECEIPT_TYPE)
 		self.assertEqual('namespaceExpired', NAMESPACE_EXPIRED_RECEIPT_TYPE)
 		self.assertEqual('namespaceDeleted', NAMESPACE_DELETED_RECEIPT_TYPE)
-
-	def test_mosaic_expired_receipt_type_is_documented_label(self):
-		# Arrange / Act / Assert:
 		self.assertEqual('mosaicExpired', MOSAIC_EXPIRED_RECEIPT_TYPE)
 
 	def test_create_receipt_rows_populates_balance_change_fields(self):

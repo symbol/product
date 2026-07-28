@@ -68,7 +68,12 @@ def create_expected_mosaic_row(
 ):
 	"""Creates an expected row for the default unlimited, transferable fixture.
 
-	Non-default duration or flags require explicit expected normalized values.
+	``None`` is a valid expected value for an unlimited mosaic, so it cannot also
+	serve as the unspecified sentinel. Flag expectations are booleans, but they
+	use the same ``UNSET`` sentinel so all omitted values are handled consistently.
+	For non-default duration or flags, callers must provide normalized expectations
+	instead of having this helper repeat production calculations and create a
+	tautological test.
 	"""
 
 	mosaic = mosaic_item['mosaic']

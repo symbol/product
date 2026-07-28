@@ -646,7 +646,7 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 			'DELETE FROM symbol_alias_names WHERE name = %s RETURNING artifact_type, artifact_id',
 			(namespace_row['full_name'],))
 		mosaic_ids = {
-			artifact_id: None
+			artifact_id
 			for artifact_type, artifact_id in cursor.fetchall()
 			if 'mosaic' == artifact_type
 		}
@@ -658,9 +658,9 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 				''',
 				alias_name_row)
 			if 'mosaic' == alias_name_row['artifact_type']:
-				mosaic_ids[alias_name_row['artifact_id']] = None
+				mosaic_ids.add(alias_name_row['artifact_id'])
 
-		SymbolDatabase._execute_refresh_mosaic_alias_names(cursor, list(mosaic_ids))
+		SymbolDatabase._execute_refresh_mosaic_alias_names(cursor, mosaic_ids)
 
 	def upsert_mosaic(self, mosaic_row):
 		"""Upserts one mosaic current-state row and derives its alias names."""
@@ -727,12 +727,12 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 			'DELETE FROM symbol_alias_names WHERE name = %s RETURNING artifact_type, artifact_id',
 			(result[0],))
 		mosaic_ids = {
-			artifact_id: None
+			artifact_id
 			for artifact_type, artifact_id in cursor.fetchall()
 			if 'mosaic' == artifact_type
 		}
 		cursor.execute('DELETE FROM symbol_namespaces WHERE namespace_id = %s', (namespace_id,))
-		SymbolDatabase._execute_refresh_mosaic_alias_names(cursor, list(mosaic_ids))
+		SymbolDatabase._execute_refresh_mosaic_alias_names(cursor, mosaic_ids)
 
 	def get_namespace_ids_updated_from_height(self, height):  # pylint: disable=invalid-name
 		"""Gets namespace ids whose current state was observed at or after a height."""

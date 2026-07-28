@@ -1,3 +1,4 @@
+from copy import deepcopy
 from unittest import TestCase
 
 from symbolchain.sc import MosaicFlags
@@ -64,15 +65,16 @@ class MosaicTest(TestCase):
 		# Assert:
 		self.assertEqual(create_expected_mosaic_row(item, 123), row)
 
-	def test_create_mosaic_row_retains_raw_payload(self):
+	def test_create_mosaic_row_retains_unmodified_raw_payload(self):
 		# Arrange:
 		item = create_mosaic_item(item_id='A1B2C3D4E5F6071829304A5B')
+		expected = create_expected_mosaic_row(deepcopy(item), 123)
 
 		# Act:
 		row = create_mosaic_row(item, 123)
 
 		# Assert:
-		self.assertEqual(create_expected_mosaic_row(item, 123), row)
+		self.assertEqual(expected, row)
 
 	def test_create_mosaic_row_calculates_finite_expiration_height(self):
 		# Arrange:
