@@ -1,4 +1,7 @@
-import { Card, LoadingIndicator, Spacer, Stack, StyledText } from '@/app/components';
+import { PriceImpactSeverity } from '../constants';
+import { formatPriceImpactText, getEstimationsPriceImpact, getPriceImpactSeverity } from '../utils';
+import { Card, Icon, LoadingIndicator, Spacer, Stack, StyledText } from '@/app/components';
+import { config } from '@/app/config';
 import { $t } from '@/app/localization';
 import { Colors, Sizes } from '@/app/styles';
 import React from 'react';
@@ -9,9 +12,49 @@ import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 /** @typedef {import('@/app/screens/bridge/types/Bridge').SwapToken} SwapToken */
 /** @typedef {import('@/app/types/Network').NetworkCurrency} NetworkCurrency */
 
+const severityAppearanceMap = {
+	[PriceImpactSeverity.WARNING]: {
+		iconName: 'alert-warning',
+		iconVariant: 'warning',
+		color: Colors.Semantic.role.warning.default,
+		levelTextKey: 's_bridge_summary_priceImpact_high'
+	},
+	[PriceImpactSeverity.CRITICAL]: {
+		iconName: 'alert-danger',
+		iconVariant: 'danger',
+		color: Colors.Semantic.role.danger.default,
+		levelTextKey: 's_bridge_summary_priceImpact_veryHigh'
+	}
+};
+
+/**
+ * Builds the price difference row of the summary, or null when no step involves a swap. The row
+ * severity pairs a color with an icon and a level word, so the warning does not rely on color alone.
+ * @param {BridgeEstimation[]|null} estimations - Bridge estimation data.
+ * @returns {object|null} Summary row descriptor, or null when the row does not apply.
+ */
+const createPriceImpactRow = estimations => {
+	const priceImpact = getEstimationsPriceImpact(estimations);
+
+	if (priceImpact === undefined)
+		return null;
+
+	const severity = getPriceImpactSeverity(priceImpact, config.bridge.priceImpact);
+	const appearance = severityAppearanceMap[severity];
+	const isUnknown = priceImpact === null;
+
+	return {
+		title: $t('s_bridge_summary_priceImpact'),
+		isShown: true,
+		amount: isUnknown ? $t('s_bridge_summary_priceImpact_unknown') : formatPriceImpactText(priceImpact),
+		units: !isUnknown && appearance ? `· ${$t(appearance.levelTextKey)}` : '',
+		appearance
+	};
+};
+
 /**
  * EstimationSummary component. Displays swap estimation details including send amount,
- * transaction fee, bridge fee, and expected receive amount.
+ * transaction fee, bridge fee, price difference, and expected receive amount.
  * @param {object} props - Component props.
  * @param {string} props.sendAmount - Amount being sent.
  * @param {string} props.transactionFeeAmount - Transaction fee amount.
@@ -32,6 +75,7 @@ export const EstimationSummary = ({
 	isLoading
 }) => {
 	const estimation = estimations?.[estimations.length - 1] ?? null;
+	const priceImpactRow = createPriceImpactRow(estimations);
 	const summary = [
 		{
 			title: $t('s_bridge_summary_amountSend'),
@@ -51,6 +95,7 @@ export const EstimationSummary = ({
 			amount: estimation?.bridgeFee ?? '-',
 			units: targetToken ? targetToken.name : ''
 		},
+		...(priceImpactRow ? [priceImpactRow] : []),
 		{
 			title: $t('s_bridge_summary_amountReceive'),
 			isShown: !!estimation && !!targetToken,
@@ -85,9 +130,19 @@ export const EstimationSummary = ({
 									{item.title}
 								</StyledText>
 								{item.isShown && (
-									<StyledText>
-										{item.amount} {item.units}
-									</StyledText>
+									<View style={styles.summaryValue}>
+										{!!item.appearance && (
+											<Icon
+												name={item.appearance.iconName}
+												variant={item.appearance.iconVariant}
+												size="xs"
+												style={styles.valueIcon}
+											/>
+										)}
+										<StyledText style={item.appearance && { color: item.appearance.color }}>
+											{item.amount} {item.units}
+										</StyledText>
+									</View>
 								)}
 							</View>
 						))}
@@ -103,6 +158,13 @@ const styles = StyleSheet.create({
 		flexDirection: 'row',
 		justifyContent: 'space-between',
 		width: '100%'
+	},
+	summaryValue: {
+		flexDirection: 'row',
+		alignItems: 'center'
+	},
+	valueIcon: {
+		marginRight: Sizes.Semantic.spacing.xs
 	},
 	loadingIndicator: {
 		position: 'absolute',

@@ -1,5 +1,5 @@
 import { TransactionType } from '../constants';
-import { applySaturationHaircut, isSaturatedQuote, isZeroForOne, normalizeAddress } from '../utils';
+import { applySaturationHaircut, calculatePriceImpact, isSaturatedQuote, isZeroForOne, normalizeAddress } from '../utils';
 import { TransactionBundle, absoluteToRelativeAmount, constants, relativeToAbsoluteAmount } from 'wallet-common-core';
 
 const DEFAULT_TRANSACTION_DEADLINE_SECONDS = 600;
@@ -8,7 +8,9 @@ const { BridgeEstimationErrorCode } = constants;
 
 /** @typedef {import('wallet-common-core').WalletController} WalletController */
 /** @typedef {import('../types/Token').TokenInfo} TokenInfo */
+/** @typedef {import('../types/Network').NetworkProperties} NetworkProperties */
 /** @typedef {import('../types/Uniswap').UniswapEstimation} UniswapEstimation */
+/** @typedef {import('../types/Uniswap').PoolSlot0} PoolSlot0 */
 /** @typedef {import('../api/UniswapService').UniswapService} UniswapService */
 /** @typedef {import('../api/TransactionService').TransactionService} TransactionService */
 /** @typedef {import('wallet-common-core/src/types/Network').NetworkMap<UniswapNetworkConfig>} UniswapNetworkConfigMap */
@@ -20,6 +22,7 @@ const { BridgeEstimationErrorCode } = constants;
  * @property {string} wethTokenId - WETH token contract address.
  * @property {string} quoterAddress - Uniswap V3 Quoter contract address.
  * @property {string} swapRouterAddress - Uniswap V3 SwapRouter contract address.
+ * @property {string} poolAddress - Uniswap V3 pool contract address. Empty when the pool is not deployed yet.
  * @property {number} poolFee - Pool fee tier in hundredths of a bip (e.g. 3000 = 0.3%).
  */
 
@@ -227,6 +230,9 @@ export class UniswapPairManager {
 		const tokenInId = sourceTokenInfo.id === networkCurrency.id ? wethId : sourceTokenInfo.id;
 		const tokenOutId = targetTokenInfo.id === networkCurrency.id ? wethId : targetTokenInfo.id;
 
+		// Started before the quote so both requests run in parallel; it never rejects.
+		const slot0Promise = this.#fetchPoolSlot0Safe(networkProperties);
+
 		let quote;
 		try {
 			quote = await this.#uniswapApi.quoteExactInputSingle(networkProperties, normalizeAddress(quoterAddress), {
@@ -253,13 +259,45 @@ export class UniswapPairManager {
 			);
 		}
 
+		const slot0 = await slot0Promise;
+		const priceImpact = slot0
+			? calculatePriceImpact({
+				amountIn: amountInAbsolute,
+				amountOut: quote.amountOut,
+				sqrtPriceX96: slot0.sqrtPriceX96,
+				zeroForOne,
+				poolFee
+			})
+			: null;
+
 		const feeAbsolute = BigInt(quote.amountOut) * BigInt(poolFee) / 1_000_000n;
 
 		return {
 			receiveAmount: absoluteToRelativeAmount(quote.amountOut, targetTokenInfo.divisibility),
 			bridgeFee: absoluteToRelativeAmount(String(feeAbsolute), targetTokenInfo.divisibility),
+			priceImpact,
 			error: null
 		};
+	};
+
+	/**
+	 * Fetches the pool's current price state, resolving to null on any failure so that a missing
+	 * reference price degrades the estimation to an unknown price impact instead of failing it.
+	 * Skipped when no pool address is configured for the network.
+	 * @param {NetworkProperties} networkProperties - Network properties.
+	 * @returns {Promise<PoolSlot0|null>} Pool price state, or null when unavailable.
+	 */
+	#fetchPoolSlot0Safe = async networkProperties => {
+		const { poolAddress } = this.#networkConfig;
+
+		if (!poolAddress)
+			return null;
+
+		try {
+			return await this.#uniswapApi.fetchPoolSlot0(networkProperties, normalizeAddress(poolAddress));
+		} catch {
+			return null;
+		}
 	};
 
 	/**

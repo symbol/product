@@ -15,6 +15,12 @@
  */
 
 /**
+ * @typedef {Object} PoolSlot0
+ * @property {string} sqrtPriceX96 - Current pool sqrt price, as a decimal string.
+ * @property {number} tick - Current pool tick.
+ */
+
+/**
  * @typedef {Object} UniswapEstimation
  * @property {string|null} receiveAmount - Amount that will be received, in relative units. Null when the estimation failed.
  * @property {string|null} bridgeFee - Pool fee extracted from the output amount, in relative units. Null when the estimation failed.

@@ -5,6 +5,7 @@ import { createContract, createEthereumJrpcProvider } from '../utils';
 /** @typedef {import('../types/Network').NetworkProperties} NetworkProperties */
 /** @typedef {import('../types/Uniswap').UniswapExactInputQuote} UniswapExactInputQuote */
 /** @typedef {import('../types/Uniswap').UniswapExactOutputQuote} UniswapExactOutputQuote */
+/** @typedef {import('../types/Uniswap').PoolSlot0} PoolSlot0 */
 
 /**
  * @typedef {Object} UniswapPoolTokenInfos
@@ -37,6 +38,12 @@ const QUOTER_EXACT_OUTPUT_SINGLE_SIGNATURE =
 	'function quoteExactOutputSingle(tuple(address tokenIn, address tokenOut, uint256 amount, uint24 fee, uint160 sqrtPriceLimitX96)) external returns (uint256 amountIn, uint160 sqrtPriceX96After, uint32 initializedTicksCrossed, uint256 gasEstimate)';
 
 const QUOTER_ABI = [QUOTER_EXACT_INPUT_SINGLE_SIGNATURE, QUOTER_EXACT_OUTPUT_SINGLE_SIGNATURE];
+
+const POOL_SLOT0_SIGNATURE =
+	// eslint-disable-next-line max-len
+	'function slot0() external view returns (uint160 sqrtPriceX96, int24 tick, uint16 observationIndex, uint16 observationCardinality, uint16 observationCardinalityNext, uint8 feeProtocol, bool unlocked)';
+
+const POOL_ABI = [POOL_SLOT0_SIGNATURE];
 
 export class UniswapService {
 	constructor() {}
@@ -110,6 +117,24 @@ export class UniswapService {
 		return {
 			amountIn: amountIn.toString(),
 			sqrtPriceX96After: sqrtPriceX96After.toString()
+		};
+	};
+
+	/**
+	 * Fetches the current price state from a Uniswap V3 pool contract.
+	 * @param {NetworkProperties} networkProperties - Network properties.
+	 * @param {string} poolAddress - Uniswap V3 pool contract address.
+	 * @returns {Promise<PoolSlot0>} Current pool sqrt price and tick.
+	 */
+	fetchPoolSlot0 = async (networkProperties, poolAddress) => {
+		const provider = createEthereumJrpcProvider(networkProperties);
+		const pool = createContract(poolAddress, POOL_ABI, provider);
+
+		const [sqrtPriceX96, tick] = await pool.slot0();
+
+		return {
+			sqrtPriceX96: sqrtPriceX96.toString(),
+			tick: Number(tick)
 		};
 	};
 }

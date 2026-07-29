@@ -1,4 +1,5 @@
 import { BridgeHistory, EstimationSummary, SwapSelector } from './components';
+import { PriceImpactSeverity } from './constants';
 import {
 	useBridge,
 	useBridgeAmount,
@@ -12,6 +13,9 @@ import {
 } from './hooks';
 import {
 	createTransactionProgressViewModel,
+	formatPriceImpactText,
+	getEstimationsPriceImpact,
+	getPriceImpactSeverity,
 	validateEstimation
 } from './utils';
 import {
@@ -25,7 +29,8 @@ import {
 	StyledText,
 	TransactionScreenTemplate
 } from '@/app/components';
-import { useTransactionFees, useWalletController } from '@/app/hooks';
+import { config } from '@/app/config';
+import { useToggle, useTransactionFees, useWalletController } from '@/app/hooks';
 import { $t } from '@/app/localization';
 import { Router } from '@/app/router/Router';
 import { getTotalFeeAmount } from '@/app/utils';
@@ -136,6 +141,29 @@ export const BridgeSwap = props => {
 	// Bridge turned off by its operator popup
 	const disabledDialogManager = useBridgeDisabledDialog({ pairsStatus });
 
+	// Price impact confirmation. At the critical tier the send flow is gated by an explicit
+	// warning dialog; the ref carries the send action to the dialog rendered in the modals slot.
+	const priceImpact = getEstimationsPriceImpact(estimations);
+	const priceImpactSeverity = getPriceImpactSeverity(priceImpact, config.bridge.priceImpact);
+	const [isPriceImpactConfirmVisible, togglePriceImpactConfirm] = useToggle(false);
+	const sendTransactionRef = useRef(() => {});
+
+	const createSendPressHandler = sendTransaction => () => {
+		if (priceImpactSeverity !== PriceImpactSeverity.CRITICAL) {
+			sendTransaction();
+
+			return;
+		}
+
+		sendTransactionRef.current = sendTransaction;
+		togglePriceImpactConfirm();
+	};
+
+	const handlePriceImpactConfirm = () => {
+		togglePriceImpactConfirm();
+		sendTransactionRef.current();
+	};
+
 	const isAmountPositive = Number(amount) > 0;
 
 	// Reload data on tokens or amount change
@@ -216,6 +244,14 @@ export const BridgeSwap = props => {
 						type="alert"
 						onSuccess={disabledDialogManager.onClose}
 					/>
+					<DialogBox
+						isVisible={isPriceImpactConfirmVisible}
+						title={$t('s_bridge_swap_dialog_priceImpact_title')}
+						text={$t('s_bridge_swap_dialog_priceImpact_text', { priceImpact: formatPriceImpactText(priceImpact) })}
+						type="confirm"
+						onSuccess={handlePriceImpactConfirm}
+						onCancel={togglePriceImpactConfirm}
+					/>
 					<ButtonCircle isFloating onPress={Router.goToBridgeAccountList} icon="account" />
 				</>
 			)}
@@ -256,7 +292,7 @@ export const BridgeSwap = props => {
 							sourceNetworkCurrency={sourceWalletController?.networkProperties?.networkCurrency}
 							isLoading={isEstimationLoading || isFeesLoading}
 						/>
-						<Button {...buttonProps} />
+						<Button {...buttonProps} onPress={createSendPressHandler(buttonProps.onPress)} />
 						<Divider />
 						<StyledText type="title">
 							{$t('s_bridge_history_title')}

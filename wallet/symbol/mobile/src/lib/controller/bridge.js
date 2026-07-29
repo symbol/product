@@ -57,6 +57,7 @@ const Pairs = {
 				wethTokenId: config.bridge.uniswapWrapped.testnet.wethAddress,
 				quoterAddress: config.bridge.uniswapWrapped.testnet.quoterAddress,
 				swapRouterAddress: config.bridge.uniswapWrapped.testnet.routerAddress,
+				poolAddress: config.bridge.uniswapWrapped.testnet.poolAddress,
 				poolFee: config.bridge.uniswapWrapped.testnet.poolFee
 			},
 			mainnet: {
@@ -65,6 +66,7 @@ const Pairs = {
 				wethTokenId: config.bridge.uniswapWrapped.mainnet.wethAddress,
 				quoterAddress: config.bridge.uniswapWrapped.mainnet.quoterAddress,
 				swapRouterAddress: config.bridge.uniswapWrapped.mainnet.routerAddress,
+				poolAddress: config.bridge.uniswapWrapped.mainnet.poolAddress,
 				poolFee: config.bridge.uniswapWrapped.mainnet.poolFee
 			}
 		}

@@ -1,5 +1,11 @@
 export const BRIDGE_HISTORY_PAGE_SIZE = 5;
 
+export const PriceImpactSeverity = {
+	NONE: 'none',
+	WARNING: 'warning',
+	CRITICAL: 'critical'
+};
+
 export const BridgeTransactionWorkflowStatus = {
 	IDLE: 'idle',
 	CREATING: 'creating',

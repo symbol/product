@@ -122,6 +122,7 @@
                 "routerAddress": "0xc50f6b8AcBc6C5852A44371ef31b52122F43c349",
                 "wethAddress": "0x3a8c1bd531b5c1aefbb9ebc3e021c1251cf4ccb1",
                 "bxymAddress": "0x5e8343a455f03109b737b6d8b410e4ecce998cda",
+                "poolAddress": "",
                 "poolFee": 3000
             },
             "testnet": {
@@ -129,8 +130,13 @@
                 "routerAddress": "0x3bFA4769FB09eefC5a80d6E87c3B9C650f7Ae48E",
                 "wethAddress": "0xfff9976782d46cc05630d1f6ebab18b2324d6b14",
                 "bxymAddress": "0xac461bf5a6554e8406f58b192d83aeea695e229b",
+                "poolAddress": "0x725e444d8Ce7c2635C39eb8B4ed36008F8481d2b",
                 "poolFee": 3000
             }
+        },
+        "priceImpact": {
+            "warningThreshold": 0.05,
+            "criticalThreshold": 0.15
         }
     }
 }

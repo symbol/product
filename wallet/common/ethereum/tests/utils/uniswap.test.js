@@ -2,6 +2,7 @@ import {
 	MAX_SQRT_PRICE_LIMIT_X96,
 	MIN_SQRT_PRICE_LIMIT_X96,
 	applySaturationHaircut,
+	calculatePriceImpact,
 	isSaturatedQuote,
 	isZeroForOne
 } from '../../src/utils/uniswap';
@@ -11,6 +12,8 @@ import {
 const LOWER_TOKEN_ID = '0xac461bf5a6554e8406f58b192d83aeea695e229b';
 const HIGHER_TOKEN_ID = '0xfff9976782d46cc05630d1f6ebab18b2324d6b14';
 const midRangeSqrtPriceX96 = '93455262124906132660367607190557';
+// Sqrt price of a pool whose raw price is exactly 1 (2^96).
+const unitPriceSqrtPriceX96 = '79228162514264337593543950336';
 
 describe('utils/uniswap', () => {
 	describe('isZeroForOne', () => {
@@ -127,6 +130,123 @@ describe('utils/uniswap', () => {
 
 		applySaturationHaircutTests.forEach(test => {
 			runApplySaturationHaircutTest(test.description, test.config, test.expected);
+		});
+	});
+
+	describe('calculatePriceImpact', () => {
+		const runCalculatePriceImpactTest = (description, config, expected) => {
+			it(description, () => {
+				// Act:
+				const result = calculatePriceImpact(config.params);
+
+				// Assert:
+				expect(result).toBe(expected.result);
+			});
+		};
+
+		const calculatePriceImpactTests = [
+			{
+				description: 'returns zero when the output differs from the mid price only by the pool fee',
+				config: {
+					params: {
+						amountIn: '1000000000000000000',
+						amountOut: '997000000000000000',
+						sqrtPriceX96: unitPriceSqrtPriceX96,
+						zeroForOne: true,
+						poolFee: 3000
+					}
+				},
+				expected: { result: 0 }
+			},
+			{
+				description: 'returns the fee-excluded impact for an output 10% below the mid-price expectation',
+				config: {
+					params: {
+						amountIn: '1000000000000000000',
+						amountOut: '897300000000000000',
+						sqrtPriceX96: unitPriceSqrtPriceX96,
+						zeroForOne: true,
+						poolFee: 3000
+					}
+				},
+				expected: { result: 0.1 }
+			},
+			{
+				description: 'clamps a favorable output to zero impact',
+				config: {
+					params: {
+						amountIn: '1000000000000000000',
+						amountOut: '1000000000000000000',
+						sqrtPriceX96: unitPriceSqrtPriceX96,
+						zeroForOne: true,
+						poolFee: 3000
+					}
+				},
+				expected: { result: 0 }
+			},
+			{
+				description: 'returns null when the expected output is zero',
+				config: {
+					params: {
+						amountIn: '1',
+						amountOut: '1',
+						sqrtPriceX96: '79228162514264337593543950336000000',
+						zeroForOne: false,
+						poolFee: 3000
+					}
+				},
+				expected: { result: null }
+			},
+			{
+				description: 'matches the observed impact of a 0.1 ETH swap against the live pool state',
+				config: {
+					params: {
+						amountIn: '100000000000000000',
+						amountOut: '57086872534',
+						sqrtPriceX96: midRangeSqrtPriceX96,
+						zeroForOne: false,
+						poolFee: 3000
+					}
+				},
+				expected: { result: 0.20331 }
+			},
+			{
+				description: 'reports near-zero impact for a dust swap against the live pool state',
+				config: {
+					params: {
+						amountIn: '100000000000000',
+						amountOut: '71622593',
+						sqrtPriceX96: midRangeSqrtPriceX96,
+						zeroForOne: false,
+						poolFee: 3000
+					}
+				},
+				expected: { result: 0.000453 }
+			}
+		];
+
+		calculatePriceImpactTests.forEach(test => {
+			runCalculatePriceImpactTest(test.description, test.config, test.expected);
+		});
+
+		it('stays within the pool price displacement bounds of the live 0.1 ETH swap', () => {
+			// Arrange: the average execution price of a swap lies between the pre and post swap pool
+			// prices, so the fee-excluded impact must sit between half of the total price displacement
+			// and the full displacement (0.254218 for this captured pool state).
+			const totalPriceDisplacement = 0.254218;
+
+			// Act:
+			const result = calculatePriceImpact({
+				amountIn: '100000000000000000',
+				amountOut: '57086872534',
+				sqrtPriceX96: midRangeSqrtPriceX96,
+				zeroForOne: false,
+				poolFee: 3000
+			});
+
+			// Assert:
+			expect(result).toBeGreaterThan(totalPriceDisplacement / 2);
+			expect(result).toBeLessThan(totalPriceDisplacement);
 		});
 	});
 });

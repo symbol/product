@@ -81,6 +81,12 @@ const SCREEN_TEXT = {
 	textEstimationUnavailable: 'validation_error_estimation_unavailable',
 	textInsufficientLiquidity: 'validation_error_insufficientLiquidity 0.235399 ETH',
 
+	// Price impact
+	textSummaryPriceImpact: 's_bridge_summary_priceImpact',
+	textSummaryPriceImpactWarningValue: '6.00% · s_bridge_summary_priceImpact_high',
+	textSummaryPriceImpactUnknown: 's_bridge_summary_priceImpact_unknown',
+	textDialogPriceImpactTitle: 's_bridge_swap_dialog_priceImpact_title',
+
 	// Token Display Names
 	displayNameTokenXym: 'Symbol • XYM',
 	displayNameTokenBxym: 'Bridged XYM • bXYM',
@@ -645,6 +651,96 @@ describe('screens/bridge/BridgeSwap', () => {
 
 			// Assert:
 			screenTester.expectButtonDisabled(SCREEN_TEXT.buttonSend);
+		});
+	});
+
+	describe('price impact', () => {
+		const warningImpactEstimation = { ...estimationResult, priceImpact: 0.06 };
+		const criticalImpactEstimation = { ...estimationResult, priceImpact: 0.20331 };
+		const unknownImpactEstimation = { ...estimationResult, priceImpact: null };
+
+		it('shows the price difference row with the level wording at the warning tier', () => {
+			// Arrange:
+			setupMocks({
+				useEstimation: {
+					estimations: [warningImpactEstimation]
+				}
+			});
+
+			// Act:
+			const screenTester = new ScreenTester(BridgeSwap, createDefaultProps());
+
+			// Assert:
+			screenTester.expectText([
+				SCREEN_TEXT.textSummaryPriceImpact,
+				SCREEN_TEXT.textSummaryPriceImpactWarningValue
+			]);
+		});
+
+		it('shows the unknown state when the impact could not be computed', () => {
+			// Arrange:
+			setupMocks({
+				useEstimation: {
+					estimations: [unknownImpactEstimation]
+				}
+			});
+
+			// Act:
+			const screenTester = new ScreenTester(BridgeSwap, createDefaultProps());
+
+			// Assert:
+			screenTester.expectText([SCREEN_TEXT.textSummaryPriceImpactUnknown]);
+		});
+
+		it('hides the price difference row when no step involves a swap', () => {
+			// Arrange:
+			setupMocks({
+				useEstimation: {
+					estimations: [estimationResult]
+				}
+			});
+
+			// Act:
+			const screenTester = new ScreenTester(BridgeSwap, createDefaultProps());
+
+			// Assert:
+			screenTester.notExpectText([SCREEN_TEXT.textSummaryPriceImpact]);
+		});
+
+		it('gates sending behind a warning dialog at the critical tier', async () => {
+			// Arrange:
+			setupMocks({
+				useBridgeAmount: {
+					amount: '1',
+					amountInput: '1'
+				},
+				useEstimation: {
+					estimations: [criticalImpactEstimation]
+				}
+			});
+			const screenTester = new ScreenTester(BridgeSwap, createDefaultProps());
+			await screenTester.waitForTimer();
+
+			// Act: sending opens the price impact warning instead of the confirmation dialog.
+			screenTester.pressButton(SCREEN_TEXT.buttonSend);
+
+			// Assert:
+			screenTester.expectText([SCREEN_TEXT.textDialogPriceImpactTitle]);
+			screenTester.notExpectText([SCREEN_TEXT.textDialogConfirmTitle]);
+
+			// Act: cancelling returns to the form without sending.
+			screenTester.pressButton(SCREEN_TEXT.buttonCancel);
+
+			// Assert:
+			screenTester.notExpectText([SCREEN_TEXT.textDialogPriceImpactTitle]);
+
+			// Act: confirming the warning proceeds to the standard confirmation dialog.
+			screenTester.pressButton(SCREEN_TEXT.buttonSend);
+			screenTester.pressButton(SCREEN_TEXT.buttonConfirm);
+			await screenTester.waitForTimer();
+
+			// Assert:
+			screenTester.expectText([SCREEN_TEXT.textDialogConfirmTitle]);
 		});
 	});
 
