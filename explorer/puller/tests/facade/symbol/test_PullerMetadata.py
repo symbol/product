@@ -219,13 +219,13 @@ class SymbolPullerMetadataTest(SymbolPullerTestBase):  # pylint: disable=too-man
 		rows = {
 			1: [
 				{'type': TransactionType.ACCOUNT_METADATA.value, 'signer_address': bytes.fromhex(SIGNER_ADDRESS),
-					'target_address': bytes.fromhex(RECIPIENT_ADDRESS), 'metadata_target_id': None,
+					'target_address': bytes.fromhex(RECIPIENT_ADDRESS), 'mosaic_metadata_target_id': None,
 					'body': {'targetAddress': RECIPIENT_ADDRESS, 'scopedMetadataKey': '0000000000000001'}},
 				{'type': TransactionType.MOSAIC_METADATA.value, 'signer_address': bytes.fromhex(SIGNER_ADDRESS),
-					'target_address': bytes.fromhex(RECIPIENT_ADDRESS), 'metadata_target_id': MOSAIC_ID,
+					'target_address': bytes.fromhex(RECIPIENT_ADDRESS), 'mosaic_metadata_target_id': MOSAIC_ID,
 					'body': {'targetAddress': RECIPIENT_ADDRESS, 'targetMosaicId': MOSAIC_ID, 'scopedMetadataKey': '0000000000000002'}},
 				{'type': TransactionType.NAMESPACE_METADATA.value, 'signer_address': bytes.fromhex(SIGNER_ADDRESS),
-					'target_address': bytes.fromhex(RECIPIENT_ADDRESS), 'metadata_target_id': None,
+					'target_address': bytes.fromhex(RECIPIENT_ADDRESS), 'mosaic_metadata_target_id': None,
 					'body': {'targetAddress': RECIPIENT_ADDRESS, 'targetNamespaceId': NAMESPACE_ID, 'scopedMetadataKey': '0000000000000003'}}
 			]
 		}
@@ -248,19 +248,19 @@ class SymbolPullerMetadataTest(SymbolPullerTestBase):  # pylint: disable=too-man
 		rows = {
 			1: [
 				{'type': TransactionType.NAMESPACE_METADATA.value, 'signer_address': bytes.fromhex(SIGNER_ADDRESS),
-					'target_address': bytes.fromhex(RECIPIENT_ADDRESS), 'metadata_target_id': None,
+					'target_address': bytes.fromhex(RECIPIENT_ADDRESS), 'mosaic_metadata_target_id': None,
 					'body': {'targetAddress': RECIPIENT_ADDRESS, 'targetNamespaceId': NAMESPACE_ID, 'scopedMetadataKey': '0000000000000003'}},
 				{'type': TransactionType.ACCOUNT_METADATA.value, 'signer_address': bytes.fromhex(SIGNER_ADDRESS),
-					'target_address': bytes.fromhex(RECIPIENT_ADDRESS), 'metadata_target_id': None,
+					'target_address': bytes.fromhex(RECIPIENT_ADDRESS), 'mosaic_metadata_target_id': None,
 					'body': {'targetAddress': RECIPIENT_ADDRESS, 'scopedMetadataKey': '0000000000000001'}},
 				{'type': TransactionType.MOSAIC_METADATA.value, 'signer_address': bytes.fromhex(SIGNER_ADDRESS),
-					'target_address': bytes.fromhex(RECIPIENT_ADDRESS), 'metadata_target_id': MOSAIC_ID,
+					'target_address': bytes.fromhex(RECIPIENT_ADDRESS), 'mosaic_metadata_target_id': MOSAIC_ID,
 					'body': {'targetAddress': RECIPIENT_ADDRESS, 'targetMosaicId': MOSAIC_ID, 'scopedMetadataKey': '0000000000000002'}},
 				{'type': TransactionType.NAMESPACE_METADATA.value, 'signer_address': bytes.fromhex(SIGNER_ADDRESS),
-					'target_address': bytes.fromhex(RECIPIENT_ADDRESS), 'metadata_target_id': None,
+					'target_address': bytes.fromhex(RECIPIENT_ADDRESS), 'mosaic_metadata_target_id': None,
 					'body': {'targetAddress': RECIPIENT_ADDRESS, 'targetNamespaceId': NAMESPACE_ID, 'scopedMetadataKey': '0000000000000003'}},
 				{'type': TransactionType.ACCOUNT_METADATA.value, 'signer_address': bytes.fromhex(SIGNER_ADDRESS),
-					'target_address': bytes.fromhex(RECIPIENT_ADDRESS), 'metadata_target_id': None,
+					'target_address': bytes.fromhex(RECIPIENT_ADDRESS), 'mosaic_metadata_target_id': None,
 					'body': {'targetAddress': RECIPIENT_ADDRESS, 'scopedMetadataKey': '0000000000000001'}}
 			]
 		}
@@ -300,7 +300,7 @@ class SymbolPullerMetadataTest(SymbolPullerTestBase):  # pylint: disable=too-man
 		# Assert:
 		self.assertEqual([], keys)
 
-	def _assert_collect_dirty_metadata_keys_prefers_row_target_address(self, transaction_row, expected_key):
+	def _assert_collect_dirty_metadata_keys_selects_row_target_address(self, transaction_row, expected_key):
 		# Arrange:
 		# body targetAddress is an unresolved alias; row target_address is the resolved address.
 
@@ -310,13 +310,13 @@ class SymbolPullerMetadataTest(SymbolPullerTestBase):  # pylint: disable=too-man
 		# Assert:
 		self.assertEqual([expected_key], keys)
 
-	def test_collect_dirty_metadata_keys_prefers_row_target_address_over_body_target_address_for_account_metadata(self):
-		self._assert_collect_dirty_metadata_keys_prefers_row_target_address(
+	def test_collect_dirty_metadata_keys_selects_row_target_address_over_body_target_address_for_account_metadata(self):
+		self._assert_collect_dirty_metadata_keys_selects_row_target_address(
 			{
 				'type': TransactionType.ACCOUNT_METADATA.value,
 				'signer_address': bytes.fromhex(SIGNER_ADDRESS),
 				'target_address': bytes.fromhex(TARGET_ADDRESS),
-				'metadata_target_id': None,
+				'mosaic_metadata_target_id': None,
 				'body': {'targetAddress': ALIAS_ADDRESS, 'scopedMetadataKey': '0000000000000004'}
 			},
 			{
@@ -327,13 +327,13 @@ class SymbolPullerMetadataTest(SymbolPullerTestBase):  # pylint: disable=too-man
 				'target_id': None
 			})
 
-	def test_collect_dirty_metadata_keys_prefers_row_target_address_over_body_target_address_for_mosaic_metadata(self):
-		self._assert_collect_dirty_metadata_keys_prefers_row_target_address(
+	def test_collect_dirty_metadata_keys_selects_row_target_address_over_body_target_address_for_mosaic_metadata(self):
+		self._assert_collect_dirty_metadata_keys_selects_row_target_address(
 			{
 				'type': TransactionType.MOSAIC_METADATA.value,
 				'signer_address': bytes.fromhex(SIGNER_ADDRESS),
 				'target_address': bytes.fromhex(TARGET_ADDRESS),
-				'metadata_target_id': MOSAIC_ID,
+				'mosaic_metadata_target_id': MOSAIC_ID,
 				'body': {
 					'targetAddress': ALIAS_ADDRESS,
 					'targetMosaicId': MOSAIC_ID,
@@ -348,13 +348,13 @@ class SymbolPullerMetadataTest(SymbolPullerTestBase):  # pylint: disable=too-man
 				'target_id': MOSAIC_ID
 			})
 
-	def test_collect_dirty_metadata_keys_prefers_row_target_address_over_body_target_address_for_namespace_metadata(self):
-		self._assert_collect_dirty_metadata_keys_prefers_row_target_address(
+	def test_collect_dirty_metadata_keys_selects_row_target_address_over_body_target_address_for_namespace_metadata(self):
+		self._assert_collect_dirty_metadata_keys_selects_row_target_address(
 			{
 				'type': TransactionType.NAMESPACE_METADATA.value,
 				'signer_address': bytes.fromhex(SIGNER_ADDRESS),
 				'target_address': bytes.fromhex(TARGET_ADDRESS),
-				'metadata_target_id': None,
+				'mosaic_metadata_target_id': None,
 				'body': {
 					'targetAddress': ALIAS_ADDRESS,
 					'targetNamespaceId': NAMESPACE_ID,
@@ -376,7 +376,7 @@ class SymbolPullerMetadataTest(SymbolPullerTestBase):  # pylint: disable=too-man
 			'type': TransactionType.MOSAIC_METADATA.value,
 			'signer_address': bytes.fromhex(SIGNER_ADDRESS),
 			'target_address': bytes.fromhex(TARGET_ADDRESS),
-			'metadata_target_id': MOSAIC_ID,
+			'mosaic_metadata_target_id': MOSAIC_ID,
 			'body': {
 				'targetAddress': RECIPIENT_ADDRESS,
 				'targetMosaicId': alias_mosaic_id,

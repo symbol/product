@@ -217,10 +217,11 @@ def create_transaction_row(item, network, epoch_adjustment_seconds):
 	transaction_type = int(transaction['type'])
 	signer_public_key = bytes.fromhex(transaction['signerPublicKey'])
 	signer_address = address_from_public_key(signer_public_key, network)
-	# Non-persisted: carries targetMosaicId through mosaic alias resolution so the metadata
-	# natural key uses the resolved id. Namespace metadata's targetNamespaceId is a NamespaceId
-	# and requires no mosaic alias resolution, so the collector reads it directly from body.
-	metadata_target_id = (
+	# Non-persisted: copies both direct and unresolved targetMosaicId values into one normalized field. SymbolPuller owns
+	# alias detection and resolution, replacing an alias here with its resolved mosaic id before the metadata collector uses
+	# it as a natural-key component; body and raw_payload retain the unresolved DTO. Namespace metadata's targetNamespaceId
+	# is a concrete NamespaceId, so the collector reads it directly from body instead of using this mosaic-only field.
+	mosaic_metadata_target_id = (
 		transaction['targetMosaicId']
 		if TransactionType.MOSAIC_METADATA.value == transaction_type
 		else None
@@ -238,7 +239,7 @@ def create_transaction_row(item, network, epoch_adjustment_seconds):
 		'signer_address': signer_address,
 		'recipient_address': bytes.fromhex(transaction['recipientAddress']) if 'recipientAddress' in transaction else None,
 		'target_address': _target_address(transaction_type, transaction),
-		'metadata_target_id': metadata_target_id,
+		'mosaic_metadata_target_id': mosaic_metadata_target_id,
 		'message_type': message_type,
 		'message_payload': message_payload,
 		'body': {

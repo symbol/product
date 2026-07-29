@@ -442,14 +442,14 @@ class SymbolPuller:
 
 		return dict(rows_by_height)
 
-	async def _get_resolution_statements(self, kind, height):
+	async def _get_resolution_statements(self, request):
 		resolution_entries_by_unresolved = {}
 		page_number = 1
 		while True:
 			response = await self.get_symbol_node(
-				f'/statements/resolutions/{kind}?height={height}&pageSize={MAX_PAGE_SIZE}&pageNumber={page_number}'
+				f'/statements/resolutions/{request.kind}?height={request.height}&pageSize={MAX_PAGE_SIZE}&pageNumber={page_number}'
 			)
-			items = self._get_node_page_data(response, f'Malformed Symbol {kind} resolution page response')
+			items = self._get_node_page_data(response, f'Malformed Symbol {request.kind} resolution page response')
 			for item in items:
 				statement = item['statement']
 				resolution_entries_by_unresolved[statement['unresolved'].upper()] = statement['resolutionEntries']
@@ -505,9 +505,9 @@ class SymbolPuller:
 			for mosaic_row in row['mosaic_rows']
 			if is_alias_mosaic_id(mosaic_row['mosaic_id'])
 		}
-		metadata_target_id = row['metadata_target_id']
-		if metadata_target_id is not None and is_alias_mosaic_id(metadata_target_id):
-			alias_mosaic_ids.add(metadata_target_id)
+		mosaic_metadata_target_id = row['mosaic_metadata_target_id']
+		if mosaic_metadata_target_id is not None and is_alias_mosaic_id(mosaic_metadata_target_id):
+			alias_mosaic_ids.add(mosaic_metadata_target_id)
 		return alias_addresses, alias_mosaic_ids
 
 	@classmethod
@@ -528,43 +528,38 @@ class SymbolPuller:
 
 		source = self._transaction_resolution_source(row, top_level_rows_by_hash)
 		if alias_addresses:
+			def _resolve_transaction_alias_address(address):
+				resolved_hex = self._resolve_transaction_alias(
+					resolution_statements.address,
+					address.hex().upper(),
+					source,
+					'address',
+					height)
+				return bytes.fromhex(resolved_hex)
+
 			for address_row in row['address_rows']:
 				if address_row['address'] in alias_addresses:
-					resolved = self._resolve_transaction_alias(
-						resolution_statements.address,
-						address_row['address'].hex().upper(),
-						source,
-						'address',
-						height)
-					address_row['address'] = bytes.fromhex(resolved)
+					address_row['address'] = _resolve_transaction_alias_address(address_row['address'])
 			row['address_rows'] = unique_address_rows(row['address_rows'])
 			for field_name in ('recipient_address', 'target_address'):
 				address = row[field_name]
 				if address in alias_addresses:
-					resolved = self._resolve_transaction_alias(
-						resolution_statements.address,
-						address.hex().upper(),
-						source,
-						'address',
-						height)
-					row[field_name] = bytes.fromhex(resolved)
+					row[field_name] = _resolve_transaction_alias_address(address)
 
 		if alias_mosaic_ids:
-			for mosaic_row in row['mosaic_rows']:
-				if mosaic_row['mosaic_id'] in alias_mosaic_ids:
-					mosaic_row['mosaic_id'] = self._resolve_transaction_alias(
-						resolution_statements.mosaic,
-						mosaic_row['mosaic_id'].upper(),
-						source,
-						'mosaic',
-						height)
-			if row['metadata_target_id'] in alias_mosaic_ids:
-				row['metadata_target_id'] = self._resolve_transaction_alias(
+			def _resolve_transaction_alias_mosaic(mosaic_id):
+				return self._resolve_transaction_alias(
 					resolution_statements.mosaic,
-					row['metadata_target_id'].upper(),
+					mosaic_id.upper(),
 					source,
 					'mosaic',
 					height)
+
+			for mosaic_row in row['mosaic_rows']:
+				if mosaic_row['mosaic_id'] in alias_mosaic_ids:
+					mosaic_row['mosaic_id'] = _resolve_transaction_alias_mosaic(mosaic_row['mosaic_id'])
+			if row['mosaic_metadata_target_id'] in alias_mosaic_ids:
+				row['mosaic_metadata_target_id'] = _resolve_transaction_alias_mosaic(row['mosaic_metadata_target_id'])
 
 	async def _resolve_transaction_rows_for_batch(self, transaction_rows_by_height):  # pylint: disable=too-many-locals
 		resolution_requests = []
@@ -583,7 +578,7 @@ class SymbolPuller:
 		for batch_start in range(0, len(resolution_requests), RESOLUTION_FETCH_CONCURRENCY):
 			batch_requests = resolution_requests[batch_start:batch_start + RESOLUTION_FETCH_CONCURRENCY]
 			batch_statements = await asyncio.gather(*(
-				self._get_resolution_statements(request.kind, request.height)
+				self._get_resolution_statements(request)
 				for request in batch_requests
 			))
 			for request, statements in zip(batch_requests, batch_statements):
@@ -838,7 +833,7 @@ class SymbolPuller:
 
 				body = transaction_row['body']
 				if 'mosaic' == metadata_type:
-					target_id = transaction_row['metadata_target_id']
+					target_id = transaction_row['mosaic_metadata_target_id']
 				elif 'namespace' == metadata_type:
 					target_id = body['targetNamespaceId']
 				else:
