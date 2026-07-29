@@ -21,8 +21,8 @@ from tests.test.SymbolMetadataTestUtils import (
 	TARGET_ADDRESS,
 	create_expected_metadata_row,
 	create_metadata_item,
-	fetch_metadata_row,
-	fetch_metadata_rows
+	fetch_metadata_rows,
+	find_metadata_row
 )
 from tests.test.SymbolMosaicTestUtils import (
 	create_expected_mosaic_row,
@@ -1153,7 +1153,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		database.upsert_metadata(row)
 
 		# Assert:
-		self.assertEqual(row, fetch_metadata_row(database, row['composite_hash']))
+		self.assertEqual(row, find_metadata_row(database, row['composite_hash']))
 
 	def test_upsert_metadata_updates_all_non_key_columns_for_same_composite_hash(self):
 		# Arrange:
@@ -1181,7 +1181,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		database.upsert_metadata(updated_row)
 
 		# Assert:
-		self.assertEqual(updated_row, fetch_metadata_row(database, updated_row['composite_hash']))
+		self.assertEqual(updated_row, find_metadata_row(database, updated_row['composite_hash']))
 
 	def test_upsert_metadata_failed_update_preserves_existing_row(self):
 		# Arrange:
@@ -1198,7 +1198,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			database.upsert_metadata(invalid_row)
 
 		# Assert:
-		self.assertEqual(original_row, fetch_metadata_row(database, original_row['composite_hash']))
+		self.assertEqual(original_row, find_metadata_row(database, original_row['composite_hash']))
 
 	def test_upsert_metadata_keeps_connection_usable_after_failed_update(self):
 		# Arrange:
@@ -1222,7 +1222,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		database.upsert_metadata(updated_row)
 
 		# Assert:
-		self.assertEqual(updated_row, fetch_metadata_row(database, original_row['composite_hash']))
+		self.assertEqual(updated_row, find_metadata_row(database, original_row['composite_hash']))
 
 	def test_delete_metadata_by_key_deletes_only_the_exact_null_target_id_key(self):
 		# Arrange:
@@ -1249,8 +1249,8 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		database.delete_metadata_by_key(metadata_key)
 
 		# Assert:
-		self.assertIsNone(fetch_metadata_row(database, null_target_row['composite_hash']))
-		self.assertEqual(value_target_row, fetch_metadata_row(database, value_target_row['composite_hash']))
+		self.assertIsNone(find_metadata_row(database, null_target_row['composite_hash']))
+		self.assertEqual(value_target_row, find_metadata_row(database, value_target_row['composite_hash']))
 
 	def test_delete_metadata_by_key_is_noop_for_missing_natural_key(self):
 		# Arrange:
@@ -1272,7 +1272,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		database.delete_metadata_by_key(missing_key)
 
 		# Assert:
-		self.assertEqual(row, fetch_metadata_row(database, row['composite_hash']))
+		self.assertEqual(row, find_metadata_row(database, row['composite_hash']))
 
 	def test_get_metadata_keys_updated_from_height_returns_exact_keys_in_composite_hash_order(self):
 		# Arrange:
@@ -1463,7 +1463,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		database.repair_rollback_from_height(2, _create_sync_state(
 			status='repairing',
 			last_synced_height=1,
-			last_synced_block_hash=b'hash 1'), RollbackRefreshEntries([], [], []))
+			last_synced_block_hash=b'hash 1'), RollbackRefreshEntries())
 
 		# Assert:
 		cursor = database.connection.cursor()
@@ -1489,7 +1489,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		database.repair_rollback_from_height(
 			fork_height,
 			_create_sync_state(status='repairing', last_synced_height=1, last_synced_block_hash=b'hash 1'),
-			RollbackRefreshEntries([], [], []))
+			RollbackRefreshEntries())
 
 		# Assert:
 		self.assertEqual(original_mosaic_state, fetch_mosaic_state(database))
@@ -1558,7 +1558,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			status='repairing',
 			last_synced_height=1,
 			last_synced_block_hash=b'hash 1')
-		expected_mosaic_row = create_expected_mosaic_row(create_mosaic_item(mosaic_id=mosaic_id, supply='99'), 1)
+		expected_mosaic_row = refresh_entries.mosaic_entries[0]['row']
 		expected_mosaic_state = [create_persisted_mosaic_state(expected_mosaic_row, [])]
 		expected_namespace_state = (
 			[
@@ -1583,8 +1583,9 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		cursor.execute('SELECT height FROM symbol_blocks ORDER BY height')
 		self.assertEqual([(1,)], cursor.fetchall())
 
-	# pylint: disable=too-many-locals
 	def test_repair_rollback_rolls_back_namespace_mosaic_metadata_and_chain_state_after_metadata_failure(self):
+		# pylint: disable=too-many-locals
+
 		# Arrange:
 		database = self._create_database()
 		database.upsert_blocks([_create_block(1), _create_block(2)])
@@ -1614,6 +1615,9 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			'mosaic': fetch_mosaic_state(database),
 			'metadata': fetch_metadata_rows(database)
 		}
+		self.assertEqual(2, len(original_state['namespace'][0]))
+		self.assertEqual(2, len(original_state['mosaic']))
+		self.assertEqual(2, len(original_state['metadata']))
 		updated_namespace_row = _create_namespace_row(
 			alias_type='none', alias_mosaic_id=None, end_height=100, observed_height=1,
 			raw_payload={'namespace': {'state': 'updated'}})
@@ -3309,7 +3313,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 
 		# Act:
 		database.repair_rollback_from_height(
-			10, _create_sync_state(status='repairing', last_synced_height=9), RollbackRefreshEntries([], [], []))
+			10, _create_sync_state(status='repairing', last_synced_height=9), RollbackRefreshEntries())
 
 		# Assert:
 		self.assertEqual('stale', database.get_account_refresh_state()['status'])
@@ -3325,7 +3329,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 
 		# Act:
 		database.repair_rollback_from_height(
-			10, _create_sync_state(status='repairing', last_synced_height=9), RollbackRefreshEntries([], [], []))
+			10, _create_sync_state(status='repairing', last_synced_height=9), RollbackRefreshEntries())
 
 		# Assert:
 		self.assertEqual('healthy', database.get_account_refresh_state()['status'])
@@ -3410,7 +3414,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 
 		# Act:
 		database.repair_rollback_from_height(
-			10, _create_sync_state(status='repairing', last_synced_height=9), RollbackRefreshEntries([], [], []))
+			10, _create_sync_state(status='repairing', last_synced_height=9), RollbackRefreshEntries())
 
 		# Assert:
 		expected_address = bytes.fromhex(ADDRESS1)
@@ -3963,7 +3967,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			status='repairing',
 			last_synced_height=1,
 			last_synced_block_hash=b'hash 1'
-		), RollbackRefreshEntries([], [], []))
+		), RollbackRefreshEntries())
 
 		# Assert:
 		cursor = database.connection.cursor()

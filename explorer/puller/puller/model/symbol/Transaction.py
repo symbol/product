@@ -217,6 +217,9 @@ def create_transaction_row(item, network, epoch_adjustment_seconds):
 	transaction_type = int(transaction['type'])
 	signer_public_key = bytes.fromhex(transaction['signerPublicKey'])
 	signer_address = address_from_public_key(signer_public_key, network)
+	# Non-persisted: carries targetMosaicId through mosaic alias resolution so the metadata
+	# natural key uses the resolved id. Namespace metadata's targetNamespaceId is a NamespaceId
+	# and requires no mosaic alias resolution, so the collector reads it directly from body.
 	metadata_target_id = (
 		transaction['targetMosaicId']
 		if TransactionType.MOSAIC_METADATA.value == transaction_type

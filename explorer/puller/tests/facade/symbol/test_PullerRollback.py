@@ -332,6 +332,9 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):
 		original_namespace_state = fetch_namespace_state(self.puller.symbol_db.connection)
 		original_mosaic_state = fetch_mosaic_state(self.puller.symbol_db)
 		original_metadata_rows = fetch_metadata_rows(self.puller.symbol_db)
+		self.assertEqual(1, len(original_namespace_state[0]))
+		self.assertEqual(1, len(original_mosaic_state))
+		self.assertEqual(1, len(original_metadata_rows))
 		connector = FakeConnector(
 			3,
 			{},
@@ -352,22 +355,19 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):
 		self.assertEqual(original_namespace_state, fetch_namespace_state(self.puller.symbol_db.connection))
 		self.assertEqual(original_mosaic_state, fetch_mosaic_state(self.puller.symbol_db))
 		self.assertEqual(original_metadata_rows, fetch_metadata_rows(self.puller.symbol_db))
-		namespace_paths = [
+		self.assertEqual([
+			f'namespaces/{NAMESPACE_ROOT_ID}',
+			'namespaces/names',
+			'mosaics',
+			metadata_path(1, mosaic_id)
+		], [
 			path for path in connector.paths
-			if path.startswith('namespaces/') and path != 'namespaces/names'
-		]
-		self.assertEqual([f'namespaces/{NAMESPACE_ROOT_ID}'], namespace_paths)
-		self.assertEqual(['mosaics'], [path for path in connector.paths if 'mosaics' == path])
-		self.assertEqual([metadata_path(1, mosaic_id)], [
-			path for path in connector.paths if path.startswith('metadata?')])
+			if path in (f'namespaces/{NAMESPACE_ROOT_ID}', 'namespaces/names', 'mosaics') or path.startswith('metadata?')
+		])
 		self.assertEqual([{'namespaceIds': [NAMESPACE_ROOT_ID]}], [
 			payload for path, payload in connector.post_requests if 'namespaces/names' == path])
 		self.assertEqual([{'mosaicIds': [mosaic_id]}], [
 			payload for path, payload in connector.post_requests if 'mosaics' == path])
-		self.assertLess(
-			connector.paths.index(f'namespaces/{NAMESPACE_ROOT_ID}'),
-			connector.paths.index(metadata_path(1, mosaic_id)))
-		self.assertLess(connector.paths.index('mosaics'), connector.paths.index(metadata_path(1, mosaic_id)))
 
 	def test_sync_block_headers_refreshes_orphaned_namespace_state_to_canonical_state_during_rollback(self):
 		# Arrange:

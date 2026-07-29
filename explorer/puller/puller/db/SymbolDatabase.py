@@ -14,7 +14,7 @@ from puller.model.symbol.Transaction import MESSAGE_TYPE_LABELS, TRANSACTION_TYP
 from .DatabaseConnection import DatabaseConnection
 
 RollbackRefreshEntries = namedtuple(
-	'RollbackRefreshEntries', ['namespace_entries', 'mosaic_entries', 'metadata_entries'])
+	'RollbackRefreshEntries', ['namespace_entries', 'mosaic_entries', 'metadata_entries'], defaults=((), (), ()))
 
 SYNC_STATE_COLUMNS = [
 	'status',

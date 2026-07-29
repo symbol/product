@@ -36,6 +36,7 @@ DatabaseConfiguration = namedtuple('DatabaseConfiguration', ['database', 'user',
 NativeMosaicInfo = namedtuple('NativeMosaicInfo', ['id', 'divisibility'])
 TransactionSource = namedtuple('TransactionSource', ['primary_id', 'secondary_id'])
 ResolutionStatements = namedtuple('ResolutionStatements', ['address', 'mosaic'])
+ResolutionRequest = namedtuple('ResolutionRequest', ['height', 'kind'])
 MAX_PAGE_SIZE = 100
 ACCOUNT_BATCH_FETCH_SIZE = MAX_PAGE_SIZE
 BLOCK_PAGE_FETCH_CONCURRENCY = 10
@@ -575,19 +576,19 @@ class SymbolPuller:
 
 			resolution_statements_by_height[height] = ResolutionStatements({}, {})
 			if alias_addresses:
-				resolution_requests.append((height, 'address'))
+				resolution_requests.append(ResolutionRequest(height, 'address'))
 			if alias_mosaic_ids:
-				resolution_requests.append((height, 'mosaic'))
+				resolution_requests.append(ResolutionRequest(height, 'mosaic'))
 
 		for batch_start in range(0, len(resolution_requests), RESOLUTION_FETCH_CONCURRENCY):
 			batch_requests = resolution_requests[batch_start:batch_start + RESOLUTION_FETCH_CONCURRENCY]
 			batch_statements = await asyncio.gather(*(
-				self._get_resolution_statements(kind, height)
-				for height, kind in batch_requests
+				self._get_resolution_statements(request.kind, request.height)
+				for request in batch_requests
 			))
-			for (height, kind), statements in zip(batch_requests, batch_statements):
-				resolution_statements_by_height[height] = resolution_statements_by_height[height]._replace(
-					**{kind: statements})
+			for request, statements in zip(batch_requests, batch_statements):
+				resolution_statements_by_height[request.height] = resolution_statements_by_height[request.height]._replace(
+					**{request.kind: statements})
 
 		for height, transaction_rows in transaction_rows_by_height.items():
 			if height not in resolution_statements_by_height:
@@ -823,7 +824,10 @@ class SymbolPuller:
 
 	@staticmethod
 	def _collect_dirty_metadata_keys_for_batch(transaction_rows_by_height):
-		"""Collects unique metadata natural keys touched by metadata transactions."""
+		"""Collects natural keys for exact-key metadata searches and deduplication.
+
+		Empty exact-key searches must delete the local row, but supply no composite hash from the node.
+		"""
 
 		dirty_metadata_keys = {}
 		for transaction_rows in transaction_rows_by_height.values():
@@ -875,9 +879,7 @@ class SymbolPuller:
 				path += f'&targetId={metadata_key["target_id"]}'
 
 			response = await self.get_symbol_node(path)
-			if not isinstance(response, dict) or 'data' not in response:
-				raise ValueError('Malformed Symbol metadata search response')
-			items = response['data']
+			items = self._get_node_page_data(response, 'Malformed Symbol metadata search response')
 			if not isinstance(items, list):
 				raise ValueError('Malformed Symbol metadata search data')
 			if len(items) > 1:

@@ -533,7 +533,11 @@ class BoundedDetailConnector(FakeConnector):
 				asyncio.get_running_loop().call_soon(self._detail_requests_released.set)
 			await self._detail_requests_released.wait()
 
-			return self._get_detail_response(url_path)
+			response = self._get_detail_response(url_path)
+			if isinstance(response, Exception):
+				raise response
+
+			return response
 		finally:
 			self.in_flight_detail_requests -= 1
 
@@ -545,11 +549,7 @@ class BoundedMetadataConnector(BoundedDetailConnector):
 	DETAIL_PATH_PREFIX = 'metadata?'
 
 	def _get_detail_response(self, url_path):
-		response = self.metadata_by_query.get(url_path, {'data': []})
-		if isinstance(response, Exception):
-			raise response
-
-		return response
+		return self.metadata_by_query.get(url_path, {'data': []})
 
 
 class ResponseConnector:
@@ -593,11 +593,7 @@ class BoundedNamespaceDetailConnector(BoundedDetailConnector):
 	DETAIL_PATH_PREFIX = 'namespaces/'
 
 	def _get_detail_response(self, url_path):
-		response = self.namespace_by_id[url_path.removeprefix('namespaces/')]
-		if isinstance(response, Exception):
-			raise response
-
-		return response
+		return self.namespace_by_id[url_path.removeprefix('namespaces/')]
 
 
 class SymbolPullerTestBase(TestCase):

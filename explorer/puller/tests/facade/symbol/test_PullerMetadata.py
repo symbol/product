@@ -300,73 +300,74 @@ class SymbolPullerMetadataTest(SymbolPullerTestBase):  # pylint: disable=too-man
 		# Assert:
 		self.assertEqual([], keys)
 
-	def test_collect_dirty_metadata_keys_uses_resolved_target_address_for_account_metadata(self):
+	def _assert_collect_dirty_metadata_keys_prefers_row_target_address(self, transaction_row, expected_key):
 		# Arrange:
-		alias_address = '99065A28385EB5AE88000000000000000000000000000000'
-		row = {
-			'type': TransactionType.ACCOUNT_METADATA.value,
-			'signer_address': bytes.fromhex(SIGNER_ADDRESS),
-			'target_address': bytes.fromhex(TARGET_ADDRESS),
-			'metadata_target_id': None,
-			'body': {'targetAddress': alias_address, 'scopedMetadataKey': '0000000000000004'}
-		}
+		# body targetAddress is an unresolved alias; row target_address is the resolved address.
 
 		# Act:
-		keys = self.puller._collect_dirty_metadata_keys_for_batch({1: [row]})  # pylint: disable=protected-access
+		keys = self.puller._collect_dirty_metadata_keys_for_batch({1: [transaction_row]})  # pylint: disable=protected-access
 
 		# Assert:
-		self.assertEqual([{
-			'metadata_type': 'account', 'source_address': bytes.fromhex(SIGNER_ADDRESS),
-			'target_address': bytes.fromhex(TARGET_ADDRESS), 'scoped_metadata_key': '0000000000000004', 'target_id': None
-		}], keys)
+		self.assertEqual([expected_key], keys)
 
-	def test_collect_dirty_metadata_keys_uses_resolved_target_address_for_mosaic_metadata(self):
-		# Arrange:
-		alias_address = '99065A28385EB5AE88000000000000000000000000000000'
-		row = {
-			'type': TransactionType.MOSAIC_METADATA.value,
-			'signer_address': bytes.fromhex(SIGNER_ADDRESS),
-			'target_address': bytes.fromhex(TARGET_ADDRESS),
-			'metadata_target_id': MOSAIC_ID,
-			'body': {
-				'targetAddress': alias_address,
-				'targetMosaicId': MOSAIC_ID,
-				'scopedMetadataKey': '0000000000000005'
-			}
-		}
+	def test_collect_dirty_metadata_keys_prefers_row_target_address_over_body_target_address_for_account_metadata(self):
+		self._assert_collect_dirty_metadata_keys_prefers_row_target_address(
+			{
+				'type': TransactionType.ACCOUNT_METADATA.value,
+				'signer_address': bytes.fromhex(SIGNER_ADDRESS),
+				'target_address': bytes.fromhex(TARGET_ADDRESS),
+				'metadata_target_id': None,
+				'body': {'targetAddress': ALIAS_ADDRESS, 'scopedMetadataKey': '0000000000000004'}
+			},
+			{
+				'metadata_type': 'account',
+				'source_address': bytes.fromhex(SIGNER_ADDRESS),
+				'target_address': bytes.fromhex(TARGET_ADDRESS),
+				'scoped_metadata_key': '0000000000000004',
+				'target_id': None
+			})
 
-		# Act:
-		keys = self.puller._collect_dirty_metadata_keys_for_batch({1: [row]})  # pylint: disable=protected-access
+	def test_collect_dirty_metadata_keys_prefers_row_target_address_over_body_target_address_for_mosaic_metadata(self):
+		self._assert_collect_dirty_metadata_keys_prefers_row_target_address(
+			{
+				'type': TransactionType.MOSAIC_METADATA.value,
+				'signer_address': bytes.fromhex(SIGNER_ADDRESS),
+				'target_address': bytes.fromhex(TARGET_ADDRESS),
+				'metadata_target_id': MOSAIC_ID,
+				'body': {
+					'targetAddress': ALIAS_ADDRESS,
+					'targetMosaicId': MOSAIC_ID,
+					'scopedMetadataKey': '0000000000000005'
+				}
+			},
+			{
+				'metadata_type': 'mosaic',
+				'source_address': bytes.fromhex(SIGNER_ADDRESS),
+				'target_address': bytes.fromhex(TARGET_ADDRESS),
+				'scoped_metadata_key': '0000000000000005',
+				'target_id': MOSAIC_ID
+			})
 
-		# Assert:
-		self.assertEqual([{
-			'metadata_type': 'mosaic', 'source_address': bytes.fromhex(SIGNER_ADDRESS),
-			'target_address': bytes.fromhex(TARGET_ADDRESS), 'scoped_metadata_key': '0000000000000005', 'target_id': MOSAIC_ID
-		}], keys)
-
-	def test_collect_dirty_metadata_keys_uses_resolved_target_address_for_namespace_metadata(self):
-		# Arrange:
-		alias_address = '99065A28385EB5AE88000000000000000000000000000000'
-		row = {
-			'type': TransactionType.NAMESPACE_METADATA.value,
-			'signer_address': bytes.fromhex(SIGNER_ADDRESS),
-			'target_address': bytes.fromhex(TARGET_ADDRESS),
-			'metadata_target_id': None,
-			'body': {
-				'targetAddress': alias_address,
-				'targetNamespaceId': NAMESPACE_ID,
-				'scopedMetadataKey': '0000000000000006'
-			}
-		}
-
-		# Act:
-		keys = self.puller._collect_dirty_metadata_keys_for_batch({1: [row]})  # pylint: disable=protected-access
-
-		# Assert:
-		self.assertEqual([{
-			'metadata_type': 'namespace', 'source_address': bytes.fromhex(SIGNER_ADDRESS),
-			'target_address': bytes.fromhex(TARGET_ADDRESS), 'scoped_metadata_key': '0000000000000006', 'target_id': NAMESPACE_ID
-		}], keys)
+	def test_collect_dirty_metadata_keys_prefers_row_target_address_over_body_target_address_for_namespace_metadata(self):
+		self._assert_collect_dirty_metadata_keys_prefers_row_target_address(
+			{
+				'type': TransactionType.NAMESPACE_METADATA.value,
+				'signer_address': bytes.fromhex(SIGNER_ADDRESS),
+				'target_address': bytes.fromhex(TARGET_ADDRESS),
+				'metadata_target_id': None,
+				'body': {
+					'targetAddress': ALIAS_ADDRESS,
+					'targetNamespaceId': NAMESPACE_ID,
+					'scopedMetadataKey': '0000000000000006'
+				}
+			},
+			{
+				'metadata_type': 'namespace',
+				'source_address': bytes.fromhex(SIGNER_ADDRESS),
+				'target_address': bytes.fromhex(TARGET_ADDRESS),
+				'scoped_metadata_key': '0000000000000006',
+				'target_id': NAMESPACE_ID
+			})
 
 	def test_collect_dirty_metadata_keys_uses_resolved_mosaic_target_id_for_mosaic_alias(self):
 		# Arrange:
@@ -490,7 +491,7 @@ class SymbolPullerMetadataTest(SymbolPullerTestBase):  # pylint: disable=too-man
 		# Assert:
 		self.assertEqual([sibling_row], fetch_metadata_rows(self.puller.symbol_db))
 
-	def test_fetch_dirty_metadata_rejects_malformed_response(self):
+	def _assert_fetch_dirty_metadata_rejects_response(self, response, expected_message):
 		# Arrange:
 		key = {
 			'metadata_type': 'account',
@@ -499,74 +500,34 @@ class SymbolPullerMetadataTest(SymbolPullerTestBase):  # pylint: disable=too-man
 			'scoped_metadata_key': SCOPED_METADATA_KEY,
 			'target_id': None
 		}
-		connector = FakeConnector(1, {}, metadata_by_query={metadata_path(0): None})
+		connector = FakeConnector(1, {}, metadata_by_query={metadata_path(0): response})
 		set_symbol_connector(self.puller, connector)
 
 		# Act:
-		with self.assertRaisesRegex(ValueError, '^Malformed Symbol metadata search response$'):
+		with self.assertRaisesRegex(ValueError, expected_message):
 			asyncio.run(self.puller._fetch_dirty_metadata([key], 9))  # pylint: disable=protected-access
 
 		# Assert:
 		self.assertEqual([metadata_path(0)], connector.paths)
+
+	def test_fetch_dirty_metadata_rejects_malformed_response(self):
+		self._assert_fetch_dirty_metadata_rejects_response(None, '^Malformed Symbol metadata search response$')
 
 	def test_fetch_dirty_metadata_rejects_response_missing_data(self):
-		# Arrange:
-		key = {
-			'metadata_type': 'account',
-			'source_address': bytes.fromhex(SIGNER_ADDRESS),
-			'target_address': bytes.fromhex(RECIPIENT_ADDRESS),
-			'scoped_metadata_key': SCOPED_METADATA_KEY,
-			'target_id': None
-		}
-		connector = FakeConnector(1, {}, metadata_by_query={metadata_path(0): {}})
-		set_symbol_connector(self.puller, connector)
-
-		# Act:
-		with self.assertRaisesRegex(ValueError, '^Malformed Symbol metadata search response$'):
-			asyncio.run(self.puller._fetch_dirty_metadata([key], 9))  # pylint: disable=protected-access
-
-		# Assert:
-		self.assertEqual([metadata_path(0)], connector.paths)
+		self._assert_fetch_dirty_metadata_rejects_response({}, '^Malformed Symbol metadata search response$')
 
 	def test_fetch_dirty_metadata_rejects_non_list_data(self):
-		# Arrange:
-		key = {
-			'metadata_type': 'account',
-			'source_address': bytes.fromhex(SIGNER_ADDRESS),
-			'target_address': bytes.fromhex(RECIPIENT_ADDRESS),
-			'scoped_metadata_key': SCOPED_METADATA_KEY,
-			'target_id': None
-		}
-		connector = FakeConnector(1, {}, metadata_by_query={metadata_path(0): {'data': {}}})
-		set_symbol_connector(self.puller, connector)
-
-		# Act:
-		with self.assertRaisesRegex(ValueError, '^Malformed Symbol metadata search data$'):
-			asyncio.run(self.puller._fetch_dirty_metadata([key], 9))  # pylint: disable=protected-access
-
-		# Assert:
-		self.assertEqual([metadata_path(0)], connector.paths)
+		self._assert_fetch_dirty_metadata_rejects_response({'data': {}}, '^Malformed Symbol metadata search data$')
 
 	def test_fetch_dirty_metadata_rejects_multiple_entries(self):
-		# Arrange:
-		key = {
-			'metadata_type': 'account',
-			'source_address': bytes.fromhex(SIGNER_ADDRESS),
-			'target_address': bytes.fromhex(RECIPIENT_ADDRESS),
-			'scoped_metadata_key': SCOPED_METADATA_KEY,
-			'target_id': None
-		}
-		connector = FakeConnector(1, {}, metadata_by_query={metadata_path(0): {
-			'data': [create_metadata_item(), create_metadata_item(composite_hash='22' * 32)]
-		}})
-		set_symbol_connector(self.puller, connector)
-
-		# Act:
-		with self.assertRaisesRegex(ValueError, '^Symbol metadata exact-key search returned multiple entries$'):
-			asyncio.run(self.puller._fetch_dirty_metadata([key], 9))  # pylint: disable=protected-access
-
-		# Assert:
-		self.assertEqual([metadata_path(0)], connector.paths)
+		self._assert_fetch_dirty_metadata_rejects_response(
+			{
+				'data': [
+					create_metadata_item(),
+					create_metadata_item(composite_hash='22' * 32)
+				]
+			},
+			'^Symbol metadata exact-key search returned multiple entries$')
 
 	def test_fetch_dirty_metadata_returns_empty_for_no_keys(self):
 		# Arrange:
@@ -636,7 +597,7 @@ class SymbolPullerMetadataTest(SymbolPullerTestBase):  # pylint: disable=too-man
 				'value': '68656C6C6F'
 			})
 
-	def test_sync_block_headers_resolves_address_alias_for_embedded_metadata(self):
+	def test_sync_block_headers_resolves_address_alias_for_embedded_mosaic_metadata(self):
 		# Arrange:
 		connector, _, _, embedded_transaction, transactions, metadata_item = _create_embedded_metadata_fixture(
 			ALIAS_ADDRESS,
@@ -674,7 +635,7 @@ class SymbolPullerMetadataTest(SymbolPullerTestBase):  # pylint: disable=too-man
 				'value': '68656C6C6F'
 			})
 
-	def test_sync_block_headers_resolves_mosaic_target_id_alias_for_embedded_metadata(self):
+	def test_sync_block_headers_resolves_target_mosaic_id_alias_for_embedded_mosaic_metadata(self):
 		# Arrange:
 		connector, _, _, embedded_transaction, transactions, metadata_item = _create_embedded_metadata_fixture(
 			RECIPIENT_ADDRESS,
@@ -712,7 +673,7 @@ class SymbolPullerMetadataTest(SymbolPullerTestBase):  # pylint: disable=too-man
 				'value': '68656C6C6F'
 			})
 
-	def test_sync_block_headers_resolves_address_and_mosaic_aliases_for_embedded_metadata(self):
+	def test_sync_block_headers_resolves_address_and_target_mosaic_id_aliases_for_embedded_mosaic_metadata(self):
 		# Arrange:
 		connector, _, _, embedded_transaction, transactions, metadata_item = _create_embedded_metadata_fixture(
 			ALIAS_ADDRESS,
@@ -755,7 +716,7 @@ class SymbolPullerMetadataTest(SymbolPullerTestBase):  # pylint: disable=too-man
 				'value': '68656C6C6F'
 			})
 
-	def test_sync_block_headers_resolves_address_alias_and_persists_account_metadata(self):
+	def test_sync_block_headers_resolves_address_alias_for_embedded_account_metadata(self):
 		# Arrange:
 		_, _, embedded_transaction, transactions = _create_embedded_metadata_transactions(
 			TransactionType.ACCOUNT_METADATA.value,
@@ -812,7 +773,7 @@ class SymbolPullerMetadataTest(SymbolPullerTestBase):  # pylint: disable=too-man
 				'value': '68656C6C6F'
 			})
 
-	def test_sync_block_headers_resolves_address_alias_and_persists_namespace_metadata(self):
+	def test_sync_block_headers_resolves_address_alias_for_embedded_namespace_metadata(self):
 		# Arrange:
 		_, _, embedded_transaction, transactions = _create_embedded_metadata_transactions(
 			TransactionType.NAMESPACE_METADATA.value,
@@ -1134,17 +1095,19 @@ class SymbolPullerMetadataTest(SymbolPullerTestBase):  # pylint: disable=too-man
 			cursor.execute(f'SELECT COUNT(*) FROM {table}')
 			self.assertEqual(0, cursor.fetchone()[0])
 		self.assertIsNone(self.puller.symbol_db.get_sync_state())
-		self.assertEqual([f'namespaces/{NAMESPACE_ID}'], [
-			path for path in connector.paths if path.startswith('namespaces/') and path != 'namespaces/names'])
-		self.assertEqual(['mosaics'], [path for path in connector.paths if 'mosaics' == path])
-		self.assertEqual(['accounts'], [path for path in connector.paths if 'accounts' == path])
-		self.assertEqual([metadata_failure_path], [path for path in connector.paths if path.startswith('metadata?')])
+		self.assertEqual([
+			'accounts',
+			f'namespaces/{NAMESPACE_ID}',
+			'namespaces/names',
+			'mosaics',
+			metadata_failure_path
+		], [
+			path for path in connector.paths
+			if path in ('accounts', f'namespaces/{NAMESPACE_ID}', 'namespaces/names', 'mosaics') or path.startswith('metadata?')
+		])
 		self.assertEqual([{'addresses': account_addresses}], [
 			payload for path, payload in connector.post_requests if 'accounts' == path])
 		self.assertEqual([{'namespaceIds': [NAMESPACE_ID]}], [
 			payload for path, payload in connector.post_requests if 'namespaces/names' == path])
 		self.assertEqual([{'mosaicIds': [dirty_mosaic_id]}], [
 			payload for path, payload in connector.post_requests if 'mosaics' == path])
-		metadata_request_index = connector.paths.index(metadata_failure_path)
-		for request_path in ('accounts', f'namespaces/{NAMESPACE_ID}', 'mosaics'):
-			self.assertLess(connector.paths.index(request_path), metadata_request_index)

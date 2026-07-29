@@ -103,7 +103,7 @@ def fetch_metadata_rows(database):
 	]
 
 
-def fetch_metadata_row(database, composite_hash):
+def find_metadata_row(database, composite_hash):
 	return next(
 		(row for row in fetch_metadata_rows(database) if row['composite_hash'] == composite_hash),
 		None)
