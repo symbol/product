@@ -210,6 +210,29 @@ def create_embedded_node_transaction(height, aggregate_hash, embedded_index, tra
 	}
 
 
+def create_complete_aggregate_pair(
+	height,
+	aggregate_hash,
+	embedded_index,
+	transaction_id=None,
+	**embedded_transaction_overrides
+):
+	return [
+		create_node_transaction(
+			height,
+			transaction_hash=aggregate_hash,
+			type=TransactionType.AGGREGATE_COMPLETE.value,
+			transactionsHash='9' * 64,
+			cosignatures=[]),
+		create_embedded_node_transaction(
+			height,
+			aggregate_hash,
+			embedded_index,
+			transaction_id=transaction_id,
+			**embedded_transaction_overrides)
+	]
+
+
 def transaction_path(start_height, end_height, page_number=1):
 	return (
 		f'transactions/confirmed?fromHeight={start_height}&toHeight={end_height}'

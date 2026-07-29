@@ -179,9 +179,61 @@ class LockTest(TestCase):
 		# Assert:
 		self.assertEqual((1234, 5678), (secret_row['amount'], secret_row['end_height']))
 
+	def test_create_hash_lock_row_preserves_zero_numeric_values(self):
+		# Arrange:
+		items = (
+			create_hash_lock_item(amount=0, endHeight='0'),
+			create_hash_lock_item(amount='0', endHeight=0)
+		)
+
+		# Act:
+		rows = [create_hash_lock_row(item, 123) for item in items]
+
+		# Assert:
+		self.assertEqual([(0, 0), (0, 0)], [
+			(row['amount'], row['end_height'])
+			for row in rows
+		])
+
+	def test_create_hash_lock_row_uppercases_a_lowercase_mosaic_id(self):
+		# Arrange:
+		item = create_hash_lock_item(mosaicId=MOSAIC_ID.lower())
+
+		# Act:
+		row = create_hash_lock_row(item, 123)
+
+		# Assert:
+		self.assertEqual(MOSAIC_ID, row['mosaic_id'])
+
+	def test_create_secret_lock_row_preserves_zero_numeric_values(self):
+		# Arrange:
+		items = (
+			create_secret_lock_item(amount=0, endHeight='0'),
+			create_secret_lock_item(amount='0', endHeight=0)
+		)
+
+		# Act:
+		rows = [create_secret_lock_row(item, 123) for item in items]
+
+		# Assert:
+		self.assertEqual([(0, 0), (0, 0)], [
+			(row['amount'], row['end_height'])
+			for row in rows
+		])
+
+	def test_create_secret_lock_row_uppercases_a_lowercase_mosaic_id(self):
+		# Arrange:
+		item = create_secret_lock_item(mosaicId=MOSAIC_ID.lower())
+
+		# Act:
+		row = create_secret_lock_row(item, 123)
+
+		# Assert:
+		self.assertEqual(MOSAIC_ID, row['mosaic_id'])
+
 	def test_create_hash_lock_row_rejects_noncanonical_numeric_fields_with_deterministic_errors(self):
 		# Arrange:
-		invalid_values = (True, 1.0, 1.5, '1.5', '1e3', '', ' 1', '1 ', '-1', None)
+		invalid_values = (True, 1.0, 1.5, '1.5', '1e3', '', ' 1', '1 ', '-1', '+1', '١', None)
 
 		# Act / Assert:
 		for field_name in ('amount', 'endHeight'):
@@ -192,7 +244,7 @@ class LockTest(TestCase):
 
 	def test_create_secret_lock_row_rejects_noncanonical_numeric_fields_with_deterministic_errors(self):
 		# Arrange:
-		invalid_values = (True, 1.0, 1.5, '1.5', '1e3', '', ' 1', '1 ', '-1', None)
+		invalid_values = (True, 1.0, 1.5, '1.5', '1e3', '', ' 1', '1 ', '-1', '+1', '١', None)
 
 		# Act / Assert:
 		for field_name in ('amount', 'endHeight'):

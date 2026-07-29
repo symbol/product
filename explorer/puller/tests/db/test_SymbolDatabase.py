@@ -4390,28 +4390,155 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		cursor.execute('SELECT composite_hash FROM symbol_secret_locks')
 		self.assertEqual([], cursor.fetchall())
 
-	def test_lock_height_queries_return_updated_and_expiring_logical_keys(self):
+	def test_replace_secret_locks_rolls_back_delete_and_prior_insert_when_a_later_row_is_invalid(self):
 		# Arrange:
 		database = self._create_database()
-		hash_row = _create_hash_lock_row(observed_height=5, end_height=8)
-		secret_row = _create_secret_lock_row(observed_height=5, end_height=8)
-		database.upsert_hash_lock(hash_row)
+		key = create_secret_lock_search_key(LOCK_OWNER, LOCK_RECIPIENT, LOCK_SECRET, 'hash160')
+		initial_row = _create_secret_lock_row()
+		sibling_row = _create_secret_lock_row(composite_hash=LOCK_COMPOSITE_HASH_2, owner_address=LOCK_OWNER_2)
+		database.replace_secret_locks(key, [initial_row])
 		database.replace_secret_locks(
-			create_secret_lock_search_key(LOCK_OWNER, LOCK_RECIPIENT, LOCK_SECRET, 'hash160'), [secret_row])
+			create_secret_lock_search_key(LOCK_OWNER_2, LOCK_RECIPIENT, LOCK_SECRET, 'hash160'), [sibling_row])
+		invalid_row = {**_create_secret_lock_row(composite_hash=b'\xFF' * 32), 'hash_algorithm': 'invalid'}
 
-		# Act:
-		updated_hashes = database.get_hash_lock_hashes_updated_from_height(5)
-		updated_secrets = database.get_secret_lock_search_keys_updated_from_height(5)
-		expiring_hashes = database.get_hash_lock_hashes_expiring_between(8, 8)
-		expiring_secrets = database.get_secret_lock_search_keys_expiring_between(8, 8)
+		# Act / Assert:
+		with self.assertRaises(PsycopgError):
+			database.replace_secret_locks(key, [_create_secret_lock_row(status='used'), invalid_row])
 
 		# Assert:
-		self.assertEqual([LOCK_HASH], [key.hash for key in updated_hashes])
-		self.assertEqual([LOCK_HASH], [key.hash for key in expiring_hashes])
+		cursor = database.connection.cursor()
+		cursor.execute('SELECT composite_hash, owner_address, status FROM symbol_secret_locks ORDER BY composite_hash')
 		self.assertEqual([
-			(LOCK_OWNER, LOCK_RECIPIENT, LOCK_SECRET, 'hash160')
-		], updated_secrets)
-		self.assertEqual(updated_secrets, expiring_secrets)
+			(LOCK_COMPOSITE_HASH, LOCK_OWNER, 'unused'),
+			(LOCK_COMPOSITE_HASH_2, LOCK_OWNER_2, 'unused')
+		], [
+			(bytes(composite_hash), bytes(owner_address), status)
+			for composite_hash, owner_address, status in cursor.fetchall()
+		])
+
+	def test_get_hash_lock_hashes_updated_from_height_rejects_an_out_of_band_invalid_hash_length(self):
+		# Arrange:
+		database = self._create_database()
+		row = _create_hash_lock_row(lock_hash=b'bad')
+		cursor = database.connection.cursor()
+		cursor.execute(
+			'''INSERT INTO symbol_hash_locks
+				(hash, owner_address, mosaic_id, amount, end_height, status, raw_payload, updated_at_height)
+				VALUES (%(hash)s, %(owner_address)s, %(mosaic_id)s, %(amount)s, %(end_height)s, %(status)s,
+				%(raw_payload)s, %(updated_at_height)s)''',
+			{**row, 'raw_payload': Json(row['raw_payload'])})
+		database.connection.commit()
+
+		# Act / Assert:
+		with self.assertRaisesRegex(ValueError, '^Invalid Symbol Hash Lock key$'):
+			database.get_hash_lock_hashes_updated_from_height(1)
+
+	def test_get_secret_lock_search_keys_updated_from_height_rejects_an_out_of_band_invalid_owner_length(self):
+		# Arrange:
+		database = self._create_database()
+		row = _create_secret_lock_row(owner_address=b'bad')
+		cursor = database.connection.cursor()
+		cursor.execute(
+			'''INSERT INTO symbol_secret_locks
+				(composite_hash, owner_address, recipient_address, secret, hash_algorithm, mosaic_id, amount, end_height,
+				status, raw_payload, updated_at_height)
+				VALUES (%(composite_hash)s, %(owner_address)s, %(recipient_address)s, %(secret)s, %(hash_algorithm)s,
+				%(mosaic_id)s, %(amount)s, %(end_height)s, %(status)s, %(raw_payload)s, %(updated_at_height)s)''',
+			{**row, 'raw_payload': Json(row['raw_payload'])})
+		database.connection.commit()
+
+		# Act / Assert:
+		with self.assertRaisesRegex(ValueError, '^Invalid Symbol Secret Lock owner address$'):
+			database.get_secret_lock_search_keys_updated_from_height(1)
+
+	def test_get_hash_lock_hashes_updated_from_height_returns_ordered_boundary_rows(self):
+		# Arrange:
+		database = self._create_database()
+		height_rows = (
+			(9, b'\x50' * 32),
+			(10, b'\x30' * 32),
+			(11, b'\x10' * 32),
+			(12, b'\x40' * 32),
+			(13, b'\x20' * 32)
+		)
+		for observed_height, lock_hash in height_rows:
+			database.upsert_hash_lock(_create_hash_lock_row(observed_height, lock_hash, end_height=1))
+
+		# Act:
+		keys = database.get_hash_lock_hashes_updated_from_height(10)
+
+		# Assert:
+		self.assertEqual([b'\x10' * 32, b'\x20' * 32, b'\x30' * 32, b'\x40' * 32], [key.hash for key in keys])
+
+	def test_get_hash_lock_hashes_expiring_between_returns_ordered_boundary_rows(self):
+		# Arrange:
+		database = self._create_database()
+		height_rows = (
+			(9, b'\x50' * 32),
+			(10, b'\x40' * 32),
+			(11, b'\x10' * 32),
+			(12, b'\x30' * 32),
+			(13, b'\x20' * 32)
+		)
+		for end_height, lock_hash in height_rows:
+			database.upsert_hash_lock(_create_hash_lock_row(observed_height=1, lock_hash=lock_hash, end_height=end_height))
+
+		# Act:
+		keys = database.get_hash_lock_hashes_expiring_between(10, 12)
+
+		# Assert:
+		self.assertEqual([b'\x10' * 32, b'\x30' * 32, b'\x40' * 32], [key.hash for key in keys])
+
+	def test_get_secret_lock_search_keys_updated_from_height_returns_ordered_boundary_rows(self):
+		# Arrange:
+		database = self._create_database()
+		height_rows = (
+			(9, b'\x50' * 32, b'\x59' * 32),
+			(10, b'\x30' * 32, b'\x39' * 32),
+			(11, b'\x10' * 32, b'\x19' * 32),
+			(12, b'\x40' * 32, b'\x49' * 32),
+			(13, b'\x20' * 32, b'\x29' * 32)
+		)
+		for observed_height, composite_hash, secret in height_rows:
+			row = _create_secret_lock_row(observed_height, composite_hash, secret=secret, end_height=1)
+			database.replace_secret_locks(
+				create_secret_lock_search_key(LOCK_OWNER, LOCK_RECIPIENT, secret, 'hash160'), [row])
+
+		# Act:
+		keys = database.get_secret_lock_search_keys_updated_from_height(10)
+
+		# Assert:
+		self.assertEqual([
+			(LOCK_OWNER, LOCK_RECIPIENT, b'\x19' * 32, 'hash160'),
+			(LOCK_OWNER, LOCK_RECIPIENT, b'\x29' * 32, 'hash160'),
+			(LOCK_OWNER, LOCK_RECIPIENT, b'\x39' * 32, 'hash160'),
+			(LOCK_OWNER, LOCK_RECIPIENT, b'\x49' * 32, 'hash160')
+		], keys)
+
+	def test_get_secret_lock_search_keys_expiring_between_returns_ordered_boundary_rows(self):
+		# Arrange:
+		database = self._create_database()
+		height_rows = (
+			(9, b'\x50' * 32, b'\x59' * 32),
+			(10, b'\x40' * 32, b'\x49' * 32),
+			(11, b'\x10' * 32, b'\x19' * 32),
+			(12, b'\x30' * 32, b'\x39' * 32),
+			(13, b'\x20' * 32, b'\x29' * 32)
+		)
+		for end_height, composite_hash, secret in height_rows:
+			row = _create_secret_lock_row(observed_height=1, composite_hash=composite_hash, secret=secret, end_height=end_height)
+			database.replace_secret_locks(
+				create_secret_lock_search_key(LOCK_OWNER, LOCK_RECIPIENT, secret, 'hash160'), [row])
+
+		# Act:
+		keys = database.get_secret_lock_search_keys_expiring_between(10, 12)
+
+		# Assert:
+		self.assertEqual([
+			(LOCK_OWNER, LOCK_RECIPIENT, b'\x19' * 32, 'hash160'),
+			(LOCK_OWNER, LOCK_RECIPIENT, b'\x39' * 32, 'hash160'),
+			(LOCK_OWNER, LOCK_RECIPIENT, b'\x49' * 32, 'hash160')
+		], keys)
 
 	def test_confirmed_transaction_lock_key_collection_includes_only_authoritative_sources(self):
 		# Arrange:
@@ -4461,6 +4588,63 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		self.assertEqual([
 			(LOCK_OWNER, LOCK_RECIPIENT, LOCK_SECRET, 'sha3_256'),
 			(None, LOCK_RECIPIENT, LOCK_SECRET, 'sha3_256')
+		], keys.secret_keys)
+
+	def test_confirmed_transaction_lock_key_collection_includes_creation_and_completion_at_or_after_fork_height(self):
+		# Arrange:
+		database = self._create_database()
+		for height in (1, 2, 3):
+			database.upsert_blocks([_create_block(height)])
+			hash_lock_hash = bytes([height]) * 32
+			aggregate_hash = bytes([height + 16]) * 32
+			secret_lock_secret = bytes([height + 32]) * 32
+			secret_proof_secret = bytes([height + 48]) * 32
+			database.upsert_transactions_for_height(height, [
+				create_transaction_entry(
+					height,
+					f'hash-lock-{height}',
+					type=TransactionType.HASH_LOCK.value,
+					type_name=TRANSACTION_TYPE_LABELS[TransactionType.HASH_LOCK.value],
+					body={'hash': hash_lock_hash.hex().upper()}),
+				create_transaction_entry(
+					height,
+					f'aggregate-{height}',
+					type=TransactionType.AGGREGATE_BONDED.value,
+					type_name=TRANSACTION_TYPE_LABELS[TransactionType.AGGREGATE_BONDED.value],
+					hash=aggregate_hash),
+				create_transaction_entry(
+					height,
+					f'secret-lock-{height}',
+					type=TransactionType.SECRET_LOCK.value,
+					type_name=TRANSACTION_TYPE_LABELS[TransactionType.SECRET_LOCK.value],
+					signer_address=LOCK_OWNER,
+					recipient_address=LOCK_RECIPIENT,
+					body={'secret': secret_lock_secret.hex().upper(), 'hashAlgorithm': 1}),
+				create_transaction_entry(
+					height,
+					f'secret-proof-{height}',
+					type=TransactionType.SECRET_PROOF.value,
+					type_name=TRANSACTION_TYPE_LABELS[TransactionType.SECRET_PROOF.value],
+					signer_address=LOCK_OWNER,
+					recipient_address=LOCK_RECIPIENT,
+					body={'secret': secret_proof_secret.hex().upper(), 'hashAlgorithm': 1})
+			])
+
+		# Act:
+		keys = database.get_lock_keys_from_confirmed_transactions_from_height(2)
+
+		# Assert:
+		self.assertEqual([
+			bytes([2]) * 32,
+			bytes([18]) * 32,
+			bytes([3]) * 32,
+			bytes([19]) * 32
+		], [key.hash for key in keys.hash_keys])
+		self.assertEqual([
+			(LOCK_OWNER, LOCK_RECIPIENT, bytes([34]) * 32, 'hash160'),
+			(None, LOCK_RECIPIENT, bytes([50]) * 32, 'hash160'),
+			(LOCK_OWNER, LOCK_RECIPIENT, bytes([35]) * 32, 'hash160'),
+			(None, LOCK_RECIPIENT, bytes([51]) * 32, 'hash160')
 		], keys.secret_keys)
 
 	def test_repair_rollback_deletes_lock_rows_at_fork_and_applies_replacements_atomically(self):
