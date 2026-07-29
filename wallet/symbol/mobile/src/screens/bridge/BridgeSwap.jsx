@@ -10,7 +10,10 @@ import {
 	useEstimation,
 	useSwapSelector
 } from './hooks';
-import { createTransactionProgressViewModel, validateEstimation } from './utils';
+import {
+	createTransactionProgressViewModel,
+	validateEstimation
+} from './utils';
 import {
 	Button,
 	ButtonCircle,
@@ -133,12 +136,14 @@ export const BridgeSwap = props => {
 	// Bridge turned off by its operator popup
 	const disabledDialogManager = useBridgeDisabledDialog({ pairsStatus });
 
+	const isAmountPositive = Number(amount) > 0;
+
 	// Reload data on tokens or amount change
 	const fetchSwapData = useCallback(() => {
 		if (isReady)
 			fetchFees();
 
-		if (isReady && amount && amount !== '0')
+		if (isReady && isAmountPositive)
 			estimate();
 		else
 			clearEstimation();
@@ -162,7 +167,7 @@ export const BridgeSwap = props => {
 	useFocusEffect(init);
 
 	const isScreenLoading = !isReady;
-	const isButtonDisabled = isEstimationLoading || isFeesLoading || !isAmountValid || amount === '0';
+	const isButtonDisabled = isEstimationLoading || isFeesLoading || !isAmountValid || !isAmountPositive;
 
 	const handleTransactionSendComplete = () => reset();
 

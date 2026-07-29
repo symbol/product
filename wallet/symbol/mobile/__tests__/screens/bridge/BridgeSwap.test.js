@@ -79,6 +79,7 @@ const SCREEN_TEXT = {
 
 	// Validation
 	textEstimationUnavailable: 'validation_error_estimation_unavailable',
+	textInsufficientLiquidity: 'validation_error_insufficientLiquidity 0.235399 ETH',
 
 	// Token Display Names
 	displayNameTokenXym: 'Symbol • XYM',
@@ -550,6 +551,83 @@ describe('screens/bridge/BridgeSwap', () => {
 
 			// Assert:
 			screenTester.expectText([SCREEN_TEXT.textEstimationUnavailable]);
+		});
+
+		it('shows the insufficient liquidity error with the max swappable amount', () => {
+			// Arrange: the localization mock appends message parameters so the interpolation is observable.
+			mockLocalization((key, params) => (params ? `${key} ${Object.values(params).join(' ')}` : key));
+			const insufficientLiquidityEstimation = {
+				receiveAmount: null,
+				bridgeFee: null,
+				error: {
+					code: 'insufficient_liquidity',
+					params: { maxAmount: '0.235399146392349099', ticker: 'ETH' }
+				}
+			};
+			const changeAmountValidityMock = jest.fn();
+			setupMocks({
+				useBridgeAmount: {
+					amount: '1',
+					amountInput: '1',
+					changeAmountValidity: changeAmountValidityMock
+				},
+				useEstimation: {
+					estimations: [insufficientLiquidityEstimation]
+				}
+			});
+
+			// Act:
+			const screenTester = new ScreenTester(BridgeSwap, createDefaultProps());
+
+			// Assert:
+			screenTester.expectText([SCREEN_TEXT.textInsufficientLiquidity]);
+			expect(changeAmountValidityMock).toHaveBeenCalledWith(false);
+		});
+
+		it('does not request an estimation and disables send for a zero amount input', async () => {
+			// Arrange: '0.0000' is numerically zero but not the literal '0' string.
+			const estimateMock = jest.fn().mockResolvedValue(null);
+			const clearEstimationMock = jest.fn();
+			setupMocks({
+				useBridgeAmount: {
+					amount: '0.0000',
+					amountInput: '0.0000'
+				},
+				useEstimation: {
+					estimate: estimateMock,
+					clearEstimation: clearEstimationMock
+				}
+			});
+
+			// Act:
+			const screenTester = new ScreenTester(BridgeSwap, createDefaultProps());
+			await screenTester.waitForTimer();
+
+			// Assert:
+			expect(estimateMock).not.toHaveBeenCalled();
+			expect(clearEstimationMock).toHaveBeenCalled();
+			screenTester.expectButtonDisabled(SCREEN_TEXT.buttonSend);
+		});
+
+		it('requests an estimation for a positive amount', async () => {
+			// Arrange:
+			const estimateMock = jest.fn().mockResolvedValue(null);
+			setupMocks({
+				useBridgeAmount: {
+					amount: '1',
+					amountInput: '1'
+				},
+				useEstimation: {
+					estimate: estimateMock
+				}
+			});
+
+			// Act:
+			const screenTester = new ScreenTester(BridgeSwap, createDefaultProps());
+			await screenTester.waitForTimer();
+
+			// Assert:
+			expect(estimateMock).toHaveBeenCalled();
 		});
 
 		it('disables send button when the amount fails validation', () => {

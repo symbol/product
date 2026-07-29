@@ -155,10 +155,12 @@ describe('api/UniswapService', () => {
 	});
 
 	describe('quoteExactInputSingle', () => {
+		const sqrtPriceX96After = 93455262124906132660367607190557n;
+
 		const runQuoteExactInputSingleTest = (description, config, expected) => {
 			it(description, async () => {
 				// Arrange:
-				const staticCallMock = jest.fn().mockResolvedValue(config.rawAmountOut);
+				const staticCallMock = jest.fn().mockResolvedValue(config.rawQuote);
 				createContractMock.mockReturnValueOnce({
 					quoteExactInputSingle: { staticCall: staticCallMock }
 				});
@@ -172,7 +174,7 @@ describe('api/UniswapService', () => {
 				);
 
 				// Assert:
-				expect(result).toBe(expected.amountOut);
+				expect(result).toStrictEqual(expected.quote);
 			});
 		};
 
@@ -181,25 +183,46 @@ describe('api/UniswapService', () => {
 				description: 'returns quoted output amount for 0.05% fee tier (500)',
 				config: {
 					params: { tokenInId: NATIVE_TOKEN_ID, tokenOutId: WRAPPED_TOKEN_ID, amountIn: '1000000', fee: 500 },
-					rawAmountOut: 997_500n
+					rawQuote: [997_500n, sqrtPriceX96After, 0n, 91_602n]
 				},
-				expected: { amountOut: '997500' }
+				expected: {
+					quote: {
+						amountOut: '997500',
+						sqrtPriceX96After: sqrtPriceX96After.toString(),
+						initializedTicksCrossed: 0,
+						gasEstimate: '91602'
+					}
+				}
 			},
 			{
 				description: 'returns quoted output amount for 0.3% fee tier (3000)',
 				config: {
 					params: { tokenInId: NATIVE_TOKEN_ID, tokenOutId: WRAPPED_TOKEN_ID, amountIn: '1000000', fee: 3000 },
-					rawAmountOut: 985_000n
+					rawQuote: [985_000n, sqrtPriceX96After, 2n, 130_000n]
 				},
-				expected: { amountOut: '985000' }
+				expected: {
+					quote: {
+						amountOut: '985000',
+						sqrtPriceX96After: sqrtPriceX96After.toString(),
+						initializedTicksCrossed: 2,
+						gasEstimate: '130000'
+					}
+				}
 			},
 			{
-				description: 'returns quoted output amount for 1% fee tier (10000)',
+				description: 'returns large bigint values as strings',
 				config: {
-					params: { tokenInId: NATIVE_TOKEN_ID, tokenOutId: WRAPPED_TOKEN_ID, amountIn: '1000000', fee: 10000 },
-					rawAmountOut: 950_000n
+					params: { tokenInId: NATIVE_TOKEN_ID, tokenOutId: WRAPPED_TOKEN_ID, amountIn: '1000000000000000000', fee: 3000 },
+					rawQuote: [999_000_000_000_000_000n, sqrtPriceX96After, 4n, 200_000n]
 				},
-				expected: { amountOut: '950000' }
+				expected: {
+					quote: {
+						amountOut: '999000000000000000',
+						sqrtPriceX96After: sqrtPriceX96After.toString(),
+						initializedTicksCrossed: 4,
+						gasEstimate: '200000'
+					}
+				}
 			}
 		];
 
@@ -215,7 +238,7 @@ describe('api/UniswapService', () => {
 				amountIn: '1000000',
 				fee: 3000
 			};
-			const staticCallMock = jest.fn().mockResolvedValue(985_000n);
+			const staticCallMock = jest.fn().mockResolvedValue([985_000n, sqrtPriceX96After, 0n, 91_602n]);
 			createContractMock.mockReturnValueOnce({
 				quoteExactInputSingle: { staticCall: staticCallMock }
 			});
@@ -238,7 +261,7 @@ describe('api/UniswapService', () => {
 			// Arrange:
 			const params = { tokenInId: NATIVE_TOKEN_ID, tokenOutId: WRAPPED_TOKEN_ID, amountIn: '100', fee: 3000 };
 			createContractMock.mockReturnValueOnce({
-				quoteExactInputSingle: { staticCall: jest.fn().mockResolvedValue(99n) }
+				quoteExactInputSingle: { staticCall: jest.fn().mockResolvedValue([99n, sqrtPriceX96After, 0n, 91_602n]) }
 			});
 			const service = new UniswapService();
 
@@ -254,26 +277,60 @@ describe('api/UniswapService', () => {
 				provider
 			);
 		});
+	});
 
-		it('returns bigint amountOut as a string', async () => {
+	describe('quoteExactOutputSingle', () => {
+		const sqrtPriceX96After = 93497613353213384457885328768846n;
+
+		it('returns required input amount and post-swap price as strings', async () => {
 			// Arrange:
 			const params = {
 				tokenInId: NATIVE_TOKEN_ID,
 				tokenOutId: WRAPPED_TOKEN_ID,
-				amountIn: '1000000000000000000',
+				amountOut: '35811296',
 				fee: 3000
 			};
-			const rawAmountOut = 999_000_000_000_000_000n;
+			const staticCallMock = jest.fn().mockResolvedValue([49_988_672_502_728n, sqrtPriceX96After, 0n, 91_602n]);
 			createContractMock.mockReturnValueOnce({
-				quoteExactInputSingle: { staticCall: jest.fn().mockResolvedValue(rawAmountOut) }
+				quoteExactOutputSingle: { staticCall: staticCallMock }
 			});
 			const service = new UniswapService();
 
 			// Act:
-			const result = await service.quoteExactInputSingle(mainnetNetworkProperties, QUOTER_ADDRESS, params);
+			const result = await service.quoteExactOutputSingle(mainnetNetworkProperties, QUOTER_ADDRESS, params);
 
 			// Assert:
-			expect(result).toBe('999000000000000000');
+			expect(result).toStrictEqual({
+				amountIn: '49988672502728',
+				sqrtPriceX96After: sqrtPriceX96After.toString()
+			});
+		});
+
+		it('passes correct params to staticCall with BigInt amount and sqrtPriceLimitX96 = 0', async () => {
+			// Arrange:
+			const params = {
+				tokenInId: NATIVE_TOKEN_ID,
+				tokenOutId: WRAPPED_TOKEN_ID,
+				amountOut: '1000000',
+				fee: 3000
+			};
+			const staticCallMock = jest.fn().mockResolvedValue([1_003_000n, sqrtPriceX96After, 0n, 91_602n]);
+			createContractMock.mockReturnValueOnce({
+				quoteExactOutputSingle: { staticCall: staticCallMock }
+			});
+			const service = new UniswapService();
+
+			// Act:
+			await service.quoteExactOutputSingle(mainnetNetworkProperties, QUOTER_ADDRESS, params);
+
+			// Assert:
+			expect(staticCallMock).toHaveBeenCalledWith({
+				tokenIn: params.tokenInId,
+				tokenOut: params.tokenOutId,
+				amount: BigInt(params.amountOut),
+				fee: params.fee,
+				sqrtPriceLimitX96: 0
+			});
 		});
 	});
 });

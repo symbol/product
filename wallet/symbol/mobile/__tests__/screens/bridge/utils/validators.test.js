@@ -10,14 +10,24 @@ const SCREEN_TEXT = {
 	textAmountHigh: 'validation_error_amount_high',
 	textTransferLimit: 'validation_error_amount_transferLimit',
 	textDailyLimit: 'validation_error_amount_dailyLimit',
-	textEstimationUnavailable: 'validation_error_estimation_unavailable'
+	textEstimationUnavailable: 'validation_error_estimation_unavailable',
+	textInsufficientLiquidity: 'validation_error_insufficientLiquidity',
+	textInsufficientLiquidityGeneric: 'validation_error_insufficientLiquidity_generic'
 };
 
 // Fixtures
 
+const maxSwappableAmount = '0.235399146392349099';
+const maxSwappableAmountTruncated = '0.235399';
+const sourceTokenTicker = 'ETH';
+
 const createEstimation = (receiveAmount = '10') => ({ receiveAmount, bridgeFee: '1', error: null });
 
-const createFailedEstimation = code => ({ receiveAmount: null, bridgeFee: null, error: { code } });
+const createFailedEstimation = (code, params) => ({
+	receiveAmount: null,
+	bridgeFee: null,
+	error: { code, ...(params && { params }) }
+});
 
 describe('screens/bridge/utils/validators', () => {
 	describe('validateEstimation', () => {
@@ -30,7 +40,7 @@ describe('screens/bridge/utils/validators', () => {
 				const result = validator();
 
 				// Assert:
-				expect(result).toBe(expected.errorKey);
+				expect(result).toStrictEqual(expected.errorKey);
 			});
 		};
 
@@ -122,6 +132,41 @@ describe('screens/bridge/utils/validators', () => {
 					hasEstimationFailed: false
 				},
 				expected: { errorKey: SCREEN_TEXT.textTransferLimit }
+			},
+			{
+				description: 'returns the insufficient liquidity error with a truncated max amount and ticker',
+				config: {
+					estimations: [createFailedEstimation(
+						BridgeEstimationErrorCode.INSUFFICIENT_LIQUIDITY,
+						{ maxAmount: maxSwappableAmount, ticker: sourceTokenTicker }
+					)],
+					hasEstimationFailed: false
+				},
+				expected: {
+					errorKey: {
+						key: SCREEN_TEXT.textInsufficientLiquidity,
+						params: { maxAmount: maxSwappableAmountTruncated, ticker: sourceTokenTicker }
+					}
+				}
+			},
+			{
+				description: 'returns the generic insufficient liquidity error when the max amount is unknown',
+				config: {
+					estimations: [createFailedEstimation(BridgeEstimationErrorCode.INSUFFICIENT_LIQUIDITY)],
+					hasEstimationFailed: false
+				},
+				expected: { errorKey: SCREEN_TEXT.textInsufficientLiquidityGeneric }
+			},
+			{
+				description: 'prefers the insufficient liquidity error over any other failing step',
+				config: {
+					estimations: [
+						createFailedEstimation(BridgeEstimationErrorCode.AMOUNT_LOW),
+						createFailedEstimation(BridgeEstimationErrorCode.INSUFFICIENT_LIQUIDITY)
+					],
+					hasEstimationFailed: false
+				},
+				expected: { errorKey: SCREEN_TEXT.textInsufficientLiquidityGeneric }
 			},
 			{
 				description: 'returns the unavailable error when the estimation request failed outright',

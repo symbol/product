@@ -1,11 +1,14 @@
 import { TransactionType } from '../constants';
-import { normalizeAddress } from '../utils';
-import { TransactionBundle, absoluteToRelativeAmount, relativeToAbsoluteAmount } from 'wallet-common-core';
+import { applySaturationHaircut, isSaturatedQuote, isZeroForOne, normalizeAddress } from '../utils';
+import { TransactionBundle, absoluteToRelativeAmount, constants, relativeToAbsoluteAmount } from 'wallet-common-core';
 
 const DEFAULT_TRANSACTION_DEADLINE_SECONDS = 600;
 
+const { BridgeEstimationErrorCode } = constants;
+
 /** @typedef {import('wallet-common-core').WalletController} WalletController */
 /** @typedef {import('../types/Token').TokenInfo} TokenInfo */
+/** @typedef {import('../types/Uniswap').UniswapEstimation} UniswapEstimation */
 /** @typedef {import('../api/UniswapService').UniswapService} UniswapService */
 /** @typedef {import('../api/TransactionService').TransactionService} TransactionService */
 /** @typedef {import('wallet-common-core/src/types/Network').NetworkMap<UniswapNetworkConfig>} UniswapNetworkConfigMap */
@@ -18,13 +21,6 @@ const DEFAULT_TRANSACTION_DEADLINE_SECONDS = 600;
  * @property {string} quoterAddress - Uniswap V3 Quoter contract address.
  * @property {string} swapRouterAddress - Uniswap V3 SwapRouter contract address.
  * @property {number} poolFee - Pool fee tier in hundredths of a bip (e.g. 3000 = 0.3%).
- */
-
-/**
- * @typedef {Object} UniswapEstimation
- * @property {string} receiveAmount - Amount that will be received, in relative units.
- * @property {string} bridgeFee - Pool fee extracted from the output amount, in relative units.
- * @property {object|null} error - Error info if estimation failed.
  */
 
 const SwapMode = {
@@ -209,6 +205,7 @@ export class UniswapPairManager {
 	/**
 	 * Estimate how much of the output token will be received for a given input amount
 	 * using the Uniswap V3 Quoter contract (on-chain, no gas consumed).
+	 * Returns an insufficient-liquidity error when the pool cannot absorb the input amount.
 	 * @param {string} amount - Input amount in relative units.
 	 * @returns {Promise<UniswapEstimation>}
 	 */
@@ -222,23 +219,100 @@ export class UniswapPairManager {
 		const amountInAbsolute = relativeToAbsoluteAmount(amount, sourceTokenInfo.divisibility);
 		const { networkCurrency } = networkProperties;
 
+		if (BigInt(amountInAbsolute) === 0n)
+			return this.#createFailedEstimation(BridgeEstimationErrorCode.AMOUNT_LOW);
+
 		const { wethTokenId, quoterAddress, poolFee } = this.#networkConfig;
 		const wethId = wethTokenId.toLowerCase();
-		const amountOutAbsolute = await this.#uniswapApi.quoteExactInputSingle(networkProperties, normalizeAddress(quoterAddress), {
-			tokenInId: sourceTokenInfo.id === networkCurrency.id ? wethId : sourceTokenInfo.id,
-			tokenOutId: targetTokenInfo.id === networkCurrency.id ? wethId : targetTokenInfo.id,
-			amountIn: amountInAbsolute,
-			fee: poolFee
-		});
+		const tokenInId = sourceTokenInfo.id === networkCurrency.id ? wethId : sourceTokenInfo.id;
+		const tokenOutId = targetTokenInfo.id === networkCurrency.id ? wethId : targetTokenInfo.id;
 
-		const feeAbsolute = BigInt(amountOutAbsolute) * BigInt(poolFee) / 1_000_000n;
+		let quote;
+		try {
+			quote = await this.#uniswapApi.quoteExactInputSingle(networkProperties, normalizeAddress(quoterAddress), {
+				tokenInId,
+				tokenOutId,
+				amountIn: amountInAbsolute,
+				fee: poolFee
+			});
+		} catch (error) {
+			if (!this.#isQuoterRevert(error))
+				throw error;
+
+			return this.#createFailedEstimation(BridgeEstimationErrorCode.INSUFFICIENT_LIQUIDITY);
+		}
+
+		const zeroForOne = isZeroForOne(tokenInId, tokenOutId);
+
+		if (isSaturatedQuote(quote.sqrtPriceX96After, zeroForOne)) {
+			const maxAmount = await this.#tryEstimateMaxSwappableAmount({ cappedAmountOut: quote.amountOut, tokenInId, tokenOutId });
+
+			return this.#createFailedEstimation(
+				BridgeEstimationErrorCode.INSUFFICIENT_LIQUIDITY,
+				maxAmount ? { maxAmount, ticker: this.sourceTokenInfo.ticker } : undefined
+			);
+		}
+
+		const feeAbsolute = BigInt(quote.amountOut) * BigInt(poolFee) / 1_000_000n;
 
 		return {
-			receiveAmount: absoluteToRelativeAmount(amountOutAbsolute, targetTokenInfo.divisibility),
+			receiveAmount: absoluteToRelativeAmount(quote.amountOut, targetTokenInfo.divisibility),
 			bridgeFee: absoluteToRelativeAmount(String(feeAbsolute), targetTokenInfo.divisibility),
 			error: null
 		};
 	};
+
+	/**
+	 * Checks whether an error is a quoter contract revert rather than an infrastructure failure.
+	 * The quoter reverts when the swap cannot be simulated at all (e.g. it starts inside
+	 * a zero-liquidity region), which is an insufficient-liquidity condition, not a network error.
+	 * @param {Error} error - Error thrown by the quoter call.
+	 * @returns {boolean} True when the error is a contract revert.
+	 */
+	#isQuoterRevert = error => error.code === 'CALL_EXCEPTION';
+
+	/**
+	 * Estimates the maximum input amount the pool can currently absorb by requesting the input
+	 * needed to buy the saturated quote's output. Failures degrade the error message instead of
+	 * breaking the estimation, so any error resolves to undefined.
+	 * @param {object} options - Options.
+	 * @param {string} options.cappedAmountOut - Saturated quote output in absolute units.
+	 * @param {string} options.tokenInId - Input token contract address used for the quote.
+	 * @param {string} options.tokenOutId - Output token contract address used for the quote.
+	 * @returns {Promise<string|undefined>} Maximum swappable amount in relative units, or undefined.
+	 */
+	#tryEstimateMaxSwappableAmount = async ({ cappedAmountOut, tokenInId, tokenOutId }) => {
+		try {
+			const { networkProperties } = this.#walletController;
+			const { quoterAddress, poolFee } = this.#networkConfig;
+			const quote = await this.#uniswapApi.quoteExactOutputSingle(networkProperties, normalizeAddress(quoterAddress), {
+				tokenInId,
+				tokenOutId,
+				amountOut: applySaturationHaircut(cappedAmountOut),
+				fee: poolFee
+			});
+
+			return absoluteToRelativeAmount(quote.amountIn, this.sourceTokenInfo.divisibility);
+		} catch {
+			return undefined;
+		}
+	};
+
+	/**
+	 * Creates a failed estimation carrying the given error code.
+	 * @param {string} code - One of BridgeEstimationErrorCode.
+	 * @param {Object.<string, string>} [params] - Optional parameters for the user-facing error message.
+	 * @returns {UniswapEstimation} Estimation with the error set and no amounts.
+	 */
+	#createFailedEstimation = (code, params) => ({
+		receiveAmount: null,
+		bridgeFee: null,
+		priceImpact: null,
+		error: {
+			code,
+			...(params && { params })
+		}
+	});
 
 	/**
 	 * Create a Uniswap V3 exactInputSingle swap transaction.

@@ -75,6 +75,7 @@
 /**
  * @typedef {object} BridgeEstimationError
  * @property {string} code - Reason the estimation failed. One of BridgeEstimationErrorCode.
+ * @property {Object.<string, string>} [params] - Optional parameters for the user-facing error message
  */
 
 /**
@@ -83,6 +84,8 @@
  * Amount is in target receiving currency in relative units. Null when the estimation failed.
  * @property {string|null} receiveAmount - Estimated amount to be received after conversion and fees deducted.
  * Amount is in target receiving currency in relative units. Null when the estimation failed.
+ * @property {number|null} [priceImpact] - Price impact of a DEX swap step as a fraction in the [0, 1] range.
+ * Null when unknown; absent for steps without a price-dependent swap.
  * @property {BridgeEstimationError|null} error - Error details if estimation failed, null otherwise.
  * If present, the estimation values should be ignored.
  */

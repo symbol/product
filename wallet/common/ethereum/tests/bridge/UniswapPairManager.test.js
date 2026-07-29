@@ -93,6 +93,19 @@ const createWalletControllerMock = (overrides = {}) => ({
 const createUniswapApiMock = (overrides = {}) => ({
 	fetchPoolTokenInfos: jest.fn().mockResolvedValue({ nativeTokenInfo, wrappedTokenInfo }),
 	quoteExactInputSingle: jest.fn(),
+	quoteExactOutputSingle: jest.fn(),
+	...overrides
+});
+
+const MID_RANGE_SQRT_PRICE_X96 = '93455262124906132660367607190557';
+// Saturation boundary for a one-for-zero swap; wrap mode swaps from the higher-addressed token.
+const UPPER_SQRT_PRICE_LIMIT_X96 = '1461446703485210103287273052203988822378723970341';
+
+const createExactInputQuote = overrides => ({
+	amountOut: '990000',
+	sqrtPriceX96After: MID_RANGE_SQRT_PRICE_X96,
+	initializedTicksCrossed: 0,
+	gasEstimate: '91602',
 	...overrides
 });
 
@@ -414,7 +427,7 @@ describe('bridge/UniswapPairManager', () => {
 			it(description, async () => {
 				// Arrange:
 				const { manager, uniswapApi } = await createLoadedManager({ managerOptions: { mode: config.mode } });
-				uniswapApi.quoteExactInputSingle.mockResolvedValue(config.quotedAbsoluteAmount);
+				uniswapApi.quoteExactInputSingle.mockResolvedValue(createExactInputQuote({ amountOut: config.quotedAbsoluteAmount }));
 
 				// Act:
 				const result = await manager.estimateRequest(config.inputAmount);
@@ -479,7 +492,7 @@ describe('bridge/UniswapPairManager', () => {
 		it('native ETH wrap mode: uses wethTokenId for quoter tokenIn instead of ETH id', async () => {
 			// Arrange:
 			const { manager, uniswapApi } = await createLoadedEthNativeManager();
-			uniswapApi.quoteExactInputSingle.mockResolvedValue('990000');
+			uniswapApi.quoteExactInputSingle.mockResolvedValue(createExactInputQuote());
 
 			// Act:
 			const result = await manager.estimateRequest('1');
@@ -499,6 +512,151 @@ describe('bridge/UniswapPairManager', () => {
 				receiveAmount: '0.99',
 				bridgeFee: '0.00297',
 				error: null
+			});
+		});
+
+		describe('zero amount', () => {
+			const runZeroAmountTest = (description, config) => {
+				it(description, async () => {
+					// Arrange:
+					const { manager, uniswapApi } = await createLoadedManager({ managerOptions: { mode: config.mode } });
+
+					// Act:
+					const result = await manager.estimateRequest(config.inputAmount);
+
+					// Assert:
+					expect(uniswapApi.quoteExactInputSingle).not.toHaveBeenCalled();
+					expect(result).toStrictEqual({
+						receiveAmount: null,
+						bridgeFee: null,
+						priceImpact: null,
+						error: { code: 'amount_low' }
+					});
+				});
+			};
+
+			const zeroAmountTests = [
+				{
+					description: 'returns the amount too low error for typed zeros without calling the quoter',
+					config: { mode: 'wrap', inputAmount: '0.0000' }
+				},
+				{
+					description: 'returns the amount too low error for dust below the source token divisibility',
+					config: { mode: 'unwrap', inputAmount: '0.0000001' }
+				}
+			];
+
+			zeroAmountTests.forEach(test => {
+				runZeroAmountTest(test.description, test.config);
+			});
+		});
+
+		describe('insufficient liquidity', () => {
+			const saturatedQuote = createExactInputQuote({
+				amountOut: '126974974899',
+				sqrtPriceX96After: UPPER_SQRT_PRICE_LIMIT_X96
+			});
+			const expectedHaircutAmountOut = '126962277401';
+
+			it('saturated quote: returns the error with the max swappable amount from a counter-quote', async () => {
+				// Arrange:
+				const { manager, uniswapApi } = await createLoadedManager();
+				uniswapApi.quoteExactInputSingle.mockResolvedValue(saturatedQuote);
+				uniswapApi.quoteExactOutputSingle.mockResolvedValue({
+					amountIn: '235399146392349099',
+					sqrtPriceX96After: UPPER_SQRT_PRICE_LIMIT_X96
+				});
+
+				// Act:
+				const result = await manager.estimateRequest('1');
+
+				// Assert:
+				expect(uniswapApi.quoteExactOutputSingle).toHaveBeenCalledWith(
+					networkProperties,
+					QUOTER_ADDRESS,
+					{
+						tokenInId: NATIVE_TOKEN_ID,
+						tokenOutId: WRAPPED_TOKEN_ID,
+						amountOut: expectedHaircutAmountOut,
+						fee: POOL_FEE
+					}
+				);
+				expect(result).toStrictEqual({
+					receiveAmount: null,
+					bridgeFee: null,
+					priceImpact: null,
+					error: {
+						code: 'insufficient_liquidity',
+						params: {
+							maxAmount: '0.235399146392349099',
+							ticker: nativeTokenInfo.ticker
+						}
+					}
+				});
+			});
+
+			it('saturated quote: omits the max amount when the counter-quote fails', async () => {
+				// Arrange:
+				const { manager, uniswapApi } = await createLoadedManager();
+				uniswapApi.quoteExactInputSingle.mockResolvedValue(saturatedQuote);
+				uniswapApi.quoteExactOutputSingle.mockRejectedValue(new Error('counter-quote failed'));
+
+				// Act:
+				const result = await manager.estimateRequest('1');
+
+				// Assert:
+				expect(result).toStrictEqual({
+					receiveAmount: null,
+					bridgeFee: null,
+					priceImpact: null,
+					error: { code: 'insufficient_liquidity' }
+				});
+			});
+
+			it('quoter revert: returns the error without the max amount and skips the counter-quote', async () => {
+				// Arrange:
+				const revertError = new Error('execution reverted');
+				revertError.code = 'CALL_EXCEPTION';
+				const { manager, uniswapApi } = await createLoadedManager();
+				uniswapApi.quoteExactInputSingle.mockRejectedValue(revertError);
+
+				// Act:
+				const result = await manager.estimateRequest('1');
+
+				// Assert:
+				expect(uniswapApi.quoteExactOutputSingle).not.toHaveBeenCalled();
+				expect(result).toStrictEqual({
+					receiveAmount: null,
+					bridgeFee: null,
+					priceImpact: null,
+					error: { code: 'insufficient_liquidity' }
+				});
+			});
+
+			it('non-revert quoter failure: rethrows the error', async () => {
+				// Arrange:
+				const networkError = new Error('connection refused');
+				networkError.code = 'NETWORK_ERROR';
+				const { manager, uniswapApi } = await createLoadedManager();
+				uniswapApi.quoteExactInputSingle.mockRejectedValue(networkError);
+
+				// Act & Assert:
+				await expect(manager.estimateRequest('1')).rejects.toThrow('connection refused');
+			});
+
+			it('opposite direction boundary does not trigger the error in unwrap mode', async () => {
+				// Arrange: unwrap mode swaps from the lower-addressed token, so the upper boundary is not its limit.
+				const { manager, uniswapApi } = await createLoadedManager({ managerOptions: { mode: 'unwrap' } });
+				uniswapApi.quoteExactInputSingle.mockResolvedValue(createExactInputQuote({
+					amountOut: '490000000000000000',
+					sqrtPriceX96After: UPPER_SQRT_PRICE_LIMIT_X96
+				}));
+
+				// Act:
+				const result = await manager.estimateRequest('0.5');
+
+				// Assert:
+				expect(result.error).toBeNull();
 			});
 		});
 	});

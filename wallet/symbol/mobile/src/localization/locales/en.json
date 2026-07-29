@@ -757,6 +757,8 @@
     "validation_error_amount_high": "Amount too high",
     "validation_error_amount_transferLimit": "Amount exceeds transfer limit",
     "validation_error_amount_dailyLimit": "Daily bridge limit exceeded",
+    "validation_error_insufficientLiquidity": "Insufficient pool liquidity. You can swap at most {{maxAmount}} {{ticker}} right now",
+    "validation_error_insufficientLiquidity_generic": "Insufficient pool liquidity for this amount. Try a smaller amount",
     "validation_error_estimation_unavailable": "Unable to estimate. Please try again",
     "validation_error_already_exists": "Already exists",
     "validation_error_mosaic_supply": "Should be a number from 1 to 9999999999",
