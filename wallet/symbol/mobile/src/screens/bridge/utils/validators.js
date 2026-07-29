@@ -11,15 +11,13 @@ const estimationErrorPriority = [
 	BridgeEstimationErrorCode.INSUFFICIENT_LIQUIDITY,
 	BridgeEstimationErrorCode.AMOUNT_LOW,
 	BridgeEstimationErrorCode.REQUEST_LIMIT_EXCEEDED,
-	BridgeEstimationErrorCode.DAILY_LIMIT_EXCEEDED,
-	BridgeEstimationErrorCode.AMOUNT_HIGH
+	BridgeEstimationErrorCode.DAILY_LIMIT_EXCEEDED
 ];
 
 const estimationErrorTranslationKeyMap = {
 	[BridgeEstimationErrorCode.AMOUNT_LOW]: 'validation_error_amount_low',
 	[BridgeEstimationErrorCode.REQUEST_LIMIT_EXCEEDED]: 'validation_error_amount_transferLimit',
-	[BridgeEstimationErrorCode.DAILY_LIMIT_EXCEEDED]: 'validation_error_amount_dailyLimit',
-	[BridgeEstimationErrorCode.AMOUNT_HIGH]: 'validation_error_amount_high'
+	[BridgeEstimationErrorCode.DAILY_LIMIT_EXCEEDED]: 'validation_error_amount_dailyLimit'
 };
 
 /**
@@ -46,8 +44,8 @@ export const validateEstimation = (estimations, hasEstimationFailed) => () => {
 };
 
 /**
- * Builds the insufficient-liquidity validation result. Includes the maximum swappable amount when
- * the estimation provides it, truncated down so the message never suggests more than is available.
+ * Builds the insufficient-liquidity validation result. Includes the maximum amount that can be sent
+ * when the estimation provides it, truncated down so the message never suggests more than is available.
  * @param {Array} errors - Estimation errors collected from all steps.
  * @returns {string|{key: string, params: object}} Error key, with message parameters when available.
  */

@@ -1256,12 +1256,12 @@ describe('bridge/BridgePairManager', () => {
 				expected: { errorCode: BridgeEstimationErrorCode.DAILY_LIMIT_EXCEEDED }
 			},
 			{
-				description: 'maps the payout liquidity revert message to the amount high error code',
+				description: 'maps the payout liquidity revert message to the insufficient liquidity error code',
 				config: {
 					amount: '99999',
 					error: new Error('eth_estimateGas RPC call failed: execution reverted: ERC20: transfer amount exceeds balance')
 				},
-				expected: { errorCode: BridgeEstimationErrorCode.AMOUNT_HIGH }
+				expected: { errorCode: BridgeEstimationErrorCode.INSUFFICIENT_LIQUIDITY }
 			}
 		];
 

@@ -7,7 +7,6 @@ const { BridgeEstimationErrorCode } = constants;
 
 const SCREEN_TEXT = {
 	textAmountLow: 'validation_error_amount_low',
-	textAmountHigh: 'validation_error_amount_high',
 	textTransferLimit: 'validation_error_amount_transferLimit',
 	textDailyLimit: 'validation_error_amount_dailyLimit',
 	textEstimationUnavailable: 'validation_error_estimation_unavailable',
@@ -69,14 +68,6 @@ describe('screens/bridge/utils/validators', () => {
 				expected: { errorKey: SCREEN_TEXT.textAmountLow }
 			},
 			{
-				description: 'returns the amount high error when the bridge cannot cover the payout',
-				config: {
-					estimations: [createFailedEstimation(BridgeEstimationErrorCode.AMOUNT_HIGH)],
-					hasEstimationFailed: false
-				},
-				expected: { errorKey: SCREEN_TEXT.textAmountHigh }
-			},
-			{
 				description: 'returns the transfer limit error when the per-transfer cap is exceeded',
 				config: {
 					estimations: [createFailedEstimation(BridgeEstimationErrorCode.REQUEST_LIMIT_EXCEEDED)],
@@ -101,26 +92,15 @@ describe('screens/bridge/utils/validators', () => {
 				expected: { errorKey: SCREEN_TEXT.textDailyLimit }
 			},
 			{
-				description: 'prefers the amount low error over any other failing step',
+				description: 'prefers the amount low error over the transfer limit error',
 				config: {
 					estimations: [
-						createFailedEstimation(BridgeEstimationErrorCode.AMOUNT_HIGH),
+						createFailedEstimation(BridgeEstimationErrorCode.REQUEST_LIMIT_EXCEEDED),
 						createFailedEstimation(BridgeEstimationErrorCode.AMOUNT_LOW)
 					],
 					hasEstimationFailed: false
 				},
 				expected: { errorKey: SCREEN_TEXT.textAmountLow }
-			},
-			{
-				description: 'prefers the transfer limit error over the less actionable amount high error',
-				config: {
-					estimations: [
-						createFailedEstimation(BridgeEstimationErrorCode.AMOUNT_HIGH),
-						createFailedEstimation(BridgeEstimationErrorCode.REQUEST_LIMIT_EXCEEDED)
-					],
-					hasEstimationFailed: false
-				},
-				expected: { errorKey: SCREEN_TEXT.textTransferLimit }
 			},
 			{
 				description: 'prefers the transfer limit error over the daily limit error',

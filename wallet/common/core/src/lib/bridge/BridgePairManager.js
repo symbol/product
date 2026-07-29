@@ -33,11 +33,6 @@ const BridgeMode = {
 	UNWRAP: 'unwrap'
 };
 
-const bridgeApiErrorCodeMap = {
-	REQUEST_LIMIT_EXCEEDED: BridgeEstimationErrorCode.REQUEST_LIMIT_EXCEEDED,
-	DAILY_LIMIT_EXCEEDED: BridgeEstimationErrorCode.DAILY_LIMIT_EXCEEDED
-};
-
 const BRIDGE_LIQUIDITY_REVERT_MESSAGE =
 	'eth_estimateGas RPC call failed: execution reverted: ERC20: transfer amount exceeds balance';
 
@@ -429,13 +424,17 @@ export class BridgePairManager {
 	 * @returns {string|null} Estimation error code, or null when the error is not recognised.
 	 */
 	#resolveEstimationErrorCode = error => {
+		const bridgeApiErrorCodeMap = {
+			REQUEST_LIMIT_EXCEEDED: BridgeEstimationErrorCode.REQUEST_LIMIT_EXCEEDED,
+			DAILY_LIMIT_EXCEEDED: BridgeEstimationErrorCode.DAILY_LIMIT_EXCEEDED
+		};
 		const mappedCode = bridgeApiErrorCodeMap[error.body?.errorCode];
 
 		if (mappedCode)
 			return mappedCode;
 
 		if (error.message === BRIDGE_LIQUIDITY_REVERT_MESSAGE)
-			return BridgeEstimationErrorCode.AMOUNT_HIGH;
+			return BridgeEstimationErrorCode.INSUFFICIENT_LIQUIDITY;
 
 		return null;
 	};
