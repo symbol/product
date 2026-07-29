@@ -11,10 +11,25 @@ from psycopg2.extras import Json
 from symbolchain.sc import ReceiptType
 from symbolchain.symbol.Network import Network
 
-from puller.db.SymbolDatabase import SymbolDatabase
+from puller.db.SymbolDatabase import RollbackRefreshEntries, SymbolDatabase
 from puller.model.symbol.Account import create_account_row
 from tests.facade.symbol.puller_test_utils import NATIVE_MOSAIC_ID, create_account_item
-from tests.test.SymbolMosaicTestUtils import create_expected_mosaic_row, create_mosaic_item, fetch_mosaic_state
+from tests.test.SymbolDatabaseTestUtils import fetch_full_block_state, fetch_normalized_sync_state
+from tests.test.SymbolMetadataTestUtils import (
+	SCOPED_METADATA_KEY,
+	SOURCE_ADDRESS,
+	TARGET_ADDRESS,
+	create_expected_metadata_row,
+	create_metadata_item,
+	fetch_metadata_rows,
+	find_metadata_row
+)
+from tests.test.SymbolMosaicTestUtils import (
+	create_expected_mosaic_row,
+	create_mosaic_item,
+	create_persisted_mosaic_state,
+	fetch_mosaic_state
+)
 from tests.test.SymbolNamespaceTestUtils import (
 	NAMESPACE_ROOT_ID,
 	NAMESPACE_SUB_ID,
@@ -180,12 +195,6 @@ def _create_alias_name_rows(namespace_row):
 		})
 
 	return rows
-
-
-def _fetch_block_state(database):
-	cursor = database.connection.cursor()
-	cursor.execute('SELECT * FROM symbol_blocks ORDER BY height')
-	return cursor.fetchall()
 
 
 class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
@@ -491,6 +500,103 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			WHERE table_name = 'symbol_mosaics' AND column_name = 'alias_names'
 			''')
 		self.assertEqual([('NO', "'[]'::jsonb")], cursor.fetchall())
+
+	def test_create_tables_creates_symbol_metadata_columns(self):
+		# Arrange:
+		database = self._create_uninitialized_database()
+		cursor = database.connection.cursor()
+
+		# Act:
+		database.create_tables()
+
+		# Assert:
+		cursor.execute(
+			'''
+			SELECT column_name, udt_name, is_nullable, character_maximum_length
+			FROM information_schema.columns
+			WHERE table_name = 'symbol_metadata'
+			ORDER BY ordinal_position
+			''')
+		self.assertEqual([
+			('composite_hash', 'bytea', 'NO', None),
+			('metadata_type', 'symbol_metadata_type', 'NO', None),
+			('scoped_metadata_key', 'varchar', 'NO', None),
+			('source_address', 'bytea', 'NO', None),
+			('target_address', 'bytea', 'YES', None),
+			('target_id', 'varchar', 'YES', 16),
+			('value_hex', 'text', 'NO', None),
+			('value_utf8', 'text', 'NO', None),
+			('raw_payload', 'jsonb', 'NO', None),
+			('updated_at_height', 'int8', 'NO', None)
+		], cursor.fetchall())
+
+	def test_create_tables_creates_symbol_metadata_enum(self):
+		# Arrange:
+		database = self._create_uninitialized_database()
+		cursor = database.connection.cursor()
+
+		# Act:
+		database.create_tables()
+
+		# Assert:
+		cursor.execute(
+			'''
+			SELECT pg_type.typname, enumlabel
+			FROM pg_enum
+			JOIN pg_type ON pg_type.oid = pg_enum.enumtypid
+			WHERE pg_type.typname = 'symbol_metadata_type'
+			ORDER BY enumsortorder
+			''')
+		self.assertEqual([
+			('symbol_metadata_type', 'account'),
+			('symbol_metadata_type', 'mosaic'),
+			('symbol_metadata_type', 'namespace')
+		], cursor.fetchall())
+
+	def test_create_tables_creates_symbol_metadata_indexes(self):
+		# Arrange:
+		database = self._create_uninitialized_database()
+		cursor = database.connection.cursor()
+
+		# Act:
+		database.create_tables()
+
+		# Assert:
+		cursor.execute(
+			'''
+			SELECT indexname, indexdef
+			FROM pg_indexes
+			WHERE schemaname = 'public' AND tablename = 'symbol_metadata'
+			ORDER BY indexname
+			''')
+		self.assertEqual([
+			(
+				'idx_symbol_metadata_scoped_key',
+				'CREATE INDEX idx_symbol_metadata_scoped_key ON public.symbol_metadata USING btree (scoped_metadata_key)'
+			),
+			(
+				'idx_symbol_metadata_source',
+				'CREATE INDEX idx_symbol_metadata_source ON public.symbol_metadata USING btree (source_address)'
+			),
+			(
+				'idx_symbol_metadata_target_address_height',
+				'CREATE INDEX idx_symbol_metadata_target_address_height ON public.symbol_metadata '
+				'USING btree (target_address, updated_at_height DESC)'
+			),
+			(
+				'idx_symbol_metadata_target_id',
+				'CREATE INDEX idx_symbol_metadata_target_id ON public.symbol_metadata USING btree (target_id)'
+			),
+			(
+				'idx_symbol_metadata_type',
+				'CREATE INDEX idx_symbol_metadata_type ON public.symbol_metadata USING btree (metadata_type)'
+			),
+			(
+				'idx_symbol_metadata_updated_height',
+				'CREATE INDEX idx_symbol_metadata_updated_height ON public.symbol_metadata USING btree (updated_at_height)'
+			),
+			('symbol_metadata_pkey', 'CREATE UNIQUE INDEX symbol_metadata_pkey ON public.symbol_metadata USING btree (composite_hash)')
+		], cursor.fetchall())
 
 	def test_upsert_namespace_persists_fresh_namespace_and_full_alias_row_set(self):
 		# Arrange:
@@ -1035,6 +1141,181 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		# Assert:
 		self.assertEqual(valid_row['mosaic_id'], fetch_mosaic_state(database)[0].mosaic_id)
 
+	def test_upsert_metadata_persists_fresh_insert_as_a_full_row(self):
+		# Arrange:
+		database = self._create_database()
+		item = create_metadata_item(metadata_type=1, target_id='72C0212E67A08BCE')
+		row = create_expected_metadata_row(
+			item, 123, composite_hash=bytes.fromhex('11' * 32), metadata_type='mosaic',
+			target_id='72C0212E67A08BCE', value_utf8='hello')
+
+		# Act:
+		database.upsert_metadata(row)
+
+		# Assert:
+		self.assertEqual(row, find_metadata_row(database, row['composite_hash']))
+
+	def test_upsert_metadata_updates_all_non_key_columns_for_same_composite_hash(self):
+		# Arrange:
+		database = self._create_database()
+		original_item = create_metadata_item(metadata_type=1, target_id='72C0212E67A08BCE')
+		database.upsert_metadata(create_expected_metadata_row(
+			original_item, 123, composite_hash=bytes.fromhex('11' * 32), metadata_type='mosaic',
+			target_id='72C0212E67A08BCE', value_utf8='hello'))
+		updated_item = create_metadata_item(
+			metadata_type=2,
+			scoped_metadata_key='0102030405060708',
+			source_address='12' * 24,
+			target_address='13' * 24,
+			target_id='A95F1F8A96159516',
+			value='776F726C64',
+			composite_hash='11' * 32,
+			item_id='updated-metadata-item-id')
+		updated_row = create_expected_metadata_row(
+			updated_item, 456, composite_hash=bytes.fromhex('11' * 32), metadata_type='namespace',
+			scoped_metadata_key='0102030405060708', source_address=bytes.fromhex('12' * 24),
+			target_address=bytes.fromhex('13' * 24), target_id='A95F1F8A96159516', value_hex='776F726C64',
+			value_utf8='world')
+
+		# Act:
+		database.upsert_metadata(updated_row)
+
+		# Assert:
+		self.assertEqual(updated_row, find_metadata_row(database, updated_row['composite_hash']))
+
+	def test_upsert_metadata_failed_update_preserves_existing_row(self):
+		# Arrange:
+		database = self._create_database()
+		original_item = create_metadata_item(metadata_type=1, target_id='72C0212E67A08BCE')
+		original_row = create_expected_metadata_row(
+			original_item, 123, composite_hash=bytes.fromhex('11' * 32), metadata_type='mosaic',
+			target_id='72C0212E67A08BCE', value_utf8='hello')
+		database.upsert_metadata(original_row)
+		invalid_row = {**original_row, 'value_utf8': None}
+
+		# Act:
+		with self.assertRaises(PsycopgError):
+			database.upsert_metadata(invalid_row)
+
+		# Assert:
+		self.assertEqual(original_row, find_metadata_row(database, original_row['composite_hash']))
+
+	def test_upsert_metadata_keeps_connection_usable_after_failed_update(self):
+		# Arrange:
+		database = self._create_database()
+		original_item = create_metadata_item(metadata_type=1, target_id='72C0212E67A08BCE')
+		original_row = create_expected_metadata_row(
+			original_item, 123, composite_hash=bytes.fromhex('11' * 32), metadata_type='mosaic',
+			target_id='72C0212E67A08BCE', value_utf8='hello')
+		database.upsert_metadata(original_row)
+		invalid_row = {**original_row, 'value_utf8': None}
+		updated_row = {
+			**original_row,
+			'value_hex': '776F726C64',
+			'value_utf8': 'world',
+			'updated_at_height': 456
+		}
+
+		# Act:
+		with self.assertRaises(PsycopgError):
+			database.upsert_metadata(invalid_row)
+		database.upsert_metadata(updated_row)
+
+		# Assert:
+		self.assertEqual(updated_row, find_metadata_row(database, original_row['composite_hash']))
+
+	def test_delete_metadata_by_key_deletes_only_the_exact_null_target_id_key(self):
+		# Arrange:
+		database = self._create_database()
+		common_item = create_metadata_item(
+			metadata_type=0,
+			composite_hash='11' * 32,
+			target_id='0000000000000000')
+		null_target_row = create_expected_metadata_row(
+			common_item, 123, composite_hash=bytes.fromhex('11' * 32), metadata_type='account',
+			target_id=None, value_utf8='hello')
+		value_target_row = {**null_target_row, 'composite_hash': bytes.fromhex('22' * 32), 'target_id': '0000000000000001'}
+		database.upsert_metadata(null_target_row)
+		database.upsert_metadata(value_target_row)
+		metadata_key = {
+			'metadata_type': 'account',
+			'source_address': null_target_row['source_address'],
+			'target_address': null_target_row['target_address'],
+			'scoped_metadata_key': null_target_row['scoped_metadata_key'],
+			'target_id': None
+		}
+
+		# Act:
+		database.delete_metadata_by_key(metadata_key)
+
+		# Assert:
+		self.assertIsNone(find_metadata_row(database, null_target_row['composite_hash']))
+		self.assertEqual(value_target_row, find_metadata_row(database, value_target_row['composite_hash']))
+
+	def test_delete_metadata_by_key_is_noop_for_missing_natural_key(self):
+		# Arrange:
+		database = self._create_database()
+		item = create_metadata_item(metadata_type=1, target_id='72C0212E67A08BCE')
+		row = create_expected_metadata_row(
+			item, 123, composite_hash=bytes.fromhex('11' * 32), metadata_type='mosaic',
+			target_id='72C0212E67A08BCE', value_utf8='hello')
+		database.upsert_metadata(row)
+		missing_key = {
+			'metadata_type': row['metadata_type'],
+			'source_address': row['source_address'],
+			'target_address': row['target_address'],
+			'scoped_metadata_key': 'FFFFFFFFFFFFFFFF',
+			'target_id': row['target_id']
+		}
+
+		# Act:
+		database.delete_metadata_by_key(missing_key)
+
+		# Assert:
+		self.assertEqual(row, find_metadata_row(database, row['composite_hash']))
+
+	def test_get_metadata_keys_updated_from_height_returns_exact_keys_in_composite_hash_order(self):
+		# Arrange:
+		database = self._create_database()
+		rows = [
+			(create_metadata_item(
+				metadata_type=1, composite_hash='33' * 32, target_id='72C0212E67A08BCE',
+				scoped_metadata_key='0000000000000003'), 3, {
+				'composite_hash': bytes.fromhex('33' * 32), 'metadata_type': 'mosaic',
+				'scoped_metadata_key': '0000000000000003', 'source_address': bytes.fromhex(SOURCE_ADDRESS),
+				'target_address': bytes.fromhex(TARGET_ADDRESS), 'target_id': '72C0212E67A08BCE',
+				'value_hex': '68656C6C6F', 'value_utf8': 'hello'}),
+			(create_metadata_item(
+				metadata_type=2, composite_hash='11' * 32, target_id='A95F1F8A96159516',
+				scoped_metadata_key='0000000000000004'), 4, {
+				'composite_hash': bytes.fromhex('11' * 32), 'metadata_type': 'namespace',
+				'scoped_metadata_key': '0000000000000004', 'source_address': bytes.fromhex(SOURCE_ADDRESS),
+				'target_address': bytes.fromhex(TARGET_ADDRESS), 'target_id': 'A95F1F8A96159516',
+				'value_hex': '68656C6C6F', 'value_utf8': 'hello'}),
+			(create_metadata_item(metadata_type=0, composite_hash='22' * 32, scoped_metadata_key='0000000000000005'), 5, {
+				'composite_hash': bytes.fromhex('22' * 32), 'metadata_type': 'account',
+				'scoped_metadata_key': '0000000000000005', 'source_address': bytes.fromhex(SOURCE_ADDRESS),
+				'target_address': bytes.fromhex(TARGET_ADDRESS), 'target_id': None,
+				'value_hex': '68656C6C6F', 'value_utf8': 'hello'})
+		]
+		for item, height, normalized_row in rows:
+			database.upsert_metadata(create_expected_metadata_row(
+				item, height, **normalized_row))
+
+		# Act:
+		keys = database.get_metadata_keys_updated_from_height(4)
+
+		# Assert:
+		expected_keys = [
+			{'metadata_type': 'namespace', 'source_address': bytes.fromhex(SOURCE_ADDRESS),
+				'target_address': bytes.fromhex(TARGET_ADDRESS), 'scoped_metadata_key': '0000000000000004',
+				'target_id': 'A95F1F8A96159516'},
+			{'metadata_type': 'account', 'source_address': bytes.fromhex(SOURCE_ADDRESS),
+				'target_address': bytes.fromhex(TARGET_ADDRESS), 'scoped_metadata_key': '0000000000000005',
+				'target_id': None}
+		]
+		self.assertEqual(expected_keys, keys)
+
 	def test_upsert_namespace_refreshes_existing_mosaic_alias_names(self):
 		# Arrange:
 		database = self._create_database()
@@ -1182,7 +1463,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		database.repair_rollback_from_height(2, _create_sync_state(
 			status='repairing',
 			last_synced_height=1,
-			last_synced_block_hash=b'hash 1'), [], [])
+			last_synced_block_hash=b'hash 1'), RollbackRefreshEntries())
 
 		# Assert:
 		cursor = database.connection.cursor()
@@ -1208,16 +1489,16 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		database.repair_rollback_from_height(
 			fork_height,
 			_create_sync_state(status='repairing', last_synced_height=1, last_synced_block_hash=b'hash 1'),
-			[],
-			[])
+			RollbackRefreshEntries())
 
 		# Assert:
 		self.assertEqual(original_mosaic_state, fetch_mosaic_state(database))
 
-	def test_repair_rollback_from_height_applies_namespace_and_mosaic_changes_in_same_transaction(self):
+	def test_repair_rollback_from_height_applies_namespace_mosaic_and_metadata_changes_in_same_transaction(self):
 		# Arrange:
 		database = self._create_database()
 		database.upsert_blocks([_create_block(1), _create_block(2)])
+		database.upsert_sync_state(_create_sync_state())
 		refreshed_row = _create_namespace_row()
 		deleted_row = _create_namespace_row('B95F1F8A96159516', 'orphaned', 2)
 		database.upsert_namespace(refreshed_row, _create_alias_name_rows(refreshed_row))
@@ -1226,50 +1507,157 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		deleted_mosaic_id = '0000000000000002'
 		database.upsert_mosaic(create_expected_mosaic_row(create_mosaic_item(mosaic_id=mosaic_id), 2))
 		database.upsert_mosaic(create_expected_mosaic_row(create_mosaic_item(mosaic_id=deleted_mosaic_id), 2))
+		metadata_item = create_metadata_item(
+			metadata_type=1,
+			composite_hash='11' * 32,
+			target_id='72C0212E67A08BCE')
+		deleted_metadata_item = create_metadata_item(
+			metadata_type=2,
+			composite_hash='22' * 32,
+			target_id='A95F1F8A96159516')
+		database.upsert_metadata(create_expected_metadata_row(
+			metadata_item, 2, composite_hash=bytes.fromhex('11' * 32), metadata_type='mosaic',
+			target_id='72C0212E67A08BCE', value_utf8='hello'))
+		database.upsert_metadata(create_expected_metadata_row(
+			deleted_metadata_item, 2, composite_hash=bytes.fromhex('22' * 32), metadata_type='namespace',
+			target_id='A95F1F8A96159516', value_utf8='hello'))
 		refreshed_row = _create_namespace_row(
 			alias_type='none',
 			alias_mosaic_id=None,
 			end_height=100,
 			observed_height=1)
-
-		# Act:
-		database.repair_rollback_from_height(2, _create_sync_state(
+		refresh_entries = RollbackRefreshEntries(
+			[
+				{'row': refreshed_row, 'alias_rows': _create_alias_name_rows(refreshed_row)},
+				{'namespace_id': deleted_row['namespace_id']}
+			],
+			[
+				{'row': create_expected_mosaic_row(create_mosaic_item(mosaic_id=mosaic_id, supply='99'), 1)},
+				{'mosaic_id': deleted_mosaic_id}
+			],
+			[
+				{'row': create_expected_metadata_row(
+					create_metadata_item(
+						metadata_type=1,
+						composite_hash='11' * 32,
+						target_id='72C0212E67A08BCE',
+						value='776F726C64',
+						item_id='refreshed-metadata-item'),
+					1, composite_hash=bytes.fromhex('11' * 32), metadata_type='mosaic',
+					target_id='72C0212E67A08BCE', value_hex='776F726C64', value_utf8='world')},
+				{'key': {
+					'metadata_type': 'namespace',
+					'source_address': bytes.fromhex(SOURCE_ADDRESS),
+					'target_address': bytes.fromhex(TARGET_ADDRESS),
+					'scoped_metadata_key': SCOPED_METADATA_KEY,
+					'target_id': 'A95F1F8A96159516'
+				}}
+			])
+		refreshed_metadata_row = refresh_entries.metadata_entries[0]['row']
+		expected_sync_state = _create_sync_state(
 			status='repairing',
 			last_synced_height=1,
-			last_synced_block_hash=b'hash 1'), [
-			{'row': refreshed_row, 'alias_rows': _create_alias_name_rows(refreshed_row)},
-			{'namespace_id': deleted_row['namespace_id']}
-		], [
-			{'row': create_expected_mosaic_row(create_mosaic_item(mosaic_id=mosaic_id, supply='99'), 1)},
-			{'mosaic_id': deleted_mosaic_id}
-		])
+			last_synced_block_hash=b'hash 1')
+		expected_mosaic_row = refresh_entries.mosaic_entries[0]['row']
+		expected_mosaic_state = [create_persisted_mosaic_state(expected_mosaic_row, [])]
+		expected_namespace_state = (
+			[
+				(
+					NAMESPACE_ROOT_ID, None, NAMESPACE_ROOT_ID, 'root', 'root', 1, 'root',
+					ADDRESS1.lower(), 1, 100, 'none', None, None,
+					{'namespace': {'level0': NAMESPACE_ROOT_ID}}, 1
+				)
+			],
+			[('namespace', NAMESPACE_ROOT_ID, 'root', 1)]
+		)
+
+		# Act:
+		database.repair_rollback_from_height(2, expected_sync_state, refresh_entries)
 
 		# Assert:
+		self.assertEqual(expected_namespace_state, fetch_namespace_state(database.connection))
+		self.assertEqual(expected_mosaic_state, fetch_mosaic_state(database))
+		self.assertEqual([refreshed_metadata_row], fetch_metadata_rows(database))
+		self.assertEqual(expected_sync_state, fetch_normalized_sync_state(database))
 		cursor = database.connection.cursor()
-		cursor.execute(
-			'''
-			SELECT namespace_id, parent_id, root_id, name, full_name, depth, registration_type,
-				encode(owner_address, 'hex'), start_height, end_height, alias_type, alias_mosaic_id,
-				encode(alias_address, 'hex'), raw_payload, updated_at_height
-			FROM symbol_namespaces
-			ORDER BY namespace_id
-			''')
-		self.assertEqual([(
-			NAMESPACE_ROOT_ID, None, NAMESPACE_ROOT_ID, 'root', 'root', 1, 'root',
-			ADDRESS1.lower(), 1, 100, 'none', None, None,
-			{'namespace': {'level0': NAMESPACE_ROOT_ID}}, 1
-		)], cursor.fetchall())
-		cursor.execute(
-			'SELECT artifact_type, artifact_id, name, updated_at_height FROM symbol_alias_names ORDER BY artifact_type, artifact_id, name')
-		self.assertEqual([
-			('namespace', NAMESPACE_ROOT_ID, 'root', 1)
-		], cursor.fetchall())
-		cursor.execute('SELECT mosaic_id, supply, updated_at_height FROM symbol_mosaics ORDER BY mosaic_id')
-		self.assertEqual([(mosaic_id, 99, 1)], cursor.fetchall())
 		cursor.execute('SELECT height FROM symbol_blocks ORDER BY height')
 		self.assertEqual([(1,)], cursor.fetchall())
-		self.assertEqual('repairing', database.get_sync_state()['status'])
-		self.assertEqual(1, database.get_sync_state()['last_synced_height'])
+
+	def test_repair_rollback_rolls_back_namespace_mosaic_metadata_and_chain_state_after_metadata_failure(self):
+		# pylint: disable=too-many-locals
+
+		# Arrange:
+		database = self._create_database()
+		database.upsert_blocks([_create_block(1), _create_block(2)])
+		database.upsert_sync_state(_create_sync_state())
+		original_namespace_row = _create_namespace_row(observed_height=2)
+		deleted_namespace_row = _create_namespace_row('B95F1F8A96159516', 'gone', 2)
+		database.upsert_namespace(original_namespace_row, _create_alias_name_rows(original_namespace_row))
+		database.upsert_namespace(deleted_namespace_row, _create_alias_name_rows(deleted_namespace_row))
+		original_mosaic_row = create_expected_mosaic_row(create_mosaic_item(mosaic_id='0000000000000001'), 2)
+		deleted_mosaic_row = create_expected_mosaic_row(create_mosaic_item(mosaic_id='0000000000000002'), 2)
+		database.upsert_mosaic(original_mosaic_row)
+		database.upsert_mosaic(deleted_mosaic_row)
+		original_metadata_item = create_metadata_item(metadata_type=1, composite_hash='11' * 32, target_id='72C0212E67A08BCE')
+		deleted_metadata_item = create_metadata_item(metadata_type=2, composite_hash='22' * 32, target_id='A95F1F8A96159516')
+		original_metadata_row = create_expected_metadata_row(
+			original_metadata_item, 2, composite_hash=bytes.fromhex('11' * 32), metadata_type='mosaic',
+			target_id='72C0212E67A08BCE', value_utf8='hello')
+		deleted_metadata_row = create_expected_metadata_row(
+			deleted_metadata_item, 2, composite_hash=bytes.fromhex('22' * 32), metadata_type='namespace',
+			target_id='A95F1F8A96159516', value_utf8='hello')
+		database.upsert_metadata(original_metadata_row)
+		database.upsert_metadata(deleted_metadata_row)
+		original_state = {
+			'blocks': fetch_full_block_state(database),
+			'sync_state': fetch_normalized_sync_state(database),
+			'namespace': fetch_namespace_state(database.connection),
+			'mosaic': fetch_mosaic_state(database),
+			'metadata': fetch_metadata_rows(database)
+		}
+		self.assertEqual(2, len(original_state['namespace'][0]))
+		self.assertEqual(2, len(original_state['mosaic']))
+		self.assertEqual(2, len(original_state['metadata']))
+		updated_namespace_row = _create_namespace_row(
+			alias_type='none', alias_mosaic_id=None, end_height=100, observed_height=1,
+			raw_payload={'namespace': {'state': 'updated'}})
+		updated_mosaic_row = create_expected_mosaic_row(
+			create_mosaic_item(mosaic_id='0000000000000001', supply='99'), 1)
+		updated_metadata_item = create_metadata_item(
+			metadata_type=1,
+			composite_hash='11' * 32,
+			target_id='72C0212E67A08BCE',
+			value='776F726C64',
+			item_id='updated-metadata-item')
+		updated_metadata_row = create_expected_metadata_row(
+			updated_metadata_item, 1, composite_hash=bytes.fromhex('11' * 32), metadata_type='mosaic',
+			target_id='72C0212E67A08BCE', value_hex='776F726C64', value_utf8='world')
+		invalid_metadata_row = {**updated_metadata_row, 'composite_hash': bytes.fromhex('33' * 32), 'value_utf8': None}
+		refresh_entries = RollbackRefreshEntries(
+			[
+				{'row': updated_namespace_row, 'alias_rows': _create_alias_name_rows(updated_namespace_row)},
+				{'namespace_id': deleted_namespace_row['namespace_id']}
+			],
+			[
+				{'row': updated_mosaic_row},
+				{'mosaic_id': deleted_mosaic_row['mosaic_id']}
+			],
+			[
+				{'row': updated_metadata_row},
+				{'row': invalid_metadata_row}
+			])
+
+		# Act:
+		with self.assertRaises(PsycopgError):
+			database.repair_rollback_from_height(2, _create_sync_state(
+				status='repairing', last_synced_height=1, last_synced_block_hash=b'hash 1'), refresh_entries)
+
+		# Assert:
+		self.assertEqual(original_state['blocks'], fetch_full_block_state(database))
+		self.assertEqual(original_state['sync_state'], fetch_normalized_sync_state(database))
+		self.assertEqual(original_state['namespace'], fetch_namespace_state(database.connection))
+		self.assertEqual(original_state['mosaic'], fetch_mosaic_state(database))
+		self.assertEqual(original_state['metadata'], fetch_metadata_rows(database))
 
 	def test_repair_rollback_rolls_back_namespace_entries_and_chain_state_when_later_alias_insert_fails(self):
 		# Arrange:
@@ -1287,13 +1675,8 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			raw_payload={'namespace': {'state': 'updated'}},
 			observed_height=1)
 		invalid_row = _create_namespace_row(NAMESPACE_SUB_ID, 'invalid', 1)
-
-		# Act:
-		with self.assertRaises(PsycopgError):
-			database.repair_rollback_from_height(2, _create_sync_state(
-				status='repairing',
-				last_synced_height=1,
-				last_synced_block_hash=b'hash 1'), [
+		refresh_entries = RollbackRefreshEntries(
+			[
 				{'row': updated_row, 'alias_rows': _create_alias_name_rows(updated_row)},
 				{'namespace_id': deleted_row['namespace_id']},
 				{'row': invalid_row, 'alias_rows': [{
@@ -1302,7 +1685,16 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 					'name': 'invalid',
 					'updated_at_height': 1
 				}]}
-			], [])
+			],
+			[],
+			[])
+
+		# Act:
+		with self.assertRaises(PsycopgError):
+			database.repair_rollback_from_height(2, _create_sync_state(
+				status='repairing',
+				last_synced_height=1,
+				last_synced_block_hash=b'hash 1'), refresh_entries)
 
 		# Assert:
 		cursor = database.connection.cursor()
@@ -1367,6 +1759,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			'symbol_accounts',
 			'symbol_alias_names',
 			'symbol_blocks',
+			'symbol_metadata',
 			'symbol_mosaics',
 			'symbol_multisig',
 			'symbol_namespaces',
@@ -2919,7 +3312,8 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		})
 
 		# Act:
-		database.repair_rollback_from_height(10, _create_sync_state(status='repairing', last_synced_height=9), [], [])
+		database.repair_rollback_from_height(
+			10, _create_sync_state(status='repairing', last_synced_height=9), RollbackRefreshEntries())
 
 		# Assert:
 		self.assertEqual('stale', database.get_account_refresh_state()['status'])
@@ -2934,7 +3328,8 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		})
 
 		# Act:
-		database.repair_rollback_from_height(10, _create_sync_state(status='repairing', last_synced_height=9), [], [])
+		database.repair_rollback_from_height(
+			10, _create_sync_state(status='repairing', last_synced_height=9), RollbackRefreshEntries())
 
 		# Assert:
 		self.assertEqual('healthy', database.get_account_refresh_state()['status'])
@@ -2968,7 +3363,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			10))
 		original_namespace_state = fetch_namespace_state(database.connection)
 		original_mosaic_state = fetch_mosaic_state(database)
-		original_block_state = _fetch_block_state(database)
+		original_block_state = fetch_full_block_state(database)
 		original_refresh_state = database.get_account_refresh_state()
 		refreshed_row = _create_namespace_row(
 			alias_mosaic_id='mosaic-refreshed',
@@ -2983,16 +3378,16 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 
 		# Act:
 		with self.assertRaises(PsycopgError):
-			database.repair_rollback_from_height(10, _create_sync_state(status='repairing', last_synced_height=9), [
+			database.repair_rollback_from_height(10, _create_sync_state(status='repairing', last_synced_height=9), RollbackRefreshEntries([
 				{'row': refreshed_row, 'alias_rows': _create_alias_name_rows(refreshed_row)},
 				{'namespace_id': deleted_row['namespace_id']}
 			], [
 				{'row': refreshed_mosaic_row},
 				{'mosaic_id': 'mosaic-gone'}
-			])
+			], []))
 
 		# Assert:
-		self.assertEqual(original_block_state, _fetch_block_state(database))
+		self.assertEqual(original_block_state, fetch_full_block_state(database))
 		self.assertEqual(original_refresh_state, database.get_account_refresh_state())
 		self.assertEqual(original_namespace_state, fetch_namespace_state(database.connection))
 		self.assertEqual(original_mosaic_state, fetch_mosaic_state(database))
@@ -3018,7 +3413,8 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		database.finalize_account_refresh('run-1', NATIVE_MOSAIC_ID, 10, datetime.datetime(2026, 1, 1))
 
 		# Act:
-		database.repair_rollback_from_height(10, _create_sync_state(status='repairing', last_synced_height=9), [], [])
+		database.repair_rollback_from_height(
+			10, _create_sync_state(status='repairing', last_synced_height=9), RollbackRefreshEntries())
 
 		# Assert:
 		expected_address = bytes.fromhex(ADDRESS1)
@@ -3571,7 +3967,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			status='repairing',
 			last_synced_height=1,
 			last_synced_block_hash=b'hash 1'
-		), [], [])
+		), RollbackRefreshEntries())
 
 		# Assert:
 		cursor = database.connection.cursor()

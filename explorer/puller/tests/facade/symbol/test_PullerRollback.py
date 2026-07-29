@@ -4,6 +4,8 @@ import asyncio
 from symbolchain.symbol.Network import Address
 
 from puller.facade.SymbolPuller import SymbolRollbackError
+from tests.test.SymbolDatabaseTestUtils import fetch_full_block_state, fetch_normalized_sync_state
+from tests.test.SymbolMetadataTestUtils import create_expected_metadata_row, create_metadata_item, fetch_metadata_rows, metadata_path
 from tests.test.SymbolMosaicTestUtils import (
 	create_expected_mosaic_row,
 	create_mosaic_item,
@@ -221,6 +223,151 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):
 		self.assertEqual(original_sync_state, self.puller.symbol_db.get_sync_state())
 		self.assertEqual(original_mosaic_state, fetch_mosaic_state(self.puller.symbol_db))
 		self.assertEqual(original_namespace_state, self._fetch_namespace_rows())
+
+	def test_sync_block_headers_refreshes_metadata_at_or_above_rollback_height_and_deletes_fork_only_rows(self):
+		# Arrange:
+		mosaic_id = '72C0212E67A08BCE'
+		before_fork_item = create_metadata_item(
+			metadata_type=1,
+			target_id=mosaic_id,
+			composite_hash='11' * 32,
+			scoped_metadata_key='0000000000000001',
+			value='6265666F7265')
+		survivor_item = create_metadata_item(
+			metadata_type=1,
+			target_id=mosaic_id,
+			composite_hash='22' * 32,
+			scoped_metadata_key='0000000000000002',
+			value='6F6C64')
+		fork_only_item = create_metadata_item(
+			metadata_type=1,
+			target_id=mosaic_id,
+			composite_hash='33' * 32,
+			scoped_metadata_key='0000000000000003',
+			value='666F726B')
+		canonical_survivor_item = create_metadata_item(
+			metadata_type=1,
+			target_id=mosaic_id,
+			composite_hash='22' * 32,
+			scoped_metadata_key='0000000000000002',
+			value='6E6577',
+			item_id='canonical-survivor-item-id')
+		self._seed_blocks(
+			self.puller.symbol_db,
+			[1, 2, 3],
+			{2: b'local mismatch'.hex()})
+		self.puller.symbol_db.upsert_sync_state(create_sync_state())
+		self.puller.symbol_db.upsert_metadata(create_expected_metadata_row(
+			before_fork_item, 1, composite_hash=bytes.fromhex('11' * 32), metadata_type='mosaic',
+			scoped_metadata_key='0000000000000001', target_id=mosaic_id, value_hex='6265666F7265', value_utf8='before'))
+		self.puller.symbol_db.upsert_metadata(create_expected_metadata_row(
+			survivor_item, 2, composite_hash=bytes.fromhex('22' * 32), metadata_type='mosaic',
+			scoped_metadata_key='0000000000000002', target_id=mosaic_id, value_hex='6F6C64', value_utf8='old'))
+		self.puller.symbol_db.upsert_metadata(create_expected_metadata_row(
+			fork_only_item, 3, composite_hash=bytes.fromhex('33' * 32), metadata_type='mosaic',
+			scoped_metadata_key='0000000000000003', target_id=mosaic_id, value_hex='666F726B', value_utf8='fork'))
+		connector = FakeConnector(
+			3,
+			{1: [create_node_block(2), create_node_block(3)]},
+			{2: create_node_block(2)},
+			metadata_by_query={
+				metadata_path(1, mosaic_id, scoped_metadata_key='0000000000000002'): {
+					'data': [canonical_survivor_item]},
+				metadata_path(1, mosaic_id, scoped_metadata_key='0000000000000003'): {'data': []}})
+		set_symbol_connector(self.puller, connector)
+
+		# Act:
+		asyncio.run(self.puller.sync_block_headers())
+
+		# Assert:
+		expected_rows = [
+			create_expected_metadata_row(
+				before_fork_item, 1, composite_hash=bytes.fromhex('11' * 32), metadata_type='mosaic',
+				scoped_metadata_key='0000000000000001', target_id=mosaic_id, value_hex='6265666F7265', value_utf8='before'),
+			create_expected_metadata_row(
+				canonical_survivor_item, 1, composite_hash=bytes.fromhex('22' * 32), metadata_type='mosaic',
+				scoped_metadata_key='0000000000000002', target_id=mosaic_id, value_hex='6E6577', value_utf8='new')
+		]
+		self.assertEqual(expected_rows, fetch_metadata_rows(self.puller.symbol_db))
+		metadata_paths = [path for path in connector.paths if path.startswith('metadata?')]
+		self.assertEqual([
+			metadata_path(1, mosaic_id, scoped_metadata_key='0000000000000002'),
+			metadata_path(1, mosaic_id, scoped_metadata_key='0000000000000003')
+		], metadata_paths)
+		self.assertEqual(3, self.puller.symbol_db.get_sync_state()['last_synced_height'])
+
+	def test_sync_block_headers_leaves_metadata_rollback_state_unchanged_when_metadata_fetch_fails(self):
+		# Arrange:
+		mosaic_id = '72C0212E67A08BCE'
+		orphaned_namespace_item = create_namespace_item(
+			alias={'type': 1, 'mosaicId': mosaic_id},
+			owner_address=SIGNER_ADDRESS,
+			end_height='5')
+		canonical_namespace_item = create_namespace_item(
+			alias={'type': 2, 'address': RECIPIENT_ADDRESS},
+			owner_address=RECIPIENT_ADDRESS,
+			end_height='50')
+		orphaned_mosaic_item = create_mosaic_item(mosaic_id=mosaic_id, supply='222')
+		canonical_mosaic_item = create_mosaic_item(
+			mosaic_id=mosaic_id,
+			owner_address=RECIPIENT_ADDRESS,
+			supply='999')
+		item = create_metadata_item(metadata_type=1, target_id=mosaic_id, value='6F6C64')
+		self._seed_blocks(
+			self.puller.symbol_db,
+			[1, 2, 3],
+			{2: b'local mismatch'.hex()})
+		self.puller.symbol_db.upsert_sync_state(create_sync_state())
+		seed_namespace(
+			self.puller.symbol_db,
+			orphaned_namespace_item,
+			{NAMESPACE_ROOT_ID: 'root'},
+			2)
+		self.puller.symbol_db.upsert_mosaic(create_expected_mosaic_row(orphaned_mosaic_item, 2))
+		self.puller.symbol_db.upsert_metadata(create_expected_metadata_row(
+			item, 2, composite_hash=bytes.fromhex('11' * 32), metadata_type='mosaic',
+			target_id=mosaic_id, value_hex='6F6C64', value_utf8='old'))
+		original_block_state = fetch_full_block_state(self.puller.symbol_db)
+		original_sync_state = fetch_normalized_sync_state(self.puller.symbol_db)
+		original_namespace_state = fetch_namespace_state(self.puller.symbol_db.connection)
+		original_mosaic_state = fetch_mosaic_state(self.puller.symbol_db)
+		original_metadata_rows = fetch_metadata_rows(self.puller.symbol_db)
+		self.assertEqual(1, len(original_namespace_state[0]))
+		self.assertEqual(1, len(original_mosaic_state))
+		self.assertEqual(1, len(original_metadata_rows))
+		connector = FakeConnector(
+			3,
+			{},
+			{2: create_node_block(2)},
+			namespace_by_id={NAMESPACE_ROOT_ID: canonical_namespace_item},
+			namespace_names={NAMESPACE_ROOT_ID: 'root'},
+			mosaics_by_id={mosaic_id: canonical_mosaic_item},
+			metadata_by_query={metadata_path(1, mosaic_id): RuntimeError('metadata fetch failed')})
+		set_symbol_connector(self.puller, connector)
+
+		# Act / Assert:
+		with self.assertRaisesRegex(RuntimeError, 'metadata fetch failed'):
+			asyncio.run(self.puller.sync_block_headers())
+
+		# Assert:
+		self.assertEqual(original_block_state, fetch_full_block_state(self.puller.symbol_db))
+		self.assertEqual(original_sync_state, fetch_normalized_sync_state(self.puller.symbol_db))
+		self.assertEqual(original_namespace_state, fetch_namespace_state(self.puller.symbol_db.connection))
+		self.assertEqual(original_mosaic_state, fetch_mosaic_state(self.puller.symbol_db))
+		self.assertEqual(original_metadata_rows, fetch_metadata_rows(self.puller.symbol_db))
+		self.assertEqual([
+			f'namespaces/{NAMESPACE_ROOT_ID}',
+			'namespaces/names',
+			'mosaics',
+			metadata_path(1, mosaic_id)
+		], [
+			path for path in connector.paths
+			if path in (f'namespaces/{NAMESPACE_ROOT_ID}', 'namespaces/names', 'mosaics') or path.startswith('metadata?')
+		])
+		self.assertEqual([{'namespaceIds': [NAMESPACE_ROOT_ID]}], [
+			payload for path, payload in connector.post_requests if 'namespaces/names' == path])
+		self.assertEqual([{'mosaicIds': [mosaic_id]}], [
+			payload for path, payload in connector.post_requests if 'mosaics' == path])
 
 	def test_sync_block_headers_refreshes_orphaned_namespace_state_to_canonical_state_during_rollback(self):
 		# Arrange:

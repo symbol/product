@@ -1,15 +1,20 @@
 # pylint: disable=too-many-lines
+from collections import namedtuple
 from contextlib import contextmanager
 
 from psycopg2.extras import Json
 
 from puller.model.symbol.Account import ACCOUNT_TYPE_VALUES
 from puller.model.symbol.Block import BLOCK_TYPE_VALUES
+from puller.model.symbol.Metadata import METADATA_TYPE_LABELS
 from puller.model.symbol.Namespace import NAMESPACE_ALIAS_TYPE_LABELS, NAMESPACE_REGISTRATION_TYPE_LABELS
 from puller.model.symbol.Receipt import RECEIPT_TYPE_LABELS
 from puller.model.symbol.Transaction import MESSAGE_TYPE_LABELS, TRANSACTION_TYPE_LABELS
 
 from .DatabaseConnection import DatabaseConnection
+
+RollbackRefreshEntries = namedtuple(
+	'RollbackRefreshEntries', ['namespace_entries', 'mosaic_entries', 'metadata_entries'], defaults=((), (), ()))
 
 SYNC_STATE_COLUMNS = [
 	'status',
@@ -32,6 +37,7 @@ SYMBOL_TRANSACTION_MESSAGE_TYPE_VALUES = tuple(MESSAGE_TYPE_LABELS.values())
 SYMBOL_NAMESPACE_REGISTRATION_TYPE_VALUES = tuple(NAMESPACE_REGISTRATION_TYPE_LABELS.values())
 SYMBOL_NAMESPACE_ALIAS_TYPE_VALUES = tuple(NAMESPACE_ALIAS_TYPE_LABELS.values())
 SYMBOL_ALIAS_ARTIFACT_TYPE_VALUES = ('mosaic', 'namespace', 'account')
+SYMBOL_METADATA_TYPE_VALUES = tuple(METADATA_TYPE_LABELS.values())
 ACCOUNT_REFRESH_STATE_STATUS_VALUES = ('healthy', 'refreshing', 'stale', 'unhealthy')
 ACCOUNT_REFRESH_STATE_COLUMNS = [
 	'last_successful_run_id',
@@ -257,6 +263,18 @@ SYMBOL_MOSAIC_DEFINITIONS = [
 	'raw_payload jsonb NOT NULL',
 	'updated_at_height bigint NOT NULL'
 ]
+SYMBOL_METADATA_DEFINITIONS = [
+	'composite_hash bytea PRIMARY KEY',
+	'metadata_type symbol_metadata_type NOT NULL',
+	'scoped_metadata_key varchar NOT NULL',
+	'source_address bytea NOT NULL',
+	'target_address bytea',
+	'target_id varchar(16)',
+	'value_hex text NOT NULL',
+	'value_utf8 text NOT NULL',
+	'raw_payload jsonb NOT NULL',
+	'updated_at_height bigint NOT NULL'
+]
 MOSAIC_ALIAS_NAMES_SUBQUERY = '''
 (
 	SELECT COALESCE(jsonb_agg(name ORDER BY name), '[]'::jsonb)
@@ -274,6 +292,15 @@ SYMBOL_MOSAIC_INDEXES = [
 	'CREATE INDEX IF NOT EXISTS idx_symbol_mosaics_restrictable ON symbol_mosaics(restrictable)',
 	'CREATE INDEX IF NOT EXISTS idx_symbol_mosaics_revokable ON symbol_mosaics(revokable)',
 	'CREATE INDEX IF NOT EXISTS idx_symbol_mosaics_updated_height ON symbol_mosaics(updated_at_height)'
+]
+SYMBOL_METADATA_INDEXES = [
+	'CREATE INDEX IF NOT EXISTS idx_symbol_metadata_target_address_height '
+	'ON symbol_metadata(target_address, updated_at_height DESC)',
+	'CREATE INDEX IF NOT EXISTS idx_symbol_metadata_type ON symbol_metadata(metadata_type)',
+	'CREATE INDEX IF NOT EXISTS idx_symbol_metadata_scoped_key ON symbol_metadata(scoped_metadata_key)',
+	'CREATE INDEX IF NOT EXISTS idx_symbol_metadata_source ON symbol_metadata(source_address)',
+	'CREATE INDEX IF NOT EXISTS idx_symbol_metadata_target_id ON symbol_metadata(target_id)',
+	'CREATE INDEX IF NOT EXISTS idx_symbol_metadata_updated_height ON symbol_metadata(updated_at_height)'
 ]
 SYMBOL_TRANSACTION_DEFINITIONS = [
 	'id bigserial PRIMARY KEY',
@@ -386,6 +413,7 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 		_create_enum_type(cursor, 'symbol_namespace_registration_type', SYMBOL_NAMESPACE_REGISTRATION_TYPE_VALUES)
 		_create_enum_type(cursor, 'symbol_namespace_alias_type', SYMBOL_NAMESPACE_ALIAS_TYPE_VALUES)
 		_create_enum_type(cursor, 'symbol_alias_artifact_type', SYMBOL_ALIAS_ARTIFACT_TYPE_VALUES)
+		_create_enum_type(cursor, 'symbol_metadata_type', SYMBOL_METADATA_TYPE_VALUES)
 		_create_table(cursor, 'symbol_sync_state', SYMBOL_SYNC_STATE_DEFINITIONS)
 		_create_table(cursor, 'symbol_blocks', SYMBOL_BLOCK_DEFINITIONS)
 		_create_table(cursor, 'symbol_account_refresh_state', SYMBOL_ACCOUNT_REFRESH_STATE_DEFINITIONS)
@@ -405,6 +433,9 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 			cursor.execute(index_sql)
 		_create_table(cursor, 'symbol_mosaics', SYMBOL_MOSAIC_DEFINITIONS)
 		for index_sql in SYMBOL_MOSAIC_INDEXES:
+			cursor.execute(index_sql)
+		_create_table(cursor, 'symbol_metadata', SYMBOL_METADATA_DEFINITIONS)
+		for index_sql in SYMBOL_METADATA_INDEXES:
 			cursor.execute(index_sql)
 		cursor.execute('CREATE SEQUENCE IF NOT EXISTS symbol_transaction_list_sequence_seq')
 		_create_table(cursor, 'symbol_transactions', SYMBOL_TRANSACTION_DEFINITIONS)
@@ -615,6 +646,14 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 				SymbolDatabase._execute_upsert_mosaic(cursor, entry['row'])
 
 	@staticmethod
+	def _execute_metadata_entries(cursor, metadata_entries):
+		for entry in metadata_entries:
+			if 'key' in entry:
+				SymbolDatabase._execute_delete_metadata_by_key(cursor, entry['key'])
+			else:
+				SymbolDatabase._execute_upsert_metadata(cursor, entry['row'])
+
+	@staticmethod
 	def _execute_refresh_mosaic_alias_names(cursor, mosaic_ids):
 		for mosaic_id in mosaic_ids:
 			cursor.execute(
@@ -709,6 +748,79 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 			(height,))
 
 		return [row[0] for row in cursor.fetchall()]
+
+	def upsert_metadata(self, metadata_row):
+		"""Upserts one Symbol metadata current-state row."""
+
+		with self._database_transaction() as cursor:
+			self._execute_upsert_metadata(cursor, metadata_row)
+
+	@staticmethod
+	def _execute_upsert_metadata(cursor, metadata_row):
+		cursor.execute(
+			'''
+			INSERT INTO symbol_metadata (
+				composite_hash, metadata_type, scoped_metadata_key, source_address, target_address, target_id,
+				value_hex, value_utf8, raw_payload, updated_at_height
+			)
+			VALUES (
+				%(composite_hash)s, %(metadata_type)s, %(scoped_metadata_key)s, %(source_address)s, %(target_address)s,
+				%(target_id)s, %(value_hex)s, %(value_utf8)s, %(raw_payload)s, %(updated_at_height)s
+			)
+			ON CONFLICT (composite_hash) DO UPDATE SET
+				metadata_type = EXCLUDED.metadata_type,
+				scoped_metadata_key = EXCLUDED.scoped_metadata_key,
+				source_address = EXCLUDED.source_address,
+				target_address = EXCLUDED.target_address,
+				target_id = EXCLUDED.target_id,
+				value_hex = EXCLUDED.value_hex,
+				value_utf8 = EXCLUDED.value_utf8,
+				raw_payload = EXCLUDED.raw_payload,
+				updated_at_height = EXCLUDED.updated_at_height
+			''',
+			{**metadata_row, 'raw_payload': Json(metadata_row['raw_payload'])})
+
+	def delete_metadata_by_key(self, metadata_key):
+		"""Deletes metadata matching its natural key when it exists."""
+
+		with self._database_transaction() as cursor:
+			self._execute_delete_metadata_by_key(cursor, metadata_key)
+
+	@staticmethod
+	def _execute_delete_metadata_by_key(cursor, metadata_key):
+		cursor.execute(
+			'''
+			DELETE FROM symbol_metadata
+			WHERE metadata_type = %(metadata_type)s
+				AND source_address = %(source_address)s
+				AND scoped_metadata_key = %(scoped_metadata_key)s
+				AND target_address IS NOT DISTINCT FROM %(target_address)s
+				AND target_id IS NOT DISTINCT FROM %(target_id)s
+			''',
+			metadata_key)
+
+	def get_metadata_keys_updated_from_height(self, height):  # pylint: disable=invalid-name
+		"""Gets natural metadata keys observed at or after a height."""
+
+		cursor = self.connection.cursor()
+		cursor.execute(
+			'''
+			SELECT metadata_type, source_address, target_address, scoped_metadata_key, target_id
+			FROM symbol_metadata
+			WHERE updated_at_height >= %s
+			ORDER BY composite_hash
+			''',
+			(height,))
+
+		columns = ('metadata_type', 'source_address', 'target_address', 'scoped_metadata_key', 'target_id')
+		return [
+			{
+				**dict(zip(columns, row)),
+				'source_address': bytes(row[1]),
+				'target_address': bytes(row[2]) if row[2] is not None else None
+			}
+			for row in cursor.fetchall()
+		]
 
 	def delete_namespace(self, namespace_id):
 		"""Deletes one namespace and its derived alias-name rows when it exists."""
@@ -1153,14 +1265,15 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 			self._delete_rollback_affected_rows_from_height(cursor, height)
 			self._stale_mark_account_refresh_state_if_needed(cursor, height)
 
-	def repair_rollback_from_height(self, height, sync_state, namespace_entries, mosaic_entries):
-		"""Repairs rollbacked chain, namespace state, and mosaic state in one transaction."""
+	def repair_rollback_from_height(self, height, sync_state, refresh_entries):
+		"""Repairs rollbacked chain and refreshed current state in one transaction."""
 
 		with self._database_transaction() as cursor:
 			self._delete_rollback_affected_rows_from_height(cursor, height)
 			self._stale_mark_account_refresh_state_if_needed(cursor, height)
-			self._execute_namespace_entries(cursor, namespace_entries)
-			self._execute_mosaic_entries(cursor, mosaic_entries)
+			self._execute_namespace_entries(cursor, refresh_entries.namespace_entries)
+			self._execute_mosaic_entries(cursor, refresh_entries.mosaic_entries)
+			self._execute_metadata_entries(cursor, refresh_entries.metadata_entries)
 			self._execute_upsert_sync_state(cursor, sync_state)
 
 	@staticmethod

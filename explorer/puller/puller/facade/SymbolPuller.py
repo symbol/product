@@ -1,3 +1,5 @@
+# pylint: disable=too-many-lines
+
 import asyncio
 import configparser
 import uuid
@@ -13,10 +15,11 @@ from symbollightapi.connector.SymbolConnector import SymbolConnector
 from symbollightapi.model.Exceptions import NodeException
 from zenlog import log
 
-from puller.db.SymbolDatabase import SymbolDatabase
+from puller.db.SymbolDatabase import RollbackRefreshEntries, SymbolDatabase
 from puller.facade.RequestRateLimiter import RequestRateLimiter
 from puller.model.symbol.Account import HARVESTING_ACTIVE_WINDOW_DAYS, create_account_row, create_multisig_row
 from puller.model.symbol.Block import create_block_row
+from puller.model.symbol.Metadata import METADATA_TRANSACTION_TYPE_LABELS, METADATA_TYPE_NUMBERS, create_metadata_row
 from puller.model.symbol.Mosaic import create_mosaic_row
 from puller.model.symbol.Namespace import create_alias_name_rows, create_namespace_row
 from puller.model.symbol.Receipt import (
@@ -33,10 +36,12 @@ DatabaseConfiguration = namedtuple('DatabaseConfiguration', ['database', 'user',
 NativeMosaicInfo = namedtuple('NativeMosaicInfo', ['id', 'divisibility'])
 TransactionSource = namedtuple('TransactionSource', ['primary_id', 'secondary_id'])
 ResolutionStatements = namedtuple('ResolutionStatements', ['address', 'mosaic'])
+ResolutionRequest = namedtuple('ResolutionRequest', ['height', 'kind'])
 MAX_PAGE_SIZE = 100
 ACCOUNT_BATCH_FETCH_SIZE = MAX_PAGE_SIZE
 BLOCK_PAGE_FETCH_CONCURRENCY = 10
 RESOLUTION_FETCH_CONCURRENCY = 10
+METADATA_FETCH_CONCURRENCY = 10
 DEFAULT_MAX_REQUESTS_PER_SECOND = 20
 ACCOUNT_PAGE_SIZE = 100
 
@@ -278,20 +283,22 @@ class SymbolPuller:
 
 	async def _repair_from_height(self, height, sync_state):
 		# Unlike account/multisig rows (deleted by the repair and repopulated by the next dirty-key touch or
-		# refresh snapshot run), namespaces and mosaics have no broad re-dirty signal: only registration,
-		# alias, supply, or expiry events touch their ids, and none may recur after a fork. Re-fetch node state
-		# before the repair write and apply it in the same transaction, deleting an artifact only when the node
-		# confirms it is gone.
+		# refresh snapshot run), namespaces, mosaics, and metadata have no broad re-dirty signal: only
+		# registration, alias, supply, expiry, or metadata events touch their keys, and none may recur after a
+		# fork. Re-fetch node state before the repair write and apply it in the same transaction, deleting an
+		# artifact only when the node confirms it is gone.
 		namespace_ids = self.symbol_db.get_namespace_ids_updated_from_height(height)
 		namespace_entries = await self._fetch_dirty_namespaces(namespace_ids, height - 1)
 		mosaic_ids = self.symbol_db.get_mosaic_ids_updated_from_height(height)
 		mosaic_entries = await self._fetch_dirty_mosaics(mosaic_ids, height - 1)
+		metadata_keys = self.symbol_db.get_metadata_keys_updated_from_height(height)
+		metadata_entries = await self._fetch_dirty_metadata(metadata_keys, height - 1)
 		self.symbol_db.repair_rollback_from_height(height, {
 			**sync_state,
 			'status': 'repairing',
 			'last_synced_height': height - 1,
 			'last_synced_block_hash': self.symbol_db.get_block_hash(height - 1)
-		}, namespace_entries, mosaic_entries)
+		}, RollbackRefreshEntries(namespace_entries, mosaic_entries, metadata_entries))
 		return height
 
 	async def _sync_block_pages(  # pylint: disable=too-many-locals
@@ -363,17 +370,18 @@ class SymbolPuller:
 			dirty_addresses,
 			observed_height,
 			native_mosaic_info)
-		direct_dirty_namespace_ids = self._collect_dirty_namespace_ids_for_batch(
-			transaction_rows_by_height,
-			receipt_rows_by_height)
-		dirty_namespace_ids = self._expand_dirty_namespace_ids(direct_dirty_namespace_ids)
+		dirty_namespace_ids = self._expand_dirty_namespace_ids(
+			self._collect_dirty_namespace_ids_for_batch(transaction_rows_by_height, receipt_rows_by_height))
 		dirty_namespace_entries = await self._fetch_dirty_namespaces(dirty_namespace_ids, observed_height)
 		dirty_mosaic_ids = self._collect_dirty_mosaic_ids_for_batch(transaction_rows_by_height, receipt_rows_by_height)
 		dirty_mosaic_entries = await self._fetch_dirty_mosaics(dirty_mosaic_ids, observed_height)
+		dirty_metadata_keys = self._collect_dirty_metadata_keys_for_batch(transaction_rows_by_height)
+		dirty_metadata_entries = await self._fetch_dirty_metadata(dirty_metadata_keys, observed_height)
 		self._sync_block_batch(batch_rows, transaction_rows_by_height, receipt_rows_by_height)
 		self._write_dirty_accounts_for_batch(dirty_account_rows)
 		self.symbol_db.apply_namespace_entries(dirty_namespace_entries)
 		self._write_dirty_mosaics(dirty_mosaic_entries)
+		self._write_dirty_metadata(dirty_metadata_entries)
 
 	def _sync_block_batch(self, batch_rows, transaction_rows_by_height, receipt_rows_by_height):
 		"""Writes previously-fetched block, transaction, and receipt rows for one batch.
@@ -434,14 +442,14 @@ class SymbolPuller:
 
 		return dict(rows_by_height)
 
-	async def _get_resolution_statements(self, kind, height):
+	async def _get_resolution_statements(self, request):
 		resolution_entries_by_unresolved = {}
 		page_number = 1
 		while True:
 			response = await self.get_symbol_node(
-				f'/statements/resolutions/{kind}?height={height}&pageSize={MAX_PAGE_SIZE}&pageNumber={page_number}'
+				f'/statements/resolutions/{request.kind}?height={request.height}&pageSize={MAX_PAGE_SIZE}&pageNumber={page_number}'
 			)
-			items = self._get_node_page_data(response, f'Malformed Symbol {kind} resolution page response')
+			items = self._get_node_page_data(response, f'Malformed Symbol {request.kind} resolution page response')
 			for item in items:
 				statement = item['statement']
 				resolution_entries_by_unresolved[statement['unresolved'].upper()] = statement['resolutionEntries']
@@ -497,6 +505,9 @@ class SymbolPuller:
 			for mosaic_row in row['mosaic_rows']
 			if is_alias_mosaic_id(mosaic_row['mosaic_id'])
 		}
+		mosaic_metadata_target_id = row['mosaic_metadata_target_id']
+		if mosaic_metadata_target_id is not None and is_alias_mosaic_id(mosaic_metadata_target_id):
+			alias_mosaic_ids.add(mosaic_metadata_target_id)
 		return alias_addresses, alias_mosaic_ids
 
 	@classmethod
@@ -517,36 +528,38 @@ class SymbolPuller:
 
 		source = self._transaction_resolution_source(row, top_level_rows_by_hash)
 		if alias_addresses:
+			def _resolve_transaction_alias_address(address):
+				resolved_hex = self._resolve_transaction_alias(
+					resolution_statements.address,
+					address.hex().upper(),
+					source,
+					'address',
+					height)
+				return bytes.fromhex(resolved_hex)
+
 			for address_row in row['address_rows']:
 				if address_row['address'] in alias_addresses:
-					resolved = self._resolve_transaction_alias(
-						resolution_statements.address,
-						address_row['address'].hex().upper(),
-						source,
-						'address',
-						height)
-					address_row['address'] = bytes.fromhex(resolved)
+					address_row['address'] = _resolve_transaction_alias_address(address_row['address'])
 			row['address_rows'] = unique_address_rows(row['address_rows'])
 			for field_name in ('recipient_address', 'target_address'):
 				address = row[field_name]
 				if address in alias_addresses:
-					resolved = self._resolve_transaction_alias(
-						resolution_statements.address,
-						address.hex().upper(),
-						source,
-						'address',
-						height)
-					row[field_name] = bytes.fromhex(resolved)
+					row[field_name] = _resolve_transaction_alias_address(address)
 
 		if alias_mosaic_ids:
+			def _resolve_transaction_alias_mosaic(mosaic_id):
+				return self._resolve_transaction_alias(
+					resolution_statements.mosaic,
+					mosaic_id.upper(),
+					source,
+					'mosaic',
+					height)
+
 			for mosaic_row in row['mosaic_rows']:
 				if mosaic_row['mosaic_id'] in alias_mosaic_ids:
-					mosaic_row['mosaic_id'] = self._resolve_transaction_alias(
-						resolution_statements.mosaic,
-						mosaic_row['mosaic_id'].upper(),
-						source,
-						'mosaic',
-						height)
+					mosaic_row['mosaic_id'] = _resolve_transaction_alias_mosaic(mosaic_row['mosaic_id'])
+			if row['mosaic_metadata_target_id'] in alias_mosaic_ids:
+				row['mosaic_metadata_target_id'] = _resolve_transaction_alias_mosaic(row['mosaic_metadata_target_id'])
 
 	async def _resolve_transaction_rows_for_batch(self, transaction_rows_by_height):  # pylint: disable=too-many-locals
 		resolution_requests = []
@@ -558,19 +571,19 @@ class SymbolPuller:
 
 			resolution_statements_by_height[height] = ResolutionStatements({}, {})
 			if alias_addresses:
-				resolution_requests.append((height, 'address'))
+				resolution_requests.append(ResolutionRequest(height, 'address'))
 			if alias_mosaic_ids:
-				resolution_requests.append((height, 'mosaic'))
+				resolution_requests.append(ResolutionRequest(height, 'mosaic'))
 
 		for batch_start in range(0, len(resolution_requests), RESOLUTION_FETCH_CONCURRENCY):
 			batch_requests = resolution_requests[batch_start:batch_start + RESOLUTION_FETCH_CONCURRENCY]
 			batch_statements = await asyncio.gather(*(
-				self._get_resolution_statements(kind, height)
-				for height, kind in batch_requests
+				self._get_resolution_statements(request)
+				for request in batch_requests
 			))
-			for (height, kind), statements in zip(batch_requests, batch_statements):
-				resolution_statements_by_height[height] = resolution_statements_by_height[height]._replace(
-					**{kind: statements})
+			for request, statements in zip(batch_requests, batch_statements):
+				resolution_statements_by_height[request.height] = resolution_statements_by_height[request.height]._replace(
+					**{request.kind: statements})
 
 		for height, transaction_rows in transaction_rows_by_height.items():
 			if height not in resolution_statements_by_height:
@@ -803,6 +816,89 @@ class SymbolPuller:
 				self.symbol_db.delete_mosaic(entry['mosaic_id'])
 			else:
 				self.symbol_db.upsert_mosaic(entry['row'])
+
+	@staticmethod
+	def _collect_dirty_metadata_keys_for_batch(transaction_rows_by_height):
+		"""Collects natural keys for exact-key metadata searches and deduplication.
+
+		Empty exact-key searches must delete the local row, but supply no composite hash from the node.
+		"""
+
+		dirty_metadata_keys = {}
+		for transaction_rows in transaction_rows_by_height.values():
+			for transaction_row in transaction_rows:
+				metadata_type = METADATA_TRANSACTION_TYPE_LABELS.get(transaction_row['type'])
+				if metadata_type is None:
+					continue
+
+				body = transaction_row['body']
+				if 'mosaic' == metadata_type:
+					target_id = transaction_row['mosaic_metadata_target_id']
+				elif 'namespace' == metadata_type:
+					target_id = body['targetNamespaceId']
+				else:
+					target_id = None
+
+				key = {
+					'metadata_type': metadata_type,
+					'source_address': transaction_row['signer_address'],
+					'target_address': transaction_row['target_address'],
+					'scoped_metadata_key': body['scopedMetadataKey'],
+					'target_id': target_id
+				}
+				key_identity = (
+					key['metadata_type'],
+					key['source_address'],
+					key['target_address'],
+					key['scoped_metadata_key'],
+					key['target_id'])
+				dirty_metadata_keys[key_identity] = key
+
+		return list(dirty_metadata_keys.values())
+
+	async def _fetch_dirty_metadata(self, metadata_keys, observed_height):
+		"""Fetches metadata by exact natural key in bounded concurrent batches."""
+
+		if not metadata_keys:
+			return []
+
+		async def fetch_entry(metadata_key):
+			address = Address(metadata_key['source_address'])
+			target_address = Address(metadata_key['target_address'])
+			metadata_number = METADATA_TYPE_NUMBERS[metadata_key['metadata_type']]
+			path = (
+				f'/metadata?sourceAddress={address}&targetAddress={target_address}'
+				f'&scopedMetadataKey={metadata_key["scoped_metadata_key"]}&metadataType={metadata_number}'
+			)
+			if metadata_key['target_id'] is not None:
+				path += f'&targetId={metadata_key["target_id"]}'
+
+			response = await self.get_symbol_node(path)
+			items = self._get_node_page_data(response, 'Malformed Symbol metadata search response')
+			if not isinstance(items, list):
+				raise ValueError('Malformed Symbol metadata search data')
+			if len(items) > 1:
+				raise ValueError('Symbol metadata exact-key search returned multiple entries')
+			if not items:
+				return {'key': metadata_key}
+
+			return {'row': create_metadata_row(items[0], observed_height)}
+
+		entries = []
+		for chunk_start in range(0, len(metadata_keys), METADATA_FETCH_CONCURRENCY):
+			chunk = metadata_keys[chunk_start:chunk_start + METADATA_FETCH_CONCURRENCY]
+			entries.extend(await asyncio.gather(*(fetch_entry(metadata_key) for metadata_key in chunk)))
+
+		return entries
+
+	def _write_dirty_metadata(self, entries):
+		"""Writes fetched metadata current-state changes after all batch fetches complete."""
+
+		for entry in entries:
+			if 'key' in entry:
+				self.symbol_db.delete_metadata_by_key(entry['key'])
+			else:
+				self.symbol_db.upsert_metadata(entry['row'])
 
 	async def _fetch_dirty_accounts_for_batch(  # pylint: disable=too-many-locals
 		self,
