@@ -1,4 +1,5 @@
 import { fetchBridgeConfiguration } from '@/api/bridge';
+import ReportPanel from '@/components/ReportPanel';
 import ReportTabs from '@/components/ReportTabs';
 import { BRIDGE_TABS } from '@/constants';
 import styles from '@/styles/Home.module.css';
@@ -11,14 +12,12 @@ export const getServerSideProps = async () => {
 
 	return {
 		props: {
-			bridgeConfigurations,
-			initialPage: null,
-			initialError: ''
+			bridgeConfigurations
 		}
 	};
 };
 
-export const Home = ({ bridgeConfigurations, initialPage, initialError }) => {
+export const Home = ({ bridgeConfigurations }) => {
 	const [activeTabId, setActiveTabId] = useState(BRIDGE_TABS[0].id);
 	const activeTab = BRIDGE_TABS.find(tab => tab.id === activeTabId);
 	const bridgeTypes = [...new Set(BRIDGE_TABS.map(tab => tab.bridgeType))];
@@ -52,6 +51,15 @@ export const Home = ({ bridgeConfigurations, initialPage, initialError }) => {
 					<div><span>Active report</span><strong>{activeTab.label}</strong></div>
 				</div>
 				<ReportTabs activeTabId={activeTabId} onChange={setActiveTabId} tabs={BRIDGE_TABS} />
+				<div className={styles.panelStack}>
+					{BRIDGE_TABS.map(tab => (
+						<ReportPanel
+							isActive={tab.id === activeTabId}
+							key={tab.id}
+							tab={tab}
+						/>
+					))}
+				</div>
 			</main>
 		</div>
 	);
