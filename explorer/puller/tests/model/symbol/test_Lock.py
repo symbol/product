@@ -13,6 +13,7 @@ from puller.model.symbol.Lock import (
 	lock_hash_algorithm_label,
 	lock_status_label
 )
+from tests.test.SymbolLockTestUtils import create_expected_secret_lock_row, create_secret_lock_item
 
 OWNER_ADDRESS = '98' + '11' * 23
 RECIPIENT_ADDRESS = '98' + '22' * 23
@@ -33,22 +34,6 @@ def create_hash_lock_item(**overrides):
 	}
 	lock.update(overrides)
 	return {'lock': lock, 'id': 'hash-item'}
-
-
-def create_secret_lock_item(**overrides):
-	lock = {
-		'compositeHash': COMPOSITE_HASH,
-		'ownerAddress': OWNER_ADDRESS,
-		'recipientAddress': RECIPIENT_ADDRESS,
-		'secret': SECRET,
-		'hashAlgorithm': 1,
-		'mosaicId': MOSAIC_ID,
-		'amount': '1234',
-		'endHeight': '5678',
-		'status': 1
-	}
-	lock.update(overrides)
-	return {'lock': lock, 'id': 'secret-item'}
 
 
 class LockTest(TestCase):
@@ -92,19 +77,7 @@ class LockTest(TestCase):
 		row = create_secret_lock_row(item, 123)
 
 		# Assert:
-		self.assertEqual({
-			'composite_hash': bytes.fromhex(COMPOSITE_HASH),
-			'owner_address': bytes.fromhex(OWNER_ADDRESS),
-			'recipient_address': bytes.fromhex(RECIPIENT_ADDRESS),
-			'secret': bytes.fromhex(SECRET),
-			'hash_algorithm': 'hash160',
-			'mosaic_id': MOSAIC_ID,
-			'amount': 1234,
-			'end_height': 5678,
-			'status': 'used',
-			'raw_payload': item,
-			'updated_at_height': 123
-		}, row)
+		self.assertEqual(create_expected_secret_lock_row(item, 123), row)
 
 	def test_create_hash_lock_key_requires_exactly_32_bytes(self):
 		# Arrange:

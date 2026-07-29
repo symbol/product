@@ -13,6 +13,8 @@ from puller.model.symbol.Lock import (
 	create_secret_lock_search_key
 )
 from tests.test.SymbolDatabaseTestUtils import fetch_full_block_state, fetch_normalized_sync_state
+from tests.test.SymbolLockTestUtils import create_expected_secret_lock_row
+from tests.test.SymbolLockTestUtils import create_secret_lock_item as create_secret_lock_item_fixture
 from tests.test.SymbolMetadataTestUtils import create_expected_metadata_row, create_metadata_item, fetch_metadata_rows
 from tests.test.SymbolMosaicTestUtils import create_expected_mosaic_row, create_mosaic_item, fetch_mosaic_state
 from tests.test.SymbolNamespaceTestUtils import NAMESPACE_ROOT_ID, create_namespace_item, fetch_namespace_state, seed_namespace
@@ -57,19 +59,18 @@ def create_secret_lock_item(
 	secret=SECRET,
 	**overrides
 ):
-	lock = {
-		'compositeHash': composite_hash,
-		'ownerAddress': owner_address,
-		'recipientAddress': RECIPIENT_ADDRESS,
-		'secret': secret,
-		'hashAlgorithm': 1,
-		'mosaicId': MOSAIC_ID,
-		'amount': '1234',
-		'endHeight': '100',
-		'status': 0
-	}
-	lock.update(overrides)
-	return {'lock': lock, 'id': 'secret-lock'}
+	return create_secret_lock_item_fixture(
+		composite_hash=composite_hash,
+		owner_address=owner_address,
+		recipient_address=RECIPIENT_ADDRESS,
+		secret=secret,
+		hash_algorithm=1,
+		mosaic_id=MOSAIC_ID,
+		amount='1234',
+		end_height='100',
+		status=0,
+		item_id='secret-lock',
+		lock_overrides=overrides)
 
 
 class LockConnector(FakeConnector):
@@ -765,32 +766,18 @@ class SymbolPullerLocksTest(SymbolPullerTestBase):
 				'id': 'hash-lock'
 			},
 			'updated_at_height': 1
-		}], [{
-			'composite_hash': bytes.fromhex(COMPOSITE_HASH),
-			'owner_address': bytes.fromhex(SIGNER_ADDRESS),
-			'recipient_address': bytes.fromhex(RECIPIENT_ADDRESS),
-			'secret': bytes.fromhex(SECRET),
-			'hash_algorithm': 'hash160',
-			'mosaic_id': MOSAIC_ID,
-			'amount': 1234,
-			'end_height': 100,
-			'status': 'unused',
-			'raw_payload': {
-				'lock': {
-					'compositeHash': COMPOSITE_HASH,
-					'ownerAddress': SIGNER_ADDRESS,
-					'recipientAddress': RECIPIENT_ADDRESS,
-					'secret': SECRET,
-					'hashAlgorithm': 1,
-					'mosaicId': MOSAIC_ID,
-					'amount': '1234',
-					'endHeight': '100',
-					'status': 0
-				},
-				'id': 'secret-lock'
-			},
-			'updated_at_height': 1
-		}])
+		}], [create_expected_secret_lock_row(
+			create_secret_lock_item(),
+			1,
+			composite_hash=bytes.fromhex(COMPOSITE_HASH),
+			owner_address=bytes.fromhex(SIGNER_ADDRESS),
+			recipient_address=bytes.fromhex(RECIPIENT_ADDRESS),
+			secret=bytes.fromhex(SECRET),
+			hash_algorithm='hash160',
+			mosaic_id=MOSAIC_ID,
+			amount=1234,
+			end_height=100,
+			status='unused')])
 
 	def _fetch_persisted_lock_state(self):
 		cursor = self.puller.symbol_db.connection.cursor()
