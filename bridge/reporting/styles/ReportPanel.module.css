@@ -1,0 +1,242 @@
+.panel {
+	display: none;
+	flex: 1;
+	flex-direction: column;
+	min-width: 0;
+	min-height: 0;
+	border: 1px solid var(--color-line);
+	background: rgba(34, 28, 49, 0.78);
+}
+
+.activePanel {
+	display: flex;
+}
+
+.toolbar {
+	display: grid;
+	grid-template-columns: minmax(280px, 1.3fr) minmax(360px, auto) auto;
+	gap: 14px;
+	align-items: start;
+	padding: 14px;
+	border-bottom: 1px solid var(--color-line);
+	background: var(--color-surface);
+}
+
+.searchArea {
+	position: relative;
+}
+
+.searchForm {
+	position: relative;
+	display: flex;
+	align-items: center;
+}
+
+.searchForm input {
+	width: 100%;
+	height: 38px;
+	padding: 0 38px;
+	color: var(--color-text);
+	font: 400 13px/1 var(--font-body);
+	background: var(--color-deep);
+	border: 1px solid #684079;
+	border-radius: 3px;
+}
+
+.searchForm input::placeholder {
+	color: #797182;
+}
+
+.searchForm input[aria-invalid='true'] {
+	border-color: var(--color-danger);
+}
+
+.searchIcon,
+.clearButton {
+	position: absolute;
+	z-index: 1;
+}
+
+.searchIcon {
+	left: 13px;
+	color: var(--color-purple);
+	font: 700 22px/1 var(--font-data);
+	transform: rotate(-15deg);
+}
+
+.clearButton {
+	right: 7px;
+	width: 28px;
+	height: 28px;
+	padding: 0;
+	color: var(--color-muted);
+	font-size: 20px;
+	background: transparent;
+	border: 0;
+	cursor: pointer;
+}
+
+.validationError,
+.exportError {
+	display: block;
+	margin-top: 5px;
+	color: var(--color-danger);
+	font-size: 11px;
+}
+
+.statusFilters {
+	display: flex;
+	min-width: 0;
+	overflow-x: auto;
+	border: 1px solid var(--color-line);
+}
+
+.statusFilters button {
+	min-height: 36px;
+	padding: 0 11px;
+	color: var(--color-muted);
+	font: 700 10px/1 var(--font-data);
+	background: transparent;
+	border: 0;
+	border-right: 1px solid var(--color-line);
+	cursor: pointer;
+}
+
+.statusFilters button:last-child {
+	border-right: 0;
+}
+
+.statusFilters button:hover,
+.statusFilters .filterActive {
+	color: var(--color-deep);
+	background: var(--color-cyan);
+}
+
+.exportArea {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-end;
+}
+
+.exportButton,
+.retryButton {
+	display: inline-flex;
+	gap: 9px;
+	align-items: center;
+	justify-content: center;
+	min-height: 38px;
+	padding: 0 15px;
+	color: var(--color-cyan);
+	font: 800 12px/1 var(--font-display);
+	letter-spacing: 0.05em;
+	text-transform: uppercase;
+	background: transparent;
+	border: 1px solid var(--color-cyan);
+	border-radius: 2px;
+	cursor: pointer;
+}
+
+.exportButton:hover,
+.retryButton:hover {
+	color: var(--color-deep);
+	background: var(--color-cyan);
+}
+
+.exportButton:disabled {
+	color: var(--color-muted);
+	border-color: var(--color-line);
+	cursor: progress;
+}
+
+.tableViewport {
+	position: relative;
+	flex: 1;
+	min-height: 0;
+	overflow: auto;
+	background: var(--color-deep);
+}
+
+.stateMessage,
+.loader,
+.endMessage {
+	display: flex;
+	gap: 14px;
+	align-items: center;
+	justify-content: center;
+	min-height: 120px;
+	color: var(--color-muted);
+	font-size: 13px;
+	text-align: center;
+}
+
+.stateMessage {
+	flex-direction: column;
+}
+
+.loader {
+	min-height: 64px;
+}
+
+.loader span {
+	width: 13px;
+	height: 13px;
+	border: 2px solid var(--color-line);
+	border-top-color: var(--color-cyan);
+	border-radius: 50%;
+	animation: spin 800ms linear infinite;
+}
+
+.endMessage {
+	min-height: 58px;
+	font: 700 9px/1 var(--font-data);
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+}
+
+.sentinel {
+	height: 1px;
+}
+
+@keyframes spin {
+	to { transform: rotate(360deg); }
+}
+
+@media (max-width: 1100px) {
+	.toolbar {
+		grid-template-columns: minmax(260px, 1fr) auto;
+	}
+
+	.statusFilters {
+		grid-column: 1 / -1;
+		grid-row: 2;
+		width: max-content;
+		max-width: 100%;
+	}
+}
+
+@media (max-width: 640px) {
+	.toolbar {
+		grid-template-columns: 1fr;
+		gap: 10px;
+		padding: 10px;
+	}
+
+	.statusFilters {
+		grid-column: auto;
+		grid-row: auto;
+		width: 100%;
+	}
+
+	.statusFilters button {
+		flex: 1;
+		padding: 0 8px;
+	}
+
+	.exportArea {
+		align-items: stretch;
+	}
+
+	.exportButton {
+		width: 100%;
+	}
+}

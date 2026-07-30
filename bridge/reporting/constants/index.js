@@ -54,3 +54,18 @@ const createBridgeTabs = () => {
 };
 
 export const BRIDGE_TABS = createBridgeTabs();
+
+export const PAYOUT_STATUS = {
+	UNPROCESSED: 0,
+	SENT: 1,
+	COMPLETED: 2,
+	FAILED: 3
+};
+
+export const PAYOUT_STATUS_OPTIONS = [
+	{ label: 'All', value: null },
+	{ label: 'Unprocessed', value: PAYOUT_STATUS.UNPROCESSED },
+	{ label: 'Sent', value: PAYOUT_STATUS.SENT },
+	{ label: 'Completed', value: PAYOUT_STATUS.COMPLETED },
+	{ label: 'Failed', value: PAYOUT_STATUS.FAILED }
+];
