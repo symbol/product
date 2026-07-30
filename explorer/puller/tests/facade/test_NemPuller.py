@@ -673,6 +673,18 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 		self.assertEqual(result, mosaics)
 		mock_account_mosaics.assert_called_once_with(address)
 
+	@patch('puller.facade.NemPuller.NemConnector.get_block')
+	def test_retry_get_block(self, mock_get_block):
+		# Arrange:
+		mock_get_block.return_value = NEM_CONNECTOR_RESPONSE_BLOCKS[0]
+
+		# Act:
+		result = asyncio.run(self.puller._retry_get_block(1))  # pylint: disable=protected-access
+
+		# Assert:
+		self.assertEqual(result, NEM_CONNECTOR_RESPONSE_BLOCKS[0])
+		mock_get_block.assert_called_once_with(1)
+
 	@patch('puller.facade.NemPuller.NemDatabase.get_mosaic_levy_recipients')
 	def test_can_extract_addresses_from_block_signer_and_beneficiary(self, mock_get_mosaic_levy_recipients):
 		# Arrange:

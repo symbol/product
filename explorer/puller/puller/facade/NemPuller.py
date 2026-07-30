@@ -139,6 +139,16 @@ class NemPuller:
 			delay
 		)
 
+	async def _retry_get_block(self, height, retries=3, delay=2):
+		"""Retries fetching a block at a specific height with exponential backoff."""
+
+		return await self._retry_operation(
+			lambda: self.nem_connector.get_block(height),
+			f'fetching block at height {height}',
+			retries,
+			delay
+		)
+
 	async def _retry_get_account_info(self, address, retries=3, delay=2):
 		"""Retries fetching account info with exponential backoff."""
 
