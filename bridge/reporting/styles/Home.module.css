@@ -126,11 +126,22 @@
 	font-size: 12px;
 }
 
+.panelStack {
+	display: flex;
+	flex: 1;
+	min-height: 0;
+}
+
 @media (max-width: 900px) {
 	.page {
 		height: auto;
 		min-height: 100vh;
 		overflow: visible;
+	}
+
+	.panelStack {
+		height: 68vh;
+		min-height: 520px;
 	}
 }
 
