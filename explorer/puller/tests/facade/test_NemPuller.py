@@ -33,8 +33,10 @@ from puller.facade.NemPuller import (
 	AccountVestedBalanceRecord,
 	DatabaseConfig,
 	MosaicRecord,
+	NEM_MAX_ROLLBACK_DEPTH,
 	NamespaceRecord,
 	NemPuller,
+	NemRollbackError,
 	TransactionRecord
 )
 
@@ -1545,3 +1547,38 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 			'block_height': 3,
 			'is_inner': False
 		})
+
+	def _run_detect_rollback_test(self, database_hashes, node_hashes, db_height, chain_height):
+		self.puller.nem_db.get_block_hash = Mock(
+			side_effect=lambda height: database_hashes.get(height, 'db-hash')
+		)
+		self.puller._retry_get_block = AsyncMock(  # pylint: disable=protected-access
+			side_effect=lambda height: Mock(block_hash=node_hashes.get(height, 'chain-hash'))
+		)
+
+		# Act:
+		return asyncio.run(self.puller.detect_rollback(db_height, chain_height))
+
+	def test_returns_none_when_comparison_hash_matches(self):
+		# Arrange + Act:
+		fork_height = self._run_detect_rollback_test({3: 'ABCDEF'}, {3: 'abcdef'}, 3, 3)
+
+		# Assert:
+		self.assertIsNone(fork_height)
+
+	def test_returns_chain_height_when_database_is_ahead(self):
+		# Arrange + Act:
+		fork_height = self._run_detect_rollback_test({3: 'common'}, {3: 'common'}, 5, 3)
+
+		# Assert:
+		self.assertEqual(3, fork_height)
+
+	def test_common_block_at_360_block_boundary_is_allowed(self):
+		# Arrange:
+		db_height = NEM_MAX_ROLLBACK_DEPTH + 1
+
+		# Act:
+		fork_height = self._run_detect_rollback_test({1: 'common'}, {1: 'common'}, db_height, db_height)
+
+		# Assert:
+		self.assertEqual(1, fork_height)
