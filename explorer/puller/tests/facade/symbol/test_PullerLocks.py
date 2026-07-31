@@ -1119,7 +1119,7 @@ class SymbolPullerLocksTest(SymbolPullerTestBase):
 			_secret_search_path(SIGNER_ADDRESS, SECRET)
 		], [path for path in connector.paths if path.startswith('lock/')])
 
-	def test_sync_block_headers_persists_a_hash_lock(self):
+	def test_sync_block_headers_persists_a_hash_lock_without_an_aggregate_bonded_transaction(self):
 		# Arrange:
 		connector = self._create_hash_lock_sync_connector()
 		expected_lock_state = self._expected_persisted_hash_lock_state()
