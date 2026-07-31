@@ -8,13 +8,12 @@ from unittest import TestCase
 from common.tests.PostgresTestUtils import PostgresTestDatabase, drop_symbol_block_tables_if_present
 from psycopg2 import Error as PsycopgError
 from psycopg2.extras import Json
-from symbolchain.sc import ReceiptType, TransactionType
+from symbolchain.sc import ReceiptType
 from symbolchain.symbol.Network import Network
 
 from puller.db.SymbolDatabase import RollbackRefreshEntries, SymbolDatabase
 from puller.model.symbol.Account import create_account_row
 from puller.model.symbol.Lock import create_hash_lock_key, create_secret_lock_search_key
-from puller.model.symbol.Transaction import TRANSACTION_TYPE_LABELS
 from tests.facade.symbol.puller_test_utils import NATIVE_MOSAIC_ID, create_account_item
 from tests.test.SymbolDatabaseTestUtils import fetch_full_block_state, fetch_normalized_sync_state
 from tests.test.SymbolMetadataTestUtils import (
@@ -4498,7 +4497,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			b'\x60' * 32
 		], [key.hash for key in keys])
 
-	def test_get_hash_lock_hashes_reaching_end_height_between_returns_height_ordered_boundary_rows(self):
+	def test_get_hash_lock_hashes_reaching_finalized_height_returns_height_ordered_boundary_rows(self):
 		# Arrange:
 		database = self._create_database()
 		height_rows = (
@@ -4513,10 +4512,11 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			database.upsert_hash_lock(_create_hash_lock_row(observed_height=1, lock_hash=lock_hash, end_height=end_height))
 
 		# Act:
-		keys = database.get_hash_lock_hashes_reaching_end_height_between(10, 12)
+		keys = database.get_hash_lock_hashes_reaching_finalized_height(12)
 
 		# Assert:
 		self.assertEqual([
+			b'\x50' * 32,
 			b'\x30' * 32,
 			b'\x40' * 32,
 			b'\x10' * 32,
@@ -4551,7 +4551,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			(LOCK_OWNER, LOCK_RECIPIENT, b'\x49' * 32, 'hash160')
 		], keys)
 
-	def test_get_secret_lock_search_keys_reaching_end_height_between_returns_height_ordered_boundary_rows(self):
+	def test_get_secret_lock_search_keys_reaching_finalized_height_returns_height_ordered_boundary_rows(self):
 		# Arrange:
 		database = self._create_database()
 		height_rows = (
@@ -4568,156 +4568,37 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 				create_secret_lock_search_key(LOCK_OWNER, LOCK_RECIPIENT, secret, 'hash160'), [row])
 
 		# Act:
-		keys = database.get_secret_lock_search_keys_reaching_end_height_between(10, 12)
+		keys = database.get_secret_lock_search_keys_reaching_finalized_height(12)
 
 		# Assert:
 		self.assertEqual([
+			(LOCK_OWNER, LOCK_RECIPIENT, b'\x59' * 32, 'hash160'),
 			(LOCK_OWNER, LOCK_RECIPIENT, b'\x99' * 32, 'hash160'),
 			(LOCK_OWNER, LOCK_RECIPIENT, b'\x01' * 32, 'hash160'),
 			(LOCK_OWNER, LOCK_RECIPIENT, b'\x19' * 32, 'hash160'),
 			(LOCK_OWNER, LOCK_RECIPIENT, b'\x29' * 32, 'hash160')
 		], keys)
 
-	def test_confirmed_transaction_lock_key_collection_includes_only_authoritative_sources(self):
+	def test_apply_finalization_lock_entries_rolls_back_hash_and_secret_writes_together(self):
 		# Arrange:
 		database = self._create_database()
-		database.upsert_blocks([_create_block(2)])
-		hash_lock_transaction = create_transaction_entry(
-			2, 'hash-lock', type=TransactionType.HASH_LOCK.value,
-			type_name=TRANSACTION_TYPE_LABELS[TransactionType.HASH_LOCK.value],
-			body={'hash': LOCK_HASH.hex().upper()})
-		aggregate_transaction = create_transaction_entry(
-			2, 'aggregate-bonded', type=TransactionType.AGGREGATE_BONDED.value,
-			type_name=TRANSACTION_TYPE_LABELS[TransactionType.AGGREGATE_BONDED.value],
-			hash=LOCK_HASH_2)
-		secret_lock_transaction = create_transaction_entry(
-			2, 'secret-lock', type=TransactionType.SECRET_LOCK.value,
-			type_name=TRANSACTION_TYPE_LABELS[TransactionType.SECRET_LOCK.value],
-			signer_address=LOCK_OWNER, recipient_address=LOCK_RECIPIENT,
-			body={'secret': LOCK_SECRET.hex().upper(), 'hashAlgorithm': 0})
-		secret_proof_transaction = create_transaction_entry(
-			2, 'secret-proof', type=TransactionType.SECRET_PROOF.value,
-			type_name=TRANSACTION_TYPE_LABELS[TransactionType.SECRET_PROOF.value],
-			signer_address=LOCK_OWNER_2, recipient_address=LOCK_RECIPIENT,
-			body={'secret': LOCK_SECRET.hex().upper(), 'hashAlgorithm': 0})
-		database.upsert_transactions_for_height(2, [
-			hash_lock_transaction, aggregate_transaction, secret_lock_transaction,
-			secret_proof_transaction])
+		database.upsert_hash_lock(_create_hash_lock_row(status='unused'))
+		secret_key = create_secret_lock_search_key(LOCK_OWNER, LOCK_RECIPIENT, LOCK_SECRET, 'hash160')
+		database.replace_secret_locks(secret_key, [_create_secret_lock_row(status='unused')])
+		invalid_secret_row = {**_create_secret_lock_row(status='used'), 'hash_algorithm': 'invalid'}
 
-		# Act:
-		keys = database.get_lock_keys_from_confirmed_transactions_from_height(2)
+		# Act / Assert:
+		with self.assertRaises(PsycopgError):
+			database.apply_finalization_lock_entries(
+				[{'row': _create_hash_lock_row(status='used')}],
+				[{'key': secret_key, 'rows': [invalid_secret_row]}])
 
 		# Assert:
-		self.assertEqual([LOCK_HASH, LOCK_HASH_2], [key.hash for key in keys.hash_keys])
-		self.assertEqual([
-			(LOCK_OWNER, LOCK_RECIPIENT, LOCK_SECRET, 'sha3_256'),
-			(None, LOCK_RECIPIENT, LOCK_SECRET, 'sha3_256')
-		], keys.secret_keys)
-
-	def test_confirmed_transaction_lock_key_collection_deduplicates_in_first_encounter_order(self):
-		# Arrange:
-		database = self._create_database()
-		database.upsert_blocks([_create_block(2)])
-		first_hash = b'\x30' * 32
-		second_hash = b'\x10' * 32
-		first_secret = b'\x40' * 32
-		second_secret = b'\x20' * 32
-		database.upsert_transactions_for_height(2, [
-			create_transaction_entry(
-				2, 'first-hash-lock', type=TransactionType.HASH_LOCK.value,
-				type_name=TRANSACTION_TYPE_LABELS[TransactionType.HASH_LOCK.value],
-				body={'hash': first_hash.hex().upper()}),
-			create_transaction_entry(
-				2, 'aggregate-bonded', type=TransactionType.AGGREGATE_BONDED.value,
-				type_name=TRANSACTION_TYPE_LABELS[TransactionType.AGGREGATE_BONDED.value],
-				hash=second_hash),
-			create_transaction_entry(
-				2, 'duplicate-hash-lock', type=TransactionType.HASH_LOCK.value,
-				type_name=TRANSACTION_TYPE_LABELS[TransactionType.HASH_LOCK.value],
-				body={'hash': first_hash.hex().upper()}),
-			create_transaction_entry(
-				2, 'first-secret-proof', type=TransactionType.SECRET_PROOF.value,
-				type_name=TRANSACTION_TYPE_LABELS[TransactionType.SECRET_PROOF.value],
-				recipient_address=LOCK_RECIPIENT,
-				body={'secret': first_secret.hex().upper(), 'hashAlgorithm': 0}),
-			create_transaction_entry(
-				2, 'secret-lock', type=TransactionType.SECRET_LOCK.value,
-				type_name=TRANSACTION_TYPE_LABELS[TransactionType.SECRET_LOCK.value],
-				signer_address=LOCK_OWNER, recipient_address=LOCK_RECIPIENT,
-				body={'secret': second_secret.hex().upper(), 'hashAlgorithm': 0}),
-			create_transaction_entry(
-				2, 'duplicate-secret-proof', type=TransactionType.SECRET_PROOF.value,
-				type_name=TRANSACTION_TYPE_LABELS[TransactionType.SECRET_PROOF.value],
-				recipient_address=LOCK_RECIPIENT,
-				body={'secret': first_secret.hex().upper(), 'hashAlgorithm': 0})
-		])
-
-		# Act:
-		keys = database.get_lock_keys_from_confirmed_transactions_from_height(2)
-
-		# Assert:
-		self.assertEqual([first_hash, second_hash], [key.hash for key in keys.hash_keys])
-		self.assertEqual([
-			(None, LOCK_RECIPIENT, first_secret, 'sha3_256'),
-			(LOCK_OWNER, LOCK_RECIPIENT, second_secret, 'sha3_256')
-		], keys.secret_keys)
-
-	def test_confirmed_transaction_lock_key_collection_includes_creation_and_completion_at_or_after_fork_height(self):
-		# Arrange:
-		database = self._create_database()
-		for height in (1, 2, 3):
-			database.upsert_blocks([_create_block(height)])
-			hash_lock_hash = bytes([height]) * 32
-			aggregate_hash = bytes([height + 16]) * 32
-			secret_lock_secret = bytes([height + 32]) * 32
-			secret_proof_secret = bytes([height + 48]) * 32
-			database.upsert_transactions_for_height(height, [
-				create_transaction_entry(
-					height,
-					f'hash-lock-{height}',
-					type=TransactionType.HASH_LOCK.value,
-					type_name=TRANSACTION_TYPE_LABELS[TransactionType.HASH_LOCK.value],
-					body={'hash': hash_lock_hash.hex().upper()}),
-				create_transaction_entry(
-					height,
-					f'aggregate-{height}',
-					type=TransactionType.AGGREGATE_BONDED.value,
-					type_name=TRANSACTION_TYPE_LABELS[TransactionType.AGGREGATE_BONDED.value],
-					hash=aggregate_hash),
-				create_transaction_entry(
-					height,
-					f'secret-lock-{height}',
-					type=TransactionType.SECRET_LOCK.value,
-					type_name=TRANSACTION_TYPE_LABELS[TransactionType.SECRET_LOCK.value],
-					signer_address=LOCK_OWNER,
-					recipient_address=LOCK_RECIPIENT,
-					body={'secret': secret_lock_secret.hex().upper(), 'hashAlgorithm': 1}),
-				create_transaction_entry(
-					height,
-					f'secret-proof-{height}',
-					type=TransactionType.SECRET_PROOF.value,
-					type_name=TRANSACTION_TYPE_LABELS[TransactionType.SECRET_PROOF.value],
-					signer_address=LOCK_OWNER,
-					recipient_address=LOCK_RECIPIENT,
-					body={'secret': secret_proof_secret.hex().upper(), 'hashAlgorithm': 1})
-			])
-
-		# Act:
-		keys = database.get_lock_keys_from_confirmed_transactions_from_height(2)
-
-		# Assert:
-		self.assertEqual([
-			bytes([2]) * 32,
-			bytes([18]) * 32,
-			bytes([3]) * 32,
-			bytes([19]) * 32
-		], [key.hash for key in keys.hash_keys])
-		self.assertEqual([
-			(LOCK_OWNER, LOCK_RECIPIENT, bytes([34]) * 32, 'hash160'),
-			(None, LOCK_RECIPIENT, bytes([50]) * 32, 'hash160'),
-			(LOCK_OWNER, LOCK_RECIPIENT, bytes([35]) * 32, 'hash160'),
-			(None, LOCK_RECIPIENT, bytes([51]) * 32, 'hash160')
-		], keys.secret_keys)
+		cursor = database.connection.cursor()
+		cursor.execute('SELECT status FROM symbol_hash_locks WHERE hash = %s', (LOCK_HASH,))
+		self.assertEqual([('unused',)], cursor.fetchall())
+		cursor.execute('SELECT status FROM symbol_secret_locks WHERE composite_hash = %s', (LOCK_COMPOSITE_HASH,))
+		self.assertEqual([('unused',)], cursor.fetchall())
 
 	def test_repair_rollback_deletes_lock_rows_at_fork_and_applies_replacements_atomically(self):
 		# Arrange:

@@ -203,6 +203,8 @@ class SymbolPuller:
 			if not finalized_hash:
 				raise ValueError(f'Unable to determine finalized hash for height {finalized_height}')
 
+		await self._sync_finalization_lock_cleanup(finalized_height)
+
 		self.symbol_db.upsert_sync_state({
 			'status': 'healthy',
 			'chain_height': chain_height,
@@ -302,15 +304,10 @@ class SymbolPuller:
 		mosaic_entries = await self._fetch_dirty_mosaics(mosaic_ids, height - 1)
 		metadata_keys = self.symbol_db.get_metadata_keys_updated_from_height(height)
 		metadata_entries = await self._fetch_dirty_metadata(metadata_keys, height - 1)
-		# Current rows recover Lock state still present after the fork, while rollback-range transactions recover
-		# exact keys for Locks already deleted on the orphan branch. Collect both before chain-row deletion.
-		rollback_transaction_keys = self.symbol_db.get_lock_keys_from_confirmed_transactions_from_height(height)
-		hash_lock_keys = self._union_lock_keys(
-			self.symbol_db.get_hash_lock_hashes_updated_from_height(height),
-			rollback_transaction_keys.hash_keys)
-		secret_lock_keys = self._union_lock_keys(
-			self.symbol_db.get_secret_lock_search_keys_updated_from_height(height),
-			rollback_transaction_keys.secret_keys)
+		# Current rows recover Lock state still present after the fork. Finalized rows cannot be part of this
+		# unfinalized repair range, so transaction history is not an authoritative rollback key source.
+		hash_lock_keys = self.symbol_db.get_hash_lock_hashes_updated_from_height(height)
+		secret_lock_keys = self.symbol_db.get_secret_lock_search_keys_updated_from_height(height)
 		hash_lock_entries = await self._fetch_dirty_hash_locks(hash_lock_keys, height - 1)
 		secret_lock_entries = await self._fetch_dirty_secret_locks(secret_lock_keys, height - 1)
 		self.symbol_db.repair_rollback_from_height(height, {
@@ -402,9 +399,7 @@ class SymbolPuller:
 		dirty_mosaic_entries = await self._fetch_dirty_mosaics(dirty_mosaic_ids, observed_height)
 		dirty_metadata_keys = self._collect_dirty_metadata_keys_for_batch(transaction_rows_by_height)
 		dirty_metadata_entries = await self._fetch_dirty_metadata(dirty_metadata_keys, observed_height)
-		dirty_lock_keys = self._collect_dirty_lock_keys_for_batch(
-			batch_rows,
-			transaction_rows_by_height)
+		dirty_lock_keys = self._collect_dirty_lock_keys_for_batch(transaction_rows_by_height)
 		dirty_hash_lock_entries = await self._fetch_dirty_hash_locks(dirty_lock_keys.hash_keys, observed_height)
 		dirty_secret_lock_entries = await self._fetch_dirty_secret_locks(dirty_lock_keys.secret_keys, observed_height)
 		self._sync_block_batch(batch_rows, transaction_rows_by_height, receipt_rows_by_height)
@@ -414,6 +409,16 @@ class SymbolPuller:
 		self._write_dirty_metadata(dirty_metadata_entries)
 		self._write_dirty_hash_locks(dirty_hash_lock_entries)
 		self._write_dirty_secret_locks(dirty_secret_lock_entries)
+
+	async def _sync_finalization_lock_cleanup(self, finalized_height):
+		"""Reconciles all current Lock rows whose end height has reached finalization."""
+
+		hash_lock_keys = self.symbol_db.get_hash_lock_hashes_reaching_finalized_height(finalized_height)
+		secret_lock_keys = self.symbol_db.get_secret_lock_search_keys_reaching_finalized_height(finalized_height)
+		# Fetch every replacement before the first cleanup write so a failed request leaves all state untouched.
+		hash_lock_entries = await self._fetch_dirty_hash_locks(hash_lock_keys, finalized_height)
+		secret_lock_entries = await self._fetch_dirty_secret_locks(secret_lock_keys, finalized_height)
+		self.symbol_db.apply_finalization_lock_entries(hash_lock_entries, secret_lock_entries)
 
 	def _sync_block_batch(self, batch_rows, transaction_rows_by_height, receipt_rows_by_height):
 		"""Writes previously-fetched block, transaction, and receipt rows for one batch.
@@ -937,12 +942,8 @@ class SymbolPuller:
 		if address is not None and Address(address).is_alias():
 			raise ValueError(f'Unresolved Symbol transaction {field_name} reached Lock dirty-key collection')
 
-	@staticmethod
-	def _union_lock_keys(*key_lists):
-		return list(dict.fromkeys(key for key_list in key_lists for key in key_list))
-
-	def _collect_dirty_lock_keys_for_batch(self, block_rows, transaction_rows_by_height):
-		"""Collects Hash and Secret Lock dirty keys from transactions and expiring current rows."""
+	def _collect_dirty_lock_keys_for_batch(self, transaction_rows_by_height):
+		"""Collects Hash and Secret Lock dirty keys from transactions in the current batch."""
 
 		hash_keys = []
 		secret_keys = []
@@ -964,17 +965,7 @@ class SymbolPuller:
 						body['secret'],
 						lock_hash_algorithm_label(body['hashAlgorithm'])))
 
-		start_height = block_rows[0]['height']
-		end_height = block_rows[-1]['height']
-		# Rows reaching end height in this batch must be rechecked because the node may already have pruned them.
-		ending_hash_keys = self.symbol_db.get_hash_lock_hashes_reaching_end_height_between(
-			start_height, end_height)
-		ending_secret_keys = self.symbol_db.get_secret_lock_search_keys_reaching_end_height_between(
-			start_height, end_height)
-
-		return RollbackLockKeys(
-			self._union_lock_keys(hash_keys, ending_hash_keys),
-			self._union_lock_keys(secret_keys, ending_secret_keys))
+		return RollbackLockKeys(list(dict.fromkeys(hash_keys)), list(dict.fromkeys(secret_keys)))
 
 	async def _fetch_dirty_hash_locks(self, hash_keys, observed_height):
 		"""Fetches Hash Lock detail state in bounded concurrent batches."""
