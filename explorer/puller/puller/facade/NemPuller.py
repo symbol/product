@@ -334,6 +334,17 @@ class NemPuller:
 				last_height
 			)
 
+	def _flush_pending_account_state(self, cursor, pending_addresses, accounts_harvested_fee):
+		"""Flushes accumulated account and harvested fee state, clearing both accumulators."""
+
+		if pending_addresses:
+			asyncio.run(self._process_account_batch(cursor, pending_addresses))
+			pending_addresses.clear()
+
+		if accounts_harvested_fee:
+			self._process_harvested_fees(cursor, accounts_harvested_fee)
+			accounts_harvested_fee.clear()
+
 	async def refresh_accounts(self, batch_size):
 		"""Refresh vested balance and importance for stored accounts."""
 
@@ -618,9 +629,8 @@ class NemPuller:
 			if block is None:
 				log.info('Received stop signal, ending DB writer thread')
 
-				# Process any remaining addresses before exiting
-				if pending_addresses:
-					asyncio.run(self._process_account_batch(cursor, pending_addresses))
+				# Process any remaining addresses and harvested fees before exiting
+				self._flush_pending_account_state(cursor, pending_addresses, accounts_harvested_fee)
 
 				block_queue.task_done()
 				break
@@ -644,11 +654,7 @@ class NemPuller:
 
 			# Batch commits
 			if processed % batch_size == 0:
-				asyncio.run(self._process_account_batch(cursor, pending_addresses))
-				pending_addresses.clear()
-
-				self._process_harvested_fees(cursor, accounts_harvested_fee)
-				accounts_harvested_fee.clear()
+				self._flush_pending_account_state(cursor, pending_addresses, accounts_harvested_fee)
 
 				self._commit_blocks(f'Committed {processed} blocks')
 
