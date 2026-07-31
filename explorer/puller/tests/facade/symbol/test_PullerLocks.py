@@ -619,7 +619,7 @@ class SymbolPullerLocksTest(SymbolPullerTestBase):
 		with self.assertRaisesRegex(ValueError, '^Duplicate Symbol Secret Lock composite hash$'):
 			asyncio.run(self.puller._fetch_dirty_secret_locks([key], 12))  # pylint: disable=protected-access
 
-	def test_fetch_secret_locks_uses_ten_request_chunks_and_preserves_non_sorted_first_encounter_order(self):
+	def test_fetch_secret_locks_uses_ten_request_chunks_and_preserves_non_sorted_input_sequence(self):
 		# Arrange:
 		secrets = [f'{index:064X}' for index in (3, 1, 11, 2, 10, 4, 9, 5, 8, 6, 7)]
 		keys = [
@@ -649,7 +649,7 @@ class SymbolPullerLocksTest(SymbolPullerTestBase):
 			for secret in secrets
 		], [entry['key'] for entry in entries])
 
-	def test_fetch_hash_locks_uses_ten_request_chunks_and_preserves_non_sorted_first_encounter_order(self):
+	def test_fetch_hash_locks_uses_ten_request_chunks_and_preserves_non_sorted_input_sequence(self):
 		# Arrange:
 		hashes = [f'{index:064X}' for index in (3, 1, 11, 2, 10, 4, 9, 5, 8, 6, 7)]
 		keys = [create_hash_lock_key(lock_hash) for lock_hash in hashes]
@@ -682,8 +682,8 @@ class SymbolPullerLocksTest(SymbolPullerTestBase):
 		keys = self._collect_lock_keys([transaction_row])
 
 		# Assert:
-		self.assertEqual([bytes.fromhex(LOCK_HASH_2)], [key.hash for key in keys.hash_keys])
-		self.assertEqual([], keys.secret_keys)
+		self.assertEqual({create_hash_lock_key(LOCK_HASH_2)}, keys.hash_keys)
+		self.assertEqual(set(), keys.secret_keys)
 
 	def test_collect_dirty_lock_keys_uses_top_level_aggregate_bonded_hash(self):
 		# Arrange:
@@ -694,8 +694,8 @@ class SymbolPullerLocksTest(SymbolPullerTestBase):
 		keys = self._collect_lock_keys([top_level])
 
 		# Assert:
-		self.assertEqual([bytes.fromhex(LOCK_HASH_2)], [key.hash for key in keys.hash_keys])
-		self.assertEqual([], keys.secret_keys)
+		self.assertEqual({create_hash_lock_key(LOCK_HASH_2)}, keys.hash_keys)
+		self.assertEqual(set(), keys.secret_keys)
 
 	def test_collect_dirty_lock_keys_uses_resolved_secret_lock_recipient(self):
 		# Arrange:
@@ -707,10 +707,10 @@ class SymbolPullerLocksTest(SymbolPullerTestBase):
 		keys = self._collect_lock_keys([transaction_row])
 
 		# Assert:
-		self.assertEqual([], keys.hash_keys)
-		self.assertEqual([(
+		self.assertEqual(set(), keys.hash_keys)
+		self.assertEqual({(
 			bytes.fromhex(SIGNER_ADDRESS), bytes.fromhex(RECIPIENT_ADDRESS), bytes.fromhex(SECRET), 'hash160'
-		)], keys.secret_keys)
+		)}, keys.secret_keys)
 
 	def test_collect_dirty_lock_keys_uses_secret_proof_with_unknown_owner(self):
 		# Arrange:
@@ -721,8 +721,8 @@ class SymbolPullerLocksTest(SymbolPullerTestBase):
 		keys = self._collect_lock_keys([transaction_row])
 
 		# Assert:
-		self.assertEqual([], keys.hash_keys)
-		self.assertEqual([(None, bytes.fromhex(RECIPIENT_ADDRESS), bytes.fromhex(SECRET), 'sha3_256')], keys.secret_keys)
+		self.assertEqual(set(), keys.hash_keys)
+		self.assertEqual({(None, bytes.fromhex(RECIPIENT_ADDRESS), bytes.fromhex(SECRET), 'sha3_256')}, keys.secret_keys)
 
 	def test_collect_dirty_lock_keys_ignores_unrelated_transaction_type(self):
 		# Arrange:
@@ -732,7 +732,8 @@ class SymbolPullerLocksTest(SymbolPullerTestBase):
 		keys = self._collect_lock_keys([unrelated])
 
 		# Assert:
-		self.assertEqual(([], []), (keys.hash_keys, keys.secret_keys))
+		self.assertEqual(set(), keys.hash_keys)
+		self.assertEqual(set(), keys.secret_keys)
 
 	def test_collect_dirty_lock_keys_accepts_empty_transaction_input(self):
 		# Arrange:
@@ -742,9 +743,10 @@ class SymbolPullerLocksTest(SymbolPullerTestBase):
 		keys = self._collect_lock_keys(transaction_rows)
 
 		# Assert:
-		self.assertEqual(([], []), (keys.hash_keys, keys.secret_keys))
+		self.assertEqual(set(), keys.hash_keys)
+		self.assertEqual(set(), keys.secret_keys)
 
-	def test_collect_dirty_lock_keys_deduplicates_hash_keys_in_first_encounter_order(self):
+	def test_collect_dirty_lock_keys_deduplicates_hash_keys(self):
 		# Arrange:
 		first = self._create_lock_transaction_row(TransactionType.HASH_LOCK.value, {'hash': LOCK_HASH_2})
 		second = self._create_lock_transaction_row(TransactionType.HASH_LOCK.value, {'hash': LOCK_HASH})
@@ -754,9 +756,10 @@ class SymbolPullerLocksTest(SymbolPullerTestBase):
 		keys = self._collect_lock_keys([first, second, duplicate])
 
 		# Assert:
-		self.assertEqual([bytes.fromhex(LOCK_HASH_2), bytes.fromhex(LOCK_HASH)], [key.hash for key in keys.hash_keys])
+		self.assertEqual(2, len(keys.hash_keys))
+		self.assertEqual({create_hash_lock_key(LOCK_HASH_2), create_hash_lock_key(LOCK_HASH)}, keys.hash_keys)
 
-	def test_collect_dirty_lock_keys_deduplicates_secret_keys_in_first_encounter_order(self):
+	def test_collect_dirty_lock_keys_deduplicates_secret_keys(self):
 		# Arrange:
 		first = self._create_lock_transaction_row(TransactionType.SECRET_PROOF.value, {'secret': SECRET, 'hashAlgorithm': 0})
 		second = self._create_lock_transaction_row(TransactionType.SECRET_LOCK.value, {'secret': SECRET, 'hashAlgorithm': 1})
@@ -766,10 +769,11 @@ class SymbolPullerLocksTest(SymbolPullerTestBase):
 		keys = self._collect_lock_keys([first, second, duplicate])
 
 		# Assert:
-		self.assertEqual([
+		self.assertEqual(2, len(keys.secret_keys))
+		self.assertEqual({
 			(None, bytes.fromhex(RECIPIENT_ADDRESS), bytes.fromhex(SECRET), 'sha3_256'),
 			(bytes.fromhex(SIGNER_ADDRESS), bytes.fromhex(RECIPIENT_ADDRESS), bytes.fromhex(SECRET), 'hash160')
-		], keys.secret_keys)
+		}, keys.secret_keys)
 
 	def test_collect_dirty_lock_keys_rejects_surviving_alias_recipient(self):
 		# Arrange:
@@ -1275,9 +1279,10 @@ class SymbolPullerLocksTest(SymbolPullerTestBase):
 
 		# Assert:
 		self.assertEqual(([], [expected_row]), self._fetch_persisted_lock_state())
-		self.assertEqual([address_path, secret_only_path], [
-			path for path in connector.paths if path.startswith('lock/')
-		])
+		lock_paths = [path for path in connector.paths if path.startswith('lock/')]
+		self.assertCountEqual((address_path, secret_only_path), lock_paths)
+		self.assertEqual(1, lock_paths.count(address_path))
+		self.assertEqual(1, lock_paths.count(secret_only_path))
 
 	def test_sync_block_headers_updates_an_existing_hash_lock_to_used_when_completion_arrives_in_a_later_batch(self):
 		# Arrange:

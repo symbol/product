@@ -400,8 +400,10 @@ class SymbolPuller:
 		dirty_metadata_keys = self._collect_dirty_metadata_keys_for_batch(transaction_rows_by_height)
 		dirty_metadata_entries = await self._fetch_dirty_metadata(dirty_metadata_keys, observed_height)
 		dirty_lock_keys = self._collect_dirty_lock_keys_for_batch(transaction_rows_by_height)
-		dirty_hash_lock_entries = await self._fetch_dirty_hash_locks(dirty_lock_keys.hash_keys, observed_height)
-		dirty_secret_lock_entries = await self._fetch_dirty_secret_locks(dirty_lock_keys.secret_keys, observed_height)
+		dirty_hash_lock_entries = await self._fetch_dirty_hash_locks(
+			list(dirty_lock_keys.hash_keys), observed_height)
+		dirty_secret_lock_entries = await self._fetch_dirty_secret_locks(
+			list(dirty_lock_keys.secret_keys), observed_height)
 		self._sync_block_batch(batch_rows, transaction_rows_by_height, receipt_rows_by_height)
 		self._write_dirty_accounts_for_batch(dirty_account_rows)
 		self.symbol_db.apply_namespace_entries(dirty_namespace_entries)
@@ -945,27 +947,27 @@ class SymbolPuller:
 	def _collect_dirty_lock_keys_for_batch(self, transaction_rows_by_height):
 		"""Collects Hash and Secret Lock dirty keys from transactions in the current batch."""
 
-		hash_keys = []
-		secret_keys = []
+		hash_keys = set()
+		secret_keys = set()
 		for transaction_rows in transaction_rows_by_height.values():
 			for transaction_row in transaction_rows:
 				transaction_type = transaction_row['type']
 				body = transaction_row['body']
 				if TransactionType.HASH_LOCK.value == transaction_type:
-					hash_keys.append(create_hash_lock_key(body['hash']))
+					hash_keys.add(create_hash_lock_key(body['hash']))
 				elif TransactionType.AGGREGATE_BONDED.value == transaction_type:
-					hash_keys.append(create_hash_lock_key(transaction_row['hash']))
+					hash_keys.add(create_hash_lock_key(transaction_row['hash']))
 				elif transaction_type in (TransactionType.SECRET_LOCK.value, TransactionType.SECRET_PROOF.value):
 					self._assert_resolved_transaction_address(transaction_row['recipient_address'], 'recipient_address')
 					owner_address = transaction_row['signer_address'] if TransactionType.SECRET_LOCK.value == transaction_type else None
 					self._assert_resolved_transaction_address(owner_address, 'signer_address')
-					secret_keys.append(create_secret_lock_search_key_from_hex_secret(
+					secret_keys.add(create_secret_lock_search_key_from_hex_secret(
 						owner_address,
 						transaction_row['recipient_address'],
 						body['secret'],
 						lock_hash_algorithm_label(body['hashAlgorithm'])))
 
-		return RollbackLockKeys(list(dict.fromkeys(hash_keys)), list(dict.fromkeys(secret_keys)))
+		return RollbackLockKeys(hash_keys, secret_keys)
 
 	async def _fetch_dirty_hash_locks(self, hash_keys, observed_height):
 		"""Fetches Hash Lock detail state in bounded concurrent batches."""
