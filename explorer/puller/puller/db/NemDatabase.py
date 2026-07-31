@@ -2,11 +2,14 @@ import json
 from binascii import unhexlify
 from collections import namedtuple
 
+from psycopg2.extras import execute_values
 from symbolchain.nem.Network import Address
 
 from .DatabaseConnection import DatabaseConnection
 
 AccountRefreshRecord = namedtuple('AccountRefreshRecord', ['id', 'address'])
+
+BULK_PAGE_SIZE = 1000
 
 
 class NemDatabase(DatabaseConnection):
@@ -363,25 +366,33 @@ class NemDatabase(DatabaseConnection):
 		self.connection.commit()
 
 	@staticmethod
-	def insert_block(cursor, block):
-		"""Adds block height into table."""
+	def insert_blocks(cursor, blocks):
+		"""Adds many blocks in a single statement."""
 
-		cursor.execute(
+		if not blocks:
+			return
+
+		execute_values(
+			cursor,
 			'''
 			INSERT INTO blocks (height, timestamp, total_fee, total_transactions, difficulty, hash, beneficiary, signer, signature, size)
-			VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-			''', (
-				block.height,
-				block.timestamp,
-				block.total_fee,
-				block.total_transactions,
-				block.difficulty,
-				unhexlify(block.block_hash),
-				block.beneficiary.bytes,
-				block.signer.bytes,
-				unhexlify(block.signature),
-				block.size
-			)
+			VALUES %s
+			''',
+			[
+				(
+					block.height,
+					block.timestamp,
+					block.total_fee,
+					block.total_transactions,
+					block.difficulty,
+					unhexlify(block.block_hash),
+					block.beneficiary.bytes,
+					block.signer.bytes,
+					unhexlify(block.signature),
+					block.size
+				) for block in blocks
+			],
+			page_size=BULK_PAGE_SIZE
 		)
 
 	def get_current_height(self):
@@ -437,10 +448,19 @@ class NemDatabase(DatabaseConnection):
 		return [Address(record[0]) for record in results]
 
 	@staticmethod
-	def upsert_account(cursor, account_info):
-		"""Insert or update account information."""
+	def upsert_accounts(cursor, accounts):
+		"""
+		Inserts or updates many accounts in a single statement.
 
-		cursor.execute(
+		Callers must pass at most one record per address; PostgreSQL rejects an ON CONFLICT DO UPDATE
+		that would affect the same row twice.
+		"""
+
+		if not accounts:
+			return
+
+		execute_values(
+			cursor,
 			'''
 			INSERT INTO accounts (
 				address,
@@ -457,7 +477,7 @@ class NemDatabase(DatabaseConnection):
 				cosignatory_of,
 				cosignatories
 			)
-			VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+			VALUES %s
 			ON CONFLICT (address)
 			DO UPDATE SET
 				importance = EXCLUDED.importance,
@@ -470,21 +490,25 @@ class NemDatabase(DatabaseConnection):
 				cosignatory_of = EXCLUDED.cosignatory_of,
 				cosignatories = EXCLUDED.cosignatories,
 				updated_at = CURRENT_TIMESTAMP
-			''', (
-				account_info.address.bytes,
-				account_info.height,
-				account_info.public_key.bytes if account_info.public_key else None,
-				account_info.remote_address.bytes if account_info.remote_address else None,
-				account_info.importance,
-				account_info.balance,
-				account_info.vested_balance,
-				json.dumps(account_info.mosaics),
-				account_info.harvested_blocks,
-				account_info.remote_status,
-				account_info.min_cosignatories,
-				[address.bytes for address in account_info.cosignatory_of] if len(account_info.cosignatory_of) > 0 else None,
-				[address.bytes for address in account_info.cosignatories] if len(account_info.cosignatories) > 0 else None,
-			)
+			''',
+			[
+				(
+					account_info.address.bytes,
+					account_info.height,
+					account_info.public_key.bytes if account_info.public_key else None,
+					account_info.remote_address.bytes if account_info.remote_address else None,
+					account_info.importance,
+					account_info.balance,
+					account_info.vested_balance,
+					json.dumps(account_info.mosaics),
+					account_info.harvested_blocks,
+					account_info.remote_status,
+					account_info.min_cosignatories,
+					[address.bytes for address in account_info.cosignatory_of] if len(account_info.cosignatory_of) > 0 else None,
+					[address.bytes for address in account_info.cosignatories] if len(account_info.cosignatories) > 0 else None,
+				) for account_info in accounts
+			],
+			page_size=BULK_PAGE_SIZE
 		)
 
 	@staticmethod
@@ -524,20 +548,26 @@ class NemDatabase(DatabaseConnection):
 		)
 
 	@staticmethod
-	def update_account_harvested_fees(cursor, harvester, total_fees, last_height):
-		"""Updates harvested fees for an account."""
+	def update_accounts_harvested_fees(cursor, harvested_fees):
+		"""Applies many harvested fee updates, each entry being a (harvester, total_fees, last_height) triple."""
 
-		cursor.execute(
+		if not harvested_fees:
+			return
+
+		execute_values(
+			cursor,
 			'''
-			UPDATE accounts
-			SET harvested_fees = harvested_fees + %s,
-				last_harvested_height = %s
-			WHERE address = %s
-			''', (
-				total_fees,
-				last_height,
-				harvester.bytes
-			)
+			UPDATE accounts AS account
+			SET harvested_fees = account.harvested_fees + harvested.total_fees,
+				last_harvested_height = harvested.last_height
+			FROM (VALUES %s) AS harvested (address, total_fees, last_height)
+			WHERE account.address = harvested.address::bytea
+			''',
+			[
+				(harvester.bytes, total_fees, last_height)
+				for harvester, total_fees, last_height in harvested_fees
+			],
+			page_size=BULK_PAGE_SIZE
 		)
 
 	@staticmethod
@@ -657,10 +687,14 @@ class NemDatabase(DatabaseConnection):
 		)
 
 	@staticmethod
-	def insert_transaction(cursor, transaction):
-		"""Inserts transaction information."""
+	def insert_transactions(cursor, transactions):
+		"""Adds many transactions in a single statement and returns their ids in input order."""
 
-		cursor.execute(
+		if not transactions:
+			return []
+
+		rows = execute_values(
+			cursor,
 			'''
 			INSERT INTO transactions (
 				transaction_hash,
@@ -678,45 +712,49 @@ class NemDatabase(DatabaseConnection):
 				size,
 				version
 			)
-			VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+			VALUES %s
 			RETURNING id
 			''',
-			(
-				unhexlify(transaction.transaction_hash),
-				transaction.transaction_type,
-				transaction.height,
-				transaction.sender_public_key.bytes,
-				transaction.sender_address.bytes,
-				transaction.recipient_address.bytes if transaction.recipient_address else None,
-				transaction.fee,
-				transaction.timestamp,
-				transaction.deadline,
-				unhexlify(transaction.signature) if transaction.signature else None,
-				transaction.is_inner,
-				json.dumps(transaction.payload) if transaction.payload else None,
-				transaction.size,
-				transaction.version
-			)
+			[
+				(
+					unhexlify(transaction.transaction_hash),
+					transaction.transaction_type,
+					transaction.height,
+					transaction.sender_public_key.bytes,
+					transaction.sender_address.bytes,
+					transaction.recipient_address.bytes if transaction.recipient_address else None,
+					transaction.fee,
+					transaction.timestamp,
+					transaction.deadline,
+					unhexlify(transaction.signature) if transaction.signature else None,
+					transaction.is_inner,
+					json.dumps(transaction.payload) if transaction.payload else None,
+					transaction.size,
+					transaction.version
+				) for transaction in transactions
+			],
+			page_size=BULK_PAGE_SIZE,
+			fetch=True
 		)
 
-		return cursor.fetchone()[0]
+		return [row[0] for row in rows]
 
 	@staticmethod
-	def insert_transaction_mosaic(cursor, transaction_id, mosaic):
-		"""Inserts transaction mosaic information."""
+	def insert_transaction_mosaics(cursor, transaction_mosaics):
+		"""Adds many transaction mosaics, each entry being a (transaction_id, mosaic) pair."""
 
-		cursor.execute(
+		if not transaction_mosaics:
+			return
+
+		execute_values(
+			cursor,
 			'''
-			INSERT INTO transactions_mosaic (
-				transaction_id,
-				namespace_name,
-				quantity
-			)
-			VALUES (%s, %s, %s)
+			INSERT INTO transactions_mosaic (transaction_id, namespace_name, quantity)
+			VALUES %s
 			''',
-			(
-				transaction_id,
-				mosaic.namespace_name,
-				mosaic.quantity
-			)
+			[
+				(transaction_id, mosaic.namespace_name, mosaic.quantity)
+				for transaction_id, mosaic in transaction_mosaics
+			],
+			page_size=BULK_PAGE_SIZE
 		)

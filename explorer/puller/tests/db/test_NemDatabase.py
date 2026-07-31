@@ -359,7 +359,7 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 			cursor = nem_database.connection.cursor()
 
 			# Act:
-			nem_database.insert_block(cursor, BLOCKS[0])
+			nem_database.insert_blocks(cursor, [BLOCKS[0]])
 
 			nem_database.connection.commit()
 			cursor.execute(
@@ -405,11 +405,11 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 
 			cursor = nem_database.connection.cursor()
 
-			nem_database.insert_block(cursor, BLOCKS[0])
+			nem_database.insert_blocks(cursor, [BLOCKS[0]])
 
 			# Act + Assert:
 			with self.assertRaises(psycopg2.IntegrityError):
-				nem_database.insert_block(cursor, BLOCKS[0])
+				nem_database.insert_blocks(cursor, [BLOCKS[0]])
 
 	def test_can_get_current_height(self):
 		# Arrange:
@@ -419,7 +419,7 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 			cursor = nem_database.connection.cursor()
 
 			for block in BLOCKS:
-				nem_database.insert_block(cursor, block)
+				nem_database.insert_blocks(cursor, [block])
 
 			nem_database.connection.commit()
 
@@ -448,10 +448,7 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 			cursor = nem_database.connection.cursor()
 
 			# Act:
-			nem_database.upsert_account(
-				cursor,
-				ACCOUNTS[0]
-			)
+			nem_database.upsert_accounts(cursor, [ACCOUNTS[0]])
 
 			nem_database.connection.commit()
 			result = self._fetch_account_from_db(cursor, ACCOUNTS[0].address)
@@ -484,16 +481,10 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 			cursor = nem_database.connection.cursor()
 
 			# insert initial account
-			nem_database.upsert_account(
-				cursor,
-				ACCOUNTS[0]
-			)
+			nem_database.upsert_accounts(cursor, [ACCOUNTS[0]])
 
 			# Act:
-			nem_database.upsert_account(
-				cursor,
-				ACCOUNTS[0]._replace(balance=2000000)
-			)
+			nem_database.upsert_accounts(cursor, [ACCOUNTS[0]._replace(balance=2000000)])
 
 			nem_database.connection.commit()
 			result = self._fetch_account_from_db(cursor, ACCOUNTS[0].address)
@@ -526,16 +517,10 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 			cursor = nem_database.connection.cursor()
 
 			# insert initial account
-			nem_database.upsert_account(
-				cursor,
-				ACCOUNTS[0]
-			)
+			nem_database.upsert_accounts(cursor, [ACCOUNTS[0]])
 
 			# Act:
-			nem_database.upsert_account(
-				cursor,
-				ACCOUNTS[0]._replace(height=3)
-			)
+			nem_database.upsert_accounts(cursor, [ACCOUNTS[0]._replace(height=3)])
 
 			nem_database.connection.commit()
 			result = self._fetch_account_from_db(cursor, ACCOUNTS[0].address)
@@ -553,16 +538,10 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 			cursor = nem_database.connection.cursor()
 
 			# insert an account that already carries a remote link
-			nem_database.upsert_account(
-				cursor,
-				ACCOUNTS[0]._replace(remote_address=remote_address)
-			)
+			nem_database.upsert_accounts(cursor, [ACCOUNTS[0]._replace(remote_address=remote_address)])
 
 			# Act:
-			nem_database.upsert_account(
-				cursor,
-				ACCOUNTS[0]._replace(remote_address=None, balance=2000000)
-			)
+			nem_database.upsert_accounts(cursor, [ACCOUNTS[0]._replace(remote_address=None, balance=2000000)])
 
 			nem_database.connection.commit()
 			result = self._fetch_account_from_db(cursor, ACCOUNTS[0].address)
@@ -580,7 +559,7 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 
 			cursor = nem_database.connection.cursor()
 
-			nem_database.upsert_account(cursor, ACCOUNTS[0])
+			nem_database.upsert_accounts(cursor, [ACCOUNTS[0]])
 
 			# Act:
 			nem_database.update_account_remote_address(cursor, ACCOUNTS[0].address, remote_address)
@@ -599,7 +578,7 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 
 			cursor = nem_database.connection.cursor()
 
-			nem_database.upsert_account(cursor, ACCOUNTS[0]._replace(remote_address=remote_address))
+			nem_database.upsert_accounts(cursor, [ACCOUNTS[0]._replace(remote_address=remote_address)])
 
 			# Act:
 			nem_database.update_account_remote_address(cursor, ACCOUNTS[0].address, None)
@@ -643,7 +622,7 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 
 			cursor = nem_database.connection.cursor()
 			for account in accounts:
-				nem_database.upsert_account(cursor, account)
+				nem_database.upsert_accounts(cursor, [account])
 
 			nem_database.connection.commit()
 
@@ -702,10 +681,7 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 
 			cursor = nem_database.connection.cursor()
 
-			nem_database.upsert_account(
-				cursor,
-				ACCOUNTS[0]
-			)
+			nem_database.upsert_accounts(cursor, [ACCOUNTS[0]])
 
 			# Act:
 			nem_database.update_vested_balance_and_importance(
@@ -750,26 +726,13 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 			cursor = nem_database.connection.cursor()
 
 			# insert initial account
-			nem_database.upsert_account(
-				cursor,
-				ACCOUNTS[0]
-			)
+			nem_database.upsert_accounts(cursor, [ACCOUNTS[0]])
 
 			# setup initial harvested fees:
-			nem_database.update_account_harvested_fees(
-				cursor,
-				Address(ACCOUNTS[0].address),
-				500000,
-				10
-			)
+			nem_database.update_accounts_harvested_fees(cursor, [(Address(ACCOUNTS[0].address), 500000, 10)])
 
 			# Act:
-			nem_database.update_account_harvested_fees(
-				cursor,
-				Address(ACCOUNTS[0].address),
-				250000,
-				20
-			)
+			nem_database.update_accounts_harvested_fees(cursor, [(Address(ACCOUNTS[0].address), 250000, 20)])
 
 			nem_database.connection.commit()
 			result = self._fetch_account_from_db(cursor, ACCOUNTS[0].address)
@@ -1029,10 +992,7 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 			cursor = nem_database.connection.cursor()
 
 			# Act:
-			nem_database.insert_transaction(
-				cursor,
-				transaction=TRANSACTIONS[0]
-			)
+			nem_database.insert_transactions(cursor, [TRANSACTIONS[0]])
 
 			nem_database.connection.commit()
 
@@ -1086,20 +1046,10 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 
 			cursor = nem_database.connection.cursor()
 
-			nem_database.insert_transaction(
-				cursor,
-				transaction=TRANSACTIONS[0]
-			)
+			nem_database.insert_transactions(cursor, [TRANSACTIONS[0]])
 
 			# Act:
-			nem_database.insert_transaction_mosaic(
-				cursor,
-				transaction_id=1,
-				mosaic=Mosaic(
-					namespace_name='nem.xem',
-					quantity=2000000
-				)
-			)
+			nem_database.insert_transaction_mosaics(cursor, [(1, Mosaic(namespace_name='nem.xem', quantity=2000000))])
 
 			nem_database.connection.commit()
 

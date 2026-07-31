@@ -1,21 +1,27 @@
 import asyncio
 import configparser
 import threading
-from collections import namedtuple
+from collections import OrderedDict, namedtuple
 from queue import Queue
 
 from symbolchain.CryptoTypes import PublicKey
 from symbolchain.facade.NemFacade import NemFacade
 from symbolchain.nc import TransactionType
 from symbolchain.nem.Network import Address, Network
-from symbollightapi.connector.NemConnector import NemConnector
 from symbollightapi.model.Exceptions import NodeException
 from symbollightapi.model.Transaction import Mosaic
 from zenlog import log
 
 from puller.db.NemDatabase import NemDatabase
+from puller.facade.PooledNemConnector import PooledNemConnector
 
 ACCOUNT_KEY_LINK_MODE_ACTIVATE = 1
+
+# number of account state requests kept in flight against the node
+ACCOUNT_FETCH_CONCURRENCY = 32
+
+# number of addresses remembered as already synced, so they are not re-fetched every batch
+ACCOUNT_CACHE_CAPACITY = 250_000
 
 BlockRecord = namedtuple('BlockRecord', [
 	'height',
@@ -110,8 +116,14 @@ class NemPuller:
 		network = Network.MAINNET if network_type == 'mainnet' else Network.TESTNET
 
 		self.nem_db = NemDatabase(DatabaseConfig(**db_config))
-		self.nem_connector = NemConnector(node_url, network)
+		self.nem_connector = PooledNemConnector(node_url, network)
 		self.nem_facade = NemFacade(str(network))
+
+		self._synced_addresses = OrderedDict()
+		self._writer_loop = None
+		self._pending_blocks = []
+		self._pending_transactions = []
+		self._pending_transaction_mosaics = []
 
 	@staticmethod
 	async def _retry_operation(operation, description, retries=3, delay=2):
@@ -235,12 +247,12 @@ class NemPuller:
 		if message:
 			log.info(message)
 
-	def _process_block(self, cursor, block_data):
-		"""Process block data."""
+	def _process_block(self, cursor, block_data):  # pylint: disable=unused-argument
+		"""Process block data, buffering the row until the batch is flushed."""
 
 		timestamp = self._convert_timestamp_to_datetime(block_data.timestamp)
 
-		block = BlockRecord(
+		self._pending_blocks.append(BlockRecord(
 			block_data.height,
 			timestamp,
 			block_data.total_fee,
@@ -251,9 +263,7 @@ class NemPuller:
 			block_data.signer,
 			block_data.signature,
 			block_data.size
-		)
-
-		self.nem_db.insert_block(cursor, block)
+		))
 
 	@staticmethod
 	def _convert_mosaics_to_json(account_mosaics):
@@ -297,7 +307,7 @@ class NemPuller:
 			_format_xem_absolute(account_info.vested_balance)
 		)
 
-	async def _process_account_batch(self, cursor, address_heights):
+	async def _process_account_batch(self, cursor, address_heights, concurrency=ACCOUNT_FETCH_CONCURRENCY):
 		"""
 		Process a batch of addresses: fetch account info, mosaics, and upsert.
 		Updates both new and existing accounts with latest information.
@@ -305,45 +315,97 @@ class NemPuller:
 
 		log.info(f'Processing batch of {len(address_heights)} addresses')
 
-		# Fetch account info for all addresses (both new and existing)
-		for address, height in address_heights.items():
-			account_info = await self._retry_get_account_info(address)
-			account_mosaics = await self._retry_get_account_mosaics(address)
+		semaphore = asyncio.Semaphore(concurrency)
 
-			mosaics_json = self._convert_mosaics_to_json(account_mosaics)
-			account = self._create_account_record(account_info, mosaics_json, height)
+		async def fetch(address, height):
+			async with semaphore:
+				account_info, account_mosaics = await asyncio.gather(
+					self._retry_get_account_info(address),
+					self._retry_get_account_mosaics(address))
 
-			self.nem_db.upsert_account(cursor, account)
+			return self._create_account_record(account_info, self._convert_mosaics_to_json(account_mosaics), height)
 
-	@staticmethod
-	def _add_pending_addresses(pending_addresses, addresses, height):
-		"""Adds addresses to pending account processing with their earliest recovered height."""
+		# fetch the whole batch concurrently, then write it in one statement
+		accounts = await asyncio.gather(*[fetch(address, height) for address, height in address_heights.items()])
+
+		self.nem_db.upsert_accounts(cursor, accounts)
+
+		for address in address_heights:
+			self._note_synced_address(address)
+
+	def _note_synced_address(self, address):
+		"""Records an address as synced, evicting the least recently used entry once the cache is full."""
+
+		self._synced_addresses[address] = None
+		self._synced_addresses.move_to_end(address)
+		if len(self._synced_addresses) > ACCOUNT_CACHE_CAPACITY:
+			self._synced_addresses.popitem(last=False)
+
+	def _add_pending_addresses(self, pending_addresses, addresses, height):
+		"""
+		Adds addresses to pending account processing with their earliest recovered height.
+
+		Addresses already synced during this run are skipped; the node answers account queries with
+		current state regardless of the height being synced, so re-fetching them returns the same data.
+		"""
 
 		for address in addresses:
+			if address in self._synced_addresses:
+				self._synced_addresses.move_to_end(address)
+				continue
+
 			if address not in pending_addresses:
 				pending_addresses[address] = height
 
-	def _process_harvested_fees(self, cursor, accounts_harvested_fee):  # pylint: disable=no-self-use
+	def _process_harvested_fees(self, cursor, accounts_harvested_fee):
 		"""Process harvested fees for accounts."""
 
-		for beneficiary, (total_fees, last_height) in accounts_harvested_fee.items():
-			self.nem_db.update_account_harvested_fees(
-				cursor,
-				beneficiary,
-				total_fees,
-				last_height
-			)
+		self.nem_db.update_accounts_harvested_fees(
+			cursor,
+			[
+				(beneficiary, total_fees, last_height)
+				for beneficiary, (total_fees, last_height) in accounts_harvested_fee.items()
+			]
+		)
+
+	def _flush_pending_rows(self, cursor):
+		"""Writes all buffered blocks, transactions and transaction mosaics."""
+
+		self.nem_db.insert_blocks(cursor, self._pending_blocks)
+
+		transaction_ids = self.nem_db.insert_transactions(cursor, self._pending_transactions)
+		self.nem_db.insert_transaction_mosaics(
+			cursor,
+			[(transaction_ids[index], mosaic) for index, mosaic in self._pending_transaction_mosaics])
+
+		self._pending_blocks.clear()
+		self._pending_transactions.clear()
+		self._pending_transaction_mosaics.clear()
 
 	def _flush_pending_account_state(self, cursor, pending_addresses, accounts_harvested_fee):
-		"""Flushes accumulated account and harvested fee state, clearing both accumulators."""
+		"""Flushes accumulated block, account and harvested fee state, clearing all accumulators."""
+
+		self._flush_pending_rows(cursor)
 
 		if pending_addresses:
-			asyncio.run(self._process_account_batch(cursor, pending_addresses))
+			self._run_on_writer_loop(self._process_account_batch(cursor, pending_addresses))
 			pending_addresses.clear()
 
 		if accounts_harvested_fee:
 			self._process_harvested_fees(cursor, accounts_harvested_fee)
 			accounts_harvested_fee.clear()
+
+	def _run_on_writer_loop(self, coroutine):
+		"""
+		Runs a coroutine on the writer thread's long-lived event loop.
+
+		A fresh loop per flush would discard the connector's keep-alive connections every batch.
+		"""
+
+		if self._writer_loop is None:
+			return asyncio.run(coroutine)
+
+		return self._writer_loop.run_until_complete(coroutine)
 
 	async def refresh_accounts(self, batch_size):
 		"""Refresh vested balance and importance for stored accounts."""
@@ -352,20 +414,23 @@ class NemPuller:
 		last_account_id = 0
 		total_refreshed = 0
 
-		while True:
-			accounts = self.nem_db.get_accounts_for_refresh(batch_size, last_account_id)
-			if not accounts:
-				break
+		try:
+			while True:
+				accounts = self.nem_db.get_accounts_for_refresh(batch_size, last_account_id)
+				if not accounts:
+					break
 
-			for account in accounts:
-				account_info = await self._retry_get_account_info(str(account.address))
-				account_vested_balance = self._create_account_vested_balance_record(account_info)
-				self.nem_db.update_vested_balance_and_importance(cursor, account_vested_balance)
-				last_account_id = account.id
-				total_refreshed += 1
+				for account in accounts:
+					account_info = await self._retry_get_account_info(str(account.address))
+					account_vested_balance = self._create_account_vested_balance_record(account_info)
+					self.nem_db.update_vested_balance_and_importance(cursor, account_vested_balance)
+					last_account_id = account.id
+					total_refreshed += 1
 
-			self.nem_db.connection.commit()
-			log.info(f'Refreshed {len(accounts)} accounts in current batch, {total_refreshed} total')
+				self.nem_db.connection.commit()
+				log.info(f'Refreshed {len(accounts)} accounts in current batch, {total_refreshed} total')
+		finally:
+			await self.nem_connector.close()
 
 		return total_refreshed
 
@@ -540,26 +605,27 @@ class NemPuller:
 
 	def _process_transaction(self, cursor, transaction, block_height, is_inner):
 		# pylint: disable=too-many-arguments,too-many-positional-arguments
-		"""Process a single transaction."""
+		"""
+		Process a single transaction.
 
-		transaction_record = self._build_transaction_record(transaction, is_inner)
-		transaction_id = self.nem_db.insert_transaction(cursor, transaction_record)
+		The transaction row and its mosaics are buffered until the batch is flushed, so the returned
+		index refers to the pending buffer rather than to a database id.
+		"""
+
+		self._pending_transactions.append(self._build_transaction_record(transaction, is_inner))
+		transaction_index = len(self._pending_transactions) - 1
 
 		if transaction.transaction_type == TransactionType.TRANSFER.value:
 			if transaction.mosaics:
 				for mosaic in transaction.mosaics:
 					mosaic_amount = mosaic.quantity * transaction.amount // (10 ** 6)
-					self.nem_db.insert_transaction_mosaic(
-						cursor,
-						transaction_id,
-						Mosaic(mosaic.namespace_name, mosaic_amount)
+					self._pending_transaction_mosaics.append(
+						(transaction_index, Mosaic(mosaic.namespace_name, mosaic_amount))
 					)
 			else:
 				# handle v1 transfer transaction
-				self.nem_db.insert_transaction_mosaic(
-					cursor,
-					transaction_id,
-					Mosaic('nem.xem', transaction.amount)
+				self._pending_transaction_mosaics.append(
+					(transaction_index, Mosaic('nem.xem', transaction.amount))
 				)
 		elif transaction.transaction_type == TransactionType.NAMESPACE_REGISTRATION.value:
 			self._process_namespace(cursor, transaction, block_height)
@@ -570,7 +636,7 @@ class NemPuller:
 		elif transaction.transaction_type == TransactionType.ACCOUNT_KEY_LINK.value:
 			self._process_account_key_link(cursor, transaction)
 
-		return transaction_id
+		return transaction_index
 
 	def _process_transactions(self, cursor, block_transactions, height):
 		"""Process transactions in a block."""
@@ -607,12 +673,25 @@ class NemPuller:
 
 		self._process_transactions(cursor, nemesis_block.transactions, nemesis_block.height)
 
+		self._flush_pending_rows(cursor)
+
 		self._commit_blocks('Committed Nemesis block')
 
 	def _db_writer(self, block_queue, batch_size=50):
 		"""
 		Consumer blocks from queue and write to database in batches.
 		"""
+
+		self._writer_loop = asyncio.new_event_loop()
+		try:
+			self._db_writer_loop(block_queue, batch_size)
+		finally:
+			self._writer_loop.run_until_complete(self.nem_connector.close())
+			self._writer_loop.close()
+			self._writer_loop = None
+
+	def _db_writer_loop(self, block_queue, batch_size):
+		"""Consumes blocks from the queue until the stop sentinel arrives."""
 
 		cursor = self.nem_db.connection.cursor()
 		processed = 0
@@ -708,3 +787,5 @@ class NemPuller:
 			log.error(f'Sync error: {error}')
 			block_queue.put(None)
 			raise
+		finally:
+			await self.nem_connector.close()

@@ -326,9 +326,9 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 
 		return results
 
-	@patch('puller.facade.NemPuller.NemConnector.get_block')
-	@patch('puller.facade.NemPuller.NemConnector.account_info')
-	@patch('puller.facade.NemPuller.NemConnector.account_mosaics')
+	@patch('puller.facade.NemPuller.PooledNemConnector.get_block')
+	@patch('puller.facade.NemPuller.PooledNemConnector.account_info')
+	@patch('puller.facade.NemPuller.PooledNemConnector.account_mosaics')
 	@patch('puller.facade.NemPuller.NemPuller._process_transactions')
 	@patch('puller.facade.NemPuller.NemDatabase.seed_network_currency')
 	def test_can_sync_nemesis_block(  # pylint: disable=too-many-arguments, too-many-positional-arguments
@@ -392,7 +392,7 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 			self.assertEqual(mock_process_transactions.call_args[0][1], NEM_CONNECTOR_RESPONSE_BLOCKS[0].transactions)
 			self.assertEqual(mock_process_transactions.call_args[0][2], NEM_CONNECTOR_RESPONSE_BLOCKS[0].height)
 
-	@patch('puller.facade.NemPuller.NemConnector.get_blocks_after')
+	@patch('puller.facade.NemPuller.PooledNemConnector.get_blocks_after')
 	@patch('puller.facade.NemPuller.NemPuller._process_account_batch')
 	@patch('puller.facade.NemPuller.NemPuller._process_transactions')
 	def test_can_sync_blocks(self, mock_process_transactions, mock_process_account_batch, mock_get_blocks_after):
@@ -487,7 +487,7 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 
 			mock_log.error.assert_called_once_with('Sync error: Connection timeout')
 
-	@patch('puller.facade.NemPuller.NemConnector.get_blocks_after')
+	@patch('puller.facade.NemPuller.PooledNemConnector.get_blocks_after')
 	@patch('puller.facade.NemPuller.NemPuller._commit_blocks')
 	@patch('puller.facade.NemPuller.NemPuller._process_account_batch')
 	@patch('puller.facade.NemPuller.NemPuller._process_harvested_fees')
@@ -644,7 +644,7 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 		self.assertEqual(mock_operation.call_count, 3)
 		self.assertEqual(mock_sleep.call_count, 2)
 
-	@patch('puller.facade.NemPuller.NemConnector.get_blocks_after')
+	@patch('puller.facade.NemPuller.PooledNemConnector.get_blocks_after')
 	def test_retry_get_blocks_after(self, mock_get_blocks_after):
 		# Arrange:
 		mock_get_blocks_after.return_value = NEM_CONNECTOR_RESPONSE_BLOCKS
@@ -656,7 +656,7 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 		self.assertEqual(result, NEM_CONNECTOR_RESPONSE_BLOCKS)
 		mock_get_blocks_after.assert_called_once_with(1)
 
-	@patch('puller.facade.NemPuller.NemConnector.account_info')
+	@patch('puller.facade.NemPuller.PooledNemConnector.account_info')
 	def test_retry_get_account_info(self, mock_account_info):
 		# Arrange:
 		mock_account_info.return_value = NEM_CONNECTOR_RESPONSE_ACCOUNT_INFO
@@ -669,7 +669,7 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 		self.assertEqual(result, NEM_CONNECTOR_RESPONSE_ACCOUNT_INFO)
 		mock_account_info.assert_called_once_with(address)
 
-	@patch('puller.facade.NemPuller.NemConnector.account_mosaics')
+	@patch('puller.facade.NemPuller.PooledNemConnector.account_mosaics')
 	def test_retry_get_account_mosaics(self, mock_account_mosaics):
 		# Arrange:
 		mosaics = [
@@ -813,10 +813,10 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 			if key != 'status'  # Exclude status from the record
 		}
 
-	@patch('puller.facade.NemPuller.NemConnector.account_info')
-	@patch('puller.facade.NemPuller.NemConnector.account_mosaics')
-	@patch('puller.facade.NemPuller.NemDatabase.upsert_account')
-	def test_can_process_account_batch(self, mock_upsert_account, mock_account_mosaics, mock_account_info):
+	@patch('puller.facade.NemPuller.PooledNemConnector.account_info')
+	@patch('puller.facade.NemPuller.PooledNemConnector.account_mosaics')
+	@patch('puller.facade.NemPuller.NemDatabase.upsert_accounts')
+	def test_can_process_account_batch(self, mock_upsert_accounts, mock_account_mosaics, mock_account_info):
 		# Arrange:
 		mock_account_info.return_value = NEM_CONNECTOR_RESPONSE_ACCOUNT_INFO
 		mock_account_mosaics.return_value = [
@@ -834,9 +834,9 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 		# Assert:
 		mock_account_info.assert_called_once_with(str(NEM_CONNECTOR_RESPONSE_ACCOUNT_INFO.address))
 		mock_account_mosaics.assert_called_once_with(str(NEM_CONNECTOR_RESPONSE_ACCOUNT_INFO.address))
-		mock_upsert_account.assert_called_once_with(
+		mock_upsert_accounts.assert_called_once_with(
 			cursor,
-			AccountRecord(
+			[AccountRecord(
 				height=3,
 				mosaics=[{
 					'namespace_name': 'nem.xem',
@@ -844,11 +844,33 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 				}],
 				remote_address=None,
 				**self._exclude_account_status(NEM_CONNECTOR_RESPONSE_ACCOUNT_INFO)
-			)
+			)]
 		)
 
-	@patch('puller.facade.NemPuller.NemDatabase.update_account_harvested_fees')
-	def test_can_process_harvested_fees(self, mock_update_account_harvested_fees):
+	@patch('puller.facade.NemPuller.PooledNemConnector.account_info')
+	@patch('puller.facade.NemPuller.PooledNemConnector.account_mosaics')
+	@patch('puller.facade.NemPuller.NemDatabase.upsert_accounts')
+	def test_process_account_batch_skips_addresses_already_synced(self, mock_upsert_accounts, mock_account_mosaics, mock_account_info):
+		# Arrange:
+		mock_account_info.return_value = NEM_CONNECTOR_RESPONSE_ACCOUNT_INFO
+		mock_account_mosaics.return_value = [AccountMosaic(('nem', 'xem'), 8000000)]
+
+		address = str(NEM_CONNECTOR_RESPONSE_ACCOUNT_INFO.address)
+		cursor = Mock()
+
+		# Act: sync the address, then offer it again as a pending address
+		asyncio.run(self.puller._process_account_batch(cursor, {address: 3}))  # pylint: disable=protected-access
+
+		pending_addresses = {}
+		self.puller._add_pending_addresses(pending_addresses, [address, 'OTHER'], 7)  # pylint: disable=protected-access
+
+		# Assert: the already synced address is not queued again
+		self.assertEqual({'OTHER': 7}, pending_addresses)
+		self.assertEqual(1, mock_account_info.call_count)
+		self.assertEqual(1, mock_upsert_accounts.call_count)
+
+	@patch('puller.facade.NemPuller.NemDatabase.update_accounts_harvested_fees')
+	def test_can_process_harvested_fees(self, mock_update_accounts_harvested_fees):
 		# Arrange:
 		harvested_fees = {
 			Address('TALICEPFLZQRZGPRIJTMJOCPWDNECXTNNFEN6XWA'): (59200000, 3),
@@ -860,13 +882,11 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 		self.puller._process_harvested_fees(cursor, harvested_fees)  # pylint: disable=protected-access
 
 		# Assert:
-		update_fees_calls = mock_update_account_harvested_fees.call_args_list
+		update_fees_calls = mock_update_accounts_harvested_fees.call_args_list
 		self.assertEqual(len(update_fees_calls), 1)
 		self.assertEqual(update_fees_calls[0][0], (
 			cursor,
-			Address('TALICEPFLZQRZGPRIJTMJOCPWDNECXTNNFEN6XWA'),
-			59200000,
-			3
+			[(Address('TALICEPFLZQRZGPRIJTMJOCPWDNECXTNNFEN6XWA'), 59200000, 3)]
 		))
 
 	@patch('puller.facade.NemPuller.NemPuller._retry_get_account_info')
@@ -1124,13 +1144,8 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 	def test_can_process_account_key_link_deactivate(self, mock_update_account_remote_address):
 		self._assert_account_key_link(mock_update_account_remote_address, mode=2, expects_remote_address=False)
 
-	@patch('puller.facade.NemPuller.NemDatabase.insert_transaction')
 	@patch('puller.facade.NemPuller.NemDatabase.update_account_remote_address')
-	def test_can_process_multisig_account_key_link_links_multisig_account(
-		self,
-		mock_update_account_remote_address,
-		mock_insert_transaction
-	):
+	def test_can_process_multisig_account_key_link_links_multisig_account(self, mock_update_account_remote_address):
 		# Arrange:
 		multisig_account = PublicKey('fbae41931de6a0cc25153781321f3de0806c7ba9a191474bb9a838118c8de4d3')
 		cosignatory = PublicKey('aa455d831430872feb0c6ae14265209182546c985a321c501be7fdc96ed04757')
@@ -1155,7 +1170,6 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 			'edcc8d1c48165f5b771087fbe3c4b4d41f5f8f6c4ce715e050b86fb4e7fdeb64'
 		)
 
-		mock_insert_transaction.return_value = 1
 		cursor = Mock()
 		network = self.puller.nem_facade.network
 
@@ -1360,11 +1374,8 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 			})
 
 	@patch('puller.facade.NemPuller.NemPuller._build_transaction_record')
-	@patch('puller.facade.NemPuller.NemDatabase.insert_transaction')
-	@patch('puller.facade.NemPuller.NemDatabase.insert_transaction_mosaic')
-	def test_can_process_transaction_transfer(self, mock_insert_transaction_mosaic, mock_insert_transaction, mock_build_transaction_record):
+	def test_can_process_transaction_transfer(self, mock_build_transaction_record):
 		# Arrange:
-		mock_insert_transaction.return_value = 1  # Simulate inserted transaction ID for linking mosaics
 		transfer = NEM_CONNECTOR_RESPONSE_BLOCKS[2].transactions[1]
 
 		transaction = TransferTransaction(
@@ -1393,28 +1404,17 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 
 		# Assert:
 		mock_build_transaction_record.assert_called_once()
-		mock_insert_transaction.assert_called_once()
-		insert_transaction_mosaic_calls = mock_insert_transaction_mosaic.call_args_list
+		self.assertEqual(1, len(self.puller._pending_transactions))  # pylint: disable=protected-access
 		expected_mosaics = [
 			Mosaic('namespace.test', 39),
 			Mosaic('nem.xem', 15999992)
 		]
-		for index, mosaic in enumerate(expected_mosaics):
-			self.assertEqual(insert_transaction_mosaic_calls[index][0], (
-				cursor,
-				1,  # transaction_id from insert_transaction mock
-				mosaic
-			))
+		self.assertEqual(
+			[(0, mosaic) for mosaic in expected_mosaics],
+			self.puller._pending_transaction_mosaics)  # pylint: disable=protected-access
 
 	@patch('puller.facade.NemPuller.NemPuller._build_transaction_record')
-	@patch('puller.facade.NemPuller.NemDatabase.insert_transaction')
-	@patch('puller.facade.NemPuller.NemDatabase.insert_transaction_mosaic')
-	def test_can_process_transaction_transfer_without_mosaic(
-		self,
-		mock_insert_transaction_mosaic,
-		mock_insert_transaction,
-		mock_build_transaction_record
-	):
+	def test_can_process_transaction_transfer_without_mosaic(self, mock_build_transaction_record):
 		# Arrange:
 		transaction = NEM_CONNECTOR_RESPONSE_BLOCKS[2].transactions[1]
 
@@ -1425,20 +1425,16 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 
 		# Assert:
 		mock_build_transaction_record.assert_called_once()
-		mock_insert_transaction.assert_called_once()
-		mock_insert_transaction_mosaic.assert_called_once_with(
-			cursor,
-			mock_insert_transaction.return_value,
-			Mosaic('nem.xem', transaction.amount)
-		)
+		self.assertEqual(1, len(self.puller._pending_transactions))  # pylint: disable=protected-access
+		self.assertEqual(
+			[(0, Mosaic('nem.xem', transaction.amount))],
+			self.puller._pending_transaction_mosaics)  # pylint: disable=protected-access
 
 	@patch('puller.facade.NemPuller.NemPuller._build_transaction_record')
-	@patch('puller.facade.NemPuller.NemDatabase.insert_transaction')
 	@patch('puller.facade.NemPuller.NemPuller._process_namespace')
 	def test_can_process_transaction_namespace_registration(
 		self,
 		mock_process_namespace,
-		mock_insert_transaction,
 		mock_build_transaction_record
 	):
 		# Arrange:
@@ -1451,16 +1447,14 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 
 		# Assert:
 		mock_build_transaction_record.assert_called_once()
-		mock_insert_transaction.assert_called_once()
+		self.assertEqual(1, len(self.puller._pending_transactions))  # pylint: disable=protected-access
 		mock_process_namespace.assert_called_once_with(cursor, transaction, 3)
 
 	@patch('puller.facade.NemPuller.NemPuller._build_transaction_record')
-	@patch('puller.facade.NemPuller.NemDatabase.insert_transaction')
 	@patch('puller.facade.NemPuller.NemPuller._process_mosaic_definition')
 	def test_can_process_transaction_mosaic_definition(
 		self,
 		mock_process_mosaic_definition,
-		mock_insert_transaction,
 		mock_build_transaction_record
 	):
 		# Arrange:
@@ -1473,16 +1467,14 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 
 		# Assert:
 		mock_build_transaction_record.assert_called_once()
-		mock_insert_transaction.assert_called_once()
+		self.assertEqual(1, len(self.puller._pending_transactions))  # pylint: disable=protected-access
 		mock_process_mosaic_definition.assert_called_once_with(cursor, transaction, 3)
 
 	@patch('puller.facade.NemPuller.NemPuller._build_transaction_record')
-	@patch('puller.facade.NemPuller.NemDatabase.insert_transaction')
 	@patch('puller.facade.NemPuller.NemPuller._process_mosaic_supply_change')
 	def test_can_process_transaction_mosaic_supply_change(
 		self,
 		mock_process_mosaic_supply_change,
-		mock_insert_transaction,
 		mock_build_transaction_record
 	):
 		# Arrange:
@@ -1495,7 +1487,7 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 
 		# Assert:
 		mock_build_transaction_record.assert_called_once()
-		mock_insert_transaction.assert_called_once()
+		self.assertEqual(1, len(self.puller._pending_transactions))  # pylint: disable=protected-access
 		mock_process_mosaic_supply_change.assert_called_once_with(cursor, transaction)
 
 	@patch('puller.facade.NemPuller.NemPuller._process_transaction')
