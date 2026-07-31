@@ -5,7 +5,6 @@ from puller.model.symbol.Lock import (
 	LOCK_HASH_ALGORITHM_LABELS,
 	LOCK_STATUS_LABELS,
 	create_hash_lock_key,
-	create_hash_lock_key_from_hex,
 	create_hash_lock_row,
 	create_secret_lock_row,
 	create_secret_lock_search_key,
@@ -79,6 +78,16 @@ class LockTest(TestCase):
 		# Assert:
 		self.assertEqual(create_expected_secret_lock_row(item, 123), row)
 
+	def test_create_hash_lock_key_normalizes_supported_input_types_to_bytes(self):
+		# Arrange:
+		expected_key = (bytes.fromhex(HASH),)
+
+		# Act:
+		keys = [create_hash_lock_key(HASH), create_hash_lock_key(bytes.fromhex(HASH))]
+
+		# Assert:
+		self.assertEqual([expected_key, expected_key], keys)
+
 	def test_create_hash_lock_key_requires_exactly_32_bytes(self):
 		# Arrange:
 		invalid_hash = b'not-a-hash'
@@ -87,7 +96,7 @@ class LockTest(TestCase):
 		with self.assertRaisesRegex(ValueError, '^Invalid Symbol Hash Lock key$'):
 			create_hash_lock_key(invalid_hash)
 
-	def test_create_hash_lock_key_from_hex_rejects_non_hex_and_wrong_length(self):
+	def test_create_hash_lock_key_rejects_non_hex_and_wrong_length_text(self):
 		# Arrange:
 		invalid_values = ('not-hex', 'AA' * 31, 'AA' * 33)
 
@@ -95,15 +104,15 @@ class LockTest(TestCase):
 		for invalid_value in invalid_values:
 			with self.subTest(invalid_value=invalid_value):
 				with self.assertRaisesRegex(ValueError, '^Invalid Symbol Hash Lock key$'):
-					create_hash_lock_key_from_hex(invalid_value)
+					create_hash_lock_key(invalid_value)
 
-	def test_create_hash_lock_key_from_hex_rejects_a_non_string(self):
+	def test_create_hash_lock_key_rejects_an_unsupported_type(self):
 		# Arrange:
-		invalid_hash = None
+		invalid_hash = bytearray(32)
 
 		# Act / Assert:
 		with self.assertRaisesRegex(ValueError, '^Invalid Symbol Hash Lock key$'):
-			create_hash_lock_key_from_hex(invalid_hash)
+			create_hash_lock_key(invalid_hash)
 
 	def test_create_secret_lock_search_key_supports_unknown_owner(self):
 		# Arrange:
@@ -308,6 +317,24 @@ class LockTest(TestCase):
 		with self.assertRaisesRegex(ValueError, '^Invalid Symbol Secret Lock owner address$'):
 			create_secret_lock_search_key(invalid_owner, bytes.fromhex(RECIPIENT_ADDRESS), bytes.fromhex(SECRET), 'sha3_256')
 
+	def test_create_secret_lock_search_key_rejects_non_byte_addresses_and_secret(self):
+		# Arrange:
+		owner = bytes.fromhex(OWNER_ADDRESS)
+		recipient = bytes.fromhex(RECIPIENT_ADDRESS)
+		secret = bytes.fromhex(SECRET)
+		invalid_values = (
+			('owner address', 'owner', recipient, secret),
+			('recipient address', owner, 'recipient', secret),
+			('secret', owner, recipient, 'secret')
+		)
+
+		# Act / Assert:
+		for field_name, owner_value, recipient_value, secret_value in invalid_values:
+			with self.subTest(field_name=field_name):
+				with self.assertRaisesRegex(ValueError, f'^Invalid Symbol Secret Lock {field_name}$'):
+					create_secret_lock_search_key(
+						owner_value, recipient_value, secret_value, 'sha3_256')
+
 	def test_create_secret_lock_search_key_rejects_invalid_recipient_secret_and_algorithm(self):
 		# Arrange:
 		owner = bytes.fromhex(OWNER_ADDRESS)
@@ -344,6 +371,31 @@ class LockTest(TestCase):
 
 		# Act / Assert:
 		with self.assertRaisesRegex(ValueError, '^Invalid Symbol Hash Lock hash$'):
+			create_hash_lock_row(item, 123)
+
+	def test_create_lock_rows_reject_non_string_hash_fields_with_deterministic_errors(self):
+		# Arrange:
+		invalid_fields = (
+			('Hash Lock hash', create_hash_lock_row, create_hash_lock_item(hash=None),
+				'^Invalid Symbol Hash Lock hash$'),
+			('Secret Lock compositeHash', create_secret_lock_row, create_secret_lock_item(compositeHash=None),
+				'^Invalid Symbol Secret Lock compositeHash$'),
+			('Secret Lock secret', create_secret_lock_row, create_secret_lock_item(secret=None),
+				'^Invalid Symbol Secret Lock secret$')
+		)
+
+		# Act / Assert:
+		for field_name, create_row, item, expected_error in invalid_fields:
+			with self.subTest(field_name=field_name):
+				with self.assertRaisesRegex(ValueError, expected_error):
+					create_row(item, 123)
+
+	def test_create_hash_lock_row_rejects_a_non_string_owner_address(self):
+		# Arrange:
+		item = create_hash_lock_item(ownerAddress=None)
+
+		# Act / Assert:
+		with self.assertRaisesRegex(ValueError, '^Invalid Symbol Hash Lock ownerAddress$'):
 			create_hash_lock_row(item, 123)
 
 	def test_create_secret_lock_row_rejects_invalid_mosaic_hex_with_the_expected_field_length(self):

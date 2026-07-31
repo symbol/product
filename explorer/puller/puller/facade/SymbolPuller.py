@@ -21,7 +21,7 @@ from puller.model.symbol.Account import HARVESTING_ACTIVE_WINDOW_DAYS, create_ac
 from puller.model.symbol.Block import create_block_row
 from puller.model.symbol.Lock import (
 	RollbackLockKeys,
-	create_hash_lock_key_from_hex,
+	create_hash_lock_key,
 	create_hash_lock_row,
 	create_secret_lock_row,
 	create_secret_lock_search_key_from_hex_secret,
@@ -302,11 +302,13 @@ class SymbolPuller:
 		mosaic_entries = await self._fetch_dirty_mosaics(mosaic_ids, height - 1)
 		metadata_keys = self.symbol_db.get_metadata_keys_updated_from_height(height)
 		metadata_entries = await self._fetch_dirty_metadata(metadata_keys, height - 1)
+		# Current rows recover Lock state still present after the fork, while rollback-range transactions recover
+		# exact keys for Locks already deleted on the orphan branch. Collect both before chain-row deletion.
 		rollback_transaction_keys = self.symbol_db.get_lock_keys_from_confirmed_transactions_from_height(height)
-		hash_lock_keys = self._union_hash_lock_keys(
+		hash_lock_keys = self._union_lock_keys(
 			self.symbol_db.get_hash_lock_hashes_updated_from_height(height),
 			rollback_transaction_keys.hash_keys)
-		secret_lock_keys = self._union_secret_lock_keys(
+		secret_lock_keys = self._union_lock_keys(
 			self.symbol_db.get_secret_lock_search_keys_updated_from_height(height),
 			rollback_transaction_keys.secret_keys)
 		hash_lock_entries = await self._fetch_dirty_hash_locks(hash_lock_keys, height - 1)
@@ -936,56 +938,43 @@ class SymbolPuller:
 			raise ValueError(f'Unresolved Symbol transaction {field_name} reached Lock dirty-key collection')
 
 	@staticmethod
-	def _union_hash_lock_keys(*key_lists):
-		keys = {}
-		for key_list in key_lists:
-			for key in key_list:
-				keys[key] = None
-
-		return list(keys)
-
-	@staticmethod
-	def _union_secret_lock_keys(*key_lists):
-		keys = {}
-		for key_list in key_lists:
-			for key in key_list:
-				keys[key] = None
-
-		return list(keys)
+	def _union_lock_keys(*key_lists):
+		return list(dict.fromkeys(key for key_list in key_lists for key in key_list))
 
 	def _collect_dirty_lock_keys_for_batch(self, block_rows, transaction_rows_by_height):
 		"""Collects Hash and Secret Lock dirty keys from transactions and expiring current rows."""
 
-		hash_keys = {}
-		secret_keys = {}
+		hash_keys = []
+		secret_keys = []
 		for transaction_rows in transaction_rows_by_height.values():
 			for transaction_row in transaction_rows:
 				transaction_type = transaction_row['type']
 				body = transaction_row['body']
 				if TransactionType.HASH_LOCK.value == transaction_type:
-					hash_keys[create_hash_lock_key_from_hex(body['hash'])] = None
-				elif TransactionType.AGGREGATE_BONDED.value == transaction_type and not transaction_row['is_embedded']:
-					hash_keys[create_hash_lock_key_from_hex(transaction_row['hash'].hex())] = None
+					hash_keys.append(create_hash_lock_key(body['hash']))
+				elif TransactionType.AGGREGATE_BONDED.value == transaction_type:
+					hash_keys.append(create_hash_lock_key(transaction_row['hash']))
 				elif transaction_type in (TransactionType.SECRET_LOCK.value, TransactionType.SECRET_PROOF.value):
 					self._assert_resolved_transaction_address(transaction_row['recipient_address'], 'recipient_address')
 					owner_address = transaction_row['signer_address'] if TransactionType.SECRET_LOCK.value == transaction_type else None
 					self._assert_resolved_transaction_address(owner_address, 'signer_address')
-					secret_key = create_secret_lock_search_key_from_hex_secret(
+					secret_keys.append(create_secret_lock_search_key_from_hex_secret(
 						owner_address,
 						transaction_row['recipient_address'],
 						body['secret'],
-						lock_hash_algorithm_label(body['hashAlgorithm']))
-					secret_keys[secret_key] = None
+						lock_hash_algorithm_label(body['hashAlgorithm'])))
 
 		start_height = block_rows[0]['height']
 		end_height = block_rows[-1]['height']
-		hash_keys.update({key: None for key in self.symbol_db.get_hash_lock_hashes_expiring_between(start_height, end_height)})
-		secret_keys.update({
-			key: None
-			for key in self.symbol_db.get_secret_lock_search_keys_expiring_between(start_height, end_height)
-		})
+		# Rows reaching end height in this batch must be rechecked because the node may already have pruned them.
+		ending_hash_keys = self.symbol_db.get_hash_lock_hashes_reaching_end_height_between(
+			start_height, end_height)
+		ending_secret_keys = self.symbol_db.get_secret_lock_search_keys_reaching_end_height_between(
+			start_height, end_height)
 
-		return RollbackLockKeys(list(hash_keys), list(secret_keys))
+		return RollbackLockKeys(
+			self._union_lock_keys(hash_keys, ending_hash_keys),
+			self._union_lock_keys(secret_keys, ending_secret_keys))
 
 	async def _fetch_dirty_hash_locks(self, hash_keys, observed_height):
 		"""Fetches Hash Lock detail state in bounded concurrent batches."""

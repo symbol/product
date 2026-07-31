@@ -11,7 +11,7 @@ from puller.model.symbol.Lock import (
 	LOCK_HASH_ALGORITHM_LABELS,
 	LOCK_STATUS_LABELS,
 	RollbackLockKeys,
-	create_hash_lock_key_from_hex,
+	create_hash_lock_key,
 	create_secret_lock_search_key,
 	create_secret_lock_search_key_from_hex_secret,
 	lock_hash_algorithm_label
@@ -1005,19 +1005,20 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 
 		cursor = self.connection.cursor()
 		cursor.execute(
-			'SELECT hash FROM symbol_hash_locks WHERE updated_at_height >= %s ORDER BY hash',
+			'SELECT hash FROM symbol_hash_locks WHERE updated_at_height >= %s ORDER BY updated_at_height, hash',
 			(height,))
 
-		return [create_hash_lock_key_from_hex(bytes(row[0]).hex()) for row in cursor.fetchall()]
+		return [create_hash_lock_key(bytes(row[0])) for row in cursor.fetchall()]
 
 	def get_secret_lock_search_keys_updated_from_height(self, height):  # pylint: disable=invalid-name
 		"""Gets Secret Lock logical keys whose current state was observed at or after a height."""
 
 		return self._get_secret_lock_search_keys(
 			'updated_at_height >= %s',
-			(height,))
+			(height,),
+			'updated_at_height')
 
-	def get_hash_lock_hashes_expiring_between(self, start_height, end_height):  # pylint: disable=invalid-name
+	def get_hash_lock_hashes_reaching_end_height_between(self, start_height, end_height):  # pylint: disable=invalid-name
 		"""Gets Hash Lock keys whose end height is inside an inclusive range."""
 
 		cursor = self.connection.cursor()
@@ -1026,27 +1027,33 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 			SELECT hash
 			FROM symbol_hash_locks
 			WHERE end_height BETWEEN %s AND %s
-			ORDER BY hash
+			ORDER BY end_height, hash
 			''',
 			(start_height, end_height))
 
-		return [create_hash_lock_key_from_hex(bytes(row[0]).hex()) for row in cursor.fetchall()]
+		return [create_hash_lock_key(bytes(row[0])) for row in cursor.fetchall()]
 
-	def get_secret_lock_search_keys_expiring_between(self, start_height, end_height):  # pylint: disable=invalid-name
+	def get_secret_lock_search_keys_reaching_end_height_between(self, start_height, end_height):  # pylint: disable=invalid-name
 		"""Gets Secret Lock logical keys whose end height is inside an inclusive range."""
 
 		return self._get_secret_lock_search_keys(
 			'end_height BETWEEN %s AND %s',
-			(start_height, end_height))
+			(start_height, end_height),
+			'end_height')
 
-	def _get_secret_lock_search_keys(self, predicate, parameters):
+	def _get_secret_lock_search_keys(self, predicate, parameters, sort_column):
+		# Keep interpolated SQL identifiers restricted to the two fixed query contracts.
+		sort_column = {
+			'updated_at_height': 'updated_at_height',
+			'end_height': 'end_height'
+		}[sort_column]
 		cursor = self.connection.cursor()
 		cursor.execute(
 			f'''
 			SELECT owner_address, recipient_address, secret, hash_algorithm
 			FROM symbol_secret_locks
 			WHERE {predicate}
-			ORDER BY composite_hash
+			ORDER BY {sort_column}, composite_hash
 			''',
 			parameters)
 
@@ -1062,7 +1069,7 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 		cursor = self.connection.cursor()
 		cursor.execute(
 			'''
-			SELECT type, is_embedded, hash, signer_address, recipient_address, body
+			SELECT type, hash, signer_address, recipient_address, body
 			FROM symbol_transactions
 			WHERE height >= %s
 				AND type IN (%s, %s, %s, %s)
@@ -1076,27 +1083,25 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 				TransactionType.AGGREGATE_BONDED.value
 			))
 
-		hash_keys = {}
-		secret_keys = {}
-		for transaction_type, is_embedded, transaction_hash, signer_address, recipient_address, body in cursor.fetchall():
+		hash_keys = []
+		secret_keys = []
+		for transaction_type, transaction_hash, signer_address, recipient_address, body in cursor.fetchall():
 			if TransactionType.HASH_LOCK.value == transaction_type:
-				hash_key = create_hash_lock_key_from_hex(body['hash'])
-				hash_keys[hash_key] = None
-			elif TransactionType.AGGREGATE_BONDED.value == transaction_type and not is_embedded:
-				hash_key = create_hash_lock_key_from_hex(bytes(transaction_hash).hex())
-				hash_keys[hash_key] = None
+				hash_keys.append(create_hash_lock_key(body['hash']))
+			elif TransactionType.AGGREGATE_BONDED.value == transaction_type:
+				hash_keys.append(create_hash_lock_key(bytes(transaction_hash)))
 			elif TransactionType.SECRET_LOCK.value == transaction_type:
-				secret_key = create_secret_lock_search_key_from_hex_secret(
+				secret_keys.append(create_secret_lock_search_key_from_hex_secret(
 					bytes(signer_address), bytes(recipient_address), body['secret'],
-					lock_hash_algorithm_label(body['hashAlgorithm']))
-				secret_keys[secret_key] = None
+					lock_hash_algorithm_label(body['hashAlgorithm'])))
 			elif TransactionType.SECRET_PROOF.value == transaction_type:
-				secret_key = create_secret_lock_search_key_from_hex_secret(
+				secret_keys.append(create_secret_lock_search_key_from_hex_secret(
 					None, bytes(recipient_address), body['secret'],
-					lock_hash_algorithm_label(body['hashAlgorithm']))
-				secret_keys[secret_key] = None
+					lock_hash_algorithm_label(body['hashAlgorithm'])))
 
-		return RollbackLockKeys(list(hash_keys), list(secret_keys))
+		return RollbackLockKeys(
+			list(dict.fromkeys(hash_keys)),
+			list(dict.fromkeys(secret_keys)))
 
 	def delete_namespace(self, namespace_id):
 		"""Deletes one namespace and its derived alias-name rows when it exists."""

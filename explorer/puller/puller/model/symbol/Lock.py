@@ -2,7 +2,9 @@
 
 from collections import namedtuple
 
+from symbolchain.CryptoTypes import Hash256
 from symbolchain.sc import LockHashAlgorithm
+from symbolchain.symbol.Network import Address
 
 from puller.model.symbol.format import label_for_type
 
@@ -39,24 +41,17 @@ def lock_hash_algorithm_label(hash_algorithm):
 
 
 def create_hash_lock_key(hash_value):
-	"""Creates a validated Hash Lock dirty key from a 32-byte value."""
+	"""Creates a validated Hash Lock dirty key from bytes or hexadecimal text."""
 
-	if not isinstance(hash_value, bytes) or 32 != len(hash_value):
-		raise ValueError('Invalid Symbol Hash Lock key')
-
-	return HashLockKey(hash_value)
-
-
-def create_hash_lock_key_from_hex(hash_value):
-	"""Creates a validated Hash Lock dirty key from a hexadecimal hash."""
-
-	if not isinstance(hash_value, str):
+	if not isinstance(hash_value, (bytes, str)):
 		raise ValueError('Invalid Symbol Hash Lock key')
 
 	try:
-		return create_hash_lock_key(bytes.fromhex(hash_value))
+		normalized_hash = Hash256(hash_value).bytes
 	except ValueError as exception:
 		raise ValueError('Invalid Symbol Hash Lock key') from exception
+
+	return HashLockKey(normalized_hash)
 
 
 def create_secret_lock_search_key_from_hex_secret(owner_address, recipient_address, secret, hash_algorithm):  # pylint: disable=invalid-name
@@ -66,7 +61,7 @@ def create_secret_lock_search_key_from_hex_secret(owner_address, recipient_addre
 		raise ValueError('Invalid Symbol Secret Lock secret')
 
 	try:
-		secret_bytes = bytes.fromhex(secret)
+		secret_bytes = Hash256(secret).bytes
 	except ValueError as exception:
 		raise ValueError('Invalid Symbol Secret Lock secret') from exception
 
@@ -76,16 +71,15 @@ def create_secret_lock_search_key_from_hex_secret(owner_address, recipient_addre
 def create_secret_lock_search_key(owner_address, recipient_address, secret, hash_algorithm):
 	"""Creates a validated Secret Lock logical search key."""
 
-	if owner_address is not None and (not isinstance(owner_address, bytes) or 24 != len(owner_address)):
-		raise ValueError('Invalid Symbol Secret Lock owner address')
-	if not isinstance(recipient_address, bytes) or 24 != len(recipient_address):
-		raise ValueError('Invalid Symbol Secret Lock recipient address')
-	if not isinstance(secret, bytes) or 32 != len(secret):
-		raise ValueError('Invalid Symbol Secret Lock secret')
+	normalized_owner_address = None
+	if owner_address is not None:
+		normalized_owner_address = _address_from_bytes(owner_address, 'owner address')
+	normalized_recipient_address = _address_from_bytes(recipient_address, 'recipient address')
+	normalized_secret = _hash_from_bytes(secret, 'secret')
 	if hash_algorithm not in LOCK_HASH_ALGORITHM_LABELS.values():
 		raise ValueError(f'Unsupported Symbol Secret Lock hash algorithm {hash_algorithm}')
 
-	return SecretLockSearchKey(owner_address, recipient_address, secret, hash_algorithm)
+	return SecretLockSearchKey(normalized_owner_address, normalized_recipient_address, normalized_secret, hash_algorithm)
 
 
 def _required_lock(item, lock_type):
@@ -95,13 +89,44 @@ def _required_lock(item, lock_type):
 	return item['lock']
 
 
-def _hex_bytes(lock, field_name, byte_length, lock_type):
+def _address_from_bytes(value, field_name):
+	if not isinstance(value, bytes):
+		raise ValueError(f'Invalid Symbol Secret Lock {field_name}')
+
+	try:
+		return Address(value).bytes
+	except ValueError as exception:
+		raise ValueError(f'Invalid Symbol Secret Lock {field_name}') from exception
+
+
+def _hash_from_bytes(value, field_name):
+	if not isinstance(value, bytes):
+		raise ValueError(f'Invalid Symbol Secret Lock {field_name}')
+
+	try:
+		return Hash256(value).bytes
+	except ValueError as exception:
+		raise ValueError(f'Invalid Symbol Secret Lock {field_name}') from exception
+
+
+def _decoded_address_from_hex(lock, field_name, lock_type):
 	value = lock.get(field_name)
-	if not isinstance(value, str) or len(value) != byte_length * 2:
+	if not isinstance(value, str):
 		raise ValueError(f'Invalid Symbol {lock_type} Lock {field_name}')
 
 	try:
-		return bytes.fromhex(value)
+		return Address.from_decoded_address_hex_string(value).bytes
+	except ValueError as exception:
+		raise ValueError(f'Invalid Symbol {lock_type} Lock {field_name}') from exception
+
+
+def _hash_from_hex(lock, field_name, lock_type):
+	value = lock.get(field_name)
+	if not isinstance(value, str):
+		raise ValueError(f'Invalid Symbol {lock_type} Lock {field_name}')
+
+	try:
+		return Hash256(value).bytes
 	except ValueError as exception:
 		raise ValueError(f'Invalid Symbol {lock_type} Lock {field_name}') from exception
 
@@ -134,8 +159,8 @@ def create_hash_lock_row(item, observed_height):
 
 	lock = _required_lock(item, 'Hash')
 	return {
-		'hash': _hex_bytes(lock, 'hash', 32, 'Hash'),
-		'owner_address': _hex_bytes(lock, 'ownerAddress', 24, 'Hash'),
+		'hash': _hash_from_hex(lock, 'hash', 'Hash'),
+		'owner_address': _decoded_address_from_hex(lock, 'ownerAddress', 'Hash'),
 		'mosaic_id': _mosaic_id(lock, 'Hash'),
 		'amount': _integer(lock, 'amount', 'Hash'),
 		'end_height': _integer(lock, 'endHeight', 'Hash'),
@@ -149,10 +174,10 @@ def create_secret_lock_row(item, observed_height):
 	"""Creates one persisted Secret Lock row from a Symbol node response wrapper."""
 
 	lock = _required_lock(item, 'Secret')
-	composite_hash = _hex_bytes(lock, 'compositeHash', 32, 'Secret')
-	owner_address = _hex_bytes(lock, 'ownerAddress', 24, 'Secret')
-	recipient_address = _hex_bytes(lock, 'recipientAddress', 24, 'Secret')
-	secret = _hex_bytes(lock, 'secret', 32, 'Secret')
+	composite_hash = _hash_from_hex(lock, 'compositeHash', 'Secret')
+	owner_address = _decoded_address_from_hex(lock, 'ownerAddress', 'Secret')
+	recipient_address = _decoded_address_from_hex(lock, 'recipientAddress', 'Secret')
+	secret = _hash_from_hex(lock, 'secret', 'Secret')
 	hash_algorithm = lock_hash_algorithm_label(lock.get('hashAlgorithm'))
 	create_secret_lock_search_key(owner_address, recipient_address, secret, hash_algorithm)
 

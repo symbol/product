@@ -13,7 +13,7 @@ from symbolchain.symbol.Network import Network
 
 from puller.db.SymbolDatabase import RollbackRefreshEntries, SymbolDatabase
 from puller.model.symbol.Account import create_account_row
-from puller.model.symbol.Lock import create_hash_lock_key_from_hex, create_secret_lock_search_key
+from puller.model.symbol.Lock import create_hash_lock_key, create_secret_lock_search_key
 from puller.model.symbol.Transaction import TRANSACTION_TYPE_LABELS
 from tests.facade.symbol.puller_test_utils import NATIVE_MOSAIC_ID, create_account_item
 from tests.test.SymbolDatabaseTestUtils import fetch_full_block_state, fetch_normalized_sync_state
@@ -4236,7 +4236,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 				'CREATE UNIQUE INDEX symbol_secret_locks_pkey ON public.symbol_secret_locks USING btree (composite_hash)')
 		], cursor.fetchall())
 
-	def test_create_tables_creates_exact_lock_enum_labels_and_column_types(self):
+	def test_create_tables_creates_exact_lock_enum_labels(self):
 		# Arrange:
 		database = self._create_uninitialized_database()
 		cursor = database.connection.cursor()
@@ -4260,6 +4260,16 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			('symbol_lock_status', 'unused'),
 			('symbol_lock_status', 'used')
 		], cursor.fetchall())
+
+	def test_create_tables_uses_lock_enum_types_for_lock_columns(self):
+		# Arrange:
+		database = self._create_uninitialized_database()
+		cursor = database.connection.cursor()
+
+		# Act:
+		database.create_tables()
+
+		# Assert:
 		cursor.execute(
 			'''
 			SELECT table_name, column_name, udt_name
@@ -4331,7 +4341,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			''')
 		self.assertEqual([], cursor.fetchall())
 
-	def test_hash_lock_upsert_update_and_delete_persist_current_state(self):
+	def test_hash_lock_upsert_and_update_persist_current_state(self):
 		# Arrange:
 		database = self._create_database()
 		initial_row = _create_hash_lock_row()
@@ -4342,14 +4352,23 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		database.upsert_hash_lock(updated_row)
 		cursor = database.connection.cursor()
 		cursor.execute('SELECT hash, amount, end_height, status, updated_at_height FROM symbol_hash_locks')
-		updated_state = cursor.fetchall()
-		database.delete_hash_lock(create_hash_lock_key_from_hex(LOCK_HASH.hex()))
 
 		# Assert:
 		self.assertEqual(
 			[(LOCK_HASH, 1234, 200, 'used', 2)],
 			[(bytes(lock_hash), amount, end_height, status, updated_at_height)
-				for lock_hash, amount, end_height, status, updated_at_height in updated_state])
+				for lock_hash, amount, end_height, status, updated_at_height in cursor.fetchall()])
+
+	def test_delete_hash_lock_removes_current_state(self):
+		# Arrange:
+		database = self._create_database()
+		database.upsert_hash_lock(_create_hash_lock_row())
+
+		# Act:
+		database.delete_hash_lock(create_hash_lock_key(LOCK_HASH))
+
+		# Assert:
+		cursor = database.connection.cursor()
 		cursor.execute('SELECT hash FROM symbol_hash_locks')
 		self.assertEqual([], cursor.fetchall())
 
@@ -4376,10 +4395,12 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 	def test_secret_lock_unknown_owner_replace_removes_all_owner_siblings(self):
 		# Arrange:
 		database = self._create_database()
-		rows = [_create_secret_lock_row(), _create_secret_lock_row(
-			composite_hash=LOCK_COMPOSITE_HASH_2, owner_address=LOCK_OWNER_2)]
 		database.replace_secret_locks(
-			create_secret_lock_search_key(None, LOCK_RECIPIENT, LOCK_SECRET, 'hash160'), rows)
+			create_secret_lock_search_key(LOCK_OWNER, LOCK_RECIPIENT, LOCK_SECRET, 'hash160'),
+			[_create_secret_lock_row()])
+		database.replace_secret_locks(
+			create_secret_lock_search_key(LOCK_OWNER_2, LOCK_RECIPIENT, LOCK_SECRET, 'hash160'),
+			[_create_secret_lock_row(composite_hash=LOCK_COMPOSITE_HASH_2, owner_address=LOCK_OWNER_2)])
 
 		# Act:
 		database.replace_secret_locks(
@@ -4456,10 +4477,11 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		database = self._create_database()
 		height_rows = (
 			(9, b'\x50' * 32),
+			(10, b'\x40' * 32),
 			(10, b'\x30' * 32),
 			(11, b'\x10' * 32),
-			(12, b'\x40' * 32),
-			(13, b'\x20' * 32)
+			(12, b'\x20' * 32),
+			(13, b'\x60' * 32)
 		)
 		for observed_height, lock_hash in height_rows:
 			database.upsert_hash_lock(_create_hash_lock_row(observed_height, lock_hash, end_height=1))
@@ -4468,36 +4490,49 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		keys = database.get_hash_lock_hashes_updated_from_height(10)
 
 		# Assert:
-		self.assertEqual([b'\x10' * 32, b'\x20' * 32, b'\x30' * 32, b'\x40' * 32], [key.hash for key in keys])
+		self.assertEqual([
+			b'\x30' * 32,
+			b'\x40' * 32,
+			b'\x10' * 32,
+			b'\x20' * 32,
+			b'\x60' * 32
+		], [key.hash for key in keys])
 
-	def test_get_hash_lock_hashes_expiring_between_returns_ordered_boundary_rows(self):
+	def test_get_hash_lock_hashes_reaching_end_height_between_returns_height_ordered_boundary_rows(self):
 		# Arrange:
 		database = self._create_database()
 		height_rows = (
 			(9, b'\x50' * 32),
 			(10, b'\x40' * 32),
+			(10, b'\x30' * 32),
 			(11, b'\x10' * 32),
-			(12, b'\x30' * 32),
-			(13, b'\x20' * 32)
+			(12, b'\x20' * 32),
+			(13, b'\x60' * 32)
 		)
 		for end_height, lock_hash in height_rows:
 			database.upsert_hash_lock(_create_hash_lock_row(observed_height=1, lock_hash=lock_hash, end_height=end_height))
 
 		# Act:
-		keys = database.get_hash_lock_hashes_expiring_between(10, 12)
+		keys = database.get_hash_lock_hashes_reaching_end_height_between(10, 12)
 
 		# Assert:
-		self.assertEqual([b'\x10' * 32, b'\x30' * 32, b'\x40' * 32], [key.hash for key in keys])
+		self.assertEqual([
+			b'\x30' * 32,
+			b'\x40' * 32,
+			b'\x10' * 32,
+			b'\x20' * 32
+		], [key.hash for key in keys])
 
 	def test_get_secret_lock_search_keys_updated_from_height_returns_ordered_boundary_rows(self):
 		# Arrange:
 		database = self._create_database()
 		height_rows = (
 			(9, b'\x50' * 32, b'\x59' * 32),
-			(10, b'\x30' * 32, b'\x39' * 32),
+			(10, b'\x40' * 32, b'\x01' * 32),
+			(10, b'\x30' * 32, b'\x99' * 32),
 			(11, b'\x10' * 32, b'\x19' * 32),
-			(12, b'\x40' * 32, b'\x49' * 32),
-			(13, b'\x20' * 32, b'\x29' * 32)
+			(12, b'\x20' * 32, b'\x29' * 32),
+			(13, b'\x60' * 32, b'\x49' * 32)
 		)
 		for observed_height, composite_hash, secret in height_rows:
 			row = _create_secret_lock_row(observed_height, composite_hash, secret=secret, end_height=1)
@@ -4509,21 +4544,23 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 
 		# Assert:
 		self.assertEqual([
+			(LOCK_OWNER, LOCK_RECIPIENT, b'\x99' * 32, 'hash160'),
+			(LOCK_OWNER, LOCK_RECIPIENT, b'\x01' * 32, 'hash160'),
 			(LOCK_OWNER, LOCK_RECIPIENT, b'\x19' * 32, 'hash160'),
 			(LOCK_OWNER, LOCK_RECIPIENT, b'\x29' * 32, 'hash160'),
-			(LOCK_OWNER, LOCK_RECIPIENT, b'\x39' * 32, 'hash160'),
 			(LOCK_OWNER, LOCK_RECIPIENT, b'\x49' * 32, 'hash160')
 		], keys)
 
-	def test_get_secret_lock_search_keys_expiring_between_returns_ordered_boundary_rows(self):
+	def test_get_secret_lock_search_keys_reaching_end_height_between_returns_height_ordered_boundary_rows(self):
 		# Arrange:
 		database = self._create_database()
 		height_rows = (
 			(9, b'\x50' * 32, b'\x59' * 32),
-			(10, b'\x40' * 32, b'\x49' * 32),
+			(10, b'\x40' * 32, b'\x01' * 32),
+			(10, b'\x30' * 32, b'\x99' * 32),
 			(11, b'\x10' * 32, b'\x19' * 32),
-			(12, b'\x30' * 32, b'\x39' * 32),
-			(13, b'\x20' * 32, b'\x29' * 32)
+			(12, b'\x20' * 32, b'\x29' * 32),
+			(13, b'\x60' * 32, b'\x49' * 32)
 		)
 		for end_height, composite_hash, secret in height_rows:
 			row = _create_secret_lock_row(observed_height=1, composite_hash=composite_hash, secret=secret, end_height=end_height)
@@ -4531,13 +4568,14 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 				create_secret_lock_search_key(LOCK_OWNER, LOCK_RECIPIENT, secret, 'hash160'), [row])
 
 		# Act:
-		keys = database.get_secret_lock_search_keys_expiring_between(10, 12)
+		keys = database.get_secret_lock_search_keys_reaching_end_height_between(10, 12)
 
 		# Assert:
 		self.assertEqual([
+			(LOCK_OWNER, LOCK_RECIPIENT, b'\x99' * 32, 'hash160'),
+			(LOCK_OWNER, LOCK_RECIPIENT, b'\x01' * 32, 'hash160'),
 			(LOCK_OWNER, LOCK_RECIPIENT, b'\x19' * 32, 'hash160'),
-			(LOCK_OWNER, LOCK_RECIPIENT, b'\x39' * 32, 'hash160'),
-			(LOCK_OWNER, LOCK_RECIPIENT, b'\x49' * 32, 'hash160')
+			(LOCK_OWNER, LOCK_RECIPIENT, b'\x29' * 32, 'hash160')
 		], keys)
 
 	def test_confirmed_transaction_lock_key_collection_includes_only_authoritative_sources(self):
@@ -4562,23 +4600,9 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			type_name=TRANSACTION_TYPE_LABELS[TransactionType.SECRET_PROOF.value],
 			signer_address=LOCK_OWNER_2, recipient_address=LOCK_RECIPIENT,
 			body={'secret': LOCK_SECRET.hex().upper(), 'hashAlgorithm': 0})
-		secret_proof_after = create_transaction_entry(
-			2, 'secret-proof-after', type=TransactionType.SECRET_PROOF.value,
-			type_name=TRANSACTION_TYPE_LABELS[TransactionType.SECRET_PROOF.value],
-			signer_address=LOCK_OWNER, recipient_address=LOCK_RECIPIENT,
-			body={'secret': LOCK_SECRET.hex().upper(), 'hashAlgorithm': 0})
-		embedded_aggregate_transaction = create_transaction_entry(
-			2, 'embedded-aggregate', is_embedded=True,
-			type=TransactionType.AGGREGATE_BONDED.value,
-			type_name=TRANSACTION_TYPE_LABELS[TransactionType.AGGREGATE_BONDED.value])
-		hash_lock_after_proof = create_transaction_entry(
-			2, 'hash-lock-after-proof', type=TransactionType.HASH_LOCK.value,
-			type_name=TRANSACTION_TYPE_LABELS[TransactionType.HASH_LOCK.value],
-			body={'hash': LOCK_HASH.hex().upper()})
 		database.upsert_transactions_for_height(2, [
 			hash_lock_transaction, aggregate_transaction, secret_lock_transaction,
-			secret_proof_transaction, secret_proof_after, embedded_aggregate_transaction,
-			hash_lock_after_proof])
+			secret_proof_transaction])
 
 		# Act:
 		keys = database.get_lock_keys_from_confirmed_transactions_from_height(2)
@@ -4588,6 +4612,54 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		self.assertEqual([
 			(LOCK_OWNER, LOCK_RECIPIENT, LOCK_SECRET, 'sha3_256'),
 			(None, LOCK_RECIPIENT, LOCK_SECRET, 'sha3_256')
+		], keys.secret_keys)
+
+	def test_confirmed_transaction_lock_key_collection_deduplicates_in_first_encounter_order(self):
+		# Arrange:
+		database = self._create_database()
+		database.upsert_blocks([_create_block(2)])
+		first_hash = b'\x30' * 32
+		second_hash = b'\x10' * 32
+		first_secret = b'\x40' * 32
+		second_secret = b'\x20' * 32
+		database.upsert_transactions_for_height(2, [
+			create_transaction_entry(
+				2, 'first-hash-lock', type=TransactionType.HASH_LOCK.value,
+				type_name=TRANSACTION_TYPE_LABELS[TransactionType.HASH_LOCK.value],
+				body={'hash': first_hash.hex().upper()}),
+			create_transaction_entry(
+				2, 'aggregate-bonded', type=TransactionType.AGGREGATE_BONDED.value,
+				type_name=TRANSACTION_TYPE_LABELS[TransactionType.AGGREGATE_BONDED.value],
+				hash=second_hash),
+			create_transaction_entry(
+				2, 'duplicate-hash-lock', type=TransactionType.HASH_LOCK.value,
+				type_name=TRANSACTION_TYPE_LABELS[TransactionType.HASH_LOCK.value],
+				body={'hash': first_hash.hex().upper()}),
+			create_transaction_entry(
+				2, 'first-secret-proof', type=TransactionType.SECRET_PROOF.value,
+				type_name=TRANSACTION_TYPE_LABELS[TransactionType.SECRET_PROOF.value],
+				recipient_address=LOCK_RECIPIENT,
+				body={'secret': first_secret.hex().upper(), 'hashAlgorithm': 0}),
+			create_transaction_entry(
+				2, 'secret-lock', type=TransactionType.SECRET_LOCK.value,
+				type_name=TRANSACTION_TYPE_LABELS[TransactionType.SECRET_LOCK.value],
+				signer_address=LOCK_OWNER, recipient_address=LOCK_RECIPIENT,
+				body={'secret': second_secret.hex().upper(), 'hashAlgorithm': 0}),
+			create_transaction_entry(
+				2, 'duplicate-secret-proof', type=TransactionType.SECRET_PROOF.value,
+				type_name=TRANSACTION_TYPE_LABELS[TransactionType.SECRET_PROOF.value],
+				recipient_address=LOCK_RECIPIENT,
+				body={'secret': first_secret.hex().upper(), 'hashAlgorithm': 0})
+		])
+
+		# Act:
+		keys = database.get_lock_keys_from_confirmed_transactions_from_height(2)
+
+		# Assert:
+		self.assertEqual([first_hash, second_hash], [key.hash for key in keys.hash_keys])
+		self.assertEqual([
+			(None, LOCK_RECIPIENT, first_secret, 'sha3_256'),
+			(LOCK_OWNER, LOCK_RECIPIENT, second_secret, 'sha3_256')
 		], keys.secret_keys)
 
 	def test_confirmed_transaction_lock_key_collection_includes_creation_and_completion_at_or_after_fork_height(self):
@@ -4705,13 +4777,40 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			2,
 			_create_sync_state(status='repairing', last_synced_height=1, last_synced_block_hash=b'hash 1'),
 			RollbackRefreshEntries(hash_lock_entries=[{
-				'hash': create_hash_lock_key_from_hex(LOCK_HASH.hex())
+				'hash': create_hash_lock_key(LOCK_HASH)
 			}]))
 
 		# Assert:
 		cursor = database.connection.cursor()
 		cursor.execute('SELECT hash FROM symbol_hash_locks')
 		self.assertEqual([], cursor.fetchall())
+
+	def test_repair_rollback_applies_empty_secret_lock_replacement_and_preserves_siblings(self):
+		# Arrange:
+		database = self._create_database()
+		target_key = create_secret_lock_search_key(LOCK_OWNER, LOCK_RECIPIENT, LOCK_SECRET, 'hash160')
+		sibling_key = create_secret_lock_search_key(LOCK_OWNER_2, LOCK_RECIPIENT, LOCK_SECRET, 'hash160')
+		database.replace_secret_locks(target_key, [_create_secret_lock_row()])
+		database.replace_secret_locks(
+			sibling_key,
+			[_create_secret_lock_row(composite_hash=LOCK_COMPOSITE_HASH_2, owner_address=LOCK_OWNER_2)])
+
+		# Act:
+		database.repair_rollback_from_height(
+			2,
+			_create_sync_state(status='repairing', last_synced_height=1, last_synced_block_hash=b'hash 1'),
+			RollbackRefreshEntries(secret_lock_entries=[{
+				'key': target_key,
+				'rows': []
+			}]))
+
+		# Assert:
+		cursor = database.connection.cursor()
+		cursor.execute('SELECT composite_hash, owner_address FROM symbol_secret_locks ORDER BY composite_hash')
+		self.assertEqual(
+			[(LOCK_COMPOSITE_HASH_2, LOCK_OWNER_2)],
+			[(bytes(composite_hash), bytes(owner_address)) for composite_hash, owner_address in cursor.fetchall()])
+		self.assertEqual('repairing', database.get_sync_state()['status'])
 
 	def test_repair_rollback_restores_chain_and_lock_state_when_later_secret_lock_write_fails(self):  # pylint: disable=too-many-locals
 		# Arrange:

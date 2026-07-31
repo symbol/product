@@ -12,7 +12,6 @@ def create_secret_lock_item(
 	end_height='5678',
 	status=1,
 	item_id='secret-item',
-	lock_overrides=None,
 	**overrides
 ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
 	lock = {
@@ -26,8 +25,6 @@ def create_secret_lock_item(
 		'endHeight': end_height,
 		'status': status
 	}
-	if lock_overrides:
-		lock.update(lock_overrides)
 	lock.update(overrides)
 	return {'lock': lock, 'id': item_id}
 
