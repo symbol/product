@@ -1134,6 +1134,30 @@ class SymbolPullerLocksTest(SymbolPullerTestBase):
 		# Assert:
 		self.assertEqual(expected_lock_state, self._fetch_persisted_lock_state())
 
+	def test_sync_block_headers_removes_a_dirty_hash_lock_when_node_returns_not_found(self):
+		# Arrange:
+		self.puller.symbol_db.upsert_hash_lock(create_hash_lock_row(create_hash_lock_item(), 1))
+		connector = self._create_hash_lock_sync_connector()
+		connector.hash_responses['lock/hash/' + LOCK_HASH] = {
+			'code': 'ResourceNotFound',
+			'message': 'not found'
+		}
+
+		# Act:
+		self._sync_with_connector(connector)
+
+		# Assert:
+		self.assertEqual(([], []), self._fetch_persisted_lock_state())
+		self.assertEqual([1], self._fetch_block_heights(self.puller.symbol_db))
+		cursor = self.puller.symbol_db.connection.cursor()
+		cursor.execute('SELECT COUNT(*) FROM symbol_transactions')
+		self.assertEqual(1, cursor.fetchone()[0])
+		sync_state = self.puller.symbol_db.get_sync_state()
+		self.assertEqual(1, sync_state['chain_height'])
+		self.assertEqual(1, sync_state['last_synced_height'])
+		hash_paths = [path for path in connector.paths if path == 'lock/hash/' + LOCK_HASH]
+		self.assertEqual(1, len(hash_paths))
+
 	def test_sync_block_headers_persists_a_secret_lock(self):
 		# Arrange:
 		connector = self._create_secret_lock_sync_connector()
