@@ -19,6 +19,14 @@ from puller.db.SymbolDatabase import RollbackRefreshEntries, SymbolDatabase
 from puller.facade.RequestRateLimiter import RequestRateLimiter
 from puller.model.symbol.Account import HARVESTING_ACTIVE_WINDOW_DAYS, create_account_row, create_multisig_row
 from puller.model.symbol.Block import create_block_row
+from puller.model.symbol.Lock import (
+	RollbackLockKeys,
+	create_hash_lock_key,
+	create_hash_lock_row,
+	create_secret_lock_row,
+	create_secret_lock_search_key_from_hex_secret,
+	lock_hash_algorithm_label
+)
 from puller.model.symbol.Metadata import METADATA_TRANSACTION_TYPE_LABELS, METADATA_TYPE_NUMBERS, create_metadata_row
 from puller.model.symbol.Mosaic import create_mosaic_row
 from puller.model.symbol.Namespace import create_alias_name_rows, create_namespace_row
@@ -42,6 +50,7 @@ ACCOUNT_BATCH_FETCH_SIZE = MAX_PAGE_SIZE
 BLOCK_PAGE_FETCH_CONCURRENCY = 10
 RESOLUTION_FETCH_CONCURRENCY = 10
 METADATA_FETCH_CONCURRENCY = 10
+LOCK_FETCH_CONCURRENCY = 10
 DEFAULT_MAX_REQUESTS_PER_SECOND = 20
 ACCOUNT_PAGE_SIZE = 100
 
@@ -194,6 +203,8 @@ class SymbolPuller:
 			if not finalized_hash:
 				raise ValueError(f'Unable to determine finalized hash for height {finalized_height}')
 
+		await self._sync_finalization_lock_cleanup(finalized_height)
+
 		self.symbol_db.upsert_sync_state({
 			'status': 'healthy',
 			'chain_height': chain_height,
@@ -293,12 +304,23 @@ class SymbolPuller:
 		mosaic_entries = await self._fetch_dirty_mosaics(mosaic_ids, height - 1)
 		metadata_keys = self.symbol_db.get_metadata_keys_updated_from_height(height)
 		metadata_entries = await self._fetch_dirty_metadata(metadata_keys, height - 1)
+		# Current rows recover Lock state still present after the fork. Finalized rows cannot be part of this
+		# unfinalized repair range, so transaction history is not an authoritative rollback key source.
+		hash_lock_keys = self.symbol_db.get_hash_lock_hashes_updated_from_height(height)
+		secret_lock_keys = self.symbol_db.get_secret_lock_search_keys_updated_from_height(height)
+		hash_lock_entries = await self._fetch_dirty_hash_locks(hash_lock_keys, height - 1)
+		secret_lock_entries = await self._fetch_dirty_secret_locks(secret_lock_keys, height - 1)
 		self.symbol_db.repair_rollback_from_height(height, {
 			**sync_state,
 			'status': 'repairing',
 			'last_synced_height': height - 1,
 			'last_synced_block_hash': self.symbol_db.get_block_hash(height - 1)
-		}, RollbackRefreshEntries(namespace_entries, mosaic_entries, metadata_entries))
+		}, RollbackRefreshEntries(
+			namespace_entries,
+			mosaic_entries,
+			metadata_entries,
+			hash_lock_entries,
+			secret_lock_entries))
 		return height
 
 	async def _sync_block_pages(  # pylint: disable=too-many-locals
@@ -348,7 +370,7 @@ class SymbolPuller:
 
 		return last_synced_height, last_synced_block_hash
 
-	async def _sync_block_batch_with_dirty_state(
+	async def _sync_block_batch_with_dirty_state(  # pylint: disable=too-many-locals
 		self,
 		batch_rows,
 		epoch_adjustment_seconds,
@@ -377,11 +399,28 @@ class SymbolPuller:
 		dirty_mosaic_entries = await self._fetch_dirty_mosaics(dirty_mosaic_ids, observed_height)
 		dirty_metadata_keys = self._collect_dirty_metadata_keys_for_batch(transaction_rows_by_height)
 		dirty_metadata_entries = await self._fetch_dirty_metadata(dirty_metadata_keys, observed_height)
+		dirty_lock_keys = self._collect_dirty_lock_keys_for_batch(transaction_rows_by_height)
+		dirty_hash_lock_entries = await self._fetch_dirty_hash_locks(
+			list(dirty_lock_keys.hash_keys), observed_height)
+		dirty_secret_lock_entries = await self._fetch_dirty_secret_locks(
+			list(dirty_lock_keys.secret_keys), observed_height)
 		self._sync_block_batch(batch_rows, transaction_rows_by_height, receipt_rows_by_height)
 		self._write_dirty_accounts_for_batch(dirty_account_rows)
 		self.symbol_db.apply_namespace_entries(dirty_namespace_entries)
 		self._write_dirty_mosaics(dirty_mosaic_entries)
 		self._write_dirty_metadata(dirty_metadata_entries)
+		self._write_dirty_hash_locks(dirty_hash_lock_entries)
+		self._write_dirty_secret_locks(dirty_secret_lock_entries)
+
+	async def _sync_finalization_lock_cleanup(self, finalized_height):
+		"""Reconciles all current Lock rows whose end height has reached finalization."""
+
+		hash_lock_keys = self.symbol_db.get_hash_lock_hashes_reaching_finalized_height(finalized_height)
+		secret_lock_keys = self.symbol_db.get_secret_lock_search_keys_reaching_finalized_height(finalized_height)
+		# Fetch every replacement before the first cleanup write so a failed request leaves all state untouched.
+		hash_lock_entries = await self._fetch_dirty_hash_locks(hash_lock_keys, finalized_height)
+		secret_lock_entries = await self._fetch_dirty_secret_locks(secret_lock_keys, finalized_height)
+		self.symbol_db.apply_finalization_lock_entries(hash_lock_entries, secret_lock_entries)
 
 	def _sync_block_batch(self, batch_rows, transaction_rows_by_height, receipt_rows_by_height):
 		"""Writes previously-fetched block, transaction, and receipt rows for one batch.
@@ -899,6 +938,120 @@ class SymbolPuller:
 				self.symbol_db.delete_metadata_by_key(entry['key'])
 			else:
 				self.symbol_db.upsert_metadata(entry['row'])
+
+	@staticmethod
+	def _assert_resolved_transaction_address(address, field_name):
+		if address is not None and Address(address).is_alias():
+			raise ValueError(f'Unresolved Symbol transaction {field_name} reached Lock dirty-key collection')
+
+	def _collect_dirty_lock_keys_for_batch(self, transaction_rows_by_height):
+		"""Collects Hash and Secret Lock dirty keys from transactions in the current batch."""
+
+		hash_keys = set()
+		secret_keys = set()
+		for transaction_rows in transaction_rows_by_height.values():
+			for transaction_row in transaction_rows:
+				transaction_type = transaction_row['type']
+				body = transaction_row['body']
+				if TransactionType.HASH_LOCK.value == transaction_type:
+					hash_keys.add(create_hash_lock_key(body['hash']))
+				elif TransactionType.AGGREGATE_BONDED.value == transaction_type:
+					hash_keys.add(create_hash_lock_key(transaction_row['hash']))
+				elif transaction_type in (TransactionType.SECRET_LOCK.value, TransactionType.SECRET_PROOF.value):
+					self._assert_resolved_transaction_address(transaction_row['recipient_address'], 'recipient_address')
+					owner_address = transaction_row['signer_address'] if TransactionType.SECRET_LOCK.value == transaction_type else None
+					self._assert_resolved_transaction_address(owner_address, 'signer_address')
+					secret_keys.add(create_secret_lock_search_key_from_hex_secret(
+						owner_address,
+						transaction_row['recipient_address'],
+						body['secret'],
+						lock_hash_algorithm_label(body['hashAlgorithm'])))
+
+		return RollbackLockKeys(hash_keys, secret_keys)
+
+	async def _fetch_dirty_hash_locks(self, hash_keys, observed_height):
+		"""Fetches Hash Lock detail state in bounded concurrent batches."""
+
+		async def fetch_entry(hash_key):
+			path = f'/lock/hash/{hash_key.hash.hex().upper()}'
+			response = await self.get_symbol_node(path, not_found_as_error=False)
+			if _is_not_found_response(response):
+				return {'hash': hash_key}
+
+			row = create_hash_lock_row(response, observed_height)
+			if row['hash'] != hash_key.hash:
+				raise ValueError('Symbol Hash Lock response hash does not match dirty key')
+
+			return {'row': row}
+
+		entries = []
+		for chunk_start in range(0, len(hash_keys), LOCK_FETCH_CONCURRENCY):
+			chunk = hash_keys[chunk_start:chunk_start + LOCK_FETCH_CONCURRENCY]
+			entries.extend(await asyncio.gather(*(fetch_entry(hash_key) for hash_key in chunk)))
+
+		return entries
+
+	async def _fetch_dirty_secret_locks(self, search_keys, observed_height):
+		"""Fetches and exactly filters paginated Secret Lock search results in bounded concurrent batches."""
+
+		async def fetch_entry(search_key):
+			page_number = 1
+			matching_rows = []
+			composite_hashes = set()
+			while True:
+				path = '/lock/secret?'
+				if search_key.owner_address is not None:
+					path += f'address={Address(search_key.owner_address)}&'
+				path += f'secret={search_key.secret.hex().upper()}&pageSize={MAX_PAGE_SIZE}&pageNumber={page_number}'
+				response = await self.get_symbol_node(path, not_found_as_error=False)
+				if _is_not_found_response(response):
+					items = []
+				else:
+					if not isinstance(response, dict) or not isinstance(response.get('data'), list):
+						raise ValueError('Malformed Symbol Secret Lock search response')
+					items = response['data']
+
+				for item in items:
+					row = create_secret_lock_row(item, observed_height)
+					if row['composite_hash'] in composite_hashes:
+						raise ValueError('Duplicate Symbol Secret Lock composite hash')
+					composite_hashes.add(row['composite_hash'])
+					if search_key.owner_address is not None and row['owner_address'] != search_key.owner_address:
+						continue
+					if row['recipient_address'] != search_key.recipient_address:
+						continue
+					if row['secret'] != search_key.secret:
+						continue
+					if row['hash_algorithm'] != search_key.hash_algorithm:
+						continue
+					matching_rows.append(row)
+
+				if len(items) < MAX_PAGE_SIZE:
+					return {'key': search_key, 'rows': matching_rows}
+
+				page_number += 1
+
+		entries = []
+		for chunk_start in range(0, len(search_keys), LOCK_FETCH_CONCURRENCY):
+			chunk = search_keys[chunk_start:chunk_start + LOCK_FETCH_CONCURRENCY]
+			entries.extend(await asyncio.gather(*(fetch_entry(search_key) for search_key in chunk)))
+
+		return entries
+
+	def _write_dirty_hash_locks(self, entries):
+		"""Writes fetched Hash Lock current-state changes after all batch fetches complete."""
+
+		for entry in entries:
+			if 'hash' in entry:
+				self.symbol_db.delete_hash_lock(entry['hash'])
+			else:
+				self.symbol_db.upsert_hash_lock(entry['row'])
+
+	def _write_dirty_secret_locks(self, entries):
+		"""Replaces fetched Secret Lock logical keys after all batch fetches complete."""
+
+		for entry in entries:
+			self.symbol_db.replace_secret_locks(entry['key'], entry['rows'])
 
 	async def _fetch_dirty_accounts_for_batch(  # pylint: disable=too-many-locals
 		self,

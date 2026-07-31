@@ -6,6 +6,7 @@ from psycopg2.extras import Json
 
 from puller.model.symbol.Account import ACCOUNT_TYPE_VALUES
 from puller.model.symbol.Block import BLOCK_TYPE_VALUES
+from puller.model.symbol.Lock import LOCK_HASH_ALGORITHM_LABELS, LOCK_STATUS_LABELS, create_hash_lock_key, create_secret_lock_search_key
 from puller.model.symbol.Metadata import METADATA_TYPE_LABELS
 from puller.model.symbol.Namespace import NAMESPACE_ALIAS_TYPE_LABELS, NAMESPACE_REGISTRATION_TYPE_LABELS
 from puller.model.symbol.Receipt import RECEIPT_TYPE_LABELS
@@ -14,7 +15,9 @@ from puller.model.symbol.Transaction import MESSAGE_TYPE_LABELS, TRANSACTION_TYP
 from .DatabaseConnection import DatabaseConnection
 
 RollbackRefreshEntries = namedtuple(
-	'RollbackRefreshEntries', ['namespace_entries', 'mosaic_entries', 'metadata_entries'], defaults=((), (), ()))
+	'RollbackRefreshEntries',
+	['namespace_entries', 'mosaic_entries', 'metadata_entries', 'hash_lock_entries', 'secret_lock_entries'],
+	defaults=((), (), (), (), ()))
 
 SYNC_STATE_COLUMNS = [
 	'status',
@@ -38,6 +41,8 @@ SYMBOL_NAMESPACE_REGISTRATION_TYPE_VALUES = tuple(NAMESPACE_REGISTRATION_TYPE_LA
 SYMBOL_NAMESPACE_ALIAS_TYPE_VALUES = tuple(NAMESPACE_ALIAS_TYPE_LABELS.values())
 SYMBOL_ALIAS_ARTIFACT_TYPE_VALUES = ('mosaic', 'namespace', 'account')
 SYMBOL_METADATA_TYPE_VALUES = tuple(METADATA_TYPE_LABELS.values())
+SYMBOL_LOCK_STATUS_VALUES = tuple(LOCK_STATUS_LABELS.values())
+SYMBOL_LOCK_HASH_ALGORITHM_VALUES = tuple(LOCK_HASH_ALGORITHM_LABELS.values())
 ACCOUNT_REFRESH_STATE_STATUS_VALUES = ('healthy', 'refreshing', 'stale', 'unhealthy')
 ACCOUNT_REFRESH_STATE_COLUMNS = [
 	'last_successful_run_id',
@@ -302,6 +307,57 @@ SYMBOL_METADATA_INDEXES = [
 	'CREATE INDEX IF NOT EXISTS idx_symbol_metadata_target_id ON symbol_metadata(target_id)',
 	'CREATE INDEX IF NOT EXISTS idx_symbol_metadata_updated_height ON symbol_metadata(updated_at_height)'
 ]
+SYMBOL_HASH_LOCK_DEFINITIONS = [
+	'hash bytea PRIMARY KEY',
+	'owner_address bytea NOT NULL',
+	'mosaic_id varchar(16) NOT NULL',
+	'amount bigint NOT NULL',
+	'end_height bigint NOT NULL',
+	'status symbol_lock_status NOT NULL',
+	'raw_payload jsonb NOT NULL',
+	'updated_at_height bigint NOT NULL'
+]
+SYMBOL_SECRET_LOCK_DEFINITIONS = [
+	'composite_hash bytea PRIMARY KEY',
+	'owner_address bytea NOT NULL',
+	'recipient_address bytea NOT NULL',
+	'secret bytea NOT NULL',
+	'hash_algorithm symbol_lock_hash_algorithm NOT NULL',
+	'mosaic_id varchar(16) NOT NULL',
+	'amount bigint NOT NULL',
+	'end_height bigint NOT NULL',
+	'status symbol_lock_status NOT NULL',
+	'raw_payload jsonb NOT NULL',
+	'updated_at_height bigint NOT NULL'
+]
+SYMBOL_LOCK_INDEXES = [
+	'CREATE INDEX IF NOT EXISTS idx_symbol_hash_locks_owner_end_height '
+	'ON symbol_hash_locks(owner_address, end_height DESC, hash DESC)',
+	'CREATE INDEX IF NOT EXISTS idx_symbol_hash_locks_mosaic_end_height '
+	'ON symbol_hash_locks(mosaic_id, end_height DESC, hash DESC)',
+	'CREATE INDEX IF NOT EXISTS idx_symbol_hash_locks_status_end_height '
+	'ON symbol_hash_locks(status, end_height DESC, hash DESC)',
+	'CREATE INDEX IF NOT EXISTS idx_symbol_hash_locks_end_height '
+	'ON symbol_hash_locks(end_height DESC, hash DESC)',
+	'CREATE INDEX IF NOT EXISTS idx_symbol_hash_locks_updated_at_height '
+	'ON symbol_hash_locks(updated_at_height)',
+	'CREATE INDEX IF NOT EXISTS idx_symbol_secret_locks_owner_end_height '
+	'ON symbol_secret_locks(owner_address, end_height DESC, composite_hash DESC)',
+	'CREATE INDEX IF NOT EXISTS idx_symbol_secret_locks_recipient_end_height '
+	'ON symbol_secret_locks(recipient_address, end_height DESC, composite_hash DESC)',
+	'CREATE INDEX IF NOT EXISTS idx_symbol_secret_locks_mosaic_end_height '
+	'ON symbol_secret_locks(mosaic_id, end_height DESC, composite_hash DESC)',
+	'CREATE INDEX IF NOT EXISTS idx_symbol_secret_locks_status_end_height '
+	'ON symbol_secret_locks(status, end_height DESC, composite_hash DESC)',
+	'CREATE INDEX IF NOT EXISTS idx_symbol_secret_locks_hash_algorithm_end_height '
+	'ON symbol_secret_locks(hash_algorithm, end_height DESC, composite_hash DESC)',
+	'CREATE INDEX IF NOT EXISTS idx_symbol_secret_locks_end_height '
+	'ON symbol_secret_locks(end_height DESC, composite_hash DESC)',
+	'CREATE INDEX IF NOT EXISTS idx_symbol_secret_locks_updated_at_height '
+	'ON symbol_secret_locks(updated_at_height)',
+	'CREATE INDEX IF NOT EXISTS idx_symbol_secret_locks_search '
+	'ON symbol_secret_locks(secret, recipient_address, hash_algorithm, owner_address)'
+]
 SYMBOL_TRANSACTION_DEFINITIONS = [
 	'id bigserial PRIMARY KEY',
 	'hash bytea UNIQUE',
@@ -414,6 +470,8 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 		_create_enum_type(cursor, 'symbol_namespace_alias_type', SYMBOL_NAMESPACE_ALIAS_TYPE_VALUES)
 		_create_enum_type(cursor, 'symbol_alias_artifact_type', SYMBOL_ALIAS_ARTIFACT_TYPE_VALUES)
 		_create_enum_type(cursor, 'symbol_metadata_type', SYMBOL_METADATA_TYPE_VALUES)
+		_create_enum_type(cursor, 'symbol_lock_status', SYMBOL_LOCK_STATUS_VALUES)
+		_create_enum_type(cursor, 'symbol_lock_hash_algorithm', SYMBOL_LOCK_HASH_ALGORITHM_VALUES)
 		_create_table(cursor, 'symbol_sync_state', SYMBOL_SYNC_STATE_DEFINITIONS)
 		_create_table(cursor, 'symbol_blocks', SYMBOL_BLOCK_DEFINITIONS)
 		_create_table(cursor, 'symbol_account_refresh_state', SYMBOL_ACCOUNT_REFRESH_STATE_DEFINITIONS)
@@ -436,6 +494,10 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 			cursor.execute(index_sql)
 		_create_table(cursor, 'symbol_metadata', SYMBOL_METADATA_DEFINITIONS)
 		for index_sql in SYMBOL_METADATA_INDEXES:
+			cursor.execute(index_sql)
+		_create_table(cursor, 'symbol_hash_locks', SYMBOL_HASH_LOCK_DEFINITIONS)
+		_create_table(cursor, 'symbol_secret_locks', SYMBOL_SECRET_LOCK_DEFINITIONS)
+		for index_sql in SYMBOL_LOCK_INDEXES:
 			cursor.execute(index_sql)
 		cursor.execute('CREATE SEQUENCE IF NOT EXISTS symbol_transaction_list_sequence_seq')
 		_create_table(cursor, 'symbol_transactions', SYMBOL_TRANSACTION_DEFINITIONS)
@@ -654,6 +716,19 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 				SymbolDatabase._execute_upsert_metadata(cursor, entry['row'])
 
 	@staticmethod
+	def _execute_hash_lock_entries(cursor, hash_lock_entries):
+		for entry in hash_lock_entries:
+			if 'hash' in entry:
+				SymbolDatabase._execute_delete_hash_lock(cursor, entry['hash'])
+			else:
+				SymbolDatabase._execute_upsert_hash_lock(cursor, entry['row'])
+
+	@staticmethod
+	def _execute_secret_lock_entries(cursor, secret_lock_entries):
+		for entry in secret_lock_entries:
+			SymbolDatabase._execute_replace_secret_locks(cursor, entry['key'], entry['rows'])
+
+	@staticmethod
 	def _execute_refresh_mosaic_alias_names(cursor, mosaic_ids):
 		for mosaic_id in mosaic_ids:
 			cursor.execute(
@@ -821,6 +896,170 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 			}
 			for row in cursor.fetchall()
 		]
+
+	def upsert_hash_lock(self, hash_lock_row):
+		"""Upserts one Hash Lock current-state row by its aggregate bonded hash."""
+
+		with self._database_transaction() as cursor:
+			self._execute_upsert_hash_lock(cursor, hash_lock_row)
+
+	def delete_hash_lock(self, hash_lock):
+		"""Deletes one Hash Lock current-state row by its aggregate bonded hash."""
+
+		with self._database_transaction() as cursor:
+			self._execute_delete_hash_lock(cursor, hash_lock)
+
+	@staticmethod
+	def _execute_upsert_hash_lock(cursor, hash_lock_row):
+		cursor.execute(
+			'''
+			INSERT INTO symbol_hash_locks (
+				hash, owner_address, mosaic_id, amount, end_height, status, raw_payload, updated_at_height
+			)
+			VALUES (
+				%(hash)s, %(owner_address)s, %(mosaic_id)s, %(amount)s, %(end_height)s, %(status)s,
+				%(raw_payload)s, %(updated_at_height)s
+			)
+			ON CONFLICT (hash) DO UPDATE SET
+				owner_address = EXCLUDED.owner_address,
+				mosaic_id = EXCLUDED.mosaic_id,
+				amount = EXCLUDED.amount,
+				end_height = EXCLUDED.end_height,
+				status = EXCLUDED.status,
+				raw_payload = EXCLUDED.raw_payload,
+				updated_at_height = EXCLUDED.updated_at_height
+			''',
+			{**hash_lock_row, 'raw_payload': Json(hash_lock_row['raw_payload'])})
+
+	@staticmethod
+	def _execute_delete_hash_lock(cursor, hash_lock):
+		cursor.execute('DELETE FROM symbol_hash_locks WHERE hash = %s', (hash_lock.hash,))
+
+	def replace_secret_locks(self, search_key, secret_lock_rows):
+		"""Replaces all Secret Lock rows matching one logical key, including an empty replacement."""
+
+		with self._database_transaction() as cursor:
+			self._execute_replace_secret_locks(cursor, search_key, secret_lock_rows)
+
+	@staticmethod
+	def _execute_replace_secret_locks(cursor, search_key, secret_lock_rows):
+		SymbolDatabase._execute_delete_secret_locks(cursor, search_key)
+		for secret_lock_row in secret_lock_rows:
+			SymbolDatabase._execute_upsert_secret_lock(cursor, secret_lock_row)
+
+	@staticmethod
+	def _execute_delete_secret_locks(cursor, search_key):
+		where_clause = '''
+			WHERE recipient_address = %(recipient_address)s
+				AND secret = %(secret)s
+				AND hash_algorithm = %(hash_algorithm)s
+		'''
+		parameters = {
+			'recipient_address': search_key.recipient_address,
+			'secret': search_key.secret,
+			'hash_algorithm': search_key.hash_algorithm
+		}
+		if search_key.owner_address is not None:
+			where_clause += ' AND owner_address = %(owner_address)s'
+			parameters['owner_address'] = search_key.owner_address
+
+		cursor.execute(f'DELETE FROM symbol_secret_locks {where_clause}', parameters)
+
+	@staticmethod
+	def _execute_upsert_secret_lock(cursor, secret_lock_row):
+		cursor.execute(
+			'''
+			INSERT INTO symbol_secret_locks (
+				composite_hash, owner_address, recipient_address, secret, hash_algorithm, mosaic_id,
+				amount, end_height, status, raw_payload, updated_at_height
+			)
+			VALUES (
+				%(composite_hash)s, %(owner_address)s, %(recipient_address)s, %(secret)s, %(hash_algorithm)s,
+				%(mosaic_id)s, %(amount)s, %(end_height)s, %(status)s, %(raw_payload)s, %(updated_at_height)s
+			)
+			ON CONFLICT (composite_hash) DO UPDATE SET
+				owner_address = EXCLUDED.owner_address,
+				recipient_address = EXCLUDED.recipient_address,
+				secret = EXCLUDED.secret,
+				hash_algorithm = EXCLUDED.hash_algorithm,
+				mosaic_id = EXCLUDED.mosaic_id,
+				amount = EXCLUDED.amount,
+				end_height = EXCLUDED.end_height,
+				status = EXCLUDED.status,
+				raw_payload = EXCLUDED.raw_payload,
+				updated_at_height = EXCLUDED.updated_at_height
+			''',
+			{**secret_lock_row, 'raw_payload': Json(secret_lock_row['raw_payload'])})
+
+	def get_hash_lock_hashes_updated_from_height(self, height):  # pylint: disable=invalid-name
+		"""Gets Hash Lock keys whose current state was observed at or after a height."""
+
+		cursor = self.connection.cursor()
+		cursor.execute(
+			'SELECT hash FROM symbol_hash_locks WHERE updated_at_height >= %s ORDER BY updated_at_height, hash',
+			(height,))
+
+		return [create_hash_lock_key(bytes(row[0])) for row in cursor.fetchall()]
+
+	def get_secret_lock_search_keys_updated_from_height(self, height):  # pylint: disable=invalid-name
+		"""Gets Secret Lock logical keys whose current state was observed at or after a height."""
+
+		return self._get_secret_lock_search_keys(
+			'updated_at_height >= %s',
+			(height,),
+			'updated_at_height')
+
+	def get_hash_lock_hashes_reaching_finalized_height(self, finalized_height):  # pylint: disable=invalid-name
+		"""Gets Hash Lock keys whose end height has reached finalization."""
+
+		cursor = self.connection.cursor()
+		cursor.execute(
+			'''
+			SELECT hash
+			FROM symbol_hash_locks
+			WHERE end_height <= %s
+			ORDER BY end_height, hash
+			''',
+			(finalized_height,))
+
+		return [create_hash_lock_key(bytes(row[0])) for row in cursor.fetchall()]
+
+	def get_secret_lock_search_keys_reaching_finalized_height(self, finalized_height):  # pylint: disable=invalid-name
+		"""Gets Secret Lock logical keys whose end height has reached finalization."""
+
+		return self._get_secret_lock_search_keys(
+			'end_height <= %s',
+			(finalized_height,),
+			'end_height')
+
+	def _get_secret_lock_search_keys(self, predicate, parameters, sort_column):
+		# Keep the interpolated ORDER BY identifier restricted to the updated-height and finalized-height contracts.
+		sort_column = {
+			'updated_at_height': 'updated_at_height',
+			'end_height': 'end_height'
+		}[sort_column]
+		cursor = self.connection.cursor()
+		cursor.execute(
+			f'''
+			SELECT owner_address, recipient_address, secret, hash_algorithm
+			FROM symbol_secret_locks
+			WHERE {predicate}
+			ORDER BY {sort_column}, composite_hash
+			''',
+			parameters)
+
+		return [
+			create_secret_lock_search_key(
+				bytes(row[0]), bytes(row[1]), bytes(row[2]), row[3])
+			for row in cursor.fetchall()
+		]
+
+	def apply_finalization_lock_entries(self, hash_lock_entries, secret_lock_entries):
+		"""Applies finalized Hash and Secret Lock replacements in one transaction."""
+
+		with self._database_transaction() as cursor:
+			self._execute_hash_lock_entries(cursor, hash_lock_entries)
+			self._execute_secret_lock_entries(cursor, secret_lock_entries)
 
 	def delete_namespace(self, namespace_id):
 		"""Deletes one namespace and its derived alias-name rows when it exists."""
@@ -1274,6 +1513,8 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 			self._execute_namespace_entries(cursor, refresh_entries.namespace_entries)
 			self._execute_mosaic_entries(cursor, refresh_entries.mosaic_entries)
 			self._execute_metadata_entries(cursor, refresh_entries.metadata_entries)
+			self._execute_hash_lock_entries(cursor, refresh_entries.hash_lock_entries)
+			self._execute_secret_lock_entries(cursor, refresh_entries.secret_lock_entries)
 			self._execute_upsert_sync_state(cursor, sync_state)
 
 	@staticmethod
@@ -1286,6 +1527,8 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 		cursor.execute('DELETE FROM symbol_multisig WHERE updated_at_height >= %s', (height,))
 		cursor.execute('DELETE FROM symbol_account_mosaics WHERE updated_at_height >= %s', (height,))
 		cursor.execute('DELETE FROM symbol_accounts WHERE last_seen_height >= %s', (height,))
+		cursor.execute('DELETE FROM symbol_hash_locks WHERE updated_at_height >= %s', (height,))
+		cursor.execute('DELETE FROM symbol_secret_locks WHERE updated_at_height >= %s', (height,))
 
 	def upsert_transactions_for_height(self, height, transaction_entries):
 		"""Replaces persisted Symbol transactions and child index rows for one height."""

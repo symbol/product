@@ -13,6 +13,7 @@ from symbolchain.symbol.Network import Network
 
 from puller.db.SymbolDatabase import RollbackRefreshEntries, SymbolDatabase
 from puller.model.symbol.Account import create_account_row
+from puller.model.symbol.Lock import create_hash_lock_key, create_secret_lock_search_key
 from tests.facade.symbol.puller_test_utils import NATIVE_MOSAIC_ID, create_account_item
 from tests.test.SymbolDatabaseTestUtils import fetch_full_block_state, fetch_normalized_sync_state
 from tests.test.SymbolMetadataTestUtils import (
@@ -48,6 +49,50 @@ ADDRESS1 = '9889432DE263BB8FE88444A4DA28D3609BD8BB8FAE18AE95'
 ADDRESS2 = '9889432DE263BB8FE88444A4DA28D3609BD8BB8FAE18AE96'
 ADDRESS3 = '9889432DE263BB8FE88444A4DA28D3609BD8BB8FAE18AE97'
 ADDRESS4 = '98' + '11' * 23
+LOCK_HASH = bytes.fromhex('AA' * 32)
+LOCK_HASH_2 = bytes.fromhex('BB' * 32)
+LOCK_SECRET = bytes.fromhex('CC' * 32)
+LOCK_COMPOSITE_HASH = bytes.fromhex('DD' * 32)
+LOCK_COMPOSITE_HASH_2 = bytes.fromhex('EE' * 32)
+LOCK_OWNER = bytes.fromhex(ADDRESS1)
+LOCK_OWNER_2 = bytes.fromhex(ADDRESS2)
+LOCK_RECIPIENT = bytes.fromhex(ADDRESS3)
+
+
+def _create_hash_lock_row(observed_height=1, lock_hash=LOCK_HASH, end_height=100, status='unused'):
+	return {
+		'hash': lock_hash,
+		'owner_address': LOCK_OWNER,
+		'mosaic_id': NATIVE_MOSAIC_ID,
+		'amount': 1234,
+		'end_height': end_height,
+		'status': status,
+		'raw_payload': {'lock': {'hash': lock_hash.hex()}},
+		'updated_at_height': observed_height
+	}
+
+
+def _create_secret_lock_row(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+	observed_height=1,
+	composite_hash=LOCK_COMPOSITE_HASH,
+	owner_address=LOCK_OWNER,
+	secret=LOCK_SECRET,
+	end_height=100,
+	status='unused'
+):
+	return {
+		'composite_hash': composite_hash,
+		'owner_address': owner_address,
+		'recipient_address': LOCK_RECIPIENT,
+		'secret': secret,
+		'hash_algorithm': 'hash160',
+		'mosaic_id': NATIVE_MOSAIC_ID,
+		'amount': 1234,
+		'end_height': end_height,
+		'status': status,
+		'raw_payload': {'lock': {'compositeHash': composite_hash.hex()}},
+		'updated_at_height': observed_height
+	}
 
 
 def _create_block(height, block_hash=None, **overrides):
@@ -1759,11 +1804,13 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			'symbol_accounts',
 			'symbol_alias_names',
 			'symbol_blocks',
+			'symbol_hash_locks',
 			'symbol_metadata',
 			'symbol_mosaics',
 			'symbol_multisig',
 			'symbol_namespaces',
 			'symbol_receipts',
+			'symbol_secret_locks',
 			'symbol_sync_state',
 			'symbol_transaction_addresses',
 			'symbol_transaction_mosaics',
@@ -4007,3 +4054,711 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			bytes(b'hash 1'),
 			bytes(sync_state['last_synced_block_hash'])
 		)
+
+	def test_create_tables_creates_exact_hash_lock_columns_types_and_nullability(self):
+		# Arrange:
+		database = self._create_uninitialized_database()
+		cursor = database.connection.cursor()
+
+		# Act:
+		database.create_tables()
+
+		# Assert:
+		cursor.execute(
+			'''
+			SELECT table_name, column_name, udt_name, is_nullable, character_maximum_length
+			FROM information_schema.columns
+			WHERE table_name = 'symbol_hash_locks'
+			ORDER BY ordinal_position
+			''')
+		self.assertEqual([
+			('symbol_hash_locks', 'hash', 'bytea', 'NO', None),
+			('symbol_hash_locks', 'owner_address', 'bytea', 'NO', None),
+			('symbol_hash_locks', 'mosaic_id', 'varchar', 'NO', 16),
+			('symbol_hash_locks', 'amount', 'int8', 'NO', None),
+			('symbol_hash_locks', 'end_height', 'int8', 'NO', None),
+			('symbol_hash_locks', 'status', 'symbol_lock_status', 'NO', None),
+			('symbol_hash_locks', 'raw_payload', 'jsonb', 'NO', None),
+			('symbol_hash_locks', 'updated_at_height', 'int8', 'NO', None)
+		], cursor.fetchall())
+
+	def test_create_tables_creates_exact_hash_lock_primary_key_constraint(self):
+		# Arrange:
+		database = self._create_uninitialized_database()
+		cursor = database.connection.cursor()
+
+		# Act:
+		database.create_tables()
+
+		# Assert:
+		cursor.execute(
+			'''
+			SELECT table_constraints.constraint_type, key_column_usage.column_name
+			FROM information_schema.table_constraints AS table_constraints
+			JOIN information_schema.key_column_usage AS key_column_usage
+				USING (constraint_catalog, constraint_schema, constraint_name)
+			WHERE table_constraints.table_name = 'symbol_hash_locks'
+				AND table_constraints.constraint_type = 'PRIMARY KEY'
+			ORDER BY key_column_usage.ordinal_position
+			''')
+		self.assertEqual([('PRIMARY KEY', 'hash')], cursor.fetchall())
+
+	def test_create_tables_creates_exact_hash_lock_index_set(self):
+		# Arrange:
+		database = self._create_uninitialized_database()
+		cursor = database.connection.cursor()
+
+		# Act:
+		database.create_tables()
+
+		# Assert:
+		cursor.execute(
+			'''
+			SELECT indexname, indexdef
+			FROM pg_indexes
+			WHERE tablename = 'symbol_hash_locks'
+			ORDER BY indexname
+			''')
+		self.assertEqual([
+			('idx_symbol_hash_locks_end_height',
+				'CREATE INDEX idx_symbol_hash_locks_end_height ON public.symbol_hash_locks '
+				'USING btree (end_height DESC, hash DESC)'),
+			('idx_symbol_hash_locks_mosaic_end_height',
+				'CREATE INDEX idx_symbol_hash_locks_mosaic_end_height ON public.symbol_hash_locks '
+				'USING btree (mosaic_id, end_height DESC, hash DESC)'),
+			('idx_symbol_hash_locks_owner_end_height',
+				'CREATE INDEX idx_symbol_hash_locks_owner_end_height ON public.symbol_hash_locks '
+				'USING btree (owner_address, end_height DESC, hash DESC)'),
+			('idx_symbol_hash_locks_status_end_height',
+				'CREATE INDEX idx_symbol_hash_locks_status_end_height ON public.symbol_hash_locks '
+				'USING btree (status, end_height DESC, hash DESC)'),
+			('idx_symbol_hash_locks_updated_at_height',
+				'CREATE INDEX idx_symbol_hash_locks_updated_at_height ON public.symbol_hash_locks '
+				'USING btree (updated_at_height)'),
+			('symbol_hash_locks_pkey',
+				'CREATE UNIQUE INDEX symbol_hash_locks_pkey ON public.symbol_hash_locks USING btree (hash)')
+		], cursor.fetchall())
+
+	def test_create_tables_creates_exact_secret_lock_columns_types_and_nullability(self):
+		# Arrange:
+		database = self._create_uninitialized_database()
+		cursor = database.connection.cursor()
+
+		# Act:
+		database.create_tables()
+
+		# Assert:
+		cursor.execute(
+			'''
+			SELECT table_name, column_name, udt_name, is_nullable, character_maximum_length
+			FROM information_schema.columns
+			WHERE table_name = 'symbol_secret_locks'
+			ORDER BY ordinal_position
+			''')
+		self.assertEqual([
+			('symbol_secret_locks', 'composite_hash', 'bytea', 'NO', None),
+			('symbol_secret_locks', 'owner_address', 'bytea', 'NO', None),
+			('symbol_secret_locks', 'recipient_address', 'bytea', 'NO', None),
+			('symbol_secret_locks', 'secret', 'bytea', 'NO', None),
+			('symbol_secret_locks', 'hash_algorithm', 'symbol_lock_hash_algorithm', 'NO', None),
+			('symbol_secret_locks', 'mosaic_id', 'varchar', 'NO', 16),
+			('symbol_secret_locks', 'amount', 'int8', 'NO', None),
+			('symbol_secret_locks', 'end_height', 'int8', 'NO', None),
+			('symbol_secret_locks', 'status', 'symbol_lock_status', 'NO', None),
+			('symbol_secret_locks', 'raw_payload', 'jsonb', 'NO', None),
+			('symbol_secret_locks', 'updated_at_height', 'int8', 'NO', None)
+		], cursor.fetchall())
+
+	def test_create_tables_creates_exact_secret_lock_primary_key_constraint(self):
+		# Arrange:
+		database = self._create_uninitialized_database()
+		cursor = database.connection.cursor()
+
+		# Act:
+		database.create_tables()
+
+		# Assert:
+		cursor.execute(
+			'''
+			SELECT table_constraints.constraint_type, key_column_usage.column_name
+			FROM information_schema.table_constraints AS table_constraints
+			JOIN information_schema.key_column_usage AS key_column_usage
+				USING (constraint_catalog, constraint_schema, constraint_name)
+			WHERE table_constraints.table_name = 'symbol_secret_locks'
+				AND table_constraints.constraint_type = 'PRIMARY KEY'
+			ORDER BY key_column_usage.ordinal_position
+			''')
+		self.assertEqual([('PRIMARY KEY', 'composite_hash')], cursor.fetchall())
+
+	def test_create_tables_creates_exact_secret_lock_index_set(self):
+		# Arrange:
+		database = self._create_uninitialized_database()
+		cursor = database.connection.cursor()
+
+		# Act:
+		database.create_tables()
+
+		# Assert:
+		cursor.execute(
+			'''
+			SELECT indexname, indexdef
+			FROM pg_indexes
+			WHERE tablename = 'symbol_secret_locks'
+			ORDER BY indexname
+			''')
+		self.assertEqual([
+			('idx_symbol_secret_locks_end_height',
+				'CREATE INDEX idx_symbol_secret_locks_end_height ON public.symbol_secret_locks '
+				'USING btree (end_height DESC, composite_hash DESC)'),
+			('idx_symbol_secret_locks_hash_algorithm_end_height',
+				'CREATE INDEX idx_symbol_secret_locks_hash_algorithm_end_height ON public.symbol_secret_locks '
+				'USING btree (hash_algorithm, end_height DESC, composite_hash DESC)'),
+			('idx_symbol_secret_locks_mosaic_end_height',
+				'CREATE INDEX idx_symbol_secret_locks_mosaic_end_height ON public.symbol_secret_locks '
+				'USING btree (mosaic_id, end_height DESC, composite_hash DESC)'),
+			('idx_symbol_secret_locks_owner_end_height',
+				'CREATE INDEX idx_symbol_secret_locks_owner_end_height ON public.symbol_secret_locks '
+				'USING btree (owner_address, end_height DESC, composite_hash DESC)'),
+			('idx_symbol_secret_locks_recipient_end_height',
+				'CREATE INDEX idx_symbol_secret_locks_recipient_end_height ON public.symbol_secret_locks '
+				'USING btree (recipient_address, end_height DESC, composite_hash DESC)'),
+			('idx_symbol_secret_locks_search',
+				'CREATE INDEX idx_symbol_secret_locks_search ON public.symbol_secret_locks '
+				'USING btree (secret, recipient_address, hash_algorithm, owner_address)'),
+			('idx_symbol_secret_locks_status_end_height',
+				'CREATE INDEX idx_symbol_secret_locks_status_end_height ON public.symbol_secret_locks '
+				'USING btree (status, end_height DESC, composite_hash DESC)'),
+			('idx_symbol_secret_locks_updated_at_height',
+				'CREATE INDEX idx_symbol_secret_locks_updated_at_height ON public.symbol_secret_locks '
+				'USING btree (updated_at_height)'),
+			('symbol_secret_locks_pkey',
+				'CREATE UNIQUE INDEX symbol_secret_locks_pkey ON public.symbol_secret_locks USING btree (composite_hash)')
+		], cursor.fetchall())
+
+	def test_create_tables_creates_exact_lock_enum_labels(self):
+		# Arrange:
+		database = self._create_uninitialized_database()
+		cursor = database.connection.cursor()
+
+		# Act:
+		database.create_tables()
+
+		# Assert:
+		cursor.execute(
+			'''
+			SELECT pg_type.typname, enumlabel
+			FROM pg_enum
+			JOIN pg_type ON pg_type.oid = pg_enum.enumtypid
+			WHERE pg_type.typname IN ('symbol_lock_status', 'symbol_lock_hash_algorithm')
+			ORDER BY pg_type.typname, enumsortorder
+			''')
+		self.assertEqual([
+			('symbol_lock_hash_algorithm', 'sha3_256'),
+			('symbol_lock_hash_algorithm', 'hash160'),
+			('symbol_lock_hash_algorithm', 'hash256'),
+			('symbol_lock_status', 'unused'),
+			('symbol_lock_status', 'used')
+		], cursor.fetchall())
+
+	def test_create_tables_uses_lock_enum_types_for_lock_columns(self):
+		# Arrange:
+		database = self._create_uninitialized_database()
+		cursor = database.connection.cursor()
+
+		# Act:
+		database.create_tables()
+
+		# Assert:
+		cursor.execute(
+			'''
+			SELECT table_name, column_name, udt_name
+			FROM information_schema.columns
+			WHERE table_name IN ('symbol_hash_locks', 'symbol_secret_locks')
+				AND column_name IN ('hash_algorithm', 'status')
+			ORDER BY table_name, column_name
+			''')
+		self.assertEqual([
+			('symbol_hash_locks', 'status', 'symbol_lock_status'),
+			('symbol_secret_locks', 'hash_algorithm', 'symbol_lock_hash_algorithm'),
+			('symbol_secret_locks', 'status', 'symbol_lock_status')
+		], cursor.fetchall())
+
+	def test_create_tables_does_not_add_lock_column_defaults(self):
+		# Arrange:
+		database = self._create_uninitialized_database()
+		cursor = database.connection.cursor()
+
+		# Act:
+		database.create_tables()
+
+		# Assert:
+		cursor.execute(
+			'''
+			SELECT table_name, column_name, column_default
+			FROM information_schema.columns
+			WHERE table_name IN ('symbol_hash_locks', 'symbol_secret_locks')
+				AND column_default IS NOT NULL
+			ORDER BY table_name, ordinal_position
+			''')
+		self.assertEqual([], cursor.fetchall())
+
+	def test_create_tables_does_not_add_lock_foreign_keys(self):
+		# Arrange:
+		database = self._create_uninitialized_database()
+		cursor = database.connection.cursor()
+
+		# Act:
+		database.create_tables()
+
+		# Assert:
+		cursor.execute(
+			'''
+			SELECT table_name, constraint_name
+			FROM information_schema.table_constraints
+			WHERE table_name IN ('symbol_hash_locks', 'symbol_secret_locks')
+				AND constraint_type = 'FOREIGN KEY'
+			ORDER BY table_name, constraint_name
+			''')
+		self.assertEqual([], cursor.fetchall())
+
+	def test_create_tables_does_not_add_lock_check_constraints(self):
+		# Arrange:
+		database = self._create_uninitialized_database()
+		cursor = database.connection.cursor()
+
+		# Act:
+		database.create_tables()
+
+		# Assert:
+		cursor.execute(
+			'''
+			SELECT conrelid::regclass::text, pg_get_constraintdef(oid)
+			FROM pg_constraint
+			WHERE conrelid IN ('symbol_hash_locks'::regclass, 'symbol_secret_locks'::regclass)
+				AND contype = 'c'
+			ORDER BY conrelid::regclass::text, conname
+			''')
+		self.assertEqual([], cursor.fetchall())
+
+	def test_hash_lock_upsert_and_update_persist_current_state(self):
+		# Arrange:
+		database = self._create_database()
+		initial_row = _create_hash_lock_row()
+		updated_row = _create_hash_lock_row(observed_height=2, end_height=200, status='used')
+
+		# Act:
+		database.upsert_hash_lock(initial_row)
+		database.upsert_hash_lock(updated_row)
+		cursor = database.connection.cursor()
+		cursor.execute('SELECT hash, amount, end_height, status, updated_at_height FROM symbol_hash_locks')
+
+		# Assert:
+		self.assertEqual(
+			[(LOCK_HASH, 1234, 200, 'used', 2)],
+			[(bytes(lock_hash), amount, end_height, status, updated_at_height)
+				for lock_hash, amount, end_height, status, updated_at_height in cursor.fetchall()])
+
+	def test_delete_hash_lock_removes_current_state(self):
+		# Arrange:
+		database = self._create_database()
+		database.upsert_hash_lock(_create_hash_lock_row())
+
+		# Act:
+		database.delete_hash_lock(create_hash_lock_key(LOCK_HASH))
+
+		# Assert:
+		cursor = database.connection.cursor()
+		cursor.execute('SELECT hash FROM symbol_hash_locks')
+		self.assertEqual([], cursor.fetchall())
+
+	def test_secret_lock_replace_empty_removes_logical_key_and_preserves_siblings(self):
+		# Arrange:
+		database = self._create_database()
+		first_row = _create_secret_lock_row()
+		sibling_row = _create_secret_lock_row(composite_hash=LOCK_COMPOSITE_HASH_2, owner_address=LOCK_OWNER_2)
+		database.replace_secret_locks(
+			create_secret_lock_search_key(LOCK_OWNER, LOCK_RECIPIENT, LOCK_SECRET, 'hash160'),
+			[first_row, sibling_row])
+
+		# Act:
+		database.replace_secret_locks(
+			create_secret_lock_search_key(LOCK_OWNER, LOCK_RECIPIENT, LOCK_SECRET, 'hash160'), [])
+
+		# Assert:
+		cursor = database.connection.cursor()
+		cursor.execute('SELECT composite_hash, owner_address FROM symbol_secret_locks ORDER BY composite_hash')
+		self.assertEqual(
+			[(LOCK_COMPOSITE_HASH_2, LOCK_OWNER_2)],
+			[(bytes(composite_hash), bytes(owner_address)) for composite_hash, owner_address in cursor.fetchall()])
+
+	def test_secret_lock_unknown_owner_replace_removes_all_owner_siblings(self):
+		# Arrange:
+		database = self._create_database()
+		database.replace_secret_locks(
+			create_secret_lock_search_key(LOCK_OWNER, LOCK_RECIPIENT, LOCK_SECRET, 'hash160'),
+			[_create_secret_lock_row()])
+		database.replace_secret_locks(
+			create_secret_lock_search_key(LOCK_OWNER_2, LOCK_RECIPIENT, LOCK_SECRET, 'hash160'),
+			[_create_secret_lock_row(composite_hash=LOCK_COMPOSITE_HASH_2, owner_address=LOCK_OWNER_2)])
+
+		# Act:
+		database.replace_secret_locks(
+			create_secret_lock_search_key(None, LOCK_RECIPIENT, LOCK_SECRET, 'hash160'), [])
+
+		# Assert:
+		cursor = database.connection.cursor()
+		cursor.execute('SELECT composite_hash FROM symbol_secret_locks')
+		self.assertEqual([], cursor.fetchall())
+
+	def test_replace_secret_locks_rolls_back_delete_and_prior_insert_when_a_later_row_is_invalid(self):
+		# Arrange:
+		database = self._create_database()
+		key = create_secret_lock_search_key(LOCK_OWNER, LOCK_RECIPIENT, LOCK_SECRET, 'hash160')
+		initial_row = _create_secret_lock_row()
+		sibling_row = _create_secret_lock_row(composite_hash=LOCK_COMPOSITE_HASH_2, owner_address=LOCK_OWNER_2)
+		database.replace_secret_locks(key, [initial_row])
+		database.replace_secret_locks(
+			create_secret_lock_search_key(LOCK_OWNER_2, LOCK_RECIPIENT, LOCK_SECRET, 'hash160'), [sibling_row])
+		invalid_row = {**_create_secret_lock_row(composite_hash=b'\xFF' * 32), 'hash_algorithm': 'invalid'}
+
+		# Act / Assert:
+		with self.assertRaises(PsycopgError):
+			database.replace_secret_locks(key, [_create_secret_lock_row(status='used'), invalid_row])
+
+		# Assert:
+		cursor = database.connection.cursor()
+		cursor.execute('SELECT composite_hash, owner_address, status FROM symbol_secret_locks ORDER BY composite_hash')
+		self.assertEqual([
+			(LOCK_COMPOSITE_HASH, LOCK_OWNER, 'unused'),
+			(LOCK_COMPOSITE_HASH_2, LOCK_OWNER_2, 'unused')
+		], [
+			(bytes(composite_hash), bytes(owner_address), status)
+			for composite_hash, owner_address, status in cursor.fetchall()
+		])
+
+	def test_get_hash_lock_hashes_updated_from_height_rejects_an_out_of_band_invalid_hash_length(self):
+		# Arrange:
+		database = self._create_database()
+		row = _create_hash_lock_row(lock_hash=b'bad')
+		cursor = database.connection.cursor()
+		cursor.execute(
+			'''INSERT INTO symbol_hash_locks
+				(hash, owner_address, mosaic_id, amount, end_height, status, raw_payload, updated_at_height)
+				VALUES (%(hash)s, %(owner_address)s, %(mosaic_id)s, %(amount)s, %(end_height)s, %(status)s,
+				%(raw_payload)s, %(updated_at_height)s)''',
+			{**row, 'raw_payload': Json(row['raw_payload'])})
+		database.connection.commit()
+
+		# Act / Assert:
+		with self.assertRaisesRegex(ValueError, '^Invalid Symbol Hash Lock key$'):
+			database.get_hash_lock_hashes_updated_from_height(1)
+
+	def test_get_secret_lock_search_keys_updated_from_height_rejects_an_out_of_band_invalid_owner_length(self):
+		# Arrange:
+		database = self._create_database()
+		row = _create_secret_lock_row(owner_address=b'bad')
+		cursor = database.connection.cursor()
+		cursor.execute(
+			'''INSERT INTO symbol_secret_locks
+				(composite_hash, owner_address, recipient_address, secret, hash_algorithm, mosaic_id, amount, end_height,
+				status, raw_payload, updated_at_height)
+				VALUES (%(composite_hash)s, %(owner_address)s, %(recipient_address)s, %(secret)s, %(hash_algorithm)s,
+				%(mosaic_id)s, %(amount)s, %(end_height)s, %(status)s, %(raw_payload)s, %(updated_at_height)s)''',
+			{**row, 'raw_payload': Json(row['raw_payload'])})
+		database.connection.commit()
+
+		# Act / Assert:
+		with self.assertRaisesRegex(ValueError, '^Invalid Symbol Secret Lock owner address$'):
+			database.get_secret_lock_search_keys_updated_from_height(1)
+
+	def test_get_hash_lock_hashes_updated_from_height_returns_ordered_boundary_rows(self):
+		# Arrange:
+		database = self._create_database()
+		height_rows = (
+			(9, b'\x50' * 32),
+			(10, b'\x40' * 32),
+			(10, b'\x30' * 32),
+			(11, b'\x10' * 32),
+			(12, b'\x20' * 32),
+			(13, b'\x60' * 32)
+		)
+		for observed_height, lock_hash in height_rows:
+			database.upsert_hash_lock(_create_hash_lock_row(observed_height, lock_hash, end_height=1))
+
+		# Act:
+		keys = database.get_hash_lock_hashes_updated_from_height(10)
+
+		# Assert:
+		self.assertEqual([
+			b'\x30' * 32,
+			b'\x40' * 32,
+			b'\x10' * 32,
+			b'\x20' * 32,
+			b'\x60' * 32
+		], [key.hash for key in keys])
+
+	def test_get_hash_lock_hashes_reaching_finalized_height_returns_height_ordered_boundary_rows(self):
+		# Arrange:
+		database = self._create_database()
+		height_rows = (
+			(9, b'\x50' * 32),
+			(10, b'\x40' * 32),
+			(10, b'\x30' * 32),
+			(11, b'\x10' * 32),
+			(12, b'\x20' * 32),
+			(13, b'\x60' * 32)
+		)
+		for end_height, lock_hash in height_rows:
+			database.upsert_hash_lock(_create_hash_lock_row(observed_height=1, lock_hash=lock_hash, end_height=end_height))
+
+		# Act:
+		keys = database.get_hash_lock_hashes_reaching_finalized_height(12)
+
+		# Assert:
+		self.assertEqual([
+			b'\x50' * 32,
+			b'\x30' * 32,
+			b'\x40' * 32,
+			b'\x10' * 32,
+			b'\x20' * 32
+		], [key.hash for key in keys])
+
+	def test_get_secret_lock_search_keys_updated_from_height_returns_ordered_boundary_rows(self):
+		# Arrange:
+		database = self._create_database()
+		height_rows = (
+			(9, b'\x50' * 32, b'\x59' * 32),
+			(10, b'\x40' * 32, b'\x01' * 32),
+			(10, b'\x30' * 32, b'\x99' * 32),
+			(11, b'\x10' * 32, b'\x19' * 32),
+			(12, b'\x20' * 32, b'\x29' * 32),
+			(13, b'\x60' * 32, b'\x49' * 32)
+		)
+		for observed_height, composite_hash, secret in height_rows:
+			row = _create_secret_lock_row(observed_height, composite_hash, secret=secret, end_height=1)
+			database.replace_secret_locks(
+				create_secret_lock_search_key(LOCK_OWNER, LOCK_RECIPIENT, secret, 'hash160'), [row])
+
+		# Act:
+		keys = database.get_secret_lock_search_keys_updated_from_height(10)
+
+		# Assert:
+		self.assertEqual([
+			(LOCK_OWNER, LOCK_RECIPIENT, b'\x99' * 32, 'hash160'),
+			(LOCK_OWNER, LOCK_RECIPIENT, b'\x01' * 32, 'hash160'),
+			(LOCK_OWNER, LOCK_RECIPIENT, b'\x19' * 32, 'hash160'),
+			(LOCK_OWNER, LOCK_RECIPIENT, b'\x29' * 32, 'hash160'),
+			(LOCK_OWNER, LOCK_RECIPIENT, b'\x49' * 32, 'hash160')
+		], keys)
+
+	def test_get_secret_lock_search_keys_reaching_finalized_height_returns_height_ordered_boundary_rows(self):
+		# Arrange:
+		database = self._create_database()
+		height_rows = (
+			(9, b'\x50' * 32, b'\x59' * 32),
+			(10, b'\x40' * 32, b'\x01' * 32),
+			(10, b'\x30' * 32, b'\x99' * 32),
+			(11, b'\x10' * 32, b'\x19' * 32),
+			(12, b'\x20' * 32, b'\x29' * 32),
+			(13, b'\x60' * 32, b'\x49' * 32)
+		)
+		for end_height, composite_hash, secret in height_rows:
+			row = _create_secret_lock_row(observed_height=1, composite_hash=composite_hash, secret=secret, end_height=end_height)
+			database.replace_secret_locks(
+				create_secret_lock_search_key(LOCK_OWNER, LOCK_RECIPIENT, secret, 'hash160'), [row])
+
+		# Act:
+		keys = database.get_secret_lock_search_keys_reaching_finalized_height(12)
+
+		# Assert:
+		self.assertEqual([
+			(LOCK_OWNER, LOCK_RECIPIENT, b'\x59' * 32, 'hash160'),
+			(LOCK_OWNER, LOCK_RECIPIENT, b'\x99' * 32, 'hash160'),
+			(LOCK_OWNER, LOCK_RECIPIENT, b'\x01' * 32, 'hash160'),
+			(LOCK_OWNER, LOCK_RECIPIENT, b'\x19' * 32, 'hash160'),
+			(LOCK_OWNER, LOCK_RECIPIENT, b'\x29' * 32, 'hash160')
+		], keys)
+
+	def test_apply_finalization_lock_entries_rolls_back_hash_and_secret_writes_together(self):
+		# Arrange:
+		database = self._create_database()
+		database.upsert_hash_lock(_create_hash_lock_row(status='unused'))
+		secret_key = create_secret_lock_search_key(LOCK_OWNER, LOCK_RECIPIENT, LOCK_SECRET, 'hash160')
+		database.replace_secret_locks(secret_key, [_create_secret_lock_row(status='unused')])
+		invalid_secret_row = {**_create_secret_lock_row(status='used'), 'hash_algorithm': 'invalid'}
+
+		# Act / Assert:
+		with self.assertRaises(PsycopgError):
+			database.apply_finalization_lock_entries(
+				[{'row': _create_hash_lock_row(status='used')}],
+				[{'key': secret_key, 'rows': [invalid_secret_row]}])
+
+		# Assert:
+		cursor = database.connection.cursor()
+		cursor.execute('SELECT status FROM symbol_hash_locks WHERE hash = %s', (LOCK_HASH,))
+		self.assertEqual([('unused',)], cursor.fetchall())
+		cursor.execute('SELECT status FROM symbol_secret_locks WHERE composite_hash = %s', (LOCK_COMPOSITE_HASH,))
+		self.assertEqual([('unused',)], cursor.fetchall())
+
+	def test_repair_rollback_deletes_lock_rows_at_fork_and_applies_replacements_atomically(self):
+		# Arrange:
+		database = self._create_database()
+		kept_hash_row = _create_hash_lock_row(observed_height=1, lock_hash=LOCK_HASH)
+		orphaned_hash_row = _create_hash_lock_row(observed_height=2, lock_hash=LOCK_HASH_2)
+		kept_secret_row = _create_secret_lock_row(observed_height=1)
+		orphaned_secret_row = _create_secret_lock_row(observed_height=2, composite_hash=LOCK_COMPOSITE_HASH_2)
+		database.upsert_hash_lock(kept_hash_row)
+		database.upsert_hash_lock(orphaned_hash_row)
+		database.replace_secret_locks(
+			create_secret_lock_search_key(LOCK_OWNER, LOCK_RECIPIENT, LOCK_SECRET, 'hash160'), [kept_secret_row])
+		database.replace_secret_locks(
+			create_secret_lock_search_key(LOCK_OWNER_2, LOCK_RECIPIENT, LOCK_SECRET, 'hash160'), [orphaned_secret_row])
+		refreshed_hash_row = _create_hash_lock_row(observed_height=1, lock_hash=LOCK_HASH_2, status='used')
+		refreshed_secret_row = _create_secret_lock_row(
+			observed_height=1, composite_hash=LOCK_COMPOSITE_HASH_2, owner_address=LOCK_OWNER_2, status='used')
+		refresh_entries = RollbackRefreshEntries(
+			hash_lock_entries=[{'row': refreshed_hash_row}],
+			secret_lock_entries=[{
+				'key': create_secret_lock_search_key(LOCK_OWNER_2, LOCK_RECIPIENT, LOCK_SECRET, 'hash160'),
+				'rows': [refreshed_secret_row]
+			}])
+
+		# Act:
+		database.repair_rollback_from_height(
+			2,
+			_create_sync_state(status='repairing', last_synced_height=1, last_synced_block_hash=b'hash 1'),
+			refresh_entries)
+
+		# Assert:
+		cursor = database.connection.cursor()
+		cursor.execute('SELECT hash, status, updated_at_height FROM symbol_hash_locks ORDER BY hash')
+		self.assertEqual([
+			(LOCK_HASH, 'unused', 1),
+			(LOCK_HASH_2, 'used', 1)
+		], [
+			(bytes(lock_hash), status, updated_at_height)
+			for lock_hash, status, updated_at_height in cursor.fetchall()])
+		cursor.execute('SELECT composite_hash, status, updated_at_height FROM symbol_secret_locks ORDER BY composite_hash')
+		self.assertEqual([
+			(LOCK_COMPOSITE_HASH, 'unused', 1),
+			(LOCK_COMPOSITE_HASH_2, 'used', 1)
+		], [
+			(bytes(composite_hash), status, updated_at_height)
+			for composite_hash, status, updated_at_height in cursor.fetchall()])
+		self.assertEqual('repairing', database.get_sync_state()['status'])
+		self.assertEqual(1, database.get_sync_state()['last_synced_height'])
+
+	def test_repair_rollback_applies_hash_lock_delete_entries(self):
+		# Arrange:
+		database = self._create_database()
+		database.upsert_hash_lock(_create_hash_lock_row(observed_height=1))
+
+		# Act:
+		database.repair_rollback_from_height(
+			2,
+			_create_sync_state(status='repairing', last_synced_height=1, last_synced_block_hash=b'hash 1'),
+			RollbackRefreshEntries(hash_lock_entries=[{
+				'hash': create_hash_lock_key(LOCK_HASH)
+			}]))
+
+		# Assert:
+		cursor = database.connection.cursor()
+		cursor.execute('SELECT hash FROM symbol_hash_locks')
+		self.assertEqual([], cursor.fetchall())
+
+	def test_repair_rollback_applies_empty_secret_lock_replacement_and_preserves_siblings(self):
+		# Arrange:
+		database = self._create_database()
+		target_key = create_secret_lock_search_key(LOCK_OWNER, LOCK_RECIPIENT, LOCK_SECRET, 'hash160')
+		sibling_key = create_secret_lock_search_key(LOCK_OWNER_2, LOCK_RECIPIENT, LOCK_SECRET, 'hash160')
+		database.replace_secret_locks(target_key, [_create_secret_lock_row()])
+		database.replace_secret_locks(
+			sibling_key,
+			[_create_secret_lock_row(composite_hash=LOCK_COMPOSITE_HASH_2, owner_address=LOCK_OWNER_2)])
+
+		# Act:
+		database.repair_rollback_from_height(
+			2,
+			_create_sync_state(status='repairing', last_synced_height=1, last_synced_block_hash=b'hash 1'),
+			RollbackRefreshEntries(secret_lock_entries=[{
+				'key': target_key,
+				'rows': []
+			}]))
+
+		# Assert:
+		cursor = database.connection.cursor()
+		cursor.execute('SELECT composite_hash, owner_address FROM symbol_secret_locks ORDER BY composite_hash')
+		self.assertEqual(
+			[(LOCK_COMPOSITE_HASH_2, LOCK_OWNER_2)],
+			[(bytes(composite_hash), bytes(owner_address)) for composite_hash, owner_address in cursor.fetchall()])
+		self.assertEqual('repairing', database.get_sync_state()['status'])
+
+	def test_repair_rollback_restores_chain_and_lock_state_when_later_secret_lock_write_fails(self):  # pylint: disable=too-many-locals
+		# Arrange:
+		database = self._create_database()
+		database.upsert_blocks([_create_block(1), _create_block(2)])
+		database.upsert_sync_state(_create_sync_state())
+		original_namespace_row = _create_namespace_row(observed_height=2)
+		database.upsert_namespace(original_namespace_row, _create_alias_name_rows(original_namespace_row))
+		original_mosaic_row = create_expected_mosaic_row(create_mosaic_item(supply='1234'), 2)
+		database.upsert_mosaic(original_mosaic_row)
+		original_metadata_item = create_metadata_item(metadata_type=1, target_id='72C0212E67A08BCE')
+		original_metadata_row = create_expected_metadata_row(
+			original_metadata_item, 2, bytes.fromhex('11' * 32), 'mosaic', '72C0212E67A08BCE', 'hello')
+		database.upsert_metadata(original_metadata_row)
+		original_hash_row = _create_hash_lock_row(observed_height=2, status='unused')
+		original_secret_row = _create_secret_lock_row(observed_height=2, status='unused')
+		database.upsert_hash_lock(original_hash_row)
+		database.replace_secret_locks(
+			create_secret_lock_search_key(LOCK_OWNER, LOCK_RECIPIENT, LOCK_SECRET, 'hash160'), [original_secret_row])
+		original_blocks = fetch_full_block_state(database)
+		original_sync_state = fetch_normalized_sync_state(database)
+		original_namespace_state = fetch_namespace_state(database.connection)
+		original_mosaic_state = fetch_mosaic_state(database)
+		original_metadata_state = fetch_metadata_rows(database)
+		invalid_secret_row = {
+			**_create_secret_lock_row(observed_height=1, status='used'),
+			'hash_algorithm': 'invalid'
+		}
+		canonical_namespace_row = _create_namespace_row(full_name='canonical', observed_height=1)
+		refresh_entries = RollbackRefreshEntries(
+			namespace_entries=[{
+				'row': canonical_namespace_row,
+				'alias_rows': _create_alias_name_rows(canonical_namespace_row)
+			}],
+			mosaic_entries=[{
+				'row': create_expected_mosaic_row(create_mosaic_item(supply='9999'), 1)
+			}],
+			metadata_entries=[{
+				'row': create_expected_metadata_row(
+					create_metadata_item(metadata_type=1, target_id='72C0212E67A08BCE', value='776F726C64'),
+					1, bytes.fromhex('11' * 32), 'mosaic', '72C0212E67A08BCE', 'world', value_hex='776F726C64')
+			}],
+			hash_lock_entries=[{'row': _create_hash_lock_row(observed_height=1, status='used')}],
+			secret_lock_entries=[{
+				'key': create_secret_lock_search_key(LOCK_OWNER, LOCK_RECIPIENT, LOCK_SECRET, 'hash160'),
+				'rows': [invalid_secret_row]
+			}])
+
+		# Act / Assert:
+		with self.assertRaises(PsycopgError):
+			database.repair_rollback_from_height(2, _create_sync_state(
+				status='repairing', last_synced_height=1, last_synced_block_hash=b'hash 1'), refresh_entries)
+
+		# Assert:
+		self.assertEqual(original_blocks, fetch_full_block_state(database))
+		self.assertEqual(original_sync_state, fetch_normalized_sync_state(database))
+		self.assertEqual(original_namespace_state, fetch_namespace_state(database.connection))
+		self.assertEqual(original_mosaic_state, fetch_mosaic_state(database))
+		self.assertEqual(original_metadata_state, fetch_metadata_rows(database))
+		cursor = database.connection.cursor()
+		cursor.execute('SELECT hash, status, updated_at_height FROM symbol_hash_locks')
+		self.assertEqual([(LOCK_HASH, 'unused', 2)], [
+			(bytes(lock_hash), status, updated_at_height)
+			for lock_hash, status, updated_at_height in cursor.fetchall()
+		])
+		cursor.execute('SELECT composite_hash, status, updated_at_height FROM symbol_secret_locks')
+		self.assertEqual([(LOCK_COMPOSITE_HASH, 'unused', 2)], [
+			(bytes(composite_hash), status, updated_at_height)
+			for composite_hash, status, updated_at_height in cursor.fetchall()
+		])
