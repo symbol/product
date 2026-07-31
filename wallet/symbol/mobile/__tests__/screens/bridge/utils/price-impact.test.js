@@ -16,6 +16,13 @@ const createSwapStepEstimation = priceImpact => ({
 	error: null
 });
 
+const failedSwapStepEstimation = {
+	receiveAmount: null,
+	bridgeFee: null,
+	priceImpact: null,
+	error: { code: 'insufficient_liquidity' }
+};
+
 describe('screens/bridge/utils/price-impact', () => {
 	describe('getPriceImpactSeverity', () => {
 		const runGetPriceImpactSeverityTest = (description, config, expected) => {
@@ -151,6 +158,16 @@ describe('screens/bridge/utils/price-impact', () => {
 				description: 'returns null when the swap step impact is unknown',
 				config: { estimations: [createSwapStepEstimation(null), bridgeStepEstimation] },
 				expected: { priceImpact: null }
+			},
+			{
+				description: 'returns undefined when the swap step failed',
+				config: { estimations: [failedSwapStepEstimation] },
+				expected: { priceImpact: undefined }
+			},
+			{
+				description: 'skips a failed step and returns the impact of a successful one',
+				config: { estimations: [failedSwapStepEstimation, createSwapStepEstimation(0.2)] },
+				expected: { priceImpact: 0.2 }
 			}
 		];
 

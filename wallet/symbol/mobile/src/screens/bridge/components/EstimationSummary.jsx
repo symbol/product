@@ -12,6 +12,8 @@ import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 /** @typedef {import('@/app/screens/bridge/types/Bridge').SwapToken} SwapToken */
 /** @typedef {import('@/app/types/Network').NetworkCurrency} NetworkCurrency */
 
+const MISSING_VALUE_TEXT = '-';
+
 const severityAppearanceMap = {
 	[PriceImpactSeverity.WARNING]: {
 		iconName: 'alert-warning',
@@ -28,26 +30,42 @@ const severityAppearanceMap = {
 };
 
 /**
- * Builds the price difference row of the summary, or null when no step involves a swap. The row
- * severity pairs a color with an icon and a level word, so the warning does not rely on color alone.
+ * Formats a summary row value with its units, or the placeholder when the value is unavailable, so
+ * every row keeps a value instead of an empty gap next to its title.
+ * @param {string|null|undefined} value - Row value.
+ * @param {string} [units] - Units shown after the value.
+ * @returns {string} Row value text.
+ */
+const formatRowValue = (value, units) => {
+	if (!value)
+		return MISSING_VALUE_TEXT;
+
+	return [value, units].filter(Boolean).join(' ');
+};
+
+/**
+ * Builds the price difference row of the summary. The row shows the placeholder when no step involves
+ * a swap. The row severity pairs a color with an icon and a level word, so the warning does not rely
+ * on color alone.
  * @param {BridgeEstimation[]|null} estimations - Bridge estimation data.
- * @returns {object|null} Summary row descriptor, or null when the row does not apply.
+ * @returns {object} Summary row descriptor.
  */
 const createPriceImpactRow = estimations => {
 	const priceImpact = getEstimationsPriceImpact(estimations);
+	const title = $t('s_bridge_summary_priceImpact');
 
 	if (priceImpact === undefined)
-		return null;
+		return { title, value: MISSING_VALUE_TEXT };
 
 	const severity = getPriceImpactSeverity(priceImpact, config.bridge.priceImpact);
 	const appearance = severityAppearanceMap[severity];
-	const isUnknown = priceImpact === null;
+
+	if (priceImpact === null)
+		return { title, value: $t('s_bridge_summary_priceImpact_unknown'), appearance };
 
 	return {
-		title: $t('s_bridge_summary_priceImpact'),
-		isShown: true,
-		amount: isUnknown ? $t('s_bridge_summary_priceImpact_unknown') : formatPriceImpactText(priceImpact),
-		units: !isUnknown && appearance ? `· ${$t(appearance.levelTextKey)}` : '',
+		title,
+		value: formatRowValue(formatPriceImpactText(priceImpact), appearance && `· ${$t(appearance.levelTextKey)}`),
 		appearance
 	};
 };
@@ -75,32 +93,23 @@ export const EstimationSummary = ({
 	isLoading
 }) => {
 	const estimation = estimations?.[estimations.length - 1] ?? null;
-	const priceImpactRow = createPriceImpactRow(estimations);
 	const summary = [
 		{
 			title: $t('s_bridge_summary_amountSend'),
-			isShown: !!sourceToken,
-			amount: sourceToken ? sendAmount : '-',
-			units: sourceToken ? sourceToken.name : ''
+			value: formatRowValue(sourceToken ? sendAmount : null, sourceToken?.name)
 		},
 		{
 			title: $t('s_bridge_summary_transactionFee'),
-			isShown: !!transactionFeeAmount && !!sourceNetworkCurrency,
-			amount: transactionFeeAmount,
-			units: sourceNetworkCurrency ? sourceNetworkCurrency.name : ''
+			value: formatRowValue(sourceNetworkCurrency ? transactionFeeAmount : null, sourceNetworkCurrency?.name)
 		},
 		{
 			title: $t('s_bridge_summary_bridgeFee'),
-			isShown: !!estimation && !!targetToken,
-			amount: estimation?.bridgeFee ?? '-',
-			units: targetToken ? targetToken.name : ''
+			value: formatRowValue(targetToken ? estimation?.bridgeFee : null, targetToken?.name)
 		},
-		...(priceImpactRow ? [priceImpactRow] : []),
+		createPriceImpactRow(estimations),
 		{
 			title: $t('s_bridge_summary_amountReceive'),
-			isShown: !!estimation && !!targetToken,
-			amount: estimation?.receiveAmount ?? '-',
-			units: targetToken ? targetToken.name : ''
+			value: formatRowValue(targetToken ? estimation?.receiveAmount : null, targetToken?.name)
 		}
 	];
 
@@ -129,21 +138,19 @@ export const EstimationSummary = ({
 								<StyledText>
 									{item.title}
 								</StyledText>
-								{item.isShown && (
-									<View style={styles.summaryValue}>
-										{!!item.appearance && (
-											<Icon
-												name={item.appearance.iconName}
-												variant={item.appearance.iconVariant}
-												size="xs"
-												style={styles.valueIcon}
-											/>
-										)}
-										<StyledText style={item.appearance && { color: item.appearance.color }}>
-											{item.amount} {item.units}
-										</StyledText>
-									</View>
-								)}
+								<View style={styles.summaryValue}>
+									{!!item.appearance && (
+										<Icon
+											name={item.appearance.iconName}
+											variant={item.appearance.iconVariant}
+											size="xs"
+											style={styles.valueIcon}
+										/>
+									)}
+									<StyledText style={item.appearance && { color: item.appearance.color }}>
+										{item.value}
+									</StyledText>
+								</View>
 							</View>
 						))}
 					</Animated.View>

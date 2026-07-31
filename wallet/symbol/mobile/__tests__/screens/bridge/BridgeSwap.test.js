@@ -87,6 +87,9 @@ const SCREEN_TEXT = {
 	textSummaryPriceImpactUnknown: 's_bridge_summary_priceImpact_unknown',
 	textDialogPriceImpactTitle: 's_bridge_swap_dialog_priceImpact_title',
 
+	// Placeholder shown by a summary row without a value
+	textValueMissing: '-',
+
 	// Token Display Names
 	displayNameTokenXym: 'Symbol • XYM',
 	displayNameTokenBxym: 'Bridged XYM • bXYM',
@@ -658,6 +661,12 @@ describe('screens/bridge/BridgeSwap', () => {
 		const warningImpactEstimation = { ...estimationResult, priceImpact: 0.06 };
 		const criticalImpactEstimation = { ...estimationResult, priceImpact: 0.20331 };
 		const unknownImpactEstimation = { ...estimationResult, priceImpact: null };
+		const failedEstimation = {
+			bridgeFee: null,
+			receiveAmount: null,
+			priceImpact: null,
+			error: { code: 'insufficient_liquidity' }
+		};
 
 		it('shows the price difference row with the level wording at the warning tier', () => {
 			// Arrange:
@@ -692,7 +701,7 @@ describe('screens/bridge/BridgeSwap', () => {
 			screenTester.expectText([SCREEN_TEXT.textSummaryPriceImpactUnknown]);
 		});
 
-		it('hides the price difference row when no step involves a swap', () => {
+		it('shows the price difference row with a placeholder when no step involves a swap', () => {
 			// Arrange:
 			setupMocks({
 				useEstimation: {
@@ -703,8 +712,26 @@ describe('screens/bridge/BridgeSwap', () => {
 			// Act:
 			const screenTester = new ScreenTester(BridgeSwap, createDefaultProps());
 
-			// Assert:
-			screenTester.notExpectText([SCREEN_TEXT.textSummaryPriceImpact]);
+			// Assert: the price difference is the only row left without a value.
+			screenTester.expectText([SCREEN_TEXT.textSummaryPriceImpact]);
+			screenTester.notExpectText([SCREEN_TEXT.textSummaryPriceImpactUnknown]);
+			screenTester.expectTextCount(SCREEN_TEXT.textValueMissing, 1);
+		});
+
+		it('shows placeholders instead of an impact warning when the estimation failed', () => {
+			// Arrange:
+			setupMocks({
+				useEstimation: {
+					estimations: [failedEstimation]
+				}
+			});
+
+			// Act:
+			const screenTester = new ScreenTester(BridgeSwap, createDefaultProps());
+
+			// Assert: the bridge fee, price difference and receive rows carry no value.
+			screenTester.notExpectText([SCREEN_TEXT.textSummaryPriceImpactUnknown]);
+			screenTester.expectTextCount(SCREEN_TEXT.textValueMissing, 3);
 		});
 
 		it('gates sending behind a warning dialog at the critical tier', async () => {

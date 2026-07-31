@@ -27,17 +27,17 @@ export const useEstimation = ({ bridge, amount }) => {
 
 			return estimations;
 		},
-		shouldShowErrorPopup: false,
-		shouldClearDataOnCall: true
+		shouldShowErrorPopup: false
 	});
 
 	const { error, isLoading, isCompleted } = estimationManager;
+	const hasFailed = !!error && !isLoading && !isCompleted;
 
 	return {
 		estimate: estimationManager.call,
-		estimations: estimationManager.data,
+		estimations: hasFailed ? null : estimationManager.data,
 		clearEstimation: estimationManager.reset,
 		isLoading,
-		hasFailed: !!error && !isLoading && !isCompleted
+		hasFailed
 	};
 };

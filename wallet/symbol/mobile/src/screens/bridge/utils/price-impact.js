@@ -58,7 +58,7 @@ export const formatPriceImpactText = priceImpact => {
  * @returns {number|null|undefined} Price impact fraction, null when unknown, undefined when no step has one.
  */
 export const getEstimationsPriceImpact = estimations => {
-	const swapEstimation = (estimations ?? []).find(estimation => estimation.priceImpact !== undefined);
+	const swapEstimation = (estimations ?? []).find(estimation => !estimation.error && estimation.priceImpact !== undefined);
 
 	return swapEstimation ? swapEstimation.priceImpact : undefined;
 };

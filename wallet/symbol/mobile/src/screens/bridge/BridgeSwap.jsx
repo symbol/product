@@ -166,6 +166,12 @@ export const BridgeSwap = props => {
 
 	const isAmountPositive = Number(amount) > 0;
 
+	// Drop the estimation of the previous pair before the new one is fetched, so its values are never
+	// shown against the newly selected tokens. Values are kept across amount changes on purpose.
+	useEffect(() => {
+		clearEstimation();
+	}, [source, target]);
+
 	// Reload data on tokens or amount change
 	const fetchSwapData = useCallback(() => {
 		if (isReady)

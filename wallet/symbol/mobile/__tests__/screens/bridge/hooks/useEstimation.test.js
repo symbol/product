@@ -81,6 +81,36 @@ describe('hooks/useEstimation', () => {
 		});
 	});
 
+	describe('refresh', () => {
+		it('keeps the previous estimations while the next request is in flight', async () => {
+			// Arrange: the second request never settles, so the hook stays in its loading state.
+			const pendingBridgeManager = {
+				estimateRequest: jest.fn()
+					.mockResolvedValueOnce([estimationData])
+					.mockImplementationOnce(() => new Promise(() => {}))
+			};
+			const params = createHookParams({ bridge: pendingBridgeManager });
+			const hookTester = new HookTester(useEstimation, [params]);
+			await act(async () => {
+				hookTester.currentResult.estimate();
+			});
+			await hookTester.waitFor(() => {
+				expect(hookTester.currentResult.estimations).toStrictEqual([estimationData]);
+			});
+
+			// Act:
+			await act(async () => {
+				hookTester.currentResult.estimate();
+			});
+
+			// Assert:
+			await hookTester.waitFor(() => {
+				expect(hookTester.currentResult.isLoading).toBe(true);
+			});
+			expect(hookTester.currentResult.estimations).toStrictEqual([estimationData]);
+		});
+	});
+
 	describe('failure', () => {
 		it('reports a failure and holds no estimations when the request is rejected', async () => {
 			// Arrange:
@@ -100,6 +130,34 @@ describe('hooks/useEstimation', () => {
 				expect(hookTester.currentResult.hasFailed).toBe(true);
 				expect(hookTester.currentResult.estimations).toBeNull();
 				expect(hookTester.currentResult.isLoading).toBe(false);
+			});
+		});
+
+		it('withholds the previous estimations when a later request is rejected', async () => {
+			// Arrange:
+			const unstableBridgeManager = {
+				estimateRequest: jest.fn()
+					.mockResolvedValueOnce([estimationData])
+					.mockRejectedValueOnce(new Error('Bridge is unreachable'))
+			};
+			const params = createHookParams({ bridge: unstableBridgeManager });
+			const hookTester = new HookTester(useEstimation, [params]);
+			await act(async () => {
+				hookTester.currentResult.estimate();
+			});
+			await hookTester.waitFor(() => {
+				expect(hookTester.currentResult.estimations).toStrictEqual([estimationData]);
+			});
+
+			// Act:
+			await act(async () => {
+				hookTester.currentResult.estimate().catch(() => {});
+			});
+
+			// Assert:
+			await hookTester.waitFor(() => {
+				expect(hookTester.currentResult.hasFailed).toBe(true);
+				expect(hookTester.currentResult.estimations).toBeNull();
 			});
 		});
 	});
