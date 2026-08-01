@@ -29,11 +29,11 @@ from symbollightapi.model.Transaction import (
 
 from puller.db.NemDatabase import AccountRefreshRecord
 from puller.facade.NemPuller import (
+	NEM_MAX_ROLLBACK_DEPTH,
 	AccountRecord,
 	AccountVestedBalanceRecord,
 	DatabaseConfig,
 	MosaicRecord,
-	NEM_MAX_ROLLBACK_DEPTH,
 	NamespaceRecord,
 	NemPuller,
 	NemRollbackError,
