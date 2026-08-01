@@ -1582,3 +1582,18 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 
 		# Assert:
 		self.assertEqual(1, fork_height)
+
+	def test_no_matching_block_hash_within_360_blocks_requires_manual_investigation(self):
+		# Arrange:
+		db_height = NEM_MAX_ROLLBACK_DEPTH + 1
+		expected_message = (
+			f'No matching NEM block hash found within {NEM_MAX_ROLLBACK_DEPTH} blocks '
+			f'(database height: {db_height}, chain height: {db_height}); '
+			'manual investigation is required'
+		)
+
+		# Act + Assert:
+		with self.assertRaises(NemRollbackError) as context:
+			self._run_detect_rollback_test({}, {}, db_height, db_height)
+
+		self.assertEqual(expected_message, str(context.exception))

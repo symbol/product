@@ -19,6 +19,10 @@ ACCOUNT_KEY_LINK_MODE_ACTIVATE = 1
 NEM_MAX_ROLLBACK_DEPTH = 360
 
 
+class NemRollbackError(RuntimeError):
+	"""Raised when a safe NEM rollback point cannot be found."""
+
+
 BlockRecord = namedtuple('BlockRecord', [
 	'height',
 	'timestamp',
@@ -163,6 +167,12 @@ class NemPuller:
 
 			if db_block_hash.lower() == node_block.block_hash.lower():
 				return None if height == db_height else height
+
+		raise NemRollbackError(
+			f'No matching NEM block hash found within {NEM_MAX_ROLLBACK_DEPTH} blocks '
+			f'(database height: {db_height}, chain height: {chain_height}); '
+			'manual investigation is required'
+		)
 
 	async def _retry_get_account_info(self, address, retries=3, delay=2):
 		"""Retries fetching account info with exponential backoff."""
