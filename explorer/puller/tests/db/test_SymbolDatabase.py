@@ -1384,7 +1384,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		self.assertEqual('ABCDEF0123456789', keys[0]['scoped_metadata_key'])
 		self.assertEqual('1234567890ABCDEF', keys[0]['target_id'])
 
-	def test_get_metadata_keys_from_confirmed_transactions_returns_all_types_in_parent_order(self):
+	def test_get_confirmed_metadata_keys_since_returns_all_types_in_parent_order(self):
 		# Arrange:
 		database = self._create_database()
 		database.upsert_blocks([_create_block(height) for height in range(1, 5)])
@@ -1419,7 +1419,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			database.upsert_transactions_for_height(height, height_entries)
 
 		# Act:
-		keys = database.get_metadata_keys_from_confirmed_transactions_at_or_after_height(2)
+		keys = database.get_confirmed_metadata_keys_since(2)
 
 		# Assert:
 		self.assertEqual([
@@ -1431,7 +1431,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 				'scoped_metadata_key': '0000000000000003', 'target_id': 'A95F1F8A96159516'}
 		], keys)
 
-	def test_get_metadata_keys_from_confirmed_transactions_rejects_invalid_relation_cardinality(self):
+	def test_get_confirmed_metadata_keys_since_rejects_invalid_relation_cardinality(self):
 		for metadata_type, mosaic_rows, error in (
 			(TransactionType.MOSAIC_METADATA.value, [], 'mosaic Metadata target relation count'),
 			(TransactionType.ACCOUNT_METADATA.value, [{
@@ -1451,11 +1451,11 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 
 				# Act + Assert:
 				with self.assertRaisesRegex(ValueError, error):
-					database.get_metadata_keys_from_confirmed_transactions_at_or_after_height(1)
+					database.get_confirmed_metadata_keys_since(1)
 				# Release the read transaction before the next subtest recreates the schema.
 				database.connection.rollback()
 
-	def test_get_metadata_keys_from_confirmed_transactions_rejects_duplicate_mosaic_relations(self):
+	def test_get_confirmed_metadata_keys_since_rejects_duplicate_mosaic_relations(self):
 		# Arrange:
 		database = self._create_database()
 		database.upsert_blocks([_create_block(1)])
@@ -1476,9 +1476,9 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 
 		# Act + Assert:
 		with self.assertRaisesRegex(ValueError, 'mosaic Metadata target relation count'):
-			database.get_metadata_keys_from_confirmed_transactions_at_or_after_height(1)
+			database.get_confirmed_metadata_keys_since(1)
 
-	def test_get_metadata_keys_from_confirmed_transactions_rejects_non_object_body(self):
+	def test_get_confirmed_metadata_keys_since_rejects_non_object_body(self):
 		# Arrange:
 		database = self._create_database()
 		database.upsert_blocks([_create_block(1)])
@@ -1489,9 +1489,9 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 
 		# Act + Assert:
 		with self.assertRaisesRegex(ValueError, 'Invalid confirmed Symbol account Metadata transaction body'):
-			database.get_metadata_keys_from_confirmed_transactions_at_or_after_height(1)
+			database.get_confirmed_metadata_keys_since(1)
 
-	def test_get_metadata_keys_from_confirmed_transactions_rejects_invalid_relation_sentinel(self):
+	def test_get_confirmed_metadata_keys_since_rejects_invalid_relation_sentinel(self):
 		# Arrange:
 		database = self._create_database()
 		database.upsert_blocks([_create_block(1)])
@@ -1505,7 +1505,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 
 		# Act + Assert:
 		with self.assertRaisesRegex(ValueError, 'mosaic Metadata target relation at height 1'):
-			database.get_metadata_keys_from_confirmed_transactions_at_or_after_height(1)
+			database.get_confirmed_metadata_keys_since(1)
 
 	def test_upsert_transactions_persists_private_metadata_target_relation_and_raw_payload(self):
 		# Arrange:

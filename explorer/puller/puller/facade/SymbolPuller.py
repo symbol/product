@@ -311,7 +311,7 @@ class SymbolPuller:
 		mosaic_entries = await self._fetch_dirty_mosaics(mosaic_ids, height - 1)
 		metadata_keys = self._union_metadata_keys(
 			self.symbol_db.get_metadata_keys_updated_from_height(height),
-			self.symbol_db.get_metadata_keys_from_confirmed_transactions_at_or_after_height(height))
+			self.symbol_db.get_confirmed_metadata_keys_since(height))
 		metadata_entries = await self._fetch_dirty_metadata(metadata_keys, height - 1)
 		# Current rows recover Lock state still present after the fork. Finalized rows cannot be part of this
 		# unfinalized repair range, so transaction history is not an authoritative rollback key source.

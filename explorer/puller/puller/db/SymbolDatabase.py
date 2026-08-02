@@ -914,7 +914,7 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 			for row in cursor.fetchall()
 		]
 
-	def get_metadata_keys_from_confirmed_transactions_at_or_after_height(self, height):  # pylint: disable=invalid-name
+	def get_confirmed_metadata_keys_since(self, height):
 		"""Gets Metadata natural keys from confirmed transactions at or after a height."""
 
 		cursor = self.connection.cursor()
