@@ -7,7 +7,13 @@ from psycopg2.extras import Json
 from puller.model.symbol.Account import ACCOUNT_TYPE_VALUES
 from puller.model.symbol.Block import BLOCK_TYPE_VALUES
 from puller.model.symbol.Lock import LOCK_HASH_ALGORITHM_LABELS, LOCK_STATUS_LABELS, create_hash_lock_key, create_secret_lock_search_key
-from puller.model.symbol.Metadata import METADATA_TYPE_LABELS
+from puller.model.symbol.Metadata import (
+	METADATA_TRANSACTION_TYPE_LABELS,
+	METADATA_TYPE_LABELS,
+	canonical_metadata_hex,
+	canonical_metadata_key,
+	metadata_target_from_relations
+)
 from puller.model.symbol.Namespace import NAMESPACE_ALIAS_TYPE_LABELS, NAMESPACE_REGISTRATION_TYPE_LABELS
 from puller.model.symbol.Receipt import RECEIPT_TYPE_LABELS
 from puller.model.symbol.Transaction import MESSAGE_TYPE_LABELS, TRANSACTION_TYPE_LABELS
@@ -34,7 +40,15 @@ SYMBOL_RECEIPT_TYPE_VALUES = tuple(RECEIPT_TYPE_LABELS.values())
 SYMBOL_RECEIPT_GROUP_VALUES = ('balanceChange', 'balanceTransfer', 'artifactExpiry', 'inflation')
 SYNC_STATE_STATUS_VALUES = ('initialized', 'healthy', 'repairing', 'unhealthy')
 SYMBOL_TRANSACTION_TYPE_VALUES = tuple(TRANSACTION_TYPE_LABELS.values())
-SYMBOL_TRANSACTION_MOSAIC_ROLE_VALUES = ('transfer', 'hash_lock', 'secret_lock', 'revocation', 'restriction', 'definition')
+SYMBOL_TRANSACTION_MOSAIC_ROLE_VALUES = (
+	'transfer',
+	'hash_lock',
+	'secret_lock',
+	'revocation',
+	'restriction',
+	'definition',
+	'metadata_target'
+)
 SYMBOL_TRANSACTION_ADDRESS_ROLE_VALUES = ('signer', 'recipient', 'target', 'sender', 'cosignatory', 'mosaic_owner')
 SYMBOL_TRANSACTION_MESSAGE_TYPE_VALUES = tuple(MESSAGE_TYPE_LABELS.values())
 SYMBOL_NAMESPACE_REGISTRATION_TYPE_VALUES = tuple(NAMESPACE_REGISTRATION_TYPE_LABELS.values())
@@ -832,6 +846,8 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 
 	@staticmethod
 	def _execute_upsert_metadata(cursor, metadata_row):
+		metadata_key = canonical_metadata_key(metadata_row)
+		metadata_row = {**metadata_row, **metadata_key}
 		cursor.execute(
 			'''
 			INSERT INTO symbol_metadata (
@@ -863,6 +879,7 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 
 	@staticmethod
 	def _execute_delete_metadata_by_key(cursor, metadata_key):
+		metadata_key = canonical_metadata_key(metadata_key)
 		cursor.execute(
 			'''
 			DELETE FROM symbol_metadata
@@ -889,13 +906,75 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 
 		columns = ('metadata_type', 'source_address', 'target_address', 'scoped_metadata_key', 'target_id')
 		return [
-			{
+			canonical_metadata_key({
 				**dict(zip(columns, row)),
 				'source_address': bytes(row[1]),
 				'target_address': bytes(row[2]) if row[2] is not None else None
-			}
+			})
 			for row in cursor.fetchall()
 		]
+
+	def get_metadata_keys_from_confirmed_transactions_at_or_after_height(self, height):  # pylint: disable=invalid-name
+		"""Gets Metadata natural keys from confirmed transactions at or after a height."""
+
+		cursor = self.connection.cursor()
+		cursor.execute(
+			'''
+			SELECT
+				transactions.height,
+				transactions.id,
+				transactions.type,
+				transactions.signer_address,
+				transactions.target_address,
+				transactions.body,
+				metadata_targets.mosaic_id,
+				metadata_targets.amount,
+				metadata_targets.position
+			FROM symbol_transactions transactions
+			LEFT JOIN symbol_transaction_mosaics metadata_targets
+				ON metadata_targets.transaction_id = transactions.id
+				AND metadata_targets.role = 'metadata_target'
+			WHERE transactions.height >= %s AND transactions.type = ANY(%s)
+			ORDER BY transactions.height, transactions.id, metadata_targets.mosaic_id
+			''',
+			(height, list(METADATA_TRANSACTION_TYPE_LABELS)))
+
+		transaction_rows = []
+		for row in cursor.fetchall():
+			if not transaction_rows or transaction_rows[-1][0][1] != row[1]:
+				transaction_rows.append([row])
+			else:
+				transaction_rows[-1].append(row)
+
+		return [self._metadata_key_from_confirmed_transaction_rows(rows) for rows in transaction_rows]
+
+	@staticmethod
+	def _metadata_key_from_confirmed_transaction_rows(rows):
+		height, transaction_id, transaction_type, signer_address, target_address, body, *_ = rows[0]
+		metadata_type = METADATA_TRANSACTION_TYPE_LABELS[transaction_type]
+		if not isinstance(body, dict):
+			raise ValueError(
+				f'Invalid confirmed Symbol {metadata_type} Metadata transaction body at height {height}, id {transaction_id}')
+
+		metadata_target_rows = [
+			{'mosaic_id': row[6], 'amount': row[7], 'position': row[8]}
+			for row in rows
+			if row[6] is not None
+		]
+		target_id = metadata_target_from_relations(
+			metadata_type,
+			metadata_target_rows,
+			f'at height {height}, id {transaction_id}')
+		if 'namespace' == metadata_type:
+			target_id = body.get('targetNamespaceId')
+
+		return canonical_metadata_key({
+			'metadata_type': metadata_type,
+			'source_address': bytes(signer_address),
+			'target_address': bytes(target_address) if target_address is not None else None,
+			'scoped_metadata_key': body.get('scopedMetadataKey'),
+			'target_id': target_id
+		})
 
 	def upsert_hash_lock(self, hash_lock_row):
 		"""Upserts one Hash Lock current-state row by its aggregate bonded hash."""
@@ -1540,6 +1619,11 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 		for entry in transaction_entries:
 			transaction_id = self._insert_transaction(cursor, entry)
 			for mosaic_row in entry['mosaic_rows']:
+				if 'metadata_target' == mosaic_row['role']:
+					mosaic_row = {
+						**mosaic_row,
+						'mosaic_id': canonical_metadata_hex(mosaic_row['mosaic_id'], 'target id')
+					}
 				cursor.execute(
 					'''
 					INSERT INTO symbol_transaction_mosaics (

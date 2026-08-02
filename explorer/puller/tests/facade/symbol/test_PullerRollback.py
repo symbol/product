@@ -1,9 +1,11 @@
-# pylint: disable=duplicate-code
+# pylint: disable=duplicate-code,too-many-lines
 import asyncio
 
+from symbolchain.sc import TransactionType
 from symbolchain.symbol.Network import Address
 
 from puller.facade.SymbolPuller import SymbolRollbackError
+from puller.model.symbol.Transaction import TRANSACTION_TYPE_LABELS
 from tests.test.SymbolDatabaseTestUtils import fetch_full_block_state, fetch_normalized_sync_state
 from tests.test.SymbolMetadataTestUtils import create_expected_metadata_row, create_metadata_item, fetch_metadata_rows, metadata_path
 from tests.test.SymbolMosaicTestUtils import (
@@ -37,7 +39,7 @@ from .puller_test_utils import (
 )
 
 
-class SymbolPullerRollbackTest(SymbolPullerTestBase):
+class SymbolPullerRollbackTest(SymbolPullerTestBase):  # pylint: disable=too-many-public-methods
 	def _fetch_namespace_rows(self):
 		cursor = self.puller.symbol_db.connection.cursor()
 		cursor.execute(
@@ -55,6 +57,46 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):
 			''')
 
 		return namespace_rows, cursor.fetchall()
+
+	def _seed_transaction_metadata_rollback(self, transaction_type, body, mosaic_rows, metadata_item):
+		metadata_type_number = metadata_item['metadataEntry']['metadataType']
+		metadata_type = {0: 'account', 1: 'mosaic', 2: 'namespace'}[metadata_type_number]
+		target_id = metadata_item['metadataEntry']['targetId'].upper() if 'account' != metadata_type else None
+		metadata_key_path = metadata_path(
+			metadata_type_number,
+			target_id,
+			source_address=SIGNER_ADDRESS,
+			target_address=RECIPIENT_ADDRESS,
+			scoped_metadata_key=metadata_item['metadataEntry']['scopedMetadataKey'].upper())
+		self._seed_blocks(
+			self.puller.symbol_db,
+			[1, 2, 3],
+			{2: b'local mismatch'.hex()})
+		self.puller.symbol_db.upsert_sync_state(create_sync_state())
+		self.puller.symbol_db.upsert_transactions_for_height(2, [create_transaction_entry(
+			2,
+			f'{metadata_type}-metadata-rollback',
+			type=transaction_type,
+			type_name=TRANSACTION_TYPE_LABELS[transaction_type],
+			signer_address=bytes.fromhex(SIGNER_ADDRESS),
+			target_address=bytes.fromhex(RECIPIENT_ADDRESS),
+			body=body,
+			mosaic_rows=mosaic_rows)])
+		connector = FakeConnector(
+			3,
+			{1: [create_node_block(2), create_node_block(3)]},
+			{2: create_node_block(2)},
+			metadata_by_query={metadata_key_path: {'data': [metadata_item]}})
+		set_symbol_connector(self.puller, connector)
+
+		return connector, metadata_key_path
+
+	def _assert_metadata_rollback_recovery(self, connector, metadata_key_path, expected_metadata_row):
+		# Assert:
+		self.assertEqual([expected_metadata_row], fetch_metadata_rows(self.puller.symbol_db))
+		self.assertEqual(
+			[metadata_key_path],
+			[path for path in connector.paths if path.startswith('metadata?')])
 
 	def test_sync_block_headers_refreshes_namespace_state_at_or_above_rollback_height(self):
 		# Arrange:
@@ -327,11 +369,31 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):
 		self.puller.symbol_db.upsert_metadata(create_expected_metadata_row(
 			item, 2, composite_hash=bytes.fromhex('11' * 32), metadata_type='mosaic',
 			target_id=mosaic_id, value_hex='6F6C64', value_utf8='old'))
+		self.puller.symbol_db.upsert_transactions_for_height(2, [create_transaction_entry(
+			2,
+			'metadata-rollback-fetch-failure',
+			type=TransactionType.MOSAIC_METADATA.value,
+			type_name=TRANSACTION_TYPE_LABELS[TransactionType.MOSAIC_METADATA.value],
+			signer_address=bytes.fromhex(SIGNER_ADDRESS),
+			target_address=bytes.fromhex(RECIPIENT_ADDRESS),
+			body={
+				'targetAddress': RECIPIENT_ADDRESS,
+				'targetMosaicId': mosaic_id,
+				'scopedMetadataKey': item['metadataEntry']['scopedMetadataKey']
+			},
+			mosaic_rows=[{
+				'mosaic_id': mosaic_id,
+				'amount': 0,
+				'role': 'metadata_target',
+				'position': 0
+			}])])
 		original_block_state = fetch_full_block_state(self.puller.symbol_db)
 		original_sync_state = fetch_normalized_sync_state(self.puller.symbol_db)
 		original_namespace_state = fetch_namespace_state(self.puller.symbol_db.connection)
 		original_mosaic_state = fetch_mosaic_state(self.puller.symbol_db)
 		original_metadata_rows = fetch_metadata_rows(self.puller.symbol_db)
+		original_transaction_rows = self._fetch_transaction_rows(self.puller.symbol_db)
+		original_transaction_mosaic_rows = self._fetch_transaction_mosaic_rows(self.puller.symbol_db)
 		self.assertEqual(1, len(original_namespace_state[0]))
 		self.assertEqual(1, len(original_mosaic_state))
 		self.assertEqual(1, len(original_metadata_rows))
@@ -355,6 +417,8 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):
 		self.assertEqual(original_namespace_state, fetch_namespace_state(self.puller.symbol_db.connection))
 		self.assertEqual(original_mosaic_state, fetch_mosaic_state(self.puller.symbol_db))
 		self.assertEqual(original_metadata_rows, fetch_metadata_rows(self.puller.symbol_db))
+		self.assertEqual(original_transaction_rows, self._fetch_transaction_rows(self.puller.symbol_db))
+		self.assertEqual(original_transaction_mosaic_rows, self._fetch_transaction_mosaic_rows(self.puller.symbol_db))
 		self.assertEqual([
 			f'namespaces/{NAMESPACE_ROOT_ID}',
 			'namespaces/names',
@@ -368,6 +432,219 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):
 			payload for path, payload in connector.post_requests if 'namespaces/names' == path])
 		self.assertEqual([{'mosaicIds': [mosaic_id]}], [
 			payload for path, payload in connector.post_requests if 'mosaics' == path])
+
+	def test_sync_block_headers_recovers_orphaned_account_metadata_from_confirmed_transaction(self):
+		# Arrange:
+		metadata_item = create_metadata_item(
+			metadata_type=0,
+			composite_hash='44' * 32,
+			scoped_metadata_key='abcdef0123456789',
+			value='7265636F7665726564',
+			target_address=RECIPIENT_ADDRESS,
+			item_id='account-metadata-recovered')
+		connector, metadata_key_path = self._seed_transaction_metadata_rollback(
+			TransactionType.ACCOUNT_METADATA.value,
+			{'targetAddress': 'unresolved-address', 'scopedMetadataKey': 'abcdef0123456789'},
+			[],
+			metadata_item)
+		expected_metadata_row = create_expected_metadata_row(
+			metadata_item,
+			1,
+			composite_hash=bytes.fromhex('44' * 32),
+			metadata_type='account',
+			target_id=None,
+			scoped_metadata_key='ABCDEF0123456789',
+			value_hex='7265636F7665726564',
+			value_utf8='recovered')
+
+		# Act:
+		asyncio.run(self.puller.sync_block_headers())
+
+		# Assert:
+		self._assert_metadata_rollback_recovery(connector, metadata_key_path, expected_metadata_row)
+		self.assertEqual(3, self.puller.symbol_db.get_sync_state()['last_synced_height'])
+
+	def test_sync_block_headers_recovers_orphaned_namespace_metadata_from_confirmed_transaction(self):
+		# Arrange:
+		metadata_item = create_metadata_item(
+			metadata_type=2,
+			target_id='a95f1f8a96159516',
+			scoped_metadata_key='0000000000000010',
+			source_address=SIGNER_ADDRESS.lower())
+		connector, metadata_key_path = self._seed_transaction_metadata_rollback(
+			TransactionType.NAMESPACE_METADATA.value,
+			{
+				'targetAddress': 'unresolved-address',
+				'targetNamespaceId': 'a95f1f8a96159516',
+				'scopedMetadataKey': '0000000000000010'
+			},
+			[],
+			metadata_item)
+		expected_metadata_row = create_expected_metadata_row(
+			metadata_item,
+			1,
+			composite_hash=bytes.fromhex('11' * 32),
+			metadata_type='namespace',
+			target_id='A95F1F8A96159516',
+			scoped_metadata_key='0000000000000010',
+			value_utf8='hello')
+
+		# Act:
+		asyncio.run(self.puller.sync_block_headers())
+
+		# Assert:
+		self._assert_metadata_rollback_recovery(connector, metadata_key_path, expected_metadata_row)
+
+	def test_sync_block_headers_recovers_orphaned_resolved_alias_mosaic_metadata_from_relation(self):
+		# Arrange:
+		metadata_item = create_metadata_item(
+			metadata_type=1,
+			target_id='72c0212e67a08bce',
+			scoped_metadata_key='0000000000000011',
+			source_address=SIGNER_ADDRESS.lower())
+		connector, metadata_key_path = self._seed_transaction_metadata_rollback(
+			TransactionType.MOSAIC_METADATA.value,
+			{
+				'targetAddress': 'unresolved-address-alias',
+				'targetMosaicId': 'a95f1f8a96159516',
+				'scopedMetadataKey': '0000000000000011'
+			},
+			[{
+				'mosaic_id': '72c0212e67a08bce',
+				'amount': 0,
+				'role': 'metadata_target',
+				'position': 0
+			}],
+			metadata_item)
+		expected_metadata_row = create_expected_metadata_row(
+			metadata_item,
+			1,
+			composite_hash=bytes.fromhex('11' * 32),
+			metadata_type='mosaic',
+			target_id='72C0212E67A08BCE',
+			scoped_metadata_key='0000000000000011',
+			value_utf8='hello')
+
+		# Act:
+		asyncio.run(self.puller.sync_block_headers())
+
+		# Assert:
+		self._assert_metadata_rollback_recovery(connector, metadata_key_path, expected_metadata_row)
+
+	def test_sync_block_headers_recovers_orphaned_direct_mosaic_metadata_from_relation(self):
+		# Arrange:
+		metadata_item = create_metadata_item(
+			metadata_type=1,
+			target_id='72c0212e67a08bce',
+			scoped_metadata_key='0000000000000012',
+			source_address=SIGNER_ADDRESS.lower())
+		connector, metadata_key_path = self._seed_transaction_metadata_rollback(
+			TransactionType.MOSAIC_METADATA.value,
+			{
+				'targetAddress': RECIPIENT_ADDRESS,
+				'targetMosaicId': '72c0212e67a08bce',
+				'scopedMetadataKey': '0000000000000012'
+			},
+			[{
+				'mosaic_id': '72c0212e67a08bce',
+				'amount': 0,
+				'role': 'metadata_target',
+				'position': 0
+			}],
+			metadata_item)
+		expected_metadata_row = create_expected_metadata_row(
+			metadata_item,
+			1,
+			composite_hash=bytes.fromhex('11' * 32),
+			metadata_type='mosaic',
+			target_id='72C0212E67A08BCE',
+			scoped_metadata_key='0000000000000012',
+			value_utf8='hello')
+
+		# Act:
+		asyncio.run(self.puller.sync_block_headers())
+
+		# Assert:
+		self._assert_metadata_rollback_recovery(connector, metadata_key_path, expected_metadata_row)
+
+	def test_sync_block_headers_deduplicates_current_and_transaction_metadata_keys_after_canonicalization(self):
+		# Arrange:
+		resolved_mosaic_id = '72C0212E67A08BCE'
+		metadata_item = create_metadata_item(
+			metadata_type=1,
+			target_id=resolved_mosaic_id.lower(),
+			scoped_metadata_key='abcdef0123456789',
+			source_address=SIGNER_ADDRESS.lower())
+		connector, metadata_key_path = self._seed_transaction_metadata_rollback(
+			TransactionType.MOSAIC_METADATA.value,
+			{
+				'targetAddress': 'unresolved-address',
+				'targetMosaicId': 'a95f1f8a96159516',
+				'scopedMetadataKey': 'abcdef0123456789'
+			},
+			[{
+				'mosaic_id': resolved_mosaic_id,
+				'amount': 0,
+				'role': 'metadata_target',
+				'position': 0
+			}],
+			metadata_item)
+		current_item = create_metadata_item(
+			metadata_type=1,
+			target_id=resolved_mosaic_id,
+			scoped_metadata_key='ABCDEF0123456789',
+			source_address=SIGNER_ADDRESS,
+			value='7374616C65')
+		self.puller.symbol_db.upsert_metadata(create_expected_metadata_row(
+			current_item, 2, composite_hash=bytes.fromhex('11' * 32), metadata_type='mosaic',
+			target_id=resolved_mosaic_id, scoped_metadata_key='ABCDEF0123456789',
+			value_hex='7374616C65', value_utf8='stale'))
+		expected_metadata_row = create_expected_metadata_row(
+			metadata_item, 1, composite_hash=bytes.fromhex('11' * 32), metadata_type='mosaic',
+			target_id=resolved_mosaic_id, scoped_metadata_key='ABCDEF0123456789', value_utf8='hello')
+
+		# Act:
+		asyncio.run(self.puller.sync_block_headers())
+
+		# Assert:
+		self._assert_metadata_rollback_recovery(connector, metadata_key_path, expected_metadata_row)
+
+	def test_sync_block_headers_deduplicates_namespace_metadata_keys_after_canonicalization(self):
+		# Arrange:
+		namespace_id = 'A95F1F8A96159516'
+		metadata_item = create_metadata_item(
+			metadata_type=2,
+			target_id=namespace_id.lower(),
+			scoped_metadata_key='abcdef0123456789',
+			source_address=SIGNER_ADDRESS.lower())
+		connector, metadata_key_path = self._seed_transaction_metadata_rollback(
+			TransactionType.NAMESPACE_METADATA.value,
+			{
+				'targetAddress': 'unresolved-address',
+				'targetNamespaceId': namespace_id.lower(),
+				'scopedMetadataKey': 'abcdef0123456789'
+			},
+			[],
+			metadata_item)
+		current_item = create_metadata_item(
+			metadata_type=2,
+			target_id=namespace_id,
+			scoped_metadata_key='ABCDEF0123456789',
+			source_address=SIGNER_ADDRESS,
+			value='7374616C65')
+		self.puller.symbol_db.upsert_metadata(create_expected_metadata_row(
+			current_item, 2, composite_hash=bytes.fromhex('11' * 32), metadata_type='namespace',
+			target_id=namespace_id, scoped_metadata_key='ABCDEF0123456789',
+			value_hex='7374616C65', value_utf8='stale'))
+		expected_metadata_row = create_expected_metadata_row(
+			metadata_item, 1, composite_hash=bytes.fromhex('11' * 32), metadata_type='namespace',
+			target_id=namespace_id, scoped_metadata_key='ABCDEF0123456789', value_utf8='hello')
+
+		# Act:
+		asyncio.run(self.puller.sync_block_headers())
+
+		# Assert:
+		self._assert_metadata_rollback_recovery(connector, metadata_key_path, expected_metadata_row)
 
 	def test_sync_block_headers_refreshes_orphaned_namespace_state_to_canonical_state_during_rollback(self):
 		# Arrange:

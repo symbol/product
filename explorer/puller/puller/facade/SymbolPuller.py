@@ -27,7 +27,14 @@ from puller.model.symbol.Lock import (
 	create_secret_lock_search_key_from_hex_secret,
 	lock_hash_algorithm_label
 )
-from puller.model.symbol.Metadata import METADATA_TRANSACTION_TYPE_LABELS, METADATA_TYPE_NUMBERS, create_metadata_row
+from puller.model.symbol.Metadata import (
+	METADATA_TRANSACTION_TYPE_LABELS,
+	METADATA_TYPE_NUMBERS,
+	canonical_metadata_hex,
+	canonical_metadata_key,
+	create_metadata_row,
+	metadata_target_from_relations
+)
 from puller.model.symbol.Mosaic import create_mosaic_row
 from puller.model.symbol.Namespace import create_alias_name_rows, create_namespace_row
 from puller.model.symbol.Receipt import (
@@ -302,7 +309,9 @@ class SymbolPuller:
 		namespace_entries = await self._fetch_dirty_namespaces(namespace_ids, height - 1)
 		mosaic_ids = self.symbol_db.get_mosaic_ids_updated_from_height(height)
 		mosaic_entries = await self._fetch_dirty_mosaics(mosaic_ids, height - 1)
-		metadata_keys = self.symbol_db.get_metadata_keys_updated_from_height(height)
+		metadata_keys = self._union_metadata_keys(
+			self.symbol_db.get_metadata_keys_updated_from_height(height),
+			self.symbol_db.get_metadata_keys_from_confirmed_transactions_at_or_after_height(height))
 		metadata_entries = await self._fetch_dirty_metadata(metadata_keys, height - 1)
 		# Current rows recover Lock state still present after the fork. Finalized rows cannot be part of this
 		# unfinalized repair range, so transaction history is not an authoritative rollback key source.
@@ -544,9 +553,6 @@ class SymbolPuller:
 			for mosaic_row in row['mosaic_rows']
 			if is_alias_mosaic_id(mosaic_row['mosaic_id'])
 		}
-		mosaic_metadata_target_id = row['mosaic_metadata_target_id']
-		if mosaic_metadata_target_id is not None and is_alias_mosaic_id(mosaic_metadata_target_id):
-			alias_mosaic_ids.add(mosaic_metadata_target_id)
 		return alias_addresses, alias_mosaic_ids
 
 	@classmethod
@@ -597,8 +603,8 @@ class SymbolPuller:
 			for mosaic_row in row['mosaic_rows']:
 				if mosaic_row['mosaic_id'] in alias_mosaic_ids:
 					mosaic_row['mosaic_id'] = _resolve_transaction_alias_mosaic(mosaic_row['mosaic_id'])
-			if row['mosaic_metadata_target_id'] in alias_mosaic_ids:
-				row['mosaic_metadata_target_id'] = _resolve_transaction_alias_mosaic(row['mosaic_metadata_target_id'])
+				if 'metadata_target' == mosaic_row['role']:
+					mosaic_row['mosaic_id'] = canonical_metadata_hex(mosaic_row['mosaic_id'], 'target id')
 
 	async def _resolve_transaction_rows_for_batch(self, transaction_rows_by_height):  # pylint: disable=too-many-locals
 		resolution_requests = []
@@ -870,21 +876,23 @@ class SymbolPuller:
 				if metadata_type is None:
 					continue
 
+				metadata_target_rows = [
+					mosaic_row
+					for mosaic_row in transaction_row['mosaic_rows']
+					if 'metadata_target' == mosaic_row['role']
+				]
 				body = transaction_row['body']
-				if 'mosaic' == metadata_type:
-					target_id = transaction_row['mosaic_metadata_target_id']
-				elif 'namespace' == metadata_type:
-					target_id = body['targetNamespaceId']
-				else:
-					target_id = None
+				target_id = metadata_target_from_relations(metadata_type, metadata_target_rows)
+				if 'namespace' == metadata_type:
+					target_id = body.get('targetNamespaceId')
 
-				key = {
+				key = canonical_metadata_key({
 					'metadata_type': metadata_type,
 					'source_address': transaction_row['signer_address'],
 					'target_address': transaction_row['target_address'],
-					'scoped_metadata_key': body['scopedMetadataKey'],
+					'scoped_metadata_key': body.get('scopedMetadataKey'),
 					'target_id': target_id
-				}
+				})
 				key_identity = (
 					key['metadata_type'],
 					key['source_address'],
@@ -894,6 +902,22 @@ class SymbolPuller:
 				dirty_metadata_keys[key_identity] = key
 
 		return list(dirty_metadata_keys.values())
+
+	@staticmethod
+	def _union_metadata_keys(*metadata_key_collections):
+		metadata_keys = {}
+		for collection in metadata_key_collections:
+			for metadata_key in collection:
+				metadata_key = canonical_metadata_key(metadata_key)
+				identity = (
+					metadata_key['metadata_type'],
+					metadata_key['source_address'],
+					metadata_key['target_address'],
+					metadata_key['scoped_metadata_key'],
+					metadata_key['target_id'])
+				metadata_keys[identity] = metadata_key
+
+		return list(metadata_keys.values())
 
 	async def _fetch_dirty_metadata(self, metadata_keys, observed_height):
 		"""Fetches metadata by exact natural key in bounded concurrent batches."""

@@ -118,7 +118,6 @@ def _expected_top_level_row(item, **overrides):
 		'signer_address': bytes.fromhex(SIGNER_ADDRESS),
 		'recipient_address': bytes.fromhex(RECIPIENT_ADDRESS),
 		'target_address': None,
-		'mosaic_metadata_target_id': None,
 		'deadline': datetime.fromtimestamp(102, timezone.utc),
 		'network_deadline': 2000,
 		'max_fee': 1000,
@@ -192,7 +191,6 @@ class TransactionTest(TestCase):  # pylint: disable=too-many-public-methods
 			'signer_address': bytes.fromhex(SIGNER_ADDRESS),
 			'recipient_address': bytes.fromhex(RECIPIENT_ADDRESS),
 			'target_address': None,
-			'mosaic_metadata_target_id': None,
 			'deadline': None,
 			'network_deadline': None,
 			'max_fee': None,
@@ -218,7 +216,7 @@ class TransactionTest(TestCase):  # pylint: disable=too-many-public-methods
 			]
 		}, row)
 
-	def test_create_transaction_row_keeps_mosaic_metadata_target_id_non_persisted(self):
+	def test_create_transaction_row_creates_private_mosaic_metadata_target_relation(self):
 		# Arrange:
 		alias_mosaic_id = 'A95F1F8A96159516'
 		item = _create_embedded_item({
@@ -238,8 +236,12 @@ class TransactionTest(TestCase):  # pylint: disable=too-many-public-methods
 		row = create_transaction_row(item, Network.TESTNET, 100)
 
 		# Assert:
-		self.assertEqual(alias_mosaic_id, row['mosaic_metadata_target_id'])
-		self.assertEqual([], row['mosaic_rows'])
+		self.assertEqual([{
+			'mosaic_id': alias_mosaic_id,
+			'amount': 0,
+			'role': 'metadata_target',
+			'position': 0
+		}], row['mosaic_rows'])
 		self.assertEqual(True, row['is_embedded'])
 		self.assertEqual(bytes.fromhex('B' * 64), row['aggregate_hash'])
 		self.assertEqual(2, row['embedded_index'])
@@ -410,6 +412,14 @@ class TransactionTest(TestCase):  # pylint: disable=too-many-public-methods
 			'mosaic_id': '1111111111111111',
 			'amount': 10,
 			'role': 'definition',
+			'position': 0
+		})
+
+	def test_create_transaction_mosaic_rows_creates_canonical_mosaic_metadata_target_row(self):
+		_assert_single_mosaic(self, TransactionType.MOSAIC_METADATA.value, {'targetMosaicId': 'abcdef0123456789'}, {
+			'mosaic_id': 'ABCDEF0123456789',
+			'amount': 0,
+			'role': 'metadata_target',
 			'position': 0
 		})
 

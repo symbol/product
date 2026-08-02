@@ -351,7 +351,7 @@ class SymbolPullerTransactionAliasResolutionTest(SymbolPullerTestBase):
 						type=TransactionType.ACCOUNT_METADATA.value,
 						targetAddress=ALIAS_ADDRESS,
 						targetPublicKey='0' * 64,
-						scopedMetadataKey='1',
+						scopedMetadataKey='0000000000000001',
 						valueSizeDelta=1,
 						value='AA')
 				]}
