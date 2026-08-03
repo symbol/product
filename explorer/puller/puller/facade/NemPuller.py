@@ -16,6 +16,12 @@ from zenlog import log
 from puller.db.NemDatabase import NemDatabase
 
 ACCOUNT_KEY_LINK_MODE_ACTIVATE = 1
+NEM_MAX_ROLLBACK_DEPTH = 360
+
+
+class NemRollbackError(RuntimeError):
+	"""Raised when a safe NEM rollback point cannot be found."""
+
 
 BlockRecord = namedtuple('BlockRecord', [
 	'height',
@@ -137,6 +143,35 @@ class NemPuller:
 			f'fetching blocks after height {height}',
 			retries,
 			delay
+		)
+
+	async def _retry_get_block(self, height, retries=3, delay=2):
+		"""Retries fetching a block at a specific height with exponential backoff."""
+
+		return await self._retry_operation(
+			lambda: self.nem_connector.get_block(height),
+			f'fetching block at height {height}',
+			retries,
+			delay
+		)
+
+	async def detect_rollback(self, db_height, chain_height):
+		"""Returns the fork height when rollback is detected, otherwise None."""
+
+		comparison_height = min(db_height, chain_height)
+		minimum_height = max(1, db_height - NEM_MAX_ROLLBACK_DEPTH)
+
+		for height in range(comparison_height, minimum_height - 1, -1):
+			db_block_hash = self.nem_db.get_block_hash(height)
+			node_block = await self._retry_get_block(height)
+
+			if db_block_hash.lower() == node_block.block_hash.lower():
+				return None if height == db_height else height
+
+		raise NemRollbackError(
+			f'No matching NEM block hash found within {NEM_MAX_ROLLBACK_DEPTH} blocks '
+			f'(database height: {db_height}, chain height: {chain_height}); '
+			'manual investigation is required'
 		)
 
 	async def _retry_get_account_info(self, address, retries=3, delay=2):

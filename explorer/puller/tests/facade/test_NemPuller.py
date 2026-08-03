@@ -29,12 +29,14 @@ from symbollightapi.model.Transaction import (
 
 from puller.db.NemDatabase import AccountRefreshRecord
 from puller.facade.NemPuller import (
+	NEM_MAX_ROLLBACK_DEPTH,
 	AccountRecord,
 	AccountVestedBalanceRecord,
 	DatabaseConfig,
 	MosaicRecord,
 	NamespaceRecord,
 	NemPuller,
+	NemRollbackError,
 	TransactionRecord
 )
 
@@ -685,6 +687,18 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 		# Assert:
 		self.assertEqual(result, mosaics)
 		mock_account_mosaics.assert_called_once_with(address)
+
+	@patch('puller.facade.NemPuller.NemConnector.get_block')
+	def test_retry_get_block(self, mock_get_block):
+		# Arrange:
+		mock_get_block.return_value = NEM_CONNECTOR_RESPONSE_BLOCKS[0]
+
+		# Act:
+		result = asyncio.run(self.puller._retry_get_block(1))  # pylint: disable=protected-access
+
+		# Assert:
+		self.assertEqual(result, NEM_CONNECTOR_RESPONSE_BLOCKS[0])
+		mock_get_block.assert_called_once_with(1)
 
 	@patch('puller.facade.NemPuller.NemDatabase.get_mosaic_levy_recipients')
 	def test_can_extract_addresses_from_block_signer_and_beneficiary(self, mock_get_mosaic_levy_recipients):
@@ -1546,3 +1560,53 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 			'block_height': 3,
 			'is_inner': False
 		})
+
+	def _run_detect_rollback_test(self, database_hashes, node_hashes, db_height, chain_height):
+		self.puller.nem_db.get_block_hash = Mock(
+			side_effect=lambda height: database_hashes.get(height, 'db-hash')
+		)
+		self.puller._retry_get_block = AsyncMock(  # pylint: disable=protected-access
+			side_effect=lambda height: Mock(block_hash=node_hashes.get(height, 'chain-hash'))
+		)
+
+		# Act:
+		return asyncio.run(self.puller.detect_rollback(db_height, chain_height))
+
+	def test_returns_none_when_comparison_hash_matches(self):
+		# Arrange + Act:
+		fork_height = self._run_detect_rollback_test({3: 'ABCDEF'}, {3: 'abcdef'}, 3, 3)
+
+		# Assert:
+		self.assertIsNone(fork_height)
+
+	def test_returns_chain_height_when_database_is_ahead(self):
+		# Arrange + Act:
+		fork_height = self._run_detect_rollback_test({3: 'common'}, {3: 'common'}, 5, 3)
+
+		# Assert:
+		self.assertEqual(3, fork_height)
+
+	def test_common_block_at_360_block_boundary_is_allowed(self):
+		# Arrange:
+		db_height = NEM_MAX_ROLLBACK_DEPTH + 1
+
+		# Act:
+		fork_height = self._run_detect_rollback_test({1: 'common'}, {1: 'common'}, db_height, db_height)
+
+		# Assert:
+		self.assertEqual(1, fork_height)
+
+	def test_no_matching_block_hash_within_360_blocks_requires_manual_investigation(self):
+		# Arrange:
+		db_height = NEM_MAX_ROLLBACK_DEPTH + 1
+		expected_message = (
+			f'No matching NEM block hash found within {NEM_MAX_ROLLBACK_DEPTH} blocks '
+			f'(database height: {db_height}, chain height: {db_height}); '
+			'manual investigation is required'
+		)
+
+		# Act + Assert:
+		with self.assertRaises(NemRollbackError) as context:
+			self._run_detect_rollback_test({}, {}, db_height, db_height)
+
+		self.assertEqual(expected_message, str(context.exception))
