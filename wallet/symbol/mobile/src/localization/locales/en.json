@@ -17,7 +17,7 @@
     "button_hide": "Hide",
     "button_add": "Add",
     "button_addAccount": "Add Account",
-    "button_importAccount": "Add existing private key",
+    "button_importAccount": "Import existing private key",
     "button_addContact": "Add Contact",
     "button_remove": "Remove",
     "button_removeAccount": "Remove Account",
