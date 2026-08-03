@@ -46,14 +46,14 @@ const SCREEN_TEXT = {
 	textCardTitleAddress: 'c_accountCard_title_address',
 
 	// Buttons
-	buttonAddExternalAccount: 'button_addExternalAccount',
+	buttonImportAccount: 'button_importAccount',
 	buttonConfirm: 'button_confirm',
 
 	// Default Account Names (with index placeholder)
 	textDefaultAccountName: 's_addAccount_seed_name_default',
 
-	// External Account Dialog
-	textExternalAccountDialogTitle: 's_addAccount_privateKey_dialog_title',
+	// Import Account Dialog
+	textImportAccountDialogTitle: 's_addAccount_privateKey_dialog_title',
 	inputPrivateKeyLabel: 'input_privateKey',
 
 	// Validation Errors
@@ -163,7 +163,7 @@ describe('screens/account/AddSeedAccount', () => {
 				SCREEN_TEXT.textNameTitle,
 				SCREEN_TEXT.textSelectTitle,
 				SCREEN_TEXT.textDescription,
-				SCREEN_TEXT.buttonAddExternalAccount
+				SCREEN_TEXT.buttonImportAccount
 			];
 
 			// Act:
@@ -335,8 +335,8 @@ describe('screens/account/AddSeedAccount', () => {
 		});
 	});
 
-	describe('external account dialog', () => {
-		const runExternalAccountDialogTest = (description, config, expected) => {
+	describe('import account dialog', () => {
+		const runImportAccountDialogTest = (description, config, expected) => {
 			it(description, async () => {
 				// Arrange:
 				const addExternalAccountMock = jest.fn().mockResolvedValue();
@@ -344,7 +344,7 @@ describe('screens/account/AddSeedAccount', () => {
 				const screenTester = new ScreenTester(AddSeedAccount);
 
 				// Act:
-				screenTester.pressButton(SCREEN_TEXT.buttonAddExternalAccount);
+				screenTester.pressButton(SCREEN_TEXT.buttonImportAccount);
 				screenTester.inputText(SCREEN_TEXT.inputNameLabel, config.nameToEnter, 1);
 				screenTester.inputText(SCREEN_TEXT.inputPrivateKeyLabel, config.privateKeyToEnter);
 
@@ -359,9 +359,9 @@ describe('screens/account/AddSeedAccount', () => {
 			});
 		};
 
-		const externalAccountDialogTests = [
+		const importAccountDialogTests = [
 			{
-				description: 'submits external account with valid name and private key',
+				description: 'submits imported account with valid name and private key',
 				config: { 
 					nameToEnter: VALID_ACCOUNT_NAME, 
 					privateKeyToEnter: VALID_PRIVATE_KEY 
@@ -394,8 +394,8 @@ describe('screens/account/AddSeedAccount', () => {
 			}
 		];
 
-		externalAccountDialogTests.forEach(test => {
-			runExternalAccountDialogTest(test.description, test.config, test.expected);
+		importAccountDialogTests.forEach(test => {
+			runImportAccountDialogTest(test.description, test.config, test.expected);
 		});
 	});
 });

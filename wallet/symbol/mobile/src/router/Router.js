@@ -63,9 +63,6 @@ export class Router {
 	static goToAddSeedAccount(params) {
 		navigationRef.navigate(RouteName.AddSeedAccount, parseNavigationParams(params));
 	}
-	static goToAddExternalAccount(params) {
-		navigationRef.navigate(RouteName.AddExternalAccount, parseNavigationParams(params));
-	}
 	static goToSend(params) {
 		navigationRef.navigate(RouteName.Send, parseNavigationParams(params));
 	}
