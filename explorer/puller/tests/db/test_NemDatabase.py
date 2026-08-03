@@ -440,6 +440,26 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 		# Assert:
 		self.assertEqual(result, 0)
 
+	def _run_get_block_hash_test(self, height, expected_hash):
+		# Arrange:
+		with NemDatabase(self.db_config) as nem_database:
+			nem_database.create_tables()
+			cursor = nem_database.connection.cursor()
+			nem_database.insert_block(cursor, BLOCKS[0])
+			nem_database.connection.commit()
+
+			# Act:
+			block_hash = nem_database.get_block_hash(height)
+
+		# Assert:
+		self.assertEqual(expected_hash, block_hash)
+
+	def test_can_get_block_hash(self):
+		self._run_get_block_hash_test(BLOCKS[0].height, BLOCKS[0].block_hash)
+
+	def test_can_get_block_hash_returns_none_for_nonexistent_block(self):
+		self._run_get_block_hash_test(999, None)
+
 	def test_can_insert_account(self):
 		# Arrange:
 		with NemDatabase(self.db_config) as nem_database:
