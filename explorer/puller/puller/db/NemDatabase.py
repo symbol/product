@@ -397,6 +397,21 @@ class NemDatabase(DatabaseConnection):
 		results = cursor.fetchone()
 		return 0 if results[0] is None else results[0]
 
+	def get_block_hash(self, height):
+		"""Gets block hash at a specific height."""
+
+		cursor = self.connection.cursor()
+		cursor.execute(
+			'''
+			SELECT encode(hash, 'hex')
+			FROM blocks
+			WHERE height = %s
+			''',
+			(height,)
+		)
+		result = cursor.fetchone()
+		return result[0] if result else None
+
 	def get_accounts_for_refresh(self, limit, last_account_id):
 		"""Gets account addresses that should have vested balance and importance refreshed."""
 
