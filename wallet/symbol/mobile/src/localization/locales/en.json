@@ -652,6 +652,7 @@
     "s_bridge_history_title": "Recent History",
     "s_bridge_history_description": "Your recent swap transactions will appear here. Please allow a few minutes after making a swap for the transaction to appear.",
     "s_revoke_description": "Mosaic Supply Revocation allows to collect back mosaics that you created with the Revokable flag from the accounts that hold them.",
+    "s_revoke_alert_noHolders_description": "No other accounts currently hold this mosaic. There is nothing to revoke.",
     "s_modifyMosaic_description": "Mosaic Supply Change allows to increase or decrease the total supply of a mosaic that you created with the Supply mutable flag.",
     "s_modifyMosaic_supply_title": "Total supply",
     "s_modifyMosaic_currentSupply_label": "Current supply",

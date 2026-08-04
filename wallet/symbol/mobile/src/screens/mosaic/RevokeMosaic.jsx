@@ -1,4 +1,5 @@
 import {
+	Alert,
 	FeeSelector,
 	InputAmount,
 	SelectToken,
@@ -21,6 +22,7 @@ import { $t } from '@/app/localization';
 import { Router } from '@/app/router/Router';
 import { SelectSourceAccount } from '@/app/screens/mosaic/components';
 import { useMosaicInfo, useMosaicOwners, useRevokeMosaicFormState, useRevokeMosaicTransaction } from '@/app/screens/mosaic/hooks';
+import { createNoHoldersAlertData } from '@/app/screens/mosaic/utils';
 import React, { useEffect, useMemo } from 'react';
 import Animated, { FadeInDown, FadeOut } from 'react-native-reanimated';
 
@@ -155,6 +157,9 @@ export const RevokeMosaic = props => {
 		transactionFeeTierLevel: transactionSpeed
 	});
 
+	// Warning
+	const noHoldersAlert = createNoHoldersAlertData(sourceOptions.length, isLoading);
+
 	// Derived state
 	const isLoading = !isWalletReady || isMosaicLoading || isOwnersLoading;
 	const isButtonDisabled = !isNetworkConnectionReady
@@ -196,16 +201,24 @@ export const RevokeMosaic = props => {
 					</Stack>
 					<Stack gap="none">
 						<StyledText type="title" size="s">{$t('s_send_from_title')}</StyledText>
-						<SelectSourceAccount
-							label={$t('fieldTitle_account')}
-							value={sourceAddress}
-							owners={sourceOptions}
-							chainName={chainName}
-							networkIdentifier={networkIdentifier}
-							walletAccounts={walletAccounts}
-							addressBook={walletController.modules.addressBook}
-							onChange={changeSourceAddress}
-						/>
+						<Stack gap="s">
+							<SelectSourceAccount
+								label={$t('fieldTitle_account')}
+								value={sourceAddress}
+								owners={sourceOptions}
+								chainName={chainName}
+								networkIdentifier={networkIdentifier}
+								walletAccounts={walletAccounts}
+								addressBook={walletController.modules.addressBook}
+								onChange={changeSourceAddress}
+							/>
+							{noHoldersAlert.isVisible && (
+								<Alert
+									variant={noHoldersAlert.variant}
+									body={noHoldersAlert.text}
+								/>
+							)}
+						</Stack>
 					</Stack>
 					<Stack gap="none">
 						<StyledText type="title" size="s">{$t('s_send_token_title')}</StyledText>

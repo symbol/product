@@ -47,7 +47,10 @@ const SCREEN_TEXT = {
 	textConfirmDialogTitle: 'form_transfer_confirm_title',
 
 	// Validation errors
-	errorBalanceNotEnough: 'validation_error_balance_not_enough'
+	errorBalanceNotEnough: 'validation_error_balance_not_enough',
+
+	// Alerts
+	textNoHoldersAlert: 's_revoke_alert_noHolders_description'
 };
 
 // Account Fixtures
@@ -93,6 +96,10 @@ const holders = [
 
 const holdersIncludingCreator = [
 	...holders,
+	{ address: currentAccount.address, amount: CREATOR_BALANCE }
+];
+
+const creatorOnlyHolders = [
 	{ address: currentAccount.address, amount: CREATOR_BALANCE }
 ];
 
@@ -283,6 +290,46 @@ describe('screens/mosaic/RevokeMosaic', () => {
 
 		sourceAccountTests.forEach(test => {
 			runSourceAccountTest(test.description, test.config, test.expected);
+		});
+	});
+
+	describe('no holders alert', () => {
+		const runNoHoldersAlertTest = (description, config, expected) => {
+			it(description, async () => {
+				// Arrange:
+				setupMocks({ owners: config.owners });
+
+				// Act:
+				const screenTester = await renderRevokeMosaicScreen();
+
+				// Assert:
+				if (expected.isAlertRendered)
+					screenTester.expectText([SCREEN_TEXT.textNoHoldersAlert]);
+				else
+					screenTester.notExpectText([SCREEN_TEXT.textNoHoldersAlert]);
+			});
+		};
+
+		const noHoldersAlertTests = [
+			{
+				description: 'renders the no-holders alert when only the creator holds the mosaic',
+				config: { owners: creatorOnlyHolders },
+				expected: { isAlertRendered: true }
+			},
+			{
+				description: 'renders the no-holders alert when nobody holds the mosaic',
+				config: { owners: [] },
+				expected: { isAlertRendered: true }
+			},
+			{
+				description: 'does not render the no-holders alert when other accounts hold the mosaic',
+				config: { owners: holders },
+				expected: { isAlertRendered: false }
+			}
+		];
+
+		noHoldersAlertTests.forEach(test => {
+			runNoHoldersAlertTest(test.description, test.config, test.expected);
 		});
 	});
 

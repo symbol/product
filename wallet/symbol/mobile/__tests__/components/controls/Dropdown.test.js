@@ -1,8 +1,11 @@
 import { Dropdown } from '@/app/components/controls/Dropdown';
 import { runDropdownSelectTest, runRenderTextTest } from '__tests__/component-tests';
+import { mockLocalization } from '__tests__/mock-helpers';
 import { fireEvent, render } from '@testing-library/react-native';
 
 describe('components/Dropdown', () => {
+	const emptyListMessageText = 'message_emptyList';
+
 	const defaultList = [
 		{ value: 'option1', label: 'Option 1' },
 		{ value: 'option2', label: 'Option 2' },
@@ -105,6 +108,56 @@ describe('components/Dropdown', () => {
 
 		tests.forEach(test => {
 			runModalTest(test.description, test.config, test.expected);
+		});
+	});
+
+	describe('empty list', () => {
+		beforeEach(() => {
+			mockLocalization();
+		});
+
+		afterEach(() => {
+			jest.restoreAllMocks();
+		});
+
+		const runEmptyListTest = (description, config, expected) => {
+			it(description, () => {
+				// Arrange:
+				const props = createProps(config.props);
+				const { getByText, queryByText } = render(<Dropdown {...props} />);
+
+				// Act:
+				fireEvent.press(getByText(config.textToPress));
+
+				// Assert:
+				if (expected.isEmptyMessageRendered)
+					expect(queryByText(emptyListMessageText)).toBeTruthy();
+				else
+					expect(queryByText(emptyListMessageText)).toBeNull();
+			});
+		};
+
+		const emptyListTests = [
+			{
+				description: 'renders the empty list message when the modal is opened with no items',
+				config: {
+					props: { list: [], value: '' },
+					textToPress: 'Test Label'
+				},
+				expected: { isEmptyMessageRendered: true }
+			},
+			{
+				description: 'does not render the empty list message when the modal has items',
+				config: {
+					props: {},
+					textToPress: 'Option 1'
+				},
+				expected: { isEmptyMessageRendered: false }
+			}
+		];
+
+		emptyListTests.forEach(test => {
+			runEmptyListTest(test.description, test.config, test.expected);
 		});
 	});
 
