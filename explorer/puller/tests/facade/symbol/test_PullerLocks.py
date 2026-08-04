@@ -1627,6 +1627,31 @@ class SymbolPullerLocksTest(SymbolPullerTestBase):
 			'symbol_sync_state': 0
 		}, self._fetch_lock_alias_failure_state())
 
+	def test_sync_block_headers_rejects_a_hash_lock_mosaic_alias_surviving_resolution(self):
+		# Arrange:
+		transaction = create_node_transaction(
+			1,
+			type=TransactionType.HASH_LOCK.value,
+			hash=LOCK_HASH,
+			mosaicId=ALIAS_MOSAIC_ID,
+			amount='1234')
+		connector = LockConnector(
+			1,
+			{0: [create_node_block(1)]},
+			transactions_by_path={transaction_path(1, 1): {'data': [transaction]}},
+			mosaic_resolutions_by_height={1: [create_resolution_statement(
+				1,
+				ALIAS_MOSAIC_ID,
+				[_resolution_entry(1, 0, 'A95F1F8A96159516')])]},
+			statement_pages={statement_path(1, 1): {'data': []}})
+
+		# Act / Assert:
+		with self.assertRaisesRegex(ValueError, 'mosaic_id.*Lock'):
+			self._sync_with_connector(connector)
+
+		# Assert:
+		self.assertEqual([], [path for path in connector.paths if path.startswith('lock/')])
+
 	def test_sync_block_headers_rejects_an_inapplicable_secret_proof_recipient_alias_resolution(self):
 		# Arrange:
 		transaction = create_node_transaction(

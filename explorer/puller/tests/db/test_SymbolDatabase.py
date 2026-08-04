@@ -15,6 +15,7 @@ from symbolchain.symbol.Network import Network
 from puller.db.SymbolDatabase import RollbackRefreshEntries, SymbolDatabase
 from puller.model.symbol.Account import create_account_row
 from puller.model.symbol.Lock import create_hash_lock_key, create_secret_lock_search_key
+from puller.model.symbol.MosaicRestriction import MosaicRestrictionEntryType, MosaicRestrictionKey
 from puller.model.symbol.Transaction import TRANSACTION_TYPE_LABELS
 from tests.facade.symbol.puller_test_utils import NATIVE_MOSAIC_ID, create_account_item
 from tests.test.SymbolDatabaseTestUtils import fetch_full_block_state, fetch_normalized_sync_state
@@ -59,6 +60,27 @@ LOCK_COMPOSITE_HASH_2 = bytes.fromhex('EE' * 32)
 LOCK_OWNER = bytes.fromhex(ADDRESS1)
 LOCK_OWNER_2 = bytes.fromhex(ADDRESS2)
 LOCK_RECIPIENT = bytes.fromhex(ADDRESS3)
+RESTRICTION_HASH = bytes.fromhex('F1' * 32)
+RESTRICTION_HASH_2 = bytes.fromhex('F2' * 32)
+RESTRICTION_MOSAIC_ID = '72C0212E67A08BCE'
+
+
+def _create_mosaic_restriction_row(
+	entry_type=MosaicRestrictionEntryType.ADDRESS,
+	target_address=LOCK_RECIPIENT,
+	composite_hash=RESTRICTION_HASH,
+	observed_height=1,
+	restrictions=None
+):
+	return {
+		'composite_hash': composite_hash,
+		'entry_type': entry_type,
+		'mosaic_id': RESTRICTION_MOSAIC_ID,
+		'target_address': target_address if entry_type is MosaicRestrictionEntryType.ADDRESS else None,
+		'restrictions': restrictions if restrictions is not None else [{'key': '1', 'value': '2'}],
+		'raw_payload': {'mosaicRestrictionEntry': {'compositeHash': composite_hash.hex()}},
+		'updated_at_height': observed_height
+	}
 
 
 def _create_hash_lock_row(observed_height=1, lock_hash=LOCK_HASH, end_height=100, status='unused'):
@@ -1976,6 +1998,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			'symbol_blocks',
 			'symbol_hash_locks',
 			'symbol_metadata',
+			'symbol_mosaic_restrictions',
 			'symbol_mosaics',
 			'symbol_multisig',
 			'symbol_namespaces',
@@ -4971,3 +4994,547 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			(bytes(composite_hash), status, updated_at_height)
 			for composite_hash, status, updated_at_height in cursor.fetchall()
 		])
+
+	@staticmethod
+	def _fetch_table_state(database, table_names):
+		cursor = database.connection.cursor()
+		state = {}
+		for table_name in table_names:
+			cursor.execute(
+				f'SELECT to_jsonb(table_row) FROM {table_name} AS table_row ORDER BY to_jsonb(table_row)::text')
+			state[table_name] = cursor.fetchall()
+		return state
+
+	def test_repair_rollback_restores_all_state_when_mosaic_restriction_write_fails(self):  # pylint: disable=too-many-locals
+		# Arrange:
+		database = self._create_database()
+		database.upsert_blocks([_create_block(1), _create_block(2)])
+		database.upsert_transactions_for_height(1, [create_transaction_entry(
+			1,
+			'kept',
+			mosaic_rows=[{'mosaic_id': '1111111111111111', 'amount': 10, 'role': 'transfer', 'position': 0}],
+			address_rows=[{'address': b'kept address', 'role': 'signer'}])])
+		database.upsert_transactions_for_height(2, [create_transaction_entry(
+			2,
+			'rollbacked',
+			mosaic_rows=[{'mosaic_id': '2222222222222222', 'amount': 20, 'role': 'transfer', 'position': 0}],
+			address_rows=[{'address': b'rollbacked address', 'role': 'signer'}])])
+		database.upsert_sync_state(_create_sync_state())
+
+		original_namespace_row = _create_namespace_row(observed_height=2)
+		database.upsert_namespace(original_namespace_row, _create_alias_name_rows(original_namespace_row))
+		original_mosaic_row = create_expected_mosaic_row(
+			create_mosaic_item(mosaic_id=RESTRICTION_MOSAIC_ID, supply='1234'), 2)
+		database.upsert_mosaic(original_mosaic_row)
+		original_metadata_item = create_metadata_item(
+			metadata_type=1, composite_hash='11' * 32, target_id=RESTRICTION_MOSAIC_ID)
+		original_metadata_row = create_expected_metadata_row(
+			original_metadata_item,
+			2,
+			bytes.fromhex('11' * 32),
+			'mosaic',
+			RESTRICTION_MOSAIC_ID,
+			'original')
+		database.upsert_metadata(original_metadata_row)
+		database.upsert_hash_lock(_create_hash_lock_row(observed_height=2, status='unused'))
+		secret_key = create_secret_lock_search_key(LOCK_OWNER, LOCK_RECIPIENT, LOCK_SECRET, 'hash160')
+		database.replace_secret_locks(secret_key, [_create_secret_lock_row(observed_height=2, status='unused')])
+		restriction_key = MosaicRestrictionKey(MosaicRestrictionEntryType.GLOBAL, RESTRICTION_MOSAIC_ID, None)
+		database.replace_mosaic_restrictions(restriction_key, [
+			_create_mosaic_restriction_row(
+				entry_type=MosaicRestrictionEntryType.GLOBAL,
+				composite_hash=RESTRICTION_HASH,
+				observed_height=2)])
+
+		state_tables = (
+			'symbol_blocks',
+			'symbol_transactions',
+			'symbol_transaction_mosaics',
+			'symbol_transaction_addresses',
+			'symbol_sync_state',
+			'symbol_namespaces',
+			'symbol_alias_names',
+			'symbol_mosaics',
+			'symbol_metadata',
+			'symbol_hash_locks',
+			'symbol_secret_locks',
+			'symbol_mosaic_restrictions'
+		)
+		before_state = self._fetch_table_state(database, state_tables)
+		self.assertEqual(1, len(before_state['symbol_mosaic_restrictions']))
+		updated_namespace_row = _create_namespace_row(
+			observed_height=1, raw_payload={'namespace': {'state': 'replacement'}})
+		updated_mosaic_row = create_expected_mosaic_row(
+			create_mosaic_item(mosaic_id=RESTRICTION_MOSAIC_ID, supply='9999'), 1)
+		updated_metadata_item = create_metadata_item(
+			metadata_type=1,
+			composite_hash='11' * 32,
+			target_id=RESTRICTION_MOSAIC_ID,
+			value='776F726C64')
+		updated_metadata_row = create_expected_metadata_row(
+			updated_metadata_item,
+			1,
+			bytes.fromhex('11' * 32),
+			'mosaic',
+			RESTRICTION_MOSAIC_ID,
+			'world',
+			value_hex='776F726C64')
+		updated_hash_row = _create_hash_lock_row(observed_height=1, status='used')
+		updated_secret_row = _create_secret_lock_row(observed_height=1, status='used')
+		invalid_restriction_row = {
+			**_create_mosaic_restriction_row(
+				entry_type=MosaicRestrictionEntryType.GLOBAL,
+				composite_hash=RESTRICTION_HASH_2,
+				observed_height=1),
+			'target_address': LOCK_RECIPIENT
+		}
+		refresh_entries = RollbackRefreshEntries(
+			namespace_entries=[{
+				'row': updated_namespace_row,
+				'alias_rows': _create_alias_name_rows(updated_namespace_row)
+			}],
+			mosaic_entries=[{'row': updated_mosaic_row}],
+			metadata_entries=[{'row': updated_metadata_row}],
+			hash_lock_entries=[{'row': updated_hash_row}],
+			secret_lock_entries=[{'key': secret_key, 'rows': [updated_secret_row]}],
+			# This valid-domain row violates the production target-address check at INSERT time.
+			mosaic_restriction_entries=[{'key': restriction_key, 'rows': [invalid_restriction_row]}])
+
+		# Act / Assert:
+		with self.assertRaises(PsycopgError):
+			database.repair_rollback_from_height(
+				2,
+				_create_sync_state(status='repairing', last_synced_height=1, last_synced_block_hash=b'hash 1'),
+				refresh_entries)
+
+		# Assert:
+		after_state = self._fetch_table_state(database, state_tables)
+		self.assertEqual(before_state, after_state)
+		# The height-2 row was deleted before the invalid INSERT and is restored by transaction rollback.
+		self.assertEqual(before_state['symbol_mosaic_restrictions'], after_state['symbol_mosaic_restrictions'])
+
+	def test_create_tables_creates_mosaic_restriction_enum_labels(self):
+		# Arrange:
+		database = self._create_uninitialized_database()
+
+		# Act:
+		database.create_tables()
+
+		# Assert:
+		cursor = database.connection.cursor()
+		cursor.execute(
+			'''
+			SELECT enumlabel
+			FROM pg_enum
+			JOIN pg_type ON pg_type.oid = pg_enum.enumtypid
+			WHERE pg_type.typname = 'symbol_mosaic_restriction_entry_type'
+			ORDER BY enumsortorder
+			''')
+		self.assertEqual([('address',), ('global',)], cursor.fetchall())
+
+	def test_create_tables_creates_mosaic_restriction_columns_and_nullability(self):
+		# Arrange:
+		database = self._create_uninitialized_database()
+
+		# Act:
+		database.create_tables()
+
+		# Assert:
+		cursor = database.connection.cursor()
+		cursor.execute(
+			'''
+			SELECT column_name, is_nullable, udt_name
+			FROM information_schema.columns
+			WHERE table_name = 'symbol_mosaic_restrictions'
+			ORDER BY ordinal_position
+			''')
+		self.assertEqual([
+			('composite_hash', 'NO', 'bytea'),
+			('entry_type', 'NO', 'symbol_mosaic_restriction_entry_type'),
+			('mosaic_id', 'NO', 'varchar'),
+			('target_address', 'YES', 'bytea'),
+			('restrictions', 'NO', 'jsonb'),
+			('raw_payload', 'NO', 'jsonb'),
+			('updated_at_height', 'NO', 'int8')
+		], cursor.fetchall())
+
+	def test_create_tables_uses_mosaic_restriction_enum_for_entry_type(self):
+		# Arrange:
+		database = self._create_uninitialized_database()
+
+		# Act:
+		database.create_tables()
+
+		# Assert:
+		cursor = database.connection.cursor()
+		cursor.execute(
+			'SELECT udt_name FROM information_schema.columns '
+			'WHERE table_name = %s AND column_name = %s',
+			('symbol_mosaic_restrictions', 'entry_type'))
+		self.assertEqual([('symbol_mosaic_restriction_entry_type',)], cursor.fetchall())
+
+	def test_create_tables_enforces_mosaic_restriction_target_address_consistency(self):
+		# Arrange:
+		database = self._create_uninitialized_database()
+
+		# Act:
+		database.create_tables()
+
+		# Assert:
+		cursor = database.connection.cursor()
+		cursor.execute(
+			'SELECT pg_get_constraintdef(oid) FROM pg_constraint WHERE conname = %s',
+			('symbol_mosaic_restrictions_target_address_consistency',))
+		self.assertEqual([
+			"CHECK ((((entry_type = 'address'::symbol_mosaic_restriction_entry_type) AND (target_address IS NOT NULL)) OR "
+			"((entry_type = 'global'::symbol_mosaic_restriction_entry_type) AND (target_address IS NULL))))"
+		], [row[0] for row in cursor.fetchall()])
+
+	def test_create_tables_defines_mosaic_restriction_logical_uniqueness_with_nulls_not_distinct(self):
+		# Arrange:
+		database = self._create_uninitialized_database()
+
+		# Act:
+		database.create_tables()
+
+		# Assert:
+		cursor = database.connection.cursor()
+		cursor.execute(
+			'SELECT pg_get_constraintdef(oid) FROM pg_constraint WHERE conname = %s',
+			('symbol_mosaic_restrictions_logical_key_unique',))
+		self.assertEqual(
+			['UNIQUE NULLS NOT DISTINCT (mosaic_id, entry_type, target_address)'],
+			[row[0] for row in cursor.fetchall()])
+
+	def test_create_tables_creates_mosaic_restriction_indexes(self):
+		# Arrange:
+		database = self._create_uninitialized_database()
+
+		# Act:
+		database.create_tables()
+
+		# Assert:
+		cursor = database.connection.cursor()
+		cursor.execute(
+			"SELECT indexname FROM pg_indexes WHERE tablename = 'symbol_mosaic_restrictions' ORDER BY indexname")
+		self.assertEqual([
+			'idx_symbol_mosaic_restrictions_entry_type',
+			'idx_symbol_mosaic_restrictions_target_address',
+			'idx_symbol_mosaic_restrictions_updated_height',
+			'symbol_mosaic_restrictions_logical_key_unique',
+			'symbol_mosaic_restrictions_pkey'
+		], [row[0] for row in cursor.fetchall()])
+
+	def test_replace_mosaic_restrictions_inserts_one_logical_key(self):
+		# Arrange:
+		database = self._create_database()
+		key = MosaicRestrictionKey(MosaicRestrictionEntryType.ADDRESS, RESTRICTION_MOSAIC_ID, LOCK_RECIPIENT)
+		initial_row = _create_mosaic_restriction_row()
+
+		# Act:
+		database.replace_mosaic_restrictions(key, [initial_row])
+
+		# Assert:
+		cursor = database.connection.cursor()
+		cursor.execute(
+			'SELECT composite_hash, restrictions, updated_at_height FROM symbol_mosaic_restrictions')
+		self.assertEqual([(RESTRICTION_HASH, [{'key': '1', 'value': '2'}], 1)], [
+			(bytes(composite_hash), restrictions, updated_at_height)
+			for composite_hash, restrictions, updated_at_height in cursor.fetchall()
+		])
+
+	def test_replace_mosaic_restrictions_updates_one_logical_key(self):
+		# Arrange:
+		database = self._create_database()
+		key = MosaicRestrictionKey(MosaicRestrictionEntryType.ADDRESS, RESTRICTION_MOSAIC_ID, LOCK_RECIPIENT)
+		database.replace_mosaic_restrictions(key, [_create_mosaic_restriction_row()])
+		updated_row = _create_mosaic_restriction_row(
+			composite_hash=RESTRICTION_HASH_2,
+			observed_height=2,
+			restrictions=[{'key': '9', 'value': '10'}])
+
+		# Act:
+		database.replace_mosaic_restrictions(key, [updated_row])
+
+		# Assert:
+		cursor = database.connection.cursor()
+		cursor.execute('SELECT composite_hash, restrictions, updated_at_height FROM symbol_mosaic_restrictions')
+		self.assertEqual([(RESTRICTION_HASH_2, [{'key': '9', 'value': '10'}], 2)], [
+			(bytes(composite_hash), restrictions, updated_at_height)
+			for composite_hash, restrictions, updated_at_height in cursor.fetchall()
+		])
+
+	def test_replace_mosaic_restrictions_empty_rows_deletes_matching_key(self):
+		# Arrange:
+		database = self._create_database()
+		global_key = MosaicRestrictionKey(MosaicRestrictionEntryType.GLOBAL, RESTRICTION_MOSAIC_ID, None)
+		database.replace_mosaic_restrictions(global_key, [_create_mosaic_restriction_row(
+			entry_type=MosaicRestrictionEntryType.GLOBAL, target_address=None, composite_hash=RESTRICTION_HASH_2)])
+
+		# Act:
+		database.replace_mosaic_restrictions(global_key, [])
+
+		# Assert:
+		cursor = database.connection.cursor()
+		cursor.execute('SELECT COUNT(*) FROM symbol_mosaic_restrictions')
+		self.assertEqual(0, cursor.fetchone()[0])
+
+	def test_replace_mosaic_restrictions_keeps_different_target_sibling(self):
+		# Arrange:
+		database = self._create_database()
+		first_key = MosaicRestrictionKey(MosaicRestrictionEntryType.ADDRESS, RESTRICTION_MOSAIC_ID, LOCK_RECIPIENT)
+		second_key = MosaicRestrictionKey(MosaicRestrictionEntryType.ADDRESS, RESTRICTION_MOSAIC_ID, LOCK_OWNER)
+		database.replace_mosaic_restrictions(first_key, [_create_mosaic_restriction_row()])
+		database.replace_mosaic_restrictions(second_key, [_create_mosaic_restriction_row(
+			target_address=LOCK_OWNER, composite_hash=RESTRICTION_HASH_2)])
+
+		# Act:
+		database.replace_mosaic_restrictions(first_key, [])
+
+		# Assert:
+		cursor = database.connection.cursor()
+		cursor.execute('SELECT target_address FROM symbol_mosaic_restrictions')
+		self.assertEqual([(LOCK_OWNER,)], [(bytes(row[0]),) for row in cursor.fetchall()])
+
+	def test_replace_mosaic_restrictions_keeps_different_entry_type_sibling(self):
+		# Arrange:
+		database = self._create_database()
+		address_key = MosaicRestrictionKey(MosaicRestrictionEntryType.ADDRESS, RESTRICTION_MOSAIC_ID, LOCK_RECIPIENT)
+		global_key = MosaicRestrictionKey(MosaicRestrictionEntryType.GLOBAL, RESTRICTION_MOSAIC_ID, None)
+		database.replace_mosaic_restrictions(address_key, [_create_mosaic_restriction_row()])
+		database.replace_mosaic_restrictions(global_key, [_create_mosaic_restriction_row(
+			entry_type=MosaicRestrictionEntryType.GLOBAL, target_address=None, composite_hash=RESTRICTION_HASH_2)])
+
+		# Act:
+		database.replace_mosaic_restrictions(address_key, [])
+
+		# Assert:
+		cursor = database.connection.cursor()
+		cursor.execute('SELECT entry_type FROM symbol_mosaic_restrictions')
+		self.assertEqual([('global',)], cursor.fetchall())
+
+	def test_replace_mosaic_restrictions_replaces_global_null_target_key(self):
+		# Arrange:
+		database = self._create_database()
+		key = MosaicRestrictionKey(MosaicRestrictionEntryType.GLOBAL, RESTRICTION_MOSAIC_ID, None)
+		database.replace_mosaic_restrictions(key, [_create_mosaic_restriction_row(
+			entry_type=MosaicRestrictionEntryType.GLOBAL, target_address=None, composite_hash=RESTRICTION_HASH)])
+
+		# Act:
+		database.replace_mosaic_restrictions(key, [_create_mosaic_restriction_row(
+			entry_type=MosaicRestrictionEntryType.GLOBAL, target_address=None, composite_hash=RESTRICTION_HASH_2)])
+
+		# Assert:
+		cursor = database.connection.cursor()
+		cursor.execute('SELECT composite_hash, target_address FROM symbol_mosaic_restrictions')
+		self.assertEqual([(RESTRICTION_HASH_2, None)], [
+			(bytes(composite_hash), target_address) for composite_hash, target_address in cursor.fetchall()
+		])
+
+	def test_replace_mosaic_restrictions_rejects_invalid_logical_key(self):
+		# Arrange:
+		database = self._create_database()
+
+		# Act + Assert:
+		with self.assertRaises(ValueError):
+			database.replace_mosaic_restrictions('global', [])
+
+	def test_mosaic_restriction_current_keys_are_height_and_hash_ordered(self):
+		# Arrange:
+		database = self._create_database()
+		outside_key = MosaicRestrictionKey(
+			MosaicRestrictionEntryType.ADDRESS, RESTRICTION_MOSAIC_ID, bytes.fromhex(ADDRESS2))
+		first_key = MosaicRestrictionKey(MosaicRestrictionEntryType.ADDRESS, RESTRICTION_MOSAIC_ID, LOCK_RECIPIENT)
+		second_key = MosaicRestrictionKey(MosaicRestrictionEntryType.GLOBAL, RESTRICTION_MOSAIC_ID, None)
+		third_key = MosaicRestrictionKey(MosaicRestrictionEntryType.ADDRESS, RESTRICTION_MOSAIC_ID, LOCK_OWNER)
+		fourth_key = MosaicRestrictionKey(MosaicRestrictionEntryType.ADDRESS, RESTRICTION_MOSAIC_ID, bytes.fromhex(ADDRESS4))
+		database.replace_mosaic_restrictions(outside_key, [_create_mosaic_restriction_row(
+			target_address=bytes.fromhex(ADDRESS2),
+			composite_hash=bytes.fromhex('00' * 32),
+			observed_height=1)])
+		database.replace_mosaic_restrictions(first_key, [_create_mosaic_restriction_row(
+			composite_hash=RESTRICTION_HASH, observed_height=2)])
+		database.replace_mosaic_restrictions(second_key, [_create_mosaic_restriction_row(
+			entry_type=MosaicRestrictionEntryType.GLOBAL,
+			target_address=None,
+			composite_hash=RESTRICTION_HASH_2,
+			observed_height=2)])
+		database.replace_mosaic_restrictions(third_key, [_create_mosaic_restriction_row(
+			target_address=LOCK_OWNER,
+			composite_hash=bytes.fromhex('F3' * 32),
+			observed_height=2)])
+		database.replace_mosaic_restrictions(fourth_key, [_create_mosaic_restriction_row(
+			target_address=bytes.fromhex(ADDRESS4),
+			composite_hash=bytes.fromhex('01' * 32),
+			observed_height=3)])
+
+		# Act:
+		keys = database.get_mosaic_restriction_keys_updated_from_height(2)
+
+		# Assert:
+		self.assertEqual([first_key, second_key, third_key, fourth_key], keys)
+
+	def test_confirmed_mosaic_restriction_keys_use_resolved_position_zero_and_height_id_order(self):
+		# Arrange:
+		database = self._create_database()
+		database.upsert_blocks([_create_block(4), _create_block(5), _create_block(6)])
+		database.upsert_transactions_for_height(4, [create_transaction_entry(
+			4,
+			key='outside',
+			type=TransactionType.MOSAIC_GLOBAL_RESTRICTION.value,
+			target_address=None,
+			mosaic_rows=[{
+				'mosaic_id': RESTRICTION_MOSAIC_ID,
+				'amount': 0,
+				'role': 'restriction',
+				'position': 0
+			}])])
+		database.upsert_transactions_for_height(6, [create_transaction_entry(
+			6,
+			key='height-six',
+			type=TransactionType.MOSAIC_GLOBAL_RESTRICTION.value,
+			target_address=None,
+			mosaic_rows=[{
+				'mosaic_id': '3333333333333333',
+				'amount': 0,
+				'role': 'restriction',
+				'position': 0
+			}])])
+		database.upsert_transactions_for_height(5, [create_transaction_entry(
+			5,
+			key='global',
+			type=TransactionType.MOSAIC_GLOBAL_RESTRICTION.value,
+			target_address=None,
+			mosaic_rows=[{
+				'mosaic_id': RESTRICTION_MOSAIC_ID,
+				'amount': 0,
+				'role': 'restriction',
+				'position': 0
+			}, {
+				'mosaic_id': '1111111111111111',
+				'amount': 0,
+				'role': 'restriction',
+				'position': 1
+			}]), create_transaction_entry(
+			5,
+			key='address',
+			type=TransactionType.MOSAIC_ADDRESS_RESTRICTION.value,
+			target_address=LOCK_RECIPIENT,
+			mosaic_rows=[{
+				'mosaic_id': RESTRICTION_MOSAIC_ID,
+				'amount': 0,
+				'role': 'restriction',
+				'position': 0
+			}])])
+
+		# Act:
+		keys = database.get_confirmed_mosaic_restriction_keys_since(5)
+
+		# Assert:
+		self.assertEqual([
+			MosaicRestrictionKey(MosaicRestrictionEntryType.GLOBAL, RESTRICTION_MOSAIC_ID, None),
+			MosaicRestrictionKey(MosaicRestrictionEntryType.ADDRESS, RESTRICTION_MOSAIC_ID, LOCK_RECIPIENT),
+			MosaicRestrictionKey(MosaicRestrictionEntryType.GLOBAL, '3333333333333333', None)
+		], keys)
+
+	def test_confirmed_mosaic_restriction_key_rejects_unknown_transaction_type(self):
+		# Arrange:
+		rows = [(
+			5, 'transaction-1', 999, None, RESTRICTION_MOSAIC_ID, 0)]
+
+		# Act / Assert:
+		with self.assertRaises(ValueError):
+			SymbolDatabase._mosaic_restriction_key_from_confirmed_transaction_rows(  # pylint: disable=protected-access
+				rows)
+
+	def test_confirmed_global_mosaic_restriction_query_rejects_missing_position_zero_mosaic(self):
+		# Arrange:
+		database = self._create_database()
+		database.upsert_blocks([_create_block(5)])
+		database.upsert_transactions_for_height(5, [create_transaction_entry(
+			5,
+			key='missing-global-mosaic',
+			type=TransactionType.MOSAIC_GLOBAL_RESTRICTION.value,
+			target_address=None,
+			mosaic_rows=[])])
+		cursor = database.connection.cursor()
+		cursor.execute('SELECT id FROM symbol_transactions WHERE height = %s', (5,))
+		transaction_id = cursor.fetchone()[0]
+
+		# Act / Assert:
+		with self.assertRaisesRegex(
+			ValueError,
+			f'Invalid confirmed Symbol global Mosaic Restriction transaction at height 5, id {transaction_id}'):
+			database.get_confirmed_mosaic_restriction_keys_since(5)
+
+	def test_confirmed_address_mosaic_restriction_query_rejects_missing_target_address(self):
+		# Arrange:
+		database = self._create_database()
+		database.upsert_blocks([_create_block(5)])
+		database.upsert_transactions_for_height(5, [create_transaction_entry(
+			5,
+			key='missing-address-target',
+			type=TransactionType.MOSAIC_ADDRESS_RESTRICTION.value,
+			target_address=None,
+			mosaic_rows=[{
+				'mosaic_id': RESTRICTION_MOSAIC_ID,
+				'amount': 0,
+				'role': 'restriction',
+				'position': 0
+			}])])
+		cursor = database.connection.cursor()
+		cursor.execute('SELECT id FROM symbol_transactions WHERE height = %s', (5,))
+		transaction_id = cursor.fetchone()[0]
+
+		# Act / Assert:
+		with self.assertRaisesRegex(
+			ValueError,
+			f'Invalid confirmed Symbol address Mosaic Restriction target at height 5, id {transaction_id}'):
+			database.get_confirmed_mosaic_restriction_keys_since(5)
+
+	def test_confirmed_mosaic_restriction_query_groups_rows_for_one_transaction(self):
+		# Arrange:
+		database = self._create_database()
+		database.upsert_blocks([_create_block(5)])
+		database.upsert_transactions_for_height(5, [create_transaction_entry(
+			5,
+			type=TransactionType.MOSAIC_GLOBAL_RESTRICTION.value,
+			target_address=None,
+			mosaic_rows=[
+				{'mosaic_id': RESTRICTION_MOSAIC_ID, 'amount': 0, 'role': 'restriction', 'position': 0},
+				{'mosaic_id': '1111111111111111', 'amount': 0, 'role': 'restriction', 'position': 0}
+			])])
+
+		# Act + Assert:
+		with self.assertRaises(ValueError):
+			database.get_confirmed_mosaic_restriction_keys_since(5)
+
+	def test_repair_rollback_applies_mosaic_restriction_replacement(self):
+		# Arrange:
+		database = self._create_database()
+		key = MosaicRestrictionKey(MosaicRestrictionEntryType.GLOBAL, RESTRICTION_MOSAIC_ID, None)
+		row = _create_mosaic_restriction_row(entry_type=MosaicRestrictionEntryType.GLOBAL, target_address=None)
+
+		# Act:
+		database.repair_rollback_from_height(
+			2,
+			_create_sync_state(status='repairing', last_synced_height=1, last_synced_block_hash=b'hash 1'),
+			RollbackRefreshEntries(mosaic_restriction_entries=[{'key': key, 'rows': [row]}]))
+
+		# Assert:
+		cursor = database.connection.cursor()
+		cursor.execute('SELECT composite_hash, updated_at_height FROM symbol_mosaic_restrictions')
+		self.assertEqual([(RESTRICTION_HASH, 1)], [
+			(bytes(composite_hash), updated_at_height)
+			for composite_hash, updated_at_height in cursor.fetchall()
+		])
+
+	def test_rollback_refresh_entries_supports_zero_argument_immutable_defaults(self):
+		# Arrange / Act:
+		entries = RollbackRefreshEntries()
+
+		# Assert:
+		self.assertEqual(((), (), (), (), (), ()), entries)
+		self.assertEqual((), entries.mosaic_restriction_entries)
+		with self.assertRaises(AttributeError):
+			entries.mosaic_restriction_entries = ()

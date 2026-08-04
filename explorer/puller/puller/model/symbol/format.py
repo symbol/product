@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 
-from symbolchain.CryptoTypes import PublicKey
+from symbolchain.CryptoTypes import Hash256, PublicKey
+from symbolchain.symbol.Network import Address
 
 
 def int_or_none(value):
@@ -11,6 +12,40 @@ def int_or_none(value):
 def bytes_from_hex_or_none(value):
 	"""Converts an optional hex string to bytes."""
 	return bytes.fromhex(value) if value else None
+
+
+def decoded_address_bytes_from_hex(node, field_name, context_name):
+	"""Decode a node response's canonical hexadecimal Symbol address field."""
+
+	value = node.get(field_name) if isinstance(node, dict) else None
+	if not isinstance(value, str) or not is_hex_text(value):
+		raise ValueError(f'Invalid {context_name} {field_name}')
+
+	try:
+		return Address.from_decoded_address_hex_string(value).bytes
+	except ValueError as exception:
+		raise ValueError(f'Invalid {context_name} {field_name}') from exception
+
+
+def hash_bytes_from_hex(node, field_name, context_name):
+	"""Decode a node response's hexadecimal hash field to bytes."""
+
+	value = node.get(field_name) if isinstance(node, dict) else None
+	if not isinstance(value, str) or not is_hex_text(value):
+		raise ValueError(f'Invalid {context_name} {field_name}')
+
+	try:
+		return Hash256(value).bytes
+	except ValueError as exception:
+		raise ValueError(f'Invalid {context_name} {field_name}') from exception
+
+
+def is_hex_text(value):
+	"""Return whether every character in value is hexadecimal.
+
+	Callers must provide a string and enforce any required length; an empty string returns True.
+	"""
+	return all(character in '0123456789abcdefABCDEF' for character in value)
 
 
 def str_or_none(value):
