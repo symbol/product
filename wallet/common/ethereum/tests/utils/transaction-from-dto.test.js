@@ -4,6 +4,8 @@ import {
 	bridgeTransactionResponse,
 	erc20TransactionResponse,
 	etherTransactionResponse,
+	searchEtherTransactionResponse,
+	searchTransactionResponses,
 	transactionResponses
 } from '../__fixtures__/api/transaction';
 import { blocks } from '../__fixtures__/local/block';
@@ -57,6 +59,28 @@ describe('utils/transaction-from-dto', () => {
 		];
 
 		transactionFromDTOTests.forEach(test => runTransactionFromDTOTest(test.description, test.config, test.expected));
+
+		it('takes the timestamp from the DTO in preference to the fetched block', () => {
+			// Arrange: the DTO and the block of that height carry different timestamps on purpose.
+			const expectedTimestamp = 1759900000000;
+
+			// Act:
+			const result = transactionFromDTO(searchEtherTransactionResponse, transactionOptions);
+
+			// Assert:
+			expect(result.timestamp).toBe(expectedTimestamp);
+		});
+
+		it('takes the timestamp from the DTO when no block was fetched', () => {
+			// Arrange:
+			const expectedTimestamp = 1759900000000;
+
+			// Act:
+			const result = transactionFromDTO(searchEtherTransactionResponse, { ...transactionOptions, blocks: {} });
+
+			// Assert:
+			expect(result.timestamp).toBe(expectedTimestamp);
+		});
 
 		it('sets height, nonce and timestamp to null when block metadata is absent', () => {
 			// Arrange:
@@ -118,6 +142,35 @@ describe('utils/transaction-from-dto', () => {
 
 			// Act:
 			const result = getUnresolvedIdsFromTransactionDTOs(transactionResponses);
+
+			// Assert:
+			expect(result).toStrictEqual(expectedResult);
+		});
+
+		it('requests no block heights when every DTO carries its own timestamp', () => {
+			// Arrange: a block is only fetched to read its timestamp, so these DTOs need none.
+			const expectedResult = {
+				blockHeights: [],
+				tokenContractAddresses: ['0x5e8343a455f03109b737b6d8b410e4ecce998cda']
+			};
+
+			// Act:
+			const result = getUnresolvedIdsFromTransactionDTOs(searchTransactionResponses);
+
+			// Assert:
+			expect(result).toStrictEqual(expectedResult);
+		});
+
+		it('requests block heights only for the DTOs without a timestamp', () => {
+			// Arrange:
+			const transactionDTOs = [searchTransactionResponses[0], erc20TransactionResponse];
+			const expectedResult = {
+				blockHeights: ['251181'],
+				tokenContractAddresses: ['0x5e8343a455f03109b737b6d8b410e4ecce998cda']
+			};
+
+			// Act:
+			const result = getUnresolvedIdsFromTransactionDTOs(transactionDTOs);
 
 			// Assert:
 			expect(result).toStrictEqual(expectedResult);

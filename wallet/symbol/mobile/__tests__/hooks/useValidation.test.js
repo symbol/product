@@ -102,6 +102,42 @@ describe('hooks/useValidation', () => {
 		});
 	});
 
+	describe('validation with key and params result', () => {
+		const keyWithParams = { key: 'error_with_params', params: { maxAmount: '0.2353', ticker: 'ETH' } };
+
+		it('passes the key and params separately to formatResult', () => {
+			// Arrange:
+			const formatResult = jest.fn((key, params) => `formatted_${key}_${params.maxAmount}`);
+
+			// Act:
+			const { result } = renderHook(() => useValidation('invalid', [createFailingValidator(keyWithParams)], formatResult));
+
+			// Assert:
+			expect(formatResult).toHaveBeenCalledWith(keyWithParams.key, keyWithParams.params);
+			expect(result.current).toBe('formatted_error_with_params_0.2353');
+		});
+
+		it('passes undefined params to formatResult for a plain string result', () => {
+			// Arrange:
+			const formatResult = jest.fn(key => `formatted_${key}`);
+
+			// Act:
+			const { result } = renderHook(() => useValidation('invalid', [createFailingValidator('error_plain')], formatResult));
+
+			// Assert:
+			expect(formatResult).toHaveBeenCalledWith('error_plain', undefined);
+			expect(result.current).toBe('formatted_error_plain');
+		});
+
+		it('returns the key without formatResult', () => {
+			// Act:
+			const { result } = renderHook(() => useValidation('invalid', [createFailingValidator(keyWithParams)]));
+
+			// Assert:
+			expect(result.current).toBe(keyWithParams.key);
+		});
+	});
+
 	describe('reactivity', () => {
 		it('updates result when value changes', () => {
 			// Arrange:

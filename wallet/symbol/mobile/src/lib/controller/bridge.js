@@ -9,7 +9,7 @@ import { BridgePairManager, SwapWorkflowManager } from 'wallet-common-core';
 import { UniswapPairManager, constants } from 'wallet-common-ethereum';
 
 const Pairs = {
-	XYM_wXYM: new BridgePairManager({
+	XYM_bXYM: new BridgePairManager({
 		mode: 'wrap',
 		nativeWalletController: symbolWalletController,
 		wrappedWalletController: ethereumWalletController,
@@ -21,7 +21,7 @@ const Pairs = {
 		},
 		makeRequest
 	}),
-	wXYM_XYM: new BridgePairManager({
+	bXYM_XYM: new BridgePairManager({
 		mode: 'unwrap',
 		nativeWalletController: symbolWalletController,
 		wrappedWalletController: ethereumWalletController,
@@ -45,7 +45,7 @@ const Pairs = {
 		},
 		makeRequest
 	}),
-	ETH_wXYM: new UniswapPairManager({
+	ETH_bXYM: new UniswapPairManager({
 		mode: 'wrap',
 		walletController: ethereumWalletController,
 		uniswapApi: ethereumNetworkApi.uniswap,
@@ -53,18 +53,20 @@ const Pairs = {
 		configs: {
 			testnet: {
 				nativeTokenId: constants.NETWORK_CURRENCY_ID,
-				wrappedTokenId: config.bridge.uniswapWrapped.testnet.wxymAddress,
+				wrappedTokenId: config.bridge.uniswapWrapped.testnet.bxymAddress,
 				wethTokenId: config.bridge.uniswapWrapped.testnet.wethAddress,
 				quoterAddress: config.bridge.uniswapWrapped.testnet.quoterAddress,
 				swapRouterAddress: config.bridge.uniswapWrapped.testnet.routerAddress,
+				poolAddress: config.bridge.uniswapWrapped.testnet.poolAddress,
 				poolFee: config.bridge.uniswapWrapped.testnet.poolFee
 			},
 			mainnet: {
 				nativeTokenId: constants.NETWORK_CURRENCY_ID,
-				wrappedTokenId: config.bridge.uniswapWrapped.mainnet.wxymAddress,
+				wrappedTokenId: config.bridge.uniswapWrapped.mainnet.bxymAddress,
 				wethTokenId: config.bridge.uniswapWrapped.mainnet.wethAddress,
 				quoterAddress: config.bridge.uniswapWrapped.mainnet.quoterAddress,
 				swapRouterAddress: config.bridge.uniswapWrapped.mainnet.routerAddress,
+				poolAddress: config.bridge.uniswapWrapped.mainnet.poolAddress,
 				poolFee: config.bridge.uniswapWrapped.mainnet.poolFee
 			}
 		}
@@ -72,20 +74,20 @@ const Pairs = {
 };
 
 export const bridges = [
-	// XYM -> wXYM
+	// XYM -> bXYM
 	new SwapWorkflowManager({
-		pairManagers: [Pairs.XYM_wXYM]
+		pairManagers: [Pairs.XYM_bXYM]
 	}),
-	// wXYM -> XYM
+	// bXYM -> XYM
 	new SwapWorkflowManager({
-		pairManagers: [Pairs.wXYM_XYM]
+		pairManagers: [Pairs.bXYM_XYM]
 	}),
 	// XYM -> ETH
 	new SwapWorkflowManager({
 		pairManagers: [Pairs.XYM_ETH]
 	}),
-	// ETH -> XYM 
+	// ETH -> XYM
 	new SwapWorkflowManager({
-		pairManagers: [Pairs.ETH_wXYM, Pairs.wXYM_XYM]
+		pairManagers: [Pairs.ETH_bXYM, Pairs.bXYM_XYM]
 	})
 ];

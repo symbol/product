@@ -19,6 +19,7 @@ jest.mock('@react-navigation/native', () => ({
 jest.mock('@/app/screens/bridge/hooks', () => ({
 	useBridge: jest.fn(),
 	useBridgeAmount: jest.fn(),
+	useBridgeDisabledDialog: jest.fn(),
 	useBridgeHistory: jest.fn(),
 	useBridgeNoPairsDialog: jest.fn(),
 	useBridgeTransaction: jest.fn(),
@@ -34,7 +35,7 @@ jest.mock('@/app/screens/bridge/hooks', () => ({
 const CHAIN_NAME_SYMBOL = 'symbol';
 const CHAIN_NAME_ETHEREUM = 'ethereum';
 const NETWORK_IDENTIFIER = 'testnet';
-const BRIDGE_ID_XYM_TO_WXYM = 'symbol-xym-ethereum-wxym';
+const BRIDGE_ID_XYM_TO_BXYM = 'symbol-xym-ethereum-bxym';
 const PAYOUT_AMOUNT = '99';
 const HISTORY_ITEM_TRANSACTION_HASH = '0C905EB065E6A42029CD1A10E710422761495A63D433535BA6EAA9BCF36AB8B6';
 
@@ -57,6 +58,8 @@ const SCREEN_TEXT = {
 	// Dialog
 	textDialogNoPairsTitle: 's_bridge_swap_dialog_noPairs_title',
 	textDialogNoPairsText: 's_bridge_swap_dialog_noPairs_text',
+	textDialogDisabledTitle: 's_bridge_swap_dialog_disabled_title',
+	textDialogDisabledText: 's_bridge_swap_dialog_disabled_text',
 	textDialogConfirmTitle: 's_bridge_swap_dialog_confirm_title',
 	textDialogConfirmText: 's_bridge_swap_dialog_confirm_text',
 
@@ -64,6 +67,7 @@ const SCREEN_TEXT = {
 	buttonSend: 'button_send',
 	buttonConfirm: 'button_confirm',
 	buttonCancel: 'button_cancel',
+	buttonOk: 'button_ok',
 
 	// Accessibility Labels
 	labelSelectSourceToken: 'Select source token',
@@ -73,9 +77,22 @@ const SCREEN_TEXT = {
 	// History item
 	textSwapAction: 'transactionDescriptor_swap',
 
+	// Validation
+	textEstimationUnavailable: 'validation_error_estimation_unavailable',
+	textInsufficientLiquidity: 'validation_error_insufficientLiquidity 0.235399 ETH',
+
+	// Price impact
+	textSummaryPriceImpact: 's_bridge_summary_priceImpact',
+	textSummaryPriceImpactWarningValue: '6.00% · s_bridge_summary_priceImpact_high',
+	textSummaryPriceImpactUnknown: 's_bridge_summary_priceImpact_unknown',
+	textDialogPriceImpactTitle: 's_bridge_swap_dialog_priceImpact_title',
+
+	// Placeholder shown by a summary row without a value
+	textValueMissing: '-',
+
 	// Token Display Names
 	displayNameTokenXym: 'Symbol • XYM',
-	displayNameTokenWxym: 'Wrapped XYM • wXYM',
+	displayNameTokenBxym: 'Bridged XYM • bXYM',
 	displayNameTokenEth: 'Ether • ETH'
 };
 
@@ -106,12 +123,12 @@ const tokenXym = TokenFixtureBuilder
 	.setAmount('1000')
 	.build();
 
-const tokenWxym = TokenFixtureBuilder
+const tokenBxym = TokenFixtureBuilder
 	.createWithToken(CHAIN_NAME_ETHEREUM, NETWORK_IDENTIFIER, 1)
 	.setAmount('500')
 	.build();
 
-const tokenWxymPayout = TokenFixtureBuilder
+const tokenBxymPayout = TokenFixtureBuilder
 	.createWithToken(CHAIN_NAME_ETHEREUM, NETWORK_IDENTIFIER, 1)
 	.setAmount(PAYOUT_AMOUNT)
 	.build();
@@ -161,11 +178,11 @@ const bridgeStepPair = {
 	sourceWalletController: symbolWalletController,
 	targetWalletController: ethereumWalletController,
 	sourceTokenInfo: tokenXym,
-	targetTokenInfo: tokenWxym
+	targetTokenInfo: tokenBxym
 };
 
 const bridgeMock = {
-	id: BRIDGE_ID_XYM_TO_WXYM,
+	id: BRIDGE_ID_XYM_TO_BXYM,
 	steps: 1,
 	isReady: true,
 	estimateRequest: jest.fn().mockResolvedValue({
@@ -186,8 +203,8 @@ const swapSideSymbolXym = {
 	walletController: symbolWalletController
 };
 
-const swapSideEthereumWxym = {
-	token: tokenWxym,
+const swapSideEthereumBxym = {
+	token: tokenBxym,
 	chainName: CHAIN_NAME_ETHEREUM,
 	networkIdentifier: NETWORK_IDENTIFIER,
 	walletController: ethereumWalletController
@@ -202,9 +219,9 @@ const swapSideEthereumEth = {
 
 // Swap Pair Fixtures
 
-const swapPairXymToWxym = {
+const swapPairXymToBxym = {
 	source: swapSideSymbolXym,
-	target: swapSideEthereumWxym,
+	target: swapSideEthereumBxym,
 	bridge: bridgeMock,
 	mode: BridgeMode.WRAP
 };
@@ -218,7 +235,7 @@ const swapPairXymToEth = {
 
 // Pair Collections
 
-const allPairs = [swapPairXymToWxym, swapPairXymToEth];
+const allPairs = [swapPairXymToBxym, swapPairXymToEth];
 
 // History Fixtures
 
@@ -230,9 +247,9 @@ const historyItem = {
 	sourceChainName: CHAIN_NAME_SYMBOL,
 	targetChainName: CHAIN_NAME_ETHEREUM,
 	sourceTokenInfo: tokenXym,
-	targetTokenInfo: tokenWxym,
+	targetTokenInfo: tokenBxym,
 	payoutTransaction: {
-		token: tokenWxymPayout
+		token: tokenBxymPayout
 	},
 	requestStatus: BridgeRequestStatus.CONFIRMED,
 	payoutStatus: 2
@@ -264,6 +281,7 @@ const estimationResult = {
 const {
 	useBridge,
 	useBridgeAmount,
+	useBridgeDisabledDialog,
 	useBridgeHistory,
 	useBridgeNoPairsDialog,
 	useBridgeTransaction,
@@ -288,9 +306,9 @@ const createUseSwapSelectorMock = (overrides = {}) => ({
 	bridge: bridgeMock,
 	mode: BridgeMode.WRAP,
 	source: swapSideSymbolXym,
-	target: swapSideEthereumWxym,
+	target: swapSideEthereumBxym,
 	sourceList: [swapSideSymbolXym, swapSideEthereumEth],
-	targetList: [swapSideEthereumWxym, swapSideEthereumEth],
+	targetList: [swapSideEthereumBxym, swapSideEthereumEth],
 	changeSource: jest.fn(),
 	changeTarget: jest.fn(),
 	reverse: jest.fn(),
@@ -316,9 +334,10 @@ const createUseBridgeTransactionMock = (overrides = {}) => ({
 
 const createUseEstimationMock = (overrides = {}) => ({
 	estimations: null,
-	estimate: jest.fn(),
+	estimate: jest.fn().mockResolvedValue(null),
 	clearEstimation: jest.fn(),
 	isLoading: false,
+	hasFailed: false,
 	...overrides
 });
 
@@ -334,6 +353,13 @@ const createUseBridgeNoPairsDialogMock = (overrides = {}) => ({
 	isVisible: false,
 	onSuccess: jest.fn(),
 	onCancel: jest.fn(),
+	onScreenFocus: jest.fn(),
+	...overrides
+});
+
+const createUseBridgeDisabledDialogMock = (overrides = {}) => ({
+	isVisible: false,
+	onClose: jest.fn(),
 	onScreenFocus: jest.fn(),
 	...overrides
 });
@@ -361,6 +387,7 @@ const setupMocks = (config = {}) => {
 	useEstimation.mockReturnValue(createUseEstimationMock(config.useEstimation));
 	useBridgeHistory.mockReturnValue(createUseBridgeHistoryMock(config.useBridgeHistory));
 	useBridgeNoPairsDialog.mockReturnValue(createUseBridgeNoPairsDialogMock(config.useBridgeNoPairsDialog));
+	useBridgeDisabledDialog.mockReturnValue(createUseBridgeDisabledDialogMock(config.useBridgeDisabledDialog));
 	
 	mockWalletController(walletController);
 	
@@ -414,9 +441,9 @@ describe('screens/bridge/BridgeSwap', () => {
 					isReady: true,
 					bridge,
 					source: swapSideSymbolXym,
-					target: swapSideEthereumWxym,
+					target: swapSideEthereumBxym,
 					sourceList: [swapSideSymbolXym, swapSideEthereumEth],
-					targetList: [swapSideEthereumWxym, swapSideEthereumEth],
+					targetList: [swapSideEthereumBxym, swapSideEthereumEth],
 					changeSource: changeSourceMock,
 					changeTarget: changeTargetMock
 				},
@@ -519,6 +546,231 @@ describe('screens/bridge/BridgeSwap', () => {
 		});
 	});
 
+	describe('estimation errors', () => {
+		it('warns that the estimation is unavailable when the request failed', () => {
+			// Arrange:
+			setupMocks({
+				useEstimation: {
+					hasFailed: true
+				}
+			});
+
+			// Act:
+			const screenTester = new ScreenTester(BridgeSwap, createDefaultProps());
+
+			// Assert:
+			screenTester.expectText([SCREEN_TEXT.textEstimationUnavailable]);
+		});
+
+		it('shows the insufficient liquidity error with the max swappable amount', () => {
+			// Arrange: the localization mock appends message parameters so the interpolation is observable.
+			mockLocalization((key, params) => (params ? `${key} ${Object.values(params).join(' ')}` : key));
+			const insufficientLiquidityEstimation = {
+				receiveAmount: null,
+				bridgeFee: null,
+				error: {
+					code: 'insufficient_liquidity',
+					params: { maxAmount: '0.235399146392349099', ticker: 'ETH' }
+				}
+			};
+			const changeAmountValidityMock = jest.fn();
+			setupMocks({
+				useBridgeAmount: {
+					amount: '1',
+					amountInput: '1',
+					changeAmountValidity: changeAmountValidityMock
+				},
+				useEstimation: {
+					estimations: [insufficientLiquidityEstimation]
+				}
+			});
+
+			// Act:
+			const screenTester = new ScreenTester(BridgeSwap, createDefaultProps());
+
+			// Assert:
+			screenTester.expectText([SCREEN_TEXT.textInsufficientLiquidity]);
+			expect(changeAmountValidityMock).toHaveBeenCalledWith(false);
+		});
+
+		it('does not request an estimation and disables send for a zero amount input', async () => {
+			// Arrange: '0.0000' is numerically zero but not the literal '0' string.
+			const estimateMock = jest.fn().mockResolvedValue(null);
+			const clearEstimationMock = jest.fn();
+			setupMocks({
+				useBridgeAmount: {
+					amount: '0.0000',
+					amountInput: '0.0000'
+				},
+				useEstimation: {
+					estimate: estimateMock,
+					clearEstimation: clearEstimationMock
+				}
+			});
+
+			// Act:
+			const screenTester = new ScreenTester(BridgeSwap, createDefaultProps());
+			await screenTester.waitForTimer();
+
+			// Assert:
+			expect(estimateMock).not.toHaveBeenCalled();
+			expect(clearEstimationMock).toHaveBeenCalled();
+			screenTester.expectButtonDisabled(SCREEN_TEXT.buttonSend);
+		});
+
+		it('requests an estimation for a positive amount', async () => {
+			// Arrange:
+			const estimateMock = jest.fn().mockResolvedValue(null);
+			setupMocks({
+				useBridgeAmount: {
+					amount: '1',
+					amountInput: '1'
+				},
+				useEstimation: {
+					estimate: estimateMock
+				}
+			});
+
+			// Act:
+			const screenTester = new ScreenTester(BridgeSwap, createDefaultProps());
+			await screenTester.waitForTimer();
+
+			// Assert:
+			expect(estimateMock).toHaveBeenCalled();
+		});
+
+		it('disables send button when the amount fails validation', () => {
+			// Arrange:
+			setupMocks({
+				useBridgeAmount: {
+					amount: '100',
+					amountInput: '100',
+					isAmountValid: false
+				}
+			});
+
+			// Act:
+			const screenTester = new ScreenTester(BridgeSwap, createDefaultProps());
+
+			// Assert:
+			screenTester.expectButtonDisabled(SCREEN_TEXT.buttonSend);
+		});
+	});
+
+	describe('price impact', () => {
+		const warningImpactEstimation = { ...estimationResult, priceImpact: 0.06 };
+		const criticalImpactEstimation = { ...estimationResult, priceImpact: 0.20331 };
+		const unknownImpactEstimation = { ...estimationResult, priceImpact: null };
+		const failedEstimation = {
+			bridgeFee: null,
+			receiveAmount: null,
+			priceImpact: null,
+			error: { code: 'insufficient_liquidity' }
+		};
+
+		it('shows the price difference row with the level wording at the warning tier', () => {
+			// Arrange:
+			setupMocks({
+				useEstimation: {
+					estimations: [warningImpactEstimation]
+				}
+			});
+
+			// Act:
+			const screenTester = new ScreenTester(BridgeSwap, createDefaultProps());
+
+			// Assert:
+			screenTester.expectText([
+				SCREEN_TEXT.textSummaryPriceImpact,
+				SCREEN_TEXT.textSummaryPriceImpactWarningValue
+			]);
+		});
+
+		it('shows the unknown state when the impact could not be computed', () => {
+			// Arrange:
+			setupMocks({
+				useEstimation: {
+					estimations: [unknownImpactEstimation]
+				}
+			});
+
+			// Act:
+			const screenTester = new ScreenTester(BridgeSwap, createDefaultProps());
+
+			// Assert:
+			screenTester.expectText([SCREEN_TEXT.textSummaryPriceImpactUnknown]);
+		});
+
+		it('shows the price difference row with a placeholder when no step involves a swap', () => {
+			// Arrange:
+			setupMocks({
+				useEstimation: {
+					estimations: [estimationResult]
+				}
+			});
+
+			// Act:
+			const screenTester = new ScreenTester(BridgeSwap, createDefaultProps());
+
+			// Assert: the price difference is the only row left without a value.
+			screenTester.expectText([SCREEN_TEXT.textSummaryPriceImpact]);
+			screenTester.notExpectText([SCREEN_TEXT.textSummaryPriceImpactUnknown]);
+			screenTester.expectTextCount(SCREEN_TEXT.textValueMissing, 1);
+		});
+
+		it('shows placeholders instead of an impact warning when the estimation failed', () => {
+			// Arrange:
+			setupMocks({
+				useEstimation: {
+					estimations: [failedEstimation]
+				}
+			});
+
+			// Act:
+			const screenTester = new ScreenTester(BridgeSwap, createDefaultProps());
+
+			// Assert: the bridge fee, price difference and receive rows carry no value.
+			screenTester.notExpectText([SCREEN_TEXT.textSummaryPriceImpactUnknown]);
+			screenTester.expectTextCount(SCREEN_TEXT.textValueMissing, 3);
+		});
+
+		it('gates sending behind a warning dialog at the critical tier', async () => {
+			// Arrange:
+			setupMocks({
+				useBridgeAmount: {
+					amount: '1',
+					amountInput: '1'
+				},
+				useEstimation: {
+					estimations: [criticalImpactEstimation]
+				}
+			});
+			const screenTester = new ScreenTester(BridgeSwap, createDefaultProps());
+			await screenTester.waitForTimer();
+
+			// Act: sending opens the price impact warning instead of the confirmation dialog.
+			screenTester.pressButton(SCREEN_TEXT.buttonSend);
+
+			// Assert:
+			screenTester.expectText([SCREEN_TEXT.textDialogPriceImpactTitle]);
+			screenTester.notExpectText([SCREEN_TEXT.textDialogConfirmTitle]);
+
+			// Act: cancelling returns to the form without sending.
+			screenTester.pressButton(SCREEN_TEXT.buttonCancel);
+
+			// Assert:
+			screenTester.notExpectText([SCREEN_TEXT.textDialogPriceImpactTitle]);
+
+			// Act: confirming the warning proceeds to the standard confirmation dialog.
+			screenTester.pressButton(SCREEN_TEXT.buttonSend);
+			screenTester.pressButton(SCREEN_TEXT.buttonConfirm);
+			await screenTester.waitForTimer();
+
+			// Assert:
+			screenTester.expectText([SCREEN_TEXT.textDialogConfirmTitle]);
+		});
+	});
+
 	describe('no pairs dialog', () => {
 		const runNoPairsDialogTest = (description, config, expected) => {
 			it(description, async () => {
@@ -585,6 +837,50 @@ describe('screens/bridge/BridgeSwap', () => {
 		});
 	});
 
+	describe('disabled dialog', () => {
+		it('shows the dialog and calls onClose when ok is pressed', async () => {
+			// Arrange: every bridge is turned off by its operator, so there is nothing the user can fix.
+			const onCloseMock = jest.fn();
+
+			setupMocks({
+				useBridge: {
+					pairsStatus: BridgePairsStatus.DISABLED
+				},
+				useBridgeDisabledDialog: {
+					isVisible: true,
+					onClose: onCloseMock
+				}
+			});
+
+			const screenTester = new ScreenTester(BridgeSwap, createDefaultProps());
+
+			// Assert: dialog is visible
+			screenTester.expectText([
+				SCREEN_TEXT.textDialogDisabledTitle,
+				SCREEN_TEXT.textDialogDisabledText
+			]);
+
+			// Act:
+			screenTester.pressButton(SCREEN_TEXT.buttonOk);
+
+			// Assert:
+			expect(onCloseMock).toHaveBeenCalled();
+		});
+
+		it('does not show the dialog when bridges are available', async () => {
+			// Arrange:
+			setupMocks();
+
+			const screenTester = new ScreenTester(BridgeSwap, createDefaultProps());
+
+			// Act & Assert:
+			screenTester.notExpectText([
+				SCREEN_TEXT.textDialogDisabledTitle,
+				SCREEN_TEXT.textDialogDisabledText
+			]);
+		});
+	});
+
 	describe('history item press', () => {
 		it('navigates to swap details when history item is pressed', async () => {
 			// Arrange:
@@ -604,7 +900,7 @@ describe('screens/bridge/BridgeSwap', () => {
 			// Assert:
 			expect(Router.goToBridgeSwapDetails).toHaveBeenCalledWith({
 				params: {
-					bridgeId: BRIDGE_ID_XYM_TO_WXYM,
+					bridgeId: BRIDGE_ID_XYM_TO_BXYM,
 					requestTransactionHash: HISTORY_ITEM_TRANSACTION_HASH,
 					preloadedData: historyItem
 				}

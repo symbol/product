@@ -14,9 +14,9 @@ export const tokenImages = {
 		medium: require('@/app/assets/images/tokens/eth_m.png'),
 		large: require('@/app/assets/images/tokens/eth_l.png')
 	},
-	wxym: {
-		small: require('@/app/assets/images/tokens/wxym_s.png'),
-		medium: require('@/app/assets/images/tokens/wxym_m.png'),
-		large: require('@/app/assets/images/tokens/wxym_l.png')
+	bxym: {
+		small: require('@/app/assets/images/tokens/bxym_s.png'),
+		medium: require('@/app/assets/images/tokens/bxym_m.png'),
+		large: require('@/app/assets/images/tokens/bxym_l.png')
 	}
 };

@@ -114,7 +114,9 @@ const SWAP_ROUTER_EXACT_INPUT_SINGLE_SIGNATURE =
 const SWAP_ROUTER_MULTICALL_SIGNATURE =
 	'function multicall(uint256 deadline, bytes[] data) payable returns (bytes[] results)';
 
-const SWAP_ROUTER_ABI = [SWAP_ROUTER_EXACT_INPUT_SINGLE_SIGNATURE, SWAP_ROUTER_MULTICALL_SIGNATURE];
+const SWAP_ROUTER_REFUND_ETH_SIGNATURE = 'function refundETH() external payable';
+
+const SWAP_ROUTER_ABI = [SWAP_ROUTER_EXACT_INPUT_SINGLE_SIGNATURE, SWAP_ROUTER_MULTICALL_SIGNATURE, SWAP_ROUTER_REFUND_ETH_SIGNATURE];
 
 const uniswapSwapToEthereum = (transaction, config) => {
 	const baseTransaction = createBaseEthereumTransaction(transaction, config.networkIdentifier);
@@ -141,10 +143,18 @@ const uniswapSwapToEthereum = (transaction, config) => {
 		sqrtPriceLimitX96: BigInt(transaction.sqrtPriceLimitX96)
 	}]);
 
+	const swapCalls = [exactInputSingleData];
+
+	// With a native input the router wraps only the ETH the pool actually consumes, so a partial
+	// fill leaves the rest in the router where anyone can sweep it. refundETH returns the leftover
+	// to the sender within the same transaction and must stay the last call of the batch.
+	if (value > 0n)
+		swapCalls.push(routerInterface.encodeFunctionData('refundETH'));
+
 	return {
 		...baseTransaction,
 		to: transaction.routerAddress,
 		value,
-		data: routerInterface.encodeFunctionData('multicall', [transaction.deadline, [exactInputSingleData]])
+		data: routerInterface.encodeFunctionData('multicall', [transaction.deadline, swapCalls])
 	};
 };

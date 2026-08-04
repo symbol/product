@@ -28,7 +28,8 @@ export const useBridgeHistory = ({ bridge }) => {
 		callback: async () => bridge && bridge.isReady && bridge.hasHistory
 			? bridge.fetchRecentHistory(BRIDGE_HISTORY_PAGE_SIZE)
 			: [],
-		defaultData: []
+		defaultData: [],
+		shouldShowErrorPopup: false
 	});
 
 	useTimer({

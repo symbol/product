@@ -82,3 +82,19 @@ export const transactionResponses = [
 	erc20TransactionResponse,
 	bridgeTransactionResponse
 ];
+
+// The same DTOs as returned by ots_searchTransactionsBefore, which carries the block timestamp on
+// every transaction. The timestamps deliberately differ from the block fixtures of the same heights,
+// so that tests can tell which of the two sources was used.
+
+export const searchEtherTransactionResponse = { ...etherTransactionResponse, blockTimestamp: '0x68e5f160' };
+
+export const searchErc20TransactionResponse = { ...erc20TransactionResponse, blockTimestamp: '0x68e5f1c4' };
+
+export const searchBridgeTransactionResponse = { ...bridgeTransactionResponse, blockTimestamp: '0x68e5f228' };
+
+export const searchTransactionResponses = [
+	searchEtherTransactionResponse,
+	searchErc20TransactionResponse,
+	searchBridgeTransactionResponse
+];

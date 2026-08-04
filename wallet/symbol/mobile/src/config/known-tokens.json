@@ -27,9 +27,9 @@
             },
             {
                 "tokenId": "0xac461bf5a6554e8406f58b192d83aeea695e229b",
-                "imageId": "wxym",
-                "name": "Wrapped XYM",
-                "ticker": "wXYM"
+                "imageId": "bxym",
+                "name": "Bridged XYM",
+                "ticker": "bXYM"
             }
         ],
         "mainnet": [

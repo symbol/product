@@ -6,4 +6,5 @@ export * from './network';
 export * from './transaction';
 export * from './transaction-from-dto';
 export * from './transaction-to-ethereum';
+export * from './uniswap';
 export * from './wallet';
