@@ -38,8 +38,8 @@ const SCREEN_TEXT = {
 	textCardTitleAddress: 'c_accountCard_title_address',
 
 	// Dialog
-	dialogRemoveExternalTitle: 's_accountList_confirm_removeExternal_title',
-	dialogRemoveExternalBody: 's_accountList_confirm_removeExternal_body',
+	dialogRemoveImportedTitle: 's_accountList_confirm_removeImported_title',
+	dialogRemoveImportedBody: 's_accountList_confirm_removeImported_body',
 
 	// Button TestIDs
 	testIdButtonHide: 'icon-hide',
@@ -67,10 +67,10 @@ const seedAccount2 = AccountFixtureBuilder
 	.setAccountType(WalletAccountType.MNEMONIC)
 	.build();
 
-const externalAccount = AccountFixtureBuilder
+const importedAccount = AccountFixtureBuilder
 	.createWithAccount(CHAIN_NAME, NETWORK_IDENTIFIER_TESTNET, 3)
 	.setAccountType(WalletAccountType.EXTERNAL)
-	.setName('External Account')
+	.setName('Imported Account')
 	.build();
 
 const mainnetSeedAccount = AccountFixtureBuilder
@@ -88,7 +88,7 @@ const networkPropertiesTestnet = NetworkPropertiesFixtureBuilder
 // Account Lists
 
 const ACCOUNTS_WITH_MULTIPLE_SEED = [rootSeedAccount, seedAccount1, seedAccount2];
-const ACCOUNTS_WITH_EXTERNAL = [rootSeedAccount, seedAccount1, externalAccount];
+const ACCOUNTS_WITH_IMPORTED = [rootSeedAccount, seedAccount1, importedAccount];
 const ACCOUNTS_SINGLE = [rootSeedAccount];
 
 // Account Balances
@@ -97,7 +97,7 @@ const MOCK_BALANCES = {
 	[rootSeedAccount.publicKey]: { balance: '100', balanceChange: '0' },
 	[seedAccount1.publicKey]: { balance: '250', balanceChange: '0' },
 	[seedAccount2.publicKey]: { balance: '75', balanceChange: '0' },
-	[externalAccount.publicKey]: { balance: '500', balanceChange: '0' }
+	[importedAccount.publicKey]: { balance: '500', balanceChange: '0' }
 };
 
 // Wallet Controller Mock
@@ -317,11 +317,11 @@ describe('screens/account/AccountList', () => {
 			});
 		});
 
-		describe('external account removal', () => {
-			it('shows confirmation dialog when removing external account', async () => {
+		describe('imported account removal', () => {
+			it('shows confirmation dialog when removing imported account', async () => {
 				// Arrange:
 				mockWalletControllerConfigured({
-					accounts: { testnet: ACCOUNTS_WITH_EXTERNAL }
+					accounts: { testnet: ACCOUNTS_WITH_IMPORTED }
 				});
 				const screenTester = new ScreenTester(AccountList);
 
@@ -331,17 +331,17 @@ describe('screens/account/AccountList', () => {
 
 				// Assert:
 				screenTester.expectText([
-					SCREEN_TEXT.dialogRemoveExternalTitle,
-					SCREEN_TEXT.dialogRemoveExternalBody
+					SCREEN_TEXT.dialogRemoveImportedTitle,
+					SCREEN_TEXT.dialogRemoveImportedBody
 				]);
 			});
 
-			it('removes external account after confirmation', async () => {
+			it('removes imported account after confirmation', async () => {
 				// Arrange:
 				const removeAccountMock = jest.fn().mockResolvedValue();
 				mockWalletControllerConfigured({
 					removeAccount: removeAccountMock,
-					accounts: { testnet: ACCOUNTS_WITH_EXTERNAL }
+					accounts: { testnet: ACCOUNTS_WITH_IMPORTED }
 				});
 				const screenTester = new ScreenTester(AccountList);
 
@@ -353,7 +353,7 @@ describe('screens/account/AccountList', () => {
 
 				// Assert:
 				expect(removeAccountMock).toHaveBeenCalledWith({
-					publicKey: externalAccount.publicKey,
+					publicKey: importedAccount.publicKey,
 					networkIdentifier: NETWORK_IDENTIFIER_TESTNET
 				});
 			});

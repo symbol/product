@@ -13,7 +13,6 @@ export const RouteName = {
 	AccountDetails: 'AccountDetails',
 	AccountList: 'AccountList',
 	AddSeedAccount: 'AddSeedAccount',
-	AddExternalAccount: 'AddExternalAccount',
 	Send: 'Send',
 	Settings: 'Settings',
 	SettingsAbout: 'SettingsAbout',

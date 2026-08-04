@@ -21,7 +21,9 @@ const SCREEN_TEXT = {
 	bridgeTitle: 's_actions_bridge_title',
 	bridgeDescription: 's_actions_bridge_description',
 	multisigTitle: 's_actions_multisig_title',
-	multisigDescription: 's_actions_multisig_description'
+	multisigDescription: 's_actions_multisig_description',
+	bridgeAccountsTitle: 's_actions_bridgeAccounts_title',
+	bridgeAccountsDescription: 's_actions_bridgeAccounts_description'
 };
 
 // Account Fixture
@@ -50,7 +52,9 @@ describe('screens/actions/Actions', () => {
 			{ type: 'text', value: SCREEN_TEXT.bridgeTitle },
 			{ type: 'text', value: SCREEN_TEXT.bridgeDescription },
 			{ type: 'text', value: SCREEN_TEXT.multisigTitle },
-			{ type: 'text', value: SCREEN_TEXT.multisigDescription }
+			{ type: 'text', value: SCREEN_TEXT.multisigDescription },
+			{ type: 'text', value: SCREEN_TEXT.bridgeAccountsTitle },
+			{ type: 'text', value: SCREEN_TEXT.bridgeAccountsDescription }
 		]
 	});
 
@@ -75,6 +79,10 @@ describe('screens/actions/Actions', () => {
 			{
 				buttonText: SCREEN_TEXT.multisigTitle,
 				actionName: 'goToMultisigAccountList'
+			},
+			{
+				buttonText: SCREEN_TEXT.bridgeAccountsTitle,
+				actionName: 'goToBridgeAccountList'
 			}
 		]
 	});
