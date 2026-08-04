@@ -97,6 +97,7 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):  # pylint: disable=too-man
 		self.assertEqual(
 			[metadata_key_path],
 			[path for path in connector.paths if path.startswith('metadata?')])
+		self.assertEqual(3, self.puller.symbol_db.get_sync_state()['last_synced_height'])
 
 	def test_sync_block_headers_refreshes_namespace_state_at_or_above_rollback_height(self):
 		# Arrange:
@@ -462,7 +463,6 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):  # pylint: disable=too-man
 
 		# Assert:
 		self._assert_metadata_rollback_recovery(connector, metadata_key_path, expected_metadata_row)
-		self.assertEqual(3, self.puller.symbol_db.get_sync_state()['last_synced_height'])
 
 	def test_sync_block_headers_recovers_orphaned_namespace_metadata_from_confirmed_transaction(self):
 		# Arrange:
@@ -599,6 +599,8 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):  # pylint: disable=too-man
 			current_item, 2, composite_hash=bytes.fromhex('11' * 32), metadata_type='mosaic',
 			target_id=resolved_mosaic_id, scoped_metadata_key='ABCDEF0123456789',
 			value_hex='7374616C65', value_utf8='stale'))
+		current_keys = self.puller.symbol_db.get_metadata_keys_updated_from_height(2)
+		confirmed_keys = self.puller.symbol_db.get_confirmed_metadata_keys_since(2)
 		expected_metadata_row = create_expected_metadata_row(
 			metadata_item, 1, composite_hash=bytes.fromhex('11' * 32), metadata_type='mosaic',
 			target_id=resolved_mosaic_id, scoped_metadata_key='ABCDEF0123456789', value_utf8='hello')
@@ -607,6 +609,8 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):  # pylint: disable=too-man
 		asyncio.run(self.puller.sync_block_headers())
 
 		# Assert:
+		self.assertEqual(1, len(current_keys))
+		self.assertEqual(current_keys, confirmed_keys)
 		self._assert_metadata_rollback_recovery(connector, metadata_key_path, expected_metadata_row)
 
 	def test_sync_block_headers_deduplicates_namespace_metadata_keys_after_canonicalization(self):
@@ -636,6 +640,8 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):  # pylint: disable=too-man
 			current_item, 2, composite_hash=bytes.fromhex('11' * 32), metadata_type='namespace',
 			target_id=namespace_id, scoped_metadata_key='ABCDEF0123456789',
 			value_hex='7374616C65', value_utf8='stale'))
+		current_keys = self.puller.symbol_db.get_metadata_keys_updated_from_height(2)
+		confirmed_keys = self.puller.symbol_db.get_confirmed_metadata_keys_since(2)
 		expected_metadata_row = create_expected_metadata_row(
 			metadata_item, 1, composite_hash=bytes.fromhex('11' * 32), metadata_type='namespace',
 			target_id=namespace_id, scoped_metadata_key='ABCDEF0123456789', value_utf8='hello')
@@ -644,6 +650,8 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):  # pylint: disable=too-man
 		asyncio.run(self.puller.sync_block_headers())
 
 		# Assert:
+		self.assertEqual(1, len(current_keys))
+		self.assertEqual(current_keys, confirmed_keys)
 		self._assert_metadata_rollback_recovery(connector, metadata_key_path, expected_metadata_row)
 
 	def test_sync_block_headers_refreshes_orphaned_namespace_state_to_canonical_state_during_rollback(self):

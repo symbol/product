@@ -884,13 +884,13 @@ class SymbolPuller:
 				body = transaction_row['body']
 				target_id = metadata_target_from_relations(metadata_type, metadata_target_rows)
 				if 'namespace' == metadata_type:
-					target_id = body.get('targetNamespaceId')
+					target_id = body['targetNamespaceId']
 
 				key = canonical_metadata_key({
 					'metadata_type': metadata_type,
 					'source_address': transaction_row['signer_address'],
 					'target_address': transaction_row['target_address'],
-					'scoped_metadata_key': body.get('scopedMetadataKey'),
+					'scoped_metadata_key': body['scopedMetadataKey'],
 					'target_id': target_id
 				})
 				key_identity = (

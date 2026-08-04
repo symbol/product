@@ -14,25 +14,8 @@ from puller.model.symbol.Metadata import (
 from tests.test.SymbolMetadataTestUtils import create_expected_metadata_row, create_metadata_item
 
 
-class MetadataTest(TestCase):
-	def _assert_canonical_metadata_hex_rejected(self, value):
-		# Act + Assert:
-		with self.assertRaisesRegex(ValueError, '^Invalid Symbol Metadata scoped metadata key'):
-			canonical_metadata_hex(value, 'scoped metadata key')
-
-	def _assert_canonical_metadata_key_rejected(self, overrides, error):
-		# Arrange:
-		valid_key = {
-			'metadata_type': 'mosaic',
-			'source_address': b'source',
-			'target_address': b'target',
-			'scoped_metadata_key': '0000000000000001',
-			'target_id': '0000000000000002'
-		}
-
-		# Act + Assert:
-		with self.assertRaisesRegex(ValueError, error):
-			canonical_metadata_key({**valid_key, **overrides})
+class MetadataTest(TestCase):  # pylint: disable=too-many-public-methods
+	# region metadata type definitions
 
 	def test_metadata_type_labels_match_independent_expected_values(self):
 		self.assertEqual({0: 'account', 1: 'mosaic', 2: 'namespace'}, METADATA_TYPE_LABELS)
@@ -47,61 +30,103 @@ class MetadataTest(TestCase):
 			TransactionType.NAMESPACE_METADATA.value: 'namespace'
 		}, METADATA_TRANSACTION_TYPE_LABELS)
 
-	def test_create_metadata_row_normalizes_account_and_preserves_wrapper(self):
+	# endregion
+
+	# region canonical_metadata_hex
+
+	def test_canonical_metadata_hex_returns_uppercase_for_lowercase_hex(self):
 		# Arrange:
-		item = create_metadata_item()
-		expected_row = create_expected_metadata_row(
-			item, 123, composite_hash=bytes.fromhex('11' * 32), metadata_type='account',
-			target_id=None, value_utf8='hello')
+		value = 'abcdef0123456789'
 
 		# Act:
-		row = create_metadata_row(item, 123)
+		canonical_value = canonical_metadata_hex(value, 'scoped metadata key')
 
 		# Assert:
-		self.assertEqual(expected_row, row)
+		self.assertEqual('ABCDEF0123456789', canonical_value)
 
-	def test_create_metadata_row_preserves_mosaic_target_id(self):
+	def test_canonical_metadata_hex_returns_same_value_for_canonical_hex(self):
 		# Arrange:
-		mosaic_item = create_metadata_item(metadata_type=1, target_id='72C0212E67A08BCE')
+		value = 'ABCDEF0123456789'
 
 		# Act:
-		row = create_metadata_row(mosaic_item, 123)
+		canonical_value = canonical_metadata_hex(value, 'scoped metadata key')
 
 		# Assert:
-		self.assertEqual(create_expected_metadata_row(
-			mosaic_item, 123, composite_hash=bytes.fromhex('11' * 32), metadata_type='mosaic',
-			target_id='72C0212E67A08BCE', value_utf8='hello'), row)
+		self.assertEqual(value, canonical_value)
 
-	def test_create_metadata_row_preserves_namespace_target_id(self):
-		# Arrange:
-		namespace_item = create_metadata_item(metadata_type=2, target_id='A95F1F8A96159516')
-
-		# Act:
-		row = create_metadata_row(namespace_item, 123)
-
-		# Assert:
-		self.assertEqual(create_expected_metadata_row(
-			namespace_item, 123, composite_hash=bytes.fromhex('11' * 32), metadata_type='namespace',
-			target_id='A95F1F8A96159516', value_utf8='hello'), row)
-
-	def test_create_metadata_row_canonicalizes_scoped_key_and_target_id(self):
-		# Arrange:
-		item = create_metadata_item(
-			metadata_type=1,
-			target_id='abcdef0123456789',
-			scoped_metadata_key='1234567890abcdef')
-
-		# Act:
-		row = create_metadata_row(item, 123)
-
-		# Assert:
-		self.assertEqual('1234567890ABCDEF', row['scoped_metadata_key'])
-		self.assertEqual('ABCDEF0123456789', row['target_id'])
+	def _assert_canonical_metadata_hex_rejected(self, value):
+		# Act + Assert:
+		with self.assertRaisesRegex(ValueError, '^Invalid Symbol Metadata scoped metadata key'):
+			canonical_metadata_hex(value, 'scoped metadata key')
 
 	def test_canonical_metadata_hex_rejects_invalid_values(self):
 		for value in (None, 123, '', '1', ' 1234567890ABCDE', '1234567890ABCDEG'):
 			with self.subTest(value=value):
 				self._assert_canonical_metadata_hex_rejected(value)
+
+	# endregion
+
+	# region canonical_metadata_key
+
+	def test_canonical_metadata_key_canonicalizes_mosaic_fields_and_preserves_extra_fields(self):
+		# Arrange:
+		metadata_key = {
+			'metadata_type': 'mosaic',
+			'source_address': b'source',
+			'target_address': b'target',
+			'scoped_metadata_key': 'abcdef0123456789',
+			'target_id': '1234567890abcdef',
+			'composite_hash': b'composite-hash'
+		}
+
+		# Act:
+		canonical_key = canonical_metadata_key(metadata_key)
+
+		# Assert:
+		self.assertEqual({
+			'metadata_type': 'mosaic',
+			'source_address': b'source',
+			'target_address': b'target',
+			'scoped_metadata_key': 'ABCDEF0123456789',
+			'target_id': '1234567890ABCDEF',
+			'composite_hash': b'composite-hash'
+		}, canonical_key)
+
+	def test_canonical_metadata_key_preserves_none_target_id_for_account_metadata(self):
+		# Arrange:
+		metadata_key = {
+			'metadata_type': 'account',
+			'source_address': b'source',
+			'target_address': b'target',
+			'scoped_metadata_key': 'abcdef0123456789',
+			'target_id': None
+		}
+
+		# Act:
+		canonical_key = canonical_metadata_key(metadata_key)
+
+		# Assert:
+		self.assertEqual({
+			'metadata_type': 'account',
+			'source_address': b'source',
+			'target_address': b'target',
+			'scoped_metadata_key': 'ABCDEF0123456789',
+			'target_id': None
+		}, canonical_key)
+
+	def _assert_canonical_metadata_key_rejected(self, overrides, error):
+		# Arrange:
+		valid_key = {
+			'metadata_type': 'mosaic',
+			'source_address': b'source',
+			'target_address': b'target',
+			'scoped_metadata_key': '0000000000000001',
+			'target_id': '0000000000000002'
+		}
+
+		# Act + Assert:
+		with self.assertRaisesRegex(ValueError, error):
+			canonical_metadata_key({**valid_key, **overrides})
 
 	def test_canonical_metadata_key_rejects_inapplicable_target_ids(self):
 		# Arrange:
@@ -130,6 +155,10 @@ class MetadataTest(TestCase):
 			({'target_id': None}, 'Invalid Symbol mosaic Metadata target id')):
 			with self.subTest(overrides=overrides):
 				self._assert_canonical_metadata_key_rejected(overrides, error)
+
+	# endregion
+
+	# region metadata target relation
 
 	def test_metadata_target_from_relations_returns_mosaic_target_id(self):
 		# Arrange:
@@ -190,6 +219,61 @@ class MetadataTest(TestCase):
 				with self.assertRaisesRegex(ValueError, f'^Invalid Symbol {metadata_type} Metadata target relation$'):
 					metadata_target_from_relations(metadata_type, metadata_target_rows)
 
+	# endregion
+
+	# region metadata row creation
+
+	def test_create_metadata_row_normalizes_account_and_preserves_wrapper(self):
+		# Arrange:
+		item = create_metadata_item()
+		expected_row = create_expected_metadata_row(
+			item, 123, composite_hash=bytes.fromhex('11' * 32), metadata_type='account',
+			target_id=None, value_utf8='hello')
+
+		# Act:
+		row = create_metadata_row(item, 123)
+
+		# Assert:
+		self.assertEqual(expected_row, row)
+
+	def test_create_metadata_row_preserves_mosaic_target_id(self):
+		# Arrange:
+		mosaic_item = create_metadata_item(metadata_type=1, target_id='72C0212E67A08BCE')
+
+		# Act:
+		row = create_metadata_row(mosaic_item, 123)
+
+		# Assert:
+		self.assertEqual(create_expected_metadata_row(
+			mosaic_item, 123, composite_hash=bytes.fromhex('11' * 32), metadata_type='mosaic',
+			target_id='72C0212E67A08BCE', value_utf8='hello'), row)
+
+	def test_create_metadata_row_preserves_namespace_target_id(self):
+		# Arrange:
+		namespace_item = create_metadata_item(metadata_type=2, target_id='A95F1F8A96159516')
+
+		# Act:
+		row = create_metadata_row(namespace_item, 123)
+
+		# Assert:
+		self.assertEqual(create_expected_metadata_row(
+			namespace_item, 123, composite_hash=bytes.fromhex('11' * 32), metadata_type='namespace',
+			target_id='A95F1F8A96159516', value_utf8='hello'), row)
+
+	def test_create_metadata_row_canonicalizes_scoped_key_and_target_id(self):
+		# Arrange:
+		item = create_metadata_item(
+			metadata_type=1,
+			target_id='abcdef0123456789',
+			scoped_metadata_key='1234567890abcdef')
+
+		# Act:
+		row = create_metadata_row(item, 123)
+
+		# Assert:
+		self.assertEqual('1234567890ABCDEF', row['scoped_metadata_key'])
+		self.assertEqual('ABCDEF0123456789', row['target_id'])
+
 	def test_create_metadata_row_decodes_clean_utf8_value(self):
 		# Arrange:
 		clean_item = create_metadata_item(value='E38182E38184')
@@ -217,3 +301,5 @@ class MetadataTest(TestCase):
 		# Act / Assert:
 		with self.assertRaisesRegex(ValueError, '^Unsupported Symbol metadata type 99$'):
 			create_metadata_row(item, 123)
+
+	# endregion
