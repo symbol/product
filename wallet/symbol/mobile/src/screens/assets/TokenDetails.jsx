@@ -4,6 +4,7 @@ import {
 	ButtonPlain,
 	Card,
 	Divider,
+	EmptyListMessage,
 	Field,
 	FlexContainer,
 	Screen,
@@ -46,15 +47,46 @@ export const TokenDetails = ({ route }) => {
 	// Fetch data
 	const dataManager = useAsyncManager({
 		callback: async () => {
-			const accountInfo = await walletController.networkApi.account.fetchAccountInfo(networkProperties, accountAddress);
+			const { networkApi } = walletController;
+			const accountInfo = await networkApi.account.fetchAccountInfo(networkProperties, accountAddress);
 
 			const tokens = accountInfo.tokens ?? accountInfo.mosaics ?? [];
+			const heldToken = tokens.find(token => token.id === tokenId);
 
-			return tokens.find(token => token.id === tokenId);
+			if (heldToken)
+				return heldToken;
+
+			// The account no longer holds the token (e.g. after sending out the full balance).
+			// Fetch the token info directly to keep the details visible with a zero balance.
+			const tokenInfo = networkApi.mosaic
+				? await networkApi.mosaic.fetchMosaicInfo(networkProperties, tokenId)
+				: await networkApi.token.fetchTokenInfo(networkProperties, tokenId);
+
+			if (!tokenInfo)
+				return null;
+
+			return {
+				...tokenInfo,
+				name: tokenInfo.name ?? (tokenInfo.names?.[0] || tokenInfo.id),
+				amount: '0'
+			};
 		},
 		defaultData: preloadedData
 	});
 	const token = dataManager.data;
+
+	// The token info is unavailable (e.g. the token has expired and is pruned from the node)
+	if (!token) {
+		return (
+			<Screen refresh={{ onRefresh: dataManager.call, isRefreshing: dataManager.isLoading }}>
+				<Screen.Upper>
+					<Spacer>
+						<EmptyListMessage />
+					</Spacer>
+				</Screen.Upper>
+			</Screen>
+		);
+	}
 
 	// Token display data
 	const {

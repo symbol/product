@@ -1,5 +1,6 @@
 import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
 import React from 'react';
+import { RefreshControl } from 'react-native';
 
 /**
  * A helper class to facilitate testing of React Native screens.
@@ -285,8 +286,16 @@ export class ScreenTester {
 	};
 
 	/**
+	 * Simulates the pull-to-refresh gesture on the screen scroll container.
+	 */
+	pullToRefresh = () => {
+		const refreshControl = this.renderer.UNSAFE_getByType(RefreshControl);
+		fireEvent(refreshControl, 'refresh');
+	};
+
+	/**
 	 * Advances timers by a specified time to simulate waiting.
-	 * 
+	 *
 	 * @param {number} time - The time in milliseconds to advance timers by. Default is 2000ms.
 	 */
 	waitForTimer = async (time = 2000) => {
