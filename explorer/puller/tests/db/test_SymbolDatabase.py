@@ -1,4 +1,5 @@
 # pylint: disable=duplicate-code,too-many-lines
+import copy
 import datetime
 from collections import namedtuple
 from contextlib import ExitStack
@@ -8,12 +9,13 @@ from unittest import TestCase
 from common.tests.PostgresTestUtils import PostgresTestDatabase, drop_symbol_block_tables_if_present
 from psycopg2 import Error as PsycopgError
 from psycopg2.extras import Json
-from symbolchain.sc import ReceiptType
+from symbolchain.sc import ReceiptType, TransactionType
 from symbolchain.symbol.Network import Network
 
 from puller.db.SymbolDatabase import RollbackRefreshEntries, SymbolDatabase
 from puller.model.symbol.Account import create_account_row
 from puller.model.symbol.Lock import create_hash_lock_key, create_secret_lock_search_key
+from puller.model.symbol.Transaction import TRANSACTION_TYPE_LABELS
 from tests.facade.symbol.puller_test_utils import NATIVE_MOSAIC_ID, create_account_item
 from tests.test.SymbolDatabaseTestUtils import fetch_full_block_state, fetch_normalized_sync_state
 from tests.test.SymbolMetadataTestUtils import (
@@ -1279,7 +1281,12 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		null_target_row = create_expected_metadata_row(
 			common_item, 123, composite_hash=bytes.fromhex('11' * 32), metadata_type='account',
 			target_id=None, value_utf8='hello')
-		value_target_row = {**null_target_row, 'composite_hash': bytes.fromhex('22' * 32), 'target_id': '0000000000000001'}
+		value_target_row = {
+			**null_target_row,
+			'composite_hash': bytes.fromhex('22' * 32),
+			'metadata_type': 'mosaic',
+			'target_id': '0000000000000001'
+		}
 		database.upsert_metadata(null_target_row)
 		database.upsert_metadata(value_target_row)
 		metadata_key = {
@@ -1360,6 +1367,169 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 				'target_id': None}
 		]
 		self.assertEqual(expected_keys, keys)
+
+	def test_get_metadata_keys_updated_from_height_canonicalizes_hexadecimal_key_fields(self):
+		# Arrange:
+		database = self._create_database()
+		row = create_expected_metadata_row(
+			create_metadata_item(metadata_type=1), 4,
+			composite_hash=bytes.fromhex('11' * 32), metadata_type='mosaic',
+			scoped_metadata_key='abcdef0123456789', target_id='1234567890abcdef', value_utf8='hello')
+		database.upsert_metadata(row)
+
+		# Act:
+		keys = database.get_metadata_keys_updated_from_height(4)
+
+		# Assert:
+		self.assertEqual('ABCDEF0123456789', keys[0]['scoped_metadata_key'])
+		self.assertEqual('1234567890ABCDEF', keys[0]['target_id'])
+
+	def test_get_confirmed_metadata_keys_since_returns_all_types_in_parent_order(self):
+		# Arrange:
+		database = self._create_database()
+		database.upsert_blocks([_create_block(height) for height in range(1, 5)])
+		metadata_types = (
+			(TransactionType.ACCOUNT_METADATA.value, 'account'),
+			(TransactionType.MOSAIC_METADATA.value, 'mosaic'),
+			(TransactionType.NAMESPACE_METADATA.value, 'namespace'))
+		entries = [
+			create_transaction_entry(
+				1, 'below-fork', type=TransactionType.ACCOUNT_METADATA.value,
+				type_name=TRANSACTION_TYPE_LABELS[TransactionType.ACCOUNT_METADATA.value], target_address=b'below',
+				body={'scopedMetadataKey': '0000000000000000'}),
+			create_transaction_entry(
+				2, 'account', type=metadata_types[0][0], type_name=TRANSACTION_TYPE_LABELS[metadata_types[0][0]],
+				signer_address=b'signer-account', target_address=b'target-account',
+				body={'scopedMetadataKey': 'abcdef0123456789'}),
+			create_transaction_entry(
+				2, 'mosaic', type=metadata_types[1][0], type_name=TRANSACTION_TYPE_LABELS[metadata_types[1][0]],
+				signer_address=b'signer-mosaic', target_address=b'target-mosaic',
+				body={'scopedMetadataKey': '1234567890abcdef', 'targetMosaicId': 'A95F1F8A96159516'},
+				mosaic_rows=[{
+					'mosaic_id': '72c0212e67a08bce', 'amount': 0, 'role': 'metadata_target', 'position': 0
+				}]),
+			create_transaction_entry(
+				3, 'namespace', type=metadata_types[2][0], type_name=TRANSACTION_TYPE_LABELS[metadata_types[2][0]],
+				signer_address=b'signer-namespace', target_address=b'target-namespace',
+				body={'scopedMetadataKey': '0000000000000003', 'targetNamespaceId': 'a95f1f8a96159516'}),
+			create_transaction_entry(4, 'ignored-transfer')
+		]
+		# Seed the higher parent height first so id-only ordering returns the wrong sequence.
+		for height, height_entries in ((3, entries[3:4]), (2, entries[1:3]), (1, entries[:1]), (4, entries[4:])):
+			database.upsert_transactions_for_height(height, height_entries)
+
+		# Act:
+		keys = database.get_confirmed_metadata_keys_since(2)
+
+		# Assert:
+		self.assertEqual([
+			{'metadata_type': 'account', 'source_address': b'signer-account', 'target_address': b'target-account',
+				'scoped_metadata_key': 'ABCDEF0123456789', 'target_id': None},
+			{'metadata_type': 'mosaic', 'source_address': b'signer-mosaic', 'target_address': b'target-mosaic',
+				'scoped_metadata_key': '1234567890ABCDEF', 'target_id': '72C0212E67A08BCE'},
+			{'metadata_type': 'namespace', 'source_address': b'signer-namespace', 'target_address': b'target-namespace',
+				'scoped_metadata_key': '0000000000000003', 'target_id': 'A95F1F8A96159516'}
+		], keys)
+
+	def test_get_confirmed_metadata_keys_since_rejects_invalid_relation_cardinality(self):
+		for metadata_type, mosaic_rows, error in (
+			(TransactionType.MOSAIC_METADATA.value, [], 'mosaic Metadata target relation count'),
+			(TransactionType.ACCOUNT_METADATA.value, [{
+				'mosaic_id': '0000000000000001', 'amount': 0, 'role': 'metadata_target', 'position': 0
+			}], 'account Metadata target relation')):
+			with self.subTest(metadata_type=metadata_type):
+				# Arrange:
+				database = self._create_database()
+				database.upsert_blocks([_create_block(1)])
+				body = {'scopedMetadataKey': '0000000000000001'}
+				if TransactionType.MOSAIC_METADATA.value == metadata_type:
+					body['targetMosaicId'] = '0000000000000001'
+				database.upsert_transactions_for_height(1, [create_transaction_entry(
+					1, f'metadata-{metadata_type}', type=metadata_type,
+					type_name=TRANSACTION_TYPE_LABELS[metadata_type], target_address=b'target',
+					body=body, mosaic_rows=mosaic_rows)])
+
+				# Act + Assert:
+				with self.assertRaisesRegex(ValueError, error):
+					database.get_confirmed_metadata_keys_since(1)
+				# Release the read transaction before the next subtest recreates the schema.
+				database.connection.rollback()
+
+	def test_get_confirmed_metadata_keys_since_rejects_duplicate_mosaic_relations(self):
+		# Arrange:
+		database = self._create_database()
+		database.upsert_blocks([_create_block(1)])
+		database.upsert_transactions_for_height(1, [create_transaction_entry(
+			1, 'duplicate-metadata-target', type=TransactionType.MOSAIC_METADATA.value,
+			type_name=TRANSACTION_TYPE_LABELS[TransactionType.MOSAIC_METADATA.value], target_address=b'target',
+			body={'scopedMetadataKey': '0000000000000001', 'targetMosaicId': '0000000000000001'},
+			mosaic_rows=[{
+				'mosaic_id': '0000000000000001', 'amount': 0, 'role': 'metadata_target', 'position': 0
+			}])])
+		cursor = database.connection.cursor()
+		cursor.execute(
+			'''
+			INSERT INTO symbol_transaction_mosaics (transaction_id, height, mosaic_id, amount, role, position)
+			SELECT id, height, '0000000000000002', 0, 'metadata_target', 0 FROM symbol_transactions
+			''')
+		database.connection.commit()
+
+		# Act + Assert:
+		with self.assertRaisesRegex(ValueError, 'mosaic Metadata target relation count'):
+			database.get_confirmed_metadata_keys_since(1)
+
+	def test_get_confirmed_metadata_keys_since_rejects_non_object_body(self):
+		# Arrange:
+		database = self._create_database()
+		database.upsert_blocks([_create_block(1)])
+		database.upsert_transactions_for_height(1, [create_transaction_entry(
+			1, 'invalid-body', type=TransactionType.ACCOUNT_METADATA.value,
+			type_name=TRANSACTION_TYPE_LABELS[TransactionType.ACCOUNT_METADATA.value],
+			target_address=b'target', body=[])])
+
+		# Act + Assert:
+		with self.assertRaisesRegex(ValueError, 'Invalid confirmed Symbol account Metadata transaction body'):
+			database.get_confirmed_metadata_keys_since(1)
+
+	def test_get_confirmed_metadata_keys_since_rejects_invalid_relation_sentinel(self):
+		# Arrange:
+		database = self._create_database()
+		database.upsert_blocks([_create_block(1)])
+		database.upsert_transactions_for_height(1, [create_transaction_entry(
+			1, 'invalid-relation', type=TransactionType.MOSAIC_METADATA.value,
+			type_name=TRANSACTION_TYPE_LABELS[TransactionType.MOSAIC_METADATA.value], target_address=b'target',
+			body={'scopedMetadataKey': '0000000000000001', 'targetMosaicId': '0000000000000001'},
+			mosaic_rows=[{
+				'mosaic_id': '0000000000000001', 'amount': 1, 'role': 'metadata_target', 'position': 0
+			}])])
+
+		# Act + Assert:
+		with self.assertRaisesRegex(ValueError, 'mosaic Metadata target relation at height 1'):
+			database.get_confirmed_metadata_keys_since(1)
+
+	def test_upsert_transactions_persists_private_metadata_target_relation_and_raw_payload(self):
+		# Arrange:
+		database = self._create_database()
+		database.upsert_blocks([_create_block(1)])
+		body = {'targetMosaicId': 'a95f1f8a96159516', 'scopedMetadataKey': '0000000000000001'}
+		raw_payload = {'transaction': body.copy()}
+		expected_body = copy.deepcopy(body)
+		expected_raw_payload = copy.deepcopy(raw_payload)
+
+		# Act:
+		database.upsert_transactions_for_height(1, [create_transaction_entry(
+			1, 'mosaic-metadata', type=TransactionType.MOSAIC_METADATA.value,
+			type_name=TRANSACTION_TYPE_LABELS[TransactionType.MOSAIC_METADATA.value], body=body,
+			raw_payload=raw_payload, mosaic_rows=[{
+				'mosaic_id': '72c0212e67a08bce', 'amount': 0, 'role': 'metadata_target', 'position': 0
+			}])])
+
+		# Assert:
+		cursor = database.connection.cursor()
+		cursor.execute('SELECT body, raw_payload FROM symbol_transactions')
+		self.assertEqual([(expected_body, expected_raw_payload)], cursor.fetchall())
+		cursor.execute('SELECT mosaic_id, amount, role, position FROM symbol_transaction_mosaics')
+		self.assertEqual([('72C0212E67A08BCE', 0, 'metadata_target', 0)], cursor.fetchall())
 
 	def test_upsert_namespace_refreshes_existing_mosaic_alias_names(self):
 		# Arrange:
@@ -2598,6 +2768,45 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			('symbol_transaction_mosaics', 'PRIMARY KEY', 'role'),
 			('symbol_transaction_mosaics', 'PRIMARY KEY', 'transaction_id')
 		], key_constraints)
+
+	def test_create_tables_adds_private_metadata_target_role(self):
+		# Arrange:
+		database = self._create_uninitialized_database()
+		cursor = database.connection.cursor()
+
+		# Act:
+		database.create_tables()
+
+		# Assert:
+		cursor.execute(
+			'''
+			SELECT enumlabel
+			FROM pg_enum
+			JOIN pg_type ON pg_type.oid = pg_enum.enumtypid
+			WHERE pg_type.typname = 'symbol_transaction_mosaic_role'
+			ORDER BY enumsortorder
+			''')
+		self.assertEqual([
+			('transfer',), ('hash_lock',), ('secret_lock',), ('revocation',),
+			('restriction',), ('definition',), ('metadata_target',)
+		], cursor.fetchall())
+
+	def test_create_tables_does_not_add_metadata_target_parent_column(self):
+		# Arrange:
+		database = self._create_uninitialized_database()
+		cursor = database.connection.cursor()
+
+		# Act:
+		database.create_tables()
+
+		# Assert:
+		cursor.execute(
+			'''
+			SELECT column_name
+			FROM information_schema.columns
+			WHERE table_name = 'symbol_transactions' AND column_name LIKE '%metadata%target%id%'
+			''')
+		self.assertEqual([], cursor.fetchall())
 
 	def test_create_tables_creates_symbol_transaction_indexes(self):
 		# Arrange:

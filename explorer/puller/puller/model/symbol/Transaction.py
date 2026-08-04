@@ -1,6 +1,7 @@
 from symbolchain.sc import TransactionType
 
 from puller.model.symbol.format import address_from_public_key, camel_case_enum_name, label_for_type, timestamp_from_network_value
+from puller.model.symbol.Metadata import canonical_metadata_hex
 
 TRANSACTION_TYPE_LABELS = {
 	transaction_type.value: camel_case_enum_name(transaction_type.name)
@@ -63,12 +64,16 @@ def create_transaction_mosaic_rows(transaction_type, transaction):
 		TransactionType.MOSAIC_SUPPLY_REVOCATION.value: ('revocation', 'mosaicId', 'amount'),
 		TransactionType.MOSAIC_ADDRESS_RESTRICTION.value: ('restriction', 'mosaicId', None),
 		TransactionType.MOSAIC_DEFINITION.value: ('definition', 'id', None),
-		TransactionType.MOSAIC_SUPPLY_CHANGE.value: ('definition', 'mosaicId', 'delta')
+		TransactionType.MOSAIC_SUPPLY_CHANGE.value: ('definition', 'mosaicId', 'delta'),
+		TransactionType.MOSAIC_METADATA.value: ('metadata_target', 'targetMosaicId', None)
 	}
 	if transaction_type in single_mosaic_mappings:
 		role, mosaic_id_field, amount_field = single_mosaic_mappings[transaction_type]
+		mosaic_id = transaction[mosaic_id_field]
+		if 'metadata_target' == role:
+			mosaic_id = canonical_metadata_hex(mosaic_id, 'target id')
 		return [{
-			'mosaic_id': transaction[mosaic_id_field],
+			'mosaic_id': mosaic_id,
 			'amount': int(transaction[amount_field]) if amount_field else 0,
 			'role': role,
 			'position': 0
@@ -217,15 +222,6 @@ def create_transaction_row(item, network, epoch_adjustment_seconds):
 	transaction_type = int(transaction['type'])
 	signer_public_key = bytes.fromhex(transaction['signerPublicKey'])
 	signer_address = address_from_public_key(signer_public_key, network)
-	# Non-persisted: copies both direct and unresolved targetMosaicId values into one normalized field. SymbolPuller owns
-	# alias detection and resolution, replacing an alias here with its resolved mosaic id before the metadata collector uses
-	# it as a natural-key component; body and raw_payload retain the unresolved DTO. Namespace metadata's targetNamespaceId
-	# is a concrete NamespaceId, so the collector reads it directly from body instead of using this mosaic-only field.
-	mosaic_metadata_target_id = (
-		transaction['targetMosaicId']
-		if TransactionType.MOSAIC_METADATA.value == transaction_type
-		else None
-	)
 	message_type, message_payload = _parse_message(transaction)
 	variable_fields = _top_level_or_embedded_fields(meta, transaction, is_embedded, epoch_adjustment_seconds)
 
@@ -239,7 +235,6 @@ def create_transaction_row(item, network, epoch_adjustment_seconds):
 		'signer_address': signer_address,
 		'recipient_address': bytes.fromhex(transaction['recipientAddress']) if 'recipientAddress' in transaction else None,
 		'target_address': _target_address(transaction_type, transaction),
-		'mosaic_metadata_target_id': mosaic_metadata_target_id,
 		'message_type': message_type,
 		'message_payload': message_payload,
 		'body': {
