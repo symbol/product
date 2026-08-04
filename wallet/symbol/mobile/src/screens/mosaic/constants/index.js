@@ -23,11 +23,8 @@ export const MOSAIC_NEVER_EXPIRING_DURATION = 0;
 export const MOSAIC_DIVISIBILITY_MIN = 0;
 export const MOSAIC_DIVISIBILITY_MAX = 6;
 
-// The network caps a mosaic supply in absolute (atomic) units, independent of divisibility. The relative
-// supply limit shown to the user is therefore MOSAIC_MAX_ATOMIC_UNITS / 10^divisibility, and the smallest
-// valid supply is a single atomic unit. Kept as strings because the max (9 * 10^15) sits at the edge of
-// Number.MAX_SAFE_INTEGER and is compared with BigInt.
-export const MOSAIC_MAX_ATOMIC_UNITS = '9000000000000000';
+// The network caps a mosaic supply in absolute (atomic) units, independent of divisibility.
+export const MOSAIC_MAX_ATOMIC_UNITS = '8999999999000000';
 export const MOSAIC_MIN_ATOMIC_UNITS = '1';
 
 export const MOSAIC_DURATION_MIN = 1;

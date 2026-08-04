@@ -303,8 +303,13 @@ describe('screens/mosaic/CreateMosaic', () => {
 				expected: { errorText: SCREEN_TEXT.errorSupplyWhole }
 			},
 			{
+				description: 'renders no error when the supply equals the maximum',
+				config: { divisibility: '0', supply: '8999999999000000' },
+				expected: { errorText: null }
+			},
+			{
 				description: 'renders the high error when the supply exceeds the maximum',
-				config: { divisibility: '0', supply: '9000000000000001' },
+				config: { divisibility: '0', supply: '8999999999000001' },
 				expected: { errorText: SCREEN_TEXT.errorSupplyHigh }
 			},
 			{
