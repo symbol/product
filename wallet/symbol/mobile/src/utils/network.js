@@ -52,15 +52,15 @@ export const makeRequest = async (url, options) => {
 	switch (response.status) {
 	case 400:
 	case 409:
-		throw new InvalidRequestError(errorMessageText, response.status);
+		throw new InvalidRequestError(errorMessageText, response.status, jsonData);
 	case 404:
-		throw new NotFoundError(errorMessageText, response.status);
+		throw new NotFoundError(errorMessageText, response.status, jsonData);
 	case 429:
-		throw new RateLimitError(errorMessageText, response.status);
+		throw new RateLimitError(errorMessageText, response.status, jsonData);
 	case 500:
 	case 502:
-		throw new InternalServerError(errorMessageText, response.status);
+		throw new InternalServerError(errorMessageText, response.status, jsonData);
 	default:
-		throw new NetworkRequestError(errorMessageText, response.status);
+		throw new NetworkRequestError(errorMessageText, response.status, jsonData);
 	}
 };

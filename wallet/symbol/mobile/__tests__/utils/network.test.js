@@ -152,6 +152,35 @@ describe('utils/network', () => {
 				runErrorMessageTest(test.description, test.config, test.expected);
 			});
 
+			it('keeps the parsed response body on the thrown error', async () => {
+				// Arrange:
+				const errorBody = {
+					errorCode: 'REQUEST_LIMIT_EXCEEDED',
+					error: 'gross transfer amount 105666666 exceeds max transfer amount 105666660'
+				};
+				global.fetch.mockResolvedValue(createMockErrorResponse(400, errorBody));
+
+				// Act & Assert:
+				await expect(makeRequest('https://example.com', {})).rejects.toMatchObject({
+					code: 'error_fetch_invalid_request',
+					statusCode: 400,
+					body: errorBody
+				});
+			});
+
+			it('sets the body to null when the response is not JSON', async () => {
+				// Arrange:
+				global.fetch.mockResolvedValue({
+					ok: false,
+					status: 400,
+					statusText: 'Bad Request',
+					text: jest.fn().mockResolvedValue('<html>Bad Request</html>')
+				});
+
+				// Act & Assert:
+				await expect(makeRequest('https://example.com', {})).rejects.toMatchObject({ body: null });
+			});
+
 			it('falls back to statusText when JSON parsing fails', async () => {
 				// Arrange:
 				const mockResponse = createMockResponse(

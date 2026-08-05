@@ -15,6 +15,7 @@ import {
 	uniswapSwapTransaction
 } from '../__fixtures__/local/transactions';
 import { currentNetworkIdentifier } from '../__fixtures__/local/wallet';
+import { ethers } from 'ethers';
 
 // Constants
 
@@ -76,6 +77,34 @@ describe('utils/transaction-to-ethereum', () => {
 
 			// Assert:
 			expect(result).toBeNull();
+		});
+
+		describe('uniswap swap multicall composition', () => {
+			const routerInterface = new ethers.Interface([
+				'function multicall(uint256 deadline, bytes[] data) payable returns (bytes[] results)'
+			]);
+			const refundEthSelector = '0x12210e8a';
+
+			const decodeMulticallCalls = data => routerInterface.decodeFunctionData('multicall', data)[1];
+
+			it('appends refundETH as the last call for a native ETH source token', () => {
+				// Act:
+				const result = transactionToEthereum(uniswapNativeSwapTransaction, { networkIdentifier });
+
+				// Assert:
+				const calls = decodeMulticallCalls(result.data);
+				expect(calls).toHaveLength(2);
+				expect(calls[1]).toBe(refundEthSelector);
+			});
+
+			it('keeps a single call for an ERC-20 source token', () => {
+				// Act:
+				const result = transactionToEthereum(uniswapSwapTransaction, { networkIdentifier });
+
+				// Assert:
+				const calls = decodeMulticallCalls(result.data);
+				expect(calls).toHaveLength(1);
+			});
 		});
 
 		it('omits the gas fields when the transaction has no fee', () => {

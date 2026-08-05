@@ -53,7 +53,7 @@ export const tokens = {
 				divisibility: 18
 			},
 			{
-				name: 'WXYM',
+				name: 'bXYM',
 				id: '0x5e8343a455f03109b737b6d8b410e4ecce998cda',
 				divisibility: 6
 			}
@@ -65,7 +65,7 @@ export const tokens = {
 				divisibility: 18
 			},
 			{
-				name: 'WXYM',
+				name: 'bXYM',
 				id: '0xac461bf5a6554e8406f58b192d83aeea695e229b',
 				divisibility: 6
 			}

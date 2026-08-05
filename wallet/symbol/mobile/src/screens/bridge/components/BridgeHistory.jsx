@@ -1,13 +1,13 @@
-import { 
-	Amount, 
-	AnimatedListItem, 
-	Icon, 
-	ListItemContainer, 
-	Stack, 
-	StatusRow, 
-	StyledText, 
-	TokenAvatar, 
-	TransactionAvatar 
+import {
+	Amount,
+	AnimatedListItem,
+	Icon,
+	ListItemContainer,
+	Stack,
+	StatusRow,
+	StyledText,
+	TokenAvatar,
+	TransactionAvatar
 } from '@/app/components';
 import { $t } from '@/app/localization';
 import { BRIDGE_HISTORY_PAGE_SIZE } from '@/app/screens/bridge/constants';
@@ -132,7 +132,7 @@ const SwapChains = ({ sourceChainName, targetChainName, sourceTokenInfo, targetT
  */
 const SwapListItem = ({ data, networkIdentifier, onPress }) => {
 	const action = $t('transactionDescriptor_swap');
-	const dateText = formatDate(data.requestTransaction.timestamp, $t, true);
+	const dateText = formatDate(data.requestTransaction.timestamp, $t);
 
 	const borderColor = getBorderColor(data);
 	const amount = getAmount(data, networkIdentifier);
@@ -184,7 +184,12 @@ const SwapListItem = ({ data, networkIdentifier, onPress }) => {
 						/>
 					)}
 					{amount.isVisible && (
-						<Amount value={amount.value} ticker={amount.ticker} size="m" />
+						<Amount
+							value={amount.value}
+							ticker={amount.ticker}
+							size="m"
+							style={styles.amount}
+						/>
 					)}
 				</View>
 			</View>
@@ -269,6 +274,10 @@ const styles = StyleSheet.create({
 		justifyContent: 'flex-end',
 		alignItems: 'flex-end',
 		gap: Sizes.Semantic.spacing.xs
+	},
+	amount: {
+		width: '200%',
+		justifyContent: 'flex-end'
 	},
 	tokenImage: {
 		marginRight: Sizes.Semantic.spacing.xs,

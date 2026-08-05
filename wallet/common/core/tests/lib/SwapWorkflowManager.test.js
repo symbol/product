@@ -26,12 +26,15 @@ const createHistoryItem = timestamp => ({ requestTransaction: { timestamp } });
 
 const createEstimation = (receiveAmount, bridgeFee = '0') => ({ receiveAmount, bridgeFee, error: null });
 
+const createFailedEstimation = code => ({ receiveAmount: null, bridgeFee: null, error: { code } });
+
 // Factory functions
 
 const createPairManagerMock = (overrides = {}) => ({
 	id: 'default-pair-id',
 	mode: 'wrap',
 	isReady: true,
+	isEnabled: true,
 	hasHistory: true,
 	nativeTokenInfo,
 	wrappedTokenInfo,
@@ -152,6 +155,51 @@ describe('bridge/SwapWorkflowManager', () => {
 
 			isReadyTests.forEach(test => {
 				runIsReadyTest(test.description, test.config, test.expected);
+			});
+		});
+
+		describe('isEnabled', () => {
+			const runIsEnabledTest = (description, config, expected) => {
+				it(description, () => {
+					// Arrange:
+					const pairManagers = config.managerAvailability.map(isEnabled => createPairManagerMock({ isEnabled }));
+					const workflow = createWorkflow(pairManagers);
+
+					// Act & Assert:
+					expect(workflow.isEnabled).toBe(expected.isEnabled);
+				});
+			};
+
+			const isEnabledTests = [
+				{
+					description: 'returns true when the single pair manager is enabled',
+					config: { managerAvailability: [true] },
+					expected: { isEnabled: true }
+				},
+				{
+					description: 'returns false when the single pair manager is disabled',
+					config: { managerAvailability: [false] },
+					expected: { isEnabled: false }
+				},
+				{
+					description: 'returns true when all pair managers are enabled',
+					config: { managerAvailability: [true, true] },
+					expected: { isEnabled: true }
+				},
+				{
+					description: 'returns false when the last pair manager is disabled',
+					config: { managerAvailability: [true, false] },
+					expected: { isEnabled: false }
+				},
+				{
+					description: 'returns false when the first pair manager is disabled',
+					config: { managerAvailability: [false, true] },
+					expected: { isEnabled: false }
+				}
+			];
+
+			isEnabledTests.forEach(test => {
+				runIsEnabledTest(test.description, test.config, test.expected);
 			});
 		});
 
@@ -428,6 +476,23 @@ describe('bridge/SwapWorkflowManager', () => {
 			expect(managerB.estimateRequest).toHaveBeenCalledWith('0.9');
 			expect(managerC.estimateRequest).toHaveBeenCalledWith('0.85');
 			expect(result).toStrictEqual([estimationA, estimationB, estimationC]);
+		});
+
+		it('stops at the first failed step instead of estimating the next one with no input amount', async () => {
+			// Arrange:
+			const failedEstimation = createFailedEstimation('request_limit_exceeded');
+			const estimationB = createEstimation('0.85', '0.05');
+			const managerA = createPairManagerMock({ estimateRequest: jest.fn().mockResolvedValue(failedEstimation) });
+			const managerB = createPairManagerMock({ estimateRequest: jest.fn().mockResolvedValue(estimationB) });
+			const workflow = createWorkflow([managerA, managerB]);
+
+			// Act:
+			const result = await workflow.estimateRequest('1');
+
+			// Assert:
+			expect(managerA.estimateRequest).toHaveBeenCalledWith('1');
+			expect(managerB.estimateRequest).not.toHaveBeenCalled();
+			expect(result).toStrictEqual([failedEstimation]);
 		});
 	});
 

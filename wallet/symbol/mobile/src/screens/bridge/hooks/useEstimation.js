@@ -10,6 +10,7 @@ import { useAsyncManager } from '@/app/hooks';
  * @property {BridgeEstimation[]|null} estimations - Current estimation data.
  * @property {() => void} clearEstimation - Clears the estimation data.
  * @property {boolean} isLoading - Whether estimation is being fetched.
+ * @property {boolean} hasFailed - Whether the last estimation request failed outright.
  */
 
 /**
@@ -26,15 +27,17 @@ export const useEstimation = ({ bridge, amount }) => {
 
 			return estimations;
 		},
-		shouldShowErrorPopup: false,
-		shouldClearDataOnCall: true
+		shouldShowErrorPopup: false
 	});
 
-	
+	const { error, isLoading, isCompleted } = estimationManager;
+	const hasFailed = !!error && !isLoading && !isCompleted;
+
 	return {
 		estimate: estimationManager.call,
-		estimations: estimationManager.data,
+		estimations: hasFailed ? null : estimationManager.data,
 		clearEstimation: estimationManager.reset,
-		isLoading: estimationManager.isLoading
+		isLoading,
+		hasFailed
 	};
 };
