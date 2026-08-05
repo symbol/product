@@ -3,11 +3,11 @@ import tempfile
 from unittest import TestCase
 from unittest.mock import AsyncMock, MagicMock, patch
 
+from common.symbol.Receipt import MOSAIC_EXPIRED_RECEIPT_TYPE, NAMESPACE_EXPIRED_RECEIPT_TYPE
 from symbolchain.sc import AliasAction, TransactionType
 from symbollightapi.model.Exceptions import NodeException
 
 from puller.facade.SymbolPuller import SymbolPuller
-from puller.model.symbol.Receipt import MOSAIC_EXPIRED_RECEIPT_TYPE, NAMESPACE_EXPIRED_RECEIPT_TYPE
 from tests.test.SymbolMosaicTestUtils import MOSAIC_ID, create_expected_mosaic_row, create_mosaic_item
 
 from .puller_test_utils import NODE_URL, ResponseConnector, create_db_config, create_symbol_puller, temporary_symbol_puller

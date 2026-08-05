@@ -2558,11 +2558,6 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 				'CREATE INDEX idx_symbol_receipts_mosaic ON public.symbol_receipts USING btree (mosaic_id)'
 			),
 			(
-				'idx_symbol_receipts_recipient_group_height',
-				'CREATE INDEX idx_symbol_receipts_recipient_group_height ON public.symbol_receipts '
-				'USING btree (recipient_address, receipt_group, height DESC)'
-			),
-			(
 				'idx_symbol_receipts_sender_group_height',
 				'CREATE INDEX idx_symbol_receipts_sender_group_height ON public.symbol_receipts '
 				'USING btree (sender_address, receipt_group, height DESC)'
