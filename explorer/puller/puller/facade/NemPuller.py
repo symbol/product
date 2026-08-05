@@ -20,7 +20,7 @@ NEM_MAX_ROLLBACK_DEPTH = 360
 
 
 class NemRollbackError(RuntimeError):
-	"""Raised when a safe NEM rollback point cannot be found."""
+	"""Raised when a NEM rollback cannot safely proceed."""
 
 
 BlockRecord = namedtuple('BlockRecord', [
@@ -92,6 +92,25 @@ TransactionRecord = namedtuple('TransactionRecord', [
 	'payload',
 	'size',
 	'version'
+])
+RollbackPayloadAccounts = namedtuple('RollbackPayloadAccounts', [
+	'accounts',
+	'remote_link_accounts'
+])
+RollbackProjectionIdentifiers = namedtuple('RollbackProjectionIdentifiers', [
+	'namespace_roots',
+	'mosaic_names'
+])
+NemRollbackImpact = namedtuple('NemRollbackImpact', [
+	'fork_height',
+	'affected_accounts',
+	'account_creation_heights',
+	'orphan_created_accounts',
+	'surviving_affected_accounts',
+	'orphan_beneficiaries',
+	'affected_remote_link_accounts',
+	'affected_namespace_roots',
+	'affected_mosaic_names'
 ])
 DatabaseConfig = namedtuple('DatabaseConfig', ['database', 'user', 'password', 'host', 'port'])
 
@@ -172,6 +191,124 @@ class NemPuller:
 			f'No matching NEM block hash found within {NEM_MAX_ROLLBACK_DEPTH} blocks '
 			f'(database height: {db_height}, chain height: {chain_height}); '
 			'manual investigation is required'
+		)
+
+	def _extract_affected_payload_accounts(self, transaction):
+		"""Extracts account addresses stored only in an orphan transaction payload."""
+
+		affected_accounts = set()
+		affected_remote_link_accounts = set()
+
+		if TransactionType.ACCOUNT_KEY_LINK.value == transaction.transaction_type:
+			affected_remote_link_accounts.add(transaction.sender_address)
+			affected_accounts.add(
+				self._convert_public_key_to_address(transaction.payload['remote_account'])
+			)
+		elif TransactionType.MULTISIG_ACCOUNT_MODIFICATION.value == transaction.transaction_type:
+			for modification in transaction.payload['modifications']:
+				affected_accounts.add(
+					self._convert_public_key_to_address(modification['cosignatory_account'])
+				)
+		elif TransactionType.MULTISIG.value == transaction.transaction_type:
+			for signature in transaction.payload['signatures']:
+				affected_accounts.add(Address(signature['other_account']))
+				affected_accounts.add(self._convert_public_key_to_address(signature['sender']))
+		elif TransactionType.MOSAIC_DEFINITION.value == transaction.transaction_type:
+			levy = transaction.payload['levy']
+			if levy:
+				affected_accounts.add(Address(levy['recipient']))
+
+		return RollbackPayloadAccounts(affected_accounts, affected_remote_link_accounts)
+
+	@staticmethod
+	def _extract_affected_projection_identifiers(transaction):
+		"""Extracts projection identifiers changed by an orphan transaction."""
+
+		affected_namespace_roots = set()
+		affected_mosaic_names = set()
+
+		if TransactionType.NAMESPACE_REGISTRATION.value == transaction.transaction_type:
+			parent = transaction.payload['parent']
+			if parent:
+				affected_namespace_roots.add(parent.split('.')[0])
+			else:
+				affected_namespace_roots.add(transaction.payload['namespace'])
+		elif transaction.transaction_type in (
+			TransactionType.MOSAIC_DEFINITION.value,
+			TransactionType.MOSAIC_SUPPLY_CHANGE.value
+		):
+			affected_mosaic_names.add(transaction.payload['namespace_name'])
+
+		return RollbackProjectionIdentifiers(affected_namespace_roots, affected_mosaic_names)
+
+	@staticmethod
+	def _validate_account_creation_heights(affected_accounts, account_creation_heights):
+		"""Requires every affected account to have a stored creation height."""
+
+		missing_accounts = affected_accounts - set(account_creation_heights)
+		if missing_accounts:
+			raise NemRollbackError(
+				f'Missing creation heights for {len(missing_accounts)} affected NEM account(s)'
+			)
+
+	def capture_rollback_impact(self, fork_height):
+		"""Captures the complete local impact of blocks above a confirmed fork height."""
+
+		if fork_height < 1:
+			raise NemRollbackError(f'Invalid NEM fork height {fork_height}')
+
+		affected_accounts = set()
+		orphan_beneficiaries = set()
+		affected_remote_link_accounts = set()
+		affected_namespace_roots = set()
+		affected_mosaic_names = set()
+
+		orphan_records = self.nem_db.get_orphan_chain_records(fork_height)
+
+		for block in orphan_records.blocks:
+			orphan_beneficiaries.add(block.beneficiary)
+			affected_accounts.add(block.beneficiary)
+			affected_accounts.add(self._convert_public_key_to_address(block.signer))
+
+		for transaction in orphan_records.transactions:
+			affected_accounts.add(transaction.sender_address)
+			if transaction.recipient_address:
+				affected_accounts.add(transaction.recipient_address)
+
+			payload_accounts = self._extract_affected_payload_accounts(transaction)
+			affected_accounts.update(payload_accounts.accounts)
+			affected_remote_link_accounts.update(payload_accounts.remote_link_accounts)
+
+			projection_identifiers = self._extract_affected_projection_identifiers(transaction)
+			affected_namespace_roots.update(projection_identifiers.namespace_roots)
+			affected_mosaic_names.update(projection_identifiers.mosaic_names)
+
+		affected_accounts.update(orphan_records.transfer_levy_recipients)
+
+		account_creation_heights = self.nem_db.get_account_creation_heights(affected_accounts)
+		self._validate_account_creation_heights(affected_accounts, account_creation_heights)
+
+		orphan_created_accounts = {
+			address
+			for address, height in account_creation_heights.items()
+			if height > fork_height
+		}
+		surviving_affected_accounts = {
+			address
+			for address, height in account_creation_heights.items()
+			if height <= fork_height
+		}
+
+		return NemRollbackImpact(
+			fork_height,
+			affected_accounts,
+			account_creation_heights,
+			orphan_created_accounts,
+			surviving_affected_accounts,
+			orphan_beneficiaries,
+			affected_remote_link_accounts,
+			affected_namespace_roots,
+			affected_mosaic_names
 		)
 
 	async def _retry_get_account_info(self, address, retries=3, delay=2):
