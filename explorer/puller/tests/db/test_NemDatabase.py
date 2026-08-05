@@ -1141,3 +1141,83 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 			'nem.xem',
 			2000000
 		))
+
+	def test_can_read_orphan_chain_records(self):
+		# Arrange:
+		surviving_account = ACCOUNTS[0]
+		orphan_account = ACCOUNTS[0]._replace(
+			address=Address('TALICE6XEEEOBFJVY3ZCENZ7WBG6LB4KB7P7KMQX'),
+			height=2
+		)
+		surviving_transaction = TRANSACTIONS[0]._replace(
+			transaction_hash='11' * 32,
+			height=1,
+			payload={'source': 'surviving'}
+		)
+		orphan_transaction = TRANSACTIONS[0]._replace(
+			transaction_hash='22' * 32,
+			height=2,
+			payload={'source': 'outer'}
+		)
+		orphan_inner_transaction = TRANSACTIONS[0]._replace(
+			transaction_hash='33' * 32,
+			height=2,
+			sender_address=orphan_account.address,
+			is_inner=True,
+			payload={'source': 'inner'}
+		)
+		levy_mosaic = MOSAICS[0]._replace(
+			root_namespace='foo',
+			namespace_name='foo.token',
+			levy_recipient=orphan_account.address
+		)
+
+		with NemDatabase(self.db_config) as nem_database:
+			nem_database.create_tables()
+			cursor = nem_database.connection.cursor()
+
+			for block in BLOCKS:
+				nem_database.insert_block(cursor, block)
+
+			nem_database.upsert_account(cursor, surviving_account)
+			nem_database.upsert_account(cursor, orphan_account)
+			nem_database.upsert_mosaic(cursor, levy_mosaic)
+			nem_database.insert_transaction(cursor, surviving_transaction)
+			orphan_transaction_id = nem_database.insert_transaction(cursor, orphan_transaction)
+			nem_database.insert_transaction(cursor, orphan_inner_transaction)
+			nem_database.insert_transaction_mosaic(
+				cursor,
+				orphan_transaction_id,
+				Mosaic('foo.token', 100)
+			)
+			nem_database.connection.commit()
+
+			# Act:
+			orphan_blocks, orphan_transactions, orphan_transfer_levy_recipients = nem_database.get_orphan_chain_records(1)
+			account_heights = nem_database.get_account_creation_heights({
+				surviving_account.address,
+				orphan_account.address
+			})
+
+		# Assert:
+		self.assertEqual(1, len(orphan_blocks))
+		self.assertEqual(str(BLOCKS[1].beneficiary), str(orphan_blocks[0].beneficiary))
+		self.assertEqual(str(BLOCKS[1].signer), str(orphan_blocks[0].signer))
+
+		self.assertEqual(2, len(orphan_transactions))
+		self.assertEqual(['outer', 'inner'], [
+			transaction.payload['source']
+			for transaction in orphan_transactions
+		])
+		self.assertEqual(str(orphan_account.address), str(orphan_transactions[1].sender_address))
+
+		self.assertEqual(
+			{str(orphan_account.address)},
+			{str(address) for address in orphan_transfer_levy_recipients}
+		)
+		self.assertEqual({
+			str(surviving_account.address): 1,
+			str(orphan_account.address): 2
+		}, {
+			str(address): height for address, height in account_heights.items()
+		})
