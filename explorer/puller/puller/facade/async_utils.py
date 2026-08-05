@@ -11,9 +11,6 @@ async def gather_in_chunks(items, chunk_size, fetch_item):
 
 	results = []
 	for start in range(0, len(items), chunk_size):
-		results.extend(await _gather_chunk(items[start:start + chunk_size], fetch_item))
+		chunk = items[start:start + chunk_size]
+		results.extend(await asyncio.gather(*(fetch_item(item) for item in chunk)))
 	return results
-
-
-async def _gather_chunk(items, fetch_item):
-	return await asyncio.gather(*(fetch_item(item) for item in items))

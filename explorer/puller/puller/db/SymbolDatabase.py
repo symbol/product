@@ -3,7 +3,6 @@ from collections import namedtuple
 from contextlib import contextmanager
 
 from psycopg2.extras import Json
-from symbolchain.sc import TransactionType
 
 from puller.model.symbol.Account import ACCOUNT_TYPE_VALUES
 from puller.model.symbol.Block import BLOCK_TYPE_VALUES
@@ -16,6 +15,7 @@ from puller.model.symbol.Metadata import (
 	metadata_target_from_relations
 )
 from puller.model.symbol.MosaicRestriction import (
+	MOSAIC_RESTRICTION_ENTRY_TYPE_BY_TRANSACTION_TYPE,
 	MosaicRestrictionEntryType,
 	MosaicRestrictionKey,
 	create_mosaic_restriction_key,
@@ -1101,10 +1101,7 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 			''',
 			(
 				height,
-				[
-					TransactionType.MOSAIC_ADDRESS_RESTRICTION.value,
-					TransactionType.MOSAIC_GLOBAL_RESTRICTION.value
-				]
+				list(MOSAIC_RESTRICTION_ENTRY_TYPE_BY_TRANSACTION_TYPE)
 			))
 
 		transaction_rows = []
@@ -1119,10 +1116,7 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 	@staticmethod
 	def _mosaic_restriction_key_from_confirmed_transaction_rows(rows):
 		height, transaction_id, transaction_type, target_address, *_ = rows[0]
-		entry_type = {
-			TransactionType.MOSAIC_ADDRESS_RESTRICTION.value: MosaicRestrictionEntryType.ADDRESS,
-			TransactionType.MOSAIC_GLOBAL_RESTRICTION.value: MosaicRestrictionEntryType.GLOBAL
-		}.get(transaction_type)
+		entry_type = MOSAIC_RESTRICTION_ENTRY_TYPE_BY_TRANSACTION_TYPE.get(transaction_type)
 		if entry_type is None:
 			raise ValueError(f'Unsupported confirmed Symbol Mosaic Restriction transaction at height {height}, id {transaction_id}')
 

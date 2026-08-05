@@ -38,6 +38,7 @@ from puller.model.symbol.Metadata import (
 )
 from puller.model.symbol.Mosaic import create_mosaic_row
 from puller.model.symbol.MosaicRestriction import (
+	MOSAIC_RESTRICTION_ENTRY_TYPE_BY_TRANSACTION_TYPE,
 	MosaicRestrictionEntryType,
 	MosaicRestrictionKey,
 	create_mosaic_restriction_key,
@@ -1042,9 +1043,8 @@ class SymbolPuller:
 		for transaction_rows in transaction_rows_by_height.values():
 			for transaction_row in transaction_rows:
 				transaction_type = transaction_row['type']
-				if transaction_type not in (
-					TransactionType.MOSAIC_ADDRESS_RESTRICTION.value,
-					TransactionType.MOSAIC_GLOBAL_RESTRICTION.value):
+				entry_type = MOSAIC_RESTRICTION_ENTRY_TYPE_BY_TRANSACTION_TYPE.get(transaction_type)
+				if entry_type is None:
 					continue
 
 				position_zero_rows = [
@@ -1059,13 +1059,11 @@ class SymbolPuller:
 				SymbolPuller._assert_resolved_transaction_mosaic_id(
 					mosaic_id, 'mosaic_id', 'Mosaic Restriction')
 				mosaic_id = mosaic_id.upper()
-				if TransactionType.MOSAIC_ADDRESS_RESTRICTION.value == transaction_type:
+				if entry_type is MosaicRestrictionEntryType.ADDRESS:
 					address = transaction_row['target_address']
 					SymbolPuller._assert_resolved_transaction_address(address, 'target_address', 'Mosaic Restriction')
-					entry_type = MosaicRestrictionEntryType.ADDRESS
 				else:
 					address = None
-					entry_type = MosaicRestrictionEntryType.GLOBAL
 
 				dirty_keys.add(create_mosaic_restriction_key(entry_type, mosaic_id, address))
 

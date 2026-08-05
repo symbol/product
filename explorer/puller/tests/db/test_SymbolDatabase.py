@@ -5107,11 +5107,10 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 				_create_sync_state(status='repairing', last_synced_height=1, last_synced_block_hash=b'hash 1'),
 				refresh_entries)
 
+		# The height-2 row was deleted before the invalid INSERT and is restored by transaction rollback.
 		# Assert:
 		after_state = self._fetch_table_state(database, state_tables)
 		self.assertEqual(before_state, after_state)
-		# The height-2 row was deleted before the invalid INSERT and is restored by transaction rollback.
-		self.assertEqual(before_state['symbol_mosaic_restrictions'], after_state['symbol_mosaic_restrictions'])
 
 	def test_create_tables_creates_mosaic_restriction_enum_labels(self):
 		# Arrange:
@@ -5143,19 +5142,19 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		cursor = database.connection.cursor()
 		cursor.execute(
 			'''
-			SELECT column_name, is_nullable, udt_name
+			SELECT column_name, is_nullable, data_type
 			FROM information_schema.columns
 			WHERE table_name = 'symbol_mosaic_restrictions'
 			ORDER BY ordinal_position
 			''')
 		self.assertEqual([
 			('composite_hash', 'NO', 'bytea'),
-			('entry_type', 'NO', 'symbol_mosaic_restriction_entry_type'),
-			('mosaic_id', 'NO', 'varchar'),
+			('entry_type', 'NO', 'USER-DEFINED'),
+			('mosaic_id', 'NO', 'character varying'),
 			('target_address', 'YES', 'bytea'),
 			('restrictions', 'NO', 'jsonb'),
 			('raw_payload', 'NO', 'jsonb'),
-			('updated_at_height', 'NO', 'int8')
+			('updated_at_height', 'NO', 'bigint')
 		], cursor.fetchall())
 
 	def test_create_tables_uses_mosaic_restriction_enum_for_entry_type(self):

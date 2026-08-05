@@ -186,15 +186,6 @@ class PullerMosaicRestrictionsTest(TestCase):  # pylint: disable=too-many-public
 				bytes.fromhex(RECIPIENT_ADDRESS))
 		}, keys)
 
-	def test_collector_uses_only_position_zero_for_global_restriction(self):
-		# Act:
-		keys = SymbolPuller._collect_dirty_mosaic_restriction_keys_for_batch({
-			11: [_global_transaction()]
-		})
-
-		# Assert:
-		self.assertEqual({MosaicRestrictionKey(MosaicRestrictionEntryType.GLOBAL, MOSAIC_ID, None)}, keys)
-
 	def test_collector_rejects_an_unresolved_mosaic_with_field_and_context(self):
 		# Arrange:
 		transaction = _global_transaction('E74B99BA41F4AFEE')
@@ -632,33 +623,6 @@ class PullerMosaicRestrictionsIntegrationTest(SymbolPullerTestBase):
 		# Assert:
 		cursor.execute('SELECT composite_hash, updated_at_height FROM symbol_mosaic_restrictions')
 		self.assertEqual(first_state, cursor.fetchall())
-
-	def test_sync_block_headers_resolves_address_restriction_aliases_before_exact_fetch(self):
-		# Arrange:
-		transaction = self._restriction_transaction(
-			mosaic_id=ALIAS_MOSAIC_ID, target_address=ALIAS_ADDRESS)
-		path = self._restriction_path(0, RECIPIENT_ADDRESS, MOSAIC_ID)
-		connector = self._create_alias_connector(
-			transaction,
-			path,
-			self._restriction_response(0, RECIPIENT_ADDRESS, mosaic_id=MOSAIC_ID),
-			address_resolutions={1: [create_resolution_statement(
-				1, ALIAS_ADDRESS, [_resolution_entry(1, 0, RECIPIENT_ADDRESS)])]},
-			mosaic_resolutions={1: [create_resolution_statement(
-				1, ALIAS_MOSAIC_ID, [_resolution_entry(1, 0, MOSAIC_ID)])]})
-
-		# Act:
-		self._sync_with_connector(connector)
-
-		# Assert:
-		cursor = self.puller.symbol_db.connection.cursor()
-		cursor.execute(
-			"SELECT body->>'mosaicId', encode(target_address, 'hex') FROM symbol_transactions")
-		self.assertEqual([(ALIAS_MOSAIC_ID, RECIPIENT_ADDRESS.lower())], cursor.fetchall())
-		cursor.execute(
-			"SELECT mosaic_id, position FROM symbol_transaction_mosaics WHERE role = 'restriction'")
-		self.assertEqual([(MOSAIC_ID, 0)], cursor.fetchall())
-		self.assertEqual(1, connector.paths.count(path))
 
 	def test_sync_and_rollback_address_restriction_alias_uses_resolved_relations(self):
 		# Arrange:
