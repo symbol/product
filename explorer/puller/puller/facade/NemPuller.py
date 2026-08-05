@@ -459,6 +459,15 @@ class NemPuller:
 			account_info.cosignatories
 		)
 
+	async def _fetch_account_record(self, address, height):
+		"""Fetches current node state and creates a complete account record."""
+
+		account_info = await self._retry_get_account_info(address)
+		account_mosaics = await self._retry_get_account_mosaics(address)
+		mosaics_json = self._convert_mosaics_to_json(account_mosaics)
+
+		return self._create_account_record(account_info, mosaics_json, height)
+
 	@staticmethod
 	def _create_account_vested_balance_record(account_info):
 		"""Create account vested balance record."""
@@ -479,12 +488,7 @@ class NemPuller:
 
 		# Fetch account info for all addresses (both new and existing)
 		for address, height in address_heights.items():
-			account_info = await self._retry_get_account_info(address)
-			account_mosaics = await self._retry_get_account_mosaics(address)
-
-			mosaics_json = self._convert_mosaics_to_json(account_mosaics)
-			account = self._create_account_record(account_info, mosaics_json, height)
-
+			account = await self._fetch_account_record(address, height)
 			self.nem_db.upsert_account(cursor, account)
 
 	@staticmethod
