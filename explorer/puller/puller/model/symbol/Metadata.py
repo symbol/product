@@ -87,11 +87,13 @@ def create_metadata_row(metadata_item, observed_height):
 		'target_address': bytes.fromhex(entry['targetAddress']),
 		'target_id': None if 'account' == metadata_type else entry['targetId']
 	})
+	# PostgreSQL text rejects NUL; value_hex retains raw bytes while decoded text substitutes U+FFFD.
+	value_utf8 = bytes.fromhex(entry['value']).decode('utf-8', errors='replace').replace('\x00', '\uFFFD')
 	return {
 		'composite_hash': bytes.fromhex(entry['compositeHash']),
 		**metadata_key,
 		'value_hex': entry['value'],
-		'value_utf8': bytes.fromhex(entry['value']).decode('utf-8', errors='replace'),
+		'value_utf8': value_utf8,
 		'raw_payload': metadata_item,
 		'updated_at_height': observed_height
 	}

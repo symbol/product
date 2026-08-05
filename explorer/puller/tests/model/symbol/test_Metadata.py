@@ -294,6 +294,16 @@ class MetadataTest(TestCase):  # pylint: disable=too-many-public-methods
 		# Assert:
 		self.assertEqual('�', row['value_utf8'])
 
+	def test_create_metadata_row_replaces_nul_with_replacement_character(self):
+		# Arrange:
+		nul_item = create_metadata_item(value='410042')
+
+		# Act:
+		row = create_metadata_row(nul_item, 123)
+
+		# Assert:
+		self.assertEqual('A�B', row['value_utf8'])
+
 	def test_create_metadata_row_rejects_unsupported_type(self):
 		# Arrange:
 		item = create_metadata_item(metadata_type=99)
