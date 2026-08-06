@@ -1201,23 +1201,23 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 
 		# Assert:
 		self.assertEqual(1, len(orphan_blocks))
-		self.assertEqual(str(BLOCKS[1].beneficiary), str(orphan_blocks[0].beneficiary))
-		self.assertEqual(str(BLOCKS[1].signer), str(orphan_blocks[0].signer))
+		self.assertEqual(BLOCKS[1].beneficiary, orphan_blocks[0].beneficiary)
+		self.assertEqual(BLOCKS[1].signer, orphan_blocks[0].signer)
 
 		self.assertEqual(2, len(orphan_transactions))
 		self.assertEqual(['outer', 'inner'], [
 			transaction.payload['source']
 			for transaction in orphan_transactions
 		])
-		self.assertEqual(str(orphan_account.address), str(orphan_transactions[1].sender_address))
+		self.assertEqual(orphan_account.address, orphan_transactions[1].sender_address)
 
 		self.assertEqual(
-			{str(orphan_account.address)},
-			{str(address) for address in orphan_transfer_levy_recipients}
+			{orphan_account.address},
+			{address for address in orphan_transfer_levy_recipients}
 		)
 		self.assertEqual({
-			str(surviving_account.address): 1,
-			str(orphan_account.address): 2
+			surviving_account.address: 1,
+			orphan_account.address: 2
 		}, {
-			str(address): height for address, height in account_heights.items()
+			address: height for address, height in account_heights.items()
 		})
