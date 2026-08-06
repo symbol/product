@@ -1213,11 +1213,19 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 
 		self.assertEqual(
 			{orphan_account.address},
-			{address for address in orphan_transfer_levy_recipients}
+			orphan_transfer_levy_recipients
 		)
 		self.assertEqual({
 			surviving_account.address: 1,
 			orphan_account.address: 2
-		}, {
-			address: height for address, height in account_heights.items()
-		})
+		}, account_heights)
+
+	def test_returns_empty_account_creation_heights_when_addresses_are_empty(self):
+		# Arrange:
+		nem_database = NemDatabase(self.db_config)
+
+		# Act:
+		account_heights = nem_database.get_account_creation_heights(set())
+
+		# Assert:
+		self.assertEqual({}, account_heights)
