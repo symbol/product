@@ -14,30 +14,37 @@ def bytes_from_hex_or_none(value):
 	return bytes.fromhex(value) if value else None
 
 
-def decoded_address_bytes_from_hex(node, field_name, context_name):
-	"""Decode a node response's canonical hexadecimal Symbol address field."""
-
+def _decoded_bytes_from_hex(node, field_name, context_name, decoder):
 	value = node.get(field_name) if isinstance(node, dict) else None
 	if not isinstance(value, str) or not is_hex_text(value):
 		raise ValueError(f'Invalid {context_name} {field_name}')
 
 	try:
-		return Address.from_decoded_address_hex_string(value).bytes
+		return decoder(value)
 	except ValueError as exception:
 		raise ValueError(f'Invalid {context_name} {field_name}') from exception
+
+
+def decoded_address_bytes_from_hex(node, field_name, context_name):
+	"""Decode a node response's canonical hexadecimal Symbol address field."""
+
+	return _decoded_bytes_from_hex(
+		node,
+		field_name,
+		context_name,
+		lambda value: Address.from_decoded_address_hex_string(value).bytes)
 
 
 def hash_bytes_from_hex(node, field_name, context_name):
 	"""Decode a node response's hexadecimal hash field to bytes."""
 
-	value = node.get(field_name) if isinstance(node, dict) else None
-	if not isinstance(value, str) or not is_hex_text(value):
-		raise ValueError(f'Invalid {context_name} {field_name}')
+	return _decoded_bytes_from_hex(node, field_name, context_name, lambda value: Hash256(value).bytes)
 
-	try:
-		return Hash256(value).bytes
-	except ValueError as exception:
-		raise ValueError(f'Invalid {context_name} {field_name}') from exception
+
+def is_exact_integer(value):
+	"""Return whether value is an integer but not a boolean."""
+
+	return isinstance(value, int) and not isinstance(value, bool)
 
 
 def is_hex_text(value):

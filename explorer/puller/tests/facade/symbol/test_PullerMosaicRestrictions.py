@@ -27,6 +27,7 @@ from .puller_test_utils import (
 	create_node_transaction,
 	create_resolution_statement,
 	create_sync_state,
+	set_symbol_connector,
 	transaction_path
 )
 
@@ -35,6 +36,11 @@ ALIAS_ADDRESS = '99065A28385EB5AE88000000000000000000000000000000'
 ALIAS_MOSAIC_ID = 'E74B99BA41F4AFEE'
 ALIAS_MOSAIC_ID_2 = 'A95F1F8A96159516'
 RESOLVED_MOSAIC_ID_2 = '1111111111111111'
+GLOBAL_RESTRICTION_PATH = (
+	f'restrictions/mosaic?mosaicId={MOSAIC_ID}&entryType=1&pageSize=100&pageNumber=1')
+ADDRESS_RESTRICTION_PATH = (
+	f'restrictions/mosaic?mosaicId={MOSAIC_ID}&entryType=0&pageSize=100&pageNumber=1'
+	'&targetAddress=TCXBENCWPCIKXTPPCI2FM6EQVPG66ERUKZ4JBKY')
 
 
 def _resolution_entry(primary_id, secondary_id, resolved):
@@ -95,29 +101,16 @@ def _address_response_item(mosaic_id=MOSAIC_ID, target_address=RECIPIENT_ADDRESS
 	}
 
 
-class PullerMosaicRestrictionsTest(TestCase):  # pylint: disable=too-many-public-methods
-	@staticmethod
-	def _fetch_response(response, key=None):
-		# Arrange:
-		puller = object.__new__(SymbolPuller)
-		key = key or MosaicRestrictionKey(MosaicRestrictionEntryType.GLOBAL, MOSAIC_ID, None)
+def _restriction_path(entry_type, target_address=None, mosaic_id=MOSAIC_ID):
+	path = f'restrictions/mosaic?mosaicId={mosaic_id}&entryType={entry_type}&pageSize=100&pageNumber=1'
+	return path if target_address is None else f'{path}&targetAddress={Address(bytes.fromhex(target_address))}'
 
-		async def get_symbol_node(_path):
-			return response
 
-		puller.get_symbol_node = get_symbol_node
+def _restriction_paths(connector):
+	return [path for path in connector.paths if path.startswith('restrictions/mosaic?')]
 
-		# Act:
-		return asyncio.run(puller._fetch_dirty_mosaic_restrictions([key], 20))
 
-	def _assert_exact_fetch_rejects(self, response, expected_error):
-		# Arrange:
-		key = MosaicRestrictionKey(MosaicRestrictionEntryType.GLOBAL, MOSAIC_ID, None)
-
-		# Act / Assert:
-		with self.assertRaisesRegex(ValueError, expected_error):
-			self._fetch_response(response, key)
-
+class PullerMosaicRestrictionsTest(TestCase):
 	def test_collector_returns_empty_set_for_empty_input(self):
 		# Arrange:
 		transaction_rows_by_height = {}
@@ -139,27 +132,21 @@ class PullerMosaicRestrictionsTest(TestCase):  # pylint: disable=too-many-public
 		# Assert:
 		self.assertEqual({MosaicRestrictionKey(MosaicRestrictionEntryType.GLOBAL, MOSAIC_ID, None)}, keys)
 
-	def test_collector_ignores_account_restriction_transaction(self):
-		# Arrange:
-		transaction = _global_transaction()
-		transaction['type'] = TransactionType.ACCOUNT_ADDRESS_RESTRICTION.value
+	def test_collector_ignores_non_mosaic_restriction_transactions(self):
+		for transaction_type in (
+			TransactionType.ACCOUNT_ADDRESS_RESTRICTION.value,
+			TransactionType.TRANSFER.value
+		):
+			with self.subTest(transaction_type=transaction_type):
+				# Arrange:
+				transaction = _global_transaction()
+				transaction['type'] = transaction_type
 
-		# Act:
-		keys = SymbolPuller._collect_dirty_mosaic_restriction_keys_for_batch({10: [transaction]})
+				# Act:
+				keys = SymbolPuller._collect_dirty_mosaic_restriction_keys_for_batch({10: [transaction]})
 
-		# Assert:
-		self.assertEqual(set(), keys)
-
-	def test_collector_ignores_unrelated_transaction(self):
-		# Arrange:
-		transaction = _global_transaction()
-		transaction['type'] = TransactionType.TRANSFER.value
-
-		# Act:
-		keys = SymbolPuller._collect_dirty_mosaic_restriction_keys_for_batch({10: [transaction]})
-
-		# Assert:
-		self.assertEqual(set(), keys)
+				# Assert:
+				self.assertEqual(set(), keys)
 
 	def test_collector_ignores_global_reference_position_one(self):
 		# Arrange:
@@ -172,10 +159,15 @@ class PullerMosaicRestrictionsTest(TestCase):  # pylint: disable=too-many-public
 		# Assert:
 		self.assertEqual({MosaicRestrictionKey(MosaicRestrictionEntryType.GLOBAL, MOSAIC_ID, None)}, keys)
 
-	def test_collector_uses_resolved_position_zero_mosaic_and_target_address(self):
+	def test_collector_uses_resolved_primary_restriction_mosaic_relation_and_target_address(self):
+		# Arrange:
+		# Position 0 is the transaction's primary restriction mosaic relation. Position 1, when
+		# present on a Global restriction, is its reference mosaic relation.
+		transaction = _address_transaction()
+
 		# Act:
 		keys = SymbolPuller._collect_dirty_mosaic_restriction_keys_for_batch({
-			10: [_address_transaction()]
+			10: [transaction]
 		})
 
 		# Assert:
@@ -199,8 +191,10 @@ class PullerMosaicRestrictionsTest(TestCase):  # pylint: disable=too-many-public
 		with self.assertRaisesRegex(ValueError, 'mosaic_id.*Mosaic Restriction'):
 			SymbolPuller._collect_dirty_mosaic_restriction_keys_for_batch({11: [_global_transaction('not-hex')]})
 
-	def test_collector_rejects_multiple_position_zero_relations(self):
+	def test_collector_rejects_multiple_primary_restriction_mosaic_relations(self):
 		# Arrange:
+		# Position 0 is the transaction's primary restriction mosaic relation. Position 1, when
+		# present on a Global restriction, is its reference mosaic relation.
 		transaction = _global_transaction()
 		transaction['mosaic_rows'].append({'mosaic_id': MOSAIC_ID, 'role': 'restriction', 'position': 0})
 
@@ -208,131 +202,120 @@ class PullerMosaicRestrictionsTest(TestCase):  # pylint: disable=too-many-public
 		with self.assertRaisesRegex(ValueError, 'restriction mosaic relation'):
 			SymbolPuller._collect_dirty_mosaic_restriction_keys_for_batch({11: [transaction]})
 
+
+class PullerMosaicRestrictionsIntegrationTest(SymbolPullerTestBase):
+	def _fetch_response(self, response, path, key=None):
+		# Arrange:
+		key = key or MosaicRestrictionKey(MosaicRestrictionEntryType.GLOBAL, MOSAIC_ID, None)
+		connector = RestrictionResponseConnector(0, {}, restriction_responses={path: response})
+		set_symbol_connector(self.puller, connector)
+
+		# Act:
+		entries = asyncio.run(self.puller._fetch_dirty_mosaic_restrictions([key], 20))
+		return entries, connector
+
+	def _assert_exact_fetch_rejects(self, response, path, expected_error):
+		# Arrange:
+		key = MosaicRestrictionKey(MosaicRestrictionEntryType.GLOBAL, MOSAIC_ID, None)
+
+		# Act + Assert:
+		with self.assertRaisesRegex(ValueError, expected_error):
+			self._fetch_response(response, path, key)
+
 	def test_exact_fetch_builds_global_path_and_returns_empty_replacement(self):
 		# Arrange:
-		puller = object.__new__(SymbolPuller)
-		paths = []
-
-		async def get_symbol_node(path):
-			paths.append(path.lstrip('/'))
-			return {'pagination': {'pageNumber': 1, 'pageSize': 100}, 'data': []}
-
-		puller.get_symbol_node = get_symbol_node
 		key = MosaicRestrictionKey(MosaicRestrictionEntryType.GLOBAL, MOSAIC_ID, None)
 
 		# Act:
-		entries = asyncio.run(puller._fetch_dirty_mosaic_restrictions([key], 20))
+		entries, connector = self._fetch_response(
+			{'pagination': {'pageNumber': 1, 'pageSize': 100}, 'data': []}, GLOBAL_RESTRICTION_PATH, key)
 
 		# Assert:
-		self.assertEqual([
-			f'restrictions/mosaic?mosaicId={MOSAIC_ID}&entryType=1&pageSize=100&pageNumber=1'
-		], paths)
+		self.assertEqual([GLOBAL_RESTRICTION_PATH], connector.paths)
 		self.assertEqual([{'key': key, 'rows': []}], entries)
 
 	def test_exact_fetch_builds_address_path_with_base32_target(self):
 		# Arrange:
-		puller = object.__new__(SymbolPuller)
-		paths = []
-
-		async def get_symbol_node(path):
-			paths.append(path.lstrip('/'))
-			return {'pagination': {'pageNumber': 1, 'pageSize': 100}, 'data': []}
-
-		puller.get_symbol_node = get_symbol_node
 		target_address = bytes.fromhex(RECIPIENT_ADDRESS)
 		key = MosaicRestrictionKey(MosaicRestrictionEntryType.ADDRESS, MOSAIC_ID, target_address)
 
 		# Act:
-		asyncio.run(puller._fetch_dirty_mosaic_restrictions([key], 20))
+		entries, connector = self._fetch_response(
+			{'pagination': {'pageNumber': 1, 'pageSize': 100}, 'data': []}, ADDRESS_RESTRICTION_PATH, key)
 
 		# Assert:
-		self.assertEqual(
-			f'restrictions/mosaic?mosaicId={MOSAIC_ID}&entryType=0&pageSize=100&pageNumber=1'
-			f'&targetAddress={str(Address(target_address))}',
-			paths[0])
+		self.assertEqual([ADDRESS_RESTRICTION_PATH], connector.paths)
+		self.assertEqual([{'key': key, 'rows': []}], entries)
 
 	def test_exact_fetch_rejects_boolean_page_number(self):
 		# Arrange:
-		puller = object.__new__(SymbolPuller)
-
-		async def get_symbol_node(_path):
-			return {'pagination': {'pageNumber': True, 'pageSize': 100}, 'data': []}
-
-		puller.get_symbol_node = get_symbol_node
 		key = MosaicRestrictionKey(MosaicRestrictionEntryType.GLOBAL, MOSAIC_ID, None)
 
 		# Act + Assert:
 		with self.assertRaisesRegex(ValueError, 'pagination'):
-			asyncio.run(puller._fetch_dirty_mosaic_restrictions([key], 20))
+			self._fetch_response(
+				{'pagination': {'pageNumber': True, 'pageSize': 100}, 'data': []}, GLOBAL_RESTRICTION_PATH, key)
 
 	def test_exact_fetch_rejects_non_dict_response(self):
-		self._assert_exact_fetch_rejects([], 'Malformed')
+		self._assert_exact_fetch_rejects([], GLOBAL_RESTRICTION_PATH, 'Malformed')
 
 	def test_exact_fetch_rejects_missing_pagination(self):
-		self._assert_exact_fetch_rejects({'data': []}, 'Malformed')
+		self._assert_exact_fetch_rejects({'data': []}, GLOBAL_RESTRICTION_PATH, 'Malformed')
 
 	def test_exact_fetch_rejects_non_dict_pagination(self):
-		self._assert_exact_fetch_rejects({'pagination': [], 'data': []}, 'Malformed')
+		self._assert_exact_fetch_rejects({'pagination': [], 'data': []}, GLOBAL_RESTRICTION_PATH, 'Malformed')
 
 	def test_exact_fetch_rejects_missing_page_number(self):
-		self._assert_exact_fetch_rejects({'pagination': {'pageSize': 100}, 'data': []}, 'pagination')
+		self._assert_exact_fetch_rejects(
+			{'pagination': {'pageSize': 100}, 'data': []}, GLOBAL_RESTRICTION_PATH, 'pagination')
 
 	def test_exact_fetch_rejects_missing_page_size(self):
-		self._assert_exact_fetch_rejects({'pagination': {'pageNumber': 1}, 'data': []}, 'pagination')
+		self._assert_exact_fetch_rejects(
+			{'pagination': {'pageNumber': 1}, 'data': []}, GLOBAL_RESTRICTION_PATH, 'pagination')
 
 	def test_exact_fetch_rejects_boolean_page_size(self):
 		self._assert_exact_fetch_rejects(
-			{'pagination': {'pageNumber': 1, 'pageSize': True}, 'data': []}, 'pagination')
+			{'pagination': {'pageNumber': 1, 'pageSize': True}, 'data': []}, GLOBAL_RESTRICTION_PATH, 'pagination')
 
 	def test_exact_fetch_rejects_string_page_number(self):
 		self._assert_exact_fetch_rejects(
-			{'pagination': {'pageNumber': '1', 'pageSize': 100}, 'data': []}, 'pagination')
+			{'pagination': {'pageNumber': '1', 'pageSize': 100}, 'data': []}, GLOBAL_RESTRICTION_PATH, 'pagination')
 
 	def test_exact_fetch_rejects_string_page_size(self):
 		self._assert_exact_fetch_rejects(
-			{'pagination': {'pageNumber': 1, 'pageSize': '100'}, 'data': []}, 'pagination')
+			{'pagination': {'pageNumber': 1, 'pageSize': '100'}, 'data': []}, GLOBAL_RESTRICTION_PATH, 'pagination')
 
 	def test_exact_fetch_rejects_wrong_page_number(self):
 		self._assert_exact_fetch_rejects(
-			{'pagination': {'pageNumber': 2, 'pageSize': 100}, 'data': []}, 'pagination')
+			{'pagination': {'pageNumber': 2, 'pageSize': 100}, 'data': []}, GLOBAL_RESTRICTION_PATH, 'pagination')
 
 	def test_exact_fetch_rejects_wrong_page_size(self):
 		self._assert_exact_fetch_rejects(
-			{'pagination': {'pageNumber': 1, 'pageSize': 99}, 'data': []}, 'pagination')
+			{'pagination': {'pageNumber': 1, 'pageSize': 99}, 'data': []}, GLOBAL_RESTRICTION_PATH, 'pagination')
 
 	def test_exact_fetch_rejects_non_list_data(self):
 		self._assert_exact_fetch_rejects(
-			{'pagination': {'pageNumber': 1, 'pageSize': 100}, 'data': {}}, 'data')
+			{'pagination': {'pageNumber': 1, 'pageSize': 100}, 'data': {}}, GLOBAL_RESTRICTION_PATH, 'data')
 
 	def test_exact_fetch_rejects_multiple_entries_before_model_conversion(self):
 		# Arrange:
-		puller = object.__new__(SymbolPuller)
-
-		async def get_symbol_node(_path):
-			return {'pagination': {'pageNumber': 1, 'pageSize': 100}, 'data': [{}, {}]}
-
-		puller.get_symbol_node = get_symbol_node
 		key = MosaicRestrictionKey(MosaicRestrictionEntryType.GLOBAL, MOSAIC_ID, None)
 
 		# Act + Assert:
 		with self.assertRaisesRegex(ValueError, 'multiple entries'):
-			asyncio.run(puller._fetch_dirty_mosaic_restrictions([key], 20))
+			self._fetch_response(
+				{'pagination': {'pageNumber': 1, 'pageSize': 100}, 'data': [{}, {}]}, GLOBAL_RESTRICTION_PATH, key)
 
 	def test_exact_fetch_returns_one_valid_replacement_row(self):
 		# Arrange:
-		puller = object.__new__(SymbolPuller)
-
-		async def get_symbol_node(_path):
-			return {
-				'pagination': {'pageNumber': 1, 'pageSize': 100, 'totalEntries': 1},
-				'data': [_global_response_item()]
-			}
-
-		puller.get_symbol_node = get_symbol_node
+		response = {
+			'pagination': {'pageNumber': 1, 'pageSize': 100, 'totalEntries': 1},
+			'data': [_global_response_item()]
+		}
 		key = MosaicRestrictionKey(MosaicRestrictionEntryType.GLOBAL, MOSAIC_ID, None)
 
 		# Act:
-		entries = asyncio.run(puller._fetch_dirty_mosaic_restrictions([key], 20))
+		entries, _ = self._fetch_response(response, GLOBAL_RESTRICTION_PATH, key)
 
 		# Assert:
 		self.assertEqual(key, entries[0]['key'])
@@ -345,8 +328,10 @@ class PullerMosaicRestrictionsTest(TestCase):  # pylint: disable=too-many-public
 		key = MosaicRestrictionKey(MosaicRestrictionEntryType.ADDRESS, MOSAIC_ID, bytes.fromhex(RECIPIENT_ADDRESS))
 
 		# Act:
-		entries = self._fetch_response(
-			{'pagination': {'pageNumber': 1, 'pageSize': 100}, 'data': [_address_response_item()]}, key)
+		entries, _ = self._fetch_response(
+			{'pagination': {'pageNumber': 1, 'pageSize': 100}, 'data': [_address_response_item()]},
+			ADDRESS_RESTRICTION_PATH,
+			key)
 
 		# Assert:
 		self.assertEqual(key, entries[0]['key'])
@@ -355,7 +340,7 @@ class PullerMosaicRestrictionsTest(TestCase):  # pylint: disable=too-many-public
 	def test_exact_fetch_rejects_mismatched_logical_key(self):
 		self._assert_exact_fetch_rejects({
 			'pagination': {'pageNumber': 1, 'pageSize': 100},
-			'data': [_global_response_item('6B66D046670F91BE')]}, 'does not match')
+			'data': [_global_response_item('6B66D046670F91BE')]}, GLOBAL_RESTRICTION_PATH, 'does not match')
 
 
 class RestrictionResponseConnector(FakeConnector):
@@ -374,12 +359,7 @@ class RestrictionResponseConnector(FakeConnector):
 		return await super().get(url_path, *args)
 
 
-class PullerMosaicRestrictionsIntegrationTest(SymbolPullerTestBase):
-	@staticmethod
-	def _restriction_path(entry_type, target_address=None, mosaic_id=MOSAIC_ID):
-		path = f'restrictions/mosaic?mosaicId={mosaic_id}&entryType={entry_type}&pageSize=100&pageNumber=1'
-		return path if target_address is None else f'{path}&targetAddress={Address(bytes.fromhex(target_address))}'
-
+class PullerMosaicRestrictionsSyncIntegrationTest(SymbolPullerTestBase):
 	@staticmethod
 	def _restriction_response(
 		entry_type=0,
@@ -424,13 +404,13 @@ class PullerMosaicRestrictionsIntegrationTest(SymbolPullerTestBase):
 			overrides['referenceMosaicId'] = reference_mosaic_id
 		return create_node_transaction(height, transaction_hash='A' * 64, transaction_id='restriction-transaction', **overrides)
 
-	def _create_normal_connector(self, response=None, failure=None):
-		path = self._restriction_path(0, RECIPIENT_ADDRESS)
+	def _create_normal_connector(self, response):
+		path = _restriction_path(0, RECIPIENT_ADDRESS)
 		return RestrictionResponseConnector(
 			1,
 			{0: [create_node_block(1)]},
 			transactions_by_path={transaction_path(1, 1): {'data': [self._restriction_transaction()]}},
-			restriction_responses={path: failure if failure is not None else response})
+			restriction_responses={path: response})
 
 	@staticmethod
 	def _create_alias_connector(transaction, response_path, response, address_resolutions=None, mosaic_resolutions=None):
@@ -516,24 +496,6 @@ class PullerMosaicRestrictionsIntegrationTest(SymbolPullerTestBase):
 			last_synced_height=0,
 			last_synced_block_hash=b''))
 
-	def _fetch_complete_batch_state(self):
-		return self._fetch_table_state((
-			'symbol_blocks',
-			'symbol_transactions',
-			'symbol_transaction_mosaics',
-			'symbol_transaction_addresses',
-			'symbol_receipts',
-			'symbol_accounts',
-			'symbol_account_mosaics',
-			'symbol_multisig',
-			'symbol_namespaces',
-			'symbol_alias_names',
-			'symbol_mosaics',
-			'symbol_metadata',
-			'symbol_hash_locks',
-			'symbol_secret_locks',
-			'symbol_mosaic_restrictions'))
-
 	def _assert_sync_failure_has_no_write_state(self, connector, exception_type, expected_error):
 		# Arrange:
 		tables = (
@@ -549,7 +511,7 @@ class PullerMosaicRestrictionsIntegrationTest(SymbolPullerTestBase):
 			self._sync_with_connector(connector)
 
 		# Assert:
-		self.assertEqual([], [path for path in connector.paths if path.startswith('restrictions/mosaic?')])
+		self.assertEqual([], _restriction_paths(connector))
 		cursor = self.puller.symbol_db.connection.cursor()
 		for table in tables:
 			cursor.execute(f'SELECT COUNT(*) FROM {table}')
@@ -558,7 +520,7 @@ class PullerMosaicRestrictionsIntegrationTest(SymbolPullerTestBase):
 
 	def test_sync_block_headers_persists_restriction_state(self):
 		# Arrange:
-		connector = self._create_normal_connector(response=self._restriction_response())
+		connector = self._create_normal_connector(self._restriction_response())
 
 		# Act:
 		self._sync_with_connector(connector)
@@ -572,7 +534,7 @@ class PullerMosaicRestrictionsIntegrationTest(SymbolPullerTestBase):
 			(entry_type, mosaic_id, bytes(target_address), restrictions, updated_at_height)
 			for entry_type, mosaic_id, target_address, restrictions, updated_at_height in cursor.fetchall()
 		])
-		self.assertEqual(1, connector.paths.count(self._restriction_path(0, RECIPIENT_ADDRESS)))
+		self.assertEqual([_restriction_path(0, RECIPIENT_ADDRESS)], _restriction_paths(connector))
 
 	def test_sync_block_headers_restriction_fetch_failure_preserves_complete_batch_state(self):
 		# Arrange:
@@ -580,7 +542,7 @@ class PullerMosaicRestrictionsIntegrationTest(SymbolPullerTestBase):
 		self._seed_complete_batch_state()
 		before_state = self._fetch_complete_batch_state()
 		before_sync_state = database.get_sync_state()
-		connector = self._create_normal_connector(failure=RuntimeError('restriction fetch failed'))
+		connector = self._create_normal_connector(RuntimeError('restriction fetch failed'))
 
 		# Act + Assert:
 		with self.assertRaisesRegex(RuntimeError, 'restriction fetch failed'):
@@ -595,21 +557,21 @@ class PullerMosaicRestrictionsIntegrationTest(SymbolPullerTestBase):
 		key = MosaicRestrictionKey(MosaicRestrictionEntryType.ADDRESS, MOSAIC_ID, bytes.fromhex(RECIPIENT_ADDRESS))
 		row = create_mosaic_restriction_row(self._restriction_response()['data'][0], 1)
 		self.puller.symbol_db.replace_mosaic_restrictions(key, [row])
-		connector = self._create_normal_connector(response={
+		connector = self._create_normal_connector({
 			'code': 'ResourceNotFound', 'message': 'missing'})
-		before_state = self._fetch_restriction_state()
+		before_state = self._fetch_table_state(('symbol_mosaic_restrictions',))
 
 		# Act / Assert:
 		with self.assertRaisesRegex(NodeException, 'ResourceNotFound: missing'):
 			self._sync_with_connector(connector)
 
 		# Assert:
-		self.assertEqual(before_state, self._fetch_restriction_state())
+		self.assertEqual(before_state, self._fetch_table_state(('symbol_mosaic_restrictions',)))
 		self.assertEqual([], self._fetch_block_heights(self.puller.symbol_db))
 
 	def test_sync_block_headers_restriction_state_converges_when_restarted(self):
 		# Arrange:
-		connector = self._create_normal_connector(response=self._restriction_response())
+		connector = self._create_normal_connector(self._restriction_response())
 		self._sync_with_connector(connector)
 		cursor = self.puller.symbol_db.connection.cursor()
 		cursor.execute('SELECT composite_hash, updated_at_height FROM symbol_mosaic_restrictions')
@@ -624,11 +586,11 @@ class PullerMosaicRestrictionsIntegrationTest(SymbolPullerTestBase):
 		cursor.execute('SELECT composite_hash, updated_at_height FROM symbol_mosaic_restrictions')
 		self.assertEqual(first_state, cursor.fetchall())
 
-	def test_sync_and_rollback_address_restriction_alias_uses_resolved_relations(self):
-		# Arrange:
+	def test_sync_and_rollback_address_restriction_uses_persisted_resolved_child_relations(self):
+		# Arrange: persist the resolved child relations on the branch that will become orphaned.
 		transaction = self._restriction_transaction(
 			height=2, mosaic_id=ALIAS_MOSAIC_ID, target_address=ALIAS_ADDRESS)
-		path = self._restriction_path(0, RECIPIENT_ADDRESS, MOSAIC_ID)
+		path = _restriction_path(0, RECIPIENT_ADDRESS, MOSAIC_ID)
 		normal_connector = RestrictionResponseConnector(
 			2,
 			{0: [create_node_block(1), create_node_block(2)]},
@@ -640,7 +602,7 @@ class PullerMosaicRestrictionsIntegrationTest(SymbolPullerTestBase):
 			restriction_responses={path: self._restriction_response(
 				0, RECIPIENT_ADDRESS, mosaic_id=MOSAIC_ID)})
 
-		# Act:
+		# Arrange: perform the initial sync that persists the resolved child relations.
 		self._sync_with_connector(normal_connector)
 
 		# Assert:
@@ -655,9 +617,10 @@ class PullerMosaicRestrictionsIntegrationTest(SymbolPullerTestBase):
 			'WHERE height = 2 AND role = %s',
 			('restriction',))
 		self.assertEqual([(MOSAIC_ID, 0)], cursor.fetchall())
-		self.assertEqual(1, normal_connector.paths.count(path))
+		self.assertEqual([path], _restriction_paths(normal_connector))
 
-		# Arrange:
+		# Arrange: make the initial sync's block 2 orphaned so rollback must use its persisted
+		# resolved restriction mosaic and target address relations.
 		canonical_block_hash = '22' * 32
 		rollback_connector = RestrictionResponseConnector(
 			3,
@@ -675,12 +638,7 @@ class PullerMosaicRestrictionsIntegrationTest(SymbolPullerTestBase):
 		self._sync_with_connector(rollback_connector)
 
 		# Assert:
-		restriction_paths = [
-			request_path
-			for request_path in rollback_connector.paths
-			if request_path.startswith('restrictions/mosaic?')
-		]
-		self.assertEqual([path], restriction_paths)
+		self.assertEqual([path], _restriction_paths(rollback_connector))
 		cursor.execute(
 			' SELECT composite_hash, updated_at_height FROM symbol_mosaic_restrictions')
 		self.assertEqual([(bytes.fromhex('CC' * 32), 1)], [
@@ -700,13 +658,15 @@ class PullerMosaicRestrictionsIntegrationTest(SymbolPullerTestBase):
 		self.assertEqual(3, sync_state['last_synced_height'])
 		self.assertEqual(bytes.fromhex(f'{3:064X}'), bytes(sync_state['last_synced_block_hash']))
 
-	def test_sync_block_headers_uses_only_global_position_zero_when_both_mosaic_aliases_resolve(self):
+	def test_sync_block_headers_uses_only_global_primary_restriction_mosaic_when_both_aliases_resolve(self):
 		# Arrange:
+		# Position 0 is the transaction's primary restriction mosaic relation; position 1 is
+		# the Global restriction's reference mosaic relation and must not trigger a state fetch.
 		transaction = self._restriction_transaction(
 			entry_type=TransactionType.MOSAIC_GLOBAL_RESTRICTION.value,
 			mosaic_id=ALIAS_MOSAIC_ID,
 			reference_mosaic_id=ALIAS_MOSAIC_ID_2)
-		path = self._restriction_path(1, mosaic_id=MOSAIC_ID)
+		path = _restriction_path(1, mosaic_id=MOSAIC_ID)
 		connector = self._create_alias_connector(
 			transaction,
 			path,
@@ -724,14 +684,16 @@ class PullerMosaicRestrictionsIntegrationTest(SymbolPullerTestBase):
 		cursor.execute(
 			"SELECT mosaic_id, position FROM symbol_transaction_mosaics WHERE role = 'restriction' ORDER BY position")
 		self.assertEqual([(MOSAIC_ID, 0), (RESOLVED_MOSAIC_ID_2, 1)], cursor.fetchall())
-		self.assertEqual(1, connector.paths.count(path))
+		self.assertEqual([path], _restriction_paths(connector))
 
-	def test_sync_block_headers_omits_global_zero_reference_position_one_and_fetches_position_zero(self):
+	def test_sync_block_headers_omits_global_zero_reference_and_fetches_primary_restriction_mosaic(self):
 		# Arrange:
+		# Position 0 is the transaction's primary restriction mosaic relation; position 1 is
+		# the optional Global reference mosaic relation, omitted here because it is zero.
 		transaction = self._restriction_transaction(
 			entry_type=TransactionType.MOSAIC_GLOBAL_RESTRICTION.value,
 			mosaic_id=ALIAS_MOSAIC_ID)
-		path = self._restriction_path(1, mosaic_id=MOSAIC_ID)
+		path = _restriction_path(1, mosaic_id=MOSAIC_ID)
 		connector = self._create_alias_connector(
 			transaction,
 			path,
@@ -746,7 +708,7 @@ class PullerMosaicRestrictionsIntegrationTest(SymbolPullerTestBase):
 		cursor = self.puller.symbol_db.connection.cursor()
 		cursor.execute("SELECT mosaic_id, position FROM symbol_transaction_mosaics WHERE role = 'restriction'")
 		self.assertEqual([(MOSAIC_ID, 0)], cursor.fetchall())
-		self.assertEqual(1, connector.paths.count(path))
+		self.assertEqual([path], _restriction_paths(connector))
 
 	def test_sync_block_headers_rejects_missing_mosaic_resolution_before_restriction_fetch(self):
 		# Arrange:
@@ -754,11 +716,13 @@ class PullerMosaicRestrictionsIntegrationTest(SymbolPullerTestBase):
 			entry_type=TransactionType.MOSAIC_GLOBAL_RESTRICTION.value, mosaic_id=ALIAS_MOSAIC_ID)
 		connector = self._create_alias_connector(transaction, '', None)
 
+		# Act + Assert:
 		self._assert_sync_failure_has_no_write_state(
 			connector, ValueError, f'Missing Symbol mosaic resolution.*{ALIAS_MOSAIC_ID}')
 
-	def test_sync_block_headers_rejects_inapplicable_mosaic_resolution_before_restriction_fetch(self):
-		# Arrange:
+	def test_sync_block_headers_rejects_mosaic_resolution_entry_after_transaction_source_before_restriction_fetch(self):
+		# Arrange: transaction source primaryId is 1, but the resolution entry primaryId is 2,
+		# so the entry cannot apply to this transaction.
 		transaction = self._restriction_transaction(
 			entry_type=TransactionType.MOSAIC_GLOBAL_RESTRICTION.value, mosaic_id=ALIAS_MOSAIC_ID)
 		connector = self._create_alias_connector(
@@ -768,6 +732,7 @@ class PullerMosaicRestrictionsIntegrationTest(SymbolPullerTestBase):
 			mosaic_resolutions={1: [create_resolution_statement(
 				1, ALIAS_MOSAIC_ID, [_resolution_entry(2, 0, MOSAIC_ID)])]})
 
+		# Act + Assert:
 		self._assert_sync_failure_has_no_write_state(
 			connector, ValueError, f'Missing Symbol mosaic resolution entry.*{ALIAS_MOSAIC_ID}')
 
@@ -776,11 +741,13 @@ class PullerMosaicRestrictionsIntegrationTest(SymbolPullerTestBase):
 		transaction = self._restriction_transaction(mosaic_id=MOSAIC_ID, target_address=ALIAS_ADDRESS)
 		connector = self._create_alias_connector(transaction, '', None)
 
+		# Act + Assert:
 		self._assert_sync_failure_has_no_write_state(
 			connector, ValueError, f'Missing Symbol address resolution.*{ALIAS_ADDRESS}')
 
-	def test_sync_block_headers_rejects_inapplicable_address_resolution_before_restriction_fetch(self):
-		# Arrange:
+	def test_sync_block_headers_rejects_address_resolution_entry_after_transaction_source_before_restriction_fetch(self):
+		# Arrange: transaction source primaryId is 1, but the resolution entry primaryId is 2,
+		# so the entry cannot apply to this transaction.
 		transaction = self._restriction_transaction(mosaic_id=MOSAIC_ID, target_address=ALIAS_ADDRESS)
 		connector = self._create_alias_connector(
 			transaction,
@@ -789,6 +756,7 @@ class PullerMosaicRestrictionsIntegrationTest(SymbolPullerTestBase):
 			address_resolutions={1: [create_resolution_statement(
 				1, ALIAS_ADDRESS, [_resolution_entry(2, 0, RECIPIENT_ADDRESS)])]})
 
+		# Act + Assert:
 		self._assert_sync_failure_has_no_write_state(
 			connector, ValueError, f'Missing Symbol address resolution entry.*{ALIAS_ADDRESS}')
 
@@ -826,7 +794,7 @@ class PullerMosaicRestrictionsIntegrationTest(SymbolPullerTestBase):
 				target_address=None,
 				mosaic_rows=[{'mosaic_id': MOSAIC_ID, 'amount': 0, 'role': 'restriction', 'position': 0}]
 			)])
-		response_path = self._restriction_path(1)
+		response_path = _restriction_path(1)
 		connector = RestrictionResponseConnector(
 			3,
 			{1: [create_node_block(2), create_node_block(3)]},
@@ -849,7 +817,7 @@ class PullerMosaicRestrictionsIntegrationTest(SymbolPullerTestBase):
 			(bytes(composite_hash), updated_at_height)
 			for composite_hash, updated_at_height in cursor.fetchall()
 		])
-		self.assertEqual(1, connector.paths.count(response_path))
+		self.assertEqual([response_path], _restriction_paths(connector))
 
 	def test_rollback_refreshes_restriction_from_current_row_without_transaction_source(self):
 		# Arrange:
@@ -864,7 +832,7 @@ class PullerMosaicRestrictionsIntegrationTest(SymbolPullerTestBase):
 		self.assertEqual([(bytes.fromhex('CC' * 32), 1)], [
 			(bytes(composite_hash), updated_at_height) for composite_hash, updated_at_height in cursor.fetchall()
 		])
-		self.assertEqual(1, connector.paths.count(response_path))
+		self.assertEqual([response_path], _restriction_paths(connector))
 
 	def test_rollback_deduplicates_current_and_transaction_restriction_sources(self):
 		# Arrange:
@@ -874,7 +842,7 @@ class PullerMosaicRestrictionsIntegrationTest(SymbolPullerTestBase):
 		self._sync_with_connector(connector)
 
 		# Assert:
-		self.assertEqual(1, connector.paths.count(response_path))
+		self.assertEqual([response_path], _restriction_paths(connector))
 
 	def test_rollback_replaces_only_affected_restriction_and_preserves_sibling(self):
 		# Arrange:
@@ -893,7 +861,7 @@ class PullerMosaicRestrictionsIntegrationTest(SymbolPullerTestBase):
 			(entry_type, bytes(target_address)) for entry_type, target_address in cursor.fetchall()
 		])
 
-	def _seed_backend6_and_lock_state(self):
+	def _seed_existing_current_state(self):
 		database = self.puller.symbol_db
 		account_row, account_mosaic_rows = create_account_row(
 			create_account_item(SIGNER_ADDRESS), self.puller.symbol_facade.network, 1, MOSAIC_ID, 6)
@@ -926,58 +894,17 @@ class PullerMosaicRestrictionsIntegrationTest(SymbolPullerTestBase):
 			bytes.fromhex(SIGNER_ADDRESS), bytes.fromhex(RECIPIENT_ADDRESS), bytes.fromhex('CC' * 32), 'hash160')
 		database.replace_secret_locks(secret_key, [create_secret_lock_row(secret_item, 1)])
 
-	def _fetch_table_state(self, table_names):
-		cursor = self.puller.symbol_db.connection.cursor()
-		state = {}
-		for table_name in table_names:
-			cursor.execute(
-				f'SELECT to_jsonb(table_row) FROM {table_name} AS table_row ORDER BY to_jsonb(table_row)::text')
-			state[table_name] = cursor.fetchall()
-		return state
-
-	def _fetch_backend6_state(self):
-		return self._fetch_table_state((
-			'symbol_accounts',
-			'symbol_account_mosaics',
-			'symbol_multisig',
-			'symbol_namespaces',
-			'symbol_alias_names',
-			'symbol_mosaics',
-			'symbol_metadata'))
-
-	def _fetch_lock_state(self):
-		return self._fetch_table_state(('symbol_hash_locks', 'symbol_secret_locks'))
-
-	def _fetch_restriction_state(self):
-		return self._fetch_table_state(('symbol_mosaic_restrictions',))
-
 	def test_rollback_restriction_fetch_failure_preserves_state_and_watermark(self):
 		# Arrange:
 		connector, response_path = self._seed_rollback_restriction_state(current_row=True, transaction_row=True)
-		self._seed_backend6_and_lock_state()
+		self._seed_existing_current_state()
 		connector.restriction_responses[response_path] = RuntimeError('rollback restriction fetch failed')
-		before_state = self.puller.symbol_db.get_sync_state()
-		before_restriction_state = self._fetch_restriction_state()
-		before_lock_state = self._fetch_lock_state()
-		before_backend6_state = self._fetch_backend6_state()
-		before_chain_state = self._fetch_table_state((
-			'symbol_blocks',
-			'symbol_transactions',
-			'symbol_transaction_mosaics',
-			'symbol_transaction_addresses'))
+		before_state = self._fetch_complete_batch_state()
 
 		# Act + Assert:
 		with self.assertRaisesRegex(RuntimeError, 'rollback restriction fetch failed'):
 			self._sync_with_connector(connector)
 
 		# Assert:
-		self.assertEqual(before_state, self.puller.symbol_db.get_sync_state())
 		self.assertEqual([1, 2, 3], self._fetch_block_heights(self.puller.symbol_db))
-		self.assertEqual(before_chain_state, self._fetch_table_state((
-			'symbol_blocks',
-			'symbol_transactions',
-			'symbol_transaction_mosaics',
-			'symbol_transaction_addresses')))
-		self.assertEqual(before_restriction_state, self._fetch_restriction_state())
-		self.assertEqual(before_lock_state, self._fetch_lock_state())
-		self.assertEqual(before_backend6_state, self._fetch_backend6_state())
+		self.assertEqual(before_state, self._fetch_complete_batch_state())

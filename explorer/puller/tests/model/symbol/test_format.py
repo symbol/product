@@ -10,6 +10,7 @@ from puller.model.symbol.format import (
 	decoded_address_bytes_from_hex,
 	hash_bytes_from_hex,
 	int_or_none,
+	is_exact_integer,
 	is_hex_text,
 	label_for_type,
 	str_or_none,
@@ -64,6 +65,12 @@ class SymbolFormatTest(TestCase):
 
 		# Assert:
 		self.assertFalse(result)
+
+	def test_is_exact_integer_accepts_only_non_boolean_integers(self):
+		for value, expected in ((0, True), (-1, True), (True, False), (False, False), ('1', False), (1.0, False)):
+			with self.subTest(value=value):
+				# Act + Assert:
+				self.assertEqual(expected, is_exact_integer(value))
 
 	def test_can_camel_case_multi_word_enum_name(self):
 		# Act + Assert:

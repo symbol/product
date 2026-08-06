@@ -2,11 +2,13 @@
 
 import asyncio
 
+from puller.model.symbol.format import is_exact_integer
+
 
 async def gather_in_chunks(items, chunk_size, fetch_item):
 	"""Fetch an explicitly ordered sequence in bounded asynchronous chunks."""
 
-	if not isinstance(chunk_size, int) or isinstance(chunk_size, bool) or chunk_size <= 0:
+	if not is_exact_integer(chunk_size) or chunk_size <= 0:
 		raise ValueError('chunk_size must be a positive integer')
 
 	results = []

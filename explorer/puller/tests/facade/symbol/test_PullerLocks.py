@@ -213,34 +213,6 @@ class SymbolPullerLocksTest(SymbolPullerTestBase):
 			last_synced_height=0,
 			last_synced_block_hash=b''))
 
-	def _fetch_complete_batch_state(self):
-		table_names = (
-			'symbol_blocks',
-			'symbol_transactions',
-			'symbol_transaction_mosaics',
-			'symbol_transaction_addresses',
-			'symbol_receipts',
-			'symbol_accounts',
-			'symbol_account_mosaics',
-			'symbol_multisig',
-			'symbol_namespaces',
-			'symbol_alias_names',
-			'symbol_mosaics',
-			'symbol_metadata',
-			'symbol_hash_locks',
-			'symbol_secret_locks',
-			'symbol_sync_state'
-		)
-		cursor = self.puller.symbol_db.connection.cursor()
-		state = {}
-		for table_name in table_names:
-			cursor.execute(
-				f'SELECT to_jsonb(table_row) FROM {table_name} AS table_row '
-				'ORDER BY to_jsonb(table_row)::text')
-			state[table_name] = cursor.fetchall()
-
-		return state
-
 	def _seed_rollback_batch_state(self):
 		self._seed_blocks(self.puller.symbol_db, [1, 2], {2: b'local mismatch'.hex()})
 		self.puller.symbol_db.upsert_sync_state(create_sync_state(

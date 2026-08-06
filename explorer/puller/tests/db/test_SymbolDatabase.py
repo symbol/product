@@ -5373,7 +5373,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		# Assert:
 		self.assertEqual([first_key, second_key, third_key, fourth_key], keys)
 
-	def test_confirmed_mosaic_restriction_keys_use_resolved_position_zero_and_height_id_order(self):
+	def test_confirmed_mosaic_restriction_keys_use_primary_restriction_mosaic_relation_and_height_id_order(self):
 		# Arrange:
 		database = self._create_database()
 		database.upsert_blocks([_create_block(4), _create_block(5), _create_block(6)])
@@ -5446,13 +5446,14 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			SymbolDatabase._mosaic_restriction_key_from_confirmed_transaction_rows(  # pylint: disable=protected-access
 				rows)
 
-	def test_confirmed_global_mosaic_restriction_query_rejects_missing_position_zero_mosaic(self):
-		# Arrange:
+	def test_get_confirmed_mosaic_restriction_keys_since_rejects_persisted_global_transaction_without_primary_mosaic_relation(self):
+		# Arrange: the persisted transaction is the rollback key source. A restriction transaction
+		# requires a primary mosaic relation, so its absence is corrupt persisted data and must be
+		# rejected.
 		database = self._create_database()
 		database.upsert_blocks([_create_block(5)])
 		database.upsert_transactions_for_height(5, [create_transaction_entry(
 			5,
-			key='missing-global-mosaic',
 			type=TransactionType.MOSAIC_GLOBAL_RESTRICTION.value,
 			target_address=None,
 			mosaic_rows=[])])
@@ -5466,13 +5467,12 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			f'Invalid confirmed Symbol global Mosaic Restriction transaction at height 5, id {transaction_id}'):
 			database.get_confirmed_mosaic_restriction_keys_since(5)
 
-	def test_confirmed_address_mosaic_restriction_query_rejects_missing_target_address(self):
+	def test_get_confirmed_mosaic_restriction_keys_since_rejects_persisted_address_transaction_without_target_address(self):
 		# Arrange:
 		database = self._create_database()
 		database.upsert_blocks([_create_block(5)])
 		database.upsert_transactions_for_height(5, [create_transaction_entry(
 			5,
-			key='missing-address-target',
 			type=TransactionType.MOSAIC_ADDRESS_RESTRICTION.value,
 			target_address=None,
 			mosaic_rows=[{
@@ -5491,7 +5491,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			f'Invalid confirmed Symbol address Mosaic Restriction target at height 5, id {transaction_id}'):
 			database.get_confirmed_mosaic_restriction_keys_since(5)
 
-	def test_confirmed_mosaic_restriction_query_groups_rows_for_one_transaction(self):
+	def test_get_confirmed_mosaic_restriction_keys_since_rejects_global_transaction_with_multiple_primary_mosaic_relations(self):
 		# Arrange:
 		database = self._create_database()
 		database.upsert_blocks([_create_block(5)])
@@ -5528,12 +5528,17 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			for composite_hash, updated_at_height in cursor.fetchall()
 		])
 
-	def test_rollback_refresh_entries_supports_zero_argument_immutable_defaults(self):
+	def test_rollback_refresh_entries_supports_zero_argument_defaults(self):
 		# Arrange / Act:
 		entries = RollbackRefreshEntries()
 
 		# Assert:
+		self.assertEqual((
+			'namespace_entries',
+			'mosaic_entries',
+			'metadata_entries',
+			'hash_lock_entries',
+			'secret_lock_entries',
+			'mosaic_restriction_entries'), entries._fields)
 		self.assertEqual(((), (), (), (), (), ()), entries)
 		self.assertEqual((), entries.mosaic_restriction_entries)
-		with self.assertRaises(AttributeError):
-			entries.mosaic_restriction_entries = ()

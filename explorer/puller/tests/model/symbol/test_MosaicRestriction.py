@@ -4,12 +4,11 @@ from symbolchain.sc import MosaicRestrictionType
 
 from puller.model.symbol.MosaicRestriction import (
 	MosaicRestrictionEntryType,
-	MosaicRestrictionKey,
 	create_mosaic_restriction_key,
 	create_mosaic_restriction_row,
-	mosaic_restriction_entry_type_from_node,
+	mosaic_restriction_entry_type_from_enum_value,
 	mosaic_restriction_entry_type_label,
-	mosaic_restriction_entry_type_to_node
+	mosaic_restriction_entry_type_to_enum_value
 )
 from tests.test.SymbolTestConstants import RECIPIENT_ADDRESS
 
@@ -57,7 +56,7 @@ class MosaicRestrictionModelTest(TestCase):  # pylint: disable=too-many-public-m
 
 		# Act / Assert:
 		with self.assertRaises(ValueError):
-			mosaic_restriction_entry_type_from_node(invalid_entry_type)
+			mosaic_restriction_entry_type_from_enum_value(invalid_entry_type)
 
 	def _assert_key_rejects(self, entry_type, mosaic_id, target_address):
 		# Arrange:
@@ -87,42 +86,42 @@ class MosaicRestrictionModelTest(TestCase):  # pylint: disable=too-many-public-m
 		# Assert:
 		self.assertEqual(expected, actual)
 
-	def test_node_zero_maps_to_address(self):
+	def test_enum_zero_maps_to_address(self):
 		# Arrange:
 		expected = MosaicRestrictionEntryType.ADDRESS
 
 		# Act:
-		actual = mosaic_restriction_entry_type_from_node(0)
+		actual = mosaic_restriction_entry_type_from_enum_value(0)
 
 		# Assert:
 		self.assertEqual(expected, actual)
 
-	def test_node_one_maps_to_global(self):
+	def test_enum_one_maps_to_global(self):
 		# Arrange:
 		expected = MosaicRestrictionEntryType.GLOBAL
 
 		# Act:
-		actual = mosaic_restriction_entry_type_from_node(1)
+		actual = mosaic_restriction_entry_type_from_enum_value(1)
 
 		# Assert:
 		self.assertEqual(expected, actual)
 
-	def test_address_maps_to_node_zero(self):
+	def test_address_maps_to_enum_zero(self):
 		# Arrange:
 		expected = 0
 
 		# Act:
-		actual = mosaic_restriction_entry_type_to_node(MosaicRestrictionEntryType.ADDRESS)
+		actual = mosaic_restriction_entry_type_to_enum_value(MosaicRestrictionEntryType.ADDRESS)
 
 		# Assert:
 		self.assertEqual(expected, actual)
 
-	def test_global_maps_to_node_one(self):
+	def test_global_maps_to_enum_one(self):
 		# Arrange:
 		expected = 1
 
 		# Act:
-		actual = mosaic_restriction_entry_type_to_node(MosaicRestrictionEntryType.GLOBAL)
+		actual = mosaic_restriction_entry_type_to_enum_value(MosaicRestrictionEntryType.GLOBAL)
 
 		# Assert:
 		self.assertEqual(expected, actual)
@@ -147,11 +146,10 @@ class MosaicRestrictionModelTest(TestCase):  # pylint: disable=too-many-public-m
 		# Assert:
 		self.assertEqual(expected, actual)
 
-	def test_entry_type_rejects_true(self):
-		self._assert_entry_type_rejects(True)
-
-	def test_entry_type_rejects_false(self):
-		self._assert_entry_type_rejects(False)
+	def test_entry_type_rejects_booleans(self):
+		for value in (True, False):
+			with self.subTest(value=value):
+				self._assert_entry_type_rejects(value)
 
 	def test_entry_type_rejects_numeric_string(self):
 		self._assert_entry_type_rejects('0')
@@ -159,13 +157,13 @@ class MosaicRestrictionModelTest(TestCase):  # pylint: disable=too-many-public-m
 	def test_entry_type_rejects_unknown_integer(self):
 		self._assert_entry_type_rejects(2)
 
-	def test_entry_type_to_node_rejects_invalid_local_value(self):
+	def test_entry_type_to_enum_value_rejects_invalid_local_value(self):
 		# Arrange:
 		invalid_value = 'address'
 
 		# Act / Assert:
 		with self.assertRaises(ValueError):
-			mosaic_restriction_entry_type_to_node(invalid_value)
+			mosaic_restriction_entry_type_to_enum_value(invalid_value)
 
 	def test_entry_type_label_rejects_invalid_local_value(self):
 		# Arrange:
@@ -178,7 +176,7 @@ class MosaicRestrictionModelTest(TestCase):  # pylint: disable=too-many-public-m
 	def test_key_rejects_invalid_entry_type(self):
 		self._assert_key_rejects('address', '72C0212E67A08BCE', None)
 
-	def test_key_rejects_invalid_mosaic_id(self):
+	def test_global_key_rejects_invalid_mosaic_id(self):
 		self._assert_key_rejects(MosaicRestrictionEntryType.GLOBAL, 'not-a-mosaic-id', None)
 
 	def test_global_key_rejects_non_null_target(self):
@@ -196,10 +194,8 @@ class MosaicRestrictionModelTest(TestCase):  # pylint: disable=too-many-public-m
 			'72C0212E67A08BCE',
 			bytes([1]) + bytes(23))
 
-	def test_key_rejects_alias_mosaic_id(self):
-		# Act + Assert:
-		with self.assertRaises(ValueError):
-			create_mosaic_restriction_key(MosaicRestrictionEntryType.GLOBAL, 'E74B99BA41F4AFEE', None)
+	def test_global_key_rejects_alias_mosaic_id(self):
+		self._assert_key_rejects(MosaicRestrictionEntryType.GLOBAL, 'E74B99BA41F4AFEE', None)
 
 	def test_address_row_preserves_every_persisted_field(self):
 		# Arrange:
@@ -302,16 +298,14 @@ class MosaicRestrictionModelTest(TestCase):  # pylint: disable=too-many-public-m
 			create_mosaic_restriction_row(item, 1)
 
 	def test_model_rejects_boolean_version(self):
-		self._assert_model_rejects(create_restriction_item(version=True))
+		for value in (True, False):
+			with self.subTest(value=value):
+				self._assert_model_rejects(create_restriction_item(version=value))
 
-	def test_model_rejects_false_version(self):
-		self._assert_model_rejects(create_restriction_item(version=False))
-
-	def test_model_rejects_true_entry_type(self):
-		self._assert_model_rejects(create_restriction_item(entryType=True))
-
-	def test_model_rejects_false_entry_type(self):
-		self._assert_model_rejects(create_restriction_item(entryType=False))
+	def test_model_rejects_boolean_entry_type(self):
+		for value in (True, False):
+			with self.subTest(value=value):
+				self._assert_model_rejects(create_restriction_item(entryType=value))
 
 	def test_model_rejects_numeric_string_entry_type(self):
 		self._assert_model_rejects(create_restriction_item(entryType='0'))
@@ -534,15 +528,12 @@ class MosaicRestrictionModelTest(TestCase):  # pylint: disable=too-many-public-m
 				'restrictionType': 1
 			}}]))
 
-	def test_model_rejects_true_global_restriction_type(self):
-		item = create_restriction_item(1)
-		item['mosaicRestrictionEntry']['restrictions'][0]['restriction']['restrictionType'] = True
-		self._assert_model_rejects(item)
-
-	def test_model_rejects_false_global_restriction_type(self):
-		item = create_restriction_item(1)
-		item['mosaicRestrictionEntry']['restrictions'][0]['restriction']['restrictionType'] = False
-		self._assert_model_rejects(item)
+	def test_model_rejects_boolean_global_restriction_type(self):
+		for value in (True, False):
+			with self.subTest(value=value):
+				item = create_restriction_item(1)
+				item['mosaicRestrictionEntry']['restrictions'][0]['restriction']['restrictionType'] = value
+				self._assert_model_rejects(item)
 
 	def test_model_rejects_global_restriction_type_deletion_marker(self):
 		# Arrange:
@@ -582,10 +573,3 @@ class MosaicRestrictionModelTest(TestCase):  # pylint: disable=too-many-public-m
 		item = create_restriction_item(1)
 		item['mosaicRestrictionEntry']['restrictions'][0]['restriction']['restrictionType'] = 999
 		self._assert_model_rejects(item)
-
-	def test_key_shape_is_domain_values(self):
-		# Act:
-		key = MosaicRestrictionKey(MosaicRestrictionEntryType.GLOBAL, '72C0212E67A08BCE', None)
-
-		# Assert:
-		self.assertEqual(MosaicRestrictionEntryType.GLOBAL, key.entry_type)

@@ -7,9 +7,10 @@ from symbolchain.sc import MosaicRestrictionType, TransactionType
 from symbolchain.symbol.IdGenerator import is_mosaic_alias
 from symbolchain.symbol.Network import Address
 
-from puller.model.symbol.format import decoded_address_bytes_from_hex, hash_bytes_from_hex, is_hex_text
+from puller.model.symbol.format import decoded_address_bytes_from_hex, hash_bytes_from_hex, is_exact_integer, is_hex_text
 
-MOSAIC_ADDRESS_RESTRICTION_REMOVAL_SENTINEL = '18446744073709551615'
+UINT64_MAX_DECIMAL = '18446744073709551615'
+MOSAIC_ADDRESS_RESTRICTION_REMOVAL_SENTINEL = UINT64_MAX_DECIMAL
 
 
 class MosaicRestrictionEntryType(Enum):
@@ -23,30 +24,30 @@ MosaicRestrictionKey = namedtuple(
 	'MosaicRestrictionKey',
 	['entry_type', 'mosaic_id', 'target_address'])
 
-_ENTRY_TYPE_BY_NODE_VALUE = {0: MosaicRestrictionEntryType.ADDRESS, 1: MosaicRestrictionEntryType.GLOBAL}
-_NODE_VALUE_BY_ENTRY_TYPE = {entry_type: node_value for node_value, entry_type in _ENTRY_TYPE_BY_NODE_VALUE.items()}
+_ENTRY_TYPE_BY_ENUM_VALUE = {0: MosaicRestrictionEntryType.ADDRESS, 1: MosaicRestrictionEntryType.GLOBAL}
+_ENUM_VALUE_BY_ENTRY_TYPE = {entry_type: enum_value for enum_value, entry_type in _ENTRY_TYPE_BY_ENUM_VALUE.items()}
 MOSAIC_RESTRICTION_ENTRY_TYPE_BY_TRANSACTION_TYPE = {
 	TransactionType.MOSAIC_ADDRESS_RESTRICTION.value: MosaicRestrictionEntryType.ADDRESS,
 	TransactionType.MOSAIC_GLOBAL_RESTRICTION.value: MosaicRestrictionEntryType.GLOBAL
 }
 
 
-def mosaic_restriction_entry_type_from_node(value):  # pylint: disable=invalid-name
-	"""Map the strict Symbol node entryType integer to the local enum."""
+def mosaic_restriction_entry_type_from_enum_value(value):  # pylint: disable=invalid-name
+	"""Map the strict Symbol entryType enum value to the local enum."""
 
-	if not isinstance(value, int) or isinstance(value, bool) or value not in _ENTRY_TYPE_BY_NODE_VALUE:
+	if not is_exact_integer(value) or value not in _ENTRY_TYPE_BY_ENUM_VALUE:
 		raise ValueError(f'Unsupported Symbol mosaic restriction entry type {value}')
 
-	return _ENTRY_TYPE_BY_NODE_VALUE[value]
+	return _ENTRY_TYPE_BY_ENUM_VALUE[value]
 
 
-def mosaic_restriction_entry_type_to_node(entry_type):  # pylint: disable=invalid-name
-	"""Map the local enum to the strict Symbol node entryType integer."""
+def mosaic_restriction_entry_type_to_enum_value(entry_type):  # pylint: disable=invalid-name
+	"""Map the local enum to the strict Symbol entryType enum value."""
 
 	if not isinstance(entry_type, MosaicRestrictionEntryType):
 		raise ValueError(f'Unsupported Symbol mosaic restriction entry type {entry_type}')
 
-	return _NODE_VALUE_BY_ENTRY_TYPE[entry_type]
+	return _ENUM_VALUE_BY_ENTRY_TYPE[entry_type]
 
 
 def mosaic_restriction_entry_type_label(entry_type):
@@ -100,9 +101,9 @@ def create_mosaic_restriction_row(item, observed_height):
 	entry = item['mosaicRestrictionEntry']
 	composite_hash = hash_bytes_from_hex(entry, 'compositeHash', 'Symbol mosaic restriction')
 	version = entry.get('version')
-	if not isinstance(version, int) or isinstance(version, bool):
+	if not is_exact_integer(version):
 		raise ValueError('Invalid Symbol mosaic restriction version')
-	entry_type = mosaic_restriction_entry_type_from_node(entry.get('entryType'))
+	entry_type = mosaic_restriction_entry_type_from_enum_value(entry.get('entryType'))
 	mosaic_id = entry.get('mosaicId')
 	target_address = _target_address(entry, entry_type)
 	key = _create_mosaic_restriction_key(
@@ -168,7 +169,7 @@ def _validate_restriction(restriction, entry_type):
 
 
 def _validate_global_restriction_type(restriction_type):
-	if not isinstance(restriction_type, int) or isinstance(restriction_type, bool):
+	if not is_exact_integer(restriction_type):
 		raise ValueError('Invalid Symbol global mosaic restriction restrictionType')
 	try:
 		validated_restriction_type = MosaicRestrictionType(restriction_type)
@@ -186,4 +187,4 @@ def _is_decimal_u64(value):
 		return False
 	normalized = value.lstrip('0') or '0'
 	return len(normalized) < 20 or (
-		len(normalized) == 20 and normalized <= '18446744073709551615')
+		len(normalized) == 20 and normalized <= UINT64_MAX_DECIMAL)

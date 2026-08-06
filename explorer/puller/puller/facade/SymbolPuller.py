@@ -20,6 +20,7 @@ from puller.facade.async_utils import gather_in_chunks
 from puller.facade.RequestRateLimiter import RequestRateLimiter
 from puller.model.symbol.Account import HARVESTING_ACTIVE_WINDOW_DAYS, create_account_row, create_multisig_row
 from puller.model.symbol.Block import create_block_row
+from puller.model.symbol.format import is_exact_integer
 from puller.model.symbol.Lock import (
 	RollbackLockKeys,
 	create_hash_lock_key,
@@ -43,7 +44,7 @@ from puller.model.symbol.MosaicRestriction import (
 	MosaicRestrictionKey,
 	create_mosaic_restriction_key,
 	create_mosaic_restriction_row,
-	mosaic_restriction_entry_type_to_node
+	mosaic_restriction_entry_type_to_enum_value
 )
 from puller.model.symbol.Namespace import create_alias_name_rows, create_namespace_row
 from puller.model.symbol.Receipt import (
@@ -95,10 +96,6 @@ def _raise_if_node_error(response, allow_not_found=False):
 
 def _is_not_found_response(response):
 	return isinstance(response, dict) and 'ResourceNotFound' == response.get('code')
-
-
-def _is_exact_json_integer(value):
-	return isinstance(value, int) and not isinstance(value, bool)
 
 
 class SymbolPuller:
@@ -1132,7 +1129,7 @@ class SymbolPuller:
 		"""Fetches exact Mosaic Restriction state in bounded concurrent batches."""
 
 		async def fetch_entry(restriction_key):
-			entry_type = mosaic_restriction_entry_type_to_node(restriction_key.entry_type)
+			entry_type = mosaic_restriction_entry_type_to_enum_value(restriction_key.entry_type)
 			path = (
 				f'/restrictions/mosaic?mosaicId={restriction_key.mosaic_id}'
 				f'&entryType={entry_type}&pageSize={MAX_PAGE_SIZE}&pageNumber=1'
@@ -1144,11 +1141,11 @@ class SymbolPuller:
 			if not isinstance(response, dict) or not isinstance(response.get('pagination'), dict):
 				raise ValueError('Malformed Symbol Mosaic Restriction search response')
 			pagination = response['pagination']
-			# Empty data is a deletion only after the node proves this was the exact first page requested;
-			# accepting a wrong page would turn a malformed response into a destructive stale-row delete.
+			# A page-one request does not guarantee matching node pagination metadata. Treating an
+			# incorrectly paged empty result as a deletion would destructively remove current state.
 			page_number = pagination.get('pageNumber')
 			page_size = pagination.get('pageSize')
-			if not _is_exact_json_integer(page_number) or page_number != 1 or not _is_exact_json_integer(page_size) or page_size != MAX_PAGE_SIZE:
+			if not is_exact_integer(page_number) or page_number != 1 or not is_exact_integer(page_size) or page_size != MAX_PAGE_SIZE:
 				raise ValueError('Invalid Symbol Mosaic Restriction search pagination')
 			items = response.get('data')
 			if not isinstance(items, list):

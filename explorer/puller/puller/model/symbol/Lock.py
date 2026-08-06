@@ -6,7 +6,7 @@ from symbolchain.CryptoTypes import Hash256
 from symbolchain.sc import LockHashAlgorithm
 from symbolchain.symbol.Network import Address
 
-from puller.model.symbol.format import decoded_address_bytes_from_hex, hash_bytes_from_hex, label_for_type
+from puller.model.symbol.format import decoded_address_bytes_from_hex, hash_bytes_from_hex, is_exact_integer, label_for_type
 
 LOCK_STATUS_LABELS = {0: 'unused', 1: 'used'}
 LOCK_HASH_ALGORITHM_LABELS = {
@@ -25,7 +25,7 @@ RollbackLockKeys = namedtuple('RollbackLockKeys', ['hash_keys', 'secret_keys'], 
 def lock_status_label(status):
 	"""Maps a Symbol Lock status number to its canonical database label."""
 
-	if not isinstance(status, int) or isinstance(status, bool):
+	if not is_exact_integer(status):
 		raise ValueError(f'Unsupported Symbol lock status type {status}')
 
 	return label_for_type(LOCK_STATUS_LABELS, status, 'lock status')
@@ -34,7 +34,7 @@ def lock_status_label(status):
 def lock_hash_algorithm_label(hash_algorithm):
 	"""Maps a Symbol Lock hash algorithm number to its canonical database label."""
 
-	if not isinstance(hash_algorithm, int) or isinstance(hash_algorithm, bool):
+	if not is_exact_integer(hash_algorithm):
 		raise ValueError(f'Unsupported Symbol lock hash algorithm type {hash_algorithm}')
 
 	return label_for_type(LOCK_HASH_ALGORITHM_LABELS, hash_algorithm, 'lock hash algorithm')
@@ -124,7 +124,7 @@ def _mosaic_id(lock, lock_type):
 
 def _integer(lock, field_name, lock_type):
 	value = lock.get(field_name)
-	if isinstance(value, int) and not isinstance(value, bool) and 0 <= value:
+	if is_exact_integer(value) and 0 <= value:
 		return value
 	if isinstance(value, str) and value.isascii() and value.isdecimal():
 		return int(value)
