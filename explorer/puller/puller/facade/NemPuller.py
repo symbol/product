@@ -293,7 +293,6 @@ class NemPuller:
 		account_creation_heights = self.nem_db.get_account_creation_heights(affected_accounts)
 		self._validate_account_creation_heights(affected_accounts, account_creation_heights)
 
-
 		for address, height in account_creation_heights.items():
 			if height > fork_height:
 				orphan_created_accounts.add(address)
