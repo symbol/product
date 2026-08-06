@@ -254,7 +254,7 @@ class NemPuller:
 				f'Missing creation heights for {len(missing_accounts)} affected NEM account(s)'
 			)
 
-	def capture_rollback_impact(self, fork_height):
+	def capture_rollback_impact(self, fork_height):  # pylint: disable=too-many-locals
 		"""Captures the complete local impact of blocks above a confirmed fork height."""
 
 		if fork_height < 1:
