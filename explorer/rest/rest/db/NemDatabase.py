@@ -865,12 +865,11 @@ class NemDatabase(DatabaseConnectionPool):
 		return (
 			' OR ('
 			f' t.transaction_type = {TransactionType.MULTISIG.value}'
-			' AND EXISTS ('
-			' SELECT 1 FROM transactions it'
+			' AND t.inner_hash = ANY(ARRAY('
+			' SELECT it.transaction_hash FROM transactions it'
 			' WHERE it.is_inner = true'
-			" AND it.transaction_hash = decode(t.payload->>'inner_hash', 'hex')"
 			f' AND {address_condition}'
-			' )'
+			'))'
 			' )'
 		)
 
@@ -878,7 +877,7 @@ class NemDatabase(DatabaseConnectionPool):
 		"""Gets transactions pagination."""
 
 		where_condition = ' WHERE t.is_inner = False '
-		order_condition = f' ORDER BY t.height {sort}'
+		order_condition = f' ORDER BY t.height {sort}, t.id {sort}'
 		limit_condition = ' LIMIT %s OFFSET %s'
 
 		filter_params = []

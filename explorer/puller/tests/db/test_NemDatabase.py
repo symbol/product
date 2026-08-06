@@ -95,7 +95,7 @@ TRANSACTIONS = [
 		is_inner=False,
 		sender_address=Address('TCJLCZSOQ6RGWHTPSV2DW467WZSHK4NBSITND4OF'),
 		recipient_address=Address('TBZWVEKB2XMTO4F3RAOEIBWRBMPQ5N23G56ZJM4I'),
-		payload='{}',
+		payload={'message': None},
 		size=184,
 		version=1
 	)
@@ -1074,7 +1074,7 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 			datetime.datetime(2015, 3, 29, 20, 34, 19),
 			TRANSACTIONS[0].signature,
 			False,
-			'{}',
+			{'message': None},
 			184,
 			1
 		))

@@ -909,12 +909,23 @@ TRANSACTION_NAMES_SORTED_BY_HEIGHT_ASC = (
 	'mosaic_supply_change'
 )
 
-TRANSACTION_NAMES_FILTERED_BY_MULTISIG_INNER_SENDER = (
-	'multisig',
-	'mosaic_definition',
+TRANSACTION_NAMES_SORTED_BY_HEIGHT_DESC = (
 	'mosaic_supply_change',
-	'multisig_account_modification',
+	'mosaic_definition',
 	'namespace_registration',
+	'multisig',
+	'multisig_account_modification',
+	'account_key_link',
+	'transfer_v2',
+	'transfer'
+)
+
+TRANSACTION_NAMES_FILTERED_BY_MULTISIG_INNER_SENDER = (
+	'mosaic_supply_change',
+	'mosaic_definition',
+	'namespace_registration',
+	'multisig',
+	'multisig_account_modification',
 	'transfer_v2',
 	'transfer'
 )
@@ -1053,7 +1064,8 @@ def initialize_database(db_config, network_name):
 				is_inner boolean NOT NULL,
 				payload jsonb,
 				size int NOT NULL,
-				version int NOT NULL
+				version int NOT NULL,
+				inner_hash bytea
 			)
 			'''
 		)
@@ -1216,9 +1228,10 @@ def initialize_database(db_config, network_name):
 					is_inner,
 					payload,
 					size,
-					version
+					version,
+					inner_hash
 				)
-				VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+				VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
 				''',
 				(
 					unhexlify(transaction.transaction_hash),
@@ -1234,7 +1247,8 @@ def initialize_database(db_config, network_name):
 					transaction.is_inner,
 					json.dumps(transaction.payload) if transaction.payload else None,
 					transaction.size,
-					transaction.version
+					transaction.version,
+					unhexlify(transaction.payload['inner_hash']) if (transaction.payload or {}).get('inner_hash') else None
 				)
 			)
 
