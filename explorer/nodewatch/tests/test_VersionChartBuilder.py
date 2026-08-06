@@ -1,5 +1,7 @@
 import json
+import struct
 import unittest
+from base64 import b64encode
 from collections import namedtuple
 
 from nodewatch.chart_utils import VersionCustomizations
@@ -48,13 +50,17 @@ class VersionChartBuilderTest(unittest.TestCase):
 		chart_bar_segment = next(chart_bar_segment for chart_bar_segment in chart_data if segment_name == chart_bar_segment['name'])
 		expected_color = {'0.0.3.3': '#008A00', '0.0.3.1': '#00B300', '0.0.3.0': '#00D600'}[segment_name]
 
+		def to_plotly_encoding_double(values):
+			buffer = bytes().join([struct.pack('d', value) for value in values])
+			return {'bdata': b64encode(buffer).decode('utf-8'), 'dtype': 'f8'}
+
 		self.assertEqual({
 			'color': expected_color,
 			'pattern': {'shape': ''}
 		}, chart_bar_segment['marker'])
 		self.assertEqual('bar', chart_bar_segment['type'])
 		self.assertEqual(expected['y'] if 'y' in expected else ['All', 'All Nodes', 'Ex All Nodes'], chart_bar_segment['y'])
-		self.assertEqual(expected['x'], chart_bar_segment['x'])
+		self.assertEqual(to_plotly_encoding_double(expected['x']), chart_bar_segment['x'])
 		self.assertEqual(expected['text'], chart_bar_segment['text'])
 
 	def _assert_threshold_line(self, annotation, expected_threshold):
