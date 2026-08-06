@@ -4,6 +4,7 @@
 /** @typedef {import('wallet-common-core').MarketModule} MarketModule */
 /** @typedef {import('wallet-common-symbol').HarvestingModule} HarvestingModule */
 /** @typedef {import('wallet-common-symbol').MultisigModule} SymbolMultisigModule */
+/** @typedef {import('wallet-common-symbol').TokenModule} TokenModule */
 /** @typedef {import('wallet-common-symbol').TransferModule} SymbolTransferModule */
 /** @typedef {import('wallet-common-ethereum').TransferModule} EthereumTransferModule */
 /** @typedef {import('wallet-common-symbol/src/types/Network').NetworkProperties} SymbolNetworkProperties */
@@ -19,6 +20,7 @@
  * @property {LocalizationModule} localization
  * @property {MarketModule} market
  * @property {SymbolMultisigModule} multisig
+ * @property {TokenModule} token
  * @property {SymbolTransferModule} transfer
  */
 

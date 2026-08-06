@@ -1,5 +1,6 @@
 import { $t } from '@/app/localization';
 import { FilterType } from '@/app/types/Filter';
+import { isTokenExpired } from '@/app/utils';
 
 /** @typedef {import('@/app/types/Network').ChainName} ChainName */
 /** @typedef {import('@/app/types/Wallet').WalletController} WalletController */
@@ -63,9 +64,7 @@ const filterAssets = (assets, filter, currentAccount, networkProperties) => {
 	if (filter.expired)
 		return filteredByCreated;
 
-	const filteredByExpired = filteredByCreated.filter(asset => asset.endHeight
-		? !asset.endHeight || asset.isUnlimitedDuration || asset.endHeight > networkProperties.chainHeight
-		: true);
+	const filteredByExpired = filteredByCreated.filter(asset => !isTokenExpired(asset, networkProperties.chainHeight));
 
 	return filteredByExpired;
 };

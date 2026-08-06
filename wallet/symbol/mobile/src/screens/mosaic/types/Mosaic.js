@@ -1,4 +1,5 @@
 /** @typedef {import('@/app/types/Network').ChainName} ChainName */
+/** @typedef {import('wallet-common-symbol/src/types/Mosaic').Mosaic} Mosaic */
 
 /**
  * Route parameters for the RevokeMosaic screen.
@@ -54,6 +55,14 @@
  * @property {string} integer - The thousand-grouped integer part.
  * @property {string} enteredFraction - The entered fractional digits, truncated to the divisibility.
  * @property {string} paddingFraction - The zero padding filling the remaining decimal capacity.
+ */
+
+/**
+ * A section of the created token list.
+ * @typedef {object} CreatedTokenSection
+ * @property {string} title - The section title, empty as the list shows a single untitled section.
+ * @property {string} group - The section group identifier.
+ * @property {Mosaic[]} data - The tokens in this section.
  */
 
 export {};

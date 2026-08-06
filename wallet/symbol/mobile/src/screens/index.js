@@ -46,6 +46,7 @@ export { Harvesting } from './harvesting/Harvesting';
 export { CreateMosaic } from './mosaic/CreateMosaic';
 export { ModifyMosaic } from './mosaic/ModifyMosaic';
 export { RevokeMosaic } from './mosaic/RevokeMosaic';
+export { CreatedTokenList } from './mosaic/CreatedTokenList';
 
 // Transport
 export { Scan } from './transport/Scan';

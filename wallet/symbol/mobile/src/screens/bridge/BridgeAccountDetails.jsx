@@ -9,13 +9,13 @@ import {
 	SendReceiveButtons,
 	Spacer,
 	Stack,
-	StyledText
+	StyledText,
+	TokenListItem
 } from '@/app/components';
 import { usePasscode, useToggle, useWalletController } from '@/app/hooks';
 import { PlatformUtils } from '@/app/lib/platform/PlatformUtils';
 import { $t } from '@/app/localization';
 import { Router } from '@/app/router/Router';
-import { TokenListItem } from '@/app/screens/assets/components';
 import { createAccountAddressQr, createExplorerAccountUrl } from '@/app/utils';
 import React, { useState } from 'react';
 

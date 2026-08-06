@@ -3,14 +3,6 @@
 /** @typedef {import('@/app/types/Token').Token} Token */
 
 /**
- * Token display information resolved from known tokens registry.
- * @typedef {object} ResolvedTokenData
- * @property {string} name - Display name with optional ticker suffix.
- * @property {string} [ticker] - Token ticker symbol.
- * @property {string} [imageId] - Token avatar image identifier.
- */
-
-/**
  * Token expiration status data.
  * @typedef {object} TokenExpirationDisplayData
  * @property {boolean} isTokenExpired - Whether the token has expired.
