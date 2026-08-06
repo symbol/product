@@ -265,6 +265,8 @@ class NemPuller:
 		affected_remote_link_accounts = set()
 		affected_namespace_roots = set()
 		affected_mosaic_names = set()
+		orphan_created_accounts = set()
+		surviving_affected_accounts = set()
 
 		orphan_records = self.nem_db.get_orphan_chain_records(fork_height)
 
@@ -291,16 +293,12 @@ class NemPuller:
 		account_creation_heights = self.nem_db.get_account_creation_heights(affected_accounts)
 		self._validate_account_creation_heights(affected_accounts, account_creation_heights)
 
-		orphan_created_accounts = {
-			address
-			for address, height in account_creation_heights.items()
-			if height > fork_height
-		}
-		surviving_affected_accounts = {
-			address
-			for address, height in account_creation_heights.items()
-			if height <= fork_height
-		}
+
+		for address, height in account_creation_heights.items():
+			if height > fork_height:
+				orphan_created_accounts.add(address)
+			else:
+				surviving_affected_accounts.add(address)
 
 		return NemRollbackImpact(
 			fork_height,
