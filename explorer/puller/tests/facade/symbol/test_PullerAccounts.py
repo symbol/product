@@ -27,6 +27,7 @@ from .puller_test_utils import (
 	create_node_block,
 	create_node_transaction,
 	create_resolution_statement,
+	create_sync_state,
 	set_symbol_connector,
 	statement_path,
 	transaction_path
@@ -829,6 +830,14 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):  # pylint: disable=too-man
 	def test_rollback_re_raises_database_error(self):
 		# Arrange:
 		database = self.exit_stack.enter_context(SymbolDatabase(self.db_config))
+		database.upsert_sync_state(create_sync_state(
+			chain_height=1,
+			finalized_height=0,
+			finalized_hash=b'finalized',
+			finalized_epoch=0,
+			finalized_point=0,
+			last_synced_height=0,
+			last_synced_block_hash=b'last'))
 		sync_state = self._create_rollback_sync_state(status='invalid')
 
 		# Act:
