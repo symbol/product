@@ -39,6 +39,7 @@ from puller.facade.NemPuller import (
 	NamespaceRecord,
 	NemPuller,
 	NemRollbackError,
+	RollbackPayloadAccounts,
 	TransactionRecord
 )
 
@@ -1788,6 +1789,10 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 			definition_levy_recipient,
 			transfer_levy_recipient
 		}
+		expected_account_creation_heights = {
+			address: orphan_height if recipient == address else fork_height
+			for address in expected_accounts
+		}
 
 		with self.puller.nem_db as database:
 			database.create_tables()
@@ -1828,13 +1833,10 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 				transfer_transaction_id,
 				Mosaic('levy.token', 1)
 			)
-			for address in expected_accounts:
+			for address, height in expected_account_creation_heights.items():
 				database.upsert_account(
 					cursor,
-					self._create_rollback_account(
-						address,
-						orphan_height if recipient == address else fork_height
-					)
+					self._create_rollback_account(address, height)
 				)
 			database.connection.commit()
 
@@ -1850,7 +1852,7 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 		self.assertEqual({sender}, capture.affected_remote_link_accounts)
 		self.assertEqual({'root'}, capture.affected_namespace_roots)
 		self.assertEqual({'root.token', 'root.supply'}, capture.affected_mosaic_names)
-		self.assertEqual(expected_accounts, set(capture.account_creation_heights))
+		self.assertEqual(expected_account_creation_heights, capture.account_creation_heights)
 
 	def test_rejects_invalid_fork_height_before_reading_database(self):
 		with patch.object(self.puller.nem_db, 'get_orphan_chain_records') as mock_get_orphan_chain_records:
