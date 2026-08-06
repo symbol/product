@@ -1644,6 +1644,45 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 			1
 		)
 
+	def test_extracts_multisig_account_and_all_signature_senders(self):
+		# Arrange:
+		multisig_account = Address('TAWUGAUSWSVB35T5QE44ICIK2WE3AUOTSGZBO5O4')
+		first_signature_sender = PublicKey(
+			'f94e8702eb1943b23570b1b83be1b81536df35538978820e98bfce8f999e2d37'
+		)
+		second_signature_sender = PublicKey(
+			'1fbdbdde28daf828245e4533765726f0b7790e0b7146e2ce205df3e86366980b'
+		)
+		transaction = self._create_rollback_transaction(
+			1,
+			TransactionType.MULTISIG.value,
+			11,
+			Address('TCJLCZSOQ6RGWHTPSV2DW467WZSHK4NBSITND4OF'),
+			payload={'signatures': [
+				{
+					'other_account': str(multisig_account),
+					'sender': str(first_signature_sender)
+				},
+				{
+					'other_account': str(multisig_account),
+					'sender': str(second_signature_sender)
+				}
+			]}
+		)
+
+		# Act:
+		accounts = self.puller._extract_affected_payload_accounts(  # pylint: disable=protected-access
+			transaction
+		)
+
+		# Assert:
+		expected_accounts = RollbackPayloadAccounts({
+			multisig_account,
+			Address('TANIBAXPVLBP37YXSGREVD77NXIFZML5FANIVEXX'),
+			Address('TADMEHCFJD45GPTDL4HZP2LJLZVAZRLYWY2K4OOH')
+		}, set())
+		self.assertEqual(expected_accounts, accounts)
+
 	def test_can_capture_all_data_affected_by_rollback(self):  # pylint: disable=too-many-locals
 		# Arrange:
 		fork_height = 10

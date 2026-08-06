@@ -210,8 +210,11 @@ class NemPuller:
 					self._convert_public_key_to_address(modification['cosignatory_account'])
 				)
 		elif TransactionType.MULTISIG.value == transaction.transaction_type:
-			for signature in transaction.payload['signatures']:
-				affected_accounts.add(Address(signature['other_account']))
+			signatures = transaction.payload['signatures']
+			if signatures:
+				affected_accounts.add(Address(signatures[0]['other_account']))
+
+			for signature in signatures:
 				affected_accounts.add(self._convert_public_key_to_address(signature['sender']))
 		elif TransactionType.MOSAIC_DEFINITION.value == transaction.transaction_type:
 			levy = transaction.payload['levy']
