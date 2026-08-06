@@ -170,9 +170,9 @@ const Header = ({ backendStatus }) => {
 	return (
 		<div className={styles.headerWrapper}>
 			<header className={styles.header}>
-				<div className={styles.headerLogo}>
+				<Link className={styles.headerLogo} href={createPageHref('home')}>
 					<Image src={createAssetURL('/images/logo.png')} fill alt="Logo" />
-				</div>
+				</Link>
 
 				<div className={styles.headerRightSection}>
 					<div className={styles.headerMenu}>{renderMenu()}</div>
