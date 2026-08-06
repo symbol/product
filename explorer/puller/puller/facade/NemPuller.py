@@ -311,6 +311,18 @@ class NemPuller:
 			affected_mosaic_names
 		)
 
+	async def prefetch_rollback_account_state(self, rollback_impact):
+		"""Fetches current node state for all affected accounts that survive a rollback."""
+
+		account_state = {}
+		for address in rollback_impact.surviving_affected_accounts:
+			account_state[address] = await self._fetch_account_record(
+				str(address),
+				rollback_impact.account_creation_heights[address]
+			)
+
+		return account_state
+
 	async def _retry_get_account_info(self, address, retries=3, delay=2):
 		"""Retries fetching account info with exponential backoff."""
 

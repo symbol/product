@@ -40,6 +40,7 @@ from puller.facade.NemPuller import (
 	NemPuller,
 	NemRollbackError,
 	RollbackPayloadAccounts,
+	NemRollbackImpact,
 	TransactionRecord
 )
 
@@ -1940,3 +1941,42 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 			expected_message = 'Missing creation heights for 2 affected NEM account'
 			with self.assertRaisesRegex(NemRollbackError, expected_message):
 				self.puller.capture_rollback_impact(fork_height)
+
+	def test_prefetches_current_state_for_surviving_affected_accounts(self):
+		# Arrange:
+		first_survivor = Address('TALICE6XEEEOBFJVY3ZCENZ7WBG6LB4KB7P7KMQX')
+		second_survivor = Address('TCJLCZSOQ6RGWHTPSV2DW467WZSHK4NBSITND4OF')
+		first_account_record = Mock()
+		second_account_record = Mock()
+		accounts_by_address = {
+			str(first_survivor): first_account_record,
+			str(second_survivor): second_account_record
+		}
+		self.puller._fetch_account_record = AsyncMock(  # pylint: disable=protected-access
+			side_effect=lambda address, _height: accounts_by_address[address]
+		)
+
+		rollback_impact = NemRollbackImpact(
+			fork_height=10,
+			affected_accounts={first_survivor, second_survivor},
+			account_creation_heights={first_survivor: 2, second_survivor: 5},
+			orphan_created_accounts={},
+			surviving_affected_accounts={first_survivor, second_survivor},
+			orphan_beneficiaries=set(),
+			affected_remote_link_accounts=set(),
+			affected_namespace_roots=set(),
+			affected_mosaic_names=set()
+		)
+
+		# Act:
+		account_state = asyncio.run(self.puller.prefetch_rollback_account_state(rollback_impact))
+
+		# Assert:
+		self.assertEqual({
+			first_survivor: first_account_record,
+			second_survivor: second_account_record
+		}, account_state)
+		self.assertCountEqual(
+			[(str(first_survivor), 2), (str(second_survivor), 5)],
+			[call.args for call in self.puller._fetch_account_record.await_args_list]  # pylint: disable=protected-access
+		)
