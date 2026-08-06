@@ -45,7 +45,6 @@ const AppComponent = ({ Component, pageProps, appConfig }) => {
 			router.push(router.asPath, null, { locale: userLanguage });
 	}, [userLanguage, router.locale]);
 
-
 	// Fetch backend status
 	const [backendStatus, setBackendStatus] = useState(null);
 	const fetchBackendStatus = async () => {
@@ -59,6 +58,7 @@ const AppComponent = ({ Component, pageProps, appConfig }) => {
 
 	return (
 		<div className={styles.wrapper}>
+			{/* Baseline configuration; `/runtime-config.js` overrides it with the container's runtime values. */}
 			<script dangerouslySetInnerHTML={{ __html: `window.appConfig = ${JSON.stringify(appConfig).replace(/</g, '\\u003c')};` }} />
 			<ConfigProvider>
 				<Header backendStatus={backendStatus} />

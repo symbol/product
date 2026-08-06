@@ -20,6 +20,9 @@ const variantAlias = `./variants/${VARIANT}`;
 module.exports = {
 	output: 'standalone',
 	reactStrictMode: true,
+	// `/api/*` on a deployed origin is proxied to the REST backend, so the runtime config script is
+	// exposed outside that namespace.
+	rewrites: async () => [{ source: '/runtime-config.js', destination: '/api/config' }],
 	experimental: {
 		scrollRestoration: true
 	},
