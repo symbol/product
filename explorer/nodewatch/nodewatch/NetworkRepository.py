@@ -174,7 +174,7 @@ class NetworkRepository:
 		log.info(f'loading nodes from {nodes_data_filepath}')
 
 		with open(nodes_data_filepath, 'rt', encoding='utf8') as infile:
-			self.node_descriptors = list(filter(None.__ne__, [
+			self.node_descriptors = list(filter(lambda obj: obj is not None, [
 				self._create_descriptor_from_json(json_node) for json_node in json.load(infile)
 			]))
 
