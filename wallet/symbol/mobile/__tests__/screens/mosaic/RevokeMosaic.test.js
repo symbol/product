@@ -89,19 +89,16 @@ const tokenInfo = {
 	divisibility: TOKEN_DIVISIBILITY
 };
 
+const creatorHolder = { address: currentAccount.address, amount: CREATOR_BALANCE };
+
 const holders = [
 	{ address: holderAccountA.address, amount: HOLDER_A_BALANCE },
 	{ address: holderAccountB.address, amount: HOLDER_B_BALANCE }
 ];
 
-const holdersIncludingCreator = [
-	...holders,
-	{ address: currentAccount.address, amount: CREATOR_BALANCE }
-];
+const holdersIncludingCreator = [...holders, creatorHolder];
 
-const creatorOnlyHolders = [
-	{ address: currentAccount.address, amount: CREATOR_BALANCE }
-];
+const creatorOnlyHolders = [creatorHolder];
 
 // Mock Revocation Transaction Bundle (returned by the token module)
 
