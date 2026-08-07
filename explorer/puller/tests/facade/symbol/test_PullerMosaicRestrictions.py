@@ -422,6 +422,21 @@ class PullerMosaicRestrictionsSyncIntegrationTest(SymbolPullerTestBase):
 			mosaic_resolutions_by_height=mosaic_resolutions or {},
 			restriction_responses={response_path: response})
 
+	def _create_address_restriction_alias_connector(self, restriction_response):
+		transaction = self._restriction_transaction(
+			height=2, mosaic_id=ALIAS_MOSAIC_ID, target_address=ALIAS_ADDRESS)
+		expected_path = _restriction_path(0, RECIPIENT_ADDRESS, MOSAIC_ID)
+		connector = RestrictionResponseConnector(
+			2,
+			{0: [create_node_block(1), create_node_block(2)]},
+			transactions_by_path={transaction_path(1, 2): {'data': [transaction]}},
+			address_resolutions_by_height={2: [create_resolution_statement(
+				2, ALIAS_ADDRESS, [_resolution_entry(1, 0, RECIPIENT_ADDRESS)])]},
+			mosaic_resolutions_by_height={2: [create_resolution_statement(
+				2, ALIAS_MOSAIC_ID, [_resolution_entry(1, 0, MOSAIC_ID)])]},
+			restriction_responses={expected_path: restriction_response})
+		return connector, expected_path
+
 	def _seed_complete_batch_state(self):
 		database = self.puller.symbol_db
 		self._seed_blocks(database, [1], {1: 'FF' * 32})
@@ -586,23 +601,12 @@ class PullerMosaicRestrictionsSyncIntegrationTest(SymbolPullerTestBase):
 		cursor.execute('SELECT composite_hash, updated_at_height FROM symbol_mosaic_restrictions')
 		self.assertEqual(first_state, cursor.fetchall())
 
-	def test_sync_and_rollback_address_restriction_uses_persisted_resolved_child_relations(self):
-		# Arrange: persist the resolved child relations on the branch that will become orphaned.
-		transaction = self._restriction_transaction(
-			height=2, mosaic_id=ALIAS_MOSAIC_ID, target_address=ALIAS_ADDRESS)
-		path = _restriction_path(0, RECIPIENT_ADDRESS, MOSAIC_ID)
-		normal_connector = RestrictionResponseConnector(
-			2,
-			{0: [create_node_block(1), create_node_block(2)]},
-			transactions_by_path={transaction_path(1, 2): {'data': [transaction]}},
-			address_resolutions_by_height={2: [create_resolution_statement(
-				2, ALIAS_ADDRESS, [_resolution_entry(1, 0, RECIPIENT_ADDRESS)])]},
-			mosaic_resolutions_by_height={2: [create_resolution_statement(
-				2, ALIAS_MOSAIC_ID, [_resolution_entry(1, 0, MOSAIC_ID)])]},
-			restriction_responses={path: self._restriction_response(
-				0, RECIPIENT_ADDRESS, mosaic_id=MOSAIC_ID)})
+	def test_sync_block_headers_persists_resolved_child_relations_for_address_restriction_aliases(self):
+		# Arrange:
+		normal_connector, expected_path = self._create_address_restriction_alias_connector(
+			self._restriction_response(0, RECIPIENT_ADDRESS, mosaic_id=MOSAIC_ID))
 
-		# Arrange: perform the initial sync that persists the resolved child relations.
+		# Act:
 		self._sync_with_connector(normal_connector)
 
 		# Assert:
@@ -617,10 +621,21 @@ class PullerMosaicRestrictionsSyncIntegrationTest(SymbolPullerTestBase):
 			'WHERE height = 2 AND role = %s',
 			('restriction',))
 		self.assertEqual([(MOSAIC_ID, 0)], cursor.fetchall())
-		self.assertEqual([path], _restriction_paths(normal_connector))
+		self.assertEqual([expected_path], _restriction_paths(normal_connector))
 
-		# Arrange: make the initial sync's block 2 orphaned so rollback must use its persisted
-		# resolved restriction mosaic and target address relations.
+	def test_rollback_uses_persisted_resolved_child_relations_for_address_restriction_aliases(self):
+		# Arrange: persist the transaction and resolved child relations on the branch that will become orphaned.
+		normal_connector, expected_path = self._create_address_restriction_alias_connector({
+			'pagination': {
+				'pageNumber': 1,
+				'pageSize': 100
+			},
+			'data': []
+		})
+		self._sync_with_connector(normal_connector)
+
+		# _repair_from_height reads the orphaned branch's resolved child relations before
+		# repair_rollback_from_height performs destructive database updates.
 		canonical_block_hash = '22' * 32
 		rollback_connector = RestrictionResponseConnector(
 			3,
@@ -631,14 +646,15 @@ class PullerMosaicRestrictionsSyncIntegrationTest(SymbolPullerTestBase):
 			block_by_height={2: create_node_block(2, block_hash=canonical_block_hash)},
 			transactions_by_path={transaction_path(2, 3): {
 				'data': [create_node_transaction(2, type=TransactionType.TRANSFER.value)]}},
-			restriction_responses={path: self._restriction_response(
+			restriction_responses={expected_path: self._restriction_response(
 				0, RECIPIENT_ADDRESS, composite_hash='CC' * 32, mosaic_id=MOSAIC_ID)})
 
 		# Act:
 		self._sync_with_connector(rollback_connector)
 
 		# Assert:
-		self.assertEqual([path], _restriction_paths(rollback_connector))
+		self.assertEqual([expected_path], _restriction_paths(rollback_connector))
+		cursor = self.puller.symbol_db.connection.cursor()
 		cursor.execute(
 			' SELECT composite_hash, updated_at_height FROM symbol_mosaic_restrictions')
 		self.assertEqual([(bytes.fromhex('CC' * 32), 1)], [
@@ -646,8 +662,8 @@ class PullerMosaicRestrictionsSyncIntegrationTest(SymbolPullerTestBase):
 			for composite_hash, updated_at_height in cursor.fetchall()
 		])
 		cursor.execute(
-			"SELECT body->>'mosaicId' FROM symbol_transactions WHERE height = 2")
-		self.assertEqual([(None,)], cursor.fetchall())
+			"SELECT type, body->>'mosaicId' FROM symbol_transactions WHERE height = 2")
+		self.assertEqual([(TransactionType.TRANSFER.value, None)], cursor.fetchall())
 		cursor.execute(
 			'SELECT COUNT(*) FROM symbol_transaction_mosaics '
 			'WHERE height = 2 AND role = %s',
