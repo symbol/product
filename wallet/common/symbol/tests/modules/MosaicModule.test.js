@@ -205,7 +205,7 @@ describe('MosaicModule', () => {
 				expected: {}
 			},
 			{
-				description: 'derives the mosaic id from a given nonce',
+				description: 'uses the provided nonce instead of the generated fallback',
 				config: { sender: sender.currentAccount, nonce: 1234567 },
 				expected: { nonce: 1234567 }
 			}
