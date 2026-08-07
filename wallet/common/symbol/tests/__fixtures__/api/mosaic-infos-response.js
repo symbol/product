@@ -82,5 +82,19 @@ export const mosaicInfosResponse = [
 			'duration': '100'
 		},
 		'id': 'metaId_699E9532708D2FB8'
+	},
+	{
+		'mosaic': {
+			'version': 1,
+			'id': '5C4D3A2B1E9F8071',
+			'supply': '1000',
+			'startHeight': '1000',
+			'ownerAddress': '982C69A051A72BFBE31AEDA7250AC6C747B7570B3E9C00B6',
+			'revision': 1,
+			'flags': 11,
+			'divisibility': 2,
+			'duration': '100'
+		},
+		'id': 'metaId_5C4D3A2B1E9F8071'
 	}
 ];

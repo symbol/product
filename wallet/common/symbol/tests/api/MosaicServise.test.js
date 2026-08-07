@@ -1,7 +1,7 @@
 import { MosaicService } from '../../src/api/MosaicService';
 import { accountsSearchResponse } from '../__fixtures__/api/accounts-search-response';
 import { mosaicInfosResponse } from '../__fixtures__/api/mosaic-infos-response';
-import { mosaicInfos, mosaicNames, mosaicOwners } from '../__fixtures__/local/mosaic';
+import { mosaicCreatorAddress, mosaicInfos, mosaicNames, mosaicOwners, supplyMutableMosaic } from '../__fixtures__/local/mosaic';
 import { namespaceInfoWithMosaicAlias } from '../__fixtures__/local/namespace';
 import { networkProperties } from '../__fixtures__/local/network';
 import { expect, jest } from '@jest/globals';
@@ -15,8 +15,7 @@ const mockApi = {
 };
 
 const mosaicsEndpoint = `${networkProperties.nodeUrl}/mosaics`;
-const creatorAddress = 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ';
-const heldMosaic = mosaicInfos['78C3CDF0896248DB'];
+const heldMosaic = supplyMutableMosaic;
 const mosaicAliasNamespaceId = namespaceInfoWithMosaicAlias.id;
 const linkedMosaic = mosaicInfos[namespaceInfoWithMosaicAlias.linkedMosaicId];
 
@@ -128,7 +127,7 @@ describe('MosaicService', () => {
 				mockApi.namespace.fetchMosaicNames.mockResolvedValueOnce(config.mosaicNames);
 
 				// Act:
-				const result = await mosaicService.fetchAccountMosaics(networkProperties, creatorAddress, config.searchCriteria);
+				const result = await mosaicService.fetchAccountMosaics(networkProperties, mosaicCreatorAddress, config.searchCriteria);
 
 				// Assert:
 				expect(mockMakeRequest).toHaveBeenCalledWith(expected.endpoint);
@@ -145,7 +144,7 @@ describe('MosaicService', () => {
 					mosaicNames
 				},
 				expected: {
-					endpoint: `${mosaicsEndpoint}?pageNumber=1&pageSize=100&order=desc&ownerAddress=${creatorAddress}`,
+					endpoint: `${mosaicsEndpoint}?pageNumber=1&pageSize=100&order=desc&ownerAddress=${mosaicCreatorAddress}`,
 					mosaicIds: Object.keys(mosaicInfos),
 					mosaicInfos: Object.values(mosaicInfos)
 				}
@@ -158,7 +157,7 @@ describe('MosaicService', () => {
 					searchCriteria: { pageNumber: 2, pageSize: 10, order: 'asc' }
 				},
 				expected: {
-					endpoint: `${mosaicsEndpoint}?pageNumber=2&pageSize=10&order=asc&ownerAddress=${creatorAddress}`,
+					endpoint: `${mosaicsEndpoint}?pageNumber=2&pageSize=10&order=asc&ownerAddress=${mosaicCreatorAddress}`,
 					mosaicIds: Object.keys(mosaicInfos),
 					mosaicInfos: Object.values(mosaicInfos)
 				}
@@ -170,7 +169,7 @@ describe('MosaicService', () => {
 					mosaicNames: {}
 				},
 				expected: {
-					endpoint: `${mosaicsEndpoint}?pageNumber=1&pageSize=100&order=desc&ownerAddress=${creatorAddress}`,
+					endpoint: `${mosaicsEndpoint}?pageNumber=1&pageSize=100&order=desc&ownerAddress=${mosaicCreatorAddress}`,
 					mosaicIds: [],
 					mosaicInfos: []
 				}

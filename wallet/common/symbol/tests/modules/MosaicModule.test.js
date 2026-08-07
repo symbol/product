@@ -18,7 +18,7 @@ import {
 	createTransactionFeeTiers,
 	mosaicIdFromNonce
 } from '../../src/utils';
-import { mosaicInfos, mosaicOwners } from '../__fixtures__/local/mosaic';
+import { mosaicInfos, mosaicOwners, supplyMutableMosaic } from '../__fixtures__/local/mosaic';
 import { networkProperties } from '../__fixtures__/local/network';
 import { currentAccount, walletStorageAccounts } from '../__fixtures__/local/wallet';
 import { expect, jest } from '@jest/globals';
@@ -26,7 +26,7 @@ import { TransactionBundle, relativeToAbsoluteAmount } from 'wallet-common-core'
 
 const multisigAccount = walletStorageAccounts.testnet[1];
 const holderAccount = walletStorageAccounts.testnet[2];
-const token = mosaicInfos['78C3CDF0896248DB'];
+const token = supplyMutableMosaic;
 const fixedNowMilliseconds = 1_700_000_000_000;
 
 // A mosaic action is performed on behalf of a multisig account when the sender public key differs from the current account.
