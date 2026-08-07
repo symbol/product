@@ -126,7 +126,7 @@ export const isMosaicRevokable = (mosaic, chainHeight, currentAddress, sourceAdd
 	const hasRevokableFlag = mosaic.isRevokable;
 	const isCreatorCurrentAccount = mosaic.creator === currentAddress;
 	const isSelfRevocation = sourceAddress === currentAddress;
-	const isMosaicExpired = mosaic.endHeight - chainHeight <= 0;
+	const isMosaicExpired = mosaic.endHeight <= chainHeight;
 	const isMosaicActive = !isMosaicExpired || mosaic.isUnlimitedDuration;
 
 	return hasRevokableFlag && isCreatorCurrentAccount && !isSelfRevocation && isMosaicActive;
@@ -142,7 +142,7 @@ export const isMosaicRevokable = (mosaic, chainHeight, currentAddress, sourceAdd
 export const isMosaicSupplyModifiable = (mosaic, chainHeight, currentAddress) => {
 	const hasSupplyMutableFlag = mosaic.isSupplyMutable;
 	const isCreatorCurrentAccount = mosaic.creator === currentAddress;
-	const isMosaicExpired = mosaic.endHeight - chainHeight <= 0;
+	const isMosaicExpired = mosaic.endHeight <= chainHeight;
 	const isMosaicActive = !isMosaicExpired || mosaic.isUnlimitedDuration;
 
 	return hasSupplyMutableFlag && isCreatorCurrentAccount && isMosaicActive;
