@@ -238,6 +238,11 @@ const NAVIGATION_SCREENS_CONFIG = [
 		hasParams: true
 	},
 	{
+		screenName: 'RevokeMosaic',
+		shouldReset: false,
+		hasParams: true
+	},
+	{
 		screenName: 'CreatedMosaicList',
 		shouldReset: false,
 		hasParams: true
