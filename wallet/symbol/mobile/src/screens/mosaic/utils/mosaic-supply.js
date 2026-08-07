@@ -1,4 +1,4 @@
-import { formatIntegerGroups, formatNumberGroups } from './number-format';
+import { formatIntegerGroups } from './number-format';
 import { MosaicSupplyChangeAction } from '@/app/constants';
 import { absoluteToRelativeAmount, relativeToAbsoluteAmount } from 'wallet-common-core';
 
@@ -68,24 +68,6 @@ export const calculateSupplyDelta = (currentSupply, newSupply, divisibility) => 
 		delta: absoluteToRelativeAmount(absoluteMagnitude.toString(), divisibility),
 		action: absoluteDelta === 0n ? null : changeAction
 	};
-};
-
-/**
- * Returns the supply delta as signed display text, so an increase stays distinguishable from a decrease of
- * the same size. A zero delta carries no sign.
- * @param {string} delta - The supply change magnitude in relative units.
- * @param {number|null} action - The supply change action, or null when the supply is unchanged.
- * @returns {string} The signed delta text.
- * @example
- * getSupplyDeltaText('1500', 0); // '-1 500'
- */
-export const getSupplyDeltaText = (delta, action) => {
-	const deltaText = formatNumberGroups(delta);
-
-	if (delta === '0')
-		return deltaText;
-
-	return MosaicSupplyChangeAction.Increase === action ? `+${deltaText}` : `-${deltaText}`;
 };
 
 /**
