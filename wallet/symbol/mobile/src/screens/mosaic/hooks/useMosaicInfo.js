@@ -16,14 +16,14 @@ import { useAsyncManager } from '@/app/hooks';
  * React hook for loading a mosaic's info. Provides the divisibility and name the revoke screen needs.
  * @param {object} params - Hook parameters.
  * @param {WalletController} params.walletController - The wallet controller instance.
- * @param {string} params.tokenId - The mosaic id to load.
+ * @param {string} params.mosaicId - The mosaic id to load.
  * @returns {UseMosaicInfoReturnType}
  */
-export const useMosaicInfo = ({ walletController, tokenId }) => {
+export const useMosaicInfo = ({ walletController, mosaicId }) => {
 	const { networkProperties } = walletController;
 
 	const mosaicInfoManager = useAsyncManager({
-		callback: () => walletController.networkApi.mosaic.fetchMosaicInfo(networkProperties, tokenId)
+		callback: () => walletController.networkApi.mosaic.fetchMosaicInfo(networkProperties, mosaicId)
 	});
 
 	return {

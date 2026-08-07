@@ -1,4 +1,4 @@
-import { useCreatedTokenList } from './hooks';
+import { useCreatedMosaicList } from './hooks';
 import { ButtonCircle, FilteredListScreenTemplate, Spacer, StyledText, TokenListItem } from '@/app/components';
 import { useInit, useRefresh, useWalletController, useWalletRefreshLifecycle } from '@/app/hooks';
 import { $t } from '@/app/localization';
@@ -6,12 +6,12 @@ import { Router } from '@/app/router/Router';
 import React, { useCallback } from 'react';
 
 /**
- * CreatedTokenList screen component. Displays the paginated list of tokens created by the
- * current account, including zero-balance and expired ones. Supports filtering by token flags,
- * and allows navigation to token details or creating a new token.
- * @returns {React.ReactNode} CreatedTokenList component.
+ * CreatedMosaicList screen component. Displays the paginated list of mosaics created by the
+ * current account, including zero-balance and expired ones. Supports filtering by mosaic flags,
+ * and allows opening a mosaic's details or creating a new one.
+ * @returns {React.ReactNode} CreatedMosaicList component.
  */
-export const CreatedTokenList = () => {
+export const CreatedMosaicList = () => {
 	const walletController = useWalletController();
 	const {
 		chainName,
@@ -33,7 +33,7 @@ export const CreatedTokenList = () => {
 		isLoading,
 		isPageLoading,
 		isLastPage
-	} = useCreatedTokenList(walletController);
+	} = useCreatedMosaicList(walletController);
 
 	// Refresh lifecycle
 	useWalletRefreshLifecycle({
@@ -45,13 +45,13 @@ export const CreatedTokenList = () => {
 	useInit(load, isWalletReady);
 
 	// Navigation handlers
-	const openTokenDetails = useCallback(token => {
+	const openTokenDetails = useCallback(mosaic => {
 		Router.goToTokenDetails({
 			params: {
 				chainName,
 				accountAddress: currentAccount.address,
-				tokenId: token.id,
-				preloadedData: token
+				tokenId: mosaic.id,
+				preloadedData: mosaic
 			}
 		});
 	}, [chainName, currentAccount.address]);
@@ -61,15 +61,15 @@ export const CreatedTokenList = () => {
 	}, []);
 
 	// Render helpers
-	const keyExtractor = useCallback(token => token.id, []);
+	const keyExtractor = useCallback(mosaic => mosaic.id, []);
 
 	const renderListHeader = useCallback(() => (
 		<Spacer>
 			<StyledText type="title">
-				{$t('s_createdTokenList_title')}
+				{$t('s_createdMosaicList_title')}
 			</StyledText>
 			<StyledText type="body">
-				{$t('s_createdTokenList_description')}
+				{$t('s_createdMosaicList_description')}
 			</StyledText>
 		</Spacer>
 	), []);

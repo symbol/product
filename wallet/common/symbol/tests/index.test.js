@@ -23,6 +23,6 @@ describe('package entry (src/index.js)', () => {
 
 		expect(typeof entry.TransferModule).toBe('function');
 		expect(typeof entry.HarvestingModule).toBe('function');
-		expect(typeof entry.TokenModule).toBe('function');
+		expect(typeof entry.MosaicModule).toBe('function');
 	});
 });

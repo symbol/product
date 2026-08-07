@@ -9,7 +9,7 @@ import {
 	TransactionBundleType,
 	TransactionType
 } from '../../src/constants';
-import { TokenModule } from '../../src/modules/TokenModule';
+import { MosaicModule } from '../../src/modules/MosaicModule';
 import {
 	addressFromPublicKey,
 	calculateTransactionSize,
@@ -29,7 +29,7 @@ const holderAccount = walletStorageAccounts.testnet[2];
 const token = mosaicInfos['78C3CDF0896248DB'];
 const fixedNowMilliseconds = 1_700_000_000_000;
 
-// A token action is performed on behalf of a multisig account when the sender public key differs from the current account.
+// A mosaic action is performed on behalf of a multisig account when the sender public key differs from the current account.
 const sender = {
 	currentAccount: { publicKey: currentAccount.publicKey, isMultisig: false },
 	multisigAccount: { publicKey: multisigAccount.publicKey, isMultisig: true }
@@ -90,8 +90,8 @@ const buildAggregateCompleteBundle = (innerTransactions, signerPublicKey, bundle
 // Reads the inner transactions from a result bundle: index 0 for aggregate complete, index 1 for aggregate bonded.
 const extractInnerTransactions = (bundle, isMultisig) => bundle.transactions[isMultisig ? 1 : 0].innerTransactions;
 
-describe('TokenModule', () => {
-	let tokenModule;
+describe('MosaicModule', () => {
+	let mosaicModule;
 	let api;
 	let walletController;
 
@@ -111,8 +111,8 @@ describe('TokenModule', () => {
 			networkIdentifier: networkProperties.networkIdentifier
 		};
 
-		tokenModule = new TokenModule();
-		tokenModule.init({ walletController, api });
+		mosaicModule = new MosaicModule();
+		mosaicModule.init({ walletController, api });
 
 		// The transaction deadlines are derived from the current time, which is frozen to keep them predictable.
 		jest.spyOn(Date, 'now').mockReturnValue(fixedNowMilliseconds);
@@ -124,7 +124,7 @@ describe('TokenModule', () => {
 
 	it('has correct static name', () => {
 		// Assert:
-		expect(TokenModule.name).toBe('token');
+		expect(MosaicModule.name).toBe('mosaic');
 	});
 
 	describe('createTransaction()', () => {
@@ -174,7 +174,7 @@ describe('TokenModule', () => {
 				const options = withSender({ ...createOptions, nonce: config.nonce }, config.sender);
 
 				// Act:
-				const result = tokenModule.createTransaction(options);
+				const result = mosaicModule.createTransaction(options);
 
 				// Assert: an omitted nonce is generated internally, so it is read back from the result.
 				const innerTransactions = extractInnerTransactions(result, config.sender.isMultisig);
@@ -183,11 +183,11 @@ describe('TokenModule', () => {
 
 				const expectedInnerTransactions = buildExpectedInnerTransactions(config.sender.publicKey, nonce);
 				const expectedResult = config.sender.isMultisig
-					? buildMultisigBundle(expectedInnerTransactions, TransactionBundleType.MULTISIG_TOKEN_CREATION)
+					? buildMultisigBundle(expectedInnerTransactions, TransactionBundleType.MULTISIG_MOSAIC_CREATION)
 					: buildAggregateCompleteBundle(
 						expectedInnerTransactions,
 						config.sender.publicKey,
-						TransactionBundleType.TOKEN_CREATION
+						TransactionBundleType.MOSAIC_CREATION
 					);
 				expectBundlesEqual(result, expectedResult);
 			});
@@ -229,7 +229,7 @@ describe('TokenModule', () => {
 				const options = withSender({ ...supplyChangeOptions, action: config.action }, config.sender);
 
 				// Act:
-				const result = tokenModule.createSupplyChangeTransaction(options);
+				const result = mosaicModule.createSupplyChangeTransaction(options);
 
 				// Assert:
 				const expectedTransaction = {
@@ -241,8 +241,8 @@ describe('TokenModule', () => {
 					delta: relativeToAbsoluteAmount(supplyChangeOptions.delta, supplyChangeOptions.divisibility)
 				};
 				const expectedResult = config.sender.isMultisig
-					? buildMultisigBundle([expectedTransaction], TransactionBundleType.MULTISIG_TOKEN_SUPPLY_CHANGE)
-					: buildSingleAccountBundle(expectedTransaction, TransactionBundleType.TOKEN_SUPPLY_CHANGE);
+					? buildMultisigBundle([expectedTransaction], TransactionBundleType.MULTISIG_MOSAIC_SUPPLY_CHANGE)
+					: buildSingleAccountBundle(expectedTransaction, TransactionBundleType.MOSAIC_SUPPLY_CHANGE);
 				expectBundlesEqual(result, expectedResult);
 			});
 		};
@@ -281,7 +281,7 @@ describe('TokenModule', () => {
 		const runRevocationTest = (description, config) => {
 			it(description, () => {
 				// Act:
-				const result = tokenModule.createRevocationTransaction(withSender(revocationOptions, config.sender));
+				const result = mosaicModule.createRevocationTransaction(withSender(revocationOptions, config.sender));
 
 				// Assert:
 				const expectedTransaction = {
@@ -296,8 +296,8 @@ describe('TokenModule', () => {
 					sourceAddress: revocationOptions.sourceAddress
 				};
 				const expectedResult = config.sender.isMultisig
-					? buildMultisigBundle([expectedTransaction], TransactionBundleType.MULTISIG_TOKEN_REVOCATION)
-					: buildSingleAccountBundle(expectedTransaction, TransactionBundleType.TOKEN_REVOCATION);
+					? buildMultisigBundle([expectedTransaction], TransactionBundleType.MULTISIG_MOSAIC_REVOCATION)
+					: buildSingleAccountBundle(expectedTransaction, TransactionBundleType.MOSAIC_REVOCATION);
 				expectBundlesEqual(result, expectedResult);
 			});
 		};
@@ -318,15 +318,15 @@ describe('TokenModule', () => {
 		});
 	});
 
-	describe('fetchAccountTokens()', () => {
-		const runFetchAccountTokensTest = (description, config, expected) => {
+	describe('fetchAccountMosaics()', () => {
+		const runFetchAccountMosaicsTest = (description, config, expected) => {
 			it(description, async () => {
 				// Arrange:
 				const accountTokens = Object.values(mosaicInfos);
 				api.mosaic.fetchAccountMosaics.mockResolvedValue(accountTokens);
 
 				// Act:
-				const result = await tokenModule.fetchAccountTokens(config.address, config.searchCriteria);
+				const result = await mosaicModule.fetchAccountMosaics(config.address, config.searchCriteria);
 
 				// Assert:
 				expect(api.mosaic.fetchAccountMosaics).toHaveBeenCalledWith(
@@ -338,21 +338,21 @@ describe('TokenModule', () => {
 			});
 		};
 
-		const fetchAccountTokensTests = [
+		const fetchAccountMosaicsTests = [
 			{
-				description: 'fetches the tokens created by the current account by default',
+				description: 'fetches the mosaics created by the current account by default',
 				config: {},
 				expected: { address: currentAccount.address }
 			},
 			{
-				description: 'fetches the tokens created by a given account with search criteria',
+				description: 'fetches the mosaics created by a given account with search criteria',
 				config: { address: holderAccount.address, searchCriteria: { pageNumber: 2, pageSize: 10 } },
 				expected: { address: holderAccount.address }
 			}
 		];
 
-		fetchAccountTokensTests.forEach(test => {
-			runFetchAccountTokensTest(test.description, test.config, test.expected);
+		fetchAccountMosaicsTests.forEach(test => {
+			runFetchAccountMosaicsTest(test.description, test.config, test.expected);
 		});
 	});
 
@@ -363,7 +363,7 @@ describe('TokenModule', () => {
 				api.mosaic.fetchMosaicOwners.mockResolvedValue(mosaicOwners);
 
 				// Act:
-				const result = await tokenModule.fetchMosaicOwners(token.id, config.searchCriteria);
+				const result = await mosaicModule.fetchMosaicOwners(token.id, config.searchCriteria);
 
 				// Assert:
 				expect(api.mosaic.fetchMosaicOwners).toHaveBeenCalledWith(networkProperties, token.id, config.searchCriteria);
@@ -373,7 +373,7 @@ describe('TokenModule', () => {
 
 		const fetchMosaicOwnersTests = [
 			{
-				description: 'fetches the accounts holding a token',
+				description: 'fetches the accounts holding a mosaic',
 				config: {}
 			},
 			{
@@ -396,7 +396,7 @@ describe('TokenModule', () => {
 		};
 
 		const createSupplyChangeBundle = senderContext =>
-			tokenModule.createSupplyChangeTransaction(withSender(supplyChangeOptions, senderContext));
+			mosaicModule.createSupplyChangeTransaction(withSender(supplyChangeOptions, senderContext));
 
 		const runCalculateTransactionFeesTest = (description, config, expected) => {
 			it(description, async () => {
@@ -404,7 +404,7 @@ describe('TokenModule', () => {
 				const bundle = createSupplyChangeBundle(config.sender);
 
 				// Act:
-				const result = await tokenModule.calculateTransactionFees(bundle);
+				const result = await mosaicModule.calculateTransactionFees(bundle);
 
 				// Assert:
 				const expectedResult = bundle.transactions.map(transaction =>

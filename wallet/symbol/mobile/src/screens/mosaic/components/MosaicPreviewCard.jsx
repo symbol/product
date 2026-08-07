@@ -45,7 +45,7 @@ const SupplyAmount = ({ integer, enteredFraction, paddingFraction, divisibility 
 };
 
 /**
- * MosaicPreviewCard component. A read-only receipt of the mosaic being created: the token identity above
+ * MosaicPreviewCard component. A read-only receipt of the mosaic being created: the mosaic identity above
  * the total supply, rendered with the entered amount in full and the unused decimal capacity dimmed,
  * followed by the smallest sendable amount and a note that the decimal places are permanent.
  * @param {object} props - Component props.
@@ -59,8 +59,8 @@ export const MosaicPreviewCard = ({ supply, divisibility, mosaicId }) => {
 	const isDivisible = divisibilityValue > 0;
 	const supplyDisplay = createSupplyDisplayData(supply, divisibilityValue);
 	const smallestSendText = getSmallestFractionText(divisibilityValue);
-	const wholeTokensText = $t('s_mosaicCreation_smallestSend_whole');
-	const smallestSendValueText = isDivisible ? smallestSendText : `${smallestSendText} ${wholeTokensText}`;
+	const wholeMosaicsText = $t('s_mosaicCreation_smallestSend_whole');
+	const smallestSendValueText = isDivisible ? smallestSendText : `${smallestSendText} ${wholeMosaicsText}`;
 
 	return (
 		<Card style={styles.card}>
@@ -84,7 +84,7 @@ export const MosaicPreviewCard = ({ supply, divisibility, mosaicId }) => {
 				>
 					<StyledText bold>{smallestSendText}</StyledText>
 					{!isDivisible && (
-						<StyledText size="s">{wholeTokensText}</StyledText>
+						<StyledText size="s">{wholeMosaicsText}</StyledText>
 					)}
 				</View>
 			</Field>

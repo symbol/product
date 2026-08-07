@@ -163,8 +163,8 @@ export const TokenDetails = ({ route }) => {
 	const canModifyMosaic = isCurrentAccountCreator
 		&& isMosaicSupplyModifiable(token, networkProperties?.chainHeight, accountAddress);
 	const isCreatorActionsVisible = canRevokeMosaic || canModifyMosaic;
-	const openRevokeScreen = () => Router.goToRevokeMosaic({ params: { chainName, tokenId } });
-	const openModifyScreen = () => Router.goToModifyMosaic({ params: { chainName, tokenId } });
+	const openRevokeScreen = () => Router.goToRevokeMosaic({ params: { chainName, mosaicId: tokenId } });
+	const openModifyScreen = () => Router.goToModifyMosaic({ params: { chainName, mosaicId: tokenId } });
 
 	return (
 		<Screen refresh={{ onRefresh: dataManager.call, isRefreshing: dataManager.isLoading }}>

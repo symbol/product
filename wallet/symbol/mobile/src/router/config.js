@@ -34,7 +34,7 @@ export const RouteName = {
 	CreateMosaic: 'CreateMosaic',
 	ModifyMosaic: 'ModifyMosaic',
 	RevokeMosaic: 'RevokeMosaic',
-	CreatedTokenList: 'CreatedTokenList',
+	CreatedMosaicList: 'CreatedMosaicList',
 	Scan: 'Scan',
 	TransportRequest: 'TransportRequest'
 };

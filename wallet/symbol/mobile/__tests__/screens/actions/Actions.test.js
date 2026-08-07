@@ -88,7 +88,7 @@ describe('screens/actions/Actions', () => {
 				buttonText: SCREEN_TEXT.bridgeAccountsTitle,
 				actionName: 'goToBridgeAccountList',
 				buttonText: SCREEN_TEXT.createMosaicTitle,
-				actionName: 'goToCreatedTokenList'
+				actionName: 'goToCreatedMosaicList'
 			}
 		]
 	});

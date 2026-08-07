@@ -6,7 +6,7 @@ import React from 'react';
 import { StyleSheet, View } from 'react-native';
 
 /**
- * ExpirationSummaryCard component. The read-only summary card echoing when the token expires: a
+ * ExpirationSummaryCard component. The read-only summary card echoing when the mosaic expires: a
  * permanence note when never expiring, otherwise the exact block count with the approximate human
  * lifetime beside it.
  * @param {object} props - Component props.

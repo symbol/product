@@ -11,9 +11,9 @@ const CHAIN_NAME = 'symbol';
 const NETWORK_IDENTIFIER = 'testnet';
 const TICKER = 'XYM';
 
-const MOSAIC_ID = '78C3CDF0896248DB';
-const MOSAIC_NAME = 'my.revokable.mosaic';
-const MOSAIC_DIVISIBILITY = 0;
+const TOKEN_ID = '78C3CDF0896248DB';
+const TOKEN_NAME = 'my.revokable.mosaic';
+const TOKEN_DIVISIBILITY = 0;
 
 const HOLDER_A_BALANCE = '1000';
 const HOLDER_B_BALANCE = '500';
@@ -29,7 +29,7 @@ const SCREEN_TEXT = {
 	textDescription: 's_revoke_description',
 	textCreatorTitle: 's_mosaicCreation_sender_title',
 	textFromTitle: 's_send_from_title',
-	textTokenTitle: 's_send_token_title',
+	textMosaicTitle: 's_revoke_mosaic_title',
 
 	// Input labels (accessibility)
 	inputMosaicLabel: 'input_mosaic',
@@ -81,12 +81,12 @@ const transactionFees = TransactionFeeFixtureBuilder
 	.createWithAmounts('0.1', '0.2', '0.3', CHAIN_NAME, NETWORK_IDENTIFIER)
 	.build();
 
-// Mosaic Info and Holders Fixtures
+// Token Info and Holders Fixtures
 
-const mosaicInfo = {
-	id: MOSAIC_ID,
-	names: [MOSAIC_NAME],
-	divisibility: MOSAIC_DIVISIBILITY
+const tokenInfo = {
+	id: TOKEN_ID,
+	names: [TOKEN_NAME],
+	divisibility: TOKEN_DIVISIBILITY
 };
 
 const holders = [
@@ -109,7 +109,7 @@ const revocationTransaction = {
 	type: 'mosaicSupplyRevocation',
 	signerAddress: currentAccount.address,
 	sourceAddress: holderAccountA.address,
-	mosaic: { id: MOSAIC_ID, amount: VALID_AMOUNT },
+	mosaic: { id: TOKEN_ID, amount: VALID_AMOUNT },
 	fee: { token: { amount: '0.1' } }
 };
 
@@ -142,13 +142,13 @@ const setupMocks = (overrides = {}) => {
 		},
 		networkApi: {
 			mosaic: {
-				fetchMosaicInfo: jest.fn().mockResolvedValue(overrides.mosaic ?? mosaicInfo)
+				fetchMosaicInfo: jest.fn().mockResolvedValue(overrides.token ?? tokenInfo)
 			}
 		},
 		signTransactionBundle: jest.fn().mockResolvedValue(signedTransactionBundle),
 		announceSignedTransactionBundle: jest.fn().mockResolvedValue({}),
 		modules: {
-			token: {
+			mosaic: {
 				fetchMosaicOwners: jest.fn().mockResolvedValue(overrides.owners ?? holders),
 				createRevocationTransaction: jest.fn().mockReturnValue(revokeTransactionBundle)
 			},
@@ -173,7 +173,7 @@ const renderRevokeMosaicScreen = async (routeParams = {}) => {
 		route: {
 			params: {
 				chainName: CHAIN_NAME,
-				tokenId: MOSAIC_ID,
+				mosaicId: TOKEN_ID,
 				...routeParams
 			}
 		}
@@ -211,7 +211,7 @@ describe('screens/mosaic/RevokeMosaic', () => {
 				SCREEN_TEXT.textDescription,
 				SCREEN_TEXT.textCreatorTitle,
 				SCREEN_TEXT.textFromTitle,
-				SCREEN_TEXT.textTokenTitle,
+				SCREEN_TEXT.textMosaicTitle,
 				SCREEN_TEXT.buttonSend
 			];
 
@@ -230,7 +230,7 @@ describe('screens/mosaic/RevokeMosaic', () => {
 			const screenTester = await renderRevokeMosaicScreen();
 
 			// Assert:
-			screenTester.expectText([MOSAIC_NAME]);
+			screenTester.expectText([TOKEN_NAME]);
 		});
 
 		it('shows a loading indicator until the wallet, mosaic and holders are ready', async () => {
@@ -239,7 +239,7 @@ describe('screens/mosaic/RevokeMosaic', () => {
 
 			// Act:
 			const screenTester = new ScreenTester(RevokeMosaic, {
-				route: { params: { chainName: CHAIN_NAME, tokenId: MOSAIC_ID } }
+				route: { params: { chainName: CHAIN_NAME, mosaicId: TOKEN_ID } }
 			});
 
 			// Assert:
@@ -491,7 +491,7 @@ describe('screens/mosaic/RevokeMosaic', () => {
 				await screenTester.waitForTimer(); // announce transaction
 
 				// Assert:
-				expect(walletControllerMock.modules.token.createRevocationTransaction)
+				expect(walletControllerMock.modules.mosaic.createRevocationTransaction)
 					.toHaveBeenCalledWith(expect.objectContaining(expected.transactionOptions));
 				expect(walletControllerMock.signTransactionBundle).toHaveBeenCalledWith(revokeTransactionBundle);
 				expect(walletControllerMock.announceSignedTransactionBundle).toHaveBeenCalledWith(signedTransactionBundle);
@@ -504,8 +504,8 @@ describe('screens/mosaic/RevokeMosaic', () => {
 				config: { sourceAddress: holderAccountA.address, amount: VALID_AMOUNT },
 				expected: {
 					transactionOptions: {
-						mosaicId: MOSAIC_ID,
-						divisibility: MOSAIC_DIVISIBILITY,
+						mosaicId: TOKEN_ID,
+						divisibility: TOKEN_DIVISIBILITY,
 						amount: VALID_AMOUNT,
 						sourceAddress: holderAccountA.address
 					}

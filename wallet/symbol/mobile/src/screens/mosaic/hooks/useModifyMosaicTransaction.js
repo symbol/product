@@ -35,7 +35,7 @@ export const useModifyMosaicTransaction = ({
 	 * @returns {Promise<TransactionBundle>}
 	 */
 	const createModifyMosaicTransaction = async () => {
-		const transactionBundle = walletController.modules.token.createSupplyChangeTransaction({
+		const transactionBundle = walletController.modules.mosaic.createSupplyChangeTransaction({
 			mosaicId,
 			divisibility,
 			delta,

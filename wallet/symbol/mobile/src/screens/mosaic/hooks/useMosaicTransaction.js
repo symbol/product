@@ -42,7 +42,7 @@ export const useMosaicTransaction = ({
 	 * @returns {Promise<TransactionBundle>}
 	 */
 	const createMosaicTransaction = async () => {
-		const transactionBundle = walletController.modules.token.createTransaction({
+		const transactionBundle = walletController.modules.mosaic.createTransaction({
 			nonce,
 			initialSupply: supply,
 			divisibility: Number(divisibility),

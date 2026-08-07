@@ -63,7 +63,7 @@ const CustomLayout = values => {
 };
 
 /**
- * CreateMosaic screen component. Provides the interface for creating a new mosaic (token)
+ * CreateMosaic screen component. Provides the interface for creating a new mosaic
  * on the Symbol network by configuring the divisibility, initial supply, duration and mosaic flags,
  * on behalf of the current account.
  * @returns {React.ReactNode} CreateMosaic component.
@@ -153,7 +153,7 @@ export const CreateMosaic = () => {
 	const handleExpiryToggle = isExpiring => {
 		toggleNeverExpiring();
 
-		// Marking the token as expiring with no value yet pre-fills a safe one-year lifetime.
+		// Marking the mosaic as expiring with no value yet pre-fills a safe one-year lifetime.
 		if (isExpiring && parseDurationBlocks(duration) === null)
 			changeDuration(getDefaultDurationInputValue(blockGenerationTargetTime));
 	};

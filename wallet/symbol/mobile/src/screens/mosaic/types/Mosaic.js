@@ -5,7 +5,7 @@
  * Route parameters for the RevokeMosaic screen.
  * @typedef {object} RevokeMosaicRouteParams
  * @property {ChainName} [chainName] - The blockchain name.
- * @property {string} tokenId - The mosaic identifier to revoke.
+ * @property {string} mosaicId - The mosaic identifier to revoke.
  * @property {string} [sourceAddress] - Pre-filled holder address to revoke the mosaic from.
  * @property {string} [amount] - Pre-filled amount to revoke.
  */
@@ -14,7 +14,7 @@
  * Route parameters for the ModifyMosaic screen.
  * @typedef {object} ModifyMosaicRouteParams
  * @property {ChainName} [chainName] - The blockchain name.
- * @property {string} tokenId - The mosaic identifier to modify.
+ * @property {string} mosaicId - The mosaic identifier to modify.
  */
 
 /**
@@ -58,11 +58,11 @@
  */
 
 /**
- * A section of the created token list.
- * @typedef {object} CreatedTokenSection
+ * A section of the created mosaic list.
+ * @typedef {object} CreatedMosaicSection
  * @property {string} title - The section title, empty as the list shows a single untitled section.
  * @property {string} group - The section group identifier.
- * @property {Mosaic[]} data - The tokens in this section.
+ * @property {Mosaic[]} data - The mosaics in this section.
  */
 
 export {};

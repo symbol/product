@@ -23,8 +23,8 @@ import { TransactionBundle, relativeToAbsoluteAmount } from 'wallet-common-core'
 /** @typedef {import('../types/Network').TransactionFees} TransactionFees */
 /** @typedef {import('../types/SearchCriteria').SearchCriteria} SearchCriteria */
 
-export class TokenModule {
-	static name = 'token';
+export class MosaicModule {
+	static name = 'mosaic';
 	#walletController;
 	#api;
 
@@ -42,21 +42,21 @@ export class TokenModule {
 	clear = () => { };
 
 	/**
-	 * Prepares a token creation transaction bundle.
-	 * The mosaic definition and its initial supply change are wrapped in an aggregate so the token is created
+	 * Prepares a mosaic creation transaction bundle.
+	 * The mosaic definition and its initial supply change are wrapped in an aggregate so the mosaic is created
 	 * with the requested supply atomically. When the sender is a multisig account, the bundle contains hash lock
 	 * and aggregate bonded transactions instead.
-	 * @param {object} options - The token creation options.
+	 * @param {object} options - The mosaic creation options.
 	 * @param {string} [options.senderPublicKey] - The creator public key. Defaults to the current account.
 	 * @param {number} [options.nonce] - The mosaic nonce. Defaults to a freshly generated one.
 	 * @param {string} options.initialSupply - The initial supply in relative units.
-	 * @param {number} options.divisibility - The token divisibility.
-	 * @param {number} options.duration - The token duration in blocks. 0 means unlimited.
+	 * @param {number} options.divisibility - The mosaic divisibility.
+	 * @param {number} options.duration - The mosaic duration in blocks. 0 means unlimited.
 	 * @param {boolean} options.isSupplyMutable - Whether the supply can be changed after creation.
-	 * @param {boolean} options.isTransferable - Whether the token can be transferred between accounts.
-	 * @param {boolean} options.isRestrictable - Whether the token supports restrictions.
-	 * @param {boolean} options.isRevokable - Whether the creator can revoke the token.
-	 * @returns {TransactionBundle} The token creation transaction bundle.
+	 * @param {boolean} options.isTransferable - Whether the mosaic can be transferred between accounts.
+	 * @param {boolean} options.isRestrictable - Whether the mosaic supports restrictions.
+	 * @param {boolean} options.isRevokable - Whether the creator can revoke the mosaic.
+	 * @returns {TransactionBundle} The mosaic creation transaction bundle.
 	 */
 	createTransaction = options => {
 		const { initialSupply, divisibility, duration } = options;
@@ -90,18 +90,18 @@ export class TokenModule {
 		const innerTransactions = [definitionTransaction, supplyChangeTransaction];
 
 		if (isMultisig)
-			return this.#createMultisigBundle(innerTransactions, TransactionBundleType.MULTISIG_TOKEN_CREATION);
+			return this.#createMultisigBundle(innerTransactions, TransactionBundleType.MULTISIG_MOSAIC_CREATION);
 
-		return this.#createAggregateCompleteBundle(innerTransactions, senderPublicKey, TransactionBundleType.TOKEN_CREATION);
+		return this.#createAggregateCompleteBundle(innerTransactions, senderPublicKey, TransactionBundleType.MOSAIC_CREATION);
 	};
 
 	/**
-	 * Prepares a token supply change transaction bundle to increase or decrease the supply of an existing token.
+	 * Prepares a mosaic supply change transaction bundle to increase or decrease the supply of an existing mosaic.
 	 * When the sender is a multisig account, the bundle contains hash lock and aggregate bonded transactions.
 	 * @param {object} options - The supply change options.
 	 * @param {string} [options.senderPublicKey] - The creator public key. Defaults to the current account.
-	 * @param {string} options.mosaicId - The token id.
-	 * @param {number} options.divisibility - The token divisibility.
+	 * @param {string} options.mosaicId - The mosaic id.
+	 * @param {number} options.divisibility - The mosaic divisibility.
 	 * @param {string} options.delta - The supply change amount in relative units.
 	 * @param {number} options.action - The supply change action. One of MosaicSupplyChangeAction.
 	 * @returns {TransactionBundle} The supply change transaction bundle.
@@ -120,20 +120,20 @@ export class TokenModule {
 		};
 
 		if (isMultisig)
-			return this.#createMultisigBundle([supplyChangeTransaction], TransactionBundleType.MULTISIG_TOKEN_SUPPLY_CHANGE);
+			return this.#createMultisigBundle([supplyChangeTransaction], TransactionBundleType.MULTISIG_MOSAIC_SUPPLY_CHANGE);
 
-		return this.#createSingleTransactionBundle(supplyChangeTransaction, TransactionBundleType.TOKEN_SUPPLY_CHANGE);
+		return this.#createSingleTransactionBundle(supplyChangeTransaction, TransactionBundleType.MOSAIC_SUPPLY_CHANGE);
 	};
 
 	/**
-	 * Prepares a token revocation transaction bundle to reclaim a token amount from a holder back to the creator.
+	 * Prepares a mosaic revocation transaction bundle to reclaim a mosaic amount from a holder back to the creator.
 	 * When the sender is a multisig account, the bundle contains hash lock and aggregate bonded transactions.
 	 * @param {object} options - The revocation options.
 	 * @param {string} [options.senderPublicKey] - The creator public key. Defaults to the current account.
-	 * @param {string} options.mosaicId - The token id.
-	 * @param {number} options.divisibility - The token divisibility.
+	 * @param {string} options.mosaicId - The mosaic id.
+	 * @param {number} options.divisibility - The mosaic divisibility.
 	 * @param {string} options.amount - The amount to revoke in relative units.
-	 * @param {string} options.sourceAddress - The holder address to revoke the token from.
+	 * @param {string} options.sourceAddress - The holder address to revoke the mosaic from.
 	 * @returns {TransactionBundle} The revocation transaction bundle.
 	 */
 	createRevocationTransaction = options => {
@@ -153,18 +153,18 @@ export class TokenModule {
 		};
 
 		if (isMultisig)
-			return this.#createMultisigBundle([revocationTransaction], TransactionBundleType.MULTISIG_TOKEN_REVOCATION);
+			return this.#createMultisigBundle([revocationTransaction], TransactionBundleType.MULTISIG_MOSAIC_REVOCATION);
 
-		return this.#createSingleTransactionBundle(revocationTransaction, TransactionBundleType.TOKEN_REVOCATION);
+		return this.#createSingleTransactionBundle(revocationTransaction, TransactionBundleType.MOSAIC_REVOCATION);
 	};
 
 	/**
-	 * Fetches the list of tokens created by the current account or a given account.
+	 * Fetches the list of mosaics created by the current account or a given account.
 	 * @param {string} [address] - The creator address. Defaults to the current account.
 	 * @param {SearchCriteria} [searchCriteria] - Pagination params.
-	 * @returns {Promise<MosaicInfo[]>} The created tokens.
+	 * @returns {Promise<MosaicInfo[]>} The created mosaics.
 	 */
-	fetchAccountTokens = async (address, searchCriteria) => {
+	fetchAccountMosaics = async (address, searchCriteria) => {
 		const { currentAccount, networkProperties } = this.#walletController;
 		const targetAddress = address ?? currentAccount.address;
 
@@ -172,10 +172,10 @@ export class TokenModule {
 	};
 
 	/**
-	 * Fetches the list of accounts holding a given token.
-	 * @param {string} mosaicId - The token id.
+	 * Fetches the list of accounts holding a given mosaic.
+	 * @param {string} mosaicId - The mosaic id.
 	 * @param {SearchCriteria} [searchCriteria] - Pagination params.
-	 * @returns {Promise<MosaicOwner[]>} The token owners with their held amounts in relative units.
+	 * @returns {Promise<MosaicOwner[]>} The mosaic owners with their held amounts in relative units.
 	 */
 	fetchMosaicOwners = async (mosaicId, searchCriteria) => {
 		const { networkProperties } = this.#walletController;
@@ -200,7 +200,7 @@ export class TokenModule {
 
 	/**
 	 * Resolves the sender context. When a sender public key distinct from the current account is provided,
-	 * the token action is performed on behalf of that multisig account.
+	 * the mosaic action is performed on behalf of that multisig account.
 	 * @param {string} [senderPublicKey] - The sender public key, if any.
 	 * @returns {{ senderPublicKey: string, senderAddress: string, isMultisig: boolean }} The sender context.
 	 */

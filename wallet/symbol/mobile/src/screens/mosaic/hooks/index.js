@@ -1,5 +1,5 @@
 export { useCreateMosaicFormState } from './useCreateMosaicFormState';
-export { useCreatedTokenList } from './useCreatedTokenList';
+export { useCreatedMosaicList } from './useCreatedMosaicList';
 export { useModifyMosaicFormState } from './useModifyMosaicFormState';
 export { useModifyMosaicTransaction } from './useModifyMosaicTransaction';
 export { useMosaicIdentity } from './useMosaicIdentity';

@@ -52,21 +52,21 @@ export const TransactionBundleType = {
 	MULTISIG_ACCOUNT_MODIFICATION: 'multisig-account-modification',
 	DELEGATED_HARVESTING: 'delegated-harvesting',
 	MULTISIG_DELEGATED_HARVESTING: 'multisig-delegated-harvesting',
-	TOKEN_CREATION: 'token-creation',
-	MULTISIG_TOKEN_CREATION: 'multisig-token-creation',
-	TOKEN_SUPPLY_CHANGE: 'token-supply-change',
-	MULTISIG_TOKEN_SUPPLY_CHANGE: 'multisig-token-supply-change',
-	TOKEN_REVOCATION: 'token-revocation',
-	MULTISIG_TOKEN_REVOCATION: 'multisig-token-revocation'
+	MOSAIC_CREATION: 'mosaic-creation',
+	MULTISIG_MOSAIC_CREATION: 'multisig-mosaic-creation',
+	MOSAIC_SUPPLY_CHANGE: 'mosaic-supply-change',
+	MULTISIG_MOSAIC_SUPPLY_CHANGE: 'multisig-mosaic-supply-change',
+	MOSAIC_REVOCATION: 'mosaic-revocation',
+	MULTISIG_MOSAIC_REVOCATION: 'multisig-mosaic-revocation'
 };
 
 export const MULTISIG_BUNDLE_TYPES = [
 	TransactionBundleType.MULTISIG_TRANSFER,
 	TransactionBundleType.MULTISIG_ACCOUNT_MODIFICATION,
 	TransactionBundleType.MULTISIG_DELEGATED_HARVESTING,
-	TransactionBundleType.MULTISIG_TOKEN_CREATION,
-	TransactionBundleType.MULTISIG_TOKEN_SUPPLY_CHANGE,
-	TransactionBundleType.MULTISIG_TOKEN_REVOCATION
+	TransactionBundleType.MULTISIG_MOSAIC_CREATION,
+	TransactionBundleType.MULTISIG_MOSAIC_SUPPLY_CHANGE,
+	TransactionBundleType.MULTISIG_MOSAIC_REVOCATION
 ];
 
 export const HarvestingStatus = {

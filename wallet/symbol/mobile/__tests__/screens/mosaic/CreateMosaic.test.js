@@ -154,7 +154,7 @@ const signedTransactionBundle = {
 
 // Module Mock Factories
 
-const createTokenModuleMock = () => ({
+const createMosaicModuleMock = () => ({
 	createTransaction: jest.fn().mockReturnValue(mosaicTransactionBundle)
 });
 
@@ -179,7 +179,7 @@ const setupMocks = () => {
 		signTransactionBundle: jest.fn().mockResolvedValue(signedTransactionBundle),
 		announceSignedTransactionBundle: jest.fn().mockResolvedValue({}),
 		modules: {
-			token: createTokenModuleMock(),
+			mosaic: createMosaicModuleMock(),
 			transfer: createTransferModuleMock(),
 			addressBook: createAddressBookMock([])
 		}
@@ -456,7 +456,7 @@ describe('screens/mosaic/CreateMosaic', () => {
 				await screenTester.waitForTimer(); // announce transaction
 
 				// Assert:
-				expect(walletControllerMock.modules.token.createTransaction)
+				expect(walletControllerMock.modules.mosaic.createTransaction)
 					.toHaveBeenCalledWith(expect.objectContaining(expected.transactionOptions));
 				expect(walletControllerMock.signTransactionBundle).toHaveBeenCalledWith(mosaicTransactionBundle);
 				expect(walletControllerMock.announceSignedTransactionBundle).toHaveBeenCalledWith(signedTransactionBundle);

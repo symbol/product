@@ -16,12 +16,12 @@ import { useAsyncManager } from '@/app/hooks';
  * React hook for loading the accounts holding a mosaic. Populates the source account selector.
  * @param {object} params - Hook parameters.
  * @param {WalletController} params.walletController - The wallet controller instance.
- * @param {string} params.tokenId - The mosaic id to load holders for.
+ * @param {string} params.mosaicId - The mosaic id to load holders for.
  * @returns {UseMosaicOwnersReturnType}
  */
-export const useMosaicOwners = ({ walletController, tokenId }) => {
+export const useMosaicOwners = ({ walletController, mosaicId }) => {
 	const mosaicOwnersManager = useAsyncManager({
-		callback: () => walletController.modules.token.fetchMosaicOwners(tokenId),
+		callback: () => walletController.modules.mosaic.fetchMosaicOwners(mosaicId),
 		defaultData: []
 	});
 

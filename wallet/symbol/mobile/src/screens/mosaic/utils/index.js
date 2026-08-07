@@ -1,4 +1,4 @@
-export * from './created-token-list';
+export * from './created-mosaic-list';
 export * from './mosaic-duration';
 export * from './mosaic-supply';
 export * from './number-format';

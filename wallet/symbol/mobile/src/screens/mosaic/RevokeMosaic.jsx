@@ -50,7 +50,7 @@ export const RevokeMosaic = props => {
 	} = walletController;
 	const currentAccountInfo = walletController.currentAccountInfo || {};
 	const walletAccounts = accounts[networkIdentifier];
-	const { tokenId } = route.params;
+	const { mosaicId } = route.params;
 
 	// Transaction sender
 	const {
@@ -67,7 +67,7 @@ export const RevokeMosaic = props => {
 		isLoading: isMosaicLoading,
 		load: loadMosaic,
 		reset: resetMosaic
-	} = useMosaicInfo({ walletController, tokenId });
+	} = useMosaicInfo({ walletController, mosaicId });
 
 	// Mosaic holders
 	const {
@@ -75,7 +75,7 @@ export const RevokeMosaic = props => {
 		isLoading: isOwnersLoading,
 		load: loadOwners,
 		reset: resetOwners
-	} = useMosaicOwners({ walletController, tokenId });
+	} = useMosaicOwners({ walletController, mosaicId });
 
 	useWalletRefreshLifecycle({
 		walletController,
@@ -114,7 +114,7 @@ export const RevokeMosaic = props => {
 	const selectedOwner = sourceOptions.find(owner => owner.address === sourceAddress);
 	const availableBalance = selectedOwner?.amount ?? '0';
 
-	// The token is fixed to the mosaic the screen was opened for
+	// The selection is fixed to the mosaic the screen was opened for
 	/** @type {Token[]} */
 	const tokens = useMemo(() => {
 		if (!mosaic)
@@ -131,7 +131,7 @@ export const RevokeMosaic = props => {
 	// Transaction creation and preview
 	const { createRevokeMosaicTransaction, getConfirmationPreview } = useRevokeMosaicTransaction({
 		walletController,
-		mosaicId: tokenId,
+		mosaicId,
 		divisibility: mosaic?.divisibility,
 		amount,
 		sourceAddress
@@ -221,7 +221,7 @@ export const RevokeMosaic = props => {
 						</Stack>
 					</Stack>
 					<Stack gap="none">
-						<StyledText type="title" size="s">{$t('s_send_token_title')}</StyledText>
+						<StyledText type="title" size="s">{$t('s_revoke_mosaic_title')}</StyledText>
 						<Stack gap="s">
 							<SelectToken
 								label={$t('input_mosaic')}

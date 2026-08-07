@@ -34,7 +34,7 @@ export const useRevokeMosaicTransaction = ({
 	 * @returns {Promise<TransactionBundle>}
 	 */
 	const createRevokeMosaicTransaction = async () => {
-		const transactionBundle = walletController.modules.token.createRevocationTransaction({
+		const transactionBundle = walletController.modules.mosaic.createRevocationTransaction({
 			mosaicId,
 			divisibility,
 			amount,

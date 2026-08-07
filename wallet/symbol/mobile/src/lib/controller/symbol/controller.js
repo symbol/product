@@ -12,7 +12,7 @@ import {
 	StorageInterface,
 	WalletController
 } from 'wallet-common-core';
-import { HarvestingModule, MultisigModule, TokenModule, TransferModule } from 'wallet-common-symbol';
+import { HarvestingModule, MosaicModule, MultisigModule, TransferModule } from 'wallet-common-symbol';
 
 /** @typedef {import('@/app/types/Wallet').MainWalletController} MainWalletController */
 
@@ -25,7 +25,7 @@ const modules = [
 	new TransferModule(),
 	new LocalizationModule(),
 	new HarvestingModule(),
-	new TokenModule()
+	new MosaicModule()
 ];
 
 /**

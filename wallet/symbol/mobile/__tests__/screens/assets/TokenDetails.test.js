@@ -641,7 +641,7 @@ describe('screens/assets/TokenDetails', () => {
 
 				// Assert:
 				expect(routerMock[expected.routerMethod]).toHaveBeenCalledWith({
-					params: { chainName: CHAIN_NAME, tokenId: TOKEN_ID }
+					params: { chainName: CHAIN_NAME, mosaicId: TOKEN_ID }
 				});
 			});
 		};

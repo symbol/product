@@ -233,7 +233,7 @@ const SupplyTimeline = ({ steps }) => {
  * the surviving supply and an added share to its right, so the direction of the change reads from the side
  * the colored segment sits on. Every amount is padded to the full divisibility to keep the decimals aligned.
  * @param {object} props - Component props.
- * @param {TokenInfo} props.token - The mosaic whose supply is being changed.
+ * @param {TokenInfo} props.token - The token whose supply is being changed.
  * @param {string} props.currentSupply - The current total supply in relative units.
  * @param {string} props.newSupply - The requested total supply in relative units.
  * @param {string} props.delta - The change magnitude in relative units.

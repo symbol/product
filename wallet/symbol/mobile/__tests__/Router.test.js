@@ -91,7 +91,7 @@ jest.mock('@/app/screens', () => {
 		CreateMosaic: createMockScreen('CreateMosaic'),
 		ModifyMosaic: createMockScreen('ModifyMosaic'),
 		RevokeMosaic: createMockScreen('RevokeMosaic'),
-		CreatedTokenList: createMockScreen('CreatedTokenList'),
+		CreatedMosaicList: createMockScreen('CreatedMosaicList'),
 		Scan: createMockScreen('Scan'),
 		TransportRequest: createMockScreen('TransportRequest'),
 		Send: createMockScreen('Send'),
@@ -238,7 +238,7 @@ const NAVIGATION_SCREENS_CONFIG = [
 		hasParams: true
 	},
 	{
-		screenName: 'CreatedTokenList',
+		screenName: 'CreatedMosaicList',
 		shouldReset: false,
 		hasParams: true
 	}

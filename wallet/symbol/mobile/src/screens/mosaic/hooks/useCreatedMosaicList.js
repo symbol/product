@@ -1,11 +1,11 @@
-import { buildCreatedTokenListSections, filterCreatedTokens, getCreatedTokenListFilterConfig, mergeHeldAmounts } from '../utils';
+import { buildCreatedMosaicListSections, filterCreatedMosaics, getCreatedMosaicListFilterConfig, mergeHeldAmounts } from '../utils';
 import { usePagination } from '@/app/hooks';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 /** @typedef {import('@/app/types/Filter').FilterItem} FilterItem */
 /** @typedef {import('@/app/types/Filter').FilterValue} FilterValue */
 /** @typedef {import('@/app/types/Wallet').MainWalletController} MainWalletController */
-/** @typedef {import('@/app/screens/mosaic/types/Mosaic').CreatedTokenSection} CreatedTokenSection */
+/** @typedef {import('@/app/screens/mosaic/types/Mosaic').CreatedMosaicSection} CreatedMosaicSection */
 
 const FIRST_PAGE_NUMBER = 1;
 const PAGE_SIZE = 15;
@@ -13,9 +13,9 @@ const PAGE_SIZE = 15;
 const AUTO_FILL_MIN_ITEMS = 10;
 
 /**
- * Return type for useCreatedTokenList hook.
- * @typedef {object} UseCreatedTokenListReturnType
- * @property {CreatedTokenSection[]} sections - List sections holding the created tokens, narrowed by the active filter.
+ * Return type for useCreatedMosaicList hook.
+ * @typedef {object} UseCreatedMosaicListReturnType
+ * @property {CreatedMosaicSection[]} sections - List sections holding the created mosaics, narrowed by the active filter.
  * @property {FilterItem[]} filterConfig - Filter configuration array.
  * @property {FilterValue} filter - Current filter values.
  * @property {function(FilterValue): void} setFilter - Function to update filter.
@@ -28,23 +28,23 @@ const AUTO_FILL_MIN_ITEMS = 10;
  */
 
 /**
- * React hook that manages the paginated list of tokens created by the current account, with held
+ * React hook that manages the paginated list of mosaics created by the current account, with held
  * balances merged in. Auto-fetches further pages while the filtered list stays under-filled.
  * @param {MainWalletController} walletController - The wallet controller instance.
- * @returns {UseCreatedTokenListReturnType} The created token list state and controls.
+ * @returns {UseCreatedMosaicListReturnType} The created mosaic list state and controls.
  */
-export const useCreatedTokenList = walletController => {
-	const tokenModule = walletController.modules.token;
+export const useCreatedMosaicList = walletController => {
+	const mosaicModule = walletController.modules.mosaic;
 	const { currentAccount, currentAccountInfo, networkProperties } = walletController;
-	const heldTokens = currentAccountInfo?.tokens ?? currentAccountInfo?.mosaics ?? [];
+	const heldMosaics = currentAccountInfo?.tokens ?? currentAccountInfo?.mosaics ?? [];
 
 	// Filter
 	const [filter, setFilter] = useState({});
-	const filterConfig = useMemo(() => getCreatedTokenListFilterConfig(), []);
+	const filterConfig = useMemo(() => getCreatedMosaicListFilterConfig(), []);
 
 	// Data fetching
 	const pagination = usePagination({
-		callback: ({ pageNumber, pageSize }) => tokenModule.fetchAccountTokens(currentAccount.address, { pageNumber, pageSize }),
+		callback: ({ pageNumber, pageSize }) => mosaicModule.fetchAccountMosaics(currentAccount.address, { pageNumber, pageSize }),
 		pageSize: PAGE_SIZE,
 		firstPageNumber: FIRST_PAGE_NUMBER,
 		defaultData: []
@@ -64,14 +64,14 @@ export const useCreatedTokenList = walletController => {
 	}, [pagination]);
 
 	// Derived display list
-	const tokens = filterCreatedTokens(mergeHeldAmounts(pagination.data, heldTokens), filter, networkProperties.chainHeight);
-	const sections = buildCreatedTokenListSections(tokens);
+	const mosaics = filterCreatedMosaics(mergeHeldAmounts(pagination.data, heldMosaics), filter, networkProperties.chainHeight);
+	const sections = buildCreatedMosaicListSections(mosaics);
 
 	// The page number advances only after a successful fetch, so it also signals that the first page is in
 	const hasLoadedFirstPage = pagination.pageNumber > FIRST_PAGE_NUMBER;
-	const isUnderFilled = hasLoadedFirstPage && tokens.length < AUTO_FILL_MIN_ITEMS;
+	const isUnderFilled = hasLoadedFirstPage && mosaics.length < AUTO_FILL_MIN_ITEMS;
 
-	// Filters and hidden expired tokens narrow the fetched pages, so keep pulling until the list fills up
+	// Filters and hidden expired mosaics narrow the fetched pages, so keep pulling until the list fills up
 	useEffect(() => {
 		if (isUnderFilled && !pagination.isLastPage && !pagination.isLoading)
 			fetchNextPage();

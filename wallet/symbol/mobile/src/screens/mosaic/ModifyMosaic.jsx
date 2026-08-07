@@ -27,7 +27,7 @@ import React, { useEffect, useMemo } from 'react';
 import Animated, { FadeInDown, FadeOut } from 'react-native-reanimated';
 
 /** @typedef {import('@/app/screens/mosaic/types/Mosaic').ModifyMosaicRouteParams} ModifyMosaicRouteParams */
-/** @typedef {import('@/app/types/Token').Token} Token */
+/** @typedef {import('@/app/types/Token').TokenInfo} TokenInfo */
 
 /**
  * ModifyMosaic screen component. Provides the interface for changing the total supply of an existing
@@ -50,7 +50,7 @@ export const ModifyMosaic = props => {
 	} = walletController;
 	const currentAccountInfo = walletController.currentAccountInfo || {};
 	const walletAccounts = accounts[networkIdentifier];
-	const { tokenId } = route.params;
+	const { mosaicId } = route.params;
 
 	// Transaction sender
 	const {
@@ -67,7 +67,7 @@ export const ModifyMosaic = props => {
 		isLoading: isMosaicLoading,
 		load: loadMosaic,
 		reset: resetMosaic
-	} = useMosaicInfo({ walletController, tokenId });
+	} = useMosaicInfo({ walletController, mosaicId });
 
 	// Form state
 	const {
@@ -78,7 +78,8 @@ export const ModifyMosaic = props => {
 	} = useModifyMosaicFormState({ currentSupply: mosaic?.supply });
 
 	// Mosaic identity and precision shown on the supply card, falling back to the id when unnamed
-	const token = mosaic
+	/** @type {TokenInfo|null} */
+	const tokenDisplayData = mosaic
 		? {
 			id: mosaic.id,
 			name: mosaic.names?.[0] || mosaic.id,
@@ -107,7 +108,7 @@ export const ModifyMosaic = props => {
 	// Transaction creation and preview
 	const { createModifyMosaicTransaction, getConfirmationPreview } = useModifyMosaicTransaction({
 		walletController,
-		mosaicId: tokenId,
+		mosaicId,
 		divisibility: mosaic?.divisibility,
 		delta: supplyDelta?.delta,
 		action: supplyDelta?.action
@@ -191,7 +192,7 @@ export const ModifyMosaic = props => {
 						<Stack gap="m">
 							{!!supplyDelta && (
 								<SupplyDeltaCard
-									token={token}
+									token={tokenDisplayData}
 									currentSupply={mosaic.supply}
 									newSupply={newSupply}
 									delta={supplyDelta.delta}

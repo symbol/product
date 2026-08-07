@@ -1,4 +1,4 @@
-import { CreatedTokenList } from '@/app/screens/mosaic/CreatedTokenList';
+import { CreatedMosaicList } from '@/app/screens/mosaic/CreatedMosaicList';
 import { AccountFixtureBuilder } from '__fixtures__/local/AccountFixtureBuilder';
 import { NetworkPropertiesFixtureBuilder } from '__fixtures__/local/NetworkPropertiesFixtureBuilder';
 import { TokenFixtureBuilder } from '__fixtures__/local/TokenFixtureBuilder';
@@ -22,15 +22,15 @@ const PAGE_SIZE = 15;
 // Screen Text
 
 const SCREEN_TEXT = {
-	textTitle: 's_createdTokenList_title',
-	textDescription: 's_createdTokenList_description',
-	textFilterRevokable: 's_createdTokenList_filter_revokable',
-	textFilterSupplyMutable: 's_createdTokenList_filter_supplyMutable',
-	textFilterExpired: 's_createdTokenList_filter_expired',
+	textTitle: 's_createdMosaicList_title',
+	textDescription: 's_createdMosaicList_description',
+	textFilterRevokable: 's_createdMosaicList_filter_revokable',
+	textFilterSupplyMutable: 's_createdMosaicList_filter_supplyMutable',
+	textFilterExpired: 's_createdMosaicList_filter_expired',
 	textExpired: 's_assets_item_expired',
 	buttonClear: 'button_clear',
 	textEmptyList: 'message_emptyList',
-	buttonCreateToken: 'plus'
+	buttonCreateMosaic: 'plus'
 };
 
 // Account Fixtures
@@ -126,19 +126,19 @@ const expectedSecondPageTokenName = 'second.page.token';
 
 // Mock Factory
 
-const createTokenModuleMock = (createdTokens = []) => ({
-	fetchAccountTokens: jest.fn().mockResolvedValue(createdTokens)
+const createMosaicModuleMock = (createdTokens = []) => ({
+	fetchAccountMosaics: jest.fn().mockResolvedValue(createdTokens)
 });
 
-const createPagedTokenModuleMock = pagesByNumber => ({
-	fetchAccountTokens: jest.fn((_, searchCriteria) => Promise.resolve(pagesByNumber[searchCriteria.pageNumber] ?? []))
+const createPagedMosaicModuleMock = pagesByNumber => ({
+	fetchAccountMosaics: jest.fn((_, searchCriteria) => Promise.resolve(pagesByNumber[searchCriteria.pageNumber] ?? []))
 });
 
 // Setup
 
 const setupMocks = (config = {}) => {
 	const {
-		tokenModule = createTokenModuleMock(createdTokenDefinitions),
+		mosaicModule = createMosaicModuleMock(createdTokenDefinitions),
 		heldTokens = [heldRevokableToken]
 	} = config;
 
@@ -153,14 +153,14 @@ const setupMocks = (config = {}) => {
 		},
 		isWalletReady: true,
 		modules: {
-			token: tokenModule
+			mosaic: mosaicModule
 		}
 	});
 
-	return { tokenModule };
+	return { mosaicModule };
 };
 
-describe('screens/mosaic/CreatedTokenList', () => {
+describe('screens/mosaic/CreatedMosaicList', () => {
 	beforeEach(() => {
 		jest.useFakeTimers();
 		jest.clearAllMocks();
@@ -185,7 +185,7 @@ describe('screens/mosaic/CreatedTokenList', () => {
 			];
 
 			// Act:
-			const screenTester = new ScreenTester(CreatedTokenList);
+			const screenTester = new ScreenTester(CreatedMosaicList);
 			await screenTester.waitForTimer(); // complete the initial load
 
 			// Assert:
@@ -193,7 +193,7 @@ describe('screens/mosaic/CreatedTokenList', () => {
 		});
 	});
 
-	describe('created token list', () => {
+	describe('created mosaic list', () => {
 		it('renders held and zero-balance created tokens and hides expired ones by default', async () => {
 			// Arrange:
 			setupMocks();
@@ -205,7 +205,7 @@ describe('screens/mosaic/CreatedTokenList', () => {
 			const expectedZeroAmountCount = 1;
 
 			// Act:
-			const screenTester = new ScreenTester(CreatedTokenList);
+			const screenTester = new ScreenTester(CreatedMosaicList);
 			await screenTester.waitForTimer(); // complete the initial load
 
 			// Assert:
@@ -225,7 +225,7 @@ describe('screens/mosaic/CreatedTokenList', () => {
 			];
 
 			// Act:
-			const screenTester = new ScreenTester(CreatedTokenList);
+			const screenTester = new ScreenTester(CreatedMosaicList);
 			await screenTester.waitForTimer(); // complete the initial load
 			screenTester.pressButton(SCREEN_TEXT.textFilterExpired);
 			await screenTester.waitForTimer(); // flush any auto-fill fetch
@@ -241,7 +241,7 @@ describe('screens/mosaic/CreatedTokenList', () => {
 			setupMocks();
 
 			// Act:
-			const screenTester = new ScreenTester(CreatedTokenList);
+			const screenTester = new ScreenTester(CreatedMosaicList);
 			await screenTester.waitForTimer(); // complete the initial load
 			screenTester.pressButton(SCREEN_TEXT.textFilterRevokable);
 
@@ -255,7 +255,7 @@ describe('screens/mosaic/CreatedTokenList', () => {
 			setupMocks();
 
 			// Act:
-			const screenTester = new ScreenTester(CreatedTokenList);
+			const screenTester = new ScreenTester(CreatedMosaicList);
 			await screenTester.waitForTimer(); // complete the initial load
 			screenTester.pressButton(SCREEN_TEXT.textFilterSupplyMutable);
 
@@ -269,7 +269,7 @@ describe('screens/mosaic/CreatedTokenList', () => {
 			setupMocks();
 
 			// Act:
-			const screenTester = new ScreenTester(CreatedTokenList);
+			const screenTester = new ScreenTester(CreatedMosaicList);
 			await screenTester.waitForTimer(); // complete the initial load
 			screenTester.pressButton(SCREEN_TEXT.textFilterRevokable);
 			screenTester.pressButton(SCREEN_TEXT.textFilterSupplyMutable);
@@ -288,7 +288,7 @@ describe('screens/mosaic/CreatedTokenList', () => {
 			];
 
 			// Act:
-			const screenTester = new ScreenTester(CreatedTokenList);
+			const screenTester = new ScreenTester(CreatedMosaicList);
 			await screenTester.waitForTimer(); // complete the initial load
 			screenTester.pressButton(SCREEN_TEXT.textFilterRevokable);
 			screenTester.pressButton(SCREEN_TEXT.buttonClear);
@@ -302,10 +302,10 @@ describe('screens/mosaic/CreatedTokenList', () => {
 	describe('empty state', () => {
 		it('renders empty list message when the account has no created tokens', async () => {
 			// Arrange:
-			setupMocks({ tokenModule: createTokenModuleMock([]) });
+			setupMocks({ mosaicModule: createMosaicModuleMock([]) });
 
 			// Act:
-			const screenTester = new ScreenTester(CreatedTokenList);
+			const screenTester = new ScreenTester(CreatedMosaicList);
 			await screenTester.waitForTimer(); // complete the initial load
 
 			// Assert:
@@ -315,13 +315,13 @@ describe('screens/mosaic/CreatedTokenList', () => {
 		it('renders empty list message when the fetch fails', async () => {
 			// Arrange:
 			const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-			const tokenModule = {
-				fetchAccountTokens: jest.fn().mockRejectedValue(new Error('error_network'))
+			const mosaicModule = {
+				fetchAccountMosaics: jest.fn().mockRejectedValue(new Error('error_network'))
 			};
-			setupMocks({ tokenModule });
+			setupMocks({ mosaicModule });
 
 			// Act:
-			const screenTester = new ScreenTester(CreatedTokenList);
+			const screenTester = new ScreenTester(CreatedMosaicList);
 			await screenTester.waitForTimer(); // complete the failing fetch
 
 			// Assert:
@@ -333,61 +333,61 @@ describe('screens/mosaic/CreatedTokenList', () => {
 	describe('pagination', () => {
 		it('loads the next page when the list end is reached', async () => {
 			// Arrange:
-			const tokenModule = createPagedTokenModuleMock({
+			const mosaicModule = createPagedMosaicModuleMock({
 				1: fullFirstPage,
 				2: [secondPageTokenDefinition]
 			});
-			setupMocks({ tokenModule });
+			setupMocks({ mosaicModule });
 
 			// Act:
-			const screenTester = new ScreenTester(CreatedTokenList);
+			const screenTester = new ScreenTester(CreatedMosaicList);
 			await screenTester.waitForTimer(); // complete the initial load
 
 			// Assert: only the first page is fetched initially
 			screenTester.expectText([expectedFirstPageTokenName]);
-			expect(tokenModule.fetchAccountTokens).toHaveBeenCalledTimes(1);
-			expect(tokenModule.fetchAccountTokens).toHaveBeenCalledWith(currentAccount.address, { pageNumber: 1, pageSize: PAGE_SIZE });
+			expect(mosaicModule.fetchAccountMosaics).toHaveBeenCalledTimes(1);
+			expect(mosaicModule.fetchAccountMosaics).toHaveBeenCalledWith(currentAccount.address, { pageNumber: 1, pageSize: PAGE_SIZE });
 
 			// Act: reach the list end
 			screenTester.scrollListToEnd();
 			await screenTester.waitForTimer(); // complete the next page fetch
 
 			// Assert: the next page is fetched and appended
-			expect(tokenModule.fetchAccountTokens).toHaveBeenCalledTimes(2);
-			expect(tokenModule.fetchAccountTokens).toHaveBeenCalledWith(currentAccount.address, { pageNumber: 2, pageSize: PAGE_SIZE });
+			expect(mosaicModule.fetchAccountMosaics).toHaveBeenCalledTimes(2);
+			expect(mosaicModule.fetchAccountMosaics).toHaveBeenCalledWith(currentAccount.address, { pageNumber: 2, pageSize: PAGE_SIZE });
 		});
 
 		it('fetches no further pages when the first page is short', async () => {
 			// Arrange:
-			const { tokenModule } = setupMocks();
+			const { mosaicModule } = setupMocks();
 
 			// Act:
-			const screenTester = new ScreenTester(CreatedTokenList);
+			const screenTester = new ScreenTester(CreatedMosaicList);
 			await screenTester.waitForTimer(); // complete the initial load
 			screenTester.scrollListToEnd();
 			await screenTester.waitForTimer(); // flush any next page fetch
 
 			// Assert:
-			expect(tokenModule.fetchAccountTokens).toHaveBeenCalledTimes(1);
+			expect(mosaicModule.fetchAccountMosaics).toHaveBeenCalledTimes(1);
 		});
 
 		it('auto-fetches further pages when the active filter leaves the list under-filled', async () => {
 			// Arrange: the first page has no revokable tokens; the matching token sits on the second page
-			const tokenModule = createPagedTokenModuleMock({
+			const mosaicModule = createPagedMosaicModuleMock({
 				1: fullFirstPage,
 				2: [secondPageTokenDefinition]
 			});
-			setupMocks({ tokenModule });
+			setupMocks({ mosaicModule });
 
 			// Act:
-			const screenTester = new ScreenTester(CreatedTokenList);
+			const screenTester = new ScreenTester(CreatedMosaicList);
 			await screenTester.waitForTimer(); // complete the initial load
 			screenTester.pressButton(SCREEN_TEXT.textFilterRevokable);
 			await screenTester.waitForTimer(); // complete the auto-fill fetch
 
 			// Assert: the second page is fetched automatically and its matching token is shown
-			expect(tokenModule.fetchAccountTokens).toHaveBeenCalledTimes(2);
-			expect(tokenModule.fetchAccountTokens).toHaveBeenCalledWith(currentAccount.address, { pageNumber: 2, pageSize: PAGE_SIZE });
+			expect(mosaicModule.fetchAccountMosaics).toHaveBeenCalledTimes(2);
+			expect(mosaicModule.fetchAccountMosaics).toHaveBeenCalledWith(currentAccount.address, { pageNumber: 2, pageSize: PAGE_SIZE });
 			screenTester.expectText([expectedSecondPageTokenName]);
 			screenTester.notExpectText([expectedFirstPageTokenName]);
 		});
@@ -398,34 +398,34 @@ describe('screens/mosaic/CreatedTokenList', () => {
 				endHeight: CHAIN_HEIGHT - 1000,
 				isUnlimitedDuration: false
 			});
-			const tokenModule = createPagedTokenModuleMock({
+			const mosaicModule = createPagedMosaicModuleMock({
 				1: expiredFirstPage,
 				2: [secondPageTokenDefinition]
 			});
-			setupMocks({ tokenModule });
+			setupMocks({ mosaicModule });
 
 			// Act:
-			const screenTester = new ScreenTester(CreatedTokenList);
+			const screenTester = new ScreenTester(CreatedMosaicList);
 			await screenTester.waitForTimer(); // complete the initial load
 			await screenTester.waitForTimer(); // complete the auto-fill fetch
 
 			// Assert: the second page is fetched automatically and its active token is shown
-			expect(tokenModule.fetchAccountTokens).toHaveBeenCalledTimes(2);
-			expect(tokenModule.fetchAccountTokens).toHaveBeenCalledWith(currentAccount.address, { pageNumber: 2, pageSize: PAGE_SIZE });
+			expect(mosaicModule.fetchAccountMosaics).toHaveBeenCalledTimes(2);
+			expect(mosaicModule.fetchAccountMosaics).toHaveBeenCalledWith(currentAccount.address, { pageNumber: 2, pageSize: PAGE_SIZE });
 			screenTester.expectText([expectedSecondPageTokenName]);
 			screenTester.notExpectText([expectedFirstPageTokenName]);
 		});
 
 		it('restarts from the first page on pull-to-refresh', async () => {
 			// Arrange:
-			const tokenModule = createPagedTokenModuleMock({
+			const mosaicModule = createPagedMosaicModuleMock({
 				1: fullFirstPage,
 				2: [secondPageTokenDefinition]
 			});
-			setupMocks({ tokenModule });
+			setupMocks({ mosaicModule });
 
 			// Act:
-			const screenTester = new ScreenTester(CreatedTokenList);
+			const screenTester = new ScreenTester(CreatedMosaicList);
 			await screenTester.waitForTimer(); // complete the initial load
 			screenTester.scrollListToEnd();
 			await screenTester.waitForTimer(); // complete the next page fetch
@@ -433,8 +433,8 @@ describe('screens/mosaic/CreatedTokenList', () => {
 			await screenTester.waitForTimer(); // complete the refresh fetch
 
 			// Assert: the refresh fetches the first page again
-			expect(tokenModule.fetchAccountTokens).toHaveBeenCalledTimes(3);
-			expect(tokenModule.fetchAccountTokens).toHaveBeenLastCalledWith(currentAccount.address, { pageNumber: 1, pageSize: PAGE_SIZE });
+			expect(mosaicModule.fetchAccountMosaics).toHaveBeenCalledTimes(3);
+			expect(mosaicModule.fetchAccountMosaics).toHaveBeenLastCalledWith(currentAccount.address, { pageNumber: 1, pageSize: PAGE_SIZE });
 		});
 	});
 
@@ -447,7 +447,7 @@ describe('screens/mosaic/CreatedTokenList', () => {
 			});
 
 			// Act:
-			const screenTester = new ScreenTester(CreatedTokenList);
+			const screenTester = new ScreenTester(CreatedMosaicList);
 			await screenTester.waitForTimer(); // complete the initial load
 			screenTester.pressButton(expectedSupplyMutableTokenName);
 
@@ -474,9 +474,9 @@ describe('screens/mosaic/CreatedTokenList', () => {
 			});
 
 			// Act:
-			const screenTester = new ScreenTester(CreatedTokenList);
+			const screenTester = new ScreenTester(CreatedMosaicList);
 			await screenTester.waitForTimer(); // complete the initial load
-			screenTester.presButtonByLabel(SCREEN_TEXT.buttonCreateToken);
+			screenTester.presButtonByLabel(SCREEN_TEXT.buttonCreateMosaic);
 
 			// Assert:
 			expect(routerMock.goToCreateMosaic).toHaveBeenCalledWith();

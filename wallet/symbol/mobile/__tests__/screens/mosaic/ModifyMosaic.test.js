@@ -12,10 +12,10 @@ const CHAIN_NAME = 'symbol';
 const NETWORK_IDENTIFIER = 'testnet';
 const TICKER = 'XYM';
 
-const MOSAIC_ID = '78C3CDF0896248DB';
-const MOSAIC_NAME = 'my.mutable.mosaic';
-const MOSAIC_DIVISIBILITY = 0;
-const DIVISIBLE_MOSAIC_DIVISIBILITY = 2;
+const TOKEN_ID = '78C3CDF0896248DB';
+const TOKEN_NAME = 'my.mutable.mosaic';
+const TOKEN_DIVISIBILITY = 0;
+const DIVISIBLE_TOKEN_DIVISIBILITY = 2;
 
 const CURRENT_SUPPLY = '1000';
 const CURRENT_SUPPLY_TEXT = '1 000';
@@ -92,18 +92,18 @@ const transactionFees = TransactionFeeFixtureBuilder
 	.createWithAmounts('0.1', '0.2', '0.3', CHAIN_NAME, NETWORK_IDENTIFIER)
 	.build();
 
-// Mosaic Info Fixtures
+// Token Info Fixtures
 
-const mosaicInfo = {
-	id: MOSAIC_ID,
-	names: [MOSAIC_NAME],
-	divisibility: MOSAIC_DIVISIBILITY,
+const tokenInfo = {
+	id: TOKEN_ID,
+	names: [TOKEN_NAME],
+	divisibility: TOKEN_DIVISIBILITY,
 	supply: CURRENT_SUPPLY
 };
 
-const divisibleMosaicInfo = {
-	...mosaicInfo,
-	divisibility: DIVISIBLE_MOSAIC_DIVISIBILITY
+const divisibleTokenInfo = {
+	...tokenInfo,
+	divisibility: DIVISIBLE_TOKEN_DIVISIBILITY
 };
 
 // Mock Supply Change Transaction Bundle (returned by the token module)
@@ -111,7 +111,7 @@ const divisibleMosaicInfo = {
 const supplyChangeTransaction = {
 	type: 'mosaicSupplyChange',
 	signerAddress: currentAccount.address,
-	mosaicId: MOSAIC_ID,
+	mosaicId: TOKEN_ID,
 	action: 'Increase',
 	delta: INCREASE_DELTA,
 	fee: { token: { amount: '0.1' } }
@@ -146,13 +146,13 @@ const setupMocks = (overrides = {}) => {
 		},
 		networkApi: {
 			mosaic: {
-				fetchMosaicInfo: jest.fn().mockResolvedValue(overrides.mosaic ?? mosaicInfo)
+				fetchMosaicInfo: jest.fn().mockResolvedValue(overrides.token ?? tokenInfo)
 			}
 		},
 		signTransactionBundle: jest.fn().mockResolvedValue(signedTransactionBundle),
 		announceSignedTransactionBundle: jest.fn().mockResolvedValue({}),
 		modules: {
-			token: {
+			mosaic: {
 				createSupplyChangeTransaction: jest.fn().mockReturnValue(supplyChangeTransactionBundle)
 			},
 			transfer: {
@@ -176,7 +176,7 @@ const renderModifyMosaicScreen = async (routeParams = {}) => {
 		route: {
 			params: {
 				chainName: CHAIN_NAME,
-				tokenId: MOSAIC_ID,
+				mosaicId: TOKEN_ID,
 				...routeParams
 			}
 		}
@@ -233,7 +233,7 @@ describe('screens/mosaic/ModifyMosaic', () => {
 			const screenTester = await renderModifyMosaicScreen();
 
 			// Assert:
-			screenTester.expectText([MOSAIC_NAME]);
+			screenTester.expectText([TOKEN_NAME]);
 		});
 
 		it('shows a loading indicator until the wallet and mosaic are ready', async () => {
@@ -242,7 +242,7 @@ describe('screens/mosaic/ModifyMosaic', () => {
 
 			// Act:
 			const screenTester = new ScreenTester(ModifyMosaic, {
-				route: { params: { chainName: CHAIN_NAME, tokenId: MOSAIC_ID } }
+				route: { params: { chainName: CHAIN_NAME, mosaicId: TOKEN_ID } }
 			});
 
 			// Assert:
@@ -311,7 +311,7 @@ describe('screens/mosaic/ModifyMosaic', () => {
 		const runSupplyValidationTest = (description, config, expected) => {
 			it(description, async () => {
 				// Arrange:
-				setupMocks({ mosaic: config.mosaic });
+				setupMocks({ token: config.token });
 				const screenTester = await renderModifyMosaicScreen();
 
 				// Act:
@@ -344,7 +344,7 @@ describe('screens/mosaic/ModifyMosaic', () => {
 			},
 			{
 				description: 'renders the decimals error when more decimals than the divisibility are entered',
-				config: { mosaic: divisibleMosaicInfo, newSupply: TOO_MANY_DECIMALS_SUPPLY },
+				config: { token: divisibleTokenInfo, newSupply: TOO_MANY_DECIMALS_SUPPLY },
 				expected: { errorText: SCREEN_TEXT.errorSupplyDecimals }
 			},
 			{
@@ -453,7 +453,7 @@ describe('screens/mosaic/ModifyMosaic', () => {
 				await screenTester.waitForTimer(); // announce transaction
 
 				// Assert:
-				expect(walletControllerMock.modules.token.createSupplyChangeTransaction)
+				expect(walletControllerMock.modules.mosaic.createSupplyChangeTransaction)
 					.toHaveBeenCalledWith(expect.objectContaining(expected.transactionOptions));
 				expect(walletControllerMock.signTransactionBundle).toHaveBeenCalledWith(supplyChangeTransactionBundle);
 				expect(walletControllerMock.announceSignedTransactionBundle).toHaveBeenCalledWith(signedTransactionBundle);
@@ -466,8 +466,8 @@ describe('screens/mosaic/ModifyMosaic', () => {
 				config: { newSupply: INCREASED_SUPPLY },
 				expected: {
 					transactionOptions: {
-						mosaicId: MOSAIC_ID,
-						divisibility: MOSAIC_DIVISIBILITY,
+						mosaicId: TOKEN_ID,
+						divisibility: TOKEN_DIVISIBILITY,
 						delta: INCREASE_DELTA,
 						action: MosaicSupplyChangeAction.Increase
 					}
@@ -478,8 +478,8 @@ describe('screens/mosaic/ModifyMosaic', () => {
 				config: { newSupply: DECREASED_SUPPLY },
 				expected: {
 					transactionOptions: {
-						mosaicId: MOSAIC_ID,
-						divisibility: MOSAIC_DIVISIBILITY,
+						mosaicId: TOKEN_ID,
+						divisibility: TOKEN_DIVISIBILITY,
 						delta: DECREASE_DELTA,
 						action: MosaicSupplyChangeAction.Decrease
 					}

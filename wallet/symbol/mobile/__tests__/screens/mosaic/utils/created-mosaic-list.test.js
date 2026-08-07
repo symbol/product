@@ -1,7 +1,7 @@
 import {
-	buildCreatedTokenListSections,
-	filterCreatedTokens,
-	getCreatedTokenListFilterConfig,
+	buildCreatedMosaicListSections,
+	filterCreatedMosaics,
+	getCreatedMosaicListFilterConfig,
 	mergeHeldAmounts
 } from '@/app/screens/mosaic/utils';
 import { FilterType } from '@/app/types/Filter';
@@ -17,9 +17,9 @@ const CHAIN_HEIGHT = 150_000;
 // Screen Text
 
 const SCREEN_TEXT = {
-	textFilterRevokable: 's_createdTokenList_filter_revokable',
-	textFilterSupplyMutable: 's_createdTokenList_filter_supplyMutable',
-	textFilterExpired: 's_createdTokenList_filter_expired'
+	textFilterRevokable: 's_createdMosaicList_filter_revokable',
+	textFilterSupplyMutable: 's_createdMosaicList_filter_supplyMutable',
+	textFilterExpired: 's_createdMosaicList_filter_expired'
 };
 
 // Token Fixtures
@@ -54,8 +54,8 @@ const expiredRevokableToken = TokenFixtureBuilder
 const allTokens = [revokableToken, supplyMutableToken, revokableSupplyMutableToken, expiredRevokableToken];
 const activeTokens = [revokableToken, supplyMutableToken, revokableSupplyMutableToken];
 
-describe('screens/mosaic/utils/created-token-list', () => {
-	describe('getCreatedTokenListFilterConfig()', () => {
+describe('screens/mosaic/utils/created-mosaic-list', () => {
+	describe('getCreatedMosaicListFilterConfig()', () => {
 		it('returns boolean filter items for the revokable and supply mutable flags', () => {
 			// Arrange:
 			mockLocalization();
@@ -78,18 +78,18 @@ describe('screens/mosaic/utils/created-token-list', () => {
 			];
 
 			// Act:
-			const config = getCreatedTokenListFilterConfig();
+			const config = getCreatedMosaicListFilterConfig();
 
 			// Assert:
 			expect(config).toEqual(expectedConfig);
 		});
 	});
 
-	describe('filterCreatedTokens()', () => {
+	describe('filterCreatedMosaics()', () => {
 		const runFilterCreatedTokensTest = (description, filter, expectedTokens) => {
 			it(description, () => {
 				// Act:
-				const result = filterCreatedTokens(allTokens, filter, CHAIN_HEIGHT);
+				const result = filterCreatedMosaics(allTokens, filter, CHAIN_HEIGHT);
 
 				// Assert:
 				expect(result).toEqual(expectedTokens);
@@ -185,19 +185,19 @@ describe('screens/mosaic/utils/created-token-list', () => {
 		});
 	});
 
-	describe('buildCreatedTokenListSections()', () => {
+	describe('buildCreatedMosaicListSections()', () => {
 		it('wraps the tokens into a single untitled section', () => {
 			// Arrange:
 			const expectedSections = [
 				{
 					title: '',
-					group: 'createdTokens',
+					group: 'createdMosaics',
 					data: allTokens
 				}
 			];
 
 			// Act:
-			const result = buildCreatedTokenListSections(allTokens);
+			const result = buildCreatedMosaicListSections(allTokens);
 
 			// Assert:
 			expect(result).toEqual(expectedSections);
@@ -205,7 +205,7 @@ describe('screens/mosaic/utils/created-token-list', () => {
 
 		it('returns no sections when the token list is empty', () => {
 			// Act:
-			const result = buildCreatedTokenListSections([]);
+			const result = buildCreatedMosaicListSections([]);
 
 			// Assert:
 			expect(result).toEqual([]);
