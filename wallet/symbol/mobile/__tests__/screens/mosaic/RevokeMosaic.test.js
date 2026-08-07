@@ -248,6 +248,7 @@ describe('screens/mosaic/RevokeMosaic', () => {
 		const runSourceAccountTest = (description, config, expected) => {
 			it(description, async () => {
 				// Arrange:
+				const creatorSectionAddress = currentAccount.address;
 				setupMocks({ owners: config.owners });
 				const screenTester = await renderRevokeMosaicScreen();
 
@@ -255,33 +256,21 @@ describe('screens/mosaic/RevokeMosaic', () => {
 				screenTester.presButtonByLabel(SCREEN_TEXT.inputAccountLabel);
 
 				// Assert:
-				expected.addressCounts.forEach(([address, count]) => screenTester.expectTextCount(address, count));
+				screenTester.expectTextCount(creatorSectionAddress, 1);
+				expected.sourceAddressList.forEach(address => screenTester.expectTextCount(address, 1));
 			});
 		};
 
-		// The creator is always rendered once in the creator section, so it is counted rather than
-		// asserted absent when checking that it is not offered as a holder option
 		const sourceAccountTests = [
 			{
 				description: 'lists all mosaic holders as selectable options',
 				config: { owners: holders },
-				expected: {
-					addressCounts: [
-						[holderAccountA.address, 1],
-						[holderAccountB.address, 1]
-					]
-				}
+				expected: { sourceAddressList: [holderAccountA.address, holderAccountB.address] }
 			},
 			{
 				description: 'excludes the creator from the holder options when the creator also holds the mosaic',
 				config: { owners: holdersIncludingCreator },
-				expected: {
-					addressCounts: [
-						[holderAccountA.address, 1],
-						[holderAccountB.address, 1],
-						[currentAccount.address, 1]
-					]
-				}
+				expected: { sourceAddressList: [holderAccountA.address, holderAccountB.address] }
 			}
 		];
 
