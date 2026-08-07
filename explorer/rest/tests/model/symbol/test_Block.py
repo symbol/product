@@ -2,7 +2,11 @@ from datetime import datetime, timezone
 from decimal import Decimal
 from unittest import TestCase
 
+from common.symbol.NativeMosaic import NativeMosaicInfo
+
 from rest.model.symbol.Block import SymbolBlockView
+
+NATIVE_MOSAIC_INFO = NativeMosaicInfo('72C0212E67A08BCE', 6)
 
 
 def _expected_list_dict():
@@ -53,6 +57,7 @@ class SymbolBlockViewTest(TestCase):
 			harvesting_eligible_accounts_count=17,
 			total_voting_balance=Decimal('19000235663367'),
 			previous_importance_block_hash=b'\x0A',
+			block_reward=None,
 			is_finalized=True
 		)
 
@@ -61,7 +66,7 @@ class SymbolBlockViewTest(TestCase):
 		block_view = self._create_block_view()
 
 		# Act:
-		result = block_view.to_dict()
+		result = block_view.to_dict(NATIVE_MOSAIC_INFO)
 
 		# Assert:
 		self.assertEqual(_expected_list_dict(), result)
@@ -71,7 +76,7 @@ class SymbolBlockViewTest(TestCase):
 		block_view = self._create_block_view()
 
 		# Act:
-		result = block_view.to_detail_dict()
+		result = block_view.to_detail_dict(NATIVE_MOSAIC_INFO)
 
 		# Assert:
 		self.assertEqual({
@@ -99,7 +104,7 @@ class SymbolBlockViewTest(TestCase):
 		block_view.state_hash_sub_cache_roots = []
 
 		# Act:
-		result = block_view.to_detail_dict()
+		result = block_view.to_detail_dict(NATIVE_MOSAIC_INFO)
 
 		# Assert:
 		self.assertEqual([], result['stateHashSubCacheMerkleRoots'])
@@ -110,7 +115,35 @@ class SymbolBlockViewTest(TestCase):
 		block_view.timestamp = datetime(2026, 1, 2, 3, 4, 5)
 
 		# Act:
-		result = block_view.to_dict()
+		result = block_view.to_dict(NATIVE_MOSAIC_INFO)
 
 		# Assert:
 		self.assertEqual('2026-01-02T03:04:05Z', result['timestamp'])
+
+	def test_formats_zero_block_reward(self):
+		# Arrange:
+		block_view = self._create_block_view()
+		block_view.block_reward = 0
+
+		# Act:
+		result = block_view.to_dict(NATIVE_MOSAIC_INFO)
+
+		# Assert:
+		expected = _expected_list_dict()
+		expected['blockReward'] = 0.0
+		self.assertEqual(expected, result)
+
+	def test_formats_positive_block_reward_with_native_divisibility(self):
+		# Arrange:
+		block_view = self._create_block_view()
+		block_view.total_fee = 12345
+		block_view.block_reward = 678
+		native_mosaic_info = NATIVE_MOSAIC_INFO._replace(divisibility=3)
+
+		# Act:
+		result = block_view.to_dict(native_mosaic_info)
+
+		# Assert:
+		expected = _expected_list_dict()
+		expected.update({'totalFee': 12.345, 'blockReward': 0.678})
+		self.assertEqual(expected, result)

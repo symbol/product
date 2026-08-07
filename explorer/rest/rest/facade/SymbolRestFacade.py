@@ -1,7 +1,9 @@
+from common.symbol.NativeMosaic import NativeMosaicInfo
 from psycopg2 import Error as PsycopgError
 from zenlog import log
 
 from rest.db.SymbolDatabase import SymbolDatabase
+from rest.model.symbol.Receipt import ReceiptPage, SymbolReceiptView
 
 DATABASE_UNAVAILABLE_MESSAGE = 'Symbol database is unavailable'
 
@@ -9,13 +11,15 @@ DATABASE_UNAVAILABLE_MESSAGE = 'Symbol database is unavailable'
 class SymbolRestFacade:
 	"""Symbol Rest Facade."""
 
-	def __init__(self, db_config, node_config):
+	def __init__(self, db_config, node_config, native_mosaic_info):
 		"""Creates a Symbol facade object."""
 
 		if db_config is None:
 			raise ValueError('Symbol database configuration is required')
 		if node_config is None:
 			raise ValueError('Symbol node configuration is required')
+		if not isinstance(native_mosaic_info, NativeMosaicInfo):
+			raise ValueError('Native mosaic information is required')
 
 		self.symbol_db = None
 		self.db_error = None
@@ -26,6 +30,7 @@ class SymbolRestFacade:
 			self.db_error = DATABASE_UNAVAILABLE_MESSAGE
 
 		self.node_config = node_config
+		self.native_mosaic_info = native_mosaic_info
 
 	def is_configured(self):
 		"""Returns whether Symbol REST dependencies are configured."""
@@ -51,11 +56,7 @@ class SymbolRestFacade:
 		if not self.is_database_available():
 			return False
 
-		try:
-			return self.symbol_db.get_block_head_height() is not None
-		except PsycopgError:
-			log.error('Failed to check Symbol block data availability')
-			return False
+		return self.symbol_db.get_block_head_height() is not None
 
 	def get_health(self):
 		"""Gets health of the Symbol backend core foundation."""
@@ -142,7 +143,7 @@ class SymbolRestFacade:
 		if blocks is None:
 			return None
 
-		return [block.to_dict() for block in blocks]
+		return [block.to_dict(self.native_mosaic_info) for block in blocks]
 
 	def get_block(self, height):
 		"""Gets a Symbol block by height."""
@@ -152,4 +153,20 @@ class SymbolRestFacade:
 
 		block = self.symbol_db.get_block(height)
 
-		return block.to_detail_dict() if block else None
+		return block.to_detail_dict(self.native_mosaic_info) if block else None
+
+	def get_receipts(self, query):
+		"""Gets Symbol receipts for a validated query."""
+
+		if not self.is_database_available():
+			return None
+
+		page = self.symbol_db.get_receipts(query)
+		if page is None:
+			return None
+
+		return ReceiptPage(
+			tuple(SymbolReceiptView(receipt, self.native_mosaic_info).to_dict() for receipt in page.items),
+			page.next_position,
+			page.chain_revision
+		)

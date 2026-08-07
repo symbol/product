@@ -2,18 +2,66 @@ import tempfile
 from pathlib import Path
 
 import pytest
+from common.symbol.NativeMosaic import NativeMosaicInfo
 from common.symbol.NodeConfiguration import SymbolNodeConfigurationError
 from common.tests.PostgresTestUtils import PostgresTestDatabase, create_unreachable_db_configuration, drop_symbol_block_tables_if_present
 from flask import Flask
 from puller.db.SymbolDatabase import SymbolDatabase as PullerSymbolDatabase
+from symbolchain.symbol.Network import Network
 
 from rest import create_app, setup_symbol_facade
 from rest.facade.SymbolRestFacade import SymbolRestFacade
 from rest.model.common import DatabaseConfig
+from rest.routes.symbol import setup_symbol_routes
+from rest.symbol_node import fetch_native_mosaic_info
 
 from .test.EnvTestUtils import rest_settings_env
 from .test.SymbolBlockTestUtils import create_symbol_block, create_symbol_importance_block, create_symbol_sync_state
 from .test.SymbolHealthTestUtils import create_symbol_health
+
+NATIVE_MOSAIC_INFO = NativeMosaicInfo('72C0212E67A08BCE', 6)
+TARGET_ADDRESS = bytes.fromhex('9889432DE263BB8FE88444A4DA28D3609BD8BB8FAE18AE95')
+SENDER_ADDRESS = bytes.fromhex('98' + '11' * 23)
+RECIPIENT_ADDRESS = bytes.fromhex('98' + '22' * 23)
+
+
+class SetupConnector:
+	def __init__(self, _endpoint):
+		self.responses = {
+			'network/properties': {'chain': {'currencyMosaicId': "0x72C0'212E'67A0'8BCE"}},
+			'mosaics/72C0212E67A08BCE': {'mosaic': {'divisibility': 3}}
+		}
+
+	async def get(self, path):
+		return self.responses[path]
+
+
+class BadSetupConnector(SetupConnector):
+	def __init__(self, endpoint):
+		super().__init__(endpoint)
+		self.responses['mosaics/72C0212E67A08BCE'] = {'mosaic': {}}
+
+
+def _create_symbol_app():
+	return create_app(rest_chain_handlers={
+		'symbol': (_setup_test_symbol_facade, setup_symbol_routes)
+	})
+
+
+def _fetch_test_native_mosaic_info(_node_config):
+	return NATIVE_MOSAIC_INFO
+
+
+def _setup_test_symbol_facade(app):
+	return setup_symbol_facade(app, native_mosaic_info_fetcher=_fetch_test_native_mosaic_info)
+
+
+def _fetch_setup_native_mosaic_info(node_config):
+	return fetch_native_mosaic_info(node_config, SetupConnector)
+
+
+def _fetch_bad_native_mosaic_info(node_config):
+	return fetch_native_mosaic_info(node_config, BadSetupConnector)
 
 
 def _create_config_file(
@@ -84,6 +132,25 @@ def _seed_symbol_block_tables(database_config, sync_state, blocks):
 		database.upsert_blocks(blocks)
 
 
+def _update_block_reward(database_config, height, reward):
+	with PullerSymbolDatabase(database_config) as database:
+		with database.connection.cursor() as cursor:
+			cursor.execute(
+				'UPDATE symbol_blocks SET block_reward = %s WHERE height = %s',
+				(reward, height))
+			database.connection.commit()
+
+
+def _seed_symbol_receipts(database_config, sync_state, blocks, receipts):
+	_seed_symbol_block_tables(database_config, sync_state, blocks)
+	with PullerSymbolDatabase(database_config) as database:
+		by_height = {}
+		for receipt in receipts:
+			by_height.setdefault(receipt['height'], []).append(receipt)
+		for height, rows in by_height.items():
+			database.upsert_receipts_for_height(height, rows, 0)
+
+
 def _expected_block_list_item(height, is_finalized):
 	return {
 		'height': height,
@@ -143,7 +210,7 @@ def test_symbol_health_with_database(symbol_database_config):
 			[])
 		with rest_settings_env(app_config_path):
 			# Act:
-			response = create_app().test_client().get('/api/symbol/health')
+			response = _create_symbol_app().test_client().get('/api/symbol/health')
 
 	# Assert:
 	assert 200 == response.status_code
@@ -171,7 +238,7 @@ def test_symbol_health_reports_db_error(symbol_database_config):
 		_drop_symbol_block_tables_if_present(symbol_database_config)
 		with rest_settings_env(app_config_path):
 			# Act:
-			response = create_app().test_client().get('/api/symbol/health')
+			response = _create_symbol_app().test_client().get('/api/symbol/health')
 
 	# Assert:
 	assert 200 == response.status_code
@@ -199,7 +266,7 @@ def test_symbol_blocks_reads_db(symbol_database_config):
 			[create_symbol_block(height) for height in range(1, 4)])
 		with rest_settings_env(app_config_path):
 			# Act:
-			response = create_app().test_client().get(
+			response = _create_symbol_app().test_client().get(
 				'/api/symbol/blocks?limit=2&fromHeight=3&sort=desc')
 
 	# Assert:
@@ -224,7 +291,7 @@ def test_symbol_block_reads_db(symbol_database_config):
 			[create_symbol_block(2)])
 		with rest_settings_env(app_config_path):
 			# Act:
-			response = create_app().test_client().get('/api/symbol/block/2')
+			response = _create_symbol_app().test_client().get('/api/symbol/block/2')
 
 	# Assert:
 	assert 200 == response.status_code
@@ -245,7 +312,7 @@ def test_symbol_importance_reads_db(symbol_database_config):
 			[create_symbol_importance_block(2)])
 		with rest_settings_env(app_config_path):
 			# Act:
-			response = create_app().test_client().get('/api/symbol/block/2')
+			response = _create_symbol_app().test_client().get('/api/symbol/block/2')
 
 	# Assert:
 	assert 200 == response.status_code
@@ -255,6 +322,108 @@ def test_symbol_importance_reads_db(symbol_database_config):
 		'harvestingEligibleAccountsCount': '17',
 		'totalVotingBalance': '19000235663367',
 		'previousImportanceBlockHash': '86' * 32
+	} == response.json
+
+
+def test_symbol_block_list_reward(symbol_database_config):
+	# Arrange:
+	with tempfile.TemporaryDirectory() as temp_directory:
+		db_config_path = _create_config_file(
+			temp_directory,
+			database_config=symbol_database_config)
+		app_config_path = _create_app_config(temp_directory, db_config_path)
+
+		_seed_symbol_block_tables(
+			symbol_database_config,
+			create_symbol_sync_state(last_synced_height=2, finalized_height=2),
+			[create_symbol_block(2)])
+		_update_block_reward(symbol_database_config, 2, 1234567)
+		with rest_settings_env(app_config_path):
+			# Act:
+			response = _create_symbol_app().test_client().get('/api/symbol/blocks?limit=1')
+
+	# Assert:
+	expected = _expected_block_list_item(2, is_finalized=True)
+	expected['blockReward'] = 1.234567
+	assert 200 == response.status_code
+	assert [expected] == response.json
+
+
+def test_symbol_block_detail_reward(symbol_database_config):
+	# Arrange:
+	with tempfile.TemporaryDirectory() as temp_directory:
+		db_config_path = _create_config_file(
+			temp_directory,
+			database_config=symbol_database_config)
+		app_config_path = _create_app_config(temp_directory, db_config_path)
+
+		_seed_symbol_block_tables(
+			symbol_database_config,
+			create_symbol_sync_state(last_synced_height=2, finalized_height=2),
+			[create_symbol_block(2)])
+		_update_block_reward(symbol_database_config, 2, 2000000)
+		with rest_settings_env(app_config_path):
+			# Act:
+			response = _create_symbol_app().test_client().get('/api/symbol/block/2')
+
+	# Assert:
+	expected = _expected_block_detail(2, is_finalized=True)
+	expected['blockReward'] = 2.0
+	assert 200 == response.status_code
+	assert expected == response.json
+
+
+def test_symbol_receipts_read_db(symbol_database_config):
+	# Arrange:
+	with tempfile.TemporaryDirectory() as temp_directory:
+		db_config_path = _create_config_file(
+			temp_directory,
+			database_config=symbol_database_config)
+		app_config_path = _create_app_config(temp_directory, db_config_path)
+		receipt = {
+			'height': 2,
+			'receipt_type': 'harvestFee',
+			'receipt_group': 'balanceChange',
+			'version': 1,
+			'source_primary_id': 0,
+			'source_secondary_id': 0,
+			'sender_address': SENDER_ADDRESS,
+			'recipient_address': RECIPIENT_ADDRESS,
+			'target_address': TARGET_ADDRESS,
+			'mosaic_id': '72C0212E67A08BCE',
+			'amount': 1234567,
+			'artifact_id': None,
+			'raw_payload': {'type': 'harvestFee'}
+		}
+		_seed_symbol_receipts(
+			symbol_database_config,
+			create_symbol_sync_state(last_synced_height=2, finalized_height=2),
+			[create_symbol_block(2)],
+			[receipt])
+		with rest_settings_env(app_config_path):
+			# Act:
+			response = _create_symbol_app().test_client().get('/api/symbol/receipts')
+
+	# Assert:
+	assert 200 == response.status_code
+	assert {
+		'data': [{
+			'version': 1,
+			'height': 2,
+			'type': 'harvestFee',
+			'group': 'balanceChange',
+			'targetAddress': str(Network.MAINNET.address_class(TARGET_ADDRESS)),
+			'sender': str(Network.MAINNET.address_class(SENDER_ADDRESS)),
+			'to': str(Network.MAINNET.address_class(RECIPIENT_ADDRESS)),
+			'artifactId': None,
+			'mosaics': [{
+				'id': NATIVE_MOSAIC_INFO.id,
+				'name': NATIVE_MOSAIC_INFO.id,
+				'amount': 1.234567,
+				'isNative': True
+			}]
+		}],
+		'pagination': {'nextCursor': None}
 	} == response.json
 
 
@@ -282,7 +451,7 @@ def test_health_reports_db_error():
 
 		with rest_settings_env(app_config_path):
 			# Act:
-			response = create_app().test_client().get('/api/symbol/health')
+			response = _create_symbol_app().test_client().get('/api/symbol/health')
 
 	# Assert:
 	assert 200 == response.status_code
@@ -341,12 +510,58 @@ def test_symbol_facade_config(symbol_database_config):
 		app.config.from_pyfile(app_config_path)
 
 		# Act:
-		facade = setup_symbol_facade(app)
+		facade = setup_symbol_facade(app, native_mosaic_info_fetcher=_fetch_test_native_mosaic_info)
 
 	# Assert:
 	assert isinstance(facade, SymbolRestFacade)
 	assert facade.is_configured()
 	assert 'http://localhost:3000' == facade.node_config.base_url
+
+
+def test_setup_uses_connector_factory():
+	# Arrange:
+	with tempfile.TemporaryDirectory() as temp_directory:
+		db_config_path = _create_config_file(temp_directory)
+		app_config_path = _create_app_config(temp_directory, db_config_path)
+		app = Flask(__name__)
+		app.config.from_pyfile(app_config_path)
+
+		# Act:
+		facade = setup_symbol_facade(app, native_mosaic_info_fetcher=_fetch_setup_native_mosaic_info)
+
+	# Assert:
+	assert NativeMosaicInfo('72C0212E67A08BCE', 3) == facade.native_mosaic_info
+
+
+def test_setup_rejects_bad_native_info():
+	# Arrange:
+	with tempfile.TemporaryDirectory() as temp_directory:
+		db_config_path = _create_config_file(temp_directory)
+		app_config_path = _create_app_config(temp_directory, db_config_path)
+		app = Flask(__name__)
+		app.config.from_pyfile(app_config_path)
+
+		# Act + Assert:
+		with pytest.raises(ValueError, match='Mosaic response must include mosaic.divisibility'):
+			setup_symbol_facade(app, native_mosaic_info_fetcher=_fetch_bad_native_mosaic_info)
+
+
+def test_setup_uses_native_fetcher():
+	# Arrange:
+	with tempfile.TemporaryDirectory() as temp_directory:
+		db_config_path = _create_config_file(temp_directory)
+		app_config_path = _create_app_config(temp_directory, db_config_path)
+		app = Flask(__name__)
+		app.config.from_pyfile(app_config_path)
+
+		def native_fetcher(_node_config):
+			return NativeMosaicInfo('ABCDEF0123456789', 2)
+
+		# Act:
+		facade = setup_symbol_facade(app, native_mosaic_info_fetcher=native_fetcher)
+
+	# Assert:
+	assert NativeMosaicInfo('ABCDEF0123456789', 2) == facade.native_mosaic_info
 
 
 def test_symbol_facade_requires_db():
@@ -378,7 +593,7 @@ def test_symbol_facade_db_error():
 		app.config.from_pyfile(app_config_path)
 
 		# Act:
-		facade = setup_symbol_facade(app)
+		facade = setup_symbol_facade(app, native_mosaic_info_fetcher=_fetch_test_native_mosaic_info)
 
 	# Assert:
 	health = facade.get_health()

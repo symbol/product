@@ -1,6 +1,6 @@
 from decimal import Decimal
 
-XYM_DIVISIBILITY = 6
+from symbolchain.symbol.Network import Address
 
 
 def format_timestamp(timestamp):
@@ -19,5 +19,25 @@ def str_or_none(value):
 	return str(value) if value is not None else None
 
 
-def format_xym_amount(total_fee):
-	return float(Decimal(total_fee) / (Decimal(10) ** XYM_DIVISIBILITY))
+def format_amount(amount, divisibility):
+	"""Formats an absolute amount using the supplied mosaic divisibility."""
+
+	return float(Decimal(amount) / (Decimal(10) ** divisibility))
+
+
+def format_address(address):
+	"""Formats a persisted Symbol address byte sequence as canonical text."""
+
+	if address is None:
+		return None
+
+	return str(Address(bytes(address)))
+
+
+def format_hex_id(identifier):
+	"""Formats a persisted or textual Symbol identifier as uppercase hexadecimal."""
+
+	if identifier is None:
+		return None
+
+	return identifier.upper()
