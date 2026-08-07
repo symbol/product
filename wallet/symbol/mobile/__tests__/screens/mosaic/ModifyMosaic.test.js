@@ -420,7 +420,7 @@ describe('screens/mosaic/ModifyMosaic', () => {
 				expected: { isDisabled: true }
 			},
 			{
-				description: 'enables the send button once a valid supply change and fees are ready',
+				description: 'enables the send button once the network, a valid supply change and fees are ready',
 				config: { isNetworkConnectionReady: true, newSupply: INCREASED_SUPPLY },
 				expected: { isDisabled: false }
 			}

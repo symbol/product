@@ -418,7 +418,7 @@ describe('screens/mosaic/RevokeMosaic', () => {
 				expected: { isDisabled: true }
 			},
 			{
-				description: 'enables the send button once a holder, a valid amount and fees are ready',
+				description: 'enables the send button once the network, a holder, a valid amount and fees are ready',
 				config: { isNetworkConnectionReady: true, selectHolder: true },
 				expected: { isDisabled: false }
 			}
