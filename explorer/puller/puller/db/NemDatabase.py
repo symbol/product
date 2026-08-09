@@ -2,7 +2,6 @@ import json
 from binascii import unhexlify
 from collections import namedtuple
 
-from symbolchain.nc import TransactionType
 from symbolchain.nem.Network import Address
 
 from .DatabaseConnection import DatabaseConnection
@@ -99,14 +98,9 @@ class NemDatabase(DatabaseConnection):
 			'''
 		)
 
-		# The address indexes below let the account transaction query bitmap-or its three arms together
-		# (see rest NemDatabase._create_multisig_inner_filter). They are split by is_inner because an
-		# account reaches a wrapper through its own address columns but an inner transaction through the
-		# hash of its wrapper. Address alone is enough: a bitmap scan reads only the leading column, and
-		# where the planner wants height order it walks transactions_height_is_inner_false_idx instead.
 		cursor.execute(
 			'''
-			CREATE INDEX IF NOT EXISTS transactions_outer_sender_address_idx
+			CREATE INDEX IF NOT EXISTS transactions_sender_address_is_inner_false_idx
 				ON transactions(sender_address)
 				WHERE is_inner = false
 			'''
@@ -114,7 +108,7 @@ class NemDatabase(DatabaseConnection):
 
 		cursor.execute(
 			'''
-			CREATE INDEX IF NOT EXISTS transactions_outer_recipient_address_idx
+			CREATE INDEX IF NOT EXISTS transactions_recipient_address_is_inner_false_idx
 				ON transactions(recipient_address)
 				WHERE is_inner = false
 			'''
@@ -122,7 +116,7 @@ class NemDatabase(DatabaseConnection):
 
 		cursor.execute(
 			'''
-			CREATE INDEX IF NOT EXISTS transactions_inner_sender_address_idx
+			CREATE INDEX IF NOT EXISTS transactions_sender_address_is_inner_true_idx
 				ON transactions(sender_address)
 				WHERE is_inner = true
 			'''
@@ -130,17 +124,17 @@ class NemDatabase(DatabaseConnection):
 
 		cursor.execute(
 			'''
-			CREATE INDEX IF NOT EXISTS transactions_inner_recipient_address_idx
+			CREATE INDEX IF NOT EXISTS transactions_recipient_address_is_inner_true_idx
 				ON transactions(recipient_address)
 				WHERE is_inner = true
 			'''
 		)
 
 		cursor.execute(
-			f'''
+			'''
 			CREATE INDEX IF NOT EXISTS transactions_inner_hash_idx
 				ON transactions(inner_hash)
-				WHERE is_inner = false AND transaction_type = {TransactionType.MULTISIG.value}
+				WHERE inner_hash IS NOT NULL
 			'''
 		)
 
@@ -679,9 +673,6 @@ class NemDatabase(DatabaseConnection):
 	def insert_transaction(cursor, transaction):
 		"""Inserts transaction information."""
 
-		# a multisig wrapper points at exactly one inner transaction; the hash is mirrored out of the
-		# payload into its own column so the link is an ordinary indexed join key rather than a json
-		# expression, which the query planner cannot gather statistics for
 		inner_hash = transaction.payload.get('inner_hash') if transaction.payload else None
 
 		cursor.execute(
