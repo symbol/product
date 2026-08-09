@@ -14,6 +14,13 @@ from puller.model.symbol.Metadata import (
 	canonical_metadata_key,
 	metadata_target_from_relations
 )
+from puller.model.symbol.MosaicRestriction import (
+	MOSAIC_RESTRICTION_ENTRY_TYPE_BY_TRANSACTION_TYPE,
+	MosaicRestrictionEntryType,
+	MosaicRestrictionKey,
+	create_mosaic_restriction_key,
+	mosaic_restriction_entry_type_label
+)
 from puller.model.symbol.Namespace import NAMESPACE_ALIAS_TYPE_LABELS, NAMESPACE_REGISTRATION_TYPE_LABELS
 from puller.model.symbol.Receipt import RECEIPT_TYPE_LABELS
 from puller.model.symbol.Transaction import MESSAGE_TYPE_LABELS, TRANSACTION_TYPE_LABELS
@@ -22,8 +29,9 @@ from .DatabaseConnection import DatabaseConnection
 
 RollbackRefreshEntries = namedtuple(
 	'RollbackRefreshEntries',
-	['namespace_entries', 'mosaic_entries', 'metadata_entries', 'hash_lock_entries', 'secret_lock_entries'],
-	defaults=((), (), (), (), ()))
+	['namespace_entries', 'mosaic_entries', 'metadata_entries', 'hash_lock_entries', 'secret_lock_entries',
+		'mosaic_restriction_entries'],
+	defaults=((), (), (), (), (), ()))
 
 SYNC_STATE_COLUMNS = [
 	'status',
@@ -55,6 +63,7 @@ SYMBOL_NAMESPACE_REGISTRATION_TYPE_VALUES = tuple(NAMESPACE_REGISTRATION_TYPE_LA
 SYMBOL_NAMESPACE_ALIAS_TYPE_VALUES = tuple(NAMESPACE_ALIAS_TYPE_LABELS.values())
 SYMBOL_ALIAS_ARTIFACT_TYPE_VALUES = ('mosaic', 'namespace', 'account')
 SYMBOL_METADATA_TYPE_VALUES = tuple(METADATA_TYPE_LABELS.values())
+SYMBOL_MOSAIC_RESTRICTION_ENTRY_TYPE_VALUES = tuple(entry_type.value for entry_type in MosaicRestrictionEntryType)
 SYMBOL_LOCK_STATUS_VALUES = tuple(LOCK_STATUS_LABELS.values())
 SYMBOL_LOCK_HASH_ALGORITHM_VALUES = tuple(LOCK_HASH_ALGORITHM_LABELS.values())
 ACCOUNT_REFRESH_STATE_STATUS_VALUES = ('healthy', 'refreshing', 'stale', 'unhealthy')
@@ -321,6 +330,28 @@ SYMBOL_METADATA_INDEXES = [
 	'CREATE INDEX IF NOT EXISTS idx_symbol_metadata_target_id ON symbol_metadata(target_id)',
 	'CREATE INDEX IF NOT EXISTS idx_symbol_metadata_updated_height ON symbol_metadata(updated_at_height)'
 ]
+SYMBOL_MOSAIC_RESTRICTION_DEFINITIONS = [
+	'composite_hash bytea PRIMARY KEY',
+	'entry_type symbol_mosaic_restriction_entry_type NOT NULL',
+	'mosaic_id varchar(16) NOT NULL',
+	'target_address bytea',
+	'restrictions jsonb NOT NULL',
+	'raw_payload jsonb NOT NULL',
+	'updated_at_height bigint NOT NULL',
+	'CONSTRAINT symbol_mosaic_restrictions_target_address_consistency '
+	"CHECK ((entry_type = 'address' AND target_address IS NOT NULL) OR "
+	"(entry_type = 'global' AND target_address IS NULL))",
+	'CONSTRAINT symbol_mosaic_restrictions_logical_key_unique '
+	'UNIQUE NULLS NOT DISTINCT (mosaic_id, entry_type, target_address)'
+]
+SYMBOL_MOSAIC_RESTRICTION_INDEXES = [
+	'CREATE INDEX IF NOT EXISTS idx_symbol_mosaic_restrictions_entry_type '
+	'ON symbol_mosaic_restrictions(entry_type)',
+	'CREATE INDEX IF NOT EXISTS idx_symbol_mosaic_restrictions_target_address '
+	'ON symbol_mosaic_restrictions(target_address)',
+	'CREATE INDEX IF NOT EXISTS idx_symbol_mosaic_restrictions_updated_height '
+	'ON symbol_mosaic_restrictions(updated_at_height)'
+]
 SYMBOL_HASH_LOCK_DEFINITIONS = [
 	'hash bytea PRIMARY KEY',
 	'owner_address bytea NOT NULL',
@@ -484,6 +515,7 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 		_create_enum_type(cursor, 'symbol_namespace_alias_type', SYMBOL_NAMESPACE_ALIAS_TYPE_VALUES)
 		_create_enum_type(cursor, 'symbol_alias_artifact_type', SYMBOL_ALIAS_ARTIFACT_TYPE_VALUES)
 		_create_enum_type(cursor, 'symbol_metadata_type', SYMBOL_METADATA_TYPE_VALUES)
+		_create_enum_type(cursor, 'symbol_mosaic_restriction_entry_type', SYMBOL_MOSAIC_RESTRICTION_ENTRY_TYPE_VALUES)
 		_create_enum_type(cursor, 'symbol_lock_status', SYMBOL_LOCK_STATUS_VALUES)
 		_create_enum_type(cursor, 'symbol_lock_hash_algorithm', SYMBOL_LOCK_HASH_ALGORITHM_VALUES)
 		_create_table(cursor, 'symbol_sync_state', SYMBOL_SYNC_STATE_DEFINITIONS)
@@ -508,6 +540,9 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 			cursor.execute(index_sql)
 		_create_table(cursor, 'symbol_metadata', SYMBOL_METADATA_DEFINITIONS)
 		for index_sql in SYMBOL_METADATA_INDEXES:
+			cursor.execute(index_sql)
+		_create_table(cursor, 'symbol_mosaic_restrictions', SYMBOL_MOSAIC_RESTRICTION_DEFINITIONS)
+		for index_sql in SYMBOL_MOSAIC_RESTRICTION_INDEXES:
 			cursor.execute(index_sql)
 		_create_table(cursor, 'symbol_hash_locks', SYMBOL_HASH_LOCK_DEFINITIONS)
 		_create_table(cursor, 'symbol_secret_locks', SYMBOL_SECRET_LOCK_DEFINITIONS)
@@ -743,6 +778,11 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 			SymbolDatabase._execute_replace_secret_locks(cursor, entry['key'], entry['rows'])
 
 	@staticmethod
+	def _execute_mosaic_restriction_entries(cursor, mosaic_restriction_entries):
+		for entry in mosaic_restriction_entries:
+			SymbolDatabase._execute_replace_mosaic_restrictions(cursor, entry['key'], entry['rows'])
+
+	@staticmethod
 	def _execute_refresh_mosaic_alias_names(cursor, mosaic_ids):
 		for mosaic_id in mosaic_ids:
 			cursor.execute(
@@ -975,6 +1015,123 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 			'scoped_metadata_key': body.get('scopedMetadataKey'),
 			'target_id': target_id
 		})
+
+	def replace_mosaic_restrictions(self, restriction_key, restriction_rows):
+		"""Replaces all current Mosaic Restriction rows matching one logical key."""
+
+		with self._database_transaction() as cursor:
+			self._execute_replace_mosaic_restrictions(cursor, restriction_key, restriction_rows)
+
+	@staticmethod
+	def _execute_replace_mosaic_restrictions(cursor, restriction_key, restriction_rows):
+		if not isinstance(restriction_key, MosaicRestrictionKey):
+			raise ValueError('Invalid Symbol mosaic restriction logical key')
+		entry_type = mosaic_restriction_entry_type_label(restriction_key.entry_type)
+		cursor.execute(
+			'''
+			DELETE FROM symbol_mosaic_restrictions
+			WHERE entry_type = %(entry_type)s
+				AND mosaic_id = %(mosaic_id)s
+				AND target_address IS NOT DISTINCT FROM %(target_address)s
+			''',
+			{
+				'entry_type': entry_type,
+				'mosaic_id': restriction_key.mosaic_id,
+				'target_address': restriction_key.target_address
+			})
+		for restriction_row in restriction_rows:
+			cursor.execute(
+				'''
+				INSERT INTO symbol_mosaic_restrictions (
+					composite_hash, entry_type, mosaic_id, target_address, restrictions, raw_payload, updated_at_height
+				)
+				VALUES (
+					%(composite_hash)s, %(entry_type)s, %(mosaic_id)s, %(target_address)s,
+					%(restrictions)s, %(raw_payload)s, %(updated_at_height)s
+				)
+				''',
+				{
+					**restriction_row,
+					'entry_type': mosaic_restriction_entry_type_label(restriction_row['entry_type']),
+					'restrictions': Json(restriction_row['restrictions']),
+					'raw_payload': Json(restriction_row['raw_payload'])
+				})
+
+	def get_mosaic_restriction_keys_updated_from_height(self, height):  # pylint: disable=invalid-name
+		"""Gets current Mosaic Restriction logical keys observed at or after a height."""
+
+		cursor = self.connection.cursor()
+		cursor.execute(
+			'''
+			SELECT entry_type, mosaic_id, target_address
+			FROM symbol_mosaic_restrictions
+			WHERE updated_at_height >= %s
+			ORDER BY updated_at_height, composite_hash
+			''',
+			(height,))
+
+		return [
+			create_mosaic_restriction_key(
+				MosaicRestrictionEntryType(row[0]),
+				row[1],
+				bytes(row[2]) if row[2] is not None else None)
+			for row in cursor.fetchall()
+		]
+
+	def get_confirmed_mosaic_restriction_keys_since(self, height):  # pylint: disable=invalid-name
+		"""Gets Mosaic Restriction logical keys from persisted transactions at or after a height."""
+
+		cursor = self.connection.cursor()
+		cursor.execute(
+			'''
+			SELECT
+				transactions.height,
+				transactions.id,
+				transactions.type,
+				transactions.target_address,
+				restriction_mosaics.mosaic_id,
+				restriction_mosaics.position
+			FROM symbol_transactions transactions
+			LEFT JOIN symbol_transaction_mosaics restriction_mosaics
+				ON restriction_mosaics.transaction_id = transactions.id
+				AND restriction_mosaics.role = 'restriction'
+				AND restriction_mosaics.position = 0
+			WHERE transactions.height >= %s AND transactions.type = ANY(%s)
+			ORDER BY transactions.height, transactions.id, restriction_mosaics.mosaic_id
+			''',
+			(
+				height,
+				list(MOSAIC_RESTRICTION_ENTRY_TYPE_BY_TRANSACTION_TYPE)
+			))
+
+		transaction_rows = []
+		for row in cursor.fetchall():
+			if not transaction_rows or transaction_rows[-1][0][1] != row[1]:
+				transaction_rows.append([row])
+			else:
+				transaction_rows[-1].append(row)
+
+		return [self._mosaic_restriction_key_from_confirmed_transaction_rows(rows) for rows in transaction_rows]
+
+	@staticmethod
+	def _mosaic_restriction_key_from_confirmed_transaction_rows(rows):
+		height, transaction_id, transaction_type, target_address, *_ = rows[0]
+		entry_type = MOSAIC_RESTRICTION_ENTRY_TYPE_BY_TRANSACTION_TYPE.get(transaction_type)
+		if entry_type is None:
+			raise ValueError(f'Unsupported confirmed Symbol Mosaic Restriction transaction at height {height}, id {transaction_id}')
+
+		position_zero_rows = [row for row in rows if row[4] is not None and row[5] == 0]
+		if len(position_zero_rows) != 1:
+			raise ValueError(
+				f'Invalid confirmed Symbol {entry_type.value} Mosaic Restriction transaction at height {height}, id {transaction_id}')
+		mosaic_id = position_zero_rows[0][4]
+		resolved_target = bytes(target_address) if target_address is not None else None
+		if entry_type is MosaicRestrictionEntryType.ADDRESS and resolved_target is None:
+			raise ValueError(
+				f'Invalid confirmed Symbol address Mosaic Restriction target at height {height}, id {transaction_id}')
+		if entry_type is MosaicRestrictionEntryType.GLOBAL:
+			resolved_target = None
+		return create_mosaic_restriction_key(entry_type, mosaic_id, resolved_target)
 
 	def upsert_hash_lock(self, hash_lock_row):
 		"""Upserts one Hash Lock current-state row by its aggregate bonded hash."""
@@ -1594,6 +1751,7 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 			self._execute_metadata_entries(cursor, refresh_entries.metadata_entries)
 			self._execute_hash_lock_entries(cursor, refresh_entries.hash_lock_entries)
 			self._execute_secret_lock_entries(cursor, refresh_entries.secret_lock_entries)
+			self._execute_mosaic_restriction_entries(cursor, refresh_entries.mosaic_restriction_entries)
 			self._execute_upsert_sync_state(cursor, sync_state)
 
 	@staticmethod
@@ -1608,6 +1766,7 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 		cursor.execute('DELETE FROM symbol_accounts WHERE last_seen_height >= %s', (height,))
 		cursor.execute('DELETE FROM symbol_hash_locks WHERE updated_at_height >= %s', (height,))
 		cursor.execute('DELETE FROM symbol_secret_locks WHERE updated_at_height >= %s', (height,))
+		cursor.execute('DELETE FROM symbol_mosaic_restrictions WHERE updated_at_height >= %s', (height,))
 
 	def upsert_transactions_for_height(self, height, transaction_entries):
 		"""Replaces persisted Symbol transactions and child index rows for one height."""

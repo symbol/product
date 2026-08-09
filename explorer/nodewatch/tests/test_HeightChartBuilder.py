@@ -1,5 +1,6 @@
 import json
 import unittest
+from base64 import b64encode
 from collections import namedtuple
 
 from nodewatch.chart_utils import VersionCustomizations
@@ -52,16 +53,21 @@ class HeightChartBuilderTest(unittest.TestCase):
 		expected_color = {'0.0.3.3': '#008A00', '0.0.3.1': '#00B300', '0.0.2.0': '#FF1F1F'}[name_parts[0]]
 		expected_shape = {'height': 'circle', 'finalized height': 'diamond'}[name_parts[1].strip()]
 
+		def to_plotly_encoding_int(source, size):
+			values = source if isinstance(source, list) else [source]
+			buffer = bytes().join([value.to_bytes(size, 'little') for value in values])
+			return {'bdata': b64encode(buffer).decode('utf-8'), 'dtype': f'i{size}'}
+
 		self.assertEqual({
 			'color': expected_color,
 			'sizeref': 319999.99964444444,
-			'size': expected['size'],
+			'size': to_plotly_encoding_int(expected['size'], 4),
 			'sizemode': 'area',
 			'symbol': expected_shape
 		}, chart_scatterpoint['marker'])
 		self.assertEqual('scatter', chart_scatterpoint['type'])
-		self.assertEqual(expected['y'], chart_scatterpoint['y'])
-		self.assertEqual(expected['x'], chart_scatterpoint['x'])
+		self.assertEqual(to_plotly_encoding_int(expected['y'], 1), chart_scatterpoint['y'])
+		self.assertEqual(to_plotly_encoding_int(expected['x'], 2), chart_scatterpoint['x'])
 		self.assertEqual(expected['text'], chart_scatterpoint['text'])
 
 	def test_can_create_power_chart_without_min_cluster_size(self):

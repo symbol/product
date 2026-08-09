@@ -643,6 +643,36 @@ class SymbolPullerTestBase(TestCase):
 
 		return [row[0] for row in cursor.fetchall()]
 
+	def _fetch_table_state(self, table_names):
+		cursor = self.puller.symbol_db.connection.cursor()
+		state = {}
+		for table_name in table_names:
+			cursor.execute(
+				f'SELECT to_jsonb(table_row) FROM {table_name} AS table_row '
+				'ORDER BY to_jsonb(table_row)::text')
+			state[table_name] = cursor.fetchall()
+
+		return state
+
+	def _fetch_complete_batch_state(self):
+		return self._fetch_table_state((
+			'symbol_blocks',
+			'symbol_transactions',
+			'symbol_transaction_mosaics',
+			'symbol_transaction_addresses',
+			'symbol_receipts',
+			'symbol_accounts',
+			'symbol_account_mosaics',
+			'symbol_multisig',
+			'symbol_namespaces',
+			'symbol_alias_names',
+			'symbol_mosaics',
+			'symbol_metadata',
+			'symbol_hash_locks',
+			'symbol_secret_locks',
+			'symbol_mosaic_restrictions',
+			'symbol_sync_state'))
+
 	@staticmethod
 	def _fetch_block_hash(database, height):
 		cursor = database.connection.cursor()

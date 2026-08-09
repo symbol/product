@@ -1,0 +1,190 @@
+"""Normalization and validation for Symbol mosaic restriction current state."""
+
+from collections import namedtuple
+from enum import Enum
+
+from symbolchain.sc import MosaicRestrictionType, TransactionType
+from symbolchain.symbol.IdGenerator import is_mosaic_alias
+from symbolchain.symbol.Network import Address
+
+from puller.model.symbol.format import decoded_address_bytes_from_hex, hash_bytes_from_hex, is_exact_integer, is_hex_text
+
+UINT64_MAX_DECIMAL = '18446744073709551615'
+MOSAIC_ADDRESS_RESTRICTION_REMOVAL_SENTINEL = UINT64_MAX_DECIMAL
+
+
+class MosaicRestrictionEntryType(Enum):
+	"""The two Symbol mosaic restriction entry kinds."""
+
+	ADDRESS = 'address'
+	GLOBAL = 'global'
+
+
+MosaicRestrictionKey = namedtuple(
+	'MosaicRestrictionKey',
+	['entry_type', 'mosaic_id', 'target_address'])
+
+_ENTRY_TYPE_BY_ENUM_VALUE = {0: MosaicRestrictionEntryType.ADDRESS, 1: MosaicRestrictionEntryType.GLOBAL}
+_ENUM_VALUE_BY_ENTRY_TYPE = {entry_type: enum_value for enum_value, entry_type in _ENTRY_TYPE_BY_ENUM_VALUE.items()}
+MOSAIC_RESTRICTION_ENTRY_TYPE_BY_TRANSACTION_TYPE = {
+	TransactionType.MOSAIC_ADDRESS_RESTRICTION.value: MosaicRestrictionEntryType.ADDRESS,
+	TransactionType.MOSAIC_GLOBAL_RESTRICTION.value: MosaicRestrictionEntryType.GLOBAL
+}
+
+
+def mosaic_restriction_entry_type_from_enum_value(value):  # pylint: disable=invalid-name
+	"""Map the strict Symbol entryType enum value to the local enum."""
+
+	if not is_exact_integer(value) or value not in _ENTRY_TYPE_BY_ENUM_VALUE:
+		raise ValueError(f'Unsupported Symbol mosaic restriction entry type {value}')
+
+	return _ENTRY_TYPE_BY_ENUM_VALUE[value]
+
+
+def mosaic_restriction_entry_type_to_enum_value(entry_type):  # pylint: disable=invalid-name
+	"""Map the local enum to the strict Symbol entryType enum value."""
+
+	if not isinstance(entry_type, MosaicRestrictionEntryType):
+		raise ValueError(f'Unsupported Symbol mosaic restriction entry type {entry_type}')
+
+	return _ENUM_VALUE_BY_ENTRY_TYPE[entry_type]
+
+
+def mosaic_restriction_entry_type_label(entry_type):
+	"""Return the database enum label for a local entry type."""
+
+	if not isinstance(entry_type, MosaicRestrictionEntryType):
+		raise ValueError(f'Unsupported Symbol mosaic restriction entry type {entry_type}')
+
+	return entry_type.value
+
+
+def create_mosaic_restriction_key(entry_type, mosaic_id, target_address):
+	"""Create a validated logical key for one persisted restriction entry."""
+
+	return _create_mosaic_restriction_key(
+		entry_type, mosaic_id, target_address, 'Invalid Symbol mosaic restriction mosaicId')
+
+
+def _create_mosaic_restriction_key(entry_type, mosaic_id, target_address, mosaic_id_error):
+	if not isinstance(entry_type, MosaicRestrictionEntryType):
+		raise ValueError(f'Unsupported Symbol mosaic restriction entry type {entry_type}')
+	if not isinstance(mosaic_id, str) or len(mosaic_id) != 16 or not is_hex_text(mosaic_id):
+		raise ValueError(mosaic_id_error)
+	normalized_mosaic_id = mosaic_id.upper()
+	if is_mosaic_alias(int(normalized_mosaic_id, 16)):
+		raise ValueError('Alias Symbol mosaic restriction mosaicId is unresolved')
+
+	if entry_type is MosaicRestrictionEntryType.GLOBAL:
+		if target_address is not None:
+			raise ValueError('Global Symbol mosaic restriction target_address must be null')
+		return MosaicRestrictionKey(entry_type, normalized_mosaic_id, None)
+
+	if not isinstance(target_address, bytes):
+		raise ValueError('Address Symbol mosaic restriction target_address is invalid')
+	try:
+		address = Address(target_address)
+	except ValueError as exception:
+		raise ValueError('Address Symbol mosaic restriction target_address is invalid') from exception
+	if address.is_alias():
+		raise ValueError('Alias Symbol address mosaic restriction targetAddress is unresolved')
+	return MosaicRestrictionKey(entry_type, normalized_mosaic_id, address.bytes)
+
+
+def create_mosaic_restriction_row(item, observed_height):
+	"""Validate one node wrapper and convert it to a persistence row."""
+
+	if not isinstance(item, dict) or not isinstance(item.get('mosaicRestrictionEntry'), dict):
+		raise ValueError('Malformed Symbol mosaic restriction response')
+	if not isinstance(item.get('id'), str) or len(item['id']) != 24 or not is_hex_text(item['id']):
+		raise ValueError('Invalid Symbol mosaic restriction id')
+	entry = item['mosaicRestrictionEntry']
+	composite_hash = hash_bytes_from_hex(entry, 'compositeHash', 'Symbol mosaic restriction')
+	version = entry.get('version')
+	if not is_exact_integer(version):
+		raise ValueError('Invalid Symbol mosaic restriction version')
+	entry_type = mosaic_restriction_entry_type_from_enum_value(entry.get('entryType'))
+	mosaic_id = entry.get('mosaicId')
+	target_address = _target_address(entry, entry_type)
+	key = _create_mosaic_restriction_key(
+		entry_type,
+		mosaic_id,
+		target_address,
+		f'Invalid Symbol {entry_type.value} mosaic restriction mosaicId')
+	restrictions = entry.get('restrictions')
+	if not isinstance(restrictions, list):
+		raise ValueError('Invalid Symbol mosaic restriction restrictions')
+	for restriction in restrictions:
+		_validate_restriction(restriction, entry_type)
+
+	return {
+		'composite_hash': composite_hash,
+		'entry_type': key.entry_type,
+		'mosaic_id': key.mosaic_id,
+		'target_address': key.target_address,
+		'restrictions': restrictions,
+		'raw_payload': item,
+		'updated_at_height': observed_height
+	}
+
+
+def _target_address(entry, entry_type):
+	if entry_type is MosaicRestrictionEntryType.GLOBAL:
+		if 'targetAddress' in entry:
+			raise ValueError('Global Symbol mosaic restriction must not contain targetAddress')
+		return None
+	return decoded_address_bytes_from_hex(entry, 'targetAddress', 'Symbol address mosaic restriction')
+
+
+def _validate_restriction(restriction, entry_type):
+	if not isinstance(restriction, dict):
+		raise ValueError('Invalid Symbol mosaic restriction restriction')
+	key = restriction.get('key')
+	if not _is_decimal_u64(key):
+		raise ValueError('Invalid Symbol mosaic restriction key')
+	if entry_type is MosaicRestrictionEntryType.ADDRESS:
+		value = restriction.get('value')
+		if not _is_decimal_u64(value):
+			raise ValueError('Invalid Symbol address mosaic restriction value')
+		# Symbol core 3a509647a1a7fb20be0bdb5435d923cb073b2773:
+		# client/catapult/plugins/txes/restriction_mosaic/src/state/MosaicAddressRestriction.h/.cpp
+		# defines UINT64_MAX as the removal sentinel and deletes the key instead of storing it.
+		if (value.lstrip('0') or '0') == MOSAIC_ADDRESS_RESTRICTION_REMOVAL_SENTINEL:
+			raise ValueError('Invalid Symbol address mosaic restriction value')
+		return
+
+	nested = restriction.get('restriction')
+	if not isinstance(nested, dict):
+		raise ValueError('Invalid Symbol global mosaic restriction restriction')
+	reference_mosaic_id = nested.get('referenceMosaicId')
+	if not isinstance(reference_mosaic_id, str) or len(reference_mosaic_id) != 16 or not is_hex_text(reference_mosaic_id):
+		raise ValueError('Invalid Symbol global mosaic restriction referenceMosaicId')
+	reference_mosaic_id = reference_mosaic_id.upper()
+	reference_mosaic_id_value = int(reference_mosaic_id, 16)
+	if reference_mosaic_id_value != 0 and is_mosaic_alias(reference_mosaic_id_value):
+		raise ValueError('Invalid Symbol global mosaic restriction referenceMosaicId')
+	if not _is_decimal_u64(nested.get('restrictionValue')):
+		raise ValueError('Invalid Symbol global mosaic restriction restrictionValue')
+	_validate_global_restriction_type(nested.get('restrictionType'))
+
+
+def _validate_global_restriction_type(restriction_type):
+	if not is_exact_integer(restriction_type):
+		raise ValueError('Invalid Symbol global mosaic restriction restrictionType')
+	try:
+		validated_restriction_type = MosaicRestrictionType(restriction_type)
+	except ValueError as exception:
+		raise ValueError('Invalid Symbol global mosaic restriction restrictionType') from exception
+	# Symbol core 3a509647a1a7fb20be0bdb5435d923cb073b2773:
+	# client/catapult/plugins/txes/restriction_mosaic/src/state/MosaicGlobalRestriction.cpp
+	# defines NONE as the deletion marker and removes the key instead of storing its rule.
+	if MosaicRestrictionType.NONE == validated_restriction_type:
+		raise ValueError('Invalid Symbol global mosaic restriction restrictionType')
+
+
+def _is_decimal_u64(value):
+	if not isinstance(value, str) or not value.isascii() or not value.isdecimal():
+		return False
+	normalized = value.lstrip('0') or '0'
+	return len(normalized) < 20 or (
+		len(normalized) == 20 and normalized <= UINT64_MAX_DECIMAL)

@@ -6,7 +6,7 @@ from symbolchain.CryptoTypes import Hash256
 from symbolchain.sc import LockHashAlgorithm
 from symbolchain.symbol.Network import Address
 
-from puller.model.symbol.format import label_for_type
+from puller.model.symbol.format import decoded_address_bytes_from_hex, hash_bytes_from_hex, is_exact_integer, label_for_type
 
 LOCK_STATUS_LABELS = {0: 'unused', 1: 'used'}
 LOCK_HASH_ALGORITHM_LABELS = {
@@ -25,7 +25,7 @@ RollbackLockKeys = namedtuple('RollbackLockKeys', ['hash_keys', 'secret_keys'], 
 def lock_status_label(status):
 	"""Maps a Symbol Lock status number to its canonical database label."""
 
-	if not isinstance(status, int) or isinstance(status, bool):
+	if not is_exact_integer(status):
 		raise ValueError(f'Unsupported Symbol lock status type {status}')
 
 	return label_for_type(LOCK_STATUS_LABELS, status, 'lock status')
@@ -34,7 +34,7 @@ def lock_status_label(status):
 def lock_hash_algorithm_label(hash_algorithm):
 	"""Maps a Symbol Lock hash algorithm number to its canonical database label."""
 
-	if not isinstance(hash_algorithm, int) or isinstance(hash_algorithm, bool):
+	if not is_exact_integer(hash_algorithm):
 		raise ValueError(f'Unsupported Symbol lock hash algorithm type {hash_algorithm}')
 
 	return label_for_type(LOCK_HASH_ALGORITHM_LABELS, hash_algorithm, 'lock hash algorithm')
@@ -109,28 +109,6 @@ def _hash_from_bytes(value, field_name):
 		raise ValueError(f'Invalid Symbol Secret Lock {field_name}') from exception
 
 
-def _decoded_address_from_hex(lock, field_name, lock_type):
-	value = lock.get(field_name)
-	if not isinstance(value, str):
-		raise ValueError(f'Invalid Symbol {lock_type} Lock {field_name}')
-
-	try:
-		return Address.from_decoded_address_hex_string(value).bytes
-	except ValueError as exception:
-		raise ValueError(f'Invalid Symbol {lock_type} Lock {field_name}') from exception
-
-
-def _hash_from_hex(lock, field_name, lock_type):
-	value = lock.get(field_name)
-	if not isinstance(value, str):
-		raise ValueError(f'Invalid Symbol {lock_type} Lock {field_name}')
-
-	try:
-		return Hash256(value).bytes
-	except ValueError as exception:
-		raise ValueError(f'Invalid Symbol {lock_type} Lock {field_name}') from exception
-
-
 def _mosaic_id(lock, lock_type):
 	value = lock.get('mosaicId')
 	if not isinstance(value, str) or len(value) != 16:
@@ -146,7 +124,7 @@ def _mosaic_id(lock, lock_type):
 
 def _integer(lock, field_name, lock_type):
 	value = lock.get(field_name)
-	if isinstance(value, int) and not isinstance(value, bool) and 0 <= value:
+	if is_exact_integer(value) and 0 <= value:
 		return value
 	if isinstance(value, str) and value.isascii() and value.isdecimal():
 		return int(value)
@@ -159,8 +137,8 @@ def create_hash_lock_row(item, observed_height):
 
 	lock = _required_lock(item, 'Hash')
 	return {
-		'hash': _hash_from_hex(lock, 'hash', 'Hash'),
-		'owner_address': _decoded_address_from_hex(lock, 'ownerAddress', 'Hash'),
+		'hash': hash_bytes_from_hex(lock, 'hash', 'Symbol Hash Lock'),
+		'owner_address': decoded_address_bytes_from_hex(lock, 'ownerAddress', 'Symbol Hash Lock'),
 		'mosaic_id': _mosaic_id(lock, 'Hash'),
 		'amount': _integer(lock, 'amount', 'Hash'),
 		'end_height': _integer(lock, 'endHeight', 'Hash'),
@@ -174,10 +152,10 @@ def create_secret_lock_row(item, observed_height):
 	"""Creates one persisted Secret Lock row from a Symbol node response wrapper."""
 
 	lock = _required_lock(item, 'Secret')
-	composite_hash = _hash_from_hex(lock, 'compositeHash', 'Secret')
-	owner_address = _decoded_address_from_hex(lock, 'ownerAddress', 'Secret')
-	recipient_address = _decoded_address_from_hex(lock, 'recipientAddress', 'Secret')
-	secret = _hash_from_hex(lock, 'secret', 'Secret')
+	composite_hash = hash_bytes_from_hex(lock, 'compositeHash', 'Symbol Secret Lock')
+	owner_address = decoded_address_bytes_from_hex(lock, 'ownerAddress', 'Symbol Secret Lock')
+	recipient_address = decoded_address_bytes_from_hex(lock, 'recipientAddress', 'Symbol Secret Lock')
+	secret = hash_bytes_from_hex(lock, 'secret', 'Symbol Secret Lock')
 	hash_algorithm = lock_hash_algorithm_label(lock.get('hashAlgorithm'))
 	create_secret_lock_search_key(owner_address, recipient_address, secret, hash_algorithm)
 
