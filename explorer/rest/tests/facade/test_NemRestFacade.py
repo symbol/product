@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock, patch
 from symbollightapi.model.Exceptions import NodeException
 
 from rest.facade.NemRestFacade import NemRestFacade
-from rest.model.common import Pagination, RestConfig, Sorting
+from rest.model.common import STATISTICS_RANGE_CACHE_MAX_ENTRIES, Pagination, RestConfig, Sorting
 
 from ..test.DatabaseTestUtils import (
 	ACCOUNT_STATISTIC_VIEW,
@@ -442,6 +442,48 @@ class TestNemRestFacade(DatabaseTestBase):  # pylint: disable=too-many-public-me
 	# endregion
 
 	# region transaction statistics
+
+	def test_can_tell_cached_date_ranges_apart(self):
+		# Arrange: the same dates asked for in both period types, so only the period type can tell them apart
+		# Act:
+		daily = self.nem_rest_facade.get_transaction_statistics_by_date_range('2015-03-01', '2015-03-31', 'DAY')
+		monthly = self.nem_rest_facade.get_transaction_statistics_by_date_range('2015-03-01', '2015-03-31', 'MONTH')
+		daily_again = self.nem_rest_facade.get_transaction_statistics_by_date_range('2015-03-01', '2015-03-31', 'DAY')
+
+		# Assert: the period type belongs to the cache key, otherwise the monthly read would answer both
+		self.assertNotEqual(daily, monthly)
+		self.assertEqual(daily, daily_again)
+
+	def test_can_keep_summaries_cached_while_date_ranges_churn(self):
+		# Arrange: warm the transaction summary, then flood the range cache past its capacity
+		self.nem_rest_facade.get_transaction_statistics()
+
+		for day in range(STATISTICS_RANGE_CACHE_MAX_ENTRIES + 8):
+			self.nem_rest_facade.get_transaction_statistics_by_date_range('2015-03-01', f'2015-03-{1 + day % 28:02}', 'DAY')
+
+		with patch.object(
+			self.nem_rest_facade.nem_db, 'get_transaction_statistics',
+			wraps=self.nem_rest_facade.nem_db.get_transaction_statistics
+		) as spy:
+			# Act:
+			self.nem_rest_facade.get_transaction_statistics()
+
+			# Assert: the summaries live in their own cache, so arbitrary ranges cannot evict them
+			self.assertEqual(0, spy.call_count)
+
+	def test_can_serve_repeated_statistics_reads_from_cache(self):
+		# Arrange: statistics summarise the whole chain and are expensive, so a repeated read must not hit the database
+		with patch.object(
+			self.nem_rest_facade.nem_db, 'get_transaction_statistics',
+			wraps=self.nem_rest_facade.nem_db.get_transaction_statistics
+		) as spy:
+			# Act:
+			first_statistics = self.nem_rest_facade.get_transaction_statistics()
+			second_statistics = self.nem_rest_facade.get_transaction_statistics()
+
+			# Assert:
+			self.assertEqual(first_statistics, second_statistics)
+			self.assertEqual(1, spy.call_count)
 
 	def test_can_retrieve_transaction_statistics(self):
 		# Act:
