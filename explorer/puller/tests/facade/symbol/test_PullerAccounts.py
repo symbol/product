@@ -39,7 +39,19 @@ class MalformedAccountsBatchConnector(FakeConnector):
 		raise KeyError(url_path)
 
 
-class MissingConfiguredAccountConnector(FakeConnector):
+class EmptyMosaicRestrictionConnector(FakeConnector):
+	async def get(self, url_path, *args):
+		if url_path.startswith('restrictions/mosaic?'):
+			self.paths.append(url_path)
+			return {
+				'pagination': {'pageNumber': 1, 'pageSize': 100},
+				'data': []
+			}
+
+		return await super().get(url_path, *args)
+
+
+class MissingConfiguredAccountConnector(EmptyMosaicRestrictionConnector):
 	def __init__(self, missing_address, *args, **kwargs):
 		super().__init__(*args, **kwargs)
 		self.missing_address = missing_address
@@ -332,7 +344,7 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):  # pylint: disable=too-man
 
 	def test_refresh_dirty_accounts_for_batch_persists_mosaic_restriction_target_relation(self):
 		# Arrange:
-		connector = FakeConnector(
+		connector = EmptyMosaicRestrictionConnector(
 			1,
 			{0: [self._create_block(1)]},
 			transactions_by_path={
@@ -385,7 +397,7 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):  # pylint: disable=too-man
 
 	def test_refresh_dirty_accounts_for_batch_keeps_mosaic_restriction_target_when_it_is_signer(self):
 		# Arrange:
-		connector = FakeConnector(
+		connector = EmptyMosaicRestrictionConnector(
 			1,
 			{0: [self._create_block(1, beneficiaryAddress=RECIPIENT_ADDRESS)]},
 			transactions_by_path={
@@ -410,7 +422,7 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):  # pylint: disable=too-man
 	def test_refresh_dirty_accounts_for_batch_keeps_mosaic_restriction_target_when_it_is_beneficiary(self):
 		# Arrange:
 		target_address_text = self._address_text(RECIPIENT_ADDRESS)
-		connector = FakeConnector(
+		connector = EmptyMosaicRestrictionConnector(
 			1,
 			{0: [self._create_block(1, beneficiaryAddress=RECIPIENT_ADDRESS)]},
 			transactions_by_path={
@@ -435,7 +447,7 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):  # pylint: disable=too-man
 	def test_refresh_dirty_accounts_for_batch_keeps_mosaic_restriction_target_when_it_is_receipt_address(self):
 		# Arrange:
 		target_address_text = self._address_text(RECIPIENT_ADDRESS)
-		connector = FakeConnector(
+		connector = EmptyMosaicRestrictionConnector(
 			1,
 			{0: [self._create_block(1)]},
 			transactions_by_path={
