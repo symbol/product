@@ -12,6 +12,7 @@ from puller.db.SymbolDatabase import RollbackRefreshEntries, SymbolDatabase
 from puller.facade.SymbolPuller import ACCOUNT_BATCH_FETCH_SIZE
 from puller.model.symbol.Account import create_account_row
 from puller.model.symbol.Block import create_block_row
+from tests.test.SymbolTestConstants import SIGNER_ADDRESS
 
 from .puller_test_utils import (
 	BENEFICIARY_ADDRESS,
@@ -395,33 +396,33 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):  # pylint: disable=too-man
 			'addresses': [self._address_text(BENEFICIARY_ADDRESS), self._address_text(target_address)]
 		}], connector.post_payloads)
 
-	def test_refresh_dirty_accounts_for_batch_keeps_mosaic_restriction_target_when_it_is_signer(self):
-		# Arrange:
+	def test_refresh_dirty_accounts_for_batch_keeps_target_when_it_matches_transaction_signer(self):
+		# Arrange: the target row is excluded, but the same address's signer row remains dirty.
+		block_beneficiary_address = _address_hex(1)
 		connector = EmptyMosaicRestrictionConnector(
 			1,
-			{0: [self._create_block(1, beneficiaryAddress=RECIPIENT_ADDRESS)]},
+			{0: [self._create_block(1, beneficiaryAddress=block_beneficiary_address)]},
 			transactions_by_path={
 				transaction_path(1, 1): {
 					'data': [create_node_transaction(
 						1,
 						type=TransactionType.MOSAIC_ADDRESS_RESTRICTION.value,
-						targetAddress=BENEFICIARY_ADDRESS,
+						targetAddress=SIGNER_ADDRESS,
 						mosaicId=NATIVE_MOSAIC_ID)]
 				}
 			},
-			account_by_address=self._account_by_address_text(BENEFICIARY_ADDRESS, RECIPIENT_ADDRESS))
+			account_by_address=self._account_by_address_text(block_beneficiary_address, SIGNER_ADDRESS))
 
 		# Act:
 		self._sync_with_connector(connector)
 
 		# Assert:
 		self.assertEqual([{
-			'addresses': [self._address_text(RECIPIENT_ADDRESS), self._address_text(BENEFICIARY_ADDRESS)]
+			'addresses': [self._address_text(block_beneficiary_address), self._address_text(SIGNER_ADDRESS)]
 		}], connector.post_payloads)
 
-	def test_refresh_dirty_accounts_for_batch_keeps_mosaic_restriction_target_when_it_is_beneficiary(self):
-		# Arrange:
-		target_address_text = self._address_text(RECIPIENT_ADDRESS)
+	def test_refresh_dirty_accounts_for_batch_keeps_target_when_it_matches_block_beneficiary(self):
+		# Arrange: the target row is excluded, but the same address remains as the block beneficiary.
 		connector = EmptyMosaicRestrictionConnector(
 			1,
 			{0: [self._create_block(1, beneficiaryAddress=RECIPIENT_ADDRESS)]},
@@ -434,14 +435,14 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):  # pylint: disable=too-man
 						mosaicId=NATIVE_MOSAIC_ID)]
 				}
 			},
-			account_by_address=self._account_by_address_text(BENEFICIARY_ADDRESS, RECIPIENT_ADDRESS))
+			account_by_address=self._account_by_address_text(SIGNER_ADDRESS, RECIPIENT_ADDRESS))
 
 		# Act:
 		self._sync_with_connector(connector)
 
 		# Assert:
 		self.assertEqual([{
-			'addresses': [target_address_text, self._address_text(BENEFICIARY_ADDRESS)]
+			'addresses': [self._address_text(RECIPIENT_ADDRESS), self._address_text(SIGNER_ADDRESS)]
 		}], connector.post_payloads)
 
 	def test_refresh_dirty_accounts_for_batch_keeps_mosaic_restriction_target_when_it_is_receipt_address(self):
