@@ -67,8 +67,8 @@ def setup_symbol_routes(app, symbol_api_facade):  # pylint: disable=too-many-sta
 			if availability_check and not availability_check():
 				return _service_unavailable('Symbol backend data is unavailable'), None
 			return None, query_fn()
-		except ReceiptCursorStaleError as error:
-			return _conflict(str(error)), None
+		except ReceiptCursorStaleError:
+			return _conflict(ReceiptCursorStaleError.MESSAGE), None
 		except ReceiptDataUnavailableError:
 			return _service_unavailable('Symbol backend data is unavailable'), None
 		except PsycopgError:

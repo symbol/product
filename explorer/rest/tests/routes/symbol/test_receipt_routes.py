@@ -803,10 +803,12 @@ def test_block_cursor_rejects_path():
 	assert facade.receipt_query is None
 
 
-def test_receipts_maps_stale_cursor():
+def test_receipts_hides_internal_details():
 	# Arrange:
 	facade = ReceiptFacade()
-	facade.receipts_error = ReceiptCursorStaleError()
+	stale_error = ReceiptCursorStaleError()
+	stale_error.args = ('internal cursor details',)
+	facade.receipts_error = stale_error
 
 	# Act:
 	response = _create_client(facade).get('/api/symbol/receipts')
