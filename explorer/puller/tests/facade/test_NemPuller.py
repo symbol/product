@@ -1531,12 +1531,13 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 		self.assertEqual(block.transactions[0].other_transaction.height, block.transactions[0].height)
 		self.assertEqual(block.transactions[0].other_transaction.transaction_hash, block.transactions[0].inner_hash)
 
-		# first call is inner transaction
+		# first call is inner transaction, pointing back at the aggregate that owns it
 		self.assertEqual(process_transaction_calls[0][0], (cursor,))
 		self.assertEqual(process_transaction_calls[0][1], {
 			'transaction': block.transactions[0].other_transaction,
 			'block_height': 3,
-			'is_inner': True
+			'is_inner': True,
+			'aggregate_hash': block.transactions[0].transaction_hash
 		})
 
 		# second call is outer transaction

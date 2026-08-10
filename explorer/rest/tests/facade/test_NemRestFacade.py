@@ -591,7 +591,7 @@ class TestNemRestFacade(DatabaseTestBase):  # pylint: disable=too-many-public-me
 			transaction_query=self._make_transaction_query(
 				recipient_address='NBFWZ4IVRHEIBRCGHLYDS62FSFTBM3VDFA7E6LSQ'
 			),
-			expected_transaction_names=('multisig', 'namespace_registration', 'mosaic_definition', 'transfer', 'transfer_v2')
+			expected_transaction_names=('mosaic_definition', 'namespace_registration', 'multisig', 'transfer_v2', 'transfer')
 		)
 
 	def test_can_retrieve_transactions_filtered_by_sender_address(self):

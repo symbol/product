@@ -754,7 +754,7 @@ class NemDatabaseTest(DatabaseTestBase):  # pylint: disable=too-many-public-meth
 	def test_can_query_transactions_filtered_by_address_as_recipient(self):
 		self._assert_can_query_transactions_with_filter(
 			Pagination(10, 0), 'desc', self._make_transaction_query(address=TRANSACTIONS[0].recipient_address),
-			('multisig', 'namespace_registration', 'mosaic_definition', 'transfer', 'transfer_v2')
+			('mosaic_definition', 'namespace_registration', 'multisig', 'transfer_v2', 'transfer')
 		)
 
 	def test_can_query_transactions_filtered_by_sender_address(self):
@@ -766,7 +766,7 @@ class NemDatabaseTest(DatabaseTestBase):  # pylint: disable=too-many-public-meth
 	def test_can_query_transactions_filtered_by_recipient_address(self):
 		self._assert_can_query_transactions_with_filter(
 			Pagination(10, 0), 'desc', self._make_transaction_query(recipient_address=TRANSACTIONS[0].recipient_address),
-			('multisig', 'namespace_registration', 'mosaic_definition', 'transfer', 'transfer_v2')
+			('mosaic_definition', 'namespace_registration', 'multisig', 'transfer_v2', 'transfer')
 		)
 
 	def test_can_exclude_multisig_transaction_for_initiator_account_from_address_filter(self):
@@ -787,7 +787,7 @@ class NemDatabaseTest(DatabaseTestBase):  # pylint: disable=too-many-public-meth
 	def test_can_query_multisig_transaction_filtered_by_inner_recipient_address(self):
 		self._assert_can_query_transactions_with_filter(
 			Pagination(10, 0), 'desc', self._make_transaction_query(recipient_address=TRANSACTIONS[5].recipient_address),
-			('multisig', 'namespace_registration', 'mosaic_definition', 'transfer', 'transfer_v2')
+			('mosaic_definition', 'namespace_registration', 'multisig', 'transfer_v2', 'transfer')
 		)
 
 	def test_can_query_transactions_filtered_by_mosaic_nem_xem(self):

@@ -856,11 +856,11 @@ def test_api_transactions_excludes_multisig_for_initiator_from_address_filter(cl
 
 def test_api_transactions_applies_recipient_address(client):  # pylint: disable=redefined-outer-name, invalid-name
 	_assert_get_api_nem_transactions(client, 200, transaction_dicts(
-		'multisig',
-		'namespace_registration',
 		'mosaic_definition',
-		'transfer',
-		'transfer_v2'
+		'namespace_registration',
+		'multisig',
+		'transfer_v2',
+		'transfer'
 	), recipientAddress='NBFWZ4IVRHEIBRCGHLYDS62FSFTBM3VDFA7E6LSQ')
 
 
