@@ -369,14 +369,19 @@ class NemDatabase(DatabaseConnectionPool):
 
 		return f'''
 			SELECT
-				root_namespace,
-				owner,
-				registered_height,
+				n.root_namespace,
+				n.owner,
+				n.registered_height,
 				b.timestamp AS registered_timestamp,
-				expiration_height ,
-				sub_namespaces,
+				n.expiration_height,
+				n.sub_namespaces,
 				COALESCE(m.mosaics, '[]'::json) AS mosaics
-			FROM namespaces n
+			FROM (
+				SELECT * FROM namespaces n
+				{where_condition}
+				{order_condition}
+				{limit_condition}
+			) n
 			LEFT JOIN blocks b
 				on n.registered_height = b.height
 			LEFT JOIN LATERAL (
@@ -392,9 +397,7 @@ class NemDatabase(DatabaseConnectionPool):
 					ON ms.registered_height = mb.height
 				WHERE ms.root_namespace = n.root_namespace
 			) m ON true
-			{where_condition}
 			{order_condition}
-			{limit_condition}
 		'''
 
 	@staticmethod
@@ -605,7 +608,7 @@ class NemDatabase(DatabaseConnectionPool):
 	def get_namespaces(self, pagination, sort):
 		"""Gets namespaces pagination in database."""
 
-		order_condition = f' ORDER BY registered_height {sort}'
+		order_condition = f' ORDER BY registered_height {sort}, root_namespace ASC'
 		limit_condition = ' LIMIT %s OFFSET %s'
 
 		sql = self._generate_namespace_query(
