@@ -3,11 +3,21 @@ from binascii import unhexlify
 from collections import namedtuple
 
 from symbolchain.nc import TransactionType
+from symbolchain.CryptoTypes import PublicKey
 from symbolchain.nem.Network import Address
 
 from .DatabaseConnection import DatabaseConnection
 
 AccountRefreshRecord = namedtuple('AccountRefreshRecord', ['id', 'address'])
+RollbackBlockRecord = namedtuple('RollbackBlockRecord', ['beneficiary', 'signer'])
+RollbackTransactionRecord = namedtuple(
+	'RollbackTransactionRecord',
+	['transaction_type', 'sender_address', 'recipient_address', 'payload']
+)
+OrphanChainRecords = namedtuple(
+	'OrphanChainRecords',
+	['blocks', 'transactions', 'transfer_levy_recipients']
+)
 
 
 class NemDatabase(DatabaseConnection):
@@ -411,6 +421,88 @@ class NemDatabase(DatabaseConnection):
 		)
 		result = cursor.fetchone()
 		return result[0] if result else None
+
+	def get_orphan_chain_records(self, fork_height):
+		"""Gets block and transaction records above a confirmed fork height."""
+
+		cursor = self.connection.cursor()
+		cursor.execute(
+			'''
+			SELECT
+				beneficiary,
+				signer
+			FROM blocks
+			WHERE height > %s
+			ORDER BY height ASC
+			''',
+			(fork_height,)
+		)
+		results = cursor.fetchall()
+		blocks = [
+			RollbackBlockRecord(Address(bytes(record[0])), PublicKey(bytes(record[1])))
+			for record in results
+		]
+
+		cursor.execute(
+			'''
+			SELECT
+				transaction_type,
+				sender_address,
+				recipient_address,
+				payload
+			FROM transactions
+			WHERE height > %s
+			ORDER BY height ASC, id ASC
+			''',
+			(fork_height,)
+		)
+		results = cursor.fetchall()
+		transactions = [
+			RollbackTransactionRecord(
+				record[0],
+				Address(bytes(record[1])),
+				Address(bytes(record[2])) if record[2] else None,
+				record[3]
+			)
+			for record in results
+		]
+
+		cursor.execute(
+			'''
+			SELECT DISTINCT mosaics.levy_recipient
+			FROM transactions
+			INNER JOIN transactions_mosaic
+				ON transactions_mosaic.transaction_id = transactions.id
+			INNER JOIN mosaics
+				ON mosaics.namespace_name = transactions_mosaic.namespace_name
+			WHERE transactions.height > %s
+				AND mosaics.levy_recipient IS NOT NULL
+			''',
+			(fork_height,)
+		)
+		results = cursor.fetchall()
+		transfer_levy_recipients = {Address(bytes(record[0])) for record in results}
+
+		return OrphanChainRecords(blocks, transactions, transfer_levy_recipients)
+
+	def get_account_creation_heights(self, addresses):
+		"""Gets stored creation heights for affected accounts."""
+
+		if not addresses:
+			return {}
+
+		cursor = self.connection.cursor()
+		cursor.execute(
+			'''
+			SELECT address, height
+			FROM accounts
+			WHERE address = ANY(%s)
+			''',
+			([address.bytes for address in addresses],)
+		)
+		results = cursor.fetchall()
+
+		return {Address(bytes(record[0])): record[1] for record in results}
 
 	def get_accounts_for_refresh(self, limit, last_account_id):
 		"""Gets account addresses that should have vested balance and importance refreshed."""
