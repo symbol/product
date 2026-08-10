@@ -7,6 +7,7 @@ from unittest.mock import AsyncMock, Mock, patch
 
 import testing.postgresql
 from symbolchain.CryptoTypes import PublicKey
+from symbolchain.nc import TransactionType
 from symbolchain.nem.Network import Address
 from symbollightapi.connector.NemConnector import AccountMosaic, NemAccountInfo
 from symbollightapi.model.Block import Block
@@ -32,11 +33,13 @@ from puller.facade.NemPuller import (
 	NEM_MAX_ROLLBACK_DEPTH,
 	AccountRecord,
 	AccountVestedBalanceRecord,
+	BlockRecord,
 	DatabaseConfig,
 	MosaicRecord,
 	NamespaceRecord,
 	NemPuller,
 	NemRollbackError,
+	RollbackPayloadAccounts,
 	TransactionRecord
 )
 
@@ -1610,3 +1613,330 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 			self._run_detect_rollback_test({}, {}, db_height, db_height)
 
 		self.assertEqual(expected_message, str(context.exception))
+
+	@staticmethod
+	def _create_rollback_account(address, height):
+		return AccountRecord(address, height, None, None, 0, 0, 0, [], 0, 'INACTIVE', None, [], [])
+
+	@staticmethod
+	def _create_rollback_transaction(
+		transaction_id,
+		transaction_type,
+		height,
+		sender_address,
+		recipient_address=None,
+		payload=None,
+		is_inner=False
+	):  # pylint: disable=too-many-arguments,too-many-positional-arguments
+		return TransactionRecord(
+			f'{transaction_id:064X}',
+			height,
+			PublicKey('11' * 32),
+			0,
+			'2015-03-29 00:00:00+00:00',
+			'2015-03-29 01:00:00+00:00',
+			None,
+			transaction_type,
+			is_inner,
+			sender_address,
+			recipient_address,
+			payload,
+			100,
+			1
+		)
+
+	def test_extracts_multisig_account_and_all_signature_senders(self):
+		# Arrange:
+		multisig_account = Address('TAWUGAUSWSVB35T5QE44ICIK2WE3AUOTSGZBO5O4')
+		first_signature_sender = PublicKey(
+			'f94e8702eb1943b23570b1b83be1b81536df35538978820e98bfce8f999e2d37'
+		)
+		second_signature_sender = PublicKey(
+			'1fbdbdde28daf828245e4533765726f0b7790e0b7146e2ce205df3e86366980b'
+		)
+		transaction = self._create_rollback_transaction(
+			1,
+			TransactionType.MULTISIG.value,
+			11,
+			Address('TCJLCZSOQ6RGWHTPSV2DW467WZSHK4NBSITND4OF'),
+			payload={'signatures': [
+				{
+					'other_account': str(multisig_account),
+					'sender': str(first_signature_sender)
+				},
+				{
+					'other_account': str(multisig_account),
+					'sender': str(second_signature_sender)
+				}
+			]}
+		)
+
+		# Act:
+		accounts = self.puller._extract_affected_payload_accounts(  # pylint: disable=protected-access
+			transaction
+		)
+
+		# Assert:
+		expected_accounts = RollbackPayloadAccounts({
+			multisig_account,
+			Address('TANIBAXPVLBP37YXSGREVD77NXIFZML5FANIVEXX'),
+			Address('TADMEHCFJD45GPTDL4HZP2LJLZVAZRLYWY2K4OOH')
+		}, set())
+		self.assertEqual(expected_accounts, accounts)
+
+	def test_can_capture_all_data_affected_by_rollback(self):  # pylint: disable=too-many-locals
+		# Arrange:
+		fork_height = 10
+		orphan_height = fork_height + 1
+		beneficiary = Address('TBZWVEKB2XMTO4F3RAOEIBWRBMPQ5N23G56ZJM4I')
+		signer = PublicKey('8d07f90fb4bbe7715fa327c926770166a11be2e494a970605f2e12557f66c9b9')
+		signer_address = self.puller._convert_public_key_to_address(signer)  # pylint: disable=protected-access
+		sender = Address('TCJLCZSOQ6RGWHTPSV2DW467WZSHK4NBSITND4OF')
+		inner_sender = Address('TBKQWJJGPOHL462DBVMTYOAERXGG2BOS5XRFO2P6')
+		recipient = Address('TALICE6XEEEOBFJVY3ZCENZ7WBG6LB4KB7P7KMQX')
+		remote_key = PublicKey('7195f4d7a40ad7e31958ae96c4afed002962229675a4cae8dc8a18e290618981')
+		remote_address = self.puller._convert_public_key_to_address(remote_key)  # pylint: disable=protected-access
+		cosignatory_key = PublicKey('1fbdbdde28daf828245e4533765726f0b7790e0b7146e2ce205df3e86366980b')
+		cosignatory_address = self.puller._convert_public_key_to_address(cosignatory_key)  # pylint: disable=protected-access
+		signature_sender_key = PublicKey(
+			'f94e8702eb1943b23570b1b83be1b81536df35538978820e98bfce8f999e2d37'
+		)
+		signature_sender_address = self.puller._convert_public_key_to_address(  # pylint: disable=protected-access
+			signature_sender_key
+		)
+		multisig_account = Address('TAWUGAUSWSVB35T5QE44ICIK2WE3AUOTSGZBO5O4')
+		rental_fee_recipient = Address('TAMESPACEWH4MKFMBCVFERDPOOP4FK7MTDJEYP35')
+		creation_fee_recipient = Address('TBMOSAICOD4F54EE5CDMR23CCBGOAM2XSJBR5OLC')
+		definition_levy_recipient = Address('NBRYCNWZINEVNITUESKUMFIENWKYCRUGNFZV25AV')
+		transfer_levy_recipient = Address('TBEM6SFOHU5PORIGAVG3NNJIMCG73R2TWH35O2VF')
+
+		transactions = [
+			self._create_rollback_transaction(
+				1, TransactionType.TRANSFER.value, orphan_height, sender, recipient
+			),
+			self._create_rollback_transaction(
+				2,
+				TransactionType.ACCOUNT_KEY_LINK.value,
+				orphan_height,
+				sender,
+				payload={'mode': 1, 'remote_account': str(remote_key)}
+			),
+			self._create_rollback_transaction(
+				3,
+				TransactionType.MULTISIG_ACCOUNT_MODIFICATION.value,
+				orphan_height,
+				sender,
+				payload={'modifications': [{'cosignatory_account': str(cosignatory_key)}]}
+			),
+			self._create_rollback_transaction(
+				4,
+				TransactionType.MULTISIG.value,
+				orphan_height,
+				sender,
+				payload={'signatures': [{
+					'other_account': str(multisig_account),
+					'sender': str(signature_sender_key)
+				}]}
+			),
+			self._create_rollback_transaction(
+				5,
+				TransactionType.NAMESPACE_REGISTRATION.value,
+				orphan_height,
+				sender,
+				rental_fee_recipient,
+				{'parent': None, 'namespace': 'root'}
+			),
+			self._create_rollback_transaction(
+				6,
+				TransactionType.NAMESPACE_REGISTRATION.value,
+				orphan_height,
+				sender,
+				rental_fee_recipient,
+				{'parent': 'root.child', 'namespace': 'grandchild'}
+			),
+			self._create_rollback_transaction(
+				7,
+				TransactionType.MOSAIC_DEFINITION.value,
+				orphan_height,
+				sender,
+				creation_fee_recipient,
+				{
+					'namespace_name': 'root.token',
+					'levy': {'recipient': str(definition_levy_recipient)}
+				}
+			),
+			self._create_rollback_transaction(
+				8,
+				TransactionType.MOSAIC_SUPPLY_CHANGE.value,
+				orphan_height,
+				inner_sender,
+				payload={'namespace_name': 'root.supply'},
+				is_inner=True
+			)
+		]
+		expected_accounts = {
+			beneficiary,
+			signer_address,
+			sender,
+			inner_sender,
+			recipient,
+			remote_address,
+			cosignatory_address,
+			multisig_account,
+			signature_sender_address,
+			rental_fee_recipient,
+			creation_fee_recipient,
+			definition_levy_recipient,
+			transfer_levy_recipient
+		}
+		expected_account_creation_heights = {
+			address: orphan_height if recipient == address else fork_height
+			for address in expected_accounts
+		}
+
+		with self.puller.nem_db as database:
+			database.create_tables()
+			cursor = database.connection.cursor()
+			database.insert_block(cursor, BlockRecord(
+				orphan_height,
+				'2015-03-29 00:00:00+00:00',
+				0,
+				len(transactions),
+				1,
+				'AA' * 32,
+				beneficiary,
+				signer,
+				'BB' * 64,
+				100
+			))
+			database.upsert_mosaic(cursor, MosaicRecord(
+				'levy',
+				'levy.token',
+				'levy mosaic',
+				signer,
+				fork_height,
+				1,
+				1,
+				0,
+				True,
+				True,
+				1,
+				'nem.xem',
+				1,
+				transfer_levy_recipient
+			))
+			transfer_transaction_id = database.insert_transaction(cursor, transactions[0])
+			for transaction in transactions[1:]:
+				database.insert_transaction(cursor, transaction)
+			database.insert_transaction_mosaic(
+				cursor,
+				transfer_transaction_id,
+				Mosaic('levy.token', 1)
+			)
+			for address, height in expected_account_creation_heights.items():
+				database.upsert_account(
+					cursor,
+					self._create_rollback_account(address, height)
+				)
+			database.connection.commit()
+
+			# Act:
+			capture = self.puller.capture_rollback_impact(fork_height)
+
+		# Assert:
+		self.assertEqual(fork_height, capture.fork_height)
+		self.assertEqual(expected_accounts, capture.affected_accounts)
+		self.assertEqual({recipient}, capture.orphan_created_accounts)
+		self.assertEqual(expected_accounts - {recipient}, capture.surviving_affected_accounts)
+		self.assertEqual({beneficiary}, capture.orphan_beneficiaries)
+		self.assertEqual({sender}, capture.affected_remote_link_accounts)
+		self.assertEqual({'root'}, capture.affected_namespace_roots)
+		self.assertEqual({'root.token', 'root.supply'}, capture.affected_mosaic_names)
+		self.assertEqual(expected_account_creation_heights, capture.account_creation_heights)
+
+	def test_rejects_invalid_fork_height_before_reading_database(self):
+		with patch.object(self.puller.nem_db, 'get_orphan_chain_records') as mock_get_orphan_chain_records:
+			# Act:
+			with self.assertRaisesRegex(NemRollbackError, 'Invalid NEM fork height 0'):
+				self.puller.capture_rollback_impact(0)
+
+			# Assert:
+			mock_get_orphan_chain_records.assert_not_called()
+
+	def test_accepts_empty_multisig_collections(self):
+		# Arrange:
+		fork_height = 10
+		orphan_height = fork_height + 1
+		multisig_account = Address('TCJLCZSOQ6RGWHTPSV2DW467WZSHK4NBSITND4OF')
+		cosigner = Address('TALICE6XEEEOBFJVY3ZCENZ7WBG6LB4KB7P7KMQX')
+		transactions = [
+			self._create_rollback_transaction(
+				9,
+				TransactionType.MULTISIG_ACCOUNT_MODIFICATION.value,
+				orphan_height,
+				multisig_account,
+				payload={'modifications': []}
+			),
+			self._create_rollback_transaction(
+				10,
+				TransactionType.MULTISIG.value,
+				orphan_height,
+				cosigner,
+				payload={'signatures': []}
+			)
+		]
+
+		with self.puller.nem_db as database:
+			database.create_tables()
+			cursor = database.connection.cursor()
+			for transaction in transactions:
+				database.insert_transaction(cursor, transaction)
+			for address in (multisig_account, cosigner):
+				database.upsert_account(cursor, self._create_rollback_account(address, fork_height))
+			database.connection.commit()
+
+			# Act:
+			impact = self.puller.capture_rollback_impact(fork_height)
+
+		# Assert:
+		expected_accounts = {multisig_account, cosigner}
+		self.assertEqual(fork_height, impact.fork_height)
+		self.assertEqual(expected_accounts, impact.affected_accounts)
+		self.assertEqual({
+			multisig_account: fork_height,
+			cosigner: fork_height
+		}, impact.account_creation_heights)
+		self.assertEqual(set(), impact.orphan_created_accounts)
+		self.assertEqual(expected_accounts, impact.surviving_affected_accounts)
+		self.assertEqual(set(), impact.orphan_beneficiaries)
+		self.assertEqual(set(), impact.affected_remote_link_accounts)
+		self.assertEqual(set(), impact.affected_namespace_roots)
+		self.assertEqual(set(), impact.affected_mosaic_names)
+
+	def test_rejects_affected_account_without_creation_height(self):
+		# Arrange:
+		fork_height = 10
+		beneficiary = Address('TBZWVEKB2XMTO4F3RAOEIBWRBMPQ5N23G56ZJM4I')
+		signer = PublicKey('8d07f90fb4bbe7715fa327c926770166a11be2e494a970605f2e12557f66c9b9')
+
+		with self.puller.nem_db as database:
+			database.create_tables()
+			cursor = database.connection.cursor()
+			database.insert_block(cursor, BlockRecord(
+				fork_height + 1,
+				'2015-03-29 00:00:00+00:00',
+				0,
+				0,
+				1,
+				'CC' * 32,
+				beneficiary,
+				signer,
+				'DD' * 64,
+				100
+			))
+			database.connection.commit()
+
+			# Act + Assert:
+			expected_message = 'Missing creation heights for 2 affected NEM account'
+			with self.assertRaisesRegex(NemRollbackError, expected_message):
+				self.puller.capture_rollback_impact(fork_height)
