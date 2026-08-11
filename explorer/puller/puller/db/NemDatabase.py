@@ -139,7 +139,7 @@ class NemDatabase(DatabaseConnection):
 			CREATE INDEX IF NOT EXISTS transactions_sender_address_height_idx
 				ON transactions(sender_address, height DESC, id DESC)
 				INCLUDE (aggregate_hash)
-				WHERE NOT (is_inner = false AND transaction_type = {TransactionType.MULTISIG.value})
+				WHERE transaction_type <> {TransactionType.MULTISIG.value}
 			'''
 		)
 
@@ -148,7 +148,7 @@ class NemDatabase(DatabaseConnection):
 			CREATE INDEX IF NOT EXISTS transactions_recipient_address_height_idx
 				ON transactions(recipient_address, height DESC, id DESC)
 				INCLUDE (aggregate_hash)
-				WHERE NOT (is_inner = false AND transaction_type = {TransactionType.MULTISIG.value})
+				WHERE transaction_type <> {TransactionType.MULTISIG.value}
 			'''
 		)
 

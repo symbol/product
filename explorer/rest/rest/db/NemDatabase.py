@@ -925,7 +925,7 @@ class NemDatabase(DatabaseConnectionPool):
 				' FROM transactions t'
 				' LEFT JOIN transactions o ON o.transaction_hash = t.aggregate_hash'
 				f' WHERE t.{column} = %s{extra_condition}'
-				f' AND NOT (t.is_inner = false AND t.transaction_type = {TransactionType.MULTISIG.value})'
+				f' AND t.transaction_type <> {TransactionType.MULTISIG.value}'
 				f'{filter_condition}'
 				f' ORDER BY t.height {sort}, t.id {sort}'
 				' LIMIT %s)'
