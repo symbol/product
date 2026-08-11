@@ -523,6 +523,21 @@ class NemDatabase(DatabaseConnection):
 			(fork_height,)
 		)
 
+	@staticmethod
+	def delete_accounts(cursor, addresses):
+		"""Deletes accounts that were first observed on the orphan chain."""
+
+		if not addresses:
+			return
+
+		cursor.execute(
+			'''
+			DELETE FROM accounts
+			WHERE address = ANY(%s)
+			''',
+			([address.bytes for address in addresses],)
+		)
+
 
 	def get_accounts_for_refresh(self, limit, last_account_id):
 		"""Gets account addresses that should have vested balance and importance refreshed."""

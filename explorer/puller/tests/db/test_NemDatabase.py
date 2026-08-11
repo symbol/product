@@ -1271,3 +1271,29 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 		self.assertEqual([1], transaction_heights)
 		self.assertEqual([1], transaction_id)
 
+	def test_can_delete_accounts(self):
+		# Arrange:
+		surviving_account = ACCOUNTS[0]
+		orphan_account = ACCOUNTS[0]._replace(
+			address=Address('TALICE6XEEEOBFJVY3ZCENZ7WBG6LB4KB7P7KMQX'),
+			height=2
+		)
+
+		with NemDatabase(self.db_config) as nem_database:
+			nem_database.create_tables()
+			cursor = nem_database.connection.cursor()
+
+			nem_database.upsert_account(cursor, surviving_account)
+			nem_database.upsert_account(cursor, orphan_account)
+			nem_database.connection.commit()
+
+			# Act:
+			nem_database.delete_accounts(cursor, {orphan_account.address})
+
+			surviving_result = self._fetch_account_from_db(cursor, surviving_account.address)
+			orphan_result = self._fetch_account_from_db(cursor, orphan_account.address)
+
+		# Assert:
+		self.assertIsNotNone(surviving_result)
+		self.assertIsNone(orphan_result)
+
