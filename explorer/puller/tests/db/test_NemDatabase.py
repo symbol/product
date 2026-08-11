@@ -1297,3 +1297,78 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 		self.assertIsNotNone(surviving_result)
 		self.assertIsNone(orphan_result)
 
+	def test_can_refresh_account_from_rollback_snapshot(self):
+		# Arrange:
+		orphan_remote_address = Address('TBKQWJJGPOHL462DBVMTYOAERXGG2BOS5XRFO2P6')
+		orphan_harvested_fees = 500000
+		orphan_last_harvested_height = 10
+		orphan_account = ACCOUNTS[0]._replace(remote_address=orphan_remote_address)
+		snapshot = orphan_account._replace(
+			remote_address=None,
+			importance=0.5,
+			balance=2000000,
+			vested_balance=1500000,
+			mosaics=[{'namespace_name': 'foo.token', 'quantity': 7}],
+			harvested_blocks=25,
+			remote_status='ACTIVE',
+			min_cosignatories=1,
+			cosignatory_of=[orphan_remote_address],
+			cosignatories=[orphan_remote_address]
+		)
+
+		with NemDatabase(self.db_config) as nem_database:
+			nem_database.create_tables()
+			cursor = nem_database.connection.cursor()
+
+			nem_database.upsert_account(cursor, orphan_account)
+			nem_database.update_account_harvested_fees(
+				cursor,
+				orphan_account.address,
+				orphan_harvested_fees,
+				orphan_last_harvested_height
+			)
+			nem_database.connection.commit()
+
+			# Act:
+			nem_database.refresh_account_from_snapshot(cursor, snapshot)
+			nem_database.connection.commit()
+			result = self._fetch_account_from_db(cursor, snapshot.address)
+
+		# Assert:
+		self.assertEqual(snapshot.address.bytes.hex(), result[0])
+		self.assertEqual(snapshot.height, result[1])
+		self.assertEqual(snapshot.public_key.bytes.hex(), result[2])
+		self.assertEqual(orphan_remote_address.bytes.hex(), result[3])  # remote_address should remain unchanged
+		self.assertEqual(f'{snapshot.importance:.10f}', result[4])
+		self.assertEqual(snapshot.balance, result[5])
+		self.assertEqual(snapshot.vested_balance, result[6])
+		self.assertEqual(snapshot.mosaics, result[7])
+		self.assertEqual(orphan_harvested_fees, result[8])  # harvested_fees should remain unchanged
+		self.assertEqual(snapshot.harvested_blocks, result[9])
+		self.assertEqual(snapshot.remote_status, result[10])
+		self.assertEqual(orphan_last_harvested_height, result[11])  # last_harvested_height should remain unchanged
+		self.assertEqual(snapshot.min_cosignatories, result[12])
+		self.assertEqual(
+			[address.bytes for address in snapshot.cosignatory_of],
+			[bytes(address) for address in result[13]]
+		)
+		self.assertEqual(
+			[address.bytes for address in snapshot.cosignatories],
+			[bytes(address) for address in result[14]]
+		)
+
+	def test_rejects_refreshing_missing_account_from_rollback_snapshot(self):
+		# Arrange:
+		missing_account = ACCOUNTS[0]
+
+		with NemDatabase(self.db_config) as nem_database:
+			nem_database.create_tables()
+			cursor = nem_database.connection.cursor()
+
+			# Act + Assert:
+			with self.assertRaisesRegex(
+				RuntimeError,
+				f'Cannot refresh missing NEM account {missing_account.address}'
+			):
+				nem_database.refresh_account_from_snapshot(cursor, missing_account)
+

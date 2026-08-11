@@ -538,6 +538,42 @@ class NemDatabase(DatabaseConnection):
 			([address.bytes for address in addresses],)
 		)
 
+	@staticmethod
+	def refresh_account_from_snapshot(cursor, account_info):
+		"""Refreshes existing account state."""
+
+		cursor.execute(
+			'''
+			UPDATE accounts
+			SET importance = %s,
+				balance = %s,
+				vested_balance = %s,
+				mosaics = %s,
+				harvested_blocks = %s,
+				remote_status = %s,
+				min_cosignatories = %s,
+				cosignatory_of = %s,
+				cosignatories = %s,
+				updated_at = CURRENT_TIMESTAMP
+			WHERE address = %s
+			''',
+			(
+				account_info.importance,
+				account_info.balance,
+				account_info.vested_balance,
+				json.dumps(account_info.mosaics),
+				account_info.harvested_blocks,
+				account_info.remote_status,
+				account_info.min_cosignatories,
+				[address.bytes for address in account_info.cosignatory_of] if account_info.cosignatory_of else None,
+				[address.bytes for address in account_info.cosignatories] if account_info.cosignatories else None,
+				account_info.address.bytes
+			)
+		)
+
+		if 0 == cursor.rowcount:
+			raise RuntimeError(f'Cannot refresh missing NEM account {account_info.address}')
+
 
 	def get_accounts_for_refresh(self, limit, last_account_id):
 		"""Gets account addresses that should have vested balance and importance refreshed."""
