@@ -1229,3 +1229,45 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 
 		# Assert:
 		self.assertEqual({}, account_heights)
+
+	def test_can_delete_orphan_chain_data(self):
+		# Arrange:
+		surviving_transaction = TRANSACTIONS[0]._replace(
+			transaction_hash='11' * 32,
+			height=1
+		)
+		orphan_transaction = TRANSACTIONS[0]._replace(
+			transaction_hash='22' * 32,
+			height=2
+		)
+
+		with NemDatabase(self.db_config) as nem_database:
+			nem_database.create_tables()
+			cursor = nem_database.connection.cursor()
+
+			for block in BLOCKS:
+				nem_database.insert_block(cursor, block)
+
+			surviving_transaction_id = nem_database.insert_transaction(cursor, surviving_transaction)
+			orphan_transaction_id = nem_database.insert_transaction(cursor, orphan_transaction)
+			nem_database.insert_transaction_mosaic(cursor, surviving_transaction_id, Mosaic('nem.xem', 1))
+			nem_database.insert_transaction_mosaic(cursor, orphan_transaction_id, Mosaic('nem.xem', 2))
+			nem_database.connection.commit()
+
+			# Act:
+			nem_database.delete_orphan_chain_data(cursor, 1)
+
+			cursor.execute('SELECT height FROM blocks')
+			block_heights = [record[0] for record in cursor.fetchall()]
+
+			cursor.execute('SELECT height FROM transactions')
+			transaction_heights = [record[0] for record in cursor.fetchall()]
+
+			cursor.execute('SELECT transaction_id FROM transactions_mosaic')
+			transaction_id = [record[0] for record in cursor.fetchall()]
+
+		# Assert:
+		self.assertEqual([1], block_heights)
+		self.assertEqual([1], transaction_heights)
+		self.assertEqual([1], transaction_id)
+

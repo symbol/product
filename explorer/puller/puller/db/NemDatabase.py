@@ -504,6 +504,26 @@ class NemDatabase(DatabaseConnection):
 
 		return {Address(bytes(record[0])): record[1] for record in results}
 
+	@staticmethod
+	def delete_orphan_chain_data(cursor, fork_height):
+		"""Deletes transaction and block rows above a confirmed fork height."""
+
+		cursor.execute(
+			'''
+			DELETE FROM transactions
+			WHERE height > %s
+			''',
+			(fork_height,)
+		)
+		cursor.execute(
+			'''
+			DELETE FROM blocks
+			WHERE height > %s
+			''',
+			(fork_height,)
+		)
+
+
 	def get_accounts_for_refresh(self, limit, last_account_id):
 		"""Gets account addresses that should have vested balance and importance refreshed."""
 
