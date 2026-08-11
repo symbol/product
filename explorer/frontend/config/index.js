@@ -35,4 +35,4 @@ export const publicAppConfig = Object.fromEntries(Object.entries(serverAppConfig
 
 const isClientSide = typeof window !== 'undefined';
 
-export default isClientSide ? (window.appConfig ?? publicAppConfig) : serverAppConfig;
+export default isClientSide ? window.appConfig : serverAppConfig;
