@@ -6,12 +6,7 @@ from symbollightapi.model.Exceptions import NodeException
 
 from rest.db.NemDatabase import NemDatabase
 from rest.facade.TtlCache import TtlCache
-from rest.model.common import (
-	STATISTICS_CACHE_MAX_ENTRIES,
-	STATISTICS_CACHE_TTL_SECONDS,
-	STATISTICS_RANGE_CACHE_MAX_ENTRIES,
-	Pagination
-)
+from rest.model.common import STATISTICS_CACHE_MAX_ENTRIES, STATISTICS_CACHE_TTL_SECONDS, STATISTICS_RANGE_CACHE_MAX_ENTRIES, Pagination
 
 
 class NemRestFacade:
