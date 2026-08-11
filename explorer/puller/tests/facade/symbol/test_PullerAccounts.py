@@ -4,7 +4,7 @@ from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
 from psycopg2 import Error as PsycopgError
-from symbolchain.sc import ReceiptType
+from symbolchain.sc import ReceiptType, TransactionType
 from symbolchain.symbol.Network import Address
 from symbollightapi.model.Exceptions import NodeException
 
@@ -12,6 +12,7 @@ from puller.db.SymbolDatabase import RollbackRefreshEntries, SymbolDatabase
 from puller.facade.SymbolPuller import ACCOUNT_BATCH_FETCH_SIZE
 from puller.model.symbol.Account import create_account_row
 from puller.model.symbol.Block import create_block_row
+from tests.test.SymbolTestConstants import SIGNER_ADDRESS
 
 from .puller_test_utils import (
 	BENEFICIARY_ADDRESS,
@@ -37,6 +38,31 @@ class MalformedAccountsBatchConnector(FakeConnector):
 			return {'data': []}
 
 		raise KeyError(url_path)
+
+
+class EmptyMosaicRestrictionConnector(FakeConnector):
+	async def get(self, url_path, *args):
+		if url_path.startswith('restrictions/mosaic?'):
+			self.paths.append(url_path)
+			return {
+				'pagination': {'pageNumber': 1, 'pageSize': 100},
+				'data': []
+			}
+
+		return await super().get(url_path, *args)
+
+
+class MissingConfiguredAccountConnector(EmptyMosaicRestrictionConnector):
+	def __init__(self, missing_address, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		self.missing_address = missing_address
+
+	async def post(self, url_path, request_payload, *args):
+		response = await super().post(url_path, request_payload, *args)
+		if 'accounts' != url_path:
+			return response
+
+		return [item for item in response if item['account']['address'] != self.missing_address]
 
 
 def _address_hex(index):
@@ -289,6 +315,169 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):  # pylint: disable=too-man
 		self.assertEqual(
 			sorted([beneficiary_address_text, participant_address_text]),
 			sorted(connector.post_payloads[0]['addresses']))
+
+	def test_refresh_dirty_accounts_for_batch_ignores_missing_mosaic_restriction_target(self):
+		# Arrange:
+		connector = MissingConfiguredAccountConnector(
+			RECIPIENT_ADDRESS,
+			1,
+			{0: [self._create_block(1)]},
+			transactions_by_path={
+				transaction_path(1, 1): {
+					'data': [create_node_transaction(
+						1,
+						type=TransactionType.MOSAIC_ADDRESS_RESTRICTION.value,
+						targetAddress=RECIPIENT_ADDRESS,
+						mosaicId=NATIVE_MOSAIC_ID)]
+				}
+			},
+			account_by_address=self._account_by_address_text(BENEFICIARY_ADDRESS))
+
+		# Act:
+		blocks, sync_state = self._sync_with_connector(connector)
+
+		# Assert:
+		self.assertEqual([1], blocks)
+		self.assertEqual(1, sync_state['last_synced_height'])
+		self.assertEqual([{'addresses': [self._address_text(BENEFICIARY_ADDRESS)]}], connector.post_payloads)
+		self.assertEqual(1, self._fetch_account_count(BENEFICIARY_ADDRESS))
+		self.assertEqual(0, self._fetch_account_count(RECIPIENT_ADDRESS))
+
+	def test_refresh_dirty_accounts_for_batch_persists_mosaic_restriction_target_relation(self):
+		# Arrange:
+		connector = EmptyMosaicRestrictionConnector(
+			1,
+			{0: [self._create_block(1)]},
+			transactions_by_path={
+				transaction_path(1, 1): {
+					'data': [create_node_transaction(
+						1,
+						type=TransactionType.MOSAIC_ADDRESS_RESTRICTION.value,
+						targetAddress=RECIPIENT_ADDRESS,
+						mosaicId=NATIVE_MOSAIC_ID)]
+				}
+			},
+			account_by_address=self._account_by_address_text(BENEFICIARY_ADDRESS, RECIPIENT_ADDRESS))
+
+		# Act:
+		self._sync_with_connector(connector)
+
+		# Assert:
+		cursor = self.puller.symbol_db.connection.cursor()
+		cursor.execute(
+			"SELECT encode(address, 'hex'), role FROM symbol_transaction_addresses WHERE role = 'target'"
+		)
+		self.assertEqual([(RECIPIENT_ADDRESS.lower(), 'target')], cursor.fetchall())
+
+	def test_refresh_dirty_accounts_for_batch_keeps_non_mosaic_restriction_target(self):
+		# Arrange:
+		target_address = '98AB1234567890ABCDEF1234567890ABCDEF1234567890AB'
+		connector = FakeConnector(
+			1,
+			{0: [self._create_block(1)]},
+			transactions_by_path={
+				transaction_path(1, 1): {
+					'data': [create_node_transaction(
+						1,
+						type=TransactionType.ACCOUNT_METADATA.value,
+						targetAddress=target_address,
+						scopedMetadataKey='0000000000000001',
+						valueSizeDelta=1,
+						value='AA')]
+				}
+			},
+			account_by_address=self._account_by_address_text(BENEFICIARY_ADDRESS, target_address))
+
+		# Act:
+		self._sync_with_connector(connector)
+
+		# Assert:
+		self.assertEqual([{
+			'addresses': [self._address_text(BENEFICIARY_ADDRESS), self._address_text(target_address)]
+		}], connector.post_payloads)
+
+	def test_refresh_dirty_accounts_for_batch_keeps_target_when_it_matches_transaction_signer(self):
+		# Arrange: the target row is excluded, but the same address's signer row remains dirty.
+		block_beneficiary_address = _address_hex(1)
+		connector = EmptyMosaicRestrictionConnector(
+			1,
+			{0: [self._create_block(1, beneficiaryAddress=block_beneficiary_address)]},
+			transactions_by_path={
+				transaction_path(1, 1): {
+					'data': [create_node_transaction(
+						1,
+						type=TransactionType.MOSAIC_ADDRESS_RESTRICTION.value,
+						targetAddress=SIGNER_ADDRESS,
+						mosaicId=NATIVE_MOSAIC_ID)]
+				}
+			},
+			account_by_address=self._account_by_address_text(block_beneficiary_address, SIGNER_ADDRESS))
+
+		# Act:
+		self._sync_with_connector(connector)
+
+		# Assert:
+		self.assertEqual([{
+			'addresses': [self._address_text(block_beneficiary_address), self._address_text(SIGNER_ADDRESS)]
+		}], connector.post_payloads)
+
+	def test_refresh_dirty_accounts_for_batch_keeps_target_when_it_matches_block_beneficiary(self):
+		# Arrange: the target row is excluded, but the same address remains as the block beneficiary.
+		connector = EmptyMosaicRestrictionConnector(
+			1,
+			{0: [self._create_block(1, beneficiaryAddress=RECIPIENT_ADDRESS)]},
+			transactions_by_path={
+				transaction_path(1, 1): {
+					'data': [create_node_transaction(
+						1,
+						type=TransactionType.MOSAIC_ADDRESS_RESTRICTION.value,
+						targetAddress=RECIPIENT_ADDRESS,
+						mosaicId=NATIVE_MOSAIC_ID)]
+				}
+			},
+			account_by_address=self._account_by_address_text(SIGNER_ADDRESS, RECIPIENT_ADDRESS))
+
+		# Act:
+		self._sync_with_connector(connector)
+
+		# Assert:
+		self.assertEqual([{
+			'addresses': [self._address_text(RECIPIENT_ADDRESS), self._address_text(SIGNER_ADDRESS)]
+		}], connector.post_payloads)
+
+	def test_refresh_dirty_accounts_for_batch_keeps_mosaic_restriction_target_when_it_is_receipt_address(self):
+		# Arrange:
+		target_address_text = self._address_text(RECIPIENT_ADDRESS)
+		connector = EmptyMosaicRestrictionConnector(
+			1,
+			{0: [self._create_block(1)]},
+			transactions_by_path={
+				transaction_path(1, 1): {
+					'data': [create_node_transaction(
+						1,
+						type=TransactionType.MOSAIC_ADDRESS_RESTRICTION.value,
+						targetAddress=RECIPIENT_ADDRESS,
+						mosaicId=NATIVE_MOSAIC_ID)]
+				}
+			},
+			statement_pages={
+				statement_path(1, 1): {
+					'data': [create_amount_statement_item(
+						1,
+						100,
+						ReceiptType.LOCK_HASH_EXPIRED.value,
+						targetAddress=RECIPIENT_ADDRESS)]
+				}
+			},
+			account_by_address=self._account_by_address_text(BENEFICIARY_ADDRESS, RECIPIENT_ADDRESS))
+
+		# Act:
+		self._sync_with_connector(connector)
+
+		# Assert:
+		self.assertEqual([{
+			'addresses': [self._address_text(BENEFICIARY_ADDRESS), target_address_text]
+		}], connector.post_payloads)
 
 	def test_refresh_dirty_accounts_for_batch_includes_balance_change_receipt_target_address_without_matching_transaction(self):
 		# Arrange:
