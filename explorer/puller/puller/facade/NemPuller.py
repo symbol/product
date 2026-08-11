@@ -323,6 +323,24 @@ class NemPuller:
 
 		return account_state
 
+	@staticmethod
+	def _validate_rollback_account_state(rollback_impact, account_state):
+		"""Requires one correctly identified node snapshot for every surviving account."""
+
+		expected_addresses = rollback_impact.surviving_affected_accounts
+		actual_addresses = set(account_state)
+		if expected_addresses != actual_addresses:
+			raise NemRollbackError(
+				'Rollback account snapshot does not match surviving affected accounts'
+			)
+
+		for address, account in account_state.items():
+			if address != account.address:
+				raise NemRollbackError(f'Rollback account snapshot address mismatch for {address}')
+
+			if rollback_impact.account_creation_heights[address] != account.height:
+				raise NemRollbackError(f'Rollback account snapshot height mismatch for {address}')
+
 	async def _retry_get_account_info(self, address, retries=3, delay=2):
 		"""Retries fetching account info with exponential backoff."""
 

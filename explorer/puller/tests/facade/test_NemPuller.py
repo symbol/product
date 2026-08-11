@@ -39,8 +39,8 @@ from puller.facade.NemPuller import (
 	NamespaceRecord,
 	NemPuller,
 	NemRollbackError,
-	RollbackPayloadAccounts,
 	NemRollbackImpact,
+	RollbackPayloadAccounts,
 	TransactionRecord
 )
 
@@ -1646,6 +1646,20 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 			1
 		)
 
+	@staticmethod
+	def _create_surviving_account_rollback_impact(address, height=1):
+		return NemRollbackImpact(
+			fork_height=10,
+			affected_accounts={address},
+			account_creation_heights={address: height},
+			orphan_created_accounts=set(),
+			surviving_affected_accounts={address},
+			orphan_beneficiaries=set(),
+			affected_remote_link_accounts=set(),
+			affected_namespace_roots=set(),
+			affected_mosaic_names=set()
+		)
+
 	def test_extracts_multisig_account_and_all_signature_senders(self):
 		# Arrange:
 		multisig_account = Address('TAWUGAUSWSVB35T5QE44ICIK2WE3AUOTSGZBO5O4')
@@ -1980,3 +1994,55 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 			[(str(first_survivor), 2), (str(second_survivor), 5)],
 			[call.args for call in self.puller._fetch_account_record.await_args_list]  # pylint: disable=protected-access
 		)
+
+	def test_accepts_complete_rollback_account_state(self):
+		# Arrange:
+		address = Address('TALICE6XEEEOBFJVY3ZCENZ7WBG6LB4KB7P7KMQX')
+		rollback_impact = self._create_surviving_account_rollback_impact(address)
+		account_state = {address: self._create_rollback_account(address, 1)}
+
+		# Act:
+		result = self.puller._validate_rollback_account_state(  # pylint: disable=protected-access
+			rollback_impact,
+			account_state
+		)
+
+		# Assert:
+		self.assertIsNone(result)
+
+	def test_rejects_rollback_account_state_with_missing_snapshot(self):
+		# Arrange:
+		address = Address('TALICE6XEEEOBFJVY3ZCENZ7WBG6LB4KB7P7KMQX')
+		rollback_impact = self._create_surviving_account_rollback_impact(address)
+
+		# Act + Assert:
+		with self.assertRaisesRegex(NemRollbackError, 'Rollback account snapshot does not match surviving affected accounts'):
+			self.puller._validate_rollback_account_state(rollback_impact, {})  # pylint: disable=protected-access
+
+	def test_rejects_rollback_account_state_with_mismatched_address(self):
+		# Arrange:
+		address = Address('TALICE6XEEEOBFJVY3ZCENZ7WBG6LB4KB7P7KMQX')
+		other_address = Address('TCJLCZSOQ6RGWHTPSV2DW467WZSHK4NBSITND4OF')
+		rollback_impact = self._create_surviving_account_rollback_impact(address)
+		account_state = {address: self._create_rollback_account(other_address, 1)}
+
+		# Act + Assert:
+		with self.assertRaisesRegex(NemRollbackError, f'Rollback account snapshot address mismatch for {address}'):
+			self.puller._validate_rollback_account_state(  # pylint: disable=protected-access
+				rollback_impact,
+				account_state
+			)
+
+	def test_rejects_rollback_account_state_with_mismatched_height(self):
+		# Arrange:
+		address = Address('TALICE6XEEEOBFJVY3ZCENZ7WBG6LB4KB7P7KMQX')
+		rollback_impact = self._create_surviving_account_rollback_impact(address)
+		account_state = {address: self._create_rollback_account(address, 2)}
+
+		# Act + Assert:
+		with self.assertRaisesRegex(NemRollbackError, f'Rollback account snapshot height mismatch for {address}'):
+			self.puller._validate_rollback_account_state(  # pylint: disable=protected-access
+				rollback_impact,
+				account_state
+			)
+
