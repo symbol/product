@@ -82,6 +82,13 @@ class NemDatabase(DatabaseConnection):
 			'''
 		)
 
+		cursor.execute(
+			'''
+			CREATE INDEX IF NOT EXISTS mosaics_root_namespace_idx
+				ON mosaics (root_namespace)
+			'''
+		)
+
 		# Create indexes for transactions table
 		cursor.execute(
 			'''
