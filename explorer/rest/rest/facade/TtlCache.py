@@ -12,7 +12,7 @@ class TtlCache:
 		self.ttl_seconds = ttl_seconds
 		self.max_entries = max_entries
 		self._entries = OrderedDict()
-		# the eviction path reads the size and then removes entries, which two threads cannot interleave safely
+		# a write reads the size and then removes an entry, which two threads cannot interleave safely
 		self._lock = threading.Lock()
 
 	def get_or_load(self, key, load):
@@ -32,17 +32,10 @@ class TtlCache:
 		with self._lock:
 			self._entries[key] = (time.monotonic(), value)
 			self._entries.move_to_end(key)
-			self._evict()
+
+			# a write adds at most one entry, so dropping one keeps the cache within its limit;
+			# stale entries need no sweep because get_or_load rechecks the lifetime before returning a value
+			if len(self._entries) > self.max_entries:
+				self._entries.popitem(last=False)
 
 		return value
-
-	def _evict(self):
-		"""Drops stale entries, then the least recently used ones, until the cache fits."""
-
-		now = time.monotonic()
-
-		for key in [key for key, (stored_at, _) in self._entries.items() if now - stored_at >= self.ttl_seconds]:
-			del self._entries[key]
-
-		while len(self._entries) > self.max_entries:
-			self._entries.popitem(last=False)
