@@ -32,6 +32,12 @@ export const mosaicNamesResponse = {
 			'names': [
 				'custom-4'
 			]
+		},
+		{
+			'mosaicId': '5C4D3A2B1E9F8071',
+			'names': [
+				'custom-5'
+			]
 		}
 	]
 };

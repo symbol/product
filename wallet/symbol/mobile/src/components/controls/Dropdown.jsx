@@ -1,4 +1,4 @@
-import { ButtonClose, Icon, StyledText } from '@/app/components';
+import { ButtonClose, EmptyListMessage, Icon, StyledText } from '@/app/components';
 import { useColorTransition } from '@/app/hooks';
 import { Colors, Sizes, Typography } from '@/app/styles';
 import React, { useState } from 'react';
@@ -50,6 +50,8 @@ export const DropdownModal = props => {
 						{isOpen && (
 							<FlatList
 								data={list}
+								contentContainerStyle={styles.listContentContainer}
+								ListEmptyComponent={<EmptyListMessage />}
 								keyExtractor={(_, index) => 'dropdown' + index}
 								renderItem={({ item, index }) => (
 									<TouchableOpacity 
@@ -204,6 +206,9 @@ const styles = StyleSheet.create({
 		flex: 1,
 		justifyContent: 'center',
 		alignItems: 'center'
+	},
+	listContentContainer: {
+		flexGrow: 1
 	},
 	modalContainer: {
 		width: '100%',

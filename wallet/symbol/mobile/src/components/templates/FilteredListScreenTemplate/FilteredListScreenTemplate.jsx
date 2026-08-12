@@ -87,6 +87,8 @@ const LoadingFooter = ({ isLoading, renderPlaceholder }) => (
  * @param {function(object): string} props.keyExtractor - Function to extract unique keys from items.
  * @param {function(object): React.ReactNode} props.renderItem - Function to render list items.
  * @param {function(): React.ReactNode} [props.renderScreenHeader] - Function to render custom screen header.
+ * @param {function(): React.ReactNode} [props.renderListHeader] - Function to render custom content above the filter in the list header.
+ * @param {function(): React.ReactNode} [props.renderScreenBottom] - Function to render the bottom screen slot content.
  * @param {function(object): React.ReactNode} [props.renderSectionHeader] - Function to render custom section headers.
  * @param {function(object): React.ReactNode} [props.renderPlaceholder] - Function to render placeholder items during loading.
  * @param {function(object): boolean} [props.shouldShowFooter] - Function to determine if footer should be shown for a section.
@@ -106,6 +108,8 @@ export const FilteredListScreenTemplate = ({
 	onEndReached,
 	keyExtractor,
 	renderScreenHeader,
+	renderListHeader,
+	renderScreenBottom,
 	renderSectionHeader: renderSectionHeaderProp,
 	renderItem,
 	renderPlaceholder,
@@ -114,18 +118,21 @@ export const FilteredListScreenTemplate = ({
 	const walletController = useWalletController();
 	const { accounts, networkIdentifier, chainName, modules } = walletController;
 
-	const renderListHeader = useCallback(() => (
-		<Filter
-			accounts={accounts[networkIdentifier]}
-			addressBook={modules?.addressBook}
-			chainName={chainName}
-			networkIdentifier={networkIdentifier}
-			data={filterConfig}
-			isDisabled={isFilterDisabled || isRefreshing || isLoading}
-			value={filterValue}
-			onChange={onFilterChange}
-		/>
-	), [filterConfig, isFilterDisabled, isLoading, isRefreshing, filterValue, onFilterChange]);
+	const listHeader = (
+		<>
+			{renderListHeader?.()}
+			<Filter
+				accounts={accounts[networkIdentifier]}
+				addressBook={modules?.addressBook}
+				chainName={chainName}
+				networkIdentifier={networkIdentifier}
+				data={filterConfig}
+				isDisabled={isFilterDisabled || isRefreshing || isLoading}
+				value={filterValue}
+				onChange={onFilterChange}
+			/>
+		</>
+	);
 
 	const renderListEmpty = useCallback(() => {
 		if (isLoading || isRefreshing || isPageLoading)
@@ -183,13 +190,16 @@ export const FilteredListScreenTemplate = ({
 					contentContainerStyle={styles.listContainer}
 					sections={sections}
 					ListEmptyComponent={renderListEmpty}
-					ListHeaderComponent={renderListHeader}
+					ListHeaderComponent={listHeader}
 					keyExtractor={keyExtractor}
 					renderItem={renderItemWrapper}
 					renderSectionHeader={renderSectionHeader}
 					renderSectionFooter={renderSectionFooter}
 				/>
 			</Screen.Upper>
+			{renderScreenBottom && (
+				<Screen.Bottom>{renderScreenBottom()}</Screen.Bottom>
+			)}
 		</Screen>
 	);
 };

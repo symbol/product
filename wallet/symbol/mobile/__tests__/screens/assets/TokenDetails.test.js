@@ -19,6 +19,8 @@ const TOKEN_NAME = 'Test Token';
 const TOKEN_TICKER = 'XYM';
 const TOKEN_DISPLAY_NAME = `${TOKEN_NAME} • ${TOKEN_TICKER}`;
 const TOKEN_AMOUNT = '1000';
+const TOKEN_AMOUNT_REFRESHED = '750';
+const TOKEN_AMOUNT_ZERO = '0';
 const TOKEN_SUPPLY = '10000000';
 const TOKEN_DIVISIBILITY = 6;
 const TOKEN_START_HEIGHT = 100_000;
@@ -30,6 +32,11 @@ jest.mock('@/app/utils', () => ({
 	...jest.requireActual('@/app/utils'),
 	getTokenKnownInfo: () => ({
 		name: TOKEN_NAME,
+		ticker: TOKEN_TICKER,
+		imageId: 'image'
+	}),
+	createTokenDisplayData: () => ({
+		name: `${TOKEN_NAME} • ${TOKEN_TICKER}`,
 		ticker: TOKEN_TICKER,
 		imageId: 'image'
 	})
@@ -58,7 +65,12 @@ const SCREEN_TEXT = {
 	textExpireIn: 's_assets_item_expireIn',
 
 	// Buttons
-	buttonSend: 'button_send'
+	buttonSend: 'button_send',
+	buttonRevoke: 'button_revoke',
+	buttonModify: 'button_modifyMosaic',
+
+	// Errors
+	textNotFound: 'message_emptyList'
 };
 
 // Account Fixtures
@@ -107,6 +119,24 @@ const tokenOwnedByExternalAccount = TokenFixtureBuilder
 	.override({ supply: TOKEN_SUPPLY })
 	.build();
 
+// Tokens the creator is allowed to revoke and to change the supply of
+const createManageableToken = creator => TokenFixtureBuilder
+	.createWithToken(CHAIN_NAME, NETWORK_IDENTIFIER, 1)
+	.setId(TOKEN_ID)
+	.setAmount(TOKEN_AMOUNT)
+	.setDivisibility(TOKEN_DIVISIBILITY)
+	.setCreator(creator)
+	.setIsUnlimitedDuration(true)
+	.override({
+		supply: TOKEN_SUPPLY,
+		isRevokable: true,
+		isSupplyMutable: true
+	})
+	.build();
+
+const manageableTokenOwnedByCurrentAccount = createManageableToken(currentAccount.address);
+const manageableTokenOwnedByExternalAccount = createManageableToken(externalAccount.address);
+
 const tokenWithoutCreator = TokenFixtureBuilder
 	.createWithToken(CHAIN_NAME, NETWORK_IDENTIFIER, 1)
 	.setId(TOKEN_ID)
@@ -132,6 +162,22 @@ const tokenExpirable = TokenFixtureBuilder
 	.setIsUnlimitedDuration(false)
 	.build();
 
+const tokenHeldAfterRefresh = TokenFixtureBuilder
+	.createWithToken(CHAIN_NAME, NETWORK_IDENTIFIER, 1)
+	.setId(TOKEN_ID)
+	.setAmount(TOKEN_AMOUNT_REFRESHED)
+	.setDivisibility(TOKEN_DIVISIBILITY)
+	.build();
+
+const fetchedTokenInfo = {
+	id: TOKEN_ID,
+	names: [TOKEN_NAME],
+	divisibility: TOKEN_DIVISIBILITY,
+	supply: TOKEN_SUPPLY,
+	creator: currentAccount.address,
+	isUnlimitedDuration: true
+};
+
 // Account Info Fixtures
 
 const createAccountInfoWithToken = token => AccountInfoFixtureBuilder
@@ -139,14 +185,19 @@ const createAccountInfoWithToken = token => AccountInfoFixtureBuilder
 	.setMosaics([token])
 	.build();
 
+const accountInfoWithoutToken = AccountInfoFixtureBuilder
+	.createWithAccount(CHAIN_NAME, NETWORK_IDENTIFIER, 0)
+	.setMosaics([])
+	.build();
+
 // Route Props Factory
 
-const createRouteProps = (tokenId, preloadedData) => ({
+const createRouteProps = (tokenId, preloadedData, accountAddress = currentAccount.address) => ({
 	route: {
 		params: {
 			chainName: CHAIN_NAME,
 			tokenId,
-			accountAddress: currentAccount.address,
+			accountAddress,
 			preloadedData
 		}
 	}
@@ -154,12 +205,13 @@ const createRouteProps = (tokenId, preloadedData) => ({
 
 // Wallet Controller Configuration
 
-const createWalletControllerConfig = (accountInfo, networkProperties) => ({
+const createWalletControllerConfig = (accountInfo, networkProperties, networkApi = {}) => ({
 	chainName: CHAIN_NAME,
 	networkIdentifier: NETWORK_IDENTIFIER,
 	currentAccount,
 	currentAccountInfo: accountInfo,
 	networkProperties,
+	networkApi,
 	modules: {
 		addressBook: {
 			whiteList: [],
@@ -207,6 +259,95 @@ describe('screens/assets/TokenDetails', () => {
 
 			// Assert:
 			screenTester.expectText(expectedTexts);
+		});
+	});
+
+	describe('refresh', () => {
+		const runRefreshTest = (description, config, expected) => {
+			it(description, async () => {
+				// Arrange:
+				const accountInfo = config.heldToken
+					? createAccountInfoWithToken(config.heldToken)
+					: accountInfoWithoutToken;
+				const networkApi = {
+					account: { fetchAccountInfo: jest.fn().mockResolvedValue(accountInfo) },
+					mosaic: { fetchMosaicInfo: jest.fn().mockResolvedValue(config.fetchedTokenInfo) }
+				};
+				mockWalletController(createWalletControllerConfig(accountInfo, networkPropertiesActive, networkApi));
+
+				// Act:
+				const screenTester = new ScreenTester(TokenDetails, createRouteProps(TOKEN_ID, tokenOwnedByCurrentAccount));
+				screenTester.pullToRefresh();
+				await screenTester.waitForTimer();
+
+				// Assert:
+				expect(networkApi.account.fetchAccountInfo).toHaveBeenCalledWith(networkPropertiesActive, currentAccount.address);
+
+				if (expected.isTokenInfoFetched)
+					expect(networkApi.mosaic.fetchMosaicInfo).toHaveBeenCalledWith(networkPropertiesActive, TOKEN_ID);
+				else
+					expect(networkApi.mosaic.fetchMosaicInfo).not.toHaveBeenCalled();
+
+				if (expected.textsRendered?.length)
+					screenTester.expectText(expected.textsRendered);
+
+				if (expected.textsNotRendered?.length)
+					screenTester.notExpectText(expected.textsNotRendered);
+			});
+		};
+
+		const refreshTests = [
+			{
+				description: 'renders the refreshed balance when the account still holds the token',
+				config: {
+					heldToken: tokenHeldAfterRefresh
+				},
+				expected: {
+					isTokenInfoFetched: false,
+					textsRendered: [
+						TOKEN_DISPLAY_NAME,
+						TOKEN_AMOUNT_REFRESHED
+					]
+				}
+			},
+			{
+				description: 'renders zero balance with the fetched token info when the account no longer holds the token',
+				config: {
+					fetchedTokenInfo
+				},
+				expected: {
+					isTokenInfoFetched: true,
+					textsRendered: [
+						TOKEN_DISPLAY_NAME,
+						TOKEN_AMOUNT_ZERO,
+						TOKEN_SUPPLY,
+						SCREEN_TEXT.buttonSend
+					],
+					textsNotRendered: [
+						SCREEN_TEXT.textNotFound
+					]
+				}
+			},
+			{
+				description: 'renders the not found message when the token info is unavailable',
+				config: {
+					fetchedTokenInfo: undefined
+				},
+				expected: {
+					isTokenInfoFetched: true,
+					textsRendered: [
+						SCREEN_TEXT.textNotFound
+					],
+					textsNotRendered: [
+						TOKEN_DISPLAY_NAME,
+						SCREEN_TEXT.buttonSend
+					]
+				}
+			}
+		];
+
+		refreshTests.forEach(test => {
+			runRefreshTest(test.description, test.config, test.expected);
 		});
 	});
 
@@ -426,6 +567,100 @@ describe('screens/assets/TokenDetails', () => {
 
 		sendButtonTests.forEach(test => {
 			runSendButtonTest(test.description, test.config, test.expected);
+		});
+	});
+
+	describe('creator actions', () => {
+		const runCreatorActionsTest = (description, config, expected) => {
+			it(description, async () => {
+				// Arrange:
+				const accountInfo = createAccountInfoWithToken(config.token);
+				mockWalletController(createWalletControllerConfig(accountInfo, networkPropertiesActive));
+
+				// Act:
+				const screenTester = new ScreenTester(
+					TokenDetails,
+					createRouteProps(TOKEN_ID, config.token, config.accountAddress)
+				);
+
+				// Assert:
+				if (expected.areActionsRendered)
+					screenTester.expectText([SCREEN_TEXT.buttonRevoke, SCREEN_TEXT.buttonModify]);
+				else
+					screenTester.notExpectText([SCREEN_TEXT.buttonRevoke, SCREEN_TEXT.buttonModify]);
+			});
+		};
+
+		const creatorActionsTests = [
+			{
+				description: 'renders the revoke and modify actions for a token created by the current account',
+				config: {
+					token: manageableTokenOwnedByCurrentAccount,
+					accountAddress: currentAccount.address
+				},
+				expected: { areActionsRendered: true }
+			},
+			{
+				// Only the current account can sign the mosaic management transactions
+				description: 'hides the revoke and modify actions when the token is viewed on behalf of another account',
+				config: {
+					token: manageableTokenOwnedByExternalAccount,
+					accountAddress: externalAccount.address
+				},
+				expected: { areActionsRendered: false }
+			},
+			{
+				description: 'hides the revoke and modify actions for a token created by another account',
+				config: {
+					token: manageableTokenOwnedByExternalAccount,
+					accountAddress: currentAccount.address
+				},
+				expected: { areActionsRendered: false }
+			}
+		];
+
+		creatorActionsTests.forEach(test => {
+			runCreatorActionsTest(test.description, test.config, test.expected);
+		});
+	});
+
+	describe('creator action navigation', () => {
+		const runNavigationTest = (description, config, expected) => {
+			it(description, async () => {
+				// Arrange:
+				const accountInfo = createAccountInfoWithToken(manageableTokenOwnedByCurrentAccount);
+				mockWalletController(createWalletControllerConfig(accountInfo, networkPropertiesActive));
+				const routerMock = mockRouter({ goToRevokeMosaic: jest.fn(), goToModifyMosaic: jest.fn() });
+
+				// Act:
+				const screenTester = new ScreenTester(
+					TokenDetails,
+					createRouteProps(TOKEN_ID, manageableTokenOwnedByCurrentAccount)
+				);
+				screenTester.pressButton(config.button);
+
+				// Assert:
+				expect(routerMock[expected.routerMethod]).toHaveBeenCalledWith({
+					params: { chainName: CHAIN_NAME, mosaicId: TOKEN_ID }
+				});
+			});
+		};
+
+		const navigationTests = [
+			{
+				description: 'opens the revoke screen for the token without a pre-selected creator',
+				config: { button: SCREEN_TEXT.buttonRevoke },
+				expected: { routerMethod: 'goToRevokeMosaic' }
+			},
+			{
+				description: 'opens the modify screen for the token without a pre-selected creator',
+				config: { button: SCREEN_TEXT.buttonModify },
+				expected: { routerMethod: 'goToModifyMosaic' }
+			}
+		];
+
+		navigationTests.forEach(test => {
+			runNavigationTest(test.description, test.config, test.expected);
 		});
 	});
 });

@@ -1,7 +1,6 @@
-import { Amount, ListItemContainer, StyledText, TokenAvatar } from '@/app/components';
-import { ExpirationProgress } from '@/app/screens/assets/components';
-import { getTokenDisplayInfo } from '@/app/screens/assets/utils';
+import { Amount, ExpirationProgress, ListItemContainer, StyledText, TokenAvatar } from '@/app/components';
 import { Sizes } from '@/app/styles';
+import { createTokenDisplayData } from '@/app/utils';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 
@@ -29,7 +28,7 @@ const PROGRESS_WIDTH = Sizes.Semantic.spacing.m * 15;
  * @returns {React.ReactNode} TokenListItem component.
  */
 export const TokenListItem = ({ token, chainName, networkIdentifier, chainHeight, blockGenerationTargetTime, onPress }) => {
-	const tokenDisplayData = getTokenDisplayInfo(token, chainName, networkIdentifier);
+	const tokenDisplayData = createTokenDisplayData(token, chainName, networkIdentifier);
 
 	// Expiration progress
 	const isProgressShown = token.endHeight && !token.isUnlimitedDuration;

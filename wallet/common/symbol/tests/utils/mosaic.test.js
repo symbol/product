@@ -2,17 +2,34 @@ import {
 	formatMosaicList,
 	getMosaicAmount,
 	isMosaicRevokable,
+	isMosaicSupplyModifiable,
 	isRestrictableFlag,
 	isRevokableFlag,
 	isSupplyMutableFlag,
-	isTransferableFlag
+	isTransferableFlag,
+	mosaicIdFromNonce,
+	mosaicInfoFromDTO
 } from '../../src/utils';
+import { mosaicInfosResponse } from '../__fixtures__/api/mosaic-infos-response';
+import {
+	expiringSupplyImmutableMosaic,
+	expiringSupplyMutableMosaic,
+	mosaicCreatorAddress,
+	mosaicHolderAddress,
+	nativeMosaic,
+	revokableMosaic
+} from '../__fixtures__/local/mosaic';
 import { generateBitCombinations } from '../test-utils';
 
 const SUPPLY_MUTABLE_FLAG = 1;
 const TRANSFERABLE_FLAG = 2;
 const RESTRICTABLE_FLAG = 4;
 const REVOKABLE_FLAG = 8;
+
+// Below the end height of the expiring mosaics, so they are active unless a case overrides it
+const CHAIN_HEIGHT = 1000;
+
+const findMosaicInfoDTO = mosaicId => mosaicInfosResponse.find(mosaicInfoDTO => mosaicInfoDTO.mosaic.id === mosaicId).mosaic;
 
 describe('utils/mosaic', () => {
 	describe('getMosaicAmount', () => {
@@ -168,126 +185,122 @@ describe('utils/mosaic', () => {
 	});
 
 	describe('isMosaicRevokable', () => {
-		const runIsMosaicRevokableTest = ({ mosaic, chainHeight, currentAddress, sourceAddress, expectedResult }) => {
-			// Act:
-			const result = isMosaicRevokable(mosaic, chainHeight, currentAddress, sourceAddress);
+		const runIsMosaicRevokableTest = (description, config, expected) => {
+			it(description, () => {
+				// Arrange:
+				const currentAddress = config.currentAddress ?? mosaicCreatorAddress;
+				const sourceAddress = config.sourceAddress ?? mosaicHolderAddress;
 
-			// Assert:
-			expect(result).toBe(expectedResult);
+				// Act:
+				const result = isMosaicRevokable(config.mosaic, CHAIN_HEIGHT, currentAddress, sourceAddress);
+
+				// Assert:
+				expect(result).toBe(expected.result);
+			});
 		};
 
-		it('returns true if the mosaic is revokable and chain height is less than the mosaic end height', () => {
-			// Arrange:
-			const chainHeight = 100;
-			const currentAddress = 'currentAddress';
-			const sourceAddress = 'sourceAddress';
-			const mosaic = {
-				id: 'mosaic1',
-				amount: '100',
-				endHeight: 200,
-				isUnlimitedDuration: false,
-				isRevokable: true,
-				creator: currentAddress
-			};
-			const expectedResult = true;
+		const isMosaicRevokableTests = [
+			{
+				description: 'returns true if the mosaic is revokable, created by the current address and active',
+				config: { mosaic: revokableMosaic },
+				expected: { result: true }
+			},
+			{
+				description: 'returns true if the mosaic has unlimited duration and the end height has passed',
+				config: { mosaic: { ...revokableMosaic, endHeight: CHAIN_HEIGHT - 1, isUnlimitedDuration: true } },
+				expected: { result: true }
+			},
+			{
+				description: 'returns true if the chain height is one block below the mosaic end height',
+				config: { mosaic: { ...revokableMosaic, endHeight: CHAIN_HEIGHT + 1 } },
+				expected: { result: true }
+			},
+			{
+				description: 'returns false if the chain height reached the mosaic end height',
+				config: { mosaic: { ...revokableMosaic, endHeight: CHAIN_HEIGHT } },
+				expected: { result: false }
+			},
+			{
+				description: 'returns false if the mosaic is expired',
+				config: { mosaic: { ...revokableMosaic, endHeight: CHAIN_HEIGHT - 1 } },
+				expected: { result: false }
+			},
+			{
+				description: 'returns false if the mosaic is not revokable',
+				config: { mosaic: expiringSupplyMutableMosaic },
+				expected: { result: false }
+			},
+			{
+				description: 'returns false if the mosaic creator is not the current address',
+				config: { mosaic: revokableMosaic, currentAddress: mosaicHolderAddress },
+				expected: { result: false }
+			},
+			{
+				description: 'returns false if the source address is the current address',
+				config: { mosaic: revokableMosaic, sourceAddress: mosaicCreatorAddress },
+				expected: { result: false }
+			}
+		];
 
-			// Act & Assert:
-			runIsMosaicRevokableTest({ mosaic, chainHeight, currentAddress, sourceAddress, expectedResult });
+		isMosaicRevokableTests.forEach(test => {
+			runIsMosaicRevokableTest(test.description, test.config, test.expected);
 		});
+	});
 
-		it('returns true if the mosaic is revokable and is unlimited duration', () => {
-			// Arrange:
-			const chainHeight = 300;
-			const currentAddress = 'currentAddress';
-			const sourceAddress = 'sourceAddress';
-			const mosaic = {
-				id: 'mosaic1',
-				amount: '100',
-				endHeight: 200,
-				isUnlimitedDuration: true,
-				isRevokable: true,
-				creator: currentAddress
-			};
-			const expectedResult = true;
+	describe('isMosaicSupplyModifiable', () => {
+		const runIsMosaicSupplyModifiableTest = (description, config, expected) => {
+			it(description, () => {
+				// Arrange:
+				const currentAddress = config.currentAddress ?? mosaicCreatorAddress;
 
-			// Act & Assert:
-			runIsMosaicRevokableTest({ mosaic, chainHeight, currentAddress, sourceAddress, expectedResult });
-		});
+				// Act:
+				const result = isMosaicSupplyModifiable(config.mosaic, CHAIN_HEIGHT, currentAddress);
 
-		it('returns false if the mosaic is not revokable', () => {
-			// Arrange:
-			const chainHeight = 100;
-			const currentAddress = 'currentAddress';
-			const sourceAddress = 'sourceAddress';
-			const mosaic = {
-				id: 'mosaic1',
-				amount: '100',
-				endHeight: 200,
-				isUnlimitedDuration: false,
-				isRevokable: false,
-				creator: currentAddress
-			};
-			const expectedResult = false;
+				// Assert:
+				expect(result).toBe(expected.result);
+			});
+		};
 
-			// Act & Assert:
-			runIsMosaicRevokableTest({ mosaic, chainHeight, currentAddress, sourceAddress, expectedResult });
-		});
+		const isMosaicSupplyModifiableTests = [
+			{
+				description: 'returns true if the supply is mutable, the mosaic is created by the current address and active',
+				config: { mosaic: expiringSupplyMutableMosaic },
+				expected: { result: true }
+			},
+			{
+				description: 'returns true if the mosaic has unlimited duration and the end height has passed',
+				config: { mosaic: { ...expiringSupplyMutableMosaic, endHeight: CHAIN_HEIGHT - 1, isUnlimitedDuration: true } },
+				expected: { result: true }
+			},
+			{
+				description: 'returns true if the chain height is one block below the mosaic end height',
+				config: { mosaic: { ...expiringSupplyMutableMosaic, endHeight: CHAIN_HEIGHT + 1 } },
+				expected: { result: true }
+			},
+			{
+				description: 'returns false if the chain height reached the mosaic end height',
+				config: { mosaic: { ...expiringSupplyMutableMosaic, endHeight: CHAIN_HEIGHT } },
+				expected: { result: false }
+			},
+			{
+				description: 'returns false if the mosaic is expired',
+				config: { mosaic: { ...expiringSupplyMutableMosaic, endHeight: CHAIN_HEIGHT - 1 } },
+				expected: { result: false }
+			},
+			{
+				description: 'returns false if the supply is not mutable',
+				config: { mosaic: expiringSupplyImmutableMosaic },
+				expected: { result: false }
+			},
+			{
+				description: 'returns false if the mosaic creator is not the current address',
+				config: { mosaic: expiringSupplyMutableMosaic, currentAddress: mosaicHolderAddress },
+				expected: { result: false }
+			}
+		];
 
-		it('returns false if the mosaic creator is not the current address', () => {
-			// Arrange:
-			const chainHeight = 100;
-			const currentAddress = 'currentAddress';
-			const sourceAddress = 'sourceAddress';
-			const mosaic = {
-				id: 'mosaic1',
-				amount: '100',
-				endHeight: 200,
-				isUnlimitedDuration: false,
-				isRevokable: true,
-				creator: 'creatorAddress'
-			};
-			const expectedResult = false;
-
-			// Act & Assert:
-			runIsMosaicRevokableTest({ mosaic, chainHeight, currentAddress, sourceAddress, expectedResult });
-		});
-
-		it('returns false if the source address is the current address', () => {
-			// Arrange:
-			const chainHeight = '100';
-			const currentAddress = 'currentAddress';
-			const sourceAddress = currentAddress;
-			const mosaic = {
-				id: 'mosaic1',
-				amount: 100,
-				endHeight: 200,
-				isUnlimitedDuration: false,
-				isRevokable: true,
-				creator: currentAddress
-			};
-			const expectedResult = false;
-
-			// Act & Assert:
-			runIsMosaicRevokableTest({ mosaic, chainHeight, currentAddress, sourceAddress, expectedResult });
-		});
-
-		it('returns false if the mosaic is expired', () => {
-			// Arrange:
-			const chainHeight = 300;
-			const currentAddress = 'currentAddress';
-			const sourceAddress = 'sourceAddress';
-			const mosaic = {
-				id: 'mosaic1',
-				amount: '100',
-				endHeight: 200,
-				isUnlimitedDuration: false,
-				isRevokable: true,
-				creator: currentAddress
-			};
-			const expectedResult = false;
-
-			// Act & Assert:
-			runIsMosaicRevokableTest({ mosaic, chainHeight, currentAddress, sourceAddress, expectedResult });
+		isMosaicSupplyModifiableTests.forEach(test => {
+			runIsMosaicSupplyModifiableTest(test.description, test.config, test.expected);
 		});
 	});
 
@@ -378,6 +391,39 @@ describe('utils/mosaic', () => {
 
 			// Act & Assert:
 			runMosaicFlagsTest(flags, expectedResult, isRevokableFlag);
+		});
+	});
+
+	describe('mosaicIdFromNonce', () => {
+		const ownerAddress = 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ';
+		const testCases = [
+			{ description: 'derives the mosaic id from the owner address and nonce', nonce: 12345, expectedMosaicId: '619284EB8A8505DA' },
+			{ description: 'derives the mosaic id for a zero nonce', nonce: 0, expectedMosaicId: '64CC999288ED1BB9' }
+		];
+
+		testCases.forEach(({ description, nonce, expectedMosaicId }) => it(description, () => {
+			// Act:
+			const result = mosaicIdFromNonce(ownerAddress, nonce);
+
+			// Assert:
+			expect(result).toBe(expectedMosaicId);
+		}));
+	});
+
+	describe('mosaicInfoFromDTO', () => {
+		it('formats a mosaic node DTO into mosaic info with empty names', () => {
+			// Arrange:
+			const mosaicDTO = findMosaicInfoDTO(nativeMosaic.id);
+			const expectedResult = {
+				...nativeMosaic,
+				names: []
+			};
+
+			// Act:
+			const result = mosaicInfoFromDTO(mosaicDTO);
+
+			// Assert:
+			expect(result).toStrictEqual(expectedResult);
 		});
 	});
 });
