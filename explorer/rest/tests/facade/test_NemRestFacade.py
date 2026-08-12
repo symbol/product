@@ -353,28 +353,28 @@ class TestNemRestFacade(DatabaseTestBase):  # pylint: disable=too-many-public-me
 		self._assert_can_retrieve_mosaics(
 			pagination=Pagination(1, 0),
 			sort='DESC',
-			expected_mosaics=[EXPECTED_MOSAIC_2]
+			expected_mosaics=[EXPECTED_MOSAIC_3]
 		)
 
 	def test_can_retrieve_mosaics_filtered_by_offset(self):
 		self._assert_can_retrieve_mosaics(
 			pagination=Pagination(1, 1),
 			sort='DESC',
-			expected_mosaics=[EXPECTED_MOSAIC_3]
+			expected_mosaics=[EXPECTED_MOSAIC_2]
 		)
 
 	def test_can_retrieve_mosaics_sorted_by_registered_height_asc(self):
 		self._assert_can_retrieve_mosaics(
 			pagination=Pagination(10, 0),
 			sort='ASC',
-			expected_mosaics=[EXPECTED_MOSAIC_1, EXPECTED_MOSAIC_2, EXPECTED_MOSAIC_3]
+			expected_mosaics=[EXPECTED_MOSAIC_1, EXPECTED_MOSAIC_3, EXPECTED_MOSAIC_2]
 		)
 
 	def test_can_retrieve_mosaics_sorted_by_registered_height_desc(self):
 		self._assert_can_retrieve_mosaics(
 			pagination=Pagination(10, 0),
 			sort='DESC',
-			expected_mosaics=[EXPECTED_MOSAIC_2, EXPECTED_MOSAIC_3, EXPECTED_MOSAIC_1]
+			expected_mosaics=[EXPECTED_MOSAIC_3, EXPECTED_MOSAIC_2, EXPECTED_MOSAIC_1]
 		)
 
 	# endregion

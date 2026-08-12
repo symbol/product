@@ -557,30 +557,30 @@ def _assert_get_api_nem_mosaics(client, expected_status_code, expected_result, *
 
 
 def test_api_mosaics_without_params(client):  # pylint: disable=redefined-outer-name
-	_assert_get_api_nem_mosaics(client, 200, [MOSAIC_VIEWS[1].to_dict(), MOSAIC_VIEWS[2].to_dict(), MOSAIC_VIEWS[0].to_dict()])
+	_assert_get_api_nem_mosaics(client, 200, [MOSAIC_VIEWS[2].to_dict(), MOSAIC_VIEWS[1].to_dict(), MOSAIC_VIEWS[0].to_dict()])
 
 
 def test_api_mosaics_applies_limit(client):  # pylint: disable=redefined-outer-name
-	_assert_get_api_nem_mosaics(client, 200, [MOSAIC_VIEWS[1].to_dict()], limit=1)
+	_assert_get_api_nem_mosaics(client, 200, [MOSAIC_VIEWS[2].to_dict()], limit=1)
 
 
 def test_api_mosaics_applies_offset(client):  # pylint: disable=redefined-outer-name
-	_assert_get_api_nem_mosaics(client, 200, [MOSAIC_VIEWS[2].to_dict(), MOSAIC_VIEWS[0].to_dict()], offset=1)
+	_assert_get_api_nem_mosaics(client, 200, [MOSAIC_VIEWS[1].to_dict(), MOSAIC_VIEWS[0].to_dict()], offset=1)
 
 
 def test_api_mosaics_applies_sorted_by_registered_height_asc(client):  # pylint: disable=redefined-outer-name, invalid-name
-	_assert_get_api_nem_mosaics(client, 200, [MOSAIC_VIEWS[0].to_dict(), MOSAIC_VIEWS[1].to_dict(), MOSAIC_VIEWS[2].to_dict()], sort='ASC')
+	_assert_get_api_nem_mosaics(client, 200, [MOSAIC_VIEWS[0].to_dict(), MOSAIC_VIEWS[2].to_dict(), MOSAIC_VIEWS[1].to_dict()], sort='ASC')
 
 
 def test_api_mosaics_applies_sorted_by_registered_height_desc(client):  # pylint: disable=redefined-outer-name, invalid-name
-	_assert_get_api_nem_mosaics(client, 200, [MOSAIC_VIEWS[1].to_dict(), MOSAIC_VIEWS[2].to_dict(), MOSAIC_VIEWS[0].to_dict()], sort='DESC')
+	_assert_get_api_nem_mosaics(client, 200, [MOSAIC_VIEWS[2].to_dict(), MOSAIC_VIEWS[1].to_dict(), MOSAIC_VIEWS[0].to_dict()], sort='DESC')
 
 
 def test_api_mosaics_with_all_params(client):  # pylint: disable=redefined-outer-name
 	_assert_get_api_nem_mosaics(
 		client,
 		200,
-		[MOSAIC_VIEWS[2].to_dict()],
+		[MOSAIC_VIEWS[1].to_dict()],
 		limit=1,
 		offset=1,
 		sort='DESC'
