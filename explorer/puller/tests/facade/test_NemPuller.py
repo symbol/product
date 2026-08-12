@@ -2096,3 +2096,62 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 		# Assert:
 		self.assertEqual(surviving_remote_address.bytes.hex(), remote_address)
 
+	def test_can_repair_rollback_with_expected_operations(self):
+		# Arrange:
+		first_address = Address('TALICE6XEEEOBFJVY3ZCENZ7WBG6LB4KB7P7KMQX')
+		second_address = Address('TCJLCZSOQ6RGWHTPSV2DW467WZSHK4NBSITND4OF')
+		orphan_address = Address('TBKQWJJGPOHL462DBVMTYOAERXGG2BOS5XRFO2P6')
+		first_account = Mock()
+		second_account = Mock()
+		account_state = {
+			second_address: second_account,
+			first_address: first_account
+		}
+		rollback_impact = Mock(
+			fork_height=123,
+			orphan_created_accounts={orphan_address}
+		)
+		database = Mock()
+		cursor = database.connection.cursor.return_value
+		self.puller.nem_db = database
+
+		with patch.object(self.puller, '_validate_rollback_account_state') as mock_validate, patch.object(
+			self.puller,
+			'_restore_rollback_remote_addresses'
+		) as mock_restore_remote_addresses:
+			# Act:
+			self.puller.repair_rollback(rollback_impact, account_state)
+
+			# Assert:
+			mock_validate.assert_called_once_with(rollback_impact, account_state)
+			database.delete_orphan_chain_data.assert_called_once_with(cursor, 123)
+			database.delete_accounts.assert_called_once_with(cursor, {orphan_address})
+
+			refresh_calls = database.refresh_account_from_snapshot.call_args_list
+			self.assertEqual(2, len(refresh_calls))
+			self.assertEqual((cursor, first_account), refresh_calls[0][0])
+			self.assertEqual((cursor, second_account), refresh_calls[1][0])
+
+			mock_restore_remote_addresses.assert_called_once_with(cursor, rollback_impact)
+			database.connection.commit.assert_called_once_with()
+			database.connection.rollback.assert_not_called()
+
+	def test_repair_rollback_rolls_back_transaction_on_failure(self):
+		# Arrange:
+		address = Address('TALICE6XEEEOBFJVY3ZCENZ7WBG6LB4KB7P7KMQX')
+		account_state = {address: Mock()}
+		rollback_impact = Mock(fork_height=123, orphan_created_accounts=set())
+		database = Mock()
+		self.puller.nem_db = database
+
+		with patch.object(self.puller, '_validate_rollback_account_state'), patch.object(
+			self.puller,
+			'_restore_rollback_remote_addresses',
+			side_effect=RuntimeError('forced repair failure')
+		):
+			# Act + Assert:
+			with self.assertRaisesRegex(RuntimeError, 'forced repair failure'):
+				self.puller.repair_rollback(rollback_impact, account_state)
+
+		database.connection.rollback.assert_called_once_with()
+		database.connection.commit.assert_not_called()

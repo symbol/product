@@ -363,6 +363,28 @@ class NemPuller:
 				remote_address
 			)
 
+	def repair_rollback(self, rollback_impact, account_state):
+		"""Atomically restores NEM database state to a confirmed fork height."""
+
+		self._validate_rollback_account_state(rollback_impact, account_state)
+		cursor = self.nem_db.connection.cursor()
+
+		try:
+			self.nem_db.delete_orphan_chain_data(cursor, rollback_impact.fork_height)
+			self.nem_db.delete_accounts(cursor, rollback_impact.orphan_created_accounts)
+
+			for address in sorted(account_state, key=str):
+				self.nem_db.refresh_account_from_snapshot(cursor, account_state[address])
+
+			self._restore_rollback_remote_addresses(cursor, rollback_impact)
+
+			# Todo: reconstruct_rollback_namespaces, reconstruct_rollback_mosaics, recalculate_account_harvesting
+
+			self.nem_db.connection.commit()
+		except Exception:
+			self.nem_db.connection.rollback()
+			raise
+
 	async def _retry_get_account_info(self, address, retries=3, delay=2):
 		"""Retries fetching account info with exponential backoff."""
 
