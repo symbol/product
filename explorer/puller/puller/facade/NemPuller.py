@@ -341,6 +341,28 @@ class NemPuller:
 			if rollback_impact.account_creation_heights[address] != account.height:
 				raise NemRollbackError(f'Rollback account snapshot height mismatch for {address}')
 
+	def _restore_rollback_remote_addresses(self, cursor, rollback_impact):
+		"""Restores affected remote links from surviving account-key-link history."""
+
+		addresses = rollback_impact.affected_remote_link_accounts
+		self.nem_db.clear_account_remote_addresses(cursor, addresses)
+
+		transactions = self.nem_db.get_surviving_account_key_links(
+			cursor,
+			rollback_impact.fork_height,
+			addresses
+		)
+		for transaction in transactions:
+			remote_address = (
+				self._convert_public_key_to_address(transaction.payload['remote_account'])
+				if ACCOUNT_KEY_LINK_MODE_ACTIVATE == transaction.payload['mode'] else None
+			)
+			self.nem_db.update_account_remote_address(
+				cursor,
+				transaction.sender_address,
+				remote_address
+			)
+
 	async def _retry_get_account_info(self, address, retries=3, delay=2):
 		"""Retries fetching account info with exponential backoff."""
 

@@ -3,6 +3,7 @@ from binascii import unhexlify
 from collections import namedtuple
 
 from symbolchain.CryptoTypes import PublicKey
+from symbolchain.nc import TransactionType
 from symbolchain.nem.Network import Address
 
 from .DatabaseConnection import DatabaseConnection
@@ -16,6 +17,10 @@ RollbackTransactionRecord = namedtuple(
 OrphanChainRecords = namedtuple(
 	'OrphanChainRecords',
 	['blocks', 'transactions', 'transfer_levy_recipients']
+)
+RollbackAccountKeyLinkRecord = namedtuple(
+	'RollbackAccountKeyLinkRecord',
+	['sender_address', 'payload']
 )
 
 
@@ -573,6 +578,54 @@ class NemDatabase(DatabaseConnection):
 
 		if 0 == cursor.rowcount:
 			raise RuntimeError(f'Cannot refresh missing NEM account {account_info.address}')
+
+	@staticmethod
+	def clear_account_remote_addresses(cursor, addresses):
+		"""Clears links for accounts whose link history must be replayed."""
+
+		if not addresses:
+			return
+
+		cursor.execute(
+			'''
+			UPDATE accounts
+			SET remote_address = NULL,
+				updated_at = CURRENT_TIMESTAMP
+			WHERE address = ANY(%s)
+			''',
+			([address.bytes for address in addresses],)
+		)
+
+	@staticmethod
+	def get_surviving_account_key_links(cursor, fork_height, addresses):
+		"""Gets the latest surviving account-key-link transition for each affected account."""
+
+		if not addresses:
+			return []
+
+		cursor.execute(
+			'''
+			SELECT DISTINCT ON (sender_address)
+				sender_address,
+				payload
+			FROM transactions
+			WHERE transaction_type = %s
+				AND height <= %s
+				AND sender_address = ANY(%s)
+			ORDER BY sender_address ASC, height DESC, id DESC
+			''',
+			(
+				TransactionType.ACCOUNT_KEY_LINK.value,
+				fork_height,
+				[address.bytes for address in addresses]
+			)
+		)
+		results = cursor.fetchall()
+
+		return [
+			RollbackAccountKeyLinkRecord(Address(bytes(record[0])), record[1])
+			for record in results
+		]
 
 
 	def get_accounts_for_refresh(self, limit, last_account_id):

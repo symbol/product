@@ -2046,3 +2046,53 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 				account_state
 			)
 
+	def test_can_restore_rollback_remote_address_from_surviving_key_link(self):
+		# Arrange:
+		account = Address('TALICE6XEEEOBFJVY3ZCENZ7WBG6LB4KB7P7KMQX')
+		surviving_remote_key = PublicKey('7195f4d7a40ad7e31958ae96c4afed002962229675a4cae8dc8a18e290618981')
+		orphan_remote_key = PublicKey('1fbdbdde28daf828245e4533765726f0b7790e0b7146e2ce205df3e86366980b')
+		surviving_remote_address = self.puller._convert_public_key_to_address(  # pylint: disable=protected-access
+			surviving_remote_key
+		)
+		orphan_remote_address = self.puller._convert_public_key_to_address(  # pylint: disable=protected-access
+			orphan_remote_key
+		)
+		rollback_impact = self._create_surviving_account_rollback_impact(account)._replace(
+			fork_height=1,
+			affected_remote_link_accounts={account}
+		)
+
+		with self.puller.nem_db as database:
+			database.create_tables()
+			cursor = database.connection.cursor()
+
+			database.upsert_account(
+				cursor,
+				self._create_rollback_account(account, 1)._replace(remote_address=orphan_remote_address)
+			)
+			database.insert_transaction(
+				cursor,
+				self._create_rollback_transaction(
+					1,
+					TransactionType.ACCOUNT_KEY_LINK.value,
+					1,
+					account,
+					payload={'mode': 1, 'remote_account': str(surviving_remote_key)}
+				)
+			)
+
+			# Act:
+			self.puller._restore_rollback_remote_addresses(  # pylint: disable=protected-access
+				cursor,
+				rollback_impact
+			)
+
+			cursor.execute(
+				'SELECT encode(remote_address, \'hex\') FROM accounts WHERE address = %s',
+				(account.bytes,)
+			)
+			remote_address = cursor.fetchone()[0]
+
+		# Assert:
+		self.assertEqual(surviving_remote_address.bytes.hex(), remote_address)
+

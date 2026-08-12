@@ -6,10 +6,11 @@ from pathlib import Path
 import psycopg2
 import testing.postgresql
 from symbolchain.CryptoTypes import PublicKey
+from symbolchain.nc import TransactionType
 from symbolchain.nem.Network import Address
 from symbollightapi.model.Transaction import Mosaic
 
-from puller.db.NemDatabase import NemDatabase
+from puller.db.NemDatabase import NemDatabase, RollbackAccountKeyLinkRecord
 from puller.facade.NemPuller import AccountRecord, BlockRecord, MosaicRecord, NamespaceRecord, TransactionRecord
 
 from .test_DatabaseConnection import DatabaseConfig
@@ -1371,4 +1372,87 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 				f'Cannot refresh missing NEM account {missing_account.address}'
 			):
 				nem_database.refresh_account_from_snapshot(cursor, missing_account)
+
+	def test_can_clear_selected_account_remote_addresses(self):
+		# Arrange:
+		remote_address = Address('TBKQWJJGPOHL462DBVMTYOAERXGG2BOS5XRFO2P6')
+		cleared_account = ACCOUNTS[0]._replace(remote_address=remote_address)
+
+		with NemDatabase(self.db_config) as nem_database:
+			nem_database.create_tables()
+			cursor = nem_database.connection.cursor()
+
+			nem_database.upsert_account(cursor, cleared_account)
+
+			# Act:
+			nem_database.clear_account_remote_addresses(cursor, {cleared_account.address})
+
+			cleared_result = self._fetch_account_from_db(cursor, cleared_account.address)
+
+		# Assert:
+		self.assertIsNone(cleared_result[3])
+
+	def test_can_get_latest_surviving_account_key_link(self):
+		# Arrange:
+		fork_height = 2
+		affected_address = ACCOUNTS[0].address
+		first_remote_key = PublicKey('7195f4d7a40ad7e31958ae96c4afed002962229675a4cae8dc8a18e290618981')
+		second_remote_key = PublicKey('f94e8702eb1943b23570b1b83be1b81536df35538978820e98bfce8f999e2d37')
+		activation_payload = {'mode': 1, 'remote_account': str(first_remote_key)}
+		deactivation_payload = {'mode': 2, 'remote_account': str(first_remote_key)}
+		reactivation_payload = {'mode': 1, 'remote_account': str(second_remote_key)}
+		transactions = [
+			TRANSACTIONS[0]._replace(
+				transaction_hash='11' * 32,
+				transaction_type=TransactionType.ACCOUNT_KEY_LINK.value,
+				height=1,
+				sender_address=affected_address,
+				payload=activation_payload
+			),
+			TRANSACTIONS[0]._replace(
+				transaction_hash='22' * 32,
+				transaction_type=TransactionType.ACCOUNT_KEY_LINK.value,
+				height=2,
+				is_inner=True,
+				sender_address=affected_address,
+				payload=deactivation_payload
+			),
+			TRANSACTIONS[0]._replace(
+				transaction_hash='33' * 32,
+				transaction_type=TransactionType.ACCOUNT_KEY_LINK.value,
+				height=2,
+				is_inner=True,
+				sender_address=affected_address,
+				payload=reactivation_payload
+			),
+			TRANSACTIONS[0]._replace(
+				transaction_hash='44' * 32,
+				transaction_type=TransactionType.ACCOUNT_KEY_LINK.value,
+				height=3,
+				sender_address=affected_address,
+				payload=activation_payload
+			)
+		]
+
+		with NemDatabase(self.db_config) as nem_database:
+			nem_database.create_tables()
+			cursor = nem_database.connection.cursor()
+
+			for transaction in transactions:
+				nem_database.insert_transaction(cursor, transaction)
+
+			# Act:
+			results = nem_database.get_surviving_account_key_links(
+				cursor,
+				fork_height,
+				{affected_address}
+			)
+
+		# Assert:
+		self.assertEqual([
+			RollbackAccountKeyLinkRecord(
+				affected_address,
+				reactivation_payload
+			)
+		], results)
 
