@@ -627,7 +627,6 @@ class NemDatabase(DatabaseConnection):
 			for record in results
 		]
 
-
 	def get_accounts_for_refresh(self, limit, last_account_id):
 		"""Gets account addresses that should have vested balance and importance refreshed."""
 

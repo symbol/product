@@ -1455,4 +1455,3 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 				reactivation_payload
 			)
 		], results)
-
