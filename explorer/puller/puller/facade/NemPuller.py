@@ -85,8 +85,9 @@ TransactionRecord = namedtuple('TransactionRecord', [
 	'recipient_address',
 	'payload',
 	'size',
-	'version'
-])
+	'version',
+	'aggregate_hash'
+], defaults=[None])
 DatabaseConfig = namedtuple('DatabaseConfig', ['database', 'user', 'password', 'host', 'port'])
 
 
@@ -442,7 +443,7 @@ class NemPuller:
 		adjustment = transaction.delta if transaction.supply_type == 1 else -transaction.delta
 		self.nem_db.update_mosaic_total_supply(cursor, transaction.namespace_name, adjustment)
 
-	def _build_transaction_record(self, transaction, is_inner):
+	def _build_transaction_record(self, transaction, is_inner, aggregate_hash=None):
 		"""Create TransactionRecord from transaction data."""
 
 		payload = None
@@ -531,6 +532,7 @@ class NemPuller:
 			signature=transaction.signature,
 			transaction_type=transaction.transaction_type,
 			is_inner=is_inner,
+			aggregate_hash=aggregate_hash,
 			sender_address=self._convert_public_key_to_address(transaction.sender),
 			recipient_address=recipient_address,
 			payload=payload,
@@ -538,11 +540,11 @@ class NemPuller:
 			version=transaction.version
 		)
 
-	def _process_transaction(self, cursor, transaction, block_height, is_inner):
+	def _process_transaction(self, cursor, transaction, block_height, is_inner, aggregate_hash=None):
 		# pylint: disable=too-many-arguments,too-many-positional-arguments
 		"""Process a single transaction."""
 
-		transaction_record = self._build_transaction_record(transaction, is_inner)
+		transaction_record = self._build_transaction_record(transaction, is_inner, aggregate_hash)
 		transaction_id = self.nem_db.insert_transaction(cursor, transaction_record)
 
 		if transaction.transaction_type == TransactionType.TRANSFER.value:
@@ -582,7 +584,13 @@ class NemPuller:
 				# For inner transactions, we set the transaction hash to the inner hash
 				transaction.other_transaction.transaction_hash = transaction.inner_hash
 				transaction.other_transaction.height = transaction.height
-				self._process_transaction(cursor, transaction=transaction.other_transaction, block_height=height, is_inner=True)
+				self._process_transaction(
+					cursor,
+					transaction=transaction.other_transaction,
+					block_height=height,
+					is_inner=True,
+					aggregate_hash=transaction.transaction_hash
+				)
 
 			self._process_transaction(
 				cursor,
