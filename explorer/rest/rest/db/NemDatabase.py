@@ -322,7 +322,12 @@ class NemDatabase(DatabaseConnectionPool):
 				cosignatory_of,
 				cosignatories,
 				ar.remark
-			FROM accounts a
+			FROM (
+				SELECT * FROM accounts a
+				{where_condition}
+				{order_condition}
+				{limit_condition}
+			) a
 			LEFT JOIN account_remark ar
 				ON ar.address = a.address
 			LEFT JOIN LATERAL (
@@ -336,9 +341,7 @@ class NemDatabase(DatabaseConnectionPool):
 				LEFT JOIN mosaics m
 					ON m.namespace_name = mosaic.item->>'namespace_name'
 			) am ON true
-			{where_condition}
 			{order_condition}
-			{limit_condition}
 		'''
 
 	@staticmethod
@@ -427,7 +430,12 @@ class NemDatabase(DatabaseConnectionPool):
 				ns.registered_height AS root_namespace_registered_height,
 				ns_block.timestamp AS root_namespace_registered_timestamp,
 				ns.expiration_height AS root_namespace_expiration_height
-			FROM mosaics m
+			FROM (
+				SELECT * FROM mosaics m
+				{where_condition}
+				{order_condition}
+				{limit_condition}
+			) m
 			LEFT JOIN mosaics levy
 				ON levy.namespace_name = m.levy_namespace_name
 			LEFT JOIN namespaces ns
@@ -436,9 +444,7 @@ class NemDatabase(DatabaseConnectionPool):
 				ON ns_block.height = ns.registered_height
 			LEFT JOIN blocks m_block
 				ON m_block.height = m.registered_height
-			{where_condition}
 			{order_condition}
-			{limit_condition}
 		'''
 
 	@staticmethod
@@ -460,7 +466,12 @@ class NemDatabase(DatabaseConnectionPool):
 				COALESCE(m.mosaics, '[]'::json) AS mosaics,
 				t.size,
 				t.version
-			FROM transactions t
+			FROM (
+				SELECT * FROM transactions t
+				{where_condition}
+				{order_condition}
+				{limit_condition}
+			) t
 			LEFT JOIN LATERAL (
 				SELECT json_agg(json_build_object(
 				'namespace_name', tm.namespace_name,
@@ -471,9 +482,7 @@ class NemDatabase(DatabaseConnectionPool):
 				ON mo.namespace_name = tm.namespace_name
 			WHERE tm.transaction_id = t.id
 			) m ON true
-			{where_condition}
 			{order_condition}
-			{limit_condition}
 		'''
 
 	def _read_harvesting_active_cutoff_height(self, cursor):
@@ -642,7 +651,7 @@ class NemDatabase(DatabaseConnectionPool):
 	def get_mosaics(self, pagination, sort):
 		"""Gets mosaics pagination in database."""
 
-		order_condition = f' ORDER BY m.registered_height {sort}'
+		order_condition = f' ORDER BY m.registered_height {sort}, m.namespace_name'
 		limit_condition = ' LIMIT %s OFFSET %s'
 
 		sql = self._generate_mosaic_query(order_condition=order_condition, limit_condition=limit_condition)

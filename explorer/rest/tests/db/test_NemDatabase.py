@@ -552,23 +552,23 @@ class NemDatabaseTest(DatabaseTestBase):  # pylint: disable=too-many-public-meth
 		self.assertEqual(expected_mosaics, mosaics_view)
 
 	def test_can_query_mosaics_filtered_limit_offset_0(self):
-		self._assert_can_query_mosaics_with_filter(Pagination(1, 0), 'desc', [EXPECTED_MOSAIC_VIEW_2])
+		self._assert_can_query_mosaics_with_filter(Pagination(1, 0), 'desc', [EXPECTED_MOSAIC_VIEW_3])
 
 	def test_can_query_mosaics_filtered_offset_1(self):
-		self._assert_can_query_mosaics_with_filter(Pagination(1, 1), 'desc', [EXPECTED_MOSAIC_VIEW_3])
+		self._assert_can_query_mosaics_with_filter(Pagination(1, 1), 'desc', [EXPECTED_MOSAIC_VIEW_2])
 
 	def test_can_query_mosaics_sorted_by_registered_height_asc(self):
 		self._assert_can_query_mosaics_with_filter(
 			Pagination(10, 0),
 			'asc',
-			[EXPECTED_MOSAIC_VIEW_1, EXPECTED_MOSAIC_VIEW_2, EXPECTED_MOSAIC_VIEW_3]
+			[EXPECTED_MOSAIC_VIEW_1, EXPECTED_MOSAIC_VIEW_3, EXPECTED_MOSAIC_VIEW_2]
 		)
 
 	def test_can_query_mosaics_sorted_by_registered_height_desc(self):
 		self._assert_can_query_mosaics_with_filter(
 			Pagination(10, 0),
 			'desc',
-			[EXPECTED_MOSAIC_VIEW_2, EXPECTED_MOSAIC_VIEW_3, EXPECTED_MOSAIC_VIEW_1]
+			[EXPECTED_MOSAIC_VIEW_3, EXPECTED_MOSAIC_VIEW_2, EXPECTED_MOSAIC_VIEW_1]
 		)
 
 	# endregion
