@@ -41,6 +41,14 @@ async def main():
 			await facade.sync_nemesis_block()
 			db_height = 1
 
+		fork_height = await facade.detect_rollback(db_height, chain_height)
+		if fork_height is not None:
+			log.warning(f'Rollback detected at height: {fork_height}')
+			rollback_impact = facade.capture_rollback_impact(fork_height)
+			account_state = await facade.prefetch_rollback_account_state(rollback_impact)
+			facade.repair_rollback(rollback_impact, account_state)
+			db_height = fork_height
+
 		# sync network blocks in database
 		await facade.sync_blocks(db_height, chain_height)
 

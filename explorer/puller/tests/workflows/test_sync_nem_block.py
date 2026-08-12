@@ -30,7 +30,14 @@ class SyncNemBlockTest(unittest.TestCase):
 
 	@patch('puller.workflows.sync_nem_block.NemPuller')
 	@patch('puller.workflows.sync_nem_block.parse_args')
-	def _run_main_test(self, mock_parse_args, mock_nem_puller, db_height, account_remark=None):  # pylint: disable=no-self-use
+	def _run_main_test(
+		self,
+		mock_parse_args,
+		mock_nem_puller,
+		db_height,
+		account_remark=None,
+		fork_height=None
+	):  # pylint: disable=no-self-use,too-many-arguments,too-many-positional-arguments
 		# Arrange:
 		mock_parse_args.return_value = create_main_args(account_remark=account_remark)
 		mock_facade, mock_db = create_facade_with_mock_db(mock_nem_puller)
@@ -41,6 +48,11 @@ class SyncNemBlockTest(unittest.TestCase):
 
 		mock_db.get_current_height.return_value = db_height
 		mock_facade.sync_nemesis_block = AsyncMock()
+		mock_facade.detect_rollback = AsyncMock(return_value=fork_height)
+		rollback_impact = Mock()
+		account_state = Mock()
+		mock_facade.capture_rollback_impact.return_value = rollback_impact
+		mock_facade.prefetch_rollback_account_state = AsyncMock(return_value=account_state)
 		mock_facade.sync_blocks = AsyncMock()
 
 		# Act:
@@ -55,7 +67,17 @@ class SyncNemBlockTest(unittest.TestCase):
 			mock_db.seed_account_remark.assert_not_called()
 		mock_db.get_current_height.assert_called_once()
 		mock_connector.chain_height.assert_called_once()
-		mock_facade.sync_blocks.assert_called_once_with(1, 10)
+		mock_facade.detect_rollback.assert_called_once_with(1, 10)
+		if fork_height is None:
+			mock_facade.capture_rollback_impact.assert_not_called()
+			mock_facade.prefetch_rollback_account_state.assert_not_awaited()
+			mock_facade.repair_rollback.assert_not_called()
+			mock_facade.sync_blocks.assert_called_once_with(1, 10)
+		else:
+			mock_facade.capture_rollback_impact.assert_called_once_with(fork_height)
+			mock_facade.prefetch_rollback_account_state.assert_awaited_once_with(rollback_impact)
+			mock_facade.repair_rollback.assert_called_once_with(rollback_impact, account_state)
+			mock_facade.sync_blocks.assert_awaited_once_with(fork_height, 10)
 
 		return mock_facade
 
@@ -76,3 +98,7 @@ class SyncNemBlockTest(unittest.TestCase):
 	def test_can_seed_account_remark_when_configured(self):
 		# Act:
 		self._run_main_test(db_height=1, account_remark='test_remark.json')  # pylint: disable=no-value-for-parameter
+
+	def test_repairs_rollback_before_syncing_canonical_blocks(self):
+		# Act:
+		self._run_main_test(db_height=1, fork_height=5)  # pylint: disable=no-value-for-parameter
