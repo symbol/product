@@ -8,6 +8,7 @@ import testing.postgresql
 from symbollightapi.model.Exceptions import NodeException
 
 from rest import create_app
+from rest.routes.nem import MAX_PAGE_LIMIT
 
 from ...test.DatabaseTestUtils import (
 	ACCOUNT_STATISTIC_VIEW,
@@ -110,15 +111,28 @@ def _get_api(client, endpoint, **query_params):  # pylint: disable=redefined-out
 def test_invalid_pagination_params(client):  # pylint: disable=redefined-outer-name
 
 	for module in ['blocks', 'accounts', 'namespaces', 'mosaics', 'mosaic/rich/list', 'transactions']:
-		# Act:
-		response = client.get(f'/api/nem/{module}', query_string={'limit': -1})
+		for limit in [-1, 0, MAX_PAGE_LIMIT + 1]:
+			# Act:
+			response = client.get(f'/api/nem/{module}', query_string={'limit': limit})
 
-		_assert_status_code_400(response, 'Limit and offset must be greater than or equal to 0')
+			# Assert:
+			_assert_status_code_400(response, f'Limit must be between 1 and {MAX_PAGE_LIMIT}')
 
 		# Act:
 		response = client.get(f'/api/nem/{module}', query_string={'offset': -1})
 
-		_assert_status_code_400(response, 'Limit and offset must be greater than or equal to 0')
+		# Assert:
+		_assert_status_code_400(response, 'Offset must be greater than or equal to 0')
+
+
+def test_accepts_pagination_params_at_limit_boundary(client):  # pylint: disable=redefined-outer-name, invalid-name
+
+	for module in ['blocks', 'accounts', 'namespaces', 'mosaics', 'mosaic/rich/list', 'transactions']:
+		# Act:
+		response = client.get(f'/api/nem/{module}', query_string={'limit': MAX_PAGE_LIMIT})
+
+		# Assert:
+		_assert_status_code_and_headers(response, 200)
 
 
 def test_invalid_sort_params(client):  # pylint: disable=redefined-outer-name
