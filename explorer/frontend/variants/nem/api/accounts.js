@@ -71,6 +71,7 @@ export const fetchAccountInfoByPublicKey = createTryFetchInfoFunction(async publ
  */
 const accountInfoFromDTO = data => ({
 	linkedAddress: data.remoteAddress || null,
+	mainAddress: data.mainAddress || null,
 	address: data.address,
 	publicKey: data.publicKey || null,
 	description: data.remark || null,

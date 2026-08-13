@@ -12,6 +12,7 @@ const styleMap = {
 	false: styles.danger,
 	inactive: styles.danger,
 	harvesting: styles.info,
+	linked: styles.info,
 	multisig: styles.info
 };
 

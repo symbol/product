@@ -82,6 +82,29 @@ class AccountTest(unittest.TestCase):
 			'remark': 'Test remark'
 		}, account_view_dict)
 
+	def test_can_convert_to_detail_dict(self):
+		# Arrange:
+		account_view = self._create_default_account_view(('main_address', 'NAFUNDZWDMSOOFL4DUGB5GFNR34NCEOUOMTJ4UEB'))
+
+		# Act:
+		account_view_dict = account_view.to_detail_dict()
+
+		# Assert: the detail dictionary adds the main account on top of the listing one
+		self.assertEqual({
+			**self._create_default_account_view().to_dict(),
+			'mainAddress': 'NAFUNDZWDMSOOFL4DUGB5GFNR34NCEOUOMTJ4UEB'
+		}, account_view_dict)
+
+	def test_to_dict_omits_main_account(self):
+		# Arrange: a listing never resolves the main account, so the field must not appear at all
+		account_view = self._create_default_account_view(('main_address', 'NAFUNDZWDMSOOFL4DUGB5GFNR34NCEOUOMTJ4UEB'))
+
+		# Act:
+		account_view_dict = account_view.to_dict()
+
+		# Assert:
+		self.assertNotIn('mainAddress', account_view_dict)
+
 	def test_eq_is_supported(self):
 		# Arrange:
 		account_view = self._create_default_account_view()
@@ -94,6 +117,7 @@ class AccountTest(unittest.TestCase):
 		self.assertNotEqual(account_view, self._create_default_account_view(('height', 200)))
 		self.assertNotEqual(account_view, self._create_default_account_view(('public_key', 'DIFFERENT_KEY')))
 		self.assertNotEqual(account_view, self._create_default_account_view(('remote_address', 'DIFFERENT_REMOTE')))
+		self.assertNotEqual(account_view, self._create_default_account_view(('main_address', 'DIFFERENT_MAIN')))
 		self.assertNotEqual(account_view, self._create_default_account_view(('importance', 0.002)))
 		self.assertNotEqual(account_view, self._create_default_account_view(('balance', 999999.0)))
 		self.assertNotEqual(account_view, self._create_default_account_view(('vested_balance', 888888.0)))

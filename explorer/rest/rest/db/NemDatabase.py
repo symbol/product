@@ -75,7 +75,7 @@ class NemDatabase(DatabaseConnectionPool):
 			size=size
 		)
 
-	def _create_account_view(self, result):  # pylint: disable=too-many-locals
+	def _create_account_view(self, result, main_address=None):  # pylint: disable=too-many-locals
 		(
 			address,
 			height,
@@ -101,6 +101,7 @@ class NemDatabase(DatabaseConnectionPool):
 			height=height,
 			public_key=str(PublicKey(public_key)) if public_key else None,
 			remote_address=_format_address_bytes_to_string(remote_address) if remote_address else None,
+			main_address=_format_address_bytes_to_string(main_address) if main_address else None,
 			importance=importance,
 			balance=_format_xem_relative(balance),
 			vested_balance=_format_xem_relative(vested_balance),
@@ -500,6 +501,15 @@ class NemDatabase(DatabaseConnectionPool):
 
 		return cursor.fetchone()[0]
 
+	@staticmethod
+	def _read_main_address(cursor, address):
+		"""Reads the main account that harvests through this account, if this account is a remote one."""
+
+		cursor.execute('SELECT address FROM accounts WHERE remote_address = %s', (address,))
+		result = cursor.fetchone()
+
+		return result[0] if result else None
+
 	def _get_account(self, where_condition, query_bytes):
 		"""Gets account by where clause."""
 
@@ -510,8 +520,10 @@ class NemDatabase(DatabaseConnectionPool):
 			cutoff_height = self._read_harvesting_active_cutoff_height(cursor)
 			cursor.execute(sql, (cutoff_height, query_bytes))
 			result = cursor.fetchone()
+			if not result:
+				return None
 
-			return self._create_account_view(result) if result else None
+			return self._create_account_view(result, self._read_main_address(cursor, result[0]))
 
 	def get_block(self, height):
 		"""Gets block by height in database."""

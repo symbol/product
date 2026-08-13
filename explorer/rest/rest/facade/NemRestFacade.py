@@ -41,14 +41,14 @@ class NemRestFacade:
 
 		account = self.nem_db.get_account_by_address(Address(address))
 
-		return account.to_dict() if account else None
+		return account.to_detail_dict() if account else None
 
 	def get_account_by_public_key(self, public_key):
 		"""Gets account by public key."""
 
 		account = self.nem_db.get_account_by_public_key(PublicKey(public_key))
 
-		return account.to_dict() if account else None
+		return account.to_detail_dict() if account else None
 
 	def get_accounts(self, pagination, sorting, is_harvesting):
 		"""Gets accounts pagination."""

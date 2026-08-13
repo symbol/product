@@ -258,14 +258,14 @@ def _assert_get_nem_account_bad_request(client, expected_message, **query_params
 def test_api_nem_account_by_address(client):  # pylint: disable=redefined-outer-name
 	_assert_get_nem_account_success(
 		client,
-		ACCOUNT_VIEWS[0].to_dict(),
+		ACCOUNT_VIEWS[0].to_detail_dict(),
 		address='NAGHXD63C4V6REWGXCVKJ2SBS3GUAXGTRQZQXPRO')
 
 
 def test_api_nem_account_by_public_key(client):  # pylint: disable=redefined-outer-name
 	_assert_get_nem_account_success(
 		client,
-		ACCOUNT_VIEWS[0].to_dict(),
+		ACCOUNT_VIEWS[0].to_detail_dict(),
 		publicKey='b88221939ac920484753c738fafda87e82ff04b5e370c9456d85a0f12c6a5cca')
 
 

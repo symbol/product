@@ -53,6 +53,14 @@ class NemDatabase(DatabaseConnection):
 			'''
 		)
 
+		cursor.execute(
+			'''
+			CREATE INDEX IF NOT EXISTS accounts_remote_address_idx
+				ON accounts (remote_address)
+				WHERE remote_address IS NOT NULL
+			'''
+		)
+
 		# Create indexes for blocks table
 		cursor.execute(
 			'''

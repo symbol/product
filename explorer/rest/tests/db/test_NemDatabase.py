@@ -410,6 +410,43 @@ class NemDatabaseTest(DatabaseTestBase):  # pylint: disable=too-many-public-meth
 		# Assert:
 		self.assertEqual(EXPECTED_ACCOUNT_VIEW_1, account_view)
 
+	def _link_remote_account(self, main_account, remote_account):
+		"""Makes the main account harvest through the remote one."""
+
+		with self.nem_db.connection() as connection:
+			cursor = connection.cursor()
+			cursor.execute(
+				'UPDATE accounts SET remote_address = %s WHERE address = %s',
+				(remote_account.address.bytes, main_account.address.bytes))
+			connection.commit()
+
+	def test_can_query_main_account_of_remote_account(self):
+		# Arrange:
+		self._link_remote_account(ACCOUNTS[1], ACCOUNTS[0])
+
+		# Act:
+		account_view = self.nem_db.get_account_by_address(address=ACCOUNTS[0].address)
+
+		# Assert: the remote account reports the account harvesting through it
+		self.assertEqual(str(ACCOUNTS[1].address), account_view.main_address)
+
+	def test_can_query_account_that_no_account_harvests_through(self):
+		# Act:
+		account_view = self.nem_db.get_account_by_address(address=ACCOUNTS[0].address)
+
+		# Assert:
+		self.assertIsNone(account_view.main_address)
+
+	def test_can_query_accounts_without_resolving_main_account(self):
+		# Arrange:
+		self._link_remote_account(ACCOUNTS[1], ACCOUNTS[0])
+
+		# Act: the listing does not carry the reverse lookup, so it stays a single query per page
+		accounts_view = self.nem_db.get_accounts(Pagination(10, 0), Sorting('BALANCE', 'DESC'), False)
+
+		# Assert:
+		self.assertTrue(all(account.main_address is None for account in accounts_view))
+
 	# endregion
 
 	# region accounts

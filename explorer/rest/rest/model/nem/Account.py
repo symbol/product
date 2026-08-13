@@ -17,7 +17,8 @@ class AccountView:  # pylint: disable=too-many-locals,too-many-instance-attribut
 		min_cosignatories,
 		cosignatory_of,
 		cosignatories,
-		remark
+		remark,
+		main_address=None
 	):
 		"""Create account view."""
 
@@ -27,6 +28,7 @@ class AccountView:  # pylint: disable=too-many-locals,too-many-instance-attribut
 		self.height = height
 		self.public_key = public_key
 		self.remote_address = remote_address
+		self.main_address = main_address
 		self.importance = importance
 		self.balance = balance
 		self.vested_balance = vested_balance
@@ -47,6 +49,7 @@ class AccountView:  # pylint: disable=too-many-locals,too-many-instance-attribut
 			self.height == other.height,
 			self.public_key == other.public_key,
 			self.remote_address == other.remote_address,
+			self.main_address == other.main_address,
 			self.importance == other.importance,
 			self.balance == other.balance,
 			self.vested_balance == other.vested_balance,
@@ -83,4 +86,12 @@ class AccountView:  # pylint: disable=too-many-locals,too-many-instance-attribut
 			'cosignatoryOf': self.cosignatory_of,
 			'cosignatories': self.cosignatories,
 			'remark': self.remark
+		}
+
+	def to_detail_dict(self):
+		"""Formats the account info as an account-detail dictionary."""
+
+		return {
+			**self.to_dict(),
+			'mainAddress': self.main_address
 		}
