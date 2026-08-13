@@ -807,6 +807,21 @@ class NemDatabase(DatabaseConnection):
 		)
 
 	@staticmethod
+	def delete_namespaces(cursor, root_namespaces):
+		"""Deletes affected namespace projections before replay."""
+
+		if not root_namespaces:
+			return
+
+		cursor.execute(
+			'''
+			DELETE FROM namespaces
+			WHERE root_namespace = ANY(%s)
+			''',
+			(list(root_namespaces),)
+		)
+
+	@staticmethod
 	def update_sub_namespaces(cursor, sub_namespace, root_namespace):
 		"""Appends sub-namespace to a root namespace's sub_namespaces array."""
 

@@ -920,6 +920,24 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 			[]
 		), result)
 
+	def test_can_delete_affected_namespace_roots(self):
+		# Arrange:
+		owner = PublicKey('11' * 32)
+		with NemDatabase(self.db_config) as nem_database:
+			nem_database.create_tables()
+			cursor = nem_database.connection.cursor()
+
+			nem_database.upsert_namespace(cursor, NamespaceRecord('affected', owner, 100, 200))
+			nem_database.upsert_namespace(cursor, NamespaceRecord('unaffected', owner, 100, 200))
+
+			# Act:
+			nem_database.delete_namespaces(cursor, {'affected'})
+			cursor.execute('SELECT root_namespace FROM namespaces ORDER BY root_namespace')
+			results = [record[0] for record in cursor.fetchall()]
+
+		# Assert:
+		self.assertEqual(['unaffected'], results)
+
 	def test_can_update_sub_namespaces(self):
 		# Arrange:
 		with NemDatabase(self.db_config) as nem_database:
