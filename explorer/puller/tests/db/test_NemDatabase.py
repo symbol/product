@@ -10,7 +10,7 @@ from symbolchain.nc import TransactionType
 from symbolchain.nem.Network import Address
 from symbollightapi.model.Transaction import Mosaic
 
-from puller.db.NemDatabase import NemDatabase, RollbackAccountKeyLinkRecord
+from puller.db.NemDatabase import NemDatabase, RollbackAccountKeyLinkRecord, RollbackNamespaceRegistrationRecord
 from puller.facade.NemPuller import AccountRecord, BlockRecord, MosaicRecord, NamespaceRecord, TransactionRecord
 
 from .test_DatabaseConnection import DatabaseConfig
@@ -975,6 +975,126 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 			200,
 			['sub1']
 		))
+
+	def test_namespace_history_filters_affected_roots(self):
+		# Arrange:
+		owner = PublicKey('11' * 32)
+		transactions = [
+			TRANSACTIONS[0]._replace(
+				transaction_hash='11' * 32,
+				transaction_type=TransactionType.NAMESPACE_REGISTRATION.value,
+				height=2,
+				sender_public_key=owner,
+				payload={'parent': None, 'namespace': 'root'}
+			),
+			TRANSACTIONS[0]._replace(
+				transaction_hash='22' * 32,
+				transaction_type=TransactionType.NAMESPACE_REGISTRATION.value,
+				height=2,
+				sender_public_key=owner,
+				payload={'parent': 'root', 'namespace': 'child'}
+			),
+			TRANSACTIONS[0]._replace(
+				transaction_hash='33' * 32,
+				transaction_type=TransactionType.NAMESPACE_REGISTRATION.value,
+				height=2,
+				sender_public_key=owner,
+				payload={'parent': 'root.child', 'namespace': 'grandchild'}
+			),
+			TRANSACTIONS[0]._replace(
+				transaction_hash='44' * 32,
+				transaction_type=TransactionType.NAMESPACE_REGISTRATION.value,
+				height=2,
+				sender_public_key=owner,
+				payload={'parent': None, 'namespace': 'unaffected'}
+			)
+		]
+
+		with NemDatabase(self.db_config) as nem_database:
+			nem_database.create_tables()
+			cursor = nem_database.connection.cursor()
+			for transaction in transactions:
+				nem_database.insert_transaction(cursor, transaction)
+
+			# Act:
+			results = nem_database.get_surviving_namespace_history(cursor, 2, {'root', 'missing'})
+
+		# Assert:
+		self.assertEqual([
+			RollbackNamespaceRegistrationRecord(2, owner, None, 'root'),
+			RollbackNamespaceRegistrationRecord(2, owner, 'root', 'child'),
+			RollbackNamespaceRegistrationRecord(2, owner, 'root.child', 'grandchild')
+		], results)
+
+	def test_namespace_history_filters_transactions_above_fork_height(self):
+		# Arrange:
+		owner = PublicKey('11' * 32)
+		transactions = [
+			TRANSACTIONS[0]._replace(
+				transaction_hash='11' * 32,
+				transaction_type=TransactionType.NAMESPACE_REGISTRATION.value,
+				height=2,
+				sender_public_key=owner,
+				payload={'parent': None, 'namespace': 'root'}
+			),
+			TRANSACTIONS[0]._replace(
+				transaction_hash='22' * 32,
+				transaction_type=TransactionType.NAMESPACE_REGISTRATION.value,
+				height=3,
+				sender_public_key=owner,
+				payload={'parent': None, 'namespace': 'root'}
+			)
+		]
+
+		with NemDatabase(self.db_config) as nem_database:
+			nem_database.create_tables()
+			cursor = nem_database.connection.cursor()
+
+			for transaction in transactions:
+				nem_database.insert_transaction(cursor, transaction)
+
+			# Act:
+			results = nem_database.get_surviving_namespace_history(cursor, 2, {'root'})
+
+		# Assert:
+		self.assertEqual([
+			RollbackNamespaceRegistrationRecord(2, owner, None, 'root')
+		], results)
+
+	def test_namespace_history_filters_other_transaction_types(self):
+		# Arrange:
+		owner = PublicKey('11' * 32)
+		transactions = [
+			TRANSACTIONS[0]._replace(
+				transaction_hash='11' * 32,
+				transaction_type=TransactionType.NAMESPACE_REGISTRATION.value,
+				height=2,
+				sender_public_key=owner,
+				payload={'parent': None, 'namespace': 'root'}
+			),
+			TRANSACTIONS[0]._replace(
+				transaction_hash='22' * 32,
+				transaction_type=TransactionType.TRANSFER.value,
+				height=2,
+				sender_public_key=owner,
+				payload={'parent': None, 'namespace': 'root'}
+			)
+		]
+
+		with NemDatabase(self.db_config) as nem_database:
+			nem_database.create_tables()
+			cursor = nem_database.connection.cursor()
+
+			for transaction in transactions:
+				nem_database.insert_transaction(cursor, transaction)
+
+			# Act:
+			results = nem_database.get_surviving_namespace_history(cursor, 2, {'root'})
+
+		# Assert:
+		self.assertEqual([
+			RollbackNamespaceRegistrationRecord(2, owner, None, 'root')
+		], results)
 
 	def test_can_insert_mosaic(self):
 		# Arrange:

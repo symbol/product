@@ -24,6 +24,10 @@ RollbackAccountKeyLinkRecord = namedtuple(
 	'RollbackAccountKeyLinkRecord',
 	['sender_address', 'payload']
 )
+RollbackNamespaceRegistrationRecord = namedtuple(
+	'RollbackNamespaceRegistrationRecord',
+	['height', 'owner', 'parent', 'namespace']
+)
 
 
 class NemDatabase(DatabaseConnection):
@@ -820,6 +824,48 @@ class NemDatabase(DatabaseConnection):
 			''',
 			(list(root_namespaces),)
 		)
+
+	@staticmethod
+	def get_surviving_namespace_history(cursor, fork_height, root_namespaces):
+		"""Gets surviving namespace registrations for affected roots in replay order."""
+
+		if not root_namespaces:
+			return []
+
+		cursor.execute(
+			'''
+			SELECT
+				height,
+				sender_public_key,
+				payload->>'parent',
+				payload->>'namespace'
+			FROM transactions
+			WHERE transaction_type = %s
+				AND height <= %s
+				AND (
+					CASE
+						WHEN payload->>'parent' IS NULL THEN payload->>'namespace'
+						ELSE split_part(payload->>'parent', '.', 1)
+					END
+				) = ANY(%s)
+			ORDER BY height ASC, id ASC
+			''',
+			(
+				TransactionType.NAMESPACE_REGISTRATION.value,
+				fork_height,
+				list(root_namespaces)
+			)
+		)
+
+		return [
+			RollbackNamespaceRegistrationRecord(
+				record[0],
+				PublicKey(bytes(record[1])),
+				record[2],
+				record[3]
+			)
+			for record in cursor.fetchall()
+		]
 
 	@staticmethod
 	def update_sub_namespaces(cursor, sub_namespace, root_namespace):
