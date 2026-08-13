@@ -1131,29 +1131,31 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 		pending_addresses = {str(main_address): 3}
 		pending_remote_links = {main_address: remote_address}
 		call_order = []
+		# the accumulator is cleared after the flush, so snapshot it at call time
+		captured_addresses = []
 		cursor = Mock()
+
+		def record_upsert_accounts(_cursor, address_heights):
+			captured_addresses.append(dict(address_heights))
+			call_order.append('upsert_accounts')
 
 		with patch.object(self.puller, '_process_account_batch', new=AsyncMock()) as mock_process_account_batch, \
 			patch('puller.facade.NemPuller.NemDatabase.update_account_remote_address') as mock_update_remote:
-			mock_process_account_batch.side_effect = lambda *_: call_order.append('upsert_accounts')
+			mock_process_account_batch.side_effect = record_upsert_accounts
 			mock_update_remote.side_effect = lambda *_: call_order.append('update_remote_address')
 
 			# Act:
 			self.puller._flush_pending_account_state(  # pylint: disable=protected-access
 				cursor, pending_addresses, {}, pending_remote_links)
 
-		# Assert: the link is written only once the account row is guaranteed to exist
+		# Assert: the link is written only once the account it belongs to has been upserted
 		self.assertEqual(['upsert_accounts', 'update_remote_address'], call_order)
-		mock_update_remote.assert_called_once_with(cursor, main_address, remote_address)
+		self.assertEqual([{str(main_address): 3}], captured_addresses)
+		mock_update_remote.assert_called_with(cursor, main_address, remote_address)
 		self.assertEqual({}, pending_remote_links)
 
 	@patch('puller.facade.NemPuller.NemDatabase.insert_transaction')
-	@patch('puller.facade.NemPuller.NemDatabase.update_account_remote_address')
-	def test_can_process_multisig_account_key_link_links_multisig_account(
-		self,
-		mock_update_account_remote_address,
-		mock_insert_transaction
-	):
+	def test_can_process_multisig_account_key_link_links_multisig_account(self, mock_insert_transaction):
 		# Arrange:
 		multisig_account = PublicKey('fbae41931de6a0cc25153781321f3de0806c7ba9a191474bb9a838118c8de4d3')
 		cosignatory = PublicKey('aa455d831430872feb0c6ae14265209182546c985a321c501be7fdc96ed04757')
@@ -1191,7 +1193,6 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 		self.assertEqual(pending_remote_links, {
 			network.public_key_to_address(multisig_account): network.public_key_to_address(remote_account)
 		})
-		mock_update_account_remote_address.assert_not_called()
 
 	def _assert_transaction_record(self, transaction, payload, recipient_address=None):
 		# Act:
