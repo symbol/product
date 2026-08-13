@@ -1086,7 +1086,7 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 			expected_supply_change=500000
 		)
 
-	def _assert_account_key_link(self, mock_update_account_remote_address, mode, expects_remote_address):
+	def _assert_account_key_link(self, mode, expects_remote_address):
 		# Arrange:
 		transaction = AccountKeyLinkTransaction(
 			'a1cd7bc6d3b13d5eb0e1b6a4c40b1e0c2ea6d6f9f3e0c1a7b2d5e8f0a3c6d9e2',
@@ -1103,26 +1103,49 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 			PublicKey('7195f4d7a40ad7e31958ae96c4afed002962229675a4cae8dc8a18e290618981')
 		)
 
-		cursor = Mock()
 		network = self.puller.nem_facade.network
+		pending_remote_links = {}
 
 		# Act:
-		self.puller._process_account_key_link(cursor, transaction)  # pylint: disable=protected-access
+		self.puller._process_account_key_link(transaction, pending_remote_links)  # pylint: disable=protected-access
 
 		# Assert:
-		mock_update_account_remote_address.assert_called_once_with(
-			cursor,
-			network.public_key_to_address(transaction.sender),
-			network.public_key_to_address(transaction.remote_account) if expects_remote_address else None
-		)
+		self.assertEqual(pending_remote_links, {
+			network.public_key_to_address(transaction.sender):
+				network.public_key_to_address(transaction.remote_account) if expects_remote_address else None
+		})
 
-	@patch('puller.facade.NemPuller.NemDatabase.update_account_remote_address')
-	def test_can_process_account_key_link_activate(self, mock_update_account_remote_address):
-		self._assert_account_key_link(mock_update_account_remote_address, mode=1, expects_remote_address=True)
+	def test_can_process_account_key_link_activate(self):
+		self._assert_account_key_link(mode=1, expects_remote_address=True)
 
-	@patch('puller.facade.NemPuller.NemDatabase.update_account_remote_address')
-	def test_can_process_account_key_link_deactivate(self, mock_update_account_remote_address):
-		self._assert_account_key_link(mock_update_account_remote_address, mode=2, expects_remote_address=False)
+	def test_can_process_account_key_link_deactivate(self):
+		self._assert_account_key_link(mode=2, expects_remote_address=False)
+
+	def test_can_apply_remote_links_after_accounts_exist(self):
+		# Arrange: an account whose link arrives in the same batch in which the account first appears
+		network = self.puller.nem_facade.network
+		main_address = network.public_key_to_address(
+			PublicKey('aa455d831430872feb0c6ae14265209182546c985a321c501be7fdc96ed04757'))
+		remote_address = network.public_key_to_address(
+			PublicKey('7195f4d7a40ad7e31958ae96c4afed002962229675a4cae8dc8a18e290618981'))
+		pending_addresses = {str(main_address): 3}
+		pending_remote_links = {main_address: remote_address}
+		call_order = []
+		cursor = Mock()
+
+		with patch.object(self.puller, '_process_account_batch', new=AsyncMock()) as mock_process_account_batch, \
+			patch('puller.facade.NemPuller.NemDatabase.update_account_remote_address') as mock_update_remote:
+			mock_process_account_batch.side_effect = lambda *_: call_order.append('upsert_accounts')
+			mock_update_remote.side_effect = lambda *_: call_order.append('update_remote_address')
+
+			# Act:
+			self.puller._flush_pending_account_state(  # pylint: disable=protected-access
+				cursor, pending_addresses, {}, pending_remote_links)
+
+		# Assert: the link is written only once the account row is guaranteed to exist
+		self.assertEqual(['upsert_accounts', 'update_remote_address'], call_order)
+		mock_update_remote.assert_called_once_with(cursor, main_address, remote_address)
+		self.assertEqual({}, pending_remote_links)
 
 	@patch('puller.facade.NemPuller.NemDatabase.insert_transaction')
 	@patch('puller.facade.NemPuller.NemDatabase.update_account_remote_address')
@@ -1158,16 +1181,17 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 		mock_insert_transaction.return_value = 1
 		cursor = Mock()
 		network = self.puller.nem_facade.network
+		pending_remote_links = {}
 
 		# Act:
-		self.puller._process_transactions(cursor, [multisig_transaction], 3)  # pylint: disable=protected-access
+		self.puller._process_transactions(  # pylint: disable=protected-access
+			cursor, [multisig_transaction], 3, pending_remote_links)
 
-		# Assert:
-		mock_update_account_remote_address.assert_called_once_with(
-			cursor,
-			network.public_key_to_address(multisig_account),
-			network.public_key_to_address(remote_account)
-		)
+		# Assert: the link belongs to the multisig account, not to the cosignatory that announced it
+		self.assertEqual(pending_remote_links, {
+			network.public_key_to_address(multisig_account): network.public_key_to_address(remote_account)
+		})
+		mock_update_account_remote_address.assert_not_called()
 
 	def _assert_transaction_record(self, transaction, payload, recipient_address=None):
 		# Act:
@@ -1389,7 +1413,7 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 		cursor = Mock()
 
 		# Act:
-		self.puller._process_transaction(cursor, transaction, 3, is_inner=False)  # pylint: disable=protected-access
+		self.puller._process_transaction(cursor, transaction, 3, is_inner=False, pending_remote_links={})  # pylint: disable=protected-access
 
 		# Assert:
 		mock_build_transaction_record.assert_called_once()
@@ -1421,7 +1445,7 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 		cursor = Mock()
 
 		# Act:
-		self.puller._process_transaction(cursor, transaction, 3, is_inner=False)  # pylint: disable=protected-access
+		self.puller._process_transaction(cursor, transaction, 3, is_inner=False, pending_remote_links={})  # pylint: disable=protected-access
 
 		# Assert:
 		mock_build_transaction_record.assert_called_once()
@@ -1447,7 +1471,7 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 		cursor = Mock()
 
 		# Act:
-		self.puller._process_transaction(cursor, transaction, 3, is_inner=False)  # pylint: disable=protected-access
+		self.puller._process_transaction(cursor, transaction, 3, is_inner=False, pending_remote_links={})  # pylint: disable=protected-access
 
 		# Assert:
 		mock_build_transaction_record.assert_called_once()
@@ -1469,7 +1493,7 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 		cursor = Mock()
 
 		# Act:
-		self.puller._process_transaction(cursor, transaction, 3, is_inner=False)  # pylint: disable=protected-access
+		self.puller._process_transaction(cursor, transaction, 3, is_inner=False, pending_remote_links={})  # pylint: disable=protected-access
 
 		# Assert:
 		mock_build_transaction_record.assert_called_once()
@@ -1491,7 +1515,7 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 		cursor = Mock()
 
 		# Act:
-		self.puller._process_transaction(cursor, transaction, 3, is_inner=False)  # pylint: disable=protected-access
+		self.puller._process_transaction(cursor, transaction, 3, is_inner=False, pending_remote_links={})  # pylint: disable=protected-access
 
 		# Assert:
 		mock_build_transaction_record.assert_called_once()
@@ -1519,9 +1543,11 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 		)
 
 		cursor = Mock()
+		pending_remote_links = {}
 
 		# Act:
-		self.puller._process_transactions(cursor, block.transactions, block.height)  # pylint: disable=protected-access
+		self.puller._process_transactions(  # pylint: disable=protected-access
+			cursor, block.transactions, block.height, pending_remote_links)
 
 		# Assert:
 		process_transaction_calls = mock_process_transaction.call_args_list
@@ -1537,6 +1563,7 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 			'transaction': block.transactions[0].other_transaction,
 			'block_height': 3,
 			'is_inner': True,
+			'pending_remote_links': pending_remote_links,
 			'aggregate_hash': block.transactions[0].transaction_hash
 		})
 
@@ -1545,5 +1572,6 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 		self.assertEqual(process_transaction_calls[1][1], {
 			'transaction': block.transactions[0],
 			'block_height': 3,
-			'is_inner': False
+			'is_inner': False,
+			'pending_remote_links': pending_remote_links
 		})
