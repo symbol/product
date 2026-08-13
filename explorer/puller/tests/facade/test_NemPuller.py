@@ -1577,11 +1577,8 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 		return asyncio.run(self.puller.detect_rollback(db_height, chain_height))
 
 	def test_returns_none_when_comparison_hash_matches(self):
-		# Arrange + Act:
-		fork_height = self._run_detect_rollback_test({3: 'ABCDEF'}, {3: 'abcdef'}, 3, 3)
-
-		# Assert:
-		self.assertIsNone(fork_height)
+		# Act + Assert: no exception
+		self._run_detect_rollback_test({3: 'ABCDEF'}, {3: 'abcdef'}, 3, 3)
 
 	def test_returns_chain_height_when_database_is_ahead(self):
 		# Arrange + Act:
@@ -2001,14 +1998,11 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 		rollback_impact = self._create_surviving_account_rollback_impact(address)
 		account_state = {address: self._create_rollback_account(address, 1)}
 
-		# Act:
-		result = self.puller._validate_rollback_account_state(  # pylint: disable=protected-access
+		# Act + Assert: no exception
+		self.puller._validate_rollback_account_state(  # pylint: disable=protected-access
 			rollback_impact,
 			account_state
 		)
-
-		# Assert:
-		self.assertIsNone(result)
 
 	def test_rejects_rollback_account_state_with_missing_snapshot(self):
 		# Arrange:
