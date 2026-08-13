@@ -175,6 +175,9 @@ const AccountInfo = ({ accountInfo, preloadedTransactions }) => {
 									/>
 								)}
 								{accountInfo.isMultisig && <ValueLabel type="multisig" text={t('label_multisig')} />}
+								{!!accountInfo.mainAddress && (
+									<ValueLabel type="linked" text={t('label_linked')} title={t('label_linked_description')} isIconHidden />
+								)}
 							</div>
 						</div>
 						<Field title={t('field_balance')}>
@@ -251,8 +254,13 @@ const AccountInfo = ({ accountInfo, preloadedTransactions }) => {
 										<ValueAccount address={accountInfo.linkedAddress} size="sm" />
 									</Field>
 								)}
-								{!accountInfo.linkedAddress && (
-									<div className="value-description">No linked keys</div>
+								{!!accountInfo.mainAddress && (
+									<Field title={t('field_mainAccount')} description={t('field_mainAccount_description')}>
+										<ValueAccount address={accountInfo.mainAddress} size="sm" />
+									</Field>
+								)}
+								{!accountInfo.linkedAddress && !accountInfo.mainAddress && (
+									<div className="value-description">{t('message_noLinkedKeys')}</div>
 								)}
 							</div>
 						)

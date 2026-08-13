@@ -30,6 +30,8 @@ EXPECTED_BLOCK_2 = BLOCK_VIEWS[1].to_dict()
 
 EXPECTED_ACCOUNT_1 = ACCOUNT_VIEWS[0].to_dict()
 
+EXPECTED_ACCOUNT_DETAIL_1 = ACCOUNT_VIEWS[0].to_detail_dict()
+
 EXPECTED_ACCOUNT_2 = ACCOUNT_VIEWS[1].to_dict()
 
 EXPECTED_ACCOUNT_STATISTIC = ACCOUNT_STATISTIC_VIEW.to_dict()
@@ -122,14 +124,14 @@ class TestNemRestFacade(DatabaseTestBase):  # pylint: disable=too-many-public-me
 		account = self.nem_rest_facade.get_account_by_address(address='NAGHXD63C4V6REWGXCVKJ2SBS3GUAXGTRQZQXPRO')
 
 		# Assert:
-		self.assertEqual(EXPECTED_ACCOUNT_1, account)
+		self.assertEqual(EXPECTED_ACCOUNT_DETAIL_1, account)
 
 	def test_can_retrieve_account_by_public_key(self):
 		# Act:
 		account = self.nem_rest_facade.get_account_by_public_key(public_key='b88221939ac920484753c738fafda87e82ff04b5e370c9456d85a0f12c6a5cca')
 
 		# Assert:
-		self.assertEqual(EXPECTED_ACCOUNT_1, account)
+		self.assertEqual(EXPECTED_ACCOUNT_DETAIL_1, account)
 
 	def test_returns_none_for_nonexistent_account_address(self):
 		# Act:
