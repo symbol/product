@@ -8,6 +8,8 @@ from symbolchain.nem.Network import Address
 
 from .DatabaseConnection import DatabaseConnection
 
+NEM_NAMESPACE_GRACE_PERIOD = 30 * 1440
+
 AccountRefreshRecord = namedtuple('AccountRefreshRecord', ['id', 'address'])
 RollbackBlockRecord = namedtuple('RollbackBlockRecord', ['beneficiary', 'signer'])
 RollbackTransactionRecord = namedtuple(
@@ -787,13 +789,20 @@ class NemDatabase(DatabaseConnection):
 			DO UPDATE SET
 				owner = EXCLUDED.owner,
 				registered_height = EXCLUDED.registered_height,
-				expiration_height = EXCLUDED.expiration_height
+				expiration_height = EXCLUDED.expiration_height,
+				sub_namespaces = CASE
+					WHEN namespaces.owner = EXCLUDED.owner
+						AND EXCLUDED.registered_height < namespaces.expiration_height + %s
+					THEN namespaces.sub_namespaces
+					ELSE '{}'
+				END
 			''',
 			(
 				namespace.root_namespace,
 				namespace.owner.bytes,
 				namespace.registered_height,
-				namespace.expiration_height
+				namespace.expiration_height,
+				NEM_NAMESPACE_GRACE_PERIOD
 			)
 		)
 

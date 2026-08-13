@@ -872,6 +872,54 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 			[]
 		))
 
+	def test_same_owner_namespace_renewal_before_grace_period_end_preserves_sub_namespaces(self):
+		# Arrange:
+		owner = PublicKey('11' * 32)
+		renewal_height = 200 + (30 * 1440) - 1
+		with NemDatabase(self.db_config) as nem_database:
+			nem_database.create_tables()
+			cursor = nem_database.connection.cursor()
+
+			nem_database.upsert_namespace(cursor, NamespaceRecord('root', owner, 100, 200))
+			nem_database.update_sub_namespaces(cursor, 'root.child', 'root')
+
+			# Act:
+			nem_database.upsert_namespace(cursor, NamespaceRecord('root', owner, renewal_height, 500000))
+			result = self._fetch_namespace_from_db(cursor, 'root')
+
+		# Assert:
+		self.assertEqual((
+			'root',
+			str(owner),
+			renewal_height,
+			500000,
+			['root.child']
+		), result)
+
+	def test_same_owner_namespace_registration_at_grace_period_end_clears_sub_namespaces(self):
+		# Arrange:
+		owner = PublicKey('11' * 32)
+		registration_height = 200 + (30 * 1440)  # grace period end
+		with NemDatabase(self.db_config) as nem_database:
+			nem_database.create_tables()
+			cursor = nem_database.connection.cursor()
+
+			nem_database.upsert_namespace(cursor, NamespaceRecord('root', owner, 100, 200))
+			nem_database.update_sub_namespaces(cursor, 'root.child', 'root')
+
+			# Act:
+			nem_database.upsert_namespace(cursor, NamespaceRecord('root', owner, registration_height, 500000))
+			result = self._fetch_namespace_from_db(cursor, 'root')
+
+		# Assert:
+		self.assertEqual((
+			'root',
+			str(owner),
+			registration_height,
+			500000,
+			[]
+		), result)
+
 	def test_can_update_sub_namespaces(self):
 		# Arrange:
 		with NemDatabase(self.db_config) as nem_database:
