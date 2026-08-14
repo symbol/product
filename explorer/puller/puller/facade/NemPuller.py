@@ -1,3 +1,4 @@
+# pylint: disable=too-many-lines
 import asyncio
 import configparser
 import threading
@@ -17,6 +18,7 @@ from puller.db.NemDatabase import NemDatabase
 
 ACCOUNT_KEY_LINK_MODE_ACTIVATE = 1
 NEM_MAX_ROLLBACK_DEPTH = 360
+NEM_NAMESPACE_DURATION = 365 * 1440
 
 
 class NemRollbackError(RuntimeError):
@@ -363,6 +365,35 @@ class NemPuller:
 				remote_address
 			)
 
+	def _restore_rollback_namespaces(self, cursor, rollback_impact):
+		"""Rebuilds affected namespace projections from surviving registrations."""
+
+		root_namespaces = rollback_impact.affected_namespace_roots
+		self.nem_db.delete_namespaces(cursor, root_namespaces)
+
+		registrations = self.nem_db.get_surviving_namespace_history(
+			cursor,
+			rollback_impact.fork_height,
+			root_namespaces
+		)
+		for record in registrations:
+			if record.parent:
+				self.nem_db.update_sub_namespaces(
+					cursor,
+					f'{record.parent}.{record.namespace}',
+					record.parent.split('.')[0]
+				)
+			else:
+				self.nem_db.upsert_namespace(
+					cursor,
+					NamespaceRecord(
+						record.namespace,
+						record.owner,
+						record.height,
+						record.height + NEM_NAMESPACE_DURATION
+					)
+				)
+
 	def repair_rollback(self, rollback_impact, account_state):
 		"""Atomically restores NEM database state to a confirmed fork height."""
 
@@ -377,8 +408,9 @@ class NemPuller:
 				self.nem_db.refresh_account_from_snapshot(cursor, account_state[address])
 
 			self._restore_rollback_remote_addresses(cursor, rollback_impact)
+			self._restore_rollback_namespaces(cursor, rollback_impact)
 
-			# Todo: reconstruct_rollback_namespaces, reconstruct_rollback_mosaics, recalculate_account_harvesting
+			# Todo: reconstruct_rollback_mosaics, recalculate_account_harvesting
 
 			self.nem_db.connection.commit()
 		except Exception:
@@ -623,7 +655,7 @@ class NemPuller:
 		"""Process root namespace data."""
 
 		# add 1 year to expired height
-		expired_height = block_height + (365 * 1440)
+		expired_height = block_height + NEM_NAMESPACE_DURATION
 
 		namespace = NamespaceRecord(
 			root_namespace=transaction.namespace,

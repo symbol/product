@@ -3,7 +3,7 @@ import asyncio
 import datetime
 import tempfile
 import unittest
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import AsyncMock, Mock, call, patch
 
 import testing.postgresql
 from symbolchain.CryptoTypes import PublicKey
@@ -28,9 +28,10 @@ from symbollightapi.model.Transaction import (
 	TransferTransaction
 )
 
-from puller.db.NemDatabase import AccountRefreshRecord
+from puller.db.NemDatabase import AccountRefreshRecord, RollbackNamespaceRegistrationRecord
 from puller.facade.NemPuller import (
 	NEM_MAX_ROLLBACK_DEPTH,
+	NEM_NAMESPACE_DURATION,
 	AccountRecord,
 	AccountVestedBalanceRecord,
 	BlockRecord,
@@ -985,7 +986,7 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 				root_namespace='namespace',
 				owner=PublicKey('a700809530e5428066807ec0d34859c52e260fc60634aaac13e3972dcfc08736'),
 				registered_height=3,
-				expiration_height=3 + (365 * 1440)
+				expiration_height=3 + NEM_NAMESPACE_DURATION
 			)
 		))
 
@@ -2090,6 +2091,64 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 		# Assert:
 		self.assertEqual(surviving_remote_address.bytes.hex(), remote_address)
 
+	def test_can_restore_rollback_namespaces_by_replaying_surviving_registrations(self):
+		# Arrange:
+		owner = PublicKey('11' * 32)
+		namespace_registration_records = [
+			RollbackNamespaceRegistrationRecord(5, owner, None, 'root'),
+			RollbackNamespaceRegistrationRecord(6, owner, 'root', 'child'),
+			RollbackNamespaceRegistrationRecord(7, owner, 'root.child', 'grandchild')
+		]
+		rollback_impact = Mock(
+			fork_height=10,
+			affected_namespace_roots={'root'}
+		)
+		database = Mock()
+		database.get_surviving_namespace_history.return_value = namespace_registration_records
+		cursor = Mock()
+		self.puller.nem_db = database
+
+		# Act:
+		self.puller._restore_rollback_namespaces(cursor, rollback_impact)  # pylint: disable=protected-access
+
+		# Assert:
+		self.assertEqual([
+			call.delete_namespaces(cursor, {'root'}),
+			call.get_surviving_namespace_history(cursor, 10, {'root'})
+		], database.mock_calls[:2])
+		database.get_surviving_namespace_history.assert_called_once_with(
+			cursor,
+			10,
+			{'root'}
+		)
+		database.upsert_namespace.assert_called_once_with(
+			cursor,
+			NamespaceRecord('root', owner, 5, 5 + NEM_NAMESPACE_DURATION)
+		)
+		self.assertEqual([
+			call(cursor, 'root.child', 'root'),
+			call(cursor, 'root.child.grandchild', 'root')
+		], database.update_sub_namespaces.call_args_list)
+
+	def test_removes_orphan_root_when_it_has_no_surviving_registration(self):
+		# Arrange:
+		rollback_impact = Mock(
+			fork_height=10,
+			affected_namespace_roots={'orphan'}
+		)
+		database = Mock()
+		database.get_surviving_namespace_history.return_value = []
+		cursor = Mock()
+		self.puller.nem_db = database
+
+		# Act:
+		self.puller._restore_rollback_namespaces(cursor, rollback_impact)  # pylint: disable=protected-access
+
+		# Assert:
+		database.delete_namespaces.assert_called_once_with(cursor, {'orphan'})
+		database.upsert_namespace.assert_not_called()
+		database.update_sub_namespaces.assert_not_called()
+
 	def test_can_repair_rollback_with_expected_operations(self):
 		# Arrange:
 		first_address = Address('TALICE6XEEEOBFJVY3ZCENZ7WBG6LB4KB7P7KMQX')
@@ -2112,7 +2171,10 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 		with patch.object(self.puller, '_validate_rollback_account_state') as mock_validate, patch.object(
 			self.puller,
 			'_restore_rollback_remote_addresses'
-		) as mock_restore_remote_addresses:
+		) as mock_restore_remote_addresses, patch.object(
+			self.puller,
+			'_restore_rollback_namespaces'
+		) as mock_restore_namespaces:
 			# Act:
 			self.puller.repair_rollback(rollback_impact, account_state)
 
@@ -2127,6 +2189,7 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 			self.assertEqual((cursor, second_account), refresh_calls[1][0])
 
 			mock_restore_remote_addresses.assert_called_once_with(cursor, rollback_impact)
+			mock_restore_namespaces.assert_called_once_with(cursor, rollback_impact)
 			database.connection.commit.assert_called_once_with()
 			database.connection.rollback.assert_not_called()
 
