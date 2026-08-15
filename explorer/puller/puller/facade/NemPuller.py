@@ -461,6 +461,10 @@ class NemPuller:
 			self._restore_rollback_remote_addresses(cursor, rollback_impact)
 			self._restore_rollback_namespaces(cursor, rollback_impact)
 			self._restore_rollback_mosaics(cursor, rollback_impact)
+			self.nem_db.recalculate_account_harvesting(
+				cursor,
+				rollback_impact.orphan_beneficiaries
+			)
 
 			self.nem_db.connection.commit()
 		except Exception:

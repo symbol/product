@@ -2271,7 +2271,8 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 		}
 		rollback_impact = Mock(
 			fork_height=123,
-			orphan_created_accounts={orphan_address}
+			orphan_created_accounts={orphan_address},
+			orphan_beneficiaries={first_address}
 		)
 		database = Mock()
 		cursor = database.connection.cursor.return_value
@@ -2283,7 +2284,10 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 		) as mock_restore_remote_addresses, patch.object(
 			self.puller,
 			'_restore_rollback_namespaces'
-		) as mock_restore_namespaces:
+		) as mock_restore_namespaces, patch.object(
+			self.puller,
+			'_restore_rollback_mosaics'
+		) as mock_restore_mosaics:
 			# Act:
 			self.puller.repair_rollback(rollback_impact, account_state)
 
@@ -2299,6 +2303,8 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 
 			mock_restore_remote_addresses.assert_called_once_with(cursor, rollback_impact)
 			mock_restore_namespaces.assert_called_once_with(cursor, rollback_impact)
+			mock_restore_mosaics.assert_called_once_with(cursor, rollback_impact)
+			database.recalculate_account_harvesting.assert_called_once_with(cursor, {first_address})
 			database.connection.commit.assert_called_once_with()
 			database.connection.rollback.assert_not_called()
 
