@@ -1786,3 +1786,42 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 				second_supply_change_payload
 			)
 		], results)
+
+	def _run_recalculate_account_harvesting_test(self, account, blocks):
+		# Arrange:
+		with NemDatabase(self.db_config) as nem_database:
+			nem_database.create_tables()
+			cursor = nem_database.connection.cursor()
+
+			for block in blocks:
+				nem_database.insert_block(cursor, block)
+
+			nem_database.upsert_account(cursor, account)
+			nem_database.update_account_harvested_fees(cursor, account.address, 1, 99)
+			nem_database.connection.commit()
+
+			# Act:
+			nem_database.recalculate_account_harvesting(cursor, {account.address})
+
+			return self._fetch_account_from_db(cursor, account.address)
+
+	def test_can_recalculate_harvesting_from_surviving_blocks(self):
+		# Act:
+		result = self._run_recalculate_account_harvesting_test(ACCOUNTS[0], [BLOCKS[0]])
+
+		# Assert:
+		self.assertEqual(BLOCKS[0].total_fee, result[8])
+		self.assertEqual(BLOCKS[0].height, result[11])
+
+	def test_can_reset_harvesting_when_no_surviving_blocks(self):
+		# Arrange:
+		account = ACCOUNTS[0]._replace(
+			address=Address('TALICE6XEEEOBFJVY3ZCENZ7WBG6LB4KB7P7KMQX')
+		)
+
+		# Act:
+		result = self._run_recalculate_account_harvesting_test(account, [])
+
+		# Assert:
+		self.assertEqual(0, result[8])
+		self.assertEqual(0, result[11])

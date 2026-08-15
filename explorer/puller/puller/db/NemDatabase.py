@@ -1076,3 +1076,27 @@ class NemDatabase(DatabaseConnection):
 				mosaic.quantity
 			)
 		)
+
+	@staticmethod
+	def recalculate_account_harvesting(cursor, beneficiaries):
+		"""Replaces harvesting fee with aggregates from surviving blocks."""
+
+		for beneficiary in sorted(beneficiaries, key=str):
+			cursor.execute(
+				'''
+				UPDATE accounts
+				SET harvested_fees = (
+						SELECT COALESCE(SUM(total_fee), 0)
+						FROM blocks
+						WHERE beneficiary = %s
+					),
+					last_harvested_height = (
+						SELECT COALESCE(MAX(height), 0)
+						FROM blocks
+						WHERE beneficiary = %s
+					),
+					updated_at = CURRENT_TIMESTAMP
+				WHERE address = %s
+				''',
+				(beneficiary.bytes, beneficiary.bytes, beneficiary.bytes)
+			)
