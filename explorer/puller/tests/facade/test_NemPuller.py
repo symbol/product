@@ -28,7 +28,7 @@ from symbollightapi.model.Transaction import (
 	TransferTransaction
 )
 
-from puller.db.NemDatabase import AccountRefreshRecord, RollbackNamespaceRegistrationRecord
+from puller.db.NemDatabase import AccountRefreshRecord, RollbackMosaicRecord, RollbackNamespaceRegistrationRecord
 from puller.facade.NemPuller import (
 	NEM_MAX_ROLLBACK_DEPTH,
 	NEM_NAMESPACE_DURATION,
@@ -2148,6 +2148,115 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 		database.delete_namespaces.assert_called_once_with(cursor, {'orphan'})
 		database.upsert_namespace.assert_not_called()
 		database.update_sub_namespaces.assert_not_called()
+
+	def _run_rollback_mosaics_test(self, transactions, namespace_name='root.token'):
+		rollback_impact = Mock(
+			fork_height=10,
+			affected_mosaic_names={namespace_name}
+		)
+		database = Mock()
+		database.get_surviving_mosaic_transactions.return_value = transactions
+		cursor = Mock()
+		self.puller.nem_db = database
+
+		# Act:
+		self.puller._restore_rollback_mosaics(cursor, rollback_impact)  # pylint: disable=protected-access
+
+		# Assert:
+		self.assertEqual([
+			call.delete_mosaics(cursor, {namespace_name}),
+			call.get_surviving_mosaic_transactions(cursor, 10, {namespace_name})
+		], database.mock_calls[:2])
+
+		return database, cursor
+
+	def test_can_restore_rollback_mosaic_definition(self):
+		# Arrange:
+		creator = PublicKey('11' * 32)
+		levy_recipient = Address('TALICE6XEEEOBFJVY3ZCENZ7WBG6LB4KB7P7KMQX')
+		definition_payload = {
+			'namespace_name': 'root.token',
+			'description': 'rollback mosaic',
+			'mosaic_properties': {
+				'initial_supply': 1000,
+				'divisibility': 2,
+				'supply_mutable': True,
+				'transferable': False
+			},
+			'levy': {
+				'type': 1,
+				'namespace_name': 'levy.token',
+				'fee': 25,
+				'recipient': str(levy_recipient)
+			}
+		}
+		transaction = RollbackMosaicRecord(
+			TransactionType.MOSAIC_DEFINITION.value,
+			5,
+			creator,
+			definition_payload
+		)
+
+		# Act:
+		database, cursor = self._run_rollback_mosaics_test([transaction])
+
+		# Assert:
+		database.upsert_mosaic.assert_called_once_with(
+			cursor,
+			MosaicRecord(
+				root_namespace='root',
+				namespace_name='root.token',
+				description='rollback mosaic',
+				creator=creator,
+				registered_height=5,
+				initial_supply=1000,
+				total_supply=1000,
+				divisibility=2,
+				supply_mutable=True,
+				transferable=False,
+				levy_type=1,
+				levy_namespace_name='levy.token',
+				levy_fee=25,
+				levy_recipient=levy_recipient
+			)
+		)
+		database.update_mosaic_total_supply.assert_not_called()
+
+	def test_can_restore_rollback_mosaic_supply_changes(self):
+		# Arrange:
+		creator = PublicKey('11' * 32)
+		transactions = [
+			RollbackMosaicRecord(
+				TransactionType.MOSAIC_SUPPLY_CHANGE.value,
+				6,
+				creator,
+				{'namespace_name': 'root.token', 'supply_type': 1, 'delta': 300}
+			),
+			RollbackMosaicRecord(
+				TransactionType.MOSAIC_SUPPLY_CHANGE.value,
+				7,
+				creator,
+				{'namespace_name': 'root.token', 'supply_type': 2, 'delta': 100}
+			)
+		]
+
+		# Act:
+		database, cursor = self._run_rollback_mosaics_test(transactions)
+
+		# Assert:
+		database.upsert_mosaic.assert_not_called()
+		self.assertEqual([
+			call(cursor, 'root.token', 300),
+			call(cursor, 'root.token', -100)
+		], database.update_mosaic_total_supply.call_args_list)
+
+	def test_removes_orphan_mosaic_when_it_has_no_surviving_transaction(self):
+		# Act:
+		database, _ = self._run_rollback_mosaics_test([], 'orphan.token')
+
+		# Assert:
+		database.upsert_mosaic.assert_not_called()
+		database.update_mosaic_total_supply.assert_not_called()
 
 	def test_can_repair_rollback_with_expected_operations(self):
 		# Arrange:

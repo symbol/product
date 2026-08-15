@@ -394,6 +394,57 @@ class NemPuller:
 					)
 				)
 
+	@staticmethod
+	def _create_rollback_mosaic_record(transaction):
+		"""Creates a mosaic projection from a stored surviving definition transaction."""
+
+		payload = transaction.payload
+		properties = payload['mosaic_properties']
+		levy = payload['levy']
+
+		return MosaicRecord(
+			root_namespace=payload['namespace_name'].split('.')[0],
+			namespace_name=payload['namespace_name'],
+			description=payload['description'],
+			creator=transaction.sender_public_key,
+			registered_height=transaction.height,
+			initial_supply=properties['initial_supply'],
+			total_supply=properties['initial_supply'],
+			divisibility=properties['divisibility'],
+			supply_mutable=properties['supply_mutable'],
+			transferable=properties['transferable'],
+			levy_type=levy['type'] if levy else None,
+			levy_namespace_name=levy['namespace_name'] if levy else None,
+			levy_fee=levy['fee'] if levy else None,
+			levy_recipient=Address(levy['recipient']) if levy else None
+		)
+
+	def _restore_rollback_mosaics(self, cursor, rollback_impact):
+		"""Rebuilds affected mosaic projections from surviving transactions."""
+
+		namespace_names = rollback_impact.affected_mosaic_names
+		self.nem_db.delete_mosaics(cursor, namespace_names)
+
+		transactions = self.nem_db.get_surviving_mosaic_transactions(
+			cursor,
+			rollback_impact.fork_height,
+			namespace_names
+		)
+		for transaction in transactions:
+			if TransactionType.MOSAIC_DEFINITION.value == transaction.transaction_type:
+				self.nem_db.upsert_mosaic(
+					cursor,
+					self._create_rollback_mosaic_record(transaction)
+				)
+			else:
+				payload = transaction.payload
+				adjustment = payload['delta'] if 1 == payload['supply_type'] else -payload['delta']
+				self.nem_db.update_mosaic_total_supply(
+					cursor,
+					payload['namespace_name'],
+					adjustment
+				)
+
 	def repair_rollback(self, rollback_impact, account_state):
 		"""Atomically restores NEM database state to a confirmed fork height."""
 
@@ -409,8 +460,7 @@ class NemPuller:
 
 			self._restore_rollback_remote_addresses(cursor, rollback_impact)
 			self._restore_rollback_namespaces(cursor, rollback_impact)
-
-			# Todo: reconstruct_rollback_mosaics, recalculate_account_harvesting
+			self._restore_rollback_mosaics(cursor, rollback_impact)
 
 			self.nem_db.connection.commit()
 		except Exception:
