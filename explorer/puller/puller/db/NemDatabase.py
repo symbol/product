@@ -1,3 +1,4 @@
+# pylint: disable=too-many-lines
 import json
 from binascii import unhexlify
 from collections import namedtuple
@@ -34,7 +35,7 @@ RollbackMosaicRecord = namedtuple(
 )
 
 
-class NemDatabase(DatabaseConnection):
+class NemDatabase(DatabaseConnection):  # pylint: disable=too-many-public-methods
 	"""Database containing Nem blockchain data."""
 
 	@staticmethod
