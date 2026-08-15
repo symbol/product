@@ -28,6 +28,10 @@ RollbackNamespaceRegistrationRecord = namedtuple(
 	'RollbackNamespaceRegistrationRecord',
 	['height', 'owner', 'parent', 'namespace']
 )
+RollbackMosaicRecord = namedtuple(
+	'RollbackMosaicRecord',
+	['transaction_type', 'height', 'sender_public_key', 'payload']
+)
 
 
 class NemDatabase(DatabaseConnection):
@@ -955,6 +959,58 @@ class NemDatabase(DatabaseConnection):
 				namespace_name
 			)
 		)
+
+	@staticmethod
+	def delete_mosaics(cursor, namespace_names):
+		"""Deletes affected mosaic projections except the seeded network currency."""
+
+		deletable_names = set(namespace_names) - {'nem.xem'}
+		if not deletable_names:
+			return
+
+		cursor.execute(
+			'''
+			DELETE FROM mosaics
+			WHERE namespace_name = ANY(%s)
+			''',
+			(list(deletable_names),)
+		)
+
+	@staticmethod
+	def get_surviving_mosaic_transactions(cursor, fork_height, namespace_names):
+		"""Gets affected mosaic definition and supply transactions in replay order."""
+
+		replay_names = set(namespace_names) - {'nem.xem'}
+		if not replay_names:
+			return []
+
+		cursor.execute(
+			'''
+			SELECT transaction_type, height, sender_public_key, payload
+			FROM transactions
+			WHERE transaction_type = ANY(%s)
+				AND height <= %s
+				AND payload->>'namespace_name' = ANY(%s)
+			ORDER BY height ASC, id ASC
+			''',
+			(
+				[
+					TransactionType.MOSAIC_DEFINITION.value,
+					TransactionType.MOSAIC_SUPPLY_CHANGE.value
+				],
+				fork_height,
+				list(replay_names)
+			)
+		)
+		return [
+			RollbackMosaicRecord(
+				record[0],
+				record[1],
+				PublicKey(bytes(record[2])),
+				record[3]
+			)
+			for record in cursor.fetchall()
+		]
 
 	@staticmethod
 	def insert_transaction(cursor, transaction):

@@ -10,7 +10,7 @@ from symbolchain.nc import TransactionType
 from symbolchain.nem.Network import Address
 from symbollightapi.model.Transaction import Mosaic
 
-from puller.db.NemDatabase import NemDatabase, RollbackAccountKeyLinkRecord, RollbackNamespaceRegistrationRecord
+from puller.db.NemDatabase import NemDatabase, RollbackAccountKeyLinkRecord, RollbackMosaicRecord, RollbackNamespaceRegistrationRecord
 from puller.facade.NemPuller import AccountRecord, BlockRecord, MosaicRecord, NamespaceRecord, TransactionRecord
 
 from .test_DatabaseConnection import DatabaseConfig
@@ -1639,5 +1639,150 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 			RollbackAccountKeyLinkRecord(
 				affected_address,
 				reactivation_payload
+			)
+		], results)
+
+	def _run_delete_mosaics_test(self, prepare_mosaics, mosaics_to_delete, expected_mosaics):
+		# Arrange:
+		with NemDatabase(self.db_config) as nem_database:
+			nem_database.create_tables()
+			cursor = nem_database.connection.cursor()
+
+			for mosaic in prepare_mosaics:
+				nem_database.upsert_mosaic(cursor, mosaic)
+
+			nem_database.connection.commit()
+
+			# Act:
+			nem_database.delete_mosaics(cursor, mosaics_to_delete)
+
+			cursor.execute('SELECT namespace_name FROM mosaics ORDER BY namespace_name')
+			results = [record[0] for record in cursor.fetchall()]
+
+		# Assert:
+		self.assertEqual(expected_mosaics, results)
+
+	def test_delete_mosaics_preserves_seeded_network_currency(self):
+		# Arrange:
+		other_mosaic = MOSAICS[0]._replace(
+			root_namespace='foo',
+			namespace_name='foo.token'
+		)
+
+		self._run_delete_mosaics_test(
+			prepare_mosaics=[MOSAICS[0], other_mosaic],
+			mosaics_to_delete={'foo.token'},
+			expected_mosaics=['nem.xem']
+		)
+
+	def test_delete_mosaics_deletes_only_affected_mosaics(self):
+		# Arrange:
+		affected_mosaic = MOSAICS[0]._replace(
+			root_namespace='foo',
+			namespace_name='foo.token'
+		)
+		unaffected_mosaic = MOSAICS[0]._replace(
+			root_namespace='bar',
+			namespace_name='bar.token'
+		)
+
+		self._run_delete_mosaics_test(
+			prepare_mosaics=[affected_mosaic, unaffected_mosaic],
+			mosaics_to_delete={'foo.token'},
+			expected_mosaics=['bar.token']
+		)
+
+	def test_can_get_surviving_mosaic_transactions_in_replay_order(self):
+		# Arrange:
+		definition_payload = {
+			'namespace_name': 'foo.token',
+			'description': 'foo mosaic',
+			'mosaic_properties': {
+				'initial_supply': 1000,
+				'divisibility': 2,
+				'supply_mutable': True,
+				'transferable': True
+			},
+			'levy': None
+		}
+		first_supply_change_payload = {
+			'namespace_name': 'foo.token',
+			'supply_type': 1,
+			'delta': 100
+		}
+		second_supply_change_payload = {
+			'namespace_name': 'foo.token',
+			'supply_type': 2,
+			'delta': 50
+		}
+		transactions = [
+			TRANSACTIONS[0]._replace(
+				transaction_hash='11' * 32,
+				transaction_type=TransactionType.MOSAIC_DEFINITION.value,
+				height=1,
+				payload=definition_payload
+			),
+			TRANSACTIONS[0]._replace(
+				transaction_hash='22' * 32,
+				transaction_type=TransactionType.MOSAIC_SUPPLY_CHANGE.value,
+				height=2,
+				payload=first_supply_change_payload
+			),
+			TRANSACTIONS[0]._replace(
+				transaction_hash='33' * 32,
+				transaction_type=TransactionType.MOSAIC_SUPPLY_CHANGE.value,
+				height=2,
+				payload=second_supply_change_payload
+			),
+			TRANSACTIONS[0]._replace(
+				transaction_hash='44' * 32,
+				transaction_type=TransactionType.MOSAIC_SUPPLY_CHANGE.value,
+				height=3,
+				payload={
+					'namespace_name': 'foo.token',
+					'supply_type': 1,
+					'delta': 200
+				}
+			),
+			TRANSACTIONS[0]._replace(
+				transaction_hash='55' * 32,
+				transaction_type=TransactionType.MOSAIC_DEFINITION.value,
+				height=1,
+				payload={**definition_payload, 'namespace_name': 'bar.token'}
+			)
+		]
+
+		with NemDatabase(self.db_config) as nem_database:
+			nem_database.create_tables()
+			cursor = nem_database.connection.cursor()
+			for transaction in transactions:
+				nem_database.insert_transaction(cursor, transaction)
+
+			# Act:
+			results = nem_database.get_surviving_mosaic_transactions(
+				cursor,
+				2,
+				{'foo.token'}
+			)
+
+		# Assert:
+		self.assertEqual([
+			RollbackMosaicRecord(
+				TransactionType.MOSAIC_DEFINITION.value,
+				1,
+				TRANSACTIONS[0].sender_public_key,
+				definition_payload
+			),
+			RollbackMosaicRecord(
+				TransactionType.MOSAIC_SUPPLY_CHANGE.value,
+				2,
+				TRANSACTIONS[0].sender_public_key,
+				first_supply_change_payload
+			),
+			RollbackMosaicRecord(
+				TransactionType.MOSAIC_SUPPLY_CHANGE.value,
+				2,
+				TRANSACTIONS[0].sender_public_key,
+				second_supply_change_payload
 			)
 		], results)
