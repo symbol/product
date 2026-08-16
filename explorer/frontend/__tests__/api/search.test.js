@@ -14,8 +14,7 @@ jest.mock('@/app/utils/server', () => {
 	};
 });
 
-const runSearchTest = async (searchQuery, responseMap, expectedResult) => {
-	// Arrange:
+const mockMakeRequest = responseMap => {
 	const spy = jest.spyOn(utils, 'makeRequest');
 
 	spy.mockImplementation(url => {
@@ -27,11 +26,30 @@ const runSearchTest = async (searchQuery, responseMap, expectedResult) => {
 			return Promise.reject(error404Response);
 	});
 
+	return spy;
+};
+
+const runSearchTest = async (searchQuery, responseMap, expectedResult) => {
+	// Arrange:
+	mockMakeRequest(responseMap);
+
 	// Act:
 	const result = await search(searchQuery);
 
 	// Assert:
 	expect(result).toStrictEqual(expectedResult);
+};
+
+const runScopedSearchTest = async (searchQuery, type, responseMap, expectedResult, expectedRequestedURLs) => {
+	// Arrange:
+	const spy = mockMakeRequest(responseMap);
+
+	// Act:
+	const result = await search(searchQuery, type);
+
+	// Assert:
+	expect(result).toStrictEqual(expectedResult);
+	expect(spy.mock.calls.map(call => call[0])).toStrictEqual(expectedRequestedURLs);
 };
 
 describe('api/search', () => {
@@ -160,5 +178,63 @@ describe('api/search', () => {
 
 		// Act + Assert:
 		await runSearchTest(searchQuery, responseMap, expectedResult);
+	});
+
+	it('requests only the account when scoped to account', async () => {
+		// Arrange:
+		const searchQuery = 'NADMEHCFJD45GPTDL4HZP2LJLZVAZRLYWYPNEMLY';
+		const responseMap = {
+			'https://explorer.backend/account?address=NADMEHCFJD45GPTDL4HZP2LJLZVAZRLYWYPNEMLY': accountInfoResponse
+		};
+		const expectedResult = {
+			account: accountInfoResult
+		};
+
+		// Act + Assert:
+		await runScopedSearchTest(searchQuery, 'account', responseMap, expectedResult, [
+			'https://explorer.backend/account?address=NADMEHCFJD45GPTDL4HZP2LJLZVAZRLYWYPNEMLY'
+		]);
+	});
+
+	it('requests only the mosaic when scoped to mosaic', async () => {
+		// Arrange:
+		const searchQuery = 'namespace-name.sub-name';
+		const responseMap = {
+			'https://explorer.backend/mosaic/namespace-name.sub-name': mosaicInfoResponse,
+			'https://explorer.backend/namespace/namespace-name.sub-name': namespaceInfoResponse
+		};
+		const expectedResult = {
+			mosaic: mosaicInfoResult
+		};
+
+		// Act + Assert:
+		await runScopedSearchTest(searchQuery, 'mosaic', responseMap, expectedResult, [
+			'https://explorer.backend/mosaic/namespace-name.sub-name'
+		]);
+	});
+
+	it('requests only the block when scoped to block', async () => {
+		// Arrange:
+		const searchQuery = '1';
+		const responseMap = {
+			'https://explorer.backend/block/1': blockInfoResponse,
+			'https://explorer.backend/namespace/1': namespaceInfoResponse
+		};
+		const expectedResult = {
+			block: blockInfoResult
+		};
+
+		// Act + Assert:
+		await runScopedSearchTest(searchQuery, 'block', responseMap, expectedResult, ['https://explorer.backend/block/1']);
+	});
+
+	it('requests nothing when scoped to account and the text cannot be an account', async () => {
+		// Arrange:
+		const searchQuery = 'NADMEHCFJD45';
+		const responseMap = {};
+		const expectedResult = {};
+
+		// Act + Assert:
+		await runScopedSearchTest(searchQuery, 'account', responseMap, expectedResult, []);
 	});
 });
