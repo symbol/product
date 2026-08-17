@@ -137,6 +137,40 @@ describe('AccountInfo', () => {
 			expect(screen.getByText('field_linkedAccount')).toBeInTheDocument();
 			expect(screen.getByText(linkedAddress)).toBeInTheDocument();
 		});
+
+		it('renders main account address when account is a remote one', () => {
+			// Arrange:
+			const mainAddress = 'NANQPLR63Z4ONDR3X6JQAC2HQCVPKI4ZDQ6OG6M4';
+			const accountInfoWithMainAccount = { ...accountInfoResult, mainAddress };
+
+			// Act:
+			render(<AccountInfo accountInfo={accountInfoWithMainAccount} preloadedTransactions={[]} />);
+			fireEvent.click(screen.getByText('section_linkedKeys'));
+
+			// Assert:
+			expect(screen.getByText('field_mainAccount')).toBeInTheDocument();
+			expect(screen.getByText(mainAddress)).toBeInTheDocument();
+		});
+
+		it('labels an account that another account harvests through', () => {
+			// Arrange:
+			const accountInfoWithMainAccount = { ...accountInfoResult, mainAddress: 'NANQPLR63Z4ONDR3X6JQAC2HQCVPKI4ZDQ6OG6M4' };
+
+			// Act:
+			render(<AccountInfo accountInfo={accountInfoWithMainAccount} preloadedTransactions={[]} />);
+
+			// Assert:
+			expect(screen.getByText('label_linked')).toBeInTheDocument();
+		});
+
+		it('does not label an ordinary account as remote', () => {
+			// Act:
+			render(<AccountInfo accountInfo={accountInfoResult} preloadedTransactions={[]} />);
+
+			// Assert:
+			expect(screen.queryByText('label_linked')).not.toBeInTheDocument();
+			expect(screen.queryByText('field_mainAccount')).not.toBeInTheDocument();
+		});
 	});
 
 	describe('account transactions', () => {

@@ -410,6 +410,43 @@ class NemDatabaseTest(DatabaseTestBase):  # pylint: disable=too-many-public-meth
 		# Assert:
 		self.assertEqual(EXPECTED_ACCOUNT_VIEW_1, account_view)
 
+	def _link_remote_account(self, main_account, remote_account):
+		"""Makes the main account harvest through the remote one."""
+
+		with self.nem_db.connection() as connection:
+			cursor = connection.cursor()
+			cursor.execute(
+				'UPDATE accounts SET remote_address = %s WHERE address = %s',
+				(remote_account.address.bytes, main_account.address.bytes))
+			connection.commit()
+
+	def test_can_query_main_account_of_remote_account(self):
+		# Arrange:
+		self._link_remote_account(ACCOUNTS[1], ACCOUNTS[0])
+
+		# Act:
+		account_view = self.nem_db.get_account_by_address(address=ACCOUNTS[0].address)
+
+		# Assert: the remote account reports the account harvesting through it
+		self.assertEqual(str(ACCOUNTS[1].address), account_view.main_address)
+
+	def test_can_query_account_that_no_account_harvests_through(self):
+		# Act:
+		account_view = self.nem_db.get_account_by_address(address=ACCOUNTS[0].address)
+
+		# Assert:
+		self.assertIsNone(account_view.main_address)
+
+	def test_can_query_accounts_without_resolving_main_account(self):
+		# Arrange:
+		self._link_remote_account(ACCOUNTS[1], ACCOUNTS[0])
+
+		# Act: the listing does not carry the reverse lookup, so it stays a single query per page
+		accounts_view = self.nem_db.get_accounts(Pagination(10, 0), Sorting('BALANCE', 'DESC'), False)
+
+		# Assert:
+		self.assertTrue(all(account.main_address is None for account in accounts_view))
+
 	# endregion
 
 	# region accounts
@@ -552,23 +589,23 @@ class NemDatabaseTest(DatabaseTestBase):  # pylint: disable=too-many-public-meth
 		self.assertEqual(expected_mosaics, mosaics_view)
 
 	def test_can_query_mosaics_filtered_limit_offset_0(self):
-		self._assert_can_query_mosaics_with_filter(Pagination(1, 0), 'desc', [EXPECTED_MOSAIC_VIEW_2])
+		self._assert_can_query_mosaics_with_filter(Pagination(1, 0), 'desc', [EXPECTED_MOSAIC_VIEW_3])
 
 	def test_can_query_mosaics_filtered_offset_1(self):
-		self._assert_can_query_mosaics_with_filter(Pagination(1, 1), 'desc', [EXPECTED_MOSAIC_VIEW_3])
+		self._assert_can_query_mosaics_with_filter(Pagination(1, 1), 'desc', [EXPECTED_MOSAIC_VIEW_2])
 
 	def test_can_query_mosaics_sorted_by_registered_height_asc(self):
 		self._assert_can_query_mosaics_with_filter(
 			Pagination(10, 0),
 			'asc',
-			[EXPECTED_MOSAIC_VIEW_1, EXPECTED_MOSAIC_VIEW_2, EXPECTED_MOSAIC_VIEW_3]
+			[EXPECTED_MOSAIC_VIEW_1, EXPECTED_MOSAIC_VIEW_3, EXPECTED_MOSAIC_VIEW_2]
 		)
 
 	def test_can_query_mosaics_sorted_by_registered_height_desc(self):
 		self._assert_can_query_mosaics_with_filter(
 			Pagination(10, 0),
 			'desc',
-			[EXPECTED_MOSAIC_VIEW_2, EXPECTED_MOSAIC_VIEW_3, EXPECTED_MOSAIC_VIEW_1]
+			[EXPECTED_MOSAIC_VIEW_3, EXPECTED_MOSAIC_VIEW_2, EXPECTED_MOSAIC_VIEW_1]
 		)
 
 	# endregion
@@ -754,7 +791,7 @@ class NemDatabaseTest(DatabaseTestBase):  # pylint: disable=too-many-public-meth
 	def test_can_query_transactions_filtered_by_address_as_recipient(self):
 		self._assert_can_query_transactions_with_filter(
 			Pagination(10, 0), 'desc', self._make_transaction_query(address=TRANSACTIONS[0].recipient_address),
-			('multisig', 'namespace_registration', 'mosaic_definition', 'transfer', 'transfer_v2')
+			('mosaic_definition', 'namespace_registration', 'multisig', 'transfer_v2', 'transfer')
 		)
 
 	def test_can_query_transactions_filtered_by_sender_address(self):
@@ -766,7 +803,7 @@ class NemDatabaseTest(DatabaseTestBase):  # pylint: disable=too-many-public-meth
 	def test_can_query_transactions_filtered_by_recipient_address(self):
 		self._assert_can_query_transactions_with_filter(
 			Pagination(10, 0), 'desc', self._make_transaction_query(recipient_address=TRANSACTIONS[0].recipient_address),
-			('multisig', 'namespace_registration', 'mosaic_definition', 'transfer', 'transfer_v2')
+			('mosaic_definition', 'namespace_registration', 'multisig', 'transfer_v2', 'transfer')
 		)
 
 	def test_can_exclude_multisig_transaction_for_initiator_account_from_address_filter(self):
@@ -787,7 +824,7 @@ class NemDatabaseTest(DatabaseTestBase):  # pylint: disable=too-many-public-meth
 	def test_can_query_multisig_transaction_filtered_by_inner_recipient_address(self):
 		self._assert_can_query_transactions_with_filter(
 			Pagination(10, 0), 'desc', self._make_transaction_query(recipient_address=TRANSACTIONS[5].recipient_address),
-			('multisig', 'namespace_registration', 'mosaic_definition', 'transfer', 'transfer_v2')
+			('mosaic_definition', 'namespace_registration', 'multisig', 'transfer_v2', 'transfer')
 		)
 
 	def test_can_query_transactions_filtered_by_mosaic_nem_xem(self):

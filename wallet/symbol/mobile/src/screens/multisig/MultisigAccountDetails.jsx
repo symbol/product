@@ -9,13 +9,13 @@ import {
 	SendReceiveButtons,
 	Spacer,
 	Stack,
-	StyledText
+	StyledText,
+	TokenListItem
 } from '@/app/components';
 import { useAsyncManager, useWalletController } from '@/app/hooks';
 import { PlatformUtils } from '@/app/lib/platform/PlatformUtils';
 import { $t } from '@/app/localization';
 import { Router } from '@/app/router/Router';
-import { TokenListItem } from '@/app/screens/assets/components';
 import { CosignatoryList, CosignatureCounter } from '@/app/screens/multisig/components';
 import { createAccountAddressQr, createAccountDisplayData, createExplorerAccountUrl } from '@/app/utils';
 import React from 'react';

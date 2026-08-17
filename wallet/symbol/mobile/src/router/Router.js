@@ -117,6 +117,18 @@ export class Router {
 	static goToHarvesting(params) {
 		navigationRef.navigate(RouteName.Harvesting, parseNavigationParams(params));
 	}
+	static goToCreateMosaic(params) {
+		navigationRef.navigate(RouteName.CreateMosaic, parseNavigationParams(params));
+	}
+	static goToModifyMosaic(params) {
+		navigationRef.navigate(RouteName.ModifyMosaic, parseNavigationParams(params));
+	}
+	static goToRevokeMosaic(params) {
+		navigationRef.navigate(RouteName.RevokeMosaic, parseNavigationParams(params));
+	}
+	static goToCreatedMosaicList(params) {
+		navigationRef.navigate(RouteName.CreatedMosaicList, parseNavigationParams(params));
+	}
 	static goToScan(params) {
 		navigationRef.navigate(RouteName.Scan, parseNavigationParams(params));
 	}

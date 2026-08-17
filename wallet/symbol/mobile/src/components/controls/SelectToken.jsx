@@ -14,11 +14,12 @@ import React from 'react';
  * @param {import('wallet-common-core/src/types/Token').Token[]} props.tokens - List of available tokens.
  * @param {ChainName} props.chainName - Current chain name.
  * @param {NetworkIdentifier} props.networkIdentifier - Current network identifier.
+ * @param {boolean} [props.isDisabled] - Whether the selector is disabled.
  * @param {function(object): void} props.onChange - Callback for when the selected token changes.
  * @returns {React.ReactNode} The InputAddress component.
  */
 export const SelectToken = props => {
-	const { label, value, tokens, chainName, networkIdentifier, onChange } = props;
+	const { label, value, tokens, chainName, networkIdentifier, isDisabled, onChange } = props;
 
 	const list = tokens.map(token => {
 		const resolvedInfo = getTokenKnownInfo(chainName, networkIdentifier, token.id);
@@ -51,6 +52,7 @@ export const SelectToken = props => {
 			label={label}
 			value={value}
 			list={list}
+			isDisabled={isDisabled}
 			onChange={onChange}
 			renderItem={renderItem}
 		/>

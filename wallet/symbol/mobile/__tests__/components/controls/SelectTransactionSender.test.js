@@ -107,6 +107,22 @@ describe('components/controls/SelectTransactionSender', () => {
 				currentAccount.address
 			]);
 		});
+
+		it('renders only the current account when multisig is disabled', async () => {
+			// Arrange:
+			const props = createProps({
+				multisigAccounts: MULTISIG_ACCOUNTS,
+				isMultisigDisabled: true
+			});
+
+			// Act:
+			const screenTester = new ScreenTester(SelectTransactionSender, props);
+			await screenTester.waitForTimer();
+
+			// Assert:
+			screenTester.expectText([currentAccount.name, currentAccount.address]);
+			screenTester.notExpectText([SCREEN_TEXT.tabCurrentAccount, SCREEN_TEXT.tabMultisigAccount]);
+		});
 	});
 
 	describe('sender selection', () => {

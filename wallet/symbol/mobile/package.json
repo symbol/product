@@ -12,7 +12,7 @@
     "connect:android": "adb reverse tcp:8081 tcp:8081",
     "test": "jest",
     "test:cov": "c8 --reporter=lcov --reporter=text --report-dir=coverage npm run test",
-    "test:cov:ci": "NODE_OPTIONS='--max-old-space-size=4096' c8 --reporter=lcov --reporter=text --report-dir=coverage npm run test",
+    "test:cov:ci": "NODE_OPTIONS='--max-old-space-size=4096' c8 --reporter=lcov --reporter=text --report-dir=coverage bash -c 'npm run test -- --shard=1/3 --testTimeout=30000 && npm run test -- --shard=2/3 --testTimeout=30000 && npm run test -- --shard=3/3 --testTimeout=30000'",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix --color",
     "postinstall": "npx resolve-local-dependencies"

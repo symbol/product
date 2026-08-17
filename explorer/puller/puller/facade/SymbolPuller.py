@@ -728,6 +728,11 @@ class SymbolPuller:
 		for transaction_rows in transaction_rows_by_height.values():
 			for transaction_row in transaction_rows:
 				for address_row in transaction_row['address_rows']:
+					# Mosaic Address Restriction targets can have restriction state without account state,
+					# so keep the transaction relation but do not require an account refresh for this role.
+					if TransactionType.MOSAIC_ADDRESS_RESTRICTION.value == transaction_row['type'] and 'target' == address_row['role']:
+						continue
+
 					address = Address(address_row['address'])
 					if address not in dirty_addresses:
 						dirty_addresses[address] = {

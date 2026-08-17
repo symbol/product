@@ -31,7 +31,7 @@
  * @property {number} endHeight - Mosaic expiration height.
  * @property {boolean} isUnlimitedDuration - Mosaic unlimited duration flag.
  * @property {string} creator - Mosaic creator address.
- * @property {number} supply - Mosaic total supply.
+ * @property {string} supply - Mosaic total supply in relative units.
  * @property {boolean} isSupplyMutable - Mosaic supply mutable flag.
  * @property {boolean} isTransferable - Mosaic transferable flag.
  * @property {boolean} isRestrictable - Mosaic restrictable flag.
@@ -42,6 +42,12 @@
  * @typedef {MosaicInfo} Mosaic
  * @property {string} amount - The mosaic relative amount.
  * @property {string} name - Mosaic linked namespace name or id.
+ */
+
+/**
+ * @typedef {Object} MosaicOwner
+ * @property {string} address - The holder account address.
+ * @property {string} amount - The held amount in relative units.
  */
 
 export default {};

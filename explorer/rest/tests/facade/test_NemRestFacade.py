@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock, patch
 from symbollightapi.model.Exceptions import NodeException
 
 from rest.facade.NemRestFacade import NemRestFacade
-from rest.model.common import Pagination, RestConfig, Sorting
+from rest.model.common import STATISTICS_RANGE_CACHE_MAX_ENTRIES, Pagination, RestConfig, Sorting
 
 from ..test.DatabaseTestUtils import (
 	ACCOUNT_STATISTIC_VIEW,
@@ -29,6 +29,8 @@ EXPECTED_BLOCK_1 = BLOCK_VIEWS[0].to_dict()
 EXPECTED_BLOCK_2 = BLOCK_VIEWS[1].to_dict()
 
 EXPECTED_ACCOUNT_1 = ACCOUNT_VIEWS[0].to_dict()
+
+EXPECTED_ACCOUNT_DETAIL_1 = ACCOUNT_VIEWS[0].to_detail_dict()
 
 EXPECTED_ACCOUNT_2 = ACCOUNT_VIEWS[1].to_dict()
 
@@ -122,14 +124,14 @@ class TestNemRestFacade(DatabaseTestBase):  # pylint: disable=too-many-public-me
 		account = self.nem_rest_facade.get_account_by_address(address='NAGHXD63C4V6REWGXCVKJ2SBS3GUAXGTRQZQXPRO')
 
 		# Assert:
-		self.assertEqual(EXPECTED_ACCOUNT_1, account)
+		self.assertEqual(EXPECTED_ACCOUNT_DETAIL_1, account)
 
 	def test_can_retrieve_account_by_public_key(self):
 		# Act:
 		account = self.nem_rest_facade.get_account_by_public_key(public_key='b88221939ac920484753c738fafda87e82ff04b5e370c9456d85a0f12c6a5cca')
 
 		# Assert:
-		self.assertEqual(EXPECTED_ACCOUNT_1, account)
+		self.assertEqual(EXPECTED_ACCOUNT_DETAIL_1, account)
 
 	def test_returns_none_for_nonexistent_account_address(self):
 		# Act:
@@ -353,28 +355,28 @@ class TestNemRestFacade(DatabaseTestBase):  # pylint: disable=too-many-public-me
 		self._assert_can_retrieve_mosaics(
 			pagination=Pagination(1, 0),
 			sort='DESC',
-			expected_mosaics=[EXPECTED_MOSAIC_2]
+			expected_mosaics=[EXPECTED_MOSAIC_3]
 		)
 
 	def test_can_retrieve_mosaics_filtered_by_offset(self):
 		self._assert_can_retrieve_mosaics(
 			pagination=Pagination(1, 1),
 			sort='DESC',
-			expected_mosaics=[EXPECTED_MOSAIC_3]
+			expected_mosaics=[EXPECTED_MOSAIC_2]
 		)
 
 	def test_can_retrieve_mosaics_sorted_by_registered_height_asc(self):
 		self._assert_can_retrieve_mosaics(
 			pagination=Pagination(10, 0),
 			sort='ASC',
-			expected_mosaics=[EXPECTED_MOSAIC_1, EXPECTED_MOSAIC_2, EXPECTED_MOSAIC_3]
+			expected_mosaics=[EXPECTED_MOSAIC_1, EXPECTED_MOSAIC_3, EXPECTED_MOSAIC_2]
 		)
 
 	def test_can_retrieve_mosaics_sorted_by_registered_height_desc(self):
 		self._assert_can_retrieve_mosaics(
 			pagination=Pagination(10, 0),
 			sort='DESC',
-			expected_mosaics=[EXPECTED_MOSAIC_2, EXPECTED_MOSAIC_3, EXPECTED_MOSAIC_1]
+			expected_mosaics=[EXPECTED_MOSAIC_3, EXPECTED_MOSAIC_2, EXPECTED_MOSAIC_1]
 		)
 
 	# endregion
@@ -442,6 +444,48 @@ class TestNemRestFacade(DatabaseTestBase):  # pylint: disable=too-many-public-me
 	# endregion
 
 	# region transaction statistics
+
+	def test_can_tell_cached_date_ranges_apart(self):
+		# Arrange: the same dates asked for in both period types, so only the period type can tell them apart
+		# Act:
+		daily = self.nem_rest_facade.get_transaction_statistics_by_date_range('2015-03-01', '2015-03-31', 'DAY')
+		monthly = self.nem_rest_facade.get_transaction_statistics_by_date_range('2015-03-01', '2015-03-31', 'MONTH')
+		daily_again = self.nem_rest_facade.get_transaction_statistics_by_date_range('2015-03-01', '2015-03-31', 'DAY')
+
+		# Assert: the period type belongs to the cache key, otherwise the monthly read would answer both
+		self.assertNotEqual(daily, monthly)
+		self.assertEqual(daily, daily_again)
+
+	def test_can_keep_summaries_cached_while_date_ranges_churn(self):
+		# Arrange: warm the transaction summary, then flood the range cache past its capacity
+		self.nem_rest_facade.get_transaction_statistics()
+
+		for day in range(STATISTICS_RANGE_CACHE_MAX_ENTRIES + 8):
+			self.nem_rest_facade.get_transaction_statistics_by_date_range('2015-03-01', f'2015-03-{1 + day % 28:02}', 'DAY')
+
+		with patch.object(
+			self.nem_rest_facade.nem_db, 'get_transaction_statistics',
+			wraps=self.nem_rest_facade.nem_db.get_transaction_statistics
+		) as spy:
+			# Act:
+			self.nem_rest_facade.get_transaction_statistics()
+
+			# Assert: the summaries live in their own cache, so arbitrary ranges cannot evict them
+			self.assertEqual(0, spy.call_count)
+
+	def test_can_serve_repeated_statistics_reads_from_cache(self):
+		# Arrange: statistics summarise the whole chain and are expensive, so a repeated read must not hit the database
+		with patch.object(
+			self.nem_rest_facade.nem_db, 'get_transaction_statistics',
+			wraps=self.nem_rest_facade.nem_db.get_transaction_statistics
+		) as spy:
+			# Act:
+			first_statistics = self.nem_rest_facade.get_transaction_statistics()
+			second_statistics = self.nem_rest_facade.get_transaction_statistics()
+
+			# Assert:
+			self.assertEqual(first_statistics, second_statistics)
+			self.assertEqual(1, spy.call_count)
 
 	def test_can_retrieve_transaction_statistics(self):
 		# Act:
@@ -549,7 +593,7 @@ class TestNemRestFacade(DatabaseTestBase):  # pylint: disable=too-many-public-me
 			transaction_query=self._make_transaction_query(
 				recipient_address='NBFWZ4IVRHEIBRCGHLYDS62FSFTBM3VDFA7E6LSQ'
 			),
-			expected_transaction_names=('multisig', 'namespace_registration', 'mosaic_definition', 'transfer', 'transfer_v2')
+			expected_transaction_names=('mosaic_definition', 'namespace_registration', 'multisig', 'transfer_v2', 'transfer')
 		)
 
 	def test_can_retrieve_transactions_filtered_by_sender_address(self):

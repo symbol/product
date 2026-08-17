@@ -1,19 +1,19 @@
-import { mosaicInfos } from './mosaic';
+import { multiNameMosaic, nativeMosaic, supplyMutableMosaic } from './mosaic';
 
 const mosaics = [
 	{
-		...mosaicInfos['72C0212E67A08BCE'],
-		name: mosaicInfos['72C0212E67A08BCE'].names[0],
+		...nativeMosaic,
+		name: nativeMosaic.names[0],
 		'amount': '7270485345.948776'
 	},
 	{
-		...mosaicInfos['0E2B031D9C83906D'],
-		name: mosaicInfos['0E2B031D9C83906D'].names[0],
+		...multiNameMosaic,
+		name: multiNameMosaic.names[0],
 		'amount': '4'
 	},
 	{
-		...mosaicInfos['78C3CDF0896248DB'],
-		name: '78C3CDF0896248DB',
+		...supplyMutableMosaic,
+		name: supplyMutableMosaic.id,
 		'amount': '0.54'
 	}
 ];

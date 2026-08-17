@@ -1,5 +1,6 @@
 import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
 import React from 'react';
+import { RefreshControl, SectionList } from 'react-native';
 
 /**
  * A helper class to facilitate testing of React Native screens.
@@ -12,12 +13,23 @@ export class ScreenTester {
 
 	/**
 	 * Creates an instance of ScreenTester.
-	 * 
+	 *
 	 * @param {React.Component} Screen - The screen component to test.
 	 * @param {object} props - Props to pass to the screen component.
 	 */
 	constructor(Screen, props = {}) {
+		this.Screen = Screen;
 		this.renderer = render(<Screen {...props} />);
+	};
+
+	/**
+	 * Re-renders the screen with new props.
+	 *
+	 * @param {object} props - The new props to render the screen with.
+	 */
+	updateProps = props => {
+		const { Screen } = this;
+		this.renderer.rerender(<Screen {...props} />);
 	};
 
 	/**
@@ -91,7 +103,7 @@ export class ScreenTester {
 		const { getByLabelText} = this.renderer;
 		const element = getByLabelText(label);
 
-		expect(element.props.accessibilityValue).toBe(expectedValue);
+		expect(element.props.accessibilityValue).toEqual(expectedValue);
 	};
 
 	/**
@@ -285,8 +297,26 @@ export class ScreenTester {
 	};
 
 	/**
+	 * Simulates the pull-to-refresh gesture on the screen scroll container.
+	 */
+	pullToRefresh = () => {
+		const refreshControl = this.renderer.UNSAFE_getByType(RefreshControl);
+		fireEvent(refreshControl, 'refresh');
+	};
+
+	/**
+	 * Simulates the screen list reaching its end (the infinite scroll next page trigger).
+	 */
+	scrollListToEnd = () => {
+		const sectionList = this.renderer.UNSAFE_getByType(SectionList);
+		act(() => {
+			sectionList.props.onEndReached({ distanceFromEnd: 0 });
+		});
+	};
+
+	/**
 	 * Advances timers by a specified time to simulate waiting.
-	 * 
+	 *
 	 * @param {number} time - The time in milliseconds to advance timers by. Default is 2000ms.
 	 */
 	waitForTimer = async (time = 2000) => {
