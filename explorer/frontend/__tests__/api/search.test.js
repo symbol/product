@@ -40,7 +40,7 @@ const runSearchTest = async (searchQuery, responseMap, expectedResult) => {
 	expect(result).toStrictEqual(expectedResult);
 };
 
-const runScopedSearchTest = async (searchQuery, type, responseMap, expectedResult, expectedRequestedURLs) => {
+const runScopedSearchTest = async (searchQuery, type, responseMap, expectedResult) => {
 	// Arrange:
 	const spy = mockMakeRequest(responseMap);
 
@@ -49,7 +49,7 @@ const runScopedSearchTest = async (searchQuery, type, responseMap, expectedResul
 
 	// Assert:
 	expect(result).toStrictEqual(expectedResult);
-	expect(spy.mock.calls.map(call => call[0])).toStrictEqual(expectedRequestedURLs);
+	expect(spy.mock.calls.map(call => call[0])).toStrictEqual(Object.keys(responseMap));
 };
 
 describe('api/search', () => {
@@ -191,41 +191,74 @@ describe('api/search', () => {
 		};
 
 		// Act + Assert:
-		await runScopedSearchTest(searchQuery, 'account', responseMap, expectedResult, [
-			'https://explorer.backend/account?address=NADMEHCFJD45GPTDL4HZP2LJLZVAZRLYWYPNEMLY'
-		]);
+		await runScopedSearchTest(searchQuery, 'account', responseMap, expectedResult);
 	});
 
 	it('requests only the mosaic when scoped to mosaic', async () => {
 		// Arrange:
 		const searchQuery = 'namespace-name.sub-name';
 		const responseMap = {
-			'https://explorer.backend/mosaic/namespace-name.sub-name': mosaicInfoResponse,
-			'https://explorer.backend/namespace/namespace-name.sub-name': namespaceInfoResponse
+			'https://explorer.backend/mosaic/namespace-name.sub-name': mosaicInfoResponse
 		};
 		const expectedResult = {
 			mosaic: mosaicInfoResult
 		};
 
 		// Act + Assert:
-		await runScopedSearchTest(searchQuery, 'mosaic', responseMap, expectedResult, [
-			'https://explorer.backend/mosaic/namespace-name.sub-name'
-		]);
+		await runScopedSearchTest(searchQuery, 'mosaic', responseMap, expectedResult);
 	});
 
 	it('requests only the block when scoped to block', async () => {
 		// Arrange:
 		const searchQuery = '1';
 		const responseMap = {
-			'https://explorer.backend/block/1': blockInfoResponse,
-			'https://explorer.backend/namespace/1': namespaceInfoResponse
+			'https://explorer.backend/block/1': blockInfoResponse
 		};
 		const expectedResult = {
 			block: blockInfoResult
 		};
 
 		// Act + Assert:
-		await runScopedSearchTest(searchQuery, 'block', responseMap, expectedResult, ['https://explorer.backend/block/1']);
+		await runScopedSearchTest(searchQuery, 'block', responseMap, expectedResult);
+	});
+
+	it('requests only the namespace when scoped to namespace', async () => {
+		// Arrange:
+		const searchQuery = 'namespace-name.sub-name';
+		const responseMap = {
+			'https://explorer.backend/namespace/namespace-name.sub-name': namespaceInfoResponse
+		};
+		const expectedResult = {
+			namespace: namespaceInfoResult
+		};
+
+		// Act + Assert:
+		await runScopedSearchTest(searchQuery, 'namespace', responseMap, expectedResult);
+	});
+
+	it('requests only the transaction when scoped to transaction', async () => {
+		// Arrange:
+		const searchQuery = '89DFA7AAD61024CCB564C41239CA865221A8984EE970FBDA0F492B09E4C70691';
+		const responseMap = {
+			'https://explorer.backend/transaction/89DFA7AAD61024CCB564C41239CA865221A8984EE970FBDA0F492B09E4C70691':
+				transactionInfoResponse
+		};
+		const expectedResult = {
+			transaction: transactionInfoResult
+		};
+
+		// Act + Assert:
+		await runScopedSearchTest(searchQuery, 'transaction', responseMap, expectedResult);
+	});
+
+	it('requests nothing when scoped to transaction and the text cannot be a transaction hash', async () => {
+		// Arrange:
+		const searchQuery = '89DFA7AAD610';
+		const responseMap = {};
+		const expectedResult = {};
+
+		// Act + Assert:
+		await runScopedSearchTest(searchQuery, 'transaction', responseMap, expectedResult);
 	});
 
 	it('requests nothing when scoped to account and the text cannot be an account', async () => {
@@ -235,6 +268,6 @@ describe('api/search', () => {
 		const expectedResult = {};
 
 		// Act + Assert:
-		await runScopedSearchTest(searchQuery, 'account', responseMap, expectedResult, []);
+		await runScopedSearchTest(searchQuery, 'account', responseMap, expectedResult);
 	});
 });
