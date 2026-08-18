@@ -296,10 +296,10 @@ class MetadataTest(TestCase):  # pylint: disable=too-many-public-methods
 
 	def test_create_metadata_row_replaces_nul_with_replacement_character(self):
 		# Arrange:
-		nul_item = create_metadata_item(value='410042')
+		item_with_nul = create_metadata_item(value='410042')
 
 		# Act:
-		row = create_metadata_row(nul_item, 123)
+		row = create_metadata_row(item_with_nul, 123)
 
 		# Assert:
 		self.assertEqual('A�B', row['value_utf8'])
