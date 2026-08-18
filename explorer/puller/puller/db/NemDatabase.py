@@ -12,7 +12,7 @@ from .DatabaseConnection import DatabaseConnection
 NEM_NAMESPACE_GRACE_PERIOD = 30 * 1440
 
 AccountRefreshRecord = namedtuple('AccountRefreshRecord', ['id', 'address'])
-RollbackBlockRecord = namedtuple('RollbackBlockRecord', ['beneficiary', 'signer'])
+RollbackBlockRecord = namedtuple('RollbackBlockRecord', ['beneficiary', 'signer', 'total_fee'])
 RollbackTransactionRecord = namedtuple(
 	'RollbackTransactionRecord',
 	['transaction_type', 'sender_address', 'recipient_address', 'payload']
@@ -446,7 +446,8 @@ class NemDatabase(DatabaseConnection):  # pylint: disable=too-many-public-method
 			'''
 			SELECT
 				beneficiary,
-				signer
+				signer,
+				total_fee
 			FROM blocks
 			WHERE height > %s
 			ORDER BY height ASC
@@ -455,7 +456,7 @@ class NemDatabase(DatabaseConnection):  # pylint: disable=too-many-public-method
 		)
 		results = cursor.fetchall()
 		blocks = [
-			RollbackBlockRecord(Address(bytes(record[0])), PublicKey(bytes(record[1])))
+			RollbackBlockRecord(Address(bytes(record[0])), PublicKey(bytes(record[1])), record[2])
 			for record in results
 		]
 
@@ -1079,25 +1080,27 @@ class NemDatabase(DatabaseConnection):  # pylint: disable=too-many-public-method
 		)
 
 	@staticmethod
-	def recalculate_account_harvesting(cursor, beneficiaries):
-		"""Replaces harvesting fee with aggregates from surviving blocks."""
+	def rollback_account_harvesting(cursor, orphan_harvested_fees, fork_height):
+		"""Subtracts orphan block fees and restores the latest surviving harvest height."""
 
-		for beneficiary in sorted(beneficiaries, key=str):
+		for beneficiary in sorted(orphan_harvested_fees, key=str):
 			cursor.execute(
 				'''
 				UPDATE accounts
-				SET harvested_fees = (
-						SELECT COALESCE(SUM(total_fee), 0)
-						FROM blocks
-						WHERE beneficiary = %s
-					),
+				SET harvested_fees = harvested_fees - %s,
 					last_harvested_height = (
 						SELECT COALESCE(MAX(height), 0)
 						FROM blocks
 						WHERE beneficiary = %s
+							AND height <= %s
 					),
 					updated_at = CURRENT_TIMESTAMP
 				WHERE address = %s
 				''',
-				(beneficiary.bytes, beneficiary.bytes, beneficiary.bytes)
+				(
+					orphan_harvested_fees[beneficiary],
+					beneficiary.bytes,
+					fork_height,
+					beneficiary.bytes
+				)
 			)

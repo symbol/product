@@ -109,7 +109,7 @@ NemRollbackImpact = namedtuple('NemRollbackImpact', [
 	'account_creation_heights',
 	'orphan_created_accounts',
 	'surviving_affected_accounts',
-	'orphan_beneficiaries',
+	'orphan_harvested_fees',
 	'affected_remote_link_accounts',
 	'affected_namespace_roots',
 	'affected_mosaic_names'
@@ -263,7 +263,7 @@ class NemPuller:
 			raise NemRollbackError(f'Invalid NEM fork height {fork_height}')
 
 		affected_accounts = set()
-		orphan_beneficiaries = set()
+		orphan_harvested_fees = {}
 		affected_remote_link_accounts = set()
 		affected_namespace_roots = set()
 		affected_mosaic_names = set()
@@ -273,7 +273,9 @@ class NemPuller:
 		orphan_records = self.nem_db.get_orphan_chain_records(fork_height)
 
 		for block in orphan_records.blocks:
-			orphan_beneficiaries.add(block.beneficiary)
+			orphan_harvested_fees[block.beneficiary] = (
+				orphan_harvested_fees.get(block.beneficiary, 0) + block.total_fee
+			)
 			affected_accounts.add(block.beneficiary)
 			affected_accounts.add(self._convert_public_key_to_address(block.signer))
 
@@ -307,7 +309,7 @@ class NemPuller:
 			account_creation_heights,
 			orphan_created_accounts,
 			surviving_affected_accounts,
-			orphan_beneficiaries,
+			orphan_harvested_fees,
 			affected_remote_link_accounts,
 			affected_namespace_roots,
 			affected_mosaic_names
@@ -452,6 +454,11 @@ class NemPuller:
 		cursor = self.nem_db.connection.cursor()
 
 		try:
+			self.nem_db.rollback_account_harvesting(
+				cursor,
+				rollback_impact.orphan_harvested_fees,
+				rollback_impact.fork_height
+			)
 			self.nem_db.delete_orphan_chain_data(cursor, rollback_impact.fork_height)
 			self.nem_db.delete_accounts(cursor, rollback_impact.orphan_created_accounts)
 
@@ -461,10 +468,6 @@ class NemPuller:
 			self._restore_rollback_remote_addresses(cursor, rollback_impact)
 			self._restore_rollback_namespaces(cursor, rollback_impact)
 			self._restore_rollback_mosaics(cursor, rollback_impact)
-			self.nem_db.recalculate_account_harvesting(
-				cursor,
-				rollback_impact.orphan_beneficiaries
-			)
 
 			self.nem_db.connection.commit()
 		except Exception:

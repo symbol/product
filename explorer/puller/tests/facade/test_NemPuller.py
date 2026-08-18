@@ -1652,7 +1652,7 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 			account_creation_heights={address: height},
 			orphan_created_accounts=set(),
 			surviving_affected_accounts={address},
-			orphan_beneficiaries=set(),
+			orphan_harvested_fees={},
 			affected_remote_link_accounts=set(),
 			affected_namespace_roots=set(),
 			affected_mosaic_names=set()
@@ -1813,13 +1813,25 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 			database.insert_block(cursor, BlockRecord(
 				orphan_height,
 				'2015-03-29 00:00:00+00:00',
-				0,
+				20,
 				len(transactions),
 				1,
 				'AA' * 32,
 				beneficiary,
 				signer,
 				'BB' * 64,
+				100
+			))
+			database.insert_block(cursor, BlockRecord(
+				orphan_height + 1,
+				'2015-03-29 00:01:00+00:00',
+				30,
+				0,
+				1,
+				'CC' * 32,
+				beneficiary,
+				signer,
+				'DD' * 64,
 				100
 			))
 			database.upsert_mosaic(cursor, MosaicRecord(
@@ -1861,7 +1873,7 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 		self.assertEqual(expected_accounts, capture.affected_accounts)
 		self.assertEqual({recipient}, capture.orphan_created_accounts)
 		self.assertEqual(expected_accounts - {recipient}, capture.surviving_affected_accounts)
-		self.assertEqual({beneficiary}, capture.orphan_beneficiaries)
+		self.assertEqual({beneficiary: 50}, capture.orphan_harvested_fees)
 		self.assertEqual({sender}, capture.affected_remote_link_accounts)
 		self.assertEqual({'root'}, capture.affected_namespace_roots)
 		self.assertEqual({'root.token', 'root.supply'}, capture.affected_mosaic_names)
@@ -1921,7 +1933,7 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 		}, impact.account_creation_heights)
 		self.assertEqual(set(), impact.orphan_created_accounts)
 		self.assertEqual(expected_accounts, impact.surviving_affected_accounts)
-		self.assertEqual(set(), impact.orphan_beneficiaries)
+		self.assertEqual({}, impact.orphan_harvested_fees)
 		self.assertEqual(set(), impact.affected_remote_link_accounts)
 		self.assertEqual(set(), impact.affected_namespace_roots)
 		self.assertEqual(set(), impact.affected_mosaic_names)
@@ -1974,7 +1986,7 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 			account_creation_heights={first_survivor: 2, second_survivor: 5},
 			orphan_created_accounts={},
 			surviving_affected_accounts={first_survivor, second_survivor},
-			orphan_beneficiaries=set(),
+			orphan_harvested_fees={},
 			affected_remote_link_accounts=set(),
 			affected_namespace_roots=set(),
 			affected_mosaic_names=set()
@@ -2272,7 +2284,7 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 		rollback_impact = Mock(
 			fork_height=123,
 			orphan_created_accounts={orphan_address},
-			orphan_beneficiaries={first_address}
+			orphan_harvested_fees={first_address: 50}
 		)
 		database = Mock()
 		cursor = database.connection.cursor.return_value
@@ -2293,7 +2305,12 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 
 			# Assert:
 			mock_validate.assert_called_once_with(rollback_impact, account_state)
+			database.rollback_account_harvesting.assert_called_once_with(cursor, {first_address: 50}, 123)
 			database.delete_orphan_chain_data.assert_called_once_with(cursor, 123)
+			self.assertLess(
+				database.mock_calls.index(call.rollback_account_harvesting(cursor, {first_address: 50}, 123)),
+				database.mock_calls.index(call.delete_orphan_chain_data(cursor, 123))
+			)
 			database.delete_accounts.assert_called_once_with(cursor, {orphan_address})
 
 			refresh_calls = database.refresh_account_from_snapshot.call_args_list
@@ -2304,7 +2321,6 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 			mock_restore_remote_addresses.assert_called_once_with(cursor, rollback_impact)
 			mock_restore_namespaces.assert_called_once_with(cursor, rollback_impact)
 			mock_restore_mosaics.assert_called_once_with(cursor, rollback_impact)
-			database.recalculate_account_harvesting.assert_called_once_with(cursor, {first_address})
 			database.connection.commit.assert_called_once_with()
 			database.connection.rollback.assert_not_called()
 

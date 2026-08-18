@@ -1390,6 +1390,7 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 		self.assertEqual(1, len(orphan_blocks))
 		self.assertEqual(BLOCKS[1].beneficiary, orphan_blocks[0].beneficiary)
 		self.assertEqual(BLOCKS[1].signer, orphan_blocks[0].signer)
+		self.assertEqual(BLOCKS[1].total_fee, orphan_blocks[0].total_fee)
 
 		self.assertEqual(2, len(orphan_transactions))
 		self.assertEqual(['outer', 'inner'], [
@@ -1787,41 +1788,46 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 			)
 		], results)
 
-	def _run_recalculate_account_harvesting_test(self, account, blocks):
+	def test_can_subtract_orphan_harvesting_from_accounts(self):
 		# Arrange:
+		fork_height = 1
+		first_account = ACCOUNTS[0]
+		second_account = ACCOUNTS[0]._replace(address=BLOCKS[1].beneficiary)
+		first_orphan_block = BLOCKS[0]._replace(
+			height=2,
+			total_fee=50,
+			block_hash='11' * 32
+		)
+		second_orphan_block = BLOCKS[1]._replace(height=3)
+		first_harvested_fees = 1000
+
 		with NemDatabase(self.db_config) as nem_database:
 			nem_database.create_tables()
 			cursor = nem_database.connection.cursor()
 
-			for block in blocks:
+			for block in [BLOCKS[0], first_orphan_block, second_orphan_block]:
 				nem_database.insert_block(cursor, block)
 
-			nem_database.upsert_account(cursor, account)
-			nem_database.update_account_harvested_fees(cursor, account.address, 1, 99)
+			for account, harvested_fees in [
+				(first_account, first_harvested_fees),
+				(second_account, second_orphan_block.total_fee)
+			]:
+				nem_database.upsert_account(cursor, account)
+				nem_database.update_account_harvested_fees(cursor, account.address, harvested_fees, 3)
+
 			nem_database.connection.commit()
 
 			# Act:
-			nem_database.recalculate_account_harvesting(cursor, {account.address})
+			nem_database.rollback_account_harvesting(cursor, {
+				first_account.address: first_orphan_block.total_fee,
+				second_account.address: second_orphan_block.total_fee
+			}, fork_height)
 
-			return self._fetch_account_from_db(cursor, account.address)
-
-	def test_can_recalculate_harvesting_from_surviving_blocks(self):
-		# Act:
-		result = self._run_recalculate_account_harvesting_test(ACCOUNTS[0], [BLOCKS[0]])
-
-		# Assert:
-		self.assertEqual(BLOCKS[0].total_fee, result[8])
-		self.assertEqual(BLOCKS[0].height, result[11])
-
-	def test_can_reset_harvesting_when_no_surviving_blocks(self):
-		# Arrange:
-		account = ACCOUNTS[0]._replace(
-			address=Address('TALICE6XEEEOBFJVY3ZCENZ7WBG6LB4KB7P7KMQX')
-		)
-
-		# Act:
-		result = self._run_recalculate_account_harvesting_test(account, [])
+			first_result = self._fetch_account_from_db(cursor, first_account.address)
+			second_result = self._fetch_account_from_db(cursor, second_account.address)
 
 		# Assert:
-		self.assertEqual(0, result[8])
-		self.assertEqual(0, result[11])
+		self.assertEqual(first_harvested_fees - first_orphan_block.total_fee, first_result[8])
+		self.assertEqual(BLOCKS[0].height, first_result[11])
+		self.assertEqual(0, second_result[8])
+		self.assertEqual(0, second_result[11])
