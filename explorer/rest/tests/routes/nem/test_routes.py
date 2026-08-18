@@ -877,6 +877,15 @@ def test_api_transactions_applies_mosaic(client):  # pylint: disable=redefined-o
 	_assert_get_api_nem_transactions(client, 200, transaction_dicts('transfer_v2'), mosaic='root.mosaic')
 
 
+def test_api_transactions_applies_mosaic_carried_by_multisig(client):  # pylint: disable=redefined-outer-name, invalid-name
+	_assert_get_api_nem_transactions(
+		client,
+		200,
+		transaction_dicts('multisig', 'transfer_v2', 'transfer'),
+		mosaic='nem.xem'
+	)
+
+
 def test_api_transactions_applies_address_ignore_other(client):  # pylint: disable=redefined-outer-name, invalid-name
 	for query_params in [
 		{'senderAddress': 'NALICEPFLZQRZGPRIJTMJOCPWDNECXTNNG7QLSG3'},

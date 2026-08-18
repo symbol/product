@@ -175,6 +175,13 @@ class NemDatabase(DatabaseConnection):
 			'''
 		)
 
+		cursor.execute(
+			'''
+			CREATE INDEX IF NOT EXISTS transactions_mosaic_namespace_name_transaction_id_idx
+				ON transactions_mosaic(namespace_name, transaction_id)
+			'''
+		)
+
 	def create_tables(self):
 		"""Creates database tables."""
 
