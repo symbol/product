@@ -30,7 +30,7 @@ from symbollightapi.model.Transaction import (
 from puller.db.NemDatabase import AccountRefreshRecord
 from puller.facade.NemPuller import (
 	AccountRecord,
-	AccountVestedBalanceRecord,
+	RefreshedAccountRecord,
 	DatabaseConfig,
 	MosaicRecord,
 	NamespaceRecord,
@@ -871,10 +871,10 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 
 	@patch('puller.facade.NemPuller.NemPuller._retry_get_account_info')
 	@patch('puller.facade.NemPuller.NemDatabase.get_accounts_for_refresh')
-	@patch('puller.facade.NemPuller.NemDatabase.update_vested_balance_and_importance')
+	@patch('puller.facade.NemPuller.NemDatabase.update_refreshed_account')
 	def test_can_refresh_accounts_in_batches(
 		self,
-		mock_update_vested_balance_and_importance,  # pylint: disable=invalid-name
+		mock_update_refreshed_account,
 		mock_get_accounts_for_refresh,
 		mock_retry_get_account_info
 	):
@@ -897,16 +897,19 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 		account_info_1.address = account_1.address
 		account_info_1.importance = 0.1
 		account_info_1.vested_balance = 6449.201816
+		account_info_1.remote_status = 'ACTIVE'
 
 		account_info_2 = Mock()
 		account_info_2.address = account_2.address
 		account_info_2.importance = 0.2
 		account_info_2.vested_balance = 1234.000001
+		account_info_2.remote_status = 'INACTIVE'
 
 		account_info_3 = Mock()
 		account_info_3.address = account_3.address
 		account_info_3.importance = 0.3
 		account_info_3.vested_balance = 0
+		account_info_3.remote_status = 'DEACTIVATING'
 
 		mock_retry_get_account_info.side_effect = [
 			account_info_1,
@@ -932,19 +935,19 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 		self.assertEqual(retry_get_account_info_calls[1][0], (str(account_2.address),))
 		self.assertEqual(retry_get_account_info_calls[2][0], (str(account_3.address),))
 
-		update_account_calls = mock_update_vested_balance_and_importance.call_args_list
+		update_account_calls = mock_update_refreshed_account.call_args_list
 		self.assertEqual(len(update_account_calls), 3)
 		self.assertEqual(update_account_calls[0][0], (
 			cursor,
-			AccountVestedBalanceRecord(account_1.address, 0.1, 6449201816)
+			RefreshedAccountRecord(account_1.address, 0.1, 6449201816, 'ACTIVE')
 		))
 		self.assertEqual(update_account_calls[1][0], (
 			cursor,
-			AccountVestedBalanceRecord(account_2.address, 0.2, 1234000001)
+			RefreshedAccountRecord(account_2.address, 0.2, 1234000001, 'INACTIVE')
 		))
 		self.assertEqual(update_account_calls[2][0], (
 			cursor,
-			AccountVestedBalanceRecord(account_3.address, 0.3, 0)
+			RefreshedAccountRecord(account_3.address, 0.3, 0, 'DEACTIVATING')
 		))
 		self.assertEqual(self.puller.nem_db.connection.commit.call_count, 2)
 

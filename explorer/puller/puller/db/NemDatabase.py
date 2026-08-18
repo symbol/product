@@ -448,7 +448,12 @@ class NemDatabase(DatabaseConnection):
 			SELECT id, address
 			FROM accounts
 			WHERE id > %s
-				AND (balance > 0 OR vested_balance > 0 OR importance > 0)
+				AND (
+					balance > 0
+					OR vested_balance > 0
+					OR importance > 0
+					OR remote_status IN ('ACTIVATING', 'DEACTIVATING')
+				)
 			ORDER BY id ASC
 			LIMIT %s
 			''',
@@ -547,20 +552,22 @@ class NemDatabase(DatabaseConnection):
 		)
 
 	@staticmethod
-	def update_vested_balance_and_importance(cursor, account_info):
-		"""Updates vested balance and importance for an account."""
+	def update_refreshed_account(cursor, account_info):
+		"""Updates vested balance, importance and remote status for an account."""
 
 		cursor.execute(
 			'''
 			UPDATE accounts
 			SET vested_balance = %s,
 				importance = %s,
+				remote_status = %s,
 				updated_at = CURRENT_TIMESTAMP
 			WHERE address = %s
 			''',
 			(
 				account_info.vested_balance,
 				account_info.importance,
+				account_info.remote_status,
 				account_info.address.bytes
 			)
 		)
