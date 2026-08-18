@@ -1,6 +1,7 @@
 import datetime
 import json
 import unittest
+from collections import namedtuple
 from pathlib import Path
 
 import psycopg2
@@ -14,6 +15,12 @@ from puller.db.NemDatabase import NemDatabase, RollbackAccountKeyLinkRecord, Rol
 from puller.facade.NemPuller import AccountRecord, BlockRecord, MosaicRecord, NamespaceRecord, TransactionRecord
 
 from .test_DatabaseConnection import DatabaseConfig
+
+AccountDbRecord = namedtuple('AccountDbRecord', [
+	*AccountRecord._fields,
+	'harvested_fees',
+	'last_harvested_height'
+])
 
 # region test data
 
@@ -130,19 +137,20 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 				balance,
 				vested_balance,
 				mosaics,
-				harvested_fees,
 				harvested_blocks,
 				remote_status,
-				last_harvested_height,
 				min_cosignatories,
 				cosignatory_of,
-				cosignatories
+				cosignatories,
+				harvested_fees,
+				last_harvested_height
 			FROM accounts
 			WHERE address = %s
 			''',
 			(address.bytes,)
 		)
-		return cursor.fetchone()
+		result = cursor.fetchone()
+		return AccountDbRecord(*result) if result else None
 
 	@staticmethod
 	def _fetch_namespace_from_db(cursor, root_namespace):
@@ -488,13 +496,13 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 			1000000,
 			99999,
 			[],
-			0,
 			10,
 			'INACTIVE',
+			None,
+			None,
+			None,
 			0,
-			None,
-			None,
-			None)
+			0)
 		)
 
 	def test_can_update_account_by_address_conflict(self):
@@ -530,13 +538,13 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 			2000000,
 			99999,
 			[],
-			0,
 			10,
 			'INACTIVE',
+			None,
+			None,
+			None,
 			0,
-			None,
-			None,
-			None)
+			0)
 		)
 
 	def test_account_height_remains_unchanged_on_update(self):
@@ -562,7 +570,7 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 			result = self._fetch_account_from_db(cursor, ACCOUNTS[0].address)
 
 		# Assert:
-		self.assertEqual(result[1], 1)
+		self.assertEqual(result.height, 1)
 
 	def test_upsert_account_does_not_overwrite_remote_address(self):
 		# Arrange:
@@ -589,8 +597,8 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 			result = self._fetch_account_from_db(cursor, ACCOUNTS[0].address)
 
 		# Assert:
-		self.assertEqual(result[3], remote_address.bytes.hex())
-		self.assertEqual(result[5], 2000000)
+		self.assertEqual(result.remote_address, remote_address.bytes.hex())
+		self.assertEqual(result.balance, 2000000)
 
 	def test_can_set_account_remote_address(self):
 		# Arrange:
@@ -609,7 +617,7 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 			result = self._fetch_account_from_db(cursor, ACCOUNTS[0].address)
 
 		# Assert:
-		self.assertEqual(result[3], remote_address.bytes.hex())
+		self.assertEqual(result.remote_address, remote_address.bytes.hex())
 
 	def test_can_clear_account_remote_address(self):
 		# Arrange:
@@ -628,7 +636,7 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 			result = self._fetch_account_from_db(cursor, ACCOUNTS[0].address)
 
 		# Assert:
-		self.assertIsNone(result[3])
+		self.assertIsNone(result.remote_address)
 
 	def test_can_get_accounts_for_refresh(self):
 		# Arrange:
@@ -754,13 +762,13 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 			1000000,
 			88888,
 			[],
-			0,
 			10,
 			'INACTIVE',
+			None,
+			None,
+			None,
 			0,
-			None,
-			None,
-			None)
+			0)
 		)
 
 	def test_can_update_account_harvested_fees(self):
@@ -796,8 +804,8 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 			result = self._fetch_account_from_db(cursor, ACCOUNTS[0].address)
 
 		# Assert:
-		self.assertEqual(result[8], 750000)  # harvested_fees
-		self.assertEqual(result[11], 20)      # last_harvested_height
+		self.assertEqual(result.harvested_fees, 750000)
+		self.assertEqual(result.last_harvested_height, 20)
 
 	def test_can_insert_namespace(self):
 		# Arrange:
@@ -1523,26 +1531,26 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 			result = self._fetch_account_from_db(cursor, snapshot.address)
 
 		# Assert:
-		self.assertEqual(snapshot.address.bytes.hex(), result[0])
-		self.assertEqual(snapshot.height, result[1])
-		self.assertEqual(snapshot.public_key.bytes.hex(), result[2])
-		self.assertEqual(orphan_remote_address.bytes.hex(), result[3])  # remote_address should remain unchanged
-		self.assertEqual(f'{snapshot.importance:.10f}', result[4])
-		self.assertEqual(snapshot.balance, result[5])
-		self.assertEqual(snapshot.vested_balance, result[6])
-		self.assertEqual(snapshot.mosaics, result[7])
-		self.assertEqual(orphan_harvested_fees, result[8])  # harvested_fees should remain unchanged
-		self.assertEqual(snapshot.harvested_blocks, result[9])
-		self.assertEqual(snapshot.remote_status, result[10])
-		self.assertEqual(orphan_last_harvested_height, result[11])  # last_harvested_height should remain unchanged
-		self.assertEqual(snapshot.min_cosignatories, result[12])
+		self.assertEqual(snapshot.address.bytes.hex(), result.address)
+		self.assertEqual(snapshot.height, result.height)
+		self.assertEqual(snapshot.public_key.bytes.hex(), result.public_key)
+		self.assertEqual(orphan_remote_address.bytes.hex(), result.remote_address)
+		self.assertEqual(f'{snapshot.importance:.10f}', result.importance)
+		self.assertEqual(snapshot.balance, result.balance)
+		self.assertEqual(snapshot.vested_balance, result.vested_balance)
+		self.assertEqual(snapshot.mosaics, result.mosaics)
+		self.assertEqual(orphan_harvested_fees, result.harvested_fees)
+		self.assertEqual(snapshot.harvested_blocks, result.harvested_blocks)
+		self.assertEqual(snapshot.remote_status, result.remote_status)
+		self.assertEqual(orphan_last_harvested_height, result.last_harvested_height)
+		self.assertEqual(snapshot.min_cosignatories, result.min_cosignatories)
 		self.assertEqual(
 			[address.bytes for address in snapshot.cosignatory_of],
-			[bytes(address) for address in result[13]]
+			[bytes(address) for address in result.cosignatory_of]
 		)
 		self.assertEqual(
 			[address.bytes for address in snapshot.cosignatories],
-			[bytes(address) for address in result[14]]
+			[bytes(address) for address in result.cosignatories]
 		)
 
 	def test_rejects_refreshing_missing_account_from_rollback_snapshot(self):
@@ -1577,7 +1585,7 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 			cleared_result = self._fetch_account_from_db(cursor, cleared_account.address)
 
 		# Assert:
-		self.assertIsNone(cleared_result[3])
+		self.assertIsNone(cleared_result.remote_address)
 
 	def test_can_get_latest_surviving_account_key_link(self):
 		# Arrange:
@@ -1827,7 +1835,7 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 			second_result = self._fetch_account_from_db(cursor, second_account.address)
 
 		# Assert:
-		self.assertEqual(first_harvested_fees - first_orphan_block.total_fee, first_result[8])
-		self.assertEqual(BLOCKS[0].height, first_result[11])
-		self.assertEqual(0, second_result[8])
-		self.assertEqual(0, second_result[11])
+		self.assertEqual(first_harvested_fees - first_orphan_block.total_fee, first_result.harvested_fees)
+		self.assertEqual(BLOCKS[0].height, first_result.last_harvested_height)
+		self.assertEqual(0, second_result.harvested_fees)
+		self.assertEqual(0, second_result.last_harvested_height)
