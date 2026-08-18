@@ -4,37 +4,55 @@ import { fetchMosaicInfo } from './mosaics';
 import { fetchNamespaceInfo } from './namespaces';
 import { fetchTransactionInfo } from './transactions';
 
-export const search = async text => {
+const ADDRESS_LENGTH = 40;
+const HEX_KEY_LENGTH = 64;
+
+const searchAccount = query => {
+	if (ADDRESS_LENGTH === query.length)
+		return fetchAccountInfo(query);
+
+	if (HEX_KEY_LENGTH === query.length)
+		return fetchAccountInfoByPublicKey(query);
+
+	return null;
+};
+
+const searchNamespace = async query => {
+	const namespace = await fetchNamespaceInfo(query.toLowerCase());
+
+	if (namespace || 2 > query.split('.').length)
+		return namespace;
+
+	const rootNamespaceName = query.split('.')[0] || '';
+
+	return fetchNamespaceInfo(rootNamespaceName.toLowerCase());
+};
+
+const searchHandlers = {
+	block: query => fetchBlockInfo(query),
+	transaction: query => (HEX_KEY_LENGTH === query.length ? fetchTransactionInfo(query) : null),
+	account: searchAccount,
+	mosaic: query => fetchMosaicInfo(query.toLowerCase()),
+	namespace: searchNamespace
+};
+
+/**
+ * Searches for the entity matching the text.
+ * @param {string} text - search text
+ * @param {string} [type] - entity type to search for; every type is searched when omitted
+ * @returns {Promise<object>} map of the entities found, keyed by type
+ */
+export const search = async (text, type) => {
 	const query = `${text}`.trim().toUpperCase();
+	const requestedTypes = type ? [type] : Object.keys(searchHandlers);
+	const types = requestedTypes.filter(requestedType => searchHandlers[requestedType]);
+	const entities = await Promise.all(types.map(searchType => searchHandlers[searchType](query)));
 	const results = {};
-	let account;
-	let transaction;
-	let namespace;
 
-	const block = await fetchBlockInfo(query);
-	if (query.length === 64) 
-		transaction = await fetchTransactionInfo(query);
-	if (query.length === 40) 
-		account = await fetchAccountInfo(query);
-	if (!account && query.length === 64) 
-		account = await fetchAccountInfoByPublicKey(query);
-	const mosaic = await fetchMosaicInfo(query.toLowerCase());
-	namespace = await fetchNamespaceInfo(query.toLowerCase());
-	if (!namespace && query.split('.').length > 1) {
-		const mosaicRootNamespaceName = query.split('.')[0] || '';
-		namespace = await fetchNamespaceInfo(mosaicRootNamespaceName.toLowerCase());
-	}
-
-	if (block) 
-		results.block = block;
-	if (transaction) 
-		results.transaction = transaction;
-	if (account) 
-		results.account = account;
-	if (mosaic) 
-		results.mosaic = mosaic;
-	if (namespace) 
-		results.namespace = namespace;
+	types.forEach((searchType, index) => {
+		if (entities[index])
+			results[searchType] = entities[index];
+	});
 
 	return results;
 };
