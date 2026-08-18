@@ -10,13 +10,15 @@ import { renderToString } from 'react-dom/server';
 
 const ReactApexChart = dynamic(() => import('react-apexcharts'), { ssr: false });
 
-const MAX_DATA_LENGTH = 400;
+// The largest block the fee treemap is drawn for. It caps the single request that has to return every
+// transaction of the block.
+export const MAX_TRANSACTION_SQUARES = 250;
 
 const Tooltip = ({ fee }) => <ValueMosaic isNative amount={fee} />;
 
-const ValueTransactionSquares = ({ data = [], isTransactionPreviewEnabled, isLoading, className }) => {
+const ValueTransactionSquares = ({ data = [], transactionCount, isTransactionPreviewEnabled, isLoading, className }) => {
 	const { t } = useTranslation('common');
-	const isChartPresentable = data.length < MAX_DATA_LENGTH;
+	const isChartPresentable = transactionCount <= MAX_TRANSACTION_SQUARES;
 	const [selectedTransaction, setSelectedTransaction] = useState(null);
 	const series = [
 		{
@@ -88,7 +90,10 @@ const ValueTransactionSquares = ({ data = [], isTransactionPreviewEnabled, isLoa
 			{!!data.length && !isLoading && isChartPresentable && (
 				<ReactApexChart className={styles.chart} options={options} series={series} type="treemap" height="100%" />
 			)}
-			{!data.length && !isLoading && <div className={styles.emptyDataMessage}>{t('message_emptyTable')}</div>}
+			{!data.length && !isLoading && isChartPresentable && <div className={styles.emptyDataMessage}>{t('message_emptyTable')}</div>}
+			{!isLoading && !isChartPresentable && (
+				<div className={styles.emptyDataMessage}>{t('message_tooManyTransactionsToVisualize')}</div>
+			)}
 			{!!isTransactionPreviewEnabled && !!selectedTransaction && (
 				<div className={styles.selectedTransaction}>
 					<ValueTransaction
