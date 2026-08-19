@@ -1870,7 +1870,7 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 				%(deadline)s,
 				%(network_deadline)s,
 				%(max_fee)s,
-				LEAST(%(max_fee)s, %(size)s * (SELECT fee_multiplier FROM symbol_blocks WHERE height = %(height)s)),
+				LEAST(%(max_fee)s, CAST(%(size)s AS bigint) * (SELECT fee_multiplier FROM symbol_blocks WHERE height = %(height)s)),
 				%(size)s,
 				%(message_type)s,
 				%(message_payload)s,
