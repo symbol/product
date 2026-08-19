@@ -4,6 +4,7 @@ from asyncio import run
 from zenlog import log
 
 from puller.facade.NemPuller import NemPuller
+from puller.workflows.log_utils import configure_logging
 
 
 def parse_args():
@@ -23,6 +24,8 @@ def parse_args():
 
 
 async def main():
+	configure_logging()
+
 	args = parse_args()
 
 	facade = NemPuller(args.nem_node, args.db_config, args.network)
