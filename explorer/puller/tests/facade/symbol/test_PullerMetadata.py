@@ -170,6 +170,7 @@ def _create_embedded_metadata_fixture(
 	include_decoy=False,
 	decoy_address=RECIPIENT_ADDRESS,
 	decoy_mosaic_id=DECOY_MOSAIC_ID,
+	metadata_value='68656C6C6F',
 	connector_class=FakeConnector,
 	scoped_metadata_key=SCOPED_METADATA_KEY
 ):  # pylint: disable=too-many-arguments,too-many-positional-arguments,too-many-locals
@@ -181,15 +182,16 @@ def _create_embedded_metadata_fixture(
 		targetAddress=target_address,
 		targetMosaicId=target_mosaic_id,
 		scopedMetadataKey=scoped_metadata_key,
-		valueSizeDelta=5,
-		value='68656C6C6F')
+		valueSizeDelta=len(bytes.fromhex(metadata_value)),
+		value=metadata_value)
 	metadata_item = create_metadata_item(
 		metadata_type=1,
 		target_id=resolved_mosaic_id,
 		scoped_metadata_key=scoped_metadata_key,
 		composite_hash=METADATA_COMPOSITE_HASH,
 		target_address=resolved_address,
-		item_id='embedded-metadata-result')
+		item_id='embedded-metadata-result',
+		value=metadata_value)
 	address_resolution_items = [] if address_resolution_entries is None else [create_resolution_statement(
 		1, target_address, address_resolution_entries)]
 	mosaic_resolution_items = [] if mosaic_resolution_entries is None else [create_resolution_statement(
@@ -692,6 +694,39 @@ class SymbolPullerMetadataTest(SymbolPullerTestBase):  # pylint: disable=too-man
 				'scopedMetadataKey': lowercase_scoped_key,
 				'valueSizeDelta': 5,
 				'value': '68656C6C6F'
+			})
+
+	def test_sync_block_headers_persists_metadata_value_containing_nul(self):
+		# Arrange:
+		connector, _, _, embedded_transaction, transactions, metadata_item = _create_embedded_metadata_fixture(
+			RECIPIENT_ADDRESS, MOSAIC_ID, metadata_value='410042')
+		expected_path = metadata_path(1, MOSAIC_ID)
+		transactions_snapshot = copy.deepcopy(transactions)
+		embedded_transaction_snapshot = copy.deepcopy(embedded_transaction)
+		metadata_item_snapshot = copy.deepcopy(metadata_item)
+		expected_metadata_row = create_expected_metadata_row(
+			metadata_item_snapshot,
+			1,
+			composite_hash=bytes.fromhex(METADATA_COMPOSITE_HASH),
+			metadata_type='mosaic',
+			target_id=MOSAIC_ID,
+			value_utf8='A�B',
+			value_hex='410042')
+
+		# Act:
+		self._sync_with_connector(connector)
+
+		# Assert:
+		self._assert_embedded_metadata_persisted(
+			connector, transactions_snapshot, embedded_transaction_snapshot, expected_metadata_row, expected_path, [],
+			{
+				'version': 1,
+				'network': 152,
+				'targetAddress': RECIPIENT_ADDRESS,
+				'targetMosaicId': MOSAIC_ID,
+				'scopedMetadataKey': SCOPED_METADATA_KEY,
+				'valueSizeDelta': 3,
+				'value': '410042'
 			})
 
 	def test_sync_block_headers_resolves_address_alias_for_embedded_mosaic_metadata(self):
