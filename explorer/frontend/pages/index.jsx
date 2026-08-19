@@ -22,10 +22,11 @@ import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 import { useCallback } from 'react';
 
 const DATA_REFRESH_INTERVAL = 60000;
+const RECENT_BLOCK_COUNT = 50;
 
 export const getServerSideProps = async ({ locale }) => {
 	const [blocksPage, latestTransactionsPage, pendingTransactionsPage] = await Promise.all([
-		fetchBlockPage({ pageSize: 50 }),
+		fetchBlockPage({ pageSize: RECENT_BLOCK_COUNT }),
 		fetchTransactionPage({ pageSize: 5 }),
 		fetchTransactionPage({ pageSize: 5, group: TRANSACTION_GROUP.UNCONFIRMED })
 	]);
@@ -75,7 +76,7 @@ const Home = ({
 		preloadedPendingTransactions,
 		DATA_REFRESH_INTERVAL
 	);
-	const blocks = useAsyncCall(fetchBlockPage, preloadedBlocks, DATA_REFRESH_INTERVAL);
+	const blocks = useAsyncCall(() => fetchBlockPage({ pageSize: RECENT_BLOCK_COUNT }), preloadedBlocks, DATA_REFRESH_INTERVAL);
 	const chainStatus = useAsyncCall(fetchChainStatus, null, DATA_REFRESH_INTERVAL);
 
 	const fetchBlockTransactions = useCallback(height => fetchTransactionPage({ pageSize: 160, height }), [fetchTransactionPage]);
