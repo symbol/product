@@ -32,6 +32,24 @@ jest.mock('@/app/api/transactions', () => {
 });
 
 describe('BlockInfo', () => {
+	const renderPage = async (blockInfo, nextPageResult = { data: [], pageNumber: 2 }) => {
+		mockAllIsIntersecting(false);
+		const fetchTransactionPage = jest.spyOn(TransactionService, 'fetchTransactionPage');
+		fetchTransactionPage.mockImplementation(async ({ pageNumber }) => {
+			if (undefined === pageNumber)
+				return transactionPageResult;
+
+			return 1 === pageNumber ? { ...transactionPageResult, pageNumber: 1 } : nextPageResult;
+		});
+		jest.spyOn(BlockService, 'fetchChainStatus').mockResolvedValue({ height: blockInfo.height, finalizedHeight: null });
+
+		await act(async () => {
+			render(<BlockInfo blockInfo={blockInfo} />);
+		});
+
+		return fetchTransactionPage;
+	};
+
 	describe('getServerSideProps', () => {
 		const runTest = async (blockInfoResult, expectedResult) => {
 			// Arrange:
@@ -75,7 +93,7 @@ describe('BlockInfo', () => {
 	});
 
 	describe('page', () => {
-		it('renders page with the information about the block', () => {
+		it('renders page with the information about the block', async () => {
 			// Arrange:
 			const pageSectionText = 'section_block';
 			const heightText = blockInfoResult.height;
@@ -84,7 +102,7 @@ describe('BlockInfo', () => {
 			const harvesterText = blockInfoResult.harvester;
 
 			// Act:
-			render(<BlockInfo blockInfo={blockInfoResult} />);
+			await renderPage(blockInfoResult);
 
 			// Assert:
 			expect(screen.getByText(pageSectionText)).toBeInTheDocument();
@@ -94,67 +112,64 @@ describe('BlockInfo', () => {
 			expect(screen.getByText(harvesterText)).toBeInTheDocument();
 		});
 
-		const runStatusLabelTest = (chainHeightOffset, expectedShownLabelText, expectedHiddenLabelText) => {
+		const runStatusLabelTest = async (chainHeightOffset, expectedShownLabelText, expectedHiddenLabelText) => {
 			// Arrange:
 			const spy = jest.spyOn(utils, 'useAsyncCall');
 			spy.mockImplementation(() => ({ height: blockInfoResult.height + chainHeightOffset, finalizedHeight: null }));
 
 			// Act:
-			render(<BlockInfo blockInfo={blockInfoResult} />);
+			await renderPage(blockInfoResult);
 
 			// Assert:
 			expect(screen.getByText(expectedShownLabelText)).toBeInTheDocument();
 			expect(screen.queryByText(expectedHiddenLabelText)).not.toBeInTheDocument();
 		};
 
-		it('renders safe label', () => {
+		it('renders safe label', async () => {
 			// Arrange:
 			const chainHeightOffset = 361;
 			const expectedShownLabelText = 'label_safe';
 			const expectedHiddenLabelText = 'label_unsafe';
 
 			// Act + Assert:
-			runStatusLabelTest(chainHeightOffset, expectedShownLabelText, expectedHiddenLabelText);
+			await runStatusLabelTest(chainHeightOffset, expectedShownLabelText, expectedHiddenLabelText);
 		});
 
-		it('renders created label', () => {
+		it('renders created label', async () => {
 			// Arrange:
 			const chainHeightOffset = 100;
 			const expectedShownLabelText = 'label_created';
 			const expectedHiddenLabelText = 'label_safe';
 
 			// Act + Assert:
-			runStatusLabelTest(chainHeightOffset, expectedShownLabelText, expectedHiddenLabelText);
+			await runStatusLabelTest(chainHeightOffset, expectedShownLabelText, expectedHiddenLabelText);
 		});
 	});
 
 	describe('transactions', () => {
 		const TRANSACTION_PAGE_SIZE = 50;
 
-		const renderPage = async (blockInfo, nextPageResult = { data: [], pageNumber: 2 }) => {
-			mockAllIsIntersecting(false);
-			const fetchTransactionPage = jest.spyOn(TransactionService, 'fetchTransactionPage');
-			fetchTransactionPage.mockResolvedValue(nextPageResult);
-			fetchTransactionPage.mockResolvedValueOnce({ ...transactionPageResult, pageNumber: 1 });
-			jest.spyOn(BlockService, 'fetchChainStatus').mockResolvedValue({ height: blockInfo.height, finalizedHeight: null });
+		it('requests the first transaction page and the fee visualisation data', async () => {
+			// Arrange:
+			const transactionHashes = transactionPageResult.data.map(transaction => utils.truncateString(transaction.hash, 'hash'));
 
-			await act(async () => {
-				render(<BlockInfo blockInfo={blockInfo} />);
-			});
-
-			return fetchTransactionPage;
-		};
-
-		it('requests the first transaction page of the block', async () => {
-			// Arrange + Act:
+			// Act:
 			const fetchTransactionPage = await renderPage(blockInfoResult);
 
 			// Assert:
+			expect(fetchTransactionPage).toHaveBeenCalledTimes(2);
 			expect(fetchTransactionPage).toHaveBeenCalledWith({
 				pageNumber: 1,
 				height: blockInfoResult.height,
 				pageSize: TRANSACTION_PAGE_SIZE
 			});
+			expect(fetchTransactionPage).toHaveBeenCalledWith({
+				height: blockInfoResult.height,
+				pageSize: MAX_TRANSACTION_SQUARES
+			});
+			transactionHashes.forEach(hash => expect(screen.getByText(hash)).toBeInTheDocument());
+			expect(screen.queryByText('message_emptyTable')).not.toBeInTheDocument();
+			expect(screen.queryByText('message_tooManyTransactionsToVisualize')).not.toBeInTheDocument();
 		});
 
 		it('requests the next transaction page from the server', async () => {
@@ -174,19 +189,7 @@ describe('BlockInfo', () => {
 			});
 		});
 
-		it('requests all the transactions of the block for the fee visualisation', async () => {
-			// Arrange + Act:
-			const fetchTransactionPage = await renderPage(blockInfoResult);
-
-			// Assert:
-			expect(fetchTransactionPage).toHaveBeenCalledWith({
-				height: blockInfoResult.height,
-				pageSize: MAX_TRANSACTION_SQUARES
-			});
-			expect(screen.queryByText('message_tooManyTransactionsToVisualize')).not.toBeInTheDocument();
-		});
-
-		it('requests the fee visualisation for a block sitting exactly on the cap', async () => {
+		it('keeps the fee visualisation when the block sits exactly on the cap', async () => {
 			// Arrange:
 			const blockInfo = { ...blockInfoResult, transactionCount: MAX_TRANSACTION_SQUARES };
 
@@ -194,6 +197,7 @@ describe('BlockInfo', () => {
 			const fetchTransactionPage = await renderPage(blockInfo);
 
 			// Assert:
+			expect(fetchTransactionPage).toHaveBeenCalledTimes(2);
 			expect(fetchTransactionPage).toHaveBeenCalledWith({
 				height: blockInfo.height,
 				pageSize: MAX_TRANSACTION_SQUARES
