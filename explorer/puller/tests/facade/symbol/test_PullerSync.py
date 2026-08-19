@@ -765,6 +765,182 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 			bytes(sync_state['last_synced_block_hash'])
 		)
 
+	def test_sync_block_headers_accepts_valid_parent_hash_chain(self):
+		# Arrange:
+		connector = FakeConnector(
+			3,
+			{0: [create_node_block(1), create_node_block(2), create_node_block(3)]}
+		)
+
+		# Act:
+		block_heights, sync_state = self._sync_with_connector(connector)
+
+		# Assert:
+		self.assertEqual([1, 2, 3], block_heights)
+		self.assertEqual(3, sync_state['last_synced_height'])
+
+	def test_sync_block_headers_accepts_height_one_without_stored_parent_hash(self):
+		# Arrange:
+		connector = FakeConnector(1, {0: [create_node_block(1, previous_hash='A' * 64)]})
+
+		# Act:
+		block_heights, sync_state = self._sync_with_connector(connector)
+
+		# Assert:
+		self.assertEqual([1], block_heights)
+		self.assertEqual(1, sync_state['last_synced_height'])
+
+	def test_sync_block_headers_rejects_parent_hash_mismatch_at_stored_block_boundary(self):
+		# Arrange:
+		stored_height = 1
+		connector = FakeConnector(
+			2,
+			{1: [create_node_block(2, previous_hash='A' * 64)]}
+		)
+		self._seed_blocks(self.puller.symbol_db, [stored_height])
+		existing_sync_state = create_sync_state(
+			chain_height=stored_height,
+			last_synced_height=stored_height,
+			last_synced_block_hash=bytes.fromhex(f'{stored_height:064X}'))
+		self.puller.symbol_db.upsert_sync_state(existing_sync_state)
+		expected_state = self._fetch_complete_batch_state()
+		set_symbol_connector(self.puller, connector)
+
+		# Act / Assert:
+		with self.assertRaisesRegex(
+			ValueError,
+			f'Symbol block chain mismatch at height 2: expected previous hash {1:064X}, got {"A" * 64}'
+		):
+			asyncio.run(self.puller.sync_block_headers())
+
+		# Assert:
+		self.assertEqual(expected_state, self._fetch_complete_batch_state())
+		self.assertEqual([
+			'chain/info',
+			'network/properties',
+			f'mosaics/{NATIVE_MOSAIC_ID}',
+			'blocks?pageSize=100&offset=1&orderBy=height'
+		], connector.paths)
+
+	def test_sync_block_headers_rejects_parent_hash_mismatch_within_page_before_related_fetches(self):
+		# Arrange:
+		connector = FakeConnector(
+			2,
+			{0: [create_node_block(1), create_node_block(2, previous_hash='A' * 64)]},
+			transactions_by_path={
+				transaction_path(1, 2): {'data': [create_node_transaction(2)]}
+			},
+			statement_pages={
+				statement_path(1, 2): {'data': [create_amount_statement_item(2, 2000)]}
+			}
+		)
+		expected_state = self._fetch_complete_batch_state()
+		set_symbol_connector(self.puller, connector)
+
+		# Act / Assert:
+		with self.assertRaisesRegex(
+			ValueError,
+			f'Symbol block chain mismatch at height 2: expected previous hash {1:064X}, got {"A" * 64}'
+		):
+			asyncio.run(self.puller.sync_block_headers())
+
+		# Assert:
+		self.assertEqual(expected_state, self._fetch_complete_batch_state())
+		self.assertEqual([
+			'chain/info',
+			'network/properties',
+			f'mosaics/{NATIVE_MOSAIC_ID}',
+			'blocks?pageSize=100&offset=0&orderBy=height'
+		], connector.paths)
+
+	def test_sync_block_headers_rejects_parent_hash_mismatch_at_page_boundary(self):
+		# Arrange:
+		first_page = [create_node_block(height) for height in range(1, 101)]
+		second_page = [create_node_block(101, previous_hash='A' * 64)]
+		connector = FakeConnector(101, {0: first_page, 100: second_page})
+		expected_state = self._fetch_complete_batch_state()
+		set_symbol_connector(self.puller, connector)
+
+		# Act / Assert:
+		with self.assertRaisesRegex(
+			ValueError,
+			f'Symbol block chain mismatch at height 101: expected previous hash {100:064X}, got {"A" * 64}'
+		):
+			asyncio.run(self.puller.sync_block_headers())
+
+		# Assert:
+		self.assertEqual(expected_state, self._fetch_complete_batch_state())
+		self.assertEqual([
+			'chain/info',
+			'network/properties',
+			f'mosaics/{NATIVE_MOSAIC_ID}',
+			'blocks?pageSize=100&offset=0&orderBy=height',
+			'blocks?pageSize=100&offset=100&orderBy=height'
+		], connector.paths)
+
+	def test_sync_block_headers_rejects_parent_hash_mismatch_at_block_page_fetch_batch_boundary(self):
+		# Arrange:
+		chain_height = BLOCK_PAGE_FETCH_CONCURRENCY * MAX_PAGE_SIZE + 1
+		pages = {
+			offset: [
+				create_node_block(height)
+				for height in range(offset + 1, min(offset + MAX_PAGE_SIZE + 1, chain_height + 1))
+			]
+			for offset in range(0, chain_height, MAX_PAGE_SIZE)
+		}
+		pages[BLOCK_PAGE_FETCH_CONCURRENCY * MAX_PAGE_SIZE] = [
+			create_node_block(chain_height, previous_hash='A' * 64)
+		]
+		connector = FakeConnector(chain_height, pages)
+		set_symbol_connector(self.puller, connector)
+
+		# Act / Assert:
+		with self.assertRaisesRegex(
+			ValueError,
+			f'Symbol block chain mismatch at height {chain_height}: '
+			f'expected previous hash {chain_height - 1:064X}, got {"A" * 64}'
+		):
+			asyncio.run(self.puller.sync_block_headers())
+
+		# Assert:
+		self.assertEqual(list(range(1, chain_height)), self._fetch_block_heights(self.puller.symbol_db))
+		self.assertIsNone(self.puller.symbol_db.get_sync_state())
+		block_paths = [path for path in connector.paths if path.startswith('blocks?pageSize=100&offset=')]
+		transaction_paths = [path for path in connector.paths if path.startswith('transactions/confirmed?')]
+		statement_paths = [path for path in connector.paths if path.startswith('statements/transaction?')]
+		self.assertEqual(BLOCK_PAGE_FETCH_CONCURRENCY + 1, len(block_paths))
+		self.assertEqual([transaction_path(1, chain_height - 1)], transaction_paths)
+		self.assertEqual([statement_path(1, chain_height - 1)], statement_paths)
+
+	def test_sync_block_headers_keeps_previous_watermark_when_next_run_parent_hash_mismatches(self):
+		# Arrange:
+		first_connector = FakeConnector(1, {0: [create_node_block(1)]})
+
+		# Act:
+		self._sync_with_connector(first_connector)
+
+		# Assert:
+		first_state = self._fetch_complete_batch_state()
+		self.assertEqual(1, self.puller.symbol_db.get_sync_state()['last_synced_height'])
+
+		# Arrange:
+		second_connector = FakeConnector(2, {1: [create_node_block(2, previous_hash='A' * 64)]})
+		set_symbol_connector(self.puller, second_connector)
+
+		# Act / Assert:
+		with self.assertRaisesRegex(
+			ValueError,
+			f'Symbol block chain mismatch at height 2: expected previous hash {1:064X}, got {"A" * 64}'
+		):
+			asyncio.run(self.puller.sync_block_headers())
+
+		# Assert:
+		self.assertEqual(first_state, self._fetch_complete_batch_state())
+		self.assertEqual([
+			'chain/info',
+			'blocks?pageSize=100&offset=1&orderBy=height'
+		], second_connector.paths)
+
 	def test_sync_block_headers_persists_importance_block_fields(self):
 		# Arrange:
 		connector = FakeConnector(1, {0: [create_node_block(

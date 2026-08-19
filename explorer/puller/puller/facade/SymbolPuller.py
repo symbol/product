@@ -361,6 +361,7 @@ class SymbolPuller:
 		last_synced_height = None
 		last_synced_block_hash = None
 		all_offsets = range(start_height - 1, chain_height, MAX_PAGE_SIZE)
+		previous_block_hash = self.symbol_db.get_block_hash(start_height - 1) if start_height > 1 else None
 
 		for batch_start in range(0, len(all_offsets), BLOCK_PAGE_FETCH_CONCURRENCY):
 			batch_offsets = all_offsets[batch_start:batch_start + BLOCK_PAGE_FETCH_CONCURRENCY]
@@ -380,6 +381,7 @@ class SymbolPuller:
 					raise ValueError(f'Symbol block page at offset {offset} does not contain blocks at or below chain height {chain_height}')
 
 				self._validate_block_page(rows, offset + 1)
+				previous_block_hash = self._validate_block_chain(rows, previous_block_hash)
 				last_row = rows[-1]
 				if len(blocks) < MAX_PAGE_SIZE and last_row['height'] < chain_height:
 					raise ValueError(f'Short Symbol block page ended at height {last_row["height"]} before chain height {chain_height}')
@@ -1339,3 +1341,20 @@ class SymbolPuller:
 			expected_height = expected_start_height + index
 			if row['height'] != expected_height:
 				raise ValueError(f'Unexpected Symbol block height {row["height"]}; expected {expected_height}')
+
+	@staticmethod
+	def _validate_block_chain(rows, previous_block_hash):
+		for row in rows:
+			if 1 < row['height']:
+				expected_hash = bytes(previous_block_hash) if previous_block_hash is not None else None
+				actual_previous_hash = bytes(row['previous_hash'])
+				if actual_previous_hash != expected_hash:
+					expected_hash_text = expected_hash.hex().upper() if expected_hash is not None else 'None'
+					raise ValueError(
+						f'Symbol block chain mismatch at height {row["height"]}: '
+						f'expected previous hash {expected_hash_text}, got {actual_previous_hash.hex().upper()}'
+					)
+
+			previous_block_hash = row['hash']
+
+		return previous_block_hash
