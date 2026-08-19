@@ -178,6 +178,7 @@
 	"message_addressBook_addressAlreadyAdded": "Address already added",
 	"message_addressBook_nameAlreadyAdded": "Address with such Name already added",
 	"message_emptyTable": "Nothing to show.",
+	"message_tooManyTransactionsToVisualize": "Too many transactions to visualize.",
 	"message_noLinkedKeys": "No linked keys",
 	"message_nothingFound": "Nothing found.",
 	"message_404": "We can't seem to find the resource you're looking for.",

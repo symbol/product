@@ -1,7 +1,6 @@
 import {
 	useAsyncCall,
 	useClientSideFilter,
-	useClientSidePagination,
 	useDataManager,
 	useDebounce,
 	useFilter,
@@ -270,49 +269,6 @@ describe('utils/hooks', () => {
 			expect(result.current.isError).toBe(true);
 			expect(result.current.isLastPage).toBe(false);
 			expect(result.current.pageNumber).toBe(1);
-		});
-	});
-
-	describe('useClientSidePagination', () => {
-		it('paginates a data list', () => {
-			// Arrange:
-			const fullData = [1, 2, 3, 4, 5, 6, 7, 8, 9];
-			const pageSize = 3;
-
-			// Act:
-			const { result } = renderHook(() => useClientSidePagination(fullData, pageSize));
-
-			// Assert initial state:
-			const { data, pageNumber, isLastPage } = result.current;
-			expect(data).toStrictEqual([1, 2, 3]);
-			expect(pageNumber).toBe(1);
-			expect(isLastPage).toBe(false);
-
-			// Request next page:
-			act(() => {
-				result.current.requestNextPage();
-			});
-
-			// Assert state after request:
-			const { data: dataAfterRequest, pageNumber: pageNumberAfterRequest, isLastPage: isLastPageAfterRequest } = result.current;
-			expect(dataAfterRequest).toStrictEqual([1, 2, 3, 4, 5, 6]);
-			expect(pageNumberAfterRequest).toBe(2);
-			expect(isLastPageAfterRequest).toBe(false);
-
-			// Request last page:
-			act(() => {
-				result.current.requestNextPage();
-			});
-
-			// Assert state after last request:
-			const {
-				data: dataAfterLastRequest,
-				pageNumber: pageNumberAfterLastRequest,
-				isLastPage: isLastPageAfterLastRequest
-			} = result.current;
-			expect(dataAfterLastRequest).toStrictEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
-			expect(pageNumberAfterLastRequest).toBe(3);
-			expect(isLastPageAfterLastRequest).toBe(true);
 		});
 	});
 

@@ -10,6 +10,7 @@ import RecentTransactions from '@/app/components/RecentTransactions';
 import Section from '@/app/components/Section';
 import Separator from '@/app/components/Separator';
 import ValuePrice from '@/app/components/ValuePrice';
+import { MAX_TRANSACTION_SQUARES } from '@/app/components/ValueTransactionSquares';
 import config from '@/app/config';
 import { TRANSACTION_CHART_TYPE, TRANSACTION_GROUP } from '@/app/constants';
 import styles from '@/app/styles/pages/Home.module.scss';
@@ -79,7 +80,10 @@ const Home = ({
 	const blocks = useAsyncCall(() => fetchBlockPage({ pageSize: RECENT_BLOCK_COUNT }), preloadedBlocks, DATA_REFRESH_INTERVAL);
 	const chainStatus = useAsyncCall(fetchChainStatus, null, DATA_REFRESH_INTERVAL);
 
-	const fetchBlockTransactions = useCallback(height => fetchTransactionPage({ pageSize: 160, height }), [fetchTransactionPage]);
+	const fetchBlockTransactions = useCallback(
+		height => fetchTransactionPage({ pageSize: MAX_TRANSACTION_SQUARES, height }),
+		[fetchTransactionPage]
+	);
 
 	return (
 		<div className={styles.wrapper}>
