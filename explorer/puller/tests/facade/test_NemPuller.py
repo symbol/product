@@ -1652,7 +1652,7 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 			account_creation_heights={address: height},
 			orphan_created_accounts=set(),
 			surviving_affected_accounts={address},
-			orphan_harvested_fees={},
+			orphan_harvested_fees_map={},
 			affected_remote_link_accounts=set(),
 			affected_namespace_roots=set(),
 			affected_mosaic_names=set()
@@ -1873,7 +1873,7 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 		self.assertEqual(expected_accounts, capture.affected_accounts)
 		self.assertEqual({recipient}, capture.orphan_created_accounts)
 		self.assertEqual(expected_accounts - {recipient}, capture.surviving_affected_accounts)
-		self.assertEqual({beneficiary: 50}, capture.orphan_harvested_fees)
+		self.assertEqual({beneficiary: 50}, capture.orphan_harvested_fees_map)
 		self.assertEqual({sender}, capture.affected_remote_link_accounts)
 		self.assertEqual({'root'}, capture.affected_namespace_roots)
 		self.assertEqual({'root.token', 'root.supply'}, capture.affected_mosaic_names)
@@ -1933,7 +1933,7 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 		}, impact.account_creation_heights)
 		self.assertEqual(set(), impact.orphan_created_accounts)
 		self.assertEqual(expected_accounts, impact.surviving_affected_accounts)
-		self.assertEqual({}, impact.orphan_harvested_fees)
+		self.assertEqual({}, impact.orphan_harvested_fees_map)
 		self.assertEqual(set(), impact.affected_remote_link_accounts)
 		self.assertEqual(set(), impact.affected_namespace_roots)
 		self.assertEqual(set(), impact.affected_mosaic_names)
@@ -1986,7 +1986,7 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 			account_creation_heights={first_survivor: 2, second_survivor: 5},
 			orphan_created_accounts={},
 			surviving_affected_accounts={first_survivor, second_survivor},
-			orphan_harvested_fees={},
+			orphan_harvested_fees_map={},
 			affected_remote_link_accounts=set(),
 			affected_namespace_roots=set(),
 			affected_mosaic_names=set()
@@ -2284,7 +2284,7 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 		rollback_impact = Mock(
 			fork_height=123,
 			orphan_created_accounts={orphan_address},
-			orphan_harvested_fees={first_address: 50}
+			orphan_harvested_fees_map={first_address: 50}
 		)
 		database = Mock()
 		cursor = database.connection.cursor.return_value
