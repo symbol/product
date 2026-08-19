@@ -37,7 +37,7 @@ class RefreshNemAccountsTest(unittest.TestCase):
 			with self.assertRaises(SystemExit):
 				parse_args()
 
-	@patch('puller.workflows.refresh_nem_accounts.NemPuller')
+	@patch('puller.workflows.nem_workflow_utils.NemPuller')
 	@patch('puller.workflows.refresh_nem_accounts.parse_args')
 	def test_can_refresh_accounts(self, mock_parse_args, mock_nem_puller):
 		# Arrange:
