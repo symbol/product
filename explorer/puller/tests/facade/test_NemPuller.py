@@ -30,11 +30,11 @@ from symbollightapi.model.Transaction import (
 from puller.db.NemDatabase import AccountRefreshRecord
 from puller.facade.NemPuller import (
 	AccountRecord,
-	RefreshedAccountRecord,
 	DatabaseConfig,
 	MosaicRecord,
 	NamespaceRecord,
 	NemPuller,
+	RefreshedAccountRecord,
 	TransactionRecord
 )
 
