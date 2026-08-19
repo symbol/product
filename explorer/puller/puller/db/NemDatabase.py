@@ -1083,7 +1083,7 @@ class NemDatabase(DatabaseConnection):  # pylint: disable=too-many-public-method
 	def rollback_account_harvesting(cursor, orphan_harvested_fees_map, fork_height):
 		"""Subtracts orphan block fees and restores the latest surviving harvest height."""
 
-		for beneficiary in sorted(orphan_harvested_fees_map, key=str):
+		for beneficiary, orphan_harvested_fees in orphan_harvested_fees_map.items():
 			cursor.execute(
 				'''
 				UPDATE accounts
@@ -1098,7 +1098,7 @@ class NemDatabase(DatabaseConnection):  # pylint: disable=too-many-public-method
 				WHERE address = %s
 				''',
 				(
-					orphan_harvested_fees_map[beneficiary],
+					orphan_harvested_fees,
 					beneficiary.bytes,
 					fork_height,
 					beneficiary.bytes
