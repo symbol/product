@@ -119,6 +119,48 @@ describe('ReportTable', () => {
 		expect(failedStatus).toHaveAttribute('data-tooltip', 'Payout rejected');
 	});
 
+	it('renders an unknown payout status', () => {
+		// Arrange:
+		const { table } = renderTable({
+			rows: [{
+				...REQUEST_ROW,
+				payoutStatus: 99
+			}]
+		});
+
+		// Act:
+		const tableView = within(table);
+
+		// Assert:
+		expect(tableView.getByText('Unknown')).toBeInTheDocument();
+	});
+
+	it('renders incomplete payout details without explorer links', () => {
+		// Arrange:
+		const { table } = renderTable({
+			configuration: null,
+			rows: [{
+				...REQUEST_ROW,
+				payoutConversionRate: null,
+				payoutNetAmount: null,
+				payoutStatus: 0,
+				payoutTimestamp: null,
+				payoutTotalFee: null,
+				payoutTransactionHash: null
+			}]
+		});
+
+		// Act:
+		const tableView = within(table);
+
+		// Assert:
+		expect(tableView.getByText('Unprocessed')).toBeInTheDocument();
+		expect(tableView.queryAllByRole('link')).toHaveLength(0);
+		expect(tableView.getAllByText('—')).toHaveLength(5);
+		expect(tableView.getByText('XYM')).toBeInTheDocument();
+		expect(tableView.queryByText('WXYM')).not.toBeInTheDocument();
+	});
+
 	it('renders links addresses and transactions to their configured explorers', () => {
 		// Arrange:
 		const { table } = renderTable();
@@ -161,6 +203,20 @@ describe('ReportTable', () => {
 		expect(sortButton.closest('th')).toHaveAttribute('aria-sort', 'descending');
 	});
 
+	it('renders the alternate request sort direction', () => {
+		// Arrange:
+		const { table } = renderTable({ sort: 1 });
+
+		// Act:
+		const sortButton = within(table).getByRole('button', {
+			name: 'Sort by request block height descending'
+		});
+
+		// Assert:
+		expect(sortButton.closest('th')).toHaveAttribute('aria-sort', 'ascending');
+		expect(sortButton).toHaveTextContent('↑');
+	});
+
 	it('renders and formats errors report fields', () => {
 		// Arrange:
 		const { table } = renderTable({
@@ -175,6 +231,26 @@ describe('ReportTable', () => {
 		expect(tableView.getByText('TARDV42KT…IXVJQY')).toHaveAttribute('title', 'TARDV42KTAIZEF64EQT4NXT7K55DHWBEFIXVJQY');
 		expect(tableView.getByText('CCCCCCCC…CCCCCC')).toHaveAttribute('title', 'C'.repeat(64));
 		expect(tableView.getByText('Required message is missing')).toBeInTheDocument();
+	});
+
+	it('renders missing error messages and the alternate sort direction', () => {
+		// Arrange:
+		const { table } = renderTable({
+			rows: [{ ...ERROR_ROW, errorMessage: null }],
+			sort: 1,
+			tab: ERROR_TAB
+		});
+
+		// Act:
+		const tableView = within(table);
+		const sortButton = tableView.getByRole('button', {
+			name: 'Sort by request block height descending'
+		});
+
+		// Assert:
+		expect(tableView.getByText('—')).toBeInTheDocument();
+		expect(sortButton.closest('th')).toHaveAttribute('aria-sort', 'ascending');
+		expect(sortButton).toHaveTextContent('↑');
 	});
 
 	it('renders and formats request mobile card fields', () => {
