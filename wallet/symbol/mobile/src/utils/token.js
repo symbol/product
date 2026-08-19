@@ -24,6 +24,16 @@ export const getTokenKnownInfo = (chainName, networkIdentifier, tokenId) => {
 };
 
 /**
+ * Checks whether a token is expired at the given chain height. Tokens without an end height
+ * or with unlimited duration never expire.
+ * @param {Token} token - The token to check.
+ * @param {number} chainHeight - The current chain height.
+ * @returns {boolean} True if the token is expired, otherwise false.
+ */
+export const isTokenExpired = (token, chainHeight) =>
+	Boolean(token.endHeight) && !token.isUnlimitedDuration && token.endHeight <= chainHeight;
+
+/**
  * Calculates the total fee amount for a transaction based on the provided transaction fee tiers and selected speed.
  * @param {import('wallet-common-core/src/types/Transaction').TransactionFeeTiers[]} transactionFeeTiers - Array of transaction fee tiers.
  * @param {import('wallet-common-core/src/types/Transaction').TransactionFeeTierLevel} speed

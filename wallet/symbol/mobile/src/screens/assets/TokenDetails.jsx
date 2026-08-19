@@ -1,8 +1,11 @@
 import {
 	Alert,
 	Amount,
+	ButtonPlain,
 	Card,
 	Divider,
+	EmptyListMessage,
+	ExpirationProgress,
 	Field,
 	FlexContainer,
 	Screen,
@@ -16,11 +19,11 @@ import {
 import { useAsyncManager, useWalletController } from '@/app/hooks';
 import { $t } from '@/app/localization';
 import { Router } from '@/app/router/Router';
-import { ExpirationProgress } from '@/app/screens/assets/components';
-import { getExpirationData, getTokenDisplayInfo } from '@/app/screens/assets/utils';
+import { getExpirationData } from '@/app/screens/assets/utils';
 import { Colors } from '@/app/styles';
-import { createTransactionQr } from '@/app/utils';
+import { createTokenDisplayData, createTransactionQr } from '@/app/utils';
 import React from 'react';
+import { isMosaicRevokable, isMosaicSupplyModifiable } from 'wallet-common-symbol';
 
 /** @typedef {import('@/app/types/Network').ChainName} ChainName */
 
@@ -39,27 +42,58 @@ import React from 'react';
 export const TokenDetails = ({ route }) => {
 	const { chainName, tokenId, accountAddress, preloadedData } = route.params;
 	const walletController = useWalletController(chainName);
-	const { networkIdentifier, networkProperties } = walletController;
+	const { currentAccount, networkIdentifier, networkProperties } = walletController;
 
 	// Fetch data
 	const dataManager = useAsyncManager({
 		callback: async () => {
-			const accountInfo = await walletController.networkApi.account.fetchAccountInfo(networkProperties, accountAddress);
+			const { networkApi } = walletController;
+			const accountInfo = await networkApi.account.fetchAccountInfo(networkProperties, accountAddress);
 
 			const tokens = accountInfo.tokens ?? accountInfo.mosaics ?? [];
+			const heldToken = tokens.find(token => token.id === tokenId);
 
-			return tokens.find(token => token.id === tokenId);
+			if (heldToken)
+				return heldToken;
+
+			// The account no longer holds the token (e.g. after sending out the full balance).
+			// Fetch the token info directly to keep the details visible with a zero balance.
+			const tokenInfo = networkApi.mosaic
+				? await networkApi.mosaic.fetchMosaicInfo(networkProperties, tokenId)
+				: await networkApi.token.fetchTokenInfo(networkProperties, tokenId);
+
+			if (!tokenInfo)
+				return null;
+
+			return {
+				...tokenInfo,
+				name: tokenInfo.name ?? (tokenInfo.names?.[0] || tokenInfo.id),
+				amount: '0'
+			};
 		},
 		defaultData: preloadedData
 	});
 	const token = dataManager.data;
+
+	// The token info is unavailable (e.g. the token has expired and is pruned from the node)
+	if (!token) {
+		return (
+			<Screen refresh={{ onRefresh: dataManager.call, isRefreshing: dataManager.isLoading }}>
+				<Screen.Upper>
+					<Spacer>
+						<EmptyListMessage />
+					</Spacer>
+				</Screen.Upper>
+			</Screen>
+		);
+	}
 
 	// Token display data
 	const {
 		name,
 		ticker,
 		imageId
-	} = getTokenDisplayInfo(token, chainName, networkIdentifier);
+	} = createTokenDisplayData(token, chainName, networkIdentifier);
 
 	// Info table data
 	const tableData = [
@@ -121,6 +155,16 @@ export const TokenDetails = ({ route }) => {
 	});
 
 	const isSendReceiveButtonsDisabled = isTokenExpired;
+
+	// Mosaic creator actions
+	const isCurrentAccountCreator = accountAddress === currentAccount.address;
+	const canRevokeMosaic = isCurrentAccountCreator
+		&& isMosaicRevokable(token, networkProperties?.chainHeight, accountAddress);
+	const canModifyMosaic = isCurrentAccountCreator
+		&& isMosaicSupplyModifiable(token, networkProperties?.chainHeight, accountAddress);
+	const isCreatorActionsVisible = canRevokeMosaic || canModifyMosaic;
+	const openRevokeScreen = () => Router.goToRevokeMosaic({ params: { chainName, mosaicId: tokenId } });
+	const openModifyScreen = () => Router.goToModifyMosaic({ params: { chainName, mosaicId: tokenId } });
 
 	return (
 		<Screen refresh={{ onRefresh: dataManager.call, isRefreshing: dataManager.isLoading }}>
@@ -197,6 +241,25 @@ export const TokenDetails = ({ route }) => {
 									</Stack>
 								</Spacer>
 							</Card>
+						)}
+						{isCreatorActionsVisible && (
+							<Stack>
+								<Divider />
+								{canRevokeMosaic && (
+									<ButtonPlain
+										icon="revoke"
+										text={$t('button_revoke')}
+										onPress={openRevokeScreen}
+									/>
+								)}
+								{canModifyMosaic && (
+									<ButtonPlain
+										icon="edit"
+										text={$t('button_modifyMosaic')}
+										onPress={openModifyScreen}
+									/>
+								)}
+							</Stack>
 						)}
 					</Stack>
 				</Spacer>

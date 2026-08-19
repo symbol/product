@@ -51,13 +51,22 @@ export const TransactionBundleType = {
 	MULTISIG_TRANSFER: 'multisig-transfer',
 	MULTISIG_ACCOUNT_MODIFICATION: 'multisig-account-modification',
 	DELEGATED_HARVESTING: 'delegated-harvesting',
-	MULTISIG_DELEGATED_HARVESTING: 'multisig-delegated-harvesting'
+	MULTISIG_DELEGATED_HARVESTING: 'multisig-delegated-harvesting',
+	MOSAIC_CREATION: 'mosaic-creation',
+	MULTISIG_MOSAIC_CREATION: 'multisig-mosaic-creation',
+	MOSAIC_SUPPLY_CHANGE: 'mosaic-supply-change',
+	MULTISIG_MOSAIC_SUPPLY_CHANGE: 'multisig-mosaic-supply-change',
+	MOSAIC_REVOCATION: 'mosaic-revocation',
+	MULTISIG_MOSAIC_REVOCATION: 'multisig-mosaic-revocation'
 };
 
 export const MULTISIG_BUNDLE_TYPES = [
 	TransactionBundleType.MULTISIG_TRANSFER,
 	TransactionBundleType.MULTISIG_ACCOUNT_MODIFICATION,
-	TransactionBundleType.MULTISIG_DELEGATED_HARVESTING
+	TransactionBundleType.MULTISIG_DELEGATED_HARVESTING,
+	TransactionBundleType.MULTISIG_MOSAIC_CREATION,
+	TransactionBundleType.MULTISIG_MOSAIC_SUPPLY_CHANGE,
+	TransactionBundleType.MULTISIG_MOSAIC_REVOCATION
 ];
 
 export const HarvestingStatus = {

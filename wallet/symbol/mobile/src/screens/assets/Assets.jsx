@@ -1,7 +1,6 @@
-import { TokenListItem } from './components';
 import { useAssetsData } from './hooks';
 import { Header } from '@/app/app/components';
-import { AccountView, CopyButtonContainer, FilteredListScreenTemplate, Spacer, StyledText } from '@/app/components';
+import { AccountView, CopyButtonContainer, FilteredListScreenTemplate, Spacer, StyledText, TokenListItem } from '@/app/components';
 import { useInit, useRefresh, useWalletController, useWalletRefreshLifecycle } from '@/app/hooks';
 import { Router } from '@/app/router/Router';
 import React, { useCallback } from 'react';

@@ -268,7 +268,7 @@ const mosaicDefinitionTransactionToSymbol = (transaction, config) => {
 		fee: mapFee(transaction.fee),
 		deadline: mapDeadline(transaction.deadline),
 		duration: BigInt(transaction.duration),
-		flags: flags.join(' '),
+		flags: flags.length ? flags.join(' ') : 'none',
 		nonce: transaction.nonce,
 		divisibility: transaction.divisibility
 	};

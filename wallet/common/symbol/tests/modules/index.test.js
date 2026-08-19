@@ -6,19 +6,22 @@ jest.unstable_mockModule('lodash', () => ({
 	default: { shuffle: mockShuffle }
 }));
 
-const { TransferModule, HarvestingModule } = await import('../../src/modules');
+const { TransferModule, HarvestingModule, MosaicModule } = await import('../../src/modules');
 
 describe('modules/index.js re-exports', () => {
-	it('re-exports TransferModule and HarvestingModule', () => {
+	it('re-exports TransferModule, HarvestingModule and MosaicModule', () => {
 		// Assert:
 		expect(typeof TransferModule).toBe('function');
 		expect(typeof HarvestingModule).toBe('function');
+		expect(typeof MosaicModule).toBe('function');
 
 		// Instances can be created without args and then initialized
 		const transfer = new TransferModule();
 		const harvesting = new HarvestingModule();
+		const mosaic = new MosaicModule();
 
 		expect(transfer).toBeInstanceOf(TransferModule);
 		expect(harvesting).toBeInstanceOf(HarvestingModule);
+		expect(mosaic).toBeInstanceOf(MosaicModule);
 	});
 });

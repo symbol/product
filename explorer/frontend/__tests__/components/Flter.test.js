@@ -267,7 +267,7 @@ describe('Filter', () => {
 
 			// Assert:
 			if (shouldUseSearch)
-				expect(search).toHaveBeenCalledWith(searchText);
+				expect(search).toHaveBeenCalledWith(searchText, filterConfig.find(filter => filter.title === filterToPress).type);
 
 			const assertionPromises = expectedTextList.map(text => {
 				return waitFor(() => expect(screen.getByText(text)).toBeInTheDocument());

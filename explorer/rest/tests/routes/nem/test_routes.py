@@ -258,14 +258,14 @@ def _assert_get_nem_account_bad_request(client, expected_message, **query_params
 def test_api_nem_account_by_address(client):  # pylint: disable=redefined-outer-name
 	_assert_get_nem_account_success(
 		client,
-		ACCOUNT_VIEWS[0].to_dict(),
+		ACCOUNT_VIEWS[0].to_detail_dict(),
 		address='NAGHXD63C4V6REWGXCVKJ2SBS3GUAXGTRQZQXPRO')
 
 
 def test_api_nem_account_by_public_key(client):  # pylint: disable=redefined-outer-name
 	_assert_get_nem_account_success(
 		client,
-		ACCOUNT_VIEWS[0].to_dict(),
+		ACCOUNT_VIEWS[0].to_detail_dict(),
 		publicKey='b88221939ac920484753c738fafda87e82ff04b5e370c9456d85a0f12c6a5cca')
 
 
@@ -557,30 +557,30 @@ def _assert_get_api_nem_mosaics(client, expected_status_code, expected_result, *
 
 
 def test_api_mosaics_without_params(client):  # pylint: disable=redefined-outer-name
-	_assert_get_api_nem_mosaics(client, 200, [MOSAIC_VIEWS[1].to_dict(), MOSAIC_VIEWS[2].to_dict(), MOSAIC_VIEWS[0].to_dict()])
+	_assert_get_api_nem_mosaics(client, 200, [MOSAIC_VIEWS[2].to_dict(), MOSAIC_VIEWS[1].to_dict(), MOSAIC_VIEWS[0].to_dict()])
 
 
 def test_api_mosaics_applies_limit(client):  # pylint: disable=redefined-outer-name
-	_assert_get_api_nem_mosaics(client, 200, [MOSAIC_VIEWS[1].to_dict()], limit=1)
+	_assert_get_api_nem_mosaics(client, 200, [MOSAIC_VIEWS[2].to_dict()], limit=1)
 
 
 def test_api_mosaics_applies_offset(client):  # pylint: disable=redefined-outer-name
-	_assert_get_api_nem_mosaics(client, 200, [MOSAIC_VIEWS[2].to_dict(), MOSAIC_VIEWS[0].to_dict()], offset=1)
+	_assert_get_api_nem_mosaics(client, 200, [MOSAIC_VIEWS[1].to_dict(), MOSAIC_VIEWS[0].to_dict()], offset=1)
 
 
 def test_api_mosaics_applies_sorted_by_registered_height_asc(client):  # pylint: disable=redefined-outer-name, invalid-name
-	_assert_get_api_nem_mosaics(client, 200, [MOSAIC_VIEWS[0].to_dict(), MOSAIC_VIEWS[1].to_dict(), MOSAIC_VIEWS[2].to_dict()], sort='ASC')
+	_assert_get_api_nem_mosaics(client, 200, [MOSAIC_VIEWS[0].to_dict(), MOSAIC_VIEWS[2].to_dict(), MOSAIC_VIEWS[1].to_dict()], sort='ASC')
 
 
 def test_api_mosaics_applies_sorted_by_registered_height_desc(client):  # pylint: disable=redefined-outer-name, invalid-name
-	_assert_get_api_nem_mosaics(client, 200, [MOSAIC_VIEWS[1].to_dict(), MOSAIC_VIEWS[2].to_dict(), MOSAIC_VIEWS[0].to_dict()], sort='DESC')
+	_assert_get_api_nem_mosaics(client, 200, [MOSAIC_VIEWS[2].to_dict(), MOSAIC_VIEWS[1].to_dict(), MOSAIC_VIEWS[0].to_dict()], sort='DESC')
 
 
 def test_api_mosaics_with_all_params(client):  # pylint: disable=redefined-outer-name
 	_assert_get_api_nem_mosaics(
 		client,
 		200,
-		[MOSAIC_VIEWS[2].to_dict()],
+		[MOSAIC_VIEWS[1].to_dict()],
 		limit=1,
 		offset=1,
 		sort='DESC'
@@ -856,11 +856,11 @@ def test_api_transactions_excludes_multisig_for_initiator_from_address_filter(cl
 
 def test_api_transactions_applies_recipient_address(client):  # pylint: disable=redefined-outer-name, invalid-name
 	_assert_get_api_nem_transactions(client, 200, transaction_dicts(
-		'multisig',
-		'namespace_registration',
 		'mosaic_definition',
-		'transfer',
-		'transfer_v2'
+		'namespace_registration',
+		'multisig',
+		'transfer_v2',
+		'transfer'
 	), recipientAddress='NBFWZ4IVRHEIBRCGHLYDS62FSFTBM3VDFA7E6LSQ')
 
 
@@ -875,6 +875,15 @@ def test_api_transactions_applies_multisig_inner_sender_address(client):  # pyli
 
 def test_api_transactions_applies_mosaic(client):  # pylint: disable=redefined-outer-name
 	_assert_get_api_nem_transactions(client, 200, transaction_dicts('transfer_v2'), mosaic='root.mosaic')
+
+
+def test_api_transactions_applies_mosaic_carried_by_multisig(client):  # pylint: disable=redefined-outer-name, invalid-name
+	_assert_get_api_nem_transactions(
+		client,
+		200,
+		transaction_dicts('multisig', 'transfer_v2', 'transfer'),
+		mosaic='nem.xem'
+	)
 
 
 def test_api_transactions_applies_address_ignore_other(client):  # pylint: disable=redefined-outer-name, invalid-name

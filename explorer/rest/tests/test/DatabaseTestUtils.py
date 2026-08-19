@@ -90,8 +90,9 @@ Transaction = namedtuple('Transaction', [
 	'recipient_address',
 	'payload',
 	'size',
-	'version'
-])
+	'version',
+	'aggregate_hash'
+], defaults=[None])
 TransactionMosaic = namedtuple('Transaction_Mosaic', [
 	'transaction_id',
 	'namespace_name',
@@ -376,7 +377,8 @@ TRANSACTIONS = [
 			'message': None
 		},
 		size=184,
-		version=1
+		version=1,
+		aggregate_hash='0' * 63 + '5'
 	),
 	Transaction(  # Namespace registration
 		transaction_hash='0' * 63 + '7',
@@ -910,11 +912,11 @@ TRANSACTION_NAMES_SORTED_BY_HEIGHT_ASC = (
 )
 
 TRANSACTION_NAMES_FILTERED_BY_MULTISIG_INNER_SENDER = (
-	'multisig',
-	'mosaic_definition',
 	'mosaic_supply_change',
-	'multisig_account_modification',
+	'mosaic_definition',
 	'namespace_registration',
+	'multisig',
+	'multisig_account_modification',
 	'transfer_v2',
 	'transfer'
 )
@@ -1051,6 +1053,7 @@ def initialize_database(db_config, network_name):
 				deadline timestamp NOT NULL,
 				signature bytea,
 				is_inner boolean NOT NULL,
+				aggregate_hash bytea,
 				payload jsonb,
 				size int NOT NULL,
 				version int NOT NULL
@@ -1214,11 +1217,12 @@ def initialize_database(db_config, network_name):
 					deadline,
 					signature,
 					is_inner,
+					aggregate_hash,
 					payload,
 					size,
 					version
 				)
-				VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+				VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
 				''',
 				(
 					unhexlify(transaction.transaction_hash),
@@ -1232,6 +1236,7 @@ def initialize_database(db_config, network_name):
 					transaction.deadline,
 					unhexlify(transaction.signature) if transaction.signature else None,
 					transaction.is_inner,
+					unhexlify(transaction.aggregate_hash) if transaction.aggregate_hash else None,
 					json.dumps(transaction.payload) if transaction.payload else None,
 					transaction.size,
 					transaction.version

@@ -85,8 +85,9 @@ TransactionRecord = namedtuple('TransactionRecord', [
 	'recipient_address',
 	'payload',
 	'size',
-	'version'
-])
+	'version',
+	'aggregate_hash'
+], defaults=[None])
 DatabaseConfig = namedtuple('DatabaseConfig', ['database', 'user', 'password', 'host', 'port'])
 
 
@@ -334,8 +335,11 @@ class NemPuller:
 				last_height
 			)
 
-	def _flush_pending_account_state(self, cursor, pending_addresses, accounts_harvested_fee):
-		"""Flushes accumulated account and harvested fee state, clearing both accumulators."""
+	def _flush_pending_account_state(self, cursor, pending_addresses, accounts_harvested_fee, pending_remote_links):
+		"""Flushes accumulated account state, clearing every accumulator.
+
+		Accounts are upserted first, so the updates that follow always find their row.
+		"""
 
 		if pending_addresses:
 			asyncio.run(self._process_account_batch(cursor, pending_addresses))
@@ -344,6 +348,10 @@ class NemPuller:
 		if accounts_harvested_fee:
 			self._process_harvested_fees(cursor, accounts_harvested_fee)
 			accounts_harvested_fee.clear()
+
+		if pending_remote_links:
+			self._apply_remote_links(cursor, pending_remote_links)
+			pending_remote_links.clear()
 
 	async def refresh_accounts(self, batch_size):
 		"""Refresh vested balance and importance for stored accounts."""
@@ -425,8 +433,12 @@ class NemPuller:
 
 		self.nem_db.upsert_mosaic(cursor, mosaic)
 
-	def _process_account_key_link(self, cursor, transaction):
-		"""Apply a remote link change announced by an account key link transaction."""
+	def _process_account_key_link(self, transaction, pending_remote_links):
+		"""Records a remote link change announced by an account key link transaction.
+
+		Recorded rather than written: the account row is inserted only when the batch is flushed,
+		so an earlier update would match no row. Later blocks overwrite earlier ones.
+		"""
 
 		main_address = self._convert_public_key_to_address(transaction.sender)
 		remote_address = (
@@ -434,7 +446,13 @@ class NemPuller:
 			if ACCOUNT_KEY_LINK_MODE_ACTIVATE == transaction.mode else None
 		)
 
-		self.nem_db.update_account_remote_address(cursor, main_address, remote_address)
+		pending_remote_links[main_address] = remote_address
+
+	def _apply_remote_links(self, cursor, pending_remote_links):
+		"""Writes accumulated remote link changes."""
+
+		for main_address, remote_address in pending_remote_links.items():
+			self.nem_db.update_account_remote_address(cursor, main_address, remote_address)
 
 	def _process_mosaic_supply_change(self, cursor, transaction):
 		"""Process mosaic supply change in a block."""
@@ -442,7 +460,7 @@ class NemPuller:
 		adjustment = transaction.delta if transaction.supply_type == 1 else -transaction.delta
 		self.nem_db.update_mosaic_total_supply(cursor, transaction.namespace_name, adjustment)
 
-	def _build_transaction_record(self, transaction, is_inner):
+	def _build_transaction_record(self, transaction, is_inner, aggregate_hash=None):
 		"""Create TransactionRecord from transaction data."""
 
 		payload = None
@@ -531,6 +549,7 @@ class NemPuller:
 			signature=transaction.signature,
 			transaction_type=transaction.transaction_type,
 			is_inner=is_inner,
+			aggregate_hash=aggregate_hash,
 			sender_address=self._convert_public_key_to_address(transaction.sender),
 			recipient_address=recipient_address,
 			payload=payload,
@@ -538,11 +557,11 @@ class NemPuller:
 			version=transaction.version
 		)
 
-	def _process_transaction(self, cursor, transaction, block_height, is_inner):
+	def _process_transaction(self, cursor, transaction, block_height, is_inner, pending_remote_links, aggregate_hash=None):
 		# pylint: disable=too-many-arguments,too-many-positional-arguments
 		"""Process a single transaction."""
 
-		transaction_record = self._build_transaction_record(transaction, is_inner)
+		transaction_record = self._build_transaction_record(transaction, is_inner, aggregate_hash)
 		transaction_id = self.nem_db.insert_transaction(cursor, transaction_record)
 
 		if transaction.transaction_type == TransactionType.TRANSFER.value:
@@ -568,11 +587,11 @@ class NemPuller:
 		elif transaction.transaction_type == TransactionType.MOSAIC_SUPPLY_CHANGE.value:
 			self._process_mosaic_supply_change(cursor, transaction)
 		elif transaction.transaction_type == TransactionType.ACCOUNT_KEY_LINK.value:
-			self._process_account_key_link(cursor, transaction)
+			self._process_account_key_link(transaction, pending_remote_links)
 
 		return transaction_id
 
-	def _process_transactions(self, cursor, block_transactions, height):
+	def _process_transactions(self, cursor, block_transactions, height, pending_remote_links):
 		"""Process transactions in a block."""
 
 		for transaction in block_transactions:
@@ -582,13 +601,21 @@ class NemPuller:
 				# For inner transactions, we set the transaction hash to the inner hash
 				transaction.other_transaction.transaction_hash = transaction.inner_hash
 				transaction.other_transaction.height = transaction.height
-				self._process_transaction(cursor, transaction=transaction.other_transaction, block_height=height, is_inner=True)
+				self._process_transaction(
+					cursor,
+					transaction=transaction.other_transaction,
+					block_height=height,
+					is_inner=True,
+					pending_remote_links=pending_remote_links,
+					aggregate_hash=transaction.transaction_hash
+				)
 
 			self._process_transaction(
 				cursor,
 				transaction=transaction,
 				block_height=height,
-				is_inner=False
+				is_inner=False,
+				pending_remote_links=pending_remote_links
 			)
 
 	async def sync_nemesis_block(self):
@@ -605,7 +632,9 @@ class NemPuller:
 		addresses = self._extract_addresses_from_block(cursor, nemesis_block)
 		await self._process_account_batch(cursor, {address: nemesis_block.height for address in addresses})
 
-		self._process_transactions(cursor, nemesis_block.transactions, nemesis_block.height)
+		pending_remote_links = {}
+		self._process_transactions(cursor, nemesis_block.transactions, nemesis_block.height, pending_remote_links)
+		self._apply_remote_links(cursor, pending_remote_links)
 
 		self._commit_blocks('Committed Nemesis block')
 
@@ -618,6 +647,7 @@ class NemPuller:
 		processed = 0
 		pending_addresses = {}
 		accounts_harvested_fee = {}
+		pending_remote_links = {}
 
 		log.info('DB writer thread started')
 
@@ -630,7 +660,7 @@ class NemPuller:
 				log.info('Received stop signal, ending DB writer thread')
 
 				# Process any remaining addresses and harvested fees before exiting
-				self._flush_pending_account_state(cursor, pending_addresses, accounts_harvested_fee)
+				self._flush_pending_account_state(cursor, pending_addresses, accounts_harvested_fee, pending_remote_links)
 
 				block_queue.task_done()
 				break
@@ -650,11 +680,11 @@ class NemPuller:
 				block.height
 			)
 
-			self._process_transactions(cursor, block.transactions, block.height)
+			self._process_transactions(cursor, block.transactions, block.height, pending_remote_links)
 
 			# Batch commits
 			if processed % batch_size == 0:
-				self._flush_pending_account_state(cursor, pending_addresses, accounts_harvested_fee)
+				self._flush_pending_account_state(cursor, pending_addresses, accounts_harvested_fee, pending_remote_links)
 
 				self._commit_blocks(f'Committed {processed} blocks')
 

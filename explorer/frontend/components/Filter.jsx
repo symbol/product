@@ -61,7 +61,7 @@ const FilterModal = ({ isVisible, title, type, isSearchEnabled, options, onSearc
 	const [text, setText] = useState('');
 	const [searchResult, setSearchResult] = useState(null);
 	const [search, isLoading] = useDataManager(async text => {
-		const searchResult = await onSearchRequest(text);
+		const searchResult = await onSearchRequest(text, type);
 		if (searchResult?.[type])
 			setSearchResult(searchResult[type]);
 		else

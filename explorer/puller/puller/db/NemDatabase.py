@@ -2,6 +2,7 @@ import json
 from binascii import unhexlify
 from collections import namedtuple
 
+from symbolchain.nc import TransactionType
 from symbolchain.nem.Network import Address
 
 from .DatabaseConnection import DatabaseConnection
@@ -49,6 +50,14 @@ class NemDatabase(DatabaseConnection):
 			'''
 			CREATE INDEX IF NOT EXISTS accounts_last_harvested_height_idx
 				ON accounts (last_harvested_height DESC)
+			'''
+		)
+
+		cursor.execute(
+			'''
+			CREATE INDEX IF NOT EXISTS accounts_remote_address_idx
+				ON accounts (remote_address)
+				WHERE remote_address IS NOT NULL
 			'''
 		)
 
@@ -133,6 +142,24 @@ class NemDatabase(DatabaseConnection):
 			'''
 		)
 
+		cursor.execute(
+			f'''
+			CREATE INDEX IF NOT EXISTS transactions_sender_address_height_idx
+				ON transactions(sender_address, height DESC, id DESC)
+				INCLUDE (aggregate_hash)
+				WHERE transaction_type <> {TransactionType.MULTISIG.value}
+			'''
+		)
+
+		cursor.execute(
+			f'''
+			CREATE INDEX IF NOT EXISTS transactions_recipient_address_height_idx
+				ON transactions(recipient_address, height DESC, id DESC)
+				INCLUDE (aggregate_hash)
+				WHERE transaction_type <> {TransactionType.MULTISIG.value}
+			'''
+		)
+
 		# Create indexes for transactions_mosaic table
 		cursor.execute(
 			'''
@@ -145,6 +172,13 @@ class NemDatabase(DatabaseConnection):
 			'''
 			CREATE INDEX IF NOT EXISTS transactions_mosaic_namespace_name_idx
 				ON transactions_mosaic(namespace_name)
+			'''
+		)
+
+		cursor.execute(
+			'''
+			CREATE INDEX IF NOT EXISTS transactions_mosaic_namespace_name_transaction_id_idx
+				ON transactions_mosaic(namespace_name, transaction_id)
 			'''
 		)
 
@@ -250,6 +284,7 @@ class NemDatabase(DatabaseConnection):
 				deadline timestamp NOT NULL,
 				signature bytea,
 				is_inner boolean NOT NULL,
+				aggregate_hash bytea,
 				payload jsonb,
 				size int NOT NULL,
 				version int NOT NULL
@@ -681,11 +716,12 @@ class NemDatabase(DatabaseConnection):
 				deadline,
 				signature,
 				is_inner,
+				aggregate_hash,
 				payload,
 				size,
 				version
 			)
-			VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+			VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
 			RETURNING id
 			''',
 			(
@@ -700,6 +736,7 @@ class NemDatabase(DatabaseConnection):
 				transaction.deadline,
 				unhexlify(transaction.signature) if transaction.signature else None,
 				transaction.is_inner,
+				unhexlify(transaction.aggregate_hash) if transaction.aggregate_hash else None,
 				json.dumps(transaction.payload) if transaction.payload else None,
 				transaction.size,
 				transaction.version

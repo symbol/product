@@ -5,7 +5,8 @@ from symbollightapi.connector.NemConnector import NemConnector
 from symbollightapi.model.Exceptions import NodeException
 
 from rest.db.NemDatabase import NemDatabase
-from rest.model.common import Pagination
+from rest.facade.TtlCache import TtlCache
+from rest.model.common import STATISTICS_CACHE_MAX_ENTRIES, STATISTICS_CACHE_TTL_SECONDS, STATISTICS_RANGE_CACHE_MAX_ENTRIES, Pagination
 
 
 class NemRestFacade:
@@ -18,6 +19,8 @@ class NemRestFacade:
 		self.nem_db = NemDatabase(db_config, self.network, rest_config.harvesting_active_window_days)
 		self.nem_connector = NemConnector(rest_config.node_url, self.network)
 		self.max_lag_blocks = rest_config.max_lag_blocks
+		self.statistics_cache = TtlCache(STATISTICS_CACHE_TTL_SECONDS, STATISTICS_CACHE_MAX_ENTRIES)
+		self.statistics_range_cache = TtlCache(STATISTICS_CACHE_TTL_SECONDS, STATISTICS_RANGE_CACHE_MAX_ENTRIES)
 
 	def get_block(self, height):
 		"""Gets block by height."""
@@ -38,14 +41,14 @@ class NemRestFacade:
 
 		account = self.nem_db.get_account_by_address(Address(address))
 
-		return account.to_dict() if account else None
+		return account.to_detail_dict() if account else None
 
 	def get_account_by_public_key(self, public_key):
 		"""Gets account by public key."""
 
 		account = self.nem_db.get_account_by_public_key(PublicKey(public_key))
 
-		return account.to_dict() if account else None
+		return account.to_detail_dict() if account else None
 
 	def get_accounts(self, pagination, sorting, is_harvesting):
 		"""Gets accounts pagination."""
@@ -57,9 +60,7 @@ class NemRestFacade:
 	def get_account_statistics(self):
 		"""Gets account statistics."""
 
-		account_statistics = self.nem_db.get_account_statistics()
-
-		return account_statistics.to_dict()
+		return self.statistics_cache.get_or_load('account', lambda: self.nem_db.get_account_statistics().to_dict())
 
 	async def get_health(self):
 		"""Gets health of the node."""
@@ -175,16 +176,22 @@ class NemRestFacade:
 	def get_transaction_statistics(self):
 		"""Gets transaction statistics."""
 
-		transaction_statistics = self.nem_db.get_transaction_statistics()
+		def _load():
+			transaction_statistics = self.nem_db.get_transaction_statistics()
 
-		return transaction_statistics.to_dict() if transaction_statistics else None
+			return transaction_statistics.to_dict() if transaction_statistics else None
+
+		return self.statistics_cache.get_or_load('transaction', _load)
 
 	def get_transaction_statistics_by_date_range(self, start_date, end_date, period_type):  # pylint: disable=invalid-name
 		"""Gets transaction statistics grouped by period type."""
 
-		transaction_statistics = self.nem_db.get_transaction_statistics_by_date_range(start_date, end_date, period_type)
+		def _load():
+			transaction_statistics = self.nem_db.get_transaction_statistics_by_date_range(start_date, end_date, period_type)
 
-		return transaction_statistics.to_dict() if transaction_statistics else None
+			return transaction_statistics.to_dict() if transaction_statistics else None
+
+		return self.statistics_range_cache.get_or_load((start_date, end_date, period_type), _load)
 
 	async def get_unconfirmed_transactions(self):
 		"""Gets unconfirmed transactions."""
