@@ -44,10 +44,11 @@ AccountRecord = namedtuple('AccountRecord', [
 	'cosignatory_of',
 	'cosignatories'
 ])
-AccountVestedBalanceRecord = namedtuple('AccountVestedBalanceRecord', [
+RefreshedAccountRecord = namedtuple('RefreshedAccountRecord', [
 	'address',
 	'importance',
-	'vested_balance'
+	'vested_balance',
+	'remote_status'
 ])
 NamespaceRecord = namedtuple('NamespaceRecord', [
 	'root_namespace',
@@ -289,13 +290,14 @@ class NemPuller:
 		)
 
 	@staticmethod
-	def _create_account_vested_balance_record(account_info):
-		"""Create account vested balance record."""
+	def _create_refreshed_account_record(account_info):
+		"""Create refreshed account record."""
 
-		return AccountVestedBalanceRecord(
+		return RefreshedAccountRecord(
 			account_info.address,
 			account_info.importance,
-			_format_xem_absolute(account_info.vested_balance)
+			_format_xem_absolute(account_info.vested_balance),
+			account_info.remote_status
 		)
 
 	async def _process_account_batch(self, cursor, address_heights):
@@ -354,7 +356,7 @@ class NemPuller:
 			pending_remote_links.clear()
 
 	async def refresh_accounts(self, batch_size):
-		"""Refresh vested balance and importance for stored accounts."""
+		"""Refresh vested balance, importance and remote status for stored accounts."""
 
 		cursor = self.nem_db.connection.cursor()
 		last_account_id = 0
@@ -367,8 +369,8 @@ class NemPuller:
 
 			for account in accounts:
 				account_info = await self._retry_get_account_info(str(account.address))
-				account_vested_balance = self._create_account_vested_balance_record(account_info)
-				self.nem_db.update_vested_balance_and_importance(cursor, account_vested_balance)
+				refreshed_account = self._create_refreshed_account_record(account_info)
+				self.nem_db.update_refreshed_account(cursor, refreshed_account)
 				last_account_id = account.id
 				total_refreshed += 1
 
