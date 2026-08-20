@@ -28,7 +28,7 @@ class SyncNemBlockTest(unittest.TestCase):
 		# Assert:
 		assert_common_args(self, args, 'testnet', 'test_config.ini')
 
-	@patch('puller.workflows.sync_nem_block.NemPuller')
+	@patch('puller.workflows.nem_workflow_utils.NemPuller')
 	@patch('puller.workflows.sync_nem_block.parse_args')
 	def _run_main_test(self, mock_parse_args, mock_nem_puller, db_height, account_remark=None):  # pylint: disable=no-self-use
 		# Arrange:
