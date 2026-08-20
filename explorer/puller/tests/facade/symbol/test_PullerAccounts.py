@@ -18,6 +18,7 @@ from .puller_test_utils import (
 	BENEFICIARY_ADDRESS,
 	NATIVE_MOSAIC_ID,
 	RECIPIENT_ADDRESS,
+	DelegatingSymbolDatabase,
 	FakeConnector,
 	SymbolPullerTestBase,
 	create_account_item,
@@ -105,13 +106,10 @@ class RefreshFailureConnector(FakeConnector):
 		return await super().get(url_path, *args)
 
 
-class FailureStateRecordingDatabase:
+class FailureStateRecordingDatabase(DelegatingSymbolDatabase):
 	def __init__(self, database):
-		self.database = database
+		super().__init__(database)
 		self.failure_state_errors = []
-
-	def __getattr__(self, name):
-		return getattr(self.database, name)
 
 	def mark_account_refresh_failed(self, last_error):
 		self.failure_state_errors.append(last_error)
@@ -168,7 +166,8 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):  # pylint: disable=too-man
 			'finalized_epoch': 0,
 			'finalized_point': 0,
 			'last_synced_height': 0,
-			'last_synced_block_hash': b'last'
+			'last_synced_block_hash': b'last',
+			'dirty_state_from_height': None
 		}
 
 	@staticmethod

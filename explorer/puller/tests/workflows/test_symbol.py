@@ -116,16 +116,27 @@ def test_command_help(command, expected_text, capsys):
 	assert expected_text in capsys.readouterr().out
 
 
-def test_refresh_accounts_help_describes_scheduler_non_overlap(capsys):
+@pytest.mark.parametrize(
+	('command', 'command_specific_text'),
+	[
+		('refresh-accounts', 'refresh-accounts runs'),
+		('sync-block', 'do not overlap sync-block runs')
+	],
+	ids=['refresh-accounts', 'sync-block'])
+def test_command_help_describes_single_writer_contract(command, command_specific_text, capsys):
 	# Act:
 	with pytest.raises(SystemExit) as exception:
-		asyncio.run(main(['refresh-accounts', '--help']))
+		asyncio.run(main([command, '--help']))
 
 	# Assert:
 	assert 0 == exception.value.code
-	normalized_output = ' '.join(capsys.readouterr().out.split())
-	assert 'do not run concurrently' in normalized_output
-	assert 'sync-block rollback repair' in normalized_output
+	normalized_output = ' '.join(capsys.readouterr().out.split()).lower()
+	assert 'sync-block runs' in normalized_output
+	assert 'refresh-accounts' in normalized_output
+	assert 'manual runs' in normalized_output
+	assert 'external scheduler' in normalized_output
+	assert 'no mechanical lock' in normalized_output
+	assert command_specific_text in normalized_output
 
 
 def test_sync_block_dispatches_with_forwarded_limits_and_config():

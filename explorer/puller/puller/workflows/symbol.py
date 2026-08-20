@@ -5,10 +5,16 @@ from puller.facade.SymbolPuller import SymbolPuller
 from puller.workflows import refresh_symbol_accounts, sync_symbol_block
 
 COMMANDS = (
-	('sync-block', 'Synchronize Symbol block headers.', sync_symbol_block),
+	(
+		'sync-block',
+		'Synchronize Symbol block headers; do not overlap sync-block runs or run concurrently with refresh-accounts, including manual runs. '
+		'External scheduler owns single-writer exclusion; the Puller provides no mechanical lock.',
+		sync_symbol_block
+	),
 	(
 		'refresh-accounts',
-		'Refresh Symbol accounts; do not run concurrently with sync-block rollback repair.',
+		'Refresh Symbol accounts; do not run concurrently with sync-block runs or overlap refresh-accounts runs, including manual runs. '
+		'External scheduler owns single-writer exclusion; the Puller provides no mechanical lock.',
 		refresh_symbol_accounts
 	)
 )

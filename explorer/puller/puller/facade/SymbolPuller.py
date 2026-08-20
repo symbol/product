@@ -71,6 +71,7 @@ LOCK_FETCH_CONCURRENCY = 10
 MOSAIC_RESTRICTION_FETCH_CONCURRENCY = 10
 DEFAULT_MAX_REQUESTS_PER_SECOND = 20
 ACCOUNT_PAGE_SIZE = 100
+NEMESIS_PREVIOUS_BLOCK_HASH = bytes(32)
 
 
 def _get_symbol_network(network_type):
@@ -190,32 +191,76 @@ class SymbolPuller:
 		)
 
 	async def sync_block_headers(self, max_height=None):  # pylint: disable=too-many-locals
-		"""Synchronizes Symbol block headers from the configured node."""
+		"""Synchronizes Symbol block headers; an external scheduler must prevent overlap."""
+
+		try:
+			await self._sync_block_headers(max_height)
+		except Exception:
+			try:
+				sync_state = self.symbol_db.get_sync_state()
+				if sync_state and sync_state['dirty_state_from_height'] is not None:
+					self.symbol_db.mark_sync_unhealthy()
+			except Exception as state_error:  # pylint: disable=broad-exception-caught
+				# Preserve the primary failure if the best-effort failure-state update also fails.
+				log.error(f'Failed to record Symbol sync failure: {state_error}')
+			raise
+
+	async def _sync_block_headers(self, max_height=None):  # pylint: disable=too-many-locals
+		"""Runs one non-overlapping Symbol block synchronization attempt."""
 
 		chain_info = await self.get_symbol_node('/chain/info')
 		network_properties = await self._get_network_properties()
+		node_chain_height = int(chain_info['height'])
 		chain_height = self._get_sync_chain_height(int(chain_info['height']), max_height)
 		finalized_height, finalized_hash, finalized_epoch, finalized_point, is_finalization_capped = (
 			self._get_finalized_watermark(chain_info, chain_height)
 		)
 		epoch_adjustment_seconds = self._parse_epoch_adjustment(network_properties)
 		native_mosaic_info = await self._get_native_mosaic_info()
-		sync_state = self._get_bounded_sync_state(self.symbol_db.get_sync_state(), chain_height)
-		if is_finalization_capped and sync_state and sync_state['last_synced_height'] >= finalized_height:
-			finalized_hash = self.symbol_db.get_block_hash(finalized_height)
+		raw_sync_state = self.symbol_db.get_sync_state()
+		if is_finalization_capped and raw_sync_state:
+			raw_last_synced_height = raw_sync_state['last_synced_height']
+			if raw_last_synced_height and raw_last_synced_height >= finalized_height:
+				finalized_hash = self.symbol_db.get_block_hash(finalized_height)
 
-		start_height = await self._repair_unfinalized_rollback(sync_state, finalized_height, finalized_hash)
+		dirty_state_from_height = raw_sync_state['dirty_state_from_height'] if raw_sync_state else None
+		node_chain_shorter_than_dirty = (
+			dirty_state_from_height is not None and node_chain_height < dirty_state_from_height)
+		dirty_range_outside_cap = False
+		if dirty_state_from_height is not None and not node_chain_shorter_than_dirty:
+			dirty_range_outside_cap = max_height is not None and max_height < node_chain_height
+		start_height = await self._repair_unfinalized_rollback(
+			raw_sync_state,
+			finalized_height,
+			finalized_hash,
+			chain_height,
+			dirty_state_from_height=None if dirty_range_outside_cap else dirty_state_from_height,
+			node_chain_height=node_chain_height,
+			verify_unfinalized=not dirty_range_outside_cap)
+		if dirty_range_outside_cap:
+			self.symbol_db.mark_sync_unhealthy()
+			return
+
+		bounded_sync_state = self._get_bounded_sync_state(raw_sync_state, chain_height)
 		if not start_height:
-			start_height = (sync_state['last_synced_height'] + 1) if sync_state and sync_state['last_synced_height'] else 1
+			start_height = (
+				bounded_sync_state['last_synced_height'] + 1
+				if bounded_sync_state and bounded_sync_state['last_synced_height'] else 1)
+		elif start_height <= chain_height:
+			bounded_sync_state = {
+				**(bounded_sync_state or {}),
+				'last_synced_height': start_height - 1 if start_height > 1 else None,
+				'last_synced_block_hash': self.symbol_db.get_block_hash(start_height - 1) if start_height > 1 else None
+			}
 
 		last_synced_height, last_synced_block_hash = await self._sync_block_pages(
 			start_height,
 			chain_height,
 			epoch_adjustment_seconds,
 			native_mosaic_info)
-		if last_synced_height is None and sync_state:
-			last_synced_height = sync_state['last_synced_height']
-			last_synced_block_hash = sync_state['last_synced_block_hash']
+		if last_synced_height is None and bounded_sync_state:
+			last_synced_height = bounded_sync_state['last_synced_height']
+			last_synced_block_hash = bounded_sync_state['last_synced_block_hash']
 		if is_finalization_capped:
 			finalized_hash = last_synced_block_hash if finalized_height == last_synced_height else self.symbol_db.get_block_hash(finalized_height)
 			if not finalized_hash:
@@ -231,7 +276,8 @@ class SymbolPuller:
 			'finalized_epoch': finalized_epoch,
 			'finalized_point': finalized_point,
 			'last_synced_height': last_synced_height,
-			'last_synced_block_hash': last_synced_block_hash
+			'last_synced_block_hash': last_synced_block_hash,
+			'dirty_state_from_height': None
 		})
 
 	@staticmethod
@@ -259,6 +305,8 @@ class SymbolPuller:
 		)
 
 	def _get_bounded_sync_state(self, sync_state, chain_height):
+		"""Returns the state used for this run's forward-sync watermark."""
+
 		if not sync_state or not sync_state['last_synced_height'] or sync_state['last_synced_height'] <= chain_height:
 			return sync_state
 
@@ -269,9 +317,23 @@ class SymbolPuller:
 			'last_synced_block_hash': self.symbol_db.get_block_hash(chain_height)
 		}
 
-	async def _repair_unfinalized_rollback(self, sync_state, finalized_height, finalized_hash):
+	async def _repair_unfinalized_rollback(  # pylint: disable=too-many-arguments,too-many-positional-arguments,too-many-locals
+		self,
+		sync_state,
+		finalized_height,
+		finalized_hash,
+		chain_height,
+		dirty_state_from_height=None,
+		node_chain_height=None,
+		verify_unfinalized=True
+	):
 		if not sync_state or not sync_state['last_synced_height']:
-			return None
+			if dirty_state_from_height is None or not verify_unfinalized:
+				return None
+
+			return await self._repair_from_height(
+				min(dirty_state_from_height, node_chain_height + 1),
+				sync_state)
 
 		db_finalized_hash = self.symbol_db.get_block_hash(finalized_height)
 		if 0 < finalized_height <= sync_state['last_synced_height'] and not db_finalized_hash:
@@ -290,58 +352,70 @@ class SymbolPuller:
 				'finalized_hash': finalized_hash
 			})
 			raise SymbolRollbackError('Finalized block hash does not match local database')
-
-		verify_start_height = finalized_height + 1
-		if verify_start_height > sync_state['last_synced_height']:
+		if not verify_unfinalized:
 			return None
 
-		expected_height = verify_start_height
-		for height, local_hash in self.symbol_db.get_block_hashes(verify_start_height, sync_state['last_synced_height']):
-			if height != expected_height:
-				return await self._repair_from_height(expected_height, sync_state)
+		verify_start_height = finalized_height + 1
+		verify_end_height = min(sync_state['last_synced_height'], chain_height)
+		repair_height = None
+		if verify_start_height <= verify_end_height:
+			expected_height = verify_start_height
+			for height, local_hash in self.symbol_db.get_block_hashes(verify_start_height, verify_end_height):
+				if height != expected_height:
+					repair_height = expected_height
+					break
 
-			remote_block = await self.get_symbol_node(f'/blocks/{height}')
-			if bytes(local_hash) != bytes.fromhex(remote_block['meta']['hash']):
-				return await self._repair_from_height(height, sync_state)
-			expected_height += 1
+				remote_block = await self.get_symbol_node(f'/blocks/{height}')
+				if bytes(local_hash) != bytes.fromhex(remote_block['meta']['hash']):
+					repair_height = height
+					break
+				expected_height += 1
 
-		if expected_height <= sync_state['last_synced_height']:
-			return await self._repair_from_height(expected_height, sync_state)
+			if repair_height is None and expected_height <= verify_end_height:
+				repair_height = expected_height
+
+		if dirty_state_from_height is not None:
+			dirty_repair_height = min(dirty_state_from_height, node_chain_height + 1)
+			repair_height = dirty_repair_height if repair_height is None else min(repair_height, dirty_repair_height)
+
+		if repair_height is not None:
+			return await self._repair_from_height(repair_height, sync_state)
 
 		return None
 
-	async def _repair_from_height(self, height, sync_state):
+	async def _repair_from_height(self, height, sync_state):  # pylint: disable=too-many-locals
 		# Unlike account/multisig rows (deleted by the repair and repopulated by the next dirty-key touch or
 		# refresh snapshot run), namespaces, mosaics, and metadata have no broad re-dirty signal: only
 		# registration, alias, supply, expiry, or metadata events touch their keys, and none may recur after a
 		# fork. Re-fetch node state before the repair write and apply it in the same transaction, deleting an
 		# artifact only when the node confirms it is gone.
+		observed_height = height - 1  # Height one repairs against the genesis boundary at height zero.
 		namespace_ids = self.symbol_db.get_namespace_ids_updated_from_height(height)
-		namespace_entries = await self._fetch_dirty_namespaces(namespace_ids, height - 1)
+		namespace_entries = await self._fetch_dirty_namespaces(namespace_ids, observed_height)
 		mosaic_ids = self.symbol_db.get_mosaic_ids_updated_from_height(height)
-		mosaic_entries = await self._fetch_dirty_mosaics(mosaic_ids, height - 1)
+		mosaic_entries = await self._fetch_dirty_mosaics(mosaic_ids, observed_height)
 		metadata_keys = self._union_metadata_keys(
 			self.symbol_db.get_metadata_keys_updated_from_height(height),
 			self.symbol_db.get_confirmed_metadata_keys_since(height))
-		metadata_entries = await self._fetch_dirty_metadata(metadata_keys, height - 1)
+		metadata_entries = await self._fetch_dirty_metadata(metadata_keys, observed_height)
 		# Current rows recover Lock state still present after the fork. Finalized rows cannot be part of this
 		# unfinalized repair range, so transaction history is not an authoritative rollback key source.
 		hash_lock_keys = self.symbol_db.get_hash_lock_hashes_updated_from_height(height)
 		secret_lock_keys = self.symbol_db.get_secret_lock_search_keys_updated_from_height(height)
-		hash_lock_entries = await self._fetch_dirty_hash_locks(hash_lock_keys, height - 1)
-		secret_lock_entries = await self._fetch_dirty_secret_locks(secret_lock_keys, height - 1)
+		hash_lock_entries = await self._fetch_dirty_hash_locks(hash_lock_keys, observed_height)
+		secret_lock_entries = await self._fetch_dirty_secret_locks(secret_lock_keys, observed_height)
 		# Restrictions need both current rows and persisted transaction child rows: an orphaned branch can
 		# have deleted a current row before the rollback, leaving the transaction-derived logical key as
 		# the only way to fetch and restore that state before the destructive rollback transaction.
 		mosaic_restriction_keys = set(self.symbol_db.get_mosaic_restriction_keys_updated_from_height(height))
 		mosaic_restriction_keys.update(self.symbol_db.get_confirmed_mosaic_restriction_keys_since(height))
 		mosaic_restriction_entries = await self._fetch_dirty_mosaic_restrictions(
-			list(mosaic_restriction_keys), height - 1)
+			list(mosaic_restriction_keys), observed_height)
 		self.symbol_db.repair_rollback_from_height(height, {
 			**sync_state,
 			'status': 'repairing',
-			'last_synced_height': height - 1,
-			'last_synced_block_hash': self.symbol_db.get_block_hash(height - 1)
+			'last_synced_height': observed_height if observed_height > 0 else None,
+			'last_synced_block_hash': self.symbol_db.get_block_hash(observed_height) if observed_height > 0 else None
 		}, RollbackRefreshEntries(
 			namespace_entries,
 			mosaic_entries,
@@ -438,6 +512,7 @@ class SymbolPuller:
 			transaction_rows_by_height)
 		dirty_mosaic_restriction_entries = await self._fetch_dirty_mosaic_restrictions(
 			list(dirty_mosaic_restriction_keys), observed_height)
+		self.symbol_db.mark_sync_write_intent(batch_rows[0]['height'])
 		self._sync_block_batch(batch_rows, transaction_rows_by_height, receipt_rows_by_height)
 		self._write_dirty_accounts_for_batch(dirty_account_rows)
 		self.symbol_db.apply_namespace_entries(dirty_namespace_entries)
@@ -1345,15 +1420,13 @@ class SymbolPuller:
 	@staticmethod
 	def _validate_block_chain(rows, previous_block_hash):
 		for row in rows:
-			if 1 < row['height']:
-				expected_hash = bytes(previous_block_hash) if previous_block_hash is not None else None
-				actual_previous_hash = bytes(row['previous_hash'])
-				if actual_previous_hash != expected_hash:
-					expected_hash_text = expected_hash.hex().upper() if expected_hash is not None else 'None'
-					raise ValueError(
-						f'Symbol block chain mismatch at height {row["height"]}: '
-						f'expected previous hash {expected_hash_text}, got {actual_previous_hash.hex().upper()}'
-					)
+			expected_hash = NEMESIS_PREVIOUS_BLOCK_HASH if 1 == row['height'] else bytes(previous_block_hash)
+			actual_previous_hash = bytes(row['previous_hash'])
+			if actual_previous_hash != expected_hash:
+				raise ValueError(
+					f'Symbol block chain mismatch at height {row["height"]}: '
+					f'expected previous hash {expected_hash.hex().upper()}, got {actual_previous_hash.hex().upper()}'
+				)
 
 			previous_block_hash = row['hash']
 
