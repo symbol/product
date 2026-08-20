@@ -1,3 +1,4 @@
+# pylint: disable=too-many-lines
 import asyncio
 import configparser
 import threading
@@ -17,6 +18,7 @@ from puller.db.NemDatabase import NemDatabase
 
 ACCOUNT_KEY_LINK_MODE_ACTIVATE = 1
 NEM_MAX_ROLLBACK_DEPTH = 360
+NEM_NAMESPACE_DURATION = 365 * 1440
 
 
 class NemRollbackError(RuntimeError):
@@ -107,7 +109,7 @@ NemRollbackImpact = namedtuple('NemRollbackImpact', [
 	'account_creation_heights',
 	'orphan_created_accounts',
 	'surviving_affected_accounts',
-	'orphan_beneficiaries',
+	'orphan_harvested_fees_map',
 	'affected_remote_link_accounts',
 	'affected_namespace_roots',
 	'affected_mosaic_names'
@@ -261,7 +263,7 @@ class NemPuller:
 			raise NemRollbackError(f'Invalid NEM fork height {fork_height}')
 
 		affected_accounts = set()
-		orphan_beneficiaries = set()
+		orphan_harvested_fees_map = {}
 		affected_remote_link_accounts = set()
 		affected_namespace_roots = set()
 		affected_mosaic_names = set()
@@ -271,7 +273,9 @@ class NemPuller:
 		orphan_records = self.nem_db.get_orphan_chain_records(fork_height)
 
 		for block in orphan_records.blocks:
-			orphan_beneficiaries.add(block.beneficiary)
+			orphan_harvested_fees_map[block.beneficiary] = (
+				orphan_harvested_fees_map.get(block.beneficiary, 0) + block.total_fee
+			)
 			affected_accounts.add(block.beneficiary)
 			affected_accounts.add(self._convert_public_key_to_address(block.signer))
 
@@ -305,7 +309,7 @@ class NemPuller:
 			account_creation_heights,
 			orphan_created_accounts,
 			surviving_affected_accounts,
-			orphan_beneficiaries,
+			orphan_harvested_fees_map,
 			affected_remote_link_accounts,
 			affected_namespace_roots,
 			affected_mosaic_names
@@ -363,6 +367,86 @@ class NemPuller:
 				remote_address
 			)
 
+	def _restore_rollback_namespaces(self, cursor, rollback_impact):
+		"""Rebuilds affected namespace projections from surviving registrations."""
+
+		root_namespaces = rollback_impact.affected_namespace_roots
+		self.nem_db.delete_namespaces(cursor, root_namespaces)
+
+		registrations = self.nem_db.get_surviving_namespace_history(
+			cursor,
+			rollback_impact.fork_height,
+			root_namespaces
+		)
+		for record in registrations:
+			if record.parent:
+				self.nem_db.update_sub_namespaces(
+					cursor,
+					f'{record.parent}.{record.namespace}',
+					record.parent.split('.')[0]
+				)
+			else:
+				self.nem_db.upsert_namespace(
+					cursor,
+					NamespaceRecord(
+						record.namespace,
+						record.owner,
+						record.height,
+						record.height + NEM_NAMESPACE_DURATION
+					)
+				)
+
+	@staticmethod
+	def _create_rollback_mosaic_record(transaction):
+		"""Creates a mosaic projection from a stored surviving definition transaction."""
+
+		payload = transaction.payload
+		properties = payload['mosaic_properties']
+		levy = payload['levy']
+
+		return MosaicRecord(
+			root_namespace=payload['namespace_name'].split('.')[0],
+			namespace_name=payload['namespace_name'],
+			description=payload['description'],
+			creator=transaction.sender_public_key,
+			registered_height=transaction.height,
+			initial_supply=properties['initial_supply'],
+			total_supply=properties['initial_supply'],
+			divisibility=properties['divisibility'],
+			supply_mutable=properties['supply_mutable'],
+			transferable=properties['transferable'],
+			levy_type=levy['type'] if levy else None,
+			levy_namespace_name=levy['namespace_name'] if levy else None,
+			levy_fee=levy['fee'] if levy else None,
+			levy_recipient=Address(levy['recipient']) if levy else None
+		)
+
+	def _restore_rollback_mosaics(self, cursor, rollback_impact):
+		"""Rebuilds affected mosaic projections from surviving transactions."""
+
+		namespace_names = rollback_impact.affected_mosaic_names
+		self.nem_db.delete_mosaics(cursor, namespace_names)
+
+		transactions = self.nem_db.get_surviving_mosaic_transactions(
+			cursor,
+			rollback_impact.fork_height,
+			namespace_names
+		)
+		for transaction in transactions:
+			if TransactionType.MOSAIC_DEFINITION.value == transaction.transaction_type:
+				self.nem_db.upsert_mosaic(
+					cursor,
+					self._create_rollback_mosaic_record(transaction)
+				)
+			else:
+				payload = transaction.payload
+				adjustment = payload['delta'] if 1 == payload['supply_type'] else -payload['delta']
+				self.nem_db.update_mosaic_total_supply(
+					cursor,
+					payload['namespace_name'],
+					adjustment
+				)
+
 	def repair_rollback(self, rollback_impact, account_state):
 		"""Atomically restores NEM database state to a confirmed fork height."""
 
@@ -370,6 +454,11 @@ class NemPuller:
 		cursor = self.nem_db.connection.cursor()
 
 		try:
+			self.nem_db.rollback_account_harvesting(
+				cursor,
+				rollback_impact.orphan_harvested_fees_map,
+				rollback_impact.fork_height
+			)
 			self.nem_db.delete_orphan_chain_data(cursor, rollback_impact.fork_height)
 			self.nem_db.delete_accounts(cursor, rollback_impact.orphan_created_accounts)
 
@@ -377,8 +466,8 @@ class NemPuller:
 				self.nem_db.refresh_account_from_snapshot(cursor, account_state[address])
 
 			self._restore_rollback_remote_addresses(cursor, rollback_impact)
-
-			# Todo: reconstruct_rollback_namespaces, reconstruct_rollback_mosaics, recalculate_account_harvesting
+			self._restore_rollback_namespaces(cursor, rollback_impact)
+			self._restore_rollback_mosaics(cursor, rollback_impact)
 
 			self.nem_db.connection.commit()
 		except Exception:
@@ -623,7 +712,7 @@ class NemPuller:
 		"""Process root namespace data."""
 
 		# add 1 year to expired height
-		expired_height = block_height + (365 * 1440)
+		expired_height = block_height + NEM_NAMESPACE_DURATION
 
 		namespace = NamespaceRecord(
 			root_namespace=transaction.namespace,

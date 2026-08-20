@@ -3,7 +3,7 @@ import asyncio
 import datetime
 import tempfile
 import unittest
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import AsyncMock, Mock, call, patch
 
 import testing.postgresql
 from symbolchain.CryptoTypes import PublicKey
@@ -28,9 +28,10 @@ from symbollightapi.model.Transaction import (
 	TransferTransaction
 )
 
-from puller.db.NemDatabase import AccountRefreshRecord
+from puller.db.NemDatabase import AccountRefreshRecord, RollbackMosaicRecord, RollbackNamespaceRegistrationRecord
 from puller.facade.NemPuller import (
 	NEM_MAX_ROLLBACK_DEPTH,
+	NEM_NAMESPACE_DURATION,
 	AccountRecord,
 	AccountVestedBalanceRecord,
 	BlockRecord,
@@ -985,7 +986,7 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 				root_namespace='namespace',
 				owner=PublicKey('a700809530e5428066807ec0d34859c52e260fc60634aaac13e3972dcfc08736'),
 				registered_height=3,
-				expiration_height=3 + (365 * 1440)
+				expiration_height=3 + NEM_NAMESPACE_DURATION
 			)
 		))
 
@@ -1651,7 +1652,7 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 			account_creation_heights={address: height},
 			orphan_created_accounts=set(),
 			surviving_affected_accounts={address},
-			orphan_beneficiaries=set(),
+			orphan_harvested_fees_map={},
 			affected_remote_link_accounts=set(),
 			affected_namespace_roots=set(),
 			affected_mosaic_names=set()
@@ -1812,13 +1813,25 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 			database.insert_block(cursor, BlockRecord(
 				orphan_height,
 				'2015-03-29 00:00:00+00:00',
-				0,
+				20,
 				len(transactions),
 				1,
 				'AA' * 32,
 				beneficiary,
 				signer,
 				'BB' * 64,
+				100
+			))
+			database.insert_block(cursor, BlockRecord(
+				orphan_height + 1,
+				'2015-03-29 00:01:00+00:00',
+				30,
+				0,
+				1,
+				'CC' * 32,
+				beneficiary,
+				signer,
+				'DD' * 64,
 				100
 			))
 			database.upsert_mosaic(cursor, MosaicRecord(
@@ -1860,7 +1873,7 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 		self.assertEqual(expected_accounts, capture.affected_accounts)
 		self.assertEqual({recipient}, capture.orphan_created_accounts)
 		self.assertEqual(expected_accounts - {recipient}, capture.surviving_affected_accounts)
-		self.assertEqual({beneficiary}, capture.orphan_beneficiaries)
+		self.assertEqual({beneficiary: 50}, capture.orphan_harvested_fees_map)
 		self.assertEqual({sender}, capture.affected_remote_link_accounts)
 		self.assertEqual({'root'}, capture.affected_namespace_roots)
 		self.assertEqual({'root.token', 'root.supply'}, capture.affected_mosaic_names)
@@ -1920,7 +1933,7 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 		}, impact.account_creation_heights)
 		self.assertEqual(set(), impact.orphan_created_accounts)
 		self.assertEqual(expected_accounts, impact.surviving_affected_accounts)
-		self.assertEqual(set(), impact.orphan_beneficiaries)
+		self.assertEqual({}, impact.orphan_harvested_fees_map)
 		self.assertEqual(set(), impact.affected_remote_link_accounts)
 		self.assertEqual(set(), impact.affected_namespace_roots)
 		self.assertEqual(set(), impact.affected_mosaic_names)
@@ -1973,7 +1986,7 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 			account_creation_heights={first_survivor: 2, second_survivor: 5},
 			orphan_created_accounts={},
 			surviving_affected_accounts={first_survivor, second_survivor},
-			orphan_beneficiaries=set(),
+			orphan_harvested_fees_map={},
 			affected_remote_link_accounts=set(),
 			affected_namespace_roots=set(),
 			affected_mosaic_names=set()
@@ -2090,6 +2103,173 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 		# Assert:
 		self.assertEqual(surviving_remote_address.bytes.hex(), remote_address)
 
+	def test_can_restore_rollback_namespaces_by_replaying_surviving_registrations(self):
+		# Arrange:
+		owner = PublicKey('11' * 32)
+		namespace_registration_records = [
+			RollbackNamespaceRegistrationRecord(5, owner, None, 'root'),
+			RollbackNamespaceRegistrationRecord(6, owner, 'root', 'child'),
+			RollbackNamespaceRegistrationRecord(7, owner, 'root.child', 'grandchild')
+		]
+		rollback_impact = Mock(
+			fork_height=10,
+			affected_namespace_roots={'root'}
+		)
+		database = Mock()
+		database.get_surviving_namespace_history.return_value = namespace_registration_records
+		cursor = Mock()
+		self.puller.nem_db = database
+
+		# Act:
+		self.puller._restore_rollback_namespaces(cursor, rollback_impact)  # pylint: disable=protected-access
+
+		# Assert:
+		self.assertEqual([
+			call.delete_namespaces(cursor, {'root'}),
+			call.get_surviving_namespace_history(cursor, 10, {'root'})
+		], database.mock_calls[:2])
+		database.get_surviving_namespace_history.assert_called_once_with(
+			cursor,
+			10,
+			{'root'}
+		)
+		database.upsert_namespace.assert_called_once_with(
+			cursor,
+			NamespaceRecord('root', owner, 5, 5 + NEM_NAMESPACE_DURATION)
+		)
+		self.assertEqual([
+			call(cursor, 'root.child', 'root'),
+			call(cursor, 'root.child.grandchild', 'root')
+		], database.update_sub_namespaces.call_args_list)
+
+	def test_removes_orphan_root_when_it_has_no_surviving_registration(self):
+		# Arrange:
+		rollback_impact = Mock(
+			fork_height=10,
+			affected_namespace_roots={'orphan'}
+		)
+		database = Mock()
+		database.get_surviving_namespace_history.return_value = []
+		cursor = Mock()
+		self.puller.nem_db = database
+
+		# Act:
+		self.puller._restore_rollback_namespaces(cursor, rollback_impact)  # pylint: disable=protected-access
+
+		# Assert:
+		database.delete_namespaces.assert_called_once_with(cursor, {'orphan'})
+		database.upsert_namespace.assert_not_called()
+		database.update_sub_namespaces.assert_not_called()
+
+	def _run_rollback_mosaics_test(self, transactions, namespace_name='root.token'):
+		rollback_impact = Mock(
+			fork_height=10,
+			affected_mosaic_names={namespace_name}
+		)
+		database = Mock()
+		database.get_surviving_mosaic_transactions.return_value = transactions
+		cursor = Mock()
+		self.puller.nem_db = database
+
+		# Act:
+		self.puller._restore_rollback_mosaics(cursor, rollback_impact)  # pylint: disable=protected-access
+
+		# Assert:
+		self.assertEqual([
+			call.delete_mosaics(cursor, {namespace_name}),
+			call.get_surviving_mosaic_transactions(cursor, 10, {namespace_name})
+		], database.mock_calls[:2])
+
+		return database, cursor
+
+	def test_can_restore_rollback_mosaic_definition(self):
+		# Arrange:
+		creator = PublicKey('11' * 32)
+		levy_recipient = Address('TALICE6XEEEOBFJVY3ZCENZ7WBG6LB4KB7P7KMQX')
+		definition_payload = {
+			'namespace_name': 'root.token',
+			'description': 'rollback mosaic',
+			'mosaic_properties': {
+				'initial_supply': 1000,
+				'divisibility': 2,
+				'supply_mutable': True,
+				'transferable': False
+			},
+			'levy': {
+				'type': 1,
+				'namespace_name': 'levy.token',
+				'fee': 25,
+				'recipient': str(levy_recipient)
+			}
+		}
+		transaction = RollbackMosaicRecord(
+			TransactionType.MOSAIC_DEFINITION.value,
+			5,
+			creator,
+			definition_payload
+		)
+
+		# Act:
+		database, cursor = self._run_rollback_mosaics_test([transaction])
+
+		# Assert:
+		database.upsert_mosaic.assert_called_once_with(
+			cursor,
+			MosaicRecord(
+				root_namespace='root',
+				namespace_name='root.token',
+				description='rollback mosaic',
+				creator=creator,
+				registered_height=5,
+				initial_supply=1000,
+				total_supply=1000,
+				divisibility=2,
+				supply_mutable=True,
+				transferable=False,
+				levy_type=1,
+				levy_namespace_name='levy.token',
+				levy_fee=25,
+				levy_recipient=levy_recipient
+			)
+		)
+		database.update_mosaic_total_supply.assert_not_called()
+
+	def test_can_restore_rollback_mosaic_supply_changes(self):
+		# Arrange:
+		creator = PublicKey('11' * 32)
+		transactions = [
+			RollbackMosaicRecord(
+				TransactionType.MOSAIC_SUPPLY_CHANGE.value,
+				6,
+				creator,
+				{'namespace_name': 'root.token', 'supply_type': 1, 'delta': 300}
+			),
+			RollbackMosaicRecord(
+				TransactionType.MOSAIC_SUPPLY_CHANGE.value,
+				7,
+				creator,
+				{'namespace_name': 'root.token', 'supply_type': 2, 'delta': 100}
+			)
+		]
+
+		# Act:
+		database, cursor = self._run_rollback_mosaics_test(transactions)
+
+		# Assert:
+		database.upsert_mosaic.assert_not_called()
+		self.assertEqual([
+			call(cursor, 'root.token', 300),
+			call(cursor, 'root.token', -100)
+		], database.update_mosaic_total_supply.call_args_list)
+
+	def test_removes_orphan_mosaic_when_it_has_no_surviving_transaction(self):
+		# Act:
+		database, _ = self._run_rollback_mosaics_test([], 'orphan.token')
+
+		# Assert:
+		database.upsert_mosaic.assert_not_called()
+		database.update_mosaic_total_supply.assert_not_called()
+
 	def test_can_repair_rollback_with_expected_operations(self):
 		# Arrange:
 		first_address = Address('TALICE6XEEEOBFJVY3ZCENZ7WBG6LB4KB7P7KMQX')
@@ -2103,7 +2283,8 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 		}
 		rollback_impact = Mock(
 			fork_height=123,
-			orphan_created_accounts={orphan_address}
+			orphan_created_accounts={orphan_address},
+			orphan_harvested_fees_map={first_address: 50}
 		)
 		database = Mock()
 		cursor = database.connection.cursor.return_value
@@ -2112,13 +2293,24 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 		with patch.object(self.puller, '_validate_rollback_account_state') as mock_validate, patch.object(
 			self.puller,
 			'_restore_rollback_remote_addresses'
-		) as mock_restore_remote_addresses:
+		) as mock_restore_remote_addresses, patch.object(
+			self.puller,
+			'_restore_rollback_namespaces'
+		) as mock_restore_namespaces, patch.object(
+			self.puller,
+			'_restore_rollback_mosaics'
+		) as mock_restore_mosaics:
 			# Act:
 			self.puller.repair_rollback(rollback_impact, account_state)
 
 			# Assert:
 			mock_validate.assert_called_once_with(rollback_impact, account_state)
+			database.rollback_account_harvesting.assert_called_once_with(cursor, {first_address: 50}, 123)
 			database.delete_orphan_chain_data.assert_called_once_with(cursor, 123)
+			self.assertLess(
+				database.mock_calls.index(call.rollback_account_harvesting(cursor, {first_address: 50}, 123)),
+				database.mock_calls.index(call.delete_orphan_chain_data(cursor, 123))
+			)
 			database.delete_accounts.assert_called_once_with(cursor, {orphan_address})
 
 			refresh_calls = database.refresh_account_from_snapshot.call_args_list
@@ -2127,6 +2319,8 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 			self.assertEqual((cursor, second_account), refresh_calls[1][0])
 
 			mock_restore_remote_addresses.assert_called_once_with(cursor, rollback_impact)
+			mock_restore_namespaces.assert_called_once_with(cursor, rollback_impact)
+			mock_restore_mosaics.assert_called_once_with(cursor, rollback_impact)
 			database.connection.commit.assert_called_once_with()
 			database.connection.rollback.assert_not_called()
 
