@@ -465,6 +465,7 @@ class NemDatabase(DatabaseConnection):
 			VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
 			ON CONFLICT (address)
 			DO UPDATE SET
+				public_key = EXCLUDED.public_key,
 				importance = EXCLUDED.importance,
 				balance = EXCLUDED.balance,
 				vested_balance = EXCLUDED.vested_balance,
