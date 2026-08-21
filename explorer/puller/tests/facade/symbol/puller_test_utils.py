@@ -178,6 +178,16 @@ def create_node_block(
 	return node_block
 
 
+def create_multi_batch_block_pages(chain_height=1001):
+	"""Creates fresh block pages that exercise the puller's internal batch boundary."""
+
+	blocks = [create_node_block(height) for height in range(1, chain_height + 1)]
+	return {
+		offset: blocks[offset:offset + MAX_PAGE_SIZE]
+		for offset in range(0, chain_height, MAX_PAGE_SIZE)
+	}
+
+
 def create_node_transaction(height, transaction_hash=None, transaction_id=None, block_index=0, **transaction_overrides):
 	transaction_hash = transaction_hash or f'{height:064X}'
 	transaction = {

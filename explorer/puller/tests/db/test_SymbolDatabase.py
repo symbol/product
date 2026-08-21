@@ -66,11 +66,14 @@ RESTRICTION_MOSAIC_ID = '72C0212E67A08BCE'
 
 
 class FailingCommitConnection:
+	def __init__(self, connection):
+		self._connection = connection
+
 	def commit(self):  # pylint: disable=no-self-use
 		raise RuntimeError('commit failed')
 
-	def close(self):  # pylint: disable=no-self-use
-		return None
+	def __getattr__(self, name):
+		return getattr(self._connection, name)
 
 
 class FailingCommitObserver:
@@ -92,6 +95,20 @@ class DeterministicClock:
 		self.call_count += 1
 		value = next(self._values, None)
 		assert value is not None, 'commit clock value sequence was exhausted'
+		return value
+
+
+class ScriptedClock:
+	def __init__(self, values):
+		self._values = iter(values)
+		self.call_count = 0
+
+	def __call__(self):
+		self.call_count += 1
+		value = next(self._values)
+		if isinstance(value, Exception):
+			raise value
+
 		return value
 
 
@@ -319,7 +336,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		self.assertEqual([(0.25, True), (0.50, True)], commit_notifications)
 		self.assertEqual(4, clock.call_count)
 
-	def test_public_symbol_database_api_ignores_commit_observer_failure(self):
+	def test_create_tables_and_upsert_sync_state_ignore_commit_observer_failure(self):
 		# Arrange:
 		database = self.exit_stack.enter_context(
 			SymbolDatabase(self.db_config, commit_observer=FailingCommitObserver()))
@@ -336,21 +353,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		actual_sync_state['last_synced_block_hash'] = bytes(actual_sync_state['last_synced_block_hash'])
 		self.assertEqual(_create_sync_state(), actual_sync_state)
 
-	def test_symbol_database_without_commit_observer_preserves_existing_public_api(self):
-		# Arrange:
-		database = self._create_database()
-		expected_sync_state = _create_sync_state()
-
-		# Act:
-		database.upsert_sync_state(expected_sync_state)
-
-		# Assert:
-		actual_sync_state = database.get_sync_state()
-		actual_sync_state['finalized_hash'] = bytes(actual_sync_state['finalized_hash'])
-		actual_sync_state['last_synced_block_hash'] = bytes(actual_sync_state['last_synced_block_hash'])
-		self.assertEqual(expected_sync_state, actual_sync_state)
-
-	def test_public_symbol_database_api_tolerates_clock_failure_without_observer(self):
+	def test_create_tables_succeeds_when_commit_clock_fails_without_observer(self):
 		# Arrange:
 		database = self.exit_stack.enter_context(SymbolDatabase(self.db_config, time_source=FailingClock()))
 		drop_symbol_block_tables_if_present(database)
@@ -365,22 +368,117 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 	def test_commit_failure_notifies_observer_as_failed_attempt(self):
 		# Arrange:
 		commit_notifications = []
+		clock = DeterministicClock([1.0, 1.25, 2.0, 2.75])
 		database = self.exit_stack.enter_context(
 			SymbolDatabase(
 				self.db_config,
 				commit_observer=lambda elapsed_seconds, succeeded: commit_notifications.append(
 					(elapsed_seconds, succeeded)),
-				time_source=lambda: 0))
+				time_source=clock))
+		drop_symbol_block_tables_if_present(database)
+		self.addCleanup(drop_symbol_block_tables_if_present, database)
+		database.create_tables()
 		original_connection = database.connection
-		self.addCleanup(original_connection.close)
-		database.connection = FailingCommitConnection()
+		database.connection = FailingCommitConnection(original_connection)
 
 		# Act:
-		with self.assertRaisesRegex(RuntimeError, 'commit failed'):
-			database._commit()  # pylint: disable=protected-access
+		try:
+			with self.assertRaisesRegex(RuntimeError, 'commit failed') as exception_context:
+				database.upsert_sync_state(_create_sync_state())
+		finally:
+			try:
+				database.connection.rollback()
+			finally:
+				database.connection = original_connection
 
 		# Assert:
-		self.assertEqual([(0, False)], commit_notifications)
+		self.assertEqual('commit failed', str(exception_context.exception))
+		self.assertEqual([(0.25, True), (0.75, False)], commit_notifications)
+		self.assertEqual(1, commit_notifications.count((0.75, False)))
+		self.assertEqual(4, clock.call_count)
+		self.assertIsNone(database.get_sync_state())
+
+	def test_create_tables_succeeds_when_commit_clock_start_read_fails_with_observer(self):
+		# Arrange:
+		commit_notifications = []
+		clock = ScriptedClock([RuntimeError('clock start failed'), 1.0])
+		database = self.exit_stack.enter_context(SymbolDatabase(
+			self.db_config,
+			commit_observer=lambda elapsed_seconds, succeeded: commit_notifications.append(
+				(elapsed_seconds, succeeded)),
+			time_source=clock))
+		drop_symbol_block_tables_if_present(database)
+		self.addCleanup(drop_symbol_block_tables_if_present, database)
+
+		# Act:
+		database.create_tables()
+
+		# Assert:
+		self.assertEqual([(0, True)], commit_notifications)
+		self.assertEqual(2, clock.call_count)
+
+	def test_create_tables_succeeds_when_commit_clock_end_read_fails_with_observer(self):
+		# Arrange:
+		commit_notifications = []
+		clock = ScriptedClock([1.0, RuntimeError('clock end failed')])
+		database = self.exit_stack.enter_context(SymbolDatabase(
+			self.db_config,
+			commit_observer=lambda elapsed_seconds, succeeded: commit_notifications.append(
+				(elapsed_seconds, succeeded)),
+			time_source=clock))
+		drop_symbol_block_tables_if_present(database)
+		self.addCleanup(drop_symbol_block_tables_if_present, database)
+
+		# Act:
+		database.create_tables()
+
+		# Assert:
+		self.assertEqual([(0, True)], commit_notifications)
+		self.assertEqual(2, clock.call_count)
+
+	def test_create_tables_clamps_reverse_commit_clock_to_zero_with_observer(self):
+		# Arrange:
+		commit_notifications = []
+		clock = DeterministicClock([2.0, 1.0])
+		database = self.exit_stack.enter_context(SymbolDatabase(
+			self.db_config,
+			commit_observer=lambda elapsed_seconds, succeeded: commit_notifications.append(
+				(elapsed_seconds, succeeded)),
+			time_source=clock))
+		drop_symbol_block_tables_if_present(database)
+		self.addCleanup(drop_symbol_block_tables_if_present, database)
+
+		# Act:
+		database.create_tables()
+
+		# Assert:
+		self.assertEqual([(0, True)], commit_notifications)
+		self.assertEqual(2, clock.call_count)
+
+	def test_upsert_sync_state_preserves_commit_exception_when_commit_observer_also_fails(self):
+		# Arrange:
+		database = self.exit_stack.enter_context(SymbolDatabase(
+			self.db_config,
+			commit_observer=FailingCommitObserver(),
+			time_source=lambda: 0))
+		drop_symbol_block_tables_if_present(database)
+		self.addCleanup(drop_symbol_block_tables_if_present, database)
+		database.create_tables()
+		original_connection = database.connection
+		database.connection = FailingCommitConnection(original_connection)
+
+		# Act:
+		try:
+			with self.assertRaisesRegex(RuntimeError, 'commit failed') as exception_context:
+				database.upsert_sync_state(_create_sync_state())
+		finally:
+			try:
+				database.connection.rollback()
+			finally:
+				database.connection = original_connection
+
+		# Assert:
+		self.assertEqual('commit failed', str(exception_context.exception))
 
 	def test_create_tables_creates_symbol_namespace_columns(self):
 		# Arrange:
