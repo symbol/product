@@ -4,7 +4,12 @@ import os
 import unittest
 
 from common.symbol.NodeConfiguration import SymbolNodeConfigurationError
-from workflow_test_utils import RecordingSymbolPullerFactory, assert_symbol_node_config, create_symbol_environment
+from workflow_test_utils import (
+	FailingCreateTablesSymbolPullerFactory,
+	RecordingSymbolPullerFactory,
+	assert_symbol_node_config,
+	create_symbol_environment
+)
 
 from puller.workflows.symbol_workflow_utils import add_common_arguments, create_node_config, run_symbol_workflow
 
@@ -57,14 +62,17 @@ class SymbolWorkflowUtilsTest(unittest.TestCase):
 		assert_symbol_node_config(self, node_config)
 
 	def test_create_node_config_rejects_missing_allowed_hosts(self):
-		# Act + Assert:
+		# Act:
 		with self.assertRaisesRegex(
 			SymbolNodeConfigurationError,
 			'SYMBOL_NODE_ALLOWED_HOSTS is required'
-		):
+		) as exception_context:
 			create_node_config('http://localhost:7890', {})
 
-	def test_run_symbol_workflow_creates_tables_and_runs_operation(self):
+		# Assert:
+		self.assertEqual('SYMBOL_NODE_ALLOWED_HOSTS is required', str(exception_context.exception))
+
+	def test_run_symbol_workflow_runs_operation_after_table_initialization(self):
 		# Arrange:
 		factory = RecordingSymbolPullerFactory()
 		args = argparse.Namespace(
@@ -90,3 +98,30 @@ class SymbolWorkflowUtilsTest(unittest.TestCase):
 		self.assertEqual({'max_requests_per_second': 25}, puller.constructor_kwargs)
 		self.assertEqual(1, puller.symbol_db.create_tables_call_count)
 		self.assertEqual([puller], operation_pullers)
+		self.assertEqual(1, puller.async_enter_call_count)
+		self.assertEqual(1, puller.async_exit_call_count)
+
+	def test_run_symbol_workflow_stops_before_operation_when_table_creation_fails(self):
+		# Arrange:
+		factory = FailingCreateTablesSymbolPullerFactory()
+		args = argparse.Namespace(
+			symbol_node='http://localhost:7890',
+			db_config='test_config.ini',
+			network='testnet')
+		environment = create_symbol_environment()
+		operation_pullers = []
+
+		async def operation(puller):
+			operation_pullers.append(puller)
+
+		# Act:
+		with self.assertRaisesRegex(RuntimeError, 'create tables failed') as exception_context:
+			asyncio.run(run_symbol_workflow(factory, args, operation, environment))
+
+		# Assert:
+		puller = factory.puller
+		self.assertEqual('create tables failed', str(exception_context.exception))
+		self.assertEqual(1, puller.symbol_db.create_tables_call_count)
+		self.assertEqual([], operation_pullers)
+		self.assertEqual(1, puller.async_enter_call_count)
+		self.assertEqual(1, puller.async_exit_call_count)

@@ -638,9 +638,8 @@ class SymbolPullerTestBase(TestCase):
 		)
 		self.db_config = self.exit_stack.enter_context(PostgresTestDatabase())
 		self.config_ini = create_db_config(self.config_dir, self.db_config)
-		self.puller = self.exit_stack.enter_context(
-			create_symbol_puller(self.config_ini, 'testnet')
-		)
+		self.puller = create_symbol_puller(self.config_ini, 'testnet')
+		self.exit_stack.enter_context(self.puller.symbol_db)
 		drop_symbol_block_tables_if_present(self.puller.symbol_db)
 		self.puller.symbol_db.create_tables()
 

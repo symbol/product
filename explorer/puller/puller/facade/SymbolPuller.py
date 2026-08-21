@@ -11,13 +11,13 @@ from common.symbol.NodeConfiguration import SymbolNodeConfiguration
 from symbolchain.facade.SymbolFacade import SymbolFacade
 from symbolchain.sc import TransactionType
 from symbolchain.symbol.Network import Address, Network
-from symbollightapi.connector.SymbolConnector import SymbolConnector
 from symbollightapi.model.Exceptions import NodeException
 from zenlog import log
 
 from puller.db.SymbolDatabase import RollbackRefreshEntries, SymbolDatabase
 from puller.facade.async_utils import gather_in_chunks
 from puller.facade.RequestRateLimiter import RequestRateLimiter
+from puller.facade.SymbolPullerConnector import SymbolPullerConnector
 from puller.model.symbol.Account import HARVESTING_ACTIVE_WINDOW_DAYS, create_account_row, create_multisig_row
 from puller.model.symbol.Block import create_block_row
 from puller.model.symbol.format import is_exact_integer
@@ -72,6 +72,15 @@ MOSAIC_RESTRICTION_FETCH_CONCURRENCY = 10
 DEFAULT_MAX_REQUESTS_PER_SECOND = 20
 ACCOUNT_PAGE_SIZE = 100
 NEMESIS_PREVIOUS_BLOCK_HASH = bytes(32)
+# Namespace detail and account multisig fetches use one request per item in a max-size batch.
+SYMBOL_HTTP_CONNECTION_POOL_LIMIT = max(
+	BLOCK_PAGE_FETCH_CONCURRENCY,
+	RESOLUTION_FETCH_CONCURRENCY,
+	METADATA_FETCH_CONCURRENCY,
+	LOCK_FETCH_CONCURRENCY,
+	MOSAIC_RESTRICTION_FETCH_CONCURRENCY,
+	MAX_PAGE_SIZE,
+	ACCOUNT_BATCH_FETCH_SIZE)
 
 
 def _get_symbol_network(network_type):
@@ -99,7 +108,7 @@ def _is_not_found_response(response):
 	return isinstance(response, dict) and 'ResourceNotFound' == response.get('code')
 
 
-class SymbolPuller:
+class SymbolPuller:  # pylint: disable=too-many-instance-attributes
 	"""Facade for pulling data from Symbol network."""
 
 	def __init__(  # pylint: disable=too-many-arguments,too-many-positional-arguments
@@ -110,9 +119,13 @@ class SymbolPuller:
 		node_config=None,
 		connector=None,
 		max_requests_per_second=DEFAULT_MAX_REQUESTS_PER_SECOND,
-		rate_limiter=None
+		rate_limiter=None,
+		connector_factory=None
 	):
 		"""Creates a Symbol puller facade object."""
+
+		if connector is not None and connector_factory is not None:
+			raise ValueError('connector and connector_factory cannot both be specified')
 
 		config = configparser.ConfigParser()
 		config.read(config_file)
@@ -124,7 +137,15 @@ class SymbolPuller:
 		self.symbol_db = SymbolDatabase(DatabaseConfiguration(**db_config))
 		self.node_config = node_config or SymbolNodeConfiguration.from_url(node_url)
 		symbol_node_endpoint = self.node_config.assert_request_allowed(self.node_config.base_url)
-		self._symbol_connector = connector or SymbolConnector(symbol_node_endpoint)
+		if connector is not None:
+			self._symbol_connector = connector
+			self._owned_symbol_connector = None
+		else:
+			self._symbol_connector = (connector_factory or SymbolPullerConnector)(
+				symbol_node_endpoint,
+				self.node_config.timeout_seconds,
+				SYMBOL_HTTP_CONNECTION_POOL_LIMIT)
+			self._owned_symbol_connector = self._symbol_connector
 		self._symbol_connector.timeout_seconds = self.node_config.timeout_seconds
 		self.symbol_facade = SymbolFacade(network)
 		self._retry_delay = 2
@@ -132,12 +153,52 @@ class SymbolPuller:
 		self._native_mosaic_info = None
 		self._network_properties = None
 
-	def __enter__(self):
-		self.symbol_db.__enter__()
-		return self
+	async def __aenter__(self):
+		"""Enters the puller lifecycle and opens its internally-owned node session."""
 
-	def __exit__(self, *args):
-		self.symbol_db.__exit__(*args)
+		try:
+			if self._owned_symbol_connector is not None:
+				await self._owned_symbol_connector.open()
+			self.symbol_db.__enter__()
+			return self
+		except BaseException:  # pylint: disable=broad-exception-caught
+			try:
+				await self._close_owned_symbol_connector()
+			except BaseException as cleanup_error:  # pylint: disable=broad-exception-caught
+				log.error(f'Failed to close Symbol node session after lifecycle failure: {cleanup_error}')
+			raise
+
+	async def __aexit__(self, *args):
+		"""Exits the puller lifecycle without masking an operation or cleanup failure."""
+
+		primary_error = args[1]
+		cleanup_error = None
+		try:
+			self.symbol_db.__exit__(*args)
+		except BaseException as error:  # pylint: disable=broad-exception-caught
+			cleanup_error = error
+
+		try:
+			await self._close_owned_symbol_connector()
+		except BaseException as error:  # pylint: disable=broad-exception-caught
+			if cleanup_error is None:
+				cleanup_error = error
+			else:
+				log.error(f'Failed to close Symbol node session after database cleanup failure: {error}')
+
+		if primary_error is not None:
+			if cleanup_error is not None:
+				log.error(f'Failed to clean up Symbol puller after operation failure: {cleanup_error}')
+			return False
+
+		if cleanup_error is not None:
+			raise cleanup_error
+
+		return False
+
+	async def _close_owned_symbol_connector(self):
+		if self._owned_symbol_connector is not None:
+			await self._owned_symbol_connector.close()
 
 	def _validate_symbol_node_path(self, url_path):
 		parsed_url = urlparse(url_path)

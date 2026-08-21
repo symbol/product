@@ -3,6 +3,7 @@ import tempfile
 from unittest import TestCase
 from unittest.mock import AsyncMock, MagicMock, patch
 
+from common.symbol.NodeConfiguration import SymbolNodeConfiguration
 from symbolchain.sc import AliasAction, TransactionType
 from symbollightapi.model.Exceptions import NodeException
 
@@ -19,6 +20,11 @@ class CountingRateLimiter:
 
 	async def wait_for_turn(self):
 		self.call_count += 1
+
+
+class PositionalConnector:
+	def __init__(self):
+		self.timeout_seconds = None
 
 
 class SymbolPullerTest(TestCase):  # pylint: disable=too-many-public-methods
@@ -271,6 +277,29 @@ class SymbolPullerTest(TestCase):  # pylint: disable=too-many-public-methods
 			# Assert:
 			self.assertEqual(15, puller.node_config.timeout_seconds)
 			self.assertEqual(puller.node_config.timeout_seconds, connector.timeout_seconds)
+
+	def test_preserves_legacy_positional_max_requests_per_second(self):
+		# Arrange:
+		connector = PositionalConnector()
+		with tempfile.TemporaryDirectory() as temp_directory:
+			db_config_path = create_db_config(temp_directory)
+			node_config = SymbolNodeConfiguration.from_url(
+				NODE_URL,
+				allow_loopback=True,
+				timeout_seconds=17)
+
+			# Act:
+			puller = SymbolPuller(
+				NODE_URL,
+				db_config_path,
+				'testnet',
+				node_config,
+				connector,
+				17)
+
+			# Assert:
+			self.assertEqual(17, puller._rate_limiter._min_interval_seconds ** -1)  # pylint: disable=protected-access
+			self.assertEqual(17, connector.timeout_seconds)
 
 	def test_rejects_unsupported_network_type(self):
 		# Arrange:

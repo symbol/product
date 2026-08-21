@@ -153,6 +153,8 @@ def test_sync_block_dispatches_with_forwarded_limits_and_config():
 	assert {'max_requests_per_second': 25} == puller.constructor_kwargs
 	assert 1 == puller.symbol_db.create_tables_call_count
 	assert [3000] == puller.synced_max_heights
+	assert 1 == puller.async_enter_call_count
+	assert 1 == puller.async_exit_call_count
 	assert ('http://localhost:7890', 'test_config.ini', 'testnet') == puller.constructor_args[:3]
 	assert 'http://localhost:7890' == puller.constructor_args[3].base_url
 
@@ -181,6 +183,8 @@ def test_refresh_accounts_dispatches_and_logs_completion(caplog):
 	puller = puller_factory.puller
 	assert 1 == puller.refresh_accounts_call_count
 	assert 1 == puller.symbol_db.create_tables_call_count
+	assert 1 == puller.async_enter_call_count
+	assert 1 == puller.async_exit_call_count
 	assert ('http://localhost:7890', 'test_config.ini', 'testnet') == puller.constructor_args[:3]
 	assert ['Account refresh completed'] == caplog.messages
 
@@ -196,3 +200,5 @@ def test_refresh_accounts_propagates_failure_without_completion_log(caplog):
 
 	# Assert:
 	assert [] == caplog.messages
+	assert 1 == puller_factory.puller.async_enter_call_count
+	assert 1 == puller_factory.puller.async_exit_call_count
