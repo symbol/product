@@ -1,15 +1,19 @@
+# pylint: disable=too-many-lines
 import json
 from binascii import unhexlify
 from collections import namedtuple
 
 from symbolchain.nc import TransactionType
 from symbolchain.CryptoTypes import PublicKey
+from symbolchain.nc import TransactionType
 from symbolchain.nem.Network import Address
 
 from .DatabaseConnection import DatabaseConnection
 
+NEM_NAMESPACE_GRACE_PERIOD = 30 * 1440
+
 AccountRefreshRecord = namedtuple('AccountRefreshRecord', ['id', 'address'])
-RollbackBlockRecord = namedtuple('RollbackBlockRecord', ['beneficiary', 'signer'])
+RollbackBlockRecord = namedtuple('RollbackBlockRecord', ['beneficiary', 'signer', 'total_fee'])
 RollbackTransactionRecord = namedtuple(
 	'RollbackTransactionRecord',
 	['transaction_type', 'sender_address', 'recipient_address', 'payload']
@@ -18,9 +22,21 @@ OrphanChainRecords = namedtuple(
 	'OrphanChainRecords',
 	['blocks', 'transactions', 'transfer_levy_recipients']
 )
+RollbackAccountKeyLinkRecord = namedtuple(
+	'RollbackAccountKeyLinkRecord',
+	['sender_address', 'payload']
+)
+RollbackNamespaceRegistrationRecord = namedtuple(
+	'RollbackNamespaceRegistrationRecord',
+	['height', 'owner', 'parent', 'namespace']
+)
+RollbackMosaicRecord = namedtuple(
+	'RollbackMosaicRecord',
+	['transaction_type', 'height', 'sender_public_key', 'payload']
+)
 
 
-class NemDatabase(DatabaseConnection):
+class NemDatabase(DatabaseConnection):  # pylint: disable=too-many-public-methods
 	"""Database containing Nem blockchain data."""
 
 	@staticmethod
@@ -430,7 +446,8 @@ class NemDatabase(DatabaseConnection):
 			'''
 			SELECT
 				beneficiary,
-				signer
+				signer,
+				total_fee
 			FROM blocks
 			WHERE height > %s
 			ORDER BY height ASC
@@ -439,7 +456,7 @@ class NemDatabase(DatabaseConnection):
 		)
 		results = cursor.fetchall()
 		blocks = [
-			RollbackBlockRecord(Address(bytes(record[0])), PublicKey(bytes(record[1])))
+			RollbackBlockRecord(Address(bytes(record[0])), PublicKey(bytes(record[1])), record[2])
 			for record in results
 		]
 
@@ -503,6 +520,124 @@ class NemDatabase(DatabaseConnection):
 		results = cursor.fetchall()
 
 		return {Address(bytes(record[0])): record[1] for record in results}
+
+	@staticmethod
+	def delete_orphan_chain_data(cursor, fork_height):
+		"""Deletes transaction and block rows above a confirmed fork height."""
+
+		cursor.execute(
+			'''
+			DELETE FROM transactions
+			WHERE height > %s
+			''',
+			(fork_height,)
+		)
+		cursor.execute(
+			'''
+			DELETE FROM blocks
+			WHERE height > %s
+			''',
+			(fork_height,)
+		)
+
+	@staticmethod
+	def delete_accounts(cursor, addresses):
+		"""Deletes accounts that were first observed on the orphan chain."""
+
+		if not addresses:
+			return
+
+		cursor.execute(
+			'''
+			DELETE FROM accounts
+			WHERE address = ANY(%s)
+			''',
+			([address.bytes for address in addresses],)
+		)
+
+	@staticmethod
+	def refresh_account_from_snapshot(cursor, account_info):
+		"""Refreshes existing account state."""
+
+		cursor.execute(
+			'''
+			UPDATE accounts
+			SET importance = %s,
+				balance = %s,
+				vested_balance = %s,
+				mosaics = %s,
+				harvested_blocks = %s,
+				remote_status = %s,
+				min_cosignatories = %s,
+				cosignatory_of = %s,
+				cosignatories = %s,
+				updated_at = CURRENT_TIMESTAMP
+			WHERE address = %s
+			''',
+			(
+				account_info.importance,
+				account_info.balance,
+				account_info.vested_balance,
+				json.dumps(account_info.mosaics),
+				account_info.harvested_blocks,
+				account_info.remote_status,
+				account_info.min_cosignatories,
+				[address.bytes for address in account_info.cosignatory_of] if account_info.cosignatory_of else None,
+				[address.bytes for address in account_info.cosignatories] if account_info.cosignatories else None,
+				account_info.address.bytes
+			)
+		)
+
+		if 0 == cursor.rowcount:
+			raise RuntimeError(f'Cannot refresh missing NEM account {account_info.address}')
+
+	@staticmethod
+	def clear_account_remote_addresses(cursor, addresses):
+		"""Clears links for accounts whose link history must be replayed."""
+
+		if not addresses:
+			return
+
+		cursor.execute(
+			'''
+			UPDATE accounts
+			SET remote_address = NULL,
+				updated_at = CURRENT_TIMESTAMP
+			WHERE address = ANY(%s)
+			''',
+			([address.bytes for address in addresses],)
+		)
+
+	@staticmethod
+	def get_surviving_account_key_links(cursor, fork_height, addresses):
+		"""Gets the latest surviving account-key-link transition for each affected account."""
+
+		if not addresses:
+			return []
+
+		cursor.execute(
+			'''
+			SELECT DISTINCT ON (sender_address)
+				sender_address,
+				payload
+			FROM transactions
+			WHERE transaction_type = %s
+				AND height <= %s
+				AND sender_address = ANY(%s)
+			ORDER BY sender_address ASC, height DESC, id DESC
+			''',
+			(
+				TransactionType.ACCOUNT_KEY_LINK.value,
+				fork_height,
+				[address.bytes for address in addresses]
+			)
+		)
+		results = cursor.fetchall()
+
+		return [
+			RollbackAccountKeyLinkRecord(Address(bytes(record[0])), record[1])
+			for record in results
+		]
 
 	def get_accounts_for_refresh(self, limit, last_account_id):
 		"""Gets account addresses that should have vested balance and importance refreshed."""
@@ -672,15 +807,79 @@ class NemDatabase(DatabaseConnection):
 			DO UPDATE SET
 				owner = EXCLUDED.owner,
 				registered_height = EXCLUDED.registered_height,
-				expiration_height = EXCLUDED.expiration_height
+				expiration_height = EXCLUDED.expiration_height,
+				sub_namespaces = CASE
+					WHEN namespaces.owner = EXCLUDED.owner
+						AND EXCLUDED.registered_height < namespaces.expiration_height + %s
+					THEN namespaces.sub_namespaces
+					ELSE '{}'
+				END
 			''',
 			(
 				namespace.root_namespace,
 				namespace.owner.bytes,
 				namespace.registered_height,
-				namespace.expiration_height
+				namespace.expiration_height,
+				NEM_NAMESPACE_GRACE_PERIOD
 			)
 		)
+
+	@staticmethod
+	def delete_namespaces(cursor, root_namespaces):
+		"""Deletes affected namespace projections before replay."""
+
+		if not root_namespaces:
+			return
+
+		cursor.execute(
+			'''
+			DELETE FROM namespaces
+			WHERE root_namespace = ANY(%s)
+			''',
+			(list(root_namespaces),)
+		)
+
+	@staticmethod
+	def get_surviving_namespace_history(cursor, fork_height, root_namespaces):
+		"""Gets surviving namespace registrations for affected roots in replay order."""
+
+		if not root_namespaces:
+			return []
+
+		cursor.execute(
+			'''
+			SELECT
+				height,
+				sender_public_key,
+				payload->>'parent',
+				payload->>'namespace'
+			FROM transactions
+			WHERE transaction_type = %s
+				AND height <= %s
+				AND (
+					CASE
+						WHEN payload->>'parent' IS NULL THEN payload->>'namespace'
+						ELSE split_part(payload->>'parent', '.', 1)
+					END
+				) = ANY(%s)
+			ORDER BY height ASC, id ASC
+			''',
+			(
+				TransactionType.NAMESPACE_REGISTRATION.value,
+				fork_height,
+				list(root_namespaces)
+			)
+		)
+
+		return [
+			RollbackNamespaceRegistrationRecord(
+				record[0],
+				PublicKey(bytes(record[1])),
+				record[2],
+				record[3]
+			)
+			for record in cursor.fetchall()
+		]
 
 	@staticmethod
 	def update_sub_namespaces(cursor, sub_namespace, root_namespace):
@@ -772,6 +971,58 @@ class NemDatabase(DatabaseConnection):
 		)
 
 	@staticmethod
+	def delete_mosaics(cursor, namespace_names):
+		"""Deletes affected mosaic projections except the seeded network currency."""
+
+		deletable_names = set(namespace_names) - {'nem.xem'}
+		if not deletable_names:
+			return
+
+		cursor.execute(
+			'''
+			DELETE FROM mosaics
+			WHERE namespace_name = ANY(%s)
+			''',
+			(list(deletable_names),)
+		)
+
+	@staticmethod
+	def get_surviving_mosaic_transactions(cursor, fork_height, namespace_names):
+		"""Gets affected mosaic definition and supply transactions in replay order."""
+
+		replay_names = set(namespace_names) - {'nem.xem'}
+		if not replay_names:
+			return []
+
+		cursor.execute(
+			'''
+			SELECT transaction_type, height, sender_public_key, payload
+			FROM transactions
+			WHERE transaction_type = ANY(%s)
+				AND height <= %s
+				AND payload->>'namespace_name' = ANY(%s)
+			ORDER BY height ASC, id ASC
+			''',
+			(
+				[
+					TransactionType.MOSAIC_DEFINITION.value,
+					TransactionType.MOSAIC_SUPPLY_CHANGE.value
+				],
+				fork_height,
+				list(replay_names)
+			)
+		)
+		return [
+			RollbackMosaicRecord(
+				record[0],
+				record[1],
+				PublicKey(bytes(record[2])),
+				record[3]
+			)
+			for record in cursor.fetchall()
+		]
+
+	@staticmethod
 	def insert_transaction(cursor, transaction):
 		"""Inserts transaction information."""
 
@@ -837,3 +1088,29 @@ class NemDatabase(DatabaseConnection):
 				mosaic.quantity
 			)
 		)
+
+	@staticmethod
+	def rollback_account_harvesting(cursor, orphan_harvested_fees_map, fork_height):
+		"""Subtracts orphan block fees and restores the latest surviving harvest height."""
+
+		for beneficiary, orphan_harvested_fees in orphan_harvested_fees_map.items():
+			cursor.execute(
+				'''
+				UPDATE accounts
+				SET harvested_fees = harvested_fees - %s,
+					last_harvested_height = (
+						SELECT COALESCE(MAX(height), 0)
+						FROM blocks
+						WHERE beneficiary = %s
+							AND height <= %s
+					),
+					updated_at = CURRENT_TIMESTAMP
+				WHERE address = %s
+				''',
+				(
+					orphan_harvested_fees,
+					beneficiary.bytes,
+					fork_height,
+					beneficiary.bytes
+				)
+			)

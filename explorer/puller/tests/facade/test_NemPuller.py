@@ -3,7 +3,7 @@ import asyncio
 import datetime
 import tempfile
 import unittest
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import AsyncMock, Mock, call, patch
 
 import testing.postgresql
 from symbolchain.CryptoTypes import PublicKey
@@ -28,9 +28,10 @@ from symbollightapi.model.Transaction import (
 	TransferTransaction
 )
 
-from puller.db.NemDatabase import AccountRefreshRecord
+from puller.db.NemDatabase import AccountRefreshRecord, RollbackMosaicRecord, RollbackNamespaceRegistrationRecord
 from puller.facade.NemPuller import (
 	NEM_MAX_ROLLBACK_DEPTH,
+	NEM_NAMESPACE_DURATION,
 	AccountRecord,
 	BlockRecord,
 	DatabaseConfig,
@@ -39,6 +40,7 @@ from puller.facade.NemPuller import (
 	NemPuller,
 	RefreshedAccountRecord,
 	NemRollbackError,
+	NemRollbackImpact,
 	RollbackPayloadAccounts,
 	TransactionRecord
 )
@@ -987,7 +989,7 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 				root_namespace='namespace',
 				owner=PublicKey('a700809530e5428066807ec0d34859c52e260fc60634aaac13e3972dcfc08736'),
 				registered_height=3,
-				expiration_height=3 + (365 * 1440)
+				expiration_height=3 + NEM_NAMESPACE_DURATION
 			)
 		))
 
@@ -1609,11 +1611,8 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 		return asyncio.run(self.puller.detect_rollback(db_height, chain_height))
 
 	def test_returns_none_when_comparison_hash_matches(self):
-		# Arrange + Act:
-		fork_height = self._run_detect_rollback_test({3: 'ABCDEF'}, {3: 'abcdef'}, 3, 3)
-
-		# Assert:
-		self.assertIsNone(fork_height)
+		# Act + Assert: no exception
+		self._run_detect_rollback_test({3: 'ABCDEF'}, {3: 'abcdef'}, 3, 3)
 
 	def test_returns_chain_height_when_database_is_ahead(self):
 		# Arrange + Act:
@@ -1676,6 +1675,20 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 			payload,
 			100,
 			1
+		)
+
+	@staticmethod
+	def _create_surviving_account_rollback_impact(address, height=1):
+		return NemRollbackImpact(
+			fork_height=10,
+			affected_accounts={address},
+			account_creation_heights={address: height},
+			orphan_created_accounts=set(),
+			surviving_affected_accounts={address},
+			orphan_harvested_fees_map={},
+			affected_remote_link_accounts=set(),
+			affected_namespace_roots=set(),
+			affected_mosaic_names=set()
 		)
 
 	def test_extracts_multisig_account_and_all_signature_senders(self):
@@ -1833,13 +1846,25 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 			database.insert_block(cursor, BlockRecord(
 				orphan_height,
 				'2015-03-29 00:00:00+00:00',
-				0,
+				20,
 				len(transactions),
 				1,
 				'AA' * 32,
 				beneficiary,
 				signer,
 				'BB' * 64,
+				100
+			))
+			database.insert_block(cursor, BlockRecord(
+				orphan_height + 1,
+				'2015-03-29 00:01:00+00:00',
+				30,
+				0,
+				1,
+				'CC' * 32,
+				beneficiary,
+				signer,
+				'DD' * 64,
 				100
 			))
 			database.upsert_mosaic(cursor, MosaicRecord(
@@ -1881,7 +1906,7 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 		self.assertEqual(expected_accounts, capture.affected_accounts)
 		self.assertEqual({recipient}, capture.orphan_created_accounts)
 		self.assertEqual(expected_accounts - {recipient}, capture.surviving_affected_accounts)
-		self.assertEqual({beneficiary}, capture.orphan_beneficiaries)
+		self.assertEqual({beneficiary: 50}, capture.orphan_harvested_fees_map)
 		self.assertEqual({sender}, capture.affected_remote_link_accounts)
 		self.assertEqual({'root'}, capture.affected_namespace_roots)
 		self.assertEqual({'root.token', 'root.supply'}, capture.affected_mosaic_names)
@@ -1941,7 +1966,7 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 		}, impact.account_creation_heights)
 		self.assertEqual(set(), impact.orphan_created_accounts)
 		self.assertEqual(expected_accounts, impact.surviving_affected_accounts)
-		self.assertEqual(set(), impact.orphan_beneficiaries)
+		self.assertEqual({}, impact.orphan_harvested_fees_map)
 		self.assertEqual(set(), impact.affected_remote_link_accounts)
 		self.assertEqual(set(), impact.affected_namespace_roots)
 		self.assertEqual(set(), impact.affected_mosaic_names)
@@ -1973,3 +1998,381 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 			expected_message = 'Missing creation heights for 2 affected NEM account'
 			with self.assertRaisesRegex(NemRollbackError, expected_message):
 				self.puller.capture_rollback_impact(fork_height)
+
+	def test_prefetches_current_state_for_surviving_affected_accounts(self):
+		# Arrange:
+		first_survivor = Address('TALICE6XEEEOBFJVY3ZCENZ7WBG6LB4KB7P7KMQX')
+		second_survivor = Address('TCJLCZSOQ6RGWHTPSV2DW467WZSHK4NBSITND4OF')
+		first_account_record = Mock()
+		second_account_record = Mock()
+		accounts_by_address = {
+			str(first_survivor): first_account_record,
+			str(second_survivor): second_account_record
+		}
+		self.puller._fetch_account_record = AsyncMock(  # pylint: disable=protected-access
+			side_effect=lambda address, _height: accounts_by_address[address]
+		)
+
+		rollback_impact = NemRollbackImpact(
+			fork_height=10,
+			affected_accounts={first_survivor, second_survivor},
+			account_creation_heights={first_survivor: 2, second_survivor: 5},
+			orphan_created_accounts={},
+			surviving_affected_accounts={first_survivor, second_survivor},
+			orphan_harvested_fees_map={},
+			affected_remote_link_accounts=set(),
+			affected_namespace_roots=set(),
+			affected_mosaic_names=set()
+		)
+
+		# Act:
+		account_state = asyncio.run(self.puller.prefetch_rollback_account_state(rollback_impact))
+
+		# Assert:
+		self.assertEqual({
+			first_survivor: first_account_record,
+			second_survivor: second_account_record
+		}, account_state)
+		self.assertCountEqual(
+			[(str(first_survivor), 2), (str(second_survivor), 5)],
+			[call.args for call in self.puller._fetch_account_record.await_args_list]  # pylint: disable=protected-access
+		)
+
+	def test_accepts_complete_rollback_account_state(self):
+		# Arrange:
+		address = Address('TALICE6XEEEOBFJVY3ZCENZ7WBG6LB4KB7P7KMQX')
+		rollback_impact = self._create_surviving_account_rollback_impact(address)
+		account_state = {address: self._create_rollback_account(address, 1)}
+
+		# Act + Assert: no exception
+		self.puller._validate_rollback_account_state(  # pylint: disable=protected-access
+			rollback_impact,
+			account_state
+		)
+
+	def test_rejects_rollback_account_state_with_missing_snapshot(self):
+		# Arrange:
+		address = Address('TALICE6XEEEOBFJVY3ZCENZ7WBG6LB4KB7P7KMQX')
+		rollback_impact = self._create_surviving_account_rollback_impact(address)
+
+		# Act + Assert:
+		with self.assertRaisesRegex(NemRollbackError, 'Rollback account snapshot does not match surviving affected accounts'):
+			self.puller._validate_rollback_account_state(rollback_impact, {})  # pylint: disable=protected-access
+
+	def test_rejects_rollback_account_state_with_mismatched_address(self):
+		# Arrange:
+		address = Address('TALICE6XEEEOBFJVY3ZCENZ7WBG6LB4KB7P7KMQX')
+		other_address = Address('TCJLCZSOQ6RGWHTPSV2DW467WZSHK4NBSITND4OF')
+		rollback_impact = self._create_surviving_account_rollback_impact(address)
+		account_state = {address: self._create_rollback_account(other_address, 1)}
+
+		# Act + Assert:
+		with self.assertRaisesRegex(NemRollbackError, f'Rollback account snapshot address mismatch for {address}'):
+			self.puller._validate_rollback_account_state(  # pylint: disable=protected-access
+				rollback_impact,
+				account_state
+			)
+
+	def test_rejects_rollback_account_state_with_mismatched_height(self):
+		# Arrange:
+		address = Address('TALICE6XEEEOBFJVY3ZCENZ7WBG6LB4KB7P7KMQX')
+		rollback_impact = self._create_surviving_account_rollback_impact(address)
+		account_state = {address: self._create_rollback_account(address, 2)}
+
+		# Act + Assert:
+		with self.assertRaisesRegex(NemRollbackError, f'Rollback account snapshot height mismatch for {address}'):
+			self.puller._validate_rollback_account_state(  # pylint: disable=protected-access
+				rollback_impact,
+				account_state
+			)
+
+	def test_can_restore_rollback_remote_address_from_surviving_key_link(self):
+		# Arrange:
+		account = Address('TALICE6XEEEOBFJVY3ZCENZ7WBG6LB4KB7P7KMQX')
+		surviving_remote_key = PublicKey('7195f4d7a40ad7e31958ae96c4afed002962229675a4cae8dc8a18e290618981')
+		orphan_remote_key = PublicKey('1fbdbdde28daf828245e4533765726f0b7790e0b7146e2ce205df3e86366980b')
+		surviving_remote_address = self.puller._convert_public_key_to_address(  # pylint: disable=protected-access
+			surviving_remote_key
+		)
+		orphan_remote_address = self.puller._convert_public_key_to_address(  # pylint: disable=protected-access
+			orphan_remote_key
+		)
+		rollback_impact = self._create_surviving_account_rollback_impact(account)._replace(
+			fork_height=1,
+			affected_remote_link_accounts={account}
+		)
+
+		with self.puller.nem_db as database:
+			database.create_tables()
+			cursor = database.connection.cursor()
+
+			database.upsert_account(
+				cursor,
+				self._create_rollback_account(account, 1)._replace(remote_address=orphan_remote_address)
+			)
+			database.insert_transaction(
+				cursor,
+				self._create_rollback_transaction(
+					1,
+					TransactionType.ACCOUNT_KEY_LINK.value,
+					1,
+					account,
+					payload={'mode': 1, 'remote_account': str(surviving_remote_key)}
+				)
+			)
+
+			# Act:
+			self.puller._restore_rollback_remote_addresses(  # pylint: disable=protected-access
+				cursor,
+				rollback_impact
+			)
+
+			cursor.execute(
+				'SELECT encode(remote_address, \'hex\') FROM accounts WHERE address = %s',
+				(account.bytes,)
+			)
+			remote_address = cursor.fetchone()[0]
+
+		# Assert:
+		self.assertEqual(surviving_remote_address.bytes.hex(), remote_address)
+
+	def test_can_restore_rollback_namespaces_by_replaying_surviving_registrations(self):
+		# Arrange:
+		owner = PublicKey('11' * 32)
+		namespace_registration_records = [
+			RollbackNamespaceRegistrationRecord(5, owner, None, 'root'),
+			RollbackNamespaceRegistrationRecord(6, owner, 'root', 'child'),
+			RollbackNamespaceRegistrationRecord(7, owner, 'root.child', 'grandchild')
+		]
+		rollback_impact = Mock(
+			fork_height=10,
+			affected_namespace_roots={'root'}
+		)
+		database = Mock()
+		database.get_surviving_namespace_history.return_value = namespace_registration_records
+		cursor = Mock()
+		self.puller.nem_db = database
+
+		# Act:
+		self.puller._restore_rollback_namespaces(cursor, rollback_impact)  # pylint: disable=protected-access
+
+		# Assert:
+		self.assertEqual([
+			call.delete_namespaces(cursor, {'root'}),
+			call.get_surviving_namespace_history(cursor, 10, {'root'})
+		], database.mock_calls[:2])
+		database.get_surviving_namespace_history.assert_called_once_with(
+			cursor,
+			10,
+			{'root'}
+		)
+		database.upsert_namespace.assert_called_once_with(
+			cursor,
+			NamespaceRecord('root', owner, 5, 5 + NEM_NAMESPACE_DURATION)
+		)
+		self.assertEqual([
+			call(cursor, 'root.child', 'root'),
+			call(cursor, 'root.child.grandchild', 'root')
+		], database.update_sub_namespaces.call_args_list)
+
+	def test_removes_orphan_root_when_it_has_no_surviving_registration(self):
+		# Arrange:
+		rollback_impact = Mock(
+			fork_height=10,
+			affected_namespace_roots={'orphan'}
+		)
+		database = Mock()
+		database.get_surviving_namespace_history.return_value = []
+		cursor = Mock()
+		self.puller.nem_db = database
+
+		# Act:
+		self.puller._restore_rollback_namespaces(cursor, rollback_impact)  # pylint: disable=protected-access
+
+		# Assert:
+		database.delete_namespaces.assert_called_once_with(cursor, {'orphan'})
+		database.upsert_namespace.assert_not_called()
+		database.update_sub_namespaces.assert_not_called()
+
+	def _run_rollback_mosaics_test(self, transactions, namespace_name='root.token'):
+		rollback_impact = Mock(
+			fork_height=10,
+			affected_mosaic_names={namespace_name}
+		)
+		database = Mock()
+		database.get_surviving_mosaic_transactions.return_value = transactions
+		cursor = Mock()
+		self.puller.nem_db = database
+
+		# Act:
+		self.puller._restore_rollback_mosaics(cursor, rollback_impact)  # pylint: disable=protected-access
+
+		# Assert:
+		self.assertEqual([
+			call.delete_mosaics(cursor, {namespace_name}),
+			call.get_surviving_mosaic_transactions(cursor, 10, {namespace_name})
+		], database.mock_calls[:2])
+
+		return database, cursor
+
+	def test_can_restore_rollback_mosaic_definition(self):
+		# Arrange:
+		creator = PublicKey('11' * 32)
+		levy_recipient = Address('TALICE6XEEEOBFJVY3ZCENZ7WBG6LB4KB7P7KMQX')
+		definition_payload = {
+			'namespace_name': 'root.token',
+			'description': 'rollback mosaic',
+			'mosaic_properties': {
+				'initial_supply': 1000,
+				'divisibility': 2,
+				'supply_mutable': True,
+				'transferable': False
+			},
+			'levy': {
+				'type': 1,
+				'namespace_name': 'levy.token',
+				'fee': 25,
+				'recipient': str(levy_recipient)
+			}
+		}
+		transaction = RollbackMosaicRecord(
+			TransactionType.MOSAIC_DEFINITION.value,
+			5,
+			creator,
+			definition_payload
+		)
+
+		# Act:
+		database, cursor = self._run_rollback_mosaics_test([transaction])
+
+		# Assert:
+		database.upsert_mosaic.assert_called_once_with(
+			cursor,
+			MosaicRecord(
+				root_namespace='root',
+				namespace_name='root.token',
+				description='rollback mosaic',
+				creator=creator,
+				registered_height=5,
+				initial_supply=1000,
+				total_supply=1000,
+				divisibility=2,
+				supply_mutable=True,
+				transferable=False,
+				levy_type=1,
+				levy_namespace_name='levy.token',
+				levy_fee=25,
+				levy_recipient=levy_recipient
+			)
+		)
+		database.update_mosaic_total_supply.assert_not_called()
+
+	def test_can_restore_rollback_mosaic_supply_changes(self):
+		# Arrange:
+		creator = PublicKey('11' * 32)
+		transactions = [
+			RollbackMosaicRecord(
+				TransactionType.MOSAIC_SUPPLY_CHANGE.value,
+				6,
+				creator,
+				{'namespace_name': 'root.token', 'supply_type': 1, 'delta': 300}
+			),
+			RollbackMosaicRecord(
+				TransactionType.MOSAIC_SUPPLY_CHANGE.value,
+				7,
+				creator,
+				{'namespace_name': 'root.token', 'supply_type': 2, 'delta': 100}
+			)
+		]
+
+		# Act:
+		database, cursor = self._run_rollback_mosaics_test(transactions)
+
+		# Assert:
+		database.upsert_mosaic.assert_not_called()
+		self.assertEqual([
+			call(cursor, 'root.token', 300),
+			call(cursor, 'root.token', -100)
+		], database.update_mosaic_total_supply.call_args_list)
+
+	def test_removes_orphan_mosaic_when_it_has_no_surviving_transaction(self):
+		# Act:
+		database, _ = self._run_rollback_mosaics_test([], 'orphan.token')
+
+		# Assert:
+		database.upsert_mosaic.assert_not_called()
+		database.update_mosaic_total_supply.assert_not_called()
+
+	def test_can_repair_rollback_with_expected_operations(self):
+		# Arrange:
+		first_address = Address('TALICE6XEEEOBFJVY3ZCENZ7WBG6LB4KB7P7KMQX')
+		second_address = Address('TCJLCZSOQ6RGWHTPSV2DW467WZSHK4NBSITND4OF')
+		orphan_address = Address('TBKQWJJGPOHL462DBVMTYOAERXGG2BOS5XRFO2P6')
+		first_account = Mock()
+		second_account = Mock()
+		account_state = {
+			second_address: second_account,
+			first_address: first_account
+		}
+		rollback_impact = Mock(
+			fork_height=123,
+			orphan_created_accounts={orphan_address},
+			orphan_harvested_fees_map={first_address: 50}
+		)
+		database = Mock()
+		cursor = database.connection.cursor.return_value
+		self.puller.nem_db = database
+
+		with patch.object(self.puller, '_validate_rollback_account_state') as mock_validate, patch.object(
+			self.puller,
+			'_restore_rollback_remote_addresses'
+		) as mock_restore_remote_addresses, patch.object(
+			self.puller,
+			'_restore_rollback_namespaces'
+		) as mock_restore_namespaces, patch.object(
+			self.puller,
+			'_restore_rollback_mosaics'
+		) as mock_restore_mosaics:
+			# Act:
+			self.puller.repair_rollback(rollback_impact, account_state)
+
+			# Assert:
+			mock_validate.assert_called_once_with(rollback_impact, account_state)
+			database.rollback_account_harvesting.assert_called_once_with(cursor, {first_address: 50}, 123)
+			database.delete_orphan_chain_data.assert_called_once_with(cursor, 123)
+			self.assertLess(
+				database.mock_calls.index(call.rollback_account_harvesting(cursor, {first_address: 50}, 123)),
+				database.mock_calls.index(call.delete_orphan_chain_data(cursor, 123))
+			)
+			database.delete_accounts.assert_called_once_with(cursor, {orphan_address})
+
+			refresh_calls = database.refresh_account_from_snapshot.call_args_list
+			self.assertEqual(2, len(refresh_calls))
+			self.assertEqual((cursor, first_account), refresh_calls[0][0])
+			self.assertEqual((cursor, second_account), refresh_calls[1][0])
+
+			mock_restore_remote_addresses.assert_called_once_with(cursor, rollback_impact)
+			mock_restore_namespaces.assert_called_once_with(cursor, rollback_impact)
+			mock_restore_mosaics.assert_called_once_with(cursor, rollback_impact)
+			database.connection.commit.assert_called_once_with()
+			database.connection.rollback.assert_not_called()
+
+	def test_repair_rollback_rolls_back_transaction_on_failure(self):
+		# Arrange:
+		address = Address('TALICE6XEEEOBFJVY3ZCENZ7WBG6LB4KB7P7KMQX')
+		account_state = {address: Mock()}
+		rollback_impact = Mock(fork_height=123, orphan_created_accounts=set())
+		database = Mock()
+		self.puller.nem_db = database
+
+		with patch.object(self.puller, '_validate_rollback_account_state'), patch.object(
+			self.puller,
+			'_restore_rollback_remote_addresses',
+			side_effect=RuntimeError('forced repair failure')
+		):
+			# Act + Assert:
+			with self.assertRaisesRegex(RuntimeError, 'forced repair failure'):
+				self.puller.repair_rollback(rollback_impact, account_state)
+
+		database.connection.rollback.assert_called_once_with()
+		database.connection.commit.assert_not_called()

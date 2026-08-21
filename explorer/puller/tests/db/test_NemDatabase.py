@@ -1,18 +1,26 @@
 import datetime
 import json
 import unittest
+from collections import namedtuple
 from pathlib import Path
 
 import psycopg2
 import testing.postgresql
 from symbolchain.CryptoTypes import PublicKey
+from symbolchain.nc import TransactionType
 from symbolchain.nem.Network import Address
 from symbollightapi.model.Transaction import Mosaic
 
-from puller.db.NemDatabase import NemDatabase
+from puller.db.NemDatabase import NemDatabase, RollbackAccountKeyLinkRecord, RollbackMosaicRecord, RollbackNamespaceRegistrationRecord
 from puller.facade.NemPuller import AccountRecord, BlockRecord, MosaicRecord, NamespaceRecord, TransactionRecord
 
 from .test_DatabaseConnection import DatabaseConfig
+
+AccountDbRecord = namedtuple('AccountDbRecord', [
+	*AccountRecord._fields,
+	'harvested_fees',
+	'last_harvested_height'
+])
 
 # region test data
 
@@ -129,19 +137,20 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 				balance,
 				vested_balance,
 				mosaics,
-				harvested_fees,
 				harvested_blocks,
 				remote_status,
-				last_harvested_height,
 				min_cosignatories,
 				cosignatory_of,
-				cosignatories
+				cosignatories,
+				harvested_fees,
+				last_harvested_height
 			FROM accounts
 			WHERE address = %s
 			''',
 			(address.bytes,)
 		)
-		return cursor.fetchone()
+		result = cursor.fetchone()
+		return AccountDbRecord(*result) if result else None
 
 	@staticmethod
 	def _fetch_namespace_from_db(cursor, root_namespace):
@@ -487,13 +496,13 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 			1000000,
 			99999,
 			[],
-			0,
 			10,
 			'INACTIVE',
+			None,
+			None,
+			None,
 			0,
-			None,
-			None,
-			None)
+			0)
 		)
 
 	def test_can_update_account_by_address_conflict(self):
@@ -529,13 +538,13 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 			2000000,
 			99999,
 			[],
-			0,
 			10,
 			'INACTIVE',
+			None,
+			None,
+			None,
 			0,
-			None,
-			None,
-			None)
+			0)
 		)
 
 	def test_account_height_remains_unchanged_on_update(self):
@@ -561,7 +570,7 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 			result = self._fetch_account_from_db(cursor, ACCOUNTS[0].address)
 
 		# Assert:
-		self.assertEqual(result[1], 1)
+		self.assertEqual(result.height, 1)
 
 	def test_upsert_account_does_not_overwrite_remote_address(self):
 		# Arrange:
@@ -588,8 +597,8 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 			result = self._fetch_account_from_db(cursor, ACCOUNTS[0].address)
 
 		# Assert:
-		self.assertEqual(result[3], remote_address.bytes.hex())
-		self.assertEqual(result[5], 2000000)
+		self.assertEqual(result.remote_address, remote_address.bytes.hex())
+		self.assertEqual(result.balance, 2000000)
 
 	def test_can_set_account_remote_address(self):
 		# Arrange:
@@ -608,7 +617,7 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 			result = self._fetch_account_from_db(cursor, ACCOUNTS[0].address)
 
 		# Assert:
-		self.assertEqual(result[3], remote_address.bytes.hex())
+		self.assertEqual(result.remote_address, remote_address.bytes.hex())
 
 	def test_can_clear_account_remote_address(self):
 		# Arrange:
@@ -627,7 +636,7 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 			result = self._fetch_account_from_db(cursor, ACCOUNTS[0].address)
 
 		# Assert:
-		self.assertIsNone(result[3])
+		self.assertIsNone(result.remote_address)
 
 	def test_can_get_accounts_for_refresh(self):
 		# Arrange:
@@ -772,13 +781,13 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 			1000000,
 			88888,
 			[],
-			0,
 			10,
 			'ACTIVE',
+			None,
+			None,
+			None,
 			0,
-			None,
-			None,
-			None)
+			0)
 		)
 
 	def test_can_update_account_harvested_fees(self):
@@ -814,8 +823,8 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 			result = self._fetch_account_from_db(cursor, ACCOUNTS[0].address)
 
 		# Assert:
-		self.assertEqual(result[8], 750000)  # harvested_fees
-		self.assertEqual(result[11], 20)      # last_harvested_height
+		self.assertEqual(result.harvested_fees, 750000)
+		self.assertEqual(result.last_harvested_height, 20)
 
 	def test_can_insert_namespace(self):
 		# Arrange:
@@ -890,6 +899,72 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 			[]
 		))
 
+	def test_same_owner_namespace_renewal_before_grace_period_end_preserves_sub_namespaces(self):
+		# Arrange:
+		owner = PublicKey('11' * 32)
+		renewal_height = 200 + (30 * 1440) - 1
+		with NemDatabase(self.db_config) as nem_database:
+			nem_database.create_tables()
+			cursor = nem_database.connection.cursor()
+
+			nem_database.upsert_namespace(cursor, NamespaceRecord('root', owner, 100, 200))
+			nem_database.update_sub_namespaces(cursor, 'root.child', 'root')
+
+			# Act:
+			nem_database.upsert_namespace(cursor, NamespaceRecord('root', owner, renewal_height, 500000))
+			result = self._fetch_namespace_from_db(cursor, 'root')
+
+		# Assert:
+		self.assertEqual((
+			'root',
+			str(owner),
+			renewal_height,
+			500000,
+			['root.child']
+		), result)
+
+	def test_same_owner_namespace_registration_at_grace_period_end_clears_sub_namespaces(self):
+		# Arrange:
+		owner = PublicKey('11' * 32)
+		registration_height = 200 + (30 * 1440)  # grace period end
+		with NemDatabase(self.db_config) as nem_database:
+			nem_database.create_tables()
+			cursor = nem_database.connection.cursor()
+
+			nem_database.upsert_namespace(cursor, NamespaceRecord('root', owner, 100, 200))
+			nem_database.update_sub_namespaces(cursor, 'root.child', 'root')
+
+			# Act:
+			nem_database.upsert_namespace(cursor, NamespaceRecord('root', owner, registration_height, 500000))
+			result = self._fetch_namespace_from_db(cursor, 'root')
+
+		# Assert:
+		self.assertEqual((
+			'root',
+			str(owner),
+			registration_height,
+			500000,
+			[]
+		), result)
+
+	def test_can_delete_affected_namespace_roots(self):
+		# Arrange:
+		owner = PublicKey('11' * 32)
+		with NemDatabase(self.db_config) as nem_database:
+			nem_database.create_tables()
+			cursor = nem_database.connection.cursor()
+
+			nem_database.upsert_namespace(cursor, NamespaceRecord('affected', owner, 100, 200))
+			nem_database.upsert_namespace(cursor, NamespaceRecord('unaffected', owner, 100, 200))
+
+			# Act:
+			nem_database.delete_namespaces(cursor, {'affected'})
+			cursor.execute('SELECT root_namespace FROM namespaces ORDER BY root_namespace')
+			results = [record[0] for record in cursor.fetchall()]
+
+		# Assert:
+		self.assertEqual(['unaffected'], results)
+
 	def test_can_update_sub_namespaces(self):
 		# Arrange:
 		with NemDatabase(self.db_config) as nem_database:
@@ -927,6 +1002,126 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 			200,
 			['sub1']
 		))
+
+	def test_namespace_history_filters_affected_roots(self):
+		# Arrange:
+		owner = PublicKey('11' * 32)
+		transactions = [
+			TRANSACTIONS[0]._replace(
+				transaction_hash='11' * 32,
+				transaction_type=TransactionType.NAMESPACE_REGISTRATION.value,
+				height=2,
+				sender_public_key=owner,
+				payload={'parent': None, 'namespace': 'root'}
+			),
+			TRANSACTIONS[0]._replace(
+				transaction_hash='22' * 32,
+				transaction_type=TransactionType.NAMESPACE_REGISTRATION.value,
+				height=2,
+				sender_public_key=owner,
+				payload={'parent': 'root', 'namespace': 'child'}
+			),
+			TRANSACTIONS[0]._replace(
+				transaction_hash='33' * 32,
+				transaction_type=TransactionType.NAMESPACE_REGISTRATION.value,
+				height=2,
+				sender_public_key=owner,
+				payload={'parent': 'root.child', 'namespace': 'grandchild'}
+			),
+			TRANSACTIONS[0]._replace(
+				transaction_hash='44' * 32,
+				transaction_type=TransactionType.NAMESPACE_REGISTRATION.value,
+				height=2,
+				sender_public_key=owner,
+				payload={'parent': None, 'namespace': 'unaffected'}
+			)
+		]
+
+		with NemDatabase(self.db_config) as nem_database:
+			nem_database.create_tables()
+			cursor = nem_database.connection.cursor()
+			for transaction in transactions:
+				nem_database.insert_transaction(cursor, transaction)
+
+			# Act:
+			results = nem_database.get_surviving_namespace_history(cursor, 2, {'root', 'missing'})
+
+		# Assert:
+		self.assertEqual([
+			RollbackNamespaceRegistrationRecord(2, owner, None, 'root'),
+			RollbackNamespaceRegistrationRecord(2, owner, 'root', 'child'),
+			RollbackNamespaceRegistrationRecord(2, owner, 'root.child', 'grandchild')
+		], results)
+
+	def test_namespace_history_filters_transactions_above_fork_height(self):
+		# Arrange:
+		owner = PublicKey('11' * 32)
+		transactions = [
+			TRANSACTIONS[0]._replace(
+				transaction_hash='11' * 32,
+				transaction_type=TransactionType.NAMESPACE_REGISTRATION.value,
+				height=2,
+				sender_public_key=owner,
+				payload={'parent': None, 'namespace': 'root'}
+			),
+			TRANSACTIONS[0]._replace(
+				transaction_hash='22' * 32,
+				transaction_type=TransactionType.NAMESPACE_REGISTRATION.value,
+				height=3,
+				sender_public_key=owner,
+				payload={'parent': None, 'namespace': 'root'}
+			)
+		]
+
+		with NemDatabase(self.db_config) as nem_database:
+			nem_database.create_tables()
+			cursor = nem_database.connection.cursor()
+
+			for transaction in transactions:
+				nem_database.insert_transaction(cursor, transaction)
+
+			# Act:
+			results = nem_database.get_surviving_namespace_history(cursor, 2, {'root'})
+
+		# Assert:
+		self.assertEqual([
+			RollbackNamespaceRegistrationRecord(2, owner, None, 'root')
+		], results)
+
+	def test_namespace_history_filters_other_transaction_types(self):
+		# Arrange:
+		owner = PublicKey('11' * 32)
+		transactions = [
+			TRANSACTIONS[0]._replace(
+				transaction_hash='11' * 32,
+				transaction_type=TransactionType.NAMESPACE_REGISTRATION.value,
+				height=2,
+				sender_public_key=owner,
+				payload={'parent': None, 'namespace': 'root'}
+			),
+			TRANSACTIONS[0]._replace(
+				transaction_hash='22' * 32,
+				transaction_type=TransactionType.TRANSFER.value,
+				height=2,
+				sender_public_key=owner,
+				payload={'parent': None, 'namespace': 'root'}
+			)
+		]
+
+		with NemDatabase(self.db_config) as nem_database:
+			nem_database.create_tables()
+			cursor = nem_database.connection.cursor()
+
+			for transaction in transactions:
+				nem_database.insert_transaction(cursor, transaction)
+
+			# Act:
+			results = nem_database.get_surviving_namespace_history(cursor, 2, {'root'})
+
+		# Assert:
+		self.assertEqual([
+			RollbackNamespaceRegistrationRecord(2, owner, None, 'root')
+		], results)
 
 	def test_can_insert_mosaic(self):
 		# Arrange:
@@ -1222,6 +1417,7 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 		self.assertEqual(1, len(orphan_blocks))
 		self.assertEqual(BLOCKS[1].beneficiary, orphan_blocks[0].beneficiary)
 		self.assertEqual(BLOCKS[1].signer, orphan_blocks[0].signer)
+		self.assertEqual(BLOCKS[1].total_fee, orphan_blocks[0].total_fee)
 
 		self.assertEqual(2, len(orphan_transactions))
 		self.assertEqual(['outer', 'inner'], [
@@ -1248,3 +1444,417 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 
 		# Assert:
 		self.assertEqual({}, account_heights)
+
+	def test_can_delete_orphan_chain_data(self):
+		# Arrange:
+		surviving_transaction = TRANSACTIONS[0]._replace(
+			transaction_hash='11' * 32,
+			height=1
+		)
+		orphan_transaction = TRANSACTIONS[0]._replace(
+			transaction_hash='22' * 32,
+			height=2
+		)
+
+		with NemDatabase(self.db_config) as nem_database:
+			nem_database.create_tables()
+			cursor = nem_database.connection.cursor()
+
+			for block in BLOCKS:
+				nem_database.insert_block(cursor, block)
+
+			surviving_transaction_id = nem_database.insert_transaction(cursor, surviving_transaction)
+			orphan_transaction_id = nem_database.insert_transaction(cursor, orphan_transaction)
+			nem_database.insert_transaction_mosaic(cursor, surviving_transaction_id, Mosaic('nem.xem', 1))
+			nem_database.insert_transaction_mosaic(cursor, orphan_transaction_id, Mosaic('nem.xem', 2))
+			nem_database.connection.commit()
+
+			# Act:
+			nem_database.delete_orphan_chain_data(cursor, 1)
+
+			cursor.execute('SELECT height FROM blocks')
+			block_heights = [record[0] for record in cursor.fetchall()]
+
+			cursor.execute('SELECT height FROM transactions')
+			transaction_heights = [record[0] for record in cursor.fetchall()]
+
+			cursor.execute('SELECT transaction_id FROM transactions_mosaic')
+			transaction_id = [record[0] for record in cursor.fetchall()]
+
+		# Assert:
+		self.assertEqual([1], block_heights)
+		self.assertEqual([1], transaction_heights)
+		self.assertEqual([1], transaction_id)
+
+	def test_can_delete_accounts(self):
+		# Arrange:
+		surviving_account = ACCOUNTS[0]
+		orphan_account = ACCOUNTS[0]._replace(
+			address=Address('TALICE6XEEEOBFJVY3ZCENZ7WBG6LB4KB7P7KMQX'),
+			height=2
+		)
+
+		with NemDatabase(self.db_config) as nem_database:
+			nem_database.create_tables()
+			cursor = nem_database.connection.cursor()
+
+			nem_database.upsert_account(cursor, surviving_account)
+			nem_database.upsert_account(cursor, orphan_account)
+			nem_database.connection.commit()
+
+			# Act:
+			nem_database.delete_accounts(cursor, {orphan_account.address})
+
+			surviving_result = self._fetch_account_from_db(cursor, surviving_account.address)
+			orphan_result = self._fetch_account_from_db(cursor, orphan_account.address)
+
+		# Assert:
+		self.assertIsNotNone(surviving_result)
+		self.assertIsNone(orphan_result)
+
+	def test_can_refresh_account_from_rollback_snapshot(self):
+		# Arrange:
+		orphan_remote_address = Address('TBKQWJJGPOHL462DBVMTYOAERXGG2BOS5XRFO2P6')
+		orphan_harvested_fees = 500000
+		orphan_last_harvested_height = 10
+		orphan_account = ACCOUNTS[0]._replace(remote_address=orphan_remote_address)
+		snapshot = orphan_account._replace(
+			remote_address=None,
+			importance=0.5,
+			balance=2000000,
+			vested_balance=1500000,
+			mosaics=[{'namespace_name': 'foo.token', 'quantity': 7}],
+			harvested_blocks=25,
+			remote_status='ACTIVE',
+			min_cosignatories=1,
+			cosignatory_of=[orphan_remote_address],
+			cosignatories=[orphan_remote_address]
+		)
+
+		with NemDatabase(self.db_config) as nem_database:
+			nem_database.create_tables()
+			cursor = nem_database.connection.cursor()
+
+			nem_database.upsert_account(cursor, orphan_account)
+			nem_database.update_account_harvested_fees(
+				cursor,
+				orphan_account.address,
+				orphan_harvested_fees,
+				orphan_last_harvested_height
+			)
+			nem_database.connection.commit()
+
+			# Act:
+			nem_database.refresh_account_from_snapshot(cursor, snapshot)
+			nem_database.connection.commit()
+			result = self._fetch_account_from_db(cursor, snapshot.address)
+
+		# Assert:
+		self.assertEqual(snapshot.address.bytes.hex(), result.address)
+		self.assertEqual(snapshot.height, result.height)
+		self.assertEqual(snapshot.public_key.bytes.hex(), result.public_key)
+		self.assertEqual(orphan_remote_address.bytes.hex(), result.remote_address)
+		self.assertEqual(f'{snapshot.importance:.10f}', result.importance)
+		self.assertEqual(snapshot.balance, result.balance)
+		self.assertEqual(snapshot.vested_balance, result.vested_balance)
+		self.assertEqual(snapshot.mosaics, result.mosaics)
+		self.assertEqual(orphan_harvested_fees, result.harvested_fees)
+		self.assertEqual(snapshot.harvested_blocks, result.harvested_blocks)
+		self.assertEqual(snapshot.remote_status, result.remote_status)
+		self.assertEqual(orphan_last_harvested_height, result.last_harvested_height)
+		self.assertEqual(snapshot.min_cosignatories, result.min_cosignatories)
+		self.assertEqual(
+			[address.bytes for address in snapshot.cosignatory_of],
+			[bytes(address) for address in result.cosignatory_of]
+		)
+		self.assertEqual(
+			[address.bytes for address in snapshot.cosignatories],
+			[bytes(address) for address in result.cosignatories]
+		)
+
+	def test_rejects_refreshing_missing_account_from_rollback_snapshot(self):
+		# Arrange:
+		missing_account = ACCOUNTS[0]
+
+		with NemDatabase(self.db_config) as nem_database:
+			nem_database.create_tables()
+			cursor = nem_database.connection.cursor()
+
+			# Act + Assert:
+			with self.assertRaisesRegex(
+				RuntimeError,
+				f'Cannot refresh missing NEM account {missing_account.address}'
+			):
+				nem_database.refresh_account_from_snapshot(cursor, missing_account)
+
+	def test_can_clear_selected_account_remote_addresses(self):
+		# Arrange:
+		remote_address = Address('TBKQWJJGPOHL462DBVMTYOAERXGG2BOS5XRFO2P6')
+		cleared_account = ACCOUNTS[0]._replace(remote_address=remote_address)
+
+		with NemDatabase(self.db_config) as nem_database:
+			nem_database.create_tables()
+			cursor = nem_database.connection.cursor()
+
+			nem_database.upsert_account(cursor, cleared_account)
+
+			# Act:
+			nem_database.clear_account_remote_addresses(cursor, {cleared_account.address})
+
+			cleared_result = self._fetch_account_from_db(cursor, cleared_account.address)
+
+		# Assert:
+		self.assertIsNone(cleared_result.remote_address)
+
+	def test_can_get_latest_surviving_account_key_link(self):
+		# Arrange:
+		fork_height = 2
+		affected_address = ACCOUNTS[0].address
+		first_remote_key = PublicKey('7195f4d7a40ad7e31958ae96c4afed002962229675a4cae8dc8a18e290618981')
+		second_remote_key = PublicKey('f94e8702eb1943b23570b1b83be1b81536df35538978820e98bfce8f999e2d37')
+		activation_payload = {'mode': 1, 'remote_account': str(first_remote_key)}
+		deactivation_payload = {'mode': 2, 'remote_account': str(first_remote_key)}
+		reactivation_payload = {'mode': 1, 'remote_account': str(second_remote_key)}
+		transactions = [
+			TRANSACTIONS[0]._replace(
+				transaction_hash='11' * 32,
+				transaction_type=TransactionType.ACCOUNT_KEY_LINK.value,
+				height=1,
+				sender_address=affected_address,
+				payload=activation_payload
+			),
+			TRANSACTIONS[0]._replace(
+				transaction_hash='22' * 32,
+				transaction_type=TransactionType.ACCOUNT_KEY_LINK.value,
+				height=2,
+				is_inner=True,
+				sender_address=affected_address,
+				payload=deactivation_payload
+			),
+			TRANSACTIONS[0]._replace(
+				transaction_hash='33' * 32,
+				transaction_type=TransactionType.ACCOUNT_KEY_LINK.value,
+				height=2,
+				is_inner=True,
+				sender_address=affected_address,
+				payload=reactivation_payload
+			),
+			TRANSACTIONS[0]._replace(
+				transaction_hash='44' * 32,
+				transaction_type=TransactionType.ACCOUNT_KEY_LINK.value,
+				height=3,
+				sender_address=affected_address,
+				payload=activation_payload
+			)
+		]
+
+		with NemDatabase(self.db_config) as nem_database:
+			nem_database.create_tables()
+			cursor = nem_database.connection.cursor()
+
+			for transaction in transactions:
+				nem_database.insert_transaction(cursor, transaction)
+
+			# Act:
+			results = nem_database.get_surviving_account_key_links(
+				cursor,
+				fork_height,
+				{affected_address}
+			)
+
+		# Assert:
+		self.assertEqual([
+			RollbackAccountKeyLinkRecord(
+				affected_address,
+				reactivation_payload
+			)
+		], results)
+
+	def _run_delete_mosaics_test(self, prepare_mosaics, mosaics_to_delete, expected_mosaics):
+		# Arrange:
+		with NemDatabase(self.db_config) as nem_database:
+			nem_database.create_tables()
+			cursor = nem_database.connection.cursor()
+
+			for mosaic in prepare_mosaics:
+				nem_database.upsert_mosaic(cursor, mosaic)
+
+			nem_database.connection.commit()
+
+			# Act:
+			nem_database.delete_mosaics(cursor, mosaics_to_delete)
+
+			cursor.execute('SELECT namespace_name FROM mosaics ORDER BY namespace_name')
+			results = [record[0] for record in cursor.fetchall()]
+
+		# Assert:
+		self.assertEqual(expected_mosaics, results)
+
+	def test_delete_mosaics_preserves_seeded_network_currency(self):
+		# Arrange:
+		other_mosaic = MOSAICS[0]._replace(
+			root_namespace='foo',
+			namespace_name='foo.token'
+		)
+
+		self._run_delete_mosaics_test(
+			prepare_mosaics=[MOSAICS[0], other_mosaic],
+			mosaics_to_delete={'foo.token'},
+			expected_mosaics=['nem.xem']
+		)
+
+	def test_delete_mosaics_deletes_only_affected_mosaics(self):
+		# Arrange:
+		affected_mosaic = MOSAICS[0]._replace(
+			root_namespace='foo',
+			namespace_name='foo.token'
+		)
+		unaffected_mosaic = MOSAICS[0]._replace(
+			root_namespace='bar',
+			namespace_name='bar.token'
+		)
+
+		self._run_delete_mosaics_test(
+			prepare_mosaics=[affected_mosaic, unaffected_mosaic],
+			mosaics_to_delete={'foo.token'},
+			expected_mosaics=['bar.token']
+		)
+
+	def test_can_get_surviving_mosaic_transactions_in_replay_order(self):
+		# Arrange:
+		definition_payload = {
+			'namespace_name': 'foo.token',
+			'description': 'foo mosaic',
+			'mosaic_properties': {
+				'initial_supply': 1000,
+				'divisibility': 2,
+				'supply_mutable': True,
+				'transferable': True
+			},
+			'levy': None
+		}
+		first_supply_change_payload = {
+			'namespace_name': 'foo.token',
+			'supply_type': 1,
+			'delta': 100
+		}
+		second_supply_change_payload = {
+			'namespace_name': 'foo.token',
+			'supply_type': 2,
+			'delta': 50
+		}
+		transactions = [
+			TRANSACTIONS[0]._replace(
+				transaction_hash='11' * 32,
+				transaction_type=TransactionType.MOSAIC_DEFINITION.value,
+				height=1,
+				payload=definition_payload
+			),
+			TRANSACTIONS[0]._replace(
+				transaction_hash='22' * 32,
+				transaction_type=TransactionType.MOSAIC_SUPPLY_CHANGE.value,
+				height=2,
+				payload=first_supply_change_payload
+			),
+			TRANSACTIONS[0]._replace(
+				transaction_hash='33' * 32,
+				transaction_type=TransactionType.MOSAIC_SUPPLY_CHANGE.value,
+				height=2,
+				payload=second_supply_change_payload
+			),
+			TRANSACTIONS[0]._replace(
+				transaction_hash='44' * 32,
+				transaction_type=TransactionType.MOSAIC_SUPPLY_CHANGE.value,
+				height=3,
+				payload={
+					'namespace_name': 'foo.token',
+					'supply_type': 1,
+					'delta': 200
+				}
+			),
+			TRANSACTIONS[0]._replace(
+				transaction_hash='55' * 32,
+				transaction_type=TransactionType.MOSAIC_DEFINITION.value,
+				height=1,
+				payload={**definition_payload, 'namespace_name': 'bar.token'}
+			)
+		]
+
+		with NemDatabase(self.db_config) as nem_database:
+			nem_database.create_tables()
+			cursor = nem_database.connection.cursor()
+			for transaction in transactions:
+				nem_database.insert_transaction(cursor, transaction)
+
+			# Act:
+			results = nem_database.get_surviving_mosaic_transactions(
+				cursor,
+				2,
+				{'foo.token'}
+			)
+
+		# Assert:
+		self.assertEqual([
+			RollbackMosaicRecord(
+				TransactionType.MOSAIC_DEFINITION.value,
+				1,
+				TRANSACTIONS[0].sender_public_key,
+				definition_payload
+			),
+			RollbackMosaicRecord(
+				TransactionType.MOSAIC_SUPPLY_CHANGE.value,
+				2,
+				TRANSACTIONS[0].sender_public_key,
+				first_supply_change_payload
+			),
+			RollbackMosaicRecord(
+				TransactionType.MOSAIC_SUPPLY_CHANGE.value,
+				2,
+				TRANSACTIONS[0].sender_public_key,
+				second_supply_change_payload
+			)
+		], results)
+
+	def test_can_subtract_orphan_harvesting_from_accounts(self):
+		# Arrange:
+		fork_height = 1
+		first_account = ACCOUNTS[0]
+		second_account = ACCOUNTS[0]._replace(address=BLOCKS[1].beneficiary)
+		first_orphan_block = BLOCKS[0]._replace(
+			height=2,
+			total_fee=50,
+			block_hash='11' * 32
+		)
+		second_orphan_block = BLOCKS[1]._replace(height=3)
+		first_harvested_fees = 1000
+
+		with NemDatabase(self.db_config) as nem_database:
+			nem_database.create_tables()
+			cursor = nem_database.connection.cursor()
+
+			for block in [BLOCKS[0], first_orphan_block, second_orphan_block]:
+				nem_database.insert_block(cursor, block)
+
+			for account, harvested_fees in [
+				(first_account, first_harvested_fees),
+				(second_account, second_orphan_block.total_fee)
+			]:
+				nem_database.upsert_account(cursor, account)
+				nem_database.update_account_harvested_fees(cursor, account.address, harvested_fees, 3)
+
+			nem_database.connection.commit()
+
+			# Act:
+			nem_database.rollback_account_harvesting(cursor, {
+				first_account.address: first_orphan_block.total_fee,
+				second_account.address: second_orphan_block.total_fee
+			}, fork_height)
+
+			first_result = self._fetch_account_from_db(cursor, first_account.address)
+			second_result = self._fetch_account_from_db(cursor, second_account.address)
+
+		# Assert:
+		self.assertEqual(first_harvested_fees - first_orphan_block.total_fee, first_result.harvested_fees)
+		self.assertEqual(BLOCKS[0].height, first_result.last_harvested_height)
+		self.assertEqual(0, second_result.harvested_fees)
+		self.assertEqual(0, second_result.last_harvested_height)
