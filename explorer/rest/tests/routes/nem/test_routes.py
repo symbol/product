@@ -8,6 +8,7 @@ import testing.postgresql
 from symbollightapi.model.Exceptions import NodeException
 
 from rest import create_app
+from rest.routes.nem import MAX_PAGE_LIMIT
 
 from ...test.DatabaseTestUtils import (
 	ACCOUNT_STATISTIC_VIEW,
@@ -89,6 +90,9 @@ def client(app):  # pylint: disable=redefined-outer-name
 # endregion
 
 
+PAGINATED_MODULES = ['blocks', 'accounts', 'namespaces', 'mosaics', 'mosaic/rich/list', 'transactions']
+
+
 def _assert_status_code_and_headers(response, expected_status_code):
 	assert expected_status_code == response.status_code
 	assert response.headers['Access-Control-Allow-Origin'] == '*'
@@ -107,18 +111,36 @@ def _get_api(client, endpoint, **query_params):  # pylint: disable=redefined-out
 	return client.get(f'/api/nem/{endpoint}?{query_string}')
 
 
-def test_invalid_pagination_params(client):  # pylint: disable=redefined-outer-name
-
-	for module in ['blocks', 'accounts', 'namespaces', 'mosaics', 'mosaic/rich/list', 'transactions']:
+def _assert_pagination_rejected(client, query_string, expected_message):  # pylint: disable=redefined-outer-name
+	for module in PAGINATED_MODULES:
 		# Act:
-		response = client.get(f'/api/nem/{module}', query_string={'limit': -1})
+		response = client.get(f'/api/nem/{module}', query_string=query_string)
 
-		_assert_status_code_400(response, 'Limit and offset must be greater than or equal to 0')
+		# Assert:
+		_assert_status_code_400(response, expected_message)
 
+
+def test_rejects_limit_below_one(client):  # pylint: disable=redefined-outer-name
+	for limit in [-1, 0]:
+		_assert_pagination_rejected(client, {'limit': limit}, f'Limit must be between 1 and {MAX_PAGE_LIMIT}')
+
+
+def test_rejects_limit_above_maximum(client):  # pylint: disable=redefined-outer-name
+	_assert_pagination_rejected(client, {'limit': MAX_PAGE_LIMIT + 1}, f'Limit must be between 1 and {MAX_PAGE_LIMIT}')
+
+
+def test_rejects_negative_offset(client):  # pylint: disable=redefined-outer-name
+	_assert_pagination_rejected(client, {'offset': -1}, 'Offset must be greater than or equal to 0')
+
+
+def test_accepts_limit_at_maximum(client):  # pylint: disable=redefined-outer-name
+
+	for module in PAGINATED_MODULES:
 		# Act:
-		response = client.get(f'/api/nem/{module}', query_string={'offset': -1})
+		response = client.get(f'/api/nem/{module}', query_string={'limit': MAX_PAGE_LIMIT})
 
-		_assert_status_code_400(response, 'Limit and offset must be greater than or equal to 0')
+		# Assert:
+		_assert_status_code_and_headers(response, 200)
 
 
 def test_invalid_sort_params(client):  # pylint: disable=redefined-outer-name

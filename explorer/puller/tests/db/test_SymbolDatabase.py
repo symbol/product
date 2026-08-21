@@ -4117,6 +4117,59 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			(None, None)
 		], results)
 
+	def test_upsert_transactions_for_height_stores_effective_fee_when_product_exceeds_integer_range(self):
+		# Arrange:
+		database = self._create_database()
+		database.upsert_blocks([_create_block(2, fee_multiplier=45221)])
+
+		# These values reproduce the Symbol testnet transaction that exceeded PostgreSQL's 32-bit integer range.
+		transaction = create_transaction_entry(2, 'overflow', max_fee=5000000000, size=110568)
+
+		# Act:
+		database.upsert_transactions_for_height(2, [transaction])
+
+		# Assert:
+		cursor = database.connection.cursor()
+		cursor.execute(
+			'''
+			SELECT hash, is_embedded, height, type, max_fee, size, effective_fee, body
+			FROM symbol_transactions
+			WHERE height = 2
+			''')
+		result = cursor.fetchone()
+		result = (bytes(result[0]), *result[1:])
+		self.assertEqual([(
+			b'hash-overflow',
+			False,
+			2,
+			TransactionType.TRANSFER.value,
+			5000000000,
+			110568,
+			4999995528,
+			{'height': 2, 'key': 'overflow'}
+		)], [result])
+
+	def test_upsert_transactions_for_height_uses_max_fee_when_product_is_higher(self):
+		# Arrange:
+		database = self._create_database()
+		database.upsert_blocks([_create_block(2, fee_multiplier=45221)])
+
+		# The product exceeds PostgreSQL's 32-bit integer range, while max_fee is the expected cap.
+		transaction = create_transaction_entry(2, 'capped', max_fee=4000000000, size=110568)
+
+		# Act:
+		database.upsert_transactions_for_height(2, [transaction])
+
+		# Assert:
+		cursor = database.connection.cursor()
+		cursor.execute(
+			'''
+			SELECT max_fee, size, effective_fee
+			FROM symbol_transactions
+			WHERE height = 2
+			''')
+		self.assertEqual([(4000000000, 110568, 4000000000)], cursor.fetchall())
+
 	def test_upsert_transactions_for_height_replaces_parent_and_child_rows(self):
 		# Arrange:
 		database = self._create_database()

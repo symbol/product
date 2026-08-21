@@ -3,6 +3,7 @@ import asyncio
 
 from puller.facade.SymbolPuller import SymbolPuller
 from puller.workflows import refresh_symbol_accounts, sync_symbol_block
+from puller.workflows.log_utils import configure_logging
 
 COMMANDS = (
 	(
@@ -49,6 +50,8 @@ def parse_args(argv=None):
 
 async def main(argv=None, symbol_puller_factory=SymbolPuller, environment=None):
 	"""Dispatches one Symbol workflow command."""
+
+	configure_logging()
 
 	args = parse_args(argv)
 	await args.run_main(args, symbol_puller_factory, environment)

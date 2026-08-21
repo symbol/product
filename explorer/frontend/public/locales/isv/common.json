@@ -178,6 +178,7 @@
 	"message_addressBook_addressAlreadyAdded": "Adresa juže dodana",
 	"message_addressBook_nameAlreadyAdded": "Adresa s takim imenem juže dodana",
 	"message_emptyTable": "Ničto pokazati.",
+	"message_tooManyTransactionsToVisualize": "Previše transakcij za vizualizaciju.",
 	"message_noLinkedKeys": "Ne ma svězanyh klučev",
 	"message_nothingFound": "Ničto najdeno.",
 	"message_404": "Ne možem najti resurs kotory iskate.",

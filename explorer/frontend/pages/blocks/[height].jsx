@@ -11,10 +11,10 @@ import ValueCopy from '@/app/components/ValueCopy';
 import ValueList from '@/app/components/ValueList';
 import ValueMosaic from '@/app/components/ValueMosaic';
 import ValueTransactionHash from '@/app/components/ValueTransactionHash';
-import ValueTransactionSquares from '@/app/components/ValueTransactionSquares';
+import ValueTransactionSquares, { MAX_TRANSACTION_SQUARES } from '@/app/components/ValueTransactionSquares';
 import ValueTransactionType from '@/app/components/ValueTransactionType';
 import styles from '@/app/styles/pages/BlockInfo.module.scss';
-import { useAsyncCall, useClientSidePagination, usePagination } from '@/app/utils';
+import { useAsyncCall, useDataManager, usePagination } from '@/app/utils';
 import Head from 'next/head';
 import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
@@ -37,13 +37,22 @@ export const getServerSideProps = async ({ locale, params }) => {
 	};
 };
 
+const TRANSACTION_PAGE_SIZE = 50;
+
 const BlockInfo = ({ blockInfo }) => {
 	const { t } = useTranslation();
-	const transactionInitialPagination = usePagination(
-		async () => await fetchTransactionPage({ pageSize: blockInfo.transactionCount, height: blockInfo.height }),
-		[]
+	const transactionPagination = usePagination(fetchTransactionPage, [], {
+		height: blockInfo.height,
+		pageSize: TRANSACTION_PAGE_SIZE
+	});
+	// The fee treemap needs every transaction of the block in a single request, so larger blocks skip it.
+	const isTransactionSquaresAvailable = blockInfo.transactionCount <= MAX_TRANSACTION_SQUARES;
+	const [fetchTransactionSquares, isTransactionSquaresLoading, transactionSquares] = useDataManager(
+		async () => (await fetchTransactionPage({ pageSize: MAX_TRANSACTION_SQUARES, height: blockInfo.height })).data,
+		[],
+		null,
+		isTransactionSquaresAvailable
 	);
-	const transactionPagination = useClientSidePagination(transactionInitialPagination.data);
 	const chainStatus = useAsyncCall(fetchChainStatus, null);
 
 	const tableColumns = [
@@ -87,7 +96,10 @@ const BlockInfo = ({ blockInfo }) => {
 	];
 
 	useEffect(() => {
-		transactionInitialPagination.initialRequest();
+		transactionPagination.initialRequest();
+
+		if (isTransactionSquaresAvailable)
+			fetchTransactionSquares();
 	}, [blockInfo.height]);
 
 	return (
@@ -113,8 +125,9 @@ const BlockInfo = ({ blockInfo }) => {
 						<Field title={t('field_transactionFees')}>
 							<ValueTransactionSquares
 								isTransactionPreviewEnabled
-								data={transactionInitialPagination.data}
-								isLoading={transactionInitialPagination.isLoading}
+								data={transactionSquares}
+								transactionCount={blockInfo.transactionCount}
+								isLoading={isTransactionSquaresLoading}
 								className={styles.valueTransactionSquares}
 							/>
 						</Field>
@@ -142,9 +155,9 @@ const BlockInfo = ({ blockInfo }) => {
 					columns={tableColumns}
 					renderItemMobile={data => <ItemTransactionMobile data={data} />}
 					data={transactionPagination.data}
-					isLoading={transactionInitialPagination.isLoading}
+					isLoading={transactionPagination.isLoading}
 					isLastPage={transactionPagination.isLastPage}
-					isError={transactionInitialPagination.isError}
+					isError={transactionPagination.isError}
 					onEndReached={transactionPagination.requestNextPage}
 				/>
 			</Section>

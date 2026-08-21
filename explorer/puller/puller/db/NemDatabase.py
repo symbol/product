@@ -20,13 +20,6 @@ class NemDatabase(DatabaseConnection):
 		# Create indexes for accounts table
 		cursor.execute(
 			'''
-			CREATE INDEX IF NOT EXISTS accounts_address_idx
-				ON accounts (address)
-			'''
-		)
-
-		cursor.execute(
-			'''
 			CREATE INDEX IF NOT EXISTS accounts_balance_idx
 				ON accounts(balance DESC);
 			'''
@@ -36,13 +29,6 @@ class NemDatabase(DatabaseConnection):
 			'''
 			CREATE INDEX IF NOT EXISTS accounts_public_key_idx
 				ON accounts (public_key)
-			'''
-		)
-
-		cursor.execute(
-			'''
-			CREATE INDEX IF NOT EXISTS accounts_mosaics_idx
-				ON accounts USING GIN (mosaics)
 			'''
 		)
 
@@ -64,33 +50,12 @@ class NemDatabase(DatabaseConnection):
 		# Create indexes for blocks table
 		cursor.execute(
 			'''
-			CREATE INDEX IF NOT EXISTS blocks_height_idx ON blocks(height DESC);
-			'''
-		)
-
-		cursor.execute(
-			'''
 			CREATE INDEX IF NOT EXISTS blocks_timestamp_idx
 				ON blocks(timestamp)
 			'''
 		)
 
-		# Create indexes for namespaces table
-		cursor.execute(
-			'''
-			CREATE INDEX IF NOT EXISTS namespaces_root_namespace_idx
-				ON namespaces (root_namespace)
-			'''
-		)
-
 		# Create indexes for mosaics table
-		cursor.execute(
-			'''
-			CREATE INDEX IF NOT EXISTS mosaics_namespace_name_idx
-				ON mosaics (namespace_name)
-			'''
-		)
-
 		cursor.execute(
 			'''
 			CREATE INDEX IF NOT EXISTS mosaics_root_namespace_idx
@@ -99,13 +64,6 @@ class NemDatabase(DatabaseConnection):
 		)
 
 		# Create indexes for transactions table
-		cursor.execute(
-			'''
-			CREATE INDEX IF NOT EXISTS transactions_transaction_hash_idx
-				ON transactions (transaction_hash)
-			'''
-		)
-
 		cursor.execute(
 			'''
 			CREATE INDEX IF NOT EXISTS transactions_transaction_type_idx
@@ -448,7 +406,12 @@ class NemDatabase(DatabaseConnection):
 			SELECT id, address
 			FROM accounts
 			WHERE id > %s
-				AND (balance > 0 OR vested_balance > 0 OR importance > 0)
+				AND (
+					balance > 0
+					OR vested_balance > 0
+					OR importance > 0
+					OR remote_status IN ('ACTIVATING', 'DEACTIVATING')
+				)
 			ORDER BY id ASC
 			LIMIT %s
 			''',
@@ -547,20 +510,22 @@ class NemDatabase(DatabaseConnection):
 		)
 
 	@staticmethod
-	def update_vested_balance_and_importance(cursor, account_info):
-		"""Updates vested balance and importance for an account."""
+	def update_refreshed_account(cursor, account_info):
+		"""Updates vested balance, importance and remote status for an account."""
 
 		cursor.execute(
 			'''
 			UPDATE accounts
 			SET vested_balance = %s,
 				importance = %s,
+				remote_status = %s,
 				updated_at = CURRENT_TIMESTAMP
 			WHERE address = %s
 			''',
 			(
 				account_info.vested_balance,
 				account_info.importance,
+				account_info.remote_status,
 				account_info.address.bytes
 			)
 		)
