@@ -224,20 +224,23 @@ class SymbolPuller:
 				finalized_hash = self.symbol_db.get_block_hash(finalized_height)
 
 		dirty_state_from_height = raw_sync_state['dirty_state_from_height'] if raw_sync_state else None
-		node_chain_shorter_than_dirty = (
+		is_node_chain_shorter_than_dirty = (
 			dirty_state_from_height is not None and node_chain_height < dirty_state_from_height)
-		dirty_range_outside_cap = False
-		if dirty_state_from_height is not None and not node_chain_shorter_than_dirty:
-			dirty_range_outside_cap = max_height is not None and max_height < node_chain_height
+		is_dirty_repair_blocked_by_cap = False
+		if dirty_state_from_height is not None and not is_node_chain_shorter_than_dirty:
+			is_dirty_repair_blocked_by_cap = max_height is not None and max_height < node_chain_height
+		# A dirty marker gives only the tail's lower bound, so capped repair could change rows outside the operator scope.
+		# When blocked by the cap, exclude the marker from this repair decision and skip unfinalized verification; finalized
+		# safety checks still run. The persisted marker is then retained, status is set unhealthy, and forward sync is skipped.
 		start_height = await self._repair_unfinalized_rollback(
 			raw_sync_state,
 			finalized_height,
 			finalized_hash,
 			chain_height,
-			dirty_state_from_height=None if dirty_range_outside_cap else dirty_state_from_height,
+			dirty_state_from_height=None if is_dirty_repair_blocked_by_cap else dirty_state_from_height,
 			node_chain_height=node_chain_height,
-			verify_unfinalized=not dirty_range_outside_cap)
-		if dirty_range_outside_cap:
+			should_verify_unfinalized=not is_dirty_repair_blocked_by_cap)
+		if is_dirty_repair_blocked_by_cap:
 			self.symbol_db.mark_sync_unhealthy()
 			return
 
@@ -325,10 +328,10 @@ class SymbolPuller:
 		chain_height,
 		dirty_state_from_height=None,
 		node_chain_height=None,
-		verify_unfinalized=True
+		should_verify_unfinalized=True
 	):
 		if not sync_state or not sync_state['last_synced_height']:
-			if dirty_state_from_height is None or not verify_unfinalized:
+			if dirty_state_from_height is None or not should_verify_unfinalized:
 				return None
 
 			return await self._repair_from_height(
@@ -352,7 +355,7 @@ class SymbolPuller:
 				'finalized_hash': finalized_hash
 			})
 			raise SymbolRollbackError('Finalized block hash does not match local database')
-		if not verify_unfinalized:
+		if not should_verify_unfinalized:
 			return None
 
 		verify_start_height = finalized_height + 1

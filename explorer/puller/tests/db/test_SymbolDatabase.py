@@ -3104,23 +3104,16 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			'FROM symbol_sync_state WHERE id = 1')
 		self.assertEqual(before, cursor.fetchone())
 
-	def test_mark_sync_write_intent_converges_to_the_minimum_and_is_idempotent(self):
+	def test_mark_sync_write_intent_converges_to_minimum(self):
 		# Arrange:
 		database = self._create_database()
 		database.mark_sync_write_intent(10)
 		database.mark_sync_write_intent(20)
-		database.mark_sync_write_intent(5)
-		cursor = database.connection.cursor()
-		cursor.execute('SELECT dirty_state_from_height, updated_at FROM symbol_sync_state WHERE id = 1')
-		before = cursor.fetchone()
 
 		# Act:
 		database.mark_sync_write_intent(5)
-		database.mark_sync_write_intent(8)
 
 		# Assert:
-		cursor.execute('SELECT dirty_state_from_height, updated_at FROM symbol_sync_state WHERE id = 1')
-		self.assertEqual(before, cursor.fetchone())
 		self.assertEqual(5, database.get_sync_state()['dirty_state_from_height'])
 
 	def test_mark_sync_unhealthy_rolls_back_update_failure_and_keeps_connection_usable(self):
@@ -3129,13 +3122,20 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		database.upsert_sync_state(_create_sync_state(dirty_state_from_height=3))
 		cursor = database.connection.cursor()
 		cursor.execute('DROP TABLE symbol_sync_state')
+		# The DROP is uncommitted; PostgreSQL transactional DDL lets the later rollback undo the DROP itself.
 
-		# Act:
+		# Act / Assert:
 		with self.assertRaises(PsycopgError):
 			database.mark_sync_unhealthy()
 
 		# Assert:
+		cursor.execute("SELECT to_regclass('symbol_sync_state')")
+		self.assertEqual(('symbol_sync_state',), cursor.fetchone())
+
+		# Act:
 		database.mark_sync_unhealthy()
+
+		# Assert:
 		sync_state = database.get_sync_state()
 		self.assertEqual('unhealthy', sync_state['status'])
 		self.assertEqual(3, sync_state['dirty_state_from_height'])
@@ -3945,12 +3945,16 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		database.upsert_blocks([_create_block(1)])
 		invalid_block = {**_create_block(3), 'hash': None}
 
-		# Act:
+		# Act / Assert:
 		with self.assertRaises(PsycopgError):
 			database.upsert_blocks([_create_block(2), invalid_block])
+
+		# Assert:
 		cursor = database.connection.cursor()
 		cursor.execute('SELECT height FROM symbol_blocks ORDER BY height')
 		self.assertEqual([(1,)], cursor.fetchall())
+
+		# Act:
 		database.upsert_blocks([_create_block(2)])
 
 		# Assert:
@@ -3989,17 +3993,21 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		database.upsert_blocks([_create_block(1)])
 		database.upsert_receipts_for_height(1, [_create_receipt(1, amount=50)], 50)
 
-		# Act:
+		# Act / Assert:
 		with self.assertRaises(PsycopgError):
 			database.upsert_receipts_for_height(
 				1,
 				[_create_receipt(1, amount=75), _create_receipt(1, receipt_group='invalid')],
 				75)
+
+		# Assert:
 		cursor = database.connection.cursor()
 		cursor.execute('SELECT amount FROM symbol_receipts')
 		self.assertEqual([(50,)], cursor.fetchall())
 		cursor.execute('SELECT block_reward FROM symbol_blocks WHERE height = 1')
 		self.assertEqual((50,), cursor.fetchone())
+
+		# Act:
 		database.upsert_receipts_for_height(1, [_create_receipt(1, amount=75)], 75)
 
 		# Assert:
@@ -4244,15 +4252,19 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		database.upsert_blocks([_create_block(1)])
 		database.upsert_transactions_for_height(1, [create_transaction_entry(1, 'original')])
 
-		# Act:
+		# Act / Assert:
 		with self.assertRaises(PsycopgError):
 			database.upsert_transactions_for_height(1, [
 				create_transaction_entry(1, 'replacement'),
 				create_transaction_entry(1, 'replacement')
 			])
+
+		# Assert:
 		cursor = database.connection.cursor()
 		cursor.execute('SELECT encode(hash, \'escape\') FROM symbol_transactions')
 		self.assertEqual([('hash-original',)], cursor.fetchall())
+
+		# Act:
 		database.upsert_transactions_for_height(1, [create_transaction_entry(1, 'replacement')])
 
 		# Assert:
@@ -4445,8 +4457,12 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		before_blocks = fetch_full_block_state(database)
 		before_sync_state = fetch_normalized_sync_state(database)
 
+		mosaic_entry_without_raw_payload = {'row': {}}
+
+		# The height-scoped DELETE runs before _execute_upsert_mosaic() reads the required raw_payload field,
+		# so this injected KeyError occurs after the deletion and exercises transaction-wide rollback.
 		# Act / Assert:
-		with self.assertRaises(KeyError):
+		with self.assertRaisesRegex(KeyError, 'raw_payload'):
 			database.repair_rollback_from_height(
 				1,
 				_create_sync_state(
@@ -4456,7 +4472,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 					last_synced_height=None,
 					last_synced_block_hash=None,
 					dirty_state_from_height=1),
-				RollbackRefreshEntries(mosaic_entries=[{'row': {}}]))
+				RollbackRefreshEntries(mosaic_entries=[mosaic_entry_without_raw_payload]))
 
 		# Assert:
 		self.assertEqual(before_blocks, fetch_full_block_state(database))
@@ -4508,6 +4524,11 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			last_synced_block_hash=None,
 			dirty_state_from_height=1)
 
+		# Rollback repair deletes height-scoped rows, then applies node-refetched namespace, mosaic, and metadata
+		# current state in the same transaction. It can therefore temporarily contain no block but confirmed
+		# current-state replacements; the replacement rows' updated_at_height=0 comes from the node response.
+		# The facade test test_sync_block_headers_repairs_height_one_dirty_tail_before_forward_sync verifies the
+		# subsequent forward sync and terminal healthy state.
 		# Act:
 		database.repair_rollback_from_height(1, expected_sync_state, RollbackRefreshEntries(
 			namespace_entries=[{

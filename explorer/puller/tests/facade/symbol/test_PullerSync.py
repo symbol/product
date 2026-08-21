@@ -872,16 +872,19 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 	def test_sync_block_headers_propagates_capped_status_update_failure(self):
 		# Arrange:
 		database = self.puller.symbol_db
-		self._seed_blocks(database, [1])
+		self._seed_blocks(database, [1, 2, 3, 4, 5])
 		database.upsert_sync_state(create_sync_state(
 			chain_height=5,
 			finalized_height=1,
 			finalized_hash=bytes.fromhex(f'{1:064X}'),
-			last_synced_height=5,
-			last_synced_block_hash=bytes.fromhex(f'{5:064X}'),
+			last_synced_height=4,
+			last_synced_block_hash=bytes.fromhex(f'{4:064X}'),
 			dirty_state_from_height=5))
 		self.puller.symbol_db = FailingSyncTransactionAndStatusDatabase(database)
-		set_symbol_connector(self.puller, FakeConnector(5, {}))
+		set_symbol_connector(self.puller, FakeConnector(
+			5,
+			{},
+			block_by_height={2: create_node_block(2, block_hash='B' * 64)}))
 
 		try:
 			# Act:
@@ -959,6 +962,8 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		# Act:
 		self._sync_with_connector(FakeConnector(1, {0: [create_node_block(1)]}))
 
+		# The height-1 repair can temporarily leave node-confirmed current state without a block; the run above completes
+		# the subsequent forward sync and establishes the terminal healthy state.
 		# Assert:
 		sync_state = database.get_sync_state()
 		self.assertEqual([1], self._fetch_block_heights(database))
@@ -998,8 +1003,8 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 			chain_height=5,
 			finalized_height=1,
 			finalized_hash=bytes.fromhex(f'{1:064X}'),
-			last_synced_height=5,
-			last_synced_block_hash=bytes.fromhex(f'{5:064X}'),
+			last_synced_height=4,
+			last_synced_block_hash=bytes.fromhex(f'{4:064X}'),
 			dirty_state_from_height=5))
 		connector = FakeConnector(
 			5,
@@ -1026,10 +1031,10 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 			chain_height=5,
 			finalized_height=1,
 			finalized_hash=bytes.fromhex(f'{1:064X}'),
-			last_synced_height=5,
-			last_synced_block_hash=bytes.fromhex(f'{5:064X}'),
+			last_synced_height=2,
+			last_synced_block_hash=bytes.fromhex(f'{2:064X}'),
 			dirty_state_from_height=3))
-		connector = FakeConnector(5, {}, block_by_height={4: create_node_block(4)})
+		connector = FakeConnector(5, {}, block_by_height={2: create_node_block(2, block_hash='B' * 64)})
 		set_symbol_connector(self.puller, connector)
 
 		# Act:
@@ -1037,7 +1042,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 
 		# Assert:
 		self.assertEqual([1, 2, 3, 4, 5], self._fetch_block_heights(database))
-		self.assertEqual(0, connector.paths.count('blocks/4'))
+		self.assertEqual(0, connector.paths.count('blocks/2'))
 		self.assertEqual([], [path for path in connector.paths if path.startswith('blocks?page')])
 		sync_state = database.get_sync_state()
 		self.assertEqual('unhealthy', sync_state['status'])
@@ -1051,8 +1056,8 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 			chain_height=5,
 			finalized_height=1,
 			finalized_hash=bytes.fromhex(f'{1:064X}'),
-			last_synced_height=5,
-			last_synced_block_hash=bytes.fromhex(f'{5:064X}'),
+			last_synced_height=4,
+			last_synced_block_hash=bytes.fromhex(f'{4:064X}'),
 			dirty_state_from_height=5))
 		connector = FakeConnector(3, {}, block_by_height={
 			2: create_node_block(2),
@@ -1095,8 +1100,8 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 			chain_height=5,
 			finalized_height=1,
 			finalized_hash=bytes.fromhex(f'{1:064X}'),
-			last_synced_height=5,
-			last_synced_block_hash=bytes.fromhex(f'{5:064X}'),
+			last_synced_height=4,
+			last_synced_block_hash=bytes.fromhex(f'{4:064X}'),
 			dirty_state_from_height=5))
 		namespace_not_found = {
 			'code': 'ResourceNotFound',
@@ -1125,17 +1130,16 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		self.assertEqual([], fetch_namespace_state(database.connection)[0])
 		self.assertEqual([], fetch_mosaic_state(database))
 		self.assertEqual([], fetch_metadata_rows(database))
-		detail_indices = [
-			index for index, path in enumerate(connector.paths)
-			if path.startswith(('namespaces/', 'mosaics', 'metadata?'))
+		repair_and_page_paths = [
+			path for path in connector.paths
+			if path in (f'namespaces/{NAMESPACE_ROOT_ID}', 'mosaics', metadata_query) or path.startswith('blocks?page')
 		]
-		page_indices = [
-			index for index, path in enumerate(connector.paths)
-			if path.startswith('blocks?page')
-		]
-		self.assertTrue(detail_indices)
-		self.assertTrue(page_indices)
-		self.assertLess(max(detail_indices), min(page_indices))
+		self.assertEqual([
+			f'namespaces/{NAMESPACE_ROOT_ID}',
+			'mosaics',
+			metadata_query,
+			'blocks?pageSize=100&offset=4&orderBy=height'
+		], repair_and_page_paths)
 		sync_state = database.get_sync_state()
 		self.assertEqual('healthy', sync_state['status'])
 		self.assertIsNone(sync_state['dirty_state_from_height'])
@@ -1148,8 +1152,8 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 			chain_height=5,
 			finalized_height=1,
 			finalized_hash=bytes.fromhex(f'{1:064X}'),
-			last_synced_height=5,
-			last_synced_block_hash=bytes.fromhex(f'{5:064X}'),
+			last_synced_height=4,
+			last_synced_block_hash=bytes.fromhex(f'{4:064X}'),
 			dirty_state_from_height=5))
 		connector = FakeConnector(3, {}, block_by_height={2: create_node_block(2)})
 		set_symbol_connector(self.puller, connector)
@@ -1273,7 +1277,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 			'blocks?pageSize=100&offset=100&orderBy=height'
 		], connector.paths)
 
-	def test_sync_block_headers_persists_prior_batch_and_records_dirty_tail_at_fetch_batch_boundary(self):
+	def test_sync_block_headers_persists_prior_batch_before_later_batch_validation_failure(self):
 		# Arrange:
 		chain_height = BLOCK_PAGE_FETCH_CONCURRENCY * MAX_PAGE_SIZE + 1
 		pages = {
@@ -1297,6 +1301,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		):
 			asyncio.run(self.puller.sync_block_headers())
 
+		# Each block-page batch commits before a later page can fail validation, so earlier rows may remain persisted.
 		# Assert:
 		self.assertEqual(list(range(1, chain_height)), self._fetch_block_heights(self.puller.symbol_db))
 		sync_state = self.puller.symbol_db.get_sync_state()
@@ -1310,12 +1315,10 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		self.assertEqual([statement_path(1, chain_height - 1)], statement_paths)
 
 		# Act: restart with the valid node chain so the persisted dirty tail is repaired before forward sync.
+		last_page_offset = BLOCK_PAGE_FETCH_CONCURRENCY * MAX_PAGE_SIZE
 		repaired_pages = {
-			offset: [
-				create_node_block(height)
-				for height in range(offset + 1, min(offset + MAX_PAGE_SIZE + 1, chain_height + 1))
-			]
-			for offset in range(0, chain_height, MAX_PAGE_SIZE)
+			**pages,
+			last_page_offset: [create_node_block(chain_height)]
 		}
 		self._sync_with_connector(FakeConnector(chain_height, repaired_pages))
 
