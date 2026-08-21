@@ -41,7 +41,8 @@ SYNC_STATE_COLUMNS = [
 	'finalized_epoch',
 	'finalized_point',
 	'last_synced_height',
-	'last_synced_block_hash'
+	'last_synced_block_hash',
+	'dirty_state_from_height'
 ]
 
 SYMBOL_RECEIPT_TYPE_VALUES = tuple(RECEIPT_TYPE_LABELS.values())
@@ -86,6 +87,7 @@ SYMBOL_SYNC_STATE_DEFINITIONS = [
 	'finalized_point int',
 	'last_synced_height int',
 	'last_synced_block_hash bytea',
+	'dirty_state_from_height bigint',
 	'updated_at timestamp DEFAULT CURRENT_TIMESTAMP',
 	'CONSTRAINT symbol_sync_state_singleton CHECK (id = 1)'
 ]
@@ -518,6 +520,8 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 		_create_enum_type(cursor, 'symbol_mosaic_restriction_entry_type', SYMBOL_MOSAIC_RESTRICTION_ENTRY_TYPE_VALUES)
 		_create_enum_type(cursor, 'symbol_lock_status', SYMBOL_LOCK_STATUS_VALUES)
 		_create_enum_type(cursor, 'symbol_lock_hash_algorithm', SYMBOL_LOCK_HASH_ALGORITHM_VALUES)
+		# The Symbol schema is greenfield in this phase. Existing databases are recreated
+		# by the deployment lifecycle; CREATE TABLE is not a migration mechanism here.
 		_create_table(cursor, 'symbol_sync_state', SYMBOL_SYNC_STATE_DEFINITIONS)
 		_create_table(cursor, 'symbol_blocks', SYMBOL_BLOCK_DEFINITIONS)
 		_create_table(cursor, 'symbol_account_refresh_state', SYMBOL_ACCOUNT_REFRESH_STATE_DEFINITIONS)
@@ -624,6 +628,35 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 		self._execute_upsert_sync_state(cursor, sync_state)
 		self.connection.commit()
 
+	def mark_sync_write_intent(self, height):
+		"""Persists the earliest height whose batch may start a local write."""
+
+		with self._database_transaction() as cursor:
+			cursor.execute(
+				'''
+				INSERT INTO symbol_sync_state (id, status, dirty_state_from_height)
+				VALUES (1, 'initialized', %s)
+				ON CONFLICT (id) DO UPDATE SET
+					dirty_state_from_height = LEAST(
+						COALESCE(symbol_sync_state.dirty_state_from_height, EXCLUDED.dirty_state_from_height),
+						EXCLUDED.dirty_state_from_height
+					)
+				WHERE symbol_sync_state.dirty_state_from_height IS NULL
+					OR EXCLUDED.dirty_state_from_height < symbol_sync_state.dirty_state_from_height
+				''',
+				(height,))
+
+	def mark_sync_unhealthy(self):
+		"""Updates the failure status after the caller has confirmed a dirty marker."""
+
+		with self._database_transaction() as cursor:
+			cursor.execute(
+				'''
+				UPDATE symbol_sync_state
+				SET status = 'unhealthy', updated_at = CURRENT_TIMESTAMP
+				WHERE id = 1
+				''')
+
 	@staticmethod
 	def _execute_upsert_sync_state(cursor, sync_state):
 		cursor.execute(
@@ -638,9 +671,10 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 				finalized_point,
 				last_synced_height,
 				last_synced_block_hash,
+				dirty_state_from_height,
 				updated_at
 			)
-			VALUES (1, %s, %s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP)
+			VALUES (1, %s, %s, %s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP)
 			ON CONFLICT (id) DO UPDATE SET
 				status = EXCLUDED.status,
 				chain_height = EXCLUDED.chain_height,
@@ -650,6 +684,7 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 				finalized_point = EXCLUDED.finalized_point,
 				last_synced_height = EXCLUDED.last_synced_height,
 				last_synced_block_hash = EXCLUDED.last_synced_block_hash,
+				dirty_state_from_height = EXCLUDED.dirty_state_from_height,
 				updated_at = CURRENT_TIMESTAMP
 			''',
 			[
@@ -660,7 +695,8 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 				sync_state['finalized_epoch'],
 				sync_state['finalized_point'],
 				sync_state['last_synced_height'],
-				sync_state['last_synced_block_hash']
+				sync_state['last_synced_block_hash'],
+				sync_state['dirty_state_from_height']
 			])
 
 	def get_account_refresh_state(self):
@@ -1769,55 +1805,53 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 		cursor.execute('DELETE FROM symbol_mosaic_restrictions WHERE updated_at_height >= %s', (height,))
 
 	def upsert_transactions_for_height(self, height, transaction_entries):
-		"""Replaces persisted Symbol transactions and child index rows for one height."""
+		"""Replaces persisted Symbol transactions and child index rows for one height atomically."""
 
-		cursor = self.connection.cursor()
-		cursor.execute('DELETE FROM symbol_transaction_mosaics WHERE height = %s', (height,))
-		cursor.execute('DELETE FROM symbol_transaction_addresses WHERE height = %s', (height,))
-		cursor.execute('DELETE FROM symbol_transactions WHERE height = %s', (height,))
-		for entry in transaction_entries:
-			transaction_id = self._insert_transaction(cursor, entry)
-			for mosaic_row in entry['mosaic_rows']:
-				if 'metadata_target' == mosaic_row['role']:
-					mosaic_row = {
-						**mosaic_row,
-						'mosaic_id': canonical_metadata_hex(mosaic_row['mosaic_id'], 'target id')
-					}
-				cursor.execute(
-					'''
-					INSERT INTO symbol_transaction_mosaics (
-						transaction_id,
-						height,
-						mosaic_id,
-						amount,
-						role,
-						position
-					)
-					VALUES (%(transaction_id)s, %(height)s, %(mosaic_id)s, %(amount)s, %(role)s, %(position)s)
-					''',
-					{
-						**mosaic_row,
-						'transaction_id': transaction_id,
-						'height': entry['height']
-					})
-			for address_row in entry['address_rows']:
-				cursor.execute(
-					'''
-					INSERT INTO symbol_transaction_addresses (
-						transaction_id,
-						height,
-						address,
-						role
-					)
-					VALUES (%(transaction_id)s, %(height)s, %(address)s, %(role)s)
-					''',
-					{
-						**address_row,
-						'transaction_id': transaction_id,
-						'height': entry['height']
-					})
-
-		self.connection.commit()
+		with self._database_transaction() as cursor:
+			cursor.execute('DELETE FROM symbol_transaction_mosaics WHERE height = %s', (height,))
+			cursor.execute('DELETE FROM symbol_transaction_addresses WHERE height = %s', (height,))
+			cursor.execute('DELETE FROM symbol_transactions WHERE height = %s', (height,))
+			for entry in transaction_entries:
+				transaction_id = SymbolDatabase._insert_transaction(cursor, entry)
+				for mosaic_row in entry['mosaic_rows']:
+					if 'metadata_target' == mosaic_row['role']:
+						mosaic_row = {
+							**mosaic_row,
+							'mosaic_id': canonical_metadata_hex(mosaic_row['mosaic_id'], 'target id')
+						}
+					cursor.execute(
+						'''
+						INSERT INTO symbol_transaction_mosaics (
+							transaction_id,
+							height,
+							mosaic_id,
+							amount,
+							role,
+							position
+						)
+						VALUES (%(transaction_id)s, %(height)s, %(mosaic_id)s, %(amount)s, %(role)s, %(position)s)
+						''',
+						{
+							**mosaic_row,
+							'transaction_id': transaction_id,
+							'height': entry['height']
+						})
+				for address_row in entry['address_rows']:
+					cursor.execute(
+						'''
+						INSERT INTO symbol_transaction_addresses (
+							transaction_id,
+							height,
+							address,
+							role
+						)
+						VALUES (%(transaction_id)s, %(height)s, %(address)s, %(role)s)
+						''',
+						{
+							**address_row,
+							'transaction_id': transaction_id,
+							'height': entry['height']
+						})
 
 	@staticmethod
 	def _insert_transaction(cursor, transaction):
@@ -1885,49 +1919,48 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 		return cursor.fetchone()[0]
 
 	def upsert_receipts_for_height(self, height, receipts, block_reward):
-		"""Replaces receipts for a height and updates its block reward."""
+		"""Replaces receipts for a height and updates its block reward atomically."""
 
-		cursor = self.connection.cursor()
-		cursor.execute('DELETE FROM symbol_receipts WHERE height = %s', (height,))
-		for receipt in receipts:
+		with self._database_transaction() as cursor:
+			cursor.execute('DELETE FROM symbol_receipts WHERE height = %s', (height,))
+			for receipt in receipts:
+				cursor.execute(
+					'''
+					INSERT INTO symbol_receipts (
+						height,
+						receipt_type,
+						receipt_group,
+						version,
+						source_primary_id,
+						source_secondary_id,
+						sender_address,
+						recipient_address,
+						target_address,
+						mosaic_id,
+						amount,
+						artifact_id,
+						raw_payload
+					)
+					VALUES (
+						%(height)s,
+						%(receipt_type)s,
+						%(receipt_group)s,
+						%(version)s,
+						%(source_primary_id)s,
+						%(source_secondary_id)s,
+						%(sender_address)s,
+						%(recipient_address)s,
+						%(target_address)s,
+						%(mosaic_id)s,
+						%(amount)s,
+						%(artifact_id)s,
+						%(raw_payload)s
+					)
+					''',
+					{**receipt, 'raw_payload': Json(receipt['raw_payload'])})
 			cursor.execute(
-				'''
-				INSERT INTO symbol_receipts (
-					height,
-					receipt_type,
-					receipt_group,
-					version,
-					source_primary_id,
-					source_secondary_id,
-					sender_address,
-					recipient_address,
-					target_address,
-					mosaic_id,
-					amount,
-					artifact_id,
-					raw_payload
-				)
-				VALUES (
-					%(height)s,
-					%(receipt_type)s,
-					%(receipt_group)s,
-					%(version)s,
-					%(source_primary_id)s,
-					%(source_secondary_id)s,
-					%(sender_address)s,
-					%(recipient_address)s,
-					%(target_address)s,
-					%(mosaic_id)s,
-					%(amount)s,
-					%(artifact_id)s,
-					%(raw_payload)s
-				)
-				''',
-				{**receipt, 'raw_payload': Json(receipt['raw_payload'])})
-		cursor.execute(
-			'UPDATE symbol_blocks SET block_reward = %s, updated_at = CURRENT_TIMESTAMP WHERE height = %s',
-			(block_reward, height))
-		self.connection.commit()
+				'UPDATE symbol_blocks SET block_reward = %s, updated_at = CURRENT_TIMESTAMP WHERE height = %s',
+				(block_reward, height))
 
 	@staticmethod
 	def _stale_mark_account_refresh_state_if_needed(cursor, fork_height):
@@ -1941,106 +1974,105 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 			(fork_height,))
 
 	def upsert_blocks(self, blocks):
-		"""Upserts Symbol block rows."""
+		"""Upserts Symbol block rows atomically."""
 
-		cursor = self.connection.cursor()
-		for block in blocks:
-			cursor.execute(
-				'''
-				INSERT INTO symbol_blocks (
-					height,
-					hash,
-					previous_hash,
-					timestamp,
-					network_timestamp,
-					total_fee,
-					transactions_count,
-					total_transactions_count,
-					statements_count,
-					difficulty,
-					fee_multiplier,
-					block_type,
-					signer_public_key,
-					signer_address,
-					beneficiary_address,
-					signature,
-					size,
-					proof_gamma,
-					proof_verification_hash,
-					proof_scalar,
-					state_hash,
-					transactions_hash,
-					receipts_hash,
-					state_hash_sub_cache_roots,
-					voting_eligible_accounts_count,
-					harvesting_eligible_accounts_count,
-					total_voting_balance,
-					previous_importance_block_hash,
-					raw_payload,
-					updated_at
-				)
-				VALUES (
-					%(height)s,
-					%(hash)s,
-					%(previous_hash)s,
-					%(timestamp)s,
-					%(network_timestamp)s,
-					%(total_fee)s,
-					%(transactions_count)s,
-					%(total_transactions_count)s,
-					%(statements_count)s,
-					%(difficulty)s,
-					%(fee_multiplier)s,
-					%(block_type)s,
-					%(signer_public_key)s,
-					%(signer_address)s,
-					%(beneficiary_address)s,
-					%(signature)s,
-					%(size)s,
-					%(proof_gamma)s,
-					%(proof_verification_hash)s,
-					%(proof_scalar)s,
-					%(state_hash)s,
-					%(transactions_hash)s,
-					%(receipts_hash)s,
-					%(state_hash_sub_cache_roots)s,
-					%(voting_eligible_accounts_count)s,
-					%(harvesting_eligible_accounts_count)s,
-					%(total_voting_balance)s,
-					%(previous_importance_block_hash)s,
-					%(raw_payload)s,
-					CURRENT_TIMESTAMP
-				)
-				ON CONFLICT (height) DO UPDATE SET
-					hash = EXCLUDED.hash,
-					previous_hash = EXCLUDED.previous_hash,
-					timestamp = EXCLUDED.timestamp,
-					network_timestamp = EXCLUDED.network_timestamp,
-					total_fee = EXCLUDED.total_fee,
-					transactions_count = EXCLUDED.transactions_count,
-					total_transactions_count = EXCLUDED.total_transactions_count,
-					statements_count = EXCLUDED.statements_count,
-					difficulty = EXCLUDED.difficulty,
-					fee_multiplier = EXCLUDED.fee_multiplier,
-					block_type = EXCLUDED.block_type,
-					signer_public_key = EXCLUDED.signer_public_key,
-					signer_address = EXCLUDED.signer_address,
-					beneficiary_address = EXCLUDED.beneficiary_address,
-					signature = EXCLUDED.signature,
-					size = EXCLUDED.size,
-					proof_gamma = EXCLUDED.proof_gamma,
-					proof_verification_hash = EXCLUDED.proof_verification_hash,
-					proof_scalar = EXCLUDED.proof_scalar,
-					state_hash = EXCLUDED.state_hash,
-					transactions_hash = EXCLUDED.transactions_hash,
-					receipts_hash = EXCLUDED.receipts_hash,
-					state_hash_sub_cache_roots = EXCLUDED.state_hash_sub_cache_roots,
-					voting_eligible_accounts_count = EXCLUDED.voting_eligible_accounts_count,
-					harvesting_eligible_accounts_count = EXCLUDED.harvesting_eligible_accounts_count,
-					total_voting_balance = EXCLUDED.total_voting_balance,
-					previous_importance_block_hash = EXCLUDED.previous_importance_block_hash,
-					raw_payload = EXCLUDED.raw_payload,
-					updated_at = CURRENT_TIMESTAMP
-				''',
-				block)
-		self.connection.commit()
+		with self._database_transaction() as cursor:
+			for block in blocks:
+				cursor.execute(
+					'''
+					INSERT INTO symbol_blocks (
+						height,
+						hash,
+						previous_hash,
+						timestamp,
+						network_timestamp,
+						total_fee,
+						transactions_count,
+						total_transactions_count,
+						statements_count,
+						difficulty,
+						fee_multiplier,
+						block_type,
+						signer_public_key,
+						signer_address,
+						beneficiary_address,
+						signature,
+						size,
+						proof_gamma,
+						proof_verification_hash,
+						proof_scalar,
+						state_hash,
+						transactions_hash,
+						receipts_hash,
+						state_hash_sub_cache_roots,
+						voting_eligible_accounts_count,
+						harvesting_eligible_accounts_count,
+						total_voting_balance,
+						previous_importance_block_hash,
+						raw_payload,
+						updated_at
+					)
+					VALUES (
+						%(height)s,
+						%(hash)s,
+						%(previous_hash)s,
+						%(timestamp)s,
+						%(network_timestamp)s,
+						%(total_fee)s,
+						%(transactions_count)s,
+						%(total_transactions_count)s,
+						%(statements_count)s,
+						%(difficulty)s,
+						%(fee_multiplier)s,
+						%(block_type)s,
+						%(signer_public_key)s,
+						%(signer_address)s,
+						%(beneficiary_address)s,
+						%(signature)s,
+						%(size)s,
+						%(proof_gamma)s,
+						%(proof_verification_hash)s,
+						%(proof_scalar)s,
+						%(state_hash)s,
+						%(transactions_hash)s,
+						%(receipts_hash)s,
+						%(state_hash_sub_cache_roots)s,
+						%(voting_eligible_accounts_count)s,
+						%(harvesting_eligible_accounts_count)s,
+						%(total_voting_balance)s,
+						%(previous_importance_block_hash)s,
+						%(raw_payload)s,
+						CURRENT_TIMESTAMP
+					)
+					ON CONFLICT (height) DO UPDATE SET
+						hash = EXCLUDED.hash,
+						previous_hash = EXCLUDED.previous_hash,
+						timestamp = EXCLUDED.timestamp,
+						network_timestamp = EXCLUDED.network_timestamp,
+						total_fee = EXCLUDED.total_fee,
+						transactions_count = EXCLUDED.transactions_count,
+						total_transactions_count = EXCLUDED.total_transactions_count,
+						statements_count = EXCLUDED.statements_count,
+						difficulty = EXCLUDED.difficulty,
+						fee_multiplier = EXCLUDED.fee_multiplier,
+						block_type = EXCLUDED.block_type,
+						signer_public_key = EXCLUDED.signer_public_key,
+						signer_address = EXCLUDED.signer_address,
+						beneficiary_address = EXCLUDED.beneficiary_address,
+						signature = EXCLUDED.signature,
+						size = EXCLUDED.size,
+						proof_gamma = EXCLUDED.proof_gamma,
+						proof_verification_hash = EXCLUDED.proof_verification_hash,
+						proof_scalar = EXCLUDED.proof_scalar,
+						state_hash = EXCLUDED.state_hash,
+						transactions_hash = EXCLUDED.transactions_hash,
+						receipts_hash = EXCLUDED.receipts_hash,
+						state_hash_sub_cache_roots = EXCLUDED.state_hash_sub_cache_roots,
+						voting_eligible_accounts_count = EXCLUDED.voting_eligible_accounts_count,
+						harvesting_eligible_accounts_count = EXCLUDED.harvesting_eligible_accounts_count,
+						total_voting_balance = EXCLUDED.total_voting_balance,
+						previous_importance_block_hash = EXCLUDED.previous_importance_block_hash,
+						raw_payload = EXCLUDED.raw_payload,
+						updated_at = CURRENT_TIMESTAMP
+					''',
+					block)

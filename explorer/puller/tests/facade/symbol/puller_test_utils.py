@@ -19,6 +19,16 @@ NATIVE_MOSAIC_ID = '72C0212E67A08BCE'
 NATIVE_MOSAIC_DIVISIBILITY = 6
 
 
+class DelegatingSymbolDatabase:
+	"""Delegates unspecified Symbol database operations to a wrapped database."""
+
+	def __init__(self, database):
+		self.database = database
+
+	def __getattr__(self, name):
+		return getattr(self.database, name)
+
+
 def create_db_config(config_dir, db_config=None, include_symbol_db=True):
 	db_config = db_config or DatabaseConfiguration(
 		'symbol',
@@ -324,7 +334,8 @@ def create_sync_state(**overrides):
 		'finalized_epoch': 1,
 		'finalized_point': 1,
 		'last_synced_height': 3,
-		'last_synced_block_hash': bytes.fromhex(f'{3:064X}')
+		'last_synced_block_hash': bytes.fromhex(f'{3:064X}'),
+		'dirty_state_from_height': None
 	}
 	sync_state.update(overrides)
 

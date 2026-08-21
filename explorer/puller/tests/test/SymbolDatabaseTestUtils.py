@@ -14,6 +14,7 @@ def fetch_normalized_sync_state(database):
 
 	return {
 		**sync_state,
-		'finalized_hash': bytes(sync_state['finalized_hash']),
+		'finalized_hash': bytes(sync_state['finalized_hash']) if sync_state['finalized_hash'] is not None else None,
 		'last_synced_block_hash': bytes(sync_state['last_synced_block_hash'])
+		if sync_state['last_synced_block_hash'] is not None else None
 	}

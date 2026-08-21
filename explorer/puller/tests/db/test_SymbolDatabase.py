@@ -177,7 +177,8 @@ def _create_sync_state(**overrides):
 		'finalized_epoch': 2,
 		'finalized_point': 3,
 		'last_synced_height': 10,
-		'last_synced_block_hash': b'last'
+		'last_synced_block_hash': b'last',
+		'dirty_state_from_height': None
 	}
 	sync_state.update(overrides)
 
@@ -2444,6 +2445,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			('finalized_point', 'int4'),
 			('last_synced_height', 'int4'),
 			('last_synced_block_hash', 'bytea'),
+			('dirty_state_from_height', 'int8'),
 			('updated_at', 'timestamp')
 		], sync_state_columns)
 		self.assertEqual('symbol_sync_state_status', status_type)
@@ -3060,6 +3062,83 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			bytes(b'last'),
 			bytes(result['last_synced_block_hash'])
 		)
+
+	def test_mark_sync_write_intent_creates_initialized_state_without_watermarks(self):
+		# Arrange:
+		database = self._create_database()
+
+		# Act:
+		database.mark_sync_write_intent(7)
+
+		# Assert:
+		self.assertEqual({
+			'status': 'initialized',
+			'chain_height': None,
+			'finalized_height': None,
+			'finalized_hash': None,
+			'finalized_epoch': None,
+			'finalized_point': None,
+			'last_synced_height': None,
+			'last_synced_block_hash': None,
+			'dirty_state_from_height': 7
+		}, database.get_sync_state())
+
+	def test_mark_sync_write_intent_preserves_existing_state_and_updated_at_for_higher_height(self):
+		# Arrange:
+		database = self._create_database()
+		database.upsert_sync_state(_create_sync_state(status='repairing', dirty_state_from_height=10))
+		cursor = database.connection.cursor()
+		cursor.execute(
+			'SELECT status, chain_height, finalized_height, finalized_hash, finalized_epoch, finalized_point, '
+			'last_synced_height, last_synced_block_hash, dirty_state_from_height, updated_at '
+			'FROM symbol_sync_state WHERE id = 1')
+		before = cursor.fetchone()
+
+		# Act:
+		database.mark_sync_write_intent(20)
+
+		# Assert:
+		cursor.execute(
+			'SELECT status, chain_height, finalized_height, finalized_hash, finalized_epoch, finalized_point, '
+			'last_synced_height, last_synced_block_hash, dirty_state_from_height, updated_at '
+			'FROM symbol_sync_state WHERE id = 1')
+		self.assertEqual(before, cursor.fetchone())
+
+	def test_mark_sync_write_intent_converges_to_minimum(self):
+		# Arrange:
+		database = self._create_database()
+		database.mark_sync_write_intent(10)
+		database.mark_sync_write_intent(20)
+
+		# Act:
+		database.mark_sync_write_intent(5)
+
+		# Assert:
+		self.assertEqual(5, database.get_sync_state()['dirty_state_from_height'])
+
+	def test_mark_sync_unhealthy_rolls_back_update_failure_and_keeps_connection_usable(self):
+		# Arrange:
+		database = self._create_database()
+		database.upsert_sync_state(_create_sync_state(dirty_state_from_height=3))
+		cursor = database.connection.cursor()
+		cursor.execute('DROP TABLE symbol_sync_state')
+		# The DROP is uncommitted; PostgreSQL transactional DDL lets the later rollback undo the DROP itself.
+
+		# Act / Assert:
+		with self.assertRaises(PsycopgError):
+			database.mark_sync_unhealthy()
+
+		# Assert:
+		cursor.execute("SELECT to_regclass('symbol_sync_state')")
+		self.assertEqual(('symbol_sync_state',), cursor.fetchone())
+
+		# Act:
+		database.mark_sync_unhealthy()
+
+		# Assert:
+		sync_state = database.get_sync_state()
+		self.assertEqual('unhealthy', sync_state['status'])
+		self.assertEqual(3, sync_state['dirty_state_from_height'])
 
 	def test_can_update_existing_sync_state(self):
 		# Arrange:
@@ -3860,6 +3939,28 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		with self.assertRaises(PsycopgError):
 			database.upsert_blocks([_create_block(2, block_hash=b'same hash')])
 
+	def test_upsert_blocks_rolls_back_constraint_failure_and_keeps_connection_usable(self):
+		# Arrange:
+		database = self._create_database()
+		database.upsert_blocks([_create_block(1)])
+		invalid_block = {**_create_block(3), 'hash': None}
+
+		# Act / Assert:
+		with self.assertRaises(PsycopgError):
+			database.upsert_blocks([_create_block(2), invalid_block])
+
+		# Assert:
+		cursor = database.connection.cursor()
+		cursor.execute('SELECT height FROM symbol_blocks ORDER BY height')
+		self.assertEqual([(1,)], cursor.fetchall())
+
+		# Act:
+		database.upsert_blocks([_create_block(2)])
+
+		# Assert:
+		cursor.execute('SELECT height FROM symbol_blocks ORDER BY height')
+		self.assertEqual([(1,), (2,)], cursor.fetchall())
+
 	def test_rejects_receipt_without_existing_block(self):
 		# Arrange:
 		database = self._create_database()
@@ -3885,6 +3986,35 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		# Act + Assert:
 		with self.assertRaises(PsycopgError):
 			database.upsert_receipts_for_height(1, [_create_receipt(1, receipt_group='invalid')], 100)
+
+	def test_upsert_receipts_for_height_rolls_back_constraint_failure_and_keeps_connection_usable(self):
+		# Arrange:
+		database = self._create_database()
+		database.upsert_blocks([_create_block(1)])
+		database.upsert_receipts_for_height(1, [_create_receipt(1, amount=50)], 50)
+
+		# Act / Assert:
+		with self.assertRaises(PsycopgError):
+			database.upsert_receipts_for_height(
+				1,
+				[_create_receipt(1, amount=75), _create_receipt(1, receipt_group='invalid')],
+				75)
+
+		# Assert:
+		cursor = database.connection.cursor()
+		cursor.execute('SELECT amount FROM symbol_receipts')
+		self.assertEqual([(50,)], cursor.fetchall())
+		cursor.execute('SELECT block_reward FROM symbol_blocks WHERE height = 1')
+		self.assertEqual((50,), cursor.fetchone())
+
+		# Act:
+		database.upsert_receipts_for_height(1, [_create_receipt(1, amount=75)], 75)
+
+		# Assert:
+		cursor.execute('SELECT amount FROM symbol_receipts')
+		self.assertEqual([(75,)], cursor.fetchall())
+		cursor.execute('SELECT block_reward FROM symbol_blocks WHERE height = 1')
+		self.assertEqual((75,), cursor.fetchone())
 
 	def test_upsert_receipts_for_height_replaces_rows_and_updates_block_reward(self):
 		# Arrange:
@@ -4169,6 +4299,31 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 				create_transaction_entry(1, 'duplicate')
 			])
 
+	def test_upsert_transactions_for_height_rolls_back_constraint_failure_and_keeps_connection_usable(self):
+		# Arrange:
+		database = self._create_database()
+		database.upsert_blocks([_create_block(1)])
+		database.upsert_transactions_for_height(1, [create_transaction_entry(1, 'original')])
+
+		# Act / Assert:
+		with self.assertRaises(PsycopgError):
+			database.upsert_transactions_for_height(1, [
+				create_transaction_entry(1, 'replacement'),
+				create_transaction_entry(1, 'replacement')
+			])
+
+		# Assert:
+		cursor = database.connection.cursor()
+		cursor.execute('SELECT encode(hash, \'escape\') FROM symbol_transactions')
+		self.assertEqual([('hash-original',)], cursor.fetchall())
+
+		# Act:
+		database.upsert_transactions_for_height(1, [create_transaction_entry(1, 'replacement')])
+
+		# Assert:
+		cursor.execute('SELECT encode(hash, \'escape\') FROM symbol_transactions')
+		self.assertEqual([('hash-replacement',)], cursor.fetchall())
+
 	def test_upsert_transactions_for_height_rejects_duplicate_embedded_position(self):
 		# Arrange:
 		database = self._create_database()
@@ -4339,6 +4494,119 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			bytes(b'hash 1'),
 			bytes(sync_state['last_synced_block_hash'])
 		)
+
+	def test_repair_rollback_from_height_one_is_atomic(self):
+		# Arrange:
+		database = self._create_database()
+		database.upsert_blocks([_create_block(1)])
+		database.upsert_transactions_for_height(1, [create_transaction_entry(1, 'kept')])
+		database.upsert_sync_state(_create_sync_state(
+			status='unhealthy',
+			chain_height=1,
+			finalized_height=1,
+			last_synced_height=1,
+			last_synced_block_hash=b'hash 1',
+			dirty_state_from_height=1))
+		before_blocks = fetch_full_block_state(database)
+		before_sync_state = fetch_normalized_sync_state(database)
+
+		mosaic_entry_without_raw_payload = {'row': {}}
+
+		# The height-scoped DELETE runs before _execute_upsert_mosaic() reads the required raw_payload field,
+		# so this injected KeyError occurs after the deletion and exercises transaction-wide rollback.
+		# Act / Assert:
+		with self.assertRaisesRegex(KeyError, 'raw_payload'):
+			database.repair_rollback_from_height(
+				1,
+				_create_sync_state(
+					status='repairing',
+					chain_height=1,
+					finalized_height=1,
+					last_synced_height=None,
+					last_synced_block_hash=None,
+					dirty_state_from_height=1),
+				RollbackRefreshEntries(mosaic_entries=[mosaic_entry_without_raw_payload]))
+
+		# Assert:
+		self.assertEqual(before_blocks, fetch_full_block_state(database))
+		self.assertEqual(before_sync_state, fetch_normalized_sync_state(database))
+
+	def test_repair_rollback_from_height_one_deletes_chain_rows_and_applies_current_state_refresh(self):
+		# Arrange:
+		database = self._create_database()
+		database.upsert_blocks([_create_block(1)])
+		database.upsert_transactions_for_height(1, [create_transaction_entry(1, 'orphan')])
+		database.upsert_receipts_for_height(1, [_create_receipt(1)], 100)
+		orphan_namespace = _create_namespace_row(observed_height=1)
+		database.upsert_namespace(orphan_namespace, _create_alias_name_rows(orphan_namespace))
+		orphan_mosaic = create_expected_mosaic_row(
+			create_mosaic_item(mosaic_id='0000000000000001', supply='10'), 1)
+		database.upsert_mosaic(orphan_mosaic)
+		metadata_item = create_metadata_item(metadata_type=1, target_id='0000000000000001')
+		orphan_metadata = create_expected_metadata_row(
+			metadata_item,
+			1,
+			composite_hash=bytes.fromhex('11' * 32),
+			metadata_type='mosaic',
+			target_id='0000000000000001',
+			value_utf8='orphan')
+		database.upsert_metadata(orphan_metadata)
+		database.upsert_sync_state(_create_sync_state(dirty_state_from_height=1))
+		replacement_namespace = _create_namespace_row(
+			full_name='replacement',
+			observed_height=0,
+			alias_type='none',
+			alias_mosaic_id=None)
+		replacement_mosaic = create_expected_mosaic_row(
+			create_mosaic_item(mosaic_id='0000000000000001', supply='20'), 0)
+		replacement_metadata_item = create_metadata_item(
+			metadata_type=1,
+			target_id='0000000000000001',
+			value='776F726C64')
+		replacement_metadata = create_expected_metadata_row(
+			replacement_metadata_item,
+			0,
+			composite_hash=bytes.fromhex('11' * 32),
+			metadata_type='mosaic',
+			target_id='0000000000000001',
+			value_utf8='world',
+			value_hex='776F726C64')
+		expected_sync_state = _create_sync_state(
+			status='repairing',
+			last_synced_height=None,
+			last_synced_block_hash=None,
+			dirty_state_from_height=1)
+
+		# Rollback repair deletes height-scoped rows, then applies node-refetched namespace, mosaic, and metadata
+		# current state in the same transaction. It can therefore temporarily contain no block but confirmed
+		# current-state replacements; the replacement rows' updated_at_height=0 comes from the node response.
+		# The facade test test_sync_block_headers_repairs_height_one_dirty_tail_before_forward_sync verifies the
+		# subsequent forward sync and terminal healthy state.
+		# Act:
+		database.repair_rollback_from_height(1, expected_sync_state, RollbackRefreshEntries(
+			namespace_entries=[{
+				'row': replacement_namespace,
+				'alias_rows': _create_alias_name_rows(replacement_namespace)
+			}],
+			mosaic_entries=[{'row': replacement_mosaic}],
+			metadata_entries=[{'row': replacement_metadata}]))
+
+		# Assert:
+		cursor = database.connection.cursor()
+		for table in ('symbol_blocks', 'symbol_transactions', 'symbol_receipts'):
+			cursor.execute(f'SELECT COUNT(*) FROM {table}')
+			self.assertEqual(0, cursor.fetchone()[0])
+		cursor.execute('SELECT namespace_id, full_name, updated_at_height FROM symbol_namespaces')
+		self.assertEqual(
+			[(replacement_namespace['namespace_id'], 'replacement', 0)],
+			cursor.fetchall())
+		self.assertEqual([create_persisted_mosaic_state(replacement_mosaic, [])], fetch_mosaic_state(database))
+		self.assertEqual([replacement_metadata], fetch_metadata_rows(database))
+		sync_state = database.get_sync_state()
+		self.assertEqual('repairing', sync_state['status'])
+		self.assertIsNone(sync_state['last_synced_height'])
+		self.assertIsNone(sync_state['last_synced_block_hash'])
+		self.assertEqual(1, sync_state['dirty_state_from_height'])
 
 	def test_create_tables_creates_exact_hash_lock_columns_types_and_nullability(self):
 		# Arrange:
