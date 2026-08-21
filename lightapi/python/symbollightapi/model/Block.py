@@ -24,12 +24,12 @@ class Block:  # pylint: disable=too-many-instance-attributes
 		self.transactions = transactions
 		self.difficulty = difficulty
 		self.block_hash = block_hash
-		self.previous_block_hash = previous_block_hash
 		self.total_fee = total_fee
 		self.beneficiary = beneficiary
 		self.signer = signer
 		self.signature = signature
 		self.size = size
+		self.previous_block_hash = previous_block_hash
 
 	def __eq__(self, other):
 		return isinstance(other, Block) and all([
@@ -38,10 +38,10 @@ class Block:  # pylint: disable=too-many-instance-attributes
 			self.transactions == other.transactions,
 			self.difficulty == other.difficulty,
 			self.block_hash == other.block_hash,
-			self.previous_block_hash == other.previous_block_hash,
 			self.total_fee == other.total_fee,
 			self.beneficiary == other.beneficiary,
 			self.signer == other.signer,
 			self.signature == other.signature,
-			self.size == other.size
+			self.size == other.size,
+			self.previous_block_hash == other.previous_block_hash
 		])
