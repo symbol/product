@@ -1773,7 +1773,8 @@ class SymbolPullerLocksTest(SymbolPullerTestBase):
 			finalized_epoch=4,
 			finalized_point=5,
 			last_synced_height=2,
-			last_synced_block_hash=bytes.fromhex(f'{2:064X}')),
+			last_synced_block_hash=bytes.fromhex(f'{2:064X}'),
+			chain_revision=1),
 			fetch_normalized_sync_state(self.puller.symbol_db))
 		self.assertEqual(['lock/hash/' + LOCK_HASH], [
 			path for path in connector.paths if path.startswith('lock/')
@@ -1826,7 +1827,8 @@ class SymbolPullerLocksTest(SymbolPullerTestBase):
 			finalized_epoch=4,
 			finalized_point=5,
 			last_synced_height=2,
-			last_synced_block_hash=bytes.fromhex(f'{2:064X}')),
+			last_synced_block_hash=bytes.fromhex(f'{2:064X}'),
+			chain_revision=1),
 			fetch_normalized_sync_state(self.puller.symbol_db))
 		self.assertEqual([path], [path for path in connector.paths if path.startswith('lock/')])
 
@@ -1899,7 +1901,8 @@ class SymbolPullerLocksTest(SymbolPullerTestBase):
 			finalized_epoch=4,
 			finalized_point=5,
 			last_synced_height=2,
-			last_synced_block_hash=bytes.fromhex(f'{2:064X}')),
+			last_synced_block_hash=bytes.fromhex(f'{2:064X}'),
+			chain_revision=1),
 			fetch_normalized_sync_state(self.puller.symbol_db))
 
 	def test_sync_block_headers_keeps_all_rollback_state_unchanged_when_hash_lock_replacement_fetch_fails(self):

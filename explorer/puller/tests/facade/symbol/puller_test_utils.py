@@ -324,7 +324,8 @@ def create_sync_state(**overrides):
 		'finalized_epoch': 1,
 		'finalized_point': 1,
 		'last_synced_height': 3,
-		'last_synced_block_hash': bytes.fromhex(f'{3:064X}')
+		'last_synced_block_hash': bytes.fromhex(f'{3:064X}'),
+		'chain_revision': 0
 	}
 	sync_state.update(overrides)
 

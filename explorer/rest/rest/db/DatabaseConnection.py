@@ -1,4 +1,5 @@
 from psycopg2 import pool
+from zenlog import log
 
 
 class DatabaseConnectionPool:
@@ -40,15 +41,31 @@ class PooledConnection:
 
 		self._pool = connection_pool
 		self.connection = None
+		self._discard_requested = False
 
 	def __enter__(self):
 		"""Acquire a database connection from the pool upon entering the context of a `with` statement."""
 
+		self._discard_requested = False
 		self.connection = self._pool.getconn()
 		return self.connection
+
+	def mark_for_discard(self):
+		"""Marks the acquired connection to be discarded when the context exits."""
+
+		self._discard_requested = True
 
 	def __exit__(self, exc_type, exc_value, traceback):
 		"""Ensure the connection is returned to the pool upon exiting the context of a `with` statement."""
 
 		if self.connection:
-			self._pool.putconn(self.connection)
+			try:
+				if self._discard_requested:
+					self._pool.putconn(self.connection, close=True)
+				else:
+					self._pool.putconn(self.connection)
+			except BaseException as cleanup_error:
+				log.error(f'Failed to return database connection: {cleanup_error}')
+				if exc_type is None:
+					raise
+		return False

@@ -16,15 +16,19 @@ from tests.test.SymbolTestConstants import SIGNER_ADDRESS
 
 from .puller_test_utils import (
 	BENEFICIARY_ADDRESS,
+	NATIVE_MOSAIC_DIVISIBILITY,
 	NATIVE_MOSAIC_ID,
 	RECIPIENT_ADDRESS,
 	FakeConnector,
+	ResponseConnector,
 	SymbolPullerTestBase,
 	create_account_item,
 	create_amount_statement_item,
+	create_chain_info,
 	create_node_block,
 	create_node_transaction,
 	create_resolution_statement,
+	create_sync_state,
 	set_symbol_connector,
 	statement_path,
 	transaction_path
@@ -157,6 +161,17 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):  # pylint: disable=too-man
 			(bytes.fromhex(address_hex),))
 
 		return cursor.fetchone()[0]
+
+	def _fetch_account_mosaics(self):
+		cursor = self.puller.symbol_db.connection.cursor()
+		cursor.execute(
+			'''
+			SELECT address, mosaic_id, amount
+			FROM symbol_account_mosaics
+			ORDER BY address, mosaic_id
+			''')
+
+		return [(bytes(address), mosaic_id, amount) for address, mosaic_id, amount in cursor.fetchall()]
 
 	@staticmethod
 	def _create_rollback_sync_state(status='repairing'):
@@ -724,7 +739,7 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):  # pylint: disable=too-man
 		self.assertEqual([], self._fetch_block_heights(self.puller.symbol_db))
 		self.assertEqual(0, self._fetch_account_count())
 
-	def test_get_native_mosaic_info_is_memoized(self):
+	def test_sync_memoizes_native_info(self):
 		# Arrange:
 		connector = FakeConnector(1, {0: [self._create_block(1)]})
 
@@ -733,8 +748,38 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):  # pylint: disable=too-man
 		self._sync_with_connector(connector)
 
 		# Assert:
-		self.assertEqual(1, connector.paths.count('network/properties'))
-		self.assertEqual(1, connector.paths.count(f'mosaics/{NATIVE_MOSAIC_ID}'))
+		native_paths = [
+			path for path in connector.paths
+			if path in ('network/properties', f'mosaics/{NATIVE_MOSAIC_ID}')
+		]
+		self.assertEqual(['network/properties', f'mosaics/{NATIVE_MOSAIC_ID}'], native_paths)
+		self.assertEqual(
+			[(bytes.fromhex(BENEFICIARY_ADDRESS), NATIVE_MOSAIC_ID, 20_000 * 10 ** NATIVE_MOSAIC_DIVISIBILITY)],
+			self._fetch_account_mosaics())
+		self.assertTrue(self._fetch_account_current_state()[3])
+
+	def test_sync_rejects_bad_mosaic_response(self):
+		# Arrange:
+		connector = ResponseConnector({
+			'chain/info': create_chain_info(),
+			'network/properties': {
+				'network': {'epochAdjustment': '100s'},
+				'chain': {'currencyMosaicId': "0x72C0'212E'67A0'8BCE"}
+			},
+			f'mosaics/{NATIVE_MOSAIC_ID}': {'mosaic': {}}
+		})
+
+		# Act / Assert:
+		self._assert_sync_rejects_node_response(
+			connector,
+			ValueError,
+			'Mosaic response must include mosaic.divisibility')
+
+		self.assertEqual(
+			['chain/info', 'network/properties', f'mosaics/{NATIVE_MOSAIC_ID}'],
+			connector.paths)
+		self.assertEqual(0, self._fetch_account_count())
+		self.assertIsNone(self.puller.symbol_db.get_account_refresh_state())
 
 	def test_refresh_accounts_pages_all_accounts_and_assigns_search_order_across_pages(self):
 		# Arrange:
@@ -974,6 +1019,14 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):  # pylint: disable=too-man
 	def test_rollback_re_raises_database_error(self):
 		# Arrange:
 		database = self.exit_stack.enter_context(SymbolDatabase(self.db_config))
+		database.upsert_sync_state(create_sync_state(
+			chain_height=1,
+			finalized_height=0,
+			finalized_hash=b'finalized',
+			finalized_epoch=0,
+			finalized_point=0,
+			last_synced_height=0,
+			last_synced_block_hash=b'last'))
 		sync_state = self._create_rollback_sync_state(status='invalid')
 
 		# Act:

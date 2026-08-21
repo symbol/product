@@ -2,6 +2,7 @@
 from collections import namedtuple
 from contextlib import contextmanager
 
+from common.symbol.Receipt import RECEIPT_GROUP_VALUES, RECEIPT_TYPE_VALUES
 from psycopg2.extras import Json
 
 from puller.model.symbol.Account import ACCOUNT_TYPE_VALUES
@@ -22,7 +23,6 @@ from puller.model.symbol.MosaicRestriction import (
 	mosaic_restriction_entry_type_label
 )
 from puller.model.symbol.Namespace import NAMESPACE_ALIAS_TYPE_LABELS, NAMESPACE_REGISTRATION_TYPE_LABELS
-from puller.model.symbol.Receipt import RECEIPT_TYPE_LABELS
 from puller.model.symbol.Transaction import MESSAGE_TYPE_LABELS, TRANSACTION_TYPE_LABELS
 
 from .DatabaseConnection import DatabaseConnection
@@ -41,11 +41,12 @@ SYNC_STATE_COLUMNS = [
 	'finalized_epoch',
 	'finalized_point',
 	'last_synced_height',
-	'last_synced_block_hash'
+	'last_synced_block_hash',
+	'chain_revision'
 ]
 
-SYMBOL_RECEIPT_TYPE_VALUES = tuple(RECEIPT_TYPE_LABELS.values())
-SYMBOL_RECEIPT_GROUP_VALUES = ('balanceChange', 'balanceTransfer', 'artifactExpiry', 'inflation')
+SYMBOL_RECEIPT_TYPE_VALUES = RECEIPT_TYPE_VALUES
+SYMBOL_RECEIPT_GROUP_VALUES = RECEIPT_GROUP_VALUES
 SYNC_STATE_STATUS_VALUES = ('initialized', 'healthy', 'repairing', 'unhealthy')
 SYMBOL_TRANSACTION_TYPE_VALUES = tuple(TRANSACTION_TYPE_LABELS.values())
 SYMBOL_TRANSACTION_MOSAIC_ROLE_VALUES = (
@@ -86,6 +87,7 @@ SYMBOL_SYNC_STATE_DEFINITIONS = [
 	'finalized_point int',
 	'last_synced_height int',
 	'last_synced_block_hash bytea',
+	'chain_revision bigint NOT NULL DEFAULT 0',
 	'updated_at timestamp DEFAULT CURRENT_TIMESTAMP',
 	'CONSTRAINT symbol_sync_state_singleton CHECK (id = 1)'
 ]
@@ -464,14 +466,17 @@ SYMBOL_RECEIPT_DEFINITIONS = [
 	'raw_payload jsonb NOT NULL'
 ]
 SYMBOL_RECEIPT_INDEXES = [
-	'CREATE INDEX IF NOT EXISTS idx_symbol_receipts_height_type ON symbol_receipts(height DESC, receipt_type)',
-	'CREATE INDEX IF NOT EXISTS idx_symbol_receipts_type_height ON symbol_receipts(receipt_type, height DESC)',
-	'CREATE INDEX IF NOT EXISTS idx_symbol_receipts_group_height ON symbol_receipts(receipt_group, height DESC)',
-	'CREATE INDEX IF NOT EXISTS idx_symbol_receipts_target ON symbol_receipts(target_address)',
-	'CREATE INDEX IF NOT EXISTS idx_symbol_receipts_target_group_height ON symbol_receipts(target_address, receipt_group, height DESC)',
-	'CREATE INDEX IF NOT EXISTS idx_symbol_receipts_target_type_height ON symbol_receipts(target_address, receipt_type, height DESC)',
-	'CREATE INDEX IF NOT EXISTS idx_symbol_receipts_sender_group_height ON symbol_receipts(sender_address, receipt_group, height DESC)',
-	'CREATE INDEX IF NOT EXISTS idx_symbol_receipts_recipient_group_height ON symbol_receipts(recipient_address, receipt_group, height DESC)',
+	'CREATE INDEX IF NOT EXISTS idx_symbol_receipts_height_id ON symbol_receipts(height DESC, id DESC)',
+	'CREATE INDEX IF NOT EXISTS idx_symbol_receipts_group_height_id ON symbol_receipts(receipt_group, height DESC, id DESC)',
+	'CREATE INDEX IF NOT EXISTS idx_symbol_receipts_type_height_id ON symbol_receipts(receipt_type, height DESC, id DESC)',
+	'CREATE INDEX IF NOT EXISTS idx_symbol_receipts_target_height_id ON symbol_receipts(target_address, height DESC, id DESC)',
+	'CREATE INDEX IF NOT EXISTS idx_symbol_receipts_sender_height_id ON symbol_receipts(sender_address, height DESC, id DESC)',
+	'CREATE INDEX IF NOT EXISTS idx_symbol_receipts_target_group_height_id '
+	'ON symbol_receipts(target_address, receipt_group, height DESC, id DESC)',
+	'CREATE INDEX IF NOT EXISTS idx_symbol_receipts_target_type_height_id '
+	'ON symbol_receipts(target_address, receipt_type, height DESC, id DESC)',
+	'CREATE INDEX IF NOT EXISTS idx_symbol_receipts_sender_group_height_id '
+	'ON symbol_receipts(sender_address, receipt_group, height DESC, id DESC)',
 	'CREATE INDEX IF NOT EXISTS idx_symbol_receipts_mosaic ON symbol_receipts(mosaic_id)'
 ]
 
@@ -1739,6 +1744,7 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 		with self._database_transaction() as cursor:
 			self._delete_rollback_affected_rows_from_height(cursor, height)
 			self._stale_mark_account_refresh_state_if_needed(cursor, height)
+			self._increment_chain_revision(cursor)
 
 	def repair_rollback_from_height(self, height, sync_state, refresh_entries):
 		"""Repairs rollbacked chain and refreshed current state in one transaction."""
@@ -1752,7 +1758,20 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 			self._execute_hash_lock_entries(cursor, refresh_entries.hash_lock_entries)
 			self._execute_secret_lock_entries(cursor, refresh_entries.secret_lock_entries)
 			self._execute_mosaic_restriction_entries(cursor, refresh_entries.mosaic_restriction_entries)
+			self._increment_chain_revision(cursor)
 			self._execute_upsert_sync_state(cursor, sync_state)
+
+	@staticmethod
+	def _increment_chain_revision(cursor):
+		cursor.execute(
+			'''
+			UPDATE symbol_sync_state
+			SET chain_revision = chain_revision + 1
+			WHERE id = 1
+			RETURNING chain_revision
+			''')
+		if cursor.rowcount != 1 or cursor.fetchone() is None:
+			raise RuntimeError('Symbol sync state singleton is missing')
 
 	@staticmethod
 	def _delete_rollback_affected_rows_from_height(cursor, height):

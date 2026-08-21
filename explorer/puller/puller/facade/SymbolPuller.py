@@ -7,7 +7,14 @@ from collections import defaultdict, namedtuple
 from datetime import datetime, timedelta, timezone
 from urllib.parse import urlparse
 
+from common.symbol.NativeMosaic import NativeMosaicInfo, create_native_mosaic_info, extract_native_mosaic_id
 from common.symbol.NodeConfiguration import SymbolNodeConfiguration
+from common.symbol.Receipt import (
+	INFLATION_RECEIPT_TYPE,
+	MOSAIC_EXPIRED_RECEIPT_TYPE,
+	NAMESPACE_DELETED_RECEIPT_TYPE,
+	NAMESPACE_EXPIRED_RECEIPT_TYPE
+)
 from symbolchain.facade.SymbolFacade import SymbolFacade
 from symbolchain.sc import TransactionType
 from symbolchain.symbol.Network import Address, Network
@@ -47,18 +54,11 @@ from puller.model.symbol.MosaicRestriction import (
 	mosaic_restriction_entry_type_to_enum_value
 )
 from puller.model.symbol.Namespace import create_alias_name_rows, create_namespace_row
-from puller.model.symbol.Receipt import (
-	INFLATION_RECEIPT_TYPE,
-	MOSAIC_EXPIRED_RECEIPT_TYPE,
-	NAMESPACE_DELETED_RECEIPT_TYPE,
-	NAMESPACE_EXPIRED_RECEIPT_TYPE,
-	create_receipt_rows
-)
+from puller.model.symbol.Receipt import create_receipt_rows
 from puller.model.symbol.Resolution import is_alias_mosaic_id, select_resolution_entry
 from puller.model.symbol.Transaction import create_transaction_row, unique_address_rows
 
 DatabaseConfiguration = namedtuple('DatabaseConfiguration', ['database', 'user', 'password', 'host', 'port'])
-NativeMosaicInfo = namedtuple('NativeMosaicInfo', ['id', 'divisibility'])
 TransactionSource = namedtuple('TransactionSource', ['primary_id', 'secondary_id'])
 ResolutionStatements = namedtuple('ResolutionStatements', ['address', 'mosaic'])
 ResolutionRequest = namedtuple('ResolutionRequest', ['height', 'kind'])
@@ -691,16 +691,16 @@ class SymbolPuller:
 
 		return self._network_properties
 
-	async def _get_native_mosaic_info(self):
+	async def _get_native_mosaic_info(self) -> NativeMosaicInfo:
 		"""Gets and memoizes the native mosaic id and divisibility for this puller instance."""
 
 		if self._native_mosaic_info:
 			return self._native_mosaic_info
 
 		network_properties = await self._get_network_properties()
-		native_mosaic_id = network_properties['chain']['currencyMosaicId'].replace('0x', '').replace("'", '').upper()
+		native_mosaic_id = extract_native_mosaic_id(network_properties)
 		mosaic_definition = await self.get_symbol_node(f'/mosaics/{native_mosaic_id}')
-		self._native_mosaic_info = NativeMosaicInfo(native_mosaic_id, int(mosaic_definition['mosaic']['divisibility']))
+		self._native_mosaic_info = create_native_mosaic_info(network_properties, mosaic_definition)
 
 		return self._native_mosaic_info
 

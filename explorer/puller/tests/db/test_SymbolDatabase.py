@@ -177,11 +177,19 @@ def _create_sync_state(**overrides):
 		'finalized_epoch': 2,
 		'finalized_point': 3,
 		'last_synced_height': 10,
-		'last_synced_block_hash': b'last'
+		'last_synced_block_hash': b'last',
+		'chain_revision': 0
 	}
 	sync_state.update(overrides)
 
 	return sync_state
+
+
+def _upsert_sync_state_with_revision(database, chain_revision):
+	database.upsert_sync_state(_create_sync_state())
+	cursor = database.connection.cursor()
+	cursor.execute('UPDATE symbol_sync_state SET chain_revision = %s WHERE id = 1', (chain_revision,))
+	database.connection.commit()
 
 
 def _create_receipt(height, receipt_type='inflation', **overrides):
@@ -1693,6 +1701,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		# Arrange:
 		database = self._create_database()
 		database.upsert_blocks([_create_block(1), _create_block(2)])
+		database.upsert_sync_state(_create_sync_state(chain_revision=0))
 		namespace_row = _create_namespace_row(updated_at_height=2)
 		database.upsert_namespace(namespace_row, _create_alias_name_rows(namespace_row))
 
@@ -1711,11 +1720,13 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			('mosaic', '72C0212E67A08BCE', 'root', 2),
 			('namespace', NAMESPACE_ROOT_ID, 'root', 2)
 		], cursor.fetchall())
+		self.assertEqual(1, database.get_sync_state()['chain_revision'])
 
 	def test_repair_rollback_from_height_leaves_mosaic_current_state_rows_in_place(self):
 		# Arrange:
 		database = self._create_database()
 		fork_height = 2
+		database.upsert_sync_state(_create_sync_state(chain_revision=0))
 		mosaic_row = create_expected_mosaic_row(
 			create_mosaic_item(mosaic_id='0000000000000001', supply='4321', item_id='fork-survivor'),
 			fork_height)
@@ -1730,12 +1741,13 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 
 		# Assert:
 		self.assertEqual(original_mosaic_state, fetch_mosaic_state(database))
+		self.assertEqual(1, database.get_sync_state()['chain_revision'])
 
 	def test_repair_rollback_from_height_applies_namespace_mosaic_and_metadata_changes_in_same_transaction(self):
 		# Arrange:
 		database = self._create_database()
 		database.upsert_blocks([_create_block(1), _create_block(2)])
-		database.upsert_sync_state(_create_sync_state())
+		database.upsert_sync_state(_create_sync_state(chain_revision=0))
 		refreshed_row = _create_namespace_row()
 		deleted_row = _create_namespace_row('B95F1F8A96159516', 'orphaned', 2)
 		database.upsert_namespace(refreshed_row, _create_alias_name_rows(refreshed_row))
@@ -1794,7 +1806,8 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		expected_sync_state = _create_sync_state(
 			status='repairing',
 			last_synced_height=1,
-			last_synced_block_hash=b'hash 1')
+			last_synced_block_hash=b'hash 1',
+			chain_revision=1)
 		expected_mosaic_row = refresh_entries.mosaic_entries[0]['row']
 		expected_mosaic_state = [create_persisted_mosaic_state(expected_mosaic_row, [])]
 		expected_namespace_state = (
@@ -1826,7 +1839,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		# Arrange:
 		database = self._create_database()
 		database.upsert_blocks([_create_block(1), _create_block(2)])
-		database.upsert_sync_state(_create_sync_state())
+		database.upsert_sync_state(_create_sync_state(chain_revision=0))
 		original_namespace_row = _create_namespace_row(observed_height=2)
 		deleted_namespace_row = _create_namespace_row('B95F1F8A96159516', 'gone', 2)
 		database.upsert_namespace(original_namespace_row, _create_alias_name_rows(original_namespace_row))
@@ -1895,6 +1908,54 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		self.assertEqual(original_state['namespace'], fetch_namespace_state(database.connection))
 		self.assertEqual(original_state['mosaic'], fetch_mosaic_state(database))
 		self.assertEqual(original_state['metadata'], fetch_metadata_rows(database))
+
+	def test_repair_failure_after_revision_increment_restores_receipts_and_chain_revision_atomically(self):
+		# Arrange:
+		database = self._create_database()
+		database.upsert_blocks([_create_block(1), _create_block(2)])
+		database.upsert_receipts_for_height(1, [_create_receipt(1)], 10)
+		database.upsert_receipts_for_height(2, [_create_receipt(2)], 20)
+		_upsert_sync_state_with_revision(database, 7)
+		database.upsert_account_current_state(*_create_account_row(ADDRESS1, observed_height=2))
+		database.upsert_account_refresh_state({
+			'status': 'healthy',
+			'last_successful_run_id': 'run-1',
+			'last_completed_height': 2
+		})
+		cursor = database.connection.cursor()
+		cursor.execute('SELECT height, amount FROM symbol_receipts ORDER BY height')
+		original_receipts = cursor.fetchall()
+		original_sync_state = database.get_sync_state()
+		original_blocks = fetch_full_block_state(database)
+		cursor.execute('SELECT address, last_seen_height FROM symbol_accounts ORDER BY address')
+		original_account_state = [(bytes(address), height) for address, height in cursor.fetchall()]
+		cursor.execute('SELECT address, mosaic_id, amount, updated_at_height FROM symbol_account_mosaics ORDER BY address, mosaic_id')
+		original_account_mosaic_state = [(bytes(address), mosaic_id, amount, height) for address, mosaic_id, amount, height in cursor.fetchall()]
+		original_refresh_state = database.get_account_refresh_state()
+		self.assertEqual(7, original_sync_state['chain_revision'])
+
+		# Act:
+		# PostgreSQL rejects the invalid status in _execute_upsert_sync_state after the revision increment.
+		with self.assertRaises(PsycopgError):
+			database.repair_rollback_from_height(
+				2,
+				_create_sync_state(status='invalid', last_synced_height=1, last_synced_block_hash=b'hash 1'),
+				RollbackRefreshEntries())
+
+		# Assert:
+		cursor.execute('SELECT height, amount FROM symbol_receipts ORDER BY height')
+		self.assertEqual(original_receipts, cursor.fetchall())
+		self.assertEqual(original_blocks, fetch_full_block_state(database))
+		cursor.execute('SELECT address, last_seen_height FROM symbol_accounts ORDER BY address')
+		self.assertEqual(original_account_state, [
+			(bytes(address), height) for address, height in cursor.fetchall()
+		])
+		cursor.execute('SELECT address, mosaic_id, amount, updated_at_height FROM symbol_account_mosaics ORDER BY address, mosaic_id')
+		self.assertEqual(original_account_mosaic_state, [
+			(bytes(address), mosaic_id, amount, height) for address, mosaic_id, amount, height in cursor.fetchall()
+		])
+		self.assertEqual(original_refresh_state, database.get_account_refresh_state())
+		self.assertEqual(original_sync_state, database.get_sync_state())
 
 	def test_repair_rollback_rolls_back_namespace_entries_and_chain_state_when_later_alias_insert_fails(self):
 		# Arrange:
@@ -2444,10 +2505,19 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			('finalized_point', 'int4'),
 			('last_synced_height', 'int4'),
 			('last_synced_block_hash', 'bytea'),
+			('chain_revision', 'int8'),
 			('updated_at', 'timestamp')
 		], sync_state_columns)
 		self.assertEqual('symbol_sync_state_status', status_type)
 		self.assertIsNone(status_default)
+		cursor.execute(
+			'''
+			SELECT column_default
+			FROM information_schema.columns
+			WHERE table_name = 'symbol_sync_state'
+				AND column_name = 'chain_revision'
+			''')
+		self.assertEqual('0', cursor.fetchone()[0])
 
 	def test_create_tables_creates_enum_types(self):
 		# Arrange:
@@ -2546,43 +2616,43 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 
 		self.assertEqual([
 			(
-				'idx_symbol_receipts_group_height',
-				'CREATE INDEX idx_symbol_receipts_group_height ON public.symbol_receipts USING btree (receipt_group, height DESC)'
+				'idx_symbol_receipts_group_height_id',
+				'CREATE INDEX idx_symbol_receipts_group_height_id ON public.symbol_receipts USING btree (receipt_group, height DESC, id DESC)'
 			),
 			(
-				'idx_symbol_receipts_height_type',
-				'CREATE INDEX idx_symbol_receipts_height_type ON public.symbol_receipts USING btree (height DESC, receipt_type)'
+				'idx_symbol_receipts_height_id',
+				'CREATE INDEX idx_symbol_receipts_height_id ON public.symbol_receipts USING btree (height DESC, id DESC)'
 			),
 			(
 				'idx_symbol_receipts_mosaic',
 				'CREATE INDEX idx_symbol_receipts_mosaic ON public.symbol_receipts USING btree (mosaic_id)'
 			),
 			(
-				'idx_symbol_receipts_recipient_group_height',
-				'CREATE INDEX idx_symbol_receipts_recipient_group_height ON public.symbol_receipts '
-				'USING btree (recipient_address, receipt_group, height DESC)'
+				'idx_symbol_receipts_sender_group_height_id',
+				'CREATE INDEX idx_symbol_receipts_sender_group_height_id ON public.symbol_receipts '
+				'USING btree (sender_address, receipt_group, height DESC, id DESC)'
 			),
 			(
-				'idx_symbol_receipts_sender_group_height',
-				'CREATE INDEX idx_symbol_receipts_sender_group_height ON public.symbol_receipts '
-				'USING btree (sender_address, receipt_group, height DESC)'
+				'idx_symbol_receipts_sender_height_id',
+				'CREATE INDEX idx_symbol_receipts_sender_height_id ON public.symbol_receipts USING btree (sender_address, height DESC, id DESC)'
 			),
 			(
-				'idx_symbol_receipts_target',
-				'CREATE INDEX idx_symbol_receipts_target ON public.symbol_receipts USING btree (target_address)'
+				'idx_symbol_receipts_target_group_height_id',
+				'CREATE INDEX idx_symbol_receipts_target_group_height_id ON public.symbol_receipts '
+				'USING btree (target_address, receipt_group, height DESC, id DESC)'
 			),
 			(
-				'idx_symbol_receipts_target_group_height',
-				'CREATE INDEX idx_symbol_receipts_target_group_height ON public.symbol_receipts '
-				'USING btree (target_address, receipt_group, height DESC)'
+				'idx_symbol_receipts_target_height_id',
+				'CREATE INDEX idx_symbol_receipts_target_height_id ON public.symbol_receipts USING btree (target_address, height DESC, id DESC)'
 			),
 			(
-				'idx_symbol_receipts_target_type_height',
-				'CREATE INDEX idx_symbol_receipts_target_type_height ON public.symbol_receipts USING btree (target_address, receipt_type, height DESC)'
+				'idx_symbol_receipts_target_type_height_id',
+				'CREATE INDEX idx_symbol_receipts_target_type_height_id ON public.symbol_receipts '
+				'USING btree (target_address, receipt_type, height DESC, id DESC)'
 			),
 			(
-				'idx_symbol_receipts_type_height',
-				'CREATE INDEX idx_symbol_receipts_type_height ON public.symbol_receipts USING btree (receipt_type, height DESC)'
+				'idx_symbol_receipts_type_height_id',
+				'CREATE INDEX idx_symbol_receipts_type_height_id ON public.symbol_receipts USING btree (receipt_type, height DESC, id DESC)'
 			),
 			(
 				'symbol_receipts_pkey',
@@ -3024,7 +3094,8 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 				finalized_epoch,
 				finalized_point,
 				last_synced_height,
-				last_synced_block_hash
+				last_synced_block_hash,
+				chain_revision
 			FROM symbol_sync_state
 			WHERE id = 1
 			'''
@@ -3039,6 +3110,35 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		self.assertEqual(3, result[5])
 		self.assertEqual(10, result[6])
 		self.assertEqual(bytes(b'last'), bytes(result[7]))
+		self.assertEqual(0, result[8])
+
+	def test_normal_sync_state_upsert_preserves_chain_revision(self):
+		# Arrange:
+		database = self._create_database()
+		database.upsert_sync_state(_create_sync_state())
+		cursor = database.connection.cursor()
+		cursor.execute('UPDATE symbol_sync_state SET chain_revision = 7 WHERE id = 1')
+		database.connection.commit()
+
+		# Act:
+		database.upsert_sync_state(_create_sync_state(chain_height=11))
+
+		# Assert:
+		self.assertEqual(7, database.get_sync_state()['chain_revision'])
+
+	def test_normal_block_append_preserves_chain_revision(self):
+		# Arrange:
+		database = self._create_database()
+		database.upsert_sync_state(_create_sync_state())
+		cursor = database.connection.cursor()
+		cursor.execute('UPDATE symbol_sync_state SET chain_revision = 7 WHERE id = 1')
+		database.connection.commit()
+
+		# Act:
+		database.upsert_blocks([_create_block(1)])
+
+		# Assert:
+		self.assertEqual(7, database.get_sync_state()['chain_revision'])
 
 	def test_get_sync_state_returns_upserted_value(self):
 		# Arrange:
@@ -3584,6 +3684,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 	def test_repair_rollback_marks_account_refresh_state_stale_when_completed_height_is_rollbacked(self):
 		# Arrange:
 		database = self._create_database()
+		database.upsert_sync_state(_create_sync_state(chain_revision=0))
 		database.upsert_account_refresh_state({
 			'status': 'healthy',
 			'last_successful_run_id': 'run-1',
@@ -3596,10 +3697,12 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 
 		# Assert:
 		self.assertEqual('stale', database.get_account_refresh_state()['status'])
+		self.assertEqual(1, database.get_sync_state()['chain_revision'])
 
 	def test_repair_rollback_leaves_account_refresh_state_when_completed_height_is_before_rollback(self):
 		# Arrange:
 		database = self._create_database()
+		database.upsert_sync_state(_create_sync_state(chain_revision=0))
 		database.upsert_account_refresh_state({
 			'status': 'healthy',
 			'last_successful_run_id': 'run-1',
@@ -3612,6 +3715,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 
 		# Assert:
 		self.assertEqual('healthy', database.get_account_refresh_state()['status'])
+		self.assertEqual(1, database.get_sync_state()['chain_revision'])
 
 	def test_repair_rollback_from_height_rolls_back_when_sync_state_table_is_missing(self):
 		# Arrange:
@@ -3671,9 +3775,54 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		self.assertEqual(original_namespace_state, fetch_namespace_state(database.connection))
 		self.assertEqual(original_mosaic_state, fetch_mosaic_state(database))
 
+	def test_repair_rollback_fails_without_sync_state_singleton(self):
+		# Arrange:
+		database = self._create_database()
+		database.upsert_blocks([_create_block(1), _create_block(2)])
+		database.upsert_receipts_for_height(1, [_create_receipt(1)], 10)
+		database.upsert_receipts_for_height(2, [_create_receipt(2)], 20)
+		database.upsert_account_current_state(*_create_account_row(ADDRESS1, observed_height=2))
+		database.upsert_account_refresh_state({
+			'status': 'healthy',
+			'last_successful_run_id': 'run-1',
+			'last_completed_height': 2
+		})
+		cursor = database.connection.cursor()
+		cursor.execute('DELETE FROM symbol_sync_state')
+		database.connection.commit()
+		original_blocks = fetch_full_block_state(database)
+		cursor.execute('SELECT height, amount FROM symbol_receipts ORDER BY height')
+		original_receipts = cursor.fetchall()
+		cursor.execute('SELECT address, last_seen_height FROM symbol_accounts ORDER BY address')
+		original_account_state = [(bytes(address), height) for address, height in cursor.fetchall()]
+		cursor.execute('SELECT address, mosaic_id, amount, updated_at_height FROM symbol_account_mosaics ORDER BY address, mosaic_id')
+		original_account_mosaic_state = [(bytes(address), mosaic_id, amount, height) for address, mosaic_id, amount, height in cursor.fetchall()]
+		original_refresh_state = database.get_account_refresh_state()
+
+		# Act:
+		with self.assertRaisesRegex(RuntimeError, 'Symbol sync state singleton is missing'):
+			database.repair_rollback_from_height(
+				2, _create_sync_state(status='repairing', last_synced_height=1), RollbackRefreshEntries())
+
+		# Assert:
+		self.assertEqual(original_blocks, fetch_full_block_state(database))
+		cursor.execute('SELECT height, amount FROM symbol_receipts ORDER BY height')
+		self.assertEqual(original_receipts, cursor.fetchall())
+		cursor.execute('SELECT address, last_seen_height FROM symbol_accounts ORDER BY address')
+		self.assertEqual(original_account_state, [
+			(bytes(address), height) for address, height in cursor.fetchall()
+		])
+		cursor.execute('SELECT address, mosaic_id, amount, updated_at_height FROM symbol_account_mosaics ORDER BY address, mosaic_id')
+		self.assertEqual(original_account_mosaic_state, [
+			(bytes(address), mosaic_id, amount, height) for address, mosaic_id, amount, height in cursor.fetchall()
+		])
+		self.assertEqual(original_refresh_state, database.get_account_refresh_state())
+		self.assertIsNone(database.get_sync_state())
+
 	def test_repair_rollback_deletes_current_state_but_preserves_account_refresh_rows(self):
 		# Arrange:
 		database = self._create_database()
+		database.upsert_sync_state(_create_sync_state(chain_revision=0))
 		account_row, mosaic_rows = _create_account_row()
 		database.upsert_account_current_state(account_row, mosaic_rows)
 		database.upsert_multisig(bytes.fromhex(ADDRESS1), {
@@ -3725,6 +3874,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		self.assertEqual([(0, expected_address)], self._fetch_rank_addresses(database, 'ID'))
 		self.assertEqual([(0, expected_address)], self._fetch_rank_addresses(database, 'IMPORTANCE'))
 		self.assertEqual([(0, expected_address)], self._fetch_rank_addresses(database, f'BALANCE:{NATIVE_MOSAIC_ID}'))
+		self.assertEqual(1, database.get_sync_state()['chain_revision'])
 
 	def test_rejects_invalid_block_type(self):
 		# Arrange:
@@ -3944,6 +4094,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			_create_block(2),
 			_create_block(3)
 		])
+		_upsert_sync_state_with_revision(database, 7)
 		database.upsert_receipts_for_height(2, [_create_receipt(2)], 100)
 		database.upsert_receipts_for_height(3, [_create_receipt(3)], 100)
 
@@ -3959,6 +4110,49 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 
 		self.assertEqual([(1,)], block_results)
 		self.assertEqual([], receipt_results)
+		self.assertEqual(8, database.get_sync_state()['chain_revision'])
+
+	def test_delete_blocks_from_height_fails_without_sync_state_singleton(self):
+		# Arrange:
+		database = self._create_database()
+		database.upsert_blocks([_create_block(1), _create_block(2)])
+		database.upsert_receipts_for_height(2, [_create_receipt(2)], 20)
+		database.upsert_account_current_state(*_create_account_row(ADDRESS1, observed_height=2))
+		database.upsert_account_refresh_state({
+			'status': 'healthy',
+			'last_successful_run_id': 'run-1',
+			'last_completed_height': 2
+		})
+		cursor = database.connection.cursor()
+		cursor.execute('DELETE FROM symbol_sync_state')
+		database.connection.commit()
+		original_blocks = fetch_full_block_state(database)
+		cursor.execute('SELECT height, amount FROM symbol_receipts ORDER BY height')
+		original_receipts = cursor.fetchall()
+		cursor.execute('SELECT address, last_seen_height FROM symbol_accounts ORDER BY address')
+		original_account_state = [(bytes(address), height) for address, height in cursor.fetchall()]
+		cursor.execute('SELECT address, mosaic_id, amount, updated_at_height FROM symbol_account_mosaics ORDER BY address, mosaic_id')
+		original_account_mosaic_state = [(bytes(address), mosaic_id, amount, height) for address, mosaic_id, amount, height in cursor.fetchall()]
+		original_refresh_state = database.get_account_refresh_state()
+
+		# Act:
+		with self.assertRaisesRegex(RuntimeError, 'Symbol sync state singleton is missing'):
+			database.delete_blocks_from_height(2)
+
+		# Assert:
+		self.assertEqual(original_blocks, fetch_full_block_state(database))
+		cursor.execute('SELECT height, amount FROM symbol_receipts ORDER BY height')
+		self.assertEqual(original_receipts, cursor.fetchall())
+		cursor.execute('SELECT address, last_seen_height FROM symbol_accounts ORDER BY address')
+		self.assertEqual(original_account_state, [
+			(bytes(address), height) for address, height in cursor.fetchall()
+		])
+		cursor.execute('SELECT address, mosaic_id, amount, updated_at_height FROM symbol_account_mosaics ORDER BY address, mosaic_id')
+		self.assertEqual(original_account_mosaic_state, [
+			(bytes(address), mosaic_id, amount, height) for address, mosaic_id, amount, height in cursor.fetchall()
+		])
+		self.assertEqual(original_refresh_state, database.get_account_refresh_state())
+		self.assertIsNone(database.get_sync_state())
 
 	def test_upsert_transactions_for_height_computes_effective_fee(self):
 		# Arrange:
@@ -4206,6 +4400,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		database = self._create_database()
 		cursor = database.connection.cursor()
 		database.upsert_blocks([_create_block(1), _create_block(2), _create_block(3)])
+		database.upsert_sync_state(_create_sync_state(chain_revision=0))
 		database.upsert_transactions_for_height(1, [create_transaction_entry(1, 'kept')])
 		database.upsert_transactions_for_height(2, [create_transaction_entry(
 			2,
@@ -4231,12 +4426,14 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		self.assertEqual(0, mosaic_count)
 		self.assertEqual(0, address_count)
 		self.assertEqual([(1,)], block_results)
+		self.assertEqual(1, database.get_sync_state()['chain_revision'])
 
 	def test_delete_blocks_from_height_deletes_account_family_rows(self):
 		# Arrange:
 		database = self._create_database()
 		cursor = database.connection.cursor()
 		database.upsert_blocks([_create_block(1), _create_block(2), _create_block(3)])
+		database.upsert_sync_state(_create_sync_state(chain_revision=0))
 		kept_account_row, kept_mosaic_rows = _create_account_row(ADDRESS1, observed_height=1)
 		rollbacked_account_row, rollbacked_mosaic_rows = _create_account_row(RECIPIENT_ADDRESS, observed_height=2)
 		after_fork_account_row, after_fork_mosaic_rows = _create_account_row(ADDRESS4, observed_height=3)
@@ -4265,6 +4462,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		self.assertEqual([(ADDRESS1.lower(), 1)], account_results)
 		self.assertEqual([(ADDRESS1.lower(), NATIVE_MOSAIC_ID, 1)], mosaic_results)
 		self.assertEqual([(ADDRESS1.lower(), 1)], multisig_results)
+		self.assertEqual(1, database.get_sync_state()['chain_revision'])
 
 	def test_can_repair_rollback_from_height_in_one_transaction(self):
 		# Arrange:
@@ -4289,6 +4487,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		database.upsert_receipts_for_height(1, [_create_receipt(1)], 100)
 		database.upsert_receipts_for_height(2, [_create_receipt(2)], 100)
 		database.upsert_receipts_for_height(3, [_create_receipt(3)], 100)
+		_upsert_sync_state_with_revision(database, 7)
 		database.upsert_account_current_state(*_create_account_row(ADDRESS1, observed_height=1))
 		database.upsert_account_current_state(*_create_account_row(RECIPIENT_ADDRESS, observed_height=2))
 		database.upsert_multisig(bytes.fromhex(ADDRESS1), _create_multisig_row(ADDRESS1, 1))
@@ -4339,6 +4538,9 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			bytes(b'hash 1'),
 			bytes(sync_state['last_synced_block_hash'])
 		)
+		self.assertEqual(8, sync_state['chain_revision'])
+		database.upsert_sync_state(_create_sync_state(status='healthy', last_synced_height=1))
+		self.assertEqual(8, database.get_sync_state()['chain_revision'])
 
 	def test_create_tables_creates_exact_hash_lock_columns_types_and_nullability(self):
 		# Arrange:
@@ -4888,6 +5090,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 	def test_repair_rollback_deletes_lock_rows_at_fork_and_applies_replacements_atomically(self):
 		# Arrange:
 		database = self._create_database()
+		database.upsert_sync_state(_create_sync_state(chain_revision=0))
 		kept_hash_row = _create_hash_lock_row(observed_height=1, lock_hash=LOCK_HASH)
 		orphaned_hash_row = _create_hash_lock_row(observed_height=2, lock_hash=LOCK_HASH_2)
 		kept_secret_row = _create_secret_lock_row(observed_height=1)
@@ -4932,10 +5135,12 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			for composite_hash, status, updated_at_height in cursor.fetchall()])
 		self.assertEqual('repairing', database.get_sync_state()['status'])
 		self.assertEqual(1, database.get_sync_state()['last_synced_height'])
+		self.assertEqual(1, database.get_sync_state()['chain_revision'])
 
 	def test_repair_rollback_applies_hash_lock_delete_entries(self):
 		# Arrange:
 		database = self._create_database()
+		database.upsert_sync_state(_create_sync_state(chain_revision=0))
 		database.upsert_hash_lock(_create_hash_lock_row(observed_height=1))
 
 		# Act:
@@ -4950,10 +5155,12 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		cursor = database.connection.cursor()
 		cursor.execute('SELECT hash FROM symbol_hash_locks')
 		self.assertEqual([], cursor.fetchall())
+		self.assertEqual(1, database.get_sync_state()['chain_revision'])
 
 	def test_repair_rollback_applies_empty_secret_lock_replacement_and_preserves_siblings(self):
 		# Arrange:
 		database = self._create_database()
+		database.upsert_sync_state(_create_sync_state(chain_revision=0))
 		target_key = create_secret_lock_search_key(LOCK_OWNER, LOCK_RECIPIENT, LOCK_SECRET, 'hash160')
 		sibling_key = create_secret_lock_search_key(LOCK_OWNER_2, LOCK_RECIPIENT, LOCK_SECRET, 'hash160')
 		database.replace_secret_locks(target_key, [_create_secret_lock_row()])
@@ -4977,6 +5184,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			[(LOCK_COMPOSITE_HASH_2, LOCK_OWNER_2)],
 			[(bytes(composite_hash), bytes(owner_address)) for composite_hash, owner_address in cursor.fetchall()])
 		self.assertEqual('repairing', database.get_sync_state()['status'])
+		self.assertEqual(1, database.get_sync_state()['chain_revision'])
 
 	def test_repair_rollback_restores_chain_and_lock_state_when_later_secret_lock_write_fails(self):  # pylint: disable=too-many-locals
 		# Arrange:
@@ -5564,6 +5772,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 	def test_repair_rollback_applies_mosaic_restriction_replacement(self):
 		# Arrange:
 		database = self._create_database()
+		database.upsert_sync_state(_create_sync_state(chain_revision=0))
 		key = MosaicRestrictionKey(MosaicRestrictionEntryType.GLOBAL, RESTRICTION_MOSAIC_ID, None)
 		row = _create_mosaic_restriction_row(entry_type=MosaicRestrictionEntryType.GLOBAL, target_address=None)
 
