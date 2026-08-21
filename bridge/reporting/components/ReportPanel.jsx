@@ -3,8 +3,8 @@ import styles from '@/styles/ReportPanel.module.css';
 import { parseSearchInput } from '@/utils/validation';
 import { useRef, useState } from 'react';
 
-const createDefaultCriteria = tab => ({
-	baseUrl: tab.baseUrl,
+const createDefaultCriteria = (tab, baseUrl) => ({
+	baseUrl,
 	operation: tab.operation,
 	resource: tab.resource,
 	limit: PAGE_SIZE,
@@ -13,10 +13,10 @@ const createDefaultCriteria = tab => ({
 	sort: 0
 });
 
-const ReportPanel = ({ tab, isActive }) => {
+const ReportPanel = ({ tab, isActive, baseUrl }) => {
 	const [searchInput, setSearchInput] = useState('');
 	const [validationError, setValidationError] = useState('');
-	const [criteria, setCriteria] = useState(() => createDefaultCriteria(tab));
+	const [criteria, setCriteria] = useState(() => createDefaultCriteria(tab, baseUrl));
 	const criteriaRef = useRef(criteria);
 
 	const updateCriteria = nextCriteria => {
