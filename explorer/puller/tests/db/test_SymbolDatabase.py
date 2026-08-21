@@ -65,6 +65,36 @@ RESTRICTION_HASH_2 = bytes.fromhex('F2' * 32)
 RESTRICTION_MOSAIC_ID = '72C0212E67A08BCE'
 
 
+class FailingCommitConnection:
+	def commit(self):  # pylint: disable=no-self-use
+		raise RuntimeError('commit failed')
+
+	def close(self):  # pylint: disable=no-self-use
+		return None
+
+
+class FailingCommitObserver:
+	def __call__(self, elapsed_seconds, succeeded):  # pylint: disable=unused-argument
+		raise RuntimeError('observer failed')
+
+
+class FailingClock:
+	def __call__(self):  # pylint: disable=no-self-use
+		raise RuntimeError('clock failed')
+
+
+class DeterministicClock:
+	def __init__(self, values):
+		self._values = iter(values)
+		self.call_count = 0
+
+	def __call__(self):
+		self.call_count += 1
+		value = next(self._values, None)
+		assert value is not None, 'commit clock value sequence was exhausted'
+		return value
+
+
 def _create_mosaic_restriction_row(
 	entry_type=MosaicRestrictionEntryType.ADDRESS,
 	target_address=LOCK_RECIPIENT,
@@ -268,6 +298,90 @@ def _create_alias_name_rows(namespace_row):
 
 
 class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
+	def test_public_symbol_database_api_reports_exact_commit_elapsed_time_for_real_postgresql_commits(self):
+		# Arrange:
+		commit_notifications = []
+		clock = DeterministicClock([1.00, 1.25, 2.00, 2.50])
+		database = self.exit_stack.enter_context(
+			SymbolDatabase(
+				self.db_config,
+				time_source=clock,
+				commit_observer=lambda elapsed_seconds, succeeded: commit_notifications.append(
+					(elapsed_seconds, succeeded))))
+		drop_symbol_block_tables_if_present(database)
+		self.addCleanup(drop_symbol_block_tables_if_present, database)
+
+		# Act:
+		database.create_tables()
+		database.upsert_sync_state(_create_sync_state())
+
+		# Assert:
+		self.assertEqual([(0.25, True), (0.50, True)], commit_notifications)
+		self.assertEqual(4, clock.call_count)
+
+	def test_public_symbol_database_api_ignores_commit_observer_failure(self):
+		# Arrange:
+		database = self.exit_stack.enter_context(
+			SymbolDatabase(self.db_config, commit_observer=FailingCommitObserver()))
+		drop_symbol_block_tables_if_present(database)
+		self.addCleanup(drop_symbol_block_tables_if_present, database)
+
+		# Act:
+		database.create_tables()
+		database.upsert_sync_state(_create_sync_state())
+
+		# Assert:
+		actual_sync_state = database.get_sync_state()
+		actual_sync_state['finalized_hash'] = bytes(actual_sync_state['finalized_hash'])
+		actual_sync_state['last_synced_block_hash'] = bytes(actual_sync_state['last_synced_block_hash'])
+		self.assertEqual(_create_sync_state(), actual_sync_state)
+
+	def test_symbol_database_without_commit_observer_preserves_existing_public_api(self):
+		# Arrange:
+		database = self._create_database()
+		expected_sync_state = _create_sync_state()
+
+		# Act:
+		database.upsert_sync_state(expected_sync_state)
+
+		# Assert:
+		actual_sync_state = database.get_sync_state()
+		actual_sync_state['finalized_hash'] = bytes(actual_sync_state['finalized_hash'])
+		actual_sync_state['last_synced_block_hash'] = bytes(actual_sync_state['last_synced_block_hash'])
+		self.assertEqual(expected_sync_state, actual_sync_state)
+
+	def test_public_symbol_database_api_tolerates_clock_failure_without_observer(self):
+		# Arrange:
+		database = self.exit_stack.enter_context(SymbolDatabase(self.db_config, time_source=FailingClock()))
+		drop_symbol_block_tables_if_present(database)
+		self.addCleanup(drop_symbol_block_tables_if_present, database)
+
+		# Act:
+		database.create_tables()
+
+		# Assert:
+		self.assertEqual(None, database.get_sync_state())
+
+	def test_commit_failure_notifies_observer_as_failed_attempt(self):
+		# Arrange:
+		commit_notifications = []
+		database = self.exit_stack.enter_context(
+			SymbolDatabase(
+				self.db_config,
+				commit_observer=lambda elapsed_seconds, succeeded: commit_notifications.append(
+					(elapsed_seconds, succeeded)),
+				time_source=lambda: 0))
+		original_connection = database.connection
+		self.addCleanup(original_connection.close)
+		database.connection = FailingCommitConnection()
+
+		# Act:
+		with self.assertRaisesRegex(RuntimeError, 'commit failed'):
+			database._commit()  # pylint: disable=protected-access
+
+		# Assert:
+		self.assertEqual([(0, False)], commit_notifications)
+
 	def test_create_tables_creates_symbol_namespace_columns(self):
 		# Arrange:
 		database = self._create_uninitialized_database()

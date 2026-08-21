@@ -2,6 +2,8 @@
 
 import asyncio
 import configparser
+import json
+import time
 import uuid
 from collections import defaultdict, namedtuple
 from datetime import datetime, timedelta, timezone
@@ -18,6 +20,7 @@ from zenlog import log
 from puller.db.SymbolDatabase import RollbackRefreshEntries, SymbolDatabase
 from puller.facade.async_utils import gather_in_chunks
 from puller.facade.RequestRateLimiter import RequestRateLimiter
+from puller.facade.SymbolSyncPerformance import SyncPerformance, request_category
 from puller.model.symbol.Account import HARVESTING_ACTIVE_WINDOW_DAYS, create_account_row, create_multisig_row
 from puller.model.symbol.Block import create_block_row
 from puller.model.symbol.format import is_exact_integer
@@ -99,7 +102,7 @@ def _is_not_found_response(response):
 	return isinstance(response, dict) and 'ResourceNotFound' == response.get('code')
 
 
-class SymbolPuller:
+class SymbolPuller:  # pylint: disable=too-many-instance-attributes
 	"""Facade for pulling data from Symbol network."""
 
 	def __init__(  # pylint: disable=too-many-arguments,too-many-positional-arguments
@@ -110,7 +113,9 @@ class SymbolPuller:
 		node_config=None,
 		connector=None,
 		max_requests_per_second=DEFAULT_MAX_REQUESTS_PER_SECOND,
-		rate_limiter=None
+		rate_limiter=None,
+		time_source=time.monotonic,
+		performance_logger=log
 	):
 		"""Creates a Symbol puller facade object."""
 
@@ -121,16 +126,43 @@ class SymbolPuller:
 
 		network = _get_symbol_network(network_type)
 
-		self.symbol_db = SymbolDatabase(DatabaseConfiguration(**db_config))
+		self._time_source = time_source
+		self._performance_logger = performance_logger
+		self._active_performance = None
+		self.symbol_db = SymbolDatabase(
+			DatabaseConfiguration(**db_config),
+			commit_observer=self._record_commit,
+			time_source=time_source)
 		self.node_config = node_config or SymbolNodeConfiguration.from_url(node_url)
 		symbol_node_endpoint = self.node_config.assert_request_allowed(self.node_config.base_url)
 		self._symbol_connector = connector or SymbolConnector(symbol_node_endpoint)
 		self._symbol_connector.timeout_seconds = self.node_config.timeout_seconds
 		self.symbol_facade = SymbolFacade(network)
 		self._retry_delay = 2
-		self._rate_limiter = rate_limiter or RequestRateLimiter(max_requests_per_second)
+		self._rate_limiter = rate_limiter or RequestRateLimiter(max_requests_per_second, time_source=time_source)
 		self._native_mosaic_info = None
 		self._network_properties = None
+
+	def _record_performance(self, method_name, *args):
+		if self._active_performance is None:
+			return
+
+		try:
+			getattr(self._active_performance, method_name)(*args)
+		except Exception:  # pylint: disable=broad-exception-caught
+			# Metrics must not alter synchronization or exception propagation.
+			return
+
+	def _record_commit(self, elapsed_seconds, succeeded):
+		self._record_performance('record_commit', elapsed_seconds, succeeded)
+
+	def _log_performance_event(self, performance, event_name, status, exception=None):
+		try:
+			event = performance.event(event_name, status, exception)
+			self._performance_logger.info(json.dumps(event, sort_keys=True, separators=(',', ':')))
+		except Exception:  # pylint: disable=broad-exception-caught
+			# Event construction or logging failure must never replace the synchronization result.
+			pass
 
 	def __enter__(self):
 		self.symbol_db.__enter__()
@@ -151,14 +183,26 @@ class SymbolPuller:
 
 		return normalized_path
 
-	async def _retry_operation(self, operation, description, retries=3, not_found_as_error=True):
+	async def _retry_operation(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+		self,
+		operation,
+		description,
+		retries=3,
+		not_found_as_error=True,
+		method='GET',
+		category='other'
+	):
 		"""Retries a Symbol node operation with exponential backoff."""
 
 		for attempt_index in range(retries):
 			try:
-				await self._rate_limiter.wait_for_turn()
+				wait_seconds = await self._rate_limiter.wait_for_turn()
+				self._record_performance('record_rate_limit_wait', wait_seconds or 0)
+				self._record_performance('record_request_attempt', method, category)
 				response = await operation()
 				_raise_if_node_error(response, allow_not_found=not not_found_as_error)
+				if not isinstance(response, dict) or 'code' not in response or 'message' not in response:
+					self._record_performance('record_request_success')
 				return response
 			except NodeException as error:
 				attempt = attempt_index + 1
@@ -167,6 +211,7 @@ class SymbolPuller:
 					raise
 
 				wait_time = self._retry_delay * (2 ** attempt_index)
+				self._record_performance('record_retry')
 				log.warning(f'Error {description} (attempt {attempt}/{retries}): {error}. Retrying in {wait_time}s...')
 				await asyncio.sleep(wait_time)
 
@@ -177,7 +222,9 @@ class SymbolPuller:
 		return await self._retry_operation(
 			lambda: self._symbol_connector.get(normalized_path, property_name, not_found_as_error),
 			f'fetching Symbol node path {normalized_path}',
-			not_found_as_error=not_found_as_error
+			not_found_as_error=not_found_as_error,
+			method='GET',
+			category=request_category('GET', normalized_path)
 		)
 
 	async def post_symbol_node(self, url_path, request_payload, property_name=None, not_found_as_error=True):
@@ -187,15 +234,20 @@ class SymbolPuller:
 		return await self._retry_operation(
 			lambda: self._symbol_connector.post(normalized_path, request_payload, property_name, not_found_as_error),
 			f'posting Symbol node path {normalized_path}',
-			not_found_as_error=not_found_as_error
+			not_found_as_error=not_found_as_error,
+			method='POST',
+			category=request_category('POST', normalized_path)
 		)
 
 	async def sync_block_headers(self, max_height=None):  # pylint: disable=too-many-locals
 		"""Synchronizes Symbol block headers; an external scheduler must prevent overlap."""
 
+		performance = SyncPerformance(self._time_source)
+		self._active_performance = performance
 		try:
 			await self._sync_block_headers(max_height)
-		except Exception:
+			self._log_performance_event(performance, 'symbol_sync_completed', 'completed')
+		except Exception as exception:
 			try:
 				sync_state = self.symbol_db.get_sync_state()
 				if sync_state and sync_state['dirty_state_from_height'] is not None:
@@ -203,12 +255,18 @@ class SymbolPuller:
 			except Exception as state_error:  # pylint: disable=broad-exception-caught
 				# Preserve the primary failure if the best-effort failure-state update also fails.
 				log.error(f'Failed to record Symbol sync failure: {state_error}')
+			performance.set_failed_phase()
+			self._log_performance_event(performance, 'symbol_sync_failed', 'failed', exception)
 			raise
+		finally:
+			self._active_performance = None
 
 	async def _sync_block_headers(self, max_height=None):  # pylint: disable=too-many-locals
 		"""Runs one non-overlapping Symbol block synchronization attempt."""
 
+		self._record_performance('set_phase', 'chain_info_fetch')
 		chain_info = await self.get_symbol_node('/chain/info')
+		self._record_performance('set_phase', 'network_properties_fetch')
 		network_properties = await self._get_network_properties()
 		node_chain_height = int(chain_info['height'])
 		chain_height = self._get_sync_chain_height(int(chain_info['height']), max_height)
@@ -216,7 +274,9 @@ class SymbolPuller:
 			self._get_finalized_watermark(chain_info, chain_height)
 		)
 		epoch_adjustment_seconds = self._parse_epoch_adjustment(network_properties)
+		self._record_performance('set_phase', 'native_mosaic_fetch')
 		native_mosaic_info = await self._get_native_mosaic_info()
+		self._record_performance('set_phase', 'sync_state_read')
 		raw_sync_state = self.symbol_db.get_sync_state()
 		if is_finalization_capped and raw_sync_state:
 			raw_last_synced_height = raw_sync_state['last_synced_height']
@@ -232,6 +292,7 @@ class SymbolPuller:
 		# A dirty marker gives only the tail's lower bound, so capped repair could change rows outside the operator scope.
 		# When blocked by the cap, exclude the marker from this repair decision and skip unfinalized verification; finalized
 		# safety checks still run. The persisted marker is then retained, status is set unhealthy, and forward sync is skipped.
+		self._record_performance('set_phase', 'rollback_repair')
 		start_height = await self._repair_unfinalized_rollback(
 			raw_sync_state,
 			finalized_height,
@@ -255,7 +316,9 @@ class SymbolPuller:
 				'last_synced_height': start_height - 1 if start_height > 1 else None,
 				'last_synced_block_hash': self.symbol_db.get_block_hash(start_height - 1) if start_height > 1 else None
 			}
+		self._active_performance.set_bounds(start_height, chain_height)
 
+		self._record_performance('set_phase', 'block_sync')
 		last_synced_height, last_synced_block_hash = await self._sync_block_pages(
 			start_height,
 			chain_height,
@@ -264,13 +327,16 @@ class SymbolPuller:
 		if last_synced_height is None and bounded_sync_state:
 			last_synced_height = bounded_sync_state['last_synced_height']
 			last_synced_block_hash = bounded_sync_state['last_synced_block_hash']
+		self._record_performance('set_last_completed_height', last_synced_height)
 		if is_finalization_capped:
 			finalized_hash = last_synced_block_hash if finalized_height == last_synced_height else self.symbol_db.get_block_hash(finalized_height)
 			if not finalized_hash:
 				raise ValueError(f'Unable to determine finalized hash for height {finalized_height}')
 
+		self._record_performance('set_phase', 'finalization_lock_cleanup')
 		await self._sync_finalization_lock_cleanup(finalized_height)
 
+		self._record_performance('set_phase', 'sync_state_write')
 		self.symbol_db.upsert_sync_state({
 			'status': 'healthy',
 			'chain_height': chain_height,
@@ -442,88 +508,140 @@ class SymbolPuller:
 
 		for batch_start in range(0, len(all_offsets), BLOCK_PAGE_FETCH_CONCURRENCY):
 			batch_offsets = all_offsets[batch_start:batch_start + BLOCK_PAGE_FETCH_CONCURRENCY]
-			pages = await asyncio.gather(*[self._get_block_page(offset) for offset in batch_offsets])
+			batch = self._active_performance.start_batch(
+				batch_offsets[0] + 1,
+				min(chain_height, batch_offsets[-1] + MAX_PAGE_SIZE))
+			try:
+				is_final_batch = False
+				with batch.measure('block_fetch_ms', 'block_fetch'):
+					pages = await asyncio.gather(*[self._get_block_page(offset) for offset in batch_offsets])
 
-			batch_rows = []
-			for offset, blocks in zip(batch_offsets, pages):
-				if not blocks:
-					raise ValueError(f'Expected Symbol blocks at offset {offset} before chain height {chain_height}')
+					batch_rows = []
+					for offset, blocks in zip(batch_offsets, pages):
+						if not blocks:
+							raise ValueError(f'Expected Symbol blocks at offset {offset} before chain height {chain_height}')
 
-				rows = [
-					create_block_row(block, epoch_adjustment_seconds, self.symbol_facade.network)
-					for block in blocks
-					if int(block['block']['height']) <= chain_height
-				]
-				if not rows:
-					raise ValueError(f'Symbol block page at offset {offset} does not contain blocks at or below chain height {chain_height}')
+						rows = [
+							create_block_row(block, epoch_adjustment_seconds, self.symbol_facade.network)
+							for block in blocks
+							if int(block['block']['height']) <= chain_height
+						]
+						if not rows:
+							raise ValueError(
+								f'Symbol block page at offset {offset} does not contain blocks at or below chain height {chain_height}')
 
-				self._validate_block_page(rows, offset + 1)
-				previous_block_hash = self._validate_block_chain(rows, previous_block_hash)
-				last_row = rows[-1]
-				if len(blocks) < MAX_PAGE_SIZE and last_row['height'] < chain_height:
-					raise ValueError(f'Short Symbol block page ended at height {last_row["height"]} before chain height {chain_height}')
+						self._validate_block_page(rows, offset + 1)
+						previous_block_hash = self._validate_block_chain(rows, previous_block_hash)
+						last_row = rows[-1]
+						if len(blocks) < MAX_PAGE_SIZE and last_row['height'] < chain_height:
+							raise ValueError(
+								f'Short Symbol block page ended at height {last_row["height"]} before chain height {chain_height}')
 
-				batch_rows.extend(rows)
-				last_synced_height = last_row['height']
-				last_synced_block_hash = last_row['hash']
+						batch_rows.extend(rows)
+						batch.set_count('block_count', len(batch_rows))
+						last_synced_height = last_row['height']
+						last_synced_block_hash = last_row['hash']
 
-				if len(blocks) < MAX_PAGE_SIZE:
+						if len(blocks) < MAX_PAGE_SIZE:
+							batch.set_range(batch_rows[0]['height'], batch_rows[-1]['height'])
+							is_final_batch = True
+							break
+
+				if is_final_batch:
 					await self._sync_block_batch_with_dirty_state(
-						batch_rows, epoch_adjustment_seconds, native_mosaic_info)
+						batch_rows, epoch_adjustment_seconds, native_mosaic_info, batch)
+					self._active_performance.complete_batch(batch)
+					self._log_performance_event(
+						batch, 'symbol_sync_batch_completed', 'completed')
 					return last_synced_height, last_synced_block_hash
 
-			await self._sync_block_batch_with_dirty_state(
-				batch_rows, epoch_adjustment_seconds, native_mosaic_info)
+				batch.set_range(batch_rows[0]['height'], batch_rows[-1]['height'])
+				await self._sync_block_batch_with_dirty_state(
+					batch_rows, epoch_adjustment_seconds, native_mosaic_info, batch)
+				self._active_performance.complete_batch(batch)
+				self._log_performance_event(
+					batch, 'symbol_sync_batch_completed', 'completed')
+			except Exception as exception:
+				self._active_performance.fail_batch(batch)
+				self._log_performance_event(
+					batch, 'symbol_sync_batch_failed', 'failed', exception)
+				raise
 
 		return last_synced_height, last_synced_block_hash
 
-	async def _sync_block_batch_with_dirty_state(  # pylint: disable=too-many-locals
+	async def _sync_block_batch_with_dirty_state(  # pylint: disable=too-many-locals,too-many-statements
 		self,
 		batch_rows,
 		epoch_adjustment_seconds,
-		native_mosaic_info
+		native_mosaic_info,
+		batch
 	):
-		transaction_rows_by_height = await self._get_transaction_rows_by_height(
-			batch_rows[0]['height'],
-			batch_rows[-1]['height'],
-			epoch_adjustment_seconds
-		)
-		receipt_rows_by_height = await self._get_receipt_rows_by_height(batch_rows[0]['height'], batch_rows[-1]['height'])
-		await self._resolve_transaction_rows_for_batch(transaction_rows_by_height)
+		with batch.measure('transaction_fetch_ms', 'transaction_fetch'):
+			transaction_rows_by_height = await self._get_transaction_rows_by_height(
+				batch_rows[0]['height'],
+				batch_rows[-1]['height'],
+				epoch_adjustment_seconds
+			)
+			batch.set_count('transaction_count', sum(len(rows) for rows in transaction_rows_by_height.values()))
+		with batch.measure('receipt_fetch_ms', 'receipt_fetch'):
+			receipt_rows_by_height = await self._get_receipt_rows_by_height(
+				batch_rows[0]['height'], batch_rows[-1]['height'])
+			batch.set_count('receipt_count', sum(len(rows) for rows in receipt_rows_by_height.values()))
+		with batch.measure('resolution_fetch_ms', 'resolution_fetch'):
+			await self._resolve_transaction_rows_for_batch(transaction_rows_by_height)
+		batch.set_phase('dirty_key_collection')
 		dirty_addresses = self._collect_dirty_addresses_for_batch(
 			batch_rows,
 			transaction_rows_by_height,
 			receipt_rows_by_height)
+		batch.set_count('dirty_account_count', len(dirty_addresses))
 		observed_height = max(row['height'] for row in batch_rows)
-		dirty_account_rows = await self._fetch_dirty_accounts_for_batch(
-			dirty_addresses,
-			observed_height,
-			native_mosaic_info)
+		with batch.measure('account_fetch_ms', 'account_fetch'):
+			dirty_account_rows = await self._fetch_dirty_accounts_for_batch(
+				dirty_addresses,
+				observed_height,
+				native_mosaic_info)
 		dirty_namespace_ids = self._expand_dirty_namespace_ids(
 			self._collect_dirty_namespace_ids_for_batch(transaction_rows_by_height, receipt_rows_by_height))
-		dirty_namespace_entries = await self._fetch_dirty_namespaces(dirty_namespace_ids, observed_height)
+		batch.set_count('dirty_namespace_count', len(dirty_namespace_ids))
+		with batch.measure('namespace_fetch_ms', 'namespace_fetch'):
+			dirty_namespace_entries = await self._fetch_dirty_namespaces(dirty_namespace_ids, observed_height)
 		dirty_mosaic_ids = self._collect_dirty_mosaic_ids_for_batch(transaction_rows_by_height, receipt_rows_by_height)
-		dirty_mosaic_entries = await self._fetch_dirty_mosaics(dirty_mosaic_ids, observed_height)
+		batch.set_count('dirty_mosaic_count', len(dirty_mosaic_ids))
+		with batch.measure('mosaic_fetch_ms', 'mosaic_fetch'):
+			dirty_mosaic_entries = await self._fetch_dirty_mosaics(dirty_mosaic_ids, observed_height)
 		dirty_metadata_keys = self._collect_dirty_metadata_keys_for_batch(transaction_rows_by_height)
-		dirty_metadata_entries = await self._fetch_dirty_metadata(dirty_metadata_keys, observed_height)
+		batch.set_count('dirty_metadata_count', len(dirty_metadata_keys))
+		with batch.measure('metadata_fetch_ms', 'metadata_fetch'):
+			dirty_metadata_entries = await self._fetch_dirty_metadata(dirty_metadata_keys, observed_height)
 		dirty_lock_keys = self._collect_dirty_lock_keys_for_batch(transaction_rows_by_height)
-		dirty_hash_lock_entries = await self._fetch_dirty_hash_locks(
-			list(dirty_lock_keys.hash_keys), observed_height)
-		dirty_secret_lock_entries = await self._fetch_dirty_secret_locks(
-			list(dirty_lock_keys.secret_keys), observed_height)
+		batch.set_count('dirty_hash_lock_count', len(dirty_lock_keys.hash_keys))
+		batch.set_count('dirty_secret_lock_count', len(dirty_lock_keys.secret_keys))
+		with batch.measure('hash_lock_fetch_ms', 'hash_lock_fetch'):
+			dirty_hash_lock_entries = await self._fetch_dirty_hash_locks(
+				list(dirty_lock_keys.hash_keys), observed_height)
+		with batch.measure('secret_lock_fetch_ms', 'secret_lock_fetch'):
+			dirty_secret_lock_entries = await self._fetch_dirty_secret_locks(
+				list(dirty_lock_keys.secret_keys), observed_height)
 		dirty_mosaic_restriction_keys = self._collect_dirty_mosaic_restriction_keys_for_batch(
 			transaction_rows_by_height)
-		dirty_mosaic_restriction_entries = await self._fetch_dirty_mosaic_restrictions(
-			list(dirty_mosaic_restriction_keys), observed_height)
-		self.symbol_db.mark_sync_write_intent(batch_rows[0]['height'])
-		self._sync_block_batch(batch_rows, transaction_rows_by_height, receipt_rows_by_height)
-		self._write_dirty_accounts_for_batch(dirty_account_rows)
-		self.symbol_db.apply_namespace_entries(dirty_namespace_entries)
-		self._write_dirty_mosaics(dirty_mosaic_entries)
-		self._write_dirty_metadata(dirty_metadata_entries)
-		self._write_dirty_hash_locks(dirty_hash_lock_entries)
-		self._write_dirty_secret_locks(dirty_secret_lock_entries)
-		self._write_dirty_mosaic_restrictions(dirty_mosaic_restriction_entries)
+		batch.set_count('dirty_mosaic_restriction_count', len(dirty_mosaic_restriction_keys))
+		with batch.measure('mosaic_restriction_fetch_ms', 'mosaic_restriction_fetch'):
+			dirty_mosaic_restriction_entries = await self._fetch_dirty_mosaic_restrictions(
+				list(dirty_mosaic_restriction_keys), observed_height)
+		with batch.measure('db_write_total_ms', 'db_write'):
+			self.symbol_db.mark_sync_write_intent(batch_rows[0]['height'])
+			with batch.measure('block_transaction_receipt_write_ms', 'db_write'):
+				self._sync_block_batch(batch_rows, transaction_rows_by_height, receipt_rows_by_height)
+			with batch.measure('account_multisig_write_ms', 'db_write'):
+				self._write_dirty_accounts_for_batch(dirty_account_rows)
+			with batch.measure('current_state_write_ms', 'db_write'):
+				self.symbol_db.apply_namespace_entries(dirty_namespace_entries)
+				self._write_dirty_mosaics(dirty_mosaic_entries)
+				self._write_dirty_metadata(dirty_metadata_entries)
+				self._write_dirty_hash_locks(dirty_hash_lock_entries)
+				self._write_dirty_secret_locks(dirty_secret_lock_entries)
+				self._write_dirty_mosaic_restrictions(dirty_mosaic_restriction_entries)
 
 	async def _sync_finalization_lock_cleanup(self, finalized_height):
 		"""Reconciles all current Lock rows whose end height has reached finalization."""
@@ -562,6 +680,7 @@ class SymbolPuller:
 			for item in items:
 				row = create_transaction_row(item, self.symbol_facade.network, epoch_adjustment_seconds)
 				rows_by_height.setdefault(row['height'], []).append(row)
+				self._record_performance('add_count', 'transaction_count', 1)
 
 			if len(items) < MAX_PAGE_SIZE:
 				return rows_by_height
