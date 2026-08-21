@@ -985,14 +985,12 @@ class NemDatabase(DatabaseConnectionPool):
 	def get_transactions(self, pagination, sort, transaction_query):
 		"""Gets transactions pagination."""
 
-		order_condition = f' ORDER BY t.height {sort}'
+		order_condition = f' ORDER BY t.height {sort}, t.id {sort}'
 		branches = self._create_address_branches(transaction_query)
 
 		if branches:
 			# the page is chosen by the branches, so the outer query has nothing left to limit
 			limit_condition = ''
-			# ties are broken the same way the branches order them, otherwise the page and its rows disagree
-			order_condition += f', t.id {sort}'
 			where_condition, params = self._create_address_page_condition(
 				branches,
 				sort,
@@ -1001,7 +999,6 @@ class NemDatabase(DatabaseConnectionPool):
 			)
 		elif transaction_query.mosaic:
 			limit_condition = ''
-			order_condition += f', t.id {sort}'
 			where_condition, params = self._create_mosaic_page_condition(
 				transaction_query.mosaic,
 				sort,

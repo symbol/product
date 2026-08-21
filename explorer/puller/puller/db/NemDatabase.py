@@ -73,8 +73,8 @@ class NemDatabase(DatabaseConnection):
 
 		cursor.execute(
 			'''
-			CREATE INDEX IF NOT EXISTS transactions_height_is_inner_false_idx
-				ON transactions(height DESC)
+			CREATE INDEX IF NOT EXISTS transactions_height_id_is_inner_false_idx
+				ON transactions(height DESC, id DESC)
 				WHERE is_inner = false
 			'''
 		)
@@ -465,6 +465,7 @@ class NemDatabase(DatabaseConnection):
 			VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
 			ON CONFLICT (address)
 			DO UPDATE SET
+				public_key = EXCLUDED.public_key,
 				importance = EXCLUDED.importance,
 				balance = EXCLUDED.balance,
 				vested_balance = EXCLUDED.vested_balance,

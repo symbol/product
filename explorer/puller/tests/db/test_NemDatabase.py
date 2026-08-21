@@ -483,10 +483,10 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 
 			cursor = nem_database.connection.cursor()
 
-			# insert initial account
+			# insert initial account, seen as a recipient before it revealed a public key
 			nem_database.upsert_account(
 				cursor,
-				ACCOUNTS[0]
+				ACCOUNTS[0]._replace(public_key=None)
 			)
 
 			# Act:
