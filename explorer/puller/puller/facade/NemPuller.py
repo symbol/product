@@ -111,7 +111,7 @@ NemRollbackImpact = namedtuple('NemRollbackImpact', [
 	'account_creation_heights',
 	'orphan_created_accounts',
 	'surviving_affected_accounts',
-	'orphan_beneficiaries',
+	'orphan_harvested_fees_map',
 	'affected_remote_link_accounts',
 	'affected_namespace_roots',
 	'affected_mosaic_names'
