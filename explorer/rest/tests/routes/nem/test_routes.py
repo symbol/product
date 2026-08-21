@@ -21,6 +21,7 @@ from ...test.DatabaseTestUtils import (
 	TRANSACTION_MONTH_STATISTIC_VIEW,
 	TRANSACTION_NAMES_FILTERED_BY_MULTISIG_INNER_SENDER,
 	TRANSACTION_NAMES_SORTED_BY_HEIGHT_ASC,
+	TRANSACTION_NAMES_SORTED_BY_HEIGHT_DESC,
 	TRANSACTION_STATISTIC_VIEW,
 	DatabaseConfig,
 	initialize_database,
@@ -787,32 +788,16 @@ def _assert_get_api_nem_transactions(client, expected_status_code, expected_resu
 
 
 def test_api_transactions_without_params(client):  # pylint: disable=redefined-outer-name
-	_assert_get_api_nem_transactions(client, 200, transaction_dicts(
-		'mosaic_supply_change',
-		'namespace_registration',
-		'mosaic_definition',
-		'account_key_link',
-		'multisig_account_modification',
-		'multisig',
-		'transfer_v2',
-		'transfer'
-	))
+	_assert_get_api_nem_transactions(client, 200, transaction_dicts(*TRANSACTION_NAMES_SORTED_BY_HEIGHT_DESC))
 
 
 def test_api_transactions_applies_limit(client):  # pylint: disable=redefined-outer-name
-	_assert_get_api_nem_transactions(client, 200, transaction_dicts('account_key_link'), limit=1)
+	_assert_get_api_nem_transactions(client, 200, transaction_dicts('mosaic_supply_change'), limit=1)
 
 
 def test_api_transactions_applies_offset(client):  # pylint: disable=redefined-outer-name
-	_assert_get_api_nem_transactions(client, 200, transaction_dicts(
-		'namespace_registration',
-		'mosaic_definition',
-		'account_key_link',
-		'multisig_account_modification',
-		'multisig',
-		'transfer_v2',
-		'transfer'
-	), offset=1)
+	_assert_get_api_nem_transactions(
+		client, 200, transaction_dicts(*TRANSACTION_NAMES_SORTED_BY_HEIGHT_DESC[1:]), offset=1)
 
 
 def test_api_transactions_applies_sorted_by_height_asc(client):  # pylint: disable=redefined-outer-name, invalid-name
@@ -820,27 +805,19 @@ def test_api_transactions_applies_sorted_by_height_asc(client):  # pylint: disab
 
 
 def test_api_transactions_applies_sorted_by_height_desc(client):  # pylint: disable=redefined-outer-name, invalid-name
-	_assert_get_api_nem_transactions(client, 200, transaction_dicts(
-		'mosaic_supply_change',
-		'namespace_registration',
-		'mosaic_definition',
-		'account_key_link',
-		'multisig_account_modification',
-		'multisig',
-		'transfer_v2',
-		'transfer'
-	), sort='DESC')
+	_assert_get_api_nem_transactions(
+		client, 200, transaction_dicts(*TRANSACTION_NAMES_SORTED_BY_HEIGHT_DESC), sort='DESC')
 
 
 def test_api_transactions_applies_height(client):  # pylint: disable=redefined-outer-name
-	_assert_get_api_nem_transactions(client, 200, transaction_dicts('transfer', 'transfer_v2'), height=1)
+	_assert_get_api_nem_transactions(client, 200, transaction_dicts('transfer_v2', 'transfer'), height=1)
 
 
 def test_api_transactions_applies_transaction_types(client):  # pylint: disable=redefined-outer-name, invalid-name
 	_assert_get_api_nem_transactions(client, 200, transaction_dicts(
 		'account_key_link',
-		'transfer',
-		'transfer_v2'
+		'transfer_v2',
+		'transfer'
 	), transactionTypes='transfer,account_key_link')
 
 
