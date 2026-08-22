@@ -201,6 +201,7 @@ describe('ReportTable', () => {
 		// Assert:
 		expect(onSortChange).toHaveBeenCalledTimes(1);
 		expect(sortButton.closest('th')).toHaveAttribute('aria-sort', 'descending');
+		expect(sortButton).toHaveTextContent('↓');
 	});
 
 	it('renders the alternate request sort direction', () => {
