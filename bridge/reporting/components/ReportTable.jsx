@@ -1,6 +1,13 @@
 import { PAYOUT_STATUS_DETAILS } from '@/constants';
 import styles from '@/styles/ReportTable.module.css';
-import { createExplorerUrl, formatAtomicAmount, formatPpm, formatTimestamp, truncateMiddle } from '@/utils/format';
+import {
+	createExplorerUrl,
+	formatAtomicAmount,
+	formatPpm,
+	formatTimestamp,
+	isValueMissing,
+	truncateMiddle
+} from '@/utils/format';
 
 const StatusBadge = ({ status, errorMessage }) => {
 	const details = PAYOUT_STATUS_DETAILS[status] || { label: 'Unknown', tone: 'neutral' };
@@ -51,7 +58,7 @@ const AmountValue = ({ value, asset }) => (
 );
 
 const RateValue = ({ value }) => (
-	<span className={styles.rateValue} title={null === value || value === undefined ? '' : `${value} PPM`}>
+	<span className={styles.rateValue} title={isValueMissing(value) ? '' : `${value} PPM`}>
 		{formatPpm(value)}
 	</span>
 );

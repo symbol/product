@@ -1,5 +1,7 @@
+export const isValueMissing = value => null === value || value === undefined;
+
 export const formatAtomicAmount = (value, divisibility) => {
-	if (null === value || value === undefined || '' === value)
+	if (isValueMissing(value) || '' === value)
 		return '—';
 
 	const digits = String(value);
@@ -20,7 +22,7 @@ export const formatAtomicAmount = (value, divisibility) => {
 export const formatPpm = value => formatAtomicAmount(value, 6);
 
 export const formatTimestamp = value => {
-	if (null === value || value === undefined)
+	if (isValueMissing(value))
 		return '—';
 
 	const date = new Date(Number(value) * 1000);

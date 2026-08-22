@@ -1,6 +1,34 @@
-import { createExplorerUrl, formatAtomicAmount, formatPpm, formatTimestamp, truncateMiddle } from '@/utils/format';
+import {
+	createExplorerUrl,
+	formatAtomicAmount,
+	formatPpm,
+	formatTimestamp,
+	isValueMissing,
+	truncateMiddle
+} from '@/utils/format';
 
 describe('report formatting', () => {
+	describe('isValueMissing', () => {
+		const runIsValueMissingTest = (value, expectedResult) => {
+			// Act:
+			const result = isValueMissing(value);
+
+			// Assert:
+			expect(result).toBe(expectedResult);
+		};
+
+		it('returns true when value is missing', () => {
+			runIsValueMissingTest(null, true);
+			runIsValueMissingTest(undefined, true);
+		});
+
+		it('returns false when value is defined', () => {
+			runIsValueMissingTest('', false);
+			runIsValueMissingTest(0, false);
+			runIsValueMissingTest(false, false);
+		});
+	});
+
 	describe('formatTimestamp', () => {
 		const runTimestampTest = (input, expectedOutput) => {
 			// Act:
