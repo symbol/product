@@ -23,19 +23,42 @@ describe('report formatting', () => {
 		});
 	});
 
-	it('formats atomic values without losing integer precision', () => {
-		// Arrange:
-		const inputs = [
-			['100000000', 6],
-			['151458904500184', 18],
-			['999999999999999999999999', 18]
-		];
+	describe('formatAtomicAmount', () => {
+		const runFormatAtomicAmountTest = (value, divisibility, expectedOutput) => {
+			// Act:
+			const formattedAmount = formatAtomicAmount(value, divisibility);
 
-		// Act:
-		const formattedAmounts = inputs.map(([value, divisibility]) => formatAtomicAmount(value, divisibility));
+			// Assert:
+			expect(formattedAmount).toBe(expectedOutput);
+		};
 
-		// Assert:
-		expect(formattedAmounts).toEqual(['100', '0.000151458904500184', '999999.999999999999999999']);
+		it('formats atomic values without losing integer precision', () => {
+			runFormatAtomicAmountTest('100000000', 6, '100');
+			runFormatAtomicAmountTest('151458904500184', 18, '0.000151458904500184');
+			runFormatAtomicAmountTest('999999999999999999999999', 18, '999999.999999999999999999');
+		});
+
+		it('returns a placeholder when atomic value is missing', () => {
+			runFormatAtomicAmountTest(null, 6, '—');
+			runFormatAtomicAmountTest(undefined, 6, '—');
+			runFormatAtomicAmountTest('', 6, '—');
+		});
+
+		it('returns a nonnumeric atomic value unchanged', () => {
+			runFormatAtomicAmountTest('hello', 6, 'hello');
+		});
+
+		it('returns an atomic value unchanged when divisibility is zero', () => {
+			runFormatAtomicAmountTest('123', 0, '123');
+		});
+
+		it('returns an atomic value unchanged when divisibility is missing', () => {
+			// Act:
+			const formattedAmount = formatAtomicAmount('123');
+
+			// Assert:
+			expect(formattedAmount).toBe('123');
+		});
 	});
 
 	it('formats conversion rate PPM values', () => {
