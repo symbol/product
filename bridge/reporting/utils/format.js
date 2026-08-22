@@ -49,5 +49,8 @@ export const createExplorerUrl = (network, type, value) => {
 		return `${baseUrl}/${path}/${normalizedValue}`;
 	}
 
-	return `${baseUrl}/${'transaction' === type ? 'transactions' : 'accounts'}/${value}`;
+	if ('symbol' === network.blockchain || 'nem' === network.blockchain)
+		return `${baseUrl}/${'transaction' === type ? 'transactions' : 'accounts'}/${value}`;
+
+	return null;
 };

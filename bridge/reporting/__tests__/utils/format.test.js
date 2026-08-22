@@ -100,49 +100,68 @@ describe('report formatting', () => {
 		expect(formattedRates).toEqual(['1', '0.999999', '2']);
 	});
 
-	it('creates Symbol explorer URLs', () => {
-		// Arrange:
-		const network = { blockchain: 'symbol', explorerUrl: 'https://symbol.example/' };
+	describe('createExplorerUrl', () => {
+		const runSymbolAndNemExplorerUrlTest = blockchain => {
+			// Arrange:
+			const explorerUrl = `https://${blockchain}.example`;
+			const network = { blockchain, explorerUrl: `${explorerUrl}/` };
 
-		// Act:
-		const transactionUrl = createExplorerUrl(network, 'transaction', 'ABC123');
-		const accountUrl = createExplorerUrl(network, 'address', 'TADDRESS');
+			// Act:
+			const transactionUrl = createExplorerUrl(network, 'transaction', 'ABC123');
+			const accountUrl = createExplorerUrl(network, 'address', 'TADDRESS');
 
-		// Assert:
-		expect(transactionUrl).toBe('https://symbol.example/transactions/ABC123');
-		expect(accountUrl).toBe('https://symbol.example/accounts/TADDRESS');
-	});
+			// Assert:
+			expect(transactionUrl).toBe(`${explorerUrl}/transactions/ABC123`);
+			expect(accountUrl).toBe(`${explorerUrl}/accounts/TADDRESS`);
+		};
 
-	it('creates Ethereum explorer URLs and normalizes transaction hash prefixes', () => {
-		// Arrange:
-		const network = { blockchain: 'ethereum', explorerUrl: 'https://ethereum.example/' };
+		it('creates Symbol or NEM explorer URLs', () => {
+			runSymbolAndNemExplorerUrlTest('symbol');
+			runSymbolAndNemExplorerUrlTest('nem');
+		});
 
-		// Act:
-		const transactionUrls = [
-			createExplorerUrl(network, 'transaction', 'ABC123'),
-			createExplorerUrl(network, 'transaction', '0xABC123')
-		];
-		const addressUrl = createExplorerUrl(network, 'address', '0x123ABC');
+		it('creates Ethereum explorer URLs and normalizes transaction hash prefixes', () => {
+			// Arrange:
+			const network = { blockchain: 'ethereum', explorerUrl: 'https://ethereum.example/' };
 
-		// Assert:
-		expect(transactionUrls).toEqual([
-			'https://ethereum.example/tx/0xABC123',
-			'https://ethereum.example/tx/0xABC123'
-		]);
-		expect(addressUrl).toBe('https://ethereum.example/address/0x123ABC');
-	});
+			// Act:
+			const transactionUrls = [
+				createExplorerUrl(network, 'transaction', 'ABC123'),
+				createExplorerUrl(network, 'transaction', '0xABC123')
+			];
+			const addressUrl = createExplorerUrl(network, 'address', '0x123ABC');
 
-	it('returns null when explorer URL or value is missing', () => {
-		// Arrange:
-		const network = { blockchain: 'symbol', explorerUrl: 'https://symbol.example' };
+			// Assert:
+			expect(transactionUrls).toEqual([
+				'https://ethereum.example/tx/0xABC123',
+				'https://ethereum.example/tx/0xABC123'
+			]);
+			expect(addressUrl).toBe('https://ethereum.example/address/0x123ABC');
+		});
 
-		// Act:
-		const urls = [
-			createExplorerUrl({}, 'transaction', 'ABC123'),
-			createExplorerUrl(network, 'transaction', null)
-		];
+		it('returns null when explorer URL or value is missing', () => {
+			// Arrange:
+			const network = { blockchain: 'symbol', explorerUrl: 'https://symbol.example' };
 
-		// Assert:
-		expect(urls).toEqual([null, null]);
+			// Act:
+			const urls = [
+				createExplorerUrl({}, 'transaction', 'ABC123'),
+				createExplorerUrl(network, 'transaction', null)
+			];
+
+			// Assert:
+			expect(urls).toEqual([null, null]);
+		});
+
+		it('returns null when blockchain is unsupported', () => {
+			// Arrange:
+			const network = { blockchain: 'bitcoin', explorerUrl: 'https://bitcoin.example' };
+
+			// Act:
+			const url = createExplorerUrl(network, 'transaction', 'ABC123');
+
+			// Assert:
+			expect(url).toBeNull();
+		});
 	});
 });
