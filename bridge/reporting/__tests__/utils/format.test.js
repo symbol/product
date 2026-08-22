@@ -1,4 +1,4 @@
-import { createExplorerUrl, formatAtomicAmount, formatPpm, formatTimestamp } from '@/utils/format';
+import { createExplorerUrl, formatAtomicAmount, formatPpm, formatTimestamp, truncateMiddle } from '@/utils/format';
 
 describe('report formatting', () => {
 	describe('formatTimestamp', () => {
@@ -58,6 +58,34 @@ describe('report formatting', () => {
 
 			// Assert:
 			expect(formattedAmount).toBe('123');
+		});
+	});
+
+	describe('truncateMiddle', () => {
+		const runTruncateMiddleTest = (value, expectedOutput, start, end) => {
+			// Act:
+			const truncatedValue = truncateMiddle(value, start, end);
+
+			// Assert:
+			expect(truncatedValue).toBe(expectedOutput);
+		};
+
+		it('returns a placeholder when value is missing', () => {
+			runTruncateMiddleTest(null, '—');
+			runTruncateMiddleTest(undefined, '—');
+			runTruncateMiddleTest('', '—');
+		});
+
+		it('returns a value at the maximum visible length unchanged', () => {
+			runTruncateMiddleTest('12345678901234', '12345678901234');
+		});
+
+		it('truncates a long value using default lengths', () => {
+			runTruncateMiddleTest('123456789012345', '12345678…012345');
+		});
+
+		it('truncates a long value using custom lengths', () => {
+			runTruncateMiddleTest('1234567890', '1234…890', 4, 3);
 		});
 	});
 
