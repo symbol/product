@@ -1,6 +1,28 @@
 import { createExplorerUrl, formatAtomicAmount, formatPpm, formatTimestamp } from '@/utils/format';
 
 describe('report formatting', () => {
+	describe('formatTimestamp', () => {
+		const runTimestampTest = (input, expectedOutput) => {
+			// Act:
+			const formattedTimestamp = formatTimestamp(input);
+
+			// Assert:
+			expect(formattedTimestamp).toBe(expectedOutput);
+		};
+
+		it('formats Unix seconds as UTC', () => {
+			runTimestampTest(1759781792.879, '2025-10-06 20:16:32 UTC');
+		});
+
+		it('returns a placeholder when timestamp is missing', () => {
+			runTimestampTest(null, '—');
+		});
+
+		it('returns a placeholder when timestamp is invalid', () => {
+			runTimestampTest('hello', '—');
+		});
+	});
+
 	it('formats atomic values without losing integer precision', () => {
 		// Arrange:
 		const inputs = [
@@ -25,17 +47,6 @@ describe('report formatting', () => {
 
 		// Assert:
 		expect(formattedRates).toEqual(['1', '0.999999', '2']);
-	});
-
-	it('formats Unix seconds as UTC', () => {
-		// Arrange:
-		const timestamps = [1759781792.879, null, 'hello'];
-
-		// Act:
-		const formattedTimestamps = timestamps.map(formatTimestamp);
-
-		// Assert:
-		expect(formattedTimestamps).toEqual(['2025-10-06 20:16:32 UTC', '—', '—']);
 	});
 
 	it('creates Symbol explorer URLs', () => {
