@@ -112,8 +112,12 @@ python3 -m workflows.check_finalized_transactions --config configuration.ini
 python3 -m workflows.check_finalized_transactions --config configuration.ini --unwrap
 ```
 
-When operating in **swap mode** (exchanging native `XYM` for native `ETH`), skip all commands with the `--unwrap` parameter.
+When operating in **swap mode** (e.g. exchanging native `XYM` for native `ETH`),
+skip all commands with the `--unwrap` parameter.
 In this mode, the bridge operates only in one direction.
+
+When operating in **wrap mode** (e.g. exchanging native `XYM` for wrapped `wXYM` on Ethereum),
+the `download_balance_changes` line is not required.
 
 All commands require a configuration file, specified with the `--config` parameter.
 The expected contents of this file are described in the [Configuration](#configuration) section.
