@@ -899,11 +899,10 @@ class NemDatabase(DatabaseConnectionPool):
 
 		if transaction_query.mosaic:
 			condition += (
-				' AND t.transaction_type = %s'
 				' AND EXISTS (SELECT 1 FROM transactions_mosaic tm'
 				' WHERE tm.transaction_id = t.id AND tm.namespace_name = %s)'
 			)
-			params.extend([TransactionType.TRANSFER.value, transaction_query.mosaic])
+			params.append(transaction_query.mosaic)
 
 		return condition, params
 
@@ -963,21 +962,51 @@ class NemDatabase(DatabaseConnectionPool):
 			params + [pagination.limit, pagination.offset]
 		)
 
+	@staticmethod
+	def _create_mosaic_page_condition(mosaic, sort, filters, pagination):
+		"""Restricts the listing to one page of ids, chosen from the mosaic index before any row is hydrated."""
+
+		filter_condition, filter_params = filters
+
+		# a multisig transaction carries its mosaics on the inner transfer, so the mosaic resolves to its owner;
+		# ids are handed out in height order, which lets the page be ordered without joining the transfer first
+		return (
+			' WHERE t.is_inner = false AND t.id IN ('
+			' SELECT COALESCE(o.id, t.id)'
+			' FROM transactions_mosaic tm'
+			' JOIN transactions t ON t.id = tm.transaction_id'
+			' LEFT JOIN transactions o ON o.transaction_hash = t.aggregate_hash'
+			f' WHERE tm.namespace_name = %s{filter_condition}'
+			f' ORDER BY tm.transaction_id {sort}'
+			' LIMIT %s OFFSET %s)',
+			[mosaic] + filter_params + [pagination.limit, pagination.offset]
+		)
+
 	def get_transactions(self, pagination, sort, transaction_query):
 		"""Gets transactions pagination."""
 
-		order_condition = f' ORDER BY t.height {sort}'
+		order_condition = f' ORDER BY t.height {sort}, t.id {sort}'
 		branches = self._create_address_branches(transaction_query)
 
 		if branches:
 			# the page is chosen by the branches, so the outer query has nothing left to limit
 			limit_condition = ''
-			# ties are broken the same way the branches order them, otherwise the page and its rows disagree
-			order_condition += f', t.id {sort}'
 			where_condition, params = self._create_address_page_condition(
 				branches,
 				sort,
 				self._create_transaction_filters(transaction_query, 'COALESCE(o.transaction_type, t.transaction_type)'),
+				pagination
+			)
+		elif transaction_query.mosaic:
+			limit_condition = ''
+			where_condition, params = self._create_mosaic_page_condition(
+				transaction_query.mosaic,
+				sort,
+				# the mosaic selects the page here, so it must not be repeated as a filter on the rows
+				self._create_transaction_filters(
+					transaction_query._replace(mosaic=None),
+					'COALESCE(o.transaction_type, t.transaction_type)'
+				),
 				pagination
 			)
 		else:

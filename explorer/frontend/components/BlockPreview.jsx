@@ -14,7 +14,7 @@ import { useTranslation } from 'next-i18next';
 import { useEffect, useState } from 'react';
 
 const BlockExpanded = ({ data, transactions, chainStatus, isTransactionSquaresRendered, onClose }) => {
-	const { height, timestamp, totalFee } = data;
+	const { height, timestamp, totalFee, transactionCount } = data;
 	const { t } = useTranslation();
 	const href = createPageHref('blocks', height);
 
@@ -39,7 +39,7 @@ const BlockExpanded = ({ data, transactions, chainStatus, isTransactionSquaresRe
 				</Field>
 			</div>
 			<Field title={t('field_transactionFees')}>
-				{isTransactionSquaresRendered && <ValueTransactionSquares data={transactions} />}
+				{isTransactionSquaresRendered && <ValueTransactionSquares data={transactions} transactionCount={transactionCount} />}
 			</Field>
 		</div>
 	);

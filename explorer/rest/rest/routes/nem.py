@@ -11,6 +11,18 @@ from rest.facade.NemRestFacade import NemRestFacade
 from rest.model.common import DEFAULT_HARVESTING_ACTIVE_WINDOW_DAYS, DatabaseConfig, Pagination, RestConfig, Sorting
 from rest.model.nem.Transaction import TransactionQuery
 
+MAX_PAGE_LIMIT = 250
+
+
+def _validate_pagination(limit, offset):
+	"""Rejects page requests that are malformed or large enough to strain the database."""
+
+	if limit < 1 or limit > MAX_PAGE_LIMIT:
+		raise ValueError(f'Limit must be between 1 and {MAX_PAGE_LIMIT}')
+
+	if offset < 0:
+		raise ValueError('Offset must be greater than or equal to 0')
+
 
 def setup_nem_facade(app):
 	config = configparser.ConfigParser()
@@ -64,8 +76,7 @@ def setup_nem_routes(app, nem_api_facade):  # pylint: disable=too-many-statement
 			min_height = int(request.args.get('min_height', 1))
 			sort = request.args.get('sort', 'DESC')
 
-			if limit < 0 or offset < 0:
-				raise ValueError('Limit and offset must be greater than or equal to 0')
+			_validate_pagination(limit, offset)
 			if min_height < 1:
 				raise ValueError('Minimum height must be greater than or equal to 1')
 			if sort.upper() not in ['ASC', 'DESC']:
@@ -129,8 +140,7 @@ def setup_nem_routes(app, nem_api_facade):  # pylint: disable=too-many-statement
 			sort_order = request.args.get('sort_order', 'DESC').upper()
 			is_harvesting = request.args.get('is_harvesting', 'false').lower() == 'true'
 
-			if limit < 0 or offset < 0:
-				raise ValueError('Limit and offset must be greater than or equal to 0')
+			_validate_pagination(limit, offset)
 			if sort_order not in ['ASC', 'DESC']:
 				raise ValueError('Sort order must be either ASC or DESC')
 			if sort_field not in ['BALANCE', 'HEIGHT']:
@@ -163,8 +173,7 @@ def setup_nem_routes(app, nem_api_facade):  # pylint: disable=too-many-statement
 			offset = int(request.args.get('offset', 0))
 			sort = request.args.get('sort', 'DESC')
 
-			if limit < 0 or offset < 0:
-				raise ValueError('Limit and offset must be greater than or equal to 0')
+			_validate_pagination(limit, offset)
 			if sort.upper() not in ['ASC', 'DESC']:
 				raise ValueError('Sort must be either ASC or DESC')
 
@@ -194,8 +203,7 @@ def setup_nem_routes(app, nem_api_facade):  # pylint: disable=too-many-statement
 			offset = int(request.args.get('offset', 0))
 			sort = request.args.get('sort', 'DESC')
 
-			if limit < 0 or offset < 0:
-				raise ValueError('Limit and offset must be greater than or equal to 0')
+			_validate_pagination(limit, offset)
 			if sort.upper() not in ['ASC', 'DESC']:
 				raise ValueError('Sort must be either ASC or DESC')
 
@@ -216,8 +224,7 @@ def setup_nem_routes(app, nem_api_facade):  # pylint: disable=too-many-statement
 			offset = int(request.args.get('offset', 0))
 			namespace_name = request.args.get('namespace_name', 'nem.xem')
 
-			if limit < 0 or offset < 0:
-				raise ValueError('Limit and offset must be greater than or equal to 0')
+			_validate_pagination(limit, offset)
 
 		except ValueError as error:
 			abort(400, error)
@@ -284,8 +291,7 @@ def setup_nem_routes(app, nem_api_facade):  # pylint: disable=too-many-statement
 			sender = request.args.get('senderPublicKey', None)
 			mosaic = request.args.get('mosaic', None)
 
-			if limit < 0 or offset < 0:
-				raise ValueError('Limit and offset must be greater than or equal to 0')
+			_validate_pagination(limit, offset)
 
 			if sort.upper() not in ['ASC', 'DESC']:
 				raise ValueError('Sort must be either ASC or DESC')

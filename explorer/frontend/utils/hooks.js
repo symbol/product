@@ -1,5 +1,4 @@
 import { STORAGE_KEY } from '@/app/constants';
-import _ from 'lodash';
 import { useEffect, useState } from 'react';
 
 // Makes an async call. Handles the loading and error states.
@@ -80,38 +79,6 @@ export const usePagination = (callback, defaultData, defaultFilter = {}) => {
 	};
 
 	return { requestNextPage, initialRequest, data, isLoading, pageNumber, isLastPage, filter, isError, changeFilter, clearFilter };
-};
-
-// Paginate a data list.
-export const useClientSidePagination = (fullData, pageSize = 10) => {
-	const [isLastPage, setIsLastPage] = useState(false);
-	const [pageNumber, setPageNumber] = useState(1);
-	const [dataChunks, setDataChunks] = useState([]);
-	const [data, setData] = useState([]);
-
-	const requestNextPage = () => {
-		const nextPageNumber = pageNumber + 1;
-		const page = dataChunks[pageNumber];
-
-		if (!dataChunks[nextPageNumber])
-			setIsLastPage(true);
-
-		if (page) {
-			setData([...data, ...page]);
-			setPageNumber(nextPageNumber);
-		}
-	};
-
-	useEffect(() => {
-		const dataChunks = _.chunk(fullData, pageSize);
-		const page = dataChunks[0];
-		setDataChunks(dataChunks);
-		setData(page || []);
-		setIsLastPage(false);
-		setPageNumber(1);
-	}, [fullData, pageSize]);
-
-	return { requestNextPage, data, pageNumber, isLastPage };
 };
 
 // Makes an async call and handle a filter.

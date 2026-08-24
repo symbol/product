@@ -744,12 +744,12 @@ class NemDatabaseTest(DatabaseTestBase):  # pylint: disable=too-many-public-meth
 
 	def test_can_query_transactions_filtered_limit_offset_0(self):
 		self._assert_can_query_transactions_with_filter(
-			Pagination(1, 0), 'desc', self._make_transaction_query(), ('account_key_link', )
+			Pagination(1, 0), 'desc', self._make_transaction_query(), ('mosaic_supply_change', )
 		)
 
 	def test_can_query_transactions_filtered_limit_offset_1(self):
 		self._assert_can_query_transactions_with_filter(
-			Pagination(2, 1), 'desc', self._make_transaction_query(), ('account_key_link', 'multisig')
+			Pagination(2, 1), 'desc', self._make_transaction_query(), ('mosaic_definition', 'namespace_registration')
 		)
 
 	def test_can_query_transactions_sorted_by_height_asc(self):
@@ -760,13 +760,13 @@ class NemDatabaseTest(DatabaseTestBase):  # pylint: disable=too-many-public-meth
 	def test_can_query_transactions_sorted_by_height_desc(self):
 		self._assert_can_query_transactions_with_filter(
 			Pagination(3, 0), 'desc', self._make_transaction_query(),
-			('multisig_account_modification', 'account_key_link', 'multisig')
+			('mosaic_supply_change', 'mosaic_definition', 'namespace_registration')
 		)
 
 	def test_can_query_transactions_filtered_by_height(self):
 		self._assert_can_query_transactions_with_filter(
 			Pagination(10, 0), 'desc', self._make_transaction_query(height=1),
-			('transfer', 'transfer_v2')
+			('transfer_v2', 'transfer')
 		)
 
 	def test_can_query_transactions_filtered_by_nonexistent_height(self):
@@ -779,7 +779,7 @@ class NemDatabaseTest(DatabaseTestBase):  # pylint: disable=too-many-public-meth
 		self._assert_can_query_transactions_with_filter(
 			Pagination(10, 0), 'desc',
 			self._make_transaction_query(transaction_types=[257, 2049]),
-			('account_key_link', 'transfer', 'transfer_v2')
+			('account_key_link', 'transfer_v2', 'transfer')
 		)
 
 	def test_can_query_transactions_filtered_by_address_as_sender(self):
@@ -830,7 +830,7 @@ class NemDatabaseTest(DatabaseTestBase):  # pylint: disable=too-many-public-meth
 	def test_can_query_transactions_filtered_by_mosaic_nem_xem(self):
 		self._assert_can_query_transactions_with_filter(
 			Pagination(10, 0), 'desc', self._make_transaction_query(mosaic='nem.xem'),
-			('transfer', 'transfer_v2')
+			('multisig', 'transfer_v2', 'transfer')
 		)
 
 	def test_can_query_transactions_filtered_by_mosaic_other(self):
@@ -842,6 +842,44 @@ class NemDatabaseTest(DatabaseTestBase):  # pylint: disable=too-many-public-meth
 	def test_can_query_transactions_filtered_by_nonexistent_mosaic(self):
 		self._assert_can_query_transactions_with_filter(
 			Pagination(10, 0), 'desc', self._make_transaction_query(mosaic='nonexistent.mosaic'), ()
+		)
+
+	def test_can_query_transactions_filtered_by_mosaic_sorted_by_height_asc(self):
+		self._assert_can_query_transactions_with_filter(
+			Pagination(10, 0), 'asc', self._make_transaction_query(mosaic='nem.xem'),
+			('transfer', 'transfer_v2', 'multisig')
+		)
+
+	def test_can_query_transactions_filtered_by_mosaic_with_limit_offset(self):
+		self._assert_can_query_transactions_with_filter(
+			Pagination(1, 1), 'desc', self._make_transaction_query(mosaic='nem.xem'), ('transfer_v2', )
+		)
+
+	def test_can_query_transactions_filtered_by_mosaic_and_height(self):
+		self._assert_can_query_transactions_with_filter(
+			Pagination(10, 0), 'desc', self._make_transaction_query(mosaic='nem.xem', height=1),
+			('transfer_v2', 'transfer')
+		)
+
+	def test_can_query_transactions_filtered_by_mosaic_and_multisig_transaction_type(self):
+		# MULTISIG (4100)
+		self._assert_can_query_transactions_with_filter(
+			Pagination(10, 0), 'desc', self._make_transaction_query(mosaic='nem.xem', transaction_types=[4100]),
+			('multisig', )
+		)
+
+	def test_can_query_transactions_filtered_by_mosaic_and_transfer_transaction_type(self):
+		# TRANSFER (257)
+		self._assert_can_query_transactions_with_filter(
+			Pagination(10, 0), 'desc', self._make_transaction_query(mosaic='nem.xem', transaction_types=[257]),
+			('transfer_v2', 'transfer')
+		)
+
+	def test_can_query_transactions_filtered_by_mosaic_and_inner_sender_address(self):
+		self._assert_can_query_transactions_with_filter(
+			Pagination(10, 0), 'desc',
+			self._make_transaction_query(mosaic='nem.xem', sender_address=TRANSACTIONS[5].sender_address),
+			('multisig', 'transfer_v2', 'transfer')
 		)
 
 	# endregion

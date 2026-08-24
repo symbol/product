@@ -12,7 +12,8 @@ def create_symbol_sync_state(last_synced_height, finalized_height, **overrides):
 		'finalized_epoch': 2 if finalized_height else None,
 		'finalized_point': 3 if finalized_height else None,
 		'last_synced_height': last_synced_height,
-		'last_synced_block_hash': bytes([last_synced_height]) * 32
+		'last_synced_block_hash': bytes([last_synced_height]) * 32,
+		'dirty_state_from_height': None
 	}
 	sync_state.update(overrides)
 	return sync_state

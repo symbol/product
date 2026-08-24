@@ -483,10 +483,10 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 
 			cursor = nem_database.connection.cursor()
 
-			# insert initial account
+			# insert initial account, seen as a recipient before it revealed a public key
 			nem_database.upsert_account(
 				cursor,
-				ACCOUNTS[0]
+				ACCOUNTS[0]._replace(public_key=None)
 			)
 
 			# Act:
@@ -635,6 +635,20 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 				balance=0,
 				vested_balance=0,
 				importance=0
+			),
+			ACCOUNTS[0]._replace(
+				address=Address('TCARLOS5VILUENPKLFYIUKFHYXNVJ357NIXVFXEH'),
+				balance=0,
+				vested_balance=0,
+				importance=0,
+				remote_status='ACTIVATING'
+			),
+			ACCOUNTS[0]._replace(
+				address=Address('TDEBBIE7CROVQAOEDGXXTDPQVYCP4KEXPHNPHNMB'),
+				balance=0,
+				vested_balance=0,
+				importance=0,
+				remote_status='DEACTIVATING'
 			)
 		]
 
@@ -650,6 +664,7 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 			# Act:
 			first_batch = nem_database.get_accounts_for_refresh(2, 0)
 			second_batch = nem_database.get_accounts_for_refresh(2, first_batch[-1].id)
+			third_batch = nem_database.get_accounts_for_refresh(2, second_batch[-1].id)
 
 		# Assert:
 		self.assertEqual([str(account.address) for account in first_batch], [
@@ -657,7 +672,11 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 			'TCJLCZSOQ6RGWHTPSV2DW467WZSHK4NBSITND4OF'
 		])
 		self.assertEqual([str(account.address) for account in second_batch], [
-			'TALICE6XEEEOBFJVY3ZCENZ7WBG6LB4KB7P7KMQX'
+			'TALICE6XEEEOBFJVY3ZCENZ7WBG6LB4KB7P7KMQX',
+			'TCARLOS5VILUENPKLFYIUKFHYXNVJ357NIXVFXEH'
+		])
+		self.assertEqual([str(account.address) for account in third_batch], [
+			'TDEBBIE7CROVQAOEDGXXTDPQVYCP4KEXPHNPHNMB'
 		])
 
 	def test_can_get_mosaic_levy_recipients(self):
@@ -695,7 +714,7 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 		self.assertEqual(empty_results, [])
 		self.assertEqual([str(result) for result in results], [str(levy_recipient)])
 
-	def test_can_update_vested_balance_and_importance(self):
+	def test_can_update_refreshed_account(self):
 		# Arrange:
 		with NemDatabase(self.db_config) as nem_database:
 			nem_database.create_tables()
@@ -704,11 +723,11 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 
 			nem_database.upsert_account(
 				cursor,
-				ACCOUNTS[0]
+				ACCOUNTS[0]._replace(remote_status='ACTIVATING')
 			)
 
 			# Act:
-			nem_database.update_vested_balance_and_importance(
+			nem_database.update_refreshed_account(
 				cursor,
 				ACCOUNTS[0]._replace(
 					importance=0.654321,
@@ -735,7 +754,7 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 			[],
 			0,
 			10,
-			'INACTIVE',
+			'ACTIVE',
 			0,
 			None,
 			None,

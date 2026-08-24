@@ -8,6 +8,7 @@ import testing.postgresql
 from symbollightapi.model.Exceptions import NodeException
 
 from rest import create_app
+from rest.routes.nem import MAX_PAGE_LIMIT
 
 from ...test.DatabaseTestUtils import (
 	ACCOUNT_STATISTIC_VIEW,
@@ -20,6 +21,7 @@ from ...test.DatabaseTestUtils import (
 	TRANSACTION_MONTH_STATISTIC_VIEW,
 	TRANSACTION_NAMES_FILTERED_BY_MULTISIG_INNER_SENDER,
 	TRANSACTION_NAMES_SORTED_BY_HEIGHT_ASC,
+	TRANSACTION_NAMES_SORTED_BY_HEIGHT_DESC,
 	TRANSACTION_STATISTIC_VIEW,
 	DatabaseConfig,
 	initialize_database,
@@ -89,6 +91,9 @@ def client(app):  # pylint: disable=redefined-outer-name
 # endregion
 
 
+PAGINATED_MODULES = ['blocks', 'accounts', 'namespaces', 'mosaics', 'mosaic/rich/list', 'transactions']
+
+
 def _assert_status_code_and_headers(response, expected_status_code):
 	assert expected_status_code == response.status_code
 	assert response.headers['Access-Control-Allow-Origin'] == '*'
@@ -107,18 +112,36 @@ def _get_api(client, endpoint, **query_params):  # pylint: disable=redefined-out
 	return client.get(f'/api/nem/{endpoint}?{query_string}')
 
 
-def test_invalid_pagination_params(client):  # pylint: disable=redefined-outer-name
-
-	for module in ['blocks', 'accounts', 'namespaces', 'mosaics', 'mosaic/rich/list', 'transactions']:
+def _assert_pagination_rejected(client, query_string, expected_message):  # pylint: disable=redefined-outer-name
+	for module in PAGINATED_MODULES:
 		# Act:
-		response = client.get(f'/api/nem/{module}', query_string={'limit': -1})
+		response = client.get(f'/api/nem/{module}', query_string=query_string)
 
-		_assert_status_code_400(response, 'Limit and offset must be greater than or equal to 0')
+		# Assert:
+		_assert_status_code_400(response, expected_message)
 
+
+def test_rejects_limit_below_one(client):  # pylint: disable=redefined-outer-name
+	for limit in [-1, 0]:
+		_assert_pagination_rejected(client, {'limit': limit}, f'Limit must be between 1 and {MAX_PAGE_LIMIT}')
+
+
+def test_rejects_limit_above_maximum(client):  # pylint: disable=redefined-outer-name
+	_assert_pagination_rejected(client, {'limit': MAX_PAGE_LIMIT + 1}, f'Limit must be between 1 and {MAX_PAGE_LIMIT}')
+
+
+def test_rejects_negative_offset(client):  # pylint: disable=redefined-outer-name
+	_assert_pagination_rejected(client, {'offset': -1}, 'Offset must be greater than or equal to 0')
+
+
+def test_accepts_limit_at_maximum(client):  # pylint: disable=redefined-outer-name
+
+	for module in PAGINATED_MODULES:
 		# Act:
-		response = client.get(f'/api/nem/{module}', query_string={'offset': -1})
+		response = client.get(f'/api/nem/{module}', query_string={'limit': MAX_PAGE_LIMIT})
 
-		_assert_status_code_400(response, 'Limit and offset must be greater than or equal to 0')
+		# Assert:
+		_assert_status_code_and_headers(response, 200)
 
 
 def test_invalid_sort_params(client):  # pylint: disable=redefined-outer-name
@@ -765,32 +788,16 @@ def _assert_get_api_nem_transactions(client, expected_status_code, expected_resu
 
 
 def test_api_transactions_without_params(client):  # pylint: disable=redefined-outer-name
-	_assert_get_api_nem_transactions(client, 200, transaction_dicts(
-		'mosaic_supply_change',
-		'namespace_registration',
-		'mosaic_definition',
-		'account_key_link',
-		'multisig_account_modification',
-		'multisig',
-		'transfer_v2',
-		'transfer'
-	))
+	_assert_get_api_nem_transactions(client, 200, transaction_dicts(*TRANSACTION_NAMES_SORTED_BY_HEIGHT_DESC))
 
 
 def test_api_transactions_applies_limit(client):  # pylint: disable=redefined-outer-name
-	_assert_get_api_nem_transactions(client, 200, transaction_dicts('account_key_link'), limit=1)
+	_assert_get_api_nem_transactions(client, 200, transaction_dicts('mosaic_supply_change'), limit=1)
 
 
 def test_api_transactions_applies_offset(client):  # pylint: disable=redefined-outer-name
-	_assert_get_api_nem_transactions(client, 200, transaction_dicts(
-		'namespace_registration',
-		'mosaic_definition',
-		'account_key_link',
-		'multisig_account_modification',
-		'multisig',
-		'transfer_v2',
-		'transfer'
-	), offset=1)
+	_assert_get_api_nem_transactions(
+		client, 200, transaction_dicts(*TRANSACTION_NAMES_SORTED_BY_HEIGHT_DESC[1:]), offset=1)
 
 
 def test_api_transactions_applies_sorted_by_height_asc(client):  # pylint: disable=redefined-outer-name, invalid-name
@@ -798,27 +805,19 @@ def test_api_transactions_applies_sorted_by_height_asc(client):  # pylint: disab
 
 
 def test_api_transactions_applies_sorted_by_height_desc(client):  # pylint: disable=redefined-outer-name, invalid-name
-	_assert_get_api_nem_transactions(client, 200, transaction_dicts(
-		'mosaic_supply_change',
-		'namespace_registration',
-		'mosaic_definition',
-		'account_key_link',
-		'multisig_account_modification',
-		'multisig',
-		'transfer_v2',
-		'transfer'
-	), sort='DESC')
+	_assert_get_api_nem_transactions(
+		client, 200, transaction_dicts(*TRANSACTION_NAMES_SORTED_BY_HEIGHT_DESC), sort='DESC')
 
 
 def test_api_transactions_applies_height(client):  # pylint: disable=redefined-outer-name
-	_assert_get_api_nem_transactions(client, 200, transaction_dicts('transfer', 'transfer_v2'), height=1)
+	_assert_get_api_nem_transactions(client, 200, transaction_dicts('transfer_v2', 'transfer'), height=1)
 
 
 def test_api_transactions_applies_transaction_types(client):  # pylint: disable=redefined-outer-name, invalid-name
 	_assert_get_api_nem_transactions(client, 200, transaction_dicts(
 		'account_key_link',
-		'transfer',
-		'transfer_v2'
+		'transfer_v2',
+		'transfer'
 	), transactionTypes='transfer,account_key_link')
 
 
@@ -875,6 +874,15 @@ def test_api_transactions_applies_multisig_inner_sender_address(client):  # pyli
 
 def test_api_transactions_applies_mosaic(client):  # pylint: disable=redefined-outer-name
 	_assert_get_api_nem_transactions(client, 200, transaction_dicts('transfer_v2'), mosaic='root.mosaic')
+
+
+def test_api_transactions_applies_mosaic_carried_by_multisig(client):  # pylint: disable=redefined-outer-name, invalid-name
+	_assert_get_api_nem_transactions(
+		client,
+		200,
+		transaction_dicts('multisig', 'transfer_v2', 'transfer'),
+		mosaic='nem.xem'
+	)
 
 
 def test_api_transactions_applies_address_ignore_other(client):  # pylint: disable=redefined-outer-name, invalid-name

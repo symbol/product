@@ -3,12 +3,19 @@ import asyncio
 
 from puller.facade.SymbolPuller import SymbolPuller
 from puller.workflows import refresh_symbol_accounts, sync_symbol_block
+from puller.workflows.log_utils import configure_logging
 
 COMMANDS = (
-	('sync-block', 'Synchronize Symbol block headers.', sync_symbol_block),
+	(
+		'sync-block',
+		'Synchronize Symbol block headers; do not overlap sync-block runs or run concurrently with refresh-accounts, including manual runs. '
+		'External scheduler owns single-writer exclusion; the Puller provides no mechanical lock.',
+		sync_symbol_block
+	),
 	(
 		'refresh-accounts',
-		'Refresh Symbol accounts; do not run concurrently with sync-block rollback repair.',
+		'Refresh Symbol accounts; do not run concurrently with sync-block runs or overlap refresh-accounts runs, including manual runs. '
+		'External scheduler owns single-writer exclusion; the Puller provides no mechanical lock.',
 		refresh_symbol_accounts
 	)
 )
@@ -43,6 +50,8 @@ def parse_args(argv=None):
 
 async def main(argv=None, symbol_puller_factory=SymbolPuller, environment=None):
 	"""Dispatches one Symbol workflow command."""
+
+	configure_logging()
 
 	args = parse_args(argv)
 	await args.run_main(args, symbol_puller_factory, environment)

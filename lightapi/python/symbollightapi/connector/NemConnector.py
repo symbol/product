@@ -365,7 +365,8 @@ class NemConnector(BasicConnector):
 			Address(block_json['beneficiary']),
 			PublicKey(block['signer']),
 			block['signature'],
-			size
+			size,
+			block['prevBlockHash']['data']
 		)
 
 	@staticmethod

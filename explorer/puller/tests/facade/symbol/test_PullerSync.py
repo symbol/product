@@ -10,6 +10,15 @@ from symbollightapi.model.Exceptions import NodeException
 from puller.facade.SymbolPuller import BLOCK_PAGE_FETCH_CONCURRENCY, MAX_PAGE_SIZE
 from puller.model.symbol.Block import create_block_row
 from puller.model.symbol.Receipt import create_receipt_rows
+from tests.test.SymbolMetadataTestUtils import (
+	SCOPED_METADATA_KEY,
+	SOURCE_ADDRESS,
+	TARGET_ADDRESS,
+	create_expected_metadata_row,
+	create_metadata_item,
+	fetch_metadata_rows,
+	metadata_path
+)
 from tests.test.SymbolMosaicTestUtils import (
 	MOSAIC_ID,
 	create_expected_mosaic_row,
@@ -29,6 +38,7 @@ from tests.test.SymbolTestConstants import BENEFICIARY_ADDRESS
 from .puller_test_utils import (
 	NATIVE_MOSAIC_ID,
 	BoundedNamespaceDetailConnector,
+	DelegatingSymbolDatabase,
 	FakeConnector,
 	NamespaceNamesResponseConnector,
 	NoOpRateLimiter,
@@ -51,6 +61,26 @@ from .puller_test_utils import (
 	statement_path,
 	transaction_path
 )
+
+
+class FailingSyncWriteIntentDatabase(DelegatingSymbolDatabase):
+	def mark_sync_write_intent(self, height):  # pylint: disable=no-self-use
+		raise RuntimeError(f'write intent failed at height {height}')
+
+
+class FailingSyncTransactionDatabase(DelegatingSymbolDatabase):
+	def upsert_transactions_for_height(self, height, transaction_rows):  # pylint: disable=no-self-use
+		raise RuntimeError(f'transaction write failed at height {height}')
+
+
+class FailingSyncCurrentStateDatabase(DelegatingSymbolDatabase):
+	def upsert_account_current_state(self, account_row, mosaic_rows, overwrite_is_harvesting_active=False):  # pylint: disable=no-self-use
+		raise RuntimeError('current-state write failed')
+
+
+class FailingSyncTransactionAndStatusDatabase(FailingSyncTransactionDatabase):
+	def mark_sync_unhealthy(self):  # pylint: disable=no-self-use
+		raise RuntimeError('status update failed')
 
 
 class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-public-methods
@@ -447,7 +477,9 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		# Assert:
 		self.assertEqual(before_state, fetch_namespace_state(self.puller.symbol_db.connection))
 		self.assertEqual([1], self._fetch_block_heights(self.puller.symbol_db))
-		self.assertIsNone(self.puller.symbol_db.get_sync_state())
+		sync_state = self.puller.symbol_db.get_sync_state()
+		self.assertEqual('unhealthy', sync_state['status'])
+		self.assertEqual(1, sync_state['dirty_state_from_height'])
 		self._assert_namespace_requests(
 			connector,
 			[first_id, second_id],
@@ -764,6 +796,566 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 			bytes.fromhex(f'{2:064X}'),
 			bytes(sync_state['last_synced_block_hash'])
 		)
+		self.assertIsNone(sync_state['dirty_state_from_height'])
+
+	def test_sync_block_headers_accepts_valid_parent_hash_chain(self):
+		# Arrange:
+		connector = FakeConnector(
+			3,
+			{0: [create_node_block(1), create_node_block(2), create_node_block(3)]}
+		)
+
+		# Act:
+		block_heights, sync_state = self._sync_with_connector(connector)
+
+		# Assert:
+		self.assertEqual([1, 2, 3], block_heights)
+		self.assertEqual(3, sync_state['last_synced_height'])
+
+	def test_sync_block_headers_accepts_height_one_with_zero_previous_hash(self):
+		# Arrange:
+		connector = FakeConnector(1, {0: [create_node_block(1)]})
+
+		# Act:
+		block_heights, sync_state = self._sync_with_connector(connector)
+
+		# Assert:
+		self.assertEqual([1], block_heights)
+		self.assertEqual(1, sync_state['last_synced_height'])
+
+	def test_sync_block_headers_rejects_nonzero_previous_hash_at_height_one(self):
+		# Arrange:
+		connector = FakeConnector(1, {0: [create_node_block(1, previous_hash='A' * 64)]})
+
+		# Act / Assert:
+		self._assert_sync_rejects_node_response(
+			connector,
+			ValueError,
+			f'Symbol block chain mismatch at height 1: expected previous hash {bytes(32).hex().upper()}, got {"A" * 64}')
+
+	def test_sync_block_headers_does_not_write_blocks_when_write_intent_fails(self):
+		# Arrange:
+		connector = FakeConnector(1, {0: [create_node_block(1)]})
+		database = self.puller.symbol_db
+		self.puller.symbol_db = FailingSyncWriteIntentDatabase(database)
+
+		try:
+			# Act / Assert:
+			with self.assertRaisesRegex(RuntimeError, 'write intent failed at height 1'):
+				self._sync_with_connector(connector)
+		finally:
+			self.puller.symbol_db = database
+
+		# Assert:
+		self.assertEqual([], self._fetch_block_heights(database))
+		self.assertIsNone(database.get_sync_state())
+
+	def test_sync_block_headers_keeps_dirty_intent_after_transaction_write_failure(self):
+		# Arrange:
+		connector = FakeConnector(1, {0: [create_node_block(1)]})
+		database = self.puller.symbol_db
+		self.puller.symbol_db = FailingSyncTransactionDatabase(database)
+
+		try:
+			# Act / Assert:
+			with self.assertRaisesRegex(RuntimeError, 'transaction write failed at height 1'):
+				self._sync_with_connector(connector)
+		finally:
+			self.puller.symbol_db = database
+
+		# Assert:
+		self.assertEqual([1], self._fetch_block_heights(database))
+		sync_state = database.get_sync_state()
+		self.assertEqual('unhealthy', sync_state['status'])
+		self.assertEqual(1, sync_state['dirty_state_from_height'])
+
+	def test_sync_block_headers_propagates_capped_status_update_failure(self):
+		# Arrange:
+		database = self.puller.symbol_db
+		self._seed_blocks(database, [1, 2, 3, 4, 5])
+		database.upsert_sync_state(create_sync_state(
+			chain_height=5,
+			finalized_height=1,
+			finalized_hash=bytes.fromhex(f'{1:064X}'),
+			last_synced_height=4,
+			last_synced_block_hash=bytes.fromhex(f'{4:064X}'),
+			dirty_state_from_height=5))
+		self.puller.symbol_db = FailingSyncTransactionAndStatusDatabase(database)
+		set_symbol_connector(self.puller, FakeConnector(
+			5,
+			{},
+			block_by_height={2: create_node_block(2, block_hash='B' * 64)}))
+
+		try:
+			# Act:
+			with self.assertRaisesRegex(RuntimeError, 'status update failed'):
+				asyncio.run(self.puller.sync_block_headers(max_height=2))
+		finally:
+			self.puller.symbol_db = database
+
+		# Assert:
+		sync_state = database.get_sync_state()
+		self.assertEqual('healthy', sync_state['status'])
+		self.assertEqual(5, sync_state['dirty_state_from_height'])
+
+	def test_sync_block_headers_preserves_original_error_when_unhealthy_update_fails(self):
+		# Arrange:
+		connector = FakeConnector(1, {0: [create_node_block(1)]})
+		database = self.puller.symbol_db
+		self.puller.symbol_db = FailingSyncTransactionAndStatusDatabase(database)
+
+		try:
+			# Act / Assert:
+			with self.assertRaisesRegex(RuntimeError, 'transaction write failed at height 1'):
+				self._sync_with_connector(connector)
+		finally:
+			self.puller.symbol_db = database
+
+		# Assert:
+		sync_state = database.get_sync_state()
+		self.assertEqual('initialized', sync_state['status'])
+		self.assertEqual(1, sync_state['dirty_state_from_height'])
+
+		# Act:
+		self._sync_with_connector(FakeConnector(1, {0: [create_node_block(1)]}))
+
+		# Assert:
+		sync_state = database.get_sync_state()
+		self.assertEqual('healthy', sync_state['status'])
+		self.assertIsNone(sync_state['dirty_state_from_height'])
+
+	def test_sync_block_headers_keeps_dirty_intent_after_current_state_write_failure(self):
+		# Arrange:
+		connector = FakeConnector(1, {0: [create_node_block(1)]})
+		database = self.puller.symbol_db
+		self.puller.symbol_db = FailingSyncCurrentStateDatabase(database)
+
+		try:
+			# Act / Assert:
+			with self.assertRaisesRegex(RuntimeError, 'current-state write failed'):
+				self._sync_with_connector(connector)
+		finally:
+			self.puller.symbol_db = database
+
+		# Assert:
+		self.assertEqual([1], self._fetch_block_heights(database))
+		cursor = database.connection.cursor()
+		cursor.execute('SELECT COUNT(*) FROM symbol_transactions')
+		self.assertEqual(0, cursor.fetchone()[0])
+		cursor.execute('SELECT COUNT(*) FROM symbol_receipts')
+		self.assertEqual(0, cursor.fetchone()[0])
+		sync_state = database.get_sync_state()
+		self.assertEqual('unhealthy', sync_state['status'])
+		self.assertEqual(1, sync_state['dirty_state_from_height'])
+
+	def test_sync_block_headers_repairs_height_one_dirty_tail_before_forward_sync(self):
+		# Arrange:
+		connector = FakeConnector(1, {0: [create_node_block(1)]})
+		database = self.puller.symbol_db
+		self.puller.symbol_db = FailingSyncCurrentStateDatabase(database)
+		try:
+			with self.assertRaisesRegex(RuntimeError, 'current-state write failed'):
+				self._sync_with_connector(connector)
+		finally:
+			self.puller.symbol_db = database
+
+		# Act:
+		self._sync_with_connector(FakeConnector(1, {0: [create_node_block(1)]}))
+
+		# The height-1 repair can temporarily leave node-confirmed current state without a block; the run above completes
+		# the subsequent forward sync and establishes the terminal healthy state.
+		# Assert:
+		sync_state = database.get_sync_state()
+		self.assertEqual([1], self._fetch_block_heights(database))
+		self.assertEqual('healthy', sync_state['status'])
+		self.assertIsNone(sync_state['dirty_state_from_height'])
+
+	def test_sync_block_headers_keeps_minimum_dirty_height_when_forward_sync_fails_after_repair(self):
+		# Arrange:
+		first_connector = FakeConnector(1, {0: [create_node_block(1)]})
+		database = self.puller.symbol_db
+		self.puller.symbol_db = FailingSyncTransactionDatabase(database)
+		try:
+			with self.assertRaisesRegex(RuntimeError, 'transaction write failed at height 1'):
+				self._sync_with_connector(first_connector)
+		finally:
+			self.puller.symbol_db = database
+
+		second_connector = FakeConnector(2, {0: [create_node_block(1), create_node_block(2)]})
+		self.puller.symbol_db = FailingSyncCurrentStateDatabase(database)
+		try:
+			# Act / Assert:
+			with self.assertRaisesRegex(RuntimeError, 'current-state write failed'):
+				self._sync_with_connector(second_connector)
+		finally:
+			self.puller.symbol_db = database
+
+		# Assert:
+		sync_state = database.get_sync_state()
+		self.assertEqual('unhealthy', sync_state['status'])
+		self.assertEqual(1, sync_state['dirty_state_from_height'])
+
+	def test_sync_block_headers_keeps_dirty_tail_outside_explicit_cap_untouched(self):
+		# Arrange:
+		database = self.puller.symbol_db
+		self._seed_blocks(database, [1, 2, 3, 4, 5])
+		database.upsert_sync_state(create_sync_state(
+			chain_height=5,
+			finalized_height=1,
+			finalized_hash=bytes.fromhex(f'{1:064X}'),
+			last_synced_height=4,
+			last_synced_block_hash=bytes.fromhex(f'{4:064X}'),
+			dirty_state_from_height=5))
+		connector = FakeConnector(
+			5,
+			{},
+			block_by_height={2: create_node_block(2, block_hash='B' * 64)})
+		set_symbol_connector(self.puller, connector)
+
+		# Act:
+		asyncio.run(self.puller.sync_block_headers(max_height=2))
+
+		# Assert:
+		self.assertEqual([1, 2, 3, 4, 5], self._fetch_block_heights(database))
+		self.assertEqual(0, connector.paths.count('blocks/2'))
+		self.assertEqual([], [path for path in connector.paths if path.startswith('blocks?page')])
+		sync_state = database.get_sync_state()
+		self.assertEqual('unhealthy', sync_state['status'])
+		self.assertEqual(5, sync_state['dirty_state_from_height'])
+
+	def test_sync_block_headers_keeps_partially_capped_dirty_tail_untouched(self):
+		# Arrange:
+		database = self.puller.symbol_db
+		self._seed_blocks(database, [1, 2, 3, 4, 5])
+		database.upsert_sync_state(create_sync_state(
+			chain_height=5,
+			finalized_height=1,
+			finalized_hash=bytes.fromhex(f'{1:064X}'),
+			last_synced_height=2,
+			last_synced_block_hash=bytes.fromhex(f'{2:064X}'),
+			dirty_state_from_height=3))
+		connector = FakeConnector(5, {}, block_by_height={2: create_node_block(2, block_hash='B' * 64)})
+		set_symbol_connector(self.puller, connector)
+
+		# Act:
+		asyncio.run(self.puller.sync_block_headers(max_height=4))
+
+		# Assert:
+		self.assertEqual([1, 2, 3, 4, 5], self._fetch_block_heights(database))
+		self.assertEqual(0, connector.paths.count('blocks/2'))
+		self.assertEqual([], [path for path in connector.paths if path.startswith('blocks?page')])
+		sync_state = database.get_sync_state()
+		self.assertEqual('unhealthy', sync_state['status'])
+		self.assertEqual(3, sync_state['dirty_state_from_height'])
+
+	def test_sync_block_headers_removes_orphan_tail_when_node_chain_is_shorter_than_dirty_start(self):
+		# Arrange:
+		database = self.puller.symbol_db
+		self._seed_blocks(database, [1, 2, 3, 4, 5])
+		database.upsert_sync_state(create_sync_state(
+			chain_height=5,
+			finalized_height=1,
+			finalized_hash=bytes.fromhex(f'{1:064X}'),
+			last_synced_height=4,
+			last_synced_block_hash=bytes.fromhex(f'{4:064X}'),
+			dirty_state_from_height=5))
+		connector = FakeConnector(3, {}, block_by_height={
+			2: create_node_block(2),
+			3: create_node_block(3)
+		})
+		set_symbol_connector(self.puller, connector)
+
+		# Act:
+		asyncio.run(self.puller.sync_block_headers())
+
+		# Assert:
+		self.assertEqual([1, 2, 3], self._fetch_block_heights(database))
+		sync_state = database.get_sync_state()
+		self.assertEqual('healthy', sync_state['status'])
+		self.assertEqual(3, sync_state['last_synced_height'])
+		self.assertIsNone(sync_state['dirty_state_from_height'])
+
+	def test_sync_block_headers_converges_orphan_current_state_before_forward_sync(self):
+		# Arrange:
+		database = self.puller.symbol_db
+		self._seed_blocks(database, [1, 2, 3, 4, 5])
+		seed_namespace(database, create_namespace_item(), {NAMESPACE_ROOT_ID: 'orphan'}, observed_height=5)
+		database.upsert_mosaic(create_expected_mosaic_row(create_mosaic_item(), 5))
+		metadata_item = create_metadata_item(
+			metadata_type=1,
+			target_id=MOSAIC_ID,
+			composite_hash='11' * 32)
+		database.upsert_metadata(create_expected_metadata_row(
+			metadata_item,
+			5,
+			composite_hash=bytes.fromhex('11' * 32),
+			metadata_type='mosaic',
+			target_id=MOSAIC_ID,
+			value_utf8='orphan',
+			scoped_metadata_key=SCOPED_METADATA_KEY,
+			source_address=bytes.fromhex(SOURCE_ADDRESS),
+			target_address=bytes.fromhex(TARGET_ADDRESS),
+			value_hex='6F727068616E'))
+		database.upsert_sync_state(create_sync_state(
+			chain_height=5,
+			finalized_height=1,
+			finalized_hash=bytes.fromhex(f'{1:064X}'),
+			last_synced_height=4,
+			last_synced_block_hash=bytes.fromhex(f'{4:064X}'),
+			dirty_state_from_height=5))
+		namespace_not_found = {
+			'code': 'ResourceNotFound',
+			'message': f'no resource exists with id {NAMESPACE_ROOT_ID}'
+		}
+		metadata_query = metadata_path(
+			1,
+			target_id=MOSAIC_ID,
+			source_address=SOURCE_ADDRESS,
+			target_address=TARGET_ADDRESS,
+			scoped_metadata_key=SCOPED_METADATA_KEY)
+		connector = FakeConnector(
+			6,
+			{4: [create_node_block(5), create_node_block(6)]},
+			block_by_height={height: create_node_block(height) for height in range(2, 6)},
+			namespace_by_id={NAMESPACE_ROOT_ID: namespace_not_found},
+			mosaics_response=[],
+			metadata_by_query={metadata_query: {'data': []}})
+		set_symbol_connector(self.puller, connector)
+
+		# Act:
+		asyncio.run(self.puller.sync_block_headers())
+
+		# Assert:
+		self.assertEqual([1, 2, 3, 4, 5, 6], self._fetch_block_heights(database))
+		self.assertEqual([], fetch_namespace_state(database.connection)[0])
+		self.assertEqual([], fetch_mosaic_state(database))
+		self.assertEqual([], fetch_metadata_rows(database))
+		repair_and_page_paths = [
+			path for path in connector.paths
+			if path in (f'namespaces/{NAMESPACE_ROOT_ID}', 'mosaics', metadata_query) or path.startswith('blocks?page')
+		]
+		self.assertEqual([
+			f'namespaces/{NAMESPACE_ROOT_ID}',
+			'mosaics',
+			metadata_query,
+			'blocks?pageSize=100&offset=4&orderBy=height'
+		], repair_and_page_paths)
+		sync_state = database.get_sync_state()
+		self.assertEqual('healthy', sync_state['status'])
+		self.assertIsNone(sync_state['dirty_state_from_height'])
+
+	def test_sync_block_headers_prioritizes_node_shortening_over_operator_cap(self):
+		# Arrange:
+		database = self.puller.symbol_db
+		self._seed_blocks(database, [1, 2, 3, 4, 5])
+		database.upsert_sync_state(create_sync_state(
+			chain_height=5,
+			finalized_height=1,
+			finalized_hash=bytes.fromhex(f'{1:064X}'),
+			last_synced_height=4,
+			last_synced_block_hash=bytes.fromhex(f'{4:064X}'),
+			dirty_state_from_height=5))
+		connector = FakeConnector(3, {}, block_by_height={2: create_node_block(2)})
+		set_symbol_connector(self.puller, connector)
+
+		# Act:
+		asyncio.run(self.puller.sync_block_headers(max_height=2))
+
+		# Assert:
+		self.assertEqual([1, 2, 3], self._fetch_block_heights(database))
+		self.assertEqual([], [path for path in connector.paths if path.startswith('blocks?page')])
+		sync_state = database.get_sync_state()
+		self.assertEqual('healthy', sync_state['status'])
+		self.assertEqual(2, sync_state['chain_height'])
+		self.assertEqual(2, sync_state['last_synced_height'])
+		self.assertIsNone(sync_state['dirty_state_from_height'])
+
+	def test_sync_block_headers_preserves_existing_empty_watermark_when_no_pages_are_returned(self):
+		# Arrange:
+		database = self.puller.symbol_db
+		database.upsert_sync_state(create_sync_state(
+			chain_height=1,
+			last_synced_height=None,
+			last_synced_block_hash=None))
+		set_symbol_connector(self.puller, FakeConnector(1, {}))
+		set_sync_block_pages(self.puller, AsyncMock(return_value=(None, None)))
+
+		# Act:
+		asyncio.run(self.puller.sync_block_headers())
+
+		# Assert:
+		sync_state = database.get_sync_state()
+		self.assertEqual('healthy', sync_state['status'])
+		self.assertIsNone(sync_state['last_synced_height'])
+		self.assertIsNone(sync_state['last_synced_block_hash'])
+
+	def test_sync_block_headers_rejects_parent_hash_mismatch_at_stored_block_boundary(self):
+		# Arrange:
+		stored_height = 1
+		connector = FakeConnector(
+			2,
+			{1: [create_node_block(2, previous_hash='A' * 64)]}
+		)
+		self._seed_blocks(self.puller.symbol_db, [stored_height])
+		existing_sync_state = create_sync_state(
+			chain_height=stored_height,
+			last_synced_height=stored_height,
+			last_synced_block_hash=bytes.fromhex(f'{stored_height:064X}'))
+		self.puller.symbol_db.upsert_sync_state(existing_sync_state)
+		expected_state = self._fetch_complete_batch_state()
+		set_symbol_connector(self.puller, connector)
+
+		# Act / Assert:
+		with self.assertRaisesRegex(
+			ValueError,
+			f'Symbol block chain mismatch at height 2: expected previous hash {1:064X}, got {"A" * 64}'
+		):
+			asyncio.run(self.puller.sync_block_headers())
+
+		# Assert:
+		self.assertEqual(expected_state, self._fetch_complete_batch_state())
+		self.assertEqual([
+			'chain/info',
+			'network/properties',
+			f'mosaics/{NATIVE_MOSAIC_ID}',
+			'blocks?pageSize=100&offset=1&orderBy=height'
+		], connector.paths)
+
+	def test_sync_block_headers_rejects_parent_hash_mismatch_within_page_before_related_fetches(self):
+		# Arrange:
+		connector = FakeConnector(
+			2,
+			{0: [create_node_block(1), create_node_block(2, previous_hash='A' * 64)]},
+			transactions_by_path={
+				transaction_path(1, 2): {'data': [create_node_transaction(2)]}
+			},
+			statement_pages={
+				statement_path(1, 2): {'data': [create_amount_statement_item(2, 2000)]}
+			}
+		)
+		expected_state = self._fetch_complete_batch_state()
+		set_symbol_connector(self.puller, connector)
+
+		# Act / Assert:
+		with self.assertRaisesRegex(
+			ValueError,
+			f'Symbol block chain mismatch at height 2: expected previous hash {1:064X}, got {"A" * 64}'
+		):
+			asyncio.run(self.puller.sync_block_headers())
+
+		# Assert:
+		self.assertEqual(expected_state, self._fetch_complete_batch_state())
+		self.assertEqual([
+			'chain/info',
+			'network/properties',
+			f'mosaics/{NATIVE_MOSAIC_ID}',
+			'blocks?pageSize=100&offset=0&orderBy=height'
+		], connector.paths)
+
+	def test_sync_block_headers_rejects_parent_hash_mismatch_at_page_boundary(self):
+		# Arrange:
+		first_page = [create_node_block(height) for height in range(1, 101)]
+		second_page = [create_node_block(101, previous_hash='A' * 64)]
+		connector = FakeConnector(101, {0: first_page, 100: second_page})
+		expected_state = self._fetch_complete_batch_state()
+		set_symbol_connector(self.puller, connector)
+
+		# Act / Assert:
+		with self.assertRaisesRegex(
+			ValueError,
+			f'Symbol block chain mismatch at height 101: expected previous hash {100:064X}, got {"A" * 64}'
+		):
+			asyncio.run(self.puller.sync_block_headers())
+
+		# Assert:
+		self.assertEqual(expected_state, self._fetch_complete_batch_state())
+		self.assertEqual([
+			'chain/info',
+			'network/properties',
+			f'mosaics/{NATIVE_MOSAIC_ID}',
+			'blocks?pageSize=100&offset=0&orderBy=height',
+			'blocks?pageSize=100&offset=100&orderBy=height'
+		], connector.paths)
+
+	def test_sync_block_headers_persists_prior_batch_before_later_batch_validation_failure(self):
+		# Arrange:
+		chain_height = BLOCK_PAGE_FETCH_CONCURRENCY * MAX_PAGE_SIZE + 1
+		pages = {
+			offset: [
+				create_node_block(height)
+				for height in range(offset + 1, min(offset + MAX_PAGE_SIZE + 1, chain_height + 1))
+			]
+			for offset in range(0, chain_height, MAX_PAGE_SIZE)
+		}
+		pages[BLOCK_PAGE_FETCH_CONCURRENCY * MAX_PAGE_SIZE] = [
+			create_node_block(chain_height, previous_hash='A' * 64)
+		]
+		connector = FakeConnector(chain_height, pages)
+		set_symbol_connector(self.puller, connector)
+
+		# Act / Assert:
+		with self.assertRaisesRegex(
+			ValueError,
+			f'Symbol block chain mismatch at height {chain_height}: '
+			f'expected previous hash {chain_height - 1:064X}, got {"A" * 64}'
+		):
+			asyncio.run(self.puller.sync_block_headers())
+
+		# Each block-page batch commits before a later page can fail validation, so earlier rows may remain persisted.
+		# Assert:
+		self.assertEqual(list(range(1, chain_height)), self._fetch_block_heights(self.puller.symbol_db))
+		sync_state = self.puller.symbol_db.get_sync_state()
+		self.assertEqual('unhealthy', sync_state['status'])
+		self.assertEqual(1, sync_state['dirty_state_from_height'])
+		block_paths = [path for path in connector.paths if path.startswith('blocks?pageSize=100&offset=')]
+		transaction_paths = [path for path in connector.paths if path.startswith('transactions/confirmed?')]
+		statement_paths = [path for path in connector.paths if path.startswith('statements/transaction?')]
+		self.assertEqual(BLOCK_PAGE_FETCH_CONCURRENCY + 1, len(block_paths))
+		self.assertEqual([transaction_path(1, chain_height - 1)], transaction_paths)
+		self.assertEqual([statement_path(1, chain_height - 1)], statement_paths)
+
+		# Act: restart with the valid node chain so the persisted dirty tail is repaired before forward sync.
+		last_page_offset = BLOCK_PAGE_FETCH_CONCURRENCY * MAX_PAGE_SIZE
+		repaired_pages = {
+			**pages,
+			last_page_offset: [create_node_block(chain_height)]
+		}
+		self._sync_with_connector(FakeConnector(chain_height, repaired_pages))
+
+		# Assert:
+		self.assertEqual(list(range(1, chain_height + 1)), self._fetch_block_heights(self.puller.symbol_db))
+		sync_state = self.puller.symbol_db.get_sync_state()
+		self.assertEqual('healthy', sync_state['status'])
+		self.assertIsNone(sync_state['dirty_state_from_height'])
+
+	def test_sync_block_headers_keeps_previous_watermark_when_next_run_parent_hash_mismatches(self):
+		# Arrange:
+		first_connector = FakeConnector(1, {0: [create_node_block(1)]})
+
+		# Act:
+		self._sync_with_connector(first_connector)
+
+		# Assert:
+		first_state = self._fetch_complete_batch_state()
+		self.assertEqual(1, self.puller.symbol_db.get_sync_state()['last_synced_height'])
+
+		# Arrange:
+		second_connector = FakeConnector(2, {1: [create_node_block(2, previous_hash='A' * 64)]})
+		set_symbol_connector(self.puller, second_connector)
+
+		# Act / Assert:
+		with self.assertRaisesRegex(
+			ValueError,
+			f'Symbol block chain mismatch at height 2: expected previous hash {1:064X}, got {"A" * 64}'
+		):
+			asyncio.run(self.puller.sync_block_headers())
+
+		# Assert:
+		self.assertEqual(first_state, self._fetch_complete_batch_state())
+		self.assertEqual([
+			'chain/info',
+			'blocks?pageSize=100&offset=1&orderBy=height'
+		], second_connector.paths)
 
 	def test_sync_block_headers_persists_importance_block_fields(self):
 		# Arrange:
@@ -972,6 +1564,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		], connector.paths)
 		self.assertEqual(2, sync_state['chain_height'])
 		self.assertEqual(2, sync_state['finalized_height'])
+		self.assertEqual([1, 2, 3, 4, 5], self._fetch_block_heights(self.puller.symbol_db))
 		self.assertEqual(2, sync_state['last_synced_height'])
 		self.assertEqual(
 			bytes.fromhex(f'{2:064X}'),

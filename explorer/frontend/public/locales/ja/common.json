@@ -182,6 +182,7 @@
 	"message_addressBook_addressAlreadyAdded": "このアドレスはすでに追加されています",
 	"message_addressBook_nameAlreadyAdded": "この名前はすでに使用されています",
 	"message_emptyTable": "表示するものがありません。",
+	"message_tooManyTransactionsToVisualize": "トランザクションが多すぎるため表示できません。",
 	"message_noLinkedKeys": "リンクされたキーはありません。",
 	"message_nothingFound": "何も見つかりませんでした。",
 	"message_404": "お探しのリソースが見つかりません。",

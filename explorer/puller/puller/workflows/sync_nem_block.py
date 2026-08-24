@@ -3,27 +3,21 @@ from asyncio import run
 
 from zenlog import log
 
-from puller.facade.NemPuller import NemPuller
+from puller.workflows.nem_workflow_utils import add_common_arguments, bootstrap_nem_workflow
 
 
 def parse_args():
 	"""Parse command line arguments."""
 
 	parser = argparse.ArgumentParser(description='sync blocks from network')
-	parser.add_argument('--nem-node', help='NEM node(local) url', default='http://localhost:7890')
-	parser.add_argument('--network', help='mainnet or testnet', choices=['mainnet', 'testnet'], default='mainnet')
-	parser.add_argument('--db-config', help='database config file *.ini', default='config.ini')
+	add_common_arguments(parser)
 	parser.add_argument('--account-remark', help='optional account remark seed JSON file')
 	return parser.parse_args()
 
 
 async def main():
 	args = parse_args()
-
-	facade = NemPuller(args.nem_node, args.db_config, args.network)
-
-	log.info(f'Node URL: {args.nem_node}')
-	log.info(f'Network: {args.network}')
+	facade = bootstrap_nem_workflow(args)
 
 	with facade.nem_db as databases:
 		databases.create_tables()
