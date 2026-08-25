@@ -63,8 +63,9 @@ async def test_metrics_route_reports_collected_samples(client):  # pylint: disab
 		# Act:
 		body = client.get('/metrics').get_data(as_text=True)
 
-		# Assert: the collectors ran, so the exposition carries samples and not just declarations
-		assert 'bridge_node_up{network="native"} 1.0' in body
-		assert 'bridge_node_up{network="wrapped"} 1.0' in body
+		# Assert: the collectors ran and reached both nodes; label sets are asserted in tests/api/metrics
+		samples = [line for line in body.splitlines() if line.startswith('bridge_node_up{')]
+		assert 2 == len(samples), body
+		assert all(line.endswith(' 1.0') for line in samples), body
 
 	await asyncio.get_running_loop().run_in_executor(None, test_impl)

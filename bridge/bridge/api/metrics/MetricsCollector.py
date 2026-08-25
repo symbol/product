@@ -12,10 +12,10 @@ DEFAULT_TIMEOUT_SECONDS = 3
 class MetricsCollector:
 	"""Runs every collector and gathers the result into a single registry."""
 
-	def __init__(self, context, timeout_seconds=DEFAULT_TIMEOUT_SECONDS):
+	def __init__(self, config, context, timeout_seconds=DEFAULT_TIMEOUT_SECONDS):
 		"""Creates a metrics collector."""
 
-		self._collectors = load_collectors(context, timeout_seconds)
+		self._collectors = load_collectors(config, context, timeout_seconds)
 		self._logger = logging.getLogger(__name__)
 
 	async def collect(self):

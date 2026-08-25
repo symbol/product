@@ -83,35 +83,42 @@ def _ethereum_network(server, mosaic_id=ETHEREUM_TOKEN_ID):
 
 # region test utils
 
-def _create_context(native_network, wrapped_network):
-	"""Creates a context around network configurations, without any file on disk."""
+def _create_config(native_network, wrapped_network):
+	"""Creates a configuration without any file on disk."""
 
-	return BridgeContext(BridgeConfiguration(
+	return BridgeConfiguration(
 		# the collector reads neither the databases nor the price oracle, so these only need to parse
 		MachineConfiguration('/nonexistent', '/nonexistent/log', 1, 1),
 		GlobalConfiguration(StrategyMode.STAKE),
 		PriceOracleConfiguration(UNREACHABLE_ENDPOINT, ''),
 		PriceOracleConfiguration(UNREACHABLE_ENDPOINT, ''),
 		native_network,
-		wrapped_network), 600)
+		wrapped_network)
 
 
 async def _collect(native_network, wrapped_network):
+	config = _create_config(native_network, wrapped_network)
+
 	registry = CollectorRegistry()
-	await ChainCollector(_create_context(native_network, wrapped_network), 3).collect(registry)
+	await ChainCollector(config, BridgeContext(config, 600), 3).collect(registry)
 	return registry
 
 
-def _balance(registry, role, token):
-	return registry.get_sample_value('bridge_balance', {'network': role, 'token': token})
+ROLE_TO_ADDRESS = {'native': NEM_BRIDGE_ADDRESS, 'wrapped': SYMBOL_BRIDGE_ADDRESS}
 
 
-def _gas_balance(registry, role):
-	return registry.get_sample_value('bridge_gas_balance', {'network': role})
+def _balance(registry, role, token, address=None):
+	address = address or ROLE_TO_ADDRESS[role]
+	return registry.get_sample_value('bridge_balance', {'network': role, 'token': token, 'address': address})
 
 
-def _node_up(registry, role):
-	return registry.get_sample_value('bridge_node_up', {'network': role})
+def _gas_balance(registry, role, address=None):
+	return registry.get_sample_value('bridge_gas_balance', {'network': role, 'address': address or ROLE_TO_ADDRESS[role]})
+
+
+def _node_up(registry, role, server=None):
+	endpoint = str(server.make_url('')) if server else UNREACHABLE_ENDPOINT
+	return registry.get_sample_value('bridge_node_up', {'network': role, 'endpoint': endpoint})
 
 # endregion
 
@@ -121,8 +128,8 @@ async def test_balances_are_reported_for_both_legs(nem_server, symbol_server):  
 	registry = await _collect(_nem_network(nem_server), _symbol_network(symbol_server))
 
 	# Assert: both nodes answered
-	assert 1 == _node_up(registry, 'native')
-	assert 1 == _node_up(registry, 'wrapped')
+	assert 1 == _node_up(registry, 'native', nem_server)
+	assert 1 == _node_up(registry, 'wrapped', symbol_server)
 
 	# ... and each balance was read for the token named in configuration
 	assert NEM_XEM_BALANCE == _balance(registry, 'native', 'nem:xem')
@@ -153,10 +160,10 @@ async def test_ethereum_leg_reports_token_balance_and_gas_separately(nem_server,
 	registry = await _collect(_nem_network(nem_server), _ethereum_network(ethereum_server))
 
 	# Assert: the bridge balance comes from the ERC-20 contract
-	assert ETHEREUM_TOKEN_BALANCE == _balance(registry, 'wrapped', ETHEREUM_TOKEN_ID)
+	assert ETHEREUM_TOKEN_BALANCE == _balance(registry, 'wrapped', ETHEREUM_TOKEN_ID, ETHEREUM_BRIDGE_ADDRESS)
 
 	# ... while gas is the ETH balance of the same account
-	assert ETHEREUM_ETH_BALANCE == _gas_balance(registry, 'wrapped')
+	assert ETHEREUM_ETH_BALANCE == _gas_balance(registry, 'wrapped', ETHEREUM_BRIDGE_ADDRESS)
 
 
 async def test_failed_balance_read_is_not_reported_as_a_zero_balance(nem_server, symbol_server):  # pylint: disable=redefined-outer-name
@@ -167,8 +174,8 @@ async def test_failed_balance_read_is_not_reported_as_a_zero_balance(nem_server,
 	registry = await _collect(_nem_network(nem_server), _symbol_network(symbol_server))
 
 	# Assert: only the failing leg is marked down
-	assert 0 == _node_up(registry, 'wrapped')
-	assert 1 == _node_up(registry, 'native')
+	assert 0 == _node_up(registry, 'wrapped', symbol_server)
+	assert 1 == _node_up(registry, 'native', nem_server)
 
 	# ... and it reports no balance at all, rather than a zero that would look like a drained account
 	assert _balance(registry, 'wrapped', SYMBOL_MOSAIC_ID) is None
@@ -181,7 +188,7 @@ async def test_unreachable_node_is_reported_as_down(symbol_server):  # pylint: d
 
 	# Assert: both legs are reported as down
 	assert 0 == _node_up(registry, 'native')
-	assert 0 == _node_up(registry, 'wrapped')
+	assert 0 == _node_up(registry, 'wrapped', symbol_server)
 
 	# ... and no balance is published for either
 	assert _balance(registry, 'native', 'nem:xem') is None
