@@ -39,9 +39,9 @@ from puller.facade.NemPuller import (
 	MosaicRecord,
 	NamespaceRecord,
 	NemPuller,
-	RefreshedAccountRecord,
 	NemRollbackError,
 	NemRollbackImpact,
+	RefreshedAccountRecord,
 	RollbackPayloadAccounts,
 	TransactionRecord
 )
