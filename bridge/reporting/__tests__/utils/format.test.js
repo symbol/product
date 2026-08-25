@@ -129,7 +129,7 @@ describe('report formatting', () => {
 	});
 
 	describe('createExplorerUrl', () => {
-		const runSymbolAndNemExplorerUrlTest = blockchain => {
+		const runExplorerUrlTest = blockchain => {
 			// Arrange:
 			const explorerUrl = `https://${blockchain}.example`;
 			const network = { blockchain, explorerUrl: `${explorerUrl}/` };
@@ -143,9 +143,12 @@ describe('report formatting', () => {
 			expect(accountUrl).toBe(`${explorerUrl}/accounts/TADDRESS`);
 		};
 
-		it('creates Symbol or NEM explorer URLs', () => {
-			runSymbolAndNemExplorerUrlTest('symbol');
-			runSymbolAndNemExplorerUrlTest('nem');
+		it('creates Symbol explorer URLs', () => {
+			runExplorerUrlTest('symbol');
+		});
+
+		it('creates NEM explorer URLs', () => {
+			runExplorerUrlTest('nem');
 		});
 
 		it('creates Ethereum explorer URLs and normalizes transaction hash prefixes', () => {
