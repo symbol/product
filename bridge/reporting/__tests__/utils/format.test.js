@@ -29,28 +29,6 @@ describe('report formatting', () => {
 		});
 	});
 
-	describe('formatTimestamp', () => {
-		const runTimestampTest = (input, expectedOutput) => {
-			// Act:
-			const formattedTimestamp = formatTimestamp(input);
-
-			// Assert:
-			expect(formattedTimestamp).toBe(expectedOutput);
-		};
-
-		it('formats Unix seconds as UTC', () => {
-			runTimestampTest(1759781792.879, '2025-10-06 20:16:32 UTC');
-		});
-
-		it('returns a placeholder when timestamp is missing', () => {
-			runTimestampTest(null, '—');
-		});
-
-		it('returns a placeholder when timestamp is invalid', () => {
-			runTimestampTest('hello', '—');
-		});
-	});
-
 	describe('formatAtomicAmount', () => {
 		const runFormatAtomicAmountTest = (value, divisibility, expectedOutput) => {
 			// Act:
@@ -89,6 +67,41 @@ describe('report formatting', () => {
 		});
 	});
 
+	describe('formatPpm', () => {
+		it('formats conversion rate PPM values', () => {
+			// Arrange:
+			const rates = ['1000000', '999999', '2000000'];
+
+			// Act:
+			const formattedRates = rates.map(formatPpm);
+
+			// Assert:
+			expect(formattedRates).toEqual(['1', '0.999999', '2']);
+		});
+	});
+
+	describe('formatTimestamp', () => {
+		const runTimestampTest = (input, expectedOutput) => {
+			// Act:
+			const formattedTimestamp = formatTimestamp(input);
+
+			// Assert:
+			expect(formattedTimestamp).toBe(expectedOutput);
+		};
+
+		it('formats Unix seconds as UTC', () => {
+			runTimestampTest(1759781792.879, '2025-10-06 20:16:32 UTC');
+		});
+
+		it('returns a placeholder when timestamp is missing', () => {
+			runTimestampTest(null, '—');
+		});
+
+		it('returns a placeholder when timestamp is invalid', () => {
+			runTimestampTest('hello', '—');
+		});
+	});
+
 	describe('truncateMiddle', () => {
 		const runTruncateMiddleTest = (value, expectedOutput, start, end) => {
 			// Act:
@@ -115,17 +128,6 @@ describe('report formatting', () => {
 		it('truncates a long value using custom lengths', () => {
 			runTruncateMiddleTest('1234567890', '1234…890', 4, 3);
 		});
-	});
-
-	it('formats conversion rate PPM values', () => {
-		// Arrange:
-		const rates = ['1000000', '999999', '2000000'];
-
-		// Act:
-		const formattedRates = rates.map(formatPpm);
-
-		// Assert:
-		expect(formattedRates).toEqual(['1', '0.999999', '2']);
 	});
 
 	describe('createExplorerUrl', () => {
