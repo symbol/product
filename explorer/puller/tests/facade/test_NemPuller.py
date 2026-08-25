@@ -3,6 +3,7 @@ import asyncio
 import datetime
 import tempfile
 import unittest
+from collections import namedtuple
 from unittest.mock import AsyncMock, Mock, call, patch
 
 import testing.postgresql
@@ -46,6 +47,8 @@ from puller.facade.NemPuller import (
 )
 
 # region test data
+
+NodeBlockHashes = namedtuple('NodeBlockHashes', ['block_hash', 'previous_block_hash'])
 
 NEM_CONNECTOR_RESPONSE_BLOCKS = [
 	Block(
@@ -1599,12 +1602,23 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 			'pending_remote_links': pending_remote_links
 		})
 
-	def _run_detect_rollback_test(self, database_hashes, node_hashes, db_height, chain_height):
+	def _run_detect_rollback_test(
+		self,
+		database_hashes_map,
+		node_block_hashes_map,
+		db_height,
+		chain_height
+	):
 		self.puller.nem_db.get_block_hash = Mock(
-			side_effect=lambda height: database_hashes.get(height, 'db-hash')
+			side_effect=lambda height: database_hashes_map.get(height, 'db-hash')
 		)
 		self.puller._retry_get_block = AsyncMock(  # pylint: disable=protected-access
-			side_effect=lambda height: Mock(block_hash=node_hashes.get(height, 'chain-hash'))
+			side_effect=lambda height: Mock(
+				**node_block_hashes_map.get(
+					height,
+					NodeBlockHashes('chain-hash', 'chain-previous-hash')
+				)._asdict()
+			)
 		)
 
 		# Act:
@@ -1612,21 +1626,86 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 
 	def test_returns_none_when_comparison_hash_matches(self):
 		# Act + Assert: no exception
-		self._run_detect_rollback_test({3: 'ABCDEF'}, {3: 'abcdef'}, 3, 3)
+		self._run_detect_rollback_test(
+			{2: '012345', 3: 'ABCDEF'},
+			{3: NodeBlockHashes('abcdef', '012345')},
+			3,
+			3
+		)
 
 	def test_returns_chain_height_when_database_is_ahead(self):
 		# Arrange + Act:
-		fork_height = self._run_detect_rollback_test({3: 'common'}, {3: 'common'}, 5, 3)
+		fork_height = self._run_detect_rollback_test(
+			{2: 'parent', 3: 'common'},
+			{3: NodeBlockHashes('common', 'parent')},
+			5,
+			3
+		)
 
 		# Assert:
 		self.assertEqual(3, fork_height)
+
+	def test_walks_back_when_only_current_block_hash_matches(self):
+		# Arrange + Act:
+		fork_height = self._run_detect_rollback_test(
+			{1: 'parent', 2: 'common', 3: 'same-current'},
+			{
+				2: NodeBlockHashes('common', 'parent'),
+				3: NodeBlockHashes('SAME-CURRENT', 'different-parent')
+			},
+			3,
+			3
+		)
+
+		# Assert:
+		self.assertEqual(2, fork_height)
+		self.assertEqual(
+			[call(3), call(2)],
+			self.puller._retry_get_block.await_args_list  # pylint: disable=protected-access
+		)
+
+	def test_returns_none_when_nemesis_hash_matches(self):
+		# Act + Assert: no exception
+		self._run_detect_rollback_test(
+			{1: 'common'},
+			{1: NodeBlockHashes('COMMON', 'unused')},
+			1,
+			1
+		)
+		self.puller.nem_db.get_block_hash.assert_called_once_with(1)
+
+	def test_walks_back_without_checking_parent_when_current_hash_does_not_match(self):
+		fork_height = self._run_detect_rollback_test(
+			{
+				1: 'parent',
+				2: 'common',
+				3: 'database-fork'
+			},
+			{
+				2: NodeBlockHashes('COMMON', 'PARENT'),
+				3: NodeBlockHashes('node-fork', 'common')
+			},
+			3,
+			3
+		)
+
+		self.assertEqual(2, fork_height)
+		self.assertEqual(
+			[call(3), call(2), call(1)],
+			self.puller.nem_db.get_block_hash.call_args_list
+		)
 
 	def test_common_block_at_360_block_boundary_is_allowed(self):
 		# Arrange:
 		db_height = NEM_MAX_ROLLBACK_DEPTH + 1
 
 		# Act:
-		fork_height = self._run_detect_rollback_test({1: 'common'}, {1: 'common'}, db_height, db_height)
+		fork_height = self._run_detect_rollback_test(
+			{1: 'common'},
+			{1: NodeBlockHashes('COMMON', 'unused')},
+			db_height,
+			db_height
+		)
 
 		# Assert:
 		self.assertEqual(1, fork_height)
