@@ -22,6 +22,10 @@ async def server(aiohttp_client):
 		'TA6MYQRFJI24C2Y2WPX7QKAPMUDIS5FWZOBIBEA': [
 			('currency', 9988776655),
 			('FAF0EBED913FA202', 1122334455)
+		],
+		'TDDRDLK5QL2LJPZOF26QFXB24TJ5HGB4NDTF6SI': [
+			('currency', 5544332211),
+			('FAF0EBED913FA202', 778899)
 		]
 	})
 
@@ -420,5 +424,33 @@ def test_can_calculate_transfer_transaction_fee_with_message():
 
 	# Assert:
 	assert 209 * 50 == transaction_fee
+
+# endregion
+
+
+# region read_bridge_balance, read_native_currency_balance
+
+async def test_can_read_bridge_balance_of_mosaic(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	facade = SymbolNetworkFacade(_create_config(server, 'FAF0EBED913FA202'))
+	await facade.init()
+
+	# Act:
+	balance = await facade.read_bridge_balance(facade.create_connector())
+
+	# Assert:
+	assert 778899 == balance
+
+
+async def test_can_read_native_currency_balance(server):  # pylint: disable=redefined-outer-name
+	# Arrange: the bridge moves a mosaic, so fees come out of a XYM balance
+	facade = SymbolNetworkFacade(_create_config(server, 'FAF0EBED913FA202'))
+	await facade.init()
+
+	# Act:
+	balance = await facade.read_native_currency_balance(facade.create_connector())
+
+	# Assert:
+	assert 5544332211 == balance
 
 # endregion

@@ -55,6 +55,18 @@ class SymbolNetworkFacade:
 
 		return PrintableMosaicId(mosaic_id, self.config.mosaic_id)
 
+	async def read_bridge_balance(self, connector):
+		"""Reads the bridge account balance of the configured mosaic."""
+
+		# the REST api reports mosaic ids in the hex form held in configuration
+		return await connector.balance(self.bridge_address, self.extract_mosaic_id().formatted)
+
+	async def read_native_currency_balance(self, connector):
+		"""Reads the balance of the chain's native currency, which is what transaction fees are paid in."""
+
+		# the REST api reports mosaic ids in hex, and currency_mosaic_ids is populated during init
+		return await connector.balance(self.bridge_address, f'{self.currency_mosaic_ids[0]:016X}')
+
 	def create_connector(self, **_kwargs):
 		"""Creates a connector to the network."""
 

@@ -4,7 +4,8 @@ from collections import namedtuple
 from decimal import Decimal
 from pathlib import Path
 
-from flask import Flask, jsonify, request, send_from_directory
+from flask import Flask, Response, jsonify, request, send_from_directory
+from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 from symbolchain.CryptoTypes import Hash256
 from symbollightapi.model.Exceptions import NodeException
 
@@ -17,6 +18,7 @@ from ..NetworkUtils import BalanceTransfer, estimate_balance_transfer_fees
 from ..price_oracle.PriceOracleLoader import load_price_oracle
 from ..price_oracle.PriceOracleThrottle import make_throttled_conversion_rate_lookup
 from ..WorkflowUtils import create_conversion_rate_calculator_factory, is_daily_limit_exceeded, is_native_to_native_conversion
+from .metrics.MetricsCollector import MetricsCollector
 from .Validators import is_valid_address_string, is_valid_decimal_string, is_valid_hash_string
 
 FilterOptions = namedtuple('FilterOptions', ['address', 'transaction_hash', 'offset', 'limit', 'sort', 'payout_status'])
@@ -338,6 +340,16 @@ def add_unwrap_routes(app, context):
 		return await _handle_wrap_estimate(True, context, None, 'unwrap_request')
 
 
+def add_metrics_routes(app, context):
+	"""Adds a prometheus metrics endpoint."""
+
+	collector = MetricsCollector(context)
+
+	@app.route('/metrics')
+	async def metrics():  # pylint: disable=unused-variable
+		return Response(generate_latest(await collector.collect()), mimetype=CONTENT_TYPE_LATEST)
+
+
 def create_app():
 	app = Flask(__name__)
 	app.config.from_envvar('BRIDGE_API_SETTINGS')
@@ -364,5 +376,7 @@ def create_app():
 	add_wrap_routes(app, context)
 	if config.wrapped_network.mosaic_id:  # not native to native conversion
 		add_unwrap_routes(app, context)
+
+	add_metrics_routes(app, context)
 
 	return app

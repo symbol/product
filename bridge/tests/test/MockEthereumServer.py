@@ -5,7 +5,7 @@ from aiohttp import web
 from .BridgeTestUtils import HASHES
 
 
-async def create_simple_ethereum_client(aiohttp_client):
+async def create_simple_ethereum_client(aiohttp_client, address_to_balance_map=None, address_to_token_balance_map=None):
 	# pylint: disable=too-many-statements
 
 	"""Creates an Ethereum client with support for basic operations ."""
@@ -21,7 +21,7 @@ async def create_simple_ethereum_client(aiohttp_client):
 			self.failed_transaction_execution_hash = None
 			self.gas_price_override = None
 
-		async def rpc_main(self, request):  # pylint: disable = too-many-return-statements
+		async def rpc_main(self, request):  # pylint: disable = too-many-return-statements, too-many-branches
 			request_json = await request.json()
 			self.request_json_payloads.append(request_json)
 
@@ -37,6 +37,9 @@ async def create_simple_ethereum_client(aiohttp_client):
 
 			if 'eth_gasPrice' == method:
 				return await self._handle_eth_gas_price(request)
+
+			if 'eth_getBalance' == method:
+				return await self._handle_eth_get_balance(request, request_json['params'][0])
 
 			if 'eth_getBlockByNumber' == method:
 				return await self._handle_eth_get_block_by_number(request, request_json['params'][0])
@@ -63,6 +66,10 @@ async def create_simple_ethereum_client(aiohttp_client):
 				return await self.handle_ots_search_transaction_before(request)
 
 			raise ValueError(f'unknown ETH RPC method: {method}')
+
+		async def _handle_eth_get_balance(self, request, account_address):
+			balance = address_to_balance_map.get(account_address, 0) if address_to_balance_map else 0
+			return await self._process(request, {'result': hex(balance)})
 
 		async def _handle_eth_block_number(self, request):
 			return await self._process(request, {
@@ -184,9 +191,12 @@ async def create_simple_ethereum_client(aiohttp_client):
 			})
 
 		async def _handle_eth_call(self, request, data):
-			# balanceOf(address) [d8dA6BF26964aF9D7eEd9e03E53415D37aA96045]
-			if '0x70a08231000000000000000000000000d8dA6BF26964aF9D7eEd9e03E53415D37aA96045' == data:
-				return await self._process(request, {'result': '0x123456'})
+			# balanceOf(address)
+			if data.startswith('0x70a08231'):
+				# the queried account is the abi-encoded argument, left-padded into the last 32 bytes
+				account_address = f'0x{data[-40:]}'
+				balance = address_to_token_balance_map.get(account_address, 0) if address_to_token_balance_map else 0
+				return await self._process(request, {'result': hex(balance)})
 
 			# decimals()
 			if '0x313ce567' == data:

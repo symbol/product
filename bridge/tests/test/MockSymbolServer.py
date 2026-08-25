@@ -12,6 +12,7 @@ async def create_simple_symbol_client(aiohttp_client, currency_mosaic_id, addres
 
 			self.request_json_payloads = []
 			self.simulate_transaction_status_not_found = False  # pylint: disable=invalid-name
+			self.simulate_account_error = False
 
 		@staticmethod
 		async def network_properties(request):
@@ -41,15 +42,17 @@ async def create_simple_symbol_client(aiohttp_client, currency_mosaic_id, addres
 				}
 			})
 
-		@staticmethod
-		async def accounts_by_id(request):
+		async def accounts_by_id(self, request):
+			if self.simulate_account_error:
+				return await self._process(request, {'code': 'InternalError', 'message': 'account lookup failed'}, 500)
+
 			balances = []
 			if address_to_balance_map:
 				account_id = request.match_info['account_id']
 				for mosaic_id, amount in address_to_balance_map.get(account_id, []):
 					balances.append((currency_mosaic_id[2:].replace('\'', '') if 'currency' == mosaic_id else mosaic_id, amount))
 
-			return await MockSymbolServer._process(request, {
+			return await self._process(request, {
 				'account': {
 					'mosaics': [{'id': mosaic_id, 'amount': amount} for mosaic_id, amount in balances]
 				}

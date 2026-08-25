@@ -18,7 +18,10 @@ SignedTransaction = namedtuple('SignedTransaction', ['raw_transaction'])
 
 @pytest.fixture
 async def server(aiohttp_client):
-	return await create_simple_ethereum_client(aiohttp_client)
+	return await create_simple_ethereum_client(
+		aiohttp_client,
+		{'0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045': 2 * 10 ** 18},
+		{'0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045': 0x123456})
 
 
 # pylint: disable=invalid-name
@@ -155,6 +158,48 @@ async def test_can_query_balance(server):  # pylint: disable=redefined-outer-nam
 
 async def test_can_query_balance_with_custom_block_identifier(server):  # pylint: disable=redefined-outer-name
 	await _assert_can_query_balance(server, 0xAABBCC, '0xAABBCC')
+
+# endregion
+
+
+# region native_balance
+
+async def _assert_can_query_native_balance(server, block_identifier, expected_block_identifier):
+	# pylint: disable=redefined-outer-name
+	# Arrange:
+	connector = EthereumConnector(server.make_url(''))
+
+	# Act:
+	balance = await connector.native_balance(
+		EthereumAddress('0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045'),
+		*([block_identifier] if block_identifier else []))
+
+	# Assert:
+	assert [f'{server.make_url("")}/'] == server.mock.urls
+	assert [
+		make_rpc_request_json('eth_getBalance', [
+			'0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045',
+			expected_block_identifier
+		])
+	] == server.mock.request_json_payloads
+	assert 2 * 10 ** 18 == balance
+
+
+async def test_can_query_native_balance(server):  # pylint: disable=redefined-outer-name
+	await _assert_can_query_native_balance(server, None, 'latest')
+
+
+async def test_can_query_native_balance_with_custom_block_identifier(server):  # pylint: disable=redefined-outer-name
+	await _assert_can_query_native_balance(server, 0xAABBCC, '0xAABBCC')
+
+
+async def test_native_balance_of_unknown_account_is_zero(server):  # pylint: disable=redefined-outer-name
+	# Act:
+	balance = await EthereumConnector(server.make_url('')).native_balance(
+		EthereumAddress('0x67b1d87101671b127f5f8714789C7192f7ad340e'))
+
+	# Assert:
+	assert 0 == balance
 
 # endregion
 

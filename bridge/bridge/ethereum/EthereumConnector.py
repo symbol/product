@@ -144,6 +144,20 @@ class EthereumConnector(BasicConnector):
 
 	# endregion
 
+	# region native_balance
+
+	async def native_balance(self, account_address, block_identifier='latest'):
+		"""Gets the native currency (ETH) balance of an account."""
+
+		request_json = make_rpc_request_json('eth_getBalance', [
+			str(account_address),
+			self._format_block_identifier(block_identifier)
+		])
+		result_json = await self._post_rpc(request_json)
+		return parse_rpc_response_hex_value(result_json)
+
+	# endregion
+
 	# region token_precision
 
 	async def token_precision(self, token_contract_address, block_identifier='latest'):
