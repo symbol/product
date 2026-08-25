@@ -53,7 +53,7 @@ const TransactionValue = ({ hash, timestamp, network }) => (
 const AmountValue = ({ value, asset }) => (
 	<div className={styles.amountValue} title={value ?? ''}>
 		<span>{formatAtomicAmount(value, asset.divisibility)}</span>
-		{null !== value && value !== undefined && <small>{asset.ticker}</small>}
+		{!isValueMissing(value) && <small>{asset.ticker}</small>}
 	</div>
 );
 
