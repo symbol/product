@@ -67,10 +67,6 @@ async def create_simple_ethereum_client(aiohttp_client, address_to_balance_map=N
 
 			raise ValueError(f'unknown ETH RPC method: {method}')
 
-		async def _handle_eth_get_balance(self, request, account_address):
-			balance = address_to_balance_map.get(account_address, 0) if address_to_balance_map else 0
-			return await self._process(request, {'result': hex(balance)})
-
 		async def _handle_eth_block_number(self, request):
 			return await self._process(request, {
 				'result': '0xAB123'
@@ -121,6 +117,10 @@ async def create_simple_ethereum_client(aiohttp_client, address_to_balance_map=N
 			return await self._process(request, {
 				'result': hex(self.gas_price_override) if self.gas_price_override else '0x1DFD14000'
 			})
+
+		async def _handle_eth_get_balance(self, request, account_address):
+			balance = address_to_balance_map.get(account_address, 0) if address_to_balance_map else 0
+			return await self._process(request, {'result': hex(balance)})
 
 		async def _handle_eth_get_block_by_number(self, request, block_identifier):
 			result_json = {}
