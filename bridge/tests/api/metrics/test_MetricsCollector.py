@@ -1,3 +1,4 @@
+import pytest
 from prometheus_client import Gauge
 
 from bridge.api.metrics.MetricsCollector import MetricsCollector
@@ -61,21 +62,11 @@ async def test_each_scrape_builds_a_new_registry():
 	assert 2 == registry.get_sample_value('bridge_probe_one')
 
 
-async def test_a_failing_collector_does_not_prevent_the_others():
-	# Arrange: one collector raises where it should have reported, the other works
-	collectors = [_FailingCollector(), _ProbeCollector('bridge_probe_one', 7)]
+async def test_a_failing_collector_fails_the_scrape():
+	# Arrange: a collector is expected to report the failure of its own source as a metric, so
+	# anything raising here is a defect and must not be hidden behind a successful scrape
+	collector = MetricsCollector([_FailingCollector(), _ProbeCollector('bridge_probe_one', 7)])
 
-	# Act:
-	registry = await MetricsCollector(collectors).collect()
-
-	# Assert: the scrape still succeeds and keeps everything the healthy collector produced
-	assert 7 == registry.get_sample_value('bridge_probe_one')
-
-
-async def test_a_failing_collector_is_logged(caplog):
-	# Act:
-	with caplog.at_level('ERROR'):
-		await MetricsCollector([_FailingCollector()]).collect()
-
-	# Assert: a swallowed failure must still be visible somewhere
-	assert '_FailingCollector' in caplog.text
+	# Act + Assert:
+	with pytest.raises(RuntimeError):
+		await collector.collect()
