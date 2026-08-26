@@ -1,4 +1,4 @@
-import { Card, Divider, Field, StyledText, TokenInfoView } from '@/app/components';
+import { Card, Divider, Field, StyledText, TokenRow } from '@/app/components';
 import { MosaicSupplyChangeAction } from '@/app/constants';
 import { $t } from '@/app/localization';
 import { getPaddedSupplyDeltaText, getPaddedSupplyText } from '@/app/screens/mosaic/utils';
@@ -276,8 +276,8 @@ export const SupplyDeltaCard = ({ token, currentSupply, newSupply, delta, action
 	return (
 		<Card style={styles.card}>
 			<View style={styles.identityRow}>
-				<TokenInfoView
-					id={token.id}
+				<TokenRow
+					tokenId={token.id}
 					name={token.name}
 				/>
 				<StyledText size="s" variant="secondary" numberOfLines={1}>

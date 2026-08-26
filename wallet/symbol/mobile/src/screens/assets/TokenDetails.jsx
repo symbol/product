@@ -7,21 +7,19 @@ import {
 	EmptyListMessage,
 	ExpirationProgress,
 	Field,
-	FlexContainer,
 	Screen,
 	SendReceiveButtons,
 	Spacer,
 	Stack,
 	StyledText,
 	TableView,
-	TokenAvatar
+	TokenInfoCard
 } from '@/app/components';
-import { useAsyncManager, useWalletController } from '@/app/hooks';
+import { useAsyncManager, useTokenDisplayData, useWalletController } from '@/app/hooks';
 import { $t } from '@/app/localization';
 import { Router } from '@/app/router/Router';
 import { getExpirationData } from '@/app/screens/assets/utils';
-import { Colors } from '@/app/styles';
-import { createTokenDisplayData, createTransactionQr } from '@/app/utils';
+import { createTransactionQr, formatTokenNameText } from '@/app/utils';
 import React from 'react';
 import { isMosaicRevokable, isMosaicSupplyModifiable } from 'wallet-common-symbol';
 
@@ -75,6 +73,10 @@ export const TokenDetails = ({ route }) => {
 	});
 	const token = dataManager.data;
 
+	// Token display data
+	const { name, ticker, imageId } = useTokenDisplayData(token ?? { id: tokenId }, chainName);
+	const nameText = formatTokenNameText(name, ticker);
+
 	// The token info is unavailable (e.g. the token has expired and is pruned from the node)
 	if (!token) {
 		return (
@@ -87,13 +89,6 @@ export const TokenDetails = ({ route }) => {
 			</Screen>
 		);
 	}
-
-	// Token display data
-	const {
-		name,
-		ticker,
-		imageId
-	} = createTokenDisplayData(token, chainName, networkIdentifier);
 
 	// Info table data
 	const tableData = [
@@ -171,24 +166,13 @@ export const TokenDetails = ({ route }) => {
 			<Screen.Upper>
 				<Spacer>
 					<Stack>
-						<Card>
-							<Spacer>
-								<Stack>
-									<FlexContainer center>
-										<TokenAvatar imageId={imageId} size="l" />
-										<StyledText type="title" size="s">
-											{name}
-										</StyledText>
-									</FlexContainer>
-									<Divider color={Colors.Semantic.background.tertiary.lighter} />
-									<Field title={$t('fieldTitle_balance')}>
-										<Amount size="l" value={token.amount} ticker={ticker} />
-									</Field>
-								</Stack>
-							</Spacer>
-						</Card>
+						<TokenInfoCard name={nameText} imageId={imageId}>
+							<Field title={$t('fieldTitle_balance')}>
+								<Amount size="l" value={token.amount} ticker={ticker} />
+							</Field>
+						</TokenInfoCard>
 						<SendReceiveButtons
-							tokenName={name}
+							tokenName={nameText}
 							accountAddress={accountAddress}
 							chainName={chainName}
 							receiveQrData={receiveQrData}
@@ -199,11 +183,7 @@ export const TokenDetails = ({ route }) => {
 							<Spacer>
 								<TableView
 									data={tableData}
-									addressBook={walletController.modules.addressBook}
-									walletAccounts={walletController.accounts}
 									chainName={chainName}
-									networkIdentifier={networkIdentifier}
-									translate={$t}
 									isTitleTranslatable
 								/>
 							</Spacer>

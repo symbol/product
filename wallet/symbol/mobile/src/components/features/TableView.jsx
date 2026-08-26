@@ -1,75 +1,77 @@
-import { AccountView, BooleanView, CopyButtonContainer, Field, MessageView, Stack, StyledText, TokenView } from '@/app/components';
+import { AccountRow, BooleanView, CopyButtonContainer, Field, MessageView, Stack, StyledText, TokenBalanceRow } from '@/app/components';
+import { useAccountDisplayData, useTokenDisplayData } from '@/app/hooks';
 import { $t } from '@/app/localization';
-import { createTokenDisplayData, getAccountKnownInfo, getTransactionTypeTranslationKey } from '@/app/utils';
-import React, { useMemo } from 'react';
+import { getTransactionTypeTranslationKey } from '@/app/utils';
+import React from 'react';
 import { StyleSheet, View } from 'react-native';
 
 /** @typedef {import('@/app/types/Table').TableRow} TableRow */
-/** @typedef {import('@/app/types/Network').NetworkIdentifier} NetworkIdentifier */
 /** @typedef {import('@/app/types/Network').ChainName} ChainName */
+/** @typedef {import('@/app/types/Account').AccountDisplayData} AccountDisplayData */
+/** @typedef {import('@/app/types/Token').TokenDisplayData} TokenDisplayData */
 
 /**
- * Resolves known info for account and token rows.
+ * Resolves display data for the account rows, keyed by address.
  * @param {TableRow[]} data - Array of table rows.
- * @param {object} options - Resolution options.
- * @param {object} options.addressBook - Address book data.
- * @param {object} options.walletAccounts - Wallet accounts data.
- * @param {ChainName} options.chainName - Chain name.
- * @param {NetworkIdentifier} options.networkIdentifier - Network identifier.
- * @returns {Map<string, *>} Map of resolved info by value.
+ * @param {ChainName} [chainName] - Chain name. Defaults to the main chain.
+ * @returns {Map<string, AccountDisplayData>} Account display data by address.
  */
-const useResolvedData = (data, options) => {
-	const { addressBook, walletAccounts, chainName, networkIdentifier } = options;
+const useAccountDisplayMap = (data, chainName) => {
+	const addresses = data.flatMap(row => {
+		if (row.type !== 'account')
+			return [];
 
-	return useMemo(() => {
-		const resolved = new Map();
+		const values = Array.isArray(row.value) ? row.value : [row.value];
 
-		for (const row of data) {
-			const values = Array.isArray(row.value) ? row.value : [row.value];
+		return values.filter(Boolean);
+	});
+	const accountsDisplayData = useAccountDisplayData(addresses, chainName);
 
-			for (const value of values) {
-				if (resolved.has(value))
-					continue;
+	return new Map(accountsDisplayData.map(accountDisplayData => [accountDisplayData.address, accountDisplayData]));
+};
 
-				if (row.type === 'account' && value) {
-					const info = getAccountKnownInfo(value, {
-						walletAccounts: walletAccounts[networkIdentifier],
-						addressBook,
-						chainName,
-						networkIdentifier
-					});
-					resolved.set(value, info);
-				}
+/**
+ * Resolves display data for the token and fee rows, keyed by token id. Only the identity fields
+ * (name, ticker, image) are read from the map; amounts come from the row itself, since several
+ * rows can share one token id, such as a transfer and its fee in the native currency.
+ * @param {TableRow[]} data - Array of table rows.
+ * @param {ChainName} [chainName] - Chain name. Defaults to the main chain.
+ * @returns {Map<string, TokenDisplayData>} Token display data by token id.
+ */
+const useTokenDisplayMap = (data, chainName) => {
+	const tokens = data.flatMap(row => {
+		if (row.type !== 'token' && row.type !== 'fee')
+			return [];
 
-				if ((row.type === 'token' || row.type === 'fee') && value) {
-					const tokenId = value.id ?? value.token?.id ?? value;
-					const tokenData = value.token ?? value;
-					const info = createTokenDisplayData(tokenData, chainName, networkIdentifier);
-					resolved.set(tokenId, info);
-				}
-			}
-		}
+		const values = Array.isArray(row.value) ? row.value : [row.value];
 
-		return resolved;
-	}, [data, addressBook, walletAccounts, chainName, networkIdentifier]);
+		return values
+			.map(value => (row.type === 'fee' ? value?.token : value))
+			.filter(Boolean);
+	});
+	const tokensDisplayData = useTokenDisplayData(tokens, chainName);
+
+	return new Map(tokensDisplayData.map(tokenDisplayData => [tokenDisplayData.tokenId, tokenDisplayData]));
 };
 
 /**
  * Renders a single row based on its type.
  * @param {TableRow} row - Row data.
- * @param {Map<string, *>} resolvedData - Map of resolved known info.
+ * @param {Map<string, AccountDisplayData>} accountsDisplayMap - Account display data by address.
+ * @param {Map<string, TokenDisplayData>} tokensDisplayMap - Token display data by token id.
  * @param {function(string): string} translate - Translation function.
  * @param {ChainName} [chainName] - Chain name, used to resolve chain-specific row values.
  * @param {string|number} [key] - Optional key for list rendering.
  * @returns {React.ReactNode} Row content.
  */
-const renderRowValue = (row, resolvedData, translate, chainName, key) => {
+const renderRowValue = (row, accountsDisplayMap, tokensDisplayMap, translate, chainName, key) => {
 	const isArrayValue = Array.isArray(row.value);
 
 	if (isArrayValue && row.value.length > 0) {
 		return row.value.map((value, index) => renderRowValue(
 			{ ...row, value },
-			resolvedData,
+			accountsDisplayMap,
+			tokensDisplayMap,
 			translate,
 			chainName,
 			`${row.title}-${index}`
@@ -83,31 +85,39 @@ const renderRowValue = (row, resolvedData, translate, chainName, key) => {
 	case 'account':
 		return (
 			<CopyButtonContainer key={key} isStretched value={row.value}>
-				<AccountView
+				<AccountRow
 					address={row.value}
-					name={resolvedData.get(row.value)?.name}
-					imageId={resolvedData.get(row.value)?.imageId}
+					name={accountsDisplayMap.get(row.value)?.name}
+					imageId={accountsDisplayMap.get(row.value)?.imageId}
 				/>
 			</CopyButtonContainer>
 		);
-	case 'token':
+	case 'token': {
+		const tokenDisplayData = tokensDisplayMap.get(row.value.id);
+
 		return (
-			<TokenView
+			<TokenBalanceRow
 				key={key}
-				name={resolvedData.get(row.value.id ?? row.value)?.name ?? row.value.name}
+				name={tokenDisplayData?.name}
+				ticker={tokenDisplayData?.ticker}
 				amount={row.value.amount}
-				imageId={resolvedData.get(row.value.id ?? row.value)?.imageId}
+				imageId={tokenDisplayData?.imageId}
 			/>
 		);
-	case 'fee':
+	}
+	case 'fee': {
+		const tokenDisplayData = tokensDisplayMap.get(row.value.token?.id);
+
 		return (
-			<TokenView
+			<TokenBalanceRow
 				key={key}
-				name={resolvedData.get(row.value.token?.id ?? row.value.token)?.name ?? row.value.token.name}
+				name={tokenDisplayData?.name}
+				ticker={tokenDisplayData?.ticker}
 				amount={row.value.token.amount}
-				imageId={resolvedData.get(row.value.token?.id ?? row.value.token)?.imageId}
+				imageId={tokenDisplayData?.imageId}
 			/>
 		);
+	}
 	case 'message':
 		return <MessageView key={key} message={row.value} />;
 	case 'boolean':
@@ -158,43 +168,23 @@ const renderRowValue = (row, resolvedData, translate, chainName, key) => {
  * @param {object} props - Component props.
  * @param {object} [props.style] - Additional styles for the root container.
  * @param {TableRow[]} props.data - Array of row objects to display.
- * @param {object} [props.addressBook] - Address book instance for resolving account names.
- * @param {Array} [props.walletAccounts] - List of wallet accounts for resolving account names.
- * @param {ChainName} [props.chainName] - Blockchain name (e.g., 'symbol').
- * @param {NetworkIdentifier} [props.networkIdentifier] - Network identifier (e.g., 'mainnet').
+ * @param {ChainName} [props.chainName] - The chain the rows belong to. Defaults to the main chain.
  * @param {boolean} [props.isTitleTranslatable=false] - Whether row titles should be translated.
- * @param {boolean} [props.showEmptyArrays=false] - Whether to show rows with empty array values.
  * @returns {React.ReactNode} TableView component.
  */
 export const TableView = ({
 	style,
 	data,
-	addressBook,
-	walletAccounts,
 	chainName,
-	networkIdentifier,
-	isTitleTranslatable = false,
-	showEmptyArrays = false
+	isTitleTranslatable = false
 }) => {
 	if (!data || !Array.isArray(data))
 		throw new Error(`TableView: "data" prop must be a valid array of rows. Received: ${typeof data}`);
 
 	const translate = $t;
-	const resolvedData = useResolvedData(data, {
-		addressBook,
-		walletAccounts,
-		chainName,
-		networkIdentifier
-	});
+	const accountsDisplayMap = useAccountDisplayMap(data, chainName);
+	const tokensDisplayMap = useTokenDisplayMap(data, chainName);
 
-	const shouldRenderRow = row => {
-		const isArrayValue = Array.isArray(row.value);
-
-		if (isArrayValue && row.value.length === 0 && !showEmptyArrays)
-			return true;
-
-		return true;
-	};
 	const getTitleText = title => {
 		if (isTitleTranslatable && translate)
 			return translate(`fieldTitle_${title}`);
@@ -206,11 +196,9 @@ export const TableView = ({
 		<View style={[styles.root, style]}>
 			<Stack>
 				{data.map((row, index) => (
-					shouldRenderRow(row) && (
-						<Field title={getTitleText(row.title)} key={`${row.title}-${index}`}>
-							{renderRowValue(row, resolvedData, translate, chainName)}
-						</Field>
-					)
+					<Field title={getTitleText(row.title)} key={`${row.title}-${index}`}>
+						{renderRowValue(row, accountsDisplayMap, tokensDisplayMap, translate, chainName)}
+					</Field>
 				))}
 			</Stack>
 		</View>

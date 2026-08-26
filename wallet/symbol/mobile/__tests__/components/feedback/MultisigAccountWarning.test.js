@@ -1,138 +1,124 @@
 import { MultisigAccountWarning } from '@/app/components/feedback/MultisigAccountWarning';
+import { AccountFixtureBuilder } from '__fixtures__/local/AccountFixtureBuilder';
+import { ScreenTester } from '__tests__/ScreenTester';
 import { runRenderTextTest } from '__tests__/component-tests';
-import { render } from '@testing-library/react-native';
+import { mockLocalization, mockWalletController } from '__tests__/mock-helpers';
 
-jest.mock('@/app/localization', () => ({
-	$t: jest.fn(key => {
-		const translations = {
-			'warning_multisig_title': 'Multisig Account',
-			'warning_multisig_body': 'This is a multisig account.',
-			'fieldTitle_cosignatories': 'Cosignatories'
-		};
-		return translations[key] || key;
-	})
-}));
+// Constants
 
-jest.mock('@/app/utils', () => ({
-	getAccountKnownInfo: address => {
-		const accountInfoMap = {
-			'TADDRESS1': { name: 'Alice', imageId: 'alice' },
-			'TADDRESS2': { name: 'Bob', imageId: 'bob' },
-			'TADDRESS3': { name: null, imageId: null }
-		};
-		return accountInfoMap[address] || { name: null, imageId: null };
-	},
-	getTokenKnownInfo: () => ({ name: null, ticker: null, imageId: null })
-}));
+const CHAIN_NAME = 'symbol';
+const NETWORK_IDENTIFIER = 'testnet';
+
+// Screen Text
+
+const SCREEN_TEXT = {
+	textWarningTitle: 'warning_multisig_title',
+	textWarningBody: 'warning_multisig_body',
+	textFieldCosignatories: 'fieldTitle_cosignatories'
+};
+
+// Account Fixtures
+
+const firstCosignatoryAccount = AccountFixtureBuilder
+	.createWithAccount(CHAIN_NAME, NETWORK_IDENTIFIER, 1)
+	.build();
+
+const secondCosignatoryAccount = AccountFixtureBuilder
+	.createWithAccount(CHAIN_NAME, NETWORK_IDENTIFIER, 2)
+	.build();
+
+const unknownCosignatoryAccount = AccountFixtureBuilder
+	.createWithAccount(CHAIN_NAME, NETWORK_IDENTIFIER, 3)
+	.build();
+
+const walletAccounts = [firstCosignatoryAccount, secondCosignatoryAccount];
+
+// Props
+
+const createDefaultProps = (overrides = {}) => ({
+	cosignatories: [firstCosignatoryAccount.address, secondCosignatoryAccount.address],
+	chainName: CHAIN_NAME,
+	...overrides
+});
 
 describe('components/MultisigAccountWarning', () => {
-	const createProps = ({
-		cosignatories,
-		addressBook,
-		accounts,
-		chainName,
-		networkIdentifier
-	} = {}) => ({
-		cosignatories: cosignatories ?? ['TADDRESS1', 'TADDRESS2'],
-		addressBook: addressBook ?? {},
-		accounts: accounts ?? { mainnet: [] },
-		chainName: chainName ?? 'symbol',
-		networkIdentifier: networkIdentifier ?? 'mainnet'
+	beforeEach(() => {
+		mockLocalization();
+		mockWalletController({
+			chainName: CHAIN_NAME,
+			networkIdentifier: NETWORK_IDENTIFIER,
+			accounts: { [NETWORK_IDENTIFIER]: walletAccounts }
+		});
 	});
 
 	runRenderTextTest(MultisigAccountWarning, {
-		props: createProps(),
+		props: createDefaultProps(),
 		textToRender: [
-			{ type: 'text', value: 'Multisig Account' },
-			{ type: 'text', value: 'This is a multisig account.' }
+			{ type: 'text', value: SCREEN_TEXT.textWarningTitle },
+			{ type: 'text', value: SCREEN_TEXT.textWarningBody },
+			{ type: 'text', value: SCREEN_TEXT.textFieldCosignatories }
 		]
-	});
-
-	describe('alert', () => {
-		it('renders warning alert with correct title and body', () => {
-			// Arrange:
-			const props = createProps();
-
-			// Act:
-			const { getByText } = render(<MultisigAccountWarning {...props} />);
-
-			// Assert:
-			expect(getByText('Multisig Account')).toBeTruthy();
-			expect(getByText('This is a multisig account.')).toBeTruthy();
-		});
 	});
 
 	describe('cosignatories table', () => {
 		const runCosignatoriesTest = (description, config, expected) => {
 			it(description, () => {
 				// Arrange:
-				const props = createProps(config.props);
+				const props = createDefaultProps({ cosignatories: config.cosignatories });
 
 				// Act:
-				const { queryByText, queryAllByText } = render(<MultisigAccountWarning {...props} />);
+				const screenTester = new ScreenTester(MultisigAccountWarning, props);
 
 				// Assert:
-				expected.visibleTexts.forEach(text => {
-					const elements = queryAllByText(text);
-					expect(elements.length).toBeGreaterThan(0);
-				});
+				screenTester.expectText(expected.visibleTexts);
 
-				if (expected.hiddenTexts) {
-					expected.hiddenTexts.forEach(text => {
-						expect(queryByText(text)).toBeNull();
-					});
-				}
+				if (expected.hiddenTexts)
+					screenTester.notExpectText(expected.hiddenTexts);
 			});
 		};
 
-		const tests = [
+		const cosignatoriesTests = [
 			{
-				description: 'renders cosignatories with resolved names',
+				description: 'renders the resolved names of the wallet cosignatories',
 				config: {
-					props: {
-						cosignatories: ['TADDRESS1', 'TADDRESS2']
-					}
+					cosignatories: [firstCosignatoryAccount.address, secondCosignatoryAccount.address]
 				},
 				expected: {
-					visibleTexts: ['Cosignatories', 'Alice', 'TADDRESS1', 'Bob', 'TADDRESS2']
+					visibleTexts: [
+						firstCosignatoryAccount.name,
+						firstCosignatoryAccount.address,
+						secondCosignatoryAccount.name,
+						secondCosignatoryAccount.address
+					]
 				}
 			},
 			{
-				description: 'renders cosignatories without names when not resolved',
+				description: 'renders only the address for an unknown cosignatory',
 				config: {
-					props: {
-						cosignatories: ['TADDRESS3']
-					}
+					cosignatories: [unknownCosignatoryAccount.address]
 				},
 				expected: {
-					visibleTexts: ['Cosignatories', 'TADDRESS3']
+					visibleTexts: [unknownCosignatoryAccount.address],
+					hiddenTexts: [unknownCosignatoryAccount.name]
 				}
 			},
 			{
-				description: 'renders single cosignatory',
+				description: 'renders a mix of resolved and unresolved cosignatories',
 				config: {
-					props: {
-						cosignatories: ['TADDRESS1']
-					}
+					cosignatories: [firstCosignatoryAccount.address, unknownCosignatoryAccount.address]
 				},
 				expected: {
-					visibleTexts: ['Cosignatories', 'Alice', 'TADDRESS1']
-				}
-			},
-			{
-				description: 'renders multiple cosignatories with mixed resolution',
-				config: {
-					props: {
-						cosignatories: ['TADDRESS1', 'TADDRESS3']
-					}
-				},
-				expected: {
-					visibleTexts: ['Cosignatories', 'Alice', 'TADDRESS1', 'TADDRESS3']
+					visibleTexts: [
+						firstCosignatoryAccount.name,
+						firstCosignatoryAccount.address,
+						unknownCosignatoryAccount.address
+					],
+					hiddenTexts: [unknownCosignatoryAccount.name]
 				}
 			}
 		];
 
-		tests.forEach(test => {
+		cosignatoriesTests.forEach(test => {
 			runCosignatoriesTest(test.description, test.config, test.expected);
 		});
 	});

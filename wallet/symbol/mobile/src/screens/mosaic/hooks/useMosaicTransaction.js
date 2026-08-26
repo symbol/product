@@ -62,8 +62,7 @@ export const useMosaicTransaction = ({
 	 * @returns {TransactionConfirmationDialogSection[]}
 	 */
 	const getConfirmationPreview = transactionBundle => {
-		const { chainName, networkIdentifier, modules: { addressBook }, accounts } = walletController;
-		const walletAccounts = accounts;
+		const { chainName } = walletController;
 
 		const createMosaicCreationTableData = transaction => {
 			const [definitionTransaction, supplyChangeTransaction] = transaction.innerTransactions;
@@ -93,9 +92,6 @@ export const useMosaicTransaction = ({
 				id: `section_${index}`,
 				title: '',
 				chainName,
-				networkIdentifier,
-				addressBook,
-				walletAccounts,
 				tableData
 			};
 		});

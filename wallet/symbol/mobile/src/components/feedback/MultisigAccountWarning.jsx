@@ -9,13 +9,10 @@ import React from 'react';
  * alongside a table listing the cosignatory accounts.
  * @param {object} props - Component props.
  * @param {string[]} props.cosignatories - Array of cosignatory account addresses.
- * @param {object} props.addressBook - Address book for resolving account info.
- * @param {object} props.accounts - Wallet accounts for resolving account info.
- * @param {ChainName} props.chainName - Chain name for token/account resolution.
- * @param {import('@/app/types/Network').NetworkIdentifier} props.networkIdentifier - Network identifier for token/account resolution.
+ * @param {ChainName} [props.chainName] - The chain the accounts belong to. Defaults to the main chain.
  * @returns {React.ReactNode} MultisigAccountWarning component.
  */
-export const MultisigAccountWarning = ({ cosignatories, addressBook, accounts, chainName, networkIdentifier }) => {
+export const MultisigAccountWarning = ({ cosignatories, chainName }) => {
 	const tableData = [
 		{
 			title: 'cosignatories',
@@ -34,10 +31,7 @@ export const MultisigAccountWarning = ({ cosignatories, addressBook, accounts, c
 			<TableView
 				isTitleTranslatable
 				data={tableData}
-				addressBook={addressBook}
-				walletAccounts={accounts}
 				chainName={chainName}
-				networkIdentifier={networkIdentifier}
 			/>
 		</Stack>
 	);

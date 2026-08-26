@@ -51,7 +51,6 @@ export const Send = props => {
 	const { route } = props;
 	const walletController = useWalletController(route.params?.chainName);
 	const {
-		accounts,
 		isWalletReady,
 		isNetworkConnectionReady,
 		networkProperties,
@@ -61,7 +60,6 @@ export const Send = props => {
 		price
 	} = walletController;
 	const currentAccountInfo = walletController.currentAccountInfo || {};
-	const walletAccounts = accounts[networkIdentifier];
 	const hasMessageField = CHAINS_WITH_MESSAGE_SUPPORT.includes(walletController.chainName);
 
 	// Sender selection (current or multisig)
@@ -209,11 +207,7 @@ export const Send = props => {
 						<SelectTransactionSender
 							value={senderAddress}
 							options={senderOptions}
-							ticker={ticker}
 							chainName={walletController.chainName}
-							networkIdentifier={networkIdentifier}
-							walletAccounts={walletAccounts}
-							addressBook={walletController.modules.addressBook}
 							onChange={changeSenderAddress}
 						/>
 					</Stack>
@@ -222,10 +216,7 @@ export const Send = props => {
 						<InputAddress
 							label={$t('input_recipient')}
 							value={recipientAddress}
-							addressBook={walletController.modules.addressBook}
-							accounts={walletAccounts}
 							chainName={walletController.chainName}
-							networkIdentifier={walletController.networkIdentifier}
 							extraValidators={[validateRecipient(walletController.chainName)]}
 							onChange={changeRecipientAddress}
 							onValidityChange={changeRecipientValidity}
@@ -239,7 +230,6 @@ export const Send = props => {
 								value={selectedTokenId}
 								tokens={tokenListFiltered}
 								chainName={walletController.chainName}
-								networkIdentifier={walletController.networkIdentifier}
 								onChange={changeSelectedTokenId}
 							/>
 							<InputAmount

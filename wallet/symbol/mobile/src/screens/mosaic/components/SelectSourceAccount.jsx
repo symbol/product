@@ -1,12 +1,8 @@
-import { AccountView, Amount, Dropdown } from '@/app/components';
-import { Sizes } from '@/app/styles';
-import { createAccountDisplayData } from '@/app/utils';
+import { AccountBalanceRow, Dropdown } from '@/app/components';
+import { useAccountDisplayData } from '@/app/hooks';
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
 
 /** @typedef {import('wallet-common-symbol/src/types/Mosaic').MosaicOwner} MosaicOwner */
-/** @typedef {import('@/app/types/Account').WalletAccount} WalletAccount */
-/** @typedef {import('@/app/types/Network').NetworkIdentifier} NetworkIdentifier */
 /** @typedef {import('@/app/types/Network').ChainName} ChainName */
 
 /**
@@ -16,24 +12,16 @@ import { StyleSheet, View } from 'react-native';
  * @param {string} props.label - Dropdown label.
  * @param {string} props.value - Currently selected holder address.
  * @param {MosaicOwner[]} props.owners - The mosaic holders to choose from.
- * @param {WalletAccount[]} [props.walletAccounts] - The wallet accounts for display names.
- * @param {object} [props.addressBook] - The address book for display names.
- * @param {ChainName} props.chainName - Current chain name.
- * @param {NetworkIdentifier} props.networkIdentifier - Current network identifier.
+ * @param {ChainName} [props.chainName] - The chain the holders belong to. Defaults to the main chain.
  * @param {function(string): void} props.onChange - Callback when the selected holder changes.
  * @returns {React.ReactNode} SelectSourceAccount component.
  */
 export const SelectSourceAccount = props => {
-	const { label, value, owners, walletAccounts, addressBook, chainName, networkIdentifier, onChange } = props;
+	const { label, value, owners, chainName, onChange } = props;
+	const ownersDisplayData = useAccountDisplayData(owners.map(owner => owner.address), chainName);
 
-	const displayContext = { 
-		walletAccounts, 
-		addressBook, 
-		chainName, 
-		networkIdentifier 
-	};
-	const list = owners.map(owner => {
-		const accountName = createAccountDisplayData(owner.address, displayContext).name;
+	const list = owners.map((owner, index) => {
+		const accountName = ownersDisplayData[index].name;
 
 		return {
 			value: owner.address,
@@ -44,16 +32,11 @@ export const SelectSourceAccount = props => {
 	});
 
 	const renderItem = ({ item }) => (
-		<View style={styles.item}>
-			<AccountView
-				address={item.value}
-				name={item.name}
-			/>
-			<Amount
-				value={item.amount}
-				style={styles.amount}
-			/>
-		</View>
+		<AccountBalanceRow
+			address={item.value}
+			name={item.name}
+			amount={item.amount}
+		/>
 	);
 
 	return (
@@ -66,15 +49,3 @@ export const SelectSourceAccount = props => {
 		/>
 	);
 };
-
-const styles = StyleSheet.create({
-	item: {
-		flex: 1,
-		flexDirection: 'row',
-		justifyContent: 'space-between',
-		gap: Sizes.Semantic.layoutSpacing.l
-	},
-	amount: {
-		alignSelf: 'flex-end'
-	}
-});

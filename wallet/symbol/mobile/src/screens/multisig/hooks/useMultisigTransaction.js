@@ -98,8 +98,7 @@ export const useMultisigTransaction = ({
 	 * @returns {TransactionConfirmationDialogSection[]}
 	 */
 	const getConfirmationPreview = transactionBundle => {
-		const { chainName, networkIdentifier, modules: { addressBook }, accounts } = walletController;
-		const walletAccounts = accounts;
+		const { chainName } = walletController;
 
 		const createHashLockTableData = transaction => {
 			const hashLockData = {
@@ -152,9 +151,6 @@ export const useMultisigTransaction = ({
 				id: `section_${index}`,
 				title: '',
 				chainName,
-				networkIdentifier,
-				addressBook,
-				walletAccounts,
 				tableData
 			};
 		});

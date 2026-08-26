@@ -125,11 +125,7 @@ export const AccountDetails = () => {
 								<Spacer>
 									<TableView
 										data={tableData}
-										addressBook={walletController.modules.addressBook}
-										walletAccounts={walletController.accounts}
 										chainName={chainName}
-										networkIdentifier={networkIdentifier}
-										translate={$t}
 										isTitleTranslatable
 									/>
 								</Spacer>

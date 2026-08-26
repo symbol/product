@@ -1,6 +1,16 @@
 import { Card, Spacer, Stack, TableView } from '@/app/components';
 
-export const RequestDetails = ({ requestDetailsViewModel, chainName, networkIdentifier, walletAccounts, addressBook }) => {
+/** @typedef {import('react')} React */
+/** @typedef {import('@/app/types/Network').ChainName} ChainName */
+
+/**
+ * RequestDetails component. A card listing the parameters of a transport request as a table.
+ * @param {object} props - Component props.
+ * @param {object} props.requestDetailsViewModel - View model with the table rows to display.
+ * @param {ChainName} [props.chainName] - The chain the request belongs to. Defaults to the main chain.
+ * @returns {React.ReactNode} RequestDetails component.
+ */
+export const RequestDetails = ({ requestDetailsViewModel, chainName }) => {
 
 	return (
 		<Card>
@@ -8,10 +18,7 @@ export const RequestDetails = ({ requestDetailsViewModel, chainName, networkIden
 				<Stack>
 					<TableView
 						data={requestDetailsViewModel.tableData}
-						addressBook={addressBook}
-						walletAccounts={walletAccounts}
 						chainName={chainName}
-						networkIdentifier={networkIdentifier}
 					/>
 				</Stack>
 			</Spacer>

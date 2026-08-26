@@ -1,4 +1,5 @@
 import * as hooks from '@/app/hooks';
+import * as useWalletControllerModule from '@/app/hooks/useWalletController';
 import { PlatformUtils } from '@/app/lib/platform/PlatformUtils';
 import * as localization from '@/app/localization';
 import { currentAccount, currentNetworkIdentifier, walletStorageAccounts } from '__fixtures__/local/wallet';
@@ -109,6 +110,8 @@ export const createWalletControllerMock = (overrides = {}) => {
 export const mockWalletController = (overrides = {}) => {
 	const walletControllerMock = createWalletControllerMock(overrides);
 	jest.spyOn(hooks, 'useWalletController').mockReturnValue(walletControllerMock);
+	// Display-data hooks import useWalletController directly, bypassing the barrel spy above.
+	jest.spyOn(useWalletControllerModule, 'useWalletController').mockReturnValue(walletControllerMock);
 
 	return walletControllerMock;
 };

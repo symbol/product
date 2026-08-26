@@ -43,8 +43,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
  */
 export const Harvesting = () => {
 	const walletController = useWalletController();
-	const { ticker, isWalletReady, networkIdentifier, chainName, networkProperties } = walletController;
-	const walletAccounts = walletController.accounts[networkIdentifier];
+	const { ticker, isWalletReady, chainName, networkProperties } = walletController;
 
 	// Custom status to feedback pending state after sending start/stop transaction until next status load
 	const [isPendingTransaction, setIsPendingTransaction] = useState(false);
@@ -227,11 +226,7 @@ export const Harvesting = () => {
 							<SelectTransactionSender
 								value={senderAddress}
 								options={senderOptions}
-								ticker={ticker}
 								chainName={chainName}
-								networkIdentifier={networkIdentifier}
-								walletAccounts={walletAccounts}
-								addressBook={walletController.modules.addressBook}
 								onChange={setSenderAddress}
 							/>
 						</Stack>

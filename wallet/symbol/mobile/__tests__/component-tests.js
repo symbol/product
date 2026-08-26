@@ -174,20 +174,21 @@ export const runPressTest = (Component, config) => {
  * @typedef {object} RenderTextTest
  * @property {object} props - The props to be passed to the component.
  * @property {RenderText[]} textToRender - The text expected to be rendered by the component.
+ * @property {RenderText[]} [textToHide] - The text expected NOT to be rendered by the component.
  */
 
 /**
  * Runs render text tests for a given component.
- * 
+ *
  * @param {React.Component} Component - The React Native component to be tested.
  * @param {RenderTextTest} config - Configuration object for the test.
  */
 export const runRenderTextTest = (Component, config) => {
-	const { props = {}, textToRender } = config;
+	const { props = {}, textToRender, textToHide } = config;
 	const cases = [
-		{ 
-			description: 'renders component with text', 
-			shouldBeRendered: true 
+		{
+			description: 'renders component with text',
+			shouldBeRendered: true
 		}
 	];
 
@@ -197,7 +198,8 @@ export const runRenderTextTest = (Component, config) => {
 				const config = {
 					Component,
 					props,
-					textToRender
+					textToRender,
+					textToHide
 				};
 				const expected = {
 					shouldBeRendered: testCase.shouldBeRendered

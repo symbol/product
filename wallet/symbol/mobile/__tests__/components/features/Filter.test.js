@@ -3,7 +3,7 @@ import { FilterType } from '@/app/types/Filter';
 import { AccountFixtureBuilder } from '__fixtures__/local/AccountFixtureBuilder';
 import { ScreenTester } from '__tests__/ScreenTester';
 import { runRenderTextTest } from '__tests__/component-tests';
-import { mockLocalization } from '__tests__/mock-helpers';
+import { createAddressBookMock, mockLocalization, mockWalletController } from '__tests__/mock-helpers';
 
 // Constants
 
@@ -47,21 +47,21 @@ const account = AccountFixtureBuilder
 
 // Props Helpers
 
-const createAddressBookMock = contacts => ({
-	whiteList: contacts,
-	getContactByAddress: address => contacts.find(c => c.address === address) || null
-});
-
 const createDefaultProps = (overrides = {}) => ({
 	data: allFilters,
 	value: {},
 	isDisabled: false,
-	addressBook: createAddressBookMock([]),
-	accounts: [],
 	chainName: CHAIN_NAME,
-	networkIdentifier: NETWORK_IDENTIFIER,
 	onChange: jest.fn(),
 	...overrides
+});
+
+// The address filter dropdown self-sources its list from the wallet controller
+const mockController = ({ walletAccounts = [], contacts = [] } = {}) => mockWalletController({
+	chainName: CHAIN_NAME,
+	networkIdentifier: NETWORK_IDENTIFIER,
+	accounts: { [NETWORK_IDENTIFIER]: walletAccounts },
+	modules: { addressBook: createAddressBookMock(contacts) }
 });
 
 // Render Helper
@@ -76,6 +76,7 @@ describe('components/features/Filter', () => {
 	beforeEach(() => {
 		mockLocalization();
 		jest.clearAllMocks();
+		mockController();
 	});
 
 	runRenderTextTest(Filter, {
@@ -198,7 +199,8 @@ describe('components/features/Filter', () => {
 		const runAddressFilterTest = (description, config, expected) => {
 			it(description, () => {
 				// Arrange:
-				const { tester, props } = createTester(config.propsOverrides);
+				mockController(config.controller);
+				const { tester, props } = createTester();
 
 				// Act:
 				tester.pressButton(addressFilter.title);
@@ -218,9 +220,7 @@ describe('components/features/Filter', () => {
 			{
 				description: 'renders address book contacts in dropdown',
 				config: {
-					propsOverrides: {
-						addressBook: createAddressBookMock([account])
-					},
+					controller: { contacts: [account] },
 					addressToSelect: null
 				},
 				expected: {
@@ -230,9 +230,7 @@ describe('components/features/Filter', () => {
 			{
 				description: 'calls onChange when contact is selected',
 				config: {
-					propsOverrides: {
-						addressBook: createAddressBookMock([account])
-					},
+					controller: { contacts: [account] },
 					addressToSelect: account.name
 				},
 				expected: {
@@ -243,9 +241,7 @@ describe('components/features/Filter', () => {
 			{
 				description: 'calls onChange when account is selected',
 				config: {
-					propsOverrides: {
-						accounts: [account]
-					},
+					controller: { walletAccounts: [account] },
 					addressToSelect: account.name
 				},
 				expected: {

@@ -13,6 +13,7 @@ import {
 	isPublicKey as isSymbolPublicKey
 } from 'wallet-common-symbol/src/utils/account';
 
+/** @typedef {import('@/app/types/Account').AccountDisplayData} AccountDisplayData */
 /** @typedef {import('@/app/types/Account').WalletAccount} WalletAccount */
 /** @typedef {import('@/app/types/Network').NetworkIdentifier} NetworkIdentifier */
 /** @typedef {import('@/app/types/Network').ChainName} ChainName */
@@ -86,15 +87,6 @@ export const getAccountKnownInfo = (address, options) => {
 
 	return { name, imageId };
 };
-
-/**
- * Account display data structure.
- * @typedef {object} AccountDisplayData
- * @property {string} address - The account address.
- * @property {string} name - The display name for the account.
- * @property {string|null} imageId - The image ID for the account avatar, or null if not available.
- * @property {string} color - The generated color for the account avatar when no image is available.
- */
 
 /**
  * Creates account display data by combining known account information with generated color.

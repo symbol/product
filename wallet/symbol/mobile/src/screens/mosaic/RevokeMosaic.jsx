@@ -41,7 +41,6 @@ export const RevokeMosaic = props => {
 	const { route } = props;
 	const walletController = useWalletController(route.params?.chainName);
 	const {
-		accounts,
 		isWalletReady,
 		isNetworkConnectionReady,
 		networkIdentifier,
@@ -49,7 +48,6 @@ export const RevokeMosaic = props => {
 		ticker
 	} = walletController;
 	const currentAccountInfo = walletController.currentAccountInfo || {};
-	const walletAccounts = accounts[networkIdentifier];
 	const { mosaicId } = route.params;
 
 	// Transaction sender
@@ -157,9 +155,6 @@ export const RevokeMosaic = props => {
 		transactionFeeTierLevel: transactionSpeed
 	});
 
-	// Warning
-	const noHoldersAlert = createNoHoldersAlertData(sourceOptions.length, isLoading);
-
 	// Derived state
 	const isLoading = !isWalletReady || isMosaicLoading || isOwnersLoading;
 	const isButtonDisabled = !isNetworkConnectionReady
@@ -167,6 +162,9 @@ export const RevokeMosaic = props => {
 		|| !isAmountValid
 		|| !transactionFees
 		|| isFeesLoading;
+
+	// Warning
+	const noHoldersAlert = createNoHoldersAlertData(sourceOptions.length, isLoading);
 
 	return (
 		<TransactionScreenTemplate
@@ -186,11 +184,7 @@ export const RevokeMosaic = props => {
 						<SelectTransactionSender
 							value={senderAddress}
 							options={senderOptions}
-							ticker={ticker}
 							chainName={chainName}
-							networkIdentifier={networkIdentifier}
-							walletAccounts={walletAccounts}
-							addressBook={walletController.modules.addressBook}
 							isMultisigDisabled
 							onChange={changeSenderAddress}
 						/>
@@ -207,9 +201,6 @@ export const RevokeMosaic = props => {
 								value={sourceAddress}
 								owners={sourceOptions}
 								chainName={chainName}
-								networkIdentifier={networkIdentifier}
-								walletAccounts={walletAccounts}
-								addressBook={walletController.modules.addressBook}
 								onChange={changeSourceAddress}
 							/>
 							{noHoldersAlert.isVisible && (
@@ -228,7 +219,6 @@ export const RevokeMosaic = props => {
 								value={mosaic?.id}
 								tokens={tokens}
 								chainName={chainName}
-								networkIdentifier={networkIdentifier}
 								isDisabled
 								onChange={() => {}}
 							/>

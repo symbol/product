@@ -46,26 +46,30 @@ export const expectText = async (screenRender, expectedTextList, shouldBeRendere
 
 /**
  * Helper function to test rendering of React Native components.
- * 
+ *
  * @param {object} config - Configuration object for the test.
  * @param {React.Component} config.Component - The React Native component to be tested.
  * @param {object} config.props - Props to be passed to the component.
  * @param {React.ReactNode} [config.children] - Children to be passed to the component.
  * @param {RenderText[]} [config.textToRender] - The text expected to be rendered by the component.
+ * @param {RenderText[]} [config.textToHide] - The text expected NOT to be rendered by the component.
  */
 export const testRenderWith = (config, expected = {}) => {
 	// Arrange:
-	const { Component, props, textToRender } = config;
+	const { Component, props, textToRender, textToHide } = config;
 	const { shouldBeRendered = true } = expected;
 
 	// Act:
 	const renderer = render(<Component {...props} />);
-	
+
 	// Assert:
 	expect(renderer.root).toBeTruthy();
 
 	if (textToRender)
 		expectText(renderer, textToRender, shouldBeRendered);
+
+	if (textToHide && shouldBeRendered)
+		expectText(renderer, textToHide, false);
 };
 
 /**

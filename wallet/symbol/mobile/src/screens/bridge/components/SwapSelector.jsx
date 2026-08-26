@@ -1,56 +1,41 @@
-import { Amount, DropdownModal, ListItemContainer, LoadingIndicator, StyledText, TokenAvatar } from '@/app/components';
+import { DropdownModal, ListItemContainer, LoadingIndicator, StyledText, TokenBalanceRow } from '@/app/components';
+import { useTokenDisplayData } from '@/app/hooks';
 import { Colors, Sizes } from '@/app/styles';
-import { getTokenKnownInfo } from '@/app/utils';
 import { useState } from 'react';
 import { Image, StyleSheet, TouchableOpacity, View } from 'react-native';
 import Animated, { FadeInDown, FadeInUp, FadeOutDown, FadeOutUp } from 'react-native-reanimated'; // eslint-disable-line import/order
 
 /** @typedef {import('@/app/screens/bridge/types/Bridge').SwapSide} SwapSide */
 /** @typedef {import('@/app/screens/bridge/types/Bridge').SwapToken} SwapToken */
-/** @typedef {import('@/app/types/Network').NetworkIdentifier} NetworkIdentifier */
 /** @typedef {import('@/app/types/Network').ChainName} ChainName */
 
 const ICON_SWAP_REVERSE = require('@/app/assets/images/components/swap-reverse.png');
 const REVERSE_BUTTON_SIZE = Sizes.Semantic.spacing.m * 5;
 
 /**
- * TokenItem component. Displays token info with avatar, name, and balance.
+ * SwapTokenRow component. A swap-side token row: resolved token identity and amount, with the
+ * side's chain name beside the token name.
  * @param {object} props - Component props.
  * @param {SwapToken} props.token - Token data.
- * @param {ChainName} props.chainName - Chain name.
- * @param {NetworkIdentifier} props.networkIdentifier - Network identifier.
- * @returns {import('react').ReactNode} TokenItem component.
+ * @param {ChainName} props.chainName - Chain name of the swap side.
+ * @returns {import('react').ReactNode} SwapTokenRow component.
  */
-const TokenItem = ({ token, chainName, networkIdentifier }) => {
-	// Resolve value token info for name, ticker and image
-	const resolvedTokenInfo = getTokenKnownInfo(
-		chainName,
-		networkIdentifier,
-		token.id
-	);
-
-	// Name
-	const name = resolvedTokenInfo.name ?? token.name;
-	const { ticker } = resolvedTokenInfo;
-	const nameText = !ticker
-		? name
-		: `${name} • ${ticker}`;
+const SwapTokenRow = ({ token, chainName }) => {
+	const tokenDisplayData = useTokenDisplayData(token, chainName);
 
 	return (
-		<View style={styles.tokenItem}>
-			<TokenAvatar imageId={resolvedTokenInfo.imageId} size="l" />
-			<View style={styles.tokenTextContainer}>
-				<View style={styles.tokenTitleRow}>
-					<StyledText>
-						{nameText}
-					</StyledText>
-					<StyledText type="label" variant="secondary">
-						{chainName}
-					</StyledText>
-				</View>
-				<Amount size="l" value={token.amount} />
-			</View>
-		</View>
+		<TokenBalanceRow
+			name={tokenDisplayData.name}
+			ticker={tokenDisplayData.ticker}
+			amount={tokenDisplayData.amount}
+			imageId={tokenDisplayData.imageId}
+			size="l"
+			titleCaption={(
+				<StyledText type="label" variant="secondary">
+					{chainName}
+				</StyledText>
+			)}
+		/>
 	);
 };
 
@@ -84,10 +69,9 @@ const SelectTokenDropdown = props => {
 
 	// Items renderer
 	const renderItem = ({ item }) => (
-		<TokenItem
+		<SwapTokenRow
 			token={item.token}
 			chainName={item.chainName}
-			networkIdentifier={item.networkIdentifier}
 		/>
 	);
 
@@ -125,10 +109,9 @@ const TokenSelect = ({ value, list, accessibilityLabel, onChange }) => {
 	return (
 		<>
 			<ListItemContainer onPress={openDropdown} accessibilityLabel={accessibilityLabel}>
-				<TokenItem
+				<SwapTokenRow
 					token={value.token}
 					chainName={value.chainName}
-					networkIdentifier={value.networkIdentifier}
 				/>
 			</ListItemContainer>
 			<SelectTokenDropdown
@@ -226,20 +209,6 @@ const styles = StyleSheet.create({
 		position: 'relative',
 		flexDirection: 'column',
 		gap: Sizes.Semantic.spacing.l
-	},
-	tokenItem: {
-		flexDirection: 'row',
-		alignItems: 'center',
-		gap: Sizes.Semantic.spacing.m,
-		flex: 1
-	},
-	tokenTextContainer: {
-		flex: 1,
-		justifyContent: 'center'
-	},
-	tokenTitleRow: {
-		flexDirection: 'row',
-		justifyContent: 'space-between'
 	},
 	reverseButton: {
 		position: 'absolute',

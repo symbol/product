@@ -41,15 +41,12 @@ export const ModifyMosaic = props => {
 	const { route } = props;
 	const walletController = useWalletController(route.params?.chainName);
 	const {
-		accounts,
 		isWalletReady,
 		isNetworkConnectionReady,
-		networkIdentifier,
 		chainName,
 		ticker
 	} = walletController;
 	const currentAccountInfo = walletController.currentAccountInfo || {};
-	const walletAccounts = accounts[networkIdentifier];
 	const { mosaicId } = route.params;
 
 	// Transaction sender
@@ -175,11 +172,7 @@ export const ModifyMosaic = props => {
 						<SelectTransactionSender
 							value={senderAddress}
 							options={senderOptions}
-							ticker={ticker}
 							chainName={chainName}
-							networkIdentifier={networkIdentifier}
-							walletAccounts={walletAccounts}
-							addressBook={walletController.modules.addressBook}
 							isMultisigDisabled
 							onChange={changeSenderAddress}
 						/>

@@ -134,10 +134,7 @@ export const TransactionScreenTemplate = props => {
 					<Spacer>
 						<MultisigAccountWarning
 							cosignatories={accountCosignatories}
-							addressBook={walletController.modules.addressBook}
-							accounts={walletController.accounts[walletController.networkIdentifier]}
 							chainName={walletController.chainName}
-							networkIdentifier={walletController.networkIdentifier}
 						/>
 					</Spacer>
 				</Screen.Upper>

@@ -2,18 +2,19 @@ import { SelectToken } from '@/app/components/controls/SelectToken';
 import { TokenFixtureBuilder } from '__fixtures__/local/TokenFixtureBuilder';
 import { ScreenTester } from '__tests__/ScreenTester';
 import { runDropdownSelectTest, runRenderTextTest } from '__tests__/component-tests';
-import { mockLocalization } from '__tests__/mock-helpers';
+import { mockLocalization, mockWalletController } from '__tests__/mock-helpers';
 
 // Mocks
 
 jest.mock('@/app/utils', () => ({
+	...jest.requireActual('@/app/utils'),
 	getTokenKnownInfo: (chainName, networkIdentifier, tokenId) => {
 		const tokenInfoMap = {
 			'6BED913FA20223F8': { name: 'Symbol Token', ticker: 'XYM', imageId: 'symbol' },
-			'3A8416DB2D53B6C8': { name: 'Custom Token', ticker: 'CTK', imageId: 'custom' },
-			'4A8416DB2D53B6C8': { name: null, ticker: null, imageId: null }
+			'3A8416DB2D53B6C8': { name: 'Custom Token', ticker: 'CTK', imageId: 'custom' }
 		};
-		return tokenInfoMap[tokenId] || {};
+
+		return tokenInfoMap[tokenId] ?? { name: null, ticker: null, imageId: null };
 	}
 }));
 
@@ -77,6 +78,7 @@ const createDefaultProps = (overrides = {}) => ({
 describe('components/SelectToken', () => {
 	beforeEach(() => {
 		mockLocalization();
+		mockWalletController();
 	});
 
 	runRenderTextTest(SelectToken, {
@@ -154,9 +156,9 @@ describe('components/SelectToken', () => {
 			it(description, () => {
 				// Arrange:
 				const onChangeMock = jest.fn();
-				const props = createDefaultProps({ 
-					value: config.initialValue, 
-					onChange: onChangeMock 
+				const props = createDefaultProps({
+					value: config.initialValue,
+					onChange: onChangeMock
 				});
 				const screenTester = new ScreenTester(SelectToken, props);
 
@@ -172,8 +174,8 @@ describe('components/SelectToken', () => {
 		const onChangeTests = [
 			{
 				description: 'calls onChange with custom token id when selected',
-				config: { 
-					initialValue: tokenSymbol.id, 
+				config: {
+					initialValue: tokenSymbol.id,
 					triggerText: SCREEN_TEXT.textSymbolTokenName,
 					selectText: SCREEN_TEXT.textCustomTokenDisplay
 				},
@@ -181,8 +183,8 @@ describe('components/SelectToken', () => {
 			},
 			{
 				description: 'calls onChange with unknown token id when selected',
-				config: { 
-					initialValue: tokenSymbol.id, 
+				config: {
+					initialValue: tokenSymbol.id,
 					triggerText: SCREEN_TEXT.textSymbolTokenName,
 					selectText: SCREEN_TEXT.textUnknownTokenName
 				},
@@ -190,8 +192,8 @@ describe('components/SelectToken', () => {
 			},
 			{
 				description: 'calls onChange with symbol token id when selected from custom',
-				config: { 
-					initialValue: tokenCustom.id, 
+				config: {
+					initialValue: tokenCustom.id,
 					triggerText: SCREEN_TEXT.textCustomTokenName,
 					selectText: SCREEN_TEXT.textSymbolTokenDisplay
 				},

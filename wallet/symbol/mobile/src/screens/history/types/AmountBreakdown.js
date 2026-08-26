@@ -1,5 +1,5 @@
 /** @typedef {import('@/app/types/Token').Token} Token */
-/** @typedef {import('@/app/utils/account').AccountDisplayData} AccountDisplayData */
+/** @typedef {import('@/app/types/Account').AccountDisplayData} AccountDisplayData */
 
 /**
  * Amount change type enum.

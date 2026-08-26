@@ -115,7 +115,7 @@ export const BridgeSwap = props => {
 	const {
 		createTransaction,
 		getConfirmationPreview
-	} = useBridgeTransaction({ bridge, target, amount, estimations, walletController: sourceWalletController });
+	} = useBridgeTransaction({ bridge, target, amount, estimations });
 
 	// Update ref to break circular dependency with useTransactionFees
 	createTransactionRef.current = createTransaction;

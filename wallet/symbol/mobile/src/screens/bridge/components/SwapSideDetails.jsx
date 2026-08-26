@@ -1,5 +1,5 @@
 import {
-	AccountView,
+	AccountRow,
 	ButtonPlain,
 	Card,
 	CopyButtonContainer,
@@ -8,7 +8,7 @@ import {
 	Spacer,
 	Stack,
 	StyledText,
-	TokenView
+	TokenBalanceRow
 } from '@/app/components';
 import { PlatformUtils } from '@/app/lib/platform/PlatformUtils';
 import { $t } from '@/app/localization';
@@ -44,9 +44,6 @@ export const SwapSideDetails = ({ type, chainName, networkIdentifier, token, acc
 		? $t('fieldTitle_senderAddress')
 		: $t('fieldTitle_recipientAddress');
 
-	// Token
-	const tokenAmountText = token.amount ? token.amount : '..';
-
 	// Transaction hash
 	const isTransactionVisible = !!transactionHash;
 
@@ -62,11 +59,11 @@ export const SwapSideDetails = ({ type, chainName, networkIdentifier, token, acc
 		<Card>
 			<Spacer>
 				<Stack>
-					<TokenView
+					<TokenBalanceRow
 						name={token.name}
 						ticker={token.ticker}
 						imageId={token.imageId}
-						amount={tokenAmountText}
+						amount={token.amount || null}
 						size="l"
 					/>
 					<Divider color={Colors.Semantic.background.tertiary.lighter} />
@@ -78,7 +75,7 @@ export const SwapSideDetails = ({ type, chainName, networkIdentifier, token, acc
 					<Field title={accountTitle}>
 						{isAccountVisible ? (
 							<CopyButtonContainer value={account.address} isStretched>
-								<AccountView
+								<AccountRow
 									address={account.address}
 									name={account.name}
 									imageId={account.imageId}

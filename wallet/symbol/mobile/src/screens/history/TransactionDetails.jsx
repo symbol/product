@@ -191,11 +191,7 @@ export const TransactionDetails = ({ route }) => {
 												<Divider inverse />
 												<TableView
 													data={cardData.table}
-													addressBook={addressBook}
-													walletAccounts={walletController.accounts}
 													chainName={chainName}
-													networkIdentifier={networkIdentifier}
-													translate={$t}
 													isTitleTranslatable
 												/>
 											</Stack>
@@ -215,11 +211,7 @@ export const TransactionDetails = ({ route }) => {
 						</Stack>
 						<TableView
 							data={transactionBaseTableData}
-							addressBook={addressBook}
-							walletAccounts={walletController.accounts}
 							chainName={chainName}
-							networkIdentifier={networkIdentifier}
-							translate={$t}
 							isTitleTranslatable
 						/>
 						{amountBreakdownDisplayData.isBreakdownVisible && (

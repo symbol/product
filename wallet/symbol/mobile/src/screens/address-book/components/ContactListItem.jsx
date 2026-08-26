@@ -1,4 +1,5 @@
 import { AccountListItem } from '@/app/components';
+import { useAccountDisplayData } from '@/app/hooks';
 import React from 'react';
 
 /** @typedef {import('wallet-common-core').Contact} Contact */
@@ -12,10 +13,13 @@ import React from 'react';
  * @returns {React.ReactNode} ContactListItem component.
  */
 export const ContactListItem = ({ contact, onPress }) => {
+	const contactDisplayData = useAccountDisplayData(contact.address);
+
 	return (
 		<AccountListItem
 			address={contact.address}
 			name={contact.name}
+			imageId={contactDisplayData.imageId}
 			onPress={onPress}
 		/>
 	);

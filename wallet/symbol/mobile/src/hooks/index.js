@@ -19,3 +19,6 @@ export * from './useValidation';
 export * from './useWalletController';
 export * from './useWalletListener';
 export * from './useWalletRefreshLifecycle';
+// Keep below './useWalletController': these enter the controller module graph, which must not load first from this barrel
+export * from './useAccountDisplayData';
+export * from './useTokenDisplayData';

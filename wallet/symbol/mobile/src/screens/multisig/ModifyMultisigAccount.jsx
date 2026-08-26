@@ -15,7 +15,7 @@ import {
 	TransactionScreenTemplate
 } from '@/app/components';
 import { useStandardTransactionWorkflow } from '@/app/components/templates/TransactionScreenTemplate/hooks';
-import { useAsyncManager, useDebounce, useTransactionFees, useWalletController } from '@/app/hooks';
+import { useAccountDisplayData, useAsyncManager, useDebounce, useTransactionFees, useWalletController } from '@/app/hooks';
 import { $t } from '@/app/localization';
 import { Router } from '@/app/router/Router';
 import { CosignatoryList, CosignatureCounter } from '@/app/screens/multisig/components';
@@ -44,21 +44,18 @@ export const ModifyMultisigAccount = props => {
 	const { chainName, accountAddress, preloadedData } = props.route.params;
 	const walletController = useWalletController(chainName);
 	const {
-		networkIdentifier,
-		accounts,
 		currentAccount,
 		ticker
 	} = walletController;
-	const walletAccounts = accounts[networkIdentifier];
-	const { addressBook, multisig: multisigModule } = walletController.modules;
+	const { multisig: multisigModule } = walletController.modules;
 
-	// New account
 	// Fetch multisig account data
 	const dataManager = useAsyncManager({
 		callback: async () => multisigModule.fetchAccountInfo(accountAddress),
 		defaultData: preloadedData
 	});
 	const multisigAccountInfo = dataManager.data;
+	const [multisigAccountDisplayData] = useAccountDisplayData(multisigAccountInfo ? [multisigAccountInfo.address] : [], chainName);
 	useEffect(() => {
 		dataManager.call();
 	}, []);
@@ -157,8 +154,7 @@ export const ModifyMultisigAccount = props => {
 						<InputAddress
 							label={$t('input_address')}
 							extraValidators={[validateAddress(chainName)]}
-							addressBook={addressBook}
-							accounts={walletAccounts}
+							chainName={chainName}
 							value={cosignatoryInput}
 							onChange={inputCosignatory}
 						/>
@@ -181,13 +177,10 @@ export const ModifyMultisigAccount = props => {
 							{multisigAccountInfo && (
 								<AccountListItem
 									address={multisigAccountInfo.address}
-									balance={multisigAccountInfo.balance}
+									name={multisigAccountDisplayData?.name ?? $t('s_multisig_defaultAccountName')}
+									amount={multisigAccountInfo.balance}
 									ticker={ticker}
-									walletAccounts={walletAccounts}
-									addressBook={addressBook}
-									chainName={chainName}
-									networkIdentifier={networkIdentifier}
-									defaultName={$t('s_multisig_defaultAccountName')}
+									imageId={multisigAccountDisplayData?.imageId}
 								/>
 							)}
 						</Stack>
@@ -214,9 +207,6 @@ export const ModifyMultisigAccount = props => {
 									isEditable
 									cosignatories={cosignatories}
 									chainName={chainName}
-									networkIdentifier={networkIdentifier}
-									walletAccounts={walletAccounts}
-									addressBook={addressBook}
 									onRemove={removeCosignatory}
 								/>
 							)}

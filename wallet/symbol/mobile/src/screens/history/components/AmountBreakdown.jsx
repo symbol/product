@@ -1,4 +1,4 @@
-import { AccountView, Amount } from '@/app/components';
+import { AccountBalanceRow } from '@/app/components';
 import { Sizes } from '@/app/styles';
 import { StyleSheet, View } from 'react-native';
 
@@ -15,24 +15,17 @@ export const AmountBreakdown = ({ breakdown }) => {
 	return (
 		<View style={styles.root}>
 			{breakdown.map(item => (
-				<View key={item.account.address} style={styles.item}>
-					<AccountView
-						address={item.account.address}
-						name={item.account.name}
-						size="m"
-					/>
-					<View style={styles.amountListContainer}>
-						{item.amounts.map(amount => (
-							<Amount
-								key={amount.label}
-								value={amount.amountText}
-								ticker={amount.label}
-								isColored
-								size={amount.size}
-							/>
-						))}
-					</View>
-				</View>
+				<AccountBalanceRow
+					key={item.account.address}
+					address={item.account.address}
+					name={item.account.name}
+					amounts={item.amounts.map(amountItem => ({
+						value: amountItem.amountText,
+						ticker: amountItem.label,
+						size: amountItem.size,
+						isColored: true
+					}))}
+				/>
 			))}
 		</View>
 	);
@@ -42,14 +35,5 @@ const styles = StyleSheet.create({
 	root: {
 		gap: Sizes.Semantic.layoutSpacing.m,
 		width: '100%'
-	},
-	item: {
-		flexDirection: 'row',
-		width: '100%',
-		justifyContent: 'space-between',
-		gap: Sizes.Semantic.layoutSpacing.s
-	},
-	amountListContainer: {
-		alignItems: 'flex-end'
 	}
-}); 
+});

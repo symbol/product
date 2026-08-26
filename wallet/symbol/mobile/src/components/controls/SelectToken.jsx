@@ -1,9 +1,9 @@
-import { Dropdown, TokenView } from '@/app/components';
-import { getTokenKnownInfo } from '@/app/utils';
+import { Dropdown, TokenBalanceRow } from '@/app/components';
+import { useTokenDisplayData } from '@/app/hooks';
 import React from 'react';
 
-/** @typedef {import('@/app/types/Network').NetworkIdentifier} NetworkIdentifier */
 /** @typedef {import('@/app/types/Network').ChainName} ChainName */
+/** @typedef {import('@/app/types/Token').Token} Token */
 
 /**
  * SelectToken component. A dropdown selector for choosing tokens from a provided list,
@@ -11,39 +11,28 @@ import React from 'react';
  * @param {object} props - Component props.
  * @param {string} props.label - Dropdown label.
  * @param {string} props.value - Currently selected token id.
- * @param {import('wallet-common-core/src/types/Token').Token[]} props.tokens - List of available tokens.
- * @param {ChainName} props.chainName - Current chain name.
- * @param {NetworkIdentifier} props.networkIdentifier - Current network identifier.
+ * @param {Token[]} props.tokens - List of available tokens.
+ * @param {ChainName} [props.chainName] - The chain the tokens belong to. Defaults to the main chain.
  * @param {boolean} [props.isDisabled] - Whether the selector is disabled.
  * @param {function(object): void} props.onChange - Callback for when the selected token changes.
- * @returns {React.ReactNode} The InputAddress component.
+ * @returns {React.ReactNode} The SelectToken component.
  */
 export const SelectToken = props => {
-	const { label, value, tokens, chainName, networkIdentifier, isDisabled, onChange } = props;
+	const { label, value, tokens, chainName, isDisabled, onChange } = props;
+	const tokensDisplayData = useTokenDisplayData(tokens, chainName);
 
-	const list = tokens.map(token => {
-		const resolvedInfo = getTokenKnownInfo(chainName, networkIdentifier, token.id);
-		const tokenName = resolvedInfo.name ?? token.name;
-
-		return {
-			value: token.id,
-			label: tokenName,
-			token: {
-				name: tokenName,
-				ticker: resolvedInfo.ticker,
-				imageId: resolvedInfo.imageId,
-				amount: token.amount
-			}
-		};
-	});
+	const list = tokensDisplayData.map(tokenDisplayData => ({
+		value: tokenDisplayData.tokenId,
+		label: tokenDisplayData.name,
+		token: tokenDisplayData
+	}));
 
 	const renderItem = ({ item: { token } }) => (
-		<TokenView
+		<TokenBalanceRow
 			name={token.name}
 			ticker={token.ticker}
 			imageId={token.imageId}
 			amount={token.amount}
-			isCopyButtonVisible={false}
 		/>
 	);
 

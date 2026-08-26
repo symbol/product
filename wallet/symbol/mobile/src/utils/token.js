@@ -2,6 +2,7 @@ import { knownTokens } from '@/app/config';
 import { safeOperationWithRelativeAmounts } from 'wallet-common-core';
 
 /** @typedef {import('@/app/types/Token').Token} Token */
+/** @typedef {import('@/app/types/Token').TokenExpiration} TokenExpiration */
 /** @typedef {import('@/app/types/Network').NetworkIdentifier} NetworkIdentifier */
 /** @typedef {import('@/app/types/Network').ChainName} ChainName */
 
@@ -24,6 +25,15 @@ export const getTokenKnownInfo = (chainName, networkIdentifier, tokenId) => {
 };
 
 /**
+ * Formats the token display label: the name with the ticker appended, or the name alone when
+ * no ticker is known.
+ * @param {string} name - The token display name.
+ * @param {string|null} [ticker] - The token ticker symbol.
+ * @returns {string} The token label text.
+ */
+export const formatTokenNameText = (name, ticker) => (!ticker ? name : `${name} • ${ticker}`);
+
+/**
  * Checks whether a token is expired at the given chain height. Tokens without an end height
  * or with unlimited duration never expire.
  * @param {Token} token - The token to check.
@@ -32,6 +42,24 @@ export const getTokenKnownInfo = (chainName, networkIdentifier, tokenId) => {
  */
 export const isTokenExpired = (token, chainHeight) =>
 	Boolean(token.endHeight) && !token.isUnlimitedDuration && token.endHeight <= chainHeight;
+
+/**
+ * Creates the expiration display inputs for a token, or null for tokens that never expire.
+ * @param {Token} token - The token.
+ * @param {object} networkProperties - The network properties with the chain height and block time.
+ * @returns {TokenExpiration|null} The expiration inputs, or null when not applicable.
+ */
+export const createTokenExpiration = (token, networkProperties) => {
+	if (!token.endHeight || token.isUnlimitedDuration)
+		return null;
+
+	return {
+		startHeight: token.startHeight,
+		endHeight: token.endHeight,
+		chainHeight: networkProperties.chainHeight,
+		blockGenerationTargetTime: networkProperties.blockGenerationTargetTime
+	};
+};
 
 /**
  * Calculates the total fee amount for a transaction based on the provided transaction fee tiers and selected speed.
@@ -77,19 +105,19 @@ export const getAvailableBalance = (token, nativeTokenId, transactionFeeTiers, s
 };
 
 /**
- * Token display data structure.
- * @typedef {object} TokenDisplayData
- * @property {string} name - The display name of the token, potentially including ticker.
+ * Resolved token label data; the name already includes the ticker when known.
+ * @typedef {object} TokenLabelDisplayData
+ * @property {string} name - The display name of the token, including the ticker when known.
  * @property {string|null} ticker - The token's ticker symbol, if available.
  * @property {string|null} imageId - The known image identifier for the token, if available.
  */
 
 /**
- * Creates token display data by combining token information with known token metadata.
+ * Creates token label data by combining token information with known token metadata.
  * @param {Token} token - The token for which to create display data.
  * @param {ChainName} chainName - The name of the blockchain (e.g., 'symbol', 'ethereum').
  * @param {NetworkIdentifier} networkIdentifier - The network identifier (e.g., 'mainnet', 'testnet').
- * @returns {TokenDisplayData} The token display data.
+ * @returns {TokenLabelDisplayData} The token label data.
  */
 export const createTokenDisplayData = (token, chainName, networkIdentifier) => {
 	const tokenKnownInfo = getTokenKnownInfo(
@@ -101,12 +129,8 @@ export const createTokenDisplayData = (token, chainName, networkIdentifier) => {
 	const name = tokenKnownInfo.name ?? token.name ?? token.id;
 	const { ticker, imageId } = tokenKnownInfo;
 
-	const nameText = !ticker
-		? name
-		: `${name} • ${ticker}`;
-
 	return {
-		name: nameText,
+		name: formatTokenNameText(name, ticker),
 		ticker,
 		imageId
 	};

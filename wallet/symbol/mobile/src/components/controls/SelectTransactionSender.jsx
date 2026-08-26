@@ -1,13 +1,12 @@
-import { AccountItem, AccountListItem, DropdownModal, Icon, StyledText, TabSelector } from '@/app/components';
+import { AccountBalanceRow, AccountListItem, DropdownModal, Icon, StyledText, TabSelector } from '@/app/components';
+import { useAccountDisplayData, useWalletController } from '@/app/hooks';
 import { $t } from '@/app/localization';
 import { Sizes } from '@/app/styles';
 import React, { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
-/** @typedef {import('@/app/types/Account').WalletAccount} WalletAccount */
 /** @typedef {import('@/app/types/Account').SymbolAccountInfo} SymbolAccountInfo */
-/** @typedef {import('@/app/types/Network').NetworkIdentifier} NetworkIdentifier */
 /** @typedef {import('@/app/types/Network').ChainName} ChainName */
 
 /**
@@ -38,11 +37,7 @@ const SenderTab = {
  * @param {string} [props.label] - Label displayed above the selector.
  * @param {string} props.value - The currently selected sender address.
  * @param {SenderOptions} props.options - The selectable sender accounts (current and multisig).
- * @param {string} props.ticker - The native currency ticker symbol.
- * @param {ChainName} props.chainName - The blockchain name.
- * @param {NetworkIdentifier} props.networkIdentifier - The network identifier.
- * @param {WalletAccount[]} [props.walletAccounts] - Wallet accounts for resolving account names.
- * @param {object} [props.addressBook] - Address book for resolving account names.
+ * @param {ChainName} [props.chainName] - The chain the accounts belong to. Defaults to the main chain.
  * @param {boolean} [props.isMultisigDisabled] - Whether to hide the multisig accounts, rendering only the current account.
  * @param {(address: string) => void} props.onChange - Callback when the selected sender changes.
  * @returns {React.ReactNode} SelectTransactionSender component.
@@ -52,15 +47,12 @@ export const SelectTransactionSender = props => {
 		label,
 		value,
 		options,
-		ticker,
 		chainName,
-		networkIdentifier,
-		walletAccounts,
-		addressBook,
 		isMultisigDisabled,
 		onChange
 	} = props;
 	const { current } = options;
+	const { ticker } = useWalletController(chainName);
 
 	const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
@@ -74,14 +66,11 @@ export const SelectTransactionSender = props => {
 		? multisigAccounts.find(account => account.address === value) || current
 		: current;
 
-	// Shared display props for account items
-	const accountDisplayProps = {
-		ticker,
-		walletAccounts,
-		addressBook,
-		chainName,
-		networkIdentifier
-	};
+	// Display data for the current and multisig accounts
+	const addresses = [current.address, ...multisigAccounts.map(account => account.address)];
+	const accountsDisplayData = useAccountDisplayData(addresses, chainName);
+	const accountsDisplayMap = new Map(accountsDisplayData.map(accountDisplayData => [accountDisplayData.address, accountDisplayData]));
+	const selectedAccountDisplayData = accountsDisplayMap.get(selectedAccount.address);
 
 	// Handlers
 	const openDropdown = () => setIsDropdownOpen(true);
@@ -108,14 +97,20 @@ export const SelectTransactionSender = props => {
 
 	// Dropdown options and renderer
 	const dropdownList = multisigAccounts.map(account => ({ ...account, value: account.address }));
-	const renderDropdownItem = ({ item }) => (
-		<AccountItem
-			{...accountDisplayProps}
-			address={item.address}
-			balance={item.balance}
-			defaultName={multisigDefaultName}
-		/>
-	);
+	const renderDropdownItem = ({ item }) => {
+		const accountDisplayData = accountsDisplayMap.get(item.address);
+
+		return (
+			<AccountBalanceRow
+				address={item.address}
+				name={accountDisplayData?.name ?? multisigDefaultName}
+				amount={item.balance}
+				ticker={ticker}
+				imageId={accountDisplayData?.imageId}
+				size="l"
+			/>
+		);
+	};
 
 	// Animated chevron shown when a multisig account is selected, hinting the item is pressable
 	const itemAccessory = isMultisigSelected
@@ -125,6 +120,11 @@ export const SelectTransactionSender = props => {
 			</Animated.View>
 		)
 		: undefined;
+
+	// The current account name resolves from the wallet; multisig accounts fall back to the default name
+	const selectedAccountName = isMultisigSelected
+		? selectedAccountDisplayData?.name ?? multisigDefaultName
+		: selectedAccountDisplayData?.name;
 
 	return (
 		<View style={styles.root}>
@@ -139,10 +139,11 @@ export const SelectTransactionSender = props => {
 				/>
 			)}
 			<AccountListItem
-				{...accountDisplayProps}
 				address={selectedAccount.address}
-				balance={selectedAccount.balance}
-				defaultName={isMultisigSelected ? multisigDefaultName : undefined}
+				name={selectedAccountName}
+				amount={selectedAccount.balance}
+				ticker={ticker}
+				imageId={selectedAccountDisplayData?.imageId}
 				accessory={itemAccessory}
 				accessibilityLabel={label}
 				onPress={handleItemPress}
