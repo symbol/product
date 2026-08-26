@@ -194,9 +194,11 @@ async def test_can_query_native_balance_with_custom_block_identifier(server):  #
 
 
 async def test_native_balance_of_unknown_account_is_zero(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	connector = EthereumConnector(server.make_url(''))
+
 	# Act:
-	balance = await EthereumConnector(server.make_url('')).native_balance(
-		EthereumAddress('0x67b1d87101671b127f5f8714789C7192f7ad340e'))
+	balance = await connector.native_balance(EthereumAddress('0x67b1d87101671b127f5f8714789C7192f7ad340e'))
 
 	# Assert:
 	assert 0 == balance
