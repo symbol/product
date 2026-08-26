@@ -341,13 +341,15 @@ def add_unwrap_routes(app, context):
 		return await _handle_wrap_estimate(True, context, None, 'unwrap_request')
 
 
-def add_metrics_routes(app, config, context):
+def add_metrics_routes(app, context):
 	"""Adds a prometheus metrics endpoint."""
 
-	collector = MetricsCollector(load_collectors(config, context))
+	collector = MetricsCollector(load_collectors(context))
 
 	@app.route('/metrics')
 	async def metrics():  # pylint: disable=unused-variable
+		await context.load()
+
 		return Response(generate_latest(await collector.collect()), content_type=CONTENT_TYPE_LATEST)
 
 
@@ -378,6 +380,6 @@ def create_app():
 	if config.wrapped_network.mosaic_id:  # not native to native conversion
 		add_unwrap_routes(app, context)
 
-	add_metrics_routes(app, config, context)
+	add_metrics_routes(app, context)
 
 	return app

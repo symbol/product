@@ -47,10 +47,9 @@ async def _read_network(role, facade, timeout_seconds):
 class ChainCollector:
 	"""Collects balances read from the nodes named in configuration."""
 
-	def __init__(self, config, context, timeout_seconds):
+	def __init__(self, context, timeout_seconds):
 		"""Creates a chain collector."""
 
-		self.config = config
 		self.context = context
 		self.timeout_seconds = timeout_seconds
 
@@ -74,16 +73,6 @@ class ChainCollector:
 
 	async def _read_all(self):
 		"""Reads both networks concurrently."""
-
-		try:
-			await self.context.load()
-		except Exception:  # pylint: disable=broad-except
-			# the facades never got built, so the endpoint has to come from configuration instead
-			network_configs = (self.config.native_network, self.config.wrapped_network)
-			return [
-				NetworkReading(role, network_config.endpoint, None, None)
-				for (role, network_config) in zip(NETWORK_ROLES, network_configs)
-			]
 
 		facades = (self.context.native_facade, self.context.wrapped_facade)
 		return await asyncio.gather(*[

@@ -97,10 +97,11 @@ def _create_config(native_network, wrapped_network):
 
 
 async def _collect(native_network, wrapped_network):
-	config = _create_config(native_network, wrapped_network)
+	context = BridgeContext(_create_config(native_network, wrapped_network), 600)
+	await context.load()
 
 	registry = CollectorRegistry()
-	await ChainCollector(config, BridgeContext(config, 600), 3).collect(registry)
+	await ChainCollector(context, 3).collect(registry)
 	return registry
 
 
@@ -193,16 +194,3 @@ async def test_failed_balance_read_is_not_reported_as_a_zero_balance(nem_server,
 	# ... and it reports no balance at all, rather than a zero that would look like a drained account
 	assert 0 == _balance_sample_count(registry, 'wrapped')
 	assert NEM_XEM_BALANCE == _balance(registry, 'native', 'nem:xem')
-
-
-async def test_unreachable_node_is_reported_as_down(symbol_server):  # pylint: disable=redefined-outer-name
-	# Act: the native endpoint refuses connections, so facade initialization never completes
-	registry = await _collect(_nem_network(), _symbol_network(symbol_server))
-
-	# Assert: both legs are reported as down
-	assert 0 == _node_up(registry, 'native')
-	assert 0 == _node_up(registry, 'wrapped', symbol_server)
-
-	# ... and no balance is published for either
-	assert 0 == _balance_sample_count(registry, 'native')
-	assert 0 == _balance_sample_count(registry, 'wrapped')
