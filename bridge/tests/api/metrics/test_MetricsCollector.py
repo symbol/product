@@ -53,8 +53,7 @@ async def test_each_scrape_builds_a_new_registry():
 	# Arrange: the value changes per scrape, so a stale registry cannot pass unnoticed
 	collector = MetricsCollector([_CountingCollector('bridge_probe_one')])
 
-	# Act: registering the same gauge twice in one registry raises, and the failure would be
-	# swallowed by the safety net, leaving the first scrape's value behind
+	# Act: reusing one registry across scrapes would fail on the second gauge registration
 	await collector.collect()
 	registry = await collector.collect()
 
