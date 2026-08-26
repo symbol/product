@@ -1,4 +1,5 @@
 # pylint: disable=too-many-lines
+import time
 from collections import namedtuple
 from contextlib import contextmanager
 
@@ -499,6 +500,41 @@ def _create_table(cursor, name, definitions):
 class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-methods
 	"""Database containing Symbol blockchain data."""
 
+	def __init__(self, db_config, commit_observer=None, time_source=time.monotonic):
+		"""Creates a Symbol database wrapper with an optional commit observation hook."""
+
+		super().__init__(db_config)
+		self._commit_observer = commit_observer
+		self._time_source = time_source
+
+	def _commit(self):
+		started_at = self._read_commit_time()
+		try:
+			self.connection.commit()
+		except Exception:
+			self._notify_commit_observer(started_at, False)
+			raise
+
+		self._notify_commit_observer(started_at, True)
+
+	def _read_commit_time(self):
+		try:
+			return self._time_source()
+		except Exception:  # pylint: disable=broad-exception-caught
+			return None
+
+	def _notify_commit_observer(self, started_at, succeeded):
+		if self._commit_observer is None:
+			return
+
+		try:
+			ended_at = self._read_commit_time()
+			elapsed_seconds = None if started_at is None or ended_at is None else ended_at - started_at
+			self._commit_observer(elapsed_seconds, succeeded)
+		except Exception:  # pylint: disable=broad-exception-caught
+			# Performance observation must never alter database commit semantics.
+			return
+
 	def create_tables(self):  # pylint: disable=too-many-statements
 		"""Creates Symbol block synchronization tables."""
 
@@ -605,7 +641,7 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 		cursor.execute('CREATE INDEX IF NOT EXISTS idx_symbol_transaction_addresses_height ON symbol_transaction_addresses(height)')
 		for index_sql in SYMBOL_RECEIPT_INDEXES:
 			cursor.execute(index_sql)
-		self.connection.commit()
+		self._commit()
 
 	def check_connection(self):
 		"""Checks whether the configured Symbol database is reachable and initialized."""
@@ -626,7 +662,7 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 
 		cursor = self.connection.cursor()
 		self._execute_upsert_sync_state(cursor, sync_state)
-		self.connection.commit()
+		self._commit()
 
 	def mark_sync_write_intent(self, height):
 		"""Persists the earliest height whose batch may start a local write."""
@@ -713,7 +749,7 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 		try:
 			cursor = self.connection.cursor()
 			yield cursor
-			self.connection.commit()
+			self._commit()
 		except Exception:
 			self.connection.rollback()
 			raise
@@ -1503,7 +1539,7 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 		cursor = self.connection.cursor()
 		if multisig_row_or_none is None:
 			cursor.execute('DELETE FROM symbol_multisig WHERE address = %s', (address,))
-			self.connection.commit()
+			self._commit()
 			return
 
 		cursor.execute(
@@ -1532,7 +1568,7 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 				updated_at_height = EXCLUDED.updated_at_height
 			''',
 			multisig_row_or_none)
-		self.connection.commit()
+		self._commit()
 
 	@staticmethod
 	def _execute_insert_account_refresh_snapshot_rows(  # pylint: disable=too-many-arguments,too-many-positional-arguments

@@ -63,13 +63,21 @@ def create_symbol_puller(  # pylint: disable=too-many-arguments,too-many-positio
 	request_timeout_seconds=10,
 	node_url=NODE_URL,
 	connector=None,
-	rate_limiter=None
+	rate_limiter=None,
+	time_source=None,
+	performance_logger=None
 ):
 	node_config = SymbolNodeConfiguration.from_url(
 		node_url,
 		allow_loopback=True,
 		timeout_seconds=request_timeout_seconds
 	)
+
+	puller_kwargs = {}
+	if time_source is not None:
+		puller_kwargs['time_source'] = time_source
+	if performance_logger is not None:
+		puller_kwargs['performance_logger'] = performance_logger
 
 	puller = SymbolPuller(
 		node_url,
@@ -78,7 +86,8 @@ def create_symbol_puller(  # pylint: disable=too-many-arguments,too-many-positio
 		node_config,
 		connector,
 		max_requests_per_second=1_000_000,
-		rate_limiter=rate_limiter
+		rate_limiter=rate_limiter,
+		**puller_kwargs
 	)
 	puller._retry_delay = 0  # pylint: disable=protected-access
 
@@ -86,11 +95,13 @@ def create_symbol_puller(  # pylint: disable=too-many-arguments,too-many-positio
 
 
 @contextmanager
-def temporary_symbol_puller(
+def temporary_symbol_puller(  # pylint: disable=too-many-arguments,too-many-positional-arguments
 	network_type='mainnet',
 	request_timeout_seconds=10,
 	connector=None,
-	rate_limiter=None
+	rate_limiter=None,
+	time_source=None,
+	performance_logger=None
 ):
 	with tempfile.TemporaryDirectory() as temp_directory:
 		db_config_path = create_db_config(temp_directory)
@@ -100,7 +111,9 @@ def temporary_symbol_puller(
 			network_type,
 			request_timeout_seconds,
 			connector=connector,
-			rate_limiter=rate_limiter
+			rate_limiter=rate_limiter,
+			time_source=time_source,
+			performance_logger=performance_logger
 		)
 
 
@@ -163,6 +176,16 @@ def create_node_block(
 	node_block['block'].update(block_overrides)
 
 	return node_block
+
+
+def create_multi_batch_block_pages(chain_height=1001):
+	"""Creates fresh block pages that exercise the puller's internal batch boundary."""
+
+	blocks = [create_node_block(height) for height in range(1, chain_height + 1)]
+	return {
+		offset: blocks[offset:offset + MAX_PAGE_SIZE]
+		for offset in range(0, chain_height, MAX_PAGE_SIZE)
+	}
 
 
 def create_node_transaction(height, transaction_hash=None, transaction_id=None, block_index=0, **transaction_overrides):

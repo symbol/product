@@ -17,14 +17,16 @@ class RequestRateLimiter:
 	async def wait_for_turn(self):
 		"""Blocks until this caller's turn to dispatch a request, per the configured rate."""
 
+		started_at = self._time_source()
 		async with self._lock:
 			now = self._time_source()
 			if self._next_allowed_time is None:
 				self._next_allowed_time = now
 
-			wait_seconds = self._next_allowed_time - now
-			if wait_seconds > 0:
-				await self._sleep(wait_seconds)
+			required_wait_seconds = self._next_allowed_time - now
+			if required_wait_seconds > 0:
+				await self._sleep(required_wait_seconds)
 				now = self._time_source()
 
 			self._next_allowed_time = now + self._min_interval_seconds
+			return now - started_at
