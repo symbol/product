@@ -29,4 +29,4 @@ class RequestRateLimiter:
 				now = self._time_source()
 
 			self._next_allowed_time = now + self._min_interval_seconds
-			return max(0, now - started_at)
+			return now - started_at

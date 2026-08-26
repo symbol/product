@@ -50,14 +50,6 @@ class ConcurrentClock(FakeClock):
 		return super().__call__()
 
 
-class SequenceClock:
-	def __init__(self, values):
-		self._values = iter(values)
-
-	def __call__(self):
-		return next(self._values)
-
-
 class RequestRateLimiterTest(TestCase):
 	def test_wait_for_turn_does_not_sleep_on_first_call(self):
 		# Arrange:
@@ -119,8 +111,8 @@ class RequestRateLimiterTest(TestCase):
 		wait_durations = asyncio.run(wait_twice())
 
 		# Assert:
-		self.assertEqual([0, 0.15], [round(duration, 2) for duration in wait_durations])
 		self.assertEqual([0.1], sleep.wait_seconds)
+		self.assertEqual([0, 0.15], [round(duration, 2) for duration in wait_durations])
 
 	def test_wait_for_turn_serializes_concurrent_callers(self):
 		# Arrange:
@@ -158,14 +150,3 @@ class RequestRateLimiterTest(TestCase):
 
 		# Assert:
 		self.assertEqual([0.35, 0.35], wait_durations)
-
-	def test_wait_for_turn_clamps_negative_clock_elapsed_time_to_zero(self):
-		# Arrange:
-		clock = SequenceClock([1, 0])
-		limiter = RequestRateLimiter(10, clock, RecordingSleep(FakeClock()))
-
-		# Act:
-		wait_duration = asyncio.run(limiter.wait_for_turn())
-
-		# Assert:
-		self.assertEqual(0, wait_duration)

@@ -2,6 +2,7 @@ import json
 from unittest import TestCase
 
 from puller.facade.SymbolSyncPerformance import BatchPerformance, SyncPerformance, request_category
+from tests.test.PerformanceTestUtils import FailingClock, ScriptedClock
 
 
 class MutableClock:
@@ -10,11 +11,6 @@ class MutableClock:
 
 	def __call__(self):
 		return self.value
-
-
-class FailingClock:
-	def __call__(self):  # pylint: disable=no-self-use
-		raise RuntimeError('clock failed')
 
 
 # pylint: disable=duplicate-code,too-many-public-methods
@@ -182,6 +178,20 @@ class SymbolSyncPerformanceTest(TestCase):
 		self.assertEqual(None, completed_event['failed_phase'])
 		self.assertEqual('sync_state_write', failed_event['failed_phase'])
 
+	def test_batch_and_sync_events_report_zero_when_clock_does_not_advance(self):
+		# Arrange:
+		clock = MutableClock()
+		batch = BatchPerformance(clock, 10, 12)
+		sync = SyncPerformance(clock)
+
+		# Act:
+		batch_event = batch.event('symbol_sync_batch_completed', 'completed')
+		sync_event = sync.event('symbol_sync_completed', 'completed')
+
+		# Assert:
+		self.assertEqual(0, batch_event['elapsed_ms'])
+		self.assertEqual(0, sync_event['elapsed_ms'])
+
 	def test_batch_performance_elapsed_falls_back_when_clock_fails(self):
 		# Arrange:
 		clock = FailingClock()
@@ -191,7 +201,7 @@ class SymbolSyncPerformanceTest(TestCase):
 		batch_event = batch.event('symbol_sync_batch_completed', 'completed')
 
 		# Assert:
-		self.assertEqual(0, batch_event['elapsed_ms'])
+		self.assertEqual(-1, batch_event['elapsed_ms'])
 
 	def test_sync_performance_elapsed_falls_back_when_clock_fails(self):
 		# Arrange:
@@ -202,33 +212,40 @@ class SymbolSyncPerformanceTest(TestCase):
 		sync_event = sync.event('symbol_sync_completed', 'completed')
 
 		# Assert:
-		self.assertEqual(0, sync_event['elapsed_ms'])
+		self.assertEqual(-1, sync_event['elapsed_ms'])
 
-	def test_batch_performance_clamps_reverse_clock_elapsed_and_phase_to_zero(self):
+	def test_batch_event_uses_sentinel_for_unmeasurable_commit_duration(self):
 		# Arrange:
-		clock = MutableClock()
-		clock.value = 2
-		batch = BatchPerformance(clock, 10, 12)
+		batch = BatchPerformance(MutableClock(), 10, 12)
+		batch.record_commit(None, True)
 
 		# Act:
-		clock.value = 2
-		with batch.measure('block_fetch_ms', 'block_fetch'):
-			clock.value = 1
 		batch_event = batch.event('symbol_sync_batch_completed', 'completed')
 
 		# Assert:
-		self.assertEqual(0, batch_event['elapsed_ms'])
-		self.assertEqual(0, batch_event['block_fetch_ms'])
+		self.assertEqual(-1, batch_event['db_commit_ms'])
+		self.assertEqual(1, batch_event['db_commit_count'])
+		self.assertEqual(1, batch_event['db_commit_attempt_count'])
 
-	def test_sync_performance_clamps_reverse_clock_elapsed_to_zero(self):
+	def test_sync_performance_does_not_add_unmeasurable_batch_duration_to_workflow_total(self):
 		# Arrange:
-		clock = MutableClock()
-		clock.value = 2
+		clock = ScriptedClock([
+			0, 0, 0, 0, 0.001,
+			0.002, RuntimeError('phase clock failed'), 0.003,
+			0.004, 0.005, 0.006, 0.007
+		])
 		sync = SyncPerformance(clock)
+		first_batch = sync.start_batch(1, 1)
+		with first_batch.measure('block_fetch_ms', 'block_fetch'):
+			pass
+		sync.complete_batch(first_batch)
+		second_batch = sync.start_batch(2, 2)
+		with second_batch.measure('block_fetch_ms', 'block_fetch'):
+			pass
+		sync.complete_batch(second_batch)
 
 		# Act:
-		clock.value = 1
-		sync_event = sync.event('symbol_sync_completed', 'completed')
+		workflow_event = sync.event('symbol_sync_completed', 'completed')
 
 		# Assert:
-		self.assertEqual(0, sync_event['elapsed_ms'])
+		self.assertEqual(-1, workflow_event['block_fetch_ms'])

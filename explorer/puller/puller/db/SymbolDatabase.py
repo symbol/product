@@ -529,7 +529,7 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 
 		try:
 			ended_at = self._read_commit_time()
-			elapsed_seconds = 0 if started_at is None or ended_at is None else max(0, ended_at - started_at)
+			elapsed_seconds = None if started_at is None or ended_at is None else ended_at - started_at
 			self._commit_observer(elapsed_seconds, succeeded)
 		except Exception:  # pylint: disable=broad-exception-caught
 			# Performance observation must never alter database commit semantics.

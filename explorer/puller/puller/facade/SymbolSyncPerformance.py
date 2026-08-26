@@ -79,9 +79,21 @@ WORKFLOW_FIELDS = (
 	'db_commit_ms'
 )
 
+UNMEASURABLE_ELAPSED_MS = -1
+
 
 def _milliseconds(seconds):
-	return round(max(0, seconds) * 1000, 3)
+	if seconds is None:
+		return UNMEASURABLE_ELAPSED_MS
+
+	return round(seconds * 1000, 3)
+
+
+def _add_elapsed_ms(current_ms, elapsed_ms):
+	if UNMEASURABLE_ELAPSED_MS in (current_ms, elapsed_ms):
+		return UNMEASURABLE_ELAPSED_MS
+
+	return current_ms + elapsed_ms
 
 
 def request_category(method, url_path):  # pylint: disable=too-many-return-statements,too-many-branches
@@ -144,7 +156,7 @@ class BatchPerformance:  # pylint: disable=too-many-instance-attributes
 	def _elapsed_seconds(self, started_at):
 		ended_at = self._read_time()
 		if started_at is None or ended_at is None:
-			return 0
+			return None
 
 		return ended_at - started_at
 
@@ -157,7 +169,8 @@ class BatchPerformance:  # pylint: disable=too-many-instance-attributes
 		try:
 			yield
 		finally:
-			self._fields[field] += _milliseconds(self._elapsed_seconds(started_at))
+			self._fields[field] = _add_elapsed_ms(
+				self._fields[field], _milliseconds(self._elapsed_seconds(started_at)))
 
 	def set_range(self, start_height, end_height):
 		"""Sets the actual first and last block heights represented by the batch."""
@@ -203,13 +216,15 @@ class BatchPerformance:  # pylint: disable=too-many-instance-attributes
 	def record_rate_limit_wait(self, wait_seconds):
 		"""Adds one RequestRateLimiter wait duration in seconds."""
 
-		self._fields['rate_limit_wait_ms'] += _milliseconds(wait_seconds)
+		self._fields['rate_limit_wait_ms'] = _add_elapsed_ms(
+			self._fields['rate_limit_wait_ms'], _milliseconds(wait_seconds))
 
 	def record_commit(self, elapsed_seconds, succeeded):
 		"""Records one actual commit attempt and its result."""
 
 		self._fields['db_commit_attempt_count'] += 1
-		self._fields['db_commit_ms'] += _milliseconds(elapsed_seconds)
+		self._fields['db_commit_ms'] = _add_elapsed_ms(
+			self._fields['db_commit_ms'], _milliseconds(elapsed_seconds))
 		if succeeded:
 			self._fields['db_commit_count'] += 1
 
@@ -260,7 +275,7 @@ class SyncPerformance:  # pylint: disable=too-many-instance-attributes
 	def _elapsed_seconds(self):
 		ended_at = self._read_time()
 		if self._started_at is None or ended_at is None:
-			return 0
+			return None
 
 		return ended_at - self._started_at
 
@@ -354,7 +369,10 @@ class SyncPerformance:  # pylint: disable=too-many-instance-attributes
 			event = batch.event('', '')
 			for field in fields:
 				if field not in WORKFLOW_FIELDS:
-					fields[field] += event[field]
+					if field in PHASE_FIELDS or field in DB_FIELDS:
+						fields[field] = _add_elapsed_ms(fields[field], event[field])
+					else:
+						fields[field] += event[field]
 
 		workflow_event = self._workflow_counters.event('', '')
 		for field in WORKFLOW_FIELDS:
