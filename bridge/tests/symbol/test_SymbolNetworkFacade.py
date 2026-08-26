@@ -428,39 +428,39 @@ def test_can_calculate_transfer_transaction_fee_with_message():
 # endregion
 
 
-# region read_bridge_balance, read_native_currency_balance
+# region read_balance
 
-async def test_can_read_bridge_balance_of_native_currency(server):  # pylint: disable=redefined-outer-name
+async def test_can_read_balance_of_native_currency(server):  # pylint: disable=redefined-outer-name
 	# Arrange: the configured mosaic is the network currency
 	facade = SymbolNetworkFacade(_create_config(server, '72C0212E67A08BCE'))
 	await facade.init()
 
 	# Act:
-	balance = await facade.read_bridge_balance(facade.create_connector())
+	balance = await facade.read_balance(facade.create_connector(), facade.extract_mosaic_id())
 
 	# Assert:
 	assert 5544332211 == balance
 
 
-async def test_can_read_bridge_balance_of_mosaic(server):  # pylint: disable=redefined-outer-name
+async def test_can_read_balance_of_mosaic(server):  # pylint: disable=redefined-outer-name
 	# Arrange:
 	facade = SymbolNetworkFacade(_create_config(server, 'FAF0EBED913FA202'))
 	await facade.init()
 
 	# Act:
-	balance = await facade.read_bridge_balance(facade.create_connector())
+	balance = await facade.read_balance(facade.create_connector(), facade.extract_mosaic_id())
 
 	# Assert:
 	assert 778899 == balance
 
 
-async def test_can_read_native_currency_balance(server):  # pylint: disable=redefined-outer-name
+async def test_can_read_balance_of_native_currency_while_moving_a_token(server):  # pylint: disable=redefined-outer-name
 	# Arrange: the bridge moves a mosaic, so fees come out of a XYM balance
 	facade = SymbolNetworkFacade(_create_config(server, 'FAF0EBED913FA202'))
 	await facade.init()
 
 	# Act:
-	balance = await facade.read_native_currency_balance(facade.create_connector())
+	balance = await facade.read_balance(facade.create_connector(), facade.extract_native_currency_mosaic_id())
 
 	# Assert:
 	assert 5544332211 == balance

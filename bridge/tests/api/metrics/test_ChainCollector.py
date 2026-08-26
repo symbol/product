@@ -112,8 +112,16 @@ def _balance(registry, role, token, address=None):
 	return registry.get_sample_value('bridge_balance', {'network': role, 'token': token, 'address': address})
 
 
-def _gas_balance(registry, role, address=None):
-	return registry.get_sample_value('bridge_gas_balance', {'network': role, 'address': address or ROLE_TO_ADDRESS[role]})
+SYMBOL_CURRENCY_MOSAIC_ID = '72C0212E67A08BCE'
+ETHEREUM_NATIVE_TOKEN = 'ETH'
+NEM_CURRENCY_MOSAIC_ID = 'nem:xem'
+
+
+def _balance_sample_count(registry, role):
+	"""Counts balance samples published for one network, so an unexpected one cannot slip through."""
+
+	family = next(f for f in registry.collect() if 'bridge_balance' == f.name)
+	return len([sample for sample in family.samples if role == sample.labels['network']])
 
 
 def _node_up(registry, role, server=None):
@@ -136,14 +144,19 @@ async def test_balances_are_reported_for_both_legs(nem_server, symbol_server):  
 	assert SYMBOL_MOSAIC_BALANCE == _balance(registry, 'wrapped', SYMBOL_MOSAIC_ID)
 
 
-async def test_gas_is_reported_only_when_the_bridge_token_is_not_the_native_currency(nem_server, symbol_server):
+async def test_native_currency_is_reported_alongside_the_token_it_pays_fees_for(nem_server, symbol_server):
 	# pylint: disable=redefined-outer-name
 	# Act: the native leg moves XEM itself, the wrapped leg moves a mosaic
 	registry = await _collect(_nem_network(nem_server), _symbol_network(symbol_server))
 
-	# Assert:
-	assert SYMBOL_XYM_BALANCE == _gas_balance(registry, 'wrapped')
-	assert _gas_balance(registry, 'native') is None
+	# Assert: the wrapped leg reports both the mosaic it moves and the currency its fees come out of
+	assert 2 == _balance_sample_count(registry, 'wrapped')
+	assert SYMBOL_MOSAIC_BALANCE == _balance(registry, 'wrapped', SYMBOL_MOSAIC_ID)
+	assert SYMBOL_XYM_BALANCE == _balance(registry, 'wrapped', SYMBOL_CURRENCY_MOSAIC_ID)
+
+	# ... while the native leg moves XEM itself, so the same balance is not reported twice
+	assert 1 == _balance_sample_count(registry, 'native')
+	assert NEM_XEM_BALANCE == _balance(registry, 'native', NEM_CURRENCY_MOSAIC_ID)
 
 
 async def test_nem_leg_moving_a_mosaic_reports_a_separate_xem_balance(nem_server, symbol_server):  # pylint: disable=redefined-outer-name
@@ -152,7 +165,7 @@ async def test_nem_leg_moving_a_mosaic_reports_a_separate_xem_balance(nem_server
 
 	# Assert:
 	assert 2 * NEM_XEM_BALANCE == _balance(registry, 'native', 'foo:bar')
-	assert NEM_XEM_BALANCE == _gas_balance(registry, 'native')
+	assert NEM_XEM_BALANCE == _balance(registry, 'native', NEM_CURRENCY_MOSAIC_ID)
 
 
 async def test_ethereum_leg_reports_token_balance_and_gas_separately(nem_server, ethereum_server):  # pylint: disable=redefined-outer-name
@@ -163,7 +176,7 @@ async def test_ethereum_leg_reports_token_balance_and_gas_separately(nem_server,
 	assert ETHEREUM_TOKEN_BALANCE == _balance(registry, 'wrapped', ETHEREUM_TOKEN_ID, ETHEREUM_BRIDGE_ADDRESS)
 
 	# ... while gas is the ETH balance of the same account
-	assert ETHEREUM_ETH_BALANCE == _gas_balance(registry, 'wrapped', ETHEREUM_BRIDGE_ADDRESS)
+	assert ETHEREUM_ETH_BALANCE == _balance(registry, 'wrapped', ETHEREUM_NATIVE_TOKEN, ETHEREUM_BRIDGE_ADDRESS)
 
 
 async def test_failed_balance_read_is_not_reported_as_a_zero_balance(nem_server, symbol_server):  # pylint: disable=redefined-outer-name
@@ -178,7 +191,7 @@ async def test_failed_balance_read_is_not_reported_as_a_zero_balance(nem_server,
 	assert 1 == _node_up(registry, 'native', nem_server)
 
 	# ... and it reports no balance at all, rather than a zero that would look like a drained account
-	assert _balance(registry, 'wrapped', SYMBOL_MOSAIC_ID) is None
+	assert 0 == _balance_sample_count(registry, 'wrapped')
 	assert NEM_XEM_BALANCE == _balance(registry, 'native', 'nem:xem')
 
 
@@ -191,5 +204,5 @@ async def test_unreachable_node_is_reported_as_down(symbol_server):  # pylint: d
 	assert 0 == _node_up(registry, 'wrapped', symbol_server)
 
 	# ... and no balance is published for either
-	assert _balance(registry, 'native', 'nem:xem') is None
-	assert _balance(registry, 'wrapped', SYMBOL_MOSAIC_ID) is None
+	assert 0 == _balance_sample_count(registry, 'native')
+	assert 0 == _balance_sample_count(registry, 'wrapped')

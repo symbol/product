@@ -54,20 +54,20 @@ class EthereumNetworkFacade:  # pylint: disable=too-many-instance-attributes
 		config_mosaic_id = self.config.mosaic_id
 		return PrintableMosaicId(config_mosaic_id, 'ETH' if self._is_currency_mosaic_id() else config_mosaic_id)
 
-	async def read_bridge_balance(self, connector):
-		"""Reads the bridge account balance of the configured token."""
+	@staticmethod
+	def extract_native_currency_mosaic_id():
+		"""Extracts the mosaic id of the network currency, which is what gas is charged in."""
 
-		mosaic_id = self.extract_mosaic_id()
+		return PrintableMosaicId('', 'ETH')
+
+	async def read_balance(self, connector, mosaic_id):
+		"""Reads the bridge account balance of a token."""
+
 		if not mosaic_id.id:
-			# an empty mosaic id means the bridge moves ETH itself rather than an ERC-20
+			# an empty mosaic id means ETH itself rather than an ERC-20
 			return await connector.native_balance(self.bridge_address)
 
 		return await connector.balance(self.bridge_address, mosaic_id.id)
-
-	async def read_native_currency_balance(self, connector):
-		"""Reads the balance of the chain's native currency, which is what transaction fees are paid in."""
-
-		return await connector.native_balance(self.bridge_address)
 
 	def create_connector(self, **_kwargs):
 		"""Creates a connector to the network."""

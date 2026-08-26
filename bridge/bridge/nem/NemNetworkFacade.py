@@ -53,17 +53,17 @@ class NemNetworkFacade:
 
 		return PrintableMosaicId(mosaic_id_parts, config_mosaic_id)
 
-	async def read_bridge_balance(self, connector):
-		"""Reads the bridge account balance of the configured mosaic."""
+	@staticmethod
+	def extract_native_currency_mosaic_id():
+		"""Extracts the mosaic id of the network currency, which is what transaction fees are paid in."""
 
 		# a None mosaic id resolves to the native currency
-		return await connector.balance(self.bridge_address, self.extract_mosaic_id().id)
+		return PrintableMosaicId(None, 'nem:xem')
 
-	async def read_native_currency_balance(self, connector):
-		"""Reads the balance of the chain's native currency, which is what transaction fees are paid in."""
+	async def read_balance(self, connector, mosaic_id):
+		"""Reads the bridge account balance of a mosaic."""
 
-		# a None mosaic id resolves to the native currency
-		return await connector.balance(self.bridge_address, None)
+		return await connector.balance(self.bridge_address, mosaic_id.id)
 
 	def create_connector(self, **kwargs):
 		"""Creates a connector to the network."""

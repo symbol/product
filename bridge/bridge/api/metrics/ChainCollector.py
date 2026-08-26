@@ -5,8 +5,8 @@ from prometheus_client import Gauge
 
 NETWORK_ROLES = ('native', 'wrapped')
 
-# what a single scrape learned about one network; balance is None exactly when the node could not be read
-NetworkReading = namedtuple('NetworkReading', ['role', 'endpoint', 'address', 'token', 'balance', 'gas_balance'])
+# what a single scrape learned about one network; balances is None exactly when the node could not be read
+NetworkReading = namedtuple('NetworkReading', ['role', 'endpoint', 'address', 'balances'])
 
 
 async def _try_read(awaitable):
@@ -24,20 +24,23 @@ async def _read_network(role, facade, timeout_seconds):
 	connector = facade.create_connector()
 	connector.timeout_seconds = timeout_seconds
 
-	address = str(facade.bridge_address)
-	token = facade.extract_mosaic_id().formatted
+	mosaic_id = facade.extract_mosaic_id()
 
-	balance = await _try_read(facade.read_bridge_balance(connector))
+	balance = await _try_read(facade.read_balance(connector, mosaic_id))
 	if balance is None:
-		return NetworkReading(role, facade.config.endpoint, address, token, None, None)
+		return NetworkReading(role, facade.config.endpoint, str(facade.bridge_address), None)
+
+	balances = {mosaic_id.formatted: balance}
 
 	# fees are always paid in the chain's native currency; a mosaic id of None means the bridge moves
-	# that currency itself, so the balance above already covers them and there is nothing separate to report
-	gas_balance = None
-	if facade.extract_mosaic_id().id:
-		gas_balance = await _try_read(facade.read_native_currency_balance(connector))
+	# that currency itself, so the balance above already covers them and there is nothing more to read
+	if mosaic_id.id:
+		native_mosaic_id = facade.extract_native_currency_mosaic_id()
+		native_balance = await _try_read(facade.read_balance(connector, native_mosaic_id))
+		if native_balance is not None:
+			balances[native_mosaic_id.formatted] = native_balance
 
-	return NetworkReading(role, facade.config.endpoint, address, token, balance, gas_balance)
+	return NetworkReading(role, facade.config.endpoint, str(facade.bridge_address), balances)
 
 
 class ChainCollector:
@@ -59,22 +62,14 @@ class ChainCollector:
 			['network', 'endpoint'],
 			registry=registry)
 		balance_gauge = Gauge('bridge_balance', 'bridge account balance', ['network', 'token', 'address'], registry=registry)
-		gas_gauge = Gauge(
-			'bridge_gas_balance',
-			'native currency balance available for fees',
-			['network', 'address'],
-			registry=registry)
 
 		for reading in await self._read_all():
-			up_gauge.labels(reading.role, reading.endpoint).set(0 if reading.balance is None else 1)
-
-			# a balance is published only when it was actually read, so that a failed read
+			# balances are published only when they were actually read, so that a failed read
 			# can never be mistaken for a drained account
-			if reading.balance is not None:
-				balance_gauge.labels(reading.role, reading.token, reading.address).set(reading.balance)
+			up_gauge.labels(reading.role, reading.endpoint).set(0 if reading.balances is None else 1)
 
-			if reading.gas_balance is not None:
-				gas_gauge.labels(reading.role, reading.address).set(reading.gas_balance)
+			for (token, balance) in (reading.balances or {}).items():
+				balance_gauge.labels(reading.role, token, reading.address).set(balance)
 
 	async def _read_all(self):
 		"""Reads both networks concurrently."""
@@ -85,7 +80,7 @@ class ChainCollector:
 			# the facades never got built, so the endpoint has to come from configuration instead
 			network_configs = (self.config.native_network, self.config.wrapped_network)
 			return [
-				NetworkReading(role, network_config.endpoint, None, None, None, None)
+				NetworkReading(role, network_config.endpoint, None, None)
 				for (role, network_config) in zip(NETWORK_ROLES, network_configs)
 			]
 
