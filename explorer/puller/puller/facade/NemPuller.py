@@ -187,9 +187,22 @@ class NemPuller:
 		for height in range(comparison_height, minimum_height - 1, -1):
 			db_block_hash = self.nem_db.get_block_hash(height)
 			node_block = await self._retry_get_block(height)
+			current_hash_matches = db_block_hash.lower() == node_block.block_hash.lower()
 
-			if db_block_hash.lower() == node_block.block_hash.lower():
-				return None if height == db_height else height
+			if 1 == height:
+				if current_hash_matches:
+					return None if height == db_height else height
+
+				continue
+
+			if current_hash_matches:
+				db_previous_block_hash = self.nem_db.get_block_hash(height - 1)
+				previous_hash_matches = db_previous_block_hash.lower() == node_block.previous_block_hash.lower()
+
+				if previous_hash_matches:
+					return None if height == db_height else height
+
+				continue
 
 		raise NemRollbackError(
 			f'No matching NEM block hash found within {NEM_MAX_ROLLBACK_DEPTH} blocks '

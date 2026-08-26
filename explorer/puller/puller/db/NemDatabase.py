@@ -3,7 +3,6 @@ import json
 from binascii import unhexlify
 from collections import namedtuple
 
-from symbolchain.nc import TransactionType
 from symbolchain.CryptoTypes import PublicKey
 from symbolchain.nc import TransactionType
 from symbolchain.nem.Network import Address
