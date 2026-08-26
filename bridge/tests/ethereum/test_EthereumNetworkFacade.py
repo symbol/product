@@ -19,7 +19,10 @@ from ..test.PytestUtils import PytestAsserter
 
 @pytest.fixture
 async def server(aiohttp_client):
-	return await create_simple_ethereum_client(aiohttp_client)
+	return await create_simple_ethereum_client(
+		aiohttp_client,
+		{'0x67b1d87101671b127f5f8714789C7192f7ad340e': 3 * 10 ** 18},
+		{'0x67b1d87101671b127f5f8714789C7192f7ad340e': 444555})
 
 
 # pylint: disable=invalid-name
@@ -589,5 +592,42 @@ async def test_can_calculate_transfer_transaction_fee_for_account_with_unknown_n
 	# - base_fee     => ceil(2486633695 * 1.2 == 2983960434)
 	# - priority_fee => ceil(623200001 * 1.05 == 654360001.05)
 	assert Decimal(24150 * (2983960434 + 654360002)) == transaction_fee
+
+# endregion
+
+
+# region read_balance
+
+async def test_can_read_balance_of_native_currency(server):  # pylint: disable=redefined-outer-name
+	# Arrange: an empty mosaic id means the bridge moves ETH itself
+	facade = EthereumNetworkFacade(_create_config(server, ''))
+
+	# Act:
+	balance = await facade.read_balance(facade.create_connector(), facade.extract_mosaic_id())
+
+	# Assert:
+	assert 3 * 10 ** 18 == balance
+
+
+async def test_can_read_balance_of_erc20_token(server):  # pylint: disable=redefined-outer-name
+	# Arrange: a non-empty mosaic id is an ERC-20 contract address
+	facade = EthereumNetworkFacade(_create_config(server))
+
+	# Act:
+	balance = await facade.read_balance(facade.create_connector(), facade.extract_mosaic_id())
+
+	# Assert: the balance comes from the ERC-20 contract, not from the account itself
+	assert 444555 == balance
+
+
+async def test_can_read_balance_of_native_currency_while_moving_a_token(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	facade = EthereumNetworkFacade(_create_config(server))
+
+	# Act: fees are charged in ETH even though the bridge moves an ERC-20
+	balance = await facade.read_balance(facade.create_connector(), facade.extract_native_currency_mosaic_id())
+
+	# Assert:
+	assert 3 * 10 ** 18 == balance
 
 # endregion

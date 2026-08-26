@@ -19,7 +19,8 @@ from ..test.PytestUtils import PytestAsserter
 @pytest.fixture
 async def server(aiohttp_client):
 	return await create_simple_nem_client(aiohttp_client, {
-		'TCQKTUUNUOPQGDQIDQT2CCJGQZ4QNAAGBZRV5YJJ': 9988776655
+		'TCQKTUUNUOPQGDQIDQT2CCJGQZ4QNAAGBZRV5YJJ': 9988776655,
+		'TCYIHED7HZQ3IPBY5WRDPDLV5CCMMOOVSOMSPD6B': 1000
 	})
 
 
@@ -512,5 +513,42 @@ async def test_cannot_calculate_transfer_transaction_fee_without_mosaic_fee_info
 	# Act:
 	with pytest.raises(ValueError, match='unable to create transaction for mosaic foo:baz with unknown fee information'):
 		facade.calculate_transfer_transaction_fee(_create_sample_balance_transfer('', amount=88887_000), ('foo', 'baz'))
+
+# endregion
+
+
+# region read_balance
+
+async def test_can_read_balance_of_native_currency(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	facade = NemNetworkFacade(_create_config(server))
+
+	# Act:
+	balance = await facade.read_balance(facade.create_connector(), facade.extract_mosaic_id())
+
+	# Assert: nem:xem resolves to the account balance
+	assert 1000 == balance
+
+
+async def test_can_read_balance_of_mosaic(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	facade = NemNetworkFacade(_create_config(server, 'foo:bar'))
+
+	# Act:
+	balance = await facade.read_balance(facade.create_connector(), facade.extract_mosaic_id())
+
+	# Assert: the mock reports twice the account balance for foo:bar
+	assert 2000 == balance
+
+
+async def test_can_read_balance_of_native_currency_while_moving_a_token(server):  # pylint: disable=redefined-outer-name
+	# Arrange: the bridge moves a mosaic, so fees come out of a separate XEM balance
+	facade = NemNetworkFacade(_create_config(server, 'foo:bar'))
+
+	# Act:
+	balance = await facade.read_balance(facade.create_connector(), facade.extract_native_currency_mosaic_id())
+
+	# Assert:
+	assert 1000 == balance
 
 # endregion

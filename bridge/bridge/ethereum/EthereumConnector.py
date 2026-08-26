@@ -62,6 +62,14 @@ class EthereumConnector(BasicConnector):
 	def _format_block_identifier(block_identifier):
 		return f'0x{block_identifier:X}' if isinstance(block_identifier, int) else block_identifier
 
+	async def _get_account_value(self, method, account_address, block_identifier):
+		request_json = make_rpc_request_json(method, [
+			str(account_address),
+			self._format_block_identifier(block_identifier)
+		])
+		result_json = await self._post_rpc(request_json)
+		return parse_rpc_response_hex_value(result_json)
+
 	async def _make_eth_call(self, function_name, account_address, token_contract_address, block_identifier):
 		function_hash = hexlify(sha3.keccak_256(function_name.encode('utf8')).digest()).decode('utf8')
 
@@ -135,12 +143,16 @@ class EthereumConnector(BasicConnector):
 	async def nonce(self, account_address, block_identifier='latest'):
 		"""Gets account nonce."""
 
-		request_json = make_rpc_request_json('eth_getTransactionCount', [
-			str(account_address),
-			self._format_block_identifier(block_identifier)
-		])
-		result_json = await self._post_rpc(request_json)
-		return parse_rpc_response_hex_value(result_json)
+		return await self._get_account_value('eth_getTransactionCount', account_address, block_identifier)
+
+	# endregion
+
+	# region native_balance
+
+	async def native_balance(self, account_address, block_identifier='latest'):
+		"""Gets the native currency (ETH) balance of an account."""
+
+		return await self._get_account_value('eth_getBalance', account_address, block_identifier)
 
 	# endregion
 
