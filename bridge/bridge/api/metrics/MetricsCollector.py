@@ -3,19 +3,14 @@ import logging
 
 from prometheus_client import CollectorRegistry
 
-from .MetricsLoader import load_collectors
-
-# reads happen while a scrape is in flight, so an unresponsive source must never pin a worker
-DEFAULT_TIMEOUT_SECONDS = 3
-
 
 class MetricsCollector:
 	"""Runs every collector and gathers the result into a single registry."""
 
-	def __init__(self, config, context, timeout_seconds=DEFAULT_TIMEOUT_SECONDS):
+	def __init__(self, collectors):
 		"""Creates a metrics collector."""
 
-		self._collectors = load_collectors(config, context, timeout_seconds)
+		self._collectors = collectors
 		self._logger = logging.getLogger(__name__)
 
 	async def collect(self):
