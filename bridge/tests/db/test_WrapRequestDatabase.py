@@ -1090,6 +1090,52 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 
 	# endregion
 
+	# region count_permanent_failures
+
+	def test_can_count_permanent_failures(self):
+		# Arrange:
+		with sqlite3.connect(':memory:') as connection:
+			database = self._create_database(connection)
+			database.create_tables()
+			seed_database_with_simple_requests(database)
+
+			# Act: the seed marks two of its requests as permanently failed
+			count = database.count_permanent_failures()
+
+			# Assert:
+			self.assertEqual(2, count)
+
+	def test_count_permanent_failures_excludes_retried_requests(self):
+		# Arrange: a transient failure carries the same failed status and is told apart only by is_retried
+		with sqlite3.connect(':memory:') as connection:
+			database = self._create_database(connection)
+			database.create_tables()
+
+			request = make_request(0, height=777, amount=4321, destination_address=SYMBOL_ADDRESSES[0])
+			database.add_request(request)
+			database.mark_payout_failed_transient(request, 'node unavailable')
+
+			# Act:
+			count = database.count_permanent_failures()
+
+			# Assert:
+			self.assertEqual(1, len(database.requests_by_status(WrapRequestStatus.FAILED)))
+			self.assertEqual(0, count)
+
+	def test_count_permanent_failures_is_zero_for_an_empty_database(self):
+		# Arrange:
+		with sqlite3.connect(':memory:') as connection:
+			database = self._create_database(connection)
+			database.create_tables()
+
+			# Act:
+			count = database.count_permanent_failures()
+
+			# Assert:
+			self.assertEqual(0, count)
+
+	# endregion
+
 	# region requests_by_status
 
 	@staticmethod

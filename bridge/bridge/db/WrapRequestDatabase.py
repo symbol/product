@@ -448,6 +448,19 @@ class WrapRequestDatabase(MaxProcessedHeightMixin):  # pylint: disable=too-many-
 
 	# endregion
 
+	# region count_permanent_failures
+
+	def count_permanent_failures(self):
+		"""Gets a count of requests that failed and were not retried."""
+
+		cursor = self.connection.cursor()
+		cursor.execute(
+			'SELECT COUNT(*) FROM wrap_request WHERE payout_status = ? AND NOT is_retried',
+			(WrapRequestStatus.FAILED.value,))
+		return cursor.fetchone()[0]
+
+	# endregion
+
 	# region requests_by_status, unconfirmed_payout_transaction_hashes
 
 	def requests_by_status(self, status):
