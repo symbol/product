@@ -430,6 +430,18 @@ def test_can_calculate_transfer_transaction_fee_with_message():
 
 # region read_bridge_balance, read_native_currency_balance
 
+async def test_can_read_bridge_balance_of_network_currency(server):  # pylint: disable=redefined-outer-name
+	# Arrange: the configured mosaic is the network currency
+	facade = SymbolNetworkFacade(_create_config(server, '72C0212E67A08BCE'))
+	await facade.init()
+
+	# Act:
+	balance = await facade.read_bridge_balance(facade.create_connector())
+
+	# Assert:
+	assert 5544332211 == balance
+
+
 async def test_can_read_bridge_balance_of_mosaic(server):  # pylint: disable=redefined-outer-name
 	# Arrange:
 	facade = SymbolNetworkFacade(_create_config(server, 'FAF0EBED913FA202'))
