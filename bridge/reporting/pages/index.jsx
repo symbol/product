@@ -1,6 +1,7 @@
 import { fetchBridgeConfiguration } from '@/api/bridge';
 import ReportPanel from '@/components/ReportPanel';
 import ReportTabs from '@/components/ReportTabs';
+import config from '@/config';
 import { BRIDGE_TABS } from '@/constants';
 import styles from '@/styles/Home.module.css';
 import Head from 'next/head';
@@ -12,12 +13,16 @@ export const getServerSideProps = async () => {
 
 	return {
 		props: {
+			bridgeBaseUrls: {
+				native: config.PUBLIC_BRIDGE_NATIVE_URL,
+				wrapped: config.PUBLIC_BRIDGE_WRAPPED_URL
+			},
 			bridgeConfigurations
 		}
 	};
 };
 
-export const Home = ({ bridgeConfigurations }) => {
+export const Home = ({ bridgeBaseUrls, bridgeConfigurations }) => {
 	const [activeTabId, setActiveTabId] = useState(BRIDGE_TABS[0].id);
 	const activeTab = BRIDGE_TABS.find(tab => tab.id === activeTabId);
 	const bridgeTypes = [...new Set(BRIDGE_TABS.map(tab => tab.bridgeType))];
@@ -54,6 +59,7 @@ export const Home = ({ bridgeConfigurations }) => {
 				<div className={styles.panelStack}>
 					{BRIDGE_TABS.map(tab => (
 						<ReportPanel
+							baseUrl={bridgeBaseUrls[tab.bridgeType]}
 							isActive={tab.id === activeTabId}
 							key={tab.id}
 							tab={tab}

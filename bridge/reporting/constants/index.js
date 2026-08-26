@@ -69,3 +69,10 @@ export const PAYOUT_STATUS_OPTIONS = [
 	{ label: 'Completed', value: PAYOUT_STATUS.COMPLETED },
 	{ label: 'Failed', value: PAYOUT_STATUS.FAILED }
 ];
+
+export const PAYOUT_STATUS_DETAILS = {
+	[PAYOUT_STATUS.UNPROCESSED]: { label: 'Unprocessed', tone: 'neutral' },
+	[PAYOUT_STATUS.SENT]: { label: 'Sent', tone: 'info' },
+	[PAYOUT_STATUS.COMPLETED]: { label: 'Completed', tone: 'success' },
+	[PAYOUT_STATUS.FAILED]: { label: 'Failed', tone: 'danger' }
+};

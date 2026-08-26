@@ -2,10 +2,10 @@ import ReportPanel from '@/components/ReportPanel';
 import '@testing-library/jest-dom';
 import { fireEvent, render, screen } from '@testing-library/react';
 
+const BASE_URL = 'https://bridge.example/wrapped';
 const tab = {
 	id: 'xym-wxym-requests',
 	label: 'XYM → WXYM',
-	baseUrl: 'https://bridge.example/wrapped',
 	operation: 'wrap',
 	resource: 'requests',
 	sourceAsset: { ticker: 'XYM', divisibility: 6 },
@@ -14,10 +14,12 @@ const tab = {
 	destinationNetwork: 'wrappedNetwork'
 };
 
+const renderPanel = currentTab => render(<ReportPanel baseUrl={BASE_URL} isActive tab={currentTab} />);
+
 describe('ReportPanel', () => {
 	it('renders validation error given invalid input', () => {
 		// Arrange:
-		render(<ReportPanel isActive tab={tab} />);
+		renderPanel(tab);
 		const input = screen.getByRole('textbox', { name: /filter by address/i });
 		fireEvent.change(input, { target: { value: 'invalid' } });
 
@@ -31,7 +33,7 @@ describe('ReportPanel', () => {
 
 	it('accepts a valid search and removes an existing validation error', () => {
 		// Arrange:
-		render(<ReportPanel isActive tab={tab} />);
+		renderPanel(tab);
 		const input = screen.getByRole('textbox', { name: /filter by address/i });
 		fireEvent.change(input, { target: { value: 'invalid' } });
 		fireEvent.submit(input.closest('form'));
@@ -47,7 +49,7 @@ describe('ReportPanel', () => {
 
 	it('clears the search input and its validation error', () => {
 		// Arrange:
-		render(<ReportPanel isActive tab={tab} />);
+		renderPanel(tab);
 		const input = screen.getByRole('textbox', { name: /filter by address/i });
 		fireEvent.change(input, { target: { value: 'invalid' } });
 		fireEvent.submit(input.closest('form'));
@@ -63,7 +65,7 @@ describe('ReportPanel', () => {
 
 	it('selects one payout status at a time', () => {
 		// Arrange:
-		render(<ReportPanel isActive tab={tab} />);
+		renderPanel(tab);
 		const allButton = screen.getByRole('button', { name: 'All' });
 		const sentButton = screen.getByRole('button', { name: 'Sent' });
 		const failedButton = screen.getByRole('button', { name: 'Failed' });
@@ -82,7 +84,7 @@ describe('ReportPanel', () => {
 		const errorTab = { ...tab, id: 'xym-wxym-errors', resource: 'errors' };
 
 		// Act:
-		render(<ReportPanel isActive tab={errorTab} />);
+		renderPanel(errorTab);
 
 		// Assert:
 		expect(screen.queryByRole('group', { name: 'Payout status' })).not.toBeInTheDocument();
