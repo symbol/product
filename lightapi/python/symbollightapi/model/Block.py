@@ -1,7 +1,20 @@
 class Block:  # pylint: disable=too-many-instance-attributes
 	"""Block model."""
 
-	def __init__(self, height, timestamp, transactions, difficulty, block_hash, total_fee, beneficiary, signer, signature, size):
+	def __init__(
+		self,
+		height,
+		timestamp,
+		transactions,
+		difficulty,
+		block_hash,
+		total_fee,
+		beneficiary,
+		signer,
+		signature,
+		size,
+		previous_block_hash
+	):
 		"""Create a Block model."""
 
 		# pylint: disable=too-many-arguments,too-many-positional-arguments
@@ -16,6 +29,7 @@ class Block:  # pylint: disable=too-many-instance-attributes
 		self.signer = signer
 		self.signature = signature
 		self.size = size
+		self.previous_block_hash = previous_block_hash
 
 	def __eq__(self, other):
 		return isinstance(other, Block) and all([
@@ -28,5 +42,6 @@ class Block:  # pylint: disable=too-many-instance-attributes
 			self.beneficiary == other.beneficiary,
 			self.signer == other.signer,
 			self.signature == other.signature,
-			self.size == other.size
+			self.size == other.size,
+			self.previous_block_hash == other.previous_block_hash
 		])
