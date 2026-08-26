@@ -2,6 +2,7 @@ import asyncio
 from collections import namedtuple
 
 from prometheus_client import Gauge
+from symbollightapi.model.Exceptions import NodeException
 
 NETWORK_ROLES = ('native', 'wrapped')
 
@@ -14,7 +15,7 @@ async def _try_read(awaitable):
 
 	try:
 		return await awaitable
-	except Exception:  # pylint: disable=broad-except
+	except NodeException:
 		return None
 
 
