@@ -598,17 +598,6 @@ async def test_can_calculate_transfer_transaction_fee_for_account_with_unknown_n
 
 # region read_bridge_balance, read_native_currency_balance
 
-async def test_can_read_bridge_balance_of_erc20_token(server):  # pylint: disable=redefined-outer-name
-	# Arrange: a non-empty mosaic id is an ERC-20 contract address
-	facade = EthereumNetworkFacade(_create_config(server))
-
-	# Act:
-	balance = await facade.read_bridge_balance(facade.create_connector())
-
-	# Assert: the balance comes from the ERC-20 contract, not from the account itself
-	assert 444555 == balance
-
-
 async def test_can_read_bridge_balance_of_native_currency(server):  # pylint: disable=redefined-outer-name
 	# Arrange: an empty mosaic id means the bridge moves ETH itself
 	facade = EthereumNetworkFacade(_create_config(server, ''))
@@ -618,6 +607,17 @@ async def test_can_read_bridge_balance_of_native_currency(server):  # pylint: di
 
 	# Assert:
 	assert 3 * 10 ** 18 == balance
+
+
+async def test_can_read_bridge_balance_of_erc20_token(server):  # pylint: disable=redefined-outer-name
+	# Arrange: a non-empty mosaic id is an ERC-20 contract address
+	facade = EthereumNetworkFacade(_create_config(server))
+
+	# Act:
+	balance = await facade.read_bridge_balance(facade.create_connector())
+
+	# Assert: the balance comes from the ERC-20 contract, not from the account itself
+	assert 444555 == balance
 
 
 async def test_can_read_native_currency_balance(server):  # pylint: disable=redefined-outer-name
