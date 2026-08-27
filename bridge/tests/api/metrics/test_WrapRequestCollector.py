@@ -53,6 +53,7 @@ def _seed_wrap_requests(directory):
 
 
 def _seed_rejection(directory):
+	# index 4 keeps this error clear of every hash the request seed uses, so that it has no matching request
 	with Databases(directory, MockNemNetworkFacade(), MockSymbolNetworkFacade()) as databases:
 		databases.wrap_request.add_error(make_request_error(4, 'destination address is invalid', height=777))
 
@@ -61,6 +62,7 @@ def _seed_transient_failure(directory):
 	with Databases(directory, MockNemNetworkFacade(), MockSymbolNetworkFacade()) as databases:
 		request = make_request(0, height=777, amount=4321, destination_address=SYMBOL_ADDRESSES[0])
 		databases.wrap_request.add_request(request)
+		databases.wrap_request.set_block_timestamp(777, 1020)
 		databases.wrap_request.mark_payout_failed_transient(request, 'node unavailable')
 
 
@@ -97,15 +99,17 @@ async def test_permanent_failures_are_counted(database_directory):  # pylint: di
 	assert 2 == _failed_permanent(registry, 'wrap')
 
 
-async def test_transient_failures_are_not_counted(database_directory):  # pylint: disable=redefined-outer-name
+async def test_a_transiently_failed_request_is_not_counted_but_is_still_waiting(database_directory):
+	# pylint: disable=redefined-outer-name
 	# Arrange: a transient failure carries the same failed status and is told apart only by is_retried
 	_seed_transient_failure(database_directory)
 
 	# Act:
 	registry = await _collect(database_directory)
 
-	# Assert:
+	# Assert: the failure counter looks away from the retry on purpose, so the age metric must not do the same
 	assert 0 == _failed_permanent(registry, 'wrap')
+	assert _age(registry, 'bridge_oldest_unprocessed_age_seconds', 'wrap') is not None
 
 
 async def test_both_directions_are_reported(database_directory):  # pylint: disable=redefined-outer-name
