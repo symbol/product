@@ -1095,7 +1095,7 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 
 	# endregion
 
-	# region count_permanent_failures
+	# region count_permanent_failures, count_retried_requests, count_rejected_requests
 
 	def test_can_count_permanent_failures(self):
 		# Arrange:
@@ -1225,6 +1225,21 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 			# Assert:
 			self.assertEqual(1, len(list(database.find_errors())))
 			self.assertEqual(0, count)
+
+	def test_count_rejected_requests_matches_requests_on_subindex(self):
+		# Arrange: one transaction carries both a request and a rejected transfer, told apart only by subindex
+		with sqlite3.connect(':memory:') as connection:
+			database = self._create_database(connection)
+			database.create_tables()
+
+			database.add_request(make_request(0, height=111, transaction_subindex=1, destination_address=SYMBOL_ADDRESSES[0]))
+			database.add_error(make_request_error(0, 'destination address is invalid', height=111, transaction_subindex=5))
+
+			# Act:
+			count = database.count_rejected_requests()
+
+			# Assert:
+			self.assertEqual(1, count)
 
 	def test_count_rejected_requests_is_zero_for_an_empty_database(self):
 		# Arrange:

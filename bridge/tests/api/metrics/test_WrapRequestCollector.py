@@ -116,19 +116,7 @@ async def test_a_transiently_failed_request_is_not_counted_but_is_still_waiting(
 	assert _age(registry, 'bridge_oldest_unprocessed_age_seconds', 'wrap') is not None
 
 
-async def test_retried_requests_are_counted(database_directory):  # pylint: disable=redefined-outer-name
-	# Arrange:
-	_seed_transient_failure(database_directory)
-
-	# Act:
-	registry = await _collect(database_directory)
-
-	# Assert:
-	assert 1 == _retried(registry, 'wrap')
-	assert 0 == _retried(registry, 'unwrap')
-
-
-async def test_both_directions_are_reported(database_directory):  # pylint: disable=redefined-outer-name
+async def test_a_direction_without_failures_reports_zero(database_directory):  # pylint: disable=redefined-outer-name
 	# Arrange: the seed marks two requests as permanently failed and touches only the wrap database
 	_seed_wrap_requests(database_directory)
 
@@ -140,30 +128,16 @@ async def test_both_directions_are_reported(database_directory):  # pylint: disa
 	assert 0 == _failed_permanent(registry, 'unwrap')
 
 
-async def test_ages_are_reported_for_a_bridge_with_work_in_flight(database_directory):  # pylint: disable=redefined-outer-name
-	# Arrange: the seed leaves one request unprocessed and one payout awaiting confirmation
-	_seed_wrap_requests(database_directory)
-
-	with Databases(database_directory, MockNemNetworkFacade(), MockSymbolNetworkFacade()) as databases:
-		unprocessed_timestamp = databases.wrap_request.oldest_unprocessed_request_timestamp()
-		sent_timestamp = databases.wrap_request.oldest_payout_sent_timestamp()
+async def test_retried_requests_are_counted(database_directory):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	_seed_transient_failure(database_directory)
 
 	# Act:
 	registry = await _collect(database_directory)
 
-	# Assert: adding the reported age back onto the timestamp the database holds must land on now
-	assert_timestamp_within_last_second(unprocessed_timestamp + _age(registry, 'bridge_oldest_unprocessed_age_seconds', 'wrap'))
-	assert_timestamp_within_last_second(sent_timestamp + _age(registry, 'bridge_oldest_sent_age_seconds', 'wrap'))
-
-
-async def test_ages_are_omitted_for_an_idle_bridge(database_directory):  # pylint: disable=redefined-outer-name
-	# Act: nothing was seeded into either database
-	registry = await _collect(database_directory)
-
-	# Assert: a missing sample keeps an idle bridge off the alert, where zero would put it on
-	for name in ('bridge_oldest_unprocessed_age_seconds', 'bridge_oldest_sent_age_seconds'):
-		for direction in ('wrap', 'unwrap'):
-			assert _age(registry, name, direction) is None, f'{name} {direction}'
+	# Assert:
+	assert 1 == _retried(registry, 'wrap')
+	assert 0 == _retried(registry, 'unwrap')
 
 
 async def test_rejected_deposits_are_counted(database_directory):  # pylint: disable=redefined-outer-name
@@ -214,3 +188,29 @@ async def test_daily_transfer_remaining_is_omitted_without_a_configured_limit(da
 	# Assert:
 	assert _remaining(registry, 'wrap') is None
 	assert _remaining(registry, 'unwrap') is None
+
+
+async def test_ages_are_reported_for_a_bridge_with_work_in_flight(database_directory):  # pylint: disable=redefined-outer-name
+	# Arrange: the seed leaves one request unprocessed and one payout awaiting confirmation
+	_seed_wrap_requests(database_directory)
+
+	with Databases(database_directory, MockNemNetworkFacade(), MockSymbolNetworkFacade()) as databases:
+		unprocessed_timestamp = databases.wrap_request.oldest_unprocessed_request_timestamp()
+		sent_timestamp = databases.wrap_request.oldest_payout_sent_timestamp()
+
+	# Act:
+	registry = await _collect(database_directory)
+
+	# Assert: adding the reported age back onto the timestamp the database holds must land on now
+	assert_timestamp_within_last_second(unprocessed_timestamp + _age(registry, 'bridge_oldest_unprocessed_age_seconds', 'wrap'))
+	assert_timestamp_within_last_second(sent_timestamp + _age(registry, 'bridge_oldest_sent_age_seconds', 'wrap'))
+
+
+async def test_ages_are_omitted_for_an_idle_bridge(database_directory):  # pylint: disable=redefined-outer-name
+	# Act: nothing was seeded into either database
+	registry = await _collect(database_directory)
+
+	# Assert: a missing sample keeps an idle bridge off the alert, where zero would put it on
+	for name in ('bridge_oldest_unprocessed_age_seconds', 'bridge_oldest_sent_age_seconds'):
+		for direction in ('wrap', 'unwrap'):
+			assert _age(registry, name, direction) is None, f'{name} {direction}'
