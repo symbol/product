@@ -448,7 +448,7 @@ class WrapRequestDatabase(MaxProcessedHeightMixin):  # pylint: disable=too-many-
 
 	# endregion
 
-	# region count_permanent_failures
+	# region count_permanent_failures, count_rejected_requests
 
 	def count_permanent_failures(self):
 		"""Gets a count of requests that failed and were not retried."""
@@ -457,6 +457,23 @@ class WrapRequestDatabase(MaxProcessedHeightMixin):  # pylint: disable=too-many-
 		cursor.execute(
 			'SELECT COUNT(*) FROM wrap_request WHERE payout_status = ? AND NOT is_retried',
 			(WrapRequestStatus.FAILED.value,))
+		return cursor.fetchone()[0]
+
+	def count_rejected_requests(self):
+		"""Gets a count of deposits that were rejected on download and never became requests."""
+
+		# payout failures and retries share this table, but each of those has a matching request;
+		# a deposit rejected on download never reached the request table, which is what tells them apart
+		cursor = self.connection.cursor()
+		cursor.execute(
+			'''
+				SELECT COUNT(*) FROM wrap_error
+				WHERE NOT EXISTS (
+					SELECT 1 FROM wrap_request
+					WHERE wrap_request.request_transaction_hash = wrap_error.request_transaction_hash
+					AND wrap_request.request_transaction_subindex = wrap_error.request_transaction_subindex
+				)
+			''')
 		return cursor.fetchone()[0]
 
 	# endregion

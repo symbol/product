@@ -21,6 +21,11 @@ class WrapRequestCollector:
 			'requests that failed and were not retried; each one is potentially lost user funds',
 			['direction'],
 			registry=registry)
+		rejected_gauge = Gauge(
+			'bridge_requests_rejected',
+			'deposits that were rejected on download and never became requests',
+			['direction'],
+			registry=registry)
 		unprocessed_age_gauge = Gauge(
 			'bridge_oldest_unprocessed_age_seconds',
 			'age of the oldest request that has not been processed yet',
@@ -37,6 +42,7 @@ class WrapRequestCollector:
 		with Databases(*self.context.database_params) as databases:
 			for (direction, database) in (('wrap', databases.wrap_request), ('unwrap', databases.unwrap_request)):
 				failed_gauge.labels(direction).set(database.count_permanent_failures())
+				rejected_gauge.labels(direction).set(database.count_rejected_requests())
 				_set_age(unprocessed_age_gauge, direction, now, database.oldest_unprocessed_request_timestamp())
 				_set_age(sent_age_gauge, direction, now, database.oldest_payout_sent_timestamp())
 

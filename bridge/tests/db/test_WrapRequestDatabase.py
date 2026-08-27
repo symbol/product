@@ -1139,6 +1139,62 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 			# Assert:
 			self.assertEqual(0, count)
 
+	def test_can_count_rejected_requests(self):
+		# Arrange: every seeded error was rejected on download, so none of them has a matching request
+		with sqlite3.connect(':memory:') as connection:
+			database = self._create_database(connection)
+			database.create_tables()
+			seed_database_with_simple_errors(database)
+
+			# Act:
+			count = database.count_rejected_requests()
+
+			# Assert:
+			self.assertEqual(3, count)
+
+	def test_count_rejected_requests_excludes_payout_failures(self):
+		# Arrange: the seed marks two payouts failed, and each of those writes an error alongside its request
+		with sqlite3.connect(':memory:') as connection:
+			database = self._create_database(connection)
+			database.create_tables()
+			seed_database_with_simple_requests(database)
+
+			# Act:
+			count = database.count_rejected_requests()
+
+			# Assert:
+			self.assertEqual(2, len(list(database.find_errors())))
+			self.assertEqual(0, count)
+
+	def test_count_rejected_requests_excludes_retried_requests(self):
+		# Arrange: a transient failure writes an error against the request it retried
+		with sqlite3.connect(':memory:') as connection:
+			database = self._create_database(connection)
+			database.create_tables()
+
+			request = make_request(0, height=777, amount=4321, destination_address=SYMBOL_ADDRESSES[0])
+			database.add_request(request)
+			database.mark_payout_failed_transient(request, 'node unavailable')
+
+			# Act:
+			count = database.count_rejected_requests()
+
+			# Assert:
+			self.assertEqual(1, len(list(database.find_errors())))
+			self.assertEqual(0, count)
+
+	def test_count_rejected_requests_is_zero_for_an_empty_database(self):
+		# Arrange:
+		with sqlite3.connect(':memory:') as connection:
+			database = self._create_database(connection)
+			database.create_tables()
+
+			# Act:
+			count = database.count_rejected_requests()
+
+			# Assert:
+			self.assertEqual(0, count)
+
 	# endregion
 
 	# region oldest_unprocessed_request_timestamp, oldest_payout_sent_timestamp

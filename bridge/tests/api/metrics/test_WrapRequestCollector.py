@@ -8,7 +8,7 @@ from bridge.api.metrics.WrapRequestCollector import WrapRequestCollector
 from bridge.db.Databases import Databases
 
 from ...test.BridgeTestUtils import SYMBOL_ADDRESSES, assert_timestamp_within_last_second
-from ...test.DatabaseTestUtils import make_request, seed_database_with_simple_requests
+from ...test.DatabaseTestUtils import make_request, make_request_error, seed_database_with_simple_requests
 from ...test.MockNetworkFacade import MockNemNetworkFacade, MockSymbolNetworkFacade
 
 # pylint: disable=invalid-name
@@ -39,6 +39,11 @@ def _seed_permanent_failures(directory):
 		seed_database_with_simple_requests(databases.wrap_request)
 
 
+def _seed_rejection(directory):
+	with Databases(directory, MockNemNetworkFacade(), MockSymbolNetworkFacade()) as databases:
+		databases.wrap_request.add_error(make_request_error(4, 'destination address is invalid', height=777))
+
+
 def _seed_transient_failure(directory):
 	with Databases(directory, MockNemNetworkFacade(), MockSymbolNetworkFacade()) as databases:
 		request = make_request(0, height=777, amount=4321, destination_address=SYMBOL_ADDRESSES[0])
@@ -58,6 +63,10 @@ def _failed_permanent(registry, direction):
 
 def _age(registry, name, direction):
 	return registry.get_sample_value(name, {'direction': direction})
+
+
+def _rejected(registry, direction):
+	return registry.get_sample_value('bridge_requests_rejected', {'direction': direction})
 
 
 async def test_permanent_failures_are_counted(database_directory):  # pylint: disable=redefined-outer-name
@@ -118,3 +127,16 @@ async def test_ages_are_omitted_for_an_idle_bridge(database_directory):  # pylin
 	for name in ('bridge_oldest_unprocessed_age_seconds', 'bridge_oldest_sent_age_seconds'):
 		for direction in ('wrap', 'unwrap'):
 			assert _age(registry, name, direction) is None, f'{name} {direction}'
+
+
+async def test_rejected_deposits_are_counted(database_directory):  # pylint: disable=redefined-outer-name
+	# Arrange: the seed also writes an error for each of its two failed payouts, which must not be counted here
+	_seed_permanent_failures(database_directory)
+	_seed_rejection(database_directory)
+
+	# Act:
+	registry = await _collect(database_directory)
+
+	# Assert:
+	assert 1 == _rejected(registry, 'wrap')
+	assert 0 == _rejected(registry, 'unwrap')
