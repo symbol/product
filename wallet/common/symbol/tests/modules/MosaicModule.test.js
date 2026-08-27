@@ -101,6 +101,7 @@ describe('MosaicModule', () => {
 		api = {
 			mosaic: {
 				fetchAccountMosaics: jest.fn(),
+				fetchMosaicOwner: jest.fn(),
 				fetchMosaicOwners: jest.fn()
 			}
 		};
@@ -384,6 +385,21 @@ describe('MosaicModule', () => {
 
 		fetchMosaicOwnersTests.forEach(test => {
 			runFetchMosaicOwnersTest(test.description, test.config);
+		});
+	});
+
+	describe('fetchMosaicOwner()', () => {
+		it('fetches the held amount of a single holder', async () => {
+			// Arrange:
+			const [mosaicOwner] = mosaicOwners;
+			api.mosaic.fetchMosaicOwner.mockResolvedValue(mosaicOwner);
+
+			// Act:
+			const result = await mosaicModule.fetchMosaicOwner(token.id, mosaicOwner.address);
+
+			// Assert:
+			expect(api.mosaic.fetchMosaicOwner).toHaveBeenCalledWith(networkProperties, token.id, mosaicOwner.address);
+			expect(result).toBe(mosaicOwner);
 		});
 	});
 
