@@ -80,6 +80,10 @@ def _age(registry, name, direction):
 	return registry.get_sample_value(name, {'direction': direction})
 
 
+def _retried(registry, direction):
+	return registry.get_sample_value('bridge_requests_retried', {'direction': direction})
+
+
 def _rejected(registry, direction):
 	return registry.get_sample_value('bridge_requests_rejected', {'direction': direction})
 
@@ -110,6 +114,18 @@ async def test_a_transiently_failed_request_is_not_counted_but_is_still_waiting(
 	# Assert: the failure counter looks away from the retry on purpose, so the age metric must not do the same
 	assert 0 == _failed_permanent(registry, 'wrap')
 	assert _age(registry, 'bridge_oldest_unprocessed_age_seconds', 'wrap') is not None
+
+
+async def test_retried_requests_are_counted(database_directory):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	_seed_transient_failure(database_directory)
+
+	# Act:
+	registry = await _collect(database_directory)
+
+	# Assert:
+	assert 1 == _retried(registry, 'wrap')
+	assert 0 == _retried(registry, 'unwrap')
 
 
 async def test_both_directions_are_reported(database_directory):  # pylint: disable=redefined-outer-name

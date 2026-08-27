@@ -1139,6 +1139,49 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 			# Assert:
 			self.assertEqual(0, count)
 
+	def test_can_count_retried_requests(self):
+		# Arrange: the same request fails transiently twice, so two generations of it are marked retried
+		with sqlite3.connect(':memory:') as connection:
+			database = self._create_database(connection)
+			database.create_tables()
+
+			request = make_request(0, height=777, amount=4321, destination_address=SYMBOL_ADDRESSES[0])
+			database.add_request(request)
+			database.mark_payout_failed_transient(request, 'node unavailable')
+			database.mark_payout_failed_transient(make_next_retry_wrap_request(request), 'node unavailable')
+
+			# Act:
+			count = database.count_retried_requests()
+
+			# Assert:
+			self.assertEqual(2, count)
+
+	def test_count_retried_requests_excludes_permanent_failures(self):
+		# Arrange: the seed marks two of its requests as permanently failed and retries none of them
+		with sqlite3.connect(':memory:') as connection:
+			database = self._create_database(connection)
+			database.create_tables()
+			seed_database_with_simple_requests(database)
+
+			# Act:
+			count = database.count_retried_requests()
+
+			# Assert:
+			self.assertEqual(2, len(database.requests_by_status(WrapRequestStatus.FAILED)))
+			self.assertEqual(0, count)
+
+	def test_count_retried_requests_is_zero_for_an_empty_database(self):
+		# Arrange:
+		with sqlite3.connect(':memory:') as connection:
+			database = self._create_database(connection)
+			database.create_tables()
+
+			# Act:
+			count = database.count_retried_requests()
+
+			# Assert:
+			self.assertEqual(0, count)
+
 	def test_can_count_rejected_requests(self):
 		# Arrange: every seeded error was rejected on download, so none of them has a matching request
 		with sqlite3.connect(':memory:') as connection:
