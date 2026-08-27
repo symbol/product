@@ -1227,13 +1227,14 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 			self.assertEqual(0, count)
 
 	def test_count_rejected_requests_matches_requests_on_subindex(self):
-		# Arrange: one transaction carries both a request and a rejected transfer, told apart only by subindex
+		# Arrange: every transfer embedded in a symbol aggregate shares the aggregate hash and differs only by
+		# its index, so one aggregate can carry a valid transfer alongside a rejected one
 		with sqlite3.connect(':memory:') as connection:
 			database = self._create_database(connection)
 			database.create_tables()
 
-			database.add_request(make_request(0, height=111, transaction_subindex=1, destination_address=SYMBOL_ADDRESSES[0]))
-			database.add_error(make_request_error(0, 'destination address is invalid', height=111, transaction_subindex=5))
+			database.add_request(make_request(0, height=111, transaction_subindex=0, destination_address=SYMBOL_ADDRESSES[0]))
+			database.add_error(make_request_error(0, 'destination address is invalid', height=111, transaction_subindex=1))
 
 			# Act:
 			count = database.count_rejected_requests()

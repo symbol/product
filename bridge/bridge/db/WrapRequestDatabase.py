@@ -469,8 +469,6 @@ class WrapRequestDatabase(MaxProcessedHeightMixin):  # pylint: disable=too-many-
 	def count_rejected_requests(self):
 		"""Gets a count of deposits that were rejected on download and never became requests."""
 
-		# payout failures and retries share this table, but each of those has a matching request;
-		# a deposit rejected on download never reached the request table, which is what tells them apart
 		cursor = self.connection.cursor()
 		cursor.execute(
 			'''

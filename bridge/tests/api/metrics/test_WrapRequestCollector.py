@@ -53,7 +53,6 @@ def _seed_wrap_requests(directory):
 
 
 def _seed_rejection(directory):
-	# index 4 keeps this error clear of every hash the request seed uses, so that it has no matching request
 	with Databases(directory, MockNemNetworkFacade(), MockSymbolNetworkFacade()) as databases:
 		databases.wrap_request.add_error(make_request_error(4, 'destination address is invalid', height=777))
 
@@ -76,10 +75,6 @@ def _failed_permanent(registry, direction):
 	return registry.get_sample_value('bridge_requests_failed_permanent', {'direction': direction})
 
 
-def _age(registry, name, direction):
-	return registry.get_sample_value(name, {'direction': direction})
-
-
 def _retried(registry, direction):
 	return registry.get_sample_value('bridge_requests_retried', {'direction': direction})
 
@@ -92,15 +87,20 @@ def _remaining(registry, direction):
 	return registry.get_sample_value('bridge_daily_transfer_remaining', {'direction': direction})
 
 
+def _age(registry, name, direction):
+	return registry.get_sample_value(name, {'direction': direction})
+
+
 async def test_permanent_failures_are_counted(database_directory):  # pylint: disable=redefined-outer-name
-	# Arrange: the seed marks two of its five requests as permanently failed
+	# Arrange: the seed marks two of its five requests as permanently failed and touches only the wrap database
 	_seed_wrap_requests(database_directory)
 
 	# Act:
 	registry = await _collect(database_directory)
 
-	# Assert:
+	# Assert: a direction with nothing to report still reports zero rather than being omitted
 	assert 2 == _failed_permanent(registry, 'wrap')
+	assert 0 == _failed_permanent(registry, 'unwrap')
 
 
 async def test_a_transiently_failed_request_is_not_counted_but_is_still_waiting(database_directory):
@@ -116,20 +116,8 @@ async def test_a_transiently_failed_request_is_not_counted_but_is_still_waiting(
 	assert _age(registry, 'bridge_oldest_unprocessed_age_seconds', 'wrap') is not None
 
 
-async def test_a_direction_without_failures_reports_zero(database_directory):  # pylint: disable=redefined-outer-name
-	# Arrange: the seed marks two requests as permanently failed and touches only the wrap database
-	_seed_wrap_requests(database_directory)
-
-	# Act:
-	registry = await _collect(database_directory)
-
-	# Assert: a direction with no failures reports zero rather than being omitted
-	assert 2 == _failed_permanent(registry, 'wrap')
-	assert 0 == _failed_permanent(registry, 'unwrap')
-
-
 async def test_retried_requests_are_counted(database_directory):  # pylint: disable=redefined-outer-name
-	# Arrange:
+	# Arrange: a transient failure marks the request it retried and touches only the wrap database
 	_seed_transient_failure(database_directory)
 
 	# Act:
@@ -179,7 +167,7 @@ async def test_daily_transfer_remaining_goes_negative_when_the_limit_is_exceeded
 
 async def test_daily_transfer_remaining_is_omitted_without_a_configured_limit(database_directory):
 	# pylint: disable=redefined-outer-name
-	# Arrange:
+	# Arrange: seeding payouts means there is an amount to report, so the omission cannot pass for an empty database
 	_seed_wrap_requests(database_directory)
 
 	# Act: neither direction configures max_daily_transfer_amount
