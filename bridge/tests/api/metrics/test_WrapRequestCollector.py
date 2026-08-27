@@ -1,4 +1,5 @@
 import tempfile
+from collections import namedtuple
 from pathlib import Path
 
 import pytest
@@ -14,11 +15,24 @@ from ...test.MockNetworkFacade import MockNemNetworkFacade, MockSymbolNetworkFac
 # pylint: disable=invalid-name
 
 
-class _Context:
-	"""Stands in for BridgeContext, which only supplies the database parameters here."""
+_NetworkConfiguration = namedtuple('_NetworkConfiguration', ['extensions'])
 
-	def __init__(self, database_directory):  # pylint: disable=redefined-outer-name
+
+class _Facade:
+	"""Stands in for a network facade, which only supplies the payout limit configuration here."""
+
+	def __init__(self, max_daily_transfer_amount=None):
+		extensions = {} if max_daily_transfer_amount is None else {'max_daily_transfer_amount': str(max_daily_transfer_amount)}
+		self.config = _NetworkConfiguration(extensions)
+
+
+class _Context:
+	"""Stands in for BridgeContext, which only supplies the database parameters and the payout facades here."""
+
+	def __init__(self, database_directory, wrap_limit=None, unwrap_limit=None):  # pylint: disable=redefined-outer-name
 		self.database_params = [database_directory, MockNemNetworkFacade(), MockSymbolNetworkFacade(), True]
+		self.wrapped_facade = _Facade(wrap_limit)
+		self.native_facade = _Facade(unwrap_limit)
 
 
 @pytest.fixture
@@ -33,8 +47,7 @@ def database_directory():
 		yield directory
 
 
-def _seed_permanent_failures(directory):
-	# the seed marks two of its five requests as permanently failed
+def _seed_wrap_requests(directory):
 	with Databases(directory, MockNemNetworkFacade(), MockSymbolNetworkFacade()) as databases:
 		seed_database_with_simple_requests(databases.wrap_request)
 
@@ -51,9 +64,9 @@ def _seed_transient_failure(directory):
 		databases.wrap_request.mark_payout_failed_transient(request, 'node unavailable')
 
 
-async def _collect(directory):
+async def _collect(directory, wrap_limit=None, unwrap_limit=None):
 	registry = CollectorRegistry()
-	await WrapRequestCollector(_Context(directory)).collect(registry)
+	await WrapRequestCollector(_Context(directory, wrap_limit, unwrap_limit)).collect(registry)
 	return registry
 
 
@@ -69,9 +82,13 @@ def _rejected(registry, direction):
 	return registry.get_sample_value('bridge_requests_rejected', {'direction': direction})
 
 
+def _remaining(registry, direction):
+	return registry.get_sample_value('bridge_daily_transfer_remaining', {'direction': direction})
+
+
 async def test_permanent_failures_are_counted(database_directory):  # pylint: disable=redefined-outer-name
-	# Arrange:
-	_seed_permanent_failures(database_directory)
+	# Arrange: the seed marks two of its five requests as permanently failed
+	_seed_wrap_requests(database_directory)
 
 	# Act:
 	registry = await _collect(database_directory)
@@ -92,8 +109,8 @@ async def test_transient_failures_are_not_counted(database_directory):  # pylint
 
 
 async def test_both_directions_are_reported(database_directory):  # pylint: disable=redefined-outer-name
-	# Arrange: nothing was seeded into the unwrap database
-	_seed_permanent_failures(database_directory)
+	# Arrange: the seed marks two requests as permanently failed and touches only the wrap database
+	_seed_wrap_requests(database_directory)
 
 	# Act:
 	registry = await _collect(database_directory)
@@ -105,7 +122,7 @@ async def test_both_directions_are_reported(database_directory):  # pylint: disa
 
 async def test_ages_are_reported_for_a_bridge_with_work_in_flight(database_directory):  # pylint: disable=redefined-outer-name
 	# Arrange: the seed leaves one request unprocessed and one payout awaiting confirmation
-	_seed_permanent_failures(database_directory)
+	_seed_wrap_requests(database_directory)
 
 	with Databases(database_directory, MockNemNetworkFacade(), MockSymbolNetworkFacade()) as databases:
 		unprocessed_timestamp = databases.wrap_request.oldest_unprocessed_request_timestamp()
@@ -131,7 +148,7 @@ async def test_ages_are_omitted_for_an_idle_bridge(database_directory):  # pylin
 
 async def test_rejected_deposits_are_counted(database_directory):  # pylint: disable=redefined-outer-name
 	# Arrange: the seed also writes an error for each of its two failed payouts, which must not be counted here
-	_seed_permanent_failures(database_directory)
+	_seed_wrap_requests(database_directory)
 	_seed_rejection(database_directory)
 
 	# Act:
@@ -140,3 +157,40 @@ async def test_rejected_deposits_are_counted(database_directory):  # pylint: dis
 	# Assert:
 	assert 1 == _rejected(registry, 'wrap')
 	assert 0 == _rejected(registry, 'unwrap')
+
+
+async def test_daily_transfer_remaining_is_reported(database_directory):  # pylint: disable=redefined-outer-name
+	# Arrange: the seed sends payouts worth 4050 gross, and the directions are given different limits
+	_seed_wrap_requests(database_directory)
+
+	# Act:
+	registry = await _collect(database_directory, wrap_limit=10000, unwrap_limit=7000)
+
+	# Assert:
+	assert 5950 == _remaining(registry, 'wrap')
+	assert 7000 == _remaining(registry, 'unwrap')
+
+
+async def test_daily_transfer_remaining_goes_negative_when_the_limit_is_exceeded(database_directory):
+	# pylint: disable=redefined-outer-name
+	# Arrange: the seed already sent more than the limit allows
+	_seed_wrap_requests(database_directory)
+
+	# Act:
+	registry = await _collect(database_directory, wrap_limit=1000)
+
+	# Assert: the overshoot is reported rather than clamped, so its size stays visible
+	assert -3050 == _remaining(registry, 'wrap')
+
+
+async def test_daily_transfer_remaining_is_omitted_without_a_configured_limit(database_directory):
+	# pylint: disable=redefined-outer-name
+	# Arrange:
+	_seed_wrap_requests(database_directory)
+
+	# Act: neither direction configures max_daily_transfer_amount
+	registry = await _collect(database_directory)
+
+	# Assert:
+	assert _remaining(registry, 'wrap') is None
+	assert _remaining(registry, 'unwrap') is None
