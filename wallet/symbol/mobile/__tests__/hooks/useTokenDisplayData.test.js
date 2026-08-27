@@ -13,6 +13,7 @@ const NETWORK_IDENTIFIER = 'testnet';
 const KNOWN_TOKEN_NAME = 'Symbol';
 const KNOWN_TOKEN_TICKER = 'XYM';
 const KNOWN_TOKEN_IMAGE_ID = 'xym';
+const RENAMED_TOKEN_NAME = 'custom.renamed';
 
 // Token Fixtures
 
@@ -136,6 +137,19 @@ describe('hooks/useTokenDisplayData', () => {
 			// Assert:
 			expect(hookTester.currentResult).not.toBe(firstResult);
 			expect(hookTester.currentResult[0].amount).toBe('200');
+		});
+
+		it('recomputes when a token name changes', () => {
+			// Arrange:
+			const hookTester = new HookTester(useTokenDisplayData, [[customToken]]);
+			const firstResult = hookTester.currentResult;
+
+			// Act:
+			hookTester.updateProps([[{ ...customToken, name: RENAMED_TOKEN_NAME }]]);
+
+			// Assert:
+			expect(hookTester.currentResult).not.toBe(firstResult);
+			expect(hookTester.currentResult[0].name).toBe(RENAMED_TOKEN_NAME);
 		});
 	});
 

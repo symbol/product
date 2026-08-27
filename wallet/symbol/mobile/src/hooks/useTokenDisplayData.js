@@ -20,7 +20,7 @@ export const useTokenDisplayData = (tokenOrTokens, chainName) => {
 	const isArrayInput = Array.isArray(tokenOrTokens);
 	const tokens = isArrayInput ? tokenOrTokens : [tokenOrTokens];
 	// Memoize on the list content, as callers may build it inline
-	const tokensKey = tokens.map(token => `${token.id}:${token.amount}`).join();
+	const tokensKey = tokens.map(token => `${token.id}:${token.name}:${token.amount}`).join();
 
 	const displayDataList = useMemo(
 		() => tokens.map(token => {
