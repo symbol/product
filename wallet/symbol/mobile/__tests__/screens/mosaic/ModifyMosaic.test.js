@@ -36,14 +36,16 @@ const SCREEN_TEXT = {
 	// Section titles and descriptions
 	textScreenTitle: 'screen_ModifyMosaic',
 	textDescription: 's_modifyMosaic_description',
-	textCreatorTitle: 's_mosaicCreation_sender_title',
+
+	// Mosaic info card field titles
+	textMosaicIdTitle: 'fieldTitle_mosaicId',
+	textDivisibilityTitle: 'fieldTitle_divisibility',
 
 	// Supply delta summary
 	textCurrentSupplyLabel: 's_modifyMosaic_currentSupply_label',
 	textDeltaLabel: 's_modifyMosaic_delta_label',
 
 	// Input labels (accessibility)
-	inputMosaicLabel: 'input_mosaic',
 	inputNewSupplyLabel: 's_modifyMosaic_newSupply_label',
 
 	// Fee selector
@@ -158,10 +160,6 @@ const setupMocks = (overrides = {}) => {
 			transfer: {
 				calculateTransactionFees: jest.fn().mockResolvedValue(transactionFees)
 			},
-			multisig: {
-				multisigAccounts: [],
-				fetchData: jest.fn().mockResolvedValue([])
-			},
 			addressBook: createAddressBookMock([])
 		}
 	});
@@ -169,7 +167,7 @@ const setupMocks = (overrides = {}) => {
 	return { walletControllerMock };
 };
 
-// Renders the screen and waits for the initial loads (sender options, mosaic info)
+// Renders the screen and waits for the initial mosaic info load
 
 const renderModifyMosaicScreen = async (routeParams = {}) => {
 	const props = {
@@ -182,7 +180,7 @@ const renderModifyMosaicScreen = async (routeParams = {}) => {
 		}
 	};
 	const screenTester = new ScreenTester(ModifyMosaic, props);
-	await screenTester.waitForTimer(); // sender options and mosaic info load
+	await screenTester.waitForTimer(); // mosaic info load
 
 	return screenTester;
 };
@@ -206,13 +204,14 @@ describe('screens/mosaic/ModifyMosaic', () => {
 	});
 
 	describe('render', () => {
-		it('renders the title, description, section title and the send button', async () => {
+		it('renders the title, description, supply labels and the send button', async () => {
 			// Arrange:
 			setupMocks();
 			const expectedTexts = [
 				SCREEN_TEXT.textScreenTitle,
 				SCREEN_TEXT.textDescription,
-				SCREEN_TEXT.textCreatorTitle,
+				SCREEN_TEXT.textMosaicIdTitle,
+				SCREEN_TEXT.textDivisibilityTitle,
 				SCREEN_TEXT.textCurrentSupplyLabel,
 				SCREEN_TEXT.textDeltaLabel,
 				SCREEN_TEXT.buttonSend
@@ -225,15 +224,18 @@ describe('screens/mosaic/ModifyMosaic', () => {
 			screenTester.expectText(expectedTexts);
 		});
 
-		it('shows the fixed mosaic name in the disabled token selector', async () => {
+		it('shows the mosaic name, id and divisibility in the info card', async () => {
 			// Arrange:
 			setupMocks();
+			const expectedTexts = [TOKEN_NAME, TOKEN_ID];
+			const expectedDivisibilityText = String(TOKEN_DIVISIBILITY);
 
 			// Act:
 			const screenTester = await renderModifyMosaicScreen();
 
 			// Assert:
-			screenTester.expectText([TOKEN_NAME]);
+			screenTester.expectText(expectedTexts);
+			screenTester.expectText([expectedDivisibilityText], true); // "0" is also the unchanged supply delta
 		});
 
 		it('shows a loading indicator until the wallet and mosaic are ready', async () => {

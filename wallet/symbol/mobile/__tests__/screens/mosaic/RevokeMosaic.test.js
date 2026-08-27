@@ -14,6 +14,7 @@ const TICKER = 'XYM';
 const TOKEN_ID = '78C3CDF0896248DB';
 const TOKEN_NAME = 'my.revokable.mosaic';
 const TOKEN_DIVISIBILITY = 0;
+const TOKEN_SUPPLY = '750';
 
 const HOLDER_A_BALANCE = '1000';
 const HOLDER_B_BALANCE = '500';
@@ -28,12 +29,12 @@ const SCREEN_TEXT = {
 	// Section titles and descriptions
 	textScreenTitle: 'screen_RevokeMosaic',
 	textDescription: 's_revoke_description',
-	textCreatorTitle: 's_mosaicCreation_sender_title',
 	textFromTitle: 's_send_from_title',
-	textMosaicTitle: 's_revoke_mosaic_title',
+	textMosaicIdTitle: 'fieldTitle_mosaicId',
+	textDivisibilityTitle: 'fieldTitle_divisibility',
+	textSupplyTitle: 'fieldTitle_supply',
 
 	// Input labels (accessibility)
-	inputMosaicLabel: 'input_mosaic',
 	inputAmountLabel: 'input_amount',
 	inputAccountLabel: 'fieldTitle_account',
 
@@ -95,7 +96,8 @@ const transactionFees = TransactionFeeFixtureBuilder
 const tokenInfo = {
 	id: TOKEN_ID,
 	names: [TOKEN_NAME],
-	divisibility: TOKEN_DIVISIBILITY
+	divisibility: TOKEN_DIVISIBILITY,
+	supply: TOKEN_SUPPLY
 };
 
 const creatorHolder = { address: currentAccount.address, amount: CREATOR_BALANCE };
@@ -165,10 +167,6 @@ const setupMocks = (overrides = {}) => {
 			transfer: {
 				calculateTransactionFees: jest.fn().mockResolvedValue(transactionFees)
 			},
-			multisig: {
-				multisigAccounts: [],
-				fetchData: jest.fn().mockResolvedValue([])
-			},
 			addressBook: createAddressBookMock([])
 		}
 	});
@@ -226,9 +224,7 @@ describe('screens/mosaic/RevokeMosaic', () => {
 			const expectedTexts = [
 				SCREEN_TEXT.textScreenTitle,
 				SCREEN_TEXT.textDescription,
-				SCREEN_TEXT.textCreatorTitle,
 				SCREEN_TEXT.textFromTitle,
-				SCREEN_TEXT.textMosaicTitle,
 				SCREEN_TEXT.buttonSend
 			];
 
@@ -239,15 +235,25 @@ describe('screens/mosaic/RevokeMosaic', () => {
 			screenTester.expectText(expectedTexts);
 		});
 
-		it('shows the fixed mosaic name in the disabled token selector', async () => {
+		it('shows the mosaic name, id, divisibility and total supply in the info card', async () => {
 			// Arrange:
 			setupMocks();
+			const expectedTexts = [
+				TOKEN_NAME,
+				SCREEN_TEXT.textMosaicIdTitle,
+				TOKEN_ID,
+				SCREEN_TEXT.textDivisibilityTitle,
+				SCREEN_TEXT.textSupplyTitle,
+				TOKEN_SUPPLY
+			];
+			const expectedDivisibilityText = String(TOKEN_DIVISIBILITY);
 
 			// Act:
 			const screenTester = await renderRevokeMosaicScreen();
 
 			// Assert:
-			screenTester.expectText([TOKEN_NAME]);
+			screenTester.expectText(expectedTexts);
+			screenTester.expectText([expectedDivisibilityText], true); // "0" is also the available balance before a holder is picked
 		});
 
 		it('shows a loading indicator until the wallet, mosaic and holders are ready', async () => {
@@ -268,7 +274,6 @@ describe('screens/mosaic/RevokeMosaic', () => {
 		const runSourceAccountTest = (description, config, expected) => {
 			it(description, async () => {
 				// Arrange:
-				const creatorSectionAddress = currentAccount.address;
 				setupMocks({ owners: config.owners });
 				const screenTester = await renderRevokeMosaicScreen();
 
@@ -276,7 +281,7 @@ describe('screens/mosaic/RevokeMosaic', () => {
 				screenTester.presButtonByLabel(SCREEN_TEXT.iconHolderPicker);
 
 				// Assert:
-				screenTester.expectTextCount(creatorSectionAddress, 1);
+				screenTester.notExpectText([currentAccount.address]);
 				expected.sourceAddressList.forEach(address => screenTester.expectTextCount(address, 1));
 			});
 		};

@@ -1,20 +1,20 @@
 import {
 	Alert,
 	FeeSelector,
+	Field,
 	InputAmount,
-	SelectToken,
-	SelectTransactionSender,
 	Spacer,
 	Stack,
 	StyledText,
+	TokenInfoCard,
 	TransactionScreenTemplate
 } from '@/app/components';
 import { useStandardTransactionWorkflow } from '@/app/components/templates/TransactionScreenTemplate/hooks';
 import {
 	useDebounce,
 	useInit,
+	useTokenDisplayData,
 	useTransactionFees,
-	useTransactionSender,
 	useWalletController,
 	useWalletRefreshLifecycle
 } from '@/app/hooks';
@@ -28,12 +28,11 @@ import {
 	useRevokeMosaicFormState,
 	useRevokeMosaicTransaction
 } from '@/app/screens/mosaic/hooks';
-import { createNoHoldersAlertData } from '@/app/screens/mosaic/utils';
+import { createNoHoldersAlertData, getPaddedSupplyText } from '@/app/screens/mosaic/utils';
 import React, { useEffect, useMemo } from 'react';
 import Animated, { FadeInDown, FadeOut } from 'react-native-reanimated';
 
 /** @typedef {import('@/app/screens/mosaic/types/Mosaic').RevokeMosaicRouteParams} RevokeMosaicRouteParams */
-/** @typedef {import('@/app/types/Token').Token} Token */
 
 /**
  * RevokeMosaic screen component. Provides the interface for reclaiming a revokable mosaic from a holder
@@ -51,19 +50,14 @@ export const RevokeMosaic = props => {
 		isNetworkConnectionReady,
 		networkIdentifier,
 		chainName,
-		ticker
+		ticker,
+		currentAccount
 	} = walletController;
 	const currentAccountInfo = walletController.currentAccountInfo || {};
 	const { mosaicId } = route.params;
 
-	// Transaction sender
-	const {
-		options: senderOptions,
-		value: senderAddress,
-		changeValue: changeSenderAddress,
-		load: loadSenderOptions,
-		reset: resetSenderOptions
-	} = useTransactionSender(walletController);
+	// Transaction sender: the revocation is always sent by the current account
+	const senderAddress = currentAccount.address;
 
 	// Mosaic info
 	const {
@@ -72,6 +66,8 @@ export const RevokeMosaic = props => {
 		load: loadMosaic,
 		reset: resetMosaic
 	} = useMosaicInfo({ walletController, mosaicId });
+	const mosaicToken = mosaic ? { id: mosaic.id, name: mosaic.names?.[0] } : { id: mosaicId };
+	const { name: mosaicName, imageId: mosaicImageId } = useTokenDisplayData(mosaicToken, chainName);
 
 	// Mosaic holder account list
 	const {
@@ -115,7 +111,6 @@ export const RevokeMosaic = props => {
 
 	// Load all data on screen init and refresh
 	const loadAll = () => {
-		loadSenderOptions();
 		loadMosaic();
 		loadOwners();
 
@@ -126,7 +121,6 @@ export const RevokeMosaic = props => {
 		walletController,
 		onRefresh: loadAll,
 		onClear: () => {
-			resetSenderOptions();
 			resetMosaic();
 			resetOwners();
 			resetSourceOwner();
@@ -142,19 +136,6 @@ export const RevokeMosaic = props => {
 
 	// Available balance: the held amount of the listed or fetched holder, unknown while the fetch is in flight
 	const availableBalance = isIndividualOwnerLoading ? undefined : (resolvedMosaicOwner?.amount ?? '0');
-
-	// The selection is fixed to the mosaic the screen was opened for
-	const tokens = useMemo(() => {
-		if (!mosaic)
-			return [];
-
-		return [{
-			id: mosaic.id,
-			name: mosaic.names?.[0] || mosaic.id,
-			amount: availableBalance,
-			divisibility: mosaic.divisibility
-		}];
-	}, [mosaic, availableBalance]);
 
 	// Transaction creation and preview
 	const { createRevokeMosaicTransaction, getConfirmationPreview } = useRevokeMosaicTransaction({
@@ -193,9 +174,9 @@ export const RevokeMosaic = props => {
 		|| !isAmountValid
 		|| !transactionFees
 		|| isFeesLoading;
-	// With no holders nobody owns the mosaic, so manual address entry cannot help either
-	const isAddressInputDisabled = !sourceOptions.length;
 
+	// With no holders nobody owns the mosaic, so manual address entry cannot help either
+	const isFormVisible = !!sourceOptions.length;
 	const noHoldersAlert = createNoHoldersAlertData(sourceOptions.length, isLoading);
 
 	return (
@@ -212,61 +193,52 @@ export const RevokeMosaic = props => {
 			<Spacer>
 				<Stack gap="l">
 					<Stack gap="none">
-						<StyledText type="title" size="s">{$t('s_mosaicCreation_sender_title')}</StyledText>
-						<SelectTransactionSender
-							value={senderAddress}
-							options={senderOptions}
-							chainName={chainName}
-							isMultisigDisabled
-							onChange={changeSenderAddress}
-						/>
-					</Stack>
-					<Stack gap="none">
 						<StyledText type="title">{$t('screen_RevokeMosaic')}</StyledText>
 						<StyledText type="body">{$t('s_revoke_description')}</StyledText>
 					</Stack>
-					<Stack gap="none">
-						<StyledText type="title" size="s">{$t('s_send_from_title')}</StyledText>
-						<Stack gap="s">
-							<InputSourceAccount
-								label={$t('fieldTitle_account')}
-								value={sourceAddress}
-								owners={sourceOptions}
-								senderAddress={senderAddress}
-								chainName={chainName}
-								isDisabled={isAddressInputDisabled}
-								onChange={changeSourceAddress}
-								onValidityChange={changeSourceAddressValidity}
-							/>
-							{noHoldersAlert.isVisible && (
-								<Alert
-									variant={noHoldersAlert.variant}
-									body={noHoldersAlert.text}
+					{!!mosaic && (
+						<TokenInfoCard name={mosaicName} imageId={mosaicImageId}>
+							<Field title={$t('fieldTitle_mosaicId')}>
+								<StyledText>{mosaic.id}</StyledText>
+							</Field>
+							<Field title={$t('fieldTitle_divisibility')}>
+								<StyledText>{mosaic.divisibility}</StyledText>
+							</Field>
+							<Field title={$t('fieldTitle_supply')}>
+								<StyledText>{getPaddedSupplyText(mosaic.supply, mosaic.divisibility)}</StyledText>
+							</Field>
+						</TokenInfoCard>
+					)}
+					{noHoldersAlert.isVisible && (
+						<Alert
+							variant={noHoldersAlert.variant}
+							body={noHoldersAlert.text}
+						/>
+					)}
+					{isFormVisible && (
+						<Stack gap="none">
+							<StyledText type="title" size="s">{$t('s_send_from_title')}</StyledText>
+							<Stack>
+								<InputSourceAccount
+									label={$t('fieldTitle_account')}
+									value={sourceAddress}
+									owners={sourceOptions}
+									senderAddress={senderAddress}
+									chainName={chainName}
+									onChange={changeSourceAddress}
+									onValidityChange={changeSourceAddressValidity}
 								/>
-							)}
+								<InputAmount
+									label={$t('input_amount')}
+									availableBalance={availableBalance}
+									networkIdentifier={networkIdentifier}
+									value={amount}
+									onChange={changeAmount}
+									onValidityChange={changeAmountValidity}
+								/>
+							</Stack>
 						</Stack>
-					</Stack>
-					<Stack gap="none">
-						<StyledText type="title" size="s">{$t('s_revoke_mosaic_title')}</StyledText>
-						<Stack gap="s">
-							<SelectToken
-								label={$t('input_mosaic')}
-								value={mosaic?.id}
-								tokens={tokens}
-								chainName={chainName}
-								isDisabled
-								onChange={() => {}}
-							/>
-							<InputAmount
-								label={$t('input_amount')}
-								availableBalance={availableBalance}
-								networkIdentifier={networkIdentifier}
-								value={amount}
-								onChange={changeAmount}
-								onValidityChange={changeAmountValidity}
-							/>
-						</Stack>
-					</Stack>
+					)}
 					{!!transactionFees && (
 						<Animated.View entering={FadeInDown} exiting={FadeOut}>
 							<FeeSelector
