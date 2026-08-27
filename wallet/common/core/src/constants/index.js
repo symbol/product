@@ -7,6 +7,7 @@ export const ControllerEventName = {
 	STATE_CHANGE: 'wc:state.change',
 	WALLET_CLEAR: 'wc:wallet.logout',
 	WALLET_CREATE: 'wc:wallet.login',
+	NEW_BLOCK: 'wc:block.new',
 	NEW_TRANSACTION_CONFIRMED: 'wc:transaction.add.confirmed',
 	NEW_TRANSACTION_UNCONFIRMED: 'wc:transaction.add.unconfirmed',
 	NEW_TRANSACTION_PARTIAL: 'wc:transaction.add.partial',
@@ -81,6 +82,17 @@ export const MessageType = {
 	PLAIN: 'plain',
 	ENCRYPTED: 'encrypted',
 	RAW: 'raw'
+};
+
+export const HttpMethod = {
+	GET: 'GET',
+	POST: 'POST',
+	PUT: 'PUT'
+};
+
+export const CacheMode = {
+	CACHE: 'cache',
+	DEDUP: 'dedup'
 };
 
 export const REQUIRED_API_METHODS = [

@@ -116,7 +116,7 @@ export class Listener {
 	 * @returns {void}
 	 */
 	listenNewBlock(callback) {
-		this._subscribe(StompDestination.BLOCK, callback);
+		this._subscribe(StompDestination.BLOCK, callback, block => ({ height: block?.height ?? null }));
 	}
 
 	/**

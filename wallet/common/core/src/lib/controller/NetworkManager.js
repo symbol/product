@@ -272,6 +272,11 @@ export class NetworkManager {
 					method: 'listenTransactionError',
 					params: [],
 					event: ControllerEventName.TRANSACTION_ERROR
+				},
+				{
+					method: 'listenNewBlock',
+					params: [],
+					event: ControllerEventName.NEW_BLOCK
 				}
 			];
 			subscribeList.forEach(item => {

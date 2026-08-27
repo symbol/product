@@ -4,7 +4,7 @@ import { ethereumWalletController } from './ethereum/controller';
 import { symbolBridgeHelper } from './symbol/bridge';
 import { symbolWalletController } from './symbol/controller';
 import { config } from '@/app/config';
-import { makeRequest } from '@/app/utils';
+import { cachedMakeRequest } from '@/app/lib/cache';
 import { BridgePairManager, SwapWorkflowManager } from 'wallet-common-core';
 import { UniswapPairManager, constants } from 'wallet-common-ethereum';
 
@@ -19,7 +19,7 @@ const Pairs = {
 			testnet: config.bridge.bridgeEthereumWrapped.testnet.bridgeUrl,
 			mainnet: config.bridge.bridgeEthereumWrapped.mainnet.bridgeUrl
 		},
-		makeRequest
+		makeRequest: cachedMakeRequest
 	}),
 	bXYM_XYM: new BridgePairManager({
 		mode: 'unwrap',
@@ -31,7 +31,7 @@ const Pairs = {
 			testnet: config.bridge.bridgeEthereumWrapped.testnet.bridgeUrl,
 			mainnet: config.bridge.bridgeEthereumWrapped.mainnet.bridgeUrl
 		},
-		makeRequest
+		makeRequest: cachedMakeRequest
 	}),
 	XYM_ETH: new BridgePairManager({
 		mode: 'wrap',
@@ -43,7 +43,7 @@ const Pairs = {
 			testnet: config.bridge.bridgeEthereumNative.testnet.bridgeUrl,
 			mainnet: config.bridge.bridgeEthereumNative.mainnet.bridgeUrl
 		},
-		makeRequest
+		makeRequest: cachedMakeRequest
 	}),
 	ETH_bXYM: new UniswapPairManager({
 		mode: 'wrap',
