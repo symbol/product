@@ -13,10 +13,12 @@ const DEFAULT_AMOUNT = '0';
  * @property {string} sourceAddress - The holder address to revoke the mosaic from.
  * @property {string} amount - The amount to revoke.
  * @property {TransactionFeeTierLevel} transactionSpeed - The selected transaction speed.
+ * @property {boolean} isSourceAddressValid - Whether the source address is valid.
  * @property {boolean} isAmountValid - Whether the amount is valid.
  * @property {(address: string) => void} changeSourceAddress - Updates the source address.
  * @property {(amount: string) => void} changeAmount - Updates the amount.
  * @property {(speed: TransactionFeeTierLevel) => void} changeTransactionSpeed - Updates transaction speed.
+ * @property {(isValid: boolean) => void} changeSourceAddressValidity - Updates source address validity state.
  * @property {(isValid: boolean) => void} changeAmountValidity - Updates amount validity state.
  * @property {() => void} reset - Resets all form state to defaults.
  */
@@ -35,12 +37,14 @@ export const useRevokeMosaicFormState = ({ routeParams = {} }) => {
 	const [transactionSpeed, setTransactionSpeed] = useState(DEFAULT_TRANSACTION_SPEED);
 
 	// Validation state
+	const [isSourceAddressValid, setSourceAddressValid] = useState(false);
 	const [isAmountValid, setAmountValid] = useState(false);
 
 	const reset = useCallback(() => {
 		setSourceAddress('');
 		setAmount(DEFAULT_AMOUNT);
 		setTransactionSpeed(DEFAULT_TRANSACTION_SPEED);
+		setSourceAddressValid(false);
 		setAmountValid(false);
 	}, [setSourceAddress, setAmount]);
 
@@ -49,12 +53,14 @@ export const useRevokeMosaicFormState = ({ routeParams = {} }) => {
 		sourceAddress,
 		amount,
 		transactionSpeed,
+		isSourceAddressValid,
 		isAmountValid,
 
 		// State setters
 		changeSourceAddress: setSourceAddress,
 		changeAmount: setAmount,
 		changeTransactionSpeed: setTransactionSpeed,
+		changeSourceAddressValidity: setSourceAddressValid,
 		changeAmountValidity: setAmountValid,
 		reset
 	};

@@ -20,8 +20,14 @@ import {
 } from '@/app/hooks';
 import { $t } from '@/app/localization';
 import { Router } from '@/app/router/Router';
-import { SelectSourceAccount } from '@/app/screens/mosaic/components';
-import { useMosaicInfo, useMosaicOwners, useRevokeMosaicFormState, useRevokeMosaicTransaction } from '@/app/screens/mosaic/hooks';
+import { InputSourceAccount } from '@/app/screens/mosaic/components';
+import {
+	useMosaicInfo,
+	useMosaicOwner,
+	useMosaicOwners,
+	useRevokeMosaicFormState,
+	useRevokeMosaicTransaction
+} from '@/app/screens/mosaic/hooks';
 import { createNoHoldersAlertData } from '@/app/screens/mosaic/utils';
 import React, { useEffect, useMemo } from 'react';
 import Animated, { FadeInDown, FadeOut } from 'react-native-reanimated';
@@ -67,53 +73,77 @@ export const RevokeMosaic = props => {
 		reset: resetMosaic
 	} = useMosaicInfo({ walletController, mosaicId });
 
-	// Mosaic holders
+	// Mosaic holder account list
 	const {
 		owners,
 		isLoading: isOwnersLoading,
 		load: loadOwners,
 		reset: resetOwners
 	} = useMosaicOwners({ walletController, mosaicId });
+	const sourceOptions = useMemo(
+		() => owners.filter(owner => owner.address !== senderAddress),
+		[owners, senderAddress]
+	);
 
-	useWalletRefreshLifecycle({
-		walletController,
-		onRefresh: () => {
-			loadSenderOptions();
-			loadMosaic();
-			loadOwners();
-		},
-		onClear: () => {
-			resetSenderOptions();
-			resetMosaic();
-			resetOwners();
-		}
-	});
-	useInit(loadSenderOptions, isWalletReady);
-	useInit(loadMosaic, isWalletReady);
-	useInit(loadOwners, isWalletReady);
+	// Manually entered holder account
+	const {
+		owner: fetchedMosaicOwner,
+		isLoading: isIndividualOwnerLoading,
+		load: loadSourceOwner,
+		reset: resetSourceOwner
+	} = useMosaicOwner({ walletController, mosaicId });
 
 	// Form state
 	const {
 		sourceAddress,
 		amount,
 		transactionSpeed,
+		isSourceAddressValid,
 		isAmountValid,
 		changeSourceAddress,
 		changeAmount,
 		changeTransactionSpeed,
+		changeSourceAddressValidity,
 		changeAmountValidity
 	} = useRevokeMosaicFormState({ routeParams: route.params });
 
-	// Holders excluding the sender. Revoking from the creator itself is not a valid revocation
-	const sourceOptions = useMemo(
-		() => owners.filter(owner => owner.address !== senderAddress),
-		[owners, senderAddress]
-	);
-	const selectedOwner = sourceOptions.find(owner => owner.address === sourceAddress);
-	const availableBalance = selectedOwner?.amount ?? '0';
+	// Resolve mosaic owner info from the fetched owner list or individually fetched for the manually entered address
+	const listedMosaicOwner = sourceOptions.find(owner => owner.address === sourceAddress);
+	const isFetchedMosaicOwnerFresh = fetchedMosaicOwner?.address === sourceAddress;
+	const resolvedMosaicOwner = listedMosaicOwner ?? (isFetchedMosaicOwnerFresh ? fetchedMosaicOwner : null);
+	const isSelectedSourceAccountFetchNeeded = isSourceAddressValid && !listedMosaicOwner;
+
+	// Load all data on screen init and refresh
+	const loadAll = () => {
+		loadSenderOptions();
+		loadMosaic();
+		loadOwners();
+
+		if (isSelectedSourceAccountFetchNeeded)
+			loadSourceOwner(sourceAddress);
+	};
+	useWalletRefreshLifecycle({
+		walletController,
+		onRefresh: loadAll,
+		onClear: () => {
+			resetSenderOptions();
+			resetMosaic();
+			resetOwners();
+			resetSourceOwner();
+		}
+	});
+	useInit(loadAll, isWalletReady);;
+	useEffect(() => {
+		if (isSelectedSourceAccountFetchNeeded)
+			loadSourceOwner(sourceAddress);
+		else
+			resetSourceOwner();
+	}, [sourceAddress, isSelectedSourceAccountFetchNeeded]);
+
+	// Available balance: the held amount of the listed or fetched holder, unknown while the fetch is in flight
+	const availableBalance = isIndividualOwnerLoading ? undefined : (resolvedMosaicOwner?.amount ?? '0');
 
 	// The selection is fixed to the mosaic the screen was opened for
-	/** @type {Token[]} */
 	const tokens = useMemo(() => {
 		if (!mosaic)
 			return [];
@@ -143,9 +173,9 @@ export const RevokeMosaic = props => {
 	} = useTransactionFees(createRevokeMosaicTransaction, walletController);
 	const calculateFeesSafely = useDebounce(fetchFees, 1000);
 	useEffect(() => {
-		if (isWalletReady && mosaic && isAmountValid && sourceAddress)
+		if (isWalletReady && mosaic && isAmountValid && isSourceAddressValid)
 			calculateFeesSafely();
-	}, [isWalletReady, mosaic, isAmountValid, sourceAddress, amount]);
+	}, [isWalletReady, mosaic, isAmountValid, isSourceAddressValid, sourceAddress, amount]);
 
 	// Transaction workflow
 	const workflow = useStandardTransactionWorkflow({
@@ -158,12 +188,14 @@ export const RevokeMosaic = props => {
 	// Derived state
 	const isLoading = !isWalletReady || isMosaicLoading || isOwnersLoading;
 	const isButtonDisabled = !isNetworkConnectionReady
-		|| !sourceAddress
+		|| !isSourceAddressValid
+		|| isIndividualOwnerLoading
 		|| !isAmountValid
 		|| !transactionFees
 		|| isFeesLoading;
+	// With no holders nobody owns the mosaic, so manual address entry cannot help either
+	const isAddressInputDisabled = !sourceOptions.length;
 
-	// Warning
 	const noHoldersAlert = createNoHoldersAlertData(sourceOptions.length, isLoading);
 
 	return (
@@ -196,12 +228,15 @@ export const RevokeMosaic = props => {
 					<Stack gap="none">
 						<StyledText type="title" size="s">{$t('s_send_from_title')}</StyledText>
 						<Stack gap="s">
-							<SelectSourceAccount
+							<InputSourceAccount
 								label={$t('fieldTitle_account')}
 								value={sourceAddress}
 								owners={sourceOptions}
+								senderAddress={senderAddress}
 								chainName={chainName}
+								isDisabled={isAddressInputDisabled}
 								onChange={changeSourceAddress}
+								onValidityChange={changeSourceAddressValidity}
 							/>
 							{noHoldersAlert.isVisible && (
 								<Alert

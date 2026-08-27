@@ -848,6 +848,7 @@
     "validation_error_mosaic_divisibility": "Should be a number from 0 to 6",
     "validation_error_mosaic_duration_low": "Duration must be at least %{min} block",
     "validation_error_mosaic_duration_high": "Duration can't exceed %{max} blocks (~10 years)",
+    "validation_error_mosaic_revoke_sender": "Can't revoke from the creator account",
     "warning_multisig_title": "Multisig Account",
     "warning_multisig_body": "To send transactions from this account, please announce it from cosignature account!",
     "message_emptyList": "Nothing to show",

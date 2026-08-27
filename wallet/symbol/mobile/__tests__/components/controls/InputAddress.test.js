@@ -3,14 +3,20 @@ import { AccountFixtureBuilder } from '__fixtures__/local/AccountFixtureBuilder'
 import { runInputTextTest, runRenderTextTest } from '__tests__/component-tests';
 import { createAddressBookMock, mockLocalization, mockWalletController } from '__tests__/mock-helpers';
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
+import { Text } from 'react-native';
 
 // Constants
 
 const CHAIN_NAME = 'symbol';
 const NETWORK_IDENTIFIER = 'mainnet';
+const HOLDER_AMOUNT = '10';
 
 const SCREEN_TEXT = {
-	inputRecipientLabel: 'input_recipientAddress'
+	inputRecipientLabel: 'input_recipientAddress',
+
+	// Picker icons (accessibility)
+	iconContactsPicker: 'address-book',
+	iconOptionsPicker: 'chevron-down'
 };
 
 // Account Fixtures
@@ -27,6 +33,14 @@ const contactAccount = AccountFixtureBuilder
 	.createWithAccount(CHAIN_NAME, NETWORK_IDENTIFIER, 2)
 	.override({ name: 'Bob Contact' })
 	.build();
+
+const holderAccount = AccountFixtureBuilder
+	.createWithAccount(CHAIN_NAME, NETWORK_IDENTIFIER, 3)
+	.build();
+
+// Options Fixtures
+
+const holderOptions = [{ address: holderAccount.address, amount: HOLDER_AMOUNT }];
 
 // Props
 
@@ -80,7 +94,7 @@ describe('components/InputAddress', () => {
 				const { queryByLabelText } = render(<InputAddress {...props} />);
 
 				// Assert:
-				const icon = queryByLabelText('address-book');
+				const icon = queryByLabelText(SCREEN_TEXT.iconContactsPicker);
 
 				if (expected.isVisible)
 					expect(icon).toBeTruthy();
@@ -125,7 +139,7 @@ describe('components/InputAddress', () => {
 			const { getByLabelText, findAllByText } = render(<InputAddress {...props} />);
 
 			// Act:
-			const addressBookIcon = getByLabelText('address-book');
+			const addressBookIcon = getByLabelText(SCREEN_TEXT.iconContactsPicker);
 			fireEvent.press(addressBookIcon);
 
 			// Assert:
@@ -141,13 +155,99 @@ describe('components/InputAddress', () => {
 			const { getByLabelText, findByText } = render(<InputAddress {...props} />);
 
 			// Act:
-			const addressBookIcon = getByLabelText('address-book');
+			const addressBookIcon = getByLabelText(SCREEN_TEXT.iconContactsPicker);
 			fireEvent.press(addressBookIcon);
 			const contactItem = await findByText(recipientAccount.address);
 			fireEvent.press(contactItem);
 
 			// Assert:
 			expect(onChangeMock).toHaveBeenCalledWith(recipientAccount.address);
+		});
+	});
+
+	describe('options picker', () => {
+		const runPickerIconTest = (description, config, expected) => {
+			it(description, () => {
+				// Arrange:
+				mockController({ walletAccounts: [currentAccount] }); // contacts available in every case
+				const props = createDefaultProps({ options: config.options });
+
+				// Act:
+				const { queryByLabelText } = render(<InputAddress {...props} />);
+
+				// Assert:
+				const optionsIcon = queryByLabelText(SCREEN_TEXT.iconOptionsPicker);
+				const contactsIcon = queryByLabelText(SCREEN_TEXT.iconContactsPicker);
+
+				if (expected.isOptionsIconVisible)
+					expect(optionsIcon).toBeTruthy();
+				else
+					expect(optionsIcon).toBeNull();
+				expect(contactsIcon).toBeNull();
+			});
+		};
+
+		const pickerIconTests = [
+			{
+				description: 'shows the chevron instead of the address book icon when options are given',
+				config: { options: holderOptions },
+				expected: { isOptionsIconVisible: true }
+			},
+			{
+				description: 'hides the picker when the options are empty, even with contacts available',
+				config: { options: [] },
+				expected: { isOptionsIconVisible: false }
+			}
+		];
+
+		pickerIconTests.forEach(test => {
+			runPickerIconTest(test.description, test.config, test.expected);
+		});
+
+		it('lists the options instead of the contacts when the chevron is pressed', async () => {
+			// Arrange:
+			mockController({ walletAccounts: [currentAccount] });
+			const props = createDefaultProps({ options: holderOptions });
+			const { getByLabelText, findByText, queryByText } = render(<InputAddress {...props} />);
+
+			// Act:
+			fireEvent.press(getByLabelText(SCREEN_TEXT.iconOptionsPicker));
+
+			// Assert:
+			expect(await findByText(holderAccount.address)).toBeTruthy();
+			expect(queryByText(currentAccount.address)).toBeNull();
+		});
+
+		it('renders the options with the custom renderer and their resolved display data', async () => {
+			// Arrange:
+			mockController({ walletAccounts: [holderAccount] }); // resolves the holder name
+			const renderItem = ({ item, accountDisplayData }) => (
+				<Text>{`${accountDisplayData.name}:${item.amount}`}</Text>
+			);
+			const props = createDefaultProps({ options: holderOptions, renderItem });
+			const { getByLabelText, findByText } = render(<InputAddress {...props} />);
+			const expectedRowText = `${holderAccount.name}:${HOLDER_AMOUNT}`;
+
+			// Act:
+			fireEvent.press(getByLabelText(SCREEN_TEXT.iconOptionsPicker));
+
+			// Assert:
+			expect(await findByText(expectedRowText)).toBeTruthy();
+		});
+
+		it('calls onChange when an option is selected', async () => {
+			// Arrange:
+			const onChangeMock = jest.fn();
+			const props = createDefaultProps({ options: holderOptions, onChange: onChangeMock });
+			const { getByLabelText, findByText } = render(<InputAddress {...props} />);
+
+			// Act:
+			fireEvent.press(getByLabelText(SCREEN_TEXT.iconOptionsPicker));
+			const optionItem = await findByText(holderAccount.address);
+			fireEvent.press(optionItem);
+
+			// Assert:
+			expect(onChangeMock).toHaveBeenCalledWith(holderAccount.address);
 		});
 	});
 

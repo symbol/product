@@ -4,7 +4,16 @@ import { Sizes } from '@/app/styles';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 
-/** @typedef {import('@/app/types/Account').AccountBalanceAmount} AccountBalanceAmount */
+/** @typedef {import('@/app/types/Sizes').SizeVariant} SizeVariant */
+
+/**
+ * One amount line of an account balance row.
+ * @typedef {object} AccountBalanceAmount
+ * @property {string|null} value - The amount value.
+ * @property {string} [ticker] - The ticker symbol shown after the value.
+ * @property {SizeVariant} [size] - The amount size. Defaults to the row size.
+ * @property {boolean} [isColored] - Whether to color the value by its sign.
+ */
 
 const DEFAULT_SIZE = 'm';
 
