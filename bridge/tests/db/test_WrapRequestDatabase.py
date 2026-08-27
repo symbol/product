@@ -32,6 +32,11 @@ from ..test.DatabaseTestUtils import (
 )
 from ..test.MockNetworkFacade import MockNemNetworkFacade, MockSymbolNetworkFacade
 
+PAYOUT_TRANSACTION_HASHES = (
+	Hash256('066E5BF4B539230E12DD736D44CEFB5274FACBABC22735F2264A40F72AFB0124'),
+	Hash256('ACFF5E24733CD040504448A3A75F1CE32E90557E5FBA02E107624242F4FA251D')
+)
+
 # region factories
 
 
@@ -1133,6 +1138,125 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 
 			# Assert:
 			self.assertEqual(0, count)
+
+	# endregion
+
+	# region oldest_unprocessed_request_timestamp, oldest_payout_sent_timestamp
+
+	def test_can_get_oldest_unprocessed_request_timestamp(self):
+		# Arrange: the newer request is added first, so insertion order cannot pass for age
+		with sqlite3.connect(':memory:') as connection:
+			database = self._create_database(connection)
+			database.create_tables()
+
+			for (index, height, raw_timestamp) in ((0, 222, 3040), (1, 111, 1020)):
+				database.add_request(make_request(index, height=height, destination_address=SYMBOL_ADDRESSES[index]))
+				database.set_block_timestamp(height, raw_timestamp)
+
+			# Act:
+			timestamp = database.oldest_unprocessed_request_timestamp()
+
+			# Assert:
+			self.assertEqual(self._nem_to_unix_timestamp(1020), timestamp)
+
+	def test_oldest_unprocessed_request_timestamp_ignores_requests_in_other_statuses(self):
+		# Arrange: the older of the two requests has already been sent, so only the newer one is still waiting
+		with sqlite3.connect(':memory:') as connection:
+			database = self._create_database(connection)
+			database.create_tables()
+
+			sent_request = make_request(0, height=111, destination_address=SYMBOL_ADDRESSES[0])
+			waiting_request = make_request(1, height=222, destination_address=SYMBOL_ADDRESSES[1])
+			for (request, height, raw_timestamp) in ((sent_request, 111, 1020), (waiting_request, 222, 3040)):
+				database.add_request(request)
+				database.set_block_timestamp(height, raw_timestamp)
+
+			payout_transaction_hash = Hash256('066E5BF4B539230E12DD736D44CEFB5274FACBABC22735F2264A40F72AFB0124')
+			database.mark_payout_sent(sent_request, PayoutDetails(payout_transaction_hash, 2200, 450, 156))
+
+			# Act:
+			timestamp = database.oldest_unprocessed_request_timestamp()
+
+			# Assert:
+			self.assertEqual(self._nem_to_unix_timestamp(3040), timestamp)
+
+	def test_oldest_unprocessed_request_timestamp_ignores_requests_without_a_block_timestamp(self):
+		# Arrange: block timestamps are downloaded in a second pass, so a request can briefly have no matching row
+		with sqlite3.connect(':memory:') as connection:
+			database = self._create_database(connection)
+			database.create_tables()
+
+			database.add_request(make_request(0, height=111, destination_address=SYMBOL_ADDRESSES[0]))
+
+			# Act:
+			timestamp = database.oldest_unprocessed_request_timestamp()
+
+			# Assert:
+			self.assertEqual(1, len(database.requests_by_status(WrapRequestStatus.UNPROCESSED)))
+			self.assertIsNone(timestamp)
+
+	def test_oldest_unprocessed_request_timestamp_is_none_when_nothing_is_waiting(self):
+		# Arrange:
+		with sqlite3.connect(':memory:') as connection:
+			database = self._create_database(connection)
+			database.create_tables()
+
+			# Act:
+			timestamp = database.oldest_unprocessed_request_timestamp()
+
+			# Assert:
+			self.assertIsNone(timestamp)
+
+	def test_can_get_oldest_payout_sent_timestamp(self):
+		# Arrange:
+		with sqlite3.connect(':memory:') as connection:
+			database = self._create_database(connection)
+			database.create_tables()
+
+			first_request = make_request(0, height=111, destination_address=SYMBOL_ADDRESSES[0])
+			second_request = make_request(1, height=222, destination_address=SYMBOL_ADDRESSES[1])
+			for (payout_transaction_hash, request) in zip(PAYOUT_TRANSACTION_HASHES, (first_request, second_request)):
+				database.add_request(request)
+				database.mark_payout_sent(request, PayoutDetails(payout_transaction_hash, 2200, 450, 156))
+
+			# Act:
+			timestamp = database.oldest_payout_sent_timestamp()
+
+			# Assert:
+			self.assertEqual(database.payout_sent_timestamp_for_request(first_request), timestamp)
+			assert_timestamp_within_last_second(timestamp)
+
+	def test_oldest_payout_sent_timestamp_ignores_confirmed_payouts(self):
+		# Arrange: the payout sent first has already been confirmed, so only the later one is still awaiting one
+		with sqlite3.connect(':memory:') as connection:
+			database = self._create_database(connection)
+			database.create_tables()
+
+			confirmed_request = make_request(0, height=111, destination_address=SYMBOL_ADDRESSES[0])
+			awaiting_request = make_request(1, height=222, destination_address=SYMBOL_ADDRESSES[1])
+			for (payout_transaction_hash, request) in zip(PAYOUT_TRANSACTION_HASHES, (confirmed_request, awaiting_request)):
+				database.add_request(request)
+				database.mark_payout_sent(request, PayoutDetails(payout_transaction_hash, 2200, 450, 156))
+
+			database.mark_payout_completed(PAYOUT_TRANSACTION_HASHES[0], 1122)
+
+			# Act:
+			timestamp = database.oldest_payout_sent_timestamp()
+
+			# Assert:
+			self.assertEqual(database.payout_sent_timestamp_for_request(awaiting_request), timestamp)
+
+	def test_oldest_payout_sent_timestamp_is_none_when_nothing_is_awaiting_confirmation(self):
+		# Arrange:
+		with sqlite3.connect(':memory:') as connection:
+			database = self._create_database(connection)
+			database.create_tables()
+
+			# Act:
+			timestamp = database.oldest_payout_sent_timestamp()
+
+			# Assert:
+			self.assertIsNone(timestamp)
 
 	# endregion
 

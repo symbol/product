@@ -1,3 +1,5 @@
+import datetime
+
 from prometheus_client import Gauge
 
 from ...db.Databases import Databases
@@ -19,7 +21,26 @@ class WrapRequestCollector:
 			'requests that failed and were not retried; each one is potentially lost user funds',
 			['direction'],
 			registry=registry)
+		unprocessed_age_gauge = Gauge(
+			'bridge_oldest_unprocessed_age_seconds',
+			'age of the oldest request that has not been processed yet',
+			['direction'],
+			registry=registry)
+		sent_age_gauge = Gauge(
+			'bridge_oldest_sent_age_seconds',
+			'age of the oldest payout that has not been confirmed yet',
+			['direction'],
+			registry=registry)
+
+		now = datetime.datetime.now(datetime.timezone.utc).timestamp()
 
 		with Databases(*self.context.database_params) as databases:
 			for (direction, database) in (('wrap', databases.wrap_request), ('unwrap', databases.unwrap_request)):
 				failed_gauge.labels(direction).set(database.count_permanent_failures())
+				_set_age(unprocessed_age_gauge, direction, now, database.oldest_unprocessed_request_timestamp())
+				_set_age(sent_age_gauge, direction, now, database.oldest_payout_sent_timestamp())
+
+
+def _set_age(gauge, direction, now, timestamp):
+	if timestamp is not None:
+		gauge.labels(direction).set(now - timestamp)
