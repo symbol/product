@@ -448,6 +448,68 @@ class WrapRequestDatabase(MaxProcessedHeightMixin):  # pylint: disable=too-many-
 
 	# endregion
 
+	# region count_permanent_failures, count_retries, count_rejected_requests
+
+	def count_permanent_failures(self):
+		"""Gets a count of requests that failed and were not retried."""
+
+		cursor = self.connection.cursor()
+		cursor.execute(
+			'SELECT COUNT(*) FROM wrap_request WHERE payout_status = ? AND NOT is_retried',
+			(WrapRequestStatus.FAILED.value,))
+		return cursor.fetchone()[0]
+
+	def count_retries(self):
+		"""Gets a count of transient failures that were put back into circulation."""
+
+		cursor = self.connection.cursor()
+		cursor.execute('SELECT COUNT(*) FROM wrap_request WHERE is_retried')
+		return cursor.fetchone()[0]
+
+	def count_rejected_requests(self):
+		"""Gets a count of deposits that were rejected on download and never became requests."""
+
+		cursor = self.connection.cursor()
+		cursor.execute(
+			'''
+				SELECT COUNT(*) FROM wrap_error
+				WHERE NOT EXISTS (
+					SELECT 1 FROM wrap_request
+					WHERE wrap_request.request_transaction_hash = wrap_error.request_transaction_hash
+					AND wrap_request.request_transaction_subindex = wrap_error.request_transaction_subindex
+				)
+			''')
+		return cursor.fetchone()[0]
+
+	# endregion
+
+	# region oldest_unprocessed_request_timestamp, oldest_payout_sent_timestamp
+
+	def oldest_unprocessed_request_timestamp(self):
+		"""Gets the block timestamp of the oldest request that has not been processed yet."""
+
+		cursor = self.connection.cursor()
+		cursor.execute(
+			'''
+				SELECT MIN(block_metadata.timestamp)
+				FROM wrap_request
+				JOIN block_metadata ON wrap_request.request_transaction_height = block_metadata.height
+				WHERE wrap_request.payout_status = ?
+			''',
+			(WrapRequestStatus.UNPROCESSED.value,))
+		return cursor.fetchone()[0]
+
+	def oldest_payout_sent_timestamp(self):
+		"""Gets the send timestamp of the oldest payout that has not been confirmed yet."""
+
+		cursor = self.connection.cursor()
+		cursor.execute(
+			'SELECT MIN(payout_sent_timestamp) FROM wrap_request WHERE payout_status = ?',
+			(WrapRequestStatus.SENT.value,))
+		return cursor.fetchone()[0]
+
+	# endregion
+
 	# region requests_by_status, unconfirmed_payout_transaction_hashes
 
 	def requests_by_status(self, status):

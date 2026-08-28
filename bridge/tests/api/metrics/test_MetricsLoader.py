@@ -1,16 +1,16 @@
 from bridge.api.metrics.ChainCollector import ChainCollector
 from bridge.api.metrics.MetricsLoader import load_collectors
+from bridge.api.metrics.WrapRequestCollector import WrapRequestCollector
 
 # pylint: disable=invalid-name
 
 
-def test_chain_collector_is_always_loaded():
+def test_every_collector_is_loaded():
 	# Act:
 	collectors = load_collectors(None, 3)
 
 	# Assert:
-	assert 1 == len(collectors)
-	assert isinstance(collectors[0], ChainCollector)
+	assert [ChainCollector, WrapRequestCollector] == [type(collector) for collector in collectors]
 
 
 def test_loaded_collectors_are_given_the_context_and_timeout():
