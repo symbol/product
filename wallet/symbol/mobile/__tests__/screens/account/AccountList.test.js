@@ -19,6 +19,9 @@ jest.mock('@/app/screens/account/hooks', () => ({
 	useAccountBalances: jest.fn(() => ({
 		accountBalances: {},
 		refetch: jest.fn()
+	})),
+	useAccountMultisigStates: jest.fn(() => ({
+		accountMultisigStates: {}
 	}))
 }));
 

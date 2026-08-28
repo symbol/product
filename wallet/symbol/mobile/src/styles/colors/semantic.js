@@ -103,6 +103,28 @@ export const Components = {
 	cardHeader: {
 		background: Semantic.background.primary.lighter
 	},
+	accountCard: {
+		default: {
+			default: {
+				background: Semantic.background.primary.default,
+				border: Semantic.role.neutral.muted
+			},
+			active: {
+				background: Semantic.background.primary.default,
+				border: Semantic.role.secondary.default
+			}
+		},
+		multisig: {
+			default: {
+				background: Semantic.role.warning.muted,
+				border: Semantic.role.warning.weaker
+			},
+			active: {
+				background: Semantic.role.warning.muted,
+				border: Semantic.role.warning.default
+			}
+		}
+	},
 	dataContainer: {
 		background: Semantic.background.tertiary.darker
 	},
