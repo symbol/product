@@ -1,6 +1,7 @@
 import { TransactionGroup } from '@/app/constants';
 import { History } from '@/app/screens/history/History';
 import { AccountFixtureBuilder } from '__fixtures__/local/AccountFixtureBuilder';
+import { AccountInfoFixtureBuilder } from '__fixtures__/local/AccountInfoFixtureBuilder';
 import { AggregateTransactionFixtureBuilder } from '__fixtures__/local/AggregateTransactionFixtureBuilde';
 import { NetworkPropertiesFixtureBuilder } from '__fixtures__/local/NetworkPropertiesFixtureBuilder';
 import { ReceiptFixtureBuilder } from '__fixtures__/local/ReceiptFixtureBuilder';
@@ -77,6 +78,18 @@ const cosignerAccount = AccountFixtureBuilder
 	
 
 const walletAccounts = [currentAccount];
+
+// Account Info Fixtures
+
+const currentAccountInfoNonMultisig = AccountInfoFixtureBuilder
+	.createWithAccount(CHAIN_NAME, NETWORK_IDENTIFIER, 0)
+	.setMultisigStatusByIndexes(false)
+	.build();
+
+const currentAccountInfoMultisig = AccountInfoFixtureBuilder
+	.createWithAccount(CHAIN_NAME, NETWORK_IDENTIFIER, 0)
+	.setMultisigStatusByIndexes(true, [1, 2])
+	.build();
 
 // Network Properties Fixtures
 
@@ -169,6 +182,14 @@ const partialTransactionSignedByCurrentAccount = AggregateTransactionFixtureBuil
 	.createDefaultBonded(CHAIN_NAME, NETWORK_IDENTIFIER)
 	.setHash('HASH_PARTIAL_SIGNED')
 	.setSigner(currentAccount)
+	.setInnerTransactions([innerTransferSignedByCurrentAccount])
+	.build();
+
+// Initiated by a cosigner on behalf of the current account, which is the multisig account
+const partialTransactionForCurrentMultisigAccount = AggregateTransactionFixtureBuilder
+	.createDefaultBonded(CHAIN_NAME, NETWORK_IDENTIFIER)
+	.setHash('HASH_PARTIAL_FOR_MULTISIG')
+	.setSigner(recipientAccount)
 	.setInnerTransactions([innerTransferSignedByCurrentAccount])
 	.build();
 
@@ -880,6 +901,7 @@ describe('screens/history/History', () => {
 				// Arrange:
 				mockWalletControllerConfigured({
 					currentAccount: config.currentAccount,
+					currentAccountInfo: config.currentAccountInfo,
 					fetchAccountTransactions: createFetchAccountTransactionsMock({
 						partial: [config.transaction]
 					})
@@ -902,6 +924,7 @@ describe('screens/history/History', () => {
 				description: 'displays awaiting signature text when current account has not signed',
 				config: {
 					currentAccount,
+					currentAccountInfo: currentAccountInfoNonMultisig,
 					transaction: partialTransactionAwaitingSignature
 				},
 				expected: { shouldShowAwaitingSignature: true }
@@ -910,6 +933,7 @@ describe('screens/history/History', () => {
 				description: 'hides awaiting signature text when current account has cosigned',
 				config: {
 					currentAccount,
+					currentAccountInfo: currentAccountInfoNonMultisig,
 					transaction: partialTransactionWithCosignature
 				},
 				expected: { shouldShowAwaitingSignature: false }
@@ -918,7 +942,17 @@ describe('screens/history/History', () => {
 				description: 'hides awaiting signature text when current account is the signer',
 				config: {
 					currentAccount,
+					currentAccountInfo: currentAccountInfoNonMultisig,
 					transaction: partialTransactionSignedByCurrentAccount
+				},
+				expected: { shouldShowAwaitingSignature: false }
+			},
+			{
+				description: 'hides awaiting signature text when current account is the multisig account',
+				config: {
+					currentAccount,
+					currentAccountInfo: currentAccountInfoMultisig,
+					transaction: partialTransactionForCurrentMultisigAccount
 				},
 				expected: { shouldShowAwaitingSignature: false }
 			}

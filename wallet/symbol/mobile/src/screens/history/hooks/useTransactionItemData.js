@@ -29,6 +29,7 @@ import { useMemo } from 'react';
  * @param {Transaction} options.transaction - Transaction object.
  * @param {string} options.group - Transaction group (confirmed, unconfirmed, partial).
  * @param {WalletAccount} options.currentAccount - Current account.
+ * @param {boolean} [options.isCurrentAccountMultisig=false] - Whether the current account is a multisig account.
  * @param {WalletAccount[]} options.walletAccounts - Wallet accounts for the network.
  * @param {object} options.addressBook - Address book instance.
  * @param {ChainName} options.chainName - Chain name (e.g., 'symbol').
@@ -40,6 +41,7 @@ export const useTransactionItemData = ({
 	transaction,
 	group,
 	currentAccount,
+	isCurrentAccountMultisig = false,
 	walletAccounts,
 	addressBook,
 	chainName,
@@ -60,7 +62,8 @@ export const useTransactionItemData = ({
 		const dateText = isDateHidden ? '' : getTransactionDateText(transaction, group);
 
 		const isPartial = group === TransactionGroup.PARTIAL;
-		const isAwaitingAccountSignature = isPartial && isTransactionAwaitingSignatureByAccount(transaction, currentAccount);
+		const isAwaitingAccountSignature = isPartial
+			&& isTransactionAwaitingSignatureByAccount(transaction, currentAccount, { isCurrentAccountMultisig });
 
 		return {
 			iconName,
@@ -69,5 +72,15 @@ export const useTransactionItemData = ({
 			dateText,
 			isAwaitingAccountSignature
 		};
-	}, [transaction, group, currentAccount, walletAccounts, addressBook, chainName, networkIdentifier, isDateHidden]);
+	}, [
+		transaction,
+		group,
+		currentAccount,
+		isCurrentAccountMultisig,
+		walletAccounts,
+		addressBook,
+		chainName,
+		networkIdentifier,
+		isDateHidden
+	]);
 };

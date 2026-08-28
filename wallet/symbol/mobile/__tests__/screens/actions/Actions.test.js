@@ -1,7 +1,9 @@
 import { Actions } from '@/app/screens/actions/Actions';
 import { AccountFixtureBuilder } from '__fixtures__/local/AccountFixtureBuilder';
+import { AccountInfoFixtureBuilder } from '__fixtures__/local/AccountInfoFixtureBuilder';
+import { ScreenTester } from '__tests__/ScreenTester';
 import { runRenderTextTest } from '__tests__/component-tests';
-import { mockLocalization, mockWalletController } from '__tests__/mock-helpers';
+import { mockLocalization, mockRouter, mockWalletController } from '__tests__/mock-helpers';
 import { runScreenNavigationTest } from '__tests__/screen-tests';
 
 // Constants
@@ -25,14 +27,50 @@ const SCREEN_TEXT = {
 	bridgeAccountsTitle: 's_actions_bridgeAccounts_title',
 	bridgeAccountsDescription: 's_actions_bridgeAccounts_description',
 	createMosaicTitle: 's_actions_createMosaic_title',
-	createMosaicDescription: 's_actions_createMosaic_description'
+	createMosaicDescription: 's_actions_createMosaic_description',
+
+	// Icon Labels
+	labelLockIcon: 'lock icon'
 };
 
-// Account Fixture
+// Card Groups
+
+const TRANSACTION_CARD_TITLES = [
+	SCREEN_TEXT.harvestingTitle,
+	SCREEN_TEXT.multisigTitle,
+	SCREEN_TEXT.sendTitle,
+	SCREEN_TEXT.createMosaicTitle,
+	SCREEN_TEXT.bridgeTitle
+];
+const VIEW_ONLY_CARD_TITLES = [
+	SCREEN_TEXT.addressBookTitle,
+	SCREEN_TEXT.bridgeAccountsTitle
+];
+const ALL_CARD_TITLES = [...TRANSACTION_CARD_TITLES, ...VIEW_ONLY_CARD_TITLES];
+
+// Account Fixtures
 
 const currentAccount = AccountFixtureBuilder
 	.createWithAccount(CHAIN_NAME, NETWORK_IDENTIFIER, 0)
 	.build();
+
+const regularAccountInfo = AccountInfoFixtureBuilder
+	.createWithAccount(CHAIN_NAME, NETWORK_IDENTIFIER, 0)
+	.setMultisigStatusByIndexes(false)
+	.build();
+
+const multisigAccountInfo = AccountInfoFixtureBuilder
+	.createWithAccount(CHAIN_NAME, NETWORK_IDENTIFIER, 0)
+	.setMultisigStatusByIndexes(true, [1, 2])
+	.build();
+
+// Account Scenarios
+
+const AccountScenario = {
+	REGULAR: { currentAccountInfo: regularAccountInfo },
+	INFO_NOT_LOADED: { currentAccountInfo: null },
+	MULTISIG: { currentAccountInfo: multisigAccountInfo }
+};
 
 describe('screens/actions/Actions', () => {
 	beforeEach(() => {
@@ -86,10 +124,82 @@ describe('screens/actions/Actions', () => {
 			},
 			{
 				buttonText: SCREEN_TEXT.bridgeAccountsTitle,
-				actionName: 'goToBridgeAccountList',
+				actionName: 'goToBridgeAccountList'
+			},
+			{
 				buttonText: SCREEN_TEXT.createMosaicTitle,
 				actionName: 'goToCreatedMosaicList'
 			}
 		]
+	});
+
+	describe('disabled cards', () => {
+		const runDisabledCardsTest = (description, config, expected) => {
+			it(description, () => {
+				// Arrange:
+				mockWalletController({
+					currentAccount,
+					currentAccountInfo: config.scenario.currentAccountInfo
+				});
+
+				// Act:
+				const screenTester = new ScreenTester(Actions);
+
+				// Assert:
+				expected.disabledCardTitles.forEach(title => screenTester.expectButtonDisabled(title));
+				expected.enabledCardTitles.forEach(title => screenTester.expectButtonEnabled(title));
+				screenTester.expectElementCount(SCREEN_TEXT.labelLockIcon, expected.lockIconCount, 'label');
+			});
+		};
+
+		const disabledCardsTests = [
+			{
+				description: 'enables all cards for regular account',
+				config: { scenario: AccountScenario.REGULAR },
+				expected: {
+					disabledCardTitles: [],
+					enabledCardTitles: ALL_CARD_TITLES,
+					lockIconCount: 0
+				}
+			},
+			{
+				description: 'enables all cards when account info is not loaded',
+				config: { scenario: AccountScenario.INFO_NOT_LOADED },
+				expected: {
+					disabledCardTitles: [],
+					enabledCardTitles: ALL_CARD_TITLES,
+					lockIconCount: 0
+				}
+			},
+			{
+				description: 'disables transaction cards and shows lock icons for multisig account',
+				config: { scenario: AccountScenario.MULTISIG },
+				expected: {
+					disabledCardTitles: TRANSACTION_CARD_TITLES,
+					enabledCardTitles: VIEW_ONLY_CARD_TITLES,
+					lockIconCount: TRANSACTION_CARD_TITLES.length
+				}
+			}
+		];
+
+		disabledCardsTests.forEach(test => {
+			runDisabledCardsTest(test.description, test.config, test.expected);
+		});
+
+		it('does not navigate when disabled card is pressed', () => {
+			// Arrange:
+			const routerMock = mockRouter({ goToSend: jest.fn() });
+			mockWalletController({
+				currentAccount,
+				currentAccountInfo: AccountScenario.MULTISIG.currentAccountInfo
+			});
+			const screenTester = new ScreenTester(Actions);
+
+			// Act:
+			screenTester.pressButton(SCREEN_TEXT.sendTitle);
+
+			// Assert:
+			expect(routerMock.goToSend).not.toHaveBeenCalled();
+		});
 	});
 });

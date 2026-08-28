@@ -1,5 +1,5 @@
 import { AccountCard, DraggableList } from './components';
-import { useAccountBalances } from './hooks';
+import { useAccountBalances, useAccountMultisigStates } from './hooks';
 import { ButtonCircle, DialogBox, Screen } from '@/app/components';
 import { useAsyncManager, useProp, useToggle, useWalletController } from '@/app/hooks';
 import { $t } from '@/app/localization';
@@ -34,6 +34,9 @@ export const AccountList = () => {
 
 	// Balance fetching
 	const { accountBalances } = useAccountBalances(walletController);
+
+	// Multisig state fetching
+	const { accountMultisigStates } = useAccountMultisigStates(walletController);
 
 	// Select account
 	const selectAccountManager = useAsyncManager({
@@ -100,6 +103,7 @@ export const AccountList = () => {
 				ticker={ticker}
 				accountType={item.accountType}
 				isActive={isAccountSelected(item)}
+				isMultisig={accountMultisigStates[item.publicKey] ?? false}
 				onRemove={canRemove ? () => handleRemovePress(item) : null}
 			/>
 		);

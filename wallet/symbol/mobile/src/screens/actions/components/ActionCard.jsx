@@ -1,4 +1,4 @@
-import { Card, StyledText, TouchableNative } from '@/app/components';
+import { Card, Icon, StyledText, TouchableNative } from '@/app/components';
 import { Colors, Sizes } from '@/app/styles';
 import React from 'react';
 import { ImageBackground, StyleSheet, View } from 'react-native';
@@ -9,6 +9,7 @@ const CARD_BACKGROUND_COLOR = Colors.Semantic.overlay.primary.default;
 const IMAGE_HEIGHT_PERCENT = '70%';
 const CONTENT_HEIGHT_PERCENT = '50%';
 const CONTENT_OVERLAY_OPACITY = 'rgba(0,0,0,0.7)';
+const LOCK_ICON_SIZE = 'xl';
 
 /**
  * ActionCard component. Displays a feature card with an image, title, and description.
@@ -17,19 +18,24 @@ const CONTENT_OVERLAY_OPACITY = 'rgba(0,0,0,0.7)';
  * @param {string} props.title - Card title text.
  * @param {string} props.description - Card description text.
  * @param {number} props.imageSource - Image source for the card background.
+ * @param {boolean} [props.isDisabled=false] - Whether the card is disabled. Fades the content and shows a lock icon.
  * @param {function(): void} props.onPress - Callback function when the card is pressed.
  * @returns {React.ReactNode} ActionCard component.
  */
-export const ActionCard = ({ title, description, imageSource, onPress }) => {
+export const ActionCard = ({ title, description, imageSource, isDisabled = false, onPress }) => {
+	const imageContainerStyle = [styles.imageContainer, isDisabled && styles.imageContainer__disabled];
+	const contentInnerStyle = isDisabled ? styles.contentInner__disabled : null;
+
 	return (
 		<Card style={styles.card} color={CARD_BACKGROUND_COLOR}>
 			<TouchableNative
 				style={styles.touchable}
 				containerStyle={styles.touchableContainer}
 				colorPressed={Colors.Semantic.overlay.primary.default}
+				disabled={isDisabled}
 				onPress={onPress}
 			>
-				<View style={styles.imageContainer}>
+				<View style={imageContainerStyle}>
 					<ImageBackground
 						source={imageSource}
 						style={styles.image}
@@ -37,13 +43,20 @@ export const ActionCard = ({ title, description, imageSource, onPress }) => {
 					/>
 				</View>
 				<View style={styles.content}>
-					<StyledText type="title" size="s" style={styles.title}>
-						{title}
-					</StyledText>
-					<StyledText type="body" style={styles.description}>
-						{description}
-					</StyledText>
+					<View style={contentInnerStyle}>
+						<StyledText type="title" size="s" style={styles.title}>
+							{title}
+						</StyledText>
+						<StyledText type="body" style={styles.description}>
+							{description}
+						</StyledText>
+					</View>
 				</View>
+				{isDisabled && (
+					<View style={styles.lockIconContainer}>
+						<Icon name="lock" variant="warning" size={LOCK_ICON_SIZE} />
+					</View>
+				)}
 			</TouchableNative>
 		</Card>
 	);
@@ -70,6 +83,9 @@ const styles = StyleSheet.create({
 		height: IMAGE_HEIGHT_PERCENT,
 		zIndex: 1
 	},
+	imageContainer__disabled: {
+		opacity: 0.5
+	},
 	image: {
 		width: '100%',
 		height: '100%',
@@ -89,6 +105,19 @@ const styles = StyleSheet.create({
 		backgroundColor: CONTENT_OVERLAY_OPACITY,
 		zIndex: 2,
 		padding: Sizes.Semantic.spacing.m
+	},
+	contentInner__disabled: {
+		opacity: 0.3
+	},
+	lockIconContainer: {
+		position: 'absolute',
+		top: 0,
+		left: 0,
+		width: '100%',
+		height: '100%',
+		alignItems: 'center',
+		justifyContent: 'center',
+		zIndex: 3
 	},
 	title: {
 		marginBottom: Sizes.Semantic.spacing.xs,

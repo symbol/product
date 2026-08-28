@@ -162,7 +162,8 @@ const sourceMap = {
 		'ethereum': require('@/app/assets/images/icons/black/ethereum.png'),
 		'plus': require('@/app/assets/images/icons/black/plus.png'),
 		'minus': require('@/app/assets/images/icons/black/minus.png'),
-		'swap': require('@/app/assets/images/icons/black/swap.png')
+		'swap': require('@/app/assets/images/icons/black/swap.png'),
+		'lock': require('@/app/assets/images/icons/black/lock.png')
 	},
 	danger: {
 		'alert-danger': require('@/app/assets/images/icons/red/alert-danger.png')
@@ -170,7 +171,8 @@ const sourceMap = {
 	warning: {
 		'alert-warning': require('@/app/assets/images/icons/yellow/alert-warning.png'),
 		'pending': require('@/app/assets/images/icons/yellow/pending.png'),
-		'send-plane': require('@/app/assets/images/icons/yellow/send-plane.png')
+		'send-plane': require('@/app/assets/images/icons/yellow/send-plane.png'),
+		'lock': require('@/app/assets/images/icons/yellow/lock.png')
 	},
 	success: {
 		'check-circle': require('@/app/assets/images/icons/green/check-circle.png'),

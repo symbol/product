@@ -57,7 +57,7 @@ import React from 'react';
 export const TransactionDetails = ({ route }) => {
 	const { chainName, transaction: preloadedData, group } = route.params;
 	const walletController = useWalletController(chainName);
-	const { ticker, currentAccount, networkIdentifier, networkProperties, accounts, modules } = walletController;
+	const { ticker, currentAccount, currentAccountInfo, networkIdentifier, networkProperties, accounts, modules } = walletController;
 	const walletAccounts = accounts[networkIdentifier];
 	const { addressBook } = modules;
 
@@ -102,8 +102,10 @@ export const TransactionDetails = ({ route }) => {
 	const amountBreakdownDisplayData = createAmountBreakdownDisplayData(transaction, amountBreakdownDisplayOptions);
 
 	// Cosignature
+	const isCurrentAccountMultisig = currentAccountInfo?.isMultisig ?? false;
 	const cosignStatus = getTransactionCosignStatus(transaction, {
 		currentAccount,
+		isCurrentAccountMultisig,
 		addressBook,
 		walletAccounts,
 		transactionGroup: status.group

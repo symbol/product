@@ -231,8 +231,34 @@ export class ScreenTester {
 	};
 
 	/**
+	 * Asserts that the number of elements found by testID, text, or accessibility label matches the expected count.
+	 *
+	 * @param {string} value - The testID, text, or accessibility label to search for.
+	 * @param {number} count - The expected number of elements.
+	 * @param {'testId'|'text'|'label'} [by='testId'] - Method to find the elements.
+	 */
+	expectElementCount = (value, count, by = 'testId') => {
+		const { queryAllByTestId, queryAllByText, queryAllByLabelText } = this.renderer;
+		let elements;
+		switch (by) {
+		case 'text':
+			elements = queryAllByText(value);
+			break;
+		case 'label':
+			elements = queryAllByLabelText(value);
+			break;
+		case 'testId':
+		default:
+			elements = queryAllByTestId(value);
+			break;
+		}
+
+		expect(elements.length).toBe(count);
+	};
+
+	/**
 	 * Asserts that an input with the specified value is present on the screen.
-	 * 
+	 *
 	 * @param {string} value - The value to check for.
 	 */
 	expectInputValue = value => {

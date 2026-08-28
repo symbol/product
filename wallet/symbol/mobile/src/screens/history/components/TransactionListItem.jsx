@@ -20,6 +20,7 @@ const TEXT_PIXEL_CORRECTION = 1;
  * @param {string} props.group - Transaction group (confirmed, unconfirmed, partial).
  * @param {Transaction} props.transaction - Transaction data to display.
  * @param {WalletAccount} props.currentAccount - Current user account.
+ * @param {boolean} [props.isCurrentAccountMultisig=false] - Whether the current account is a multisig account.
  * @param {WalletAccount[]} props.walletAccounts - Wallet accounts for the network.
  * @param {object} props.addressBook - Address book instance.
  * @param {NetworkIdentifier} props.networkIdentifier - Network identifier (e.g., 'mainnet').
@@ -33,6 +34,7 @@ export const TransactionListItem = ({
 	group,
 	transaction,
 	currentAccount,
+	isCurrentAccountMultisig = false,
 	walletAccounts,
 	addressBook,
 	networkIdentifier,
@@ -48,6 +50,7 @@ export const TransactionListItem = ({
 		transaction,
 		group,
 		currentAccount,
+		isCurrentAccountMultisig,
 		walletAccounts,
 		addressBook,
 		chainName,

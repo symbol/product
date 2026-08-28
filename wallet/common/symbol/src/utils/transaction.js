@@ -96,17 +96,21 @@ export const isHarvestingServiceTransaction = transaction => {
 };
 
 /**
- * Checks whether transaction is awaiting a signature by account.
+ * Checks whether an aggregate bonded transaction is still awaiting the account's signature.
  * @param {Transaction} transaction - The transaction object.
- * @param {PublicAccount} account - The account object.
+ * @param {PublicAccount} currentAccount - The account to check.
+ * @param {Object} [options] - Signature check options.
+ * @param {boolean} [options.isCurrentAccountMultisig=false] - Whether the checked account is multisig.
  * @returns {boolean} A boolean indicating whether the transaction is awaiting a signature by the account.
  */
-export const isTransactionAwaitingSignatureByAccount = (transaction, account) => {
-	if (transaction.type !== TransactionType.AGGREGATE_BONDED)
+export const isTransactionAwaitingSignatureByAccount = (transaction, currentAccount, options = {}) => {
+	const { isCurrentAccountMultisig = false } = options;
+
+	if (transaction.type !== TransactionType.AGGREGATE_BONDED || isCurrentAccountMultisig)
 		return false;
 
-	const isSignedByAccount = transaction.signerPublicKey === account.publicKey;
-	const hasAccountCosignature = transaction.cosignatures.some(cosignature => cosignature.signerPublicKey === account.publicKey);
+	const isSignedByAccount = transaction.signerPublicKey === currentAccount.publicKey;
+	const hasAccountCosignature = transaction.cosignatures.some(cosignature => cosignature.signerPublicKey === currentAccount.publicKey);
 
 	return !isSignedByAccount && !hasAccountCosignature;
 };

@@ -19,6 +19,9 @@ jest.mock('@/app/screens/account/hooks', () => ({
 	useAccountBalances: jest.fn(() => ({
 		accountBalances: {},
 		refetch: jest.fn()
+	})),
+	useAccountMultisigStates: jest.fn(() => ({
+		accountMultisigStates: {}
 	}))
 }));
 
@@ -47,7 +50,10 @@ const SCREEN_TEXT = {
 
 	// Button Labels (accessibility labels for ButtonCircle)
 	buttonAddAccountLabel: 'account-add',
-	buttonConfirm: 'button_confirm'
+	buttonConfirm: 'button_confirm',
+
+	// Icon Labels
+	labelLockIcon: 'lock icon'
 };
 
 // Account Fixtures
@@ -100,6 +106,24 @@ const MOCK_BALANCES = {
 	[importedAccount.publicKey]: { balance: '500', balanceChange: '0' }
 };
 
+// Account Multisig States
+
+const MULTISIG_STATES_NONE = {
+	[rootSeedAccount.publicKey]: false,
+	[seedAccount1.publicKey]: false,
+	[seedAccount2.publicKey]: false
+};
+const MULTISIG_STATES_SEED_ACCOUNT_1 = {
+	[rootSeedAccount.publicKey]: false,
+	[seedAccount1.publicKey]: true,
+	[seedAccount2.publicKey]: false
+};
+const MULTISIG_STATES_SEED_ACCOUNTS_1_AND_2 = {
+	[rootSeedAccount.publicKey]: false,
+	[seedAccount1.publicKey]: true,
+	[seedAccount2.publicKey]: true
+};
+
 // Wallet Controller Mock
 
 const mockWalletControllerConfigured = (overrides = {}) => {
@@ -127,12 +151,20 @@ const mockAccountBalances = (balances = MOCK_BALANCES) => {
 	});
 };
 
+const mockAccountMultisigStates = (multisigStates = MULTISIG_STATES_NONE) => {
+	const { useAccountMultisigStates } = require('@/app/screens/account/hooks');
+	useAccountMultisigStates.mockReturnValue({
+		accountMultisigStates: multisigStates
+	});
+};
+
 describe('screens/account/AccountList', () => {
 	beforeEach(() => {
 		jest.useFakeTimers();
 		mockLocalization();
 		mockRouter();
 		mockAccountBalances();
+		mockAccountMultisigStates();
 		jest.clearAllMocks();
 	});
 
@@ -254,6 +286,76 @@ describe('screens/account/AccountList', () => {
 
 			balanceDisplayTests.forEach(test => {
 				runBalanceDisplayTest(test.description, test.config, test.expected);
+			});
+		});
+
+		describe('multisig accounts', () => {
+			const runMultisigCardTest = (description, config, expected) => {
+				it(description, () => {
+					// Arrange:
+					mockWalletControllerConfigured({
+						currentAccount: config.currentAccount,
+						accounts: { testnet: ACCOUNTS_WITH_MULTIPLE_SEED }
+					});
+					mockAccountMultisigStates(config.multisigStates);
+
+					// Act:
+					const screenTester = new ScreenTester(AccountList);
+
+					// Assert:
+					screenTester.expectElementCount(SCREEN_TEXT.labelLockIcon, expected.lockIconCount, 'label');
+				});
+			};
+
+			const multisigCardTests = [
+				{
+					description: 'renders lock icon for multisig account',
+					config: {
+						currentAccount: rootSeedAccount,
+						multisigStates: MULTISIG_STATES_SEED_ACCOUNT_1
+					},
+					expected: { lockIconCount: 1 }
+				},
+				{
+					description: 'renders lock icon for each multisig account',
+					config: {
+						currentAccount: rootSeedAccount,
+						multisigStates: MULTISIG_STATES_SEED_ACCOUNTS_1_AND_2
+					},
+					expected: { lockIconCount: 2 }
+				},
+				{
+					description: 'renders lock icon for selected multisig account',
+					config: {
+						currentAccount: seedAccount1,
+						multisigStates: MULTISIG_STATES_SEED_ACCOUNT_1
+					},
+					expected: { lockIconCount: 1 }
+				},
+				{
+					description: 'does not render lock icon for regular accounts',
+					config: {
+						currentAccount: rootSeedAccount,
+						multisigStates: MULTISIG_STATES_NONE
+					},
+					expected: { lockIconCount: 0 }
+				}
+			];
+
+			multisigCardTests.forEach(test => {
+				runMultisigCardTest(test.description, test.config, test.expected);
+			});
+
+			it('resolves multisig states with the wallet controller', () => {
+				// Arrange:
+				const { useAccountMultisigStates } = require('@/app/screens/account/hooks');
+				const walletControllerMock = mockWalletControllerConfigured();
+
+				// Act:
+				new ScreenTester(AccountList);
+
+				// Assert:
+				expect(useAccountMultisigStates).toHaveBeenCalledWith(walletControllerMock);
 			});
 		});
 	});

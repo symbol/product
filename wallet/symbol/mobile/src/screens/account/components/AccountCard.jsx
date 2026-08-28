@@ -17,6 +17,7 @@ import { WalletAccountType } from 'wallet-common-core/src/constants';
 
 const BALANCE_CHANGE_ANIMATION_DELAY = 1000;
 const BALANCE_CHANGE_ANIMATION_DURATION = 250;
+const MULTISIG_LOCK_ICON_SIZE = 'l';
 
 /**
  * RemoveButton component. Renders a touchable icon button for removing or hiding an account.
@@ -77,6 +78,7 @@ const BalanceChangeBadge = ({ value, ticker }) => {
  * @param {string} props.name - Account display name.
  * @param {boolean} [props.isLoading=false] - Whether the card is in a loading state.
  * @param {boolean} [props.isActive=false] - Whether the card is currently active/selected.
+ * @param {boolean} [props.isMultisig=false] - Whether the account is a multisig account.
  * @param {string} [props.accountType] - Account type.
  * @param {function(): void} [props.onRemove] - Callback when remove button is pressed.
  * @returns {React.ReactNode} AccountCard component.
@@ -89,6 +91,7 @@ export const AccountCard = props => {
 		name,
 		isLoading = false,
 		isActive = false,
+		isMultisig = false,
 		accountType,
 		ticker,
 		onRemove
@@ -96,8 +99,17 @@ export const AccountCard = props => {
 	const isBalanceChangeVisible = Boolean(balanceChange && balanceChange !== '0');
 
 	// Styles
-	const rootStateStyle = isActive ? styles.root__active : styles.root__inactive;
-	const rootStyle = [styles.root, rootStateStyle];
+	const getRootStateStyle = () => {
+		if (isMultisig && isActive)
+			return styles.root__multisigActive;
+		if (isMultisig)
+			return styles.root__multisig;
+		if (isActive)
+			return styles.root__active;
+
+		return styles.root__inactive;
+	};
+	const rootStyle = [styles.root, getRootStateStyle()];
 
 	// Handlers
 	const handleRemovePress = e => {
@@ -107,6 +119,11 @@ export const AccountCard = props => {
 
 	return (
 		<View style={rootStyle}>
+			{isMultisig && (
+				<View style={styles.multisigIconContainer}>
+					<Icon name="lock" size={MULTISIG_LOCK_ICON_SIZE} variant="warning" style={styles.multisigIcon} />
+				</View>
+			)}
 			{isLoading && (
 				<LoadingIndicator size="sm" style={styles.loadingIndicator} />
 			)}
@@ -146,14 +163,35 @@ const styles = StyleSheet.create({
 		width: '100%',
 		borderRadius: Sizes.Semantic.borderRadius.m,
 		borderWidth: Sizes.Semantic.borderWidth.m,
-		backgroundColor: Colors.Components.card.background,
 		overflow: 'hidden'
 	},
 	root__inactive: {
-		borderColor: Colors.Semantic.role.neutral.muted
+		backgroundColor: Colors.Components.accountCard.default.default.background,
+		borderColor: Colors.Components.accountCard.default.default.border
 	},
 	root__active: {
-		borderColor: Colors.Semantic.role.secondary.default
+		backgroundColor: Colors.Components.accountCard.default.active.background,
+		borderColor: Colors.Components.accountCard.default.active.border
+	},
+	root__multisig: {
+		backgroundColor: Colors.Components.accountCard.multisig.default.background,
+		borderColor: Colors.Components.accountCard.multisig.default.border
+	},
+	root__multisigActive: {
+		backgroundColor: Colors.Components.accountCard.multisig.active.background,
+		borderColor: Colors.Components.accountCard.multisig.active.border
+	},
+	multisigIconContainer: {
+		position: 'absolute',
+		top: 0,
+		left: 0,
+		width: '100%',
+		height: '100%',
+		alignItems: 'center',
+		justifyContent: 'center'
+	},
+	multisigIcon: {
+		opacity: 1
 	},
 	header: {
 		position: 'absolute',

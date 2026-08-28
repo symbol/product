@@ -21,10 +21,12 @@ export const History = () => {
 		networkIdentifier,
 		chainName,
 		ticker,
-		currentAccount
+		currentAccount,
+		currentAccountInfo
 	} = walletController;
 	const {addressBook} = walletController.modules;
 	const walletAccounts = accounts[networkIdentifier];
+	const isCurrentAccountMultisig = currentAccountInfo?.isMultisig ?? false;
 
 	const {
 		sections,
@@ -66,6 +68,7 @@ export const History = () => {
 				group={section.group}
 				transaction={item}
 				currentAccount={currentAccount}
+				isCurrentAccountMultisig={isCurrentAccountMultisig}
 				walletAccounts={walletAccounts}
 				addressBook={addressBook}
 				networkIdentifier={networkIdentifier}
@@ -76,6 +79,7 @@ export const History = () => {
 		);
 	}, [
 		currentAccount,
+		isCurrentAccountMultisig,
 		walletAccounts,
 		addressBook,
 		networkIdentifier,

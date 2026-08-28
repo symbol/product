@@ -197,9 +197,9 @@ describe('utils/transaction', () => {
 	});
 
 	describe('isTransactionAwaitingSignatureByAccount', () => {
-		const runIsTransactionAwaitingSignatureByAccountTest = (transaction, expectedResult) => {
+		const runIsTransactionAwaitingSignatureByAccountTest = (transaction, options, expectedResult) => {
 			// Act:
-			const result = isTransactionAwaitingSignatureByAccount(transaction, currentAccount);
+			const result = isTransactionAwaitingSignatureByAccount(transaction, currentAccount, options);
 
 			// Assert:
 			expect(result).toBe(expectedResult);
@@ -212,10 +212,11 @@ describe('utils/transaction', () => {
 				signerPublicKey: 'another-public-key',
 				cosignatures: []
 			};
+			const options = {};
 			const expectedResult = true;
 
 			// Act & Assert:
-			runIsTransactionAwaitingSignatureByAccountTest(transaction, expectedResult);
+			runIsTransactionAwaitingSignatureByAccountTest(transaction, options, expectedResult);
 		});
 
 		it('returns false when transaction signed by account public key', () => {
@@ -225,10 +226,11 @@ describe('utils/transaction', () => {
 				signerPublicKey: currentAccount.publicKey,
 				cosignatures: []
 			};
+			const options = {};
 			const expectedResult = false;
 
 			// Act & Assert:
-			runIsTransactionAwaitingSignatureByAccountTest(transaction, expectedResult);
+			runIsTransactionAwaitingSignatureByAccountTest(transaction, options, expectedResult);
 		});
 
 		it('returns false when transaction cosigned by account public key', () => {
@@ -238,10 +240,39 @@ describe('utils/transaction', () => {
 				signerPublicKey: 'another-public-key',
 				cosignatures: [{ signerPublicKey: currentAccount.publicKey }]
 			};
+			const options = {};
 			const expectedResult = false;
 
 			// Act & Assert:
-			runIsTransactionAwaitingSignatureByAccountTest(transaction, expectedResult);
+			runIsTransactionAwaitingSignatureByAccountTest(transaction, options, expectedResult);
+		});
+
+		it('returns false when current account is multisig', () => {
+			// Arrange: not signed by the current account, but a multisig account never signs
+			const transaction = {
+				type: AGGREGATE_BONDED_TRANSACTION_TYPE,
+				signerPublicKey: 'another-public-key',
+				cosignatures: []
+			};
+			const options = { isCurrentAccountMultisig: true };
+			const expectedResult = false;
+
+			// Act & Assert:
+			runIsTransactionAwaitingSignatureByAccountTest(transaction, options, expectedResult);
+		});
+
+		it('returns true when current account is explicitly not multisig', () => {
+			// Arrange:
+			const transaction = {
+				type: AGGREGATE_BONDED_TRANSACTION_TYPE,
+				signerPublicKey: 'another-public-key',
+				cosignatures: []
+			};
+			const options = { isCurrentAccountMultisig: false };
+			const expectedResult = true;
+
+			// Act & Assert:
+			runIsTransactionAwaitingSignatureByAccountTest(transaction, options, expectedResult);
 		});
 	});
 
