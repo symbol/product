@@ -167,18 +167,30 @@ export class BlockieGenerator {
 	}
 
 	/**
+     * Generate only the blockie colors from an address string, skipping the expensive
+     * PNG rendering. The PRNG draw order matches generate(), so the colors are identical.
+     * @param {string} address - The address to generate the colors for.
+     * @returns {Omit<BlockieResult, 'imageBase64'>} Object containing the HSL colors.
+     */
+	generateColors(address) {
+		// Initialize PRNG with lowercase address as seed
+		this._initializeRandomSeed(address.toLowerCase());
+
+		const foregroundColor = this._generateRandomColor();
+		const backgroundColor = this._generateRandomColor();
+		const spotColor = this._generateRandomColor();
+
+		return { backgroundColor, foregroundColor, spotColor };
+	}
+
+	/**
      * Generate a blockie image from an address string.
      * @param {string} address - The address to generate a blockie for.
      * @returns {BlockieResult} Object containing the image data and colors.
      */
 	generate(address) {
-		// Initialize PRNG with lowercase address as seed
-		this._initializeRandomSeed(address.toLowerCase());
-
-		// Generate colors
-		const foregroundColor = this._generateRandomColor();
-		const backgroundColor = this._generateRandomColor();
-		const spotColor = this._generateRandomColor();
+		// Colors are drawn from the seeded PRNG before the pattern
+		const { backgroundColor, foregroundColor, spotColor } = this.generateColors(address);
 
 		// Generate pattern
 		const patternData = this._generatePatternData();
@@ -194,15 +206,18 @@ export class BlockieGenerator {
 		const spotColorIndex = pngImage.registerColor(...hslToRgba(...spotColor));
 
 		// Render each pixel of the pattern
+		const pixelColorIndexMap = {
+			[PIXEL_FOREGROUND]: foregroundColorIndex,
+			[PIXEL_SPOT]: spotColorIndex
+		};
 		for (let pixelIndex = 0; pixelIndex < patternData.length; pixelIndex++) {
 			const row = Math.floor(pixelIndex / gridWidth);
 			const column = pixelIndex % gridWidth;
 			const pixelValue = patternData[pixelIndex];
 
 			// Skip background pixels (value 0)
-			PIXEL_SPOT;
 			if (pixelValue !== PIXEL_BACKGROUND) {
-				const colorIndex = pixelValue === PIXEL_FOREGROUND ? foregroundColorIndex : spotColorIndex;
+				const colorIndex = pixelColorIndexMap[pixelValue];
 				this._fillRectangle(
 					pngImage,
 					column * this.scale,

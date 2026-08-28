@@ -1,5 +1,5 @@
 import { knownAccounts } from '@/app/config';
-import { generateBlockie } from '@/app/lib/blockie';
+import { getBlockieColors } from '@/app/lib/blockie';
 import {
 	isEthereumAddress,
 	isPrivateKey as isEthereumPrivateKey,
@@ -108,8 +108,7 @@ export const getAccountKnownInfo = (address, options) => {
  */
 export const createAccountDisplayData = (address, options) => {
 	const knownInfo = getAccountKnownInfo(address, options);
-	const blockie = generateBlockie(address);
-	const color = blockie.background;
+	const color = getBlockieColors(address).background;
 
 	return {
 		address,

@@ -2,7 +2,7 @@ import { Icon } from '@/app/components/visual';
 import { accountImages } from '@/app/config/known-account-images';
 import { generateBlockie } from '@/app/lib/blockie';
 import { Sizes } from '@/app/styles';
-import React, { useEffect, useState } from 'react';
+import React, { useMemo } from 'react';
 import { Image, StyleSheet, View } from 'react-native';
 
 /** @typedef {import('@/app/types/Sizes').AvatarSize} AvatarSize */
@@ -24,16 +24,13 @@ const AVATAR_SIZE_XL = Sizes.Semantic.avatarHeight.xl;
  * @returns {React.ReactNode} Account avatar component.
  */
 export const AccountAvatar = ({ address, imageId, size = DEFAULT_SIZE }) => {
-	// Image 
+	// Image
 	const customImageSrc = accountImages[imageId] || null;
-	const [generatedImageSrc, setGeneratedImageSrc] = useState('');
-
-	useEffect(() => {
+	const generatedImageSrc = useMemo(() => {
 		if (customImageSrc)
-			return;
+			return null;
 
-		const blockie = generateBlockie(address);
-		setGeneratedImageSrc({ uri: blockie.image });
+		return { uri: generateBlockie(address).image };
 	}, [customImageSrc, address]);
 
 	// Size style
