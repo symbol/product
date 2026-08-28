@@ -2,6 +2,7 @@ import { SymbolTransactionType, TransactionGroup } from '@/app/constants';
 import { TransactionDetails } from '@/app/screens/history/TransactionDetails';
 import { formatDate } from '@/app/utils';
 import { AccountFixtureBuilder } from '__fixtures__/local/AccountFixtureBuilder';
+import { AccountInfoFixtureBuilder } from '__fixtures__/local/AccountInfoFixtureBuilder';
 import { AggregateTransactionFixtureBuilder } from '__fixtures__/local/AggregateTransactionFixtureBuilde';
 import { ContactFixtureBuilder } from '__fixtures__/local/ContactFixtureBuilder';
 import { NetworkPropertiesFixtureBuilder } from '__fixtures__/local/NetworkPropertiesFixtureBuilder';
@@ -65,6 +66,7 @@ const SCREEN_TEXT = {
 	// Cosign alerts
 	textAlertSigned: 's_transactionDetails_cosignAlert_signed',
 	textAlertAwaitingSignature: 's_transactionDetails_cosignAlert_trustedAccount',
+	textAlertAwaitingOtherSignatures: 's_transactionDetails_cosignAlert_awaitingOtherSignatures',
 
 	// Safety warning
 	textSafetyWarning: 's_transactionDetails_safetyWarning_description',
@@ -102,6 +104,18 @@ const otherSignerAccount = AccountFixtureBuilder
 	.build();
 
 const walletAccounts = [currentAccount, recipientAccount];
+
+// Account Info Fixtures
+
+const currentAccountInfoNonMultisig = AccountInfoFixtureBuilder
+	.createWithAccount(CHAIN_NAME, NETWORK_IDENTIFIER, 0)
+	.setMultisigStatusByIndexes(false)
+	.build();
+
+const currentAccountInfoMultisig = AccountInfoFixtureBuilder
+	.createWithAccount(CHAIN_NAME, NETWORK_IDENTIFIER, 0)
+	.setMultisigStatusByIndexes(true, [1, 2])
+	.build();
 
 // Network Properties Fixtures
 
@@ -209,6 +223,15 @@ const aggregateBondedWithMultisigModification = AggregateTransactionFixtureBuild
 	.setTimestamp(TRANSACTION_TIMESTAMP)
 	.setSigner(otherSignerAccount)
 	.setInnerTransactions([innerMultisigAccountModification])
+	.build();
+
+// Initiated by a cosigner on behalf of the current account, which is the multisig account
+const aggregateBondedForCurrentMultisigAccount = AggregateTransactionFixtureBuilder
+	.createDefaultBonded(CHAIN_NAME, NETWORK_IDENTIFIER)
+	.setHash(TRANSACTION_HASH)
+	.setTimestamp(TRANSACTION_TIMESTAMP)
+	.setSigner(otherSignerAccount)
+	.setInnerTransactions([innerTransferFromCurrentAccount])
 	.build();
 
 // Mosaic Supply Change Transaction Fixtures
@@ -485,6 +508,7 @@ describe('screens/history/TransactionDetails', () => {
 					transaction: aggregateBondedSignedByCurrentAccount,
 					group: TransactionGroup.PARTIAL,
 					walletControllerOverrides: {
+						currentAccountInfo: currentAccountInfoNonMultisig,
 						fetchTransactionStatus: jest.fn().mockResolvedValue({ group: TransactionGroup.PARTIAL })
 					}
 				},
@@ -504,6 +528,7 @@ describe('screens/history/TransactionDetails', () => {
 					transaction: aggregateBondedSignedByOtherAccount,
 					group: TransactionGroup.PARTIAL,
 					walletControllerOverrides: {
+						currentAccountInfo: currentAccountInfoNonMultisig,
 						fetchTransactionStatus: jest.fn().mockResolvedValue({ group: TransactionGroup.PARTIAL }),
 						modules: {
 							addressBook: addressBookWithContacts
@@ -524,6 +549,7 @@ describe('screens/history/TransactionDetails', () => {
 					transaction: aggregateBondedWithMultisigModification,
 					group: TransactionGroup.PARTIAL,
 					walletControllerOverrides: {
+						currentAccountInfo: currentAccountInfoNonMultisig,
 						fetchTransactionStatus: jest.fn().mockResolvedValue({ group: TransactionGroup.PARTIAL }),
 						modules: {
 							addressBook: addressBookWithContacts
@@ -537,6 +563,30 @@ describe('screens/history/TransactionDetails', () => {
 						SCREEN_TEXT.buttonSignAndApprove
 					],
 					notVisibleTexts: []
+				}
+			},
+			{
+				description: 'renders awaiting other signatures alert and no sign button when current account is the multisig account',
+				config: {
+					transaction: aggregateBondedForCurrentMultisigAccount,
+					group: TransactionGroup.PARTIAL,
+					walletControllerOverrides: {
+						currentAccountInfo: currentAccountInfoMultisig,
+						fetchTransactionStatus: jest.fn().mockResolvedValue({ group: TransactionGroup.PARTIAL }),
+						modules: {
+							addressBook: addressBookWithContacts
+						}
+					}
+				},
+				expected: {
+					visibleTexts: [
+						SCREEN_TEXT.textAlertAwaitingOtherSignatures,
+						SCREEN_TEXT.textStatusPartial
+					],
+					notVisibleTexts: [
+						SCREEN_TEXT.textAlertAwaitingSignature,
+						SCREEN_TEXT.buttonSignAndApprove
+					]
 				}
 			}
 		];

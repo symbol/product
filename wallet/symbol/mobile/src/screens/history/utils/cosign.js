@@ -25,6 +25,7 @@ import {
  * @typedef {object} CosignStatusOptions
  * @property {string} transactionGroup - Transaction group from TransactionGroup enum.
  * @property {WalletAccount} currentAccount - Current wallet account.
+ * @property {boolean} [isCurrentAccountMultisig=false] - Whether the current account is a multisig account.
  * @property {object} addressBook - Address book instance with whitelist and blacklist.
  * @property {WalletAccount[]} [walletAccounts] - All wallet accounts.
  * @property {WalletAccount[]} [multisigCosigners] - Multisig cosigner accounts.
@@ -42,7 +43,7 @@ export const isTransactionAwaitingSignatureByAccount = isTransactionAwaitingSign
  * @returns {CosignStatusValue} Cosign status value.
  */
 export const getTransactionCosignStatus = (transaction, options) => {
-	const { transactionGroup, currentAccount, addressBook, walletAccounts, multisigCosigners } = options;
+	const { transactionGroup, currentAccount, isCurrentAccountMultisig, addressBook, walletAccounts, multisigCosigners } = options;
 
 	if (transactionGroup !== TransactionGroup.PARTIAL)
 		return CosignStatus.NOT_AWAITING;
@@ -53,7 +54,9 @@ export const getTransactionCosignStatus = (transaction, options) => {
 	if (isSignedByCurrentAccount)
 		return CosignStatus.SIGNED_AND_AWAITING_OTHER_ACCOUNT;
 
-	const isAwaitingCurrentAccountSignature = isTransactionAwaitingSignatureByAccount(transaction, currentAccount);
+	const isAwaitingCurrentAccountSignature = isTransactionAwaitingSignatureByAccount(transaction, currentAccount, {
+		isCurrentAccountMultisig
+	});
 
 	if (!isAwaitingCurrentAccountSignature) 
 		return CosignStatus.AWAITING_OTHER_ACCOUNT;
