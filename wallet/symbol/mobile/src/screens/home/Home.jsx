@@ -1,5 +1,5 @@
 import { Header } from '@/app/app/components';
-import { Screen, Spacer, Stack, StyledText } from '@/app/components';
+import { MultisigAccountWarning, Screen, Spacer, Stack, StyledText } from '@/app/components';
 import { useInit, useWalletController } from '@/app/hooks';
 import { useAsyncManager } from '@/app/hooks/useAsyncManager';
 import { $t } from '@/app/localization';
@@ -25,6 +25,8 @@ import Animated, { FadeInUp } from 'react-native-reanimated';
 export const Home = () => {
 	const walletController = useWalletController();
 	const { currentAccount, currentAccountInfo, networkIdentifier } = walletController;
+
+	const isMultisigAccount = currentAccountInfo?.isMultisig ?? false;
 
 	// Account rename manager
 	const renameManager = useAsyncManager({
@@ -69,12 +71,25 @@ export const Home = () => {
 								price={walletController.modules.market.price}
 								ticker={walletController.ticker}
 								networkIdentifier={walletController.networkIdentifier}
+								isMultisig={isMultisigAccount}
 								onNameChange={renameManager.call}
 								onSwapPress={Router.goToBridgeSwap}
 								onSendPress={Router.goToSend}
 								onDetailsPress={Router.goToAccountDetails}
 							/>
 						</Animated.View>
+
+						{isMultisigAccount && (
+							<Animated.View entering={FadeInUp}>
+								<MultisigAccountWarning
+									cosignatories={currentAccountInfo.cosignatories}
+									addressBook={walletController.modules.addressBook}
+									accounts={walletController.accounts[networkIdentifier]}
+									chainName={walletController.chainName}
+									networkIdentifier={networkIdentifier}
+								/>
+							</Animated.View>
+						)}
 
 						{isUpdatesWidgetsVisible && (
 							<Stack gap="m">
