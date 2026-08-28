@@ -22,6 +22,7 @@ import { Image, StyleSheet, Text, View } from 'react-native';
 
 const CARD_BACKGROUND_COLOR = Colors.Semantic.role.primary.default;
 const BUTTON_BACKGROUND_COLOR = Colors.Semantic.role.primary.weaker;
+const BUTTON_BACKGROUND_COLOR_DISABLED = Colors.Components.buttonCardEmbedded.primary.disabled.background;
 
 const ART_HEIGHT = Sizes.Semantic.spacing.m * 25;
 const ART_WIDTH = Sizes.Semantic.spacing.m * 32;
@@ -37,14 +38,20 @@ const CONTENT_TOP_OFFSET = Sizes.Semantic.spacing.m * 10;
  * @param {string} props.icon - Icon name to display.
  * @param {string} props.text - Button label text.
  * @param {boolean} [props.isLast=false] - Whether this is the last button (no right border).
+ * @param {boolean} [props.isDisabled=false] - Whether this button is disabled.
  * @param {function(): void} props.onPress - Callback when button is pressed.
  */
-const ActionButton = ({ icon, text, isLast = false, onPress }) => {
-	const buttonStyle = isLast ? [styles.actionButton, styles.actionButtonLast] : styles.actionButton;
+const ActionButton = ({ icon, text, isLast = false, isDisabled = false, onPress }) => {
+	const buttonStyle = [
+		styles.actionButton,
+		isLast && styles.actionButtonLast,
+		isDisabled && styles.actionButton__disabled
+	];
+	const pressableStyle = [styles.actionButtonPressable, isDisabled && styles.actionButtonPressable__disabled];
 
 	return (
 		<View style={buttonStyle}>
-			<TouchableNative onPress={onPress} style={styles.actionButtonPressable}>
+			<TouchableNative onPress={onPress} disabled={isDisabled} style={pressableStyle}>
 				<Icon name={icon} size="xs" />
 				<Text style={styles.actionButtonText}>{text}</Text>
 			</TouchableNative>
@@ -64,6 +71,7 @@ const ActionButton = ({ icon, text, isLast = false, onPress }) => {
  * @param {import('../../../types/Price').Price} props.price - Current token price for fiat conversion.
  * @param {string} props.ticker - Currency ticker symbol.
  * @param {NetworkIdentifier} props.networkIdentifier - Network identifier for currency formatting.
+ * @param {boolean} [props.isMultisig=false] - Whether the account is a multisig account. Disables the send and swap buttons.
  * @param {function(string): void} props.onNameChange - Callback when account name is changed.
  * @param {function(): void} props.onSwapPress - Callback when swap button is pressed.
  * @param {function(): void} props.onSendPress - Callback when send button is pressed.
@@ -78,6 +86,7 @@ export const AccountCardWidget = props => {
 		price,
 		ticker,
 		networkIdentifier,
+		isMultisig = false,
 		onNameChange,
 		onSwapPress,
 		onSendPress,
@@ -138,12 +147,14 @@ export const AccountCardWidget = props => {
 				<ActionButton
 					icon="send-plane"
 					text={$t('c_accountCard_button_send')}
+					isDisabled={isMultisig}
 					onPress={onSendPress}
 				/>
 				<ActionButton
 					icon="swap"
 					text={$t('c_accountCard_button_swap')}
 					isLast
+					isDisabled={isMultisig}
 					onPress={onSwapPress}
 				/>
 			</View>
@@ -203,6 +214,9 @@ const styles = StyleSheet.create({
 	actionButtonLast: {
 		borderRightWidth: 0
 	},
+	actionButton__disabled: {
+		backgroundColor: BUTTON_BACKGROUND_COLOR_DISABLED
+	},
 	actionButtonPressable: {
 		width: '100%',
 		height: '100%',
@@ -210,6 +224,9 @@ const styles = StyleSheet.create({
 		alignItems: 'center',
 		flexDirection: 'row',
 		gap: Sizes.Semantic.spacing.s
+	},
+	actionButtonPressable__disabled: {
+		opacity: 0.5
 	},
 	actionButtonText: {
 		...Typography.Semantic.button.m,
