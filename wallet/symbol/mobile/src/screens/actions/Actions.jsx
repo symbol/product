@@ -15,7 +15,9 @@ import React, { useCallback, useMemo } from 'react';
  */
 export const Actions = () => {
 	const walletController = useWalletController();
-	const { currentAccount } = walletController;
+	const { currentAccount, currentAccountInfo } = walletController;
+
+	const isMultisigAccount = currentAccountInfo?.isMultisig ?? false;
 
 	/** @type {ActionItem[]} */
 	const actionItems = useMemo(() => [
@@ -29,12 +31,14 @@ export const Actions = () => {
 			title: $t('s_actions_harvesting_title'),
 			description: $t('s_actions_harvesting_description'),
 			imageSource: require('@/app/assets/images/art/harvesting.png'),
+			isDisabled: isMultisigAccount,
 			onPress: Router.goToHarvesting
 		},
 		{
 			title: $t('s_actions_multisig_title'),
 			description: $t('s_actions_multisig_description'),
 			imageSource: require('@/app/assets/images/art/multisig-chest.png'),
+			isDisabled: isMultisigAccount,
 			onPress: Router.goToMultisigAccountList
 		},
 		{
@@ -47,27 +51,31 @@ export const Actions = () => {
 			title: $t('s_actions_send_title'),
 			description: $t('s_actions_send_description'),
 			imageSource: require('@/app/assets/images/art/ship.png'),
+			isDisabled: isMultisigAccount,
 			onPress: Router.goToSend
 		},
 		{
 			title: $t('s_actions_createMosaic_title'),
 			description: $t('s_actions_createMosaic_description'),
 			imageSource: require('@/app/assets/images/art/mosaic-puzzle.png'),
+			isDisabled: isMultisigAccount,
 			onPress: Router.goToCreatedMosaicList
 		},
 		{
 			title: $t('s_actions_bridge_title'),
 			description: $t('s_actions_bridge_description'),
 			imageSource: require('@/app/assets/images/art/bridge.png'),
+			isDisabled: isMultisigAccount,
 			onPress: Router.goToBridgeSwap
 		}
-	], []);
+	], [isMultisigAccount]);
 
 	const renderItem = useCallback(({ item }) => (
 		<ActionCard
 			title={item.title}
 			description={item.description}
 			imageSource={item.imageSource}
+			isDisabled={item.isDisabled}
 			onPress={item.onPress}
 		/>
 	), []);
