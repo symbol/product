@@ -22,9 +22,9 @@ class WrapRequestCollector:
 			'requests that failed and were not retried; each one is potentially lost user funds',
 			['direction'],
 			registry=registry)
-		retried_gauge = Gauge(
-			'bridge_requests_retried',
-			'requests that failed transiently and were put back into circulation',
+		retries_gauge = Gauge(
+			'bridge_request_retries',
+			'transient failures that were put back into circulation; one per attempt, not per request',
 			['direction'],
 			registry=registry)
 		rejected_gauge = Gauge(
@@ -59,7 +59,7 @@ class WrapRequestCollector:
 			)
 			for (direction, database, payout_facade) in direction_database_facade_tuples:
 				failed_gauge.labels(direction).set(database.count_permanent_failures())
-				retried_gauge.labels(direction).set(database.count_retried_requests())
+				retries_gauge.labels(direction).set(database.count_retries())
 				rejected_gauge.labels(direction).set(database.count_rejected_requests())
 				_set_daily_transfer_remaining(remaining_gauge, direction, payout_facade, database)
 				_set_age(unprocessed_age_gauge, direction, now, database.oldest_unprocessed_request_timestamp())

@@ -1095,7 +1095,7 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 
 	# endregion
 
-	# region count_permanent_failures, count_retried_requests, count_rejected_requests
+	# region count_permanent_failures, count_retries, count_rejected_requests
 
 	def test_can_count_permanent_failures(self):
 		# Arrange:
@@ -1139,24 +1139,28 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 			# Assert:
 			self.assertEqual(0, count)
 
-	def test_can_count_retried_requests(self):
-		# Arrange: the same request fails transiently twice, so two generations of it are marked retried
+	def test_can_count_retries(self):
+		# Arrange: one request fails transiently twice and another once, so attempts and requests differ
 		with sqlite3.connect(':memory:') as connection:
 			database = self._create_database(connection)
 			database.create_tables()
 
-			request = make_request(0, height=777, amount=4321, destination_address=SYMBOL_ADDRESSES[0])
-			database.add_request(request)
-			database.mark_payout_failed_transient(request, 'node unavailable')
-			database.mark_payout_failed_transient(make_next_retry_wrap_request(request), 'node unavailable')
+			looping_request = make_request(0, height=777, amount=4321, destination_address=SYMBOL_ADDRESSES[0])
+			database.add_request(looping_request)
+			database.mark_payout_failed_transient(looping_request, 'node unavailable')
+			database.mark_payout_failed_transient(make_next_retry_wrap_request(looping_request), 'node unavailable')
+
+			single_failure_request = make_request(1, height=888, amount=1234, destination_address=SYMBOL_ADDRESSES[1])
+			database.add_request(single_failure_request)
+			database.mark_payout_failed_transient(single_failure_request, 'node unavailable')
 
 			# Act:
-			count = database.count_retried_requests()
+			count = database.count_retries()
 
-			# Assert:
-			self.assertEqual(2, count)
+			# Assert: attempts are counted rather than requests, which two requests would report as 2
+			self.assertEqual(3, count)
 
-	def test_count_retried_requests_excludes_permanent_failures(self):
+	def test_count_retries_excludes_permanent_failures(self):
 		# Arrange: the seed marks two of its requests as permanently failed and retries none of them
 		with sqlite3.connect(':memory:') as connection:
 			database = self._create_database(connection)
@@ -1164,20 +1168,20 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 			seed_database_with_simple_requests(database)
 
 			# Act:
-			count = database.count_retried_requests()
+			count = database.count_retries()
 
 			# Assert:
 			self.assertEqual(2, len(database.requests_by_status(WrapRequestStatus.FAILED)))
 			self.assertEqual(0, count)
 
-	def test_count_retried_requests_is_zero_for_an_empty_database(self):
+	def test_count_retries_is_zero_for_an_empty_database(self):
 		# Arrange:
 		with sqlite3.connect(':memory:') as connection:
 			database = self._create_database(connection)
 			database.create_tables()
 
 			# Act:
-			count = database.count_retried_requests()
+			count = database.count_retries()
 
 			# Assert:
 			self.assertEqual(0, count)
@@ -1333,6 +1337,7 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 			for (payout_transaction_hash, request) in zip(PAYOUT_TRANSACTION_HASHES, (first_request, second_request)):
 				database.add_request(request)
 				database.mark_payout_sent(request, PayoutDetails(payout_transaction_hash, 2200, 450, 156))
+				time.sleep(0.1)  # separate the send timestamps, so that the earlier one cannot tie with the later
 
 			# Act:
 			timestamp = database.oldest_payout_sent_timestamp()
@@ -1352,6 +1357,7 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 			for (payout_transaction_hash, request) in zip(PAYOUT_TRANSACTION_HASHES, (confirmed_request, awaiting_request)):
 				database.add_request(request)
 				database.mark_payout_sent(request, PayoutDetails(payout_transaction_hash, 2200, 450, 156))
+				time.sleep(0.1)  # separate the send timestamps, so that the earlier one cannot tie with the later
 
 			database.mark_payout_completed(PAYOUT_TRANSACTION_HASHES[0], 1122)
 

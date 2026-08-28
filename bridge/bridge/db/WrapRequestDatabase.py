@@ -448,7 +448,7 @@ class WrapRequestDatabase(MaxProcessedHeightMixin):  # pylint: disable=too-many-
 
 	# endregion
 
-	# region count_permanent_failures, count_retried_requests, count_rejected_requests
+	# region count_permanent_failures, count_retries, count_rejected_requests
 
 	def count_permanent_failures(self):
 		"""Gets a count of requests that failed and were not retried."""
@@ -459,8 +459,8 @@ class WrapRequestDatabase(MaxProcessedHeightMixin):  # pylint: disable=too-many-
 			(WrapRequestStatus.FAILED.value,))
 		return cursor.fetchone()[0]
 
-	def count_retried_requests(self):
-		"""Gets a count of requests that failed transiently and were put back into circulation."""
+	def count_retries(self):
+		"""Gets a count of transient failures that were put back into circulation."""
 
 		cursor = self.connection.cursor()
 		cursor.execute('SELECT COUNT(*) FROM wrap_request WHERE is_retried')
