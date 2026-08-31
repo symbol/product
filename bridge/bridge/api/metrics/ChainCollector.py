@@ -7,7 +7,7 @@ from symbollightapi.model.Exceptions import NodeException
 NETWORK_ROLES = ('native', 'wrapped')
 
 # what a single scrape learned about one network; balances is None exactly when the node could not be read
-NetworkReading = namedtuple('NetworkReading', ['role', 'endpoint', 'address', 'balances'])
+NetworkReading = namedtuple('NetworkReading', ['role', 'endpoint', 'address', 'balances', 'chain_height', 'finalized_height'])
 
 
 async def _try_read(awaitable):
@@ -20,7 +20,7 @@ async def _try_read(awaitable):
 
 
 async def _read_network(role, facade, timeout_seconds):
-	"""Reads every balance for one network. Never raises."""
+	"""Reads every balance and height for one network. Never raises."""
 
 	connector = facade.create_connector()
 	connector.timeout_seconds = timeout_seconds
@@ -29,7 +29,7 @@ async def _read_network(role, facade, timeout_seconds):
 
 	balance = await _try_read(facade.read_balance(connector, mosaic_id))
 	if balance is None:
-		return NetworkReading(role, facade.config.endpoint, str(facade.bridge_address), None)
+		return NetworkReading(role, facade.config.endpoint, str(facade.bridge_address), None, None, None)
 
 	balances = {mosaic_id.formatted: balance}
 
@@ -41,11 +41,17 @@ async def _read_network(role, facade, timeout_seconds):
 		if native_balance is not None:
 			balances[native_mosaic_id.formatted] = native_balance
 
-	return NetworkReading(role, facade.config.endpoint, str(facade.bridge_address), balances)
+	return NetworkReading(
+		role,
+		facade.config.endpoint,
+		str(facade.bridge_address),
+		balances,
+		await _try_read(connector.chain_height()),
+		await _try_read(connector.finalized_chain_height()))
 
 
 class ChainCollector:
-	"""Collects balances read from the nodes named in configuration."""
+	"""Collects heights and balances read from the nodes named in configuration."""
 
 	def __init__(self, context, timeout_seconds):
 		"""Creates a chain collector."""
@@ -63,6 +69,17 @@ class ChainCollector:
 			registry=registry)
 		balance_gauge = Gauge('bridge_balance', 'bridge account balance', ['network', 'token', 'address'], registry=registry)
 
+		chain_height_gauge = Gauge(
+			'bridge_chain_height',
+			'height of the newest block the node knows about',
+			['network'],
+			registry=registry)
+		finalized_height_gauge = Gauge(
+			'bridge_finalized_height',
+			'height of the newest finalized block the node knows about',
+			['network'],
+			registry=registry)
+
 		for reading in await self._read_all():
 			# balances are published only when they were actually read, so that a failed read
 			# can never be mistaken for a drained account
@@ -70,6 +87,12 @@ class ChainCollector:
 
 			for (token, balance) in (reading.balances or {}).items():
 				balance_gauge.labels(reading.role, token, reading.address).set(balance)
+
+			if reading.chain_height is not None:
+				chain_height_gauge.labels(reading.role).set(reading.chain_height)
+
+			if reading.finalized_height is not None:
+				finalized_height_gauge.labels(reading.role).set(reading.finalized_height)
 
 	async def _read_all(self):
 		"""Reads both networks concurrently."""

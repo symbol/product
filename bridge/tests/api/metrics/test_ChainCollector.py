@@ -125,6 +125,14 @@ def _balance_sample_count(registry, role):
 	return len([sample for sample in family.samples if role == sample.labels['network']])
 
 
+def _chain_height(registry, role):
+	return registry.get_sample_value('bridge_chain_height', {'network': role})
+
+
+def _finalized_height(registry, role):
+	return registry.get_sample_value('bridge_finalized_height', {'network': role})
+
+
 def _node_up(registry, role, server=None):
 	endpoint = str(server.make_url('')) if server else UNREACHABLE_ENDPOINT
 	return registry.get_sample_value('bridge_node_up', {'network': role, 'endpoint': endpoint})
@@ -194,3 +202,41 @@ async def test_failed_balance_read_is_not_reported_as_a_zero_balance(nem_server,
 	# ... and it reports no balance at all, rather than a zero that would look like a drained account
 	assert 0 == _balance_sample_count(registry, 'wrapped')
 	assert NEM_XEM_BALANCE == _balance(registry, 'native', 'nem:xem')
+
+
+async def test_heights_are_reported_for_both_legs(nem_server, symbol_server):  # pylint: disable=redefined-outer-name
+	# Act:
+	registry = await _collect(_nem_network(nem_server), _symbol_network(symbol_server))
+
+	# Assert: nem has no real finalization, so lightapi reports it as a fixed distance behind the chain
+	assert 1234 == _chain_height(registry, 'native')
+	assert 1234 - 360 == _finalized_height(registry, 'native')
+
+	# ... while symbol reports the height of its latest finalized block
+	assert 1234 == _chain_height(registry, 'wrapped')
+	assert 1198 == _finalized_height(registry, 'wrapped')
+
+
+async def test_ethereum_leg_reports_heights(nem_server, ethereum_server):  # pylint: disable=redefined-outer-name
+	# Act:
+	registry = await _collect(_nem_network(nem_server), _ethereum_network(ethereum_server))
+
+	# Assert:
+	assert 0xAB123 == _chain_height(registry, 'wrapped')
+	assert 0x112233 == _finalized_height(registry, 'wrapped')
+
+
+async def test_node_that_could_not_be_read_reports_no_heights(nem_server, symbol_server):
+	# pylint: disable=redefined-outer-name
+	# Arrange: the wrapped node answers during facade initialization but fails the balance lookup
+	symbol_server.mock.simulate_account_error = True
+
+	# Act:
+	registry = await _collect(_nem_network(nem_server), _symbol_network(symbol_server))
+
+	# Assert:
+	assert _chain_height(registry, 'wrapped') is None
+	assert _finalized_height(registry, 'wrapped') is None
+
+	# and the native leg that answered is unaffected
+	assert 1234 == _chain_height(registry, 'native')

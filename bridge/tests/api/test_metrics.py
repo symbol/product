@@ -53,7 +53,7 @@ async def test_metrics_route_serves_the_prometheus_exposition_format(client):  #
 		assert response.headers['Content-Type'].startswith('text/plain')
 
 		metric_names = (
-			'bridge_node_up', 'bridge_balance',
+			'bridge_node_up', 'bridge_balance', 'bridge_chain_height', 'bridge_finalized_height',
 			'bridge_price_oracle_up', 'bridge_price_oracle_credits_left',
 			'bridge_vault_up', 'bridge_vault_token_ttl_seconds',
 			'bridge_requests_failed_permanent', 'bridge_request_retries', 'bridge_requests_rejected',
