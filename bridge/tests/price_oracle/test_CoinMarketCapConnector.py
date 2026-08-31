@@ -1,6 +1,7 @@
 from decimal import Decimal
 
 import pytest
+from symbollightapi.model.Exceptions import NodeException
 
 from bridge.price_oracle.CoinMarketCapConnector import CoinMarketCapConnector
 
@@ -77,3 +78,26 @@ async def test_can_query_conversion_rate(server):  # pylint: disable=redefined-o
 	] == server.mock.urls
 	assert ['4643DDBAF', '4643DDBAF'] == server.mock.access_tokens
 	assert Decimal(0.0877) / Decimal(0.0199) == conversion_rate
+
+
+async def test_can_check_health(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	connector = CoinMarketCapConnector(server.make_url(''), '4643DDBAF')
+
+	# Act:
+	credits_left = await connector.check_health()
+
+	# Assert:
+	assert [f'{server.make_url("")}/v1/key/info'] == server.mock.urls
+	assert ['4643DDBAF'] == server.mock.access_tokens
+	assert 7331 == credits_left
+
+
+async def test_check_health_raises_when_the_oracle_is_unavailable(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	server.mock.simulate_unavailable = True
+	connector = CoinMarketCapConnector(server.make_url(''), '4643DDBAF')
+
+	# Act + Assert:
+	with pytest.raises(NodeException):
+		await connector.check_health()

@@ -37,6 +37,18 @@ class CoinMarketCapConnector(BasicConnector):
 
 		return Decimal(result_json['data'][token_id]['quote']['USD']['price'])
 
+	async def check_health(self):
+		"""Checks that the oracle is reachable and gets the number of requests left in the quota it reports."""
+
+		result_json = await self._dispatch(
+			'get',
+			'v1/key/info',
+			None,
+			True,
+			headers={'X-CMC_PRO_API_KEY': self.access_token})
+
+		return result_json['data']['usage']['current_month']['credits_left']
+
 	async def conversion_rate(self, ticker1, ticker2):
 		"""Gets spot conversion rate between two tickers."""
 

@@ -52,7 +52,13 @@ async def test_metrics_route_serves_the_prometheus_exposition_format(client):  #
 		assert 200 == response.status_code
 		assert response.headers['Content-Type'].startswith('text/plain')
 
-		for metric_name in ('bridge_node_up', 'bridge_balance'):
+		metric_names = (
+			'bridge_node_up', 'bridge_balance',
+			'bridge_price_oracle_up', 'bridge_price_oracle_credits_left',
+			'bridge_requests_failed_permanent', 'bridge_request_retries', 'bridge_requests_rejected',
+			'bridge_daily_transfer_remaining', 'bridge_oldest_unprocessed_age_seconds', 'bridge_oldest_sent_age_seconds'
+		)
+		for metric_name in metric_names:
 			assert f'# TYPE {metric_name} gauge' in body, metric_name
 
 	await asyncio.get_running_loop().run_in_executor(None, test_impl)

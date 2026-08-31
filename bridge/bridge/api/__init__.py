@@ -266,6 +266,11 @@ class BridgeContext:  # pylint: disable=too-many-instance-attributes
 
 		self.conversion_rate_lookup = None
 
+	def create_price_oracle(self):
+		"""Creates a price oracle connector, separate from the one shared by the request handlers."""
+
+		return load_price_oracle(self._config.price_oracle)
+
 	async def load(self):
 		if not self._is_loaded:
 			async with self._semaphore:
