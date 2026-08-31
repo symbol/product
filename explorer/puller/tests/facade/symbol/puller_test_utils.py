@@ -19,6 +19,19 @@ NATIVE_MOSAIC_ID = '72C0212E67A08BCE'
 NATIVE_MOSAIC_DIVISIBILITY = 6
 
 
+class RecordingCleanupLogger:
+	"""Records cleanup messages and can emulate a logger failure."""
+
+	def __init__(self, logging_error=None):
+		self.logging_error = logging_error
+		self.messages = []
+
+	def error(self, message):
+		self.messages.append(message)
+		if self.logging_error:
+			raise self.logging_error
+
+
 class DelegatingSymbolDatabase:
 	"""Delegates unspecified Symbol database operations to a wrapped database."""
 
@@ -121,6 +134,7 @@ def set_symbol_connector(puller, connector):
 	# Keep protected connector replacement in one helper so sync tests can use
 	# deterministic Symbol node responses.
 	puller._symbol_connector = connector  # pylint: disable=protected-access
+	puller._owned_symbol_connector = None  # pylint: disable=protected-access
 
 
 def set_symbol_rate_limiter(puller, rate_limiter):
@@ -661,9 +675,8 @@ class SymbolPullerTestBase(TestCase):
 		)
 		self.db_config = self.exit_stack.enter_context(PostgresTestDatabase())
 		self.config_ini = create_db_config(self.config_dir, self.db_config)
-		self.puller = self.exit_stack.enter_context(
-			create_symbol_puller(self.config_ini, 'testnet')
-		)
+		self.puller = create_symbol_puller(self.config_ini, 'testnet')
+		self.exit_stack.enter_context(self.puller.symbol_db)
 		drop_symbol_block_tables_if_present(self.puller.symbol_db)
 		self.puller.symbol_db.create_tables()
 

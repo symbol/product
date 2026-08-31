@@ -13,13 +13,13 @@ from common.symbol.NodeConfiguration import SymbolNodeConfiguration
 from symbolchain.facade.SymbolFacade import SymbolFacade
 from symbolchain.sc import TransactionType
 from symbolchain.symbol.Network import Address, Network
-from symbollightapi.connector.SymbolConnector import SymbolConnector
 from symbollightapi.model.Exceptions import NodeException
 from zenlog import log
 
 from puller.db.SymbolDatabase import RollbackRefreshEntries, SymbolDatabase
 from puller.facade.async_utils import gather_in_chunks
 from puller.facade.RequestRateLimiter import RequestRateLimiter
+from puller.facade.SymbolPullerConnector import SymbolPullerConnector
 from puller.facade.SymbolSyncPerformance import SyncPerformance, request_category
 from puller.model.symbol.Account import HARVESTING_ACTIVE_WINDOW_DAYS, create_account_row, create_multisig_row
 from puller.model.symbol.Block import create_block_row
@@ -75,6 +75,16 @@ MOSAIC_RESTRICTION_FETCH_CONCURRENCY = 10
 DEFAULT_MAX_REQUESTS_PER_SECOND = 20
 ACCOUNT_PAGE_SIZE = 100
 NEMESIS_PREVIOUS_BLOCK_HASH = bytes(32)
+# Namespace detail and account multisig fetches use one request per item in a max-size batch.
+# Pin the pool to that application concurrency policy, even though aiohttp currently has the same default limit.
+SYMBOL_HTTP_CONNECTION_POOL_LIMIT = max(
+	BLOCK_PAGE_FETCH_CONCURRENCY,
+	RESOLUTION_FETCH_CONCURRENCY,
+	METADATA_FETCH_CONCURRENCY,
+	LOCK_FETCH_CONCURRENCY,
+	MOSAIC_RESTRICTION_FETCH_CONCURRENCY,
+	MAX_PAGE_SIZE,
+	ACCOUNT_BATCH_FETCH_SIZE)
 
 
 def _get_symbol_network(network_type):
@@ -115,19 +125,23 @@ class SymbolPuller:  # pylint: disable=too-many-instance-attributes
 		max_requests_per_second=DEFAULT_MAX_REQUESTS_PER_SECOND,
 		rate_limiter=None,
 		time_source=time.monotonic,
-		performance_logger=log
+		performance_logger=log,
+		connector_factory=None,
+		cleanup_logger=log
 	):
 		"""Creates a Symbol puller facade object."""
+
+		if connector is not None and connector_factory is not None:
+			raise ValueError('connector and connector_factory cannot both be specified')
 
 		config = configparser.ConfigParser()
 		config.read(config_file)
 
 		db_config = config['symbol_db']
 
-		network = _get_symbol_network(network_type)
-
 		self._time_source = time_source
 		self._performance_logger = performance_logger
+		self._cleanup_logger = cleanup_logger
 		self._active_performance = None
 		self.symbol_db = SymbolDatabase(
 			DatabaseConfiguration(**db_config),
@@ -135,9 +149,18 @@ class SymbolPuller:  # pylint: disable=too-many-instance-attributes
 			time_source=time_source)
 		self.node_config = node_config or SymbolNodeConfiguration.from_url(node_url)
 		symbol_node_endpoint = self.node_config.assert_request_allowed(self.node_config.base_url)
-		self._symbol_connector = connector or SymbolConnector(symbol_node_endpoint)
-		self._symbol_connector.timeout_seconds = self.node_config.timeout_seconds
-		self.symbol_facade = SymbolFacade(network)
+		if connector is not None:
+			self._symbol_connector = connector
+			self._owned_symbol_connector = None
+			# Preserve timeout compatibility for legacy injected connectors; reusable caller-owned connectors configure timeout at construction.
+			self._symbol_connector.timeout_seconds = self.node_config.timeout_seconds
+		else:
+			self._symbol_connector = (connector_factory or SymbolPullerConnector)(
+				symbol_node_endpoint,
+				self.node_config.timeout_seconds,
+				SYMBOL_HTTP_CONNECTION_POOL_LIMIT)
+			self._owned_symbol_connector = self._symbol_connector
+		self.symbol_facade = SymbolFacade(_get_symbol_network(network_type))
 		self._retry_delay = 2
 		self._rate_limiter = rate_limiter or RequestRateLimiter(max_requests_per_second, time_source=time_source)
 		self._native_mosaic_info = None
@@ -164,12 +187,101 @@ class SymbolPuller:  # pylint: disable=too-many-instance-attributes
 			# Event construction or logging failure must never replace the synchronization result.
 			pass
 
-	def __enter__(self):
-		self.symbol_db.__enter__()
-		return self
+	def _log_cleanup_failure(self, message):
+		try:
+			self._cleanup_logger.error(message)
+		except Exception:  # pylint: disable=broad-exception-caught
+			# Cleanup logging must not replace an operation or cleanup exception.
+			pass
 
-	def __exit__(self, *args):
-		self.symbol_db.__exit__(*args)
+	async def __aenter__(self):
+		"""Enters the puller lifecycle and opens its internally-owned node session."""
+
+		try:
+			if self._owned_symbol_connector is not None:
+				await self._owned_symbol_connector.open()
+			self.symbol_db.__enter__()
+			return self
+		except BaseException as primary_error:  # pylint: disable=broad-exception-caught
+			try:
+				await self._close_owned_symbol_connector()
+			except (asyncio.CancelledError, KeyboardInterrupt, SystemExit) as cleanup_error:
+				if isinstance(primary_error, asyncio.CancelledError):
+					raise primary_error from cleanup_error
+				if isinstance(cleanup_error, asyncio.CancelledError):
+					raise cleanup_error
+				if isinstance(primary_error, (KeyboardInterrupt, SystemExit)):
+					raise primary_error from cleanup_error
+				raise cleanup_error
+			except BaseException as cleanup_error:  # pylint: disable=broad-exception-caught
+				self._log_cleanup_failure(f'Failed to close Symbol node session after lifecycle failure: {cleanup_error}')
+			raise
+
+	async def __aexit__(self, exc_type, exc_value, traceback):
+		"""Exits the puller lifecycle without masking an operation or cleanup failure."""
+
+		primary_error = exc_value
+		cleanup_error = None
+		control_flow_error = None
+		try:
+			self.symbol_db.__exit__(exc_type, exc_value, traceback)
+		except (asyncio.CancelledError, KeyboardInterrupt, SystemExit) as error:
+			control_flow_error = error
+		except BaseException as error:  # pylint: disable=broad-exception-caught
+			cleanup_error = error
+
+		try:
+			await self._close_owned_symbol_connector()
+		except (asyncio.CancelledError, KeyboardInterrupt, SystemExit) as error:
+			control_flow_error = self._select_control_flow_error(control_flow_error, error)
+		except BaseException as error:  # pylint: disable=broad-exception-caught
+			if cleanup_error is None:
+				cleanup_error = error
+			else:
+				self._log_cleanup_failure(f'Failed to close Symbol node session after database cleanup failure: {error}')
+
+		return self._resolve_lifecycle_exit(primary_error, control_flow_error, cleanup_error)
+
+	def _resolve_lifecycle_exit(self, primary_error, control_flow_error, cleanup_error):
+		if self._primary_control_flow_is_first(primary_error, control_flow_error):
+			if cleanup_error is not None:
+				self._log_cleanup_failure(f'Failed to clean up Symbol puller after operation failure: {cleanup_error}')
+			return False
+
+		if control_flow_error is not None:
+			if cleanup_error is not None:
+				self._log_cleanup_failure(f'Failed to clean up Symbol puller during interruption: {cleanup_error}')
+			raise control_flow_error
+
+		if primary_error is not None:
+			if cleanup_error is not None:
+				self._log_cleanup_failure(f'Failed to clean up Symbol puller after operation failure: {cleanup_error}')
+			return False
+
+		if cleanup_error is not None:
+			raise cleanup_error
+
+		return False
+
+	@staticmethod
+	def _select_control_flow_error(current_error, candidate_error):
+		if current_error is None:
+			return candidate_error
+		if isinstance(candidate_error, asyncio.CancelledError) and not isinstance(current_error, asyncio.CancelledError):
+			return candidate_error
+		return current_error
+
+	@staticmethod
+	def _primary_control_flow_is_first(primary_error, cleanup_error):
+		if isinstance(primary_error, asyncio.CancelledError):
+			return True
+		if isinstance(primary_error, (KeyboardInterrupt, SystemExit)):
+			return cleanup_error is None or not isinstance(cleanup_error, asyncio.CancelledError)
+		return False
+
+	async def _close_owned_symbol_connector(self):
+		if self._owned_symbol_connector is not None:
+			await self._owned_symbol_connector.close()
 
 	def _validate_symbol_node_path(self, url_path):
 		parsed_url = urlparse(url_path)
