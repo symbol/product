@@ -10,6 +10,7 @@ import {
 } from './mosaic';
 import { networkTypeToIdentifier } from './network';
 import {
+	calculateEffectiveFee,
 	createTransactionFee,
 	decodePlainMessage,
 	getUnresolvedIdsFromTransactions,
@@ -38,6 +39,7 @@ import { SdkError, absoluteToRelativeAmount, safeOperationWithRelativeAmounts } 
 /** @typedef {import('../types/Mosaic').Mosaic} Mosaic */
 /** @typedef {import('../types/Network').NetworkProperties} NetworkProperties */
 /** @typedef {import('../types/Transaction').Transaction} Transaction */
+/** @typedef {import('wallet-common-core/src/types/Transaction').TransactionFee} TransactionFee */
 
 /**
  * Checks if a transaction DTO is an aggregate transaction.
@@ -62,6 +64,30 @@ const formatAddress = (rawAddress, resolvedAddresses) => {
 		return addressFromRaw(rawAddress);
 
 	return resolvedAddresses[rawAddress] || null;
+};
+
+/**
+ * Creates the fee object of a transaction DTO. Confirmed transactions report the fee the network
+ * charged; the ones still waiting for a block report the maximum fee their sender declared.
+ * @param {object} transactionDTO - The transaction DTO.
+ * @param {NetworkProperties} networkProperties - The network properties.
+ * @returns {TransactionFee | null} The fee object, or null when the DTO declares no fee.
+ */
+const createFeeFromDTO = (transactionDTO, networkProperties) => {
+	const { transaction, meta } = transactionDTO;
+
+	if (!transaction.maxFee)
+		return null;
+
+	// DTO omits the block fee multiplier until the transaction is confirmed (in the block).
+	const absoluteAmount = Number.isFinite(meta.feeMultiplier)
+		? calculateEffectiveFee(transaction.maxFee, transaction.size, meta.feeMultiplier)
+		: transaction.maxFee;
+
+	return createTransactionFee(
+		networkProperties,
+		absoluteToRelativeAmount(absoluteAmount, networkProperties.networkCurrency.divisibility)
+	);
 };
 
 /**
@@ -162,12 +188,7 @@ const baseTransactionFromDTO = (transactionDTO, config) => {
 		timestamp: networkTimestampToUnix(Number(meta.timestamp), networkProperties.epochAdjustment),
 		height: Number(meta.height),
 		hash: meta.hash,
-		fee: transaction.maxFee
-			? createTransactionFee(
-				networkProperties, 
-				absoluteToRelativeAmount(transaction.maxFee, networkProperties.networkCurrency.divisibility)
-			)
-			: null,
+		fee: createFeeFromDTO(transactionDTO, networkProperties),
 		signerAddress: signerPublicKey ? addressFromPublicKey(signerPublicKey, networkProperties.networkIdentifier) : null,
 		signerPublicKey
 	};
