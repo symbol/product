@@ -17,6 +17,7 @@ from ..NetworkFacadeLoader import load_network_facade
 from ..NetworkUtils import BalanceTransfer, estimate_balance_transfer_fees
 from ..price_oracle.PriceOracleLoader import load_price_oracle
 from ..price_oracle.PriceOracleThrottle import make_throttled_conversion_rate_lookup
+from ..VaultConnector import VaultConnector
 from ..WorkflowUtils import create_conversion_rate_calculator_factory, is_daily_limit_exceeded, is_native_to_native_conversion
 from .metrics.MetricsCollector import MetricsCollector
 from .metrics.MetricsLoader import load_collectors
@@ -265,6 +266,15 @@ class BridgeContext:  # pylint: disable=too-many-instance-attributes
 		self.native_mosaic_id = None
 
 		self.conversion_rate_lookup = None
+
+		self.is_vault_used = any(
+			network.extensions.get('signer_private_key', '').startswith('vault:')
+			for network in (config.native_network, config.wrapped_network))
+
+	def create_vault_connector(self):
+		"""Creates a vault connector."""
+
+		return VaultConnector(self._config.vault.url, self._config.vault.access_token)
 
 	def create_price_oracle(self):
 		"""Creates a price oracle connector, separate from the one shared by the request handlers."""

@@ -55,6 +55,7 @@ async def test_metrics_route_serves_the_prometheus_exposition_format(client):  #
 		metric_names = (
 			'bridge_node_up', 'bridge_balance',
 			'bridge_price_oracle_up', 'bridge_price_oracle_credits_left',
+			'bridge_vault_up', 'bridge_vault_token_ttl_seconds',
 			'bridge_requests_failed_permanent', 'bridge_request_retries', 'bridge_requests_rejected',
 			'bridge_daily_transfer_remaining', 'bridge_oldest_unprocessed_age_seconds', 'bridge_oldest_sent_age_seconds'
 		)
