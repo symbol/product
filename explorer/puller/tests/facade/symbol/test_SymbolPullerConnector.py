@@ -151,6 +151,52 @@ def _create_connector_with_close_error(close_error, cleanup_logger):
 	return connector, session
 
 
+async def _assert_close_propagates_expected_error(session_error, pool_error, expected_error, context_error):
+	# Arrange:
+	session = FakeSession([], close_error=session_error)
+	tcp_connector = RecordingTcpConnector(100, close_error=pool_error)
+	connector = SymbolPullerConnector(
+		'http://node',
+		13,
+		100,
+		session_factory=RecordingFactory(session),
+		tcp_connector_factory=lambda **_: tcp_connector)
+	await connector.open()
+
+	# Act:
+	with pytest.raises(BaseException) as exception_info:
+		await connector.close()
+
+	# Assert:
+	assert expected_error is exception_info.value
+	assert context_error is exception_info.value.__context__
+	assert 1 == session.close_call_count
+	assert 1 == tcp_connector.close_call_count
+
+
+async def _assert_open_cleanup_propagates_expected_error(setup_error, pool_error, expected_error, context_error):
+	# Arrange:
+	def failing_session_factory(**_):
+		raise setup_error
+
+	tcp_connector = RecordingTcpConnector(100, close_error=pool_error)
+	connector = SymbolPullerConnector(
+		'http://node',
+		13,
+		100,
+		session_factory=failing_session_factory,
+		tcp_connector_factory=lambda **_: tcp_connector)
+
+	# Act:
+	with pytest.raises(BaseException) as exception_info:
+		await connector.open()
+
+	# Assert:
+	assert expected_error is exception_info.value
+	assert context_error is exception_info.value.__context__
+	assert 1 == tcp_connector.close_call_count
+
+
 async def test_reuses_one_session_for_serial_get_requests():
 	# Arrange:
 	connector, session, _, session_factory = _create_connector([
@@ -782,24 +828,15 @@ async def test_close_failure_preserves_session_error_when_pool_close_fails():
 
 
 async def test_close_failure_does_not_replace_pool_cleanup_cancellation():
-	# Arrange:
-	session = FakeSession([], close_error=RuntimeError('session close failed'))
-	tcp_connector = RecordingTcpConnector(100, close_error=asyncio.CancelledError())
-	connector = SymbolPullerConnector(
-		'http://node',
-		13,
-		100,
-		session_factory=RecordingFactory(session),
-		tcp_connector_factory=lambda **_: tcp_connector)
-	await connector.open()
+	session_error = RuntimeError('session close failed')
+	pool_error = asyncio.CancelledError()
+	await _assert_close_propagates_expected_error(session_error, pool_error, pool_error, session_error)
 
-	# Act:
-	with pytest.raises(asyncio.CancelledError):
-		await connector.close()
 
-	# Assert:
-	assert 1 == session.close_call_count
-	assert 1 == tcp_connector.close_call_count
+async def test_close_failure_preserves_session_cancellation_over_pool_interrupt():
+	session_error = asyncio.CancelledError()
+	pool_error = KeyboardInterrupt('pool close interrupted')
+	await _assert_close_propagates_expected_error(session_error, pool_error, session_error, pool_error)
 
 
 async def test_session_factory_failure_closes_created_pool_and_connector():
@@ -868,21 +905,15 @@ async def test_session_factory_failure_preserves_error_when_pool_close_fails():
 
 
 async def test_session_factory_failure_does_not_replace_pool_cleanup_cancellation():
-	# Arrange:
-	tcp_connector = RecordingTcpConnector(100, close_error=asyncio.CancelledError())
-	connector = SymbolPullerConnector(
-		'http://node',
-		13,
-		100,
-		session_factory=_failing_session_factory,
-		tcp_connector_factory=lambda **_: tcp_connector)
+	setup_error = RuntimeError('session factory failed')
+	pool_error = asyncio.CancelledError()
+	await _assert_open_cleanup_propagates_expected_error(setup_error, pool_error, pool_error, setup_error)
 
-	# Act:
-	with pytest.raises(asyncio.CancelledError):
-		await connector.open()
 
-	# Assert:
-	assert 1 == tcp_connector.close_call_count
+async def test_session_factory_failure_preserves_setup_cancellation_over_pool_interrupt():
+	setup_error = asyncio.CancelledError()
+	pool_error = KeyboardInterrupt('pool close interrupted')
+	await _assert_open_cleanup_propagates_expected_error(setup_error, pool_error, setup_error, pool_error)
 
 
 @pytest.fixture(name='symbol_connector_http_server')
