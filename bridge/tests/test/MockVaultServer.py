@@ -29,8 +29,6 @@ async def create_simple_vault_client(aiohttp_client):
 			}, 503 if self.is_sealed else 200)
 
 		async def token_lookup_self(self, request):
-			self.access_tokens.append(request.headers['X-Vault-Token'])
-
 			return await self._process(request, {
 				'data': {
 					'display_name': 'token',
@@ -41,8 +39,6 @@ async def create_simple_vault_client(aiohttp_client):
 			})
 
 		async def read_secret(self, request):
-			self.access_tokens.append(request.headers['X-Vault-Token'])
-
 			return await self._process(request, {
 				'data': {
 					'data': {
@@ -58,6 +54,10 @@ async def create_simple_vault_client(aiohttp_client):
 
 		async def _process(self, request, response_body, status_code=200):
 			self.urls.append(str(request.url))
+
+			# if endpoint is unauthenticated None is recorded
+			self.access_tokens.append(request.headers.get('X-Vault-Token'))
+
 			return web.Response(body=json.dumps(response_body), headers={'Content-Type': 'application/json'}, status=status_code)
 
 	# create a mock server

@@ -25,6 +25,9 @@ async def test_can_read_health(server):  # pylint: disable=redefined-outer-name
 	assert [f'{server.make_url("")}/v1/sys/health'] == server.mock.urls
 	assert not health['sealed']
 
+	# ... and no token was sent, since the vault health endpoint is unauthenticated
+	assert [None] == server.mock.access_tokens
+
 
 async def test_read_health_raises_when_the_vault_is_sealed(server):  # pylint: disable=redefined-outer-name
 	# Arrange: a sealed vault answers 503, which is wanted here - it cannot serve the signing key
