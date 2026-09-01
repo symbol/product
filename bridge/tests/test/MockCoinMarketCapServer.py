@@ -14,8 +14,6 @@ async def create_simple_coinmarketcap_client(aiohttp_client):
 			self.credits_left = 7331
 
 		async def key_info(self, request):
-			self.access_tokens.append(request.headers['X-CMC_PRO_API_KEY'])
-
 			if self.simulate_unavailable:
 				return await self._process(request, {'status': {'error_message': 'service unavailable'}}, 503)
 
@@ -39,8 +37,6 @@ async def create_simple_coinmarketcap_client(aiohttp_client):
 			})
 
 		async def price(self, request):
-			self.access_tokens.append(request.headers['X-CMC_PRO_API_KEY'])
-
 			ticker = request.url.query['id']
 
 			price = {
@@ -64,6 +60,7 @@ async def create_simple_coinmarketcap_client(aiohttp_client):
 
 		async def _process(self, request, response_body, status_code=200):
 			self.urls.append(str(request.url))
+			self.access_tokens.append(request.headers['X-CMC_PRO_API_KEY'])
 			return web.Response(body=json.dumps(response_body), headers={'Content-Type': 'application/json'}, status=status_code)
 
 	# create a mock server
