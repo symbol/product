@@ -25,7 +25,7 @@ class VaultCollector:
 
 		up_gauge = Gauge(
 			'bridge_vault_up',
-			'vault configured for the bridge can serve the signing key; zero covers unreachable, sealed and uninitialized',
+			'vault configured for the bridge can serve the signing key; zero covers unreachable, sealed, standby and uninitialized',
 			['endpoint'],
 			registry=registry)
 		token_ttl_gauge = Gauge(

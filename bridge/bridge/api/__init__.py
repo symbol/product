@@ -269,7 +269,7 @@ class BridgeContext:  # pylint: disable=too-many-instance-attributes
 
 		self.is_vault_used = any(
 			network.extensions.get('signer_private_key', '').startswith('vault:')
-			for network in (config.native_network, config.wrapped_network))
+			for network in (self._config.native_network, self._config.wrapped_network))
 
 	def create_vault_connector(self):
 		"""Creates a vault connector."""
