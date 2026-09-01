@@ -81,7 +81,7 @@ const createFeeFromDTO = (transactionDTO, networkProperties) => {
 
 	// DTO omits the block fee multiplier until the transaction is confirmed (in the block).
 	const absoluteAmount = Number.isFinite(meta.feeMultiplier)
-		? calculateEffectiveFee(transaction.maxFee, transaction.size, meta.feeMultiplier)
+		? calculateEffectiveFee(transaction.size, meta.feeMultiplier)
 		: transaction.maxFee;
 
 	return createTransactionFee(

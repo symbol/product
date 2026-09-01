@@ -698,7 +698,7 @@ describe('utils/transaction', () => {
 		const runCalculateEffectiveFeeTest = (description, config, expected) => {
 			it(description, () => {
 				// Act:
-				const result = calculateEffectiveFee(config.maxFee, config.size, config.feeMultiplier);
+				const result = calculateEffectiveFee(config.size, config.feeMultiplier);
 
 				// Assert:
 				expect(result).toBe(expected.fee);
@@ -708,27 +708,17 @@ describe('utils/transaction', () => {
 		const calculateEffectiveFeeTests = [
 			{
 				description: 'returns the transaction size multiplied by the block fee multiplier',
-				config: { maxFee: '29268', size: 176, feeMultiplier: 166 },
+				config: { size: 176, feeMultiplier: 166 },
 				expected: { fee: '29216' }
 			},
 			{
-				description: 'returns the declared maximum fee when the charged fee would exceed it',
-				config: { maxFee: '29268', size: 176, feeMultiplier: 1000 },
-				expected: { fee: '29268' }
-			},
-			{
-				description: 'returns the declared maximum fee when the charged fee matches it exactly',
-				config: { maxFee: '15200', size: 152, feeMultiplier: 100 },
-				expected: { fee: '15200' }
-			},
-			{
 				description: 'returns zero when the block fee multiplier is zero',
-				config: { maxFee: '29268', size: 176, feeMultiplier: 0 },
+				config: { size: 176, feeMultiplier: 0 },
 				expected: { fee: '0' }
 			},
 			{
 				description: 'keeps precision when the charged fee exceeds the safe integer range',
-				config: { maxFee: '18446744073709551615', size: 4294967295, feeMultiplier: 4294967295 },
+				config: { size: 4294967295, feeMultiplier: 4294967295 },
 				expected: { fee: '18446744065119617025' }
 			}
 		];
