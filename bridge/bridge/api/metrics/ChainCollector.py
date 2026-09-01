@@ -7,7 +7,7 @@ from symbollightapi.model.Exceptions import NodeException
 NETWORK_ROLES = ('native', 'wrapped')
 
 # what a single scrape learned about one network; balances is None exactly when the node could not be read
-NetworkReading = namedtuple('NetworkReading', ['role', 'endpoint', 'address', 'balances'])
+NetworkReading = namedtuple('NetworkReading', ['role', 'endpoint', 'address', 'balances', 'chain_height', 'finalized_height'])
 
 
 async def _try_read(awaitable):
@@ -20,32 +20,37 @@ async def _try_read(awaitable):
 
 
 async def _read_network(role, facade, timeout_seconds):
-	"""Reads every balance for one network. Never raises."""
+	"""Reads every balance and height for one network. Never raises."""
 
 	connector = facade.create_connector()
 	connector.timeout_seconds = timeout_seconds
 
-	mosaic_id = facade.extract_mosaic_id()
-
-	balance = await _try_read(facade.read_balance(connector, mosaic_id))
-	if balance is None:
-		return NetworkReading(role, facade.config.endpoint, str(facade.bridge_address), None)
-
-	balances = {mosaic_id.formatted: balance}
-
 	# fees are always paid in the chain's native currency; a mosaic id of None means the bridge moves
-	# that currency itself, so the balance above already covers them and there is nothing more to read
-	if mosaic_id.id:
-		native_mosaic_id = facade.extract_native_currency_mosaic_id()
-		native_balance = await _try_read(facade.read_balance(connector, native_mosaic_id))
-		if native_balance is not None:
-			balances[native_mosaic_id.formatted] = native_balance
+	# that currency itself, so the first balance already covers them and there is nothing more to read
+	mosaic_ids = [facade.extract_mosaic_id()]
+	if mosaic_ids[0].id:
+		mosaic_ids.append(facade.extract_native_currency_mosaic_id())
 
-	return NetworkReading(role, facade.config.endpoint, str(facade.bridge_address), balances)
+	*balances, chain_height, finalized_height = await asyncio.gather(
+		*[_try_read(facade.read_balance(connector, mosaic_id)) for mosaic_id in mosaic_ids],
+		_try_read(connector.chain_height()),
+		_try_read(connector.finalized_chain_height()))
+
+	# a failed read of the configured token means the node could not be read, so nothing else is published for it
+	if balances[0] is None:
+		return NetworkReading(role, facade.config.endpoint, str(facade.bridge_address), None, None, None)
+
+	return NetworkReading(
+		role,
+		facade.config.endpoint,
+		str(facade.bridge_address),
+		{mosaic_id.formatted: balance for (mosaic_id, balance) in zip(mosaic_ids, balances) if balance is not None},
+		chain_height,
+		finalized_height)
 
 
 class ChainCollector:
-	"""Collects balances read from the nodes named in configuration."""
+	"""Collects heights and balances read from the nodes named in configuration."""
 
 	def __init__(self, context, timeout_seconds):
 		"""Creates a chain collector."""
@@ -63,6 +68,17 @@ class ChainCollector:
 			registry=registry)
 		balance_gauge = Gauge('bridge_balance', 'bridge account balance', ['network', 'token', 'address'], registry=registry)
 
+		chain_height_gauge = Gauge(
+			'blockchain_height',
+			'height of the newest block the node knows about',
+			['network'],
+			registry=registry)
+		finalized_height_gauge = Gauge(
+			'blockchain_finalized_height',
+			'height of the newest finalized block the node knows about',
+			['network'],
+			registry=registry)
+
 		for reading in await self._read_all():
 			# balances are published only when they were actually read, so that a failed read
 			# can never be mistaken for a drained account
@@ -70,6 +86,12 @@ class ChainCollector:
 
 			for (token, balance) in (reading.balances or {}).items():
 				balance_gauge.labels(reading.role, token, reading.address).set(balance)
+
+			if reading.chain_height is not None:
+				chain_height_gauge.labels(reading.role).set(reading.chain_height)
+
+			if reading.finalized_height is not None:
+				finalized_height_gauge.labels(reading.role).set(reading.finalized_height)
 
 	async def _read_all(self):
 		"""Reads both networks concurrently."""

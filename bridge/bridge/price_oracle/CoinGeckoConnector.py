@@ -12,6 +12,14 @@ class CoinGeckoConnector(BasicConnector):
 		result_json = await self.get(f'api/v3/simple/price?vs_currencies=usd&ids={ticker}')
 		return Decimal(result_json[ticker]['usd'])
 
+	async def check_health(self):
+		"""Checks that the oracle is reachable."""
+
+		await self.get('api/v3/ping')
+
+		# CoinGecko reports no quota
+		return None
+
 	async def conversion_rate(self, ticker1, ticker2):
 		"""Gets spot conversion rate between two tickers."""
 
