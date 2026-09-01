@@ -13,6 +13,11 @@ class CoinMarketCapConnector(BasicConnector):
 
 		self.access_token = access_token
 
+	async def _get_authenticated(self, url_path):
+		"""Initiates an authenticated GET to the specified path."""
+
+		return await self._dispatch('get', url_path, None, True, headers={'X-CMC_PRO_API_KEY': self.access_token})
+
 	async def price(self, ticker):
 		"""Gets spot price for ticker."""
 
@@ -28,24 +33,14 @@ class CoinMarketCapConnector(BasicConnector):
 		if not token_id:
 			raise ValueError(f'price lookup for ticker "{ticker}" is not supported')
 
-		result_json = await self._dispatch(
-			'get',
-			f'v2/cryptocurrency/quotes/latest?convert=USD&id={token_id}',
-			None,
-			True,
-			headers={'X-CMC_PRO_API_KEY': self.access_token})
+		result_json = await self._get_authenticated(f'v2/cryptocurrency/quotes/latest?convert=USD&id={token_id}')
 
 		return Decimal(result_json['data'][token_id]['quote']['USD']['price'])
 
 	async def check_health(self):
 		"""Checks that the oracle is reachable and gets the number of requests left in the quota it reports."""
 
-		result_json = await self._dispatch(
-			'get',
-			'v1/key/info',
-			None,
-			True,
-			headers={'X-CMC_PRO_API_KEY': self.access_token})
+		result_json = await self._get_authenticated('v1/key/info')
 
 		return result_json['data']['usage']['current_month']['credits_left']
 
