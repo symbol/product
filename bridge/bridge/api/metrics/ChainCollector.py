@@ -69,12 +69,12 @@ class ChainCollector:
 		balance_gauge = Gauge('bridge_balance', 'bridge account balance', ['network', 'token', 'address'], registry=registry)
 
 		chain_height_gauge = Gauge(
-			'bridge_chain_height',
+			'blockchain_height',
 			'height of the newest block the node knows about',
 			['network'],
 			registry=registry)
 		finalized_height_gauge = Gauge(
-			'bridge_finalized_height',
+			'blockchain_finalized_height',
 			'height of the newest finalized block the node knows about',
 			['network'],
 			registry=registry)

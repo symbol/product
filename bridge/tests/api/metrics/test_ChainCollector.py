@@ -126,11 +126,11 @@ def _balance_sample_count(registry, role):
 
 
 def _chain_height(registry, role):
-	return registry.get_sample_value('bridge_chain_height', {'network': role})
+	return registry.get_sample_value('blockchain_height', {'network': role})
 
 
 def _finalized_height(registry, role):
-	return registry.get_sample_value('bridge_finalized_height', {'network': role})
+	return registry.get_sample_value('blockchain_finalized_height', {'network': role})
 
 
 def _node_up(registry, role, server=None):
