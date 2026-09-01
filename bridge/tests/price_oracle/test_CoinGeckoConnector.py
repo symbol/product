@@ -28,21 +28,6 @@ async def test_can_query_price(server):  # pylint: disable=redefined-outer-name
 	assert Decimal(0.0877) == price
 
 
-async def test_can_query_conversion_rate(server):  # pylint: disable=redefined-outer-name
-	# Arrange:
-	connector = CoinGeckoConnector(server.make_url(''))
-
-	# Act:
-	conversion_rate = await connector.conversion_rate('symbol', 'nem')
-
-	# Assert:
-	assert [
-		f'{server.make_url("")}/api/v3/simple/price?vs_currencies=usd&ids=symbol',
-		f'{server.make_url("")}/api/v3/simple/price?vs_currencies=usd&ids=nem',
-	] == server.mock.urls
-	assert Decimal(0.0877) / Decimal(0.0199) == conversion_rate
-
-
 async def test_can_check_health(server):  # pylint: disable=redefined-outer-name
 	# Arrange:
 	connector = CoinGeckoConnector(server.make_url(''))
@@ -63,3 +48,18 @@ async def test_check_health_raises_when_the_oracle_is_unavailable(server):  # py
 	# Act + Assert:
 	with pytest.raises(NodeException):
 		await connector.check_health()
+
+
+async def test_can_query_conversion_rate(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	connector = CoinGeckoConnector(server.make_url(''))
+
+	# Act:
+	conversion_rate = await connector.conversion_rate('symbol', 'nem')
+
+	# Assert:
+	assert [
+		f'{server.make_url("")}/api/v3/simple/price?vs_currencies=usd&ids=symbol',
+		f'{server.make_url("")}/api/v3/simple/price?vs_currencies=usd&ids=nem',
+	] == server.mock.urls
+	assert Decimal(0.0877) / Decimal(0.0199) == conversion_rate

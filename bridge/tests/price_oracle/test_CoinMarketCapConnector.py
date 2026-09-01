@@ -64,22 +64,6 @@ async def test_cannot_query_price_for_unknown_ticker(server):  # pylint: disable
 		await connector.price('bitcoin')
 
 
-async def test_can_query_conversion_rate(server):  # pylint: disable=redefined-outer-name
-	# Arrange:
-	connector = CoinMarketCapConnector(server.make_url(''), '4643DDBAF')
-
-	# Act:
-	conversion_rate = await connector.conversion_rate('symbol', 'nem')
-
-	# Assert:
-	assert [
-		f'{server.make_url("")}/v2/cryptocurrency/quotes/latest?convert=USD&id=8677',
-		f'{server.make_url("")}/v2/cryptocurrency/quotes/latest?convert=USD&id=873',
-	] == server.mock.urls
-	assert ['4643DDBAF', '4643DDBAF'] == server.mock.access_tokens
-	assert Decimal(0.0877) / Decimal(0.0199) == conversion_rate
-
-
 async def test_can_check_health(server):  # pylint: disable=redefined-outer-name
 	# Arrange:
 	connector = CoinMarketCapConnector(server.make_url(''), '4643DDBAF')
@@ -101,3 +85,19 @@ async def test_check_health_raises_when_the_oracle_is_unavailable(server):  # py
 	# Act + Assert:
 	with pytest.raises(NodeException):
 		await connector.check_health()
+
+
+async def test_can_query_conversion_rate(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	connector = CoinMarketCapConnector(server.make_url(''), '4643DDBAF')
+
+	# Act:
+	conversion_rate = await connector.conversion_rate('symbol', 'nem')
+
+	# Assert:
+	assert [
+		f'{server.make_url("")}/v2/cryptocurrency/quotes/latest?convert=USD&id=8677',
+		f'{server.make_url("")}/v2/cryptocurrency/quotes/latest?convert=USD&id=873',
+	] == server.mock.urls
+	assert ['4643DDBAF', '4643DDBAF'] == server.mock.access_tokens
+	assert Decimal(0.0877) / Decimal(0.0199) == conversion_rate

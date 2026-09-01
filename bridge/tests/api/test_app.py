@@ -269,6 +269,9 @@ VAULT_ACCESS_TOKEN = '4643DDBAF'
 PRICE_ORACLE_URL = 'https://api.coingecko.com'
 PRICE_ORACLE_ACCESS_TOKEN = 'CB01FE12'
 
+VAULT_SIGNING_KEY = 'vault:bridge/testnet/xym-bxym/native'
+RAW_SIGNING_KEY = '2525B8B423FCD66D460ED1D53D3B2971DE858792FF70741C0C96922BA2C46C75'
+
 
 def _create_config(native_signer_private_key='', wrapped_signer_private_key=''):
 	"""Creates a configuration without any file on disk."""
@@ -310,29 +313,33 @@ def test_price_oracle_is_created_from_the_price_oracle_configuration():
 	assert PRICE_ORACLE_URL == price_oracle.endpoint
 
 
-@pytest.mark.parametrize('native_key, wrapped_key', [
-	('vault:bridge/native', ''),
-	('', 'vault:bridge/wrapped'),
-	('vault:bridge/native', 'vault:bridge/wrapped')
-])
-def test_vault_is_used_when_any_signing_key_is_stored_in_it(native_key, wrapped_key):
+def _assert_is_vault_used(expected_is_vault_used, native_signer_private_key, wrapped_signer_private_key):
 	# Act:
-	context = BridgeContext(_create_config(native_key, wrapped_key), 600)
+	context = BridgeContext(_create_config(native_signer_private_key, wrapped_signer_private_key), 600)
 
 	# Assert:
-	assert context.is_vault_used
+	assert expected_is_vault_used == context.is_vault_used
 
 
-@pytest.mark.parametrize('native_key, wrapped_key', [
-	('', ''),
-	('2525B8B423FCD66D460ED1D53D3B2971DE858792FF70741C0C96922BA2C46C75', '')
-])
-def test_vault_is_not_used_when_the_keys_are_in_configuration(native_key, wrapped_key):
-	# Act: a bridge holding its keys in configuration leaves the vault section on a placeholder
-	context = BridgeContext(_create_config(native_key, wrapped_key), 600)
+def test_vault_is_used_when_the_native_signing_key_is_stored_in_it():
+	_assert_is_vault_used(True, VAULT_SIGNING_KEY, '')
 
-	# Assert:
-	assert not context.is_vault_used
+
+def test_vault_is_used_when_the_wrapped_signing_key_is_stored_in_it():
+	_assert_is_vault_used(True, '', VAULT_SIGNING_KEY)
+
+
+def test_vault_is_used_when_both_signing_keys_are_stored_in_it():
+	_assert_is_vault_used(True, VAULT_SIGNING_KEY, VAULT_SIGNING_KEY)
+
+
+def test_vault_is_not_used_when_no_signing_key_is_configured():
+	_assert_is_vault_used(False, '', '')
+
+
+def test_vault_is_not_used_when_the_signing_key_is_in_configuration():
+	# a bridge holding its keys in configuration leaves the vault section on a placeholder
+	_assert_is_vault_used(False, RAW_SIGNING_KEY, '')
 
 # endregion
 
