@@ -7,9 +7,9 @@ from bridge.api.metrics.WrapRequestCollector import WrapRequestCollector
 # pylint: disable=invalid-name
 
 # collectors that read remote endpoints and are given a timeout; WrapRequestCollector reads local databases, so it is not among them
-TIMEOUT_AWARE_COLLECTOR_TYPES = (ChainCollector, PriceOracleCollector, VaultCollector)
+TIMEOUT_AWARE_COLLECTOR_TYPES = {ChainCollector, PriceOracleCollector, VaultCollector}
 
-ALL_COLLECTOR_TYPES = TIMEOUT_AWARE_COLLECTOR_TYPES + (WrapRequestCollector,)
+ALL_COLLECTOR_TYPES = TIMEOUT_AWARE_COLLECTOR_TYPES | {WrapRequestCollector}
 
 
 def _map_collectors_by_type(collectors):
@@ -23,7 +23,7 @@ def test_every_collector_is_loaded():
 	collectors = load_collectors(None, 3)
 
 	# Assert:
-	assert set(ALL_COLLECTOR_TYPES) == set(_map_collectors_by_type(collectors))
+	assert ALL_COLLECTOR_TYPES == set(_map_collectors_by_type(collectors))
 	assert len(ALL_COLLECTOR_TYPES) == len(collectors)
 
 
@@ -38,4 +38,5 @@ def test_loaded_collectors_are_given_the_context_and_timeout():
 	for collector_type in TIMEOUT_AWARE_COLLECTOR_TYPES:
 		assert 7 == collectors[collector_type].timeout_seconds, collector_type.__name__
 
-	assert not hasattr(collectors[WrapRequestCollector], 'timeout_seconds')
+	for collector_type in ALL_COLLECTOR_TYPES.difference(TIMEOUT_AWARE_COLLECTOR_TYPES):
+		assert not hasattr(collectors[collector_type], 'timeout_seconds'), collector_type.__name__
