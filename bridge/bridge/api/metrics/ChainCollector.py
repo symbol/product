@@ -25,29 +25,28 @@ async def _read_network(role, facade, timeout_seconds):
 	connector = facade.create_connector()
 	connector.timeout_seconds = timeout_seconds
 
-	mosaic_id = facade.extract_mosaic_id()
-
-	balance = await _try_read(facade.read_balance(connector, mosaic_id))
-	if balance is None:
-		return NetworkReading(role, facade.config.endpoint, str(facade.bridge_address), None, None, None)
-
-	balances = {mosaic_id.formatted: balance}
-
 	# fees are always paid in the chain's native currency; a mosaic id of None means the bridge moves
-	# that currency itself, so the balance above already covers them and there is nothing more to read
-	if mosaic_id.id:
-		native_mosaic_id = facade.extract_native_currency_mosaic_id()
-		native_balance = await _try_read(facade.read_balance(connector, native_mosaic_id))
-		if native_balance is not None:
-			balances[native_mosaic_id.formatted] = native_balance
+	# that currency itself, so the first balance already covers them and there is nothing more to read
+	mosaic_ids = [facade.extract_mosaic_id()]
+	if mosaic_ids[0].id:
+		mosaic_ids.append(facade.extract_native_currency_mosaic_id())
+
+	*balances, chain_height, finalized_height = await asyncio.gather(
+		*[_try_read(facade.read_balance(connector, mosaic_id)) for mosaic_id in mosaic_ids],
+		_try_read(connector.chain_height()),
+		_try_read(connector.finalized_chain_height()))
+
+	# a failed read of the configured token means the node could not be read, so nothing else is published for it
+	if balances[0] is None:
+		return NetworkReading(role, facade.config.endpoint, str(facade.bridge_address), None, None, None)
 
 	return NetworkReading(
 		role,
 		facade.config.endpoint,
 		str(facade.bridge_address),
-		balances,
-		await _try_read(connector.chain_height()),
-		await _try_read(connector.finalized_chain_height()))
+		{mosaic_id.formatted: balance for (mosaic_id, balance) in zip(mosaic_ids, balances) if balance is not None},
+		chain_height,
+		finalized_height)
 
 
 class ChainCollector:
