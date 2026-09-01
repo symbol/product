@@ -45,12 +45,6 @@ class RecordingSymbolDatabase:
 		self.create_tables_call_count += 1
 
 
-class FailingCreateTablesSymbolDatabase(RecordingSymbolDatabase):
-	def create_tables(self):
-		super().create_tables()
-		raise RuntimeError('create tables failed')
-
-
 class RecordingSymbolPuller:
 	def __init__(self, *args, **kwargs):
 		self.constructor_args = args
@@ -87,21 +81,6 @@ class RecordingSymbolPullerFactory:
 
 	def __call__(self, *args, **kwargs):
 		self.puller = RecordingSymbolPuller(*args, **kwargs)
-		return self.puller
-
-
-class FailingCreateTablesSymbolPuller(RecordingSymbolPuller):
-	def __init__(self, *args, **kwargs):
-		super().__init__(*args, **kwargs)
-		self.symbol_db = FailingCreateTablesSymbolDatabase()
-
-
-class FailingCreateTablesSymbolPullerFactory:
-	def __init__(self):
-		self.puller = None
-
-	def __call__(self, *args, **kwargs):
-		self.puller = FailingCreateTablesSymbolPuller(*args, **kwargs)
 		return self.puller
 
 

@@ -17,7 +17,7 @@ from symbollightapi.model.Exceptions import NodeException
 from zenlog import log
 
 from puller.db.SymbolDatabase import RollbackRefreshEntries, SymbolDatabase
-from puller.facade.async_utils import gather_in_chunks
+from puller.facade.async_utils import gather_in_chunks, log_cleanup_failure_safely, select_exception_by_priority
 from puller.facade.RequestRateLimiter import RequestRateLimiter
 from puller.facade.SymbolPullerConnector import SymbolPullerConnector
 from puller.facade.SymbolSyncPerformance import SyncPerformance, request_category
@@ -187,13 +187,6 @@ class SymbolPuller:  # pylint: disable=too-many-instance-attributes
 			# Event construction or logging failure must never replace the synchronization result.
 			pass
 
-	def _log_cleanup_failure(self, message):
-		try:
-			self._cleanup_logger.error(message)
-		except Exception:  # pylint: disable=broad-exception-caught
-			# Cleanup logging must not replace an operation or cleanup exception.
-			pass
-
 	async def __aenter__(self):
 		"""Enters the puller lifecycle and opens its internally-owned node session."""
 
@@ -205,16 +198,16 @@ class SymbolPuller:  # pylint: disable=too-many-instance-attributes
 		except BaseException as primary_error:  # pylint: disable=broad-exception-caught
 			try:
 				await self._close_owned_symbol_connector()
-			except (asyncio.CancelledError, KeyboardInterrupt, SystemExit) as cleanup_error:
-				if isinstance(primary_error, asyncio.CancelledError):
-					raise primary_error from cleanup_error
-				if isinstance(cleanup_error, asyncio.CancelledError):
-					raise cleanup_error
-				if isinstance(primary_error, (KeyboardInterrupt, SystemExit)):
-					raise primary_error from cleanup_error
-				raise cleanup_error
 			except BaseException as cleanup_error:  # pylint: disable=broad-exception-caught
-				self._log_cleanup_failure(f'Failed to close Symbol node session after lifecycle failure: {cleanup_error}')
+				selected_error = select_exception_by_priority(primary_error, cleanup_error)
+				if selected_error is primary_error:
+					if isinstance(cleanup_error, (asyncio.CancelledError, KeyboardInterrupt, SystemExit)):
+						raise primary_error from cleanup_error
+					log_cleanup_failure_safely(
+						self._cleanup_logger,
+						f'Failed to close Symbol node session after lifecycle failure: {cleanup_error}')
+				else:
+					raise cleanup_error
 			raise
 
 	async def __aexit__(self, exc_type, exc_value, traceback):
@@ -226,57 +219,48 @@ class SymbolPuller:  # pylint: disable=too-many-instance-attributes
 		try:
 			self.symbol_db.__exit__(exc_type, exc_value, traceback)
 		except (asyncio.CancelledError, KeyboardInterrupt, SystemExit) as error:
-			control_flow_error = error
+			control_flow_error = select_exception_by_priority(control_flow_error, error)
 		except BaseException as error:  # pylint: disable=broad-exception-caught
 			cleanup_error = error
 
 		try:
 			await self._close_owned_symbol_connector()
 		except (asyncio.CancelledError, KeyboardInterrupt, SystemExit) as error:
-			control_flow_error = self._select_control_flow_error(control_flow_error, error)
+			control_flow_error = select_exception_by_priority(control_flow_error, error)
 		except BaseException as error:  # pylint: disable=broad-exception-caught
 			if cleanup_error is None:
 				cleanup_error = error
 			else:
-				self._log_cleanup_failure(f'Failed to close Symbol node session after database cleanup failure: {error}')
+				log_cleanup_failure_safely(
+					self._cleanup_logger,
+					f'Failed to close Symbol node session after database cleanup failure: {error}')
 
 		return self._resolve_lifecycle_exit(primary_error, control_flow_error, cleanup_error)
 
 	def _resolve_lifecycle_exit(self, primary_error, control_flow_error, cleanup_error):
-		if self._primary_control_flow_is_first(primary_error, control_flow_error):
-			if cleanup_error is not None:
-				self._log_cleanup_failure(f'Failed to clean up Symbol puller after operation failure: {cleanup_error}')
-			return False
-
 		if control_flow_error is not None:
+			if select_exception_by_priority(primary_error, control_flow_error) is primary_error:
+				if cleanup_error is not None:
+					log_cleanup_failure_safely(
+						self._cleanup_logger,
+						f'Failed to clean up Symbol puller after operation failure: {cleanup_error}')
+				return False
 			if cleanup_error is not None:
-				self._log_cleanup_failure(f'Failed to clean up Symbol puller during interruption: {cleanup_error}')
+				log_cleanup_failure_safely(
+					self._cleanup_logger,
+					f'Failed to clean up Symbol puller during interruption: {cleanup_error}')
 			raise control_flow_error
 
 		if primary_error is not None:
 			if cleanup_error is not None:
-				self._log_cleanup_failure(f'Failed to clean up Symbol puller after operation failure: {cleanup_error}')
+				log_cleanup_failure_safely(
+					self._cleanup_logger,
+					f'Failed to clean up Symbol puller after operation failure: {cleanup_error}')
 			return False
 
 		if cleanup_error is not None:
 			raise cleanup_error
 
-		return False
-
-	@staticmethod
-	def _select_control_flow_error(current_error, candidate_error):
-		if current_error is None:
-			return candidate_error
-		if isinstance(candidate_error, asyncio.CancelledError) and not isinstance(current_error, asyncio.CancelledError):
-			return candidate_error
-		return current_error
-
-	@staticmethod
-	def _primary_control_flow_is_first(primary_error, cleanup_error):
-		if isinstance(primary_error, asyncio.CancelledError):
-			return True
-		if isinstance(primary_error, (KeyboardInterrupt, SystemExit)):
-			return cleanup_error is None or not isinstance(cleanup_error, asyncio.CancelledError)
 		return False
 
 	async def _close_owned_symbol_connector(self):

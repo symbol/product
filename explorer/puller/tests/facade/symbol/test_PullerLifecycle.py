@@ -152,18 +152,15 @@ async def test_preserves_operation_error_when_owned_close_fails(tmp_path):
 	assert 1 == connector.close_call_count
 
 
-@pytest.mark.parametrize('cleanup_error, expected_type', [
-	(KeyboardInterrupt('connector close interrupted'), KeyboardInterrupt),
-	(SystemExit('connector close exited'), SystemExit)
-])
-async def test_propagates_connector_cleanup_control_flow_after_operation_failure(tmp_path, cleanup_error, expected_type):
+async def test_propagates_connector_cleanup_control_flow_after_operation_failure(tmp_path):
 	# Arrange:
 	operation_error = RuntimeError('operation failed')
+	cleanup_error = KeyboardInterrupt('connector close interrupted')
 	connector = RecordingConnector(close_error=cleanup_error)
 	puller = _create_puller(tmp_path, RecordingDatabase(), connector_factory=ConnectorFactory(connector))
 
 	# Act:
-	with pytest.raises(expected_type) as exception_info:
+	with pytest.raises(KeyboardInterrupt) as exception_info:
 		async with puller:
 			raise operation_error
 
@@ -175,7 +172,6 @@ async def test_propagates_connector_cleanup_control_flow_after_operation_failure
 
 @pytest.mark.parametrize('cleanup_error, database_error', [
 	(KeyboardInterrupt('connector close interrupted'), None),
-	(SystemExit('connector close exited'), None),
 	(KeyboardInterrupt('connector close interrupted'), RuntimeError('database cleanup failed'))
 ])
 async def test_preserves_operation_cancellation_over_connector_control_flow(tmp_path, cleanup_error, database_error):
@@ -195,13 +191,10 @@ async def test_preserves_operation_cancellation_over_connector_control_flow(tmp_
 	assert 1 == connector.close_call_count
 
 
-@pytest.mark.parametrize('cleanup_error', [
-	KeyboardInterrupt('connector close interrupted'),
-	SystemExit('connector close exited')
-])
-async def test_preserves_operation_control_flow_over_same_rank_cleanup(tmp_path, cleanup_error):
+async def test_preserves_operation_control_flow_over_same_rank_cleanup(tmp_path):
 	# Arrange:
 	operation_error = KeyboardInterrupt('operation interrupted')
+	cleanup_error = KeyboardInterrupt('connector close interrupted')
 	connector = RecordingConnector(close_error=cleanup_error)
 	puller = _create_puller(tmp_path, RecordingDatabase(), connector_factory=ConnectorFactory(connector))
 
@@ -264,101 +257,6 @@ async def test_propagates_owned_close_failure_after_success(tmp_path):
 
 	# Assert:
 	assert 1 == connector.close_call_count
-
-
-@pytest.mark.parametrize('close_error, body_error, expected_type', [
-	(KeyboardInterrupt('connector close interrupted'), ValueError('body failed'), KeyboardInterrupt),
-	(SystemExit('connector close exited'), ValueError('body failed'), SystemExit),
-	(KeyboardInterrupt('connector close interrupted'), None, KeyboardInterrupt),
-	(KeyboardInterrupt('connector close interrupted'), KeyboardInterrupt('body interrupted'), KeyboardInterrupt)
-])
-async def test_connector_context_propagates_close_control_flow_after_body_failure(
-	close_error, body_error, expected_type):
-	# Arrange:
-	class FailingSession:
-		def __init__(self, error):
-			self.error = error
-			self.close_call_count = 0
-
-		async def close(self):
-			self.close_call_count += 1
-			raise self.error
-
-	class RecordingPool:
-		def __init__(self):
-			self.close_call_count = 0
-
-		async def close(self):
-			self.close_call_count += 1
-
-	session = FailingSession(close_error)
-	tcp_connector = RecordingPool()
-	connector = SymbolPullerConnector(
-		NODE_URL,
-		13,
-		100,
-		session_factory=lambda **_: session,
-		tcp_connector_factory=lambda **_: tcp_connector)
-
-	# Act:
-	with pytest.raises(expected_type) as exception_info:
-		async with connector:
-			if body_error is not None:
-				raise body_error
-
-	# Assert:
-	expected_error = body_error if isinstance(body_error, KeyboardInterrupt) else close_error
-	assert expected_error is exception_info.value
-	if isinstance(body_error, ValueError):
-		assert body_error is exception_info.value.__context__
-	assert 1 == session.close_call_count
-	assert 1 == tcp_connector.close_call_count
-	with pytest.raises(SymbolPullerConnectorStateError, match='closed state'):
-		await connector.get('after-close')
-
-
-@pytest.mark.parametrize('close_error', [
-	KeyboardInterrupt('connector close interrupted'),
-	SystemExit('connector close exited')
-])
-async def test_connector_context_preserves_body_cancellation_over_close_control_flow(close_error):
-	# Arrange:
-	body_error = asyncio.CancelledError('body cancelled')
-
-	class FailingSession:
-		def __init__(self, error):
-			self.error = error
-			self.close_call_count = 0
-
-		async def close(self):
-			self.close_call_count += 1
-			raise self.error
-
-	class RecordingPool:
-		def __init__(self):
-			self.close_call_count = 0
-
-		async def close(self):
-			self.close_call_count += 1
-
-	session = FailingSession(close_error)
-	tcp_connector = RecordingPool()
-	connector = SymbolPullerConnector(
-		NODE_URL,
-		13,
-		100,
-		session_factory=lambda **_: session,
-		tcp_connector_factory=lambda **_: tcp_connector)
-
-	# Act:
-	with pytest.raises(asyncio.CancelledError) as exception_info:
-		async with connector:
-			raise body_error
-
-	# Assert:
-	assert body_error is exception_info.value
-	assert 1 == session.close_call_count
-	assert 1 == tcp_connector.close_call_count
 
 
 async def test_closes_owned_connector_when_database_enter_fails(tmp_path):
@@ -424,38 +322,40 @@ async def test_propagates_cancellation_received_during_enter_cleanup(tmp_path):
 	assert 1 == connector.close_call_count
 
 
-@pytest.mark.parametrize('open_error, cleanup_error, expected_type', [
-	(RuntimeError('open failed'), KeyboardInterrupt('connector close interrupted'), KeyboardInterrupt),
-	(RuntimeError('open failed'), SystemExit('connector close exited'), SystemExit),
-	(KeyboardInterrupt('open interrupted'), SystemExit('connector close exited'), KeyboardInterrupt)
+@pytest.mark.parametrize('open_error, cleanup_error, is_cleanup_error_expected', [
+	(
+		RuntimeError('open failed'),
+		KeyboardInterrupt('connector close interrupted'),
+		True),
+	(
+		KeyboardInterrupt('open interrupted'),
+		SystemExit('connector close exited'),
+		False)
 ])
-async def test_propagates_open_cleanup_control_flow(tmp_path, open_error, cleanup_error, expected_type):
+async def test_propagates_open_cleanup_control_flow(
+	tmp_path, open_error, cleanup_error, is_cleanup_error_expected):
 	# Arrange:
 	connector = RecordingConnector(open_error=open_error, close_error=cleanup_error)
 	puller = _create_puller(tmp_path, RecordingDatabase(), connector_factory=ConnectorFactory(connector))
 
 	# Act:
-	with pytest.raises(expected_type) as exception_info:
+	with pytest.raises(KeyboardInterrupt) as exception_info:
 		async with puller:
 			pass
 
 	# Assert:
-	if isinstance(open_error, (KeyboardInterrupt, SystemExit)):
-		assert open_error is exception_info.value
-	else:
-		assert cleanup_error is exception_info.value
+	expected_error = cleanup_error if is_cleanup_error_expected else open_error
+	assert expected_error is exception_info.value
+	if is_cleanup_error_expected:
 		assert open_error is exception_info.value.__context__
 	assert 1 == connector.open_call_count
 	assert 1 == connector.close_call_count
 
 
-@pytest.mark.parametrize('cleanup_error', [
-	KeyboardInterrupt('connector close interrupted'),
-	SystemExit('connector close exited')
-])
-async def test_preserves_open_cancellation_over_cleanup_control_flow(tmp_path, cleanup_error):
+async def test_preserves_open_cancellation_over_cleanup_control_flow(tmp_path):
 	# Arrange:
 	open_error = asyncio.CancelledError('open cancelled')
+	cleanup_error = KeyboardInterrupt('connector close interrupted')
 	connector = RecordingConnector(open_error=open_error, close_error=cleanup_error)
 	puller = _create_puller(tmp_path, RecordingDatabase(), connector_factory=ConnectorFactory(connector))
 
@@ -468,82 +368,6 @@ async def test_preserves_open_cancellation_over_cleanup_control_flow(tmp_path, c
 	assert open_error is exception_info.value
 	assert 1 == connector.open_call_count
 	assert 1 == connector.close_call_count
-
-
-@pytest.mark.parametrize('pool_error, expected_type', [
-	(KeyboardInterrupt('pool close interrupted'), KeyboardInterrupt),
-	(SystemExit('pool close exited'), SystemExit)
-])
-async def test_connector_open_propagates_pool_cleanup_control_flow(pool_error, expected_type):
-	# Arrange:
-	factory_error = RuntimeError('session factory failed')
-
-	class FailingPool:
-		def __init__(self, error):
-			self.error = error
-			self.close_call_count = 0
-
-		async def close(self):
-			self.close_call_count += 1
-			raise self.error
-
-	tcp_connector = FailingPool(pool_error)
-
-	def failing_session_factory(**_):
-		raise factory_error
-
-	connector = SymbolPullerConnector(
-		NODE_URL,
-		13,
-		100,
-		session_factory=failing_session_factory,
-		tcp_connector_factory=lambda **_: tcp_connector)
-
-	# Act:
-	with pytest.raises(expected_type) as exception_info:
-		await connector.open()
-
-	# Assert:
-	assert pool_error is exception_info.value
-	assert factory_error is exception_info.value.__context__
-	assert 1 == tcp_connector.close_call_count
-
-
-@pytest.mark.parametrize('primary_error, pool_error, expected_type', [
-	(asyncio.CancelledError('session factory cancelled'), KeyboardInterrupt('pool close interrupted'), asyncio.CancelledError),
-	(asyncio.CancelledError('session factory cancelled'), SystemExit('pool close exited'), asyncio.CancelledError),
-	(KeyboardInterrupt('session factory interrupted'), SystemExit('pool close exited'), KeyboardInterrupt)
-])
-async def test_connector_open_preserves_primary_cancellation_over_pool_control_flow(primary_error, pool_error, expected_type):
-	# Arrange:
-	class FailingPool:
-		def __init__(self, error):
-			self.error = error
-			self.close_call_count = 0
-
-		async def close(self):
-			self.close_call_count += 1
-			raise self.error
-
-	tcp_connector = FailingPool(pool_error)
-
-	def failing_session_factory(**_):
-		raise primary_error
-
-	connector = SymbolPullerConnector(
-		NODE_URL,
-		13,
-		100,
-		session_factory=failing_session_factory,
-		tcp_connector_factory=lambda **_: tcp_connector)
-
-	# Act:
-	with pytest.raises(expected_type) as exception_info:
-		await connector.open()
-
-	# Assert:
-	assert primary_error is exception_info.value
-	assert 1 == tcp_connector.close_call_count
 
 
 async def test_logs_owned_cleanup_failure_when_open_fails(tmp_path):
@@ -600,148 +424,6 @@ async def test_logs_connector_cleanup_failure_after_database_exit_failure(tmp_pa
 
 	# Assert:
 	assert ['Failed to close Symbol node session after database cleanup failure: close failed'] == cleanup_logger.messages
-
-
-@pytest.mark.parametrize('session_error, pool_error, expected_type', [
-	(RuntimeError('session close failed'), KeyboardInterrupt('pool close interrupted'), KeyboardInterrupt),
-	(RuntimeError('session close failed'), SystemExit('pool close exited'), SystemExit),
-	(KeyboardInterrupt('session close interrupted'), SystemExit('pool close exited'), KeyboardInterrupt)
-])
-async def test_connector_close_propagates_pool_cleanup_control_flow(session_error, pool_error, expected_type):
-	# Arrange:
-	class FailingSession:
-		def __init__(self, error):
-			self.error = error
-			self.close_call_count = 0
-
-		async def close(self):
-			self.close_call_count += 1
-			raise self.error
-
-	class FailingPool:
-		def __init__(self, error):
-			self.error = error
-			self.close_call_count = 0
-
-		async def close(self):
-			self.close_call_count += 1
-			raise self.error
-
-	session = FailingSession(session_error)
-	tcp_connector = FailingPool(pool_error)
-	connector = SymbolPullerConnector(
-		NODE_URL,
-		13,
-		100,
-		session_factory=lambda **_: session,
-		tcp_connector_factory=lambda **_: tcp_connector)
-	await connector.open()
-
-	# Act:
-	with pytest.raises(expected_type) as exception_info:
-		await connector.close()
-
-	# Assert:
-	expected_error = session_error if isinstance(session_error, KeyboardInterrupt) else pool_error
-	assert expected_error is exception_info.value
-	if isinstance(session_error, RuntimeError):
-		assert session_error is exception_info.value.__context__
-	assert 1 == session.close_call_count
-	assert 1 == tcp_connector.close_call_count
-	with pytest.raises(SymbolPullerConnectorStateError, match='closed state'):
-		await connector.get('after-close')
-
-
-@pytest.mark.parametrize('session_error', [
-	KeyboardInterrupt('session close interrupted'),
-	SystemExit('session close exited')
-])
-async def test_connector_close_preserves_pool_cancellation_over_session_control_flow(session_error):
-	# Arrange:
-	pool_error = asyncio.CancelledError('pool close cancelled')
-
-	class FailingSession:
-		def __init__(self, error):
-			self.error = error
-			self.close_call_count = 0
-
-		async def close(self):
-			self.close_call_count += 1
-			raise self.error
-
-	class CancelledPool:
-		def __init__(self, error):
-			self.error = error
-			self.close_call_count = 0
-
-		async def close(self):
-			self.close_call_count += 1
-			raise self.error
-
-	session = FailingSession(session_error)
-	tcp_connector = CancelledPool(pool_error)
-	connector = SymbolPullerConnector(
-		NODE_URL,
-		13,
-		100,
-		session_factory=lambda **_: session,
-		tcp_connector_factory=lambda **_: tcp_connector)
-	await connector.open()
-
-	# Act:
-	with pytest.raises(asyncio.CancelledError) as exception_info:
-		await connector.close()
-
-	# Assert:
-	assert pool_error is exception_info.value
-	assert 1 == session.close_call_count
-	assert 1 == tcp_connector.close_call_count
-
-
-@pytest.mark.parametrize('pool_error', [
-	KeyboardInterrupt('pool close interrupted'),
-	SystemExit('pool close exited')
-])
-async def test_connector_close_preserves_first_session_cancellation(pool_error):
-	# Arrange:
-	session_error = asyncio.CancelledError('session close cancelled')
-
-	class FailingSession:
-		def __init__(self, error):
-			self.error = error
-			self.close_call_count = 0
-
-		async def close(self):
-			self.close_call_count += 1
-			raise self.error
-
-	class FailingPool:
-		def __init__(self, error):
-			self.error = error
-			self.close_call_count = 0
-
-		async def close(self):
-			self.close_call_count += 1
-			raise self.error
-
-	session = FailingSession(session_error)
-	tcp_connector = FailingPool(pool_error)
-	connector = SymbolPullerConnector(
-		NODE_URL,
-		13,
-		100,
-		session_factory=lambda **_: session,
-		tcp_connector_factory=lambda **_: tcp_connector)
-	await connector.open()
-
-	# Act:
-	with pytest.raises(asyncio.CancelledError) as exception_info:
-		await connector.close()
-
-	# Assert:
-	assert session_error is exception_info.value
-	assert 1 == session.close_call_count
-	assert 1 == tcp_connector.close_call_count
 
 
 async def test_does_not_manage_injected_connector(tmp_path):
@@ -877,21 +559,19 @@ async def test_preserves_cleanup_cancellation_after_database_exit_failure(tmp_pa
 	assert ['Failed to clean up Symbol puller during interruption: database exit failed'] == cleanup_logger.messages
 
 
-@pytest.mark.parametrize('database_error, connector_error, expected_type', [
-	(asyncio.CancelledError('database exit cancelled'), None, asyncio.CancelledError),
-	(KeyboardInterrupt('database exit interrupted'), None, KeyboardInterrupt),
-	(SystemExit('database exit exited'), None, SystemExit),
-	(KeyboardInterrupt('database exit interrupted'), SystemExit('connector close exited'), KeyboardInterrupt)
+@pytest.mark.parametrize('database_error, connector_error', [
+	(asyncio.CancelledError('database exit cancelled'), None),
+	(KeyboardInterrupt('database exit interrupted'), SystemExit('connector close exited'))
 ])
 async def test_database_exit_control_flow_closes_owned_connector_and_propagates(
-	tmp_path, database_error, connector_error, expected_type):
+	tmp_path, database_error, connector_error):
 	# Arrange:
 	database = RecordingDatabase(exit_error=database_error)
 	connector = RecordingConnector(close_error=connector_error)
 	puller = _create_puller(tmp_path, database, connector_factory=ConnectorFactory(connector))
 
 	# Act:
-	with pytest.raises(expected_type) as exception_info:
+	with pytest.raises(type(database_error)) as exception_info:
 		async with puller:
 			pass
 
@@ -901,12 +581,9 @@ async def test_database_exit_control_flow_closes_owned_connector_and_propagates(
 	assert 1 == connector.close_call_count
 
 
-@pytest.mark.parametrize('database_error', [
-	KeyboardInterrupt('database exit interrupted'),
-	SystemExit('database exit exited')
-])
-async def test_connector_cleanup_cancellation_precedes_database_control_flow(tmp_path, database_error):
+async def test_connector_cleanup_cancellation_precedes_database_control_flow(tmp_path):
 	# Arrange:
+	database_error = KeyboardInterrupt('database exit interrupted')
 	database = RecordingDatabase(exit_error=database_error)
 	connector_error = asyncio.CancelledError('connector cleanup cancelled')
 	connector = RecordingConnector(close_error=connector_error)

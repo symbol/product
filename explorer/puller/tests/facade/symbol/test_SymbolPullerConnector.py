@@ -5,7 +5,7 @@ import json
 from dataclasses import dataclass
 
 import pytest
-from aiohttp import ClientSession, client_exceptions, web
+from aiohttp import client_exceptions, web
 from symbollightapi.model.Exceptions import HttpException, NodeException
 
 from puller.facade.SymbolPullerConnector import SymbolPullerConnector, SymbolPullerConnectorStateError
@@ -32,11 +32,13 @@ class FakeResponse:
 
 
 class FakeSession:
-	def __init__(self, outcomes):
+	def __init__(self, outcomes, close_error=None, close_event=None):
 		self.outcomes = list(outcomes)
 		self.calls = []
 		self.close_call_count = 0
 		self.close_started = asyncio.Event()
+		self.close_error = close_error
+		self.allow_close = close_event
 
 	def _request(self, method, url, **kwargs):
 		self.calls.append((method, url, kwargs))
@@ -54,17 +56,10 @@ class FakeSession:
 	async def close(self):
 		self.close_call_count += 1
 		self.close_started.set()
-
-
-class FailingCloseSession(FakeSession):
-	def __init__(self, close_error):
-		super().__init__([])
-		self.close_error = close_error
-
-	async def close(self):
-		self.close_call_count += 1
-		self.close_started.set()
-		raise self.close_error
+		if self.allow_close is not None:
+			await self.allow_close.wait()
+		if self.close_error is not None:
+			raise self.close_error
 
 
 class BlockingResponse(FakeResponse):
@@ -81,32 +76,16 @@ class BlockingResponse(FakeResponse):
 		await self.allow_exit.wait()
 
 
-class BlockingCloseSession(FakeSession):
-	def __init__(self):
-		super().__init__([])
-		self.allow_close = asyncio.Event()
-
-	async def close(self):
-		self.close_call_count += 1
-		self.close_started.set()
-		await self.allow_close.wait()
-
-
-class FailingBlockingCloseSession(BlockingCloseSession):
-	async def close(self):
-		self.close_call_count += 1
-		self.close_started.set()
-		await self.allow_close.wait()
-		raise RuntimeError('close failed')
-
-
 class RecordingTcpConnector:
-	def __init__(self, limit):
+	def __init__(self, limit, close_error=None):
 		self.limit = limit
 		self.close_call_count = 0
+		self.close_error = close_error
 
 	async def close(self):
 		self.close_call_count += 1
+		if self.close_error is not None:
+			raise self.close_error
 
 
 class RecordingFactory:
@@ -117,18 +96,6 @@ class RecordingFactory:
 	def __call__(self, **kwargs):
 		self.calls.append(kwargs)
 		return self.result
-
-
-class ClientSessionFactory:
-	def __init__(self):
-		self.calls = []
-		self.sessions = []
-
-	def __call__(self, **kwargs):
-		self.calls.append(kwargs)
-		session = ClientSession(**kwargs)
-		self.sessions.append(session)
-		return session
 
 
 @dataclass
@@ -173,7 +140,7 @@ def _create_connector(outcomes, timeout_seconds=13, connection_limit=100, endpoi
 
 
 def _create_connector_with_close_error(close_error, cleanup_logger):
-	session = FailingCloseSession(close_error)
+	session = FakeSession([], close_error=close_error)
 	connector = SymbolPullerConnector(
 		'http://node',
 		13,
@@ -293,9 +260,42 @@ async def test_context_preserves_body_cancellation_when_close_fails():
 	assert ['Failed to close Symbol puller connector after context failure: close failed'] == cleanup_logger.messages
 
 
+async def test_context_propagates_close_control_flow_after_body_error():
+	# Arrange:
+	body_error = RuntimeError('body failed')
+	close_error = KeyboardInterrupt('close interrupted')
+	connector, session = _create_connector_with_close_error(close_error, RecordingCleanupLogger())
+
+	# Act:
+	with pytest.raises(KeyboardInterrupt) as exception_info:
+		async with connector:
+			raise body_error
+
+	# Assert:
+	assert close_error is exception_info.value
+	assert body_error is exception_info.value.__context__
+	assert 1 == session.close_call_count
+
+
+async def test_context_preserves_body_cancellation_over_close_control_flow():
+	# Arrange:
+	body_error = asyncio.CancelledError('body cancelled')
+	close_error = KeyboardInterrupt('close interrupted')
+	connector, session = _create_connector_with_close_error(close_error, RecordingCleanupLogger())
+
+	# Act:
+	with pytest.raises(asyncio.CancelledError) as exception_info:
+		async with connector:
+			raise body_error
+
+	# Assert:
+	assert body_error is exception_info.value
+	assert 1 == session.close_call_count
+
+
 async def test_context_propagates_cancellation_received_during_failed_close():
 	# Arrange:
-	session = FailingBlockingCloseSession()
+	session = FakeSession([], close_error=RuntimeError('close failed'), close_event=asyncio.Event())
 	tcp_connector = RecordingTcpConnector(100)
 	connector = SymbolPullerConnector(
 		'http://node',
@@ -549,7 +549,7 @@ async def test_concurrent_close_calls_close_session_once():
 
 async def test_cancelled_close_completes_actual_close_and_re_raises_cancellation():
 	# Arrange:
-	session = BlockingCloseSession()
+	session = FakeSession([], close_event=asyncio.Event())
 	tcp_connector = RecordingTcpConnector(100)
 	connector = SymbolPullerConnector(
 		'http://node',
@@ -573,7 +573,7 @@ async def test_cancelled_close_completes_actual_close_and_re_raises_cancellation
 
 async def test_cancelled_close_consumes_close_failure_and_re_raises_cancellation():
 	# Arrange:
-	session = FailingBlockingCloseSession()
+	session = FakeSession([], close_error=RuntimeError('close failed'), close_event=asyncio.Event())
 	tcp_connector = RecordingTcpConnector(100)
 	connector = SymbolPullerConnector(
 		'http://node',
@@ -738,7 +738,7 @@ async def test_reuses_same_session_after_server_disconnected_error():
 
 async def test_close_failure_leaves_connector_closed():
 	# Arrange:
-	session = FailingCloseSession(RuntimeError('close failed'))
+	session = FakeSession([], close_error=RuntimeError('close failed'))
 	tcp_connector = RecordingTcpConnector(100)
 	connector = SymbolPullerConnector(
 		'http://node',
@@ -761,13 +761,8 @@ async def test_close_failure_leaves_connector_closed():
 
 async def test_close_failure_preserves_session_error_when_pool_close_fails():
 	# Arrange:
-	class FailingCloseTcpConnector(RecordingTcpConnector):
-		async def close(self):
-			self.close_call_count += 1
-			raise RuntimeError('pool close failed')
-
-	session = FailingCloseSession(RuntimeError('session close failed'))
-	tcp_connector = FailingCloseTcpConnector(100)
+	session = FakeSession([], close_error=RuntimeError('session close failed'))
+	tcp_connector = RecordingTcpConnector(100, close_error=RuntimeError('pool close failed'))
 	connector = SymbolPullerConnector(
 		'http://node',
 		13,
@@ -788,13 +783,8 @@ async def test_close_failure_preserves_session_error_when_pool_close_fails():
 
 async def test_close_failure_does_not_replace_pool_cleanup_cancellation():
 	# Arrange:
-	class CancelledCloseTcpConnector(RecordingTcpConnector):
-		async def close(self):
-			self.close_call_count += 1
-			raise asyncio.CancelledError()
-
-	session = FailingCloseSession(RuntimeError('session close failed'))
-	tcp_connector = CancelledCloseTcpConnector(100)
+	session = FakeSession([], close_error=RuntimeError('session close failed'))
+	tcp_connector = RecordingTcpConnector(100, close_error=asyncio.CancelledError())
 	connector = SymbolPullerConnector(
 		'http://node',
 		13,
@@ -860,12 +850,7 @@ async def test_tcp_connector_factory_failure_preserves_error_without_creating_se
 
 async def test_session_factory_failure_preserves_error_when_pool_close_fails():
 	# Arrange:
-	class FailingCloseTcpConnector(RecordingTcpConnector):
-		async def close(self):
-			self.close_call_count += 1
-			raise RuntimeError('pool close failed')
-
-	tcp_connector = FailingCloseTcpConnector(100)
+	tcp_connector = RecordingTcpConnector(100, close_error=RuntimeError('pool close failed'))
 	connector = SymbolPullerConnector(
 		'http://node',
 		13,
@@ -884,12 +869,7 @@ async def test_session_factory_failure_preserves_error_when_pool_close_fails():
 
 async def test_session_factory_failure_does_not_replace_pool_cleanup_cancellation():
 	# Arrange:
-	class CancelledCloseTcpConnector(RecordingTcpConnector):
-		async def close(self):
-			self.close_call_count += 1
-			raise asyncio.CancelledError()
-
-	tcp_connector = CancelledCloseTcpConnector(100)
+	tcp_connector = RecordingTcpConnector(100, close_error=asyncio.CancelledError())
 	connector = SymbolPullerConnector(
 		'http://node',
 		13,
@@ -966,12 +946,10 @@ async def test_serial_requests_reuse_one_tcp_transport(symbol_connector_http_ser
 
 async def test_reconnects_after_server_closes_first_transport(symbol_connector_http_server):
 	# Arrange:
-	session_factory = ClientSessionFactory()
 	connector = SymbolPullerConnector(
 		symbol_connector_http_server.client.make_url(''),
 		13,
-		100,
-		session_factory=session_factory)
+		100)
 	await connector.open()
 
 	# Act:
@@ -982,7 +960,5 @@ async def test_reconnects_after_server_closes_first_transport(symbol_connector_h
 
 	# Assert:
 	assert [{'request': 1}, {'request': 2}] == responses
-	assert 1 == len(session_factory.calls)
-	assert 1 == len(session_factory.sessions)
 	assert 2 == len(symbol_connector_http_server.transports)
 	assert symbol_connector_http_server.transports[0] is not symbol_connector_http_server.transports[1]

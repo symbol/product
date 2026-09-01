@@ -23,16 +23,6 @@ class CountingRateLimiter:
 		self.call_count += 1
 
 
-class PositionalConnector:
-	def __init__(self):
-		self.timeout_seconds = None
-		self.paths = []
-
-	async def get(self, url_path, *_):
-		self.paths.append(url_path)
-		return {'ok': True}
-
-
 class SymbolPullerTest(TestCase):  # pylint: disable=too-many-public-methods
 	def test_collect_dirty_mosaic_ids_for_batch_returns_unique_ids_in_first_encounter_order(self):
 		# Arrange:
@@ -286,7 +276,7 @@ class SymbolPullerTest(TestCase):  # pylint: disable=too-many-public-methods
 
 	def test_preserves_legacy_positional_max_requests_per_second(self):
 		# Arrange:
-		connector = PositionalConnector()
+		connector = ResponseConnector({'chain/info': {'ok': True}})
 		clock = ScriptedClock([0, 0, 0.1, 0.1])
 		with tempfile.TemporaryDirectory() as temp_directory:
 			db_config_path = create_db_config(temp_directory)

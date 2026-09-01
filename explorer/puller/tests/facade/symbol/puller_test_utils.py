@@ -627,6 +627,7 @@ class ResponseConnector:
 	def __init__(self, responses):
 		self.responses = responses
 		self.paths = []
+		self.timeout_seconds = None
 
 	async def get(self, url_path, *_):
 		self.paths.append(url_path)

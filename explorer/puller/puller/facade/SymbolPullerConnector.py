@@ -6,6 +6,8 @@ from aiohttp import ClientSession, ClientTimeout, TCPConnector, client_exception
 from symbollightapi.model.Exceptions import HttpException, NodeException
 from zenlog import log
 
+from puller.facade.async_utils import log_cleanup_failure_safely, select_exception_by_priority
+
 
 class SymbolPullerConnectorState(Enum):
 	"""States in the lifetime of a Symbol puller HTTP connector."""
@@ -60,26 +62,15 @@ class SymbolPullerConnector:  # pylint: disable=too-many-instance-attributes
 
 		try:
 			await self.close()
-		except (asyncio.CancelledError, KeyboardInterrupt, SystemExit) as cleanup_error:
-			if exc_value is None:
-				raise
-			if isinstance(exc_value, asyncio.CancelledError):
-				return False
-			if isinstance(exc_value, (KeyboardInterrupt, SystemExit)) and not isinstance(cleanup_error, asyncio.CancelledError):
-				return False
-			raise
 		except BaseException as cleanup_error:  # pylint: disable=broad-exception-caught
-			if exc_value is None:
-				raise
-			self._log_cleanup_failure(f'Failed to close Symbol puller connector after context failure: {cleanup_error}')
+			selected_error = select_exception_by_priority(exc_value, cleanup_error)
+			if selected_error is cleanup_error:
+				raise cleanup_error
+			if not isinstance(cleanup_error, (asyncio.CancelledError, KeyboardInterrupt, SystemExit)):
+				log_cleanup_failure_safely(
+					self._cleanup_logger,
+					f'Failed to close Symbol puller connector after context failure: {cleanup_error}')
 		return False
-
-	def _log_cleanup_failure(self, message):
-		try:
-			self._cleanup_logger.error(message)
-		except Exception:  # pylint: disable=broad-exception-caught
-			# Cleanup logging must not replace a context body exception.
-			pass
 
 	async def open(self):
 		"""Opens one session, or waits harmlessly when it is already open."""
@@ -102,17 +93,12 @@ class SymbolPullerConnector:  # pylint: disable=too-many-instance-attributes
 				if tcp_connector is not None:
 					try:
 						await self._close_created_connector(tcp_connector)
-					except (asyncio.CancelledError, KeyboardInterrupt, SystemExit) as cleanup_error:
-						if isinstance(setup_error, asyncio.CancelledError):
-							raise setup_error from cleanup_error
-						if isinstance(cleanup_error, asyncio.CancelledError):
+					except BaseException as cleanup_error:  # pylint: disable=broad-exception-caught
+						selected_error = select_exception_by_priority(setup_error, cleanup_error)
+						if selected_error is cleanup_error:
 							raise cleanup_error
-						if isinstance(setup_error, (KeyboardInterrupt, SystemExit)):
+						if isinstance(cleanup_error, (asyncio.CancelledError, KeyboardInterrupt, SystemExit)):
 							raise setup_error from cleanup_error
-						raise cleanup_error
-					except BaseException:  # pylint: disable=broad-exception-caught
-						# Preserve the session factory failure as the setup result.
-						pass
 				raise
 
 			self._tcp_connector = tcp_connector
@@ -215,17 +201,13 @@ class SymbolPullerConnector:  # pylint: disable=too-many-instance-attributes
 			except BaseException as session_error:  # pylint: disable=broad-exception-caught
 				try:
 					await self._close_created_connector(self._tcp_connector)
-				except (asyncio.CancelledError, KeyboardInterrupt, SystemExit) as pool_error:
-					if isinstance(session_error, asyncio.CancelledError):
-						raise session_error from pool_error
-					if isinstance(pool_error, asyncio.CancelledError):
+				except BaseException as pool_error:  # pylint: disable=broad-exception-caught
+					selected_error = select_exception_by_priority(session_error, pool_error)
+					if selected_error is pool_error:
 						raise pool_error
-					if isinstance(session_error, (KeyboardInterrupt, SystemExit)):
+					if isinstance(session_error, (asyncio.CancelledError, KeyboardInterrupt, SystemExit)) \
+						and isinstance(pool_error, (asyncio.CancelledError, KeyboardInterrupt, SystemExit)):
 						raise session_error from pool_error
-					raise pool_error
-				except BaseException:  # pylint: disable=broad-exception-caught
-					# Preserve the session close failure as the cleanup result.
-					pass
 				raise
 		finally:
 			async with self._state_lock:
