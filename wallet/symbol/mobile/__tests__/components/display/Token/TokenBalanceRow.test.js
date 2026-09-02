@@ -15,6 +15,7 @@ const token = TokenFixtureBuilder
 const TICKER = 'XYM';
 const DISPLAY_NAME = `${token.name} • ${TICKER}`;
 const ACCESSORY_TEXT = 'accessory';
+const AMOUNT_PLACEHOLDER = '..';
 
 describe('components/display/Token/TokenBalanceRow', () => {
 	describe('with a name, ticker and amount', () => {
@@ -39,6 +40,23 @@ describe('components/display/Token/TokenBalanceRow', () => {
 			},
 			textToRender: [
 				{ type: 'text', value: DISPLAY_NAME }
+			],
+			textToHide: [
+				{ type: 'text', value: token.amount }
+			]
+		});
+	});
+
+	describe('with a null amount', () => {
+		runRenderTextTest(TokenBalanceRow, {
+			props: {
+				name: token.name,
+				ticker: TICKER,
+				amount: null
+			},
+			textToRender: [
+				{ type: 'text', value: DISPLAY_NAME },
+				{ type: 'text', value: AMOUNT_PLACEHOLDER }
 			],
 			textToHide: [
 				{ type: 'text', value: token.amount }
