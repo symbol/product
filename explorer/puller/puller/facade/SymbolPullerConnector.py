@@ -6,7 +6,7 @@ from aiohttp import ClientSession, ClientTimeout, TCPConnector, client_exception
 from symbollightapi.model.Exceptions import HttpException, NodeException
 from zenlog import log
 
-from puller.facade.async_utils import log_cleanup_failure_safely, select_exception_by_priority
+from puller.facade.async_utils import CONTROL_FLOW_EXCEPTIONS, log_cleanup_failure_safely, select_exception_by_priority
 
 
 class SymbolPullerConnectorState(Enum):
@@ -66,7 +66,7 @@ class SymbolPullerConnector:  # pylint: disable=too-many-instance-attributes
 			selected_error = select_exception_by_priority(exc_value, cleanup_error)
 			if selected_error is cleanup_error:
 				raise cleanup_error
-			if not isinstance(cleanup_error, (asyncio.CancelledError, KeyboardInterrupt, SystemExit)):
+			if not isinstance(cleanup_error, CONTROL_FLOW_EXCEPTIONS):
 				log_cleanup_failure_safely(
 					self._cleanup_logger,
 					f'Failed to close Symbol puller connector after context failure: {cleanup_error}')
@@ -97,7 +97,7 @@ class SymbolPullerConnector:  # pylint: disable=too-many-instance-attributes
 						selected_error = select_exception_by_priority(setup_error, cleanup_error)
 						if selected_error is cleanup_error:
 							raise cleanup_error
-						if isinstance(cleanup_error, (asyncio.CancelledError, KeyboardInterrupt, SystemExit)):
+						if isinstance(cleanup_error, CONTROL_FLOW_EXCEPTIONS):
 							raise setup_error from cleanup_error
 				raise
 
@@ -205,8 +205,8 @@ class SymbolPullerConnector:  # pylint: disable=too-many-instance-attributes
 					selected_error = select_exception_by_priority(session_error, pool_error)
 					if selected_error is pool_error:
 						raise pool_error
-					if isinstance(session_error, (asyncio.CancelledError, KeyboardInterrupt, SystemExit)) \
-						and isinstance(pool_error, (asyncio.CancelledError, KeyboardInterrupt, SystemExit)):
+					if isinstance(session_error, CONTROL_FLOW_EXCEPTIONS) \
+						and isinstance(pool_error, CONTROL_FLOW_EXCEPTIONS):
 						raise session_error from pool_error
 				raise
 		finally:
@@ -220,7 +220,7 @@ class SymbolPullerConnector:  # pylint: disable=too-many-instance-attributes
 
 		try:
 			await self._finish_close()
-		except (asyncio.CancelledError, KeyboardInterrupt, SystemExit) as close_error:
+		except CONTROL_FLOW_EXCEPTIONS as close_error:
 			return False, close_error
 		return True, None
 

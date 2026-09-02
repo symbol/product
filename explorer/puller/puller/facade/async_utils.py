@@ -4,6 +4,12 @@ import asyncio
 
 from puller.model.symbol.format import is_exact_integer
 
+CONTROL_FLOW_EXCEPTIONS = (
+	asyncio.CancelledError,
+	KeyboardInterrupt,
+	SystemExit
+)
+
 
 def select_exception_by_priority(current_exception, candidate_exception):
 	"""Selects the higher-priority exception, retaining the first on ties."""
@@ -32,7 +38,7 @@ def log_cleanup_failure_safely(cleanup_logger, message):
 def _exception_priority(exception):
 	if isinstance(exception, asyncio.CancelledError):
 		return 3
-	if isinstance(exception, (KeyboardInterrupt, SystemExit)):
+	if isinstance(exception, CONTROL_FLOW_EXCEPTIONS):
 		return 2
 	return 1
 

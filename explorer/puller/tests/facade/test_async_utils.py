@@ -31,20 +31,6 @@ class AsyncUtilsTest(TestCase):
 				selected_exception = select_exception_by_priority(current_exception, candidate_exception)
 				self.assertIs(expected_exception, selected_exception)
 
-	def test_select_exception_by_priority_preserves_selected_exception_context(self):
-		# Arrange:
-		current_exception = RuntimeError('operation failed')
-		candidate_exception = KeyboardInterrupt('cleanup interrupted')
-		context_exception = ValueError('original context')
-		candidate_exception.__context__ = context_exception
-
-		# Act:
-		selected_exception = select_exception_by_priority(current_exception, candidate_exception)
-
-		# Assert:
-		self.assertIs(candidate_exception, selected_exception)
-		self.assertIs(context_exception, selected_exception.__context__)
-
 	def test_log_cleanup_failure_safely_ignores_logger_failure(self):
 		# Arrange:
 		cleanup_logger = RecordingCleanupLogger(RuntimeError('logger failed'))

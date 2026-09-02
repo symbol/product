@@ -7,9 +7,9 @@ from aiohttp import web
 from common.symbol.NodeConfiguration import SymbolNodeConfiguration
 
 from puller.facade.SymbolPuller import SymbolPuller
-from puller.facade.SymbolPullerConnector import SymbolPullerConnector, SymbolPullerConnectorStateError
+from puller.facade.SymbolPullerConnector import SymbolPullerConnector
 
-from .puller_test_utils import NODE_URL, RecordingCleanupLogger, create_db_config, set_symbol_connector
+from .puller_test_utils import NODE_URL, RecordingCleanupLogger, create_db_config
 
 
 class RecordingDatabase:
@@ -79,16 +79,15 @@ class ConnectorFactory:
 		self.connector = connector
 		self.calls = []
 
-	def __call__(self, *args):
-		self.calls.append(args)
+	def __call__(self, endpoint, timeout_seconds, connection_limit):
+		self.calls.append((endpoint, timeout_seconds, connection_limit))
 		return self.connector
 
 
 def _create_puller(
 	tmp_path,
 	database,
-	connector=None,
-	connector_factory=None,
+	connector_factory,
 	node_url=f'{NODE_URL}/',
 	**puller_kwargs
 ):
@@ -98,7 +97,6 @@ def _create_puller(
 		db_config_path,
 		'testnet',
 		SymbolNodeConfiguration.from_url(node_url, allow_loopback=True, timeout_seconds=17),
-		connector=connector,
 		connector_factory=connector_factory,
 		**puller_kwargs)
 	puller.symbol_db = database
@@ -170,15 +168,19 @@ async def test_propagates_connector_cleanup_control_flow_after_operation_failure
 	assert 1 == connector.close_call_count
 
 
-@pytest.mark.parametrize('cleanup_error, database_error', [
+@pytest.mark.parametrize('connector_cleanup_error, database_cleanup_error', [
 	(KeyboardInterrupt('connector close interrupted'), None),
 	(KeyboardInterrupt('connector close interrupted'), RuntimeError('database cleanup failed'))
 ])
-async def test_preserves_operation_cancellation_over_connector_control_flow(tmp_path, cleanup_error, database_error):
+async def test_preserves_operation_cancellation_over_connector_control_flow(
+	tmp_path,
+	connector_cleanup_error,
+	database_cleanup_error
+):
 	# Arrange:
 	operation_error = asyncio.CancelledError('operation cancelled')
-	connector = RecordingConnector(close_error=cleanup_error)
-	database = RecordingDatabase(exit_error=database_error)
+	connector = RecordingConnector(close_error=connector_cleanup_error)
+	database = RecordingDatabase(exit_error=database_cleanup_error)
 	puller = _create_puller(tmp_path, database, connector_factory=ConnectorFactory(connector))
 
 	# Act:
@@ -188,6 +190,8 @@ async def test_preserves_operation_cancellation_over_connector_control_flow(tmp_
 
 	# Assert:
 	assert operation_error is exception_info.value
+	# The selected operation cancellation must not be re-chained to a lower-priority cleanup error.
+	assert exception_info.value.__context__ is None
 	assert 1 == connector.close_call_count
 
 
@@ -211,8 +215,8 @@ async def test_preserves_operation_control_flow_over_same_rank_cleanup(tmp_path)
 async def test_connector_cleanup_cancellation_precedes_operation_control_flow(tmp_path):
 	# Arrange:
 	operation_error = KeyboardInterrupt('operation interrupted')
-	connector_error = asyncio.CancelledError('connector cleanup cancelled')
-	connector = RecordingConnector(close_error=connector_error)
+	cleanup_error = asyncio.CancelledError('connector cleanup cancelled')
+	connector = RecordingConnector(close_error=cleanup_error)
 	puller = _create_puller(tmp_path, RecordingDatabase(), connector_factory=ConnectorFactory(connector))
 
 	# Act:
@@ -221,7 +225,7 @@ async def test_connector_cleanup_cancellation_precedes_operation_control_flow(tm
 			raise operation_error
 
 	# Assert:
-	assert connector_error is exception_info.value
+	assert cleanup_error is exception_info.value
 	assert 1 == connector.close_call_count
 
 
@@ -426,54 +430,6 @@ async def test_logs_connector_cleanup_failure_after_database_exit_failure(tmp_pa
 	assert ['Failed to close Symbol node session after database cleanup failure: close failed'] == cleanup_logger.messages
 
 
-async def test_does_not_manage_injected_connector(tmp_path):
-	# Arrange:
-	database = RecordingDatabase()
-	connector = RecordingConnector()
-	puller = _create_puller(tmp_path, database, connector=connector)
-
-	# Act:
-	async with puller:
-		database.create_tables()
-
-	# Assert:
-	assert 0 == connector.open_call_count
-	assert 0 == connector.close_call_count
-
-
-async def test_does_not_manage_or_open_unused_owned_connector_after_injection(tmp_path):
-	# Arrange:
-	owned_connector = RecordingConnector()
-	injected_connector = RecordingConnector()
-	puller = _create_puller(
-		tmp_path,
-		RecordingDatabase(),
-		connector_factory=ConnectorFactory(owned_connector))
-	set_symbol_connector(puller, injected_connector)
-
-	# Act:
-	async with puller:
-		pass
-
-	# Assert:
-	assert 0 == owned_connector.open_call_count
-	assert 0 == owned_connector.close_call_count
-	assert 0 == injected_connector.open_call_count
-	assert 0 == injected_connector.close_call_count
-
-
-def test_rejects_connector_and_factory_together():
-	# Arrange:
-	connector = RecordingConnector()
-
-	# Act:
-	with pytest.raises(ValueError) as exception_info:
-		SymbolPuller(NODE_URL, 'unused.ini', connector=connector, connector_factory=lambda *_: connector)
-
-	# Assert:
-	assert 'connector and connector_factory cannot both be specified' == str(exception_info.value)
-
-
 async def test_preserves_cancellation_while_owned_close_completes(tmp_path):
 	# Arrange:
 	connector = BlockingCloseConnector()
@@ -559,34 +515,34 @@ async def test_preserves_cleanup_cancellation_after_database_exit_failure(tmp_pa
 	assert ['Failed to clean up Symbol puller during interruption: database exit failed'] == cleanup_logger.messages
 
 
-@pytest.mark.parametrize('database_error, connector_error', [
+@pytest.mark.parametrize('database_cleanup_error, connector_cleanup_error', [
 	(asyncio.CancelledError('database exit cancelled'), None),
 	(KeyboardInterrupt('database exit interrupted'), SystemExit('connector close exited'))
 ])
 async def test_database_exit_control_flow_closes_owned_connector_and_propagates(
-	tmp_path, database_error, connector_error):
+	tmp_path, database_cleanup_error, connector_cleanup_error):
 	# Arrange:
-	database = RecordingDatabase(exit_error=database_error)
-	connector = RecordingConnector(close_error=connector_error)
+	database = RecordingDatabase(exit_error=database_cleanup_error)
+	connector = RecordingConnector(close_error=connector_cleanup_error)
 	puller = _create_puller(tmp_path, database, connector_factory=ConnectorFactory(connector))
 
 	# Act:
-	with pytest.raises(type(database_error)) as exception_info:
+	with pytest.raises(type(database_cleanup_error)) as exception_info:
 		async with puller:
 			pass
 
 	# Assert:
-	assert database_error is exception_info.value
+	assert database_cleanup_error is exception_info.value
 	assert 1 == database.exit_call_count
 	assert 1 == connector.close_call_count
 
 
 async def test_connector_cleanup_cancellation_precedes_database_control_flow(tmp_path):
 	# Arrange:
-	database_error = KeyboardInterrupt('database exit interrupted')
-	database = RecordingDatabase(exit_error=database_error)
-	connector_error = asyncio.CancelledError('connector cleanup cancelled')
-	connector = RecordingConnector(close_error=connector_error)
+	database_cleanup_error = KeyboardInterrupt('database exit interrupted')
+	database = RecordingDatabase(exit_error=database_cleanup_error)
+	connector_cleanup_error = asyncio.CancelledError('connector cleanup cancelled')
+	connector = RecordingConnector(close_error=connector_cleanup_error)
 	puller = _create_puller(tmp_path, database, connector_factory=ConnectorFactory(connector))
 
 	# Act:
@@ -595,7 +551,7 @@ async def test_connector_cleanup_cancellation_precedes_database_control_flow(tmp
 			pass
 
 	# Assert:
-	assert connector_error is exception_info.value
+	assert connector_cleanup_error is exception_info.value
 	assert 1 == database.exit_call_count
 	assert 1 == connector.close_call_count
 
@@ -616,8 +572,8 @@ async def test_retries_post_after_silent_pooled_transport_disconnect_within_one_
 	server = await aiohttp_raw_server(handler)
 	created_connectors = []
 
-	def connector_factory(*args):
-		connector = SymbolPullerConnector(*args)
+	def connector_factory(endpoint, timeout_seconds, connection_limit):
+		connector = SymbolPullerConnector(endpoint, timeout_seconds, connection_limit)
 		created_connectors.append(connector)
 		return connector
 
@@ -632,9 +588,6 @@ async def test_retries_post_after_silent_pooled_transport_disconnect_within_one_
 	async with puller:
 		warmup_response = await puller.post_symbol_node('mosaics', {'mosaicIds': ['1']})
 		retried_response = await puller.post_symbol_node('mosaics', {'mosaicIds': ['2']})
-
-	with pytest.raises(SymbolPullerConnectorStateError, match='closed state'):
-		await created_connectors[0].post('mosaics', {'mosaicIds': ['3']})
 
 	# Assert:
 	assert {'request': 1} == warmup_response

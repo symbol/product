@@ -17,7 +17,7 @@ from symbollightapi.model.Exceptions import NodeException
 from zenlog import log
 
 from puller.db.SymbolDatabase import RollbackRefreshEntries, SymbolDatabase
-from puller.facade.async_utils import gather_in_chunks, log_cleanup_failure_safely, select_exception_by_priority
+from puller.facade.async_utils import CONTROL_FLOW_EXCEPTIONS, gather_in_chunks, log_cleanup_failure_safely, select_exception_by_priority
 from puller.facade.RequestRateLimiter import RequestRateLimiter
 from puller.facade.SymbolPullerConnector import SymbolPullerConnector
 from puller.facade.SymbolSyncPerformance import SyncPerformance, request_category
@@ -121,18 +121,14 @@ class SymbolPuller:  # pylint: disable=too-many-instance-attributes
 		config_file,
 		network_type='mainnet',
 		node_config=None,
-		connector=None,
 		max_requests_per_second=DEFAULT_MAX_REQUESTS_PER_SECOND,
 		rate_limiter=None,
 		time_source=time.monotonic,
 		performance_logger=log,
-		connector_factory=None,
+		connector_factory=SymbolPullerConnector,
 		cleanup_logger=log
 	):
 		"""Creates a Symbol puller facade object."""
-
-		if connector is not None and connector_factory is not None:
-			raise ValueError('connector and connector_factory cannot both be specified')
 
 		config = configparser.ConfigParser()
 		config.read(config_file)
@@ -149,17 +145,10 @@ class SymbolPuller:  # pylint: disable=too-many-instance-attributes
 			time_source=time_source)
 		self.node_config = node_config or SymbolNodeConfiguration.from_url(node_url)
 		symbol_node_endpoint = self.node_config.assert_request_allowed(self.node_config.base_url)
-		if connector is not None:
-			self._symbol_connector = connector
-			self._owned_symbol_connector = None
-			# Preserve timeout compatibility for legacy injected connectors; reusable caller-owned connectors configure timeout at construction.
-			self._symbol_connector.timeout_seconds = self.node_config.timeout_seconds
-		else:
-			self._symbol_connector = (connector_factory or SymbolPullerConnector)(
-				symbol_node_endpoint,
-				self.node_config.timeout_seconds,
-				SYMBOL_HTTP_CONNECTION_POOL_LIMIT)
-			self._owned_symbol_connector = self._symbol_connector
+		self._symbol_connector = connector_factory(
+			symbol_node_endpoint,
+			self.node_config.timeout_seconds,
+			SYMBOL_HTTP_CONNECTION_POOL_LIMIT)
 		self.symbol_facade = SymbolFacade(_get_symbol_network(network_type))
 		self._retry_delay = 2
 		self._rate_limiter = rate_limiter or RequestRateLimiter(max_requests_per_second, time_source=time_source)
@@ -188,20 +177,19 @@ class SymbolPuller:  # pylint: disable=too-many-instance-attributes
 			pass
 
 	async def __aenter__(self):
-		"""Enters the puller lifecycle and opens its internally-owned node session."""
+		"""Enters the puller lifecycle and opens its factory-created node session."""
 
 		try:
-			if self._owned_symbol_connector is not None:
-				await self._owned_symbol_connector.open()
+			await self._symbol_connector.open()
 			self.symbol_db.__enter__()
 			return self
 		except BaseException as primary_error:  # pylint: disable=broad-exception-caught
 			try:
-				await self._close_owned_symbol_connector()
+				await self._symbol_connector.close()
 			except BaseException as cleanup_error:  # pylint: disable=broad-exception-caught
 				selected_error = select_exception_by_priority(primary_error, cleanup_error)
 				if selected_error is primary_error:
-					if isinstance(cleanup_error, (asyncio.CancelledError, KeyboardInterrupt, SystemExit)):
+					if isinstance(cleanup_error, CONTROL_FLOW_EXCEPTIONS):
 						raise primary_error from cleanup_error
 					log_cleanup_failure_safely(
 						self._cleanup_logger,
@@ -218,14 +206,14 @@ class SymbolPuller:  # pylint: disable=too-many-instance-attributes
 		control_flow_error = None
 		try:
 			self.symbol_db.__exit__(exc_type, exc_value, traceback)
-		except (asyncio.CancelledError, KeyboardInterrupt, SystemExit) as error:
+		except CONTROL_FLOW_EXCEPTIONS as error:
 			control_flow_error = select_exception_by_priority(control_flow_error, error)
 		except BaseException as error:  # pylint: disable=broad-exception-caught
 			cleanup_error = error
 
 		try:
-			await self._close_owned_symbol_connector()
-		except (asyncio.CancelledError, KeyboardInterrupt, SystemExit) as error:
+			await self._symbol_connector.close()
+		except CONTROL_FLOW_EXCEPTIONS as error:
 			control_flow_error = select_exception_by_priority(control_flow_error, error)
 		except BaseException as error:  # pylint: disable=broad-exception-caught
 			if cleanup_error is None:
@@ -262,10 +250,6 @@ class SymbolPuller:  # pylint: disable=too-many-instance-attributes
 			raise cleanup_error
 
 		return False
-
-	async def _close_owned_symbol_connector(self):
-		if self._owned_symbol_connector is not None:
-			await self._owned_symbol_connector.close()
 
 	def _validate_symbol_node_path(self, url_path):
 		parsed_url = urlparse(url_path)

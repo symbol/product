@@ -91,13 +91,14 @@ def create_symbol_puller(  # pylint: disable=too-many-arguments,too-many-positio
 		puller_kwargs['time_source'] = time_source
 	if performance_logger is not None:
 		puller_kwargs['performance_logger'] = performance_logger
+	if connector is not None:
+		puller_kwargs['connector_factory'] = lambda _endpoint, _timeout_seconds, _connection_limit: connector
 
 	puller = SymbolPuller(
 		node_url,
 		db_config_path,
 		network_type,
 		node_config,
-		connector,
 		max_requests_per_second=1_000_000,
 		rate_limiter=rate_limiter,
 		**puller_kwargs
@@ -134,7 +135,6 @@ def set_symbol_connector(puller, connector):
 	# Keep protected connector replacement in one helper so sync tests can use
 	# deterministic Symbol node responses.
 	puller._symbol_connector = connector  # pylint: disable=protected-access
-	puller._owned_symbol_connector = None  # pylint: disable=protected-access
 
 
 def set_symbol_rate_limiter(puller, rate_limiter):

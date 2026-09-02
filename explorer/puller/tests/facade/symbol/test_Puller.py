@@ -7,9 +7,8 @@ from common.symbol.NodeConfiguration import SymbolNodeConfiguration
 from symbolchain.sc import AliasAction, TransactionType
 from symbollightapi.model.Exceptions import NodeException
 
-from puller.facade.SymbolPuller import SymbolPuller
+from puller.facade.SymbolPuller import SYMBOL_HTTP_CONNECTION_POOL_LIMIT, SymbolPuller
 from puller.model.symbol.Receipt import MOSAIC_EXPIRED_RECEIPT_TYPE, NAMESPACE_EXPIRED_RECEIPT_TYPE
-from tests.test.PerformanceTestUtils import ScriptedClock
 from tests.test.SymbolMosaicTestUtils import MOSAIC_ID, create_expected_mosaic_row, create_mosaic_item
 
 from .puller_test_utils import NODE_URL, ResponseConnector, create_db_config, create_symbol_puller, temporary_symbol_puller
@@ -263,54 +262,26 @@ class SymbolPullerTest(TestCase):  # pylint: disable=too-many-public-methods
 			self.assertIsNone(puller.symbol_db.connection)
 
 	def test_initializes_with_custom_request_timeout(self):
-		# Arrange / Act:
-		connector = MagicMock()
-		with temporary_symbol_puller(
-			'testnet',
-			request_timeout_seconds=15,
-			connector=connector
-		) as puller:
-			# Assert:
-			self.assertEqual(15, puller.node_config.timeout_seconds)
-			self.assertEqual(puller.node_config.timeout_seconds, connector.timeout_seconds)
-
-	def test_preserves_legacy_positional_max_requests_per_second(self):
 		# Arrange:
-		connector = ResponseConnector({'chain/info': {'ok': True}})
-		clock = ScriptedClock([0, 0, 0.1, 0.1])
+		connector = MagicMock()
+		factory_calls = []
+
+		def connector_factory(endpoint, timeout_seconds, connection_limit):
+			factory_calls.append((endpoint, timeout_seconds, connection_limit))
+			return connector
+
 		with tempfile.TemporaryDirectory() as temp_directory:
 			db_config_path = create_db_config(temp_directory)
-			node_config = SymbolNodeConfiguration.from_url(
-				NODE_URL,
-				allow_loopback=True,
-				timeout_seconds=17)
-
 			# Act:
-			puller = SymbolPuller(
+			SymbolPuller(
 				NODE_URL,
 				db_config_path,
 				'testnet',
-				node_config,
-				connector,
-				2,
-				time_source=clock)
+				SymbolNodeConfiguration.from_url(NODE_URL, allow_loopback=True, timeout_seconds=15),
+				connector_factory=connector_factory)
 
-			async def request_twice():
-				first_response = await puller.get_symbol_node('chain/info')
-				second_request_task = asyncio.create_task(puller.get_symbol_node('chain/info'))
-				await asyncio.sleep(0)
-				paths_before_cancellation = list(connector.paths)
-				second_request_task.cancel()
-				with self.assertRaises(asyncio.CancelledError):
-					await second_request_task
-				return first_response, paths_before_cancellation
-
-			first_response, paths_before_cancellation = asyncio.run(request_twice())
-
-			# Assert:
-			self.assertEqual({'ok': True}, first_response)
-			self.assertEqual(['chain/info'], paths_before_cancellation)
-			self.assertEqual(17, connector.timeout_seconds)
+		# Assert:
+		self.assertEqual([(NODE_URL, 15, SYMBOL_HTTP_CONNECTION_POOL_LIMIT)], factory_calls)
 
 	def test_rejects_unsupported_network_type(self):
 		# Arrange:

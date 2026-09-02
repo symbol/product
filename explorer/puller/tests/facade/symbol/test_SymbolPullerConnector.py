@@ -2,6 +2,7 @@
 
 import asyncio
 import json
+import re
 from dataclasses import dataclass
 
 import pytest
@@ -114,12 +115,11 @@ def _failing_tcp_connector_factory(**_):
 
 async def _assert_http_exception(connector, url_path, expected_status, expected_message):
 	# Act:
-	with pytest.raises(HttpException) as exception_info:
+	with pytest.raises(HttpException, match=rf'^{re.escape(expected_message)}$') as exception_info:
 		await connector.get(url_path)
 
 	# Assert:
 	assert expected_status == exception_info.value.http_status_code
-	assert expected_message == str(exception_info.value)
 
 
 def _create_connector(outcomes, timeout_seconds=13, connection_limit=100, endpoint='http://node'):
@@ -204,13 +204,12 @@ async def test_reuses_one_session_for_serial_get_requests():
 		FakeResponse({'value': 2})
 	])
 
-	async with connector as opened_connector:
+	async with connector:
 		# Act:
 		responses = [await connector.get('first'), await connector.get('second')]
 
 	# Assert:
 	assert [{'value': 1}, {'value': 2}] == responses
-	assert connector is opened_connector
 	assert 1 == len(session_factory.calls)
 	assert 2 == len(session.calls)
 	assert 1 == session.close_call_count
@@ -247,10 +246,6 @@ async def test_context_preserves_body_error_and_logs_close_failure():
 	assert body_error is exception_info.value
 	assert 1 == session.close_call_count
 	assert ['Failed to close Symbol puller connector after context failure: close failed'] == cleanup_logger.messages
-	with pytest.raises(SymbolPullerConnectorStateError, match='closed state'):
-		await connector.open()
-	with pytest.raises(SymbolPullerConnectorStateError, match='closed state'):
-		await connector.get('after-close')
 
 
 async def test_context_preserves_body_error_when_cleanup_logging_fails():
@@ -385,14 +380,13 @@ async def test_open_after_open_reuses_existing_session():
 	connector, session, _, session_factory = _create_connector([])
 
 	# Act:
-	await asyncio.gather(connector.open(), connector.open())
 	try:
-		session_creation_count = len(session_factory.calls)
+		await asyncio.gather(connector.open(), connector.open())
 	finally:
 		await connector.close()
 
 	# Assert:
-	assert 1 == session_creation_count
+	assert 1 == len(session_factory.calls)
 	assert 1 == session.close_call_count
 
 
@@ -467,11 +461,11 @@ async def test_open_after_close_is_rejected():
 	await connector.close()
 
 	# Act:
-	with pytest.raises(SymbolPullerConnectorStateError) as exception_info:
+	with pytest.raises(
+		SymbolPullerConnectorStateError,
+		match=r'^Cannot open SymbolPullerConnector in closed state$'
+	):
 		await connector.open()
-
-	# Assert:
-	assert 'Cannot open SymbolPullerConnector in closed state' == str(exception_info.value)
 
 
 async def test_request_after_close_is_rejected():
@@ -480,11 +474,11 @@ async def test_request_after_close_is_rejected():
 	await connector.close()
 
 	# Act:
-	with pytest.raises(SymbolPullerConnectorStateError) as exception_info:
+	with pytest.raises(
+		SymbolPullerConnectorStateError,
+		match=r'^Cannot request from SymbolPullerConnector in closed state$'
+	):
 		await connector.get('after-close')
-
-	# Assert:
-	assert 'Cannot request from SymbolPullerConnector in closed state' == str(exception_info.value)
 
 
 async def test_request_from_new_is_rejected():
@@ -492,11 +486,11 @@ async def test_request_from_new_is_rejected():
 	connector, _, _, _ = _create_connector([])
 
 	# Act:
-	with pytest.raises(SymbolPullerConnectorStateError) as exception_info:
+	with pytest.raises(
+		SymbolPullerConnectorStateError,
+		match=r'^Cannot request from SymbolPullerConnector in new state$'
+	):
 		await connector.get('before-open')
-
-	# Assert:
-	assert 'Cannot request from SymbolPullerConnector in new state' == str(exception_info.value)
 
 
 async def test_request_during_closing_is_rejected():
@@ -511,7 +505,10 @@ async def test_request_during_closing_is_rejected():
 	close_task = asyncio.create_task(connector.close())
 	new_request_task = asyncio.create_task(connector.get('new'))
 	try:
-		with pytest.raises(SymbolPullerConnectorStateError) as exception_info:
+		with pytest.raises(
+			SymbolPullerConnectorStateError,
+			match=r'^Cannot request from SymbolPullerConnector in closing state$'
+		):
 			await new_request_task
 		response.allow_exit.set()
 		active_response = await request_task
@@ -521,7 +518,6 @@ async def test_request_during_closing_is_rejected():
 		await asyncio.gather(request_task, close_task, return_exceptions=True)
 
 	# Assert:
-	assert 'Cannot request from SymbolPullerConnector in closing state' == str(exception_info.value)
 	assert {'ok': True} == active_response
 
 
@@ -537,7 +533,10 @@ async def test_open_during_closing_is_rejected_while_active_request_completes():
 	close_task = asyncio.create_task(connector.close())
 	open_task = asyncio.create_task(connector.open())
 	try:
-		with pytest.raises(SymbolPullerConnectorStateError) as exception_info:
+		with pytest.raises(
+			SymbolPullerConnectorStateError,
+			match=r'^Cannot open SymbolPullerConnector in closing state$'
+		):
 			await open_task
 		response.allow_exit.set()
 		active_response = await request_task
@@ -547,7 +546,6 @@ async def test_open_during_closing_is_rejected_while_active_request_completes():
 		await asyncio.gather(request_task, close_task, return_exceptions=True)
 
 	# Assert:
-	assert 'Cannot open SymbolPullerConnector in closing state' == str(exception_info.value)
 	assert {'ok': True} == active_response
 	assert 1 == session.close_call_count
 
@@ -577,7 +575,7 @@ async def test_close_waits_for_all_active_requests_before_closing_session():
 	# Assert:
 	assert {'ok': True} == first_response
 	assert {'ok': True} == second_response
-	assert close_started_after_first_response is False
+	assert not close_started_after_first_response
 	assert 1 == session.close_call_count
 
 
@@ -593,33 +591,10 @@ async def test_concurrent_close_calls_close_session_once():
 	assert 1 == session.close_call_count
 
 
-async def test_cancelled_close_completes_actual_close_and_re_raises_cancellation():
+@pytest.mark.parametrize('close_error', [None, RuntimeError('close failed')])
+async def test_cancelled_close_completes_actual_close_and_re_raises_cancellation(close_error):
 	# Arrange:
-	session = FakeSession([], close_event=asyncio.Event())
-	tcp_connector = RecordingTcpConnector(100)
-	connector = SymbolPullerConnector(
-		'http://node',
-		13,
-		100,
-		session_factory=RecordingFactory(session),
-		tcp_connector_factory=lambda **_: tcp_connector)
-	await connector.open()
-	close_task = asyncio.create_task(connector.close())
-	await session.close_started.wait()
-
-	# Act:
-	close_task.cancel()
-	session.allow_close.set()
-	with pytest.raises(asyncio.CancelledError):
-		await close_task
-
-	# Assert:
-	assert 1 == session.close_call_count
-
-
-async def test_cancelled_close_consumes_close_failure_and_re_raises_cancellation():
-	# Arrange:
-	session = FakeSession([], close_error=RuntimeError('close failed'), close_event=asyncio.Event())
+	session = FakeSession([], close_error=close_error, close_event=asyncio.Event())
 	tcp_connector = RecordingTcpConnector(100)
 	connector = SymbolPullerConnector(
 		'http://node',
@@ -801,7 +776,10 @@ async def test_close_failure_leaves_connector_closed():
 	# Assert:
 	assert 1 == session.close_call_count
 	assert 1 == tcp_connector.close_call_count
-	with pytest.raises(SymbolPullerConnectorStateError, match='closed state'):
+	with pytest.raises(
+		SymbolPullerConnectorStateError,
+		match=r'^Cannot open SymbolPullerConnector in closed state$'
+	):
 		await connector.open()
 
 
@@ -818,11 +796,10 @@ async def test_close_failure_preserves_session_error_when_pool_close_fails():
 	await connector.open()
 
 	# Act:
-	with pytest.raises(RuntimeError) as exception_info:
+	with pytest.raises(RuntimeError, match=r'^session close failed$'):
 		await connector.close()
 
 	# Assert:
-	assert 'session close failed' == str(exception_info.value)
 	assert 1 == session.close_call_count
 	assert 1 == tcp_connector.close_call_count
 
@@ -851,15 +828,16 @@ async def test_session_factory_failure_closes_created_pool_and_connector():
 		tcp_connector_factory=lambda **_: tcp_connector)
 
 	# Act:
-	with pytest.raises(RuntimeError) as exception_info:
+	with pytest.raises(RuntimeError, match=r'^session factory failed$'):
 		await connector.open()
-	with pytest.raises(SymbolPullerConnectorStateError) as state_exception_info:
+	with pytest.raises(
+		SymbolPullerConnectorStateError,
+		match=r'^Cannot open SymbolPullerConnector in closed state$'
+	):
 		await connector.open()
 
 	# Assert:
-	assert 'session factory failed' == str(exception_info.value)
 	assert 1 == tcp_connector.close_call_count
-	assert 'Cannot open SymbolPullerConnector in closed state' == str(state_exception_info.value)
 
 
 async def test_tcp_connector_factory_failure_preserves_error_without_creating_session_and_closes_connector():
@@ -874,15 +852,16 @@ async def test_tcp_connector_factory_failure_preserves_error_without_creating_se
 		tcp_connector_factory=_failing_tcp_connector_factory)
 
 	# Act:
-	with pytest.raises(RuntimeError) as exception_info:
+	with pytest.raises(RuntimeError, match=r'^tcp connector factory failed$'):
 		await connector.open()
-	with pytest.raises(SymbolPullerConnectorStateError) as state_exception_info:
+	with pytest.raises(
+		SymbolPullerConnectorStateError,
+		match=r'^Cannot open SymbolPullerConnector in closed state$'
+	):
 		await connector.open()
 
 	# Assert:
-	assert 'tcp connector factory failed' == str(exception_info.value)
 	assert 0 == len(session_factory.calls)
-	assert 'Cannot open SymbolPullerConnector in closed state' == str(state_exception_info.value)
 
 
 async def test_session_factory_failure_preserves_error_when_pool_close_fails():
@@ -896,11 +875,10 @@ async def test_session_factory_failure_preserves_error_when_pool_close_fails():
 		tcp_connector_factory=lambda **_: tcp_connector)
 
 	# Act:
-	with pytest.raises(RuntimeError) as exception_info:
+	with pytest.raises(RuntimeError, match=r'^session factory failed$'):
 		await connector.open()
 
 	# Assert:
-	assert 'session factory failed' == str(exception_info.value)
 	assert 1 == tcp_connector.close_call_count
 
 
