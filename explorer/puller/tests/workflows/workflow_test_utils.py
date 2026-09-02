@@ -52,11 +52,15 @@ class RecordingSymbolPuller:
 		self.symbol_db = RecordingSymbolDatabase()
 		self.refresh_accounts_call_count = 0
 		self.synced_max_heights = []
+		self.async_enter_call_count = 0
+		self.async_exit_call_count = 0
 
-	def __enter__(self):
+	async def __aenter__(self):
+		self.async_enter_call_count += 1
 		return self
 
-	def __exit__(self, *_):
+	async def __aexit__(self, *_):
+		self.async_exit_call_count += 1
 		return None
 
 	async def refresh_accounts(self):

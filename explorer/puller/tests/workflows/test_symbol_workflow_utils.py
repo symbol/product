@@ -64,7 +64,7 @@ class SymbolWorkflowUtilsTest(unittest.TestCase):
 		):
 			create_node_config('http://localhost:7890', {})
 
-	def test_run_symbol_workflow_creates_tables_and_runs_operation(self):
+	def test_run_symbol_workflow_runs_operation_after_table_initialization(self):
 		# Arrange:
 		factory = RecordingSymbolPullerFactory()
 		args = argparse.Namespace(
@@ -90,3 +90,5 @@ class SymbolWorkflowUtilsTest(unittest.TestCase):
 		self.assertEqual({'max_requests_per_second': 25}, puller.constructor_kwargs)
 		self.assertEqual(1, puller.symbol_db.create_tables_call_count)
 		self.assertEqual([puller], operation_pullers)
+		self.assertEqual(1, puller.async_enter_call_count)
+		self.assertEqual(1, puller.async_exit_call_count)

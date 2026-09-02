@@ -36,6 +36,6 @@ async def run_symbol_workflow(symbol_puller_factory, args, operation, environmen
 		node_config,
 		**(puller_kwargs or {}))
 
-	with puller:
+	async with puller:
 		puller.symbol_db.create_tables()
 		await operation(puller)

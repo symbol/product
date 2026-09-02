@@ -196,3 +196,5 @@ def test_refresh_accounts_propagates_failure_without_completion_log(caplog):
 
 	# Assert:
 	assert [] == caplog.messages
+	assert 1 == puller_factory.puller.async_enter_call_count
+	assert 1 == puller_factory.puller.async_exit_call_count

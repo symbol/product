@@ -19,6 +19,19 @@ NATIVE_MOSAIC_ID = '72C0212E67A08BCE'
 NATIVE_MOSAIC_DIVISIBILITY = 6
 
 
+class RecordingCleanupLogger:
+	"""Records cleanup messages and can emulate a logger failure."""
+
+	def __init__(self, logging_error=None):
+		self.logging_error = logging_error
+		self.messages = []
+
+	def error(self, message):
+		self.messages.append(message)
+		if self.logging_error:
+			raise self.logging_error
+
+
 class DelegatingSymbolDatabase:
 	"""Delegates unspecified Symbol database operations to a wrapped database."""
 
@@ -78,13 +91,14 @@ def create_symbol_puller(  # pylint: disable=too-many-arguments,too-many-positio
 		puller_kwargs['time_source'] = time_source
 	if performance_logger is not None:
 		puller_kwargs['performance_logger'] = performance_logger
+	if connector is not None:
+		puller_kwargs['connector_factory'] = lambda _endpoint, _timeout_seconds, _connection_limit: connector
 
 	puller = SymbolPuller(
 		node_url,
 		db_config_path,
 		network_type,
 		node_config,
-		connector,
 		max_requests_per_second=1_000_000,
 		rate_limiter=rate_limiter,
 		**puller_kwargs
@@ -613,6 +627,7 @@ class ResponseConnector:
 	def __init__(self, responses):
 		self.responses = responses
 		self.paths = []
+		self.timeout_seconds = None
 
 	async def get(self, url_path, *_):
 		self.paths.append(url_path)
@@ -661,9 +676,8 @@ class SymbolPullerTestBase(TestCase):
 		)
 		self.db_config = self.exit_stack.enter_context(PostgresTestDatabase())
 		self.config_ini = create_db_config(self.config_dir, self.db_config)
-		self.puller = self.exit_stack.enter_context(
-			create_symbol_puller(self.config_ini, 'testnet')
-		)
+		self.puller = create_symbol_puller(self.config_ini, 'testnet')
+		self.exit_stack.enter_context(self.puller.symbol_db)
 		drop_symbol_block_tables_if_present(self.puller.symbol_db)
 		self.puller.symbol_db.create_tables()
 

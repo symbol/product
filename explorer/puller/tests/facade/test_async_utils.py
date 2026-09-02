@@ -1,10 +1,46 @@
 import asyncio
 from unittest import TestCase
 
-from puller.facade.async_utils import gather_in_chunks
+from puller.facade.async_utils import gather_in_chunks, log_cleanup_failure_safely, select_exception_by_priority
+from tests.facade.symbol.puller_test_utils import RecordingCleanupLogger
 
 
 class AsyncUtilsTest(TestCase):
+	def test_select_exception_by_priority_keeps_highest_priority_and_first_observed_instance(self):
+		# Arrange:
+		first_regular = RuntimeError('first regular')
+		second_regular = ValueError('second regular')
+		keyboard_interrupt = KeyboardInterrupt('keyboard interrupt')
+		system_exit = SystemExit('system exit')
+		first_cancellation = asyncio.CancelledError('first cancellation')
+		second_cancellation = asyncio.CancelledError('second cancellation')
+		cases = [
+			(None, first_regular, first_regular),
+			(first_regular, None, first_regular),
+			(first_regular, second_regular, first_regular),
+			(first_regular, keyboard_interrupt, keyboard_interrupt),
+			(keyboard_interrupt, system_exit, keyboard_interrupt),
+			(keyboard_interrupt, first_cancellation, first_cancellation),
+			(first_cancellation, keyboard_interrupt, first_cancellation),
+			(first_cancellation, second_cancellation, first_cancellation)
+		]
+
+		# Act / Assert:
+		for current_exception, candidate_exception, expected_exception in cases:
+			with self.subTest(current_exception=current_exception, candidate_exception=candidate_exception):
+				selected_exception = select_exception_by_priority(current_exception, candidate_exception)
+				self.assertIs(expected_exception, selected_exception)
+
+	def test_log_cleanup_failure_safely_ignores_logger_failure(self):
+		# Arrange:
+		cleanup_logger = RecordingCleanupLogger(RuntimeError('logger failed'))
+
+		# Act:
+		log_cleanup_failure_safely(cleanup_logger, 'cleanup failed')
+
+		# Assert:
+		self.assertEqual(['cleanup failed'], cleanup_logger.messages)
+
 	def test_gather_in_chunks_rejects_non_positive_or_boolean_chunk_size(self):
 		# Act + Assert:
 		async def fetch_item(item):

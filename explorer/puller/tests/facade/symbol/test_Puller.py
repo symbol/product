@@ -3,10 +3,11 @@ import tempfile
 from unittest import TestCase
 from unittest.mock import AsyncMock, MagicMock, patch
 
+from common.symbol.NodeConfiguration import SymbolNodeConfiguration
 from symbolchain.sc import AliasAction, TransactionType
 from symbollightapi.model.Exceptions import NodeException
 
-from puller.facade.SymbolPuller import SymbolPuller
+from puller.facade.SymbolPuller import SYMBOL_HTTP_CONNECTION_POOL_LIMIT, SymbolPuller
 from puller.model.symbol.Receipt import MOSAIC_EXPIRED_RECEIPT_TYPE, NAMESPACE_EXPIRED_RECEIPT_TYPE
 from tests.test.SymbolMosaicTestUtils import MOSAIC_ID, create_expected_mosaic_row, create_mosaic_item
 
@@ -261,16 +262,26 @@ class SymbolPullerTest(TestCase):  # pylint: disable=too-many-public-methods
 			self.assertIsNone(puller.symbol_db.connection)
 
 	def test_initializes_with_custom_request_timeout(self):
-		# Arrange / Act:
+		# Arrange:
 		connector = MagicMock()
-		with temporary_symbol_puller(
-			'testnet',
-			request_timeout_seconds=15,
-			connector=connector
-		) as puller:
-			# Assert:
-			self.assertEqual(15, puller.node_config.timeout_seconds)
-			self.assertEqual(puller.node_config.timeout_seconds, connector.timeout_seconds)
+		factory_calls = []
+
+		def connector_factory(endpoint, timeout_seconds, connection_limit):
+			factory_calls.append((endpoint, timeout_seconds, connection_limit))
+			return connector
+
+		with tempfile.TemporaryDirectory() as temp_directory:
+			db_config_path = create_db_config(temp_directory)
+			# Act:
+			SymbolPuller(
+				NODE_URL,
+				db_config_path,
+				'testnet',
+				SymbolNodeConfiguration.from_url(NODE_URL, allow_loopback=True, timeout_seconds=15),
+				connector_factory=connector_factory)
+
+		# Assert:
+		self.assertEqual([(NODE_URL, 15, SYMBOL_HTTP_CONNECTION_POOL_LIMIT)], factory_calls)
 
 	def test_rejects_unsupported_network_type(self):
 		# Arrange:
