@@ -15,6 +15,10 @@ async def create_simple_nem_client(aiohttp_client, address_to_balance_map=None):
 			return await MockNemServer._process(request, {'sendTimeStamp': 322666792999, 'receiveTimeStamp': 322666799999})
 
 		@staticmethod
+		async def chain_height(request):
+			return await MockNemServer._process(request, {'height': 1234})
+
+		@staticmethod
 		async def account_info(request):
 			balance = 0
 			if address_to_balance_map:
@@ -75,6 +79,7 @@ async def create_simple_nem_client(aiohttp_client, address_to_balance_map=None):
 	# create an app using the server
 	app = web.Application()
 	app.router.add_get('/time-sync/network-time', mock_server.network_time)
+	app.router.add_get('/chain/height', mock_server.chain_height)
 	app.router.add_get('/account/get', mock_server.account_info)
 	app.router.add_get('/account/mosaic/owned', mock_server.account_mosaic_owned)
 	app.router.add_get('/mosaic/supply', mock_server.mosaic_supply)

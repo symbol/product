@@ -9,6 +9,13 @@ async def create_simple_coingecko_client(aiohttp_client):
 	class MockCoinGeckoServer:
 		def __init__(self):
 			self.urls = []
+			self.simulate_unavailable = False
+
+		async def ping(self, request):
+			if self.simulate_unavailable:
+				return await self._process(request, {'status': {'error_message': 'server unavailable'}}, 503)
+
+			return await self._process(request, {'gecko_says': '(V3) To the Moon!'})
 
 		async def price(self, request):
 			ticker = request.url.query['ids']
@@ -30,6 +37,7 @@ async def create_simple_coingecko_client(aiohttp_client):
 
 	# create an app using the server
 	app = web.Application()
+	app.router.add_get('/api/v3/ping', mock_server.ping)
 	app.router.add_get('/api/v3/simple/price', mock_server.price)
 	server = await aiohttp_client(app)  # pylint: disable=redefined-outer-name
 

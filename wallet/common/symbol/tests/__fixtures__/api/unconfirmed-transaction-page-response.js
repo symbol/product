@@ -1,0 +1,79 @@
+/* eslint-disable max-len */
+/**
+ * Response of `/transactions/unconfirmed`.
+ */
+export const unconfirmedTransactionPageResponse = [
+	{
+		meta: {
+			height: '0',
+			hash: '1CABCFA63934926B3E1C646716C4D212867F3BC86DDB83C265D86BDFB3B64260',
+			merkleComponentHash: '1CABCFA63934926B3E1C646716C4D212867F3BC86DDB83C265D86BDFB3B64260',
+			index: 0
+		},
+		transaction: {
+			size: 176,
+			signature:
+                'E46CC709CC8EFAAFF4A0D646C79525B967932C2D7AF79EB6004424063302EB25EB0DA3DFD6BC42A9404E40FA6469E5F8ECBD1ACC2C66B58AAFFB3769EB89960E',
+			signerPublicKey: 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
+			version: 1,
+			network: 152,
+			type: 16724,
+			maxFee: '29268',
+			deadline: '111929184811',
+			recipientAddress: '989222D2C5F190628F208EC652D921DECF679D51CA092A57',
+			mosaics: [
+				{
+					id: '72C0212E67A08BCE',
+					amount: '123000000'
+				}
+			]
+		},
+		id: '6A0C0467FD8A987E1A0FF69D'
+	},
+	{
+		meta: {
+			height: '0',
+			hash: 'B077AD3289BD9B173727A990676BF3ED7D06FB0083937DD9523DEF50AEADC6D9',
+			merkleComponentHash: 'B077AD3289BD9B173727A990676BF3ED7D06FB0083937DD9523DEF50AEADC6D9',
+			index: 0
+		},
+		transaction: {
+			size: 264,
+			signature:
+                '17C38A64316B8197AACD7F1B97199ECD2628403E01AFD3E684FD21BF51FCF233C3E8C4A5A4ADADD900ABA216C7C7EBC31654B7A11A3BF52FDD956C0F2BF00405',
+			signerPublicKey: 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
+			version: 2,
+			network: 152,
+			type: 16961,
+			maxFee: '47200',
+			deadline: '111929184811',
+			transactionsHash: '2C03591ED233B317D8617565D7F75085E0710804EB836933171DDEBC3BBC4294',
+			cosignatures: [],
+			transactions: [
+				{
+					meta: {
+						height: '0',
+						aggregateHash: 'B077AD3289BD9B173727A990676BF3ED7D06FB0083937DD9523DEF50AEADC6D9',
+						aggregateId: '6A94D544863647916806CF70',
+						index: 0
+					},
+					transaction: {
+						signerPublicKey: 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
+						version: 1,
+						network: 152,
+						type: 16724,
+						recipientAddress: '989222D2C5F190628F208EC652D921DECF679D51CA092A57',
+						mosaics: [
+							{
+								id: '72C0212E67A08BCE',
+								amount: '5000000'
+							}
+						]
+					},
+					id: '6A94D544863647916806CF71'
+				}
+			]
+		},
+		id: '6A94D544863647916806CF70'
+	}
+];

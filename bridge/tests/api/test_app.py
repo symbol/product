@@ -9,8 +9,16 @@ from pathlib import Path
 
 import pytest
 
-from bridge.api import create_app
+from bridge.api import BridgeContext, create_app
 from bridge.db.Databases import Databases
+from bridge.models.BridgeConfiguration import (
+	BridgeConfiguration,
+	GlobalConfiguration,
+	MachineConfiguration,
+	NetworkConfiguration,
+	PriceOracleConfiguration,
+	StrategyMode
+)
 
 from ..test.BridgeTestUtils import HASHES, NEM_ADDRESSES, SYMBOL_ADDRESSES, assert_timestamp_within_last_second
 from ..test.DatabaseTestUtils import (
@@ -251,6 +259,89 @@ def _assert_json_response_internal_server_error(response):
 
 
 # pylint: disable=invalid-name
+
+
+# region BridgeContext
+
+VAULT_URL = 'http://vault.example.com'
+VAULT_ACCESS_TOKEN = '4643DDBAF'
+
+PRICE_ORACLE_URL = 'https://api.coingecko.com'
+PRICE_ORACLE_ACCESS_TOKEN = 'CB01FE12'
+
+VAULT_SIGNING_KEY = 'vault:bridge/testnet/xym-bxym/native'
+RAW_SIGNING_KEY = '2525B8B423FCD66D460ED1D53D3B2971DE858792FF70741C0C96922BA2C46C75'
+
+
+def _create_config(native_signer_private_key='', wrapped_signer_private_key=''):
+	"""Creates a configuration without any file on disk."""
+
+	def make_network(blockchain, signer_private_key):
+		extensions = {} if not signer_private_key else {'signer_private_key': signer_private_key}
+		return NetworkConfiguration(blockchain, 'testnet', 'http://127.0.0.1:1', 'address', 'mosaic', extensions)
+
+	return BridgeConfiguration(
+		MachineConfiguration('/nonexistent', '/nonexistent/log', 1, 1),
+		GlobalConfiguration(StrategyMode.STAKE),
+		PriceOracleConfiguration(PRICE_ORACLE_URL, PRICE_ORACLE_ACCESS_TOKEN),
+		PriceOracleConfiguration(VAULT_URL, VAULT_ACCESS_TOKEN),
+		make_network('nem', native_signer_private_key),
+		make_network('symbol', wrapped_signer_private_key))
+
+
+def test_vault_connector_is_created_from_the_vault_configuration():
+	# Arrange: both sections are parsed into the same shape, so a connector built from the wrong one
+	# would look correct and authenticate against the wrong service
+	context = BridgeContext(_create_config(), 600)
+
+	# Act:
+	vault_connector = context.create_vault_connector()
+
+	# Assert:
+	assert VAULT_URL == vault_connector.endpoint
+	assert VAULT_ACCESS_TOKEN == vault_connector.access_token
+
+
+def test_price_oracle_is_created_from_the_price_oracle_configuration():
+	# Arrange:
+	context = BridgeContext(_create_config(), 600)
+
+	# Act:
+	price_oracle = context.create_price_oracle()
+
+	# Assert: the hostname selects the connector, so this also pins that the oracle url is the one used
+	assert PRICE_ORACLE_URL == price_oracle.endpoint
+
+
+def _assert_is_vault_used(expected_is_vault_used, native_signer_private_key, wrapped_signer_private_key):
+	# Act:
+	context = BridgeContext(_create_config(native_signer_private_key, wrapped_signer_private_key), 600)
+
+	# Assert:
+	assert expected_is_vault_used == context.is_vault_used
+
+
+def test_vault_is_used_when_the_native_signing_key_is_stored_in_it():
+	_assert_is_vault_used(True, VAULT_SIGNING_KEY, '')
+
+
+def test_vault_is_used_when_the_wrapped_signing_key_is_stored_in_it():
+	_assert_is_vault_used(True, '', VAULT_SIGNING_KEY)
+
+
+def test_vault_is_used_when_both_signing_keys_are_stored_in_it():
+	_assert_is_vault_used(True, VAULT_SIGNING_KEY, VAULT_SIGNING_KEY)
+
+
+def test_vault_is_not_used_when_no_signing_key_is_configured():
+	_assert_is_vault_used(False, '', '')
+
+
+def test_vault_is_not_used_when_the_signing_key_is_in_configuration():
+	# a bridge holding its keys in configuration leaves the vault section on a placeholder
+	_assert_is_vault_used(False, RAW_SIGNING_KEY, '')
+
+# endregion
 
 
 # region root (/)
