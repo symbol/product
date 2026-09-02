@@ -184,15 +184,15 @@ export class MosaicModule {
 	};
 
 	/**
-	 * Fetches the amount of a given mosaic held by a single account.
+	 * Fetches the balance of a given mosaic held by an account.
 	 * @param {string} mosaicId - The mosaic id.
-	 * @param {string} address - The holder account address.
-	 * @returns {Promise<MosaicOwner>} The mosaic owner with its held amount in relative units.
+	 * @param {string} address - The account address.
+	 * @returns {Promise<string>} The held amount in relative units.
 	 */
-	fetchMosaicOwner = async (mosaicId, address) => {
+	fetchMosaicBalance = async (mosaicId, address) => {
 		const { networkProperties } = this.#walletController;
 
-		return this.#api.mosaic.fetchMosaicOwner(networkProperties, mosaicId, address);
+		return this.#api.mosaic.fetchMosaicBalance(networkProperties, mosaicId, address);
 	};
 
 	/**

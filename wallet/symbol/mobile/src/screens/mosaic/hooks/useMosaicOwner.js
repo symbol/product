@@ -14,7 +14,8 @@ import { useAsyncManager } from '@/app/hooks';
 
 /**
  * React hook for loading the held amount of a single mosaic holder. Provides the available balance of
- * a manually entered source address that is not in the loaded holder list.
+ * a manually entered source address that is not in the loaded holder list. The fetched balance is paired
+ * with the requested address so the caller can tell a fresh result from a stale one.
  * @param {object} params - Hook parameters.
  * @param {WalletController} params.walletController - The wallet controller instance.
  * @param {string} params.mosaicId - The mosaic id to load the holder for.
@@ -22,7 +23,10 @@ import { useAsyncManager } from '@/app/hooks';
  */
 export const useMosaicOwner = ({ walletController, mosaicId }) => {
 	const mosaicOwnerManager = useAsyncManager({
-		callback: address => walletController.modules.mosaic.fetchMosaicOwner(mosaicId, address),
+		callback: async address => ({
+			address,
+			amount: await walletController.modules.mosaic.fetchMosaicBalance(mosaicId, address)
+		}),
 		shouldClearDataOnCall: true
 	});
 

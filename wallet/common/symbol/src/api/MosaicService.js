@@ -135,26 +135,23 @@ export class MosaicService {
 	};
 
 	/**
-	 * Fetches the amount of a given mosaic held by a single account from the node. An account unknown
-	 * to the network holds nothing, so it is returned with a zero amount instead of failing.
+	 * Fetches the balance of a given mosaic held by an account from the node. An account unknown
+	 * to the network holds nothing, so a zero balance is returned instead of failing.
 	 * @param {NetworkProperties} networkProperties - Network properties.
 	 * @param {string} mosaicId - The mosaic id.
-	 * @param {string} address - The holder account address.
-	 * @returns {Promise<MosaicOwner>} - The mosaic owner with its held amount in relative units.
+	 * @param {string} address - The account address.
+	 * @returns {Promise<string>} - The held amount in relative units.
 	 */
-	fetchMosaicOwner = async (networkProperties, mosaicId, address) => {
+	fetchMosaicBalance = async (networkProperties, mosaicId, address) => {
 		const mosaics = await this.#fetchAccountMosaics(networkProperties, address);
 		const absoluteAmount = getMosaicAmount(mosaics, mosaicId);
 
 		if (absoluteAmount === '0')
-			return { address, amount: '0' };
+			return '0';
 
 		const divisibility = await this.#fetchMosaicDivisibility(networkProperties, mosaicId);
 
-		return {
-			address,
-			amount: absoluteToRelativeAmount(absoluteAmount, divisibility)
-		};
+		return absoluteToRelativeAmount(absoluteAmount, divisibility);
 	};
 
 	/**

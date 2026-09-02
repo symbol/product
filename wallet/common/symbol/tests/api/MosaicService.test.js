@@ -262,62 +262,62 @@ describe('MosaicService', () => {
 		});
 	});
 
-	describe('fetchMosaicOwner', () => {
+	describe('fetchMosaicBalance', () => {
 		const mosaicId = heldMosaic.id;
 		const address = mosaicHolderAddress;
 		const accountEndpoint = `${networkProperties.nodeUrl}/accounts/${address}`;
 		const accountWithoutMosaicResponse = { account: { mosaics: [] } };
 
-		const runFetchMosaicOwnerTest = (description, config, expected) => {
+		const runFetchMosaicBalanceTest = (description, config, expected) => {
 			it(description, async () => {
 				// Arrange:
 				config.requestResponses.forEach(response => mockMakeRequest.mockResolvedValueOnce(response));
 
 				// Act:
-				const result = await mosaicService.fetchMosaicOwner(networkProperties, mosaicId, address);
+				const result = await mosaicService.fetchMosaicBalance(networkProperties, mosaicId, address);
 
 				// Assert:
 				expect(mockMakeRequest).toHaveBeenCalledTimes(config.requestResponses.length);
 				expect(mockMakeRequest).toHaveBeenNthCalledWith(1, accountEndpoint);
-				expect(result).toStrictEqual(expected.mosaicOwner);
+				expect(result).toBe(expected.balance);
 			});
 		};
 
-		const fetchMosaicOwnerTests = [
+		const fetchMosaicBalanceTests = [
 			{
 				description: 'fetches the held amount of the account in relative units',
 				config: {
 					requestResponses: [accountInfoResponse, findMosaicInfosResponse(mosaicId)]
 				},
 				expected: {
-					mosaicOwner: { address, amount: '0.54' }
+					balance: '0.54'
 				}
 			},
 			{
-				description: 'returns a zero amount without fetching the mosaic info when the account does not hold the mosaic',
+				description: 'returns a zero balance without fetching the mosaic info when the account does not hold the mosaic',
 				config: {
 					requestResponses: [accountWithoutMosaicResponse]
 				},
 				expected: {
-					mosaicOwner: { address, amount: '0' }
+					balance: '0'
 				}
 			}
 		];
 
-		fetchMosaicOwnerTests.forEach(test => {
-			runFetchMosaicOwnerTest(test.description, test.config, test.expected);
+		fetchMosaicBalanceTests.forEach(test => {
+			runFetchMosaicBalanceTest(test.description, test.config, test.expected);
 		});
 
-		it('returns a zero amount when the account is unknown to the network', async () => {
+		it('returns a zero balance when the account is unknown to the network', async () => {
 			// Arrange:
 			mockMakeRequest.mockRejectedValueOnce(new NotFoundError('Account not found'));
 
 			// Act:
-			const result = await mosaicService.fetchMosaicOwner(networkProperties, mosaicId, address);
+			const result = await mosaicService.fetchMosaicBalance(networkProperties, mosaicId, address);
 
 			// Assert:
 			expect(mockMakeRequest).toHaveBeenCalledTimes(1);
-			expect(result).toStrictEqual({ address, amount: '0' });
+			expect(result).toBe('0');
 		});
 
 		it('rethrows other request errors', async () => {
@@ -326,7 +326,7 @@ describe('MosaicService', () => {
 			mockMakeRequest.mockRejectedValueOnce(requestError);
 
 			// Act & Assert:
-			await expect(mosaicService.fetchMosaicOwner(networkProperties, mosaicId, address)).rejects.toBe(requestError);
+			await expect(mosaicService.fetchMosaicBalance(networkProperties, mosaicId, address)).rejects.toBe(requestError);
 		});
 	});
 });

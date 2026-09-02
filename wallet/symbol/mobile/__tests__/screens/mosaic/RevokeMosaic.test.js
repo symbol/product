@@ -111,9 +111,6 @@ const holdersIncludingCreator = [...holders, creatorHolder];
 
 const creatorOnlyHolders = [creatorHolder];
 
-// A holder outside the loaded list, reached only by typing its address
-const typedHolder = { address: typedHolderAccount.address, amount: TYPED_HOLDER_BALANCE };
-
 // Mock Revocation Transaction Bundle (returned by the token module)
 
 const revocationTransaction = {
@@ -161,7 +158,8 @@ const setupMocks = (overrides = {}) => {
 		modules: {
 			mosaic: {
 				fetchMosaicOwners: jest.fn().mockResolvedValue(overrides.owners ?? holders),
-				fetchMosaicOwner: jest.fn().mockResolvedValue(typedHolder),
+				// Balance of a holder outside the loaded list, reached only by typing its address
+				fetchMosaicBalance: jest.fn().mockResolvedValue(TYPED_HOLDER_BALANCE),
 				createRevocationTransaction: jest.fn().mockReturnValue(revokeTransactionBundle)
 			},
 			transfer: {
@@ -488,7 +486,7 @@ describe('screens/mosaic/RevokeMosaic', () => {
 			await inputSourceAddress(screenTester, typedHolderAccount.address);
 
 			// Assert:
-			expect(walletControllerMock.modules.mosaic.fetchMosaicOwner).toHaveBeenCalledWith(TOKEN_ID, typedHolderAccount.address);
+			expect(walletControllerMock.modules.mosaic.fetchMosaicBalance).toHaveBeenCalledWith(TOKEN_ID, typedHolderAccount.address);
 		});
 
 		it('does not fetch a typed address that is a loaded holder', async () => {
@@ -500,7 +498,7 @@ describe('screens/mosaic/RevokeMosaic', () => {
 			await inputSourceAddress(screenTester, holderAccountA.address);
 
 			// Assert:
-			expect(walletControllerMock.modules.mosaic.fetchMosaicOwner).not.toHaveBeenCalled();
+			expect(walletControllerMock.modules.mosaic.fetchMosaicBalance).not.toHaveBeenCalled();
 		});
 
 		it('renders the sender error without fetching when the typed address is the creator account', async () => {
@@ -513,7 +511,7 @@ describe('screens/mosaic/RevokeMosaic', () => {
 
 			// Assert:
 			screenTester.expectText([SCREEN_TEXT.errorRevokeSender]);
-			expect(walletControllerMock.modules.mosaic.fetchMosaicOwner).not.toHaveBeenCalled();
+			expect(walletControllerMock.modules.mosaic.fetchMosaicBalance).not.toHaveBeenCalled();
 		});
 
 		describe('amount validation', () => {

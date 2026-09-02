@@ -101,7 +101,7 @@ describe('MosaicModule', () => {
 		api = {
 			mosaic: {
 				fetchAccountMosaics: jest.fn(),
-				fetchMosaicOwner: jest.fn(),
+				fetchMosaicBalance: jest.fn(),
 				fetchMosaicOwners: jest.fn()
 			}
 		};
@@ -388,18 +388,18 @@ describe('MosaicModule', () => {
 		});
 	});
 
-	describe('fetchMosaicOwner()', () => {
-		it('fetches the held amount of a single holder', async () => {
+	describe('fetchMosaicBalance()', () => {
+		it('fetches the held amount of a single account', async () => {
 			// Arrange:
 			const [mosaicOwner] = mosaicOwners;
-			api.mosaic.fetchMosaicOwner.mockResolvedValue(mosaicOwner);
+			api.mosaic.fetchMosaicBalance.mockResolvedValue(mosaicOwner.amount);
 
 			// Act:
-			const result = await mosaicModule.fetchMosaicOwner(token.id, mosaicOwner.address);
+			const result = await mosaicModule.fetchMosaicBalance(token.id, mosaicOwner.address);
 
 			// Assert:
-			expect(api.mosaic.fetchMosaicOwner).toHaveBeenCalledWith(networkProperties, token.id, mosaicOwner.address);
-			expect(result).toBe(mosaicOwner);
+			expect(api.mosaic.fetchMosaicBalance).toHaveBeenCalledWith(networkProperties, token.id, mosaicOwner.address);
+			expect(result).toBe(mosaicOwner.amount);
 		});
 	});
 
