@@ -473,6 +473,17 @@ export const createTransactionFee = (networkProperties, amount) => {
 };
 
 /**
+ * Calculates the fee a confirmed transaction actually paid.
+ * The transaction size multiplied by the fee multiplier of the block it was included in.
+ * @param {number} size - The transaction size in bytes.
+ * @param {number} feeMultiplier - The fee multiplier of the block the transaction was included in.
+ * @returns {string} The effective fee. Absolute amount.
+ */
+export const calculateEffectiveFee = (size, feeMultiplier) => {
+	return (BigInt(size) * BigInt(feeMultiplier)).toString();
+};
+
+/**
  * Calculates the transaction fees for a given transaction.
  * @param {NetworkProperties} networkProperties - The network properties.
  * @param {number} size - The transaction size.
