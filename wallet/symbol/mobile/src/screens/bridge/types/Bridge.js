@@ -11,6 +11,7 @@
 /** @typedef {import('wallet-common-core/src/types/Bridge').BridgeError} BridgeError */
 /** @typedef {import('@/app/types/ColorVariants').SemanticRoleColorVariants} SemanticRoleColorVariants */
 /** @typedef {import('@/app/types/Transaction').TransactionFeeTiers} TransactionFeeTiers */
+/** @typedef {import('@/app/types/ActivityLog').ActivityLogItem} ActivityLogItem */
 
 /**
  * Bridge operation mode.
@@ -148,6 +149,57 @@
  * @typedef {object} EstimationSummaryViewModel
  * @property {string} key - Changes with the selected pair; the card replays its fade-in on it.
  * @property {EstimationSummaryRow[]} rows - Rows in display order.
+ */
+
+/**
+ * One selectable side of the swap selector, ready to render.
+ * @typedef {object} SwapSideOption
+ * @property {string} key - `${chainName}|${tokenId}`; the dropdown value.
+ * @property {string} label - Token name with its ticker, for example 'Symbol • XYM'.
+ * @property {string|null} imageId - Token avatar image identifier.
+ * @property {ChainName} chainName - Chain shown next to the label.
+ * @property {string} amount - Balance in relative units.
+ * @property {SwapSide} side - Domain value handed back by the change callbacks.
+ */
+
+/**
+ * View model of the swap selector.
+ * @typedef {object} SwapSelectorViewModel
+ * @property {SwapSideOption|null} source - Selected source option; null while nothing is selected.
+ * @property {SwapSideOption|null} target - Selected target option; null while nothing is selected.
+ * @property {SwapSideOption[]} sourceOptions - Selectable source options.
+ * @property {SwapSideOption[]} targetOptions - Selectable target options.
+ */
+
+/**
+ * One row of the swap history list, ready to render.
+ * @typedef {object} SwapHistoryItem
+ * @property {string} key - Request transaction hash.
+ * @property {string} actionText - Localized action label.
+ * @property {string} dateText - Formatted request date.
+ * @property {{ chainName: ChainName, imageId: string|null }} source - Source chain and its token avatar.
+ * @property {{ chainName: ChainName, imageId: string|null }} target - Target chain and its token avatar.
+ * @property {SwapStatusDisplayData|null} status - Payout status; null while the payout status is unknown.
+ * @property {{ value: string, ticker: string }|null} amount - Payout amount; null before a payout exists.
+ * @property {SwapStatusCaptionDisplayData} caption - Caption under the row.
+ * @property {boolean} isPending - Request confirmed, payout not processed yet; the row is highlighted.
+ * @property {BridgeRequest|BridgeError} request - Domain item, handed back on press.
+ */
+
+/**
+ * View model of the swap history list.
+ * @typedef {object} SwapHistoryViewModel
+ * @property {SwapHistoryItem[]} items - Rows in list order.
+ * @property {string} pageSizeText - Note under the list when the page is full; empty otherwise.
+ */
+
+/**
+ * View model of the swap details screen.
+ * @typedef {object} SwapDetailsViewModel
+ * @property {SwapStatusDisplayData} status - Overall swap status.
+ * @property {SwapSideDisplayData} source - Source side.
+ * @property {SwapSideDisplayData} target - Target side.
+ * @property {ActivityLogItem[]} activityLog - Step-by-step progress.
  */
 
 /** Bridge operation mode constants. */

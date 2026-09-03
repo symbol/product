@@ -86,6 +86,7 @@ const SCREEN_TEXT = {
 	// Accessibility Labels
 	labelSelectSourceToken: 'Select source token',
 	labelSelectTargetToken: 'Select target token',
+	labelReverse: 'Reverse swap direction',
 	inputAmountLabel: 'form_transfer_input_amount',
 
 	// History item
@@ -1034,6 +1035,25 @@ describe('screens/bridge/BridgeSwap', () => {
 				SCREEN_TEXT.textDialogDisabledTitle,
 				SCREEN_TEXT.textDialogDisabledText
 			]);
+		});
+	});
+
+	describe('reverse', () => {
+		it('calls reverse when the reverse button is pressed', () => {
+			// Arrange:
+			const reverseMock = jest.fn();
+			setupMocks({
+				useSwapSelector: {
+					reverse: reverseMock
+				}
+			});
+			const screenTester = new ScreenTester(BridgeSwap, createDefaultProps());
+
+			// Act:
+			screenTester.presButtonByLabel(SCREEN_TEXT.labelReverse);
+
+			// Assert:
+			expect(reverseMock).toHaveBeenCalledTimes(1);
 		});
 	});
 

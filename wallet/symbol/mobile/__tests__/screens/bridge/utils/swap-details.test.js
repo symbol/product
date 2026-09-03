@@ -1,11 +1,18 @@
 import { ActivityStatus } from '@/app/constants';
 import { BridgePayoutStatus, BridgeRequestStatus } from '@/app/screens/bridge/types/Bridge';
-import { buildActivityLog } from '@/app/screens/bridge/utils/activity-log';
+import { buildActivityLog, createSwapDetailsViewModel } from '@/app/screens/bridge/utils/swap-details';
 import { formatDate } from '@/app/utils';
-import { mockLocalization } from '__tests__/mock-helpers';
+import { AccountFixtureBuilder } from '__fixtures__/local/AccountFixtureBuilder';
+import { TokenFixtureBuilder } from '__fixtures__/local/TokenFixtureBuilder';
+import { createWalletControllerMock, mockLocalization } from '__tests__/mock-helpers';
 
 // Constants
 
+const CHAIN_NAME_SYMBOL = 'symbol';
+const CHAIN_NAME_ETHEREUM = 'ethereum';
+const NETWORK_IDENTIFIER = 'testnet';
+const REQUEST_TRANSACTION_HASH = 'ABC123DEF456789REQUEST';
+const PAYOUT_TRANSACTION_HASH = '0xPAYOUT789ABC123DEF';
 const REQUEST_TIMESTAMP = 1684265310994;
 const PAYOUT_TIMESTAMP = 1684351710994;
 const ERROR_MESSAGE = 'Bridge processing error';
@@ -18,7 +25,10 @@ const SCREEN_TEXT = {
 	textStepPayoutSend: 's_bridge_swapStatus_step_payoutSend',
 	textStepPayoutConfirmation: 's_bridge_swapStatus_step_payoutConfirmation',
 	textRequestDateValue: formatDate(REQUEST_TIMESTAMP, key => key, true),
-	textPayoutDateValue: formatDate(PAYOUT_TIMESTAMP, key => key, true)
+	textPayoutDateValue: formatDate(PAYOUT_TIMESTAMP, key => key, true),
+	textStatusCompleted: 's_bridge_history_status_completed',
+	textStatusProcessing: 's_bridge_history_status_processing',
+	textStatusFailed: 's_bridge_history_status_failed'
 };
 
 // Icon Names
@@ -30,12 +40,181 @@ const IconName = {
 	CHECK: 'check'
 };
 
-describe('screens/bridge/utils/activity-log', () => {
+// Account Fixtures
+
+const symbolAccount = AccountFixtureBuilder
+	.createWithAccount(CHAIN_NAME_SYMBOL, NETWORK_IDENTIFIER, 0)
+	.build();
+
+const ethereumAccount = AccountFixtureBuilder
+	.createWithAccount(CHAIN_NAME_ETHEREUM, NETWORK_IDENTIFIER, 0)
+	.build();
+
+// Token Fixtures
+
+const tokenXym = TokenFixtureBuilder
+	.createWithToken(CHAIN_NAME_SYMBOL, NETWORK_IDENTIFIER, 0)
+	.build();
+
+const tokenBxym = TokenFixtureBuilder
+	.createWithToken(CHAIN_NAME_ETHEREUM, NETWORK_IDENTIFIER, 1)
+	.build();
+
+// Wallet Controller Fixtures
+
+// Each controller holds its chain's account, so the side accounts resolve to their wallet names
+const symbolWalletController = createWalletControllerMock({
+	chainName: CHAIN_NAME_SYMBOL,
+	networkIdentifier: NETWORK_IDENTIFIER,
+	accounts: { [NETWORK_IDENTIFIER]: [symbolAccount] }
+});
+
+const ethereumWalletController = createWalletControllerMock({
+	chainName: CHAIN_NAME_ETHEREUM,
+	networkIdentifier: NETWORK_IDENTIFIER,
+	accounts: { [NETWORK_IDENTIFIER]: [ethereumAccount] }
+});
+
+// Bridge Request Fixtures
+
+const createBridgeRequest = (overrides = {}) => ({
+	sourceChainName: CHAIN_NAME_SYMBOL,
+	targetChainName: CHAIN_NAME_ETHEREUM,
+	sourceTokenInfo: tokenXym,
+	targetTokenInfo: tokenBxym,
+	requestStatus: BridgeRequestStatus.CONFIRMED,
+	payoutStatus: BridgePayoutStatus.COMPLETED,
+	requestTransaction: {
+		hash: REQUEST_TRANSACTION_HASH,
+		timestamp: REQUEST_TIMESTAMP,
+		signerAddress: symbolAccount.address,
+		token: { amount: '100' }
+	},
+	payoutTransaction: {
+		hash: PAYOUT_TRANSACTION_HASH,
+		timestamp: PAYOUT_TIMESTAMP,
+		recipientAddress: ethereumAccount.address,
+		token: { amount: '99' }
+	},
+	errorMessage: null,
+	...overrides
+});
+
+const requestCompleted = createBridgeRequest();
+
+const requestWithoutPayout = createBridgeRequest({
+	payoutStatus: BridgePayoutStatus.UNPROCESSED,
+	payoutTransaction: null
+});
+
+const requestFailed = createBridgeRequest({
+	requestStatus: BridgeRequestStatus.ERROR,
+	payoutStatus: undefined,
+	payoutTransaction: null,
+	errorMessage: ERROR_MESSAGE
+});
+
+// Expected Sides
+
+const expectedSourceSide = {
+	chainName: CHAIN_NAME_SYMBOL,
+	networkIdentifier: NETWORK_IDENTIFIER,
+	token: { name: 'Symbol', ticker: 'XYM', imageId: 'xym', amount: '100' },
+	account: { address: symbolAccount.address, name: symbolAccount.name, imageId: null },
+	transactionHash: REQUEST_TRANSACTION_HASH
+};
+
+const expectedTargetSide = {
+	chainName: CHAIN_NAME_ETHEREUM,
+	networkIdentifier: NETWORK_IDENTIFIER,
+	token: { name: 'Bridged XYM', ticker: 'bXYM', imageId: 'bxym', amount: '99' },
+	account: { address: ethereumAccount.address, name: ethereumAccount.name, imageId: null },
+	transactionHash: PAYOUT_TRANSACTION_HASH
+};
+
+const expectedTargetSideWithoutPayout = {
+	...expectedTargetSide,
+	token: { ...expectedTargetSide.token, amount: null },
+	account: null,
+	transactionHash: null
+};
+
+describe('screens/bridge/utils/swap-details', () => {
 	beforeEach(() => {
 		mockLocalization();
 	});
 
-	describe('buildActivityLog', () => {
+	describe('createSwapDetailsViewModel()', () => {
+		const runCreateSwapDetailsViewModelTest = (description, config, expected) => {
+			it(description, () => {
+				// Act:
+				const result = createSwapDetailsViewModel({
+					request: config.request,
+					sourceWalletController: symbolWalletController,
+					targetWalletController: ethereumWalletController
+				});
+
+				// Assert:
+				expect(result.status).toStrictEqual(expected.status);
+				expect(result.source).toStrictEqual(expected.source);
+				expect(result.target).toStrictEqual(expected.target);
+				expect(result.activityLog.map(item => item.status)).toStrictEqual(expected.activityLogStatuses);
+			});
+		};
+
+		const createSwapDetailsViewModelTests = [
+			{
+				description: 'resolves both sides and a complete activity log for a completed swap',
+				config: { request: requestCompleted },
+				expected: {
+					status: { variant: 'success', iconName: 'check-circle', text: SCREEN_TEXT.textStatusCompleted },
+					source: expectedSourceSide,
+					target: expectedTargetSide,
+					activityLogStatuses: [
+						ActivityStatus.COMPLETE,
+						ActivityStatus.COMPLETE,
+						ActivityStatus.COMPLETE,
+						ActivityStatus.COMPLETE
+					]
+				}
+			},
+			{
+				description: 'leaves the target account, hash and amount empty before the payout exists',
+				config: { request: requestWithoutPayout },
+				expected: {
+					status: { variant: 'warning', iconName: 'pending', text: SCREEN_TEXT.textStatusProcessing },
+					source: expectedSourceSide,
+					target: expectedTargetSideWithoutPayout,
+					activityLogStatuses: [
+						ActivityStatus.COMPLETE,
+						ActivityStatus.COMPLETE,
+						ActivityStatus.LOADING,
+						ActivityStatus.PENDING
+					]
+				}
+			},
+			{
+				description: 'marks the bridge step as failed for a rejected request',
+				config: { request: requestFailed },
+				expected: {
+					status: { variant: 'danger', iconName: 'alert-danger', text: SCREEN_TEXT.textStatusFailed },
+					source: expectedSourceSide,
+					target: expectedTargetSideWithoutPayout,
+					activityLogStatuses: [
+						ActivityStatus.COMPLETE,
+						ActivityStatus.ERROR,
+						ActivityStatus.PENDING,
+						ActivityStatus.PENDING
+					]
+				}
+			}
+		];
+
+		createSwapDetailsViewModelTests.forEach(test =>
+			runCreateSwapDetailsViewModelTest(test.description, test.config, test.expected));
+	});
+
+	describe('buildActivityLog()', () => {
 		describe('activity log structure', () => {
 			it('returns array with four activity log items', () => {
 				// Arrange:

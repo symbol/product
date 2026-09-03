@@ -172,6 +172,7 @@ describe('utils/token', () => {
 				expected: {
 					displayData: {
 						name: 'Symbol • XYM',
+						plainName: 'Symbol',
 						ticker: 'XYM',
 						tickerText: 'XYM',
 						imageId: 'xym'
@@ -184,6 +185,7 @@ describe('utils/token', () => {
 				expected: {
 					displayData: {
 						name: unknownToken.name,
+						plainName: unknownToken.name,
 						ticker: null,
 						tickerText: unknownToken.name,
 						imageId: null
