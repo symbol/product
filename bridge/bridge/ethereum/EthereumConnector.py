@@ -14,6 +14,8 @@ from .RpcUtils import make_rpc_request_json, parse_rpc_response_hex_value
 
 FeeInformation = namedtuple('FeeInformation', ['base_fee', 'priority_fee'])
 
+INSUFFICIENT_BALANCE_ERROR_MESSAGES = ('transfer amount exceeds balance', 'insufficient funds')
+
 
 class ConfirmedTransactionExecutionFailure(NodeException):
 	"""Exception raised when a transaction is confirmed but failed execution."""
@@ -51,7 +53,8 @@ class EthereumConnector(BasicConnector):
 		response_json = await self.post('', request_json)
 		if 'error' in response_json:
 			error_message = f'{request_json["method"]} RPC call failed: {response_json["error"]["message"]}'
-			if 'transfer amount exceeds balance' in response_json['error']['message']:
+			node_message = response_json['error']['message'].lower()
+			if any(message in node_message for message in INSUFFICIENT_BALANCE_ERROR_MESSAGES):
 				raise InsufficientBalanceException(error_message)
 
 			raise NodeException(error_message)
