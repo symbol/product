@@ -60,10 +60,7 @@ export const TransactionConfirmationDialog = ({
 							<TableView
 								isTitleTranslatable
 								data={section.tableData}
-								addressBook={section.addressBook}
-								walletAccounts={section.walletAccounts}
 								chainName={section.chainName}
-								networkIdentifier={section.networkIdentifier}
 							/>
 						</Stack>
 					))}

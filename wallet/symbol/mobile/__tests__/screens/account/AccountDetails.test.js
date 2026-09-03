@@ -14,10 +14,11 @@ jest.mock('@/app/lib/platform/PlatformUtils', () => ({
 }));
 
 jest.mock('@/app/utils', () => ({
+	...jest.requireActual('@/app/utils'),
+	...require('__tests__/mock-factories').createAccountDisplayDataUtilsMock({}),
 	createAccountAddressQr: jest.fn(() => ({})),
 	createExplorerAccountUrl: jest.fn((chainName, networkIdentifier, address) =>
-		`https://explorer.${chainName}.${networkIdentifier}/account/${address}`),
-	getAccountKnownInfo: jest.fn(() => null)
+		`https://explorer.${chainName}.${networkIdentifier}/account/${address}`)
 }));
 
 jest.mock('@/app/config', () => {

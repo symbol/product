@@ -44,12 +44,9 @@ export const CreateMultisigAccount = props => {
 	const walletController = useWalletController(chainName);
 	const {
 		networkIdentifier,
-		accounts,
 		currentAccount,
 		ticker
 	} = walletController;
-	const walletAccounts = accounts[networkIdentifier];
-	const { addressBook } = walletController.modules;
 
 	// New account
 	const accountGenerationManager = useAsyncManager({
@@ -160,8 +157,7 @@ export const CreateMultisigAccount = props => {
 						<InputAddress
 							label={$t('input_address')}
 							extraValidators={[validateAddress(chainName)]}
-							addressBook={addressBook}
-							accounts={walletAccounts}
+							chainName={chainName}
 							value={cosignatoryInput}
 							onChange={inputCosignatory}
 						/>
@@ -184,13 +180,9 @@ export const CreateMultisigAccount = props => {
 							{multisigAccount && (
 								<AccountListItem
 									address={multisigAccount.address}
-									balance="0"
+									name={$t('s_multisig_defaultAccountName')}
+									amount="0"
 									ticker={ticker}
-									walletAccounts={walletAccounts}
-									addressBook={addressBook}
-									chainName={chainName}
-									networkIdentifier={networkIdentifier}
-									defaultName={$t('s_multisig_defaultAccountName')}
 								/>
 							)}
 							<ButtonPlain
@@ -222,9 +214,6 @@ export const CreateMultisigAccount = props => {
 									isEditable
 									cosignatories={cosignatories}
 									chainName={chainName}
-									networkIdentifier={networkIdentifier}
-									walletAccounts={walletAccounts}
-									addressBook={addressBook}
 									onRemove={removeCosignatory}
 								/>
 							)}

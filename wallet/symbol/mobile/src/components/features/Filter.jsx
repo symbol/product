@@ -10,7 +10,6 @@ const DISABLED_OPACITY = 0.7;
 
 /** @typedef {import('@/app/types/Filter').FilterItem} FilterItem */
 /** @typedef {import('@/app/types/Filter').FilterValue} FilterValue */
-/** @typedef {import('@/app/types/Network').NetworkIdentifier} NetworkIdentifier */
 /** @typedef {import('@/app/types/Network').ChainName} ChainName */
 
 /**
@@ -80,23 +79,17 @@ const ClearFilterChip = ({ isDisabled = false, onPress }) => (
  * @param {FilterItem[]} props.data - Array of filter configuration items.
  * @param {FilterValue} props.value - Current filter values as key-value pairs.
  * @param {boolean} [props.isDisabled=false] - Whether all filters are disabled.
- * @param {object} [props.addressBook] - Address book instance for address filters.
- * @param {Array} [props.accounts] - List of wallet accounts for address filters.
- * @param {ChainName} [props.chainName] - Blockchain name for address resolution.
- * @param {NetworkIdentifier} [props.networkIdentifier] - Network identifier for address resolution.
+ * @param {ChainName} [props.chainName] - The chain the address filters resolve against. Defaults to the main chain.
  * @param {function(object): void} props.onChange - Callback when filter values change.
  * @returns {React.ReactNode} Filter component.
  */
 export const Filter = props => {
-	const { 
-		data, 
-		value, 
-		isDisabled = false, 
-		addressBook, 
-		accounts,
-		chainName, 
-		networkIdentifier, 
-		onChange 
+	const {
+		data,
+		value,
+		isDisabled = false,
+		chainName,
+		onChange
 	} = props;
 	const [expandedFilter, setExpandedFilter] = useState(null);
 
@@ -175,10 +168,7 @@ export const Filter = props => {
 					isOpen
 					title={expandedFilter.title}
 					value={value[expandedFilter.name]}
-					addressBook={addressBook}
-					accounts={accounts}
 					chainName={chainName}
-					networkIdentifier={networkIdentifier}
 					onChange={filterValue => handleFilterValueChange(expandedFilter, filterValue)}
 					onClose={handleModalClose}
 				/>

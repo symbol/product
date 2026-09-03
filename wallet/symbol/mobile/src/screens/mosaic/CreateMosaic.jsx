@@ -75,12 +75,10 @@ export const CreateMosaic = () => {
 		isWalletReady,
 		isNetworkConnectionReady,
 		networkProperties,
-		networkIdentifier,
 		chainName,
 		ticker
 	} = walletController;
 	const currentAccountInfo = walletController.currentAccountInfo || {};
-	const walletAccounts = walletController.accounts[networkIdentifier];
 
 	// Transaction sender
 	const {
@@ -207,11 +205,7 @@ export const CreateMosaic = () => {
 							<SelectTransactionSender
 								value={senderAddress}
 								options={senderOptions}
-								ticker={ticker}
 								chainName={chainName}
-								networkIdentifier={networkIdentifier}
-								walletAccounts={walletAccounts}
-								addressBook={walletController.modules.addressBook}
 								isMultisigDisabled
 								onChange={changeSenderAddress}
 							/>

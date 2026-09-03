@@ -76,9 +76,6 @@ export const TransportRequest = ({ route }) => {
 								<RequestDetails
 									requestDetailsViewModel={requestDetailsViewModel}
 									chainName={transportUriObject.chainName}
-									networkIdentifier={transportUriObject.networkIdentifier}
-									walletAccounts={walletController.accounts}
-									addressBook={walletController.modules.addressBook}
 								/>
 							</Stack>
 						)}

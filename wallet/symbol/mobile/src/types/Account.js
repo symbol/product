@@ -12,4 +12,13 @@
 
 /** @typedef {SymbolAccountInfo | EthereumAccountInfo} AccountInfo */
 
+/**
+ * Resolved display data for an account, consumed by the account display components.
+ * @typedef {object} AccountDisplayData
+ * @property {string} address - The account address.
+ * @property {string|null} name - The display name for the account, or null when unresolved.
+ * @property {string|null} imageId - The image ID for the account avatar, or null if not available.
+ * @property {string} color - The generated color for the account avatar when no image is available.
+ */
+
 export {};

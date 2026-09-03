@@ -69,6 +69,17 @@ export const validateSupplyChanged = (currentSupply, divisibility) => newSupply 
 };
 
 /**
+ * Creates a validator rejecting the sender's own address as the revocation source, since a mosaic
+ * cannot be revoked from the account announcing the revocation.
+ * @param {string} senderAddress - The address the revocation is sent from.
+ * @returns {(address: string) => string|undefined} The source address validator.
+ */
+export const validateNotSenderAddress = senderAddress => address => {
+	if (address.trim() === senderAddress)
+		return 'validation_error_mosaic_revoke_sender';
+};
+
+/**
  * Creates a validator for the duration in blocks, applied only to expiring mosaics. The value must be a
  * whole number of blocks within the allowed range.
  * @returns {(duration: string) => ValidationError|undefined} The duration validator.

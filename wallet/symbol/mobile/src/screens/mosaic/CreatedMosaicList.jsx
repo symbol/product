@@ -1,9 +1,36 @@
 import { useCreatedMosaicList } from './hooks';
 import { ButtonCircle, FilteredListScreenTemplate, Spacer, StyledText, TokenListItem } from '@/app/components';
-import { useInit, useRefresh, useWalletController, useWalletRefreshLifecycle } from '@/app/hooks';
+import { useInit, useRefresh, useTokenDisplayData, useWalletController, useWalletRefreshLifecycle } from '@/app/hooks';
 import { $t } from '@/app/localization';
 import { Router } from '@/app/router/Router';
+import { createTokenExpiration } from '@/app/utils';
 import React, { useCallback } from 'react';
+
+/** @typedef {import('@/app/types/Token').Token} Token */
+
+/**
+ * CreatedMosaicListItem component. Resolves a mosaic's display data and renders the token list
+ * row with its expiration state.
+ * @param {object} props - Component props.
+ * @param {Token} props.mosaic - Mosaic to display.
+ * @param {object} props.networkProperties - Network properties for the expiration display.
+ * @param {function(): void} props.onPress - Press handler.
+ * @returns {React.ReactNode} CreatedMosaicListItem component.
+ */
+const CreatedMosaicListItem = ({ mosaic, networkProperties, onPress }) => {
+	const tokenDisplayData = useTokenDisplayData(mosaic);
+
+	return (
+		<TokenListItem
+			name={tokenDisplayData.name}
+			amount={tokenDisplayData.amount}
+			ticker={tokenDisplayData.ticker}
+			imageId={tokenDisplayData.imageId}
+			expiration={createTokenExpiration(mosaic, networkProperties)}
+			onPress={onPress}
+		/>
+	);
+};
 
 /**
  * CreatedMosaicList screen component. Displays the paginated list of mosaics created by the
@@ -15,7 +42,6 @@ export const CreatedMosaicList = () => {
 	const walletController = useWalletController();
 	const {
 		chainName,
-		networkIdentifier,
 		networkProperties,
 		currentAccount,
 		isWalletReady
@@ -75,15 +101,12 @@ export const CreatedMosaicList = () => {
 	), []);
 
 	const renderItem = useCallback(({ item }) => (
-		<TokenListItem
-			token={item}
-			chainName={chainName}
-			networkIdentifier={networkIdentifier}
-			chainHeight={networkProperties.chainHeight}
-			blockGenerationTargetTime={networkProperties.blockGenerationTargetTime}
-			onPress={openTokenDetails}
+		<CreatedMosaicListItem
+			mosaic={item}
+			networkProperties={networkProperties}
+			onPress={() => openTokenDetails(item)}
 		/>
-	), [chainName, networkIdentifier, networkProperties.chainHeight, networkProperties.blockGenerationTargetTime, openTokenDetails]);
+	), [networkProperties, openTokenDetails]);
 
 	const renderSectionHeader = useCallback(() => null, []);
 

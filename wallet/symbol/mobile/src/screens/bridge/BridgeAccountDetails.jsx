@@ -12,7 +12,7 @@ import {
 	StyledText,
 	TokenListItem
 } from '@/app/components';
-import { usePasscode, useToggle, useWalletController } from '@/app/hooks';
+import { usePasscode, useToggle, useTokenDisplayData, useWalletController } from '@/app/hooks';
 import { PlatformUtils } from '@/app/lib/platform/PlatformUtils';
 import { $t } from '@/app/localization';
 import { Router } from '@/app/router/Router';
@@ -29,6 +29,7 @@ export const BridgeAccountDetails = ({ route }) => {
 	const walletController = useWalletController(chainName);
 	const { networkIdentifier, currentAccount, currentAccountInfo } = walletController;
 	const tokens = currentAccountInfo?.tokens || currentAccountInfo?.mosaics || [];
+	const tokensDisplayData = useTokenDisplayData(tokens, chainName);
 
 	// Send/Receive buttons
 	const receiveQrData = createAccountAddressQr({
@@ -99,15 +100,20 @@ export const BridgeAccountDetails = ({ route }) => {
 							<StyledText type="title">
 								{$t('s_bridge_tokens_title')}
 							</StyledText>
-							{tokens.map(token => (
-								<TokenListItem
-									key={token.id}
-									token={token}
-									chainName={chainName}
-									networkIdentifier={networkIdentifier}
-									onPress={handleTokenPress}
-								/>
-							))}
+							{tokens.map((token, index) => {
+								const tokenDisplayData = tokensDisplayData[index];
+
+								return (
+									<TokenListItem
+										key={token.id}
+										name={tokenDisplayData.name}
+										amount={tokenDisplayData.amount}
+										ticker={tokenDisplayData.ticker}
+										imageId={tokenDisplayData.imageId}
+										onPress={() => handleTokenPress(token)}
+									/>
+								);
+							})}
 						</Stack>
 					</Stack>
 				</Spacer>

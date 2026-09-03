@@ -184,6 +184,18 @@ export class MosaicModule {
 	};
 
 	/**
+	 * Fetches the balance of a given mosaic held by an account.
+	 * @param {string} mosaicId - The mosaic id.
+	 * @param {string} address - The account address.
+	 * @returns {Promise<string>} The held amount in relative units.
+	 */
+	fetchMosaicBalance = async (mosaicId, address) => {
+		const { networkProperties } = this.#walletController;
+
+		return this.#api.mosaic.fetchMosaicBalance(networkProperties, mosaicId, address);
+	};
+
+	/**
 	 * Calculates the transaction fees for a given transaction bundle.
 	 * @param {TransactionBundle} transactionBundle - The transaction bundle.
 	 * @returns {TransactionFees[]} The transaction fees for each transaction in the bundle.

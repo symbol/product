@@ -1,6 +1,6 @@
 import { useMultisigAccountList } from './hooks';
 import { AccountListItem, ButtonCircle, EmptyListMessage, Screen, ScreenIllustration, Spacer, Stack, StyledText } from '@/app/components';
-import { useInit, useRefresh, useWalletController, useWalletRefreshLifecycle } from '@/app/hooks';
+import { useAccountDisplayData, useInit, useRefresh, useWalletController, useWalletRefreshLifecycle } from '@/app/hooks';
 import { $t } from '@/app/localization';
 import { Router } from '@/app/router/Router';
 import React from 'react';
@@ -14,21 +14,18 @@ export const MultisigAccountList = () => {
 	const walletController = useWalletController();
 	const {
 		chainName,
-		networkIdentifier,
 		ticker,
-		accounts,
 		isWalletReady
 	} = walletController;
-	const { addressBook } = walletController.modules;
-	const walletAccounts = accounts[networkIdentifier];
 
 	// Data fetching
-	const { 
+	const {
 		data: multisigAccountList,
 		load,
 		reset,
-		isLoading 
+		isLoading
 	} = useMultisigAccountList(walletController);
+	const accountsDisplayData = useAccountDisplayData(multisigAccountList.map(accountInfo => accountInfo.address));
 
 	// Refresh lifecycle
 	useWalletRefreshLifecycle({
@@ -73,20 +70,21 @@ export const MultisigAccountList = () => {
 				</Spacer>
 				<Spacer>
 					<Stack gap="s">
-						{multisigAccountList.map(accountInfo => (
-							<AccountListItem
-								key={accountInfo.address}
-								address={accountInfo.address}
-								balance={accountInfo.balance}
-								ticker={ticker}
-								walletAccounts={walletAccounts}
-								addressBook={addressBook}
-								chainName={chainName}
-								networkIdentifier={networkIdentifier}
-								defaultName={$t('s_multisig_defaultAccountName')}
-								onPress={() => openAccount(accountInfo)}
-							/>
-						))}
+						{multisigAccountList.map((accountInfo, index) => {
+							const accountDisplayData = accountsDisplayData[index];
+
+							return (
+								<AccountListItem
+									key={accountInfo.address}
+									address={accountInfo.address}
+									name={accountDisplayData.name ?? $t('s_multisig_defaultAccountName')}
+									amount={accountInfo.balance}
+									ticker={ticker}
+									imageId={accountDisplayData.imageId}
+									onPress={() => openAccount(accountInfo)}
+								/>
+							);
+						})}
 						{multisigAccountList.length === 0 && (
 							<EmptyListMessage />
 						)}

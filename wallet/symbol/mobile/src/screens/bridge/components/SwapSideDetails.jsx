@@ -1,5 +1,5 @@
 import {
-	AccountView,
+	AccountRow,
 	ButtonPlain,
 	Card,
 	CopyButtonContainer,
@@ -8,7 +8,7 @@ import {
 	Spacer,
 	Stack,
 	StyledText,
-	TokenView
+	TokenBalanceRow
 } from '@/app/components';
 import { PlatformUtils } from '@/app/lib/platform/PlatformUtils';
 import { $t } from '@/app/localization';
@@ -30,7 +30,7 @@ import { createExplorerTransactionUrl } from '@/app/utils';
  * @param {SwapSideTypeValue} props.type - The side type (source or target).
  * @param {ChainName} props.chainName - The blockchain name.
  * @param {NetworkIdentifier} props.networkIdentifier - The network identifier.
- * @param {ResolvedTokenData} props.token - Token information.
+ * @param {ResolvedTokenData} props.token - Token information. A null amount shows the amount placeholder.
  * @param {ResolvedAccountData|null} props.account - Account information.
  * @param {string|null} props.transactionHash - The transaction hash.
  * @returns {import('react').ReactNode} SwapSideDetails component.
@@ -43,9 +43,6 @@ export const SwapSideDetails = ({ type, chainName, networkIdentifier, token, acc
 	const accountTitle = type === SwapSideType.SOURCE
 		? $t('fieldTitle_senderAddress')
 		: $t('fieldTitle_recipientAddress');
-
-	// Token
-	const tokenAmountText = token.amount ? token.amount : '..';
 
 	// Transaction hash
 	const isTransactionVisible = !!transactionHash;
@@ -62,11 +59,11 @@ export const SwapSideDetails = ({ type, chainName, networkIdentifier, token, acc
 		<Card>
 			<Spacer>
 				<Stack>
-					<TokenView
+					<TokenBalanceRow
 						name={token.name}
 						ticker={token.ticker}
 						imageId={token.imageId}
-						amount={tokenAmountText}
+						amount={token.amount}
 						size="l"
 					/>
 					<Divider color={Colors.Semantic.background.tertiary.lighter} />
@@ -78,7 +75,7 @@ export const SwapSideDetails = ({ type, chainName, networkIdentifier, token, acc
 					<Field title={accountTitle}>
 						{isAccountVisible ? (
 							<CopyButtonContainer value={account.address} isStretched>
-								<AccountView
+								<AccountRow
 									address={account.address}
 									name={account.name}
 									imageId={account.imageId}

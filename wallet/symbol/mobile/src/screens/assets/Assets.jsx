@@ -1,9 +1,38 @@
 import { useAssetsData } from './hooks';
 import { Header } from '@/app/app/components';
-import { AccountView, CopyButtonContainer, FilteredListScreenTemplate, Spacer, StyledText, TokenListItem } from '@/app/components';
-import { useInit, useRefresh, useWalletController, useWalletRefreshLifecycle } from '@/app/hooks';
+import { AccountRow, CopyButtonContainer, FilteredListScreenTemplate, Spacer, StyledText, TokenListItem } from '@/app/components';
+import { useInit, useRefresh, useTokenDisplayData, useWalletController, useWalletRefreshLifecycle } from '@/app/hooks';
 import { Router } from '@/app/router/Router';
+import { createTokenExpiration } from '@/app/utils';
 import React, { useCallback } from 'react';
+
+/** @typedef {import('@/app/types/Network').ChainName} ChainName */
+/** @typedef {import('@/app/types/Token').Token} Token */
+
+/**
+ * AssetsTokenListItem component. Resolves a token's display data for its section's chain and
+ * renders the token list row with its expiration state.
+ * @param {object} props - Component props.
+ * @param {Token} props.token - Token to display.
+ * @param {ChainName} props.chainName - Chain the token belongs to.
+ * @param {object} props.networkProperties - Network properties for the expiration display.
+ * @param {function(): void} props.onPress - Press handler.
+ * @returns {React.ReactNode} AssetsTokenListItem component.
+ */
+const AssetsTokenListItem = ({ token, chainName, networkProperties, onPress }) => {
+	const tokenDisplayData = useTokenDisplayData(token, chainName);
+
+	return (
+		<TokenListItem
+			name={tokenDisplayData.name}
+			amount={tokenDisplayData.amount}
+			ticker={tokenDisplayData.ticker}
+			imageId={tokenDisplayData.imageId}
+			expiration={createTokenExpiration(token, networkProperties)}
+			onPress={onPress}
+		/>
+	);
+};
 
 /**
  * Assets screen component. Displays a filterable list of tokens/mosaics across all connected
@@ -14,7 +43,6 @@ import React, { useCallback } from 'react';
 export const Assets = () => {
 	const walletController = useWalletController();
 	const {
-		networkIdentifier,
 		networkProperties,
 		currentAccount,
 		isWalletReady
@@ -62,7 +90,7 @@ export const Assets = () => {
 				</Spacer>
 			)}
 			<CopyButtonContainer value={section.address} isStretched>
-				<AccountView
+				<AccountRow
 					address={section.address}
 					name={section.name}
 				/>
@@ -71,28 +99,26 @@ export const Assets = () => {
 	), []);
 
 	const renderItem = useCallback(({ item, section }) => {
-		const handleTokenPress = token => {
+		const handleTokenPress = () => {
 			Router.goToTokenDetails({
 				params: {
 					chainName: section.chainName,
 					accountAddress: section.address,
-					tokenId: token.id,
-					preloadedData: token
+					tokenId: item.id,
+					preloadedData: item
 				}
 			});
 		};
 
 		return (
-			<TokenListItem
+			<AssetsTokenListItem
 				token={item}
 				chainName={section.chainName}
-				networkIdentifier={networkIdentifier}
-				chainHeight={networkProperties.chainHeight}
-				blockGenerationTargetTime={networkProperties.blockGenerationTargetTime}
+				networkProperties={networkProperties}
 				onPress={handleTokenPress}
 			/>
 		);
-	}, [networkIdentifier, networkProperties.chainHeight, networkProperties.blockGenerationTargetTime]);
+	}, [networkProperties]);
 
 	return (
 		<FilteredListScreenTemplate

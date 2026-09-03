@@ -1,6 +1,6 @@
 import { addressFromRaw, createSearchUrl, getMosaicAmount, mosaicInfoFromDTO } from '../utils';
 import _ from 'lodash';
-import { absoluteToRelativeAmount } from 'wallet-common-core';
+import { NotFoundError, absoluteToRelativeAmount } from 'wallet-common-core';
 
 /** @typedef {import('../types/Mosaic').Mosaic} Mosaic */
 /** @typedef {import('../types/Mosaic').MosaicInfo} MosaicInfo */
@@ -132,6 +132,47 @@ export class MosaicService {
 			address: addressFromRaw(accountDTO.account.address),
 			amount: absoluteToRelativeAmount(getMosaicAmount(accountDTO.account.mosaics, mosaicId), divisibility)
 		}));
+	};
+
+	/**
+	 * Fetches the balance of a given mosaic held by an account from the node. An account unknown
+	 * to the network holds nothing, so a zero balance is returned instead of failing.
+	 * @param {NetworkProperties} networkProperties - Network properties.
+	 * @param {string} mosaicId - The mosaic id.
+	 * @param {string} address - The account address.
+	 * @returns {Promise<string>} - The held amount in relative units.
+	 */
+	fetchMosaicBalance = async (networkProperties, mosaicId, address) => {
+		const mosaics = await this.#fetchAccountMosaics(networkProperties, address);
+		const absoluteAmount = getMosaicAmount(mosaics, mosaicId);
+
+		if (absoluteAmount === '0')
+			return '0';
+
+		const divisibility = await this.#fetchMosaicDivisibility(networkProperties, mosaicId);
+
+		return absoluteToRelativeAmount(absoluteAmount, divisibility);
+	};
+
+	/**
+	 * Fetches the mosaics held by an account from the node, treating an account unknown to the network as holding none.
+	 * @param {NetworkProperties} networkProperties - Network properties.
+	 * @param {string} address - The account address.
+	 * @returns {Promise<Array<{id: string, amount: string}>>} - The held mosaics in absolute units.
+	 */
+	#fetchAccountMosaics = async (networkProperties, address) => {
+		const endpoint = `${networkProperties.nodeUrl}/accounts/${address}`;
+
+		try {
+			const { account } = await this.#makeRequest(endpoint);
+
+			return account.mosaics;
+		} catch (error) {
+			if (error instanceof NotFoundError || error.statusCode === 404)
+				return [];
+
+			throw error;
+		}
 	};
 
 	/**

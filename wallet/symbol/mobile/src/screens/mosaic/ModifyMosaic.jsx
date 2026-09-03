@@ -1,25 +1,27 @@
 import {
+	Divider,
 	FeeSelector,
-	SelectTransactionSender,
+	Field,
 	Spacer,
 	Stack,
 	StyledText,
 	TextBox,
+	TokenInfoCard,
 	TransactionScreenTemplate
 } from '@/app/components';
 import { useStandardTransactionWorkflow } from '@/app/components/templates/TransactionScreenTemplate/hooks';
 import {
 	useDebounce,
 	useInit,
+	useTokenDisplayData,
 	useTransactionFees,
-	useTransactionSender,
 	useValidation,
 	useWalletController,
 	useWalletRefreshLifecycle
 } from '@/app/hooks';
 import { $t } from '@/app/localization';
 import { Router } from '@/app/router/Router';
-import { SupplyDeltaCard } from '@/app/screens/mosaic/components';
+import { SupplyDeltaView } from '@/app/screens/mosaic/components';
 import { useModifyMosaicFormState, useModifyMosaicTransaction, useMosaicInfo } from '@/app/screens/mosaic/hooks';
 import { calculateSupplyDelta, validateMosaicSupply, validateSupplyChanged } from '@/app/screens/mosaic/utils';
 import { validateRequired } from '@/app/utils';
@@ -27,7 +29,6 @@ import React, { useEffect, useMemo } from 'react';
 import Animated, { FadeInDown, FadeOut } from 'react-native-reanimated';
 
 /** @typedef {import('@/app/screens/mosaic/types/Mosaic').ModifyMosaicRouteParams} ModifyMosaicRouteParams */
-/** @typedef {import('@/app/types/Token').TokenInfo} TokenInfo */
 
 /**
  * ModifyMosaic screen component. Provides the interface for changing the total supply of an existing
@@ -41,25 +42,13 @@ export const ModifyMosaic = props => {
 	const { route } = props;
 	const walletController = useWalletController(route.params?.chainName);
 	const {
-		accounts,
 		isWalletReady,
 		isNetworkConnectionReady,
-		networkIdentifier,
 		chainName,
 		ticker
 	} = walletController;
 	const currentAccountInfo = walletController.currentAccountInfo || {};
-	const walletAccounts = accounts[networkIdentifier];
 	const { mosaicId } = route.params;
-
-	// Transaction sender
-	const {
-		options: senderOptions,
-		value: senderAddress,
-		changeValue: changeSenderAddress,
-		load: loadSenderOptions,
-		reset: resetSenderOptions
-	} = useTransactionSender(walletController);
 
 	// Mosaic info
 	const {
@@ -68,6 +57,8 @@ export const ModifyMosaic = props => {
 		load: loadMosaic,
 		reset: resetMosaic
 	} = useMosaicInfo({ walletController, mosaicId });
+	const mosaicToken = mosaic ? { id: mosaic.id, name: mosaic.names?.[0] } : { id: mosaicId };
+	const { name: mosaicName, imageId: mosaicImageId } = useTokenDisplayData(mosaicToken, chainName);
 
 	// Form state
 	const {
@@ -76,16 +67,6 @@ export const ModifyMosaic = props => {
 		changeNewSupply,
 		changeTransactionSpeed
 	} = useModifyMosaicFormState({ currentSupply: mosaic?.supply });
-
-	// Mosaic identity and precision shown on the supply card, falling back to the id when unnamed
-	/** @type {TokenInfo|null} */
-	const tokenDisplayData = mosaic
-		? {
-			id: mosaic.id,
-			name: mosaic.names?.[0] || mosaic.id,
-			divisibility: mosaic.divisibility
-		}
-		: null;
 
 	// Supply change delta calculation
 	const supplyDelta = useMemo(
@@ -136,16 +117,9 @@ export const ModifyMosaic = props => {
 
 	useWalletRefreshLifecycle({
 		walletController,
-		onRefresh: () => {
-			loadSenderOptions();
-			loadMosaic();
-		},
-		onClear: () => {
-			resetSenderOptions();
-			resetMosaic();
-		}
+		onRefresh: loadMosaic,
+		onClear: resetMosaic
 	});
-	useInit(loadSenderOptions, isWalletReady);
 	useInit(loadMosaic, isWalletReady);
 
 	// Derived state
@@ -171,43 +145,36 @@ export const ModifyMosaic = props => {
 			<Spacer>
 				<Stack gap="l">
 					<Stack gap="none">
-						<StyledText type="title" size="s">{$t('s_mosaicCreation_sender_title')}</StyledText>
-						<SelectTransactionSender
-							value={senderAddress}
-							options={senderOptions}
-							ticker={ticker}
-							chainName={chainName}
-							networkIdentifier={networkIdentifier}
-							walletAccounts={walletAccounts}
-							addressBook={walletController.modules.addressBook}
-							isMultisigDisabled
-							onChange={changeSenderAddress}
-						/>
-					</Stack>
-					<Stack gap="none">
 						<StyledText type="title">{$t('screen_ModifyMosaic')}</StyledText>
 						<StyledText type="body">{$t('s_modifyMosaic_description')}</StyledText>
 					</Stack>
-					<Stack gap="none">
-						<Stack gap="m">
-							{!!supplyDelta && (
-								<SupplyDeltaCard
-									token={tokenDisplayData}
-									currentSupply={mosaic.supply}
-									newSupply={newSupply}
-									delta={supplyDelta.delta}
-									action={supplyDelta.action}
-								/>
-							)}
-							<TextBox
-								label={$t('s_modifyMosaic_newSupply_label')}
-								keyboardType="decimal-pad"
-								errorMessage={supplyErrorMessage}
-								value={newSupply}
-								onChange={changeNewSupply}
-							/>
-						</Stack>
-					</Stack>
+					{!!mosaic && (
+						<TokenInfoCard name={mosaicName} imageId={mosaicImageId}>
+							<Field title={$t('fieldTitle_mosaicId')}>
+								<StyledText>{mosaic.id}</StyledText>
+							</Field>
+							<Field title={$t('fieldTitle_divisibility')}>
+								<StyledText>{mosaic.divisibility}</StyledText>
+							</Field>
+						</TokenInfoCard>
+					)}
+					<Divider />
+					{!!mosaic && (
+						<SupplyDeltaView
+							divisibility={mosaic.divisibility}
+							currentSupply={mosaic.supply}
+							newSupply={newSupply}
+							delta={supplyDelta.delta}
+							action={supplyDelta.action}
+						/>
+					)}
+					<TextBox
+						label={$t('s_modifyMosaic_newSupply_label')}
+						keyboardType="decimal-pad"
+						errorMessage={supplyErrorMessage}
+						value={newSupply}
+						onChange={changeNewSupply}
+					/>
 					{!!transactionFees && (
 						<Animated.View entering={FadeInDown} exiting={FadeOut}>
 							<FeeSelector

@@ -4,6 +4,7 @@ export { useModifyMosaicFormState } from './useModifyMosaicFormState';
 export { useModifyMosaicTransaction } from './useModifyMosaicTransaction';
 export { useMosaicIdentity } from './useMosaicIdentity';
 export { useMosaicInfo } from './useMosaicInfo';
+export { useMosaicOwner } from './useMosaicOwner';
 export { useMosaicOwners } from './useMosaicOwners';
 export { useMosaicTransaction } from './useMosaicTransaction';
 export { useRevokeMosaicFormState } from './useRevokeMosaicFormState';

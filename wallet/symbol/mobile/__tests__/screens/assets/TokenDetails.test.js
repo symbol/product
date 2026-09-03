@@ -34,11 +34,6 @@ jest.mock('@/app/utils', () => ({
 		name: TOKEN_NAME,
 		ticker: TOKEN_TICKER,
 		imageId: 'image'
-	}),
-	createTokenDisplayData: () => ({
-		name: `${TOKEN_NAME} • ${TOKEN_TICKER}`,
-		ticker: TOKEN_TICKER,
-		imageId: 'image'
 	})
 }));
 

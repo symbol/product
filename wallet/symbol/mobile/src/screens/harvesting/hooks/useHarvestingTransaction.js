@@ -59,15 +59,12 @@ export const useHarvestingTransaction = ({ walletController, selectedNodeUrl, ac
 		if (actionType === HarvestingAction.STOP)
 			return [];
 
-		const { chainName, networkIdentifier, modules: { addressBook }, accounts } = walletController;
+		const { chainName } = walletController;
 
 		return [{
 			id: 'section_0',
 			title: '',
 			chainName,
-			networkIdentifier,
-			addressBook,
-			walletAccounts: accounts,
 			tableData: objectToTableData({ nodeUrl: selectedNodeUrl })
 		}];
 	}, [walletController, selectedNodeUrl, actionType]);

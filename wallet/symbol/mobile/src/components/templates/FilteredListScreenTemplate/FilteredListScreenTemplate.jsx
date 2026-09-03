@@ -116,16 +116,13 @@ export const FilteredListScreenTemplate = ({
 	shouldShowFooter
 }) => {
 	const walletController = useWalletController();
-	const { accounts, networkIdentifier, chainName, modules } = walletController;
+	const { chainName } = walletController;
 
 	const listHeader = (
 		<>
 			{renderListHeader?.()}
 			<Filter
-				accounts={accounts[networkIdentifier]}
-				addressBook={modules?.addressBook}
 				chainName={chainName}
-				networkIdentifier={networkIdentifier}
 				data={filterConfig}
 				isDisabled={isFilterDisabled || isRefreshing || isLoading}
 				value={filterValue}

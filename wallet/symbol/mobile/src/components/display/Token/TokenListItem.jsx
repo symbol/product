@@ -1,71 +1,42 @@
-import { Amount, ExpirationProgress, ListItemContainer, StyledText, TokenAvatar } from '@/app/components';
+import { ExpirationProgress, ListItemContainer, TokenBalanceRow } from '@/app/components';
 import { Sizes } from '@/app/styles';
-import { createTokenDisplayData } from '@/app/utils';
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet } from 'react-native';
 
 const PROGRESS_WIDTH = Sizes.Semantic.spacing.m * 15;
 
-/** @typedef {import('@/app/types/Token').Token} Token */
-/** @typedef {import('@/app/types/Network').NetworkIdentifier} NetworkIdentifier */
-/** @typedef {import('@/app/types/Network').ChainName} ChainName */
+/** @typedef {import('@/app/types/Token').TokenExpiration} TokenExpiration */
 
 /**
- * Props for the TokenListItem component.
- * @typedef {object} TokenListItemProps
- * @property {Token} token - Token data to display.
- * @property {ChainName} chainName - Chain name identifier.
- * @property {NetworkIdentifier} networkIdentifier - Network identifier (mainnet/testnet).
- * @property {number} chainHeight - Current blockchain height.
- * @property {number} blockGenerationTargetTime - Average block generation time in seconds.
- * @property {function(Token): void} [onPress] - Optional press handler.
- */
-
-/**
- * TokenListItem component. Displays a token in a list with avatar, name, amount,
- * and optional expiration progress indicator.
- * @param {TokenListItemProps} props - Component props.
+ * TokenListItem component. A pressable list card for a token: avatar, name, amount, and an
+ * optional expiration progress indicator.
+ * @param {object} props - Component props.
+ * @param {string} props.name - Resolved token name.
+ * @param {string|null} [props.amount] - Token amount.
+ * @param {string} [props.ticker] - Token ticker symbol, appended to the name label.
+ * @param {string} [props.imageId] - Known token image identifier.
+ * @param {TokenExpiration|null} [props.expiration] - Expiration data. The progress bar is hidden when not provided.
+ * @param {string} [props.accessibilityLabel] - Accessibility label for the pressable card.
+ * @param {function(): void} [props.onPress] - Optional press handler.
  * @returns {React.ReactNode} TokenListItem component.
  */
-export const TokenListItem = ({ token, chainName, networkIdentifier, chainHeight, blockGenerationTargetTime, onPress }) => {
-	const tokenDisplayData = createTokenDisplayData(token, chainName, networkIdentifier);
-
-	// Expiration progress
-	const isProgressShown = token.endHeight && !token.isUnlimitedDuration;
-
-	// Handlers
-	const handlePress = () => {
-		onPress?.(token);
-	};
-
-	return (
-		<ListItemContainer cardStyle={styles.root} onPress={handlePress}>
-			<TokenAvatar imageId={tokenDisplayData.imageId} size="l" />
-			<View>
-				<StyledText>
-					{tokenDisplayData.name}
-				</StyledText>
-				<Amount size="l" value={token.amount} />
-				{isProgressShown && (
-					<ExpirationProgress
-						startHeight={token.startHeight}
-						endHeight={token.endHeight}
-						chainHeight={chainHeight}
-						blockGenerationTargetTime={blockGenerationTargetTime}
-						style={styles.expirationProgress}
-					/>
-				)}
-			</View>
-		</ListItemContainer>
-	);
-};
+export const TokenListItem = ({ name, amount, ticker, imageId, expiration, accessibilityLabel, onPress }) => (
+	<ListItemContainer accessibilityLabel={accessibilityLabel} onPress={onPress}>
+		<TokenBalanceRow name={name} amount={amount} ticker={ticker} imageId={imageId} size="l">
+			{!!expiration && (
+				<ExpirationProgress
+					startHeight={expiration.startHeight}
+					endHeight={expiration.endHeight}
+					chainHeight={expiration.chainHeight}
+					blockGenerationTargetTime={expiration.blockGenerationTargetTime}
+					style={styles.expirationProgress}
+				/>
+			)}
+		</TokenBalanceRow>
+	</ListItemContainer>
+);
 
 const styles = StyleSheet.create({
-	root: {
-		flexDirection: 'row',
-		alignItems: 'center',
-		gap: Sizes.Semantic.spacing.m
-	},
 	expirationProgress: {
 		width: PROGRESS_WIDTH
 	}

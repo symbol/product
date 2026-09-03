@@ -29,6 +29,19 @@ jest.mock('@/app/screens/bridge/hooks', () => ({
 	useSwapSelector: jest.fn()
 }));
 
+// Resolve token labels by id, so both chains resolve under the single mocked controller.
+jest.mock('@/app/utils', () => ({
+	...jest.requireActual('@/app/utils'),
+	getTokenKnownInfo: (chainName, networkIdentifier, tokenId) => {
+		const tokenInfoById = {
+			'72C0212E67A08BCE': { name: 'Symbol', ticker: 'XYM', imageId: 'symbol' },
+			'0xac461bf5a6554e8406f58b192d83aeea695e229b': { name: 'Bridged XYM', ticker: 'bXYM', imageId: 'bxym' },
+			eth: { name: 'Ether', ticker: 'ETH', imageId: 'eth' }
+		};
+
+		return tokenInfoById[tokenId] ?? { name: null, ticker: null, imageId: null };
+	}
+}));
 
 // Constants
 

@@ -35,6 +35,9 @@ const BRIDGE_ID = 'symbol-xym-ethereum-bxym';
 
 const REQUEST_TRANSACTION_HASH = 'ABC123DEF456789REQUEST';
 const PAYOUT_TRANSACTION_HASH = '0xPAYOUT789ABC123DEF';
+const REQUEST_AMOUNT = '100';
+const PAYOUT_AMOUNT = '99';
+const AMOUNT_PLACEHOLDER = '..';
 const REQUEST_TIMESTAMP = 1684265310994;
 const PAYOUT_TIMESTAMP = 1684351710994;
 const ERROR_MESSAGE = 'Bridge processing error';
@@ -134,13 +137,13 @@ const createBridgeRequestData = (overrides = {}) => ({
 		hash: REQUEST_TRANSACTION_HASH,
 		timestamp: REQUEST_TIMESTAMP,
 		signerAddress: symbolAccount.address,
-		token: { amount: '100' }
+		token: { amount: REQUEST_AMOUNT }
 	},
 	payoutTransaction: {
 		hash: PAYOUT_TRANSACTION_HASH,
 		timestamp: PAYOUT_TIMESTAMP,
 		recipientAddress: ethereumAccount.address,
-		token: { amount: '99' }
+		token: { amount: PAYOUT_AMOUNT }
 	},
 	errorMessage: null,
 	...overrides
@@ -244,12 +247,16 @@ describe('screens/bridge/BridgeSwapDetails', () => {
 						CHAIN_NAME_SYMBOL,
 						symbolAccount.address,
 						REQUEST_TRANSACTION_HASH,
+						REQUEST_AMOUNT,
 						// Target side
 						CHAIN_NAME_ETHEREUM,
 						ethereumAccount.address,
-						PAYOUT_TRANSACTION_HASH
+						PAYOUT_TRANSACTION_HASH,
+						PAYOUT_AMOUNT
 					],
-					notVisibleTexts: []
+					notVisibleTexts: [
+						AMOUNT_PLACEHOLDER
+					]
 				}
 			},
 			{
@@ -263,11 +270,14 @@ describe('screens/bridge/BridgeSwapDetails', () => {
 						CHAIN_NAME_SYMBOL,
 						symbolAccount.address,
 						REQUEST_TRANSACTION_HASH,
-						// Target side chain name visible
-						CHAIN_NAME_ETHEREUM
+						REQUEST_AMOUNT,
+						// Target side chain name and amount placeholder visible
+						CHAIN_NAME_ETHEREUM,
+						AMOUNT_PLACEHOLDER
 					],
 					notVisibleTexts: [
 						PAYOUT_TRANSACTION_HASH,
+						PAYOUT_AMOUNT,
 						ethereumAccount.address
 					]
 				}

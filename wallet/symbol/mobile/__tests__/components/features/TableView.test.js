@@ -1,6 +1,6 @@
 import { TableView } from '@/app/components/features/TableView';
 import { runRenderComponentTest, runRenderTextTest } from '__tests__/component-tests';
-import { mockLocalization } from '__tests__/mock-helpers';
+import { mockLocalization, mockWalletController } from '__tests__/mock-helpers';
 import { render } from '@testing-library/react-native';
 
 jest.mock('@/app/localization', () => ({
@@ -8,44 +8,35 @@ jest.mock('@/app/localization', () => ({
 }));
 
 jest.mock('@/app/utils', () => ({
-	getAccountKnownInfo: address => {
-		const accountInfoMap = {
-			'TADDRESS1': { name: 'Alice', imageId: 'alice' },
-			'TADDRESS2': { name: 'Bob', imageId: 'bob' },
-			'TADDRESS3': { name: null, imageId: null }
-		};
-		return accountInfoMap[address] || { name: null, imageId: null };
-	},
-	createTokenDisplayData: token => {
+	...jest.requireActual('@/app/utils'),
+	...require('__tests__/mock-factories').createAccountDisplayDataUtilsMock({
+		'TADDRESS1': { name: 'Alice', imageId: 'alice' },
+		'TADDRESS2': { name: 'Bob', imageId: 'bob' },
+		'TADDRESS3': { name: null, imageId: null }
+	}),
+	getTokenKnownInfo: (chainName, networkIdentifier, tokenId) => {
 		const tokenInfoMap = {
 			'token1': { name: 'Symbol', ticker: 'XYM', imageId: 'symbol' },
 			'token2': { name: 'Custom Token', ticker: 'CTK', imageId: 'custom' }
 		};
-		const info = tokenInfoMap[token.id] || { name: null, ticker: null, imageId: null };
-		const name = info.name ?? token.name ?? token.id;
-		const nameText = !info.ticker ? name : `${name} • ${info.ticker}`;
-		return { name: nameText, ticker: info.ticker, imageId: info.imageId };
-	},
-	getTransactionTypeTranslationKey: (type, chainName) => `transactionDescriptor_${chainName}_${type}`
+
+		return tokenInfoMap[tokenId] ?? { name: null, ticker: null, imageId: null };
+	}
 }));
 
 describe('components/TableView', () => {
+	beforeEach(() => {
+		mockWalletController();
+	});
+
 	const createProps = ({
 		data,
-		addressBook,
-		walletAccounts,
 		chainName,
-		networkIdentifier,
-		isTitleTranslatable,
-		showEmptyArrays
+		isTitleTranslatable
 	} = {}) => ({
 		data: data ?? [],
-		addressBook: addressBook ?? {},
-		walletAccounts: walletAccounts ?? { mainnet: [] },
 		chainName: chainName ?? 'symbol',
-		networkIdentifier: networkIdentifier ?? 'mainnet',
-		isTitleTranslatable: isTitleTranslatable ?? false,
-		showEmptyArrays: showEmptyArrays ?? false
+		isTitleTranslatable: isTitleTranslatable ?? false
 	});
 
 	describe('render', () => {
@@ -151,8 +142,9 @@ describe('components/TableView', () => {
 						]
 					}
 				},
+				// The Amount primitive renders the integer and decimal parts as separate nodes
 				expected: {
-					visibleTexts: ['Fee', 'Symbol • XYM', '0.5']
+					visibleTexts: ['Fee', 'Symbol • XYM', '0', '.5']
 				}
 			},
 			{
@@ -305,8 +297,7 @@ describe('components/TableView', () => {
 					props: {
 						data: [
 							{ title: 'Recipients', type: 'account', value: [] }
-						],
-						showEmptyArrays: true
+						]
 					}
 				},
 				expected: {
@@ -317,6 +308,25 @@ describe('components/TableView', () => {
 
 		tests.forEach(test => {
 			runArrayValueTest(test.description, test.config, test.expected);
+		});
+	});
+
+	describe('token and fee amount collision', () => {
+		it('renders each row with its own amount when a token and its fee share a token id', () => {
+			// Arrange: the native-currency send confirmation renders the transfer and the fee with the same token id
+			const props = createProps({
+				data: [
+					{ title: 'Transfer', type: 'token', value: { id: 'token1', amount: '100' } },
+					{ title: 'Fee', type: 'fee', value: { token: { id: 'token1', amount: '0.5' } } }
+				]
+			});
+
+			// Act:
+			const { queryAllByText } = render(<TableView {...props} />);
+
+			// Assert: each amount comes from its own row, not the shared id-keyed map
+			expect(queryAllByText('100')).toHaveLength(1);
+			expect(queryAllByText('.5')).toHaveLength(1);
 		});
 	});
 

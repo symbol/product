@@ -1,11 +1,9 @@
-import { AccountView, ActionRow, ButtonCircle, Stack } from '@/app/components';
-import { createAccountDisplayData } from '@/app/utils';
+import { AccountRow, ActionRow, ButtonCircle, Stack } from '@/app/components';
+import { useAccountDisplayData } from '@/app/hooks';
 import React from 'react';
 import { View } from 'react-native';
 
 /** @typedef {import('@/app/screens/multisig/types/Multisig').Cosignatory} Cosignatory */
-/** @typedef {import('@/app/types/Account').WalletAccount} WalletAccount */
-/** @typedef {import('@/app/types/Network').NetworkIdentifier} NetworkIdentifier */
 /** @typedef {import('@/app/types/Network').ChainName} ChainName */
 
 /**
@@ -15,21 +13,17 @@ import { View } from 'react-native';
  * @param {boolean} [props.isEditable=false] - Whether to show remove buttons.
  * @param {(address: Cosignatory) => void} [props.onRemove] - Callback when a cosignatory is removed.
  * @param {Cosignatory[]} props.cosignatories - List of cosignatory addresses.
- * @param {ChainName} props.chainName - The blockchain name.
- * @param {NetworkIdentifier} props.networkIdentifier - The network identifier.
- * @param {WalletAccount[]} [props.walletAccounts] - The wallet accounts for display names.
- * @param {object} [props.addressBook] - The address book for display names.
+ * @param {ChainName} [props.chainName] - The chain the accounts belong to. Defaults to the main chain.
  * @returns {React.ReactNode} CosignatoryList component.
  */
 export const CosignatoryList = ({
 	isEditable = false,
 	onRemove,
 	cosignatories,
-	chainName,
-	networkIdentifier,
-	walletAccounts,
-	addressBook
+	chainName
 }) => {
+	const cosignatoriesDisplayData = useAccountDisplayData(cosignatories, chainName);
+
 	const handleRemovePress = address => {
 		if (isEditable && onRemove)
 			onRemove(address);
@@ -37,35 +31,25 @@ export const CosignatoryList = ({
 
 	return (
 		<Stack gap="s">
-			{cosignatories.map(address => {
-				const accountDisplay = createAccountDisplayData(address, {
-					walletAccounts,
-					addressBook,
-					chainName,
-					networkIdentifier
-				});
-
-				return (
-					<View key={address}>
-						<ActionRow
-							isStretched
-							button={isEditable && (
-								<ButtonCircle
-									size="m"
-									icon="delete"
-									onPress={() => handleRemovePress(address)}
-								/>
-							)}
-						>
-							<AccountView
-								address={address}
-								name={accountDisplay.name}
+			{cosignatories.map((address, index) => (
+				<View key={address}>
+					<ActionRow
+						isStretched
+						button={isEditable && (
+							<ButtonCircle
 								size="m"
+								icon="delete"
+								onPress={() => handleRemovePress(address)}
 							/>
-						</ActionRow>
-					</View>
-				);
-			})}
+						)}
+					>
+						<AccountRow
+							address={address}
+							name={cosignatoriesDisplayData[index].name}
+						/>
+					</ActionRow>
+				</View>
+			))}
 		</Stack>
 	);
 };

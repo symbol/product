@@ -1,4 +1,4 @@
-import { Card, Divider, Field, StyledText, TokenInfoView } from '@/app/components';
+import { Field, StyledText } from '@/app/components';
 import { MosaicSupplyChangeAction } from '@/app/constants';
 import { $t } from '@/app/localization';
 import { getPaddedSupplyDeltaText, getPaddedSupplyText } from '@/app/screens/mosaic/utils';
@@ -6,8 +6,6 @@ import { Colors, Sizes, Typography } from '@/app/styles';
 import React, { useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
-
-/** @typedef {import('@/app/types/Token').TokenInfo} TokenInfo */
 
 /**
  * The proportional widths of the supply bar segments, expressed as fractions of the full bar.
@@ -50,7 +48,7 @@ const VALUE_ROW_HEIGHT = Typography.Semantic.bodyBold.xl.lineHeight;
 const STEP_PITCH = (STEP_PADDING * 2) + LABEL_ROW_HEIGHT + VALUE_ROW_HEIGHT;
 const MARKER_CENTER_OFFSET = STEP_PADDING + (LABEL_ROW_HEIGHT / 2);
 
-/** The direction the card renders, distinguishing an unchanged supply from a gain and a loss. */
+/** The direction the view renders, distinguishing an unchanged supply from a gain and a loss. */
 const SupplyChangeDirection = {
 	NONE: 'none',
 	INCREASE: 'increase',
@@ -227,20 +225,20 @@ const SupplyTimeline = ({ steps }) => {
 };
 
 /**
- * SupplyDeltaCard component. A read-only receipt of the requested supply change: an identity row naming the
- * mosaic, a proportional bar whose full width is the larger of the two supplies, and a rail stepping from the
- * current supply through the signed change down to the new one. The bar seats a removed share to the left of
- * the surviving supply and an added share to its right, so the direction of the change reads from the side
- * the colored segment sits on. Every amount is padded to the full divisibility to keep the decimals aligned.
+ * SupplyDeltaView component. A read-only receipt of the requested supply change: a proportional bar whose full
+ * width is the larger of the two supplies, and a rail stepping from the current supply through the signed
+ * change down to the new one. The bar seats a removed share to the left of the surviving supply and an added
+ * share to its right, so the direction of the change reads from the side the colored segment sits on. Every
+ * amount is padded to the full divisibility to keep the decimals aligned.
  * @param {object} props - Component props.
- * @param {TokenInfo} props.token - The token whose supply is being changed.
+ * @param {number} props.divisibility - The mosaic divisibility the amounts are padded to.
  * @param {string} props.currentSupply - The current total supply in relative units.
  * @param {string} props.newSupply - The requested total supply in relative units.
  * @param {string} props.delta - The change magnitude in relative units.
  * @param {number|null} props.action - The supply change action, or null when the supply is unchanged.
- * @returns {React.ReactNode} SupplyDeltaCard component.
+ * @returns {React.ReactNode} SupplyDeltaView component.
  */
-export const SupplyDeltaCard = ({ token, currentSupply, newSupply, delta, action }) => {
+export const SupplyDeltaView = ({ divisibility, currentSupply, newSupply, delta, action }) => {
 	// Direction
 	const direction = getSupplyChangeDirection(delta, action);
 	const isChanged = SupplyChangeDirection.NONE !== direction;
@@ -253,13 +251,13 @@ export const SupplyDeltaCard = ({ token, currentSupply, newSupply, delta, action
 	const steps = [
 		{
 			label: $t('s_modifyMosaic_currentSupply_label'),
-			value: getPaddedSupplyText(currentSupply, token.divisibility),
+			value: getPaddedSupplyText(currentSupply, divisibility),
 			markerSize: MARKER_SIZE,
 			markerStyle: styles.marker__current
 		},
 		{
 			label: $t('s_modifyMosaic_delta_label'),
-			value: getPaddedSupplyDeltaText(delta, action, token.divisibility),
+			value: getPaddedSupplyDeltaText(delta, action, divisibility),
 			valueStyle: [styles.changeValue, isChanged && { color: directionColor }],
 			markerSize: EVENT_MARKER_SIZE,
 			markerStyle: [styles.marker__change, { backgroundColor: directionColor }],
@@ -267,45 +265,28 @@ export const SupplyDeltaCard = ({ token, currentSupply, newSupply, delta, action
 		},
 		{
 			label: $t('s_modifyMosaic_newSupply_label'),
-			value: getPaddedSupplyText(newSupply, token.divisibility),
+			value: getPaddedSupplyText(newSupply, divisibility),
 			markerSize: MARKER_SIZE,
 			markerStyle: styles.marker__new
 		}
 	];
 
 	return (
-		<Card style={styles.card}>
-			<View style={styles.identityRow}>
-				<TokenInfoView
-					id={token.id}
-					name={token.name}
-				/>
-				<StyledText size="s" variant="secondary" numberOfLines={1}>
-					{$t('s_modifyMosaic_divisibility_label', { divisibility: token.divisibility })}
-				</StyledText>
-			</View>
+		<View style={styles.root}>
 			<SupplyBar direction={direction} baseRatio={baseRatio} changeRatio={changeRatio} />
-			<Divider />
 			<SupplyTimeline steps={steps} />
-		</Card>
+		</View>
 	);
 };
 
 const styles = StyleSheet.create({
-	card: {
-		padding: Sizes.Semantic.layoutPadding.m,
-		gap: Sizes.Semantic.spacing.m
-	},
-	identityRow: {
-		flexDirection: 'row',
-		alignItems: 'center',
-		justifyContent: 'space-between',
+	root: {
 		gap: Sizes.Semantic.spacing.m
 	},
 	barTrack: {
 		flexDirection: 'row',
 		height: BAR_HEIGHT,
-		borderRadius: Sizes.Semantic.borderRadius.round,
+		borderRadius: Sizes.Semantic.borderRadius.s,
 		backgroundColor: Colors.Semantic.background.tertiary.default,
 		overflow: 'hidden'
 	},

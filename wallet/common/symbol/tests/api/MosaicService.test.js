@@ -1,10 +1,19 @@
 import { MosaicService } from '../../src/api/MosaicService';
+import { accountInfoResponse } from '../__fixtures__/api/account-info-response';
 import { accountsSearchResponse } from '../__fixtures__/api/accounts-search-response';
 import { mosaicInfosResponse } from '../__fixtures__/api/mosaic-infos-response';
-import { mosaicCreatorAddress, mosaicInfos, mosaicNames, mosaicOwners, supplyMutableMosaic } from '../__fixtures__/local/mosaic';
+import {
+	mosaicCreatorAddress,
+	mosaicHolderAddress,
+	mosaicInfos,
+	mosaicNames,
+	mosaicOwners,
+	supplyMutableMosaic
+} from '../__fixtures__/local/mosaic';
 import { namespaceInfoWithMosaicAlias } from '../__fixtures__/local/namespace';
 import { networkProperties } from '../__fixtures__/local/network';
 import { expect, jest } from '@jest/globals';
+import { NotFoundError } from 'wallet-common-core';
 
 const mockMakeRequest = jest.fn();
 const mockApi = {
@@ -250,6 +259,74 @@ describe('MosaicService', () => {
 
 			// Assert:
 			expect(mockMakeRequest).toHaveBeenNthCalledWith(2, mosaicsEndpoint, expectedRequestConfig);
+		});
+	});
+
+	describe('fetchMosaicBalance', () => {
+		const mosaicId = heldMosaic.id;
+		const address = mosaicHolderAddress;
+		const accountEndpoint = `${networkProperties.nodeUrl}/accounts/${address}`;
+		const accountWithoutMosaicResponse = { account: { mosaics: [] } };
+
+		const runFetchMosaicBalanceTest = (description, config, expected) => {
+			it(description, async () => {
+				// Arrange:
+				config.requestResponses.forEach(response => mockMakeRequest.mockResolvedValueOnce(response));
+
+				// Act:
+				const result = await mosaicService.fetchMosaicBalance(networkProperties, mosaicId, address);
+
+				// Assert:
+				expect(mockMakeRequest).toHaveBeenCalledTimes(config.requestResponses.length);
+				expect(mockMakeRequest).toHaveBeenNthCalledWith(1, accountEndpoint);
+				expect(result).toBe(expected.balance);
+			});
+		};
+
+		const fetchMosaicBalanceTests = [
+			{
+				description: 'fetches the held amount of the account in relative units',
+				config: {
+					requestResponses: [accountInfoResponse, findMosaicInfosResponse(mosaicId)]
+				},
+				expected: {
+					balance: '0.54'
+				}
+			},
+			{
+				description: 'returns a zero balance without fetching the mosaic info when the account does not hold the mosaic',
+				config: {
+					requestResponses: [accountWithoutMosaicResponse]
+				},
+				expected: {
+					balance: '0'
+				}
+			}
+		];
+
+		fetchMosaicBalanceTests.forEach(test => {
+			runFetchMosaicBalanceTest(test.description, test.config, test.expected);
+		});
+
+		it('returns a zero balance when the account is unknown to the network', async () => {
+			// Arrange:
+			mockMakeRequest.mockRejectedValueOnce(new NotFoundError('Account not found'));
+
+			// Act:
+			const result = await mosaicService.fetchMosaicBalance(networkProperties, mosaicId, address);
+
+			// Assert:
+			expect(mockMakeRequest).toHaveBeenCalledTimes(1);
+			expect(result).toBe('0');
+		});
+
+		it('rethrows other request errors', async () => {
+			// Arrange:
+			const requestError = new Error('Network unavailable');
+			mockMakeRequest.mockRejectedValueOnce(requestError);
+
+			// Act & Assert:
+			await expect(mosaicService.fetchMosaicBalance(networkProperties, mosaicId, address)).rejects.toBe(requestError);
 		});
 	});
 });

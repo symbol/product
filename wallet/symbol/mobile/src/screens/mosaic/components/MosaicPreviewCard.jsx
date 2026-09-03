@@ -1,4 +1,4 @@
-import { Card, Divider, Field, Icon, StyledText, TokenInfoView } from '@/app/components';
+import { Card, Divider, Field, Icon, StyledText, TokenRow } from '@/app/components';
 import { $t } from '@/app/localization';
 import { createSupplyDisplayData, getSmallestFractionText } from '@/app/screens/mosaic/utils';
 import { Sizes } from '@/app/styles';
@@ -64,9 +64,9 @@ export const MosaicPreviewCard = ({ supply, divisibility, mosaicId }) => {
 
 	return (
 		<Card style={styles.card}>
-			<TokenInfoView
+			<TokenRow
 				name={$t('s_mosaicCreation_namePlaceholder')}
-				id={mosaicId}
+				tokenId={mosaicId}
 			/>
 			<Field title={$t('s_mosaicCreation_totalSupply_label')} size="s" alignRight>
 				<SupplyAmount

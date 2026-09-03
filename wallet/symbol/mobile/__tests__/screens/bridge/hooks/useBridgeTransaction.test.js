@@ -69,7 +69,6 @@ const bridge = {
 
 const createHookParams = overrides => ({
 	bridge,
-	walletController: sourceWalletController,
 	amount: AMOUNT,
 	...overrides
 });
@@ -112,9 +111,6 @@ describe('hooks/useBridgeTransaction', () => {
 				id: 'section_0_0',
 				title: '',
 				chainName: sourceWalletController.chainName,
-				networkIdentifier: sourceWalletController.networkIdentifier,
-				addressBook: sourceWalletController.modules.addressBook,
-				walletAccounts: sourceWalletController.accounts,
 				tableData: [
 					{ type: 'account', value: bridgeTransaction.signerAddress, title: 'signerAddress' },
 					{ type: 'account', value: bridgeTransaction.message.text, title: 'recipientAddress' },

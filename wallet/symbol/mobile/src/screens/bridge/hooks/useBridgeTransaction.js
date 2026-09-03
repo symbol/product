@@ -4,7 +4,6 @@ import { objectToTableData } from '@/app/utils';
 /** @typedef {import('@/app/screens/bridge/types/Bridge').BridgeEstimation} BridgeEstimation */
 /** @typedef {import('@/app/types/Transaction').TransactionBundle} TransactionBundle */
 /** @typedef {import('@/app/types/Transaction').TransactionConfirmationDialogSection} TransactionConfirmationDialogSection */
-/** @typedef {import('@/app/types/Wallet').WalletController} WalletController */
 
 /**
  * Return type for useBridgeTransaction hook.
@@ -21,10 +20,9 @@ import { objectToTableData } from '@/app/utils';
  * @param {SwapWorkflowManager|null} params.bridge - The bridge manager instance.
  * @param {string} params.amount - The amount to transfer.
  * @param {BridgeEstimation[]} params.estimations - The estimations data for the transactions.
- * @param {WalletController} params.walletController - The source wallet controller instance.
  * @returns {UseBridgeTransactionReturnType}
  */
-export const useBridgeTransaction = ({ bridge, amount, estimations, walletController }) => {
+export const useBridgeTransaction = ({ bridge, amount, estimations }) => {
 	/**
 	 * Creates a bridge transaction bundle.
 	 * @returns {Promise<TransactionBundle>}
@@ -54,9 +52,6 @@ export const useBridgeTransaction = ({ bridge, amount, estimations, walletContro
 	 * @returns {TransactionConfirmationDialogSection[]}
 	 */
 	const getConfirmationPreview = transactionBundle => {
-		const { modules: { addressBook }, accounts } = walletController;
-		const walletAccounts = accounts;
-
 		const bundles = Array.isArray(transactionBundle) ? transactionBundle : [transactionBundle];
 
 		return bundles.flatMap((bundle, bundleIndex) =>
@@ -66,8 +61,8 @@ export const useBridgeTransaction = ({ bridge, amount, estimations, walletContro
 				if (!stepPair)
 					throw new Error(`No pair found for step index ${bundleIndex}`);
 
-				const { chainName, networkIdentifier } = stepPair.sourceWalletController;
-				
+				const { chainName } = stepPair.sourceWalletController;
+
 				const swapData = {
 					signerAddress: transaction.signerAddress,
 					recipientAddress: transaction.message?.text ?? transaction.recipientAddress,
@@ -79,9 +74,6 @@ export const useBridgeTransaction = ({ bridge, amount, estimations, walletContro
 					id: `section_${bundleIndex}_${index}`,
 					title: '',
 					chainName,
-					networkIdentifier,
-					addressBook,
-					walletAccounts,
 					tableData: objectToTableData(swapData)
 				};
 			}));
