@@ -1,6 +1,7 @@
 import { BridgeHistory, EstimationSummary, SwapSelector } from './components';
 import { PriceImpactSeverity } from './constants';
 import {
+	useAdditionalStepFees,
 	useBridge,
 	useBridgeAmount,
 	useBridgeDisabledDialog,
@@ -12,6 +13,8 @@ import {
 	useSwapSelector
 } from './hooks';
 import {
+	createOperationFeeGroups,
+	createTransactionFeeGroups,
 	createTransactionProgressViewModel,
 	formatPriceImpactText,
 	getEstimationsPriceImpact,
@@ -33,7 +36,6 @@ import { config } from '@/app/config';
 import { useToggle, useTransactionFees, useWalletController } from '@/app/hooks';
 import { $t } from '@/app/localization';
 import { Router } from '@/app/router/Router';
-import { getTotalFeeAmount } from '@/app/utils';
 import { useFocusEffect } from '@react-navigation/native';
 import React, { useCallback, useEffect, useRef } from 'react';
 
@@ -86,9 +88,6 @@ export const BridgeSwap = props => {
 		isLoading: isFeesLoading,
 		call: fetchFees
 	} = useTransactionFees(() => createTransactionRef.current(), sourceWalletController);
-	const transactionFeeAmount = transactionFees
-		? getTotalFeeAmount(transactionFees, TRANSACTION_SPEED)
-		: '0';
 
 	// Amount and validation
 	const {
@@ -119,6 +118,15 @@ export const BridgeSwap = props => {
 
 	// Update ref to break circular dependency with useTransactionFees
 	createTransactionRef.current = createTransaction;
+
+	// Transaction fees of the steps after the first one (their transaction amounts come from the
+	// estimation output, so they are fetched separately, once the estimation arrives)
+	const {
+		additionalStepFees,
+		fetchAdditionalStepFees,
+		clearAdditionalStepFees,
+		isLoading: isAdditionalFeesLoading
+	} = useAdditionalStepFees({ bridge, estimations, createTransaction });
 
 	// Transaction workflow
 	const workflow = useBridgeTransactionWorkflow({
@@ -185,6 +193,25 @@ export const BridgeSwap = props => {
 	useEffect(() => {
 		fetchSwapData();
 	}, [fetchSwapData]);
+
+	// Fetch the remaining steps' fees once the estimation output they depend on is available
+	useEffect(() => {
+		if (estimations)
+			fetchAdditionalStepFees();
+		else
+			clearAdditionalStepFees();
+	}, [estimations]);
+
+	// Summary fee rows, grouped for display (same fee token — added; different — separate rows)
+	const sourceNetworkCurrency = sourceWalletController?.networkProperties?.networkCurrency;
+	const transactionFeeGroups = createTransactionFeeGroups(
+		[
+			{ chainName: source?.chainName, networkCurrency: sourceNetworkCurrency, feeTiers: transactionFees },
+			...(additionalStepFees ?? [])
+		],
+		TRANSACTION_SPEED
+	);
+	const operationFeeGroups = createOperationFeeGroups(estimations, bridge);
 
 	const init = useCallback(() => {
 		(async () => {
@@ -291,12 +318,12 @@ export const BridgeSwap = props => {
 						/>
 						<EstimationSummary
 							sendAmount={amount}
-							transactionFeeAmount={transactionFeeAmount}
+							transactionFeeGroups={transactionFeeGroups}
+							operationFeeGroups={operationFeeGroups}
 							estimations={estimations}
 							sourceToken={source?.token}
 							targetToken={target?.token}
-							sourceNetworkCurrency={sourceWalletController?.networkProperties?.networkCurrency}
-							isLoading={isEstimationLoading || isFeesLoading}
+							isLoading={isEstimationLoading || isFeesLoading || isAdditionalFeesLoading}
 						/>
 						<Button {...buttonProps} onPress={createSendPressHandler(buttonProps.onPress)} />
 						<Divider />

@@ -9,8 +9,8 @@ import { StyleSheet, View } from 'react-native';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 
 /** @typedef {import('@/app/screens/bridge/types/Bridge').BridgeEstimation} BridgeEstimation */
+/** @typedef {import('@/app/screens/bridge/types/Bridge').FeeGroup} FeeGroup */
 /** @typedef {import('@/app/screens/bridge/types/Bridge').SwapToken} SwapToken */
-/** @typedef {import('@/app/types/Network').NetworkCurrency} NetworkCurrency */
 
 const MISSING_VALUE_TEXT = '-';
 
@@ -44,6 +44,25 @@ const formatRowValue = (value, units) => {
 };
 
 /**
+ * Builds the summary rows for one fee kind from its display groups. The first group keeps the titled
+ * row; every extra group becomes a continuation row, marked to render a connector in place of the
+ * title. Falls back to a single placeholder row when there are no groups.
+ * @param {string} title - Row title.
+ * @param {FeeGroup[]} groups - Display fee groups.
+ * @returns {object[]} Summary row descriptors.
+ */
+const createFeeGroupRows = (title, groups) => {
+	if (!groups?.length)
+		return [{ title, value: MISSING_VALUE_TEXT }];
+
+	return groups.map((group, index) => ({
+		title,
+		value: formatRowValue(group.amount, group.tokenName),
+		isContinuation: index > 0
+	}));
+};
+
+/**
  * Builds the price difference row of the summary. The row shows the placeholder when no step involves
  * a swap. The row severity pairs a color with an icon and a level word, so the warning does not rely
  * on color alone.
@@ -72,24 +91,25 @@ const createPriceImpactRow = estimations => {
 
 /**
  * EstimationSummary component. Displays swap estimation details including send amount,
- * transaction fee, bridge fee, price difference, and expected receive amount.
+ * transaction fees, operation fees, price difference, and expected receive amount. Fee rows come
+ * pre-grouped: extra groups of a fee kind render as continuation rows connected to the titled row.
  * @param {object} props - Component props.
  * @param {string} props.sendAmount - Amount being sent.
- * @param {string} props.transactionFeeAmount - Transaction fee amount.
+ * @param {FeeGroup[]} props.transactionFeeGroups - Transaction (gas) fee display groups.
+ * @param {FeeGroup[]} props.operationFeeGroups - Operation fee display groups.
  * @param {BridgeEstimation[]|null} props.estimations - Bridge estimation data.
  * @param {SwapToken|null} props.sourceToken - Source token info.
  * @param {SwapToken|null} props.targetToken - Target token info.
- * @param {NetworkCurrency|null} props.sourceNetworkCurrency - Source network native currency info.
  * @param {boolean} props.isLoading - Whether estimation is loading.
  * @returns {React.ReactNode} EstimationSummary component.
  */
 export const EstimationSummary = ({
 	sendAmount,
-	transactionFeeAmount,
+	transactionFeeGroups,
+	operationFeeGroups,
 	estimations,
 	sourceToken,
 	targetToken,
-	sourceNetworkCurrency,
 	isLoading
 }) => {
 	const estimation = estimations?.[estimations.length - 1] ?? null;
@@ -98,14 +118,8 @@ export const EstimationSummary = ({
 			title: $t('s_bridge_summary_amountSend'),
 			value: formatRowValue(sourceToken ? sendAmount : null, sourceToken?.name)
 		},
-		{
-			title: $t('s_bridge_summary_transactionFee'),
-			value: formatRowValue(sourceNetworkCurrency ? transactionFeeAmount : null, sourceNetworkCurrency?.name)
-		},
-		{
-			title: $t('s_bridge_summary_bridgeFee'),
-			value: formatRowValue(targetToken ? estimation?.bridgeFee : null, targetToken?.name)
-		},
+		...createFeeGroupRows($t('s_bridge_summary_transactionFee'), transactionFeeGroups),
+		...createFeeGroupRows($t('s_bridge_summary_bridgeFee'), operationFeeGroups),
 		createPriceImpactRow(estimations),
 		{
 			title: $t('s_bridge_summary_amountReceive'),
@@ -135,9 +149,13 @@ export const EstimationSummary = ({
 					>
 						{summary.map((item, index) => (
 							<View style={styles.summaryRow} key={index}>
-								<StyledText>
-									{item.title}
-								</StyledText>
+								{item.isContinuation ? (
+									<View accessible accessibilityLabel={item.title} style={styles.connector} />
+								) : (
+									<StyledText>
+										{item.title}
+									</StyledText>
+								)}
 								<View style={styles.summaryValue}>
 									{!!item.appearance && (
 										<Icon
@@ -169,6 +187,15 @@ const styles = StyleSheet.create({
 	summaryValue: {
 		flexDirection: 'row',
 		alignItems: 'center'
+	},
+	connector: {
+		width: Sizes.Semantic.spacing.m,
+		height: Sizes.Semantic.spacing.m,
+		marginLeft: Sizes.Semantic.spacing.s,
+		alignSelf: 'flex-start',
+		borderLeftWidth: Sizes.Semantic.borderWidth.s,
+		borderBottomWidth: Sizes.Semantic.borderWidth.s,
+		borderColor: Colors.Semantic.role.neutral.default
 	},
 	valueIcon: {
 		marginRight: Sizes.Semantic.spacing.xs

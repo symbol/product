@@ -17,6 +17,7 @@ jest.mock('@react-navigation/native', () => ({
 }));
 
 jest.mock('@/app/screens/bridge/hooks', () => ({
+	useAdditionalStepFees: jest.fn(),
 	useBridge: jest.fn(),
 	useBridgeAmount: jest.fn(),
 	useBridgeDisabledDialog: jest.fn(),
@@ -292,6 +293,7 @@ const estimationResult = {
 // Hook Mocks
 
 const {
+	useAdditionalStepFees,
 	useBridge,
 	useBridgeAmount,
 	useBridgeDisabledDialog,
@@ -354,6 +356,14 @@ const createUseEstimationMock = (overrides = {}) => ({
 	...overrides
 });
 
+const createUseAdditionalStepFeesMock = (overrides = {}) => ({
+	additionalStepFees: null,
+	fetchAdditionalStepFees: jest.fn().mockResolvedValue([]),
+	clearAdditionalStepFees: jest.fn(),
+	isLoading: false,
+	...overrides
+});
+
 const createUseBridgeHistoryMock = (overrides = {}) => ({
 	history: [],
 	isHistoryLoading: false,
@@ -398,6 +408,7 @@ const setupMocks = (config = {}) => {
 	useBridgeAmount.mockReturnValue(createUseBridgeAmountMock(config.useBridgeAmount));
 	useBridgeTransaction.mockReturnValue(createUseBridgeTransactionMock(config.useBridgeTransaction));
 	useEstimation.mockReturnValue(createUseEstimationMock(config.useEstimation));
+	useAdditionalStepFees.mockReturnValue(createUseAdditionalStepFeesMock(config.useAdditionalStepFees));
 	useBridgeHistory.mockReturnValue(createUseBridgeHistoryMock(config.useBridgeHistory));
 	useBridgeNoPairsDialog.mockReturnValue(createUseBridgeNoPairsDialogMock(config.useBridgeNoPairsDialog));
 	useBridgeDisabledDialog.mockReturnValue(createUseBridgeDisabledDialogMock(config.useBridgeDisabledDialog));
@@ -782,6 +793,137 @@ describe('screens/bridge/BridgeSwap', () => {
 			// Assert:
 			screenTester.expectText([SCREEN_TEXT.textDialogConfirmTitle]);
 		});
+	});
+
+	describe('fee summary', () => {
+		// Dual-step ETH → XYM route: step 0 swaps on Uniswap (fee in bXYM), step 1 sends through the
+		// bridge (fee in XYM); both steps' transactions pay gas on Ethereum.
+		const ethereumFeeTiers = [
+			TransactionFeeFixtureBuilder
+				.createWithAmounts('0.5', '1', '2', CHAIN_NAME_ETHEREUM)
+				.build()
+		];
+
+		const ethereumSourceWalletController = createWalletControllerMock({
+			...ethereumWalletController,
+			modules: {
+				transfer: {
+					calculateTransactionFees: jest.fn().mockResolvedValue(ethereumFeeTiers)
+				},
+				bridge: {
+					createTransaction: jest.fn().mockResolvedValue({})
+				}
+			}
+		});
+
+		const swapStepPairEthToBxym = {
+			sourceWalletController: ethereumSourceWalletController,
+			targetWalletController: ethereumWalletController,
+			sourceTokenInfo: tokenEth,
+			targetTokenInfo: tokenBxym
+		};
+
+		const swapStepPairBxymToXym = {
+			sourceWalletController: ethereumSourceWalletController,
+			targetWalletController: symbolWalletController,
+			sourceTokenInfo: tokenBxym,
+			targetTokenInfo: tokenXym
+		};
+
+		const createDualStepBridge = (firstStepPair, secondStepPair) => ({
+			...bridgeMock,
+			steps: 2,
+			getPairForStep: jest.fn(stepIndex => (0 === stepIndex ? firstStepPair : secondStepPair))
+		});
+
+		const dualStepEstimations = [
+			{ bridgeFee: '2.5', receiveAmount: '735' },
+			{ bridgeFee: '0.75', receiveAmount: PAYOUT_AMOUNT }
+		];
+
+		// expected.rowCounts: [row title, expected titled row count, expected connector (continuation row) count]
+		const runFeeSummaryTest = (description, config, expected) => {
+			it(description, async () => {
+				// Arrange:
+				setupMocks({
+					walletController: ethereumSourceWalletController,
+					useSwapSelector: {
+						bridge: config.bridge,
+						source: swapSideEthereumEth,
+						target: swapSideSymbolXym
+					},
+					useEstimation: { estimations: config.estimations },
+					useAdditionalStepFees: { additionalStepFees: config.additionalStepFees }
+				});
+
+				// Act:
+				const screenTester = new ScreenTester(BridgeSwap, createDefaultProps());
+				await screenTester.waitForTimer(); // initial fee calculation
+
+				// Assert:
+				screenTester.expectText(expected.texts);
+				expected.rowCounts.forEach(([title, titleCount, connectorCount]) => {
+					screenTester.expectTextCount(title, titleCount);
+					screenTester.expectElementCount(title, connectorCount, 'label');
+				});
+			});
+		};
+
+		const testCases = [
+			[
+				'adds the gas of the steps into one row and shows each operation fee token on its own row',
+				{
+					bridge: createDualStepBridge(swapStepPairEthToBxym, swapStepPairBxymToXym),
+					estimations: dualStepEstimations,
+					additionalStepFees: [{
+						chainName: CHAIN_NAME_ETHEREUM,
+						networkCurrency: ethereumNetworkProperties.networkCurrency,
+						feeTiers: ethereumFeeTiers
+					}]
+				},
+				{
+					// Gas 1 + 1 ETH summed; operation fees bXYM and XYM kept apart, the XYM one on a connected row
+					texts: ['2 ETH', '2.5 bXYM', '0.75 symbol.xym'],
+					rowCounts: [
+						[SCREEN_TEXT.textSummaryTransactionFee, 1, 0],
+						[SCREEN_TEXT.textSummaryBridgeFee, 1, 1]
+					]
+				}
+			],
+			[
+				'shows the gas of a step paid in another currency on a connected row',
+				{
+					bridge: createDualStepBridge(swapStepPairEthToBxym, swapStepPairBxymToXym),
+					estimations: dualStepEstimations,
+					additionalStepFees: [{
+						chainName: CHAIN_NAME_SYMBOL,
+						networkCurrency: symbolNetworkProperties.networkCurrency,
+						feeTiers: transactionFeeTiers
+					}]
+				},
+				{
+					texts: ['1 ETH', '2 symbol.xym'],
+					rowCounts: [[SCREEN_TEXT.textSummaryTransactionFee, 1, 1]]
+				}
+			],
+			[
+				'adds the operation fees into one row when they are in the same token',
+				{
+					bridge: createDualStepBridge(swapStepPairBxymToXym, swapStepPairBxymToXym),
+					estimations: [
+						{ bridgeFee: '1.5', receiveAmount: '735' },
+						{ bridgeFee: '0.5', receiveAmount: PAYOUT_AMOUNT }
+					],
+					additionalStepFees: null
+				},
+				{
+					texts: ['2 symbol.xym'],
+					rowCounts: [[SCREEN_TEXT.textSummaryBridgeFee, 1, 0]]
+				}
+			]
+		];
+
+		testCases.forEach(([description, config, expected]) => runFeeSummaryTest(description, config, expected));
 	});
 
 	describe('no pairs dialog', () => {
