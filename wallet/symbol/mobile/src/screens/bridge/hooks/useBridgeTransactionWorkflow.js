@@ -3,8 +3,9 @@ import { TransactionWorkflowStatus } from '@/app/components/templates/Transactio
 import { useStandardTransactionWorkflow } from '@/app/components/templates/TransactionScreenTemplate/hooks';
 import { useEffect } from 'react';
 
-/** @typedef {import('@/app/screens/bridge/types/Bridge').SwapWorkflowManager} SwapWorkflowManager */
+/** @typedef {import('@/app/screens/bridge/types/Bridge').SwapStep} SwapStep */
 /** @typedef {import('@/app/types/Network').ChainName} ChainName */
+/** @typedef {import('@/app/types/Wallet').WalletController} WalletController */
 /** @typedef {import('@/app/types/Network').NetworkIdentifier} NetworkIdentifier */
 /** @typedef {import('@/app/types/Token').TokenInfo} TokenInfo */
 /** @typedef {import('@/app/types/Transaction').TransactionFeeTiers} TransactionFeeTiers */
@@ -51,17 +52,39 @@ const EMPTY_SETUP = {
 };
 
 /**
+ * Builds the metadata of one side of a step; empty fields while no route is selected.
+ * @param {TokenInfo|null|undefined} tokenInfo - The side's token.
+ * @param {WalletController|undefined} walletController - The side's wallet controller.
+ * @returns {WorkflowMetaSide} Side metadata.
+ */
+const createSideMeta = (tokenInfo, walletController) => ({
+	tokenInfo: tokenInfo ?? null,
+	chainName: walletController?.chainName,
+	networkIdentifier: walletController?.networkIdentifier
+});
+
+/**
+ * Builds the metadata of one workflow step from a route step.
+ * @param {SwapStep|undefined} step - The route step; undefined while no route is selected.
+ * @returns {WorkflowStepMeta} Step metadata.
+ */
+const createStepMeta = step => ({
+	source: createSideMeta(step?.sourceTokenInfo, step?.sourceWalletController),
+	target: createSideMeta(step?.targetTokenInfo, step?.targetWalletController)
+});
+
+/**
  * React hook for managing the full bridge transaction send workflow.
- * Selects between single-step and dual-step workflows based on the bridge configuration.
+ * Selects between single-step and dual-step workflows based on the number of route steps.
  * @param {object} params - The parameters object.
- * @param {SwapWorkflowManager|null} params.bridge - The bridge manager instance.
+ * @param {SwapStep[]} params.steps - Steps of the selected route; empty while no route is selected.
  * @param {CreateTransactionCallback} params.createTransaction - Callback to create the transaction bundle for a given step index.
  * @param {TransactionFeeTiers[]} [params.transactionFeeTiers] - Optional fee tiers per transaction.
  * @param {TransactionFeeTierLevel} [params.transactionFeeTierLevel] - Optional fee tier level to apply.
  * @returns {object} The active workflow (single or dual step).
  */
 export const useBridgeTransactionWorkflow = params => {
-	const isDualStepWorkflow = params.bridge?.steps === 2;
+	const isDualStepWorkflow = params.steps.length === 2;
 	const singleStepWorkflow = useSingleStepWorkflow({ ...params, isActive: !isDualStepWorkflow });
 	const dualStepWorkflow = useDualStepWorkflow({ ...params, isActive: isDualStepWorkflow });
 
@@ -72,7 +95,7 @@ export const useBridgeTransactionWorkflow = params => {
  * React hook for managing a single-step bridge transaction workflow.
  * @param {object} params - The parameters object.
  * @param {boolean} params.isActive - Whether this workflow is currently active.
- * @param {SwapWorkflowManager|null} params.bridge - The bridge manager instance.
+ * @param {SwapStep[]} params.steps - Steps of the selected route; empty while no route is selected.
  * @param {CreateTransactionCallback} params.createTransaction - Callback to create the transaction bundle.
  * @param {TransactionFeeTiers[]} [params.transactionFeeTiers] - Optional fee tiers per transaction.
  * @param {TransactionFeeTierLevel} [params.transactionFeeTierLevel] - Optional fee tier level to apply.
@@ -80,7 +103,7 @@ export const useBridgeTransactionWorkflow = params => {
  */
 export const useSingleStepWorkflow = ({
 	isActive,
-	bridge,
+	steps,
 	createTransaction,
 	transactionFeeTiers,
 	transactionFeeTierLevel
@@ -90,27 +113,15 @@ export const useSingleStepWorkflow = ({
 	let meta;
 
 	if (isActive) {
-		const pair = bridge?.getPairForStep(0);
+		const step = steps[0];
 
 		workflowConfig = {
 			createTransaction: () => createTransaction(0),
-			walletController: pair?.sourceWalletController,
+			walletController: step?.sourceWalletController,
 			transactionFeeTiers,
 			transactionFeeTierLevel
 		};
-
-		meta = {
-			source: {
-				tokenInfo: pair?.sourceTokenInfo ?? null,
-				chainName: pair?.sourceWalletController.chainName,
-				networkIdentifier: pair?.sourceWalletController.networkIdentifier
-			},
-			target: {
-				tokenInfo: pair?.targetTokenInfo ?? null,
-				chainName: pair?.targetWalletController.chainName,
-				networkIdentifier: pair?.targetWalletController.networkIdentifier
-			}
-		};
+		meta = createStepMeta(step);
 	}
 
 	const workflow = useStandardTransactionWorkflow(workflowConfig);
@@ -124,7 +135,7 @@ export const useSingleStepWorkflow = ({
  * React hook for managing a dual-step bridge transaction workflow.
  * @param {object} params - The parameters object.
  * @param {boolean} params.isActive - Whether this workflow is currently active.
- * @param {SwapWorkflowManager|null} params.bridge - The bridge manager instance.
+ * @param {SwapStep[]} params.steps - Steps of the selected route; empty while no route is selected.
  * @param {CreateTransactionCallback} params.createTransaction - Callback to create the transaction bundle for a given step index.
  * @param {TransactionFeeTiers[]} [params.transactionFeeTiers] - Optional fee tiers per transaction.
  * @param {TransactionFeeTierLevel} [params.transactionFeeTierLevel] - Optional fee tier level to apply.
@@ -132,7 +143,7 @@ export const useSingleStepWorkflow = ({
  */
 const useDualStepWorkflow = ({
 	isActive,
-	bridge,
+	steps,
 	createTransaction: createTransactionCallback,
 	transactionFeeTiers,
 	transactionFeeTierLevel
@@ -143,46 +154,23 @@ const useDualStepWorkflow = ({
 	let meta;
 
 	if (isActive) {
-		const firstPair = bridge?.getPairForStep(0);
-		const secondPair = bridge?.getPairForStep(1);
+		const [firstStep, secondStep] = steps;
 
 		configWorkflow1 = {
 			createTransaction: () => createTransactionCallback(0),
-			walletController: firstPair?.sourceWalletController,
+			walletController: firstStep?.sourceWalletController,
 			transactionFeeTiers,
 			transactionFeeTierLevel
 		};
 		configWorkflow2 = {
 			createTransaction: () => createTransactionCallback(1),
-			walletController: secondPair?.sourceWalletController,
+			walletController: secondStep?.sourceWalletController,
 			transactionFeeTiers,
 			transactionFeeTierLevel
 		};
 		meta = {
-			step1: {
-				source: {
-					tokenInfo: firstPair?.sourceTokenInfo ?? null,
-					chainName: firstPair?.sourceWalletController.chainName,
-					networkIdentifier: firstPair?.sourceWalletController.networkIdentifier
-				},
-				target: {
-					tokenInfo: firstPair?.targetTokenInfo ?? null,
-					chainName: firstPair?.targetWalletController.chainName,
-					networkIdentifier: firstPair?.targetWalletController.networkIdentifier
-				}
-			},
-			step2: {
-				source: {
-					tokenInfo: secondPair?.sourceTokenInfo ?? null,
-					chainName: secondPair?.sourceWalletController.chainName,
-					networkIdentifier: secondPair?.sourceWalletController.networkIdentifier
-				},
-				target: {
-					tokenInfo: secondPair?.targetTokenInfo ?? null,
-					chainName: secondPair?.targetWalletController.chainName,
-					networkIdentifier: secondPair?.targetWalletController.networkIdentifier
-				}
-			}
+			step1: createStepMeta(firstStep),
+			step2: createStepMeta(secondStep)
 		};
 	}
 
