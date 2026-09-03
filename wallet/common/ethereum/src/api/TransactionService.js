@@ -7,6 +7,11 @@ import { TransactionGroup } from 'wallet-common-core/src/constants';
 // Use a conservative fixed gas limit that covers typical V3 exactInputSingle calls.
 const UNISWAP_SWAP_GAS_LIMIT = '300000';
 
+// A bridge transfer spends wrapped tokens the account receives only after the preceding swap runs,
+// so estimateGas fails beforehand. Fall back to a fixed limit that covers a typical ERC-20 transfer;
+// unused gas is refunded on-chain.
+const ERC20_BRIDGE_TRANSFER_GAS_LIMIT = '100000';
+
 // eth_estimateGas may underestimate the required gas for some contract calls 
 // (for example due to internal calls, proxy contracts, or EIP-150 gas forwarding). 
 // Apply a safety margin to reduce the chance of on-chain out-of-gas reverts.
@@ -148,6 +153,9 @@ export class TransactionService {
 
 			return applyGasLimitSafetyMargin(gasLimit).toString();
 		} catch (error) {
+			if (transaction.type === TransactionType.ERC_20_BRIDGE_TRANSFER)
+				return ERC20_BRIDGE_TRANSFER_GAS_LIMIT;
+
 			throw new ApiError(`Gas limit estimation failed: ${error.message}`);
 		}
 	};
