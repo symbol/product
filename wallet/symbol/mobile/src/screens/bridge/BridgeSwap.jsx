@@ -89,7 +89,6 @@ export const BridgeSwap = props => {
 	// Transaction fees of every route step
 	const {
 		stepFees,
-		firstStepFeeTiers,
 		isLoading: isStepFeesLoading,
 		fetchFirstStepFees,
 		fetchRemainingStepFees,
@@ -105,7 +104,7 @@ export const BridgeSwap = props => {
 		changeAmount,
 		changeAmountValidity,
 		reset
-	} = useBridgeAmount({ source, transactionFees: firstStepFeeTiers, transactionFeeTierLevel: TRANSACTION_SPEED });
+	} = useBridgeAmount({ source, stepFees, transactionFeeTierLevel: TRANSACTION_SPEED });
 
 	// Estimation summary
 	const {
@@ -130,7 +129,7 @@ export const BridgeSwap = props => {
 	const workflow = useBridgeTransactionWorkflow({
 		steps,
 		createTransaction,
-		transactionFeeTiers: firstStepFeeTiers,
+		stepFees,
 		transactionFeeTierLevel: TRANSACTION_SPEED
 	});
 
