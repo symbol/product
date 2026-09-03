@@ -9,6 +9,7 @@
 /** @typedef {import('wallet-common-core/src/types/Bridge').BridgeRequest} BridgeRequest */
 /** @typedef {import('wallet-common-core/src/types/Bridge').BridgeError} BridgeError */
 /** @typedef {import('@/app/types/ColorVariants').SemanticRoleColorVariants} SemanticRoleColorVariants */
+/** @typedef {import('@/app/types/Transaction').TransactionFeeTiers} TransactionFeeTiers */
 
 /**
  * Bridge operation mode.
@@ -114,6 +115,23 @@
 /**
  * Swap side type identifier.
  * @typedef {'source' | 'target'} SwapSideTypeValue
+ */
+
+/**
+ * One displayed fee entry of the swap summary: a summed amount in one token on one chain.
+ * @typedef {object} FeeGroup
+ * @property {string} amount - Summed fee amount in relative units.
+ * @property {string} tokenName - Fee token ticker (e.g. 'ETH', 'bXYM', 'XYM'), or the token name when no ticker is known.
+ * @property {ChainName} chainName - Chain the fee is paid on.
+ */
+
+/**
+ * Gas fee data of one swap step.
+ * @typedef {object} StepTransactionFees
+ * @property {ChainName} chainName - Chain the step's transactions run on.
+ * @property {NetworkIdentifier} networkIdentifier - Network identifier of the step's chain.
+ * @property {TokenInfo} networkCurrency - Currency the gas is paid in.
+ * @property {TransactionFeeTiers[]} feeTiers - Fee tiers per transaction in the step's bundle.
  */
 
 /** Bridge operation mode constants. */
