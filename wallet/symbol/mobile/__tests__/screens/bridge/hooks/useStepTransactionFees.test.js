@@ -69,7 +69,6 @@ describe('hooks/useStepTransactionFees', () => {
 		props: [createHookParams()],
 		contract: {
 			stepFees: 'array',
-			firstStepFeeTiers: 'object',
 			isLoading: 'boolean',
 			fetchFirstStepFees: 'function',
 			fetchRemainingStepFees: 'function',
@@ -88,7 +87,6 @@ describe('hooks/useStepTransactionFees', () => {
 
 			// Assert:
 			expect(hookTester.currentResult.stepFees).toStrictEqual(expectedStepFees);
-			expect(hookTester.currentResult.firstStepFeeTiers).toBeNull();
 			expect(hookTester.currentResult.isLoading).toBe(false);
 		});
 	});
@@ -112,7 +110,6 @@ describe('hooks/useStepTransactionFees', () => {
 				expect(createTransaction).toHaveBeenCalledTimes(1);
 				expect(createTransaction).toHaveBeenCalledWith(0);
 				expect(walletController.modules.transfer.calculateTransactionFees).toHaveBeenCalledWith(transactionBundle);
-				expect(hookTester.currentResult.firstStepFeeTiers).toStrictEqual(feeTiers);
 				expect(hookTester.currentResult.stepFees).toStrictEqual(expectedStepFees);
 				expect(hookTester.currentResult.isLoading).toBe(false);
 			});
