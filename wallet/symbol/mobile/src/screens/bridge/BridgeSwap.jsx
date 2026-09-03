@@ -15,6 +15,8 @@ import {
 import {
 	createEstimationSummaryViewModel,
 	createSwapConfirmationText,
+	createSwapHistoryViewModel,
+	createSwapSelectorViewModel,
 	createTransactionProgressViewModel,
 	formatPriceImpactText,
 	getEstimationsPriceImpact,
@@ -213,6 +215,10 @@ export const BridgeSwap = props => {
 	// Confirm dialog text
 	const confirmationText = createSwapConfirmationText({ source, target, amount });
 
+	// Selector and history view models
+	const selector = createSwapSelectorViewModel({ source, target, sourceList, targetList });
+	const swapHistory = createSwapHistoryViewModel({ history, networkIdentifier: source?.networkIdentifier });
+
 	const init = useCallback(() => {
 		(async () => {
 			reset();
@@ -232,12 +238,12 @@ export const BridgeSwap = props => {
 
 	const handleTransactionSendComplete = () => reset();
 
-	const handleHistoryItemPress = data => {
+	const handleHistoryItemPress = item => {
 		Router.goToBridgeSwapDetails({
 			params: {
 				bridgeId: bridge.id,
-				requestTransactionHash: data.requestTransaction.hash,
-				preloadedData: data
+				requestTransactionHash: item.key,
+				preloadedData: item.request
 			}
 		});
 	};
@@ -294,13 +300,10 @@ export const BridgeSwap = props => {
 						</StyledText>
 						<SwapSelector
 							isLoading={isScreenLoading}
-							source={source}
-							target={target}
-							sourceList={sourceList}
-							targetList={targetList}
+							selector={selector}
 							onSourceChange={changeSource}
 							onTargetChange={changeTarget}
-							reverse={reverse}
+							onReverse={reverse}
 						/>
 						<InputAmount
 							label={$t('form_transfer_input_amount')}
@@ -323,8 +326,7 @@ export const BridgeSwap = props => {
 							{$t('s_bridge_history_description')}
 						</StyledText>
 						<BridgeHistory
-							history={history}
-							networkIdentifier={source?.networkIdentifier}
+							history={swapHistory}
 							onItemPress={handleHistoryItemPress}
 						/>
 					</Stack>

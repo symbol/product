@@ -9,17 +9,11 @@ import {
 	TokenAvatar,
 	TransactionAvatar
 } from '@/app/components';
-import { $t } from '@/app/localization';
-import { BRIDGE_HISTORY_PAGE_SIZE } from '@/app/screens/bridge/constants';
-import { BridgeRequestStatus } from '@/app/screens/bridge/types/Bridge';
-import { getSwapStatus, getSwapStatusCaption } from '@/app/screens/bridge/utils';
 import { Colors, Sizes, Typography } from '@/app/styles';
-import { formatDate, getTokenKnownInfo } from '@/app/utils';
 import { StyleSheet, View } from 'react-native';
 
-/** @typedef {import('@/app/screens/bridge/types/Bridge').BridgeRequest} BridgeRequest */
-/** @typedef {import('@/app/types/Token').TokenInfo} TokenInfo */
-/** @typedef {import('@/app/types/Network').NetworkIdentifier} NetworkIdentifier */
+/** @typedef {import('@/app/screens/bridge/types/Bridge').SwapHistoryItem} SwapHistoryItem */
+/** @typedef {import('@/app/screens/bridge/types/Bridge').SwapHistoryViewModel} SwapHistoryViewModel */
 /** @typedef {import('@/app/types/Network').ChainName} ChainName */
 
 const ICON_NAME = 'swap';
@@ -27,132 +21,58 @@ const PENDING_COLOR = Colors.Semantic.role.warning.default;
 const FAILED_COLOR = Colors.Semantic.role.danger.default;
 
 /**
- * Gets border color for history item based on request status.
- * @param {BridgeRequest} data - The bridge request data.
- * @returns {string|null} Border color or null.
- */
-const getBorderColor = data => {
-	const { requestStatus } = data;
-
-	if (requestStatus === BridgeRequestStatus.CONFIRMED)
-		return PENDING_COLOR;
-
-	return null;
-};
-
-/**
- * Gets display amount information for a bridge request.
- * @param {BridgeRequest} data - The bridge request data.
- * @param {NetworkIdentifier} networkIdentifier - The network identifier.
- * @returns {{isVisible: boolean, value?: string, ticker?: string, chainName?: string}} Amount info.
- */
-const getAmount = (data, networkIdentifier) => {
-	const { payoutTransaction, targetChainName } = data;
-
-	if (!payoutTransaction)
-		return { isVisible: false };
-
-	const resolvedTokenInfo = getTokenKnownInfo(
-		targetChainName,
-		networkIdentifier,
-		payoutTransaction.token.id
-	);
-
-	// Name
-	const name = resolvedTokenInfo.name ?? payoutTransaction.token.name;
-	const { ticker } = resolvedTokenInfo;
-
-	const tokenTickerOrName = ticker ?? name;
-
-	return {
-		isVisible: true,
-		value: payoutTransaction.token.amount,
-		ticker: tokenTickerOrName,
-		chainName: targetChainName
-	};
-};
-
-
-/**
- * SwapChains component. Displays source and target chain with token avatars.
+ * SwapChains component. Displays the source and target chains with their token avatars.
  * @param {object} props - Component props.
- * @param {ChainName} props.sourceChainName - Source chain name.
- * @param {ChainName} props.targetChainName - Target chain name.
- * @param {TokenInfo} props.sourceTokenInfo - Source token info.
- * @param {TokenInfo} props.targetTokenInfo - Target token info.
- * @param {NetworkIdentifier} props.networkIdentifier - Network identifier.
+ * @param {{ chainName: ChainName, imageId: string|null }} props.source - Source chain display data.
+ * @param {{ chainName: ChainName, imageId: string|null }} props.target - Target chain display data.
  * @returns {import('react').ReactNode} SwapChains component.
  */
-const SwapChains = ({ sourceChainName, targetChainName, sourceTokenInfo, targetTokenInfo, networkIdentifier }) => {
-	const { imageId: sourceImageId } = getTokenKnownInfo(
-		sourceChainName,
-		networkIdentifier,
-		sourceTokenInfo.id
-	);
-
-	const { imageId: targetImageId } = getTokenKnownInfo(
-		targetChainName,
-		networkIdentifier,
-		targetTokenInfo.id
-	);
-	return (
-		<View style={styles.swapChainsContainer}>
-			<View style={styles.swapChain}>
-				<TokenAvatar
-					imageId={sourceImageId}
-					size="l"
-					style={styles.tokenImage}
-				/>
-				<StyledText type="label" size="s">
-					{sourceChainName}
-				</StyledText>
-			</View>
-			<Icon name="chevron-right" size="xs" />
-			<View style={styles.swapChain}>
-				<TokenAvatar
-					imageId={targetImageId}
-					size="l"
-					style={styles.tokenImage}
-				/>
-				<StyledText type="label" size="s">
-					{targetChainName}
-				</StyledText>
-			</View>
+const SwapChains = ({ source, target }) => (
+	<View style={styles.swapChainsContainer}>
+		<View style={styles.swapChain}>
+			<TokenAvatar
+				imageId={source.imageId}
+				size="l"
+				style={styles.tokenImage}
+			/>
+			<StyledText type="label" size="s">
+				{source.chainName}
+			</StyledText>
 		</View>
-	);
-};
+		<Icon name="chevron-right" size="xs" />
+		<View style={styles.swapChain}>
+			<TokenAvatar
+				imageId={target.imageId}
+				size="l"
+				style={styles.tokenImage}
+			/>
+			<StyledText type="label" size="s">
+				{target.chainName}
+			</StyledText>
+		</View>
+	</View>
+);
 
 /**
- * SwapListItem component. Displays a single bridge history item with status and amount.
+ * SwapListItem component. Displays one history row with its status and amount.
  * @param {object} props - Component props.
- * @param {BridgeRequest} props.data - Bridge request data.
- * @param {NetworkIdentifier} props.networkIdentifier - Network identifier.
- * @param {(data: BridgeRequest) => void} props.onPress - Press handler.
+ * @param {SwapHistoryItem} props.item - The row to display.
+ * @param {(item: SwapHistoryItem) => void} props.onPress - Press handler.
  * @returns {import('react').ReactNode} SwapListItem component.
  */
-const SwapListItem = ({ data, networkIdentifier, onPress }) => {
-	const action = $t('transactionDescriptor_swap');
-	const dateText = formatDate(data.requestTransaction.timestamp, $t);
-
-	const borderColor = getBorderColor(data);
-	const amount = getAmount(data, networkIdentifier);
-
-	const status = getSwapStatus(data.requestStatus, data.payoutStatus);
-	const isStatusVisible = data.payoutStatus !== undefined;
-
-	const caption = getSwapStatusCaption(data);
+const SwapListItem = ({ item, onPress }) => {
 	const captionTextStyleMap = {
 		regular: styles.captionTextRegular,
 		error: styles.captionTextError
 	};
 
 	const handlePress = () => {
-		onPress(data);
+		onPress(item);
 	};
 
 	return (
 		<ListItemContainer
-			borderColor={borderColor}
+			borderColor={item.isPending ? PENDING_COLOR : null}
 			contentContainerStyle={styles.root}
 			onPress={handlePress}
 		>
@@ -162,44 +82,38 @@ const SwapListItem = ({ data, networkIdentifier, onPress }) => {
 				</View>
 				<View style={styles.middleSection}>
 					<StyledText type="title" size="s">
-						{action}
+						{item.actionText}
 					</StyledText>
-					<SwapChains
-						sourceChainName={data.sourceChainName}
-						targetChainName={data.targetChainName}
-						sourceTokenInfo={data.sourceTokenInfo}
-						targetTokenInfo={data.targetTokenInfo}
-						networkIdentifier={networkIdentifier}
-					/>
+					<SwapChains source={item.source} target={item.target} />
 					<StyledText type="body" size="s" style={styles.dateText}>
-						{dateText}
+						{item.dateText}
 					</StyledText>
 				</View>
 				<View style={styles.statusAndAmountSection}>
-					{isStatusVisible && (
+					{!!item.status && (
 						<StatusRow
-							variant={status.variant}
-							icon={status.iconName}
-							statusText={status.text}
+							variant={item.status.variant}
+							icon={item.status.iconName}
+							statusText={item.status.text}
 						/>
 					)}
-					{amount.isVisible && (
+					{!!item.amount && (
 						<Amount
-							value={amount.value}
-							ticker={amount.ticker}
+							value={item.amount.value}
+							ticker={item.amount.ticker}
 							size="m"
 							style={styles.amount}
 						/>
 					)}
 				</View>
 			</View>
-			{caption.isVisible && (
+			{item.caption.isVisible && (
 				<View style={styles.bottomCaption}>
 					<StyledText
-						type={caption.textType}
-						style={captionTextStyleMap[caption.textStyle]}
+						type={item.caption.textType}
+						style={captionTextStyleMap[item.caption.textStyle]}
 					>
-						{caption.text}
+						{item.caption.text}
 					</StyledText>
 				</View>
 			)}
@@ -208,36 +122,26 @@ const SwapListItem = ({ data, networkIdentifier, onPress }) => {
 };
 
 /**
- * BridgeHistory component. Displays a list of recent bridge transaction history items.
+ * BridgeHistory component. Displays the recent swap rows and the page-size note.
  * @param {object} props - Component props.
- * @param {BridgeRequest[]} props.history - Array of bridge request history items.
- * @param {NetworkIdentifier} props.networkIdentifier - Network identifier for resolving token info.
- * @param {(data: BridgeRequest) => void} props.onItemPress - Handler for item press.
+ * @param {SwapHistoryViewModel} props.history - Rows and the page-size note.
+ * @param {(item: SwapHistoryItem) => void} props.onItemPress - Row press handler.
  * @returns {import('react').ReactNode} BridgeHistory component.
  */
-export const BridgeHistory = ({ history, networkIdentifier, onItemPress }) => {
-	const isPageSizeMessageVisible = history.length === BRIDGE_HISTORY_PAGE_SIZE;
-	const pageSizeMessage = $t('s_bridge_history_page_size_message', { size: BRIDGE_HISTORY_PAGE_SIZE });
-
-	return (
-		<Stack gap="l">
-			<Stack gap="s">
-				{history.map(item => (
-					<AnimatedListItem key={item.requestTransaction.hash}>
-						<SwapListItem
-							data={item}
-							networkIdentifier={networkIdentifier}
-							onPress={onItemPress}
-						/>
-					</AnimatedListItem>
-				))}
-			</Stack>
-			<StyledText type="label" style={styles.pageSizeMessage}>
-				{isPageSizeMessageVisible ? pageSizeMessage : ''}
-			</StyledText>
+export const BridgeHistory = ({ history, onItemPress }) => (
+	<Stack gap="l">
+		<Stack gap="s">
+			{history.items.map(item => (
+				<AnimatedListItem key={item.key}>
+					<SwapListItem item={item} onPress={onItemPress} />
+				</AnimatedListItem>
+			))}
 		</Stack>
-	);
-};
+		<StyledText type="label" style={styles.pageSizeMessage}>
+			{history.pageSizeText}
+		</StyledText>
+	</Stack>
+);
 
 const styles = StyleSheet.create({
 	root: {

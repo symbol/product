@@ -1,100 +1,70 @@
 import { Amount, DropdownModal, ListItemContainer, LoadingIndicator, StyledText, TokenAvatar } from '@/app/components';
 import { Colors, Sizes } from '@/app/styles';
-import { getTokenKnownInfo } from '@/app/utils';
 import { useState } from 'react';
 import { Image, StyleSheet, TouchableOpacity, View } from 'react-native';
 import Animated, { FadeInDown, FadeInUp, FadeOutDown, FadeOutUp } from 'react-native-reanimated'; // eslint-disable-line import/order
 
 /** @typedef {import('@/app/screens/bridge/types/Bridge').SwapSide} SwapSide */
-/** @typedef {import('@/app/screens/bridge/types/Bridge').SwapToken} SwapToken */
-/** @typedef {import('@/app/types/Network').NetworkIdentifier} NetworkIdentifier */
-/** @typedef {import('@/app/types/Network').ChainName} ChainName */
+/** @typedef {import('@/app/screens/bridge/types/Bridge').SwapSideOption} SwapSideOption */
+/** @typedef {import('@/app/screens/bridge/types/Bridge').SwapSelectorViewModel} SwapSelectorViewModel */
 
 const ICON_SWAP_REVERSE = require('@/app/assets/images/components/swap-reverse.png');
 const REVERSE_BUTTON_SIZE = Sizes.Semantic.spacing.m * 5;
 
 /**
- * TokenItem component. Displays token info with avatar, name, and balance.
+ * TokenItem component. Displays a side option with its avatar, label, chain and balance.
  * @param {object} props - Component props.
- * @param {SwapToken} props.token - Token data.
- * @param {ChainName} props.chainName - Chain name.
- * @param {NetworkIdentifier} props.networkIdentifier - Network identifier.
+ * @param {SwapSideOption} props.option - The option to display.
  * @returns {import('react').ReactNode} TokenItem component.
  */
-const TokenItem = ({ token, chainName, networkIdentifier }) => {
-	// Resolve value token info for name, ticker and image
-	const resolvedTokenInfo = getTokenKnownInfo(
-		chainName,
-		networkIdentifier,
-		token.id
-	);
-
-	// Name
-	const name = resolvedTokenInfo.name ?? token.name;
-	const { ticker } = resolvedTokenInfo;
-	const nameText = !ticker
-		? name
-		: `${name} • ${ticker}`;
-
-	return (
-		<View style={styles.tokenItem}>
-			<TokenAvatar imageId={resolvedTokenInfo.imageId} size="l" />
-			<View style={styles.tokenTextContainer}>
-				<View style={styles.tokenTitleRow}>
-					<StyledText>
-						{nameText}
-					</StyledText>
-					<StyledText type="label" variant="secondary">
-						{chainName}
-					</StyledText>
-				</View>
-				<Amount size="l" value={token.amount} />
+const TokenItem = ({ option }) => (
+	<View style={styles.tokenItem}>
+		<TokenAvatar imageId={option.imageId} size="l" />
+		<View style={styles.tokenTextContainer}>
+			<View style={styles.tokenTitleRow}>
+				<StyledText>
+					{option.label}
+				</StyledText>
+				<StyledText type="label" variant="secondary">
+					{option.chainName}
+				</StyledText>
 			</View>
+			<Amount size="l" value={option.amount} />
 		</View>
-	);
-};
+	</View>
+);
 
 /**
- * SelectTokenDropdown component. Dropdown modal for selecting tokens.
+ * SelectTokenDropdown component. Dropdown modal for selecting a side option.
  * @param {object} props - Component props.
  * @param {string} props.title - Dropdown title.
- * @param {SwapSide} props.value - Currently selected value.
+ * @param {SwapSideOption} props.value - Currently selected option.
  * @param {boolean} props.isOpen - Whether dropdown is open.
- * @param {SwapSide[]} props.list - Available options.
- * @param {(item: SwapSide) => void} props.onChange - Selection change handler.
+ * @param {SwapSideOption[]} props.options - Selectable options.
+ * @param {(side: SwapSide) => void} props.onChange - Called with the chosen option's side.
  * @param {() => void} props.onClose - Close handler.
  * @returns {import('react').ReactNode} SelectTokenDropdown component.
  */
 const SelectTokenDropdown = props => {
-	const { title, value, isOpen, list, onChange, onClose } = props;
+	const { title, value, isOpen, options, onChange, onClose } = props;
 
-	// Prepare dropdown value and options list
-	const dropdownValue = `${value.chainName}|${value.token.id}`;
-
-	const handleChange = chainAndTokenId => {
-		const [chainName, tokenId] = chainAndTokenId.split('|');
-		const selectedItem = list.find(item => item.chainName === chainName && item.token.id === tokenId);
-		onChange(selectedItem);
+	const handleChange = key => {
+		const selectedOption = options.find(option => option.key === key);
+		onChange(selectedOption.side);
 	};
 
-	const dropdownOptionsList = list.map(item => ({
-		...item,
-		value: `${item.chainName}|${item.token.id}`
+	const dropdownOptionsList = options.map(option => ({
+		...option,
+		value: option.key
 	}));
 
 	// Items renderer
-	const renderItem = ({ item }) => (
-		<TokenItem
-			token={item.token}
-			chainName={item.chainName}
-			networkIdentifier={item.networkIdentifier}
-		/>
-	);
+	const renderItem = ({ item }) => <TokenItem option={item} />;
 
 	return (
 		<DropdownModal
 			title={title}
-			value={dropdownValue}
+			value={value.key}
 			list={dropdownOptionsList}
 			isOpen={isOpen}
 			onChange={handleChange}
@@ -105,15 +75,15 @@ const SelectTokenDropdown = props => {
 };
 
 /**
- * TokenSelect component. Displays selected token with tap to change.
+ * TokenSelect component. Displays the selected option with tap to change.
  * @param {object} props - Component props.
- * @param {SwapSide|null} props.value - Selected swap side.
- * @param {SwapSide[]} props.list - Available options.
+ * @param {SwapSideOption|null} props.value - Selected option; null renders the empty placeholder.
+ * @param {SwapSideOption[]} props.options - Selectable options.
  * @param {string} props.accessibilityLabel - Accessibility label for the touchable element.
- * @param {(item: SwapSide) => void} props.onChange - Selection change handler.
+ * @param {(side: SwapSide) => void} props.onChange - Selection change handler.
  * @returns {import('react').ReactNode} TokenSelect component.
  */
-const TokenSelect = ({ value, list, accessibilityLabel, onChange }) => {
+const TokenSelect = ({ value, options, accessibilityLabel, onChange }) => {
 	// Dropdown visibility state
 	const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 	const openDropdown = () => setIsDropdownOpen(true);
@@ -125,17 +95,13 @@ const TokenSelect = ({ value, list, accessibilityLabel, onChange }) => {
 	return (
 		<>
 			<ListItemContainer onPress={openDropdown} accessibilityLabel={accessibilityLabel}>
-				<TokenItem
-					token={value.token}
-					chainName={value.chainName}
-					networkIdentifier={value.networkIdentifier}
-				/>
+				<TokenItem option={value} />
 			</ListItemContainer>
 			<SelectTokenDropdown
 				title="Select Token"
 				value={value}
 				isOpen={isDropdownOpen}
-				list={list}
+				options={options}
 				onChange={onChange}
 				onClose={closeDropdown}
 			/>
@@ -156,6 +122,7 @@ const ReverseButton = ({ isLoading, onPress }) => {
 			onPress={onPress}
 			style={styles.reverseButton}
 			disabled={isLoading}
+			accessibilityLabel="Reverse swap direction"
 		>
 			{!isLoading && <Image source={ICON_SWAP_REVERSE} style={styles.reverseIcon} />}
 			{isLoading && <LoadingIndicator size="sm" />}
@@ -164,55 +131,46 @@ const ReverseButton = ({ isLoading, onPress }) => {
 };
 
 /**
- * SwapSelector component. Provides source and target token selection with reverse functionality.
- * Allows users to select tokens for swap and reverse the swap direction.
+ * SwapSelector component. Renders the selected sides with their options, and reports selection
+ * changes and the reverse action.
  * @param {object} props - Component props.
  * @param {boolean} props.isLoading - Whether data is loading.
- * @param {SwapSide|null} props.source - Selected source side.
- * @param {SwapSide|null} props.target - Selected target side.
- * @param {SwapSide[]} props.sourceList - Available source options.
- * @param {SwapSide[]} props.targetList - Available target options.
+ * @param {SwapSelectorViewModel} props.selector - Selected options and the selectable options.
  * @param {(side: SwapSide) => void} props.onSourceChange - Source change handler.
  * @param {(side: SwapSide) => void} props.onTargetChange - Target change handler.
+ * @param {() => void} props.onReverse - Swaps source and target.
  * @returns {import('react').ReactNode} SwapSelector component.
  */
 export const SwapSelector = ({
 	isLoading,
-	source,
-	target,
-	sourceList,
-	targetList,
+	selector,
 	onSourceChange,
-	onTargetChange
+	onTargetChange,
+	onReverse
 }) => {
-	const reverse = () => {
-		onSourceChange(target);
-		onTargetChange(source);
-	};
-
 	return (
 		<View style={styles.root}>
 			<Animated.View
 				entering={FadeInDown}
 				exiting={FadeOutDown}
-				key={`source-${source?.token.id}`}
+				key={`source-${selector.source?.key}`}
 			>
 				<TokenSelect
-					value={source}
-					list={sourceList}
+					value={selector.source}
+					options={selector.sourceOptions}
 					accessibilityLabel="Select source token"
 					onChange={onSourceChange}
 				/>
 			</Animated.View>
-			<ReverseButton isLoading={isLoading} onPress={reverse} />
+			<ReverseButton isLoading={isLoading} onPress={onReverse} />
 			<Animated.View
 				entering={FadeInUp}
 				exiting={FadeOutUp}
-				key={`target-${target?.token.id}`}
+				key={`target-${selector.target?.key}`}
 			>
 				<TokenSelect
-					value={target}
-					list={targetList}
+					value={selector.target}
+					options={selector.targetOptions}
 					accessibilityLabel="Select target token"
 					onChange={onTargetChange}
 				/>
