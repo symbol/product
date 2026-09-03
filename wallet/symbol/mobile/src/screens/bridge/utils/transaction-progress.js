@@ -12,6 +12,7 @@ import { createTokenDisplayData } from '@/app/utils';
 /** @typedef {import('../hooks/useBridgeTransactionWorkflow').SingleWorkflowMeta} SingleWorkflowMeta */
 /** @typedef {import('../hooks/useBridgeTransactionWorkflow').DualWorkflowMeta} DualWorkflowMeta */
 
+const UNKNOWN_TOKEN_TEXT = 'unknown';
 
 /**
  * Maps a BridgeTransactionWorkflowStatus value to its full display info: icon, variant, and localised text.
@@ -222,17 +223,15 @@ const buildActivityLog = ({
 };
 
 /**
- * Extracts a display ticker string for a token using its known metadata.
+ * Resolves the label of a workflow side's token: its known ticker, or its name when unlisted.
  * @param {WorkflowMetaSide} side - The workflow metadata side containing tokenInfo, chainName and networkIdentifier.
- * @returns {string} The ticker text, or 'unknown' if no token info is available.
+ * @returns {string} Ticker text, or 'unknown' for a side without token info.
  */
 const createTokenTextFromSide = side => {
 	if (!side?.tokenInfo?.id)
-		return 'unknown';
+		return UNKNOWN_TOKEN_TEXT;
 
-	const tokenDisplayData = createTokenDisplayData(side.tokenInfo, side.chainName, side.networkIdentifier);
-
-	return tokenDisplayData.ticker;
+	return createTokenDisplayData(side.tokenInfo, side.chainName, side.networkIdentifier).tickerText;
 };
 
 /**

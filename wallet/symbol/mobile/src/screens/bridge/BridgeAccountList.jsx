@@ -38,7 +38,6 @@ export const BridgeAccountList = () => {
 							<BridgeAccountCard
 								address={account?.address}
 								name={chainName}
-								account={account}
 								balance={balance}
 								ticker={ticker}
 								isActive={isActive}
