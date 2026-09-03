@@ -5,6 +5,7 @@
 /** @typedef {import('@/app/types/Network').NetworkIdentifier} NetworkIdentifier */
 /** @typedef {import('@/app/types/Network').ChainName} ChainName */
 /** @typedef {import('wallet-common-core/src/lib/bridge/SwapWorkflowManager').SwapWorkflowManager} SwapWorkflowManager */
+/** @typedef {import('wallet-common-core/src/lib/bridge/SwapWorkflowManager').PairManager} SwapStep */
 /** @typedef {import('wallet-common-core/src/types/Bridge').BridgeEstimation} BridgeEstimation */
 /** @typedef {import('wallet-common-core/src/types/Bridge').BridgeRequest} BridgeRequest */
 /** @typedef {import('wallet-common-core/src/types/Bridge').BridgeError} BridgeError */
@@ -21,7 +22,9 @@
  * @typedef {object} SwapToken
  * @property {string} id - Token identifier.
  * @property {string} name - Token name.
+ * @property {number} divisibility - Token divisibility.
  * @property {string} amount - Token balance amount in relative units.
+ * @property {string} [ticker] - Contract-reported ticker; Ethereum tokens only.
  */
 
 /**
@@ -118,20 +121,33 @@
  */
 
 /**
- * One displayed fee entry of the swap summary: a summed amount in one token on one chain.
- * @typedef {object} FeeGroup
- * @property {string} amount - Summed fee amount in relative units.
- * @property {string} tokenName - Fee token ticker (e.g. 'ETH', 'bXYM', 'XYM'), or the token name when no ticker is known.
- * @property {ChainName} chainName - Chain the fee is paid on.
+ * Fee data of one route step.
+ * @typedef {object} StepFees
+ * @property {number} stepIndex - Zero-based step index.
+ * @property {ChainName} chainName - Chain the step's transactions run on.
+ * @property {NetworkIdentifier} networkIdentifier - Network identifier of that chain.
+ * @property {TransactionFeeTiers[]|null} feeTiers - One tier set per transaction of the step's bundle; null until fetched.
  */
 
 /**
- * Gas fee data of one swap step.
- * @typedef {object} StepTransactionFees
- * @property {ChainName} chainName - Chain the step's transactions run on.
- * @property {NetworkIdentifier} networkIdentifier - Network identifier of the step's chain.
- * @property {TokenInfo} networkCurrency - Currency the gas is paid in.
- * @property {TransactionFeeTiers[]} feeTiers - Fee tiers per transaction in the step's bundle.
+ * Price impact severity tier.
+ * @typedef {'none' | 'warning' | 'critical'} PriceImpactSeverityValue
+ */
+
+/**
+ * One line of the estimation summary card.
+ * @typedef {object} EstimationSummaryRow
+ * @property {string} title - Localized row title; kept on continuation rows for the accessibility label.
+ * @property {string} value - Ready text, for example '0.000655 ETH', '6.00% · High', 'Unknown' or '-'.
+ * @property {boolean} isContinuation - Whether the row continues the row above (connector instead of the title).
+ * @property {PriceImpactSeverityValue|null} severity - Severity of the price impact row; null on every other row.
+ */
+
+/**
+ * View model of the estimation summary card.
+ * @typedef {object} EstimationSummaryViewModel
+ * @property {string} key - Changes with the selected pair; the card replays its fade-in on it.
+ * @property {EstimationSummaryRow[]} rows - Rows in display order.
  */
 
 /** Bridge operation mode constants. */

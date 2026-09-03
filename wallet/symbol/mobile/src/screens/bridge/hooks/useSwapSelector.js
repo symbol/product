@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 /** @typedef {import('@/app/screens/bridge/types/Bridge').SwapPair} SwapPair */
 /** @typedef {import('@/app/screens/bridge/types/Bridge').SwapSide} SwapSide */
 /** @typedef {import('@/app/screens/bridge/types/Bridge').SwapSideTypeValue} SwapSideTypeValue */
+/** @typedef {import('@/app/screens/bridge/types/Bridge').SwapStep} SwapStep */
 /** @typedef {import('@/app/screens/bridge/types/Bridge').SwapWorkflowManager} SwapWorkflowManager */
 
 /**
@@ -77,6 +78,7 @@ const getCorrespondingBridge = (pairs, source, target) => {
  * @typedef {object} UseSwapSelectorReturnType
  * @property {boolean} isReady - Whether selection is complete and ready for swap.
  * @property {SwapWorkflowManager|null} bridge - Selected bridge manager.
+ * @property {SwapStep[]} steps - Steps of the selected route in execution order; empty while no route is selected.
  * @property {SwapSide|null} source - Selected source side.
  * @property {SwapSide|null} target - Selected target side.
  * @property {SwapSide[]} sourceList - Available source options.
@@ -133,6 +135,13 @@ export const useSwapSelector = ({ pairs, defaultSourceChainName }) => {
 
 		return null;
 	}, [pairs, source, target]);
+
+	const steps = useMemo(() => {
+		if (!bridge)
+			return [];
+
+		return Array.from({ length: bridge.steps }, (_, stepIndex) => bridge.getPairForStep(stepIndex));
+	}, [bridge]);
 
 	const sourceList = useMemo(() => {
 		if (pairs.length === 0)
@@ -222,6 +231,7 @@ export const useSwapSelector = ({ pairs, defaultSourceChainName }) => {
 	return {
 		isReady: source !== null && target !== null && bridge !== null,
 		bridge,
+		steps,
 		source,
 		target,
 		sourceList,

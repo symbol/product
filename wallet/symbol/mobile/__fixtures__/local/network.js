@@ -18,7 +18,9 @@ export const networkProperties = {
 				minFeeMultiplier: 100
 			},
 			networkCurrency: {
-				...tokens.symbol.mainnet[0]
+				name: 'symbol.xym',
+				mosaicId: '6BED913FA20223F8',
+				divisibility: 6
 			}
 		},
 		testnet: {
@@ -37,7 +39,9 @@ export const networkProperties = {
 				minFeeMultiplier: 100
 			},
 			networkCurrency: {
-				...tokens.symbol.testnet[0]
+				name: 'symbol.xym',
+				mosaicId: '72C0212E67A08BCE',
+				divisibility: 6
 			}
 		}
 	},
