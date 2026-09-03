@@ -54,8 +54,10 @@ const ethereumWalletController = createWalletControllerMock({
 
 // Bridge Fixtures
 
-const createBridgeMock = id => ({
+const createBridgeMock = (id, stepPairs = []) => ({
 	id,
+	steps: stepPairs.length,
+	getPairForStep: jest.fn(stepIndex => stepPairs[stepIndex]),
 	estimateFee: jest.fn(),
 	createTransaction: jest.fn()
 });
@@ -172,6 +174,7 @@ describe('hooks/useSwapSelector', () => {
 		contract: {
 			isReady: 'boolean',
 			bridge: 'object',
+			steps: 'array',
 			source: 'object',
 			target: 'object',
 			sourceList: 'array',
@@ -543,6 +546,54 @@ describe('hooks/useSwapSelector', () => {
 				expect(hookTester.currentResult.source).toBe(previousSource);
 				expect(hookTester.currentResult.target).toBe(previousTarget);
 			});
+		});
+	});
+
+	describe('route steps', () => {
+		// ETH -> XYM: Uniswap step, then bridge step
+		const firstStepPair = {
+			sourceWalletController: ethereumWalletController,
+			targetWalletController: ethereumWalletController,
+			sourceTokenInfo: swapTokenEth,
+			targetTokenInfo: swapTokenBxym
+		};
+		const secondStepPair = {
+			sourceWalletController: ethereumWalletController,
+			targetWalletController: symbolWalletController,
+			sourceTokenInfo: swapTokenBxym,
+			targetTokenInfo: swapTokenXym
+		};
+		const dualStepBridge = createBridgeMock(BRIDGE_ID_XYM_TO_ETH, [firstStepPair, secondStepPair]);
+		const pairsDualStepRoute = [{ ...swapPairEthToXym, bridge: dualStepBridge }];
+
+		const runRouteStepsTest = (description, config, expected) => {
+			it(description, () => {
+				// Arrange:
+				const params = createHookParams(config);
+
+				// Act:
+				const hookTester = new HookTester(useSwapSelector, [params]);
+
+				// Assert:
+				expect(hookTester.currentResult.steps).toStrictEqual(expected.steps);
+			});
+		};
+
+		const routeStepsTests = [
+			{
+				description: 'returns the route steps in execution order',
+				config: { pairs: pairsDualStepRoute, defaultSourceChainName: CHAIN_NAME_ETHEREUM },
+				expected: { steps: [firstStepPair, secondStepPair] }
+			},
+			{
+				description: 'returns no steps while no route is selected',
+				config: { pairs: pairsEmpty, defaultSourceChainName: CHAIN_NAME_SYMBOL },
+				expected: { steps: [] }
+			}
+		];
+
+		routeStepsTests.forEach(test => {
+			runRouteStepsTest(test.description, test.config, test.expected);
 		});
 	});
 });

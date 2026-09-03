@@ -109,6 +109,7 @@ export const getAvailableBalance = (token, nativeTokenId, transactionFeeTiers, s
  * @typedef {object} TokenLabelDisplayData
  * @property {string} name - The display name of the token, including the ticker when known.
  * @property {string|null} ticker - The token's ticker symbol, if available.
+ * @property {string} tickerText - The ticker, or the display name when no ticker is known.
  * @property {string|null} imageId - The known image identifier for the token, if available.
  */
 
@@ -132,6 +133,7 @@ export const createTokenDisplayData = (token, chainName, networkIdentifier) => {
 	return {
 		name: formatTokenNameText(name, ticker),
 		ticker,
+		tickerText: ticker ?? name,
 		imageId
 	};
 };

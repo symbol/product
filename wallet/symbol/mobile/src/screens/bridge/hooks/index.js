@@ -1,4 +1,3 @@
-export * from './useAdditionalStepFees';
 export * from './useBridge';
 export * from './useBridgeAccounts';
 export * from './useBridgeAmount';
@@ -8,4 +7,5 @@ export * from './useBridgeNoPairsDialog';
 export * from './useBridgeTransaction';
 export * from './useBridgeTransactionWorkflow';
 export * from './useEstimation';
+export * from './useStepTransactionFees';
 export * from './useSwapSelector';
