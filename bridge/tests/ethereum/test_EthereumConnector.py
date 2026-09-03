@@ -1,3 +1,4 @@
+import re
 from collections import namedtuple
 
 import pytest
@@ -443,68 +444,60 @@ async def test_can_announce_transaction_success(server):  # pylint: disable=rede
 	] == server.mock.request_json_payloads
 
 
-async def test_cannot_announce_transaction_with_error(server):  # pylint: disable=redefined-outer-name
+async def _assert_cannot_announce_transaction_with_error(
+	server,
+	simulate_announce_error,
+	expected_exception_class,
+	expected_error_message=None
+):  # pylint: disable=redefined-outer-name
 	# Arrange:
-	server.mock.simulate_announce_error = True
+	server.mock.simulate_announce_error = simulate_announce_error
 
 	connector = EthereumConnector(server.make_url(''))
 	transaction = {'signature': SignedTransaction(HexBytes(EXAMPLE_TRANSACTION_SIGNING_PAYLOAD_HEX))}
 
 	# Act + Assert:
-	with pytest.raises(NodeException, match='eth_sendRawTransaction RPC call failed: INTERNAL_ERROR: IntrinsicGas'):
+	expected_message = re.escape(f'eth_sendRawTransaction RPC call failed: {expected_error_message or simulate_announce_error}')
+	with pytest.raises(expected_exception_class, match=expected_message):
 		await connector.announce_transaction(transaction)
+
+
+async def test_cannot_announce_transaction_with_error(server):  # pylint: disable=redefined-outer-name
+	await _assert_cannot_announce_transaction_with_error(server, True, NodeException, 'INTERNAL_ERROR: IntrinsicGas')
 
 
 async def test_cannot_announce_transaction_with_error_insufficient_balance(server):  # pylint: disable=redefined-outer-name
-	# Arrange:
-	server.mock.simulate_announce_error = 'execution reverted: ERC20: transfer amount exceeds balance'
-
-	connector = EthereumConnector(server.make_url(''))
-	transaction = {'signature': SignedTransaction(HexBytes(EXAMPLE_TRANSACTION_SIGNING_PAYLOAD_HEX))}
-
-	# Act + Assert:
-	with pytest.raises(InsufficientBalanceException, match=f'eth_sendRawTransaction RPC call failed: {server.mock.simulate_announce_error}'):
-		await connector.announce_transaction(transaction)
+	# ERC-20 revert, the token balance is too low
+	await _assert_cannot_announce_transaction_with_error(
+		server,
+		'execution reverted: ERC20: transfer amount exceeds balance',
+		InsufficientBalanceException)
 
 
 async def test_cannot_announce_transaction_with_error_insufficient_funds(server):  # pylint: disable=redefined-outer-name
-	# Arrange: sender cannot cover gas * price + value
-	server.mock.simulate_announce_error = 'insufficient funds for gas * price + value: balance 0, tx cost 87181950000000, overshot 1'
-
-	connector = EthereumConnector(server.make_url(''))
-	transaction = {'signature': SignedTransaction(HexBytes(EXAMPLE_TRANSACTION_SIGNING_PAYLOAD_HEX))}
-
-	# Act + Assert:
-	expected_message = re.escape(f'eth_sendRawTransaction RPC call failed: {server.mock.simulate_announce_error}')
-	with pytest.raises(InsufficientBalanceException, match=expected_message):
-		await connector.announce_transaction(transaction)
+	# sender cannot cover gas * price + value
+	await _assert_cannot_announce_transaction_with_error(
+		server,
+		'insufficient funds for gas * price + value: balance 0, tx cost 87181950000000, overshot 1',
+		InsufficientBalanceException)
 
 
 async def test_cannot_announce_transaction_with_error_insufficient_funds_capitalized(server):
 	# pylint: disable=redefined-outer-name
-	# Arrange: some node implementations capitalize the message
-	server.mock.simulate_announce_error = 'Insufficient funds for gas * price + value'
-
-	connector = EthereumConnector(server.make_url(''))
-	transaction = {'signature': SignedTransaction(HexBytes(EXAMPLE_TRANSACTION_SIGNING_PAYLOAD_HEX))}
-
-	# Act + Assert:
-	expected_message = re.escape(f'eth_sendRawTransaction RPC call failed: {server.mock.simulate_announce_error}')
-	with pytest.raises(InsufficientBalanceException, match=expected_message):
-		await connector.announce_transaction(transaction)
+	# some node implementations capitalize the message
+	await _assert_cannot_announce_transaction_with_error(
+		server,
+		'Insufficient funds for gas * price + value',
+		InsufficientBalanceException)
 
 
 async def test_cannot_announce_transaction_with_error_insufficient_funds_short(server):
 	# pylint: disable=redefined-outer-name
-	# Arrange: erigon reports a short reason instead of the full go-ethereum message
-	server.mock.simulate_announce_error = 'INTERNAL_ERROR: insufficient funds'
-
-	connector = EthereumConnector(server.make_url(''))
-	transaction = {'signature': SignedTransaction(HexBytes(EXAMPLE_TRANSACTION_SIGNING_PAYLOAD_HEX))}
-
-	# Act + Assert:
-	with pytest.raises(InsufficientBalanceException, match=f'eth_sendRawTransaction RPC call failed: {server.mock.simulate_announce_error}'):
-		await connector.announce_transaction(transaction)
+	# erigon reports a short reason instead of the full go-ethereum message
+	await _assert_cannot_announce_transaction_with_error(
+		server,
+		'INTERNAL_ERROR: insufficient funds',
+		InsufficientBalanceException)
 
 
 async def test_cannot_announce_transaction_to_syncing_node(server):  # pylint: disable=redefined-outer-name
