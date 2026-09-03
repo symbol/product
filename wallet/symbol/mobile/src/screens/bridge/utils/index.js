@@ -3,6 +3,7 @@ export * from './bridge-account-management';
 export * from './bridge-pairs';
 export * from './estimation-summary';
 export * from './price-impact';
+export * from './swap-confirmation';
 export * from './swap-side';
 export * from './swap-status';
 export * from './transaction-progress';

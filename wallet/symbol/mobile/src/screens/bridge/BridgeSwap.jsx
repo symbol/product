@@ -14,6 +14,7 @@ import {
 } from './hooks';
 import {
 	createEstimationSummaryViewModel,
+	createSwapConfirmationText,
 	createTransactionProgressViewModel,
 	formatPriceImpactText,
 	getEstimationsPriceImpact,
@@ -118,14 +119,14 @@ export const BridgeSwap = props => {
 	const {
 		createTransaction,
 		getConfirmationPreview
-	} = useBridgeTransaction({ bridge, amount, estimations, walletController: sourceWalletController });
+	} = useBridgeTransaction({ steps, amount, estimations, walletController: sourceWalletController });
 
 	// Update ref to break circular dependency with useStepTransactionFees
 	createTransactionRef.current = createTransaction;
 
 	// Transaction workflow
 	const workflow = useBridgeTransactionWorkflow({
-		bridge,
+		steps,
 		createTransaction,
 		transactionFeeTiers: firstStepFeeTiers,
 		transactionFeeTierLevel: TRANSACTION_SPEED
@@ -209,6 +210,9 @@ export const BridgeSwap = props => {
 		transactionFeeTierLevel: TRANSACTION_SPEED
 	});
 
+	// Confirm dialog text
+	const confirmationText = createSwapConfirmationText({ source, target, amount });
+
 	const init = useCallback(() => {
 		(async () => {
 			reset();
@@ -249,13 +253,7 @@ export const BridgeSwap = props => {
 			transactionProgressViewModel={transactionProgressViewModel}
 			isCustomSendButtonUsed={true}
 			confirmDialogTitle={$t('s_bridge_swap_dialog_confirm_title')}
-			confirmDialogText={$t('s_bridge_swap_dialog_confirm_text', {
-				amount,
-				sourceToken: source?.token.name,
-				sourceChain: source?.chainName,
-				targetToken: target?.token.name,
-				targetChain: target?.chainName
-			})}
+			confirmDialogText={confirmationText}
 			modals={(
 				<>
 					<DialogBox

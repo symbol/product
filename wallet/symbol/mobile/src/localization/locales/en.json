@@ -672,7 +672,7 @@
     "s_accountList_confirm_removeImported_title": "Remove imported account",
     "s_accountList_confirm_removeImported_body": "You are about to remove account \"%{name}\" %{address} from your wallet. Please make sure that the private key is securely backed up and you will be able to access it. Note that this account cannot be restored from you mnemonic backup phrase. You won't be able to access again this account unless you have its private key.",
     "s_bridge_swap_dialog_confirm_title": "Swap tokens?",
-    "s_bridge_swap_dialog_confirm_text": "You are about to swap %{amount} of %{sourceToken} on %{sourceChain} network for %{targetToken} on %{targetChain} network.",
+    "s_bridge_swap_dialog_confirm_text": "You are about to swap %{amount} %{sourceToken} on %{sourceChain} network for %{targetToken} on %{targetChain} network.",
     "s_bridge_swap_dialog_noPairs_title": "Activate Bridge Swap",
     "s_bridge_swap_dialog_noPairs_text": "To use Bridge Swap, you need to have account from another network added to your wallet. Proceed to add an account from another network to activate the Bridge Swap feature.",
     "s_bridge_swap_dialog_disabled_title": "Bridge Swap Unavailable",

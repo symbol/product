@@ -190,7 +190,6 @@ const bridgeMock = {
 		bridgeFee: '1',
 		receiveAmount: PAYOUT_AMOUNT
 	}),
-	getPairForStep: jest.fn().mockReturnValue(bridgeStepPair),
 	createTransaction: jest.fn(),
 	fetchRecentHistory: jest.fn().mockResolvedValue([])
 };
@@ -319,7 +318,6 @@ const createUseSwapSelectorMock = (overrides = {}) => ({
 	isReady: true,
 	bridge: bridgeMock,
 	steps: [bridgeStepPair],
-	mode: BridgeMode.WRAP,
 	source: swapSideSymbolXym,
 	target: swapSideEthereumBxym,
 	sourceList: [swapSideSymbolXym, swapSideEthereumEth],
@@ -452,20 +450,17 @@ describe('screens/bridge/BridgeSwap', () => {
 				announceSignedTransactionBundle: announceSignedTransactionBundleMock
 			});
 
-			// The transaction workflow signs and announces through the step pair's source wallet controller
-			const bridge = {
-				...bridgeMock,
-				getPairForStep: jest.fn().mockReturnValue({
-					...bridgeStepPair,
-					sourceWalletController: walletController
-				})
+			// The transaction workflow signs and announces through the route step's source wallet controller
+			const signingStep = {
+				...bridgeStepPair,
+				sourceWalletController: walletController
 			};
 
 			setupMocks({
 				walletController,
 				useSwapSelector: {
 					isReady: true,
-					bridge,
+					steps: [signingStep],
 					source: swapSideSymbolXym,
 					target: swapSideEthereumBxym,
 					sourceList: [swapSideSymbolXym, swapSideEthereumEth],
@@ -553,7 +548,7 @@ describe('screens/bridge/BridgeSwap', () => {
 					source: null,
 					target: null,
 					bridge: null,
-					mode: null,
+					steps: [],
 					sourceList: [],
 					targetList: []
 				}
@@ -828,12 +823,6 @@ describe('screens/bridge/BridgeSwap', () => {
 			targetTokenInfo: tokenXym
 		};
 
-		const createDualStepBridge = (firstStepPair, secondStepPair) => ({
-			...bridgeMock,
-			steps: 2,
-			getPairForStep: jest.fn(stepIndex => (0 === stepIndex ? firstStepPair : secondStepPair))
-		});
-
 		const dualStepEstimations = [
 			{ bridgeFee: '2.5', receiveAmount: '735' },
 			{ bridgeFee: '0.75', receiveAmount: PAYOUT_AMOUNT }
@@ -846,7 +835,6 @@ describe('screens/bridge/BridgeSwap', () => {
 				setupMocks({
 					walletController: ethereumSourceWalletController,
 					useSwapSelector: {
-						bridge: config.bridge,
 						steps: config.steps,
 						source: swapSideEthereumEth,
 						target: swapSideSymbolXym
@@ -872,7 +860,6 @@ describe('screens/bridge/BridgeSwap', () => {
 			[
 				'adds the gas of the steps into one row and shows each operation fee token on its own row',
 				{
-					bridge: createDualStepBridge(swapStepPairEthToBxym, swapStepPairBxymToXym),
 					steps: [swapStepPairEthToBxym, swapStepPairBxymToXym],
 					estimations: dualStepEstimations,
 					stepFees: [
@@ -892,7 +879,6 @@ describe('screens/bridge/BridgeSwap', () => {
 			[
 				'shows the gas of a step paid in another currency on a connected row',
 				{
-					bridge: createDualStepBridge(swapStepPairEthToBxym, swapStepPairBxymToXym),
 					steps: [swapStepPairEthToBxym, swapStepPairBxymToXym],
 					estimations: dualStepEstimations,
 					stepFees: [
@@ -908,7 +894,6 @@ describe('screens/bridge/BridgeSwap', () => {
 			[
 				'adds the operation fees into one row when they are in the same token',
 				{
-					bridge: createDualStepBridge(swapStepPairBxymToXym, swapStepPairBxymToXym),
 					steps: [swapStepPairBxymToXym, swapStepPairBxymToXym],
 					estimations: [
 						{ bridgeFee: '1.5', receiveAmount: '735' },

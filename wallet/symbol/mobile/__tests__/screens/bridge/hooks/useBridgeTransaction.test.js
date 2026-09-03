@@ -55,20 +55,16 @@ const targetWalletController = createWalletControllerMock({
 	currentAccount: targetAccount
 });
 
-const stepPair = {
+const step = {
 	createTransaction: jest.fn().mockResolvedValue(transactionBundle),
 	sourceWalletController,
 	targetWalletController
 };
 
-const bridge = {
-	getPairForStep: jest.fn().mockReturnValue(stepPair)
-};
-
 // Hook Helpers
 
 const createHookParams = overrides => ({
-	bridge,
+	steps: [step],
 	walletController: sourceWalletController,
 	amount: AMOUNT,
 	...overrides
@@ -102,7 +98,7 @@ describe('hooks/useBridgeTransaction', () => {
 			});
 
 			// Assert:
-			expect(stepPair.createTransaction).toHaveBeenCalledWith({
+			expect(step.createTransaction).toHaveBeenCalledWith({
 				recipientAddress: targetAccount.address,
 				amount: AMOUNT,
 				amountOutMinimum: undefined
@@ -122,6 +118,17 @@ describe('hooks/useBridgeTransaction', () => {
 					{ type: 'fee', value: bridgeTransaction.fee, title: 'fee' }
 				]
 			}]);
+		});
+	});
+
+	describe('step lookup', () => {
+		it('rejects when the step index is outside the route', async () => {
+			// Arrange:
+			const params = createHookParams({ steps: [] });
+			const hookTester = new HookTester(useBridgeTransaction, [params]);
+
+			// Act & Assert:
+			await expect(hookTester.currentResult.createTransaction()).rejects.toThrow('No step found for index 0');
 		});
 	});
 });
