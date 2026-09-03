@@ -33,7 +33,6 @@ const isEstimationComplete = (estimations, stepCount) =>
  * Return type for useStepTransactionFees hook.
  * @typedef {object} UseStepTransactionFeesReturnType
  * @property {StepFees[]} stepFees - One entry per route step in order; feeTiers is null until fetched.
- * @property {TransactionFeeTiers[]|null} firstStepFeeTiers - Step-0 tiers, used for the available balance and signing.
  * @property {boolean} isLoading - Whether any step's fees are being fetched.
  * @property {() => Promise<TransactionFeeTiers[]>} fetchFirstStepFees - Fetches the step-0 fees; requires a selected route.
  * @property {(estimations: BridgeEstimation[]|null) => Promise<object[]>} fetchRemainingStepFees - Fetches the fees of
@@ -88,7 +87,6 @@ export const useStepTransactionFees = ({ steps, createTransaction }) => {
 
 	return {
 		stepFees,
-		firstStepFeeTiers: firstStepManager.data,
 		isLoading: firstStepManager.isLoading || remainingStepsManager.isLoading,
 		fetchFirstStepFees: firstStepManager.call,
 		fetchRemainingStepFees: remainingStepsManager.call,
