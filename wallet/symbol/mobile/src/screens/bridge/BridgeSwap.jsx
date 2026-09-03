@@ -1,7 +1,6 @@
 import { BridgeHistory, EstimationSummary, SwapSelector } from './components';
 import { PriceImpactSeverity } from './constants';
 import {
-	useAdditionalStepFees,
 	useBridge,
 	useBridgeAmount,
 	useBridgeDisabledDialog,
@@ -10,11 +9,11 @@ import {
 	useBridgeTransaction,
 	useBridgeTransactionWorkflow,
 	useEstimation,
+	useStepTransactionFees,
 	useSwapSelector
 } from './hooks';
 import {
-	createOperationFeeGroups,
-	createTransactionFeeGroups,
+	createEstimationSummaryViewModel,
 	createTransactionProgressViewModel,
 	formatPriceImpactText,
 	getEstimationsPriceImpact,
@@ -33,7 +32,7 @@ import {
 	TransactionScreenTemplate
 } from '@/app/components';
 import { config } from '@/app/config';
-import { useToggle, useTransactionFees, useWalletController } from '@/app/hooks';
+import { useToggle, useWalletController } from '@/app/hooks';
 import { $t } from '@/app/localization';
 import { Router } from '@/app/router/Router';
 import { useFocusEffect } from '@react-navigation/native';
@@ -55,7 +54,7 @@ const TRANSACTION_SPEED = 'medium';
  * @returns {React.ReactNode} BridgeSwap component.
  */
 export const BridgeSwap = props => {
-	// Ref to break createTransaction ↔ useBridgeAmount circular dependency
+	// Ref to break the createTransaction ↔ useStepTransactionFees ↔ useBridgeAmount circular dependency
 	const createTransactionRef = useRef(() => Promise.resolve(null));
 
 	// Load bridges and subscribe to changes
@@ -71,6 +70,7 @@ export const BridgeSwap = props => {
 	const {
 		isReady,
 		bridge,
+		steps,
 		source,
 		target,
 		sourceList,
@@ -80,14 +80,18 @@ export const BridgeSwap = props => {
 		reverse
 	} = useSwapSelector({ pairs, defaultSourceChainName: props.route.params.chainName });
 
+	// The transaction template and preview always need a controller; the main one stands in until a source is chosen.
 	const sourceWalletController = useWalletController(source?.chainName);
 
-	// Transaction fees
+	// Transaction fees of every route step
 	const {
-		data: transactionFees,
-		isLoading: isFeesLoading,
-		call: fetchFees
-	} = useTransactionFees(() => createTransactionRef.current(), sourceWalletController);
+		stepFees,
+		firstStepFeeTiers,
+		isLoading: isStepFeesLoading,
+		fetchFirstStepFees,
+		fetchRemainingStepFees,
+		clearRemainingStepFees
+	} = useStepTransactionFees({ steps, createTransaction: stepIndex => createTransactionRef.current(stepIndex) });
 
 	// Amount and validation
 	const {
@@ -98,7 +102,7 @@ export const BridgeSwap = props => {
 		changeAmount,
 		changeAmountValidity,
 		reset
-	} = useBridgeAmount({ source, transactionFees, transactionFeeTierLevel: TRANSACTION_SPEED });
+	} = useBridgeAmount({ source, transactionFees: firstStepFeeTiers, transactionFeeTierLevel: TRANSACTION_SPEED });
 
 	// Estimation summary
 	const {
@@ -114,26 +118,16 @@ export const BridgeSwap = props => {
 	const {
 		createTransaction,
 		getConfirmationPreview
-	} = useBridgeTransaction({ bridge, target, amount, estimations, walletController: sourceWalletController });
+	} = useBridgeTransaction({ bridge, amount, estimations, walletController: sourceWalletController });
 
-	// Update ref to break circular dependency with useTransactionFees
+	// Update ref to break circular dependency with useStepTransactionFees
 	createTransactionRef.current = createTransaction;
-
-	// Transaction fees of the steps after the first one (their transaction amounts come from the
-	// estimation output, so they are fetched separately, once the estimation arrives)
-	const {
-		additionalStepFees,
-		fetchAdditionalStepFees,
-		clearAdditionalStepFees,
-		isLoading: isAdditionalFeesLoading
-	} = useAdditionalStepFees({ bridge, estimations, createTransaction });
 
 	// Transaction workflow
 	const workflow = useBridgeTransactionWorkflow({
 		bridge,
 		createTransaction,
-		walletController: sourceWalletController,
-		transactionFeeTiers: transactionFees,
+		transactionFeeTiers: firstStepFeeTiers,
 		transactionFeeTierLevel: TRANSACTION_SPEED
 	});
 
@@ -149,8 +143,8 @@ export const BridgeSwap = props => {
 	// Bridge turned off by its operator popup
 	const disabledDialogManager = useBridgeDisabledDialog({ pairsStatus });
 
-	// Price impact confirmation. At the critical tier the send flow is gated by an explicit
-	// warning dialog; the ref carries the send action to the dialog rendered in the modals slot.
+	// Price impact feeds the send gate, its dialog and the summary row. At the critical tier a warning
+	// dialog gates the send; the ref carries the send action to that dialog.
 	const priceImpact = getEstimationsPriceImpact(estimations);
 	const priceImpactSeverity = getPriceImpactSeverity(priceImpact, config.bridge.priceImpact);
 	const [isPriceImpactConfirmVisible, togglePriceImpactConfirm] = useToggle(false);
@@ -183,7 +177,7 @@ export const BridgeSwap = props => {
 	// Reload data on tokens or amount change
 	const fetchSwapData = useCallback(() => {
 		if (isReady)
-			fetchFees();
+			fetchFirstStepFees();
 
 		if (isReady && isAmountPositive)
 			estimate();
@@ -194,24 +188,26 @@ export const BridgeSwap = props => {
 		fetchSwapData();
 	}, [fetchSwapData]);
 
-	// Fetch the remaining steps' fees once the estimation output they depend on is available
+	// The later steps' amounts are the estimation output, so their fees follow the estimation
 	useEffect(() => {
 		if (estimations)
-			fetchAdditionalStepFees();
+			fetchRemainingStepFees(estimations);
 		else
-			clearAdditionalStepFees();
+			clearRemainingStepFees();
 	}, [estimations]);
 
-	// Summary fee rows, grouped for display (same fee token — added; different — separate rows)
-	const sourceNetworkCurrency = sourceWalletController?.networkProperties?.networkCurrency;
-	const transactionFeeGroups = createTransactionFeeGroups(
-		[
-			{ chainName: source?.chainName, networkCurrency: sourceNetworkCurrency, feeTiers: transactionFees },
-			...(additionalStepFees ?? [])
-		],
-		TRANSACTION_SPEED
-	);
-	const operationFeeGroups = createOperationFeeGroups(estimations, bridge);
+	// Estimation summary view model
+	const estimationSummary = createEstimationSummaryViewModel({
+		source,
+		target,
+		steps,
+		amount,
+		stepFees,
+		estimations,
+		priceImpact,
+		priceImpactSeverity,
+		transactionFeeTierLevel: TRANSACTION_SPEED
+	});
 
 	const init = useCallback(() => {
 		(async () => {
@@ -228,7 +224,7 @@ export const BridgeSwap = props => {
 	useFocusEffect(init);
 
 	const isScreenLoading = !isReady;
-	const isButtonDisabled = isEstimationLoading || isFeesLoading || !isAmountValid || !isAmountPositive;
+	const isButtonDisabled = isEstimationLoading || isStepFeesLoading || !isAmountValid || !isAmountPositive;
 
 	const handleTransactionSendComplete = () => reset();
 
@@ -317,13 +313,8 @@ export const BridgeSwap = props => {
 							onValidityChange={changeAmountValidity}
 						/>
 						<EstimationSummary
-							sendAmount={amount}
-							transactionFeeGroups={transactionFeeGroups}
-							operationFeeGroups={operationFeeGroups}
-							estimations={estimations}
-							sourceToken={source?.token}
-							targetToken={target?.token}
-							isLoading={isEstimationLoading || isFeesLoading || isAdditionalFeesLoading}
+							summary={estimationSummary}
+							isLoading={isEstimationLoading || isStepFeesLoading}
 						/>
 						<Button {...buttonProps} onPress={createSendPressHandler(buttonProps.onPress)} />
 						<Divider />
@@ -335,7 +326,7 @@ export const BridgeSwap = props => {
 						</StyledText>
 						<BridgeHistory
 							history={history}
-							networkIdentifier={sourceWalletController?.networkIdentifier}
+							networkIdentifier={source?.networkIdentifier}
 							onItemPress={handleHistoryItemPress}
 						/>
 					</Stack>

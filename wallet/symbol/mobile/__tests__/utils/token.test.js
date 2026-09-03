@@ -1,8 +1,23 @@
-import { isTokenExpired } from '@/app/utils';
+import { createTokenDisplayData, isTokenExpired } from '@/app/utils';
+import { TokenFixtureBuilder } from '__fixtures__/local/TokenFixtureBuilder';
 
 // Constants
 
 const CHAIN_HEIGHT = 150_000;
+const CHAIN_NAME_SYMBOL = 'symbol';
+const NETWORK_IDENTIFIER = 'testnet';
+
+// Token Fixtures
+
+// A token listed in the known-tokens configuration
+const knownToken = TokenFixtureBuilder
+	.createWithToken(CHAIN_NAME_SYMBOL, NETWORK_IDENTIFIER, 0)
+	.build();
+
+// A token absent from the known-tokens configuration
+const unknownToken = TokenFixtureBuilder
+	.createWithToken(CHAIN_NAME_SYMBOL, NETWORK_IDENTIFIER, 1)
+	.build();
 
 describe('utils/token', () => {
 	describe('isTokenExpired()', () => {
@@ -52,6 +67,49 @@ describe('utils/token', () => {
 
 		isTokenExpiredTests.forEach(test => {
 			runIsTokenExpiredTest(test.description, test.config, test.expected);
+		});
+	});
+
+	describe('createTokenDisplayData()', () => {
+		const runCreateTokenDisplayDataTest = (description, config, expected) => {
+			it(description, () => {
+				// Act:
+				const result = createTokenDisplayData(config.token, CHAIN_NAME_SYMBOL, NETWORK_IDENTIFIER);
+
+				// Assert:
+				expect(result).toStrictEqual(expected.displayData);
+			});
+		};
+
+		const createTokenDisplayDataTests = [
+			{
+				description: 'resolves the name, ticker, ticker text and image of a listed token',
+				config: { token: knownToken },
+				expected: {
+					displayData: {
+						name: 'Symbol • XYM',
+						ticker: 'XYM',
+						tickerText: 'XYM',
+						imageId: 'xym'
+					}
+				}
+			},
+			{
+				description: 'falls back to the token name for an unlisted token',
+				config: { token: unknownToken },
+				expected: {
+					displayData: {
+						name: unknownToken.name,
+						ticker: null,
+						tickerText: unknownToken.name,
+						imageId: null
+					}
+				}
+			}
+		];
+
+		createTokenDisplayDataTests.forEach(test => {
+			runCreateTokenDisplayDataTest(test.description, test.config, test.expected);
 		});
 	});
 });

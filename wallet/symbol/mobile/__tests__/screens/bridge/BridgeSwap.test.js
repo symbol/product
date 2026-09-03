@@ -17,7 +17,6 @@ jest.mock('@react-navigation/native', () => ({
 }));
 
 jest.mock('@/app/screens/bridge/hooks', () => ({
-	useAdditionalStepFees: jest.fn(),
 	useBridge: jest.fn(),
 	useBridgeAmount: jest.fn(),
 	useBridgeDisabledDialog: jest.fn(),
@@ -27,6 +26,7 @@ jest.mock('@/app/screens/bridge/hooks', () => ({
 	useBridgeTransactionWorkflow:
 		jest.requireActual('@/app/screens/bridge/hooks/useBridgeTransactionWorkflow').useBridgeTransactionWorkflow,
 	useEstimation: jest.fn(),
+	useStepTransactionFees: jest.fn(),
 	useSwapSelector: jest.fn()
 }));
 
@@ -270,6 +270,18 @@ const transactionFeeTiers = [
 		.build()
 ];
 
+// Step Fees Fixtures
+
+const createStepFees = (stepIndex, chainName, feeTiers) => ({
+	stepIndex,
+	chainName,
+	networkIdentifier: NETWORK_IDENTIFIER,
+	feeTiers
+});
+
+// Step-0 fees for the default XYM -> bXYM route
+const symbolStepFees = createStepFees(0, CHAIN_NAME_SYMBOL, transactionFeeTiers);
+
 // Estimation Fixtures
 
 const estimationResult = {
@@ -280,7 +292,6 @@ const estimationResult = {
 // Hook Mocks
 
 const {
-	useAdditionalStepFees,
 	useBridge,
 	useBridgeAmount,
 	useBridgeDisabledDialog,
@@ -288,6 +299,7 @@ const {
 	useBridgeNoPairsDialog,
 	useBridgeTransaction,
 	useEstimation,
+	useStepTransactionFees,
 	useSwapSelector
 } = require('@/app/screens/bridge/hooks');
 
@@ -306,6 +318,7 @@ const createUseBridgeMock = (overrides = {}) => ({
 const createUseSwapSelectorMock = (overrides = {}) => ({
 	isReady: true,
 	bridge: bridgeMock,
+	steps: [bridgeStepPair],
 	mode: BridgeMode.WRAP,
 	source: swapSideSymbolXym,
 	target: swapSideEthereumBxym,
@@ -343,11 +356,13 @@ const createUseEstimationMock = (overrides = {}) => ({
 	...overrides
 });
 
-const createUseAdditionalStepFeesMock = (overrides = {}) => ({
-	additionalStepFees: null,
-	fetchAdditionalStepFees: jest.fn().mockResolvedValue([]),
-	clearAdditionalStepFees: jest.fn(),
+const createUseStepTransactionFeesMock = (overrides = {}) => ({
+	stepFees: [symbolStepFees],
+	firstStepFeeTiers: transactionFeeTiers,
 	isLoading: false,
+	fetchFirstStepFees: jest.fn().mockResolvedValue(transactionFeeTiers),
+	fetchRemainingStepFees: jest.fn().mockResolvedValue([]),
+	clearRemainingStepFees: jest.fn(),
 	...overrides
 });
 
@@ -395,7 +410,7 @@ const setupMocks = (config = {}) => {
 	useBridgeAmount.mockReturnValue(createUseBridgeAmountMock(config.useBridgeAmount));
 	useBridgeTransaction.mockReturnValue(createUseBridgeTransactionMock(config.useBridgeTransaction));
 	useEstimation.mockReturnValue(createUseEstimationMock(config.useEstimation));
-	useAdditionalStepFees.mockReturnValue(createUseAdditionalStepFeesMock(config.useAdditionalStepFees));
+	useStepTransactionFees.mockReturnValue(createUseStepTransactionFeesMock(config.useStepTransactionFees));
 	useBridgeHistory.mockReturnValue(createUseBridgeHistoryMock(config.useBridgeHistory));
 	useBridgeNoPairsDialog.mockReturnValue(createUseBridgeNoPairsDialogMock(config.useBridgeNoPairsDialog));
 	useBridgeDisabledDialog.mockReturnValue(createUseBridgeDisabledDialogMock(config.useBridgeDisabledDialog));
@@ -469,10 +484,6 @@ describe('screens/bridge/BridgeSwap', () => {
 				},
 				useEstimation: {
 					estimations: [estimationResult],
-					isLoading: false
-				},
-				useTransactionFees: {
-					data: transactionFeeTiers,
 					isLoading: false
 				}
 			});
@@ -836,11 +847,12 @@ describe('screens/bridge/BridgeSwap', () => {
 					walletController: ethereumSourceWalletController,
 					useSwapSelector: {
 						bridge: config.bridge,
+						steps: config.steps,
 						source: swapSideEthereumEth,
 						target: swapSideSymbolXym
 					},
 					useEstimation: { estimations: config.estimations },
-					useAdditionalStepFees: { additionalStepFees: config.additionalStepFees }
+					useStepTransactionFees: { stepFees: config.stepFees }
 				});
 
 				// Act:
@@ -861,16 +873,16 @@ describe('screens/bridge/BridgeSwap', () => {
 				'adds the gas of the steps into one row and shows each operation fee token on its own row',
 				{
 					bridge: createDualStepBridge(swapStepPairEthToBxym, swapStepPairBxymToXym),
+					steps: [swapStepPairEthToBxym, swapStepPairBxymToXym],
 					estimations: dualStepEstimations,
-					additionalStepFees: [{
-						chainName: CHAIN_NAME_ETHEREUM,
-						networkCurrency: ethereumNetworkProperties.networkCurrency,
-						feeTiers: ethereumFeeTiers
-					}]
+					stepFees: [
+						createStepFees(0, CHAIN_NAME_ETHEREUM, ethereumFeeTiers),
+						createStepFees(1, CHAIN_NAME_ETHEREUM, ethereumFeeTiers)
+					]
 				},
 				{
 					// Gas 1 + 1 ETH summed; operation fees bXYM and XYM kept apart, the XYM one on a connected row
-					texts: ['2 ETH', '2.5 bXYM', '0.75 symbol.xym'],
+					texts: ['2 ETH', '2.5 bXYM', '0.75 XYM'],
 					rowCounts: [
 						[SCREEN_TEXT.textSummaryTransactionFee, 1, 0],
 						[SCREEN_TEXT.textSummaryBridgeFee, 1, 1]
@@ -881,15 +893,15 @@ describe('screens/bridge/BridgeSwap', () => {
 				'shows the gas of a step paid in another currency on a connected row',
 				{
 					bridge: createDualStepBridge(swapStepPairEthToBxym, swapStepPairBxymToXym),
+					steps: [swapStepPairEthToBxym, swapStepPairBxymToXym],
 					estimations: dualStepEstimations,
-					additionalStepFees: [{
-						chainName: CHAIN_NAME_SYMBOL,
-						networkCurrency: symbolNetworkProperties.networkCurrency,
-						feeTiers: transactionFeeTiers
-					}]
+					stepFees: [
+						createStepFees(0, CHAIN_NAME_ETHEREUM, ethereumFeeTiers),
+						createStepFees(1, CHAIN_NAME_SYMBOL, transactionFeeTiers)
+					]
 				},
 				{
-					texts: ['1 ETH', '2 symbol.xym'],
+					texts: ['1 ETH', '2 XYM'],
 					rowCounts: [[SCREEN_TEXT.textSummaryTransactionFee, 1, 1]]
 				}
 			],
@@ -897,14 +909,18 @@ describe('screens/bridge/BridgeSwap', () => {
 				'adds the operation fees into one row when they are in the same token',
 				{
 					bridge: createDualStepBridge(swapStepPairBxymToXym, swapStepPairBxymToXym),
+					steps: [swapStepPairBxymToXym, swapStepPairBxymToXym],
 					estimations: [
 						{ bridgeFee: '1.5', receiveAmount: '735' },
 						{ bridgeFee: '0.5', receiveAmount: PAYOUT_AMOUNT }
 					],
-					additionalStepFees: null
+					stepFees: [
+						createStepFees(0, CHAIN_NAME_ETHEREUM, ethereumFeeTiers),
+						createStepFees(1, CHAIN_NAME_ETHEREUM, null)
+					]
 				},
 				{
-					texts: ['2 symbol.xym'],
+					texts: ['2 XYM'],
 					rowCounts: [[SCREEN_TEXT.textSummaryBridgeFee, 1, 0]]
 				}
 			]
