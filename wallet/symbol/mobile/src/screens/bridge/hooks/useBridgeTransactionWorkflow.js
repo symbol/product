@@ -3,45 +3,18 @@ import { TransactionWorkflowStatus } from '@/app/components/templates/Transactio
 import { useStandardTransactionWorkflow } from '@/app/components/templates/TransactionScreenTemplate/hooks';
 import { useEffect } from 'react';
 
+/** @typedef {import('@/app/screens/bridge/types/Bridge').DualWorkflowMeta} DualWorkflowMeta */
+/** @typedef {import('@/app/screens/bridge/types/Bridge').SingleWorkflowMeta} SingleWorkflowMeta */
 /** @typedef {import('@/app/screens/bridge/types/Bridge').StepFees} StepFees */
 /** @typedef {import('@/app/screens/bridge/types/Bridge').SwapStep} SwapStep */
-/** @typedef {import('@/app/types/Network').ChainName} ChainName */
+/** @typedef {import('@/app/screens/bridge/types/Bridge').WorkflowMetaSide} WorkflowMetaSide */
+/** @typedef {import('@/app/screens/bridge/types/Bridge').WorkflowStepMeta} WorkflowStepMeta */
 /** @typedef {import('@/app/types/Wallet').WalletController} WalletController */
-/** @typedef {import('@/app/types/Network').NetworkIdentifier} NetworkIdentifier */
 /** @typedef {import('@/app/types/Token').TokenInfo} TokenInfo */
 /** @typedef {import('@/app/types/Transaction').TransactionFeeTiers} TransactionFeeTiers */
 /** @typedef {import('@/app/types/Transaction').TransactionFeeTierLevel} TransactionFeeTierLevel */
 /** @typedef {import('@/app/types/Transaction').TransactionBundle} TransactionBundle */
 /** @typedef {function(number): Promise<TransactionBundle>} CreateTransactionCallback */
-
-/**
- * Metadata describing one side (source or target) of a workflow step.
- * @typedef {object} WorkflowMetaSide
- * @property {TokenInfo|null} tokenInfo - Token info for this side.
- * @property {ChainName} chainName - The blockchain name.
- * @property {NetworkIdentifier} networkIdentifier - The network identifier.
- */
-
-/**
- * Metadata for a single-step workflow.
- * @typedef {object} SingleWorkflowMeta
- * @property {WorkflowMetaSide} source - Source side metadata.
- * @property {WorkflowMetaSide} target - Target side metadata.
- */
-
-/**
- * Metadata for one step within a dual-step workflow.
- * @typedef {object} WorkflowStepMeta
- * @property {WorkflowMetaSide} source - Source side metadata.
- * @property {WorkflowMetaSide} target - Target side metadata.
- */
-
-/**
- * Metadata for a dual-step workflow.
- * @typedef {object} DualWorkflowMeta
- * @property {WorkflowStepMeta} step1 - First step metadata.
- * @property {WorkflowStepMeta} step2 - Second step metadata.
- */
 
 const EMPTY_SETUP = {
 	createTransaction: () => {
@@ -261,6 +234,13 @@ const useDualStepWorkflow = ({
 	};
 };
 
+/**
+ * Combines the statuses of the two step workflows into one bridge workflow status: the shared create
+ * phase first, then the first step's progress, then the second step's.
+ * @param {string} workflow1Status - One of TransactionWorkflowStatus, first step.
+ * @param {string} workflow2Status - One of TransactionWorkflowStatus, second step.
+ * @returns {string} One of BridgeTransactionWorkflowStatus.
+ */
 const createStatus = (workflow1Status, workflow2Status) => {
 	const {
 		IDLE, CREATING, CREATE_ERROR, CREATED,

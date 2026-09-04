@@ -1,4 +1,6 @@
 import { SwapSideType } from '@/app/screens/bridge/types/Bridge';
+// By file, not the utils barrel: the barrel loads the wallet controllers, which a hook must not import
+import { createSwapSideKey } from '@/app/screens/bridge/utils/swap-selector';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 /** @typedef {import('@/app/screens/bridge/types/Bridge').SwapPair} SwapPair */
@@ -151,7 +153,7 @@ export const useSwapSelector = ({ pairs, defaultSourceChainName }) => {
 		return pairs
 			.map(pair => pair.source)
 			.filter(side => {
-				const key = `${side.chainName}:${side.token.id}`;
+				const key = createSwapSideKey(side);
 				if (seen.has(key)) 
 					return false;
 				seen.add(key);

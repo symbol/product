@@ -1,4 +1,6 @@
 import { useAsyncManager } from '@/app/hooks';
+// By file, not the utils barrel: the barrel loads the wallet controllers, which a hook must not import
+import { isEstimationComplete } from '@/app/screens/bridge/utils/estimation';
 
 /** @typedef {import('@/app/screens/bridge/types/Bridge').BridgeEstimation} BridgeEstimation */
 /** @typedef {import('@/app/screens/bridge/types/Bridge').StepFees} StepFees */
@@ -21,19 +23,11 @@ const createStepFees = (stepIndex, step, feeTiers) => ({
 });
 
 /**
- * Whether an estimation covers every route step and no step failed.
- * @param {BridgeEstimation[]|null} estimations - Per-step estimations.
- * @param {number} stepCount - Number of route steps.
- * @returns {boolean} True when every step estimated successfully.
- */
-const isEstimationComplete = (estimations, stepCount) =>
-	stepCount > 0 && estimations?.length === stepCount && estimations.every(estimation => !estimation.error);
-
-/**
  * Return type for useStepTransactionFees hook.
  * @typedef {object} UseStepTransactionFeesReturnType
  * @property {StepFees[]} stepFees - One entry per route step in order; feeTiers is null until fetched.
  * @property {boolean} isLoading - Whether any step's fees are being fetched.
+ * @property {boolean} hasFailed - Whether the last fee request of any step failed outright.
  * @property {() => Promise<TransactionFeeTiers[]>} fetchFirstStepFees - Fetches the step-0 fees; requires a selected route.
  * @property {(estimations: BridgeEstimation[]|null) => Promise<object[]>} fetchRemainingStepFees - Fetches the fees of
  * the steps after the first; empty for single-step routes or an incomplete estimation.
@@ -88,6 +82,7 @@ export const useStepTransactionFees = ({ steps, createTransaction }) => {
 	return {
 		stepFees,
 		isLoading: firstStepManager.isLoading || remainingStepsManager.isLoading,
+		hasFailed: firstStepManager.hasFailed || remainingStepsManager.hasFailed,
 		fetchFirstStepFees: firstStepManager.call,
 		fetchRemainingStepFees: remainingStepsManager.call,
 		clearRemainingStepFees: remainingStepsManager.reset

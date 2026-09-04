@@ -5,28 +5,8 @@ import { useState } from 'react';
 /** @typedef {import('@/app/screens/bridge/types/Bridge').SwapSide} SwapSide */
 /** @typedef {import('@/app/types/Transaction').TransactionFeeTiers} TransactionFeeTiers */
 /** @typedef {import('@/app/types/Transaction').TransactionFeeTierLevel} TransactionFeeTierLevel */
-/** @typedef {import('@/app/types/Network').NetworkCurrency} NetworkCurrency */
 
 const DEFAULT_AMOUNT = '0';
-
-/**
- * Extracts the native currency info from a swap source side.
- * @param {SwapSide|null} source - The source swap side.
- * @returns {NetworkCurrency|null} The native currency info or null.
- */
-const getNativeCurrency = source => {
-	const networkCurrency = source?.walletController?.networkProperties?.networkCurrency;
-
-	if (!networkCurrency)
-		return null;
-
-	const id = networkCurrency.mosaicId || networkCurrency.id;
-
-	return {
-		...networkCurrency,
-		id
-	};
-};
 
 /**
  * Tiers of every loaded step whose fee is paid in the source chain's native currency: the gas the
@@ -54,24 +34,25 @@ const calculateAvailableBalance = (source, stepFees, transactionFeeTierLevel) =>
 	if (!source?.token || source.token.amount === '0')
 		return '0';
 
-	const nativeCurrency = getNativeCurrency(source);
+	const networkCurrency = source.walletController?.networkProperties?.networkCurrency;
 
-	if (!nativeCurrency)
+	if (!networkCurrency)
 		return '0';
 
-	const feeTiers = getNativeCurrencyFeeTiers(source, stepFees, nativeCurrency.id, transactionFeeTierLevel);
+	const nativeCurrencyId = networkCurrency.mosaicId ?? networkCurrency.id;
+	const feeTiers = getNativeCurrencyFeeTiers(source, stepFees, nativeCurrencyId, transactionFeeTierLevel);
 
 	// No step's fees are known yet
 	if (!feeTiers.length)
 		return '0';
 
-	return getAvailableBalance(source.token, nativeCurrency.id, feeTiers, transactionFeeTierLevel);
+	return getAvailableBalance(source.token, nativeCurrencyId, feeTiers, transactionFeeTierLevel);
 };
 
 /**
  * Return type for useBridgeAmount hook.
  * @typedef {object} UseBridgeAmountReturnType
- * @property {string} amount - Formatted amount value.
+ * @property {string} amount - Amount input truncated to the source token's decimals.
  * @property {string} amountInput - Raw amount input value.
  * @property {boolean} isAmountValid - Whether the amount is valid.
  * @property {string} availableBalance - Available balance after fees.
@@ -92,9 +73,8 @@ export const useBridgeAmount = ({ source, stepFees, transactionFeeTierLevel }) =
 	const [amountInput, setAmountInput] = useState(DEFAULT_AMOUNT);
 	const [isAmountValid, setAmountValidity] = useState(true);
 
-	const nativeCurrency = getNativeCurrency(source);
-	const amount = nativeCurrency
-		? formatAmountInput(amountInput, nativeCurrency.divisibility)
+	const amount = source
+		? formatAmountInput(amountInput, source.token.divisibility)
 		: amountInput;
 
 	const availableBalance = calculateAvailableBalance(source, stepFees, transactionFeeTierLevel);
