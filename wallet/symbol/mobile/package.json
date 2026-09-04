@@ -18,7 +18,7 @@
     "postinstall": "npx resolve-local-dependencies"
   },
   "dependencies": {
-    "@react-native-async-storage/async-storage": "^2.1.2",
+    "@react-native-async-storage/async-storage": "^3.1.1",
     "@react-navigation/native": "^7.1.24",
     "@react-navigation/native-stack": "^7.8.5",
     "bip39": "^3.1.0",
