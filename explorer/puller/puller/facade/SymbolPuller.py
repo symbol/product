@@ -63,11 +63,13 @@ from puller.model.symbol.Transaction import create_transaction_row, unique_addre
 DatabaseConfiguration = namedtuple('DatabaseConfiguration', ['database', 'user', 'password', 'host', 'port'])
 NativeMosaicInfo = namedtuple('NativeMosaicInfo', ['id', 'divisibility'])
 TransactionSource = namedtuple('TransactionSource', ['primary_id', 'secondary_id'])
+TransactionCountExpectation = namedtuple('TransactionCountExpectation', ['top_level_count', 'total_count'])
 ResolutionStatements = namedtuple('ResolutionStatements', ['address', 'mosaic'])
 ResolutionRequest = namedtuple('ResolutionRequest', ['height', 'kind'])
 MAX_PAGE_SIZE = 100
 ACCOUNT_BATCH_FETCH_SIZE = MAX_PAGE_SIZE
 BLOCK_PAGE_FETCH_CONCURRENCY = 10
+TRANSACTION_PAGE_FETCH_CONCURRENCY = 10
 RESOLUTION_FETCH_CONCURRENCY = 10
 METADATA_FETCH_CONCURRENCY = 10
 LOCK_FETCH_CONCURRENCY = 10
@@ -403,7 +405,8 @@ class SymbolPuller:  # pylint: disable=too-many-instance-attributes
 			start_height,
 			chain_height,
 			epoch_adjustment_seconds,
-			native_mosaic_info)
+			native_mosaic_info,
+			finalized_height)
 		if last_synced_height is None and bounded_sync_state:
 			last_synced_height = bounded_sync_state['last_synced_height']
 			last_synced_block_hash = bounded_sync_state['last_synced_block_hash']
@@ -579,7 +582,8 @@ class SymbolPuller:  # pylint: disable=too-many-instance-attributes
 		start_height,
 		chain_height,
 		epoch_adjustment_seconds,
-		native_mosaic_info
+		native_mosaic_info,
+		observed_finalized_height=None
 	):
 		last_synced_height = None
 		last_synced_block_hash = None
@@ -629,7 +633,7 @@ class SymbolPuller:  # pylint: disable=too-many-instance-attributes
 
 				if is_final_batch:
 					await self._sync_block_batch_with_dirty_state(
-						batch_rows, epoch_adjustment_seconds, native_mosaic_info, batch)
+						batch_rows, epoch_adjustment_seconds, native_mosaic_info, batch, observed_finalized_height)
 					self._active_performance.complete_batch(batch)
 					self._log_performance_event(
 						batch, 'symbol_sync_batch_completed', 'completed')
@@ -637,7 +641,7 @@ class SymbolPuller:  # pylint: disable=too-many-instance-attributes
 
 				batch.set_range(batch_rows[0]['height'], batch_rows[-1]['height'])
 				await self._sync_block_batch_with_dirty_state(
-					batch_rows, epoch_adjustment_seconds, native_mosaic_info, batch)
+					batch_rows, epoch_adjustment_seconds, native_mosaic_info, batch, observed_finalized_height)
 				self._active_performance.complete_batch(batch)
 				self._log_performance_event(
 					batch, 'symbol_sync_batch_completed', 'completed')
@@ -654,13 +658,20 @@ class SymbolPuller:  # pylint: disable=too-many-instance-attributes
 		batch_rows,
 		epoch_adjustment_seconds,
 		native_mosaic_info,
-		batch
+		batch,
+		observed_finalized_height=None
 	):
+		expected_transaction_counts = {
+			row['height']: TransactionCountExpectation(row['transactions_count'], row['total_transactions_count'])
+			for row in batch_rows
+		}
 		with batch.measure('transaction_fetch_ms', 'transaction_fetch'):
 			transaction_rows_by_height = await self._get_transaction_rows_by_height(
 				batch_rows[0]['height'],
 				batch_rows[-1]['height'],
-				epoch_adjustment_seconds
+				epoch_adjustment_seconds,
+				expected_transaction_counts,
+				observed_finalized_height
 			)
 			batch.set_count('transaction_count', sum(len(rows) for rows in transaction_rows_by_height.values()))
 		with batch.measure('receipt_fetch_ms', 'receipt_fetch'):
@@ -748,24 +759,178 @@ class SymbolPuller:  # pylint: disable=too-many-instance-attributes
 		for row in block_rows:
 			self.symbol_db.upsert_transactions_for_height(row['height'], rows_by_height.get(row['height'], []))
 
-	async def _get_transaction_rows_by_height(self, start_height, end_height, epoch_adjustment_seconds):
+	async def _get_transaction_rows_by_height(  # pylint: disable=too-many-locals
+		self,
+		start_height,
+		end_height,
+		epoch_adjustment_seconds,
+		expected_transaction_counts,
+		observed_finalized_height=None
+	):
+		# Source: _symbol/openapi/spec/schemas/Pagination.yml and TransactionPage.yml at 0f4c95e7098bbd84a8ceb9e2a101496bdfe662cf.
+		# Symbol pagination exposes pageNumber/pageSize only; finalized ranges derive page count from block metadata.
+		expected_total = sum(expectation.total_count for expectation in expected_transaction_counts.values())
+		is_finalized_range = is_exact_integer(observed_finalized_height) and observed_finalized_height >= end_height
+		page_results = {1: await self._get_transaction_page(start_height, end_height, 1)}
+		if is_finalized_range:
+			page_count = max(1, (expected_total + MAX_PAGE_SIZE - 1) // MAX_PAGE_SIZE)
+			self._validate_transaction_page_count(page_results[1], 1, self._expected_transaction_page_size(expected_total, 1))
+			if page_count > 1:
+				await self._get_transaction_pages_bounded(
+					start_height,
+					end_height,
+					expected_total,
+					page_count,
+					page_results)
+		else:
+			page_number = 1
+			while len(page_results[page_number]) == MAX_PAGE_SIZE:
+				page_number += 1
+				page_results[page_number] = await self._get_transaction_page(start_height, end_height, page_number)
+			page_count = len(page_results)
+
+		items = [
+			item
+			for page_number in range(1, page_count + 1)
+			for item in page_results[page_number]
+		]
+		if len(items) != expected_total:
+			raise ValueError(f'Expected {expected_total} Symbol transactions, received {len(items)}')
+
 		rows_by_height = {}
-		page_number = 1
-		while True:
-			response = await self.get_symbol_node(
-				f'/transactions/confirmed?fromHeight={start_height}&toHeight={end_height}'
-				f'&pageSize={MAX_PAGE_SIZE}&pageNumber={page_number}&order=asc&embedded=true'
-			)
-			items = self._get_node_page_data(response, 'Malformed Symbol transaction page response')
-			for item in items:
-				row = create_transaction_row(item, self.symbol_facade.network, epoch_adjustment_seconds)
-				rows_by_height.setdefault(row['height'], []).append(row)
-				self._record_performance('add_count', 'transaction_count', 1)
+		seen_transaction_keys = set()
+		for item in items:
+			if not isinstance(item, dict):
+				raise ValueError('Malformed Symbol transaction item')
 
-			if len(items) < MAX_PAGE_SIZE:
-				return rows_by_height
+			row = create_transaction_row(item, self.symbol_facade.network, epoch_adjustment_seconds)
+			transaction_key = self._transaction_identity(row)
+			if transaction_key in seen_transaction_keys:
+				raise ValueError(f'Duplicate Symbol transaction at height {row["height"]}')
 
-			page_number += 1
+			seen_transaction_keys.add(transaction_key)
+			if not start_height <= row['height'] <= end_height:
+				raise ValueError(f'Symbol transaction height {row["height"]} is outside requested range')
+
+			rows_by_height.setdefault(row['height'], []).append(row)
+			self._record_performance('add_count', 'transaction_count', 1)
+
+		for height, expected_counts in expected_transaction_counts.items():
+			rows_at_height = rows_by_height.get(height, [])
+			actual_top_level_count = sum(not row['is_embedded'] for row in rows_at_height)
+			if actual_top_level_count != expected_counts.top_level_count:
+				raise ValueError(
+					f'Expected {expected_counts.top_level_count} top-level Symbol transactions at height {height}, '
+					f'received {actual_top_level_count}')
+			if len(rows_at_height) != expected_counts.total_count:
+				raise ValueError(
+					f'Expected {expected_counts.total_count} total Symbol transactions at height {height}, '
+					f'received {len(rows_at_height)}')
+
+		return rows_by_height
+
+	@staticmethod
+	def _expected_transaction_page_size(expected_total, page_number):
+		page_start = (page_number - 1) * MAX_PAGE_SIZE
+		return max(0, min(MAX_PAGE_SIZE, expected_total - page_start))
+
+	async def _get_transaction_page(self, start_height, end_height, page_number):
+		response = await self.get_symbol_node(
+			f'/transactions/confirmed?fromHeight={start_height}&toHeight={end_height}'
+			f'&pageSize={MAX_PAGE_SIZE}&pageNumber={page_number}&order=asc&embedded=true'
+		)
+		if not isinstance(response, dict) or 'data' not in response or 'pagination' not in response:
+			raise ValueError('Malformed Symbol transaction page response')
+
+		items = response['data']
+		pagination = response['pagination']
+		if not isinstance(items, list) or not isinstance(pagination, dict):
+			raise ValueError('Malformed Symbol transaction page response')
+		if 'pageNumber' not in pagination or 'pageSize' not in pagination:
+			raise ValueError('Malformed Symbol transaction pagination')
+		if not is_exact_integer(pagination['pageNumber']) or not is_exact_integer(pagination['pageSize']):
+			raise ValueError('Invalid Symbol transaction pagination')
+		if pagination['pageNumber'] != page_number:
+			raise ValueError(
+				f'Symbol transaction page number {pagination["pageNumber"]} does not match requested page {page_number}')
+		if pagination['pageSize'] != MAX_PAGE_SIZE:
+			raise ValueError('Symbol transaction page size does not match requested page size')
+		if len(items) > MAX_PAGE_SIZE:
+			raise ValueError('Symbol transaction page data exceeds requested page size')
+
+		return items
+
+	@staticmethod
+	def _validate_transaction_page_count(items, page_number, expected_count):
+		if len(items) != expected_count:
+			raise ValueError(
+				f'Expected {expected_count} transactions on Symbol transaction page {page_number}, received {len(items)}')
+
+	async def _get_transaction_pages_bounded(
+		self,
+		start_height,
+		end_height,
+		expected_total,
+		page_count,
+		page_results
+	):
+		next_page_number = 2
+		allocation_lock = asyncio.Lock()
+		first_exception = None
+		exception_lock = asyncio.Lock()
+
+		async def fetch_pages():
+			nonlocal next_page_number, first_exception
+			while True:
+				async with allocation_lock:
+					if next_page_number > page_count:
+						return
+					page_number = next_page_number
+					next_page_number += 1
+
+				try:
+					items = await self._get_transaction_page(start_height, end_height, page_number)
+					self._validate_transaction_page_count(
+						items,
+						page_number,
+						self._expected_transaction_page_size(expected_total, page_number))
+					page_results[page_number] = items
+				except BaseException as exception:  # pylint: disable=broad-exception-caught
+					async with exception_lock:
+						if first_exception is None:
+							first_exception = exception
+					raise
+
+		worker_count = min(TRANSACTION_PAGE_FETCH_CONCURRENCY, page_count - 1)
+		workers = [asyncio.create_task(fetch_pages()) for _ in range(worker_count)]
+		primary_exception = None
+		try:
+			await asyncio.gather(*workers)
+		except BaseException as exception:  # pylint: disable=broad-exception-caught
+			primary_exception = first_exception or exception
+
+		if primary_exception is not None:
+			await self._cancel_transaction_page_workers(workers)
+			raise primary_exception
+
+	@staticmethod
+	async def _cancel_transaction_page_workers(workers):
+		for worker in workers:
+			if not worker.done():
+				worker.cancel()
+
+		cleanup = asyncio.gather(*workers, return_exceptions=True)
+		try:
+			await asyncio.shield(cleanup)
+		except asyncio.CancelledError:
+			await asyncio.shield(cleanup)
+
+	@staticmethod
+	def _transaction_identity(row):
+		if row['is_embedded']:
+			return 'embedded', row['aggregate_hash'], row['embedded_index']
+
+		return 'top_level', row['hash']
 
 	async def _get_block_page(self, offset):
 		response = await self.get_symbol_node(f'/blocks?pageSize={MAX_PAGE_SIZE}&offset={offset}&orderBy=height')

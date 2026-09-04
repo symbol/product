@@ -54,6 +54,7 @@ from .puller_test_utils import (
 	create_resolution_statement,
 	create_statement_item,
 	create_sync_state,
+	create_transaction_page,
 	resolution_path,
 	set_symbol_connector,
 	set_symbol_rate_limiter,
@@ -88,28 +89,26 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 	def _create_namespace_batch_connector():
 		return FakeConnector(
 			1,
-			{0: [create_node_block(1)]},
+			{0: [create_node_block(1, transactions_count=2, total_transactions_count=2)]},
 			transactions_by_path={
-				transaction_path(1, 1): {
-					'data': [
-						create_node_transaction(
-							1,
-							transaction_hash='A' * 64,
-							transaction_id='namespace-registration',
-							type=TransactionType.NAMESPACE_REGISTRATION.value,
-							id=NAMESPACE_ROOT_ID,
-							name='root',
-							registrationType=0),
-						create_node_transaction(
-							1,
-							transaction_hash='B' * 64,
-							transaction_id='mosaic-alias',
-							type=TransactionType.MOSAIC_ALIAS.value,
-							namespaceId=NAMESPACE_ROOT_ID,
-							mosaicId=NATIVE_MOSAIC_ID,
-							aliasAction=1)
-					]
-				}
+				transaction_path(1, 1): create_transaction_page([
+					create_node_transaction(
+						1,
+						transaction_hash='A' * 64,
+						transaction_id='namespace-registration',
+						type=TransactionType.NAMESPACE_REGISTRATION.value,
+						id=NAMESPACE_ROOT_ID,
+						name='root',
+						registrationType=0),
+					create_node_transaction(
+						1,
+						transaction_hash='B' * 64,
+						transaction_id='mosaic-alias',
+						type=TransactionType.MOSAIC_ALIAS.value,
+						namespaceId=NAMESPACE_ROOT_ID,
+						mosaicId=NATIVE_MOSAIC_ID,
+						aliasAction=1)
+				])
 			},
 			namespace_by_id={
 				NAMESPACE_ROOT_ID: create_namespace_item(alias={'type': 1, 'mosaicId': NATIVE_MOSAIC_ID})
@@ -117,7 +116,13 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 			namespace_names={NAMESPACE_ROOT_ID: 'root'})
 
 	@staticmethod
-	def _create_mosaic_definition_sync_connector(include_namespace_alias=False, mosaics_by_id=None, mosaics_response=None):
+	def _create_mosaic_definition_sync_connector(
+		include_namespace_alias=False,
+		mosaics_by_id=None,
+		mosaics_response=None,
+		transactions_count=1,
+		total_transactions_count=1
+	):
 		transactions = [create_node_transaction(
 			1,
 			transaction_hash='A' * 64,
@@ -128,7 +133,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 			flags=2,
 			divisibility=6)]
 		connector_arguments = {
-			'transactions_by_path': {transaction_path(1, 1): {'data': transactions}},
+			'transactions_by_path': {transaction_path(1, 1): create_transaction_page(transactions)},
 			'mosaics_by_id': mosaics_by_id if mosaics_by_id is not None else {MOSAIC_ID: create_mosaic_item()}
 		}
 		if include_namespace_alias:
@@ -157,7 +162,10 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		if mosaics_response is not None:
 			connector_arguments['mosaics_response'] = mosaics_response
 
-		return FakeConnector(1, {0: [create_node_block(1)]}, **connector_arguments)
+		return FakeConnector(1, {0: [create_node_block(
+			1,
+			transactions_count=transactions_count,
+			total_transactions_count=total_transactions_count)]}, **connector_arguments)
 
 	def test_sync_block_headers_persists_mosaic_discovered_from_definition_transaction(self):
 		# Arrange:
@@ -199,16 +207,21 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		self.assertEqual([create_persisted_mosaic_state(expected_row, [])], fetch_mosaic_state(self.puller.symbol_db))
 
 	def _assert_alias_supply_change_refreshes_mosaic_state(
-		self, alias_mosaic_id, transaction_items, resolution_entries, original_supply, new_supply
+		self, alias_mosaic_id, transaction_items, resolution_entries, original_supply, new_supply,
+		transactions_count, total_transactions_count
 	):  # pylint: disable=too-many-arguments,too-many-positional-arguments
 		# Arrange:
 		self.puller.symbol_db.upsert_mosaic(create_expected_mosaic_row(
 			create_mosaic_item(supply=str(original_supply)),
 			0))
+		block = create_node_block(
+			1,
+			transactions_count=transactions_count,
+			total_transactions_count=total_transactions_count)
 		connector = FakeConnector(
 			1,
-			{0: [create_node_block(1)]},
-			transactions_by_path={transaction_path(1, 1): {'data': transaction_items}},
+			{0: [block]},
+			transactions_by_path={transaction_path(1, 1): create_transaction_page(transaction_items)},
 			mosaic_resolutions_by_height={1: [create_resolution_statement(
 				1,
 				alias_mosaic_id,
@@ -246,7 +259,9 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 				action=MosaicSupplyChangeAction.INCREASE.value)],
 			[{'source': {'primaryId': 1, 'secondaryId': 0}, 'resolved': MOSAIC_ID}],
 			original_supply,
-			original_supply + supply_delta)
+			original_supply + supply_delta,
+			1,
+			1)
 
 	def test_sync_block_headers_refreshes_mosaic_supply_for_embedded_alias_supply_change(self):
 		alias_mosaic_id = 'A95F1F8A96159516'
@@ -271,7 +286,9 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 				{'source': {'primaryId': 1, 'secondaryId': 1}, 'resolved': MOSAIC_ID}
 			],
 			original_supply,
-			original_supply + supply_delta)
+			original_supply + supply_delta,
+			1,
+			2)
 
 	def test_sync_block_headers_deletes_dirty_mosaic_when_batch_response_omits_it(self):
 		# Arrange:
@@ -286,7 +303,10 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 
 	def test_sync_block_headers_writes_namespaces_before_mosaics_for_same_batch_alias(self):
 		# Arrange:
-		connector = self._create_mosaic_definition_sync_connector(include_namespace_alias=True)
+		connector = self._create_mosaic_definition_sync_connector(
+			include_namespace_alias=True,
+			transactions_count=3,
+			total_transactions_count=3)
 
 		# Act:
 		self._sync_with_connector(connector)
@@ -318,7 +338,9 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		# Arrange:
 		connector = self._create_mosaic_definition_sync_connector(
 			include_namespace_alias=True,
-			mosaics_by_id={MOSAIC_ID: RuntimeError('mosaic fetch failed')})
+			mosaics_by_id={MOSAIC_ID: RuntimeError('mosaic fetch failed')},
+			transactions_count=3,
+			total_transactions_count=3)
 
 		# Act / Assert:
 		with self.assertRaisesRegex(RuntimeError, 'mosaic fetch failed'):
@@ -389,18 +411,16 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		seed_namespace(self.puller.symbol_db, create_namespace_item(), {NAMESPACE_ROOT_ID: 'root'})
 		connector = FakeConnector(
 			1,
-			{0: [create_node_block(1)]},
+			{0: [create_node_block(1, transactions_count=1, total_transactions_count=1)]},
 			transactions_by_path={
-				transaction_path(1, 1): {
-					'data': [create_node_transaction(
-						1,
-						transaction_hash='A' * 64,
-						transaction_id='namespace-registration',
-						type=TransactionType.NAMESPACE_REGISTRATION.value,
-						id=NAMESPACE_ROOT_ID,
-						name='root',
-						registrationType=0)]
-				}
+				transaction_path(1, 1): create_transaction_page([create_node_transaction(
+					1,
+					transaction_hash='A' * 64,
+					transaction_id='namespace-registration',
+					type=TransactionType.NAMESPACE_REGISTRATION.value,
+					id=NAMESPACE_ROOT_ID,
+					name='root',
+					registrationType=0)])
 			},
 			namespace_by_id={NAMESPACE_ROOT_ID: {
 				'code': 'ResourceNotFound',
@@ -442,8 +462,8 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		before_state = fetch_namespace_state(self.puller.symbol_db.connection)
 		connector = FakeConnector(
 			1,
-			{0: [create_node_block(1)]},
-			transactions_by_path={transaction_path(1, 1): {'data': [
+			{0: [create_node_block(1, transactions_count=2, total_transactions_count=2)]},
+			transactions_by_path={transaction_path(1, 1): create_transaction_page([
 				create_node_transaction(
 					1,
 					transaction_hash='A' * 64,
@@ -460,7 +480,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 					id=second_id,
 					name=second_name,
 					registrationType=0)
-			]}},
+			])},
 			namespace_by_id={
 				first_id: create_namespace_item(
 					namespace_id=first_id,
@@ -521,16 +541,14 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		# Arrange:
 		connector = FakeConnector(
 			1,
-			{0: [create_node_block(1)]},
+			{0: [create_node_block(1, transactions_count=1, total_transactions_count=1)]},
 			transactions_by_path={
-				transaction_path(1, 1): {
-					'data': [create_node_transaction(
-						1,
-						type=TransactionType.NAMESPACE_REGISTRATION.value,
-						id=NAMESPACE_ROOT_ID,
-						name='root',
-						registrationType=0)]
-				}
+				transaction_path(1, 1): create_transaction_page([create_node_transaction(
+					1,
+					type=TransactionType.NAMESPACE_REGISTRATION.value,
+					id=NAMESPACE_ROOT_ID,
+					name='root',
+					registrationType=0)])
 			},
 			namespace_by_id={NAMESPACE_ROOT_ID: RuntimeError('namespace fetch failed')})
 
@@ -554,10 +572,11 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		# Arrange:
 		connector = FakeConnector(
 			1,
-			{0: [create_node_block(1)]},
-			transactions_by_path={transaction_path(1, 1): {'data': [create_node_transaction(
+			{0: [create_node_block(1, transactions_count=1, total_transactions_count=1)]},
+			transactions_by_path={transaction_path(1, 1): create_transaction_page([create_node_transaction(
 				1,
-				type=TransactionType.TRANSFER.value)]}},
+				type=TransactionType.TRANSFER.value)]),
+			},
 			statement_pages={statement_path(1, 1): {'data': [create_artifact_expiry_statement(
 				1, ReceiptType.MOSAIC_EXPIRED.value, '0000000000000001')]}})
 
@@ -608,8 +627,8 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		]
 		connector = FakeConnector(
 			1,
-			{0: [create_node_block(1)]},
-			transactions_by_path={transaction_path(1, 1): {'data': transactions}},
+			{0: [create_node_block(1, transactions_count=5, total_transactions_count=6)]},
+			transactions_by_path={transaction_path(1, 1): create_transaction_page(transactions)},
 			statement_pages={statement_path(1, 1): {'data': statement_items}},
 			namespace_by_id={
 				namespace_id: create_namespace_item(namespace_id=namespace_id, root_id=namespace_id)
@@ -627,11 +646,12 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		# Arrange:
 		connector = NamespaceNamesResponseConnector(
 			1,
-			{0: [create_node_block(1)]},
-			transactions_by_path={transaction_path(1, 1): {'data': [create_node_transaction(
+			{0: [create_node_block(1, transactions_count=1, total_transactions_count=1)]},
+			transactions_by_path={transaction_path(1, 1): create_transaction_page([create_node_transaction(
 				1,
 				type=TransactionType.NAMESPACE_REGISTRATION.value,
-				id=NAMESPACE_SUB_ID)]}},
+				id=NAMESPACE_SUB_ID)]),
+			},
 			namespace_by_id={NAMESPACE_SUB_ID: create_namespace_item(
 				namespace_id=NAMESPACE_SUB_ID,
 				root_id=NAMESPACE_ROOT_ID,
@@ -659,11 +679,12 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		# Arrange:
 		connector = NamespaceNamesResponseConnector(
 			1,
-			{0: [create_node_block(1)]},
-			transactions_by_path={transaction_path(1, 1): {'data': [create_node_transaction(
+			{0: [create_node_block(1, transactions_count=1, total_transactions_count=1)]},
+			transactions_by_path={transaction_path(1, 1): create_transaction_page([create_node_transaction(
 				1,
 				type=TransactionType.NAMESPACE_REGISTRATION.value,
-				id=NAMESPACE_ROOT_ID)]}},
+				id=NAMESPACE_ROOT_ID)]),
+			},
 			namespace_by_id={NAMESPACE_ROOT_ID: create_namespace_item()},
 			names_response={'data': []})
 
@@ -684,16 +705,24 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		namespace_ids = [f'{index:016X}' for index in range(1, MAX_PAGE_SIZE + 2)]
 		connector = BoundedNamespaceDetailConnector(
 			1,
-			{0: [create_node_block(1)]},
-			transactions_by_path={transaction_path(1, 1): {'data': [
+			{0: [create_node_block(1, transactions_count=101, total_transactions_count=101)]},
+			transactions_by_path={transaction_path(1, 1): create_transaction_page([
 				create_node_transaction(
 					1,
 					transaction_hash=f'{index + 100:064X}',
 					transaction_id=f'namespace-{index}',
 					type=TransactionType.NAMESPACE_REGISTRATION.value,
 					id=namespace_id)
-				for index, namespace_id in enumerate(namespace_ids)
-			]}},
+				for index, namespace_id in enumerate(namespace_ids[:MAX_PAGE_SIZE])
+			], page_number=1), transaction_path(1, 1, 2): create_transaction_page([
+				create_node_transaction(
+					1,
+					transaction_hash=f'{index + 100:064X}',
+					transaction_id=f'namespace-{index}',
+					type=TransactionType.NAMESPACE_REGISTRATION.value,
+					id=namespace_id)
+				for index, namespace_id in enumerate(namespace_ids[MAX_PAGE_SIZE:], MAX_PAGE_SIZE)
+			], page_number=2)},
 			namespace_by_id={
 				namespace_id: create_namespace_item(namespace_id=namespace_id, root_id=namespace_id)
 				for namespace_id in namespace_ids
@@ -1225,10 +1254,9 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		# Arrange:
 		connector = FakeConnector(
 			2,
-			{0: [create_node_block(1), create_node_block(2, previous_hash='A' * 64)]},
-			transactions_by_path={
-				transaction_path(1, 2): {'data': [create_node_transaction(2)]}
-			},
+			{0: [create_node_block(1), create_node_block(
+				2, previous_hash='A' * 64, transactions_count=1, total_transactions_count=1)]},
+			transactions_by_path={transaction_path(1, 2): create_transaction_page([create_node_transaction(2)])},
 			statement_pages={
 				statement_path(1, 2): {'data': [create_amount_statement_item(2, 2000)]}
 			}
@@ -1659,7 +1687,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 			},
 			'network/properties': create_network_properties(),
 			'blocks?pageSize=100&offset=0&orderBy=height': {'data': [create_node_block(1)]},
-			transaction_path(1, 1): {'data': []},
+			transaction_path(1, 1): create_transaction_page([]),
 			statement_path(1, 1): {'pagination': {'pageNumber': 1}}
 		})
 
@@ -1710,7 +1738,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 			},
 			'network/properties': create_network_properties(),
 			'blocks?pageSize=100&offset=0&orderBy=height': {'data': [create_node_block(1)]},
-			transaction_path(1, 1): {'data': []},
+			transaction_path(1, 1): create_transaction_page([]),
 			statement_path(1, 1): {
 				'code': 'InternalError',
 				'message': 'statement range failed'

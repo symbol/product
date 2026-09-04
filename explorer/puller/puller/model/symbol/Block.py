@@ -5,6 +5,7 @@ from puller.model.symbol.format import (
 	address_from_public_key,
 	bytes_from_hex_or_none,
 	int_or_none,
+	is_exact_integer,
 	label_for_type,
 	timestamp_from_network_value
 )
@@ -22,6 +23,25 @@ def create_block_row(node_block, epoch_adjustment_seconds, network):
 
 	block = node_block['block']
 	meta = node_block['meta']
+	# Source: _symbol/openapi/spec/core/block/schemas/BlockMetaDTO.yml at 0f4c95e7098bbd84a8ceb9e2a101496bdfe662cf.
+	# transactionsCount excludes embedded transactions; totalTransactionsCount includes them.
+	if 'transactionsCount' not in meta:
+		raise ValueError('Missing Symbol block transactionsCount')
+
+	if 'totalTransactionsCount' not in meta:
+		raise ValueError('Missing Symbol block totalTransactionsCount')
+
+	transactions_count = meta['transactionsCount']
+	total_transactions_count = meta['totalTransactionsCount']
+	if not is_exact_integer(transactions_count) or transactions_count < 0:
+		raise ValueError('Invalid Symbol block transactionsCount')
+
+	if not is_exact_integer(total_transactions_count) or total_transactions_count < 0:
+		raise ValueError('Invalid Symbol block totalTransactionsCount')
+
+	if transactions_count > total_transactions_count:
+		raise ValueError('Symbol block transactionsCount exceeds totalTransactionsCount')
+
 	signer_public_key = bytes.fromhex(block['signerPublicKey'])
 	network_timestamp = int(block['timestamp'])
 
@@ -32,8 +52,8 @@ def create_block_row(node_block, epoch_adjustment_seconds, network):
 		'timestamp': timestamp_from_network_value(network_timestamp, epoch_adjustment_seconds),
 		'network_timestamp': network_timestamp,
 		'total_fee': int(meta['totalFee']),
-		'transactions_count': int(meta['transactionsCount']),
-		'total_transactions_count': int(meta['totalTransactionsCount']),
+		'transactions_count': transactions_count,
+		'total_transactions_count': total_transactions_count,
 		'statements_count': int(meta['statementsCount']),
 		'difficulty': int(block['difficulty']),
 		'fee_multiplier': block['feeMultiplier'],
