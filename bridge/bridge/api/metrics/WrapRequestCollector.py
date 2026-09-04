@@ -47,23 +47,31 @@ class WrapRequestCollector:
 			'age of the oldest payout that has not been confirmed yet',
 			['direction'],
 			registry=registry)
+		processed_height_gauge = Gauge(
+			'bridge_processed_height',
+			'height of the newest block the bridge has downloaded requests from',
+			['network'],
+			registry=registry)
 
 		now = datetime.datetime.now(datetime.timezone.utc).timestamp()
 
 		with Databases(*self.context.database_params) as databases:
-			# the daily limit belongs to the network the payout is made on: wrapping pays out on the wrapped
-			# network and unwrapping on the native one
+			# requests are downloaded from the network opposite the one they are paid out on: wrapping
+			# reads deposits from the native network and pays out on the wrapped one, unwrapping the
+			# other way around. the daily limit belongs to the payout network, the processed height to
+			# the network the requests were read from
 			direction_database_facade_tuples = (
-				('wrap', databases.wrap_request, self.context.wrapped_facade),
-				('unwrap', databases.unwrap_request, self.context.native_facade)
+				('wrap', databases.wrap_request, self.context.wrapped_facade, 'native'),
+				('unwrap', databases.unwrap_request, self.context.native_facade, 'wrapped')
 			)
-			for (direction, database, payout_facade) in direction_database_facade_tuples:
+			for (direction, database, payout_facade, request_network) in direction_database_facade_tuples:
 				failed_gauge.labels(direction).set(database.count_permanent_failures())
 				retries_gauge.labels(direction).set(database.count_retries())
 				rejected_gauge.labels(direction).set(database.count_rejected_requests())
 				_set_daily_transfer_remaining(remaining_gauge, direction, payout_facade, database)
 				_set_age(unprocessed_age_gauge, direction, now, database.oldest_unprocessed_request_timestamp())
 				_set_age(sent_age_gauge, direction, now, database.oldest_payout_sent_timestamp())
+				processed_height_gauge.labels(request_network).set(database.max_processed_height())
 
 
 def _set_age(gauge, direction, now, timestamp):
