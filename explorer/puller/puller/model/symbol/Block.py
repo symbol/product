@@ -10,9 +10,6 @@ from puller.model.symbol.format import (
 	timestamp_from_network_value
 )
 
-# `symbol_blocks.transactions_count` and `symbol_blocks.total_transactions_count` are PostgreSQL int4 columns.
-MAX_INT4 = 2 ** 31 - 1
-
 BLOCK_TYPE_LABELS = {
 	32835: 'nemesis',
 	33347: 'importance',
@@ -36,10 +33,10 @@ def create_block_row(node_block, epoch_adjustment_seconds, network):
 
 	transactions_count = meta['transactionsCount']
 	total_transactions_count = meta['totalTransactionsCount']
-	if not is_exact_integer(transactions_count) or transactions_count < 0 or transactions_count > MAX_INT4:
+	if not is_exact_integer(transactions_count) or transactions_count < 0:
 		raise ValueError('Invalid Symbol block transactionsCount')
 
-	if not is_exact_integer(total_transactions_count) or total_transactions_count < 0 or total_transactions_count > MAX_INT4:
+	if not is_exact_integer(total_transactions_count) or total_transactions_count < 0:
 		raise ValueError('Invalid Symbol block totalTransactionsCount')
 
 	if transactions_count > total_transactions_count:

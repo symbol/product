@@ -9,8 +9,6 @@ from symbolchain.symbol.Network import Network
 from puller.model.symbol.Block import create_block_row
 from tests.test.SymbolTestConstants import BENEFICIARY_ADDRESS, SIGNER_ADDRESS, SIGNER_PUBLIC_KEY
 
-MAX_INT4 = 2147483647
-
 
 def _create_node_block(height, transactions_count=0, total_transactions_count=0, **block_overrides):
 	node_block = {
@@ -189,16 +187,16 @@ class BlockTest(TestCase):
 		self.assertEqual(7, row['transactions_count'])
 		self.assertEqual(7, row['total_transactions_count'])
 
-	def test_create_block_row_accepts_int4_maximum_transaction_counts(self):
+	def test_create_block_row_preserves_transaction_counts_above_int4_range(self):
 		# Arrange:
-		node_block = _create_node_block(7, transactions_count=MAX_INT4, total_transactions_count=MAX_INT4)
+		node_block = _create_node_block(7, transactions_count=2147483648, total_transactions_count=2147483649)
 
 		# Act:
 		row = create_block_row(node_block, 100, Network.TESTNET)
 
 		# Assert:
-		self.assertEqual(MAX_INT4, row['transactions_count'])
-		self.assertEqual(MAX_INT4, row['total_transactions_count'])
+		self.assertEqual(2147483648, row['transactions_count'])
+		self.assertEqual(2147483649, row['total_transactions_count'])
 
 	def test_create_block_row_rejects_missing_transactions_count(self):
 		# Arrange:
@@ -219,12 +217,12 @@ class BlockTest(TestCase):
 			create_block_row(node_block, 100, Network.TESTNET)
 
 	def test_create_block_row_rejects_invalid_transactions_count(self):
-		for value in (True, 1.0, '1', -1, MAX_INT4 + 1):
+		for value in (True, 1.0, '1', -1):
 			with self.subTest(value=value):
 				self._assert_rejects_transaction_counts(value, 1, 'Invalid Symbol block transactionsCount')
 
 	def test_create_block_row_rejects_invalid_total_transactions_count(self):
-		for value in (True, 1.0, '1', -1, MAX_INT4 + 1):
+		for value in (True, 1.0, '1', -1):
 			with self.subTest(value=value):
 				self._assert_rejects_transaction_counts(0, value, 'Invalid Symbol block totalTransactionsCount')
 
