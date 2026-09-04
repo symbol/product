@@ -400,6 +400,7 @@ const createUseEstimationMock = (overrides = {}) => ({
 const createUseStepTransactionFeesMock = (overrides = {}) => ({
 	stepFees: [symbolStepFees],
 	isLoading: false,
+	hasFailed: false,
 	fetchFirstStepFees: jest.fn().mockResolvedValue(transactionFeeTiers),
 	fetchRemainingStepFees: jest.fn().mockResolvedValue([]),
 	clearRemainingStepFees: jest.fn(),
@@ -713,6 +714,53 @@ describe('screens/bridge/BridgeSwap', () => {
 
 			// Assert:
 			screenTester.expectButtonDisabled(SCREEN_TEXT.buttonSend);
+		});
+	});
+
+	describe('transaction fee errors', () => {
+		// A valid positive amount with an estimation leaves the fee state as the only send gate
+		const runStepFeesFailureTest = (description, config, expected) => {
+			it(description, () => {
+				// Arrange:
+				setupMocks({
+					useBridgeAmount: {
+						amount: '100',
+						amountInput: '100'
+					},
+					useEstimation: {
+						estimations: [estimationResult]
+					},
+					useStepTransactionFees: {
+						hasFailed: config.hasFailed
+					}
+				});
+
+				// Act:
+				const screenTester = new ScreenTester(BridgeSwap, createDefaultProps());
+
+				// Assert:
+				if (expected.isSendButtonDisabled)
+					screenTester.expectButtonDisabled(SCREEN_TEXT.buttonSend);
+				else
+					screenTester.expectButtonEnabled(SCREEN_TEXT.buttonSend);
+			});
+		};
+
+		const stepFeesFailureTests = [
+			{
+				description: 'disables send button when a step fee request failed',
+				config: { hasFailed: true },
+				expected: { isSendButtonDisabled: true }
+			},
+			{
+				description: 'keeps send button enabled while the step fee requests succeed',
+				config: { hasFailed: false },
+				expected: { isSendButtonDisabled: false }
+			}
+		];
+
+		stepFeesFailureTests.forEach(test => {
+			runStepFeesFailureTest(test.description, test.config, test.expected);
 		});
 	});
 

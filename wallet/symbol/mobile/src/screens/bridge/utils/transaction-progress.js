@@ -6,11 +6,14 @@ import { ActivityStatus } from '@/app/constants';
 import { $t } from '@/app/localization';
 import { createTokenDisplayData } from '@/app/utils';
 
-/** @typedef {import('@/app/types/Network').ChainName} ChainName */
-/** @typedef {import('@/app/types/Network').NetworkIdentifier} NetworkIdentifier */
-/** @typedef {import('../hooks/useBridgeTransactionWorkflow').WorkflowMetaSide} WorkflowMetaSide */
-/** @typedef {import('../hooks/useBridgeTransactionWorkflow').SingleWorkflowMeta} SingleWorkflowMeta */
-/** @typedef {import('../hooks/useBridgeTransactionWorkflow').DualWorkflowMeta} DualWorkflowMeta */
+/** @typedef {import('@/app/screens/bridge/types/Bridge').DualWorkflowMeta} DualWorkflowMeta */
+/** @typedef {import('@/app/screens/bridge/types/Bridge').SingleWorkflowMeta} SingleWorkflowMeta */
+/** @typedef {import('@/app/screens/bridge/types/Bridge').WorkflowMetaSide} WorkflowMetaSide */
+/** @typedef {import('@/app/types/Action').ActionState} ActionState */
+/** @typedef {import('@/app/types/ActivityLog').ActivityLogItem} ActivityLogItem */
+/** @typedef {import('@/app/types/AsyncManager').AsyncManager} AsyncManager */
+// eslint-disable-next-line max-len
+/** @typedef {import('@/app/components/templates/TransactionScreenTemplate/types/TransactionProgress').TransactionProgressViewModel} TransactionProgressViewModel */
 
 const UNKNOWN_TOKEN_TEXT = 'unknown';
 
@@ -119,11 +122,22 @@ const createStatusInfo = (status, tokenPairsText) => {
 	return infoMap[status] ?? unknownStatus;
 };
 
+/**
+ * Creates the state of one send action.
+ * @param {string} status - One of ActivityStatus.
+ * @param {string|null} [errorMessage=null] - Error message when the action failed.
+ * @returns {ActionState} Action state.
+ */
 const createActionStatus = (status, errorMessage = null) => ({
 	status,
 	errorMessage
 });
 
+/**
+ * Maps an async manager's state to the state of its send action.
+ * @param {AsyncManager} asyncManager - Manager running the action.
+ * @returns {ActionState} Action state.
+ */
 const getActionStatusFromAsyncManager = asyncManager => {
 	if (asyncManager.isLoading)
 		return createActionStatus(ActivityStatus.LOADING);
@@ -137,7 +151,22 @@ const getActionStatusFromAsyncManager = asyncManager => {
 	return createActionStatus(ActivityStatus.PENDING);
 };
 
-const buildActivityLog = ({
+/**
+ * Builds the seven-step activity log of a dual-step send: create, then sign, announce and confirm per step.
+ * @param {object} params - Log parameters.
+ * @param {ActionState} params.createStatus - State of the create action.
+ * @param {ActionState} params.signStatus1 - State of the first step's sign action.
+ * @param {ActionState} params.announceStatus1 - State of the first step's announce action.
+ * @param {boolean} params.isStep1Confirmed - Whether every first-step transaction is confirmed.
+ * @param {boolean} params.hasStep1FailedTransactions - Whether the network rejected a first-step transaction.
+ * @param {ActionState} params.signStatus2 - State of the second step's sign action.
+ * @param {ActionState} params.announceStatus2 - State of the second step's announce action.
+ * @param {boolean} params.isStep2Confirmed - Whether every second-step transaction is confirmed.
+ * @param {boolean} params.hasStep2FailedTransactions - Whether the network rejected a second-step transaction.
+ * @param {Array<{from: string, to: string}>} params.tokenPairsText - Token ticker pairs for each step.
+ * @returns {ActivityLogItem[]} Activity log items.
+ */
+const buildProgressActivityLog = ({
 	createStatus,
 	signStatus1,
 	announceStatus1,
@@ -254,6 +283,12 @@ const getTokenPairsText = workflow => {
 	];
 };
 
+/**
+ * Builds the progress dialog view model of a swap: the standard one for a single-step route; for a
+ * dual-step route, the seven-step log, the combined status and the explorer links of both steps.
+ * @param {object} workflow - The active workflow with {@link SingleWorkflowMeta} or {@link DualWorkflowMeta} on `meta`.
+ * @returns {TransactionProgressViewModel} Progress view model.
+ */
 export const createTransactionProgressViewModel = workflow => {
 	if (workflow.steps === 1) {
 		return createStandardTransactionProgressViewModel(
@@ -278,7 +313,7 @@ export const createTransactionProgressViewModel = workflow => {
         && workflow.hash.confirmed2.length === workflow.hash.signed2.length;
 	const hasStep2FailedTransactions = workflow.hash.failed2.length > 0;
 
-	const activityLogData = buildActivityLog({
+	const activityLogData = buildProgressActivityLog({
 		createStatus,
 		signStatus1,
 		announceStatus1,

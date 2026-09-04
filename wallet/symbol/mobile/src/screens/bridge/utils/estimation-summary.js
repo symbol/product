@@ -1,4 +1,5 @@
-import { formatPriceImpactText } from './price-impact';
+import { formatPriceImpactText, isEstimationComplete } from './estimation';
+import { createSwapSideKey } from './swap-selector';
 import { $t } from '@/app/localization';
 import { PriceImpactSeverity } from '@/app/screens/bridge/constants';
 import { createTokenDisplayData, getTotalFeeAmount } from '@/app/utils';
@@ -33,27 +34,6 @@ const priceImpactLevelTextKeyMap = {
 	[PriceImpactSeverity.CRITICAL]: 's_bridge_summary_priceImpact_veryHigh'
 };
 
-const addAmounts = (...amounts) => amounts.reduce((total, amount) => total + amount, 0n);
-
-/**
- * Whether an estimation covers every route step and no step failed.
- * @param {BridgeEstimation[]|null} estimations - Per-step estimations.
- * @param {number} stepCount - Number of route steps.
- * @returns {boolean} True when every step estimated successfully.
- */
-const isEstimationComplete = (estimations, stepCount) =>
-	stepCount > 0 && estimations?.length === stepCount && estimations.every(estimation => !estimation.error);
-
-/**
- * Resolves the units text of a token: its known ticker, or its name when unlisted.
- * @param {TokenInfo} token - The token.
- * @param {ChainName} chainName - The token's chain.
- * @param {NetworkIdentifier} networkIdentifier - The network identifier.
- * @returns {string} Ticker text.
- */
-const getTickerText = (token, chainName, networkIdentifier) =>
-	createTokenDisplayData(token, chainName, networkIdentifier).tickerText;
-
 /**
  * Creates a fee amount entry.
  * @param {string} amount - Fee amount in relative units.
@@ -65,29 +45,26 @@ const getTickerText = (token, chainName, networkIdentifier) =>
 const createFeeAmount = (amount, token, chainName, networkIdentifier) => ({
 	amount,
 	tokenId: token.id,
-	ticker: getTickerText(token, chainName, networkIdentifier),
+	ticker: createTokenDisplayData(token, chainName, networkIdentifier).tickerText,
 	divisibility: token.divisibility,
 	chainName
 });
 
-const formatAmount = (amount, tickerText) => `${amount} ${tickerText}`;
-
 /**
  * Creates a summary row.
- * @param {string} title - Localized row title.
- * @param {string} value - Ready value text.
- * @param {boolean} [isContinuation] - Whether the row continues the row above.
- * @param {PriceImpactSeverityValue|null} [severity] - Row severity.
+ * @param {object} params - Row parameters.
+ * @param {string} params.title - Localized row title.
+ * @param {string} params.value - Ready value text.
+ * @param {boolean} [params.isContinuation=false] - Whether the row continues the row above.
+ * @param {PriceImpactSeverityValue|null} [params.severity=null] - Row severity.
  * @returns {EstimationSummaryRow} Summary row.
  */
-const createRow = (title, value, isContinuation = false, severity = null) => ({
+const createRow = ({ title, value, isContinuation = false, severity = null }) => ({
 	title,
 	value,
 	isContinuation,
 	severity
 });
-
-const createSideKey = side => (side ? `${side.chainName}|${side.token.id}` : 'none');
 
 /**
  * Adds fee amounts that share a token and chain; different tokens keep their own entry in input order.
@@ -111,7 +88,11 @@ export const sumFeeAmountsByToken = feeAmounts => {
 		...feeAmount,
 		amount: amounts.length === 1
 			? amounts[0]
-			: safeOperationWithRelativeAmounts(feeAmount.divisibility, amounts, addAmounts)
+			: safeOperationWithRelativeAmounts(
+				feeAmount.divisibility,
+				amounts,
+				(...values) => values.reduce((total, value) => total + value, 0n)
+			)
 	}));
 };
 
@@ -139,10 +120,11 @@ const createTransactionFeeAmounts = (stepFees, transactionFeeTierLevel) => {
  * Builds the operation fee amounts of every step, each in that step's target token.
  * @param {BridgeEstimation[]|null} estimations - Per-step estimations.
  * @param {SwapStep[]} steps - Steps of the selected route.
+ * @param {boolean} isComplete - Whether the estimation covers every step without an error.
  * @returns {FeeAmount[]|null} Summed fee amounts, or null without a complete, successful estimation.
  */
-const createOperationFeeAmounts = (estimations, steps) => {
-	if (!isEstimationComplete(estimations, steps.length))
+const createOperationFeeAmounts = (estimations, steps, isComplete) => {
+	if (!isComplete)
 		return null;
 
 	return sumFeeAmountsByToken(estimations.map((estimation, stepIndex) => {
@@ -166,15 +148,14 @@ const createOperationFeeAmounts = (estimations, steps) => {
  */
 const createFeeRows = (title, feeAmounts) => {
 	if (!feeAmounts)
-		return [createRow(title, MISSING_VALUE_TEXT)];
+		return [createRow({ title, value: MISSING_VALUE_TEXT })];
 
-	return feeAmounts.map((feeAmount, index) => createRow(title, formatAmount(feeAmount.amount, feeAmount.ticker), index > 0));
+	return feeAmounts.map((feeAmount, index) => createRow({
+		title,
+		value: `${feeAmount.amount} ${feeAmount.ticker}`,
+		isContinuation: index > 0
+	}));
 };
-
-const createSendRow = (source, amount) => createRow(
-	$t('s_bridge_summary_amountSend'),
-	source ? formatAmount(amount, getTickerText(source.token, source.chainName, source.networkIdentifier)) : MISSING_VALUE_TEXT
-);
 
 /**
  * Builds the price impact row. An absent impact shows '-'; an unknown impact still carries its severity.
@@ -186,30 +167,16 @@ const createPriceImpactRow = (priceImpact, priceImpactSeverity) => {
 	const title = $t('s_bridge_summary_priceImpact');
 
 	if (priceImpact === undefined)
-		return createRow(title, MISSING_VALUE_TEXT);
+		return createRow({ title, value: MISSING_VALUE_TEXT });
 
 	const severity = priceImpactSeverity === PriceImpactSeverity.NONE ? null : priceImpactSeverity;
 
 	if (priceImpact === null)
-		return createRow(title, $t('s_bridge_summary_priceImpact_unknown'), false, severity);
+		return createRow({ title, value: $t('s_bridge_summary_priceImpact_unknown'), severity });
 
 	const levelText = severity ? ` · ${$t(priceImpactLevelTextKeyMap[severity])}` : '';
 
-	return createRow(title, `${formatPriceImpactText(priceImpact)}${levelText}`, false, severity);
-};
-
-const createReceiveRow = (target, steps, estimations) => {
-	const isReceiveAmountKnown = !!target && isEstimationComplete(estimations, steps.length);
-
-	return createRow(
-		$t('s_bridge_summary_amountReceive'),
-		isReceiveAmountKnown
-			? formatAmount(
-				estimations[estimations.length - 1].receiveAmount,
-				getTickerText(target.token, target.chainName, target.networkIdentifier)
-			)
-			: MISSING_VALUE_TEXT
-	);
+	return createRow({ title, value: `${formatPriceImpactText(priceImpact)}${levelText}`, severity });
 };
 
 /**
@@ -236,13 +203,24 @@ export const createEstimationSummaryViewModel = ({
 	priceImpact,
 	priceImpactSeverity,
 	transactionFeeTierLevel
-}) => ({
-	key: `${createSideKey(source)}>${createSideKey(target)}`,
-	rows: [
-		createSendRow(source, amount),
-		...createFeeRows($t('s_bridge_summary_transactionFee'), createTransactionFeeAmounts(stepFees, transactionFeeTierLevel)),
-		...createFeeRows($t('s_bridge_summary_bridgeFee'), createOperationFeeAmounts(estimations, steps)),
-		createPriceImpactRow(priceImpact, priceImpactSeverity),
-		createReceiveRow(target, steps, estimations)
-	]
-});
+}) => {
+	const isComplete = isEstimationComplete(estimations, steps.length);
+	const sendValue = source
+		? `${amount} ${createTokenDisplayData(source.token, source.chainName, source.networkIdentifier).tickerText}`
+		: MISSING_VALUE_TEXT;
+	const receiveAmount = target && isComplete ? estimations[estimations.length - 1].receiveAmount : null;
+	const receiveValue = receiveAmount !== null
+		? `${receiveAmount} ${createTokenDisplayData(target.token, target.chainName, target.networkIdentifier).tickerText}`
+		: MISSING_VALUE_TEXT;
+
+	return {
+		key: `${source ? createSwapSideKey(source) : 'none'}>${target ? createSwapSideKey(target) : 'none'}`,
+		rows: [
+			createRow({ title: $t('s_bridge_summary_amountSend'), value: sendValue }),
+			...createFeeRows($t('s_bridge_summary_transactionFee'), createTransactionFeeAmounts(stepFees, transactionFeeTierLevel)),
+			...createFeeRows($t('s_bridge_summary_bridgeFee'), createOperationFeeAmounts(estimations, steps, isComplete)),
+			createPriceImpactRow(priceImpact, priceImpactSeverity),
+			createRow({ title: $t('s_bridge_summary_amountReceive'), value: receiveValue })
+		]
+	};
+};

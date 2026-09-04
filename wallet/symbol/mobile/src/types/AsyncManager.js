@@ -6,6 +6,7 @@
  * @property {function(...*): Promise<T>} call - The function to execute the async operation, returning a Promise of type T.
  * @property {boolean} isLoading - Indicates if the operation is currently loading.
  * @property {boolean} isCompleted - Indicates if the operation has completed.
+ * @property {boolean} hasFailed - Indicates if the last call was rejected and no later call has completed.
  * @property {T} data - The data returned from the async operation.
  * @property {*} error - The error object if the operation failed.
  * @property {function()} reset - A function to reset the state to default values.

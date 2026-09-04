@@ -6,6 +6,7 @@ import { TransactionFeeFixtureBuilder } from '__fixtures__/local/TransactionFeeF
 import { HookTester } from '__tests__/HookTester';
 import { runHookContractTest } from '__tests__/hook-tests';
 import { createWalletControllerMock } from '__tests__/mock-helpers';
+import { act } from '@testing-library/react-native';
 
 // Constants
 
@@ -75,6 +76,48 @@ const sourceWithoutNetworkCurrency = {
 	networkIdentifier: NETWORK_IDENTIFIER,
 	token: nativeToken,
 	walletController: walletControllerWithoutNetworkCurrency
+};
+
+// Ethereum Fixtures
+
+// bXYM has 6 decimals while ETH, the chain's native currency, has 18
+const ethereumAccount = AccountFixtureBuilder
+	.createWithAccount(CHAIN_NAME_ETHEREUM, NETWORK_IDENTIFIER, 0)
+	.build();
+
+const ethereumNativeToken = TokenFixtureBuilder
+	.createWithToken(CHAIN_NAME_ETHEREUM, NETWORK_IDENTIFIER, 0)
+	.setAmount('2')
+	.build();
+
+const ethereumNonNativeToken = TokenFixtureBuilder
+	.createWithToken(CHAIN_NAME_ETHEREUM, NETWORK_IDENTIFIER, 1)
+	.setAmount('500')
+	.build();
+
+const ethereumNetworkProperties = NetworkPropertiesFixtureBuilder
+	.createWithType(CHAIN_NAME_ETHEREUM, NETWORK_IDENTIFIER)
+	.build();
+
+const ethereumWalletController = createWalletControllerMock({
+	chainName: CHAIN_NAME_ETHEREUM,
+	networkIdentifier: NETWORK_IDENTIFIER,
+	networkProperties: ethereumNetworkProperties,
+	currentAccount: ethereumAccount
+});
+
+const sourceEthereumNative = {
+	chainName: CHAIN_NAME_ETHEREUM,
+	networkIdentifier: NETWORK_IDENTIFIER,
+	token: ethereumNativeToken,
+	walletController: ethereumWalletController
+};
+
+const sourceEthereumNonNative = {
+	chainName: CHAIN_NAME_ETHEREUM,
+	networkIdentifier: NETWORK_IDENTIFIER,
+	token: ethereumNonNativeToken,
+	walletController: ethereumWalletController
 };
 
 // Step Fees Fixtures
@@ -191,6 +234,52 @@ describe('hooks/useBridgeAmount', () => {
 
 		initializationTests.forEach(test => {
 			runInitializationTest(test.description, test.config, test.expected);
+		});
+	});
+
+	describe('amount', () => {
+		const runAmountTest = (description, config, expected) => {
+			it(description, () => {
+				// Arrange:
+				const params = createHookParams({ source: config.source });
+				const hookTester = new HookTester(useBridgeAmount, [params]);
+
+				// Act:
+				act(() => {
+					hookTester.currentResult.changeAmount(config.amountInput);
+				});
+
+				// Assert:
+				expect(hookTester.currentResult.amount).toBe(expected.amount);
+				expect(hookTester.currentResult.amountInput).toBe(config.amountInput);
+			});
+		};
+
+		const amountTests = [
+			{
+				description: 'truncates the input to the decimals of a native source token',
+				config: { source: sourceNative, amountInput: '1.1234567' },
+				expected: { amount: '1.123456' }
+			},
+			{
+				description: 'truncates the input to the decimals of the source token, not of the native currency',
+				config: { source: sourceEthereumNonNative, amountInput: '1.1234567' },
+				expected: { amount: '1.123456' }
+			},
+			{
+				description: 'keeps every input decimal the source token supports',
+				config: { source: sourceEthereumNative, amountInput: '1.1234567' },
+				expected: { amount: '1.1234567' }
+			},
+			{
+				description: 'keeps the raw input while no source is selected',
+				config: { source: null, amountInput: '1.1234567' },
+				expected: { amount: '1.1234567' }
+			}
+		];
+
+		amountTests.forEach(test => {
+			runAmountTest(test.description, test.config, test.expected);
 		});
 	});
 

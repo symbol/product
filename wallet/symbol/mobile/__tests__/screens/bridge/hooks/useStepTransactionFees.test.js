@@ -29,6 +29,8 @@ const failedEstimations = [
 	{ bridgeFee: null, receiveAmount: null, error: { code: 'amount_low' } }
 ];
 
+const feeRequestError = new Error('Node is unreachable');
+
 // Stubs
 
 const createWalletControllerStub = () => ({
@@ -70,6 +72,7 @@ describe('hooks/useStepTransactionFees', () => {
 		contract: {
 			stepFees: 'array',
 			isLoading: 'boolean',
+			hasFailed: 'boolean',
 			fetchFirstStepFees: 'function',
 			fetchRemainingStepFees: 'function',
 			clearRemainingStepFees: 'function'
@@ -88,6 +91,7 @@ describe('hooks/useStepTransactionFees', () => {
 			// Assert:
 			expect(hookTester.currentResult.stepFees).toStrictEqual(expectedStepFees);
 			expect(hookTester.currentResult.isLoading).toBe(false);
+			expect(hookTester.currentResult.hasFailed).toBe(false);
 		});
 	});
 
@@ -187,6 +191,75 @@ describe('hooks/useStepTransactionFees', () => {
 		];
 
 		emptyResultCases.forEach(([description, config]) => runEmptyResultTest(description, config));
+	});
+
+	describe('failure', () => {
+		it('reports a failure and holds no tiers when the first step request is rejected', async () => {
+			// Arrange:
+			const createTransaction = jest.fn().mockRejectedValue(feeRequestError);
+			const params = createHookParams({ createTransaction });
+
+			// Act:
+			const hookTester = new HookTester(useStepTransactionFees, [params]);
+			await act(async () => {
+				hookTester.currentResult.fetchFirstStepFees().catch(() => {});
+			});
+
+			// Assert:
+			await hookTester.waitFor(() => {
+				expect(hookTester.currentResult.hasFailed).toBe(true);
+				expect(hookTester.currentResult.isLoading).toBe(false);
+				expect(hookTester.currentResult.stepFees[0].feeTiers).toBeNull();
+			});
+		});
+
+		it('reports a failure and holds no tiers when a later step request is rejected', async () => {
+			// Arrange:
+			const secondStepWalletController = createWalletControllerStub();
+			secondStepWalletController.modules.transfer.calculateTransactionFees.mockRejectedValue(feeRequestError);
+			const params = createHookParams({
+				steps: [createStepStub(createWalletControllerStub()), createStepStub(secondStepWalletController)]
+			});
+
+			// Act:
+			const hookTester = new HookTester(useStepTransactionFees, [params]);
+			await act(async () => {
+				hookTester.currentResult.fetchRemainingStepFees(estimations).catch(() => {});
+			});
+
+			// Assert:
+			await hookTester.waitFor(() => {
+				expect(hookTester.currentResult.hasFailed).toBe(true);
+				expect(hookTester.currentResult.isLoading).toBe(false);
+				expect(hookTester.currentResult.stepFees[1].feeTiers).toBeNull();
+			});
+		});
+
+		it('drops the failure once the next request succeeds', async () => {
+			// Arrange:
+			const createTransaction = jest.fn()
+				.mockRejectedValueOnce(feeRequestError)
+				.mockResolvedValue(transactionBundle);
+			const params = createHookParams({ createTransaction });
+			const hookTester = new HookTester(useStepTransactionFees, [params]);
+			await act(async () => {
+				hookTester.currentResult.fetchFirstStepFees().catch(() => {});
+			});
+			await hookTester.waitFor(() => {
+				expect(hookTester.currentResult.hasFailed).toBe(true);
+			});
+
+			// Act:
+			await act(async () => {
+				hookTester.currentResult.fetchFirstStepFees();
+			});
+
+			// Assert:
+			await hookTester.waitFor(() => {
+				expect(hookTester.currentResult.hasFailed).toBe(false);
+				expect(hookTester.currentResult.stepFees[0].feeTiers).toStrictEqual(feeTiers);
+			});
+		});
 	});
 
 	describe('clear remaining steps', () => {
