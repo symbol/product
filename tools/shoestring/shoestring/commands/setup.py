@@ -62,7 +62,9 @@ async def _prepare_linking_transaction(preparer, api_endpoint):
 	log.info(_('general-connecting-to-node').format(endpoint=api_endpoint))
 	connector = SymbolConnector(api_endpoint)
 
-	account_public_key = read_public_key_from_public_key_pem_file(preparer.directories.certificates / 'ca.pubkey.pem')
+	account_public_key = preparer.config.transaction.signer_public_key
+	if not account_public_key:
+		account_public_key = read_public_key_from_public_key_pem_file(preparer.directories.certificates / 'ca.pubkey.pem')
 	existing_links = await connector.account_links(account_public_key)
 
 	network_time = await connector.network_time()

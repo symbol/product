@@ -2,7 +2,7 @@ import configparser
 import datetime
 from collections import namedtuple
 
-from symbolchain.CryptoTypes import Hash256
+from symbolchain.CryptoTypes import Hash256, PublicKey
 from symbolchain.symbol.Network import Network
 
 from .NodeFeatures import NodeFeatures
@@ -10,7 +10,8 @@ from .NodeFeatures import NodeFeatures
 ImagesConfiguration = namedtuple('ImagesConfiguration', ['client', 'rest', 'mongo'])
 ServicesConfiguration = namedtuple('ServicesConfiguration', ['nodewatch'])
 TransactionConfiguration = namedtuple('TransactionConfiguration', [
-	'fee_multiplier', 'timeout_hours', 'min_cosignatures_count', 'hash_lock_duration', 'currency_mosaic_id', 'locked_funds_per_aggregate'
+	'fee_multiplier', 'timeout_hours', 'min_cosignatures_count', 'hash_lock_duration', 'currency_mosaic_id', 'locked_funds_per_aggregate',
+	'signer_public_key'
 ])
 ImportsConfiguration = namedtuple('ImportsConfiguration', ['harvester', 'voter', 'node_key'])
 NodeConfiguration = namedtuple('NodeConfiguration', [
@@ -50,6 +51,7 @@ def parse_transaction_configuration(config):
 	hash_lock_duration = int(config['hashLockDuration'])
 	currency_mosaic_id = int(config['currencyMosaicId'], 16)
 	locked_funds_per_aggregate = int(config['lockedFundsPerAggregate'])
+	signer_public_key = PublicKey(config['signerPublicKey']) if 'signerPublicKey' in config and config['signerPublicKey'] else None
 
 	return TransactionConfiguration(
 		fee_multiplier,
@@ -57,7 +59,8 @@ def parse_transaction_configuration(config):
 		min_cosignatures_count,
 		hash_lock_duration,
 		currency_mosaic_id,
-		locked_funds_per_aggregate)
+		locked_funds_per_aggregate,
+		signer_public_key)
 
 
 def parse_imports_configuration(config):
