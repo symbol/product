@@ -151,6 +151,8 @@ def create_node_block(
 	height,
 	block_hash=None,
 	previous_hash=None,
+	transactions_count=0,
+	total_transactions_count=0,
 	**block_overrides
 ):
 	block_hash = block_hash or f'{height:064X}'
@@ -160,8 +162,8 @@ def create_node_block(
 		'meta': {
 			'hash': block_hash,
 			'totalFee': str(height * 1000),
-			'totalTransactionsCount': height + 10,
-			'transactionsCount': height,
+			'totalTransactionsCount': total_transactions_count,
+			'transactionsCount': transactions_count,
 			'statementsCount': height + 1,
 			'stateHashSubCacheMerkleRoots': ['A' * 64]
 		},
@@ -285,6 +287,15 @@ def transaction_path(start_height, end_height, page_number=1):
 		f'transactions/confirmed?fromHeight={start_height}&toHeight={end_height}'
 		f'&pageSize=100&pageNumber={page_number}&order=asc&embedded=true'
 	)
+
+
+def create_transaction_page(items, page_number=1, page_size=MAX_PAGE_SIZE):
+	"""Creates an explicit Symbol transaction REST page envelope for tests."""
+
+	return {
+		'data': items,
+		'pagination': {'pageNumber': page_number, 'pageSize': page_size}
+	}
 
 
 def statement_path(start_height, end_height, page_number=1):
@@ -486,10 +497,9 @@ class FakeConnector:  # pylint: disable=too-many-instance-attributes
 				}
 			}
 		if url_path.startswith('transactions/confirmed?'):
-			response = self.transactions_by_path.get(url_path, {'data': []})
+			response = self.transactions_by_path.get(url_path, create_transaction_page([]))
 			if isinstance(response, Exception):
 				raise response
-
 			return response
 		if url_path.startswith('statements/transaction?'):
 			return self.statement_pages.get(url_path, {'data': []})

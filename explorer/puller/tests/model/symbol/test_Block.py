@@ -9,14 +9,16 @@ from symbolchain.symbol.Network import Network
 from puller.model.symbol.Block import create_block_row
 from tests.test.SymbolTestConstants import BENEFICIARY_ADDRESS, SIGNER_ADDRESS, SIGNER_PUBLIC_KEY
 
+MAX_INT4 = 2147483647
 
-def _create_node_block(height, **block_overrides):
+
+def _create_node_block(height, transactions_count=0, total_transactions_count=0, **block_overrides):
 	node_block = {
 		'meta': {
 			'hash': f'{height:064X}',
 			'totalFee': str(height * 1000),
-			'totalTransactionsCount': height + 10,
-			'transactionsCount': height,
+			'totalTransactionsCount': total_transactions_count,
+			'transactionsCount': transactions_count,
 			'statementsCount': height + 1,
 			'stateHashSubCacheMerkleRoots': ['A' * 64]
 		},
@@ -62,8 +64,8 @@ def _expected_block_row(node_block, height, **overrides):
 		'timestamp': datetime.fromtimestamp(100 + height, timezone.utc),
 		'network_timestamp': height * 1000,
 		'total_fee': height * 1000,
-		'transactions_count': height,
-		'total_transactions_count': height + 10,
+		'transactions_count': 0,
+		'total_transactions_count': 0,
 		'statements_count': height + 1,
 		'difficulty': 100000 + height,
 		'fee_multiplier': height,
@@ -92,15 +94,28 @@ def _expected_block_row(node_block, height, **overrides):
 
 
 class BlockTest(TestCase):
+	def _assert_rejects_transaction_counts(self, transactions_count, total_transactions_count, error_message):
+		# Arrange:
+		node_block = _create_node_block(
+			7,
+			transactions_count=transactions_count,
+			total_transactions_count=total_transactions_count)
+
+		# Act / Assert:
+		with self.assertRaisesRegex(ValueError, error_message):
+			create_block_row(node_block, 100, Network.TESTNET)
+
 	def test_create_block_row_populates_fields(self):
 		# Arrange:
-		node_block = _create_node_block(7)
+		node_block = _create_node_block(7, transactions_count=7, total_transactions_count=17)
 
 		# Act:
 		row = create_block_row(node_block, 100, Network.TESTNET)
 
 		# Assert:
-		self.assertEqual(_expected_block_row(node_block, 7), _to_plain_dict(row))
+		self.assertEqual(
+			_expected_block_row(node_block, 7, transactions_count=7, total_transactions_count=17),
+			_to_plain_dict(row))
 
 	def test_create_block_row_populates_importance_block_fields(self):
 		# Arrange:
@@ -140,7 +155,7 @@ class BlockTest(TestCase):
 		# Arrange:
 		node_block = _create_node_block(1, type=1)
 
-		# Act + Assert:
+		# Act / Assert:
 		with self.assertRaisesRegex(ValueError, 'Unsupported Symbol block type 1'):
 			create_block_row(node_block, 100, Network.TESTNET)
 
@@ -148,6 +163,73 @@ class BlockTest(TestCase):
 		# Arrange:
 		node_block = _create_node_block(1, type='invalid')
 
-		# Act + Assert:
+		# Act / Assert:
 		with self.assertRaisesRegex(ValueError, 'Unsupported Symbol block type invalid'):
 			create_block_row(node_block, 100, Network.TESTNET)
+
+	def test_create_block_row_accepts_zero_transaction_counts(self):
+		# Arrange:
+		node_block = _create_node_block(7, transactions_count=0, total_transactions_count=0)
+
+		# Act:
+		row = create_block_row(node_block, 100, Network.TESTNET)
+
+		# Assert:
+		self.assertEqual(0, row['transactions_count'])
+		self.assertEqual(0, row['total_transactions_count'])
+
+	def test_create_block_row_accepts_equal_positive_transaction_counts(self):
+		# Arrange:
+		node_block = _create_node_block(7, transactions_count=7, total_transactions_count=7)
+
+		# Act:
+		row = create_block_row(node_block, 100, Network.TESTNET)
+
+		# Assert:
+		self.assertEqual(7, row['transactions_count'])
+		self.assertEqual(7, row['total_transactions_count'])
+
+	def test_create_block_row_accepts_int4_maximum_transaction_counts(self):
+		# Arrange:
+		node_block = _create_node_block(7, transactions_count=MAX_INT4, total_transactions_count=MAX_INT4)
+
+		# Act:
+		row = create_block_row(node_block, 100, Network.TESTNET)
+
+		# Assert:
+		self.assertEqual(MAX_INT4, row['transactions_count'])
+		self.assertEqual(MAX_INT4, row['total_transactions_count'])
+
+	def test_create_block_row_rejects_missing_transactions_count(self):
+		# Arrange:
+		node_block = _create_node_block(7)
+		del node_block['meta']['transactionsCount']
+
+		# Act / Assert:
+		with self.assertRaisesRegex(ValueError, 'Missing Symbol block transactionsCount'):
+			create_block_row(node_block, 100, Network.TESTNET)
+
+	def test_create_block_row_rejects_missing_total_transactions_count(self):
+		# Arrange:
+		node_block = _create_node_block(7)
+		del node_block['meta']['totalTransactionsCount']
+
+		# Act / Assert:
+		with self.assertRaisesRegex(ValueError, 'Missing Symbol block totalTransactionsCount'):
+			create_block_row(node_block, 100, Network.TESTNET)
+
+	def test_create_block_row_rejects_invalid_transactions_count(self):
+		for value in (True, 1.0, '1', -1, MAX_INT4 + 1):
+			with self.subTest(value=value):
+				self._assert_rejects_transaction_counts(value, 1, 'Invalid Symbol block transactionsCount')
+
+	def test_create_block_row_rejects_invalid_total_transactions_count(self):
+		for value in (True, 1.0, '1', -1, MAX_INT4 + 1):
+			with self.subTest(value=value):
+				self._assert_rejects_transaction_counts(0, value, 'Invalid Symbol block totalTransactionsCount')
+
+	def test_create_block_row_rejects_transactions_count_greater_than_total(self):
+		self._assert_rejects_transaction_counts(
+			2,
+			1,
+			'Symbol block transactionsCount exceeds totalTransactionsCount')

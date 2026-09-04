@@ -20,6 +20,7 @@ from .puller_test_utils import (
 	create_node_block,
 	create_node_transaction,
 	create_sync_state,
+	create_transaction_page,
 	statement_path,
 	transaction_path
 )
@@ -78,14 +79,19 @@ class SymbolPullerNamespacesTest(SymbolPullerTestBase):
 		namespace_by_id,
 		namespace_names,
 		statement_items=None,
-		height=1
-	):
+		height=1,
+		transactions_count=0,
+		total_transactions_count=0
+	):  # pylint: disable=too-many-arguments,too-many-positional-arguments
 		start_height = height
 		return FakeConnector(
 			height,
-			{height - 1: [create_node_block(height)]},
+			{height - 1: [create_node_block(
+				height,
+				transactions_count=transactions_count,
+				total_transactions_count=total_transactions_count)]},
 			finalized_height=max(1, start_height - 1),
-			transactions_by_path={transaction_path(height, height): {'data': transactions}},
+			transactions_by_path={transaction_path(height, height): create_transaction_page(transactions)},
 			statement_pages={statement_path(height, height): {'data': statement_items or []}},
 			namespace_by_id=namespace_by_id,
 			namespace_names=namespace_names)
@@ -136,7 +142,9 @@ class SymbolPullerNamespacesTest(SymbolPullerTestBase):
 				mosaicId=NATIVE_MOSAIC_ID,
 				aliasAction=AliasAction.UNLINK.value)],
 			{NAMESPACE_ROOT_ID: current_item},
-			{NAMESPACE_ROOT_ID: 'root'})
+			{NAMESPACE_ROOT_ID: 'root'},
+			transactions_count=1,
+			total_transactions_count=1)
 
 		# Act:
 		block_heights, sync_state = self._sync_with_connector(connector)
@@ -191,7 +199,9 @@ class SymbolPullerNamespacesTest(SymbolPullerTestBase):
 					aliasAction=AliasAction.LINK.value)
 			],
 			{NAMESPACE_ROOT_ID: current_item},
-			{NAMESPACE_ROOT_ID: 'root'})
+			{NAMESPACE_ROOT_ID: 'root'},
+			transactions_count=2,
+			total_transactions_count=2)
 
 		# Act:
 		block_heights, sync_state = self._sync_with_connector(connector)
@@ -247,7 +257,9 @@ class SymbolPullerNamespacesTest(SymbolPullerTestBase):
 			{NAMESPACE_ROOT_ID: 'root', NAMESPACE_SUB_ID: 'child', NAMESPACE_SUB_SUB_ID: 'grandchild'},
 			[create_artifact_expiry_statement(
 				expiry_height, ReceiptType.NAMESPACE_EXPIRED.value, NAMESPACE_ROOT_ID)],
-			height=expiry_height)
+			height=expiry_height,
+			transactions_count=0,
+			total_transactions_count=0)
 		self._seed_sync_state_before_height(expiry_height)
 
 		# Act:
@@ -316,7 +328,9 @@ class SymbolPullerNamespacesTest(SymbolPullerTestBase):
 			[], {}, {},
 			[create_artifact_expiry_statement(
 				deletion_height, ReceiptType.NAMESPACE_DELETED.value, NAMESPACE_ROOT_ID)],
-			height=deletion_height)
+			height=deletion_height,
+			transactions_count=0,
+			total_transactions_count=0)
 		self._seed_sync_state_before_height(deletion_height)
 
 		# Act:
@@ -380,7 +394,9 @@ class SymbolPullerNamespacesTest(SymbolPullerTestBase):
 				registrationType=0)],
 			renewed_items,
 			{NAMESPACE_ROOT_ID: 'root', NAMESPACE_SUB_ID: 'child', NAMESPACE_SUB_SUB_ID: 'grandchild'},
-			height=renewal_height)
+			height=renewal_height,
+			transactions_count=1,
+			total_transactions_count=1)
 		self._seed_sync_state_before_height(renewal_height)
 
 		# Act:
@@ -451,7 +467,9 @@ class SymbolPullerNamespacesTest(SymbolPullerTestBase):
 					aliasAction=AliasAction.LINK.value)
 			],
 			{NAMESPACE_ROOT_ID: root_item, NAMESPACE_SUB_ID: child_item, NAMESPACE_SUB_SUB_ID: grandchild_item},
-			{NAMESPACE_ROOT_ID: 'root', NAMESPACE_SUB_ID: 'child', NAMESPACE_SUB_SUB_ID: 'grandchild'})
+			{NAMESPACE_ROOT_ID: 'root', NAMESPACE_SUB_ID: 'child', NAMESPACE_SUB_SUB_ID: 'grandchild'},
+			transactions_count=2,
+			total_transactions_count=2)
 
 		# Act:
 		self._sync_with_connector(connector)
@@ -497,7 +515,9 @@ class SymbolPullerNamespacesTest(SymbolPullerTestBase):
 					id=NAMESPACE_ROOT_ID)
 			],
 			{NAMESPACE_SUB_ID: child_item, NAMESPACE_ROOT_ID: root_item, NAMESPACE_SUB_SUB_ID: grandchild_item},
-			{NAMESPACE_ROOT_ID: 'root', NAMESPACE_SUB_ID: 'child', NAMESPACE_SUB_SUB_ID: 'grandchild'})
+			{NAMESPACE_ROOT_ID: 'root', NAMESPACE_SUB_ID: 'child', NAMESPACE_SUB_SUB_ID: 'grandchild'},
+			transactions_count=2,
+			total_transactions_count=2)
 
 		# Act:
 		self._sync_with_connector(connector)
@@ -536,7 +556,9 @@ class SymbolPullerNamespacesTest(SymbolPullerTestBase):
 				mosaicId=NATIVE_MOSAIC_ID,
 				aliasAction=AliasAction.LINK.value)],
 			{NAMESPACE_SUB_ID: child_item},
-			{NAMESPACE_ROOT_ID: 'root', NAMESPACE_SUB_ID: 'child'})
+			{NAMESPACE_ROOT_ID: 'root', NAMESPACE_SUB_ID: 'child'},
+			transactions_count=1,
+			total_transactions_count=1)
 
 		# Act:
 		self._sync_with_connector(connector)
@@ -572,12 +594,12 @@ class SymbolPullerNamespacesTest(SymbolPullerTestBase):
 		before_state = self._fetch_blocks_sync_accounts_and_namespaces_state()
 		connector = FakeConnector(
 			2,
-			{1: [create_node_block(2)]},
+			{1: [create_node_block(2, transactions_count=1, total_transactions_count=1)]},
 			{1: create_node_block(1)},
-			transactions_by_path={transaction_path(2, 2): {'data': [create_node_transaction(
+			transactions_by_path={transaction_path(2, 2): create_transaction_page([create_node_transaction(
 				2,
 				type=TransactionType.NAMESPACE_REGISTRATION.value,
-				id=NAMESPACE_ROOT_ID)]}},
+				id=NAMESPACE_ROOT_ID)])},
 			namespace_by_id={
 				NAMESPACE_ROOT_ID: create_namespace_item(),
 				NAMESPACE_SUB_ID: RuntimeError('descendant namespace fetch failed')})
