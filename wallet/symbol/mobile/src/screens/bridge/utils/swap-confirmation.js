@@ -4,13 +4,6 @@ import { createTokenDisplayData } from '@/app/utils';
 /** @typedef {import('@/app/screens/bridge/types/Bridge').SwapSide} SwapSide */
 
 /**
- * Resolves the units text of a side's token: its known ticker, or its name when unlisted.
- * @param {SwapSide} side - The swap side.
- * @returns {string} Ticker text.
- */
-const getSideTickerText = side => createTokenDisplayData(side.token, side.chainName, side.networkIdentifier).tickerText;
-
-/**
  * Builds the confirm-dialog sentence of a swap: the entered amount and both tokens by ticker. Empty
  * until both sides are selected.
  * @param {object} params - Builder parameters.
@@ -25,9 +18,9 @@ export const createSwapConfirmationText = ({ source, target, amount }) => {
 
 	return $t('s_bridge_swap_dialog_confirm_text', {
 		amount,
-		sourceToken: getSideTickerText(source),
+		sourceToken: createTokenDisplayData(source.token, source.chainName, source.networkIdentifier).tickerText,
 		sourceChain: source.chainName,
-		targetToken: getSideTickerText(target),
+		targetToken: createTokenDisplayData(target.token, target.chainName, target.networkIdentifier).tickerText,
 		targetChain: target.chainName
 	});
 };

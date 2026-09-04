@@ -30,8 +30,7 @@ export const useEstimation = ({ bridge, amount }) => {
 		shouldShowErrorPopup: false
 	});
 
-	const { error, isLoading, isCompleted } = estimationManager;
-	const hasFailed = !!error && !isLoading && !isCompleted;
+	const { isLoading, hasFailed } = estimationManager;
 
 	return {
 		estimate: estimationManager.call,

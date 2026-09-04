@@ -90,6 +90,7 @@ export const BridgeSwap = props => {
 	const {
 		stepFees,
 		isLoading: isStepFeesLoading,
+		hasFailed: hasStepFeesFailed,
 		fetchFirstStepFees,
 		fetchRemainingStepFees,
 		clearRemainingStepFees
@@ -233,7 +234,11 @@ export const BridgeSwap = props => {
 	useFocusEffect(init);
 
 	const isScreenLoading = !isReady;
-	const isButtonDisabled = isEstimationLoading || isStepFeesLoading || !isAmountValid || !isAmountPositive;
+	const isButtonDisabled = isEstimationLoading
+		|| isStepFeesLoading
+		|| hasStepFeesFailed
+		|| !isAmountValid
+		|| !isAmountPositive;
 
 	const handleTransactionSendComplete = () => reset();
 

@@ -5,6 +5,13 @@ import { createTokenDisplayData } from '@/app/utils';
 /** @typedef {import('@/app/screens/bridge/types/Bridge').SwapSelectorViewModel} SwapSelectorViewModel */
 
 /**
+ * Identity of a swap side across the screen: its chain and token id.
+ * @param {SwapSide} side - The swap side.
+ * @returns {string} The side key.
+ */
+export const createSwapSideKey = side => `${side.chainName}|${side.token.id}`;
+
+/**
  * Builds one selectable option from a swap side.
  * @param {SwapSide} side - The swap side.
  * @returns {SwapSideOption} The option.
@@ -13,7 +20,7 @@ const createSideOption = side => {
 	const { name, imageId } = createTokenDisplayData(side.token, side.chainName, side.networkIdentifier);
 
 	return {
-		key: `${side.chainName}|${side.token.id}`,
+		key: createSwapSideKey(side),
 		label: name,
 		imageId,
 		chainName: side.chainName,

@@ -19,7 +19,7 @@ import { createTokenDisplayData, formatDate } from '@/app/utils';
  * @param {NetworkIdentifier} networkIdentifier - The network identifier.
  * @returns {{ chainName: ChainName, imageId: string|null }} Side display data.
  */
-const createSideDisplayData = (chainName, tokenInfo, networkIdentifier) => ({
+const createChainDisplayData = (chainName, tokenInfo, networkIdentifier) => ({
 	chainName,
 	imageId: createTokenDisplayData(tokenInfo, chainName, networkIdentifier).imageId
 });
@@ -52,8 +52,8 @@ const createHistoryItem = (request, networkIdentifier) => ({
 	key: request.requestTransaction.hash,
 	actionText: $t('transactionDescriptor_swap'),
 	dateText: formatDate(request.requestTransaction.timestamp, $t),
-	source: createSideDisplayData(request.sourceChainName, request.sourceTokenInfo, networkIdentifier),
-	target: createSideDisplayData(request.targetChainName, request.targetTokenInfo, networkIdentifier),
+	source: createChainDisplayData(request.sourceChainName, request.sourceTokenInfo, networkIdentifier),
+	target: createChainDisplayData(request.targetChainName, request.targetTokenInfo, networkIdentifier),
 	status: request.payoutStatus === undefined ? null : getSwapStatus(request.requestStatus, request.payoutStatus),
 	amount: createAmount(request, networkIdentifier),
 	caption: getSwapStatusCaption(request),

@@ -62,3 +62,12 @@ export const getEstimationsPriceImpact = estimations => {
 
 	return swapEstimation ? swapEstimation.priceImpact : undefined;
 };
+
+/**
+ * Whether an estimation covers every route step and no step failed.
+ * @param {BridgeEstimation[]|null} estimations - Per-step estimations.
+ * @param {number} stepCount - Number of route steps.
+ * @returns {boolean} True when every step estimated successfully.
+ */
+export const isEstimationComplete = (estimations, stepCount) =>
+	stepCount > 0 && estimations?.length === stepCount && estimations.every(estimation => !estimation.error);

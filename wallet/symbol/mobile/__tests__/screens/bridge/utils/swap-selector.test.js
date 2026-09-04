@@ -1,4 +1,4 @@
-import { createSwapSelectorViewModel } from '@/app/screens/bridge/utils/swap-selector';
+import { createSwapSelectorViewModel, createSwapSideKey } from '@/app/screens/bridge/utils/swap-selector';
 import { TokenFixtureBuilder } from '__fixtures__/local/TokenFixtureBuilder';
 
 // Constants
@@ -69,6 +69,16 @@ const expectedOptionUnlisted = {
 };
 
 describe('screens/bridge/utils/swap-selector', () => {
+	describe('createSwapSideKey()', () => {
+		it('joins the chain name and the token id', () => {
+			// Act:
+			const result = createSwapSideKey(sideXym);
+
+			// Assert:
+			expect(result).toBe(`${CHAIN_NAME_SYMBOL}|${tokenXym.id}`);
+		});
+	});
+
 	describe('createSwapSelectorViewModel()', () => {
 		const runCreateSwapSelectorViewModelTest = (description, config, expected) => {
 			it(description, () => {

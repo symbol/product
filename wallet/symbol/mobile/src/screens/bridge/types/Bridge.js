@@ -131,6 +131,35 @@
  */
 
 /**
+ * Metadata describing one side (source or target) of a workflow step.
+ * @typedef {object} WorkflowMetaSide
+ * @property {TokenInfo|null} tokenInfo - Token info for this side.
+ * @property {ChainName} chainName - The blockchain name.
+ * @property {NetworkIdentifier} networkIdentifier - The network identifier.
+ */
+
+/**
+ * Metadata for a single-step workflow.
+ * @typedef {object} SingleWorkflowMeta
+ * @property {WorkflowMetaSide} source - Source side metadata.
+ * @property {WorkflowMetaSide} target - Target side metadata.
+ */
+
+/**
+ * Metadata for one step within a dual-step workflow.
+ * @typedef {object} WorkflowStepMeta
+ * @property {WorkflowMetaSide} source - Source side metadata.
+ * @property {WorkflowMetaSide} target - Target side metadata.
+ */
+
+/**
+ * Metadata for a dual-step workflow.
+ * @typedef {object} DualWorkflowMeta
+ * @property {WorkflowStepMeta} step1 - First step metadata.
+ * @property {WorkflowStepMeta} step2 - Second step metadata.
+ */
+
+/**
  * Price impact severity tier.
  * @typedef {'none' | 'warning' | 'critical'} PriceImpactSeverityValue
  */
