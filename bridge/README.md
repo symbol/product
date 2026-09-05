@@ -151,6 +151,37 @@ The API requires its own configuration file (`api_configuration.ini` in the comm
 CONFIG_PATH="<path_to_bridge_configuration.ini>"
 ```
 
+## Monitoring
+
+The API exposes Prometheus metrics on `/metrics`, computed while a scrape is in flight - there is no
+background process and no state kept between scrapes.
+
+| Metric | Labels | Meaning |
+|---|---|---|
+| `bridge_info` | mode, native_blockchain, wrapped_blockchain | configuration the bridge runs with; always one |
+| `bridge_node_up` | network, endpoint | node configured for the bridge is reachable |
+| `bridge_balance` | network, token, address | bridge account balance, in raw units |
+| `blockchain_height` | network | height of the newest block the node knows about |
+| `blockchain_finalized_height` | network | height of the newest finalized block the node knows about |
+| `bridge_price_oracle_up` | endpoint | price oracle configured for the bridge is reachable |
+| `bridge_price_oracle_credits_left` | endpoint | requests left in the quota reported by the price oracle |
+| `bridge_vault_up` | endpoint | vault can serve the signing key; zero covers unreachable, sealed, standby and uninitialized |
+| `bridge_vault_token_ttl_seconds` | endpoint | seconds left before the access token the bridge signs with expires |
+| `bridge_requests_failed_permanent` | direction | requests that failed and were not retried |
+| `bridge_request_retries` | direction | transient failures that were put back into circulation |
+| `bridge_requests_rejected` | direction | deposits that were rejected on download |
+| `bridge_daily_transfer_remaining` | direction | gross amount still payable within the rolling 24 hour limit |
+| `bridge_oldest_unprocessed_age_seconds` | direction | age of the oldest request that has not been processed yet |
+| `bridge_oldest_sent_age_seconds` | direction | age of the oldest payout that has not been confirmed yet |
+| `bridge_processed_height` | network | height of the newest block the bridge has downloaded requests from |
+
+`network` is `native` or `wrapped`, `direction` is `wrap` or `unwrap`. Amounts are published in the
+raw units of the chain, so they need dividing by the divisibility of the asset before display.
+
+Requests are downloaded from the network opposite the one they are paid out on: wrapping reads
+deposits from the native network and pays out on the wrapped one, so
+`bridge_processed_height{network="native"}` is how far the wrap downloader has read.
+
 ## Running using Docker
 
 As an alternative to manually installing dependencies and running scripts, you can use Docker.
