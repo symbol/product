@@ -12,8 +12,8 @@ import {
 import { Colors, Sizes, Typography } from '@/app/styles';
 import { StyleSheet, View } from 'react-native';
 
-/** @typedef {import('@/app/screens/bridge/types/Bridge').SwapHistoryItem} SwapHistoryItem */
-/** @typedef {import('@/app/screens/bridge/types/Bridge').SwapHistoryViewModel} SwapHistoryViewModel */
+/** @typedef {import('@/app/screens/bridge/types/ViewModel').SwapHistoryItem} SwapHistoryItem */
+/** @typedef {import('@/app/screens/bridge/types/ViewModel').SwapHistoryViewModel} SwapHistoryViewModel */
 /** @typedef {import('@/app/types/Network').ChainName} ChainName */
 
 const ICON_NAME = 'swap';

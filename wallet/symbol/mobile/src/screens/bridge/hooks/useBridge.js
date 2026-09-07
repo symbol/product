@@ -1,6 +1,7 @@
 import { bridges } from '@/app/lib/controller';
 import { BridgePairsStatus } from '@/app/screens/bridge/types/Bridge';
-import { getBridgePairs, isBridgeControllersReady, loadWalletController } from '@/app/screens/bridge/utils';
+import { getBridgePairs, isBridgeControllersReady } from '@/app/screens/bridge/utils';
+import { loadWalletController } from '@/app/screens/bridge/utils/wallet-controller';
 import { useCallback, useEffect, useState } from 'react';
 import { ControllerEventName } from 'wallet-common-core/src/constants';
 

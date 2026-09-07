@@ -112,8 +112,7 @@ export const BridgeSwap = props => {
 		estimations,
 		estimate,
 		clearEstimation,
-		isLoading:
-		isEstimationLoading,
+		isLoading: isEstimationLoading,
 		hasFailed: hasEstimationFailed
 	} = useEstimation({ bridge, amount });
 

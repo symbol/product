@@ -83,7 +83,7 @@ export const useBridgeTransactionWorkflow = params => {
  * @param {TransactionFeeTierLevel} [params.transactionFeeTierLevel] - Optional fee tier level to apply.
  * @returns {object} The workflow object extended with {@link SingleWorkflowMeta} on the `meta` property.
  */
-export const useSingleStepWorkflow = ({
+const useSingleStepWorkflow = ({
 	isActive,
 	steps,
 	createTransaction,

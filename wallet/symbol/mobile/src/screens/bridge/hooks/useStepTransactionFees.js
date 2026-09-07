@@ -1,6 +1,5 @@
 import { useAsyncManager } from '@/app/hooks';
-// By file, not the utils barrel: the barrel loads the wallet controllers, which a hook must not import
-import { isEstimationComplete } from '@/app/screens/bridge/utils/estimation';
+import { isEstimationComplete } from '@/app/screens/bridge/utils';
 
 /** @typedef {import('@/app/screens/bridge/types/Bridge').BridgeEstimation} BridgeEstimation */
 /** @typedef {import('@/app/screens/bridge/types/Bridge').StepFees} StepFees */

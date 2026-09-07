@@ -1,4 +1,3 @@
-export * from './bridge-account-management';
 export * from './bridge-pairs';
 export * from './estimation';
 export * from './estimation-summary';
@@ -9,4 +8,3 @@ export * from './swap-selector';
 export * from './swap-status';
 export * from './transaction-progress';
 export * from './validators';
-export * from './wallet-controller';

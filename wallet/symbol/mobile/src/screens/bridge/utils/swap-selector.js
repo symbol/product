@@ -1,8 +1,8 @@
 import { createTokenDisplayData } from '@/app/utils';
 
 /** @typedef {import('@/app/screens/bridge/types/Bridge').SwapSide} SwapSide */
-/** @typedef {import('@/app/screens/bridge/types/Bridge').SwapSideOption} SwapSideOption */
-/** @typedef {import('@/app/screens/bridge/types/Bridge').SwapSelectorViewModel} SwapSelectorViewModel */
+/** @typedef {import('@/app/screens/bridge/types/ViewModel').SwapSideOption} SwapSideOption */
+/** @typedef {import('@/app/screens/bridge/types/ViewModel').SwapSelectorViewModel} SwapSelectorViewModel */
 
 /**
  * Identity of a swap side across the screen: its chain and token id.

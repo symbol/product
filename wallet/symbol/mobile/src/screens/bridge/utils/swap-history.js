@@ -6,8 +6,8 @@ import { createTokenDisplayData, formatDate } from '@/app/utils';
 
 /** @typedef {import('@/app/screens/bridge/types/Bridge').BridgeError} BridgeError */
 /** @typedef {import('@/app/screens/bridge/types/Bridge').BridgeRequest} BridgeRequest */
-/** @typedef {import('@/app/screens/bridge/types/Bridge').SwapHistoryItem} SwapHistoryItem */
-/** @typedef {import('@/app/screens/bridge/types/Bridge').SwapHistoryViewModel} SwapHistoryViewModel */
+/** @typedef {import('@/app/screens/bridge/types/ViewModel').SwapHistoryItem} SwapHistoryItem */
+/** @typedef {import('@/app/screens/bridge/types/ViewModel').SwapHistoryViewModel} SwapHistoryViewModel */
 /** @typedef {import('@/app/types/Network').ChainName} ChainName */
 /** @typedef {import('@/app/types/Network').NetworkIdentifier} NetworkIdentifier */
 /** @typedef {import('@/app/types/Token').TokenInfo} TokenInfo */
