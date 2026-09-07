@@ -50,23 +50,6 @@ rule_files:
   - /etc/prometheus/rules/bridge.yml
 ```
 
-The tests live outside `rules/` on purpose: Prometheus loads everything a `rule_files` glob
-matches, and a unit test file is not a rule file.
-
-Validate and test before reloading:
-
-```sh
-promtool check rules rules/bridge.yml
-promtool test rules tests/bridge_test.yml
-```
-
-`tests/bridge_test.yml` runs the rules against synthetic series: a node that never answers, one
-that answers a fifth of the time, a chain that stops advancing, a single permanently failed request,
-a swap bridge whose native balance must stay quiet, a request downloader that stops while the chain
-keeps finalizing, and one ETH balance that has to reach a different rule depending on the mode the
-bridge reports. It is worth running in CI, since a rename of a metric or a change to a hold period
-shows up as a failing test rather than as an alert that quietly never fires again.
-
 ## Runbooks
 
 ### BridgeRequestsFailedPermanently
@@ -94,19 +77,14 @@ arrived; query `bridge_requests_failed_permanent` itself to see what is still ou
 
 A payout was announced but is not being confirmed. Check whether the payout network is producing
 blocks (`blockchain_height`) and finalizing them (`blockchain_finalized_height`), then whether the
-fee it was sent with is still competitive. On Ethereum a spike in base fee can leave transactions
+fee it was sent with is still competitive; on Ethereum a spike in base fee can leave transactions
 pending indefinitely.
 
-**The threshold follows the payout network.** A payout stays in `SENT` until
-`check_finalized_transactions` sees it *finalized*, not merely included, so this alert measures
-finalization latency as much as it measures trouble. Wrapping pays out on the wrapped leg and
-unwrapping on the native one.
-
-One hour suits Ethereum (~13 minutes to finality) and Symbol (one finalization epoch). NEM is the
-open question: lightapi currently reports its finalized height as a fixed 360 blocks behind the
-chain, which at a one minute block time would be about six hours and would page on every healthy
-payout. Until that behaviour is settled, a bridge with a NEM payout leg needs this threshold raised
-by hand.
+The threshold follows the payout network, which is the wrapped leg for wrapping and the native one
+for unwrapping. A payout stays in `SENT` until it is *finalized*, not merely included, so an hour
+suits Ethereum and Symbol but not NEM: lightapi reports its finalized height as a fixed 360 blocks
+behind the chain, about six hours at a one minute block time, so a NEM payout leg needs this
+threshold raised by hand.
 
 ### BridgeDepositsNotProcessing
 
