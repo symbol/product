@@ -5,8 +5,8 @@ import { BridgePayoutStatus, BridgeRequestStatus } from '@/app/screens/bridge/ty
 /** @typedef {import('@/app/screens/bridge/types/Bridge').BridgePayoutStatusType} BridgePayoutStatusType */
 /** @typedef {import('@/app/screens/bridge/types/Bridge').BridgeRequest} BridgeRequest */
 /** @typedef {import('@/app/screens/bridge/types/Bridge').BridgeError} BridgeError */
-/** @typedef {import('@/app/screens/bridge/types/Bridge').SwapStatusDisplayData} SwapStatusDisplayData */
-/** @typedef {import('@/app/screens/bridge/types/Bridge').SwapStatusCaptionDisplayData} SwapStatusCaptionDisplayData */
+/** @typedef {import('@/app/screens/bridge/types/ViewModel').SwapStatusDisplayData} SwapStatusDisplayData */
+/** @typedef {import('@/app/screens/bridge/types/ViewModel').SwapStatusCaptionDisplayData} SwapStatusCaptionDisplayData */
 
 const iconNameMap = {
 	unprocessed: 'pending',

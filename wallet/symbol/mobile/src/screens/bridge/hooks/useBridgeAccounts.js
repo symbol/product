@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { ControllerEventName } from 'wallet-common-core/src/constants';
 
 /** @typedef {import('@/app/types/Wallet').WalletController} WalletController */
-/** @typedef {import('@/app/screens/bridge/types/Bridge').BridgeAccountDisplayData} BridgeAccountDisplayData */
+/** @typedef {import('@/app/screens/bridge/types/ViewModel').BridgeAccountDisplayData} BridgeAccountDisplayData */
 
 /**
  * Fetches account info if the wallet controller is ready.

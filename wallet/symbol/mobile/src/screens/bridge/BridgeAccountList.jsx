@@ -3,7 +3,7 @@ import { useBridgeAccounts } from './hooks';
 import { Screen, Spacer, Stack, TouchableNative } from '@/app/components';
 import { useAsyncManager } from '@/app/hooks';
 import { Router } from '@/app/router/Router';
-import { generateFromMnemonic } from '@/app/screens/bridge/utils';
+import { generateFromMnemonic } from '@/app/screens/bridge/utils/bridge-account-management';
 import React from 'react';
 
 /**

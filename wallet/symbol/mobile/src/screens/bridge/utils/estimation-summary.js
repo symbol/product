@@ -6,12 +6,12 @@ import { createTokenDisplayData, getTotalFeeAmount } from '@/app/utils';
 import { safeOperationWithRelativeAmounts } from 'wallet-common-core';
 
 /** @typedef {import('@/app/screens/bridge/types/Bridge').BridgeEstimation} BridgeEstimation */
-/** @typedef {import('@/app/screens/bridge/types/Bridge').EstimationSummaryRow} EstimationSummaryRow */
-/** @typedef {import('@/app/screens/bridge/types/Bridge').EstimationSummaryViewModel} EstimationSummaryViewModel */
 /** @typedef {import('@/app/screens/bridge/types/Bridge').PriceImpactSeverityValue} PriceImpactSeverityValue */
 /** @typedef {import('@/app/screens/bridge/types/Bridge').StepFees} StepFees */
 /** @typedef {import('@/app/screens/bridge/types/Bridge').SwapSide} SwapSide */
 /** @typedef {import('@/app/screens/bridge/types/Bridge').SwapStep} SwapStep */
+/** @typedef {import('@/app/screens/bridge/types/ViewModel').EstimationSummaryRow} EstimationSummaryRow */
+/** @typedef {import('@/app/screens/bridge/types/ViewModel').EstimationSummaryViewModel} EstimationSummaryViewModel */
 /** @typedef {import('@/app/types/Network').ChainName} ChainName */
 /** @typedef {import('@/app/types/Network').NetworkIdentifier} NetworkIdentifier */
 /** @typedef {import('@/app/types/Token').TokenInfo} TokenInfo */

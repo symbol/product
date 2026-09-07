@@ -6,7 +6,7 @@ import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 
-/** @typedef {import('@/app/screens/bridge/types/Bridge').EstimationSummaryViewModel} EstimationSummaryViewModel */
+/** @typedef {import('@/app/screens/bridge/types/ViewModel').EstimationSummaryViewModel} EstimationSummaryViewModel */
 
 const severityAppearanceMap = {
 	[PriceImpactSeverity.WARNING]: {

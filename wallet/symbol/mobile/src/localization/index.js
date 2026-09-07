@@ -28,7 +28,6 @@ const languageNames = {
 
 // Logic 
 
-const mainWalletController = walletControllers.main;
 const i18n = new I18n();
 
 const translate = memoize(
@@ -59,12 +58,12 @@ export const initLocalization = () => {
 };
 
 export const getCurrentLanguage = () => {
-	return mainWalletController.modules.localization.currentLanguage;
+	return walletControllers.main.modules.localization.currentLanguage;
 };
 
 export const setCurrentLanguage = async languageCode => {
 	updateConfig(languageCode);
-	await mainWalletController.modules.localization.selectLanguage(languageCode);
+	await walletControllers.main.modules.localization.selectLanguage(languageCode);
 };
 
 export const getLanguages = () => {

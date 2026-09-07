@@ -8,10 +8,10 @@ import { createTokenDisplayData, formatDate, getAccountKnownInfo } from '@/app/u
 /** @typedef {import('@/app/screens/bridge/types/Bridge').BridgePayoutStatusType} BridgePayoutStatusType */
 /** @typedef {import('@/app/screens/bridge/types/Bridge').BridgeRequest} BridgeRequest */
 /** @typedef {import('@/app/screens/bridge/types/Bridge').BridgeRequestStatusType} BridgeRequestStatusType */
-/** @typedef {import('@/app/screens/bridge/types/Bridge').ResolvedAccountData} ResolvedAccountData */
-/** @typedef {import('@/app/screens/bridge/types/Bridge').ResolvedTokenData} ResolvedTokenData */
-/** @typedef {import('@/app/screens/bridge/types/Bridge').SwapDetailsViewModel} SwapDetailsViewModel */
-/** @typedef {import('@/app/screens/bridge/types/Bridge').SwapSideDisplayData} SwapSideDisplayData */
+/** @typedef {import('@/app/screens/bridge/types/ViewModel').ResolvedAccountData} ResolvedAccountData */
+/** @typedef {import('@/app/screens/bridge/types/ViewModel').ResolvedTokenData} ResolvedTokenData */
+/** @typedef {import('@/app/screens/bridge/types/ViewModel').SwapDetailsViewModel} SwapDetailsViewModel */
+/** @typedef {import('@/app/screens/bridge/types/ViewModel').SwapSideDisplayData} SwapSideDisplayData */
 /** @typedef {import('@/app/types/ActivityLog').ActivityLogItem} ActivityLogItem */
 /** @typedef {import('@/app/types/Network').ChainName} ChainName */
 /** @typedef {import('@/app/types/Network').NetworkIdentifier} NetworkIdentifier */

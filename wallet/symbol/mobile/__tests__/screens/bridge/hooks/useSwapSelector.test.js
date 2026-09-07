@@ -15,6 +15,7 @@ const NETWORK_IDENTIFIER = 'testnet';
 
 const BRIDGE_ID_XYM_TO_BXYM = 'symbol-xym-ethereum-bxym';
 const BRIDGE_ID_XYM_TO_ETH = 'symbol-xym-ethereum-eth';
+const BRIDGE_ID_ETH_TO_BXYM = 'ethereum-eth-ethereum-bxym';
 
 // Account Fixtures
 
@@ -64,6 +65,7 @@ const createBridgeMock = (id, stepPairs = []) => ({
 
 const bridgeXymToBxym = createBridgeMock(BRIDGE_ID_XYM_TO_BXYM);
 const bridgeXymToEth = createBridgeMock(BRIDGE_ID_XYM_TO_ETH);
+const bridgeEthToBxym = createBridgeMock(BRIDGE_ID_ETH_TO_BXYM);
 
 // Token Fixtures
 
@@ -136,6 +138,12 @@ const swapPairEthToXym = {
 	bridge: bridgeXymToEth
 };
 
+const swapPairEthToBxym = {
+	source: swapSideEthereumEth,
+	target: swapSideEthereumBxym,
+	bridge: bridgeEthToBxym
+};
+
 const swapPairXymToBxymUpdated = {
 	...swapPairXymToBxym,
 	source: {
@@ -155,6 +163,10 @@ const pairsAll = [
 	swapPairXymToEth,
 	swapPairEthToXym
 ];
+// bXYM is never a source; the first pair starts from ETH
+const pairsEthToXymFirst = [swapPairEthToXym, swapPairXymToBxym];
+// ETH is a source, but XYM is not one of its targets
+const pairsXymToEthToBxym = [swapPairXymToEth, swapPairEthToBxym];
 
 // Hook Helpers
 
@@ -327,6 +339,42 @@ describe('hooks/useSwapSelector', () => {
 				}
 			},
 			{
+				description: 'ignores invalid target selection and keeps current state',
+				config: {
+					pairs: pairsSingleBxym,
+					defaultSourceChainName: CHAIN_NAME_SYMBOL,
+					changeTarget: swapSideEthereumEth
+				},
+				expected: {
+					source: swapSideSymbolXym,
+					target: swapSideEthereumBxym,
+					sourceList: [swapSideSymbolXym],
+					targetList: [swapSideEthereumBxym],
+					bridge: bridgeXymToBxym,
+					isReady: true
+				}
+			},
+			{
+				description: 'changes source and falls back to its first target when the current target is unreachable',
+				config: {
+					pairs: pairsAll,
+					defaultSourceChainName: CHAIN_NAME_SYMBOL,
+					changeSource: swapSideEthereumBxym
+				},
+				expected: {
+					source: swapSideEthereumBxym,
+					target: swapSideSymbolXym,
+					sourceList: [
+						swapSideSymbolXym,
+						swapSideEthereumBxym,
+						swapSideEthereumEth
+					],
+					targetList: [swapSideSymbolXym],
+					bridge: bridgeXymToBxym,
+					isReady: true
+				}
+			},
+			{
 				description: 'updates target to ETH maintaining symbol XYM source',
 				config: {
 					pairs: pairsAll,
@@ -425,11 +473,9 @@ describe('hooks/useSwapSelector', () => {
 			it(description, () => {
 				// Arrange:
 				const hookTester = new HookTester(useSwapSelector, [createHookParams({
-					pairs: pairsBidirectionalBxym,
+					pairs: config.pairs,
 					defaultSourceChainName: CHAIN_NAME_SYMBOL
 				})]);
-				const initialSource = hookTester.currentResult.source;
-				const initialTarget = hookTester.currentResult.target;
 
 				// Act:
 				for (let i = 0; i < config.reverseCount; i++) {
@@ -439,26 +485,36 @@ describe('hooks/useSwapSelector', () => {
 				}
 
 				// Assert:
-				if (expected.isFinalValuesReversed) {
-					expect(hookTester.currentResult.source).toStrictEqual(initialTarget);
-					expect(hookTester.currentResult.target).toStrictEqual(initialSource);
-				} else {
-					expect(hookTester.currentResult.source).toStrictEqual(initialSource);
-					expect(hookTester.currentResult.target).toStrictEqual(initialTarget);
-				}
+				expect(hookTester.currentResult.source).toStrictEqual(expected.source);
+				expect(hookTester.currentResult.target).toStrictEqual(expected.target);
 			});
 		};
 
 		const reverseTests = [
 			{
-				description: 'reverses source and target correctly',
-				config: { reverseCount: 1 },
-				expected: { isFinalValuesReversed: true }
+				description: 'reverses source and target when the reversed route exists',
+				config: { pairs: pairsBidirectionalBxym, reverseCount: 1 },
+				expected: { source: swapSideEthereumBxym, target: swapSideSymbolXym }
 			},
 			{
 				description: 'reverses back to initial state on second reverse',
-				config: { reverseCount: 2 },
-				expected: { isFinalValuesReversed: false }
+				config: { pairs: pairsBidirectionalBxym, reverseCount: 2 },
+				expected: { source: swapSideSymbolXym, target: swapSideEthereumBxym }
+			},
+			{
+				description: 'keeps the selection when no reversed route exists',
+				config: { pairs: pairsSingleBxym, reverseCount: 1 },
+				expected: { source: swapSideSymbolXym, target: swapSideEthereumBxym }
+			},
+			{
+				description: 'falls back to the first pair source when the target cannot be a source',
+				config: { pairs: pairsEthToXymFirst, reverseCount: 1 },
+				expected: { source: swapSideEthereumEth, target: swapSideSymbolXym }
+			},
+			{
+				description: 'falls back to the first target of the new source when the old source is not among its targets',
+				config: { pairs: pairsXymToEthToBxym, reverseCount: 1 },
+				expected: { source: swapSideEthereumEth, target: swapSideEthereumBxym }
 			}
 		];
 
