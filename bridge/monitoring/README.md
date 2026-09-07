@@ -120,7 +120,10 @@ deposits are only acted on once finalized.
 Most often the vault came up sealed after a restart; unseal it. Otherwise check reachability and
 whether it is in standby. The metric's zero covers unreachable, sealed, standby and uninitialized
 alike, so it does not tell you which of them you are looking at. Nothing is signed until this
-clears, so both legs stop paying out.
+clears, so both legs stop paying out. Both the vault and the price oracle are read at the top of
+every payout run, so either one failing stops payouts within minutes, well before
+`BridgePayoutsNotConfirming` would notice; that is why these two hold for less time than the alerts
+downstream of them.
 
 ### BridgePriceOracleUnavailable
 
@@ -134,13 +137,6 @@ one gunicorn worker, which is why the rule waits fifteen minutes rather than fir
 The bridge could not read its balance from this node, so on this leg it can neither see new
 deposits nor pay out. Check the node itself, its certificate and anything in front of it. The
 `endpoint` label names the exact URL from configuration.
-
-### BridgeNodeUnreliable
-
-The node answers intermittently. Look at `avg_over_time(bridge_node_up[6h])` for the shape of it,
-then at the node's own logs, since an overloaded or partially synced node behaves this way. It
-delays deposits and makes payouts retry needlessly, without ever tripping `BridgeNodeUnavailable`,
-whose `for` window is reset by every successful read.
 
 ### BridgeChainStalled
 
@@ -158,20 +154,15 @@ participation; on NEM this rule tracks the chain itself, since there is no real 
 The downloader for this leg has stopped reading blocks while the chain kept finalizing them, so
 deposits arriving now will not become requests at all. Check the flow container: it runs the
 workflows in a loop and exits on the first error, so a failure that repeats leaves it restarting and
-the height frozen. `bridge_processed_height` is the marker the downloader writes after every scan,
-whether or not the range held any requests, which is why it separates a dead downloader from a
-bridge nobody is using. The request metrics cannot, since both look like zeros.
+the height frozen. `network="native"` is the wrap downloader and `network="wrapped"` the unwrap one;
+compare `bridge_processed_height` against `blockchain_finalized_height` there to see how far behind
+it is.
 
-Requests are downloaded from the network opposite the one they are paid out on, so
-`network="native"` is the wrap downloader and `network="wrapped"` the unwrap one. Compare
-`bridge_processed_height` against `blockchain_finalized_height` on that leg to see how far behind it
-is; the rule itself turns on movement rather than on the size of the gap, since a
-`finalization_lookahead` puts the downloader ahead of finalization and makes the gap negative.
-
-Two things the rule deliberately does not fire on. The first is a height of zero, which means a
-downloader that never ran at all: swap mode has no unwrap leg, and `nativeflow` never invokes it.
-The second is a chain that is not finalizing, which is `BridgeFinalizationStalled` and would
-otherwise page twice.
+It stays quiet for a downloader that never ran, which sits at zero, and for a chain that is not
+finalizing, which is `BridgeFinalizationStalled`. Its three numbers are related: the wait sits in
+`for` rather than in the flatness range, since a range is flat over whatever samples it has, and the
+guard's range has to stay under the flatness range plus the hold, or a chain that stops finalizing
+trips this rule before the guard silences it.
 
 ### BridgeVaultTokenExpiring
 
@@ -190,6 +181,11 @@ nothing to read and stays silent.
 
 Top up the bridge account on the wrapped network. This is the float wrap payouts come out of; it is
 pre-funded by hand rather than minted, so a stretch of one-way traffic drains it.
+
+The rule selects "the wrapped balance that is not ETH". That names the bridged token exactly while
+the wrapped leg is ethereum, which is the case for every bridge deployed so far. A wrapped leg on
+symbol or nem would need a rule of its own: there the same selector also matches the currency the
+fees are paid in, and it would be judged against the float's threshold.
 
 ### BridgeEthereumGasLow
 

@@ -1,11 +1,6 @@
 groups:
   - name: bridge-symptoms
     rules:
-      # the metric is a standing count, so alerting on "> 0" would keep firing forever for a failure
-      # that was looked at and deliberately left alone - which ends in a permanent silence that also
-      # hides the next one. alert on new failures instead and keep the standing count on a dashboard.
-      # the window is long enough to survive a night, so it needs a longer repeat_interval in
-      # alertmanager than the other critical alerts
       - alert: BridgeRequestsFailedPermanently
         expr: delta(bridge_requests_failed_permanent[12h]) > 0
         for: 5m
@@ -35,8 +30,6 @@ groups:
 
   - name: bridge-causes
     rules:
-      # the vault and the oracle are read at the top of every payout run, so either one failing
-      # stops payouts within minutes - well before BridgePayoutsNotConfirming would notice
       - alert: BridgeVaultUnavailable
         expr: bridge_vault_up == 0
         for: 5m
@@ -64,15 +57,6 @@ groups:
           summary: "{{ $labels.bridge }}: the {{ $labels.network }} node is not answering ({{ $labels.endpoint }})"
           runbook_url: https://github.com/symbol/product/blob/dev/bridge/monitoring/README.md#bridgenodeunavailable
 
-      - alert: BridgeNodeUnreliable
-        expr: avg_over_time(bridge_node_up[30m]) < 0.9
-        for: 10m
-        labels:
-          severity: warning
-        annotations:
-          summary: "{{ $labels.bridge }}: the {{ $labels.network }} node answered {{ $value | humanizePercentage }} of reads ({{ $labels.endpoint }})"
-          runbook_url: https://github.com/symbol/product/blob/dev/bridge/monitoring/README.md#bridgenodeunreliable
-
       - alert: BridgeChainStalled
         expr: changes(blockchain_height[15m]) == 0
         for: 5m
@@ -91,15 +75,6 @@ groups:
           summary: "{{ $labels.bridge }}: {{ $labels.network }} finalization has not advanced for 45 minutes"
           runbook_url: https://github.com/symbol/product/blob/dev/bridge/monitoring/README.md#bridgefinalizationstalled
 
-      # every request metric describes what was already downloaded, so a downloader that stopped looks
-      # exactly like a bridge nobody is using: zeros and flat lines in both cases. the processed
-      # height is written after every scan whether or not the range held requests, which is what
-      # makes the stall visible. the second line skips a downloader that never ran, which sits at
-      # zero forever, and the third leaves a chain that stopped finalizing to BridgeFinalizationStalled.
-      # the wait is in "for" rather than in the range because a range is flat over the samples it
-      # has, so it is also flat a minute after a series appears. the third line's range has to stay
-      # under the range plus the hold that precede it, or a chain that stops finalizing trips this
-      # rule during the minutes before its own guard catches up
       - alert: BridgeRequestDownloadStalled
         expr: |
           changes(bridge_processed_height[15m]) == 0
@@ -141,12 +116,6 @@ groups:
           summary: "{{ $labels.bridge }}: wrapped balance down to {{ $value | printf \"%.0f\" }} {{ $labels.token }}"
           runbook_url: https://github.com/symbol/product/blob/dev/bridge/monitoring/README.md#bridgewrappedbalancelow
 
-      # one balance, two jobs, and the mode decides which: in wrap and stake it only pays gas, since
-      # payouts leave as an ERC-20, while in swap it is the payout float itself and gas comes out of
-      # the same account. one threshold cannot serve both - a float sized number would page a wrap
-      # bridge that is perfectly funded, and a gas sized number reaches a swap bridge long after its
-      # payouts started failing - so the bridge's own mode picks the rule. a bridge that reports no
-      # mode gets the gas rule, which is the one that alerts rather than the one that stays quiet
       - alert: BridgeEthereumGasLow
         expr: |
           bridge_balance{network="wrapped", token="ETH"} / 1e18 < 0.1
@@ -169,8 +138,6 @@ groups:
           summary: "{{ $labels.bridge }}: ethereum payout float down to {{ $value | printf \"%.4f\" }} ETH"
           runbook_url: https://github.com/symbol/product/blob/dev/bridge/monitoring/README.md#bridgeethereumpayoutbalancelow
 
-      # swap mode never pays out on the native leg, so that account only ever accumulates there.
-      # the bridge reports its own mode, which saves every deployment from remembering to drop this
       - alert: BridgeNativeBalanceLow
         expr: |
           bridge_balance{network="native"} / 1e6 < 1000
