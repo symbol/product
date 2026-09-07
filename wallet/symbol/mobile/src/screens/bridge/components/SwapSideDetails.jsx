@@ -17,8 +17,8 @@ import { Colors } from '@/app/styles';
 import { createExplorerTransactionUrl } from '@/app/utils';
 
 /** @typedef {import('@/app/screens/bridge/types/Bridge').SwapSideTypeValue} SwapSideTypeValue */
-/** @typedef {import('@/app/screens/bridge/types/Bridge').ResolvedTokenData} ResolvedTokenData */
-/** @typedef {import('@/app/screens/bridge/types/Bridge').ResolvedAccountData} ResolvedAccountData */
+/** @typedef {import('@/app/screens/bridge/types/ViewModel').ResolvedTokenData} ResolvedTokenData */
+/** @typedef {import('@/app/screens/bridge/types/ViewModel').ResolvedAccountData} ResolvedAccountData */
 /** @typedef {import('@/app/types/Network').NetworkIdentifier} NetworkIdentifier */
 /** @typedef {import('@/app/types/Network').ChainName} ChainName */
 

@@ -5,8 +5,8 @@ import { Image, StyleSheet, TouchableOpacity, View } from 'react-native';
 import Animated, { FadeInDown, FadeInUp, FadeOutDown, FadeOutUp } from 'react-native-reanimated'; // eslint-disable-line import/order
 
 /** @typedef {import('@/app/screens/bridge/types/Bridge').SwapSide} SwapSide */
-/** @typedef {import('@/app/screens/bridge/types/Bridge').SwapSideOption} SwapSideOption */
-/** @typedef {import('@/app/screens/bridge/types/Bridge').SwapSelectorViewModel} SwapSelectorViewModel */
+/** @typedef {import('@/app/screens/bridge/types/ViewModel').SwapSideOption} SwapSideOption */
+/** @typedef {import('@/app/screens/bridge/types/ViewModel').SwapSelectorViewModel} SwapSelectorViewModel */
 
 const ICON_SWAP_REVERSE = require('@/app/assets/images/components/swap-reverse.png');
 const REVERSE_BUTTON_SIZE = Sizes.Semantic.spacing.m * 5;
