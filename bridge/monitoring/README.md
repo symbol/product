@@ -82,9 +82,8 @@ pending indefinitely.
 
 The threshold follows the payout network, which is the wrapped leg for wrapping and the native one
 for unwrapping. A payout stays in `SENT` until it is *finalized*, not merely included, so an hour
-suits Ethereum and Symbol but not NEM: lightapi reports its finalized height as a fixed 360 blocks
-behind the chain, about six hours at a one minute block time, so a NEM payout leg needs this
-threshold raised by hand.
+suits Ethereum and Symbol. NEM reports its finalized height 360 blocks behind the chain and will
+need this threshold adjusted.
 
 ### BridgeDepositsNotProcessing
 
@@ -169,10 +168,8 @@ fees are paid in, and it would be judged against the float's threshold.
 
 Top up the ETH balance. This is the wrap and stake version of the rule, where ETH only pays
 transaction fees, since payouts leave as an ERC-20 that `BridgeWrappedBalanceLow` watches. A
-threshold sized for a few days of gas is enough.
-
-It excludes swap bridges by their own `bridge_info{mode="swap"}`, and a bridge that reports no mode
-still gets this rule: of the two, it is the one that alerts rather than the one that stays quiet.
+threshold sized for a few days of gas is enough. It excludes swap bridges by their own
+`bridge_info{mode="swap"}`.
 
 ### BridgeEthereumPayoutBalanceLow
 
