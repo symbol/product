@@ -721,7 +721,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 					transaction_id=f'namespace-{index}',
 					type=TransactionType.NAMESPACE_REGISTRATION.value,
 					id=namespace_id)
-				for index, namespace_id in enumerate(namespace_ids[MAX_PAGE_SIZE:], MAX_PAGE_SIZE)
+				for index, namespace_id in enumerate(namespace_ids[MAX_PAGE_SIZE:], start=MAX_PAGE_SIZE)
 			], page_number=2)},
 			namespace_by_id={
 				namespace_id: create_namespace_item(namespace_id=namespace_id, root_id=namespace_id)

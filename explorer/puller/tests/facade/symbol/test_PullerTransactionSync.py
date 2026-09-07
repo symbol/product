@@ -94,13 +94,24 @@ class ResolutionConcurrencyConnector(FakeConnector):
 class TransactionPageConcurrencyConnector(FakeConnector):  # pylint: disable=too-many-instance-attributes
 	"""Tracks transaction-page overlap and deterministically gates individual pages."""
 
-	def __init__(self, *args, gated_pages=(), failed_page=None, cleanup_failure_page=None, **kwargs):
+	def __init__(
+		self,
+		*args,
+		gated_pages=(),
+		failed_page=None,
+		cleanup_failure_page=None,
+		cleanup_hold_page=None,
+		**kwargs
+	):
 		super().__init__(*args, **kwargs)
 		self.failed_page = failed_page
 		self.cleanup_failure_page = cleanup_failure_page
+		self.cleanup_hold_page = cleanup_hold_page
 		self.page_release_events = {page: asyncio.Event() for page in gated_pages}
 		self.page_started_events = {page: asyncio.Event() for page in gated_pages}
 		self.page_completed_events = {page: asyncio.Event() for page in gated_pages}
+		self.cleanup_hold_started = asyncio.Event()
+		self.cleanup_hold_release = asyncio.Event()
 		self.active_transaction_requests = 0
 		self.max_transaction_requests = 0
 		self.started_pages = []
@@ -121,6 +132,12 @@ class TransactionPageConcurrencyConnector(FakeConnector):  # pylint: disable=too
 
 	def release_page(self, page_number):
 		self.page_release_events[page_number].set()
+
+	async def wait_for_cleanup_hold_started(self):
+		await asyncio.wait_for(self.cleanup_hold_started.wait(), CONCURRENCY_TEST_TIMEOUT_SECONDS)
+
+	def release_cleanup_hold(self):
+		self.cleanup_hold_release.set()
 
 	async def fetch_serial_pages(self, fetch_operation, page_numbers):
 		fetch_task = asyncio.create_task(fetch_operation())
@@ -172,6 +189,9 @@ class TransactionPageConcurrencyConnector(FakeConnector):  # pylint: disable=too
 			return response
 		except asyncio.CancelledError as cancellation_error:
 			self.cancelled_pages.append(page_number)
+			if page_number == self.cleanup_hold_page:
+				self.cleanup_hold_started.set()
+				await asyncio.wait_for(self.cleanup_hold_release.wait(), CONCURRENCY_TEST_TIMEOUT_SECONDS)
 			if page_number == self.cleanup_failure_page:
 				raise RuntimeError(f'transaction page {page_number} cleanup failed') from cancellation_error
 			raise
@@ -229,6 +249,37 @@ class SymbolPullerTransactionSyncTest(SymbolPullerTestBase):
 
 		# Assert:
 		self.assertEqual([transaction_path(1, 1)], connector.paths)
+
+	def _assert_sync_rejects_transaction_count(self, connector, error_message):
+		# Act / Assert:
+		self._assert_sync_rejects_node_response(connector, ValueError, error_message)
+		self.assertEqual([], [path for path in connector.paths if path.startswith('statements/')])
+		self.assertEqual([], [path for path in connector.paths if path.startswith('account')])
+		self.assertEqual([], [path for path in connector.paths if path.startswith('metadata?')])
+		self.assertEqual([], [path for path in connector.paths if path.startswith('namespaces/')])
+		self.assertEqual([], [path for path in connector.paths if path == 'mosaics'])
+		self.assertEqual([], [path for path in connector.paths if path.startswith('lock/')])
+		self.assertEqual([], [path for path in connector.paths if path.startswith('restrictions/')])
+		self.assertEqual({
+			'symbol_transactions': [],
+			'symbol_transaction_mosaics': [],
+			'symbol_transaction_addresses': [],
+			'symbol_receipts': [],
+			'symbol_accounts': [],
+			'symbol_account_mosaics': [],
+			'symbol_multisig': [],
+			'symbol_namespaces': [],
+			'symbol_alias_names': [],
+			'symbol_mosaics': [],
+			'symbol_metadata': [],
+			'symbol_hash_locks': [],
+			'symbol_secret_locks': [],
+			'symbol_mosaic_restrictions': []
+		}, {
+			table_name: rows
+			for table_name, rows in self._fetch_complete_batch_state().items()
+			if table_name not in ('symbol_blocks', 'symbol_sync_state')
+		})
 
 	def test_get_transaction_rows_by_height_requests_exact_pages_at_count_boundaries(self):
 		# Arrange:
@@ -315,38 +366,16 @@ class SymbolPullerTransactionSyncTest(SymbolPullerTestBase):
 			'Malformed Symbol transaction item')
 
 	def test_get_transaction_rows_by_height_rejects_short_intermediate_page(self):
-		# Arrange:
-		items = _create_transfer_items(MAX_PAGE_SIZE - 1)
-		connector = FakeConnector(
-			1,
-			{},
-			transactions_by_path=_create_transaction_pages({1: items}))
-		set_symbol_connector(self.puller, connector)
-
-		# Act:
-		with self.assertRaisesRegex(ValueError, 'Expected 100 transactions on Symbol transaction page 1'):
-			asyncio.run(self.puller._get_transaction_rows_by_height(
-				1, 1, 100, {1: TransactionCountExpectation(MAX_PAGE_SIZE + 1, MAX_PAGE_SIZE + 1)}, 1))  # pylint: disable=protected-access
-
-		# Assert:
-		self.assertEqual([transaction_path(1, 1)], connector.paths)
+		self._assert_transaction_page_rejected(
+			create_transaction_page(_create_transfer_items(MAX_PAGE_SIZE - 1)),
+			MAX_PAGE_SIZE + 1,
+			'Expected 100 transactions on Symbol transaction page 1')
 
 	def test_get_transaction_rows_by_height_rejects_page_larger_than_requested_page_size(self):
-		# Arrange:
-		items = _create_transfer_items(MAX_PAGE_SIZE + 1)
-		connector = FakeConnector(
-			1,
-			{},
-			transactions_by_path=_create_transaction_pages({1: items}))
-		set_symbol_connector(self.puller, connector)
-
-		# Act:
-		with self.assertRaisesRegex(ValueError, 'exceeds requested page size'):
-			asyncio.run(self.puller._get_transaction_rows_by_height(
-				1, 1, 100, {1: TransactionCountExpectation(MAX_PAGE_SIZE + 1, MAX_PAGE_SIZE + 1)}, 1))  # pylint: disable=protected-access
-
-		# Assert:
-		self.assertEqual([transaction_path(1, 1)], connector.paths)
+		self._assert_transaction_page_rejected(
+			create_transaction_page(_create_transfer_items(MAX_PAGE_SIZE + 1)),
+			MAX_PAGE_SIZE + 1,
+			'exceeds requested page size')
 
 	def test_get_transaction_rows_by_height_rejects_short_final_page(self):
 		# Arrange:
@@ -762,37 +791,75 @@ class SymbolPullerTransactionSyncTest(SymbolPullerTestBase):
 			[bytes.fromhex('A' * 64), bytes.fromhex('C' * 64)],
 			[row['hash'] for row in rows_by_height[1]])
 
-	def test_cancel_transaction_page_workers_awaits_cleanup_when_cancelled(self):
-		async def run_cancelled_cleanup():
-			# Arrange:
-			worker_cancelled = asyncio.Event()
-			release_worker = asyncio.Event()
+	def test_sync_block_headers_awaits_cancelled_transaction_page_cleanup(self):
+		# Arrange:
+		items = _create_transfer_items(MAX_PAGE_SIZE * 2 + 1)
+		connector = TransactionPageConcurrencyConnector(
+			1,
+			{0: [create_node_block(
+				1,
+				transactions_count=MAX_PAGE_SIZE * 2 + 1,
+				total_transactions_count=MAX_PAGE_SIZE * 2 + 1)]},
+			transactions_by_path=_create_transaction_pages({
+				1: items[:MAX_PAGE_SIZE],
+				2: items[MAX_PAGE_SIZE:MAX_PAGE_SIZE * 2],
+				3: items[MAX_PAGE_SIZE * 2:]
+			}),
+			gated_pages=(2, 3),
+			failed_page=2,
+			cleanup_hold_page=3)
+		set_symbol_connector(self.puller, connector)
 
-			async def worker_body():
-				try:
-					await asyncio.wait_for(asyncio.Event().wait(), CONCURRENCY_TEST_TIMEOUT_SECONDS)
-				except asyncio.CancelledError:
-					worker_cancelled.set()
-					await asyncio.wait_for(release_worker.wait(), CONCURRENCY_TEST_TIMEOUT_SECONDS)
-					raise
+		async def sync_with_cancelled_cleanup():
+			sync_task = asyncio.create_task(self.puller.sync_block_headers())
+			try:
+				await connector.wait_for_started(2, 3)
+				connector.release_page(2)
+				await connector.wait_for_cleanup_hold_started()
 
-			worker = asyncio.create_task(worker_body())
-			cleanup_task = asyncio.create_task(self.puller._cancel_transaction_page_workers([worker]))  # pylint: disable=protected-access
-			await asyncio.wait_for(worker_cancelled.wait(), CONCURRENCY_TEST_TIMEOUT_SECONDS)
+				# Act:
+				sync_task.cancel()
+				probe_event = asyncio.Event()
+				asyncio.get_running_loop().call_soon(probe_event.set)
+				await asyncio.wait_for(probe_event.wait(), CONCURRENCY_TEST_TIMEOUT_SECONDS)
 
-			# Act:
-			cleanup_task.cancel()
-			release_worker.set()
-			await cleanup_task
+				# Assert:
+				self.assertEqual(False, sync_task.done())
+				connector.release_cleanup_hold()
+				with self.assertRaisesRegex(ValueError, 'transaction page 2 failed'):
+					await sync_task
+			finally:
+				connector.release_page(2)
+				connector.release_cleanup_hold()
+				if not sync_task.done():
+					sync_task.cancel()
+				await asyncio.gather(sync_task, return_exceptions=True)
 
-			# Assert:
-			return worker.done()
-
-		# Act:
-		cleanup_completed = asyncio.run(run_cancelled_cleanup())
+		asyncio.run(sync_with_cancelled_cleanup())
 
 		# Assert:
-		self.assertEqual(True, cleanup_completed)
+		self.assertEqual([3], connector.cancelled_pages)
+		self.assertEqual(0, connector.active_transaction_requests)
+		self.assertEqual([], self._fetch_block_heights(self.puller.symbol_db))
+		self.assertIsNone(self.puller.symbol_db.get_sync_state())
+		self.assertEqual({
+			'symbol_blocks': [],
+			'symbol_transactions': [],
+			'symbol_transaction_mosaics': [],
+			'symbol_transaction_addresses': [],
+			'symbol_receipts': [],
+			'symbol_accounts': [],
+			'symbol_account_mosaics': [],
+			'symbol_multisig': [],
+			'symbol_namespaces': [],
+			'symbol_alias_names': [],
+			'symbol_mosaics': [],
+			'symbol_metadata': [],
+			'symbol_hash_locks': [],
+			'symbol_secret_locks': [],
+			'symbol_mosaic_restrictions': [],
+			'symbol_sync_state': []
+		}, self._fetch_complete_batch_state())
 
 	def test_get_transaction_rows_by_height_stops_after_short_page_when_unfinalized(self):
 		# Arrange:
@@ -1056,20 +1123,9 @@ class SymbolPullerTransactionSyncTest(SymbolPullerTestBase):
 					create_node_transaction(1, transaction_hash='B' * 64)
 				])
 			})
-		set_symbol_connector(self.puller, connector)
-
-		# Act:
-		with self.assertRaisesRegex(ValueError, 'Expected 1 top-level Symbol transactions at height 1, received 2'):
-			asyncio.run(self.puller.sync_block_headers())
-
-		# Assert:
-		self.assertEqual([], self._fetch_block_heights(self.puller.symbol_db))
-		self.assertIsNone(self.puller.symbol_db.get_sync_state())
-		self.assertEqual([], [path for path in connector.paths if path.startswith('statements/')])
-		self.assertEqual([], [path for path in connector.paths if path.startswith('statements/resolutions/')])
-		self.assertEqual([], [path for path in connector.paths if path.startswith('account')])
-		self.assertEqual([], [path for path in connector.paths if path.startswith('accounts')])
-		self.assertTrue(all(not rows for rows in self._fetch_complete_batch_state().values()))
+		self._assert_sync_rejects_transaction_count(
+			connector,
+			'Expected 1 top-level Symbol transactions at height 1, received 2')
 
 	def test_sync_block_headers_rejects_transaction_count_mismatch_before_related_fetches(self):
 		# Arrange:
@@ -1087,18 +1143,9 @@ class SymbolPullerTransactionSyncTest(SymbolPullerTestBase):
 					create_node_transaction(1, transaction_hash='E' * 64, transaction_id='extra')
 				], 2)
 			})
-		set_symbol_connector(self.puller, connector)
-
-		# Act:
-		with self.assertRaisesRegex(ValueError, 'Expected 100 Symbol transactions, received 101'):
-			asyncio.run(self.puller.sync_block_headers())
-
-		# Assert:
-		self.assertEqual([], self._fetch_block_heights(self.puller.symbol_db))
-		self.assertIsNone(self.puller.symbol_db.get_sync_state())
-		self.assertEqual([], [path for path in connector.paths if path.startswith('statements/')])
-		self.assertEqual([], [path for path in connector.paths if path.startswith('account')])
-		self.assertEqual([], [path for path in connector.paths if path.startswith('accounts')])
+		self._assert_sync_rejects_transaction_count(
+			connector,
+			'Expected 100 Symbol transactions, received 101')
 
 	def test_sync_block_headers_rejects_transaction_count_deficit_after_unfinalized_terminator(self):
 		# Arrange:
@@ -1114,19 +1161,13 @@ class SymbolPullerTransactionSyncTest(SymbolPullerTestBase):
 				transaction_path(1, 1): create_transaction_page(items),
 				transaction_path(1, 1, 2): create_transaction_page([], 2)
 			})
-		set_symbol_connector(self.puller, connector)
-
-		# Act:
-		with self.assertRaisesRegex(ValueError, 'Expected 101 Symbol transactions, received 100'):
-			asyncio.run(self.puller.sync_block_headers())
-
-		# Assert:
+		self._assert_sync_rejects_transaction_count(
+			connector,
+			'Expected 101 Symbol transactions, received 100')
 		self.assertEqual([
 			transaction_path(1, 1),
 			transaction_path(1, 1, 2)
 		], connector.paths[-2:])
-		self.assertEqual([], self._fetch_block_heights(self.puller.symbol_db))
-		self.assertIsNone(self.puller.symbol_db.get_sync_state())
 
 
 class SymbolPullerTransactionAliasResolutionTest(SymbolPullerTestBase):

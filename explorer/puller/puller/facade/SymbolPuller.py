@@ -780,8 +780,8 @@ class SymbolPuller:  # pylint: disable=too-many-instance-attributes
 					start_height,
 					end_height,
 					expected_total,
-					page_count,
-					page_results)
+					end_page_number=page_count,
+					page_results=page_results)
 		else:
 			page_number = 1
 			while len(page_results[page_number]) == MAX_PAGE_SIZE:
@@ -871,47 +871,35 @@ class SymbolPuller:  # pylint: disable=too-many-instance-attributes
 		start_height,
 		end_height,
 		expected_total,
-		page_count,
+		end_page_number,
 		page_results
 	):
 		next_page_number = 2
 		allocation_lock = asyncio.Lock()
-		first_exception = None
-		exception_lock = asyncio.Lock()
 
 		async def fetch_pages():
-			nonlocal next_page_number, first_exception
+			nonlocal next_page_number
 			while True:
 				async with allocation_lock:
-					if next_page_number > page_count:
+					if next_page_number > end_page_number:
 						return
 					page_number = next_page_number
 					next_page_number += 1
 
-				try:
-					items = await self._get_transaction_page(start_height, end_height, page_number)
-					self._validate_transaction_page_count(
-						items,
-						page_number,
-						self._expected_transaction_page_size(expected_total, page_number))
-					page_results[page_number] = items
-				except BaseException as exception:  # pylint: disable=broad-exception-caught
-					async with exception_lock:
-						if first_exception is None:
-							first_exception = exception
-					raise
+				items = await self._get_transaction_page(start_height, end_height, page_number)
+				self._validate_transaction_page_count(
+					items,
+					page_number,
+					self._expected_transaction_page_size(expected_total, page_number))
+				page_results[page_number] = items
 
-		worker_count = min(TRANSACTION_PAGE_FETCH_CONCURRENCY, page_count - 1)
+		worker_count = min(TRANSACTION_PAGE_FETCH_CONCURRENCY, end_page_number - 1)
 		workers = [asyncio.create_task(fetch_pages()) for _ in range(worker_count)]
-		primary_exception = None
 		try:
 			await asyncio.gather(*workers)
-		except BaseException as exception:  # pylint: disable=broad-exception-caught
-			primary_exception = first_exception or exception
-
-		if primary_exception is not None:
+		except BaseException:  # pylint: disable=broad-exception-caught
 			await self._cancel_transaction_page_workers(workers)
-			raise primary_exception
+			raise
 
 	@staticmethod
 	async def _cancel_transaction_page_workers(workers):
@@ -920,6 +908,9 @@ class SymbolPuller:  # pylint: disable=too-many-instance-attributes
 				worker.cancel()
 
 		cleanup = asyncio.gather(*workers, return_exceptions=True)
+		# Preserve the original page-fetch exception by draining workers despite one cancellation during cleanup.
+		# Retry the shielded wait once; another cancellation during that retry propagates instead,
+		# so worker collection is not guaranteed under repeated cancellation.
 		try:
 			await asyncio.shield(cleanup)
 		except asyncio.CancelledError:

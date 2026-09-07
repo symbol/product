@@ -92,6 +92,26 @@ def _expected_block_row(node_block, height, **overrides):
 
 
 class BlockTest(TestCase):
+	def _assert_can_create_block_row_with_transaction_counts(
+		self,
+		transactions_count,
+		total_transactions_count,
+		expected_transactions_count,
+		expected_total_transactions_count
+	):
+		# Arrange:
+		node_block = _create_node_block(
+			7,
+			transactions_count=transactions_count,
+			total_transactions_count=total_transactions_count)
+
+		# Act:
+		row = create_block_row(node_block, 100, Network.TESTNET)
+
+		# Assert:
+		self.assertEqual(expected_transactions_count, row['transactions_count'])
+		self.assertEqual(expected_total_transactions_count, row['total_transactions_count'])
+
 	def _assert_rejects_transaction_counts(self, transactions_count, total_transactions_count, error_message):
 		# Arrange:
 		node_block = _create_node_block(
@@ -166,37 +186,13 @@ class BlockTest(TestCase):
 			create_block_row(node_block, 100, Network.TESTNET)
 
 	def test_create_block_row_accepts_zero_transaction_counts(self):
-		# Arrange:
-		node_block = _create_node_block(7, transactions_count=0, total_transactions_count=0)
-
-		# Act:
-		row = create_block_row(node_block, 100, Network.TESTNET)
-
-		# Assert:
-		self.assertEqual(0, row['transactions_count'])
-		self.assertEqual(0, row['total_transactions_count'])
+		self._assert_can_create_block_row_with_transaction_counts(0, 0, 0, 0)
 
 	def test_create_block_row_accepts_equal_positive_transaction_counts(self):
-		# Arrange:
-		node_block = _create_node_block(7, transactions_count=7, total_transactions_count=7)
-
-		# Act:
-		row = create_block_row(node_block, 100, Network.TESTNET)
-
-		# Assert:
-		self.assertEqual(7, row['transactions_count'])
-		self.assertEqual(7, row['total_transactions_count'])
+		self._assert_can_create_block_row_with_transaction_counts(7, 7, 7, 7)
 
 	def test_create_block_row_preserves_transaction_counts_above_int4_range(self):
-		# Arrange:
-		node_block = _create_node_block(7, transactions_count=2147483648, total_transactions_count=2147483649)
-
-		# Act:
-		row = create_block_row(node_block, 100, Network.TESTNET)
-
-		# Assert:
-		self.assertEqual(2147483648, row['transactions_count'])
-		self.assertEqual(2147483649, row['total_transactions_count'])
+		self._assert_can_create_block_row_with_transaction_counts(2147483648, 2147483649, 2147483648, 2147483649)
 
 	def test_create_block_row_rejects_missing_transactions_count(self):
 		# Arrange:
