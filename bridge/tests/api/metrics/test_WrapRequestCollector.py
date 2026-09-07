@@ -91,6 +91,16 @@ def _age(registry, name, direction):
 	return registry.get_sample_value(name, {'direction': direction})
 
 
+def _processed_height(registry, network):
+	return registry.get_sample_value('bridge_processed_height', {'network': network})
+
+
+def _seed_processed_heights(directory, wrap_height, unwrap_height):
+	with Databases(directory, MockNemNetworkFacade(), MockSymbolNetworkFacade()) as databases:
+		databases.wrap_request.set_max_processed_height(wrap_height)
+		databases.unwrap_request.set_max_processed_height(unwrap_height)
+
+
 async def test_aggregate_counters_for_a_database_with_permanent_failures(database_directory):
 	# pylint: disable=redefined-outer-name
 	# Arrange: the seed marks two of its five requests as permanently failed, retries none of them, and writes
@@ -252,3 +262,26 @@ async def test_oldest_sent_age_is_omitted_for_an_idle_bridge(database_directory)
 	# Assert: a missing sample keeps an idle bridge off the alert, where zero would put it on
 	for direction in ('wrap', 'unwrap'):
 		assert _age(registry, 'bridge_oldest_sent_age_seconds', direction) is None, direction
+
+
+async def test_processed_height_is_reported_for_the_network_requests_are_read_from(database_directory):
+	# pylint: disable=redefined-outer-name
+	# Arrange: wrap requests are downloaded from the native network, unwrap requests from the wrapped one
+	_seed_processed_heights(database_directory, 1234, 5678)
+
+	# Act:
+	registry = await _collect(database_directory)
+
+	# Assert:
+	assert 1234 == _processed_height(registry, 'native')
+	assert 5678 == _processed_height(registry, 'wrapped')
+
+
+async def test_processed_height_is_zero_for_a_bridge_that_downloaded_nothing(database_directory):
+	# pylint: disable=redefined-outer-name
+	# Act: nothing was seeded into either database
+	registry = await _collect(database_directory)
+
+	# Assert: zero is a real state - it says the bridge has not read a single block yet
+	assert 0 == _processed_height(registry, 'native')
+	assert 0 == _processed_height(registry, 'wrapped')

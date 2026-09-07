@@ -1,3 +1,4 @@
+from bridge.api.metrics.BridgeInfoCollector import BridgeInfoCollector
 from bridge.api.metrics.ChainCollector import ChainCollector
 from bridge.api.metrics.MetricsLoader import load_collectors
 from bridge.api.metrics.PriceOracleCollector import PriceOracleCollector
@@ -6,10 +7,10 @@ from bridge.api.metrics.WrapRequestCollector import WrapRequestCollector
 
 # pylint: disable=invalid-name
 
-# collectors that read remote endpoints and are given a timeout; WrapRequestCollector reads local databases, so it is not among them
+# collectors that read remote endpoints and are given a timeout; the others read local databases or configuration
 TIMEOUT_AWARE_COLLECTOR_TYPES = {ChainCollector, PriceOracleCollector, VaultCollector}
 
-ALL_COLLECTOR_TYPES = TIMEOUT_AWARE_COLLECTOR_TYPES | {WrapRequestCollector}
+ALL_COLLECTOR_TYPES = TIMEOUT_AWARE_COLLECTOR_TYPES | {BridgeInfoCollector, WrapRequestCollector}
 
 
 def _map_collectors_by_type(collectors):
