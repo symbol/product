@@ -1,6 +1,6 @@
 /**
  * Lifecycle status of an async action.
- * @typedef {'pending' | 'loading' | 'completed' | 'error'} ActionStatus
+ * @typedef {'pending' | 'loading' | 'complete' | 'error'} ActionStatus
  */
 
 /**
