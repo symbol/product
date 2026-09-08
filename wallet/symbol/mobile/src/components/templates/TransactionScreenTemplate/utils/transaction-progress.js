@@ -84,30 +84,30 @@ const createStatusInfo = status => {
 	return infoMap[status] ?? unknownStatus;
 };
 
-const createActionStatus = (status, errorMessage = null) => ({
+const createActionState = (status, errorMessage = null) => ({
 	status,
 	errorMessage
 });
 
-const getActionStatusFromAsyncManager = asyncManager => {
+const getActionStateFromAsyncManager = asyncManager => {
 	if (asyncManager.isLoading)
-		return createActionStatus(ActivityStatus.LOADING);
+		return createActionState(ActivityStatus.LOADING);
 
 	if (asyncManager.error)
-		return createActionStatus(ActivityStatus.ERROR, asyncManager.error.message);
+		return createActionState(ActivityStatus.ERROR, asyncManager.error.message);
 
 	if (asyncManager.isCompleted)
-		return createActionStatus(ActivityStatus.COMPLETE);
+		return createActionState(ActivityStatus.COMPLETE);
 
-	return createActionStatus(ActivityStatus.PENDING);
+	return createActionState(ActivityStatus.PENDING);
 };
 
 /**
  * Parameters for building the transaction workflow activity log.
  * @typedef {object} BuildActivityLogParams
- * @property {ActionState} createStatus - Current status of the transaction creation step.
- * @property {ActionState} signStatus - Current status of the transaction signing step.
- * @property {ActionState} announceStatus - Current status of the transaction announcement step.
+ * @property {ActionState} createState - Current state of the transaction creation step.
+ * @property {ActionState} signState - Current state of the transaction signing step.
+ * @property {ActionState} announceState - Current state of the transaction announcement step.
  * @property {boolean} isAllTransactionsConfirmed - Whether all transactions in the bundle have been confirmed on the network.
  * @property {boolean} hasFailedTransactions - Whether any transactions in the bundle were rejected by the network.
  */
@@ -118,14 +118,14 @@ const getActionStatusFromAsyncManager = asyncManager => {
  * @returns {ActivityLogItem[]} Array of activity log steps representing the complete transaction workflow.
  */
 const buildActivityLog = ({
-	createStatus,
-	signStatus,
-	announceStatus,
+	createState,
+	signState,
+	announceState,
 	isAllTransactionsConfirmed,
 	hasFailedTransactions
 }) => {
 	const getConfirmStatus = () => {
-		const isAllTransactionsAnnounced = announceStatus.status === ActivityStatus.COMPLETE;
+		const isAllTransactionsAnnounced = announceState.status === ActivityStatus.COMPLETE;
 
 		if (isAllTransactionsAnnounced && isAllTransactionsConfirmed)
 			return ActivityStatus.COMPLETE;
@@ -143,20 +143,20 @@ const buildActivityLog = ({
 		{
 			title: $t('c_transactionStatus_step_create'),
 			icon: 'plus',
-			status: createStatus.status,
-			caption: createStatus.errorMessage ?? ''
+			status: createState.status,
+			caption: createState.errorMessage ?? ''
 		},
 		{
 			title: $t('c_transactionStatus_step_sign'),
 			icon: 'sign',
-			status: signStatus.status,
-			caption: signStatus.errorMessage ?? ''
+			status: signState.status,
+			caption: signState.errorMessage ?? ''
 		},
 		{
 			title: $t('c_transactionStatus_step_announce'),
 			icon: 'send-plane',
-			status: announceStatus.status,
-			caption: announceStatus.errorMessage ?? ''
+			status: announceState.status,
+			caption: announceState.errorMessage ?? ''
 		},
 		{
 			title: $t('c_transactionStatus_step_confirm'),
@@ -177,14 +177,14 @@ const buildActivityLog = ({
  * @returns {TransactionProgressViewModel} View model for the transaction status dialog.
  */
 export const createTransactionProgressViewModel = (workflow, chainName, networkIdentifier) => {
-	const createStatus = getActionStatusFromAsyncManager(workflow.managers.createManager);
-	const signStatus = getActionStatusFromAsyncManager(workflow.managers.signManager);
-	const announceStatus = getActionStatusFromAsyncManager(workflow.managers.announceManager);
+	const createState = getActionStateFromAsyncManager(workflow.managers.createManager);
+	const signState = getActionStateFromAsyncManager(workflow.managers.signManager);
+	const announceState = getActionStateFromAsyncManager(workflow.managers.announceManager);
 
 	const activityLogData = buildActivityLog({
-		createStatus,
-		signStatus,
-		announceStatus,
+		createState,
+		signState,
+		announceState,
 		isAllTransactionsConfirmed: workflow.status === TransactionWorkflowStatus.CONFIRMED,
 		hasFailedTransactions: workflow.status === TransactionWorkflowStatus.FAILED_TRANSACTIONS
 	});

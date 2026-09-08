@@ -57,8 +57,8 @@
  */
 
 /**
- * Swap request status caption display data.
- * @typedef {object} SwapStatusCaptionDisplayData
+ * Swap request caption display data.
+ * @typedef {object} SwapRequestCaptionDisplayData
  * @property {boolean} isVisible - Whether the caption should be visible.
  * @property {string|null} text - Caption text.
  * @property {string|null} textStyle - Text style identifier.
@@ -111,7 +111,7 @@
  * @property {{ chainName: ChainName, imageId: string|null }} target - Target chain and its token avatar.
  * @property {SwapStatusDisplayData|null} status - Payout status; null while the payout status is unknown.
  * @property {{ value: string, ticker: string }|null} amount - Payout amount; null before a payout exists.
- * @property {SwapStatusCaptionDisplayData} caption - Caption under the row.
+ * @property {SwapRequestCaptionDisplayData} caption - Caption under the row.
  * @property {boolean} isPending - Request confirmed, payout not processed yet; the row is highlighted.
  * @property {BridgeRequest|BridgeError} request - Domain item, handed back on press.
  */

@@ -1,5 +1,5 @@
 import { BridgePayoutStatus, BridgeRequestStatus } from '@/app/screens/bridge/types/Bridge';
-import { getSwapStatus, getSwapStatusCaption } from '@/app/screens/bridge/utils/swap-status';
+import { createSwapStatusDisplayData } from '@/app/screens/bridge/utils/swap-status';
 import { mockLocalization } from '__tests__/mock-helpers';
 
 // Screen Text
@@ -9,8 +9,7 @@ const SCREEN_TEXT = {
 	textStatusProcessing: 's_bridge_history_status_processing',
 	textStatusSent: 's_bridge_history_status_sent',
 	textStatusCompleted: 's_bridge_history_status_completed',
-	textStatusFailed: 's_bridge_history_status_failed',
-	textRequestTransactionConfirmed: 's_bridge_history_requestTransactionConfirmed'
+	textStatusFailed: 's_bridge_history_status_failed'
 };
 
 // Icon Names
@@ -30,21 +29,17 @@ const Variant = {
 	DANGER: 'danger'
 };
 
-// Constants
-
-const ERROR_MESSAGE = 'Bridge processing error';
-
 describe('screens/bridge/utils/swap-status', () => {
 	beforeEach(() => {
 		mockLocalization();
 	});
 
-	describe('getSwapStatus', () => {
+	describe('createSwapStatusDisplayData', () => {
 		describe('request status only', () => {
 			const runRequestStatusTest = (description, config, expected) => {
 				it(description, () => {
 					// Act:
-					const result = getSwapStatus(config.requestStatus, config.payoutStatus);
+					const result = createSwapStatusDisplayData(config.requestStatus, config.payoutStatus);
 
 					// Assert:
 					expect(result.variant).toBe(expected.variant);
@@ -87,7 +82,7 @@ describe('screens/bridge/utils/swap-status', () => {
 			const runPayoutStatusTest = (description, config, expected) => {
 				it(description, () => {
 					// Act:
-					const result = getSwapStatus(config.requestStatus, config.payoutStatus);
+					const result = createSwapStatusDisplayData(config.requestStatus, config.payoutStatus);
 
 					// Assert:
 					expect(result.variant).toBe(expected.variant);
@@ -150,73 +145,6 @@ describe('screens/bridge/utils/swap-status', () => {
 			payoutStatusTests.forEach(test => {
 				runPayoutStatusTest(test.description, test.config, test.expected);
 			});
-		});
-	});
-
-	describe('getSwapStatusCaption', () => {
-		const runCaptionTest = (description, config, expected) => {
-			it(description, () => {
-				// Arrange:
-				const data = {
-					requestStatus: config.requestStatus,
-					errorMessage: config.errorMessage
-				};
-
-				// Act:
-				const result = getSwapStatusCaption(data);
-
-				// Assert:
-				expect(result.isVisible).toBe(expected.isVisible);
-				expect(result.text).toBe(expected.text);
-				expect(result.textStyle).toBe(expected.textStyle);
-				expect(result.textType).toBe(expected.textType);
-			});
-		};
-
-		const captionTests = [
-			{
-				description: 'returns confirmed caption when request is confirmed',
-				config: {
-					requestStatus: BridgeRequestStatus.CONFIRMED,
-					errorMessage: null
-				},
-				expected: {
-					isVisible: true,
-					text: SCREEN_TEXT.textRequestTransactionConfirmed,
-					textStyle: 'regular',
-					textType: 'body'
-				}
-			},
-			{
-				description: 'returns error caption with message when request has error',
-				config: {
-					requestStatus: BridgeRequestStatus.ERROR,
-					errorMessage: ERROR_MESSAGE
-				},
-				expected: {
-					isVisible: true,
-					text: ERROR_MESSAGE,
-					textStyle: 'error',
-					textType: 'label'
-				}
-			},
-			{
-				description: 'returns hidden caption when request is unconfirmed',
-				config: {
-					requestStatus: BridgeRequestStatus.UNCONFIRMED,
-					errorMessage: null
-				},
-				expected: {
-					isVisible: false,
-					text: null,
-					textStyle: null,
-					textType: null
-				}
-			}
-		];
-
-		captionTests.forEach(test => {
-			runCaptionTest(test.description, test.config, test.expected);
 		});
 	});
 });
