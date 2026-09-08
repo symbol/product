@@ -87,6 +87,8 @@ groups:
           summary: "{{ $labels.bridge }}: the {{ $labels.network }} request downloader has not advanced for 45 minutes"
           runbook_url: https://github.com/symbol/product/blob/dev/bridge/monitoring/README.md#bridgerequestdownloadstalled
 
+  - name: bridge-capacity
+    rules:
       - alert: BridgeVaultTokenExpiring
         expr: bridge_vault_token_ttl_seconds < 7 * 86400
         for: 30m
@@ -105,8 +107,6 @@ groups:
           summary: "{{ $labels.bridge }}: {{ $value }} price oracle requests left in the monthly quota"
           runbook_url: https://github.com/symbol/product/blob/dev/bridge/monitoring/README.md#bridgepriceoraclequotalow
 
-  - name: bridge-capacity
-    rules:
       - alert: BridgeWrappedBalanceLow
         expr: bridge_balance{network="wrapped", token!="ETH"} / 1e6 < 100000
         for: 15m

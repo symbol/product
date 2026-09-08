@@ -40,8 +40,8 @@ component produced it:
 | Group | Contains | Severity |
 |---|---|---|
 | `bridge-symptoms` | what users feel: requests lost, payouts not confirming, deposits not processing | pages |
-| `bridge-causes` | why it happens: vault, oracle, nodes, chain progress, download progress, expiring token | mostly pages, some tickets |
-| `bridge-capacity` | balances running out; **thresholds are placeholders, set them per deployment** | pages |
+| `bridge-causes` | what is broken right now: vault, oracle, nodes, chain progress, download progress | mostly pages, some tickets |
+| `bridge-capacity` | what runs out if nobody acts: balances, the oracle quota, the vault token; **balance thresholds are placeholders, set them per deployment** | pages |
 
 Point Prometheus at it:
 
@@ -189,7 +189,7 @@ swap mode are excluded automatically, because the rule filters on `bridge_info{m
 the bridge reports about itself, so nobody has to remember to delete this rule for such a
 deployment.
 
-### Which capacity alerts apply
+### Which balance alerts apply
 
 Payouts always come from the account on the network they land on, and those accounts are pre-funded
 by hand. The wrapped supply is backed by deposits on the other leg, but that backing does not move
