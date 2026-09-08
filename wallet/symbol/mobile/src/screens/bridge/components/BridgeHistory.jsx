@@ -21,7 +21,7 @@ const PENDING_COLOR = Colors.Semantic.role.warning.default;
 const FAILED_COLOR = Colors.Semantic.role.danger.default;
 
 /**
- * SwapChains component. Displays the source and target chains with their token avatars.
+ * SwapChains component. Shows the target and source chains alongside their token avatars.
  * @param {object} props - Component props.
  * @param {{ chainName: ChainName, imageId: string|null }} props.source - Source chain display data.
  * @param {{ chainName: ChainName, imageId: string|null }} props.target - Target chain display data.
@@ -54,7 +54,7 @@ const SwapChains = ({ source, target }) => (
 );
 
 /**
- * SwapListItem component. Displays one history row with its status and amount.
+ * SwapListItem component. Shows a single history entry including its amount and status.
  * @param {object} props - Component props.
  * @param {SwapHistoryItem} props.item - The row to display.
  * @param {(item: SwapHistoryItem) => void} props.onPress - Press handler.
@@ -122,7 +122,7 @@ const SwapListItem = ({ item, onPress }) => {
 };
 
 /**
- * BridgeHistory component. Displays the recent swap rows and the page-size note.
+ * BridgeHistory component. Shows the page-size note and recent swap rows.
  * @param {object} props - Component props.
  * @param {SwapHistoryViewModel} props.history - Rows and the page-size note.
  * @param {(item: SwapHistoryItem) => void} props.onItemPress - Row press handler.

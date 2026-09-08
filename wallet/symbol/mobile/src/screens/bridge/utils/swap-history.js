@@ -13,10 +13,10 @@ import { createTokenDisplayData, formatDate } from '@/app/utils';
 /** @typedef {import('@/app/types/Token').TokenInfo} TokenInfo */
 
 /**
- * Resolves the chain label and token avatar of one side of a request.
+ * Creates an object containing chain name and the resolved token icon.
  * @param {ChainName} chainName - The side's chain.
  * @param {TokenInfo} tokenInfo - The side's token.
- * @param {NetworkIdentifier} networkIdentifier - The network identifier.
+ * @param {NetworkIdentifier} networkIdentifier - Network identifier.
  * @returns {{ chainName: ChainName, imageId: string|null }} Side display data.
  */
 const createChainDisplayData = (chainName, tokenInfo, networkIdentifier) => ({
@@ -25,9 +25,9 @@ const createChainDisplayData = (chainName, tokenInfo, networkIdentifier) => ({
 });
 
 /**
- * Resolves the payout amount with its units; null before a payout exists.
+ * Creates the amount display text with a ticker from the swap request.
  * @param {BridgeRequest|BridgeError} request - The history item.
- * @param {NetworkIdentifier} networkIdentifier - The network identifier.
+ * @param {NetworkIdentifier} networkIdentifier - Network identifier.
  * @returns {{ value: string, ticker: string }|null} Amount display data.
  */
 const createAmount = (request, networkIdentifier) => {
@@ -43,9 +43,9 @@ const createAmount = (request, networkIdentifier) => {
 };
 
 /**
- * Builds one history row. Status is null until the bridge reports a payout status.
+ * Creates a single history row.
  * @param {BridgeRequest|BridgeError} request - The history item.
- * @param {NetworkIdentifier} networkIdentifier - The network identifier.
+ * @param {NetworkIdentifier} networkIdentifier - Network identifier.
  * @returns {SwapHistoryItem} The row.
  */
 const createHistoryItem = (request, networkIdentifier) => ({
@@ -62,7 +62,7 @@ const createHistoryItem = (request, networkIdentifier) => ({
 });
 
 /**
- * Builds the swap history view model: one ready row per recent request and the page-size note.
+ * Creates the swap history view model.
  * @param {object} params - Builder parameters.
  * @param {(BridgeRequest|BridgeError)[]} params.history - Recent requests in list order; empty while no route is selected.
  * @param {NetworkIdentifier} params.networkIdentifier - Network of the selected route.

@@ -16,7 +16,7 @@ import { objectToTableData } from '@/app/utils';
  */
 
 /**
- * React hook for creating bridge transactions and generating transaction preview data.
+ * React hook for generating transaction preview data and creating bridge transactions.
  * @param {object} params - Hook parameters.
  * @param {SwapStep[]} params.steps - Steps of the selected route; empty while no route is selected.
  * @param {string} params.amount - The amount to transfer.
@@ -26,7 +26,7 @@ import { objectToTableData } from '@/app/utils';
  */
 export const useBridgeTransaction = ({ steps, amount, estimations, walletController }) => {
 	/**
-	 * Returns the route step at the given index.
+	 * Retrieves the swap step manager by given step index.
 	 * @param {number} stepIndex - Zero-based step index.
 	 * @returns {SwapStep} The route step.
 	 */
@@ -40,8 +40,7 @@ export const useBridgeTransaction = ({ steps, amount, estimations, walletControl
 	};
 
 	/**
-	 * Creates a bridge transaction bundle for the given step. A later step takes the previous step's
-	 * estimated output as its input amount.
+	 * Creates a bridge transaction bundle for the swap step. The estimated output of the previous step used as the input amount for a next step.
 	 * @param {number} [stepIndex=0] - Zero-based step index.
 	 * @returns {Promise<TransactionBundle>} The transaction bundle.
 	 */
@@ -58,8 +57,8 @@ export const useBridgeTransaction = ({ steps, amount, estimations, walletControl
 	};
 
 	/**
-	 * Generates confirmation sections for the transaction confirmation dialog, from a single bundle
-	 * (single-step) or an array of bundles (dual-step).
+	 * Creates confirmation sections for the transaction confirmation dialog. 
+	 * Accepts either an array of bundles for dual-step or a single bundle for single-step.
 	 * @param {TransactionBundle|TransactionBundle[]} transactionBundle - The transaction bundle(s) to preview.
 	 * @returns {TransactionConfirmationDialogSection[]} Confirmation sections.
 	 */

@@ -12,7 +12,7 @@ const ICON_SWAP_REVERSE = require('@/app/assets/images/components/swap-reverse.p
 const REVERSE_BUTTON_SIZE = Sizes.Semantic.spacing.m * 5;
 
 /**
- * TokenItem component. Displays a side option with its avatar, label, chain and balance.
+ * TokenItem component. Shows a side option including its balance, chain, label, and avatar.
  * @param {object} props - Component props.
  * @param {SwapSideOption} props.option - The option to display.
  * @returns {import('react').ReactNode} TokenItem component.
@@ -35,7 +35,7 @@ const TokenItem = ({ option }) => (
 );
 
 /**
- * SelectTokenDropdown component. Dropdown modal for selecting a side option.
+ * SelectTokenDropdown component. Dropdown modal used to select a side option.
  * @param {object} props - Component props.
  * @param {string} props.title - Dropdown title.
  * @param {SwapSideOption} props.value - Currently selected option.
@@ -75,7 +75,7 @@ const SelectTokenDropdown = props => {
 };
 
 /**
- * TokenSelect component. Displays the selected option with tap to change.
+ * TokenSelect component. Shows the chosen option and allows changing it via tap.
  * @param {object} props - Component props.
  * @param {SwapSideOption|null} props.value - Selected option; null renders the empty placeholder.
  * @param {SwapSideOption[]} props.options - Selectable options.
@@ -84,7 +84,7 @@ const SelectTokenDropdown = props => {
  * @returns {import('react').ReactNode} TokenSelect component.
  */
 const TokenSelect = ({ value, options, accessibilityLabel, onChange }) => {
-	// Dropdown visibility state
+	// Visibility state of dropdown
 	const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 	const openDropdown = () => setIsDropdownOpen(true);
 	const closeDropdown = () => setIsDropdownOpen(false);
@@ -110,7 +110,7 @@ const TokenSelect = ({ value, options, accessibilityLabel, onChange }) => {
 };
 
 /**
- * ReverseButton component. Button to swap source and target.
+ * ReverseButton component. Button for swapping the target and source.
  * @param {object} props - Component props.
  * @param {boolean} props.isLoading - Whether swap is loading.
  * @param {() => void} props.onPress - Press handler.
@@ -131,8 +131,7 @@ const ReverseButton = ({ isLoading, onPress }) => {
 };
 
 /**
- * SwapSelector component. Renders the selected sides with their options, and reports selection
- * changes and the reverse action.
+ * SwapSelector component. Displays the swap side tokens and allows to select them from options.
  * @param {object} props - Component props.
  * @param {boolean} props.isLoading - Whether data is loading.
  * @param {SwapSelectorViewModel} props.selector - Selected options and the selectable options.
