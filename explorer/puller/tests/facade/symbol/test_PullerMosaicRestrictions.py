@@ -27,6 +27,7 @@ from .puller_test_utils import (
 	create_node_transaction,
 	create_resolution_statement,
 	create_sync_state,
+	create_transaction_page,
 	set_symbol_connector,
 	transaction_path
 )
@@ -408,16 +409,16 @@ class PullerMosaicRestrictionsSyncIntegrationTest(SymbolPullerTestBase):
 		path = _restriction_path(0, RECIPIENT_ADDRESS)
 		return RestrictionResponseConnector(
 			1,
-			{0: [create_node_block(1)]},
-			transactions_by_path={transaction_path(1, 1): {'data': [self._restriction_transaction()]}},
+			{0: [create_node_block(1, transactions_count=1, total_transactions_count=1)]},
+			transactions_by_path={transaction_path(1, 1): create_transaction_page([self._restriction_transaction()])},
 			restriction_responses={path: response})
 
 	@staticmethod
 	def _create_alias_connector(transaction, response_path, response, address_resolutions=None, mosaic_resolutions=None):
 		return RestrictionResponseConnector(
 			1,
-			{0: [create_node_block(1)]},
-			transactions_by_path={transaction_path(1, 1): {'data': [transaction]}},
+			{0: [create_node_block(1, transactions_count=1, total_transactions_count=1)]},
+			transactions_by_path={transaction_path(1, 1): create_transaction_page([transaction])},
 			address_resolutions_by_height=address_resolutions or {},
 			mosaic_resolutions_by_height=mosaic_resolutions or {},
 			restriction_responses={response_path: response})
@@ -428,8 +429,8 @@ class PullerMosaicRestrictionsSyncIntegrationTest(SymbolPullerTestBase):
 		expected_path = _restriction_path(0, RECIPIENT_ADDRESS, MOSAIC_ID)
 		connector = RestrictionResponseConnector(
 			2,
-			{0: [create_node_block(1), create_node_block(2)]},
-			transactions_by_path={transaction_path(1, 2): {'data': [transaction]}},
+			{0: [create_node_block(1), create_node_block(2, transactions_count=1, total_transactions_count=1)]},
+			transactions_by_path={transaction_path(1, 2): create_transaction_page([transaction])},
 			address_resolutions_by_height={2: [create_resolution_statement(
 				2, ALIAS_ADDRESS, [_resolution_entry(1, 0, RECIPIENT_ADDRESS)])]},
 			mosaic_resolutions_by_height={2: [create_resolution_statement(
@@ -640,12 +641,13 @@ class PullerMosaicRestrictionsSyncIntegrationTest(SymbolPullerTestBase):
 		rollback_connector = RestrictionResponseConnector(
 			3,
 			{1: [
-				create_node_block(2, block_hash=canonical_block_hash),
+				create_node_block(2, block_hash=canonical_block_hash, transactions_count=1, total_transactions_count=1),
 				create_node_block(3, previous_hash=canonical_block_hash)
 			]},
 			block_by_height={2: create_node_block(2, block_hash=canonical_block_hash)},
-			transactions_by_path={transaction_path(2, 3): {
-				'data': [create_node_transaction(2, type=TransactionType.TRANSFER.value)]}},
+			transactions_by_path={transaction_path(2, 3): create_transaction_page([
+				create_node_transaction(2, type=TransactionType.TRANSFER.value)
+			])},
 			restriction_responses={expected_path: self._restriction_response(
 				0, RECIPIENT_ADDRESS, composite_hash='CC' * 32, mosaic_id=MOSAIC_ID)})
 
@@ -813,9 +815,11 @@ class PullerMosaicRestrictionsSyncIntegrationTest(SymbolPullerTestBase):
 		response_path = _restriction_path(1)
 		connector = RestrictionResponseConnector(
 			3,
-			{1: [create_node_block(2), create_node_block(3)]},
+			{1: [create_node_block(2, transactions_count=1, total_transactions_count=1), create_node_block(3)]},
 			block_by_height={2: create_node_block(2)},
-			transactions_by_path={transaction_path(2, 3): {'data': [create_node_transaction(2, type=TransactionType.TRANSFER.value)]}},
+			transactions_by_path={transaction_path(2, 3): create_transaction_page([
+				create_node_transaction(2, type=TransactionType.TRANSFER.value)
+			])},
 			restriction_responses={response_path: self._restriction_response(1, None, 'CC' * 32)})
 		return connector, response_path
 

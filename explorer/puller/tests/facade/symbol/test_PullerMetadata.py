@@ -31,6 +31,7 @@ from .puller_test_utils import (
 	create_node_block,
 	create_node_transaction,
 	create_resolution_statement,
+	create_transaction_page,
 	resolution_path,
 	set_symbol_connector,
 	transaction_path
@@ -201,7 +202,7 @@ def _create_embedded_metadata_fixture(
 		{0: [_create_metadata_block(
 			2 if decoy_transaction is not None else 1,
 			3 if decoy_transaction is not None else 2)]},
-		transactions_by_path={transaction_path(1, 1): {'data': transactions}},
+		transactions_by_path={transaction_path(1, 1): create_transaction_page(transactions)},
 		address_resolutions_by_height={1: address_resolution_items},
 		mosaic_resolutions_by_height={1: mosaic_resolution_items},
 		metadata_by_query={metadata_path(
@@ -872,7 +873,7 @@ class SymbolPullerMetadataTest(SymbolPullerTestBase):  # pylint: disable=too-man
 		connector = FakeConnector(
 			1,
 			{0: [_create_metadata_block(2, 3)]},
-			transactions_by_path={transaction_path(1, 1): {'data': transactions}},
+			transactions_by_path={transaction_path(1, 1): create_transaction_page(transactions)},
 			address_resolutions_by_height={1: [create_resolution_statement(
 				1, ALIAS_ADDRESS, [
 					_create_resolution_entry(1, 0, SIGNER_ADDRESS),
@@ -933,7 +934,7 @@ class SymbolPullerMetadataTest(SymbolPullerTestBase):  # pylint: disable=too-man
 		connector = FakeConnector(
 			1,
 			{0: [_create_metadata_block(2, 3)]},
-			transactions_by_path={transaction_path(1, 1): {'data': transactions}},
+			transactions_by_path={transaction_path(1, 1): create_transaction_page(transactions)},
 			address_resolutions_by_height={1: [create_resolution_statement(
 				1, ALIAS_ADDRESS, [
 					_create_resolution_entry(1, 0, SIGNER_ADDRESS),
@@ -1204,7 +1205,7 @@ class SymbolPullerMetadataTest(SymbolPullerTestBase):  # pylint: disable=too-man
 		connector = FakeConnector(
 			1,
 			{0: [_create_metadata_block(3, 4)]},
-			transactions_by_path={transaction_path(1, 1): {'data': transactions}},
+			transactions_by_path={transaction_path(1, 1): create_transaction_page(transactions)},
 			account_by_address={
 				str(Address(bytes.fromhex(SIGNER_ADDRESS))): create_account_item(
 					address_hex=SIGNER_ADDRESS, item_id='signer-account'),

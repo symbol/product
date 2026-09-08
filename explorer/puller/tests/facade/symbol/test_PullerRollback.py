@@ -33,6 +33,7 @@ from .puller_test_utils import (
 	create_node_block,
 	create_node_transaction,
 	create_sync_state,
+	create_transaction_page,
 	set_symbol_connector,
 	statement_path,
 	transaction_path
@@ -917,18 +918,16 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):  # pylint: disable=too-man
 		replacement_transaction_hash = 'C' * 64
 		connector = FakeConnector(
 			3,
-			{1: [create_node_block(2), create_node_block(3)]},
+			{1: [create_node_block(2, transactions_count=1, total_transactions_count=1), create_node_block(3)]},
 			{2: create_node_block(2)},
 			transactions_by_path={
-				transaction_path(2, 3): {
-					'data': [
-						create_node_transaction(
-							2,
-							transaction_hash=replacement_transaction_hash,
-							transaction_id='replacement-transaction'
-						)
-					]
-				}
+				transaction_path(2, 3): create_transaction_page([
+					create_node_transaction(
+						2,
+						transaction_hash=replacement_transaction_hash,
+						transaction_id='replacement-transaction'
+					)
+				])
 			}
 		)
 		self._seed_blocks(
@@ -976,18 +975,19 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):  # pylint: disable=too-man
 		# Arrange:
 		connector = FakeConnector(
 			3,
-			{1: [create_node_block(2), create_node_block(3)]},
+			{1: [
+				create_node_block(2, transactions_count=1, total_transactions_count=1),
+				create_node_block(3, transactions_count=1, total_transactions_count=1)
+			]},
 			{
 				2: create_node_block(2),
 				3: create_node_block(3)
 			},
 			transactions_by_path={
-				transaction_path(2, 3): {
-					'data': [
-						create_node_transaction(2, transaction_id='transaction-2'),
-						create_node_transaction(3, transaction_id='transaction-3')
-					]
-				}
+				transaction_path(2, 3): create_transaction_page([
+					create_node_transaction(2, transaction_id='transaction-2'),
+					create_node_transaction(3, transaction_id='transaction-3')
+				])
 			}
 		)
 		self._seed_blocks(self.puller.symbol_db, [1])

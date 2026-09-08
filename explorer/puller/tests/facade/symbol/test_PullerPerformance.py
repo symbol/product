@@ -23,6 +23,7 @@ from .puller_test_utils import (
 	create_node_block,
 	create_node_transaction,
 	create_sync_state,
+	create_transaction_page,
 	set_symbol_connector,
 	set_symbol_rate_limiter,
 	statement_path,
@@ -245,8 +246,8 @@ class SymbolPullerPerformanceTest(SymbolPullerTestBase):
 		# Arrange:
 		connector = connector_class(
 			1,
-			{0: [create_node_block(1)]},
-			transactions_by_path={transaction_path(1, 1): {'data': [transaction]}},
+			{0: [create_node_block(1, transactions_count=1, total_transactions_count=1)]},
+			transactions_by_path={transaction_path(1, 1): create_transaction_page([transaction])},
 			**connector_kwargs)
 
 		# Act:
@@ -406,8 +407,8 @@ class SymbolPullerPerformanceTest(SymbolPullerTestBase):
 		transactions = create_complete_aggregate_pair(1, 'A' * 64, 0)
 		connector = FakeConnector(
 			1,
-			{0: [create_node_block(1)]},
-			transactions_by_path={transaction_path(1, 1): {'data': transactions}},
+			{0: [create_node_block(1, transactions_count=1, total_transactions_count=2)]},
+			transactions_by_path={transaction_path(1, 1): create_transaction_page(transactions)},
 			statement_pages={statement_path(1, 1): {
 				'data': [create_amount_statement_item(1, 11, ReceiptType.INFLATION.value, 'receipt-1')]
 			}}

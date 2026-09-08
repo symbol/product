@@ -29,6 +29,7 @@ from .puller_test_utils import (
 	create_node_transaction,
 	create_resolution_statement,
 	create_sync_state,
+	create_transaction_page,
 	resolution_path,
 	set_symbol_connector,
 	statement_path,
@@ -262,15 +263,21 @@ class SymbolPullerLocksTest(SymbolPullerTestBase):
 	def _assert_sync_persists_secret_lock_transaction(
 		self,
 		transactions,
+		transactions_count,
+		total_transactions_count,
 		expected
 	):
 		# Arrange:
 		lock_item = create_secret_lock_item(owner_address=expected['owner_address'])
+		block = create_node_block(
+			1,
+			transactions_count=transactions_count,
+			total_transactions_count=total_transactions_count)
 		connector = LockConnector(
 			1,
-			{0: [create_node_block(1)]},
+			{0: [block]},
 			secret_responses={expected['lock_path']: {'data': [lock_item]}},
-			transactions_by_path={transaction_path(1, 1): {'data': transactions}},
+			transactions_by_path={transaction_path(1, 1): create_transaction_page(transactions)},
 			statement_pages={statement_path(1, 1): {'data': []}},
 			address_resolutions_by_height=expected.get('address_resolutions_by_height', {}),
 			mosaic_resolutions_by_height=expected.get('mosaic_resolutions_by_height', {}))
@@ -367,9 +374,9 @@ class SymbolPullerLocksTest(SymbolPullerTestBase):
 			amount='1234')
 		connector = LockConnector(
 			1,
-			{0: [create_node_block(1)]},
+			{0: [create_node_block(1, transactions_count=1, total_transactions_count=1)]},
 			hash_responses={'lock/hash/' + LOCK_HASH: response},
-			transactions_by_path={transaction_path(1, 1): {'data': [transaction]}},
+			transactions_by_path={transaction_path(1, 1): create_transaction_page([transaction])},
 			statement_pages={statement_path(1, 1): {'data': []}})
 
 		# Act / Assert:
@@ -396,9 +403,9 @@ class SymbolPullerLocksTest(SymbolPullerTestBase):
 		path = _secret_search_path(SIGNER_ADDRESS, SECRET)
 		connector = LockConnector(
 			1,
-			{0: [create_node_block(1)]},
+			{0: [create_node_block(1, transactions_count=1, total_transactions_count=1)]},
 			secret_responses={path: response},
-			transactions_by_path={transaction_path(1, 1): {'data': [transaction]}},
+			transactions_by_path={transaction_path(1, 1): create_transaction_page([transaction])},
 			statement_pages={statement_path(1, 1): {'data': []}})
 
 		# Act / Assert:
@@ -429,9 +436,9 @@ class SymbolPullerLocksTest(SymbolPullerTestBase):
 		page_two_path = _secret_search_path(SIGNER_ADDRESS, SECRET, 2)
 		connector = LockConnector(
 			1,
-			{0: [create_node_block(1)]},
+			{0: [create_node_block(1, transactions_count=1, total_transactions_count=1)]},
 			secret_responses={page_one_path: {'data': page_one}, page_two_path: second_page_response},
-			transactions_by_path={transaction_path(1, 1): {'data': [transaction]}},
+			transactions_by_path={transaction_path(1, 1): create_transaction_page([transaction])},
 			statement_pages={statement_path(1, 1): {'data': []}})
 
 		# Act / Assert:
@@ -793,9 +800,9 @@ class SymbolPullerLocksTest(SymbolPullerTestBase):
 			amount='1234')
 		return LockConnector(
 			1,
-			{0: [create_node_block(1)]},
+			{0: [create_node_block(1, transactions_count=1, total_transactions_count=1)]},
 			hash_responses={'lock/hash/' + LOCK_HASH: create_hash_lock_item()},
-			transactions_by_path={transaction_path(1, 1): {'data': [hash_transaction]}},
+			transactions_by_path={transaction_path(1, 1): create_transaction_page([hash_transaction])},
 			statement_pages={statement_path(1, 1): {'data': []}})
 
 	@staticmethod
@@ -810,10 +817,10 @@ class SymbolPullerLocksTest(SymbolPullerTestBase):
 			amount='1234')
 		return LockConnector(
 			1,
-			{0: [create_node_block(1)]},
+			{0: [create_node_block(1, transactions_count=1, total_transactions_count=1)]},
 			secret_responses={_secret_search_path(SIGNER_ADDRESS, SECRET): {
 				'data': [create_secret_lock_item()]}},
-			transactions_by_path={transaction_path(1, 1): {'data': [secret_transaction]}},
+			transactions_by_path={transaction_path(1, 1): create_transaction_page([secret_transaction])},
 			statement_pages={statement_path(1, 1): {'data': []}})
 
 	@staticmethod
@@ -1117,7 +1124,7 @@ class SymbolPullerLocksTest(SymbolPullerTestBase):
 			{3: create_node_block(3)},
 			finalized_height=3,
 			hash_responses={'lock/hash/' + LOCK_HASH_2: {'code': 'ResourceNotFound', 'message': 'not found'}},
-			transactions_by_path={transaction_path(3, 3): {'data': []}},
+			transactions_by_path={transaction_path(3, 3): create_transaction_page([])},
 			statement_pages={statement_path(3, 3): {'data': []}})
 		self._sync_with_connector(uncapped_connector)
 
@@ -1227,7 +1234,7 @@ class SymbolPullerLocksTest(SymbolPullerTestBase):
 			{0: [block_one]},
 			hash_responses={'lock/hash/' + LOCK_HASH: used_item},
 			transactions_by_path={
-				transaction_path(1, 1): {'data': [hash_lock_transaction, aggregate_bonded_transaction]}
+				transaction_path(1, 1): create_transaction_page([hash_lock_transaction, aggregate_bonded_transaction])
 			},
 			statement_pages={statement_path(1, 1): {'data': []}})
 		expected_row = {
@@ -1285,7 +1292,7 @@ class SymbolPullerLocksTest(SymbolPullerTestBase):
 				secret_only_path: {'data': [secret_only_response_item]}
 			},
 			transactions_by_path={
-				transaction_path(1, 1): {'data': [secret_lock_transaction, secret_proof_transaction]}
+				transaction_path(1, 1): create_transaction_page([secret_lock_transaction, secret_proof_transaction])
 			},
 			statement_pages={statement_path(1, 1): {'data': []}})
 		expected_row = create_expected_secret_lock_row(
@@ -1321,10 +1328,10 @@ class SymbolPullerLocksTest(SymbolPullerTestBase):
 			2, transaction_hash=LOCK_HASH, type=TransactionType.AGGREGATE_BONDED.value)
 		connector = LockConnector(
 			2,
-			{1: [create_node_block(2)]},
-			{2: create_node_block(2)},
+			{1: [create_node_block(2, transactions_count=1, total_transactions_count=1)]},
+			{2: create_node_block(2, transactions_count=1, total_transactions_count=1)},
 			hash_responses={'lock/hash/' + LOCK_HASH: create_hash_lock_item(status=1)},
-			transactions_by_path={transaction_path(2, 2): {'data': [aggregate_transaction]}},
+			transactions_by_path={transaction_path(2, 2): create_transaction_page([aggregate_transaction])},
 			statement_pages={statement_path(2, 2): {'data': []}})
 		expected_row = {
 			'hash': bytes.fromhex(LOCK_HASH), 'owner_address': bytes.fromhex(SIGNER_ADDRESS), 'mosaic_id': MOSAIC_ID,
@@ -1354,10 +1361,10 @@ class SymbolPullerLocksTest(SymbolPullerTestBase):
 		path = _secret_only_search_path(SECRET)
 		connector = LockConnector(
 			2,
-			{1: [create_node_block(2)]},
-			{2: create_node_block(2)},
+			{1: [create_node_block(2, transactions_count=1, total_transactions_count=1)]},
+			{2: create_node_block(2, transactions_count=1, total_transactions_count=1)},
 			secret_responses={path: {'data': [create_secret_lock_item(status=1)]}},
-			transactions_by_path={transaction_path(2, 2): {'data': [proof_transaction]}},
+			transactions_by_path={transaction_path(2, 2): create_transaction_page([proof_transaction])},
 			statement_pages={statement_path(2, 2): {'data': []}})
 		expected_row = create_expected_secret_lock_row(
 			create_secret_lock_item(status=1), 2,
@@ -1387,6 +1394,8 @@ class SymbolPullerLocksTest(SymbolPullerTestBase):
 		# Act / Assert:
 		self._assert_sync_persists_secret_lock_transaction(
 			[transaction],
+			1,
+			1,
 			{
 				'transaction_type': TransactionType.SECRET_LOCK.value,
 				'is_embedded': False,
@@ -1405,6 +1414,8 @@ class SymbolPullerLocksTest(SymbolPullerTestBase):
 		# Act / Assert:
 		self._assert_sync_persists_secret_lock_transaction(
 			[transaction],
+			1,
+			1,
 			{
 				'transaction_type': TransactionType.SECRET_PROOF.value,
 				'is_embedded': False,
@@ -1428,6 +1439,8 @@ class SymbolPullerLocksTest(SymbolPullerTestBase):
 		# Act / Assert:
 		self._assert_sync_persists_secret_lock_transaction(
 			transactions,
+			1,
+			2,
 			{
 				'transaction_type': TransactionType.SECRET_LOCK.value,
 				'is_embedded': True,
@@ -1449,6 +1462,8 @@ class SymbolPullerLocksTest(SymbolPullerTestBase):
 		# Act / Assert:
 		self._assert_sync_persists_secret_lock_transaction(
 			transactions,
+			1,
+			2,
 			{
 				'transaction_type': TransactionType.SECRET_PROOF.value,
 				'is_embedded': True,
@@ -1466,9 +1481,9 @@ class SymbolPullerLocksTest(SymbolPullerTestBase):
 			amount='1234')
 		connector = LockConnector(
 			1,
-			{0: [create_node_block(1)]},
+			{0: [create_node_block(1, transactions_count=1, total_transactions_count=1)]},
 			hash_responses={'lock/hash/' + LOCK_HASH: create_hash_lock_item()},
-			transactions_by_path={transaction_path(1, 1): {'data': [transaction]}},
+			transactions_by_path={transaction_path(1, 1): create_transaction_page([transaction])},
 			statement_pages={statement_path(1, 1): {'data': []}},
 			mosaic_resolutions_by_height={1: [create_resolution_statement(
 				1,
@@ -1515,6 +1530,8 @@ class SymbolPullerLocksTest(SymbolPullerTestBase):
 		# Act:
 		connector = self._assert_sync_persists_secret_lock_transaction(
 			[transaction],
+			1,
+			1,
 			{
 				'transaction_type': TransactionType.SECRET_LOCK.value,
 				'is_embedded': False,
@@ -1548,6 +1565,8 @@ class SymbolPullerLocksTest(SymbolPullerTestBase):
 		# Act:
 		connector = self._assert_sync_persists_secret_lock_transaction(
 			[transaction],
+			1,
+			1,
 			{
 				'transaction_type': TransactionType.SECRET_PROOF.value,
 				'is_embedded': False,
@@ -1577,8 +1596,8 @@ class SymbolPullerLocksTest(SymbolPullerTestBase):
 			amount='1234')
 		connector = LockConnector(
 			1,
-			{0: [create_node_block(1)]},
-			transactions_by_path={transaction_path(1, 1): {'data': [transaction]}},
+			{0: [create_node_block(1, transactions_count=1, total_transactions_count=1)]},
+			transactions_by_path={transaction_path(1, 1): create_transaction_page([transaction])},
 			statement_pages={statement_path(1, 1): {'data': []}})
 
 		# Act / Assert:
@@ -1609,8 +1628,8 @@ class SymbolPullerLocksTest(SymbolPullerTestBase):
 			amount='1234')
 		connector = LockConnector(
 			1,
-			{0: [create_node_block(1)]},
-			transactions_by_path={transaction_path(1, 1): {'data': [transaction]}},
+			{0: [create_node_block(1, transactions_count=1, total_transactions_count=1)]},
+			transactions_by_path={transaction_path(1, 1): create_transaction_page([transaction])},
 			mosaic_resolutions_by_height={1: [create_resolution_statement(
 				1,
 				ALIAS_MOSAIC_ID,
@@ -1634,8 +1653,8 @@ class SymbolPullerLocksTest(SymbolPullerTestBase):
 			hashAlgorithm=1)
 		connector = LockConnector(
 			1,
-			{0: [create_node_block(1)]},
-			transactions_by_path={transaction_path(1, 1): {'data': [transaction]}},
+			{0: [create_node_block(1, transactions_count=1, total_transactions_count=1)]},
+			transactions_by_path={transaction_path(1, 1): create_transaction_page([transaction])},
 			statement_pages={statement_path(1, 1): {'data': []}},
 			address_resolutions_by_height={1: [create_resolution_statement(
 				1,
@@ -1696,7 +1715,7 @@ class SymbolPullerLocksTest(SymbolPullerTestBase):
 			composite_hash=node_other_owner_replacement_hash, owner_address=other_owner, status=1)
 		connector = LockConnector(
 			1,
-			{0: [create_node_block(1)]},
+			{0: [create_node_block(1, transactions_count=1, total_transactions_count=1)]},
 			secret_responses={_secret_only_search_path(SECRET): {'data': [
 				first_match,
 				second_match,
@@ -1704,7 +1723,7 @@ class SymbolPullerLocksTest(SymbolPullerTestBase):
 				create_secret_lock_item(composite_hash='66' * 32, secret='77' * 32),
 				create_secret_lock_item(composite_hash='88' * 32, hashAlgorithm=0)
 			]}},
-			transactions_by_path={transaction_path(1, 1): {'data': [proof_transaction]}},
+			transactions_by_path={transaction_path(1, 1): create_transaction_page([proof_transaction])},
 			statement_pages={statement_path(1, 1): {'data': []}})
 		expected_rows = [
 			create_expected_secret_lock_row(
@@ -1746,7 +1765,7 @@ class SymbolPullerLocksTest(SymbolPullerTestBase):
 			{1: [create_node_block(2)]},
 			{2: create_node_block(2)},
 			hash_responses={'lock/hash/' + LOCK_HASH: create_hash_lock_item(status=1)},
-			transactions_by_path={transaction_path(2, 2): {'data': []}},
+			transactions_by_path={transaction_path(2, 2): create_transaction_page([])},
 			statement_pages={statement_path(2, 2): {'data': []}})
 		expected_row = {
 			'hash': bytes.fromhex(LOCK_HASH),
@@ -1797,7 +1816,7 @@ class SymbolPullerLocksTest(SymbolPullerTestBase):
 			{1: [create_node_block(2)]},
 			{2: create_node_block(2)},
 			secret_responses={path: {'data': [create_secret_lock_item(status=1)]}},
-			transactions_by_path={transaction_path(2, 2): {'data': []}},
+			transactions_by_path={transaction_path(2, 2): create_transaction_page([])},
 			statement_pages={statement_path(2, 2): {'data': []}})
 		expected_row = create_expected_secret_lock_row(
 			create_secret_lock_item(status=1),
@@ -1864,7 +1883,7 @@ class SymbolPullerLocksTest(SymbolPullerTestBase):
 			{2: create_node_block(2)},
 			hash_responses={fork_hash_path: {'code': 'ResourceNotFound', 'message': 'not found'}},
 			secret_responses={fork_secret_path: {'data': []}},
-			transactions_by_path={transaction_path(2, 2): {'data': []}},
+			transactions_by_path={transaction_path(2, 2): create_transaction_page([])},
 			statement_pages={statement_path(2, 2): {'data': []}})
 		expected_survivor_hash = create_hash_lock_row(survivor_hash_item, 1)
 		expected_survivor_secret = create_expected_secret_lock_row(
@@ -1953,9 +1972,9 @@ class SymbolPullerLocksTest(SymbolPullerTestBase):
 			amount='1234')
 		connector = LockConnector(
 			1,
-			{0: [create_node_block(1)]},
+			{0: [create_node_block(1, transactions_count=1, total_transactions_count=1)]},
 			hash_responses={'lock/hash/' + LOCK_HASH: RuntimeError('lock fetch failed')},
-			transactions_by_path={transaction_path(1, 1): {'data': [transaction]}},
+			transactions_by_path={transaction_path(1, 1): create_transaction_page([transaction])},
 			statement_pages={statement_path(1, 1): {'data': []}})
 
 		# Act / Assert:
@@ -1975,9 +1994,9 @@ class SymbolPullerLocksTest(SymbolPullerTestBase):
 		path = _secret_search_path(SIGNER_ADDRESS, SECRET)
 		connector = LockConnector(
 			1,
-			{0: [create_node_block(1)]},
+			{0: [create_node_block(1, transactions_count=1, total_transactions_count=1)]},
 			secret_responses={path: RuntimeError('secret lock fetch failed')},
-			transactions_by_path={transaction_path(1, 1): {'data': [transaction]}},
+			transactions_by_path={transaction_path(1, 1): create_transaction_page([transaction])},
 			statement_pages={statement_path(1, 1): {'data': []}})
 
 		# Act / Assert:
@@ -1995,10 +2014,10 @@ class SymbolPullerLocksTest(SymbolPullerTestBase):
 		secret_path = _secret_search_path(SIGNER_ADDRESS, SECRET)
 		connector = LockConnector(
 			1,
-			{0: [create_node_block(1)]},
+			{0: [create_node_block(1, transactions_count=2, total_transactions_count=2)]},
 			hash_responses={'lock/hash/' + LOCK_HASH: create_hash_lock_item()},
 			secret_responses={secret_path: RuntimeError('secret lock fetch failed')},
-			transactions_by_path={transaction_path(1, 1): {'data': [hash_transaction, secret_transaction]}},
+			transactions_by_path={transaction_path(1, 1): create_transaction_page([hash_transaction, secret_transaction])},
 			statement_pages={statement_path(1, 1): {'data': []}})
 
 		# Act / Assert:

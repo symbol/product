@@ -26,6 +26,7 @@ from .puller_test_utils import (
 	create_node_block,
 	create_node_transaction,
 	create_resolution_statement,
+	create_transaction_page,
 	set_symbol_connector,
 	statement_path,
 	transaction_path
@@ -209,9 +210,9 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):  # pylint: disable=too-man
 		self.puller.symbol_db.upsert_account_current_state(account_row, mosaic_rows)
 		connector = FakeConnector(
 			1,
-			{0: [self._create_block(1, days_ago=8)]},
+			{0: [self._create_block(1, days_ago=8, transactions_count=1, total_transactions_count=1)]},
 			transactions_by_path={
-				transaction_path(1, 1): {'data': [create_node_transaction(1)]}
+				transaction_path(1, 1): create_transaction_page([create_node_transaction(1)])
 			},
 			account_by_address=self._account_by_address_text(BENEFICIARY_ADDRESS, RECIPIENT_ADDRESS))
 
@@ -230,10 +231,11 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):  # pylint: disable=too-man
 		resolved_address_text = self._address_text(RECIPIENT_ADDRESS)
 		connector = FakeConnector(
 			1,
-			{0: [self._create_block(1)]},
+			{0: [self._create_block(1, transactions_count=1, total_transactions_count=1)]},
 			transactions_by_path={
 				transaction_path(1, 1): {
-					'data': [create_node_transaction(1, recipientAddress=alias_address)]
+					'data': [create_node_transaction(1, recipientAddress=alias_address)],
+					'pagination': {'pageNumber': 1, 'pageSize': ACCOUNT_BATCH_FETCH_SIZE}
 				}
 			},
 			account_by_address=self._account_by_address_text(BENEFICIARY_ADDRESS, RECIPIENT_ADDRESS),
@@ -272,10 +274,13 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):  # pylint: disable=too-man
 		# if the wrong source's timestamp were used, is_harvesting_active would come out False.
 		connector = FakeConnector(
 			2,
-			{0: [self._create_block(1, days_ago=8), self._create_block(2)]},
-			transactions_by_path={
-				transaction_path(1, 2): {'data': [create_node_transaction(1, recipientAddress=BENEFICIARY_ADDRESS)]}
-			},
+			{0: [
+				self._create_block(1, days_ago=8, transactions_count=1, total_transactions_count=1),
+				self._create_block(2, transactions_count=0, total_transactions_count=0)
+			]},
+			transactions_by_path={transaction_path(1, 2): create_transaction_page([
+				create_node_transaction(1, recipientAddress=BENEFICIARY_ADDRESS)
+			])},
 			account_by_address=self._account_by_address_text(BENEFICIARY_ADDRESS))
 
 		# Act:
@@ -292,7 +297,7 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):  # pylint: disable=too-man
 		participant_address_text = self._address_text(RECIPIENT_ADDRESS)
 		connector = FakeConnector(
 			1,
-			{0: [self._create_block(1)]},
+			{0: [self._create_block(1, transactions_count=2, total_transactions_count=2)]},
 			transactions_by_path={
 				transaction_path(1, 1): {
 					'data': [
@@ -301,7 +306,8 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):  # pylint: disable=too-man
 							transaction_hash=f'{index:064X}',
 							transaction_id=f'transaction-{index}')
 						for index in range(2)
-					]
+					],
+					'pagination': {'pageNumber': 1, 'pageSize': ACCOUNT_BATCH_FETCH_SIZE}
 				}
 			},
 			account_by_address=self._account_by_address_text(BENEFICIARY_ADDRESS, RECIPIENT_ADDRESS))
@@ -320,14 +326,15 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):  # pylint: disable=too-man
 		connector = MissingConfiguredAccountConnector(
 			RECIPIENT_ADDRESS,
 			1,
-			{0: [self._create_block(1)]},
+			{0: [self._create_block(1, transactions_count=1, total_transactions_count=1)]},
 			transactions_by_path={
 				transaction_path(1, 1): {
 					'data': [create_node_transaction(
 						1,
 						type=TransactionType.MOSAIC_ADDRESS_RESTRICTION.value,
 						targetAddress=RECIPIENT_ADDRESS,
-						mosaicId=NATIVE_MOSAIC_ID)]
+						mosaicId=NATIVE_MOSAIC_ID)],
+					'pagination': {'pageNumber': 1, 'pageSize': ACCOUNT_BATCH_FETCH_SIZE}
 				}
 			},
 			account_by_address=self._account_by_address_text(BENEFICIARY_ADDRESS))
@@ -346,14 +353,15 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):  # pylint: disable=too-man
 		# Arrange:
 		connector = EmptyMosaicRestrictionConnector(
 			1,
-			{0: [self._create_block(1)]},
+			{0: [self._create_block(1, transactions_count=1, total_transactions_count=1)]},
 			transactions_by_path={
 				transaction_path(1, 1): {
 					'data': [create_node_transaction(
 						1,
 						type=TransactionType.MOSAIC_ADDRESS_RESTRICTION.value,
 						targetAddress=RECIPIENT_ADDRESS,
-						mosaicId=NATIVE_MOSAIC_ID)]
+						mosaicId=NATIVE_MOSAIC_ID)],
+					'pagination': {'pageNumber': 1, 'pageSize': ACCOUNT_BATCH_FETCH_SIZE}
 				}
 			},
 			account_by_address=self._account_by_address_text(BENEFICIARY_ADDRESS, RECIPIENT_ADDRESS))
@@ -373,7 +381,7 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):  # pylint: disable=too-man
 		target_address = '98AB1234567890ABCDEF1234567890ABCDEF1234567890AB'
 		connector = FakeConnector(
 			1,
-			{0: [self._create_block(1)]},
+			{0: [self._create_block(1, transactions_count=1, total_transactions_count=1)]},
 			transactions_by_path={
 				transaction_path(1, 1): {
 					'data': [create_node_transaction(
@@ -382,7 +390,8 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):  # pylint: disable=too-man
 						targetAddress=target_address,
 						scopedMetadataKey='0000000000000001',
 						valueSizeDelta=1,
-						value='AA')]
+						value='AA')],
+					'pagination': {'pageNumber': 1, 'pageSize': ACCOUNT_BATCH_FETCH_SIZE}
 				}
 			},
 			account_by_address=self._account_by_address_text(BENEFICIARY_ADDRESS, target_address))
@@ -400,14 +409,15 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):  # pylint: disable=too-man
 		block_beneficiary_address = _address_hex(1)
 		connector = EmptyMosaicRestrictionConnector(
 			1,
-			{0: [self._create_block(1, beneficiaryAddress=block_beneficiary_address)]},
+			{0: [self._create_block(1, beneficiaryAddress=block_beneficiary_address, transactions_count=1, total_transactions_count=1)]},
 			transactions_by_path={
 				transaction_path(1, 1): {
 					'data': [create_node_transaction(
 						1,
 						type=TransactionType.MOSAIC_ADDRESS_RESTRICTION.value,
 						targetAddress=SIGNER_ADDRESS,
-						mosaicId=NATIVE_MOSAIC_ID)]
+						mosaicId=NATIVE_MOSAIC_ID)],
+					'pagination': {'pageNumber': 1, 'pageSize': ACCOUNT_BATCH_FETCH_SIZE}
 				}
 			},
 			account_by_address=self._account_by_address_text(block_beneficiary_address, SIGNER_ADDRESS))
@@ -424,14 +434,15 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):  # pylint: disable=too-man
 		# Arrange: the target row is excluded, but the same address remains as the block beneficiary.
 		connector = EmptyMosaicRestrictionConnector(
 			1,
-			{0: [self._create_block(1, beneficiaryAddress=RECIPIENT_ADDRESS)]},
+			{0: [self._create_block(1, beneficiaryAddress=RECIPIENT_ADDRESS, transactions_count=1, total_transactions_count=1)]},
 			transactions_by_path={
 				transaction_path(1, 1): {
 					'data': [create_node_transaction(
 						1,
 						type=TransactionType.MOSAIC_ADDRESS_RESTRICTION.value,
 						targetAddress=RECIPIENT_ADDRESS,
-						mosaicId=NATIVE_MOSAIC_ID)]
+						mosaicId=NATIVE_MOSAIC_ID)],
+					'pagination': {'pageNumber': 1, 'pageSize': ACCOUNT_BATCH_FETCH_SIZE}
 				}
 			},
 			account_by_address=self._account_by_address_text(SIGNER_ADDRESS, RECIPIENT_ADDRESS))
@@ -449,14 +460,15 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):  # pylint: disable=too-man
 		target_address_text = self._address_text(RECIPIENT_ADDRESS)
 		connector = EmptyMosaicRestrictionConnector(
 			1,
-			{0: [self._create_block(1)]},
+			{0: [self._create_block(1, transactions_count=1, total_transactions_count=1)]},
 			transactions_by_path={
 				transaction_path(1, 1): {
 					'data': [create_node_transaction(
 						1,
 						type=TransactionType.MOSAIC_ADDRESS_RESTRICTION.value,
 						targetAddress=RECIPIENT_ADDRESS,
-						mosaicId=NATIVE_MOSAIC_ID)]
+						mosaicId=NATIVE_MOSAIC_ID)],
+					'pagination': {'pageNumber': 1, 'pageSize': ACCOUNT_BATCH_FETCH_SIZE}
 				}
 			},
 			statement_pages={
@@ -584,10 +596,13 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):  # pylint: disable=too-man
 		]
 		connector = FakeConnector(
 			1,
-			{0: [self._create_block(1)]},
+			{0: [self._create_block(
+				1,
+				transactions_count=ACCOUNT_BATCH_FETCH_SIZE + 1,
+				total_transactions_count=ACCOUNT_BATCH_FETCH_SIZE + 1)]},
 			transactions_by_path={
-				transaction_path(1, 1): {'data': transactions[:ACCOUNT_BATCH_FETCH_SIZE]},
-				transaction_path(1, 1, 2): {'data': transactions[ACCOUNT_BATCH_FETCH_SIZE:]}
+				transaction_path(1, 1): create_transaction_page(transactions[:ACCOUNT_BATCH_FETCH_SIZE]),
+				transaction_path(1, 1, 2): create_transaction_page(transactions[ACCOUNT_BATCH_FETCH_SIZE:], 2)
 			})
 
 		# Act:
