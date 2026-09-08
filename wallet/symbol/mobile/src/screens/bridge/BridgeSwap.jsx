@@ -46,10 +46,9 @@ const TRANSACTION_SPEED = 'medium';
 /** @typedef {import('@/app/types/Network').ChainName} ChainName */
 
 /**
- * BridgeSwap screen component. Provides the main interface for performing token swaps
- * between different blockchains. Users can select source and target tokens, enter amounts,
- * view fee estimations, and execute bridge transactions. Includes swap history display
- * and handles cases when no bridge pairs are available.
+ * BridgeSwap screen component. Provides the main interface for performing token swaps - 
+ * select source and target tokens, enter amounts, view estimations, and execute swap transactions.
+ * Also shows recent swap history.
  * @param {object} props - Component props.
  * @param {object} props.route - React Navigation route object.
  * @param {object} props.route.params - Route parameters.
@@ -57,7 +56,7 @@ const TRANSACTION_SPEED = 'medium';
  * @returns {React.ReactNode} BridgeSwap component.
  */
 export const BridgeSwap = props => {
-	// Ref to break the createTransaction ↔ useStepTransactionFees ↔ useBridgeAmount circular dependency
+	// Ref that fixes the createTransaction ↔ useStepTransactionFees ↔ useBridgeAmount circular dependency
 	const createTransactionRef = useRef(() => Promise.resolve(null));
 
 	// Load bridges and subscribe to changes
@@ -82,11 +81,12 @@ export const BridgeSwap = props => {
 		changeTarget,
 		reverse
 	} = useSwapSelector({ pairs, defaultSourceChainName: props.route.params.chainName });
+	const selector = createSwapSelectorViewModel({ source, target, sourceList, targetList });
 
-	// The transaction template and preview always need a controller; the main one stands in until a source is chosen.
+	// Wallet controller is required by the transaction template. Use default one until the source is selected.
 	const sourceWalletController = useWalletController(source?.chainName);
 
-	// Transaction fees of every route step
+	// Transaction fees for each swap step.
 	const {
 		stepFees,
 		isLoading: isStepFeesLoading,
@@ -121,8 +121,6 @@ export const BridgeSwap = props => {
 		createTransaction,
 		getConfirmationPreview
 	} = useBridgeTransaction({ steps, amount, estimations });
-
-	// Update ref to break circular dependency with useStepTransactionFees
 	createTransactionRef.current = createTransaction;
 
 	// Transaction workflow
@@ -138,15 +136,15 @@ export const BridgeSwap = props => {
 
 	// Recent history
 	const { history } = useBridgeHistory({ bridge });
+	const swapHistory = createSwapHistoryViewModel({ history, networkIdentifier: source?.networkIdentifier });
 
 	// No pairs popup
 	const noPairsDialogManager = useBridgeNoPairsDialog({ pairsStatus });
 
-	// Bridge turned off by its operator popup
+	// The bridge is disabled popup
 	const disabledDialogManager = useBridgeDisabledDialog({ pairsStatus });
 
-	// Price impact feeds the send gate, its dialog and the summary row. At the critical tier a warning
-	// dialog gates the send; the ref carries the send action to that dialog.
+	// Price impact. Warning if the price impact is high and critical
 	const priceImpact = getEstimationsPriceImpact(estimations);
 	const priceImpactSeverity = getPriceImpactSeverity(priceImpact, config.bridge.priceImpact);
 	const [isPriceImpactConfirmVisible, togglePriceImpactConfirm] = useToggle(false);
@@ -170,13 +168,12 @@ export const BridgeSwap = props => {
 
 	const isAmountPositive = Number(amount) > 0;
 
-	// Drop the estimation of the previous pair before the new one is fetched, so its values are never
-	// shown against the newly selected tokens. Values are kept across amount changes on purpose.
+	// Clear the previous estimation before fetching the next one
 	useEffect(() => {
 		clearEstimation();
 	}, [source, target]);
 
-	// Reload data on tokens or amount change
+	// Refresh data when the amount or tokens are modified
 	const fetchSwapData = useCallback(() => {
 		if (isReady)
 			fetchFirstStepFees();
@@ -190,7 +187,7 @@ export const BridgeSwap = props => {
 		fetchSwapData();
 	}, [fetchSwapData]);
 
-	// The later steps' amounts are the estimation output, so their fees follow the estimation
+	// Fees for the next step are based on the previous step estimation output amount. Fetch if available 
 	useEffect(() => {
 		if (estimations)
 			fetchRemainingStepFees(estimations);
@@ -198,7 +195,7 @@ export const BridgeSwap = props => {
 			clearRemainingStepFees();
 	}, [estimations]);
 
-	// Estimation summary view model
+	// Estimation summary
 	const estimationSummary = createEstimationSummaryViewModel({
 		source,
 		target,
@@ -211,12 +208,10 @@ export const BridgeSwap = props => {
 		transactionFeeTierLevel: TRANSACTION_SPEED
 	});
 
-	// Confirm dialog text
+	// Confirmation dialog
 	const confirmationText = createSwapConfirmationText({ source, target, amount });
 
-	// Selector and history view models
-	const selector = createSwapSelectorViewModel({ source, target, sourceList, targetList });
-	const swapHistory = createSwapHistoryViewModel({ history, networkIdentifier: source?.networkIdentifier });
+
 
 	const init = useCallback(() => {
 		(async () => {

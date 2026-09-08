@@ -9,7 +9,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 /** @typedef {import('@/app/screens/bridge/types/Bridge').SwapWorkflowManager} SwapWorkflowManager */
 
 /**
- * Gets the default swap pair based on chain name preference.
+ * Retrieves the default swap pair according to the preferred chain name.
  * @param {SwapPair[]} pairs - Available swap pairs.
  * @param {string} defaultSourceChainName - Preferred source chain name.
  * @returns {SwapPair} The default swap pair.
@@ -19,7 +19,7 @@ const getDefaultPair = (pairs, defaultSourceChainName) => {
 };
 
 /**
- * Whether two swap sides are the same token on the same chain.
+ * Verifies if two swap sides utilize the same token on the same chain.
  * @param {SwapSide} side - One side.
  * @param {SwapSide} otherSide - The other side.
  * @returns {boolean} True when the side keys match.
@@ -27,7 +27,7 @@ const getDefaultPair = (pairs, defaultSourceChainName) => {
 const isSameSide = (side, otherSide) => createSwapSideKey(side) === createSwapSideKey(otherSide);
 
 /**
- * Picks the source or target side of a pair.
+ * Selects either the target or source side of a pair.
  * @param {SwapPair} pair - The swap pair.
  * @param {SwapSideTypeValue} type - Which side to pick.
  * @returns {SwapSide} The picked side.
@@ -35,7 +35,7 @@ const isSameSide = (side, otherSide) => createSwapSideKey(side) === createSwapSi
 const getPairSide = (pair, type) => type === SwapSideType.SOURCE ? pair.source : pair.target;
 
 /**
- * Finds the pair that swaps the given source to the given target.
+ * Finds the pair used to swap the specified source for the provided target.
  * @param {SwapPair[]} pairs - Available swap pairs.
  * @param {SwapSide} source - Source side.
  * @param {SwapSide} target - Target side.
@@ -44,18 +44,18 @@ const getPairSide = (pair, type) => type === SwapSideType.SOURCE ? pair.source :
 const findPair = (pairs, source, target) => pairs.find(pair => isSameSide(pair.source, source) && isSameSide(pair.target, target));
 
 /**
- * Gets available opposite sides for a given swap side.
+ * Retrieves the available opposite sides for a specified swap side.
  * @param {SwapPair[]} pairs - Available swap pairs.
  * @param {SwapSide} side - The current swap side.
  * @param {SwapSideTypeValue} type - The side type.
- * @returns {SwapSide[]} Array of available opposite sides.
+ * @returns {SwapSide[]} Available opposite sides.
  */
 const getOppositeSideList = (pairs, side, type) => pairs
 	.filter(pair => isSameSide(getPairSide(pair, type), side))
 	.map(pair => type === SwapSideType.SOURCE ? pair.target : pair.source);
 
 /**
- * Gets updated swap side with fresh balance data.
+ * Retrieves the current swap side with updated balance information.
  * @param {SwapPair[]} pairs - Available swap pairs.
  * @param {SwapSide} side - The swap side to update.
  * @param {SwapSideTypeValue} type - The side type.
@@ -68,7 +68,7 @@ const getUpdatedSide = (pairs, side, type) => {
 };
 
 /**
- * Finds the bridge for selected source and target.
+ * Finds the bridge for the chosen target and source.
  * @param {SwapPair[]} pairs - Available swap pairs.
  * @param {SwapSide} source - Selected source side.
  * @param {SwapSide} target - Selected target side.
@@ -92,8 +92,8 @@ const getCorrespondingBridge = (pairs, source, target) => findPair(pairs, source
  */
 
 /**
- * React hook for managing swap source/target selection and determining the appropriate bridge.
- * Handles pair filtering, selection lists, and automatic bridge resolution.
+ * React hook for managing the selection of swap targets and sources while identifying the correct bridge,
+ * including automatic bridge resolution, selection lists, and pair filtering.
  * @param {object} params - Hook parameters.
  * @param {SwapPair[]} params.pairs - Available swap pairs.
  * @param {string} params.defaultSourceChainName - Default source chain name.
@@ -103,7 +103,7 @@ export const useSwapSelector = ({ pairs, defaultSourceChainName }) => {
 	const [source, setSource] = useState(null);
 	const [target, setTarget] = useState(null);
 
-	// Initialize source and target when pairs become available
+	// Set target and source once pairs are accessible
 	useEffect(() => {
 		if (pairs.length === 0) {
 			setSource(null);
@@ -130,7 +130,7 @@ export const useSwapSelector = ({ pairs, defaultSourceChainName }) => {
 		});
 	}, [pairs, defaultSourceChainName]);
 
-	// Calculated values based on current source and target
+	// Values derived from the present target and source
 
 	const bridge = useMemo(() => {
 		if (source && target)

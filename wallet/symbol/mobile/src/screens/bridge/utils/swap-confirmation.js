@@ -4,8 +4,7 @@ import { createTokenDisplayData } from '@/app/utils';
 /** @typedef {import('@/app/screens/bridge/types/Bridge').SwapSide} SwapSide */
 
 /**
- * Builds the confirm-dialog sentence of a swap: the entered amount and both tokens by ticker. Empty
- * until both sides are selected.
+ * Creates the swap confirmation dialog localized text string.
  * @param {object} params - Builder parameters.
  * @param {SwapSide|null} params.source - Selected source side.
  * @param {SwapSide|null} params.target - Selected target side.

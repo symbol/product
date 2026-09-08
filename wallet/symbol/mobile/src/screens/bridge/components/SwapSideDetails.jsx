@@ -23,9 +23,8 @@ import { createExplorerTransactionUrl } from '@/app/utils';
 /** @typedef {import('@/app/types/Network').ChainName} ChainName */
 
 /**
- * SwapSideDetails component. Displays detailed information for one side of a swap,
- * including token info, chain name, account address, and transaction hash with
- * copy functionality and block explorer link.
+ * SwapSideDetails component. Shows details for a single swap side, such as the token details,
+ * account address, transaction hash and block explorer link.
  * @param {object} props - Component props.
  * @param {SwapSideTypeValue} props.type - The side type (source or target).
  * @param {ChainName} props.chainName - The blockchain name.

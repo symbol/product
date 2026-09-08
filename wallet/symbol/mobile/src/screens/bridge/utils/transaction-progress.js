@@ -18,7 +18,7 @@ import { createTokenDisplayData } from '@/app/utils';
 const UNKNOWN_TOKEN_TEXT = 'unknown';
 
 /**
- * Maps a BridgeTransactionWorkflowStatus value to its full display info: icon, variant, and localised text.
+ * Creates a status card view model for a given swap workflow status value.
  * @param {string} status - A BridgeTransactionWorkflowStatus value.
  * @param {Array<{from: string, to: string}>} tokenPairsText - Token ticker pairs for each step.
  * @returns {object} Display info for the given status.
@@ -123,7 +123,7 @@ const createStatusInfo = (status, tokenPairsText) => {
 };
 
 /**
- * Creates the state of one send action.
+ * Creates extended activity (action) status with optional error message.
  * @param {string} status - One of ActivityStatus.
  * @param {string|null} [errorMessage=null] - Error message when the action failed.
  * @returns {ActionState} Action state.
@@ -134,7 +134,7 @@ const createActionStatus = (status, errorMessage = null) => ({
 });
 
 /**
- * Maps an async manager's state to the state of its send action.
+ * Maps the async manager state to an action status.
  * @param {AsyncManager} asyncManager - Manager running the action.
  * @returns {ActionState} Action state.
  */
@@ -152,7 +152,7 @@ const getActionStatusFromAsyncManager = asyncManager => {
 };
 
 /**
- * Status of a step's confirmation entry from its announce state and the network outcome.
+ * Determines the confirmation status for a step based on the network outcome and its announce state.
  * @param {ActionState} announceStatus - State of the step's announce action.
  * @param {boolean} isConfirmed - Whether every signed transaction of the step is confirmed.
  * @param {boolean} hasFailedTransactions - Whether the network rejected a transaction of the step.
@@ -172,7 +172,7 @@ const getConfirmStatus = (announceStatus, isConfirmed, hasFailedTransactions) =>
 };
 
 /**
- * Progress of one step of a dual-step send.
+ * Progress for a single step in a dual-step swap.
  * @typedef {object} StepProgress
  * @property {ActionState} signStatus - State of the sign action.
  * @property {ActionState} announceStatus - State of the announce action.
@@ -185,7 +185,7 @@ const getConfirmStatus = (announceStatus, isConfirmed, hasFailedTransactions) =>
  */
 
 /**
- * Builds the sign, announce and confirm log items of one step.
+ * Creates the sign, announce and confirm log items for one swap step.
  * @param {StepProgress} step - The step progress.
  * @param {number} stepNumber - One-based step number shown in the titles.
  * @returns {ActivityLogItem[]} The three log items.
@@ -218,25 +218,8 @@ const createStepLogItems = ({
 ];
 
 /**
- * Builds the seven-step activity log of a dual-step send: create, then sign, announce and confirm per step.
- * @param {object} params - Log parameters.
- * @param {ActionState} params.createStatus - State of the create action.
- * @param {StepProgress[]} params.steps - Progress of both steps in execution order.
- * @returns {ActivityLogItem[]} Activity log items.
- */
-const buildProgressActivityLog = ({ createStatus, steps }) => [
-	{
-		title: $t('c_bridgeTransactionStatus_step_create'),
-		icon: 'plus',
-		status: createStatus.status,
-		caption: createStatus.errorMessage ?? ''
-	},
-	...steps.flatMap((step, index) => createStepLogItems(step, index + 1))
-];
-
-/**
- * Resolves the label of a workflow side's token: its known ticker, or its name when unlisted.
- * @param {WorkflowMetaSide} side - The workflow metadata side containing tokenInfo, chainName and networkIdentifier.
+ * Retrieves the token label for a workflow side, returning its name if unlisted or its known ticker.
+ * @param {WorkflowMetaSide} side - The workflow side.
  * @returns {string} Ticker text, or 'unknown' for a side without token info.
  */
 const createTokenTextFromSide = side => {
@@ -247,7 +230,7 @@ const createTokenTextFromSide = side => {
 };
 
 /**
- * Builds the token pair display text for each step of a dual-step workflow.
+ * Creates the display text for each step in a dual-step workflow.
  * @param {object} workflow - The dual-step workflow object with {@link DualWorkflowMeta} on `meta`.
  * @returns {Array<{from: string, to: string}>} Token ticker pairs for each step.
  */
@@ -267,7 +250,7 @@ const getTokenPairsText = workflow => {
 };
 
 /**
- * Builds the progress of one step of a dual-step send from its managers, hashes and metadata.
+ * Creates the transaction progress view mode.
  * @param {object} params - Step parameters.
  * @param {AsyncManager} params.signManager - Manager of the step's sign action.
  * @param {AsyncManager} params.announceManager - Manager of the step's announce action.
@@ -298,9 +281,8 @@ const createStepProgress = ({
 });
 
 /**
- * Builds the progress dialog view model of a swap: the standard one for a single-step route; for a
- * dual-step route, the seven-step log, the combined status and the explorer links of both steps.
- * @param {object} workflow - The active workflow with {@link SingleWorkflowMeta} or {@link DualWorkflowMeta} on `meta`.
+ * Creates the swap transaction progress dialog view model.
+ * @param {object} workflow - Single or dual-step workflow.
  * @returns {TransactionProgressViewModel} Progress view model.
  */
 export const createTransactionProgressViewModel = workflow => {
@@ -337,10 +319,15 @@ export const createTransactionProgressViewModel = workflow => {
 
 	return {
 		isCloseButtonDisabled: workflow.isSending,
-		activityLogData: buildProgressActivityLog({
-			createStatus: getActionStatusFromAsyncManager(managers.createManager1),
-			steps
-		}),
+		activityLogData:[
+			{
+				title: $t('c_bridgeTransactionStatus_step_create'),
+				icon: 'plus',
+				status: getActionStatusFromAsyncManager(managers.createManager1).status,
+				caption: getActionStatusFromAsyncManager(managers.createManager1).errorMessage ?? ''
+			},
+			...steps.flatMap((step, index) => createStepLogItems(step, index + 1))
+		],
 		statusInfo: createStatusInfo(workflow.status, tokenPairsText),
 		explorerLinks: steps
 			.filter(step => step.isAnnounced)

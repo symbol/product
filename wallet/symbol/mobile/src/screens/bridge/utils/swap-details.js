@@ -21,7 +21,7 @@ import { createTokenDisplayData, formatDate, getAccountKnownInfo } from '@/app/u
 /** @typedef {import('wallet-common-core/src/types/Bridge').RequestTransaction} RequestTransaction */
 
 /**
- * Parameters for building activity log.
+ * Parameters for activity log construction.
  * @typedef {object} BuildActivityLogParams
  * @property {BridgeRequestStatusType} requestStatus - Request transaction status.
  * @property {BridgePayoutStatusType} [payoutStatus] - Payout transaction status.
@@ -31,7 +31,7 @@ import { createTokenDisplayData, formatDate, getAccountKnownInfo } from '@/app/u
  */
 
 /**
- * Resolves the account of one side from the wallet accounts and the address book.
+ * Creates the account display data for a given address using info from the specific wallet controller.
  * @param {string} address - Signer or recipient address.
  * @param {WalletController} walletController - The side's wallet controller.
  * @returns {ResolvedAccountData} Account display data.
@@ -53,11 +53,11 @@ const createAccountDisplayData = (address, walletController) => {
 };
 
 /**
- * Resolves the token of one side. The amount is null until the side's transaction exists.
+ * Creates the token display data for a given token info and transaction.
  * @param {TokenInfo} tokenInfo - The side's token.
  * @param {RequestTransaction|PayoutTransaction|undefined} transaction - The side's transaction.
  * @param {ChainName} chainName - The side's chain.
- * @param {NetworkIdentifier} networkIdentifier - The network identifier.
+ * @param {NetworkIdentifier} networkIdentifier - Network identifier.
  * @returns {ResolvedTokenData} Token display data.
  */
 const createTokenData = (tokenInfo, transaction, chainName, networkIdentifier) => {
@@ -72,7 +72,7 @@ const createTokenData = (tokenInfo, transaction, chainName, networkIdentifier) =
 };
 
 /**
- * Builds the display data of one side from its chain, token and transaction.
+ * Creates the display data for a swap side using its transaction, token, and chain.
  * @param {object} params - Side parameters.
  * @param {ChainName} params.chainName - The side's chain.
  * @param {TokenInfo} params.tokenInfo - The side's token.
@@ -90,9 +90,9 @@ const createSideDisplayData = ({ chainName, tokenInfo, transaction, address, wal
 });
 
 /**
- * Builds an activity log array representing the token swap workflow steps.
+ * Builds the swap activity log steps.
  * @param {BuildActivityLogParams} params - Parameters for building the activity log.
- * @returns {ActivityLogItem[]} Array of activity log steps.
+ * @returns {ActivityLogItem[]} Activity log steps.
  */
 export const buildActivityLog = ({
 	requestStatus,
@@ -160,8 +160,7 @@ export const buildActivityLog = ({
 };
 
 /**
- * Builds the swap details view model from one history item: the overall status, both sides and the
- * step-by-step activity log.
+ * Creates the swap details view model.
  * @param {object} params - Builder parameters.
  * @param {BridgeRequest|BridgeError} params.request - The swap to show.
  * @param {WalletController} params.sourceWalletController - Wallet controller of the source chain.
