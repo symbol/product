@@ -1,4 +1,4 @@
-import { getSwapStatus, getSwapStatusCaption } from './swap-status';
+import { createSwapStatusDisplayData } from './swap-status';
 import { $t } from '@/app/localization';
 import { BRIDGE_HISTORY_PAGE_SIZE } from '@/app/screens/bridge/constants';
 import { BridgeRequestStatus } from '@/app/screens/bridge/types/Bridge';
@@ -8,6 +8,7 @@ import { createTokenDisplayData, formatDate } from '@/app/utils';
 /** @typedef {import('@/app/screens/bridge/types/Bridge').BridgeRequest} BridgeRequest */
 /** @typedef {import('@/app/screens/bridge/types/ViewModel').SwapHistoryItem} SwapHistoryItem */
 /** @typedef {import('@/app/screens/bridge/types/ViewModel').SwapHistoryViewModel} SwapHistoryViewModel */
+/** @typedef {import('@/app/screens/bridge/types/ViewModel').SwapRequestCaptionDisplayData} SwapRequestCaptionDisplayData */
 /** @typedef {import('@/app/types/Network').ChainName} ChainName */
 /** @typedef {import('@/app/types/Network').NetworkIdentifier} NetworkIdentifier */
 /** @typedef {import('@/app/types/Token').TokenInfo} TokenInfo */
@@ -30,7 +31,7 @@ const createChainDisplayData = (chainName, tokenInfo, networkIdentifier) => ({
  * @param {NetworkIdentifier} networkIdentifier - Network identifier.
  * @returns {{ value: string, ticker: string }|null} Amount display data.
  */
-const createAmount = (request, networkIdentifier) => {
+const createAmountDisplayData = (request, networkIdentifier) => {
 	const { payoutTransaction, targetChainName } = request;
 
 	if (!payoutTransaction)
@@ -40,6 +41,42 @@ const createAmount = (request, networkIdentifier) => {
 		value: payoutTransaction.token.amount,
 		ticker: createTokenDisplayData(payoutTransaction.token, targetChainName, networkIdentifier).tickerText
 	};
+};
+
+/**
+ * Creates the display data for the swap request caption. Showing when transaction is confirmed or failed.
+ * @param {BridgeRequest|BridgeError} request - The history item.
+ * @returns {SwapRequestCaptionDisplayData} Caption display information.
+ */
+const createSwapRequestCaptionDisplayData = request => {
+	const { requestStatus, errorMessage } = request;
+
+	let isVisible;
+	let text;
+	let textStyle;
+	let textType;
+
+	switch (requestStatus) {
+	case BridgeRequestStatus.CONFIRMED:
+		isVisible = true;
+		text = $t('s_bridge_history_requestTransactionConfirmed');
+		textStyle = 'regular';
+		textType = 'body';
+		break;
+	case BridgeRequestStatus.ERROR:
+		isVisible = true;
+		text = errorMessage;
+		textStyle = 'error';
+		textType = 'label';
+		break;
+	default:
+		isVisible = false;
+		text = null;
+		textStyle = null;
+		textType = null;
+	}
+
+	return { isVisible, text, textStyle, textType };
 };
 
 /**
@@ -54,9 +91,9 @@ const createHistoryItem = (request, networkIdentifier) => ({
 	dateText: formatDate(request.requestTransaction.timestamp, $t),
 	source: createChainDisplayData(request.sourceChainName, request.sourceTokenInfo, networkIdentifier),
 	target: createChainDisplayData(request.targetChainName, request.targetTokenInfo, networkIdentifier),
-	status: request.payoutStatus === undefined ? null : getSwapStatus(request.requestStatus, request.payoutStatus),
-	amount: createAmount(request, networkIdentifier),
-	caption: getSwapStatusCaption(request),
+	status: request.payoutStatus === undefined ? null : createSwapStatusDisplayData(request.requestStatus, request.payoutStatus),
+	amount: createAmountDisplayData(request, networkIdentifier),
+	caption: createSwapRequestCaptionDisplayData(request),
 	isPending: request.requestStatus === BridgeRequestStatus.CONFIRMED,
 	request
 });

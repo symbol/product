@@ -112,26 +112,21 @@ export const useSwapSelector = ({ pairs, defaultSourceChainName }) => {
 		}
 
 		setSource(prevSource => {
-			if (!prevSource) {
-				const defaultPair = getDefaultPair(pairs, defaultSourceChainName);
-				return defaultPair.source;
-			}
+			if (!prevSource)
+				return getDefaultPair(pairs, defaultSourceChainName).source;
 
 			return getUpdatedSide(pairs, prevSource, SwapSideType.SOURCE);
 		});
 
 		setTarget(prevTarget => {
-			if (!prevTarget) {
-				const defaultPair = getDefaultPair(pairs, defaultSourceChainName);
-				return defaultPair.target;
-			}
+			if (!prevTarget)
+				return getDefaultPair(pairs, defaultSourceChainName).target;
 
 			return getUpdatedSide(pairs, prevTarget, SwapSideType.TARGET);
 		});
 	}, [pairs, defaultSourceChainName]);
 
 	// Values derived from the present target and source
-
 	const bridge = useMemo(() => {
 		if (source && target)
 			return getCorrespondingBridge(pairs, source, target);
@@ -155,9 +150,12 @@ export const useSwapSelector = ({ pairs, defaultSourceChainName }) => {
 			.map(pair => pair.source)
 			.filter(side => {
 				const key = createSwapSideKey(side);
+
 				if (seen.has(key))
 					return false;
+
 				seen.add(key);
+
 				return true;
 			});
 	}, [pairs]);
@@ -170,7 +168,6 @@ export const useSwapSelector = ({ pairs, defaultSourceChainName }) => {
 	}, [pairs, source]);
 
 	// User interactions
-
 	const changeSource = useCallback(newSource => {
 		if (!pairs.some(pair => isSameSide(pair.source, newSource)))
 			return;

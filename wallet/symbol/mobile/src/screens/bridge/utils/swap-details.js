@@ -1,4 +1,4 @@
-import { getSwapStatus } from './swap-status';
+import { createSwapStatusDisplayData } from './swap-status';
 import { ActivityStatus } from '@/app/constants';
 import { $t } from '@/app/localization';
 import { BridgePayoutStatus, BridgeRequestStatus } from '@/app/screens/bridge/types/Bridge';
@@ -168,7 +168,7 @@ export const buildActivityLog = ({
  * @returns {SwapDetailsViewModel} The details view model.
  */
 export const createSwapDetailsViewModel = ({ request, sourceWalletController, targetWalletController }) => ({
-	status: getSwapStatus(request.requestStatus, request.payoutStatus),
+	status: createSwapStatusDisplayData(request.requestStatus, request.payoutStatus),
 	source: createSideDisplayData({
 		chainName: request.sourceChainName,
 		tokenInfo: request.sourceTokenInfo,
