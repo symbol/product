@@ -41,14 +41,54 @@ component produced it:
 |---|---|---|
 | `bridge-symptoms` | what users feel: requests lost, payouts not confirming, deposits not processing | pages |
 | `bridge-causes` | what is broken right now: vault, oracle, nodes, chain progress, download progress | mostly pages, some tickets |
-| `bridge-capacity` | what runs out if nobody acts: balances, the oracle quota, the vault token; **balance thresholds are placeholders, set them per deployment** | pages |
+| `bridge-capacity` | what runs out if nobody acts: balances, the oracle quota, the vault token | pages |
 
 Point Prometheus at it:
 
 ```yaml
 rule_files:
   - /etc/prometheus/rules/bridge.yml
+  - /etc/prometheus/rules/thresholds.yml
 ```
+
+## Thresholds
+
+`BridgeBalanceLow` carries no numbers. It reads every threshold from a series joined on
+`(bridge, network, token)`, and those series are produced by a second rules file describing one
+installation. `thresholds.example.yml` is a working copy of that file for the deployments planned so
+far; take it, put in the real contract addresses and amounts, and load it as above.
+
+```yaml
+      - record: bridge_balance_threshold
+        expr: vector(100000)
+        labels:
+          bridge: xym-bxym-stake
+          network: wrapped
+          token: "<bXYM-proxy-contract-address>"
+```
+
+Amounts are in the raw units the metric reports, written as a product so the readable number stays
+visible: `0.1 * 1e18` is a tenth of an ether, `200 * 1e6` two hundred XYM. Prometheus does the
+arithmetic when it records the rule, so nobody counts zeros and the alert rule needs to know nothing
+about how divisible an asset is.
+
+One label beside the amount carries the rest. `severity` says which level the amount is: a balance with one record has one
+level, and a balance with a second record, same labels but a higher amount and a different severity,
+warns before it wakes anybody.
+
+Once a balance is under both levels, both alerts are active, since there is one balance and two
+conditions. Suppress the lower one while the higher is firing:
+
+```yaml
+inhibit_rules:
+  - source_matchers: [severity="critical"]
+    target_matchers: [severity="warning"]
+    equal: [alertname, bridge, network, token]
+```
+
+A balance with no threshold is watched by nothing, which is how a swap bridge leaves its native
+account out; `BridgeBalanceThresholdsMissing` covers the case that is a mistake rather than a
+choice, a bridge with no thresholds at all.
 
 ## Runbooks
 
@@ -154,56 +194,45 @@ remembering that every scrape of a bridge with several gunicorn workers can prob
 per worker. Only providers that report a quota publish this metric, so on the others the rule has
 nothing to read and stays silent.
 
-### BridgeWrappedBalanceLow
+### BridgeBalanceLow
 
-Top up the bridge account on the wrapped network. This is the float wrap payouts come out of; it is
-pre-funded by hand rather than minted, so a stretch of one-way traffic drains it.
+A balance is below the level set for it in the thresholds file. The notification carries the balance
+as the metric reports it, in raw units; to read it as an amount, divide by the divisibility of the
+asset, 1e6 for XYM and XEM, 1e18 for ETH.
 
-The rule selects "the wrapped balance that is not ETH". That names the bridged token exactly while
-the wrapped leg is ethereum, which is the case for every bridge deployed so far. A wrapped leg on
-symbol or nem would need a rule of its own: there the same selector also matches the currency the
-fees are paid in, and it would be judged against the float's threshold.
+The `network` and `token` labels say which account it is, and the table at the end of this file says
+what each account is for. A balance that pays transaction fees empties into a leg that then cannot
+send anything at all, including unwrap payouts whose amount is backed by deposits sitting in the
+same account, so topping it up is small and predictable. A balance that payouts are made out of is
+pre-funded by hand rather than minted and is replenished only when traffic runs the other way, so it
+is sized from volume. In swap mode one account is both, which is why its threshold comes from
+`maxDailyTransferAmount` rather than from a few days of fees.
 
-### BridgeEthereumGasLow
+An exhausted balance is a transient error the bridge retries indefinitely rather than a failure, so
+nothing else pages until `BridgeDepositsNotProcessing` notices the deposit age an hour later.
 
-Top up the ETH balance. This is the wrap and stake version of the rule, where ETH only pays
-transaction fees, since payouts leave as an ERC-20 that `BridgeWrappedBalanceLow` watches. A
-threshold sized for a few days of gas is enough. It excludes swap bridges by their own
-`bridge_info{mode="swap"}`.
+### BridgeBalanceThresholdsMissing
 
-### BridgeEthereumPayoutBalanceLow
-
-Top up the ETH balance, and treat it as a payout float rather than as gas. This is the swap version
-of the rule: the account pays out ETH *and* pays the gas for doing so, so one threshold covers both,
-and being sized for the float it always trips before gas becomes the problem.
-
-Size it from `maxDailyTransferAmount` on the Ethereum leg rather than from gas. An exhausted balance
-is treated as a transient error and retried indefinitely rather than failed, so nothing pages on its
-own until `BridgeDepositsNotProcessing` notices the deposit age an hour later. The threshold is
-what buys the time to top up before that.
-
-### BridgeNativeBalanceLow
-
-Top up the bridge account on the native network. It funds unwrap payouts and their fees. Bridges in
-swap mode are excluded automatically, because the rule filters on `bridge_info{mode="swap"}`, which
-the bridge reports about itself, so nobody has to remember to delete this rule for such a
-deployment.
+This bridge is scraped but no `bridge_balance_threshold` series exists for it, so
+`BridgeBalanceLow` has nothing to compare its balances against and they go unwatched. Almost always
+the thresholds file was not deployed, or was deployed with a `bridge` label that does not match the
+one in `prometheus.yml`.
 
 ### Which balance alerts apply
 
-Payouts always come from the account on the network they land on, and those accounts are pre-funded
-by hand. The wrapped supply is backed by deposits on the other leg, but that backing does not move
-funds for you.
+Payouts always come from the account on the network they land on. The wrapped supply is backed by
+deposits on the other leg, and that backing is what makes the native balance need a threshold sized
+for fees alone: to unwrap, somebody must hold the wrapped token, which could only have been issued
+against a deposit that is still sitting there.
 
-| Mode | Pays out on | Alerts that apply |
+| Balance | Wrap, stake | Swap |
 |---|---|---|
-| Wrap, stake | wrapped leg (wrap), native leg (unwrap) | `BridgeWrappedBalanceLow` for the ERC-20 float, `BridgeEthereumGasLow` for the gas behind it, `BridgeNativeBalanceLow` for unwrap payouts and their fees |
-| Swap | wrapped leg only | `BridgeEthereumPayoutBalanceLow` alone. The ERC-20 rule matches nothing, since that leg moves ETH itself, and the native rule excludes itself: the native account only receives |
+| native | fees for unwrap payouts | nothing is sent from it, so it needs no threshold |
+| wrapped, the bridged token | the float wrap payouts come out of | does not exist |
+| wrapped, the fee currency | gas | the payout float, which also pays the gas |
 
-Which of the two ETH rules a bridge gets is decided by the bridge itself, from the `mode` it
-reports in `bridge_info`, so both can be deployed everywhere and neither has to be edited out by
-hand for a particular instance.
+Which of these a bridge has is decided by the thresholds file rather than by the rules: a balance
+with no threshold is watched by nothing. That is deliberate, and `BridgeBalanceThresholdsMissing`
+covers the case where the whole file is missing rather than one line of it.
 
-The thresholds and divisors shipped here are placeholders. Set them from daily volume and from the
-divisibility of the assets involved: 1e18 for ETH and 18 decimal ERC-20 tokens, 1e6 for XYM, XEM and
-the wrapped mosaic.
+Set the amounts in the thresholds file from daily volume, in the raw units the metric reports.

@@ -107,44 +107,20 @@ groups:
           summary: "{{ $labels.bridge }}: {{ $value }} price oracle requests left in the monthly quota"
           runbook_url: https://github.com/symbol/product/blob/dev/bridge/monitoring/README.md#bridgepriceoraclequotalow
 
-      - alert: BridgeWrappedBalanceLow
-        expr: bridge_balance{network="wrapped", token!="ETH"} / 1e6 < 100000
+      - alert: BridgeBalanceLow
+        expr: bridge_balance < on (bridge, network, token) group_right () bridge_balance_threshold
         for: 15m
-        labels:
-          severity: critical
         annotations:
-          summary: "{{ $labels.bridge }}: wrapped balance down to {{ $value | printf \"%.0f\" }} {{ $labels.token }}"
-          runbook_url: https://github.com/symbol/product/blob/dev/bridge/monitoring/README.md#bridgewrappedbalancelow
+          summary: >-
+            {{ $labels.bridge }}: the {{ $labels.network }} balance of {{ $labels.token }} is down
+            to {{ $value | printf "%.0f" }} in raw units, below its {{ $labels.severity }} threshold
+          runbook_url: https://github.com/symbol/product/blob/dev/bridge/monitoring/README.md#bridgebalancelow
 
-      - alert: BridgeEthereumGasLow
-        expr: |
-          bridge_balance{network="wrapped", token="ETH"} / 1e18 < 0.1
-            unless on (bridge) bridge_info{mode="swap"}
-        for: 15m
+      - alert: BridgeBalanceThresholdsMissing
+        expr: bridge_info unless on (bridge) bridge_balance_threshold
+        for: 1h
         labels:
-          severity: critical
+          severity: warning
         annotations:
-          summary: "{{ $labels.bridge }}: ethereum gas balance down to {{ $value | printf \"%.4f\" }} ETH"
-          runbook_url: https://github.com/symbol/product/blob/dev/bridge/monitoring/README.md#bridgeethereumgaslow
-
-      - alert: BridgeEthereumPayoutBalanceLow
-        expr: |
-          bridge_balance{network="wrapped", token="ETH"} / 1e18 < 5
-            and on (bridge) bridge_info{mode="swap"}
-        for: 15m
-        labels:
-          severity: critical
-        annotations:
-          summary: "{{ $labels.bridge }}: ethereum payout float down to {{ $value | printf \"%.4f\" }} ETH"
-          runbook_url: https://github.com/symbol/product/blob/dev/bridge/monitoring/README.md#bridgeethereumpayoutbalancelow
-
-      - alert: BridgeNativeBalanceLow
-        expr: |
-          bridge_balance{network="native"} / 1e6 < 1000
-            unless on (bridge) bridge_info{mode="swap"}
-        for: 15m
-        labels:
-          severity: critical
-        annotations:
-          summary: "{{ $labels.bridge }}: native balance down to {{ $value | printf \"%.0f\" }} {{ $labels.token }}"
-          runbook_url: https://github.com/symbol/product/blob/dev/bridge/monitoring/README.md#bridgenativebalancelow
+          summary: "{{ $labels.bridge }}: no balance thresholds are loaded, so no balance is watched"
+          runbook_url: https://github.com/symbol/product/blob/dev/bridge/monitoring/README.md#bridgebalancethresholdsmissing
