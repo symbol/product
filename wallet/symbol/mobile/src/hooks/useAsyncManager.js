@@ -3,7 +3,7 @@ import { showError } from '@/app/utils';
 import { useRef, useState } from 'react';
 
 /**
- * React hook for managing asynchronous operations and data fetching with loading and error handling.
+ * React hook for managing data fetching and asynchronous operations, including handling errors and loading states.
  * @template T The type of data returned by the callback.
  * 
  * @param {object} config - The configuration object for the hook.
@@ -14,8 +14,8 @@ import { useRef, useState } from 'react';
  * @param {boolean} [config.shouldShowErrorPopup=true] - Whether to show an error popup on error.
  * @param {boolean} [config.shouldClearDataOnCall=false] - Whether to clear data when calling the async function.
  * @param {boolean} [config.defaultLoadingState=false] - The default loading state.
-* @returns {import('@/app/types/AsyncManager').AsyncManager<T>} An object containing the call function,
-loading, completed and failed states, data, error, and reset function.
+ * @returns {import('@/app/types/AsyncManager').AsyncManager<T>} An object containing the call function,
+ * loading, completed and failed states, data, error, and reset function.
  */
 export const useAsyncManager = config => {
 	const { 
@@ -83,7 +83,7 @@ export const useAsyncManager = config => {
 		});
 	};
 
-	// A later call does not clear the error, so a failure counts only until the next call completes
+	// Since subsequent calls don't reset the error, a failure is only tracked until the following call finishes successfully
 	const hasFailed = !!error && !isLoading && !isCompleted;
 
 	return { call, isLoading, isCompleted, hasFailed, data, error, reset };

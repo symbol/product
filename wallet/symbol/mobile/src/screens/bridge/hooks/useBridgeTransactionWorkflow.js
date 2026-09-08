@@ -26,7 +26,7 @@ const EMPTY_SETUP = {
 };
 
 /**
- * Builds the metadata of one side of a step; empty fields while no route is selected.
+ * Creates metadata for a single side of a step, leaving fields blank if no route has been chosen.
  * @param {TokenInfo|null|undefined} tokenInfo - The side's token.
  * @param {WalletController|undefined} walletController - The side's wallet controller.
  * @returns {WorkflowMetaSide} Side metadata.
@@ -38,7 +38,7 @@ const createSideMeta = (tokenInfo, walletController) => ({
 });
 
 /**
- * Builds the metadata of one workflow step from a route step.
+ * Creates a swap step's metadata for a single workflow step.
  * @param {SwapStep|undefined} step - The route step; undefined while no route is selected.
  * @returns {WorkflowStepMeta} Step metadata.
  */
@@ -48,7 +48,7 @@ const createStepMeta = step => ({
 });
 
 /**
- * Tiers of one route step; null until fetched or while no route is selected.
+ * Retrieves the fee tiers for a single swap step.
  * @param {StepFees[]} stepFees - Fee data per step.
  * @param {number} stepIndex - Zero-based step index.
  * @returns {TransactionFeeTiers[]|null} The step's tiers.
@@ -56,14 +56,14 @@ const createStepMeta = step => ({
 const getStepFeeTiers = (stepFees, stepIndex) => stepFees[stepIndex]?.feeTiers ?? null;
 
 /**
- * React hook for managing the full bridge transaction send workflow.
- * Selects between single-step and dual-step workflows based on the number of route steps.
- * @param {object} params - The parameters object.
+ * React hook for managing the complete bridge transaction process, which chooses between dual-step and single-step
+ * workflows depending on the swap step count.
+ * @param {object} params - Hook parameters.
  * @param {SwapStep[]} params.steps - Steps of the selected route; empty while no route is selected.
- * @param {CreateTransactionCallback} params.createTransaction - Callback to create the transaction bundle for a given step index.
+ * @param {CreateTransactionCallback} params.createTransaction - Creates the transaction bundle for a step index.
  * @param {StepFees[]} params.stepFees - Fee data per step; a step's tiers are null until fetched.
- * @param {TransactionFeeTierLevel} [params.transactionFeeTierLevel] - Optional fee tier level to apply.
- * @returns {object} The active workflow (single or dual step).
+ * @param {TransactionFeeTierLevel} [params.transactionFeeTierLevel] - Fee tier level to apply.
+ * @returns {object} The active single- or dual-step workflow.
  */
 export const useBridgeTransactionWorkflow = params => {
 	const isDualStepWorkflow = params.steps.length === 2;
@@ -74,14 +74,14 @@ export const useBridgeTransactionWorkflow = params => {
 };
 
 /**
- * React hook for managing a single-step bridge transaction workflow.
- * @param {object} params - The parameters object.
- * @param {boolean} params.isActive - Whether this workflow is currently active.
+ * React hook for managing a bridge transaction workflow for the single-step swap.
+ * @param {object} params - Hook parameters.
+ * @param {boolean} params.isActive - Whether this workflow is active.
  * @param {SwapStep[]} params.steps - Steps of the selected route; empty while no route is selected.
- * @param {CreateTransactionCallback} params.createTransaction - Callback to create the transaction bundle.
+ * @param {CreateTransactionCallback} params.createTransaction - Creates the transaction bundle.
  * @param {StepFees[]} params.stepFees - Fee data per step; a step's tiers are null until fetched.
- * @param {TransactionFeeTierLevel} [params.transactionFeeTierLevel] - Optional fee tier level to apply.
- * @returns {object} The workflow object extended with {@link SingleWorkflowMeta} on the `meta` property.
+ * @param {TransactionFeeTierLevel} [params.transactionFeeTierLevel] - Fee tier level to apply.
+ * @returns {object} Workflow extended with SingleWorkflowMeta on its `meta` property.
  */
 const useSingleStepWorkflow = ({
 	isActive,
@@ -114,14 +114,14 @@ const useSingleStepWorkflow = ({
 };
 
 /**
- * React hook for managing a dual-step bridge transaction workflow.
- * @param {object} params - The parameters object.
- * @param {boolean} params.isActive - Whether this workflow is currently active.
+ * React hook for managing a bridge transaction workflow for the dual-step swap.
+ * @param {object} params - Hook parameters.
+ * @param {boolean} params.isActive - Whether this workflow is active.
  * @param {SwapStep[]} params.steps - Steps of the selected route; empty while no route is selected.
- * @param {CreateTransactionCallback} params.createTransaction - Callback to create the transaction bundle for a given step index.
+ * @param {CreateTransactionCallback} params.createTransaction - Creates the transaction bundle for a step index.
  * @param {StepFees[]} params.stepFees - Fee data per step; a step's tiers are null until fetched.
- * @param {TransactionFeeTierLevel} [params.transactionFeeTierLevel] - Optional fee tier level to apply.
- * @returns {object} The workflow object extended with {@link DualWorkflowMeta} on the `meta` property.
+ * @param {TransactionFeeTierLevel} [params.transactionFeeTierLevel] - Fee tier level to apply.
+ * @returns {object} Workflow extended with DualWorkflowMeta on its `meta` property.
  */
 const useDualStepWorkflow = ({
 	isActive,
@@ -251,7 +251,7 @@ const createStatus = (workflow1Status, workflow2Status) => {
 
 	const isCreatePhaseStatus = status => status === IDLE || status === CREATED;
 
-	// Combined create-phase states
+	// Merged create phase states
 	if (workflow1Status === IDLE && workflow2Status === IDLE)
 		return BridgeTransactionWorkflowStatus.IDLE;
 	if (workflow1Status === CREATING || workflow2Status === CREATING)
@@ -261,7 +261,7 @@ const createStatus = (workflow1Status, workflow2Status) => {
 	if (isCreatePhaseStatus(workflow1Status) && isCreatePhaseStatus(workflow2Status))
 		return BridgeTransactionWorkflowStatus.CREATED;
 
-	// Step 1 in-progress states
+	// Step 1 in progress
 	const step1Map = {
 		[SIGNING]: BridgeTransactionWorkflowStatus.SIGNING_1,
 		[SIGN_ERROR]: BridgeTransactionWorkflowStatus.SIGN_ERROR_1,
@@ -278,7 +278,7 @@ const createStatus = (workflow1Status, workflow2Status) => {
 	if (workflow1Status === CONFIRMED && isCreatePhaseStatus(workflow2Status))
 		return BridgeTransactionWorkflowStatus.CONFIRMED_1;
 
-	// Step 2 in-progress states
+	// Step 2 in progress
 	const step2Map = {
 		[SIGNING]: BridgeTransactionWorkflowStatus.SIGNING_2,
 		[SIGN_ERROR]: BridgeTransactionWorkflowStatus.SIGN_ERROR_2,

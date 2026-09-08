@@ -8,7 +8,7 @@ import { isEstimationComplete } from '@/app/screens/bridge/utils';
 /** @typedef {import('@/app/types/Transaction').TransactionFeeTiers} TransactionFeeTiers */
 
 /**
- * Builds the fee data of one route step.
+ * Builds the fee data for a swap step.
  * @param {number} stepIndex - Zero-based step index.
  * @param {SwapStep} step - The route step.
  * @param {TransactionFeeTiers[]|null} feeTiers - Fetched tiers, or null until fetched.
@@ -34,8 +34,8 @@ const createStepFees = (stepIndex, step, feeTiers) => ({
  */
 
 /**
- * React hook for the transaction fee tiers of every route step. Step 0 needs only the entered amount;
- * later steps take theirs from the estimation output, so they are fetched separately once it arrives.
+ * React hook for managing the transaction fee tiers of every swap step. Step 0 only requires the entered amount. 
+ * The next step amount is retrieved from the estimation output and fees fetched later once amount is available.
  * @param {object} params - Hook parameters.
  * @param {SwapStep[]} params.steps - Steps of the selected route.
  * @param {(stepIndex: number) => Promise<TransactionBundle>} params.createTransaction - Creates a step's transaction bundle.

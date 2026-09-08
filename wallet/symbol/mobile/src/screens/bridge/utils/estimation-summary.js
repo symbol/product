@@ -35,11 +35,11 @@ const priceImpactLevelTextKeyMap = {
 };
 
 /**
- * Creates a fee amount entry.
+ * Creates the fee amount entry.
  * @param {string} amount - Fee amount in relative units.
  * @param {TokenInfo} token - Fee token.
  * @param {ChainName} chainName - Chain the fee is paid on.
- * @param {NetworkIdentifier} networkIdentifier - The network identifier.
+ * @param {NetworkIdentifier} networkIdentifier - Network identifier.
  * @returns {FeeAmount} Fee amount entry.
  */
 const createFeeAmount = (amount, token, chainName, networkIdentifier) => ({
@@ -51,7 +51,7 @@ const createFeeAmount = (amount, token, chainName, networkIdentifier) => ({
 });
 
 /**
- * Creates a summary row.
+ * Creates the summary row.
  * @param {object} params - Row parameters.
  * @param {string} params.title - Localized row title.
  * @param {string} params.value - Ready value text.
@@ -67,8 +67,7 @@ const createRow = ({ title, value, isContinuation = false, severity = null }) =>
 });
 
 /**
- * Adds fee amounts that share a token and chain; different tokens keep their own entry in input order.
- * A single amount passes through unchanged.
+ * Sums fee amounts matching chain and token. Unrelated fee amounts are returned separately.
  * @param {FeeAmount[]} feeAmounts - Fee amounts in step order.
  * @returns {FeeAmount[]} Summed fee amounts.
  */
@@ -97,9 +96,9 @@ export const sumFeeAmountsByToken = feeAmounts => {
 };
 
 /**
- * Builds the gas fee amounts of the steps whose tiers are loaded, in the fee tier token.
+ * Creates transaction fee for each step using each fee token. Summed by token and chain.
  * @param {StepFees[]} stepFees - Fee data per step.
- * @param {TransactionFeeTierLevel} transactionFeeTierLevel - The selected fee tier level.
+ * @param {TransactionFeeTierLevel} transactionFeeTierLevel - Selected fee tier level.
  * @returns {FeeAmount[]|null} Summed fee amounts, or null while no step has fee tiers.
  */
 const createTransactionFeeAmounts = (stepFees, transactionFeeTierLevel) => {
@@ -117,7 +116,7 @@ const createTransactionFeeAmounts = (stepFees, transactionFeeTierLevel) => {
 };
 
 /**
- * Builds the operation fee amounts of every step, each in that step's target token.
+ * Creates the operation fee for each step using each step's target token. Summed by token and chain.
  * @param {BridgeEstimation[]|null} estimations - Per-step estimations.
  * @param {SwapStep[]} steps - Steps of the selected route.
  * @param {boolean} isComplete - Whether the estimation covers every step without an error.
@@ -140,10 +139,9 @@ const createOperationFeeAmounts = (estimations, steps, isComplete) => {
 };
 
 /**
- * Builds the rows of one fee kind: the first amount on the titled row, the rest on continuation rows,
- * or a single placeholder row when unavailable.
+ * Creates multi-sub-row fee rows.
  * @param {string} title - Row title.
- * @param {FeeAmount[]|null} feeAmounts - Summed fee amounts, or null when not available.
+ * @param {FeeAmount[]|null} feeAmounts - Summed fee amounts, or null when unavailable.
  * @returns {EstimationSummaryRow[]} Fee rows.
  */
 const createFeeRows = (title, feeAmounts) => {
@@ -158,7 +156,7 @@ const createFeeRows = (title, feeAmounts) => {
 };
 
 /**
- * Builds the price impact row. An absent impact shows '-'; an unknown impact still carries its severity.
+ * Creates the price impact row. A '-' is shown if the impact is not expected. When expected and unknown, a warning is shown.
  * @param {number|null|undefined} priceImpact - Price impact fraction; null when unknown; undefined when absent.
  * @param {PriceImpactSeverityValue} priceImpactSeverity - Severity derived from the price impact.
  * @returns {EstimationSummaryRow} Price impact row.
@@ -180,7 +178,7 @@ const createPriceImpactRow = (priceImpact, priceImpactSeverity) => {
 };
 
 /**
- * Builds the estimation summary view model. Rows show '-' for anything not available yet.
+ * Creates the estimation summary view model.
  * @param {object} params - Builder parameters.
  * @param {SwapSide|null} params.source - Selected source side.
  * @param {SwapSide|null} params.target - Selected target side.
@@ -190,7 +188,7 @@ const createPriceImpactRow = (priceImpact, priceImpactSeverity) => {
  * @param {BridgeEstimation[]|null} params.estimations - Per-step estimations, null when absent.
  * @param {number|null|undefined} params.priceImpact - Price impact fraction; null when unknown; undefined when no step involves a swap.
  * @param {PriceImpactSeverityValue} params.priceImpactSeverity - Severity derived from the price impact.
- * @param {TransactionFeeTierLevel} params.transactionFeeTierLevel - The selected fee tier level.
+ * @param {TransactionFeeTierLevel} params.transactionFeeTierLevel - Selected fee tier level.
  * @returns {EstimationSummaryViewModel} The card view model.
  */
 export const createEstimationSummaryViewModel = ({

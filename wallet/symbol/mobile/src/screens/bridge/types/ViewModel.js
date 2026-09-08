@@ -10,46 +10,46 @@
 /** @typedef {import('@/app/types/Token').Token} Token */
 
 /**
- * Account information for bridge operations.
+ * Bridge account display data.
  * @typedef {object} BridgeAccountDisplayData
- * @property {ChainName} chainName - The blockchain name.
- * @property {string} ticker - The native currency ticker symbol.
+ * @property {ChainName} chainName - Blockchain name.
+ * @property {string} ticker - Native currency ticker symbol.
  * @property {boolean} isActive - Whether the account is active.
- * @property {WalletAccount|null} account - The account object or null if not active.
- * @property {number} balance - The account balance.
- * @property {Token[]} tokens - The account token balances.
+ * @property {WalletAccount|null} account - Account, or null when inactive.
+ * @property {number} balance - Account balance.
+ * @property {Token[]} tokens - Account token balances.
  * @property {boolean} isAccountInfoLoaded - Whether account info has been fetched.
  */
 
 /**
- * Account data for swap side details display.
+ * Account display data.
  * @typedef {object} ResolvedAccountData
- * @property {string} address - The account address.
- * @property {string|null} name - The account name.
- * @property {string|null} imageId - The account avatar image identifier.
+ * @property {string} address - Account address.
+ * @property {string|null} name - Account name.
+ * @property {string|null} imageId - Account avatar image identifier.
  */
 
 /**
- * Token data for swap side details display.
+ * Token display data.
  * @typedef {object} ResolvedTokenData
- * @property {string} name - The token name.
- * @property {string|null} ticker - The token ticker symbol.
- * @property {string|null} imageId - The token image identifier.
- * @property {string|null} amount - The token amount.
+ * @property {string} name - Token name.
+ * @property {string|null} ticker - Token ticker symbol.
+ * @property {string|null} imageId - Token image identifier.
+ * @property {string|null} amount - Token amount.
  */
 
 /**
- * Formatted data for displaying swap source or target details.
+ * Swap side display data.
  * @typedef {object} SwapSideDisplayData
- * @property {ChainName} chainName - The blockchain name.
- * @property {NetworkIdentifier} networkIdentifier - The network identifier.
- * @property {ResolvedTokenData} token - Token information.
- * @property {ResolvedAccountData|null} account - Account information.
- * @property {string|null} transactionHash - The transaction hash.
+ * @property {ChainName} chainName - Blockchain name.
+ * @property {NetworkIdentifier} networkIdentifier - Network identifier.
+ * @property {ResolvedTokenData} token - Token data.
+ * @property {ResolvedAccountData|null} account - Account data.
+ * @property {string|null} transactionHash - Transaction hash.
  */
 
 /**
- * Swap status display information.
+ * Swap status display data.
  * @typedef {object} SwapStatusDisplayData
  * @property {SemanticRoleColorVariants} variant - Status color variant (e.g., 'warning', 'success', 'danger').
  * @property {string} iconName - Status icon name.
@@ -57,7 +57,7 @@
  */
 
 /**
- * Swap status caption display information.
+ * Swap request status caption display data.
  * @typedef {object} SwapStatusCaptionDisplayData
  * @property {boolean} isVisible - Whether the caption should be visible.
  * @property {string|null} text - Caption text.
@@ -66,7 +66,7 @@
  */
 
 /**
- * One line of the estimation summary card.
+ * Row of the estimation summary card.
  * @typedef {object} EstimationSummaryRow
  * @property {string} title - Localized row title; kept on continuation rows for the accessibility label.
  * @property {string} value - Ready text, for example '0.000655 ETH', '6.00% · High', 'Unknown' or '-'.
@@ -75,14 +75,14 @@
  */
 
 /**
- * View model of the estimation summary card.
+ * Estimation summary card view model.
  * @typedef {object} EstimationSummaryViewModel
  * @property {string} key - Changes with the selected pair; the card replays its fade-in on it.
  * @property {EstimationSummaryRow[]} rows - Rows in display order.
  */
 
 /**
- * One selectable side of the swap selector, ready to render.
+ * Selectable side option in the swap selector.
  * @typedef {object} SwapSideOption
  * @property {string} key - `${chainName}|${tokenId}`; the dropdown value.
  * @property {string} label - Token name with its ticker, for example 'Symbol • XYM'.
@@ -93,7 +93,7 @@
  */
 
 /**
- * View model of the swap selector.
+ * Swap selector view model.
  * @typedef {object} SwapSelectorViewModel
  * @property {SwapSideOption|null} source - Selected source option; null while nothing is selected.
  * @property {SwapSideOption|null} target - Selected target option; null while nothing is selected.
@@ -102,7 +102,7 @@
  */
 
 /**
- * One row of the swap history list, ready to render.
+ * Swap history item display data.
  * @typedef {object} SwapHistoryItem
  * @property {string} key - Request transaction hash.
  * @property {string} actionText - Localized action label.
@@ -117,14 +117,14 @@
  */
 
 /**
- * View model of the swap history list.
+ * Swap history list view model.
  * @typedef {object} SwapHistoryViewModel
  * @property {SwapHistoryItem[]} items - Rows in list order.
  * @property {string} pageSizeText - Note under the list when the page is full; empty otherwise.
  */
 
 /**
- * View model of the swap details screen.
+ * Swap details view model.
  * @typedef {object} SwapDetailsViewModel
  * @property {SwapStatusDisplayData} status - Overall swap status.
  * @property {SwapSideDisplayData} source - Source side.

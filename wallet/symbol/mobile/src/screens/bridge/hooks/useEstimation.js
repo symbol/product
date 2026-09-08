@@ -4,7 +4,7 @@ import { useAsyncManager } from '@/app/hooks';
 /** @typedef {import('@/app/screens/bridge/types/Bridge').BridgeEstimation} BridgeEstimation */
 
 /**
- * Return type for useEstimation hook.
+ * The return type of the useEstimation hook.
  * @typedef {object} UseEstimationReturnType
  * @property {() => Promise<void>} estimate - Fetches bridge fee estimation.
  * @property {BridgeEstimation[]|null} estimations - Current estimation data.
@@ -14,7 +14,7 @@ import { useAsyncManager } from '@/app/hooks';
  */
 
 /**
- * React hook for fetching bridge fee and receive amount estimations.
+ * React hook for fetching swap estimations - receive amount and Uniswap/Bridge fees.
  * @param {object} params - Hook parameters.
  * @param {SwapWorkflowManager|null} params.bridge - The bridge manager instance.
  * @param {string} params.amount - The amount to estimate.

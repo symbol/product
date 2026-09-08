@@ -76,7 +76,7 @@ export const getSwapStatus = (requestStatus, payoutStatus) => {
 };
 
 /**
- * Gets swap status caption display information.
+ * Creates the display data for the swap status caption. Showing when transaction is confirmed or failed.
  * @param {BridgeRequest|BridgeError} data - The bridge history item data.
  * @returns {SwapStatusCaptionDisplayData} Caption display information.
  */

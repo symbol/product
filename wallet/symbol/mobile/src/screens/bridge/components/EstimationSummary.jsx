@@ -22,7 +22,7 @@ const severityAppearanceMap = {
 };
 
 /**
- * EstimationSummary component. Renders the summary card from its view model.
+ * EstimationSummary component. Displays the summary card based on its view model.
  * @param {object} props - Component props.
  * @param {EstimationSummaryViewModel} props.summary - Ready rows and the pair key.
  * @param {boolean} props.isLoading - Whether any summary input is being fetched.

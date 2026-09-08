@@ -12,9 +12,7 @@ const MIN_DISPLAYED_IMPACT = 0.0001;
 const PERCENT_DECIMALS = 2;
 
 /**
- * Classifies a price impact value into a severity tier. An unknown impact (null) is classified
- * as a warning, because a value that cannot be verified is riskier than a low one. An absent
- * impact (undefined) means no swap step is involved, so no severity applies.
+ * Returns the severity tier for a price impact value.
  * @param {number|null|undefined} priceImpact - Price impact as a fraction in the [0, 1] range,
  * null when unknown, undefined when not applicable.
  * @param {PriceImpactThresholds} thresholds - Severity tier thresholds.
@@ -37,7 +35,7 @@ export const getPriceImpactSeverity = (priceImpact, thresholds) => {
 };
 
 /**
- * Formats a price impact fraction as an unsigned percent string, with a floor for dust values.
+ * Returns formatted price impact percent value.
  * @param {number|null} priceImpact - Price impact as a fraction in the [0, 1] range, or null when unknown.
  * @returns {string} Formatted percent text, or an empty string when the impact is unknown.
  */
@@ -64,7 +62,7 @@ export const getEstimationsPriceImpact = estimations => {
 };
 
 /**
- * Whether an estimation covers every route step and no step failed.
+ * Verifies that no swap step failed and every step is covered by an estimation.
  * @param {BridgeEstimation[]|null} estimations - Per-step estimations.
  * @param {number} stepCount - Number of route steps.
  * @returns {boolean} True when every step estimated successfully.
