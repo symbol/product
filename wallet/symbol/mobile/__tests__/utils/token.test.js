@@ -1,4 +1,9 @@
-import { createTokenDisplayData, createTokenExpiration, formatTokenNameText, isTokenExpired } from '@/app/utils';
+import {
+	createTokenDisplayData,
+	createTokenExpiration,
+	formatTokenNameText,
+	isTokenExpired
+} from '@/app/utils';
 import { TokenFixtureBuilder } from '__fixtures__/local/TokenFixtureBuilder';
 
 // Constants
@@ -14,11 +19,13 @@ const NETWORK_IDENTIFIER = 'testnet';
 // A token listed in the known-tokens configuration
 const knownToken = TokenFixtureBuilder
 	.createWithToken(CHAIN_NAME_SYMBOL, NETWORK_IDENTIFIER, 0)
+	.setAmount('100')
 	.build();
 
 // A token absent from the known-tokens configuration
 const unknownToken = TokenFixtureBuilder
 	.createWithToken(CHAIN_NAME_SYMBOL, NETWORK_IDENTIFIER, 1)
+	.setAmount('50')
 	.build();
 
 describe('utils/token', () => {
@@ -167,13 +174,15 @@ describe('utils/token', () => {
 
 		const createTokenDisplayDataTests = [
 			{
-				description: 'resolves the name, ticker, ticker text and image of a listed token',
+				description: 'resolves the name, ticker and image of a listed token',
 				config: { token: knownToken },
 				expected: {
 					displayData: {
-						name: 'Symbol • XYM',
-						plainName: 'Symbol',
+						tokenId: knownToken.id,
+						amount: knownToken.amount,
+						name: 'Symbol',
 						ticker: 'XYM',
+						nameText: 'Symbol • XYM',
 						tickerText: 'XYM',
 						imageId: 'xym'
 					}
@@ -184,9 +193,11 @@ describe('utils/token', () => {
 				config: { token: unknownToken },
 				expected: {
 					displayData: {
+						tokenId: unknownToken.id,
+						amount: unknownToken.amount,
 						name: unknownToken.name,
-						plainName: unknownToken.name,
 						ticker: null,
+						nameText: unknownToken.name,
 						tickerText: unknownToken.name,
 						imageId: null
 					}

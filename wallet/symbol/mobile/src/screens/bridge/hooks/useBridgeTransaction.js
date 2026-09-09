@@ -38,7 +38,8 @@ export const useBridgeTransaction = ({ steps, amount, estimations }) => {
 	};
 
 	/**
-	 * Creates a bridge transaction bundle for the swap step. The estimated output of the previous step used as the input amount for a next step.
+	 * Creates a bridge transaction bundle for the swap step. The estimated output of the previous step used as the
+	 * input amount for a next step.
 	 * @param {number} [stepIndex=0] - Zero-based step index.
 	 * @returns {Promise<TransactionBundle>} The transaction bundle.
 	 */

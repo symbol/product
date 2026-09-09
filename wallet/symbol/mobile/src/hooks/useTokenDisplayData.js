@@ -1,5 +1,5 @@
 import { useWalletController } from './useWalletController';
-import { getTokenKnownInfo } from '@/app/utils';
+import { createTokenDisplayData } from '@/app/utils';
 import { useMemo } from 'react';
 
 /** @typedef {import('@/app/types/Network').ChainName} ChainName */
@@ -23,17 +23,7 @@ export const useTokenDisplayData = (tokenOrTokens, chainName) => {
 	const tokensKey = tokens.map(token => `${token.id}:${token.name}:${token.amount}`).join();
 
 	const displayDataList = useMemo(
-		() => tokens.map(token => {
-			const knownInfo = getTokenKnownInfo(resolvedChainName, networkIdentifier, token.id);
-
-			return {
-				tokenId: token.id,
-				amount: token.amount,
-				name: knownInfo.name ?? token.name ?? token.id,
-				ticker: knownInfo.ticker,
-				imageId: knownInfo.imageId
-			};
-		}),
+		() => tokens.map(token => createTokenDisplayData(token, resolvedChainName, networkIdentifier)),
 		[tokensKey, resolvedChainName, networkIdentifier]
 	);
 

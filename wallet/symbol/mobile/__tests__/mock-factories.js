@@ -17,3 +17,26 @@ export const createAccountDisplayDataUtilsMock = accountInfoMap => {
 		}
 	};
 };
+
+/**
+ * Creates mock for the known-tokens config `@/app/config`. 
+ * The result must be spread into `jest.mock('@/app/config', ...)`.
+ * @param {{[tokenId: string]: { name: string, ticker: string|null, imageId: string|null }}} tokenInfoMap - Known info per token id.
+ * @param {string} [chainName='symbol'] - Chain name where the tokens belong to.
+ * @param {string} [networkIdentifier='testnet'] - Network id the tokens belong to.
+ * @returns {object} The `knownTokens` override config.
+ */
+export const createKnownTokensConfigMock = (tokenInfoMap, chainName = 'symbol', networkIdentifier = 'testnet') => {
+	const { knownTokens } = jest.requireActual('@/app/config');
+	const entries = Object.entries(tokenInfoMap).map(([tokenId, info]) => ({ tokenId, ...info }));
+
+	return {
+		knownTokens: {
+			...knownTokens,
+			[chainName]: {
+				...knownTokens[chainName],
+				[networkIdentifier]: entries
+			}
+		}
+	};
+};

@@ -2,6 +2,7 @@ import { knownTokens } from '@/app/config';
 import { safeOperationWithRelativeAmounts } from 'wallet-common-core';
 
 /** @typedef {import('@/app/types/Token').Token} Token */
+/** @typedef {import('@/app/types/Token').TokenDisplayData} TokenDisplayData */
 /** @typedef {import('@/app/types/Token').TokenExpiration} TokenExpiration */
 /** @typedef {import('@/app/types/Network').NetworkIdentifier} NetworkIdentifier */
 /** @typedef {import('@/app/types/Network').ChainName} ChainName */
@@ -11,7 +12,7 @@ import { safeOperationWithRelativeAmounts } from 'wallet-common-core';
  * @param {ChainName} chainName - The name of the blockchain (e.g., 'symbol', 'ethereum').
  * @param {NetworkIdentifier} networkIdentifier - The network identifier (e.g., 'mainnet', 'testnet').
  * @param {string} tokenId - The token ID to look up.
- * @returns {object|null} The known token entry if found, otherwise null.
+ * @returns {object} The known token entry if found in the configuration, otherwise null values for name, ticker, and imageId.
  */
 export const getTokenKnownInfo = (chainName, networkIdentifier, tokenId) => {
 	const knownTokenEntry = knownTokens[chainName][networkIdentifier]
@@ -105,21 +106,11 @@ export const getAvailableBalance = (token, nativeTokenId, transactionFeeTiers, s
 };
 
 /**
- * Resolved token label data; the name already includes the ticker when known.
- * @typedef {object} TokenLabelDisplayData
- * @property {string} name - The display name of the token, including the ticker when known.
- * @property {string} plainName - The display name of the token without the ticker.
- * @property {string|null} ticker - The token's ticker symbol, if available.
- * @property {string} tickerText - The ticker, or the display name when no ticker is known.
- * @property {string|null} imageId - The known image identifier for the token, if available.
- */
-
-/**
- * Creates token label data by combining token information with known token metadata.
+ * Creates token display data.
  * @param {Token} token - The token for which to create display data.
  * @param {ChainName} chainName - The name of the blockchain (e.g., 'symbol', 'ethereum').
  * @param {NetworkIdentifier} networkIdentifier - The network identifier (e.g., 'mainnet', 'testnet').
- * @returns {TokenLabelDisplayData} The token label data.
+ * @returns {TokenDisplayData} The token display data.
  */
 export const createTokenDisplayData = (token, chainName, networkIdentifier) => {
 	const tokenKnownInfo = getTokenKnownInfo(
@@ -128,15 +119,18 @@ export const createTokenDisplayData = (token, chainName, networkIdentifier) => {
 		token.id
 	);
 
-	const name = tokenKnownInfo.name ?? token.name ?? token.id;
-	const { ticker, imageId } = tokenKnownInfo;
+	const name = tokenKnownInfo.name ?? token.name ?? null;
+	const nameOrId = name ?? token.id;
+	const ticker = tokenKnownInfo.ticker ?? token.ticker ?? null;
 
 	return {
-		name: formatTokenNameText(name, ticker),
-		plainName: name,
+		tokenId: token.id,
+		name,
 		ticker,
-		tickerText: ticker ?? name,
-		imageId
+		nameText: formatTokenNameText(nameOrId, ticker),
+		tickerText: ticker ?? nameOrId,
+		imageId: tokenKnownInfo.imageId,
+		amount: token.amount ?? null
 	};
 };
 

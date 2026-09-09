@@ -119,16 +119,32 @@ const requestFailed = createBridgeRequest({
 const expectedSourceSide = {
 	chainName: CHAIN_NAME_SYMBOL,
 	networkIdentifier: NETWORK_IDENTIFIER,
-	token: { name: 'Symbol', ticker: 'XYM', imageId: 'xym', amount: '100' },
-	account: { address: symbolAccount.address, name: symbolAccount.name, imageId: null },
+	token: {
+		tokenId: tokenXym.id,
+		amount: '100',
+		name: 'Symbol',
+		ticker: 'XYM',
+		nameText: 'Symbol • XYM',
+		tickerText: 'XYM',
+		imageId: 'xym'
+	},
+	account: { address: symbolAccount.address, name: symbolAccount.name, imageId: null, color: expect.any(String) },
 	transactionHash: REQUEST_TRANSACTION_HASH
 };
 
 const expectedTargetSide = {
 	chainName: CHAIN_NAME_ETHEREUM,
 	networkIdentifier: NETWORK_IDENTIFIER,
-	token: { name: 'Bridged XYM', ticker: 'bXYM', imageId: 'bxym', amount: '99' },
-	account: { address: ethereumAccount.address, name: ethereumAccount.name, imageId: null },
+	token: {
+		tokenId: tokenBxym.id,
+		amount: '99',
+		name: 'Bridged XYM',
+		ticker: 'bXYM',
+		nameText: 'Bridged XYM • bXYM',
+		tickerText: 'bXYM',
+		imageId: 'bxym'
+	},
+	account: { address: ethereumAccount.address, name: ethereumAccount.name, imageId: null, color: expect.any(String) },
 	transactionHash: PAYOUT_TRANSACTION_HASH
 };
 

@@ -17,11 +17,12 @@ export const createSwapSideKey = side => `${side.chainName}|${side.token.id}`;
  * @returns {SwapSideOption} The option.
  */
 const createSideOption = side => {
-	const { name, imageId } = createTokenDisplayData(side.token, side.chainName, side.networkIdentifier);
+	const { name, ticker, imageId } = createTokenDisplayData(side.token, side.chainName, side.networkIdentifier);
 
 	return {
 		key: createSwapSideKey(side),
-		label: name,
+		name,
+		ticker,
 		imageId,
 		chainName: side.chainName,
 		amount: side.token.amount,
