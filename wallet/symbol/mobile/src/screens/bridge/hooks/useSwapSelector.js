@@ -1,13 +1,15 @@
 import { SwapSideType } from '@/app/screens/bridge/types/Bridge';
+import { createSwapSideKey } from '@/app/screens/bridge/utils';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 /** @typedef {import('@/app/screens/bridge/types/Bridge').SwapPair} SwapPair */
 /** @typedef {import('@/app/screens/bridge/types/Bridge').SwapSide} SwapSide */
 /** @typedef {import('@/app/screens/bridge/types/Bridge').SwapSideTypeValue} SwapSideTypeValue */
+/** @typedef {import('@/app/screens/bridge/types/Bridge').SwapStep} SwapStep */
 /** @typedef {import('@/app/screens/bridge/types/Bridge').SwapWorkflowManager} SwapWorkflowManager */
 
 /**
- * Gets the default swap pair based on chain name preference.
+ * Retrieves the default swap pair according to the preferred chain name.
  * @param {SwapPair[]} pairs - Available swap pairs.
  * @param {string} defaultSourceChainName - Preferred source chain name.
  * @returns {SwapPair} The default swap pair.
@@ -17,66 +19,69 @@ const getDefaultPair = (pairs, defaultSourceChainName) => {
 };
 
 /**
- * Gets available opposite sides for a given swap side.
+ * Verifies if two swap sides utilize the same token on the same chain.
+ * @param {SwapSide} side - One side.
+ * @param {SwapSide} otherSide - The other side.
+ * @returns {boolean} True when the side keys match.
+ */
+const isSameSide = (side, otherSide) => createSwapSideKey(side) === createSwapSideKey(otherSide);
+
+/**
+ * Selects either the target or source side of a pair.
+ * @param {SwapPair} pair - The swap pair.
+ * @param {SwapSideTypeValue} type - Which side to pick.
+ * @returns {SwapSide} The picked side.
+ */
+const getPairSide = (pair, type) => type === SwapSideType.SOURCE ? pair.source : pair.target;
+
+/**
+ * Finds the pair used to swap the specified source for the provided target.
+ * @param {SwapPair[]} pairs - Available swap pairs.
+ * @param {SwapSide} source - Source side.
+ * @param {SwapSide} target - Target side.
+ * @returns {SwapPair|undefined} The pair, or undefined when the route does not exist.
+ */
+const findPair = (pairs, source, target) => pairs.find(pair => isSameSide(pair.source, source) && isSameSide(pair.target, target));
+
+/**
+ * Retrieves the available opposite sides for a specified swap side.
  * @param {SwapPair[]} pairs - Available swap pairs.
  * @param {SwapSide} side - The current swap side.
  * @param {SwapSideTypeValue} type - The side type.
- * @returns {SwapSide[]} Array of available opposite sides.
+ * @returns {SwapSide[]} Available opposite sides.
  */
-const getOppositeSideList = (pairs, side, type) => {
-	const filteredPairs = pairs.filter(pair => {
-		if (type === SwapSideType.SOURCE)
-			return pair.source.chainName === side.chainName && pair.source.token.id === side.token.id;
-
-		if (type === SwapSideType.TARGET)
-			return pair.target.chainName === side.chainName && pair.target.token.id === side.token.id;
-	});
-
-	return filteredPairs.map(pair => type === SwapSideType.SOURCE ? pair.target : pair.source);
-};
+const getOppositeSideList = (pairs, side, type) => pairs
+	.filter(pair => isSameSide(getPairSide(pair, type), side))
+	.map(pair => type === SwapSideType.SOURCE ? pair.target : pair.source);
 
 /**
- * Gets updated swap side with fresh balance data.
+ * Retrieves the current swap side with updated balance information.
  * @param {SwapPair[]} pairs - Available swap pairs.
  * @param {SwapSide} side - The swap side to update.
  * @param {SwapSideTypeValue} type - The side type.
  * @returns {SwapSide} Updated swap side.
  */
 const getUpdatedSide = (pairs, side, type) => {
-	const getSide = pair => type === SwapSideType.SOURCE ? pair.source : pair.target;
+	const pair = pairs.find(pair => isSameSide(getPairSide(pair, type), side));
 
-	const pair = pairs.find(pair => 
-		getSide(pair).chainName === side.chainName &&
-		getSide(pair).token.id === side.token.id);
-
-	if (!pair)
-		return side;
-	
-	return getSide(pair);
+	return pair ? getPairSide(pair, type) : side;
 };
 
 /**
- * Finds the bridge for selected source and target.
+ * Finds the bridge for the chosen target and source.
  * @param {SwapPair[]} pairs - Available swap pairs.
  * @param {SwapSide} source - Selected source side.
  * @param {SwapSide} target - Selected target side.
  * @returns {SwapWorkflowManager|null} Matching bridge or null.
  */
-const getCorrespondingBridge = (pairs, source, target) => {
-	const pair = pairs.find(pair => 
-		pair.source.chainName === source.chainName &&
-		pair.source.token.id === source.token.id &&
-		pair.target.chainName === target.chainName &&
-		pair.target.token.id === target.token.id);
-
-	return pair ? pair.bridge : null;
-};
+const getCorrespondingBridge = (pairs, source, target) => findPair(pairs, source, target)?.bridge ?? null;
 
 /**
  * Return type for useSwapSelector hook.
  * @typedef {object} UseSwapSelectorReturnType
  * @property {boolean} isReady - Whether selection is complete and ready for swap.
  * @property {SwapWorkflowManager|null} bridge - Selected bridge manager.
+ * @property {SwapStep[]} steps - Steps of the selected route in execution order; empty while no route is selected.
  * @property {SwapSide|null} source - Selected source side.
  * @property {SwapSide|null} target - Selected target side.
  * @property {SwapSide[]} sourceList - Available source options.
@@ -87,8 +92,8 @@ const getCorrespondingBridge = (pairs, source, target) => {
  */
 
 /**
- * React hook for managing swap source/target selection and determining the appropriate bridge.
- * Handles pair filtering, selection lists, and automatic bridge resolution.
+ * React hook for managing the selection of swap targets and sources while identifying the correct bridge,
+ * including automatic bridge resolution, selection lists, and pair filtering.
  * @param {object} params - Hook parameters.
  * @param {SwapPair[]} params.pairs - Available swap pairs.
  * @param {string} params.defaultSourceChainName - Default source chain name.
@@ -98,7 +103,7 @@ export const useSwapSelector = ({ pairs, defaultSourceChainName }) => {
 	const [source, setSource] = useState(null);
 	const [target, setTarget] = useState(null);
 
-	// Initialize source and target when pairs become available
+	// Set target and source once pairs are accessible
 	useEffect(() => {
 		if (pairs.length === 0) {
 			setSource(null);
@@ -107,32 +112,34 @@ export const useSwapSelector = ({ pairs, defaultSourceChainName }) => {
 		}
 
 		setSource(prevSource => {
-			if (!prevSource) {
-				const defaultPair = getDefaultPair(pairs, defaultSourceChainName);
-				return defaultPair.source;
-			}
+			if (!prevSource)
+				return getDefaultPair(pairs, defaultSourceChainName).source;
 
 			return getUpdatedSide(pairs, prevSource, SwapSideType.SOURCE);
 		});
 
 		setTarget(prevTarget => {
-			if (!prevTarget) {
-				const defaultPair = getDefaultPair(pairs, defaultSourceChainName);
-				return defaultPair.target;
-			}
+			if (!prevTarget)
+				return getDefaultPair(pairs, defaultSourceChainName).target;
 
 			return getUpdatedSide(pairs, prevTarget, SwapSideType.TARGET);
 		});
 	}, [pairs, defaultSourceChainName]);
 
-	// Calculated values based on current source and target
-
+	// Values derived from the present target and source
 	const bridge = useMemo(() => {
 		if (source && target)
 			return getCorrespondingBridge(pairs, source, target);
 
 		return null;
 	}, [pairs, source, target]);
+
+	const steps = useMemo(() => {
+		if (!bridge)
+			return [];
+
+		return Array.from({ length: bridge.steps }, (_, stepIndex) => bridge.getPairForStep(stepIndex));
+	}, [bridge]);
 
 	const sourceList = useMemo(() => {
 		if (pairs.length === 0)
@@ -142,78 +149,50 @@ export const useSwapSelector = ({ pairs, defaultSourceChainName }) => {
 		return pairs
 			.map(pair => pair.source)
 			.filter(side => {
-				const key = `${side.chainName}:${side.token.id}`;
-				if (seen.has(key)) 
+				const key = createSwapSideKey(side);
+
+				if (seen.has(key))
 					return false;
+
 				seen.add(key);
+
 				return true;
 			});
 	}, [pairs]);
 
 	const targetList = useMemo(() => {
-		if (!source || pairs.length === 0) 
+		if (!source || pairs.length === 0)
 			return [];
-		
+
 		return getOppositeSideList(pairs, source, SwapSideType.SOURCE);
 	}, [pairs, source]);
 
 	// User interactions
-
 	const changeSource = useCallback(newSource => {
-		const isValid = pairs.some(pair =>
-			pair.source.chainName === newSource.chainName &&
-			pair.source.token.id === newSource.token.id);
+		if (!pairs.some(pair => isSameSide(pair.source, newSource)))
+			return;
 
-		if (isValid) {
-			setSource(newSource);
-			setTarget(prevTarget => {
-				const isTargetStillValid = prevTarget && pairs.some(pair =>
-					pair.source.chainName === newSource.chainName &&
-					pair.source.token.id === newSource.token.id &&
-					pair.target.chainName === prevTarget.chainName &&
-					pair.target.token.id === prevTarget.token.id);
-
-				if (isTargetStillValid) 
-					return prevTarget;
-
-				const firstPair = pairs.find(pair =>
-					pair.source.chainName === newSource.chainName &&
-					pair.source.token.id === newSource.token.id);
-				return firstPair ? firstPair.target : null;
-			});
-		}
+		setSource(newSource);
+		setTarget(prevTarget => prevTarget && findPair(pairs, newSource, prevTarget)
+			? prevTarget
+			: pairs.find(pair => isSameSide(pair.source, newSource))?.target ?? null);
 	}, [pairs]);
 
 	const changeTarget = useCallback(newTarget => {
-		const isValid = pairs.some(pair =>
-			pair.target.chainName === newTarget.chainName &&
-			pair.target.token.id === newTarget.token.id);
-
-		if (isValid) 
+		if (pairs.some(pair => isSameSide(pair.target, newTarget)))
 			setTarget(newTarget);
 	}, [pairs]);
 
 	const reverse = useCallback(() => {
-		const isNewSourceValid = target && pairs.some(pair =>
-			pair.source.chainName === target.chainName &&
-			pair.source.token.id === target.token.id);
+		const isTargetValidSource = target && pairs.some(pair => isSameSide(pair.source, target));
+		const newSource = isTargetValidSource ? target : (pairs[0]?.source ?? null);
 
-		const newSource = isNewSourceValid ? target : (pairs.length > 0 ? pairs[0].source : null);
-
-		if (!newSource) 
+		if (!newSource)
 			return;
 
-		const isNewTargetValid = source && pairs.some(pair =>
-			pair.source.chainName === newSource.chainName &&
-			pair.source.token.id === newSource.token.id &&
-			pair.target.chainName === source.chainName &&
-			pair.target.token.id === source.token.id);
-
-		const newTarget = isNewTargetValid
+		const newTarget = source && findPair(pairs, newSource, source)
 			? source
-			: (pairs.find(pair =>
-				pair.source.chainName === newSource.chainName &&
-				pair.source.token.id === newSource.token.id)?.target ?? null);
+			: pairs.find(pair => isSameSide(pair.source, newSource))?.target ?? null;
 
 		setSource(newSource);
 		setTarget(newTarget);
@@ -222,6 +201,7 @@ export const useSwapSelector = ({ pairs, defaultSourceChainName }) => {
 	return {
 		isReady: source !== null && target !== null && bridge !== null,
 		bridge,
+		steps,
 		source,
 		target,
 		sourceList,

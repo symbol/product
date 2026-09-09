@@ -13,15 +13,15 @@ jest.mock('@/app/utils', () => ({
 		'TADDRESS1': { name: 'Alice', imageId: 'alice' },
 		'TADDRESS2': { name: 'Bob', imageId: 'bob' },
 		'TADDRESS3': { name: null, imageId: null }
-	}),
-	getTokenKnownInfo: (chainName, networkIdentifier, tokenId) => {
-		const tokenInfoMap = {
-			'token1': { name: 'Symbol', ticker: 'XYM', imageId: 'symbol' },
-			'token2': { name: 'Custom Token', ticker: 'CTK', imageId: 'custom' }
-		};
+	})
+}));
 
-		return tokenInfoMap[tokenId] ?? { name: null, ticker: null, imageId: null };
-	}
+jest.mock('@/app/config', () => ({
+	...jest.requireActual('@/app/config'),
+	...require('__tests__/mock-factories').createKnownTokensConfigMock({
+		'token1': { name: 'Symbol', ticker: 'XYM', imageId: 'symbol' },
+		'token2': { name: 'Custom Token', ticker: 'CTK', imageId: 'custom' }
+	})
 }));
 
 describe('components/TableView', () => {

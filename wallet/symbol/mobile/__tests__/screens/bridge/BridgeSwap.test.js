@@ -26,21 +26,8 @@ jest.mock('@/app/screens/bridge/hooks', () => ({
 	useBridgeTransactionWorkflow:
 		jest.requireActual('@/app/screens/bridge/hooks/useBridgeTransactionWorkflow').useBridgeTransactionWorkflow,
 	useEstimation: jest.fn(),
+	useStepTransactionFees: jest.fn(),
 	useSwapSelector: jest.fn()
-}));
-
-// Resolve token labels by id, so both chains resolve under the single mocked controller.
-jest.mock('@/app/utils', () => ({
-	...jest.requireActual('@/app/utils'),
-	getTokenKnownInfo: (chainName, networkIdentifier, tokenId) => {
-		const tokenInfoById = {
-			'72C0212E67A08BCE': { name: 'Symbol', ticker: 'XYM', imageId: 'symbol' },
-			'0xac461bf5a6554e8406f58b192d83aeea695e229b': { name: 'Bridged XYM', ticker: 'bXYM', imageId: 'bxym' },
-			eth: { name: 'Ether', ticker: 'ETH', imageId: 'eth' }
-		};
-
-		return tokenInfoById[tokenId] ?? { name: null, ticker: null, imageId: null };
-	}
 }));
 
 // Constants
@@ -51,6 +38,7 @@ const NETWORK_IDENTIFIER = 'testnet';
 const BRIDGE_ID_XYM_TO_BXYM = 'symbol-xym-ethereum-bxym';
 const PAYOUT_AMOUNT = '99';
 const HISTORY_ITEM_TRANSACTION_HASH = '0C905EB065E6A42029CD1A10E710422761495A63D433535BA6EAA9BCF36AB8B6';
+const TRANSACTION_FEE_TIER_LEVEL = 'medium';
 
 // Screen Text
 
@@ -85,6 +73,7 @@ const SCREEN_TEXT = {
 	// Accessibility Labels
 	labelSelectSourceToken: 'Select source token',
 	labelSelectTargetToken: 'Select target token',
+	labelReverse: 'Reverse swap direction',
 	inputAmountLabel: 'form_transfer_input_amount',
 
 	// History item
@@ -202,10 +191,50 @@ const bridgeMock = {
 		bridgeFee: '1',
 		receiveAmount: PAYOUT_AMOUNT
 	}),
-	getPairForStep: jest.fn().mockReturnValue(bridgeStepPair),
 	createTransaction: jest.fn(),
 	fetchRecentHistory: jest.fn().mockResolvedValue([])
 };
+
+// Dual-Step Route Fixtures
+
+// ETH → XYM route: step 0 swaps on Uniswap (fee in bXYM), step 1 sends through the bridge (fee in XYM);
+// both steps' transactions pay gas on Ethereum.
+const ethereumFeeTiers = [
+	TransactionFeeFixtureBuilder
+		.createWithAmounts('0.5', '1', '2', CHAIN_NAME_ETHEREUM)
+		.build()
+];
+
+const ethereumSourceWalletController = createWalletControllerMock({
+	...ethereumWalletController,
+	modules: {
+		transfer: {
+			calculateTransactionFees: jest.fn().mockResolvedValue(ethereumFeeTiers)
+		},
+		bridge: {
+			createTransaction: jest.fn().mockResolvedValue({})
+		}
+	}
+});
+
+const swapStepPairEthToBxym = {
+	sourceWalletController: ethereumSourceWalletController,
+	targetWalletController: ethereumWalletController,
+	sourceTokenInfo: tokenEth,
+	targetTokenInfo: tokenBxym
+};
+
+const swapStepPairBxymToXym = {
+	sourceWalletController: ethereumSourceWalletController,
+	targetWalletController: symbolWalletController,
+	sourceTokenInfo: tokenBxym,
+	targetTokenInfo: tokenXym
+};
+
+const dualStepEstimations = [
+	{ bridgeFee: '2.5', receiveAmount: '735' },
+	{ bridgeFee: '0.75', receiveAmount: PAYOUT_AMOUNT }
+];
 
 // Swap Side Fixtures
 
@@ -282,6 +311,18 @@ const transactionFeeTiers = [
 		.build()
 ];
 
+// Step Fees Fixtures
+
+const createStepFees = (stepIndex, chainName, feeTiers) => ({
+	stepIndex,
+	chainName,
+	networkIdentifier: NETWORK_IDENTIFIER,
+	feeTiers
+});
+
+// Step-0 fees for the default XYM -> bXYM route
+const symbolStepFees = createStepFees(0, CHAIN_NAME_SYMBOL, transactionFeeTiers);
+
 // Estimation Fixtures
 
 const estimationResult = {
@@ -299,6 +340,7 @@ const {
 	useBridgeNoPairsDialog,
 	useBridgeTransaction,
 	useEstimation,
+	useStepTransactionFees,
 	useSwapSelector
 } = require('@/app/screens/bridge/hooks');
 
@@ -317,7 +359,7 @@ const createUseBridgeMock = (overrides = {}) => ({
 const createUseSwapSelectorMock = (overrides = {}) => ({
 	isReady: true,
 	bridge: bridgeMock,
-	mode: BridgeMode.WRAP,
+	steps: [bridgeStepPair],
 	source: swapSideSymbolXym,
 	target: swapSideEthereumBxym,
 	sourceList: [swapSideSymbolXym, swapSideEthereumEth],
@@ -351,6 +393,16 @@ const createUseEstimationMock = (overrides = {}) => ({
 	clearEstimation: jest.fn(),
 	isLoading: false,
 	hasFailed: false,
+	...overrides
+});
+
+const createUseStepTransactionFeesMock = (overrides = {}) => ({
+	stepFees: [symbolStepFees],
+	isLoading: false,
+	hasFailed: false,
+	fetchFirstStepFees: jest.fn().mockResolvedValue(transactionFeeTiers),
+	fetchRemainingStepFees: jest.fn().mockResolvedValue([]),
+	clearRemainingStepFees: jest.fn(),
 	...overrides
 });
 
@@ -398,6 +450,7 @@ const setupMocks = (config = {}) => {
 	useBridgeAmount.mockReturnValue(createUseBridgeAmountMock(config.useBridgeAmount));
 	useBridgeTransaction.mockReturnValue(createUseBridgeTransactionMock(config.useBridgeTransaction));
 	useEstimation.mockReturnValue(createUseEstimationMock(config.useEstimation));
+	useStepTransactionFees.mockReturnValue(createUseStepTransactionFeesMock(config.useStepTransactionFees));
 	useBridgeHistory.mockReturnValue(createUseBridgeHistoryMock(config.useBridgeHistory));
 	useBridgeNoPairsDialog.mockReturnValue(createUseBridgeNoPairsDialogMock(config.useBridgeNoPairsDialog));
 	useBridgeDisabledDialog.mockReturnValue(createUseBridgeDisabledDialogMock(config.useBridgeDisabledDialog));
@@ -439,20 +492,17 @@ describe('screens/bridge/BridgeSwap', () => {
 				announceSignedTransactionBundle: announceSignedTransactionBundleMock
 			});
 
-			// The transaction workflow signs and announces through the step pair's source wallet controller
-			const bridge = {
-				...bridgeMock,
-				getPairForStep: jest.fn().mockReturnValue({
-					...bridgeStepPair,
-					sourceWalletController: walletController
-				})
+			// The transaction workflow signs and announces through the route step's source wallet controller
+			const signingStep = {
+				...bridgeStepPair,
+				sourceWalletController: walletController
 			};
 
 			setupMocks({
 				walletController,
 				useSwapSelector: {
 					isReady: true,
-					bridge,
+					steps: [signingStep],
 					source: swapSideSymbolXym,
 					target: swapSideEthereumBxym,
 					sourceList: [swapSideSymbolXym, swapSideEthereumEth],
@@ -471,10 +521,6 @@ describe('screens/bridge/BridgeSwap', () => {
 				},
 				useEstimation: {
 					estimations: [estimationResult],
-					isLoading: false
-				},
-				useTransactionFees: {
-					data: transactionFeeTiers,
 					isLoading: false
 				}
 			});
@@ -544,7 +590,7 @@ describe('screens/bridge/BridgeSwap', () => {
 					source: null,
 					target: null,
 					bridge: null,
-					mode: null,
+					steps: [],
 					sourceList: [],
 					targetList: []
 				}
@@ -670,6 +716,53 @@ describe('screens/bridge/BridgeSwap', () => {
 		});
 	});
 
+	describe('transaction fee errors', () => {
+		// A valid positive amount with an estimation leaves the fee state as the only send gate
+		const runStepFeesFailureTest = (description, config, expected) => {
+			it(description, () => {
+				// Arrange:
+				setupMocks({
+					useBridgeAmount: {
+						amount: '100',
+						amountInput: '100'
+					},
+					useEstimation: {
+						estimations: [estimationResult]
+					},
+					useStepTransactionFees: {
+						hasFailed: config.hasFailed
+					}
+				});
+
+				// Act:
+				const screenTester = new ScreenTester(BridgeSwap, createDefaultProps());
+
+				// Assert:
+				if (expected.isSendButtonDisabled)
+					screenTester.expectButtonDisabled(SCREEN_TEXT.buttonSend);
+				else
+					screenTester.expectButtonEnabled(SCREEN_TEXT.buttonSend);
+			});
+		};
+
+		const stepFeesFailureTests = [
+			{
+				description: 'disables send button when a step fee request failed',
+				config: { hasFailed: true },
+				expected: { isSendButtonDisabled: true }
+			},
+			{
+				description: 'keeps send button enabled while the step fee requests succeed',
+				config: { hasFailed: false },
+				expected: { isSendButtonDisabled: false }
+			}
+		];
+
+		stepFeesFailureTests.forEach(test => {
+			runStepFeesFailureTest(test.description, test.config, test.expected);
+		});
+	});
+
 	describe('price impact', () => {
 		const warningImpactEstimation = { ...estimationResult, priceImpact: 0.06 };
 		const criticalImpactEstimation = { ...estimationResult, priceImpact: 0.20331 };
@@ -784,6 +877,148 @@ describe('screens/bridge/BridgeSwap', () => {
 		});
 	});
 
+	describe('fee summary', () => {
+		// expected.rowCounts: [row title, expected titled row count, expected connector (continuation row) count]
+		const runFeeSummaryTest = (description, config, expected) => {
+			it(description, async () => {
+				// Arrange:
+				setupMocks({
+					walletController: ethereumSourceWalletController,
+					useSwapSelector: {
+						steps: config.steps,
+						source: swapSideEthereumEth,
+						target: swapSideSymbolXym
+					},
+					useEstimation: { estimations: config.estimations },
+					useStepTransactionFees: { stepFees: config.stepFees }
+				});
+
+				// Act:
+				const screenTester = new ScreenTester(BridgeSwap, createDefaultProps());
+				await screenTester.waitForTimer(); // initial fee calculation
+
+				// Assert:
+				screenTester.expectText(expected.texts);
+				expected.rowCounts.forEach(([title, titleCount, connectorCount]) => {
+					screenTester.expectTextCount(title, titleCount);
+					screenTester.expectElementCount(title, connectorCount, 'label');
+				});
+			});
+		};
+
+		const testCases = [
+			[
+				'adds the gas of the steps into one row and shows each operation fee token on its own row',
+				{
+					steps: [swapStepPairEthToBxym, swapStepPairBxymToXym],
+					estimations: dualStepEstimations,
+					stepFees: [
+						createStepFees(0, CHAIN_NAME_ETHEREUM, ethereumFeeTiers),
+						createStepFees(1, CHAIN_NAME_ETHEREUM, ethereumFeeTiers)
+					]
+				},
+				{
+					// Gas 1 + 1 ETH summed; operation fees bXYM and XYM kept apart, the XYM one on a connected row
+					texts: ['2 ETH', '2.5 bXYM', '0.75 XYM'],
+					rowCounts: [
+						[SCREEN_TEXT.textSummaryTransactionFee, 1, 0],
+						[SCREEN_TEXT.textSummaryBridgeFee, 1, 1]
+					]
+				}
+			],
+			[
+				'shows the gas of a step paid in another currency on a connected row',
+				{
+					steps: [swapStepPairEthToBxym, swapStepPairBxymToXym],
+					estimations: dualStepEstimations,
+					stepFees: [
+						createStepFees(0, CHAIN_NAME_ETHEREUM, ethereumFeeTiers),
+						createStepFees(1, CHAIN_NAME_SYMBOL, transactionFeeTiers)
+					]
+				},
+				{
+					texts: ['1 ETH', '2 XYM'],
+					rowCounts: [[SCREEN_TEXT.textSummaryTransactionFee, 1, 1]]
+				}
+			],
+			[
+				'adds the operation fees into one row when they are in the same token',
+				{
+					steps: [swapStepPairBxymToXym, swapStepPairBxymToXym],
+					estimations: [
+						{ bridgeFee: '1.5', receiveAmount: '735' },
+						{ bridgeFee: '0.5', receiveAmount: PAYOUT_AMOUNT }
+					],
+					stepFees: [
+						createStepFees(0, CHAIN_NAME_ETHEREUM, ethereumFeeTiers),
+						createStepFees(1, CHAIN_NAME_ETHEREUM, null)
+					]
+				},
+				{
+					texts: ['2 XYM'],
+					rowCounts: [[SCREEN_TEXT.textSummaryBridgeFee, 1, 0]]
+				}
+			]
+		];
+
+		testCases.forEach(([description, config, expected]) => runFeeSummaryTest(description, config, expected));
+	});
+
+	describe('dual-step transaction fees', () => {
+		it('creates each step transaction with the fee tiers of its own step', async () => {
+			// Arrange:
+			const firstStepFeeTiers = [
+				TransactionFeeFixtureBuilder
+					.createWithAmounts('0.5', '1', '2', CHAIN_NAME_ETHEREUM)
+					.build()
+			];
+			const secondStepFeeTiers = [
+				TransactionFeeFixtureBuilder
+					.createWithAmounts('0.25', '0.5', '1', CHAIN_NAME_ETHEREUM)
+					.build()
+			];
+			const stepBundles = [
+				new TransactionBundle([{ hash: 'STEP0', type: 'uniswap_swap' }]),
+				new TransactionBundle([{ hash: 'STEP1', type: 'erc20_bridge_transfer' }])
+			];
+
+			setupMocks({
+				walletController: ethereumSourceWalletController,
+				useSwapSelector: {
+					steps: [swapStepPairEthToBxym, swapStepPairBxymToXym],
+					source: swapSideEthereumEth,
+					target: swapSideSymbolXym
+				},
+				useBridgeAmount: {
+					amount: '100',
+					amountInput: '100'
+				},
+				useEstimation: { estimations: dualStepEstimations },
+				useStepTransactionFees: {
+					stepFees: [
+						createStepFees(0, CHAIN_NAME_ETHEREUM, firstStepFeeTiers),
+						createStepFees(1, CHAIN_NAME_ETHEREUM, secondStepFeeTiers)
+					]
+				},
+				useBridgeTransaction: {
+					createTransaction: jest.fn(stepIndex => Promise.resolve(stepBundles[stepIndex]))
+				}
+			});
+
+			const screenTester = new ScreenTester(BridgeSwap, createDefaultProps());
+			await screenTester.waitForTimer(); // initial fee calculation + estimation
+
+			// Act: sending creates both step transactions before the confirmation dialog
+			screenTester.pressButton(SCREEN_TEXT.buttonSend);
+			await screenTester.waitForTimer(); // create the first step transaction
+			await screenTester.waitForTimer(); // create the second step transaction
+
+			// Assert:
+			expect(stepBundles[0].transactions[0].fee).toBe(firstStepFeeTiers[0][TRANSACTION_FEE_TIER_LEVEL]);
+			expect(stepBundles[1].transactions[0].fee).toBe(secondStepFeeTiers[0][TRANSACTION_FEE_TIER_LEVEL]);
+		});
+	});
+
 	describe('no pairs dialog', () => {
 		const runNoPairsDialogTest = (description, config, expected) => {
 			it(description, async () => {
@@ -891,6 +1126,25 @@ describe('screens/bridge/BridgeSwap', () => {
 				SCREEN_TEXT.textDialogDisabledTitle,
 				SCREEN_TEXT.textDialogDisabledText
 			]);
+		});
+	});
+
+	describe('reverse', () => {
+		it('calls reverse when the reverse button is pressed', () => {
+			// Arrange:
+			const reverseMock = jest.fn();
+			setupMocks({
+				useSwapSelector: {
+					reverse: reverseMock
+				}
+			});
+			const screenTester = new ScreenTester(BridgeSwap, createDefaultProps());
+
+			// Act:
+			screenTester.presButtonByLabel(SCREEN_TEXT.labelReverse);
+
+			// Assert:
+			expect(reverseMock).toHaveBeenCalledTimes(1);
 		});
 	});
 

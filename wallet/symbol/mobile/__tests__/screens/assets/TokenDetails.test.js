@@ -28,12 +28,10 @@ const TOKEN_END_HEIGHT = 180_000;
 
 // Mocks
 
-jest.mock('@/app/utils', () => ({
-	...jest.requireActual('@/app/utils'),
-	getTokenKnownInfo: () => ({
-		name: TOKEN_NAME,
-		ticker: TOKEN_TICKER,
-		imageId: 'image'
+jest.mock('@/app/config', () => ({
+	...jest.requireActual('@/app/config'),
+	...require('__tests__/mock-factories').createKnownTokensConfigMock({
+		'E74B99BA41F4AFB4': { name: 'Test Token', ticker: 'XYM', imageId: 'image' }
 	})
 }));
 

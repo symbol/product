@@ -1,57 +1,57 @@
 import { formatAmountInput, getAvailableBalance } from '@/app/utils';
 import { useState } from 'react';
 
+/** @typedef {import('@/app/screens/bridge/types/Bridge').StepFees} StepFees */
 /** @typedef {import('@/app/screens/bridge/types/Bridge').SwapSide} SwapSide */
 /** @typedef {import('@/app/types/Transaction').TransactionFeeTiers} TransactionFeeTiers */
 /** @typedef {import('@/app/types/Transaction').TransactionFeeTierLevel} TransactionFeeTierLevel */
-/** @typedef {import('@/app/types/Network').NetworkCurrency} NetworkCurrency */
 
 const DEFAULT_AMOUNT = '0';
 
 /**
- * Extracts the native currency info from a swap source side.
- * @param {SwapSide|null} source - The source swap side.
- * @returns {NetworkCurrency|null} The native currency info or null.
- */
-const getNativeCurrency = source => {
-	const networkCurrency = source?.walletController?.networkProperties?.networkCurrency;
-
-	if (!networkCurrency)
-		return null;
-
-	const id = networkCurrency.mosaicId || networkCurrency.id;
-
-	return {
-		...networkCurrency,
-		id
-	};
-};
-
-/**
- * Calculates the available balance after accounting for transaction fees.
- * @param {SwapSide|null} source - The source swap side.
- * @param {TransactionFeeTiers|null} transactionFees - Transaction fee tiers.
+ * Retrieves the tiers for all loaded steps that require fees in the source chain's native currency, representing
+ * the gas that must remain in the wallet after the entered amount is deducted.
+ * @param {SwapSide} source - The source swap side.
+ * @param {StepFees[]} stepFees - Fee data per step.
+ * @param {string} nativeCurrencyId - Native currency id of the source chain.
  * @param {TransactionFeeTierLevel} transactionFeeTierLevel - Selected fee tier level.
- * @returns {string} The available balance string.
+ * @returns {TransactionFeeTiers[]} One tier set per transaction of those steps.
  */
-const calculateAvailableBalance = (source, transactionFees, transactionFeeTierLevel) => {
-	if (!source?.token || source.token.amount === '0' || !transactionFees)
+const getNativeCurrencyFeeTiers = (source, stepFees, nativeCurrencyId, transactionFeeTierLevel) => stepFees
+	.filter(stepFee => stepFee.feeTiers?.length
+		&& stepFee.chainName === source.chainName
+		&& stepFee.feeTiers[0][transactionFeeTierLevel].token.id === nativeCurrencyId)
+	.flatMap(stepFee => stepFee.feeTiers);
+
+/**
+ * Calculates available balance after the fees of the route's steps.
+ * @param {SwapSide|null} source - The source swap side.
+ * @param {StepFees[]} stepFees - Fee data per step.
+ * @param {TransactionFeeTierLevel} transactionFeeTierLevel - Selected fee tier level.
+ * @returns {string} The available balance.
+ */
+const calculateAvailableBalance = (source, stepFees, transactionFeeTierLevel) => {
+	if (!source?.token || source.token.amount === '0')
 		return '0';
 
-	const networkCurrency = getNativeCurrency(source);
+	const networkCurrency = source.walletController?.networkProperties?.networkCurrency;
 
 	if (!networkCurrency)
 		return '0';
 
-	const nativeCurrencyId = networkCurrency.mosaicId || networkCurrency.id;
+	const nativeCurrencyId = networkCurrency.mosaicId ?? networkCurrency.id;
+	const feeTiers = getNativeCurrencyFeeTiers(source, stepFees, nativeCurrencyId, transactionFeeTierLevel);
 
-	return getAvailableBalance(source.token, nativeCurrencyId, transactionFees, transactionFeeTierLevel);
+	if (!feeTiers.length)
+		return '0';
+
+	return getAvailableBalance(source.token, nativeCurrencyId, feeTiers, transactionFeeTierLevel);
 };
 
 /**
- * Return type for useBridgeAmount hook.
+ * The return type of the useBridgeAmount hook.
  * @typedef {object} UseBridgeAmountReturnType
- * @property {string} amount - Formatted amount value.
+ * @property {string} amount - Amount input truncated to the source token's decimals.
  * @property {string} amountInput - Raw amount input value.
  * @property {boolean} isAmountValid - Whether the amount is valid.
  * @property {string} availableBalance - Available balance after fees.
@@ -61,24 +61,23 @@ const calculateAvailableBalance = (source, transactionFees, transactionFeeTierLe
  */
 
 /**
- * React hook for managing swap amount input, validation, and available balance calculation.
+ * React hook for managing the calculation of available balance, swap amount input, and validation.
  * @param {object} params - Hook parameters.
  * @param {SwapSide|null} params.source - The source swap side.
- * @param {TransactionFeeTiers|null} params.transactionFees - Transaction fee tiers.
+ * @param {StepFees[]} params.stepFees - Fee data per step; a step's tiers are null until fetched.
  * @param {TransactionFeeTierLevel} params.transactionFeeTierLevel - Selected fee tier level.
  * @returns {UseBridgeAmountReturnType}
  */
-export const useBridgeAmount = ({ source, transactionFees, transactionFeeTierLevel }) => {
+export const useBridgeAmount = ({ source, stepFees, transactionFeeTierLevel }) => {
 	const [amountInput, setAmountInput] = useState(DEFAULT_AMOUNT);
 	const [isAmountValid, setAmountValidity] = useState(true);
 
-	const nativeCurrency = getNativeCurrency(source);
-	const amount = nativeCurrency 
-		? formatAmountInput(amountInput, nativeCurrency.divisibility) 
+	const amount = source
+		? formatAmountInput(amountInput, source.token.divisibility)
 		: amountInput;
 
-	const availableBalance = calculateAvailableBalance(source, transactionFees, transactionFeeTierLevel);
-    
+	const availableBalance = calculateAvailableBalance(source, stepFees, transactionFeeTierLevel);
+
 	const reset = () => setAmountInput(DEFAULT_AMOUNT);
 
 	return {

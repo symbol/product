@@ -7,4 +7,5 @@ export * from './useBridgeNoPairsDialog';
 export * from './useBridgeTransaction';
 export * from './useBridgeTransactionWorkflow';
 export * from './useEstimation';
+export * from './useStepTransactionFees';
 export * from './useSwapSelector';

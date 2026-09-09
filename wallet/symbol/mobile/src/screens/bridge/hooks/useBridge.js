@@ -1,6 +1,7 @@
 import { bridges } from '@/app/lib/controller';
 import { BridgePairsStatus } from '@/app/screens/bridge/types/Bridge';
-import { getBridgePairs, isBridgeControllersReady, loadWalletController } from '@/app/screens/bridge/utils';
+import { getBridgePairs, isBridgeControllersReady } from '@/app/screens/bridge/utils';
+import { loadWalletController } from '@/app/screens/bridge/utils/wallet-controller';
 import { useCallback, useEffect, useState } from 'react';
 import { ControllerEventName } from 'wallet-common-core/src/constants';
 
@@ -10,7 +11,7 @@ import { ControllerEventName } from 'wallet-common-core/src/constants';
 /** @typedef {import('@/app/types/Wallet').WalletController} WalletController */
 
 /**
- * Extracts all wallet controllers from an array of bridges.
+ * Retrieves every wallet controller from a provided array of bridges.
  * @param {SwapWorkflowManager[]} bridges - Array of bridge managers.
  * @returns {WalletController[]} Array of wallet controllers.
  */
@@ -29,7 +30,7 @@ const getBridgesWalletControllers = bridges => {
 };
 
 /**
- * Return type for useBridge hook.
+ * The return type of the useBridge hook.
  * @typedef {object} UseBridgeReturnType
  * @property {SwapWorkflowManager[]} bridges - Array of available bridge managers.
  * @property {SwapPair[]} pairs - Array of available swap pairs.
@@ -40,8 +41,8 @@ const getBridgesWalletControllers = bridges => {
  */
 
 /**
- * React hook for managing bridge operations, swap pairs, and wallet controller lifecycle.
- * Handles loading bridges, creating swap pairs, and subscribing to account and network changes.
+ * React hook for managing controller lifecycle, swap pairs, and bridge operations. 
+ * It handles subscribing to network and account changes, creating swap pairs, and loading bridges.
  * @returns {UseBridgeReturnType}
  */
 export const useBridge = () => {

@@ -6,15 +6,19 @@ import { ActivityStatus } from '@/app/constants';
 import { $t } from '@/app/localization';
 import { createTokenDisplayData } from '@/app/utils';
 
-/** @typedef {import('@/app/types/Network').ChainName} ChainName */
-/** @typedef {import('@/app/types/Network').NetworkIdentifier} NetworkIdentifier */
-/** @typedef {import('../hooks/useBridgeTransactionWorkflow').WorkflowMetaSide} WorkflowMetaSide */
-/** @typedef {import('../hooks/useBridgeTransactionWorkflow').SingleWorkflowMeta} SingleWorkflowMeta */
-/** @typedef {import('../hooks/useBridgeTransactionWorkflow').DualWorkflowMeta} DualWorkflowMeta */
+/** @typedef {import('@/app/screens/bridge/types/Bridge').DualWorkflowMeta} DualWorkflowMeta */
+/** @typedef {import('@/app/screens/bridge/types/Bridge').SingleWorkflowMeta} SingleWorkflowMeta */
+/** @typedef {import('@/app/screens/bridge/types/Bridge').WorkflowMetaSide} WorkflowMetaSide */
+/** @typedef {import('@/app/types/Action').ActionState} ActionState */
+/** @typedef {import('@/app/types/ActivityLog').ActivityLogItem} ActivityLogItem */
+/** @typedef {import('@/app/types/AsyncManager').AsyncManager} AsyncManager */
+// eslint-disable-next-line max-len
+/** @typedef {import('@/app/components/templates/TransactionScreenTemplate/types/TransactionProgress').TransactionProgressViewModel} TransactionProgressViewModel */
 
+const UNKNOWN_TOKEN_TEXT = 'unknown';
 
 /**
- * Maps a BridgeTransactionWorkflowStatus value to its full display info: icon, variant, and localised text.
+ * Creates a status card view model for a given swap workflow status value.
  * @param {string} status - A BridgeTransactionWorkflowStatus value.
  * @param {Array<{from: string, to: string}>} tokenPairsText - Token ticker pairs for each step.
  * @returns {object} Display info for the given status.
@@ -22,6 +26,7 @@ import { createTokenDisplayData } from '@/app/utils';
 const createStatusInfo = (status, tokenPairsText) => {
 	const pair1 = tokenPairsText[0];
 	const pair2 = tokenPairsText[1];
+	
 	const unknownStatus = {
 		icon: 'question-circle',
 		variant: 'neutral',
@@ -118,125 +123,122 @@ const createStatusInfo = (status, tokenPairsText) => {
 	return infoMap[status] ?? unknownStatus;
 };
 
-const createActionStatus = (status, errorMessage = null) => ({
+/**
+ * Creates extended activity (action) state with optional error message.
+ * @param {string} status - One of ActivityStatus.
+ * @param {string|null} [errorMessage=null] - Error message when the action failed.
+ * @returns {ActionState} Action state.
+ */
+const createActionState = (status, errorMessage = null) => ({
 	status,
 	errorMessage
 });
 
-const getActionStatusFromAsyncManager = asyncManager => {
+/**
+ * Maps the async manager state to an action state.
+ * @param {AsyncManager} asyncManager - Manager running the action.
+ * @returns {ActionState} Action state.
+ */
+const getActionStateFromAsyncManager = asyncManager => {
 	if (asyncManager.isLoading)
-		return createActionStatus(ActivityStatus.LOADING);
+		return createActionState(ActivityStatus.LOADING);
 
 	if (asyncManager.error)
-		return createActionStatus(ActivityStatus.ERROR, asyncManager.error.message);
+		return createActionState(ActivityStatus.ERROR, asyncManager.error.message);
 
 	if (asyncManager.isCompleted)
-		return createActionStatus(ActivityStatus.COMPLETE);
+		return createActionState(ActivityStatus.COMPLETE);
 
-	return createActionStatus(ActivityStatus.PENDING);
+	return createActionState(ActivityStatus.PENDING);
 };
 
-const buildActivityLog = ({
-	createStatus,
-	signStatus1,
-	announceStatus1,
-	isStep1Confirmed,
-	hasStep1FailedTransactions,
-	signStatus2,
-	announceStatus2,
-	isStep2Confirmed,
-	hasStep2FailedTransactions,
-	tokenPairsText
-}) => {
-	const getConfirmStatus1 = () => {
-		const isAnnounced = announceStatus1.status === ActivityStatus.COMPLETE;
+/**
+ * Determines the confirmation status for a step based on the network outcome and its announce state.
+ * @param {ActionState} announceState - State of the step's announce action.
+ * @param {boolean} isConfirmed - Whether every signed transaction of the step is confirmed.
+ * @param {boolean} hasFailedTransactions - Whether the network rejected a transaction of the step.
+ * @returns {string} One of ActivityStatus.
+ */
+const getConfirmStatus = (announceState, isConfirmed, hasFailedTransactions) => {
+	const isAnnounced = announceState.status === ActivityStatus.COMPLETE;
 
-		if (isAnnounced && isStep1Confirmed)
-			return ActivityStatus.COMPLETE;
-		if (hasStep1FailedTransactions)
-			return ActivityStatus.ERROR;
-		if (isAnnounced)
-			return ActivityStatus.LOADING;
-		return ActivityStatus.PENDING;
-	};
+	if (isAnnounced && isConfirmed)
+		return ActivityStatus.COMPLETE;
+	if (hasFailedTransactions)
+		return ActivityStatus.ERROR;
+	if (isAnnounced)
+		return ActivityStatus.LOADING;
 
-	const getConfirmStatus2 = () => {
-		const isAnnounced = announceStatus2.status === ActivityStatus.COMPLETE;
+	return ActivityStatus.PENDING;
+};
 
-		if (isAnnounced && isStep2Confirmed)
-			return ActivityStatus.COMPLETE;
-		if (hasStep2FailedTransactions)
-			return ActivityStatus.ERROR;
-		if (isAnnounced)
-			return ActivityStatus.LOADING;
-		return ActivityStatus.PENDING;
-	};
+/**
+ * A single step in a dual-step swap.
+ * @typedef {object} WorkflowStep
+ * @property {AsyncManager} signManager - Manager of the step's sign action.
+ * @property {AsyncManager} announceManager - Manager of the step's announce action.
+ * @property {string[]} signedHashes - Hashes of the signed transactions.
+ * @property {string[]} confirmedHashes - Hashes of the confirmed transactions.
+ * @property {string[]} failedHashes - Hashes of the transactions the network rejected.
+ * @property {{from: string, to: string}} pair - Token ticker pair of the step.
+ * @property {WorkflowMetaSide} source - Source side of the step.
+ */
 
-	const pair1 = tokenPairsText[0];
-	const pair2 = tokenPairsText[1];
+/**
+ * Creates the sign, announce and confirm log items for one swap step.
+ * @param {WorkflowStep} step - The workflow step.
+ * @param {number} stepNumber - One-based step number shown in the titles.
+ * @returns {ActivityLogItem[]} The three log items.
+ */
+const createStepLogItems = ({
+	signManager,
+	announceManager,
+	signedHashes,
+	confirmedHashes,
+	failedHashes,
+	pair
+}, stepNumber) => {
+	const signState = getActionStateFromAsyncManager(signManager);
+	const announceState = getActionStateFromAsyncManager(announceManager);
+	const isConfirmed = signedHashes.length > 0 && confirmedHashes.length === signedHashes.length;
+	const hasFailedTransactions = failedHashes.length > 0;
 
 	return [
 		{
-			title: $t('c_bridgeTransactionStatus_step_create'),
-			icon: 'plus',
-			status: createStatus.status,
-			caption: createStatus.errorMessage ?? ''
-		},
-		{
-			title: $t('c_bridgeTransactionStatus_step_sign', { count: 1, ...pair1 }),
+			title: $t('c_bridgeTransactionStatus_step_sign', { count: stepNumber, ...pair }),
 			icon: 'sign',
-			status: signStatus1.status,
-			caption: signStatus1.errorMessage ?? ''
+			status: signState.status,
+			caption: signState.errorMessage ?? ''
 		},
 		{
-			title: $t('c_bridgeTransactionStatus_step_announce', { count: 1, ...pair1 }),
+			title: $t('c_bridgeTransactionStatus_step_announce', { count: stepNumber, ...pair }),
 			icon: 'send-plane',
-			status: announceStatus1.status,
-			caption: announceStatus1.errorMessage ?? ''
+			status: announceState.status,
+			caption: announceState.errorMessage ?? ''
 		},
 		{
-			title: $t('c_bridgeTransactionStatus_step_confirm', { count: 1, ...pair1 }),
-			icon: hasStep1FailedTransactions ? 'cross' : 'check',
-			status: getConfirmStatus1(),
-			caption: ''
-		},
-		{
-			title: $t('c_bridgeTransactionStatus_step_sign', { count: 2, ...pair2 }),
-			icon: 'sign',
-			status: signStatus2.status,
-			caption: signStatus2.errorMessage ?? ''
-		},
-		{
-			title: $t('c_bridgeTransactionStatus_step_announce', { count: 2, ...pair2 }),
-			icon: 'send-plane',
-			status: announceStatus2.status,
-			caption: announceStatus2.errorMessage ?? ''
-		},
-		{
-			title: $t('c_bridgeTransactionStatus_step_confirm', { count: 2, ...pair2 }),
-			icon: hasStep2FailedTransactions ? 'cross' : 'check',
-			status: getConfirmStatus2(),
+			title: $t('c_bridgeTransactionStatus_step_confirm', { count: stepNumber, ...pair }),
+			icon: hasFailedTransactions ? 'cross' : 'check',
+			status: getConfirmStatus(announceState, isConfirmed, hasFailedTransactions),
 			caption: ''
 		}
 	];
 };
 
 /**
- * Extracts a display ticker string for a token using its known metadata.
- * @param {WorkflowMetaSide} side - The workflow metadata side containing tokenInfo, chainName and networkIdentifier.
- * @returns {string} The ticker text, or 'unknown' if no token info is available.
+ * Retrieves the token label for a workflow side, returning its name if unlisted or its known ticker.
+ * @param {WorkflowMetaSide} side - The workflow side.
+ * @returns {string} Ticker text, or 'unknown' for a side without token info.
  */
 const createTokenTextFromSide = side => {
 	if (!side?.tokenInfo?.id)
-		return 'unknown';
+		return UNKNOWN_TOKEN_TEXT;
 
-	const tokenDisplayData = createTokenDisplayData(side.tokenInfo, side.chainName, side.networkIdentifier);
-
-	return tokenDisplayData.ticker;
+	return createTokenDisplayData(side.tokenInfo, side.chainName, side.networkIdentifier).tickerText;
 };
 
 /**
- * Builds the token pair display text for each step of a dual-step workflow.
+ * Creates the display text for each step in a dual-step workflow.
  * @param {object} workflow - The dual-step workflow object with {@link DualWorkflowMeta} on `meta`.
  * @returns {Array<{from: string, to: string}>} Token ticker pairs for each step.
  */
@@ -255,6 +257,11 @@ const getTokenPairsText = workflow => {
 	];
 };
 
+/**
+ * Creates the swap transaction progress dialog view model.
+ * @param {object} workflow - Single or dual-step workflow.
+ * @returns {TransactionProgressViewModel} Progress view model.
+ */
 export const createTransactionProgressViewModel = workflow => {
 	if (workflow.steps === 1) {
 		return createStandardTransactionProgressViewModel(
@@ -264,56 +271,49 @@ export const createTransactionProgressViewModel = workflow => {
 		);
 	}
 
+	const { managers, hash: hashes, meta } = workflow;
 	const tokenPairsText = getTokenPairsText(workflow);
-
-	const createStatus = getActionStatusFromAsyncManager(workflow.managers.createManager1);
-	const signStatus1 = getActionStatusFromAsyncManager(workflow.managers.signManager1);
-	const announceStatus1 = getActionStatusFromAsyncManager(workflow.managers.announceManager1);
-	const signStatus2 = getActionStatusFromAsyncManager(workflow.managers.signManager2);
-	const announceStatus2 = getActionStatusFromAsyncManager(workflow.managers.announceManager2);
-
-	const isStep1Confirmed = workflow.hash.signed1.length > 0
-        && workflow.hash.confirmed1.length === workflow.hash.signed1.length;
-	const hasStep1FailedTransactions = workflow.hash.failed1.length > 0;
-	const isStep2Confirmed = workflow.hash.signed2.length > 0
-        && workflow.hash.confirmed2.length === workflow.hash.signed2.length;
-	const hasStep2FailedTransactions = workflow.hash.failed2.length > 0;
-
-	const activityLogData = buildActivityLog({
-		createStatus,
-		signStatus1,
-		announceStatus1,
-		isStep1Confirmed,
-		hasStep1FailedTransactions,
-		signStatus2,
-		announceStatus2,
-		isStep2Confirmed,
-		hasStep2FailedTransactions,
-		tokenPairsText
-	});
-
-	const statusInfo = createStatusInfo(workflow.status, tokenPairsText);
-
-	const isStep1Announced = workflow.managers.announceManager1.isCompleted;
-	const isStep2Announced = workflow.managers.announceManager2.isCompleted;
-
-	const explorerLinks = [
-		...(isStep1Announced ? workflow.hash.signed1.map(hash => ({
-			chainName: workflow.meta?.step1.source.chainName,
-			networkIdentifier: workflow.meta?.step1.source.networkIdentifier,
-			hash
-		})) : []),
-		...(isStep2Announced ? workflow.hash.signed2.map(hash => ({
-			chainName: workflow.meta?.step2.source.chainName,
-			networkIdentifier: workflow.meta?.step2.source.networkIdentifier,
-			hash
-		})) : [])
+	const createState = getActionStateFromAsyncManager(managers.createManager1);
+	/** @type {WorkflowStep[]} */
+	const steps = [
+		{
+			signManager: managers.signManager1,
+			announceManager: managers.announceManager1,
+			signedHashes: hashes.signed1,
+			confirmedHashes: hashes.confirmed1,
+			failedHashes: hashes.failed1,
+			pair: tokenPairsText[0],
+			source: meta.step1.source
+		},
+		{
+			signManager: managers.signManager2,
+			announceManager: managers.announceManager2,
+			signedHashes: hashes.signed2,
+			confirmedHashes: hashes.confirmed2,
+			failedHashes: hashes.failed2,
+			pair: tokenPairsText[1],
+			source: meta.step2.source
+		}
 	];
 
 	return {
 		isCloseButtonDisabled: workflow.isSending,
-		activityLogData,
-		statusInfo,
-		explorerLinks
+		activityLogData: [
+			{
+				title: $t('c_bridgeTransactionStatus_step_create'),
+				icon: 'plus',
+				status: createState.status,
+				caption: createState.errorMessage ?? ''
+			},
+			...steps.flatMap((step, index) => createStepLogItems(step, index + 1))
+		],
+		statusInfo: createStatusInfo(workflow.status, tokenPairsText),
+		explorerLinks: steps
+			.filter(step => step.announceManager.isCompleted)
+			.flatMap(step => step.signedHashes.map(hash => ({
+				chainName: step.source.chainName,
+				networkIdentifier: step.source.networkIdentifier,
+				hash
+			})))
 	};
 };

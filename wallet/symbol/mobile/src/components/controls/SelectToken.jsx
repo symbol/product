@@ -23,14 +23,13 @@ export const SelectToken = props => {
 
 	const list = tokensDisplayData.map(tokenDisplayData => ({
 		value: tokenDisplayData.tokenId,
-		label: tokenDisplayData.name,
+		label: tokenDisplayData.nameText,
 		token: tokenDisplayData
 	}));
 
 	const renderItem = ({ item: { token } }) => (
 		<TokenBalanceRow
-			name={token.name}
-			ticker={token.ticker}
+			name={token.nameText}
 			imageId={token.imageId}
 			amount={token.amount}
 		/>

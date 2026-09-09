@@ -98,8 +98,7 @@ const renderRowValue = (row, accountsDisplayMap, tokensDisplayMap, translate, ch
 		return (
 			<TokenBalanceRow
 				key={key}
-				name={tokenDisplayData?.name}
-				ticker={tokenDisplayData?.ticker}
+				name={tokenDisplayData?.nameText}
 				amount={row.value.amount}
 				imageId={tokenDisplayData?.imageId}
 			/>
@@ -111,8 +110,7 @@ const renderRowValue = (row, accountsDisplayMap, tokensDisplayMap, translate, ch
 		return (
 			<TokenBalanceRow
 				key={key}
-				name={tokenDisplayData?.name}
-				ticker={tokenDisplayData?.ticker}
+				name={tokenDisplayData?.nameText}
 				amount={row.value.token.amount}
 				imageId={tokenDisplayData?.imageId}
 			/>

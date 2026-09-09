@@ -373,7 +373,7 @@ const createTargetData = (transaction, config, options) => {
 
 		return {
 			type: targetType,
-			text: tokenDisplayData.name,
+			text: tokenDisplayData.nameText,
 			imageId: tokenDisplayData.imageId
 		};
 	}

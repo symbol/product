@@ -6,16 +6,12 @@ import { mockLocalization, mockWalletController } from '__tests__/mock-helpers';
 
 // Mocks
 
-jest.mock('@/app/utils', () => ({
-	...jest.requireActual('@/app/utils'),
-	getTokenKnownInfo: (chainName, networkIdentifier, tokenId) => {
-		const tokenInfoMap = {
-			'6BED913FA20223F8': { name: 'Symbol Token', ticker: 'XYM', imageId: 'symbol' },
-			'3A8416DB2D53B6C8': { name: 'Custom Token', ticker: 'CTK', imageId: 'custom' }
-		};
-
-		return tokenInfoMap[tokenId] ?? { name: null, ticker: null, imageId: null };
-	}
+jest.mock('@/app/config', () => ({
+	...jest.requireActual('@/app/config'),
+	...require('__tests__/mock-factories').createKnownTokensConfigMock({
+		'6BED913FA20223F8': { name: 'Symbol Token', ticker: 'XYM', imageId: 'symbol' },
+		'3A8416DB2D53B6C8': { name: 'Custom Token', ticker: 'CTK', imageId: 'custom' }
+	})
 }));
 
 // Constants
@@ -27,8 +23,6 @@ const NETWORK_IDENTIFIER = 'mainnet';
 
 const SCREEN_TEXT = {
 	inputSelectTokenLabel: 'select_token',
-	textSymbolTokenName: 'Symbol Token',
-	textCustomTokenName: 'Custom Token',
 	textUnknownTokenName: 'Mainnet Symbol Token 2',
 	textSymbolTokenDisplay: 'Symbol Token • XYM',
 	textCustomTokenDisplay: 'Custom Token • CTK'
@@ -85,13 +79,13 @@ describe('components/SelectToken', () => {
 		props: createDefaultProps(),
 		textToRender: [
 			{ type: 'text', value: SCREEN_TEXT.inputSelectTokenLabel },
-			{ type: 'text', value: SCREEN_TEXT.textSymbolTokenName }
+			{ type: 'text', value: SCREEN_TEXT.textSymbolTokenDisplay }
 		]
 	});
 
 	runDropdownSelectTest(SelectToken, {
 		props: createDefaultProps(),
-		textToPress: SCREEN_TEXT.textSymbolTokenName,
+		textToPress: SCREEN_TEXT.textSymbolTokenDisplay,
 		items: DROPDOWN_ITEMS,
 		testDisabledState: false
 	});
@@ -114,12 +108,12 @@ describe('components/SelectToken', () => {
 			{
 				description: 'displays resolved name from getTokenKnownInfo',
 				config: { props: { value: tokenSymbol.id } },
-				expected: { displayedName: SCREEN_TEXT.textSymbolTokenName }
+				expected: { displayedName: SCREEN_TEXT.textSymbolTokenDisplay }
 			},
 			{
 				description: 'displays resolved name for custom token',
 				config: { props: { value: tokenCustom.id } },
-				expected: { displayedName: SCREEN_TEXT.textCustomTokenName }
+				expected: { displayedName: SCREEN_TEXT.textCustomTokenDisplay }
 			},
 			{
 				description: 'falls back to token.name when getTokenKnownInfo returns null',
@@ -140,14 +134,14 @@ describe('components/SelectToken', () => {
 			const screenTester = new ScreenTester(SelectToken, props);
 
 			// Act:
-			screenTester.pressButton(SCREEN_TEXT.textSymbolTokenName);
+			screenTester.pressButton(SCREEN_TEXT.textSymbolTokenDisplay);
 
-			// Assert:
+			// Assert: the selected token label is also the closed-state text
 			screenTester.expectText([
 				SCREEN_TEXT.textSymbolTokenDisplay,
 				SCREEN_TEXT.textCustomTokenDisplay,
 				SCREEN_TEXT.textUnknownTokenName
-			]);
+			], true);
 		});
 	});
 
@@ -176,7 +170,7 @@ describe('components/SelectToken', () => {
 				description: 'calls onChange with custom token id when selected',
 				config: {
 					initialValue: tokenSymbol.id,
-					triggerText: SCREEN_TEXT.textSymbolTokenName,
+					triggerText: SCREEN_TEXT.textSymbolTokenDisplay,
 					selectText: SCREEN_TEXT.textCustomTokenDisplay
 				},
 				expected: { selectedValue: tokenCustom.id }
@@ -185,7 +179,7 @@ describe('components/SelectToken', () => {
 				description: 'calls onChange with unknown token id when selected',
 				config: {
 					initialValue: tokenSymbol.id,
-					triggerText: SCREEN_TEXT.textSymbolTokenName,
+					triggerText: SCREEN_TEXT.textSymbolTokenDisplay,
 					selectText: SCREEN_TEXT.textUnknownTokenName
 				},
 				expected: { selectedValue: tokenUnknown.id }
@@ -194,7 +188,7 @@ describe('components/SelectToken', () => {
 				description: 'calls onChange with symbol token id when selected from custom',
 				config: {
 					initialValue: tokenCustom.id,
-					triggerText: SCREEN_TEXT.textCustomTokenName,
+					triggerText: SCREEN_TEXT.textCustomTokenDisplay,
 					selectText: SCREEN_TEXT.textSymbolTokenDisplay
 				},
 				expected: { selectedValue: tokenSymbol.id }
