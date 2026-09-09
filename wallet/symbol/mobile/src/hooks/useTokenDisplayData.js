@@ -8,8 +8,7 @@ import { useMemo } from 'react';
 
 /**
  * React hook that resolves display data (name, ticker, known image) for one token or a list of
- * tokens on the current network, memoized per input. Name and ticker are returned separately;
- * the display label is composed by the rows.
+ * tokens on the current network, memoized per input.
  * @param {Token|Token[]} tokenOrTokens - A single token or a list of tokens to resolve.
  * @param {ChainName} [chainName] - The chain to resolve against. Defaults to the main chain.
  * @returns {TokenDisplayData|TokenDisplayData[]} Display data matching the input shape.

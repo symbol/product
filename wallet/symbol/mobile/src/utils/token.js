@@ -26,15 +26,6 @@ export const getTokenKnownInfo = (chainName, networkIdentifier, tokenId) => {
 };
 
 /**
- * Formats the token display label: the name with the ticker appended, or the name alone when
- * no ticker is known.
- * @param {string} name - The token display name.
- * @param {string|null} [ticker] - The token ticker symbol.
- * @returns {string} The token label text.
- */
-export const formatTokenNameText = (name, ticker) => (!ticker ? name : `${name} • ${ticker}`);
-
-/**
  * Checks whether a token is expired at the given chain height. Tokens without an end height
  * or with unlimited duration never expire.
  * @param {Token} token - The token to check.
@@ -119,16 +110,16 @@ export const createTokenDisplayData = (token, chainName, networkIdentifier) => {
 		token.id
 	);
 
-	const name = tokenKnownInfo.name ?? token.name ?? null;
-	const nameOrId = name ?? token.id;
-	const ticker = tokenKnownInfo.ticker ?? token.ticker ?? null;
+	const name = tokenKnownInfo.name || token.name || null;
+	const nameOrId = name || token.id;
+	const ticker = tokenKnownInfo.ticker || token.ticker || null;
 
 	return {
 		tokenId: token.id,
 		name,
 		ticker,
-		nameText: formatTokenNameText(nameOrId, ticker),
-		tickerText: ticker ?? nameOrId,
+		nameText: ticker ? `${nameOrId} • ${ticker}` : nameOrId,
+		tickerText: ticker || nameOrId,
 		imageId: tokenKnownInfo.imageId,
 		amount: token.amount ?? null
 	};

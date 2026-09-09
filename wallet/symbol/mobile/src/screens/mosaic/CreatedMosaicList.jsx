@@ -22,9 +22,8 @@ const CreatedMosaicListItem = ({ mosaic, networkProperties, onPress }) => {
 
 	return (
 		<TokenListItem
-			name={tokenDisplayData.name}
+			name={tokenDisplayData.nameText}
 			amount={tokenDisplayData.amount}
-			ticker={tokenDisplayData.ticker}
 			imageId={tokenDisplayData.imageId}
 			expiration={createTokenExpiration(mosaic, networkProperties)}
 			onPress={onPress}

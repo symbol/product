@@ -27,9 +27,8 @@ const expiredTokenExpiration = {
 // Props
 
 const createDefaultProps = (overrides = {}) => ({
-	name: token.name,
+	name: DISPLAY_NAME,
 	amount: token.amount,
-	ticker: TICKER,
 	accessibilityLabel: ACCESSIBILITY_LABEL,
 	...overrides
 });

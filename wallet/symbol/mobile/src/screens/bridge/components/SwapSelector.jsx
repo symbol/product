@@ -19,8 +19,7 @@ const REVERSE_BUTTON_SIZE = Sizes.Semantic.spacing.m * 5;
  */
 const TokenItem = ({ option }) => (
 	<TokenBalanceRow
-		name={option.name}
-		ticker={option.ticker}
+		name={option.nameText}
 		amount={option.amount}
 		imageId={option.imageId}
 		size="l"

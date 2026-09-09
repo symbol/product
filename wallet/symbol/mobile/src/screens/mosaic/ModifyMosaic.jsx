@@ -58,7 +58,7 @@ export const ModifyMosaic = props => {
 		reset: resetMosaic
 	} = useMosaicInfo({ walletController, mosaicId });
 	const mosaicToken = mosaic ? { id: mosaic.id, name: mosaic.names?.[0] } : { id: mosaicId };
-	const { name: mosaicName, imageId: mosaicImageId } = useTokenDisplayData(mosaicToken, chainName);
+	const { nameText: mosaicNameText, imageId: mosaicImageId } = useTokenDisplayData(mosaicToken, chainName);
 
 	// Form state
 	const {
@@ -149,7 +149,7 @@ export const ModifyMosaic = props => {
 						<StyledText type="body">{$t('s_modifyMosaic_description')}</StyledText>
 					</Stack>
 					{!!mosaic && (
-						<TokenInfoCard name={mosaicName} imageId={mosaicImageId}>
+						<TokenInfoCard name={mosaicNameText} imageId={mosaicImageId}>
 							<Field title={$t('fieldTitle_mosaicId')}>
 								<StyledText>{mosaic.id}</StyledText>
 							</Field>

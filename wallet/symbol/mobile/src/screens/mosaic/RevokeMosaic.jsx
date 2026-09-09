@@ -67,7 +67,7 @@ export const RevokeMosaic = props => {
 		reset: resetMosaic
 	} = useMosaicInfo({ walletController, mosaicId });
 	const mosaicToken = mosaic ? { id: mosaic.id, name: mosaic.names?.[0] } : { id: mosaicId };
-	const { name: mosaicName, imageId: mosaicImageId } = useTokenDisplayData(mosaicToken, chainName);
+	const { nameText: mosaicNameText, imageId: mosaicImageId } = useTokenDisplayData(mosaicToken, chainName);
 
 	// Mosaic holder account list
 	const {
@@ -197,7 +197,7 @@ export const RevokeMosaic = props => {
 						<StyledText type="body">{$t('s_revoke_description')}</StyledText>
 					</Stack>
 					{!!mosaic && (
-						<TokenInfoCard name={mosaicName} imageId={mosaicImageId}>
+						<TokenInfoCard name={mosaicNameText} imageId={mosaicImageId}>
 							<Field title={$t('fieldTitle_mosaicId')}>
 								<StyledText>{mosaic.id}</StyledText>
 							</Field>

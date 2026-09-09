@@ -70,9 +70,8 @@
  * Selectable side option in the swap selector.
  * @typedef {object} SwapSideOption
  * @property {string} key - `${chainName}|${tokenId}`; the dropdown value.
- * @property {string} name - Resolved token name.
- * @property {string|null} ticker - Token ticker.
- * @property {string|null} imageId - Token avatar image identifier.
+ * @property {string} nameText - Token display name text.
+ * @property {string|null} imageId - Token avatar image id.
  * @property {ChainName} chainName - Chain shown next to the label.
  * @property {string} amount - Balance in relative units.
  * @property {SwapSide} side - Domain value handed back by the change callbacks.
