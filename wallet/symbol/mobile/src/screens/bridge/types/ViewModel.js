@@ -2,12 +2,14 @@
 /** @typedef {import('@/app/screens/bridge/types/Bridge').BridgeRequest} BridgeRequest */
 /** @typedef {import('@/app/screens/bridge/types/Bridge').PriceImpactSeverityValue} PriceImpactSeverityValue */
 /** @typedef {import('@/app/screens/bridge/types/Bridge').SwapSide} SwapSide */
+/** @typedef {import('@/app/types/Account').AccountDisplayData} AccountDisplayData */
 /** @typedef {import('@/app/types/Account').WalletAccount} WalletAccount */
 /** @typedef {import('@/app/types/ActivityLog').ActivityLogItem} ActivityLogItem */
 /** @typedef {import('@/app/types/ColorVariants').SemanticRoleColorVariants} SemanticRoleColorVariants */
 /** @typedef {import('@/app/types/Network').ChainName} ChainName */
 /** @typedef {import('@/app/types/Network').NetworkIdentifier} NetworkIdentifier */
 /** @typedef {import('@/app/types/Token').Token} Token */
+/** @typedef {import('@/app/types/Token').TokenDisplayData} TokenDisplayData */
 
 /**
  * Bridge account display data.
@@ -22,29 +24,12 @@
  */
 
 /**
- * Account display data.
- * @typedef {object} ResolvedAccountData
- * @property {string} address - Account address.
- * @property {string|null} name - Account name.
- * @property {string|null} imageId - Account avatar image identifier.
- */
-
-/**
- * Token display data.
- * @typedef {object} ResolvedTokenData
- * @property {string} name - Token name.
- * @property {string|null} ticker - Token ticker symbol.
- * @property {string|null} imageId - Token image identifier.
- * @property {string|null} amount - Token amount.
- */
-
-/**
  * Swap side display data.
  * @typedef {object} SwapSideDisplayData
  * @property {ChainName} chainName - Blockchain name.
  * @property {NetworkIdentifier} networkIdentifier - Network identifier.
- * @property {ResolvedTokenData} token - Token data.
- * @property {ResolvedAccountData|null} account - Account data.
+ * @property {TokenDisplayData} token - Token display data. Amount is Null before transaction exists.
+ * @property {AccountDisplayData|null} account - Account display data. Null before transaction exists.
  * @property {string|null} transactionHash - Transaction hash.
  */
 
@@ -85,7 +70,8 @@
  * Selectable side option in the swap selector.
  * @typedef {object} SwapSideOption
  * @property {string} key - `${chainName}|${tokenId}`; the dropdown value.
- * @property {string} label - Token name with its ticker, for example 'Symbol • XYM'.
+ * @property {string} name - Resolved token name.
+ * @property {string|null} ticker - Token ticker.
  * @property {string|null} imageId - Token avatar image identifier.
  * @property {ChainName} chainName - Chain shown next to the label.
  * @property {string} amount - Balance in relative units.

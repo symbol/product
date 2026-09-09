@@ -2,19 +2,16 @@ import { createSwapStatusDisplayData } from './swap-status';
 import { ActivityStatus } from '@/app/constants';
 import { $t } from '@/app/localization';
 import { BridgePayoutStatus, BridgeRequestStatus } from '@/app/screens/bridge/types/Bridge';
-import { createTokenDisplayData, formatDate, getAccountKnownInfo } from '@/app/utils';
+import { createAccountDisplayData, createTokenDisplayData, formatDate, getAccountDisplayOptions } from '@/app/utils';
 
 /** @typedef {import('@/app/screens/bridge/types/Bridge').BridgeError} BridgeError */
 /** @typedef {import('@/app/screens/bridge/types/Bridge').BridgePayoutStatusType} BridgePayoutStatusType */
 /** @typedef {import('@/app/screens/bridge/types/Bridge').BridgeRequest} BridgeRequest */
 /** @typedef {import('@/app/screens/bridge/types/Bridge').BridgeRequestStatusType} BridgeRequestStatusType */
-/** @typedef {import('@/app/screens/bridge/types/ViewModel').ResolvedAccountData} ResolvedAccountData */
-/** @typedef {import('@/app/screens/bridge/types/ViewModel').ResolvedTokenData} ResolvedTokenData */
 /** @typedef {import('@/app/screens/bridge/types/ViewModel').SwapDetailsViewModel} SwapDetailsViewModel */
 /** @typedef {import('@/app/screens/bridge/types/ViewModel').SwapSideDisplayData} SwapSideDisplayData */
 /** @typedef {import('@/app/types/ActivityLog').ActivityLogItem} ActivityLogItem */
 /** @typedef {import('@/app/types/Network').ChainName} ChainName */
-/** @typedef {import('@/app/types/Network').NetworkIdentifier} NetworkIdentifier */
 /** @typedef {import('@/app/types/Token').TokenInfo} TokenInfo */
 /** @typedef {import('@/app/types/Wallet').WalletController} WalletController */
 /** @typedef {import('wallet-common-core/src/types/Bridge').PayoutTransaction} PayoutTransaction */
@@ -31,47 +28,6 @@ import { createTokenDisplayData, formatDate, getAccountKnownInfo } from '@/app/u
  */
 
 /**
- * Creates the account display data for a given address using info from the specific wallet controller.
- * @param {string} address - Signer or recipient address.
- * @param {WalletController} walletController - The side's wallet controller.
- * @returns {ResolvedAccountData} Account display data.
- */
-const createAccountDisplayData = (address, walletController) => {
-	const { networkIdentifier } = walletController;
-	const knownInfo = getAccountKnownInfo(address, {
-		walletAccounts: walletController.accounts[networkIdentifier],
-		addressBook: walletController.modules.addressBook,
-		chainName: walletController.chainName,
-		networkIdentifier
-	});
-
-	return {
-		address,
-		name: knownInfo.name,
-		imageId: knownInfo.imageId
-	};
-};
-
-/**
- * Creates the token display data for a given token info and transaction.
- * @param {TokenInfo} tokenInfo - The side's token.
- * @param {RequestTransaction|PayoutTransaction|undefined} transaction - The side's transaction.
- * @param {ChainName} chainName - The side's chain.
- * @param {NetworkIdentifier} networkIdentifier - Network identifier.
- * @returns {ResolvedTokenData} Token display data.
- */
-const createTokenData = (tokenInfo, transaction, chainName, networkIdentifier) => {
-	const { plainName, ticker, imageId } = createTokenDisplayData(tokenInfo, chainName, networkIdentifier);
-
-	return {
-		name: plainName,
-		ticker,
-		imageId,
-		amount: transaction?.token?.amount ?? null
-	};
-};
-
-/**
  * Creates the display data for a swap side using its transaction, token, and chain.
  * @param {object} params - Side parameters.
  * @param {ChainName} params.chainName - The side's chain.
@@ -84,8 +40,12 @@ const createTokenData = (tokenInfo, transaction, chainName, networkIdentifier) =
 const createSideDisplayData = ({ chainName, tokenInfo, transaction, address, walletController }) => ({
 	chainName,
 	networkIdentifier: walletController.networkIdentifier,
-	token: createTokenData(tokenInfo, transaction, chainName, walletController.networkIdentifier),
-	account: transaction ? createAccountDisplayData(address, walletController) : null,
+	token: createTokenDisplayData(
+		{ ...tokenInfo, amount: transaction?.token?.amount ?? null },
+		chainName,
+		walletController.networkIdentifier
+	),
+	account: transaction ? createAccountDisplayData(address, getAccountDisplayOptions(walletController)) : null,
 	transactionHash: transaction?.hash ?? null
 });
 

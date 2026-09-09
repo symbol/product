@@ -82,17 +82,18 @@ const createSwapRequestCaptionDisplayData = request => {
 /**
  * Creates a single history row.
  * @param {BridgeRequest|BridgeError} request - The history item.
- * @param {NetworkIdentifier} networkIdentifier - Network identifier.
+ * @param {NetworkIdentifier} sourceNetworkIdentifier - Network identifier of the source chain.
+ * @param {NetworkIdentifier} targetNetworkIdentifier - Network identifier of the target chain.
  * @returns {SwapHistoryItem} The row.
  */
-const createHistoryItem = (request, networkIdentifier) => ({
+const createHistoryItem = (request, sourceNetworkIdentifier, targetNetworkIdentifier) => ({
 	key: request.requestTransaction.hash,
 	actionText: $t('transactionDescriptor_swap'),
 	dateText: formatDate(request.requestTransaction.timestamp, $t),
-	source: createChainDisplayData(request.sourceChainName, request.sourceTokenInfo, networkIdentifier),
-	target: createChainDisplayData(request.targetChainName, request.targetTokenInfo, networkIdentifier),
+	source: createChainDisplayData(request.sourceChainName, request.sourceTokenInfo, sourceNetworkIdentifier),
+	target: createChainDisplayData(request.targetChainName, request.targetTokenInfo, targetNetworkIdentifier),
 	status: request.payoutStatus === undefined ? null : createSwapStatusDisplayData(request.requestStatus, request.payoutStatus),
-	amount: createAmountDisplayData(request, networkIdentifier),
+	amount: createAmountDisplayData(request, targetNetworkIdentifier),
 	caption: createSwapRequestCaptionDisplayData(request),
 	isPending: request.requestStatus === BridgeRequestStatus.CONFIRMED,
 	request
@@ -102,11 +103,12 @@ const createHistoryItem = (request, networkIdentifier) => ({
  * Creates the swap history view model.
  * @param {object} params - Builder parameters.
  * @param {(BridgeRequest|BridgeError)[]} params.history - Recent requests in list order; empty while no route is selected.
- * @param {NetworkIdentifier} params.networkIdentifier - Network of the selected route.
+ * @param {NetworkIdentifier} params.sourceNetworkIdentifier - Network of the selected route's source chain.
+ * @param {NetworkIdentifier} params.targetNetworkIdentifier - Network of the selected route's target chain.
  * @returns {SwapHistoryViewModel} The history view model.
  */
-export const createSwapHistoryViewModel = ({ history, networkIdentifier }) => ({
-	items: history.map(request => createHistoryItem(request, networkIdentifier)),
+export const createSwapHistoryViewModel = ({ history, sourceNetworkIdentifier, targetNetworkIdentifier }) => ({
+	items: history.map(request => createHistoryItem(request, sourceNetworkIdentifier, targetNetworkIdentifier)),
 	pageSizeText: history.length === BRIDGE_HISTORY_PAGE_SIZE
 		? $t('s_bridge_history_page_size_message', { size: BRIDGE_HISTORY_PAGE_SIZE })
 		: ''

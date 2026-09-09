@@ -80,7 +80,8 @@ describe('screens/bridge/utils/swap-history', () => {
 				// Act:
 				const result = createSwapHistoryViewModel({
 					history: [config.request],
-					networkIdentifier: NETWORK_IDENTIFIER
+					sourceNetworkIdentifier: NETWORK_IDENTIFIER,
+					targetNetworkIdentifier: NETWORK_IDENTIFIER
 				});
 
 				// Assert:
@@ -146,7 +147,11 @@ describe('screens/bridge/utils/swap-history', () => {
 				const history = Array.from({ length: config.itemCount }, () => requestCompleted);
 
 				// Act:
-				const result = createSwapHistoryViewModel({ history, networkIdentifier: NETWORK_IDENTIFIER });
+				const result = createSwapHistoryViewModel({
+					history,
+					sourceNetworkIdentifier: NETWORK_IDENTIFIER,
+					targetNetworkIdentifier: NETWORK_IDENTIFIER
+				});
 
 				// Assert:
 				expect(result.pageSizeText).toBe(expected.text);

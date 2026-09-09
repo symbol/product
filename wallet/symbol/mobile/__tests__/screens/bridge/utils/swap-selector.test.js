@@ -43,7 +43,8 @@ const sideUnlisted = createSwapSide(tokenUnlisted, CHAIN_NAME_SYMBOL);
 
 const expectedOptionXym = {
 	key: `${CHAIN_NAME_SYMBOL}|${tokenXym.id}`,
-	label: 'Symbol • XYM',
+	name: 'Symbol',
+	ticker: 'XYM',
 	imageId: 'xym',
 	chainName: CHAIN_NAME_SYMBOL,
 	amount: '100',
@@ -52,7 +53,8 @@ const expectedOptionXym = {
 
 const expectedOptionBxym = {
 	key: `${CHAIN_NAME_ETHEREUM}|${tokenBxym.id}`,
-	label: 'Bridged XYM • bXYM',
+	name: 'Bridged XYM',
+	ticker: 'bXYM',
 	imageId: 'bxym',
 	chainName: CHAIN_NAME_ETHEREUM,
 	amount: '99',
@@ -61,7 +63,8 @@ const expectedOptionBxym = {
 
 const expectedOptionUnlisted = {
 	key: `${CHAIN_NAME_SYMBOL}|${tokenUnlisted.id}`,
-	label: tokenUnlisted.name,
+	name: tokenUnlisted.name,
+	ticker: null,
 	imageId: null,
 	chainName: CHAIN_NAME_SYMBOL,
 	amount: '5',
@@ -114,7 +117,7 @@ describe('screens/bridge/utils/swap-selector', () => {
 				}
 			},
 			{
-				description: 'resolves the label, avatar and balance of the selected sides and their options',
+				description: 'resolves the name, ticker, avatar and balance of the selected sides and their options',
 				config: {
 					source: sideXym,
 					target: sideBxym,
@@ -131,7 +134,7 @@ describe('screens/bridge/utils/swap-selector', () => {
 				}
 			},
 			{
-				description: 'labels an unlisted token by its name without an avatar',
+				description: 'names an unlisted token by its name without a ticker or avatar',
 				config: {
 					source: sideUnlisted,
 					target: null,

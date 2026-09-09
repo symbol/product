@@ -136,7 +136,11 @@ export const BridgeSwap = props => {
 
 	// Recent history
 	const { history } = useBridgeHistory({ bridge });
-	const swapHistory = createSwapHistoryViewModel({ history, networkIdentifier: source?.networkIdentifier });
+	const swapHistory = createSwapHistoryViewModel({
+		history,
+		sourceNetworkIdentifier: source?.networkIdentifier,
+		targetNetworkIdentifier: target?.networkIdentifier
+	});
 
 	// No pairs popup
 	const noPairsDialogManager = useBridgeNoPairsDialog({ pairsStatus });

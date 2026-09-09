@@ -6,16 +6,12 @@ import { mockLocalization, mockWalletController } from '__tests__/mock-helpers';
 
 // Mocks
 
-jest.mock('@/app/utils', () => ({
-	...jest.requireActual('@/app/utils'),
-	getTokenKnownInfo: (chainName, networkIdentifier, tokenId) => {
-		const tokenInfoMap = {
-			'6BED913FA20223F8': { name: 'Symbol Token', ticker: 'XYM', imageId: 'symbol' },
-			'3A8416DB2D53B6C8': { name: 'Custom Token', ticker: 'CTK', imageId: 'custom' }
-		};
-
-		return tokenInfoMap[tokenId] ?? { name: null, ticker: null, imageId: null };
-	}
+jest.mock('@/app/config', () => ({
+	...jest.requireActual('@/app/config'),
+	...require('__tests__/mock-factories').createKnownTokensConfigMock({
+		'6BED913FA20223F8': { name: 'Symbol Token', ticker: 'XYM', imageId: 'symbol' },
+		'3A8416DB2D53B6C8': { name: 'Custom Token', ticker: 'CTK', imageId: 'custom' }
+	})
 }));
 
 // Constants
