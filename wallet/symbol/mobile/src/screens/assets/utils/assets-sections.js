@@ -3,6 +3,7 @@ import { FilterType } from '@/app/types/Filter';
 import { isTokenExpired } from '@/app/utils';
 
 /** @typedef {import('@/app/types/Network').ChainName} ChainName */
+/** @typedef {import('@/app/types/Network').NetworkIdentifier} NetworkIdentifier */
 /** @typedef {import('@/app/types/Wallet').WalletController} WalletController */
 /** @typedef {import('@/app/types/Token').Token} Token */
 /** @typedef {import('@/app/types/Account').WalletAccount} WalletAccount */
@@ -33,15 +34,17 @@ export const getAssetsFilterConfig = () => [
  * @param {string} title - Section title (account name).
  * @param {string} name - Account name.
  * @param {ChainName} chainName - Chain name identifier.
+ * @param {NetworkIdentifier} networkIdentifier - Network identifier.
  * @param {string} address - Account address.
  * @param {Token[]} assets - Array of tokens.
  * @param {string} [title] - Optional section title to display above the account info.
  * @param {boolean} [hasTopMargin=false] - Whether to add top margin to the section header.
  * @returns {AssetSection} Asset section object.
  */
-const createSection = (name, chainName, address, assets, title, hasTopMargin) => ({
+const createSection = (name, chainName, networkIdentifier, address, assets, title, hasTopMargin) => ({
 	name,
 	chainName,
+	networkIdentifier,
 	address,
 	data: assets,
 	title,
@@ -84,7 +87,7 @@ export const buildAssetsSections = ({
 	const controllersWithAccounts = walletControllers.filter(controller => controller.currentAccount);
 
 	controllersWithAccounts.forEach((controller, index) => {
-		const { currentAccount, currentAccountInfo, chainName, networkProperties } = controller;
+		const { currentAccount, currentAccountInfo, chainName, networkIdentifier, networkProperties } = controller;
 
 		const assets = currentAccountInfo?.tokens ?? currentAccountInfo?.mosaics ?? [];
 		const filteredAssets = filterAssets(assets, filter, currentAccount, networkProperties);
@@ -103,6 +106,7 @@ export const buildAssetsSections = ({
 		sections.push(createSection(
 			currentAccount.name,
 			chainName,
+			networkIdentifier,
 			currentAccount.address,
 			filteredAssets,
 			title,
@@ -117,7 +121,7 @@ export const buildAssetsSections = ({
 			return;
 
 		const { multisigAccounts } = multisigModule;
-		const { chainName, networkProperties } = controller;
+		const { chainName, networkIdentifier, networkProperties } = controller;
 
 		let title = null;
 
@@ -134,6 +138,7 @@ export const buildAssetsSections = ({
 			sections.push(createSection(
 				multisigAccount.name,
 				chainName,
+				networkIdentifier,
 				multisigAccount.address,
 				filteredAssets,
 				title,

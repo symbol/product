@@ -12,12 +12,12 @@ import {
 	StyledText,
 	TokenListItem
 } from '@/app/components';
-import { useAccountDisplayData, useAsyncManager, useTokenDisplayData, useWalletController } from '@/app/hooks';
+import { useAccountDisplayData, useAsyncManager, useWalletController } from '@/app/hooks';
 import { PlatformUtils } from '@/app/lib/platform/PlatformUtils';
 import { $t } from '@/app/localization';
 import { Router } from '@/app/router/Router';
 import { CosignatoryList, CosignatureCounter } from '@/app/screens/multisig/components';
-import { createAccountAddressQr, createExplorerAccountUrl } from '@/app/utils';
+import { createAccountAddressQr, createExplorerAccountUrl, createTokenDisplayData } from '@/app/utils';
 import React from 'react';
 
 /** @typedef {import('@/app/types/Network').ChainName} ChainName */
@@ -63,7 +63,7 @@ export const MultisigAccountDetails = ({ route }) => {
 
 	// Tokens
 	const tokens = data?.tokens || data?.mosaics || [];
-	const tokensDisplayData = useTokenDisplayData(tokens, chainName);
+	const tokensDisplayData = tokens.map(token => createTokenDisplayData(token, chainName, networkIdentifier));
 
 	// Send/Receive buttons
 	const receiveQrData = createAccountAddressQr({

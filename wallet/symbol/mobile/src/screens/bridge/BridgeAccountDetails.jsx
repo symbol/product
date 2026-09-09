@@ -12,11 +12,11 @@ import {
 	StyledText,
 	TokenListItem
 } from '@/app/components';
-import { usePasscode, useToggle, useTokenDisplayData, useWalletController } from '@/app/hooks';
+import { usePasscode, useToggle, useWalletController } from '@/app/hooks';
 import { PlatformUtils } from '@/app/lib/platform/PlatformUtils';
 import { $t } from '@/app/localization';
 import { Router } from '@/app/router/Router';
-import { createAccountAddressQr, createExplorerAccountUrl } from '@/app/utils';
+import { createAccountAddressQr, createExplorerAccountUrl, createTokenDisplayData } from '@/app/utils';
 import React, { useState } from 'react';
 
 /**
@@ -29,7 +29,7 @@ export const BridgeAccountDetails = ({ route }) => {
 	const walletController = useWalletController(chainName);
 	const { networkIdentifier, currentAccount, currentAccountInfo } = walletController;
 	const tokens = currentAccountInfo?.tokens || currentAccountInfo?.mosaics || [];
-	const tokensDisplayData = useTokenDisplayData(tokens, chainName);
+	const tokensDisplayData = tokens.map(token => createTokenDisplayData(token, chainName, networkIdentifier));
 
 	// Send/Receive buttons
 	const receiveQrData = createAccountAddressQr({
