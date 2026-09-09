@@ -15,11 +15,11 @@ import {
 	TableView,
 	TokenInfoCard
 } from '@/app/components';
-import { useAsyncManager, useTokenDisplayData, useWalletController } from '@/app/hooks';
+import { useAsyncManager, useWalletController } from '@/app/hooks';
 import { $t } from '@/app/localization';
 import { Router } from '@/app/router/Router';
 import { getExpirationData } from '@/app/screens/assets/utils';
-import { createTransactionQr } from '@/app/utils';
+import { createTokenDisplayData, createTransactionQr } from '@/app/utils';
 import React from 'react';
 import { isMosaicRevokable, isMosaicSupplyModifiable } from 'wallet-common-symbol';
 
@@ -74,7 +74,7 @@ export const TokenDetails = ({ route }) => {
 	const token = dataManager.data;
 
 	// Token display data
-	const { nameText, ticker, imageId } = useTokenDisplayData(token ?? { id: tokenId }, chainName);
+	const { nameText, ticker, imageId } = createTokenDisplayData(token ?? { id: tokenId }, chainName, networkIdentifier);
 
 	// The token info is unavailable (e.g. the token has expired and is pruned from the node)
 	if (!token) {

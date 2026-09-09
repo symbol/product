@@ -1,37 +1,10 @@
 import { useAssetsData } from './hooks';
 import { Header } from '@/app/app/components';
 import { AccountRow, CopyButtonContainer, FilteredListScreenTemplate, Spacer, StyledText, TokenListItem } from '@/app/components';
-import { useInit, useRefresh, useTokenDisplayData, useWalletController, useWalletRefreshLifecycle } from '@/app/hooks';
+import { useInit, useRefresh, useWalletController, useWalletRefreshLifecycle } from '@/app/hooks';
 import { Router } from '@/app/router/Router';
-import { createTokenExpiration } from '@/app/utils';
+import { createTokenDisplayData, createTokenExpiration } from '@/app/utils';
 import React, { useCallback } from 'react';
-
-/** @typedef {import('@/app/types/Network').ChainName} ChainName */
-/** @typedef {import('@/app/types/Token').Token} Token */
-
-/**
- * AssetsTokenListItem component. Resolves a token's display data for its section's chain and
- * renders the token list row with its expiration state.
- * @param {object} props - Component props.
- * @param {Token} props.token - Token to display.
- * @param {ChainName} props.chainName - Chain the token belongs to.
- * @param {object} props.networkProperties - Network properties for the expiration display.
- * @param {function(): void} props.onPress - Press handler.
- * @returns {React.ReactNode} AssetsTokenListItem component.
- */
-const AssetsTokenListItem = ({ token, chainName, networkProperties, onPress }) => {
-	const tokenDisplayData = useTokenDisplayData(token, chainName);
-
-	return (
-		<TokenListItem
-			name={tokenDisplayData.nameText}
-			amount={tokenDisplayData.amount}
-			imageId={tokenDisplayData.imageId}
-			expiration={createTokenExpiration(token, networkProperties)}
-			onPress={onPress}
-		/>
-	);
-};
 
 /**
  * Assets screen component. Displays a filterable list of tokens/mosaics across all connected
@@ -98,6 +71,8 @@ export const Assets = () => {
 	), []);
 
 	const renderItem = useCallback(({ item, section }) => {
+		const tokenDisplayData = createTokenDisplayData(item, section.chainName, section.networkIdentifier);
+
 		const handleTokenPress = () => {
 			Router.goToTokenDetails({
 				params: {
@@ -110,10 +85,11 @@ export const Assets = () => {
 		};
 
 		return (
-			<AssetsTokenListItem
-				token={item}
-				chainName={section.chainName}
-				networkProperties={networkProperties}
+			<TokenListItem
+				name={tokenDisplayData.nameText}
+				amount={tokenDisplayData.amount}
+				imageId={tokenDisplayData.imageId}
+				expiration={createTokenExpiration(item, networkProperties)}
 				onPress={handleTokenPress}
 			/>
 		);

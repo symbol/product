@@ -1,35 +1,10 @@
 import { useCreatedMosaicList } from './hooks';
 import { ButtonCircle, FilteredListScreenTemplate, Spacer, StyledText, TokenListItem } from '@/app/components';
-import { useInit, useRefresh, useTokenDisplayData, useWalletController, useWalletRefreshLifecycle } from '@/app/hooks';
+import { useInit, useRefresh, useWalletController, useWalletRefreshLifecycle } from '@/app/hooks';
 import { $t } from '@/app/localization';
 import { Router } from '@/app/router/Router';
-import { createTokenExpiration } from '@/app/utils';
+import { createTokenDisplayData, createTokenExpiration } from '@/app/utils';
 import React, { useCallback } from 'react';
-
-/** @typedef {import('@/app/types/Token').Token} Token */
-
-/**
- * CreatedMosaicListItem component. Resolves a mosaic's display data and renders the token list
- * row with its expiration state.
- * @param {object} props - Component props.
- * @param {Token} props.mosaic - Mosaic to display.
- * @param {object} props.networkProperties - Network properties for the expiration display.
- * @param {function(): void} props.onPress - Press handler.
- * @returns {React.ReactNode} CreatedMosaicListItem component.
- */
-const CreatedMosaicListItem = ({ mosaic, networkProperties, onPress }) => {
-	const tokenDisplayData = useTokenDisplayData(mosaic);
-
-	return (
-		<TokenListItem
-			name={tokenDisplayData.nameText}
-			amount={tokenDisplayData.amount}
-			imageId={tokenDisplayData.imageId}
-			expiration={createTokenExpiration(mosaic, networkProperties)}
-			onPress={onPress}
-		/>
-	);
-};
 
 /**
  * CreatedMosaicList screen component. Displays the paginated list of mosaics created by the
@@ -41,6 +16,7 @@ export const CreatedMosaicList = () => {
 	const walletController = useWalletController();
 	const {
 		chainName,
+		networkIdentifier,
 		networkProperties,
 		currentAccount,
 		isWalletReady
@@ -99,13 +75,19 @@ export const CreatedMosaicList = () => {
 		</Spacer>
 	), []);
 
-	const renderItem = useCallback(({ item }) => (
-		<CreatedMosaicListItem
-			mosaic={item}
-			networkProperties={networkProperties}
-			onPress={() => openTokenDetails(item)}
-		/>
-	), [networkProperties, openTokenDetails]);
+	const renderItem = useCallback(({ item }) => {
+		const tokenDisplayData = createTokenDisplayData(item, chainName, networkIdentifier);
+
+		return (
+			<TokenListItem
+				name={tokenDisplayData.nameText}
+				amount={tokenDisplayData.amount}
+				imageId={tokenDisplayData.imageId}
+				expiration={createTokenExpiration(item, networkProperties)}
+				onPress={() => openTokenDetails(item)}
+			/>
+		);
+	}, [chainName, networkIdentifier, networkProperties, openTokenDetails]);
 
 	const renderSectionHeader = useCallback(() => null, []);
 
