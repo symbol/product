@@ -191,6 +191,20 @@ export const BridgeSwap = props => {
 		fetchSwapData();
 	}, [fetchSwapData]);
 
+	const init = useCallback(() => {
+		(async () => {
+			reset();
+			clearEstimation();
+
+			await loadWalletControllers();
+			await loadBridges();
+			noPairsDialogManager.onScreenFocus();
+			disabledDialogManager.onScreenFocus();
+			await fetchBalances();
+		})();
+	}, []);
+	useFocusEffect(init);
+
 	// Fees for the next step are based on the previous step estimation output amount. Fetch if available 
 	useEffect(() => {
 		if (estimations)
@@ -214,22 +228,6 @@ export const BridgeSwap = props => {
 
 	// Confirmation dialog
 	const confirmationText = createSwapConfirmationText({ source, target, amount });
-
-
-
-	const init = useCallback(() => {
-		(async () => {
-			reset();
-			clearEstimation();
-
-			await loadWalletControllers();
-			await loadBridges();
-			noPairsDialogManager.onScreenFocus();
-			disabledDialogManager.onScreenFocus();
-			await fetchBalances();
-		})();
-	}, []);
-	useFocusEffect(init);
 
 	const isScreenLoading = !isReady;
 	const isButtonDisabled = isEstimationLoading
