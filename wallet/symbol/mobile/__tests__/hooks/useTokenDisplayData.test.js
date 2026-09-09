@@ -14,6 +14,7 @@ const KNOWN_TOKEN_NAME = 'Symbol';
 const KNOWN_TOKEN_TICKER = 'XYM';
 const KNOWN_TOKEN_IMAGE_ID = 'xym';
 const RENAMED_TOKEN_NAME = 'custom.renamed';
+const CUSTOM_TOKEN_TICKER = 'CTK';
 
 // Token Fixtures
 
@@ -31,6 +32,12 @@ const namelessToken = TokenFixtureBuilder
 	.createWithToken(CHAIN_NAME, NETWORK_IDENTIFIER, 1)
 	.setName(null)
 	.setAmount('25')
+	.build();
+
+const customTokenWithTicker = TokenFixtureBuilder
+	.createWithToken(CHAIN_NAME, NETWORK_IDENTIFIER, 1)
+	.setTicker(CUSTOM_TOKEN_TICKER)
+	.setAmount('10')
 	.build();
 
 describe('hooks/useTokenDisplayData', () => {
@@ -88,6 +95,17 @@ describe('hooks/useTokenDisplayData', () => {
 					ticker: null,
 					nameText: namelessToken.id,
 					tickerText: namelessToken.id,
+					imageId: null
+				}
+			},
+			{
+				description: 'uses the token ticker of an unknown token',
+				config: { token: customTokenWithTicker },
+				expected: {
+					name: customTokenWithTicker.name,
+					ticker: CUSTOM_TOKEN_TICKER,
+					nameText: `${customTokenWithTicker.name} • ${CUSTOM_TOKEN_TICKER}`,
+					tickerText: CUSTOM_TOKEN_TICKER,
 					imageId: null
 				}
 			}

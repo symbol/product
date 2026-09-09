@@ -159,9 +159,8 @@ export const MultisigAccountDetails = ({ route }) => {
 							return (
 								<TokenListItem
 									key={token.id}
-									name={tokenDisplayData.name}
+									name={tokenDisplayData.nameText}
 									amount={tokenDisplayData.amount}
-									ticker={tokenDisplayData.ticker}
 									imageId={tokenDisplayData.imageId}
 									onPress={() => handleTokenPress(token)}
 								/>

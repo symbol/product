@@ -21,8 +21,7 @@ describe('components/display/Token/TokenBalanceRow', () => {
 	describe('with a name, ticker and amount', () => {
 		runRenderTextTest(TokenBalanceRow, {
 			props: {
-				name: token.name,
-				ticker: TICKER,
+				name: DISPLAY_NAME,
 				amount: token.amount
 			},
 			textToRender: [
@@ -35,8 +34,7 @@ describe('components/display/Token/TokenBalanceRow', () => {
 	describe('without an amount', () => {
 		runRenderTextTest(TokenBalanceRow, {
 			props: {
-				name: token.name,
-				ticker: TICKER
+				name: DISPLAY_NAME
 			},
 			textToRender: [
 				{ type: 'text', value: DISPLAY_NAME }
@@ -50,8 +48,7 @@ describe('components/display/Token/TokenBalanceRow', () => {
 	describe('with a null amount', () => {
 		runRenderTextTest(TokenBalanceRow, {
 			props: {
-				name: token.name,
-				ticker: TICKER,
+				name: DISPLAY_NAME,
 				amount: null
 			},
 			textToRender: [
@@ -67,8 +64,7 @@ describe('components/display/Token/TokenBalanceRow', () => {
 	describe('with an accessory', () => {
 		runRenderTextTest(TokenBalanceRow, {
 			props: {
-				name: token.name,
-				ticker: TICKER,
+				name: DISPLAY_NAME,
 				accessory: <Text>{ACCESSORY_TEXT}</Text>
 			},
 			textToRender: [
@@ -81,8 +77,7 @@ describe('components/display/Token/TokenBalanceRow', () => {
 	describe('with a title caption', () => {
 		runRenderTextTest(TokenBalanceRow, {
 			props: {
-				name: token.name,
-				ticker: TICKER,
+				name: DISPLAY_NAME,
 				titleCaption: <Text>caption</Text>
 			},
 			textToRender: [
@@ -95,8 +90,7 @@ describe('components/display/Token/TokenBalanceRow', () => {
 	describe('with children below the amount', () => {
 		runRenderTextTest(TokenBalanceRow, {
 			props: {
-				name: token.name,
-				ticker: TICKER,
+				name: DISPLAY_NAME,
 				amount: token.amount,
 				children: <Text>extra</Text>
 			},

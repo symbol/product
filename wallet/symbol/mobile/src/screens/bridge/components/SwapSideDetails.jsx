@@ -59,8 +59,7 @@ export const SwapSideDetails = ({ type, chainName, networkIdentifier, token, acc
 			<Spacer>
 				<Stack>
 					<TokenBalanceRow
-						name={token.name}
-						ticker={token.ticker}
+						name={token.nameText}
 						imageId={token.imageId}
 						amount={token.amount}
 						size="l"

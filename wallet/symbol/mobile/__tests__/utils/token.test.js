@@ -1,7 +1,6 @@
 import {
 	createTokenDisplayData,
 	createTokenExpiration,
-	formatTokenNameText,
 	isTokenExpired
 } from '@/app/utils';
 import { TokenFixtureBuilder } from '__fixtures__/local/TokenFixtureBuilder';
@@ -13,6 +12,7 @@ const BLOCK_GENERATION_TARGET_TIME = 30;
 const NETWORK_PROPERTIES = { chainHeight: CHAIN_HEIGHT, blockGenerationTargetTime: BLOCK_GENERATION_TARGET_TIME };
 const CHAIN_NAME_SYMBOL = 'symbol';
 const NETWORK_IDENTIFIER = 'testnet';
+const CUSTOM_TICKER = 'CTK';
 
 // Token Fixtures
 
@@ -22,9 +22,35 @@ const knownToken = TokenFixtureBuilder
 	.setAmount('100')
 	.build();
 
+// A listed token carrying its own ticker, which the listed one overrides
+const knownTokenWithOwnTicker = TokenFixtureBuilder
+	.createWithToken(CHAIN_NAME_SYMBOL, NETWORK_IDENTIFIER, 0)
+	.setTicker(CUSTOM_TICKER)
+	.setAmount('100')
+	.build();
+
 // A token absent from the known-tokens configuration
 const unknownToken = TokenFixtureBuilder
 	.createWithToken(CHAIN_NAME_SYMBOL, NETWORK_IDENTIFIER, 1)
+	.setAmount('50')
+	.build();
+
+const unknownTokenWithTicker = TokenFixtureBuilder
+	.createWithToken(CHAIN_NAME_SYMBOL, NETWORK_IDENTIFIER, 1)
+	.setTicker(CUSTOM_TICKER)
+	.setAmount('50')
+	.build();
+
+const namelessToken = TokenFixtureBuilder
+	.createWithToken(CHAIN_NAME_SYMBOL, NETWORK_IDENTIFIER, 1)
+	.setName(null)
+	.setAmount('50')
+	.build();
+
+const emptyNameToken = TokenFixtureBuilder
+	.createWithToken(CHAIN_NAME_SYMBOL, NETWORK_IDENTIFIER, 1)
+	.setName('')
+	.setTicker('')
 	.setAmount('50')
 	.build();
 
@@ -76,40 +102,6 @@ describe('utils/token', () => {
 
 		isTokenExpiredTests.forEach(test => {
 			runIsTokenExpiredTest(test.description, test.config, test.expected);
-		});
-	});
-
-	describe('formatTokenNameText()', () => {
-		const runFormatTokenNameTextTest = (description, config, expected) => {
-			it(description, () => {
-				// Act:
-				const result = formatTokenNameText(config.name, config.ticker);
-
-				// Assert:
-				expect(result).toBe(expected.result);
-			});
-		};
-
-		const formatTokenNameTextTests = [
-			{
-				description: 'appends the ticker to the name when a ticker is provided',
-				config: { name: 'Symbol', ticker: 'XYM' },
-				expected: { result: 'Symbol • XYM' }
-			},
-			{
-				description: 'returns the name alone when the ticker is null',
-				config: { name: 'Symbol', ticker: null },
-				expected: { result: 'Symbol' }
-			},
-			{
-				description: 'returns the name alone when the ticker is undefined',
-				config: { name: 'Symbol', ticker: undefined },
-				expected: { result: 'Symbol' }
-			}
-		];
-
-		formatTokenNameTextTests.forEach(test => {
-			runFormatTokenNameTextTest(test.description, test.config, test.expected);
 		});
 	});
 
@@ -199,6 +191,66 @@ describe('utils/token', () => {
 						ticker: null,
 						nameText: unknownToken.name,
 						tickerText: unknownToken.name,
+						imageId: null
+					}
+				}
+			},
+			{
+				description: 'uses the token ticker of an unlisted token',
+				config: { token: unknownTokenWithTicker },
+				expected: {
+					displayData: {
+						tokenId: unknownTokenWithTicker.id,
+						amount: unknownTokenWithTicker.amount,
+						name: unknownTokenWithTicker.name,
+						ticker: CUSTOM_TICKER,
+						nameText: `${unknownTokenWithTicker.name} • ${CUSTOM_TICKER}`,
+						tickerText: CUSTOM_TICKER,
+						imageId: null
+					}
+				}
+			},
+			{
+				description: 'prefers the listed ticker over the token ticker',
+				config: { token: knownTokenWithOwnTicker },
+				expected: {
+					displayData: {
+						tokenId: knownTokenWithOwnTicker.id,
+						amount: knownTokenWithOwnTicker.amount,
+						name: 'Symbol',
+						ticker: 'XYM',
+						nameText: 'Symbol • XYM',
+						tickerText: 'XYM',
+						imageId: 'xym'
+					}
+				}
+			},
+			{
+				description: 'falls back to the token id when the token has no name',
+				config: { token: namelessToken },
+				expected: {
+					displayData: {
+						tokenId: namelessToken.id,
+						amount: namelessToken.amount,
+						name: null,
+						ticker: null,
+						nameText: namelessToken.id,
+						tickerText: namelessToken.id,
+						imageId: null
+					}
+				}
+			},
+			{
+				description: 'treats an empty name and ticker as missing',
+				config: { token: emptyNameToken },
+				expected: {
+					displayData: {
+						tokenId: emptyNameToken.id,
+						amount: emptyNameToken.amount,
+						name: null,
+						ticker: null,
+						nameText: emptyNameToken.id,
+						tickerText: emptyNameToken.id,
 						imageId: null
 					}
 				}
