@@ -18,7 +18,7 @@
     "@fastify/cors": "^11.2.0",
     "axios": "^1.17.0",
     "dotenv": "^17.4.2",
-    "fastify": "^5.8.5",
+    "fastify": "^5.12.1",
     "jsonwebtoken": "^9.0.3",
     "sqlite3": "^6.0.1",
     "symbol-sdk": "^3.3.1",

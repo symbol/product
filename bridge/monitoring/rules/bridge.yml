@@ -1,0 +1,126 @@
+groups:
+  - name: bridge-symptoms
+    rules:
+      - alert: BridgeRequestsFailedPermanently
+        expr: delta(bridge_requests_failed_permanent[12h]) > 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "{{ $labels.bridge }}: {{ $value | printf \"%.0f\" }} new {{ $labels.direction }} request(s) failed without being retried"
+          runbook_url: https://github.com/symbol/product/blob/dev/bridge/monitoring/README.md#bridgerequestsfailedpermanently
+
+      - alert: BridgeDepositsNotProcessing
+        expr: bridge_oldest_unprocessed_age_seconds > 3600
+        for: 15m
+        labels:
+          severity: critical
+        annotations:
+          summary: "{{ $labels.bridge }}: oldest unprocessed {{ $labels.direction }} request is {{ $value | humanizeDuration }} old"
+          runbook_url: https://github.com/symbol/product/blob/dev/bridge/monitoring/README.md#bridgedepositsnotprocessing
+
+      - alert: BridgePayoutsNotConfirming
+        expr: bridge_oldest_sent_age_seconds > 3600
+        for: 15m
+        labels:
+          severity: critical
+        annotations:
+          summary: "{{ $labels.bridge }}: oldest unconfirmed {{ $labels.direction }} payout is {{ $value | humanizeDuration }} old"
+          runbook_url: https://github.com/symbol/product/blob/dev/bridge/monitoring/README.md#bridgepayoutsnotconfirming
+
+  - name: bridge-causes
+    rules:
+      - alert: BridgeVaultUnavailable
+        expr: bridge_vault_up == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "{{ $labels.bridge }}: the vault cannot serve the signing key ({{ $labels.endpoint }})"
+          runbook_url: https://github.com/symbol/product/blob/dev/bridge/monitoring/README.md#bridgevaultunavailable
+
+      - alert: BridgePriceOracleUnavailable
+        expr: bridge_price_oracle_up == 0
+        for: 15m
+        labels:
+          severity: critical
+        annotations:
+          summary: "{{ $labels.bridge }}: the price oracle is not answering ({{ $labels.endpoint }})"
+          runbook_url: https://github.com/symbol/product/blob/dev/bridge/monitoring/README.md#bridgepriceoracleunavailable
+
+      - alert: BridgeNodeUnavailable
+        expr: bridge_node_up == 0
+        for: 10m
+        labels:
+          severity: critical
+        annotations:
+          summary: "{{ $labels.bridge }}: the {{ $labels.network }} node is not answering ({{ $labels.endpoint }})"
+          runbook_url: https://github.com/symbol/product/blob/dev/bridge/monitoring/README.md#bridgenodeunavailable
+
+      - alert: BridgeChainStalled
+        expr: changes(blockchain_height[15m]) == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "{{ $labels.bridge }}: the {{ $labels.network }} chain has not advanced for 15 minutes"
+          runbook_url: https://github.com/symbol/product/blob/dev/bridge/monitoring/README.md#bridgechainstalled
+
+      - alert: BridgeFinalizationStalled
+        expr: changes(blockchain_finalized_height[45m]) == 0
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "{{ $labels.bridge }}: {{ $labels.network }} finalization has not advanced for 45 minutes"
+          runbook_url: https://github.com/symbol/product/blob/dev/bridge/monitoring/README.md#bridgefinalizationstalled
+
+      - alert: BridgeRequestDownloadStalled
+        expr: |
+          changes(bridge_processed_height[15m]) == 0
+            and bridge_processed_height > 0
+            and on (bridge, network) changes(blockchain_finalized_height[30m]) > 0
+        for: 30m
+        labels:
+          severity: critical
+        annotations:
+          summary: "{{ $labels.bridge }}: the {{ $labels.network }} request downloader has not advanced for 45 minutes"
+          runbook_url: https://github.com/symbol/product/blob/dev/bridge/monitoring/README.md#bridgerequestdownloadstalled
+
+  - name: bridge-capacity
+    rules:
+      - alert: BridgeVaultTokenExpiring
+        expr: bridge_vault_token_ttl_seconds < 7 * 86400
+        for: 30m
+        labels:
+          severity: warning
+        annotations:
+          summary: "{{ $labels.bridge }}: the vault access token expires in {{ $value | humanizeDuration }}"
+          runbook_url: https://github.com/symbol/product/blob/dev/bridge/monitoring/README.md#bridgevaulttokenexpiring
+
+      - alert: BridgePriceOracleQuotaLow
+        expr: bridge_price_oracle_credits_left < 2000
+        for: 1h
+        labels:
+          severity: warning
+        annotations:
+          summary: "{{ $labels.bridge }}: {{ $value }} price oracle requests left in the monthly quota"
+          runbook_url: https://github.com/symbol/product/blob/dev/bridge/monitoring/README.md#bridgepriceoraclequotalow
+
+      - alert: BridgeBalanceLow
+        expr: bridge_balance < on (bridge, network, token) group_right () bridge_balance_threshold
+        for: 15m
+        annotations:
+          summary: >-
+            {{ $labels.bridge }}: the {{ $labels.network }} balance of {{ $labels.token }} is down
+            to {{ $value | printf "%.0f" }} in raw units, below its {{ $labels.severity }} threshold
+          runbook_url: https://github.com/symbol/product/blob/dev/bridge/monitoring/README.md#bridgebalancelow
+
+      - alert: BridgeBalanceThresholdsMissing
+        expr: bridge_info unless on (bridge) bridge_balance_threshold
+        for: 1h
+        labels:
+          severity: warning
+        annotations:
+          summary: "{{ $labels.bridge }}: no balance thresholds are loaded, so no balance is watched"
+          runbook_url: https://github.com/symbol/product/blob/dev/bridge/monitoring/README.md#bridgebalancethresholdsmissing
