@@ -1,4 +1,4 @@
-from rest.model.symbol.format import format_timestamp, format_xym_amount, str_or_none, to_hex, to_hex_or_none
+from rest.model.symbol.format import format_amount, format_timestamp, str_or_none, to_hex, to_hex_or_none
 
 
 class SymbolBlockView:  # pylint: disable=too-many-instance-attributes
@@ -11,6 +11,7 @@ class SymbolBlockView:  # pylint: disable=too-many-instance-attributes
 		self.timestamp = kwargs['timestamp']
 		self.network_timestamp = kwargs['network_timestamp']
 		self.total_fee = kwargs['total_fee']
+		self.block_reward = kwargs['block_reward']
 		self.transaction_count = kwargs['transaction_count']
 		self.statement_count = kwargs['statement_count']
 		self.difficulty = kwargs['difficulty']
@@ -33,9 +34,10 @@ class SymbolBlockView:  # pylint: disable=too-many-instance-attributes
 		self.previous_importance_block_hash = kwargs['previous_importance_block_hash']
 		self.is_finalized = kwargs['is_finalized']
 
-	def to_dict(self):
+	def to_dict(self, native_mosaic_info):
 		"""Formats the block info as a dictionary."""
 
+		block_reward = None if self.block_reward is None else format_amount(self.block_reward, native_mosaic_info.divisibility)
 		return {
 			'height': self.height,
 			'hash': to_hex(self.block_hash),
@@ -44,20 +46,19 @@ class SymbolBlockView:  # pylint: disable=too-many-instance-attributes
 			'networkTimestamp': self.network_timestamp,
 			'harvester': self.harvester,
 			'beneficiaryAddress': self.beneficiary_address,
-			'totalFee': format_xym_amount(self.total_fee),
+			'totalFee': format_amount(self.total_fee, native_mosaic_info.divisibility),
 			'transactionCount': self.transaction_count,
 			'statementCount': self.statement_count,
-			# Receipts Core will populate block rewards when receipt data is available.
-			'blockReward': None,
+			'blockReward': block_reward,
 			'isFinalized': self.is_finalized,
 			'difficulty': str(self.difficulty)
 		}
 
-	def to_detail_dict(self):
+	def to_detail_dict(self, native_mosaic_info):
 		"""Formats the block info as a block-detail dictionary."""
 
 		return {
-			**self.to_dict(),
+			**self.to_dict(native_mosaic_info),
 			'signature': to_hex(self.signature),
 			'size': self.size,
 			'feeMultiplier': self.fee_multiplier,

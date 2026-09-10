@@ -2,6 +2,8 @@ from datetime import datetime, timezone
 from decimal import Decimal
 from unittest import TestCase
 
+from common.symbol.NativeMosaic import NativeMosaicInfo
+
 from rest.model.symbol.Block import SymbolBlockView
 
 
@@ -24,6 +26,8 @@ def _expected_list_dict():
 
 
 class SymbolBlockViewTest(TestCase):
+	NATIVE_MOSAIC_INFO = NativeMosaicInfo('72C0212E67A08BCE', 6)
+
 	@staticmethod
 	def _create_block_view():
 		return SymbolBlockView(
@@ -33,6 +37,7 @@ class SymbolBlockViewTest(TestCase):
 			timestamp=datetime(2026, 1, 2, 3, 4, 5, tzinfo=timezone.utc),
 			network_timestamp=1234,
 			total_fee=Decimal('1234567'),
+			block_reward=None,
 			transaction_count=7,
 			statement_count=3,
 			difficulty=Decimal('100000000000000'),
@@ -61,7 +66,7 @@ class SymbolBlockViewTest(TestCase):
 		block_view = self._create_block_view()
 
 		# Act:
-		result = block_view.to_dict()
+		result = block_view.to_dict(self.NATIVE_MOSAIC_INFO)
 
 		# Assert:
 		self.assertEqual(_expected_list_dict(), result)
@@ -71,7 +76,7 @@ class SymbolBlockViewTest(TestCase):
 		block_view = self._create_block_view()
 
 		# Act:
-		result = block_view.to_detail_dict()
+		result = block_view.to_detail_dict(self.NATIVE_MOSAIC_INFO)
 
 		# Assert:
 		self.assertEqual({
@@ -99,7 +104,7 @@ class SymbolBlockViewTest(TestCase):
 		block_view.state_hash_sub_cache_roots = []
 
 		# Act:
-		result = block_view.to_detail_dict()
+		result = block_view.to_detail_dict(self.NATIVE_MOSAIC_INFO)
 
 		# Assert:
 		self.assertEqual([], result['stateHashSubCacheMerkleRoots'])
@@ -110,7 +115,23 @@ class SymbolBlockViewTest(TestCase):
 		block_view.timestamp = datetime(2026, 1, 2, 3, 4, 5)
 
 		# Act:
-		result = block_view.to_dict()
+		result = block_view.to_dict(self.NATIVE_MOSAIC_INFO)
 
 		# Assert:
 		self.assertEqual('2026-01-02T03:04:05Z', result['timestamp'])
+
+	def test_can_format_zero_block_reward_as_zero_native_units(self):
+		# Arrange:
+		block_view = self._create_block_view()
+		block_view.block_reward = 0
+
+		# Act + Assert:
+		self.assertEqual(0.0, block_view.to_dict(self.NATIVE_MOSAIC_INFO)['blockReward'])
+
+	def test_can_format_positive_block_reward_using_native_divisibility(self):
+		# Arrange:
+		block_view = self._create_block_view()
+		block_view.block_reward = Decimal('1234567')
+
+		# Act + Assert:
+		self.assertEqual(1.234567, block_view.to_dict(self.NATIVE_MOSAIC_INFO)['blockReward'])
