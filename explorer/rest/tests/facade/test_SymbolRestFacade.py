@@ -1,5 +1,6 @@
 from unittest import TestCase
 
+from common.symbol.NativeMosaic import NativeMosaicInfo
 from common.symbol.NodeConfiguration import SymbolNodeConfiguration
 from common.tests.PostgresTestUtils import create_unreachable_db_configuration
 from psycopg2 import Error as PsycopgError
@@ -11,6 +12,7 @@ from rest.facade.SymbolRestFacade import SymbolRestFacade
 from ..test.SymbolHealthTestUtils import create_symbol_health
 
 NODE_URL = 'http://127.0.0.1:3000'
+NATIVE_MOSAIC_INFO = NativeMosaicInfo('72C0212E67A08BCE', 6)
 
 
 def _create_node_config():
@@ -26,6 +28,10 @@ class FailingSymbolDatabase:
 class BlockHeadHeightErrorSymbolDatabase:
 	@staticmethod
 	def get_block_head_height():
+		raise PsycopgError()
+
+	@staticmethod
+	def get_blocks(_from_height, _limit, _sort):
 		raise PsycopgError()
 
 
@@ -115,11 +121,11 @@ class SyncStateFailingSymbolDatabase:
 
 class BlockView:
 	@staticmethod
-	def to_dict():
+	def to_dict(_native_mosaic_info):
 		return {'height': 1}
 
 	@staticmethod
-	def to_detail_dict():
+	def to_detail_dict(_native_mosaic_info):
 		return {'height': 1, 'detail': True}
 
 
@@ -139,12 +145,16 @@ class BlockSymbolDatabase:
 		return self.head_height
 
 	def get_blocks(self, from_height, limit, sort):
+		if self.head_height is None:
+			return None
 		self.from_height = from_height
 		self.limit = limit
 		self.sort = sort
 		return self.blocks
 
 	def get_block(self, height):
+		if self.head_height is None:
+			return None
 		self.height = height
 		return BlockView() if 1 == height else None
 
@@ -152,7 +162,8 @@ class BlockSymbolDatabase:
 def _create_configured_facade():
 	facade = SymbolRestFacade(
 		create_unreachable_db_configuration(),
-		_create_node_config())
+		_create_node_config(),
+		NATIVE_MOSAIC_INFO)
 	facade.symbol_db = HealthySymbolDatabase()
 	facade.db_error = None
 	return facade
@@ -161,7 +172,8 @@ def _create_configured_facade():
 def _create_facade_with_database(symbol_db):
 	facade = SymbolRestFacade(
 		create_unreachable_db_configuration(),
-		_create_node_config())
+		_create_node_config(),
+		NATIVE_MOSAIC_INFO)
 	facade.symbol_db = symbol_db
 	facade.db_error = None
 	return facade
@@ -177,7 +189,7 @@ class SymbolRestFacadeTest(TestCase):  # pylint: disable=too-many-public-methods
 			ValueError,
 			'Symbol database configuration is required'
 		):
-			SymbolRestFacade(None, node_config)
+			SymbolRestFacade(None, node_config, NATIVE_MOSAIC_INFO)
 
 	def test_rejects_missing_node_config(self):
 		# Act + Assert:
@@ -185,7 +197,12 @@ class SymbolRestFacadeTest(TestCase):  # pylint: disable=too-many-public-methods
 			ValueError,
 			'Symbol node configuration is required'
 		):
-			SymbolRestFacade(create_unreachable_db_configuration(), None)
+			SymbolRestFacade(create_unreachable_db_configuration(), None, NATIVE_MOSAIC_INFO)
+
+	def test_rejects_missing_native_mosaic_info(self):
+		# Arrange + Act + Assert:
+		with self.assertRaisesRegex(ValueError, 'Native mosaic information is required'):
+			SymbolRestFacade(create_unreachable_db_configuration(), _create_node_config(), None)
 
 	def test_reports_configured_when_dependencies_are_available(self):
 		# Arrange:
@@ -285,7 +302,8 @@ class SymbolRestFacadeTest(TestCase):  # pylint: disable=too-many-public-methods
 		# Act:
 		facade = SymbolRestFacade(
 			db_config=create_unreachable_db_configuration(),
-			node_config=node_config)
+			node_config=node_config,
+			native_mosaic_info=NATIVE_MOSAIC_INFO)
 
 		# Assert:
 		self.assertFalse(facade.is_configured())
@@ -295,7 +313,8 @@ class SymbolRestFacadeTest(TestCase):  # pylint: disable=too-many-public-methods
 		node_config = _create_node_config()
 		facade = SymbolRestFacade(
 			db_config=create_unreachable_db_configuration(),
-			node_config=node_config)
+			node_config=node_config,
+			native_mosaic_info=NATIVE_MOSAIC_INFO)
 
 		# Act:
 		result = facade.get_health()
@@ -373,10 +392,12 @@ class SymbolRestFacadeTest(TestCase):  # pylint: disable=too-many-public-methods
 		# Arrange:
 		facade = SymbolRestFacade(
 			create_unreachable_db_configuration(),
-			_create_node_config())
+			_create_node_config(),
+			NATIVE_MOSAIC_INFO)
 
 		# Act + Assert:
 		self.assertFalse(facade.is_database_available())
+		self.assertFalse(facade.is_block_data_available())
 		self.assertIsNone(
 			facade.get_blocks(from_height=None, limit=1, sort=SortOrder.DESC))
 
@@ -402,6 +423,7 @@ class SymbolRestFacadeTest(TestCase):  # pylint: disable=too-many-public-methods
 		# Act + Assert:
 		with self.assertRaises(PsycopgError):
 			_create_facade_with_database(BlockHeadHeightErrorSymbolDatabase()).get_blocks(1, 10, SortOrder.DESC)
+		self.assertFalse(_create_facade_with_database(BlockHeadHeightErrorSymbolDatabase()).is_block_data_available())
 
 	def test_can_get_block_detail(self):
 		# Arrange:
@@ -421,7 +443,8 @@ class SymbolRestFacadeTest(TestCase):  # pylint: disable=too-many-public-methods
 		# Arrange:
 		facade = SymbolRestFacade(
 			create_unreachable_db_configuration(),
-			_create_node_config())
+			_create_node_config(),
+			NATIVE_MOSAIC_INFO)
 
 		# Act + Assert:
 		self.assertIsNone(facade.get_block(1))

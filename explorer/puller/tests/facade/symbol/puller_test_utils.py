@@ -410,7 +410,7 @@ def create_network_properties(epoch_adjustment='100s'):
 
 
 def create_mosaic_definition(divisibility=NATIVE_MOSAIC_DIVISIBILITY):
-	return {'mosaic': {'divisibility': divisibility}}
+	return {'mosaic': {'id': NATIVE_MOSAIC_ID, 'divisibility': divisibility}}
 
 
 def create_account_item(address_hex=BENEFICIARY_ADDRESS, item_id='account-id', **account_overrides):

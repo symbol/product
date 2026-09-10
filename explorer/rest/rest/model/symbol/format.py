@@ -1,7 +1,5 @@
 from decimal import Decimal
 
-XYM_DIVISIBILITY = 6
-
 
 def format_timestamp(timestamp):
 	return timestamp.strftime('%Y-%m-%dT%H:%M:%SZ')
@@ -19,5 +17,7 @@ def str_or_none(value):
 	return str(value) if value is not None else None
 
 
-def format_xym_amount(total_fee):
-	return float(Decimal(total_fee) / (Decimal(10) ** XYM_DIVISIBILITY))
+def format_amount(amount, divisibility):
+	"""Formats a relative mosaic amount using the explicit mosaic divisibility."""
+
+	return float(Decimal(amount) / (Decimal(10) ** divisibility))

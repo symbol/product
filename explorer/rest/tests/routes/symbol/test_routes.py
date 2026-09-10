@@ -2,7 +2,7 @@ from flask import Flask
 from psycopg2 import OperationalError
 
 from rest import setup_error_handlers
-from rest.db.SymbolDatabase import SortOrder
+from rest.db.SymbolDatabase import SortOrder, SymbolDataUnavailable
 from rest.routes.symbol import setup_symbol_routes
 
 
@@ -28,6 +28,8 @@ class SymbolBlockFacade:
 		return self.database_available and self.block_data_available
 
 	def get_blocks(self, from_height, limit, sort):
+		if not self.database_available or not self.block_data_available:
+			return None
 		self.blocks_query = (from_height, limit, sort)
 		if self.blocks_error:
 			raise self.blocks_error
@@ -35,6 +37,8 @@ class SymbolBlockFacade:
 		return self.blocks_result
 
 	def get_block(self, height):
+		if not self.database_available or not self.block_data_available:
+			raise SymbolDataUnavailable()
 		self.height = height
 		if self.block_error:
 			raise self.block_error

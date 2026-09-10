@@ -1,11 +1,27 @@
+from threading import Event, Thread
 from unittest import TestCase
 
 from common.tests.PostgresTestUtils import PostgresTestDatabase, drop_symbol_block_tables_if_present
+from psycopg2 import Error as PsycopgError
 from puller.db.SymbolDatabase import SymbolDatabase as PullerSymbolDatabase
 
-from rest.db.SymbolDatabase import SortOrder, SymbolDatabase
+from rest.db.SymbolDatabase import SortOrder, SymbolDatabase, SymbolDataUnavailable
 
 from ..test.SymbolBlockTestUtils import create_symbol_block, create_symbol_importance_block, create_symbol_sync_state
+
+
+class SnapshotInterleavingSymbolDatabase(SymbolDatabase):
+	def __init__(self, db_config):
+		super().__init__(db_config)
+		self.state_read_event = Event()
+		self.allow_block_read_event = Event()
+
+	def _fetch_sync_state(self, cursor):  # pylint: disable=arguments-differ
+		sync_state = super()._fetch_sync_state(cursor)
+		self.state_read_event.set()
+		if not self.allow_block_read_event.wait(timeout=5):
+			raise RuntimeError('Timed out waiting for snapshot interleaving')
+		return sync_state
 
 
 class SymbolDatabaseConnectionTest(TestCase):
@@ -41,6 +57,16 @@ class SymbolDatabaseBlockHeadTest(TestCase):
 		# Assert:
 		self.assertIsNone(result)
 
+	def test_get_block_head_height_returns_none_for_zero_last_synced_height(self):
+		# Arrange + Act:
+		result = _query_symbol_database(
+			[],
+			create_symbol_sync_state(last_synced_height=0, finalized_height=None),
+			lambda database: database.get_block_head_height())
+
+		# Assert:
+		self.assertIsNone(result)
+
 	def test_get_block_head_height_uses_last_synced_height(self):
 		# Arrange + Act:
 		result = _query_symbol_database(
@@ -67,16 +93,205 @@ class SymbolDatabaseBlockHeadTest(TestCase):
 		self.assertIsNone(result)
 
 
-class SymbolDatabaseBlocksTest(TestCase):
-	def test_get_blocks_returns_none_when_sync_state_is_missing(self):
+class SymbolDatabaseBlocksTest(TestCase):  # pylint: disable=too-many-public-methods
+	def test_get_blocks_returns_unavailable_when_ascending_range_crosses_dirty_boundary(self):
+		# Arrange + Act + Assert:
+		with self.assertRaises(SymbolDataUnavailable):
+			_get_blocks(
+				range(15, 25),
+				create_symbol_sync_state(
+					last_synced_height=30,
+					finalized_height=10,
+					dirty_state_from_height=20),
+				{'from_height': 15, 'limit': 10, 'sort': SortOrder.ASC})
+
+	def test_get_blocks_reads_descending_range_below_dirty_boundary(self):
 		# Arrange + Act:
-		result = _query_symbol_database(
-			[],
-			None,
-			lambda database: database.get_blocks(None, 10, SortOrder.DESC))
+		result = _get_blocks(
+			range(10, 20),
+			create_symbol_sync_state(
+				last_synced_height=30,
+				finalized_height=10,
+				dirty_state_from_height=20),
+			{'from_height': 19, 'limit': 10, 'sort': SortOrder.DESC})
+
+		# Assert:
+		self.assertEqual(list(range(19, 9, -1)), [block.height for block in result])
+
+	def test_get_block_returns_unavailable_at_dirty_boundary(self):
+		# Arrange + Act + Assert:
+		with self.assertRaises(SymbolDataUnavailable):
+			_get_block(
+				[create_symbol_block(20)],
+				create_symbol_sync_state(
+					last_synced_height=30,
+					finalized_height=10,
+					dirty_state_from_height=20),
+				20)
+
+	def test_get_block_returns_none_above_last_synced_height(self):
+		# Arrange + Act:
+		result = _get_block(
+			[create_symbol_block(2)],
+			create_symbol_sync_state(last_synced_height=1, finalized_height=1),
+			2)
 
 		# Assert:
 		self.assertIsNone(result)
+
+	def test_get_block_reads_state_and_row_from_same_snapshot(self):
+		# Arrange / Act:
+		result = _query_symbol_database_during_update(lambda database: database.get_block(1))
+
+		# Assert:
+		self.assertEqual(100, result.block_reward)
+
+	def test_get_blocks_reads_state_and_rows_from_same_snapshot(self):
+		# Arrange / Act:
+		result = _query_symbol_database_during_update(
+			lambda database: database.get_blocks(None, 1, SortOrder.DESC))
+
+		# Assert:
+		self.assertEqual([100], [block.block_reward for block in result])
+
+	def test_get_block_returns_unavailable_above_repairing_head(self):
+		# Arrange / Act / Assert:
+		with self.assertRaises(SymbolDataUnavailable):
+			_get_block(
+				[create_symbol_block(2)],
+				create_symbol_sync_state(
+					last_synced_height=1,
+					finalized_height=1,
+					status='repairing'),
+				2)
+
+	def test_get_blocks_returns_unavailable_for_ascending_cursor_above_repairing_head(self):
+		# Arrange / Act / Assert:
+		with self.assertRaises(SymbolDataUnavailable):
+			_get_blocks(
+				range(2, 3),
+				create_symbol_sync_state(
+					last_synced_height=1,
+					finalized_height=1,
+					status='repairing'),
+				{'from_height': 2, 'limit': 1, 'sort': SortOrder.ASC})
+
+	def test_get_blocks_returns_unavailable_for_descending_cursor_above_repairing_head(self):
+		# Arrange / Act / Assert:
+		with self.assertRaises(SymbolDataUnavailable):
+			_get_blocks(
+				range(2, 3),
+				create_symbol_sync_state(
+					last_synced_height=1,
+					finalized_height=1,
+					status='repairing'),
+				{'from_height': 2, 'limit': 1, 'sort': SortOrder.DESC})
+
+	def test_get_blocks_returns_repairing_block_at_safe_ascending_boundary(self):
+		# Arrange + Act:
+		result = _get_blocks(
+			range(1, 2),
+			create_symbol_sync_state(
+				last_synced_height=1,
+				finalized_height=1,
+				status='repairing'),
+			{'from_height': 1, 'limit': 1, 'sort': SortOrder.ASC})
+
+		# Assert:
+		self.assertEqual([1], [block.height for block in result])
+
+	def test_get_blocks_rejects_repairing_ascending_range_crossing_head(self):
+		# Arrange + Act + Assert:
+		with self.assertRaises(SymbolDataUnavailable):
+			_get_blocks(
+				range(1, 2),
+				create_symbol_sync_state(
+					last_synced_height=1,
+					finalized_height=1,
+					status='repairing'),
+				{'from_height': 1, 'limit': 2, 'sort': SortOrder.ASC})
+
+	def test_get_blocks_rejects_repairing_ascending_range_without_cursor(self):
+		# Arrange + Act + Assert:
+		with self.assertRaises(SymbolDataUnavailable):
+			_get_blocks(
+				range(1, 2),
+				create_symbol_sync_state(
+					last_synced_height=1,
+					finalized_height=1,
+					status='repairing'),
+				{'from_height': None, 'limit': 2, 'sort': SortOrder.ASC})
+
+	def test_get_blocks_keeps_clean_ascending_range_short_at_head(self):
+		# Arrange + Act:
+		result = _get_blocks(
+			range(1, 2),
+			create_symbol_sync_state(last_synced_height=1, finalized_height=1),
+			{'from_height': 1, 'limit': 2, 'sort': SortOrder.ASC})
+
+		# Assert:
+		self.assertEqual([1], [block.height for block in result])
+
+	def test_failed_block_sql_returns_connection_for_next_request(self):
+		# Arrange:
+		with PostgresTestDatabase() as db_config:
+			with PullerSymbolDatabase(db_config) as puller_database:
+				drop_symbol_block_tables_if_present(puller_database)
+				puller_database.create_tables()
+				puller_database.upsert_sync_state(create_symbol_sync_state(last_synced_height=1, finalized_height=1))
+				puller_database.upsert_blocks([create_symbol_block(1)])
+				database = SymbolDatabase(db_config)
+				cursor = puller_database.connection.cursor()
+				cursor.execute('ALTER TABLE symbol_blocks RENAME COLUMN block_reward TO block_reward_for_test')
+				puller_database.connection.commit()
+				cursor.close()
+
+				try:
+					# Act:
+					with self.assertRaises(PsycopgError):
+						database.get_block(1)
+
+					cursor = puller_database.connection.cursor()
+					cursor.execute('ALTER TABLE symbol_blocks RENAME COLUMN block_reward_for_test TO block_reward')
+					puller_database.connection.commit()
+					cursor.close()
+					result = database.get_block(1)
+				finally:
+					database._pool.closeall()  # pylint: disable=protected-access
+					drop_symbol_block_tables_if_present(puller_database)
+
+		# Assert:
+		self.assertEqual(1, result.height)
+
+	def test_get_blocks_returns_unavailable_when_dirty_boundary_has_no_safe_height(self):
+		# Arrange + Act + Assert:
+		with self.assertRaises(SymbolDataUnavailable):
+			_get_blocks(
+				[],
+				create_symbol_sync_state(
+					last_synced_height=30,
+					finalized_height=10,
+					dirty_state_from_height=1),
+				{'from_height': None, 'limit': 10, 'sort': SortOrder.DESC})
+
+	def test_get_blocks_returns_unavailable_for_invalid_dirty_boundary(self):
+		# Arrange + Act + Assert:
+		with self.assertRaises(SymbolDataUnavailable):
+			_get_blocks(
+				[],
+				create_symbol_sync_state(
+					last_synced_height=30,
+					finalized_height=10,
+					dirty_state_from_height=0),
+				{'from_height': None, 'limit': 10, 'sort': SortOrder.DESC})
+
+	def test_get_blocks_returns_none_when_sync_state_is_missing(self):
+		# Arrange + Act + Assert:
+		with self.assertRaises(SymbolDataUnavailable):
+			_query_symbol_database(
+				[],
+				None,
+				lambda database: database.get_blocks(None, 10, SortOrder.DESC))
 
 	def test_get_blocks_returns_empty_for_zero_limit(self):
 		# Arrange + Act:
@@ -137,17 +352,15 @@ class SymbolDatabaseBlocksTest(TestCase):
 				lambda database: database.get_blocks(0, 1, SortOrder.DESC))
 
 	def test_get_block_returns_none_when_sync_state_is_unreadable(self):
-		# Arrange + Act:
-		result = _query_symbol_database(
-			[create_symbol_block(2)],
-			create_symbol_sync_state(
-				last_synced_height=2,
-				finalized_height=2,
-				status='unhealthy'),
-			lambda database: database.get_block(2))
-
-		# Assert:
-		self.assertIsNone(result)
+		# Arrange + Act + Assert:
+		with self.assertRaises(SymbolDataUnavailable):
+			_query_symbol_database(
+				[create_symbol_block(2)],
+				create_symbol_sync_state(
+					last_synced_height=2,
+					finalized_height=2,
+					status='unhealthy'),
+				lambda database: database.get_block(2))
 
 	def test_can_get_blocks_from_postgresql_without_cursor(self):
 		# Arrange + Act:
@@ -283,3 +496,54 @@ def _query_symbol_database(blocks, sync_state, query_database):
 					database._pool.closeall()  # pylint: disable=protected-access
 			finally:
 				drop_symbol_block_tables_if_present(puller_database)
+
+
+def _query_symbol_database_during_update(query_database):
+	with PostgresTestDatabase() as db_config:
+		with PullerSymbolDatabase(db_config) as puller_database:
+			try:
+				drop_symbol_block_tables_if_present(puller_database)
+				puller_database.create_tables()
+				puller_database.upsert_sync_state(create_symbol_sync_state(last_synced_height=1, finalized_height=1))
+				puller_database.upsert_blocks([create_symbol_block(1)])
+				puller_database.upsert_receipts_for_height(1, [], 100)
+
+				database = SnapshotInterleavingSymbolDatabase(db_config)
+				result = []
+				errors = []
+
+				def read_database():
+					try:
+						result.append(query_database(database))
+					except Exception as error:  # pylint: disable=broad-exception-caught
+						errors.append(error)
+
+				reader_thread = Thread(target=read_database)
+				reader_thread.start()
+				try:
+					if not database.state_read_event.wait(timeout=5):
+						raise AssertionError('Reader did not fetch sync state')
+					_update_state_and_block(db_config)
+				finally:
+					database.allow_block_read_event.set()
+					reader_thread.join(timeout=5)
+
+				if reader_thread.is_alive():
+					raise AssertionError('Reader did not finish')
+				if errors:
+					raise errors[0]
+				return result[0]
+			finally:
+				database._pool.closeall()  # pylint: disable=protected-access
+				drop_symbol_block_tables_if_present(puller_database)
+
+
+def _update_state_and_block(db_config):
+	with PullerSymbolDatabase(db_config) as puller_database:
+		cursor = puller_database.connection.cursor()
+		try:
+			cursor.execute('UPDATE symbol_sync_state SET status = %s WHERE id = 1', ('unhealthy',))
+			cursor.execute('UPDATE symbol_blocks SET block_reward = %s WHERE height = 1', (999,))
+			puller_database.connection.commit()
+		finally:
+			cursor.close()
