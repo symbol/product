@@ -14,6 +14,15 @@ def _is_aggregate(transaction):
 	return transaction.type_ in (sc.TransactionType.AGGREGATE_BONDED, sc.TransactionType.AGGREGATE_COMPLETE)
 
 
+def _is_signed(transaction):
+	# Symbol serializes unsigned transactions with an all-zero signature field
+	return any(transaction.signature.bytes)
+
+
+def _has_cosignature(transaction, public_key):
+	return any(public_key.bytes == cosignature.signer_public_key.bytes for cosignature in transaction.cosignatures)
+
+
 def _load_transaction(filename):
 	with open(filename, 'rb') as infile:
 		payload = infile.read()
@@ -47,24 +56,46 @@ def _sign_transaction(facade, key_pair, transaction):
 	return transaction_hash
 
 
+def _cosign_transaction(facade, key_pair, transaction):
+	cosignature = facade.cosign_transaction(key_pair, transaction)
+	transaction.cosignatures.append(cosignature)
+
+	transaction_hash = facade.hash_transaction(transaction)
+	log.info(_('signer-signed-transaction').format(transaction_type=transaction.type_, transaction_hash=transaction_hash))
+	return transaction_hash
+
+
 def run_main(args):
 	config = parse_shoestring_configuration(args.config)
 	facade = SymbolFacade(config.network)
 
 	transaction = _load_transaction(args.filename)
 	key_pair = KeyPair(read_private_key_from_private_key_pem_file(args.ca_key_path, config.node.ca_password))
+	is_cosigning = False
 
-	if _is_aggregate(transaction):  # change the aggregate signer to be a valid cosigner
+	# For multisig payloads, the prebuilt aggregate can carry the multisig account public key as a placeholder.
+	# The first real signer becomes the aggregate initiator / announcer and therefore replaces the outer signer.
+	if _is_aggregate(transaction) and not _is_signed(transaction):
 		transaction.signer_public_key = sc.PublicKey(key_pair.public_key.bytes)
+	elif _is_aggregate(transaction):
+		is_cosigning = key_pair.public_key.bytes != transaction.signer_public_key.bytes
+
+		if is_cosigning and _has_cosignature(transaction, key_pair.public_key):
+			log.info(_('signer-already-cosigned-transaction').format(
+				transaction_type=transaction.type_,
+				transaction_hash=facade.hash_transaction(transaction)))
+			if args.save:
+				write_transaction_to_file(transaction, Path(args.filename))
+			return
 
 	_print_transaction(transaction)
 
-	transaction_hash = _sign_transaction(facade, key_pair, transaction)
+	transaction_hash = _cosign_transaction(facade, key_pair, transaction) if is_cosigning else _sign_transaction(facade, key_pair, transaction)
 
 	if args.save:
 		write_transaction_to_file(transaction, Path(args.filename))
 
-	if sc.TransactionType.AGGREGATE_BONDED != transaction.type_:
+	if is_cosigning or sc.TransactionType.AGGREGATE_BONDED != transaction.type_:
 		return
 
 	hash_lock_transaction = facade.transaction_factory.create({

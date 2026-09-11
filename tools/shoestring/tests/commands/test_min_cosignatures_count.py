@@ -5,6 +5,7 @@ import pytest
 from symbolchain.CryptoTypes import PrivateKey
 from symbolchain.PrivateKeyStorage import PrivateKeyStorage
 from symbolchain.symbol.Network import Network
+from symbolchain.symbol.KeyPair import KeyPair
 
 from shoestring.__main__ import main
 from shoestring.internal.ConfigurationManager import ConfigurationManager
@@ -38,16 +39,19 @@ def _load_ca_address(ca_pem_filepath):
 	return Network.TESTNET.public_key_to_address(ca_public_key)
 
 
-async def _run_test(server, caplog, additional_flags, expected_config_value):    # pylint: disable=redefined-outer-name
+async def _run_test(server, caplog, additional_flags, expected_config_value, transaction_signer_public_key=None):    # pylint: disable=redefined-outer-name
 	# Arrange:
 	with tempfile.TemporaryDirectory() as output_directory:
 		PrivateKeyStorage(output_directory).save('ca.key', PrivateKey.random())
 
 		ca_pem_filepath = Path(output_directory) / 'ca.key.pem'
-		ca_address = _load_ca_address(ca_pem_filepath)
+		public_key = transaction_signer_public_key if transaction_signer_public_key else read_public_key_from_private_key_pem_file(ca_pem_filepath)
+		ca_address = Network.TESTNET.public_key_to_address(public_key)
 		server.mock.multisig_account_addresses.append(ca_address)
 
-		config_filepath = prepare_shoestring_configuration(output_directory, NodeFeatures.PEER, server.make_url(''))
+		config_filepath = prepare_shoestring_configuration(
+			output_directory, NodeFeatures.PEER, server.make_url(''),
+			transaction_signer_public_key=transaction_signer_public_key)
 
 		# Act:
 		await main([
@@ -74,6 +78,10 @@ async def test_can_detect_min_cosignatures_count_without_update_flag(server, cap
 
 async def test_can_detect_and_update_min_cosignatures_count_with_update_flag(server, caplog):  # pylint: disable=redefined-outer-name
 	await _run_test(server, caplog, ['--update'], 2)
+
+
+async def test_can_detect_min_cosignatures_count_for_configured_signer_public_key(server, caplog):  # pylint: disable=redefined-outer-name
+	await _run_test(server, caplog, [], 0, KeyPair(PrivateKey.random()).public_key)
 
 
 # endregion
