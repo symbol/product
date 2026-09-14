@@ -28,37 +28,37 @@ describe('localization/locales translations', () => {
 	});
 
 	const runTranslationFileTests = fileName => {
-	describe(fileName, () => {
-		const translationKeys = readLocaleKeys(fileName);
+		describe(fileName, () => {
+			const translationKeys = readLocaleKeys(fileName);
 
-		it('has every key from en.json', () => {
+			it('has every key from en.json', () => {
 			// Act:
-			const missingKeys = enKeys.filter(key => !translationKeys.includes(key));
+				const missingKeys = enKeys.filter(key => !translationKeys.includes(key));
 
-			// Assert:
-			expect(missingKeys).toEqual([]);
-		});
+				// Assert:
+				expect(missingKeys).toEqual([]);
+			});
 
-		it('has no keys that are absent from en.json', () => {
+			it('has no keys that are absent from en.json', () => {
 			// Act:
-			const extraKeys = translationKeys.filter(key => !enKeys.includes(key));
+				const extraKeys = translationKeys.filter(key => !enKeys.includes(key));
 
-			// Assert:
-			expect(extraKeys).toEqual([]);
-		});
+				// Assert:
+				expect(extraKeys).toEqual([]);
+			});
 
-		it('keys are in the same order as in en.json', () => {
+			it('keys are in the same order as in en.json', () => {
 			// Arrange:
-			const expectedSharedKeys = enKeys.filter(key => translationKeys.includes(key));
+				const expectedSharedKeys = enKeys.filter(key => translationKeys.includes(key));
 
-			// Act:
-			const sharedKeys = translationKeys.filter(key => enKeys.includes(key));
+				// Act:
+				const sharedKeys = translationKeys.filter(key => enKeys.includes(key));
 
-			// Assert:
-			expect(sharedKeys).toEqual(expectedSharedKeys);
+				// Assert:
+				expect(sharedKeys).toEqual(expectedSharedKeys);
+			});
 		});
-	});
-};
+	};
 
 	TRANSLATED_LOCALE_FILES.forEach(runTranslationFileTests);
 });
