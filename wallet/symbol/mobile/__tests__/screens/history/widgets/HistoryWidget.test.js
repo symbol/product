@@ -24,7 +24,7 @@ describe('widgets/HistoryWidget', () => {
 	runRenderTextTest(HistoryWidget, {
 		props: createProps(),
 		textToRender: [
-			{ type: 'text', value: 's_history_widget_name' }
+			{ type: 'text', value: 'screen_history_widget_title' }
 		]
 	});
 });

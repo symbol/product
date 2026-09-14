@@ -34,7 +34,7 @@ export const EstimationSummary = ({ summary, isLoading }) => (
 			<Stack>
 				<View style={styles.summaryRow}>
 					<StyledText type="label">
-						{$t('s_bridge_summary_title')}
+						{$t('screen_bridge_title_summary')}
 					</StyledText>
 					{isLoading && (
 						<View style={styles.loadingIndicator}>

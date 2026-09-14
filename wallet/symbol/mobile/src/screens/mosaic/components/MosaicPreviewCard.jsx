@@ -59,16 +59,16 @@ export const MosaicPreviewCard = ({ supply, divisibility, mosaicId }) => {
 	const isDivisible = divisibilityValue > 0;
 	const supplyDisplay = createSupplyDisplayData(supply, divisibilityValue);
 	const smallestSendText = getSmallestFractionText(divisibilityValue);
-	const wholeMosaicsText = $t('s_mosaicCreation_smallestSend_whole');
+	const wholeMosaicsText = $t('screen_mosaic_label_wholeMosaicsOnly');
 	const smallestSendValueText = isDivisible ? smallestSendText : `${smallestSendText} ${wholeMosaicsText}`;
 
 	return (
 		<Card style={styles.card}>
 			<TokenRow
-				name={$t('s_mosaicCreation_namePlaceholder')}
+				name={$t('screen_mosaic_placeholder_name')}
 				tokenId={mosaicId}
 			/>
-			<Field title={$t('s_mosaicCreation_totalSupply_label')} size="s" alignRight>
+			<Field title={$t('screen_mosaic_label_totalSupply')} size="s" alignRight>
 				<SupplyAmount
 					integer={supplyDisplay.integer}
 					enteredFraction={supplyDisplay.enteredFraction}
@@ -76,7 +76,7 @@ export const MosaicPreviewCard = ({ supply, divisibility, mosaicId }) => {
 					divisibility={divisibilityValue}
 				/>
 			</Field>
-			<Field title={$t('s_mosaicCreation_smallestSend_label')} size="s">
+			<Field title={$t('screen_mosaic_label_smallestSend')} size="s">
 				<View
 					style={styles.smallestSendRow}
 					accessible
@@ -92,7 +92,7 @@ export const MosaicPreviewCard = ({ supply, divisibility, mosaicId }) => {
 			<View style={styles.noteRow}>
 				<Icon name="info-circle" size="xxs" />
 				<StyledText size="s" variant="secondary" style={styles.noteText}>
-					{$t('s_mosaicCreation_decimalsNote')}
+					{$t('screen_mosaic_hint_decimalsPermanent')}
 				</StyledText>
 			</View>
 		</Card>

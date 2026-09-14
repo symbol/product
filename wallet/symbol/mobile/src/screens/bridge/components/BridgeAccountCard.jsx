@@ -53,16 +53,16 @@ export const BridgeAccountCard = props => {
 			)}
 			<Spacer>
 				<Stack>
-					<Field title={$t('c_accountCard_title_account')}>
+					<Field title={$t('fieldTitle_account')}>
 						<StyledText type="title">{name}</StyledText>
 					</Field>
 
-					<Field title={$t('c_accountCard_title_balance')}>
+					<Field title={$t('fieldTitle_balance')}>
 						<Amount value={balance} ticker={ticker} size="l" />
 					</Field>
 
 					{isAddressVisible && (
-						<Field title={$t('c_accountCard_title_address')}>
+						<Field title={$t('fieldTitle_address')}>
 							<StyledText>{address}</StyledText>
 						</Field>
 					)}

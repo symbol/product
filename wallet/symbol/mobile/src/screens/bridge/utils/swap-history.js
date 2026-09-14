@@ -59,7 +59,7 @@ const createSwapRequestCaptionDisplayData = request => {
 	switch (requestStatus) {
 	case BridgeRequestStatus.CONFIRMED:
 		isVisible = true;
-		text = $t('s_bridge_history_requestTransactionConfirmed');
+		text = $t('screen_bridge_history_message_requestConfirmed');
 		textStyle = 'regular';
 		textType = 'body';
 		break;
@@ -88,7 +88,7 @@ const createSwapRequestCaptionDisplayData = request => {
  */
 const createHistoryItem = (request, sourceNetworkIdentifier, targetNetworkIdentifier) => ({
 	key: request.requestTransaction.hash,
-	actionText: $t('transactionDescriptor_swap'),
+	actionText: $t('transactionType_swap'),
 	dateText: formatDate(request.requestTransaction.timestamp, $t),
 	source: createChainDisplayData(request.sourceChainName, request.sourceTokenInfo, sourceNetworkIdentifier),
 	target: createChainDisplayData(request.targetChainName, request.targetTokenInfo, targetNetworkIdentifier),
@@ -110,6 +110,6 @@ const createHistoryItem = (request, sourceNetworkIdentifier, targetNetworkIdenti
 export const createSwapHistoryViewModel = ({ history, sourceNetworkIdentifier, targetNetworkIdentifier }) => ({
 	items: history.map(request => createHistoryItem(request, sourceNetworkIdentifier, targetNetworkIdentifier)),
 	pageSizeText: history.length === BRIDGE_HISTORY_PAGE_SIZE
-		? $t('s_bridge_history_page_size_message', { size: BRIDGE_HISTORY_PAGE_SIZE })
+		? $t('screen_bridge_message_historyPageSize', { size: BRIDGE_HISTORY_PAGE_SIZE })
 		: ''
 });

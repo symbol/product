@@ -112,14 +112,14 @@ export const AccountCardWidget = props => {
 			<Image source={require('@/app/assets/images/art/wallet-arms.png')} style={styles.art} />
 			<Spacer>
 				<Stack>
-					<Field title={$t('c_accountCard_title_account')}>
+					<Field title={$t('fieldTitle_account')}>
 						<EditButtonContainer onEditPress={toggleNameEdit}>
 							<StyledText type="title">
 								{name}
 							</StyledText>
 						</EditButtonContainer>
 					</Field>
-					<Field title={$t('c_accountCard_title_balance')}>
+					<Field title={$t('fieldTitle_balance')}>
 						<Amount
 							value={balance}
 							ticker={ticker}
@@ -131,7 +131,7 @@ export const AccountCardWidget = props => {
 							</StyledText>
 						)}
 					</Field>
-					<Field title={$t('c_accountCard_title_address')}>
+					<Field title={$t('fieldTitle_address')}>
 						<CopyButtonContainer value={address}>
 							<StyledText>{address}</StyledText>
 						</CopyButtonContainer>
@@ -141,18 +141,18 @@ export const AccountCardWidget = props => {
 			<View style={styles.actionBar}>
 				<ActionButton
 					icon="account"
-					text={$t('c_accountCard_button_accountDetails')}
+					text={$t('screen_home_button_accountDetails')}
 					onPress={onDetailsPress}
 				/>
 				<ActionButton
 					icon="send-plane"
-					text={$t('c_accountCard_button_send')}
+					text={$t('screen_home_button_send')}
 					isDisabled={isMultisig}
 					onPress={onSendPress}
 				/>
 				<ActionButton
 					icon="swap"
-					text={$t('c_accountCard_button_swap')}
+					text={$t('screen_home_button_swap')}
 					isLast
 					isDisabled={isMultisig}
 					onPress={onSwapPress}
@@ -160,8 +160,8 @@ export const AccountCardWidget = props => {
 			</View>
 			<DialogBox
 				type="prompt"
-				title={$t('c_accountCard_prompt_title')}
-				text={$t('c_accountCard_prompt_text')}
+				title={$t('screen_home_dialog_renameAccount_title')}
+				text={$t('screen_home_dialog_renameAccount_description')}
 				promptValidators={nameValidators}
 				isVisible={isNameEditShown}
 				onSuccess={handleNameChange}

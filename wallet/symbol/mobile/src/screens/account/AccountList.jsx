@@ -127,8 +127,8 @@ export const AccountList = () => {
 			/>
 			<DialogBox
 				type="confirm"
-				title={$t('s_accountList_confirm_removeImported_title')}
-				text={$t('s_accountList_confirm_removeImported_body', accountToRemove)}
+				title={$t('screen_account_dialog_removeImportedAccount_title')}
+				text={$t('screen_account_dialog_removeImportedAccount_description', accountToRemove)}
 				isVisible={isRemoveDialogVisible}
 				onSuccess={handleConfirmRemove}
 				onCancel={toggleRemoveDialog}

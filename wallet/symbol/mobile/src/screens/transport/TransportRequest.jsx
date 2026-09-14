@@ -83,17 +83,17 @@ export const TransportRequest = ({ route }) => {
 							<Stack>
 								<Divider />
 								<StyledText type="title">
-									{$t('s_transportRequest_actions_title')}
+									{$t('screen_transport_title_actions')}
 								</StyledText>
 								{isSuggestedActionsVisible && (
 									<WalletActionGroup
-										title={$t('s_transportRequest_suggestedActions_group')}
+										title={$t('screen_transport_title_suggestedActions')}
 										data={walletActions.suggested}
 									/>
 								)}
 								{isOtherActionsVisible && (
 									<WalletActionGroup
-										title={$t('s_transportRequest_otherActions_group')}
+										title={$t('screen_transport_title_otherActions')}
 										data={walletActions.other}
 									/>
 								)}

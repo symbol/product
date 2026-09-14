@@ -49,17 +49,17 @@ export const SettingsNetwork = () => {
 
 	const networkIdentifierOptions = [
 		{
-			label: $t('s_settings_networkType_mainnet'),
+			label: $t('screen_settings_item_mainnet'),
 			value: NetworkIdentifier.MAIN_NET
 		},
 		{
-			label: $t('s_settings_networkType_testnet'),
+			label: $t('screen_settings_item_testnet'),
 			value: NetworkIdentifier.TEST_NET
 		}
 	];
 	const nodeOptions = [
 		{
-			label: $t('s_settings_node_automatically'),
+			label: $t('screen_settings_item_nodeAutomatic'),
 			value: null
 		},
 		...nodeUrls[selectedNetworkIdentifier].map(nodeUrl => ({
@@ -93,20 +93,20 @@ export const SettingsNetwork = () => {
 		<Screen isLoading={saveChangesManager.isLoading}>
 			<Spacer>
 				<Stack>
-					<StyledText type="title">{$t('s_settings_network_select_title')}</StyledText>
+					<StyledText type="title">{$t('screen_settings_title_selectNetwork')}</StyledText>
 					<Dropdown
-						label={$t('s_settings_networkType_modal_title')}
+						label={$t('screen_settings_inputLabel_networkType')}
 						value={selectedNetworkIdentifier}
 						list={networkIdentifierOptions}
 						onChange={selectNetwork}
 					/>
 					<Dropdown
-						label={$t('s_settings_node_select_title')}
+						label={$t('screen_settings_inputLabel_node')}
 						value={selectedNodeUrl}
 						list={nodeOptions}
 						onChange={selectNode}
 					/>
-					<StyledText type="title">{$t('s_settings_node_info_title')}</StyledText>
+					<StyledText type="title">{$t('screen_settings_title_nodeInfo')}</StyledText>
 					<Card>
 						<Spacer>
 							<Animated.View entering={FadeIn} key={networkInfoTable.nodeUrl}>

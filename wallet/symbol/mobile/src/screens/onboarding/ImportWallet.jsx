@@ -10,16 +10,16 @@ import React, { useState } from 'react';
 
 export const ImportWallet = () => {
 	const walletController = useWalletController();
-	const accountName = $t('s_importWallet_defaultAccountName');
+	const accountName = $t('screen_onboarding_title_defaultAccountName');
 
 	// UI loading steps
 	const [isLoading, setIsLoading] = useState(false);
 	const [loadingStep, setLoadingStep] = useState(1);
 	const steps = [
-		$t('s_importWallet_loading_step1'),
-		$t('s_importWallet_loading_step2'),
-		$t('s_importWallet_loading_step3'),
-		$t('s_importWallet_loading_step4')
+		$t('screen_onboarding_loading_step_importMnemonic'),
+		$t('screen_onboarding_loading_step_setUpPin'),
+		$t('screen_onboarding_loading_step_generateAccount'),
+		$t('screen_onboarding_loading_step_done')
 	];
 
 	// Mnemonic state
@@ -72,13 +72,13 @@ export const ImportWallet = () => {
 							<SymbolLogo />
 						</FlexContainer>
 						<StyledText type="title">
-							{$t('s_importWallet_title')}
+							{$t('screen_onboarding_importWallet_title_intro')}
 						</StyledText>
 						<StyledText>
-							{$t('s_importWallet_text')}
+							{$t('screen_onboarding_importWallet_description_intro')}
 						</StyledText>
 						<MnemonicInput
-							label={$t('input_mnemonic')}
+							label={$t('inputLabel_mnemonic')}
 							value={mnemonic}
 							onChange={setMnemonic}
 							onValidityChange={setIsMnemonicValid}

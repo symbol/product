@@ -23,6 +23,16 @@ export const PasscodeMode = {
 	VERIFY: 'verify'
 };
 
+export const ReceiptType = {
+	HARVESTING_REWARD: 'harvestingReward'
+};
+
+/** Direction of a transfer relative to the current account. */
+export const TransactionDirection = {
+	INCOMING: 'incoming',
+	OUTGOING: 'outgoing'
+};
+
 export const PASSCODE_PIN_LENGTH = 4;
 export const PASSCODE_MAX_FAILED_ATTEMPTS = 10;
 export const PASSCODE_LOCKOUT_DURATION = 60000;

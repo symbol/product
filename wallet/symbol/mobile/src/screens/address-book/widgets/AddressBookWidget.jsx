@@ -26,7 +26,7 @@ export const AddressBookWidget = ({ contacts }) => {
 	const handleAddContactPress = () => Router.goToCreateContact();
 
 	return (
-		<WidgetContainer title={$t('s_addressBook_widget_name')} onHeaderPress={handleHeaderPress}>
+		<WidgetContainer title={$t('screen_addressBook_widget_title')} onHeaderPress={handleHeaderPress}>
 			<ScrollView horizontal showsHorizontalScrollIndicator={false}>
 				<Spacer>
 					<Stack gap="s" direction="row">

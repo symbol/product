@@ -135,11 +135,11 @@ export const AccountCard = props => {
 			</View>
 			<Spacer>
 				<Stack>
-					<Field title={$t('c_accountCard_title_account')}>
+					<Field title={$t('fieldTitle_account')}>
 						<StyledText type="title">{name}</StyledText>
 					</Field>
 
-					<Field title={$t('c_accountCard_title_balance')}>
+					<Field title={$t('fieldTitle_balance')}>
 						<View style={styles.balanceContainer}>
 							{!!isBalanceChangeVisible && (
 								<BalanceChangeBadge value={balanceChange} ticker={ticker} />
@@ -148,7 +148,7 @@ export const AccountCard = props => {
 						<Amount value={balance} ticker={ticker} size="l" />
 					</Field>
 
-					<Field title={$t('c_accountCard_title_address')}>
+					<Field title={$t('fieldTitle_address')}>
 						<StyledText>{address}</StyledText>
 					</Field>
 				</Stack>

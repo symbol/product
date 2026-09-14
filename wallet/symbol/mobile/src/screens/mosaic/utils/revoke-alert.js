@@ -23,7 +23,7 @@ export const createNoHoldersAlertData = (holderCount, isLoading) => {
 
 	return {
 		isVisible: true,
-		text: $t('s_revoke_alert_noHolders_description'),
+		text: $t('screen_mosaic_revoke_alert_noHolders_description'),
 		variant: 'warning'
 	};
 };

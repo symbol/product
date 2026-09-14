@@ -18,11 +18,11 @@ const ERROR_MESSAGE = 'Bridge processing error';
 // Screen Text
 
 const SCREEN_TEXT = {
-	textSwapAction: 'transactionDescriptor_swap',
+	textSwapAction: 'transactionType_swap',
 	textRequestDate: formatDate(REQUEST_TIMESTAMP, key => key),
-	textStatusCompleted: 's_bridge_history_status_completed',
-	textRequestConfirmed: 's_bridge_history_requestTransactionConfirmed',
-	textPageSizeMessage: 's_bridge_history_page_size_message'
+	textStatusCompleted: 'screen_bridge_history_status_completed',
+	textRequestConfirmed: 'screen_bridge_history_message_requestConfirmed',
+	textPageSizeMessage: 'screen_bridge_message_historyPageSize'
 };
 
 // Token Fixtures

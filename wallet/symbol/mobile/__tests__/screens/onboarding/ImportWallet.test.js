@@ -6,12 +6,12 @@ import { mockLocalization, mockPasscode, mockWalletController } from '__tests__/
 import { runScreenNavigationTest } from '__tests__/screen-tests';
 
 const TEST_MNEMONIC = mnemonic;
-const DEFAULT_ACCOUNT_NAME = 's_importWallet_defaultAccountName';
+const DEFAULT_ACCOUNT_NAME = 'screen_onboarding_title_defaultAccountName';
 
 const SCREEN_TEXT = {
-	textScreenTitle: 's_importWallet_title',
-	textScreenDescription: 's_importWallet_text',
-	inputMnemonicLabel: 'input_mnemonic',
+	textScreenTitle: 'screen_onboarding_importWallet_title_intro',
+	textScreenDescription: 'screen_onboarding_importWallet_description_intro',
+	inputMnemonicLabel: 'inputLabel_mnemonic',
 	buttonNext: 'button_next',
 	buttonCancel: 'button_cancel'
 };

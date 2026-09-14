@@ -58,15 +58,15 @@ export const SettingsSecurity = () => {
 			<Screen.Upper>
 				<Spacer>
 					<Stack>
-						<StyledText type="title">{$t('settings_security_pin_title')}</StyledText>
-						<StyledText type="body">{$t('settings_security_pin_body')}</StyledText>
+						<StyledText type="title">{$t('screen_settings_title_securityPin')}</StyledText>
+						<StyledText type="body">{$t('screen_settings_description_securityPin')}</StyledText>
 						<Checkbox
-							text={$t('settings_security_pin_toggle')}
+							text={$t('screen_settings_checkbox_enablePin')}
 							value={isPasscodeEnabled}
 							onChange={handlePasscodeToggle}
 						/>
-						<StyledText type="title">{$t('settings_security_mnemonic_title')}</StyledText>
-						<StyledText type="body">{$t('settings_security_mnemonic_body')}</StyledText>
+						<StyledText type="title">{$t('screen_settings_title_securityMnemonic')}</StyledText>
+						<StyledText type="body">{$t('screen_settings_description_securityMnemonic')}</StyledText>
 						<MnemonicView
 							mnemonic={mnemonic}
 							isShown={isMnemonicShown}

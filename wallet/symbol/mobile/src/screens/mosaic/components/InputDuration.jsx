@@ -26,36 +26,36 @@ const BLOCKS_UNIT_KEY = 'blocks';
 const DURATION_UNITS = [
 	{
 		key: 'minutes',
-		labelKey: 's_mosaicCreation_durationUnit_minutes',
-		amountKey: 's_mosaicCreation_durationAmount_minutes',
+		labelKey: 'screen_mosaic_chip_durationMinutes',
+		amountKey: 'screen_mosaic_label_durationMinutes',
 		seconds: SECONDS_PER_MINUTE,
 		maxCount: 60
 	},
 	{
 		key: 'hours',
-		labelKey: 's_mosaicCreation_durationUnit_hours',
-		amountKey: 's_mosaicCreation_durationAmount_hours',
+		labelKey: 'screen_mosaic_chip_durationHours',
+		amountKey: 'screen_mosaic_label_durationHours',
 		seconds: SECONDS_PER_HOUR,
 		maxCount: 24
 	},
 	{
 		key: 'days',
-		labelKey: 's_mosaicCreation_durationUnit_days',
-		amountKey: 's_mosaicCreation_durationAmount_days',
+		labelKey: 'screen_mosaic_chip_durationDays',
+		amountKey: 'screen_mosaic_label_durationDays',
 		seconds: SECONDS_PER_DAY,
 		maxCount: 30
 	},
 	{
 		key: 'months',
-		labelKey: 's_mosaicCreation_durationUnit_months',
-		amountKey: 's_mosaicCreation_durationAmount_months',
+		labelKey: 'screen_mosaic_chip_durationMonths',
+		amountKey: 'screen_mosaic_label_durationMonths',
 		seconds: SECONDS_PER_MONTH,
 		maxCount: 12
 	},
 	{
 		key: 'years',
-		labelKey: 's_mosaicCreation_durationUnit_years',
-		amountKey: 's_mosaicCreation_durationAmount_years',
+		labelKey: 'screen_mosaic_chip_durationYears',
+		amountKey: 'screen_mosaic_label_durationYears',
 		seconds: SECONDS_PER_YEAR,
 		maxCount: 10
 	}
@@ -69,7 +69,7 @@ const CHIP_HEIGHT = Sizes.Semantic.controlHeight.s;
  * @returns {string} The chip label text.
  */
 const getUnitChipLabel = key => key === BLOCKS_UNIT_KEY
-	? $t('s_mosaicCreation_durationUnit_blocksChip')
+	? $t('screen_mosaic_chip_durationBlocks')
 	: $t(DURATION_UNITS.find(unit => unit.key === key).labelKey);
 
 /**
@@ -190,7 +190,7 @@ const DurationInputOrSelect = ({ unitKey, unit, duration, blockGenerationTargetT
 	if (unitKey === BLOCKS_UNIT_KEY) {
 		return (
 			<TextBox
-				label={$t('s_mosaicCreation_duration_blocksInputLabel')}
+				label={$t('screen_mosaic_inputLabel_durationBlocks')}
 				keyboardType="number-pad"
 				placeholder={String(MOSAIC_DURATION_MIN)}
 				value={duration}

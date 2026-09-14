@@ -19,7 +19,7 @@ export const createCameraAlertData = (hasPermission, device) => {
 	if (!hasPermission) {
 		return {
 			isVisible: true,
-			text: $t('s_scan_alert_noPermission_text'),
+			text: $t('screen_transport_alert_noPermission_description'),
 			variant: 'warning'
 		};
 	}
@@ -27,7 +27,7 @@ export const createCameraAlertData = (hasPermission, device) => {
 	if (device == null) {
 		return {
 			isVisible: true,
-			text: $t('s_scan_alert_noDevice_text'),
+			text: $t('screen_transport_alert_noDevice_description'),
 			variant: 'warning'
 		};
 	}

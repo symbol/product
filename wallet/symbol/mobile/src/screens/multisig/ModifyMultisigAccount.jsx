@@ -137,22 +137,22 @@ export const ModifyMultisigAccount = props => {
 			walletController={walletController}
 			workflow={workflow}
 			isCustomSendButtonUsed={true}
-			confirmDialogTitle={$t('s_multisig_modify_dialog_confirm_title')}
-			confirmDialogText={$t('s_multisig_modify_dialog_confirm_text', {
+			confirmDialogTitle={$t('screen_multisig_modify_dialog_confirm_title')}
+			confirmDialogText={$t('screen_multisig_modify_dialog_confirm_description', {
 				address: accountAddress,
 				cosignatoriesCount
 			})}
 			modals={(
 				<DialogBox
 					isVisible={isInputDialogVisible}
-					title={$t('s_multisig_create_dialog_addCosignatory_title')}
+					title={$t('screen_multisig_dialog_addCosignatory_title')}
 					type="confirm"
 					onSuccess={submitInput}
 					onCancel={closeInputDialog}
 				>
 					<Stack>
 						<InputAddress
-							label={$t('input_address')}
+							label={$t('inputLabel_address')}
 							extraValidators={[validateAddress(chainName)]}
 							chainName={chainName}
 							value={cosignatoryInput}
@@ -168,16 +168,16 @@ export const ModifyMultisigAccount = props => {
 						<Stack>
 							<Stack gap="none">
 								<StyledText type="title">
-									{$t('s_multisig_modify_title')}
+									{$t('screen_multisig_modify_title_intro')}
 								</StyledText>
 								<StyledText type="body">
-									{$t('s_multisig_modify_description')}
+									{$t('screen_multisig_modify_description_intro')}
 								</StyledText>
 							</Stack>
 							{multisigAccountInfo && (
 								<AccountListItem
 									address={multisigAccountInfo.address}
-									name={multisigAccountDisplayData?.name ?? $t('s_multisig_defaultAccountName')}
+									name={multisigAccountDisplayData?.name ?? $t('screen_multisig_title_defaultAccountName')}
 									amount={multisigAccountInfo.balance}
 									ticker={ticker}
 									imageId={multisigAccountDisplayData?.imageId}
@@ -190,10 +190,10 @@ export const ModifyMultisigAccount = props => {
 						<Stack>
 							<Stack gap="none">
 								<StyledText type="title">
-									{$t('s_multisig_cosignatory_title')}
+									{$t('screen_multisig_title_cosignatory')}
 								</StyledText>
 								<StyledText type="body">
-									{$t('s_multisig_cosignatory_description')}
+									{$t('screen_multisig_description_cosignatory')}
 								</StyledText>
 							</Stack>
 							{cosignatoryAlert.isVisible && (
@@ -224,10 +224,10 @@ export const ModifyMultisigAccount = props => {
 						<Stack>
 							<Stack gap="none">
 								<StyledText type="title">
-									{$t('s_multisig_approvals_title')}
+									{$t('screen_multisig_title_approvals')}
 								</StyledText>
 								<StyledText type="body">
-									{$t('s_multisig_approvals_description')}
+									{$t('screen_multisig_description_approvals')}
 								</StyledText>
 							</Stack>
 							<Field title={$t('fieldTitle_minApprovals')}>

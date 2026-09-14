@@ -38,26 +38,26 @@ jest.mock('@/app/lib/controller', () => ({
 
 const SCREEN_TEXT = {
 	// Settings items - Network
-	textNetworkTitle: 's_settings_item_network_title',
-	textNetworkDescription: 's_settings_item_network_description',
+	textNetworkTitle: 'screen_settings_item_network_title',
+	textNetworkDescription: 'screen_settings_item_network_description',
 	// Settings items - Language
-	textLanguageTitle: 's_settings_item_language_title',
-	textLanguageDescription: 's_settings_item_language_description',
+	textLanguageTitle: 'screen_settings_item_language_title',
+	textLanguageDescription: 'screen_settings_item_language_description',
 	// Settings items - Security
-	textSecurityTitle: 's_settings_item_security_title',
-	textSecurityDescription: 's_settings_item_security_description',
+	textSecurityTitle: 'screen_settings_item_security_title',
+	textSecurityDescription: 'screen_settings_item_security_description',
 	// Settings items - Currency
-	textCurrencyTitle: 's_settings_item_currency_title',
-	textCurrencyDescription: 's_settings_item_currency_description',
+	textCurrencyTitle: 'screen_settings_item_currency_title',
+	textCurrencyDescription: 'screen_settings_item_currency_description',
 	// Settings items - About
-	textAboutTitle: 's_settings_item_about_title',
-	textAboutDescription: 's_settings_item_about_description',
+	textAboutTitle: 'screen_settings_item_about_title',
+	textAboutDescription: 'screen_settings_item_about_description',
 	// Settings items - Logout
-	textLogoutTitle: 's_settings_item_logout_title',
-	textLogoutDescription: 's_settings_item_logout_description',
+	textLogoutTitle: 'screen_settings_item_logout_title',
+	textLogoutDescription: 'screen_settings_item_logout_description',
 	// Logout dialog
-	textLogoutDialogTitle: 'settings_logout_confirm_title',
-	textLogoutDialogText: 'settings_logout_confirm_text',
+	textLogoutDialogTitle: 'screen_settings_dialog_logoutConfirm_title',
+	textLogoutDialogText: 'screen_settings_dialog_logoutConfirm_description',
 	// Buttons
 	buttonCancel: 'button_cancel',
 	buttonConfirm: 'button_confirm'

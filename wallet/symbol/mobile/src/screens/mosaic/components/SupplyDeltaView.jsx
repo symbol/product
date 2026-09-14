@@ -250,13 +250,13 @@ export const SupplyDeltaView = ({ divisibility, currentSupply, newSupply, delta,
 	// Timeline steps
 	const steps = [
 		{
-			label: $t('s_modifyMosaic_currentSupply_label'),
+			label: $t('screen_mosaic_label_currentSupply'),
 			value: getPaddedSupplyText(currentSupply, divisibility),
 			markerSize: MARKER_SIZE,
 			markerStyle: styles.marker__current
 		},
 		{
-			label: $t('s_modifyMosaic_delta_label'),
+			label: $t('screen_mosaic_label_delta'),
 			value: getPaddedSupplyDeltaText(delta, action, divisibility),
 			valueStyle: [styles.changeValue, isChanged && { color: directionColor }],
 			markerSize: EVENT_MARKER_SIZE,
@@ -264,7 +264,7 @@ export const SupplyDeltaView = ({ divisibility, currentSupply, newSupply, delta,
 			connectorColor: isChanged ? directionColor : null
 		},
 		{
-			label: $t('s_modifyMosaic_newSupply_label'),
+			label: $t('screen_mosaic_label_newSupply'),
 			value: getPaddedSupplyText(newSupply, divisibility),
 			markerSize: MARKER_SIZE,
 			markerStyle: styles.marker__new

@@ -42,7 +42,7 @@ export const BridgeSwapDetails = ({ route }) => {
 						/>
 						<Stack gap="s">
 							<StyledText type="title" size="s">
-								{$t('s_bridge_swapDetails_tokenSend_title')}
+								{$t('screen_bridge_swapDetails_title_tokenSend')}
 							</StyledText>
 							<SwapSideDetails
 								type={SwapSideType.SOURCE}
@@ -55,7 +55,7 @@ export const BridgeSwapDetails = ({ route }) => {
 						</Stack>
 						<Stack gap="s">
 							<StyledText type="title" size="s">
-								{$t('s_bridge_swapDetails_tokenReceive_title')}
+								{$t('screen_bridge_swapDetails_title_tokenReceive')}
 							</StyledText>
 							<SwapSideDetails
 								type={SwapSideType.TARGET}
@@ -69,7 +69,7 @@ export const BridgeSwapDetails = ({ route }) => {
 					</Stack>
 					<Stack gap="s">
 						<StyledText type="title">
-							{$t('s_bridge_swapDetails_statusTracking_title')}
+							{$t('screen_bridge_swapDetails_title_statusTracking')}
 						</StyledText>
 						<ActivityLogView data={details.activityLog} />
 					</Stack>
