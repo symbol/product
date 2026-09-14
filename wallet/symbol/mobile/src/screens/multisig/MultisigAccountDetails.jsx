@@ -28,7 +28,7 @@ import React from 'react';
  * @returns {string} The display name.
  */
 const getAccountNameText = name => {
-	return name ?? $t('s_multisig_defaultAccountName');
+	return name ?? $t('screen_multisig_title_defaultAccountName');
 };
 
 /**
@@ -120,7 +120,7 @@ export const MultisigAccountDetails = ({ route }) => {
 					</Stack>
 					<Stack gap="s">
 						<StyledText type="title">
-							{$t('s_multisig_multisigInfo_title')}
+							{$t('screen_multisig_title_multisigInfo')}
 						</StyledText>
 						<Card>
 							<Spacer>
@@ -151,7 +151,7 @@ export const MultisigAccountDetails = ({ route }) => {
 					</Stack>
 					<Stack gap="s">
 						<StyledText type="title">
-							{$t('s_multisig_tokens_title')}
+							{$t('screen_multisig_title_tokens')}
 						</StyledText>
 						{tokens.map((token, index) => {
 							const tokenDisplayData = tokensDisplayData[index];

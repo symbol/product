@@ -22,8 +22,8 @@ export const getExpirationData = (token, networkProperties) => {
 		: SemanticRoleColorVariant.WARNING;
 
 	const alertText = isExpired
-		? $t('s_assetDetails_alert_expired_description')
-		: $t('s_assetDetails_alert_expirable_description');
+		? $t('screen_assets_alert_expired_description')
+		: $t('screen_assets_alert_expirable_description');
 
 	return {
 		isTokenExpired: isExpired,

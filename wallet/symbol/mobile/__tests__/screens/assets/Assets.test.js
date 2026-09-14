@@ -39,13 +39,13 @@ const CHAIN_HEIGHT = 150_000;
 // Screen Text
 
 const SCREEN_TEXT = {
-	textFilterExpired: 's_assets_filter_expired',
-	textFilterCreated: 's_assets_filter_created',
+	textFilterExpired: 'screen_assets_chip_expired',
+	textFilterCreated: 'screen_assets_chip_created',
 	buttonClear: 'button_clear',
 	textEmptyList: 'message_emptyList',
-	textSectionCurrentAccount: 's_assets_section_currentAccount',
-	textSectionBridgeAccounts: 's_assets_section_bridgeAccounts',
-	textSectionMultisigAccounts: 's_assets_section_multisigAccounts'
+	textSectionCurrentAccount: 'screen_assets_title_currentAccount',
+	textSectionBridgeAccounts: 'screen_assets_title_bridgeAccounts',
+	textSectionMultisigAccounts: 'screen_assets_title_multisigAccounts'
 };
 
 // Account Fixtures

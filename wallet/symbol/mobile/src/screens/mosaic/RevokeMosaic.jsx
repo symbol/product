@@ -193,8 +193,8 @@ export const RevokeMosaic = props => {
 			<Spacer>
 				<Stack gap="l">
 					<Stack gap="none">
-						<StyledText type="title">{$t('screen_RevokeMosaic')}</StyledText>
-						<StyledText type="body">{$t('s_revoke_description')}</StyledText>
+						<StyledText type="title">{$t('screenTitle_RevokeMosaic')}</StyledText>
+						<StyledText type="body">{$t('screen_mosaic_revoke_description_intro')}</StyledText>
 					</Stack>
 					{!!mosaic && (
 						<TokenInfoCard name={mosaicNameText} imageId={mosaicImageId}>
@@ -217,7 +217,7 @@ export const RevokeMosaic = props => {
 					)}
 					{isFormVisible && (
 						<Stack gap="none">
-							<StyledText type="title" size="s">{$t('s_send_from_title')}</StyledText>
+							<StyledText type="title" size="s">{$t('screen_mosaic_revoke_title_from')}</StyledText>
 							<Stack>
 								<InputSourceAccount
 									label={$t('fieldTitle_account')}
@@ -229,7 +229,7 @@ export const RevokeMosaic = props => {
 									onValidityChange={changeSourceAddressValidity}
 								/>
 								<InputAmount
-									label={$t('input_amount')}
+									label={$t('inputLabel_amount')}
 									availableBalance={availableBalance}
 									networkIdentifier={networkIdentifier}
 									value={amount}
@@ -242,7 +242,7 @@ export const RevokeMosaic = props => {
 					{!!transactionFees && (
 						<Animated.View entering={FadeInDown} exiting={FadeOut}>
 							<FeeSelector
-								title={$t('input_feeSpeed')}
+								title={$t('inputLabel_feeSpeed')}
 								value={transactionSpeed}
 								feeTiers={transactionFees}
 								ticker={ticker}

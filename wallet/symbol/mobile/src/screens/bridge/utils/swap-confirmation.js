@@ -15,7 +15,7 @@ export const createSwapConfirmationText = ({ source, target, amount }) => {
 	if (!source || !target)
 		return '';
 
-	return $t('s_bridge_swap_dialog_confirm_text', {
+	return $t('screen_bridge_swap_dialog_confirm_description', {
 		amount,
 		sourceToken: createTokenDisplayData(source.token, source.chainName, source.networkIdentifier).tickerText,
 		sourceChain: source.chainName,

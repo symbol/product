@@ -21,14 +21,14 @@ const TICKER_BXYM = 'bXYM';
 // Screen Text
 
 const SCREEN_TEXT = {
-	textAmountSend: 's_bridge_summary_amountSend',
-	textTransactionFee: 's_bridge_summary_transactionFee',
-	textOperationFee: 's_bridge_summary_bridgeFee',
-	textPriceImpact: 's_bridge_summary_priceImpact',
-	textPriceImpactUnknown: 's_bridge_summary_priceImpact_unknown',
-	textPriceImpactHigh: 's_bridge_summary_priceImpact_high',
-	textPriceImpactVeryHigh: 's_bridge_summary_priceImpact_veryHigh',
-	textAmountReceive: 's_bridge_summary_amountReceive',
+	textAmountSend: 'screen_bridge_summary_label_amountSend',
+	textTransactionFee: 'screen_bridge_summary_label_transactionFee',
+	textOperationFee: 'screen_bridge_summary_label_bridgeFee',
+	textPriceImpact: 'screen_bridge_summary_label_priceImpact',
+	textPriceImpactUnknown: 'screen_bridge_summary_label_priceImpactUnknown',
+	textPriceImpactHigh: 'screen_bridge_summary_label_priceImpactHigh',
+	textPriceImpactVeryHigh: 'screen_bridge_summary_label_priceImpactVeryHigh',
+	textAmountReceive: 'screen_bridge_summary_label_amountReceive',
 	textValueMissing: '-'
 };
 

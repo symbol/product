@@ -30,26 +30,26 @@ const createStatusInfo = (status, tokenPairsText) => {
 	const unknownStatus = {
 		icon: 'question-circle',
 		variant: 'neutral',
-		title: $t('c_bridgeTransactionStatus_status_unknown_title'),
-		description: $t('c_bridgeTransactionStatus_status_unknown_description')
+		title: $t('screen_bridge_status_unknown_title'),
+		description: $t('screen_bridge_status_unknown_description')
 	};
 	const sendingStatus = {
 		icon: 'pending',
 		variant: 'warning',
-		title: $t('c_bridgeTransactionStatus_status_sending_title'),
-		description: $t('c_bridgeTransactionStatus_status_sending_description')
+		title: $t('screen_bridge_status_sending_title'),
+		description: $t('screen_bridge_status_sending_description')
 	};
 	const step1SendingStatus = {
 		icon: 'pending',
 		variant: 'warning',
-		title: $t('c_bridgeTransactionStatus_status_sending_title'),
-		description: $t('c_bridgeTransactionStatus_status_step_sending_description', pair1)
+		title: $t('screen_bridge_status_sending_title'),
+		description: $t('screen_bridge_status_sendingStep_description', pair1)
 	};
 	const step2SendingStatus = {
 		icon: 'pending',
 		variant: 'warning',
-		title: $t('c_bridgeTransactionStatus_status_sending_title'),
-		description: $t('c_bridgeTransactionStatus_status_step_sending_description', pair2)
+		title: $t('screen_bridge_status_sending_title'),
+		description: $t('screen_bridge_status_sendingStep_description', pair2)
 	};
 
 	const infoMap = {
@@ -58,65 +58,65 @@ const createStatusInfo = (status, tokenPairsText) => {
 		[BridgeTransactionWorkflowStatus.CREATE_ERROR]: {
 			icon: 'cross-circle',
 			variant: 'danger',
-			title: $t('c_bridgeTransactionStatus_status_createError_title'),
-			description: $t('c_bridgeTransactionStatus_status_createError_description')
+			title: $t('screen_bridge_status_createError_title'),
+			description: $t('screen_bridge_status_createError_description')
 		},
 		[BridgeTransactionWorkflowStatus.CREATED]: sendingStatus,
 		[BridgeTransactionWorkflowStatus.SIGNING_1]: step1SendingStatus,
 		[BridgeTransactionWorkflowStatus.SIGN_ERROR_1]: {
 			icon: 'cross-circle',
 			variant: 'danger',
-			title: $t('c_bridgeTransactionStatus_status_signError_title'),
-			description: $t('c_bridgeTransactionStatus_status_signError_description', pair1)
+			title: $t('screen_bridge_status_signError_title'),
+			description: $t('screen_bridge_status_signError_description', pair1)
 		},
 		[BridgeTransactionWorkflowStatus.SIGNED_1]: step1SendingStatus,
 		[BridgeTransactionWorkflowStatus.ANNOUNCING_1]: step1SendingStatus,
 		[BridgeTransactionWorkflowStatus.ANNOUNCE_ERROR_1]: {
 			icon: 'cross-circle',
 			variant: 'danger',
-			title: $t('c_bridgeTransactionStatus_status_announceError_title'),
-			description: $t('c_bridgeTransactionStatus_status_announceError_description', pair1)
+			title: $t('screen_bridge_status_announceError_title'),
+			description: $t('screen_bridge_status_announceError_description', pair1)
 		},
 		[BridgeTransactionWorkflowStatus.ANNOUNCED_1]: step1SendingStatus,
 		[BridgeTransactionWorkflowStatus.CONFIRMED_1]: step1SendingStatus,
 		[BridgeTransactionWorkflowStatus.FAILED_1]: {
 			icon: 'cross-circle',
 			variant: 'danger',
-			title: $t('c_bridgeTransactionStatus_status_failedTransaction_title'),
-			description: $t('c_bridgeTransactionStatus_status_failedTransaction_description', pair1)
+			title: $t('screen_bridge_status_failedTransaction_title'),
+			description: $t('screen_bridge_status_failedTransaction_description', pair1)
 		},
 		[BridgeTransactionWorkflowStatus.SIGNING_2]: step2SendingStatus,
 		[BridgeTransactionWorkflowStatus.SIGN_ERROR_2]: {
 			icon: 'cross-circle',
 			variant: 'danger',
-			title: $t('c_bridgeTransactionStatus_status_signError_title'),
-			description: $t('c_bridgeTransactionStatus_status_signError_description', pair2)
+			title: $t('screen_bridge_status_signError_title'),
+			description: $t('screen_bridge_status_signError_description', pair2)
 		},
 		[BridgeTransactionWorkflowStatus.SIGNED_2]: step2SendingStatus,
 		[BridgeTransactionWorkflowStatus.ANNOUNCING_2]: step2SendingStatus,
 		[BridgeTransactionWorkflowStatus.ANNOUNCE_ERROR_2]: {
 			icon: 'cross-circle',
 			variant: 'danger',
-			title: $t('c_bridgeTransactionStatus_status_announceError_title'),
-			description: $t('c_bridgeTransactionStatus_status_announceError_description', pair2)
+			title: $t('screen_bridge_status_announceError_title'),
+			description: $t('screen_bridge_status_announceError_description', pair2)
 		},
 		[BridgeTransactionWorkflowStatus.ANNOUNCED_2]: {
 			icon: 'check-circle',
 			variant: 'neutral',
-			title: $t('c_bridgeTransactionStatus_status_confirming_title'),
-			description: $t('c_bridgeTransactionStatus_status_confirming_description', pair2)
+			title: $t('screen_bridge_status_confirming_title'),
+			description: $t('screen_bridge_status_confirming_description', pair2)
 		},
 		[BridgeTransactionWorkflowStatus.CONFIRMED_2]: {
 			icon: 'check-circle',
 			variant: 'success',
-			title: $t('c_bridgeTransactionStatus_status_confirmed_title'),
-			description: $t('c_bridgeTransactionStatus_status_confirmed_description')
+			title: $t('screen_bridge_status_confirmed_title'),
+			description: $t('screen_bridge_status_confirmed_description')
 		},
 		[BridgeTransactionWorkflowStatus.FAILED_2]: {
 			icon: 'cross-circle',
 			variant: 'danger',
-			title: $t('c_bridgeTransactionStatus_status_failedTransaction_title'),
-			description: $t('c_bridgeTransactionStatus_status_failedTransaction_description', pair2)
+			title: $t('screen_bridge_status_failedTransaction_title'),
+			description: $t('screen_bridge_status_failedTransaction_description', pair2)
 		}
 	};
 
@@ -205,19 +205,19 @@ const createStepLogItems = ({
 
 	return [
 		{
-			title: $t('c_bridgeTransactionStatus_step_sign', { count: stepNumber, ...pair }),
+			title: $t('screen_bridge_step_sign', { count: stepNumber, ...pair }),
 			icon: 'sign',
 			status: signState.status,
 			caption: signState.errorMessage ?? ''
 		},
 		{
-			title: $t('c_bridgeTransactionStatus_step_announce', { count: stepNumber, ...pair }),
+			title: $t('screen_bridge_step_announce', { count: stepNumber, ...pair }),
 			icon: 'send-plane',
 			status: announceState.status,
 			caption: announceState.errorMessage ?? ''
 		},
 		{
-			title: $t('c_bridgeTransactionStatus_step_confirm', { count: stepNumber, ...pair }),
+			title: $t('screen_bridge_step_confirm', { count: stepNumber, ...pair }),
 			icon: hasFailedTransactions ? 'cross' : 'check',
 			status: getConfirmStatus(announceState, isConfirmed, hasFailedTransactions),
 			caption: ''
@@ -300,7 +300,7 @@ export const createTransactionProgressViewModel = workflow => {
 		isCloseButtonDisabled: workflow.isSending,
 		activityLogData: [
 			{
-				title: $t('c_bridgeTransactionStatus_step_create'),
+				title: $t('screen_bridge_step_create'),
 				icon: 'plus',
 				status: createState.status,
 				caption: createState.errorMessage ?? ''

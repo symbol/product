@@ -36,13 +36,13 @@ export const createSwapStatusDisplayData = (requestStatus, payoutStatus) => {
 	case BridgeRequestStatus.CONFIRMED:
 		variant = variantMap.unprocessed;
 		iconName = iconNameMap.unprocessed;
-		text = $t('s_bridge_history_status_unprocessed');
+		text = $t('screen_bridge_history_status_unprocessed');
 		break;
 
 	case BridgeRequestStatus.ERROR:
 		variant = variantMap.failed;
 		iconName = iconNameMap.failed;
-		text = $t('s_bridge_history_status_failed');
+		text = $t('screen_bridge_history_status_failed');
 		break;
 	};
 
@@ -50,22 +50,22 @@ export const createSwapStatusDisplayData = (requestStatus, payoutStatus) => {
 	case BridgePayoutStatus.UNPROCESSED:
 		variant = variantMap.processing;
 		iconName = iconNameMap.processing;
-		text = $t('s_bridge_history_status_processing');
+		text = $t('screen_bridge_history_status_processing');
 		break;
 	case BridgePayoutStatus.SENT:
 		variant = variantMap.sent;
 		iconName = iconNameMap.sent;
-		text = $t('s_bridge_history_status_sent');
+		text = $t('screen_bridge_history_status_sent');
 		break;
 	case BridgePayoutStatus.COMPLETED:
 		variant = variantMap.completed;
 		iconName = iconNameMap.completed;
-		text = $t('s_bridge_history_status_completed');
+		text = $t('screen_bridge_history_status_completed');
 		break;
 	case BridgePayoutStatus.FAILED:
 		variant = variantMap.failed;
 		iconName = iconNameMap.failed;
-		text = $t('s_bridge_history_status_failed');
+		text = $t('screen_bridge_history_status_failed');
 		break;
 	};
     

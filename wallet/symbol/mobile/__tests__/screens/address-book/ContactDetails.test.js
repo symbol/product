@@ -19,7 +19,7 @@ const EXPLORER_BASE_URL = config.chains[CHAIN_NAME].explorerURL[NETWORK_IDENTIFI
 const SCREEN_TEXT = {
 	textFieldAddress: 'fieldTitle_address',
 	textFieldNotes: 'fieldTitle_notes',
-	textAlertBlacklist: 's_addressBook_contactDetails_alert_blacklist',
+	textAlertBlacklist: 'screen_addressBook_contactDetails_alert_blacklist_description',
 	buttonSendTransaction: 'button_sendTransactionToThisAccount',
 	buttonOpenExplorer: 'button_openTransactionInExplorer',
 	buttonEdit: 'button_edit',

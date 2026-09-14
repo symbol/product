@@ -14,20 +14,20 @@ const NETWORK_IDENTIFIER = 'testnet';
 // Screen Text
 
 const SCREEN_TEXT = {
-	addressBookTitle: 's_actions_addressBook_title',
-	addressBookDescription: 's_actions_addressBook_description',
-	harvestingTitle: 's_actions_harvesting_title',
-	harvestingDescription: 's_actions_harvesting_description',
-	sendTitle: 's_actions_send_title',
-	sendDescription: 's_actions_send_description',
-	bridgeTitle: 's_actions_bridge_title',
-	bridgeDescription: 's_actions_bridge_description',
-	multisigTitle: 's_actions_multisig_title',
-	multisigDescription: 's_actions_multisig_description',
-	bridgeAccountsTitle: 's_actions_bridgeAccounts_title',
-	bridgeAccountsDescription: 's_actions_bridgeAccounts_description',
-	createMosaicTitle: 's_actions_createMosaic_title',
-	createMosaicDescription: 's_actions_createMosaic_description',
+	addressBookTitle: 'screen_actions_item_addressBook_title',
+	addressBookDescription: 'screen_actions_item_addressBook_description',
+	harvestingTitle: 'screen_actions_item_harvesting_title',
+	harvestingDescription: 'screen_actions_item_harvesting_description',
+	sendTitle: 'screen_actions_item_send_title',
+	sendDescription: 'screen_actions_item_send_description',
+	bridgeTitle: 'screen_actions_item_bridge_title',
+	bridgeDescription: 'screen_actions_item_bridge_description',
+	multisigTitle: 'screen_actions_item_multisig_title',
+	multisigDescription: 'screen_actions_item_multisig_description',
+	bridgeAccountsTitle: 'screen_actions_item_bridgeAccounts_title',
+	bridgeAccountsDescription: 'screen_actions_item_bridgeAccounts_description',
+	createMosaicTitle: 'screen_actions_item_createMosaic_title',
+	createMosaicDescription: 'screen_actions_item_createMosaic_description',
 
 	// Icon Labels
 	labelLockIcon: 'lock icon'

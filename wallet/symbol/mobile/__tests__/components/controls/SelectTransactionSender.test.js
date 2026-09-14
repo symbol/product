@@ -13,11 +13,11 @@ const TICKER = 'XYM';
 // Screen Text
 
 const SCREEN_TEXT = {
-	label: 'input_sender',
-	tabCurrentAccount: 'c_selectTransactionSender_currentAccount',
-	tabMultisigAccount: 'c_selectTransactionSender_multisigAccount',
-	dropdownTitle: 'c_selectTransactionSender_selectTitle',
-	defaultMultisigName: 's_multisig_defaultAccountName'
+	label: 'Sender', // passed in as a prop, the caller translates it
+	tabCurrentAccount: 'component_selectTransactionSender_tab_currentAccount',
+	tabMultisigAccount: 'component_selectTransactionSender_tab_multisigAccount',
+	dropdownTitle: 'component_selectTransactionSender_title_selectSender',
+	defaultMultisigName: 'component_selectTransactionSender_title_defaultAccountName'
 };
 
 // Account Fixtures

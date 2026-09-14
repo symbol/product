@@ -20,11 +20,11 @@ const { NetworkConnectionStatus } = constants;
  */
 export const NetworkConnectionStatusBar = ({ networkStatus }) => {
 	const statusTextMap = {
-		[NetworkConnectionStatus.INITIAL]: $t('c_connectionStatus_connecting'),
-		[NetworkConnectionStatus.CONNECTING]: $t('c_connectionStatus_connecting'),
-		[NetworkConnectionStatus.CONNECTED]: $t('c_connectionStatus_connected'),
-		[NetworkConnectionStatus.NO_INTERNET]: $t('c_connectionStatus_offline'),
-		[NetworkConnectionStatus.FAILED_CUSTOM_NODE]: $t('c_connectionStatus_nodeDown')
+		[NetworkConnectionStatus.INITIAL]: $t('component_networkConnectionStatusBar_message_connecting'),
+		[NetworkConnectionStatus.CONNECTING]: $t('component_networkConnectionStatusBar_message_connecting'),
+		[NetworkConnectionStatus.CONNECTED]: $t('component_networkConnectionStatusBar_message_connected'),
+		[NetworkConnectionStatus.NO_INTERNET]: $t('component_networkConnectionStatusBar_message_offline'),
+		[NetworkConnectionStatus.FAILED_CUSTOM_NODE]: $t('component_networkConnectionStatusBar_message_nodeDown')
 	};
 	const statusText = statusTextMap[networkStatus];
 	const statusColors = [

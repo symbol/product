@@ -14,11 +14,11 @@ jest.mock('@/app/lib/passcode', () => ({
 const TEST_MNEMONIC = mnemonic;
 
 const SCREEN_TEXT = {
-	pinTitle: 'settings_security_pin_title',
-	pinBody: 'settings_security_pin_body',
-	pinToggle: 'settings_security_pin_toggle',
-	mnemonicTitle: 'settings_security_mnemonic_title',
-	mnemonicBody: 'settings_security_mnemonic_body',
+	pinTitle: 'screen_settings_title_securityPin',
+	pinBody: 'screen_settings_description_securityPin',
+	pinToggle: 'screen_settings_checkbox_enablePin',
+	mnemonicTitle: 'screen_settings_title_securityMnemonic',
+	mnemonicBody: 'screen_settings_description_securityMnemonic',
 	showMnemonicButton: 'button_showMnemonic'
 };
 

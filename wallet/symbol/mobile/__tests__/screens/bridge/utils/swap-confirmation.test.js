@@ -8,7 +8,7 @@ const CHAIN_NAME_SYMBOL = 'symbol';
 const CHAIN_NAME_ETHEREUM = 'ethereum';
 const NETWORK_IDENTIFIER = 'testnet';
 const AMOUNT = '1';
-const TEXT_KEY = 's_bridge_swap_dialog_confirm_text';
+const TEXT_KEY = 'screen_bridge_swap_dialog_confirm_description';
 
 // Token Fixtures
 

@@ -1,3 +1,4 @@
+import { getErrorMessageLocaleKey } from './localization';
 import { PlatformUtils } from '@/app/lib/platform/PlatformUtils';
 import { $t } from '@/app/localization';
 import { InteractionManager } from 'react-native';
@@ -15,10 +16,14 @@ const SAFETY_DELAY_IOS = 500;
  */
 export const showMessage = ({ message, type }) => rnFlashMessage({ message, type });
 
+/**
+ * Shows an error as a flash message, resolving its code through the error message map.
+ * @param {Error} error - The error to show.
+ * @returns {void}
+ */
 export const showError = error => {
-	const translationKey = error.code || error.message;
-	const message = $t(translationKey, { defaultValue: translationKey });
-	showMessage({ message, type: 'danger' });
+	const code = error.code || error.message;
+	showMessage({ message: $t(getErrorMessageLocaleKey(code)), type: 'danger' });
 
 	if (__DEV__) {
 		// eslint-disable-next-line no-console

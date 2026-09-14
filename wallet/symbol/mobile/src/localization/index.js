@@ -30,6 +30,19 @@ const languageNames = {
 
 const i18n = new I18n();
 
+const MISSING_TRANSLATION_BEHAVIOR = 'report';
+
+// Names the missing key in place of the text, and warns while developing, so that a key typo cannot pass unnoticed.
+i18n.missingTranslation.register(MISSING_TRANSLATION_BEHAVIOR, (_, scope) => {
+	if (__DEV__) {
+		// eslint-disable-next-line no-console
+		console.warn(`[localization] missing key: ${scope}`);
+	}
+
+	return `[missing: ${scope}]`;
+});
+i18n.missingBehavior = MISSING_TRANSLATION_BEHAVIOR;
+
 const translate = memoize(
 	(key, config) => i18n.t(key, config),
 	(key, config) => (config ? key + JSON.stringify(config) : key)

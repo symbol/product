@@ -181,8 +181,8 @@ export const CreateMosaic = () => {
 			walletController={walletController}
 			workflow={workflow}
 			isCustomSendButtonUsed={true}
-			confirmDialogTitle={$t('s_mosaicCreation_confirm_title')}
-			confirmDialogText={$t('s_mosaicCreation_confirm_text', { supply, divisibility })}
+			confirmDialogTitle={$t('screen_mosaic_create_dialog_confirm_title')}
+			confirmDialogText={$t('screen_mosaic_create_dialog_confirm_description', { supply, divisibility })}
 		>
 			{buttonProps => (
 				<Spacer bottom="l">
@@ -190,17 +190,17 @@ export const CreateMosaic = () => {
 						{/* Title and description */}
 						<Stack gap="none">
 							<StyledText type="title">
-								{$t('s_mosaicCreation_mosaic_title')}
+								{$t('screen_mosaic_title_mosaic')}
 							</StyledText>
 							<StyledText type="body">
-								{$t('s_mosaicCreation_mosaic_description')}
+								{$t('screen_mosaic_description_mosaic')}
 							</StyledText>
 						</Stack>
 
 						{/* Creator section */}
 						<Stack gap="none">
 							<StyledText type="title" size="s">
-								{$t('s_mosaicCreation_sender_title')}
+								{$t('screen_mosaic_title_sender')}
 							</StyledText>
 							<SelectTransactionSender
 								value={senderAddress}
@@ -217,10 +217,10 @@ export const CreateMosaic = () => {
 						<Stack gap="s">
 							<Stack gap="none">
 								<StyledText type="title" size="m">
-									{$t('s_mosaicCreation_quantity_title')}
+									{$t('screen_mosaic_title_quantity')}
 								</StyledText>
 								<StyledText>
-									{$t('s_mosaicCreation_quantity_description')}
+									{$t('screen_mosaic_description_quantity')}
 								</StyledText>
 							</Stack>
 							<Stack gap="m">
@@ -234,7 +234,7 @@ export const CreateMosaic = () => {
 									onChange={changeDivisibility}
 								/>
 								<TextBox
-									label={$t('s_mosaicCreation_totalSupply_label')}
+									label={$t('screen_mosaic_label_totalSupply')}
 									keyboardType="decimal-pad"
 									errorMessage={supplyErrorMessage}
 									value={supply}
@@ -249,14 +249,14 @@ export const CreateMosaic = () => {
 						<Stack gap="l">
 							<Stack gap="none">
 								<StyledText type="title" size="m">
-									{$t('s_mosaicCreation_duration_title')}
+									{$t('screen_mosaic_title_duration')}
 								</StyledText>
 								<StyledText type="body">
-									{$t('s_mosaicCreation_duration_description')}
+									{$t('screen_mosaic_description_duration')}
 								</StyledText>
 							</Stack>
 							<Checkbox
-								text={$t('s_mosaicCreation_duration_expiresCheckbox')}
+								text={$t('screen_mosaic_checkbox_expires')}
 								value={!isNeverExpiring}
 								onChange={handleExpiryToggle}
 							/>
@@ -286,7 +286,7 @@ export const CreateMosaic = () => {
 								<Divider />
 								<Stack gap="s">
 									<StyledText type="title" size="m">
-										{$t('s_mosaicCreation_flags_title')}
+										{$t('screen_mosaic_title_flags')}
 									</StyledText>
 									<MosaicFlagList
 										flags={flags}

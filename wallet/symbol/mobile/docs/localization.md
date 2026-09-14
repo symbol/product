@@ -32,24 +32,19 @@ Element words are a fixed vocabulary, in three groups.
 
 Containers — UI blocks that carry one or more texts:
 
-`dialog` `alert` `status` `item` `tab` `step` `button` `link` `checkbox` `toggle` `chip` `widget`
+`dialog` `alert` `status` `item` `tab` `step` `button` `link` `checkbox` `toggle` `chip` `widget` `inputLabel` `fieldTitle` `fieldValue`  `errorMessage` `validationError` `title` `subtitle` `description` `label` `placeholder` `hint` `tooltip` `message`
 
-Text kinds — what kind of text it is; ends a key after a container, or stands alone with a name:
+Global only:
 
-`title` `subtitle` `description` `label` `placeholder` `hint` `tooltip` `message`
+`transactionType` `transactionDescriptionShort` `transactionGroup` `transactionStatus` `receiptType` `month` `feeSpeed` `screenTitle`
 
-Combined words — a block and its text kind in one word, always as a `<word>_<name>` pair:
-
-`inputLabel` `fieldTitle` `fieldValue` `screenTitle` `errorMessage` `validationError` `transactionType` `transactionDescriptionShort` `transactionGroup` `transactionStatus` `receiptType` `month` `feeSpeed`
-
-This list is closed. Any other text is named with a container plus a text kind (`dialog_removeAccount_title`).
 
 ## Names
 
 A name says which instance of the element the text belongs to.
 
 - A free camelCase word chosen by meaning: `dialog_confirmSwap_title`, `description_neverDisclose`.
-- A container is always followed by a name; a combined word takes exactly one name.
+- A container is always followed by a name.
 - Because names are free, a name may be the same word as an element where that reads naturally (`fieldTitle_message`, `screen_send_title_message`).
 
 ## Casing and short forms
