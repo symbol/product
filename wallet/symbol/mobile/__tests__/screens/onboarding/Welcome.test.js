@@ -18,12 +18,12 @@ describe('screens/onboarding/Welcome', () => {
 
 	runRenderTextTest(Welcome, {
 		textToRender: [
-			{ type: 'text', value: 's_welcome_wallet_title' },
+			{ type: 'text', value: 'screen_onboarding_title_welcome' },
 			{ type: 'text', value: 'button_walletCreate' },
 			{ type: 'text', value: 'button_walletImport' },
-			{ type: 'text', value: 's_welcome_modal_title' },
-			{ type: 'text', value: 's_welcome_modal_tnc' },
-			{ type: 'text', value: 's_welcome_modal_privacy' },
+			{ type: 'text', value: 'screen_onboarding_dialog_termsAndPrivacy_title' },
+			{ type: 'text', value: 'screen_onboarding_title_termsAndConditions' },
+			{ type: 'text', value: 'screen_onboarding_title_privacyPolicy' },
 			{ type: 'text', value: 'Terms content' },
 			{ type: 'text', value: 'Privacy content' }
 		]

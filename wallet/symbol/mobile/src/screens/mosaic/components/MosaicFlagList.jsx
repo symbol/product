@@ -8,27 +8,27 @@ import React from 'react';
 const FLAG_SECTIONS = [
 	{
 		flagName: 'isTransferable',
-		titleKey: 's_mosaicCreation_transferable_title',
-		descriptionKey: 's_mosaicCreation_transferable_description',
-		checkboxKey: 's_mosaicCreation_transferable_checkbox'
+		titleKey: 'screen_mosaic_title_transferable',
+		descriptionKey: 'screen_mosaic_description_transferable',
+		checkboxKey: 'screen_mosaic_checkbox_transferable'
 	},
 	{
 		flagName: 'isSupplyMutable',
-		titleKey: 's_mosaicCreation_supplyMutable_title',
-		descriptionKey: 's_mosaicCreation_supplyMutable_description',
-		checkboxKey: 's_mosaicCreation_supplyMutable_checkbox'
+		titleKey: 'screen_mosaic_title_supplyMutable',
+		descriptionKey: 'screen_mosaic_description_supplyMutable',
+		checkboxKey: 'screen_mosaic_checkbox_supplyMutable'
 	},
 	{
 		flagName: 'isRestrictable',
-		titleKey: 's_mosaicCreation_restrictable_title',
-		descriptionKey: 's_mosaicCreation_restrictable_description',
-		checkboxKey: 's_mosaicCreation_restrictable_checkbox'
+		titleKey: 'screen_mosaic_title_restrictable',
+		descriptionKey: 'screen_mosaic_description_restrictable',
+		checkboxKey: 'screen_mosaic_checkbox_restrictable'
 	},
 	{
 		flagName: 'isRevokable',
-		titleKey: 's_mosaicCreation_revokable_title',
-		descriptionKey: 's_mosaicCreation_revokable_description',
-		checkboxKey: 's_mosaicCreation_revokable_checkbox'
+		titleKey: 'screen_mosaic_title_revokable',
+		descriptionKey: 'screen_mosaic_description_revokable',
+		checkboxKey: 'screen_mosaic_checkbox_revokable'
 	}
 ];
 

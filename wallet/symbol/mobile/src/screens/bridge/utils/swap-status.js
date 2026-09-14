@@ -3,10 +3,7 @@ import { BridgePayoutStatus, BridgeRequestStatus } from '@/app/screens/bridge/ty
 
 /** @typedef {import('@/app/screens/bridge/types/Bridge').BridgeRequestStatusType} BridgeRequestStatusType */
 /** @typedef {import('@/app/screens/bridge/types/Bridge').BridgePayoutStatusType} BridgePayoutStatusType */
-/** @typedef {import('@/app/screens/bridge/types/Bridge').BridgeRequest} BridgeRequest */
-/** @typedef {import('@/app/screens/bridge/types/Bridge').BridgeError} BridgeError */
-/** @typedef {import('@/app/screens/bridge/types/Bridge').SwapStatusDisplayData} SwapStatusDisplayData */
-/** @typedef {import('@/app/screens/bridge/types/Bridge').SwapStatusCaptionDisplayData} SwapStatusCaptionDisplayData */
+/** @typedef {import('@/app/screens/bridge/types/ViewModel').SwapStatusDisplayData} SwapStatusDisplayData */
 
 const iconNameMap = {
 	unprocessed: 'pending',
@@ -25,12 +22,12 @@ const variantMap = {
 };
 
 /**
- * Gets swap status display information based on request and payout status.
+ * Creates the swap status display data based on request and payout status.
  * @param {BridgeRequestStatusType} requestStatus - The request status.
  * @param {BridgePayoutStatusType} [payoutStatus] - The payout status.
  * @returns {SwapStatusDisplayData} Status display information.
  */
-export const getSwapStatus = (requestStatus, payoutStatus) => {
+export const createSwapStatusDisplayData = (requestStatus, payoutStatus) => {
 	let variant;
 	let iconName;
 	let text;
@@ -39,13 +36,13 @@ export const getSwapStatus = (requestStatus, payoutStatus) => {
 	case BridgeRequestStatus.CONFIRMED:
 		variant = variantMap.unprocessed;
 		iconName = iconNameMap.unprocessed;
-		text = $t('s_bridge_history_status_unprocessed');
+		text = $t('screen_bridge_history_status_unprocessed');
 		break;
 
 	case BridgeRequestStatus.ERROR:
 		variant = variantMap.failed;
 		iconName = iconNameMap.failed;
-		text = $t('s_bridge_history_status_failed');
+		text = $t('screen_bridge_history_status_failed');
 		break;
 	};
 
@@ -53,60 +50,24 @@ export const getSwapStatus = (requestStatus, payoutStatus) => {
 	case BridgePayoutStatus.UNPROCESSED:
 		variant = variantMap.processing;
 		iconName = iconNameMap.processing;
-		text = $t('s_bridge_history_status_processing');
+		text = $t('screen_bridge_history_status_processing');
 		break;
 	case BridgePayoutStatus.SENT:
 		variant = variantMap.sent;
 		iconName = iconNameMap.sent;
-		text = $t('s_bridge_history_status_sent');
+		text = $t('screen_bridge_history_status_sent');
 		break;
 	case BridgePayoutStatus.COMPLETED:
 		variant = variantMap.completed;
 		iconName = iconNameMap.completed;
-		text = $t('s_bridge_history_status_completed');
+		text = $t('screen_bridge_history_status_completed');
 		break;
 	case BridgePayoutStatus.FAILED:
 		variant = variantMap.failed;
 		iconName = iconNameMap.failed;
-		text = $t('s_bridge_history_status_failed');
+		text = $t('screen_bridge_history_status_failed');
 		break;
 	};
     
 	return { variant, iconName, text };
-};
-
-/**
- * Gets swap status caption display information.
- * @param {BridgeRequest|BridgeError} data - The bridge history item data.
- * @returns {SwapStatusCaptionDisplayData} Caption display information.
- */
-export const getSwapStatusCaption = data => {
-	const { requestStatus, errorMessage } = data;
-
-	let isVisible;
-	let text;
-	let textStyle;
-	let textType;
-
-	switch (requestStatus) {
-	case BridgeRequestStatus.CONFIRMED:
-		isVisible = true;
-		text = $t('s_bridge_history_requestTransactionConfirmed');
-		textStyle = 'regular';
-		textType = 'body';
-		break;
-	case BridgeRequestStatus.ERROR:
-		isVisible = true;
-		text = errorMessage;
-		textStyle = 'error';
-		textType = 'label';
-		break;
-	default:
-		isVisible = false;
-		text = null;
-		textStyle = null;
-		textType = null;
-	}
-
-	return { isVisible, text, textStyle, textType };
 };

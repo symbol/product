@@ -96,7 +96,19 @@ export class TokenFixtureBuilder {
 	 */
 	setName = name => {
 		this._data.name = name;
-		
+
+		return this;
+	};
+
+	/**
+	 * Sets the ticker for the token.
+	 *
+	 * @param {string} ticker - The token ticker.
+	 * @returns {TokenFixtureBuilder} The builder instance.
+	 */
+	setTicker = ticker => {
+		this._data.ticker = ticker;
+
 		return this;
 	};
 

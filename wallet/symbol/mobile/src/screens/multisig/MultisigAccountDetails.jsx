@@ -12,12 +12,12 @@ import {
 	StyledText,
 	TokenListItem
 } from '@/app/components';
-import { useAccountDisplayData, useAsyncManager, useTokenDisplayData, useWalletController } from '@/app/hooks';
+import { useAccountDisplayData, useAsyncManager, useWalletController } from '@/app/hooks';
 import { PlatformUtils } from '@/app/lib/platform/PlatformUtils';
 import { $t } from '@/app/localization';
 import { Router } from '@/app/router/Router';
 import { CosignatoryList, CosignatureCounter } from '@/app/screens/multisig/components';
-import { createAccountAddressQr, createExplorerAccountUrl } from '@/app/utils';
+import { createAccountAddressQr, createExplorerAccountUrl, createTokenDisplayData } from '@/app/utils';
 import React from 'react';
 
 /** @typedef {import('@/app/types/Network').ChainName} ChainName */
@@ -28,7 +28,7 @@ import React from 'react';
  * @returns {string} The display name.
  */
 const getAccountNameText = name => {
-	return name ?? $t('s_multisig_defaultAccountName');
+	return name ?? $t('screen_multisig_title_defaultAccountName');
 };
 
 /**
@@ -63,7 +63,7 @@ export const MultisigAccountDetails = ({ route }) => {
 
 	// Tokens
 	const tokens = data?.tokens || data?.mosaics || [];
-	const tokensDisplayData = useTokenDisplayData(tokens, chainName);
+	const tokensDisplayData = tokens.map(token => createTokenDisplayData(token, chainName, networkIdentifier));
 
 	// Send/Receive buttons
 	const receiveQrData = createAccountAddressQr({
@@ -120,7 +120,7 @@ export const MultisigAccountDetails = ({ route }) => {
 					</Stack>
 					<Stack gap="s">
 						<StyledText type="title">
-							{$t('s_multisig_multisigInfo_title')}
+							{$t('screen_multisig_title_multisigInfo')}
 						</StyledText>
 						<Card>
 							<Spacer>
@@ -151,7 +151,7 @@ export const MultisigAccountDetails = ({ route }) => {
 					</Stack>
 					<Stack gap="s">
 						<StyledText type="title">
-							{$t('s_multisig_tokens_title')}
+							{$t('screen_multisig_title_tokens')}
 						</StyledText>
 						{tokens.map((token, index) => {
 							const tokenDisplayData = tokensDisplayData[index];
@@ -159,9 +159,8 @@ export const MultisigAccountDetails = ({ route }) => {
 							return (
 								<TokenListItem
 									key={token.id}
-									name={tokenDisplayData.name}
+									name={tokenDisplayData.nameText}
 									amount={tokenDisplayData.amount}
-									ticker={tokenDisplayData.ticker}
 									imageId={tokenDisplayData.imageId}
 									onPress={() => handleTokenPress(token)}
 								/>

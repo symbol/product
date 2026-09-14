@@ -15,17 +15,17 @@ jest.mock('@/app/config', () => {
 });
 
 const SCREEN_TEXT = {
-	textNetworkSelectTitle: 's_settings_network_select_title',
-	textNetworkTypeModalTitle: 's_settings_networkType_modal_title',
-	textNodeSelectTitle: 's_settings_node_select_title',
-	textNodeInfoTitle: 's_settings_node_info_title',
+	textNetworkSelectTitle: 'screen_settings_title_selectNetwork',
+	textNetworkTypeModalTitle: 'screen_settings_inputLabel_networkType',
+	textNodeSelectTitle: 'screen_settings_inputLabel_node',
+	textNodeInfoTitle: 'screen_settings_title_nodeInfo',
 	textFieldNetwork: 'fieldTitle_network',
 	textFieldNodeUrl: 'fieldTitle_nodeUrl',
 	textFieldChainHeight: 'fieldTitle_chainHeight',
 	textFieldMinFeeMultiplier: 'fieldTitle_minFeeMultiplier',
-	buttonNetworkMainnet: 's_settings_networkType_mainnet',
-	buttonNetworkTestnet: 's_settings_networkType_testnet',
-	buttonNodeAutomatically: 's_settings_node_automatically'
+	buttonNetworkMainnet: 'screen_settings_item_mainnet',
+	buttonNetworkTestnet: 'screen_settings_item_testnet',
+	buttonNodeAutomatically: 'screen_settings_item_nodeAutomatic'
 };
 
 const NETWORK_PROPERTIES_TESTNET_LOADED = NetworkPropertiesFixtureBuilder

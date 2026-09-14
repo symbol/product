@@ -1,11 +1,10 @@
 import {
-	ReceiptType,
 	getReceiptDescription,
-	getReceiptIconName,
-	getReceiptTypeText
+	getReceiptIconName
 } from '../utils';
+import { ReceiptType } from '@/app/constants';
 import { $t } from '@/app/localization';
-import { formatDate } from '@/app/utils';
+import { formatDate, getReceiptTypeLocaleKey } from '@/app/utils';
 import { useMemo } from 'react';
 
 /**
@@ -51,7 +50,7 @@ export const useReceiptItemData = ({ receipt, isDateHidden = false }) => {
 		const { type = ReceiptType.HARVESTING_REWARD, timestamp } = receipt;
 
 		const iconName = getReceiptIconName(type);
-		const action = getReceiptTypeText(type);
+		const action = $t(getReceiptTypeLocaleKey(type));
 		const description = getReceiptDescription(receipt);
 		const dateText = getReceiptDateText(timestamp, isDateHidden);
 

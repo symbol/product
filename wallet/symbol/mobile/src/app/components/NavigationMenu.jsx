@@ -35,27 +35,27 @@ const ICON_SOURCE_MAP = {
 
 const TAB_CONFIG = [
 	{
-		titleKey: 'navigation_home',
+		titleKey: 'component_navigationMenu_tab_home',
 		name: RouteName.Home,
 		navigate: () => Router.goToHome()
 	},
 	{
-		titleKey: 'navigation_history',
+		titleKey: 'component_navigationMenu_tab_history',
 		name: RouteName.History,
 		navigate: () => Router.goToHistory()
 	},
 	{
-		titleKey: 'navigation_scan',
+		titleKey: 'component_navigationMenu_tab_scan',
 		name: RouteName.Scan,
 		navigate: () => Router.goToScan()
 	},
 	{
-		titleKey: 'navigation_assets',
+		titleKey: 'component_navigationMenu_tab_assets',
 		name: RouteName.Assets,
 		navigate: () => Router.goToAssets()
 	},
 	{
-		titleKey: 'navigation_actions',
+		titleKey: 'component_navigationMenu_tab_actions',
 		name: RouteName.Actions,
 		navigate: () => Router.goToActions()
 	}

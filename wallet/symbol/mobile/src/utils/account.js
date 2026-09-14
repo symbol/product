@@ -17,6 +17,7 @@ import {
 /** @typedef {import('@/app/types/Account').WalletAccount} WalletAccount */
 /** @typedef {import('@/app/types/Network').NetworkIdentifier} NetworkIdentifier */
 /** @typedef {import('@/app/types/Network').ChainName} ChainName */
+/** @typedef {import('@/app/types/Wallet').WalletController} WalletController */
 
 /**
  * Name and optional image ID for a known/labeled account entry.
@@ -109,6 +110,27 @@ export const createAccountDisplayData = (address, options) => {
 		color
 	};
 };
+
+/**
+ * Options required to resolve account display information.
+ * @typedef {object} AccountDisplayOptions
+ * @property {WalletAccount[]} walletAccounts - Wallet accounts associated with the current network.
+ * @property {object|undefined} addressBook - Address book module (if available).
+ * @property {ChainName} chainName - Blockchain name (e.g. 'symbol', 'ethereum').
+ * @property {NetworkIdentifier} networkIdentifier - Network identifier (e.g., 'mainnet', 'testnet').
+ */
+
+/**
+ * Extracts the necessary state from a WalletController to create an options object used by `createAccountDisplayData()` function.
+ * @param {WalletController} walletController - The wallet controller.
+ * @returns {AccountDisplayOptions} The account display options.
+ */
+export const getAccountDisplayOptions = walletController => ({
+	walletAccounts: walletController.accounts[walletController.networkIdentifier],
+	addressBook: walletController.modules.addressBook,
+	chainName: walletController.chainName,
+	networkIdentifier: walletController.networkIdentifier
+});
 
 /**
  * Checks whether a value is a valid public key for the given blockchain.

@@ -13,7 +13,6 @@ import { useStandardTransactionWorkflow } from '@/app/components/templates/Trans
 import {
 	useDebounce,
 	useInit,
-	useTokenDisplayData,
 	useTransactionFees,
 	useWalletController,
 	useWalletRefreshLifecycle
@@ -29,6 +28,7 @@ import {
 	useRevokeMosaicTransaction
 } from '@/app/screens/mosaic/hooks';
 import { createNoHoldersAlertData, getPaddedSupplyText } from '@/app/screens/mosaic/utils';
+import { createTokenDisplayData } from '@/app/utils';
 import React, { useEffect, useMemo } from 'react';
 import Animated, { FadeInDown, FadeOut } from 'react-native-reanimated';
 
@@ -67,7 +67,7 @@ export const RevokeMosaic = props => {
 		reset: resetMosaic
 	} = useMosaicInfo({ walletController, mosaicId });
 	const mosaicToken = mosaic ? { id: mosaic.id, name: mosaic.names?.[0] } : { id: mosaicId };
-	const { name: mosaicName, imageId: mosaicImageId } = useTokenDisplayData(mosaicToken, chainName);
+	const { nameText: mosaicNameText, imageId: mosaicImageId } = createTokenDisplayData(mosaicToken, chainName, networkIdentifier);
 
 	// Mosaic holder account list
 	const {
@@ -193,11 +193,11 @@ export const RevokeMosaic = props => {
 			<Spacer>
 				<Stack gap="l">
 					<Stack gap="none">
-						<StyledText type="title">{$t('screen_RevokeMosaic')}</StyledText>
-						<StyledText type="body">{$t('s_revoke_description')}</StyledText>
+						<StyledText type="title">{$t('screenTitle_RevokeMosaic')}</StyledText>
+						<StyledText type="body">{$t('screen_mosaic_revoke_description_intro')}</StyledText>
 					</Stack>
 					{!!mosaic && (
-						<TokenInfoCard name={mosaicName} imageId={mosaicImageId}>
+						<TokenInfoCard name={mosaicNameText} imageId={mosaicImageId}>
 							<Field title={$t('fieldTitle_mosaicId')}>
 								<StyledText>{mosaic.id}</StyledText>
 							</Field>
@@ -217,7 +217,7 @@ export const RevokeMosaic = props => {
 					)}
 					{isFormVisible && (
 						<Stack gap="none">
-							<StyledText type="title" size="s">{$t('s_send_from_title')}</StyledText>
+							<StyledText type="title" size="s">{$t('screen_mosaic_revoke_title_from')}</StyledText>
 							<Stack>
 								<InputSourceAccount
 									label={$t('fieldTitle_account')}
@@ -229,7 +229,7 @@ export const RevokeMosaic = props => {
 									onValidityChange={changeSourceAddressValidity}
 								/>
 								<InputAmount
-									label={$t('input_amount')}
+									label={$t('inputLabel_amount')}
 									availableBalance={availableBalance}
 									networkIdentifier={networkIdentifier}
 									value={amount}
@@ -242,7 +242,7 @@ export const RevokeMosaic = props => {
 					{!!transactionFees && (
 						<Animated.View entering={FadeInDown} exiting={FadeOut}>
 							<FeeSelector
-								title={$t('input_feeSpeed')}
+								title={$t('inputLabel_feeSpeed')}
 								value={transactionSpeed}
 								feeTiers={transactionFees}
 								ticker={ticker}

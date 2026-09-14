@@ -35,29 +35,29 @@ const VALID_PRIVATE_KEY = '40C56A968FB0E551966FD958055EB6634D3AC0372745AFF442460
 
 const SCREEN_TEXT = {
 	// Titles & Labels
-	textNameTitle: 's_addAccount_name_title',
-	textSelectTitle: 's_addAccount_select_title',
-	textDescription: 's_addAccount_seed_description',
-	inputNameLabel: 'input_name',
+	textNameTitle: 'screen_account_title_accountName',
+	textSelectTitle: 'screen_account_title_selectAccount',
+	textDescription: 'screen_account_description_seedAccount',
+	inputNameLabel: 'inputLabel_name',
 
 	// Account Card
-	textCardTitleAccount: 'c_accountCard_title_account',
-	textCardTitleBalance: 'c_accountCard_title_balance',
-	textCardTitleAddress: 'c_accountCard_title_address',
+	textCardTitleAccount: 'fieldTitle_account',
+	textCardTitleBalance: 'fieldTitle_balance',
+	textCardTitleAddress: 'fieldTitle_address',
 
 	// Buttons
 	buttonImportAccount: 'button_importAccount',
 	buttonConfirm: 'button_confirm',
 
 	// Default Account Names (with index placeholder)
-	textDefaultAccountName: 's_addAccount_seed_name_default',
+	textDefaultAccountName: 'screen_account_title_seedAccount',
 
 	// Import Account Dialog
-	textImportAccountDialogTitle: 's_addAccount_privateKey_dialog_title',
-	inputPrivateKeyLabel: 'input_privateKey',
+	textImportAccountDialogTitle: 'screen_account_dialog_importPrivateKey_title',
+	inputPrivateKeyLabel: 'inputLabel_privateKey',
 
 	// Validation Errors
-	textValidationNameTooLong: 'validation_error_account_name_long'
+	textValidationNameTooLong: 'validationError_accountNameLong'
 };
 
 

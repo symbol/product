@@ -24,7 +24,7 @@ export const createTransportAlertData = (error, validationResult, { transportUri
 	if (error) {
 		return {
 			isVisible: true,
-			text: $t('s_transportRequest_alert_parseError_text', { message: error.message }),
+			text: $t('screen_transport_alert_parseError_description', { message: error.message }),
 			variant: 'danger'
 		};
 	}
@@ -33,19 +33,19 @@ export const createTransportAlertData = (error, validationResult, { transportUri
 	case TransportValidationResult.UNSUPPORTED_CHAIN:
 		return {
 			isVisible: true,
-			text: $t('s_transportRequest_alert_chainNameSupport_text', { chainName: transportUriObject.chainName }),
+			text: $t('screen_transport_alert_chainNameSupport_description', { chainName: transportUriObject.chainName }),
 			variant: 'warning'
 		};
 	case TransportValidationResult.INACTIVE_CHAIN:
 		return {
 			isVisible: true,
-			text: $t('s_transportRequest_alert_chainNameActive_text', { chainName: transportUriObject.chainName }),
+			text: $t('screen_transport_alert_chainNameActive_description', { chainName: transportUriObject.chainName }),
 			variant: 'warning'
 		};
 	case TransportValidationResult.NETWORK_MISMATCH:
 		return {
 			isVisible: true,
-			text: $t('s_transportRequest_alert_networkIdentifierMismatch_text', {
+			text: $t('screen_transport_alert_networkIdentifierMismatch_description', {
 				requestNetwork: transportUriObject.networkIdentifier,
 				currentNetwork: networkIdentifier
 			}),
@@ -54,7 +54,7 @@ export const createTransportAlertData = (error, validationResult, { transportUri
 	case TransportValidationResult.CHAIN_ID_MISMATCH:
 		return {
 			isVisible: true,
-			text: $t('s_transportRequest_alert_chainIdMismatch_text'),
+			text: $t('screen_transport_alert_chainIdMismatch_description'),
 			variant: 'warning'
 		};
 	default:

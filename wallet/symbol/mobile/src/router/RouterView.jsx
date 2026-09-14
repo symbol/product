@@ -35,7 +35,7 @@ const screenOptions = ({ route }) => ({
 	},
 	headerTintColor: HEADER_TINT_COLOR,
 	headerTitleStyle: HEADER_TITLE_TEXT,
-	title: $t(`screen_${route.name}`)
+	title: $t(`screenTitle_${route.name}`)
 });
 
 const linkingOptions = {

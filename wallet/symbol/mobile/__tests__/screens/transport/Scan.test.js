@@ -33,8 +33,8 @@ const QR_URI = 'symbol://transport?data=abc123';
 
 const SCREEN_TEXT = {
 	buttonCancel: 'button_cancel',
-	alertNoPermission: 's_scan_alert_noPermission_text',
-	alertNoDevice: 's_scan_alert_noDevice_text'
+	alertNoPermission: 'screen_transport_alert_noPermission_description',
+	alertNoDevice: 'screen_transport_alert_noDevice_description'
 };
 
 // Account Fixtures

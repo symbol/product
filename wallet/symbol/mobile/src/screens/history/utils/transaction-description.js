@@ -1,6 +1,6 @@
 import { AliasAction, AliasActionMessage, SymbolTransactionType } from '@/app/constants';
 import { $t } from '@/app/localization';
-import { getAccountKnownInfo, getTransactionTypeTranslationKey } from '@/app/utils';
+import { getAccountKnownInfo, getTransactionTypeLocaleKey } from '@/app/utils';
 import {
 	isAggregateTransaction,
 	isHarvestingServiceTransaction,
@@ -65,7 +65,7 @@ const getAggregateDescription = (transaction, chainName) => {
 
 	const firstTransactionType = transaction.innerTransactions[0]?.type;
 	const innerTypeText = firstTransactionType
-		? $t(getTransactionTypeTranslationKey(firstTransactionType, chainName))
+		? $t(getTransactionTypeLocaleKey(firstTransactionType, chainName))
 		: '';
 	const count = transaction.innerTransactions.length - 1;
 
@@ -121,7 +121,7 @@ export const getTransactionDescription = (transaction, currentAccount, resolveOp
 	case SymbolTransactionType.ACCOUNT_MOSAIC_RESTRICTION:
 	case SymbolTransactionType.ACCOUNT_ADDRESS_RESTRICTION:
 	case SymbolTransactionType.ACCOUNT_OPERATION_RESTRICTION:
-		return $t(`data_${transaction.restrictionType}`);
+		return $t(`fieldValue_${transaction.restrictionType}`);
 
 	case SymbolTransactionType.MOSAIC_GLOBAL_RESTRICTION:
 	case SymbolTransactionType.MOSAIC_ADDRESS_RESTRICTION:
@@ -131,7 +131,7 @@ export const getTransactionDescription = (transaction, currentAccount, resolveOp
 	case SymbolTransactionType.NODE_KEY_LINK:
 	case SymbolTransactionType.VOTING_KEY_LINK:
 	case SymbolTransactionType.ACCOUNT_KEY_LINK:
-		return $t(`data_${transaction.linkAction}`);
+		return $t(`fieldValue_${transaction.linkAction}`);
 
 	case SymbolTransactionType.HASH_LOCK:
 		return $t('transactionDescriptionShort_hashLock', { duration: transaction.duration });

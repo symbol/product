@@ -38,7 +38,7 @@ const FEE_TIER_LEVELS = [FeeTierLevel.SLOW, FeeTierLevel.MEDIUM, FeeTierLevel.FA
  * @returns {{ label: string, speed: TransactionFeeTierLevel, value: string }} The fee tier option.
  */
 const createFeeTierOption = (level, value) => ({
-	label: $t(`selector_fee_${level}`),
+	label: $t(`feeSpeed_${level}`),
 	speed: level,
 	value
 });

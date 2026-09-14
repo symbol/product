@@ -6,12 +6,12 @@ const { BridgeEstimationErrorCode } = constants;
 // Screen Text
 
 const SCREEN_TEXT = {
-	textAmountLow: 'validation_error_amount_low',
-	textTransferLimit: 'validation_error_amount_transferLimit',
-	textDailyLimit: 'validation_error_amount_dailyLimit',
-	textEstimationUnavailable: 'validation_error_estimation_unavailable',
-	textInsufficientLiquidity: 'validation_error_insufficientLiquidity',
-	textInsufficientLiquidityGeneric: 'validation_error_insufficientLiquidity_generic'
+	textAmountLow: 'validationError_amountLow',
+	textTransferLimit: 'validationError_amountTransferLimit',
+	textDailyLimit: 'validationError_amountDailyLimit',
+	textEstimationUnavailable: 'validationError_estimationUnavailable',
+	textInsufficientLiquidity: 'validationError_insufficientLiquidity',
+	textInsufficientLiquidityGeneric: 'validationError_insufficientLiquidityGeneric'
 };
 
 // Fixtures
