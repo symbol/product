@@ -2,7 +2,7 @@ import { SymbolTransactionType, TransactionGroup } from '@/app/constants';
 import { $t } from '@/app/localization';
 import { Colors } from '@/app/styles';
 import { FilterType } from '@/app/types/Filter';
-import { getTransactionTypeTranslationKey } from '@/app/utils';
+import { getTransactionTypeLocaleKey } from '@/app/utils';
 
 const SYMBOL_CHAIN_NAME = 'symbol';
 
@@ -23,41 +23,41 @@ export const SectionType = {
 export const getHistoryFilterConfig = () => [
 	{
 		name: 'type',
-		title: $t('s_history_filter_type'),
+		title: $t('screen_history_chip_type'),
 		type: FilterType.SELECT,
 		options: [
 			{
-				label: $t(getTransactionTypeTranslationKey(SymbolTransactionType.TRANSFER, SYMBOL_CHAIN_NAME)),
+				label: $t(getTransactionTypeLocaleKey(SymbolTransactionType.TRANSFER, SYMBOL_CHAIN_NAME)),
 				value: [SymbolTransactionType.TRANSFER]
 			},
 			{
-				label: $t(getTransactionTypeTranslationKey(SymbolTransactionType.AGGREGATE_BONDED, SYMBOL_CHAIN_NAME)),
+				label: $t(getTransactionTypeLocaleKey(SymbolTransactionType.AGGREGATE_BONDED, SYMBOL_CHAIN_NAME)),
 				value: [SymbolTransactionType.AGGREGATE_BONDED]
 			},
 			{
-				label: $t(getTransactionTypeTranslationKey(SymbolTransactionType.AGGREGATE_COMPLETE, SYMBOL_CHAIN_NAME)),
+				label: $t(getTransactionTypeLocaleKey(SymbolTransactionType.AGGREGATE_COMPLETE, SYMBOL_CHAIN_NAME)),
 				value: [SymbolTransactionType.AGGREGATE_COMPLETE]
 			}
 		]
 	},
 	{
 		name: 'from',
-		title: $t('s_history_filter_from'),
+		title: $t('screen_history_chip_from'),
 		type: FilterType.ADDRESS
 	},
 	{
 		name: 'to',
-		title: $t('s_history_filter_to'),
+		title: $t('screen_history_chip_to'),
 		type: FilterType.ADDRESS
 	},
 	{
 		name: 'harvested',
-		title: $t('s_history_filter_harvested'),
+		title: $t('screen_history_chip_harvested'),
 		type: FilterType.BOOLEAN
 	},
 	{
 		name: 'blocked',
-		title: $t('s_history_filter_blocked'),
+		title: $t('screen_history_chip_blocked'),
 		type: FilterType.BOOLEAN
 	}
 ];

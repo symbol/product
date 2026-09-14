@@ -18,15 +18,15 @@ const ABOVE_MIN_BALANCE = '50000';
 // Screen Text
 
 const SCREEN_TEXT = {
-	textStatusActive: 's_harvesting_status_active',
-	textStatusPending: 's_harvesting_status_pending',
-	textStatusInactive: 's_harvesting_status_inactive',
-	textStatusOperator: 's_harvesting_status_operator',
-	textStatusUnknown: 's_harvesting_status_unknown',
+	textStatusActive: 'screen_harvesting_status_active',
+	textStatusPending: 'screen_harvesting_status_pending',
+	textStatusInactive: 'screen_harvesting_status_inactive',
+	textStatusOperator: 'screen_harvesting_status_operator',
+	textStatusUnknown: 'screen_harvesting_status_unknown',
 
-	textWarningBalance: 's_harvesting_warning_balance',
-	textWarningImportance: 's_harvesting_warning_importance',
-	textWarningNodeDown: 's_harvesting_warning_node_down'
+	textWarningBalance: 'screen_harvesting_status_balanceWarning_description',
+	textWarningImportance: 'screen_harvesting_status_importanceWarning_description',
+	textWarningNodeDown: 'screen_harvesting_status_nodeDownWarning_description'
 };
 
 // Account Info Fixtures

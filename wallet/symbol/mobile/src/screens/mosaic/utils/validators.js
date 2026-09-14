@@ -38,19 +38,19 @@ export const validateMosaicSupply = divisibility => supply => {
 
 	if (countFractionalDigits(supply) > divisibilityValue) {
 		return divisibilityValue === MOSAIC_DIVISIBILITY_MIN
-			? { key: 'validation_error_mosaic_supply_whole' }
-			: { key: 'validation_error_mosaic_supply_decimals', params: { divisibility: divisibilityValue } };
+			? { key: 'validationError_mosaicSupplyWhole' }
+			: { key: 'validationError_mosaicSupplyDecimals', params: { divisibility: divisibilityValue } };
 	}
 
 	const absoluteSupply = BigInt(relativeToAbsoluteAmount(supply, divisibilityValue));
 
 	if (absoluteSupply < BigInt(MOSAIC_MIN_ATOMIC_UNITS))
-		return { key: 'validation_error_mosaic_supply_low', params: { min: getSmallestFractionText(divisibilityValue) } };
+		return { key: 'validationError_mosaicSupplyLow', params: { min: getSmallestFractionText(divisibilityValue) } };
 
 	if (absoluteSupply > BigInt(MOSAIC_MAX_ATOMIC_UNITS)) {
 		const maxSupply = formatNumberGroups(absoluteToRelativeAmount(MOSAIC_MAX_ATOMIC_UNITS, divisibilityValue));
 
-		return { key: 'validation_error_mosaic_supply_high', params: { max: maxSupply } };
+		return { key: 'validationError_mosaicSupplyHigh', params: { max: maxSupply } };
 	}
 };
 
@@ -65,7 +65,7 @@ export const validateSupplyChanged = (currentSupply, divisibility) => newSupply 
 	const { delta } = calculateSupplyDelta(currentSupply, newSupply, divisibility);
 
 	if (delta === '0')
-		return 'validation_error_mosaic_supply_unchanged';
+		return 'validationError_mosaicSupplyUnchanged';
 };
 
 /**
@@ -76,7 +76,7 @@ export const validateSupplyChanged = (currentSupply, divisibility) => newSupply 
  */
 export const validateNotSenderAddress = senderAddress => address => {
 	if (address.trim() === senderAddress)
-		return 'validation_error_mosaic_revoke_sender';
+		return 'validationError_mosaicRevokeSender';
 };
 
 /**
@@ -88,8 +88,8 @@ export const validateMosaicDuration = () => duration => {
 	const blocks = Number(duration);
 
 	if (!Number.isInteger(blocks) || blocks < MOSAIC_DURATION_MIN)
-		return { key: 'validation_error_mosaic_duration_low', params: { min: MOSAIC_DURATION_MIN } };
+		return { key: 'validationError_mosaicDurationLow', params: { min: MOSAIC_DURATION_MIN } };
 
 	if (blocks > MOSAIC_DURATION_MAX)
-		return { key: 'validation_error_mosaic_duration_high', params: { max: formatNumberGroups(MOSAIC_DURATION_MAX) } };
+		return { key: 'validationError_mosaicDurationHigh', params: { max: formatNumberGroups(MOSAIC_DURATION_MAX) } };
 };

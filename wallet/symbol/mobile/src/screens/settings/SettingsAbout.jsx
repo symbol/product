@@ -31,14 +31,14 @@ export const SettingsAbout = () => {
 		<Screen>
 			<Spacer>
 				<Stack>
-					<StyledText type="title">{$t('settings_about_version_title')}</StyledText>
+					<StyledText type="title">{$t('screen_settings_title_aboutApp')}</StyledText>
 					<Card>
 						<Spacer>
 							<TableView data={aboutTable} isTitleTranslatable />
 						</Spacer>
 					</Card>
-					<StyledText type="title">{$t('settings_about_symbol_title')}</StyledText>
-					<StyledText type="body">{$t('settings_about_symbol_body')}</StyledText>
+					<StyledText type="title">{$t('screen_settings_title_aboutSymbol')}</StyledText>
+					<StyledText type="body">{$t('screen_settings_description_aboutSymbol')}</StyledText>
 					<SocialBadges />
 				</Stack>
 			</Spacer>

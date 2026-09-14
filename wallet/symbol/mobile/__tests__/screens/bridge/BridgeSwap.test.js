@@ -44,25 +44,25 @@ const TRANSACTION_FEE_TIER_LEVEL = 'medium';
 
 const SCREEN_TEXT = {
 	// Titles
-	textScreenTitle: 's_bridge_title',
-	textScreenDescription: 's_bridge_description',
-	textHistoryTitle: 's_bridge_history_title',
-	textHistoryDescription: 's_bridge_history_description',
-	textSummaryTitle: 's_bridge_summary_title',
+	textScreenTitle: 'screen_bridge_title_intro',
+	textScreenDescription: 'screen_bridge_description_intro',
+	textHistoryTitle: 'screen_bridge_title_history',
+	textHistoryDescription: 'screen_bridge_description_history',
+	textSummaryTitle: 'screen_bridge_title_summary',
 
 	// Summary
-	textSummaryAmountSend: 's_bridge_summary_amountSend',
-	textSummaryBridgeFee: 's_bridge_summary_bridgeFee',
-	textSummaryTransactionFee: 's_bridge_summary_transactionFee',
-	textSummaryAmountReceive: 's_bridge_summary_amountReceive',
+	textSummaryAmountSend: 'screen_bridge_summary_label_amountSend',
+	textSummaryBridgeFee: 'screen_bridge_summary_label_bridgeFee',
+	textSummaryTransactionFee: 'screen_bridge_summary_label_transactionFee',
+	textSummaryAmountReceive: 'screen_bridge_summary_label_amountReceive',
 
 	// Dialog
-	textDialogNoPairsTitle: 's_bridge_swap_dialog_noPairs_title',
-	textDialogNoPairsText: 's_bridge_swap_dialog_noPairs_text',
-	textDialogDisabledTitle: 's_bridge_swap_dialog_disabled_title',
-	textDialogDisabledText: 's_bridge_swap_dialog_disabled_text',
-	textDialogConfirmTitle: 's_bridge_swap_dialog_confirm_title',
-	textDialogConfirmText: 's_bridge_swap_dialog_confirm_text',
+	textDialogNoPairsTitle: 'screen_bridge_swap_dialog_noPairs_title',
+	textDialogNoPairsText: 'screen_bridge_swap_dialog_noPairs_description',
+	textDialogDisabledTitle: 'screen_bridge_swap_dialog_disabled_title',
+	textDialogDisabledText: 'screen_bridge_swap_dialog_disabled_description',
+	textDialogConfirmTitle: 'screen_bridge_swap_dialog_confirm_title',
+	textDialogConfirmText: 'screen_bridge_swap_dialog_confirm_description',
 
 	// Buttons
 	buttonSend: 'button_send',
@@ -74,20 +74,20 @@ const SCREEN_TEXT = {
 	labelSelectSourceToken: 'Select source token',
 	labelSelectTargetToken: 'Select target token',
 	labelReverse: 'Reverse swap direction',
-	inputAmountLabel: 'form_transfer_input_amount',
+	inputAmountLabel: 'inputLabel_amount',
 
 	// History item
-	textSwapAction: 'transactionDescriptor_swap',
+	textSwapAction: 'transactionType_swap',
 
 	// Validation
-	textEstimationUnavailable: 'validation_error_estimation_unavailable',
-	textInsufficientLiquidity: 'validation_error_insufficientLiquidity 0.235399 ETH',
+	textEstimationUnavailable: 'validationError_estimationUnavailable',
+	textInsufficientLiquidity: 'validationError_insufficientLiquidity 0.235399 ETH',
 
 	// Price impact
-	textSummaryPriceImpact: 's_bridge_summary_priceImpact',
-	textSummaryPriceImpactWarningValue: '6.00% · s_bridge_summary_priceImpact_high',
-	textSummaryPriceImpactUnknown: 's_bridge_summary_priceImpact_unknown',
-	textDialogPriceImpactTitle: 's_bridge_swap_dialog_priceImpact_title',
+	textSummaryPriceImpact: 'screen_bridge_summary_label_priceImpact',
+	textSummaryPriceImpactWarningValue: '6.00% · screen_bridge_summary_label_priceImpactHigh',
+	textSummaryPriceImpactUnknown: 'screen_bridge_summary_label_priceImpactUnknown',
+	textDialogPriceImpactTitle: 'screen_bridge_swap_dialog_priceImpact_title',
 
 	// Placeholder shown by a summary row without a value
 	textValueMissing: '-',

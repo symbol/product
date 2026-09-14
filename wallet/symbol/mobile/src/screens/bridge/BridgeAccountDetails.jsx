@@ -98,7 +98,7 @@ export const BridgeAccountDetails = ({ route }) => {
 						/>
 						<Stack gap="s">
 							<StyledText type="title">
-								{$t('s_bridge_tokens_title')}
+								{$t('screen_bridge_title_tokens')}
 							</StyledText>
 							{tokens.map((token, index) => {
 								const tokenDisplayData = tokensDisplayData[index];
@@ -142,7 +142,7 @@ export const BridgeAccountDetails = ({ route }) => {
 			<Screen.Modals>
 				<DialogBox
 					type="alert"
-					title={$t('dialog_sensitive')}
+					title={$t('dialog_sensitiveInformation_title')}
 					text={privateKey}
 					isVisible={isPrivateKeyDialogShown}
 					onSuccess={togglePrivateKeyDialog}
@@ -150,7 +150,7 @@ export const BridgeAccountDetails = ({ route }) => {
 				<DialogBox
 					type="confirm"
 					title={$t('dialog_removeAccount_title')}
-					text={$t('dialog_removeAccount_body', { name: chainName, address: currentAccount.address })}
+					text={$t('dialog_removeAccount_description', { name: chainName, address: currentAccount.address })}
 					isVisible={isRemoveConfirmVisible}
 					onSuccess={handleConfirmRemove}
 					onCancel={toggleRemoveConfirm}

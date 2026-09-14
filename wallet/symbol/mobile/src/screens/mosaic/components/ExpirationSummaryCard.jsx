@@ -25,11 +25,11 @@ export const ExpirationSummaryCard = ({ duration, blockGenerationTargetTime, isN
 		<Card>
 			<Spacer>
 				<Stack gap="none">
-					<Field title={$t('s_mosaicCreation_expiration_title')}>
+					<Field title={$t('screen_mosaic_title_expiration')}>
 						<View style={styles.summaryRow}>
 							{isNeverExpiring && (
 								<StyledText type="body">
-									{$t('s_mosaicCreation_expiration_permanent')}
+									{$t('screen_mosaic_description_expirationPermanent')}
 								</StyledText>
 							)}
 							{!isNeverExpiring && (

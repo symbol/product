@@ -77,13 +77,13 @@ export const buildActivityLog = ({
 
 	return [
 		{
-			title: $t('s_bridge_swapStatus_step_requestSend'),
+			title: $t('screen_bridge_swapStatus_step_requestSend'),
 			icon: 'send-plane',
 			status: ActivityStatus.COMPLETE,
 			caption: requestTimestampText
 		},
 		{
-			title: $t('s_bridge_swapStatus_step_awaitingBridge'),
+			title: $t('screen_bridge_swapStatus_step_awaitingBridge'),
 			icon: 'pending',
 			status: isBridgeWorking || isPayoutFailed || isPayoutSent || isPayoutConfirmed
 				? ActivityStatus.COMPLETE
@@ -95,7 +95,7 @@ export const buildActivityLog = ({
 			caption: isRequestFailed ? errorMessage : ''
 		},
 		{
-			title: $t('s_bridge_swapStatus_step_payoutSend'),
+			title: $t('screen_bridge_swapStatus_step_payoutSend'),
 			icon: 'swap',
 			status: isPayoutFailed
 				? ActivityStatus.ERROR
@@ -107,7 +107,7 @@ export const buildActivityLog = ({
 			caption: isPayoutFailed ? errorMessage : ''
 		},
 		{
-			title: $t('s_bridge_swapStatus_step_payoutConfirmation'),
+			title: $t('screen_bridge_swapStatus_step_payoutConfirmation'),
 			icon: 'check',
 			status: isPayoutConfirmed
 				? ActivityStatus.COMPLETE

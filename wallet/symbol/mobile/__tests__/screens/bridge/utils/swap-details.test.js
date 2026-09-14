@@ -20,15 +20,15 @@ const ERROR_MESSAGE = 'Bridge processing error';
 // Screen Text
 
 const SCREEN_TEXT = {
-	textStepRequestSend: 's_bridge_swapStatus_step_requestSend',
-	textStepAwaitingBridge: 's_bridge_swapStatus_step_awaitingBridge',
-	textStepPayoutSend: 's_bridge_swapStatus_step_payoutSend',
-	textStepPayoutConfirmation: 's_bridge_swapStatus_step_payoutConfirmation',
+	textStepRequestSend: 'screen_bridge_swapStatus_step_requestSend',
+	textStepAwaitingBridge: 'screen_bridge_swapStatus_step_awaitingBridge',
+	textStepPayoutSend: 'screen_bridge_swapStatus_step_payoutSend',
+	textStepPayoutConfirmation: 'screen_bridge_swapStatus_step_payoutConfirmation',
 	textRequestDateValue: formatDate(REQUEST_TIMESTAMP, key => key, true),
 	textPayoutDateValue: formatDate(PAYOUT_TIMESTAMP, key => key, true),
-	textStatusCompleted: 's_bridge_history_status_completed',
-	textStatusProcessing: 's_bridge_history_status_processing',
-	textStatusFailed: 's_bridge_history_status_failed'
+	textStatusCompleted: 'screen_bridge_history_status_completed',
+	textStatusProcessing: 'screen_bridge_history_status_processing',
+	textStatusFailed: 'screen_bridge_history_status_failed'
 };
 
 // Icon Names

@@ -35,11 +35,11 @@ const SCREEN_TEXT = {
 	textSectionUnconfirmed: 'transactionGroup_unconfirmed',
 	textSectionConfirmed: 'transactionGroup_confirmed',
 	textSectionHarvested: 'transactionGroup_harvested',
-	textFilterType: 's_history_filter_type',
-	textFilterFrom: 's_history_filter_from',
-	textFilterTo: 's_history_filter_to',
-	textFilterHarvested: 's_history_filter_harvested',
-	textFilterBlocked: 's_history_filter_blocked'
+	textFilterType: 'screen_history_chip_type',
+	textFilterFrom: 'screen_history_chip_from',
+	textFilterTo: 'screen_history_chip_to',
+	textFilterHarvested: 'screen_history_chip_harvested',
+	textFilterBlocked: 'screen_history_chip_blocked'
 };
 
 const FilterName = {

@@ -18,15 +18,15 @@ describe('screens/settings/SettingsAbout', () => {
 
 	runRenderTextTest(SettingsAbout, {
 		textToRender: [
-			{ type: 'text', value: 'settings_about_version_title' },
+			{ type: 'text', value: 'screen_settings_title_aboutApp' },
 			{ type: 'text', value: 'fieldTitle_appVersion' },
 			{ type: 'text', value: '1.0.0' },
 			{ type: 'text', value: 'fieldTitle_symbolSdkVersion' },
 			{ type: 'text', value: '2.0.0' },
 			{ type: 'text', value: 'fieldTitle_reactNativeVersion' },
 			{ type: 'text', value: '3.0.0' },
-			{ type: 'text', value: 'settings_about_symbol_title' },
-			{ type: 'text', value: 'settings_about_symbol_body' }
+			{ type: 'text', value: 'screen_settings_title_aboutSymbol' },
+			{ type: 'text', value: 'screen_settings_description_aboutSymbol' }
 		]
 	});
 

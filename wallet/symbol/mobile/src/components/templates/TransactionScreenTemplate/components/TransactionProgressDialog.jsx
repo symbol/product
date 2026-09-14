@@ -33,7 +33,7 @@ export const TransactionProgressDialog = props => {
 	return (
 		<DialogBox
 			type="alert"
-			title={$t('c_transactionStatus_dialog_title')}
+			title={$t('component_transactionProgressDialog_title_sendTransaction')}
 			isDisabled={isCloseButtonDisabled}
 			isVisible={isVisible}
 			onSuccess={onClose}
@@ -54,7 +54,7 @@ export const TransactionProgressDialog = props => {
 					<Animated.View entering={FadeIn.delay(BASE_ANIMATION_DELAY)} key={link.hash}>
 						{explorerLinks.length > 1 && (
 							<StyledText type="label" size="s" style={styles.transactionCounter}>
-								{$t('c_transactionStatus_transaction_text', { index: index + 1 })}
+								{$t('component_transactionProgressDialog_label_transaction', { index: index + 1 })}
 							</StyledText>
 						)}
 						<ButtonPlain

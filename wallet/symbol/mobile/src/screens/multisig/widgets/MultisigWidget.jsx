@@ -30,7 +30,7 @@ export const MultisigWidget = ({ multisigAccountList, chainName }) => {
 	});
 
 	return (
-		<WidgetContainer title={$t('s_multisig_widget_name')} onHeaderPress={handleHeaderPress}>
+		<WidgetContainer title={$t('screen_multisig_widget_title')} onHeaderPress={handleHeaderPress}>
 			<Spacer x="s" y="s">
 				<Stack gap="s">
 					{multisigAccountList.map((item, index) => {
@@ -40,7 +40,7 @@ export const MultisigWidget = ({ multisigAccountList, chainName }) => {
 							<AccountListItem
 								key={item.address}
 								address={item.address}
-								name={accountDisplayData.name ?? $t('s_multisig_defaultAccountName')}
+								name={accountDisplayData.name ?? $t('screen_multisig_title_defaultAccountName')}
 								amount={item.balance}
 								ticker={ticker}
 								imageId={accountDisplayData.imageId}

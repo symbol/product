@@ -20,14 +20,14 @@ const createStatusInfo = status => {
 	const unknownStatus = {
 		icon: 'question-circle',
 		variant: 'neutral',
-		title: $t('c_transactionStatus_status_unknown_title'),
-		description: $t('c_transactionStatus_status_unknown_description')
+		title: $t('component_transactionScreenTemplate_status_unknown_title'),
+		description: $t('component_transactionScreenTemplate_status_unknown_description')
 	};
 	const sendingStatus = {
 		icon: 'pending',
 		variant: 'warning',
-		title: $t('c_transactionStatus_status_sending_title'),
-		description: $t('c_transactionStatus_status_sending_description')
+		title: $t('component_transactionScreenTemplate_status_sending_title'),
+		description: $t('component_transactionScreenTemplate_status_sending_description')
 	};
 
 	const infoMap = {
@@ -40,44 +40,44 @@ const createStatusInfo = status => {
 		[TransactionWorkflowStatus.ANNOUNCED]: {
 			icon: 'check-circle',
 			variant: 'neutral',
-			title: $t('c_transactionStatus_status_confirming_title'),
-			description: $t('c_transactionStatus_status_confirming_description')
+			title: $t('component_transactionScreenTemplate_status_confirming_title'),
+			description: $t('component_transactionScreenTemplate_status_confirming_description')
 		},
 		[TransactionWorkflowStatus.PARTIAL]: {
 			icon: 'check-circle',
 			variant: 'neutral',
-			title: $t('c_transactionStatus_status_partial_title'),
-			description: $t('c_transactionStatus_status_partial_description')
+			title: $t('component_transactionScreenTemplate_status_partial_title'),
+			description: $t('component_transactionScreenTemplate_status_partial_description')
 		},
 		[TransactionWorkflowStatus.CONFIRMED]: {
 			icon: 'check-circle',
 			variant: 'success',
-			title: $t('c_transactionStatus_status_confirmed_title'),
-			description: $t('c_transactionStatus_status_confirmed_description')
+			title: $t('component_transactionScreenTemplate_status_confirmed_title'),
+			description: $t('component_transactionScreenTemplate_status_confirmed_description')
 		},
 		[TransactionWorkflowStatus.CREATE_ERROR]: {
 			icon: 'cross-circle',
 			variant: 'danger',
-			title: $t('c_transactionStatus_status_createError_title'),
-			description: $t('c_transactionStatus_status_createError_description')
+			title: $t('component_transactionScreenTemplate_status_createError_title'),
+			description: $t('component_transactionScreenTemplate_status_createError_description')
 		},
 		[TransactionWorkflowStatus.SIGN_ERROR]: {
 			icon: 'cross-circle',
 			variant: 'danger',
-			title: $t('c_transactionStatus_status_signError_title'),
-			description: $t('c_transactionStatus_status_signError_description')
+			title: $t('component_transactionScreenTemplate_status_signError_title'),
+			description: $t('component_transactionScreenTemplate_status_signError_description')
 		},
 		[TransactionWorkflowStatus.ANNOUNCE_ERROR]: {
 			icon: 'cross-circle',
 			variant: 'danger',
-			title: $t('c_transactionStatus_status_announceError_title'),
-			description: $t('c_transactionStatus_status_announceError_description')
+			title: $t('component_transactionScreenTemplate_status_announceError_title'),
+			description: $t('component_transactionScreenTemplate_status_announceError_description')
 		},
 		[TransactionWorkflowStatus.FAILED_TRANSACTIONS]: {
 			icon: 'cross-circle',
 			variant: 'danger',
-			title: $t('c_transactionStatus_status_failedTransaction_title'),
-			description: $t('c_transactionStatus_status_failedTransaction_description')
+			title: $t('component_transactionScreenTemplate_status_failedTransaction_title'),
+			description: $t('component_transactionScreenTemplate_status_failedTransaction_description')
 		}
 	};
 
@@ -141,25 +141,25 @@ const buildActivityLog = ({
 
 	return [
 		{
-			title: $t('c_transactionStatus_step_create'),
+			title: $t('component_transactionScreenTemplate_step_create'),
 			icon: 'plus',
 			status: createState.status,
 			caption: createState.errorMessage ?? ''
 		},
 		{
-			title: $t('c_transactionStatus_step_sign'),
+			title: $t('component_transactionScreenTemplate_step_sign'),
 			icon: 'sign',
 			status: signState.status,
 			caption: signState.errorMessage ?? ''
 		},
 		{
-			title: $t('c_transactionStatus_step_announce'),
+			title: $t('component_transactionScreenTemplate_step_announce'),
 			icon: 'send-plane',
 			status: announceState.status,
 			caption: announceState.errorMessage ?? ''
 		},
 		{
-			title: $t('c_transactionStatus_step_confirm'),
+			title: $t('component_transactionScreenTemplate_step_confirm'),
 			icon: hasFailedTransactions ? 'cross' : 'check',
 			status: getConfirmStatus(),
 			caption: ''

@@ -22,36 +22,36 @@ jest.mock('@/app/utils', () => ({
 
 // constants
 
-const SCREEN_TEXT_TRANSACTION_COUNTER = 'c_transactionStatus_transaction_text';
+const SCREEN_TEXT_TRANSACTION_COUNTER = 'component_transactionProgressDialog_label_transaction';
 const SCREEN_TEXT = {
 	// Dialog
-	textDialogTitle: 'c_transactionStatus_dialog_title',
+	textDialogTitle: 'component_transactionProgressDialog_title_sendTransaction',
 	buttonOk: 'button_ok',
 
 	// Activity log steps
-	textStepCreate: 'c_transactionStatus_step_create',
-	textStepSign: 'c_transactionStatus_step_sign',
-	textStepAnnounce: 'c_transactionStatus_step_announce',
-	textStepConfirm: 'c_transactionStatus_step_confirm',
+	textStepCreate: 'component_transactionScreenTemplate_step_create',
+	textStepSign: 'component_transactionScreenTemplate_step_sign',
+	textStepAnnounce: 'component_transactionScreenTemplate_step_announce',
+	textStepConfirm: 'component_transactionScreenTemplate_step_confirm',
 
 	// Status card titles
-	textStatusSending: 'c_transactionStatus_status_sending_title',
-	textStatusConfirming: 'c_transactionStatus_status_confirming_title',
-	textStatusSuccess: 'c_transactionStatus_status_confirmed_title',
-	textStatusCreateError: 'c_transactionStatus_status_createError_title',
-	textStatusSignError: 'c_transactionStatus_status_signError_title',
-	textStatusPartial: 'c_transactionStatus_status_partial_title',
-	textStatusAnnounceError: 'c_transactionStatus_status_announceError_title',
+	textStatusSending: 'component_transactionScreenTemplate_status_sending_title',
+	textStatusConfirming: 'component_transactionScreenTemplate_status_confirming_title',
+	textStatusSuccess: 'component_transactionScreenTemplate_status_confirmed_title',
+	textStatusCreateError: 'component_transactionScreenTemplate_status_createError_title',
+	textStatusSignError: 'component_transactionScreenTemplate_status_signError_title',
+	textStatusPartial: 'component_transactionScreenTemplate_status_partial_title',
+	textStatusAnnounceError: 'component_transactionScreenTemplate_status_announceError_title',
 
 	// Status card descriptions
-	textDescriptionSending: 'c_transactionStatus_status_sending_description',
-	textDescriptionConfirming: 'c_transactionStatus_status_confirming_description',
-	textDescriptionPartial: 'c_transactionStatus_status_partial_description',
-	textDescriptionSuccess: 'c_transactionStatus_status_confirmed_description',
-	textDescriptionCreateError: 'c_transactionStatus_status_createError_description',
-	textDescriptionSignError: 'c_transactionStatus_status_signError_description',
-	textDescriptionAnnounceError: 'c_transactionStatus_status_announceError_description',
-	textDescriptionRejected: 'c_transactionStatus_status_failedTransaction_description',
+	textDescriptionSending: 'component_transactionScreenTemplate_status_sending_description',
+	textDescriptionConfirming: 'component_transactionScreenTemplate_status_confirming_description',
+	textDescriptionPartial: 'component_transactionScreenTemplate_status_partial_description',
+	textDescriptionSuccess: 'component_transactionScreenTemplate_status_confirmed_description',
+	textDescriptionCreateError: 'component_transactionScreenTemplate_status_createError_description',
+	textDescriptionSignError: 'component_transactionScreenTemplate_status_signError_description',
+	textDescriptionAnnounceError: 'component_transactionScreenTemplate_status_announceError_description',
+	textDescriptionRejected: 'component_transactionScreenTemplate_status_failedTransaction_description',
 
 	// Explorer button
 	buttonViewInExplorer: 'button_openTransactionInExplorer',

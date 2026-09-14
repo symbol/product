@@ -15,7 +15,7 @@ const token = TokenFixtureBuilder
 const TICKER = 'XYM';
 const DISPLAY_NAME = `${token.name} • ${TICKER}`;
 const ACCESSIBILITY_LABEL = 'token-item';
-const EXPIRED_TEXT = 's_assets_item_expired';
+const EXPIRED_TEXT = 'component_expirationProgress_label_expired';
 
 const expiredTokenExpiration = {
 	startHeight: 1_000,

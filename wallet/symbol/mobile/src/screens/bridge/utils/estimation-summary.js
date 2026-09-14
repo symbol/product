@@ -30,8 +30,8 @@ import { safeOperationWithRelativeAmounts } from 'wallet-common-core';
 const MISSING_VALUE_TEXT = '-';
 
 const priceImpactLevelTextKeyMap = {
-	[PriceImpactSeverity.WARNING]: 's_bridge_summary_priceImpact_high',
-	[PriceImpactSeverity.CRITICAL]: 's_bridge_summary_priceImpact_veryHigh'
+	[PriceImpactSeverity.WARNING]: 'screen_bridge_summary_label_priceImpactHigh',
+	[PriceImpactSeverity.CRITICAL]: 'screen_bridge_summary_label_priceImpactVeryHigh'
 };
 
 /**
@@ -162,7 +162,7 @@ const createFeeRows = (title, feeAmounts) => {
  * @returns {EstimationSummaryRow} Price impact row.
  */
 const createPriceImpactRow = (priceImpact, priceImpactSeverity) => {
-	const title = $t('s_bridge_summary_priceImpact');
+	const title = $t('screen_bridge_summary_label_priceImpact');
 
 	if (priceImpact === undefined)
 		return createRow({ title, value: MISSING_VALUE_TEXT });
@@ -170,7 +170,7 @@ const createPriceImpactRow = (priceImpact, priceImpactSeverity) => {
 	const severity = priceImpactSeverity === PriceImpactSeverity.NONE ? null : priceImpactSeverity;
 
 	if (priceImpact === null)
-		return createRow({ title, value: $t('s_bridge_summary_priceImpact_unknown'), severity });
+		return createRow({ title, value: $t('screen_bridge_summary_label_priceImpactUnknown'), severity });
 
 	const levelText = severity ? ` · ${$t(priceImpactLevelTextKeyMap[severity])}` : '';
 
@@ -214,11 +214,14 @@ export const createEstimationSummaryViewModel = ({
 	return {
 		key: `${source ? createSwapSideKey(source) : 'none'}>${target ? createSwapSideKey(target) : 'none'}`,
 		rows: [
-			createRow({ title: $t('s_bridge_summary_amountSend'), value: sendValue }),
-			...createFeeRows($t('s_bridge_summary_transactionFee'), createTransactionFeeAmounts(stepFees, transactionFeeTierLevel)),
-			...createFeeRows($t('s_bridge_summary_bridgeFee'), createOperationFeeAmounts(estimations, steps, isComplete)),
+			createRow({ title: $t('screen_bridge_summary_label_amountSend'), value: sendValue }),
+			...createFeeRows(
+				$t('screen_bridge_summary_label_transactionFee'),
+				createTransactionFeeAmounts(stepFees, transactionFeeTierLevel)
+			),
+			...createFeeRows($t('screen_bridge_summary_label_bridgeFee'), createOperationFeeAmounts(estimations, steps, isComplete)),
 			createPriceImpactRow(priceImpact, priceImpactSeverity),
-			createRow({ title: $t('s_bridge_summary_amountReceive'), value: receiveValue })
+			createRow({ title: $t('screen_bridge_summary_label_amountReceive'), value: receiveValue })
 		]
 	};
 };

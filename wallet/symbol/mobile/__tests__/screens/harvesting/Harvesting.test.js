@@ -40,36 +40,36 @@ const { ControllerEventName } = coreConstants;
 
 const SCREEN_TEXT = {
 	// Screen titles
-	textScreenTitle: 's_harvesting_title',
-	textScreenDescription: 's_harvesting_description',
+	textScreenTitle: 'screen_harvesting_title_intro',
+	textScreenDescription: 'screen_harvesting_description_intro',
 
 	// Status section
-	textStatusTitle: 's_harvesting_status_title',
-	textStatusActive: 's_harvesting_status_active',
-	textStatusPending: 's_harvesting_status_pending',
-	textStatusInactive: 's_harvesting_status_inactive',
-	textStatusOperator: 's_harvesting_status_operator',
-	textStatusUnknown: 's_harvesting_status_unknown',
+	textStatusTitle: 'screen_harvesting_title_status',
+	textStatusActive: 'screen_harvesting_status_active',
+	textStatusPending: 'screen_harvesting_status_pending',
+	textStatusInactive: 'screen_harvesting_status_inactive',
+	textStatusOperator: 'screen_harvesting_status_operator',
+	textStatusUnknown: 'screen_harvesting_status_unknown',
 
 	// Status warnings
-	textWarningBalance: 's_harvesting_warning_balance',
-	textWarningImportance: 's_harvesting_warning_importance',
-	textWarningNodeDown: 's_harvesting_warning_node_down',
+	textWarningBalance: 'screen_harvesting_status_balanceWarning_description',
+	textWarningImportance: 'screen_harvesting_status_importanceWarning_description',
+	textWarningNodeDown: 'screen_harvesting_status_nodeDownWarning_description',
 
 	// Summary section
-	textSummaryTitle: 's_harvesting_harvested_title',
-	textSummaryBlockLabel: 's_harvesting_harvested_block_label',
-	textSummary30DaysLabel: 's_harvesting_harvested_30days_label',
-	textSummaryBlocksCount: 's_harvesting_harvested_blocks',
+	textSummaryTitle: 'screen_harvesting_title_harvested',
+	textSummaryBlockLabel: 'screen_harvesting_label_harvestedBlock',
+	textSummary30DaysLabel: 'screen_harvesting_label_harvested30days',
+	textSummaryBlocksCount: 'screen_harvesting_label_harvestedBlocks',
 
 	// Manage section
-	textManageTitle: 's_harvesting_manage_title',
+	textManageTitle: 'screen_harvesting_title_manage',
 	textNodeUrlField: 'fieldTitle_nodeUrl',
 
 	// Sender selector
-	textSenderTitle: 's_harvesting_account_title',
-	senderTabCurrentAccount: 'c_selectTransactionSender_currentAccount',
-	senderTabMultisigAccount: 'c_selectTransactionSender_multisigAccount',
+	textSenderTitle: 'screen_harvesting_title_account',
+	senderTabCurrentAccount: 'component_selectTransactionSender_tab_currentAccount',
+	senderTabMultisigAccount: 'component_selectTransactionSender_tab_multisigAccount',
 
 	// Buttons
 	buttonStart: 'button_start',

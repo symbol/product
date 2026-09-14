@@ -59,8 +59,8 @@ export const ExpirationProgress = ({ endHeight, startHeight, chainHeight, blockG
 
 	// Expiration status text
 	const statusText = expirationPercentage === 100
-		? $t('s_assets_item_expired')
-		: $t('s_assets_item_expireIn', { inTime: blockDurationToDaysLeft(remainedBlocks, blockGenerationTargetTime) });
+		? $t('component_expirationProgress_label_expired')
+		: $t('component_expirationProgress_label_expireIn', { inTime: blockDurationToDaysLeft(remainedBlocks, blockGenerationTargetTime) });
 
 	return (
 		<View style={style}>

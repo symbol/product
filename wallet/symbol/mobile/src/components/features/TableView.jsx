@@ -1,7 +1,7 @@
 import { AccountRow, BooleanView, CopyButtonContainer, Field, MessageView, Stack, StyledText, TokenBalanceRow } from '@/app/components';
 import { useAccountDisplayData, useTokenDisplayData } from '@/app/hooks';
 import { $t } from '@/app/localization';
-import { getTransactionTypeTranslationKey } from '@/app/utils';
+import { getTransactionTypeLocaleKey } from '@/app/utils';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 
@@ -123,7 +123,7 @@ const renderRowValue = (row, accountsDisplayMap, tokensDisplayMap, translate, ch
 			<BooleanView
 				key={key}
 				value={row.value}
-				text={translate(`data_${row.value}`)}
+				text={translate(`fieldValue_${row.value}`)}
 			/>
 		);
 	case 'encryption':
@@ -131,14 +131,14 @@ const renderRowValue = (row, accountsDisplayMap, tokensDisplayMap, translate, ch
 			<BooleanView
 				key={key}
 				value={row.value}
-				text={translate(`data_${row.value ? 'encrypted' : 'unencrypted'}`)}
+				text={translate(`fieldValue_${row.value ? 'encrypted' : 'unencrypted'}`)}
 			/>
 		);
 	case 'delta':
 		return (
 			<StyledText key={key}>
 				{translate(
-					'data_delta_' + (row.value > 0 ? 'increase' : row.value < 0 ? 'decrease' : 'unchanged'), 
+					'fieldValue_' + (row.value > 0 ? 'deltaIncrease' : row.value < 0 ? 'deltaDecrease' : 'deltaUnchanged'),
 					{ delta: Math.abs(row.value) }
 				)}
 			</StyledText>
@@ -150,9 +150,9 @@ const renderRowValue = (row, accountsDisplayMap, tokensDisplayMap, translate, ch
 			</CopyButtonContainer>
 		);
 	case 'transactionType':
-		return <StyledText key={key}>{translate(getTransactionTypeTranslationKey(row.value, chainName))}</StyledText>;
+		return <StyledText key={key}>{translate(getTransactionTypeLocaleKey(row.value, chainName))}</StyledText>;
 	case 'translate':
-		return <StyledText key={key}>{translate(`data_${row.value}`)}</StyledText>;
+		return <StyledText key={key}>{translate(`fieldValue_${row.value}`)}</StyledText>;
 	case 'text':
 	default:
 		return <StyledText key={key}>{`${row.value}` ?? '-'}</StyledText>;
