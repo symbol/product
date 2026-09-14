@@ -1,0 +1,98 @@
+# Balance thresholds, one file per installation.
+#
+# BridgeBalanceLow carries no numbers, no divisors and no knowledge of any chain. It compares each
+# balance against the thresholds recorded here, joined on (bridge, network, token).
+#
+#   severity  the level this threshold represents. add a second record with the same labels and a
+#             different severity to get a warning before the critical one; inhibit the warning in
+#             alertmanager so that crossing both levels does not notify twice
+#
+# Amounts are in the raw units the metric reports, written as a product so that the readable number
+# stays visible: 0.1 * 1e18 is a tenth of an ether, 200 * 1e6 is two hundred XYM. Prometheus does the
+# arithmetic when it records the rule, so nobody has to count zeros or trust that they counted right.
+#
+# Which balances a bridge has depends on its mode. In wrap and stake the native account only needs
+# to cover fees, since the payout amount itself is backed by the deposits that put the wrapped supply
+# into circulation, while the wrapped leg holds both the float and the currency that pays for the
+# transactions. In swap the native account only receives and needs no threshold at all, and the one
+# wrapped balance is both the float and the fee source, so size it from maxDailyTransferAmount.
+#
+# Load it next to the rules:
+#
+#   rule_files:
+#     - /etc/prometheus/rules/bridge.yml
+#     - /etc/prometheus/rules/thresholds.yml
+
+groups:
+  - name: bridge-thresholds
+    rules:
+      # XYM <-> bXYM, stake
+      - record: bridge_balance_threshold
+        expr: vector(200 * 1e6)
+        labels:
+          bridge: xym-bxym-stake
+          network: native
+          token: 6BED913FA20223F8
+          severity: critical
+      - record: bridge_balance_threshold
+        expr: vector(100000 * 1e6)
+        labels:
+          bridge: xym-bxym-stake
+          network: wrapped
+          token: "<bXYM-proxy-contract-address>"
+          severity: critical
+      - record: bridge_balance_threshold
+        expr: vector(0.1 * 1e18)
+        labels:
+          bridge: xym-bxym-stake
+          network: wrapped
+          token: ETH
+          severity: critical
+
+      # XYM -> ETH, swap. the native account only receives, so it has no threshold
+      - record: bridge_balance_threshold
+        expr: vector(5 * 1e18)
+        labels:
+          bridge: xym-eth-swap
+          network: wrapped
+          token: ETH
+          severity: critical
+
+      # XEM <-> bXEM, stake. this one warns before it pages
+      - record: bridge_balance_threshold
+        expr: vector(200 * 1e6)
+        labels:
+          bridge: xem-bxem-stake
+          network: native
+          token: nem:xem
+          severity: critical
+      - record: bridge_balance_threshold
+        expr: vector(600 * 1e6)
+        labels:
+          bridge: xem-bxem-stake
+          network: native
+          token: nem:xem
+          severity: warning
+      - record: bridge_balance_threshold
+        expr: vector(100000 * 1e6)
+        labels:
+          bridge: xem-bxem-stake
+          network: wrapped
+          token: "<bXEM-proxy-contract-address>"
+          severity: critical
+      - record: bridge_balance_threshold
+        expr: vector(0.1 * 1e18)
+        labels:
+          bridge: xem-bxem-stake
+          network: wrapped
+          token: ETH
+          severity: critical
+
+      # XEM -> ETH, swap
+      - record: bridge_balance_threshold
+        expr: vector(5 * 1e18)
+        labels:
+          bridge: xem-eth-swap
+          network: wrapped
+          token: ETH
+          severity: critical
