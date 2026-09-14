@@ -1,5 +1,5 @@
 import { useWalletController } from './useWalletController';
-import { createAccountDisplayData } from '@/app/utils';
+import { createAccountDisplayData, getAccountDisplayOptions } from '@/app/utils';
 import { useMemo } from 'react';
 
 /** @typedef {import('@/app/types/Account').AccountDisplayData} AccountDisplayData */
@@ -14,9 +14,8 @@ import { useMemo } from 'react';
  */
 export const useAccountDisplayData = (addressOrAddresses, chainName) => {
 	const walletController = useWalletController(chainName);
-	const { chainName: resolvedChainName, networkIdentifier, accounts } = walletController;
-	const { addressBook } = walletController.modules;
-	const walletAccounts = accounts[networkIdentifier];
+	const displayOptions = getAccountDisplayOptions(walletController);
+	const { walletAccounts, addressBook, chainName: resolvedChainName, networkIdentifier } = displayOptions;
 	// The address book instance is stable across contact edits; its contacts array is what changes
 	const contacts = addressBook?.contacts;
 	const isArrayInput = Array.isArray(addressOrAddresses);
@@ -25,12 +24,7 @@ export const useAccountDisplayData = (addressOrAddresses, chainName) => {
 	const addressesKey = addresses.join();
 
 	const displayDataList = useMemo(
-		() => addresses.map(address => createAccountDisplayData(address, {
-			walletAccounts,
-			addressBook,
-			chainName: resolvedChainName,
-			networkIdentifier
-		})),
+		() => addresses.map(address => createAccountDisplayData(address, displayOptions)),
 		[addressesKey, walletAccounts, contacts, resolvedChainName, networkIdentifier]
 	);
 

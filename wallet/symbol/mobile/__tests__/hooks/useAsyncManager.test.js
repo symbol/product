@@ -38,6 +38,7 @@ describe('hooks/useAsyncManager', () => {
 				expect(result.current.isLoading).toBe(expected.isLoading);
 				expect(result.current.data).toEqual(expected.data);
 				expect(result.current.error).toBe(expected.error);
+				expect(result.current.hasFailed).toBe(false);
 			});
 		};
 
@@ -178,6 +179,37 @@ describe('hooks/useAsyncManager', () => {
 			// Assert:
 			expect(result.current.error).toEqual(expectedError);
 			expect(result.current.isLoading).toBe(false);
+			expect(result.current.hasFailed).toBe(true);
+		});
+
+		it('reports the failure until the next call completes', async () => {
+			// Arrange:
+			const callback = jest.fn()
+				.mockRejectedValueOnce(new Error(ERROR_MESSAGE))
+				.mockResolvedValueOnce(RESOLVED_DATA);
+			const config = createConfig({ callback });
+			const { result } = renderHook(() => useAsyncManager(config));
+
+			// Act: the first call fails
+			await act(async () => {
+				const promise = result.current.call();
+				jest.runAllTimers();
+				await promise.catch(() => {});
+			});
+
+			// Assert:
+			expect(result.current.hasFailed).toBe(true);
+
+			// Act: the next call succeeds
+			await act(async () => {
+				const promise = result.current.call();
+				jest.runAllTimers();
+				await promise;
+			});
+
+			// Assert:
+			expect(result.current.hasFailed).toBe(false);
+			expect(result.current.data).toEqual(RESOLVED_DATA);
 		});
 
 		it('calls onError callback when provided', async () => {
@@ -342,6 +374,7 @@ describe('hooks/useAsyncManager', () => {
 			// Assert:
 			expect(result.current).toHaveProperty('call');
 			expect(result.current).toHaveProperty('isLoading');
+			expect(result.current).toHaveProperty('hasFailed');
 			expect(result.current).toHaveProperty('data');
 			expect(result.current).toHaveProperty('error');
 			expect(result.current).toHaveProperty('reset');
