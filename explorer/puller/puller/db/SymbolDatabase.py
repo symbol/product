@@ -3,6 +3,7 @@ import time
 from collections import namedtuple
 from contextlib import contextmanager
 
+from common.symbol.ReceiptTypes import RECEIPT_TYPE_LABELS
 from psycopg2.extras import Json
 
 from puller.model.symbol.Account import ACCOUNT_TYPE_VALUES
@@ -23,7 +24,6 @@ from puller.model.symbol.MosaicRestriction import (
 	mosaic_restriction_entry_type_label
 )
 from puller.model.symbol.Namespace import NAMESPACE_ALIAS_TYPE_LABELS, NAMESPACE_REGISTRATION_TYPE_LABELS
-from puller.model.symbol.Receipt import RECEIPT_TYPE_LABELS
 from puller.model.symbol.Transaction import MESSAGE_TYPE_LABELS, TRANSACTION_TYPE_LABELS
 
 from .DatabaseConnection import DatabaseConnection

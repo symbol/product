@@ -1,13 +1,14 @@
 from threading import Event, Thread
 from unittest import TestCase
 
+from common.symbol.NativeMosaic import NativeMosaicInfo
 from common.tests.PostgresTestUtils import PostgresTestDatabase, drop_symbol_block_tables_if_present
 from psycopg2 import Error as PsycopgError
 from puller.db.SymbolDatabase import SymbolDatabase as PullerSymbolDatabase
 
-from rest.db.SymbolDatabase import SortOrder, SymbolDatabase, SymbolDataUnavailable
+from rest.db.SymbolDatabase import ReceiptQuery, SortOrder, SymbolDatabase, SymbolDataUnavailable
 
-from ..test.SymbolBlockTestUtils import create_symbol_block, create_symbol_importance_block, create_symbol_sync_state
+from ..test.SymbolBlockTestUtils import create_symbol_block, create_symbol_importance_block, create_symbol_receipt, create_symbol_sync_state
 
 
 class PausingAfterSyncStateReadSymbolDatabase(SymbolDatabase):
@@ -23,6 +24,30 @@ class PausingAfterSyncStateReadSymbolDatabase(SymbolDatabase):
 		if not self.allow_block_read_event.wait(timeout=5):
 			raise RuntimeError('Timed out waiting for snapshot interleaving')
 		return sync_state
+
+
+NATIVE_MOSAIC_INFO = NativeMosaicInfo('72C0212E67A08BCE', 6)
+TARGET_ADDRESS = bytes.fromhex('98534F7E1D0A26CA4E316F901E23E55C8701DB20DF11A7B2')
+SENDER_ADDRESS = bytes.fromhex('9889432DE263BB8FE88444A4DA28D3609BD8BB8FAE18AE95')
+
+
+def _create_mosaic(mosaic_id, divisibility):
+	return {
+		'mosaic_id': mosaic_id,
+		'owner_address': SENDER_ADDRESS,
+		'start_height': 1,
+		'duration': 0,
+		'expiration_height': None,
+		'supply': 1,
+		'divisibility': divisibility,
+		'flags': 0,
+		'supply_mutable': False,
+		'transferable': False,
+		'restrictable': False,
+		'revokable': False,
+		'raw_payload': {'id': mosaic_id},
+		'updated_at_height': 1
+	}
 
 
 class SymbolDatabaseConnectionTest(TestCase):
@@ -111,6 +136,14 @@ class SymbolDatabaseBlocksTest(TestCase):  # pylint: disable=too-many-public-met
 		# The block read resumes after the other connection commits, but the first sync-state SELECT fixed the REPEATABLE READ snapshot.
 		# Returning 100 proves this read ignores the committed 999 reward.
 		self.assertEqual([100], [block.block_reward for block in result])
+
+	def test_get_receipts_reads_state_and_rows_from_same_snapshot(self):
+		# Arrange / Act:
+		result = _query_symbol_database_during_update(
+			lambda database: database.get_receipts(ReceiptQuery(limit=1)))
+
+		# Assert:
+		self.assertEqual([100], [receipt.amount for receipt in result])
 
 	def test_get_block_returns_unavailable_above_repairing_head(self):
 		# Arrange / Act / Assert:
@@ -412,6 +445,379 @@ class SymbolDatabaseBlocksTest(TestCase):  # pylint: disable=too-many-public-met
 				{'from_height': from_height, 'limit': 2, 'sort': SortOrder.ASC})
 
 
+class SymbolDatabaseReceiptsTest(TestCase):  # pylint: disable=too-many-public-methods
+	def test_get_receipts_returns_descending_height_and_id_order_and_hides_rows_above_watermark(self):
+		# Arrange:
+		receipts = [
+			create_symbol_receipt(3, 'lockHashCreated', 'balanceChange', amount=1),
+			create_symbol_receipt(3, 'lockHashCompleted', 'balanceChange', amount=2),
+			create_symbol_receipt(2, 'inflation', 'inflation', amount=3),
+			create_symbol_receipt(4, 'inflation', 'inflation', amount=4)
+		]
+
+		# Act:
+		result = _query_symbol_receipts(
+			receipts,
+			create_symbol_sync_state(last_synced_height=3, finalized_height=2),
+			ReceiptQuery(limit=10))
+
+		# Assert:
+		self.assertEqual([('lockHashCompleted', 2), ('lockHashCreated', 1), ('inflation', 3)], [
+			(receipt.receipt_type, receipt.amount) for receipt in result])
+
+	def test_clean_offset_uses_height_id(self):
+		# Arrange:
+		with PostgresTestDatabase() as db_config:
+			with PullerSymbolDatabase(db_config) as puller_database:
+				try:
+					drop_symbol_block_tables_if_present(puller_database)
+					puller_database.create_tables()
+					puller_database.upsert_sync_state(create_symbol_sync_state(last_synced_height=3, finalized_height=2))
+					puller_database.upsert_blocks([create_symbol_block(3), create_symbol_block(2)])
+					puller_database.upsert_receipts_for_height(
+						3,
+						[
+							create_symbol_receipt(3, 'lockHashCreated', 'balanceChange', amount=301),
+							create_symbol_receipt(3, 'lockHashCompleted', 'balanceChange', amount=302)
+						],
+						0)
+					puller_database.upsert_receipts_for_height(
+						2,
+						[create_symbol_receipt(2, 'inflation', 'inflation', amount=201)],
+						0)
+
+					database = SymbolDatabase(db_config, NATIVE_MOSAIC_INFO)
+					try:
+						# Act:
+						result = database.get_receipts(ReceiptQuery(limit=1, offset=1))
+					finally:
+						database._pool.closeall()  # pylint: disable=protected-access
+				finally:
+					drop_symbol_block_tables_if_present(puller_database)
+
+		# Assert:
+		self.assertEqual([(3, 'lockHashCreated', 301)], [
+			(receipt.height, receipt.receipt_type, receipt.amount) for receipt in result])
+
+	def test_get_receipts_applies_group_filter(self):
+		# Arrange:
+		receipts = [
+			create_symbol_receipt(2, 'lockHashCreated', 'balanceChange'),
+			create_symbol_receipt(2, 'mosaicRentalFee', 'balanceTransfer')
+		]
+
+		# Act:
+		result = _query_symbol_receipts(
+			receipts,
+			create_symbol_sync_state(last_synced_height=2, finalized_height=2),
+			ReceiptQuery(receipt_group='balanceTransfer'))
+
+		# Assert:
+		self.assertEqual(['mosaicRentalFee'], [receipt.receipt_type for receipt in result])
+
+	def test_get_receipts_applies_single_type_filter(self):
+		# Arrange:
+		receipts = [
+			create_symbol_receipt(2, 'lockHashCreated', 'balanceChange'),
+			create_symbol_receipt(2, 'lockHashCompleted', 'balanceChange')
+		]
+
+		# Act:
+		result = _query_symbol_receipts(
+			receipts,
+			create_symbol_sync_state(last_synced_height=2, finalized_height=2),
+			ReceiptQuery(receipt_type='lockHashCompleted'))
+
+		# Assert:
+		self.assertEqual(['lockHashCompleted'], [receipt.receipt_type for receipt in result])
+
+	def test_get_receipts_applies_included_type_filter(self):
+		# Arrange:
+		receipts = [
+			create_symbol_receipt(2, 'lockHashCreated', 'balanceChange'),
+			create_symbol_receipt(2, 'lockHashCompleted', 'balanceChange'),
+			create_symbol_receipt(2, 'harvestFee', 'balanceChange')
+		]
+
+		# Act:
+		result = _query_symbol_receipts(
+			receipts,
+			create_symbol_sync_state(last_synced_height=2, finalized_height=2),
+			ReceiptQuery(included_receipt_types=('harvestFee', 'lockHashCreated')))
+
+		# Assert:
+		self.assertEqual(['harvestFee', 'lockHashCreated'], [receipt.receipt_type for receipt in result])
+
+	def test_get_receipts_applies_target_address_filter(self):
+		# Arrange:
+		receipts = [
+			create_symbol_receipt(2, 'lockHashCreated', 'balanceChange', target_address=TARGET_ADDRESS),
+			create_symbol_receipt(2, 'lockHashCompleted', 'balanceChange', target_address=SENDER_ADDRESS)
+		]
+
+		# Act:
+		result = _query_symbol_receipts(
+			receipts,
+			create_symbol_sync_state(last_synced_height=2, finalized_height=2),
+			ReceiptQuery(target_address=TARGET_ADDRESS))
+
+		# Assert:
+		self.assertEqual(['lockHashCreated'], [receipt.receipt_type for receipt in result])
+
+	def test_get_receipts_applies_sender_address_filter(self):
+		# Arrange:
+		receipts = [
+			create_symbol_receipt(2, 'mosaicRentalFee', 'balanceTransfer', sender_address=SENDER_ADDRESS),
+			create_symbol_receipt(2, 'namespaceRentalFee', 'balanceTransfer', sender_address=TARGET_ADDRESS)
+		]
+
+		# Act:
+		result = _query_symbol_receipts(
+			receipts,
+			create_symbol_sync_state(last_synced_height=2, finalized_height=2),
+			ReceiptQuery(sender_address=SENDER_ADDRESS))
+
+		# Assert:
+		self.assertEqual(['mosaicRentalFee'], [receipt.receipt_type for receipt in result])
+
+	def test_get_receipts_applies_group_type_and_target_address_filters(self):
+		# Arrange:
+		# Each receipt type has one persisted group; the group-only test above covers a valid off-group decoy.
+		receipts = [
+			create_symbol_receipt(2, 'lockHashCreated', 'balanceChange', target_address=TARGET_ADDRESS),
+			create_symbol_receipt(2, 'lockHashCompleted', 'balanceChange', target_address=TARGET_ADDRESS),
+			create_symbol_receipt(2, 'lockHashCreated', 'balanceChange', target_address=SENDER_ADDRESS)
+		]
+
+		# Act:
+		result = _query_symbol_receipts(
+			receipts,
+			create_symbol_sync_state(last_synced_height=2, finalized_height=2),
+			ReceiptQuery(
+				receipt_group='balanceChange',
+				receipt_type='lockHashCreated',
+				target_address=TARGET_ADDRESS))
+
+		# Assert:
+		self.assertEqual([('lockHashCreated', 'balanceChange', TARGET_ADDRESS)], [
+			(receipt.receipt_type, receipt.receipt_group, bytes(receipt.target_address)) for receipt in result])
+
+	def test_get_receipts_returns_empty_for_valid_unmatched_page(self):
+		# Arrange:
+		receipts = [create_symbol_receipt(2, 'inflation', 'inflation')]
+
+		# Act:
+		result = _query_symbol_receipts(
+			receipts,
+			create_symbol_sync_state(last_synced_height=2, finalized_height=2),
+			ReceiptQuery(receipt_type='harvestFee'))
+
+		# Assert:
+		self.assertEqual([], result)
+
+	def test_get_receipts_returns_none_for_missing_block(self):
+		# Arrange:
+		receipts = [create_symbol_receipt(2, 'inflation', 'inflation')]
+
+		# Act:
+		result = _query_symbol_receipts(
+			receipts,
+			create_symbol_sync_state(last_synced_height=2, finalized_height=2),
+			ReceiptQuery(height=3))
+
+		# Assert:
+		self.assertIsNone(result)
+
+	def test_get_receipts_returns_none_for_missing_readable_block(self):
+		# Arrange:
+		receipts = [create_symbol_receipt(2, 'inflation', 'inflation')]
+
+		# Act:
+		result = _query_symbol_receipts(
+			receipts,
+			create_symbol_sync_state(last_synced_height=2, finalized_height=2),
+			ReceiptQuery(height=1))
+
+		# Assert:
+		self.assertIsNone(result)
+
+	def test_get_receipts_returns_mosaic_divisibility_from_left_join(self):
+		# Arrange:
+		receipts = [
+			create_symbol_receipt(2, 'inflation', 'inflation', mosaic_id='1234567890ABCDEF', amount=12345),
+			create_symbol_receipt(1, 'inflation', 'inflation', mosaic_id=NATIVE_MOSAIC_INFO.id, amount=1234567)
+		]
+
+		# Act:
+		result = _query_symbol_receipts(
+			receipts,
+			create_symbol_sync_state(last_synced_height=2, finalized_height=2),
+			ReceiptQuery(),
+			mosaics=[_create_mosaic('1234567890ABCDEF', 2)])
+
+		# Assert:
+		self.assertEqual([2, 1], [receipt.height for receipt in result])
+		self.assertEqual([2, None], [receipt.mosaic_divisibility for receipt in result])
+
+	def test_get_receipts_rejects_unavailable_dirty_page(self):
+		# Arrange:
+		receipts = [
+			create_symbol_receipt(3, 'inflation', 'inflation'),
+			create_symbol_receipt(2, 'inflation', 'inflation')
+		]
+
+		# Act + Assert:
+		with self.assertRaises(SymbolDataUnavailable):
+			_query_symbol_receipts(
+				receipts,
+				create_symbol_sync_state(last_synced_height=3, finalized_height=2, dirty_state_from_height=3),
+				ReceiptQuery(limit=10))
+
+	def test_get_receipts_rejects_page_below_dirty_boundary_without_range_proof(self):
+		# Arrange:
+		receipts = [
+			create_symbol_receipt(3, 'inflation', 'inflation'),
+			create_symbol_receipt(2, 'inflation', 'inflation')
+		]
+
+		# Act + Assert:
+		with self.assertRaises(SymbolDataUnavailable):
+			_query_symbol_receipts(
+				receipts,
+				create_symbol_sync_state(last_synced_height=3, finalized_height=2, dirty_state_from_height=3),
+				ReceiptQuery(limit=1, offset=1))
+
+	def test_get_receipts_rejects_page_when_dirty_rows_are_missing(self):
+		# Arrange:
+		receipts = [create_symbol_receipt(2, 'inflation', 'inflation')]
+
+		# Act + Assert:
+		with self.assertRaises(SymbolDataUnavailable):
+			_query_symbol_receipts(
+				receipts,
+				create_symbol_sync_state(last_synced_height=3, finalized_height=2, dirty_state_from_height=3),
+				ReceiptQuery())
+
+	def test_get_receipts_rejects_unmatched_filter_when_dirty_rows_are_missing(self):
+		# Arrange:
+		receipts = [create_symbol_receipt(2, 'inflation', 'inflation')]
+
+		# Act + Assert:
+		with self.assertRaises(SymbolDataUnavailable):
+			_query_symbol_receipts(
+				receipts,
+				create_symbol_sync_state(last_synced_height=3, finalized_height=2, dirty_state_from_height=3),
+				ReceiptQuery(receipt_type='harvestFee'))
+
+	def test_get_receipts_rejects_empty_deep_page_when_dirty_rows_are_missing(self):
+		# Arrange:
+		receipts = [create_symbol_receipt(2, 'inflation', 'inflation')]
+
+		# Act + Assert:
+		with self.assertRaises(SymbolDataUnavailable):
+			_query_symbol_receipts(
+				receipts,
+				create_symbol_sync_state(last_synced_height=3, finalized_height=2, dirty_state_from_height=3),
+				ReceiptQuery(limit=1, offset=100000))
+
+	def test_get_receipts_allows_native_receipt_without_current_metadata_in_dirty_state(self):
+		# Arrange:
+		receipts = [create_symbol_receipt(2, 'inflation', 'inflation', mosaic_id=NATIVE_MOSAIC_INFO.id)]
+
+		# Act:
+		result = _query_symbol_receipts(
+			receipts,
+			create_symbol_sync_state(
+				last_synced_height=2,
+				finalized_height=1,
+				status='repairing',
+				dirty_state_from_height=3),
+			ReceiptQuery())
+
+		# Assert:
+		self.assertEqual([NATIVE_MOSAIC_INFO.id], [receipt.mosaic_id for receipt in result])
+		self.assertEqual([None], [receipt.mosaic_divisibility for receipt in result])
+
+	def test_get_receipts_rejects_repairing_state_without_dirty_boundary(self):
+		# Arrange:
+		receipts = [create_symbol_receipt(1, 'inflation', 'inflation')]
+
+		# Act + Assert:
+		with self.assertRaises(SymbolDataUnavailable):
+			_query_symbol_receipts(
+				receipts,
+				create_symbol_sync_state(last_synced_height=1, finalized_height=1, status='repairing'),
+				ReceiptQuery())
+
+	def test_get_receipts_rejects_non_native_receipt_without_current_metadata_in_dirty_state(self):
+		# Arrange:
+		receipts = [create_symbol_receipt(2, 'inflation', 'inflation', mosaic_id='1234567890ABCDEF')]
+
+		# Act + Assert:
+		with self.assertRaises(SymbolDataUnavailable):
+			_query_symbol_receipts(
+				receipts,
+				create_symbol_sync_state(last_synced_height=2, finalized_height=1, dirty_state_from_height=3),
+				ReceiptQuery())
+
+	def test_get_receipts_rejects_non_native_receipt_with_current_metadata_in_dirty_state(self):
+		# Arrange:
+		receipts = [create_symbol_receipt(2, 'inflation', 'inflation', mosaic_id='1234567890ABCDEF')]
+
+		# Act + Assert:
+		with self.assertRaises(SymbolDataUnavailable):
+			_query_symbol_receipts(
+				receipts,
+				create_symbol_sync_state(last_synced_height=2, finalized_height=1, dirty_state_from_height=3),
+				ReceiptQuery(),
+				mosaics=[_create_mosaic('1234567890ABCDEF', 2)])
+
+	def test_get_receipts_rejects_unhealthy_sync_state(self):
+		# Arrange + Act + Assert:
+		with self.assertRaises(SymbolDataUnavailable):
+			_query_symbol_receipts(
+				[create_symbol_receipt(1)],
+				create_symbol_sync_state(last_synced_height=1, finalized_height=1, status='unhealthy'),
+				ReceiptQuery())
+
+	def test_get_receipts_rejects_missing_sync_state(self):
+		# Arrange + Act + Assert:
+		with self.assertRaises(SymbolDataUnavailable):
+			_query_symbol_receipts([create_symbol_receipt(1)], None, ReceiptQuery())
+
+	def test_get_receipts_returns_connection_for_next_request_after_sql_failure(self):
+		# Arrange:
+		with PostgresTestDatabase() as db_config:
+			with PullerSymbolDatabase(db_config) as puller_database:
+				drop_symbol_block_tables_if_present(puller_database)
+				puller_database.create_tables()
+				puller_database.upsert_sync_state(create_symbol_sync_state(last_synced_height=1, finalized_height=1))
+				puller_database.upsert_blocks([create_symbol_block(1)])
+				puller_database.upsert_receipts_for_height(1, [create_symbol_receipt(1)], 0)
+				database = SymbolDatabase(db_config, NATIVE_MOSAIC_INFO)
+				cursor = puller_database.connection.cursor()
+				cursor.execute('ALTER TABLE symbol_mosaics RENAME TO symbol_mosaics_for_test')
+				puller_database.connection.commit()
+				cursor.close()
+
+				try:
+					# Act:
+					with self.assertRaises(PsycopgError):
+						database.get_receipts(ReceiptQuery())
+
+					cursor = puller_database.connection.cursor()
+					cursor.execute('ALTER TABLE symbol_mosaics_for_test RENAME TO symbol_mosaics')
+					puller_database.connection.commit()
+					cursor.close()
+					result = database.get_receipts(ReceiptQuery())
+				finally:
+					database._pool.closeall()  # pylint: disable=protected-access
+					drop_symbol_block_tables_if_present(puller_database)
+
+		# Assert:
+		self.assertEqual([1], [receipt.height for receipt in result])
+
+
 class SymbolDatabaseSyncStateTest(TestCase):
 	def test_try_get_sync_state_returns_none_when_row_is_missing(self):
 		# Arrange + Act:
@@ -443,6 +849,31 @@ def _get_block(blocks, sync_state, height):
 		lambda database: database.get_block(height))
 
 
+def _query_symbol_receipts(receipts, sync_state, query, mosaics=None):
+	heights = sorted({receipt['height'] for receipt in receipts})
+	with PostgresTestDatabase() as db_config:
+		with PullerSymbolDatabase(db_config) as puller_database:
+			try:
+				drop_symbol_block_tables_if_present(puller_database)
+				puller_database.create_tables()
+				if sync_state:
+					puller_database.upsert_sync_state(sync_state)
+				puller_database.upsert_blocks([create_symbol_block(height) for height in heights])
+				for mosaic in mosaics or []:
+					puller_database.upsert_mosaic(mosaic)
+				for height in heights:
+					height_receipts = [receipt for receipt in receipts if receipt['height'] == height]
+					puller_database.upsert_receipts_for_height(height, height_receipts, 0)
+
+				database = SymbolDatabase(db_config, NATIVE_MOSAIC_INFO)
+				try:
+					return database.get_receipts(query)
+				finally:
+					database._pool.closeall()  # pylint: disable=protected-access
+			finally:
+				drop_symbol_block_tables_if_present(puller_database)
+
+
 def _query_symbol_database(blocks, sync_state, query_database):
 	with PostgresTestDatabase() as db_config:
 		with PullerSymbolDatabase(db_config) as puller_database:
@@ -470,7 +901,7 @@ def _query_symbol_database_during_update(query_database):
 				puller_database.create_tables()
 				puller_database.upsert_sync_state(create_symbol_sync_state(last_synced_height=1, finalized_height=1))
 				puller_database.upsert_blocks([create_symbol_block(1)])
-				puller_database.upsert_receipts_for_height(1, [], 100)
+				puller_database.upsert_receipts_for_height(1, [create_symbol_receipt(1, amount=100)], 100)
 
 				database = PausingAfterSyncStateReadSymbolDatabase(db_config)
 				result = []
@@ -510,6 +941,7 @@ def _update_state_and_blocks(db_config):
 			# Update sync state and reward on another connection, then commit before the paused block read resumes.
 			cursor.execute('UPDATE symbol_sync_state SET status = %s WHERE id = 1', ('unhealthy',))
 			cursor.execute('UPDATE symbol_blocks SET block_reward = %s WHERE height = 1', (999,))
+			cursor.execute('UPDATE symbol_receipts SET amount = %s WHERE height = 1', (999,))
 			puller_database.connection.commit()
 		finally:
 			cursor.close()
