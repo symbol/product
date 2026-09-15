@@ -121,6 +121,8 @@ class SymbolDatabase(DatabaseConnectionPool):
 				if readable_height is None:
 					raise SymbolDataUnavailable('Symbol block data is unavailable')
 				if height > readable_height:
+					# Clean state returns None outside the published range, so HTTP returns 404.
+					# Dirty or repairing state raises because it cannot be safely served, so HTTP returns 503.
 					if _is_non_public_state(sync_state):
 						raise SymbolDataUnavailable('Symbol block data is unavailable')
 					return None
@@ -130,12 +132,6 @@ class SymbolDatabase(DatabaseConnectionPool):
 				result = cursor.fetchone()
 
 				return self._create_block_view(result, finalized_height) if result else None
-
-	def get_block_head_height(self):
-		"""Gets the latest synced height for the block list."""
-
-		sync_state = self.try_get_sync_state()
-		return _get_readable_height(sync_state)
 
 	def get_blocks(self, from_height, limit, sort):
 		"""Gets Symbol blocks using fromHeight cursor pagination."""

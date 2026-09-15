@@ -11,7 +11,6 @@ class SymbolBlockFacade:
 		self.blocks_result = [{'height': 2}]
 		self.block_result = {'height': 2}
 		self.database_available = True
-		self.block_data_available = True
 		self.blocks_query = None
 		self.height = None
 		self.blocks_error = None
@@ -21,14 +20,8 @@ class SymbolBlockFacade:
 	def get_health():
 		return {'isHealthy': True, 'errors': []}
 
-	def is_database_available(self):
-		return self.database_available
-
-	def is_block_data_available(self):
-		return self.database_available and self.block_data_available
-
 	def get_blocks(self, from_height, limit, sort):
-		if not self.database_available or not self.block_data_available:
+		if not self.database_available:
 			return None
 		self.blocks_query = (from_height, limit, sort)
 		if self.blocks_error:
@@ -37,8 +30,8 @@ class SymbolBlockFacade:
 		return self.blocks_result
 
 	def get_block(self, height):
-		if not self.database_available or not self.block_data_available:
-			raise SymbolDataUnavailable()
+		if not self.database_available:
+			return None
 		self.height = height
 		if self.block_error:
 			raise self.block_error
@@ -162,29 +155,17 @@ def test_blocks_rejects_page_size():
 		'Unsupported query parameter: pageSize')
 
 
-def test_blocks_503_when_result_missing():
+def test_blocks_503_unreadable():
 	# Arrange:
 	facade = SymbolBlockFacade()
-	facade.blocks_result = None
+	facade.blocks_error = SymbolDataUnavailable()
 
 	# Act:
 	response = _create_symbol_test_client(facade).get('/api/symbol/blocks')
 
 	# Assert:
 	_assert_symbol_backend_unavailable_response(response)
-
-
-def test_blocks_503_when_data_missing():
-	# Arrange:
-	facade = SymbolBlockFacade()
-	facade.block_data_available = False
-
-	# Act:
-	response = _create_symbol_test_client(facade).get('/api/symbol/blocks')
-
-	# Assert:
-	_assert_symbol_backend_unavailable_response(response)
-	assert facade.blocks_query is None
+	assert (None, 10, SortOrder.DESC) == facade.blocks_query
 
 
 def test_blocks_503_when_db_unavailable():
@@ -224,7 +205,7 @@ def test_block_detail():
 	assert 2 == facade.height
 
 
-def test_block_503_when_db_unavailable():
+def test_block_404_when_db_unavailable():
 	# Arrange:
 	facade = SymbolBlockFacade()
 	facade.database_available = False
@@ -233,21 +214,22 @@ def test_block_503_when_db_unavailable():
 	response = _create_symbol_test_client(facade).get('/api/symbol/block/2')
 
 	# Assert:
-	_assert_symbol_backend_unavailable_response(response)
+	assert 404 == response.status_code
+	assert {'status': 404, 'message': 'Resource not found'} == response.json
 	assert facade.height is None
 
 
-def test_block_503_when_data_missing():
+def test_block_503_unreadable():
 	# Arrange:
 	facade = SymbolBlockFacade()
-	facade.block_data_available = False
+	facade.block_error = SymbolDataUnavailable()
 
 	# Act:
 	response = _create_symbol_test_client(facade).get('/api/symbol/block/2')
 
 	# Assert:
 	_assert_symbol_backend_unavailable_response(response)
-	assert facade.height is None
+	assert 2 == facade.height
 
 
 def test_block_503_when_db_read_fails():

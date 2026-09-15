@@ -49,18 +49,6 @@ class SymbolRestFacade:
 
 		return self.symbol_db is not None
 
-	def is_block_data_available(self):
-		"""Returns whether block-backed Symbol REST data can be queried."""
-
-		if not self.is_database_available():
-			return False
-
-		try:
-			return self.symbol_db.get_block_head_height() is not None
-		except PsycopgError:
-			log.error('Failed to check Symbol block data availability')
-			return False
-
 	def get_health(self):
 		"""Gets health of the Symbol backend core foundation."""
 
@@ -139,9 +127,6 @@ class SymbolRestFacade:
 			return None
 
 		blocks = self.symbol_db.get_blocks(from_height, limit, sort)
-		if blocks is None:
-			return None
-
 		return [block.to_dict(self.native_mosaic_info) for block in blocks]
 
 	def get_block(self, height):

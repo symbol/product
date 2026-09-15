@@ -27,8 +27,8 @@ NATIVE_MOSAIC_INFO = NativeMosaicInfo('72C0212E67A08BCE', 6)
 
 class RecordingHTTPServer(ThreadingHTTPServer):
 	def __init__(self, server_address, request_handler):
-		self.request_paths = []
 		super().__init__(server_address, request_handler)
+		self.request_paths = []
 
 
 @contextmanager
@@ -134,6 +134,17 @@ def _seed_symbol_block_tables(database_config, sync_state, blocks):
 		database.create_tables()
 		database.upsert_sync_state(sync_state)
 		database.upsert_blocks(blocks)
+
+
+def _get_symbol_response(database_config, sync_state, blocks, path):
+	with tempfile.TemporaryDirectory() as temp_directory:
+		db_config_path = _create_config_file(
+			temp_directory,
+			database_config=database_config)
+		app_config_path = _create_app_config(temp_directory, db_config_path)
+		_seed_symbol_block_tables(database_config, sync_state, blocks)
+		with rest_settings_env(app_config_path):
+			return _create_symbol_app().test_client().get(path)
 
 
 def _expected_block_list_item(height, is_finalized, block_reward=None):
@@ -322,106 +333,176 @@ def test_uses_xym_divisibility(symbol_database_config):
 	assert 2.345678 == response.json[0]['blockReward']
 
 
-def test_symbol_block_dirty_visibility(symbol_database_config):
-	# Arrange:
-	with tempfile.TemporaryDirectory() as temp_directory:
-		db_config_path = _create_config_file(
-			temp_directory,
-			database_config=symbol_database_config)
-		app_config_path = _create_app_config(temp_directory, db_config_path)
-		_seed_symbol_block_tables(
-			symbol_database_config,
-			create_symbol_sync_state(
-				last_synced_height=30,
-				finalized_height=10,
-				dirty_state_from_height=20),
-			[create_symbol_block(height) for height in range(10, 25)])
-		with rest_settings_env(app_config_path):
-			client = _create_symbol_app().test_client()
-
-			# Act:
-			crossing_response = client.get('/api/symbol/blocks?fromHeight=15&limit=10&sort=asc')
-			below_boundary_response = client.get('/api/symbol/blocks?fromHeight=19&limit=10&sort=desc')
-			implicit_head_response = client.get('/api/symbol/blocks?limit=10&sort=desc')
-			boundary_detail_response = client.get('/api/symbol/block/20')
+def test_dirty_crossing_ascending(symbol_database_config):
+	# Arrange + Act:
+	response = _get_symbol_response(
+		symbol_database_config,
+		create_symbol_sync_state(last_synced_height=30, finalized_height=10, dirty_state_from_height=20),
+		[create_symbol_block(height) for height in range(10, 25)],
+		'/api/symbol/blocks?fromHeight=15&limit=10&sort=asc')
 
 	# Assert:
-	assert 503 == crossing_response.status_code
-	assert 200 == below_boundary_response.status_code
-	assert [19, 18, 17, 16, 15, 14, 13, 12, 11, 10] == [item['height'] for item in below_boundary_response.json]
-	assert 503 == implicit_head_response.status_code
-	assert 503 == boundary_detail_response.status_code
+	assert 503 == response.status_code
+	assert {'status': 503, 'message': 'Symbol backend data is unavailable'} == response.json
 
 
-def test_symbol_repairing_head_503(symbol_database_config):
-	# Arrange:
-	with tempfile.TemporaryDirectory() as temp_directory:
-		db_config_path = _create_config_file(
-			temp_directory,
-			database_config=symbol_database_config)
-		app_config_path = _create_app_config(temp_directory, db_config_path)
-		_seed_symbol_block_tables(
-			symbol_database_config,
-			create_symbol_sync_state(
-				last_synced_height=1,
-				finalized_height=1,
-				status='repairing'),
-			[create_symbol_block(1)])
-		with rest_settings_env(app_config_path):
-			client = _create_symbol_app().test_client()
-
-			# Act:
-			safe_detail_response = client.get('/api/symbol/block/1')
-			safe_list_response = client.get('/api/symbol/blocks?fromHeight=1&limit=1&sort=asc')
-			crossing_response = client.get('/api/symbol/blocks?fromHeight=1&limit=2&sort=asc')
-			implicit_ascending_response = client.get('/api/symbol/blocks?limit=2&sort=asc')
-			detail_response = client.get('/api/symbol/block/2')
-			ascending_response = client.get('/api/symbol/blocks?fromHeight=2&limit=1&sort=asc')
-			descending_response = client.get('/api/symbol/blocks?fromHeight=2&limit=1&sort=desc')
+def test_dirty_descending_below_boundary(symbol_database_config):
+	# Arrange + Act:
+	response = _get_symbol_response(
+		symbol_database_config,
+		create_symbol_sync_state(last_synced_height=30, finalized_height=10, dirty_state_from_height=20),
+		[create_symbol_block(height) for height in range(10, 25)],
+		'/api/symbol/blocks?fromHeight=19&limit=10&sort=desc')
 
 	# Assert:
-	assert 200 == safe_detail_response.status_code
-	assert _expected_block_detail(1, is_finalized=True) == safe_detail_response.json
-	assert 200 == safe_list_response.status_code
-	assert [_expected_block_list_item(1, is_finalized=True)] == safe_list_response.json
-	expected_unavailable_response = {
-		'status': 503,
-		'message': 'Symbol backend data is unavailable'
-	}
-	assert 503 == crossing_response.status_code
-	assert expected_unavailable_response == crossing_response.json
-	assert 503 == implicit_ascending_response.status_code
-	assert expected_unavailable_response == implicit_ascending_response.json
-	assert 503 == detail_response.status_code
-	assert expected_unavailable_response == detail_response.json
-	assert 503 == ascending_response.status_code
-	assert expected_unavailable_response == ascending_response.json
-	assert 503 == descending_response.status_code
-	assert expected_unavailable_response == descending_response.json
+	assert 200 == response.status_code
+	assert [
+		_expected_block_list_item(height, is_finalized=height <= 10)
+		for height in range(19, 9, -1)
+	] == response.json
 
 
-def test_symbol_block_above_watermark(symbol_database_config):
-	# Arrange:
-	with tempfile.TemporaryDirectory() as temp_directory:
-		db_config_path = _create_config_file(
-			temp_directory,
-			database_config=symbol_database_config)
-		app_config_path = _create_app_config(temp_directory, db_config_path)
-		_seed_symbol_block_tables(
-			symbol_database_config,
-			create_symbol_sync_state(last_synced_height=3, finalized_height=2),
-			[create_symbol_block(height) for height in range(1, 4)])
-		with rest_settings_env(app_config_path):
-			client = _create_symbol_app().test_client()
-
-			# Act:
-			list_response = client.get('/api/symbol/blocks?fromHeight=4&limit=10&sort=asc')
-			detail_response = client.get('/api/symbol/block/4')
+def test_dirty_descending_without_cursor(symbol_database_config):
+	# Arrange + Act:
+	response = _get_symbol_response(
+		symbol_database_config,
+		create_symbol_sync_state(last_synced_height=30, finalized_height=10, dirty_state_from_height=20),
+		[create_symbol_block(height) for height in range(10, 25)],
+		'/api/symbol/blocks?limit=10&sort=desc')
 
 	# Assert:
-	assert 200 == list_response.status_code
-	assert [] == list_response.json
-	assert 404 == detail_response.status_code
+	assert 503 == response.status_code
+	assert {'status': 503, 'message': 'Symbol backend data is unavailable'} == response.json
+
+
+def test_dirty_boundary_detail(symbol_database_config):
+	# Arrange + Act:
+	response = _get_symbol_response(
+		symbol_database_config,
+		create_symbol_sync_state(last_synced_height=30, finalized_height=10, dirty_state_from_height=20),
+		[create_symbol_block(height) for height in range(10, 25)],
+		'/api/symbol/block/20')
+
+	# Assert:
+	assert 503 == response.status_code
+	assert {'status': 503, 'message': 'Symbol backend data is unavailable'} == response.json
+
+
+def test_repairing_safe_detail(symbol_database_config):
+	# Arrange + Act:
+	response = _get_symbol_response(
+		symbol_database_config,
+		create_symbol_sync_state(last_synced_height=1, finalized_height=1, status='repairing'),
+		[create_symbol_block(1)],
+		'/api/symbol/block/1')
+
+	# Assert:
+	assert 200 == response.status_code
+	assert _expected_block_detail(1, is_finalized=True) == response.json
+
+
+def test_repairing_safe_list(symbol_database_config):
+	# Arrange + Act:
+	response = _get_symbol_response(
+		symbol_database_config,
+		create_symbol_sync_state(last_synced_height=1, finalized_height=1, status='repairing'),
+		[create_symbol_block(1)],
+		'/api/symbol/blocks?fromHeight=1&limit=1&sort=asc')
+
+	# Assert:
+	assert 200 == response.status_code
+	assert [_expected_block_list_item(1, is_finalized=True)] == response.json
+
+
+def test_repairing_crossing_head(symbol_database_config):
+	# Arrange + Act:
+	response = _get_symbol_response(
+		symbol_database_config,
+		create_symbol_sync_state(last_synced_height=1, finalized_height=1, status='repairing'),
+		[create_symbol_block(1)],
+		'/api/symbol/blocks?fromHeight=1&limit=2&sort=asc')
+
+	# Assert:
+	assert 503 == response.status_code
+	assert {'status': 503, 'message': 'Symbol backend data is unavailable'} == response.json
+
+
+def test_repairing_asc_without_cursor(symbol_database_config):
+	# Arrange + Act:
+	response = _get_symbol_response(
+		symbol_database_config,
+		create_symbol_sync_state(last_synced_height=1, finalized_height=1, status='repairing'),
+		[create_symbol_block(1)],
+		'/api/symbol/blocks?limit=2&sort=asc')
+
+	# Assert:
+	assert 503 == response.status_code
+	assert {'status': 503, 'message': 'Symbol backend data is unavailable'} == response.json
+
+
+def test_repairing_above_head_detail(symbol_database_config):
+	# Arrange + Act:
+	response = _get_symbol_response(
+		symbol_database_config,
+		create_symbol_sync_state(last_synced_height=1, finalized_height=1, status='repairing'),
+		[create_symbol_block(1)],
+		'/api/symbol/block/2')
+
+	# Assert:
+	assert 503 == response.status_code
+	assert {'status': 503, 'message': 'Symbol backend data is unavailable'} == response.json
+
+
+def test_repairing_ascending_above_head(symbol_database_config):
+	# Arrange + Act:
+	response = _get_symbol_response(
+		symbol_database_config,
+		create_symbol_sync_state(last_synced_height=1, finalized_height=1, status='repairing'),
+		[create_symbol_block(1)],
+		'/api/symbol/blocks?fromHeight=2&limit=1&sort=asc')
+
+	# Assert:
+	assert 503 == response.status_code
+	assert {'status': 503, 'message': 'Symbol backend data is unavailable'} == response.json
+
+
+def test_repairing_descending_above_head(symbol_database_config):
+	# Arrange + Act:
+	response = _get_symbol_response(
+		symbol_database_config,
+		create_symbol_sync_state(last_synced_height=1, finalized_height=1, status='repairing'),
+		[create_symbol_block(1)],
+		'/api/symbol/blocks?fromHeight=2&limit=1&sort=desc')
+
+	# Assert:
+	assert 503 == response.status_code
+	assert {'status': 503, 'message': 'Symbol backend data is unavailable'} == response.json
+
+
+def test_above_watermark_list(symbol_database_config):
+	# Arrange + Act:
+	response = _get_symbol_response(
+		symbol_database_config,
+		create_symbol_sync_state(last_synced_height=3, finalized_height=2),
+		[create_symbol_block(height) for height in range(1, 4)],
+		'/api/symbol/blocks?fromHeight=4&limit=10&sort=asc')
+
+	# Assert:
+	assert 200 == response.status_code
+	assert [] == response.json
+
+
+def test_above_watermark_detail(symbol_database_config):
+	# Arrange + Act:
+	response = _get_symbol_response(
+		symbol_database_config,
+		create_symbol_sync_state(last_synced_height=3, finalized_height=2),
+		[create_symbol_block(height) for height in range(1, 4)],
+		'/api/symbol/block/4')
+
+	# Assert:
+	assert 404 == response.status_code
+	assert {'status': 404, 'message': 'Resource not found'} == response.json
 
 
 def test_symbol_clean_short_asc_page(symbol_database_config):
@@ -731,7 +812,7 @@ def test_symbol_facade_node_error(symbol_database_config):
 	assert str(exception_info.value) == 'Configured Symbol node host is not in SYMBOL_NODE_ALLOWED_HOSTS'
 
 
-def test_native_config_skips_node(symbol_database_config):
+def test_native_setup_list_skips_get(symbol_database_config):
 	# Arrange:
 	with _running_http_server(_create_json_handler()) as node_server:
 		with tempfile.TemporaryDirectory() as temp_directory:
@@ -750,7 +831,7 @@ def test_native_config_skips_node(symbol_database_config):
 			app.config.from_pyfile(app_config_path)
 			app.config['SYMBOL_NODE_ALLOWED_HOSTS'] = f'127.0.0.1:{node_server.server_port}'
 
-			# Act:
+			# Act: setup and block-list conversion use native mosaic info without an HTTP GET to the configured node.
 			facade = setup_symbol_facade(app)
 			setup_symbol_routes(app, facade)
 			response = app.test_client().get('/api/symbol/blocks?limit=1&fromHeight=1&sort=asc')
@@ -758,4 +839,5 @@ def test_native_config_skips_node(symbol_database_config):
 	# Assert:
 	assert 200 == response.status_code
 	assert [_expected_block_list_item(1, is_finalized=True)] == response.json
-	assert not node_server.request_paths
+	# The recording server tracks GET requests only; this proves the configured node received zero GETs.
+	assert [] == node_server.request_paths  # pylint: disable=use-implicit-booleaness-not-comparison

@@ -10,7 +10,7 @@ from rest.db.SymbolDatabase import SortOrder, SymbolDatabase, SymbolDataUnavaila
 from ..test.SymbolBlockTestUtils import create_symbol_block, create_symbol_importance_block, create_symbol_sync_state
 
 
-class SnapshotInterleavingSymbolDatabase(SymbolDatabase):
+class PausingAfterSyncStateReadSymbolDatabase(SymbolDatabase):
 	def __init__(self, db_config):
 		super().__init__(db_config)
 		self.state_read_event = Event()
@@ -19,6 +19,7 @@ class SnapshotInterleavingSymbolDatabase(SymbolDatabase):
 	def _fetch_sync_state(self, cursor):  # pylint: disable=arguments-differ
 		sync_state = super()._fetch_sync_state(cursor)
 		self.state_read_event.set()
+		# Pause after the sync-state SELECT so another connection can update and commit state and reward.
 		if not self.allow_block_read_event.wait(timeout=5):
 			raise RuntimeError('Timed out waiting for snapshot interleaving')
 		return sync_state
@@ -44,53 +45,6 @@ class SymbolDatabaseConnectionTest(TestCase):
 
 		# Assert:
 		self.assertFalse(result)
-
-
-class SymbolDatabaseBlockHeadTest(TestCase):
-	def test_get_block_head_height_returns_none_when_not_synced(self):
-		# Arrange + Act:
-		result = _query_symbol_database(
-			[],
-			None,
-			lambda database: database.get_block_head_height())
-
-		# Assert:
-		self.assertIsNone(result)
-
-	def test_get_block_head_height_returns_none_for_zero_last_synced_height(self):
-		# Arrange + Act:
-		result = _query_symbol_database(
-			[],
-			create_symbol_sync_state(last_synced_height=0, finalized_height=None),
-			lambda database: database.get_block_head_height())
-
-		# Assert:
-		self.assertIsNone(result)
-
-	def test_get_block_head_height_uses_last_synced_height(self):
-		# Arrange + Act:
-		result = _query_symbol_database(
-			[],
-			create_symbol_sync_state(
-				last_synced_height=123,
-				finalized_height=100),
-			lambda database: database.get_block_head_height())
-
-		# Assert:
-		self.assertEqual(123, result)
-
-	def test_get_block_head_height_returns_none_for_unreadable_state(self):
-		# Arrange + Act:
-		result = _query_symbol_database(
-			[],
-			create_symbol_sync_state(
-				last_synced_height=123,
-				finalized_height=100,
-				status='unhealthy'),
-			lambda database: database.get_block_head_height())
-
-		# Assert:
-		self.assertIsNone(result)
 
 
 class SymbolDatabaseBlocksTest(TestCase):  # pylint: disable=too-many-public-methods
@@ -139,19 +93,23 @@ class SymbolDatabaseBlocksTest(TestCase):  # pylint: disable=too-many-public-met
 		# Assert:
 		self.assertIsNone(result)
 
-	def test_get_block_reads_state_and_row_from_same_snapshot(self):
+	def test_get_block_ignores_block_update_committed_after_sync_state_read(self):
 		# Arrange / Act:
 		result = _query_symbol_database_during_update(lambda database: database.get_block(1))
 
 		# Assert:
+		# The block read resumes after the other connection commits, but the first sync-state SELECT fixed the REPEATABLE READ snapshot.
+		# Returning 100 proves this read ignores the committed 999 reward.
 		self.assertEqual(100, result.block_reward)
 
-	def test_get_blocks_reads_state_and_rows_from_same_snapshot(self):
+	def test_get_blocks_ignores_block_update_committed_after_sync_state_read(self):
 		# Arrange / Act:
 		result = _query_symbol_database_during_update(
 			lambda database: database.get_blocks(None, 1, SortOrder.DESC))
 
 		# Assert:
+		# The block read resumes after the other connection commits, but the first sync-state SELECT fixed the REPEATABLE READ snapshot.
+		# Returning 100 proves this read ignores the committed 999 reward.
 		self.assertEqual([100], [block.block_reward for block in result])
 
 	def test_get_block_returns_unavailable_above_repairing_head(self):
@@ -200,27 +158,11 @@ class SymbolDatabaseBlocksTest(TestCase):  # pylint: disable=too-many-public-met
 		# Assert:
 		self.assertEqual([1], [block.height for block in result])
 
-	def test_get_blocks_rejects_repairing_ascending_range_crossing_head(self):
-		# Arrange + Act + Assert:
-		with self.assertRaises(SymbolDataUnavailable):
-			_get_blocks(
-				range(1, 2),
-				create_symbol_sync_state(
-					last_synced_height=1,
-					finalized_height=1,
-					status='repairing'),
-				{'from_height': 1, 'limit': 2, 'sort': SortOrder.ASC})
+	def test_get_blocks_returns_unavailable_for_repairing_ascending_range_crossing_head_with_cursor(self):
+		self._assert_repairing_ascending_range_crossing_head(1)
 
-	def test_get_blocks_rejects_repairing_ascending_range_without_cursor(self):
-		# Arrange + Act + Assert:
-		with self.assertRaises(SymbolDataUnavailable):
-			_get_blocks(
-				range(1, 2),
-				create_symbol_sync_state(
-					last_synced_height=1,
-					finalized_height=1,
-					status='repairing'),
-				{'from_height': None, 'limit': 2, 'sort': SortOrder.ASC})
+	def test_get_blocks_returns_unavailable_for_repairing_ascending_range_crossing_head_without_cursor(self):
+		self._assert_repairing_ascending_range_crossing_head(None)
 
 	def test_get_blocks_keeps_clean_ascending_range_short_at_head(self):
 		# Arrange + Act:
@@ -285,7 +227,15 @@ class SymbolDatabaseBlocksTest(TestCase):  # pylint: disable=too-many-public-met
 					dirty_state_from_height=0),
 				{'from_height': None, 'limit': 10, 'sort': SortOrder.DESC})
 
-	def test_get_blocks_returns_none_when_sync_state_is_missing(self):
+	def test_get_blocks_returns_unavailable_when_last_synced_height_is_zero(self):
+		# Arrange + Act + Assert:
+		with self.assertRaises(SymbolDataUnavailable):
+			_query_symbol_database(
+				[],
+				create_symbol_sync_state(last_synced_height=0, finalized_height=None),
+				lambda database: database.get_blocks(None, 10, SortOrder.DESC))
+
+	def test_get_blocks_returns_unavailable_when_sync_state_is_missing(self):
 		# Arrange + Act + Assert:
 		with self.assertRaises(SymbolDataUnavailable):
 			_query_symbol_database(
@@ -351,7 +301,7 @@ class SymbolDatabaseBlocksTest(TestCase):  # pylint: disable=too-many-public-met
 					finalized_height=2),
 				lambda database: database.get_blocks(0, 1, SortOrder.DESC))
 
-	def test_get_block_returns_none_when_sync_state_is_unreadable(self):
+	def test_get_block_returns_unavailable_when_sync_state_is_unreadable(self):
 		# Arrange + Act + Assert:
 		with self.assertRaises(SymbolDataUnavailable):
 			_query_symbol_database(
@@ -447,6 +397,20 @@ class SymbolDatabaseBlocksTest(TestCase):  # pylint: disable=too-many-public-met
 			bytes.fromhex('86' * 32),
 			result.previous_importance_block_hash)
 
+	def _assert_repairing_ascending_range_crossing_head(self, from_height):
+		# Arrange:
+		sync_state = create_symbol_sync_state(
+			last_synced_height=1,
+			finalized_height=1,
+			status='repairing')
+
+		# Act + Assert:
+		with self.assertRaises(SymbolDataUnavailable):
+			_get_blocks(
+				range(1, 2),
+				sync_state,
+				{'from_height': from_height, 'limit': 2, 'sort': SortOrder.ASC})
+
 
 class SymbolDatabaseSyncStateTest(TestCase):
 	def test_try_get_sync_state_returns_none_when_row_is_missing(self):
@@ -508,7 +472,7 @@ def _query_symbol_database_during_update(query_database):
 				puller_database.upsert_blocks([create_symbol_block(1)])
 				puller_database.upsert_receipts_for_height(1, [], 100)
 
-				database = SnapshotInterleavingSymbolDatabase(db_config)
+				database = PausingAfterSyncStateReadSymbolDatabase(db_config)
 				result = []
 				errors = []
 
@@ -523,7 +487,8 @@ def _query_symbol_database_during_update(query_database):
 				try:
 					if not database.state_read_event.wait(timeout=5):
 						raise AssertionError('Reader did not fetch sync state')
-					_update_state_and_block(db_config)
+					# A separate connection updates sync status and reward, then commits before block reading resumes.
+					_update_state_and_blocks(db_config)
 				finally:
 					database.allow_block_read_event.set()
 					reader_thread.join(timeout=5)
@@ -538,10 +503,11 @@ def _query_symbol_database_during_update(query_database):
 				drop_symbol_block_tables_if_present(puller_database)
 
 
-def _update_state_and_block(db_config):
+def _update_state_and_blocks(db_config):
 	with PullerSymbolDatabase(db_config) as puller_database:
 		cursor = puller_database.connection.cursor()
 		try:
+			# Update sync state and reward on another connection, then commit before the paused block read resumes.
 			cursor.execute('UPDATE symbol_sync_state SET status = %s WHERE id = 1', ('unhealthy',))
 			cursor.execute('UPDATE symbol_blocks SET block_reward = %s WHERE height = 1', (999,))
 			puller_database.connection.commit()

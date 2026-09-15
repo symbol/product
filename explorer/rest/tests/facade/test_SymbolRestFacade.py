@@ -6,7 +6,7 @@ from common.tests.PostgresTestUtils import create_unreachable_db_configuration
 from psycopg2 import Error as PsycopgError
 from psycopg2 import OperationalError
 
-from rest.db.SymbolDatabase import SortOrder
+from rest.db.SymbolDatabase import SortOrder, SymbolDataUnavailable
 from rest.facade.SymbolRestFacade import SymbolRestFacade
 
 from ..test.SymbolHealthTestUtils import create_symbol_health
@@ -25,24 +25,22 @@ class FailingSymbolDatabase:
 		raise OperationalError('database unavailable')
 
 
-class BlockHeadHeightErrorSymbolDatabase:
+class BlockReadErrorSymbolDatabase:
 	@staticmethod
-	def get_block_head_height():
+	def get_block(height):
 		raise PsycopgError()
 
+
+class BlocksReadErrorSymbolDatabase:
 	@staticmethod
 	def get_blocks(_from_height, _limit, _sort):
 		raise PsycopgError()
 
 
-class BlockReadErrorSymbolDatabase:
+class UnreadableBlocksSymbolDatabase:
 	@staticmethod
-	def get_block_head_height():
-		return 10
-
-	@staticmethod
-	def get_block(height):
-		raise PsycopgError()
+	def get_blocks(_from_height, _limit, _sort):
+		raise SymbolDataUnavailable('Symbol block data is unavailable')
 
 
 class HealthySymbolDatabase:
@@ -133,28 +131,20 @@ DEFAULT_BLOCKS = object()
 
 
 class BlockSymbolDatabase:
-	def __init__(self, head_height=6, blocks=DEFAULT_BLOCKS):
-		self.head_height = head_height
+	def __init__(self, blocks=DEFAULT_BLOCKS):
 		self.blocks = [BlockView()] if DEFAULT_BLOCKS is blocks else blocks
 		self.limit = None
 		self.from_height = None
 		self.sort = None
 		self.height = None
 
-	def get_block_head_height(self):
-		return self.head_height
-
 	def get_blocks(self, from_height, limit, sort):
-		if self.head_height is None:
-			return None
 		self.from_height = from_height
 		self.limit = limit
 		self.sort = sort
 		return self.blocks
 
 	def get_block(self, height):
-		if self.head_height is None:
-			return None
 		self.height = height
 		return BlockView() if 1 == height else None
 
@@ -397,33 +387,24 @@ class SymbolRestFacadeTest(TestCase):  # pylint: disable=too-many-public-methods
 
 		# Act + Assert:
 		self.assertFalse(facade.is_database_available())
-		self.assertFalse(facade.is_block_data_available())
-		self.assertIsNone(
-			facade.get_blocks(from_height=None, limit=1, sort=SortOrder.DESC))
-
-	def test_get_blocks_returns_none_when_backend_data_is_unavailable(self):
-		# Arrange:
-		facade = _create_facade_with_database(
-			BlockSymbolDatabase(head_height=None))
-
-		# Act + Assert:
-		self.assertFalse(facade.is_block_data_available())
-		self.assertIsNone(
-			facade.get_blocks(from_height=None, limit=1, sort=SortOrder.DESC))
-
-	def test_get_blocks_returns_none_when_database_returns_none(self):
-		# Arrange:
-		facade = _create_facade_with_database(BlockSymbolDatabase(blocks=None))
-
-		# Act + Assert:
 		self.assertIsNone(
 			facade.get_blocks(from_height=None, limit=1, sort=SortOrder.DESC))
 
 	def test_get_blocks_raises_when_database_read_fails(self):
+		# Arrange:
+		facade = _create_facade_with_database(BlocksReadErrorSymbolDatabase())
+
 		# Act + Assert:
 		with self.assertRaises(PsycopgError):
-			_create_facade_with_database(BlockHeadHeightErrorSymbolDatabase()).get_blocks(1, 10, SortOrder.DESC)
-		self.assertFalse(_create_facade_with_database(BlockHeadHeightErrorSymbolDatabase()).is_block_data_available())
+			facade.get_blocks(1, 10, SortOrder.DESC)
+
+	def test_get_blocks_propagates_unreadable_data(self):
+		# Arrange:
+		facade = _create_facade_with_database(UnreadableBlocksSymbolDatabase())
+
+		# Act + Assert:
+		with self.assertRaises(SymbolDataUnavailable):
+			facade.get_blocks(1, 10, SortOrder.DESC)
 
 	def test_can_get_block_detail(self):
 		# Arrange:
