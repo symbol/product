@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from symbolchain import sc
 from symbolchain.facade.SymbolFacade import SymbolFacade
 from symbollightapi.connector.SymbolConnector import SymbolConnector
@@ -25,6 +27,10 @@ async def run_main(args):
 
 	announce_transaction = connector.announce_transaction
 	if sc.TransactionType.AGGREGATE_BONDED == transaction_type:
+		hash_lock_filepath = Path(args.transaction).with_suffix('.hash_lock.dat')
+		if not hash_lock_filepath.exists():
+			log.warning(_('announce-transaction-missing-hash-lock').format(hash_lock_filepath=hash_lock_filepath))
+
 		announce_transaction = connector.announce_partial_transaction
 
 	await announce_transaction(transaction)

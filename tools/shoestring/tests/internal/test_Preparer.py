@@ -8,7 +8,7 @@ from zipfile import ZipFile
 
 import yaml
 from symbolchain.BufferReader import BufferReader
-from symbolchain.CryptoTypes import PrivateKey
+from symbolchain.CryptoTypes import PrivateKey, PublicKey
 from symbolchain.sc import LinkAction, TransactionType
 from symbolchain.symbol.KeyPair import KeyPair
 from symbollightapi.connector.SymbolConnector import LinkedPublicKeys, VotingPublicKey
@@ -33,12 +33,12 @@ class PreparerTest(unittest.TestCase):
 	# region utils
 
 	@staticmethod
-	def _create_configuration(node_features, api_https=True, light_api=False, imports_config=None):
+	def _create_configuration(node_features, api_https=True, light_api=False, imports_config=None, transaction_signer_public_key=None):
 		return ShoestringConfiguration(
 			'testnet',
 			None,
 			None,
-			TransactionConfiguration(234, 3, 0, 0, 0, 0),
+			TransactionConfiguration(234, 3, 0, 0, 0, 0, transaction_signer_public_key),
 			imports_config if imports_config else ImportsConfiguration(None, None, None),
 			NodeConfiguration(node_features, *([None] * 3), api_https, (NodeFeatures.API in node_features and not light_api), 'CA CN', 'NODE CN'))
 
@@ -933,6 +933,31 @@ class PreparerTest(unittest.TestCase):
 		self._assert_can_prepare_linking_transaction(
 			existing_links,
 			LinkDescriptor(TransactionType.ACCOUNT_KEY_LINK, existing_links.linked_public_key, LinkAction.UNLINK, None))
+
+	def test_prepare_linking_transaction_can_create_aggregate_for_configured_multisig_signer(self):
+		# Arrange:
+		transaction_signer_public_key = PublicKey('F357F779799EAE88B400D45E7C3C232391CFD79EFEAA05BC38868356CBE0A4D3')
+		existing_links = LinkedPublicKeys()
+		existing_links.linked_public_key = self._random_public_key()
+
+		with tempfile.TemporaryDirectory() as output_directory:
+			with Preparer(
+				output_directory,
+				self._create_configuration(NodeFeatures.PEER, transaction_signer_public_key=transaction_signer_public_key)) as preparer:
+				# Act:
+				transaction = preparer.prepare_linking_transaction(transaction_signer_public_key, existing_links, 2222)
+
+				# Assert:
+				expected_size = 168 + 88
+				expected_aggregate_descriptor = AggregateDescriptor(
+					expected_size, 234, 2222 + 3 * 60 * 60 * 1000, transaction_signer_public_key)
+				assert_aggregate_transaction(self, transaction, expected_aggregate_descriptor)
+				self.assertEqual(1, len(transaction.transactions))
+				self.assertEqual(transaction_signer_public_key, PublicKey(transaction.transactions[0].signer_public_key.bytes))
+				assert_link_transaction(
+					self,
+					transaction.transactions[0],
+					LinkDescriptor(TransactionType.ACCOUNT_KEY_LINK, existing_links.linked_public_key, LinkAction.UNLINK, None))
 
 	def test_prepare_linking_transaction_can_create_aggregate_with_vrf_key_unlink(self):
 		# Arrange:
