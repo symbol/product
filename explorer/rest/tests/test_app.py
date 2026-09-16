@@ -212,6 +212,7 @@ DATABASE_CONFIG_FILEPATH="{db_config_path}"
 SYMBOL_NODE_URL="http://localhost:3000"
 SYMBOL_NODE_ALLOWED_HOSTS="localhost:3000"
 SYMBOL_NODE_ALLOW_LOOPBACK="true"
+SYMBOL_NATIVE_MOSAIC_ID="72C0212E67A08BCE"
 ''')
 
 	# Act:
@@ -236,6 +237,7 @@ port = 5432
 	_write_config(rest_config_path, f'''
 REST_CHAIN="symbol"
 DATABASE_CONFIG_FILEPATH="{db_config_path}"
+SYMBOL_NATIVE_MOSAIC_ID="72C0212E67A08BCE"
 ''')
 
 	# Act:
@@ -263,6 +265,7 @@ DATABASE_CONFIG_FILEPATH="{db_config_path}"
 SYMBOL_NODE_URL="http://localhost"
 SYMBOL_NODE_ALLOWED_HOSTS="localhost:80"
 SYMBOL_NODE_ALLOW_LOOPBACK="true"
+SYMBOL_NATIVE_MOSAIC_ID="72C0212E67A08BCE"
 ''')
 
 	# Act:

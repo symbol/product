@@ -1,19 +1,22 @@
 import configparser
 from pathlib import Path
 
+from common.symbol.NativeMosaic import create_native_mosaic_info
 from common.symbol.NodeConfiguration import SymbolNodeConfiguration
 from flask import abort, jsonify, request
 from psycopg2 import Error as PsycopgError
 from zenlog import log
 
-from rest.db.SymbolDatabase import SortOrder
+from rest.db.SymbolDatabase import SortOrder, SymbolDataUnavailable
 from rest.facade.SymbolRestFacade import SymbolRestFacade
 from rest.model.common import DatabaseConfig
 
 BLOCK_LIST_QUERY_PARAMETERS = frozenset(['limit', 'fromHeight', 'sort'])
+XYM_DIVISIBILITY = 6
 
 
 def setup_symbol_facade(app):
+	native_mosaic_info = _create_native_mosaic_info(app.config)
 	config = configparser.ConfigParser()
 	db_path = Path(app.config.get('DATABASE_CONFIG_FILEPATH'))
 
@@ -32,16 +35,23 @@ def setup_symbol_facade(app):
 	node_config = SymbolNodeConfiguration.from_app_config(app.config)
 	node_config.assert_request_allowed(node_config.base_url)
 
-	return SymbolRestFacade(db_params, node_config)
+	return SymbolRestFacade(db_params, node_config, native_mosaic_info)
+
+
+def _create_native_mosaic_info(app_config):
+	try:
+		mosaic_id = app_config['SYMBOL_NATIVE_MOSAIC_ID']
+	except KeyError as error:
+		raise ValueError(f'{error.args[0]} is required') from error
+
+	return create_native_mosaic_info(mosaic_id, XYM_DIVISIBILITY)
 
 
 def setup_symbol_routes(app, symbol_api_facade):
 	def _run_block_query(query_fn, error_log):
-		if not symbol_api_facade.is_block_data_available():
-			return _service_unavailable('Symbol backend data is unavailable'), None
 		try:
 			return None, query_fn()
-		except PsycopgError:
+		except (PsycopgError, SymbolDataUnavailable):
 			log.error(error_log)
 			return _service_unavailable('Symbol backend data is unavailable'), None
 
