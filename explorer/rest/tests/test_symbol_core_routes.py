@@ -333,17 +333,28 @@ def test_uses_xym_divisibility(symbol_database_config):
 	assert 2.345678 == response.json[0]['blockReward']
 
 
-def test_dirty_crossing_ascending(symbol_database_config):
-	# Arrange + Act:
-	response = _get_symbol_response(
-		symbol_database_config,
-		create_symbol_sync_state(last_synced_height=30, finalized_height=10, dirty_state_from_height=20),
-		[create_symbol_block(height) for height in range(10, 25)],
-		'/api/symbol/blocks?fromHeight=15&limit=10&sort=asc')
-
-	# Assert:
+def _assert_request_unavailable(response):
 	assert 503 == response.status_code
 	assert {'status': 503, 'message': 'Symbol backend data is unavailable'} == response.json
+
+
+def _assert_dirty_request_unavailable(database_config, path):
+	# Arrange:
+	sync_state = create_symbol_sync_state(
+		last_synced_height=30,
+		finalized_height=10,
+		dirty_state_from_height=20)
+	blocks = [create_symbol_block(height) for height in range(10, 25)]
+
+	# Act:
+	response = _get_symbol_response(database_config, sync_state, blocks, path)
+
+	# Assert:
+	_assert_request_unavailable(response)
+
+
+def test_dirty_crossing_ascending(symbol_database_config):
+	_assert_dirty_request_unavailable(symbol_database_config, '/api/symbol/blocks?fromHeight=15&limit=10&sort=asc')
 
 
 def test_dirty_descending_below_boundary(symbol_database_config):
@@ -363,29 +374,11 @@ def test_dirty_descending_below_boundary(symbol_database_config):
 
 
 def test_dirty_descending_without_cursor(symbol_database_config):
-	# Arrange + Act:
-	response = _get_symbol_response(
-		symbol_database_config,
-		create_symbol_sync_state(last_synced_height=30, finalized_height=10, dirty_state_from_height=20),
-		[create_symbol_block(height) for height in range(10, 25)],
-		'/api/symbol/blocks?limit=10&sort=desc')
-
-	# Assert:
-	assert 503 == response.status_code
-	assert {'status': 503, 'message': 'Symbol backend data is unavailable'} == response.json
+	_assert_dirty_request_unavailable(symbol_database_config, '/api/symbol/blocks?limit=10&sort=desc')
 
 
 def test_dirty_boundary_detail(symbol_database_config):
-	# Arrange + Act:
-	response = _get_symbol_response(
-		symbol_database_config,
-		create_symbol_sync_state(last_synced_height=30, finalized_height=10, dirty_state_from_height=20),
-		[create_symbol_block(height) for height in range(10, 25)],
-		'/api/symbol/block/20')
-
-	# Assert:
-	assert 503 == response.status_code
-	assert {'status': 503, 'message': 'Symbol backend data is unavailable'} == response.json
+	_assert_dirty_request_unavailable(symbol_database_config, '/api/symbol/block/20')
 
 
 def test_repairing_safe_detail(symbol_database_config):
@@ -414,69 +407,39 @@ def test_repairing_safe_list(symbol_database_config):
 	assert [_expected_block_list_item(1, is_finalized=True)] == response.json
 
 
-def test_repairing_crossing_head(symbol_database_config):
-	# Arrange + Act:
-	response = _get_symbol_response(
-		symbol_database_config,
-		create_symbol_sync_state(last_synced_height=1, finalized_height=1, status='repairing'),
-		[create_symbol_block(1)],
-		'/api/symbol/blocks?fromHeight=1&limit=2&sort=asc')
+def _assert_repairing_request_unavailable(database_config, path):
+	# Arrange:
+	sync_state = create_symbol_sync_state(
+		last_synced_height=1,
+		finalized_height=1,
+		status='repairing')
+	blocks = [create_symbol_block(1)]
+
+	# Act:
+	response = _get_symbol_response(database_config, sync_state, blocks, path)
 
 	# Assert:
-	assert 503 == response.status_code
-	assert {'status': 503, 'message': 'Symbol backend data is unavailable'} == response.json
+	_assert_request_unavailable(response)
+
+
+def test_repairing_crossing_head(symbol_database_config):
+	_assert_repairing_request_unavailable(symbol_database_config, '/api/symbol/blocks?fromHeight=1&limit=2&sort=asc')
 
 
 def test_repairing_asc_without_cursor(symbol_database_config):
-	# Arrange + Act:
-	response = _get_symbol_response(
-		symbol_database_config,
-		create_symbol_sync_state(last_synced_height=1, finalized_height=1, status='repairing'),
-		[create_symbol_block(1)],
-		'/api/symbol/blocks?limit=2&sort=asc')
-
-	# Assert:
-	assert 503 == response.status_code
-	assert {'status': 503, 'message': 'Symbol backend data is unavailable'} == response.json
+	_assert_repairing_request_unavailable(symbol_database_config, '/api/symbol/blocks?limit=2&sort=asc')
 
 
 def test_repairing_above_head_detail(symbol_database_config):
-	# Arrange + Act:
-	response = _get_symbol_response(
-		symbol_database_config,
-		create_symbol_sync_state(last_synced_height=1, finalized_height=1, status='repairing'),
-		[create_symbol_block(1)],
-		'/api/symbol/block/2')
-
-	# Assert:
-	assert 503 == response.status_code
-	assert {'status': 503, 'message': 'Symbol backend data is unavailable'} == response.json
+	_assert_repairing_request_unavailable(symbol_database_config, '/api/symbol/block/2')
 
 
 def test_repairing_ascending_above_head(symbol_database_config):
-	# Arrange + Act:
-	response = _get_symbol_response(
-		symbol_database_config,
-		create_symbol_sync_state(last_synced_height=1, finalized_height=1, status='repairing'),
-		[create_symbol_block(1)],
-		'/api/symbol/blocks?fromHeight=2&limit=1&sort=asc')
-
-	# Assert:
-	assert 503 == response.status_code
-	assert {'status': 503, 'message': 'Symbol backend data is unavailable'} == response.json
+	_assert_repairing_request_unavailable(symbol_database_config, '/api/symbol/blocks?fromHeight=2&limit=1&sort=asc')
 
 
 def test_repairing_descending_above_head(symbol_database_config):
-	# Arrange + Act:
-	response = _get_symbol_response(
-		symbol_database_config,
-		create_symbol_sync_state(last_synced_height=1, finalized_height=1, status='repairing'),
-		[create_symbol_block(1)],
-		'/api/symbol/blocks?fromHeight=2&limit=1&sort=desc')
-
-	# Assert:
-	assert 503 == response.status_code
-	assert {'status': 503, 'message': 'Symbol backend data is unavailable'} == response.json
+	_assert_repairing_request_unavailable(symbol_database_config, '/api/symbol/blocks?fromHeight=2&limit=1&sort=desc')
 
 
 def test_above_watermark_list(symbol_database_config):
@@ -840,4 +803,4 @@ def test_native_setup_list_skips_get(symbol_database_config):
 	assert 200 == response.status_code
 	assert [_expected_block_list_item(1, is_finalized=True)] == response.json
 	# The recording server tracks GET requests only; this proves the configured node received zero GETs.
-	assert [] == node_server.request_paths  # pylint: disable=use-implicit-booleaness-not-comparison
+	assert not node_server.request_paths
