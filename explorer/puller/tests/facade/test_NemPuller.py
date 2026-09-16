@@ -49,6 +49,7 @@ from puller.facade.NemPuller import (
 # region test data
 
 NodeBlockHashes = namedtuple('NodeBlockHashes', ['block_hash', 'previous_block_hash'])
+ChainBlockHashes = namedtuple('ChainBlockHashes', ['height', 'block_hash', 'previous_block_hash'])
 
 NEM_CONNECTOR_RESPONSE_BLOCKS = [
 	Block(
@@ -404,6 +405,42 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 			self.assertEqual(mock_process_transactions.call_count, 1)
 			self.assertEqual(mock_process_transactions.call_args[0][1], NEM_CONNECTOR_RESPONSE_BLOCKS[0].transactions)
 			self.assertEqual(mock_process_transactions.call_args[0][2], NEM_CONNECTOR_RESPONSE_BLOCKS[0].height)
+
+	def test_can_validate_block_chain_within_fetched_page(self):
+		# Arrange:
+		blocks = [
+			ChainBlockHashes(1, '11' * 32, 'unused'),
+			ChainBlockHashes(2, '22' * 32, '11' * 32),
+			ChainBlockHashes(3, '33' * 32, '22' * 32)
+		]
+
+		# Act:
+		last_block_hash = self.puller._validate_block_chain(blocks, None)  # pylint: disable=protected-access
+
+		# Assert:
+		self.assertEqual('33' * 32, last_block_hash)
+
+	def test_rejects_block_chain_without_previous_hash_anchor(self):
+		# Act + Assert:
+		with self.assertRaisesRegex(
+			ValueError,
+			'NEM block chain cannot be validated at height 2: previous block hash is unavailable'
+		):
+			self.puller._validate_block_chain(  # pylint: disable=protected-access
+				[ChainBlockHashes(2, '22' * 32, '11' * 32)],
+				None
+			)
+
+	def test_rejects_parent_hash_mismatch(self):
+			# Act + Assert:
+			with self.assertRaisesRegex(
+				ValueError,
+				f'NEM block chain mismatch at height 2: expected previous hash {"11" * 32}, got {"AA" * 32}'
+			):
+				self.puller._validate_block_chain(  # pylint: disable=protected-access
+					[ChainBlockHashes(2, '22' * 32, 'AA' * 32)],
+					'11' * 32
+				)
 
 	@patch('puller.facade.NemPuller.NemConnector.get_blocks_after')
 	@patch('puller.facade.NemPuller.NemPuller._process_account_batch')

@@ -1059,9 +1059,31 @@ class NemPuller:
 
 		log.info(f'Database thread: {processed} blocks inserted')
 
+	@staticmethod
+	def _validate_block_chain(blocks, previous_block_hash):
+		for block in blocks:
+			if 1 != block.height:
+				if previous_block_hash is None:
+					raise ValueError(
+						f'NEM block chain cannot be validated at height {block.height}: '
+						'previous block hash is unavailable'
+					)
+
+				if block.previous_block_hash.lower() != previous_block_hash.lower():
+					raise ValueError(
+						f'NEM block chain mismatch at height {block.height}: '
+						f'expected previous hash {previous_block_hash.upper()}, '
+						f'got {block.previous_block_hash.upper()}'
+					)
+
+			previous_block_hash = block.block_hash
+
+		return previous_block_hash
+
 	async def sync_blocks(self, db_height, chain_height, queue_size=200, batch_size=50):
 		"""sync blocks from NEM network."""
 
+		previous_block_hash = self.nem_db.get_block_hash(db_height) if 0 < db_height else None
 		block_queue = Queue(maxsize=queue_size)
 
 		# Start database thread FIRST
@@ -1077,6 +1099,7 @@ class NemPuller:
 		try:
 			while chain_height > db_height:
 				blocks = await self._retry_get_blocks_after(db_height)
+				previous_block_hash = self._validate_block_chain(blocks, previous_block_hash)
 
 				for block in blocks:
 					block_queue.put(block)
