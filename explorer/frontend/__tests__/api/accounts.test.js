@@ -1,4 +1,6 @@
 import {
+	accountHarvestedBlockPageResponse,
+	accountHarvestedBlockPageResult,
 	accountInfoResponse,
 	accountInfoResult,
 	accountPageMosaicFilterResponse,
@@ -7,7 +9,7 @@ import {
 	accountPageResult
 } from '../test-utils/accounts';
 import { runApiTest } from '../test-utils/api';
-import { fetchAccountInfo, fetchAccountInfoByPublicKey, fetchAccountPage } from '@/app/api/accounts';
+import { fetchAccountHarvestedBlockPage, fetchAccountInfo, fetchAccountInfoByPublicKey, fetchAccountPage } from '@/app/api/accounts';
 
 jest.mock('@/app/utils/server', () => {
 	return {
@@ -43,6 +45,28 @@ describe('api/accounts', () => {
 
 			// Act + Assert:
 			await runApiTest(fetchAccountPage, searchCriteria, accountPageMosaicFilterResponse, expectedURL, expectedResult);
+		});
+	});
+
+	describe('fetchAccountHarvestedBlockPage', () => {
+		it('fetch harvested block page by account address', async () => {
+			// Arrange:
+			const searchCriteria = {
+				pageNumber: 2,
+				pageSize: 123,
+				address: 'NDHEJKXY6YK7JGRFQT2L7P3O5VMUGR4BWKQNVXXQ'
+			};
+			const expectedURL = 'https://explorer.backend/blocks?limit=123&offset=123&address=NDHEJKXY6YK7JGRFQT2L7P3O5VMUGR4BWKQNVXXQ';
+			const expectedResult = accountHarvestedBlockPageResult;
+
+			// Act + Assert:
+			await runApiTest(
+				fetchAccountHarvestedBlockPage,
+				searchCriteria,
+				accountHarvestedBlockPageResponse,
+				expectedURL,
+				expectedResult
+			);
 		});
 	});
 
