@@ -96,7 +96,7 @@ describe('hooks/useStepTransactionFees', () => {
 	});
 
 	describe('fetch first step', () => {
-		it('estimates the first step fees through the first step wallet controller', async () => {
+		it('estimates the fees through the step wallet controller', async () => {
 			// Arrange:
 			const walletController = createWalletControllerStub();
 			const createTransaction = jest.fn().mockResolvedValue(transactionBundle);
@@ -121,7 +121,7 @@ describe('hooks/useStepTransactionFees', () => {
 	});
 
 	describe('fetch remaining steps', () => {
-		it('estimates the fees of every step after the first one through its own wallet controller', async () => {
+		it('estimates the fees of every later step through its own wallet controller', async () => {
 			// Arrange:
 			const firstStepWalletController = createWalletControllerStub();
 			const secondStepWalletController = createWalletControllerStub();
