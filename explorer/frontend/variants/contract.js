@@ -25,7 +25,7 @@
 
 // Required exports for each API domain.
 export const API_CONTRACT = {
-	accounts: ['fetchAccountPage', 'fetchAccountInfo', 'fetchAccountInfoByPublicKey'],
+	accounts: ['fetchAccountPage', 'fetchAccountInfo', 'fetchAccountInfoByPublicKey', 'fetchAccountHarvestedBlockPage'],
 	blocks: ['fetchBlockPage', 'fetchChainHight', 'fetchChainStatus', 'fetchBlockInfo'],
 	health: ['fetchBackendHealthStatus'],
 	mosaics: ['fetchMosaicPage', 'fetchMosaicInfo'],

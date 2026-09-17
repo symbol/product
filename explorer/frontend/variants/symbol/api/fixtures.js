@@ -3,6 +3,7 @@
 // shared pages render (block cubes, tables, lists, charts) for visual/QA work without any network
 // or node calls. The shapes mirror the mapped nem api output; the values are illustrative only.
 import { SYMBOL_TRANSACTION_GROUP } from '../constants';
+import { REWARD_TYPE } from '@/app/constants';
 
 const harvester = 'NDE6Y5WNLHID5KRYN3AVNQ7U52XDXLQPHLXHV3OE';
 
@@ -44,6 +45,10 @@ export const stubBlocks = [
 		harvester: 'NBAEFLTJG3UWXNXHOLUUPSZIDEHB6VJYLLVW5DFG', totalFee: 0, transactionCount: 0
 	}
 ];
+
+export const stubHarvestedBlocks = stubBlocks
+	.filter(block => block.harvester === harvester)
+	.map(block => ({ height: block.height, timestamp: block.timestamp, amount: block.totalFee, type: REWARD_TYPE.HARVESTING }));
 
 const transfer = (hash, sender, recipient, amount, timestamp, height) => ({
 	type: 'TRANSFER', group: SYMBOL_TRANSACTION_GROUP.CONFIRMED, hash, timestamp, deadline: timestamp, signer: sender, sender, recipient,
