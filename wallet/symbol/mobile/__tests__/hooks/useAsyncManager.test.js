@@ -212,6 +212,46 @@ describe('hooks/useAsyncManager', () => {
 			expect(result.current.data).toEqual(RESOLVED_DATA);
 		});
 
+		it('reports the failure through repeated failures until a call succeeds', async () => {
+			// Arrange:
+			const secondError = new Error('second error');
+			const callback = jest.fn()
+				.mockRejectedValueOnce(new Error(ERROR_MESSAGE))
+				.mockRejectedValueOnce(secondError)
+				.mockResolvedValueOnce(RESOLVED_DATA);
+			const config = createConfig({ callback });
+			const { result } = renderHook(() => useAsyncManager(config));
+
+			// Act: the first call fails
+			await act(async () => {
+				const promise = result.current.call();
+				jest.runAllTimers();
+				await promise.catch(() => {});
+			});
+
+			// Act: the second call fails
+			await act(async () => {
+				const promise = result.current.call();
+				jest.runAllTimers();
+				await promise.catch(() => {});
+			});
+
+			// Assert:
+			expect(result.current.hasFailed).toBe(true);
+			expect(result.current.error).toBe(secondError);
+
+			// Act: the next call succeeds
+			await act(async () => {
+				const promise = result.current.call();
+				jest.runAllTimers();
+				await promise;
+			});
+
+			// Assert:
+			expect(result.current.hasFailed).toBe(false);
+			expect(result.current.data).toEqual(RESOLVED_DATA);
+		});
+
 		it('calls onError callback when provided', async () => {
 			// Arrange:
 			const expectedError = new Error(ERROR_MESSAGE);
