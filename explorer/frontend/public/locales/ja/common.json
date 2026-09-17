@@ -240,6 +240,8 @@
 	"section_holders": "所有者",
 	"section_transfers": "転送",
 	"section_distribution": "分配",
+	"section_history": "履歴",
+	"section_harvested": "ハーベスト済み",
 	"section_linkedKeys": "リンクされたキー",
 	"section_assets": "アセット",
 	"section_nodes": "ノード",
@@ -289,6 +291,7 @@
 	"transactionType_MULTISIG_ACCOUNT_MODIFICATION": "マルチシグアカウント修正",
 	"transactionType_ACCOUNT_KEY_LINK": "アカウントキーリンク",
 	"transactionType_MULTISIG": "マルチシグ",
+	"rewardType_harvesting": "ハーベスト報酬",
 
 	"value_averageFee": "{{value}} XEM",
 	"value_blockGenerationTime": "{{value}}秒",
