@@ -261,6 +261,32 @@ describe('utils/hooks', () => {
 			expect(result.current.isError).toBe(true);
 		});
 
+		it('retries an initial SSR failure with the original filter and first page number', async () => {
+			// Arrange: SSR failed before any client request could save retry parameters.
+			const callback = jest.fn().mockResolvedValue({ data: ['first result'], pageNumber: 1, isLastPage: true });
+			const { result } = renderHook(() => usePagination(callback, [], { query: 'original' }, {
+				initialError: true,
+				initialPage: { data: [], pageNumber: 1, isLastPage: false, nextPageParams: null }
+			}));
+			expect(result.current.isError).toBe(true);
+			expect(callback).not.toHaveBeenCalled();
+
+			// Act:
+			act(() => {
+				result.current.requestNextPage();
+				jest.runOnlyPendingTimers();
+			});
+			await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+			// Assert: retry starts at page one, preserves the filter and clears the failure.
+			expect(callback).toHaveBeenCalledTimes(1);
+			expect(callback).toHaveBeenCalledWith({ pageNumber: 1, query: 'original' });
+			expect(result.current.data).toEqual(['first result']);
+			expect(result.current.pageNumber).toBe(1);
+			expect(result.current.isError).toBe(false);
+			expect(result.current.isLastPage).toBe(true);
+		});
+
 		it('passes a cursor and shared page number metadata to the next request', async () => {
 			// Arrange:
 			const initialPage = {
