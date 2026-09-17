@@ -4,7 +4,7 @@ import { useAsyncManager } from '@/app/hooks';
 /** @typedef {import('@/app/screens/bridge/types/Bridge').BridgeEstimation} BridgeEstimation */
 
 /**
- * The return type of the useEstimation hook.
+ * Return type of the useEstimation hook.
  * @typedef {object} UseEstimationReturnType
  * @property {() => Promise<void>} estimate - Fetches bridge fee estimation.
  * @property {BridgeEstimation[]|null} estimations - Current estimation data.

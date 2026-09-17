@@ -49,7 +49,7 @@ const calculateAvailableBalance = (source, stepFees, transactionFeeTierLevel) =>
 };
 
 /**
- * The return type of the useBridgeAmount hook.
+ * Return type of the useBridgeAmount hook.
  * @typedef {object} UseBridgeAmountReturnType
  * @property {string} amount - Amount input truncated to the source token's decimals.
  * @property {string} amountInput - Raw amount input value.

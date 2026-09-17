@@ -30,7 +30,7 @@ const getBridgesWalletControllers = bridges => {
 };
 
 /**
- * The return type of the useBridge hook.
+ * Return type of the useBridge hook.
  * @typedef {object} UseBridgeReturnType
  * @property {SwapWorkflowManager[]} bridges - Array of available bridge managers.
  * @property {SwapPair[]} pairs - Array of available swap pairs.
