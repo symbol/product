@@ -1,7 +1,7 @@
 /* eslint-disable max-len */
-// Static stub data for the Symbol variant, which has no backend yet. These fixtures let the
-// shared pages render (block cubes, tables, lists, charts) for visual/QA work without any network
-// or node calls. The shapes mirror the mapped nem api output; the values are illustrative only.
+// Static stub data for the Symbol API domains that are not connected yet. These fixtures let the
+// shared pages render (block cubes, tables, lists, charts) for visual/QA work without node calls.
+// The shapes mirror the mapped NEM API output; the values are illustrative only.
 import { SYMBOL_TRANSACTION_GROUP } from '../constants';
 
 const harvester = 'NDE6Y5WNLHID5KRYN3AVNQ7U52XDXLQPHLXHV3OE';

@@ -7,6 +7,8 @@ import * as StatsService from '@/app/api/stats';
 import BlockList, { getServerSideProps } from '@/app/pages/blocks/index';
 import { render, screen } from '@testing-library/react';
 
+const describeNem = process.env.NEXT_PUBLIC_EXPLORER_VARIANT === 'nem' ? describe : describe.skip;
+
 jest.mock('@/app/api/blocks', () => {
 	return {
 		__esModule: true,
@@ -21,7 +23,7 @@ jest.mock('@/app/api/stats', () => {
 	};
 });
 
-describe('BlockList', () => {
+describeNem('BlockList', () => {
 	describe('getServerSideProps', () => {
 		it('fetches block list and statistics', async () => {
 			// Arrange:
@@ -33,6 +35,8 @@ describe('BlockList', () => {
 			const expectedResult = {
 				props: {
 					blocks: blockPageResult.data,
+					blockPage: blockPageResult,
+					isBlockPageError: false,
 					stats: blockStatisticsResult
 				}
 			};
@@ -61,6 +65,15 @@ describe('BlockList', () => {
 			blocksHeight.forEach(height => {
 				expect(screen.getByText(height)).toBeInTheDocument();
 			});
+			expect(screen.getByText(blockPageResult.data[0].height).closest('a')).toHaveAttribute(
+				'href',
+				`/blocks/${blockPageResult.data[0].height}`
+			);
+			expect(screen.getByText(blockPageResult.data[0].harvester).closest('a')).toHaveAttribute(
+				'href',
+				`/accounts/${blockPageResult.data[0].harvester}`
+			);
+			expect(document.querySelector('a[href="/mosaics/nem.xem"]')).toBeInTheDocument();
 		};
 
 		it('renders page with the list of blocks on desktop', () => {
