@@ -10,7 +10,6 @@ class SymbolBlockFacade:  # pylint: disable=too-many-instance-attributes
 	def __init__(self):
 		self.blocks_result = [{'height': 2}]
 		self.block_result = {'height': 2}
-		self.database_available = True
 		self.blocks_query = None
 		self.height = None
 		self.blocks_error = None
@@ -24,8 +23,6 @@ class SymbolBlockFacade:  # pylint: disable=too-many-instance-attributes
 		return {'isHealthy': True, 'errors': []}
 
 	def get_blocks(self, from_height, limit, sort):
-		if not self.database_available:
-			return None
 		self.blocks_query = (from_height, limit, sort)
 		if self.blocks_error:
 			raise self.blocks_error
@@ -33,20 +30,13 @@ class SymbolBlockFacade:  # pylint: disable=too-many-instance-attributes
 		return self.blocks_result
 
 	def get_block(self, height):
-		if not self.database_available:
-			return None
 		self.height = height
 		if self.block_error:
 			raise self.block_error
 
 		return self.block_result
 
-	def is_database_available(self):
-		return self.database_available
-
 	def get_receipts(self, query):
-		if not self.database_available:
-			return None
 		self.receipts_query = query
 		if self.receipts_error:
 			raise self.receipts_error
@@ -183,18 +173,6 @@ def test_blocks_503_unreadable():
 	assert (None, 10, SortOrder.DESC) == facade.blocks_query
 
 
-def test_blocks_503_when_db_unavailable():
-	# Arrange:
-	facade = SymbolBlockFacade()
-	facade.database_available = False
-
-	# Act:
-	response = _create_symbol_test_client(facade).get('/api/symbol/blocks')
-
-	# Assert:
-	_assert_symbol_backend_unavailable_response(response)
-
-
 def test_blocks_503_when_db_read_fails():
 	# Arrange:
 	facade = SymbolBlockFacade()
@@ -218,20 +196,6 @@ def test_block_detail():
 	assert 200 == response.status_code
 	assert {'height': 2} == response.json
 	assert 2 == facade.height
-
-
-def test_block_404_when_db_unavailable():
-	# Arrange:
-	facade = SymbolBlockFacade()
-	facade.database_available = False
-
-	# Act:
-	response = _create_symbol_test_client(facade).get('/api/symbol/block/2')
-
-	# Assert:
-	assert 404 == response.status_code
-	assert {'status': 404, 'message': 'Resource not found'} == response.json
-	assert facade.height is None
 
 
 def test_block_503_unreadable():
@@ -494,24 +458,20 @@ def test_receipts_reject_invalid_values():
 	assert facade.receipts_query is None
 
 
-def test_receipts_map_unavailable():
+def test_receipts_map_db_error_to_503():
 	# Arrange:
 	facade = SymbolBlockFacade()
 	client = _create_symbol_test_client(facade)
 
 	# Act:
-	facade.receipts_result = None
-	none_response = client.get('/api/symbol/receipts')
-	facade.receipts_result = [{'version': 1}]
 	facade.receipts_error = OperationalError('database unavailable')
 	error_response = client.get('/api/symbol/receipts')
 
 	# Assert:
-	_assert_symbol_backend_unavailable_response(none_response)
 	_assert_symbol_backend_unavailable_response(error_response)
 
 
-def test_block_receipts_map_503_or_404():
+def test_block_receipts_missing_404():
 	# Arrange:
 	facade = SymbolBlockFacade()
 	facade.receipts_result = None
@@ -519,11 +479,21 @@ def test_block_receipts_map_503_or_404():
 
 	# Act:
 	not_found_response = client.get('/api/symbol/block/12/receipts')
-	facade.database_available = False
-	unavailable_response = client.get('/api/symbol/block/12/receipts')
 
 	# Assert:
 	_assert_not_found_response(not_found_response)
+
+
+def test_block_receipts_db_error_503():
+	# Arrange:
+	facade = SymbolBlockFacade()
+	facade.receipts_error = OperationalError('database unavailable')
+	client = _create_symbol_test_client(facade)
+
+	# Act:
+	unavailable_response = client.get('/api/symbol/block/12/receipts')
+
+	# Assert:
 	_assert_symbol_backend_unavailable_response(unavailable_response)
 
 

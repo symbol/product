@@ -2,7 +2,6 @@ from unittest import TestCase
 
 from common.symbol.NativeMosaic import NativeMosaicInfo
 from common.symbol.NodeConfiguration import SymbolNodeConfiguration
-from common.tests.PostgresTestUtils import create_unreachable_db_configuration
 from psycopg2 import Error as PsycopgError
 from psycopg2 import OperationalError
 
@@ -159,35 +158,29 @@ class ReceiptSymbolDatabase:
 		return self.receipts
 
 
+class ReceiptReadErrorSymbolDatabase:
+	@staticmethod
+	def get_receipts(_query):
+		raise PsycopgError('database unavailable')
+
+
 def _create_configured_facade():
-	facade = SymbolRestFacade(
-		create_unreachable_db_configuration(),
-		_create_node_config(),
-		NATIVE_MOSAIC_INFO)
-	facade.symbol_db = HealthySymbolDatabase()
-	facade.db_error = None
-	return facade
+	return SymbolRestFacade(HealthySymbolDatabase(), _create_node_config(), NATIVE_MOSAIC_INFO)
 
 
 def _create_facade_with_database(symbol_db):
-	facade = SymbolRestFacade(
-		create_unreachable_db_configuration(),
-		_create_node_config(),
-		NATIVE_MOSAIC_INFO)
-	facade.symbol_db = symbol_db
-	facade.db_error = None
-	return facade
+	return SymbolRestFacade(symbol_db, _create_node_config(), NATIVE_MOSAIC_INFO)
 
 
 class SymbolRestFacadeTest(TestCase):  # pylint: disable=too-many-public-methods
-	def test_rejects_missing_db_config(self):
+	def test_rejects_missing_database(self):
 		# Arrange:
 		node_config = _create_node_config()
 
 		# Act + Assert:
 		with self.assertRaisesRegex(
 			ValueError,
-			'Symbol database configuration is required'
+			'Symbol database is required'
 		):
 			SymbolRestFacade(None, node_config, NATIVE_MOSAIC_INFO)
 
@@ -197,37 +190,12 @@ class SymbolRestFacadeTest(TestCase):  # pylint: disable=too-many-public-methods
 			ValueError,
 			'Symbol node configuration is required'
 		):
-			SymbolRestFacade(create_unreachable_db_configuration(), None, NATIVE_MOSAIC_INFO)
+			SymbolRestFacade(object(), None, NATIVE_MOSAIC_INFO)
 
 	def test_rejects_missing_native_mosaic_info(self):
 		# Arrange + Act + Assert:
 		with self.assertRaisesRegex(ValueError, 'Native mosaic information is required'):
-			SymbolRestFacade(create_unreachable_db_configuration(), _create_node_config(), None)
-
-	def test_reports_configured_when_dependencies_are_available(self):
-		# Arrange:
-		facade = _create_configured_facade()
-
-		# Act + Assert:
-		self.assertTrue(facade.is_configured())
-
-	def test_reports_configured_core_status_when_available(self):
-		# Arrange:
-		facade = _create_configured_facade()
-
-		# Act:
-		result = facade.get_core_status()
-
-		# Assert:
-		self.assertEqual({
-			'isConfigured': True,
-			'node': {
-				'baseUrl': NODE_URL,
-				'allowPrivate': False,
-				'allowLoopback': True,
-				'timeoutSeconds': 10
-			}
-		}, result)
+			SymbolRestFacade(object(), _create_node_config(), None)
 
 	def test_reports_healthy_core_when_dependencies_are_available(self):
 		# Arrange:
@@ -295,38 +263,6 @@ class SymbolRestFacadeTest(TestCase):  # pylint: disable=too-many-public-methods
 			}]
 		), result)
 
-	def test_reports_unconfigured_when_database_initialization_fails(self):
-		# Arrange:
-		node_config = _create_node_config()
-
-		# Act:
-		facade = SymbolRestFacade(
-			db_config=create_unreachable_db_configuration(),
-			node_config=node_config,
-			native_mosaic_info=NATIVE_MOSAIC_INFO)
-
-		# Assert:
-		self.assertFalse(facade.is_configured())
-
-	def test_reports_database_initialization_error(self):
-		# Arrange:
-		node_config = _create_node_config()
-		facade = SymbolRestFacade(
-			db_config=create_unreachable_db_configuration(),
-			node_config=node_config,
-			native_mosaic_info=NATIVE_MOSAIC_INFO)
-
-		# Act:
-		result = facade.get_health()
-
-		# Assert:
-		self.assertEqual(create_symbol_health(
-			errors=[{
-				'type': 'database',
-				'message': 'Symbol database is unavailable'
-			}]
-		), result)
-
 	def test_reports_unhealthy_rollback_state(self):
 		# Arrange:
 		facade = _create_facade_with_database(UnhealthySymbolDatabase())
@@ -388,18 +324,6 @@ class SymbolRestFacadeTest(TestCase):  # pylint: disable=too-many-public-methods
 		self.assertEqual(2, facade.symbol_db.from_height)
 		self.assertEqual(SortOrder.DESC, facade.symbol_db.sort)
 
-	def test_get_blocks_returns_none_when_database_is_unavailable(self):
-		# Arrange:
-		facade = SymbolRestFacade(
-			create_unreachable_db_configuration(),
-			_create_node_config(),
-			NATIVE_MOSAIC_INFO)
-
-		# Act + Assert:
-		self.assertFalse(facade.is_database_available())
-		self.assertIsNone(
-			facade.get_blocks(from_height=None, limit=1, sort=SortOrder.DESC))
-
 	def test_get_blocks_raises_when_database_read_fails(self):
 		# Arrange:
 		facade = _create_facade_with_database(BlocksReadErrorSymbolDatabase())
@@ -429,16 +353,6 @@ class SymbolRestFacadeTest(TestCase):  # pylint: disable=too-many-public-methods
 
 		# Act + Assert:
 		self.assertIsNone(facade.get_block(2))
-
-	def test_get_block_returns_none_when_database_is_unavailable(self):
-		# Arrange:
-		facade = SymbolRestFacade(
-			create_unreachable_db_configuration(),
-			_create_node_config(),
-			NATIVE_MOSAIC_INFO)
-
-		# Act + Assert:
-		self.assertIsNone(facade.get_block(1))
 
 	def test_get_block_raises_when_database_read_fails(self):
 		# Act + Assert:
@@ -484,19 +398,6 @@ class SymbolRestFacadeTest(TestCase):  # pylint: disable=too-many-public-methods
 		}], result)
 		self.assertEqual(ReceiptQuery(10, 0, None, 'balanceChange'), symbol_db.query)
 
-	def test_get_receipts_returns_none_when_database_is_unavailable(self):
-		# Arrange:
-		facade = SymbolRestFacade(
-			create_unreachable_db_configuration(),
-			_create_node_config(),
-			NATIVE_MOSAIC_INFO)
-
-		# Act:
-		result = facade.get_receipts(ReceiptQuery())
-
-		# Assert:
-		self.assertIsNone(result)
-
 	def test_get_receipts_returns_none_when_database_has_no_block(self):
 		# Arrange:
 		facade = _create_facade_with_database(ReceiptSymbolDatabase(None))
@@ -506,3 +407,11 @@ class SymbolRestFacadeTest(TestCase):  # pylint: disable=too-many-public-methods
 
 		# Assert:
 		self.assertIsNone(result)
+
+	def test_receipts_db_error_propagates(self):
+		# Arrange:
+		facade = _create_facade_with_database(ReceiptReadErrorSymbolDatabase())
+
+		# Act + Assert:
+		with self.assertRaises(PsycopgError):
+			facade.get_receipts(ReceiptQuery())
