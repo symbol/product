@@ -21,9 +21,9 @@ const TICKER = 'XYM';
 // Screen Text
 
 const SCREEN_TEXT = {
-	textTitle: 's_multisig_accountList_title',
-	textDescription: 's_multisig_accountList_description',
-	textDefaultAccountName: 's_multisig_defaultAccountName',
+	textTitle: 'screen_multisig_accountList_title_intro',
+	textDescription: 'screen_multisig_accountList_description_intro',
+	textDefaultAccountName: 'screen_multisig_title_defaultAccountName',
 	textEmptyList: 'message_emptyList',
 	buttonAddAccount: 'account-add'
 };

@@ -18,17 +18,17 @@ const CREATED_MOSAICS_GROUP = 'createdMosaics';
 export const getCreatedMosaicListFilterConfig = () => [
 	{
 		name: 'revokable',
-		title: $t('s_createdMosaicList_filter_revokable'),
+		title: $t('screen_mosaic_chip_revokable'),
 		type: FilterType.BOOLEAN
 	},
 	{
 		name: 'supplyMutable',
-		title: $t('s_createdMosaicList_filter_supplyMutable'),
+		title: $t('screen_mosaic_chip_supplyMutable'),
 		type: FilterType.BOOLEAN
 	},
 	{
 		name: 'expired',
-		title: $t('s_createdMosaicList_filter_expired'),
+		title: $t('screen_mosaic_chip_expired'),
 		type: FilterType.BOOLEAN
 	}
 ];

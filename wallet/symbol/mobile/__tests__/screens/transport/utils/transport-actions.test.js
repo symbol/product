@@ -14,10 +14,10 @@ const AMOUNT = '1000000';
 // Screen Text
 
 const SCREEN_TEXT = {
-	titleAddContact: 's_transportRequest_action_addContact_title',
-	titleFillTransferForm: 's_transportRequest_action_fillTransferForm_title',
-	descriptionFillTransferForm: 's_transportRequest_action_fillTransferForm_description',
-	descriptionFillTransferFormOnlyAddress: 's_transportRequest_action_fillTransferFormOnlyAddress_description'
+	titleAddContact: 'screen_transport_item_addContact_title',
+	titleFillTransferForm: 'screen_transport_item_fillTransferForm_title',
+	descriptionFillTransferForm: 'screen_transport_item_fillTransferForm_description',
+	descriptionFillTransferFormOnlyAddress: 'screen_transport_item_fillTransferFormOnlyAddress_description'
 };
 
 // Account Fixtures

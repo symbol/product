@@ -67,10 +67,10 @@ export const CreatedMosaicList = () => {
 	const renderListHeader = useCallback(() => (
 		<Spacer>
 			<StyledText type="title">
-				{$t('s_createdMosaicList_title')}
+				{$t('screen_mosaic_createdList_title_intro')}
 			</StyledText>
 			<StyledText type="body">
-				{$t('s_createdMosaicList_description')}
+				{$t('screen_mosaic_createdList_description_intro')}
 			</StyledText>
 		</Spacer>
 	), []);

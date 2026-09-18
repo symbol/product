@@ -90,10 +90,10 @@ export const usePasscodeManager = ({ mode, onSuccess }) => {
 				const remainingTimeMs = result.lockoutUntil - Date.now();
 				const remainingMinutes = Math.ceil(remainingTimeMs / 60000);
 				errorMessage = remainingMinutes > 1
-					? $t('s_passcode_error_maxAttempts_time_minutes', { count: remainingMinutes })
-					: $t('s_passcode_error_maxAttempts_time_minute');
+					? $t('component_passcode_errorMessage_maxAttemptsMinutes', { count: remainingMinutes })
+					: $t('component_passcode_errorMessage_maxAttemptsMinute');
 			} else {
-				errorMessage = $t('s_passcode_error_incorrect');
+				errorMessage = $t('component_passcode_errorMessage_incorrect');
 			}
 
 			showError(errorMessage);
@@ -139,7 +139,7 @@ export const usePasscodeManager = ({ mode, onSuccess }) => {
 			return;
 		}
 
-		showError($t('s_passcode_error_mismatch'));
+		showError($t('component_passcode_errorMessage_mismatch'));
 		setStep(PasscodeStep.ENTER);
 		passcodeInput.clear();
 		passcodeConfirmInput.clear();

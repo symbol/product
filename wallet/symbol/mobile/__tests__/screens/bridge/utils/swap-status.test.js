@@ -5,11 +5,11 @@ import { mockLocalization } from '__tests__/mock-helpers';
 // Screen Text
 
 const SCREEN_TEXT = {
-	textStatusUnprocessed: 's_bridge_history_status_unprocessed',
-	textStatusProcessing: 's_bridge_history_status_processing',
-	textStatusSent: 's_bridge_history_status_sent',
-	textStatusCompleted: 's_bridge_history_status_completed',
-	textStatusFailed: 's_bridge_history_status_failed'
+	textStatusUnprocessed: 'screen_bridge_history_status_unprocessed',
+	textStatusProcessing: 'screen_bridge_history_status_processing',
+	textStatusSent: 'screen_bridge_history_status_sent',
+	textStatusCompleted: 'screen_bridge_history_status_completed',
+	textStatusFailed: 'screen_bridge_history_status_failed'
 };
 
 // Icon Names

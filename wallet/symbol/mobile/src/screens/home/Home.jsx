@@ -94,7 +94,7 @@ export const Home = () => {
 						{isUpdatesWidgetsVisible && (
 							<Stack gap="m">
 								<StyledText type="title">
-									{$t('s_home_updates')}
+									{$t('screen_home_title_updates')}
 								</StyledText>
 								<WidgetAnimatedWrapper isVisible={historyWidget.isVisible}>
 									<HistoryWidget {...historyWidget.props} />
@@ -105,7 +105,7 @@ export const Home = () => {
 						<Stack gap="m">
 							<WidgetAnimatedWrapper isVisible>
 								<StyledText type="title">
-									{$t('s_home_widgets')}
+									{$t('screen_home_title_widgets')}
 								</StyledText>
 							</WidgetAnimatedWrapper>
 							<WidgetAnimatedWrapper isVisible={addressBookWidget.isVisible}>

@@ -41,7 +41,7 @@ export const TransactionConfirmationDialog = ({
 	return (
 		<DialogBox
 			type="confirm"
-			title={title || $t('form_transfer_confirm_title')}
+			title={title || $t('component_transactionConfirmationDialog_title_confirmTransfer')}
 			text={text}
 			isVisible={isVisible}
 			onSuccess={onConfirm}

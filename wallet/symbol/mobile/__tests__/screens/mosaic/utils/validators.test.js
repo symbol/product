@@ -5,7 +5,7 @@ import { AccountFixtureBuilder } from '__fixtures__/local/AccountFixtureBuilder'
 
 const CHAIN_NAME = 'symbol';
 const NETWORK_IDENTIFIER = 'testnet';
-const ERROR_REVOKE_SENDER = 'validation_error_mosaic_revoke_sender';
+const ERROR_REVOKE_SENDER = 'validationError_mosaicRevokeSender';
 
 // Account Fixtures
 

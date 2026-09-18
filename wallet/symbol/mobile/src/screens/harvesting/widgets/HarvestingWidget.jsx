@@ -18,7 +18,7 @@ export const HarvestingWidget = ({ summaryViewModel, statusViewModel, ticker }) 
 
 	return (
 		<WidgetContainer 
-			title={$t('s_actions_harvesting_title')} 
+			title={$t('screen_harvesting_widget_title')} 
 			backgroundColor={Colors.Components.summary.background}
 			onHeaderPress={handleHeaderPress} 
 		>

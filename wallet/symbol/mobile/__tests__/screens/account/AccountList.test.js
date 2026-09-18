@@ -36,13 +36,13 @@ const TICKER = 'XYM';
 
 const SCREEN_TEXT = {
 	// Card Titles
-	textCardTitleAccount: 'c_accountCard_title_account',
-	textCardTitleBalance: 'c_accountCard_title_balance',
-	textCardTitleAddress: 'c_accountCard_title_address',
+	textCardTitleAccount: 'fieldTitle_account',
+	textCardTitleBalance: 'fieldTitle_balance',
+	textCardTitleAddress: 'fieldTitle_address',
 
 	// Dialog
-	dialogRemoveImportedTitle: 's_accountList_confirm_removeImported_title',
-	dialogRemoveImportedBody: 's_accountList_confirm_removeImported_body',
+	dialogRemoveImportedTitle: 'screen_account_dialog_removeImportedAccount_title',
+	dialogRemoveImportedBody: 'screen_account_dialog_removeImportedAccount_description',
 
 	// Button TestIDs
 	testIdButtonHide: 'icon-hide',

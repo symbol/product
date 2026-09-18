@@ -19,56 +19,56 @@ const VALID_SUPPLY = '100';
 
 const SCREEN_TEXT = {
 	// Section titles and descriptions
-	textMosaicTitle: 's_mosaicCreation_mosaic_title',
-	textMosaicDescription: 's_mosaicCreation_mosaic_description',
-	textCreatorTitle: 's_mosaicCreation_sender_title',
-	textQuantityTitle: 's_mosaicCreation_quantity_title',
-	textQuantityDescription: 's_mosaicCreation_quantity_description',
-	textDurationTitle: 's_mosaicCreation_duration_title',
-	textDurationDescription: 's_mosaicCreation_duration_description',
-	textFlagsTitle: 's_mosaicCreation_flags_title',
+	textMosaicTitle: 'screen_mosaic_title_mosaic',
+	textMosaicDescription: 'screen_mosaic_description_mosaic',
+	textCreatorTitle: 'screen_mosaic_title_sender',
+	textQuantityTitle: 'screen_mosaic_title_quantity',
+	textQuantityDescription: 'screen_mosaic_description_quantity',
+	textDurationTitle: 'screen_mosaic_title_duration',
+	textDurationDescription: 'screen_mosaic_description_duration',
+	textFlagsTitle: 'screen_mosaic_title_flags',
 
 	// Flag section titles and descriptions
-	textSupplyMutableTitle: 's_mosaicCreation_supplyMutable_title',
-	textSupplyMutableDescription: 's_mosaicCreation_supplyMutable_description',
-	textTransferableTitle: 's_mosaicCreation_transferable_title',
-	textTransferableDescription: 's_mosaicCreation_transferable_description',
-	textRestrictableTitle: 's_mosaicCreation_restrictable_title',
-	textRestrictableDescription: 's_mosaicCreation_restrictable_description',
-	textRevokableTitle: 's_mosaicCreation_revokable_title',
-	textRevokableDescription: 's_mosaicCreation_revokable_description',
+	textSupplyMutableTitle: 'screen_mosaic_title_supplyMutable',
+	textSupplyMutableDescription: 'screen_mosaic_description_supplyMutable',
+	textTransferableTitle: 'screen_mosaic_title_transferable',
+	textTransferableDescription: 'screen_mosaic_description_transferable',
+	textRestrictableTitle: 'screen_mosaic_title_restrictable',
+	textRestrictableDescription: 'screen_mosaic_description_restrictable',
+	textRevokableTitle: 'screen_mosaic_title_revokable',
+	textRevokableDescription: 'screen_mosaic_description_revokable',
 
 	// Duration / expiration summary
-	textExpirationPermanent: 's_mosaicCreation_expiration_permanent',
-	textDurationBlocksChip: 's_mosaicCreation_durationUnit_blocksChip',
-	textSmallestSendWhole: 's_mosaicCreation_smallestSend_whole',
+	textExpirationPermanent: 'screen_mosaic_description_expirationPermanent',
+	textDurationBlocksChip: 'screen_mosaic_chip_durationBlocks',
+	textSmallestSendWhole: 'screen_mosaic_label_wholeMosaicsOnly',
 
 	// Buttons
 	buttonSend: 'button_send',
 	buttonConfirm: 'button_confirm',
 
 	// Checkboxes
-	checkboxExpires: 's_mosaicCreation_duration_expiresCheckbox',
-	checkboxSupplyMutable: 's_mosaicCreation_supplyMutable_checkbox',
-	checkboxTransferable: 's_mosaicCreation_transferable_checkbox',
-	checkboxRestrictable: 's_mosaicCreation_restrictable_checkbox',
-	checkboxRevokable: 's_mosaicCreation_revokable_checkbox',
+	checkboxExpires: 'screen_mosaic_checkbox_expires',
+	checkboxSupplyMutable: 'screen_mosaic_checkbox_supplyMutable',
+	checkboxTransferable: 'screen_mosaic_checkbox_transferable',
+	checkboxRestrictable: 'screen_mosaic_checkbox_restrictable',
+	checkboxRevokable: 'screen_mosaic_checkbox_revokable',
 
 	// Input labels (accessibility)
-	inputTotalSupplyLabel: 's_mosaicCreation_totalSupply_label',
-	inputDurationBlocksLabel: 's_mosaicCreation_duration_blocksInputLabel',
+	inputTotalSupplyLabel: 'screen_mosaic_label_totalSupply',
+	inputDurationBlocksLabel: 'screen_mosaic_inputLabel_durationBlocks',
 
 	// Confirmation dialog
-	textConfirmDialogTitle: 's_mosaicCreation_confirm_title',
+	textConfirmDialogTitle: 'screen_mosaic_create_dialog_confirm_title',
 
 	// Validation errors
-	errorFieldRequired: 'validation_error_field_required',
-	errorSupplyLow: 'validation_error_mosaic_supply_low',
-	errorSupplyHigh: 'validation_error_mosaic_supply_high',
-	errorSupplyWhole: 'validation_error_mosaic_supply_whole',
-	errorSupplyDecimals: 'validation_error_mosaic_supply_decimals',
-	errorDurationLow: 'validation_error_mosaic_duration_low',
-	errorDurationHigh: 'validation_error_mosaic_duration_high'
+	errorFieldRequired: 'validationError_fieldRequired',
+	errorSupplyLow: 'validationError_mosaicSupplyLow',
+	errorSupplyHigh: 'validationError_mosaicSupplyHigh',
+	errorSupplyWhole: 'validationError_mosaicSupplyWhole',
+	errorSupplyDecimals: 'validationError_mosaicSupplyDecimals',
+	errorDurationLow: 'validationError_mosaicDurationLow',
+	errorDurationHigh: 'validationError_mosaicDurationHigh'
 };
 
 // Grouped error texts used to assert the absence of validation errors on valid input

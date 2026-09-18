@@ -19,12 +19,12 @@ import { isTokenExpired } from '@/app/utils';
 export const getAssetsFilterConfig = () => [
 	{
 		name: 'expired',
-		title: $t('s_assets_filter_expired'),
+		title: $t('screen_assets_chip_expired'),
 		type: FilterType.BOOLEAN
 	},
 	{
 		name: 'created',
-		title: $t('s_assets_filter_created'),
+		title: $t('screen_assets_chip_created'),
 		type: FilterType.BOOLEAN
 	}
 ];
@@ -98,10 +98,10 @@ export const buildAssetsSections = ({
 		let title;
 
 		if (index === 0)
-			title = $t('s_assets_section_currentAccount');
+			title = $t('screen_assets_title_currentAccount');
 
 		if (index === 1)
-			title = $t('s_assets_section_bridgeAccounts');
+			title = $t('screen_assets_title_bridgeAccounts');
 
 		sections.push(createSection(
 			currentAccount.name,
@@ -126,7 +126,7 @@ export const buildAssetsSections = ({
 		let title = null;
 
 		if (index === 0)
-			title = $t('s_assets_section_multisigAccounts');
+			title = $t('screen_assets_title_multisigAccounts');
 
 		multisigAccounts.forEach(multisigAccount => {
 			const assets = multisigAccount.tokens ?? multisigAccount.mosaics ?? [];

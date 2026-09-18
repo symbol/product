@@ -24,10 +24,10 @@ const createUniqueValidator = (walletAccounts, addressBook, getField, ignoredCon
 
 		return getField(contact).toLowerCase() === lowerTrimmedValue;
 	}))
-		return 'validation_error_already_exists';
+		return 'validationError_alreadyExists';
 
 	if (walletAccounts.some(account => getField(account).toLowerCase() === lowerTrimmedValue))
-		return 'validation_error_already_exists';
+		return 'validationError_alreadyExists';
 };
 
 /**

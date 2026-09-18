@@ -27,36 +27,36 @@ const EXCESSIVE_AMOUNT = '5000';
 
 const SCREEN_TEXT = {
 	// Section titles and descriptions
-	textScreenTitle: 'screen_RevokeMosaic',
-	textDescription: 's_revoke_description',
-	textFromTitle: 's_send_from_title',
+	textScreenTitle: 'screenTitle_RevokeMosaic',
+	textDescription: 'screen_mosaic_revoke_description_intro',
+	textFromTitle: 'screen_mosaic_revoke_title_from',
 	textMosaicIdTitle: 'fieldTitle_mosaicId',
 	textDivisibilityTitle: 'fieldTitle_divisibility',
 	textSupplyTitle: 'fieldTitle_supply',
 
 	// Input labels (accessibility)
-	inputAmountLabel: 'input_amount',
+	inputAmountLabel: 'inputLabel_amount',
 	inputAccountLabel: 'fieldTitle_account',
 
 	// Picker icons (accessibility)
 	iconHolderPicker: 'chevron-down',
 
 	// Fee selector
-	textFeeSpeedTitle: 'input_feeSpeed',
+	textFeeSpeedTitle: 'inputLabel_feeSpeed',
 
 	// Buttons
 	buttonSend: 'button_send',
 	buttonConfirm: 'button_confirm',
 
 	// Confirmation dialog
-	textConfirmDialogTitle: 'form_transfer_confirm_title',
+	textConfirmDialogTitle: 'component_transactionConfirmationDialog_title_confirmTransfer',
 
 	// Validation errors
-	errorBalanceNotEnough: 'validation_error_balance_not_enough',
-	errorRevokeSender: 'validation_error_mosaic_revoke_sender',
+	errorBalanceNotEnough: 'validationError_balanceNotEnough',
+	errorRevokeSender: 'validationError_mosaicRevokeSender',
 
 	// Alerts
-	textNoHoldersAlert: 's_revoke_alert_noHolders_description'
+	textNoHoldersAlert: 'screen_mosaic_revoke_alert_noHolders_description'
 };
 
 // Account Fixtures

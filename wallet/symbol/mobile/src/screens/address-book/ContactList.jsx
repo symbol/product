@@ -43,10 +43,10 @@ export const ContactList = () => {
 					<Stack gap="l">
 						<Stack gap="none">
 							<StyledText type="title">
-								{$t('s_addressBook_title')}
+								{$t('screen_addressBook_title_intro')}
 							</StyledText>
 							<StyledText type="body">
-								{$t('s_addressBook_description')}
+								{$t('screen_addressBook_description_intro')}
 							</StyledText>
 						</Stack>
 						<TabSelector

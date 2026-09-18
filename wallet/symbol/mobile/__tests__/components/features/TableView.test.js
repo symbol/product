@@ -170,7 +170,7 @@ describe('components/TableView', () => {
 					}
 				},
 				expected: {
-					visibleTexts: ['Active', 'data_true']
+					visibleTexts: ['Active', 'fieldValue_true']
 				}
 			},
 			{
@@ -183,7 +183,7 @@ describe('components/TableView', () => {
 					}
 				},
 				expected: {
-					visibleTexts: ['Active', 'data_false']
+					visibleTexts: ['Active', 'fieldValue_false']
 				}
 			},
 			{
@@ -196,7 +196,7 @@ describe('components/TableView', () => {
 					}
 				},
 				expected: {
-					visibleTexts: ['Message', 'data_encrypted']
+					visibleTexts: ['Message', 'fieldValue_encrypted']
 				}
 			},
 			{
@@ -209,7 +209,7 @@ describe('components/TableView', () => {
 					}
 				},
 				expected: {
-					visibleTexts: ['Message', 'data_unencrypted']
+					visibleTexts: ['Message', 'fieldValue_unencrypted']
 				}
 			},
 			{
@@ -222,7 +222,7 @@ describe('components/TableView', () => {
 					}
 				},
 				expected: {
-					visibleTexts: ['Status', 'data_pending']
+					visibleTexts: ['Status', 'fieldValue_pending']
 				}
 			},
 			{
@@ -236,7 +236,7 @@ describe('components/TableView', () => {
 					}
 				},
 				expected: {
-					visibleTexts: ['Type', 'transactionDescriptor_symbol_16724']
+					visibleTexts: ['Type', 'transactionType_transfer']
 				}
 			},
 			{
@@ -250,7 +250,7 @@ describe('components/TableView', () => {
 					}
 				},
 				expected: {
-					visibleTexts: ['Type', 'transactionDescriptor_ethereum_1']
+					visibleTexts: ['Type', 'transactionType_transfer']
 				}
 			}
 		];

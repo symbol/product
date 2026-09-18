@@ -10,11 +10,11 @@ describe('components/NavigationMenu', () => {
 	runScreenNavigationTest(NavigationMenu, {
 		navigationActions: [
 			{
-				buttonText: 'navigation_home',
+				buttonText: 'component_navigationMenu_tab_home',
 				actionName: 'goToHome'
 			},
 			{
-				buttonText: 'navigation_history',
+				buttonText: 'component_navigationMenu_tab_history',
 				actionName: 'goToHistory'
 			}
 		]

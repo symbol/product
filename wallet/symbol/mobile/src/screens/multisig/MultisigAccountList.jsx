@@ -62,10 +62,10 @@ export const MultisigAccountList = () => {
 			<Screen.Upper>
 				<Spacer>
 					<StyledText type="title">
-						{$t('s_multisig_accountList_title')}
+						{$t('screen_multisig_accountList_title_intro')}
 					</StyledText>
 					<StyledText type="body">
-						{$t('s_multisig_accountList_description')}
+						{$t('screen_multisig_accountList_description_intro')}
 					</StyledText>
 				</Spacer>
 				<Spacer>
@@ -77,7 +77,7 @@ export const MultisigAccountList = () => {
 								<AccountListItem
 									key={accountInfo.address}
 									address={accountInfo.address}
-									name={accountDisplayData.name ?? $t('s_multisig_defaultAccountName')}
+									name={accountDisplayData.name ?? $t('screen_multisig_title_defaultAccountName')}
 									amount={accountInfo.balance}
 									ticker={ticker}
 									imageId={accountDisplayData.imageId}

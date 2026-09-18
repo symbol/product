@@ -34,36 +34,36 @@ const EMPTY_SUPPLY = '';
 
 const SCREEN_TEXT = {
 	// Section titles and descriptions
-	textScreenTitle: 'screen_ModifyMosaic',
-	textDescription: 's_modifyMosaic_description',
+	textScreenTitle: 'screenTitle_ModifyMosaic',
+	textDescription: 'screen_mosaic_modify_description_intro',
 
 	// Mosaic info card field titles
 	textMosaicIdTitle: 'fieldTitle_mosaicId',
 	textDivisibilityTitle: 'fieldTitle_divisibility',
 
 	// Supply delta summary
-	textCurrentSupplyLabel: 's_modifyMosaic_currentSupply_label',
-	textDeltaLabel: 's_modifyMosaic_delta_label',
+	textCurrentSupplyLabel: 'screen_mosaic_label_currentSupply',
+	textDeltaLabel: 'screen_mosaic_label_delta',
 
 	// Input labels (accessibility)
-	inputNewSupplyLabel: 's_modifyMosaic_newSupply_label',
+	inputNewSupplyLabel: 'screen_mosaic_label_newSupply',
 
 	// Fee selector
-	textFeeSpeedTitle: 'input_feeSpeed',
+	textFeeSpeedTitle: 'inputLabel_feeSpeed',
 
 	// Buttons
 	buttonSend: 'button_send',
 	buttonConfirm: 'button_confirm',
 
 	// Confirmation dialog
-	textConfirmDialogTitle: 's_modifyMosaic_confirm_title',
+	textConfirmDialogTitle: 'screen_mosaic_modify_dialog_confirm_title',
 
 	// Validation errors
-	errorSupplyUnchanged: 'validation_error_mosaic_supply_unchanged',
-	errorSupplyHigh: 'validation_error_mosaic_supply_high',
-	errorSupplyWhole: 'validation_error_mosaic_supply_whole',
-	errorSupplyDecimals: 'validation_error_mosaic_supply_decimals',
-	errorFieldRequired: 'validation_error_field_required'
+	errorSupplyUnchanged: 'validationError_mosaicSupplyUnchanged',
+	errorSupplyHigh: 'validationError_mosaicSupplyHigh',
+	errorSupplyWhole: 'validationError_mosaicSupplyWhole',
+	errorSupplyDecimals: 'validationError_mosaicSupplyDecimals',
+	errorFieldRequired: 'validationError_fieldRequired'
 };
 
 const validationErrors = [

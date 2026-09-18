@@ -40,9 +40,9 @@ const BALANCE_ZERO = '0';
 
 const SCREEN_TEXT = {
 	// Card titles
-	textFieldAccount: 'c_accountCard_title_account',
-	textFieldBalance: 'c_accountCard_title_balance',
-	textFieldAddress: 'c_accountCard_title_address',
+	textFieldAccount: 'fieldTitle_account',
+	textFieldBalance: 'fieldTitle_balance',
+	textFieldAddress: 'fieldTitle_address',
 
 	// Buttons
 	buttonActivate: 'button_activateAccount'

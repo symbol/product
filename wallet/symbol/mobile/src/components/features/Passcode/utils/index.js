@@ -11,12 +11,12 @@ import { $t } from '@/app/localization';
  */
 export const getPasscodeTitle = (mode, step) => {
 	if (mode === PasscodeMode.CREATE && step === PasscodeStep.ENTER)
-		return $t('s_passcode_createEnter_title');
+		return $t('component_passcode_title_createEnter');
 
 	if (mode === PasscodeMode.CREATE && step === PasscodeStep.CONFIRM)
-		return $t('s_passcode_createConfirm_title');
+		return $t('component_passcode_title_createConfirm');
     
-	return $t('s_passcode_verify_title');
+	return $t('component_passcode_title_verify');
 };
 
 /**
@@ -33,13 +33,13 @@ export const getPasscodeSubtitle = ({ errorMessage, mode, step, remainingAttempt
 		return errorMessage;
 	
 	if (mode === PasscodeMode.CREATE && step === PasscodeStep.ENTER)
-		return $t('s_passcode_createEnter_description');
+		return $t('component_passcode_description_createEnter');
 
 	if (mode === PasscodeMode.CREATE && step === PasscodeStep.CONFIRM) 
-		return $t('s_passcode_createConfirm_description');
+		return $t('component_passcode_description_createConfirm');
     
 	if (remainingAttempts && remainingAttempts < passcodeManager.getMaxAttempts())
-		return $t('s_passcode_verify_attempt_description', { attempts: remainingAttempts });
+		return $t('component_passcode_description_verifyAttempt', { attempts: remainingAttempts });
 	
 	return '';
 };

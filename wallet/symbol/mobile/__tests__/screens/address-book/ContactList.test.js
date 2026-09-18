@@ -19,10 +19,10 @@ const NETWORK_IDENTIFIER = 'testnet';
 // Screen Text
 
 const SCREEN_TEXT = {
-	textTitle: 's_addressBook_title',
-	textDescription: 's_addressBook_description',
-	textTabWhitelist: 's_addressBook_tab_whitelist',
-	textTabBlacklist: 's_addressBook_tab_blacklist',
+	textTitle: 'screen_addressBook_title_intro',
+	textDescription: 'screen_addressBook_description_intro',
+	textTabWhitelist: 'screen_addressBook_tab_whitelist',
+	textTabBlacklist: 'screen_addressBook_tab_blacklist',
 	textEmptyList: 'message_emptyList',
 	buttonAddContact: 'plus'
 };

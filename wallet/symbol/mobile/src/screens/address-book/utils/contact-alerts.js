@@ -18,14 +18,14 @@ export const createContactListTypeAlertData = listType => {
 	if (listType === ContactListType.WHITELIST) {
 		return {
 			isVisible: true,
-			text: $t('s_addressBook_manageContact_alert_whitelist'),
+			text: $t('screen_addressBook_manageContact_alert_whitelist_description'),
 			variant: 'success'
 		};
 	}
 
 	return {
 		isVisible: true,
-		text: $t('s_addressBook_manageContact_alert_blacklist'),
+		text: $t('screen_addressBook_manageContact_alert_blacklist_description'),
 		variant: 'danger'
 	};
 };
@@ -44,7 +44,7 @@ export const createBlacklistAlertData = isBlackListed => {
 
 	return {
 		isVisible: true,
-		text: $t('s_addressBook_contactDetails_alert_blacklist'),
+		text: $t('screen_addressBook_contactDetails_alert_blacklist_description'),
 		variant: 'danger'
 	};
 };
