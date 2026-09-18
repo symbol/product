@@ -2,6 +2,7 @@ from collections import namedtuple
 from enum import Enum
 
 from common.symbol.NativeMosaic import normalize_mosaic_id
+from zenlog import log
 
 from rest.model.symbol.Block import SymbolBlockView
 
@@ -124,6 +125,31 @@ class SymbolDatabase(DatabaseConnectionPool):
 
 		super().__init__(db_config)
 		self.native_mosaic_info = native_mosaic_info
+		self._is_closed = False
+
+	def __enter__(self):
+		"""Returns this database while its connection pool is managed by a context."""
+
+		return self
+
+	def __exit__(self, exception_type, _exception, _traceback):
+		"""Closes the pool, preserving an active exception if ordinary cleanup fails."""
+
+		try:
+			self.close()
+		except Exception:  # pylint: disable=broad-exception-caught
+			if exception_type is None:
+				raise
+			log.error('Failed to close Symbol database after an operation failure')
+
+	def close(self):
+		"""Closes all connections owned by this Symbol database."""
+
+		if self._is_closed:
+			return
+
+		self._pool.closeall()
+		self._is_closed = True
 
 	def check_connection(self):
 		"""Checks whether the configured Symbol database is reachable and initialized."""

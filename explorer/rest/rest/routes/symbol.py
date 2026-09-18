@@ -9,7 +9,7 @@ from psycopg2 import Error as PsycopgError
 from symbolchain.symbol.Network import Address, Network
 from zenlog import log
 
-from rest.db.SymbolDatabase import ReceiptQuery, SortOrder, SymbolDataUnavailable
+from rest.db.SymbolDatabase import ReceiptQuery, SortOrder, SymbolDatabase, SymbolDataUnavailable
 from rest.facade.SymbolRestFacade import SymbolRestFacade
 from rest.model.common import DatabaseConfig
 
@@ -42,7 +42,9 @@ def setup_symbol_facade(app):
 	node_config = SymbolNodeConfiguration.from_app_config(app.config)
 	node_config.assert_request_allowed(node_config.base_url)
 
-	return SymbolRestFacade(db_params, node_config, native_mosaic_info)
+	symbol_db = SymbolDatabase(db_params, native_mosaic_info)
+	app.extensions['symbol_database'] = symbol_db
+	return SymbolRestFacade(symbol_db, node_config, native_mosaic_info)
 
 
 def _create_native_mosaic_info(app_config):
@@ -90,9 +92,6 @@ def setup_symbol_routes(app, symbol_api_facade):
 		if error:
 			return error
 
-		if result is None:
-			return _service_unavailable('Symbol backend data is unavailable')
-
 		return jsonify(result)
 
 	@app.route('/api/symbol/block/<height>')
@@ -108,7 +107,7 @@ def setup_symbol_routes(app, symbol_api_facade):
 		if error:
 			return error
 
-		if not result:
+		if result is None:
 			abort(404)
 
 		return jsonify(result)
@@ -126,9 +125,6 @@ def setup_symbol_routes(app, symbol_api_facade):
 			'Failed to get Symbol receipts')
 		if error:
 			return error
-
-		if result is None:
-			return _service_unavailable('Symbol backend data is unavailable')
 
 		return jsonify(result)
 
@@ -148,9 +144,7 @@ def setup_symbol_routes(app, symbol_api_facade):
 			return error
 
 		if result is None:
-			if symbol_api_facade.is_database_available():
-				abort(404)
-			return _service_unavailable('Symbol backend data is unavailable')
+			abort(404)
 
 		return jsonify(result)
 
