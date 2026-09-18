@@ -135,6 +135,7 @@ def setup_nem_routes(app, nem_api_facade):  # pylint: disable=too-many-statement
 			limit = int(request.args.get('limit', 10))
 			offset = int(request.args.get('offset', 0))
 			sort = request.args.get('sort', 'DESC')
+			rewarded_only = request.args.get('rewardedOnly', 'false').lower() == 'true'
 
 			_validate_pagination(limit, offset)
 			if sort.upper() not in ['ASC', 'DESC']:
@@ -146,7 +147,8 @@ def setup_nem_routes(app, nem_api_facade):  # pylint: disable=too-many-statement
 		return jsonify(nem_api_facade.get_account_harvests(
 			address=address,
 			pagination=Pagination(limit, offset),
-			sort=sort
+			sort=sort,
+			rewarded_only=rewarded_only
 		))
 
 	@app.route('/api/nem/account/statistics')

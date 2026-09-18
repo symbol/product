@@ -372,6 +372,37 @@ def test_api_nem_account_harvests_applies_pagination(client):  # pylint: disable
 	_assert_get_api_nem_account_harvests(client, 200, [], address=HARVESTER_ADDRESS, limit=10, offset=1)
 
 
+def test_api_nem_account_harvests_rewarded_only_keeps_paid_blocks(client):
+	# pylint: disable=redefined-outer-name, invalid-name
+
+	_assert_get_api_nem_account_harvests(
+		client,
+		200,
+		[EXPECTED_HARVEST_VIEW_1.to_dict()],
+		address=HARVESTER_ADDRESS,
+		rewardedOnly='true')
+
+
+def test_api_nem_account_harvests_rewarded_only_drops_empty_blocks(client):
+	# pylint: disable=redefined-outer-name, invalid-name
+
+	# Assert: block 2 carried no fee, so its harvester earned nothing from it
+	_assert_get_api_nem_account_harvests(
+		client,
+		200,
+		[],
+		address='NBFWZ4IVRHEIBRCGHLYDS62FSFTBM3VDFA7E6LSQ',
+		rewardedOnly='true')
+
+
+def test_api_nem_account_harvests_keeps_empty_blocks_by_default(client):  # pylint: disable=redefined-outer-name, invalid-name
+	_assert_get_api_nem_account_harvests(
+		client,
+		200,
+		[EXPECTED_HARVEST_VIEW_2.to_dict()],
+		address='NBFWZ4IVRHEIBRCGHLYDS62FSFTBM3VDFA7E6LSQ')
+
+
 def test_api_nem_account_harvests_missing_address(client):  # pylint: disable=redefined-outer-name, invalid-name
 	# Act:
 	response = client.get('/api/nem/account/harvests')

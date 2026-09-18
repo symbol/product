@@ -399,9 +399,11 @@ class NemDatabaseTest(DatabaseTestBase):  # pylint: disable=too-many-public-meth
 
 	# region account harvests
 
-	def _assert_can_query_account_harvests(self, address, pagination, sort, expected_harvests):
+	def _assert_can_query_account_harvests(self, address, pagination, sort, expected_harvests, rewarded_only=False):
+		# pylint: disable=too-many-arguments,too-many-positional-arguments
+
 		# Act:
-		harvest_views = self.nem_db.get_account_harvests(Address(address), pagination, sort)
+		harvest_views = self.nem_db.get_account_harvests(Address(address), pagination, sort, rewarded_only)
 
 		# Assert:
 		self.assertEqual(expected_harvests, harvest_views)
@@ -435,6 +437,23 @@ class NemDatabaseTest(DatabaseTestBase):  # pylint: disable=too-many-public-meth
 			Pagination(10, 1),
 			'desc',
 			[])
+
+	def test_rewarded_only_drops_empty_blocks(self):
+		# Assert: block 2 carried no fee, so its harvester earned nothing from it
+		self._assert_can_query_account_harvests(
+			'NBFWZ4IVRHEIBRCGHLYDS62FSFTBM3VDFA7E6LSQ',
+			Pagination(10, 0),
+			'desc',
+			[],
+			True)
+
+	def test_rewarded_only_keeps_paid_blocks(self):
+		self._assert_can_query_account_harvests(
+			'NANEMOABLAGR72AZ2RV3V4ZHDCXW25XQ73O7OBT5',
+			Pagination(10, 0),
+			'desc',
+			[HARVEST_VIEWS[0]],
+			True)
 
 	# endregion
 

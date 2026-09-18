@@ -119,7 +119,7 @@ BLOCKS = [
 	Block(
 		2,
 		'2015-03-29 20:34:19',
-		201000000,
+		0,
 		3,
 		80000000000000,
 		'1DD9D4D7B6AF603D29C082F9AA4E123F07D18154DDBCD7DDC6702491B854C5E4',
@@ -486,7 +486,7 @@ BLOCK_VIEWS = [
 		signer='NANEMOABLAGR72AZ2RV3V4ZHDCXW25XQ73O7OBT5')
 	),
 	BlockView(*BLOCKS[1]._replace(
-		total_fee=201.0,
+		total_fee=0.0,
 		beneficiary='NBFWZ4IVRHEIBRCGHLYDS62FSFTBM3VDFA7E6LSQ',
 		signer='NALICEPFLZQRZGPRIJTMJOCPWDNECXTNNG7QLSG3')
 	)
@@ -494,7 +494,7 @@ BLOCK_VIEWS = [
 
 HARVEST_VIEWS = [
 	HarvestView(height=BLOCKS[0].height, timestamp=BLOCKS[0].timestamp, amount=102.0),
-	HarvestView(height=BLOCKS[1].height, timestamp=BLOCKS[1].timestamp, amount=201.0)
+	HarvestView(height=BLOCKS[1].height, timestamp=BLOCKS[1].timestamp, amount=0.0)
 ]
 
 ACCOUNT_VIEWS = [
