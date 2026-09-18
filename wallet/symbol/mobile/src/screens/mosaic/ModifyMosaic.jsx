@@ -13,7 +13,6 @@ import { useStandardTransactionWorkflow } from '@/app/components/templates/Trans
 import {
 	useDebounce,
 	useInit,
-	useTokenDisplayData,
 	useTransactionFees,
 	useValidation,
 	useWalletController,
@@ -24,7 +23,7 @@ import { Router } from '@/app/router/Router';
 import { SupplyDeltaView } from '@/app/screens/mosaic/components';
 import { useModifyMosaicFormState, useModifyMosaicTransaction, useMosaicInfo } from '@/app/screens/mosaic/hooks';
 import { calculateSupplyDelta, validateMosaicSupply, validateSupplyChanged } from '@/app/screens/mosaic/utils';
-import { validateRequired } from '@/app/utils';
+import { createTokenDisplayData, validateRequired } from '@/app/utils';
 import React, { useEffect, useMemo } from 'react';
 import Animated, { FadeInDown, FadeOut } from 'react-native-reanimated';
 
@@ -45,6 +44,7 @@ export const ModifyMosaic = props => {
 		isWalletReady,
 		isNetworkConnectionReady,
 		chainName,
+		networkIdentifier,
 		ticker
 	} = walletController;
 	const currentAccountInfo = walletController.currentAccountInfo || {};
@@ -58,7 +58,7 @@ export const ModifyMosaic = props => {
 		reset: resetMosaic
 	} = useMosaicInfo({ walletController, mosaicId });
 	const mosaicToken = mosaic ? { id: mosaic.id, name: mosaic.names?.[0] } : { id: mosaicId };
-	const { name: mosaicName, imageId: mosaicImageId } = useTokenDisplayData(mosaicToken, chainName);
+	const { nameText: mosaicNameText, imageId: mosaicImageId } = createTokenDisplayData(mosaicToken, chainName, networkIdentifier);
 
 	// Form state
 	const {
@@ -149,7 +149,7 @@ export const ModifyMosaic = props => {
 						<StyledText type="body">{$t('s_modifyMosaic_description')}</StyledText>
 					</Stack>
 					{!!mosaic && (
-						<TokenInfoCard name={mosaicName} imageId={mosaicImageId}>
+						<TokenInfoCard name={mosaicNameText} imageId={mosaicImageId}>
 							<Field title={$t('fieldTitle_mosaicId')}>
 								<StyledText>{mosaic.id}</StyledText>
 							</Field>

@@ -219,7 +219,7 @@ export const createAmountBreakdownDisplayData = (transaction, options) => {
 
 			const changeType = getAmountChangeType(tokenChange.amount);
 			const amountText = formatAmountWithSign(tokenChange.amount, changeType);
-			const label = tokenDisplayData.ticker ?? tokenDisplayData.name;
+			const label = tokenDisplayData.tickerText;
 
 			amounts.push({
 				tokenId,

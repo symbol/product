@@ -1,7 +1,6 @@
 import { IdentityRow } from '../IdentityRow';
 import { Amount, StyledText, TokenAvatar } from '@/app/components';
 import { Sizes } from '@/app/styles';
-import { formatTokenNameText } from '@/app/utils';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 
@@ -11,9 +10,8 @@ const DEFAULT_SIZE = 'm';
  * TokenBalanceRow component. Token row with an amount: avatar next to the "name • ticker" label
  * and the amount below it.
  * @param {object} props - Component props.
- * @param {string} props.name - Resolved token name.
+ * @param {string} props.name - Display name text.
  * @param {string|null} [props.amount] - Token amount. Hidden when undefined or empty; null shows the placeholder.
- * @param {string} [props.ticker] - Token ticker symbol, appended to the name label.
  * @param {string} [props.imageId] - Known token image identifier.
  * @param {React.ReactNode} [props.accessory] - Optional element rendered on the right side of the row.
  * @param {React.ReactNode} [props.titleCaption] - Optional element rendered at the end of the name line.
@@ -21,8 +19,7 @@ const DEFAULT_SIZE = 'm';
  * @param {React.ReactNode} [props.children] - Optional extra content rendered below the amount.
  * @returns {React.ReactNode} TokenBalanceRow component.
  */
-export const TokenBalanceRow = ({ name, amount, ticker, imageId, accessory, titleCaption, size = DEFAULT_SIZE, children }) => {
-	const nameText = formatTokenNameText(name, ticker);
+export const TokenBalanceRow = ({ name, amount, imageId, accessory, titleCaption, size = DEFAULT_SIZE, children }) => {
 	const isAmountVisible = amount !== undefined && amount !== '';
 	const amountSize = size === 'l' ? 'l' : 'm';
 	const amountStyle = size === 'l' ? styles.amountLarge : null;
@@ -32,13 +29,13 @@ export const TokenBalanceRow = ({ name, amount, ticker, imageId, accessory, titl
 			{titleCaption ? (
 				<View style={styles.titleRow}>
 					<StyledText>
-						{nameText}
+						{name}
 					</StyledText>
 					{titleCaption}
 				</View>
 			) : (
 				<StyledText>
-					{nameText}
+					{name}
 				</StyledText>
 			)}
 			{isAmountVisible && (

@@ -1,14 +1,13 @@
 /** @typedef {import('@/app/types/Wallet').WalletController} WalletController */
-/** @typedef {import('@/app/types/Account').WalletAccount} WalletAccount */
-/** @typedef {import('@/app/types/Token').Token} Token */
 /** @typedef {import('@/app/types/Token').TokenInfo} TokenInfo */
 /** @typedef {import('@/app/types/Network').NetworkIdentifier} NetworkIdentifier */
 /** @typedef {import('@/app/types/Network').ChainName} ChainName */
 /** @typedef {import('wallet-common-core/src/lib/bridge/SwapWorkflowManager').SwapWorkflowManager} SwapWorkflowManager */
+/** @typedef {import('wallet-common-core/src/lib/bridge/SwapWorkflowManager').PairManager} SwapStep */
 /** @typedef {import('wallet-common-core/src/types/Bridge').BridgeEstimation} BridgeEstimation */
 /** @typedef {import('wallet-common-core/src/types/Bridge').BridgeRequest} BridgeRequest */
 /** @typedef {import('wallet-common-core/src/types/Bridge').BridgeError} BridgeError */
-/** @typedef {import('@/app/types/ColorVariants').SemanticRoleColorVariants} SemanticRoleColorVariants */
+/** @typedef {import('@/app/types/Transaction').TransactionFeeTiers} TransactionFeeTiers */
 
 /**
  * Bridge operation mode.
@@ -16,15 +15,17 @@
  */
 
 /**
- * Token with balance information for swap operations.
+ * Token.
  * @typedef {object} SwapToken
  * @property {string} id - Token identifier.
  * @property {string} name - Token name.
- * @property {string} amount - Token balance amount in relative units.
+ * @property {number} divisibility - Token divisibility.
+ * @property {string} amount - Amount in relative units.
+ * @property {string} [ticker] - Token ticker.
  */
 
 /**
- * Represents one side of a swap operation (source or target).
+ * Side of a swap operation - target or the source.
  * @typedef {object} SwapSide
  * @property {SwapToken} token - The token being swapped with balance.
  * @property {ChainName} chainName - The name of the blockchain network (e.g., 'symbol').
@@ -33,7 +34,7 @@
  */
 
 /**
- * Represents a pair of swappable tokens from different chains.
+ * Swappable pair of tokens and their swap workflow manager.
  * @typedef {object} SwapPair
  * @property {SwapSide} source - The source swap side.
  * @property {SwapSide} target - The target swap side.
@@ -41,63 +42,7 @@
  */
 
 /**
- * Account information for bridge operations.
- * @typedef {object} BridgeAccountDisplayData
- * @property {ChainName} chainName - The blockchain name.
- * @property {string} ticker - The native currency ticker symbol.
- * @property {boolean} isActive - Whether the account is active.
- * @property {WalletAccount|null} account - The account object or null if not active.
- * @property {number} balance - The account balance.
- * @property {Token[]} tokens - The account token balances.
- * @property {boolean} isAccountInfoLoaded - Whether account info has been fetched.
- */
-
-/**
- * Account data for swap side details display.
- * @typedef {object} ResolvedAccountData
- * @property {string} address - The account address.
- * @property {string|null} name - The account name.
- * @property {string|null} imageId - The account avatar image identifier.
- */
-
-/**
- * Token data for swap side details display.
- * @typedef {object} ResolvedTokenData
- * @property {string} name - The token name.
- * @property {string|null} ticker - The token ticker symbol.
- * @property {string|null} imageId - The token image identifier.
- * @property {string|null} amount - The token amount.
- */
-
-/**
- * Formatted data for displaying swap source or target details.
- * @typedef {object} SwapSideDisplayData
- * @property {ChainName} chainName - The blockchain name.
- * @property {NetworkIdentifier} networkIdentifier - The network identifier.
- * @property {ResolvedTokenData} token - Token information.
- * @property {ResolvedAccountData|null} account - Account information.
- * @property {string|null} transactionHash - The transaction hash.
- */
-
-/**
- * Swap status display information.
- * @typedef {object} SwapStatusDisplayData
- * @property {SemanticRoleColorVariants} variant - Status color variant (e.g., 'warning', 'success', 'danger').
- * @property {string} iconName - Status icon name.
- * @property {string} text - Status text label.
- */
-
-/**
- * Swap status caption display information.
- * @typedef {object} SwapStatusCaptionDisplayData
- * @property {boolean} isVisible - Whether the caption should be visible.
- * @property {string|null} text - Caption text.
- * @property {string|null} textStyle - Text style identifier.
- * @property {string|null} textType - Text type identifier.
- */
-
-/**
- * Bridge pairs loading status.
+ * Loading status.
  * @typedef {'not_configured' | 'loading' | 'ok' | 'no_pairs' | 'disabled' | 'error'} BridgePairsStatusType
  */
 
@@ -112,17 +57,60 @@
  */
 
 /**
- * Swap side type identifier.
+ * Type of the swap side.
  * @typedef {'source' | 'target'} SwapSideTypeValue
  */
 
-/** Bridge operation mode constants. */
+/**
+ * Fees info for a swap step.
+ * @typedef {object} StepFees
+ * @property {number} stepIndex - Zero-based step index.
+ * @property {ChainName} chainName - Chain the step's transactions run on.
+ * @property {NetworkIdentifier} networkIdentifier - Network identifier of that chain.
+ * @property {TransactionFeeTiers[]|null} feeTiers - Fee tier list or null until fetched.
+ */
+
+/**
+ * Metadata for a one swap side.
+ * @typedef {object} WorkflowMetaSide
+ * @property {TokenInfo|null} tokenInfo - Token info for this side.
+ * @property {ChainName} chainName - Blockchain name.
+ * @property {NetworkIdentifier} networkIdentifier - Network identifier.
+ */
+
+/**
+ * Metadata for a single-step workflow.
+ * @typedef {object} SingleWorkflowMeta
+ * @property {WorkflowMetaSide} source - Source side metadata.
+ * @property {WorkflowMetaSide} target - Target side metadata.
+ */
+
+/**
+ * Metadata for a single step in a two-step workflow.
+ * @typedef {object} WorkflowStepMeta
+ * @property {WorkflowMetaSide} source - Source side metadata.
+ * @property {WorkflowMetaSide} target - Target side metadata.
+ */
+
+/**
+ * Metadata for a dual-step workflow.
+ * @typedef {object} DualWorkflowMeta
+ * @property {WorkflowStepMeta} step1 - First step metadata.
+ * @property {WorkflowStepMeta} step2 - Second step metadata.
+ */
+
+/**
+ * Severity level for price impact.
+ * @typedef {'none' | 'warning' | 'critical'} PriceImpactSeverityValue
+ */
+
+/** Operation modes for bridge. */
 export const BridgeMode = {
 	WRAP: /** @type {BridgeModeType} */ ('wrap'),
 	UNWRAP: /** @type {BridgeModeType} */ ('unwrap')
 };
 
-/** Bridge pairs loading status constants. */
+/** Loading status. */
 export const BridgePairsStatus = {
 	NOT_CONFIGURED: /** @type {BridgePairsStatusType} */ ('not_configured'),
 	LOADING: /** @type {BridgePairsStatusType} */ ('loading'),
@@ -132,14 +120,14 @@ export const BridgePairsStatus = {
 	ERROR: /** @type {BridgePairsStatusType} */ ('error')
 };
 
-/** Bridge request confirmation status constants. */
+/** Confirmation status of bridge requests. */
 export const BridgeRequestStatus = {
 	UNCONFIRMED: /** @type {BridgeRequestStatusType} */ ('unconfirmed'),
 	CONFIRMED: /** @type {BridgeRequestStatusType} */ ('confirmed'),
 	ERROR: /** @type {BridgeRequestStatusType} */ ('error')
 };
 
-/** Bridge payout processing status constants. */
+/** Payout processing status. */
 export const BridgePayoutStatus = {
 	UNPROCESSED: /** @type {BridgePayoutStatusType} */ (0),
 	SENT: /** @type {BridgePayoutStatusType} */ (1),
@@ -147,7 +135,7 @@ export const BridgePayoutStatus = {
 	FAILED: /** @type {BridgePayoutStatusType} */ (3)
 };
 
-/** Swap side type constants. */
+/** Swap side type. */
 export const SwapSideType = {
 	SOURCE: /** @type {SwapSideTypeValue} */ ('source'),
 	TARGET: /** @type {SwapSideTypeValue} */ ('target')
