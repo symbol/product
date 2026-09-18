@@ -1,3 +1,4 @@
+# pylint: disable=too-many-lines
 import os
 import tempfile
 from pathlib import Path
@@ -14,6 +15,7 @@ from ...test.DatabaseTestUtils import (
 	ACCOUNT_STATISTIC_VIEW,
 	ACCOUNT_VIEWS,
 	BLOCK_VIEWS,
+	HARVEST_VIEWS,
 	MOSAIC_RICH_LIST_VIEWS,
 	MOSAIC_VIEWS,
 	NAMESPACE_VIEWS,
@@ -37,6 +39,10 @@ DATABASE_CONFIG_INI = 'db_config.ini'
 EXPECTED_BLOCK_VIEW_1 = BLOCK_VIEWS[0]
 
 EXPECTED_BLOCK_VIEW_2 = BLOCK_VIEWS[1]
+
+EXPECTED_HARVEST_VIEW_1 = HARVEST_VIEWS[0]
+
+EXPECTED_HARVEST_VIEW_2 = HARVEST_VIEWS[1]
 
 
 # endregion
@@ -91,7 +97,25 @@ def client(app):  # pylint: disable=redefined-outer-name
 # endregion
 
 
-PAGINATED_MODULES = ['blocks', 'accounts', 'namespaces', 'mosaics', 'mosaic/rich/list', 'transactions']
+HARVESTER_ADDRESS = 'NANEMOABLAGR72AZ2RV3V4ZHDCXW25XQ73O7OBT5'
+
+PAGINATED_MODULES = {
+	'blocks': {},
+	'accounts': {},
+	'namespaces': {},
+	'mosaics': {},
+	'mosaic/rich/list': {},
+	'transactions': {},
+	'account/harvests': {'address': HARVESTER_ADDRESS}
+}
+
+SORTED_MODULES = {
+	'blocks': {},
+	'namespaces': {},
+	'mosaics': {},
+	'transactions': {},
+	'account/harvests': {'address': HARVESTER_ADDRESS}
+}
 
 
 def _assert_status_code_and_headers(response, expected_status_code):
@@ -113,9 +137,9 @@ def _get_api(client, endpoint, **query_params):  # pylint: disable=redefined-out
 
 
 def _assert_pagination_rejected(client, query_string, expected_message):  # pylint: disable=redefined-outer-name
-	for module in PAGINATED_MODULES:
+	for module, extra_params in PAGINATED_MODULES.items():
 		# Act:
-		response = client.get(f'/api/nem/{module}', query_string=query_string)
+		response = client.get(f'/api/nem/{module}', query_string={**extra_params, **query_string})
 
 		# Assert:
 		_assert_status_code_400(response, expected_message)
@@ -136,9 +160,9 @@ def test_rejects_negative_offset(client):  # pylint: disable=redefined-outer-nam
 
 def test_accepts_limit_at_maximum(client):  # pylint: disable=redefined-outer-name
 
-	for module in PAGINATED_MODULES:
+	for module, extra_params in PAGINATED_MODULES.items():
 		# Act:
-		response = client.get(f'/api/nem/{module}', query_string={'limit': MAX_PAGE_LIMIT})
+		response = client.get(f'/api/nem/{module}', query_string={**extra_params, 'limit': MAX_PAGE_LIMIT})
 
 		# Assert:
 		_assert_status_code_and_headers(response, 200)
@@ -146,9 +170,9 @@ def test_accepts_limit_at_maximum(client):  # pylint: disable=redefined-outer-na
 
 def test_invalid_sort_params(client):  # pylint: disable=redefined-outer-name
 
-	for module in ['blocks', 'namespaces', 'mosaics', 'transactions']:
+	for module, extra_params in SORTED_MODULES.items():
 		# Act:
-		response = client.get(f'/api/nem/{module}', query_string={'sort': 'INVALID'})
+		response = client.get(f'/api/nem/{module}', query_string={**extra_params, 'sort': 'INVALID'})
 
 		# Assert:
 		_assert_status_code_400(response, 'Sort must be either ASC or DESC')
@@ -313,6 +337,58 @@ def test_api_nem_account_invalid_public_key(client):  # pylint: disable=redefine
 
 
 # endregion
+
+# region /account/harvests
+
+def _assert_get_api_nem_account_harvests(client, expected_status_code, expected_result, **query_params):
+	# pylint: disable=redefined-outer-name, invalid-name
+
+	# Act:
+	response = _get_api(client, 'account/harvests', **query_params)
+
+	# Assert:
+	_assert_status_code_and_headers(response, expected_status_code)
+	assert expected_result == response.json
+
+
+def test_api_nem_account_harvests(client):  # pylint: disable=redefined-outer-name
+	_assert_get_api_nem_account_harvests(client, 200, [EXPECTED_HARVEST_VIEW_1.to_dict()], address=HARVESTER_ADDRESS)
+
+
+def test_api_nem_account_harvests_of_delegating_harvester(client):  # pylint: disable=redefined-outer-name, invalid-name
+	# Assert: block 2 is signed by a remote account, the reward goes to the account that delegated harvesting to it
+	_assert_get_api_nem_account_harvests(
+		client,
+		200,
+		[EXPECTED_HARVEST_VIEW_2.to_dict()],
+		address='NBFWZ4IVRHEIBRCGHLYDS62FSFTBM3VDFA7E6LSQ')
+
+
+def test_api_nem_account_harvests_of_remote_signer(client):  # pylint: disable=redefined-outer-name, invalid-name
+	_assert_get_api_nem_account_harvests(client, 200, [], address='NALICEPFLZQRZGPRIJTMJOCPWDNECXTNNG7QLSG3')
+
+
+def test_api_nem_account_harvests_applies_pagination(client):  # pylint: disable=redefined-outer-name, invalid-name
+	_assert_get_api_nem_account_harvests(client, 200, [], address=HARVESTER_ADDRESS, limit=10, offset=1)
+
+
+def test_api_nem_account_harvests_missing_address(client):  # pylint: disable=redefined-outer-name, invalid-name
+	# Act:
+	response = client.get('/api/nem/account/harvests')
+
+	# Assert:
+	_assert_status_code_400(response, 'Address is required')
+
+
+def test_api_nem_account_harvests_invalid_address(client):  # pylint: disable=redefined-outer-name, invalid-name
+	# Act:
+	response = _get_api(client, 'account/harvests', address='INVALIDADDRESS')
+
+	# Assert:
+	_assert_status_code_400(response, 'Invalid address format')
+
+# endregion
+
 
 # region /accounts
 

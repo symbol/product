@@ -11,6 +11,7 @@ from symbolchain.nem.Network import Address, Network
 from rest.db.NemDatabase import NemDatabase
 from rest.model.nem.Account import AccountView
 from rest.model.nem.Block import BlockView
+from rest.model.nem.Harvest import HarvestView
 from rest.model.nem.Mosaic import MosaicRichListView, MosaicView
 from rest.model.nem.Namespace import NamespaceView
 from rest.model.nem.Statistic import (
@@ -122,7 +123,7 @@ BLOCKS = [
 		3,
 		80000000000000,
 		'1DD9D4D7B6AF603D29C082F9AA4E123F07D18154DDBCD7DDC6702491B854C5E4',
-		Address('NALICEPFLZQRZGPRIJTMJOCPWDNECXTNNG7QLSG3'),
+		Address('NBFWZ4IVRHEIBRCGHLYDS62FSFTBM3VDFA7E6LSQ'),
 		PublicKey('F9BD190DD0C364261F5C8A74870CC7F7374E631352293C62ECC437657E5DE2CD'),
 		'1B81379847241E45DA86B27911E5C9A9192EC04F644D98019657D32838B49C14'
 		'3EAA4815A3028B80F9AFFDBF0B94CD620F7A925E02783DDA67B8627B69DDF70E',
@@ -486,9 +487,14 @@ BLOCK_VIEWS = [
 	),
 	BlockView(*BLOCKS[1]._replace(
 		total_fee=201.0,
-		beneficiary='NALICEPFLZQRZGPRIJTMJOCPWDNECXTNNG7QLSG3',
+		beneficiary='NBFWZ4IVRHEIBRCGHLYDS62FSFTBM3VDFA7E6LSQ',
 		signer='NALICEPFLZQRZGPRIJTMJOCPWDNECXTNNG7QLSG3')
 	)
+]
+
+HARVEST_VIEWS = [
+	HarvestView(height=BLOCKS[0].height, timestamp=BLOCKS[0].timestamp, amount=102.0),
+	HarvestView(height=BLOCKS[1].height, timestamp=BLOCKS[1].timestamp, amount=201.0)
 ]
 
 ACCOUNT_VIEWS = [
