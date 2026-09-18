@@ -248,6 +248,7 @@
 	"table_field_height": "Vysota",
 	"table_field_recipient": "Do",
 	"table_field_reward": "Nagrada",
+	"table_field_blockReward": "Nagrada bloka",
 	"table_field_sender": "Od",
 	"table_field_signer": "Podpisnik",
 	"table_field_signature": "Podpis",

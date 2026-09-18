@@ -240,8 +240,8 @@ describe('utils/client', () => {
 		});
 	});
 
-	// The test suite targets the reference (nem) variant, so asset URLs are prefixed with /nem.
 	describe('createAssetURL', () => {
+		const activeVariant = process.env.NEXT_PUBLIC_EXPLORER_VARIANT;
 		const runCreateAssetURLTest = (url, expectedResult) => {
 			// Act:
 			const result = createAssetURL(url);
@@ -253,7 +253,7 @@ describe('utils/client', () => {
 		it('prefixes an image path with the active variant', () => {
 			// Arrange:
 			const url = '/images/logo.png';
-			const expectedResult = '/nem/images/logo.png';
+			const expectedResult = `/${activeVariant}/images/logo.png`;
 
 			// Act + Assert:
 			runCreateAssetURLTest(url, expectedResult);
@@ -262,7 +262,7 @@ describe('utils/client', () => {
 		it('prefixes a root asset with the active variant', () => {
 			// Arrange:
 			const url = '/favicon.ico';
-			const expectedResult = '/nem/favicon.ico';
+			const expectedResult = `/${activeVariant}/favicon.ico`;
 
 			// Act + Assert:
 			runCreateAssetURLTest(url, expectedResult);

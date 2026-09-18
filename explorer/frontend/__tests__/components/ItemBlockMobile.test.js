@@ -14,7 +14,9 @@ const chainStatusRecent = { height: 1100 };
 // next/image rewrites the src to an optimized URL with the original path URL-encoded; decode before asserting.
 const getIconPath = image => decodeURIComponent(image.getAttribute('src'));
 
-describe('ItemBlockMobile', () => {
+const describeNem = process.env.NEXT_PUBLIC_EXPLORER_VARIANT === 'nem' ? describe : describe.skip;
+
+describeNem('ItemBlockMobile', () => {
 	it('links the height to the block page', () => {
 		// Act:
 		render(<ItemBlockMobile data={block} chainStatus={chainStatusSafe} />);
@@ -26,7 +28,7 @@ describe('ItemBlockMobile', () => {
 	describe('finality status icon', () => {
 		const runTest = (chainStatus, expectedLabel, expectedShape) => {
 			// Arrange:
-			const expectedSrc = `/nem/images/status/link/icon-label-${expectedShape}.svg`;
+			const expectedSrc = `/${process.env.NEXT_PUBLIC_EXPLORER_VARIANT}/images/status/link/icon-label-${expectedShape}.svg`;
 
 			// Act:
 			render(<ItemBlockMobile data={block} chainStatus={chainStatus} />);
