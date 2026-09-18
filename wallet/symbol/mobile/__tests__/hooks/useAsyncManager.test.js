@@ -4,6 +4,8 @@ import { act, renderHook } from '@testing-library/react-native';
 const DEFAULT_DATA = { id: 1, name: 'default' };
 const RESOLVED_DATA = { id: 2, name: 'resolved' };
 const ERROR_MESSAGE = 'Test error';
+const FIRST_ERROR = new Error('First test error');
+const SECOND_ERROR = new Error('Second test error');
 
 const createMockCallback = (resolvedValue = RESOLVED_DATA) => jest.fn().mockResolvedValue(resolvedValue);
 const createFailingCallback = (error = new Error(ERROR_MESSAGE)) => jest.fn().mockRejectedValue(error);
@@ -162,6 +164,14 @@ describe('hooks/useAsyncManager', () => {
 	});
 
 	describe('error handling', () => {
+		const callAndSettle = async result => {
+			await act(async () => {
+				const promise = result.current.call();
+				jest.runAllTimers();
+				await promise.catch(() => {});
+			});
+		};
+
 		it('sets error state on callback failure', async () => {
 			// Arrange:
 			const expectedError = new Error(ERROR_MESSAGE);
@@ -170,86 +180,12 @@ describe('hooks/useAsyncManager', () => {
 			const { result } = renderHook(() => useAsyncManager(config));
 
 			// Act:
-			await act(async () => {
-				const promise = result.current.call();
-				jest.runAllTimers();
-				await promise.catch(() => {});
-			});
+			await callAndSettle(result);
 
 			// Assert:
 			expect(result.current.error).toEqual(expectedError);
 			expect(result.current.isLoading).toBe(false);
 			expect(result.current.hasFailed).toBe(true);
-		});
-
-		it('reports the failure until the next call completes', async () => {
-			// Arrange:
-			const callback = jest.fn()
-				.mockRejectedValueOnce(new Error(ERROR_MESSAGE))
-				.mockResolvedValueOnce(RESOLVED_DATA);
-			const config = createConfig({ callback });
-			const { result } = renderHook(() => useAsyncManager(config));
-
-			// Act: the first call fails
-			await act(async () => {
-				const promise = result.current.call();
-				jest.runAllTimers();
-				await promise.catch(() => {});
-			});
-
-			// Assert:
-			expect(result.current.hasFailed).toBe(true);
-
-			// Act: the next call succeeds
-			await act(async () => {
-				const promise = result.current.call();
-				jest.runAllTimers();
-				await promise;
-			});
-
-			// Assert:
-			expect(result.current.hasFailed).toBe(false);
-			expect(result.current.data).toEqual(RESOLVED_DATA);
-		});
-
-		it('reports the failure through repeated failures until a call succeeds', async () => {
-			// Arrange:
-			const secondError = new Error('second error');
-			const callback = jest.fn()
-				.mockRejectedValueOnce(new Error(ERROR_MESSAGE))
-				.mockRejectedValueOnce(secondError)
-				.mockResolvedValueOnce(RESOLVED_DATA);
-			const config = createConfig({ callback });
-			const { result } = renderHook(() => useAsyncManager(config));
-
-			// Act: the first call fails
-			await act(async () => {
-				const promise = result.current.call();
-				jest.runAllTimers();
-				await promise.catch(() => {});
-			});
-
-			// Act: the second call fails
-			await act(async () => {
-				const promise = result.current.call();
-				jest.runAllTimers();
-				await promise.catch(() => {});
-			});
-
-			// Assert:
-			expect(result.current.hasFailed).toBe(true);
-			expect(result.current.error).toBe(secondError);
-
-			// Act: the next call succeeds
-			await act(async () => {
-				const promise = result.current.call();
-				jest.runAllTimers();
-				await promise;
-			});
-
-			// Assert:
-			expect(result.current.hasFailed).toBe(false);
-			expect(result.current.data).toEqual(RESOLVED_DATA);
 		});
 
 		it('calls onError callback when provided', async () => {
@@ -261,11 +197,7 @@ describe('hooks/useAsyncManager', () => {
 			const { result } = renderHook(() => useAsyncManager(config));
 
 			// Act:
-			await act(async () => {
-				const promise = result.current.call();
-				jest.runAllTimers();
-				await promise.catch(() => {});
-			});
+			await callAndSettle(result);
 
 			// Assert:
 			expect(onErrorMock).toHaveBeenCalledWith(expectedError);
@@ -283,6 +215,51 @@ describe('hooks/useAsyncManager', () => {
 				const promise = result.current.call();
 				jest.runAllTimers();
 				await expect(promise).rejects.toThrow(ERROR_MESSAGE);
+			});
+		});
+
+		describe('recovery', () => {
+			const runFailureRecoveryTest = (description, { errors }, expected) => {
+				it(description, async () => {
+					// Arrange:
+					const callback = jest.fn();
+					errors.forEach(error => callback.mockRejectedValueOnce(error));
+					callback.mockResolvedValueOnce(RESOLVED_DATA);
+					const config = createConfig({ callback });
+					const { result } = renderHook(() => useAsyncManager(config));
+
+					// Act: every call fails
+					for (let callIndex = 0; callIndex < errors.length; ++callIndex)
+						await callAndSettle(result);
+
+					// Assert:
+					expect(result.current.hasFailed).toBe(true);
+					expect(result.current.error).toBe(expected.error);
+
+					// Act: the next call succeeds
+					await callAndSettle(result);
+
+					// Assert:
+					expect(result.current.hasFailed).toBe(false);
+					expect(result.current.data).toEqual(RESOLVED_DATA);
+				});
+			};
+
+			const tests = [
+				{
+					description: 'reports the failure until the next call completes',
+					config: { errors: [FIRST_ERROR] },
+					expected: { error: FIRST_ERROR }
+				},
+				{
+					description: 'reports the latest failure through repeated failures until a call completes',
+					config: { errors: [FIRST_ERROR, SECOND_ERROR] },
+					expected: { error: SECOND_ERROR }
+				}
+			];
+
+			tests.forEach(test => {
+				runFailureRecoveryTest(test.description, test.config, test.expected);
 			});
 		});
 	});
