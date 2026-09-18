@@ -11,6 +11,7 @@ from shoestring.__main__ import main
 from shoestring.internal.NodeFeatures import NodeFeatures
 
 from ..test.ConfigurationTestUtils import prepare_shoestring_configuration
+from ..test.LogTestUtils import assert_message_is_logged
 from ..test.MockNodewatchServer import setup_mock_nodewatch_server
 
 # region server fixture
@@ -98,5 +99,64 @@ async def test_can_announce_aggregate_bonded_transaction(server):  # pylint: dis
 
 	# Act + Assert:
 	await _run_test(server, 'transactions/partial', create_transaction_descriptor)
+
+
+async def test_warns_when_announcing_aggregate_bonded_transaction_without_adjacent_hash_lock_file(server, caplog):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	with tempfile.TemporaryDirectory() as output_directory:
+		config_filepath = prepare_shoestring_configuration(output_directory, NodeFeatures.PEER, server.make_url(''))
+
+		facade = SymbolFacade('testnet')
+		transaction_filepath = Path(output_directory) / 'transaction.dat'
+		with open(transaction_filepath, 'wb') as outfile:
+			transaction = facade.transaction_factory.create({
+				**_create_aggregate_transaction_descriptor('aggregate_bonded_transaction_v3'),
+				'signer_public_key': KeyPair(PrivateKey.random()).public_key,
+				'deadline': 1234000
+			})
+			outfile.write(transaction.serialize())
+
+		# Act:
+		await main([
+			'announce-transaction',
+			'--config', str(config_filepath),
+			'--transaction', str(transaction_filepath)
+		])
+
+		# Assert:
+		assert_message_is_logged(
+			f'aggregate bonded transaction was selected but no adjacent hash lock file was found at {transaction_filepath.with_suffix(".hash_lock.dat")}',
+			caplog)
+
+
+async def test_does_not_warn_when_announcing_aggregate_bonded_transaction_with_adjacent_hash_lock_file(server, caplog):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	with tempfile.TemporaryDirectory() as output_directory:
+		config_filepath = prepare_shoestring_configuration(output_directory, NodeFeatures.PEER, server.make_url(''))
+
+		facade = SymbolFacade('testnet')
+		transaction_filepath = Path(output_directory) / 'transaction.dat'
+		with open(transaction_filepath, 'wb') as outfile:
+			transaction = facade.transaction_factory.create({
+				**_create_aggregate_transaction_descriptor('aggregate_bonded_transaction_v3'),
+				'signer_public_key': KeyPair(PrivateKey.random()).public_key,
+				'deadline': 1234000
+			})
+			outfile.write(transaction.serialize())
+
+		transaction_filepath.with_suffix('.hash_lock.dat').write_bytes(b'placeholder')
+
+		# Act:
+		await main([
+			'announce-transaction',
+			'--config', str(config_filepath),
+			'--transaction', str(transaction_filepath)
+		])
+
+		# Assert:
+		assert [
+			record.message for record in caplog.records
+			if 'aggregate bonded transaction was selected but no adjacent hash lock file was found at' in record.message
+		] == []
 
 # endregion
