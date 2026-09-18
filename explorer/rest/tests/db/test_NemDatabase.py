@@ -30,6 +30,7 @@ from ..test.DatabaseTestUtils import (
 	ACCOUNT_VIEWS,
 	ACCOUNTS,
 	BLOCK_VIEWS,
+	HARVEST_VIEWS,
 	MOSAIC_RICH_LIST_VIEWS,
 	MOSAIC_VIEWS,
 	NAMESPACE_VIEWS,
@@ -393,6 +394,47 @@ class NemDatabaseTest(DatabaseTestBase):  # pylint: disable=too-many-public-meth
 
 	def test_can_query_blocks_sorted_by_height_desc(self):
 		self._assert_can_query_blocks_with_filter(Pagination(10, 0), 0, 'desc', [EXPECTED_BLOCK_VIEW_2, EXPECTED_BLOCK_VIEW_1])
+
+	# endregion
+
+	# region account harvests
+
+	def _assert_can_query_account_harvests(self, address, pagination, sort, expected_harvests):
+		# Act:
+		harvest_views = self.nem_db.get_account_harvests(Address(address), pagination, sort)
+
+		# Assert:
+		self.assertEqual(expected_harvests, harvest_views)
+
+	def test_can_query_account_harvests(self):
+		self._assert_can_query_account_harvests(
+			'NANEMOABLAGR72AZ2RV3V4ZHDCXW25XQ73O7OBT5',
+			Pagination(10, 0),
+			'desc',
+			[HARVEST_VIEWS[0]])
+
+	def test_can_query_account_harvests_of_delegating_harvester(self):  # pylint: disable=invalid-name
+		# Assert: block 2 is signed by a remote account, the reward goes to the account that delegated harvesting to it
+		self._assert_can_query_account_harvests(
+			'NBFWZ4IVRHEIBRCGHLYDS62FSFTBM3VDFA7E6LSQ',
+			Pagination(10, 0),
+			'desc',
+			[HARVEST_VIEWS[1]])
+
+	def test_cannot_query_account_harvests_of_remote_signer(self):  # pylint: disable=invalid-name
+		# Assert: the remote account that signed block 2 earned nothing of its own
+		self._assert_can_query_account_harvests(
+			'NALICEPFLZQRZGPRIJTMJOCPWDNECXTNNG7QLSG3',
+			Pagination(10, 0),
+			'desc',
+			[])
+
+	def test_can_query_account_harvests_applies_pagination(self):  # pylint: disable=invalid-name
+		self._assert_can_query_account_harvests(
+			'NANEMOABLAGR72AZ2RV3V4ZHDCXW25XQ73O7OBT5',
+			Pagination(10, 1),
+			'desc',
+			[])
 
 	# endregion
 

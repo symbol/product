@@ -10,6 +10,7 @@ from ..test.DatabaseTestUtils import (
 	ACCOUNT_STATISTIC_VIEW,
 	ACCOUNT_VIEWS,
 	BLOCK_VIEWS,
+	HARVEST_VIEWS,
 	MOSAIC_RICH_LIST_VIEWS,
 	MOSAIC_VIEWS,
 	NAMESPACE_VIEWS,
@@ -27,6 +28,10 @@ from ..test.DatabaseTestUtils import (
 EXPECTED_BLOCK_1 = BLOCK_VIEWS[0].to_dict()
 
 EXPECTED_BLOCK_2 = BLOCK_VIEWS[1].to_dict()
+
+EXPECTED_HARVEST_1 = HARVEST_VIEWS[0].to_dict()
+
+EXPECTED_HARVEST_2 = HARVEST_VIEWS[1].to_dict()
 
 EXPECTED_ACCOUNT_1 = ACCOUNT_VIEWS[0].to_dict()
 
@@ -114,6 +119,38 @@ class TestNemRestFacade(DatabaseTestBase):  # pylint: disable=too-many-public-me
 
 	def test_blocks_sorted_by_height_desc(self):
 		self._assert_can_retrieve_blocks(Pagination(10, 0), 0, 'desc', [EXPECTED_BLOCK_2, EXPECTED_BLOCK_1])
+
+	# endregion
+
+	# region account harvests
+
+	def _assert_can_retrieve_account_harvests(self, address, pagination, sort, expected_harvests):
+		# Act:
+		harvests = self.nem_rest_facade.get_account_harvests(address=address, pagination=pagination, sort=sort)
+
+		# Assert:
+		self.assertEqual(expected_harvests, harvests)
+
+	def test_account_harvests(self):
+		self._assert_can_retrieve_account_harvests(
+			'NANEMOABLAGR72AZ2RV3V4ZHDCXW25XQ73O7OBT5',
+			Pagination(10, 0),
+			'desc',
+			[EXPECTED_HARVEST_1])
+
+	def test_account_harvests_of_delegating_harvester(self):
+		self._assert_can_retrieve_account_harvests(
+			'NBFWZ4IVRHEIBRCGHLYDS62FSFTBM3VDFA7E6LSQ',
+			Pagination(10, 0),
+			'desc',
+			[EXPECTED_HARVEST_2])
+
+	def test_account_harvests_of_remote_signer(self):
+		self._assert_can_retrieve_account_harvests(
+			'NALICEPFLZQRZGPRIJTMJOCPWDNECXTNNG7QLSG3',
+			Pagination(10, 0),
+			'desc',
+			[])
 
 	# endregion
 

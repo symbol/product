@@ -121,6 +121,34 @@ def setup_nem_routes(app, nem_api_facade):  # pylint: disable=too-many-statement
 
 		return jsonify(result)
 
+	@app.route('/api/nem/account/harvests')
+	def api_get_nem_account_harvests():
+		address = request.args.get('address', '').strip() or None
+
+		if not address:
+			abort(400, 'Address is required')
+
+		if not nem_api_facade.nem_db.network.is_valid_address_string(address):
+			abort(400, 'Invalid address format')
+
+		try:
+			limit = int(request.args.get('limit', 10))
+			offset = int(request.args.get('offset', 0))
+			sort = request.args.get('sort', 'DESC')
+
+			_validate_pagination(limit, offset)
+			if sort.upper() not in ['ASC', 'DESC']:
+				raise ValueError('Sort must be either ASC or DESC')
+
+		except ValueError as error:
+			abort(400, error)
+
+		return jsonify(nem_api_facade.get_account_harvests(
+			address=address,
+			pagination=Pagination(limit, offset),
+			sort=sort
+		))
+
 	@app.route('/api/nem/account/statistics')
 	def api_get_nem_account_statistics():
 		return jsonify(nem_api_facade.get_account_statistics())
