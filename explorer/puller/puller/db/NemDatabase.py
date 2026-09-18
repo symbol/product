@@ -62,6 +62,14 @@ class NemDatabase(DatabaseConnection):
 			'''
 		)
 
+		cursor.execute(
+			'''
+			CREATE INDEX IF NOT EXISTS blocks_beneficiary_id_rewarded_idx
+				ON blocks(beneficiary, id DESC)
+				WHERE total_fee > 0
+			'''
+		)
+
 		# Create indexes for mosaics table
 		cursor.execute(
 			'''
