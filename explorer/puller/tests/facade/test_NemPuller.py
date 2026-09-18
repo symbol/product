@@ -71,7 +71,8 @@ NEM_CONNECTOR_RESPONSE_BLOCKS = [
 			'fdf6a9830e9320af79123f467fcb03d6beab735575ff50eab363d812c5581436'
 			'2ad7be0503db2ee70e60ac3408d83cdbcbd941067a6df703e0c21c7bf389f105'
 		),
-		345
+		345,
+		'438cf6375dab5a0d32f9b7bf151d4539e00a590f7c022d5572c7d41815a24be4'
 	),
 	Block(
 		2,
@@ -86,7 +87,8 @@ NEM_CONNECTOR_RESPONSE_BLOCKS = [
 			'919ae66a34119b49812b335827b357f86884ab08b628029fd6e8db3572faeb4f'
 			'323a7bf9488c76ef8faa5b513036bbcce2d949ba3e41086d95a54c0007403c0b'
 		),
-		168
+		168,
+		'1dd9d4d7b6af603d29c082f9aa4e123f07d18154ddbcd7ddc6702491b854c5e4'
 	),
 	Block(
 		3,
@@ -239,7 +241,8 @@ NEM_CONNECTOR_RESPONSE_BLOCKS = [
 			'fdf6a9830e9320af79123f467fcb03d6beab735575ff50eab363d812c5581436'
 			'2ad7be0503db2ee70e60ac3408d83cdbcbd941067a6df703e0c21c7bf389f105'
 		),
-		2052
+		2052,
+		'9708256e8a8dfb76eed41dcfa2e47f4af520b7b3286afb7f60dca02851f8a53e'
 	)
 ]
 
@@ -505,6 +508,9 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 		# Create 5 blocks to test batch commit (batch_size=2 means 2 commits + 1 final)
 		test_blocks = []
 		for i in range(1, 6):
+			previous_block_hash = (
+				'438cf6375dab5a0d32f9b7bf151d4539e00a590f7c022d5572c7d41815a24be4' if i == 1 else 'a' * 64
+			)
 			test_blocks.append(
 				Block(
 					i,
@@ -516,7 +522,8 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 					Address('T' + 'A' * 39),  # beneficiary
 					PublicKey('A' * 64),  # signer
 					'd' * 128,  # signature
-					200
+					200,
+					previous_block_hash
 				)
 			)
 
@@ -708,7 +715,10 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 		# Arrange:
 		signer = PublicKey('f9bd190dd0c364261f5c8a74870cc7f7374e631352293c62ecc437657e5de2cd')
 		signer_address = self.puller._convert_public_key_to_address(signer)  # pylint: disable=protected-access
-		block = Block(9, 78976, [], 100, 'a' * 64, 1000000, signer_address, signer, 'd' * 128, 200)
+		block = Block(
+			9, 78976, [], 100, 'a' * 64, 1000000, signer_address, signer, 'd' * 128, 200,
+			'438cf6375dab5a0d32f9b7bf151d4539e00a590f7c022d5572c7d41815a24be4'
+		)
 		cursor = Mock()
 		mock_get_mosaic_levy_recipients.return_value = []
 
@@ -789,7 +799,8 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 			sender,
 			'fdf6a9830e9320af79123f467fcb03d6beab735575ff50eab363d812c5581436'
 			'2ad7be0503db2ee70e60ac3408d83cdbcbd941067a6df703e0c21c7bf389f105',
-			345
+			345,
+			NEM_CONNECTOR_RESPONSE_BLOCKS[1].block_hash
 		)
 		cursor = Mock()
 		mock_get_mosaic_levy_recipients.return_value = [levy_recipient]
@@ -1543,7 +1554,8 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 			block_data.beneficiary,
 			block_data.signer,
 			block_data.signature,
-			block_data.size
+			block_data.size,
+			block_data.previous_block_hash
 		)
 
 		cursor = Mock()
