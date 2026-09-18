@@ -432,15 +432,15 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 			)
 
 	def test_rejects_parent_hash_mismatch(self):
-			# Act + Assert:
-			with self.assertRaisesRegex(
-				ValueError,
-				f'NEM block chain mismatch at height 2: expected previous hash {"11" * 32}, got {"AA" * 32}'
-			):
-				self.puller._validate_block_chain(  # pylint: disable=protected-access
-					[ChainBlockHashes(2, '22' * 32, 'AA' * 32)],
-					'11' * 32
-				)
+		# Act + Assert:
+		with self.assertRaisesRegex(
+			ValueError,
+			f'NEM block chain mismatch at height 2: expected previous hash {"11" * 32}, got {"AA" * 32}'
+		):
+			self.puller._validate_block_chain(  # pylint: disable=protected-access
+				[ChainBlockHashes(2, '22' * 32, 'AA' * 32)],
+				'11' * 32
+			)
 
 	@patch('puller.facade.NemPuller.NemConnector.get_blocks_after')
 	@patch('puller.facade.NemPuller.NemPuller._process_account_batch')
