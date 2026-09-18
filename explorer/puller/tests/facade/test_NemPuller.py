@@ -49,6 +49,7 @@ from puller.facade.NemPuller import (
 # region test data
 
 NodeBlockHashes = namedtuple('NodeBlockHashes', ['block_hash', 'previous_block_hash'])
+ChainBlockHashes = namedtuple('ChainBlockHashes', ['height', 'block_hash', 'previous_block_hash'])
 
 NEM_CONNECTOR_RESPONSE_BLOCKS = [
 	Block(
@@ -81,7 +82,8 @@ NEM_CONNECTOR_RESPONSE_BLOCKS = [
 			'fdf6a9830e9320af79123f467fcb03d6beab735575ff50eab363d812c5581436'
 			'2ad7be0503db2ee70e60ac3408d83cdbcbd941067a6df703e0c21c7bf389f105'
 		),
-		345
+		345,
+		'0' * 64
 	),
 	Block(
 		2,
@@ -96,7 +98,8 @@ NEM_CONNECTOR_RESPONSE_BLOCKS = [
 			'919ae66a34119b49812b335827b357f86884ab08b628029fd6e8db3572faeb4f'
 			'323a7bf9488c76ef8faa5b513036bbcce2d949ba3e41086d95a54c0007403c0b'
 		),
-		168
+		168,
+		'1dd9d4d7b6af603d29c082f9aa4e123f07d18154ddbcd7ddc6702491b854c5e4'
 	),
 	Block(
 		3,
@@ -249,7 +252,8 @@ NEM_CONNECTOR_RESPONSE_BLOCKS = [
 			'fdf6a9830e9320af79123f467fcb03d6beab735575ff50eab363d812c5581436'
 			'2ad7be0503db2ee70e60ac3408d83cdbcbd941067a6df703e0c21c7bf389f105'
 		),
-		2052
+		2052,
+		'9708256e8a8dfb76eed41dcfa2e47f4af520b7b3286afb7f60dca02851f8a53e'
 	)
 ]
 
@@ -402,6 +406,42 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 			self.assertEqual(mock_process_transactions.call_args[0][1], NEM_CONNECTOR_RESPONSE_BLOCKS[0].transactions)
 			self.assertEqual(mock_process_transactions.call_args[0][2], NEM_CONNECTOR_RESPONSE_BLOCKS[0].height)
 
+	def test_can_validate_block_chain_within_fetched_page(self):
+		# Arrange:
+		blocks = [
+			ChainBlockHashes(1, '11' * 32, 'unused'),
+			ChainBlockHashes(2, '22' * 32, '11' * 32),
+			ChainBlockHashes(3, '33' * 32, '22' * 32)
+		]
+
+		# Act:
+		last_block_hash = self.puller._validate_block_chain(blocks, None)  # pylint: disable=protected-access
+
+		# Assert:
+		self.assertEqual('33' * 32, last_block_hash)
+
+	def test_rejects_block_chain_without_previous_hash_anchor(self):
+		# Act + Assert:
+		with self.assertRaisesRegex(
+			ValueError,
+			'NEM block chain cannot be validated at height 2: previous block hash is unavailable'
+		):
+			self.puller._validate_block_chain(  # pylint: disable=protected-access
+				[ChainBlockHashes(2, '22' * 32, '11' * 32)],
+				None
+			)
+
+	def test_rejects_parent_hash_mismatch(self):
+		# Act + Assert:
+		with self.assertRaisesRegex(
+			ValueError,
+			f'NEM block chain mismatch at height 2: expected previous hash {"11" * 32}, got {"AA" * 32}'
+		):
+			self.puller._validate_block_chain(  # pylint: disable=protected-access
+				[ChainBlockHashes(2, '22' * 32, 'AA' * 32)],
+				'11' * 32
+			)
+
 	@patch('puller.facade.NemPuller.NemConnector.get_blocks_after')
 	@patch('puller.facade.NemPuller.NemPuller._process_account_batch')
 	@patch('puller.facade.NemPuller.NemPuller._process_transactions')
@@ -526,7 +566,8 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 					Address('T' + 'A' * 39),  # beneficiary
 					PublicKey('A' * 64),  # signer
 					'd' * 128,  # signature
-					200
+					200,
+					'a' * 64
 				)
 			)
 
@@ -730,7 +771,7 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 		# Arrange:
 		signer = PublicKey('f9bd190dd0c364261f5c8a74870cc7f7374e631352293c62ecc437657e5de2cd')
 		signer_address = self.puller._convert_public_key_to_address(signer)  # pylint: disable=protected-access
-		block = Block(9, 78976, [], 100, 'a' * 64, 1000000, signer_address, signer, 'd' * 128, 200)
+		block = Block(9, 78976, [], 100, 'a' * 64, 1000000, signer_address, signer, 'd' * 128, 200, 'b' * 64)
 		cursor = Mock()
 		mock_get_mosaic_levy_recipients.return_value = []
 
@@ -811,7 +852,8 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 			sender,
 			'fdf6a9830e9320af79123f467fcb03d6beab735575ff50eab363d812c5581436'
 			'2ad7be0503db2ee70e60ac3408d83cdbcbd941067a6df703e0c21c7bf389f105',
-			345
+			345,
+			'9708256e8a8dfb76eed41dcfa2e47f4af520b7b3286afb7f60dca02851f8a53e'
 		)
 		cursor = Mock()
 		mock_get_mosaic_levy_recipients.return_value = [levy_recipient]
@@ -1565,7 +1607,8 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 			block_data.beneficiary,
 			block_data.signer,
 			block_data.signature,
-			block_data.size
+			block_data.size,
+			block_data.previous_block_hash
 		)
 
 		cursor = Mock()
