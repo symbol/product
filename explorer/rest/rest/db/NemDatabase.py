@@ -562,13 +562,15 @@ class NemDatabase(DatabaseConnectionPool):
 
 			return [self._create_block_view(result) for result in results]
 
-	def get_account_harvests(self, address, pagination, sort):
+	def get_account_harvests(self, address, pagination, sort, rewarded_only=False):
 		"""Gets the rewards an account earned for harvesting blocks."""
+
+		reward_condition = ' AND total_fee > 0' if rewarded_only else ''
 
 		sql = f'''
 			SELECT height, timestamp, total_fee
 			FROM blocks
-			WHERE beneficiary = %s
+			WHERE beneficiary = %s{reward_condition}
 			ORDER BY id {sort}
 			LIMIT %s OFFSET %s
 		'''

@@ -124,9 +124,15 @@ class TestNemRestFacade(DatabaseTestBase):  # pylint: disable=too-many-public-me
 
 	# region account harvests
 
-	def _assert_can_retrieve_account_harvests(self, address, pagination, sort, expected_harvests):
+	def _assert_can_retrieve_account_harvests(self, address, pagination, sort, expected_harvests, rewarded_only=False):
+		# pylint: disable=too-many-arguments,too-many-positional-arguments
+
 		# Act:
-		harvests = self.nem_rest_facade.get_account_harvests(address=address, pagination=pagination, sort=sort)
+		harvests = self.nem_rest_facade.get_account_harvests(
+			address=address,
+			pagination=pagination,
+			sort=sort,
+			rewarded_only=rewarded_only)
 
 		# Assert:
 		self.assertEqual(expected_harvests, harvests)
@@ -151,6 +157,22 @@ class TestNemRestFacade(DatabaseTestBase):  # pylint: disable=too-many-public-me
 			Pagination(10, 0),
 			'desc',
 			[])
+
+	def test_account_harvests_rewarded_only_drops_empty_blocks(self):  # pylint: disable=invalid-name
+		self._assert_can_retrieve_account_harvests(
+			'NBFWZ4IVRHEIBRCGHLYDS62FSFTBM3VDFA7E6LSQ',
+			Pagination(10, 0),
+			'desc',
+			[],
+			True)
+
+	def test_account_harvests_rewarded_only_keeps_paid_blocks(self):  # pylint: disable=invalid-name
+		self._assert_can_retrieve_account_harvests(
+			'NANEMOABLAGR72AZ2RV3V4ZHDCXW25XQ73O7OBT5',
+			Pagination(10, 0),
+			'desc',
+			[EXPECTED_HARVEST_1],
+			True)
 
 	# endregion
 

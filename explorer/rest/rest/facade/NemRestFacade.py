@@ -36,10 +36,10 @@ class NemRestFacade:
 
 		return [block.to_dict() for block in blocks]
 
-	def get_account_harvests(self, address, pagination, sort):
+	def get_account_harvests(self, address, pagination, sort, rewarded_only=False):
 		"""Gets the rewards an account earned for harvesting blocks."""
 
-		harvests = self.nem_db.get_account_harvests(Address(address), pagination, sort)
+		harvests = self.nem_db.get_account_harvests(Address(address), pagination, sort, rewarded_only)
 
 		return [harvest.to_dict() for harvest in harvests]
 
