@@ -24,6 +24,10 @@ export const TRANSACTION_DIRECTION = {
 	OUTGOING: 'outgoing'
 };
 
+export const REWARD_TYPE = {
+	HARVESTING: 'harvesting'
+};
+
 export const BLOCK_STATUS = {
 	PENDING: 'pending',
 	CREATED: 'created',

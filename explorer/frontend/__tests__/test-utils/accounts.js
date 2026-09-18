@@ -630,6 +630,51 @@ export const accountPageResult = {
 	pageNumber: 2
 };
 
+export const accountHarvestedBlockPageResponse = [
+	{
+		difficulty: 18458765235402,
+		hash: '7568A97D319770D2BDE8CEAED519CCF9606FF46ED1B2FE40BD031C5FDAB0B3A0',
+		height: 4695085,
+		signature:
+			'B95DF092252A50EDBB23635F6A53FC378E8DEE5CA352CFD7C7550FD8D15D642F677D7C9F81DCED3D91EBB2314DF3C405EB32E9F0174519E1E9D21008B60D1A09',
+		signer: 'NDHEJKXY6YK7JGRFQT2L7P3O5VMUGR4BWKQNVXXQ',
+		size: 168,
+		timestamp: '2024-03-30 01:06:25',
+		totalFees: 0.25,
+		totalTransactions: 3
+	},
+	{
+		difficulty: 19015354941879,
+		hash: 'BD10F67BA6929C5D11B59EDBE53797180DC06D7764353AB0967B1D4AB1D1AA6F',
+		height: 4695080,
+		signature:
+			'C418E04954FDBFC1C276197F73EB696A5DC092D0E77D22EEA577F5F60CB2E8B0985095BEB2B304BCDEB34B4E603C63259E7C254ACE4BBB944ABF4EA42477ED05',
+		signer: 'NDHEJKXY6YK7JGRFQT2L7P3O5VMUGR4BWKQNVXXQ',
+		size: 168,
+		timestamp: '2024-03-30 00:59:22',
+		totalFees: 0.1,
+		totalTransactions: 1
+	}
+];
+
+export const accountHarvestedBlockPageResult = {
+	data: [
+		{
+			height: 4695085,
+			timestamp: '2024-03-30 01:06:25',
+			amount: 0.25,
+			type: 'harvesting'
+		},
+		{
+			height: 4695080,
+			timestamp: '2024-03-30 00:59:22',
+			amount: 0.1,
+			type: 'harvesting'
+		}
+	],
+	pageNumber: 2
+};
+
 export const accountPageMosaicFilterResponse = [
 	{
 		address: 'NCHESTYVD2P6P646AMY7WSNG73PCPZDUQNSD6JAK',

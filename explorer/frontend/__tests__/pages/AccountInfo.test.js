@@ -1,11 +1,11 @@
 import '@testing-library/jest-dom';
-import { accountInfoResult } from '../test-utils/accounts';
+import { accountHarvestedBlockPageResult, accountInfoResult } from '../test-utils/accounts';
 import { transactionPageResult } from '../test-utils/transactions';
 import * as AccountService from '@/app/api/accounts';
 import * as TransactionService from '@/app/api/transactions';
 import AccountInfo, { getServerSideProps } from '@/app/pages/accounts/[address]';
 import * as utils from '@/app/utils';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 
 jest.mock('@/app/utils', () => {
 	return {
@@ -31,6 +31,10 @@ jest.mock('@/app/api/accounts', () => {
 beforeEach(() => {
 	jest.spyOn(utils, 'useUserCurrencyAmount').mockReturnValue(1000);
 	jest.spyOn(TransactionService, 'fetchTransactionPage').mockResolvedValue(transactionPageResult);
+	jest.spyOn(AccountService, 'fetchAccountHarvestedBlockPage').mockResolvedValue({
+		data: accountHarvestedBlockPageResult.data,
+		pageNumber: 1
+	});
 });
 
 describe('AccountInfo', () => {
@@ -173,18 +177,44 @@ describe('AccountInfo', () => {
 		});
 	});
 
-	describe('account transactions', () => {
-		it('renders page with the list of transactions', () => {
+	describe('account history', () => {
+		const runHistoryTabTest = async (tabToPress, expectedTextList) => {
 			// Arrange:
-			const pageSectionText = 'section_transactions';
-			const transactionHashes = transactionPageResult.data.map(transaction => utils.truncateString(transaction.hash, 'hash'));
+			const pageSectionText = 'section_history';
 
 			// Act:
 			render(<AccountInfo accountInfo={accountInfoResult} preloadedTransactions={transactionPageResult.data} />);
+			fireEvent.click(screen.getByText(tabToPress));
 
 			// Assert:
 			expect(screen.getByText(pageSectionText)).toBeInTheDocument();
-			transactionHashes.forEach(hash => expect(screen.getByText(hash)).toBeInTheDocument());
+			const assertionPromises = expectedTextList.map(expectedText => {
+				return waitFor(() => expect(screen.getByText(expectedText)).toBeInTheDocument());
+			});
+			await Promise.all(assertionPromises);
+		};
+
+		it('renders transactions tab', async () => {
+			// Arrange:
+			const tabToPress = 'section_transactions';
+			const expectedTextList = transactionPageResult.data.map(transaction => utils.truncateString(transaction.hash, 'hash'));
+
+			// Act + Assert:
+			await runHistoryTabTest(tabToPress, expectedTextList);
+		});
+
+		it('renders harvested tab', async () => {
+			// Arrange:
+			const tabToPress = 'section_harvested';
+			const expectedTextList = [
+				'table_field_height',
+				'table_field_type',
+				'table_field_amount',
+				...accountHarvestedBlockPageResult.data.map(block => block.height)
+			];
+
+			// Act + Assert:
+			await runHistoryTabTest(tabToPress, expectedTextList);
 		});
 	});
 
