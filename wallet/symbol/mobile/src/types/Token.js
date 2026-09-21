@@ -16,11 +16,15 @@
  * Resolved display data for a token: the known-token identity merged with the token's own
  * identifier and amount.
  * @typedef {object} TokenDisplayData
- * @property {string} tokenId - The token identifier.
- * @property {string} amount - The token amount, passed through from the input token.
- * @property {string} name - The resolved display name (known name, token name, or the token id).
- * @property {string|null} ticker - The resolved ticker, or null when unknown.
+ * @property {string} tokenId - Actual token id (a token contract address).
+ * @property {string} name - Actual token name. Got from the token object or known token config.
+ * @property {string|null} ticker - Actual token ticker. Got from the token object or known token config. Null when unknown.
+ * @property {string} nameText - Formatted name text that should be used as a full token name. 
+ * Constructed from known name + optional ticker. Fallback to token name or token id.
+ * @property {string} tickerText - Text that should be used as a token ticker.
+ * Not always a ticker - uses known ticker or token ticker when available, or fallback to name or id.
  * @property {string|null} imageId - The known token image identifier, or null when unknown.
+ * @property {string|null} amount - The token amount.
  */
 
 export {};

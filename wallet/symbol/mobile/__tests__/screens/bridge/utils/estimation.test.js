@@ -1,5 +1,10 @@
 import { PriceImpactSeverity } from '@/app/screens/bridge/constants';
-import { formatPriceImpactText, getEstimationsPriceImpact, getPriceImpactSeverity } from '@/app/screens/bridge/utils/price-impact';
+import {
+	formatPriceImpactText,
+	getEstimationsPriceImpact,
+	getPriceImpactSeverity,
+	isEstimationComplete
+} from '@/app/screens/bridge/utils/estimation';
 
 // Constants
 
@@ -29,7 +34,51 @@ const failedBridgeStepEstimation = {
 	error: { code: 'daily_limit_exceeded' }
 };
 
-describe('screens/bridge/utils/price-impact', () => {
+describe('screens/bridge/utils/estimation', () => {
+	describe('isEstimationComplete', () => {
+		const runIsEstimationCompleteTest = (description, config, expected) => {
+			it(description, () => {
+				// Act:
+				const result = isEstimationComplete(config.estimations, config.stepCount);
+
+				// Assert:
+				expect(result).toBe(expected.isComplete);
+			});
+		};
+
+		const isEstimationCompleteTests = [
+			{
+				description: 'is complete when every step estimated without an error',
+				config: { estimations: [createSwapStepEstimation(0.2), bridgeStepEstimation], stepCount: 2 },
+				expected: { isComplete: true }
+			},
+			{
+				description: 'is incomplete without estimations',
+				config: { estimations: null, stepCount: 2 },
+				expected: { isComplete: false }
+			},
+			{
+				description: 'is incomplete while a step estimation is missing',
+				config: { estimations: [createSwapStepEstimation(0.2)], stepCount: 2 },
+				expected: { isComplete: false }
+			},
+			{
+				description: 'is incomplete when a step failed',
+				config: { estimations: [createSwapStepEstimation(0.2), failedBridgeStepEstimation], stepCount: 2 },
+				expected: { isComplete: false }
+			},
+			{
+				description: 'is incomplete for a route without steps',
+				config: { estimations: [], stepCount: 0 },
+				expected: { isComplete: false }
+			}
+		];
+
+		isEstimationCompleteTests.forEach(test => {
+			runIsEstimationCompleteTest(test.description, test.config, test.expected);
+		});
+	});
+
 	describe('getPriceImpactSeverity', () => {
 		const runGetPriceImpactSeverityTest = (description, config, expected) => {
 			it(description, () => {

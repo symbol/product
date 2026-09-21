@@ -17,21 +17,20 @@ import { Colors } from '@/app/styles';
 import { createExplorerTransactionUrl } from '@/app/utils';
 
 /** @typedef {import('@/app/screens/bridge/types/Bridge').SwapSideTypeValue} SwapSideTypeValue */
-/** @typedef {import('@/app/screens/bridge/types/Bridge').ResolvedTokenData} ResolvedTokenData */
-/** @typedef {import('@/app/screens/bridge/types/Bridge').ResolvedAccountData} ResolvedAccountData */
+/** @typedef {import('@/app/types/Account').AccountDisplayData} AccountDisplayData */
 /** @typedef {import('@/app/types/Network').NetworkIdentifier} NetworkIdentifier */
 /** @typedef {import('@/app/types/Network').ChainName} ChainName */
+/** @typedef {import('@/app/types/Token').TokenDisplayData} TokenDisplayData */
 
 /**
- * SwapSideDetails component. Displays detailed information for one side of a swap,
- * including token info, chain name, account address, and transaction hash with
- * copy functionality and block explorer link.
+ * SwapSideDetails component. Shows details for a single swap side, such as the token details,
+ * account address, transaction hash and block explorer link.
  * @param {object} props - Component props.
  * @param {SwapSideTypeValue} props.type - The side type (source or target).
  * @param {ChainName} props.chainName - The blockchain name.
  * @param {NetworkIdentifier} props.networkIdentifier - The network identifier.
- * @param {ResolvedTokenData} props.token - Token information. A null amount shows the amount placeholder.
- * @param {ResolvedAccountData|null} props.account - Account information.
+ * @param {TokenDisplayData} props.token - Token information. A null amount shows the amount placeholder.
+ * @param {AccountDisplayData|null} props.account - Account information.
  * @param {string|null} props.transactionHash - The transaction hash.
  * @returns {import('react').ReactNode} SwapSideDetails component.
  */
@@ -60,8 +59,7 @@ export const SwapSideDetails = ({ type, chainName, networkIdentifier, token, acc
 			<Spacer>
 				<Stack>
 					<TokenBalanceRow
-						name={token.name}
-						ticker={token.ticker}
+						name={token.nameText}
 						imageId={token.imageId}
 						amount={token.amount}
 						size="l"
