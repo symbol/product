@@ -9,6 +9,7 @@ from collections import defaultdict, namedtuple
 from datetime import datetime, timedelta, timezone
 from urllib.parse import urlparse
 
+from common.symbol.NativeMosaic import normalize_mosaic_id, validate_native_mosaic_response
 from common.symbol.NodeConfiguration import SymbolNodeConfiguration
 from symbolchain.facade.SymbolFacade import SymbolFacade
 from symbolchain.sc import TransactionType
@@ -61,7 +62,6 @@ from puller.model.symbol.Resolution import is_alias_mosaic_id, select_resolution
 from puller.model.symbol.Transaction import create_transaction_row, unique_address_rows
 
 DatabaseConfiguration = namedtuple('DatabaseConfiguration', ['database', 'user', 'password', 'host', 'port'])
-NativeMosaicInfo = namedtuple('NativeMosaicInfo', ['id', 'divisibility'])
 TransactionSource = namedtuple('TransactionSource', ['primary_id', 'secondary_id'])
 TransactionCountExpectation = namedtuple('TransactionCountExpectation', ['top_level_count', 'total_count'])
 ResolutionStatements = namedtuple('ResolutionStatements', ['address', 'mosaic'])
@@ -1133,9 +1133,9 @@ class SymbolPuller:  # pylint: disable=too-many-instance-attributes
 			return self._native_mosaic_info
 
 		network_properties = await self._get_network_properties()
-		native_mosaic_id = network_properties['chain']['currencyMosaicId'].replace('0x', '').replace("'", '').upper()
+		native_mosaic_id = normalize_mosaic_id(network_properties['chain']['currencyMosaicId'])
 		mosaic_definition = await self.get_symbol_node(f'/mosaics/{native_mosaic_id}')
-		self._native_mosaic_info = NativeMosaicInfo(native_mosaic_id, int(mosaic_definition['mosaic']['divisibility']))
+		self._native_mosaic_info = validate_native_mosaic_response(native_mosaic_id, mosaic_definition)
 
 		return self._native_mosaic_info
 
@@ -1714,7 +1714,7 @@ class SymbolPuller:  # pylint: disable=too-many-instance-attributes
 			started_at = datetime.now(timezone.utc)
 			chain_info = await self.get_symbol_node('/chain/info')
 			snapshot_height = int(chain_info['height'])
-			native_mosaic_id, native_mosaic_divisibility = await self._get_native_mosaic_info()
+			native_mosaic_info = await self._get_native_mosaic_info()
 			cutoff_timestamp = started_at - timedelta(days=HARVESTING_ACTIVE_WINDOW_DAYS)
 			recently_harvesting_addresses = self.symbol_db.get_recently_harvesting_addresses(cutoff_timestamp)
 			self.symbol_db.upsert_account_refresh_state({
@@ -1736,8 +1736,8 @@ class SymbolPuller:  # pylint: disable=too-many-instance-attributes
 						item,
 						self.symbol_facade.network,
 						snapshot_height,
-						native_mosaic_id,
-						native_mosaic_divisibility)
+						native_mosaic_info.id,
+						native_mosaic_info.divisibility)
 					account_row['is_harvesting_active'] = account_row['address'] in recently_harvesting_addresses
 					account_entries.append({
 						'refresh_run_id': refresh_run_id,
@@ -1757,7 +1757,7 @@ class SymbolPuller:  # pylint: disable=too-many-instance-attributes
 
 			self.symbol_db.finalize_account_refresh(
 				refresh_run_id,
-				native_mosaic_id,
+				native_mosaic_info.id,
 				snapshot_height,
 				datetime.now(timezone.utc))
 		except Exception as exception:

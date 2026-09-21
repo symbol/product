@@ -1,0 +1,12 @@
+# Example only; this file is not a production configuration.
+# Set EXPLORER_REST_SETTINGS to the deployment-specific settings file.
+REST_CHAIN = "symbol"
+
+# Replace the placeholder with the XYM mosaic ID for the same network as the
+# configured Symbol Node and Symbol database. This value is intentionally not
+# a mainnet or testnet ID.
+SYMBOL_NATIVE_MOSAIC_ID = "REPLACE_WITH_16_HEX_NETWORK_NATIVE_MOSAIC_ID"
+
+# REST targets mainnet/testnet XYM and uses the fixed XYM_DIVISIBILITY = 6.
+# Format validation cannot detect a Node/DB/native-ID network mismatch. Deploy
+# the Node, DB and native ID as one network-specific group.
