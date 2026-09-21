@@ -1,25 +1,16 @@
 import ReportPanel from '@/components/ReportPanel';
+import { ERROR_ROW, ERROR_TAB, REQUEST_TAB } from '@/test-utils/fixtures';
 import '@testing-library/jest-dom';
 import { fireEvent, render, screen } from '@testing-library/react';
 
 const BASE_URL = 'https://bridge.example/wrapped';
-const tab = {
-	id: 'xym-wxym-requests',
-	label: 'XYM → WXYM',
-	operation: 'wrap',
-	resource: 'requests',
-	sourceAsset: { ticker: 'XYM', divisibility: 6 },
-	destinationAsset: { ticker: 'WXYM', divisibility: 6 },
-	sourceNetwork: 'nativeNetwork',
-	destinationNetwork: 'wrappedNetwork'
-};
 
 const renderPanel = currentTab => render(<ReportPanel baseUrl={BASE_URL} isActive tab={currentTab} />);
 
 describe('ReportPanel', () => {
 	it('renders validation error given invalid input', () => {
 		// Arrange:
-		renderPanel(tab);
+		renderPanel(REQUEST_TAB);
 		const input = screen.getByRole('textbox', { name: /filter by address/i });
 		fireEvent.change(input, { target: { value: 'invalid' } });
 
@@ -33,7 +24,7 @@ describe('ReportPanel', () => {
 
 	it('accepts a valid search and removes an existing validation error', () => {
 		// Arrange:
-		renderPanel(tab);
+		renderPanel(REQUEST_TAB);
 		const input = screen.getByRole('textbox', { name: /filter by address/i });
 		fireEvent.change(input, { target: { value: 'invalid' } });
 		fireEvent.submit(input.closest('form'));
@@ -49,7 +40,7 @@ describe('ReportPanel', () => {
 
 	it('clears the search input and its validation error', () => {
 		// Arrange:
-		renderPanel(tab);
+		renderPanel(REQUEST_TAB);
 		const input = screen.getByRole('textbox', { name: /filter by address/i });
 		fireEvent.change(input, { target: { value: 'invalid' } });
 		fireEvent.submit(input.closest('form'));
@@ -65,7 +56,7 @@ describe('ReportPanel', () => {
 
 	it('selects one payout status at a time', () => {
 		// Arrange:
-		renderPanel(tab);
+		renderPanel(REQUEST_TAB);
 		const allButton = screen.getByRole('button', { name: 'All' });
 		const sentButton = screen.getByRole('button', { name: 'Sent' });
 		const failedButton = screen.getByRole('button', { name: 'Failed' });
@@ -80,11 +71,8 @@ describe('ReportPanel', () => {
 	});
 
 	it('does not show payout filters for error reports', () => {
-		// Arrange:
-		const errorTab = { ...tab, id: 'xym-wxym-errors', resource: 'errors' };
-
 		// Act:
-		renderPanel(errorTab);
+		renderPanel(ERROR_TAB);
 
 		// Assert:
 		expect(screen.queryByRole('group', { name: 'Payout status' })).not.toBeInTheDocument();
