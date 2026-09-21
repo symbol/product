@@ -1,6 +1,7 @@
 package com.thesymbolsyndicate.symbolwallet
 
 import android.app.Application
+import androidx.appcompat.app.AppCompatDelegate
 import com.facebook.react.PackageList
 import com.facebook.react.ReactApplication
 import com.facebook.react.ReactHost
@@ -22,6 +23,8 @@ class MainApplication : Application(), ReactApplication {
 
   override fun onCreate() {
     super.onCreate()
+    // Set the night mode to always be on, so the system buttons match the app's dark theme.
+    AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
     loadReactNative(this)
   }
 }
