@@ -40,7 +40,7 @@ const assetFileExtensions = [
 
 module.exports = {
 	// General settings
-	preset: 'react-native',
+	preset: '@react-native/jest-preset',
 	testMatch: ['<rootDir>/__tests__/**/*.test.js'],
 	clearMocks: true,
 	setupFilesAfterEnv: ['./setupTests.js'],
