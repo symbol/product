@@ -48,6 +48,7 @@ module.exports = {
 	maxWorkers: process.env.CI ? 2 : '50%',
 
 	// Transform & module settings
+	resolver: '<rootDir>/jest.resolver.js',
 	transform: {
 		'^.+\\.(js|jsx|ts|tsx)$': 'babel-jest'
 	},
