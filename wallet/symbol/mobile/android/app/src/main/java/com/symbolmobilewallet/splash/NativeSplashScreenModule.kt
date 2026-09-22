@@ -1,16 +1,15 @@
 package com.thesymbolsyndicate.symbolwallet.splash
 
 import android.app.Activity
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
+import android.app.Dialog
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.UiThreadUtil
 import com.thesymbolsyndicate.symbolwallet.R
 import com.thesymbolsyndicate.symbolwallet.specs.NativeSplashScreenSpec
 
 /**
- * Shows the full-screen splash image over the activity content until the JS side calls hide().
+ * Shows the splash image in a dialog window over the activity until the JS side calls hide(),
+ * mirroring the react-native-splash-screen approach (fade-out on dismiss via the dialog theme).
  */
 class NativeSplashScreenModule(reactContext: ReactApplicationContext) : NativeSplashScreenSpec(reactContext) {
 
@@ -18,24 +17,32 @@ class NativeSplashScreenModule(reactContext: ReactApplicationContext) : NativeSp
 
   override fun hide() {
     UiThreadUtil.runOnUiThread {
-      splashView?.let { view -> (view.parent as? ViewGroup)?.removeView(view) }
-      splashView = null
+      val dialog = splashDialog ?: return@runOnUiThread
+      splashDialog = null
+      val activity = dialog.ownerActivity ?: return@runOnUiThread
+      if (activity.isFinishing || activity.isDestroyed || !dialog.isShowing) return@runOnUiThread
+
+      dialog.dismiss()
     }
   }
 
   companion object {
     const val NAME = "NativeSplashScreen"
 
-    private var splashView: View? = null
+    private var splashDialog: Dialog? = null
 
     /**
-     * Inflates the launch screen layout on top of the activity's decor view.
+     * Shows the launch screen layout in a full-screen dialog on top of the activity.
      */
     fun show(activity: Activity) {
-      val decorView = activity.window.decorView as ViewGroup
-      val view = LayoutInflater.from(activity).inflate(R.layout.launch_screen, decorView, false)
-      decorView.addView(view)
-      splashView = view
+      if (activity.isFinishing) return
+
+      val dialog = Dialog(activity, R.style.SplashScreenTheme)
+      dialog.setContentView(R.layout.launch_screen)
+      dialog.setCancelable(false)
+      dialog.setOwnerActivity(activity)
+      dialog.show()
+      splashDialog = dialog
     }
   }
 }
