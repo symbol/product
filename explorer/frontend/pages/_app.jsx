@@ -34,8 +34,10 @@ const AppComponent = ({ Component, pageProps, appConfig }) => {
 	const isRetainableRoute = ROUTES_TO_RETAIN.includes(router.asPath);
 
 	if (isRetainableRoute && !retainedComponents.current[router.asPath]) {
+		/* eslint-disable @eslint-react/static-components -- created once per route and cached in a ref */
 		const MemoComponent = memo(Component);
 		retainedComponents.current[router.asPath] = <MemoComponent {...pageProps} />;
+		/* eslint-enable @eslint-react/static-components */
 	}
 
 	const getDisplayStyle = flag => ({ display: flag ? 'block' : 'none' });
@@ -43,7 +45,7 @@ const AppComponent = ({ Component, pageProps, appConfig }) => {
 	useEffect(() => {
 		if (userLanguage && userLanguage !== router.locale)
 			router.push(router.asPath, null, { locale: userLanguage });
-	}, [userLanguage, router.locale]);
+	}, [userLanguage, router]);
 
 	// Fetch backend status
 	const [backendStatus, setBackendStatus] = useState(null);
@@ -74,7 +76,7 @@ const AppComponent = ({ Component, pageProps, appConfig }) => {
 								</div>
 							))}
 						</div>
-						{!isRetainableRoute && <Component {...pageProps} key={router.asPath} />}
+						{!isRetainableRoute && <Component key={router.asPath} {...pageProps} />}
 					</main>
 				</div>
 			</ConfigProvider>

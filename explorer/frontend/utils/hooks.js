@@ -1,5 +1,5 @@
 import { STORAGE_KEY } from '@/app/constants';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 // Makes an async call. Handles the loading and error states.
 export const useDataManager = (callback, defaultData, onError, defaultLoadingState = false) => {
@@ -156,60 +156,63 @@ export const useToggle = initialValue => {
 export const useStorage = (key, initialValue, callback) => {
 	const [value, setValue] = useState(initialValue);
 	const [setter, setSetter] = useState(null);
-	const getEvent = key => `storage.update.${key}`;
-	const storage = {
-		[STORAGE_KEY.ADDRESS_BOOK]: {
-			get: () => {
-				const defaultValue = [];
-
-				try {
-					const jsonString = localStorage.getItem(STORAGE_KEY.ADDRESS_BOOK);
-					return JSON.parse(jsonString) || defaultValue;
-				} catch {
-					return defaultValue;
-				}
-			},
-			set: value => {
-				localStorage.setItem(STORAGE_KEY.ADDRESS_BOOK, JSON.stringify(value));
-				dispatchEvent(new Event(getEvent(STORAGE_KEY.ADDRESS_BOOK)));
-			}
-		},
-		[STORAGE_KEY.TIMESTAMP_TYPE]: {
-			get: () => {
-				const defaultValue = 'UTC';
-				const value = localStorage.getItem(STORAGE_KEY.TIMESTAMP_TYPE);
-				return value || defaultValue;
-			},
-			set: value => {
-				localStorage.setItem(STORAGE_KEY.TIMESTAMP_TYPE, value);
-				dispatchEvent(new Event(getEvent(STORAGE_KEY.TIMESTAMP_TYPE)));
-			}
-		},
-		[STORAGE_KEY.USER_CURRENCY]: {
-			get: () => {
-				const defaultValue = 'USD';
-				const value = localStorage.getItem(STORAGE_KEY.USER_CURRENCY);
-				return value || defaultValue;
-			},
-			set: value => {
-				localStorage.setItem(STORAGE_KEY.USER_CURRENCY, value);
-				dispatchEvent(new Event(getEvent(STORAGE_KEY.USER_CURRENCY)));
-			}
-		},
-		[STORAGE_KEY.USER_LANGUAGE]: {
-			get: () => {
-				const defaultValue = 'en';
-				const value = localStorage.getItem(STORAGE_KEY.USER_LANGUAGE);
-				return value || defaultValue;
-			},
-			set: value => {
-				localStorage.setItem(STORAGE_KEY.USER_LANGUAGE, value);
-				dispatchEvent(new Event(getEvent(STORAGE_KEY.USER_LANGUAGE)));
-			}
-		}
-	};
+	// keep the latest callback without retriggering the effect (callers pass inline functions)
+	const callbackRef = useRef();
+	callbackRef.current = callback;
 
 	useEffect(() => {
+		const getEvent = key => `storage.update.${key}`;
+		const storage = {
+			[STORAGE_KEY.ADDRESS_BOOK]: {
+				get: () => {
+					const defaultValue = [];
+
+					try {
+						const jsonString = localStorage.getItem(STORAGE_KEY.ADDRESS_BOOK);
+						return JSON.parse(jsonString) || defaultValue;
+					} catch {
+						return defaultValue;
+					}
+				},
+				set: value => {
+					localStorage.setItem(STORAGE_KEY.ADDRESS_BOOK, JSON.stringify(value));
+					dispatchEvent(new Event(getEvent(STORAGE_KEY.ADDRESS_BOOK)));
+				}
+			},
+			[STORAGE_KEY.TIMESTAMP_TYPE]: {
+				get: () => {
+					const defaultValue = 'UTC';
+					const value = localStorage.getItem(STORAGE_KEY.TIMESTAMP_TYPE);
+					return value || defaultValue;
+				},
+				set: value => {
+					localStorage.setItem(STORAGE_KEY.TIMESTAMP_TYPE, value);
+					dispatchEvent(new Event(getEvent(STORAGE_KEY.TIMESTAMP_TYPE)));
+				}
+			},
+			[STORAGE_KEY.USER_CURRENCY]: {
+				get: () => {
+					const defaultValue = 'USD';
+					const value = localStorage.getItem(STORAGE_KEY.USER_CURRENCY);
+					return value || defaultValue;
+				},
+				set: value => {
+					localStorage.setItem(STORAGE_KEY.USER_CURRENCY, value);
+					dispatchEvent(new Event(getEvent(STORAGE_KEY.USER_CURRENCY)));
+				}
+			},
+			[STORAGE_KEY.USER_LANGUAGE]: {
+				get: () => {
+					const defaultValue = 'en';
+					const value = localStorage.getItem(STORAGE_KEY.USER_LANGUAGE);
+					return value || defaultValue;
+				},
+				set: value => {
+					localStorage.setItem(STORAGE_KEY.USER_LANGUAGE, value);
+					dispatchEvent(new Event(getEvent(STORAGE_KEY.USER_LANGUAGE)));
+				}
+			}
+		};
 		const accessor = storage[key];
 
 		if (!accessor)
@@ -218,8 +221,8 @@ export const useStorage = (key, initialValue, callback) => {
 		const updateValue = () => {
 			const value = accessor.get();
 			setValue(value);
-			if (callback)
-				callback(value);
+			if (callbackRef.current)
+				callbackRef.current(value);
 		};
 
 		setSetter(() => accessor.set);
@@ -229,7 +232,7 @@ export const useStorage = (key, initialValue, callback) => {
 		return () => {
 			window?.removeEventListener(getEvent(key), updateValue);
 		};
-	}, []);
+	}, [key]);
 
 	return [value, setter];
 };
@@ -257,20 +260,28 @@ export const useUserCurrencyAmount = (fetchPrice, amount, currency, timestamp) =
 // Makes an async call on mount. Allows to repeat the call with a given interval.
 export const useAsyncCall = (callback, defaultData, pollingInterval) => {
 	const [data, setData] = useState(defaultData);
+	// keep the latest callback without retriggering the effect (callers pass inline functions)
+	const callbackRef = useRef();
+	callbackRef.current = callback;
 
 	useEffect(() => {
 		const call = async () => {
 			try {
-				const data = await callback();
+				const data = await callbackRef.current();
 				setData(data);
-			} catch {}
+			} catch {
+				// keep the previous data on failure
+			}
 		};
 
-		if (pollingInterval)
-			setInterval(() => call(), pollingInterval);
-		else
-			call();
-	}, []);
+		if (pollingInterval) {
+			const intervalId = setInterval(() => call(), pollingInterval);
+
+			return () => clearInterval(intervalId);
+		}
+
+		call();
+	}, [pollingInterval]);
 
 	return data;
 };

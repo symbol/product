@@ -1,4 +1,3 @@
-/* eslint-disable max-len */
 export const namespacePageResponse = [
 	{
 		expirationHeight: 5214679,

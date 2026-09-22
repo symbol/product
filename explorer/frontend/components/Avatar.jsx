@@ -13,26 +13,25 @@ const AccountAvatar = ({ address }) => {
 	const [description, setDescription] = useState('');
 	const { knownAccounts } = useConfig();
 
-	const setKnownAccountInfo = address => {
-		setImage(knownAccounts[address].image);
-		setDescription(knownAccounts[address].description);
-		setIsKnownAccount(true);
-	};
-	const generateImage = address => {
-		const image = makeBlockie(address);
-		setImage(image);
-		setDescription(address);
-	};
-
 	useEffect(() => {
+		const setKnownAccountInfo = address => {
+			setImage(knownAccounts[address].image);
+			setDescription(knownAccounts[address].description);
+			setIsKnownAccount(true);
+		};
+		const generateImage = address => {
+			const image = makeBlockie(address);
+			setImage(image);
+			setDescription(address);
+		};
+
 		// Known account: use its stored avatar and description
-		if (knownAccounts && knownAccounts[address]) 
+		if (knownAccounts && knownAccounts[address])
 			setKnownAccountInfo(address);
-		
+
 		// Otherwise generate an identicon from the address
-		else if (knownAccounts) 
+		else if (knownAccounts)
 			generateImage(address);
-		
 	}, [address, knownAccounts]);
 
 	return (
