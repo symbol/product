@@ -65,6 +65,7 @@ export const STYLE_VARIABLES_CONTRACT = [
 
 // Required config keys by page.
 export const PAGE_CONFIG_CONTRACT = {
+	account: ['showEmptyBlockFilter'],
 	home: ['showSupernodeCount', 'additionalSections']
 };
 

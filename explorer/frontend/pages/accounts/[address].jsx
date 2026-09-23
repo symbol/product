@@ -37,6 +37,7 @@ import {
 	useStorage,
 	useUserCurrencyAmount
 } from '@/app/utils';
+import { pageConfig } from '@/app/variants/page-config';
 import Head from 'next/head';
 import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
@@ -396,20 +397,29 @@ const AccountInfo = ({ accountInfo, preloadedTransactions }) => {
 						label: t('section_harvested'),
 						content: (
 							<div className="layout-flex-col">
-								<div className="layout-flex-row-mobile-col">
-									<Filter
-										data={harvestedBlockFilterConfig}
-										isDisabled={harvestedBlockPagination.isLoading}
-										value={harvestedBlockPagination.filter}
-										onChange={harvestedBlockPagination.changeFilter}
-										onClear={harvestedBlockPagination.clearFilter}
-									/>
+								{pageConfig.account.showEmptyBlockFilter ? (
+									<div className="layout-flex-row-mobile-col">
+										<Filter
+											data={harvestedBlockFilterConfig}
+											isDisabled={harvestedBlockPagination.isLoading}
+											value={harvestedBlockPagination.filter}
+											onChange={harvestedBlockPagination.changeFilter}
+											onClear={harvestedBlockPagination.clearFilter}
+										/>
+										<ButtonCSV
+											data={harvestedBlockPagination.data}
+											fileName={`harvested-blocks-${address}`}
+											format={formatHarvestedBlockCSV}
+										/>
+									</div>
+								) : (
 									<ButtonCSV
+										className="layout-align-end"
 										data={harvestedBlockPagination.data}
 										fileName={`harvested-blocks-${address}`}
 										format={formatHarvestedBlockCSV}
 									/>
-								</div>
+								)}
 								<Table
 									data={harvestedBlockPagination.data}
 									columns={harvestedBlockTableColumns}
