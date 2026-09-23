@@ -1,5 +1,5 @@
 import ReportTable from '@/components/ReportTable';
-import { CONFIGURATION, ERROR_ROW, ERROR_TAB, REQUEST_ROW, REQUEST_TAB } from '@/test-utils/fixtures';
+import { CONFIGURATION, ERROR_ROW, ERROR_TAB, REQUEST_ROW, REQUEST_TAB } from '../test-utils/fixtures';
 import '@testing-library/jest-dom';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 

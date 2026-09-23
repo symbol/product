@@ -1,6 +1,6 @@
 import { fetchReportPage } from '@/api/bridge';
 import ReportPanel from '@/components/ReportPanel';
-import { ERROR_ROW, ERROR_TAB, REQUEST_TAB, SECOND_ERROR_ROW } from '@/test-utils/fixtures';
+import { ERROR_ROW, ERROR_TAB, REQUEST_TAB, SECOND_ERROR_ROW } from '../test-utils/fixtures';
 import '@testing-library/jest-dom';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 
