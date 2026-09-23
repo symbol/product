@@ -153,6 +153,8 @@
 	"filter_latest": "Najnovše",
 	"filter_activeHarvesting": "Aktivne Harvesting",
 	"filter_activeHarvesting_description": "Pokazati tokmo accounty koje sut harvestil najmenje jedin blok v prošlyh {{days}} dnjah.",
+	"filter_hideEmptyBlocks": "Bez Prazdnyh Blokov",
+	"filter_hideEmptyBlocks_description": "Skryti bloky ktore ne sut platili ničto.",
 	"filter_service": "Servis",
 	"filter_from": "Od",
 	"filter_to": "Do",

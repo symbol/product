@@ -56,16 +56,22 @@ export const fetchAccountInfo = createTryFetchInfoFunction(async address => {
 
 /**
  * Fetches the page of blocks harvested by an account. All NEM block fees go to the harvester,
- * so the reward amount is the block total fee.
+ * so the reward amount is the block total fee. Blocks that paid nothing are left out with "hideEmpty".
  * @param {object} searchParams - search parameters, including the account "address"
  * @returns {Promise<Page>} harvested block page
  */
 export const fetchAccountHarvestedBlockPage = async searchParams => {
 	const searchCriteria = createSearchCriteria(searchParams);
-	const url = createSearchURL(createApiUrl('blocks'), searchCriteria);
-	const blocks = await makeRequest(url);
 
-	return createPage(blocks, searchCriteria.pageNumber, harvestedBlockFromDTO);
+	if (searchCriteria.filter.hideEmpty) {
+		delete searchCriteria.filter.hideEmpty;
+		searchCriteria.filter.rewardedOnly = true;
+	}
+
+	const url = createSearchURL(createApiUrl('account/harvests'), searchCriteria);
+	const harvests = await makeRequest(url);
+
+	return createPage(harvests, searchCriteria.pageNumber, harvestedBlockFromDTO);
 };
 
 /**
@@ -80,14 +86,14 @@ export const fetchAccountInfoByPublicKey = createTryFetchInfoFunction(async publ
 });
 
 /**
- * Maps the harvested block from the block DTO.
+ * Maps the harvested block from the harvest DTO.
  * @param {object} data - raw data from response
  * @returns {object} mapped harvested block
  */
 const harvestedBlockFromDTO = data => ({
 	height: data.height,
 	timestamp: data.timestamp,
-	amount: data.totalFees,
+	amount: data.amount,
 	type: REWARD_TYPE.HARVESTING
 });
 

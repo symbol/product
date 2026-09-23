@@ -5,7 +5,7 @@ import * as AccountService from '@/app/api/accounts';
 import * as TransactionService from '@/app/api/transactions';
 import AccountInfo, { getServerSideProps } from '@/app/pages/accounts/[address]';
 import * as utils from '@/app/utils';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 
 jest.mock('@/app/utils', () => {
 	return {
@@ -194,6 +194,15 @@ describe('AccountInfo', () => {
 			await Promise.all(assertionPromises);
 		};
 
+		// The filter chip ignores clicks while the page is loading, so wait until it reports itself enabled.
+		const openHarvestedTabAndAwaitEmptyBlockFilter = async () => {
+			fireEvent.click(screen.getByText('section_harvested'));
+			const emptyBlockFilter = screen.getByText('filter_hideEmptyBlocks').closest('[role="button"]');
+			await waitFor(() => expect(emptyBlockFilter).toHaveAttribute('aria-disabled', 'false'));
+
+			return emptyBlockFilter;
+		};
+
 		it('renders transactions tab', async () => {
 			// Arrange:
 			const tabToPress = 'section_transactions';
@@ -215,6 +224,59 @@ describe('AccountInfo', () => {
 
 			// Act + Assert:
 			await runHistoryTabTest(tabToPress, expectedTextList);
+		});
+
+		it('asks for every harvested block by default', async () => {
+			// Act:
+			render(<AccountInfo accountInfo={accountInfoResult} preloadedTransactions={transactionPageResult.data} />);
+
+			// Assert: empty blocks stay in the list until the filter hides them
+			await waitFor(() =>
+				expect(AccountService.fetchAccountHarvestedBlockPage).toHaveBeenCalledWith({
+					pageNumber: 1,
+					address: accountInfoResult.address
+				}));
+		});
+
+		it('leaves out empty blocks once the filter is selected', async () => {
+			// Arrange:
+			render(<AccountInfo accountInfo={accountInfoResult} preloadedTransactions={transactionPageResult.data} />);
+			const emptyBlockFilter = await openHarvestedTabAndAwaitEmptyBlockFilter();
+
+			// Act:
+			fireEvent.click(emptyBlockFilter);
+
+			// Assert: the address must survive the toggle, the backend rejects a request without it
+			await waitFor(() =>
+				expect(AccountService.fetchAccountHarvestedBlockPage).toHaveBeenCalledWith({
+					pageNumber: 1,
+					address: accountInfoResult.address,
+					hideEmpty: true
+				}));
+		});
+
+		it('shows empty blocks again when the filter is cleared', async () => {
+			// Arrange:
+			render(<AccountInfo accountInfo={accountInfoResult} preloadedTransactions={transactionPageResult.data} />);
+			const emptyBlockFilter = await openHarvestedTabAndAwaitEmptyBlockFilter();
+			fireEvent.click(emptyBlockFilter);
+			await waitFor(() =>
+				expect(AccountService.fetchAccountHarvestedBlockPage).toHaveBeenLastCalledWith({
+					pageNumber: 1,
+					address: accountInfoResult.address,
+					hideEmpty: true
+				}));
+			AccountService.fetchAccountHarvestedBlockPage.mockClear();
+
+			// Act: the page renders a filter per history tab, so clear the one next to the empty block chip
+			fireEvent.click(within(emptyBlockFilter.parentElement).getByText('button_clear'));
+
+			// Assert: clearing drops the chip, which is what brings the empty blocks back
+			await waitFor(() =>
+				expect(AccountService.fetchAccountHarvestedBlockPage).toHaveBeenCalledWith({
+					pageNumber: 1,
+					address: accountInfoResult.address
+				}));
 		});
 	});
 
