@@ -252,7 +252,7 @@ describe('AccountInfo', () => {
 				expect(AccountService.fetchAccountHarvestedBlockPage).toHaveBeenCalledWith({
 					pageNumber: 1,
 					address: accountInfoResult.address,
-					hideEmpty: true
+					isRewardedOnly: true
 				}));
 		});
 
@@ -265,7 +265,7 @@ describe('AccountInfo', () => {
 				expect(AccountService.fetchAccountHarvestedBlockPage).toHaveBeenLastCalledWith({
 					pageNumber: 1,
 					address: accountInfoResult.address,
-					hideEmpty: true
+					isRewardedOnly: true
 				}));
 			AccountService.fetchAccountHarvestedBlockPage.mockClear();
 

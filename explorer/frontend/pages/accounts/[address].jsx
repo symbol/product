@@ -160,7 +160,7 @@ const AccountInfo = ({ accountInfo, preloadedTransactions }) => {
 	];
 	const harvestedBlockFilterConfig = [
 		{
-			name: 'hideEmpty',
+			name: 'isRewardedOnly',
 			title: t('filter_hideEmptyBlocks'),
 			description: t('filter_hideEmptyBlocks_description'),
 			type: 'boolean'
