@@ -55,7 +55,7 @@ describe('api/accounts', () => {
 				pageNumber: 2,
 				pageSize: 123,
 				address: 'NDHEJKXY6YK7JGRFQT2L7P3O5VMUGR4BWKQNVXXQ',
-				hideEmpty: true
+				isRewardedOnly: true
 			};
 			const expectedURL =
 				'https://explorer.backend/account/harvests?limit=123&offset=123' +

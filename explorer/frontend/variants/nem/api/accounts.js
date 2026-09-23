@@ -56,15 +56,15 @@ export const fetchAccountInfo = createTryFetchInfoFunction(async address => {
 
 /**
  * Fetches the page of blocks harvested by an account. All NEM block fees go to the harvester,
- * so the reward amount is the block total fee. Blocks that paid nothing are left out with "hideEmpty".
+ * so the reward amount is the block total fee. Blocks that paid nothing are left out with "isRewardedOnly".
  * @param {object} searchParams - search parameters, including the account "address"
  * @returns {Promise<Page>} harvested block page
  */
 export const fetchAccountHarvestedBlockPage = async searchParams => {
 	const searchCriteria = createSearchCriteria(searchParams);
 
-	if (searchCriteria.filter.hideEmpty) {
-		delete searchCriteria.filter.hideEmpty;
+	if (searchCriteria.filter.isRewardedOnly) {
+		delete searchCriteria.filter.isRewardedOnly;
 		searchCriteria.filter.rewardedOnly = true;
 	}
 
