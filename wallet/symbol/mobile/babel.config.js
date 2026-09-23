@@ -19,6 +19,7 @@ const config = {
 			require.resolve('babel-plugin-module-resolver'),
 			{
 				root: ['./'],
+				extensions: ['.js', '.jsx', '.ts', '.json'],
 				alias: createAlias()
 			}
 		]

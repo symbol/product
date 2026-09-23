@@ -40,7 +40,7 @@ const assetFileExtensions = [
 
 module.exports = {
 	// General settings
-	preset: 'react-native',
+	preset: '@react-native/jest-preset',
 	testMatch: ['<rootDir>/__tests__/**/*.test.js'],
 	clearMocks: true,
 	setupFilesAfterEnv: ['./setupTests.js'],
@@ -48,6 +48,7 @@ module.exports = {
 	maxWorkers: process.env.CI ? 2 : '50%',
 
 	// Transform & module settings
+	resolver: '<rootDir>/jest.resolver.js',
 	transform: {
 		'^.+\\.(js|jsx|ts|tsx)$': 'babel-jest'
 	},

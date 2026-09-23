@@ -53,6 +53,7 @@ settings:
     - react-native
     - symbol-sdk
     - symbol-sdk/symbol
+    - specs
   import/resolver:
     node:
       extensions:
@@ -63,10 +64,12 @@ settings:
         '@/app': './src'
         '__fixtures__': './__fixtures__'
         '__tests__': './__tests__'
+        'specs': './specs'
         'symbol-sdk/symbol': './node_modules/symbol-sdk/src/symbol/index.js'
       extensions:
         - .js
         - .jsx
+        - .ts
   import/parsers:
     '@babel/eslint-parser':
       - .js
