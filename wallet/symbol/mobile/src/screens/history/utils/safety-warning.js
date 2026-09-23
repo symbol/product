@@ -39,7 +39,7 @@ export const createSafetyWarningAlertData = (isTransactionDangerous, isCosignabl
 
 	return {
 		isVisible: true,
-		text: $t('s_transactionDetails_safetyWarning_description'),
+		text: $t('screen_history_alert_safetyWarning_description'),
 		variant: 'warning'
 	};
 };

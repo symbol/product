@@ -24,7 +24,7 @@ import React from 'react';
  * @returns {React.ReactNode} CreateContact component.
  */
 export const CreateContact = ({ route }) => {
-	const defaultBlacklistContactName = $t('s_addressBook_account_blacklist_defaultName');
+	const defaultBlacklistContactName = $t('screen_addressBook_title_blockedAccount');
 
 	const { 
 		listType: initialListType, 
@@ -91,10 +91,10 @@ export const CreateContact = ({ route }) => {
 					<Stack gap="l">
 						<Stack gap="none">
 							<StyledText type="title">
-								{$t('s_addressBook_create_title')}
+								{$t('screen_addressBook_title_createContact')}
 							</StyledText>
 							<StyledText type="body">
-								{$t('s_addressBook_create_description')}
+								{$t('screen_addressBook_description_createContact')}
 							</StyledText>
 						</Stack>
 						<TabSelector
@@ -112,19 +112,19 @@ export const CreateContact = ({ route }) => {
 						</StableHeightContainer>
 						<Stack gap="m">
 							<TextBox
-								label={$t('input_name')}
+								label={$t('inputLabel_name')}
 								value={name}
 								errorMessage={nameErrorMessage}
 								onChange={changeName}
 							/>
 							<TextBox
-								label={$t('input_address')}
+								label={$t('inputLabel_address')}
 								value={address}
 								errorMessage={addressErrorMessage}
 								onChange={changeAddress}
 							/>
 							<TextBox
-								label={$t('input_notes')}
+								label={$t('inputLabel_notes')}
 								value={notes}
 								multiline
 								onChange={changeNotes}

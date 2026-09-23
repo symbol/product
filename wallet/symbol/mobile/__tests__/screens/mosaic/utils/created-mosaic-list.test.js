@@ -17,9 +17,9 @@ const CHAIN_HEIGHT = 150_000;
 // Screen Text
 
 const SCREEN_TEXT = {
-	textFilterRevokable: 's_createdMosaicList_filter_revokable',
-	textFilterSupplyMutable: 's_createdMosaicList_filter_supplyMutable',
-	textFilterExpired: 's_createdMosaicList_filter_expired'
+	textFilterRevokable: 'screen_mosaic_chip_revokable',
+	textFilterSupplyMutable: 'screen_mosaic_chip_supplyMutable',
+	textFilterExpired: 'screen_mosaic_chip_expired'
 };
 
 // Token Fixtures

@@ -61,17 +61,17 @@ export const getHarvestingEligibility = (accountInfo, divisibility) => {
  */
 const createEligibilityWarning = ({ status, eligibility }) => {
 	if (status === HarvestingStatus.NODE_UNKNOWN)
-		return { isVisible: true, text: $t('s_harvesting_warning_node_down') };
+		return { isVisible: true, text: $t('screen_harvesting_status_nodeDownWarning_description') };
 
 	const activeStatuses = [HarvestingStatus.ACTIVE, HarvestingStatus.OPERATOR, HarvestingStatus.PENDING];
 	if (activeStatuses.includes(status))
 		return { isVisible: false };
 
 	if (!eligibility.isBalanceSufficient)
-		return { isVisible: true, text: $t('s_harvesting_warning_balance') };
+		return { isVisible: true, text: $t('screen_harvesting_status_balanceWarning_description') };
 
 	if (!eligibility.isImportanceSufficient)
-		return { isVisible: true, text: $t('s_harvesting_warning_importance') };
+		return { isVisible: true, text: $t('screen_harvesting_status_importanceWarning_description') };
 
 	return { isVisible: false };
 };
@@ -92,27 +92,27 @@ export const createHarvestingStatusViewModel = ({
 }) => {
 	const statusDisplayConfigMap = {
 		[HarvestingStatus.ACTIVE]: {
-			statusText: $t('s_harvesting_status_active'),
+			statusText: $t('screen_harvesting_status_active'),
 			icon: 'check-circle-big',
 			variant: 'success'
 		},
 		[HarvestingStatus.PENDING]: {
-			statusText: $t('s_harvesting_status_pending'),
+			statusText: $t('screen_harvesting_status_pending'),
 			icon: 'pending',
 			variant: 'warning'
 		},
 		[HarvestingStatus.INACTIVE]: {
-			statusText: $t('s_harvesting_status_inactive'),
+			statusText: $t('screen_harvesting_status_inactive'),
 			icon: 'cross-circle',
 			variant: 'neutral'
 		},
 		[HarvestingStatus.OPERATOR]: {
-			statusText: $t('s_harvesting_status_operator'),
+			statusText: $t('screen_harvesting_status_operator'),
 			icon: 'account',
 			variant: 'success'
 		},
 		[HarvestingStatus.NODE_UNKNOWN]: {
-			statusText: $t('s_harvesting_status_unknown'),
+			statusText: $t('screen_harvesting_status_unknown'),
 			icon: 'question-circle',
 			variant: 'neutral'
 		}

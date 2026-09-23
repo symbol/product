@@ -24,9 +24,9 @@ const DIVISIBILITY_TAB_ITEMS = Array.from(
  */
 const getDecimalsHintText = divisibility => {
 	if (divisibility === 0)
-		return $t('s_mosaicCreation_decimalsHint_whole');
+		return $t('screen_mosaic_hint_decimalsWhole');
 
-	return $t('s_mosaicCreation_decimalsHint', { count: divisibility });
+	return $t('screen_mosaic_hint_decimals', { count: divisibility });
 };
 
 /**
@@ -41,7 +41,7 @@ export const SelectDivisibility = ({ value, onChange }) => (
 	<View style={styles.root}>
 		<View style={styles.labelRow}>
 			<StyledText type="label" size="s" style={styles.mutedText}>
-				{$t('s_mosaicCreation_decimalPlaces_label')}
+				{$t('screen_mosaic_label_decimalPlaces')}
 			</StyledText>
 			<StyledText type="label" size="s" style={styles.decimalsHint}>
 				{getDecimalsHintText(Number(value))}

@@ -22,12 +22,12 @@ const PAGE_SIZE = 15;
 // Screen Text
 
 const SCREEN_TEXT = {
-	textTitle: 's_createdMosaicList_title',
-	textDescription: 's_createdMosaicList_description',
-	textFilterRevokable: 's_createdMosaicList_filter_revokable',
-	textFilterSupplyMutable: 's_createdMosaicList_filter_supplyMutable',
-	textFilterExpired: 's_createdMosaicList_filter_expired',
-	textExpired: 's_assets_item_expired',
+	textTitle: 'screen_mosaic_createdList_title_intro',
+	textDescription: 'screen_mosaic_createdList_description_intro',
+	textFilterRevokable: 'screen_mosaic_chip_revokable',
+	textFilterSupplyMutable: 'screen_mosaic_chip_supplyMutable',
+	textFilterExpired: 'screen_mosaic_chip_expired',
+	textExpired: 'component_expirationProgress_label_expired',
 	buttonClear: 'button_clear',
 	textEmptyList: 'message_emptyList',
 	buttonCreateMosaic: 'plus'

@@ -31,7 +31,7 @@ export const CreateWallet = () => {
 	const [step, setStep] = useState(1);
 
 	// Account name state
-	const [name, setName] = useState($t('s_createWallet_defaultAccountName'));
+	const [name, setName] = useState($t('screen_onboarding_title_defaultAccountName'));
 	const nameErrorMessage = useValidation(name, [validateRequired(), validateAccountName()], $t);
 
 	// Mnemonic state
@@ -43,10 +43,10 @@ export const CreateWallet = () => {
 	const [isLoading, setIsLoading] = useState(false);
 	const [loadingStep, setLoadingStep] = useState(1);
 	const steps = [
-		$t('s_createWallet_loading_step1'),
-		$t('s_createWallet_loading_step2'),
-		$t('s_createWallet_loading_step3'),
-		$t('s_createWallet_loading_step4')
+		$t('screen_onboarding_loading_step_saveMnemonic'),
+		$t('screen_onboarding_loading_step_setUpPin'),
+		$t('screen_onboarding_loading_step_generateAccount'),
+		$t('screen_onboarding_loading_step_done')
 	];
 
 	// Save mnemonic in the wallet
@@ -114,13 +114,13 @@ export const CreateWallet = () => {
 						{step === 1 && (
 							<Stack>
 								<StyledText type="title">
-									{$t('s_createWallet_accountName_title')}
+									{$t('screen_onboarding_title_accountName')}
 								</StyledText>
 								<StyledText>
-									{$t('s_createWallet_accountName_text')}
+									{$t('screen_onboarding_description_accountName')}
 								</StyledText>
 								<TextBox
-									label={$t('s_createWallet_accountName_input')}
+									label={$t('screen_onboarding_inputLabel_accountName')}
 									value={name}
 									errorMessage={nameErrorMessage}
 									onChange={setName}
@@ -131,16 +131,16 @@ export const CreateWallet = () => {
 						{step === 2 && (
 							<Stack>
 								<StyledText type="title">
-									{$t('s_createWallet_mnemonic_title')}
+									{$t('screen_onboarding_title_mnemonic')}
 								</StyledText>
 								<StyledText>
-									{$t('s_createWallet_mnemonic_text_p1')}
+									{$t('screen_onboarding_mnemonic_description_backupAndRestore')}
 								</StyledText>
 								<StyledText>
-									{$t('s_createWallet_mnemonic_text_p2')}
+									{$t('screen_onboarding_mnemonic_description_neverDisclose')}
 								</StyledText>
 								<StyledText>
-									{$t('s_createWallet_mnemonic_text_p3')}
+									{$t('screen_onboarding_mnemonic_description_noRecovery')}
 								</StyledText>
 								<MnemonicView
 									mnemonic={mnemonic}
@@ -148,19 +148,19 @@ export const CreateWallet = () => {
 									onShowPress={showMnemonic}
 								/>
 								<StyledText type="title">
-									{$t('s_createWallet_tips_title')}
+									{$t('screen_onboarding_title_tips')}
 								</StyledText>
 								<StyledText>
-									{$t('s_createWallet_tips_text_p1')}
+									{$t('screen_onboarding_tips_description_passwordManager')}
 								</StyledText>
 								<StyledText>
-									{$t('s_createWallet_tips_text_p2')}
+									{$t('screen_onboarding_tips_description_paper')}
 								</StyledText>
 								<StyledText type="title">
-									{$t('s_createWallet_confirm_title')}
+									{$t('screen_onboarding_title_confirm')}
 								</StyledText>
 								<Checkbox
-									text={$t('s_createWallet_confirm_checkbox')}
+									text={$t('screen_onboarding_checkbox_acceptRisk')}
 									value={isRiskAccepted}
 									onChange={toggleAcceptRisk}
 								/>

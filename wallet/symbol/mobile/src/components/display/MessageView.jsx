@@ -28,10 +28,10 @@ export const MessageView = ({ message }) => {
 
 	if (message.type === MessageType.ENCRYPTED_TEXT) {
 		iconName = iconMap.encrypted;
-		label = $t('c_messageView_label_encrypted');
+		label = $t('component_messageView_label_encrypted');
 	} else if (message.type !== MessageType.PLAIN_TEXT) {
 		iconName = iconMap.raw;
-		label = $t('c_messageView_label_rawData');
+		label = $t('component_messageView_label_rawData');
 	}
 
 	const isTextVisible = Boolean(message.text);

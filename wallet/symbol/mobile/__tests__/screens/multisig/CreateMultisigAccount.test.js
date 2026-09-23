@@ -19,17 +19,17 @@ const REGENERATED_ACCOUNT_ADDRESS = 'TREGENERA-TEDA-CCOU-NTAD-DRXX-XXXXX-XXXX';
 
 const SCREEN_TEXT = {
 	// Screen titles
-	textScreenTitle: 's_multisig_create_title',
-	textScreenDescription: 's_multisig_create_description',
+	textScreenTitle: 'screen_multisig_create_title_intro',
+	textScreenDescription: 'screen_multisig_create_description_intro',
 
 	// Cosignatory section
-	textCosignatoryTitle: 's_multisig_cosignatory_title',
-	textCosignatoryDescription: 's_multisig_cosignatory_description',
-	textCosignatoryWarning: 's_multisig_cosignatoryAlert_currentAccount_text',
+	textCosignatoryTitle: 'screen_multisig_title_cosignatory',
+	textCosignatoryDescription: 'screen_multisig_description_cosignatory',
+	textCosignatoryWarning: 'screen_multisig_alert_currentAccountWarning_description',
 
 	// Approvals section
-	textApprovalsTitle: 's_multisig_approvals_title',
-	textApprovalsDescription: 's_multisig_approvals_description',
+	textApprovalsTitle: 'screen_multisig_title_approvals',
+	textApprovalsDescription: 'screen_multisig_description_approvals',
 	textMinApprovals: 'fieldTitle_minApprovals',
 	textMinRemovals: 'fieldTitle_minRemovals',
 
@@ -45,15 +45,15 @@ const SCREEN_TEXT = {
 	labelButtonMinus: 'minus',
 
 	// Input labels
-	labelInputAddress: 'input_address',
+	labelInputAddress: 'inputLabel_address',
 
 	// Dialog
-	textDialogAddCosignatoryTitle: 's_multisig_create_dialog_addCosignatory_title',
-	textDialogConfirmTitle: 's_multisig_create_dialog_confirm_title',
-	textDialogConfirmText: 's_multisig_create_dialog_confirm_text',
+	textDialogAddCosignatoryTitle: 'screen_multisig_dialog_addCosignatory_title',
+	textDialogConfirmTitle: 'screen_multisig_create_dialog_confirm_title',
+	textDialogConfirmText: 'screen_multisig_create_dialog_confirm_description',
 
 	// Default name
-	textDefaultAccountName: 's_multisig_defaultAccountName'
+	textDefaultAccountName: 'screen_multisig_title_defaultAccountName'
 };
 
 // Account Fixtures

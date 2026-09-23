@@ -13,13 +13,13 @@ const NETWORK_IDENTIFIER = 'testnet';
 
 const SCREEN_TEXT = {
 	// Multisig Warning
-	textMultisigWarningTitle: 'warning_multisig_title',
-	textMultisigWarningBody: 'warning_multisig_body',
+	textMultisigWarningTitle: 'alert_multisigWarning_title',
+	textMultisigWarningBody: 'alert_multisigWarning_description',
 
 	// Account Card Buttons
-	buttonAccountDetails: 'c_accountCard_button_accountDetails',
-	buttonSend: 'c_accountCard_button_send',
-	buttonSwap: 'c_accountCard_button_swap'
+	buttonAccountDetails: 'screen_home_button_accountDetails',
+	buttonSend: 'screen_home_button_send',
+	buttonSwap: 'screen_home_button_swap'
 };
 
 // Account Info Fixtures

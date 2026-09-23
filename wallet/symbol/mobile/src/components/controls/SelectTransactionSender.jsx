@@ -61,7 +61,7 @@ export const SelectTransactionSender = props => {
 	const hasMultisigAccounts = multisigAccounts.length > 0;
 	const isMultisigSelected = hasMultisigAccounts && value !== current.address;
 	const activeTab = isMultisigSelected ? SenderTab.MULTISIG : SenderTab.CURRENT;
-	const multisigDefaultName = $t('s_multisig_defaultAccountName');
+	const multisigDefaultName = $t('component_selectTransactionSender_title_defaultAccountName');
 	const selectedAccount = isMultisigSelected
 		? multisigAccounts.find(account => account.address === value) || current
 		: current;
@@ -91,8 +91,8 @@ export const SelectTransactionSender = props => {
 
 	// Tab options
 	const tabList = [
-		{ value: SenderTab.CURRENT, label: $t('c_selectTransactionSender_currentAccount') },
-		{ value: SenderTab.MULTISIG, label: $t('c_selectTransactionSender_multisigAccount') }
+		{ value: SenderTab.CURRENT, label: $t('component_selectTransactionSender_tab_currentAccount') },
+		{ value: SenderTab.MULTISIG, label: $t('component_selectTransactionSender_tab_multisigAccount') }
 	];
 
 	// Dropdown options and renderer
@@ -149,7 +149,7 @@ export const SelectTransactionSender = props => {
 				onPress={handleItemPress}
 			/>
 			<DropdownModal
-				title={$t('c_selectTransactionSender_selectTitle')}
+				title={$t('component_selectTransactionSender_title_selectSender')}
 				value={value}
 				list={dropdownList}
 				isOpen={isDropdownOpen}

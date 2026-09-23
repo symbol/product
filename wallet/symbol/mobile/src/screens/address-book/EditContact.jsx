@@ -20,7 +20,7 @@ import React, { useMemo } from 'react';
  * @returns {React.ReactNode} EditContact component.
  */
 export const EditContact = ({ route }) => {
-	const defaultBlacklistContactName = $t('s_addressBook_account_blacklist_defaultName');
+	const defaultBlacklistContactName = $t('screen_addressBook_title_blockedAccount');
 
 	const { contactId } = route.params;
 	const walletController = useWalletController();
@@ -86,10 +86,10 @@ export const EditContact = ({ route }) => {
 					<Stack gap="l">
 						<Stack gap="none">
 							<StyledText type="title">
-								{$t('s_addressBook_edit_title')}
+								{$t('screen_addressBook_title_editContact')}
 							</StyledText>
 							<StyledText type="body">
-								{$t('s_addressBook_edit_description')}
+								{$t('screen_addressBook_description_editContact')}
 							</StyledText>
 						</Stack>
 						<TabSelector
@@ -107,18 +107,18 @@ export const EditContact = ({ route }) => {
 						</StableHeightContainer>
 						<Stack gap="m">
 							<TextBox
-								label={$t('input_name')}
+								label={$t('inputLabel_name')}
 								value={name}
 								errorMessage={nameErrorMessage}
 								onChange={changeName}
 							/>
 							<TextBox
-								label={$t('input_address')}
+								label={$t('inputLabel_address')}
 								value={address}
 								isDisabled
 							/>
 							<TextBox
-								label={$t('input_notes')}
+								label={$t('inputLabel_notes')}
 								value={notes}
 								multiline
 								onChange={changeNotes}

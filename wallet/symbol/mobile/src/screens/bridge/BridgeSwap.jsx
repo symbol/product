@@ -258,29 +258,29 @@ export const BridgeSwap = props => {
 			workflow={workflow}
 			transactionProgressViewModel={transactionProgressViewModel}
 			isCustomSendButtonUsed={true}
-			confirmDialogTitle={$t('s_bridge_swap_dialog_confirm_title')}
+			confirmDialogTitle={$t('screen_bridge_swap_dialog_confirm_title')}
 			confirmDialogText={confirmationText}
 			modals={(
 				<>
 					<DialogBox
 						isVisible={noPairsDialogManager.isVisible}
-						title={$t('s_bridge_swap_dialog_noPairs_title')}
-						text={$t('s_bridge_swap_dialog_noPairs_text')}
+						title={$t('screen_bridge_swap_dialog_noPairs_title')}
+						text={$t('screen_bridge_swap_dialog_noPairs_description')}
 						type="confirm"
 						onSuccess={noPairsDialogManager.onSuccess}
 						onCancel={noPairsDialogManager.onCancel}
 					/>
 					<DialogBox
 						isVisible={disabledDialogManager.isVisible}
-						title={$t('s_bridge_swap_dialog_disabled_title')}
-						text={$t('s_bridge_swap_dialog_disabled_text')}
+						title={$t('screen_bridge_swap_dialog_disabled_title')}
+						text={$t('screen_bridge_swap_dialog_disabled_description')}
 						type="alert"
 						onSuccess={disabledDialogManager.onClose}
 					/>
 					<DialogBox
 						isVisible={isPriceImpactConfirmVisible}
-						title={$t('s_bridge_swap_dialog_priceImpact_title')}
-						text={$t('s_bridge_swap_dialog_priceImpact_text', { priceImpact: formatPriceImpactText(priceImpact) })}
+						title={$t('screen_bridge_swap_dialog_priceImpact_title')}
+						text={$t('screen_bridge_swap_dialog_priceImpact_description', { priceImpact: formatPriceImpactText(priceImpact) })}
 						type="confirm"
 						onSuccess={handlePriceImpactConfirm}
 						onCancel={togglePriceImpactConfirm}
@@ -293,10 +293,10 @@ export const BridgeSwap = props => {
 				<Spacer bottom="l">
 					<Stack>
 						<StyledText type="title">
-							{$t('s_bridge_title')}
+							{$t('screen_bridge_title_intro')}
 						</StyledText>
 						<StyledText type="body">
-							{$t('s_bridge_description')}
+							{$t('screen_bridge_description_intro')}
 						</StyledText>
 						<SwapSelector
 							isLoading={isScreenLoading}
@@ -306,7 +306,7 @@ export const BridgeSwap = props => {
 							onReverse={reverse}
 						/>
 						<InputAmount
-							label={$t('form_transfer_input_amount')}
+							label={$t('inputLabel_amount')}
 							availableBalance={availableBalance}
 							value={amountInput}
 							extraValidators={[validateEstimation(estimations, hasEstimationFailed)]}
@@ -320,10 +320,10 @@ export const BridgeSwap = props => {
 						<Button {...buttonProps} onPress={createSendPressHandler(buttonProps.onPress)} />
 						<Divider />
 						<StyledText type="title">
-							{$t('s_bridge_history_title')}
+							{$t('screen_bridge_title_history')}
 						</StyledText>
 						<StyledText type="body">
-							{$t('s_bridge_history_description')}
+							{$t('screen_bridge_description_history')}
 						</StyledText>
 						<BridgeHistory
 							history={swapHistory}

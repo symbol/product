@@ -4,10 +4,10 @@ import { mockLocalization } from '__tests__/mock-helpers';
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
 
 const SCREEN_TEXT = {
-	inputAmountLabel: 'input_amount',
+	inputAmountLabel: 'inputLabel_amount',
 	inputAmountPlaceholder: '0',
-	textAvailableBalance: 'c_inputAmount_label_available',
-	textConfirmTitle: 'c_inputAmount_confirm_title',
+	textAvailableBalance: 'component_inputAmount_label_available',
+	textConfirmTitle: 'component_inputAmount_dialog_maxAmount_title',
 	buttonConfirm: 'button_confirm',
 	buttonCancel: 'button_cancel'
 };

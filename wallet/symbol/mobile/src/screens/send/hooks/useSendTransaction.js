@@ -66,7 +66,7 @@ export const useSendTransaction = ({
 		const createHashLockTableData = transaction => {
 			const hashLockData = {
 				type: transaction.type,
-				description: $t('form_transfer_hash_lock_description', {
+				description: $t('screen_send_description_hashLock', {
 					lockedAmount: transaction.lockedAmount,
 					duration: transaction.duration
 				}),

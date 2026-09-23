@@ -1,10 +1,4 @@
-/**
- * Receipt type enum for categorizing different types of receipts.
- * @enum {string}
- */
-export const ReceiptType = {
-	HARVESTING_REWARD: 'harvestingReward'
-};
+import { ReceiptType } from '@/app/constants';
 
 /**
  * Maps receipt types to their corresponding icon names.

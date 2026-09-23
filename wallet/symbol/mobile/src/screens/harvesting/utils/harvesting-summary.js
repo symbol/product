@@ -21,7 +21,7 @@ export const createHarvestingSummaryViewModel = summary => {
 			latestBlockNumber: '',
 			latestDate: '',
 			amountPer30Days: '0',
-			blocksCount: $t('s_harvesting_harvested_blocks', { count: 0 })
+			blocksCount: $t('screen_harvesting_label_harvestedBlocks', { count: 0 })
 		};
 	}
 
@@ -35,6 +35,6 @@ export const createHarvestingSummaryViewModel = summary => {
 		latestBlockNumber: String(summary.latestHeight),
 		latestDate: latestDateFormatted,
 		amountPer30Days: summary.amountPer30Days ? `+ ${summary.amountPer30Days}` : '0',
-		blocksCount: $t('s_harvesting_harvested_blocks', { count: summary.blocksHarvestedPer30Days || 0 })
+		blocksCount: $t('screen_harvesting_label_harvestedBlocks', { count: summary.blocksHarvestedPer30Days || 0 })
 	};
 };
