@@ -158,6 +158,14 @@ def test_rejects_negative_offset(client):  # pylint: disable=redefined-outer-nam
 	_assert_pagination_rejected(client, {'offset': -1}, 'Offset must be greater than or equal to 0')
 
 
+def test_rejects_non_numeric_limit(client):  # pylint: disable=redefined-outer-name
+	_assert_pagination_rejected(client, {'limit': 'abc'}, 'invalid literal for int() with base 10: \'abc\'')
+
+
+def test_rejects_non_numeric_offset(client):  # pylint: disable=redefined-outer-name
+	_assert_pagination_rejected(client, {'offset': 'abc'}, 'invalid literal for int() with base 10: \'abc\'')
+
+
 def test_accepts_limit_at_maximum(client):  # pylint: disable=redefined-outer-name
 
 	for module, extra_params in PAGINATED_MODULES.items():
