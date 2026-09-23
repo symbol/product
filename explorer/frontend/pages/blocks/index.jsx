@@ -32,7 +32,7 @@ export const getServerSideProps = async ({ locale }) => {
 
 const Blocks = ({ blocks, stats }) => {
 	const { t } = useTranslation();
-	const { requestNextPage, data, isLoading, isError, pageNumber, isLastPage } = usePagination(fetchBlockPage, blocks);
+	const { requestNextPage, data, isLoading, isError, isLastPage } = usePagination(fetchBlockPage, blocks);
 	const chainStatus = useAsyncCall(fetchChainStatus, null);
 
 	const tableColumns = [

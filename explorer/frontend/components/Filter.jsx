@@ -9,8 +9,7 @@ import ValueBlockHeight from './ValueBlockHeight';
 import ValueMosaic from './ValueMosaic';
 import ValueTransactionType from './ValueTransactionType';
 import styles from '@/app/styles/components/Filter.module.scss';
-import { createAssetURL } from '@/app/utils';
-import { useDataManager, useDebounce } from '@/app/utils';
+import { createAssetURL, useDataManager, useDebounce } from '@/app/utils';
 import { useTranslation } from 'next-i18next';
 import { useEffect, useState } from 'react';
 
@@ -130,7 +129,7 @@ const Filter = ({ isSelectedItemsShown, data, value, search, isDisabled, onChang
 	const isFilterAvailable = name =>
 		(!Object.keys(value).some(selectedFilterName =>
 			data.find(filter => filter.name === selectedFilterName)?.conflicts?.some(conflictFilterName => conflictFilterName === name)) ||
-			value.hasOwnProperty(name)) &&
+			Object.prototype.hasOwnProperty.call(value, name)) &&
 		!isDisabled;
 	const getButtonStyle = name => `
         ${styles.button}

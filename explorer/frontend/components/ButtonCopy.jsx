@@ -1,6 +1,5 @@
 import styles from '@/app/styles/components/ButtonCopy.module.scss';
-import { createAssetURL } from '@/app/utils';
-import { copyToClipboard } from '@/app/utils';
+import { copyToClipboard, createAssetURL } from '@/app/utils';
 import Image from 'next/image';
 import { useTranslation } from 'next-i18next';
 import { toast } from 'react-toastify';
