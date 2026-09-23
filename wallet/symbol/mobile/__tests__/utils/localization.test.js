@@ -9,6 +9,17 @@ const { ErrorCode } = constants;
 
 const CHAIN_NAME_SYMBOL = 'symbol';
 const CHAIN_NAME_ETHEREUM = 'ethereum';
+const UNKNOWN_ERROR_MESSAGE_KEY = 'errorMessage_unknown';
+
+const stringLiteralErrorCodeKeys = {
+	error_failed_decrypt_message_invalid_transaction_type: 'errorMessage_decryptMessageInvalidTransactionType',
+	error_failed_decrypt_message_not_related: 'errorMessage_decryptMessageNotRelated',
+	error_harvesting_account_no_activity: 'errorMessage_harvestingAccountNoActivity',
+	error_harvesting_no_keys_to_unlink: 'errorMessage_harvestingNoKeysToUnlink',
+	error_transfer_encrypted_message_no_recipient_public_key: 'errorMessage_transferNoRecipientPublicKey',
+	error_transfer_unknown_recipient: 'errorMessage_transferUnknownRecipient',
+	error_unknown_account_name: 'errorMessage_unknownAccountName'
+};
 
 const enKeys = Object.keys(en);
 
@@ -36,11 +47,6 @@ describe('utils/localization', () => {
 				expected: { result: 'errorMessage_accountNotFound' }
 			},
 			{
-				description: 'returns the mapped key for a string-literal wallet/common code',
-				config: { code: 'error_transfer_unknown_recipient' },
-				expected: { result: 'errorMessage_transferUnknownRecipient' }
-			},
-			{
 				description: 'returns the unknown-error key for an unmapped code',
 				config: { code: 'error_some_unknown_code' },
 				expected: { result: 'errorMessage_unknown' }
@@ -56,14 +62,26 @@ describe('utils/localization', () => {
 			runGetErrorMessageLocaleKeyTest(test.description, test.config, test.expected);
 		});
 
-		it('maps every ErrorCode member to an existing en.json key', () => {
+		it('maps every ErrorCode member to a dedicated en.json key', () => {
 			// Act:
 			const unknownKeys = Object.values(ErrorCode)
 				.map(getErrorMessageLocaleKey)
-				.filter(key => !enKeys.includes(key));
+				.filter(key => key === UNKNOWN_ERROR_MESSAGE_KEY || !enKeys.includes(key));
 
 			// Assert:
 			expect(unknownKeys).toEqual([]);
+		});
+
+		it('maps every string-literal wallet/common code to its dedicated en.json key', () => {
+			// Arrange:
+			const expectedKeys = Object.values(stringLiteralErrorCodeKeys);
+
+			// Act:
+			const result = Object.keys(stringLiteralErrorCodeKeys).map(getErrorMessageLocaleKey);
+
+			// Assert:
+			expect(result).toEqual(expectedKeys);
+			expectedKeys.forEach(key => expect(enKeys).toContain(key));
 		});
 	});
 
