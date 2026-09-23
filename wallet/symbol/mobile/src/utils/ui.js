@@ -21,8 +21,7 @@ export const showMessage = ({ message, type }) => rnFlashMessage({ message, type
  * @returns {void}
  */
 export const showError = error => {
-	const code = error.code || error.message;
-	showMessage({ message: $t(getErrorMessageLocaleKey(code)), type: 'danger' });
+	showMessage({ message: $t(getErrorMessageLocaleKey(error.code)), type: 'danger' });
 
 	if (__DEV__) {
 		// eslint-disable-next-line no-console
