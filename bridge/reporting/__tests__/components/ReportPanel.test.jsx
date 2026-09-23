@@ -15,6 +15,14 @@ describe('ReportPanel', () => {
 		fetchReportPage.mockImplementation(() => new Promise(() => {}));
 	});
 
+	it.each([REQUEST_TAB, ERROR_TAB])('renders the export button for $resource reports', tab => {
+		// Act:
+		renderPanel(tab);
+
+		// Assert:
+		expect(screen.getByRole('button', { name: 'Export all CSV' })).toBeInTheDocument();
+	});
+
 	it('renders validation error given invalid input', () => {
 		// Arrange:
 		renderPanel(REQUEST_TAB);

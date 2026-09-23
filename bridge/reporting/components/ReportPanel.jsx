@@ -1,3 +1,4 @@
+import ExportButton from './ExportButton';
 import { fetchReportPage } from '@/api/bridge';
 import ReportTable from '@/components/ReportTable';
 import { PAGE_SIZE, PAYOUT_STATUS_OPTIONS } from '@/constants';
@@ -187,6 +188,8 @@ const ReportPanel = ({ tab, isActive, baseUrl, configuration }) => {
 						))}
 					</div>
 				)}
+
+				<ExportButton criteria={criteria} tab={tab} />
 			</div>
 			<div className={styles.tableViewport} ref={tableViewportRef}>
 				{Boolean(rows.length) && (
