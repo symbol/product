@@ -49,14 +49,38 @@ describe('api/accounts', () => {
 	});
 
 	describe('fetchAccountHarvestedBlockPage', () => {
-		it('fetch harvested block page by account address', async () => {
+		it('fetch harvested block page by account address, leaving out the blocks that paid nothing', async () => {
+			// Arrange:
+			const searchCriteria = {
+				pageNumber: 2,
+				pageSize: 123,
+				address: 'NDHEJKXY6YK7JGRFQT2L7P3O5VMUGR4BWKQNVXXQ',
+				hideEmpty: true
+			};
+			const expectedURL =
+				'https://explorer.backend/account/harvests?limit=123&offset=123' +
+				'&address=NDHEJKXY6YK7JGRFQT2L7P3O5VMUGR4BWKQNVXXQ&rewardedOnly=true';
+			const expectedResult = accountHarvestedBlockPageResult;
+
+			// Act + Assert:
+			await runApiTest(
+				fetchAccountHarvestedBlockPage,
+				searchCriteria,
+				accountHarvestedBlockPageResponse,
+				expectedURL,
+				expectedResult
+			);
+		});
+
+		it('fetch harvested block page including the blocks that paid nothing', async () => {
 			// Arrange:
 			const searchCriteria = {
 				pageNumber: 2,
 				pageSize: 123,
 				address: 'NDHEJKXY6YK7JGRFQT2L7P3O5VMUGR4BWKQNVXXQ'
 			};
-			const expectedURL = 'https://explorer.backend/blocks?limit=123&offset=123&address=NDHEJKXY6YK7JGRFQT2L7P3O5VMUGR4BWKQNVXXQ';
+			const expectedURL =
+				'https://explorer.backend/account/harvests?limit=123&offset=123&address=NDHEJKXY6YK7JGRFQT2L7P3O5VMUGR4BWKQNVXXQ';
 			const expectedResult = accountHarvestedBlockPageResult;
 
 			// Act + Assert:

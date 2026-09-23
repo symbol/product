@@ -156,6 +156,8 @@
 	"filter_latest": "最新",
 	"filter_activeHarvesting": "アクティブハーベスティング",
 	"filter_activeHarvesting_description": "過去{{days}}日間に少なくとも1つのブロックをハーベストしたアカウントのみを表示します。",
+	"filter_hideEmptyBlocks": "空のブロックを除く",
+	"filter_hideEmptyBlocks_description": "報酬が発生しなかったブロックを非表示にします。",
 	"filter_service": "サービス",
 	"filter_from": "送信者",
 	"filter_to": "受信者",

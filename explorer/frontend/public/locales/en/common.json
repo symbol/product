@@ -153,6 +153,8 @@
 	"filter_latest": "Latest",
 	"filter_activeHarvesting": "Active Harvesting",
 	"filter_activeHarvesting_description": "Show only accounts that harvested at least one block within the last {{days}} days.",
+	"filter_hideEmptyBlocks": "Without Empty Blocks",
+	"filter_hideEmptyBlocks_description": "Hide the blocks that paid nothing.",
 	"filter_service": "Service",
 	"filter_from": "From",
 	"filter_to": "To",

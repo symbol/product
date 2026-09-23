@@ -157,6 +157,14 @@ const AccountInfo = ({ accountInfo, preloadedTransactions }) => {
 			renderValue: value => <ValueTimestamp value={value} hasTime />
 		}
 	];
+	const harvestedBlockFilterConfig = [
+		{
+			name: 'hideEmpty',
+			title: t('filter_hideEmptyBlocks'),
+			description: t('filter_hideEmptyBlocks_description'),
+			type: 'boolean'
+		}
+	];
 	const transactionFilterConfig = [
 		{
 			name: 'types',
@@ -388,12 +396,20 @@ const AccountInfo = ({ accountInfo, preloadedTransactions }) => {
 						label: t('section_harvested'),
 						content: (
 							<div className="layout-flex-col">
-								<ButtonCSV
-									className="layout-align-end"
-									data={harvestedBlockPagination.data}
-									fileName={`harvested-blocks-${address}`}
-									format={formatHarvestedBlockCSV}
-								/>
+								<div className="layout-flex-row-mobile-col">
+									<Filter
+										data={harvestedBlockFilterConfig}
+										isDisabled={harvestedBlockPagination.isLoading}
+										value={harvestedBlockPagination.filter}
+										onChange={harvestedBlockPagination.changeFilter}
+										onClear={harvestedBlockPagination.clearFilter}
+									/>
+									<ButtonCSV
+										data={harvestedBlockPagination.data}
+										fileName={`harvested-blocks-${address}`}
+										format={formatHarvestedBlockCSV}
+									/>
+								</div>
 								<Table
 									data={harvestedBlockPagination.data}
 									columns={harvestedBlockTableColumns}
