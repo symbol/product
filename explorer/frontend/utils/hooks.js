@@ -50,11 +50,7 @@ export const usePagination = (callback, defaultData, defaultFilter = {}, options
 	const [page, setPage] = useState(initialPage);
 	const requestIdRef = useRef(0);
 	const requestInFlightRef = useRef(false);
-	const lastRequestRef = useRef({
-		request: { pageNumber: 1, ...defaultFilter },
-		pageNumber: 1,
-		data: defaultData
-	});
+	const lastRequestRef = useRef({ request: { pageNumber: 1, ...defaultFilter }, pageNumber: 1, data: defaultData });
 
 	const call = (request, expectedPageNumber, currentData) => {
 		const requestId = ++requestIdRef.current;

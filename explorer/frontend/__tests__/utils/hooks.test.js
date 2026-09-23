@@ -268,6 +268,8 @@ describe('utils/hooks', () => {
 				initialError: true,
 				initialPage: { data: [], pageNumber: 1, isLastPage: false, nextPageParams: null }
 			}));
+
+			// Sanity check: the SSR error is present and no client request has started yet.
 			expect(result.current.isError).toBe(true);
 			expect(callback).not.toHaveBeenCalled();
 
@@ -331,7 +333,7 @@ describe('utils/hooks', () => {
 			const callback = jest.fn().mockRejectedValueOnce(Error('request failed')).mockResolvedValueOnce(nextPage);
 			const { result } = renderHook(() => usePagination(callback, initialPage.data, {}, { initialPage }));
 
-			// Act: fail the continuation request.
+			// Arrange: fail the continuation request and wait for its error state.
 			act(() => {
 				result.current.requestNextPage();
 			});
@@ -340,8 +342,10 @@ describe('utils/hooks', () => {
 			});
 			await waitFor(() => expect(result.current.isError).toBe(true));
 
-			// Assert the failed page remains available and retry the same request.
+			// Sanity check: the failed page remains available and the request is retryable.
 			expect(result.current.data).toEqual(initialPage.data);
+
+			// Act: retry the same continuation request.
 			act(() => {
 				result.current.requestNextPage();
 			});
@@ -350,6 +354,7 @@ describe('utils/hooks', () => {
 			});
 			await waitFor(() => expect(result.current.isLoading).toBe(false));
 
+			// Assert:
 			expect(callback).toHaveBeenNthCalledWith(1, { fromHeight: 99, sort: 'DESC', pageNumber: 2 });
 			expect(callback).toHaveBeenNthCalledWith(2, { fromHeight: 99, sort: 'DESC', pageNumber: 2 });
 			expect(result.current.data).toEqual([{ height: 100 }, { height: 99 }]);
@@ -364,29 +369,30 @@ describe('utils/hooks', () => {
 			}));
 			const { result } = renderHook(() => usePagination(callback, [], {}));
 
-			// Start the first request and let it reach the callback.
+			// Arrange: start the first request and let it reach the callback.
 			act(() => {
 				result.current.changeFilter({ some: 'first' });
 			});
 			act(() => {
 				jest.runOnlyPendingTimers();
 			});
+			// Sanity check: the first request reached the callback before the newer request starts.
 			expect(callback).toHaveBeenCalledTimes(1);
 
-			// Replace it with a newer request.
+			// Arrange: replace it with a newer request before the first response arrives.
 			act(() => {
 				result.current.changeFilter({ some: 'second' });
 			});
 			act(() => {
 				jest.runOnlyPendingTimers();
 			});
+			// Sanity check: both requests are in flight before either response completes.
 			expect(callback).toHaveBeenCalledTimes(2);
 
+			// Act: resolve the newer request, then resolve the stale request.
 			await act(async () => {
 				resolvers.second({ data: ['new'], pageNumber: 1, isLastPage: true });
 			});
-			expect(result.current.data).toEqual(['new']);
-
 			await act(async () => {
 				resolvers.first({ data: ['stale'], pageNumber: 1, isLastPage: true });
 			});
@@ -404,7 +410,7 @@ describe('utils/hooks', () => {
 			}));
 			const { result } = renderHook(() => usePagination(callback, [], {}));
 
-			// Act: start both requests and complete the newer one first.
+			// Arrange: start both requests before either response completes.
 			act(() => {
 				result.current.changeFilter({ some: 'first' });
 				jest.runOnlyPendingTimers();
@@ -413,6 +419,10 @@ describe('utils/hooks', () => {
 				result.current.changeFilter({ some: 'second' });
 				jest.runOnlyPendingTimers();
 			});
+			// Sanity check: both requests are in flight before either response completes.
+			expect(callback).toHaveBeenCalledTimes(2);
+
+			// Act: complete the newer request first, then reject the stale request.
 			await act(async () => {
 				pendingRequests.second.resolve({ data: ['new'], pageNumber: 1, isLastPage: true });
 			});
@@ -468,7 +478,7 @@ describe('utils/hooks', () => {
 				});
 				await waitFor(() => expect(result.current.isLastPage).toBe(true));
 
-				// Change the search and fail its first request.
+				// Arrange: change the search and fail its first request.
 				act(() => {
 					filterAction(result.current);
 				});
@@ -477,9 +487,11 @@ describe('utils/hooks', () => {
 				});
 				await waitFor(() => expect(result.current.isError).toBe(true));
 
-				// Assert the old terminal state cannot suppress retry, and only new results remain after recovery.
+				// Sanity check: the previous terminal state cannot suppress the new retry.
 				expect(result.current.isLastPage).toBe(false);
 				expect(result.current.data).toEqual([]);
+
+				// Act: retry the failed first request for the new search.
 				act(() => {
 					result.current.requestNextPage();
 				});
@@ -488,6 +500,7 @@ describe('utils/hooks', () => {
 				});
 				await waitFor(() => expect(result.current.isLoading).toBe(false));
 
+				// Assert:
 				expect(callback).toHaveBeenNthCalledWith(2, expectedRequest);
 				expect(callback).toHaveBeenNthCalledWith(3, expectedRequest);
 				expect(result.current.data).toEqual(['new-result']);

@@ -116,16 +116,16 @@ describe('variants/symbol/api/blocks', () => {
 		expect(result).toMatchObject({ data: blocks, isLastPage: true, nextPageParams: null });
 	});
 
-	it('treats a string REST height as a contract-violating response and preserves it as terminal', async () => {
+	it.each([
+		['a full page with an invalid first height', [{ height: '123' }, { height: 122 }], 2],
+		['a short page with an invalid last height', [{ height: 123 }, { height: '122' }], 10],
+		['a full page with an invalid non-terminal height', [{ height: 123 }, { height: '122' }, { height: 121 }], 3]
+	])('rejects %s instead of treating it as a terminal page', async (_description, blocks, limit) => {
 		// Arrange:
-		const blocks = [{ height: '123' }];
 		jest.spyOn(serverUtils, 'makeRequest').mockResolvedValue(blocks);
 
-		// Act:
-		const result = await fetchBlockPage({ pageSize: 1 });
-
-		// Assert:
-		expect(result).toMatchObject({ data: blocks, isLastPage: true, nextPageParams: null });
+		// Act + Assert:
+		await expect(fetchBlockPage({ limit })).rejects.toThrow('Symbol blocks response must contain integer heights');
 	});
 
 	it('accepts fromHeight 1 and ends at block height 1 without a zero cursor', async () => {

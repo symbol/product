@@ -3,28 +3,67 @@ import Table from '@/app/components/Table';
 import { fireEvent, render, screen } from '@testing-library/react';
 
 describe('Table empty results and retrieval errors', () => {
-	it.each(['data', 'sections'])('shows retry instead of an empty-success message after a failed %s request', source => {
-		// Arrange: both flat and sectioned lists can finish successfully with no results.
-		const onEndReached = jest.fn();
-		const props = { [source]: [], columns: [{ key: 'height' }], isLastPage: true, onEndReached };
-		const { rerender } = render(<Table {...props} />);
+	const createProps = source => ({ [source]: [], columns: [{ key: 'height' }], isLastPage: true });
+
+	it.each(['data', 'sections'])('shows the empty-success message for an empty %s result', source => {
+		// Arrange:
+		const props = createProps(source);
+
+		// Act:
+		render(<Table {...props} />);
+
+		// Assert:
 		expect(screen.getByText('message_emptyTable')).toBeInTheDocument();
+		expect(screen.queryByText('button_tryAgain')).not.toBeInTheDocument();
+	});
 
-		// Act: the caller reports a retrieval failure with no rows to display.
-		rerender(<Table {...props} isError />);
+	it.each(['data', 'sections'])('shows a retry action instead of the empty-success message after a failed %s request', source => {
+		// Arrange:
+		const props = createProps(source);
 
-		// Assert: failure is actionable and is not presented as a successful empty result.
+		// Act:
+		render(<Table {...props} isError />);
+
+		// Assert:
 		expect(screen.queryByText('message_emptyTable')).not.toBeInTheDocument();
-		fireEvent.click(screen.getByText('button_tryAgain'));
-		expect(onEndReached).toHaveBeenCalledTimes(1);
+		expect(screen.getByText('button_tryAgain')).toBeInTheDocument();
+	});
 
-		// During retry neither the old error action nor the empty-success message is shown.
+	it.each(['data', 'sections'])('notifies once when retry is clicked after a failed %s request', source => {
+		// Arrange:
+		const onEndReached = jest.fn();
+		const props = { ...createProps(source), onEndReached, isError: true };
+		render(<Table {...props} />);
+
+		// Act:
+		fireEvent.click(screen.getByText('button_tryAgain'));
+
+		// Assert:
+		expect(onEndReached).toHaveBeenCalledTimes(1);
+	});
+
+	it.each(['data', 'sections'])('hides retry and empty-success messages while a %s request is retrying', source => {
+		// Arrange:
+		const props = createProps(source);
+		const { rerender } = render(<Table {...props} isError />);
+
+		// Act:
 		rerender(<Table {...props} isLoading />);
+
+		// Assert:
 		expect(screen.queryByText('button_tryAgain')).not.toBeInTheDocument();
 		expect(screen.queryByText('message_emptyTable')).not.toBeInTheDocument();
+	});
 
-		// A successful empty response restores the empty-result message.
+	it.each(['data', 'sections'])('restores the empty-success message after a %s request recovers', source => {
+		// Arrange:
+		const props = createProps(source);
+		const { rerender } = render(<Table {...props} isError />);
+
+		// Act:
 		rerender(<Table {...props} />);
+
+		// Assert:
 		expect(screen.getByText('message_emptyTable')).toBeInTheDocument();
 		expect(screen.queryByText('button_tryAgain')).not.toBeInTheDocument();
 	});

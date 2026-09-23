@@ -28,7 +28,7 @@ export const getServerSideProps = async ({ locale }) => {
 		isBlockPageError = true;
 		blocksPage = { data: [], pageNumber: 1, isLastPage: false, nextPageParams: null };
 	}
-	const stats = pageConfig.blocks.showStatistics ? await fetchBlockStats() : null;
+	const stats = !isBlockPageError && pageConfig.blocks.showStatistics ? await fetchBlockStats() : null;
 
 	return {
 		props: {
@@ -94,7 +94,7 @@ const Blocks = ({ blocks, blockPage, isBlockPageError, stats }) => {
 				<title>{t('page_blocks')}</title>
 			</Head>
 			<Section title={t('section_blocks')}>
-				{pageConfig.blocks.showStatistics && (
+				{pageConfig.blocks.showStatistics && stats && (
 					<div className="layout-flex-row-mobile-col">
 						<div className="layout-grid-row layout-flex-fill">
 							<div className="layout-flex-col layout-flex-fill">

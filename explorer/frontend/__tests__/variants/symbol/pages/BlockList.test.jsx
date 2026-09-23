@@ -169,18 +169,22 @@ describe('Symbol block list page', () => {
 			.mockResolvedValueOnce(nextBlockPage);
 		const serverResult = await getServerSideProps({ locale: 'en' });
 
-		// Act: pass SSR props directly, then enter and leave the pagination sentinel once.
+		// Act: pass SSR props directly, wait for the pagination sentinel, then enter and leave it once.
 		const { container } = renderBlockPage(serverResult.props);
-		await waitFor(() => expect(container.querySelector('[class*="tablePageLoader"] > div')).toBeInTheDocument());
-		const paginationTarget = container.querySelector('[class*="tablePageLoader"] > div');
+		const paginationTarget = await waitFor(() => {
+			const target = container.querySelector('[class*="tablePageLoader"] > div');
+			expect(target).toBeInTheDocument();
+			return target;
+		});
 		act(() => mockIsIntersecting(paginationTarget, true));
 		act(() => mockIsIntersecting(paginationTarget, false));
 		act(() => {
 			jest.runOnlyPendingTimers();
 		});
+		await waitFor(() => screen.getByText('81', { exact: true }));
 
 		// Assert:
-		await waitFor(() => expect(screen.getByText('81', { exact: true })).toBeInTheDocument());
+		expect(screen.getByText('81', { exact: true })).toBeInTheDocument();
 		expect(fetchBlockPage).toHaveBeenNthCalledWith(1);
 		expect(fetchBlockPage).toHaveBeenNthCalledWith(2, { fromHeight: 90, sort: 'DESC', pageNumber: 2 });
 		const displayedHeights = screen.getAllByRole('link')
@@ -223,28 +227,38 @@ describe('Symbol block list page', () => {
 	it.each(['desktop', 'mobile'])('renders Symbol list navigation hrefs: %s', device => {
 		// Arrange:
 		setDevice(device);
-		const { container } = renderBlockPage({ blocks: blockPage.data, blockPage, isBlockPageError: false, stats: null });
+		const props = { blocks: blockPage.data, blockPage, isBlockPageError: false, stats: null };
+		const expectedBlockHref = '/blocks/100';
+		const expectedHarvester = 'NAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+		const expectedHarvesterHref = `/accounts/${expectedHarvester}`;
+		const expectedMosaicHref = '/mosaics/72C0212E67A08BCE';
 
-		// Assert the links match the displayed block and harvester, and use the Symbol testnet mosaic.
+		// Act:
+		const { container } = renderBlockPage(props);
+
+		// Assert: links match the displayed block and harvester, and use the Symbol testnet mosaic.
 		const firstBlock = getBlockContainer(device, 100);
-		expect(within(firstBlock).getByText('100', { exact: true }).closest('a')).toHaveAttribute('href', '/blocks/100');
-		expect(within(firstBlock).getByText('NAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', { exact: true }).closest('a'))
-			.toHaveAttribute('href', '/accounts/NAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA');
-		expect(container.querySelector('a[href="/mosaics/72C0212E67A08BCE"]')).toBeInTheDocument();
+		expect(within(firstBlock).getByText('100', { exact: true }).closest('a')).toHaveAttribute('href', expectedBlockHref);
+		expect(within(firstBlock).getByText(expectedHarvester, { exact: true }).closest('a'))
+			.toHaveAttribute('href', expectedHarvesterHref);
+		expect(container.querySelector(`a[href="${expectedMosaicHref}"]`)).toBeInTheDocument();
 		expect(config).toMatchObject(symbolNativeMosaicConfig);
 	});
 
 	it.each(['desktop', 'mobile'])('renders reward values in their block field and keeps fees distinct: %s', device => {
 		// Arrange:
 		setDevice(device);
-		renderBlockPage({ blocks: blockPage.data, blockPage, isBlockPageError: false, stats: null });
-
-		// Assert each reward in its own row/card field and distinguish its fee value.
+		const props = { blocks: blockPage.data, blockPage, isBlockPageError: false, stats: null };
 		const cases = [
 			{ height: 100, reward: null, fee: 17.125 },
 			{ height: 99, reward: 0, fee: 23.625 },
 			{ height: 98, reward: 191.997042, fee: 37.123456 }
 		];
+
+		// Act:
+		renderBlockPage(props);
+
+		// Assert each reward in its own row/card field and distinguish its fee value.
 		cases.forEach(({ height, reward, fee }) => {
 			const rewardContainer = getBlockRewardContainer(device, height);
 			if (reward === null) {
@@ -258,26 +272,78 @@ describe('Symbol block list page', () => {
 		});
 	});
 
-	it('keeps an SSR retrieval failure retryable instead of showing an empty success', async () => {
+	it('keeps an initial height contract failure retryable instead of showing an empty success', async () => {
 		// Arrange:
-		const fetchBlockPage = jest.spyOn(BlockService, 'fetchBlockPage').mockRejectedValueOnce(Error('request failed'));
+		const heightContractError = Error('Symbol blocks response must contain integer heights');
+		const fetchBlockPage = jest.spyOn(BlockService, 'fetchBlockPage').mockRejectedValueOnce(heightContractError);
 		const fetchBlockStats = jest.spyOn(StatsService, 'fetchBlockStats');
 		const serverResult = await getServerSideProps({ locale: 'en' });
 		fetchBlockPage.mockResolvedValueOnce(blockPage);
 
-		// Act:
+		// Arrange: build the SSR failure state and render the page.
 		renderBlockPage(serverResult.props);
 
-		// Assert the initial failure is not an empty success, then retry the initial request.
+		// Sanity check: the initial contract failure is actionable and not an empty success.
 		expect(fetchBlockPage).toHaveBeenCalledTimes(1);
 		expect(screen.getByText('button_tryAgain')).toBeInTheDocument();
 		expect(screen.queryByText('message_emptyTable')).not.toBeInTheDocument();
+
+		// Act: click retry and wait for the initial page request to complete.
 		fireEvent.click(screen.getByText('button_tryAgain'));
 		act(() => {
 			jest.runAllTimers();
 		});
 		await waitFor(() => expect(screen.getByText('100', { exact: true })).toBeInTheDocument());
+
+		// Assert:
 		expect(fetchBlockPage).toHaveBeenCalledTimes(2);
 		expect(fetchBlockStats).not.toHaveBeenCalled();
+	});
+
+	it('retains existing rows and the cursor when a continuation height violates the contract', async () => {
+		// Arrange:
+		const heightContractError = Error('Symbol blocks response must contain integer heights');
+		const nextBlockPage = {
+			data: [createBlock(90)],
+			pageNumber: 2,
+			isLastPage: true,
+			nextPageParams: null
+		};
+		const fetchBlockPage = jest.spyOn(BlockService, 'fetchBlockPage')
+			.mockResolvedValueOnce(blockPage)
+			.mockRejectedValueOnce(heightContractError)
+			.mockResolvedValueOnce(nextBlockPage);
+		const serverResult = await getServerSideProps({ locale: 'en' });
+
+		// Arrange: render the initial page, start continuation retrieval, and wait for its failure display.
+		const { container } = renderBlockPage(serverResult.props);
+		const paginationTarget = await waitFor(() => {
+			const target = container.querySelector('[class*="tablePageLoader"] > div');
+			expect(target).toBeInTheDocument();
+			return target;
+		});
+		act(() => mockIsIntersecting(paginationTarget, true));
+		act(() => mockIsIntersecting(paginationTarget, false));
+		act(() => {
+			jest.runOnlyPendingTimers();
+		});
+		await waitFor(() => screen.getByText('button_tryAgain'));
+
+		// Sanity check: the error is actionable and the failed continuation did not replace existing rows.
+		expect(screen.getByText('100', { exact: true })).toBeInTheDocument();
+		expect(screen.queryByText('90', { exact: true })).not.toBeInTheDocument();
+
+		// Act: click retry and wait for the same continuation request to complete.
+		fireEvent.click(screen.getByText('button_tryAgain'));
+		act(() => {
+			jest.runOnlyPendingTimers();
+		});
+		await waitFor(() => screen.getByText('90', { exact: true }));
+
+		// Assert:
+		expect(fetchBlockPage).toHaveBeenNthCalledWith(2, { fromHeight: 90, sort: 'DESC', pageNumber: 2 });
+		expect(fetchBlockPage).toHaveBeenNthCalledWith(3, { fromHeight: 90, sort: 'DESC', pageNumber: 2 });
+		expect(screen.getByText('90', { exact: true })).toBeInTheDocument();
+		expect(screen.queryByText('button_tryAgain')).not.toBeInTheDocument();
 	});
 });

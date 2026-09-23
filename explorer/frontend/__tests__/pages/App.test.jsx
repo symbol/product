@@ -74,24 +74,36 @@ describe('AppComponent backend health lifecycle', () => {
 		jest.clearAllTimers();
 	});
 
-	it('shows page content during the transition from initial health state to healthy response', async () => {
+	it('shows page content and the initial health state while the response is pending', () => {
+		// Arrange:
+		HealthService.fetchBackendHealthStatus.mockReturnValue(new Promise(() => {}));
+
+		// Act:
+		renderApp();
+
+		// Assert:
+		expect(screen.getByTestId('backend-health-state')).toHaveTextContent(`${healthWarningMode}:initial:null`);
+		expect(screen.getByTestId('page-content')).toBeInTheDocument();
+	});
+
+	it('transitions to an available health state when the response completes and preserves page content', async () => {
 		// Arrange:
 		let resolveHealth;
 		const healthPromise = new Promise(resolve => {
 			resolveHealth = resolve;
 		});
 		HealthService.fetchBackendHealthStatus.mockReturnValue(healthPromise);
-
-		// Act:
 		renderApp();
 
-		// Assert initial state before the first response.
+		// Sanity check: the response is still pending and the initial state is visible.
 		expect(screen.getByTestId('backend-health-state')).toHaveTextContent(`${healthWarningMode}:initial:null`);
-		expect(screen.getByTestId('page-content')).toBeInTheDocument();
 
+		// Act:
 		await act(async () => {
 			resolveHealth({ isHealthy: true });
 		});
+
+		// Assert:
 		await waitFor(() => expect(screen.getByTestId('backend-health-state')).toHaveTextContent(`${healthWarningMode}:available:true`));
 		expect(screen.getByTestId('page-content')).toBeInTheDocument();
 	});

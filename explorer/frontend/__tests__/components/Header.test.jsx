@@ -3,6 +3,12 @@ import Header from '@/app/components/Header';
 import { BACKEND_HEALTH_STATUS } from '@/app/constants';
 import { render, screen } from '@testing-library/react';
 
+jest.mock('next-i18next', () => ({
+	useTranslation: () => ({
+		t: (key, options) => options ? `${key}:${options.lastSyncedAt}` : key
+	})
+}));
+
 jest.mock('next/router', () => ({
 	useRouter: () => ({ asPath: '/', locale: 'en', push: jest.fn() })
 }));
@@ -15,7 +21,7 @@ const healthyStatus = {
 };
 
 describe('Header backend health warning', () => {
-	it('does not show a warning for an available healthy response', () => {
+	it('does not show generic or synchronization warnings for an available healthy response when request warnings are enabled', () => {
 		// Act:
 		const header = (
 			<Header backendStatus={healthyStatus} backendHealthStatus={BACKEND_HEALTH_STATUS.AVAILABLE} isHealthRequestWarningEnabled />
@@ -24,9 +30,10 @@ describe('Header backend health warning', () => {
 
 		// Assert:
 		expect(screen.queryByText('message_healthGenericError')).not.toBeInTheDocument();
+		expect(screen.queryByText(/message_healthSyncError/)).not.toBeInTheDocument();
 	});
 
-	it('shows a generic warning for an initial health request failure state', () => {
+	it('shows a generic warning for an initial request failure when request warnings are enabled', () => {
 		// Act: render the props Header receives after the initial request fails; this does not issue a request.
 		const header = (
 			<Header backendStatus={null} backendHealthStatus={BACKEND_HEALTH_STATUS.ERROR} isHealthRequestWarningEnabled />
@@ -37,7 +44,7 @@ describe('Header backend health warning', () => {
 		expect(screen.getByText('message_healthGenericError')).toBeInTheDocument();
 	});
 
-	it('shows a generic warning for an unhealthy response without sync details', () => {
+	it('shows a generic warning for an unhealthy response without sync details when request warnings are enabled', () => {
 		// Act:
 		const header = (
 			<Header
@@ -52,7 +59,7 @@ describe('Header backend health warning', () => {
 		expect(screen.getByText('message_healthGenericError')).toBeInTheDocument();
 	});
 
-	it('keeps the existing unhealthy-response warning when unavailable warnings are disabled', () => {
+	it('shows an unhealthy-response warning when request-failure warnings are disabled', () => {
 		// Act:
 		const header = (
 			<Header
@@ -66,22 +73,70 @@ describe('Header backend health warning', () => {
 		expect(screen.getByText('message_healthGenericError')).toBeInTheDocument();
 	});
 
-	it('keeps the NEM synchronization warning when its timestamp is unavailable', () => {
-		// Act:
-		const header = (
-			<Header
-				backendStatus={{ ...healthyStatus, isHealthy: false, errors: [{ type: 'synchronization' }], lastDBSyncedAt: null }}
-				backendHealthStatus={BACKEND_HEALTH_STATUS.AVAILABLE}
-			/>
-		);
-		render(header);
+	it.each([
+		[
+			'warning disabled with a null synchronization timestamp',
+			false,
+			{
+				isHealthy: false,
+				errors: [{ type: 'synchronization' }],
+				lastDBHeight: 100,
+				lastDBSyncedAt: null
+			}
+		],
+		[
+			'warning enabled with a null synchronization timestamp',
+			true,
+			{
+				isHealthy: false,
+				errors: [{ type: 'synchronization' }],
+				lastDBHeight: 100,
+				lastDBSyncedAt: null
+			}
+		],
+		[
+			'warning disabled with no synchronization timestamp property',
+			false,
+			{
+				isHealthy: false,
+				errors: [{ type: 'synchronization' }],
+				lastDBHeight: 100
+			}
+		],
+		[
+			'warning enabled with no synchronization timestamp property',
+			true,
+			{
+				isHealthy: false,
+				errors: [{ type: 'synchronization' }],
+				lastDBHeight: 100
+			}
+		]
+	])(
+		'shows a generic warning for a synchronization error when %s',
+		(_scenario, isHealthRequestWarningEnabled, backendStatus) => {
+			// Arrange:
+			const header = (
+				<Header
+					backendStatus={backendStatus}
+					backendHealthStatus={BACKEND_HEALTH_STATUS.AVAILABLE}
+					isHealthRequestWarningEnabled={isHealthRequestWarningEnabled}
+				/>
+			);
 
-		// Assert:
-		expect(screen.getByText('message_healthSyncError')).toBeInTheDocument();
-	});
+			// Act:
+			render(header);
 
-	it('renders the synchronization error message key', () => {
-		// Act:
+			// Assert:
+			expect(screen.getByText('message_healthGenericError')).toBeInTheDocument();
+			expect(screen.queryByText(/message_healthSyncError/)).not.toBeInTheDocument();
+			expect(screen.queryByText(/1970/)).not.toBeInTheDocument();
+		}
+	);
+
+	it('renders the synchronization warning with the formatted synced date', () => {
+		// Arrange:
+		jest.spyOn(Date.prototype, 'getTimezoneOffset').mockReturnValue(0);
 		const header = (
 			<Header
 				backendStatus={{ ...healthyStatus, isHealthy: false, errors: [{ type: 'synchronization' }] }}
@@ -89,25 +144,12 @@ describe('Header backend health warning', () => {
 				isHealthRequestWarningEnabled
 			/>
 		);
-		render(header);
 
-		// Assert:
-		expect(screen.getByText('message_healthSyncError')).toBeInTheDocument();
-	});
-
-	it('uses a generic warning for a Symbol sync error without a timestamp', () => {
 		// Act:
-		const header = (
-			<Header
-				backendStatus={{ ...healthyStatus, isHealthy: false, errors: [{ type: 'synchronization' }], lastDBSyncedAt: null }}
-				backendHealthStatus={BACKEND_HEALTH_STATUS.AVAILABLE}
-				isHealthRequestWarningEnabled
-			/>
-		);
 		render(header);
 
 		// Assert:
-		expect(screen.getByText('message_healthGenericError')).toBeInTheDocument();
+		expect(screen.getByText('message_healthSyncError:month_sep 15, 2026 • 01:02:03')).toBeInTheDocument();
 	});
 
 	it('hides the warning when Header props change from ERROR to AVAILABLE', () => {
@@ -122,6 +164,8 @@ describe('Header backend health warning', () => {
 			backendHealthStatus: BACKEND_HEALTH_STATUS.AVAILABLE,
 			isHealthRequestWarningEnabled: true
 		};
+
+		// Sanity check: the initial error is visible before the recovery render.
 		const { rerender } = render(<Header {...errorProps} />);
 		expect(screen.getByText('message_healthGenericError')).toBeInTheDocument();
 

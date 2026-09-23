@@ -157,7 +157,7 @@ const Header = ({ backendStatus, backendHealthStatus, isHealthRequestWarningEnab
 		const backendSyncError = backendStatus?.errors?.find(error => error.type === BACKEND_HEALTH_ERROR.SYNCHRONIZATION);
 
 		// If error is not a sync error, return a generic error message
-		if (!backendSyncError || (isHealthRequestWarningEnabled && !backendStatus?.lastDBSyncedAt))
+		if (!backendSyncError || !backendStatus?.lastDBSyncedAt)
 			return t('message_healthGenericError');
 
 		const lastSyncedAtDateText = formatDate(backendStatus.lastDBSyncedAt, t, {

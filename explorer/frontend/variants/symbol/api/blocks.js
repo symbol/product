@@ -57,14 +57,16 @@ const createBlockSearchURL = ({ limit, fromHeight, sort }) => {
 	return `${createApiUrl('blocks')}?${params.toString()}`;
 };
 
+const validateBlockHeights = blocks => {
+	if (blocks.some(block => !Number.isInteger(block?.height)))
+		throw new Error('Symbol blocks response must contain integer heights');
+};
+
 const getNextFromHeight = (blocks, sort) => {
 	if (!blocks.length)
 		return null;
 
 	const lastHeight = blocks[blocks.length - 1].height;
-	if (!Number.isInteger(lastHeight))
-		return null;
-
 	const nextFromHeight = 'ASC' === sort ? lastHeight + 1 : lastHeight - 1;
 
 	return nextFromHeight > 0 ? nextFromHeight : null;
@@ -104,6 +106,7 @@ export const fetchBlockPage = async (searchParams = {}) => {
 
 	if (!Array.isArray(blocks))
 		throw new Error('Symbol blocks response must be an array');
+	validateBlockHeights(blocks);
 
 	return createPageState(blocks, pageNumber, limit, sort);
 };

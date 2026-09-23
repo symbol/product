@@ -23,7 +23,39 @@ describe('Dropdown', () => {
 		expect(onChange).toHaveBeenCalledWith('ja');
 	});
 
-	it('opens with Enter and selects the focused option with Space', async () => {
+	it('focuses the toggle when tabbed to', async () => {
+		// Arrange:
+		const user = userEvent.setup();
+		render(<Dropdown options={[{ value: 'mainnet', label: 'Mainnet' }]} value="mainnet" onChange={jest.fn()} />);
+		const toggle = screen.getByRole('button', { name: 'Mainnet' });
+
+		// Act:
+		await user.tab();
+
+		// Assert:
+		expect(toggle).toHaveFocus();
+	});
+
+	it('moves focus to an option after opening the menu and tabbing', async () => {
+		// Arrange:
+		const user = userEvent.setup();
+		const options = [
+			{ value: 'mainnet', label: 'Mainnet' },
+			{ value: 'testnet', label: 'Testnet' }
+		];
+		render(<Dropdown options={options} value="mainnet" onChange={jest.fn()} />);
+
+		// Act:
+		await user.tab();
+		await user.keyboard('{Enter}');
+		await user.tab();
+		await user.tab();
+
+		// Assert:
+		expect(screen.getByRole('button', { name: 'Testnet' })).toHaveFocus();
+	});
+
+	it('selects the focused option with Space and notifies once', async () => {
 		// Arrange:
 		const user = userEvent.setup();
 		const onChange = jest.fn();
@@ -32,15 +64,12 @@ describe('Dropdown', () => {
 			{ value: 'testnet', label: 'Testnet' }
 		];
 		render(<Dropdown options={options} value="mainnet" onChange={onChange} />);
-		const toggle = screen.getByRole('button', { name: 'Mainnet' });
 
 		// Act:
 		await user.tab();
-		expect(toggle).toHaveFocus();
 		await user.keyboard('{Enter}');
 		await user.tab();
 		await user.tab();
-		expect(screen.getByRole('button', { name: 'Testnet' })).toHaveFocus();
 		await user.keyboard(' ');
 
 		// Assert:
