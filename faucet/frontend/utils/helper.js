@@ -46,7 +46,7 @@ export const validateSymbolAddress = address => {
 export const createI18n = locales => (key, params) => {
 	const currentLanguage = localStorage.getItem('currentLanguage');
 	const locale = locales[currentLanguage] || Object.values(locales)[0];
-	const keyExists = locale.hasOwnProperty(key);
+	const keyExists = Object.prototype.hasOwnProperty.call(locale, key);
 
 	if (!keyExists)
 		return `[missing_translation]${key}`;
