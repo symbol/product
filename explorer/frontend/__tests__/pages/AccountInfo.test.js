@@ -5,6 +5,7 @@ import * as AccountService from '@/app/api/accounts';
 import * as TransactionService from '@/app/api/transactions';
 import AccountInfo, { getServerSideProps } from '@/app/pages/accounts/[address]';
 import * as utils from '@/app/utils';
+import { pageConfig } from '@/app/variants/page-config';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 
 jest.mock('@/app/utils', () => {
@@ -277,6 +278,19 @@ describe('AccountInfo', () => {
 					pageNumber: 1,
 					address: accountInfoResult.address
 				}));
+		});
+
+		it('does not render empty block filter when variant disables it', async () => {
+			// Arrange:
+			jest.replaceProperty(pageConfig.account, 'showEmptyBlockFilter', false);
+			render(<AccountInfo accountInfo={accountInfoResult} preloadedTransactions={transactionPageResult.data} />);
+
+			// Act:
+			fireEvent.click(screen.getByText('section_harvested'));
+
+			// Assert:
+			await waitFor(() => expect(screen.getByText(accountHarvestedBlockPageResult.data[0].height)).toBeInTheDocument());
+			expect(screen.queryByText('filter_hideEmptyBlocks')).not.toBeInTheDocument();
 		});
 	});
 
