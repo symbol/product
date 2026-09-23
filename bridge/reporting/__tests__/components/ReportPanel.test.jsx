@@ -1,6 +1,6 @@
 import { fetchReportPage } from '@/api/bridge';
 import ReportPanel from '@/components/ReportPanel';
-import { ERROR_ROW, ERROR_TAB, REQUEST_TAB } from '@/test-utils/fixtures';
+import { ERROR_ROW, ERROR_TAB, REQUEST_TAB, SECOND_ERROR_ROW } from '@/test-utils/fixtures';
 import '@testing-library/jest-dom';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 
@@ -209,11 +209,7 @@ describe('ReportPanel', () => {
 				nextOffset: 1
 			})
 			.mockResolvedValueOnce({
-				data: [{
-					...ERROR_ROW,
-					errorMessage: 'Second page error',
-					requestTransactionHash: 'D'.repeat(64)
-				}],
+				data: [SECOND_ERROR_ROW],
 				hasMore: false,
 				nextOffset: 2
 			});
@@ -225,7 +221,13 @@ describe('ReportPanel', () => {
 		act(() => global.intersectionObserverInstances[0].callback([{ isIntersecting: true }]));
 
 		// Assert:
-		await waitFor(() => expect(within(table).getByText('Second page error')).toBeInTheDocument());
+		await waitFor(() => screen.findByRole('table'));
+
+		expect(within(table).getAllByRole('row')).toHaveLength(3);
+		expect(within(table).getByText(ERROR_ROW.errorMessage)).toBeInTheDocument();
+		expect(within(table).getByText(SECOND_ERROR_ROW.errorMessage)).toBeInTheDocument();
+
+		expect(fetchReportPage).toHaveBeenCalledTimes(2);
 		expect(fetchReportPage).toHaveBeenLastCalledWith(expect.objectContaining({ offset: 1 }));
 	});
 });

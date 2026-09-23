@@ -49,3 +49,12 @@ export const ERROR_ROW = {
 	requestTransactionSubindex: -1,
 	senderAddress: 'TARDV42KTAIZEF64EQT4NXT7K55DHWBEFIXVJQY'
 };
+
+export const SECOND_ERROR_ROW = {
+	errorMessage: 'Destination address is invalid',
+	requestTimestamp: 4,
+	requestTransactionHash: 'D'.repeat(64),
+	requestTransactionHeight: '12',
+	requestTransactionSubindex: -1,
+	senderAddress: 'TCONKG47FW2ZEZBPV6G7F422LXBDSMVT3JMYM4I'
+};
