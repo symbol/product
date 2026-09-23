@@ -1,5 +1,5 @@
 aiohttp==3.14.3
-psycopg2-binary==2.9.12
+psycopg2-binary==2.9.13
 symbol-lightapi~=0.0.11
-symbol-sdk-python==3.3.2
+symbol-sdk-python==3.3.3
 zenlog==1.1
