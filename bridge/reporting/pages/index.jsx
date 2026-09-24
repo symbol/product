@@ -60,6 +60,7 @@ export const Home = ({ bridgeBaseUrls, bridgeConfigurations }) => {
 					{BRIDGE_TABS.map(tab => (
 						<ReportPanel
 							baseUrl={bridgeBaseUrls[tab.bridgeType]}
+							configuration={bridgeConfigurations[tab.bridgeType]}
 							isActive={tab.id === activeTabId}
 							key={tab.id}
 							tab={tab}
