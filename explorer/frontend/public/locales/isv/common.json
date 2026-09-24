@@ -149,7 +149,7 @@
 	"field_endpoint": "URL",
 	"chart_name_importance_breakdown": "Top 10 Accountov\nRazděljenje Važnosti",
 	"chart_name_harvesting_importance": "Totalna Važnosť\nŽnjejučih Accountov",
-	"chart_name_total_harvesting": "Totalno\nŽnjejuči Accounty",
+	"chart_name_harvesting_of_eligible": "Žnjejuči Accounty\nod Accountov Gotovyh za Žnjenje",
 	"filter_latest": "Najnovše",
 	"filter_activeHarvesting": "Aktivne Žnjenje",
 	"filter_activeHarvesting_description": "Pokazati tokmo accounty koje sut zžnjeli najmenje jedin blok v prošlyh {{days}} dnjah.",
