@@ -458,13 +458,9 @@ def test_dirty_receipts_offset_503(symbol_database_config):
 			safe_block_response = client.get('/api/symbol/block/2/receipts')
 
 	# Assert:
-	assert 503 == implicit_response.status_code
-	assert 503 == offset_page_response.status_code
-	assert {
-		'status': 503,
-		'message': 'Symbol backend data is unavailable'
-	} == offset_page_response.json
-	assert 503 == dirty_block_response.status_code
+	_assert_request_unavailable(implicit_response)
+	_assert_request_unavailable(offset_page_response)
+	_assert_request_unavailable(dirty_block_response)
 	assert 200 == safe_block_response.status_code
 	assert [2] == [item['height'] for item in safe_block_response.json]
 
@@ -745,7 +741,12 @@ def test_setup_requires_symbol_db():
 				_create_symbol_app()
 
 
-def test_health_reports_db_error():
+@pytest.mark.parametrize(('path', 'status', 'expected_json'), [
+	('/api/symbol/health', 200, create_symbol_health(errors=[{'type': 'database', 'message': 'Symbol database is unavailable'}])),
+	('/api/symbol/receipts', 503, {'status': 503, 'message': 'Symbol backend data is unavailable'}),
+	('/api/symbol/block/1/receipts', 503, {'status': 503, 'message': 'Symbol backend data is unavailable'})
+])
+def test_initial_db_failure_responses(path, status, expected_json):
 	# Arrange:
 	with tempfile.TemporaryDirectory() as temp_directory:
 		db_config_path = _create_config_file(
@@ -755,14 +756,11 @@ def test_health_reports_db_error():
 
 		with rest_settings_env(app_config_path):
 			# Act:
-			response = _create_symbol_app().test_client().get('/api/symbol/health')
+			response = _create_symbol_app().test_client().get(path)
 
 	# Assert:
-	assert 200 == response.status_code
-	assert create_symbol_health(errors=[{
-		'type': 'database',
-		'message': 'Symbol database is unavailable'
-	}]) == response.json
+	assert status == response.status_code
+	assert expected_json == response.json
 
 
 def test_setup_rejects_bad_node_url():

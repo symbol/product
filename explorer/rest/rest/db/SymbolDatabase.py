@@ -160,7 +160,7 @@ class SymbolDatabase(DatabaseConnectionPool):
 
 				return self._create_block_view(result, finalized_height) if result else None
 
-	def get_receipts(self, query):  # pylint: disable=too-many-branches
+	def get_receipts(self, query):
 		"""Gets a validated receipt page from one repeatable-read database snapshot."""
 
 		with self.connection() as connection:
@@ -169,12 +169,14 @@ class SymbolDatabase(DatabaseConnectionPool):
 				sync_state = self._fetch_sync_state(cursor)
 				readable_height = _get_readable_height(sync_state)
 				if readable_height is None:
-					raise SymbolDataUnavailable('Symbol receipt data is unavailable')
+					raise SymbolDataUnavailable('Symbol receipt data is unavailable: sync state is unreadable')
 
 				if query.height is not None:
 					if query.height > readable_height:
 						if _is_non_public_state(sync_state):
-							raise SymbolDataUnavailable('Symbol receipt data is unavailable')
+							raise SymbolDataUnavailable(
+								'Symbol receipt data is unavailable: requested height is above the readable height '
+								'in dirty or repairing state')
 						return None
 					cursor.execute(
 						'SELECT 1 FROM symbol_blocks WHERE height = %s AND height <= %s',
@@ -184,24 +186,21 @@ class SymbolDatabase(DatabaseConnectionPool):
 
 				where_clauses = ['receipts.height <= sync_state.last_synced_height']
 				parameters = []
-				if query.height is not None:
-					where_clauses.append('receipts.height = %s')
-					parameters.append(query.height)
-				if query.receipt_group is not None:
-					where_clauses.append('receipts.receipt_group = %s::symbol_receipt_group')
-					parameters.append(query.receipt_group)
-				if query.receipt_type is not None:
-					where_clauses.append('receipts.receipt_type = %s::symbol_receipt_type')
-					parameters.append(query.receipt_type)
+				filters = [
+					(query.height, 'receipts.height = %s'),
+					(query.receipt_group, 'receipts.receipt_group = %s::symbol_receipt_group'),
+					(query.receipt_type, 'receipts.receipt_type = %s::symbol_receipt_type'),
+					(query.target_address, 'receipts.target_address = %s'),
+					(query.sender_address, 'receipts.sender_address = %s'),
+				]
+				for value, clause in filters:
+					if value is not None:
+						where_clauses.append(clause)
+						parameters.append(value)
+
 				if query.included_receipt_types:
 					where_clauses.append('receipts.receipt_type = ANY(%s::symbol_receipt_type[])')
 					parameters.append(list(query.included_receipt_types))
-				if query.target_address is not None:
-					where_clauses.append('receipts.target_address = %s')
-					parameters.append(query.target_address)
-				if query.sender_address is not None:
-					where_clauses.append('receipts.sender_address = %s')
-					parameters.append(query.sender_address)
 
 				# Never filter dirty rows before OFFSET; unsafe generic pages are rejected below.
 				cursor.execute(
@@ -229,11 +228,15 @@ class SymbolDatabase(DatabaseConnectionPool):
 				results = [ReceiptRecord(*result) for result in cursor.fetchall()]
 
 				if any(receipt.height > readable_height for receipt in results):
-					raise SymbolDataUnavailable('Symbol receipt data is unavailable')
+					raise SymbolDataUnavailable(
+						'Symbol receipt data is unavailable: returned receipt row is above the readable height')
 				if query.height is None and _is_generic_receipt_range_unavailable(sync_state):
-					raise SymbolDataUnavailable('Symbol receipt data is unavailable')
+					raise SymbolDataUnavailable(
+						'Symbol receipt data is unavailable: unbounded receipt query range is unsafe')
 				if _is_non_public_state(sync_state) and self._requires_current_receipt_metadata(results):
-					raise SymbolDataUnavailable('Symbol receipt data is unavailable')
+					raise SymbolDataUnavailable(
+						'Symbol receipt data is unavailable: non-native mosaic metadata is unsafe '
+						'in dirty or repairing state')
 
 				return results
 
