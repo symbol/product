@@ -71,7 +71,7 @@ export const createRequestDetailsViewModel = transportUriObject => {
 
 	if (actionType === ActionType.REQUEST) {
 		// Text
-		const title = $t('s_transportRequest_details_request_title');
+		const title = $t('screen_transport_title_requestDetails');
 		
 		return {
 			isVisible: true,
@@ -81,8 +81,8 @@ export const createRequestDetailsViewModel = transportUriObject => {
 		};
 	} else if (actionType === ActionType.SHARE) {
 		// Text
-		const title = $t('s_transportRequest_details_share_title');
-		const description = $t('s_transportRequest_details_share_description');
+		const title = $t('screen_transport_title_sharedInformation');
+		const description = $t('screen_transport_description_sharedInformation');
 
 		// Details table data
 		const payloadParameters = getTransportPayloadParameters(transportUriObject);

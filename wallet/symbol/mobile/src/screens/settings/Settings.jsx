@@ -23,38 +23,38 @@ export const Settings = () => {
 	const currencyList = config.marketCurrencies.map(currency => ({ value: currency, label: currency }));
 	const settingsList = [
 		{
-			title: $t('s_settings_item_network_title'),
-			description: $t('s_settings_item_network_description'),
+			title: $t('screen_settings_item_network_title'),
+			description: $t('screen_settings_item_network_description'),
 			icon: 'network',
 			handler: Router.goToSettingsNetwork
 		},
 		{
-			title: $t('s_settings_item_language_title'),
-			description: $t('s_settings_item_language_description'),
+			title: $t('screen_settings_item_language_title'),
+			description: $t('screen_settings_item_language_description'),
 			icon: 'language',
 			handler: toggleLanguageSelector
 		},
 		{
-			title: $t('s_settings_item_security_title'),
-			description: $t('s_settings_item_security_description'),
+			title: $t('screen_settings_item_security_title'),
+			description: $t('screen_settings_item_security_description'),
 			icon: 'security',
 			handler: Router.goToSettingsSecurity
 		},
 		{
-			title: $t('s_settings_item_currency_title'),
-			description: $t('s_settings_item_currency_description'),
+			title: $t('screen_settings_item_currency_title'),
+			description: $t('screen_settings_item_currency_description'),
 			icon: 'currency',
 			handler: toggleUserCurrencySelector
 		},
 		{
-			title: $t('s_settings_item_about_title'),
-			description: $t('s_settings_item_about_description'),
+			title: $t('screen_settings_item_about_title'),
+			description: $t('screen_settings_item_about_description'),
 			icon: 'about',
 			handler: Router.goToSettingsAbout
 		},
 		{
-			title: $t('s_settings_item_logout_title'),
-			description: $t('s_settings_item_logout_description'),
+			title: $t('screen_settings_item_logout_title'),
+			description: $t('screen_settings_item_logout_description'),
 			icon: 'logout',
 			handler: toggleLogoutConfirm
 		}
@@ -98,7 +98,7 @@ export const Settings = () => {
 			</Screen.Upper>
 			<Screen.Bottom>
 				<DropdownModal
-					title={$t('s_settings_item_language_title')}
+					title={$t('screen_settings_item_language_title')}
 					list={languageList}
 					value={userLanguage}
 					isOpen={isLanguageSelectorVisible}
@@ -106,7 +106,7 @@ export const Settings = () => {
 					onClose={toggleLanguageSelector}
 				/>
 				<DropdownModal
-					title={$t('s_settings_item_currency_title')}
+					title={$t('screen_settings_item_currency_title')}
 					list={currencyList}
 					value={userCurrency}
 					isOpen={isUserCurrencySelectorVisible}
@@ -115,8 +115,8 @@ export const Settings = () => {
 				/>
 				<DialogBox
 					type="confirm"
-					title={$t('settings_logout_confirm_title')}
-					text={$t('settings_logout_confirm_text')}
+					title={$t('screen_settings_dialog_logoutConfirm_title')}
+					text={$t('screen_settings_dialog_logoutConfirm_description')}
 					isVisible={isLogoutConfirmVisible}
 					onSuccess={handleLogoutPress}
 					onCancel={toggleLogoutConfirm}

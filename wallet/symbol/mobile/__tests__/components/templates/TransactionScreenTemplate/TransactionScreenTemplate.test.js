@@ -13,12 +13,12 @@ const SCREEN_TEXT = {
 	buttonConfirm: 'button_confirm',
 	buttonCancel: 'button_cancel',
 	// Dialog
-	textConfirmDialogTitle: 'form_transfer_confirm_title',
+	textConfirmDialogTitle: 'component_transactionConfirmationDialog_title_confirmTransfer',
 	textCustomConfirmTitle: 'Custom Confirm Title',
 	textCustomConfirmText: 'Custom confirm text message',
 	// Multisig warning
-	textMultisigWarningTitle: 'warning_multisig_title',
-	textMultisigWarningBody: 'warning_multisig_body',
+	textMultisigWarningTitle: 'alert_multisigWarning_title',
+	textMultisigWarningBody: 'alert_multisigWarning_description',
 	// Children content
 	textChildrenContent: 'Test Form Content'
 };

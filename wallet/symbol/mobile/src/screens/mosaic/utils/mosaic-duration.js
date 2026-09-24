@@ -88,7 +88,7 @@ export const snapBlocksToUnitNearestValue = (blocks, unit, blockGenerationTarget
  * @param {number} blocks - The duration in blocks.
  * @returns {string} The block count text.
  */
-export const getBlockCountText = blocks => $t('s_mosaicCreation_durationAmount_blocks', {
+export const getBlockCountText = blocks => $t('screen_mosaic_label_durationBlocks', {
 	count: blocks,
 	value: formatNumberGroups(blocks)
 });

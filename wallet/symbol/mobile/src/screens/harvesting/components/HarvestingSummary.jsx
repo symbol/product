@@ -31,7 +31,7 @@ export const HarvestingSummary = ({ summaryViewModel, ticker }) => {
 				<Stack gap="s">
 					<View style={styles.row}>
 						<StyledText>
-							{$t('s_harvesting_harvested_block_label')}
+							{$t('screen_harvesting_label_harvestedBlock')}
 						</StyledText>
 						<View style={styles.alignRight}>
 							<Amount
@@ -54,7 +54,7 @@ export const HarvestingSummary = ({ summaryViewModel, ticker }) => {
 					<Divider />
 					<View style={styles.row}>
 						<StyledText>
-							{$t('s_harvesting_harvested_30days_label')}
+							{$t('screen_harvesting_label_harvested30days')}
 						</StyledText>
 						<View style={styles.alignRight}>
 							<Amount

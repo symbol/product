@@ -24,7 +24,7 @@ export const createCosignatoryInputAlertData = (cosignatories, currentAccount) =
 
 	return {
 		isVisible: true,
-		text: $t('s_multisig_cosignatoryAlert_currentAccount_text'),
+		text: $t('screen_multisig_alert_currentAccountWarning_description'),
 		variant: 'warning'
 	};
 };

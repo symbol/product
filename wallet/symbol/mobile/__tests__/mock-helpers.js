@@ -3,8 +3,8 @@ import * as useWalletControllerModule from '@/app/hooks/useWalletController';
 import { PlatformUtils } from '@/app/lib/platform/PlatformUtils';
 import * as localization from '@/app/localization';
 import { currentAccount, currentNetworkIdentifier, walletStorageAccounts } from '__fixtures__/local/wallet';
+import NativeSplashScreen from 'specs/NativeSplashScreen';
 import { jest } from '@jest/globals';
-import SplashScreen from 'react-native-splash-screen';
 
 /**
  * Creates a store of the event handlers registered on a wallet controller, so that a test can emit
@@ -167,14 +167,14 @@ export const mockLocalization = dictionaryOrCallback => {
 
 /**
  * Mocks the SplashScreen module.
- * 
+ *
  * @return {object} The mocked SplashScreen.
  */
 export const mockSplashScreen = () => {
 	const splashScreenMock = {
 		hide: jest.fn()
 	};
-	jest.spyOn(SplashScreen, 'hide').mockImplementation(splashScreenMock.hide);
+	jest.spyOn(NativeSplashScreen, 'hide').mockImplementation(splashScreenMock.hide);
 
 	return splashScreenMock;
 };

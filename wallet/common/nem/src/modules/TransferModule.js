@@ -152,9 +152,9 @@ export class TransferModule {
 
 		if (transaction.type !== TransactionType.TRANSFER) {
 			throw new ControllerError(
-				'error_failed_decrypt_message_invalid_transaction_type',
 				`Failed to decrypt message. Transaction type "${transaction.type}" is not supported. `
-				+ `Expected type "${TransactionType.TRANSFER}"`
+				+ `Expected type "${TransactionType.TRANSFER}"`,
+				'error_failed_decrypt_message_invalid_transaction_type'
 			);
 		}
 
@@ -173,8 +173,8 @@ export class TransferModule {
 		}
 
 		throw new ControllerError(
-			'error_failed_decrypt_message_not_related',
-			'Failed to decrypt message. Transaction is not related to the current account'
+			'Failed to decrypt message. Transaction is not related to the current account',
+			'error_failed_decrypt_message_not_related'
 		);
 	};
 
@@ -183,8 +183,8 @@ export class TransferModule {
 		const accountInfo = await this.#api.account.fetchAccountInfo(networkProperties, recipientAddress);
 		if (!accountInfo.publicKey) {
 			throw new ControllerError(
-				'error_transfer_encrypted_message_no_recipient_public_key',
-				`Cannot encrypt message: recipient public key for "${recipientAddress}" is unknown`
+				`Cannot encrypt message: recipient public key for "${recipientAddress}" is unknown`,
+				'error_transfer_encrypted_message_no_recipient_public_key'
 			);
 		}
 		return accountInfo.publicKey;

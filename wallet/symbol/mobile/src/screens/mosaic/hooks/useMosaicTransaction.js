@@ -74,7 +74,7 @@ export const useMosaicTransaction = ({
 				mosaicId: definitionTransaction.mosaicId,
 				divisibility: definitionTransaction.divisibility,
 				supply: absoluteToRelativeAmount(supplyChangeTransaction.delta, definitionTransaction.divisibility),
-				duration: isExpiring ? definitionTransaction.duration : $t('data_unlimited'),
+				duration: isExpiring ? definitionTransaction.duration : $t('fieldValue_unlimited'),
 				isSupplyMutable: definitionTransaction.isSupplyMutable,
 				isTransferable: definitionTransaction.isTransferable,
 				isRestrictable: definitionTransaction.isRestrictable,

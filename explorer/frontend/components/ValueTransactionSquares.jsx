@@ -71,7 +71,7 @@ const ValueTransactionSquares = ({ data = [], transactionCount, isTransactionPre
 			}
 		},
 		tooltip: {
-			custom: ({ series, seriesIndex, dataPointIndex, w }) => {
+			custom: ({ series, seriesIndex, dataPointIndex }) => {
 				const fee = series[seriesIndex][dataPointIndex];
 				return renderToString(<Tooltip fee={fee} />);
 			}

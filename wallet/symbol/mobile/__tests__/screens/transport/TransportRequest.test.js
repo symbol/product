@@ -26,26 +26,26 @@ const DIFFERENT_CHAIN_ID = '57F7DA205008026C776CB6AED843393F04CD458E0AA2D9F1D5F3
 
 const SCREEN_TEXT = {
 	// Request details section
-	textShareTitle: 's_transportRequest_details_share_title',
-	textShareDescription: 's_transportRequest_details_share_description',
+	textShareTitle: 'screen_transport_title_sharedInformation',
+	textShareDescription: 'screen_transport_description_sharedInformation',
 
 	// Actions section
-	textSuggestedActionsGroup: 's_transportRequest_suggestedActions_group',
-	textOtherActionsGroup: 's_transportRequest_otherActions_group',
+	textSuggestedActionsGroup: 'screen_transport_title_suggestedActions',
+	textOtherActionsGroup: 'screen_transport_title_otherActions',
 
 	// Action item titles and descriptions
-	textAddContactTitle: 's_transportRequest_action_addContact_title',
-	textAddContactDescription: 's_transportRequest_action_addContact_description',
-	textFillTransferFormTitle: 's_transportRequest_action_fillTransferForm_title',
-	textFillTransferFormDescription: 's_transportRequest_action_fillTransferForm_description',
-	textFillTransferFormOnlyAddressDescription: 's_transportRequest_action_fillTransferFormOnlyAddress_description',
+	textAddContactTitle: 'screen_transport_item_addContact_title',
+	textAddContactDescription: 'screen_transport_item_addContact_description',
+	textFillTransferFormTitle: 'screen_transport_item_fillTransferForm_title',
+	textFillTransferFormDescription: 'screen_transport_item_fillTransferForm_description',
+	textFillTransferFormOnlyAddressDescription: 'screen_transport_item_fillTransferFormOnlyAddress_description',
 
 	// Alert messages
-	alertParseError: 's_transportRequest_alert_parseError_text',
-	alertUnsupportedChain: 's_transportRequest_alert_chainNameSupport_text',
-	alertInactiveChain: 's_transportRequest_alert_chainNameActive_text',
-	alertNetworkMismatch: 's_transportRequest_alert_networkIdentifierMismatch_text',
-	alertChainIdMismatch: 's_transportRequest_alert_chainIdMismatch_text'
+	alertParseError: 'screen_transport_alert_parseError_description',
+	alertUnsupportedChain: 'screen_transport_alert_chainNameSupport_description',
+	alertInactiveChain: 'screen_transport_alert_chainNameActive_description',
+	alertNetworkMismatch: 'screen_transport_alert_networkIdentifierMismatch_description',
+	alertChainIdMismatch: 'screen_transport_alert_chainIdMismatch_description'
 };
 
 // Account Fixtures

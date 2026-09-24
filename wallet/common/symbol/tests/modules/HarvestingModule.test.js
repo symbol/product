@@ -604,8 +604,8 @@ describe('HarvestingModule', () => {
 				config: { harvester: harvester.currentAccountWithoutLinkedKeys },
 				expected: {
 					error: new ControllerError(
-						'error_harvesting_no_keys_to_unlink',
-						'Failed to create stop harvesting transaction. No keys to unlink.'
+						'Failed to create stop harvesting transaction. No keys to unlink.',
+						'error_harvesting_no_keys_to_unlink'
 					)
 				}
 			},
@@ -614,9 +614,9 @@ describe('HarvestingModule', () => {
 				config: { harvester: harvester.inactiveMultisigAccount },
 				expected: {
 					error: new ControllerError(
-						'error_harvesting_account_no_activity',
 						'Failed to create harvesting transaction. Public key for account '
-							+ `"${inactiveMultisigAccountInfo.address}" does not exist on the network.`
+							+ `"${inactiveMultisigAccountInfo.address}" does not exist on the network.`,
+						'error_harvesting_account_no_activity'
 					)
 				}
 			}
@@ -719,9 +719,9 @@ describe('HarvestingModule', () => {
 		it('throws when the multisig harvester has never been active on the network', async () => {
 			// Arrange:
 			const expectedError = new ControllerError(
-				'error_harvesting_account_no_activity',
 				'Failed to create harvesting transaction. Public key for account '
-					+ `"${inactiveMultisigAccountInfo.address}" does not exist on the network.`
+					+ `"${inactiveMultisigAccountInfo.address}" does not exist on the network.`,
+				'error_harvesting_account_no_activity'
 			);
 			api.account.fetchAccountInfo.mockResolvedValue(inactiveMultisigAccountInfo);
 

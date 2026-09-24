@@ -71,8 +71,8 @@ export class TransferModule {
 
 		if (!recipientAddress) {
 			throw new ControllerError(
-				'error_transfer_unknown_recipient',
-				`Failed to create transfer transaction. Recipient address not found for provided alias "${recipientAddressOrAlias}"`
+				`Failed to create transfer transaction. Recipient address not found for provided alias "${recipientAddressOrAlias}"`,
+				'error_transfer_unknown_recipient'
 			);
 		}
 
@@ -132,9 +132,9 @@ export class TransferModule {
 
 		if (transaction.type !== TransactionType.TRANSFER) {
 			throw new ControllerError(
-				'error_failed_decrypt_message_invalid_transaction_type',
 				`Failed to decrypt message. Transaction type "${transaction.type}" is not supported. `
-				+ `Expected type "${TransactionType.TRANSFER}"`
+				+ `Expected type "${TransactionType.TRANSFER}"`,
+				'error_failed_decrypt_message_invalid_transaction_type'
 			);
 		}
 
@@ -153,8 +153,8 @@ export class TransferModule {
 		}
 
 		throw new ControllerError(
-			'error_failed_decrypt_message_not_related',
-			'Failed to decrypt message. Transaction is not related to current account'
+			'Failed to decrypt message. Transaction is not related to current account',
+			'error_failed_decrypt_message_not_related'
 		);
 	};
 

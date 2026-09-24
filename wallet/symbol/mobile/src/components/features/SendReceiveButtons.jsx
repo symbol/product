@@ -138,8 +138,8 @@ export const SendReceiveButtons = ({
 			</DialogBox>
 			<DialogBox
 				type="alert"
-				title={$t('warning_multisig_title')}
-				text={$t('warning_multisig_body')}
+				title={$t('alert_multisigWarning_title')}
+				text={$t('alert_multisigWarning_description')}
 				isVisible={isMultisigWarningShown}
 				onSuccess={toggleMultisigWarning}
 			/>

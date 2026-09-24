@@ -6,8 +6,9 @@ import {
 } from '@/app/screens/history/types/TransactionGraphic';
 import { createAccountDisplayData } from '@/app/utils/account';
 import { truncateMiddle } from '@/app/utils/format';
+import { getTransactionTypeLocaleKey } from '@/app/utils/localization';
 import { createTokenDisplayData, getNativeCurrencyToken, hasNonNativeCurrencyTokens } from '@/app/utils/token';
-import { getSignedSupplyDelta, getTransactionTypeTranslationKey } from '@/app/utils/transaction';
+import { getSignedSupplyDelta } from '@/app/utils/transaction';
 
 /** @typedef {import('@/app/screens/history/types/TransactionGraphic').TransactionGraphicArrowCaption} TransactionGraphicArrowCaption */
 /** @typedef {import('@/app/screens/history/types/TransactionGraphic').TransactionGraphicData} TransactionGraphicData */
@@ -62,9 +63,9 @@ const transactionGraphicConfigMap = {
 	[SymbolTransactionType.TRANSFER]: {
 		targetType: TransactionGraphicAvatarType.ACCOUNT,
 		targetFields: { addressField: 'recipientAddress' },
-		typeTextKey: (tx, chainName) => {
+		typeTextKey: tx => {
 			if (tx.message?.isDelegatedHarvestingMessage)
-				return `${getTransactionTypeTranslationKey(tx.type, chainName)}_harvesting`;
+				return 'transactionType_harvestingRequest';
 
 			return null;
 		},
@@ -137,7 +138,7 @@ const transactionGraphicConfigMap = {
 			{ 
 				type: CaptionType.TEXT, 
 				field: 'restrictionType', 
-				format: value => $t(`data_${value}`) 
+				format: value => $t(`fieldValue_${value}`) 
 			}
 		]
 	},
@@ -148,7 +149,7 @@ const transactionGraphicConfigMap = {
 			{ 
 				type: CaptionType.TEXT, 
 				field: 'restrictionType', 
-				format: value => $t(`data_${value}`) 
+				format: value => $t(`fieldValue_${value}`) 
 			}
 		]
 	},
@@ -156,7 +157,7 @@ const transactionGraphicConfigMap = {
 		targetType: TransactionGraphicAvatarType.ACCOUNT,
 		targetFields: { addressField: 'signerAddress' },
 		arrowCaptions: [
-			{ type: CaptionType.TEXT, field: 'restrictionType', format: value => $t(`data_${value}`) }
+			{ type: CaptionType.TEXT, field: 'restrictionType', format: value => $t(`fieldValue_${value}`) }
 		]
 	},
 	[SymbolTransactionType.MOSAIC_GLOBAL_RESTRICTION]: {
@@ -165,7 +166,7 @@ const transactionGraphicConfigMap = {
 		arrowCaptions: [
 			{
 				type: CaptionType.TEXT,
-				format: (_, tx) => `${tx.restrictionKey} ${$t(`data_${tx.newRestrictionType}`)} ${tx.newRestrictionValue}`
+				format: (_, tx) => `${tx.restrictionKey} ${$t(`fieldValue_${tx.newRestrictionType}`)} ${tx.newRestrictionValue}`
 			}
 		]
 	},
@@ -190,7 +191,7 @@ const transactionGraphicConfigMap = {
 			{   
 				type: CaptionType.TEXT, 
 				field: 'linkAction', 
-				format: value => $t(`data_${value}`) 
+				format: value => $t(`fieldValue_${value}`) 
 			}
 		]
 	},
@@ -201,7 +202,7 @@ const transactionGraphicConfigMap = {
 			{ 
 				type: CaptionType.TEXT, 
 				field: 'linkAction', 
-				format: value => $t(`data_${value}`) 
+				format: value => $t(`fieldValue_${value}`) 
 			}
 		]
 	},
@@ -212,7 +213,7 @@ const transactionGraphicConfigMap = {
 			{ 
 				type: CaptionType.TEXT, 
 				field: 'linkAction', 
-				format: value => $t(`data_${value}`) 
+				format: value => $t(`fieldValue_${value}`) 
 			}
 		]
 	},
@@ -223,7 +224,7 @@ const transactionGraphicConfigMap = {
 			{ 
 				type: CaptionType.TEXT, 
 				field: 'linkAction', 
-				format: value => $t(`data_${value}`) 
+				format: value => $t(`fieldValue_${value}`) 
 			}
 		]
 	},
@@ -373,7 +374,7 @@ const createTargetData = (transaction, config, options) => {
 
 		return {
 			type: targetType,
-			text: tokenDisplayData.name,
+			text: tokenDisplayData.nameText,
 			imageId: tokenDisplayData.imageId
 		};
 	}
@@ -447,7 +448,7 @@ const getTypeText = (transaction, config, chainName) => {
 	if (customKey)
 		return $t(customKey);
 
-	return $t(getTransactionTypeTranslationKey(transaction.type, chainName));
+	return $t(getTransactionTypeLocaleKey(transaction.type, chainName));
 };
 
 

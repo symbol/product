@@ -6,7 +6,7 @@ jest.mock('react-native-reanimated', () => require('react-native-reanimated/mock
 jest.mock('react-native-worklets', () => require('react-native-worklets/src/mock'));
 jest.mock('i18n-js', () => jest.requireActual('i18n-js/dist/require/index'));
 
-jest.mock('react-native-splash-screen', () => ({
+jest.mock('specs/NativeSplashScreen', () => ({
 	hide: jest.fn()
 }));
 

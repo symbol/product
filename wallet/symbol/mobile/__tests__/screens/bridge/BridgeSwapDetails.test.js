@@ -48,14 +48,14 @@ const PAYOUT_TIMESTAMP_TEXT = formatDate(PAYOUT_TIMESTAMP, key => key, true);
 
 const SCREEN_TEXT = {
 	// Status
-	textStatusCompleted: 's_bridge_history_status_completed',
-	textStatusProcessing: 's_bridge_history_status_processing',
-	textStatusFailed: 's_bridge_history_status_failed',
+	textStatusCompleted: 'screen_bridge_history_status_completed',
+	textStatusProcessing: 'screen_bridge_history_status_processing',
+	textStatusFailed: 'screen_bridge_history_status_failed',
 
 	// Titles
-	textTokenSendTitle: 's_bridge_swapDetails_tokenSend_title',
-	textTokenReceiveTitle: 's_bridge_swapDetails_tokenReceive_title',
-	textStatusTrackingTitle: 's_bridge_swapDetails_statusTracking_title',
+	textTokenSendTitle: 'screen_bridge_swapDetails_title_tokenSend',
+	textTokenReceiveTitle: 'screen_bridge_swapDetails_title_tokenReceive',
+	textStatusTrackingTitle: 'screen_bridge_swapDetails_title_statusTracking',
 
 	// Field titles
 	textFieldChainName: 'fieldTitle_chainName',
@@ -63,14 +63,11 @@ const SCREEN_TEXT = {
 	textFieldRecipientAddress: 'fieldTitle_recipientAddress',
 	textFieldTransactionHash: 'fieldTitle_transactionHash',
 
-	// N/A placeholder
-	textNotAvailable: 'data_v_na',
-
 	// Activity log steps
-	textStepRequestSend: 's_bridge_swapStatus_step_requestSend',
-	textStepAwaitingBridge: 's_bridge_swapStatus_step_awaitingBridge',
-	textStepPayoutSend: 's_bridge_swapStatus_step_payoutSend',
-	textStepPayoutConfirmation: 's_bridge_swapStatus_step_payoutConfirmation',
+	textStepRequestSend: 'screen_bridge_swapStatus_step_requestSend',
+	textStepAwaitingBridge: 'screen_bridge_swapStatus_step_awaitingBridge',
+	textStepPayoutSend: 'screen_bridge_swapStatus_step_payoutSend',
+	textStepPayoutConfirmation: 'screen_bridge_swapStatus_step_payoutConfirmation',
 
 	// Buttons
 	buttonOpenExplorer: 'button_openTransactionInExplorer'

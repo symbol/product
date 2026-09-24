@@ -3,7 +3,7 @@ import Button from '../Button';
 import axios from 'axios';
 import jwt from 'jsonwebtoken';
 import PropTypes from 'prop-types';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 const TwitterSignIn = function ({
 	twitterAccountStatus,

@@ -3,7 +3,7 @@ import { bridges } from '@/app/lib/controller';
 import { $t } from '@/app/localization';
 import { SwapSideDetails } from '@/app/screens/bridge/components';
 import { SwapSideType } from '@/app/screens/bridge/types/Bridge';
-import { buildActivityLog, getSwapSourceData, getSwapStatus, getSwapTargetData } from '@/app/screens/bridge/utils';
+import { createSwapDetailsViewModel } from '@/app/screens/bridge/utils';
 
 /** @typedef {import('@/app/screens/bridge/types/Bridge').BridgeRequest} BridgeRequest */
 
@@ -24,19 +24,10 @@ export const BridgeSwapDetails = ({ route }) => {
 	const { bridgeId, preloadedData } = route.params;
 	const bridge = bridges.find(b => b.id === bridgeId);
 
-	const data = preloadedData;
-
-	const status = getSwapStatus(data.requestStatus, data.payoutStatus);
-
-	const sourceData = getSwapSourceData(data, bridge.sourceWalletController);
-	const targetData = getSwapTargetData(data, bridge.targetWalletController);
-
-	const activityLog = buildActivityLog({
-		requestStatus: data.requestStatus,
-		payoutStatus: data.payoutStatus,
-		requestTimestamp: data.requestTransaction?.timestamp,
-		payoutTimestamp: data.payoutTransaction?.timestamp,
-		errorMessage: data.errorMessage
+	const details = createSwapDetailsViewModel({
+		request: preloadedData,
+		sourceWalletController: bridge.sourceWalletController,
+		targetWalletController: bridge.targetWalletController
 	});
 
 	return (
@@ -45,42 +36,42 @@ export const BridgeSwapDetails = ({ route }) => {
 				<Stack gap="xl">
 					<Stack>
 						<StatusRow
-							variant={status.variant}
-							icon={status.iconName}
-							statusText={status.text}
+							variant={details.status.variant}
+							icon={details.status.iconName}
+							statusText={details.status.text}
 						/>
 						<Stack gap="s">
 							<StyledText type="title" size="s">
-								{$t('s_bridge_swapDetails_tokenSend_title')}
+								{$t('screen_bridge_swapDetails_title_tokenSend')}
 							</StyledText>
 							<SwapSideDetails
 								type={SwapSideType.SOURCE}
-								chainName={sourceData.chainName}
-								networkIdentifier={sourceData.networkIdentifier}
-								token={sourceData.token}
-								account={sourceData.account}
-								transactionHash={sourceData.transactionHash}
+								chainName={details.source.chainName}
+								networkIdentifier={details.source.networkIdentifier}
+								token={details.source.token}
+								account={details.source.account}
+								transactionHash={details.source.transactionHash}
 							/>
 						</Stack>
 						<Stack gap="s">
 							<StyledText type="title" size="s">
-								{$t('s_bridge_swapDetails_tokenReceive_title')}
+								{$t('screen_bridge_swapDetails_title_tokenReceive')}
 							</StyledText>
 							<SwapSideDetails
 								type={SwapSideType.TARGET}
-								chainName={targetData.chainName}
-								networkIdentifier={targetData.networkIdentifier}
-								token={targetData.token}
-								account={targetData.account}
-								transactionHash={targetData.transactionHash}
+								chainName={details.target.chainName}
+								networkIdentifier={details.target.networkIdentifier}
+								token={details.target.token}
+								account={details.target.account}
+								transactionHash={details.target.transactionHash}
 							/>
 						</Stack>
 					</Stack>
 					<Stack gap="s">
 						<StyledText type="title">
-							{$t('s_bridge_swapDetails_statusTracking_title')}
+							{$t('screen_bridge_swapDetails_title_statusTracking')}
 						</StyledText>
-						<ActivityLogView data={activityLog} />
+						<ActivityLogView data={details.activityLog} />
 					</Stack>
 				</Stack>
 			</Spacer>

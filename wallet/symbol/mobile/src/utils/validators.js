@@ -12,7 +12,7 @@ export const validateRequired =
 	(isRequired = true) =>
 		str => {
 			if (isRequired && str.length === 0) 
-				return 'validation_error_field_required';
+				return 'validationError_fieldRequired';
 		
 		};
 
@@ -22,7 +22,7 @@ export const validateRequired =
  */
 export const validateAccountName = () => str => {
 	if (str.length > 15) 
-		return 'validation_error_account_name_long';
+		return 'validationError_accountNameLong';
 };
 
 /**
@@ -33,7 +33,7 @@ export const validateMnemonic = () => str => {
 	const isValidMnemonic = Bip39.validateMnemonic(str.trim());
 
 	if (!isValidMnemonic) 
-		return 'validation_error_mnemonic_invalid';
+		return 'validationError_mnemonicInvalid';
 };
 
 /**
@@ -50,7 +50,7 @@ export const validateAmount = availableBalance => str => {
 	);
 
 	if (isAmountGreaterThanBalance !== '0')
-		return 'validation_error_balance_not_enough';
+		return 'validationError_balanceNotEnough';
 };
 
 /**
@@ -64,7 +64,7 @@ export const validateAddress = chainName => str => {
 	if (isAddress(trimmedStr, chainName))
 		return;
 	
-	return 'validation_error_address_invalid';
+	return 'validationError_addressInvalid';
 };
 
 /**
@@ -83,7 +83,7 @@ export const validateRecipient = chainName => str => {
 	if (isAddress(trimmedStr, chainName))
 		return;
 
-	return 'validation_error_address_invalid';
+	return 'validationError_addressInvalid';
 };
 
 /**
@@ -97,5 +97,5 @@ export const validatePrivateKey = chainName => str => {
 	if (isPrivateKey(trimmedStr, chainName))
 		return;
 	
-	return 'validation_error_privateKey_invalid';
+	return 'validationError_privateKeyInvalid';
 };

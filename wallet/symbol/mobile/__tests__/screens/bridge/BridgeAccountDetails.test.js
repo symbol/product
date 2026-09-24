@@ -28,7 +28,7 @@ const SCREEN_TEXT = {
 	textFieldAddress: 'fieldTitle_address',
 
 	// Section titles
-	textTokensTitle: 's_bridge_tokens_title',
+	textTokensTitle: 'screen_bridge_title_tokens',
 
 	// Token display names
 	displayNameTokenBxym: 'Bridged XYM • bXYM',
@@ -42,9 +42,9 @@ const SCREEN_TEXT = {
 	buttonConfirm: 'button_confirm',
 
 	// Dialogs
-	dialogSensitiveTitle: 'dialog_sensitive',
+	dialogSensitiveTitle: 'dialog_sensitiveInformation_title',
 	dialogRemoveAccountTitle: 'dialog_removeAccount_title',
-	dialogRemoveAccountBody: 'dialog_removeAccount_body'
+	dialogRemoveAccountBody: 'dialog_removeAccount_description'
 };
 
 // Account Fixtures

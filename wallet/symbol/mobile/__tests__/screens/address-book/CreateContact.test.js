@@ -15,18 +15,18 @@ const NEW_CONTACT_NOTES = 'Test notes for new contact';
 // Screen Text
 
 const SCREEN_TEXT = {
-	textScreenTitle: 's_addressBook_create_title',
-	textScreenDescription: 's_addressBook_create_description',
-	textTabWhitelist: 's_addressBook_tab_whitelist',
-	textTabBlacklist: 's_addressBook_tab_blacklist',
-	textAlertWhitelist: 's_addressBook_manageContact_alert_whitelist',
-	textAlertBlacklist: 's_addressBook_manageContact_alert_blacklist',
-	textDefaultBlacklistName: 's_addressBook_account_blacklist_defaultName',
-	inputNameLabel: 'input_name',
-	inputAddressLabel: 'input_address',
-	inputNotesLabel: 'input_notes',
+	textScreenTitle: 'screen_addressBook_title_createContact',
+	textScreenDescription: 'screen_addressBook_description_createContact',
+	textTabWhitelist: 'screen_addressBook_tab_whitelist',
+	textTabBlacklist: 'screen_addressBook_tab_blacklist',
+	textAlertWhitelist: 'screen_addressBook_manageContact_alert_whitelist_description',
+	textAlertBlacklist: 'screen_addressBook_manageContact_alert_blacklist_description',
+	textDefaultBlacklistName: 'screen_addressBook_title_blockedAccount',
+	inputNameLabel: 'inputLabel_name',
+	inputAddressLabel: 'inputLabel_address',
+	inputNotesLabel: 'inputLabel_notes',
 	buttonSave: 'button_save',
-	textValidationRequired: 'validation_error_field_required'
+	textValidationRequired: 'validationError_fieldRequired'
 };
 
 // Account Fixtures

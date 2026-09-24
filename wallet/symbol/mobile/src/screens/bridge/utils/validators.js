@@ -15,9 +15,9 @@ const estimationErrorPriority = [
 ];
 
 const estimationErrorTranslationKeyMap = {
-	[BridgeEstimationErrorCode.AMOUNT_LOW]: 'validation_error_amount_low',
-	[BridgeEstimationErrorCode.REQUEST_LIMIT_EXCEEDED]: 'validation_error_amount_transferLimit',
-	[BridgeEstimationErrorCode.DAILY_LIMIT_EXCEEDED]: 'validation_error_amount_dailyLimit'
+	[BridgeEstimationErrorCode.AMOUNT_LOW]: 'validationError_amountLow',
+	[BridgeEstimationErrorCode.REQUEST_LIMIT_EXCEEDED]: 'validationError_amountTransferLimit',
+	[BridgeEstimationErrorCode.DAILY_LIMIT_EXCEEDED]: 'validationError_amountDailyLimit'
 };
 
 /**
@@ -29,7 +29,7 @@ const estimationErrorTranslationKeyMap = {
  */
 export const validateEstimation = (estimations, hasEstimationFailed) => () => {
 	if (hasEstimationFailed)
-		return 'validation_error_estimation_unavailable';
+		return 'validationError_estimationUnavailable';
 
 	const errors = (estimations ?? [])
 		.map(estimation => estimation.error)
@@ -54,10 +54,10 @@ const createInsufficientLiquidityResult = errors => {
 	const params = insufficientLiquidityError?.params;
 
 	if (!params?.maxAmount)
-		return 'validation_error_insufficientLiquidity_generic';
+		return 'validationError_insufficientLiquidityGeneric';
 
 	return {
-		key: 'validation_error_insufficientLiquidity',
+		key: 'validationError_insufficientLiquidity',
 		params: {
 			...params,
 			maxAmount: formatAmountInput(params.maxAmount, MAX_AMOUNT_DISPLAY_DECIMALS)

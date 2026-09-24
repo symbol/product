@@ -785,49 +785,84 @@ describe('utils/hooks', () => {
 	});
 
 	describe('useAsyncCall', () => {
-		const runTest = async (callback, pollingInterval, expectedResult) => {
+		it('calls once immediately when no polling interval is provided', async () => {
 			// Arrange:
-			const defaultData = 'defaultValue';
-			const shouldCallTimes = pollingInterval ? 2 : 1;
+			let resolveCall;
+			const callback = jest.fn(() => new Promise(resolve => { resolveCall = resolve; }));
+			const { result } = renderHook(() => useAsyncCall(callback, 'default value', null));
+
+			// Sanity check:
+			expect(callback).toHaveBeenCalledTimes(1);
+			expect(result.current).toBe('default value');
 
 			// Act:
-			const { result } = renderHook(() => useAsyncCall(callback, defaultData, pollingInterval));
-
-			act(() => {
-				jest.runOnlyPendingTimers();
-			});
-			await waitFor(() => expect(callback).toHaveBeenCalledTimes(1));
-
-			act(() => {
-				jest.runOnlyPendingTimers();
+			await act(async () => {
+				resolveCall('response');
 			});
 
 			// Assert:
-			await waitFor(() => expect(callback).toHaveBeenCalledTimes(shouldCallTimes));
-			await waitFor(() => expect(result.current).toStrictEqual(expectedResult));
-		};
-
-		it('calls an async function without polling interval', async () => {
-			// Arrange:
-			const callback = jest.fn().mockResolvedValueOnce(1).mockResolvedValue(2);
-			const pollingInterval = null;
-			const expectedValue = 1;
-
-			// Act + Assert:
-			await runTest(callback, pollingInterval, expectedValue);
+			expect(result.current).toBe('response');
 		});
 
-		it('calls an async function with polling interval', async () => {
+		it('does not call the async function before the polling interval elapses', async () => {
 			// Arrange:
-			const callback = jest.fn().mockResolvedValueOnce(1).mockResolvedValue(2);
-			const pollingInterval = 15;
-			const expectedValue = 2;
+			const callback = jest.fn().mockResolvedValue('response');
+			const { result } = renderHook(() => useAsyncCall(callback, 'default value', 15));
 
-			// Act + Assert:
-			await runTest(callback, pollingInterval, expectedValue);
+			// Act:
+			await act(async () => {
+				jest.advanceTimersByTime(14);
+			});
+
+			// Assert:
+			expect(callback).not.toHaveBeenCalled();
+			expect(result.current).toBe('default value');
 		});
 
-		it('does not let an older response overwrite a newer response', async () => {
+		it('calls the async function when the first polling interval elapses', async () => {
+			// Arrange:
+			const callback = jest.fn().mockResolvedValue('response');
+			const { result } = renderHook(() => useAsyncCall(callback, 'default value', 15));
+
+			// Sanity check:
+			expect(callback).not.toHaveBeenCalled();
+
+			// Act:
+			await act(async () => {
+				jest.advanceTimersByTime(15);
+			});
+
+			// Assert:
+			expect(callback).toHaveBeenCalledTimes(1);
+			expect(result.current).toBe('response');
+		});
+
+		it('repeats the async call on the next polling interval', async () => {
+			// Arrange:
+			const callback = jest.fn()
+				.mockResolvedValueOnce('first response')
+				.mockResolvedValue('next response');
+			const { result } = renderHook(() => useAsyncCall(callback, 'default value', 15));
+
+			await act(async () => {
+				jest.advanceTimersByTime(15);
+			});
+
+			// Sanity check:
+			expect(callback).toHaveBeenCalledTimes(1);
+			expect(result.current).toBe('first response');
+
+			// Act:
+			await act(async () => {
+				jest.advanceTimersByTime(15);
+			});
+
+			// Assert:
+			expect(callback).toHaveBeenCalledTimes(2);
+			expect(result.current).toBe('next response');
+		});
+
+		it('ignores an older response within the same polling effect', async () => {
 			// Arrange:
 			let resolveFirst;
 			let resolveSecond;
@@ -835,11 +870,14 @@ describe('utils/hooks', () => {
 				.mockImplementationOnce(() => new Promise(resolve => { resolveFirst = resolve; }))
 				.mockImplementationOnce(() => new Promise(resolve => { resolveSecond = resolve; }));
 			const { result } = renderHook(() => useAsyncCall(callback, 'default value', 15));
-
-			// Act:
-			act(() => {
+			await act(async () => {
 				jest.advanceTimersByTime(30);
 			});
+
+			// Sanity check:
+			expect(callback).toHaveBeenCalledTimes(2);
+
+			// Act:
 			await act(async () => {
 				resolveSecond('new value');
 			});
@@ -851,19 +889,171 @@ describe('utils/hooks', () => {
 			expect(result.current).toBe('new value');
 		});
 
-		it('stops polling when unmounted', () => {
+		it('stops polling when unmounted', async () => {
 			// Arrange:
 			const callback = jest.fn().mockResolvedValue('value');
-			const { unmount } = renderHook(() => useAsyncCall(callback, 'default value', 15));
+			const { result, unmount } = renderHook(() => useAsyncCall(callback, 'default value', 15));
+
+			await act(async () => {
+				jest.advanceTimersByTime(15);
+			});
+
+			// Sanity check:
+			expect(callback).toHaveBeenCalledTimes(1);
+			expect(result.current).toBe('value');
 
 			// Act:
 			unmount();
-			act(() => {
+			await act(async () => {
+				jest.advanceTimersByTime(30);
+			});
+
+			// Assert:
+			expect(callback).toHaveBeenCalledTimes(1);
+		});
+
+		it('uses the latest callback on the next poll', async () => {
+			// Arrange:
+			const originalCallback = jest.fn().mockResolvedValue('original');
+			const updatedCallback = jest.fn().mockResolvedValue('updated');
+			const { result, rerender } = renderHook(
+				({ callback }) => useAsyncCall(callback, 'default value', 15),
+				{ initialProps: { callback: originalCallback } }
+			);
+
+			await act(async () => {
+				jest.advanceTimersByTime(15);
+			});
+			rerender({ callback: updatedCallback });
+
+			// Sanity check:
+			expect(originalCallback).toHaveBeenCalledTimes(1);
+			expect(updatedCallback).not.toHaveBeenCalled();
+			expect(result.current).toBe('original');
+
+			// Act:
+			await act(async () => {
 				jest.advanceTimersByTime(15);
 			});
 
 			// Assert:
-			expect(callback).not.toHaveBeenCalled();
+			expect(originalCallback).toHaveBeenCalledTimes(1);
+			expect(updatedCallback).toHaveBeenCalledTimes(1);
+			expect(result.current).toBe('updated');
+		});
+
+		it('does not reset the pending poll when the callback changes', async () => {
+			// Arrange:
+			const originalCallback = jest.fn().mockResolvedValue('original');
+			const updatedCallback = jest.fn().mockResolvedValue('updated');
+			const { result, rerender } = renderHook(
+				({ callback }) => useAsyncCall(callback, 'default value', 15),
+				{ initialProps: { callback: originalCallback } }
+			);
+
+			act(() => {
+				jest.advanceTimersByTime(7);
+			});
+			rerender({ callback: updatedCallback });
+
+			// Sanity check:
+			expect(originalCallback).not.toHaveBeenCalled();
+			expect(updatedCallback).not.toHaveBeenCalled();
+			expect(result.current).toBe('default value');
+
+			// Act:
+			await act(async () => {
+				jest.advanceTimersByTime(8);
+			});
+
+			// Assert:
+			expect(originalCallback).not.toHaveBeenCalled();
+			expect(updatedCallback).toHaveBeenCalledTimes(1);
+			expect(result.current).toBe('updated');
+		});
+
+		it.each([
+			['at the old interval deadline', 10, 0],
+			['just before the new interval deadline', 29, 0],
+			['at the new interval deadline', 30, 1]
+		])('clears the old interval and follows the new schedule %s', async (_boundary, elapsedMs, expectedCalls) => {
+			// Arrange:
+			const oldCallback = jest.fn().mockResolvedValue('old result');
+			const newCallback = jest.fn().mockResolvedValue('new result');
+			const { rerender } = renderHook(
+				({ callback, interval }) => useAsyncCall(callback, 'default value', interval),
+				{ initialProps: { callback: oldCallback, interval: 15 } }
+			);
+			act(() => {
+				jest.advanceTimersByTime(5);
+			});
+			rerender({ callback: newCallback, interval: 30 });
+
+			// Act:
+			await act(async () => {
+				jest.advanceTimersByTime(elapsedMs);
+			});
+
+			// Assert:
+			expect(oldCallback).not.toHaveBeenCalled();
+			expect(newCallback).toHaveBeenCalledTimes(expectedCalls);
+		});
+
+		it('ignores a response started by the previous polling effect', async () => {
+			// Arrange:
+			let resolveOldRequest;
+			const oldCallback = jest.fn(() => new Promise(resolve => { resolveOldRequest = resolve; }));
+			const newCallback = jest.fn().mockResolvedValue('new result');
+			const { result, rerender } = renderHook(
+				({ callback, interval }) => useAsyncCall(callback, 'default value', interval),
+				{ initialProps: { callback: oldCallback, interval: 100 } }
+			);
+
+			await act(async () => {
+				jest.advanceTimersByTime(100);
+			});
+			rerender({ callback: newCallback, interval: 10 });
+			await act(async () => {
+				jest.advanceTimersByTime(10);
+			});
+
+			// Sanity check:
+			expect(oldCallback).toHaveBeenCalledTimes(1);
+			expect(newCallback).toHaveBeenCalledTimes(1);
+			expect(result.current).toBe('new result');
+
+			// Act:
+			await act(async () => {
+				resolveOldRequest('stale result');
+			});
+
+			// Assert:
+			expect(result.current).toBe('new result');
+		});
+
+		it('keeps the latest data when a polling request fails', async () => {
+			// Arrange:
+			const callback = jest.fn()
+				.mockResolvedValueOnce('existing data')
+				.mockRejectedValueOnce(Error('request failed'));
+			const { result } = renderHook(() => useAsyncCall(callback, 'default value', 15));
+
+			await act(async () => {
+				jest.advanceTimersByTime(15);
+			});
+
+			// Sanity check:
+			expect(callback).toHaveBeenCalledTimes(1);
+			expect(result.current).toBe('existing data');
+
+			// Act:
+			await act(async () => {
+				jest.advanceTimersByTime(15);
+			});
+
+			// Assert:
+			expect(callback).toHaveBeenCalledTimes(2);
+			expect(result.current).toBe('existing data');
 		});
 	});
 });

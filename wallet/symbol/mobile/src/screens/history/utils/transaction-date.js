@@ -17,13 +17,13 @@ export const getTransactionDateText = (transaction, group) => {
 	if (group === TransactionGroup.UNCONFIRMED || group === TransactionGroup.PARTIAL) {
 		const deadlineText = formatDate(deadline?.timestamp, $t, true);
         
-		return $t('transaction_awaitingConfirmation', { deadline: deadlineText });
+		return $t('screen_history_label_awaitingConfirmation', { deadline: deadlineText });
 	}
 
 	const dateValue = timestamp ?? deadline?.timestamp;
 
 	if (!dateValue) 
-		return $t('data_na');
+		return $t('fieldValue_na');
 
 	return formatDate(dateValue, $t, true);
 };

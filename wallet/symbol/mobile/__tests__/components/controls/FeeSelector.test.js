@@ -5,9 +5,9 @@ import { fireEvent, render } from '@testing-library/react-native';
 
 const SCREEN_TEXT = {
 	textTitle: 'Transaction Fee',
-	textFeeSlow: 'selector_fee_slow',
-	textFeeMedium: 'selector_fee_medium',
-	textFeeFast: 'selector_fee_fast'
+	textFeeSlow: 'feeSpeed_slow',
+	textFeeMedium: 'feeSpeed_medium',
+	textFeeFast: 'feeSpeed_fast'
 };
 
 const FeeTierLevel = {

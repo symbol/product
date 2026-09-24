@@ -247,8 +247,8 @@ describe('modules/TransferModule', () => {
 				},
 				expected: {
 					error: new ControllerError(
-						'error_transfer_encrypted_message_no_recipient_public_key',
-						`Cannot encrypt message: recipient public key for "${RECIPIENT_ADDRESS}" is unknown`
+						`Cannot encrypt message: recipient public key for "${RECIPIENT_ADDRESS}" is unknown`,
+						'error_transfer_encrypted_message_no_recipient_public_key'
 					),
 					shouldFetchRecipientInfo: true
 				}
@@ -369,9 +369,9 @@ describe('modules/TransferModule', () => {
 				},
 				expected: {
 					error: new ControllerError(
-						'error_failed_decrypt_message_invalid_transaction_type',
 						`Failed to decrypt message. Transaction type "${TransactionType.MULTISIG}" is not supported. `
-						+ `Expected type "${TransactionType.TRANSFER}"`
+						+ `Expected type "${TransactionType.TRANSFER}"`,
+						'error_failed_decrypt_message_invalid_transaction_type'
 					)
 				}
 			},
@@ -388,8 +388,8 @@ describe('modules/TransferModule', () => {
 				},
 				expected: {
 					error: new ControllerError(
-						'error_failed_decrypt_message_not_related',
-						'Failed to decrypt message. Transaction is not related to the current account'
+						'Failed to decrypt message. Transaction is not related to the current account',
+						'error_failed_decrypt_message_not_related'
 					)
 				}
 			}

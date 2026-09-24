@@ -84,7 +84,7 @@ export const InputAmount = props => {
 								disabled={!availableBalance}
 							>
 								<StyledText type="label" style={availableBalanceTextStyle}>
-									{$t('c_inputAmount_label_available')}: {availableBalance}
+									{$t('component_inputAmount_label_available')}: {availableBalance}
 								</StyledText>
 							</TouchableOpacity>
 						)}
@@ -93,8 +93,8 @@ export const InputAmount = props => {
 			/>
 			<DialogBox
 				type="confirm"
-				title={$t('c_inputAmount_confirm_title')}
-				text={$t('c_inputAmount_confirm_text', { amount: availableBalance })}
+				title={$t('component_inputAmount_dialog_maxAmount_title')}
+				text={$t('component_inputAmount_dialog_maxAmount_description', { amount: availableBalance })}
 				isVisible={isConfirmVisible}
 				onSuccess={handleSetMax}
 				onCancel={toggleConfirm}

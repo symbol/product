@@ -31,7 +31,9 @@ export const copyToClipboard = async text => {
 	let isCopyExecuted = false;
 	try {
 		isCopyExecuted = document.execCommand('copy');
-	} catch {}
+	} catch {
+		// execCommand is unsupported; reported below via isCopyExecuted
+	}
 
 	document.body.removeChild(textArea);
 

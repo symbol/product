@@ -19,22 +19,21 @@ const PRICE = 0.05;
 
 const SCREEN_TEXT = {
 	// Screen content
-	textTitle: 's_send_title',
-	textDescription: 's_send_description',
+	textTitle: 'screen_send_title_intro',
+	textDescription: 'screen_send_description_intro',
 
 	// Input labels
-	inputRecipientLabel: 'input_recipient',
-	inputMosaicLabel: 'input_mosaic',
-	inputAmountLabel: 'input_amount',
-	inputMessageLabel: 'input_message',
-	inputSenderLabel: 'input_sender',
+	inputRecipientLabel: 'inputLabel_recipient',
+	inputMosaicLabel: 'inputLabel_mosaic',
+	inputAmountLabel: 'inputLabel_amount',
+	inputMessageLabel: 'inputLabel_message',
 
 	// Sender selector tabs
-	senderTabCurrentAccount: 'c_selectTransactionSender_currentAccount',
-	senderTabMultisigAccount: 'c_selectTransactionSender_multisigAccount',
+	senderTabCurrentAccount: 'component_selectTransactionSender_tab_currentAccount',
+	senderTabMultisigAccount: 'component_selectTransactionSender_tab_multisigAccount',
 
 	// Checkbox
-	checkboxEncrypted: 'input_encrypted',
+	checkboxEncrypted: 'inputLabel_encrypted',
 
 	// Buttons
 	buttonSend: 'button_send'
