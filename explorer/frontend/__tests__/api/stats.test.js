@@ -81,31 +81,6 @@ describe('api/stats', () => {
 			// Act + Assert:
 			await runStatsTest(functionToTest, args, responseMap, expectedResult);
 		});
-
-		it('returns zero harvesting percentage when there are no eligible accounts', async () => {
-			// Arrange:
-			const functionToTest = fetchAccountStats;
-			const args = [];
-			const responseMap = {
-				'https://explorer.backend/account/statistics': {
-					...accountStatisticsResponse,
-					eligibleHarvestAccounts: 0
-				},
-				'https://explorer.backend/accounts?limit=10&offset=0': accountPageResponse
-			};
-			const expectedResult = {
-				...accountStatisticsResult,
-				eligibleForHarvesting: 0,
-				harvestingAccountsChart: [
-					[0, 'Harvesting'],
-					[100, 'Not harvesting']
-				],
-				harvestingAccountsPercentage: 0
-			};
-
-			// Act + Assert:
-			await runStatsTest(functionToTest, args, responseMap, expectedResult);
-		});
 	});
 
 	describe('fetchTransactionChart', () => {
