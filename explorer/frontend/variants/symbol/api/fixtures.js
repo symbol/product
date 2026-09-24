@@ -119,14 +119,14 @@ export const stubNodes = [
 ];
 
 export const stubAccountStats = {
-	total: 984546, harvesting: 23675, eligibleForHarvesting: 9093, top10AccountsImportance: 69.1, harvestingAccountsPercentage: 2.4,
+	total: 984546, harvesting: 1875, eligibleForHarvesting: 9093, top10AccountsImportance: 69.1, harvestingAccountsPercentage: 20.62,
 	importanceBreakdown: [
 		[21.07, 'NANEPSBUVE5NLYXCTP52LK3YAOSZUAIVOAD4FGSV'],
 		[23.41, 'NCHESTYVD2P6P646AMY7WSNG73PCPZDUQNSD6JAK'],
 		[0.57, 'NAXB67KOXSIDPNGTOJA35MTNCK4AHB6JE2MJRER7'],
 		[54.95, 'Rest']
 	],
-	harvestingAccountsChart: [[2.4, 'Harvesting'], [97.6, 'Not harvesting']]
+	harvestingAccountsChart: [[20.62, 'Harvesting'], [79.38, 'Not harvesting']]
 };
 
 export const stubBlockStats = {
