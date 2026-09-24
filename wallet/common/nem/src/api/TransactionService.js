@@ -33,7 +33,7 @@ export class TransactionService {
 		if (group === TransactionGroup.PARTIAL)
 			return [];
 
-		let transactionDTOs = [];
+		let transactionDTOs;
 
 		if (group === TransactionGroup.UNCONFIRMED) {
 			const url = `${networkProperties.nodeUrl}/account/unconfirmedTransactions?address=${address}`;
@@ -69,7 +69,7 @@ export class TransactionService {
 			[transactionDTO],
 			currentAccount
 		);
-		
+
 		return transactions[0];
 	};
 
@@ -82,12 +82,12 @@ export class TransactionService {
 	fetchTransactionStatus = async (networkProperties, hash) => {
 		try {
 			await this.#makeRequest(`${networkProperties.nodeUrl}/transaction/get?hash=${hash}`);
-			
+
 			return { group: TransactionGroup.CONFIRMED };
 		} catch (error) {
 			if (error instanceof NotFoundError)
 				return { group: TransactionGroup.UNCONFIRMED };
-			
+
 			throw error;
 		}
 	};
@@ -117,6 +117,7 @@ export class TransactionService {
 			for (let i = 0; i < transactions.length; i++) {
 				const tx = transactions[i];
 				const group = metadata?.groups?.[i] || TransactionAnnounceGroup.DEFAULT;
+				// eslint-disable-next-line no-await-in-loop
 				results.push(await this.announceTransaction(networkProperties, tx, group));
 			}
 			return results;
@@ -162,10 +163,10 @@ export class TransactionService {
 	 */
 	resolveTransactionData = async (networkProperties, transactionDTOs) => {
 		const { mosaicIds } = getUnresolvedIdsFromTransactionDTOs(transactionDTOs);
-		
+
 		if (!mosaicIds.length)
 			return {};
-		
+
 		return this.#api.mosaic.fetchMosaicInfos(networkProperties, mosaicIds);
 	};
 
@@ -178,7 +179,7 @@ export class TransactionService {
 	 */
 	resolveTransactionDTOs = async (networkProperties, transactionDTOs, currentAccount) => {
 		const mosaicInfos = await this.resolveTransactionData(networkProperties, transactionDTOs);
-		
+
 		return transactionDTOs.map(dto =>
 			transactionFromDTO(dto, { networkProperties, currentAccount, mosaicInfos }));
 	};
