@@ -6,3 +6,18 @@ const appConfig = {
 
 window.appConfig = appConfig;
 Object.assign(process.env, appConfig);
+
+global.IntersectionObserver = jest.fn(callback => {
+	const observer = {
+		callback,
+		disconnect: jest.fn(),
+		observe: jest.fn(),
+		unobserve: jest.fn()
+	};
+	global.intersectionObserverInstances.push(observer);
+	return observer;
+});
+
+beforeEach(() => {
+	global.intersectionObserverInstances = [];
+});

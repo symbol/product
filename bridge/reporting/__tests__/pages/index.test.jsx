@@ -5,8 +5,8 @@ import { fireEvent, render, screen, within } from '@testing-library/react';
 
 jest.mock('@/api/bridge');
 jest.mock('@/components/ReportPanel', () => {
-	const ReportPanel = ({ baseUrl, tab }) => (
-		<div data-base-url={baseUrl} data-testid={`report-panel-${tab.id}`} />
+	const ReportPanel = ({ baseUrl, configuration, tab }) => (
+		<div data-base-url={baseUrl} data-configuration={JSON.stringify(configuration)} data-testid={`report-panel-${tab.id}`} />
 	);
 	return ReportPanel;
 });
@@ -68,6 +68,20 @@ describe('Home', () => {
 
 		// Assert:
 		expect(reportPanel.getAttribute('data-base-url')).toBe(bridgeBaseUrls.native);
+	});
+
+	it.each([
+		['wrapped', 'xym-wxym-requests'],
+		['native', 'xym-eth-requests']
+	])('passes the %s bridge configuration to its panel', (bridgeType, tabId) => {
+		// Arrange:
+		renderHome();
+
+		// Act:
+		const reportPanel = screen.getByTestId(`report-panel-${tabId}`);
+
+		// Assert:
+		expect(JSON.parse(reportPanel.getAttribute('data-configuration'))).toEqual(bridgeConfigurations[bridgeType]);
 	});
 
 	it('renders bridge network status', () => {

@@ -1,58 +1,8 @@
+import { CONFIGURATION, ERROR_ROW, ERROR_TAB, REQUEST_ROW, REQUEST_TAB } from '../test-utils/fixtures';
 import ReportTable from '@/components/ReportTable';
 import '@testing-library/jest-dom';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 
-const REQUEST_TAB = {
-	resource: 'requests',
-	sourceAsset: { ticker: 'XYM', divisibility: 6 },
-	destinationAsset: { ticker: 'WXYM', divisibility: 6 },
-	sourceNetwork: 'nativeNetwork',
-	destinationNetwork: 'wrappedNetwork'
-};
-
-const ERROR_TAB = {
-	...REQUEST_TAB,
-	resource: 'errors'
-};
-
-const CONFIGURATION = {
-	nativeNetwork: {
-		blockchain: 'symbol',
-		explorerUrl: 'https://symbol.example'
-	},
-	wrappedNetwork: {
-		blockchain: 'ethereum',
-		explorerUrl: 'https://ethereum.example'
-	}
-};
-
-const REQUEST_ROW = {
-	destinationAddress: '0x1f533cd9711049fA7604D0F49C45B6e5Af30ef8e',
-	errorMessage: null,
-	payoutConversionRate: '1000000',
-	payoutNetAmount: '299642570825',
-	payoutSentTimestamp: 4,
-	payoutStatus: 2,
-	payoutTimestamp: 3,
-	payoutTotalFee: '357429175',
-	payoutTransactionHash: 'A'.repeat(64),
-	payoutTransactionHeight: '11',
-	requestAmount: '300000000000',
-	requestTimestamp: 2,
-	requestTransactionHash: 'B'.repeat(64),
-	requestTransactionHeight: '10',
-	requestTransactionSubindex: -1,
-	senderAddress: 'TCONKG47FW2ZEZBPV6G7F422LXBDSMVT3JMYM4I'
-};
-
-const ERROR_ROW = {
-	errorMessage: 'Required message is missing',
-	requestTimestamp: 5,
-	requestTransactionHash: 'C'.repeat(64),
-	requestTransactionHeight: '13',
-	requestTransactionSubindex: -1,
-	senderAddress: 'TARDV42KTAIZEF64EQT4NXT7K55DHWBEFIXVJQY'
-};
 
 const renderTable = ({
 	configuration = CONFIGURATION,
