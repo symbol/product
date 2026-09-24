@@ -149,7 +149,7 @@
 	"field_endpoint": "Endpoint",
 	"chart_name_importance_breakdown": "Top 10 Account\nImportance Breakdown",
 	"chart_name_harvesting_importance": "Total Harvesting\nAccount Importance",
-	"chart_name_total_harvesting": "Total Harvesting\nAccounts",
+	"chart_name_harvesting_of_eligible": "Harvesting Accounts\nof Eligible Accounts",
 	"filter_latest": "Latest",
 	"filter_activeHarvesting": "Active Harvesting",
 	"filter_activeHarvesting_description": "Show only accounts that harvested at least one block within the last {{days}} days.",

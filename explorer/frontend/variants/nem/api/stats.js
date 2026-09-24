@@ -10,12 +10,15 @@ export const fetchAccountStats = async () => {
 	const accounts = (await fetchAccountPage({ pageNumber: 1, pageSize: 10 })).data;
 	const top10AccountsImportance = accounts.reduce((partialSum, account) => partialSum + account.importance, 0);
 	const restAccountsImportance = 100 - top10AccountsImportance;
-	const harvestingAccountsPercentage = truncateDecimals((stats.harvestedAccounts / stats.total) * 100, 2);
+	const eligibleForHarvesting = stats.eligibleHarvestAccounts;
+	const harvestingAccountsPercentage = eligibleForHarvesting
+		? truncateDecimals((stats.harvestedAccounts / eligibleForHarvesting) * 100, 2)
+		: 0;
 
 	return {
 		total: stats.total,
 		harvesting: stats.harvestedAccounts,
-		eligibleForHarvesting: stats.eligibleHarvestAccounts,
+		eligibleForHarvesting,
 		top10AccountsImportance: truncateDecimals(top10AccountsImportance, 2),
 		harvestingAccountsPercentage,
 		importanceBreakdown: [
@@ -24,7 +27,7 @@ export const fetchAccountStats = async () => {
 		],
 		harvestingAccountsChart: [
 			[harvestingAccountsPercentage, 'Harvesting'],
-			[100 - harvestingAccountsPercentage, 'Not harvesting']
+			[Math.max(100 - harvestingAccountsPercentage, 0), 'Not harvesting']
 		]
 	};
 };

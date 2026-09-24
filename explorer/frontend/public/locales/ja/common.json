@@ -151,7 +151,7 @@
 	"field_endpoint": "エンドポイント",
 	"chart_name_importance_breakdown": "トップ10アカウント\n重要度の内訳",
 	"chart_name_harvesting_importance": "総ハーベスティング\nアカウント重要度",
-	"chart_name_total_harvesting": "総ハーベスティング\nアカウント数",
+	"chart_name_harvesting_of_eligible": "ハーベスト可能なアカウント中の\nハーベストアカウント",
 
 	"filter_latest": "最新",
 	"filter_activeHarvesting": "アクティブハーベスティング",
