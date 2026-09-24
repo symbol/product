@@ -1,4 +1,4 @@
-import { fetchAccountInfo } from '@/app/api/accounts';
+import { fetchAccountHarvestedBlockPage, fetchAccountInfo } from '@/app/api/accounts';
 import { search } from '@/app/api/search';
 import { fetchPriceByDate } from '@/app/api/stats';
 import { fetchTransactionPage } from '@/app/api/transactions';
@@ -8,6 +8,7 @@ import ButtonCSV from '@/app/components/ButtonCSV';
 import Field from '@/app/components/Field';
 import FieldTimestamp from '@/app/components/FieldTimestamp';
 import Filter from '@/app/components/Filter';
+import ItemHarvestedBlockMobile from '@/app/components/ItemHarvestedBlockMobile';
 import ItemTransactionMobile from '@/app/components/ItemTransactionMobile';
 import Section from '@/app/components/Section';
 import Separator from '@/app/components/Separator';
@@ -19,6 +20,7 @@ import ValueCopy from '@/app/components/ValueCopy';
 import ValueLabel from '@/app/components/ValueLabel';
 import ValueList from '@/app/components/ValueList';
 import ValueMosaic from '@/app/components/ValueMosaic';
+import ValueRewardType from '@/app/components/ValueRewardType';
 import ValueTimestamp from '@/app/components/ValueTimestamp';
 import ValueTransactionDirection from '@/app/components/ValueTransactionDirection';
 import ValueTransactionHash from '@/app/components/ValueTransactionHash';
@@ -26,10 +28,19 @@ import ValueTransactionType from '@/app/components/ValueTransactionType';
 import config from '@/app/config';
 import { STORAGE_KEY, TRANSACTION_TYPE } from '@/app/constants';
 import styles from '@/app/styles/pages/AccountInfo.module.scss';
-import { formatMosaicCSV, formatTransactionCSV, useClientSideFilter, usePagination, useStorage, useUserCurrencyAmount } from '@/app/utils';
+import {
+	formatHarvestedBlockCSV,
+	formatMosaicCSV,
+	formatTransactionCSV,
+	useClientSideFilter,
+	usePagination,
+	useStorage,
+	useUserCurrencyAmount
+} from '@/app/utils';
 import Head from 'next/head';
 import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
+import { useEffect } from 'react';
 
 export const getServerSideProps = async ({ locale, params }) => {
 	const accountInfo = await fetchAccountInfo(params.address);
@@ -58,6 +69,7 @@ const AccountInfo = ({ accountInfo, preloadedTransactions }) => {
 	const balanceInUserCurrency = useUserCurrencyAmount(fetchPriceByDate, accountInfo.balance, userCurrency);
 	const { t } = useTranslation();
 	const transactionPagination = usePagination(fetchTransactionPage, preloadedTransactions, { address });
+	const harvestedBlockPagination = usePagination(fetchAccountHarvestedBlockPage, [], { address });
 	const mosaics = useClientSideFilter(accountInfo.mosaics);
 	const isMultisigSectionShown = accountInfo.isMultisig || accountInfo.cosignatoryOf.length > 0;
 
@@ -122,6 +134,29 @@ const AccountInfo = ({ accountInfo, preloadedTransactions }) => {
 			renderValue: value => <ValueTimestamp value={value} hasTime />
 		}
 	];
+	const harvestedBlockTableColumns = [
+		{
+			key: 'height',
+			size: '10rem',
+			renderValue: value => <ValueBlockHeight value={value} />
+		},
+		{
+			key: 'type',
+			size: '10rem',
+			renderValue: value => <ValueRewardType value={value} />
+		},
+		{
+			key: 'amount',
+			size: '10rem',
+			renderValue: value => <ValueMosaic amount={value} isNative />
+		},
+		{
+			key: 'timestamp',
+			size: '10rem',
+			renderTitle: () => <FieldTimestamp />,
+			renderValue: value => <ValueTimestamp value={value} hasTime />
+		}
+	];
 	const transactionFilterConfig = [
 		{
 			name: 'types',
@@ -155,6 +190,10 @@ const AccountInfo = ({ accountInfo, preloadedTransactions }) => {
 			options: accountInfo.mosaics
 		}
 	];
+
+	useEffect(() => {
+		harvestedBlockPagination.initialRequest();
+	}, [accountInfo]);
 
 	return (
 		<div className={styles.wrapper}>
@@ -310,31 +349,66 @@ const AccountInfo = ({ accountInfo, preloadedTransactions }) => {
 					</div>
 				</Section>
 			)}
-			<Section title={t('section_transactions')}>
-				<div className="layout-flex-col">
-					<div className="layout-flex-row-mobile-col">
-						<Filter
-							isSelectedItemsShown
-							data={transactionFilterConfig}
-							isDisabled={transactionPagination.isLoading}
-							value={transactionPagination.filter}
-							onChange={transactionPagination.changeFilter}
-							onClear={transactionPagination.clearFilter}
-							search={search}
-						/>
-						<ButtonCSV data={transactionPagination.data} fileName={`transactions-${address}`} format={formatTransactionCSV} />
-					</div>
-					<Table
-						data={transactionPagination.data}
-						columns={transactionTableColumns}
-						renderItemMobile={data => <ItemTransactionMobile data={data} isTimestampShown />}
-						isLoading={transactionPagination.isLoading}
-						isLastPage={transactionPagination.isLastPage}
-						onEndReached={transactionPagination.requestNextPage}
-						isLastColumnAligned={true}
-					/>
-				</div>
-			</Section>
+			<Section
+				title={t('section_history')}
+				tabs={[
+					{
+						label: t('section_transactions'),
+						content: (
+							<div className="layout-flex-col">
+								<div className="layout-flex-row-mobile-col">
+									<Filter
+										isSelectedItemsShown
+										data={transactionFilterConfig}
+										isDisabled={transactionPagination.isLoading}
+										value={transactionPagination.filter}
+										onChange={transactionPagination.changeFilter}
+										onClear={transactionPagination.clearFilter}
+										search={search}
+									/>
+									<ButtonCSV
+										data={transactionPagination.data}
+										fileName={`transactions-${address}`}
+										format={formatTransactionCSV}
+									/>
+								</div>
+								<Table
+									data={transactionPagination.data}
+									columns={transactionTableColumns}
+									renderItemMobile={data => <ItemTransactionMobile data={data} isTimestampShown />}
+									isLoading={transactionPagination.isLoading}
+									isLastPage={transactionPagination.isLastPage}
+									onEndReached={transactionPagination.requestNextPage}
+									isLastColumnAligned={true}
+								/>
+							</div>
+						)
+					},
+					{
+						label: t('section_harvested'),
+						content: (
+							<div className="layout-flex-col">
+								<ButtonCSV
+									className="layout-align-end"
+									data={harvestedBlockPagination.data}
+									fileName={`harvested-blocks-${address}`}
+									format={formatHarvestedBlockCSV}
+								/>
+								<Table
+									data={harvestedBlockPagination.data}
+									columns={harvestedBlockTableColumns}
+									renderItemMobile={data => <ItemHarvestedBlockMobile data={data} />}
+									isLoading={harvestedBlockPagination.isLoading}
+									isLastPage={harvestedBlockPagination.isLastPage}
+									isError={harvestedBlockPagination.isError}
+									onEndReached={harvestedBlockPagination.requestNextPage}
+									isLastColumnAligned
+								/>
+							</div>
+						)
+					}
+				]}
+			/>
 		</div>
 	);
 };
