@@ -23,7 +23,7 @@ const twitter = {
 		} catch (error) {
 			// eslint-disable-next-line no-console
 			console.error(error);
-			throw Error('fail to request twitter token');
+			throw new Error('fail to request twitter token', { cause: error });
 		}
 	},
 	/**
@@ -59,7 +59,7 @@ const twitter = {
 		} catch (error) {
 			// eslint-disable-next-line no-console
 			console.error(error);
-			throw Error('fail to request user access token');
+			throw new Error('fail to request user access token', { cause: error });
 		}
 	}
 };
