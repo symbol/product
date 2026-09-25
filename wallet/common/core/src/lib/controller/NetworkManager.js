@@ -79,7 +79,7 @@ export class NetworkManager {
 
 	setListenAddress = address => {
 		this._state.listenAddress = address;
-		
+
 		if (this._state.chainListener)
 			this.restartChainListener();
 	};
@@ -130,7 +130,7 @@ export class NetworkManager {
 
 		if (networkInfo.networkIdentifier !== networkIdentifier) {
 			throw new ControllerError(
-				'Failed to fetch network properties. Wrong network identifier. ' 
+				'Failed to fetch network properties. Wrong network identifier. '
 				+ `Expected "${networkIdentifier}", got "${networkInfo.networkIdentifier}"`,
 				ErrorCode.NETWORK_PROPERTIES_WRONG_NETWORK
 			);
@@ -162,7 +162,7 @@ export class NetworkManager {
 				await this.restartChainListener();
 				this.#scheduleNextRun();
 				return this._state.networkConnectionStatus;
-			} catch (error) { 
+			} catch (error) {
 				this._logger.error(`[NetworkManager] Failed to connect to the current node: ${currentNodeUrl}`, error.message);
 			}
 		}
@@ -194,13 +194,16 @@ export class NetworkManager {
 			return this._state.networkConnectionStatus;
 		}
 
-		// Auto select the node. Try to connect to the node one by one from the list
+		// Auto-select the node. Try to connect to the node one by one from the list
 		const candidates = this._state.nodeUrls[this._state.networkIdentifier] ?? [];
 		for (const nodeUrl of candidates) {
 			try {
+				/* eslint-disable no-await-in-loop */
 				await this.api.network.pingNode(nodeUrl);
 				await this.fetchNetworkProperties(nodeUrl);
 				await this.restartChainListener();
+				/* eslint-enable no-await-in-loop */
+
 				this.#scheduleNextRun();
 				return this._state.networkConnectionStatus;
 			} catch (error) {
@@ -243,12 +246,12 @@ export class NetworkManager {
 			await newListener.open();
 
 			const subscribeList = [
-				{ 
+				{
 					method: 'listenAddedTransactions',
 					params: [TransactionGroup.CONFIRMED],
 					event: ControllerEventName.NEW_TRANSACTION_CONFIRMED
 				},
-				{ 
+				{
 					method: 'listenAddedTransactions',
 					params: [TransactionGroup.UNCONFIRMED],
 					event: ControllerEventName.NEW_TRANSACTION_UNCONFIRMED
