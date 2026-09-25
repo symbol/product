@@ -8,12 +8,12 @@ import {
 	isSupplyMutableFlag,
 	isTransferableFlag
 } from './mosaic';
-import { 
-	createTransactionFee, 
-	decodePlainMessage, 
-	getUnresolvedIdsFromTransactions, 
-	isIncomingTransaction, 
-	isOutgoingTransaction 
+import {
+	createTransactionFee,
+	decodePlainMessage,
+	getUnresolvedIdsFromTransactions,
+	isIncomingTransaction,
+	isOutgoingTransaction
 } from './transaction';
 import {
 	AddressRestrictionFlagMessage,
@@ -231,7 +231,7 @@ const transferTransactionFromSymbol = (transaction, config) => {
 
 const namespaceRegistrationTransactionFromSymbol = (transaction, config) => {
 	const baseTransaction = baseTransactionFromSymbol(transaction, config);
-	const parentId = !!transaction.parentId ? mapId(transaction.parentId) : '';
+	const parentId = transaction.parentId ? mapId(transaction.parentId) : '';
 
 	return {
 		...baseTransaction,
@@ -239,7 +239,7 @@ const namespaceRegistrationTransactionFromSymbol = (transaction, config) => {
 		namespaceName: Buffer.from(transaction.name).toString(),
 		namespaceId: mapId(transaction.id),
 		parentId: parentId !== '0000000000000000' ? parentId : null,
-		duration: !!transaction.duration.value ? Number(transaction.duration.value) : Message.UNLIMITED
+		duration: transaction.duration.value ? Number(transaction.duration.value) : Message.UNLIMITED
 	};
 };
 

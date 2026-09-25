@@ -1,5 +1,5 @@
 import { NamespaceService } from '../../src/api/NamespaceService';
-import { createSearchUrl } from '../../src/utils';
+import { createSearchUrl, namespaceFromDTO } from '../../src/utils';
 import { mosaicNamesResponse } from '../__fixtures__/api/mosaic-names-response';
 import { namespaceInfoWithAddressAliasResponse, namespaceInfoWithMosaicAliasResponse } from '../__fixtures__/api/namespace-info-response';
 import { namespaceNamesResponse } from '../__fixtures__/api/namespace-names-response';

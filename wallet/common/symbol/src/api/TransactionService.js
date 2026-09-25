@@ -171,6 +171,7 @@ export class TransactionService {
 		const confirmationCheckInterval = 2000;
 
 		const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+		/* eslint-disable no-await-in-loop -- transactions are announced one at a time and polled until confirmed */
 		const waitForConfirmation = async hash => {
 			const start = Date.now();
 
@@ -210,6 +211,7 @@ export class TransactionService {
 				await waitForConfirmation(signedTransaction.hash);
 			}
 		}
+		/* eslint-enable no-await-in-loop */
 	};
 
 	/**
