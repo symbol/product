@@ -3,7 +3,6 @@ import { fetchBlockStats, fetchMarketData, fetchNodeStats, fetchTransactionChart
 import { fetchTransactionPage } from '@/app/api/transactions';
 import { AdditionalSections } from '@/app/components/AdditionalSections';
 import ChartLine from '@/app/components/ChartLine';
-import CustomImage from '@/app/components/CustomImage';
 import Field from '@/app/components/Field';
 import RecentBlocks from '@/app/components/RecentBlocks';
 import RecentTransactions from '@/app/components/RecentTransactions';
@@ -80,10 +79,7 @@ const Home = ({
 	const blocks = useAsyncCall(() => fetchBlockPage({ pageSize: RECENT_BLOCK_COUNT }), preloadedBlocks, DATA_REFRESH_INTERVAL);
 	const chainStatus = useAsyncCall(fetchChainStatus, null, DATA_REFRESH_INTERVAL);
 
-	const fetchBlockTransactions = useCallback(
-		height => fetchTransactionPage({ pageSize: MAX_TRANSACTION_SQUARES, height }),
-		[fetchTransactionPage]
-	);
+	const fetchBlockTransactions = useCallback(height => fetchTransactionPage({ pageSize: MAX_TRANSACTION_SQUARES, height }), []);
 
 	return (
 		<div className={styles.wrapper}>

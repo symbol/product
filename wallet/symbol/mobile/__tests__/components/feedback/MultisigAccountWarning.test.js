@@ -12,8 +12,8 @@ const NETWORK_IDENTIFIER = 'testnet';
 // Screen Text
 
 const SCREEN_TEXT = {
-	textWarningTitle: 'warning_multisig_title',
-	textWarningBody: 'warning_multisig_body',
+	textWarningTitle: 'alert_multisigWarning_title',
+	textWarningBody: 'alert_multisigWarning_description',
 	textFieldCosignatories: 'fieldTitle_cosignatories'
 };
 

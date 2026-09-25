@@ -7,18 +7,18 @@ import { runScreenNavigationTest } from '__tests__/screen-tests';
 
 const TEST_MNEMONIC = mnemonic;
 const SCREEN_TEXT = {
-	textAccountNameTitle: 's_createWallet_accountName_title',
-	textAccountNameDescription: 's_createWallet_accountName_text',
-	inputAccountNameLabel: 's_createWallet_accountName_input',
-	textMnemonicTitle: 's_createWallet_mnemonic_title',
-	textMnemonicDescriptionParagraph1: 's_createWallet_mnemonic_text_p1',
-	textMnemonicDescriptionParagraph2: 's_createWallet_mnemonic_text_p2',
-	textMnemonicDescriptionParagraph3: 's_createWallet_mnemonic_text_p3',
-	textTipsTitle: 's_createWallet_tips_title',
-	textTipsParagraph1: 's_createWallet_tips_text_p1',
-	textTipsParagraph2: 's_createWallet_tips_text_p2',
-	textConfirmTitle: 's_createWallet_confirm_title',
-	checkboxAcceptRiskText: 's_createWallet_confirm_checkbox',
+	textAccountNameTitle: 'screen_onboarding_title_accountName',
+	textAccountNameDescription: 'screen_onboarding_description_accountName',
+	inputAccountNameLabel: 'screen_onboarding_inputLabel_accountName',
+	textMnemonicTitle: 'screen_onboarding_title_mnemonic',
+	textMnemonicDescriptionParagraph1: 'screen_onboarding_mnemonic_description_backupAndRestore',
+	textMnemonicDescriptionParagraph2: 'screen_onboarding_mnemonic_description_neverDisclose',
+	textMnemonicDescriptionParagraph3: 'screen_onboarding_mnemonic_description_noRecovery',
+	textTipsTitle: 'screen_onboarding_title_tips',
+	textTipsParagraph1: 'screen_onboarding_tips_description_passwordManager',
+	textTipsParagraph2: 'screen_onboarding_tips_description_paper',
+	textConfirmTitle: 'screen_onboarding_title_confirm',
+	checkboxAcceptRiskText: 'screen_onboarding_checkbox_acceptRisk',
 	buttonNext: 'button_next',
 	buttonCancel: 'button_cancel'
 };

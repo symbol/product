@@ -1,4 +1,5 @@
 /** @typedef {import('@/app/types/Network').ChainName} ChainName */
+/** @typedef {import('@/app/types/Network').NetworkIdentifier} NetworkIdentifier */
 /** @typedef {import('@/app/types/ColorVariants').SemanticRoleColorVariants} SemanticRoleColorVariants */
 /** @typedef {import('@/app/types/Token').Token} Token */
 
@@ -17,6 +18,7 @@
  * @typedef {object} AssetSection
  * @property {string} title - Section title (address).
  * @property {ChainName} chainName - Chain name identifier.
+ * @property {NetworkIdentifier} networkIdentifier - Network identifier.
  * @property {string} address - Account address.
  * @property {Token[]} data - Array of tokens in this section.
  */

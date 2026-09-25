@@ -641,6 +641,17 @@ class SymbolDatabaseReceiptsTest(TestCase):  # pylint: disable=too-many-public-m
 		# Assert:
 		self.assertIsNone(result)
 
+	def test_get_receipts_rejects_requested_height_above_dirty_readable_height(self):
+		# Arrange:
+		receipts = [create_symbol_receipt(2, 'inflation', 'inflation')]
+
+		# Act + Assert:
+		with self.assertRaisesRegex(SymbolDataUnavailable, 'requested height is above the readable height in dirty or repairing state'):
+			_query_symbol_receipts(
+				receipts,
+				create_symbol_sync_state(last_synced_height=3, finalized_height=2, dirty_state_from_height=3),
+				ReceiptQuery(height=3))
+
 	def test_get_receipts_returns_mosaic_divisibility_from_left_join(self):
 		# Arrange:
 		receipts = [
@@ -667,7 +678,7 @@ class SymbolDatabaseReceiptsTest(TestCase):  # pylint: disable=too-many-public-m
 		]
 
 		# Act + Assert:
-		with self.assertRaises(SymbolDataUnavailable):
+		with self.assertRaisesRegex(SymbolDataUnavailable, 'returned receipt row is above the readable height'):
 			_query_symbol_receipts(
 				receipts,
 				create_symbol_sync_state(last_synced_height=3, finalized_height=2, dirty_state_from_height=3),
@@ -681,7 +692,7 @@ class SymbolDatabaseReceiptsTest(TestCase):  # pylint: disable=too-many-public-m
 		]
 
 		# Act + Assert:
-		with self.assertRaises(SymbolDataUnavailable):
+		with self.assertRaisesRegex(SymbolDataUnavailable, 'unbounded receipt query range is unsafe'):
 			_query_symbol_receipts(
 				receipts,
 				create_symbol_sync_state(last_synced_height=3, finalized_height=2, dirty_state_from_height=3),
@@ -692,7 +703,7 @@ class SymbolDatabaseReceiptsTest(TestCase):  # pylint: disable=too-many-public-m
 		receipts = [create_symbol_receipt(2, 'inflation', 'inflation')]
 
 		# Act + Assert:
-		with self.assertRaises(SymbolDataUnavailable):
+		with self.assertRaisesRegex(SymbolDataUnavailable, 'unbounded receipt query range is unsafe'):
 			_query_symbol_receipts(
 				receipts,
 				create_symbol_sync_state(last_synced_height=3, finalized_height=2, dirty_state_from_height=3),
@@ -703,7 +714,7 @@ class SymbolDatabaseReceiptsTest(TestCase):  # pylint: disable=too-many-public-m
 		receipts = [create_symbol_receipt(2, 'inflation', 'inflation')]
 
 		# Act + Assert:
-		with self.assertRaises(SymbolDataUnavailable):
+		with self.assertRaisesRegex(SymbolDataUnavailable, 'unbounded receipt query range is unsafe'):
 			_query_symbol_receipts(
 				receipts,
 				create_symbol_sync_state(last_synced_height=3, finalized_height=2, dirty_state_from_height=3),
@@ -714,7 +725,7 @@ class SymbolDatabaseReceiptsTest(TestCase):  # pylint: disable=too-many-public-m
 		receipts = [create_symbol_receipt(2, 'inflation', 'inflation')]
 
 		# Act + Assert:
-		with self.assertRaises(SymbolDataUnavailable):
+		with self.assertRaisesRegex(SymbolDataUnavailable, 'unbounded receipt query range is unsafe'):
 			_query_symbol_receipts(
 				receipts,
 				create_symbol_sync_state(last_synced_height=3, finalized_height=2, dirty_state_from_height=3),
@@ -743,7 +754,7 @@ class SymbolDatabaseReceiptsTest(TestCase):  # pylint: disable=too-many-public-m
 		receipts = [create_symbol_receipt(1, 'inflation', 'inflation')]
 
 		# Act + Assert:
-		with self.assertRaises(SymbolDataUnavailable):
+		with self.assertRaisesRegex(SymbolDataUnavailable, 'unbounded receipt query range is unsafe'):
 			_query_symbol_receipts(
 				receipts,
 				create_symbol_sync_state(last_synced_height=1, finalized_height=1, status='repairing'),
@@ -754,7 +765,7 @@ class SymbolDatabaseReceiptsTest(TestCase):  # pylint: disable=too-many-public-m
 		receipts = [create_symbol_receipt(2, 'inflation', 'inflation', mosaic_id='1234567890ABCDEF')]
 
 		# Act + Assert:
-		with self.assertRaises(SymbolDataUnavailable):
+		with self.assertRaisesRegex(SymbolDataUnavailable, 'non-native mosaic metadata is unsafe in dirty or repairing state'):
 			_query_symbol_receipts(
 				receipts,
 				create_symbol_sync_state(last_synced_height=2, finalized_height=1, dirty_state_from_height=3),
@@ -765,7 +776,7 @@ class SymbolDatabaseReceiptsTest(TestCase):  # pylint: disable=too-many-public-m
 		receipts = [create_symbol_receipt(2, 'inflation', 'inflation', mosaic_id='1234567890ABCDEF')]
 
 		# Act + Assert:
-		with self.assertRaises(SymbolDataUnavailable):
+		with self.assertRaisesRegex(SymbolDataUnavailable, 'non-native mosaic metadata is unsafe in dirty or repairing state'):
 			_query_symbol_receipts(
 				receipts,
 				create_symbol_sync_state(last_synced_height=2, finalized_height=1, dirty_state_from_height=3),
@@ -774,7 +785,7 @@ class SymbolDatabaseReceiptsTest(TestCase):  # pylint: disable=too-many-public-m
 
 	def test_get_receipts_rejects_unhealthy_sync_state(self):
 		# Arrange + Act + Assert:
-		with self.assertRaises(SymbolDataUnavailable):
+		with self.assertRaisesRegex(SymbolDataUnavailable, 'sync state is unreadable'):
 			_query_symbol_receipts(
 				[create_symbol_receipt(1)],
 				create_symbol_sync_state(last_synced_height=1, finalized_height=1, status='unhealthy'),
@@ -782,7 +793,7 @@ class SymbolDatabaseReceiptsTest(TestCase):  # pylint: disable=too-many-public-m
 
 	def test_get_receipts_rejects_missing_sync_state(self):
 		# Arrange + Act + Assert:
-		with self.assertRaises(SymbolDataUnavailable):
+		with self.assertRaisesRegex(SymbolDataUnavailable, 'sync state is unreadable'):
 			_query_symbol_receipts([create_symbol_receipt(1)], None, ReceiptQuery())
 
 	def test_get_receipts_returns_connection_for_next_request_after_sql_failure(self):

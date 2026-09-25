@@ -1,6 +1,6 @@
 const i18nConfig = require('./next-i18next.config.js'); // eslint-disable-line import/extensions
-const path = require('path');
 const { loadEnvConfig } = require('@next/env');
+const path = require('path');
 
 // next.config.js runs before Next loads .env files, so load them here first.
 loadEnvConfig(__dirname);
@@ -44,8 +44,5 @@ module.exports = {
 		// Inject shared SCSS tokens first, then the active variant's tokens, into every stylesheet.
 		additionalData: `@import "${commonVariablesPath}"; @import "${variantVariablesPath}";`,
 		includePaths: [__dirname, commonStylesPath, variantStylesPath]
-	},
-	eslint: {
-		ignoreDuringBuilds: true
 	}
 };

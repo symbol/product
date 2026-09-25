@@ -81,3 +81,10 @@ export const TRANSACTION_CHART_TYPE = {
 export const BACKEND_HEALTH_ERROR = {
 	SYNCHRONIZATION: 'synchronization'
 };
+
+export const BACKEND_HEALTH_STATUS = {
+	INITIAL: 'initial',
+	AVAILABLE: 'available',
+	UNAVAILABLE: 'unavailable',
+	ERROR: 'error'
+};

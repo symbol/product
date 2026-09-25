@@ -324,7 +324,8 @@ def test_receipts_reject_bad_pagination():
 
 	# Act + Assert:
 	for query in ('limit=0', 'limit=-1', 'limit=101', 'limit=not-an-integer', 'offset=-1', 'offset=100001', 'offset=not-an-integer'):
-		_assert_bad_request_response(client.get(f'/api/symbol/receipts?{query}'), {
+		response = client.get(f'/api/symbol/receipts?{query}')
+		_assert_bad_request_response(response, {
 			'limit=0': 'limit must be between 1 and 100',
 			'limit=-1': 'limit must be between 1 and 100',
 			'limit=101': 'limit must be between 1 and 100',
@@ -333,8 +334,7 @@ def test_receipts_reject_bad_pagination():
 			'offset=100001': 'offset must be between 0 and 100000',
 			'offset=not-an-integer': 'offset must be an integer'
 		}[query])
-
-	assert facade.receipts_query is None
+		assert facade.receipts_query is None, query
 
 
 def test_block_receipts_offset_boundary():
@@ -445,17 +445,18 @@ def test_receipts_reject_invalid_values():
 	client = _create_symbol_test_client(facade)
 
 	# Act + Assert:
-	_assert_bad_request_response(client.get('/api/symbol/receipts?group=unknown'), 'Invalid receipt group')
-	_assert_bad_request_response(client.get('/api/symbol/receipts?receiptType=999'), 'Unsupported receipt type')
-	_assert_bad_request_response(client.get('/api/symbol/receipts?receiptType=not-an-integer'), 'Receipt type must be an integer')
-	_assert_bad_request_response(client.get('/api/symbol/receipts?receiptType=12616,8776'), 'Receipt type must be an integer')
-	_assert_bad_request_response(client.get('/api/symbol/receipts?targetAddress=INVALID'), 'Invalid targetAddress')
-	for parameter in ('targetAddress', 'senderAddress'):
-		_assert_bad_request_response(
-			client.get(f'/api/symbol/receipts?{parameter}=ND43EI7FXCHVNOBA3PFFTGM4GP2VUAUFX72OASA'),
-			f'Invalid {parameter}')
-
-	assert facade.receipts_query is None
+	for query, error in (
+		('group=unknown', 'Invalid receipt group'),
+		('receiptType=999', 'Unsupported receipt type'),
+		('receiptType=not-an-integer', 'Receipt type must be an integer'),
+		('receiptType=12616,8776', 'Receipt type must be an integer'),
+		('targetAddress=INVALID', 'Invalid targetAddress'),
+		('targetAddress=ND43EI7FXCHVNOBA3PFFTGM4GP2VUAUFX72OASA', 'Invalid targetAddress'),
+		('senderAddress=ND43EI7FXCHVNOBA3PFFTGM4GP2VUAUFX72OASA', 'Invalid senderAddress')
+	):
+		response = client.get(f'/api/symbol/receipts?{query}')
+		_assert_bad_request_response(response, error)
+		assert facade.receipts_query is None, query
 
 
 def test_receipts_map_db_error_to_503():

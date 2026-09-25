@@ -60,14 +60,14 @@ export const createHarvestingActionConfig = (harvestingStatus, isEligible = fals
 export const createConfirmationDialogData = actionType => {
 	if (actionType === HarvestingAction.START) {
 		return {
-			title: $t('s_harvesting_confirm_start_title'),
-			text: $t('s_harvesting_confirm_start_description')
+			title: $t('screen_harvesting_dialog_startHarvesting_title'),
+			text: $t('screen_harvesting_dialog_startHarvesting_description')
 		};
 	}
 
 	return {
-		title: $t('s_harvesting_confirm_stop_title'),
-		text: $t('s_harvesting_confirm_stop_description')
+		title: $t('screen_harvesting_dialog_stopHarvesting_title'),
+		text: $t('screen_harvesting_dialog_stopHarvesting_description')
 	};
 };
 

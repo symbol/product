@@ -39,27 +39,27 @@ const SCREEN_TEXT = {
 	textEmptyList: 'message_emptyList',
 
 	// Filter labels
-	textFilterType: 's_history_filter_type',
-	textFilterFrom: 's_history_filter_from',
-	textFilterTo: 's_history_filter_to',
-	textFilterHarvested: 's_history_filter_harvested',
-	textFilterBlocked: 's_history_filter_blocked',
+	textFilterType: 'screen_history_chip_type',
+	textFilterFrom: 'screen_history_chip_from',
+	textFilterTo: 'screen_history_chip_to',
+	textFilterHarvested: 'screen_history_chip_harvested',
+	textFilterBlocked: 'screen_history_chip_blocked',
 	textFilterClear: 'button_clear',
 
 	// Filter options
-	textFilterOptionTransfer: 'transactionDescriptor_symbol_16724',
-	textFilterOptionAggregateBonded: 'transactionDescriptor_symbol_16961',
-	textFilterOptionAggregateComplete: 'transactionDescriptor_symbol_16705',
+	textFilterOptionTransfer: 'transactionType_transfer',
+	textFilterOptionAggregateBonded: 'transactionType_aggregateBonded',
+	textFilterOptionAggregateComplete: 'transactionType_aggregateComplete',
 
 	// Transaction statuses
 	textAwaitingSignature: 'transactionDescriptionShort_awaitingAccountSignature',
 
 	// Transaction types for item verification
-	textTransactionOutgoing: 'transactionDescriptor_symbol_16724_outgoing',
-	textTransactionIncoming: 'transactionDescriptor_symbol_16724_incoming',
+	textTransactionOutgoing: 'transactionType_transferOutgoing',
+	textTransactionIncoming: 'transactionType_transferIncoming',
 
 	// Receipt types
-	textReceiptHarvestingReward: 'receiptDescriptor_harvestingReward'
+	textReceiptHarvestingReward: 'receiptType_harvestingReward'
 };
 
 // Account Fixtures

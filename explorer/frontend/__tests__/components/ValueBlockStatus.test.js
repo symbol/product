@@ -9,7 +9,9 @@ const chainStatusRecent = { height: 1100 };
 // next/image rewrites the src to an optimized URL with the original path URL-encoded; decode before asserting.
 const getIconPath = image => decodeURIComponent(image.getAttribute('src'));
 
-describe('ValueBlockStatus', () => {
+const describeNem = process.env.NEXT_PUBLIC_EXPLORER_VARIANT === 'nem' ? describe : describe.skip;
+
+describeNem('ValueBlockStatus', () => {
 	describe('status resolution', () => {
 		const runTest = (config, expectedLabel) => {
 			// Act:
@@ -63,7 +65,8 @@ describe('ValueBlockStatus', () => {
 	describe('icon color variant', () => {
 		const runTest = (colorVariant, expectedVariantDirectory) => {
 			// Arrange:
-			const expectedSrc = `/nem/images/status/${expectedVariantDirectory}/icon-label-confirmed.svg`;
+			const expectedSrc =
+				`/${process.env.NEXT_PUBLIC_EXPLORER_VARIANT}/images/status/${expectedVariantDirectory}/icon-label-confirmed.svg`;
 
 			// Act:
 			render(<ValueBlockStatus block={recentBlock} chainStatus={chainStatusSafe} isIconOnly colorVariant={colorVariant} />);

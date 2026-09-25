@@ -86,27 +86,27 @@ export const getTransactionCosignStatus = (transaction, options) => {
 export const createCosignAlertData = cosignStatus => {
 	const alertDataMap = {
 		[CosignStatus.AWAITING_CURRENT_ACCOUNT]: {
-			text: $t('s_transactionDetails_cosignAlert_trustedAccount'),
+			text: $t('screen_history_cosign_alert_trustedAccount_description'),
 			variant: SemanticRoleColorVariant.INFO,
 			icon: 'sign'
 		},
 		[CosignStatus.AWAITING_OTHER_ACCOUNT]: {
-			text: $t('s_transactionDetails_cosignAlert_awaitingOtherSignatures'),
+			text: $t('screen_history_cosign_alert_awaitingOtherSignatures_description'),
 			variant: SemanticRoleColorVariant.NEUTRAL,
 			icon: 'info-circle'
 		},
 		[CosignStatus.SIGNED_AND_AWAITING_OTHER_ACCOUNT]: {
-			text: $t('s_transactionDetails_cosignAlert_signed'),
+			text: $t('screen_history_cosign_alert_signed_description'),
 			variant: SemanticRoleColorVariant.NEUTRAL,
 			icon: 'info-circle'
 		},
 		[CosignStatus.INITIATED_BY_BLOCKED_ACCOUNT]: {
-			text: $t('s_transactionDetails_cosignAlert_blockedAccount'),
+			text: $t('screen_history_cosign_alert_blockedAccount_description'),
 			variant: SemanticRoleColorVariant.DANGER,
 			icon: 'alert-danger'
 		},
 		[CosignStatus.INITIATED_BY_UNKNOWN_ACCOUNT]: {
-			text: $t('s_transactionDetails_cosignAlert_unknownAccount'),
+			text: $t('screen_history_cosign_alert_unknownAccount_description'),
 			variant: SemanticRoleColorVariant.WARNING,
 			icon: 'alert-warning'
 		},

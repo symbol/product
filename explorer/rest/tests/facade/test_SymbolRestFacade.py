@@ -36,6 +36,12 @@ class BlocksReadErrorSymbolDatabase:
 		raise PsycopgError()
 
 
+class ReceiptReadErrorSymbolDatabase:
+	@staticmethod
+	def get_receipts(_query):
+		raise PsycopgError()
+
+
 class UnreadableBlocksSymbolDatabase:
 	@staticmethod
 	def get_blocks(_from_height, _limit, _sort):
@@ -156,12 +162,6 @@ class ReceiptSymbolDatabase:
 	def get_receipts(self, query):
 		self.query = query
 		return self.receipts
-
-
-class ReceiptReadErrorSymbolDatabase:
-	@staticmethod
-	def get_receipts(_query):
-		raise PsycopgError('database unavailable')
 
 
 def _create_configured_facade():
@@ -398,6 +398,14 @@ class SymbolRestFacadeTest(TestCase):  # pylint: disable=too-many-public-methods
 		}], result)
 		self.assertEqual(ReceiptQuery(10, 0, None, 'balanceChange'), symbol_db.query)
 
+	def test_get_receipts_raises_when_database_read_fails(self):
+		# Arrange:
+		facade = _create_facade_with_database(ReceiptReadErrorSymbolDatabase())
+
+		# Act + Assert:
+		with self.assertRaises(PsycopgError):
+			facade.get_receipts(ReceiptQuery())
+
 	def test_get_receipts_returns_none_when_database_has_no_block(self):
 		# Arrange:
 		facade = _create_facade_with_database(ReceiptSymbolDatabase(None))
@@ -407,11 +415,3 @@ class SymbolRestFacadeTest(TestCase):  # pylint: disable=too-many-public-methods
 
 		# Assert:
 		self.assertIsNone(result)
-
-	def test_receipts_db_error_propagates(self):
-		# Arrange:
-		facade = _create_facade_with_database(ReceiptReadErrorSymbolDatabase())
-
-		# Act + Assert:
-		with self.assertRaises(PsycopgError):
-			facade.get_receipts(ReceiptQuery())

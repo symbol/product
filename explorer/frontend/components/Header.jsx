@@ -6,10 +6,9 @@ import SearchBar from './SearchBar';
 import TextBox from './TextBox';
 import ValueAccount from './ValueAccount';
 import { search } from '@/app/api/search';
-import { BACKEND_HEALTH_ERROR, STORAGE_KEY } from '@/app/constants';
+import { BACKEND_HEALTH_ERROR, BACKEND_HEALTH_STATUS, STORAGE_KEY } from '@/app/constants';
 import styles from '@/app/styles/components/Header.module.scss';
-import { createAssetURL } from '@/app/utils';
-import { createPageHref, formatDate, useStorage, useToggle } from '@/app/utils';
+import { createAssetURL, createPageHref, formatDate, useStorage, useToggle } from '@/app/utils';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
@@ -17,7 +16,7 @@ import { useTranslation } from 'next-i18next';
 import { useState } from 'react';
 import { toast } from 'react-toastify';
 
-const Header = ({ backendStatus }) => {
+const Header = ({ backendStatus, backendHealthStatus, isHealthRequestWarningEnabled = false }) => {
 	const router = useRouter();
 	const { t } = useTranslation();
 	const [contacts, setContacts] = useStorage(STORAGE_KEY.ADDRESS_BOOK, []);
@@ -147,12 +146,17 @@ const Header = ({ backendStatus }) => {
 	};
 
 	// Backend health warning
-	const isBackendWarningShown = backendStatus?.isHealthy === false;
+	const isHealthRequestUnavailable = isHealthRequestWarningEnabled &&
+		[BACKEND_HEALTH_STATUS.UNAVAILABLE, BACKEND_HEALTH_STATUS.ERROR].includes(backendHealthStatus);
+	const isBackendWarningShown = isHealthRequestUnavailable || backendStatus?.isHealthy === false;
 	const getBackendErrorStatusText = () => {
-		const backendSyncError = backendStatus.errors.find(error => error.type === BACKEND_HEALTH_ERROR.SYNCHRONIZATION);
+		if (isHealthRequestUnavailable)
+			return t('message_healthGenericError');
+
+		const backendSyncError = backendStatus?.errors?.find(error => error.type === BACKEND_HEALTH_ERROR.SYNCHRONIZATION);
 
 		// If error is not a sync error, return a generic error message
-		if (!backendSyncError)
+		if (!backendSyncError || !backendStatus?.lastDBSyncedAt)
 			return t('message_healthGenericError');
 
 		const lastSyncedAtDateText = formatDate(backendStatus.lastDBSyncedAt, t, {

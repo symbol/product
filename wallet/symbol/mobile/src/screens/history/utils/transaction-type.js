@@ -1,6 +1,6 @@
-import { SymbolTransactionType } from '@/app/constants';
+import { SymbolTransactionType, TransactionDirection } from '@/app/constants';
 import { $t } from '@/app/localization';
-import { getTransactionTypeTranslationKey } from '@/app/utils';
+import { getTransactionTypeLocaleKey } from '@/app/utils';
 import { isIncomingTransaction, isOutgoingTransaction } from 'wallet-common-symbol/src/utils/transaction';
 
 /** @typedef {import('@/app/types/Transaction').Transaction} Transaction */
@@ -17,13 +17,12 @@ import { isIncomingTransaction, isOutgoingTransaction } from 'wallet-common-symb
 export const getTransactionTypeText = (transaction, currentAccount, chainName) => {
 	const { type } = transaction;
 	const isTransfer = type === SymbolTransactionType.TRANSFER;
-	const typeKey = getTransactionTypeTranslationKey(type, chainName);
 
 	if (isTransfer && isOutgoingTransaction(transaction, currentAccount))
-		return $t(`${typeKey}_outgoing`);
+		return $t(getTransactionTypeLocaleKey(type, chainName, TransactionDirection.OUTGOING));
 
 	if (isTransfer && isIncomingTransaction(transaction, currentAccount))
-		return $t(`${typeKey}_incoming`);
+		return $t(getTransactionTypeLocaleKey(type, chainName, TransactionDirection.INCOMING));
 
-	return $t(typeKey);
+	return $t(getTransactionTypeLocaleKey(type, chainName));
 };

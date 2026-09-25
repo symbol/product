@@ -9,7 +9,7 @@ import React, { useMemo, useState } from 'react';
 
 const DEFAULT_BALANCE_PLACEHOLDER = '..';
 
-const getDefaultAccountName = index => $t('s_addAccount_seed_name_default', { index });
+const getDefaultAccountName = index => $t('screen_account_title_seedAccount', { index });
 
 /**
  * AddSeedAccount screen component. Allows users to add a new seed account
@@ -81,20 +81,20 @@ export const AddSeedAccount = () => {
 	// Render
 	const renderHeader = () => (
 		<Stack>
-			<StyledText type="title">{$t('s_addAccount_name_title')}</StyledText>
+			<StyledText type="title">{$t('screen_account_title_accountName')}</StyledText>
 			<TextBox
-				label={$t('input_name')}
+				label={$t('inputLabel_name')}
 				errorMessage={nameErrorMessage}
 				value={accountNameInput}
 				onChange={setAccountName}
 			/>
-			<StyledText type="body">{$t('s_addAccount_seed_description')}</StyledText>
+			<StyledText type="body">{$t('screen_account_description_seedAccount')}</StyledText>
 			<ButtonPlain
 				icon="key"
 				text={$t('button_importAccount')}
 				onPress={externalAccountState.showDialog}
 			/>
-			<StyledText type="title">{$t('s_addAccount_select_title')}</StyledText>
+			<StyledText type="title">{$t('screen_account_title_selectAccount')}</StyledText>
 		</Stack>
 	);
 
@@ -131,7 +131,7 @@ export const AddSeedAccount = () => {
 			<Screen.Modals>
 				<DialogBox
 					type="confirm"
-					title={$t('s_addAccount_privateKey_dialog_title')}
+					title={$t('screen_account_dialog_importPrivateKey_title')}
 					isVisible={externalAccountState.isDialogVisible}
 					isDisabled={externalAccountState.isFormError}
 					onSuccess={handleExternalAccountSubmit}
@@ -139,20 +139,20 @@ export const AddSeedAccount = () => {
 				>
 					<Stack>
 						<StyledText>
-							{$t('s_addAccount_privateKey_dialog_description')}
+							{$t('screen_account_dialog_importPrivateKey_description')}
 						</StyledText>
 						<Alert
 							variant="warning"
-							body={$t('s_addAccount_privateKey_dialog_warning')}
+							body={$t('screen_account_alert_privateKeyWarning_description')}
 						/>
 						<TextBox
-							label={$t('input_name')}
+							label={$t('inputLabel_name')}
 							errorMessage={externalAccountState.nameErrorMessage}
 							value={externalAccountState.accountNameInput}
 							onChange={externalAccountState.setAccountName}
 						/>
 						<TextBox
-							label={$t('input_privateKey')}
+							label={$t('inputLabel_privateKey')}
 							errorMessage={externalAccountState.privateKeyErrorMessage}
 							value={externalAccountState.privateKeyInput}
 							onChange={externalAccountState.setPrivateKey}

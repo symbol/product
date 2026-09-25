@@ -119,7 +119,7 @@ export const AccountDetails = () => {
 						</Stack>
 						<Stack gap="s">
 							<StyledText type="title">
-								{$t('s_accountDetails_accountInfo_title')}
+								{$t('screen_account_title_accountInfo')}
 							</StyledText>
 							<Card>
 								<Spacer>
@@ -157,7 +157,7 @@ export const AccountDetails = () => {
 			<Screen.Modals>
 				<DialogBox
 					type="alert"
-					title={$t('dialog_sensitive')}
+					title={$t('dialog_sensitiveInformation_title')}
 					isVisible={isPrivateKeyDialogShown}
 					onSuccess={togglePrivateKeyDialog}
 				>

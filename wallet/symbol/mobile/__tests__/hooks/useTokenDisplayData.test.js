@@ -14,6 +14,7 @@ const KNOWN_TOKEN_NAME = 'Symbol';
 const KNOWN_TOKEN_TICKER = 'XYM';
 const KNOWN_TOKEN_IMAGE_ID = 'xym';
 const RENAMED_TOKEN_NAME = 'custom.renamed';
+const CUSTOM_TOKEN_TICKER = 'CTK';
 
 // Token Fixtures
 
@@ -33,6 +34,12 @@ const namelessToken = TokenFixtureBuilder
 	.setAmount('25')
 	.build();
 
+const customTokenWithTicker = TokenFixtureBuilder
+	.createWithToken(CHAIN_NAME, NETWORK_IDENTIFIER, 1)
+	.setTicker(CUSTOM_TOKEN_TICKER)
+	.setAmount('10')
+	.build();
+
 describe('hooks/useTokenDisplayData', () => {
 	beforeEach(() => {
 		mockWalletController();
@@ -50,6 +57,8 @@ describe('hooks/useTokenDisplayData', () => {
 					amount: config.token.amount,
 					name: expected.name,
 					ticker: expected.ticker,
+					nameText: expected.nameText,
+					tickerText: expected.tickerText,
 					imageId: expected.imageId
 				});
 			});
@@ -62,18 +71,43 @@ describe('hooks/useTokenDisplayData', () => {
 				expected: {
 					name: KNOWN_TOKEN_NAME,
 					ticker: KNOWN_TOKEN_TICKER,
+					nameText: `${KNOWN_TOKEN_NAME} • ${KNOWN_TOKEN_TICKER}`,
+					tickerText: KNOWN_TOKEN_TICKER,
 					imageId: KNOWN_TOKEN_IMAGE_ID
 				}
 			},
 			{
 				description: 'falls back to the token name for an unknown token',
 				config: { token: customToken },
-				expected: { name: customToken.name, ticker: null, imageId: null }
+				expected: {
+					name: customToken.name,
+					ticker: null,
+					nameText: customToken.name,
+					tickerText: customToken.name,
+					imageId: null
+				}
 			},
 			{
 				description: 'falls back to the token id when the token has no name',
 				config: { token: namelessToken },
-				expected: { name: namelessToken.id, ticker: null, imageId: null }
+				expected: {
+					name: null,
+					ticker: null,
+					nameText: namelessToken.id,
+					tickerText: namelessToken.id,
+					imageId: null
+				}
+			},
+			{
+				description: 'uses the token ticker of an unknown token',
+				config: { token: customTokenWithTicker },
+				expected: {
+					name: customTokenWithTicker.name,
+					ticker: CUSTOM_TOKEN_TICKER,
+					nameText: `${customTokenWithTicker.name} • ${CUSTOM_TOKEN_TICKER}`,
+					tickerText: CUSTOM_TOKEN_TICKER,
+					imageId: null
+				}
 			}
 		];
 

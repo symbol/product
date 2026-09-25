@@ -59,7 +59,7 @@ const SCREEN_TEXT = {
 	buttonRevealPrivateKey: 'button_revealPrivateKey',
 
 	// Dialog
-	dialogSensitiveTitle: 'dialog_sensitive'
+	dialogSensitiveTitle: 'dialog_sensitiveInformation_title'
 };
 
 // Account Fixtures

@@ -18,6 +18,7 @@ jest.unstable_mockModule('../../src/utils', async () => {
 });
 
 const { TransactionService } = await import('../../src/api/TransactionService');
+const { TransactionType } = await import('../../src/constants');
 
 const networkProperties = {
 	nodeUrl: 'http://localhost:8545',
@@ -216,6 +217,45 @@ describe('api/TransactionService', () => {
 			// Act & Assert:
 			await expect(service.estimateTransactionGasLimit(networkProperties, transaction))
 				.rejects.toThrow('Gas limit estimation failed: bad');
+		});
+
+		it('returns the fixed fallback gas limit when estimation fails for a bridge transfer', async () => {
+			// Arrange: the account does not hold the wrapped token yet, so the node rejects the estimation
+			const transaction = { type: TransactionType.ERC_20_BRIDGE_TRANSFER };
+			transactionToEthereumMock.mockReturnValue({});
+
+			const provider = {
+				estimateGas: jest.fn().mockRejectedValue(new Error('execution reverted'))
+			};
+			createEthereumJrpcProviderMock.mockReturnValue(provider);
+
+			const service = createService();
+
+			// Act:
+			const result = await service.estimateTransactionGasLimit(networkProperties, transaction);
+
+			// Assert:
+			expect(result).toBe('100000');
+		});
+
+		it('prefers the node estimate over the fallback for a bridge transfer', async () => {
+			// Arrange:
+			const transaction = { type: TransactionType.ERC_20_BRIDGE_TRANSFER };
+			transactionToEthereumMock.mockReturnValue({});
+
+			const provider = {
+				estimateGas: jest.fn().mockResolvedValue(50000n)
+			};
+			createEthereumJrpcProviderMock.mockReturnValue(provider);
+
+			const service = createService();
+
+			// Act:
+			const result = await service.estimateTransactionGasLimit(networkProperties, transaction);
+
+			// Assert:
+			// 50000 estimate + 20% safety margin = 60000
+			expect(result).toBe('60000');
 		});
 	});
 

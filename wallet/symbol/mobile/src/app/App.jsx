@@ -4,12 +4,12 @@ import { PasscodeView } from '@/app/components';
 import { useTransactionListener, useWalletController, useWalletListener } from '@/app/hooks';
 import { walletControllers } from '@/app/lib/controller';
 import { passcodeManager } from '@/app/lib/passcode';
+import { hideSplashScreen } from '@/app/lib/splash';
 import { $t, initLocalization } from '@/app/localization';
 import { Router } from '@/app/router/Router';
 import { RouterView } from '@/app/router/RouterView';
 import { showError, showMessage } from '@/app/utils';
 import React, { useEffect, useState } from 'react';
-import SplashScreen from 'react-native-splash-screen';
 
 export const App = () => {
 	const mainWalletController = useWalletController();
@@ -30,7 +30,7 @@ export const App = () => {
 		setIsWalletLoaded(false);
 
 		await initialLoad();
-		SplashScreen.hide();
+		hideSplashScreen();
 		await initialConnection();
 	};
 

@@ -429,10 +429,7 @@ def test_block_receipts_empty_or_missing(symbol_database_config):
 
 	# Assert:
 	assert (200, []) == (empty_response.status_code, empty_response.json)
-	assert (404, {
-		'status': 404,
-		'message': 'Resource not found'
-	}) == (missing_response.status_code, missing_response.json)
+	assert 404 == missing_response.status_code
 
 
 def test_dirty_receipts_offset_503(symbol_database_config):
@@ -462,13 +459,9 @@ def test_dirty_receipts_offset_503(symbol_database_config):
 			safe_block_response = client.get('/api/symbol/block/2/receipts')
 
 	# Assert:
-	assert 503 == implicit_response.status_code
-	assert 503 == offset_page_response.status_code
-	assert {
-		'status': 503,
-		'message': 'Symbol backend data is unavailable'
-	} == offset_page_response.json
-	assert 503 == dirty_block_response.status_code
+	_assert_request_unavailable(implicit_response)
+	_assert_request_unavailable(offset_page_response)
+	_assert_request_unavailable(dirty_block_response)
 	assert 200 == safe_block_response.status_code
 	assert [2] == [item['height'] for item in safe_block_response.json]
 

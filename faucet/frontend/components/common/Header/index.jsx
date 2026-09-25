@@ -1,4 +1,3 @@
-import React from 'react';
 
 const Header = function (props) {
 	const { logoImageSrc, logoWordmarkSrc, faucetAddressLink } = props;

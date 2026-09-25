@@ -5,6 +5,11 @@ The changelog format is based on [Keep a Changelog](https://keepachangelog.com/e
 
 ## next
 
+## [0.0.11] - 17 Sep-2026
+
+### Added
+- Extended `previous_block_hash` fields when querying block info.
+
 ## [0.0.10] - 13 Jul-2026
 
 ### Added
@@ -72,6 +77,7 @@ The changelog format is based on [Keep a Changelog](https://keepachangelog.com/e
 - treat all HTTP statuses less than 400 as success instead of only HTTP statuses 200 and 404 codes
 - OpenSSL libraries names are different on Windows which cause linking to fail; update to select the correct library name.
 
+[0.0.11]: https://github.com/symbol/product/compare/lightapi/python/v0.0.10...lightapi/python/v0.0.11
 [0.0.10]: https://github.com/symbol/product/compare/lightapi/python/v0.0.9...lightapi/python/v0.0.10
 [0.0.9]: https://github.com/symbol/product/compare/lightapi/python/v0.0.9...lightapi/python/v0.0.8
 [0.0.8]: https://github.com/symbol/product/compare/lightapi/python/v0.0.7...lightapi/python/v0.0.8

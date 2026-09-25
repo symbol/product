@@ -22,48 +22,48 @@ export const Actions = () => {
 	/** @type {ActionItem[]} */
 	const actionItems = useMemo(() => [
 		{
-			title: $t('s_actions_addressBook_title'),
-			description: $t('s_actions_addressBook_description'),
+			title: $t('screen_actions_item_addressBook_title'),
+			description: $t('screen_actions_item_addressBook_description'),
 			imageSource: require('@/app/assets/images/art/address-book.png'),
 			onPress: Router.goToContactList
 		},
 		{
-			title: $t('s_actions_harvesting_title'),
-			description: $t('s_actions_harvesting_description'),
+			title: $t('screen_actions_item_harvesting_title'),
+			description: $t('screen_actions_item_harvesting_description'),
 			imageSource: require('@/app/assets/images/art/harvesting.png'),
 			isDisabled: isMultisigAccount,
 			onPress: Router.goToHarvesting
 		},
 		{
-			title: $t('s_actions_multisig_title'),
-			description: $t('s_actions_multisig_description'),
+			title: $t('screen_actions_item_multisig_title'),
+			description: $t('screen_actions_item_multisig_description'),
 			imageSource: require('@/app/assets/images/art/multisig-chest.png'),
 			isDisabled: isMultisigAccount,
 			onPress: Router.goToMultisigAccountList
 		},
 		{
-			title: $t('s_actions_bridgeAccounts_title'),
-			description: $t('s_actions_bridgeAccounts_description'),
+			title: $t('screen_actions_item_bridgeAccounts_title'),
+			description: $t('screen_actions_item_bridgeAccounts_description'),
 			imageSource: require('@/app/assets/images/art/external-accounts.png'),
 			onPress: Router.goToBridgeAccountList
 		},
 		{
-			title: $t('s_actions_send_title'),
-			description: $t('s_actions_send_description'),
+			title: $t('screen_actions_item_send_title'),
+			description: $t('screen_actions_item_send_description'),
 			imageSource: require('@/app/assets/images/art/ship.png'),
 			isDisabled: isMultisigAccount,
 			onPress: Router.goToSend
 		},
 		{
-			title: $t('s_actions_createMosaic_title'),
-			description: $t('s_actions_createMosaic_description'),
+			title: $t('screen_actions_item_createMosaic_title'),
+			description: $t('screen_actions_item_createMosaic_description'),
 			imageSource: require('@/app/assets/images/art/mosaic-puzzle.png'),
 			isDisabled: isMultisigAccount,
 			onPress: Router.goToCreatedMosaicList
 		},
 		{
-			title: $t('s_actions_bridge_title'),
-			description: $t('s_actions_bridge_description'),
+			title: $t('screen_actions_item_bridge_title'),
+			description: $t('screen_actions_item_bridge_description'),
 			imageSource: require('@/app/assets/images/art/bridge.png'),
 			isDisabled: isMultisigAccount,
 			onPress: Router.goToBridgeSwap

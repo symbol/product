@@ -336,8 +336,8 @@ describe('TransferModule', () => {
 				isMessageEncrypted: false
 			};
 			const expectedError = new ControllerError(
-				'error_transfer_unknown_recipient',
-				`Failed to create transfer transaction. Recipient address not found for provided alias "${aliasName}"`
+				`Failed to create transfer transaction. Recipient address not found for provided alias "${aliasName}"`,
+				'error_transfer_unknown_recipient'
 			);
 
 			// Act & Assert:
@@ -601,9 +601,9 @@ describe('TransferModule', () => {
 				signerPublicKey: currentAccount.publicKey
 			};
 			const expectedError = new ControllerError(
-				'error_failed_decrypt_message_invalid_transaction_type',
 				// eslint-disable-next-line max-len
-				`Failed to decrypt message. Transaction type "${transaction.type}" is not supported. Expected type "${TransactionType.TRANSFER}"`
+				`Failed to decrypt message. Transaction type "${transaction.type}" is not supported. Expected type "${TransactionType.TRANSFER}"`,
+				'error_failed_decrypt_message_invalid_transaction_type'
 			);
 
 			// Act & Assert:
@@ -628,8 +628,8 @@ describe('TransferModule', () => {
 				deadline: createDeadline(2, networkProperties.epochAdjustment)
 			};
 			const expectedError = new ControllerError(
-				'error_failed_decrypt_message_not_related',
-				'Failed to decrypt message. Transaction is not related to current account'
+				'Failed to decrypt message. Transaction is not related to current account',
+				'error_failed_decrypt_message_not_related'
 			);
 
 			// Act & Assert:

@@ -64,8 +64,8 @@ const uriActionToWalletAction = {
 const createAddContactAction = transportUriObject => {
 	return {
 		icon: 'address-book',
-		title: $t('s_transportRequest_action_addContact_title'),
-		description: $t('s_transportRequest_action_addContact_description'),
+		title: $t('screen_transport_item_addContact_title'),
+		description: $t('screen_transport_item_addContact_description'),
 		handlePress: () => Router.goToCreateContact({ 
 			params: {
 				name: transportUriObject.name,
@@ -78,8 +78,8 @@ const createAddContactAction = transportUriObject => {
 const createFillTransferFormAction = transportUriObject => {
 	return {
 		icon: 'send-plane',
-		title: $t('s_transportRequest_action_fillTransferForm_title'),
-		description: $t('s_transportRequest_action_fillTransferForm_description'),
+		title: $t('screen_transport_item_fillTransferForm_title'),
+		description: $t('screen_transport_item_fillTransferForm_description'),
 		handlePress: () => Router.goToSend({
 			params: {
 				chainName: transportUriObject.chainName,
@@ -96,7 +96,7 @@ const createFillTransferFormOnlyAddressAction = transportUriObject => {
 
 	return {
 		...fillTransferFormAction,
-		description: $t('s_transportRequest_action_fillTransferFormOnlyAddress_description')
+		description: $t('screen_transport_item_fillTransferFormOnlyAddress_description')
 	};
 };
 

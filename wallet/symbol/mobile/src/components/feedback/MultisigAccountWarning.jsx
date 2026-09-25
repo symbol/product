@@ -25,8 +25,8 @@ export const MultisigAccountWarning = ({ cosignatories, chainName }) => {
 		<Stack>
 			<Alert
 				variant="warning"
-				title={$t('warning_multisig_title')}
-				body={$t('warning_multisig_body')}
+				title={$t('alert_multisigWarning_title')}
+				body={$t('alert_multisigWarning_description')}
 			/>
 			<TableView
 				isTitleTranslatable

@@ -1,4 +1,3 @@
-import React from 'react';
 
 const Button = function (props) {
 	const { children, onClick, isLoading } = props;

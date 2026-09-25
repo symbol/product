@@ -10,7 +10,7 @@ const nextConfig = {
 	eslint: {
 		ignoreDuringBuilds: true
 	},
-	webpack: (config, { isServer }) => {
+	webpack: config => {
 		// use a browser-optimized wasm for Ed25519 crypto operations
 		config.plugins.push(new webpack.NormalModuleReplacementPlugin(
 			/symbol-crypto-wasm-node/,

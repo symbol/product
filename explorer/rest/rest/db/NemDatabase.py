@@ -8,6 +8,7 @@ from symbolchain.nem.Network import Address
 from rest.model.common import DEFAULT_HARVESTING_ACTIVE_WINDOW_DAYS
 from rest.model.nem.Account import AccountView
 from rest.model.nem.Block import BlockView
+from rest.model.nem.Harvest import HarvestView
 from rest.model.nem.Mosaic import MosaicRichListView, MosaicView
 from rest.model.nem.Namespace import NamespaceView
 from rest.model.nem.Statistic import (
@@ -560,6 +561,28 @@ class NemDatabase(DatabaseConnectionPool):
 			results = cursor.fetchall()
 
 			return [self._create_block_view(result) for result in results]
+
+	def get_account_harvests(self, address, pagination, sort, rewarded_only=False):
+		"""Gets the rewards an account earned for harvesting blocks."""
+
+		reward_condition = ' AND total_fee > 0' if rewarded_only else ''
+
+		sql = f'''
+			SELECT height, timestamp, total_fee
+			FROM blocks
+			WHERE beneficiary = %s{reward_condition}
+			ORDER BY id {sort}
+			LIMIT %s OFFSET %s
+		'''
+
+		with self.connection() as connection:
+			cursor = connection.cursor()
+			cursor.execute(sql, (address.bytes, pagination.limit, pagination.offset))
+
+			return [
+				HarvestView(height=height, timestamp=str(timestamp), amount=_format_xem_relative(total_fee))
+				for height, timestamp, total_fee in cursor.fetchall()
+			]
 
 	def get_account_by_address(self, address):
 		"""Gets account by address."""

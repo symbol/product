@@ -1,9 +1,9 @@
 // Pin the shared suite to the reference variant before next/jest loads deployment .env files.
 process.env.NEXT_PUBLIC_EXPLORER_VARIANT = process.env.JEST_EXPLORER_VARIANT || 'nem';
 
+const nextJest = require('next/jest.js'); // eslint-disable-line import/extensions
 const fs = require('fs');
 const path = require('path');
-const nextJest = require('next/jest.js'); // eslint-disable-line import/extensions
 
 // Map aliases from jsconfig.json to Jest moduleNameMapper
 const mapPathsToModuleNameMapper = () => {

@@ -177,15 +177,16 @@ const formatBaseTransaction = (data, filter) => {
 
 const extractTransferTransactionValue = value => {
 	let message = null;
+	const hasOwn = (item, key) => Object.prototype.hasOwnProperty.call(item, key);
 	const mosaics = value
-		.filter(item => item.hasOwnProperty('amount') && item.hasOwnProperty('namespace'))
+		.filter(item => hasOwn(item, 'amount') && hasOwn(item, 'namespace'))
 		.map(item => ({
 			id: item.namespace,
 			name: item.namespace,
 			amount: item.amount
 		}));
 
-	const rawMessage = value.find(item => item.hasOwnProperty('message'))?.message;
+	const rawMessage = value.find(item => hasOwn(item, 'message'))?.message;
 
 	if (rawMessage?.payload)
 		message = formatTransferMessage(rawMessage.type, rawMessage.payload);

@@ -181,6 +181,7 @@ def _parse_receipt_query(height=None):
 	if group is not None:
 		if receipt_type is not None and RECEIPT_TYPE_GROUPS[receipt_type] != group:
 			raise ValueError('Receipt type does not belong to group')
+
 		if any(RECEIPT_TYPE_GROUPS[value] != group for value in included_receipt_types):
 			raise ValueError('Receipt type does not belong to group')
 
@@ -199,6 +200,7 @@ def _get_scalar_parameter(name, default=None):
 	values = request.args.getlist(name)
 	if not values:
 		return default
+
 	if len(values) != 1:
 		raise ValueError(f'{name} must not be repeated')
 
@@ -210,6 +212,7 @@ def _parse_bounded_integer(name, value, minimum, maximum):
 		parsed_value = int(value)
 	except (TypeError, ValueError) as error:
 		raise ValueError(f'{name} must be an integer') from error
+
 	if parsed_value < minimum or parsed_value > maximum:
 		raise ValueError(f'{name} must be between {minimum} and {maximum}')
 
@@ -220,11 +223,14 @@ def _parse_receipt_type(value, parameter_name='receiptType'):
 	if ',' in value:
 		if parameter_name == 'includedReceiptTypes':
 			raise ValueError('includedReceiptTypes must be repeated query parameters')
+
 		raise ValueError('Receipt type must be an integer')
+
 	try:
 		receipt_type = int(value)
 	except (TypeError, ValueError) as error:
 		raise ValueError('Receipt type must be an integer') from error
+
 	if receipt_type not in RECEIPT_TYPE_LABELS:
 		raise ValueError('Unsupported receipt type')
 
@@ -235,9 +241,11 @@ def _parse_address(name):
 	value = _get_scalar_parameter(name)
 	if value is None:
 		return None
+
 	try:
 		if not any(network.is_valid_address_string(value) for network in Network.NETWORKS):
 			raise ValueError(f'Invalid {name}')
+
 		return Address(value).bytes
 	except (TypeError, ValueError) as error:
 		raise ValueError(f'Invalid {name}') from error

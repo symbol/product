@@ -84,7 +84,7 @@ describe('page/Home', () => {
 		describe('background art', () => {
 			const renderBgContainerWithResize = async (height, width) => {
 				// Arrange:
-				window.ResizeObserver = jest.fn(callback => ({
+				window.ResizeObserver = jest.fn(() => ({
 					observe: jest.fn(),
 					disconnect: jest.fn()
 				}));

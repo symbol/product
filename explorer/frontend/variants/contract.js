@@ -23,6 +23,14 @@
  * @property {Array<{component: string}>} additionalSections - Variant-only sections to inject.
  */
 
+/**
+ * @typedef {object} VariantBlocksPageConfig
+ * @property {boolean} showStatistics - Whether the block statistics section is rendered.
+ * @property {boolean} showStatementCount - Whether the statement count is rendered.
+ * @property {boolean} showBlockReward - Whether the block reward is rendered.
+ * @property {boolean} showMobileTransactionCount - Whether mobile rows render transaction count.
+ */
+
 // Required exports for each API domain.
 export const API_CONTRACT = {
 	accounts: ['fetchAccountPage', 'fetchAccountInfo', 'fetchAccountInfoByPublicKey'],
@@ -65,7 +73,13 @@ export const STYLE_VARIABLES_CONTRACT = [
 
 // Required config keys by page.
 export const PAGE_CONFIG_CONTRACT = {
-	home: ['showSupernodeCount', 'additionalSections']
+	home: ['showSupernodeCount', 'additionalSections'],
+	blocks: [
+		'showStatistics',
+		'showStatementCount',
+		'showBlockReward',
+		'showMobileTransactionCount'
+	]
 };
 
 // Required variant-local runtime config keys, named per config/index.js.

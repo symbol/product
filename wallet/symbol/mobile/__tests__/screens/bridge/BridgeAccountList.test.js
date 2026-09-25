@@ -1,5 +1,5 @@
 import { BridgeAccountList } from '@/app/screens/bridge/BridgeAccountList';
-import * as bridgeUtils from '@/app/screens/bridge/utils';
+import * as bridgeAccountManagement from '@/app/screens/bridge/utils/bridge-account-management';
 import { AccountFixtureBuilder } from '__fixtures__/local/AccountFixtureBuilder';
 import { ScreenTester } from '__tests__/ScreenTester';
 import { mockLocalization } from '__tests__/mock-helpers';
@@ -12,7 +12,7 @@ jest.mock('@/app/screens/bridge/hooks', () => ({
 	useBridgeAccounts: () => mockUseBridgeAccounts()
 }));
 
-jest.mock('@/app/screens/bridge/utils', () => ({
+jest.mock('@/app/screens/bridge/utils/bridge-account-management', () => ({
 	generateFromMnemonic: jest.fn()
 }));
 
@@ -40,9 +40,9 @@ const BALANCE_ZERO = '0';
 
 const SCREEN_TEXT = {
 	// Card titles
-	textFieldAccount: 'c_accountCard_title_account',
-	textFieldBalance: 'c_accountCard_title_balance',
-	textFieldAddress: 'c_accountCard_title_address',
+	textFieldAccount: 'fieldTitle_account',
+	textFieldBalance: 'fieldTitle_balance',
+	textFieldAddress: 'fieldTitle_address',
 
 	// Buttons
 	buttonActivate: 'button_activateAccount'
@@ -194,7 +194,7 @@ describe('screens/bridge/BridgeAccountList', () => {
 			// Arrange:
 			const refreshMock = jest.fn();
 			const generateFromMnemonicMock = jest
-				.spyOn(bridgeUtils, 'generateFromMnemonic')
+				.spyOn(bridgeAccountManagement, 'generateFromMnemonic')
 				.mockResolvedValue();
 			mockBridgeAccounts([bridgeAccountEthereumInactive], refreshMock);
 			const screenTester = new ScreenTester(BridgeAccountList);
