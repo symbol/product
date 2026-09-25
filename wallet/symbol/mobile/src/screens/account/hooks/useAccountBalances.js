@@ -82,9 +82,9 @@ export const useAccountBalances = walletController => {
 					publicKey: account.publicKey, 
 					balance 
 				};
-			} catch (error) {
-				return { 
-					publicKey: account.publicKey, 
+			} catch {
+				return {
+					publicKey: account.publicKey,
 					balance: null
 				};
 			}

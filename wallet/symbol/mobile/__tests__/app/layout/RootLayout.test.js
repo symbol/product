@@ -1,11 +1,9 @@
 import { RootLayout } from '@/app/app/layout/RootLayout';
 import { runRenderComponentTest, runRenderTextTest } from '__tests__/component-tests';
 import { render } from '@testing-library/react-native';
-import React from 'react';
 import { Text } from 'react-native';
 
 jest.mock('@/app/app/components', () => {
-	const React = require('react');
 	const { Text } = require('react-native');
 
 	return {

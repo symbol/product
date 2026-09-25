@@ -51,7 +51,7 @@ const translate = memoize(
 const updateConfig = languageCode => {
 	let updatedLanguageCode = DEFAULT_LANGUAGE_CODE;
 
-	if (languageCode && translationGetters.hasOwnProperty(languageCode)) 
+	if (languageCode && Object.prototype.hasOwnProperty.call(translationGetters, languageCode))
 		updatedLanguageCode = languageCode;
 	
 

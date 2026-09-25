@@ -74,10 +74,9 @@ const getWalletAccountName = (address, walletAccounts) => {
  */
 export const getAccountKnownInfo = (address, options) => {
 	const { chainName, networkIdentifier } = options;
-	let name = null;
 	let imageId = null;
 
-	name = getWalletAccountName(address, options.walletAccounts);
+	let name = getWalletAccountName(address, options.walletAccounts);
 	name = getContactName(address, options.addressBook) ?? name;
 	const knownAccountEntry = getKnownAccountEntry(chainName, networkIdentifier, address);
     

@@ -19,7 +19,7 @@ import { PlatformUtils } from '@/app/lib/platform/PlatformUtils';
 import { $t } from '@/app/localization';
 import { Router } from '@/app/router/Router';
 import { createAccountAddressQr, createExplorerAccountUrl } from '@/app/utils';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { constants } from 'wallet-common-core';
 
 /**

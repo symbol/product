@@ -9,7 +9,7 @@ import { $t, initLocalization } from '@/app/localization';
 import { Router } from '@/app/router/Router';
 import { RouterView } from '@/app/router/RouterView';
 import { showError, showMessage } from '@/app/utils';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 export const App = () => {
 	const mainWalletController = useWalletController();
@@ -106,7 +106,7 @@ export const App = () => {
 	useSyncNetworkType({
 		mainWalletController,
 		additionalWalletControllers: walletControllers.additional
-	}); 
+	});
 
 	// Main wallet listeners - login, logout, account change
 	useWalletListener({

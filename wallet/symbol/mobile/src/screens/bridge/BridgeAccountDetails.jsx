@@ -17,7 +17,7 @@ import { PlatformUtils } from '@/app/lib/platform/PlatformUtils';
 import { $t } from '@/app/localization';
 import { Router } from '@/app/router/Router';
 import { createAccountAddressQr, createExplorerAccountUrl, createTokenDisplayData } from '@/app/utils';
-import React, { useState } from 'react';
+import { useState } from 'react';
 
 /**
  * BridgeAccountDetails screen component. A screen displaying detailed information about the bridge
@@ -70,13 +70,13 @@ export const BridgeAccountDetails = ({ route }) => {
 
 	// Handlers
 	const handleTokenPress = token => {
-		Router.goToTokenDetails({ 
-			params: { 
-				chainName, 
-				tokenId: token.id, 
-				accountAddress: currentAccount.address, 
-				preloadedData: token 
-			} 
+		Router.goToTokenDetails({
+			params: {
+				chainName,
+				tokenId: token.id,
+				accountAddress: currentAccount.address,
+				preloadedData: token
+			}
 		});
 	};
 

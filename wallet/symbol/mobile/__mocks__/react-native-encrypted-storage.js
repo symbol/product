@@ -1,4 +1,4 @@
-const storage = {};
+let storage = {};
 
 const RNEncryptedStorage = {
 	setItem: jest.fn((key, value) => {

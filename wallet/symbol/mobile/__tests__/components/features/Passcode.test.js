@@ -5,7 +5,6 @@ import { PlatformUtils } from '@/app/lib/platform/PlatformUtils';
 import { ScreenTester } from '__tests__/ScreenTester';
 import { mockLocalization } from '__tests__/mock-helpers';
 import { act, render } from '@testing-library/react-native';
-import React from 'react';
 
 jest.mock('@/app/lib/passcode', () => ({
 	passcodeManager: {
