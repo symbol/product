@@ -6,7 +6,7 @@ import { $t } from '@/app/localization';
 import { Router } from '@/app/router/Router';
 import { MnemonicInput } from '@/app/screens/onboarding/components/MnemonicInput';
 import { WalletCreationAnimation } from '@/app/screens/onboarding/components/WalletCreationAnimation';
-import React, { useState } from 'react';
+import { useState } from 'react';
 
 export const ImportWallet = () => {
 	const walletController = useWalletController();

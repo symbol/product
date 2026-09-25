@@ -4,7 +4,7 @@ import { ButtonCircle, DialogBox, Screen } from '@/app/components';
 import { useAsyncManager, useProp, useToggle, useWalletController } from '@/app/hooks';
 import { $t } from '@/app/localization';
 import { Router } from '@/app/router/Router';
-import React, { useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { WalletAccountType } from 'wallet-common-core/src/constants';
 
 const ROOT_ACCOUNT_INDEX = 0;

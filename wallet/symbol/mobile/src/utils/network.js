@@ -38,7 +38,9 @@ export const makeRequest = async (url, options) => {
 
 	try {
 		jsonData = JSON.parse(rawText);
-	} catch {}
+	} catch {
+		// ignore not JSON
+	}
 
 	if (response.ok && jsonData)
 		return jsonData;

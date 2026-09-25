@@ -3,7 +3,7 @@ import { config } from '@/app/config';
 import { NetworkIdentifier } from '@/app/constants';
 import { useAsyncManager, useProp, useWalletController } from '@/app/hooks';
 import { $t } from '@/app/localization';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { createNetworkMap } from 'wallet-common-core';

@@ -32,7 +32,9 @@ export const QrCodeView = ({ qrDataString }) => {
 				};
 				const uri = await QRCodeCanvas.toDataURL(qrDataString, config);
 				setQrImageSource({ uri });
-			} catch {}
+			} catch {
+				// ignore failure to generate QR code
+			}
 		};
 
 		generateQrCode();

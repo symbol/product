@@ -36,7 +36,7 @@ export const useColorTransition = ({
 	 * @param {Array<{property: string, styleProperty?: string}>} mappings - Array of properties to animate,
 	 * with optional mapping to style properties.
 	 */
-	const createAnimatedStyles = mappings => {
+	const useAnimatedStyles = mappings => {
 		return useAnimatedStyle(() => {
 			const styles = {};
 			
@@ -68,6 +68,6 @@ export const useColorTransition = ({
 		transition,
 		animateIn,
 		animateOut,
-		createAnimatedStyles
+		useAnimatedStyles
 	};
 };

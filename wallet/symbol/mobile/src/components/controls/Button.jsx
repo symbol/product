@@ -28,17 +28,17 @@ export const Button = ({ text, isDisabled = false, type = 'bordered', variant = 
 	const {
 		animateIn,
 		animateOut,
-		createAnimatedStyles
+		useAnimatedStyles
 	} = useColorTransition({
 		palette,
 		isDisabled,
 		transitionState: 'pressed'
 	});
-	const animatedContainer = createAnimatedStyles([
+	const animatedContainer = useAnimatedStyles([
 		{ property: 'background', styleProperty: 'backgroundColor' },
 		{ property: 'border', styleProperty: 'borderColor' }
 	]);
-	const animatedText = createAnimatedStyles([
+	const animatedText = useAnimatedStyles([
 		{ property: 'text', styleProperty: 'color' }
 	]);
 

@@ -94,20 +94,20 @@ export const Dropdown = props => {
 	const {
 		animateIn,
 		animateOut,
-		createAnimatedStyles
+		useAnimatedStyles
 	} = useColorTransition({
 		palette,
 		transitionState: 'focused',
 		isDisabled
 	});
-	const animatedContainer = createAnimatedStyles([
+	const animatedContainer = useAnimatedStyles([
 		{ property: 'background', styleProperty: 'backgroundColor' },
 		{ property: 'border', styleProperty: 'borderColor' }
 	]);
-	const animatedLabel = createAnimatedStyles([
+	const animatedLabel = useAnimatedStyles([
 		{ property: 'label', styleProperty: 'color' }
 	]);
-	const animatedText = createAnimatedStyles([
+	const animatedText = useAnimatedStyles([
 		{ property: 'text', styleProperty: 'color' }
 	]);
 

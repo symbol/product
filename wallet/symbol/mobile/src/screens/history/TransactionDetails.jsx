@@ -36,7 +36,6 @@ import {
 	isTransactionDangerous
 } from '@/app/screens/history/utils';
 import { createExplorerTransactionUrl } from '@/app/utils';
-import React from 'react';
 
 
 /** @typedef {import('@/app/types/Network').ChainName} ChainName */
