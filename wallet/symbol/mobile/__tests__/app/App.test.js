@@ -3,7 +3,6 @@ import { walletControllers } from '@/app/lib/controller';
 import { ScreenTester } from '__tests__/ScreenTester';
 import { mockRouter, mockSplashScreen, mockWalletController } from '__tests__/mock-helpers';
 import { act, fireEvent, render } from '@testing-library/react-native';
-import React from 'react';
 import { constants } from 'wallet-common-core';
 
 const { ControllerEventName } = constants;
@@ -26,7 +25,6 @@ jest.mock('@/app/localization', () => ({
 }));
 
 jest.mock('@/app/router/RouterView', () => {
-	const React = require('react');
 	const { Text } = require('react-native');
 
 	return {
@@ -41,7 +39,6 @@ jest.mock('@/app/router/RouterView', () => {
 });
 
 jest.mock('@/app/app/layout/RootLayout', () => {
-	const React = require('react');
 	const { View } = require('react-native');
 
 	return {

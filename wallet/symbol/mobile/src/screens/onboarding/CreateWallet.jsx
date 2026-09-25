@@ -20,7 +20,7 @@ import { Router } from '@/app/router/Router';
 import { Steps } from '@/app/screens/onboarding/components/Steps';
 import { WalletCreationAnimation } from '@/app/screens/onboarding/components/WalletCreationAnimation';
 import { validateAccountName, validateRequired } from '@/app/utils';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 const STEPS_COUNT = 2;
 

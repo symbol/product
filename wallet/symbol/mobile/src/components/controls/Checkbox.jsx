@@ -23,17 +23,17 @@ export const Checkbox = ({ style, text, value, onChange, isDisabled = false }) =
 		transition,
 		animateIn,
 		animateOut,
-		createAnimatedStyles
+		useAnimatedStyles
 	} = useColorTransition({
 		palette,
 		isDisabled,
 		transitionState: 'focused'
 	});
-	const animatedContainer = createAnimatedStyles([
+	const animatedContainer = useAnimatedStyles([
 		{ property: 'background', styleProperty: 'backgroundColor' },
 		{ property: 'border', styleProperty: 'borderColor' }
 	]);
-	const animatedText = createAnimatedStyles([
+	const animatedText = useAnimatedStyles([
 		{ property: 'text', styleProperty: 'color' }
 	]);
 	const animatedCheck = useAnimatedStyle(() => ({

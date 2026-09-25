@@ -57,6 +57,7 @@ export const useStepTransactionFees = ({ steps, createTransaction }) => {
 				return [];
 
 			const remainingStepFees = [];
+			/* eslint-disable no-await-in-loop -- fees are fetched one step at a time */
 			for (let stepIndex = 1; stepIndex < steps.length; ++stepIndex) {
 				const transactionBundle = await createTransaction(stepIndex);
 				const feeTiers = await steps[stepIndex].sourceWalletController.modules.transfer
@@ -64,6 +65,7 @@ export const useStepTransactionFees = ({ steps, createTransaction }) => {
 
 				remainingStepFees.push({ stepIndex, feeTiers });
 			}
+			/* eslint-enable no-await-in-loop */
 
 			return remainingStepFees;
 		},

@@ -25,13 +25,13 @@ export const ButtonPlain = ({ text, icon, isDisabled = false, isCentered = false
 		transition,
 		animateIn,
 		animateOut,
-		createAnimatedStyles
+		useAnimatedStyles
 	} = useColorTransition({
 		palette,
 		isDisabled,
 		transitionState: 'default'
 	});
-	const animatedText = createAnimatedStyles([
+	const animatedText = useAnimatedStyles([
 		{ property: 'text', styleProperty: 'color' }
 	]);
 	const animatedContainer = useAnimatedStyle(() => ({

@@ -2,7 +2,6 @@ import { TransactionScreenTemplate } from '@/app/components/templates/Transactio
 import { AccountFixtureBuilder } from '__fixtures__/local/AccountFixtureBuilder';
 import { ScreenTester } from '__tests__/ScreenTester';
 import { mockLocalization, mockPasscode, mockWalletController } from '__tests__/mock-helpers';
-import React from 'react';
 import { Text } from 'react-native';
 
 // Constants

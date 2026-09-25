@@ -2,10 +2,8 @@ import { Router } from '@/app/router/Router';
 import { RouterView } from '@/app/router/RouterView';
 import { navigationRef } from '@/app/router/navigationRef';
 import { render, waitFor } from '@testing-library/react-native';
-import React from 'react';
 
 jest.mock('@react-navigation/native', () => {
-	const React = require('react');
 	const { View } = require('react-native');
 
 	return {
@@ -45,7 +43,6 @@ jest.mock('react-native-screens', () => ({
 }));
 
 jest.mock('@react-navigation/native-stack', () => {
-	const React = require('react');
 	const { View } = require('react-native');
 
 	return {
@@ -59,7 +56,6 @@ jest.mock('@react-navigation/native-stack', () => {
 
 jest.mock('@/app/screens', () => {
 	const { Text } = require('react-native');
-	// eslint-disable-next-line react/display-name
 	const createMockScreen = screenName => () => <Text>{`Screen:${screenName}`}</Text>;
 
 	return {

@@ -1,5 +1,5 @@
 import { Colors, Sizes, Typography } from '@/app/styles';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
 
 const ANIMATION_DURATION = 10;

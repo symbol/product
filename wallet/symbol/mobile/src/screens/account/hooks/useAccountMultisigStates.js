@@ -52,7 +52,7 @@ export const useAccountMultisigStates = walletController => {
 					publicKey: account.publicKey,
 					isMultisig: multisigInfo.cosignatories.length > 0
 				};
-			} catch (error) {
+			} catch {
 				return null;
 			}
 		});
