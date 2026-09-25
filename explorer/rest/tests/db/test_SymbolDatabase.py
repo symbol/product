@@ -232,7 +232,7 @@ class SymbolDatabaseBlocksTest(TestCase):  # pylint: disable=too-many-public-met
 					cursor.close()
 					result = database.get_block(1)
 				finally:
-					database._pool.closeall()  # pylint: disable=protected-access
+					database.close()
 					drop_symbol_block_tables_if_present(puller_database)
 
 		# Assert:
@@ -491,7 +491,7 @@ class SymbolDatabaseReceiptsTest(TestCase):  # pylint: disable=too-many-public-m
 						# Act:
 						result = database.get_receipts(ReceiptQuery(limit=1, offset=1))
 					finally:
-						database._pool.closeall()  # pylint: disable=protected-access
+						database.close()
 				finally:
 					drop_symbol_block_tables_if_present(puller_database)
 
@@ -822,7 +822,7 @@ class SymbolDatabaseReceiptsTest(TestCase):  # pylint: disable=too-many-public-m
 					cursor.close()
 					result = database.get_receipts(ReceiptQuery())
 				finally:
-					database._pool.closeall()  # pylint: disable=protected-access
+					database.close()
 					drop_symbol_block_tables_if_present(puller_database)
 
 		# Assert:
@@ -880,7 +880,7 @@ def _query_symbol_receipts(receipts, sync_state, query, mosaics=None):
 				try:
 					return database.get_receipts(query)
 				finally:
-					database._pool.closeall()  # pylint: disable=protected-access
+					database.close()
 			finally:
 				drop_symbol_block_tables_if_present(puller_database)
 
@@ -899,7 +899,7 @@ def _query_symbol_database(blocks, sync_state, query_database):
 				try:
 					return query_database(database)
 				finally:
-					database._pool.closeall()  # pylint: disable=protected-access
+					database.close()
 			finally:
 				drop_symbol_block_tables_if_present(puller_database)
 
@@ -941,7 +941,7 @@ def _query_symbol_database_during_update(query_database):
 					raise errors[0]
 				return result[0]
 			finally:
-				database._pool.closeall()  # pylint: disable=protected-access
+				database.close()
 				drop_symbol_block_tables_if_present(puller_database)
 
 

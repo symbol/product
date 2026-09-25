@@ -11,6 +11,7 @@ from common.symbol.NativeMosaic import NativeMosaicInfo, NativeMosaicValidationE
 from common.symbol.NodeConfiguration import SymbolNodeConfigurationError
 from common.tests.PostgresTestUtils import PostgresTestDatabase, create_unreachable_db_configuration, drop_symbol_block_tables_if_present
 from flask import Flask
+from psycopg2 import OperationalError
 from puller.db.SymbolDatabase import SymbolDatabase as PullerSymbolDatabase
 
 from rest import create_app, setup_symbol_facade
@@ -741,12 +742,7 @@ def test_setup_requires_symbol_db():
 				_create_symbol_app()
 
 
-@pytest.mark.parametrize(('path', 'status', 'expected_json'), [
-	('/api/symbol/health', 200, create_symbol_health(errors=[{'type': 'database', 'message': 'Symbol database is unavailable'}])),
-	('/api/symbol/receipts', 503, {'status': 503, 'message': 'Symbol backend data is unavailable'}),
-	('/api/symbol/block/1/receipts', 503, {'status': 503, 'message': 'Symbol backend data is unavailable'})
-])
-def test_initial_db_failure_responses(path, status, expected_json):
+def test_app_fails_on_db_connect_error():
 	# Arrange:
 	with tempfile.TemporaryDirectory() as temp_directory:
 		db_config_path = _create_config_file(
@@ -755,12 +751,9 @@ def test_initial_db_failure_responses(path, status, expected_json):
 		app_config_path = _create_app_config(temp_directory, db_config_path)
 
 		with rest_settings_env(app_config_path):
-			# Act:
-			response = _create_symbol_app().test_client().get(path)
-
-	# Assert:
-	assert status == response.status_code
-	assert expected_json == response.json
+			# Act + Assert:
+			with pytest.raises(OperationalError):
+				_create_symbol_app()
 
 
 def test_setup_rejects_bad_node_url():
@@ -819,9 +812,10 @@ def test_symbol_facade_config(symbol_database_config):
 
 	# Assert:
 	assert isinstance(facade, SymbolRestFacade)
-	assert facade.is_configured()
+	assert facade.symbol_db is app.extensions['symbol_database']
 	assert 'http://localhost:3000' == facade.node_config.base_url
 	assert NATIVE_MOSAIC_INFO == facade.native_mosaic_info
+	app.extensions['symbol_database'].close()
 
 
 @pytest.mark.parametrize('native_mosaic_id,exception_type,error_message', [
@@ -871,7 +865,7 @@ def test_bad_native_id_skips_database():
 	assert 0 == create_pool.call_count
 
 
-def test_native_info_is_app_scoped():
+def test_native_info_is_app_scoped(symbol_database_config):
 	# Arrange:
 	with tempfile.TemporaryDirectory() as temp_directory:
 		first_config_dir = Path(temp_directory) / 'first'
@@ -880,10 +874,10 @@ def test_native_info_is_app_scoped():
 		second_config_dir.mkdir()
 		first_db_config_path = _create_config_file(
 			first_config_dir,
-			database_config=create_unreachable_db_configuration())
+			database_config=symbol_database_config)
 		second_db_config_path = _create_config_file(
 			second_config_dir,
-			database_config=create_unreachable_db_configuration())
+			database_config=symbol_database_config)
 		first_app_config_path = _create_app_config(
 			first_config_dir,
 			first_db_config_path,
@@ -901,6 +895,8 @@ def test_native_info_is_app_scoped():
 		# Act:
 		first_facade = setup_symbol_facade(first_app)
 		second_facade = setup_symbol_facade(second_app)
+		first_app.extensions['symbol_database'].close()
+		second_app.extensions['symbol_database'].close()
 
 	# Assert:
 	assert NativeMosaicInfo('0000000000000001', 6) == first_facade.native_mosaic_info
@@ -923,29 +919,6 @@ def test_symbol_facade_requires_db():
 
 	# Assert:
 	assert 'symbol_db' == exception_info.value.args[0]
-
-
-def test_symbol_facade_db_error():
-	# Arrange:
-	with tempfile.TemporaryDirectory() as temp_directory:
-		db_config_path = _create_config_file(
-			temp_directory,
-			database_config=create_unreachable_db_configuration())
-		app_config_path = _create_app_config(temp_directory, db_config_path)
-		app = Flask(__name__)
-		app.config.from_pyfile(app_config_path)
-
-		# Act:
-		facade = setup_symbol_facade(app)
-
-	# Assert:
-	health = facade.get_health()
-	assert isinstance(facade, SymbolRestFacade)
-	assert not facade.is_configured()
-	assert create_symbol_health(errors=[{
-		'type': 'database',
-		'message': 'Symbol database is unavailable'
-	}]) == health
 
 
 def test_symbol_facade_node_error(symbol_database_config):
@@ -990,6 +963,7 @@ def test_native_setup_list_skips_get(symbol_database_config):
 			facade = setup_symbol_facade(app)
 			setup_symbol_routes(app, facade)
 			response = app.test_client().get('/api/symbol/blocks?limit=1&fromHeight=1&sort=asc')
+			app.extensions['symbol_database'].close()
 
 	# Assert:
 	assert 200 == response.status_code
