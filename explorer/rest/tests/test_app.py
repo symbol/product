@@ -24,11 +24,12 @@ def _write_config(config_path, contents):
 
 
 def _write_symbol_database_config(config_dir, database_config):
+	assert '' == database_config.password
 	db_config_path = Path(config_dir) / 'symbol_db.ini'
 	_write_config(db_config_path, f'''[symbol_db]
 database = {database_config.database}
 user = {database_config.user}
-password = {database_config.password}
+password =
 host = {database_config.host}
 port = {database_config.port}
 ''')
