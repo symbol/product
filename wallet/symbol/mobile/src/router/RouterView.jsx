@@ -35,7 +35,9 @@ const screenOptions = ({ route }) => ({
 	},
 	headerTintColor: HEADER_TINT_COLOR,
 	headerTitleStyle: HEADER_TITLE_TEXT,
-	title: $t(`screenTitle_${route.name}`)
+	title: $t(`screenTitle_${route.name}`),
+	// Android: avoid double top inset; remove when https://github.com/software-mansion/react-native-screens/issues/3398 is fixed.
+	unstable_headerInsets: { top: false }
 });
 
 const linkingOptions = {
