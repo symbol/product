@@ -252,6 +252,7 @@
 	"table_field_height": "ブロック高",
 	"table_field_recipient": "受信者",
 	"table_field_reward": "報酬",
+	"table_field_blockReward": "ブロック報酬",
 	"table_field_sender": "送信者",
 	"table_field_signer": "署名者",
 	"table_field_signature": "署名",

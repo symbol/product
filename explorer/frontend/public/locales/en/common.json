@@ -248,6 +248,7 @@
 	"table_field_height": "Height",
 	"table_field_recipient": "To",
 	"table_field_reward": "Reward",
+	"table_field_blockReward": "Block Reward",
 	"table_field_sender": "From",
 	"table_field_signer": "Signer",
 	"table_field_signature": "Signature",

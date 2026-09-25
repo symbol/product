@@ -1,9 +1,9 @@
-import { fetchBackendHealthStatus } from '@/app/api/health';
+import { fetchBackendHealthStatus, healthConfig } from '@/app/api/health';
 import Footer from '@/app/components/Footer';
 import Header from '@/app/components/Header';
 import PageLoadingIndicator from '@/app/components/PageLoadingIndicator';
 import { publicAppConfig } from '@/app/config';
-import { STORAGE_KEY } from '@/app/constants';
+import { BACKEND_HEALTH_STATUS, STORAGE_KEY } from '@/app/constants';
 import { ConfigProvider } from '@/app/contexts/ConfigContext';
 import styles from '@/app/styles/pages/Layout.module.scss';
 import { useStorage } from '@/app/utils';
@@ -27,11 +27,37 @@ TimeAgo.addLocale(ja);
 
 const ROUTES_TO_RETAIN = ['/accounts', '/blocks', '/mosaics', '/namespaces', '/transactions'];
 
-const AppComponent = ({ Component, pageProps, appConfig }) => {
+export const AppComponent = ({ Component, pageProps, appConfig }) => {
 	const [userLanguage] = useStorage(STORAGE_KEY.USER_LANGUAGE);
 	const router = useRouter();
 	const retainedComponents = useRef({});
 	const isRetainableRoute = ROUTES_TO_RETAIN.includes(router.asPath);
+	const [backendHealthStatus, setBackendHealthStatus] = useState(BACKEND_HEALTH_STATUS.INITIAL);
+	const [backendStatus, setBackendStatus] = useState(null);
+
+	useEffect(() => {
+		let isMounted = true;
+		const fetchBackendStatus = async () => {
+			try {
+				const status = await fetchBackendHealthStatus();
+				if (!isMounted)
+					return;
+
+				setBackendStatus(status);
+				setBackendHealthStatus(status && typeof status.isHealthy === 'boolean'
+					? BACKEND_HEALTH_STATUS.AVAILABLE
+					: BACKEND_HEALTH_STATUS.UNAVAILABLE);
+			} catch {
+				if (isMounted)
+					setBackendHealthStatus(BACKEND_HEALTH_STATUS.ERROR);
+			}
+		};
+
+		fetchBackendStatus();
+		return () => {
+			isMounted = false;
+		};
+	}, []);
 
 	if (isRetainableRoute && !retainedComponents.current[router.asPath]) {
 		/* eslint-disable @eslint-react/static-components -- created once per route and cached in a ref */
@@ -47,23 +73,16 @@ const AppComponent = ({ Component, pageProps, appConfig }) => {
 			router.push(router.asPath, null, { locale: userLanguage });
 	}, [userLanguage, router]);
 
-	// Fetch backend status
-	const [backendStatus, setBackendStatus] = useState(null);
-	const fetchBackendStatus = async () => {
-		const backendStatus = await fetchBackendHealthStatus();
-		setBackendStatus(backendStatus);
-	};
-	useEffect(() => {
-		fetchBackendStatus();
-	}, []);
-
-
 	return (
 		<div className={styles.wrapper}>
 			{/* Baseline configuration; `/runtime-config.js` overrides it with the container's runtime values. */}
 			<script dangerouslySetInnerHTML={{ __html: `window.appConfig = ${JSON.stringify(appConfig).replace(/</g, '\\u003c')};` }} />
 			<ConfigProvider>
-				<Header backendStatus={backendStatus} />
+				<Header
+					backendStatus={backendStatus}
+					backendHealthStatus={backendHealthStatus}
+					isHealthRequestWarningEnabled={healthConfig.isUnavailableWarningEnabled}
+				/>
 				<ToastContainer autoClose={2000} className="toast-container" hideProgressBar pauseOnHover />
 				<PageLoadingIndicator />
 
