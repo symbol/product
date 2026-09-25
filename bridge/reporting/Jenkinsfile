@@ -6,6 +6,9 @@ defaultCiPipeline {
 
 	packageId = 'bridge-reporting'
 
+	publisher = 'docker'
+	dockerImageName = 'symbolplatform/bridge-reporting'
+
 	codeCoverageTool = 'c8'
 	minimumCodeCoverage = 95
 }
