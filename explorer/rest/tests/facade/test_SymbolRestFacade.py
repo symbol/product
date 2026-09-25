@@ -6,7 +6,7 @@ from common.tests.PostgresTestUtils import create_unreachable_db_configuration
 from psycopg2 import Error as PsycopgError
 from psycopg2 import OperationalError
 
-from rest.db.SymbolDatabase import SortOrder, SymbolDataUnavailable
+from rest.db.SymbolDatabase import ReceiptQuery, ReceiptRecord, SortOrder, SymbolDataUnavailable
 from rest.facade.SymbolRestFacade import SymbolRestFacade
 
 from ..test.SymbolHealthTestUtils import create_symbol_health
@@ -34,6 +34,12 @@ class BlockReadErrorSymbolDatabase:
 class BlocksReadErrorSymbolDatabase:
 	@staticmethod
 	def get_blocks(_from_height, _limit, _sort):
+		raise PsycopgError()
+
+
+class ReceiptReadErrorSymbolDatabase:
+	@staticmethod
+	def get_receipts(_query):
 		raise PsycopgError()
 
 
@@ -147,6 +153,16 @@ class BlockSymbolDatabase:
 	def get_block(self, height):
 		self.height = height
 		return BlockView() if 1 == height else None
+
+
+class ReceiptSymbolDatabase:
+	def __init__(self, receipts):
+		self.receipts = receipts
+		self.query = None
+
+	def get_receipts(self, query):
+		self.query = query
+		return self.receipts
 
 
 def _create_configured_facade():
@@ -434,3 +450,73 @@ class SymbolRestFacadeTest(TestCase):  # pylint: disable=too-many-public-methods
 		# Act + Assert:
 		with self.assertRaises(PsycopgError):
 			_create_facade_with_database(BlockReadErrorSymbolDatabase()).get_block(1)
+
+	def test_can_get_receipts(self):
+		# Arrange:
+		receipt = ReceiptRecord(
+			1234,
+			'harvestFee',
+			'balanceChange',
+			1,
+			None,
+			None,
+			bytes.fromhex('98534F7E1D0A26CA4E316F901E23E55C8701DB20DF11A7B2'),
+			'72C0212E67A08BCE',
+			1234567,
+			None,
+			None)
+		symbol_db = ReceiptSymbolDatabase([receipt])
+		facade = _create_facade_with_database(symbol_db)
+
+		# Act:
+		result = facade.get_receipts(ReceiptQuery(10, 0, None, 'balanceChange'))
+
+		# Assert:
+		self.assertEqual([{
+			'version': 1,
+			'height': 1234,
+			'type': 'harvestFee',
+			'group': 'balanceChange',
+			'targetAddress': 'TBJU67Q5BITMUTRRN6IB4I7FLSDQDWZA34I2PMQ',
+			'sender': None,
+			'to': None,
+			'artifactId': None,
+			'mosaics': [{
+				'id': '72C0212E67A08BCE',
+				'name': '72C0212E67A08BCE',
+				'amount': 1.234567,
+				'isNative': True
+			}]
+		}], result)
+		self.assertEqual(ReceiptQuery(10, 0, None, 'balanceChange'), symbol_db.query)
+
+	def test_get_receipts_returns_none_when_database_is_unavailable(self):
+		# Arrange:
+		facade = SymbolRestFacade(
+			create_unreachable_db_configuration(),
+			_create_node_config(),
+			NATIVE_MOSAIC_INFO)
+
+		# Act:
+		result = facade.get_receipts(ReceiptQuery())
+
+		# Assert:
+		self.assertIsNone(result)
+
+	def test_get_receipts_raises_when_database_read_fails(self):
+		# Arrange:
+		facade = _create_facade_with_database(ReceiptReadErrorSymbolDatabase())
+
+		# Act + Assert:
+		with self.assertRaises(PsycopgError):
+			facade.get_receipts(ReceiptQuery())
+
+	def test_get_receipts_returns_none_when_database_has_no_block(self):
+		# Arrange:
+		facade = _create_facade_with_database(ReceiptSymbolDatabase(None))
+
+		# Act:
+		result = facade.get_receipts(ReceiptQuery(height=1234))
+
+		# Assert:
+		self.assertIsNone(result)

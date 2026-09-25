@@ -2,11 +2,11 @@ from flask import Flask
 from psycopg2 import OperationalError
 
 from rest import setup_error_handlers
-from rest.db.SymbolDatabase import SortOrder, SymbolDataUnavailable
+from rest.db.SymbolDatabase import ReceiptQuery, SortOrder, SymbolDataUnavailable
 from rest.routes.symbol import setup_symbol_routes
 
 
-class SymbolBlockFacade:
+class SymbolBlockFacade:  # pylint: disable=too-many-instance-attributes
 	def __init__(self):
 		self.blocks_result = [{'height': 2}]
 		self.block_result = {'height': 2}
@@ -15,6 +15,9 @@ class SymbolBlockFacade:
 		self.height = None
 		self.blocks_error = None
 		self.block_error = None
+		self.receipts_result = [{'version': 1}]
+		self.receipts_query = None
+		self.receipts_error = None
 
 	@staticmethod
 	def get_health():
@@ -37,6 +40,18 @@ class SymbolBlockFacade:
 			raise self.block_error
 
 		return self.block_result
+
+	def is_database_available(self):
+		return self.database_available
+
+	def get_receipts(self, query):
+		if not self.database_available:
+			return None
+		self.receipts_query = query
+		if self.receipts_error:
+			raise self.receipts_error
+
+		return self.receipts_result
 
 
 def _create_symbol_test_client(facade):
@@ -272,3 +287,255 @@ def test_block_returns_404():
 
 	# Act + Assert:
 	_assert_not_found_response(client.get('/api/symbol/block/999'))
+
+
+def test_receipts_uses_default_query():
+	# Arrange:
+	facade = SymbolBlockFacade()
+
+	# Act:
+	response = _create_symbol_test_client(facade).get('/api/symbol/receipts')
+
+	# Assert:
+	assert 200 == response.status_code
+	assert [{'version': 1}] == response.json
+	assert ReceiptQuery(limit=10, offset=0) == facade.receipts_query
+
+
+def test_receipts_normalizes_filters():
+	# Arrange:
+	facade = SymbolBlockFacade()
+	target_address = 'TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI'
+
+	# Act:
+	response = _create_symbol_test_client(facade).get(
+		'/api/symbol/receipts?limit=25&offset=100000&group=balanceChange'
+		'&includedReceiptTypes=12616&includedReceiptTypes=8776&targetAddress=' + target_address)
+
+	# Assert:
+	assert 200 == response.status_code
+	assert ReceiptQuery(
+		25,
+		100000,
+		None,
+		'balanceChange',
+		None,
+		('lockHashCreated', 'lockHashCompleted'),
+		bytes.fromhex('9889432DE263BB8FE88444A4DA28D3609BD8BB8FAE18AE95'),
+		None) == facade.receipts_query
+
+
+def test_block_receipts_path_pagination():
+	# Arrange:
+	facade = SymbolBlockFacade()
+
+	# Act:
+	response = _create_symbol_test_client(facade).get('/api/symbol/block/12/receipts?limit=2&offset=100')
+
+	# Assert:
+	assert 200 == response.status_code
+	assert ReceiptQuery(2, 100, 12, None, None, (), None, None) == facade.receipts_query
+
+
+def test_receipts_accept_limit_100():
+	# Arrange:
+	# Exercise both public receipt routes through their shared query parser.
+	endpoints = (
+		'/api/symbol/receipts?limit=100',
+		'/api/symbol/block/12/receipts?limit=100'
+	)
+
+	# Act + Assert:
+	for endpoint in endpoints:
+		facade = SymbolBlockFacade()
+		response = _create_symbol_test_client(facade).get(endpoint)
+		assert 200 == response.status_code, endpoint
+		assert 100 == facade.receipts_query.limit, endpoint
+
+
+def test_receipts_reject_bad_pagination():
+	# Arrange:
+	facade = SymbolBlockFacade()
+	client = _create_symbol_test_client(facade)
+
+	# Act + Assert:
+	for query in ('limit=0', 'limit=-1', 'limit=101', 'limit=not-an-integer', 'offset=-1', 'offset=100001', 'offset=not-an-integer'):
+		response = client.get(f'/api/symbol/receipts?{query}')
+		_assert_bad_request_response(response, {
+			'limit=0': 'limit must be between 1 and 100',
+			'limit=-1': 'limit must be between 1 and 100',
+			'limit=101': 'limit must be between 1 and 100',
+			'limit=not-an-integer': 'limit must be an integer',
+			'offset=-1': 'offset must be between 0 and 100000',
+			'offset=100001': 'offset must be between 0 and 100000',
+			'offset=not-an-integer': 'offset must be an integer'
+		}[query])
+		assert facade.receipts_query is None, query
+
+
+def test_block_receipts_offset_boundary():
+	# Arrange:
+	facade = SymbolBlockFacade()
+	client = _create_symbol_test_client(facade)
+
+	# Act:
+	accepted_response = client.get('/api/symbol/block/12/receipts?offset=100000')
+	rejected_response = client.get('/api/symbol/block/12/receipts?offset=100001')
+
+	# Assert:
+	assert 200 == accepted_response.status_code
+	assert 100000 == facade.receipts_query.offset
+	_assert_bad_request_response(rejected_response, 'offset must be between 0 and 100000')
+
+
+def test_receipts_reject_legacy_params():
+	# Arrange:
+	client = _create_symbol_test_client(SymbolBlockFacade())
+
+	# Act + Assert:
+	for parameter in ('cursor', 'pageNumber', 'pageSize'):
+		_assert_bad_request_response(
+			client.get(f'/api/symbol/receipts?{parameter}=1'),
+			f'Unsupported query parameter: {parameter}')
+
+
+def test_block_receipts_reject_filters():
+	# Arrange:
+	client = _create_symbol_test_client(SymbolBlockFacade())
+
+	# Act + Assert:
+	for parameter in (
+		'unknown', 'group', 'receiptType', 'includedReceiptTypes', 'targetAddress', 'senderAddress',
+		'height', 'excludedReceiptTypes', 'recipientAddress'):
+		_assert_bad_request_response(
+			client.get(f'/api/symbol/block/12/receipts?{parameter}=1'),
+			f'Unsupported query parameter: {parameter}')
+
+
+def test_receipts_reject_unknown_params():
+	# Arrange:
+	client = _create_symbol_test_client(SymbolBlockFacade())
+
+	# Act + Assert:
+	for parameter in ('height', 'excludedReceiptTypes', 'recipientAddress', 'unknown'):
+		_assert_bad_request_response(
+			client.get(f'/api/symbol/receipts?{parameter}=1'),
+			f'Unsupported query parameter: {parameter}')
+
+
+def test_receipts_reject_duplicates():
+	# Arrange:
+	facade = SymbolBlockFacade()
+	client = _create_symbol_test_client(facade)
+
+	# Act + Assert:
+	for parameter in ('limit', 'offset', 'group', 'receiptType', 'targetAddress', 'senderAddress'):
+		_assert_bad_request_response(
+			client.get(f'/api/symbol/receipts?{parameter}=1&{parameter}=2'),
+			f'{parameter} must not be repeated')
+
+	assert facade.receipts_query is None
+
+
+def test_receipts_reject_comma_types():
+	# Arrange:
+	facade = SymbolBlockFacade()
+
+	# Act:
+	response = _create_symbol_test_client(facade).get('/api/symbol/receipts?includedReceiptTypes=12616,8776')
+
+	# Assert:
+	_assert_bad_request_response(response, 'includedReceiptTypes must be repeated query parameters')
+	assert facade.receipts_query is None
+
+
+def test_receipts_reject_type_conflict():
+	# Arrange:
+	facade = SymbolBlockFacade()
+
+	# Act:
+	response = _create_symbol_test_client(facade).get(
+		'/api/symbol/receipts?receiptType=12616&includedReceiptTypes=8776')
+
+	# Assert:
+	_assert_bad_request_response(response, 'receiptType and includedReceiptTypes cannot be used together')
+	assert facade.receipts_query is None
+
+
+def test_receipts_reject_group_mismatch():
+	# Arrange:
+	client = _create_symbol_test_client(SymbolBlockFacade())
+
+	# Act + Assert:
+	for query in (
+		'group=balanceChange&receiptType=4685',
+		'group=balanceChange&includedReceiptTypes=4685',
+		'group=balanceTransfer&includedReceiptTypes=4685&includedReceiptTypes=12616'
+	):
+		_assert_bad_request_response(client.get(f'/api/symbol/receipts?{query}'), 'Receipt type does not belong to group')
+
+
+def test_receipts_reject_invalid_values():
+	# Arrange:
+	facade = SymbolBlockFacade()
+	client = _create_symbol_test_client(facade)
+
+	# Act + Assert:
+	for query, error in (
+		('group=unknown', 'Invalid receipt group'),
+		('receiptType=999', 'Unsupported receipt type'),
+		('receiptType=not-an-integer', 'Receipt type must be an integer'),
+		('receiptType=12616,8776', 'Receipt type must be an integer'),
+		('targetAddress=INVALID', 'Invalid targetAddress'),
+		('targetAddress=ND43EI7FXCHVNOBA3PFFTGM4GP2VUAUFX72OASA', 'Invalid targetAddress'),
+		('senderAddress=ND43EI7FXCHVNOBA3PFFTGM4GP2VUAUFX72OASA', 'Invalid senderAddress')
+	):
+		response = client.get(f'/api/symbol/receipts?{query}')
+		_assert_bad_request_response(response, error)
+		assert facade.receipts_query is None, query
+
+
+def test_receipts_map_unavailable():
+	# Arrange:
+	facade = SymbolBlockFacade()
+	client = _create_symbol_test_client(facade)
+
+	# Act:
+	facade.receipts_result = None
+	none_response = client.get('/api/symbol/receipts')
+	facade.receipts_result = [{'version': 1}]
+	facade.receipts_error = OperationalError('database unavailable')
+	error_response = client.get('/api/symbol/receipts')
+
+	# Assert:
+	_assert_symbol_backend_unavailable_response(none_response)
+	_assert_symbol_backend_unavailable_response(error_response)
+
+
+def test_block_receipts_map_503_or_404():
+	# Arrange:
+	facade = SymbolBlockFacade()
+	facade.receipts_result = None
+	client = _create_symbol_test_client(facade)
+
+	# Act:
+	not_found_response = client.get('/api/symbol/block/12/receipts')
+	facade.database_available = False
+	unavailable_response = client.get('/api/symbol/block/12/receipts')
+
+	# Assert:
+	_assert_not_found_response(not_found_response)
+	_assert_symbol_backend_unavailable_response(unavailable_response)
+
+
+def test_block_receipts_bad_height():
+	# Arrange:
+	client = _create_symbol_test_client(SymbolBlockFacade())
+
+	# Act + Assert:
+	_assert_bad_request_response(
+		client.get('/api/symbol/block/0/receipts'),
+		'Height must be greater than or equal to 1')
+	_assert_bad_request_response(
+		client.get('/api/symbol/block/not-a-height/receipts'),
+		"invalid literal for int() with base 10: 'not-a-height'")

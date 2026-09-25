@@ -19,7 +19,7 @@ from rest.model.common import DatabaseConfig
 from rest.routes.symbol import setup_symbol_routes
 
 from .test.EnvTestUtils import rest_settings_env
-from .test.SymbolBlockTestUtils import create_symbol_block, create_symbol_importance_block, create_symbol_sync_state
+from .test.SymbolBlockTestUtils import create_symbol_block, create_symbol_importance_block, create_symbol_receipt, create_symbol_sync_state
 from .test.SymbolHealthTestUtils import create_symbol_health
 
 NATIVE_MOSAIC_INFO = NativeMosaicInfo('72C0212E67A08BCE', 6)
@@ -186,6 +186,30 @@ def _expected_block_detail(height, is_finalized):
 	}
 
 
+def _expected_receipt(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+	receipt_type, receipt_group, target_address=None, mosaic_id=None, expected_amount=0, artifact_id=None):
+	mosaics = []
+	if mosaic_id:
+		mosaics = [{
+			'id': mosaic_id,
+			'name': mosaic_id,
+			'amount': expected_amount,
+			'isNative': True
+		}]
+
+	return {
+		'version': 1,
+		'height': 2,
+		'type': receipt_type,
+		'group': receipt_group,
+		'targetAddress': target_address,
+		'sender': None,
+		'to': None,
+		'artifactId': artifact_id,
+		'mosaics': mosaics
+	}
+
+
 @pytest.fixture(name='symbol_database_config', scope='module')
 def fixture_symbol_database_config():
 	with PostgresTestDatabase() as db_config:
@@ -331,6 +355,172 @@ def test_uses_xym_divisibility(symbol_database_config):
 	assert 200 == response.status_code
 	assert 1.234567 == response.json[0]['totalFee']
 	assert 2.345678 == response.json[0]['blockReward']
+
+
+def test_receipts_read_complete_json(symbol_database_config):
+	# Arrange: include another-height receipt to verify block-owned filtering.
+	with tempfile.TemporaryDirectory() as temp_directory:
+		db_config_path = _create_config_file(
+			temp_directory,
+			database_config=symbol_database_config)
+		app_config_path = _create_app_config(temp_directory, db_config_path)
+		_seed_symbol_block_tables(
+			symbol_database_config,
+			create_symbol_sync_state(last_synced_height=2, finalized_height=1),
+			[create_symbol_block(1), create_symbol_block(2)])
+		with PullerSymbolDatabase(symbol_database_config) as database:
+			target_address = bytes.fromhex('9889432DE263BB8FE88444A4DA28D3609BD8BB8FAE18AE95')
+			database.upsert_receipts_for_height(1, [create_symbol_receipt(1)], 0)
+			database.upsert_receipts_for_height(
+				2,
+				[
+					create_symbol_receipt(
+						2, 'lockHashCreated', 'balanceChange', target_address=target_address,
+						mosaic_id=NATIVE_MOSAIC_INFO.id, amount=1234567),
+					create_symbol_receipt(
+						2, 'lockHashCompleted', 'balanceChange', target_address=target_address,
+						mosaic_id=NATIVE_MOSAIC_INFO.id, amount=2000000),
+					create_symbol_receipt(2, 'inflation', 'inflation', mosaic_id=NATIVE_MOSAIC_INFO.id, amount=3000000)
+				],
+				0)
+		with rest_settings_env(app_config_path):
+			client = _create_symbol_app().test_client()
+
+			# Act:
+			response = client.get(
+				'/api/symbol/receipts?limit=2&group=balanceChange'
+				'&includedReceiptTypes=12616&includedReceiptTypes=8776'
+				'&targetAddress=TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI')
+			block_response = client.get('/api/symbol/block/2/receipts')
+
+	# Assert:
+	expected_target = 'TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI'
+	assert 200 == response.status_code
+	assert [
+		_expected_receipt('lockHashCompleted', 'balanceChange', expected_target, NATIVE_MOSAIC_INFO.id, 2.0),
+		_expected_receipt('lockHashCreated', 'balanceChange', expected_target, NATIVE_MOSAIC_INFO.id, 1.234567)
+	] == response.json
+	assert 200 == block_response.status_code
+	assert [
+		_expected_receipt('inflation', 'inflation', mosaic_id=NATIVE_MOSAIC_INFO.id, expected_amount=3.0),
+		_expected_receipt('lockHashCompleted', 'balanceChange', expected_target, NATIVE_MOSAIC_INFO.id, 2.0),
+		_expected_receipt('lockHashCreated', 'balanceChange', expected_target, NATIVE_MOSAIC_INFO.id, 1.234567)
+	] == block_response.json
+
+
+def test_block_receipts_empty_or_missing(symbol_database_config):
+	# Arrange:
+	with tempfile.TemporaryDirectory() as temp_directory:
+		db_config_path = _create_config_file(
+			temp_directory,
+			database_config=symbol_database_config)
+		app_config_path = _create_app_config(temp_directory, db_config_path)
+		_seed_symbol_block_tables(
+			symbol_database_config,
+			create_symbol_sync_state(last_synced_height=1, finalized_height=1),
+			[create_symbol_block(1)])
+		with rest_settings_env(app_config_path):
+			client = _create_symbol_app().test_client()
+
+			# Act:
+			empty_response = client.get('/api/symbol/block/1/receipts')
+			missing_response = client.get('/api/symbol/block/2/receipts')
+
+	# Assert:
+	assert (200, []) == (empty_response.status_code, empty_response.json)
+	assert 404 == missing_response.status_code
+
+
+def test_dirty_receipts_offset_503(symbol_database_config):
+	# Arrange:
+	with tempfile.TemporaryDirectory() as temp_directory:
+		db_config_path = _create_config_file(
+			temp_directory,
+			database_config=symbol_database_config)
+		app_config_path = _create_app_config(temp_directory, db_config_path)
+		_seed_symbol_block_tables(
+			symbol_database_config,
+			create_symbol_sync_state(
+				last_synced_height=3,
+				finalized_height=2,
+				dirty_state_from_height=3),
+			[create_symbol_block(2), create_symbol_block(3)])
+		with PullerSymbolDatabase(symbol_database_config) as database:
+			database.upsert_receipts_for_height(2, [create_symbol_receipt(2)], 0)
+			database.upsert_receipts_for_height(3, [create_symbol_receipt(3)], 0)
+		with rest_settings_env(app_config_path):
+			client = _create_symbol_app().test_client()
+
+			# Act:
+			implicit_response = client.get('/api/symbol/receipts?limit=1')
+			offset_page_response = client.get('/api/symbol/receipts?limit=1&offset=1')
+			dirty_block_response = client.get('/api/symbol/block/3/receipts')
+			safe_block_response = client.get('/api/symbol/block/2/receipts')
+
+	# Assert:
+	_assert_request_unavailable(implicit_response)
+	_assert_request_unavailable(offset_page_response)
+	_assert_request_unavailable(dirty_block_response)
+	assert 200 == safe_block_response.status_code
+	assert [2] == [item['height'] for item in safe_block_response.json]
+
+
+def test_dirty_receipts_missing_503_json(symbol_database_config):
+	# Arrange:
+	with tempfile.TemporaryDirectory() as temp_directory:
+		db_config_path = _create_config_file(
+			temp_directory,
+			database_config=symbol_database_config)
+		app_config_path = _create_app_config(temp_directory, db_config_path)
+		_seed_symbol_block_tables(
+			symbol_database_config,
+			create_symbol_sync_state(
+				last_synced_height=3,
+				finalized_height=2,
+				dirty_state_from_height=3),
+			[create_symbol_block(2), create_symbol_block(3)])
+		with PullerSymbolDatabase(symbol_database_config) as database:
+			database.upsert_receipts_for_height(2, [create_symbol_receipt(2)], 0)
+		with rest_settings_env(app_config_path):
+			# Act:
+			response = _create_symbol_app().test_client().get('/api/symbol/receipts?limit=1')
+
+	# Assert:
+	assert (503, {
+		'status': 503,
+		'message': 'Symbol backend data is unavailable'
+	}) == (response.status_code, response.json)
+
+
+def test_repairing_receipts_safe_block(symbol_database_config):
+	# Arrange:
+	with tempfile.TemporaryDirectory() as temp_directory:
+		db_config_path = _create_config_file(
+			temp_directory,
+			database_config=symbol_database_config)
+		app_config_path = _create_app_config(temp_directory, db_config_path)
+		_seed_symbol_block_tables(
+			symbol_database_config,
+			create_symbol_sync_state(
+				last_synced_height=2,
+				finalized_height=1,
+				status='repairing',
+				dirty_state_from_height=2),
+			[create_symbol_block(1), create_symbol_block(2)])
+		with PullerSymbolDatabase(symbol_database_config) as database:
+			database.upsert_receipts_for_height(1, [create_symbol_receipt(1)], 0)
+			database.upsert_receipts_for_height(2, [create_symbol_receipt(2)], 0)
+		with rest_settings_env(app_config_path):
+			client = _create_symbol_app().test_client()
+
+			# Act:
+			safe_response = client.get('/api/symbol/block/1/receipts')
+			unsafe_response = client.get('/api/symbol/block/2/receipts')
+
+	# Assert:
+	assert 200 == safe_response.status_code
+	assert [1] == [item['height'] for item in safe_response.json]
+	assert 503 == unsafe_response.status_code
 
 
 def _assert_request_unavailable(response):
@@ -551,7 +741,12 @@ def test_setup_requires_symbol_db():
 				_create_symbol_app()
 
 
-def test_health_reports_db_error():
+@pytest.mark.parametrize(('path', 'status', 'expected_json'), [
+	('/api/symbol/health', 200, create_symbol_health(errors=[{'type': 'database', 'message': 'Symbol database is unavailable'}])),
+	('/api/symbol/receipts', 503, {'status': 503, 'message': 'Symbol backend data is unavailable'}),
+	('/api/symbol/block/1/receipts', 503, {'status': 503, 'message': 'Symbol backend data is unavailable'})
+])
+def test_initial_db_failure_responses(path, status, expected_json):
 	# Arrange:
 	with tempfile.TemporaryDirectory() as temp_directory:
 		db_config_path = _create_config_file(
@@ -561,14 +756,11 @@ def test_health_reports_db_error():
 
 		with rest_settings_env(app_config_path):
 			# Act:
-			response = _create_symbol_app().test_client().get('/api/symbol/health')
+			response = _create_symbol_app().test_client().get(path)
 
 	# Assert:
-	assert 200 == response.status_code
-	assert create_symbol_health(errors=[{
-		'type': 'database',
-		'message': 'Symbol database is unavailable'
-	}]) == response.json
+	assert status == response.status_code
+	assert expected_json == response.json
 
 
 def test_setup_rejects_bad_node_url():

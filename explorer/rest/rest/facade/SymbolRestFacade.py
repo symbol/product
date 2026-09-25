@@ -3,6 +3,7 @@ from psycopg2 import Error as PsycopgError
 from zenlog import log
 
 from rest.db.SymbolDatabase import SymbolDatabase
+from rest.model.symbol.Receipt import SymbolReceiptView
 
 DATABASE_UNAVAILABLE_MESSAGE = 'Symbol database is unavailable'
 
@@ -23,7 +24,7 @@ class SymbolRestFacade:
 		self.symbol_db = None
 		self.db_error = None
 		try:
-			self.symbol_db = SymbolDatabase(db_config)
+			self.symbol_db = SymbolDatabase(db_config, native_mosaic_info)
 		except PsycopgError as error:
 			log.error(f'Failed to initialize Symbol database: {error}')
 			self.db_error = DATABASE_UNAVAILABLE_MESSAGE
@@ -138,3 +139,15 @@ class SymbolRestFacade:
 		block = self.symbol_db.get_block(height)
 
 		return block.to_detail_dict(self.native_mosaic_info) if block else None
+
+	def get_receipts(self, query):
+		"""Gets a Symbol receipt page."""
+
+		if not self.is_database_available():
+			return None
+
+		receipts = self.symbol_db.get_receipts(query)
+		if receipts is None:
+			return None
+
+		return [SymbolReceiptView(**receipt._asdict()).to_dict(self.native_mosaic_info) for receipt in receipts]

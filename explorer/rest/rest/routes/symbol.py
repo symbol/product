@@ -3,15 +3,22 @@ from pathlib import Path
 
 from common.symbol.NativeMosaic import create_native_mosaic_info
 from common.symbol.NodeConfiguration import SymbolNodeConfiguration
+from common.symbol.ReceiptTypes import RECEIPT_GROUP_LABELS, RECEIPT_TYPE_GROUPS, RECEIPT_TYPE_LABELS
 from flask import abort, jsonify, request
 from psycopg2 import Error as PsycopgError
+from symbolchain.symbol.Network import Address, Network
 from zenlog import log
 
-from rest.db.SymbolDatabase import SortOrder, SymbolDataUnavailable
+from rest.db.SymbolDatabase import ReceiptQuery, SortOrder, SymbolDataUnavailable
 from rest.facade.SymbolRestFacade import SymbolRestFacade
 from rest.model.common import DatabaseConfig
 
 BLOCK_LIST_QUERY_PARAMETERS = frozenset(['limit', 'fromHeight', 'sort'])
+RECEIPT_QUERY_PARAMETERS = frozenset([
+	'limit', 'offset', 'group', 'receiptType', 'includedReceiptTypes', 'targetAddress', 'senderAddress'
+])
+BLOCK_RECEIPT_QUERY_PARAMETERS = frozenset(['limit', 'offset'])
+RECEIPT_MAX_OFFSET = 100000
 XYM_DIVISIBILITY = 6
 
 
@@ -48,7 +55,7 @@ def _create_native_mosaic_info(app_config):
 
 
 def setup_symbol_routes(app, symbol_api_facade):
-	def _run_block_query(query_fn, error_log):
+	def _run_symbol_query(query_fn, error_log):
 		try:
 			return None, query_fn()
 		except (PsycopgError, SymbolDataUnavailable):
@@ -77,7 +84,7 @@ def setup_symbol_routes(app, symbol_api_facade):
 		except ValueError as error:
 			abort(400, error)
 
-		error, result = _run_block_query(
+		error, result = _run_symbol_query(
 			lambda: symbol_api_facade.get_blocks(from_height, limit, SortOrder(sort)),
 			'Failed to get Symbol blocks')
 		if error:
@@ -95,7 +102,7 @@ def setup_symbol_routes(app, symbol_api_facade):
 		except ValueError as error:
 			abort(400, error)
 
-		error, result = _run_block_query(
+		error, result = _run_symbol_query(
 			lambda: symbol_api_facade.get_block(height),
 			'Failed to get Symbol block')
 		if error:
@@ -103,6 +110,48 @@ def setup_symbol_routes(app, symbol_api_facade):
 
 		if not result:
 			abort(404)
+
+		return jsonify(result)
+
+	@app.route('/api/symbol/receipts')
+	def api_get_symbol_receipts():
+		try:
+			_validate_allowed_query_parameters(RECEIPT_QUERY_PARAMETERS)
+			query = _parse_receipt_query()
+		except ValueError as error:
+			abort(400, error)
+
+		error, result = _run_symbol_query(
+			lambda: symbol_api_facade.get_receipts(query),
+			'Failed to get Symbol receipts')
+		if error:
+			return error
+
+		if result is None:
+			return _service_unavailable('Symbol backend data is unavailable')
+
+		return jsonify(result)
+
+	@app.route('/api/symbol/block/<height>/receipts')
+	def api_get_symbol_block_receipts(height):
+		try:
+			height = _parse_block_height(height)
+			_validate_allowed_query_parameters(BLOCK_RECEIPT_QUERY_PARAMETERS)
+			query = _parse_receipt_query(height)
+		except ValueError as error:
+			abort(400, error)
+
+		error, result = _run_symbol_query(
+			lambda: symbol_api_facade.get_receipts(query),
+			'Failed to get Symbol block receipts')
+		if error:
+			return error
+
+		if result is None:
+			if symbol_api_facade.is_database_available():
+				abort(404)
+
+			return _service_unavailable('Symbol backend data is unavailable')
 
 		return jsonify(result)
 
@@ -119,6 +168,94 @@ def _parse_block_height(raw_height):
 		raise ValueError('Height must be greater than or equal to 1')
 
 	return height
+
+
+def _parse_receipt_query(height=None):
+	limit = _parse_bounded_integer('limit', _get_scalar_parameter('limit', '10'), 1, 100)
+	offset = _parse_bounded_integer('offset', _get_scalar_parameter('offset', '0'), 0, RECEIPT_MAX_OFFSET)
+	group = _get_scalar_parameter('group')
+	if group is not None and group not in RECEIPT_GROUP_LABELS:
+		raise ValueError('Invalid receipt group')
+
+	receipt_type_arg = _get_scalar_parameter('receiptType')
+	included_receipt_type_args = request.args.getlist('includedReceiptTypes')
+	if receipt_type_arg is not None and included_receipt_type_args:
+		raise ValueError('receiptType and includedReceiptTypes cannot be used together')
+
+	receipt_type = _parse_receipt_type(receipt_type_arg) if receipt_type_arg is not None else None
+	included_receipt_types = tuple(
+		_parse_receipt_type(value, 'includedReceiptTypes') for value in included_receipt_type_args)
+	if group is not None:
+		if receipt_type is not None and RECEIPT_TYPE_GROUPS[receipt_type] != group:
+			raise ValueError('Receipt type does not belong to group')
+
+		if any(RECEIPT_TYPE_GROUPS[value] != group for value in included_receipt_types):
+			raise ValueError('Receipt type does not belong to group')
+
+	return ReceiptQuery(
+		limit=limit,
+		offset=offset,
+		height=height,
+		receipt_group=group,
+		receipt_type=RECEIPT_TYPE_LABELS[receipt_type] if receipt_type is not None else None,
+		included_receipt_types=tuple(RECEIPT_TYPE_LABELS[value] for value in included_receipt_types),
+		target_address=_parse_address('targetAddress'),
+		sender_address=_parse_address('senderAddress'))
+
+
+def _get_scalar_parameter(name, default=None):
+	values = request.args.getlist(name)
+	if not values:
+		return default
+
+	if len(values) != 1:
+		raise ValueError(f'{name} must not be repeated')
+
+	return values[0]
+
+
+def _parse_bounded_integer(name, value, minimum, maximum):
+	try:
+		parsed_value = int(value)
+	except (TypeError, ValueError) as error:
+		raise ValueError(f'{name} must be an integer') from error
+
+	if parsed_value < minimum or parsed_value > maximum:
+		raise ValueError(f'{name} must be between {minimum} and {maximum}')
+
+	return parsed_value
+
+
+def _parse_receipt_type(value, parameter_name='receiptType'):
+	if ',' in value:
+		if parameter_name == 'includedReceiptTypes':
+			raise ValueError('includedReceiptTypes must be repeated query parameters')
+
+		raise ValueError('Receipt type must be an integer')
+
+	try:
+		receipt_type = int(value)
+	except (TypeError, ValueError) as error:
+		raise ValueError('Receipt type must be an integer') from error
+
+	if receipt_type not in RECEIPT_TYPE_LABELS:
+		raise ValueError('Unsupported receipt type')
+
+	return receipt_type
+
+
+def _parse_address(name):
+	value = _get_scalar_parameter(name)
+	if value is None:
+		return None
+
+	try:
+		if not any(network.is_valid_address_string(value) for network in Network.NETWORKS):
+			raise ValueError(f'Invalid {name}')
+
+		return Address(value).bytes
+	except (TypeError, ValueError) as error:
+		raise ValueError(f'Invalid {name}') from error
 
 
 def _service_unavailable(message):

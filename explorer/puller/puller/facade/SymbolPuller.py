@@ -11,6 +11,12 @@ from urllib.parse import urlparse
 
 from common.symbol.NativeMosaic import normalize_mosaic_id, validate_native_mosaic_response
 from common.symbol.NodeConfiguration import SymbolNodeConfiguration
+from common.symbol.ReceiptTypes import (
+	INFLATION_RECEIPT_TYPE,
+	MOSAIC_EXPIRED_RECEIPT_TYPE,
+	NAMESPACE_DELETED_RECEIPT_TYPE,
+	NAMESPACE_EXPIRED_RECEIPT_TYPE
+)
 from symbolchain.facade.SymbolFacade import SymbolFacade
 from symbolchain.sc import TransactionType
 from symbolchain.symbol.Network import Address, Network
@@ -51,13 +57,7 @@ from puller.model.symbol.MosaicRestriction import (
 	mosaic_restriction_entry_type_to_enum_value
 )
 from puller.model.symbol.Namespace import create_alias_name_rows, create_namespace_row
-from puller.model.symbol.Receipt import (
-	INFLATION_RECEIPT_TYPE,
-	MOSAIC_EXPIRED_RECEIPT_TYPE,
-	NAMESPACE_DELETED_RECEIPT_TYPE,
-	NAMESPACE_EXPIRED_RECEIPT_TYPE,
-	create_receipt_rows
-)
+from puller.model.symbol.Receipt import create_receipt_rows
 from puller.model.symbol.Resolution import is_alias_mosaic_id, select_resolution_entry
 from puller.model.symbol.Transaction import create_transaction_row, unique_address_rows
 
