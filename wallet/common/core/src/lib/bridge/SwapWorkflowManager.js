@@ -147,6 +147,7 @@ export class SwapWorkflowManager {
 		let currentAmount = amount;
 
 		for (const manager of this.#pairManagers) {
+			// eslint-disable-next-line no-await-in-loop
 			const estimation = await manager.estimateRequest(currentAmount);
 			estimations.push(estimation);
 
