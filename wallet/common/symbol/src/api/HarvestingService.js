@@ -112,9 +112,10 @@ export class HarvestingService {
 		let harvestedBlocks = [];
 
 		while (!isLastPage && !isEndBlockFound) {
-			const harvestedBlocksPage = await this.fetchHarvestedBlocks(networkProperties, address, { 
+			// eslint-disable-next-line no-await-in-loop
+			const harvestedBlocksPage = await this.fetchHarvestedBlocks(networkProperties, address, {
 				pageNumber,
-				pageSize: 100 
+				pageSize: 100
 			});
 			const filteredPerDayPage = harvestedBlocksPage.filter(block => block.height >= heightMonthAgo);
 			isLastPage = harvestedBlocksPage.length === 0;
