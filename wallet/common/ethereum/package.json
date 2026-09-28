@@ -16,11 +16,12 @@
 		"wallet-common-core": "file:../core"
 	},
 	"devDependencies": {
+		"@eslint/js": "^10.0.1",
 		"c8": "~10.1.2",
-		"eslint": "~8.57.0",
-		"eslint-config-airbnb": "~19.0.4",
-		"eslint-plugin-import": "^2.32.0",
-		"eslint-plugin-jsdoc": "^50.1.0",
-		"jest": "^30.0.0"
+		"eslint": "^10.11.0",
+		"eslint-plugin-import-x": "^4.17.1",
+		"eslint-plugin-jsdoc": "^64.5.4",
+		"globals": "^17.12.0",
+		"jest": "^30.5.2"
 	}
 }
