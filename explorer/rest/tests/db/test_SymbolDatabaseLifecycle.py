@@ -52,7 +52,9 @@ class SymbolDatabaseLifecycleTest(TestCase):
 						with database:
 							raise RuntimeError('operation failed')
 				# Assert:
-				self.assertEqual('ERROR:pythonConfig:Failed to close Symbol database after an operation failure', logs.output[0])
+				self.assertEqual(
+					'ERROR:pythonConfig:Failed to close Symbol database after an operation failure: close failed',
+					logs.output[0])
 			finally:
 				SymbolDatabase.close(database)
 
@@ -67,7 +69,8 @@ class SymbolDatabaseLifecycleTest(TestCase):
 						raise operation_error
 				# Assert:
 				self.assertIs(operation_error, exception_info.exception)
-				with self.assertRaises(PoolError), database.connection():
-					pass
+				with self.assertRaises(PoolError):
+					with database.connection():
+						pass
 			finally:
 				database.close()

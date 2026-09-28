@@ -15,6 +15,7 @@ class SymbolRestFacade:
 
 		if symbol_db is None:
 			raise ValueError('Symbol database is required')
+
 		if node_config is None:
 			raise ValueError('Symbol node configuration is required')
 		if not isinstance(native_mosaic_info, NativeMosaicInfo):

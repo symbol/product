@@ -137,10 +137,11 @@ class SymbolDatabase(DatabaseConnectionPool):
 
 		try:
 			self.close()
-		except Exception:  # pylint: disable=broad-exception-caught
+		except Exception as close_error:  # pylint: disable=broad-exception-caught
 			if exception_type is None:
 				raise
-			log.error('Failed to close Symbol database after an operation failure')
+
+			log.error(f'Failed to close Symbol database after an operation failure: {close_error}')
 
 	def close(self):
 		"""Closes all connections owned by this Symbol database."""
