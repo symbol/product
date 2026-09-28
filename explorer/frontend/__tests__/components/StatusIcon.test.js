@@ -2,8 +2,7 @@ import '@testing-library/jest-dom';
 import StatusIcon from '@/app/components/StatusIcon';
 import { render, screen } from '@testing-library/react';
 
-// The suite runs against the 'nem' variant, so asset URLs are prefixed with '/nem'.
-const assetBasePath = '/nem/images/status';
+const assetBasePath = `/${process.env.NEXT_PUBLIC_EXPLORER_VARIANT}/images/status`;
 
 // next/image rewrites the src to an optimized URL with the original path URL-encoded; decode before asserting.
 const getIconPath = image => decodeURIComponent(image.getAttribute('src'));

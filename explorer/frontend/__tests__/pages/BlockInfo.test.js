@@ -7,7 +7,6 @@ import { MAX_TRANSACTION_SQUARES } from '@/app/components/ValueTransactionSquare
 import BlockInfo, { getServerSideProps } from '@/app/pages/blocks/[height]';
 import * as utils from '@/app/utils';
 import { act, render, screen } from '@testing-library/react';
-/* eslint-disable import/no-unresolved */
 import { mockAllIsIntersecting } from 'react-intersection-observer/test-utils';
 
 jest.mock('@/app/utils', () => {

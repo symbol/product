@@ -1,4 +1,3 @@
-/* eslint-disable max-len */
 export const mosaicPageResponse = [
 	{
 		creator: 'NDQXKN6REQRVT4WE6WIU2FXQLTJFEHKK5ITD2ZSV',

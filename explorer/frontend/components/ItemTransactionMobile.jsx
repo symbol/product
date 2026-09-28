@@ -6,8 +6,7 @@ import ValueMosaic from './ValueMosaic';
 import ValueTimestamp from './ValueTimestamp';
 import ValueTransactionHash from './ValueTransactionHash';
 import styles from '@/app/styles/components/ItemTransactionMobile.module.scss';
-import { createAssetURL } from '@/app/utils';
-import { createPageHref } from '@/app/utils';
+import { createAssetURL, createPageHref } from '@/app/utils';
 import Link from 'next/link';
 import { useTranslation } from 'next-i18next';
 

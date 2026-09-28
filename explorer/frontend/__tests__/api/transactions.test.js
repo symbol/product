@@ -75,7 +75,6 @@ describe('api/transactions', () => {
 				pageNumber: 3,
 				types: 'MULTISIG_ACCOUNT_MODIFICATION'
 			};
-			// eslint-disable-next-line max-len
 			const expectedURL = 'https://explorer.backend/transactions?limit=10&offset=20&transactionTypes=MULTISIG_ACCOUNT_MODIFICATION';
 			const expectedResult = transactionPageResult;
 

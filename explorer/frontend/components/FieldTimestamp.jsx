@@ -2,8 +2,7 @@ import Field from './Field';
 import ValueTimestamp from './ValueTimestamp';
 import { STORAGE_KEY } from '@/app/constants';
 import styles from '@/app/styles/components/FieldTimestamp.module.scss';
-import { createAssetURL } from '@/app/utils';
-import { useStorage } from '@/app/utils';
+import { createAssetURL, useStorage } from '@/app/utils';
 import { useTranslation } from 'next-i18next';
 
 const FieldTimestamp = ({ value, title, hasTime, hasSeconds }) => {

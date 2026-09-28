@@ -8,8 +8,7 @@ import ValueMosaic from './ValueMosaic';
 import ValueNamespace from './ValueNamespace';
 import ValueTransaction from './ValueTransaction';
 import styles from '@/app/styles/components/SearchBar.module.scss';
-import { createAssetURL } from '@/app/utils';
-import { useDataManager, useDebounce } from '@/app/utils';
+import { createAssetURL, useDataManager, useDebounce } from '@/app/utils';
 import { useTranslation } from 'next-i18next';
 import { useEffect, useState } from 'react';
 

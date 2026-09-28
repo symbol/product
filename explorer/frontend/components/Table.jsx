@@ -27,7 +27,7 @@ const Table = ({
 	const headerCellStyle = `${styles.headerCell} ${isLastColumnAligned && styles.headerCell_aligned}`;
 	const dataRowStyle = `${styles.dataRow} ${isColumnsStacked ? styles.dataRow_stacked : ''}`;
 	const dataCellStyle = isLastColumnAligned ? styles.dataCell_aligned : '';
-	const isEmptyTableMessageShown = !isLoading && ((!!data && !data.length) || (!!sections && !sections.length));
+	const isEmptyTableMessageShown = !isLoading && !isError && ((!!data && !data.length) || (!!sections && !sections.length));
 
 	const renderRow = (row, index) => (
 		<div className={dataRowStyle} key={'tr' + index}>

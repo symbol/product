@@ -84,7 +84,7 @@ const NamespaceInfo = ({ namespaceInfo }) => {
 			setProgressType(progressType);
 		};
 		fetchChainHeight();
-	}, [namespaceInfo]);
+	}, [namespaceInfo, t]);
 
 	return (
 		<div className={styles.wrapper}>

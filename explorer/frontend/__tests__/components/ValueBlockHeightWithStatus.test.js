@@ -8,7 +8,9 @@ const chainStatusSafe = { height: 2000 };
 // next/image rewrites the src to an optimized URL with the original path URL-encoded; decode before asserting.
 const getIconPath = image => decodeURIComponent(image.getAttribute('src'));
 
-describe('ValueBlockHeightWithStatus', () => {
+const describeNem = process.env.NEXT_PUBLIC_EXPLORER_VARIANT === 'nem' ? describe : describe.skip;
+
+describeNem('ValueBlockHeightWithStatus', () => {
 	it('links the height to the block page', () => {
 		// Act:
 		render(<ValueBlockHeightWithStatus block={block} chainStatus={chainStatusSafe} />);
@@ -19,7 +21,7 @@ describe('ValueBlockHeightWithStatus', () => {
 
 	it('renders the finality status as a body text colored icon next to the height', () => {
 		// Arrange:
-		const expectedSrc = '/nem/images/status/body/icon-label-confirmed.svg';
+		const expectedSrc = `/${process.env.NEXT_PUBLIC_EXPLORER_VARIANT}/images/status/body/icon-label-confirmed.svg`;
 
 		// Act:
 		render(<ValueBlockHeightWithStatus block={block} chainStatus={chainStatusSafe} />);

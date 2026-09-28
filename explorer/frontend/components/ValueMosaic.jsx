@@ -3,8 +3,7 @@ import CustomImage from './CustomImage';
 import config from '@/app/config';
 import { ACCOUNT_STATE_CHANGE_ACTION, TRANSACTION_DIRECTION } from '@/app/constants';
 import styles from '@/app/styles/components/ValueMosaic.module.scss';
-import { createAssetURL } from '@/app/utils';
-import { createPageHref, handleNavigationItemClick, numberToString } from '@/app/utils';
+import { createAssetURL, createPageHref, handleNavigationItemClick, numberToString } from '@/app/utils';
 import Link from 'next/link';
 
 const ValueMosaic = ({

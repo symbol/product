@@ -1,6 +1,6 @@
 import * as utils from '@/app/utils/server';
 
-export const runApiTest = async (functionToTest, searchCriteria, response, expectedURL, expectedResult, print) => {
+export const runApiTest = async (functionToTest, searchCriteria, response, expectedURL, expectedResult) => {
 	// Arrange:
 	const spy = jest.spyOn(utils, 'makeRequest');
 	spy.mockResolvedValue(response);

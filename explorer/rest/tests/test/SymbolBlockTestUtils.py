@@ -63,3 +63,25 @@ def create_symbol_importance_block(height):
 		harvesting_eligible_accounts_count=17,
 		total_voting_balance=19000235663367,
 		previous_importance_block_hash=bytes.fromhex('86' * 32))
+
+
+def create_symbol_receipt(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+	height, receipt_type='inflation', receipt_group='inflation', **overrides):
+	receipt = {
+		'height': height,
+		'receipt_type': receipt_type,
+		'receipt_group': receipt_group,
+		'version': 1,
+		'source_primary_id': 0,
+		'source_secondary_id': 0,
+		'sender_address': None,
+		'recipient_address': None,
+		'target_address': None,
+		'mosaic_id': None,
+		'amount': 0,
+		'artifact_id': None,
+		'raw_payload': {'type': receipt_type}
+	}
+	receipt.update(overrides)
+
+	return receipt

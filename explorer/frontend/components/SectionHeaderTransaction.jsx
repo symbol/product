@@ -1,8 +1,7 @@
 import CustomImage from './CustomImage';
 import ValueTimestamp from './ValueTimestamp';
 import styles from '@/app/styles/components/SectionHeaderTransaction.module.scss';
-import { createAssetURL } from '@/app/utils';
-import { createPageHref } from '@/app/utils';
+import { createAssetURL, createPageHref } from '@/app/utils';
 import Link from 'next/link';
 
 const SectionHeaderTransaction = ({ height, timestamp }) => {

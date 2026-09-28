@@ -1,5 +1,5 @@
 import { STORAGE_KEY } from '@/app/constants';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 // Makes an async call. Handles the loading and error states.
 export const useDataManager = (callback, defaultData, onError, defaultLoadingState = false) => {
@@ -23,33 +23,73 @@ export const useDataManager = (callback, defaultData, onError, defaultLoadingSta
 	return [call, isLoading, data];
 };
 
-// Makes a pagination calls. Handles the loading and error states.
-export const usePagination = (callback, defaultData, defaultFilter = {}) => {
+/**
+ * @typedef {object} PaginationPage
+ * @property {Array} data - rows for the requested page.
+ * @property {number} pageNumber - the page number requested by the callback.
+ * @property {boolean} [isLastPage] - whether no further page should be requested.
+ * @property {object|null} [nextPageParams] - cursor parameters for the next page.
+ */
+
+/**
+ * Makes pagination calls and handles the loading and error states.
+ * @param {(request: object) => Promise<PaginationPage>} callback - returns the rows and requested page number.
+ * @param {Array} defaultData - initially displayed rows.
+ * @param {object} [defaultFilter] - initial filter.
+ * @param {object} [options] - initial page and error state.
+ * @returns {object} pagination state and actions.
+ */
+export const usePagination = (callback, defaultData, defaultFilter = {}, options = {}) => {
+	const initialPage = options.initialPage || { data: defaultData, pageNumber: 1 };
 	const [filter, setFilter] = useState(defaultFilter);
 	const [isLoading, setIsLoading] = useState(false);
-	const [isError, setIsError] = useState(false);
-	const [isLastPage, setIsLastPage] = useState(false);
+	const [isError, setIsError] = useState(!!options.initialError);
+	const [isLastPage, setIsLastPage] = useState(!!initialPage.isLastPage && !options.initialError);
 	const [pageNumber, setPageNumber] = useState(1);
 	const [data, setData] = useState(defaultData);
+	const [page, setPage] = useState(initialPage);
+	const requestIdRef = useRef(0);
+	const requestInFlightRef = useRef(false);
+	const lastRequestRef = useRef({ request: { pageNumber: 1, ...defaultFilter }, pageNumber: 1, data: defaultData });
 
-	const call = (pageNumber, filter, data) => {
+	const call = (request, expectedPageNumber, currentData) => {
+		const requestId = ++requestIdRef.current;
+		requestInFlightRef.current = true;
+		lastRequestRef.current = { request, pageNumber: expectedPageNumber, data: currentData };
 		setIsError(false);
 		setIsLoading(true);
 		setTimeout(async () => {
 			try {
-				const { data: currentData, pageNumber: currentPageNumber } = await callback({ pageNumber: pageNumber, ...filter });
-				if (currentPageNumber === pageNumber) {
-					setData([...data, ...currentData]);
-					setPageNumber(currentPageNumber);
-					setIsLastPage(currentData.length === 0);
-				}
+				const response = await callback(request);
+				if (requestId !== requestIdRef.current)
+					return;
+
+				const responseData = response.data;
+				setData([...currentData, ...responseData]);
+				setPage(response);
+				setPageNumber(response.pageNumber);
+				setIsLastPage(response.isLastPage ?? responseData.length === 0);
 			} catch (error) {
+				if (requestId !== requestIdRef.current)
+					return;
+
 				// eslint-disable-next-line no-console
 				console.error('[Pagination] Error:', error);
 				setIsError(true);
+			} finally {
+				if (requestId === requestIdRef.current) {
+					requestInFlightRef.current = false;
+					setIsLoading(false);
+				}
 			}
-			setIsLoading(false);
 		});
+	};
+
+	const createRequest = (nextPageNumber, nextFilter, previousPage) => {
+		if (previousPage?.nextPageParams)
+			return { ...nextFilter, ...previousPage.nextPageParams, pageNumber: nextPageNumber };
+
+		return { pageNumber: nextPageNumber, ...nextFilter };
 	};
 
 	const initialRequest = () => {
@@ -59,19 +99,31 @@ export const usePagination = (callback, defaultData, defaultFilter = {}) => {
 		setIsLastPage(false);
 		setPageNumber(1);
 		setData(defaultData);
-		call(1, defaultFilter, defaultData);
+		setPage(initialPage);
+		call({ pageNumber: 1, ...defaultFilter }, 1, defaultData);
 	};
 
 	const requestNextPage = () => {
+		if (isLastPage || requestInFlightRef.current)
+			return;
+
+		if (isError) {
+			const { request, pageNumber: failedPageNumber, data: failedData } = lastRequestRef.current;
+			call(request, failedPageNumber, failedData);
+			return;
+		}
+
 		const nextPageNumber = pageNumber + 1;
-		call(nextPageNumber, filter, data);
+		call(createRequest(nextPageNumber, filter, page), nextPageNumber, data);
 	};
 
 	const changeFilter = filter => {
 		setData([]);
 		setPageNumber(0);
+		setPage({ data: [], pageNumber: 0 });
+		setIsLastPage(false);
 		setFilter(filter);
-		call(1, filter, []);
+		call({ pageNumber: 1, ...filter }, 1, []);
 	};
 
 	const clearFilter = () => {
@@ -156,60 +208,63 @@ export const useToggle = initialValue => {
 export const useStorage = (key, initialValue, callback) => {
 	const [value, setValue] = useState(initialValue);
 	const [setter, setSetter] = useState(null);
-	const getEvent = key => `storage.update.${key}`;
-	const storage = {
-		[STORAGE_KEY.ADDRESS_BOOK]: {
-			get: () => {
-				const defaultValue = [];
-
-				try {
-					const jsonString = localStorage.getItem(STORAGE_KEY.ADDRESS_BOOK);
-					return JSON.parse(jsonString) || defaultValue;
-				} catch {
-					return defaultValue;
-				}
-			},
-			set: value => {
-				localStorage.setItem(STORAGE_KEY.ADDRESS_BOOK, JSON.stringify(value));
-				dispatchEvent(new Event(getEvent(STORAGE_KEY.ADDRESS_BOOK)));
-			}
-		},
-		[STORAGE_KEY.TIMESTAMP_TYPE]: {
-			get: () => {
-				const defaultValue = 'UTC';
-				const value = localStorage.getItem(STORAGE_KEY.TIMESTAMP_TYPE);
-				return value || defaultValue;
-			},
-			set: value => {
-				localStorage.setItem(STORAGE_KEY.TIMESTAMP_TYPE, value);
-				dispatchEvent(new Event(getEvent(STORAGE_KEY.TIMESTAMP_TYPE)));
-			}
-		},
-		[STORAGE_KEY.USER_CURRENCY]: {
-			get: () => {
-				const defaultValue = 'USD';
-				const value = localStorage.getItem(STORAGE_KEY.USER_CURRENCY);
-				return value || defaultValue;
-			},
-			set: value => {
-				localStorage.setItem(STORAGE_KEY.USER_CURRENCY, value);
-				dispatchEvent(new Event(getEvent(STORAGE_KEY.USER_CURRENCY)));
-			}
-		},
-		[STORAGE_KEY.USER_LANGUAGE]: {
-			get: () => {
-				const defaultValue = 'en';
-				const value = localStorage.getItem(STORAGE_KEY.USER_LANGUAGE);
-				return value || defaultValue;
-			},
-			set: value => {
-				localStorage.setItem(STORAGE_KEY.USER_LANGUAGE, value);
-				dispatchEvent(new Event(getEvent(STORAGE_KEY.USER_LANGUAGE)));
-			}
-		}
-	};
+	// keep the latest callback without retriggering the effect (callers pass inline functions)
+	const callbackRef = useRef();
+	callbackRef.current = callback;
 
 	useEffect(() => {
+		const getEvent = key => `storage.update.${key}`;
+		const storage = {
+			[STORAGE_KEY.ADDRESS_BOOK]: {
+				get: () => {
+					const defaultValue = [];
+
+					try {
+						const jsonString = localStorage.getItem(STORAGE_KEY.ADDRESS_BOOK);
+						return JSON.parse(jsonString) || defaultValue;
+					} catch {
+						return defaultValue;
+					}
+				},
+				set: value => {
+					localStorage.setItem(STORAGE_KEY.ADDRESS_BOOK, JSON.stringify(value));
+					dispatchEvent(new Event(getEvent(STORAGE_KEY.ADDRESS_BOOK)));
+				}
+			},
+			[STORAGE_KEY.TIMESTAMP_TYPE]: {
+				get: () => {
+					const defaultValue = 'UTC';
+					const value = localStorage.getItem(STORAGE_KEY.TIMESTAMP_TYPE);
+					return value || defaultValue;
+				},
+				set: value => {
+					localStorage.setItem(STORAGE_KEY.TIMESTAMP_TYPE, value);
+					dispatchEvent(new Event(getEvent(STORAGE_KEY.TIMESTAMP_TYPE)));
+				}
+			},
+			[STORAGE_KEY.USER_CURRENCY]: {
+				get: () => {
+					const defaultValue = 'USD';
+					const value = localStorage.getItem(STORAGE_KEY.USER_CURRENCY);
+					return value || defaultValue;
+				},
+				set: value => {
+					localStorage.setItem(STORAGE_KEY.USER_CURRENCY, value);
+					dispatchEvent(new Event(getEvent(STORAGE_KEY.USER_CURRENCY)));
+				}
+			},
+			[STORAGE_KEY.USER_LANGUAGE]: {
+				get: () => {
+					const defaultValue = 'en';
+					const value = localStorage.getItem(STORAGE_KEY.USER_LANGUAGE);
+					return value || defaultValue;
+				},
+				set: value => {
+					localStorage.setItem(STORAGE_KEY.USER_LANGUAGE, value);
+					dispatchEvent(new Event(getEvent(STORAGE_KEY.USER_LANGUAGE)));
+				}
+			}
+		};
 		const accessor = storage[key];
 
 		if (!accessor)
@@ -218,8 +273,8 @@ export const useStorage = (key, initialValue, callback) => {
 		const updateValue = () => {
 			const value = accessor.get();
 			setValue(value);
-			if (callback)
-				callback(value);
+			if (callbackRef.current)
+				callbackRef.current(value);
 		};
 
 		setSetter(() => accessor.set);
@@ -229,7 +284,7 @@ export const useStorage = (key, initialValue, callback) => {
 		return () => {
 			window?.removeEventListener(getEvent(key), updateValue);
 		};
-	}, []);
+	}, [key]);
 
 	return [value, setter];
 };
@@ -257,20 +312,41 @@ export const useUserCurrencyAmount = (fetchPrice, amount, currency, timestamp) =
 // Makes an async call on mount. Allows to repeat the call with a given interval.
 export const useAsyncCall = (callback, defaultData, pollingInterval) => {
 	const [data, setData] = useState(defaultData);
+	// keep the latest callback without retriggering the effect (callers pass inline functions)
+	const callbackRef = useRef();
+	callbackRef.current = callback;
 
 	useEffect(() => {
+		let isActive = true;
+		let requestId = 0;
+		let intervalId;
+
 		const call = async () => {
+			const currentRequestId = ++requestId;
+
 			try {
-				const data = await callback();
+				const data = await callbackRef.current();
+				if (!isActive || currentRequestId !== requestId)
+					return;
+
 				setData(data);
-			} catch {}
+			} catch {
+				// keep the previous data on failure
+			}
 		};
 
 		if (pollingInterval)
-			setInterval(() => call(), pollingInterval);
-		else
+			intervalId = setInterval(() => call(), pollingInterval);
+		if (!pollingInterval)
 			call();
-	}, []);
+
+		return () => {
+			isActive = false;
+			requestId++;
+			if (intervalId)
+				clearInterval(intervalId);
+		};
+	}, [pollingInterval]);
 
 	return data;
 };

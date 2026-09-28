@@ -1,4 +1,7 @@
+from collections import namedtuple
 from enum import Enum
+
+from common.symbol.NativeMosaic import normalize_mosaic_id
 
 from rest.model.symbol.Block import SymbolBlockView
 
@@ -47,6 +50,14 @@ SYNC_STATE_COLUMNS = [
 	'updated_at'
 ]
 READABLE_BLOCK_STATUSES = frozenset(['healthy', 'repairing'])
+ReceiptQuery = namedtuple(
+	'ReceiptQuery',
+	['limit', 'offset', 'height', 'receipt_group', 'receipt_type', 'included_receipt_types', 'target_address', 'sender_address'],
+	defaults=(10, 0, None, None, None, (), None, None))
+ReceiptRecord = namedtuple(
+	'ReceiptRecord',
+	['height', 'receipt_type', 'receipt_group', 'version', 'sender_address', 'recipient_address', 'target_address',
+		'mosaic_id', 'amount', 'artifact_id', 'mosaic_divisibility'])
 
 
 class SymbolDataUnavailable(RuntimeError):
@@ -88,6 +99,16 @@ def _is_non_public_state(sync_state):
 	return sync_state['status'] == 'repairing' or sync_state['dirty_state_from_height'] is not None
 
 
+def _is_generic_receipt_range_unavailable(sync_state):
+	"""Returns whether an unbounded receipt query can have an unsafe page boundary."""
+
+	dirty_state_from_height = sync_state['dirty_state_from_height']
+	if dirty_state_from_height is None:
+		return sync_state['status'] == 'repairing'
+
+	return dirty_state_from_height <= sync_state['last_synced_height']
+
+
 def _create_sync_state(columns, result):
 	if not result:
 		return None
@@ -97,6 +118,12 @@ def _create_sync_state(columns, result):
 
 class SymbolDatabase(DatabaseConnectionPool):
 	"""Database access for Symbol Explorer data."""
+
+	def __init__(self, db_config, native_mosaic_info=None):
+		"""Creates a Symbol database accessor with optional native mosaic information."""
+
+		super().__init__(db_config)
+		self.native_mosaic_info = native_mosaic_info
 
 	def check_connection(self):
 		"""Checks whether the configured Symbol database is reachable and initialized."""
@@ -132,6 +159,98 @@ class SymbolDatabase(DatabaseConnectionPool):
 				result = cursor.fetchone()
 
 				return self._create_block_view(result, finalized_height) if result else None
+
+	def get_receipts(self, query):
+		"""Gets a validated receipt page from one repeatable-read database snapshot."""
+
+		with self.connection() as connection:
+			with connection.cursor() as cursor:
+				self._start_read_transaction(cursor)
+				sync_state = self._fetch_sync_state(cursor)
+				readable_height = _get_readable_height(sync_state)
+				if readable_height is None:
+					raise SymbolDataUnavailable('Symbol receipt data is unavailable: sync state is unreadable')
+
+				if query.height is not None:
+					if query.height > readable_height:
+						if _is_non_public_state(sync_state):
+							raise SymbolDataUnavailable(
+								'Symbol receipt data is unavailable: requested height is above the readable height '
+								'in dirty or repairing state')
+						return None
+					cursor.execute(
+						'SELECT 1 FROM symbol_blocks WHERE height = %s AND height <= %s',
+						(query.height, readable_height))
+					if not cursor.fetchone():
+						return None
+
+				where_clauses = ['receipts.height <= sync_state.last_synced_height']
+				parameters = []
+				filters = [
+					(query.height, 'receipts.height = %s'),
+					(query.receipt_group, 'receipts.receipt_group = %s::symbol_receipt_group'),
+					(query.receipt_type, 'receipts.receipt_type = %s::symbol_receipt_type'),
+					(query.target_address, 'receipts.target_address = %s'),
+					(query.sender_address, 'receipts.sender_address = %s'),
+				]
+				for value, clause in filters:
+					if value is not None:
+						where_clauses.append(clause)
+						parameters.append(value)
+
+				if query.included_receipt_types:
+					where_clauses.append('receipts.receipt_type = ANY(%s::symbol_receipt_type[])')
+					parameters.append(list(query.included_receipt_types))
+
+				# Never filter dirty rows before OFFSET; unsafe generic pages are rejected below.
+				cursor.execute(
+					f'''
+					SELECT
+						receipts.height,
+						receipts.receipt_type,
+						receipts.receipt_group,
+						receipts.version,
+						receipts.sender_address,
+						receipts.recipient_address,
+						receipts.target_address,
+						receipts.mosaic_id,
+						receipts.amount,
+						receipts.artifact_id,
+						mosaics.divisibility
+					FROM symbol_receipts AS receipts
+					JOIN symbol_sync_state AS sync_state ON sync_state.id = 1
+					LEFT JOIN symbol_mosaics AS mosaics ON mosaics.mosaic_id = receipts.mosaic_id
+					WHERE {' AND '.join(where_clauses)}
+					ORDER BY receipts.height DESC, receipts.id DESC
+					LIMIT %s OFFSET %s
+					''',
+					(*parameters, query.limit, query.offset))
+				results = [ReceiptRecord(*result) for result in cursor.fetchall()]
+
+				if any(receipt.height > readable_height for receipt in results):
+					raise SymbolDataUnavailable(
+						'Symbol receipt data is unavailable: returned receipt row is above the readable height')
+				if query.height is None and _is_generic_receipt_range_unavailable(sync_state):
+					raise SymbolDataUnavailable(
+						'Symbol receipt data is unavailable: unbounded receipt query range is unsafe')
+				if _is_non_public_state(sync_state) and self._requires_current_receipt_metadata(results):
+					raise SymbolDataUnavailable(
+						'Symbol receipt data is unavailable: non-native mosaic metadata is unsafe '
+						'in dirty or repairing state')
+
+				return results
+
+	def _requires_current_receipt_metadata(self, receipts):
+		"""Returns whether a receipt page depends on current non-native metadata."""
+
+		for receipt in receipts:
+			if receipt.mosaic_id is None:
+				continue
+			if self.native_mosaic_info and normalize_mosaic_id(receipt.mosaic_id) == self.native_mosaic_info.id:
+				continue
+			return True
+
+		return False
 
 	def get_blocks(self, from_height, limit, sort):
 		"""Gets Symbol blocks using fromHeight cursor pagination."""

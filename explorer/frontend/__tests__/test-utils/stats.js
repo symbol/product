@@ -1,7 +1,6 @@
-/* eslint-disable max-len */
 export const accountStatisticsResponse = {
 	eligibleHarvestAccounts: 9093,
-	harvestedAccounts: 23675,
+	harvestedAccounts: 1875,
 	total: 984546,
 	totalImportance: '1.013774403838297289982',
 	withBalance: 223051
@@ -372,10 +371,10 @@ export const dailyTransactionChartResponse = {
 
 export const accountStatisticsResult = {
 	total: 984546,
-	harvesting: 23675,
+	harvesting: 1875,
 	eligibleForHarvesting: 9093,
 	top10AccountsImportance: 69.1,
-	harvestingAccountsPercentage: 2.4,
+	harvestingAccountsPercentage: 20.62,
 	importanceBreakdown: [
 		[21.0754, 'NANEPSBUVE5NLYXCTP52LK3YAOSZUAIVOAD4FGSV'],
 		[0.577, 'NAXB67KOXSIDPNGTOJA35MTNCK4AHB6JE2MJRER7'],
@@ -390,8 +389,8 @@ export const accountStatisticsResult = {
 		[30.8985, 'Rest']
 	],
 	harvestingAccountsChart: [
-		[2.4, 'Harvesting'],
-		[97.6, 'Not harvesting']
+		[20.62, 'Harvesting'],
+		[79.38, 'Not harvesting']
 	]
 };
 

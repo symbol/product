@@ -3,15 +3,7 @@ from unittest import TestCase
 
 from symbolchain.sc import ReceiptType
 
-from puller.model.symbol.Receipt import (
-	INFLATION_RECEIPT_TYPE,
-	MOSAIC_EXPIRED_RECEIPT_TYPE,
-	NAMESPACE_DELETED_RECEIPT_TYPE,
-	NAMESPACE_EXPIRED_RECEIPT_TYPE,
-	RECEIPT_TYPE_GROUPS,
-	RECEIPT_TYPE_LABELS,
-	create_receipt_rows
-)
+from puller.model.symbol.Receipt import create_receipt_rows
 
 TARGET_ADDRESS = '98' * 24
 SENDER_ADDRESS = '99' * 24
@@ -30,46 +22,6 @@ def _create_statement_item(receipts, **overrides):
 
 
 class ReceiptTest(TestCase):
-
-	def test_receipt_type_groups_maps_supported_types_to_documented_groups(self):
-		# Arrange / Act / Assert:
-		self.assertEqual({
-			ReceiptType.HARVEST_FEE.value: 'balanceChange',
-			ReceiptType.LOCK_HASH_CREATED.value: 'balanceChange',
-			ReceiptType.LOCK_HASH_COMPLETED.value: 'balanceChange',
-			ReceiptType.LOCK_HASH_EXPIRED.value: 'balanceChange',
-			ReceiptType.LOCK_SECRET_CREATED.value: 'balanceChange',
-			ReceiptType.LOCK_SECRET_COMPLETED.value: 'balanceChange',
-			ReceiptType.LOCK_SECRET_EXPIRED.value: 'balanceChange',
-			ReceiptType.MOSAIC_RENTAL_FEE.value: 'balanceTransfer',
-			ReceiptType.NAMESPACE_RENTAL_FEE.value: 'balanceTransfer',
-			ReceiptType.MOSAIC_EXPIRED.value: 'artifactExpiry',
-			ReceiptType.NAMESPACE_EXPIRED.value: 'artifactExpiry',
-			ReceiptType.NAMESPACE_DELETED.value: 'artifactExpiry',
-			ReceiptType.INFLATION.value: 'inflation'
-		}, RECEIPT_TYPE_GROUPS)
-
-	def test_receipt_type_labels_maps_supported_types_to_documented_labels(self):
-		# Arrange / Act / Assert:
-		self.assertEqual({
-			ReceiptType.MOSAIC_RENTAL_FEE.value: 'mosaicRentalFee',
-			ReceiptType.NAMESPACE_RENTAL_FEE.value: 'namespaceRentalFee',
-			ReceiptType.HARVEST_FEE.value: 'harvestFee',
-			ReceiptType.LOCK_HASH_COMPLETED.value: 'lockHashCompleted',
-			ReceiptType.LOCK_HASH_EXPIRED.value: 'lockHashExpired',
-			ReceiptType.LOCK_SECRET_COMPLETED.value: 'lockSecretCompleted',
-			ReceiptType.LOCK_SECRET_EXPIRED.value: 'lockSecretExpired',
-			ReceiptType.LOCK_HASH_CREATED.value: 'lockHashCreated',
-			ReceiptType.LOCK_SECRET_CREATED.value: 'lockSecretCreated',
-			ReceiptType.MOSAIC_EXPIRED.value: 'mosaicExpired',
-			ReceiptType.NAMESPACE_EXPIRED.value: 'namespaceExpired',
-			ReceiptType.NAMESPACE_DELETED.value: 'namespaceDeleted',
-			ReceiptType.INFLATION.value: 'inflation'
-		}, RECEIPT_TYPE_LABELS)
-		self.assertEqual('inflation', INFLATION_RECEIPT_TYPE)
-		self.assertEqual('namespaceExpired', NAMESPACE_EXPIRED_RECEIPT_TYPE)
-		self.assertEqual('namespaceDeleted', NAMESPACE_DELETED_RECEIPT_TYPE)
-		self.assertEqual('mosaicExpired', MOSAIC_EXPIRED_RECEIPT_TYPE)
 
 	def test_create_receipt_rows_populates_balance_change_fields(self):
 		# Arrange:

@@ -1,6 +1,6 @@
 import BlockPreview from './BlockPreview';
 import styles from '@/app/styles/components/RecentBlocks.module.scss';
-import { createRef, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 
 const RecentBlocks = ({ data, chainStatus, onTransactionListRequest }) => {
 	const containerRef = useRef();
@@ -8,8 +8,8 @@ const RecentBlocks = ({ data, chainStatus, onTransactionListRequest }) => {
 	const [transactions, setTransactions] = useState([]);
 	const dataWithRefs = data.map(item => ({
 		...item,
-		smallBoxRef: createRef(),
-		bigBoxRef: createRef()
+		smallBoxRef: { current: null },
+		bigBoxRef: { current: null }
 	}));
 
 	const fetchTransactionList = async height => {
