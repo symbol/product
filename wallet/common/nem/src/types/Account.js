@@ -37,7 +37,7 @@
  * @typedef {object} AccountInfo
  * @property {string} address
  * @property {string|null} publicKey
- * @property {import('./Mosaic').Mosaic[]} mosaics
+ * @property {import('./Token').Token[]} tokens
  * @property {number} balance - Native currency balance (relative).
  * @property {number} importance
  * @property {boolean} isMultisig - Whether the account is a multisig account.

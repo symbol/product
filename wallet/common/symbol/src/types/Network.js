@@ -9,9 +9,9 @@
 
 /**
  * @typedef {Object} NetworkCurrency
- * @property {string} name - Mosaic name.
- * @property {string} mosaicId - Mosaic identifier.
- * @property {number} divisibility - Mosaic divisibility.
+ * @property {string} name - Token name.
+ * @property {string} id - Token identifier.
+ * @property {number} divisibility - Token divisibility.
  */
 
 /**
@@ -24,7 +24,7 @@
  * @property {string} blockGenerationTargetTime - Block generation time in seconds.
  * @property {number} epochAdjustment - Epoch adjustment.
  * @property {TransactionFeeMultipliers} transactionFees - Transaction fee multipliers.
- * @property {NetworkCurrency} networkCurrency - Network currency mosaic.
+ * @property {NetworkCurrency} networkCurrency - Network currency token.
  */
 
 /**

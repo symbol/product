@@ -22,7 +22,7 @@ export const unconfirmedWalletTransactions = [
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
 		'recipientAddress': 'TCJCFUWF6GIGFDZAR3DFFWJB33HWPHKRZIESUVY',
-		'mosaics': [
+		'tokens': [
 			{
 				'id': '72C0212E67A08BCE',
 				'divisibility': 6,
@@ -71,7 +71,7 @@ export const unconfirmedWalletTransactions = [
 				'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 				'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
 				'recipientAddress': 'TCJCFUWF6GIGFDZAR3DFFWJB33HWPHKRZIESUVY',
-				'mosaics': [
+				'tokens': [
 					{
 						'id': '72C0212E67A08BCE',
 						'divisibility': 6,

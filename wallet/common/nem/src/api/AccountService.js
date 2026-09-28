@@ -40,7 +40,7 @@ export class AccountService {
 				return {
 					address,
 					publicKey: null,
-					mosaics: [],
+					tokens: [],
 					balance: 0,
 					importance: 0,
 					isMultisig: false,
@@ -51,7 +51,7 @@ export class AccountService {
 			throw error;
 		}
 
-		const mosaics = await this.#api.mosaic.fetchAccountMosaics(networkProperties, address);
+		const tokens = await this.#api.token.fetchAccountTokens(networkProperties, address);
 
 		const { account, meta } = accountData;
 		const balance = absoluteToRelativeAmount(
@@ -65,7 +65,7 @@ export class AccountService {
 		return {
 			address: account.address,
 			publicKey: account.publicKey || null,
-			mosaics,
+			tokens,
 			balance,
 			importance: account.importance || 0,
 			isMultisig,

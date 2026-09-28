@@ -50,7 +50,7 @@ export const namespaceFromDTO = (namespaceDTO, namespaceNames) => {
             (namespace.level1 ? `.${namespaceNames[namespace.level1]}` : '') +
             (namespace.level2 ? `.${namespaceNames[namespace.level2]}` : ''),
 		aliasType: AliasTypeMessage[namespace.alias.type],
-		linkedMosaicId: namespace.alias.mosaicId 
+		linkedTokenId: namespace.alias.mosaicId 
 			? namespace.alias.mosaicId 
 			: null,
 		linkedAddress: namespace.alias.address

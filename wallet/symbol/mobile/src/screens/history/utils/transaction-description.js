@@ -111,12 +111,12 @@ export const getTransactionDescription = (transaction, currentAccount, resolveOp
 	}
 
 	case SymbolTransactionType.MOSAIC_ALIAS:
-		return $t(getAliasDescriptionKey(transaction), { target: transaction.mosaicId, name: transaction.namespaceName });
+		return $t(getAliasDescriptionKey(transaction), { target: transaction.tokenId, name: transaction.namespaceName });
 
 	case SymbolTransactionType.MOSAIC_DEFINITION:
 	case SymbolTransactionType.MOSAIC_SUPPLY_CHANGE:
 	case SymbolTransactionType.MOSAIC_SUPPLY_REVOCATION:
-		return $t('transactionDescriptionShort_mosaic', { id: transaction.mosaicId });
+		return $t('transactionDescriptionShort_mosaic', { id: transaction.tokenId });
 
 	case SymbolTransactionType.ACCOUNT_MOSAIC_RESTRICTION:
 	case SymbolTransactionType.ACCOUNT_ADDRESS_RESTRICTION:
@@ -125,7 +125,7 @@ export const getTransactionDescription = (transaction, currentAccount, resolveOp
 
 	case SymbolTransactionType.MOSAIC_GLOBAL_RESTRICTION:
 	case SymbolTransactionType.MOSAIC_ADDRESS_RESTRICTION:
-		return $t('transactionDescriptionShort_mosaicRestriction', { id: transaction.mosaicId || transaction.referenceMosaicId });
+		return $t('transactionDescriptionShort_mosaicRestriction', { id: transaction.tokenId || transaction.referenceTokenId });
 
 	case SymbolTransactionType.VRF_KEY_LINK:
 	case SymbolTransactionType.NODE_KEY_LINK:

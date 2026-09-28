@@ -64,9 +64,9 @@ const mapRestrictionKey = key => hexToBigint(key);
 
 const mapId = id => hexToBigint(id);
 
-const mapMosaic = mosaic => ({
-	mosaicId: mapId(mosaic.id),
-	amount: BigInt(relativeToAbsoluteAmount(mosaic.amount, mosaic.divisibility))
+const mapMosaic = token => ({
+	mosaicId: mapId(token.id),
+	amount: BigInt(relativeToAbsoluteAmount(token.amount, token.divisibility))
 });
 
 /**
@@ -181,7 +181,7 @@ const transferTransactionToSymbol = (transaction, config) => {
 		fee: mapFee(transaction.fee),
 		deadline: mapDeadline(transaction.deadline),
 		recipientAddress: transaction.recipientAddress,
-		mosaics: transaction.mosaics.map(mosaic => mapMosaic(mosaic))
+		mosaics: transaction.tokens.map(token => mapMosaic(token))
 	};
 
 	if (transaction.message?.payload) 
@@ -243,7 +243,7 @@ const mosaicAliasTransactionToSymbol = (transaction, config) => {
 		fee: mapFee(transaction.fee),
 		deadline: mapDeadline(transaction.deadline),
 		namespaceId: mapId(transaction.namespaceId),
-		mosaicId: mapId(transaction.mosaicId),
+		mosaicId: mapId(transaction.tokenId),
 		aliasAction: AliasActionMessage[AliasAction.Link] === transaction.aliasAction ? AliasAction.Link : AliasAction.Unlink
 	};
 
@@ -290,7 +290,7 @@ const mosaicSupplyChangeTransactionToSymbol = (transaction, config) => {
 		deadline: mapDeadline(transaction.deadline),
 		delta: BigInt(transaction.delta),
 		action,
-		mosaicId: mapId(transaction.mosaicId)
+		mosaicId: mapId(transaction.tokenId)
 	};
 
 	return createSymbolTransaction(descriptor, networkIdentifier, isEmbedded);
@@ -303,7 +303,7 @@ const mosaicSupplyRevocationTransactionToSymbol = (transaction, config) => {
 		signerPublicKey: mapSignerPublicKey(transaction.signerPublicKey),
 		fee: mapFee(transaction.fee),
 		deadline: mapDeadline(transaction.deadline),
-		mosaic: mapMosaic(transaction.mosaic),
+		mosaic: mapMosaic(transaction.token),
 		sourceAddress: transaction.sourceAddress
 	};
 
@@ -317,7 +317,7 @@ const hashLockTransactionToSymbol = (transaction, config) => {
 		signerPublicKey: mapSignerPublicKey(transaction.signerPublicKey),
 		fee: mapFee(transaction.fee),
 		deadline: mapDeadline(transaction.deadline),
-		mosaic: mapMosaic(transaction.mosaic),
+		mosaic: mapMosaic(transaction.token),
 		duration: BigInt(transaction.duration),
 		hash: Buffer.from(transaction.aggregateHash, 'hex')
 	};
@@ -332,7 +332,7 @@ const secretLockTransactionToSymbol = (transaction, config) => {
 		signerPublicKey: mapSignerPublicKey(transaction.signerPublicKey),
 		fee: mapFee(transaction.fee),
 		deadline: mapDeadline(transaction.deadline),
-		mosaic: mapMosaic(transaction.mosaic),
+		mosaic: mapMosaic(transaction.token),
 		duration: BigInt(transaction.duration),
 		recipientAddress: transaction.recipientAddress,
 		secret: transaction.secret,
@@ -433,7 +433,7 @@ const mosaicGlobalRestrictionTransactionToSymbol = (transaction, config) => {
 		signerPublicKey: mapSignerPublicKey(transaction.signerPublicKey),
 		fee: mapFee(transaction.fee),
 		deadline: mapDeadline(transaction.deadline),
-		mosaicId: mapId(transaction.referenceMosaicId),
+		mosaicId: mapId(transaction.referenceTokenId),
 		referenceMosaicId: 0n,
 		restrictionKey: mapRestrictionKey(transaction.restrictionKey),
 		previousRestrictionValue: BigInt(transaction.previousRestrictionValue),
@@ -453,7 +453,7 @@ const mosaicAddressRestrictionTransactionToSymbol = (transaction, config) => {
 		fee: mapFee(transaction.fee),
 		deadline: mapDeadline(transaction.deadline),
 		targetAddress: transaction.targetAddress,
-		mosaicId: mapId(transaction.mosaicId),
+		mosaicId: mapId(transaction.tokenId),
 		restrictionKey: mapRestrictionKey(transaction.restrictionKey),
 		previousRestrictionValue: BigInt(transaction.previousRestrictionValue),
 		newRestrictionValue: BigInt(transaction.newRestrictionValue)
@@ -516,8 +516,8 @@ const accountMosaicRestrictionTransactionToSymbol = (transaction, config) => {
 		fee: mapFee(transaction.fee),
 		deadline: mapDeadline(transaction.deadline),
 		restrictionFlags: `${restrictionFlag} mosaic_id`,
-		restrictionAdditions: transaction.restrictionMosaicAdditions.map(mapId),
-		restrictionDeletions: transaction.restrictionMosaicDeletions.map(mapId)
+		restrictionAdditions: transaction.restrictionTokenAdditions.map(mapId),
+		restrictionDeletions: transaction.restrictionTokenDeletions.map(mapId)
 	};
 
 	return createSymbolTransaction(descriptor, networkIdentifier, isEmbedded);
@@ -564,7 +564,7 @@ const mosaicMetadataTransactionToSymbol = (transaction, config) => {
 		deadline: mapDeadline(transaction.deadline),
 		targetAddress: transaction.targetAddress,
 		scopedMetadataKey: mapMetadataKey(transaction.scopedMetadataKey),
-		targetMosaicId: mapId(transaction.targetMosaicId),
+		targetMosaicId: mapId(transaction.targetTokenId),
 		valueSizeDelta: transaction.valueSizeDelta,
 		value: transaction.metadataValue //Buffer.from(transaction.metadataValue, 'hex')
 	};

@@ -1,5 +1,5 @@
 import { addressFromPublicKey } from './account';
-import { getMosaicAmount, getMosaicProperty, mosaicIdFromRaw, mosaicListFromDTO } from './mosaic';
+import { getMosaicProperty, getTokenAmount, tokenIdFromRaw, tokenListFromDTO } from './token';
 import { decodePlainMessage, isIncomingTransaction, isOutgoingTransaction, nemTimestampToDate } from './transaction';
 import {
 	MessageType,
@@ -34,34 +34,34 @@ const deadlineFromDTO = (timestamp, deadline) => {
 	};
 };
 
-const transferMosaicsFromDTO = (transaction, networkCurrency, mosaicInfos) => {
+const transferTokensFromDTO = (transaction, networkCurrency, tokenInfos) => {
 	if (transaction.mosaics?.length)
-		return mosaicListFromDTO(transaction.mosaics, mosaicInfos);
+		return tokenListFromDTO(transaction.mosaics, tokenInfos);
 
-	const { mosaicId, name, divisibility } = networkCurrency;
+	const { id, name, divisibility } = networkCurrency;
 
 	return [{
-		id: mosaicId,
+		id,
 		name,
 		amount: absoluteToRelativeAmount(transaction.amount || 0, divisibility),
 		divisibility
 	}];
 };
 
-const resolveTransferAmount = (transactionBody, nativeMosaicAmount, currentAccount) => {
+const resolveTransferAmount = (transactionBody, nativeTokenAmount, currentAccount) => {
 	if (!currentAccount)
 		return '0';
 
 	const isIncoming = isIncomingTransaction(transactionBody, currentAccount);
 	const isOutgoing = isOutgoingTransaction(transactionBody, currentAccount);
 
-	if (nativeMosaicAmount === '0' || (isIncoming && isOutgoing) || (!isIncoming && !isOutgoing))
+	if (nativeTokenAmount === '0' || (isIncoming && isOutgoing) || (!isIncoming && !isOutgoing))
 		return '0';
 
 	if (isIncoming)
-		return `${nativeMosaicAmount}`;
+		return `${nativeTokenAmount}`;
 
-	return `${-nativeMosaicAmount}`;
+	return `${-nativeTokenAmount}`;
 };
 
 // Reads the mosaic definition property array ([{ name, value }]) into the typed MosaicProperties shape.
@@ -80,7 +80,7 @@ const levyFromDTO = levy => {
 	return {
 		type: levy.type,
 		recipientAddress: levy.recipient,
-		mosaicId: mosaicIdFromRaw(levy.mosaicId),
+		mosaicId: tokenIdFromRaw(levy.mosaicId),
 		fee: levy.fee
 	};
 };
@@ -91,7 +91,7 @@ const levyFromDTO = levy => {
  * @param {object} config - The configuration object.
  * @param {NetworkProperties} config.networkProperties - The network properties.
  * @param {PublicAccount} [config.currentAccount] - The current account, used to derive the directed amount.
- * @param {object.<string, object>} [config.mosaicInfos] - The mosaic id to info map.
+ * @param {object.<string, object>} [config.tokenInfos] - The mosaic id to info map.
  * @param {boolean} [config.isEmbedded] - A flag indicating if the transaction is embedded.
  * @returns {Transaction} The transaction object.
  */
@@ -151,10 +151,10 @@ const baseTransactionFromDTO = (transactionDTO, config) => {
 
 const transferTransactionFromDTO = (transactionDTO, config) => {
 	const { transaction } = transactionDTO;
-	const { networkProperties, mosaicInfos = {}, currentAccount } = config;
+	const { networkProperties, tokenInfos = {}, currentAccount } = config;
 	const baseTransaction = baseTransactionFromDTO(transactionDTO, config);
-	const mosaics = transferMosaicsFromDTO(transaction, networkProperties.networkCurrency, mosaicInfos);
-	const nativeMosaicAmount = getMosaicAmount(mosaics, networkProperties.networkCurrency.mosaicId);
+	const tokens = transferTokensFromDTO(transaction, networkProperties.networkCurrency, tokenInfos);
+	const nativeTokenAmount = getTokenAmount(tokens, networkProperties.networkCurrency.id);
 	const transactionBody = {
 		...baseTransaction,
 		recipientAddress: transaction.recipient || null
@@ -175,8 +175,8 @@ const transferTransactionFromDTO = (transactionDTO, config) => {
 
 	return {
 		...transactionBody,
-		mosaics,
-		amount: resolveTransferAmount(transactionBody, nativeMosaicAmount, currentAccount)
+		tokens,
+		amount: resolveTransferAmount(transactionBody, nativeTokenAmount, currentAccount)
 	};
 };
 
@@ -204,7 +204,7 @@ const multisigTransactionFromDTO = (transactionDTO, config) => {
 		innerTransaction,
 		innerTransactions: innerTransaction ? [innerTransaction] : [],
 		recipientAddress: innerTransaction?.recipientAddress || null,
-		mosaics: innerTransaction?.mosaics || [],
+		tokens: innerTransaction?.tokens || [],
 		amount: innerTransaction?.amount ?? '0',
 		cosignatures,
 		message: innerTransaction?.message || null
@@ -277,7 +277,7 @@ const mosaicDefinitionTransactionFromDTO = (transactionDTO, config) => {
 	return {
 		...baseTransaction,
 		mosaicDefinition: {
-			id: mosaicIdFromRaw(mosaicDefinition.id),
+			id: tokenIdFromRaw(mosaicDefinition.id),
 			ownerPublicKey: mosaicDefinition.creator,
 			description: mosaicDefinition.description,
 			properties: mapMosaicProperties(mosaicDefinition.properties),
@@ -294,7 +294,7 @@ const mosaicSupplyChangeTransactionFromDTO = (transactionDTO, config) => {
 
 	return {
 		...baseTransaction,
-		mosaicId: mosaicIdFromRaw(transaction.mosaicId),
+		tokenId: tokenIdFromRaw(transaction.mosaicId),
 		action: transaction.supplyType,
 		delta: transaction.delta
 	};
@@ -304,20 +304,20 @@ const mosaicSupplyChangeTransactionFromDTO = (transactionDTO, config) => {
  * Extracts the unresolved (non-native) mosaic ids referenced by a list of transaction DTOs.
  * NEM does not alias addresses through namespaces, so only mosaic ids require resolution.
  * @param {object[]} transactionDTOs - The transaction DTOs.
- * @returns {{ mosaicIds: string[] }} The unresolved mosaic ids.
+ * @returns {{ tokenIds: string[] }} The unresolved token ids.
  */
 export const getUnresolvedIdsFromTransactionDTOs = transactionDTOs => {
-	const mosaicIds = new Set();
+	const tokenIds = new Set();
 
 	const extractFromTransaction = transaction => {
 		if (!transaction)
 			return;
 
 		transaction.mosaics?.forEach(mosaic => {
-			const mosaicId = mosaicIdFromRaw(mosaic.mosaicId);
+			const tokenId = tokenIdFromRaw(mosaic.mosaicId);
 
-			if (mosaicId !== NETWORK_CURRENCY_ID)
-				mosaicIds.add(mosaicId);
+			if (tokenId !== NETWORK_CURRENCY_ID)
+				tokenIds.add(tokenId);
 		});
 
 		if (transaction.otherTrans)
@@ -327,6 +327,6 @@ export const getUnresolvedIdsFromTransactionDTOs = transactionDTOs => {
 	transactionDTOs.forEach(transactionDTO => extractFromTransaction(transactionDTO.transaction || transactionDTO));
 
 	return {
-		mosaicIds: [...mosaicIds]
+		tokenIds: [...tokenIds]
 	};
 };

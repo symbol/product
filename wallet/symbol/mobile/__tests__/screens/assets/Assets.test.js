@@ -143,7 +143,7 @@ const tokenSymbolMultisigActive = TokenFixtureBuilder
 
 const accountInfoSymbolWithTokens = AccountInfoFixtureBuilder
 	.createWithAccount(CHAIN_NAME_SYMBOL, NETWORK_IDENTIFIER, 0)
-	.setMosaics([tokenSymbolCreatedActive, tokenSymbolExternalActive, tokenSymbolCreatedExpired])
+	.setTokens([tokenSymbolCreatedActive, tokenSymbolExternalActive, tokenSymbolCreatedExpired])
 	.build();
 
 const accountInfoEthereumWithTokens = AccountInfoFixtureBuilder
@@ -153,7 +153,7 @@ const accountInfoEthereumWithTokens = AccountInfoFixtureBuilder
 
 const accountInfoEmpty = AccountInfoFixtureBuilder
 	.createWithAccount(CHAIN_NAME_SYMBOL, NETWORK_IDENTIFIER, 0)
-	.setMosaics([])
+	.setTokens([])
 	.build();
 
 // Event Handlers Store
@@ -250,7 +250,7 @@ const CONTROLLER_CONFIG_SYMBOL_WITH_MULTISIG = {
 	networkProperties: networkPropertiesSymbol,
 	isWalletReady: true,
 	multisigAccounts: [
-		{ ...symbolMultisigAccount, mosaics: [tokenSymbolMultisigActive] }
+		{ ...symbolMultisigAccount, tokens: [tokenSymbolMultisigActive] }
 	]
 };
 

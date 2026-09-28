@@ -89,7 +89,7 @@ export const buildAssetsSections = ({
 	controllersWithAccounts.forEach((controller, index) => {
 		const { currentAccount, currentAccountInfo, chainName, networkIdentifier, networkProperties } = controller;
 
-		const assets = currentAccountInfo?.tokens ?? currentAccountInfo?.mosaics ?? [];
+		const assets = currentAccountInfo?.tokens ?? [];
 		const filteredAssets = filterAssets(assets, filter, currentAccount, networkProperties);
 
 		if (filteredAssets.length === 0)
@@ -129,7 +129,7 @@ export const buildAssetsSections = ({
 			title = $t('screen_assets_title_multisigAccounts');
 
 		multisigAccounts.forEach(multisigAccount => {
-			const assets = multisigAccount.tokens ?? multisigAccount.mosaics ?? [];
+			const assets = multisigAccount.tokens ?? [];
 			const filteredAssets = filterAssets(assets, filter, multisigAccount, networkProperties);
 
 			if (filteredAssets.length === 0)

@@ -16,7 +16,6 @@ const ERC20_BRIDGE_TRANSFER_GAS_LIMIT = '100000';
 const applyGasLimitSafetyMargin = gasLimit => gasLimit + ((gasLimit * GAS_LIMIT_SAFETY_MARGIN_PERCENTAGE) / 100n);
 
 /** @typedef {import('../types/Account').PublicAccount} PublicAccount */
-/** @typedef {import('../types/Mosaic').MosaicInfo} MosaicInfo */
 /** @typedef {import('../types/Network').NetworkProperties} NetworkProperties */
 /** @typedef {import('../types/Transaction').Transaction} Transaction */
 /** @typedef {import('../types/Transaction').SignedTransaction} SignedTransaction */

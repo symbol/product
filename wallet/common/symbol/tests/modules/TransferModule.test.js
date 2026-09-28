@@ -16,7 +16,7 @@ const recipientAccount = walletStorageAccounts.testnet[1];
 const otherAccount = walletStorageAccounts.testnet[2];
 const FIXED_NOW_MS = 1_700_000_000_000;
 
-const createMosaics = () => ([
+const createTokens = () => ([
 	{
 		id: '72C0212E67A08BCE',
 		divisibility: 6,
@@ -117,7 +117,7 @@ describe('TransferModule', () => {
 			const messageText = 'Hello Symbol';
 			const options = {
 				recipientAddress: recipientAccount.address,
-				mosaics: createMosaics(),
+				tokens: createTokens(),
 				messageText,
 				isMessageEncrypted: false
 			};
@@ -128,7 +128,7 @@ describe('TransferModule', () => {
 				signerPublicKey: senderPublicKey,
 				signerAddress: senderAddress,
 				recipientAddress: recipientAccount.address,
-				mosaics: createMosaics(),
+				tokens: createTokens(),
 				deadline: createDeadline(2, networkProperties.epochAdjustment),
 				message: {
 					text: messageText,
@@ -154,7 +154,7 @@ describe('TransferModule', () => {
 			// Arrange:
 			const options = {
 				recipientAddress: recipientAccount.address,
-				mosaics: createMosaics(),
+				tokens: createTokens(),
 				isMessageEncrypted: false
 			};
 			const senderPublicKey = currentAccount.publicKey;
@@ -164,7 +164,7 @@ describe('TransferModule', () => {
 				signerPublicKey: senderPublicKey,
 				signerAddress: senderAddress,
 				recipientAddress: recipientAccount.address,
-				mosaics: createMosaics(),
+				tokens: createTokens(),
 				deadline: createDeadline(2, networkProperties.epochAdjustment),
 				fee: defaultFee
 			};
@@ -187,7 +187,7 @@ describe('TransferModule', () => {
 			const namespaceIdToResolve = namespaceIdFromName(aliasName.toLowerCase());
 			const options = {
 				recipientAddress: aliasName,
-				mosaics: createMosaics(),
+				tokens: createTokens(),
 				messageText: 'Alias transfer',
 				isMessageEncrypted: false
 			};
@@ -199,7 +199,7 @@ describe('TransferModule', () => {
 				signerPublicKey: senderPublicKey,
 				signerAddress: senderAddress,
 				recipientAddress: resolvedAddress,
-				mosaics: createMosaics(),
+				tokens: createTokens(),
 				deadline: createDeadline(2, networkProperties.epochAdjustment),
 				message: {
 					text: 'Alias transfer',
@@ -232,7 +232,7 @@ describe('TransferModule', () => {
 			const messageText = 'Secret';
 			const options = {
 				recipientAddress: recipientAccount.address,
-				mosaics: createMosaics(),
+				tokens: createTokens(),
 				messageText,
 				isMessageEncrypted: true
 			};
@@ -243,7 +243,7 @@ describe('TransferModule', () => {
 				signerPublicKey: senderPublicKey,
 				signerAddress: senderAddress,
 				recipientAddress: recipientAccount.address,
-				mosaics: createMosaics(),
+				tokens: createTokens(),
 				deadline: createDeadline(2, networkProperties.epochAdjustment),
 				message: {
 					text: messageText,
@@ -275,7 +275,7 @@ describe('TransferModule', () => {
 			const options = {
 				senderPublicKey: otherAccount.publicKey,
 				recipientAddress: recipientAccount.address,
-				mosaics: createMosaics(),
+				tokens: createTokens(),
 				isMessageEncrypted: false
 			};
 			const senderPublicKey = otherAccount.publicKey;
@@ -285,14 +285,14 @@ describe('TransferModule', () => {
 				signerPublicKey: senderPublicKey,
 				signerAddress: senderAddress,
 				recipientAddress: recipientAccount.address,
-				mosaics: createMosaics(),
+				tokens: createTokens(),
 				deadline: createDeadline(2, networkProperties.epochAdjustment)
 			};
 			const hashLock = {
 				type: TransactionType.HASH_LOCK,
 				signerPublicKey: currentAccount.publicKey,
-				mosaic: {
-					id: networkProperties.networkCurrency.mosaicId,
+				token: {
+					id: networkProperties.networkCurrency.id,
 					amount: '10',
 					divisibility: networkProperties.networkCurrency.divisibility
 				},
@@ -332,7 +332,7 @@ describe('TransferModule', () => {
 			const namespaceIdToResolve = namespaceIdFromName(aliasName.toLowerCase());
 			const options = {
 				recipientAddress: aliasName,
-				mosaics: createMosaics(),
+				tokens: createTokens(),
 				isMessageEncrypted: false
 			};
 			const expectedError = new ControllerError(
@@ -439,7 +439,7 @@ describe('TransferModule', () => {
 				text: undefined,
 				payload: 'ENCRYPTED_PAYLOAD_INCOMING'
 			},
-			mosaics: [],
+			tokens: [],
 			deadline: createDeadline(2, networkProperties.epochAdjustment),
 			...overrides
 		});
@@ -454,7 +454,7 @@ describe('TransferModule', () => {
 				text: undefined,
 				payload: 'ENCRYPTED_PAYLOAD_OUTGOING'
 			},
-			mosaics: [],
+			tokens: [],
 			deadline: createDeadline(2, networkProperties.epochAdjustment),
 			...overrides
 		});
@@ -469,7 +469,7 @@ describe('TransferModule', () => {
 				text: 'Hello Plain',
 				payload: encodePlainMessage('Hello Plain')
 			},
-			mosaics: [],
+			tokens: [],
 			deadline: createDeadline(2, networkProperties.epochAdjustment),
 			...overrides
 		});

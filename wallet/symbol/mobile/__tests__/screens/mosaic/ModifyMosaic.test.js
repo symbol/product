@@ -38,7 +38,7 @@ const SCREEN_TEXT = {
 	textDescription: 'screen_mosaic_modify_description_intro',
 
 	// Mosaic info card field titles
-	textMosaicIdTitle: 'fieldTitle_mosaicId',
+	textMosaicIdTitle: 'fieldTitle_tokenId',
 	textDivisibilityTitle: 'fieldTitle_divisibility',
 
 	// Supply delta summary
@@ -147,8 +147,8 @@ const setupMocks = (overrides = {}) => {
 			[NETWORK_IDENTIFIER]: walletAccounts
 		},
 		networkApi: {
-			mosaic: {
-				fetchMosaicInfo: jest.fn().mockResolvedValue(overrides.token ?? tokenInfo)
+			token: {
+				fetchTokenInfo: jest.fn().mockResolvedValue(overrides.token ?? tokenInfo)
 			}
 		},
 		signTransactionBundle: jest.fn().mockResolvedValue(signedTransactionBundle),

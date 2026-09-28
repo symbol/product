@@ -150,7 +150,7 @@ export const ModifyMosaic = props => {
 					</Stack>
 					{!!mosaic && (
 						<TokenInfoCard name={mosaicNameText} imageId={mosaicImageId}>
-							<Field title={$t('fieldTitle_mosaicId')}>
+							<Field title={$t('fieldTitle_tokenId')}>
 								<StyledText>{mosaic.id}</StyledText>
 							</Field>
 							<Field title={$t('fieldTitle_divisibility')}>

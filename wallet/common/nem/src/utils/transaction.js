@@ -153,7 +153,7 @@ export const signTransaction = (networkIdentifier, transaction, privateKey) => {
 		? transaction
 		: { ...transaction, signerPublicKey: keyPair.publicKey.toString() };
 
-	const networkCurrency = { mosaicId: NETWORK_CURRENCY_ID, divisibility: NETWORK_CURRENCY_DIVISIBILITY };
+	const networkCurrency = { id: NETWORK_CURRENCY_ID, divisibility: NETWORK_CURRENCY_DIVISIBILITY };
 	const nemTransaction = transactionToNem(txWithSigner, {
 		networkProperties: { networkIdentifier, networkCurrency }
 	});

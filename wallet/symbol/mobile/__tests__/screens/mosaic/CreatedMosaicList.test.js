@@ -185,7 +185,7 @@ const setupMocks = (config = {}) => {
 		networkProperties,
 		currentAccount,
 		currentAccountInfo: {
-			mosaics: [heldRevokableToken]
+			tokens: [heldRevokableToken]
 		},
 		isWalletReady: true,
 		modules: {

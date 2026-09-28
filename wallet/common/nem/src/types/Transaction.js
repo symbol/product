@@ -1,4 +1,4 @@
-/** @typedef {import('./Mosaic').Mosaic} Mosaic */
+/** @typedef {import('./Token').Token} Token */
 
 /**
  * @typedef {object} Message
@@ -59,7 +59,7 @@
  * @property {string|null} signerPublicKey
  * @property {string|null} [recipientAddress]
  * @property {number} [amount] - Signed amount (positive=incoming, negative=outgoing).
- * @property {Mosaic[]} [mosaics]
+ * @property {Token[]} [mosaics]
  * @property {Message|null} [message]
  * @property {Transaction|null} [innerTransaction]
  * @property {Transaction[]} [innerTransactions]

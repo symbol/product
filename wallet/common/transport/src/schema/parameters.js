@@ -69,7 +69,7 @@ export const ParameterConfig = {
 	TokenId: {
 		name: 'tokenId',
 		type: ParameterType.STRING,
-		description: 'Mosaic/token identifier (hex String)'
+		description: 'Token identifier (hex String)'
 	},
 	TransactionPayload: {
 		name: 'payload',

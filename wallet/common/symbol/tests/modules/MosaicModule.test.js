@@ -18,15 +18,15 @@ import {
 	createTransactionFeeTiers,
 	mosaicIdFromNonce
 } from '../../src/utils';
-import { mosaicInfos, mosaicOwners, supplyMutableMosaic } from '../__fixtures__/local/mosaic';
 import { networkProperties } from '../__fixtures__/local/network';
+import { supplyMutableToken, tokenInfos, tokenOwners } from '../__fixtures__/local/token';
 import { currentAccount, walletStorageAccounts } from '../__fixtures__/local/wallet';
 import { expect, jest } from '@jest/globals';
 import { TransactionBundle, relativeToAbsoluteAmount } from 'wallet-common-core';
 
 const multisigAccount = walletStorageAccounts.testnet[1];
 const holderAccount = walletStorageAccounts.testnet[2];
-const token = supplyMutableMosaic;
+const token = supplyMutableToken;
 const fixedNowMilliseconds = 1_700_000_000_000;
 
 // A mosaic action is performed on behalf of a multisig account when the sender public key differs from the current account.
@@ -49,8 +49,8 @@ const buildMultisigBundle = (innerTransactions, bundleType) => {
 	const hashLock = {
 		type: TransactionType.HASH_LOCK,
 		signerPublicKey: currentAccount.publicKey,
-		mosaic: {
-			id: networkProperties.networkCurrency.mosaicId,
+		token: {
+			id: networkProperties.networkCurrency.id,
 			amount: HASH_LOCK_AMOUNT,
 			divisibility: networkProperties.networkCurrency.divisibility
 		},
@@ -99,10 +99,10 @@ describe('MosaicModule', () => {
 		jest.clearAllMocks();
 
 		api = {
-			mosaic: {
-				fetchAccountMosaics: jest.fn(),
-				fetchMosaicBalance: jest.fn(),
-				fetchMosaicOwners: jest.fn()
+			token: {
+				fetchCreatedTokens: jest.fn(),
+				fetchTokenBalance: jest.fn(),
+				fetchTokenOwners: jest.fn()
 			}
 		};
 
@@ -149,7 +149,7 @@ describe('MosaicModule', () => {
 					type: TransactionType.MOSAIC_DEFINITION,
 					signerPublicKey: senderPublicKey,
 					signerAddress,
-					mosaicId,
+					tokenId: mosaicId,
 					nonce,
 					divisibility: createOptions.divisibility,
 					duration: createOptions.duration,
@@ -162,7 +162,7 @@ describe('MosaicModule', () => {
 					type: TransactionType.MOSAIC_SUPPLY_CHANGE,
 					signerPublicKey: senderPublicKey,
 					signerAddress,
-					mosaicId,
+					tokenId: mosaicId,
 					action: MosaicSupplyChangeActionMessage[MosaicSupplyChangeAction.Increase],
 					delta: relativeToAbsoluteAmount(createOptions.initialSupply, createOptions.divisibility)
 				}
@@ -237,7 +237,7 @@ describe('MosaicModule', () => {
 					type: TransactionType.MOSAIC_SUPPLY_CHANGE,
 					signerPublicKey: config.sender.publicKey,
 					signerAddress: resolveSenderAddress(config.sender.publicKey),
-					mosaicId: supplyChangeOptions.mosaicId,
+					tokenId: supplyChangeOptions.mosaicId,
 					action: expected.action,
 					delta: relativeToAbsoluteAmount(supplyChangeOptions.delta, supplyChangeOptions.divisibility)
 				};
@@ -289,7 +289,7 @@ describe('MosaicModule', () => {
 					type: TransactionType.MOSAIC_SUPPLY_REVOCATION,
 					signerPublicKey: config.sender.publicKey,
 					signerAddress: resolveSenderAddress(config.sender.publicKey),
-					mosaic: {
+					token: {
 						id: revocationOptions.mosaicId,
 						amount: revocationOptions.amount,
 						divisibility: revocationOptions.divisibility
@@ -323,14 +323,14 @@ describe('MosaicModule', () => {
 		const runFetchAccountMosaicsTest = (description, config, expected) => {
 			it(description, async () => {
 				// Arrange:
-				const accountTokens = Object.values(mosaicInfos);
-				api.mosaic.fetchAccountMosaics.mockResolvedValue(accountTokens);
+				const accountTokens = Object.values(tokenInfos);
+				api.token.fetchCreatedTokens.mockResolvedValue(accountTokens);
 
 				// Act:
 				const result = await mosaicModule.fetchAccountMosaics(config.address, config.searchCriteria);
 
 				// Assert:
-				expect(api.mosaic.fetchAccountMosaics).toHaveBeenCalledWith(
+				expect(api.token.fetchCreatedTokens).toHaveBeenCalledWith(
 					networkProperties,
 					expected.address,
 					config.searchCriteria
@@ -361,14 +361,14 @@ describe('MosaicModule', () => {
 		const runFetchMosaicOwnersTest = (description, config) => {
 			it(description, async () => {
 				// Arrange:
-				api.mosaic.fetchMosaicOwners.mockResolvedValue(mosaicOwners);
+				api.token.fetchTokenOwners.mockResolvedValue(tokenOwners);
 
 				// Act:
 				const result = await mosaicModule.fetchMosaicOwners(token.id, config.searchCriteria);
 
 				// Assert:
-				expect(api.mosaic.fetchMosaicOwners).toHaveBeenCalledWith(networkProperties, token.id, config.searchCriteria);
-				expect(result).toBe(mosaicOwners);
+				expect(api.token.fetchTokenOwners).toHaveBeenCalledWith(networkProperties, token.id, config.searchCriteria);
+				expect(result).toBe(tokenOwners);
 			});
 		};
 
@@ -391,15 +391,15 @@ describe('MosaicModule', () => {
 	describe('fetchMosaicBalance()', () => {
 		it('fetches the held amount of a single account', async () => {
 			// Arrange:
-			const [mosaicOwner] = mosaicOwners;
-			api.mosaic.fetchMosaicBalance.mockResolvedValue(mosaicOwner.amount);
+			const [tokenOwner] = tokenOwners;
+			api.token.fetchTokenBalance.mockResolvedValue(tokenOwner.amount);
 
 			// Act:
-			const result = await mosaicModule.fetchMosaicBalance(token.id, mosaicOwner.address);
+			const result = await mosaicModule.fetchMosaicBalance(token.id, tokenOwner.address);
 
 			// Assert:
-			expect(api.mosaic.fetchMosaicBalance).toHaveBeenCalledWith(networkProperties, token.id, mosaicOwner.address);
-			expect(result).toBe(mosaicOwner.amount);
+			expect(api.token.fetchTokenBalance).toHaveBeenCalledWith(networkProperties, token.id, tokenOwner.address);
+			expect(result).toBe(tokenOwner.amount);
 		});
 	});
 

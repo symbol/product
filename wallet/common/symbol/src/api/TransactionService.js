@@ -12,7 +12,7 @@ import {
 import { ApiError, NotFoundError } from 'wallet-common-core';
 
 /** @typedef {import('../types/Account').PublicAccount} PublicAccount */
-/** @typedef {import('../types/Mosaic').MosaicInfo} MosaicInfo */
+/** @typedef {import('../types/Token').TokenInfo} TokenInfo */
 /** @typedef {import('../types/Network').NetworkProperties} NetworkProperties */
 /** @typedef {import('../types/SearchCriteria').TransactionSearchCriteria} TransactionSearchCriteria */
 /** @typedef {import('../types/Transaction').Transaction} Transaction */
@@ -254,33 +254,33 @@ export class TransactionService {
 	};
 
 	/**
-	 * Resolves addresses, mosaics and namespaces for transaction DTOs.
+	 * Resolves addresses, tokens and namespaces for transaction DTOs.
 	 * @typedef {object} ResolvedTransactionData
-	 * @property {object.<string, MosaicInfo>} mosaicInfos - Resolved mosaic information.
+	 * @property {object.<string, TokenInfo>} tokenInfos - Resolved token information.
 	 * @property {object.<string, string>} namespaceNames - Resolved namespace names.
 	 * @property {object.<string, string>} resolvedAddresses - Resolved addresses.
 	 * 
 	 * @param {NetworkProperties} networkProperties - Network properties.
 	 * @param {object} data - The transaction data, containing unresolved ids.
 	 * @param {string[]} data.addresses - The namespace ids of the unresolved addresses aliases.
-	 * @param {string[]} data.mosaicIds - The ids of the unresolved mosaics.
+	 * @param {string[]} data.tokenIds - The ids of the unresolved tokens.
 	 * @param {string[]} data.namespaceIds - The ids of the unresolved namespaces.
 	 * @returns {Promise<ResolvedTransactionData>} - The resolved data.
 	 */
 	resolveTransactionData = async (networkProperties, data) => {
-		// Resolve addresses, mosaics and namespaces
-		const { addresses, mosaicIds, namespaceIds } = data;
-		const mosaicInfosPromise = this.#api.mosaic.fetchMosaicInfos(networkProperties, mosaicIds);
+		// Resolve addresses, tokens and namespaces
+		const { addresses, tokenIds, namespaceIds } = data;
+		const tokenInfosPromise = this.#api.token.fetchTokenInfos(networkProperties, tokenIds);
 		const namespaceNamesPromise = this.#api.namespace.fetchNamespaceNames(networkProperties, namespaceIds);
 		const resolvedAddressesPromise = this.#api.namespace.resolveAddresses(networkProperties, addresses);
-		const [mosaicInfos, namespaceNames, resolvedAddresses] = await Promise.all([
-			mosaicInfosPromise,
+		const [tokenInfos, namespaceNames, resolvedAddresses] = await Promise.all([
+			tokenInfosPromise,
 			namespaceNamesPromise,
 			resolvedAddressesPromise
 		]);
 
 		return {
-			mosaicInfos,
+			tokenInfos,
 			namespaceNames,
 			resolvedAddresses
 		};

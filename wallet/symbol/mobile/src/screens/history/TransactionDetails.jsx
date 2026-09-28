@@ -69,7 +69,7 @@ export const TransactionDetails = ({ route }) => {
 	const transaction = useDecryptedTransaction(walletController, liveTransaction);
 
 	// Native currency info
-	const nativeCurrencyTokenId = networkProperties?.networkCurrency?.id || networkProperties?.networkCurrency?.mosaicId;
+	const nativeCurrencyTokenId = networkProperties?.networkCurrency?.id;
 
 	// Main details
 	const transactionTypeText = getTransactionTypeText(transaction, currentAccount, chainName);

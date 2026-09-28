@@ -155,7 +155,7 @@ const transferTransaction = TransferTransactionFixtureBuilder
 	.setTimestamp(TRANSACTION_TIMESTAMP)
 	.setSigner(currentAccount)
 	.setRecipientAddress(recipientAccount.address)
-	.setMosaics([tokenXym, tokenCustom])
+	.setTokens([tokenXym, tokenCustom])
 	.setPlainMessage(TRANSFER_MESSAGE_TEXT)
 	.setAmount(`-${TRANSFER_XYM_AMOUNT}`)
 	.build();
@@ -166,7 +166,7 @@ const encryptedTransferTransaction = TransferTransactionFixtureBuilder
 	.setTimestamp(TRANSACTION_TIMESTAMP)
 	.setSigner(currentAccount)
 	.setRecipientAddress(recipientAccount.address)
-	.setMosaics([tokenXym])
+	.setTokens([tokenXym])
 	.setEncryptedMessage(ENCRYPTED_MESSAGE_PAYLOAD)
 	.setAmount(`-${TRANSFER_XYM_AMOUNT}`)
 	.build();
@@ -177,7 +177,7 @@ const innerTransferFromCurrentAccount = TransferTransactionFixtureBuilder
 	.createDefault(CHAIN_NAME, NETWORK_IDENTIFIER)
 	.setSigner(currentAccount)
 	.setRecipientAddress(recipientAccount.address)
-	.setMosaics([tokenXym])
+	.setTokens([tokenXym])
 	.setAmount(`-${TRANSFER_XYM_AMOUNT}`)
 	.build();
 
@@ -185,7 +185,7 @@ const innerTransferFromOtherAccount = TransferTransactionFixtureBuilder
 	.createDefault(CHAIN_NAME, NETWORK_IDENTIFIER)
 	.setSigner(otherSignerAccount)
 	.setRecipientAddress(currentAccount.address)
-	.setMosaics([tokenXym])
+	.setTokens([tokenXym])
 	.setAmount(TRANSFER_XYM_AMOUNT)
 	.build();
 

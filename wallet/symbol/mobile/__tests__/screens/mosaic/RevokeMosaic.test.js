@@ -30,7 +30,7 @@ const SCREEN_TEXT = {
 	textScreenTitle: 'screenTitle_RevokeMosaic',
 	textDescription: 'screen_mosaic_revoke_description_intro',
 	textFromTitle: 'screen_mosaic_revoke_title_from',
-	textMosaicIdTitle: 'fieldTitle_mosaicId',
+	textMosaicIdTitle: 'fieldTitle_tokenId',
 	textDivisibilityTitle: 'fieldTitle_divisibility',
 	textSupplyTitle: 'fieldTitle_supply',
 
@@ -117,7 +117,7 @@ const revocationTransaction = {
 	type: 'mosaicSupplyRevocation',
 	signerAddress: currentAccount.address,
 	sourceAddress: holderAccountA.address,
-	mosaic: { id: TOKEN_ID, amount: VALID_AMOUNT },
+	token: { id: TOKEN_ID, amount: VALID_AMOUNT },
 	fee: { token: { amount: '0.1' } }
 };
 
@@ -149,8 +149,8 @@ const setupMocks = (overrides = {}) => {
 			[NETWORK_IDENTIFIER]: walletAccounts
 		},
 		networkApi: {
-			mosaic: {
-				fetchMosaicInfo: jest.fn().mockResolvedValue(overrides.token ?? tokenInfo)
+			token: {
+				fetchTokenInfo: jest.fn().mockResolvedValue(overrides.token ?? tokenInfo)
 			}
 		},
 		signTransactionBundle: jest.fn().mockResolvedValue(signedTransactionBundle),

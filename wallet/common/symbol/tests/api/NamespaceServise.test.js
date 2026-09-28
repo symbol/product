@@ -1,12 +1,12 @@
 import { NamespaceService } from '../../src/api/NamespaceService';
 import { createSearchUrl } from '../../src/utils';
-import { mosaicNamesResponse } from '../__fixtures__/api/mosaic-names-response';
 import { namespaceInfoWithAddressAliasResponse, namespaceInfoWithMosaicAliasResponse } from '../__fixtures__/api/namespace-info-response';
 import { namespaceNamesResponse } from '../__fixtures__/api/namespace-names-response';
 import { statementsResolutionAddressResponse } from '../__fixtures__/api/statements-resolution-address-response';
-import { mosaicNames } from '../__fixtures__/local/mosaic';
+import { tokenNamesResponse } from '../__fixtures__/api/token-names-response';
 import { namespaceInfoWithAddressAlias, namespaceInfoWithMosaicAlias, namespaceNames } from '../__fixtures__/local/namespace';
 import { networkProperties } from '../__fixtures__/local/network';
+import { tokenNames } from '../__fixtures__/local/token';
 import { describe, expect, jest } from '@jest/globals';
 import { ApiError } from 'wallet-common-core';
 
@@ -44,12 +44,12 @@ describe('NamespaceService', () => {
 		});
 	});
 
-	describe('fetchMosaicNames', () => {
+	describe('fetchTokenNames', () => {
 		it('fetches mosaic names for a given list of mosaic ids', async () => {
 			// Arrange:
-			const mosaicIds = Object.keys(mosaicNames);
-			mockMakeRequest.mockResolvedValueOnce(mosaicNamesResponse);
-			const expectedResult = mosaicNames;
+			const mosaicIds = Object.keys(tokenNames);
+			mockMakeRequest.mockResolvedValueOnce(tokenNamesResponse);
+			const expectedResult = tokenNames;
 			const expectedRequestConfig = {
 				method: 'POST',
 				body: JSON.stringify({
@@ -61,7 +61,7 @@ describe('NamespaceService', () => {
 			};
 
 			// Act:
-			const result = await namespaceService.fetchMosaicNames(networkProperties, mosaicIds);
+			const result = await namespaceService.fetchTokenNames(networkProperties, mosaicIds);
 
 			// Assert:
 			expect(mockMakeRequest).toHaveBeenCalledWith(`${networkProperties.nodeUrl}/namespaces/mosaic/names`, expectedRequestConfig);

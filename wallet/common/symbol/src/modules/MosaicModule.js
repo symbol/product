@@ -18,8 +18,8 @@ import {
 import { TransactionBundle, relativeToAbsoluteAmount } from 'wallet-common-core';
 
 /** @typedef {import('../types/Transaction').Transaction} Transaction */
-/** @typedef {import('../types/Mosaic').MosaicInfo} MosaicInfo */
-/** @typedef {import('../types/Mosaic').MosaicOwner} MosaicOwner */
+/** @typedef {import('../types/Token').TokenInfo} TokenInfo */
+/** @typedef {import('../types/Token').TokenOwner} TokenOwner */
 /** @typedef {import('../types/Network').TransactionFees} TransactionFees */
 /** @typedef {import('../types/SearchCriteria').SearchCriteria} SearchCriteria */
 
@@ -68,7 +68,7 @@ export class MosaicModule {
 			type: TransactionType.MOSAIC_DEFINITION,
 			signerPublicKey: senderPublicKey,
 			signerAddress: senderAddress,
-			mosaicId,
+			tokenId: mosaicId,
 			nonce,
 			divisibility,
 			duration,
@@ -82,7 +82,7 @@ export class MosaicModule {
 			type: TransactionType.MOSAIC_SUPPLY_CHANGE,
 			signerPublicKey: senderPublicKey,
 			signerAddress: senderAddress,
-			mosaicId,
+			tokenId: mosaicId,
 			action: MosaicSupplyChangeActionMessage[MosaicSupplyChangeAction.Increase],
 			delta: relativeToAbsoluteAmount(initialSupply, divisibility)
 		};
@@ -114,7 +114,7 @@ export class MosaicModule {
 			type: TransactionType.MOSAIC_SUPPLY_CHANGE,
 			signerPublicKey: senderPublicKey,
 			signerAddress: senderAddress,
-			mosaicId,
+			tokenId: mosaicId,
 			action: MosaicSupplyChangeActionMessage[action],
 			delta: relativeToAbsoluteAmount(delta, divisibility)
 		};
@@ -144,7 +144,7 @@ export class MosaicModule {
 			type: TransactionType.MOSAIC_SUPPLY_REVOCATION,
 			signerPublicKey: senderPublicKey,
 			signerAddress: senderAddress,
-			mosaic: {
+			token: {
 				id: mosaicId,
 				amount,
 				divisibility
@@ -162,25 +162,25 @@ export class MosaicModule {
 	 * Fetches the list of mosaics created by the current account or a given account.
 	 * @param {string} [address] - The creator address. Defaults to the current account.
 	 * @param {SearchCriteria} [searchCriteria] - Pagination params.
-	 * @returns {Promise<MosaicInfo[]>} The created mosaics.
+	 * @returns {Promise<TokenInfo[]>} The created mosaics.
 	 */
 	fetchAccountMosaics = async (address, searchCriteria) => {
 		const { currentAccount, networkProperties } = this.#walletController;
 		const targetAddress = address ?? currentAccount.address;
 
-		return this.#api.mosaic.fetchAccountMosaics(networkProperties, targetAddress, searchCriteria);
+		return this.#api.token.fetchCreatedTokens(networkProperties, targetAddress, searchCriteria);
 	};
 
 	/**
 	 * Fetches the list of accounts holding a given mosaic.
 	 * @param {string} mosaicId - The mosaic id.
 	 * @param {SearchCriteria} [searchCriteria] - Pagination params.
-	 * @returns {Promise<MosaicOwner[]>} The mosaic owners with their held amounts in relative units.
+	 * @returns {Promise<TokenOwner[]>} The mosaic owners with their held amounts in relative units.
 	 */
 	fetchMosaicOwners = async (mosaicId, searchCriteria) => {
 		const { networkProperties } = this.#walletController;
 
-		return this.#api.mosaic.fetchMosaicOwners(networkProperties, mosaicId, searchCriteria);
+		return this.#api.token.fetchTokenOwners(networkProperties, mosaicId, searchCriteria);
 	};
 
 	/**
@@ -192,7 +192,7 @@ export class MosaicModule {
 	fetchMosaicBalance = async (mosaicId, address) => {
 		const { networkProperties } = this.#walletController;
 
-		return this.#api.mosaic.fetchMosaicBalance(networkProperties, mosaicId, address);
+		return this.#api.token.fetchTokenBalance(networkProperties, mosaicId, address);
 	};
 
 	/**

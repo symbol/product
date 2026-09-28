@@ -249,17 +249,6 @@ describe('screens/bridge/utils/bridge-pairs', () => {
 					}
 				},
 				{
-					description: 'falls back to the account mosaics when tokens are absent',
-					config: {
-						sourceAccountInfo: { mosaics: [{ id: TokenId.NATIVE, amount: BalanceValue.NATIVE }] },
-						targetAccountInfo: { mosaics: [{ id: TokenId.WRAPPED, amount: BalanceValue.WRAPPED }] }
-					},
-					expected: {
-						sourceAmount: BalanceValue.NATIVE,
-						targetAmount: BalanceValue.WRAPPED
-					}
-				},
-				{
 					description: 'uses a zero balance when the account holds no matching token',
 					config: {
 						sourceAccountInfo: { tokens: [] },

@@ -62,7 +62,7 @@ export const MultisigAccountDetails = ({ route }) => {
 	const accountNameText = getAccountNameText(accountDisplayData.name);
 
 	// Tokens
-	const tokens = data?.tokens || data?.mosaics || [];
+	const tokens = data?.tokens || [];
 	const tokensDisplayData = tokens.map(token => createTokenDisplayData(token, chainName, networkIdentifier));
 
 	// Send/Receive buttons

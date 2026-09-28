@@ -175,12 +175,12 @@ const fetchedTokenInfo = {
 
 const createAccountInfoWithToken = token => AccountInfoFixtureBuilder
 	.createWithAccount(CHAIN_NAME, NETWORK_IDENTIFIER, 0)
-	.setMosaics([token])
+	.setTokens([token])
 	.build();
 
 const accountInfoWithoutToken = AccountInfoFixtureBuilder
 	.createWithAccount(CHAIN_NAME, NETWORK_IDENTIFIER, 0)
-	.setMosaics([])
+	.setTokens([])
 	.build();
 
 // Route Props Factory
@@ -264,7 +264,7 @@ describe('screens/assets/TokenDetails', () => {
 					: accountInfoWithoutToken;
 				const networkApi = {
 					account: { fetchAccountInfo: jest.fn().mockResolvedValue(accountInfo) },
-					mosaic: { fetchMosaicInfo: jest.fn().mockResolvedValue(config.fetchedTokenInfo) }
+					token: { fetchTokenInfo: jest.fn().mockResolvedValue(config.fetchedTokenInfo) }
 				};
 				mockWalletController(createWalletControllerConfig(accountInfo, networkPropertiesActive, networkApi));
 
@@ -277,9 +277,9 @@ describe('screens/assets/TokenDetails', () => {
 				expect(networkApi.account.fetchAccountInfo).toHaveBeenCalledWith(networkPropertiesActive, currentAccount.address);
 
 				if (expected.isTokenInfoFetched)
-					expect(networkApi.mosaic.fetchMosaicInfo).toHaveBeenCalledWith(networkPropertiesActive, TOKEN_ID);
+					expect(networkApi.token.fetchTokenInfo).toHaveBeenCalledWith(networkPropertiesActive, TOKEN_ID);
 				else
-					expect(networkApi.mosaic.fetchMosaicInfo).not.toHaveBeenCalled();
+					expect(networkApi.token.fetchTokenInfo).not.toHaveBeenCalled();
 
 				if (expected.textsRendered?.length)
 					screenTester.expectText(expected.textsRendered);
