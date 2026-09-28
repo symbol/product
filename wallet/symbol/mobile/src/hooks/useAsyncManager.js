@@ -1,4 +1,3 @@
-/* eslint-disable valid-jsdoc */
 import { showError } from '@/app/utils';
 import { useRef, useState } from 'react';
 

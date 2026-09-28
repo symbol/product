@@ -3,7 +3,6 @@ import { termsAndPrivacy } from '@/app/config';
 import { useToggle } from '@/app/hooks';
 import { $t } from '@/app/localization';
 import { Router } from '@/app/router/Router';
-import React from 'react';
 
 export const Welcome = () => {
 	const [isTermsAndPrivacyShown, toggleTermsAndPrivacy] = useToggle(true);

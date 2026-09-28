@@ -2,7 +2,7 @@ import { Checkbox, MnemonicView, PasscodeView, Screen, Spacer, Stack, StyledText
 import { useAsyncManager, usePasscode, useWalletController } from '@/app/hooks';
 import { passcodeManager } from '@/app/lib/passcode';
 import { $t } from '@/app/localization';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 /**
  * SettingsSecurity screen component. A screen for managing security settings, allowing users to

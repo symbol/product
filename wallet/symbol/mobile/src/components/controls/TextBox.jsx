@@ -50,7 +50,7 @@ export const TextBox = props => {
 	const {
 		animateIn,
 		animateOut,
-		createAnimatedStyles
+		useAnimatedStyles
 	} = useDualColorTransition({
 		primaryPalette,
 		secondaryPalette,
@@ -58,14 +58,14 @@ export const TextBox = props => {
 		isDisabled,
 		isSecondaryActive: isError
 	});
-	const animatedContainer = createAnimatedStyles([
+	const animatedContainer = useAnimatedStyles([
 		{ property: 'background', styleProperty: 'backgroundColor' },
 		{ property: 'border', styleProperty: 'borderColor' }
 	]);
-	const animatedLabel = createAnimatedStyles([
+	const animatedLabel = useAnimatedStyles([
 		{ property: 'label', styleProperty: 'color' }
 	]);
-	const animatedText = createAnimatedStyles([
+	const animatedText = useAnimatedStyles([
 		{ property: 'text', styleProperty: 'color' }
 	]);
 	const styleInput = [styles.input, multiline && styles.inputMultiline];

@@ -5,7 +5,6 @@ import { usePasscode, useToggle, useWalletController } from '@/app/hooks';
 import { walletControllers } from '@/app/lib/controller';
 import { $t, getLanguages, initLocalization, setCurrentLanguage } from '@/app/localization';
 import { Router } from '@/app/router/Router';
-import React from 'react';
 
 /**
  * Settings screen component. A screen providing access to application settings including network

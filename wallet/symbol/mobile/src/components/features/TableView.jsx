@@ -155,7 +155,7 @@ const renderRowValue = (row, accountsDisplayMap, tokensDisplayMap, translate, ch
 		return <StyledText key={key}>{translate(`fieldValue_${row.value}`)}</StyledText>;
 	case 'text':
 	default:
-		return <StyledText key={key}>{`${row.value}` ?? '-'}</StyledText>;
+		return <StyledText key={key}>{`${row.value ?? '-'}`}</StyledText>;
 	}
 };
 

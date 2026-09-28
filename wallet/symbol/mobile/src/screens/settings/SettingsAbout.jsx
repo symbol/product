@@ -2,7 +2,6 @@ import { SocialBadges } from './components/SocialBadges';
 import packageJSON from '../../../package.json';
 import { Card, Screen, Spacer, Stack, StyledText, TableView } from '@/app/components';
 import { $t } from '@/app/localization';
-import React from 'react';
 
 /**
  * SettingsAbout screen component. A screen displaying application version information, dependency

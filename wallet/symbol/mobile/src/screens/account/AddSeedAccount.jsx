@@ -5,7 +5,7 @@ import { useValidation, useWalletController } from '@/app/hooks';
 import { $t } from '@/app/localization';
 import { Router } from '@/app/router/Router';
 import { validateAccountName } from '@/app/utils';
-import React, { useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 
 const DEFAULT_BALANCE_PLACEHOLDER = '..';
 

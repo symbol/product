@@ -6,7 +6,7 @@ import { HookTester } from '__tests__/HookTester';
 import { runHookContractTest } from '__tests__/hook-tests';
 import { createWalletControllerMock } from '__tests__/mock-helpers';
 import { act } from '@testing-library/react-native';
-import { TransactionBundle } from 'wallet-common-core'; // eslint-disable-line import/order
+import { TransactionBundle } from 'wallet-common-core';
 
 // Constants
 
