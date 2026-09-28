@@ -1,4 +1,3 @@
-from threading import Event, Thread
 from unittest import TestCase
 
 from common.symbol.NativeMosaic import NativeMosaicInfo
@@ -9,45 +8,19 @@ from puller.db.SymbolDatabase import SymbolDatabase as PullerSymbolDatabase
 from rest.db.SymbolDatabase import ReceiptQuery, SortOrder, SymbolDatabase, SymbolDataUnavailable
 
 from ..test.SymbolBlockTestUtils import create_symbol_block, create_symbol_importance_block, create_symbol_receipt, create_symbol_sync_state
-
-
-class PausingAfterSyncStateReadSymbolDatabase(SymbolDatabase):
-	def __init__(self, db_config):
-		super().__init__(db_config)
-		self.state_read_event = Event()
-		self.allow_block_read_event = Event()
-
-	def _fetch_sync_state(self, cursor):  # pylint: disable=arguments-differ
-		sync_state = super()._fetch_sync_state(cursor)
-		self.state_read_event.set()
-		# Pause after the sync-state SELECT so another connection can update and commit state and reward.
-		if not self.allow_block_read_event.wait(timeout=5):
-			raise RuntimeError('Timed out waiting for snapshot interleaving')
-		return sync_state
-
+from ..test.SymbolDatabaseTestUtils import (
+	PausingAfterSyncStateReadSymbolDatabase,
+	create_safe_repairing_sync_state,
+	group_records_by_height,
+	initialize_symbol_database,
+	read_during_database_snapshot,
+	symbol_test_database
+)
+from ..test.SymbolMosaicTestUtils import create_symbol_mosaic
 
 NATIVE_MOSAIC_INFO = NativeMosaicInfo('72C0212E67A08BCE', 6)
 TARGET_ADDRESS = bytes.fromhex('98534F7E1D0A26CA4E316F901E23E55C8701DB20DF11A7B2')
 SENDER_ADDRESS = bytes.fromhex('9889432DE263BB8FE88444A4DA28D3609BD8BB8FAE18AE95')
-
-
-def _create_mosaic(mosaic_id, divisibility):
-	return {
-		'mosaic_id': mosaic_id,
-		'owner_address': SENDER_ADDRESS,
-		'start_height': 1,
-		'duration': 0,
-		'expiration_height': None,
-		'supply': 1,
-		'divisibility': divisibility,
-		'flags': 0,
-		'supply_mutable': False,
-		'transferable': False,
-		'restrictable': False,
-		'revokable': False,
-		'raw_payload': {'id': mosaic_id},
-		'updated_at_height': 1
-	}
 
 
 class SymbolDatabaseConnectionTest(TestCase):
@@ -211,10 +184,10 @@ class SymbolDatabaseBlocksTest(TestCase):  # pylint: disable=too-many-public-met
 		# Arrange:
 		with PostgresTestDatabase() as db_config:
 			with PullerSymbolDatabase(db_config) as puller_database:
-				drop_symbol_block_tables_if_present(puller_database)
-				puller_database.create_tables()
-				puller_database.upsert_sync_state(create_symbol_sync_state(last_synced_height=1, finalized_height=1))
-				puller_database.upsert_blocks([create_symbol_block(1)])
+				initialize_symbol_database(
+					puller_database,
+					create_symbol_sync_state(last_synced_height=1, finalized_height=1),
+					[create_symbol_block(1)])
 				database = SymbolDatabase(db_config)
 				cursor = puller_database.connection.cursor()
 				cursor.execute('ALTER TABLE symbol_blocks RENAME COLUMN block_reward TO block_reward_for_test')
@@ -470,10 +443,10 @@ class SymbolDatabaseReceiptsTest(TestCase):  # pylint: disable=too-many-public-m
 		with PostgresTestDatabase() as db_config:
 			with PullerSymbolDatabase(db_config) as puller_database:
 				try:
-					drop_symbol_block_tables_if_present(puller_database)
-					puller_database.create_tables()
-					puller_database.upsert_sync_state(create_symbol_sync_state(last_synced_height=3, finalized_height=2))
-					puller_database.upsert_blocks([create_symbol_block(3), create_symbol_block(2)])
+					initialize_symbol_database(
+						puller_database,
+						create_symbol_sync_state(last_synced_height=3, finalized_height=2),
+						[create_symbol_block(3), create_symbol_block(2)])
 					puller_database.upsert_receipts_for_height(
 						3,
 						[
@@ -664,7 +637,7 @@ class SymbolDatabaseReceiptsTest(TestCase):  # pylint: disable=too-many-public-m
 			receipts,
 			create_symbol_sync_state(last_synced_height=2, finalized_height=2),
 			ReceiptQuery(),
-			mosaics=[_create_mosaic('1234567890ABCDEF', 2)])
+			mosaics=[create_symbol_mosaic('1234567890ABCDEF', 2)])
 
 		# Assert:
 		self.assertEqual([2, 1], [receipt.height for receipt in result])
@@ -738,11 +711,7 @@ class SymbolDatabaseReceiptsTest(TestCase):  # pylint: disable=too-many-public-m
 		# Act:
 		result = _query_symbol_receipts(
 			receipts,
-			create_symbol_sync_state(
-				last_synced_height=2,
-				finalized_height=1,
-				status='repairing',
-				dirty_state_from_height=3),
+			create_safe_repairing_sync_state(),
 			ReceiptQuery())
 
 		# Assert:
@@ -781,7 +750,7 @@ class SymbolDatabaseReceiptsTest(TestCase):  # pylint: disable=too-many-public-m
 				receipts,
 				create_symbol_sync_state(last_synced_height=2, finalized_height=1, dirty_state_from_height=3),
 				ReceiptQuery(),
-				mosaics=[_create_mosaic('1234567890ABCDEF', 2)])
+				mosaics=[create_symbol_mosaic('1234567890ABCDEF', 2)])
 
 	def test_get_receipts_rejects_unhealthy_sync_state(self):
 		# Arrange + Act + Assert:
@@ -800,10 +769,10 @@ class SymbolDatabaseReceiptsTest(TestCase):  # pylint: disable=too-many-public-m
 		# Arrange:
 		with PostgresTestDatabase() as db_config:
 			with PullerSymbolDatabase(db_config) as puller_database:
-				drop_symbol_block_tables_if_present(puller_database)
-				puller_database.create_tables()
-				puller_database.upsert_sync_state(create_symbol_sync_state(last_synced_height=1, finalized_height=1))
-				puller_database.upsert_blocks([create_symbol_block(1)])
+				initialize_symbol_database(
+					puller_database,
+					create_symbol_sync_state(last_synced_height=1, finalized_height=1),
+					[create_symbol_block(1)])
 				puller_database.upsert_receipts_for_height(1, [create_symbol_receipt(1)], 0)
 				database = SymbolDatabase(db_config, NATIVE_MOSAIC_INFO)
 				cursor = puller_database.connection.cursor()
@@ -861,88 +830,38 @@ def _get_block(blocks, sync_state, height):
 
 
 def _query_symbol_receipts(receipts, sync_state, query, mosaics=None):
-	heights = sorted({receipt['height'] for receipt in receipts})
-	with PostgresTestDatabase() as db_config:
-		with PullerSymbolDatabase(db_config) as puller_database:
-			try:
-				drop_symbol_block_tables_if_present(puller_database)
-				puller_database.create_tables()
-				if sync_state:
-					puller_database.upsert_sync_state(sync_state)
-				puller_database.upsert_blocks([create_symbol_block(height) for height in heights])
-				for mosaic in mosaics or []:
-					puller_database.upsert_mosaic(mosaic)
-				for height in heights:
-					height_receipts = [receipt for receipt in receipts if receipt['height'] == height]
-					puller_database.upsert_receipts_for_height(height, height_receipts, 0)
+	receipts_by_height = group_records_by_height(receipts)
+	heights = sorted(receipts_by_height)
+	with symbol_test_database(
+		sync_state,
+		[create_symbol_block(height) for height in heights],
+		mosaics or []) as (db_config, puller_database):
+		for height, height_receipts in receipts_by_height.items():
+			puller_database.upsert_receipts_for_height(height, height_receipts, 0)
 
-				database = SymbolDatabase(db_config, NATIVE_MOSAIC_INFO)
-				try:
-					return database.get_receipts(query)
-				finally:
-					database.close()
-			finally:
-				drop_symbol_block_tables_if_present(puller_database)
+		with SymbolDatabase(db_config, NATIVE_MOSAIC_INFO) as database:
+			return database.get_receipts(query)
 
 
 def _query_symbol_database(blocks, sync_state, query_database):
-	with PostgresTestDatabase() as db_config:
-		with PullerSymbolDatabase(db_config) as puller_database:
-			try:
-				drop_symbol_block_tables_if_present(puller_database)
-				puller_database.create_tables()
-				if sync_state:
-					puller_database.upsert_sync_state(sync_state)
-				puller_database.upsert_blocks(blocks)
-
-				database = SymbolDatabase(db_config)
-				try:
-					return query_database(database)
-				finally:
-					database.close()
-			finally:
-				drop_symbol_block_tables_if_present(puller_database)
+	with symbol_test_database(sync_state, blocks) as (db_config, _puller_database):
+		with SymbolDatabase(db_config) as database:
+			return query_database(database)
 
 
 def _query_symbol_database_during_update(query_database):
-	with PostgresTestDatabase() as db_config:
-		with PullerSymbolDatabase(db_config) as puller_database:
-			try:
-				drop_symbol_block_tables_if_present(puller_database)
-				puller_database.create_tables()
-				puller_database.upsert_sync_state(create_symbol_sync_state(last_synced_height=1, finalized_height=1))
-				puller_database.upsert_blocks([create_symbol_block(1)])
-				puller_database.upsert_receipts_for_height(1, [create_symbol_receipt(1, amount=100)], 100)
-
-				database = PausingAfterSyncStateReadSymbolDatabase(db_config)
-				result = []
-				errors = []
-
-				def read_database():
-					try:
-						result.append(query_database(database))
-					except Exception as error:  # pylint: disable=broad-exception-caught
-						errors.append(error)
-
-				reader_thread = Thread(target=read_database)
-				reader_thread.start()
-				try:
-					if not database.state_read_event.wait(timeout=5):
-						raise AssertionError('Reader did not fetch sync state')
-					# A separate connection updates sync status and reward, then commits before block reading resumes.
-					_update_state_and_blocks(db_config)
-				finally:
-					database.allow_block_read_event.set()
-					reader_thread.join(timeout=5)
-
-				if reader_thread.is_alive():
-					raise AssertionError('Reader did not finish')
-				if errors:
-					raise errors[0]
-				return result[0]
-			finally:
-				database.close()
-				drop_symbol_block_tables_if_present(puller_database)
+	with symbol_test_database(
+		create_symbol_sync_state(last_synced_height=1, finalized_height=1),
+		[create_symbol_block(1)]) as (db_config, puller_database):
+		puller_database.upsert_receipts_for_height(1, [create_symbol_receipt(1, amount=100)], 100)
+		database = PausingAfterSyncStateReadSymbolDatabase(db_config)
+		try:
+			return read_during_database_snapshot(
+				database,
+				lambda: query_database(database),
+				lambda: _update_state_and_blocks(db_config))
+		finally:
+			database.close()
 
 
 def _update_state_and_blocks(db_config):

@@ -3,6 +3,7 @@ from psycopg2 import Error as PsycopgError
 from zenlog import log
 
 from rest.model.symbol.Receipt import SymbolReceiptView
+from rest.model.symbol.Transaction import SymbolTransactionView
 
 DATABASE_UNAVAILABLE_MESSAGE = 'Symbol database is unavailable'
 
@@ -111,3 +112,9 @@ class SymbolRestFacade:
 			return None
 
 		return [SymbolReceiptView(**receipt._asdict()).to_dict(self.native_mosaic_info) for receipt in receipts]
+
+	def get_transactions(self, query):
+		"""Gets a confirmed transaction page."""
+
+		transactions = self.symbol_db.get_transactions(query)
+		return [SymbolTransactionView(transaction).to_dict(self.native_mosaic_info) for transaction in transactions]

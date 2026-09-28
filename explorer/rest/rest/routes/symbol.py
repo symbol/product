@@ -1,4 +1,5 @@
 import configparser
+import re
 from pathlib import Path
 
 from common.symbol.NativeMosaic import create_native_mosaic_info
@@ -6,10 +7,13 @@ from common.symbol.NodeConfiguration import SymbolNodeConfiguration
 from common.symbol.ReceiptTypes import RECEIPT_GROUP_LABELS, RECEIPT_TYPE_GROUPS, RECEIPT_TYPE_LABELS
 from flask import abort, jsonify, request
 from psycopg2 import Error as PsycopgError
+from symbolchain.CryptoTypes import PublicKey
+from symbolchain.sc import TransactionType
+from symbolchain.symbol.IdGenerator import is_mosaic_alias
 from symbolchain.symbol.Network import Address, Network
 from zenlog import log
 
-from rest.db.SymbolDatabase import ReceiptQuery, SortOrder, SymbolDatabase, SymbolDataUnavailable
+from rest.db.SymbolDatabase import ReceiptQuery, SortOrder, SymbolDatabase, SymbolDataUnavailable, TransactionQuery
 from rest.facade.SymbolRestFacade import SymbolRestFacade
 from rest.model.common import DatabaseConfig
 
@@ -18,7 +22,14 @@ RECEIPT_QUERY_PARAMETERS = frozenset([
 	'limit', 'offset', 'group', 'receiptType', 'includedReceiptTypes', 'targetAddress', 'senderAddress'
 ])
 BLOCK_RECEIPT_QUERY_PARAMETERS = frozenset(['limit', 'offset'])
+TRANSACTION_QUERY_PARAMETERS = frozenset([
+	'limit', 'offset', 'height', 'type', 'address', 'signerPublicKey', 'recipientAddress', 'transferMosaicId', 'embedded', 'order'
+])
 RECEIPT_MAX_OFFSET = 100000
+TRANSACTION_MAX_OFFSET = 100000
+MAX_TRANSACTION_HEIGHT = 9223372036854775807
+SYMBOL_TRANSACTION_TYPE_CODES = frozenset(transaction_type.value for transaction_type in TransactionType)
+MOSAIC_ID_PATTERN = re.compile(r'[0-9A-Fa-f]{16}', re.ASCII)
 XYM_DIVISIBILITY = 6
 
 
@@ -128,6 +139,8 @@ def setup_symbol_routes(app, symbol_api_facade):
 
 		return jsonify(result)
 
+	_setup_symbol_transactions_route(app, symbol_api_facade, _run_symbol_query)
+
 	@app.route('/api/symbol/block/<height>/receipts')
 	def api_get_symbol_block_receipts(height):
 		try:
@@ -145,6 +158,24 @@ def setup_symbol_routes(app, symbol_api_facade):
 
 		if result is None:
 			abort(404)
+
+		return jsonify(result)
+
+
+def _setup_symbol_transactions_route(app, symbol_api_facade, run_symbol_query):
+	@app.route('/api/symbol/transactions')
+	def api_get_symbol_transactions():
+		try:
+			_validate_allowed_query_parameters(TRANSACTION_QUERY_PARAMETERS)
+			query = _parse_transaction_query()
+		except ValueError as error:
+			abort(400, error)
+
+		error, result = run_symbol_query(
+			lambda: symbol_api_facade.get_transactions(query),
+			'Failed to get Symbol transactions')
+		if error:
+			return error
 
 		return jsonify(result)
 
@@ -194,6 +225,88 @@ def _parse_receipt_query(height=None):
 		included_receipt_types=tuple(RECEIPT_TYPE_LABELS[value] for value in included_receipt_types),
 		target_address=_parse_address('targetAddress'),
 		sender_address=_parse_address('senderAddress'))
+
+
+def _parse_transaction_query():
+	limit = _parse_bounded_integer('limit', _get_scalar_parameter('limit', '10'), 1, 100)
+	offset = _parse_bounded_integer('offset', _get_scalar_parameter('offset', '0'), 0, TRANSACTION_MAX_OFFSET)
+	height_arg = _get_scalar_parameter('height')
+	height = _parse_bounded_integer('height', height_arg, 1, MAX_TRANSACTION_HEIGHT) if height_arg is not None else None
+	types = tuple(_parse_transaction_type(value) for value in request.args.getlist('type'))
+	address = _parse_address('address')
+	signer_public_key = _parse_public_key('signerPublicKey')
+	recipient_address = _parse_address('recipientAddress')
+	if address is not None and (signer_public_key is not None or recipient_address is not None):
+		raise ValueError('address cannot be combined with signerPublicKey or recipientAddress')
+
+	transfer_mosaic_id = _parse_transfer_mosaic_id(_get_scalar_parameter('transferMosaicId'))
+	embedded = _parse_embedded(_get_scalar_parameter('embedded'))
+	order_value = _get_scalar_parameter('order', 'DESC').upper()
+	if order_value != SortOrder.DESC.value:
+		raise ValueError('order must be DESC')
+
+	return TransactionQuery(
+		limit=limit,
+		offset=offset,
+		height=height,
+		transaction_types=types,
+		address=address,
+		signer_public_key=signer_public_key,
+		recipient_address=recipient_address,
+		transfer_mosaic_id=transfer_mosaic_id,
+		include_embedded=embedded,
+		order=SortOrder.DESC)
+
+
+def _parse_transaction_type(value):
+	try:
+		transaction_type = int(value)
+	except (TypeError, ValueError) as error:
+		raise ValueError('type must be an integer') from error
+
+	if transaction_type not in SYMBOL_TRANSACTION_TYPE_CODES:
+		raise ValueError('Unsupported transaction type')
+
+	return transaction_type
+
+
+def _parse_public_key(name):
+	value = _get_scalar_parameter(name)
+	if value is None:
+		return None
+
+	try:
+		return PublicKey(value).bytes
+	except ValueError as error:
+		raise ValueError(f'Invalid {name}') from error
+
+
+def _parse_transfer_mosaic_id(value):
+	if value is None:
+		return None
+
+	if not MOSAIC_ID_PATTERN.fullmatch(value):
+		raise ValueError('Invalid transferMosaicId')
+
+	normalized_mosaic_id = value.upper()
+	if is_mosaic_alias(int(normalized_mosaic_id, 16)):
+		raise ValueError('transferMosaicId must be a mosaic id, not an alias id')
+
+	return normalized_mosaic_id
+
+
+def _parse_embedded(value):
+	if value is None:
+		return False
+
+	normalized_value = value.lower()
+	if normalized_value == 'true':
+		return True
+
+	if normalized_value == 'false':
+		return False
+
+	raise ValueError('embedded must be true or false')
 
 
 def _get_scalar_parameter(name, default=None):

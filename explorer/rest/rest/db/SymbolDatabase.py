@@ -70,6 +70,20 @@ class SortOrder(str, Enum):
 	DESC = 'DESC'
 
 
+TransactionQuery = namedtuple(
+	'TransactionQuery',
+	['limit', 'offset', 'height', 'transaction_types', 'address', 'signer_public_key', 'recipient_address',
+		'transfer_mosaic_id', 'include_embedded', 'order'],
+	defaults=(10, 0, None, (), None, None, None, None, False, SortOrder.DESC))
+TransactionMosaicRecord = namedtuple(
+	'TransactionMosaicRecord',
+	['mosaic_id', 'amount', 'role', 'position', 'divisibility', 'alias_names'])
+TransactionRecord = namedtuple(
+	'TransactionRecord',
+	['transaction_id', 'hash', 'is_embedded', 'aggregate_hash', 'embedded_index', 'height', 'transaction_type',
+		'signer_address', 'recipient_address', 'effective_fee', 'timestamp', 'message_type', 'message_payload', 'mosaics'])
+
+
 def _bytes_or_none(value):
 	return bytes(value) if value else None
 
@@ -100,8 +114,8 @@ def _is_non_public_state(sync_state):
 	return sync_state['status'] == 'repairing' or sync_state['dirty_state_from_height'] is not None
 
 
-def _is_generic_receipt_range_unavailable(sync_state):
-	"""Returns whether an unbounded receipt query can have an unsafe page boundary."""
+def _is_generic_page_range_unavailable(sync_state):
+	"""Returns whether an unbounded page query can have an unsafe boundary."""
 
 	dirty_state_from_height = sync_state['dirty_state_from_height']
 	if dirty_state_from_height is None:
@@ -257,7 +271,7 @@ class SymbolDatabase(DatabaseConnectionPool):
 				if any(receipt.height > readable_height for receipt in results):
 					raise SymbolDataUnavailable(
 						'Symbol receipt data is unavailable: returned receipt row is above the readable height')
-				if query.height is None and _is_generic_receipt_range_unavailable(sync_state):
+				if query.height is None and _is_generic_page_range_unavailable(sync_state):
 					raise SymbolDataUnavailable(
 						'Symbol receipt data is unavailable: unbounded receipt query range is unsafe')
 				if _is_non_public_state(sync_state) and self._requires_current_receipt_metadata(results):
@@ -278,6 +292,171 @@ class SymbolDatabase(DatabaseConnectionPool):
 			return True
 
 		return False
+
+	def get_transactions(self, query):  # pylint: disable=too-many-branches
+		"""Gets a confirmed transaction page and its display relations from one database snapshot."""
+
+		if SortOrder.DESC != query.order:
+			raise ValueError('Transaction order must be DESC')
+
+		with self.connection() as connection:
+			with connection.cursor() as cursor:
+				self._start_read_transaction(cursor)
+				sync_state = self._fetch_sync_state(cursor)
+				readable_height = _get_readable_height(sync_state)
+				if readable_height is None:
+					raise SymbolDataUnavailable('Symbol transaction data is unavailable: sync state is unreadable')
+
+				transaction_rows = self._fetch_transaction_rows(cursor, query, sync_state, readable_height)
+				if not transaction_rows:
+					return []
+
+				return self._fetch_transaction_records(cursor, transaction_rows, sync_state)
+
+	@staticmethod
+	def _fetch_transaction_rows(cursor, query, sync_state, readable_height):
+		if query.height is not None and query.height > readable_height:
+			if _is_non_public_state(sync_state):
+				raise SymbolDataUnavailable(
+					'Symbol transaction data is unavailable: requested height is above the readable height '
+					'in dirty or repairing state')
+
+			return []
+
+		if query.height is None and _is_generic_page_range_unavailable(sync_state):
+			raise SymbolDataUnavailable(
+				'Symbol transaction data is unavailable: generic transaction page crosses an unsafe boundary')
+
+		where_clauses, parameters = SymbolDatabase._create_transaction_filter(query)
+		cursor.execute(
+			f'''
+			SELECT
+				transactions.id,
+				transactions.hash,
+				transactions.is_embedded,
+				transactions.aggregate_hash,
+				transactions.embedded_index,
+				transactions.height,
+				transactions.type,
+				transactions.signer_address,
+				transactions.recipient_address,
+				transactions.effective_fee,
+				transactions.timestamp,
+				transactions.message_type,
+				transactions.message_payload
+			FROM symbol_transactions AS transactions
+			JOIN symbol_sync_state AS sync_state ON sync_state.id = 1
+			WHERE {' AND '.join(where_clauses)}
+			ORDER BY transactions.height DESC, transactions.id DESC
+			LIMIT %s OFFSET %s
+			''',
+			(*parameters, query.limit, query.offset))
+		transaction_rows = cursor.fetchall()
+		if any(not row[2] and row[9] is None for row in transaction_rows):
+			raise SymbolDataUnavailable(
+				'Symbol transaction data is unavailable: confirmed top-level effective fee is missing')
+		if any(row[10] is None for row in transaction_rows):
+			raise SymbolDataUnavailable('Symbol transaction data is unavailable: confirmed timestamp is missing')
+
+		return transaction_rows
+
+	@staticmethod
+	def _create_transaction_filter(query):
+		where_clauses = ['transactions.height <= sync_state.last_synced_height']
+		parameters = []
+		filters = [
+			(query.height, 'transactions.height = %s'),
+			(query.address, '''EXISTS (
+				SELECT 1 FROM symbol_transaction_addresses AS addresses
+				WHERE addresses.transaction_id = transactions.id AND addresses.address = %s)'''),
+			(query.signer_public_key, 'transactions.signer_public_key = %s'),
+			(query.recipient_address, 'transactions.recipient_address = %s'),
+		]
+		for value, clause in filters:
+			if value is not None:
+				where_clauses.append(clause)
+				parameters.append(value)
+
+		if query.transaction_types:
+			where_clauses.append('transactions.type = ANY(%s::integer[])')
+			parameters.append(list(query.transaction_types))
+
+		if query.transfer_mosaic_id is not None:
+			where_clauses.append('''EXISTS (
+				SELECT 1 FROM symbol_transaction_mosaics AS transfer_mosaics
+				WHERE transfer_mosaics.transaction_id = transactions.id
+					AND transfer_mosaics.mosaic_id = %s
+					AND transfer_mosaics.role = 'transfer'::symbol_transaction_mosaic_role)''')
+			parameters.append(query.transfer_mosaic_id)
+
+		if not query.include_embedded:
+			where_clauses.append('transactions.is_embedded = false')
+
+		return where_clauses, parameters
+
+	def _fetch_transaction_records(self, cursor, transaction_rows, sync_state):
+		transaction_ids = [row[0] for row in transaction_rows]
+		cursor.execute(
+			'''
+			SELECT transaction_id, mosaic_id, amount, role, position
+			FROM symbol_transaction_mosaics
+			WHERE transaction_id = ANY(%s::bigint[])
+				AND role <> 'metadata_target'::symbol_transaction_mosaic_role
+			ORDER BY transaction_id, position
+			''',
+			(transaction_ids,))
+		transaction_mosaic_rows = cursor.fetchall()
+		if _is_non_public_state(sync_state) and self._requires_current_transaction_metadata(transaction_mosaic_rows):
+			raise SymbolDataUnavailable(
+				'Symbol transaction data is unavailable: mosaic display depends on current state '
+				'in dirty or repairing state')
+
+		excluded_native_mosaic_id = None
+		if _is_non_public_state(sync_state) and self.native_mosaic_info:
+			excluded_native_mosaic_id = self.native_mosaic_info.id
+		mosaic_state_by_id = SymbolDatabase._fetch_transaction_mosaic_state(
+			cursor, transaction_mosaic_rows, excluded_native_mosaic_id)
+		mosaics_by_transaction = SymbolDatabase._map_transaction_mosaics(
+			transaction_ids, transaction_mosaic_rows, mosaic_state_by_id)
+		return [TransactionRecord(*row, tuple(mosaics_by_transaction[row[0]])) for row in transaction_rows]
+
+	def _requires_current_transaction_metadata(self, transaction_mosaic_rows):
+		for row in transaction_mosaic_rows:
+			if self.native_mosaic_info and normalize_mosaic_id(row[1]) == self.native_mosaic_info.id:
+				continue
+			return True
+
+		return False
+
+	@staticmethod
+	def _fetch_transaction_mosaic_state(cursor, transaction_mosaic_rows, excluded_mosaic_id=None):
+		mosaic_ids = list(dict.fromkeys(
+			row[1] for row in transaction_mosaic_rows
+			if excluded_mosaic_id is None or normalize_mosaic_id(row[1]) != excluded_mosaic_id))
+		if not mosaic_ids:
+			return {}
+
+		cursor.execute(
+			'''
+			SELECT mosaic_id, divisibility, alias_names
+			FROM symbol_mosaics
+			WHERE mosaic_id = ANY(%s::varchar[])
+			''',
+			(mosaic_ids,))
+		return {
+			mosaic_id: (divisibility, alias_names)
+			for mosaic_id, divisibility, alias_names in cursor.fetchall()
+		}
+
+	@staticmethod
+	def _map_transaction_mosaics(transaction_ids, transaction_mosaic_rows, mosaic_state_by_id):
+		mosaics_by_transaction = {transaction_id: [] for transaction_id in transaction_ids}
+		for transaction_id, mosaic_id, amount, role, position in transaction_mosaic_rows:
+			divisibility, alias_names = mosaic_state_by_id.get(mosaic_id, (None, None))
+			mosaics_by_transaction[transaction_id].append(TransactionMosaicRecord(
+				mosaic_id, amount, role, position, divisibility, alias_names))
+
+		return mosaics_by_transaction
 
 	def get_blocks(self, from_height, limit, sort):
 		"""Gets Symbol blocks using fromHeight cursor pagination."""
