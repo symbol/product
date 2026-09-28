@@ -48,14 +48,14 @@ export class TransferModule {
 	 * @param {object} options - The transfer options.
 	 * @param {string} options.senderPublicKey - The sender public key.
 	 * @param {string} options.recipientAddress - The recipient address or alias.
-	 * @param {object[]} options.mosaics - The mosaics to transfer.
+	 * @param {object[]} options.tokens - The tokens to transfer.
 	 * @param {string} options.messageText - The message text.
 	 * @param {boolean} options.isMessageEncrypted - The message encryption flag.
 	 * @param {string} [password] - The wallet password.
 	 * @returns {TransactionBundle} The transfer transaction bundle.
 	 */
 	createTransaction = async (options, password) => {
-		const { recipientAddress: recipientAddressOrAlias, mosaics, messageText, isMessageEncrypted } = options;
+		const { recipientAddress: recipientAddressOrAlias, tokens, messageText, isMessageEncrypted } = options;
 		const { currentAccount, networkProperties } = this.#walletController;
 		const senderPublicKey = options.senderPublicKey || currentAccount.publicKey;
 		const senderAddress = addressFromPublicKey(senderPublicKey, networkProperties.networkIdentifier);
@@ -93,7 +93,7 @@ export class TransferModule {
 			signerPublicKey: senderPublicKey,
 			signerAddress: senderAddress,
 			recipientAddress,
-			mosaics,
+			tokens,
 			deadline: createDeadline(SINGLE_TRANSACTION_DEADLINE_HOURS, networkProperties.epochAdjustment)
 		};
 

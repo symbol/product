@@ -7,7 +7,7 @@ const EMPTY_TRANSFER_FIXTURE = {
 	type: TransactionType.TRANSFER,
 	recipientAddress: '',
 	message: null,
-	mosaics: [],
+	tokens: [],
 	amount: '0',
 	fee: null
 };
@@ -40,7 +40,7 @@ export class TransferTransactionFixtureBuilder extends TransactionFixtureBuilder
 
 	/**
 	 * Creates a transfer transaction fixture with default data.
-	 * Uses AccountFixtureBuilder for signer/recipient and TokenFixtureBuilder for mosaics.
+	 * Uses AccountFixtureBuilder for signer/recipient and TokenFixtureBuilder for tokens.
 	 * 
 	 * @param {string} [chainName='symbol'] - Chain name.
 	 * @param {'mainnet' | 'testnet'} [networkIdentifier='testnet'] - Network identifier.
@@ -69,7 +69,7 @@ export class TransferTransactionFixtureBuilder extends TransactionFixtureBuilder
 			signerPublicKey: signer.publicKey,
 			recipientAddress: recipient.address,
 			message: null,
-			mosaics: [token],
+			tokens: [token],
 			amount: `-${token.amount}`
 		});
 	};
@@ -162,27 +162,27 @@ export class TransferTransactionFixtureBuilder extends TransactionFixtureBuilder
 	};
 
 	/**
-	 * Sets the mosaics for the transfer.
+	 * Sets the tokens for the transfer.
 	 * 
-	 * @param {Array} mosaics - Array of mosaic objects with { id, name, names, divisibility, amount } shape.
+	 * @param {Array} tokens - Array of token objects with { id, name, names, divisibility, amount } shape.
 	 * @returns {TransferTransactionFixtureBuilder} The builder instance.
 	 */
-	setMosaics = mosaics => {
-		this._data.mosaics = mosaics;
+	setTokens = tokens => {
+		this._data.tokens = tokens;
 
 		return this;
 	};
 
 	/**
-	 * Adds a mosaic to the transfer using a token fixture and amount.
+	 * Adds a token to the transfer using a token fixture and amount.
 	 * 
 	 * @param {object} token - Token object from TokenFixtureBuilder with { id, name, divisibility }.
-	 * @param {number} amount - The mosaic amount.
+	 * @param {number} amount - The token amount.
 	 * @returns {TransferTransactionFixtureBuilder} The builder instance.
 	 */
-	addMosaic = (token, amount) => {
-		this._data.mosaics = [
-			...this._data.mosaics,
+	addToken = (token, amount) => {
+		this._data.tokens = [
+			...this._data.tokens,
 			{
 				id: token.id,
 				name: token.name,

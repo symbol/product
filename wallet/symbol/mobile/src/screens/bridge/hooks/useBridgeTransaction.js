@@ -74,7 +74,7 @@ export const useBridgeTransaction = ({ steps, amount, estimations }) => {
 				tableData: objectToTableData({
 					signerAddress: transaction.signerAddress,
 					recipientAddress: transaction.message?.text ?? transaction.recipientAddress,
-					tokens: transaction.mosaics || transaction.tokens || (transaction.sourceToken ? [transaction.sourceToken] : []),
+					tokens: transaction.tokens || (transaction.sourceToken ? [transaction.sourceToken] : []),
 					fee: transaction.fee
 				})
 			}));

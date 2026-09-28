@@ -26,7 +26,7 @@ export const outgoingTransfer = {
 		payload: '476f6f64206c75636b21',
 		native: { type: 1 }
 	},
-	mosaics: [{
+	tokens: [{
 		id: 'nem.xem',
 		name: 'XEM',
 		amount: '10',
@@ -49,7 +49,7 @@ export const incomingTransfer = {
 	signerAddress: bob.address,
 	signerPublicKey: bob.publicKey,
 	recipientAddress: alice.address,
-	mosaics: [{
+	tokens: [{
 		id: 'nem.xem',
 		name: 'XEM',
 		amount: '5',
@@ -73,7 +73,7 @@ export const mosaicTransfer = {
 	signerAddress: alice.address,
 	signerPublicKey: alice.publicKey,
 	recipientAddress: bob.address,
-	mosaics: [{
+	tokens: [{
 		id: 'test.token',
 		name: 'test.token',
 		divisibility: 2,
@@ -105,7 +105,7 @@ export const encryptedTransfer = {
 		payload: 'deadbeefcafe',
 		native: { type: 2 }
 	},
-	mosaics: [{
+	tokens: [{
 		id: 'nem.xem',
 		name: 'XEM',
 		amount: '0',
@@ -133,7 +133,7 @@ export const multisigTransfer = {
 		signerAddress: carol.address,
 		signerPublicKey: carol.publicKey,
 		recipientAddress: alice.address,
-		mosaics: [{
+		tokens: [{
 			id: 'nem.xem',
 			name: 'XEM',
 			amount: '2',
@@ -146,7 +146,7 @@ export const multisigTransfer = {
 		signerAddress: carol.address,
 		signerPublicKey: carol.publicKey,
 		recipientAddress: alice.address,
-		mosaics: [{
+		tokens: [{
 			id: 'nem.xem',
 			name: 'XEM',
 			amount: '2',
@@ -155,7 +155,7 @@ export const multisigTransfer = {
 		amount: '2'
 	}],
 	recipientAddress: alice.address,
-	mosaics: [{
+	tokens: [{
 		id: 'nem.xem',
 		name: 'XEM',
 		amount: '2',
@@ -203,7 +203,7 @@ export const unconfirmedTransfer = {
 	signerAddress: alice.address,
 	signerPublicKey: alice.publicKey,
 	recipientAddress: bob.address,
-	mosaics: [{
+	tokens: [{
 		id: 'nem.xem',
 		name: 'XEM',
 		amount: '3',
@@ -352,7 +352,7 @@ export const mosaicSupplyChange = {
 	fee: '0.15',
 	signerAddress: alice.address,
 	signerPublicKey: alice.publicKey,
-	mosaicId: 'alice.token',
+	tokenId: 'alice.token',
 	action: 1,
 	delta: 1000
 };
@@ -383,7 +383,7 @@ export const multisigImportanceTransfer = {
 	innerTransaction: multisigImportanceInner,
 	innerTransactions: [multisigImportanceInner],
 	recipientAddress: null,
-	mosaics: [],
+	tokens: [],
 	amount: '0',
 	cosignatures: [],
 	message: null

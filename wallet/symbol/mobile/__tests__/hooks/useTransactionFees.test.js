@@ -5,7 +5,7 @@ import { act, renderHook } from '@testing-library/react-native';
 const MOCK_TRANSACTION = {
 	type: 'transfer',
 	recipientAddress: 'TXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
-	mosaics: [],
+	tokens: [],
 	message: 'test message'
 };
 

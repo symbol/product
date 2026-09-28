@@ -1,10 +1,10 @@
-import { getMosaicAmount, mosaicIdFromRaw, mosaicIdToRaw, mosaicInfoFromDTO, mosaicListFromDTO } from '../../src/utils';
-import { mosaicDefinitionDTO, ownedMosaicDTOs } from '../__fixtures__/api/mosaic-dtos';
-import { accountMosaics, mosaicInfos } from '../__fixtures__/local/mosaic';
+import { getTokenAmount, tokenIdFromRaw, tokenIdToRaw, tokenInfoFromDTO, tokenListFromDTO } from '../../src/utils';
+import { mosaicDefinitionDTO, ownedMosaicDTOs } from '../__fixtures__/api/token-dtos';
+import { accountTokens, tokenInfos } from '../__fixtures__/local/token';
 
 // Constants
 
-const MISSING_PARAMETERS_ERROR = 'Failed to get mosaic amount. Missing required parameters.';
+const MISSING_PARAMETERS_ERROR = 'Failed to get token amount. Missing required parameters.';
 
 // Fixtures
 
@@ -12,7 +12,7 @@ const MISSING_PARAMETERS_ERROR = 'Failed to get mosaic amount. Missing required 
 // on-chain definition) and test.token reuses the shared resolved info. unknown.mosaic is intentionally absent.
 const resolvedMosaicInfos = {
 	'nem.xem': { id: 'nem.xem', name: 'XEM', divisibility: 6 },
-	'test.token': mosaicInfos['test.token']
+	'test.token': tokenInfos['test.token']
 };
 
 const mosaicAmountList = [
@@ -20,12 +20,12 @@ const mosaicAmountList = [
 	{ id: 'test.token', amount: '2.5' }
 ];
 
-describe('utils/mosaic', () => {
-	describe('mosaicIdFromRaw', () => {
+describe('utils/token', () => {
+	describe('tokenIdFromRaw', () => {
 		const runMosaicIdFromRawTest = (description, config, expected) => {
 			it(description, () => {
 				// Act:
-				const result = mosaicIdFromRaw(config.rawMosaicId);
+				const result = tokenIdFromRaw(config.rawMosaicId);
 
 				// Assert:
 				expect(result).toBe(expected.mosaicId);
@@ -48,11 +48,11 @@ describe('utils/mosaic', () => {
 		mosaicIdFromRawTests.forEach(test => runMosaicIdFromRawTest(test.description, test.config, test.expected));
 	});
 
-	describe('mosaicIdToRaw', () => {
+	describe('tokenIdToRaw', () => {
 		const runMosaicIdToRawTest = (description, config, expected) => {
 			it(description, () => {
 				// Act:
-				const result = mosaicIdToRaw(config.mosaicId);
+				const result = tokenIdToRaw(config.mosaicId);
 
 				// Assert:
 				expect(result).toStrictEqual(expected.rawMosaicId);
@@ -81,15 +81,15 @@ describe('utils/mosaic', () => {
 
 		it('throws when the mosaic id has no namespace separator', () => {
 			// Act & Assert:
-			expect(() => mosaicIdToRaw('xem')).toThrow('Failed to parse mosaic id. Invalid mosaic id: xem.');
+			expect(() => tokenIdToRaw('xem')).toThrow('Failed to parse token id. Invalid token id: xem.');
 		});
 	});
 
-	describe('getMosaicAmount', () => {
+	describe('getTokenAmount', () => {
 		const runGetMosaicAmountTest = (description, config, expected) => {
 			it(description, () => {
 				// Act:
-				const result = getMosaicAmount(mosaicAmountList, config.mosaicId);
+				const result = getTokenAmount(mosaicAmountList, config.mosaicId);
 
 				// Assert:
 				expect(result).toBe(expected.amount);
@@ -121,17 +121,17 @@ describe('utils/mosaic', () => {
 
 			// Act & Assert:
 			missingParameterCases.forEach(({ mosaicList, mosaicId }) =>
-				expect(() => getMosaicAmount(mosaicList, mosaicId)).toThrow(MISSING_PARAMETERS_ERROR));
+				expect(() => getTokenAmount(mosaicList, mosaicId)).toThrow(MISSING_PARAMETERS_ERROR));
 		});
 	});
 
-	describe('mosaicInfoFromDTO', () => {
+	describe('tokenInfoFromDTO', () => {
 		it('builds a mosaic info from a mosaic definition DTO', () => {
 			// Arrange:
-			const expectedMosaicInfo = mosaicInfos['test.token'];
+			const expectedMosaicInfo = tokenInfos['test.token'];
 
 			// Act:
-			const result = mosaicInfoFromDTO(mosaicDefinitionDTO);
+			const result = tokenInfoFromDTO(mosaicDefinitionDTO);
 
 			// Assert:
 			expect(result).toStrictEqual(expectedMosaicInfo);
@@ -151,21 +151,21 @@ describe('utils/mosaic', () => {
 			};
 
 			// Act:
-			const result = mosaicInfoFromDTO(definitionDTO);
+			const result = tokenInfoFromDTO(definitionDTO);
 
 			// Assert:
 			expect(result).toStrictEqual(expectedMosaicInfo);
 		});
 	});
 
-	describe('mosaicListFromDTO', () => {
+	describe('tokenListFromDTO', () => {
 		it('normalizes owned mosaic DTOs against the resolved mosaic infos', () => {
 			// Arrange: resolved mosaics carry their relative amount and metadata; the unresolved mosaic keeps
 			// only its absolute amount with null relative amount and divisibility.
-			const expectedMosaicList = accountMosaics;
+			const expectedMosaicList = accountTokens;
 
 			// Act:
-			const result = mosaicListFromDTO(ownedMosaicDTOs, resolvedMosaicInfos);
+			const result = tokenListFromDTO(ownedMosaicDTOs, resolvedMosaicInfos);
 
 			// Assert:
 			expect(result).toStrictEqual(expectedMosaicList);
@@ -174,7 +174,7 @@ describe('utils/mosaic', () => {
 		const runEmptyMosaicListTest = (description, config) => {
 			it(description, () => {
 				// Act:
-				const result = mosaicListFromDTO(config.mosaicsDTO, resolvedMosaicInfos);
+				const result = tokenListFromDTO(config.mosaicsDTO, resolvedMosaicInfos);
 
 				// Assert:
 				expect(result).toStrictEqual([]);

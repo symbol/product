@@ -7,7 +7,7 @@ import { createTransportUri, parseRawParameters, validateParameters } from '../u
  * @property {string} chainName - Blockchain name (e.g., 'symbol', 'nem', 'ethereum')
  * @property {string} networkIdentifier - Network identifier ('mainnet' or 'testnet')
  * @property {string} recipientAddress - Recipient account address (Base32 encoded)
- * @property {string} tokenId - Mosaic/token identifier (hex String)
+ * @property {string} tokenId - Token identifier (hex String)
  * @property {string} [amount] - Optional token amount in atomic units (as numeric String)
  * @property {string} [message] - Optional transaction message content
  * @property {boolean} [isMessageEncrypted] - Optional flag indicating if message is encrypted
@@ -145,7 +145,7 @@ export class ShareTransferTransactionUri {
 	}
 
 	/**
-	 * Gets the mosaic/token identifier.
+	 * Gets the token identifier.
 	 *
 	 * @returns {string} The token ID as hex string
 	 */

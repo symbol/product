@@ -42,7 +42,7 @@ export class NamespaceService {
 	 * @param {string[]} mosaicIds - Requested mosaic ids.
 	 * @returns {Promise<Record<string, string>>} - The mosaic names map.
 	 */
-	fetchMosaicNames = async (networkProperties, mosaicIds) => {
+	fetchTokenNames = async (networkProperties, mosaicIds) => {
 		const endpoint = `${networkProperties.nodeUrl}/namespaces/mosaic/names`;
 		const payload = {
 			mosaicIds

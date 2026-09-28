@@ -15,7 +15,7 @@ import { SdkError, TransactionBundle, absoluteToRelativeAmount } from 'wallet-co
 
 /** @typedef {import('../types/Account').PublicAccount} PublicAccount */
 /** @typedef {import('../types/Account').UnresolvedAddressWithLocation} UnresolvedAddressWithLocation */
-/** @typedef {import('../types/Mosaic').BaseMosaic} BaseMosaic */
+/** @typedef {import('wallet-common-core/src/types/Token').Token} BaseToken */
 /** @typedef {import('../types/Network').NetworkProperties} NetworkProperties */
 /** @typedef {import('../types/Network').TransactionFees} TransactionFees */
 /** @typedef {import('../types/Transaction').Transaction} Transaction */
@@ -224,8 +224,8 @@ export const createMultisigAggregateBundle = (innerTransactions, options) => {
 	const hashLockTransaction = {
 		type: TransactionType.HASH_LOCK,
 		signerPublicKey: currentAccount.publicKey,
-		mosaic: {
-			id: networkProperties.networkCurrency.mosaicId,
+		token: {
+			id: networkProperties.networkCurrency.id,
 			amount: HASH_LOCK_AMOUNT,
 			divisibility: networkProperties.networkCurrency.divisibility
 		},
@@ -459,14 +459,14 @@ export const calculateTransactionFees = (networkProperties, size) => {
  * Creates a fee object for a transaction.
  * @param {NetworkProperties} networkProperties - The network properties.
  * @param {number} amount - The fee amount in relative units.
- * @returns {BaseMosaic} The fee object containing amount, divisibility, id, and name.
+ * @returns {BaseToken} The fee object containing amount, divisibility, id, and name.
  */
 export const createTransactionFee = (networkProperties, amount) => {
 	return {
 		token: {
 			amount,
 			divisibility: networkProperties.networkCurrency.divisibility,
-			id: networkProperties.networkCurrency.mosaicId,
+			id: networkProperties.networkCurrency.id,
 			name: networkProperties.networkCurrency.name
 		}
 	};
@@ -523,25 +523,25 @@ export const createTransactionFeeTiers = (networkProperties, size) => {
  * @param {object} config - The configuration object.
  * @param {object.<string, string[]>} config.fieldsMap - The fields map.
  * @param {Function} config.mapNamespaceId - The namespace id mapper function.
- * @param {Function} config.mapMosaicId - The mosaic id mapper function.
+ * @param {Function} config.mapTokenId - The token id mapper function.
  * @param {Function} config.mapTransactionType - The transaction type mapper function.
  * @param {Function} config.getBodyFromTransaction - The function to get the transaction body.
  * @param {Function} config.getTransactionLocation - The function to get the transaction location.
  * @param {Function} config.verifyAddress - The function to verify an address.
- * @returns {{ mosaicIds: string[], namespaceIds: string[], addresses: UnresolvedAddressWithLocation[] }} The unresolved ids.
+ * @returns {{ tokenIds: string[], namespaceIds: string[], addresses: UnresolvedAddressWithLocation[] }} The unresolved ids.
  */
 export const getUnresolvedIdsFromTransactions = (transactions, config) => {
 	const {
 		fieldsMap,
 		mapNamespaceId,
-		mapMosaicId,
+		mapTokenId,
 		mapTransactionType,
 		getBodyFromTransaction,
 		getTransactionLocation,
 		verifyAddress
 	} = config;
 
-	const mosaicIds = [];
+	const tokenIds = [];
 	const namespaceIds = [];
 	const addresses = [];
 	const addressKeys = new Set();
@@ -576,7 +576,7 @@ export const getUnresolvedIdsFromTransactions = (transactions, config) => {
 
 		if (isAggregateTransaction(transaction)) {
 			const unresolved = getUnresolvedIdsFromTransactions(transaction.transactions, config);
-			mosaicIds.push(...unresolved.mosaicIds);
+			tokenIds.push(...unresolved.tokenIds);
 			namespaceIds.push(...unresolved.namespaceIds);
 			unresolved.addresses.forEach(a => pushAddress(a.namespaceId, item, a.location));
 		}
@@ -609,7 +609,7 @@ export const getUnresolvedIdsFromTransactions = (transactions, config) => {
 						const mosaicId = value?.mosaicId ?? value?.id ?? value;
 
 						if (mosaicId)
-							mosaicIds.push(mapMosaicId(mosaicId));
+							tokenIds.push(mapTokenId(mosaicId));
 					},
 					mosaicArray: value => {
 						if (!Array.isArray(value))
@@ -619,7 +619,7 @@ export const getUnresolvedIdsFromTransactions = (transactions, config) => {
 							const mosaicId = mosaic?.mosaicId ?? mosaic?.id ?? mosaic;
 
 							if (mosaicId)
-								mosaicIds.push(mapMosaicId(mosaicId));
+								tokenIds.push(mapTokenId(mosaicId));
 						});
 					},
 					namespace: value => {
@@ -635,7 +635,7 @@ export const getUnresolvedIdsFromTransactions = (transactions, config) => {
 	});
 
 	return {
-		mosaicIds: [...new Set(mosaicIds.flat())],
+		tokenIds: [...new Set(tokenIds.flat())],
 		namespaceIds: [...new Set(namespaceIds.flat())],
 		addresses
 	};

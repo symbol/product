@@ -25,7 +25,7 @@ const multisigDeadline = createDeadline(networkProperties.networkTime, MULTISIG_
 
 // Fixtures
 
-const nativeMosaics = (amount = '10') => [{ id: 'nem.xem', name: 'XEM', amount, divisibility: 6 }];
+const nativeTokens = (amount = '10') => [{ id: 'nem.xem', name: 'XEM', amount, divisibility: 6 }];
 const createFee = amount => createTransactionFee(networkProperties, amount);
 
 const plainMessage = text => ({
@@ -118,7 +118,7 @@ describe('modules/TransferModule', () => {
 				config: {
 					options: {
 						recipientAddress: RECIPIENT_ADDRESS,
-						mosaics: nativeMosaics('10'),
+						tokens: nativeTokens('10'),
 						message: 'Good luck!',
 						isEncrypted: false,
 						fee: createFee('1')
@@ -129,7 +129,7 @@ describe('modules/TransferModule', () => {
 						type: TransactionType.TRANSFER,
 						signerPublicKey: currentAccount.publicKey,
 						recipientAddress: RECIPIENT_ADDRESS,
-						mosaics: nativeMosaics('10'),
+						tokens: nativeTokens('10'),
 						message: plainMessage('Good luck!'),
 						fee: createFee('1'),
 						deadline: singleDeadline
@@ -142,7 +142,7 @@ describe('modules/TransferModule', () => {
 				config: {
 					options: {
 						recipientAddress: RECIPIENT_ADDRESS,
-						mosaics: nativeMosaics('5'),
+						tokens: nativeTokens('5'),
 						fee: createFee('0.5')
 					}
 				},
@@ -151,7 +151,7 @@ describe('modules/TransferModule', () => {
 						type: TransactionType.TRANSFER,
 						signerPublicKey: currentAccount.publicKey,
 						recipientAddress: RECIPIENT_ADDRESS,
-						mosaics: nativeMosaics('5'),
+						tokens: nativeTokens('5'),
 						message: null,
 						fee: createFee('0.5'),
 						deadline: singleDeadline
@@ -164,7 +164,7 @@ describe('modules/TransferModule', () => {
 				config: {
 					options: {
 						recipientAddress: RECIPIENT_ADDRESS,
-						mosaics: nativeMosaics('10')
+						tokens: nativeTokens('10')
 					}
 				},
 				expected: {
@@ -172,7 +172,7 @@ describe('modules/TransferModule', () => {
 						type: TransactionType.TRANSFER,
 						signerPublicKey: currentAccount.publicKey,
 						recipientAddress: RECIPIENT_ADDRESS,
-						mosaics: nativeMosaics('10'),
+						tokens: nativeTokens('10'),
 						message: null,
 						fee: createFee('0'),
 						deadline: singleDeadline
@@ -185,7 +185,7 @@ describe('modules/TransferModule', () => {
 				config: {
 					options: {
 						recipientAddress: RECIPIENT_ADDRESS,
-						mosaics: nativeMosaics('10'),
+						tokens: nativeTokens('10'),
 						message: 'Secret',
 						isEncrypted: true,
 						fee: createFee('3')
@@ -197,7 +197,7 @@ describe('modules/TransferModule', () => {
 						type: TransactionType.TRANSFER,
 						signerPublicKey: currentAccount.publicKey,
 						recipientAddress: RECIPIENT_ADDRESS,
-						mosaics: nativeMosaics('10'),
+						tokens: nativeTokens('10'),
 						message: encryptedMessage('Secret', `ENC(Secret)-with-${bob.publicKey}`),
 						fee: createFee('3'),
 						deadline: singleDeadline
@@ -211,7 +211,7 @@ describe('modules/TransferModule', () => {
 					options: {
 						senderPublicKey: MULTISIG_PUBLIC_KEY,
 						recipientAddress: RECIPIENT_ADDRESS,
-						mosaics: nativeMosaics('10')
+						tokens: nativeTokens('10')
 					}
 				},
 				expected: {
@@ -222,7 +222,7 @@ describe('modules/TransferModule', () => {
 							type: TransactionType.TRANSFER,
 							signerPublicKey: MULTISIG_PUBLIC_KEY,
 							recipientAddress: RECIPIENT_ADDRESS,
-							mosaics: nativeMosaics('10'),
+							tokens: nativeTokens('10'),
 							message: null,
 							fee: createFee('0.05'),
 							deadline: singleDeadline
@@ -238,7 +238,7 @@ describe('modules/TransferModule', () => {
 				config: {
 					options: {
 						recipientAddress: RECIPIENT_ADDRESS,
-						mosaics: nativeMosaics('10'),
+						tokens: nativeTokens('10'),
 						message: 'Secret',
 						isEncrypted: true,
 						fee: createFee('0.1')

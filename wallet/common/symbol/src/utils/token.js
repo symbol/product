@@ -4,10 +4,10 @@ import { Address, generateMosaicId } from 'symbol-sdk/symbol';
 import { ApiError, absoluteToRelativeAmount } from 'wallet-common-core';
 import * as Crypto from 'crypto';
 
-/** @typedef {import('../types/Mosaic').Mosaic} Mosaic */
-/** @typedef {import('../types/Mosaic').RawMosaic} RawMosaic */
-/** @typedef {import('../types/Mosaic').MosaicInfo} MosaicInfo */
-/** @typedef {import('../types/Account').MosaicDTO} MosaicDTO */
+/** @typedef {import('../types/Token').Token} Token */
+/** @typedef {import('../types/Token').RawToken} RawToken */
+/** @typedef {import('../types/Token').TokenInfo} TokenInfo */
+/** @typedef {import('../types/Token').MosaicDTO} MosaicDTO */
 
 /**
  * Generates a random nonce.
@@ -34,11 +34,11 @@ export const mosaicIdFromNonce = (ownerAddress, nonce) => {
 };
 
 /**
- * Formats a mosaic node DTO into mosaic info. Names are left empty and resolved separately.
+ * Formats a mosaic node DTO into token info. Names are left empty and resolved separately.
  * @param {object} mosaic - The mosaic node from the API response.
- * @returns {MosaicInfo} The mosaic info.
+ * @returns {TokenInfo} The token info.
  */
-export const mosaicInfoFromDTO = mosaic => {
+export const tokenInfoFromDTO = mosaic => {
 	const duration = parseInt(mosaic.duration);
 	const startHeight = parseInt(mosaic.startHeight);
 
@@ -60,33 +60,33 @@ export const mosaicInfoFromDTO = mosaic => {
 };
 
 /**
- * Gets the mosaic amount from a mosaic list.
- * @param {Mosaic[]} mosaicList - The list of mosaics.
- * @param {string} mosaicId - The mosaic id.
- * @returns {string} The mosaic amount or '0' if the mosaic is not found.
+ * Gets the token amount from a token list.
+ * @param {Token[]} tokenList - The list of tokens.
+ * @param {string} tokenId - The token id.
+ * @returns {string} The token amount or '0' if the token is not found.
  */
-export const getMosaicAmount = (mosaicList, mosaicId) => {
-	if (!mosaicList || !mosaicId) 
-		throw new ApiError('Failed to get mosaic amount. Missing required parameters.');
-    
-	const nativeMosaic = mosaicList.find(mosaic => mosaic.id === mosaicId);
+export const getTokenAmount = (tokenList, tokenId) => {
+	if (!tokenList || !tokenId)
+		throw new ApiError('Failed to get token amount. Missing required parameters.');
 
-	return nativeMosaic ? nativeMosaic.amount : '0';
+	const token = tokenList.find(listedToken => listedToken.id === tokenId);
+
+	return token ? token.amount : '0';
 };
 
 /**
- * Tries to format a mosaic list from DTO data. If the mosaic info is not available, raw mosaic data is returned instead.
+ * Tries to format a token list from DTO data. If the token info is not available, raw token data is returned instead.
  * @param {MosaicDTO[]} mosaics - The raw mosaic list.
- * @param {MosaicInfo[]} mosaicInfos - The mosaic info list.
- * @returns {Array.<Mosaic | RawMosaic>} The mosaic list.
+ * @param {TokenInfo[]} tokenInfos - The token info list.
+ * @returns {Array.<Token | RawToken>} The token list.
  */
-export const formatMosaicList = (mosaics, mosaicInfos) => {
-	if (!mosaics || !mosaicInfos) 
-		throw new ApiError('Failed to format mosaics. Missing required parameters.');
-    
+export const formatTokenList = (mosaics, tokenInfos) => {
+	if (!mosaics || !tokenInfos)
+		throw new ApiError('Failed to format tokens. Missing required parameters.');
+
 	return mosaics.map(mosaic => {
-		if (mosaic && mosaicInfos[mosaic.id]) 
-			return mosaicFromDTO(mosaic, mosaicInfos[mosaic.id]);
+		if (mosaic && tokenInfos[mosaic.id])
+			return tokenFromDTO(mosaic, tokenInfos[mosaic.id]);
 
 		return {
 			amount: null,
@@ -98,52 +98,52 @@ export const formatMosaicList = (mosaics, mosaicInfos) => {
 };
 
 /**
- * Formats the mosaic using the mosaic info.
- * @param {RawMosaic} mosaic - The raw mosaic data.
- * @param {MosaicInfo} mosaicInfo - The mosaic info data.
- * @returns {Mosaic} The formatted mosaic data.
+ * Formats the token using the token info.
+ * @param {RawToken} mosaic - The raw mosaic data.
+ * @param {TokenInfo} tokenInfo - The token info data.
+ * @returns {Token} The formatted token data.
  */
-export const mosaicFromDTO = (mosaic, mosaicInfo) => {
-	if (!mosaic || !mosaicInfo) 
-		throw new ApiError('Failed to format mosaic DTO. Missing required parameters.');
+export const tokenFromDTO = (mosaic, tokenInfo) => {
+	if (!mosaic || !tokenInfo)
+		throw new ApiError('Failed to format token DTO. Missing required parameters.');
 
 	return {
-		...mosaicInfo,
-		amount: absoluteToRelativeAmount(mosaic.amount, mosaicInfo.divisibility),
-		name: mosaicInfo.names?.[0] || mosaic.id
+		...tokenInfo,
+		amount: absoluteToRelativeAmount(mosaic.amount, tokenInfo.divisibility),
+		name: tokenInfo.names?.[0] || mosaic.id
 	};
 };
 
 /**
  * Checks if a mosaic can be revoked.
- * @param {Mosaic} mosaic - The mosaic.
+ * @param {Token} token - The token.
  * @param {number} chainHeight - The chain height.
  * @param {string} currentAddress - The current account address.
  * @param {string} sourceAddress - The source address to revoke the mosaic from.
  * @returns {boolean} True if the mosaic can be revoked, false otherwise.
  */
-export const isMosaicRevokable = (mosaic, chainHeight, currentAddress, sourceAddress) => {
-	const hasRevokableFlag = mosaic.isRevokable;
-	const isCreatorCurrentAccount = mosaic.creator === currentAddress;
+export const isMosaicRevokable = (token, chainHeight, currentAddress, sourceAddress) => {
+	const hasRevokableFlag = token.isRevokable;
+	const isCreatorCurrentAccount = token.creator === currentAddress;
 	const isSelfRevocation = sourceAddress === currentAddress;
-	const isMosaicExpired = mosaic.endHeight <= chainHeight;
-	const isMosaicActive = !isMosaicExpired || mosaic.isUnlimitedDuration;
+	const isMosaicExpired = token.endHeight <= chainHeight;
+	const isMosaicActive = !isMosaicExpired || token.isUnlimitedDuration;
 
 	return hasRevokableFlag && isCreatorCurrentAccount && !isSelfRevocation && isMosaicActive;
 };
 
 /**
  * Checks if a mosaic total supply can be changed.
- * @param {Mosaic} mosaic - The mosaic.
+ * @param {Token} token - The token.
  * @param {number} chainHeight - The chain height.
  * @param {string} currentAddress - The current account address.
  * @returns {boolean} True if the mosaic supply can be changed, false otherwise.
  */
-export const isMosaicSupplyModifiable = (mosaic, chainHeight, currentAddress) => {
-	const hasSupplyMutableFlag = mosaic.isSupplyMutable;
-	const isCreatorCurrentAccount = mosaic.creator === currentAddress;
-	const isMosaicExpired = mosaic.endHeight <= chainHeight;
-	const isMosaicActive = !isMosaicExpired || mosaic.isUnlimitedDuration;
+export const isMosaicSupplyModifiable = (token, chainHeight, currentAddress) => {
+	const hasSupplyMutableFlag = token.isSupplyMutable;
+	const isCreatorCurrentAccount = token.creator === currentAddress;
+	const isMosaicExpired = token.endHeight <= chainHeight;
+	const isMosaicActive = !isMosaicExpired || token.isUnlimitedDuration;
 
 	return hasSupplyMutableFlag && isCreatorCurrentAccount && isMosaicActive;
 };

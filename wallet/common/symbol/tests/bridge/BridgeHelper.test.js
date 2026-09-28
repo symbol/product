@@ -26,14 +26,14 @@ const createToken = () => ({
 
 describe('BridgeHelper', () => {
 	let bridgeHelper;
-	const mockMosaicApi = {
-		fetchMosaicInfo: jest.fn()
+	const mockTokenApi = {
+		fetchTokenInfo: jest.fn()
 	};
 
 	beforeEach(() => {
 		jest.clearAllMocks();
 		bridgeHelper = new BridgeHelper({
-			mosaicApi: mockMosaicApi
+			tokenApi: mockTokenApi
 		});
 	});
 
@@ -57,7 +57,7 @@ describe('BridgeHelper', () => {
 				signerPublicKey: currentAccount.publicKey,
 				signerAddress: currentAccount.address,
 				recipientAddress: bridgeAddress,
-				mosaics: [token],
+				tokens: [token],
 				message: expectedMessage,
 				fee
 			};
@@ -117,23 +117,23 @@ describe('BridgeHelper', () => {
 	describe('fetchTokenInfo', () => {
 		const runFetchTokenInfoTest = async (config, expected) => {
 			// Arrange:
-			const { networkProperties, mosaicId, mosaicInfoResponse } = config;
+			const { networkProperties, mosaicId, tokenInfoResponse } = config;
 			const { expectedResult } = expected;
-			mockMosaicApi.fetchMosaicInfo.mockResolvedValueOnce(mosaicInfoResponse);
+			mockTokenApi.fetchTokenInfo.mockResolvedValueOnce(tokenInfoResponse);
 
 			// Act:
 			const result = await bridgeHelper.fetchTokenInfo(networkProperties, mosaicId);
 
 			// Assert:
 			expect(result).toStrictEqual(expectedResult);
-			expect(mockMosaicApi.fetchMosaicInfo).toHaveBeenCalledWith(networkProperties, mosaicId);
+			expect(mockTokenApi.fetchTokenInfo).toHaveBeenCalledWith(networkProperties, mosaicId);
 		};
 
 		it('fetches token info and uses the first alias name if present', async () => {
 			// Arrange:
 			const networkProperties = createNetworkProperties();
 			const mosaicId = SYMBOL_TOKEN_ID;
-			const mosaicInfoResponse = {
+			const tokenInfoResponse = {
 				id: mosaicId,
 				names: ['MYTOKEN', 'MYTOKEN.ALIAS'],
 				divisibility: 6
@@ -146,7 +146,7 @@ describe('BridgeHelper', () => {
 
 			// Act & Assert:
 			await runFetchTokenInfoTest(
-				{ networkProperties, mosaicId, mosaicInfoResponse },
+				{ networkProperties, mosaicId, tokenInfoResponse },
 				{ expectedResult }
 			);
 		});
@@ -155,7 +155,7 @@ describe('BridgeHelper', () => {
 			// Arrange:
 			const networkProperties = createNetworkProperties();
 			const mosaicId = SYMBOL_TOKEN_ID;
-			const mosaicInfoResponse = {
+			const tokenInfoResponse = {
 				id: mosaicId,
 				divisibility: 0
 			};
@@ -167,7 +167,7 @@ describe('BridgeHelper', () => {
 
 			// Act & Assert:
 			await runFetchTokenInfoTest(
-				{ networkProperties, mosaicId, mosaicInfoResponse },
+				{ networkProperties, mosaicId, tokenInfoResponse },
 				{ expectedResult }
 			);
 		});

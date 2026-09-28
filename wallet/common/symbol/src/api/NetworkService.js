@@ -45,8 +45,8 @@ export class NetworkService {
 			this.#makeRequest(`${nodeUrl}/chain/info`)
 		]);
 
-		const networkCurrencyMosaicId = networkProps.chain.currencyMosaicId.split('\'').join('').replace(/^(0x)/, '');
-		const mosaicInfo = await this.#api.mosaic.fetchMosaicInfo({ nodeUrl }, networkCurrencyMosaicId);
+		const networkCurrencyTokenId = networkProps.chain.currencyMosaicId.split('\'').join('').replace(/^(0x)/, '');
+		const tokenInfo = await this.#api.token.fetchTokenInfo({ nodeUrl }, networkCurrencyTokenId);
 		const wsUrl = nodeUrl.replace(/^http/, 'ws') + '/ws';
 
 		return {
@@ -59,9 +59,9 @@ export class NetworkService {
 			epochAdjustment: parseInt(networkProps.network.epochAdjustment),
 			transactionFees,
 			networkCurrency: {
-				name: mosaicInfo.names[0],
-				mosaicId: networkCurrencyMosaicId,
-				divisibility: mosaicInfo.divisibility
+				name: tokenInfo.names[0],
+				id: networkCurrencyTokenId,
+				divisibility: tokenInfo.divisibility
 			}
 		};
 	};

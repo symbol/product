@@ -21,8 +21,8 @@ describe('NetworkService', () => {
 	beforeEach(() => {
 		mockMakeRequest = jest.fn();
 		mockApi = {
-			mosaic: {
-				fetchMosaicInfo: jest.fn()
+			token: {
+				fetchTokenInfo: jest.fn()
 			}
 		};
 		networkService = new NetworkService({
@@ -76,17 +76,17 @@ describe('NetworkService', () => {
 			};
 			const txFees = { averageFeeMultiplier: 100, medianFeeMultiplier: 50 };
 			const chainInfo = { height: '7654321' };
-			const mosaicInfo = { names: ['XYM'], divisibility: 6 };
+			const tokenInfo = { names: ['XYM'], divisibility: 6 };
 
 			mockMakeRequest
 				.mockResolvedValueOnce(nodeInfo)
 				.mockResolvedValueOnce(networkProps)
 				.mockResolvedValueOnce(txFees)
 				.mockResolvedValueOnce(chainInfo);
-			mockApi.mosaic.fetchMosaicInfo.mockResolvedValueOnce(mosaicInfo);
+			mockApi.token.fetchTokenInfo.mockResolvedValueOnce(tokenInfo);
 
 			const expectedNetworkIdentifier = networkTypeToIdentifier(nodeInfo.networkIdentifier);
-			const expectedMosaicId = '0xABCD\'EF01'.split('\'').join('').replace(/^(0x)/, '');
+			const expectedTokenId = '0xABCD\'EF01'.split('\'').join('').replace(/^(0x)/, '');
 
 			const result = await networkService.fetchNetworkInfo(nodeUrl);
 
@@ -101,7 +101,7 @@ describe('NetworkService', () => {
 				transactionFees: txFees,
 				networkCurrency: {
 					name: 'XYM',
-					mosaicId: expectedMosaicId,
+					id: expectedTokenId,
 					divisibility: 6
 				}
 			});
@@ -110,7 +110,7 @@ describe('NetworkService', () => {
 			expect(mockMakeRequest).toHaveBeenNthCalledWith(2, `${nodeUrl}/network/properties`);
 			expect(mockMakeRequest).toHaveBeenNthCalledWith(3, `${nodeUrl}/network/fees/transaction`);
 			expect(mockMakeRequest).toHaveBeenNthCalledWith(4, `${nodeUrl}/chain/info`);
-			expect(mockApi.mosaic.fetchMosaicInfo).toHaveBeenCalledWith({ nodeUrl }, expectedMosaicId);
+			expect(mockApi.token.fetchTokenInfo).toHaveBeenCalledWith({ nodeUrl }, expectedTokenId);
 		});
 	});
 

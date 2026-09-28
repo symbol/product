@@ -38,7 +38,7 @@ const bridgeTransaction = TransactionFixtureBuilder
 	.createDefault(CHAIN_NAME, NETWORK_IDENTIFIER)
 	.override({
 		message: { text: targetAccount.address },
-		mosaics: [transferToken],
+		tokens: [transferToken],
 		fee: {
 			token: transactionFeeToken
 		}
@@ -110,7 +110,7 @@ describe('hooks/useBridgeTransaction', () => {
 				tableData: [
 					{ type: 'account', value: bridgeTransaction.signerAddress, title: 'signerAddress' },
 					{ type: 'account', value: bridgeTransaction.message.text, title: 'recipientAddress' },
-					{ type: 'token', value: bridgeTransaction.mosaics, title: 'tokens' },
+					{ type: 'token', value: bridgeTransaction.tokens, title: 'tokens' },
 					{ type: 'fee', value: bridgeTransaction.fee, title: 'fee' }
 				]
 			}]);

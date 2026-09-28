@@ -1,5 +1,5 @@
 /** @typedef {import('@/app/types/Network').ChainName} ChainName */
-/** @typedef {import('wallet-common-symbol/src/types/Mosaic').Mosaic} Mosaic */
+/** @typedef {import('wallet-common-symbol/src/types/Token').Token} Token */
 
 /**
  * Route parameters for the RevokeMosaic screen.
@@ -62,7 +62,7 @@
  * @typedef {object} CreatedMosaicSection
  * @property {string} title - The section title, empty as the list shows a single untitled section.
  * @property {string} group - The section group identifier.
- * @property {Mosaic[]} data - The mosaics in this section.
+ * @property {Token[]} data - The mosaics in this section.
  */
 
 export {};

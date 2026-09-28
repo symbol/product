@@ -1,8 +1,8 @@
 import { symbolTransactionFromPayload, transactionFromSymbol } from '../../src/utils';
-import { mosaicInfos } from '../__fixtures__/local/mosaic';
 import { namespaceNames } from '../__fixtures__/local/namespace';
 import { networkProperties } from '../__fixtures__/local/network';
 import { payloads } from '../__fixtures__/local/payloads';
+import { tokenInfos } from '../__fixtures__/local/token';
 import { walletTransactions } from '../__fixtures__/local/transactions';
 import { currentAccount } from '../__fixtures__/local/wallet';
 import _ from 'lodash';
@@ -13,7 +13,7 @@ describe('utils/transaction-from-symbol', () => {
 		const transactionOptions = {
 			networkProperties,
 			currentAccount,
-			mosaicInfos,
+			tokenInfos,
 			namespaceNames,
 			resolvedAddresses: {},
 			fillSignerPublickey: currentAccount.publicKey

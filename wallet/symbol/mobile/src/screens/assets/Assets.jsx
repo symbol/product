@@ -7,7 +7,7 @@ import { createTokenDisplayData, createTokenExpiration } from '@/app/utils';
 import React, { useCallback } from 'react';
 
 /**
- * Assets screen component. Displays a filterable list of tokens/mosaics across all connected
+ * Assets screen component. Displays a filterable list of tokens across all connected
  * wallet accounts grouped by chain. Supports filtering by expired and created tokens, and
  * allows navigation to token details screen.
  * @returns {React.ReactNode} Assets component.

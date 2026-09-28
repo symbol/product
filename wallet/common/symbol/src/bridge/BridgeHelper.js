@@ -1,7 +1,7 @@
-/** @typedef {import('../api/MosaicService').MosaicService} MosaicService */
+/** @typedef {import('../api/TokenService').TokenService} TokenService */
 /** @typedef {import('../types/Account').PublicAccount} PublicAccount */
-/** @typedef {import('../types/Mosaic').BaseMosaic} BaseMosaic */
-/** @typedef {import('../types/Mosaic').MosaicInfo} MosaicInfo */
+/** @typedef {import('wallet-common-core/src/types/Token').Token} BaseToken */
+/** @typedef {import('../types/Token').TokenInfo} TokenInfo */
 /** @typedef {import('../types/Network').NetworkProperties} NetworkProperties */
 /** @typedef {import('../types/Transaction').Transaction} Transaction */
 /** @typedef {import('wallet-common-core/src/types/Transaction').TransactionFee} TransactionFee */
@@ -10,16 +10,16 @@ import { MessageType, TransactionType } from '../constants';
 import { createDeadline, encodePlainMessage } from '../utils';
 
 export class BridgeHelper {
-	/** @type {MosaicService} */
-	#mosaicApi;
+	/** @type {TokenService} */
+	#tokenApi;
 
 	/**
      * Initializes the BridgeHelper with necessary configurations.
      * @param {object} options - The initialization options.
-     * @param {MosaicService} options.mosaicApi - The Mosaic API service instance.
+     * @param {TokenService} options.tokenApi - The Token API service instance.
      */
 	constructor(options) {
-		this.#mosaicApi = options.mosaicApi;
+		this.#tokenApi = options.tokenApi;
 	}
 
 	/**
@@ -29,7 +29,7 @@ export class BridgeHelper {
      * @param {PublicAccount} currentAccount - The current user's public account
      * @param {string} recipientAddress - The address on the target chain to receive the resulting token
      * @param {string} bridgeAddress - The bridge address to send the source token to
-     * @param {BaseMosaic} token - The mosaic (currency) to swap
+     * @param {BaseToken} token - The token (currency) to swap
      * @param {TransactionFee} [options.fee] - The transaction fee.
      * @returns {Transaction} The transaction object
      */
@@ -41,7 +41,7 @@ export class BridgeHelper {
 			signerPublicKey: currentAccount.publicKey,
 			signerAddress: currentAccount.address,
 			recipientAddress: bridgeAddress,
-			mosaics: [token],
+			tokens: [token],
 			message: {
 				text: recipientAddress,
 				payload: encodePlainMessage(recipientAddress).substring(2),
@@ -58,15 +58,15 @@ export class BridgeHelper {
      * Fetches token information for a specific mosaic ID.
      * @param {NetworkProperties} networkProperties - The network properties.
      * @param {string} mosaicId - The ID of the mosaic to fetch information for.
-     * @returns {Promise<MosaicInfo>} The mosaic information.
+     * @returns {Promise<TokenInfo>} The token information.
      */
 	fetchTokenInfo = async (networkProperties, mosaicId) => {
-		const mosaicInfo = await this.#mosaicApi.fetchMosaicInfo(networkProperties, mosaicId);
+		const tokenInfo = await this.#tokenApi.fetchTokenInfo(networkProperties, mosaicId);
 
 		return {
-			id: mosaicInfo.id,
-			name: mosaicInfo.names?.[0] || mosaicInfo.id,
-			divisibility: mosaicInfo.divisibility
+			id: tokenInfo.id,
+			name: tokenInfo.names?.[0] || tokenInfo.id,
+			divisibility: tokenInfo.divisibility
 		};
 	};
 }

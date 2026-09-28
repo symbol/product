@@ -1,4 +1,4 @@
-import { mosaicIdToRaw } from './mosaic';
+import { tokenIdToRaw } from './token';
 import {
 	LinkAction,
 	MosaicPropertyName,
@@ -51,7 +51,7 @@ const mapMessage = message => ({
 });
 
 const mapMosaicId = id => {
-	const { namespaceId, name } = mosaicIdToRaw(id);
+	const { namespaceId, name } = tokenIdToRaw(id);
 
 	return {
 		namespaceId: { name: textEncoder.encode(namespaceId) },
@@ -59,20 +59,20 @@ const mapMosaicId = id => {
 	};
 };
 
-const mapMosaic = mosaic => ({
+const mapMosaic = token => ({
 	mosaic: {
-		mosaicId: mapMosaicId(mosaic.id),
-		amount: BigInt(relativeToAbsoluteAmount(mosaic.amount, mosaic.divisibility))
+		mosaicId: mapMosaicId(token.id),
+		amount: BigInt(relativeToAbsoluteAmount(token.amount, token.divisibility))
 	}
 });
 
-const mapTransferAmountAndMosaics = (mosaics, networkCurrency) => {
-	const nativeMosaic = mosaics?.find(mosaic => mosaic.id === networkCurrency.mosaicId);
-	const hasOnlyNativeMosaic = !mosaics?.length || (nativeMosaic && mosaics.length === 1);
+const mapTransferAmountAndTokens = (tokens, networkCurrency) => {
+	const nativeToken = tokens?.find(token => token.id === networkCurrency.id);
+	const hasOnlyNativeToken = !tokens?.length || (nativeToken && tokens.length === 1);
 
-	if (hasOnlyNativeMosaic) {
+	if (hasOnlyNativeToken) {
 		return {
-			amount: nativeMosaic ? BigInt(relativeToAbsoluteAmount(nativeMosaic.amount, networkCurrency.divisibility)) : 0n,
+			amount: nativeToken ? BigInt(relativeToAbsoluteAmount(nativeToken.amount, networkCurrency.divisibility)) : 0n,
 			mosaics: []
 		};
 	}
@@ -80,7 +80,7 @@ const mapTransferAmountAndMosaics = (mosaics, networkCurrency) => {
 	// Mosaic transfers set the XEM amount field to a 1.0 multiplier applied to each mosaic quantity.
 	return {
 		amount: BigInt(relativeToAbsoluteAmount('1', networkCurrency.divisibility)),
-		mosaics: mosaics.map(mapMosaic)
+		mosaics: tokens.map(mapMosaic)
 	};
 };
 
@@ -169,7 +169,7 @@ export const transactionToNem = (transaction, config) => {
 
 const transferTransactionToNem = (transaction, config) => {
 	const { networkIdentifier, networkCurrency } = config.networkProperties;
-	const { amount, mosaics } = mapTransferAmountAndMosaics(transaction.mosaics, networkCurrency);
+	const { amount, mosaics } = mapTransferAmountAndTokens(transaction.tokens, networkCurrency);
 	const descriptor = {
 		type: 'transfer_transaction_v2',
 		signerPublicKey: mapSignerPublicKey(transaction.signerPublicKey),
@@ -289,7 +289,7 @@ const mosaicSupplyChangeTransactionToNem = (transaction, config) => {
 		signerPublicKey: mapSignerPublicKey(transaction.signerPublicKey),
 		fee: mapFee(transaction.fee),
 		...mapDeadline(transaction.deadline),
-		mosaicId: mapMosaicId(transaction.mosaicId),
+		mosaicId: mapMosaicId(transaction.tokenId),
 		action: mosaicSupplyChangeActionMap[transaction.action],
 		delta: BigInt(transaction.delta)
 	};

@@ -572,13 +572,13 @@ describe('utils/transaction', () => {
 				type: TransactionType.TRANSFER,
 				signerPublicKey: signerAccount.publicKey,
 				recipientAddress: cosignerAccount.address,
-				mosaics: []
+				tokens: []
 			};
 			const hashLockTx = {
 				type: TransactionType.HASH_LOCK,
 				signerPublicKey: signerAccount.publicKey,
-				mosaic: {
-					id: networkProperties.networkCurrency.mosaicId,
+				token: {
+					id: networkProperties.networkCurrency.id,
 					amount: HASH_LOCK_AMOUNT,
 					divisibility: networkProperties.networkCurrency.divisibility
 				},
@@ -730,7 +730,7 @@ describe('utils/transaction', () => {
 	describe('getUnresolvedIdsFromTransactions', () => {
 		const createBaseConfig = (overrides = {}) => ({
 			mapNamespaceId: id => `ns:${id}`,
-			mapMosaicId: id => `mosaic:${id}`,
+			mapTokenId: id => `mosaic:${id}`,
 			mapTransactionType: type => type,
 			getBodyFromTransaction: tx => tx.transaction,
 			getTransactionLocation: tx =>
@@ -754,7 +754,7 @@ describe('utils/transaction', () => {
 			expect(result).toStrictEqual(expected);
 		};
 
-		it('extracts mosaicIds and avoids duplications', () => {
+		it('extracts tokenIds and avoids duplications', () => {
 			// Arrange:
 			const transactions = [
 				{
@@ -790,7 +790,7 @@ describe('utils/transaction', () => {
 				}
 			});
 			const expected = {
-				mosaicIds: ['mosaic:AAA', 'mosaic:BBB', 'mosaic:CCC', 'mosaic:DDD'],
+				tokenIds: ['mosaic:AAA', 'mosaic:BBB', 'mosaic:CCC', 'mosaic:DDD'],
 				namespaceIds: [],
 				addresses: []
 			};
@@ -825,7 +825,7 @@ describe('utils/transaction', () => {
 				}
 			});
 			const expected = {
-				mosaicIds: [],
+				tokenIds: [],
 				namespaceIds: ['ns:ns1', 'ns:ns2', 'ns:ns3'],
 				addresses: []
 			};
@@ -862,7 +862,7 @@ describe('utils/transaction', () => {
 				}
 			});
 			const expected = {
-				mosaicIds: [],
+				tokenIds: [],
 				namespaceIds: [],
 				addresses: [
 					{ 
@@ -938,7 +938,7 @@ describe('utils/transaction', () => {
 				}
 			});
 			const expected = {
-				mosaicIds: [],
+				tokenIds: [],
 				namespaceIds: [],
 				addresses: [
 					{ 

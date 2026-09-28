@@ -39,7 +39,7 @@ const calculateAvailableBalance = (source, stepFees, transactionFeeTierLevel) =>
 	if (!networkCurrency)
 		return '0';
 
-	const nativeCurrencyId = networkCurrency.mosaicId ?? networkCurrency.id;
+	const nativeCurrencyId = networkCurrency.id;
 	const feeTiers = getNativeCurrencyFeeTiers(source, stepFees, nativeCurrencyId, transactionFeeTierLevel);
 
 	if (!feeTiers.length)
