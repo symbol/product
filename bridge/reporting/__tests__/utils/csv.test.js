@@ -9,8 +9,8 @@ describe('CSV', () => {
 			['requestAmount', '123456789012345678', '123456789012.345678 XYM'],
 			['requestAmount', 0, '0 XYM'],
 			['requestAmount', null, '—'],
-			['payoutTotalFee', '357429175', '357.429175 WXYM'],
-			['payoutNetAmount', '299642570825', '299642.570825 WXYM'],
+			['payoutTotalFee', '357429175', '357.429175 bXYM'],
+			['payoutNetAmount', '299642570825', '299642.570825 bXYM'],
 			['payoutNetAmount', undefined, '—'],
 			['payoutConversionRate', '999999', '0.999999'],
 			['payoutStatus', 0, 'Unprocessed'],
@@ -45,8 +45,8 @@ describe('CSV', () => {
 				+ 'Request Timestamp,Request Amount,Destination Address,Payout Transaction Hash,Payout Transaction Height,'
 				+ 'Payout Timestamp,Payout Total Fee,Payout Net Amount,Payout Conversion Rate,Payout Status,Error Message',
 				`TCONKG47FW2ZEZBPV6G7F422LXBDSMVT3JMYM4I,${'B'.repeat(64)},10,-1,1970-01-01 00:00:02 UTC,300000 XYM,`
-				+ `0x1f533cd9711049fA7604D0F49C45B6e5Af30ef8e,${'A'.repeat(64)},11,1970-01-01 00:00:03 UTC,357.429175 WXYM,`
-				+ '299642.570825 WXYM,1,Completed,""'
+				+ `0x1f533cd9711049fA7604D0F49C45B6e5Af30ef8e,${'A'.repeat(64)},11,1970-01-01 00:00:03 UTC,357.429175 bXYM,`
+				+ '299642.570825 bXYM,1,Completed,""'
 			].join('\n'));
 		});
 	});
@@ -74,4 +74,3 @@ describe('CSV', () => {
 		});
 	});
 });
-

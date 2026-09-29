@@ -2,28 +2,28 @@ export const PAGE_SIZE = 100;
 
 const ASSETS = {
 	XYM: { ticker: 'XYM', divisibility: 6 },
-	WXYM: { ticker: 'WXYM', divisibility: 6 },
+	BXYM: { ticker: 'bXYM', divisibility: 6 },
 	ETH: { ticker: 'ETH', divisibility: 18 }
 };
 
 const createBridgeTabs = () => {
 	const bridgeRoutes = [
 		{
-			id: 'xym-wxym',
-			label: 'XYM → WXYM',
+			id: 'xym-bxym',
+			label: 'XYM → bXYM',
 			bridgeType: 'wrapped',
 			operation: 'wrap',
 			sourceAsset: ASSETS.XYM,
-			destinationAsset: ASSETS.WXYM,
+			destinationAsset: ASSETS.BXYM,
 			sourceNetwork: 'nativeNetwork',
 			destinationNetwork: 'wrappedNetwork'
 		},
 		{
-			id: 'wxym-xym',
-			label: 'WXYM → XYM',
+			id: 'bxym-xym',
+			label: 'bXYM → XYM',
 			bridgeType: 'wrapped',
 			operation: 'unwrap',
-			sourceAsset: ASSETS.WXYM,
+			sourceAsset: ASSETS.BXYM,
 			destinationAsset: ASSETS.XYM,
 			sourceNetwork: 'wrappedNetwork',
 			destinationNetwork: 'nativeNetwork'

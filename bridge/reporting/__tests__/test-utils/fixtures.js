@@ -29,17 +29,17 @@ export const REQUEST_ROW = {
 };
 
 export const REQUEST_TAB = {
-	id: 'xym-wxym-requests',
-	label: 'XYM → WXYM',
+	id: 'xym-bxym-requests',
+	label: 'XYM → bXYM',
 	operation: 'wrap',
 	resource: 'requests',
 	sourceAsset: { ticker: 'XYM', divisibility: 6 },
-	destinationAsset: { ticker: 'WXYM', divisibility: 6 },
+	destinationAsset: { ticker: 'bXYM', divisibility: 6 },
 	sourceNetwork: 'nativeNetwork',
 	destinationNetwork: 'wrappedNetwork'
 };
 
-export const ERROR_TAB = { ...REQUEST_TAB, id: 'xym-wxym-errors', resource: 'errors' };
+export const ERROR_TAB = { ...REQUEST_TAB, id: 'xym-bxym-errors', resource: 'errors' };
 
 export const ERROR_ROW = {
 	errorMessage: 'Required message is missing',

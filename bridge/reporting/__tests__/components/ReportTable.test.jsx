@@ -108,7 +108,7 @@ describe('ReportTable', () => {
 		expect(tableView.queryAllByRole('link')).toHaveLength(0);
 		expect(tableView.getAllByText('—')).toHaveLength(5);
 		expect(tableView.getByText('XYM')).toBeInTheDocument();
-		expect(tableView.queryByText('WXYM')).not.toBeInTheDocument();
+		expect(tableView.queryByText('bXYM')).not.toBeInTheDocument();
 	});
 
 	it('renders links addresses and transactions to their configured explorers', () => {
