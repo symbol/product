@@ -1,5 +1,5 @@
 import { PAYOUT_STATUS_DETAILS } from '@/constants';
-import { formatAtomicAmount, formatPpm, formatTimestamp, isValueMissing } from '@/utils/format';
+import { formatAtomicAmount, formatTimestamp, isValueMissing } from '@/utils/format';
 
 export const REQUEST_CSV_COLUMNS = [
 	['Sender Address', 'senderAddress'],
@@ -43,7 +43,7 @@ export const formatCsvValue = (value, key, tab) => {
 	case 'payoutNetAmount':
 		return formatCsvAmount(value, tab.destinationAsset);
 	case 'payoutConversionRate':
-		return formatPpm(value);
+		return formatAtomicAmount(value, tab.destinationAsset.divisibility);
 	case 'payoutStatus':
 		return PAYOUT_STATUS_DETAILS[value]?.label || 'Unknown';
 	case 'requestTimestamp':

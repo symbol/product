@@ -1,9 +1,17 @@
-import { REQUEST_ROW, REQUEST_TAB } from '../test-utils/fixtures';
+import { REQUEST_ROW, REQUEST_TAB, XYM_ETH_REQUEST_TAB } from '../test-utils/fixtures';
 import { REQUEST_CSV_COLUMNS, downloadCsv, formatCsvValue, serializeCsv } from '@/utils/csv';
 
 
 describe('CSV', () => {
 	describe('formatCsvValue', () => {
+		it('formats ETH conversion rate', () => {
+			// Act:
+			const result = formatCsvValue('1', 'payoutConversionRate', XYM_ETH_REQUEST_TAB);
+
+			// Assert:
+			expect(result).toBe('0.000000000000000001');
+		});
+
 		it.each([
 			['requestAmount', '300000000000', '300000 XYM'],
 			['requestAmount', '123456789012345678', '123456789012.345678 XYM'],

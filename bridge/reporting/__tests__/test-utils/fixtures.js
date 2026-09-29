@@ -39,6 +39,13 @@ export const REQUEST_TAB = {
 	destinationNetwork: 'wrappedNetwork'
 };
 
+export const XYM_ETH_REQUEST_TAB = {
+	...REQUEST_TAB,
+	id: 'xym-eth-requests',
+	label: 'XYM → ETH',
+	destinationAsset: { ticker: 'ETH', divisibility: 18 }
+};
+
 export const ERROR_TAB = { ...REQUEST_TAB, id: 'xym-bxym-errors', resource: 'errors' };
 
 export const ERROR_ROW = {
