@@ -20,7 +20,7 @@ describe('ReportPanel', () => {
 		renderPanel(tab);
 
 		// Assert:
-		expect(screen.getByRole('button', { name: 'Export all CSV' })).toBeInTheDocument();
+		expect(screen.getByRole('button', { name: 'Export CSV' })).toBeInTheDocument();
 	});
 
 	it('renders validation error given invalid input', () => {

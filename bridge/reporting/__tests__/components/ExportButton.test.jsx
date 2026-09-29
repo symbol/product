@@ -34,7 +34,7 @@ describe('ExportButton', () => {
 		render(<ExportButton criteria={criteria} tab={REQUEST_TAB} />);
 
 		// Act:
-		const button = screen.getByRole('button', { name: /export all csv/i });
+		const button = screen.getByRole('button', { name: /export csv/i });
 		fireEvent.click(button);
 
 		// Assert:
@@ -49,7 +49,7 @@ describe('ExportButton', () => {
 		render(<ExportButton criteria={criteria} tab={REQUEST_TAB} />);
 
 		// Act:
-		const button = screen.getByRole('button', { name: /export all csv/i });
+		const button = screen.getByRole('button', { name: /export csv/i });
 		fireEvent.click(button);
 
 		// Assert:
