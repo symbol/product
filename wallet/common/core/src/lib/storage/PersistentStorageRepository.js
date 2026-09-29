@@ -6,7 +6,6 @@ import { decodeJson, decodeNullableString, encodeNullableString } from '../../ut
 /** @typedef {import('../../types/Network').NetworkProperties} NetworkProperties */
 /** @typedef {import('../../types/Storage').StorageInterface} StorageInterface */
 
-/* eslint-disable-next-line valid-jsdoc */
 /**
  * Class representing persistent storage for wallet data.
  */
@@ -24,7 +23,6 @@ export class PersistentStorageRepository {
 		ADDRESS_BOOK: 'ADDRESS_BOOK',
 		USER_CURRENCY: 'USER_CURRENCY',
 		NETWORK_PROPERTIES: 'NETWORK_PROPERTIES',
-		SELECTED_LANGUAGE: 'SELECTED_LANGUAGE',
 		HARVESTING_STATUSES: 'HARVESTING_STATUSES',
 		HARVESTING_SUMMARIES: 'HARVESTING_SUMMARIES',
 		MULTISIG_ACCOUNTS: 'MULTISIG_ACCOUNTS'
@@ -298,23 +296,6 @@ export class PersistentStorageRepository {
 	 */
 	setHarvestingSummaries = async payload => {
 		return this.storage.setItem(PersistentStorageRepository.STORAGE_KEYS.HARVESTING_SUMMARIES, JSON.stringify(payload));
-	};
-
-	/**
-	 * Get the selected language.
-	 * @returns {Promise<string|null>} A promise that resolves to the selected language string or null if not set.
-	 */
-	getSelectedLanguage = async () => {
-		return this.storage.getItem(PersistentStorageRepository.STORAGE_KEYS.SELECTED_LANGUAGE);
-	};
-
-	/**
-	 * Set the selected language.
-	 * @param {string} payload - The selected language string to set.
-	 * @returns {Promise<void>} A promise that resolves when the selected language is set.
-	 */
-	setSelectedLanguage = async payload => {
-		return this.storage.setItem(PersistentStorageRepository.STORAGE_KEYS.SELECTED_LANGUAGE, payload);
 	};
 
 	/**
