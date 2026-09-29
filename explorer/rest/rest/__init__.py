@@ -1,3 +1,5 @@
+import weakref
+
 from flask import Flask, jsonify
 from flask_cors import CORS
 
@@ -21,8 +23,21 @@ def create_app(rest_chain_handlers=None):
 	load_rest_config(app)
 
 	setup_facade, setup_routes = _get_rest_chain_handlers(app.config.get('REST_CHAIN'), rest_chain_handlers)
-	api_facade = setup_facade(app)
-	setup_routes(app, api_facade)
+	try:
+		api_facade = setup_facade(app)
+		setup_routes(app, api_facade)
+		symbol_database = app.extensions.get('symbol_database')
+		if symbol_database is not None:
+			# The callback does not retain the app; weakref.finalize also runs it at process exit as a fallback.
+			weakref.finalize(app, symbol_database.close)
+	except BaseException:
+		symbol_database = app.extensions.get('symbol_database')
+		if symbol_database is not None:
+			try:
+				symbol_database.close()
+			except Exception:  # pylint: disable=broad-exception-caught
+				app.logger.exception('Failed to close Symbol database after REST setup failure')
+		raise
 
 	return app
 
