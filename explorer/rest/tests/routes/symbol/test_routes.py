@@ -534,8 +534,7 @@ def test_transactions_parsed_filters():
 		signer_public_key=bytes.fromhex(public_key),
 		recipient_address=bytes.fromhex('682F0A4E106CBC9224DF7AC5E2C6A9D5252E70CB6517D829'),
 		transfer_mosaic_id='72C0212E67A08BCE',
-		include_embedded=True,
-		order=SortOrder.DESC) == facade.transactions_query
+		include_embedded=True) == facade.transactions_query
 
 
 def test_transactions_address_embedded():

@@ -73,8 +73,8 @@ class SortOrder(str, Enum):
 TransactionQuery = namedtuple(
 	'TransactionQuery',
 	['limit', 'offset', 'height', 'transaction_types', 'address', 'signer_public_key', 'recipient_address',
-		'transfer_mosaic_id', 'include_embedded', 'order'],
-	defaults=(10, 0, None, (), None, None, None, None, False, SortOrder.DESC))
+		'transfer_mosaic_id', 'include_embedded'],
+	defaults=(10, 0, None, (), None, None, None, None, False))
 TransactionMosaicRecord = namedtuple(
 	'TransactionMosaicRecord',
 	['mosaic_id', 'amount', 'role', 'position', 'divisibility', 'alias_names'])
@@ -293,11 +293,8 @@ class SymbolDatabase(DatabaseConnectionPool):
 
 		return False
 
-	def get_transactions(self, query):  # pylint: disable=too-many-branches
+	def get_transactions(self, query):
 		"""Gets a confirmed transaction page and its display relations from one database snapshot."""
-
-		if SortOrder.DESC != query.order:
-			raise ValueError('Transaction order must be DESC')
 
 		with self.connection() as connection:
 			with connection.cursor() as cursor:

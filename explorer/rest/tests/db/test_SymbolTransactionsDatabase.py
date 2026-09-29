@@ -4,7 +4,7 @@ from common.symbol.NativeMosaic import NativeMosaicInfo
 from psycopg2 import Error as PsycopgError
 from symbolchain.sc import TransactionType
 
-from rest.db.SymbolDatabase import SortOrder, SymbolDatabase, SymbolDataUnavailable, TransactionQuery
+from rest.db.SymbolDatabase import SymbolDatabase, SymbolDataUnavailable, TransactionQuery
 
 from ..test.SymbolBlockTestUtils import create_symbol_block, create_symbol_sync_state
 from ..test.SymbolDatabaseTestUtils import (
@@ -57,17 +57,6 @@ class SymbolDatabaseTransactionsTest(TestCase):  # pylint: disable=too-many-publ
 
 		# Assert:
 		self.assertEqual([], result)
-
-	def test_get_transactions_rejects_ascending_order(self):
-		# Arrange:
-		with symbol_test_database() as (db_config, _puller_database):
-			database = SymbolDatabase(db_config)
-			try:
-				# Act + Assert:
-				with self.assertRaisesRegex(ValueError, 'order must be DESC'):
-					database.get_transactions(TransactionQuery(order=SortOrder.ASC))
-			finally:
-				database.close()
 
 	def test_get_transactions_applies_type_or_and_signer_recipient_and_embedded_filter(self):
 		# Arrange:

@@ -254,8 +254,7 @@ def _parse_transaction_query():
 		signer_public_key=signer_public_key,
 		recipient_address=recipient_address,
 		transfer_mosaic_id=transfer_mosaic_id,
-		include_embedded=embedded,
-		order=SortOrder.DESC)
+		include_embedded=embedded)
 
 
 def _parse_transaction_type(value):
