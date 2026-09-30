@@ -33,7 +33,13 @@ const Progress = ({ titleLeft, titleRight, valueLeft, valueRight, value, classNa
 					{valueRight}
 				</Field>
 			</div>
-			<div className={progressClassName}>
+			<div
+				className={progressClassName}
+				role="progressbar"
+				aria-valuemin={0}
+				aria-valuemax={100}
+				aria-valuenow={progressPercentage}
+			>
 				<div className={styles.progressInner} style={progressStyle} />
 			</div>
 		</div>
