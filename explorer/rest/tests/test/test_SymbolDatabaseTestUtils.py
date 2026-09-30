@@ -39,6 +39,7 @@ class SymbolDatabaseTestUtilsTest(TestCase):
 				read_sync_state.set()
 				if not allow_query.wait(timeout=5):
 					raise AssertionError('Reader was not released')
+
 				return 'snapshot'
 			finally:
 				reader_finished.set()

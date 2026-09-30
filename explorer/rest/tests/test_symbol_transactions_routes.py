@@ -1,4 +1,5 @@
 import json
+from contextlib import contextmanager
 
 import pytest
 from common.symbol.NativeMosaic import NativeMosaicInfo
@@ -51,21 +52,9 @@ def test_parent_child_full_json():
 		puller_database.upsert_transactions_for_height(1, [parent, child])
 		puller_database.upsert_mosaic(create_symbol_mosaic('1234567890ABCDEF', 2))
 
-		database = SymbolDatabase(db_config, NATIVE_MOSAIC_INFO)
-		app = Flask(__name__)
-		setup_error_handlers(app)
-		facade = SymbolRestFacade(
-			database,
-			SymbolNodeConfiguration.from_url('http://127.0.0.1:3000', allow_loopback=True),
-			NATIVE_MOSAIC_INFO)
-		setup_symbol_routes(app, facade)
-
 		# Act:
-		try:
-			client = app.test_client()
+		with _create_transaction_test_client(db_config) as client:
 			response = client.get('/api/symbol/transactions?embedded=true')
-		finally:
-			database.close()
 
 	# Assert:
 	assert 200 == response.status_code
@@ -109,12 +98,9 @@ def test_no_match_returns_200_empty():
 		create_symbol_sync_state(last_synced_height=1, finalized_height=1),
 		[create_symbol_block(1)]) as (db_config, _puller_database):
 		_puller_database.upsert_transactions_for_height(1, [create_symbol_transaction(1, 1)])
-		database, client = _create_transaction_test_client(db_config)
-		try:
+		with _create_transaction_test_client(db_config) as client:
 			# Act:
 			response = client.get(f'/api/symbol/transactions?type={TransactionType.MOSAIC_METADATA.value}')
-		finally:
-			database.close()
 
 	# Assert:
 	assert 200 == response.status_code
@@ -130,22 +116,21 @@ def test_native_only_no_mosaic_table_200(state_name):
 		puller_database.upsert_transactions_for_height(2, [transaction])
 		puller_database.upsert_mosaic(create_symbol_mosaic(NATIVE_MOSAIC_INFO.id, 3))
 		_save_mosaic_alias_names(puller_database, NATIVE_MOSAIC_INFO.id, ['unsafe-native-name'])
-		database, client = _create_transaction_test_client(db_config)
-		was_renamed = False
-		try:
-			with puller_database.connection.cursor() as cursor:
-				cursor.execute('ALTER TABLE symbol_mosaics RENAME TO symbol_mosaics_hidden_for_test')
-			puller_database.connection.commit()
-			was_renamed = True
-
-			# Act:
-			response = client.get('/api/symbol/transactions?height=2')
-		finally:
-			if was_renamed:
+		with _create_transaction_test_client(db_config) as client:
+			was_renamed = False
+			try:
 				with puller_database.connection.cursor() as cursor:
-					cursor.execute('ALTER TABLE symbol_mosaics_hidden_for_test RENAME TO symbol_mosaics')
+					cursor.execute('ALTER TABLE symbol_mosaics RENAME TO symbol_mosaics_hidden_for_test')
 				puller_database.connection.commit()
-			database.close()
+				was_renamed = True
+
+				# Act:
+				response = client.get('/api/symbol/transactions?height=2')
+			finally:
+				if was_renamed:
+					with puller_database.connection.cursor() as cursor:
+						cursor.execute('ALTER TABLE symbol_mosaics_hidden_for_test RENAME TO symbol_mosaics')
+					puller_database.connection.commit()
 
 	# Assert:
 	assert 200 == response.status_code
@@ -175,12 +160,9 @@ def test_clean_saved_native_name_and_div():
 		puller_database.upsert_transactions_for_height(2, [transaction])
 		puller_database.upsert_mosaic(create_symbol_mosaic(NATIVE_MOSAIC_INFO.id, 3))
 		_save_mosaic_alias_names(puller_database, NATIVE_MOSAIC_INFO.id, ['saved-native-name'])
-		database, client = _create_transaction_test_client(db_config)
-		try:
+		with _create_transaction_test_client(db_config) as client:
 			# Act:
 			response = client.get('/api/symbol/transactions?height=2')
-		finally:
-			database.close()
 
 	# Assert:
 	assert 200 == response.status_code
@@ -197,16 +179,59 @@ def test_non_native_unavailable_503(state_name):
 	with symbol_test_database(sync_state, [create_symbol_block(2)]) as (db_config, puller_database):
 		puller_database.upsert_transactions_for_height(2, [transaction])
 		puller_database.upsert_mosaic(create_symbol_mosaic('1234567890ABCDEF', 2))
-		database, client = _create_transaction_test_client(db_config)
-		try:
+		with _create_transaction_test_client(db_config) as client:
 			# Act:
 			response = client.get('/api/symbol/transactions?height=2')
-		finally:
-			database.close()
 
 	# Assert:
 	assert 503 == response.status_code
 	assert {'status': 503, 'message': 'Symbol backend data is unavailable'} == response.json
+
+
+def test_repair_markerless_list_503():
+	# Arrange:
+	sync_state = create_symbol_sync_state(last_synced_height=2, finalized_height=1, status='repairing')
+	with symbol_test_database(sync_state, [create_symbol_block(2)]) as (db_config, puller_database):
+		puller_database.upsert_transactions_for_height(2, [create_symbol_transaction(2, 1)])
+		with _create_transaction_test_client(db_config) as client:
+			# Act:
+			response = client.get('/api/symbol/transactions')
+
+	# Assert:
+	assert 503 == response.status_code
+	assert {'status': 503, 'message': 'Symbol backend data is unavailable'} == response.json
+
+
+def test_repairing_safe_list_200():
+	# Arrange: Dirty marker is above the watermark; no current-state Mosaic data is required.
+	sync_state = create_symbol_sync_state(
+		last_synced_height=2,
+		finalized_height=1,
+		status='repairing',
+		dirty_state_from_height=3)
+	with symbol_test_database(sync_state, [create_symbol_block(2)]) as (db_config, puller_database):
+		puller_database.upsert_transactions_for_height(2, [create_symbol_transaction(2, 1)])
+		with _create_transaction_test_client(db_config) as client:
+			# Act:
+			response = client.get('/api/symbol/transactions')
+
+	# Assert:
+	assert 200 == response.status_code
+	assert [{
+		'hash': '00' * 31 + '01',
+		'isEmbedded': False,
+		'aggregateHash': None,
+		'embeddedIndex': None,
+		'height': 2,
+		'type': 'TRANSFER',
+		'sender': 'NCUZDUB4XJ4XV3KSUBQ6NPZPP4RY3CUFZ7HNAPI',
+		'recipient': 'ND3I6ZLS22YLJIL7AIQHOAN34AOUSRNK6NTDVKQ',
+		'value': [],
+		'amount': 0,
+		'fee': 0.000002,
+		'timestamp': '2026-01-01T00:00:02Z',
+		'message': None
+	}] == response.json
 
 
 def _create_non_public_sync_state(state_name):
@@ -227,13 +252,14 @@ def _save_mosaic_alias_names(puller_database, mosaic_id, alias_names):
 	puller_database.connection.commit()
 
 
+@contextmanager
 def _create_transaction_test_client(db_config):
-	database = SymbolDatabase(db_config, NATIVE_MOSAIC_INFO)
-	app = Flask(__name__)
-	setup_error_handlers(app)
-	facade = SymbolRestFacade(
-		database,
-		SymbolNodeConfiguration.from_url('http://127.0.0.1:3000', allow_loopback=True),
-		NATIVE_MOSAIC_INFO)
-	setup_symbol_routes(app, facade)
-	return database, app.test_client()
+	with SymbolDatabase(db_config, NATIVE_MOSAIC_INFO) as database:
+		app = Flask(__name__)
+		setup_error_handlers(app)
+		facade = SymbolRestFacade(
+			database,
+			SymbolNodeConfiguration.from_url('http://127.0.0.1:3000', allow_loopback=True),
+			NATIVE_MOSAIC_INFO)
+		setup_symbol_routes(app, facade)
+		yield app.test_client()

@@ -1,10 +1,11 @@
+from datetime import datetime
 from unittest import TestCase
 
 from common.symbol.NativeMosaic import NativeMosaicInfo
 from psycopg2 import Error as PsycopgError
 from symbolchain.sc import TransactionType
 
-from rest.db.SymbolDatabase import SymbolDatabase, SymbolDataUnavailable, TransactionQuery
+from rest.db.SymbolDatabase import SymbolDatabase, SymbolDataUnavailable, TransactionMosaicRecord, TransactionQuery, TransactionRecord
 
 from ..test.SymbolBlockTestUtils import create_symbol_block, create_symbol_sync_state
 from ..test.SymbolDatabaseTestUtils import (
@@ -37,16 +38,68 @@ class SymbolDatabaseTransactionsTest(TestCase):  # pylint: disable=too-many-publ
 			transactions,
 			create_symbol_sync_state(last_synced_height=4, finalized_height=3),
 			TransactionQuery(limit=10))
-		page_result = _query_symbol_transactions(
-			transactions,
-			create_symbol_sync_state(last_synced_height=4, finalized_height=3),
-			TransactionQuery(limit=2, offset=1))
 
 		# Assert:
 		self.assertEqual([(4, 2), (4, 1), (3, 3)], [
 			(transaction.height, bytes(transaction.hash)[-1]) for transaction in result])
-		self.assertEqual([(4, 1), (3, 3)], [
-			(transaction.height, bytes(transaction.hash)[-1]) for transaction in page_result])
+
+	def test_get_transactions_applies_limit_to_the_ordered_page(self):
+		# Arrange:
+		transactions = [create_symbol_transaction(4, number) for number in (1, 2, 3)]
+
+		# Act:
+		result = _query_symbol_transactions(
+			transactions,
+			create_symbol_sync_state(last_synced_height=4, finalized_height=3),
+			TransactionQuery(limit=1))
+
+		# Assert:
+		self.assertEqual([
+			TransactionRecord(
+				3,
+				(3).to_bytes(32, 'big'),
+				False,
+				None,
+				None,
+				4,
+				TransactionType.TRANSFER.value,
+				TRANSACTION_SIGNER_ADDRESS,
+				TRANSACTION_RECIPIENT_ADDRESS,
+				4,
+				datetime(2026, 1, 1, 0, 0, 4),
+				None,
+				None,
+				())
+		], [_normalize_transaction_binary_fields(record) for record in result])
+
+	def test_get_transactions_applies_offset_after_filtering_above_watermark_rows(self):
+		# Arrange:
+		transactions = [create_symbol_transaction(4, 1), create_symbol_transaction(4, 2), create_symbol_transaction(5, 3)]
+
+		# Act:
+		result = _query_symbol_transactions(
+			transactions,
+			create_symbol_sync_state(last_synced_height=4, finalized_height=3),
+			TransactionQuery(limit=1, offset=1))
+
+		# Assert:
+		self.assertEqual([
+			TransactionRecord(
+				1,
+				(1).to_bytes(32, 'big'),
+				False,
+				None,
+				None,
+				4,
+				TransactionType.TRANSFER.value,
+				TRANSACTION_SIGNER_ADDRESS,
+				TRANSACTION_RECIPIENT_ADDRESS,
+				4,
+				datetime(2026, 1, 1, 0, 0, 4),
+				None,
+				None,
+				())
+		], [_normalize_transaction_binary_fields(record) for record in result])
 
 	def test_get_transactions_returns_empty_for_height_above_clean_watermark(self):
 		# Arrange + Act:
@@ -58,50 +111,137 @@ class SymbolDatabaseTransactionsTest(TestCase):  # pylint: disable=too-many-publ
 		# Assert:
 		self.assertEqual([], result)
 
-	def test_get_transactions_applies_type_or_and_signer_recipient_and_embedded_filter(self):
+	def test_get_transactions_matches_any_requested_type(self):
 		# Arrange:
-		other_public_key = bytes.fromhex('02' * 32)
-		other_recipient = bytes.fromhex('03' * 24)
+		mosaic_id = '1234567890ABCDEF'
 		transactions = [
-			create_symbol_transaction(4, 1),
+			create_symbol_transaction(
+				4,
+				1,
+				mosaic_rows=[{'mosaic_id': mosaic_id, 'amount': 12345, 'role': 'transfer', 'position': 0}]),
 			create_symbol_transaction(
 				4,
 				2,
 				type=TransactionType.AGGREGATE_COMPLETE.value,
 				hash=bytes.fromhex('AA' * 32)),
-			create_symbol_transaction(4, 3, signer_public_key=other_public_key),
-			create_symbol_transaction(4, 4, recipient_address=other_recipient),
-			create_symbol_transaction(4, 0, is_embedded=True),
-			create_symbol_transaction(4, 1, is_embedded=True),
-			create_symbol_transaction(4, 5, type=TransactionType.MOSAIC_METADATA.value)
+			create_symbol_transaction(4, 3, type=TransactionType.MOSAIC_METADATA.value)
 		]
-		query = TransactionQuery(
-			transaction_types=(TransactionType.TRANSFER.value, TransactionType.AGGREGATE_COMPLETE.value),
-			signer_public_key=SIGNER_PUBLIC_KEY,
-			recipient_address=TRANSACTION_RECIPIENT_ADDRESS,
-			include_embedded=True)
 
 		# Act:
 		result = _query_symbol_transactions(
 			transactions,
 			create_symbol_sync_state(last_synced_height=4, finalized_height=3),
-			query)
+			TransactionQuery(transaction_types=(TransactionType.TRANSFER.value, TransactionType.AGGREGATE_COMPLETE.value)),
+			[create_symbol_mosaic(mosaic_id, 2)])
 
 		# Assert:
 		self.assertEqual([
-			(True, 1),
-			(True, 0),
-			(False, None),
-			(False, None),
-		], [(transaction.is_embedded, transaction.embedded_index) for transaction in result])
-		self.assertEqual([
-			TransactionType.TRANSFER.value,
-			TransactionType.TRANSFER.value,
-			TransactionType.AGGREGATE_COMPLETE.value,
-			TransactionType.TRANSFER.value
-		], [transaction.transaction_type for transaction in result])
+			TransactionRecord(
+				2,
+				bytes.fromhex('AA' * 32),
+				False,
+				None,
+				None,
+				4,
+				TransactionType.AGGREGATE_COMPLETE.value,
+				TRANSACTION_SIGNER_ADDRESS,
+				TRANSACTION_RECIPIENT_ADDRESS,
+				4,
+				datetime(2026, 1, 1, 0, 0, 4),
+				None,
+				None,
+				()),
+			TransactionRecord(
+				1,
+				(1).to_bytes(32, 'big'),
+				False,
+				None,
+				None,
+				4,
+				TransactionType.TRANSFER.value,
+				TRANSACTION_SIGNER_ADDRESS,
+				TRANSACTION_RECIPIENT_ADDRESS,
+				4,
+				datetime(2026, 1, 1, 0, 0, 4),
+				None,
+				None,
+				(TransactionMosaicRecord(mosaic_id, 12345, 'transfer', 0, 2, []),))
+		], [_normalize_transaction_binary_fields(record) for record in result])
 
-	def test_get_transactions_requires_address_and_transfer_mosaic_on_the_same_row(self):
+	def test_get_transactions_combines_type_signer_and_recipient_filters_with_and(self):
+		# Arrange:
+		other_public_key = bytes.fromhex('02' * 32)
+		other_recipient = bytes.fromhex('03' * 24)
+		transactions = [
+			create_symbol_transaction(4, 1),
+			create_symbol_transaction(4, 2, signer_public_key=other_public_key),
+			create_symbol_transaction(4, 3, recipient_address=other_recipient),
+			create_symbol_transaction(4, 4, type=TransactionType.MOSAIC_METADATA.value)
+		]
+
+		# Act:
+		result = _query_symbol_transactions(
+			transactions,
+			create_symbol_sync_state(last_synced_height=4, finalized_height=3),
+			TransactionQuery(
+				transaction_types=(TransactionType.TRANSFER.value,),
+				signer_public_key=SIGNER_PUBLIC_KEY,
+				recipient_address=TRANSACTION_RECIPIENT_ADDRESS))
+
+		# Assert:
+		self.assertEqual([
+			TransactionRecord(
+				1,
+				(1).to_bytes(32, 'big'),
+				False,
+				None,
+				None,
+				4,
+				TransactionType.TRANSFER.value,
+				TRANSACTION_SIGNER_ADDRESS,
+				TRANSACTION_RECIPIENT_ADDRESS,
+				4,
+				datetime(2026, 1, 1, 0, 0, 4),
+				None,
+				None,
+				())
+		], [_normalize_transaction_binary_fields(record) for record in result])
+
+	def test_get_transactions_includes_embedded_rows_when_requested(self):
+		# Arrange:
+		parent_hash = bytes.fromhex('AA' * 32)
+		transactions = [
+			create_symbol_transaction(
+				4,
+				10,
+				type=TransactionType.AGGREGATE_COMPLETE.value,
+				hash=parent_hash),
+			create_symbol_transaction(4, 0, is_embedded=True, aggregate_hash=parent_hash),
+			create_symbol_transaction(4, 1, is_embedded=True, aggregate_hash=parent_hash)
+		]
+
+		# Act:
+		result = _query_symbol_transactions(
+			transactions,
+			create_symbol_sync_state(last_synced_height=4, finalized_height=3),
+			TransactionQuery(include_embedded=True))
+
+		# Assert:
+		self.assertEqual([
+			(3, True, TransactionType.TRANSFER.value, None, parent_hash, 1),
+			(2, True, TransactionType.TRANSFER.value, None, parent_hash, 0),
+			(1, False, TransactionType.AGGREGATE_COMPLETE.value, parent_hash, None, None)
+		], [
+			(
+				transaction.transaction_id,
+				transaction.is_embedded,
+				transaction.transaction_type,
+				bytes(transaction.hash) if transaction.hash is not None else None,
+				bytes(transaction.aggregate_hash) if transaction.aggregate_hash is not None else None,
+				transaction.embedded_index)
+			for transaction in result])
+
+	def test_get_transactions_requires_address_and_transfer_mosaic_on_the_same_transaction_row(self):
 		# Arrange:
 		participant_address = bytes.fromhex('04' * 24)
 		transfer_mosaic_id = '1234567890ABCDEF'
@@ -132,7 +272,7 @@ class SymbolDatabaseTransactionsTest(TestCase):  # pylint: disable=too-many-publ
 			is_embedded=True,
 			mosaic_rows=[{'mosaic_id': transfer_mosaic_id, 'amount': 40, 'role': 'transfer', 'position': 0}])
 
-		# Act:
+		# Act: The parent and child are decoys whose address and Mosaic only match across different rows.
 		result = _query_symbol_transactions(
 			[both_filters, address_only, mosaic_only, parent, child],
 			create_symbol_sync_state(last_synced_height=4, finalized_height=3),
@@ -182,8 +322,38 @@ class SymbolDatabaseTransactionsTest(TestCase):  # pylint: disable=too-many-publ
 			TransactionQuery(address=participant_address))
 
 		# Assert:
-		self.assertEqual([(True, 1), (True, 0)], [
-			(transaction.is_embedded, transaction.embedded_index) for transaction in embedded_result])
+		self.assertEqual([
+			TransactionRecord(
+				3,
+				None,
+				True,
+				bytes.fromhex('AA' * 32),
+				1,
+				4,
+				TransactionType.TRANSFER.value,
+				TRANSACTION_SIGNER_ADDRESS,
+				TRANSACTION_RECIPIENT_ADDRESS,
+				None,
+				datetime(2026, 1, 1, 0, 0, 4),
+				None,
+				None,
+				()),
+			TransactionRecord(
+				2,
+				None,
+				True,
+				bytes.fromhex('AA' * 32),
+				0,
+				4,
+				TransactionType.TRANSFER.value,
+				TRANSACTION_SIGNER_ADDRESS,
+				TRANSACTION_RECIPIENT_ADDRESS,
+				None,
+				datetime(2026, 1, 1, 0, 0, 4),
+				None,
+				None,
+				())
+		], [_normalize_transaction_binary_fields(record) for record in embedded_result])
 		self.assertEqual([], top_level_result)
 
 	def test_get_transactions_transfer_mosaic_search_excludes_metadata_target_and_uses_saved_resolution(self):
@@ -350,24 +520,6 @@ class SymbolDatabaseTransactionsTest(TestCase):  # pylint: disable=too-many-publ
 				create_symbol_sync_state(last_synced_height=1, finalized_height=1),
 				TransactionQuery())
 
-	def test_get_transactions_raises_data_unavailable_when_confirmed_timestamp_is_missing(self):
-		# Arrange:
-		with symbol_test_database(
-			create_symbol_sync_state(last_synced_height=1, finalized_height=1),
-			[create_symbol_block(1)]) as (db_config, puller_database):
-			puller_database.upsert_transactions_for_height(1, [create_symbol_transaction(1, 1)])
-			with puller_database.connection.cursor() as cursor:
-				cursor.execute('ALTER TABLE symbol_transactions ALTER COLUMN timestamp DROP NOT NULL')
-				cursor.execute('UPDATE symbol_transactions SET timestamp = NULL WHERE height = 1')
-			puller_database.connection.commit()
-			database = SymbolDatabase(db_config)
-			try:
-				# Act + Assert:
-				with self.assertRaisesRegex(SymbolDataUnavailable, 'confirmed timestamp is missing'):
-					database.get_transactions(TransactionQuery())
-			finally:
-				database.close()
-
 	def test_get_transactions_uses_one_snapshot_for_sync_state_page_and_mosaic_state(self):
 		# Arrange:
 		transaction = create_symbol_transaction(
@@ -439,6 +591,16 @@ class SymbolDatabaseTransactionsTest(TestCase):  # pylint: disable=too-many-publ
 		# Assert:
 		self.assertEqual(1, len(result))
 		self.assertEqual('1234567890ABCDEF', result[0].mosaics[0].mosaic_id)
+
+
+def _normalize_transaction_binary_fields(record):
+	"""Normalizes PostgreSQL bytea memoryviews for value-based record comparisons."""
+
+	return record._replace(
+		hash=bytes(record.hash) if record.hash is not None else None,
+		aggregate_hash=bytes(record.aggregate_hash) if record.aggregate_hash is not None else None,
+		signer_address=bytes(record.signer_address),
+		recipient_address=bytes(record.recipient_address) if record.recipient_address is not None else None)
 
 
 def _query_symbol_transactions(transactions, sync_state, query, mosaics=None):

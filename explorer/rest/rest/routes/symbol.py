@@ -240,7 +240,7 @@ def _parse_transaction_query():
 		raise ValueError('address cannot be combined with signerPublicKey or recipientAddress')
 
 	transfer_mosaic_id = _parse_transfer_mosaic_id(_get_scalar_parameter('transferMosaicId'))
-	embedded = _parse_embedded(_get_scalar_parameter('embedded'))
+	embedded = _parse_boolean('embedded', _get_scalar_parameter('embedded'))
 	order_value = _get_scalar_parameter('order', 'DESC').upper()
 	if order_value != SortOrder.DESC.value:
 		raise ValueError('order must be DESC')
@@ -294,7 +294,7 @@ def _parse_transfer_mosaic_id(value):
 	return normalized_mosaic_id
 
 
-def _parse_embedded(value):
+def _parse_boolean(name, value):
 	if value is None:
 		return False
 
@@ -305,7 +305,7 @@ def _parse_embedded(value):
 	if normalized_value == 'false':
 		return False
 
-	raise ValueError('embedded must be true or false')
+	raise ValueError(f'{name} must be true or false')
 
 
 def _get_scalar_parameter(name, default=None):

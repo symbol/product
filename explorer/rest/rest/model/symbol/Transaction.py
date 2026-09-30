@@ -37,8 +37,7 @@ class SymbolTransactionView:
 		return sum(
 			format_amount(mosaic.amount, native_mosaic_info.divisibility)
 			for mosaic in self.transaction.mosaics
-			if 'transfer' == mosaic.role and normalize_mosaic_id(
-				mosaic.mosaic_id) == native_mosaic_info.id)
+			if 'transfer' == mosaic.role and normalize_mosaic_id(mosaic.mosaic_id) == native_mosaic_info.id)
 
 	def _fee(self, native_mosaic_info):
 		transaction = self.transaction

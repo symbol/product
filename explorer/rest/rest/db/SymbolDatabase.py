@@ -352,8 +352,6 @@ class SymbolDatabase(DatabaseConnectionPool):
 		if any(not row[2] and row[9] is None for row in transaction_rows):
 			raise SymbolDataUnavailable(
 				'Symbol transaction data is unavailable: confirmed top-level effective fee is missing')
-		if any(row[10] is None for row in transaction_rows):
-			raise SymbolDataUnavailable('Symbol transaction data is unavailable: confirmed timestamp is missing')
 
 		return transaction_rows
 
@@ -368,6 +366,11 @@ class SymbolDatabase(DatabaseConnectionPool):
 				WHERE addresses.transaction_id = transactions.id AND addresses.address = %s)'''),
 			(query.signer_public_key, 'transactions.signer_public_key = %s'),
 			(query.recipient_address, 'transactions.recipient_address = %s'),
+			(query.transfer_mosaic_id, '''EXISTS (
+				SELECT 1 FROM symbol_transaction_mosaics AS transfer_mosaics
+				WHERE transfer_mosaics.transaction_id = transactions.id
+					AND transfer_mosaics.mosaic_id = %s
+					AND transfer_mosaics.role = 'transfer'::symbol_transaction_mosaic_role)'''),
 		]
 		for value, clause in filters:
 			if value is not None:
@@ -377,14 +380,6 @@ class SymbolDatabase(DatabaseConnectionPool):
 		if query.transaction_types:
 			where_clauses.append('transactions.type = ANY(%s::integer[])')
 			parameters.append(list(query.transaction_types))
-
-		if query.transfer_mosaic_id is not None:
-			where_clauses.append('''EXISTS (
-				SELECT 1 FROM symbol_transaction_mosaics AS transfer_mosaics
-				WHERE transfer_mosaics.transaction_id = transactions.id
-					AND transfer_mosaics.mosaic_id = %s
-					AND transfer_mosaics.role = 'transfer'::symbol_transaction_mosaic_role)''')
-			parameters.append(query.transfer_mosaic_id)
 
 		if not query.include_embedded:
 			where_clauses.append('transactions.is_embedded = false')
@@ -411,6 +406,7 @@ class SymbolDatabase(DatabaseConnectionPool):
 		excluded_native_mosaic_id = None
 		if _is_non_public_state(sync_state) and self.native_mosaic_info:
 			excluded_native_mosaic_id = self.native_mosaic_info.id
+
 		mosaic_state_by_id = SymbolDatabase._fetch_transaction_mosaic_state(
 			cursor, transaction_mosaic_rows, excluded_native_mosaic_id)
 		mosaics_by_transaction = SymbolDatabase._map_transaction_mosaics(
@@ -421,6 +417,7 @@ class SymbolDatabase(DatabaseConnectionPool):
 		for row in transaction_mosaic_rows:
 			if self.native_mosaic_info and normalize_mosaic_id(row[1]) == self.native_mosaic_info.id:
 				continue
+
 			return True
 
 		return False

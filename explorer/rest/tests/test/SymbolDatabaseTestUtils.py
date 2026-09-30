@@ -33,8 +33,10 @@ def initialize_symbol_database(puller_database, sync_state=None, blocks=(), mosa
 	puller_database.create_tables()
 	if sync_state is not None:
 		puller_database.upsert_sync_state(sync_state)
+
 	if blocks:
 		puller_database.upsert_blocks(blocks)
+
 	for mosaic in mosaics:
 		puller_database.upsert_mosaic(mosaic)
 
