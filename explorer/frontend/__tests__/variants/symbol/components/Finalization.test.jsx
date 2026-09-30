@@ -35,6 +35,8 @@ const SCREEN_TEXT = {
 	eta: 'value_eta'
 };
 
+const fieldTitles = [SCREEN_TEXT.fieldChainHeight, SCREEN_TEXT.fieldFinalizationHeight, SCREEN_TEXT.fieldEpoch];
+
 // Fixtures
 
 const finalizedEpochInfo = {
@@ -61,19 +63,6 @@ describe('variants/symbol/components/Finalization', () => {
 		jest.clearAllTimers();
 	});
 
-	it('renders the field titles', async () => {
-		// Arrange:
-		fetchFinalizationInfo.mockResolvedValue(finalizationInfo);
-
-		// Act:
-		await renderFinalization();
-
-		// Assert:
-		expect(screen.getByText(SCREEN_TEXT.fieldChainHeight)).toBeInTheDocument();
-		expect(screen.getByText(SCREEN_TEXT.fieldFinalizationHeight)).toBeInTheDocument();
-		expect(screen.getByText(SCREEN_TEXT.fieldEpoch)).toBeInTheDocument();
-	});
-
 	describe('render scenarios', () => {
 		const runRenderTest = (description, config, expected) => {
 			it(description, async () => {
@@ -84,6 +73,7 @@ describe('variants/symbol/components/Finalization', () => {
 				await renderFinalization();
 
 				// Assert:
+				fieldTitles.forEach(title => expect(screen.getByText(title)).toBeInTheDocument());
 				Object.entries(expected.textOccurrences).forEach(([text, count]) => expect(screen.getAllByText(text)).toHaveLength(count));
 				expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', expected.progressValue);
 				if (expected.etaText) {
