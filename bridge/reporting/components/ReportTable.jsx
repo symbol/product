@@ -3,7 +3,6 @@ import styles from '@/styles/ReportTable.module.css';
 import {
 	createExplorerUrl,
 	formatAtomicAmount,
-	formatPpm,
 	formatTimestamp,
 	isValueMissing,
 	truncateMiddle
@@ -57,9 +56,9 @@ const AmountValue = ({ value, asset }) => (
 	</div>
 );
 
-const RateValue = ({ value }) => (
-	<span className={styles.rateValue} title={isValueMissing(value) ? '' : `${value} PPM`}>
-		{formatPpm(value)}
+const RateValue = ({ value, asset }) => (
+	<span className={styles.rateValue} title={value ?? ''}>
+		{formatAtomicAmount(value, asset.divisibility)}
 	</span>
 );
 
@@ -88,7 +87,7 @@ const RequestRow = ({ row, tab, configuration }) => {
 			<td><AmountValue value={row.requestAmount} asset={tab.sourceAsset} /></td>
 			<td><ExternalValue network={destinationNetwork} type="address" value={row.destinationAddress} /></td>
 			<td><TransactionValue hash={row.payoutTransactionHash} timestamp={row.payoutTimestamp} network={destinationNetwork} /></td>
-			<td><RateValue value={row.payoutConversionRate} /></td>
+			<td><RateValue value={row.payoutConversionRate} asset={tab.destinationAsset} /></td>
 			<td><AmountValue value={row.payoutTotalFee} asset={tab.destinationAsset} /></td>
 			<td><AmountValue value={row.payoutNetAmount} asset={tab.destinationAsset} /></td>
 		</tr>
@@ -147,7 +146,7 @@ const RequestCard = ({ row, tab, configuration }) => {
 					/>
 				</MobileField>
 				<MobileField label="Rate">
-					<RateValue value={row.payoutConversionRate} />
+					<RateValue value={row.payoutConversionRate} asset={tab.destinationAsset} />
 				</MobileField>
 				<MobileField label="Fee">
 					<AmountValue asset={tab.destinationAsset} value={row.payoutTotalFee} />

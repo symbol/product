@@ -37,7 +37,7 @@ const ExportButton = ({ criteria, tab }) => {
 		<div className={styles.exportArea}>
 			<button className={styles.exportButton} disabled={isExporting} onClick={exportRows} type="button">
 				<span aria-hidden="true">↓</span>
-				{isExporting ? `Exporting ${exportedRows} rows` : 'Export all CSV'}
+				{isExporting ? `Exporting ${exportedRows} rows` : 'Export CSV'}
 			</button>
 			{error && <span className={styles.exportError} role="alert">{error}</span>}
 		</div>

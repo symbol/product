@@ -1,7 +1,6 @@
 import {
 	createExplorerUrl,
 	formatAtomicAmount,
-	formatPpm,
 	formatTimestamp,
 	isValueMissing,
 	truncateMiddle
@@ -64,19 +63,6 @@ describe('report formatting', () => {
 
 			// Assert:
 			expect(formattedAmount).toBe('123');
-		});
-	});
-
-	describe('formatPpm', () => {
-		it('formats conversion rate PPM values', () => {
-			// Arrange:
-			const rates = ['1000000', '999999', '2000000'];
-
-			// Act:
-			const formattedRates = rates.map(formatPpm);
-
-			// Assert:
-			expect(formattedRates).toEqual(['1', '0.999999', '2']);
 		});
 	});
 
