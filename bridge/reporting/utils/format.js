@@ -19,8 +19,6 @@ export const formatAtomicAmount = (value, divisibility) => {
 	return `${whole}${fraction ? `.${fraction}` : ''}`;
 };
 
-export const formatPpm = value => formatAtomicAmount(value, 6);
-
 export const formatTimestamp = value => {
 	if (isValueMissing(value))
 		return '—';

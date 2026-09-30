@@ -3,8 +3,8 @@ import { fireEvent, render, screen } from '@testing-library/react';
 
 describe('ReportTabs', () => {
 	const tabs = [
-		{ id: 'one', label: 'XYM → WXYM' },
-		{ id: 'two', label: 'WXYM → XYM' },
+		{ id: 'one', label: 'XYM → bXYM' },
+		{ id: 'two', label: 'bXYM → XYM' },
 		{ id: 'three', label: 'XYM → ETH' }
 	];
 
@@ -14,7 +14,7 @@ describe('ReportTabs', () => {
 		render(<ReportTabs activeTabId="one" onChange={onChange} tabs={tabs} />);
 
 		// Act:
-		fireEvent.click(screen.getByRole('tab', { name: /WXYM → XYM/ }));
+		fireEvent.click(screen.getByRole('tab', { name: /bXYM → XYM/ }));
 
 		// Assert:
 		expect(onChange).toHaveBeenCalledWith('two');

@@ -1,4 +1,4 @@
-import { CONFIGURATION, ERROR_ROW, ERROR_TAB, REQUEST_ROW, REQUEST_TAB } from '../test-utils/fixtures';
+import { CONFIGURATION, ERROR_ROW, ERROR_TAB, REQUEST_ROW, REQUEST_TAB, XYM_ETH_REQUEST_TAB } from '../test-utils/fixtures';
 import ReportTable from '@/components/ReportTable';
 import '@testing-library/jest-dom';
 import { fireEvent, render, screen, within } from '@testing-library/react';
@@ -30,6 +30,24 @@ const renderTable = ({
 };
 
 describe('ReportTable', () => {
+	it('renders and formats the ETH conversion rate', () => {
+		// Arrange:
+		const { table } = renderTable({
+			rows: [{
+				REQUEST_ROW,
+				payoutConversionRate: 1
+			}],
+			tab: XYM_ETH_REQUEST_TAB
+		});
+
+		// Act:
+		const tableView = within(table);
+
+
+		// Assert:
+		expect(tableView.getByText('0.000000000000000001')).toBeInTheDocument();
+	});
+
 	it('renders and formats request report fields', () => {
 		// Arrange:
 		const { table } = renderTable();
@@ -44,7 +62,7 @@ describe('ReportTable', () => {
 		expect(tableView.getByText('300000')).toBeInTheDocument();
 		expect(tableView.getByText('0x1f533cd…30ef8e')).toHaveAttribute('title', '0x1f533cd9711049fA7604D0F49C45B6e5Af30ef8e');
 		expect(tableView.getByText('BBBBBBBB…BBBBBB')).toHaveAttribute('title', 'B'.repeat(64));
-		expect(tableView.getByText('1')).toHaveAttribute('title', '1000000 PPM');
+		expect(tableView.getByText('1')).toHaveAttribute('title', '1000000');
 		expect(tableView.getByText('357.429175')).toBeInTheDocument();
 		expect(tableView.getByText('299642.570825')).toBeInTheDocument();
 		expect(tableView.getByText('1970-01-01 00:00:02 UTC')).toBeInTheDocument();
@@ -108,7 +126,7 @@ describe('ReportTable', () => {
 		expect(tableView.queryAllByRole('link')).toHaveLength(0);
 		expect(tableView.getAllByText('—')).toHaveLength(5);
 		expect(tableView.getByText('XYM')).toBeInTheDocument();
-		expect(tableView.queryByText('WXYM')).not.toBeInTheDocument();
+		expect(tableView.queryByText('bXYM')).not.toBeInTheDocument();
 	});
 
 	it('renders links addresses and transactions to their configured explorers', () => {
@@ -223,7 +241,7 @@ describe('ReportTable', () => {
 		expect(cardView.getByText('Payout Address')).toBeInTheDocument();
 		expect(cardView.getByText('0x1f533cd…30ef8e')).toHaveAttribute('title', REQUEST_ROW.destinationAddress);
 		expect(cardView.getByText('AAAAAAAA…AAAAAA')).toHaveAttribute('title', REQUEST_ROW.payoutTransactionHash);
-		expect(cardView.getByText('1')).toHaveAttribute('title', '1000000 PPM');
+		expect(cardView.getByText('1')).toHaveAttribute('title', '1000000');
 		expect(cardView.getByText('357.429175')).toBeInTheDocument();
 		expect(cardView.getByText('299642.570825')).toBeInTheDocument();
 	});

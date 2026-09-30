@@ -4,26 +4,26 @@ describe('report tab configuration', () => {
 	it('contains the supported request and error tabs', () => {
 		// Arrange:
 		const xym = { ticker: 'XYM', divisibility: 6 };
-		const wxym = { ticker: 'WXYM', divisibility: 6 };
+		const bxym = { ticker: 'bXYM', divisibility: 6 };
 		const eth = { ticker: 'ETH', divisibility: 18 };
 		const expectedTabs = [
 			{
-				id: 'xym-wxym-requests',
-				label: 'XYM → WXYM',
+				id: 'xym-bxym-requests',
+				label: 'XYM → bXYM',
 				bridgeType: 'wrapped',
 				operation: 'wrap',
 				sourceAsset: xym,
-				destinationAsset: wxym,
+				destinationAsset: bxym,
 				sourceNetwork: 'nativeNetwork',
 				destinationNetwork: 'wrappedNetwork',
 				resource: 'requests'
 			},
 			{
-				id: 'wxym-xym-requests',
-				label: 'WXYM → XYM',
+				id: 'bxym-xym-requests',
+				label: 'bXYM → XYM',
 				bridgeType: 'wrapped',
 				operation: 'unwrap',
-				sourceAsset: wxym,
+				sourceAsset: bxym,
 				destinationAsset: xym,
 				sourceNetwork: 'wrappedNetwork',
 				destinationNetwork: 'nativeNetwork',
@@ -41,22 +41,22 @@ describe('report tab configuration', () => {
 				resource: 'requests'
 			},
 			{
-				id: 'xym-wxym-errors',
-				label: 'XYM → WXYM Errors',
+				id: 'xym-bxym-errors',
+				label: 'XYM → bXYM Errors',
 				bridgeType: 'wrapped',
 				operation: 'wrap',
 				sourceAsset: xym,
-				destinationAsset: wxym,
+				destinationAsset: bxym,
 				sourceNetwork: 'nativeNetwork',
 				destinationNetwork: 'wrappedNetwork',
 				resource: 'errors'
 			},
 			{
-				id: 'wxym-xym-errors',
-				label: 'WXYM → XYM Errors',
+				id: 'bxym-xym-errors',
+				label: 'bXYM → XYM Errors',
 				bridgeType: 'wrapped',
 				operation: 'unwrap',
-				sourceAsset: wxym,
+				sourceAsset: bxym,
 				destinationAsset: xym,
 				sourceNetwork: 'wrappedNetwork',
 				destinationNetwork: 'nativeNetwork',

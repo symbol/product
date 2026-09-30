@@ -53,7 +53,7 @@ describe('Home', () => {
 		renderHome();
 
 		// Act:
-		const reportPanel = screen.getByTestId('report-panel-xym-wxym-requests');
+		const reportPanel = screen.getByTestId('report-panel-xym-bxym-requests');
 
 		// Assert:
 		expect(reportPanel.getAttribute('data-base-url')).toBe(bridgeBaseUrls.wrapped);
@@ -71,7 +71,7 @@ describe('Home', () => {
 	});
 
 	it.each([
-		['wrapped', 'xym-wxym-requests'],
+		['wrapped', 'xym-bxym-requests'],
 		['native', 'xym-eth-requests']
 	])('passes the %s bridge configuration to its panel', (bridgeType, tabId) => {
 		// Arrange:
@@ -101,23 +101,23 @@ describe('Home', () => {
 		const activeReport = screen.getByText('Active report').parentElement;
 
 		// Assert:
-		expect(within(activeReport).getByText('XYM → WXYM')).toBeTruthy();
+		expect(within(activeReport).getByText('XYM → bXYM')).toBeTruthy();
 
 		// Act:
-		fireEvent.click(screen.getByRole('tab', { name: /WXYM → XYM$/ }));
+		fireEvent.click(screen.getByRole('tab', { name: /bXYM → XYM$/ }));
 
 		// Assert:
-		expect(within(activeReport).getByText('WXYM → XYM')).toBeTruthy();
+		expect(within(activeReport).getByText('bXYM → XYM')).toBeTruthy();
 	});
 
 	it('renders all bridge report tabs', () => {
 		// Arrange:
 		const expectedLabels = [
-			'XYM → WXYM',
-			'WXYM → XYM',
+			'XYM → bXYM',
+			'bXYM → XYM',
 			'XYM → ETH',
-			'XYM → WXYM Errors',
-			'WXYM → XYM Errors',
+			'XYM → bXYM Errors',
+			'bXYM → XYM Errors',
 			'XYM → ETH Errors'
 		];
 
