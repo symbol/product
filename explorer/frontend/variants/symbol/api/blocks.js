@@ -1,6 +1,13 @@
 import { stubBlocks } from './fixtures';
 import { stubValue } from './stub';
+import config from '@/app/config';
 import { createApiUrl, makeRequest } from '@/app/utils/server';
+
+/**
+ * @typedef ChainStatus
+ * @property {number} height - the current chain height.
+ * @property {number} finalizedHeight - the latest finalized block height.
+ */
 
 const DEFAULT_BLOCK_LIMIT = 10;
 const MAX_BLOCK_LIMIT = 100;
@@ -84,8 +91,6 @@ const createPageState = (blocks, pageNumber, limit, sort) => {
 	};
 };
 
-const STUB_FINALIZED_HEIGHT = stubBlocks[3].height;
-
 /**
  * Fetches a Symbol block page from Explorer REST.
  *
@@ -111,6 +116,24 @@ export const fetchBlockPage = async (searchParams = {}) => {
 	return createPageState(blocks, pageNumber, limit, sort);
 };
 
-export const fetchChainHight = () => Promise.resolve(stubBlocks[0].height);
-export const fetchChainStatus = () => Promise.resolve({ height: stubBlocks[0].height, finalizedHeight: STUB_FINALIZED_HEIGHT });
+/**
+ * Fetches the chain height from Nodewatch.
+ * @returns {Promise<number>} the chain height.
+ */
+export const fetchChainHight = async () => {
+	const { height } = await fetchChainStatus();
+
+	return height;
+};
+
+/**
+ * Fetches the chain status from Nodewatch.
+ * @returns {Promise<ChainStatus>} the chain status.
+ */
+export const fetchChainStatus = async () => {
+	const { height, finalizedHeight } = await makeRequest(`${config.PUBLIC_NODEWATCH_URL}/api/symbol/height`);
+
+	return { height: Number(height), finalizedHeight: Number(finalizedHeight) };
+};
+
 export const fetchBlockInfo = stubValue(stubBlocks[0]);
