@@ -1,4 +1,5 @@
 // Registered variants, consumed by the contract test when it walks every implementation.
+import { VARIANT_IDS } from './ids';
 import * as nem from './nem';
 import * as symbol from './symbol';
 
@@ -7,4 +8,4 @@ export const variants = {
 	symbol
 };
 
-export const VARIANT_IDS = Object.keys(variants);
+export { VARIANT_IDS };
