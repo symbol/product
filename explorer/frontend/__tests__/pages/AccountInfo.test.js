@@ -2,11 +2,11 @@ import '@testing-library/jest-dom';
 import { accountHarvestedBlockPageResult, accountInfoResult } from '../test-utils/accounts';
 import { clickText, runGetServerSidePropsTests, runRenderScenarioTests, runTestCases } from '../test-utils/page';
 import { transactionPageResult } from '../test-utils/transactions';
+import { describeVariant } from '../test-utils/variants';
 import * as AccountService from '@/app/api/accounts';
 import * as TransactionService from '@/app/api/transactions';
 import AccountInfo, { getServerSideProps } from '@/app/pages/accounts/[address]';
 import * as utils from '@/app/utils';
-import { pageConfig } from '@/app/variants/page-config';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 
 // Mocks
@@ -126,164 +126,136 @@ describe('AccountInfo', () => {
 		});
 	});
 
-	describe('render scenarios', () => {
+	describe('render', () => {
 		const renderPage = config =>
 			render(<AccountInfo accountInfo={{ ...accountInfoResult, ...config.accountInfo }} preloadedTransactions={[]} />);
 
-		const renderScenarioCases = [
-			{
-				description: 'account section: renders the main account fields and mosaics',
-				config: {},
-				expected: {
-					texts: [
-						SCREEN_TEXT.sectionAccount,
-						accountInfoResult.address,
-						accountInfoResult.description,
-						accountInfoResult.publicKey,
-						accountInfoResult.height,
-						`${accountInfoResult.importance} %`,
-						...accountInfoResult.mosaics.map(mosaic => mosaic.id)
-					],
-					// The balance appears twice: the account balance field and the native mosaic row.
-					textOccurrences: { [accountInfoResult.balance]: 2 },
-					hiddenTexts: [SCREEN_TEXT.noDescription]
-				}
-			},
-			{
-				description: 'account section: renders the description placeholder when the description is missing',
-				config: { accountInfo: { description: null } },
-				expected: {
-					texts: [SCREEN_TEXT.noDescription],
-					hiddenTexts: [accountInfoResult.description]
-				}
-			},
-			{
-				description: 'account section: does not render the linked label for an ordinary account',
-				config: {},
-				expected: { hiddenTexts: [SCREEN_TEXT.labelLinked] }
-			},
-			{
-				description: 'linked keys tab: renders the linked account field when a linked key exists',
-				config: {
-					accountInfo: { linkedAddress: linkedAccountAddress },
-					actions: [clickText(SCREEN_TEXT.sectionLinkedKeys)]
-				},
-				expected: {
-					texts: [SCREEN_TEXT.fieldLinkedAccount, linkedAccountAddress],
-					hiddenTexts: [SCREEN_TEXT.fieldMainAccount, SCREEN_TEXT.messageNoLinkedKeys]
-				}
-			},
-			{
-				description: 'linked keys tab: renders the main account field and the linked label for a remote account',
-				config: {
-					accountInfo: { mainAddress: linkedAccountAddress },
-					actions: [clickText(SCREEN_TEXT.sectionLinkedKeys)]
-				},
-				expected: {
-					texts: [SCREEN_TEXT.labelLinked, SCREEN_TEXT.fieldMainAccount, linkedAccountAddress],
-					hiddenTexts: [SCREEN_TEXT.fieldLinkedAccount, SCREEN_TEXT.messageNoLinkedKeys]
-				}
-			},
-			{
-				description: 'linked keys tab: renders the no linked keys message when the account has no keys',
-				config: { actions: [clickText(SCREEN_TEXT.sectionLinkedKeys)] },
-				expected: {
-					texts: [SCREEN_TEXT.messageNoLinkedKeys],
-					hiddenTexts: [SCREEN_TEXT.fieldLinkedAccount, SCREEN_TEXT.fieldMainAccount]
-				}
-			},
-			{
-				description: 'multisig section: renders the cosignatory fields for a multisig account',
-				config: {
-					accountInfo: {
-						cosignatories: cosignatoryAddresses,
-						cosignatoryOf: cosignatoryOfAddresses,
-						isMultisig: true
-					}
-				},
-				expected: {
-					texts: [
-						SCREEN_TEXT.sectionMultisig,
-						SCREEN_TEXT.labelMultisig,
-						SCREEN_TEXT.fieldMinCosignatories,
-						SCREEN_TEXT.fieldAccountCosignatories,
-						SCREEN_TEXT.fieldCosignatoryOf,
-						...cosignatoryAddresses,
-						...cosignatoryOfAddresses
-					]
-				}
-			},
-			{
-				description: 'multisig section: renders only the cosignatory of field for a cosignatory-only account',
-				config: { accountInfo: { cosignatoryOf: cosignatoryOfAddresses } },
-				expected: {
-					texts: [SCREEN_TEXT.sectionMultisig, SCREEN_TEXT.fieldCosignatoryOf, ...cosignatoryOfAddresses],
-					hiddenTexts: [SCREEN_TEXT.labelMultisig, SCREEN_TEXT.fieldMinCosignatories, SCREEN_TEXT.fieldAccountCosignatories]
-				}
-			},
-			{
-				description: 'multisig section: is not rendered for an ordinary account',
-				config: {},
-				expected: { hiddenTexts: [SCREEN_TEXT.sectionMultisig, SCREEN_TEXT.labelMultisig] }
-			}
-		];
-
-		runRenderScenarioTests({ renderPage, cases: renderScenarioCases });
-	});
-
-	describe('account history', () => {
-		const renderAccountInfo = () =>
-			render(<AccountInfo accountInfo={accountInfoResult} preloadedTransactions={transactionPageResult.data} />);
-
-		const renderHarvestedTab = () => {
-			renderAccountInfo();
-			fireEvent.click(screen.getByText(SCREEN_TEXT.sectionHarvested));
-		};
-
-		describe('history tabs', () => {
-			const historyTabCases = [
+		describe('section: account info', () => {
+			const accountInfoCases = [
 				{
-					description: 'renders the transactions tab',
-					config: { actions: [clickText(SCREEN_TEXT.sectionTransactions)] },
+					description: 'renders the main account fields and mosaics',
+					config: {},
 					expected: {
-						texts: [SCREEN_TEXT.sectionHistory],
-						asyncTexts: transactionPageResult.data.map(transaction => utils.truncateString(transaction.hash, 'hash'))
+						texts: [
+							SCREEN_TEXT.sectionAccount,
+							accountInfoResult.address,
+							accountInfoResult.description,
+							accountInfoResult.publicKey,
+							accountInfoResult.height,
+							`${accountInfoResult.importance} %`,
+							...accountInfoResult.mosaics.map(mosaic => mosaic.id)
+						],
+						// The balance appears twice: the account balance field and the native mosaic row.
+						textOccurrences: { [accountInfoResult.balance]: 2 },
+						hiddenTexts: [SCREEN_TEXT.noDescription]
 					}
 				},
 				{
-					description: 'renders the harvested tab',
-					config: { actions: [clickText(SCREEN_TEXT.sectionHarvested)] },
+					description: 'renders the description placeholder when the description is missing',
+					config: { accountInfo: { description: null } },
 					expected: {
-						texts: [SCREEN_TEXT.sectionHistory],
-						asyncTexts: [
-							SCREEN_TEXT.tableFieldHeight,
-							SCREEN_TEXT.tableFieldType,
-							SCREEN_TEXT.tableFieldAmount,
-							...accountHarvestedBlockPageResult.data.map(block => block.height)
-						]
+						texts: [SCREEN_TEXT.noDescription],
+						hiddenTexts: [accountInfoResult.description]
+					}
+				},
+				{
+					description: 'does not render the linked label for an ordinary account',
+					config: {},
+					expected: { hiddenTexts: [SCREEN_TEXT.labelLinked] }
+				}
+			];
+
+			runRenderScenarioTests({ renderPage, cases: accountInfoCases });
+		});
+
+		describe('section: linked keys', () => {
+			const linkedKeysCases = [
+				{
+					description: 'renders the linked account field when a linked key exists',
+					config: {
+						accountInfo: { linkedAddress: linkedAccountAddress },
+						actions: [clickText(SCREEN_TEXT.sectionLinkedKeys)]
+					},
+					expected: {
+						texts: [SCREEN_TEXT.fieldLinkedAccount, linkedAccountAddress],
+						hiddenTexts: [SCREEN_TEXT.fieldMainAccount, SCREEN_TEXT.messageNoLinkedKeys]
+					}
+				},
+				{
+					description: 'renders the main account field and the linked label for a remote account',
+					config: {
+						accountInfo: { mainAddress: linkedAccountAddress },
+						actions: [clickText(SCREEN_TEXT.sectionLinkedKeys)]
+					},
+					expected: {
+						texts: [SCREEN_TEXT.labelLinked, SCREEN_TEXT.fieldMainAccount, linkedAccountAddress],
+						hiddenTexts: [SCREEN_TEXT.fieldLinkedAccount, SCREEN_TEXT.messageNoLinkedKeys]
+					}
+				},
+				{
+					description: 'renders the no linked keys message when the account has no keys',
+					config: { actions: [clickText(SCREEN_TEXT.sectionLinkedKeys)] },
+					expected: {
+						texts: [SCREEN_TEXT.messageNoLinkedKeys],
+						hiddenTexts: [SCREEN_TEXT.fieldLinkedAccount, SCREEN_TEXT.fieldMainAccount]
 					}
 				}
 			];
 
-			runRenderScenarioTests({ renderPage: renderAccountInfo, cases: historyTabCases });
+			runRenderScenarioTests({ renderPage, cases: linkedKeysCases });
 		});
 
-		describe('empty block filter', () => {
-			// The chip ignores clicks while a request is in flight, so both actions wait for it to be enabled.
-			const toggleEmptyBlockFilter = async () => {
-				const filterChip = screen.getByText(SCREEN_TEXT.filterHideEmptyBlocks).closest('[role="button"]');
-				await waitFor(() => expect(filterChip).toHaveAttribute('aria-disabled', 'false'));
-				fireEvent.click(filterChip);
+		describe('section: multisig', () => {
+			const multisigCases = [
+				{
+					description: 'renders the cosignatory fields for a multisig account',
+					config: {
+						accountInfo: {
+							cosignatories: cosignatoryAddresses,
+							cosignatoryOf: cosignatoryOfAddresses,
+							isMultisig: true
+						}
+					},
+					expected: {
+						texts: [
+							SCREEN_TEXT.sectionMultisig,
+							SCREEN_TEXT.labelMultisig,
+							SCREEN_TEXT.fieldMinCosignatories,
+							SCREEN_TEXT.fieldAccountCosignatories,
+							SCREEN_TEXT.fieldCosignatoryOf,
+							...cosignatoryAddresses,
+							...cosignatoryOfAddresses
+						]
+					}
+				},
+				{
+					description: 'renders only the cosignatory of field for a cosignatory-only account',
+					config: { accountInfo: { cosignatoryOf: cosignatoryOfAddresses } },
+					expected: {
+						texts: [SCREEN_TEXT.sectionMultisig, SCREEN_TEXT.fieldCosignatoryOf, ...cosignatoryOfAddresses],
+						hiddenTexts: [SCREEN_TEXT.labelMultisig, SCREEN_TEXT.fieldMinCosignatories, SCREEN_TEXT.fieldAccountCosignatories]
+					}
+				},
+				{
+					description: 'is not rendered for an ordinary account',
+					config: {},
+					expected: { hiddenTexts: [SCREEN_TEXT.sectionMultisig, SCREEN_TEXT.labelMultisig] }
+				}
+			];
+
+			runRenderScenarioTests({ renderPage, cases: multisigCases });
+		});
+
+		describe('section: history', () => {
+			const renderAccountInfo = () =>
+				render(<AccountInfo accountInfo={accountInfoResult} preloadedTransactions={transactionPageResult.data} />);
+
+			const renderHarvestedTab = () => {
+				renderAccountInfo();
+				fireEvent.click(screen.getByText(SCREEN_TEXT.sectionHarvested));
 			};
 
-			const clearEmptyBlockFilter = async () => {
-				const filterChip = screen.getByText(SCREEN_TEXT.filterHideEmptyBlocks).closest('[role="button"]');
-				await waitFor(() => expect(filterChip).toHaveAttribute('aria-disabled', 'false'));
-				// The page renders a filter per history tab, so click the clear button next to the chip.
-				fireEvent.click(within(filterChip.parentElement).getByText(SCREEN_TEXT.buttonClear));
-			};
-
-			const runEmptyBlockFilterTest = (description, config, expected) => {
+			const runHarvestedCriteriaTest = (description, config, expected) => {
 				it(description, async () => {
 					// Arrange:
 					renderHarvestedTab();
@@ -300,54 +272,107 @@ describe('AccountInfo', () => {
 				});
 			};
 
-			const emptyBlockFilterCases = [
-				{
-					description: 'asks for every harvested block by default',
-					config: { filterActions: [] },
-					expected: { searchCriteria: harvestedBlockSearchCriteria }
-				},
-				{
-					description: 'leaves out empty blocks once the filter is selected',
-					config: { filterActions: [toggleEmptyBlockFilter] },
-					expected: { searchCriteria: { ...harvestedBlockSearchCriteria, isRewardedOnly: true } }
-				},
-				{
-					description: 'shows empty blocks again when the filter chip is toggled off',
-					config: { filterActions: [toggleEmptyBlockFilter, toggleEmptyBlockFilter] },
-					expected: { searchCriteria: harvestedBlockSearchCriteria }
-				},
-				{
-					description: 'shows empty blocks again when the filter is cleared',
-					config: { filterActions: [toggleEmptyBlockFilter, clearEmptyBlockFilter] },
-					expected: { searchCriteria: harvestedBlockSearchCriteria }
-				}
-			];
+			describe('common', () => {
+				const historyCases = [
+					{
+						description: 'renders the transactions tab',
+						config: { actions: [clickText(SCREEN_TEXT.sectionTransactions)] },
+						expected: {
+							texts: [SCREEN_TEXT.sectionHistory],
+							asyncTexts: transactionPageResult.data.map(transaction => utils.truncateString(transaction.hash, 'hash'))
+						}
+					},
+					{
+						description: 'renders the harvested tab',
+						config: { actions: [clickText(SCREEN_TEXT.sectionHarvested)] },
+						expected: {
+							texts: [SCREEN_TEXT.sectionHistory],
+							asyncTexts: [
+								SCREEN_TEXT.tableFieldHeight,
+								SCREEN_TEXT.tableFieldType,
+								SCREEN_TEXT.tableFieldAmount,
+								...accountHarvestedBlockPageResult.data.map(block => block.height)
+							]
+						}
+					},
+					{
+						description: 'renders the empty block filter chip',
+						variants: ['nem'],
+						config: { actions: [clickText(SCREEN_TEXT.sectionHarvested)] },
+						expected: {
+							asyncTexts: [accountHarvestedBlockPageResult.data[0].height],
+							texts: [SCREEN_TEXT.filterHideEmptyBlocks]
+						}
+					},
+					{
+						description: 'does not render the empty block filter chip',
+						variants: ['symbol'],
+						config: { actions: [clickText(SCREEN_TEXT.sectionHarvested)] },
+						expected: {
+							asyncTexts: [accountHarvestedBlockPageResult.data[0].height],
+							hiddenTexts: [SCREEN_TEXT.filterHideEmptyBlocks]
+						}
+					}
+				];
 
-			runTestCases(runEmptyBlockFilterTest, emptyBlockFilterCases);
+				runRenderScenarioTests({ renderPage: renderAccountInfo, cases: historyCases });
 
-			it('does not render the filter when the variant disables it', async () => {
-				// Arrange:
-				jest.replaceProperty(pageConfig.account, 'showEmptyBlockFilter', false);
+				runTestCases(runHarvestedCriteriaTest, [
+					{
+						description: 'asks for every harvested block by default',
+						config: { filterActions: [] },
+						expected: { searchCriteria: harvestedBlockSearchCriteria }
+					}
+				]);
 
-				// Act:
-				renderHarvestedTab();
+				it('shows the try-again action when the harvested block request fails', async () => {
+					// Arrange: silence the pagination error log.
+					jest.spyOn(console, 'error').mockImplementation();
+					AccountService.fetchAccountHarvestedBlockPage.mockRejectedValue(new Error('harvests request failed'));
 
-				// Assert:
-				await waitFor(() => expect(screen.getByText(accountHarvestedBlockPageResult.data[0].height)).toBeInTheDocument());
-				expect(screen.queryByText(SCREEN_TEXT.filterHideEmptyBlocks)).not.toBeInTheDocument();
+					// Act:
+					renderHarvestedTab();
+
+					// Assert:
+					await waitFor(() => expect(screen.getByText(SCREEN_TEXT.buttonTryAgain)).toBeInTheDocument());
+				});
 			});
-		});
 
-		it('shows the try-again action when the harvested block request fails', async () => {
-			// Arrange: silence the pagination error log.
-			jest.spyOn(console, 'error').mockImplementation();
-			AccountService.fetchAccountHarvestedBlockPage.mockRejectedValue(new Error('harvests request failed'));
+			describeVariant('nem')('empty block filter', () => {
+				// The chip ignores clicks while a request is in flight, so both actions wait for it to be enabled.
+				const toggleEmptyBlockFilter = async () => {
+					const filterChip = screen.getByText(SCREEN_TEXT.filterHideEmptyBlocks).closest('[role="button"]');
+					await waitFor(() => expect(filterChip).toHaveAttribute('aria-disabled', 'false'));
+					fireEvent.click(filterChip);
+				};
 
-			// Act:
-			renderHarvestedTab();
+				const clearEmptyBlockFilter = async () => {
+					const filterChip = screen.getByText(SCREEN_TEXT.filterHideEmptyBlocks).closest('[role="button"]');
+					await waitFor(() => expect(filterChip).toHaveAttribute('aria-disabled', 'false'));
+					// The page renders a filter per history tab, so click the clear button next to the chip.
+					fireEvent.click(within(filterChip.parentElement).getByText(SCREEN_TEXT.buttonClear));
+				};
 
-			// Assert:
-			await waitFor(() => expect(screen.getByText(SCREEN_TEXT.buttonTryAgain)).toBeInTheDocument());
+				const emptyBlockFilterCases = [
+					{
+						description: 'leaves out empty blocks once the filter is selected',
+						config: { filterActions: [toggleEmptyBlockFilter] },
+						expected: { searchCriteria: { ...harvestedBlockSearchCriteria, isRewardedOnly: true } }
+					},
+					{
+						description: 'shows empty blocks again when the filter chip is toggled off',
+						config: { filterActions: [toggleEmptyBlockFilter, toggleEmptyBlockFilter] },
+						expected: { searchCriteria: harvestedBlockSearchCriteria }
+					},
+					{
+						description: 'shows empty blocks again when the filter is cleared',
+						config: { filterActions: [toggleEmptyBlockFilter, clearEmptyBlockFilter] },
+						expected: { searchCriteria: harvestedBlockSearchCriteria }
+					}
+				];
+
+				runTestCases(runHarvestedCriteriaTest, emptyBlockFilterCases);
+			});
 		});
 	});
 });
