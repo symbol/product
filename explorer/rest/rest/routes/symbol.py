@@ -9,11 +9,18 @@ from flask import abort, jsonify, request
 from psycopg2 import Error as PsycopgError
 from symbolchain.CryptoTypes import PublicKey
 from symbolchain.sc import TransactionType
-from symbolchain.symbol.IdGenerator import is_mosaic_alias
+from symbolchain.symbol.IdGenerator import generate_namespace_path
 from symbolchain.symbol.Network import Address, Network
 from zenlog import log
 
-from rest.db.SymbolDatabase import ReceiptQuery, SortOrder, SymbolDatabase, SymbolDataUnavailable, TransactionQuery
+from rest.db.SymbolDatabase import (
+	ReceiptQuery,
+	SortOrder,
+	SymbolDatabase,
+	SymbolDataUnavailable,
+	SymbolMosaicAliasNotFound,
+	TransactionQuery
+)
 from rest.facade.SymbolRestFacade import SymbolRestFacade
 from rest.model.common import DatabaseConfig
 
@@ -30,6 +37,8 @@ TRANSACTION_MAX_OFFSET = 100000
 MAX_TRANSACTION_HEIGHT = 9223372036854775807
 SYMBOL_TRANSACTION_TYPE_CODES = frozenset(transaction_type.value for transaction_type in TransactionType)
 MOSAIC_ID_PATTERN = re.compile(r'[0-9A-Fa-f]{16}', re.ASCII)
+MAX_NAMESPACE_NAME_SIZE = 64
+MAX_NAMESPACE_DEPTH = 3
 XYM_DIVISIBILITY = 6
 
 
@@ -171,9 +180,13 @@ def _setup_symbol_transactions_route(app, symbol_api_facade, run_symbol_query):
 		except ValueError as error:
 			abort(400, error)
 
-		error, result = run_symbol_query(
-			lambda: symbol_api_facade.get_transactions(query),
-			'Failed to get Symbol transactions')
+		try:
+			error, result = run_symbol_query(
+				lambda: symbol_api_facade.get_transactions(query),
+				'Failed to get Symbol transactions')
+		except SymbolMosaicAliasNotFound:
+			abort(404)
+
 		if error:
 			return error
 
@@ -284,14 +297,19 @@ def _parse_transfer_mosaic_id(value):
 	if value is None:
 		return None
 
-	if not MOSAIC_ID_PATTERN.fullmatch(value):
+	if MOSAIC_ID_PATTERN.fullmatch(value):
+		return value.upper()
+
+	parts = value.split('.')
+	if len(parts) > MAX_NAMESPACE_DEPTH:
+		raise ValueError('Invalid transferMosaicId')
+	if any(len(part) > MAX_NAMESPACE_NAME_SIZE for part in parts):
 		raise ValueError('Invalid transferMosaicId')
 
-	normalized_mosaic_id = value.upper()
-	if is_mosaic_alias(int(normalized_mosaic_id, 16)):
-		raise ValueError('transferMosaicId must be a mosaic id, not an alias id')
-
-	return normalized_mosaic_id
+	try:
+		return f'{generate_namespace_path(value)[-1]:016X}'
+	except ValueError as error:
+		raise ValueError('Invalid transferMosaicId') from error
 
 
 def _parse_boolean(name, value):
