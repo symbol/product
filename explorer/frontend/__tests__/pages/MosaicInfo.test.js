@@ -1,7 +1,7 @@
 import '@testing-library/jest-dom';
 import { accountPageMosaicFilterResult } from '../test-utils/accounts';
 import { mosaicInfoResult } from '../test-utils/mosaics';
-import { createRenderScenarioRunner } from '../test-utils/page';
+import { clickText, createRenderScenarioRunner, runGetServerSidePropsTests } from '../test-utils/page';
 import { transactionPageResult } from '../test-utils/transactions';
 import * as AccountService from '@/app/api/accounts';
 import * as BlockService from '@/app/api/blocks';
@@ -97,47 +97,41 @@ const emptyPage = {
 
 describe('MosaicInfo', () => {
 	describe('getServerSideProps', () => {
-		const runGetServerSidePropsTest = (description, config, expected) => {
-			it(description, async () => {
-				// Arrange:
-				jest.spyOn(MosaicService, 'fetchMosaicInfo').mockResolvedValue(config.mosaicInfo);
-
-				// Act:
-				const result = await getServerSideProps({
-					locale: 'en',
-					params: { id: mosaicInfoResult.id }
-				});
-
-				// Assert:
-				expect(MosaicService.fetchMosaicInfo).toHaveBeenCalledWith(mosaicInfoResult.id);
-				expect(result).toEqual(expected.result);
-			});
-		};
-
-		const getServerSidePropsCases = [
-			{
-				description: 'returns the mosaic info and empty preloaded lists',
-				config: { mosaicInfo: mosaicInfoResult },
-				expected: {
-					result: {
-						props: {
-							mosaicInfo: mosaicInfoResult,
-							preloadedTransactions: [],
-							preloadedAccounts: []
+		runGetServerSidePropsTests({
+			getServerSideProps,
+			params: { id: mosaicInfoResult.id },
+			requests: {
+				mosaicInfo: [MosaicService, 'fetchMosaicInfo']
+			},
+			cases: [
+				{
+					description: 'returns the mosaic info and empty preloaded lists',
+					config: {
+						responses: { mosaicInfo: mosaicInfoResult }
+					},
+					expected: {
+						requestArguments: { mosaicInfo: [mosaicInfoResult.id] },
+						result: {
+							props: {
+								mosaicInfo: mosaicInfoResult,
+								preloadedTransactions: [],
+								preloadedAccounts: []
+							}
 						}
 					}
+				},
+				{
+					description: 'returns not found when the mosaic does not exist',
+					config: {
+						responses: { mosaicInfo: null }
+					},
+					expected: {
+						requestArguments: { mosaicInfo: [mosaicInfoResult.id] },
+						result: { notFound: true }
+					}
 				}
-			},
-			{
-				description: 'returns not found when the mosaic does not exist',
-				config: { mosaicInfo: null },
-				expected: {
-					result: { notFound: true }
-				}
-			}
-		];
-
-		getServerSidePropsCases.forEach(({ description, config, expected }) => runGetServerSidePropsTest(description, config, expected));
+			]
+		});
 	});
 
 	describe('render scenarios', () => {
@@ -294,35 +288,27 @@ describe('MosaicInfo', () => {
 		});
 
 		describe('distribution tabs', () => {
-			const runDistributionTabTest = (description, config, expected) => {
-				it(description, async () => {
-					// Arrange:
-					AccountService.fetchAccountPage.mockResolvedValue(accountPageMosaicFilterResult);
-					TransactionService.fetchTransactionPage.mockResolvedValue(transactionPageResult);
-
-					// Act:
-					renderMosaicInfo();
-					fireEvent.click(screen.getByText(config.tabToPress));
-
-					// Assert:
-					expect(screen.getByText(SCREEN_TEXT.sectionDistribution)).toBeInTheDocument();
-					await Promise.all(expected.texts.map(text => waitFor(() => expect(screen.getByText(text)).toBeInTheDocument())));
-				});
-			};
+			const runDistributionTabTest = createRenderScenarioRunner(() => {
+				AccountService.fetchAccountPage.mockResolvedValue(accountPageMosaicFilterResult);
+				TransactionService.fetchTransactionPage.mockResolvedValue(transactionPageResult);
+				renderMosaicInfo();
+			});
 
 			const distributionTabCases = [
 				{
 					description: 'renders the holders tab',
-					config: { tabToPress: SCREEN_TEXT.sectionHolders },
+					config: { actions: [clickText(SCREEN_TEXT.sectionHolders)] },
 					expected: {
-						texts: accountPageMosaicFilterResult.data.map(account => account.address)
+						texts: [SCREEN_TEXT.sectionDistribution],
+						asyncTexts: accountPageMosaicFilterResult.data.map(account => account.address)
 					}
 				},
 				{
 					description: 'renders the transfers tab',
-					config: { tabToPress: SCREEN_TEXT.sectionTransfers },
+					config: { actions: [clickText(SCREEN_TEXT.sectionTransfers)] },
 					expected: {
-						texts: transactionPageResult.data.map(transaction => truncateString(transaction.hash, 'hash'))
+						texts: [SCREEN_TEXT.sectionDistribution],
+						asyncTexts: transactionPageResult.data.map(transaction => truncateString(transaction.hash, 'hash'))
 					}
 				}
 			];

@@ -19,6 +19,32 @@ export const waitForText = text => async () => waitFor(() => expect(screen.getBy
 
 export const flushPromises = () => async () => act(async () => {});
 
+export const runGetServerSidePropsTests = ({ getServerSideProps, params, requests, cases }) => {
+	cases.forEach(({ description, config, expected }) => {
+		it(description, async () => {
+			// Arrange: mock every request with this case's response.
+			Object.entries(requests).forEach(([name, [serviceModule, serviceMethod]]) =>
+				jest.spyOn(serviceModule, serviceMethod).mockResolvedValue(config.responses[name]));
+
+			// Act:
+			const result = await getServerSideProps({
+				locale: 'en',
+				params
+			});
+
+			// Assert: a request listed in expected.requestArguments was made with those arguments ([] = no arguments),
+			// a request left out was not made at all.
+			Object.entries(requests).forEach(([name, [serviceModule, serviceMethod]]) => {
+				if (name in expected.requestArguments)
+					expect(serviceModule[serviceMethod]).toHaveBeenCalledWith(...expected.requestArguments[name]);
+				else
+					expect(serviceModule[serviceMethod]).not.toHaveBeenCalled();
+			});
+			expect(result).toEqual(expected.result);
+		});
+	});
+};
+
 export const createRenderScenarioRunner = renderPage => (description, config, expected) => {
 	it(description, async () => {
 		// Arrange + Act:
