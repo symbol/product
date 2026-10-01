@@ -1,13 +1,20 @@
 import '@testing-library/jest-dom';
 import { accountHarvestedBlockPageResult, accountInfoResult } from '../test-utils/accounts';
-import { clickText, runGetServerSidePropsTests, runRenderScenarioTests, runTestCases } from '../test-utils/page';
+import {
+	clearFilterChip,
+	clickText,
+	runGetServerSidePropsTests,
+	runRenderScenarioTests,
+	runSearchCriteriaTests,
+	toggleFilterChip
+} from '../test-utils/page';
 import { transactionPageResult } from '../test-utils/transactions';
 import { describeVariant } from '../test-utils/variants';
 import * as AccountService from '@/app/api/accounts';
 import * as TransactionService from '@/app/api/transactions';
 import AccountInfo, { getServerSideProps } from '@/app/pages/accounts/[address]';
 import * as utils from '@/app/utils';
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 
 // Mocks
 
@@ -60,7 +67,6 @@ const SCREEN_TEXT = {
 	messageNoLinkedKeys: 'message_noLinkedKeys',
 	noDescription: 'No description',
 	filterHideEmptyBlocks: 'filter_hideEmptyBlocks',
-	buttonClear: 'button_clear',
 	buttonTryAgain: 'button_tryAgain',
 	tableFieldHeight: 'table_field_height',
 	tableFieldType: 'table_field_type',
@@ -255,123 +261,102 @@ describe('AccountInfo', () => {
 				fireEvent.click(screen.getByText(SCREEN_TEXT.sectionHarvested));
 			};
 
-			const runHarvestedCriteriaTest = (description, config, expected) => {
-				it(description, async () => {
-					// Arrange:
-					renderHarvestedTab();
 
-					// Act:
-					for (const filterAction of config.filterActions) {
-						// eslint-disable-next-line no-await-in-loop
-						await filterAction();
+			const historyCases = [
+				{
+					description: 'renders the transactions tab',
+					config: { actions: [clickText(SCREEN_TEXT.sectionTransactions)] },
+					expected: {
+						texts: [SCREEN_TEXT.sectionHistory],
+						asyncTexts: transactionPageResult.data.map(transaction => utils.truncateString(transaction.hash, 'hash'))
 					}
-
-					// Assert:
-					await waitFor(() =>
-						expect(AccountService.fetchAccountHarvestedBlockPage).toHaveBeenLastCalledWith(expected.searchCriteria));
-				});
-			};
-
-			describe('common', () => {
-				const historyCases = [
-					{
-						description: 'renders the transactions tab',
-						config: { actions: [clickText(SCREEN_TEXT.sectionTransactions)] },
-						expected: {
-							texts: [SCREEN_TEXT.sectionHistory],
-							asyncTexts: transactionPageResult.data.map(transaction => utils.truncateString(transaction.hash, 'hash'))
-						}
-					},
-					{
-						description: 'renders the harvested tab',
-						config: { actions: [clickText(SCREEN_TEXT.sectionHarvested)] },
-						expected: {
-							texts: [SCREEN_TEXT.sectionHistory],
-							asyncTexts: [
-								SCREEN_TEXT.tableFieldHeight,
-								SCREEN_TEXT.tableFieldType,
-								SCREEN_TEXT.tableFieldAmount,
-								...accountHarvestedBlockPageResult.data.map(block => block.height)
-							]
-						}
-					},
-					{
-						description: 'renders the empty block filter chip',
-						variants: ['nem'],
-						config: { actions: [clickText(SCREEN_TEXT.sectionHarvested)] },
-						expected: {
-							asyncTexts: [accountHarvestedBlockPageResult.data[0].height],
-							texts: [SCREEN_TEXT.filterHideEmptyBlocks]
-						}
-					},
-					{
-						description: 'does not render the empty block filter chip',
-						variants: ['symbol'],
-						config: { actions: [clickText(SCREEN_TEXT.sectionHarvested)] },
-						expected: {
-							asyncTexts: [accountHarvestedBlockPageResult.data[0].height],
-							hiddenTexts: [SCREEN_TEXT.filterHideEmptyBlocks]
-						}
+				},
+				{
+					description: 'renders the harvested tab',
+					config: { actions: [clickText(SCREEN_TEXT.sectionHarvested)] },
+					expected: {
+						texts: [SCREEN_TEXT.sectionHistory],
+						asyncTexts: [
+							SCREEN_TEXT.tableFieldHeight,
+							SCREEN_TEXT.tableFieldType,
+							SCREEN_TEXT.tableFieldAmount,
+							...accountHarvestedBlockPageResult.data.map(block => block.height)
+						]
 					}
-				];
+				},
+				{
+					description: 'renders the empty block filter chip',
+					variants: ['nem'],
+					config: { actions: [clickText(SCREEN_TEXT.sectionHarvested)] },
+					expected: {
+						asyncTexts: [accountHarvestedBlockPageResult.data[0].height],
+						texts: [SCREEN_TEXT.filterHideEmptyBlocks]
+					}
+				},
+				{
+					description: 'does not render the empty block filter chip',
+					variants: ['symbol'],
+					config: { actions: [clickText(SCREEN_TEXT.sectionHarvested)] },
+					expected: {
+						asyncTexts: [accountHarvestedBlockPageResult.data[0].height],
+						hiddenTexts: [SCREEN_TEXT.filterHideEmptyBlocks]
+					}
+				}
+			];
 
-				runRenderScenarioTests({ renderPage: renderAccountInfo, cases: historyCases });
+			runRenderScenarioTests({ renderPage: renderAccountInfo, cases: historyCases });
 
-				runTestCases(runHarvestedCriteriaTest, [
+			runSearchCriteriaTests({
+				renderPage: renderHarvestedTab,
+				request: [AccountService, 'fetchAccountHarvestedBlockPage'],
+				cases: [
 					{
 						description: 'asks for every harvested block by default',
-						config: { filterActions: [] },
+						config: { actions: [] },
 						expected: { searchCriteria: harvestedBlockSearchCriteria }
 					}
-				]);
+				]
+			});
 
-				it('shows the try-again action when the harvested block request fails', async () => {
-					// Arrange: silence the pagination error log.
-					jest.spyOn(console, 'error').mockImplementation();
-					AccountService.fetchAccountHarvestedBlockPage.mockRejectedValue(new Error('harvests request failed'));
+			it('shows the try-again action when the harvested block request fails', async () => {
+				// Arrange: silence the pagination error log.
+				jest.spyOn(console, 'error').mockImplementation();
+				AccountService.fetchAccountHarvestedBlockPage.mockRejectedValue(new Error('harvests request failed'));
 
-					// Act:
-					renderHarvestedTab();
+				// Act:
+				renderHarvestedTab();
 
-					// Assert:
-					await waitFor(() => expect(screen.getByText(SCREEN_TEXT.buttonTryAgain)).toBeInTheDocument());
-				});
+				// Assert:
+				await waitFor(() => expect(screen.getByText(SCREEN_TEXT.buttonTryAgain)).toBeInTheDocument());
 			});
 
 			describeVariant('nem')('empty block filter', () => {
-				// The chip ignores clicks while a request is in flight, so both actions wait for it to be enabled.
-				const toggleEmptyBlockFilter = async () => {
-					const filterChip = screen.getByText(SCREEN_TEXT.filterHideEmptyBlocks).closest('[role="button"]');
-					await waitFor(() => expect(filterChip).toHaveAttribute('aria-disabled', 'false'));
-					fireEvent.click(filterChip);
-				};
-
-				const clearEmptyBlockFilter = async () => {
-					const filterChip = screen.getByText(SCREEN_TEXT.filterHideEmptyBlocks).closest('[role="button"]');
-					await waitFor(() => expect(filterChip).toHaveAttribute('aria-disabled', 'false'));
-					// The page renders a filter per history tab, so click the clear button next to the chip.
-					fireEvent.click(within(filterChip.parentElement).getByText(SCREEN_TEXT.buttonClear));
-				};
+				const toggleEmptyBlockFilter = toggleFilterChip(SCREEN_TEXT.filterHideEmptyBlocks);
+				const clearEmptyBlockFilter = clearFilterChip(SCREEN_TEXT.filterHideEmptyBlocks);
 
 				const emptyBlockFilterCases = [
 					{
 						description: 'leaves out empty blocks once the filter is selected',
-						config: { filterActions: [toggleEmptyBlockFilter] },
+						config: { actions: [toggleEmptyBlockFilter] },
 						expected: { searchCriteria: { ...harvestedBlockSearchCriteria, isRewardedOnly: true } }
 					},
 					{
 						description: 'shows empty blocks again when the filter chip is toggled off',
-						config: { filterActions: [toggleEmptyBlockFilter, toggleEmptyBlockFilter] },
+						config: { actions: [toggleEmptyBlockFilter, toggleEmptyBlockFilter] },
 						expected: { searchCriteria: harvestedBlockSearchCriteria }
 					},
 					{
 						description: 'shows empty blocks again when the filter is cleared',
-						config: { filterActions: [toggleEmptyBlockFilter, clearEmptyBlockFilter] },
+						config: { actions: [toggleEmptyBlockFilter, clearEmptyBlockFilter] },
 						expected: { searchCriteria: harvestedBlockSearchCriteria }
 					}
 				];
 
-				runTestCases(runHarvestedCriteriaTest, emptyBlockFilterCases);
+				runSearchCriteriaTests({
+					renderPage: renderHarvestedTab,
+					request: [AccountService, 'fetchAccountHarvestedBlockPage'],
+					cases: emptyBlockFilterCases
+				});
 			});
 		});
 	});
