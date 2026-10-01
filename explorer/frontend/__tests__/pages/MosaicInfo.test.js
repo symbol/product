@@ -40,17 +40,6 @@ jest.mock('@/app/api/blocks', () => {
 	};
 });
 
-// Local option-aware translation mock, so the expiration countdown and the timestamp title are assertable.
-jest.mock('next-i18next', () => ({
-	useTranslation: () => ({
-		t: (key, options) => {
-			const optionValue = options?.value ?? options?.title;
-
-			return undefined === optionValue ? key : `${key}:${optionValue}`;
-		}
-	})
-}));
-
 beforeEach(() => {
 	jest.spyOn(AccountService, 'fetchAccountPage').mockResolvedValue(emptyPage);
 	jest.spyOn(TransactionService, 'fetchTransactionPage').mockResolvedValue(emptyPage);
@@ -92,8 +81,8 @@ const SCREEN_TEXT = {
 const remainingBlockCount = 500;
 const activeChainHeight = mosaicInfoResult.namespaceExpirationHeight - remainingBlockCount;
 const expiredChainHeight = mosaicInfoResult.namespaceExpirationHeight + remainingBlockCount;
-const expirationCountdownText = `${SCREEN_TEXT.valueExpiration}:${remainingBlockCount}`;
-const createdTimestampText = `${SCREEN_TEXT.fieldTimestampUTC}:${SCREEN_TEXT.fieldCreated}`;
+const expirationCountdownText = `${SCREEN_TEXT.valueExpiration}::value:${remainingBlockCount}`;
+const createdTimestampText = `${SCREEN_TEXT.fieldTimestampUTC}::title:${SCREEN_TEXT.fieldCreated}`;
 const mosaicSearchCriteria = {
 	pageNumber: 1,
 	mosaic: mosaicInfoResult.id

@@ -34,11 +34,13 @@ describe('components/RecentTransactions', () => {
 	};
 
 	it('shows confirmation estimate for unconfirmed transfer transactions', () => {
-		runUnconfirmedTest(TRANSACTION_TYPE.TRANSFER, 'value_transactionConfirmationTime', 'label_awaitingCosignatures');
+		const expectedStatusText = `value_transactionConfirmationTime::value:${blockTime}`;
+
+		runUnconfirmedTest(TRANSACTION_TYPE.TRANSFER, expectedStatusText, 'label_awaitingCosignatures');
 	});
 
 	it('shows awaiting cosignatures label for unconfirmed multisig transactions', () => {
-		runUnconfirmedTest(TRANSACTION_TYPE.MULTISIG, 'label_awaitingCosignatures', 'value_transactionConfirmationTime');
+		runUnconfirmedTest(TRANSACTION_TYPE.MULTISIG, 'label_awaitingCosignatures', /value_transactionConfirmationTime/);
 	});
 
 	it('shows no pending status for confirmed transactions', () => {
@@ -49,7 +51,7 @@ describe('components/RecentTransactions', () => {
 		render(<RecentTransactions data={data} blockTime={blockTime} />);
 
 		// Assert:
-		expect(screen.queryByText('value_transactionConfirmationTime')).not.toBeInTheDocument();
+		expect(screen.queryByText(/value_transactionConfirmationTime/)).not.toBeInTheDocument();
 		expect(screen.queryByText('label_awaitingCosignatures')).not.toBeInTheDocument();
 	});
 });
