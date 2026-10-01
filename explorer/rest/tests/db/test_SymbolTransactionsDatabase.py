@@ -5,7 +5,14 @@ from common.symbol.NativeMosaic import NativeMosaicInfo
 from psycopg2 import Error as PsycopgError
 from symbolchain.sc import TransactionType
 
-from rest.db.SymbolDatabase import SymbolDatabase, SymbolDataUnavailable, TransactionMosaicRecord, TransactionQuery, TransactionRecord
+from rest.db.SymbolDatabase import (
+	SymbolDatabase,
+	SymbolDataUnavailable,
+	SymbolMosaicAliasNotFound,
+	TransactionMosaicRecord,
+	TransactionQuery,
+	TransactionRecord
+)
 
 from ..test.SymbolBlockTestUtils import create_symbol_block, create_symbol_sync_state
 from ..test.SymbolDatabaseTestUtils import (
@@ -18,7 +25,12 @@ from ..test.SymbolDatabaseTestUtils import (
 from ..test.SymbolMosaicTestUtils import create_symbol_mosaic
 from ..test.SymbolTransactionTestUtils import RECIPIENT_ADDRESS as TRANSACTION_RECIPIENT_ADDRESS
 from ..test.SymbolTransactionTestUtils import SIGNER_ADDRESS as TRANSACTION_SIGNER_ADDRESS
-from ..test.SymbolTransactionTestUtils import SIGNER_PUBLIC_KEY, create_symbol_mosaic_transfer, create_symbol_transaction
+from ..test.SymbolTransactionTestUtils import (
+	SIGNER_PUBLIC_KEY,
+	create_symbol_mosaic_transfer,
+	create_symbol_namespace,
+	create_symbol_transaction
+)
 
 NATIVE_MOSAIC_INFO = NativeMosaicInfo('72C0212E67A08BCE', 6)
 
@@ -591,6 +603,128 @@ class SymbolDatabaseTransactionsTest(TestCase):  # pylint: disable=too-many-publ
 		# Assert:
 		self.assertEqual(1, len(result))
 		self.assertEqual('1234567890ABCDEF', result[0].mosaics[0].mosaic_id)
+
+
+class SymbolDatabaseTransactionAliasTest(TestCase):
+	def test_get_transactions_checks_alias_start_at_snapshot_height(self):
+		# Arrange: the alias is active at current height 3, after the queried transaction height 1.
+		with symbol_test_database(
+			create_symbol_sync_state(last_synced_height=3, finalized_height=2),
+			[create_symbol_block(height) for height in (1, 2, 3)],
+			[create_symbol_mosaic(NATIVE_MOSAIC_INFO.id, 6)]) as (db_config, puller_database):
+			puller_database.upsert_namespace(create_symbol_namespace(start_height=2, updated_at_height=3), [])
+			puller_database.upsert_transactions_for_height(1, [
+				create_symbol_mosaic_transfer(1, 1, NATIVE_MOSAIC_INFO.id, 11),
+				create_symbol_mosaic_transfer(1, 2, '1234567890ABCDEF', 22)])
+
+			# Act:
+			with SymbolDatabase(db_config, NATIVE_MOSAIC_INFO) as database:
+				result = database.get_transactions(TransactionQuery(height=1, transfer_mosaic_id='887E5DB6BB0B21F5'))
+
+		# Assert: only the current link's transfer at the requested historical height is returned.
+		self.assertEqual([
+			TransactionRecord(
+				1,
+				(1).to_bytes(32, 'big'),
+				False,
+				None,
+				None,
+				1,
+				TransactionType.TRANSFER.value,
+				TRANSACTION_SIGNER_ADDRESS,
+				TRANSACTION_RECIPIENT_ADDRESS,
+				1,
+				datetime(2026, 1, 1, 0, 0, 1),
+				None,
+				None,
+				(TransactionMosaicRecord('72C0212E67A08BCE', 11, 'transfer', 0, 6, []),))
+		], [_normalize_transaction_binary_fields(record) for record in result])
+
+	def test_get_transactions_keeps_namespace_and_transaction_rows_in_one_snapshot(self):
+		# Arrange: both links have transfers; a concurrent commit changes the link and amount.
+		alias_id = '887E5DB6BB0B21F5'
+		mosaic_a = '1234567890ABCDEF'
+		mosaic_b = '234567890ABCDEF0'
+		with symbol_test_database(
+			create_symbol_sync_state(last_synced_height=1, finalized_height=1),
+			[create_symbol_block(1)]) as (db_config, puller_database):
+			puller_database.upsert_namespace(create_symbol_namespace(alias_mosaic_id=mosaic_a), [])
+			puller_database.upsert_transactions_for_height(1, [
+				create_symbol_mosaic_transfer(1, 1, mosaic_a, 11),
+				create_symbol_mosaic_transfer(1, 2, mosaic_b, 22)])
+
+			def update_alias_snapshot():
+				with puller_database.connection.cursor() as cursor:
+					cursor.execute('UPDATE symbol_namespaces SET alias_mosaic_id = %s', (mosaic_b,))
+					cursor.execute('UPDATE symbol_transaction_mosaics SET amount = 999')
+				puller_database.connection.commit()
+
+			# Act:
+			with PausingAfterSyncStateReadSymbolDatabase(db_config) as database:
+				result = read_during_database_snapshot(
+					database,
+					lambda: database.get_transactions(TransactionQuery(transfer_mosaic_id=alias_id)),
+					update_alias_snapshot)
+			with SymbolDatabase(db_config) as database:
+				next_result = database.get_transactions(TransactionQuery(transfer_mosaic_id=alias_id))
+
+		# Assert: first read sees old link and amount; next read sees the commit.
+		self.assertEqual([(mosaic_a, 11, 1)], [
+			(row.mosaics[0].mosaic_id, row.mosaics[0].amount, bytes(row.hash)[-1]) for row in result])
+		self.assertEqual([(mosaic_b, 999, 2)], [
+			(row.mosaics[0].mosaic_id, row.mosaics[0].amount, bytes(row.hash)[-1]) for row in next_result])
+
+	def test_get_transactions_rejects_corrupt_alias_targets_before_expiration(self):
+		# Arrange:
+		for target, end_height in ((None, None), ('INVALID', None), ('887E5DB6BB0B21F5', None), (None, 2)):
+			with self.subTest(target=target, end_height=end_height):
+				with symbol_test_database(
+					create_symbol_sync_state(last_synced_height=3, finalized_height=2)) as (db_config, puller_database):
+					puller_database.upsert_namespace(create_symbol_namespace(alias_mosaic_id=target, end_height=end_height), [])
+
+					# Act + Assert:
+					with self.assertRaisesRegex(SymbolDataUnavailable, 'stored Mosaic alias target is corrupt'):
+						with SymbolDatabase(db_config) as database:
+							database.get_transactions(TransactionQuery(transfer_mosaic_id='887E5DB6BB0B21F5'))
+
+	def test_get_transactions_rejects_corrupt_alias_lifetimes(self):
+		# Arrange:
+		for start_height, end_height in ((0, None), (1, 1), (2, 1)):
+			with self.subTest(start_height=start_height, end_height=end_height):
+				with symbol_test_database(
+					create_symbol_sync_state(last_synced_height=3, finalized_height=2)) as (db_config, puller_database):
+					puller_database.upsert_namespace(create_symbol_namespace(start_height=start_height, end_height=end_height), [])
+
+					# Act + Assert:
+					with self.assertRaisesRegex(SymbolDataUnavailable, 'stored Mosaic alias lifetime is corrupt'):
+						with SymbolDatabase(db_config) as database:
+							database.get_transactions(TransactionQuery(transfer_mosaic_id='887E5DB6BB0B21F5'))
+
+	def test_get_transactions_rejects_not_yet_active_alias(self):
+		# Arrange:
+		with symbol_test_database(
+			create_symbol_sync_state(last_synced_height=3, finalized_height=2)) as (db_config, puller_database):
+			puller_database.upsert_namespace(create_symbol_namespace(start_height=4), [])
+
+			# Act + Assert:
+			with self.assertRaisesRegex(SymbolMosaicAliasNotFound, 'not currently linked'):
+				with SymbolDatabase(db_config) as database:
+					database.get_transactions(TransactionQuery(height=1, transfer_mosaic_id='887E5DB6BB0B21F5'))
+
+	def test_get_transactions_normalizes_saved_lowercase_mosaic_target(self):
+		# Arrange:
+		with symbol_test_database(
+			create_symbol_sync_state(last_synced_height=1, finalized_height=1),
+			[create_symbol_block(1)]) as (db_config, puller_database):
+			puller_database.upsert_namespace(create_symbol_namespace(alias_mosaic_id='72c0212e67a08bce'), [])
+			puller_database.upsert_transactions_for_height(1, [create_symbol_mosaic_transfer(1, 1, NATIVE_MOSAIC_INFO.id, 10)])
+
+			# Act:
+			with SymbolDatabase(db_config, NATIVE_MOSAIC_INFO) as database:
+				result = database.get_transactions(TransactionQuery(transfer_mosaic_id='887E5DB6BB0B21F5'))
+
+		# Assert:
+		self.assertEqual([(NATIVE_MOSAIC_INFO.id, 10)], [(row.mosaics[0].mosaic_id, row.mosaics[0].amount) for row in result])
 
 
 def _normalize_transaction_binary_fields(record):

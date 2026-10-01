@@ -10,6 +10,30 @@ SIGNER_ADDRESS = Network.NETWORKS[0].public_key_to_address(PublicKey(SIGNER_PUBL
 RECIPIENT_ADDRESS = Network.NETWORKS[0].public_key_to_address(PublicKey(bytes.fromhex('02' * 32))).bytes
 
 
+def create_symbol_namespace(**overrides):
+	"""Creates one normalized current namespace row for REST alias tests."""
+
+	row = {
+		'namespace_id': '887E5DB6BB0B21F5',
+		'parent_id': 'EE0EDBB5737CA68C',
+		'root_id': 'EE0EDBB5737CA68C',
+		'name': 'coin',
+		'full_name': 'daoka.coin',
+		'depth': 2,
+		'registration_type': 'child',
+		'owner_address': SIGNER_ADDRESS,
+		'start_height': 1,
+		'end_height': None,
+		'alias_type': 'mosaic',
+		'alias_mosaic_id': '72C0212E67A08BCE',
+		'alias_address': None,
+		'raw_payload': {},
+		'updated_at_height': 1
+	}
+	row.update(overrides)
+	return row
+
+
 def create_symbol_transaction(height, transaction_number, is_embedded=False, **overrides):
 	"""Creates one transaction entry accepted by PullerSymbolDatabase's real write boundary."""
 
