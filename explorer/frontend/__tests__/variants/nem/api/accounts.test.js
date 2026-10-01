@@ -7,9 +7,14 @@ import {
 	accountPageMosaicFilterResult,
 	accountPageResponse,
 	accountPageResult
-} from '../test-utils/accounts';
-import { runApiTest } from '../test-utils/api';
-import { fetchAccountHarvestedBlockPage, fetchAccountInfo, fetchAccountInfoByPublicKey, fetchAccountPage } from '@/app/api/accounts';
+} from '../../../test-utils/accounts';
+import { runApiTest } from '../../../test-utils/api';
+import {
+	fetchAccountHarvestedBlockPage,
+	fetchAccountInfo,
+	fetchAccountInfoByPublicKey,
+	fetchAccountPage
+} from '@/app/variants/nem/api/accounts';
 
 // Mocks
 
@@ -29,7 +34,7 @@ const baseSearchCriteria = {
 
 // Tests
 
-describe('api/accounts', () => {
+describe('variants/nem/api/accounts', () => {
 	describe('fetchAccountPage', () => {
 		const runAccountPageTest = (description, config, expected) => {
 			it(description, async () => {

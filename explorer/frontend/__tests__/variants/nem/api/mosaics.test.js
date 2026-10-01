@@ -1,6 +1,6 @@
-import { runApiTest } from '../test-utils/api';
-import { mosaicInfoResponse, mosaicInfoResult, mosaicPageResponse, mosaicPageResult } from '../test-utils/mosaics';
-import { fetchMosaicInfo, fetchMosaicPage } from '@/app/api/mosaics';
+import { runApiTest } from '../../../test-utils/api';
+import { mosaicInfoResponse, mosaicInfoResult, mosaicPageResponse, mosaicPageResult } from '../../../test-utils/mosaics';
+import { fetchMosaicInfo, fetchMosaicPage } from '@/app/variants/nem/api/mosaics';
 
 jest.mock('@/app/utils/server', () => {
 	return {
@@ -9,7 +9,7 @@ jest.mock('@/app/utils/server', () => {
 	};
 });
 
-describe('api/mosaics', () => {
+describe('variants/nem/api/mosaics', () => {
 	describe('fetchMosaicPage', () => {
 		it('fetch mosaic page', async () => {
 			// Arrange:
