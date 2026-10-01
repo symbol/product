@@ -1,6 +1,6 @@
 import '@testing-library/jest-dom';
 import { namespaceInfoResult } from '../test-utils/namespaces';
-import { createRenderScenarioRunner, runGetServerSidePropsTests } from '../test-utils/page';
+import { runGetServerSidePropsTests, runRenderScenarioTests } from '../test-utils/page';
 import * as BlockService from '@/app/api/blocks';
 import * as NamespaceService from '@/app/api/namespaces';
 import NamespaceInfo, { getServerSideProps } from '@/app/pages/namespaces/[id]';
@@ -60,44 +60,46 @@ const namespaceMosaic = namespaceInfoResult.namespaceMosaics[0].data[0];
 
 describe('NamespaceInfo', () => {
 	describe('getServerSideProps', () => {
+		const requests = { namespaceInfo: [NamespaceService, 'fetchNamespaceInfo'] };
+
+		const getServerSidePropsCases = [
+			{
+				description: 'returns the namespace info',
+				config: {
+					responses: { namespaceInfo: namespaceInfoResult }
+				},
+				expected: {
+					requestArguments: { namespaceInfo: [namespaceInfoResult.id] },
+					result: {
+						props: { namespaceInfo: namespaceInfoResult }
+					}
+				}
+			},
+			{
+				description: 'returns not found when the namespace does not exist',
+				config: {
+					responses: { namespaceInfo: null }
+				},
+				expected: {
+					requestArguments: { namespaceInfo: [namespaceInfoResult.id] },
+					result: { notFound: true }
+				}
+			}
+		];
+
 		runGetServerSidePropsTests({
 			getServerSideProps,
 			params: { id: namespaceInfoResult.id },
-			requests: {
-				namespaceInfo: [NamespaceService, 'fetchNamespaceInfo']
-			},
-			cases: [
-				{
-					description: 'returns the namespace info',
-					config: {
-						responses: { namespaceInfo: namespaceInfoResult }
-					},
-					expected: {
-						requestArguments: { namespaceInfo: [namespaceInfoResult.id] },
-						result: {
-							props: { namespaceInfo: namespaceInfoResult }
-						}
-					}
-				},
-				{
-					description: 'returns not found when the namespace does not exist',
-					config: {
-						responses: { namespaceInfo: null }
-					},
-					expected: {
-						requestArguments: { namespaceInfo: [namespaceInfoResult.id] },
-						result: { notFound: true }
-					}
-				}
-			]
+			requests,
+			cases: getServerSidePropsCases
 		});
 	});
 
 	describe('render scenarios', () => {
-		const runRenderScenarioTest = createRenderScenarioRunner(config => {
+		const renderPage = config => {
 			BlockService.fetchChainHight.mockResolvedValue(config.chainHeight ?? activeChainHeight);
 			render(<NamespaceInfo namespaceInfo={{ ...namespaceInfoResult, ...config.namespaceInfo }} />);
-		});
+		};
 
 		const renderScenarioCases = [
 			{
@@ -191,6 +193,6 @@ describe('NamespaceInfo', () => {
 			}
 		];
 
-		renderScenarioCases.forEach(({ description, config, expected }) => runRenderScenarioTest(description, config, expected));
+		runRenderScenarioTests({ renderPage, cases: renderScenarioCases });
 	});
 });

@@ -19,8 +19,11 @@ export const waitForText = text => async () => waitFor(() => expect(screen.getBy
 
 export const flushPromises = () => async () => act(async () => {});
 
+export const runTestCases = (runTest, cases) =>
+	cases.forEach(({ description, config, expected }) => runTest(description, config, expected));
+
 export const runGetServerSidePropsTests = ({ getServerSideProps, params, requests, cases }) => {
-	cases.forEach(({ description, config, expected }) => {
+	const runGetServerSidePropsTest = (description, config, expected) => {
 		it(description, async () => {
 			// Arrange: mock every request with this case's response.
 			Object.entries(requests).forEach(([name, [serviceModule, serviceMethod]]) =>
@@ -42,23 +45,29 @@ export const runGetServerSidePropsTests = ({ getServerSideProps, params, request
 			});
 			expect(result).toEqual(expected.result);
 		});
-	});
+	};
+
+	runTestCases(runGetServerSidePropsTest, cases);
 };
 
-export const createRenderScenarioRunner = renderPage => (description, config, expected) => {
-	it(description, async () => {
-		// Arrange + Act:
-		renderPage(config);
-		
-		// Flush the mount requests, so async state is applied before acting and asserting.
-		await act(async () => {});
-		
-		for (const action of config.actions || []) {
-			// eslint-disable-next-line no-await-in-loop
-			await action();
-		}
+export const runRenderScenarioTests = ({ renderPage, cases }) => {
+	const runRenderScenarioTest = (description, config, expected) => {
+		it(description, async () => {
+			// Arrange + Act:
+			renderPage(config);
 
-		// Assert:
-		await expectTexts(expected);
-	});
+			// Flush the mount requests, so async state is applied before acting and asserting.
+			await act(async () => {});
+
+			for (const action of config.actions || []) {
+				// eslint-disable-next-line no-await-in-loop
+				await action();
+			}
+
+			// Assert:
+			await expectTexts(expected);
+		});
+	};
+
+	runTestCases(runRenderScenarioTest, cases);
 };

@@ -1,7 +1,7 @@
 import '@testing-library/jest-dom';
 import { accountPageMosaicFilterResult } from '../test-utils/accounts';
 import { mosaicInfoResult } from '../test-utils/mosaics';
-import { clickText, createRenderScenarioRunner, runGetServerSidePropsTests } from '../test-utils/page';
+import { clickText, runGetServerSidePropsTests, runRenderScenarioTests } from '../test-utils/page';
 import { transactionPageResult } from '../test-utils/transactions';
 import * as AccountService from '@/app/api/accounts';
 import * as BlockService from '@/app/api/blocks';
@@ -97,49 +97,51 @@ const emptyPage = {
 
 describe('MosaicInfo', () => {
 	describe('getServerSideProps', () => {
+		const requests = { mosaicInfo: [MosaicService, 'fetchMosaicInfo'] };
+
+		const getServerSidePropsCases = [
+			{
+				description: 'returns the mosaic info and empty preloaded lists',
+				config: {
+					responses: { mosaicInfo: mosaicInfoResult }
+				},
+				expected: {
+					requestArguments: { mosaicInfo: [mosaicInfoResult.id] },
+					result: {
+						props: {
+							mosaicInfo: mosaicInfoResult,
+							preloadedTransactions: [],
+							preloadedAccounts: []
+						}
+					}
+				}
+			},
+			{
+				description: 'returns not found when the mosaic does not exist',
+				config: {
+					responses: { mosaicInfo: null }
+				},
+				expected: {
+					requestArguments: { mosaicInfo: [mosaicInfoResult.id] },
+					result: { notFound: true }
+				}
+			}
+		];
+
 		runGetServerSidePropsTests({
 			getServerSideProps,
 			params: { id: mosaicInfoResult.id },
-			requests: {
-				mosaicInfo: [MosaicService, 'fetchMosaicInfo']
-			},
-			cases: [
-				{
-					description: 'returns the mosaic info and empty preloaded lists',
-					config: {
-						responses: { mosaicInfo: mosaicInfoResult }
-					},
-					expected: {
-						requestArguments: { mosaicInfo: [mosaicInfoResult.id] },
-						result: {
-							props: {
-								mosaicInfo: mosaicInfoResult,
-								preloadedTransactions: [],
-								preloadedAccounts: []
-							}
-						}
-					}
-				},
-				{
-					description: 'returns not found when the mosaic does not exist',
-					config: {
-						responses: { mosaicInfo: null }
-					},
-					expected: {
-						requestArguments: { mosaicInfo: [mosaicInfoResult.id] },
-						result: { notFound: true }
-					}
-				}
-			]
+			requests,
+			cases: getServerSidePropsCases
 		});
 	});
 
 	describe('render scenarios', () => {
-		const runRenderScenarioTest = createRenderScenarioRunner(config => {
+		const renderPage = config => {
 			const mosaicInfo = { ...mosaicInfoResult, ...config.mosaicInfo };
 			BlockService.fetchChainHight.mockResolvedValue(config.chainHeight ?? activeChainHeight);
 			render(<MosaicInfo mosaicInfo={mosaicInfo} preloadedTransactions={[]} preloadedAccounts={[]} />);
-		});
+		};
 
 		const renderScenarioCases = [
 			{
@@ -271,7 +273,7 @@ describe('MosaicInfo', () => {
 			}
 		];
 
-		renderScenarioCases.forEach(({ description, config, expected }) => runRenderScenarioTest(description, config, expected));
+		runRenderScenarioTests({ renderPage, cases: renderScenarioCases });
 	});
 
 	describe('distribution', () => {
@@ -288,11 +290,11 @@ describe('MosaicInfo', () => {
 		});
 
 		describe('distribution tabs', () => {
-			const runDistributionTabTest = createRenderScenarioRunner(() => {
+			const renderPage = () => {
 				AccountService.fetchAccountPage.mockResolvedValue(accountPageMosaicFilterResult);
 				TransactionService.fetchTransactionPage.mockResolvedValue(transactionPageResult);
 				renderMosaicInfo();
-			});
+			};
 
 			const distributionTabCases = [
 				{
@@ -313,7 +315,7 @@ describe('MosaicInfo', () => {
 				}
 			];
 
-			distributionTabCases.forEach(({ description, config, expected }) => runDistributionTabTest(description, config, expected));
+			runRenderScenarioTests({ renderPage, cases: distributionTabCases });
 		});
 
 		it('shows the try-again action when the holders request fails', async () => {
