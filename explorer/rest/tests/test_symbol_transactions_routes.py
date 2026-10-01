@@ -6,6 +6,7 @@ from common.symbol.NativeMosaic import NativeMosaicInfo
 from common.symbol.NodeConfiguration import SymbolNodeConfiguration
 from flask import Flask
 from symbolchain.sc import TransactionType
+from symbolchain.symbol.Network import Network
 
 from rest import setup_error_handlers
 from rest.db.SymbolDatabase import SymbolDatabase
@@ -532,6 +533,7 @@ def _create_transaction_test_client(db_config):
 		facade = SymbolRestFacade(
 			database,
 			SymbolNodeConfiguration.from_url('http://127.0.0.1:3000', allow_loopback=True),
-			NATIVE_MOSAIC_INFO)
+			NATIVE_MOSAIC_INFO,
+			Network.TESTNET)
 		setup_symbol_routes(app, facade)
 		yield app.test_client()

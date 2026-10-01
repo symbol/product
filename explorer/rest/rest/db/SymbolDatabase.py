@@ -4,9 +4,11 @@ from enum import Enum
 
 from common.symbol.NativeMosaic import normalize_mosaic_id
 from symbolchain.symbol.IdGenerator import is_mosaic_alias
+from symbolchain.symbol.Network import Address
 from zenlog import log
 
 from rest.model.symbol.Block import SymbolBlockView
+from rest.model.symbol.validation import SymbolDataInvalid
 
 from .DatabaseConnection import DatabaseConnectionPool
 
@@ -88,6 +90,16 @@ TransactionRecord = namedtuple(
 	'TransactionRecord',
 	['transaction_id', 'hash', 'is_embedded', 'aggregate_hash', 'embedded_index', 'height', 'transaction_type',
 		'signer_address', 'recipient_address', 'effective_fee', 'timestamp', 'message_type', 'message_payload', 'mosaics'])
+SymbolAccountRecord = namedtuple(
+	'SymbolAccountRecord',
+	['address', 'public_key', 'account_type', 'address_height', 'importance_percentage', 'linked_public_key',
+		'node_public_key', 'vrf_public_key', 'voting_public_keys', 'activity_buckets', 'finalized_epoch', 'alias_names',
+		'mosaics'])
+SymbolMosaicRecord = namedtuple(
+	'SymbolMosaicRecord',
+	['mosaic_id', 'amount', 'metadata_mosaic_id', 'divisibility', 'owner_address', 'alias_names'])
+SymbolMultisigRecord = namedtuple(
+	'SymbolMultisigRecord', ['min_approval', 'min_removal', 'cosignatory_addresses', 'multisig_addresses'])
 MOSAIC_ID_PATTERN = re.compile(r'[0-9A-Fa-f]{16}', re.ASCII)
 
 
@@ -96,7 +108,6 @@ def _bytes_or_none(value):
 
 
 def _address(value):
-	from symbolchain.symbol.Network import Address  # pylint: disable=import-outside-toplevel
 	return str(Address(bytes(value)))
 
 
@@ -317,6 +328,125 @@ class SymbolDatabase(DatabaseConnectionPool):
 					return []
 
 				return self._fetch_transaction_records(cursor, transaction_rows, sync_state)
+
+	def get_account(self, address=None, public_key=None):
+		"""Gets one current-state Symbol account and its detail relations."""
+
+		with self.connection() as connection:
+			with connection.cursor() as cursor:
+				self._start_read_transaction(cursor)
+				sync_state = self._fetch_sync_state(cursor)
+				self._assert_account_state_readable(sync_state)
+				if address is not None:
+					cursor.execute(
+						'''SELECT address, public_key, account_type, address_height, importance_percentage,
+								linked_public_key, node_public_key, vrf_public_key, voting_public_keys, activity_buckets
+							FROM symbol_accounts WHERE address = %s''',
+						(address,))
+				else:
+					cursor.execute(
+						'''SELECT address, public_key, account_type, address_height, importance_percentage,
+								linked_public_key, node_public_key, vrf_public_key, voting_public_keys, activity_buckets
+							FROM symbol_accounts WHERE public_key = %s''',
+						(public_key,))
+				account_row = cursor.fetchone()
+				if not account_row:
+					return None
+
+				return self._fetch_account_record(cursor, account_row, sync_state['finalized_epoch'])
+
+	def get_multisig(self, address):
+		"""Gets one current-state Symbol multisig relation."""
+
+		with self.connection() as connection:
+			with connection.cursor() as cursor:
+				self._start_read_transaction(cursor)
+				sync_state = self._fetch_sync_state(cursor)
+				self._assert_current_state_readable(sync_state)
+				cursor.execute('SELECT 1 FROM symbol_accounts WHERE address = %s', (address,))
+				if not cursor.fetchone():
+					return None
+
+				cursor.execute(
+					'''SELECT min_approval, min_removal, cosignatory_addresses, multisig_addresses
+					FROM symbol_multisig WHERE address = %s''',
+					(address,))
+				multisig_row = cursor.fetchone()
+				if not multisig_row:
+					return None
+
+				return SymbolMultisigRecord(*multisig_row)
+
+	@staticmethod
+	def _assert_current_state_readable(sync_state):
+		if not sync_state or sync_state.get('status') != 'healthy':
+			raise SymbolDataUnavailable('Symbol account data is unavailable')
+
+		last_synced_height = sync_state.get('last_synced_height')
+		if isinstance(last_synced_height, bool) or not isinstance(last_synced_height, int) or last_synced_height < 1:
+			raise SymbolDataUnavailable('Symbol account data is unavailable')
+		if sync_state.get('dirty_state_from_height') is not None:
+			raise SymbolDataUnavailable('Symbol account data is unavailable')
+
+	@classmethod
+	def _assert_account_state_readable(cls, sync_state):
+		cls._assert_current_state_readable(sync_state)
+		finalized_epoch = sync_state.get('finalized_epoch')
+		if finalized_epoch is None:
+			raise SymbolDataUnavailable('Symbol account data is unavailable')
+		if isinstance(finalized_epoch, bool) or not isinstance(finalized_epoch, int) or finalized_epoch < 0 or finalized_epoch > 2147483647:
+			raise SymbolDataInvalid('sync_state.finalized_epoch', 'invalid integer')
+
+	@staticmethod
+	def _fetch_account_record(cursor, account_row, finalized_epoch):
+		address = bytes(account_row[0])
+		if len(address) != Address.SIZE:
+			raise SymbolDataInvalid('accounts.address', 'invalid byte length')
+
+		address_text = str(Address(address))
+		cursor.execute(
+			'''SELECT account_mosaics.mosaic_id, account_mosaics.amount, mosaics.mosaic_id,
+					mosaics.divisibility, mosaics.owner_address
+			FROM symbol_account_mosaics AS account_mosaics
+			LEFT JOIN symbol_mosaics AS mosaics ON mosaics.mosaic_id = account_mosaics.mosaic_id
+			WHERE account_mosaics.address = %s
+			ORDER BY account_mosaics.mosaic_id ASC''',
+			(address,))
+		mosaic_rows = cursor.fetchall()
+		mosaic_ids = [row[0] for row in mosaic_rows]
+		alias_names_by_mosaic = {mosaic_id: [] for mosaic_id in mosaic_ids}
+		if mosaic_ids:
+			cursor.execute(
+				'''SELECT artifact_id, name FROM symbol_alias_names
+				WHERE artifact_type = 'mosaic' AND artifact_id = ANY(%s::varchar[])
+				ORDER BY artifact_id ASC, name ASC''',
+				(mosaic_ids,))
+			for mosaic_id, name in cursor.fetchall():
+				alias_names_by_mosaic[mosaic_id].append(name)
+
+		cursor.execute(
+			'''SELECT name FROM symbol_alias_names
+			WHERE artifact_type = 'account' AND artifact_id = %s
+			ORDER BY name ASC''',
+			(address_text,))
+		account_aliases = [row[0] for row in cursor.fetchall()]
+		mosaics = tuple(SymbolMosaicRecord(
+			row[0], row[1], row[2], row[3], row[4], tuple(alias_names_by_mosaic[row[0]])) for row in mosaic_rows)
+
+		return SymbolAccountRecord(
+			address,
+			account_row[1],
+			account_row[2],
+			account_row[3],
+			account_row[4],
+			account_row[5],
+			account_row[6],
+			account_row[7],
+			account_row[8],
+			account_row[9],
+			finalized_epoch,
+			tuple(account_aliases),
+			mosaics)
 
 	@staticmethod
 	def _resolve_transfer_mosaic_id(cursor, query, sync_state):
