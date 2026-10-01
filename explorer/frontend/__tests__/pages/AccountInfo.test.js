@@ -1,6 +1,6 @@
 import '@testing-library/jest-dom';
 import { accountHarvestedBlockPageResult, accountInfoResult } from '../test-utils/accounts';
-import { clickText, createRenderScenarioRunner } from '../test-utils/page';
+import { clickText, createRenderScenarioRunner, runGetServerSidePropsTests } from '../test-utils/page';
 import { transactionPageResult } from '../test-utils/transactions';
 import * as AccountService from '@/app/api/accounts';
 import * as TransactionService from '@/app/api/transactions';
@@ -79,52 +79,47 @@ const harvestedBlockSearchCriteria = {
 
 describe('AccountInfo', () => {
 	describe('getServerSideProps', () => {
-		const runGetServerSidePropsTest = (description, config, expected) => {
-			it(description, async () => {
-				// Arrange:
-				jest.spyOn(AccountService, 'fetchAccountInfo').mockResolvedValue(config.accountInfo);
-
-				// Act:
-				const result = await getServerSideProps({
-					locale: 'en',
-					params: { address: accountInfoResult.address }
-				});
-
-				// Assert:
-				expect(AccountService.fetchAccountInfo).toHaveBeenCalledWith(accountInfoResult.address);
-				if (expected.isTransactionPageFetched)
-					expect(TransactionService.fetchTransactionPage).toHaveBeenCalledWith({ address: accountInfoResult.address });
-				else
-					expect(TransactionService.fetchTransactionPage).not.toHaveBeenCalled();
-				expect(result).toEqual(expected.result);
-			});
-		};
-
-		const getServerSidePropsCases = [
-			{
-				description: 'returns the account info and preloads transactions',
-				config: { accountInfo: accountInfoResult },
-				expected: {
-					result: {
-						props: {
+		runGetServerSidePropsTests({
+			getServerSideProps,
+			params: { address: accountInfoResult.address },
+			requests: {
+				accountInfo: [AccountService, 'fetchAccountInfo'],
+				transactionPage: [TransactionService, 'fetchTransactionPage']
+			},
+			cases: [
+				{
+					description: 'returns the account info and preloads transactions',
+					config: {
+						responses: {
 							accountInfo: accountInfoResult,
-							preloadedTransactions: transactionPageResult.data
+							transactionPage: transactionPageResult
 						}
 					},
-					isTransactionPageFetched: true
+					expected: {
+						requestArguments: {
+							accountInfo: [accountInfoResult.address],
+							transactionPage: [{ address: accountInfoResult.address }]
+						},
+						result: {
+							props: {
+								accountInfo: accountInfoResult,
+								preloadedTransactions: transactionPageResult.data
+							}
+						}
+					}
+				},
+				{
+					description: 'returns not found without fetching transactions',
+					config: {
+						responses: { accountInfo: null }
+					},
+					expected: {
+						requestArguments: { accountInfo: [accountInfoResult.address] },
+						result: { notFound: true }
+					}
 				}
-			},
-			{
-				description: 'returns not found without fetching transactions',
-				config: { accountInfo: null },
-				expected: {
-					result: { notFound: true },
-					isTransactionPageFetched: false
-				}
-			}
-		];
-
-		getServerSidePropsCases.forEach(({ description, config, expected }) => runGetServerSidePropsTest(description, config, expected));
+			]
+		});
 	});
 
 	describe('render scenarios', () => {

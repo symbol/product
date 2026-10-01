@@ -1,6 +1,6 @@
 import '@testing-library/jest-dom';
 import { namespaceInfoResult } from '../test-utils/namespaces';
-import { createRenderScenarioRunner } from '../test-utils/page';
+import { createRenderScenarioRunner, runGetServerSidePropsTests } from '../test-utils/page';
 import * as BlockService from '@/app/api/blocks';
 import * as NamespaceService from '@/app/api/namespaces';
 import NamespaceInfo, { getServerSideProps } from '@/app/pages/namespaces/[id]';
@@ -60,43 +60,37 @@ const namespaceMosaic = namespaceInfoResult.namespaceMosaics[0].data[0];
 
 describe('NamespaceInfo', () => {
 	describe('getServerSideProps', () => {
-		const runGetServerSidePropsTest = (description, config, expected) => {
-			it(description, async () => {
-				// Arrange:
-				jest.spyOn(NamespaceService, 'fetchNamespaceInfo').mockResolvedValue(config.namespaceInfo);
-
-				// Act:
-				const result = await getServerSideProps({
-					locale: 'en',
-					params: { id: namespaceInfoResult.id }
-				});
-
-				// Assert:
-				expect(NamespaceService.fetchNamespaceInfo).toHaveBeenCalledWith(namespaceInfoResult.id);
-				expect(result).toEqual(expected.result);
-			});
-		};
-
-		const getServerSidePropsCases = [
-			{
-				description: 'returns the namespace info',
-				config: { namespaceInfo: namespaceInfoResult },
-				expected: {
-					result: {
-						props: { namespaceInfo: namespaceInfoResult }
+		runGetServerSidePropsTests({
+			getServerSideProps,
+			params: { id: namespaceInfoResult.id },
+			requests: {
+				namespaceInfo: [NamespaceService, 'fetchNamespaceInfo']
+			},
+			cases: [
+				{
+					description: 'returns the namespace info',
+					config: {
+						responses: { namespaceInfo: namespaceInfoResult }
+					},
+					expected: {
+						requestArguments: { namespaceInfo: [namespaceInfoResult.id] },
+						result: {
+							props: { namespaceInfo: namespaceInfoResult }
+						}
+					}
+				},
+				{
+					description: 'returns not found when the namespace does not exist',
+					config: {
+						responses: { namespaceInfo: null }
+					},
+					expected: {
+						requestArguments: { namespaceInfo: [namespaceInfoResult.id] },
+						result: { notFound: true }
 					}
 				}
-			},
-			{
-				description: 'returns not found when the namespace does not exist',
-				config: { namespaceInfo: null },
-				expected: {
-					result: { notFound: true }
-				}
-			}
-		];
-
-		getServerSidePropsCases.forEach(({ description, config, expected }) => runGetServerSidePropsTest(description, config, expected));
+			]
+		});
 	});
 
 	describe('render scenarios', () => {
