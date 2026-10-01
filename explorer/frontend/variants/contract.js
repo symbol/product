@@ -33,7 +33,7 @@
 
 // Required exports for each API domain.
 export const API_CONTRACT = {
-	accounts: ['fetchAccountPage', 'fetchAccountInfo', 'fetchAccountInfoByPublicKey'],
+	accounts: ['fetchAccountPage', 'fetchAccountInfo', 'fetchAccountInfoByPublicKey', 'fetchAccountHarvestedBlockPage'],
 	blocks: ['fetchBlockPage', 'fetchChainHight', 'fetchChainStatus', 'fetchBlockInfo'],
 	health: ['fetchBackendHealthStatus'],
 	mosaics: ['fetchMosaicPage', 'fetchMosaicInfo'],
@@ -73,6 +73,7 @@ export const STYLE_VARIABLES_CONTRACT = [
 
 // Required config keys by page.
 export const PAGE_CONFIG_CONTRACT = {
+	account: ['showEmptyBlockFilter'],
 	home: ['showSupernodeCount', 'additionalSections'],
 	blocks: [
 		'showStatistics',
