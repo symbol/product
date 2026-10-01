@@ -1,6 +1,7 @@
 import '@testing-library/jest-dom';
 import { accountPageMosaicFilterResult } from '../test-utils/accounts';
 import { mosaicInfoResult } from '../test-utils/mosaics';
+import { createRenderScenarioRunner } from '../test-utils/page';
 import { transactionPageResult } from '../test-utils/transactions';
 import * as AccountService from '@/app/api/accounts';
 import * as BlockService from '@/app/api/blocks';
@@ -8,7 +9,7 @@ import * as MosaicService from '@/app/api/mosaics';
 import * as TransactionService from '@/app/api/transactions';
 import MosaicInfo, { getServerSideProps } from '@/app/pages/mosaics/[id]';
 import { truncateString } from '@/app/utils';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 
 // Mocks
 
@@ -140,28 +141,11 @@ describe('MosaicInfo', () => {
 	});
 
 	describe('render scenarios', () => {
-		const runRenderScenarioTest = (description, config, expected) => {
-			it(description, async () => {
-				// Arrange:
-				const mosaicInfo = { ...mosaicInfoResult, ...config.mosaicInfo };
-				BlockService.fetchChainHight.mockResolvedValue(config.chainHeight ?? activeChainHeight);
-
-				// Act:
-				render(<MosaicInfo mosaicInfo={mosaicInfo} preloadedTransactions={[]} preloadedAccounts={[]} />);
-				// Flush the mount requests, so the async expiration state is applied.
-				await act(async () => {});
-
-				// Assert:
-				const expectedTexts = expected.texts || [];
-				const expectedHiddenTexts = expected.hiddenTexts || [];
-				expectedHiddenTexts.forEach(text => expect(screen.queryByText(text)).not.toBeInTheDocument());
-				expectedTexts.forEach(text => expect(screen.getByText(text)).toBeInTheDocument());
-				Object.entries(expected.textOccurrences || {}).forEach(([text, count]) =>
-					expect(screen.getAllByText(text)).toHaveLength(count));
-				Object.entries(expected.altOccurrences || {}).forEach(([altText, count]) =>
-					expect(screen.queryAllByAltText(altText)).toHaveLength(count));
-			});
-		};
+		const runRenderScenarioTest = createRenderScenarioRunner(config => {
+			const mosaicInfo = { ...mosaicInfoResult, ...config.mosaicInfo };
+			BlockService.fetchChainHight.mockResolvedValue(config.chainHeight ?? activeChainHeight);
+			render(<MosaicInfo mosaicInfo={mosaicInfo} preloadedTransactions={[]} preloadedAccounts={[]} />);
+		});
 
 		const renderScenarioCases = [
 			{

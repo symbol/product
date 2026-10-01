@@ -1,5 +1,6 @@
 import '@testing-library/jest-dom';
 import { accountHarvestedBlockPageResult, accountInfoResult } from '../test-utils/accounts';
+import { clickText, createRenderScenarioRunner } from '../test-utils/page';
 import { transactionPageResult } from '../test-utils/transactions';
 import * as AccountService from '@/app/api/accounts';
 import * as TransactionService from '@/app/api/transactions';
@@ -127,26 +128,8 @@ describe('AccountInfo', () => {
 	});
 
 	describe('render scenarios', () => {
-		const runRenderScenarioTest = (description, config, expected) => {
-			it(description, () => {
-				// Arrange:
-				const accountInfo = { ...accountInfoResult, ...config.accountInfo };
-
-				// Act:
-				render(<AccountInfo accountInfo={accountInfo} preloadedTransactions={[]} />);
-				
-				if (config.sectionToOpen)
-					fireEvent.click(screen.getByText(config.sectionToOpen));
-
-				// Assert:
-				const expectedTexts = expected.texts || [];
-				const expectedHiddenTexts = expected.hiddenTexts || [];
-				expectedHiddenTexts.forEach(text => expect(screen.queryByText(text)).not.toBeInTheDocument());
-				expectedTexts.forEach(text => expect(screen.getByText(text)).toBeInTheDocument());
-				Object.entries(expected.textOccurrences || {}).forEach(([text, count]) =>
-					expect(screen.getAllByText(text)).toHaveLength(count));
-			});
-		};
+		const runRenderScenarioTest = createRenderScenarioRunner(config =>
+			render(<AccountInfo accountInfo={{ ...accountInfoResult, ...config.accountInfo }} preloadedTransactions={[]} />));
 
 		const renderScenarioCases = [
 			{
@@ -184,7 +167,7 @@ describe('AccountInfo', () => {
 				description: 'linked keys tab: renders the linked account field when a linked key exists',
 				config: {
 					accountInfo: { linkedAddress: linkedAccountAddress },
-					sectionToOpen: SCREEN_TEXT.sectionLinkedKeys
+					actions: [clickText(SCREEN_TEXT.sectionLinkedKeys)]
 				},
 				expected: {
 					texts: [SCREEN_TEXT.fieldLinkedAccount, linkedAccountAddress],
@@ -195,7 +178,7 @@ describe('AccountInfo', () => {
 				description: 'linked keys tab: renders the main account field and the linked label for a remote account',
 				config: {
 					accountInfo: { mainAddress: linkedAccountAddress },
-					sectionToOpen: SCREEN_TEXT.sectionLinkedKeys
+					actions: [clickText(SCREEN_TEXT.sectionLinkedKeys)]
 				},
 				expected: {
 					texts: [SCREEN_TEXT.labelLinked, SCREEN_TEXT.fieldMainAccount, linkedAccountAddress],
@@ -204,7 +187,7 @@ describe('AccountInfo', () => {
 			},
 			{
 				description: 'linked keys tab: renders the no linked keys message when the account has no keys',
-				config: { sectionToOpen: SCREEN_TEXT.sectionLinkedKeys },
+				config: { actions: [clickText(SCREEN_TEXT.sectionLinkedKeys)] },
 				expected: {
 					texts: [SCREEN_TEXT.messageNoLinkedKeys],
 					hiddenTexts: [SCREEN_TEXT.fieldLinkedAccount, SCREEN_TEXT.fieldMainAccount]
@@ -259,31 +242,23 @@ describe('AccountInfo', () => {
 		};
 
 		describe('history tabs', () => {
-			const runHistoryTabTest = (description, config, expected) => {
-				it(description, async () => {
-					// Act:
-					renderAccountInfo();
-					fireEvent.click(screen.getByText(config.tabToPress));
-
-					// Assert:
-					expect(screen.getByText(SCREEN_TEXT.sectionHistory)).toBeInTheDocument();
-					await Promise.all(expected.texts.map(text => waitFor(() => expect(screen.getByText(text)).toBeInTheDocument())));
-				});
-			};
+			const runHistoryTabTest = createRenderScenarioRunner(renderAccountInfo);
 
 			const historyTabCases = [
 				{
 					description: 'renders the transactions tab',
-					config: { tabToPress: SCREEN_TEXT.sectionTransactions },
+					config: { actions: [clickText(SCREEN_TEXT.sectionTransactions)] },
 					expected: {
-						texts: transactionPageResult.data.map(transaction => utils.truncateString(transaction.hash, 'hash'))
+						texts: [SCREEN_TEXT.sectionHistory],
+						asyncTexts: transactionPageResult.data.map(transaction => utils.truncateString(transaction.hash, 'hash'))
 					}
 				},
 				{
 					description: 'renders the harvested tab',
-					config: { tabToPress: SCREEN_TEXT.sectionHarvested },
+					config: { actions: [clickText(SCREEN_TEXT.sectionHarvested)] },
 					expected: {
-						texts: [
+						texts: [SCREEN_TEXT.sectionHistory],
+						asyncTexts: [
 							SCREEN_TEXT.tableFieldHeight,
 							SCREEN_TEXT.tableFieldType,
 							SCREEN_TEXT.tableFieldAmount,
