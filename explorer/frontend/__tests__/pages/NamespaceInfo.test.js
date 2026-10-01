@@ -1,9 +1,10 @@
 import '@testing-library/jest-dom';
 import { namespaceInfoResult } from '../test-utils/namespaces';
+import { createRenderScenarioRunner } from '../test-utils/page';
 import * as BlockService from '@/app/api/blocks';
 import * as NamespaceService from '@/app/api/namespaces';
 import NamespaceInfo, { getServerSideProps } from '@/app/pages/namespaces/[id]';
-import { act, render, screen } from '@testing-library/react';
+import { render } from '@testing-library/react';
 
 // Mocks
 
@@ -99,26 +100,10 @@ describe('NamespaceInfo', () => {
 	});
 
 	describe('render scenarios', () => {
-		const runRenderScenarioTest = (description, config, expected) => {
-			it(description, async () => {
-				// Arrange:
-				const namespaceInfo = { ...namespaceInfoResult, ...config.namespaceInfo };
-				BlockService.fetchChainHight.mockResolvedValue(config.chainHeight ?? activeChainHeight);
-
-				// Act:
-				render(<NamespaceInfo namespaceInfo={namespaceInfo} />);
-				// Flush the mount request, so the async expiration state is applied.
-				await act(async () => {});
-
-				// Assert:
-				const expectedTexts = expected.texts || [];
-				const expectedHiddenTexts = expected.hiddenTexts || [];
-				expectedHiddenTexts.forEach(text => expect(screen.queryByText(text)).not.toBeInTheDocument());
-				expectedTexts.forEach(text => expect(screen.getByText(text)).toBeInTheDocument());
-				Object.entries(expected.textOccurrences || {}).forEach(([text, count]) =>
-					expect(screen.getAllByText(text)).toHaveLength(count));
-			});
-		};
+		const runRenderScenarioTest = createRenderScenarioRunner(config => {
+			BlockService.fetchChainHight.mockResolvedValue(config.chainHeight ?? activeChainHeight);
+			render(<NamespaceInfo namespaceInfo={{ ...namespaceInfoResult, ...config.namespaceInfo }} />);
+		});
 
 		const renderScenarioCases = [
 			{
