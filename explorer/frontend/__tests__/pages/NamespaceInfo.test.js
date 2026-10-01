@@ -95,104 +95,120 @@ describe('NamespaceInfo', () => {
 		});
 	});
 
-	describe('render scenarios', () => {
+	describe('render', () => {
 		const renderPage = config => {
 			BlockService.fetchChainHight.mockResolvedValue(config.chainHeight ?? activeChainHeight);
 			render(<NamespaceInfo namespaceInfo={{ ...namespaceInfoResult, ...config.namespaceInfo }} />);
 		};
 
-		const renderScenarioCases = [
-			{
-				description: 'namespace section: renders the name and creation info',
-				config: {},
-				expected: {
-					texts: [SCREEN_TEXT.sectionNamespace, SCREEN_TEXT.fieldName],
-					// The name and the created title also appear in the mosaics section (group header and table header).
-					textOccurrences: {
-						[namespaceInfoResult.name]: 2,
-						[createdTimestampText]: 2
+		describe('section: namespace', () => {
+			const namespaceCases = [
+				{
+					description: 'renders the name and creation info',
+					config: {},
+					expected: {
+						texts: [SCREEN_TEXT.sectionNamespace, SCREEN_TEXT.fieldName],
+						// The name and the created title also appear in the mosaics section (group header and table header).
+						textOccurrences: {
+							[namespaceInfoResult.name]: 2,
+							[createdTimestampText]: 2
+						}
 					}
 				}
-			},
-			{
-				description: 'details section: renders the sub namespaces and the creator',
-				config: {},
-				expected: {
-					texts: [
-						SCREEN_TEXT.fieldSubNamespaces,
-						subNamespacesText,
-						SCREEN_TEXT.fieldCreator,
-						namespaceInfoResult.creator
-					]
-				}
-			},
-			{
-				description: 'details section: renders the expiration countdown and the progress bar for an active namespace',
-				config: {},
-				expected: {
-					texts: [
-						SCREEN_TEXT.fieldExpiration,
-						expirationCountdownText,
-						SCREEN_TEXT.fieldRegistrationHeight,
-						SCREEN_TEXT.fieldExpirationHeight,
-						namespaceInfoResult.registrationHeight,
-						namespaceInfoResult.expirationHeight
-					],
-					hiddenTexts: [SCREEN_TEXT.valueExpired, SCREEN_TEXT.valueNeverExpired]
-				}
-			},
-			{
-				description: 'details section: renders the expired state for an expired namespace',
-				config: { chainHeight: expiredChainHeight },
-				expected: {
-					texts: [
-						SCREEN_TEXT.valueExpired,
-						SCREEN_TEXT.fieldRegistrationHeight,
-						SCREEN_TEXT.fieldExpirationHeight
-					],
-					hiddenTexts: [new RegExp(SCREEN_TEXT.valueExpiration), SCREEN_TEXT.valueNeverExpired]
-				}
-			},
-			{
-				description: 'details section: renders never expired without the progress bar for an unlimited duration namespace',
-				config: { namespaceInfo: { isUnlimitedDuration: true } },
-				expected: {
-					texts: [SCREEN_TEXT.valueNeverExpired],
-					hiddenTexts: [
-						SCREEN_TEXT.fieldRegistrationHeight,
-						SCREEN_TEXT.fieldExpirationHeight,
-						SCREEN_TEXT.valueExpired,
-						new RegExp(SCREEN_TEXT.valueExpiration)
-					]
-				}
-			},
-			{
-				description: 'mosaics section: renders the mosaics grouped by namespace',
-				config: {},
-				expected: {
-					texts: [
-						SCREEN_TEXT.sectionMosaics,
-						SCREEN_TEXT.tableFieldName,
-						SCREEN_TEXT.tableFieldSupply,
-						SCREEN_TEXT.tableFieldRegistrationHeight,
-						namespaceMosaic.name,
-						namespaceMosaic.supply,
-						namespaceMosaic.registrationHeight
-					],
-					textOccurrences: { [namespaceInfoResult.name]: 2 },
-					hiddenTexts: [SCREEN_TEXT.messageEmptyTable]
-				}
-			},
-			{
-				description: 'mosaics section: renders the empty message when the namespace has no mosaics',
-				config: { namespaceInfo: { namespaceMosaics: [] } },
-				expected: {
-					texts: [SCREEN_TEXT.messageEmptyTable],
-					hiddenTexts: [namespaceMosaic.name]
-				}
-			}
-		];
+			];
 
-		runRenderScenarioTests({ renderPage, cases: renderScenarioCases });
+			runRenderScenarioTests({ renderPage, cases: namespaceCases });
+		});
+
+		describe('section: details', () => {
+			const detailsCases = [
+				{
+					description: 'renders the sub namespaces and the creator',
+					config: {},
+					expected: {
+						texts: [
+							SCREEN_TEXT.fieldSubNamespaces,
+							subNamespacesText,
+							SCREEN_TEXT.fieldCreator,
+							namespaceInfoResult.creator
+						]
+					}
+				},
+				{
+					description: 'renders the expiration countdown and the progress bar for an active namespace',
+					config: {},
+					expected: {
+						texts: [
+							SCREEN_TEXT.fieldExpiration,
+							expirationCountdownText,
+							SCREEN_TEXT.fieldRegistrationHeight,
+							SCREEN_TEXT.fieldExpirationHeight,
+							namespaceInfoResult.registrationHeight,
+							namespaceInfoResult.expirationHeight
+						],
+						hiddenTexts: [SCREEN_TEXT.valueExpired, SCREEN_TEXT.valueNeverExpired]
+					}
+				},
+				{
+					description: 'renders the expired state for an expired namespace',
+					config: { chainHeight: expiredChainHeight },
+					expected: {
+						texts: [
+							SCREEN_TEXT.valueExpired,
+							SCREEN_TEXT.fieldRegistrationHeight,
+							SCREEN_TEXT.fieldExpirationHeight
+						],
+						hiddenTexts: [new RegExp(SCREEN_TEXT.valueExpiration), SCREEN_TEXT.valueNeverExpired]
+					}
+				},
+				{
+					description: 'renders never expired without the progress bar for an unlimited duration namespace',
+					config: { namespaceInfo: { isUnlimitedDuration: true } },
+					expected: {
+						texts: [SCREEN_TEXT.valueNeverExpired],
+						hiddenTexts: [
+							SCREEN_TEXT.fieldRegistrationHeight,
+							SCREEN_TEXT.fieldExpirationHeight,
+							SCREEN_TEXT.valueExpired,
+							new RegExp(SCREEN_TEXT.valueExpiration)
+						]
+					}
+				}
+			];
+
+			runRenderScenarioTests({ renderPage, cases: detailsCases });
+		});
+
+		describe('section: mosaics', () => {
+			const mosaicsCases = [
+				{
+					description: 'renders the mosaics grouped by namespace',
+					config: {},
+					expected: {
+						texts: [
+							SCREEN_TEXT.sectionMosaics,
+							SCREEN_TEXT.tableFieldName,
+							SCREEN_TEXT.tableFieldSupply,
+							SCREEN_TEXT.tableFieldRegistrationHeight,
+							namespaceMosaic.name,
+							namespaceMosaic.supply,
+							namespaceMosaic.registrationHeight
+						],
+						textOccurrences: { [namespaceInfoResult.name]: 2 },
+						hiddenTexts: [SCREEN_TEXT.messageEmptyTable]
+					}
+				},
+				{
+					description: 'renders the empty message when the namespace has no mosaics',
+					config: { namespaceInfo: { namespaceMosaics: [] } },
+					expected: {
+						texts: [SCREEN_TEXT.messageEmptyTable],
+						hiddenTexts: [namespaceMosaic.name]
+					}
+				}
+			];
+
+			runRenderScenarioTests({ renderPage, cases: mosaicsCases });
+		});
 	});
 });

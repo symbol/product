@@ -136,211 +136,227 @@ describe('MosaicInfo', () => {
 		});
 	});
 
-	describe('render scenarios', () => {
+	describe('render', () => {
 		const renderPage = config => {
 			const mosaicInfo = { ...mosaicInfoResult, ...config.mosaicInfo };
 			BlockService.fetchChainHight.mockResolvedValue(config.chainHeight ?? activeChainHeight);
 			render(<MosaicInfo mosaicInfo={mosaicInfo} preloadedTransactions={[]} preloadedAccounts={[]} />);
 		};
 
-		const renderScenarioCases = [
-			{
-				description: 'mosaic section: renders the name, labels and description',
-				config: {},
-				expected: {
-					texts: [
-						SCREEN_TEXT.sectionMosaic,
-						SCREEN_TEXT.fieldName,
-						mosaicInfoResult.name,
-						createdTimestampText,
-						SCREEN_TEXT.labelTransferable,
-						SCREEN_TEXT.labelSupplyMutable,
-						mosaicInfoResult.description
-					],
-					// Both the transferable and the supply mutable labels render the positive icon.
-					altOccurrences: {
-						true: 2,
-						false: 0
+		describe('section: mosaic', () => {
+			const mosaicCases = [
+				{
+					description: 'renders the name, labels and description',
+					config: {},
+					expected: {
+						texts: [
+							SCREEN_TEXT.sectionMosaic,
+							SCREEN_TEXT.fieldName,
+							mosaicInfoResult.name,
+							createdTimestampText,
+							SCREEN_TEXT.labelTransferable,
+							SCREEN_TEXT.labelSupplyMutable,
+							mosaicInfoResult.description
+						],
+						// Both the transferable and the supply mutable labels render the positive icon.
+						altOccurrences: {
+							true: 2,
+							false: 0
+						},
+						hiddenTexts: [SCREEN_TEXT.noDescription]
+					}
+				},
+				{
+					description: 'renders the description placeholder when the description is missing',
+					config: { mosaicInfo: { description: null } },
+					expected: {
+						texts: [SCREEN_TEXT.noDescription],
+						hiddenTexts: [mosaicInfoResult.description]
+					}
+				},
+				{
+					description: 'renders danger icons for a non-transferable, fixed-supply mosaic',
+					config: {
+						mosaicInfo: {
+							isTransferable: false,
+							isSupplyMutable: false
+						}
 					},
-					hiddenTexts: [SCREEN_TEXT.noDescription]
-				}
-			},
-			{
-				description: 'mosaic section: renders the description placeholder when the description is missing',
-				config: { mosaicInfo: { description: null } },
-				expected: {
-					texts: [SCREEN_TEXT.noDescription],
-					hiddenTexts: [mosaicInfoResult.description]
-				}
-			},
-			{
-				description: 'mosaic section: renders danger icons for a non-transferable, fixed-supply mosaic',
-				config: {
-					mosaicInfo: {
-						isTransferable: false,
-						isSupplyMutable: false
-					}
-				},
-				expected: {
-					altOccurrences: {
-						true: 0,
-						false: 2
-					}
-				}
-			},
-			{
-				description: 'details section: renders the namespace, supply and registration fields',
-				config: { mosaicInfo: { levy: null } },
-				expected: {
-					texts: [
-						SCREEN_TEXT.fieldMosaicNamespace,
-						mosaicInfoResult.rootNamespaceName,
-						SCREEN_TEXT.fieldSupply,
-						mosaicInfoResult.supply,
-						SCREEN_TEXT.fieldDivisibility,
-						mosaicInfoResult.divisibility,
-						SCREEN_TEXT.fieldCreator,
-						mosaicInfoResult.creator,
-						SCREEN_TEXT.fieldRegistrationHeight,
-						mosaicInfoResult.registrationHeight
-					]
-				}
-			},
-			{
-				description: 'details section: renders the expiration countdown and the progress bar for an active namespace',
-				config: {},
-				expected: {
-					texts: [
-						SCREEN_TEXT.fieldNamespaceExpiration,
-						expirationCountdownText,
-						SCREEN_TEXT.fieldNamespaceRegistrationHeight,
-						SCREEN_TEXT.fieldNamespaceExpirationHeight,
-						mosaicInfoResult.namespaceRegistrationHeight,
-						mosaicInfoResult.namespaceExpirationHeight
-					],
-					hiddenTexts: [SCREEN_TEXT.valueExpired, SCREEN_TEXT.valueNeverExpired]
-				}
-			},
-			{
-				description: 'details section: renders the expired state for an expired namespace',
-				config: { chainHeight: expiredChainHeight },
-				expected: {
-					texts: [
-						SCREEN_TEXT.valueExpired,
-						SCREEN_TEXT.fieldNamespaceRegistrationHeight,
-						SCREEN_TEXT.fieldNamespaceExpirationHeight
-					],
-					hiddenTexts: [new RegExp(SCREEN_TEXT.valueExpiration), SCREEN_TEXT.valueNeverExpired]
-				}
-			},
-			{
-				description: 'details section: renders never expired without the progress bar for an unlimited duration mosaic',
-				config: { mosaicInfo: { isUnlimitedDuration: true } },
-				expected: {
-					texts: [SCREEN_TEXT.valueNeverExpired],
-					hiddenTexts: [
-						SCREEN_TEXT.fieldNamespaceRegistrationHeight,
-						SCREEN_TEXT.fieldNamespaceExpirationHeight,
-						SCREEN_TEXT.valueExpired,
-						new RegExp(SCREEN_TEXT.valueExpiration)
-					]
-				}
-			},
-			{
-				description: 'associated data section: renders the levy fields for a mosaic with levy',
-				config: {},
-				expected: {
-					texts: [
-						SCREEN_TEXT.sectionAssociatedData,
-						SCREEN_TEXT.fieldLevyType,
-						mosaicInfoResult.levy.type,
-						SCREEN_TEXT.fieldLevyMosaic,
-						mosaicInfoResult.levy.mosaic,
-						SCREEN_TEXT.fieldLevyFee,
-						mosaicInfoResult.levy.fee,
-						SCREEN_TEXT.fieldLevyRecipient
-					],
-					// The fixture levy recipient is the creator, so the address appears in both fields.
-					textOccurrences: { [mosaicInfoResult.creator]: 2 }
-				}
-			},
-			{
-				description: 'associated data section: is not rendered for a mosaic without levy',
-				config: { mosaicInfo: { levy: null } },
-				expected: {
-					hiddenTexts: [SCREEN_TEXT.sectionAssociatedData, SCREEN_TEXT.fieldLevyType]
-				}
-			}
-		];
-
-		runRenderScenarioTests({ renderPage, cases: renderScenarioCases });
-	});
-
-	describe('distribution', () => {
-		const renderMosaicInfo = () =>
-			render(<MosaicInfo mosaicInfo={mosaicInfoResult} preloadedTransactions={[]} preloadedAccounts={[]} />);
-
-		it('requests holders and transfers with the mosaic filter', async () => {
-			// Act:
-			renderMosaicInfo();
-
-			// Assert:
-			await waitFor(() => expect(AccountService.fetchAccountPage).toHaveBeenCalledWith(mosaicSearchCriteria));
-			await waitFor(() => expect(TransactionService.fetchTransactionPage).toHaveBeenCalledWith(mosaicSearchCriteria));
-		});
-
-		describe('distribution tabs', () => {
-			const renderPage = () => {
-				AccountService.fetchAccountPage.mockResolvedValue(accountPageMosaicFilterResult);
-				TransactionService.fetchTransactionPage.mockResolvedValue(transactionPageResult);
-				renderMosaicInfo();
-			};
-
-			const distributionTabCases = [
-				{
-					description: 'renders the holders tab',
-					config: { actions: [clickText(SCREEN_TEXT.sectionHolders)] },
 					expected: {
-						texts: [SCREEN_TEXT.sectionDistribution],
-						asyncTexts: accountPageMosaicFilterResult.data.map(account => account.address)
-					}
-				},
-				{
-					description: 'renders the transfers tab',
-					config: { actions: [clickText(SCREEN_TEXT.sectionTransfers)] },
-					expected: {
-						texts: [SCREEN_TEXT.sectionDistribution],
-						asyncTexts: transactionPageResult.data.map(transaction => truncateString(transaction.hash, 'hash'))
+						altOccurrences: {
+							true: 0,
+							false: 2
+						}
 					}
 				}
 			];
 
-			runRenderScenarioTests({ renderPage, cases: distributionTabCases });
+			runRenderScenarioTests({ renderPage, cases: mosaicCases });
 		});
 
-		it('shows the try-again action when the holders request fails', async () => {
-			// Arrange: silence the pagination error log.
-			jest.spyOn(console, 'error').mockImplementation();
-			AccountService.fetchAccountPage.mockRejectedValue(new Error('holders request failed'));
+		describe('section: details', () => {
+			const detailsCases = [
+				{
+					description: 'renders the namespace, supply and registration fields',
+					config: { mosaicInfo: { levy: null } },
+					expected: {
+						texts: [
+							SCREEN_TEXT.fieldMosaicNamespace,
+							mosaicInfoResult.rootNamespaceName,
+							SCREEN_TEXT.fieldSupply,
+							mosaicInfoResult.supply,
+							SCREEN_TEXT.fieldDivisibility,
+							mosaicInfoResult.divisibility,
+							SCREEN_TEXT.fieldCreator,
+							mosaicInfoResult.creator,
+							SCREEN_TEXT.fieldRegistrationHeight,
+							mosaicInfoResult.registrationHeight
+						]
+					}
+				},
+				{
+					description: 'renders the expiration countdown and the progress bar for an active namespace',
+					config: {},
+					expected: {
+						texts: [
+							SCREEN_TEXT.fieldNamespaceExpiration,
+							expirationCountdownText,
+							SCREEN_TEXT.fieldNamespaceRegistrationHeight,
+							SCREEN_TEXT.fieldNamespaceExpirationHeight,
+							mosaicInfoResult.namespaceRegistrationHeight,
+							mosaicInfoResult.namespaceExpirationHeight
+						],
+						hiddenTexts: [SCREEN_TEXT.valueExpired, SCREEN_TEXT.valueNeverExpired]
+					}
+				},
+				{
+					description: 'renders the expired state for an expired namespace',
+					config: { chainHeight: expiredChainHeight },
+					expected: {
+						texts: [
+							SCREEN_TEXT.valueExpired,
+							SCREEN_TEXT.fieldNamespaceRegistrationHeight,
+							SCREEN_TEXT.fieldNamespaceExpirationHeight
+						],
+						hiddenTexts: [new RegExp(SCREEN_TEXT.valueExpiration), SCREEN_TEXT.valueNeverExpired]
+					}
+				},
+				{
+					description: 'renders never expired without the progress bar for an unlimited duration mosaic',
+					config: { mosaicInfo: { isUnlimitedDuration: true } },
+					expected: {
+						texts: [SCREEN_TEXT.valueNeverExpired],
+						hiddenTexts: [
+							SCREEN_TEXT.fieldNamespaceRegistrationHeight,
+							SCREEN_TEXT.fieldNamespaceExpirationHeight,
+							SCREEN_TEXT.valueExpired,
+							new RegExp(SCREEN_TEXT.valueExpiration)
+						]
+					}
+				}
+			];
 
-			// Act:
-			renderMosaicInfo();
-
-			// Assert:
-			await waitFor(() => expect(screen.getByText(SCREEN_TEXT.buttonTryAgain)).toBeInTheDocument());
+			runRenderScenarioTests({ renderPage, cases: detailsCases });
 		});
 
-		it('shows the try-again action when the transfers request fails', async () => {
-			// Arrange: silence the pagination error log.
-			jest.spyOn(console, 'error').mockImplementation();
-			TransactionService.fetchTransactionPage.mockRejectedValue(new Error('transfers request failed'));
+		describe('section: associated data', () => {
+			const associatedDataCases = [
+				{
+					description: 'renders the levy fields for a mosaic with levy',
+					config: {},
+					expected: {
+						texts: [
+							SCREEN_TEXT.sectionAssociatedData,
+							SCREEN_TEXT.fieldLevyType,
+							mosaicInfoResult.levy.type,
+							SCREEN_TEXT.fieldLevyMosaic,
+							mosaicInfoResult.levy.mosaic,
+							SCREEN_TEXT.fieldLevyFee,
+							mosaicInfoResult.levy.fee,
+							SCREEN_TEXT.fieldLevyRecipient
+						],
+						// The fixture levy recipient is the creator, so the address appears in both fields.
+						textOccurrences: { [mosaicInfoResult.creator]: 2 }
+					}
+				},
+				{
+					description: 'is not rendered for a mosaic without levy',
+					config: { mosaicInfo: { levy: null } },
+					expected: {
+						hiddenTexts: [SCREEN_TEXT.sectionAssociatedData, SCREEN_TEXT.fieldLevyType]
+					}
+				}
+			];
 
-			// Act:
-			renderMosaicInfo();
-			fireEvent.click(screen.getByText(SCREEN_TEXT.sectionTransfers));
+			runRenderScenarioTests({ renderPage, cases: associatedDataCases });
+		});
 
-			// Assert:
-			await waitFor(() => expect(screen.getByText(SCREEN_TEXT.buttonTryAgain)).toBeInTheDocument());
+		describe('section: distribution', () => {
+			const renderMosaicInfo = () =>
+				render(<MosaicInfo mosaicInfo={mosaicInfoResult} preloadedTransactions={[]} preloadedAccounts={[]} />);
+
+			it('requests holders and transfers with the mosaic filter', async () => {
+				// Act:
+				renderMosaicInfo();
+
+				// Assert:
+				await waitFor(() => expect(AccountService.fetchAccountPage).toHaveBeenCalledWith(mosaicSearchCriteria));
+				await waitFor(() => expect(TransactionService.fetchTransactionPage).toHaveBeenCalledWith(mosaicSearchCriteria));
+			});
+
+			describe('tabs', () => {
+				const renderPageWithData = () => {
+					AccountService.fetchAccountPage.mockResolvedValue(accountPageMosaicFilterResult);
+					TransactionService.fetchTransactionPage.mockResolvedValue(transactionPageResult);
+					renderMosaicInfo();
+				};
+
+				const distributionTabCases = [
+					{
+						description: 'renders the holders tab',
+						config: { actions: [clickText(SCREEN_TEXT.sectionHolders)] },
+						expected: {
+							texts: [SCREEN_TEXT.sectionDistribution],
+							asyncTexts: accountPageMosaicFilterResult.data.map(account => account.address)
+						}
+					},
+					{
+						description: 'renders the transfers tab',
+						config: { actions: [clickText(SCREEN_TEXT.sectionTransfers)] },
+						expected: {
+							texts: [SCREEN_TEXT.sectionDistribution],
+							asyncTexts: transactionPageResult.data.map(transaction => truncateString(transaction.hash, 'hash'))
+						}
+					}
+				];
+
+				runRenderScenarioTests({ renderPage: renderPageWithData, cases: distributionTabCases });
+			});
+
+			it('shows the try-again action when the holders request fails', async () => {
+				// Arrange: silence the pagination error log.
+				jest.spyOn(console, 'error').mockImplementation();
+				AccountService.fetchAccountPage.mockRejectedValue(new Error('holders request failed'));
+
+				// Act:
+				renderMosaicInfo();
+
+				// Assert:
+				await waitFor(() => expect(screen.getByText(SCREEN_TEXT.buttonTryAgain)).toBeInTheDocument());
+			});
+
+			it('shows the try-again action when the transfers request fails', async () => {
+				// Arrange: silence the pagination error log.
+				jest.spyOn(console, 'error').mockImplementation();
+				TransactionService.fetchTransactionPage.mockRejectedValue(new Error('transfers request failed'));
+
+				// Act:
+				renderMosaicInfo();
+				fireEvent.click(screen.getByText(SCREEN_TEXT.sectionTransfers));
+
+				// Assert:
+				await waitFor(() => expect(screen.getByText(SCREEN_TEXT.buttonTryAgain)).toBeInTheDocument());
+			});
 		});
 	});
 });

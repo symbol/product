@@ -1,4 +1,5 @@
 import '@testing-library/jest-dom';
+import { activeVariant, formatVariantDescription } from './variants';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react';
 
 export const expectTexts = async expected => {
@@ -19,8 +20,21 @@ export const waitForText = text => async () => waitFor(() => expect(screen.getBy
 
 export const flushPromises = () => async () => act(async () => {});
 
+// A case may declare `variants: ['nem']` to run only in those variants' passes (skipped in the others).
 export const runTestCases = (runTest, cases) =>
-	cases.forEach(({ description, config, expected }) => runTest(description, config, expected));
+	cases.forEach(({ description, variants, config, expected }) => {
+		if (!variants) {
+			runTest(description, config, expected);
+
+			return;
+		}
+
+		const variantDescription = formatVariantDescription(variants, description);
+		if (variants.includes(activeVariant)) 
+			runTest(variantDescription, config, expected);
+		else 
+			it.skip(variantDescription, () => {});
+	});
 
 export const runGetServerSidePropsTests = ({ getServerSideProps, params, requests, cases }) => {
 	const runGetServerSidePropsTest = (description, config, expected) => {
