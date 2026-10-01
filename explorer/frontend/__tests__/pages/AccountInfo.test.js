@@ -1,6 +1,6 @@
 import '@testing-library/jest-dom';
 import { accountHarvestedBlockPageResult, accountInfoResult } from '../test-utils/accounts';
-import { clickText, createRenderScenarioRunner, runGetServerSidePropsTests } from '../test-utils/page';
+import { clickText, runGetServerSidePropsTests, runRenderScenarioTests, runTestCases } from '../test-utils/page';
 import { transactionPageResult } from '../test-utils/transactions';
 import * as AccountService from '@/app/api/accounts';
 import * as TransactionService from '@/app/api/transactions';
@@ -79,52 +79,56 @@ const harvestedBlockSearchCriteria = {
 
 describe('AccountInfo', () => {
 	describe('getServerSideProps', () => {
+		const requests = {
+			accountInfo: [AccountService, 'fetchAccountInfo'],
+			transactionPage: [TransactionService, 'fetchTransactionPage']
+		};
+
+		const getServerSidePropsCases = [
+			{
+				description: 'returns the account info and preloads transactions',
+				config: {
+					responses: {
+						accountInfo: accountInfoResult,
+						transactionPage: transactionPageResult
+					}
+				},
+				expected: {
+					requestArguments: {
+						accountInfo: [accountInfoResult.address],
+						transactionPage: [{ address: accountInfoResult.address }]
+					},
+					result: {
+						props: {
+							accountInfo: accountInfoResult,
+							preloadedTransactions: transactionPageResult.data
+						}
+					}
+				}
+			},
+			{
+				description: 'returns not found without fetching transactions',
+				config: {
+					responses: { accountInfo: null }
+				},
+				expected: {
+					requestArguments: { accountInfo: [accountInfoResult.address] },
+					result: { notFound: true }
+				}
+			}
+		];
+
 		runGetServerSidePropsTests({
 			getServerSideProps,
 			params: { address: accountInfoResult.address },
-			requests: {
-				accountInfo: [AccountService, 'fetchAccountInfo'],
-				transactionPage: [TransactionService, 'fetchTransactionPage']
-			},
-			cases: [
-				{
-					description: 'returns the account info and preloads transactions',
-					config: {
-						responses: {
-							accountInfo: accountInfoResult,
-							transactionPage: transactionPageResult
-						}
-					},
-					expected: {
-						requestArguments: {
-							accountInfo: [accountInfoResult.address],
-							transactionPage: [{ address: accountInfoResult.address }]
-						},
-						result: {
-							props: {
-								accountInfo: accountInfoResult,
-								preloadedTransactions: transactionPageResult.data
-							}
-						}
-					}
-				},
-				{
-					description: 'returns not found without fetching transactions',
-					config: {
-						responses: { accountInfo: null }
-					},
-					expected: {
-						requestArguments: { accountInfo: [accountInfoResult.address] },
-						result: { notFound: true }
-					}
-				}
-			]
+			requests,
+			cases: getServerSidePropsCases
 		});
 	});
 
 	describe('render scenarios', () => {
-		const runRenderScenarioTest = createRenderScenarioRunner(config =>
-			render(<AccountInfo accountInfo={{ ...accountInfoResult, ...config.accountInfo }} preloadedTransactions={[]} />));
+		const renderPage = config =>
+			render(<AccountInfo accountInfo={{ ...accountInfoResult, ...config.accountInfo }} preloadedTransactions={[]} />);
 
 		const renderScenarioCases = [
 			{
@@ -224,7 +228,7 @@ describe('AccountInfo', () => {
 			}
 		];
 
-		renderScenarioCases.forEach(({ description, config, expected }) => runRenderScenarioTest(description, config, expected));
+		runRenderScenarioTests({ renderPage, cases: renderScenarioCases });
 	});
 
 	describe('account history', () => {
@@ -237,8 +241,6 @@ describe('AccountInfo', () => {
 		};
 
 		describe('history tabs', () => {
-			const runHistoryTabTest = createRenderScenarioRunner(renderAccountInfo);
-
 			const historyTabCases = [
 				{
 					description: 'renders the transactions tab',
@@ -263,7 +265,7 @@ describe('AccountInfo', () => {
 				}
 			];
 
-			historyTabCases.forEach(({ description, config, expected }) => runHistoryTabTest(description, config, expected));
+			runRenderScenarioTests({ renderPage: renderAccountInfo, cases: historyTabCases });
 		});
 
 		describe('empty block filter', () => {
@@ -321,7 +323,7 @@ describe('AccountInfo', () => {
 				}
 			];
 
-			emptyBlockFilterCases.forEach(({ description, config, expected }) => runEmptyBlockFilterTest(description, config, expected));
+			runTestCases(runEmptyBlockFilterTest, emptyBlockFilterCases);
 
 			it('does not render the filter when the variant disables it', async () => {
 				// Arrange:
