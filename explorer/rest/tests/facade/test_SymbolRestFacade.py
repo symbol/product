@@ -5,7 +5,7 @@ from common.symbol.NodeConfiguration import SymbolNodeConfiguration
 from psycopg2 import Error as PsycopgError
 from psycopg2 import OperationalError
 
-from rest.db.SymbolDatabase import ReceiptQuery, ReceiptRecord, SortOrder, SymbolDataUnavailable
+from rest.db.SymbolDatabase import ReceiptQuery, ReceiptRecord, SortOrder, SymbolDataUnavailable, TransactionQuery
 from rest.facade.SymbolRestFacade import SymbolRestFacade
 
 from ..test.SymbolHealthTestUtils import create_symbol_health
@@ -158,6 +158,16 @@ class ReceiptSymbolDatabase:
 		return self.receipts
 
 
+class TransactionSymbolDatabase:
+	def __init__(self, transactions):
+		self.transactions = transactions
+		self.query = None
+
+	def get_transactions(self, query):
+		self.query = query
+		return self.transactions
+
+
 class ReceiptReadErrorSymbolDatabase:
 	@staticmethod
 	def get_receipts(_query):
@@ -173,6 +183,19 @@ def _create_facade_with_database(symbol_db):
 
 
 class SymbolRestFacadeTest(TestCase):  # pylint: disable=too-many-public-methods
+	def test_get_transactions_passes_query(self):
+		# Arrange:
+		query = TransactionQuery()
+		symbol_db = TransactionSymbolDatabase([])
+		facade = _create_facade_with_database(symbol_db)
+
+		# Act:
+		result = facade.get_transactions(query)
+
+		# Assert:
+		self.assertIs(query, symbol_db.query)
+		self.assertEqual([], result)
+
 	def test_rejects_missing_database(self):
 		# Arrange:
 		node_config = _create_node_config()
