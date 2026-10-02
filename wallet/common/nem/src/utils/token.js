@@ -3,6 +3,7 @@ import { ApiError, absoluteToRelativeAmount } from 'wallet-common-core';
 
 /** @typedef {import('../types/Token').Token} Token */
 /** @typedef {import('../types/Token').TokenInfo} TokenInfo */
+/** @typedef {import('../types/Token').RawToken} RawToken */
 
 /**
  * Converts a raw NEM mosaic id object to a token id string.
@@ -81,15 +82,15 @@ export const tokenInfoFromDTO = mosaicDefinitionDTO => {
  * Converts a list of raw mosaic DTOs to normalized Token objects using a tokenInfos map.
  * @param {Array} mosaicsDTO - The raw mosaic DTOs (each with `mosaicId`/`id` and `quantity`/`amount`).
  * @param {Record<string, TokenInfo>} tokenInfos - The map of TokenInfo keyed by token id string (from fetchTokenInfos).
- * @returns {Token[]} The normalized token list.
+ * @returns {Array.<Token | RawToken>} The normalized token list.
  */
 export const tokenListFromDTO = (mosaicsDTO, tokenInfos) => {
-	if (!mosaicsDTO)
-		return [];
+	if (!mosaicsDTO || !tokenInfos)
+		throw new ApiError('Failed to format tokens. Missing required parameters.');
 
 	return mosaicsDTO.map(mosaicDTO => {
 		const tokenId = tokenIdFromRaw(mosaicDTO.mosaicId || mosaicDTO.id);
-		const tokenInfo = tokenInfos?.[tokenId];
+		const tokenInfo = tokenInfos[tokenId];
 		const rawAmount = mosaicDTO.quantity ?? mosaicDTO.amount;
 
 		// Without resolved token info the relative amount and metadata are unavailable.

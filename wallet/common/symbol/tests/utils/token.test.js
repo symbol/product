@@ -1,5 +1,4 @@
 import {
-	formatTokenList,
 	getTokenAmount,
 	isMosaicRevokable,
 	isMosaicSupplyModifiable,
@@ -8,7 +7,8 @@ import {
 	isSupplyMutableFlag,
 	isTransferableFlag,
 	mosaicIdFromNonce,
-	tokenInfoFromDTO
+	tokenInfoFromDTO,
+	tokenListFromDTO
 } from '../../src/utils';
 import { tokenInfosResponse } from '../__fixtures__/api/token-infos-response';
 import {
@@ -101,7 +101,7 @@ describe('utils/token', () => {
 		});
 	});
 
-	describe('formatTokenList', () => {
+	describe('tokenListFromDTO', () => {
 		it('returns the formatted token list', () => {
 			// Arrange:
 			const rawMosaics = [
@@ -145,18 +145,18 @@ describe('utils/token', () => {
 			];
 
 			// Act:
-			const result = formatTokenList(rawMosaics, tokenInfos);
+			const result = tokenListFromDTO(rawMosaics, tokenInfos);
 
 			// Assert:
 			expect(result).toEqual(expectedTokenList);
 		});
 
-		const runFormatTokenListErrorTest = (rawMosaics, tokenInfos) => {
+		const runTokenListFromDTOErrorTest = (rawMosaics, tokenInfos) => {
 			// Arrange:
 			const expectedErrorMessage = 'Failed to format tokens. Missing required parameters.';
 
 			// Act & Assert:
-			expect(() => formatTokenList(rawMosaics, tokenInfos)).toThrow(expectedErrorMessage);
+			expect(() => tokenListFromDTO(rawMosaics, tokenInfos)).toThrow(expectedErrorMessage);
 		};
 
 		it('throws an error if the mosaic list is not provided', () => {
@@ -168,7 +168,7 @@ describe('utils/token', () => {
 			};
 
 			// Act & Assert:
-			runFormatTokenListErrorTest(rawMosaics, tokenInfos);
+			runTokenListFromDTOErrorTest(rawMosaics, tokenInfos);
 		});
 
 		it('throws an error if the token infos are not provided', () => {
@@ -180,7 +180,7 @@ describe('utils/token', () => {
 			const tokenInfos = null;
 
 			// Act & Assert:
-			runFormatTokenListErrorTest(rawMosaics, tokenInfos);
+			runTokenListFromDTOErrorTest(rawMosaics, tokenInfos);
 		});
 	});
 

@@ -61,7 +61,7 @@ export const tokenInfoFromDTO = mosaic => {
 
 /**
  * Gets the token amount from a token list.
- * @param {Token[]} tokenList - The list of tokens.
+ * @param {Array.<Token | MosaicDTO>} tokenList - The list of tokens.
  * @param {string} tokenId - The token id.
  * @returns {string} The token amount or '0' if the token is not found.
  */
@@ -77,10 +77,10 @@ export const getTokenAmount = (tokenList, tokenId) => {
 /**
  * Tries to format a token list from DTO data. If the token info is not available, raw token data is returned instead.
  * @param {MosaicDTO[]} mosaics - The raw mosaic list.
- * @param {TokenInfo[]} tokenInfos - The token info list.
+ * @param {Object.<string, TokenInfo>} tokenInfos - The token id to token info map.
  * @returns {Array.<Token | RawToken>} The token list.
  */
-export const formatTokenList = (mosaics, tokenInfos) => {
+export const tokenListFromDTO = (mosaics, tokenInfos) => {
 	if (!mosaics || !tokenInfos)
 		throw new ApiError('Failed to format tokens. Missing required parameters.');
 
@@ -99,7 +99,7 @@ export const formatTokenList = (mosaics, tokenInfos) => {
 
 /**
  * Formats the token using the token info.
- * @param {RawToken} mosaic - The raw mosaic data.
+ * @param {MosaicDTO} mosaic - The raw mosaic data.
  * @param {TokenInfo} tokenInfo - The token info data.
  * @returns {Token} The formatted token data.
  */

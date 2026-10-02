@@ -13,4 +13,13 @@
  * @property {string} amount - The token relative amount.
  */
 
+/**
+ * @typedef {object} RawToken
+ * @property {string} id - The token id.
+ * @property {string} name - The token id is used as the name.
+ * @property {null} amount - The token relative amount is unavailable in raw data.
+ * @property {number} absoluteAmount - The token absolute amount.
+ * @property {null} divisibility - The token divisibility is unavailable in raw data.
+ */
+
 export default {};

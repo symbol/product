@@ -59,7 +59,7 @@ const SCREEN_TEXT = {
 
 	// Buttons
 	buttonSend: 'button_send',
-	buttonRevoke: 'button_revoke',
+	buttonRevoke: 'button_revokeMosaic',
 	buttonModify: 'button_modifyMosaic',
 
 	// Errors

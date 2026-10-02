@@ -5,143 +5,144 @@ import { accountTokens, tokenInfos } from '../__fixtures__/local/token';
 // Constants
 
 const MISSING_PARAMETERS_ERROR = 'Failed to get token amount. Missing required parameters.';
+const MISSING_TOKEN_LIST_PARAMETERS_ERROR = 'Failed to format tokens. Missing required parameters.';
 
 // Fixtures
 
-// Mosaic infos that resolve the owned mosaic DTOs: nem.xem is seeded from the network currency (it has no
+// Token infos that resolve the owned mosaic DTOs: nem.xem is seeded from the network currency (it has no
 // on-chain definition) and test.token reuses the shared resolved info. unknown.mosaic is intentionally absent.
-const resolvedMosaicInfos = {
+const resolvedTokenInfos = {
 	'nem.xem': { id: 'nem.xem', name: 'XEM', divisibility: 6 },
 	'test.token': tokenInfos['test.token']
 };
 
-const mosaicAmountList = [
+const tokenAmountList = [
 	{ id: 'nem.xem', amount: '10.5' },
 	{ id: 'test.token', amount: '2.5' }
 ];
 
 describe('utils/token', () => {
 	describe('tokenIdFromRaw', () => {
-		const runMosaicIdFromRawTest = (description, config, expected) => {
+		const runTokenIdFromRawTest = (description, config, expected) => {
 			it(description, () => {
 				// Act:
 				const result = tokenIdFromRaw(config.rawMosaicId);
 
 				// Assert:
-				expect(result).toBe(expected.mosaicId);
+				expect(result).toBe(expected.tokenId);
 			});
 		};
 
-		const mosaicIdFromRawTests = [
+		const tokenIdFromRawTests = [
 			{
 				description: 'joins a raw mosaic id object into a string id',
 				config: { rawMosaicId: { namespaceId: 'nem', name: 'xem' } },
-				expected: { mosaicId: 'nem.xem' }
+				expected: { tokenId: 'nem.xem' }
 			},
 			{
 				description: 'returns an already-formatted string id unchanged',
 				config: { rawMosaicId: 'nem.xem' },
-				expected: { mosaicId: 'nem.xem' }
+				expected: { tokenId: 'nem.xem' }
 			}
 		];
 
-		mosaicIdFromRawTests.forEach(test => runMosaicIdFromRawTest(test.description, test.config, test.expected));
+		tokenIdFromRawTests.forEach(test => runTokenIdFromRawTest(test.description, test.config, test.expected));
 	});
 
 	describe('tokenIdToRaw', () => {
-		const runMosaicIdToRawTest = (description, config, expected) => {
+		const runTokenIdToRawTest = (description, config, expected) => {
 			it(description, () => {
 				// Act:
-				const result = tokenIdToRaw(config.mosaicId);
+				const result = tokenIdToRaw(config.tokenId);
 
 				// Assert:
 				expect(result).toStrictEqual(expected.rawMosaicId);
 			});
 		};
 
-		const mosaicIdToRawTests = [
+		const tokenIdToRawTests = [
 			{
-				description: 'splits a root-namespace mosaic id into a raw mosaic id object',
-				config: { mosaicId: 'nem.xem' },
+				description: 'splits a root-namespace token id into a raw mosaic id object',
+				config: { tokenId: 'nem.xem' },
 				expected: { rawMosaicId: { namespaceId: 'nem', name: 'xem' } }
 			},
 			{
-				description: 'keeps the dotted namespace of a sub-namespace mosaic id',
-				config: { mosaicId: 'makoto.metals.silver' },
+				description: 'keeps the dotted namespace of a sub-namespace token id',
+				config: { tokenId: 'makoto.metals.silver' },
 				expected: { rawMosaicId: { namespaceId: 'makoto.metals', name: 'silver' } }
 			},
 			{
-				description: 'keeps the dotted namespace of a three-part sub-namespace mosaic id',
-				config: { mosaicId: 'makoto.metals.silver.coin' },
+				description: 'keeps the dotted namespace of a three-part sub-namespace token id',
+				config: { tokenId: 'makoto.metals.silver.coin' },
 				expected: { rawMosaicId: { namespaceId: 'makoto.metals.silver', name: 'coin' } }
 			}
 		];
 
-		mosaicIdToRawTests.forEach(test => runMosaicIdToRawTest(test.description, test.config, test.expected));
+		tokenIdToRawTests.forEach(test => runTokenIdToRawTest(test.description, test.config, test.expected));
 
-		it('throws when the mosaic id has no namespace separator', () => {
+		it('throws when the token id has no namespace separator', () => {
 			// Act & Assert:
 			expect(() => tokenIdToRaw('xem')).toThrow('Failed to parse token id. Invalid token id: xem.');
 		});
 	});
 
 	describe('getTokenAmount', () => {
-		const runGetMosaicAmountTest = (description, config, expected) => {
+		const runGetTokenAmountTest = (description, config, expected) => {
 			it(description, () => {
 				// Act:
-				const result = getTokenAmount(mosaicAmountList, config.mosaicId);
+				const result = getTokenAmount(tokenAmountList, config.tokenId);
 
 				// Assert:
 				expect(result).toBe(expected.amount);
 			});
 		};
 
-		const getMosaicAmountTests = [
+		const getTokenAmountTests = [
 			{
-				description: 'returns the amount of the matching mosaic',
-				config: { mosaicId: 'test.token' },
+				description: 'returns the amount of the matching token',
+				config: { tokenId: 'test.token' },
 				expected: { amount: '2.5' }
 			},
 			{
-				description: 'returns "0" when the mosaic is absent from the list',
-				config: { mosaicId: 'absent.mosaic' },
+				description: 'returns "0" when the token is absent from the list',
+				config: { tokenId: 'absent.mosaic' },
 				expected: { amount: '0' }
 			}
 		];
 
-		getMosaicAmountTests.forEach(test => runGetMosaicAmountTest(test.description, test.config, test.expected));
+		getTokenAmountTests.forEach(test => runGetTokenAmountTest(test.description, test.config, test.expected));
 
-		it('throws when the mosaic list or mosaic id is missing', () => {
+		it('throws when the token list or token id is missing', () => {
 			// Arrange:
 			const missingParameterCases = [
-				{ mosaicList: null, mosaicId: 'nem.xem' },
-				{ mosaicList: mosaicAmountList, mosaicId: null },
-				{ mosaicList: null, mosaicId: null }
+				{ tokenList: null, tokenId: 'nem.xem' },
+				{ tokenList: tokenAmountList, tokenId: null },
+				{ tokenList: null, tokenId: null }
 			];
 
 			// Act & Assert:
-			missingParameterCases.forEach(({ mosaicList, mosaicId }) =>
-				expect(() => getTokenAmount(mosaicList, mosaicId)).toThrow(MISSING_PARAMETERS_ERROR));
+			missingParameterCases.forEach(({ tokenList, tokenId }) =>
+				expect(() => getTokenAmount(tokenList, tokenId)).toThrow(MISSING_PARAMETERS_ERROR));
 		});
 	});
 
 	describe('tokenInfoFromDTO', () => {
-		it('builds a mosaic info from a mosaic definition DTO', () => {
+		it('builds a token info from a mosaic definition DTO', () => {
 			// Arrange:
-			const expectedMosaicInfo = tokenInfos['test.token'];
+			const expectedTokenInfo = tokenInfos['test.token'];
 
 			// Act:
 			const result = tokenInfoFromDTO(mosaicDefinitionDTO);
 
 			// Assert:
-			expect(result).toStrictEqual(expectedMosaicInfo);
+			expect(result).toStrictEqual(expectedTokenInfo);
 		});
 
 		it('applies default property values when the definition omits them', () => {
 			// Arrange: with no properties, divisibility and supply default to 0, the supply is immutable
-			// and the mosaic is transferable.
+			// and the token is transferable.
 			const definitionDTO = { id: { namespaceId: 'foo', name: 'bar' }, properties: [] };
-			const expectedMosaicInfo = {
+			const expectedTokenInfo = {
 				id: 'foo.bar',
 				name: 'foo.bar',
 				divisibility: 0,
@@ -154,38 +155,49 @@ describe('utils/token', () => {
 			const result = tokenInfoFromDTO(definitionDTO);
 
 			// Assert:
-			expect(result).toStrictEqual(expectedMosaicInfo);
+			expect(result).toStrictEqual(expectedTokenInfo);
 		});
 	});
 
 	describe('tokenListFromDTO', () => {
-		it('normalizes owned mosaic DTOs against the resolved mosaic infos', () => {
-			// Arrange: resolved mosaics carry their relative amount and metadata; the unresolved mosaic keeps
+		it('normalizes owned mosaic DTOs against the resolved token infos', () => {
+			// Arrange: resolved tokens carry their relative amount and metadata; the unresolved token keeps
 			// only its absolute amount with null relative amount and divisibility.
-			const expectedMosaicList = accountTokens;
+			const expectedTokenList = accountTokens;
 
 			// Act:
-			const result = tokenListFromDTO(ownedMosaicDTOs, resolvedMosaicInfos);
+			const result = tokenListFromDTO(ownedMosaicDTOs, resolvedTokenInfos);
 
 			// Assert:
-			expect(result).toStrictEqual(expectedMosaicList);
+			expect(result).toStrictEqual(expectedTokenList);
 		});
 
-		const runEmptyMosaicListTest = (description, config) => {
-			it(description, () => {
-				// Act:
-				const result = tokenListFromDTO(config.mosaicsDTO, resolvedMosaicInfos);
+		it('returns an empty list when the mosaic DTOs are empty', () => {
+			// Act:
+			const result = tokenListFromDTO([], resolvedTokenInfos);
 
-				// Assert:
-				expect(result).toStrictEqual([]);
+			// Assert:
+			expect(result).toStrictEqual([]);
+		});
+
+		const runTokenListFromDTOErrorTest = (description, config) => {
+			it(description, () => {
+				// Act & Assert:
+				expect(() => tokenListFromDTO(config.mosaicsDTO, config.tokenInfos)).toThrow(MISSING_TOKEN_LIST_PARAMETERS_ERROR);
 			});
 		};
 
-		const emptyMosaicListTests = [
-			{ description: 'returns an empty list when the mosaic DTOs are undefined', config: { mosaicsDTO: undefined } },
-			{ description: 'returns an empty list when the mosaic DTOs are empty', config: { mosaicsDTO: [] } }
+		const tokenListFromDTOErrorTests = [
+			{
+				description: 'throws when the mosaic DTOs are missing',
+				config: { mosaicsDTO: undefined, tokenInfos: resolvedTokenInfos }
+			},
+			{
+				description: 'throws when the token infos are missing',
+				config: { mosaicsDTO: ownedMosaicDTOs, tokenInfos: undefined }
+			}
 		];
 
-		emptyMosaicListTests.forEach(test => runEmptyMosaicListTest(test.description, test.config));
+		tokenListFromDTOErrorTests.forEach(test => runTokenListFromDTOErrorTest(test.description, test.config));
 	});
 });

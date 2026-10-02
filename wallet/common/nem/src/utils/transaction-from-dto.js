@@ -91,7 +91,7 @@ const levyFromDTO = levy => {
  * @param {object} config - The configuration object.
  * @param {NetworkProperties} config.networkProperties - The network properties.
  * @param {PublicAccount} [config.currentAccount] - The current account, used to derive the directed amount.
- * @param {object.<string, object>} [config.tokenInfos] - The mosaic id to info map.
+ * @param {object.<string, object>} [config.tokenInfos] - The token id to info map.
  * @param {boolean} [config.isEmbedded] - A flag indicating if the transaction is embedded.
  * @returns {Transaction} The transaction object.
  */

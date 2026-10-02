@@ -12,7 +12,7 @@ const CHAIN_NAME = 'symbol';
 const NETWORK_IDENTIFIER = 'testnet';
 const TICKER = 'XYM';
 
-const MOSAIC_ID = '78C3CDF0896248DB';
+const TOKEN_ID = '78C3CDF0896248DB';
 const VALID_SUPPLY = '100';
 
 // Screen Text
@@ -60,6 +60,7 @@ const SCREEN_TEXT = {
 
 	// Confirmation dialog
 	textConfirmDialogTitle: 'screen_mosaic_create_dialog_confirm_title',
+	textFieldTitleTokenId: 'fieldTitle_tokenId',
 
 	// Validation errors
 	errorFieldRequired: 'validationError_fieldRequired',
@@ -121,7 +122,7 @@ const transactionFees = TransactionFeeFixtureBuilder
 const mosaicDefinitionTransaction = {
 	type: 'mosaicDefinition',
 	signerAddress: currentAccount.address,
-	mosaicId: MOSAIC_ID,
+	tokenId: TOKEN_ID,
 	divisibility: 0,
 	duration: MOSAIC_NEVER_EXPIRING_DURATION,
 	isSupplyMutable: true,
@@ -448,7 +449,7 @@ describe('screens/mosaic/CreateMosaic', () => {
 
 				screenTester.pressButton(SCREEN_TEXT.buttonSend);
 				await screenTester.waitForTimer(); // create transaction, open confirmation dialog
-				screenTester.expectText([SCREEN_TEXT.textConfirmDialogTitle]);
+				screenTester.expectText([SCREEN_TEXT.textConfirmDialogTitle, SCREEN_TEXT.textFieldTitleTokenId, TOKEN_ID]);
 
 				screenTester.pressButton(SCREEN_TEXT.buttonConfirm);
 				await screenTester.waitForTimer(); // passcode success, send execution delay

@@ -23,7 +23,7 @@ const mapAddress = address => Buffer.from(address.bytes).toString();
 
 const mapBytesToString = bytes => Buffer.from(bytes).toString();
 
-const mapMosaicId = mosaicId => `${mapBytesToString(mosaicId.namespaceId.name)}.${mapBytesToString(mosaicId.name)}`;
+const mapTokenId = mosaicId => `${mapBytesToString(mosaicId.namespaceId.name)}.${mapBytesToString(mosaicId.name)}`;
 
 const mapDeadline = transaction => {
 	const timestamp = Number(transaction.timestamp.value);
@@ -54,7 +54,7 @@ const resolveTransferAmount = (transactionBody, nativeTokenAmount, currentAccoun
 const mapTransferTokens = (transaction, networkCurrency, tokenInfos) => {
 	if (transaction.mosaics?.length) {
 		const mosaicsDTO = transaction.mosaics.map(({ mosaic }) => ({
-			mosaicId: mapMosaicId(mosaic.mosaicId),
+			mosaicId: mapTokenId(mosaic.mosaicId),
 			quantity: Number(mosaic.amount.value)
 		}));
 
@@ -92,7 +92,7 @@ const mapMosaicLevy = levy => {
 	return {
 		type: levy.transferFeeType.value,
 		recipientAddress: mapAddress(levy.recipientAddress),
-		mosaicId: mapMosaicId(levy.mosaicId),
+		mosaicId: mapTokenId(levy.mosaicId),
 		fee: Number(levy.fee.value)
 	};
 };
@@ -103,7 +103,7 @@ const mapMosaicLevy = levy => {
  * @param {object} config - The configuration object.
  * @param {NetworkProperties} config.networkProperties - The network properties.
  * @param {PublicAccount} [config.currentAccount] - The current account, used to derive the directed amount.
- * @param {object.<string, TokenInfo>} [config.tokenInfos] - The mosaic id to info map.
+ * @param {object.<string, TokenInfo>} [config.tokenInfos] - The token id to info map.
  * @param {string} [config.fillSignerPublicKey] - The public key used when the transaction's signer is empty.
  * @param {boolean} [config.isEmbedded] - A flag indicating if the transaction is embedded (a multisig inner transaction).
  * @returns {Transaction} The transaction object.
@@ -274,7 +274,7 @@ const mosaicDefinitionTransactionFromNem = (transaction, config) => {
 	return {
 		...baseTransaction,
 		mosaicDefinition: {
-			id: mapMosaicId(mosaicDefinition.id),
+			id: mapTokenId(mosaicDefinition.id),
 			ownerPublicKey: mosaicDefinition.ownerPublicKey.toString(),
 			description: mapBytesToString(mosaicDefinition.description),
 			properties: mapMosaicProperties(mosaicDefinition.properties),
@@ -290,7 +290,7 @@ const mosaicSupplyChangeTransactionFromNem = (transaction, config) => {
 
 	return {
 		...baseTransaction,
-		tokenId: mapMosaicId(transaction.mosaicId),
+		tokenId: mapTokenId(transaction.mosaicId),
 		action: transaction.action.value,
 		delta: Number(transaction.delta.value)
 	};
@@ -311,7 +311,7 @@ export const getUnresolvedIdsFromNemTransactions = transactions => {
 
 		if (transaction.type.value === TransactionType.TRANSFER) {
 			transaction.mosaics?.forEach(({ mosaic }) => {
-				const tokenId = mapMosaicId(mosaic.mosaicId);
+				const tokenId = mapTokenId(mosaic.mosaicId);
 
 				if (tokenId !== NETWORK_CURRENCY_ID)
 					tokenIds.add(tokenId);

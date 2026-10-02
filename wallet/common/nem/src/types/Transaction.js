@@ -59,7 +59,7 @@
  * @property {string|null} signerPublicKey
  * @property {string|null} [recipientAddress]
  * @property {number} [amount] - Signed amount (positive=incoming, negative=outgoing).
- * @property {Token[]} [mosaics]
+ * @property {Token[]} [tokens]
  * @property {Message|null} [message]
  * @property {Transaction|null} [innerTransaction]
  * @property {Transaction[]} [innerTransactions]
@@ -77,7 +77,7 @@
  * @property {string} [rentalFeeSink] - Namespace / mosaic definition: address of the rental or creation fee sink.
  * @property {object} [rentalFee] - Namespace / mosaic definition: rental or creation fee token, paid to the fee sink.
  * @property {MosaicDefinition} [mosaicDefinition] - Mosaic definition: the mosaic being defined.
- * @property {string} [mosaicId] - Mosaic supply change: the mosaic id ('namespace.name').
+ * @property {string} [tokenId] - Mosaic supply change: the token id ('namespace.name').
  * @property {number} [action] - Mosaic supply change: MosaicSupplyChangeAction code (1=increase, 2=decrease).
  * @property {number|string} [delta] - Mosaic supply change: supply delta in smallest units.
  */

@@ -624,7 +624,7 @@ describe('TransferModule', () => {
 				signerAddress: otherAccount.address,
 				recipientAddress: walletStorageAccounts.testnet[3].address,
 				message: { type: MessageType.EncryptedText, payload: 'ENCRYPTED' },
-				mosaics: [],
+				tokens: [],
 				deadline: createDeadline(2, networkProperties.epochAdjustment)
 			};
 			const expectedError = new ControllerError(

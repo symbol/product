@@ -134,9 +134,9 @@ const tokenList = [
 	revokableToken
 ];
 
-export const tokenInfos = Object.fromEntries(tokenList.map(mosaic => [mosaic.id, mosaic]));
+export const tokenInfos = Object.fromEntries(tokenList.map(token => [token.id, token]));
 
-export const tokenNames = Object.fromEntries(tokenList.map(mosaic => [mosaic.id, mosaic.names]));
+export const tokenNames = Object.fromEntries(tokenList.map(token => [token.id, token.names]));
 
 export const tokenOwners = [
 	{

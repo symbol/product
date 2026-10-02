@@ -4,6 +4,7 @@ import { NotFoundError, absoluteToRelativeAmount } from 'wallet-common-core';
 
 /** @typedef {import('../types/Token').TokenInfo} TokenInfo */
 /** @typedef {import('../types/Token').TokenOwner} TokenOwner */
+/** @typedef {import('../types/Token').MosaicDTO} MosaicDTO */
 /** @typedef {import('../types/Network').NetworkProperties} NetworkProperties */
 /** @typedef {import('../types/SearchCriteria').SearchCriteria} SearchCriteria */
 
@@ -157,7 +158,7 @@ export class TokenService {
 	 * Fetches the tokens held by an account from the node, treating an account unknown to the network as holding none.
 	 * @param {NetworkProperties} networkProperties - Network properties.
 	 * @param {string} address - The account address.
-	 * @returns {Promise<Array<{id: string, amount: string}>>} - The held tokens in absolute units.
+	 * @returns {Promise<MosaicDTO[]>} - The held tokens in absolute units.
 	 */
 	#fetchAccountTokens = async (networkProperties, address) => {
 		const endpoint = `${networkProperties.nodeUrl}/accounts/${address}`;

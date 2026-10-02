@@ -1,4 +1,4 @@
-// Resolved mosaic infos keyed by mosaic id string, as produced by MosaicService.fetchMosaicInfos.
+// Resolved token infos keyed by token id string, as produced by TokenService.fetchTokenInfos.
 // Used by the from-dto mapper to resolve non-native mosaic amounts and divisibility.
 export const tokenInfos = {
 	'test.token': {
@@ -19,9 +19,9 @@ export const tokenInfos = {
 	}
 };
 
-// The normalized mosaics owned by an account, as resolved by mosaicListFromDTO (and
-// MosaicService.fetchAccountMosaics) from the owned mosaic DTOs: the native currency seeded from the
-// network currency, test.token resolved from its definition, and an unresolved mosaic with no info.
+// The normalized tokens owned by an account, as resolved by tokenListFromDTO (and
+// TokenService.fetchAccountTokens) from the owned mosaic DTOs: the native currency seeded from the
+// network currency, test.token resolved from its definition, and an unresolved token with no info.
 export const accountTokens = [
 	{ 
 		id: 'nem.xem', 
