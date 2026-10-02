@@ -64,7 +64,7 @@ describe('variants/symbol/api/finalization', () => {
 		expect(result).toEqual(finalizationInfo);
 	});
 
-	// Base scenario bounds: epoch 10 with votingSetGrouping 720 spans heights 5760..6480.
+	// Base scenario bounds: epoch 10 with votingSetGrouping 720 spans heights 5761..6480.
 	describe('derived values', () => {
 		const runDerivedValuesTest = (description, config, expected) => {
 			it(description, async () => {
@@ -132,8 +132,8 @@ describe('variants/symbol/api/finalization', () => {
 				config: { epoch: 1, finalizedHeight: 0 },
 				expected: {
 					result: {
-						epochStart: 0,
-						epochEnd: 1,
+						currentEpoch: 1,
+						nextEpoch: 2,
 						epochProgress: 1,
 						remainingBlocks: 0,
 						epochEndEtaTimestamp: null

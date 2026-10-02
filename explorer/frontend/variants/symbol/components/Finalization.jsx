@@ -12,8 +12,8 @@ import { useTranslation } from 'next-i18next';
 const initialFinalizationInfo = {
 	chainHeight: '-',
 	finalizationHeight: '-',
-	epochStart: '-',
-	epochEnd: '-',
+	currentEpoch: '-',
+	nextEpoch: '-',
 	epochProgress: 0,
 	remainingBlocks: 0,
 	epochEndEtaTimestamp: null
@@ -28,7 +28,7 @@ const Finalization = () => {
 	const { t } = useTranslation();
 	const finalizationInfo = useAsyncCall(fetchFinalizationInfo, initialFinalizationInfo, DATA_REFRESH_INTERVAL, true)
 		?? initialFinalizationInfo;
-	const { chainHeight, finalizationHeight, epochStart, epochEnd, epochProgress, remainingBlocks, epochEndEtaTimestamp } =
+	const { chainHeight, finalizationHeight, currentEpoch, nextEpoch, epochProgress, remainingBlocks, epochEndEtaTimestamp } =
 		finalizationInfo;
 
 	return (
@@ -43,9 +43,9 @@ const Finalization = () => {
 			<div className={styles.sectionEpoch}>
 				<Progress
 					titleLeft={t('field_epoch')}
-					valueLeft={epochStart}
-					valueRight={epochEnd}
-					value={epochStart + epochProgress}
+					valueLeft={currentEpoch}
+					valueRight={nextEpoch}
+					value={currentEpoch + epochProgress}
 					size="small"
 				/>
 				{!!epochEndEtaTimestamp && (
