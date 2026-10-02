@@ -6,6 +6,7 @@ import {
 	runGetServerSidePropsTests,
 	runRenderScenarioTests,
 	runSearchCriteriaTests,
+	runTableErrorTest,
 	toggleFilterChip
 } from '../test-utils/page';
 import { transactionPageResult } from '../test-utils/transactions';
@@ -14,7 +15,7 @@ import * as AccountService from '@/app/api/accounts';
 import * as TransactionService from '@/app/api/transactions';
 import AccountInfo, { getServerSideProps } from '@/app/pages/accounts/[address]';
 import * as utils from '@/app/utils';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 
 // Mocks
 
@@ -67,7 +68,6 @@ const SCREEN_TEXT = {
 	messageNoLinkedKeys: 'message_noLinkedKeys',
 	noDescription: 'No description',
 	filterHideEmptyBlocks: 'filter_hideEmptyBlocks',
-	buttonTryAgain: 'button_tryAgain',
 	tableFieldHeight: 'table_field_height',
 	tableFieldType: 'table_field_type',
 	tableFieldAmount: 'table_field_amount'
@@ -318,16 +318,9 @@ describe('AccountInfo', () => {
 				]
 			});
 
-			it('shows the try-again action when the harvested block request fails', async () => {
-				// Arrange: silence the pagination error log.
-				jest.spyOn(console, 'error').mockImplementation();
-				AccountService.fetchAccountHarvestedBlockPage.mockRejectedValue(new Error('harvests request failed'));
-
-				// Act:
-				renderHarvestedTab();
-
-				// Assert:
-				await waitFor(() => expect(screen.getByText(SCREEN_TEXT.buttonTryAgain)).toBeInTheDocument());
+			runTableErrorTest('shows the try-again action when the harvested block request fails', {
+				renderPage: renderHarvestedTab,
+				request: [AccountService, 'fetchAccountHarvestedBlockPage']
 			});
 
 			describeVariant('nem')('empty block filter', () => {
