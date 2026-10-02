@@ -91,7 +91,7 @@ describe('variants/symbol/components/Finalization', () => {
 				config: { response: new Promise(() => {}) },
 				expected: {
 					textOccurrences: {
-						'-': 4 // chainHeight, finalizationHeight, epochStart, epochEnd
+						'-': 4 // chainHeight, finalizationHeight, currentEpoch, nextEpoch
 					},
 					progressValue: '0',
 					etaText: null
@@ -104,8 +104,8 @@ describe('variants/symbol/components/Finalization', () => {
 					textOccurrences: {
 						6500: 1, // chainHeight
 						6120: 1, // finalizationHeight
-						9: 1, // epochStart
-						10: 1 // epochEnd
+						10: 1, // currentEpoch
+						11: 1 // nextEpoch
 					},
 					progressValue: '50',
 					etaText: 'value_remainingBlocks:360'
@@ -128,7 +128,7 @@ describe('variants/symbol/components/Finalization', () => {
 				config: { response: Promise.resolve(null) },
 				expected: {
 					textOccurrences: {
-						'-': 4 // chainHeight, finalizationHeight, epochStart, epochEnd
+						'-': 4 // chainHeight, finalizationHeight, currentEpoch, nextEpoch
 					},
 					progressValue: '0',
 					etaText: null
