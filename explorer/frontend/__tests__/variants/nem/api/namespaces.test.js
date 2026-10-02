@@ -1,6 +1,6 @@
-import { runApiTest } from '../test-utils/api';
-import { namespaceInfoResponse, namespaceInfoResult, namespacePageResponse, namespacePageResult } from '../test-utils/namespaces';
-import { fetchNamespaceInfo, fetchNamespacePage } from '@/app/api/namespaces';
+import { runApiTest } from '../../../test-utils/api';
+import { namespaceInfoResponse, namespaceInfoResult, namespacePageResponse, namespacePageResult } from '../../../test-utils/namespaces';
+import { fetchNamespaceInfo, fetchNamespacePage } from '@/app/variants/nem/api/namespaces';
 
 jest.mock('@/app/utils/server', () => {
 	return {
@@ -9,7 +9,7 @@ jest.mock('@/app/utils/server', () => {
 	};
 });
 
-describe('api/namespaces', () => {
+describe('variants/nem/api/namespaces', () => {
 	describe('fetchNamespacePage', () => {
 		it('fetch namespace page', async () => {
 			// Arrange:

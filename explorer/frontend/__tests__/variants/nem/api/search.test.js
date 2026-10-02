@@ -1,11 +1,11 @@
-import { accountInfoResponse, accountInfoResult } from '../test-utils/accounts';
-import { error404Response } from '../test-utils/api';
-import { blockInfoResponse, blockInfoResult } from '../test-utils/blocks';
-import { mosaicInfoResponse, mosaicInfoResult } from '../test-utils/mosaics';
-import { namespaceInfoResponse, namespaceInfoResult } from '../test-utils/namespaces';
-import { transactionInfoResponse, transactionInfoResult } from '../test-utils/transactions';
-import { search } from '@/app/api/search';
+import { accountInfoResponse, accountInfoResult } from '../../../test-utils/accounts';
+import { error404Response } from '../../../test-utils/api';
+import { blockInfoResponse, blockInfoResult } from '../../../test-utils/blocks';
+import { mosaicInfoResponse, mosaicInfoResult } from '../../../test-utils/mosaics';
+import { namespaceInfoResponse, namespaceInfoResult } from '../../../test-utils/namespaces';
+import { transactionInfoResponse, transactionInfoResult } from '../../../test-utils/transactions';
 import * as utils from '@/app/utils/server';
+import { search } from '@/app/variants/nem/api/search';
 
 jest.mock('@/app/utils/server', () => {
 	return {
@@ -52,7 +52,7 @@ const runScopedSearchTest = async (searchQuery, type, responseMap, expectedResul
 	expect(spy.mock.calls.map(call => call[0])).toStrictEqual(Object.keys(responseMap));
 };
 
-describe('api/search', () => {
+describe('variants/nem/api/search', () => {
 	it('searches block', async () => {
 		// Arrange:
 		const searchQuery = '1';

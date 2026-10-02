@@ -1,6 +1,6 @@
-import { runApiTest } from '../test-utils/api';
-import { blockInfoResponse, blockInfoResult, blockPageResponse, blockPageResult } from '../test-utils/blocks';
-import { fetchBlockInfo, fetchBlockPage, fetchChainHight } from '@/app/api/blocks';
+import { runApiTest } from '../../../test-utils/api';
+import { blockInfoResponse, blockInfoResult, blockPageResponse, blockPageResult } from '../../../test-utils/blocks';
+import { fetchBlockInfo, fetchBlockPage, fetchChainHight } from '@/app/variants/nem/api/blocks';
 
 jest.mock('@/app/utils/server', () => {
 	return {
@@ -9,7 +9,7 @@ jest.mock('@/app/utils/server', () => {
 	};
 });
 
-describe('api/blocks', () => {
+describe('variants/nem/api/blocks', () => {
 	describe('fetchBlockPage', () => {
 		it('fetch block page', async () => {
 			// Arrange:

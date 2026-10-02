@@ -1,4 +1,4 @@
-import { runApiTest } from '../test-utils/api';
+import { runApiTest } from '../../../test-utils/api';
 import {
 	transactionAccountPageResult,
 	transactionInfoResponse,
@@ -9,9 +9,9 @@ import {
 	transactionUnconfirmedPageResult,
 	unsupportedTransactionInfoResponse,
 	unsupportedTransactionInfoResult
-} from '../test-utils/transactions';
-import { fetchTransactionInfo, fetchTransactionPage } from '@/app/api/transactions';
+} from '../../../test-utils/transactions';
 import * as serverUtils from '@/app/utils/server';
+import { fetchTransactionInfo, fetchTransactionPage } from '@/app/variants/nem/api/transactions';
 
 jest.mock('@/app/utils/server', () => {
 	return {
@@ -20,7 +20,7 @@ jest.mock('@/app/utils/server', () => {
 	};
 });
 
-describe('api/transactions', () => {
+describe('variants/nem/api/transactions', () => {
 	describe('fetchTransactionPage', () => {
 		// Arrange:
 		const currentAddress = 'NBFQ6XFBKB3DHJCFDKCMJI5MZ53HFQ56AKDLY4JK';

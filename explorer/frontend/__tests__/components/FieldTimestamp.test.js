@@ -39,9 +39,9 @@ describe('FieldTimestamp', () => {
 		test('switches to local time', () => {
 			// Arrange:
 			const timestampType = 'UTC';
-			const expectedInitialTitle = 'field_timestampUTC';
+			const expectedInitialTitle = 'field_timestampUTC::title:field_timestamp';
 			const expectedTypeAfterClick = 'local';
-			const expectedTitleAfterClick = 'field_timestampLocal';
+			const expectedTitleAfterClick = 'field_timestampLocal::title:field_timestamp';
 
 			// Act + Assert:
 			runTest(timestampType, expectedInitialTitle, expectedTypeAfterClick, expectedTitleAfterClick);
@@ -50,9 +50,9 @@ describe('FieldTimestamp', () => {
 		test('switches to UTC time', () => {
 			// Arrange:
 			const timestampType = 'local';
-			const expectedInitialTitle = 'field_timestampLocal';
+			const expectedInitialTitle = 'field_timestampLocal::title:field_timestamp';
 			const expectedTypeAfterClick = 'UTC';
-			const expectedTitleAfterClick = 'field_timestampUTC';
+			const expectedTitleAfterClick = 'field_timestampUTC::title:field_timestamp';
 
 			// Act + Assert:
 			runTest(timestampType, expectedInitialTitle, expectedTypeAfterClick, expectedTitleAfterClick);
