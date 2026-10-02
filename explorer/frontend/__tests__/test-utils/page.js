@@ -3,6 +3,7 @@ import { activeVariant, formatVariantDescription } from './variants';
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 
 const CLEAR_FILTER_TEXT = 'button_clear';
+const TRY_AGAIN_TEXT = 'button_tryAgain';
 
 export const expectTexts = async expected => {
 	// Async texts settle the UI first, so the absence checks below cannot pass against a not-yet-rendered state.
@@ -124,4 +125,20 @@ export const runSearchCriteriaTests = ({ renderPage, request, cases }) => {
 	};
 
 	runTestCases(runSearchCriteriaTest, cases);
+};
+
+export const runTableErrorTest = (description, { renderPage, request }) => {
+	const [serviceModule, serviceMethod] = request;
+
+	it(description, async () => {
+		// Arrange: silence the pagination error log.
+		jest.spyOn(console, 'error').mockImplementation();
+		serviceModule[serviceMethod].mockRejectedValue(new Error(`${serviceMethod} request failed`));
+
+		// Act:
+		renderPage();
+
+		// Assert:
+		await waitFor(() => expect(screen.getByText(TRY_AGAIN_TEXT)).toBeInTheDocument());
+	});
 };

@@ -1,7 +1,7 @@
 import '@testing-library/jest-dom';
 import { accountPageMosaicFilterResult } from '../test-utils/accounts';
 import { mosaicInfoResult } from '../test-utils/mosaics';
-import { clickText, runGetServerSidePropsTests, runRenderScenarioTests } from '../test-utils/page';
+import { clickText, runGetServerSidePropsTests, runRenderScenarioTests, runTableErrorTest } from '../test-utils/page';
 import { transactionPageResult } from '../test-utils/transactions';
 import * as AccountService from '@/app/api/accounts';
 import * as BlockService from '@/app/api/blocks';
@@ -75,8 +75,7 @@ const SCREEN_TEXT = {
 	valueExpiration: 'value_expiration',
 	valueExpired: 'value_expired',
 	valueNeverExpired: 'value_neverExpired',
-	noDescription: 'No description',
-	buttonTryAgain: 'button_tryAgain'
+	noDescription: 'No description'
 };
 
 const remainingBlockCount = 500;
@@ -333,29 +332,17 @@ describe('MosaicInfo', () => {
 				runRenderScenarioTests({ renderPage: renderPageWithData, cases: distributionTabCases });
 			});
 
-			it('shows the try-again action when the holders request fails', async () => {
-				// Arrange: silence the pagination error log.
-				jest.spyOn(console, 'error').mockImplementation();
-				AccountService.fetchAccountPage.mockRejectedValue(new Error('holders request failed'));
-
-				// Act:
-				renderMosaicInfo();
-
-				// Assert:
-				await waitFor(() => expect(screen.getByText(SCREEN_TEXT.buttonTryAgain)).toBeInTheDocument());
+			runTableErrorTest('shows the try-again action when the holders request fails', {
+				renderPage: renderMosaicInfo,
+				request: [AccountService, 'fetchAccountPage']
 			});
 
-			it('shows the try-again action when the transfers request fails', async () => {
-				// Arrange: silence the pagination error log.
-				jest.spyOn(console, 'error').mockImplementation();
-				TransactionService.fetchTransactionPage.mockRejectedValue(new Error('transfers request failed'));
-
-				// Act:
-				renderMosaicInfo();
-				fireEvent.click(screen.getByText(SCREEN_TEXT.sectionTransfers));
-
-				// Assert:
-				await waitFor(() => expect(screen.getByText(SCREEN_TEXT.buttonTryAgain)).toBeInTheDocument());
+			runTableErrorTest('shows the try-again action when the transfers request fails', {
+				renderPage: () => {
+					renderMosaicInfo();
+					fireEvent.click(screen.getByText(SCREEN_TEXT.sectionTransfers));
+				},
+				request: [TransactionService, 'fetchTransactionPage']
 			});
 		});
 	});
