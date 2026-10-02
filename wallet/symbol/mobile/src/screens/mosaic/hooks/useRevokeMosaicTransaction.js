@@ -57,7 +57,7 @@ export const useRevokeMosaicTransaction = ({
 				type: transaction.type,
 				signerAddress: transaction.signerAddress,
 				sourceAddress: transaction.sourceAddress,
-				mosaicId: transaction.token.id,
+				tokenId: transaction.token.id,
 				amount: transaction.token.amount,
 				fee: transaction.fee
 			};

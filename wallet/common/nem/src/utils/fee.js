@@ -44,7 +44,7 @@ export const createTransactionFeeTiers = (networkProperties, amount) => {
 /**
  * Derives the fully-qualified mosaic key (`namespace:name`) the symbol-sdk fee calculator uses to
  * look up mosaic information, matching how transactionToNem encodes the mosaic id.
- * @param {string} id - The mosaic id ('namespace.name').
+ * @param {string} id - The token id ('namespace.name').
  * @returns {string} The lookup key ('namespace:name').
  * @private
  */
@@ -55,12 +55,12 @@ const tokenIdToLookupKey = id => {
 };
 
 /**
- * Builds the mosaic information lookup the symbol-sdk fee calculator needs to price a mosaic transfer.
- * Seeds the native currency (which has no on-chain mosaic definition) from its protocol supply. A mosaic
+ * Builds the token information lookup the symbol-sdk fee calculator needs to price a token transfer.
+ * Seeds the native currency (which has no on-chain mosaic definition) from its protocol supply. A token
  * whose supply is unknown is left out.
  * @param {Transaction} transaction - The transaction being priced.
  * @param {object} networkCurrency - The network currency descriptor (id, divisibility).
- * @returns {function(object): {supply: bigint, divisibility: number}} The mosaic information lookup.
+ * @returns {function(object): {supply: bigint, divisibility: number}} The token information lookup.
  * @private
  */
 const createTokenInformationLookup = (transaction, networkCurrency) => {

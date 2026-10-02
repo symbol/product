@@ -225,7 +225,7 @@ export const TokenDetails = ({ route }) => {
 								{canRevokeMosaic && (
 									<ButtonPlain
 										icon="revoke"
-										text={$t('button_revoke')}
+										text={$t('button_revokeMosaic')}
 										onPress={openRevokeScreen}
 									/>
 								)}

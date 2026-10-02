@@ -1,12 +1,12 @@
 import { addressFromPublicKey } from './account';
 import { networkTimestampToUnix } from './helper';
 import {
-	formatTokenList,
 	getTokenAmount,
 	isRestrictableFlag,
 	isRevokableFlag,
 	isSupplyMutableFlag,
-	isTransferableFlag
+	isTransferableFlag,
+	tokenListFromDTO
 } from './token';
 import {
 	createTransactionFee,
@@ -62,7 +62,7 @@ const mapRestrictionKey = key => ('0000000000000000' + key.toString(16).toUpperC
  * @param {PublicAccount} config.currentAccount - The current account.
  * @param {object.<string, string>} config.resolvedAddresses - The namespace id to account address map.
  * @param {object.<string, string>} config.namespaceNames - The namespace id to namespace name map.
- * @param {object.<string, TokenInfo>} config.tokenInfos - The mosaic id to token info map.
+ * @param {object.<string, TokenInfo>} config.tokenInfos - The token id to token info map.
  * @param {string} [config.fillSignerPublickey] - The public key value, which is used if the signerPublicKey is empty.
  * @param {boolean} [config.isEmbedded] - A flag indicating if the transaction is embedded.
  * @returns {Transaction} The transaction object.
@@ -192,7 +192,7 @@ const transferTransactionFromSymbol = (transaction, config) => {
 	const { networkProperties, tokenInfos, currentAccount, resolvedAddresses } = config;
 	const baseTransaction = baseTransactionFromSymbol(transaction, config);
 	const mosaics = transaction.mosaics.map(mapMosaic);
-	const formattedTokens = formatTokenList(mosaics, tokenInfos);
+	const formattedTokens = tokenListFromDTO(mosaics, tokenInfos);
 	const nativeTokenAmount = getTokenAmount(formattedTokens, networkProperties.networkCurrency.id);
 	const transactionBody = {
 		...baseTransaction,
@@ -299,7 +299,7 @@ const mosaicSupplyChangeTransactionFromSymbol = (transaction, config) => {
 const mosaicSupplyRevocationTransactionFromSymbol = (transaction, config) => {
 	const baseTransaction = baseTransactionFromSymbol(transaction, config);
 	const mosaic = mapMosaic(transaction.mosaic);
-	const formattedTokens = formatTokenList([mosaic], config.tokenInfos);
+	const formattedTokens = tokenListFromDTO([mosaic], config.tokenInfos);
 	const sourceAddress = mapAddress(transaction.sourceAddress, config.resolvedAddresses);
 
 	return {
@@ -327,7 +327,7 @@ const multisigAccountModificationTransactionFromSymbol = (transaction, config) =
 const hashLockTransactionFromSymbol = (transaction, config) => {
 	const baseTransaction = baseTransactionFromSymbol(transaction, config);
 	const mosaic = mapMosaic(transaction.mosaic);
-	const [formattedToken] = formatTokenList([mosaic], config.tokenInfos);
+	const [formattedToken] = tokenListFromDTO([mosaic], config.tokenInfos);
 
 	return {
 		...baseTransaction,
@@ -341,7 +341,7 @@ const hashLockTransactionFromSymbol = (transaction, config) => {
 const secretLockTransactionFromSymbol = (transaction, config) => {
 	const baseTransaction = baseTransactionFromSymbol(transaction, config);
 	const mosaic = mapMosaic(transaction.mosaic);
-	const formattedTokens = formatTokenList([mosaic], config.tokenInfos);
+	const formattedTokens = tokenListFromDTO([mosaic], config.tokenInfos);
 	const resolvedAddress = mapAddress(transaction.recipientAddress, config.resolvedAddresses);
 
 	return {

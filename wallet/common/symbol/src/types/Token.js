@@ -1,7 +1,6 @@
 /**
  * @typedef {Object} MosaicDTO
  * @property {string} id - The mosaic id.
- * @property {string} name - The mosaic name.
  * @property {string} amount - The mosaic amount.
  */
 

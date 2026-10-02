@@ -45,15 +45,15 @@ describe('NamespaceService', () => {
 	});
 
 	describe('fetchTokenNames', () => {
-		it('fetches mosaic names for a given list of mosaic ids', async () => {
+		it('fetches token names for a given list of token ids', async () => {
 			// Arrange:
-			const mosaicIds = Object.keys(tokenNames);
+			const tokenIds = Object.keys(tokenNames);
 			mockMakeRequest.mockResolvedValueOnce(tokenNamesResponse);
 			const expectedResult = tokenNames;
 			const expectedRequestConfig = {
 				method: 'POST',
 				body: JSON.stringify({
-					mosaicIds
+					mosaicIds: tokenIds
 				}),
 				headers: {
 					'Content-Type': 'application/json'
@@ -61,7 +61,7 @@ describe('NamespaceService', () => {
 			};
 
 			// Act:
-			const result = await namespaceService.fetchTokenNames(networkProperties, mosaicIds);
+			const result = await namespaceService.fetchTokenNames(networkProperties, tokenIds);
 
 			// Assert:
 			expect(mockMakeRequest).toHaveBeenCalledWith(`${networkProperties.nodeUrl}/namespaces/mosaic/names`, expectedRequestConfig);

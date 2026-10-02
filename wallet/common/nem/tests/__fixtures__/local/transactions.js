@@ -58,7 +58,7 @@ export const incomingTransfer = {
 	amount: '5'
 };
 
-// Mosaic transfer: the resolved mosaic carries the full MosaicInfo (divisibility, supply, flags)
+// Mosaic transfer: the resolved token carries the full TokenInfo (divisibility, supply, flags)
 // plus the relative amount. The native XEM amount is '0', so the directed amount is '0'.
 export const mosaicTransfer = {
 	type: 257,

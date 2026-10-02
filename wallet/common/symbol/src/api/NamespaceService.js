@@ -37,15 +37,15 @@ export class NamespaceService {
 	};
 
 	/**
-	 * Fetches mosaic names for a given list of mosaic ids from the node.
+	 * Fetches token names for a given list of token ids from the node.
 	 * @param {NetworkProperties} networkProperties - Network properties.
-	 * @param {string[]} mosaicIds - Requested mosaic ids.
-	 * @returns {Promise<Record<string, string>>} - The mosaic names map.
+	 * @param {string[]} tokenIds - Requested token ids.
+	 * @returns {Promise<Record<string, string>>} - The token names map.
 	 */
-	fetchTokenNames = async (networkProperties, mosaicIds) => {
+	fetchTokenNames = async (networkProperties, tokenIds) => {
 		const endpoint = `${networkProperties.nodeUrl}/namespaces/mosaic/names`;
 		const payload = {
-			mosaicIds
+			mosaicIds: tokenIds
 		};
 		const { mosaicNames } = await this.#makeRequest(endpoint, {
 			method: 'POST',

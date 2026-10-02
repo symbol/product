@@ -55,13 +55,13 @@ export class BridgeHelper {
 	};
 
 	/**
-     * Fetches token information for a specific mosaic ID.
+     * Fetches token information for a specific token ID.
      * @param {NetworkProperties} networkProperties - The network properties.
-     * @param {string} mosaicId - The ID of the mosaic to fetch information for.
+     * @param {string} tokenId - The ID of the token to fetch information for.
      * @returns {Promise<TokenInfo>} The token information.
      */
-	fetchTokenInfo = async (networkProperties, mosaicId) => {
-		const tokenInfo = await this.#tokenApi.fetchTokenInfo(networkProperties, mosaicId);
+	fetchTokenInfo = async (networkProperties, tokenId) => {
+		const tokenInfo = await this.#tokenApi.fetchTokenInfo(networkProperties, tokenId);
 
 		return {
 			id: tokenInfo.id,

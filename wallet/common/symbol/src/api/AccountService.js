@@ -1,4 +1,4 @@
-import { addressFromRaw, formatTokenList, getTokenAmount, promiseAllSettled } from '../utils';
+import { addressFromRaw, getTokenAmount, promiseAllSettled, tokenListFromDTO } from '../utils';
 import { NotFoundError, absoluteToRelativeAmount } from 'wallet-common-core';
 
 /** @typedef {import('../types/Account').AccountInfo} AccountInfo */
@@ -62,7 +62,7 @@ export class AccountService {
 		const isMultisigRequestSucceeded = multisigInfo.status === 'fulfilled';
 
 		// Format token list and calculate balance
-		const formattedTokens = formatTokenList(account.mosaics, tokenInfos.value);
+		const formattedTokens = tokenListFromDTO(account.mosaics, tokenInfos.value);
 		const balance = getTokenAmount(formattedTokens, networkProperties.networkCurrency.id);
 
 		return {

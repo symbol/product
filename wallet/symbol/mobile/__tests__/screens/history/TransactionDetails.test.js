@@ -237,7 +237,7 @@ const aggregateBondedForCurrentMultisigAccount = AggregateTransactionFixtureBuil
 // Mosaic Supply Change Transaction Fixtures
 
 const MOSAIC_SUPPLY_DELTA = 4242;
-const MOSAIC_SUPPLY_CHANGE_MOSAIC_ID = '0E2B031D9C83906D';
+const MOSAIC_SUPPLY_CHANGE_TOKEN_ID = '0E2B031D9C83906D';
 
 const createMosaicSupplyChangeTransaction = action => ({
 	type: SymbolTransactionType.MOSAIC_SUPPLY_CHANGE,
@@ -245,7 +245,7 @@ const createMosaicSupplyChangeTransaction = action => ({
 	timestamp: TRANSACTION_TIMESTAMP,
 	signerAddress: currentAccount.address,
 	signerPublicKey: currentAccount.publicKey,
-	mosaicId: MOSAIC_SUPPLY_CHANGE_MOSAIC_ID,
+	tokenId: MOSAIC_SUPPLY_CHANGE_TOKEN_ID,
 	action,
 	delta: MOSAIC_SUPPLY_DELTA
 });

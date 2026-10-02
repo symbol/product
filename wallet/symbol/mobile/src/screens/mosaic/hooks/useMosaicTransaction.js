@@ -71,7 +71,7 @@ export const useMosaicTransaction = ({
 			const previewData = {
 				type: transaction.type,
 				signerAddress: definitionTransaction.signerAddress,
-				mosaicId: definitionTransaction.mosaicId,
+				tokenId: definitionTransaction.tokenId,
 				divisibility: definitionTransaction.divisibility,
 				supply: absoluteToRelativeAmount(supplyChangeTransaction.delta, definitionTransaction.divisibility),
 				duration: isExpiring ? definitionTransaction.duration : $t('fieldValue_unlimited'),
