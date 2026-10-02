@@ -1,4 +1,5 @@
 import '@testing-library/jest-dom';
+import { itVariant } from '../test-utils/variants';
 import RecentTransactions from '@/app/components/RecentTransactions';
 import { TRANSACTION_GROUP, TRANSACTION_TYPE } from '@/app/constants';
 import { render, screen } from '@testing-library/react';
@@ -39,7 +40,7 @@ describe('components/RecentTransactions', () => {
 		runUnconfirmedTest(TRANSACTION_TYPE.TRANSFER, expectedStatusText, 'label_awaitingCosignatures');
 	});
 
-	it('shows awaiting cosignatures label for unconfirmed multisig transactions', () => {
+	itVariant('nem')('shows awaiting cosignatures label for unconfirmed multisig transactions', () => {
 		runUnconfirmedTest(TRANSACTION_TYPE.MULTISIG, 'label_awaitingCosignatures', /value_transactionConfirmationTime/);
 	});
 

@@ -1,4 +1,5 @@
 import '@testing-library/jest-dom';
+import { describeVariant } from '../test-utils/variants';
 import ItemBlockMobile from '@/app/components/ItemBlockMobile';
 import { render, screen } from '@testing-library/react';
 
@@ -14,9 +15,7 @@ const chainStatusRecent = { height: 1100 };
 // next/image rewrites the src to an optimized URL with the original path URL-encoded; decode before asserting.
 const getIconPath = image => decodeURIComponent(image.getAttribute('src'));
 
-const describeNem = process.env.NEXT_PUBLIC_EXPLORER_VARIANT === 'nem' ? describe : describe.skip;
-
-describeNem('ItemBlockMobile', () => {
+describeVariant('nem')('ItemBlockMobile', () => {
 	it('links the height to the block page', () => {
 		// Act:
 		render(<ItemBlockMobile data={block} chainStatus={chainStatusSafe} />);
