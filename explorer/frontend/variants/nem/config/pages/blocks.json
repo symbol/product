@@ -4,4 +4,8 @@
 	"showBlockReward": false,
 	"showMobileTransactionCount": false,
 	"showBlockType": false,
+	"showBeneficiary": false,
+	"showProofGamma": false,
+	"showProofScalar": false,
+	"showProofVerificationHash": false
 }

@@ -146,7 +146,15 @@ const BlockInfo = ({ blockInfo }) => {
 						<Field title={t('field_harvester')} description={t('field_harvester_description')}>
 							<ValueAccount address={blockInfo.harvester} size="sm" />
 						</Field>
+						{pageConfig.blocks.showBeneficiary && (
+							<Field title={t('field_beneficiary')}>
+								<ValueAccount address={blockInfo.beneficiaryAddress} size="sm" />
+							</Field>
+						)}
 						<Field title={t('field_transactions')}>{blockInfo.transactionCount}</Field>
+						{pageConfig.blocks.showStatementCount && (
+							<Field title={t('field_statementCount')}>{blockInfo.statementCount}</Field>
+						)}
 						<Field title={t('field_size')}>{blockInfo.size} B</Field>
 						<Field title={t('field_difficulty')}>{blockInfo.difficulty} %</Field>
 						<Field title={t('field_signature')}>
@@ -155,6 +163,21 @@ const BlockInfo = ({ blockInfo }) => {
 						<Field title={t('field_hash')}>
 							<ValueCopy value={blockInfo.hash} />
 						</Field>
+						{pageConfig.blocks.showProofGamma && (
+							<Field title={t('field_proofGamma')}>
+								<ValueCopy value={blockInfo.proofGamma} />
+							</Field>
+						)}
+						{pageConfig.blocks.showProofScalar && (
+							<Field title={t('field_proofScalar')}>
+								<ValueCopy value={blockInfo.proofScalar} />
+							</Field>
+						)}
+						{pageConfig.blocks.showProofVerificationHash && (
+							<Field title={t('field_proofVerificationHash')}>
+								<ValueCopy value={blockInfo.proofVerificationHash} />
+							</Field>
+						)}
 					</div>
 				</Section>
 			</div>
