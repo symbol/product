@@ -29,6 +29,7 @@
  * @property {boolean} showStatementCount - Whether the statement count is rendered.
  * @property {boolean} showBlockReward - Whether the block reward is rendered.
  * @property {boolean} showMobileTransactionCount - Whether mobile rows render transaction count.
+ * @property {boolean} showBlockType - Whether block details render the block type.
  */
 
 // Required exports for each API domain.
@@ -79,7 +80,8 @@ export const PAGE_CONFIG_CONTRACT = {
 		'showStatistics',
 		'showStatementCount',
 		'showBlockReward',
-		'showMobileTransactionCount'
+		'showMobileTransactionCount',
+		'showBlockType',
 	]
 };
 

@@ -15,6 +15,7 @@ import ValueTransactionSquares, { MAX_TRANSACTION_SQUARES } from '@/app/componen
 import ValueTransactionType from '@/app/components/ValueTransactionType';
 import styles from '@/app/styles/pages/BlockInfo.module.scss';
 import { useAsyncCall, useDataManager, usePagination } from '@/app/utils';
+import { pageConfig } from '@/app/variants/page-config';
 import Head from 'next/head';
 import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
@@ -119,9 +120,16 @@ const BlockInfo = ({ blockInfo }) => {
 							</Field>
 							<FieldTimestamp value={blockInfo.timestamp} hasTime hasSeconds />
 						</div>
+						<div className="layout-grid-row">
 						<Field title={t('field_totalFee')} description={t('field_totalFee_description')}>
 							<ValueMosaic isNative amount={blockInfo.totalFee} />
 						</Field>
+							{pageConfig.blocks.showBlockType && (
+								<Field title={t('field_blockType')}>
+									{t(`blockType_${blockInfo.blockType}`, { defaultValue: blockInfo.blockType })}
+								</Field>
+							)}
+						</div>
 						<Field title={t('field_transactionFees')}>
 							<ValueTransactionSquares
 								isTransactionPreviewEnabled
