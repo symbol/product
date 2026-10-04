@@ -126,7 +126,7 @@ const BlockInfo = ({ blockInfo }) => {
 						</Field>
 							{pageConfig.blocks.showBlockType && (
 								<Field title={t('field_blockType')}>
-									{t(`blockType_${blockInfo.blockType}`, { defaultValue: blockInfo.blockType })}
+									{t(`value_blockType_${blockInfo.blockType}`, { defaultValue: blockInfo.blockType })}
 								</Field>
 							)}
 						</div>
