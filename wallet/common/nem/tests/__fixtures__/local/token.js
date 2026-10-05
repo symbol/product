@@ -33,11 +33,10 @@ export const accountTokens = [
 		...tokenInfos['test.token'], 
 		amount: '2.5' 
 	},
-	{ 
-		id: 'unknown.mosaic', 
-		name: 'unknown.mosaic', 
-		amount: null, 
-		absoluteAmount: 999, 
-		divisibility: null 
+	{
+		id: 'unknown.mosaic',
+		name: 'unknown.mosaic',
+		amount: null,
+		absoluteAmount: '999'
 	}
 ];

@@ -99,17 +99,15 @@ export const tokenListFromDTO = (mosaicsDTO, tokenInfos) => {
 				id: tokenId,
 				name: tokenId,
 				amount: null,
-				absoluteAmount: rawAmount,
-				divisibility: null
+				absoluteAmount: String(rawAmount)
 			};
 		}
 
 		// Spread the full TokenInfo so the Token carries every resolved field (supply, flags, …),
-		// then layer on the relative amount and the resolved display name.
+		// then layer on the relative amount.
 		return {
 			...tokenInfo,
-			amount: absoluteToRelativeAmount(rawAmount, tokenInfo.divisibility),
-			name: tokenInfo.name || tokenId
+			amount: absoluteToRelativeAmount(rawAmount, tokenInfo.divisibility)
 		};
 	});
 };
