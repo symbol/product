@@ -2522,7 +2522,7 @@ export const walletTransactions = [
 					'isRestrictable': false,
 					'isRevokable': false,
 					'amount': '0.5',
-					'name': '3FE10802C3B2DD8C'
+					'name': null
 				},
 				'sourceAddress': 'TD7TOGIBCITKDRXRVVVVTNZ7H5B72CZRJAPBBQY'
 			}
@@ -2566,7 +2566,7 @@ export const walletTransactions = [
 			'isRestrictable': false,
 			'isRevokable': false,
 			'amount': '0.5',
-			'name': '3FE10802C3B2DD8C'
+			'name': null
 		},
 		'sourceAddress': 'TD7TOGIBCITKDRXRVVVVTNZ7H5B72CZRJAPBBQY'
 	},
@@ -2607,7 +2607,7 @@ export const walletTransactions = [
 				'isRestrictable': false,
 				'isRevokable': false,
 				'amount': '1',
-				'name': '3FE10802C3B2DD8C'
+				'name': null
 			}
 		],
 		'amount': '0'
@@ -3517,7 +3517,7 @@ export const walletTransactions = [
 					'isRestrictable': false,
 					'isRevokable': false,
 					'amount': '0.5',
-					'name': '78C3CDF0896248DB'
+					'name': null
 				},
 				'sourceAddress': 'TD7TOGIBCITKDRXRVVVVTNZ7H5B72CZRJAPBBQY'
 			}
@@ -3989,7 +3989,7 @@ export const walletTransactions = [
 		'newRestrictionValue': '40',
 		'previousRestrictionValue': '30',
 		'tokenId': '1213766D49458631',
-		'tokenName': null,
+		'tokenName': 'custom-3',
 		'targetAddress': 'TD7TOGIBCITKDRXRVVVVTNZ7H5B72CZRJAPBBQY'
 	},
 	{
@@ -4016,7 +4016,7 @@ export const walletTransactions = [
 		'newRestrictionValue': '30',
 		'previousRestrictionValue': '18446744073709551615',
 		'tokenId': '1213766D49458631',
-		'tokenName': null,
+		'tokenName': 'custom-3',
 		'targetAddress': 'TD7TOGIBCITKDRXRVVVVTNZ7H5B72CZRJAPBBQY'
 	},
 	{
@@ -4045,7 +4045,7 @@ export const walletTransactions = [
 		'previousRestrictionType': 'MosaicRestrictionTypeNONE',
 		'previousRestrictionValue': '0',
 		'referenceTokenId': '1213766D49458631',
-		'tokenName': null
+		'tokenName': 'custom-3'
 	},
 	{
 		'type': 16717,
@@ -4112,7 +4112,7 @@ export const walletTransactions = [
 			'isRestrictable': false,
 			'isRevokable': false,
 			'amount': '0.5',
-			'name': '78C3CDF0896248DB'
+			'name': null
 		},
 		'sourceAddress': 'TD7TOGIBCITKDRXRVVVVTNZ7H5B72CZRJAPBBQY'
 	},
@@ -4153,7 +4153,7 @@ export const walletTransactions = [
 				'isRestrictable': false,
 				'isRevokable': false,
 				'amount': '1',
-				'name': '78C3CDF0896248DB'
+				'name': null
 			}
 		],
 		'amount': '0'
@@ -4829,7 +4829,7 @@ export const walletTransactions = [
 				'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
 				'scopedMetadataKey': 'E58D01B9EFE794B0',
 				'targetTokenId': '699E9532708D2FB8',
-				'targetTokenName': null,
+				'targetTokenName': 'custom-4',
 				'targetAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 				'metadataValue': '6D6F73616963206D65746164617461',
 				'valueSizeDelta': 15

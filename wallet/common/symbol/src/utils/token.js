@@ -44,6 +44,7 @@ export const tokenInfoFromDTO = mosaic => {
 
 	return {
 		id: mosaic.id,
+		name: null,
 		divisibility: mosaic.divisibility,
 		names: [],
 		duration,
@@ -91,7 +92,6 @@ export const tokenListFromDTO = (mosaics, tokenInfos) => {
 		return {
 			amount: null,
 			absoluteAmount: mosaic.amount,
-			name: mosaic.id,
 			id: mosaic.id
 		};
 	});
@@ -109,8 +109,7 @@ export const tokenFromDTO = (mosaic, tokenInfo) => {
 
 	return {
 		...tokenInfo,
-		amount: absoluteToRelativeAmount(mosaic.amount, tokenInfo.divisibility),
-		name: tokenInfo.names?.[0] || mosaic.id
+		amount: absoluteToRelativeAmount(mosaic.amount, tokenInfo.divisibility)
 	};
 };
 

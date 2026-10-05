@@ -5,17 +5,15 @@
  */
 
 /**
- * @typedef {Object} RawToken
- * @property {string} id - The token id.
- * @property {string} name - The token id is used as the name.
- * @property {null} amount - The token relative amount is unavailable in raw data.
- * @property {string} absoluteAmount - The token absolute amount.
+ * Raw token with raw absolute amount.
+ * @typedef {import('wallet-common-core/src/types/Token').RawToken} RawToken
  */
 
 /**
  * @typedef {Object} TokenInfo
  * @property {string} id - Token id.
- * @property {string[]} names - Token linked namespace name list.
+ * @property {string|null} name - The first linked namespace name, or null when the token has no name.
+ * @property {string[]} names - Namespace names linked to the token.
  * @property {number} divisibility - Token divisibility.
  * @property {number} duration - Token duration in blocks.
  * @property {number} startHeight - Token registration height.

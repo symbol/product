@@ -65,7 +65,7 @@ export class BridgeHelper {
 
 		return {
 			id: tokenInfo.id,
-			name: tokenInfo.names?.[0] || tokenInfo.id,
+			name: tokenInfo.name,
 			divisibility: tokenInfo.divisibility
 		};
 	};

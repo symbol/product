@@ -66,8 +66,8 @@ export const RevokeMosaic = props => {
 		load: loadMosaic,
 		reset: resetMosaic
 	} = useMosaicInfo({ walletController, mosaicId });
-	const mosaicToken = mosaic ? { id: mosaic.id, name: mosaic.names?.[0] } : { id: mosaicId };
-	const { nameText: mosaicNameText, imageId: mosaicImageId } = createTokenDisplayData(mosaicToken, chainName, networkIdentifier);
+	const { nameText: mosaicNameText, imageId: mosaicImageId } =
+		createTokenDisplayData(mosaic ?? { id: mosaicId }, chainName, networkIdentifier);
 
 	// Mosaic holder account list
 	const {

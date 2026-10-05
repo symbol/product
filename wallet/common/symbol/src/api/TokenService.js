@@ -74,9 +74,10 @@ export class TokenService {
 		const tokenIdsToFetchNames = _.difference(tokenIds, namespaceIds);
 		const tokenNames = await this.#api.namespace.fetchTokenNames(networkProperties, tokenIdsToFetchNames);
 
-		for (const tokenId in tokenNames)
+		for (const tokenId in tokenNames) {
 			tokenInfos[tokenId].names = tokenNames[tokenId];
-
+			tokenInfos[tokenId].name = tokenNames[tokenId][0] || null;
+		}
 
 		for (const namespaceId of namespaceIds) {
 			if (namespaceInfos[namespaceId]) {
@@ -106,7 +107,8 @@ export class TokenService {
 
 		return tokenInfos.map(tokenInfo => ({
 			...tokenInfo,
-			names: tokenNames[tokenInfo.id] || []
+			names: tokenNames[tokenInfo.id] || [],
+			name: tokenNames[tokenInfo.id]?.[0] || null
 		}));
 	};
 

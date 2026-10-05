@@ -98,6 +98,7 @@ const transactionFees = TransactionFeeFixtureBuilder
 
 const tokenInfo = {
 	id: TOKEN_ID,
+	name: TOKEN_NAME,
 	names: [TOKEN_NAME],
 	divisibility: TOKEN_DIVISIBILITY,
 	supply: CURRENT_SUPPLY

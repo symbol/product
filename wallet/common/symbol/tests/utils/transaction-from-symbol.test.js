@@ -1,4 +1,5 @@
-import { symbolTransactionFromPayload, transactionFromSymbol } from '../../src/utils';
+import { TransactionType } from '../../src/constants';
+import { getUnresolvedIdsFromSymbolTransactions, symbolTransactionFromPayload, transactionFromSymbol } from '../../src/utils';
 import { namespaceNames } from '../__fixtures__/local/namespace';
 import { networkProperties } from '../__fixtures__/local/network';
 import { payloads } from '../__fixtures__/local/payloads';

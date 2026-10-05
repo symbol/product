@@ -58,7 +58,7 @@ export const filterCreatedMosaics = (mosaics, filter, chainHeight) => {
 
 /**
  * Merges held mosaic amounts into created mosaic definitions. A matching held entry provides
- * the amount and name; definitions the account does not hold get a zero amount.
+ * the amount; definitions the account does not hold get a zero amount.
  * @param {TokenInfo[]} mosaicInfos - The created mosaic definitions.
  * @param {Token[]} heldMosaics - The mosaics currently held by the account.
  * @returns {Token[]} The mosaics ready for display.
@@ -71,8 +71,7 @@ export const mergeHeldAmounts = (mosaicInfos, heldMosaics) => {
 
 		return {
 			...mosaicInfo,
-			amount: heldMosaic?.amount ?? '0',
-			name: heldMosaic?.name ?? mosaicInfo.names?.[0] ?? mosaicInfo.id
+			amount: heldMosaic?.amount ?? '0'
 		};
 	});
 };

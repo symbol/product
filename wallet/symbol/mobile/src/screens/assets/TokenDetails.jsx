@@ -63,7 +63,6 @@ export const TokenDetails = ({ route }) => {
 
 			return {
 				...tokenInfo,
-				name: tokenInfo.name ?? tokenInfo.names?.[0],
 				amount: '0'
 			};
 		},

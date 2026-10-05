@@ -3,6 +3,7 @@ export const tokenHolderAddress = 'TCQ3FQ6U4X3KPOGJBINSYPKOL5QHDAUTUS24NVY';
 
 export const nativeToken = {
 	id: '72C0212E67A08BCE',
+	name: 'symbol.xym',
 	divisibility: 6,
 	names: [
 		'symbol.xym'
@@ -21,6 +22,7 @@ export const nativeToken = {
 
 export const multiNameToken = {
 	id: '0E2B031D9C83906D',
+	name: 'custom',
 	divisibility: 0,
 	names: [
 		'custom',
@@ -40,6 +42,7 @@ export const multiNameToken = {
 
 export const supplyMutableToken = {
 	id: '78C3CDF0896248DB',
+	name: null,
 	divisibility: 2,
 	names: [],
 	duration: 0,
@@ -56,6 +59,7 @@ export const supplyMutableToken = {
 
 export const supplyImmutableToken = {
 	id: '3FE10802C3B2DD8C',
+	name: null,
 	divisibility: 2,
 	names: [],
 	duration: 0,
@@ -72,6 +76,7 @@ export const supplyImmutableToken = {
 
 export const expiringSupplyMutableToken = {
 	id: '1213766D49458631',
+	name: 'custom-3',
 	divisibility: 6,
 	names: [
 		'custom-3'
@@ -90,6 +95,7 @@ export const expiringSupplyMutableToken = {
 
 export const expiringSupplyImmutableToken = {
 	id: '699E9532708D2FB8',
+	name: 'custom-4',
 	divisibility: 6,
 	names: [
 		'custom-4'
@@ -108,6 +114,7 @@ export const expiringSupplyImmutableToken = {
 
 export const revokableToken = {
 	id: '5C4D3A2B1E9F8071',
+	name: 'custom-5',
 	divisibility: 2,
 	names: [
 		'custom-5'

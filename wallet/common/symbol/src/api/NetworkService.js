@@ -59,7 +59,7 @@ export class NetworkService {
 			epochAdjustment: parseInt(networkProps.network.epochAdjustment),
 			transactionFees,
 			networkCurrency: {
-				name: tokenInfo.names[0],
+				name: tokenInfo.name,
 				id: networkCurrencyTokenId,
 				divisibility: tokenInfo.divisibility
 			}

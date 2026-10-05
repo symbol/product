@@ -129,12 +129,13 @@ describe('BridgeHelper', () => {
 			expect(mockTokenApi.fetchTokenInfo).toHaveBeenCalledWith(networkProperties, tokenId);
 		};
 
-		it('fetches token info and uses the first alias name if present', async () => {
+		it('fetches token info and uses the resolved token name', async () => {
 			// Arrange:
 			const networkProperties = createNetworkProperties();
 			const tokenId = SYMBOL_TOKEN_ID;
 			const tokenInfoResponse = {
 				id: tokenId,
+				name: 'MYTOKEN',
 				names: ['MYTOKEN', 'MYTOKEN.ALIAS'],
 				divisibility: 6
 			};
@@ -151,17 +152,19 @@ describe('BridgeHelper', () => {
 			);
 		});
 
-		it('fetches token info and falls back to id when no alias names', async () => {
+		it('fetches token info with a null name when the token is unnamed', async () => {
 			// Arrange:
 			const networkProperties = createNetworkProperties();
 			const tokenId = SYMBOL_TOKEN_ID;
 			const tokenInfoResponse = {
 				id: tokenId,
+				name: null,
+				names: [],
 				divisibility: 0
 			};
 			const expectedResult = {
 				id: tokenId,
-				name: tokenId,
+				name: null,
 				divisibility: 0
 			};
 

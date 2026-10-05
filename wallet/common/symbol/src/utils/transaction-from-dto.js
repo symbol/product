@@ -651,7 +651,7 @@ export const getUnresolvedIdsFromTransactionDTOs = transactionDTOs => {
 			mosaic: ['mosaicId']
 		},
 		[TransactionType.MOSAIC_GLOBAL_RESTRICTION]: {
-			mosaic: ['referenceMosaicId']
+			mosaic: ['mosaicId', 'referenceMosaicId']
 		},
 		[TransactionType.ACCOUNT_METADATA]: {
 			address: ['targetAddress']

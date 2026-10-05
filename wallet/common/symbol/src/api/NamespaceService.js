@@ -40,7 +40,7 @@ export class NamespaceService {
 	 * Fetches token names for a given list of token ids from the node.
 	 * @param {NetworkProperties} networkProperties - Network properties.
 	 * @param {string[]} tokenIds - Requested token ids.
-	 * @returns {Promise<Record<string, string>>} - The token names map.
+	 * @returns {Promise<Record<string, string[]>>} - The token names map.
 	 */
 	fetchTokenNames = async (networkProperties, tokenIds) => {
 		const endpoint = `${networkProperties.nodeUrl}/namespaces/mosaic/names`;

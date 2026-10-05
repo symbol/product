@@ -164,6 +164,7 @@ const tokenHeldAfterRefresh = TokenFixtureBuilder
 
 const fetchedTokenInfo = {
 	id: TOKEN_ID,
+	name: TOKEN_NAME,
 	names: [TOKEN_NAME],
 	divisibility: TOKEN_DIVISIBILITY,
 	supply: TOKEN_SUPPLY,

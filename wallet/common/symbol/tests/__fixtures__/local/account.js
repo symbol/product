@@ -13,7 +13,6 @@ const tokens = [
 	},
 	{
 		...supplyMutableToken,
-		name: supplyMutableToken.id,
 		'amount': '0.54'
 	}
 ];

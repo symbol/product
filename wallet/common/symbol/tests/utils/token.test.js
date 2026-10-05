@@ -112,12 +112,14 @@ describe('utils/token', () => {
 			const tokenInfos = {
 				token1: {
 					id: 'token1',
+					name: 'namespace1',
 					names: ['namespace1', 'another-namespace1'],
 					divisibility: 1
 				},
 				token2: {
 					id: 'token2',
-					names: ['namespace2'],
+					name: null,
+					names: [],
 					divisibility: 3
 				}
 			};
@@ -131,14 +133,13 @@ describe('utils/token', () => {
 				},
 				{
 					id: 'token2',
-					name: 'namespace2',
-					names: ['namespace2'],
+					name: null,
+					names: [],
 					amount: '0.2',
 					divisibility: 3
 				},
 				{
 					id: 'token3',
-					name: 'token3',
 					amount: null,
 					absoluteAmount: '300'
 				}
@@ -416,6 +417,7 @@ describe('utils/token', () => {
 			const mosaicDTO = findMosaicInfoDTO(nativeToken.id);
 			const expectedResult = {
 				...nativeToken,
+				name: null,
 				names: []
 			};
 

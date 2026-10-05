@@ -76,7 +76,7 @@ describe('NetworkService', () => {
 			};
 			const txFees = { averageFeeMultiplier: 100, medianFeeMultiplier: 50 };
 			const chainInfo = { height: '7654321' };
-			const tokenInfo = { names: ['XYM'], divisibility: 6 };
+			const tokenInfo = { name: 'XYM', names: ['XYM'], divisibility: 6 };
 
 			mockMakeRequest
 				.mockResolvedValueOnce(nodeInfo)
