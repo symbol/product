@@ -21,7 +21,7 @@
  * @typedef {Object} NetworkCurrency
  * @property {string} id - Token identifier.
  * @property {number} divisibility - Token divisibility.
- * @property {string|null} name - Token name or symbol, or null when the token has no name.
+ * @property {string} name - Token name or symbol.
  */
 
 /**
