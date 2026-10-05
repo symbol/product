@@ -7,5 +7,6 @@
 	"showBeneficiary": false,
 	"showProofGamma": false,
 	"showProofScalar": false,
-	"showProofVerificationHash": false
+	"showProofVerificationHash": false,
+	"additionalSections": []
 }

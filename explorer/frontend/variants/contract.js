@@ -34,6 +34,7 @@
  * @property {boolean} showProofGamma - Whether block details render the proof gamma.
  * @property {boolean} showProofScalar - Whether block details render the proof scalar.
  * @property {boolean} showProofVerificationHash - Whether block details render the proof verification hash.
+ * @property {Array<{component: string}>} additionalSections - Variant-only block detail sections to render.
  */
 
 // Required exports for each API domain.
@@ -89,7 +90,8 @@ export const PAGE_CONFIG_CONTRACT = {
 		'showBeneficiary',
 		'showProofGamma',
 		'showProofScalar',
-		'showProofVerificationHash'
+		'showProofVerificationHash',
+		'additionalSections'
 	]
 };
 

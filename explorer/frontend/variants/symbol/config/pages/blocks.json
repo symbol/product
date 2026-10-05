@@ -7,5 +7,13 @@
 	"showBeneficiary": true,
 	"showProofGamma": true,
 	"showProofScalar": true,
-	"showProofVerificationHash": true
+	"showProofVerificationHash": true,
+	"additionalSections": [
+		{
+			"component": "BlockImportance"
+		},
+		{
+			"component": "BlockMerkle"
+		}
+	]
 }

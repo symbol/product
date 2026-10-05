@@ -112,6 +112,26 @@ describe('BlockInfo', () => {
 			expect(screen.getByText(harvesterText)).toBeInTheDocument();
 		});
 
+		it('does not render Symbol fields for NEM', async () => {
+			// Act:
+			await renderPage(blockInfoResult);
+
+			// Assert:
+			[
+				'field_blockType', 'field_beneficiary', 'field_statementCount',
+				'field_proofGamma', 'field_proofScalar', 'field_proofVerificationHash'
+			].forEach(label => expect(screen.queryByText(label)).not.toBeInTheDocument());
+		});
+
+		it('does not render Merkle or importance sections for NEM', async () => {
+			// Act:
+			await renderPage(blockInfoResult);
+
+			// Assert:
+			expect(screen.queryByRole('heading', { name: 'section_merkleInfo' })).not.toBeInTheDocument();
+			expect(screen.queryByRole('heading', { name: 'section_blockImportance' })).not.toBeInTheDocument();
+		});
+
 		const runStatusLabelTest = async (chainHeightOffset, expectedShownLabelText, expectedHiddenLabelText) => {
 			// Arrange:
 			const spy = jest.spyOn(utils, 'useAsyncCall');

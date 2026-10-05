@@ -1,5 +1,6 @@
 import { fetchBlockInfo, fetchChainStatus } from '@/app/api/blocks';
 import { fetchTransactionPage } from '@/app/api/transactions';
+import { AdditionalSections } from '@/app/components/AdditionalSections';
 import Field from '@/app/components/Field';
 import FieldTimestamp from '@/app/components/FieldTimestamp';
 import ItemTransactionMobile from '@/app/components/ItemTransactionMobile';
@@ -121,9 +122,9 @@ const BlockInfo = ({ blockInfo }) => {
 							<FieldTimestamp value={blockInfo.timestamp} hasTime hasSeconds />
 						</div>
 						<div className="layout-grid-row">
-						<Field title={t('field_totalFee')} description={t('field_totalFee_description')}>
-							<ValueMosaic isNative amount={blockInfo.totalFee} />
-						</Field>
+							<Field title={t('field_totalFee')} description={t('field_totalFee_description')}>
+								<ValueMosaic isNative amount={blockInfo.totalFee} />
+							</Field>
 							{pageConfig.blocks.showBlockType && (
 								<Field title={t('field_blockType')}>
 									{t(`value_blockType_${blockInfo.blockType}`, { defaultValue: blockInfo.blockType })}
@@ -181,6 +182,8 @@ const BlockInfo = ({ blockInfo }) => {
 					</div>
 				</Section>
 			</div>
+
+			<AdditionalSections sections={pageConfig.blocks.additionalSections} componentProps={{ blockInfo }} />
 			<Section title={t('section_transactions')}>
 				<Table
 					columns={tableColumns}
