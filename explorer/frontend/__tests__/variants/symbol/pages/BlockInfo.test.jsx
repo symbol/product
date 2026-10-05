@@ -1,5 +1,5 @@
-import { setDevice } from '../../../test-utils/device';
 import { symbolBlockInfoResult } from '../../../test-utils/blocks';
+import { setDevice } from '../../../test-utils/device';
 import * as BlockService from '@/app/api/blocks';
 import * as TransactionService from '@/app/api/transactions';
 import config from '@/app/config';
@@ -128,7 +128,7 @@ describe('Symbol block details', () => {
 
 	it('does not render an empty importance card for normal blocks', async () => {
 		// Act: leave the importance values present to verify visibility depends on the type.
-		const { container } = await renderPage({ blockType: 'normal' });
+		await renderPage({ blockType: 'normal' });
 
 		// Assert:
 		expect(getFieldValue('blockType')).toHaveTextContent('value_blockType_normal');
