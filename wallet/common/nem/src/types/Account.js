@@ -37,8 +37,8 @@
  * @typedef {object} AccountInfo
  * @property {string} address
  * @property {string|null} publicKey
- * @property {import('./Token').Token[]} tokens
- * @property {number} balance - Native currency balance (relative).
+ * @property {Array<import('./Token').Token | import('./Token').RawToken>} tokens
+ * @property {string} balance - Native currency balance (relative).
  * @property {number} importance
  * @property {boolean} isMultisig - Whether the account is a multisig account.
  * @property {string[]} multisigAddresses

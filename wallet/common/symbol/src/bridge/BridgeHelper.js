@@ -1,7 +1,7 @@
 /** @typedef {import('../api/TokenService').TokenService} TokenService */
 /** @typedef {import('../types/Account').PublicAccount} PublicAccount */
 /** @typedef {import('wallet-common-core/src/types/Token').Token} BaseToken */
-/** @typedef {import('../types/Token').TokenInfo} TokenInfo */
+/** @typedef {import('wallet-common-core/src/types/Token').TokenInfo} TokenInfo */
 /** @typedef {import('../types/Network').NetworkProperties} NetworkProperties */
 /** @typedef {import('../types/Transaction').Transaction} Transaction */
 /** @typedef {import('wallet-common-core/src/types/Transaction').TransactionFee} TransactionFee */

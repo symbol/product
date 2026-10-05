@@ -1,4 +1,5 @@
 /** @typedef {import('./Token').Token} Token */
+/** @typedef {import('./Token').RawToken} RawToken */
 /** @typedef {import('./Namespace').Namespace} Namespace */
 /** @typedef {import('./Transaction').TransactionLocation} TransactionLocation */
 
@@ -39,8 +40,8 @@
  * @typedef {Object} BaseAccountInfo
  * @property {string} address - Account address.
  * @property {string} publicKey - Account public key.
- * @property {Token[]} tokens - Account owned tokens.
- * @property {number} balance - Account native currency balance.
+ * @property {Array<Token | RawToken>} tokens - Account owned tokens.
+ * @property {string} balance - Account native currency balance.
  * @property {number} importance - Account importance score used in harvesting.
  * @property {LinkedKeys} linkedKeys - Linked public keys used in harvesting.
  */

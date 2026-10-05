@@ -41,7 +41,7 @@ const { Transaction: SymbolTransaction } = models;
 
 const mapMosaic = mosaic => ({
 	id: mosaic.mosaicId.toString().replace('0x', ''),
-	amount: parseInt(mosaic.amount.toString())
+	amount: BigInt(mosaic.amount.toString()).toString()
 });
 
 const mapAddress = address => new Address(address.bytes).toString();

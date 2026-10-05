@@ -1,6 +1,6 @@
 /**
  * @typedef {object} NetworkCurrency
- * @property {string} name - Token name (e.g. 'nem.xem').
+ * @property {string} name - Token name (e.g. 'XEM').
  * @property {string} id - Token ID string (e.g. 'nem.xem').
  * @property {number} divisibility
  */

@@ -162,7 +162,7 @@ describe('utils/token', () => {
 	describe('tokenListFromDTO', () => {
 		it('normalizes owned mosaic DTOs against the resolved token infos', () => {
 			// Arrange: resolved tokens carry their relative amount and metadata; the unresolved token keeps
-			// only its absolute amount with null relative amount and divisibility.
+			// only its absolute amount and a null relative amount.
 			const expectedTokenList = accountTokens;
 
 			// Act:

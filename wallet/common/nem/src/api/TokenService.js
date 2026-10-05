@@ -7,6 +7,7 @@ import {
 import { NotFoundError } from 'wallet-common-core';
 
 /** @typedef {import('../types/Token').Token} Token */
+/** @typedef {import('../types/Token').RawToken} RawToken */
 /** @typedef {import('../types/Token').TokenInfo} TokenInfo */
 /** @typedef {import('../types/Network').NetworkProperties} NetworkProperties */
 
@@ -81,7 +82,7 @@ export class TokenService {
 	 * Fetches owned tokens for an account.
 	 * @param {NetworkProperties} networkProperties - Network properties.
 	 * @param {string} address - The account address.
-	 * @returns {Promise<Token[]>} The account's tokens with resolved amounts and metadata.
+	 * @returns {Promise<Array<Token | RawToken>>} The account's tokens with resolved amounts and metadata.
 	 */
 	fetchAccountTokens = async (networkProperties, address) => {
 		const mosaicsDTO = await this.#makeRequest(`${networkProperties.nodeUrl}/account/mosaic/owned?address=${address}`);

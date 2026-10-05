@@ -33,7 +33,7 @@ export class AccountService {
 					address,
 					publicKey: null,
 					tokens: [],
-					balance: 0,
+					balance: '0',
 					importance: 0,
 					linkedKeys: {
 						linkedPublicKey: null,
@@ -93,7 +93,7 @@ export class AccountService {
 	 * Fetches the native currency balance of an account from the node.
 	 * @param {NetworkProperties} networkProperties - Network properties.
 	 * @param {string} address - Requested account address.
-	 * @returns {Promise<number>} - The account balance.
+	 * @returns {Promise<string>} - The account balance.
 	 */
 	fetchAccountBalance = async (networkProperties, address) => {
 		const url = `${networkProperties.nodeUrl}/accounts/${address}`;

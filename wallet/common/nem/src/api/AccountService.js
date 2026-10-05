@@ -41,7 +41,7 @@ export class AccountService {
 					address,
 					publicKey: null,
 					tokens: [],
-					balance: 0,
+					balance: '0',
 					importance: 0,
 					isMultisig: false,
 					multisigAddresses: [],

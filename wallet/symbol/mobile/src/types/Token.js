@@ -1,11 +1,12 @@
 /** @typedef {import('wallet-common-symbol/src/types/Token').Token} SymbolToken */
+/** @typedef {import('wallet-common-symbol/src/types/Token').RawToken} SymbolRawToken */
 /** @typedef {import('wallet-common-ethereum/src/types/Token').Token} EthereumToken */
 /** @typedef {import('wallet-common-symbol/src/types/Token').TokenInfo} SymbolTokenInfo */
 /** @typedef {import('wallet-common-ethereum/src/types/Token').TokenInfo} EthereumTokenInfo */
 
 /**
  * Any token handled by the mobile wallet.
- * @typedef {SymbolToken | EthereumToken} Token
+ * @typedef {SymbolToken | SymbolRawToken | EthereumToken} Token
  */
 
 /**

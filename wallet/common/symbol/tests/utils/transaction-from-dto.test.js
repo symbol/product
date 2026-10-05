@@ -1,5 +1,4 @@
-import { TransactionType } from '../../src/constants';
-import { getUnresolvedIdsFromTransactionDTOs, transactionFromDTO } from '../../src/utils';
+import { transactionFromDTO } from '../../src/utils';
 import { transactionPageResponse } from '../__fixtures__/api/transaction-page-response';
 import { unconfirmedTransactionPageResponse } from '../__fixtures__/api/unconfirmed-transaction-page-response';
 import { effectiveTransactionFees } from '../__fixtures__/local/effective-fees';
