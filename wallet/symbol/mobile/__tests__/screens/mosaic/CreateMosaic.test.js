@@ -41,7 +41,7 @@ const SCREEN_TEXT = {
 	// Duration / expiration summary
 	textExpirationPermanent: 'screen_mosaic_description_expirationPermanent',
 	textDurationBlocksChip: 'screen_mosaic_chip_durationBlocks',
-	textSmallestSendWhole: 'screen_mosaic_label_wholeMosaicsOnly',
+	textSmallestSendWhole: 'screen_mosaic_label_wholeTokensOnly',
 
 	// Buttons
 	buttonSend: 'button_send',
