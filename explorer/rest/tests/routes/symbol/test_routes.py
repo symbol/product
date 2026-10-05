@@ -1,8 +1,11 @@
 from flask import Flask
 from psycopg2 import OperationalError
+from symbolchain.CryptoTypes import PublicKey
+from symbolchain.sc import TransactionType
+from symbolchain.symbol.Network import Network
 
 from rest import setup_error_handlers
-from rest.db.SymbolDatabase import ReceiptQuery, SortOrder, SymbolDataUnavailable
+from rest.db.SymbolDatabase import ReceiptQuery, SortOrder, SymbolDataUnavailable, TransactionQuery
 from rest.routes.symbol import setup_symbol_routes
 
 
@@ -17,6 +20,9 @@ class SymbolBlockFacade:  # pylint: disable=too-many-instance-attributes
 		self.receipts_result = [{'version': 1}]
 		self.receipts_query = None
 		self.receipts_error = None
+		self.transactions_result = []
+		self.transactions_query = None
+		self.transactions_error = None
 
 	@staticmethod
 	def get_health():
@@ -42,6 +48,13 @@ class SymbolBlockFacade:  # pylint: disable=too-many-instance-attributes
 			raise self.receipts_error
 
 		return self.receipts_result
+
+	def get_transactions(self, query):
+		self.transactions_query = query
+		if self.transactions_error:
+			raise self.transactions_error
+
+		return self.transactions_result
 
 
 def _create_symbol_test_client(facade):
@@ -470,6 +483,258 @@ def test_receipts_map_db_error_to_503():
 
 	# Assert:
 	_assert_symbol_backend_unavailable_response(error_response)
+
+
+def test_transactions_default_empty():
+	# Arrange:
+	facade = SymbolBlockFacade()
+
+	# Act:
+	response = _create_symbol_test_client(facade).get('/api/symbol/transactions')
+
+	# Assert:
+	assert 200 == response.status_code
+	assert [] == response.json
+	assert TransactionQuery() == facade.transactions_query
+
+
+def test_transactions_embedded_false():
+	# Arrange:
+	facade = SymbolBlockFacade()
+
+	# Act:
+	response = _create_symbol_test_client(facade).get('/api/symbol/transactions?embedded=FALSE')
+
+	# Assert:
+	assert 200 == response.status_code
+	assert facade.transactions_query.include_embedded is False
+
+
+def test_transactions_parsed_filters():
+	# Arrange:
+	facade = SymbolBlockFacade()
+	mainnet_address = Network.NETWORKS[0].public_key_to_address(PublicKey('00' * 32))
+	public_key = 'AB' * 32
+
+	# Act:
+	response = _create_symbol_test_client(facade).get(
+		'/api/symbol/transactions?limit=%20%2B001&offset=%20000&height=%20%2B0001'
+		f'&type={TransactionType.TRANSFER.value}&type={TransactionType.AGGREGATE_COMPLETE.value}'
+		f'&signerPublicKey={public_key}&recipientAddress={mainnet_address}'
+		'&transferMosaicId=72c0212e67a08bce&embedded=TrUe&order=desc')
+
+	# Assert:
+	assert 200 == response.status_code
+	assert TransactionQuery(
+		limit=1,
+		offset=0,
+		height=1,
+		transaction_types=(TransactionType.TRANSFER.value, TransactionType.AGGREGATE_COMPLETE.value),
+		address=None,
+		signer_public_key=bytes.fromhex(public_key),
+		recipient_address=bytes.fromhex('682F0A4E106CBC9224DF7AC5E2C6A9D5252E70CB6517D829'),
+		transfer_mosaic_id='72C0212E67A08BCE',
+		include_embedded=True) == facade.transactions_query
+
+
+def test_transactions_address_embedded():
+	# Arrange:
+	facade = SymbolBlockFacade()
+	address = Network.NETWORKS[0].public_key_to_address(PublicKey('11' * 32))
+
+	# Act:
+	response = _create_symbol_test_client(facade).get(
+		f'/api/symbol/transactions?address={address}&type={TransactionType.TRANSFER.value}&embedded=TRUE')
+
+	# Assert:
+	assert 200 == response.status_code
+	assert bytes.fromhex('68FD35818960C7B18B72F49A5598FA9F712A354DB3BF4C77') == facade.transactions_query.address
+	assert (TransactionType.TRANSFER.value,) == facade.transactions_query.transaction_types
+	assert facade.transactions_query.include_embedded is True
+
+
+def test_transactions_repeat_type():
+	# Arrange:
+	facade = SymbolBlockFacade()
+
+	# Act:
+	response = _create_symbol_test_client(facade).get(
+		f'/api/symbol/transactions?type={TransactionType.TRANSFER.value}&type={TransactionType.TRANSFER.value}')
+
+	# Assert:
+	assert 200 == response.status_code
+	assert (TransactionType.TRANSFER.value, TransactionType.TRANSFER.value) == facade.transactions_query.transaction_types
+
+
+def test_transactions_address_conflicts():
+	# Arrange:
+	facade = SymbolBlockFacade()
+	address = 'TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI'
+	public_key = 'AB' * 32
+	client = _create_symbol_test_client(facade)
+
+	# Act + Assert:
+	for query in (f'address={address}&signerPublicKey={public_key}', f'address={address}&recipientAddress={address}'):
+		response = client.get(f'/api/symbol/transactions?{query}')
+		_assert_bad_request_response(response, 'address cannot be combined with signerPublicKey or recipientAddress')
+		assert None is facade.transactions_query, query
+
+
+def test_transactions_bad_numeric():
+	# Arrange:
+	facade = SymbolBlockFacade()
+	client = _create_symbol_test_client(facade)
+
+	# Act + Assert:
+	for query, message in (
+		('limit=0', 'limit must be between 1 and 100'),
+		('limit=101', 'limit must be between 1 and 100'),
+		('limit=', 'limit must be an integer'),
+		('offset=-1', 'offset must be between 0 and 100000'),
+		('offset=100001', 'offset must be between 0 and 100000'),
+		('offset=', 'offset must be an integer'),
+		('height=0', 'height must be between 1 and 9223372036854775807'),
+		('height=9223372036854775808', 'height must be between 1 and 9223372036854775807'),
+		('height=', 'height must be an integer'),
+		('type=', 'type must be an integer')
+	):
+		response = client.get(f'/api/symbol/transactions?{query}')
+		_assert_bad_request_response(response, message)
+		assert None is facade.transactions_query, query
+
+
+def test_transactions_numeric_limits():
+	# Arrange:
+	facade = SymbolBlockFacade()
+
+	# Act:
+	response = _create_symbol_test_client(facade).get(
+		'/api/symbol/transactions?limit=100&offset=100000&height=9223372036854775807')
+
+	# Assert:
+	assert 200 == response.status_code
+	assert 100 == facade.transactions_query.limit
+	assert 100000 == facade.transactions_query.offset
+	assert 9223372036854775807 == facade.transactions_query.height
+
+
+def test_transactions_unknown_params():
+	# Arrange:
+	facade = SymbolBlockFacade()
+	client = _create_symbol_test_client(facade)
+
+	# Act + Assert:
+	for parameter in ('pageNumber', 'pageSize', 'cursor', 'orderBy', 'types', 'group', 'unknown'):
+		response = client.get(f'/api/symbol/transactions?{parameter}=1')
+		_assert_bad_request_response(response, f'Unsupported query parameter: {parameter}')
+		assert None is facade.transactions_query, parameter
+
+
+def test_transactions_scalar_duplicates():
+	# Arrange:
+	facade = SymbolBlockFacade()
+	client = _create_symbol_test_client(facade)
+
+	# Act + Assert:
+	for parameter in (
+		'limit', 'offset', 'height', 'address', 'signerPublicKey', 'recipientAddress',
+		'transferMosaicId', 'embedded', 'order'
+	):
+		response = client.get(f'/api/symbol/transactions?{parameter}=1&{parameter}=1')
+		_assert_bad_request_response(response, f'{parameter} must not be repeated')
+		assert None is facade.transactions_query, parameter
+
+
+def test_transactions_bad_types():
+	# Arrange:
+	facade = SymbolBlockFacade()
+	client = _create_symbol_test_client(facade)
+
+	# Act + Assert:
+	for value, message in (
+		('TRANSFER', 'type must be an integer'),
+		('16724,16972', 'type must be an integer'),
+		('999999', 'Unsupported transaction type')
+	):
+		response = client.get(f'/api/symbol/transactions?type={value}')
+		_assert_bad_request_response(response, message)
+		assert None is facade.transactions_query, value
+
+
+def test_transactions_bad_address_key():
+	# Arrange:
+	facade = SymbolBlockFacade()
+	client = _create_symbol_test_client(facade)
+
+	# Act + Assert:
+	for query, message in (
+		('address=INVALID', 'Invalid address'),
+		('recipientAddress=INVALID', 'Invalid recipientAddress'),
+		('signerPublicKey=1234', 'Invalid signerPublicKey')
+	):
+		response = client.get(f'/api/symbol/transactions?{query}')
+		_assert_bad_request_response(response, message)
+		assert None is facade.transactions_query, query
+
+
+def test_transactions_bad_mosaic():
+	# Arrange:
+	facade = SymbolBlockFacade()
+	client = _create_symbol_test_client(facade)
+
+	# Act + Assert:
+	for value in (
+		'123', 'GGGGGGGGGGGGGGGG', '0x72C0212E67A08BCE', ' 72C0212E67A08BCE',
+		'namespace.xym', '8000000000000000'
+	):
+		response = client.get(f'/api/symbol/transactions?transferMosaicId={value}')
+		message = (
+			'transferMosaicId must be a mosaic id, not an alias id'
+			if '8000000000000000' == value else 'Invalid transferMosaicId')
+		_assert_bad_request_response(response, message)
+		assert None is facade.transactions_query, value
+
+
+def test_embedded_rejects_invalid_values():
+	# Arrange:
+	facade = SymbolBlockFacade()
+	client = _create_symbol_test_client(facade)
+	values = ('1', '0', '', ' true', 'true ')
+
+	# Act:
+	responses = [(value, client.get(f'/api/symbol/transactions?embedded={value}')) for value in values]
+
+	# Assert:
+	for value, response in responses:
+		_assert_bad_request_response(response, 'embedded must be true or false')
+		assert None is facade.transactions_query, value
+
+
+def test_order_rejects_invalid_values():
+	# Arrange:
+	facade = SymbolBlockFacade()
+	client = _create_symbol_test_client(facade)
+	values = ('ASC', '', ' DESC')
+
+	# Act:
+	responses = [(value, client.get(f'/api/symbol/transactions?order={value}')) for value in values]
+
+	# Assert:
+	for value, response in responses:
+		_assert_bad_request_response(response, 'order must be DESC')
+		assert None is facade.transactions_query, value
+
+
+def test_transactions_db_failure():
+	# Arrange:
+	facade = SymbolBlockFacade()
+	facade.transactions_error = OperationalError('database unavailable')
+
+	# Act:
+	response = _create_symbol_test_client(facade).get('/api/symbol/transactions')
+
+	# Assert:
+	_assert_symbol_backend_unavailable_response(response)
 
 
 def test_block_receipts_missing_404():

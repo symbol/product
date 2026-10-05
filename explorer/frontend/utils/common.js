@@ -286,6 +286,21 @@ export const formatBlockCSV = (row, translate) => {
 };
 
 /**
+ * Transforms harvested block data row for CSV export.
+ * @param {object} row - Data row.
+ * @param {Function} translate - Translation function.
+ * @returns {object} Transformed data row.
+ */
+export const formatHarvestedBlockCSV = (row, translate) => {
+	return {
+		[translate('table_field_height')]: row.height,
+		[translate('table_field_type')]: translate(`rewardType_${row.type}`),
+		[translate('table_field_amount')]: row.amount,
+		[translate('table_field_timestamp')]: row.timestamp
+	};
+};
+
+/**
  * Transforms mosaic data row for CSV export.
  * @param {object} row - Data row.
  * @param {Function} translate - Translation function.

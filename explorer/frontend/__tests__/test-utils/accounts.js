@@ -629,6 +629,39 @@ export const accountPageResult = {
 	pageNumber: 2
 };
 
+export const accountHarvestedBlockPageResponse = [
+	{
+		height: 4695085,
+		timestamp: '2024-03-30 01:06:25',
+		amount: 0.25,
+		type: 'harvesting'
+	},
+	{
+		height: 4695080,
+		timestamp: '2024-03-30 00:59:22',
+		amount: 0.1,
+		type: 'harvesting'
+	}
+];
+
+export const accountHarvestedBlockPageResult = {
+	data: [
+		{
+			height: 4695085,
+			timestamp: '2024-03-30 01:06:25',
+			amount: 0.25,
+			type: 'harvesting'
+		},
+		{
+			height: 4695080,
+			timestamp: '2024-03-30 00:59:22',
+			amount: 0.1,
+			type: 'harvesting'
+		}
+	],
+	pageNumber: 2
+};
+
 export const accountPageMosaicFilterResponse = [
 	{
 		address: 'NCHESTYVD2P6P646AMY7WSNG73PCPZDUQNSD6JAK',

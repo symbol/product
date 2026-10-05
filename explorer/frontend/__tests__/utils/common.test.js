@@ -1,4 +1,4 @@
-import { accountPageResult } from '../test-utils/accounts';
+import { accountHarvestedBlockPageResult, accountPageResult } from '../test-utils/accounts';
 import { blockPageResult } from '../test-utils/blocks';
 import { transactionPageResult } from '../test-utils/transactions';
 import {
@@ -8,6 +8,7 @@ import {
 	formatAccountCSV,
 	formatBlockCSV,
 	formatDate,
+	formatHarvestedBlockCSV,
 	formatMosaicCSV,
 	formatTransactionCSV,
 	formatTransactionChart,
@@ -490,6 +491,21 @@ describe('utils/common', () => {
 				translated_table_field_harvester: 'NDE6Y5WNLHID5KRYN3AVNQ7U52XDXLQPHLXHV3OE',
 				translated_table_field_transactionCount: 0,
 				translated_table_field_totalFee: 0,
+				translated_table_field_timestamp: '2024-03-30 01:06:25'
+			};
+
+			// Act + Assert:
+			runFormatDateTest(formatter, dataRow, expectedResult);
+		});
+
+		it('returns formatted data row containing harvested block info', () => {
+			// Arrange:
+			const formatter = formatHarvestedBlockCSV;
+			const dataRow = accountHarvestedBlockPageResult.data[0];
+			const expectedResult = {
+				translated_table_field_height: 4695085,
+				translated_table_field_type: 'translated_rewardType_harvesting',
+				translated_table_field_amount: 0.25,
 				translated_table_field_timestamp: '2024-03-30 01:06:25'
 			};
 

@@ -1,11 +1,14 @@
 import '@testing-library/jest-dom';
-import { accountInfoResult } from '../test-utils/accounts';
+import { accountHarvestedBlockPageResult, accountInfoResult } from '../test-utils/accounts';
 import { transactionPageResult } from '../test-utils/transactions';
 import * as AccountService from '@/app/api/accounts';
 import * as TransactionService from '@/app/api/transactions';
 import AccountInfo, { getServerSideProps } from '@/app/pages/accounts/[address]';
 import * as utils from '@/app/utils';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { pageConfig } from '@/app/variants/page-config';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+
+// Mocks
 
 jest.mock('@/app/utils', () => {
 	return {
@@ -31,204 +34,348 @@ jest.mock('@/app/api/accounts', () => {
 beforeEach(() => {
 	jest.spyOn(utils, 'useUserCurrencyAmount').mockReturnValue(1000);
 	jest.spyOn(TransactionService, 'fetchTransactionPage').mockResolvedValue(transactionPageResult);
+	jest.spyOn(AccountService, 'fetchAccountHarvestedBlockPage').mockResolvedValue({
+		data: accountHarvestedBlockPageResult.data,
+		pageNumber: 1
+	});
 });
+
+// Constants
+
+const SCREEN_TEXT = {
+	sectionAccount: 'section_account',
+	sectionLinkedKeys: 'section_linkedKeys',
+	sectionMultisig: 'section_multisig',
+	sectionHistory: 'section_history',
+	sectionTransactions: 'section_transactions',
+	sectionHarvested: 'section_harvested',
+	labelLinked: 'label_linked',
+	labelMultisig: 'label_multisig',
+	fieldLinkedAccount: 'field_linkedAccount',
+	fieldMainAccount: 'field_mainAccount',
+	fieldMinCosignatories: 'field_minCosignatories',
+	fieldAccountCosignatories: 'field_accountCosignatories',
+	fieldCosignatoryOf: 'field_cosignatoryOf',
+	messageNoLinkedKeys: 'message_noLinkedKeys',
+	noDescription: 'No description',
+	filterHideEmptyBlocks: 'filter_hideEmptyBlocks',
+	buttonClear: 'button_clear',
+	buttonTryAgain: 'button_tryAgain',
+	tableFieldHeight: 'table_field_height',
+	tableFieldType: 'table_field_type',
+	tableFieldAmount: 'table_field_amount'
+};
+
+const linkedAccountAddress = 'NANQPLR63Z4ONDR3X6JQAC2HQCVPKI4ZDQ6OG6M4';
+const cosignatoryAddresses = ['NANGHZNOAFIKE5QTGOLWP66I2SPJSYLRXY63EODH', 'NAEF6OBWJLW3CBM7U6QVCDRS4XAKBIC4VWACEGVL'];
+const cosignatoryOfAddresses = ['NCYAVMNQOZ3MZETEBD34ACMAX3S57WUSWAZWY3DW'];
+const harvestedBlockSearchCriteria = {
+	pageNumber: 1,
+	address: accountInfoResult.address
+};
+
+// Tests
 
 describe('AccountInfo', () => {
 	describe('getServerSideProps', () => {
-		const runTest = async (accountInfo, expectedResult, isTransactionPageFetched) => {
-			// Arrange:
-			const locale = 'en';
-			const params = { address: accountInfoResult.address };
-			const fetchAccountInfo = jest.spyOn(AccountService, 'fetchAccountInfo');
-			fetchAccountInfo.mockResolvedValue(accountInfo);
-			const fetchTransactionPage = jest.spyOn(TransactionService, 'fetchTransactionPage');
-			fetchTransactionPage.mockResolvedValue(transactionPageResult);
+		const runGetServerSidePropsTest = (description, config, expected) => {
+			it(description, async () => {
+				// Arrange:
+				jest.spyOn(AccountService, 'fetchAccountInfo').mockResolvedValue(config.accountInfo);
 
-			// Act:
-			const result = await getServerSideProps({ locale, params });
+				// Act:
+				const result = await getServerSideProps({
+					locale: 'en',
+					params: { address: accountInfoResult.address }
+				});
 
-			// Assert:
-			expect(fetchAccountInfo).toHaveBeenCalledWith(params.address);
-			if (isTransactionPageFetched)
-				expect(fetchTransactionPage).toHaveBeenCalledWith({ address: params.address });
-			else
-				expect(fetchTransactionPage).not.toHaveBeenCalled();
-			expect(result).toEqual(expectedResult);
+				// Assert:
+				expect(AccountService.fetchAccountInfo).toHaveBeenCalledWith(accountInfoResult.address);
+				if (expected.isTransactionPageFetched)
+					expect(TransactionService.fetchTransactionPage).toHaveBeenCalledWith({ address: accountInfoResult.address });
+				else
+					expect(TransactionService.fetchTransactionPage).not.toHaveBeenCalled();
+				expect(result).toEqual(expected.result);
+			});
 		};
 
-		it('returns account info', async () => {
-			// Arrange:
-			const accountInfo = accountInfoResult;
-			const expectedResult = {
-				props: {
-					accountInfo,
-					preloadedTransactions: transactionPageResult.data
+		const getServerSidePropsCases = [
+			{
+				description: 'returns the account info and preloads transactions',
+				config: { accountInfo: accountInfoResult },
+				expected: {
+					result: {
+						props: {
+							accountInfo: accountInfoResult,
+							preloadedTransactions: transactionPageResult.data
+						}
+					},
+					isTransactionPageFetched: true
 				}
-			};
+			},
+			{
+				description: 'returns not found without fetching transactions',
+				config: { accountInfo: null },
+				expected: {
+					result: { notFound: true },
+					isTransactionPageFetched: false
+				}
+			}
+		];
 
-			// Act + Assert:
-			await runTest(accountInfo, expectedResult, true);
-		});
-
-		it('returns not found without fetching transactions', async () => {
-			// Arrange:
-			const accountInfo = null;
-			const expectedResult = {
-				notFound: true
-			};
-
-			// Act + Assert:
-			await runTest(accountInfo, expectedResult, false);
-		});
+		getServerSidePropsCases.forEach(({ description, config, expected }) => runGetServerSidePropsTest(description, config, expected));
 	});
 
-	describe('account information', () => {
-		it('renders page with the information about the account', () => {
-			// Arrange:
-			const pageSectionText = 'section_account';
-			const addressText = accountInfoResult.address;
-			const { balance } = accountInfoResult;
-			const descriptionText = accountInfoResult.description;
-			const publicKeyText = accountInfoResult.publicKey;
-			const heightText = accountInfoResult.height;
-			const importanceText = `${accountInfoResult.importance} %`;
-			const { mosaics } = accountInfoResult;
+	describe('render scenarios', () => {
+		const runRenderScenarioTest = (description, config, expected) => {
+			it(description, () => {
+				// Arrange:
+				const accountInfo = { ...accountInfoResult, ...config.accountInfo };
 
-			// Act:
-			render(<AccountInfo accountInfo={accountInfoResult} preloadedTransactions={[]} />);
-			const [balanceElement, mosaicElement] = screen.getAllByText(balance);
+				// Act:
+				render(<AccountInfo accountInfo={accountInfo} preloadedTransactions={[]} />);
+				
+				if (config.sectionToOpen)
+					fireEvent.click(screen.getByText(config.sectionToOpen));
 
-			// Assert:
-			expect(screen.getByText(pageSectionText)).toBeInTheDocument();
-			expect(screen.getByText(addressText)).toBeInTheDocument();
-			expect(balanceElement).toBeInTheDocument();
-			expect(mosaicElement).toBeInTheDocument();
-			expect(screen.getByText(descriptionText)).toBeInTheDocument();
-			expect(screen.getByText(publicKeyText)).toBeInTheDocument();
-			expect(screen.getByText(heightText)).toBeInTheDocument();
-			expect(screen.getByText(importanceText)).toBeInTheDocument();
-			mosaics.forEach(mosaic => expect(screen.getByText(mosaic.id)).toBeInTheDocument());
-		});
+				// Assert:
+				const expectedTexts = expected.texts || [];
+				const expectedHiddenTexts = expected.hiddenTexts || [];
+				expectedHiddenTexts.forEach(text => expect(screen.queryByText(text)).not.toBeInTheDocument());
+				expectedTexts.forEach(text => expect(screen.getByText(text)).toBeInTheDocument());
+				Object.entries(expected.textOccurrences || {}).forEach(([text, count]) =>
+					expect(screen.getAllByText(text)).toHaveLength(count));
+			});
+		};
 
-		it('renders page without account description', () => {
-			// Arrange:
-			const descriptionText = accountInfoResult.description;
-			const accountInfoWithoutDescription = { ...accountInfoResult, description: null };
-			const noDescriptionText = 'No description';
+		const renderScenarioCases = [
+			{
+				description: 'account section: renders the main account fields and mosaics',
+				config: {},
+				expected: {
+					texts: [
+						SCREEN_TEXT.sectionAccount,
+						accountInfoResult.address,
+						accountInfoResult.description,
+						accountInfoResult.publicKey,
+						accountInfoResult.height,
+						`${accountInfoResult.importance} %`,
+						...accountInfoResult.mosaics.map(mosaic => mosaic.id)
+					],
+					// The balance appears twice: the account balance field and the native mosaic row.
+					textOccurrences: { [accountInfoResult.balance]: 2 },
+					hiddenTexts: [SCREEN_TEXT.noDescription]
+				}
+			},
+			{
+				description: 'account section: renders the description placeholder when the description is missing',
+				config: { accountInfo: { description: null } },
+				expected: {
+					texts: [SCREEN_TEXT.noDescription],
+					hiddenTexts: [accountInfoResult.description]
+				}
+			},
+			{
+				description: 'account section: does not render the linked label for an ordinary account',
+				config: {},
+				expected: { hiddenTexts: [SCREEN_TEXT.labelLinked] }
+			},
+			{
+				description: 'linked keys tab: renders the linked account field when a linked key exists',
+				config: {
+					accountInfo: { linkedAddress: linkedAccountAddress },
+					sectionToOpen: SCREEN_TEXT.sectionLinkedKeys
+				},
+				expected: {
+					texts: [SCREEN_TEXT.fieldLinkedAccount, linkedAccountAddress],
+					hiddenTexts: [SCREEN_TEXT.fieldMainAccount, SCREEN_TEXT.messageNoLinkedKeys]
+				}
+			},
+			{
+				description: 'linked keys tab: renders the main account field and the linked label for a remote account',
+				config: {
+					accountInfo: { mainAddress: linkedAccountAddress },
+					sectionToOpen: SCREEN_TEXT.sectionLinkedKeys
+				},
+				expected: {
+					texts: [SCREEN_TEXT.labelLinked, SCREEN_TEXT.fieldMainAccount, linkedAccountAddress],
+					hiddenTexts: [SCREEN_TEXT.fieldLinkedAccount, SCREEN_TEXT.messageNoLinkedKeys]
+				}
+			},
+			{
+				description: 'linked keys tab: renders the no linked keys message when the account has no keys',
+				config: { sectionToOpen: SCREEN_TEXT.sectionLinkedKeys },
+				expected: {
+					texts: [SCREEN_TEXT.messageNoLinkedKeys],
+					hiddenTexts: [SCREEN_TEXT.fieldLinkedAccount, SCREEN_TEXT.fieldMainAccount]
+				}
+			},
+			{
+				description: 'multisig section: renders the cosignatory fields for a multisig account',
+				config: {
+					accountInfo: {
+						cosignatories: cosignatoryAddresses,
+						cosignatoryOf: cosignatoryOfAddresses,
+						isMultisig: true
+					}
+				},
+				expected: {
+					texts: [
+						SCREEN_TEXT.sectionMultisig,
+						SCREEN_TEXT.labelMultisig,
+						SCREEN_TEXT.fieldMinCosignatories,
+						SCREEN_TEXT.fieldAccountCosignatories,
+						SCREEN_TEXT.fieldCosignatoryOf,
+						...cosignatoryAddresses,
+						...cosignatoryOfAddresses
+					]
+				}
+			},
+			{
+				description: 'multisig section: renders only the cosignatory of field for a cosignatory-only account',
+				config: { accountInfo: { cosignatoryOf: cosignatoryOfAddresses } },
+				expected: {
+					texts: [SCREEN_TEXT.sectionMultisig, SCREEN_TEXT.fieldCosignatoryOf, ...cosignatoryOfAddresses],
+					hiddenTexts: [SCREEN_TEXT.labelMultisig, SCREEN_TEXT.fieldMinCosignatories, SCREEN_TEXT.fieldAccountCosignatories]
+				}
+			},
+			{
+				description: 'multisig section: is not rendered for an ordinary account',
+				config: {},
+				expected: { hiddenTexts: [SCREEN_TEXT.sectionMultisig, SCREEN_TEXT.labelMultisig] }
+			}
+		];
 
-			// Act:
-			render(<AccountInfo accountInfo={accountInfoWithoutDescription} preloadedTransactions={[]} />);
-
-			// Assert:
-			expect(screen.queryByText(descriptionText)).not.toBeInTheDocument();
-			expect(screen.getByText(noDescriptionText)).toBeInTheDocument();
-		});
-
-		it('renders linked account address when it exists', () => {
-			// Arrange:
-			const linkedAddress = 'NANQPLR63Z4ONDR3X6JQAC2HQCVPKI4ZDQ6OG6M4';
-			const accountInfoWithLinkedAccount = { ...accountInfoResult, linkedAddress };
-
-			// Act:
-			render(<AccountInfo accountInfo={accountInfoWithLinkedAccount} preloadedTransactions={[]} />);
-			fireEvent.click(screen.getByText('section_linkedKeys'));
-
-			// Assert:
-			expect(screen.getByText('field_linkedAccount')).toBeInTheDocument();
-			expect(screen.getByText(linkedAddress)).toBeInTheDocument();
-		});
-
-		it('renders main account address when account is a remote one', () => {
-			// Arrange:
-			const mainAddress = 'NANQPLR63Z4ONDR3X6JQAC2HQCVPKI4ZDQ6OG6M4';
-			const accountInfoWithMainAccount = { ...accountInfoResult, mainAddress };
-
-			// Act:
-			render(<AccountInfo accountInfo={accountInfoWithMainAccount} preloadedTransactions={[]} />);
-			fireEvent.click(screen.getByText('section_linkedKeys'));
-
-			// Assert:
-			expect(screen.getByText('field_mainAccount')).toBeInTheDocument();
-			expect(screen.getByText(mainAddress)).toBeInTheDocument();
-		});
-
-		it('labels an account that another account harvests through', () => {
-			// Arrange:
-			const accountInfoWithMainAccount = { ...accountInfoResult, mainAddress: 'NANQPLR63Z4ONDR3X6JQAC2HQCVPKI4ZDQ6OG6M4' };
-
-			// Act:
-			render(<AccountInfo accountInfo={accountInfoWithMainAccount} preloadedTransactions={[]} />);
-
-			// Assert:
-			expect(screen.getByText('label_linked')).toBeInTheDocument();
-		});
-
-		it('does not label an ordinary account as remote', () => {
-			// Act:
-			render(<AccountInfo accountInfo={accountInfoResult} preloadedTransactions={[]} />);
-
-			// Assert:
-			expect(screen.queryByText('label_linked')).not.toBeInTheDocument();
-			expect(screen.queryByText('field_mainAccount')).not.toBeInTheDocument();
-		});
+		renderScenarioCases.forEach(({ description, config, expected }) => runRenderScenarioTest(description, config, expected));
 	});
 
-	describe('account transactions', () => {
-		it('renders page with the list of transactions', () => {
-			// Arrange:
-			const pageSectionText = 'section_transactions';
-			const transactionHashes = transactionPageResult.data.map(transaction => utils.truncateString(transaction.hash, 'hash'));
-
-			// Act:
+	describe('account history', () => {
+		const renderAccountInfo = () =>
 			render(<AccountInfo accountInfo={accountInfoResult} preloadedTransactions={transactionPageResult.data} />);
 
-			// Assert:
-			expect(screen.getByText(pageSectionText)).toBeInTheDocument();
-			transactionHashes.forEach(hash => expect(screen.getByText(hash)).toBeInTheDocument());
-		});
-	});
+		const renderHarvestedTab = () => {
+			renderAccountInfo();
+			fireEvent.click(screen.getByText(SCREEN_TEXT.sectionHarvested));
+		};
 
-	describe('account multisig', () => {
-		it('renders page with the information about the multisig account', () => {
-			// Arrange:
-			const cosignatories = ['NANGHZNOAFIKE5QTGOLWP66I2SPJSYLRXY63EODH', 'NAEF6OBWJLW3CBM7U6QVCDRS4XAKBIC4VWACEGVL'];
-			const cosignatoryOf = ['NCYAVMNQOZ3MZETEBD34ACMAX3S57WUSWAZWY3DW'];
-			const multisigAccountInfo = {
-				...accountInfoResult,
-				cosignatories,
-				cosignatoryOf,
-				isMultisig: true
+		describe('history tabs', () => {
+			const runHistoryTabTest = (description, config, expected) => {
+				it(description, async () => {
+					// Act:
+					renderAccountInfo();
+					fireEvent.click(screen.getByText(config.tabToPress));
+
+					// Assert:
+					expect(screen.getByText(SCREEN_TEXT.sectionHistory)).toBeInTheDocument();
+					await Promise.all(expected.texts.map(text => waitFor(() => expect(screen.getByText(text)).toBeInTheDocument())));
+				});
 			};
-			const pageSectionText = 'section_multisig';
-			const labelMultisigText = 'label_multisig';
+
+			const historyTabCases = [
+				{
+					description: 'renders the transactions tab',
+					config: { tabToPress: SCREEN_TEXT.sectionTransactions },
+					expected: {
+						texts: transactionPageResult.data.map(transaction => utils.truncateString(transaction.hash, 'hash'))
+					}
+				},
+				{
+					description: 'renders the harvested tab',
+					config: { tabToPress: SCREEN_TEXT.sectionHarvested },
+					expected: {
+						texts: [
+							SCREEN_TEXT.tableFieldHeight,
+							SCREEN_TEXT.tableFieldType,
+							SCREEN_TEXT.tableFieldAmount,
+							...accountHarvestedBlockPageResult.data.map(block => block.height)
+						]
+					}
+				}
+			];
+
+			historyTabCases.forEach(({ description, config, expected }) => runHistoryTabTest(description, config, expected));
+		});
+
+		describe('empty block filter', () => {
+			// The chip ignores clicks while a request is in flight, so both actions wait for it to be enabled.
+			const toggleEmptyBlockFilter = async () => {
+				const filterChip = screen.getByText(SCREEN_TEXT.filterHideEmptyBlocks).closest('[role="button"]');
+				await waitFor(() => expect(filterChip).toHaveAttribute('aria-disabled', 'false'));
+				fireEvent.click(filterChip);
+			};
+
+			const clearEmptyBlockFilter = async () => {
+				const filterChip = screen.getByText(SCREEN_TEXT.filterHideEmptyBlocks).closest('[role="button"]');
+				await waitFor(() => expect(filterChip).toHaveAttribute('aria-disabled', 'false'));
+				// The page renders a filter per history tab, so click the clear button next to the chip.
+				fireEvent.click(within(filterChip.parentElement).getByText(SCREEN_TEXT.buttonClear));
+			};
+
+			const runEmptyBlockFilterTest = (description, config, expected) => {
+				it(description, async () => {
+					// Arrange:
+					renderHarvestedTab();
+
+					// Act:
+					for (const filterAction of config.filterActions) {
+						// eslint-disable-next-line no-await-in-loop
+						await filterAction();
+					}
+
+					// Assert:
+					await waitFor(() =>
+						expect(AccountService.fetchAccountHarvestedBlockPage).toHaveBeenLastCalledWith(expected.searchCriteria));
+				});
+			};
+
+			const emptyBlockFilterCases = [
+				{
+					description: 'asks for every harvested block by default',
+					config: { filterActions: [] },
+					expected: { searchCriteria: harvestedBlockSearchCriteria }
+				},
+				{
+					description: 'leaves out empty blocks once the filter is selected',
+					config: { filterActions: [toggleEmptyBlockFilter] },
+					expected: { searchCriteria: { ...harvestedBlockSearchCriteria, isRewardedOnly: true } }
+				},
+				{
+					description: 'shows empty blocks again when the filter chip is toggled off',
+					config: { filterActions: [toggleEmptyBlockFilter, toggleEmptyBlockFilter] },
+					expected: { searchCriteria: harvestedBlockSearchCriteria }
+				},
+				{
+					description: 'shows empty blocks again when the filter is cleared',
+					config: { filterActions: [toggleEmptyBlockFilter, clearEmptyBlockFilter] },
+					expected: { searchCriteria: harvestedBlockSearchCriteria }
+				}
+			];
+
+			emptyBlockFilterCases.forEach(({ description, config, expected }) => runEmptyBlockFilterTest(description, config, expected));
+
+			it('does not render the filter when the variant disables it', async () => {
+				// Arrange:
+				jest.replaceProperty(pageConfig.account, 'showEmptyBlockFilter', false);
+
+				// Act:
+				renderHarvestedTab();
+
+				// Assert:
+				await waitFor(() => expect(screen.getByText(accountHarvestedBlockPageResult.data[0].height)).toBeInTheDocument());
+				expect(screen.queryByText(SCREEN_TEXT.filterHideEmptyBlocks)).not.toBeInTheDocument();
+			});
+		});
+
+		it('shows the try-again action when the harvested block request fails', async () => {
+			// Arrange: silence the pagination error log.
+			jest.spyOn(console, 'error').mockImplementation();
+			AccountService.fetchAccountHarvestedBlockPage.mockRejectedValue(new Error('harvests request failed'));
 
 			// Act:
-			render(<AccountInfo accountInfo={multisigAccountInfo} preloadedTransactions={[]} />);
+			renderHarvestedTab();
 
 			// Assert:
-			expect(screen.getByText(pageSectionText)).toBeInTheDocument();
-			expect(screen.getByText(labelMultisigText)).toBeInTheDocument();
-			cosignatories.map(address => expect(screen.getByText(address)).toBeInTheDocument());
-			cosignatoryOf.map(address => expect(screen.getByText(address)).toBeInTheDocument());
-		});
-
-		it('renders page with the information about non-multisig account', () => {
-			// Arrange:
-			const accountInfo = {
-				...accountInfoResult,
-				cosignatories: [],
-				cosignatoryOf: [],
-				isMultisig: false
-			};
-			const pageSectionText = 'section_multisig';
-			const labelMultisigText = 'label_multisig';
-
-			// Act:
-			render(<AccountInfo accountInfo={accountInfo} preloadedTransactions={[]} />);
-
-			// Assert:
-			expect(screen.queryByText(pageSectionText)).not.toBeInTheDocument();
-			expect(screen.queryByText(labelMultisigText)).not.toBeInTheDocument();
+			await waitFor(() => expect(screen.getByText(SCREEN_TEXT.buttonTryAgain)).toBeInTheDocument());
 		});
 	});
 });
