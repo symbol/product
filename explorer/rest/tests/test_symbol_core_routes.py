@@ -4,7 +4,7 @@ import json
 import logging
 import tempfile
 from contextlib import contextmanager
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from threading import Thread
@@ -12,26 +12,52 @@ from unittest.mock import patch
 
 import pytest
 from common.symbol.NativeMosaic import NativeMosaicInfo, NativeMosaicValidationError
-from common.symbol.NodeConfiguration import SymbolNodeConfigurationError
+from common.symbol.NodeConfiguration import SymbolNodeConfiguration, SymbolNodeConfigurationError
 from common.tests.PostgresTestUtils import PostgresTestDatabase, create_unreachable_db_configuration, drop_symbol_block_tables_if_present
 from flask import Flask
 from psycopg2 import OperationalError
 from psycopg2.extras import Json
 from puller.db.SymbolDatabase import SymbolDatabase as PullerSymbolDatabase
 from symbolchain.CryptoTypes import PublicKey
-from symbolchain.symbol.Network import Network
+from symbolchain.symbol.Network import Address, Network
 
 from rest import create_app, setup_symbol_facade
+from rest.db.SymbolDatabase import SymbolDatabase
 from rest.facade.SymbolRestFacade import SymbolRestFacade
 from rest.model.common import DatabaseConfig
 from rest.routes.symbol import setup_symbol_routes
 
 from .test.EnvTestUtils import rest_settings_env
+from .test.SymbolAccountListTestUtils import (
+	CUSTOM_MOSAIC_ID,
+	NATIVE_MOSAIC_ID,
+	REFRESH_COMPLETED_AT,
+	FailingAccountListDatabase,
+	PausingAccountListDatabase,
+	account_address,
+	create_account_list_entries,
+	create_refresh_entry,
+	seed_alias,
+	seed_current_mosaic,
+	seed_refresh_run
+)
 from .test.SymbolAccountTestUtils import ACCOUNT_ADDRESS, OTHER_ADDRESS, create_symbol_account_row
 from .test.SymbolBlockTestUtils import create_symbol_block, create_symbol_importance_block, create_symbol_receipt, create_symbol_sync_state
+from .test.SymbolDatabaseTestUtils import read_during_database_snapshot, symbol_test_database
 from .test.SymbolHealthTestUtils import create_symbol_health
 
 NATIVE_MOSAIC_INFO = NativeMosaicInfo('72C0212E67A08BCE', 6)
+
+
+def _seed_symbol_account_list_database(database_config, sync_state, entries, completed_at=None):
+	_drop_symbol_block_tables_if_present(database_config)
+	with PullerSymbolDatabase(database_config) as database:
+		database.create_tables()
+		database.upsert_sync_state(sync_state)
+		seed_refresh_run(
+			database, entries[0]['refresh_run_id'], entries,
+			completed_at=completed_at or datetime.now(timezone.utc))
+		seed_current_mosaic(database, CUSTOM_MOSAIC_ID, divisibility=2, owner_address=account_address(99))
 
 
 def _seed_symbol_account_database(database_config, sync_state, current_amount=70000000, malformed_voting=None):
@@ -177,6 +203,7 @@ def _create_app_config(
 		app_config_file.write(f'DATABASE_CONFIG_FILEPATH="{db_config_path}"\n')
 		if native_mosaic_id is not None:
 			app_config_file.write(f'SYMBOL_NATIVE_MOSAIC_ID={native_mosaic_id!r}\n')
+		app_config_file.write('SYMBOL_ACCOUNT_REFRESH_MAX_AGE_SECONDS=7200\n')
 		if symbol_node_url:
 			app_config_file.write(f'SYMBOL_NODE_URL="{symbol_node_url}"\n')
 		app_config_file.write('SYMBOL_NODE_ALLOWED_HOSTS="localhost:3000"\n')
@@ -1809,3 +1836,466 @@ def test_native_setup_list_skips_get(symbol_database_config):
 	assert [_expected_block_list_item(1, is_finalized=True)] == response.json
 	# The recording server tracks GET requests only; this proves the configured node received zero GETs.
 	assert not node_server.request_paths
+
+
+def test_list_http_snapshot_dto(symbol_database_config):
+	# Arrange:
+	entries = create_account_list_entries()
+	with tempfile.TemporaryDirectory() as temp_directory:
+		db_config_path = _create_config_file(temp_directory, database_config=symbol_database_config)
+		app_config_path = _create_app_config(temp_directory, db_config_path)
+		_seed_symbol_account_list_database(symbol_database_config, create_symbol_sync_state(100, 100), entries)
+		with rest_settings_env(app_config_path):
+			app = _create_symbol_app()
+			try:
+				# Act:
+				response = app.test_client().get('/api/symbol/accounts')
+			finally:
+				app.extensions['symbol_database'].close()
+
+	# Assert:
+	assert 200 == response.status_code
+	assert _expected_account_list() == response.json
+
+
+def test_list_stale_detail_unchanged(symbol_database_config):
+	# Arrange:
+	entries = create_account_list_entries()
+	with tempfile.TemporaryDirectory() as temp_directory:
+		db_config_path = _create_config_file(temp_directory, database_config=symbol_database_config)
+		app_config_path = _create_app_config(temp_directory, db_config_path)
+		_seed_symbol_account_list_database(
+			symbol_database_config, create_symbol_sync_state(100, 100), entries,
+			completed_at=datetime(2025, 1, 1, tzinfo=timezone.utc))
+		with rest_settings_env(app_config_path):
+			app = _create_symbol_app()
+			try:
+				# Act:
+				list_response = app.test_client().get('/api/symbol/accounts')
+				detail_response = app.test_client().get(f'/api/symbol/account?address={str(Address(account_address(1)))}')
+			finally:
+				app.extensions['symbol_database'].close()
+
+	# Assert:
+	assert 503 == list_response.status_code
+	assert {'status': 503, 'message': 'Symbol backend data is unavailable'} == list_response.json
+	assert 200 == detail_response.status_code
+
+
+@pytest.mark.parametrize('setting', [None, True, '7200', 7200.0, 0, -1], ids=['missing', 'bool', 'string', 'float', 'zero', 'negative'])
+def test_list_age_invalid_setup(setting):
+	# Arrange:
+	with tempfile.TemporaryDirectory() as temp_directory:
+		db_config_path = _create_config_file(temp_directory, database_config=create_unreachable_db_configuration())
+		app_config_path = _create_app_config(temp_directory, db_config_path)
+		config = Path(app_config_path).read_text(encoding='utf8')
+		config = config.replace('SYMBOL_ACCOUNT_REFRESH_MAX_AGE_SECONDS=7200\n', '')
+		if setting is not None:
+			config += f'SYMBOL_ACCOUNT_REFRESH_MAX_AGE_SECONDS={setting!r}\n'
+		Path(app_config_path).write_text(config, encoding='utf8')
+
+		with rest_settings_env(app_config_path):
+			# Act:
+			with pytest.raises(ValueError) as exception_info:
+				_create_symbol_app()
+
+			# Assert:
+			assert 'SYMBOL_ACCOUNT_REFRESH_MAX_AGE_SECONDS' in str(exception_info.value)
+
+
+@contextmanager
+def _account_list_create_app_client(database_config):
+	"""Creates the real configured app and closes its database after the request sequence."""
+	with tempfile.TemporaryDirectory() as directory:
+		db_path = _create_config_file(directory, database_config=database_config)
+		app_path = _create_app_config(directory, db_path)
+		with rest_settings_env(app_path):
+			app = _create_symbol_app()
+			try:
+				yield app.test_client()
+			finally:
+				app.extensions['symbol_database'].close()
+
+
+def test_list_custom_without_rank(symbol_database_config):
+	# Arrange:
+	_seed_symbol_account_list_database(
+		symbol_database_config, create_symbol_sync_state(100, 100), create_account_list_entries())
+	with PullerSymbolDatabase(symbol_database_config) as writer:
+		with writer.connection.cursor() as cursor:
+			cursor.execute(
+				'DELETE FROM symbol_account_list_ranks WHERE refresh_run_id = %s AND rank_scope = %s',
+				('selected-run', f'BALANCE:{CUSTOM_MOSAIC_ID}'))
+		writer.connection.commit()
+	with _account_list_create_app_client(symbol_database_config) as client:
+		# Act:
+		response = client.get(f'/api/symbol/accounts?sort_field=BALANCE&mosaic_id={CUSTOM_MOSAIC_ID}')
+
+	# Assert:
+	assert (200, [
+		_expected_list_item(4, None, 'main', .2, 2, 2, None),
+		_expected_list_item(3, None, 'main', .3, 1, 1, .00005),
+		_expected_list_item(1, None, 'main', .4, 1, 1, .00005),
+		_expected_list_item(2, None, 'main', .1, 0, 0, 0)
+	]) == (response.status_code, response.json)
+
+
+def test_list_http_recovers_fixed_ranks(symbol_database_config):
+	# Arrange: corrupt one required ID rank in an otherwise readable successful run.
+	_seed_symbol_account_list_database(
+		symbol_database_config, create_symbol_sync_state(100, 100), create_account_list_entries())
+	with PullerSymbolDatabase(symbol_database_config) as writer:
+		with writer.connection.cursor() as cursor:
+			cursor.execute(
+				'UPDATE symbol_account_list_ranks SET sort_value_numeric = 999 WHERE refresh_run_id = %s AND rank_scope = %s AND rank = 0',
+				('selected-run', 'ID'))
+		writer.connection.commit()
+		with _account_list_create_app_client(symbol_database_config) as client:
+			# Act: read the corrupt scope through the configured app.
+			failed = client.get('/api/symbol/accounts')
+
+			# Assert:
+			assert (503, {'status': 503, 'message': 'Symbol backend data is unavailable'}) == (failed.status_code, failed.json)
+
+			# Arrange: repair the stored ranks through the existing Puller writer.
+			writer.finalize_account_refresh('selected-run', NATIVE_MOSAIC_ID, 100, datetime.now(timezone.utc))
+
+			# Act: reuse the same app after the failed request.
+			recovered = client.get('/api/symbol/accounts')
+
+			# Assert:
+			assert (200, _expected_account_list()) == (recovered.status_code, recovered.json)
+
+
+def _expected_account_list():
+	return [
+		{
+			'address': str(Address(account_address(2))), 'publicKey': None, 'accountType': 'main',
+			'importance': 0.1, 'balance': 0.0, 'namespaces': [],
+			'mosaics': [
+				{'id': CUSTOM_MOSAIC_ID, 'name': CUSTOM_MOSAIC_ID, 'amount': 0.0, 'isCreatedByAccount': False},
+				{'id': NATIVE_MOSAIC_ID, 'name': NATIVE_MOSAIC_ID, 'amount': 0.0, 'isCreatedByAccount': False}],
+			'description': None, 'isHarvestingActive': None
+		},
+		{
+			'address': str(Address(account_address(3))), 'publicKey': None, 'accountType': 'main',
+			'importance': 0.3, 'balance': 0.00005, 'namespaces': [],
+			'mosaics': [
+				{'id': CUSTOM_MOSAIC_ID, 'name': CUSTOM_MOSAIC_ID, 'amount': 1.0, 'isCreatedByAccount': False},
+				{'id': NATIVE_MOSAIC_ID, 'name': NATIVE_MOSAIC_ID, 'amount': 0.00005, 'isCreatedByAccount': False}],
+			'description': None, 'isHarvestingActive': None
+		},
+		{
+			'address': str(Address(account_address(1))), 'publicKey': None, 'accountType': 'main',
+			'importance': 0.4, 'balance': 0.00005, 'namespaces': [],
+			'mosaics': [
+				{'id': CUSTOM_MOSAIC_ID, 'name': CUSTOM_MOSAIC_ID, 'amount': 1.0, 'isCreatedByAccount': False},
+				{'id': NATIVE_MOSAIC_ID, 'name': NATIVE_MOSAIC_ID, 'amount': 0.00005, 'isCreatedByAccount': False}],
+			'description': None, 'isHarvestingActive': None
+		},
+		{
+			'address': str(Address(account_address(4))), 'publicKey': None, 'accountType': 'main',
+			'importance': 0.2, 'balance': 0, 'namespaces': [],
+			'mosaics': [{'id': CUSTOM_MOSAIC_ID, 'name': CUSTOM_MOSAIC_ID, 'amount': 2.0, 'isCreatedByAccount': False}],
+			'description': None, 'isHarvestingActive': None
+		}
+	]
+
+
+@contextmanager
+def _account_list_http_client(config, database_type=SymbolDatabase, clock=None):
+	with database_type(config, NATIVE_MOSAIC_INFO, clock or (lambda: REFRESH_COMPLETED_AT + timedelta(seconds=7200))) as database:
+		app = Flask(__name__)
+		facade = SymbolRestFacade(
+			database, SymbolNodeConfiguration.from_url('http://127.0.0.1:3000', allow_loopback=True),
+			NATIVE_MOSAIC_INFO, Network.TESTNET, 7200)
+		setup_symbol_routes(app, facade)
+		yield app.test_client(), database
+
+
+def _expected_list_item(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+	identity, public_key, account_type, importance, balance, custom_amount, native_amount,
+	custom_name=CUSTOM_MOSAIC_ID, namespaces=(), is_creator=False):
+	mosaics = [{'id': CUSTOM_MOSAIC_ID, 'name': custom_name, 'amount': custom_amount, 'isCreatedByAccount': is_creator}]
+	if native_amount is not None:
+		mosaics.append({'id': NATIVE_MOSAIC_ID, 'name': NATIVE_MOSAIC_ID, 'amount': native_amount, 'isCreatedByAccount': False})
+
+	return {
+		'address': str(Address(account_address(identity))), 'publicKey': public_key, 'accountType': account_type,
+		'importance': importance, 'balance': balance, 'namespaces': list(namespaces), 'mosaics': mosaics,
+		'description': None, 'isHarvestingActive': None
+	}
+
+
+@pytest.mark.parametrize('change', ['run', 'metadata'])
+def test_list_http_repeatable_read(change):
+	# Arrange: both successful runs contain the same addresses with different attributes and balances.
+	with symbol_test_database(create_symbol_sync_state(100, 100)) as (config, writer):
+		seed_refresh_run(writer, 'old-run', create_account_list_entries('old-run'))
+		seed_refresh_run(writer, 'new-run', create_account_list_entries('new-run', is_new=True))
+		writer.upsert_account_refresh_state({'last_successful_run_id': 'old-run'})
+		seed_current_mosaic(writer, CUSTOM_MOSAIC_ID, 2, account_address(1))
+		seed_alias(writer, 'account', str(Address(account_address(1))), 'before.account')
+		seed_alias(writer, 'mosaic', CUSTOM_MOSAIC_ID, 'before.mosaic')
+		expected_old = [
+			_expected_list_item(2, None, 'main', .1, 0, 0, 0, 'before.mosaic'),
+			_expected_list_item(3, None, 'main', .3, .00005, 1, .00005, 'before.mosaic'),
+			_expected_list_item(1, None, 'main', .4, .00005, 1, .00005, 'before.mosaic', ('before.account',), True),
+			_expected_list_item(4, None, 'main', .2, 0, 2, None, 'before.mosaic')
+		]
+
+		def update():
+			if change == 'run':
+				writer.upsert_account_refresh_state({'last_successful_run_id': 'new-run'})
+			else:
+				with writer.connection.cursor() as cursor:
+					cursor.execute('UPDATE symbol_alias_names SET name = \'after.account\' WHERE artifact_type = \'account\'')
+					cursor.execute('UPDATE symbol_alias_names SET name = \'after.mosaic\' WHERE artifact_type = \'mosaic\'')
+					cursor.execute(
+						'UPDATE symbol_mosaics SET divisibility = 3, owner_address = %s WHERE mosaic_id = %s',
+						(account_address(4), CUSTOM_MOSAIC_ID))
+				writer.connection.commit()
+
+		with _account_list_http_client(config, PausingAccountListDatabase) as (client, database):
+			# Act:
+			response = read_during_database_snapshot(database, lambda: client.get('/api/symbol/accounts'), update)
+			next_response = client.get('/api/symbol/accounts')
+
+	# Assert:
+	assert isinstance(database, PausingAccountListDatabase)
+	assert ('repeatable read', 'on') == database.transaction_settings  # pylint: disable=no-member
+	assert (200, expected_old) == (response.status_code, response.json)
+	if change == 'run':
+		expected_new = [
+			_expected_list_item(4, '0E' * 32, 'main', .3, 0, 3, 0, 'before.mosaic'),
+			_expected_list_item(3, '0D' * 32, 'main', .2, .000025, .25, .000025, 'before.mosaic'),
+			_expected_list_item(2, '0C' * 32, 'remote', .4, .00002, .1, .00002, 'before.mosaic'),
+			_expected_list_item(1, '0B' * 32, 'main', .1, .00001, 2, .00001, 'before.mosaic', ('before.account',), True)
+		]
+	else:
+		expected_new = [
+			_expected_list_item(2, None, 'main', .1, 0, 0, 0, 'after.mosaic'),
+			_expected_list_item(3, None, 'main', .3, .00005, .1, .00005, 'after.mosaic'),
+			_expected_list_item(1, None, 'main', .4, .00005, .1, .00005, 'after.mosaic', ('after.account',)),
+			_expected_list_item(4, None, 'main', .2, 0, .2, None, 'after.mosaic', is_creator=True)
+		]
+	assert (200, expected_new) == (next_response.status_code, next_response.json)
+
+
+@pytest.mark.parametrize('state_sql', [
+	'DELETE FROM symbol_account_refresh_state',
+	'UPDATE symbol_account_refresh_state SET status = \'refreshing\'',
+	'UPDATE symbol_account_refresh_state SET status = \'unhealthy\'',
+	'UPDATE symbol_account_refresh_state SET status = \'stale\'',
+	'UPDATE symbol_account_refresh_state SET last_successful_run_id = NULL',
+	'UPDATE symbol_account_refresh_state SET last_successful_run_id = \'\'',
+	'UPDATE symbol_account_refresh_state SET last_completed_at = NULL',
+	'DELETE FROM symbol_sync_state',
+	'UPDATE symbol_sync_state SET status = \'unhealthy\'',
+	'UPDATE symbol_sync_state SET status = \'repairing\'',
+	'UPDATE symbol_sync_state SET last_synced_height = 0',
+	'UPDATE symbol_sync_state SET dirty_state_from_height = 100'
+])
+def test_list_http_state_unavailable(state_sql):
+	# Arrange: existing success remains populated so an old-run fallback would return records.
+	with symbol_test_database(create_symbol_sync_state(100, 100)) as (config, writer):
+		seed_refresh_run(writer, 'selected-run', create_account_list_entries())
+		with writer.connection.cursor() as cursor:
+			cursor.execute(state_sql)
+		writer.connection.commit()
+		with _account_list_http_client(config) as (client, _):
+			# Act:
+			response = client.get('/api/symbol/accounts?offset=100000')
+
+	# Assert:
+	assert (503, {'status': 503, 'message': 'Symbol backend data is unavailable'}) == (response.status_code, response.json)
+
+
+@pytest.mark.parametrize('seconds,status', [(7199, 200), (7200, 200), (7201, 503)])
+def test_account_list_http_age_boundary(seconds, status):
+	# Arrange:
+	with symbol_test_database(create_symbol_sync_state(100, 100)) as (config, writer):
+		seed_refresh_run(writer, 'selected-run', create_account_list_entries())
+		seed_current_mosaic(writer, CUSTOM_MOSAIC_ID, 2)
+		with _account_list_http_client(config, clock=lambda: REFRESH_COMPLETED_AT + timedelta(seconds=seconds)) as (client, _):
+			# Act:
+			response = client.get('/api/symbol/accounts')
+
+	# Assert:
+	assert status == response.status_code
+	assert (_expected_account_list() if status == 200 else {'status': 503, 'message': 'Symbol backend data is unavailable'}) == response.json
+
+
+@pytest.mark.parametrize('query,indices,balance_values', [
+	('', [0, 1, 2, 3], [0, .00005, .00005, 0]),
+	('?sort_field=IMPORTANCE', [2, 1, 3, 0], [.00005, .00005, 0, 0]),
+	(f'?sort_field=BALANCE&mosaic_id={NATIVE_MOSAIC_ID}', [1, 2, 0], [.00005, .00005, 0]),
+	(f'?sort_field=BALANCE&mosaic_id={CUSTOM_MOSAIC_ID}', [3, 1, 2, 0], [2, 1, 1, 0]),
+	('?limit=2&offset=1', [1, 2], [.00005, .00005]),
+	('?limit=2&offset=2', [2, 3], [.00005, 0]),
+	('?limit=2&offset=3', [3], [0]),
+	(f'?sort_field=BALANCE&mosaic_id={CUSTOM_MOSAIC_ID}&limit=2&offset=1', [1, 2], [1, 1]),
+	('?offset=4', [], []),
+	('?offset=100000', [], []),
+	('?sort_field=BALANCE&mosaic_id=FEDCBA9876543210', [], [])
+])
+def test_list_http_run_and_page(query, indices, balance_values):
+	# Arrange:
+	with symbol_test_database(create_symbol_sync_state(100, 100, chain_height=200, finalized_epoch=None)) as (config, writer):
+		seed_refresh_run(writer, 'old-run', create_account_list_entries('old-run', is_new=True))
+		seed_refresh_run(writer, 'selected-run', create_account_list_entries())
+		writer.upsert_account_refresh_page(create_account_list_entries('failed-run', is_new=True), last_scanned_page=1)
+		writer.upsert_account_refresh_state({'status': 'healthy'})
+		seed_current_mosaic(writer, CUSTOM_MOSAIC_ID, 2)
+		expected = [_expected_account_list()[index] for index in indices]
+		for item, balance in zip(expected, balance_values):
+			item['balance'] = balance
+		with _account_list_http_client(config) as (client, _):
+			# Act:
+			response = client.get('/api/symbol/accounts' + query)
+
+	# Assert:
+	assert (200, expected) == (response.status_code, response.json)
+
+
+def test_list_http_sql_failure_reuse(caplog):
+	# Arrange:
+	with symbol_test_database(create_symbol_sync_state(100, 100)) as (config, writer):
+		seed_refresh_run(writer, 'selected-run', create_account_list_entries())
+		seed_current_mosaic(writer, CUSTOM_MOSAIC_ID, 2)
+		with _account_list_http_client(config, FailingAccountListDatabase) as (client, database):
+			# Act: provoke a SQL failure through the public request path.
+			with caplog.at_level(logging.ERROR, logger='pythonConfig'):
+				failed = client.get('/api/symbol/accounts')
+
+			# Assert:
+			assert (503, {'status': 503, 'message': 'Symbol backend data is unavailable'}) == (failed.status_code, failed.json)
+			assert ['Failed to get Symbol accounts'] == [record.getMessage() for record in caplog.records if record.levelno >= logging.ERROR]
+			assert 'missing_account_list_column' not in caplog.text
+			assert 'SELECT' not in caplog.text
+
+			# Arrange: stop the injected failure without replacing the app or its database pool.
+			database.should_fail = False
+
+			# Act:
+			recovered = client.get('/api/symbol/accounts')
+
+			# Assert:
+			assert (200, _expected_account_list()) == (recovered.status_code, recovered.json)
+
+
+@pytest.mark.parametrize('statement,parameters', [
+	('UPDATE symbol_account_refresh_accounts SET public_key = %s WHERE address = %s', (b'bad', account_address(1))),
+	('UPDATE symbol_account_refresh_accounts SET importance_percentage = -1 WHERE address = %s', (account_address(1),)),
+	('UPDATE symbol_account_refresh_mosaics SET amount = -1 WHERE address = %s AND mosaic_id = %s', (account_address(1), CUSTOM_MOSAIC_ID)),
+	('UPDATE symbol_mosaics SET divisibility = -1 WHERE mosaic_id = %s', (CUSTOM_MOSAIC_ID,)),
+	('UPDATE symbol_mosaics SET owner_address = %s WHERE mosaic_id = %s', (b'bad', CUSTOM_MOSAIC_ID))
+], ids=['public-key-length', 'importance-range', 'negative-amount', 'divisibility-range', 'owner-address-length'])
+def test_list_http_recovers_fixed_dto(symbol_database_config, statement, parameters, caplog):
+	# Arrange: each case corrupts a different saved DTO input without changing schema constraints.
+	entries = create_account_list_entries()
+	_seed_symbol_account_list_database(symbol_database_config, create_symbol_sync_state(100, 100), entries)
+	with PullerSymbolDatabase(symbol_database_config) as writer:
+		with writer.connection.cursor() as cursor:
+			cursor.execute(statement, parameters)
+		writer.connection.commit()
+		with _account_list_create_app_client(symbol_database_config) as client:
+			# Act: read the malformed data through create_app wiring.
+			with caplog.at_level(logging.ERROR, logger='pythonConfig'):
+				failed = client.get('/api/symbol/accounts')
+
+			# Assert:
+			assert (503, {'status': 503, 'message': 'Symbol backend data is unavailable'}) == (failed.status_code, failed.json)
+			assert 'SELECT' not in caplog.text
+			assert any('Invalid Symbol backend data at ' in record.getMessage() for record in caplog.records)
+			assert 'bad' not in caplog.text
+
+			# Arrange: restore snapshot inputs and current metadata before reusing the same app.
+			seed_refresh_run(writer, 'selected-run', entries, completed_at=datetime.now(timezone.utc))
+			seed_current_mosaic(writer, CUSTOM_MOSAIC_ID, 2)
+
+			# Act:
+			recovered = client.get('/api/symbol/accounts')
+
+			# Assert:
+			assert (200, _expected_account_list()) == (recovered.status_code, recovered.json)
+
+
+def test_list_http_returns_nullable_dto():
+	# Arrange:
+	with symbol_test_database(create_symbol_sync_state(100, 100)) as (config, writer):
+		entry = create_refresh_entry('selected-run', 1, 0, 0, account_type=None)
+		seed_refresh_run(writer, 'selected-run', [entry])
+		with _account_list_http_client(config) as (client, _):
+			# Act:
+			response = client.get('/api/symbol/accounts')
+
+	# Assert:
+	assert (200, [{
+		'address': str(Address(account_address(1))), 'publicKey': None, 'accountType': None, 'importance': 0,
+		'balance': 0, 'namespaces': [], 'mosaics': [], 'description': None, 'isHarvestingActive': None
+	}]) == (response.status_code, response.json)
+
+
+def test_list_http_returns_empty_run():
+	# Arrange:
+	with symbol_test_database(create_symbol_sync_state(100, 100)) as (config, writer):
+		seed_refresh_run(writer, 'empty-run', [])
+		with _account_list_http_client(config) as (client, _):
+			# Act:
+			response = client.get('/api/symbol/accounts')
+
+	# Assert:
+	assert (200, []) == (response.status_code, response.json)
+
+
+def test_list_http_missing_metadata():
+	# Arrange:
+	with symbol_test_database(create_symbol_sync_state(100, 100)) as (config, writer):
+		seed_refresh_run(writer, 'selected-run', create_account_list_entries())
+		with _account_list_http_client(config) as (client, _):
+			# Act:
+			response = client.get('/api/symbol/accounts')
+
+	# Assert:
+	assert (200, [
+		_expected_list_item(2, None, 'main', .1, 0, 0, 0),
+		_expected_list_item(3, None, 'main', .3, .00005, 100, .00005),
+		_expected_list_item(1, None, 'main', .4, .00005, 100, .00005),
+		_expected_list_item(4, None, 'main', .2, 0, 200, None)
+	]) == (response.status_code, response.json)
+
+
+def test_list_http_invalid_address():
+	# Arrange: bytea permits bad length; no constraints are removed.
+	with symbol_test_database(create_symbol_sync_state(100, 100)) as (config, writer):
+		entry = create_refresh_entry('selected-run', 1, 0, 0)
+		entry['account_row']['address'] = b'bad'
+		seed_refresh_run(writer, 'selected-run', [entry])
+		with _account_list_http_client(config) as (client, _):
+			# Act:
+			response = client.get('/api/symbol/accounts')
+
+	# Assert:
+	assert (503, {'status': 503, 'message': 'Symbol backend data is unavailable'}) == (response.status_code, response.json)
+
+
+@pytest.mark.parametrize('seconds', [1, 7200])
+def test_list_age_positive_setup(symbol_database_config, seconds):
+	# Arrange:
+	with tempfile.TemporaryDirectory() as directory:
+		db_path = _create_config_file(directory, database_config=symbol_database_config)
+		app_path = _create_app_config(directory, db_path)
+		Path(app_path).write_text(Path(app_path).read_text(encoding='utf8').replace(
+			'SYMBOL_ACCOUNT_REFRESH_MAX_AGE_SECONDS=7200', f'SYMBOL_ACCOUNT_REFRESH_MAX_AGE_SECONDS={seconds}'), encoding='utf8')
+		app = Flask(__name__)
+		app.config.from_pyfile(app_path)
+
+		# Act:
+		facade = setup_symbol_facade(app)
+
+		# Cleanup:
+		app.extensions['symbol_database'].close()
+
+	# Assert:
+	assert seconds == facade.account_refresh_max_age_seconds

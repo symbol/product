@@ -1,5 +1,6 @@
 # pylint: disable=too-many-lines
 
+import pytest
 from flask import Flask
 from psycopg2 import OperationalError
 from symbolchain.CryptoTypes import PublicKey
@@ -7,7 +8,15 @@ from symbolchain.sc import TransactionType
 from symbolchain.symbol.Network import Network
 
 from rest import setup_error_handlers
-from rest.db.SymbolDatabase import ReceiptQuery, SortOrder, SymbolDataUnavailable, SymbolMosaicAliasNotFound, TransactionQuery
+from rest.db.SymbolDatabase import (
+	AccountListQuery,
+	AccountSortField,
+	ReceiptQuery,
+	SortOrder,
+	SymbolDataUnavailable,
+	SymbolMosaicAliasNotFound,
+	TransactionQuery
+)
 from rest.model.symbol.validation import SymbolDataInvalid
 from rest.routes.symbol import setup_symbol_routes
 
@@ -60,7 +69,7 @@ class SymbolBlockFacade:  # pylint: disable=too-many-instance-attributes
 		return self.transactions_result
 
 
-class SymbolAccountFacade:
+class SymbolAccountFacade:  # pylint: disable=too-many-instance-attributes
 	"""Recording facade for Account and Multisig route validation tests."""
 
 	def __init__(self):
@@ -71,6 +80,16 @@ class SymbolAccountFacade:
 		self.multisig_result = {'minApproval': 1}
 		self.account_error = None
 		self.multisig_error = None
+		self.accounts_query = None
+		self.accounts_result = [{'address': 'TDUMMY'}]
+		self.accounts_error = None
+
+	def get_accounts(self, query):
+		self.accounts_query = query
+		if self.accounts_error:
+			raise self.accounts_error
+
+		return self.accounts_result
 
 	def get_account(self, address, public_key):
 		self.account_query = (address, public_key)
@@ -130,6 +149,139 @@ def test_account_address_bytes():
 	assert 200 == response.status_code
 	assert {'address': 'TDUMMY'} == response.json
 	assert (bytes.fromhex('98FD35818960C7B18B72F49A5598FA9F712A354DB33EDE57'), None) == facade.account_query
+
+
+def test_accounts_defaults():
+	# Arrange:
+	facade = SymbolAccountFacade()
+	client = _create_symbol_test_client(facade)
+
+	# Act:
+	response = client.get('/api/symbol/accounts')
+
+	# Assert:
+	assert 200 == response.status_code
+	assert [{'address': 'TDUMMY'}] == response.json
+	assert AccountListQuery(AccountSortField.ID, None, 10, 0) == facade.accounts_query
+
+
+def test_accounts_normalizes_query_case():
+	# Arrange:
+	facade = SymbolAccountFacade()
+	client = _create_symbol_test_client(facade)
+
+	# Act:
+	response = client.get('/api/symbol/accounts?limit=1&offset=2&sort_field=balance&sort_order=desc&mosaic_id=abCDef0123456789')
+
+	# Assert:
+	assert 200 == response.status_code
+	assert AccountListQuery(AccountSortField.BALANCE, 'ABCDEF0123456789', 1, 2) == facade.accounts_query
+
+
+@pytest.mark.parametrize('query', [
+	pytest.param('limit=0', id='limit-zero'),
+	pytest.param('limit=-1', id='limit-negative'),
+	pytest.param('limit=101', id='limit-above-max'),
+	pytest.param('limit=', id='limit-empty'),
+	pytest.param('limit=abc', id='limit-noninteger'),
+	pytest.param('offset=-1', id='offset-negative'),
+	pytest.param('offset=100001', id='offset-above-max'),
+	pytest.param('offset=', id='offset-empty'),
+	pytest.param('offset=abc', id='offset-noninteger'),
+	pytest.param('sort_field=unknown', id='unknown-sort-field'),
+	pytest.param('sort_order=asc', id='ascending-sort'),
+	pytest.param('sort_order=unknown', id='unknown-sort-order'),
+	pytest.param('sort_field=BALANCE', id='balance-missing-mosaic'),
+	pytest.param('sort_field=ID&mosaic_id=1234567890ABCDEF', id='id-with-mosaic'),
+	pytest.param('sort_field=IMPORTANCE&mosaic_id=1234567890ABCDEF', id='importance-with-mosaic'),
+	pytest.param('sort_field=BALANCE&mosaic_id=0x1234567890ABCDEF', id='mosaic-hex-prefix'),
+	pytest.param('sort_field=BALANCE&mosaic_id=1234567890ABCDE', id='mosaic-short'),
+	pytest.param('sort_field=BALANCE&mosaic_id=1234567890ABCDEF%20', id='mosaic-trailing-space'),
+	pytest.param('sort_field=BALANCE&mosaic_id=%201234567890ABCDEF', id='mosaic-leading-space'),
+	pytest.param('sort_field=BALANCE&mosaic_id=1234567890ABCDEＦ', id='mosaic-nonascii-hex'),
+	pytest.param('sort_field=BALANCE&mosaic_id=1234567890ABCDEF%0A', id='mosaic-newline'),
+	pytest.param('sort_field=BALANCE&mosaic_id=１２３４５６７８９０ABCDEF', id='mosaic-fullwidth-digits'),
+])
+def test_accounts_rejects_invalid_values(query):
+	# Arrange:
+	facade = SymbolAccountFacade()
+	client = _create_symbol_test_client(facade)
+
+	# Act:
+	response = client.get('/api/symbol/accounts?' + query)
+
+	# Assert:
+	assert 400 == response.status_code
+	assert facade.accounts_query is None
+
+
+@pytest.mark.parametrize('query', [
+	pytest.param('limit=1&limit=1', id='limit'),
+	pytest.param('offset=0&offset=0', id='offset'),
+	pytest.param('sort_field=ID&sort_field=ID', id='sort-field'),
+	pytest.param('sort_order=DESC&sort_order=DESC', id='sort-order'),
+	pytest.param('sort_field=BALANCE&mosaic_id=1234567890ABCDEF&mosaic_id=1234567890ABCDEF', id='mosaic-id'),
+])
+def test_accounts_rejects_scalar_repeats(query):
+	# Arrange:
+	facade = SymbolAccountFacade()
+	client = _create_symbol_test_client(facade)
+
+	# Act:
+	response = client.get('/api/symbol/accounts?' + query)
+
+	# Assert:
+	assert 400 == response.status_code
+	assert facade.accounts_query is None
+
+
+@pytest.mark.parametrize('query', [
+	pytest.param('unknown=1', id='unknown'),
+	pytest.param('address=TDUMMY', id='address'),
+	pytest.param('importance=1', id='importance'),
+	pytest.param('is_harvesting_active=true', id='is-harvesting-active'),
+	pytest.param('orderBy=ID', id='order-by'),
+	pytest.param('isLatest=true', id='is-latest-camel'),
+	pytest.param('isRichList=true', id='is-rich-list-camel'),
+	pytest.param('is_latest=true', id='is-latest-snake'),
+	pytest.param('is_rich_list=true', id='is-rich-list-snake'),
+	pytest.param('pageNumber=1', id='page-number'),
+	pytest.param('pageSize=1', id='page-size'),
+	pytest.param('mosaicId=1234567890ABCDEF', id='mosaic-id-camel'),
+	pytest.param('is_harvesting=true', id='is-harvesting'),
+	pytest.param('is_eligible_for_harvesting=true', id='is-eligible-for-harvesting'),
+])
+def test_accounts_rejects_unknown_params(query):
+	# Arrange:
+	facade = SymbolAccountFacade()
+	client = _create_symbol_test_client(facade)
+
+	# Act:
+	response = client.get('/api/symbol/accounts?' + query)
+
+	# Assert:
+	assert 400 == response.status_code
+	assert facade.accounts_query is None
+
+
+@pytest.mark.parametrize('query,expected', [
+	pytest.param('limit=1&offset=0', AccountListQuery(AccountSortField.ID, None, 1, 0), id='minimum-limit-zero-offset'),
+	pytest.param('limit=%2B1&offset=1_0', AccountListQuery(AccountSortField.ID, None, 1, 10), id='signed-limit-underscored-offset'),
+	pytest.param(
+		'limit=100&offset=100000&sort_order=DESC', AccountListQuery(AccountSortField.ID, None, 100, 100000), id='maximum-limit-offset')
+])
+def test_accounts_accepts_page_limits(query, expected):
+	# Arrange:
+	facade = SymbolAccountFacade()
+	client = _create_symbol_test_client(facade)
+
+	# Act:
+	response = client.get('/api/symbol/accounts?' + query)
+
+	# Assert:
+	assert 200 == response.status_code
+	assert [{'address': 'TDUMMY'}] == response.json
+	assert expected == facade.accounts_query
 
 
 def test_account_public_key_hex():
