@@ -1,4 +1,3 @@
-import re
 from collections import namedtuple
 from enum import Enum
 
@@ -88,7 +87,6 @@ TransactionRecord = namedtuple(
 	'TransactionRecord',
 	['transaction_id', 'hash', 'is_embedded', 'aggregate_hash', 'embedded_index', 'height', 'transaction_type',
 		'signer_address', 'recipient_address', 'effective_fee', 'timestamp', 'message_type', 'message_payload', 'mosaics'])
-MOSAIC_ID_PATTERN = re.compile(r'[0-9A-Fa-f]{16}', re.ASCII)
 
 
 def _bytes_or_none(value):
@@ -334,7 +332,7 @@ class SymbolDatabase(DatabaseConnectionPool):
 			'''
 			SELECT alias_type, alias_mosaic_id, start_height, end_height
 			FROM symbol_namespaces
-			WHERE namespace_id = %s
+			WHERE namespace_id = %s AND alias_mosaic_id IS NOT NULL
 			''',
 			(transfer_mosaic_id.upper(),))
 		result = cursor.fetchone()
@@ -342,19 +340,6 @@ class SymbolDatabase(DatabaseConnectionPool):
 			raise SymbolMosaicAliasNotFound('Requested Mosaic alias is not currently linked')
 
 		resolved_mosaic_id, start_height, end_height = result[1:]
-		if start_height < 1:
-			raise SymbolDataUnavailable(
-				'Symbol transaction data is unavailable: stored Mosaic alias lifetime is corrupt')
-		if end_height is not None and end_height <= start_height:
-			raise SymbolDataUnavailable(
-				'Symbol transaction data is unavailable: stored Mosaic alias lifetime is corrupt')
-
-		if resolved_mosaic_id is None or not MOSAIC_ID_PATTERN.fullmatch(resolved_mosaic_id):
-			raise SymbolDataUnavailable(
-				'Symbol transaction data is unavailable: stored Mosaic alias target is corrupt')
-		if is_mosaic_alias(int(resolved_mosaic_id, 16)):
-			raise SymbolDataUnavailable(
-				'Symbol transaction data is unavailable: stored Mosaic alias target is corrupt')
 
 		latest_height = sync_state['last_synced_height']
 		if start_height > latest_height or (end_height is not None and latest_height >= end_height):

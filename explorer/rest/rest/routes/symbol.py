@@ -303,6 +303,7 @@ def _parse_transfer_mosaic_id(value):
 	parts = value.split('.')
 	if len(parts) > MAX_NAMESPACE_DEPTH:
 		raise ValueError('Invalid transferMosaicId')
+
 	if any(len(part) > MAX_NAMESPACE_NAME_SIZE for part in parts):
 		raise ValueError('Invalid transferMosaicId')
 
