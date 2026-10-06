@@ -704,7 +704,10 @@ def test_symbol_block_reads_db(symbol_database_config):
 	assert _expected_block_detail(2, is_finalized=True) == response.json
 
 
-def test_symbol_importance_reads_db(symbol_database_config):
+@pytest.mark.parametrize(
+	('total_voting_balance', 'expected_total_voting_balance'),
+	[(19000235663367, 19000235.663367), (0, 0.0)])
+def test_voting_balance_in_native_units(symbol_database_config, total_voting_balance, expected_total_voting_balance):
 	# Arrange:
 	with tempfile.TemporaryDirectory() as temp_directory:
 		db_config_path = _create_config_file(
@@ -712,10 +715,12 @@ def test_symbol_importance_reads_db(symbol_database_config):
 			database_config=symbol_database_config)
 		app_config_path = _create_app_config(temp_directory, db_config_path)
 
+		importance_block = create_symbol_importance_block(2)
+		importance_block['total_voting_balance'] = total_voting_balance
 		_seed_symbol_block_tables(
 			symbol_database_config,
 			create_symbol_sync_state(last_synced_height=2, finalized_height=2),
-			[create_symbol_importance_block(2)])
+			[importance_block])
 		with rest_settings_env(app_config_path):
 			# Act:
 			response = _create_symbol_app().test_client().get('/api/symbol/block/2')
@@ -726,9 +731,10 @@ def test_symbol_importance_reads_db(symbol_database_config):
 		**_expected_block_detail(2, is_finalized=True),
 		'votingEligibleAccountsCount': 4,
 		'harvestingEligibleAccountsCount': '17',
-		'totalVotingBalance': '19000235663367',
+		'totalVotingBalance': expected_total_voting_balance,
 		'previousImportanceBlockHash': '86' * 32
 	} == response.json
+	assert type(response.json['totalVotingBalance']) in (int, float)
 
 
 def test_setup_requires_symbol_db():

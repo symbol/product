@@ -93,10 +93,44 @@ class SymbolBlockViewTest(TestCase):
 			'transactionsHash': '08',
 			'votingEligibleAccountsCount': 4,
 			'harvestingEligibleAccountsCount': '17',
-			'totalVotingBalance': '19000235663367',
+			'totalVotingBalance': 19000235.663367,
 			'previousImportanceBlockHash': '0A',
 			'blockType': 'nemesis'
 		}, result)
+
+	def test_can_format_zero_total_voting_balance_as_zero_native_units(self):
+		# Arrange:
+		block_view = self._create_block_view()
+		block_view.total_voting_balance = 0
+
+		# Act:
+		result = block_view.to_detail_dict(self.NATIVE_MOSAIC_INFO)
+
+		# Assert:
+		self.assertEqual(0.0, result['totalVotingBalance'])
+
+	def test_can_format_none_total_voting_balance_as_none(self):
+		# Arrange:
+		block_view = self._create_block_view()
+		block_view.total_voting_balance = None
+
+		# Act:
+		result = block_view.to_detail_dict(self.NATIVE_MOSAIC_INFO)
+
+		# Assert:
+		self.assertIsNone(result['totalVotingBalance'])
+
+	def test_can_format_total_voting_balance_using_native_divisibility(self):
+		# Arrange:
+		block_view = self._create_block_view()
+		block_view.total_voting_balance = Decimal('123456')
+		native_mosaic_info = NativeMosaicInfo('72C0212E67A08BCE', 3)
+
+		# Act:
+		result = block_view.to_detail_dict(native_mosaic_info)
+
+		# Assert:
+		self.assertEqual(123.456, result['totalVotingBalance'])
 
 	def test_can_convert_empty_state_hash_sub_cache_roots(self):
 		# Arrange:

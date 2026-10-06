@@ -57,6 +57,8 @@ class SymbolBlockView:  # pylint: disable=too-many-instance-attributes
 	def to_detail_dict(self, native_mosaic_info):
 		"""Formats the block info as a block-detail dictionary."""
 
+		total_voting_balance = None if self.total_voting_balance is None else format_amount(
+			self.total_voting_balance, native_mosaic_info.divisibility)
 		return {
 			**self.to_dict(native_mosaic_info),
 			'signature': to_hex(self.signature),
@@ -71,7 +73,7 @@ class SymbolBlockView:  # pylint: disable=too-many-instance-attributes
 			'transactionsHash': to_hex(self.transactions_hash),
 			'votingEligibleAccountsCount': self.voting_eligible_accounts_count,
 			'harvestingEligibleAccountsCount': str_or_none(self.harvesting_eligible_accounts_count),
-			'totalVotingBalance': str_or_none(self.total_voting_balance),
+			'totalVotingBalance': total_voting_balance,
 			'previousImportanceBlockHash': to_hex_or_none(self.previous_importance_block_hash),
 			'blockType': self.block_type
 		}
