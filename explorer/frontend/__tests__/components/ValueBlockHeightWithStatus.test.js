@@ -1,4 +1,5 @@
 import '@testing-library/jest-dom';
+import { describeVariant } from '../test-utils/variants';
 import ValueBlockHeightWithStatus from '@/app/components/ValueBlockHeightWithStatus';
 import { render, screen } from '@testing-library/react';
 
@@ -8,9 +9,7 @@ const chainStatusSafe = { height: 2000 };
 // next/image rewrites the src to an optimized URL with the original path URL-encoded; decode before asserting.
 const getIconPath = image => decodeURIComponent(image.getAttribute('src'));
 
-const describeNem = process.env.NEXT_PUBLIC_EXPLORER_VARIANT === 'nem' ? describe : describe.skip;
-
-describeNem('ValueBlockHeightWithStatus', () => {
+describeVariant('nem')('ValueBlockHeightWithStatus', () => {
 	it('links the height to the block page', () => {
 		// Act:
 		render(<ValueBlockHeightWithStatus block={block} chainStatus={chainStatusSafe} />);

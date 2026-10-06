@@ -1,6 +1,7 @@
 import '@testing-library/jest-dom';
 import { blockInfoResult } from '../test-utils/blocks';
 import { transactionPageResult } from '../test-utils/transactions';
+import { itVariant } from '../test-utils/variants';
 import * as BlockService from '@/app/api/blocks';
 import * as TransactionService from '@/app/api/transactions';
 import { MAX_TRANSACTION_SQUARES } from '@/app/components/ValueTransactionSquares';
@@ -124,7 +125,7 @@ describe('BlockInfo', () => {
 			expect(screen.queryByText(expectedHiddenLabelText)).not.toBeInTheDocument();
 		};
 
-		it('renders safe label', async () => {
+		itVariant('nem')('renders safe label', async () => {
 			// Arrange:
 			const chainHeightOffset = 361;
 			const expectedShownLabelText = 'label_safe';
