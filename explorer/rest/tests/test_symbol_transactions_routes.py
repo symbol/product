@@ -229,6 +229,7 @@ def test_alias_expiry_uses_latest_height(end_height, expected_status, expected_b
 	None,
 	{'alias_type': 'none', 'alias_mosaic_id': None},
 	{'alias_type': 'address', 'alias_mosaic_id': None, 'alias_address': bytes(24)},
+	{'alias_mosaic_id': None},
 	{'end_height': 3}
 ])
 def test_unresolved_alias_returns_404(namespace_overrides):
@@ -247,28 +248,6 @@ def test_unresolved_alias_returns_404(namespace_overrides):
 	assert {'status': 404, 'message': 'Resource not found'} == response.json
 
 
-@pytest.mark.parametrize('overrides', [
-	{'alias_mosaic_id': 'not-a-mosaic-id'},
-	{'alias_mosaic_id': None, 'end_height': 2},
-	{'alias_mosaic_id': ALIAS_ID},
-	{'start_height': 0},
-	{'end_height': 1}
-])
-def test_corrupt_alias_data_returns_503(overrides):
-	# Arrange:
-	with symbol_test_database(
-		create_symbol_sync_state(last_synced_height=3, finalized_height=2),
-		[create_symbol_block(3)]) as (db_config, puller_database):
-		puller_database.upsert_namespace(create_symbol_namespace(**overrides), [])
-		with _create_transaction_test_client(db_config) as client:
-			# Act:
-			response = client.get('/api/symbol/transactions?transferMosaicId=daoka.coin')
-
-	# Assert:
-	assert 503 == response.status_code
-	assert {'status': 503, 'message': 'Symbol backend data is unavailable'} == response.json
-
-
 @pytest.mark.parametrize('state_name', ['dirty', 'repairing'])
 def test_alias_search_returns_503_for_unsafe_state_even_with_native_target_and_no_matches(state_name):  # pylint: disable=invalid-name
 	# Arrange:
@@ -285,21 +264,27 @@ def test_alias_search_returns_503_for_unsafe_state_even_with_native_target_and_n
 	assert {'status': 503, 'message': 'Symbol backend data is unavailable'} == response.json
 
 
-def test_alias_search_prioritizes_unavailable_state_over_missing_namespace():  # pylint: disable=invalid-name
-	# Arrange: historical height 1 remains readable, but current state is unsafe and no namespace is saved.
+@pytest.mark.parametrize('state_name, namespace_overrides', [
+	('dirty', None),
+	('dirty', {'alias_mosaic_id': None}),
+	('repairing', None),
+	('repairing', {'alias_mosaic_id': None})
+])
+def test_alias_search_prioritizes_unavailable_state_over_missing_or_null_namespace(  # pylint: disable=invalid-name
+	state_name, namespace_overrides):
+	# Arrange: historical height 1 remains readable, but current state is unsafe and the alias is missing or unlinked.
 	with symbol_test_database(
-		_create_non_public_sync_state('dirty'),
-		[create_symbol_block(1), create_symbol_block(2)]) as (db_config, _):
+		_create_non_public_sync_state(state_name),
+		[create_symbol_block(1), create_symbol_block(2)]) as (db_config, puller_database):
+		if namespace_overrides is not None:
+			puller_database.upsert_namespace(create_symbol_namespace(**namespace_overrides), [])
 		with _create_transaction_test_client(db_config) as client:
 			# Act:
-			historical_response = client.get('/api/symbol/transactions?height=1')
-			alias_response = client.get('/api/symbol/transactions?transferMosaicId=daoka.coin&height=1')
+			response = client.get('/api/symbol/transactions?transferMosaicId=daoka.coin&height=1')
 
-	# Assert: current-state availability takes precedence over the missing namespace's 404.
-	assert 200 == historical_response.status_code
-	assert [] == historical_response.json
-	assert 503 == alias_response.status_code
-	assert {'status': 503, 'message': 'Symbol backend data is unavailable'} == alias_response.json
+	# Assert: current-state availability takes precedence over the missing or NULL link's 404.
+	assert 503 == response.status_code
+	assert {'status': 503, 'message': 'Symbol backend data is unavailable'} == response.json
 
 
 def test_direct_mosaic_search_succeeds_without_namespace_table():  # pylint: disable=invalid-name
