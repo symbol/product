@@ -43,7 +43,7 @@ const COSIGNATORIES = [COSIGNATORY_ACCOUNT_1.address, COSIGNATORY_ACCOUNT_2.addr
 const MOCK_TRANSACTION = {
 	type: 'transfer',
 	recipientAddress: RECIPIENT_ACCOUNT.address,
-	mosaics: [],
+	tokens: [],
 	message: 'test message'
 };
 

@@ -53,13 +53,12 @@ export const useSenderInfo = ({
 
 	const senderInfoManager = useAsyncManager({
 		callback: async sender => {
-			const { mosaics, tokens, publicKey } = await walletController.networkApi.account.fetchAccountInfo(
+			const { tokens, publicKey } = await walletController.networkApi.account.fetchAccountInfo(
 				networkProperties,
 				sender
 			);
-			const tokenList = (tokens && tokens.length) ? tokens : (mosaics || []);
 
-			updateSenderInfo(tokenList, publicKey);
+			updateSenderInfo(tokens || [], publicKey);
 		},
 		onError: error => {
 			showError(error);
@@ -70,15 +69,13 @@ export const useSenderInfo = ({
 	// Fetch sender info when address changes
 	useEffect(() => {
 		onTokenIdChange(null);
-		const currentTokens = (currentAccountInfo?.tokens && currentAccountInfo.tokens.length)
-			? currentAccountInfo.tokens
-			: (currentAccountInfo?.mosaics || []);
+		const currentTokens = currentAccountInfo?.tokens || [];
 
 		if (currentAccount.address === senderAddress)
 			updateSenderInfo(currentTokens, currentAccount.publicKey);
 		else
 			senderInfoManager.call(senderAddress);
-	}, [currentAccount, currentAccountInfo?.mosaics, currentAccountInfo?.tokens, senderAddress]);
+	}, [currentAccount, currentAccountInfo?.tokens, senderAddress]);
 
 	return {
 		senderTokenList,

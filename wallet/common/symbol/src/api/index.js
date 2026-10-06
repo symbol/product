@@ -2,9 +2,9 @@ import { AccountService } from './AccountService';
 import { HarvestingService } from './HarvestingService';
 import { ListenerService } from './ListenerService';
 import { MarketService } from './MarketService';
-import { MosaicService } from './MosaicService';
 import { NamespaceService } from './NamespaceService';
 import { NetworkService } from './NetworkService';
+import { TokenService } from './TokenService';
 import { TransactionService } from './TransactionService';
 /**
  * @typedef {Object} Config
@@ -35,9 +35,9 @@ export class Api {
 	market;
 
 	/**
-     * @type {MosaicService}
+     * @type {TokenService}
      */
-	mosaic;
+	token;
 
 	/**
      * @type {NamespaceService}
@@ -69,7 +69,7 @@ export class Api {
 		this.harvesting = new HarvestingService(propagatedOptions);
 		this.listener = new ListenerService(propagatedOptions);
 		this.market = new MarketService(propagatedOptions);
-		this.mosaic = new MosaicService(propagatedOptions);
+		this.token = new TokenService(propagatedOptions);
 		this.namespace = new NamespaceService(propagatedOptions);
 		this.network = new NetworkService(propagatedOptions);
 		this.transaction = new TransactionService(propagatedOptions);

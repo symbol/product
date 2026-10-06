@@ -1,6 +1,5 @@
 import {
-	formatMosaicList,
-	getMosaicAmount,
+	getTokenAmount,
 	isMosaicRevokable,
 	isMosaicSupplyModifiable,
 	isRestrictableFlag,
@@ -8,17 +7,18 @@ import {
 	isSupplyMutableFlag,
 	isTransferableFlag,
 	mosaicIdFromNonce,
-	mosaicInfoFromDTO
+	tokenInfoFromDTO,
+	tokenListFromDTO
 } from '../../src/utils';
-import { mosaicInfosResponse } from '../__fixtures__/api/mosaic-infos-response';
+import { tokenInfosResponse } from '../__fixtures__/api/token-infos-response';
 import {
-	expiringSupplyImmutableMosaic,
-	expiringSupplyMutableMosaic,
-	mosaicCreatorAddress,
-	mosaicHolderAddress,
-	nativeMosaic,
-	revokableMosaic
-} from '../__fixtures__/local/mosaic';
+	expiringSupplyImmutableToken,
+	expiringSupplyMutableToken,
+	nativeToken,
+	revokableToken,
+	tokenCreatorAddress,
+	tokenHolderAddress
+} from '../__fixtures__/local/token';
 import { generateBitCombinations } from '../test-utils';
 
 const SUPPLY_MUTABLE_FLAG = 1;
@@ -29,158 +29,159 @@ const REVOKABLE_FLAG = 8;
 // Below the end height of the expiring mosaics, so they are active unless a case overrides it
 const CHAIN_HEIGHT = 1000;
 
-const findMosaicInfoDTO = mosaicId => mosaicInfosResponse.find(mosaicInfoDTO => mosaicInfoDTO.mosaic.id === mosaicId).mosaic;
+const findMosaicInfoDTO = mosaicId => tokenInfosResponse.find(mosaicInfoDTO => mosaicInfoDTO.mosaic.id === mosaicId).mosaic;
 
-describe('utils/mosaic', () => {
-	describe('getMosaicAmount', () => {
-		const runGetMosaicAmountTest = (mosaicId, expectedAmount) => {
+describe('utils/token', () => {
+	describe('getTokenAmount', () => {
+		const runGetTokenAmountTest = (tokenId, expectedAmount) => {
 			// Act:
-			const mosaicList = [
-				{ id: 'mosaic1', amount: '100' },
-				{ id: 'mosaic2', amount: '200' }
+			const tokenList = [
+				{ id: 'token1', amount: '100' },
+				{ id: 'token2', amount: '200' }
 			];
-			const result = getMosaicAmount(mosaicList, mosaicId);
+			const result = getTokenAmount(tokenList, tokenId);
 
 			// Assert:
 			expect(result).toBe(expectedAmount);
 		};
-		it('returns the mosaic amount by mosaic id', () => {
+		it('returns the token amount by token id', () => {
 			// Arrange:
-			const mosaicId = 'mosaic1';
+			const tokenId = 'token1';
 			const expectedAmount = '100';
 
 			// Act & Assert:
-			runGetMosaicAmountTest(mosaicId, expectedAmount);
+			runGetTokenAmountTest(tokenId, expectedAmount);
 		});
 
-		it('returns null if the mosaic is not found', () => {
+		it('returns null if the token is not found', () => {
 			// Arrange:
-			const mosaicId = 'mosaic3';
+			const tokenId = 'token3';
 			const expectedAmount = '0';
 
 			// Act & Assert:
-			runGetMosaicAmountTest(mosaicId, expectedAmount);
+			runGetTokenAmountTest(tokenId, expectedAmount);
 		});
 
-		const runGetMosaicAmountErrorTest = (mosaicList, mosaicId) => {
+		const runGetTokenAmountErrorTest = (tokenList, tokenId) => {
 			// Arrange:
-			const expectedErrorMessage = 'Failed to get mosaic amount. Missing required parameters.';
+			const expectedErrorMessage = 'Failed to get token amount. Missing required parameters.';
 
 			// Act & Assert:
-			expect(() => getMosaicAmount(mosaicList, mosaicId)).toThrow(expectedErrorMessage);
+			expect(() => getTokenAmount(tokenList, tokenId)).toThrow(expectedErrorMessage);
 		};
 
-		it('throws an error if the mosaic list is not provided', () => {
+		it('throws an error if the token list is not provided', () => {
 			// Arrange:
-			const mosaicId = 'mosaic1';
-			const mosaicList = null;
+			const tokenId = 'token1';
+			const tokenList = null;
 
 			// Act & Assert:
-			runGetMosaicAmountErrorTest(mosaicList, mosaicId);
+			runGetTokenAmountErrorTest(tokenList, tokenId);
 		});
 
-		it('throws an error if the mosaic id is not provided', () => {
+		it('throws an error if the token id is not provided', () => {
 			// Arrange:
-			const mosaicId = null;
-			const mosaicList = [
-				{ id: 'mosaic1', amount: '100' },
-				{ id: 'mosaic2', amount: '200' }
+			const tokenId = null;
+			const tokenList = [
+				{ id: 'token1', amount: '100' },
+				{ id: 'token2', amount: '200' }
 			];
 
 			// Act & Assert:
-			runGetMosaicAmountErrorTest(mosaicList, mosaicId);
+			runGetTokenAmountErrorTest(tokenList, tokenId);
 		});
 
-		it('throws an error if the mosaic id and mosaic list are not provided', () => {
+		it('throws an error if the token id and token list are not provided', () => {
 			// Arrange:
-			const mosaicId = null;
-			const mosaicList = null;
+			const tokenId = null;
+			const tokenList = null;
 
 			// Act & Assert:
-			runGetMosaicAmountErrorTest(mosaicList, mosaicId);
+			runGetTokenAmountErrorTest(tokenList, tokenId);
 		});
 	});
 
-	describe('formatMosaicList', () => {
-		it('returns the formatted mosaic list', () => {
+	describe('tokenListFromDTO', () => {
+		it('returns the formatted token list', () => {
 			// Arrange:
 			const rawMosaics = [
-				{ id: 'mosaic1', amount: '100' },
-				{ id: 'mosaic2', amount: '200' },
-				{ id: 'mosaic3', amount: '300' }
+				{ id: 'token1', amount: '100' },
+				{ id: 'token2', amount: '200' },
+				{ id: 'token3', amount: '300' }
 			];
-			const mosaicInfos = {
-				mosaic1: { 
-					id: 'mosaic1', 
-					names: ['namespace1', 'another-namespace1'], 
-					divisibility: 1 
+			const tokenInfos = {
+				token1: {
+					id: 'token1',
+					name: 'namespace1',
+					names: ['namespace1', 'another-namespace1'],
+					divisibility: 1
 				},
-				mosaic2: { 
-					id: 'mosaic2', 
-					names: ['namespace2'], 
-					divisibility: 3 
+				token2: {
+					id: 'token2',
+					name: null,
+					names: [],
+					divisibility: 3
 				}
 			};
-			const expectedMosaicList = [
-				{ 
-					id: 'mosaic1', 
-					name: 'namespace1', 
-					names: ['namespace1', 'another-namespace1'], 
-					amount: '10', 
-					divisibility: 1 
+			const expectedTokenList = [
+				{
+					id: 'token1',
+					name: 'namespace1',
+					names: ['namespace1', 'another-namespace1'],
+					amount: '10',
+					divisibility: 1
 				},
-				{ 
-					id: 'mosaic2', 
-					name: 'namespace2', 
-					names: ['namespace2'],
-					amount: '0.2', 
-					divisibility: 3 
+				{
+					id: 'token2',
+					name: null,
+					names: [],
+					amount: '0.2',
+					divisibility: 3
 				},
-				{ 
-					id: 'mosaic3', 
-					name: 'mosaic3', 
-					amount: null, 
-					absoluteAmount: '300' 
+				{
+					id: 'token3',
+					amount: null,
+					absoluteAmount: '300'
 				}
 			];
 
 			// Act:
-			const result = formatMosaicList(rawMosaics, mosaicInfos);
+			const result = tokenListFromDTO(rawMosaics, tokenInfos);
 
 			// Assert:
-			expect(result).toEqual(expectedMosaicList);
+			expect(result).toEqual(expectedTokenList);
 		});
 
-		const runMosaicListFromRawErrorTest = (rawMosaics, mosaicInfos) => {
+		const runTokenListFromDTOErrorTest = (rawMosaics, tokenInfos) => {
 			// Arrange:
-			const expectedErrorMessage = 'Failed to format mosaics. Missing required parameters.';
+			const expectedErrorMessage = 'Failed to format tokens. Missing required parameters.';
 
 			// Act & Assert:
-			expect(() => formatMosaicList(rawMosaics, mosaicInfos)).toThrow(expectedErrorMessage);
+			expect(() => tokenListFromDTO(rawMosaics, tokenInfos)).toThrow(expectedErrorMessage);
 		};
 
 		it('throws an error if the mosaic list is not provided', () => {
 			// Arrange:
 			const rawMosaics = null;
-			const mosaicInfos = {
-				mosaic1: { name: 'mosaic1', divisibility: 6 },
-				mosaic2: { name: 'mosaic2', divisibility: 6 }
+			const tokenInfos = {
+				token1: { name: 'token1', divisibility: 6 },
+				token2: { name: 'token2', divisibility: 6 }
 			};
 
 			// Act & Assert:
-			runMosaicListFromRawErrorTest(rawMosaics, mosaicInfos);
+			runTokenListFromDTOErrorTest(rawMosaics, tokenInfos);
 		});
 
-		it('throws an error if the mosaic infos are not provided', () => {
+		it('throws an error if the token infos are not provided', () => {
 			// Arrange:
 			const rawMosaics = [
-				{ id: 'mosaic1', amount: '100' },
-				{ id: 'mosaic2', amount: '200' }
+				{ id: 'token1', amount: '100' },
+				{ id: 'token2', amount: '200' }
 			];
-			const mosaicInfos = null;
+			const tokenInfos = null;
 
 			// Act & Assert:
-			runMosaicListFromRawErrorTest(rawMosaics, mosaicInfos);
+			runTokenListFromDTOErrorTest(rawMosaics, tokenInfos);
 		});
 	});
 
@@ -188,11 +189,11 @@ describe('utils/mosaic', () => {
 		const runIsMosaicRevokableTest = (description, config, expected) => {
 			it(description, () => {
 				// Arrange:
-				const currentAddress = config.currentAddress ?? mosaicCreatorAddress;
-				const sourceAddress = config.sourceAddress ?? mosaicHolderAddress;
+				const currentAddress = config.currentAddress ?? tokenCreatorAddress;
+				const sourceAddress = config.sourceAddress ?? tokenHolderAddress;
 
 				// Act:
-				const result = isMosaicRevokable(config.mosaic, CHAIN_HEIGHT, currentAddress, sourceAddress);
+				const result = isMosaicRevokable(config.token, CHAIN_HEIGHT, currentAddress, sourceAddress);
 
 				// Assert:
 				expect(result).toBe(expected.result);
@@ -202,42 +203,42 @@ describe('utils/mosaic', () => {
 		const isMosaicRevokableTests = [
 			{
 				description: 'returns true if the mosaic is revokable, created by the current address and active',
-				config: { mosaic: revokableMosaic },
+				config: { token: revokableToken },
 				expected: { result: true }
 			},
 			{
 				description: 'returns true if the mosaic has unlimited duration and the end height has passed',
-				config: { mosaic: { ...revokableMosaic, endHeight: CHAIN_HEIGHT - 1, isUnlimitedDuration: true } },
+				config: { token: { ...revokableToken, endHeight: CHAIN_HEIGHT - 1, isUnlimitedDuration: true } },
 				expected: { result: true }
 			},
 			{
 				description: 'returns true if the chain height is one block below the mosaic end height',
-				config: { mosaic: { ...revokableMosaic, endHeight: CHAIN_HEIGHT + 1 } },
+				config: { token: { ...revokableToken, endHeight: CHAIN_HEIGHT + 1 } },
 				expected: { result: true }
 			},
 			{
 				description: 'returns false if the chain height reached the mosaic end height',
-				config: { mosaic: { ...revokableMosaic, endHeight: CHAIN_HEIGHT } },
+				config: { token: { ...revokableToken, endHeight: CHAIN_HEIGHT } },
 				expected: { result: false }
 			},
 			{
 				description: 'returns false if the mosaic is expired',
-				config: { mosaic: { ...revokableMosaic, endHeight: CHAIN_HEIGHT - 1 } },
+				config: { token: { ...revokableToken, endHeight: CHAIN_HEIGHT - 1 } },
 				expected: { result: false }
 			},
 			{
 				description: 'returns false if the mosaic is not revokable',
-				config: { mosaic: expiringSupplyMutableMosaic },
+				config: { token: expiringSupplyMutableToken },
 				expected: { result: false }
 			},
 			{
 				description: 'returns false if the mosaic creator is not the current address',
-				config: { mosaic: revokableMosaic, currentAddress: mosaicHolderAddress },
+				config: { token: revokableToken, currentAddress: tokenHolderAddress },
 				expected: { result: false }
 			},
 			{
 				description: 'returns false if the source address is the current address',
-				config: { mosaic: revokableMosaic, sourceAddress: mosaicCreatorAddress },
+				config: { token: revokableToken, sourceAddress: tokenCreatorAddress },
 				expected: { result: false }
 			}
 		];
@@ -251,10 +252,10 @@ describe('utils/mosaic', () => {
 		const runIsMosaicSupplyModifiableTest = (description, config, expected) => {
 			it(description, () => {
 				// Arrange:
-				const currentAddress = config.currentAddress ?? mosaicCreatorAddress;
+				const currentAddress = config.currentAddress ?? tokenCreatorAddress;
 
 				// Act:
-				const result = isMosaicSupplyModifiable(config.mosaic, CHAIN_HEIGHT, currentAddress);
+				const result = isMosaicSupplyModifiable(config.token, CHAIN_HEIGHT, currentAddress);
 
 				// Assert:
 				expect(result).toBe(expected.result);
@@ -264,37 +265,37 @@ describe('utils/mosaic', () => {
 		const isMosaicSupplyModifiableTests = [
 			{
 				description: 'returns true if the supply is mutable, the mosaic is created by the current address and active',
-				config: { mosaic: expiringSupplyMutableMosaic },
+				config: { token: expiringSupplyMutableToken },
 				expected: { result: true }
 			},
 			{
 				description: 'returns true if the mosaic has unlimited duration and the end height has passed',
-				config: { mosaic: { ...expiringSupplyMutableMosaic, endHeight: CHAIN_HEIGHT - 1, isUnlimitedDuration: true } },
+				config: { token: { ...expiringSupplyMutableToken, endHeight: CHAIN_HEIGHT - 1, isUnlimitedDuration: true } },
 				expected: { result: true }
 			},
 			{
 				description: 'returns true if the chain height is one block below the mosaic end height',
-				config: { mosaic: { ...expiringSupplyMutableMosaic, endHeight: CHAIN_HEIGHT + 1 } },
+				config: { token: { ...expiringSupplyMutableToken, endHeight: CHAIN_HEIGHT + 1 } },
 				expected: { result: true }
 			},
 			{
 				description: 'returns false if the chain height reached the mosaic end height',
-				config: { mosaic: { ...expiringSupplyMutableMosaic, endHeight: CHAIN_HEIGHT } },
+				config: { token: { ...expiringSupplyMutableToken, endHeight: CHAIN_HEIGHT } },
 				expected: { result: false }
 			},
 			{
 				description: 'returns false if the mosaic is expired',
-				config: { mosaic: { ...expiringSupplyMutableMosaic, endHeight: CHAIN_HEIGHT - 1 } },
+				config: { token: { ...expiringSupplyMutableToken, endHeight: CHAIN_HEIGHT - 1 } },
 				expected: { result: false }
 			},
 			{
 				description: 'returns false if the supply is not mutable',
-				config: { mosaic: expiringSupplyImmutableMosaic },
+				config: { token: expiringSupplyImmutableToken },
 				expected: { result: false }
 			},
 			{
 				description: 'returns false if the mosaic creator is not the current address',
-				config: { mosaic: expiringSupplyMutableMosaic, currentAddress: mosaicHolderAddress },
+				config: { token: expiringSupplyMutableToken, currentAddress: tokenHolderAddress },
 				expected: { result: false }
 			}
 		];
@@ -410,17 +411,18 @@ describe('utils/mosaic', () => {
 		}));
 	});
 
-	describe('mosaicInfoFromDTO', () => {
-		it('formats a mosaic node DTO into mosaic info with empty names', () => {
+	describe('tokenInfoFromDTO', () => {
+		it('formats a mosaic node DTO into token info with empty names', () => {
 			// Arrange:
-			const mosaicDTO = findMosaicInfoDTO(nativeMosaic.id);
+			const mosaicDTO = findMosaicInfoDTO(nativeToken.id);
 			const expectedResult = {
-				...nativeMosaic,
+				...nativeToken,
+				name: null,
 				names: []
 			};
 
 			// Act:
-			const result = mosaicInfoFromDTO(mosaicDTO);
+			const result = tokenInfoFromDTO(mosaicDTO);
 
 			// Assert:
 			expect(result).toStrictEqual(expectedResult);

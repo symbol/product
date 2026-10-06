@@ -1,4 +1,4 @@
-import { mosaicIdToRaw } from './mosaic';
+import { tokenIdToRaw } from './token';
 import { transactionToNem } from './transaction-to-nem';
 import { NETWORK_CURRENCY_SUPPLY, TransactionType } from '../constants';
 import { calculateTransactionFee as calculateNemTransactionFee } from 'symbol-sdk/nem';
@@ -18,7 +18,7 @@ export const createTransactionFee = (networkProperties, amount) => {
 		token: {
 			amount,
 			divisibility: networkProperties.networkCurrency.divisibility,
-			id: networkProperties.networkCurrency.mosaicId,
+			id: networkProperties.networkCurrency.id,
 			name: networkProperties.networkCurrency.name
 		}
 	};
@@ -44,40 +44,40 @@ export const createTransactionFeeTiers = (networkProperties, amount) => {
 /**
  * Derives the fully-qualified mosaic key (`namespace:name`) the symbol-sdk fee calculator uses to
  * look up mosaic information, matching how transactionToNem encodes the mosaic id.
- * @param {string} id - The mosaic id ('namespace.name').
+ * @param {string} id - The token id ('namespace.name').
  * @returns {string} The lookup key ('namespace:name').
  * @private
  */
-const mosaicIdToLookupKey = id => {
-	const { namespaceId, name } = mosaicIdToRaw(id);
+const tokenIdToLookupKey = id => {
+	const { namespaceId, name } = tokenIdToRaw(id);
 
 	return `${namespaceId}:${name}`;
 };
 
 /**
- * Builds the mosaic information lookup the symbol-sdk fee calculator needs to price a mosaic transfer.
- * Seeds the native currency (which has no on-chain mosaic definition) from its protocol supply. A mosaic
+ * Builds the token information lookup the symbol-sdk fee calculator needs to price a token transfer.
+ * Seeds the native currency (which has no on-chain mosaic definition) from its protocol supply. A token
  * whose supply is unknown is left out.
  * @param {Transaction} transaction - The transaction being priced.
- * @param {object} networkCurrency - The network currency descriptor (mosaicId, divisibility).
- * @returns {function(object): {supply: bigint, divisibility: number}} The mosaic information lookup.
+ * @param {object} networkCurrency - The network currency descriptor (id, divisibility).
+ * @returns {function(object): {supply: bigint, divisibility: number}} The token information lookup.
  * @private
  */
-const createMosaicInformationLookup = (transaction, networkCurrency) => {
+const createTokenInformationLookup = (transaction, networkCurrency) => {
 	const lookup = {
-		[mosaicIdToLookupKey(networkCurrency.mosaicId)]: { 
+		[tokenIdToLookupKey(networkCurrency.id)]: { 
 			supply: NETWORK_CURRENCY_SUPPLY, 
 			divisibility: networkCurrency.divisibility 
 		}
 	};
 
-	(transaction.mosaics || []).forEach(mosaic => {
-		if (mosaic.supply === undefined)
+	(transaction.tokens || []).forEach(token => {
+		if (token.supply === undefined)
 			return;
 
-		lookup[mosaicIdToLookupKey(mosaic.id)] = {
-			supply: BigInt(mosaic.supply),
-			divisibility: mosaic.divisibility
+		lookup[tokenIdToLookupKey(token.id)] = {
+			supply: BigInt(token.supply),
+			divisibility: token.divisibility
 		};
 	});
 
@@ -95,9 +95,9 @@ const createMosaicInformationLookup = (transaction, networkCurrency) => {
  */
 const calculateFeeAbsolute = (transaction, networkProperties) => {
 	const nemTransaction = transactionToNem(transaction, { networkProperties });
-	const mosaicInformationLookup = createMosaicInformationLookup(transaction, networkProperties.networkCurrency);
+	const tokenInformationLookup = createTokenInformationLookup(transaction, networkProperties.networkCurrency);
 
-	return calculateNemTransactionFee(nemTransaction, mosaicInformationLookup);
+	return calculateNemTransactionFee(nemTransaction, tokenInformationLookup);
 };
 
 /**

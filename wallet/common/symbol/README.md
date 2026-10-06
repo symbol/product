@@ -10,7 +10,7 @@ Protocol-specific layer for Symbol (XYM) used by Wallet Common Core. It provides
 
 ```
 src/
-├── api/            # Network service clients (Account, Namespace, Mosaic, Transaction, Harvesting, etc.)
+├── api/            # Network service clients (Account, Namespace, Token, Transaction, Harvesting, etc.)
 ├── constants/      # Symbol enums and constants
 ├── modules/        # Feature modules (HarvestingModule, TransferModule, ...)
 ├── sdk/            # Thin SDK facade (signing, cosigning, encrypt/decrypt, key utilities)

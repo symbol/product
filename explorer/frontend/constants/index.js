@@ -92,3 +92,5 @@ export const BACKEND_HEALTH_STATUS = {
 	UNAVAILABLE: 'unavailable',
 	ERROR: 'error'
 };
+
+export const DATA_REFRESH_INTERVAL = 60000;

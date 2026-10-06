@@ -1,7 +1,7 @@
 import { transactionPageResponse } from '../__fixtures__/api/transaction-page-response';
-import { mosaicInfos } from '../__fixtures__/local/mosaic';
 import { namespaceNames } from '../__fixtures__/local/namespace';
 import { networkProperties as networkPropertiesFixture } from '../__fixtures__/local/network';
+import { tokenInfos } from '../__fixtures__/local/token';
 import { currentAccount as currentAccountFixture } from '../__fixtures__/local/wallet';
 import { runApiTest } from '../test-utils';
 import { expect, jest } from '@jest/globals';
@@ -15,12 +15,12 @@ jest.unstable_mockModule('../../src/utils', () => {
 		isAggregateTransactionDTO: jest.fn(dto => Boolean(dto.isAggregate)),
 		getUnresolvedIdsFromTransactionDTOs: jest.fn(() => ({
 			addresses: ['ADDR_ALIAS_1'],
-			mosaicIds: ['MOCK_MOS_ID'],
+			tokenIds: ['MOCK_MOS_ID'],
 			namespaceIds: ['NAMESPACE_ID']
 		})),
 		getUnresolvedIdsFromSymbolTransactions: jest.fn(() => ({
 			addresses: ['ADDR_ALIAS_2'],
-			mosaicIds: ['MOCK_MOS_ID_2'],
+			tokenIds: ['MOCK_MOS_ID_2'],
 			namespaceIds: ['NAMESPACE_ID_2']
 		})),
 		promiseAllSettled: jest.fn(promises => Promise.allSettled(promises)),
@@ -55,8 +55,8 @@ describe('TransactionService', () => {
 			account: {
 				fetchAccountInfo: jest.fn()
 			},
-			mosaic: {
-				fetchMosaicInfos: jest.fn()
+			token: {
+				fetchTokenInfos: jest.fn()
 			},
 			namespace: {
 				fetchNamespaceNames: jest.fn(),
@@ -359,7 +359,7 @@ describe('TransactionService', () => {
 		const runResolveTransactionDTOsTest = async config => {
 			// Arrange:
 			const { transactionDTOs } = config;
-			mockApi.mosaic.fetchMosaicInfos.mockResolvedValue(mosaicInfos);
+			mockApi.token.fetchTokenInfos.mockResolvedValue(tokenInfos);
 			mockApi.namespace.fetchNamespaceNames.mockResolvedValue(namespaceNames);
 			mockApi.namespace.resolveAddresses.mockResolvedValue({});
 
@@ -384,7 +384,7 @@ describe('TransactionService', () => {
 		const runResolveTransactionFromPayloadTest = async (config, expectedResult) => {
 			// Arrange:
 			const { payload, fillSignerPublickey } = config;
-			mockApi.mosaic.fetchMosaicInfos.mockResolvedValue(mosaicInfos);
+			mockApi.token.fetchTokenInfos.mockResolvedValue(tokenInfos);
 			mockApi.namespace.fetchNamespaceNames.mockResolvedValue(namespaceNames);
 			mockApi.namespace.resolveAddresses.mockResolvedValue({});
 

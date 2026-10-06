@@ -57,8 +57,8 @@ export const ModifyMosaic = props => {
 		load: loadMosaic,
 		reset: resetMosaic
 	} = useMosaicInfo({ walletController, mosaicId });
-	const mosaicToken = mosaic ? { id: mosaic.id, name: mosaic.names?.[0] } : { id: mosaicId };
-	const { nameText: mosaicNameText, imageId: mosaicImageId } = createTokenDisplayData(mosaicToken, chainName, networkIdentifier);
+	const { nameText: mosaicNameText, imageId: mosaicImageId } =
+		createTokenDisplayData(mosaic ?? { id: mosaicId }, chainName, networkIdentifier);
 
 	// Form state
 	const {
@@ -150,7 +150,7 @@ export const ModifyMosaic = props => {
 					</Stack>
 					{!!mosaic && (
 						<TokenInfoCard name={mosaicNameText} imageId={mosaicImageId}>
-							<Field title={$t('fieldTitle_mosaicId')}>
+							<Field title={$t('fieldTitle_tokenId')}>
 								<StyledText>{mosaic.id}</StyledText>
 							</Field>
 							<Field title={$t('fieldTitle_divisibility')}>

@@ -10,7 +10,7 @@ describe('api/index.js Api aggregator', () => {
 			marketCurrencies: ['USD'],
 			nodewatchURL: { testnet: 'https://nodewatch.example' }
 		};
-		const expectedServices = ['account', 'listener', 'market', 'mosaic', 'namespace', 'network', 'transaction'];
+		const expectedServices = ['account', 'listener', 'market', 'token', 'namespace', 'network', 'transaction'];
 
 		// Act:
 		const api = new Api({ makeRequest, config });

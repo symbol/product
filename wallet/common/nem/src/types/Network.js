@@ -1,7 +1,7 @@
 /**
  * @typedef {object} NetworkCurrency
- * @property {string} name - Mosaic name (e.g. 'nem.xem').
- * @property {string} mosaicId - Mosaic ID string (e.g. 'nem.xem').
+ * @property {string} name - Token name (e.g. 'XEM').
+ * @property {string} id - Token ID string (e.g. 'nem.xem').
  * @property {number} divisibility
  */
 
@@ -37,8 +37,8 @@
  * @typedef {object} TransactionFeeToken
  * @property {string} amount - The fee amount as a relative string.
  * @property {number} divisibility - The currency divisibility.
- * @property {string} id - The mosaic id.
- * @property {string} name - The mosaic name.
+ * @property {string} id - The token id.
+ * @property {string} name - The token name.
  */
 
 /**

@@ -10,7 +10,7 @@ Protocol-specific layer for NEM (XEM) used by Wallet Common Core. It provides:
 
 ```
 src/
-├── api/        # Network service clients (Account, Listener, Market, Mosaic, Namespace, Network, Transaction)
+├── api/        # Network service clients (Account, Listener, Market, Namespace, Network, Token, Transaction)
 ├── constants/  # NEM enums and constants
 ├── modules/    # Feature modules (currently TransferModule)
 ├── sdk/        # Thin SDK facade (account, signing, cosigning, message helpers)

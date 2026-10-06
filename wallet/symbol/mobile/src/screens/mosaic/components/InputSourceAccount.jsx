@@ -3,7 +3,7 @@ import { validateNotSenderAddress } from '@/app/screens/mosaic/utils';
 import { validateAddress } from '@/app/utils';
 import React from 'react';
 
-/** @typedef {import('wallet-common-symbol/src/types/Mosaic').MosaicOwner} MosaicOwner */
+/** @typedef {import('wallet-common-symbol/src/types/Token').TokenOwner} TokenOwner */
 /** @typedef {import('@/app/types/Network').ChainName} ChainName */
 
 /**
@@ -12,7 +12,7 @@ import React from 'react';
  * @param {object} props - Component props.
  * @param {string} props.label - Field label; also the holder picker title.
  * @param {string} props.value - Current holder address.
- * @param {MosaicOwner[]} props.owners - The mosaic holders offered in the picker.
+ * @param {TokenOwner[]} props.owners - The mosaic holders offered in the picker.
  * @param {string} props.senderAddress - The address the revocation is sent from, rejected as a holder.
  * @param {ChainName} props.chainName - The chain the holders belong to.
  * @param {boolean} [props.isDisabled] - Whether the input is disabled, hiding validation errors.

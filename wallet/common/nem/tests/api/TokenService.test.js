@@ -1,7 +1,7 @@
 import { Api } from '../../src/api';
-import { mosaicDefinitionDTO, ownedMosaicDTOs, subNamespaceMosaicDefinitionDTO } from '../__fixtures__/api/mosaic-dtos';
-import { accountMosaics, mosaicInfos } from '../__fixtures__/local/mosaic';
+import { mosaicDefinitionDTO, ownedMosaicDTOs, subNamespaceMosaicDefinitionDTO } from '../__fixtures__/api/token-dtos';
 import { networkProperties } from '../__fixtures__/local/network';
+import { accountTokens, tokenInfos } from '../__fixtures__/local/token';
 import { walletStorageAccounts } from '../__fixtures__/local/wallet';
 import { createMakeRequestMock, runApiServiceTest } from '../test-utils';
 import { NotFoundError } from 'wallet-common-core';
@@ -10,49 +10,49 @@ import { NotFoundError } from 'wallet-common-core';
 
 const NODE_URL = networkProperties.nodeUrl;
 const ADDRESS = walletStorageAccounts.testnet[0].address;
-const MOSAIC_ID = 'test.token';
-const SUB_NAMESPACE_MOSAIC_ID = 'makoto.metals.silver';
+const TOKEN_ID = 'test.token';
+const SUB_NAMESPACE_TOKEN_ID = 'makoto.metals.silver';
 
 // A mosaic definition page response groups its mosaics under a `mosaic` wrapper.
 const definitionPageUrl = namespaceId => `${NODE_URL}/namespace/mosaic/definition/page?namespace=${namespaceId}&pageSize=100`;
 const testTokenDefinitionPage = { data: [{ mosaic: mosaicDefinitionDTO }] };
 const silverDefinitionPage = { data: [{ mosaic: subNamespaceMosaicDefinitionDTO }] };
 
-describe('api/MosaicService', () => {
-	describe('fetchMosaicInfos', () => {
-		const runFetchMosaicInfosTest = (description, config, expected) => {
+describe('api/TokenService', () => {
+	describe('fetchTokenInfos', () => {
+		const runFetchTokenInfosTest = (description, config, expected) => {
 			it(description, async () => {
 				// Act & Assert:
 				await runApiServiceTest({
 					requestMap: config.requestMap,
-					call: api => api.mosaic.fetchMosaicInfos(networkProperties, config.mosaicIds),
-					expected: expected.mosaicInfos
+					call: api => api.token.fetchTokenInfos(networkProperties, config.tokenIds),
+					expected: expected.tokenInfos
 				});
 			});
 		};
 
-		const fetchMosaicInfosTests = [
+		const fetchTokenInfosTests = [
 			{
-				description: 'resolves mosaic infos by querying the definition page per namespace',
-				config: { mosaicIds: [MOSAIC_ID], requestMap: { [definitionPageUrl('test')]: testTokenDefinitionPage } },
-				expected: { mosaicInfos: { [MOSAIC_ID]: mosaicInfos[MOSAIC_ID] } }
+				description: 'resolves token infos by querying the definition page per namespace',
+				config: { tokenIds: [TOKEN_ID], requestMap: { [definitionPageUrl('test')]: testTokenDefinitionPage } },
+				expected: { tokenInfos: { [TOKEN_ID]: tokenInfos[TOKEN_ID] } }
 			},
 			{
-				description: 'resolves a sub-namespace mosaic by querying its full dotted namespace',
+				description: 'resolves a sub-namespace token by querying its full dotted namespace',
 				config: {
-					mosaicIds: [SUB_NAMESPACE_MOSAIC_ID],
+					tokenIds: [SUB_NAMESPACE_TOKEN_ID],
 					requestMap: { [definitionPageUrl('makoto.metals')]: silverDefinitionPage }
 				},
-				expected: { mosaicInfos: { [SUB_NAMESPACE_MOSAIC_ID]: mosaicInfos[SUB_NAMESPACE_MOSAIC_ID] } }
+				expected: { tokenInfos: { [SUB_NAMESPACE_TOKEN_ID]: tokenInfos[SUB_NAMESPACE_TOKEN_ID] } }
 			},
 			{
-				description: 'omits mosaics whose definition page is not found',
-				config: { mosaicIds: [MOSAIC_ID], requestMap: { [definitionPageUrl('test')]: new NotFoundError('Namespace not found') } },
-				expected: { mosaicInfos: {} }
+				description: 'omits tokens whose definition page is not found',
+				config: { tokenIds: [TOKEN_ID], requestMap: { [definitionPageUrl('test')]: new NotFoundError('Namespace not found') } },
+				expected: { tokenInfos: {} }
 			}
 		];
 
-		fetchMosaicInfosTests.forEach(test => runFetchMosaicInfosTest(test.description, test.config, test.expected));
+		fetchTokenInfosTests.forEach(test => runFetchTokenInfosTest(test.description, test.config, test.expected));
 
 		it('rethrows errors that are not a not-found', async () => {
 			// Arrange:
@@ -60,26 +60,26 @@ describe('api/MosaicService', () => {
 			const api = new Api({ makeRequest });
 
 			// Act & Assert:
-			await expect(api.mosaic.fetchMosaicInfos(networkProperties, [MOSAIC_ID])).rejects.toThrow('Node unreachable');
+			await expect(api.token.fetchTokenInfos(networkProperties, [TOKEN_ID])).rejects.toThrow('Node unreachable');
 		});
 	});
 
-	describe('fetchMosaicInfo', () => {
-		it('resolves a single mosaic info by id', async () => {
+	describe('fetchTokenInfo', () => {
+		it('resolves a single token info by id', async () => {
 			// Arrange:
 			const requestMap = { [definitionPageUrl('test')]: testTokenDefinitionPage };
 
 			// Act & Assert:
 			await runApiServiceTest({
 				requestMap,
-				call: api => api.mosaic.fetchMosaicInfo(networkProperties, MOSAIC_ID),
-				expected: mosaicInfos[MOSAIC_ID]
+				call: api => api.token.fetchTokenInfo(networkProperties, TOKEN_ID),
+				expected: tokenInfos[TOKEN_ID]
 			});
 		});
 	});
 
-	describe('fetchAccountMosaics', () => {
-		it('resolves owned mosaics against their definitions and seeds the native currency', async () => {
+	describe('fetchAccountTokens', () => {
+		it('resolves owned tokens against their definitions and seeds the native currency', async () => {
 			// Arrange: nem.xem has no on-chain definition (seeded from the network currency) and unknown.mosaic
 			// has no definition at all, so their definition pages are empty.
 			const requestMap = {
@@ -92,8 +92,8 @@ describe('api/MosaicService', () => {
 			// Act & Assert:
 			await runApiServiceTest({
 				requestMap,
-				call: api => api.mosaic.fetchAccountMosaics(networkProperties, ADDRESS),
-				expected: accountMosaics
+				call: api => api.token.fetchAccountTokens(networkProperties, ADDRESS),
+				expected: accountTokens
 			});
 		});
 	});

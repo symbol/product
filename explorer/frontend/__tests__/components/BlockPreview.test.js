@@ -1,4 +1,5 @@
 import '@testing-library/jest-dom';
+import { itVariant } from '../test-utils/variants';
 import BlockPreview from '@/app/components/BlockPreview';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import TimeAgo from 'javascript-time-ago';
@@ -79,7 +80,7 @@ describe('components/BlockPreview', () => {
 	});
 
 	describe('expanded', () => {
-		it('renders the block details', async () => {
+		itVariant('nem')('renders the block details', async () => {
 			// Act:
 			await renderPreview({ isSelected: true });
 

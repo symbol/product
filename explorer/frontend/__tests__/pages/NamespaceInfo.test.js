@@ -1,16 +1,12 @@
 import '@testing-library/jest-dom';
 import { namespaceInfoResult } from '../test-utils/namespaces';
+import { runGetServerSidePropsTests, runRenderScenarioTests } from '../test-utils/page';
 import * as BlockService from '@/app/api/blocks';
 import * as NamespaceService from '@/app/api/namespaces';
 import NamespaceInfo, { getServerSideProps } from '@/app/pages/namespaces/[id]';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render } from '@testing-library/react';
 
-jest.mock('@/app/api/blocks', () => {
-	return {
-		__esModule: true,
-		...jest.requireActual('@/app/api/blocks')
-	};
-});
+// Mocks
 
 jest.mock('@/app/api/namespaces', () => {
 	return {
@@ -19,122 +15,200 @@ jest.mock('@/app/api/namespaces', () => {
 	};
 });
 
+jest.mock('@/app/api/blocks', () => {
+	return {
+		__esModule: true,
+		...jest.requireActual('@/app/api/blocks')
+	};
+});
+
+beforeEach(() => {
+	jest.spyOn(BlockService, 'fetchChainHight').mockResolvedValue(activeChainHeight);
+});
+
+// Constants
+
+const SCREEN_TEXT = {
+	sectionNamespace: 'section_namespace',
+	sectionMosaics: 'section_mosaics',
+	fieldName: 'field_name',
+	fieldCreated: 'field_created',
+	fieldTimestampUTC: 'field_timestampUTC',
+	fieldSubNamespaces: 'field_subNamespaces',
+	fieldCreator: 'field_creator',
+	fieldExpiration: 'field_expiration',
+	fieldRegistrationHeight: 'field_registrationHeight',
+	fieldExpirationHeight: 'field_expirationHeight',
+	valueExpiration: 'value_expiration',
+	valueExpired: 'value_expired',
+	valueNeverExpired: 'value_neverExpired',
+	tableFieldName: 'table_field_name',
+	tableFieldSupply: 'table_field_supply',
+	tableFieldRegistrationHeight: 'table_field_registrationHeight',
+	messageEmptyTable: 'message_emptyTable'
+};
+
+const remainingBlockCount = 500;
+const activeChainHeight = namespaceInfoResult.expirationHeight - remainingBlockCount;
+const expiredChainHeight = namespaceInfoResult.expirationHeight + remainingBlockCount;
+const expirationCountdownText = `${SCREEN_TEXT.valueExpiration}::value:${remainingBlockCount}`;
+const createdTimestampText = `${SCREEN_TEXT.fieldTimestampUTC}::title:${SCREEN_TEXT.fieldCreated}`;
+const subNamespacesText = namespaceInfoResult.subNamespaces.join(', ');
+const namespaceMosaic = namespaceInfoResult.namespaceMosaics[0].data[0];
+
+// Tests
+
 describe('NamespaceInfo', () => {
 	describe('getServerSideProps', () => {
-		const runTest = async (namespaceInfo, expectedResult) => {
-			// Arrange:
-			const locale = 'en';
-			const params = { id: namespaceInfoResult.id };
-			const fetchNamespaceInfo = jest.spyOn(NamespaceService, 'fetchNamespaceInfo');
-			fetchNamespaceInfo.mockResolvedValue(namespaceInfo);
+		const requests = { namespaceInfo: [NamespaceService, 'fetchNamespaceInfo'] };
 
-			// Act:
-			const result = await getServerSideProps({ locale, params });
-
-			// Assert:
-			expect(fetchNamespaceInfo).toHaveBeenCalledWith(params.id);
-			expect(result).toEqual(expectedResult);
-		};
-
-		it('returns namespace info', async () => {
-			// Arrange:
-			const namespaceInfo = namespaceInfoResult;
-			const expectedResult = {
-				props: {
-					namespaceInfo
+		const getServerSidePropsCases = [
+			{
+				description: 'returns the namespace info',
+				config: {
+					responses: { namespaceInfo: namespaceInfoResult }
+				},
+				expected: {
+					requestArguments: { namespaceInfo: [namespaceInfoResult.id] },
+					result: {
+						props: { namespaceInfo: namespaceInfoResult }
+					}
 				}
-			};
+			},
+			{
+				description: 'returns not found when the namespace does not exist',
+				config: {
+					responses: { namespaceInfo: null }
+				},
+				expected: {
+					requestArguments: { namespaceInfo: [namespaceInfoResult.id] },
+					result: { notFound: true }
+				}
+			}
+		];
 
-			// Act + Assert:
-			await runTest(namespaceInfo, expectedResult);
-		});
-
-		it('returns not found', async () => {
-			// Arrange:
-			const namespaceInfo = null;
-			const expectedResult = {
-				notFound: true
-			};
-
-			// Act + Assert:
-			await runTest(namespaceInfo, expectedResult);
-		});
-	});
-
-	describe('namespace information', () => {
-		it('renders page with the information about the namespace', () => {
-			// Arrange:
-			const namespaceInfo = namespaceInfoResult;
-			const pageSectionText = 'section_namespace';
-			const namespaceNameText = namespaceInfo.name;
-			const mosaicNameText = namespaceInfo.namespaceMosaics[0].data[0].name;
-			const creatorText = namespaceInfo.creator;
-			const spy = jest.spyOn(BlockService, 'fetchChainHight');
-			spy.mockImplementation(() => 10000);
-
-			// Act:
-			render(<NamespaceInfo namespaceInfo={namespaceInfo} />);
-
-			// Assert:
-			const [nameInMainSection, nameInMosaicsSection] = screen.getAllByText(namespaceNameText);
-			expect(screen.getByText(pageSectionText)).toBeInTheDocument();
-			expect(screen.getByText(mosaicNameText)).toBeInTheDocument();
-			expect(nameInMainSection).toBeInTheDocument();
-			expect(nameInMosaicsSection).toBeInTheDocument();
-			expect(screen.getByText(creatorText)).toBeInTheDocument();
+		runGetServerSidePropsTests({
+			getServerSideProps,
+			params: { id: namespaceInfoResult.id },
+			requests,
+			cases: getServerSidePropsCases
 		});
 	});
 
-	describe('namespace expiration status', () => {
-		const runStatusTest = async (chainHeight, expirationHeight, isUnlimitedDuration, expectedText) => {
-			// Arrange:
-			const namespaceInfoExpired = {
-				...namespaceInfoResult,
-				expirationHeight,
-				isUnlimitedDuration
-			};
-			const spy = jest.spyOn(BlockService, 'fetchChainHight');
-			spy.mockImplementation(() => chainHeight);
-
-			// Act:
-			render(<NamespaceInfo namespaceInfo={namespaceInfoExpired} />);
-
-			// Assert:
-			await waitFor(() => expect(screen.getByText(expectedText)).toBeInTheDocument());
+	describe('render', () => {
+		const renderPage = config => {
+			BlockService.fetchChainHight.mockResolvedValue(config.chainHeight ?? activeChainHeight);
+			render(<NamespaceInfo namespaceInfo={{ ...namespaceInfoResult, ...config.namespaceInfo }} />);
 		};
 
-		it('renders status for active namespace', async () => {
-			// Arrange:
-			const chainHeight = 10000;
-			const expirationHeight = 10001;
-			const isUnlimitedDuration = false;
-			const expectedText = 'value_expiration';
+		describe('section: namespace', () => {
+			const namespaceCases = [
+				{
+					description: 'renders the name and creation info',
+					config: {},
+					expected: {
+						texts: [SCREEN_TEXT.sectionNamespace, SCREEN_TEXT.fieldName],
+						// The name and the created title also appear in the mosaics section (group header and table header).
+						textOccurrences: {
+							[namespaceInfoResult.name]: 2,
+							[createdTimestampText]: 2
+						}
+					}
+				}
+			];
 
-			// Act + Assert:
-			await runStatusTest(chainHeight, expirationHeight, isUnlimitedDuration, expectedText);
+			runRenderScenarioTests({ renderPage, cases: namespaceCases });
 		});
 
-		it('renders status for expired namespace', async () => {
-			// Arrange:
-			const chainHeight = 10000;
-			const expirationHeight = 9999;
-			const isUnlimitedDuration = false;
-			const expectedText = 'value_expired';
+		describe('section: details', () => {
+			const detailsCases = [
+				{
+					description: 'renders the sub namespaces and the creator',
+					config: {},
+					expected: {
+						texts: [
+							SCREEN_TEXT.fieldSubNamespaces,
+							subNamespacesText,
+							SCREEN_TEXT.fieldCreator,
+							namespaceInfoResult.creator
+						]
+					}
+				},
+				{
+					description: 'renders the expiration countdown and the progress bar for an active namespace',
+					config: {},
+					expected: {
+						texts: [
+							SCREEN_TEXT.fieldExpiration,
+							expirationCountdownText,
+							SCREEN_TEXT.fieldRegistrationHeight,
+							SCREEN_TEXT.fieldExpirationHeight,
+							namespaceInfoResult.registrationHeight,
+							namespaceInfoResult.expirationHeight
+						],
+						hiddenTexts: [SCREEN_TEXT.valueExpired, SCREEN_TEXT.valueNeverExpired]
+					}
+				},
+				{
+					description: 'renders the expired state for an expired namespace',
+					config: { chainHeight: expiredChainHeight },
+					expected: {
+						texts: [
+							SCREEN_TEXT.valueExpired,
+							SCREEN_TEXT.fieldRegistrationHeight,
+							SCREEN_TEXT.fieldExpirationHeight
+						],
+						hiddenTexts: [new RegExp(SCREEN_TEXT.valueExpiration), SCREEN_TEXT.valueNeverExpired]
+					}
+				},
+				{
+					description: 'renders never expired without the progress bar for an unlimited duration namespace',
+					config: { namespaceInfo: { isUnlimitedDuration: true } },
+					expected: {
+						texts: [SCREEN_TEXT.valueNeverExpired],
+						hiddenTexts: [
+							SCREEN_TEXT.fieldRegistrationHeight,
+							SCREEN_TEXT.fieldExpirationHeight,
+							SCREEN_TEXT.valueExpired,
+							new RegExp(SCREEN_TEXT.valueExpiration)
+						]
+					}
+				}
+			];
 
-			// Act + Assert:
-			await runStatusTest(chainHeight, expirationHeight, isUnlimitedDuration, expectedText);
+			runRenderScenarioTests({ renderPage, cases: detailsCases });
 		});
 
-		it('renders status for namespace which never expire', async () => {
-			// Arrange:
-			const chainHeight = 10000;
-			const expirationHeight = 0;
-			const isUnlimitedDuration = true;
-			const expectedText = 'value_neverExpired';
+		describe('section: mosaics', () => {
+			const mosaicsCases = [
+				{
+					description: 'renders the mosaics grouped by namespace',
+					config: {},
+					expected: {
+						texts: [
+							SCREEN_TEXT.sectionMosaics,
+							SCREEN_TEXT.tableFieldName,
+							SCREEN_TEXT.tableFieldSupply,
+							SCREEN_TEXT.tableFieldRegistrationHeight,
+							namespaceMosaic.name,
+							namespaceMosaic.supply,
+							namespaceMosaic.registrationHeight
+						],
+						textOccurrences: { [namespaceInfoResult.name]: 2 },
+						hiddenTexts: [SCREEN_TEXT.messageEmptyTable]
+					}
+				},
+				{
+					description: 'renders the empty message when the namespace has no mosaics',
+					config: { namespaceInfo: { namespaceMosaics: [] } },
+					expected: {
+						texts: [SCREEN_TEXT.messageEmptyTable],
+						hiddenTexts: [namespaceMosaic.name]
+					}
+				}
+			];
 
-			// Act + Assert:
-			await runStatusTest(chainHeight, expirationHeight, isUnlimitedDuration, expectedText);
-			expect(screen.queryByText('field_expirationHeight')).not.toBeInTheDocument();
+			runRenderScenarioTests({ renderPage, cases: mosaicsCases });
 		});
 	});
 });

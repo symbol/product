@@ -1,12 +1,12 @@
 import { useAsyncManager } from '@/app/hooks';
 
 /** @typedef {import('@/app/types/Wallet').WalletController} WalletController */
-/** @typedef {import('wallet-common-symbol/src/types/Mosaic').MosaicInfo} MosaicInfo */
+/** @typedef {import('wallet-common-symbol/src/types/Token').TokenInfo} TokenInfo */
 
 /**
  * Return type for useMosaicInfo hook.
  * @typedef {object} UseMosaicInfoReturnType
- * @property {MosaicInfo} mosaic - The fetched mosaic info.
+ * @property {TokenInfo} mosaic - The fetched mosaic info.
  * @property {boolean} isLoading - Whether the mosaic info is being fetched.
  * @property {() => void} load - Fetches the mosaic info.
  * @property {() => void} reset - Resets the mosaic info state.
@@ -23,7 +23,7 @@ export const useMosaicInfo = ({ walletController, mosaicId }) => {
 	const { networkProperties } = walletController;
 
 	const mosaicInfoManager = useAsyncManager({
-		callback: () => walletController.networkApi.mosaic.fetchMosaicInfo(networkProperties, mosaicId)
+		callback: () => walletController.networkApi.token.fetchTokenInfo(networkProperties, mosaicId)
 	});
 
 	return {

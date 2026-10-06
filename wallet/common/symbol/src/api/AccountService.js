@@ -1,4 +1,4 @@
-import { addressFromRaw, formatMosaicList, getMosaicAmount, promiseAllSettled } from '../utils';
+import { addressFromRaw, getTokenAmount, promiseAllSettled, tokenListFromDTO } from '../utils';
 import { NotFoundError, absoluteToRelativeAmount } from 'wallet-common-core';
 
 /** @typedef {import('../types/Account').AccountInfo} AccountInfo */
@@ -32,8 +32,8 @@ export class AccountService {
 				return {
 					address,
 					publicKey: null,
-					mosaics: [],
-					balance: 0,
+					tokens: [],
+					balance: '0',
 					importance: 0,
 					linkedKeys: {
 						linkedPublicKey: null,
@@ -51,24 +51,24 @@ export class AccountService {
 		}
 		const { account } = response;
 		const { linked, node, vrf } = account.supplementalPublicKeys;
-		const accountOwnedMosaicIds = account.mosaics.map(mosaic => mosaic.id);
+		const accountOwnedTokenIds = account.mosaics.map(mosaic => mosaic.id);
 
-		// Fetch mosaic infos, multisig info, and namespaces in parallel
-		const [mosaicInfos, multisigInfo, namespaces] = await promiseAllSettled([
-			this.#api.mosaic.fetchMosaicInfos(networkProperties, accountOwnedMosaicIds),
+		// Fetch token infos, multisig info, and namespaces in parallel
+		const [tokenInfos, multisigInfo, namespaces] = await promiseAllSettled([
+			this.#api.token.fetchTokenInfos(networkProperties, accountOwnedTokenIds),
 			this.fetchMultisigInfo(networkProperties, address),
 			this.#api.namespace.fetchAccountNamespaces(networkProperties, address)
 		]);
 		const isMultisigRequestSucceeded = multisigInfo.status === 'fulfilled';
 
-		// Format mosaic list and calculate balance
-		const formattedMosaics = formatMosaicList(account.mosaics, mosaicInfos.value);
-		const balance = getMosaicAmount(formattedMosaics, networkProperties.networkCurrency.mosaicId);
+		// Format token list and calculate balance
+		const formattedTokens = tokenListFromDTO(account.mosaics, tokenInfos.value);
+		const balance = getTokenAmount(formattedTokens, networkProperties.networkCurrency.id);
 
 		return {
 			address,
 			publicKey: account.publicKey || null,
-			mosaics: formattedMosaics,
+			tokens: formattedTokens,
 			balance,
 			importance: parseInt(account.importance),
 			linkedKeys: {
@@ -93,13 +93,13 @@ export class AccountService {
 	 * Fetches the native currency balance of an account from the node.
 	 * @param {NetworkProperties} networkProperties - Network properties.
 	 * @param {string} address - Requested account address.
-	 * @returns {Promise<number>} - The account balance.
+	 * @returns {Promise<string>} - The account balance.
 	 */
 	fetchAccountBalance = async (networkProperties, address) => {
 		const url = `${networkProperties.nodeUrl}/accounts/${address}`;
 		const { account } = await this.#makeRequest(url);
 
-		const nativeCurrencyAbsoluteBalance = getMosaicAmount(account.mosaics, networkProperties.networkCurrency.mosaicId);
+		const nativeCurrencyAbsoluteBalance = getTokenAmount(account.mosaics, networkProperties.networkCurrency.id);
 		const balance = absoluteToRelativeAmount(nativeCurrencyAbsoluteBalance, networkProperties.networkCurrency.divisibility);
 
 		return balance;

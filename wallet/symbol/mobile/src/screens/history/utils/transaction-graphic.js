@@ -78,12 +78,12 @@ const transactionGraphicConfigMap = {
 			{ 
 				type: CaptionType.ICON, 
 				icon: 'token-custom', 
-				condition: (tx, options) => hasNonNativeCurrencyTokens(tx.mosaics || tx.tokens || [], options.nativeCurrencyTokenId) 
+				condition: (tx, options) => hasNonNativeCurrencyTokens(tx.tokens || [], options.nativeCurrencyTokenId) 
 			},
 			{ 
 				type: CaptionType.TEXT,
 				format: (_, tx, options) => {
-					const nativeToken = getNativeCurrencyToken(tx.mosaics || tx.tokens || [], options.nativeCurrencyTokenId);
+					const nativeToken = getNativeCurrencyToken(tx.tokens || [], options.nativeCurrencyTokenId);
 
 					return `${formatAmount(nativeToken?.amount)} ${options.nativeCurrencyTicker}`;
 				}
@@ -96,7 +96,7 @@ const transactionGraphicConfigMap = {
 	},
 	[SymbolTransactionType.MOSAIC_ALIAS]: {
 		targetType: TransactionGraphicAvatarType.TOKEN,
-		targetFields: { valueField: 'mosaicId' },
+		targetFields: { valueField: 'tokenId' },
 		arrowCaptions: [
 			{ type: CaptionType.TEXT, field: 'namespaceName' }
 		]
@@ -110,11 +110,11 @@ const transactionGraphicConfigMap = {
 	},
 	[SymbolTransactionType.MOSAIC_DEFINITION]: {
 		targetType: TransactionGraphicAvatarType.TOKEN,
-		targetFields: { valueField: 'mosaicId' }
+		targetFields: { valueField: 'tokenId' }
 	},
 	[SymbolTransactionType.MOSAIC_SUPPLY_CHANGE]: {
 		targetType: TransactionGraphicAvatarType.TOKEN,
-		targetFields: { valueField: 'mosaicId' },
+		targetFields: { valueField: 'tokenId' },
 		arrowCaptions: [
 			{
 				type: CaptionType.TEXT,
@@ -128,7 +128,7 @@ const transactionGraphicConfigMap = {
 		targetFields: { addressField: 'sourceAddress' },
 		arrowCaptions: [
 			{ type: CaptionType.ICON, icon: 'tokens' },
-			{ type: CaptionType.TEXT, field: 'mosaicId' }
+			{ type: CaptionType.TEXT, field: 'tokenId' }
 		]
 	},
 	[SymbolTransactionType.ACCOUNT_MOSAIC_RESTRICTION]: {
@@ -162,7 +162,7 @@ const transactionGraphicConfigMap = {
 	},
 	[SymbolTransactionType.MOSAIC_GLOBAL_RESTRICTION]: {
 		targetType: TransactionGraphicAvatarType.TOKEN,
-		targetFields: { valueField: 'referenceMosaicId' },
+		targetFields: { valueField: 'referenceTokenId' },
 		arrowCaptions: [
 			{
 				type: CaptionType.TEXT,
@@ -273,7 +273,7 @@ const transactionGraphicConfigMap = {
 	},
 	[SymbolTransactionType.MOSAIC_METADATA]: {
 		targetType: TransactionGraphicAvatarType.TOKEN,
-		targetFields: { valueField: 'targetMosaicId' },
+		targetFields: { valueField: 'targetTokenId' },
 		arrowCaptions: [
 			{ type: CaptionType.TEXT, field: 'scopedMetadataKey' }
 		]
