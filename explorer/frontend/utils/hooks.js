@@ -309,8 +309,8 @@ export const useUserCurrencyAmount = (fetchPrice, amount, currency, timestamp) =
 	return amountInUserCurrency;
 };
 
-// Makes an async call on mount. Allows to repeat the call with a given interval.
-export const useAsyncCall = (callback, defaultData, pollingInterval) => {
+// Repeats an async call on the polling interval; calls on mount when no interval or isCalledOnMount is set.
+export const useAsyncCall = (callback, defaultData, pollingInterval, isCalledOnMount) => {
 	const [data, setData] = useState(defaultData);
 	// keep the latest callback without retriggering the effect (callers pass inline functions)
 	const callbackRef = useRef();
@@ -337,7 +337,7 @@ export const useAsyncCall = (callback, defaultData, pollingInterval) => {
 
 		if (pollingInterval)
 			intervalId = setInterval(() => call(), pollingInterval);
-		if (!pollingInterval)
+		if (!pollingInterval || isCalledOnMount)
 			call();
 
 		return () => {
@@ -346,7 +346,7 @@ export const useAsyncCall = (callback, defaultData, pollingInterval) => {
 			if (intervalId)
 				clearInterval(intervalId);
 		};
-	}, [pollingInterval]);
+	}, [pollingInterval, isCalledOnMount]);
 
 	return data;
 };
