@@ -9,7 +9,7 @@ const LINKED_KEYS = {
 const EMPTY_FIXTURE = {
 	address: '',
 	publicKey: '',
-	mosaics: [],
+	tokens: [],
 	balance: '0',
 	importance: 0,
 	linkedKeys: null,
@@ -245,18 +245,6 @@ export class AccountInfoFixtureBuilder {
 	 */
 	setTokens = tokens => {
 		this._data.tokens = tokens;
-		
-		return this;
-	};
-
-	/**
-	 * Sets the mosaics for the account.
-	 * 
-	 * @param {Array} mosaics - The account mosaics.
-	 * @returns {AccountInfoFixtureBuilder} The builder instance.
-	 */
-	setMosaics = mosaics => {
-		this._data.mosaics = mosaics;
 		
 		return this;
 	};

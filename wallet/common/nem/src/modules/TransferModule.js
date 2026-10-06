@@ -47,7 +47,7 @@ export class TransferModule {
 	 * and pass the selected tier as options.fee.
 	 * @param {object} options - Transfer options.
 	 * @param {string} options.recipientAddress - Recipient NEM address.
-	 * @param {object[]} options.mosaics - Mosaics to transfer.
+	 * @param {object[]} options.tokens - Tokens to transfer.
 	 * @param {string} [options.message] - Message text.
 	 * @param {boolean} [options.isEncrypted] - Whether to encrypt the message.
 	 * @param {string} [options.senderPublicKey] - Sender (multisig account) public key. When it differs from the
@@ -59,7 +59,7 @@ export class TransferModule {
 	createTransaction = async (options, password) => {
 		const {
 			recipientAddress,
-			mosaics,
+			tokens,
 			message,
 			isEncrypted,
 			fee
@@ -94,7 +94,7 @@ export class TransferModule {
 			type: TransactionType.TRANSFER,
 			signerPublicKey: senderPublicKey,
 			recipientAddress,
-			mosaics: mosaics || [],
+			tokens: tokens || [],
 			message: messagePayload,
 			fee: fee ?? createTransactionFee(networkProperties, '0'),
 			deadline: createDeadline(networkProperties.networkTime, SINGLE_TRANSACTION_DEADLINE_HOURS)
@@ -124,7 +124,7 @@ export class TransferModule {
 
 	/**
 	 * Calculates the transaction fee tiers for each transaction in the bundle.
-	 * Fees are derived from the transaction content (type, mosaics, message).
+	 * Fees are derived from the transaction content (type, tokens, message).
 	 * NEM fees are deterministic, so fast/medium/slow tiers are equal.
 	 * @param {TransactionBundle} transactionBundle - The transaction bundle.
 	 * @returns {Promise<TransactionFees[]>} The transaction fee tiers for each transaction in the bundle.

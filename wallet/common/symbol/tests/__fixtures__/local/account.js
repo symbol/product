@@ -1,19 +1,18 @@
-import { multiNameMosaic, nativeMosaic, supplyMutableMosaic } from './mosaic';
+import { multiNameToken, nativeToken, supplyMutableToken } from './token';
 
-const mosaics = [
+const tokens = [
 	{
-		...nativeMosaic,
-		name: nativeMosaic.names[0],
+		...nativeToken,
+		name: nativeToken.names[0],
 		'amount': '7270485345.948776'
 	},
 	{
-		...multiNameMosaic,
-		name: multiNameMosaic.names[0],
+		...multiNameToken,
+		name: multiNameToken.names[0],
 		'amount': '4'
 	},
 	{
-		...supplyMutableMosaic,
-		name: supplyMutableMosaic.id,
+		...supplyMutableToken,
 		'amount': '0.54'
 	}
 ];
@@ -21,7 +20,7 @@ const mosaics = [
 export const accountInfoNonMultisig = {
 	'address': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 	'publicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
-	mosaics,
+	tokens,
 	'balance': '7270485345.948776',
 	'importance': 6580746036116728,
 	'linkedKeys': {
@@ -38,7 +37,7 @@ export const accountInfoNonMultisig = {
 export const accountInfoMultisig = {
 	'address': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 	'publicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
-	mosaics,
+	tokens,
 	'balance': '7270485345.948776',
 	'importance': 6580746036116728,
 	'linkedKeys': {
@@ -60,7 +59,7 @@ export const accountInfoMultisig = {
 export const accountInfoCosigner = {
 	'address': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 	'publicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
-	mosaics,
+	tokens,
 	'balance': '7270485345.948776',
 	'importance': 6580746036116728,
 	'linkedKeys': {

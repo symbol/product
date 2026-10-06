@@ -4,7 +4,7 @@ export const networkProperties = {
 	networkTime: 254452058000,
 	networkCurrency: {
 		name: 'XEM',
-		mosaicId: 'nem.xem',
+		id: 'nem.xem',
 		divisibility: 6
 	},
 	rentalFees: {

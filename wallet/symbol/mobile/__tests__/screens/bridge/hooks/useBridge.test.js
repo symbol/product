@@ -121,14 +121,6 @@ const createAccountInfoWithTokens = (chainName, account, tokens) => {
 		.build();
 };
 
-const createAccountInfoWithMosaics = (chainName, account, mosaics) => {
-	return AccountInfoFixtureBuilder
-		.createEmpty(chainName, NETWORK_IDENTIFIER)
-		.override({ address: account.address, publicKey: account.publicKey })
-		.setMosaics(mosaics)
-		.build();
-};
-
 const nativeAccountInfoWithToken = createAccountInfoWithTokens(
 	NATIVE_CHAIN_NAME,
 	nativeAccount,
@@ -136,18 +128,6 @@ const nativeAccountInfoWithToken = createAccountInfoWithTokens(
 );
 
 const wrappedAccountInfoWithToken = createAccountInfoWithTokens(
-	WRAPPED_CHAIN_NAME,
-	wrappedAccount,
-	[{ id: wrappedTokenInfo.id, amount: BalanceValue.WRAPPED }]
-);
-
-const nativeAccountInfoWithMosaic = createAccountInfoWithMosaics(
-	NATIVE_CHAIN_NAME,
-	nativeAccount,
-	[{ id: nativeTokenInfo.id, amount: BalanceValue.NATIVE }]
-);
-
-const wrappedAccountInfoWithMosaic = createAccountInfoWithMosaics(
 	WRAPPED_CHAIN_NAME,
 	wrappedAccount,
 	[{ id: wrappedTokenInfo.id, amount: BalanceValue.WRAPPED }]
@@ -206,14 +186,7 @@ const BridgeScenario = {
 		wrappedState: BridgeControllerState.READY,
 		nativeAccountInfo: nativeAccountInfoWithToken,
 		wrappedAccountInfo: wrappedAccountInfoWithToken
-	},
-	WITH_MOSAIC_BALANCES: {
-		nativeState: BridgeControllerState.READY,
-		wrappedState: BridgeControllerState.READY,
-		nativeAccountInfo: nativeAccountInfoWithMosaic,
-		wrappedAccountInfo: wrappedAccountInfoWithMosaic
-	}
-};
+	}};
 
 // Test helpers
 
@@ -438,20 +411,6 @@ describe('hooks/useBridge', () => {
 			});
 		});
 
-		it('falls back to mosaics when tokens are absent', async () => {
-			// Arrange:
-			setBridges([createBridgeManagerMock(BridgeScenario.WITH_MOSAIC_BALANCES)]);
-
-			// Act:
-			const hookTester = await createUseBridgeHookTester();
-
-			// Assert:
-			await hookTester.waitFor(() => {
-				const pair = hookTester.currentResult.pairs[0];
-				expect(pair.source.token.amount).toBe(BalanceValue.NATIVE);
-				expect(pair.target.token.amount).toBe(BalanceValue.WRAPPED);
-			});
-		});
 
 		it('sets zero amount when account has no matching token', async () => {
 			// Arrange:

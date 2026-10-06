@@ -1,7 +1,18 @@
-/** @typedef {import('wallet-common-core/src/types/Token').TokenInfo} TokenInfo */
-/** @typedef {import('wallet-common-core/src/types/Token').Token} BaseToken */
-/** @typedef {import('wallet-common-symbol/src/types/Mosaic').Mosaic} Mosaic */
-/** @typedef {BaseToken | Mosaic} Token */
+/** @typedef {import('wallet-common-symbol/src/types/Token').Token} SymbolToken */
+/** @typedef {import('wallet-common-symbol/src/types/Token').RawToken} SymbolRawToken */
+/** @typedef {import('wallet-common-ethereum/src/types/Token').Token} EthereumToken */
+/** @typedef {import('wallet-common-symbol/src/types/Token').TokenInfo} SymbolTokenInfo */
+/** @typedef {import('wallet-common-ethereum/src/types/Token').TokenInfo} EthereumTokenInfo */
+
+/**
+ * Any token handled by the mobile wallet.
+ * @typedef {SymbolToken | SymbolRawToken | EthereumToken} Token
+ */
+
+/**
+ * Any token info handled by the mobile wallet.
+ * @typedef {SymbolTokenInfo | EthereumTokenInfo} TokenInfo
+ */
 
 /**
  * Expiration inputs for a token's expiration progress display.
@@ -17,7 +28,7 @@
  * identifier and amount.
  * @typedef {object} TokenDisplayData
  * @property {string} tokenId - Actual token id (a token contract address).
- * @property {string} name - Actual token name. Got from the token object or known token config.
+ * @property {string|null} name - Actual token name. Got from the token object or known token config. Null when the token has no name.
  * @property {string|null} ticker - Actual token ticker. Got from the token object or known token config. Null when unknown.
  * @property {string} nameText - Formatted name text that should be used as a full token name. 
  * Constructed from known name + optional ticker. Fallback to token name or token id.

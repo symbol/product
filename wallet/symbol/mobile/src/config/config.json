@@ -46,7 +46,7 @@
                     },
                     "networkCurrency": {
                         "name": "symbol.xym",
-                        "mosaicId": "",
+                        "id": "",
                         "divisibility": 6
                     }
                 },
@@ -64,7 +64,7 @@
                     },
                     "networkCurrency": {
                         "name": "symbol.xym",
-                        "mosaicId": "",
+                        "id": "",
                         "divisibility": 6
                     }
                 }

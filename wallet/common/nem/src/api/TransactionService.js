@@ -156,31 +156,31 @@ export class TransactionService {
 	};
 
 	/**
-	 * Resolves the mosaic infos referenced by a list of transaction DTOs.
+	 * Resolves the token infos referenced by a list of transaction DTOs.
 	 * @param {NetworkProperties} networkProperties - Network properties.
 	 * @param {object[]} transactionDTOs - The transaction DTOs to resolve.
-	 * @returns {Promise<Record<string, object>>} The mosaic id to info map (empty when nothing to resolve).
+	 * @returns {Promise<Record<string, object>>} The token id to info map (empty when nothing to resolve).
 	 */
 	resolveTransactionData = async (networkProperties, transactionDTOs) => {
-		const { mosaicIds } = getUnresolvedIdsFromTransactionDTOs(transactionDTOs);
+		const { tokenIds } = getUnresolvedIdsFromTransactionDTOs(transactionDTOs);
 
-		if (!mosaicIds.length)
+		if (!tokenIds.length)
 			return {};
 
-		return this.#api.mosaic.fetchMosaicInfos(networkProperties, mosaicIds);
+		return this.#api.token.fetchTokenInfos(networkProperties, tokenIds);
 	};
 
 	/**
-	 * Maps a list of transaction DTOs to Transaction objects, resolving their referenced mosaics first.
+	 * Maps a list of transaction DTOs to Transaction objects, resolving their referenced tokens first.
 	 * @param {NetworkProperties} networkProperties - Network properties.
 	 * @param {object[]} transactionDTOs - The transaction DTOs to map.
 	 * @param {PublicAccount} currentAccount - The account used to derive the directed amount.
 	 * @returns {Promise<Transaction[]>} The mapped transactions.
 	 */
 	resolveTransactionDTOs = async (networkProperties, transactionDTOs, currentAccount) => {
-		const mosaicInfos = await this.resolveTransactionData(networkProperties, transactionDTOs);
+		const tokenInfos = await this.resolveTransactionData(networkProperties, transactionDTOs);
 
 		return transactionDTOs.map(dto =>
-			transactionFromDTO(dto, { networkProperties, currentAccount, mosaicInfos }));
+			transactionFromDTO(dto, { networkProperties, currentAccount, tokenInfos }));
 	};
 }

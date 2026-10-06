@@ -37,7 +37,7 @@
  * @typedef {Object} BaseAccountInfo
  * @property {string} address - Account address.
  * @property {Token[]} tokens - Account owned tokens (e.g. ETH, ERC-20).
- * @property {number} balance - Account native currency balance (ETH).
+ * @property {string} balance - Account native currency balance (ETH).
  */
 
 /**

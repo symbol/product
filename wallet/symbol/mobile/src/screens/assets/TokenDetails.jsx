@@ -48,7 +48,7 @@ export const TokenDetails = ({ route }) => {
 			const { networkApi } = walletController;
 			const accountInfo = await networkApi.account.fetchAccountInfo(networkProperties, accountAddress);
 
-			const tokens = accountInfo.tokens ?? accountInfo.mosaics ?? [];
+			const tokens = accountInfo.tokens ?? [];
 			const heldToken = tokens.find(token => token.id === tokenId);
 
 			if (heldToken)
@@ -56,16 +56,13 @@ export const TokenDetails = ({ route }) => {
 
 			// The account no longer holds the token (e.g. after sending out the full balance).
 			// Fetch the token info directly to keep the details visible with a zero balance.
-			const tokenInfo = networkApi.mosaic
-				? await networkApi.mosaic.fetchMosaicInfo(networkProperties, tokenId)
-				: await networkApi.token.fetchTokenInfo(networkProperties, tokenId);
+			const tokenInfo = await networkApi.token.fetchTokenInfo(networkProperties, tokenId);
 
 			if (!tokenInfo)
 				return null;
 
 			return {
 				...tokenInfo,
-				name: tokenInfo.name ?? tokenInfo.names?.[0],
 				amount: '0'
 			};
 		},
@@ -227,7 +224,7 @@ export const TokenDetails = ({ route }) => {
 								{canRevokeMosaic && (
 									<ButtonPlain
 										icon="revoke"
-										text={$t('button_revoke')}
+										text={$t('button_revokeMosaic')}
 										onPress={openRevokeScreen}
 									/>
 								)}

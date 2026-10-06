@@ -16,8 +16,8 @@ import {
 	subNamespaceRegistrationDTO,
 	unconfirmedTransferDTO
 } from '../__fixtures__/api/transaction-dtos';
-import { mosaicInfos } from '../__fixtures__/local/mosaic';
 import { networkProperties } from '../__fixtures__/local/network';
+import { tokenInfos } from '../__fixtures__/local/token';
 import {
 	cosignature,
 	encryptedTransfer,
@@ -39,7 +39,7 @@ import { currentAccount } from '../__fixtures__/local/wallet';
 
 // Each case pairs a NEM transaction DTO with the wallet transaction object it maps to, covering every
 // transaction type the mapper supports. Read with currentAccount = alice (so alice-signed transfers
-// resolve as outgoing) and a mosaicInfos map that resolves the non-native 'test.token' mosaic.
+// resolve as outgoing) and a tokenInfos map that resolves the non-native 'test.token' mosaic.
 const transactionFromDTOCases = [
 	{ name: 'outgoing transfer', transactionDTO: outgoingTransferDTO, expected: outgoingTransfer },
 	{ name: 'incoming transfer', transactionDTO: incomingTransferDTO, expected: incomingTransfer },
@@ -61,7 +61,7 @@ const transactionFromDTOCases = [
 describe('utils/transaction-from-dto', () => {
 	it.each(transactionFromDTOCases)('maps $name from an API DTO', ({ transactionDTO, expected }) => {
 		// Arrange:
-		const config = { networkProperties, currentAccount, mosaicInfos };
+		const config = { networkProperties, currentAccount, tokenInfos };
 
 		// Act:
 		const result = transactionFromDTO(transactionDTO, config);

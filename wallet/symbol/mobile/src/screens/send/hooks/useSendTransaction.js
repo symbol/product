@@ -47,7 +47,6 @@ export const useSendTransaction = ({
 			senderPublicKey,
 			recipientAddress,
 			tokens,
-			mosaics: tokens,
 			messageText,
 			isMessageEncrypted
 		});
@@ -90,7 +89,7 @@ export const useSendTransaction = ({
 				data.isMessageEncrypted = transfer.message.type === MessageType.ENCRYPTED_TEXT;
 			}
 
-			data.mosaics = transfer.mosaics ?? transfer.tokens;
+			data.tokens = transfer.tokens;
 			data.fee = transaction.fee;
 			
 			return objectToTableData(data);

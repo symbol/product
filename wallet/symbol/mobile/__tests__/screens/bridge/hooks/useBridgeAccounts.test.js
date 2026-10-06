@@ -399,7 +399,7 @@ describe('hooks/useBridgeAccounts', () => {
 				{
 					description: 'returns zero balance when currentAccountInfo is null',
 					config: { scenario: ControllerScenario.SYMBOL_READY_NO_ACCOUNT_INFO },
-					expected: { balance: 0 }
+					expected: { balance: '0' }
 				},
 				{
 					description: 'maps tokens from currentAccountInfo',

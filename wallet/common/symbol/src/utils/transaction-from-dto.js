@@ -1,14 +1,14 @@
 import { addressFromPublicKey, addressFromRaw } from './account';
 import { networkTimestampToUnix } from './helper';
+import { networkTypeToIdentifier } from './network';
 import {
-	formatMosaicList,
-	getMosaicAmount,
+	getTokenAmount,
 	isRestrictableFlag,
 	isRevokableFlag,
 	isSupplyMutableFlag,
-	isTransferableFlag
-} from './mosaic';
-import { networkTypeToIdentifier } from './network';
+	isTransferableFlag,
+	tokenListFromDTO
+} from './token';
 import {
 	calculateEffectiveFee,
 	createTransactionFee,
@@ -35,8 +35,8 @@ import {
 import { SdkError, absoluteToRelativeAmount, safeOperationWithRelativeAmounts } from 'wallet-common-core';
 
 /** @typedef {import('../types/Account').PublicAccount} PublicAccount */
+/** @typedef {import('../types/Token').TokenInfo} TokenInfo */
 /** @typedef {import('../types/Account').UnresolvedAddressWithLocation} UnresolvedAddressWithLocation */
-/** @typedef {import('../types/Mosaic').Mosaic} Mosaic */
 /** @typedef {import('../types/Network').NetworkProperties} NetworkProperties */
 /** @typedef {import('../types/Transaction').Transaction} Transaction */
 /** @typedef {import('wallet-common-core/src/types/Transaction').TransactionFee} TransactionFee */
@@ -98,7 +98,7 @@ const createFeeFromDTO = (transactionDTO, networkProperties) => {
  * @param {PublicAccount} config.currentAccount - The current account.
  * @param {object.<string, string>} config.resolvedAddresses - The namespace id to account address map.
  * @param {object.<string, string>} config.namespaceNames - The namespace id to namespace name map.
- * @param {object.<string, Mosaic>} config.mosaicInfos - The mosaic id to info map.
+ * @param {object.<string, TokenInfo>} config.tokenInfos - The token id to token info map.
  * @param {boolean} [config.isEmbedded] - A flag indicating if the transaction is embedded.
  * @returns {Transaction} The transaction object.
  */
@@ -230,11 +230,11 @@ const aggregateTransactionFromDTO = (transactionDTO, config) => {
 
 const transferTransactionFromDTO = (transactionDTO, config) => {
 	const { transaction } = transactionDTO;
-	const { networkProperties, mosaicInfos, currentAccount, resolvedAddresses } = config;
+	const { networkProperties, tokenInfos, currentAccount, resolvedAddresses } = config;
 	const baseTransaction = baseTransactionFromDTO(transactionDTO, config);
 	const mosaics = transaction.mosaics?.map(mosaicFromDTO) || [];
-	const formattedMosaics = formatMosaicList(mosaics, mosaicInfos);
-	const nativeMosaicAmount = getMosaicAmount(formattedMosaics, networkProperties.networkCurrency.mosaicId);
+	const formattedTokens = tokenListFromDTO(mosaics, tokenInfos);
+	const nativeTokenAmount = getTokenAmount(formattedTokens, networkProperties.networkCurrency.id);
 	const transactionBody = {
 		...baseTransaction,
 		recipientAddress: formatAddress(transaction.recipientAddress, resolvedAddresses)
@@ -244,12 +244,12 @@ const transferTransactionFromDTO = (transactionDTO, config) => {
 	const isIncoming = isIncomingTransaction(transactionBody, currentAccount);
 	const isOutgoing = isOutgoingTransaction(transactionBody, currentAccount);
 
-	if (nativeMosaicAmount === '0' || (!isIncoming && !isOutgoing) || (isIncoming && isOutgoing))
+	if (nativeTokenAmount === '0' || (!isIncoming && !isOutgoing) || (isIncoming && isOutgoing))
 		resultAmount = '0';
 	else if (isIncoming && !isOutgoing)
-		resultAmount = `${nativeMosaicAmount}`;
+		resultAmount = `${nativeTokenAmount}`;
 	else if (!isIncoming && isOutgoing)
-		resultAmount = `${-nativeMosaicAmount}`;
+		resultAmount = `${-nativeTokenAmount}`;
 
 	if (transaction.message) {
 		const messageBytes = Buffer.from(transaction.message, 'hex');
@@ -265,7 +265,7 @@ const transferTransactionFromDTO = (transactionDTO, config) => {
 
 	return {
 		...transactionBody,
-		mosaics: formattedMosaics,
+		tokens: formattedTokens,
 		amount: resultAmount
 	};
 };
@@ -308,7 +308,7 @@ const mosaicAliasTransactionFromDTO = (transactionDTO, config) => {
 		aliasAction: AliasActionMessage[transaction.aliasAction],
 		namespaceId: transaction.namespaceId,
 		namespaceName: config.namespaceNames[transaction.namespaceId],
-		mosaicId: transaction.mosaicId
+		tokenId: transaction.mosaicId
 	};
 };
 
@@ -318,7 +318,7 @@ const mosaicDefinitionTransactionFromDTO = (transactionDTO, config) => {
 
 	return {
 		...baseTransaction,
-		mosaicId: transaction.id,
+		tokenId: transaction.id,
 		divisibility: transaction.divisibility,
 		duration: Number(transaction.duration),
 		nonce: transaction.nonce,
@@ -335,7 +335,7 @@ const mosaicSupplyChangeTransactionFromDTO = (transactionDTO, config) => {
 
 	return {
 		...baseTransaction,
-		mosaicId: transaction.mosaicId,
+		tokenId: transaction.mosaicId,
 		action: MosaicSupplyChangeActionMessage[transaction.action],
 		delta: Number(transaction.delta)
 	};
@@ -345,13 +345,13 @@ const mosaicSupplyRevocationTransactionFromDTO = (transactionDTO, config) => {
 	const { transaction } = transactionDTO;
 	const baseTransaction = baseTransactionFromDTO(transactionDTO, config);
 	const mosaic = createMosaic(transaction.mosaicId, transaction.amount);
-	const formattedMosaics = formatMosaicList([mosaic], config.mosaicInfos);
+	const formattedTokens = tokenListFromDTO([mosaic], config.tokenInfos);
 	const sourceAddress = formatAddress(transaction.sourceAddress, config.resolvedAddresses);
 
 	return {
 		...baseTransaction,
-		mosaicId: mosaic.id,
-		mosaic: formattedMosaics[0],
+		tokenId: mosaic.id,
+		token: formattedTokens[0],
 		sourceAddress
 	};
 };
@@ -375,13 +375,13 @@ const hashLockTransactionFromDTO = (transactionDTO, config) => {
 	const { transaction } = transactionDTO;
 	const baseTransaction = baseTransactionFromDTO(transactionDTO, config);
 	const mosaic = createMosaic(transaction.mosaicId, transaction.amount);
-	const [formattedMosaic] = formatMosaicList([mosaic], config.mosaicInfos);
+	const [formattedToken] = tokenListFromDTO([mosaic], config.tokenInfos);
 
 	return {
 		...baseTransaction,
 		duration: Number(transaction.duration),
-		mosaic: formattedMosaic,
-		lockedAmount: formattedMosaic.amount,
+		token: formattedToken,
+		lockedAmount: formattedToken.amount,
 		aggregateHash: transaction.hash
 	};
 };
@@ -390,7 +390,7 @@ const secretLockTransactionFromDTO = (transactionDTO, config) => {
 	const { transaction } = transactionDTO;
 	const baseTransaction = baseTransactionFromDTO(transactionDTO, config);
 	const mosaic = createMosaic(transaction.mosaicId, transaction.amount);
-	const formattedMosaics = formatMosaicList([mosaic], config.mosaicInfos);
+	const formattedTokens = tokenListFromDTO([mosaic], config.tokenInfos);
 	const resolvedAddress = formatAddress(transaction.recipientAddress, config.resolvedAddresses);
 
 	return {
@@ -399,7 +399,7 @@ const secretLockTransactionFromDTO = (transactionDTO, config) => {
 		secret: transaction.secret,
 		recipientAddress: resolvedAddress,
 		hashAlgorithm: LockHashAlgorithmMessage[transaction.hashAlgorithm],
-		mosaic: formattedMosaics[0]
+		token: formattedTokens[0]
 	};
 };
 
@@ -438,8 +438,8 @@ const accountMosaicRestrictionTransactionFromDTO = (transactionDTO, config) => {
 	return {
 		...baseTransaction,
 		restrictionType: MosaicRestrictionFlagMessage[transaction.restrictionFlags],
-		restrictionMosaicAdditions: transaction.restrictionAdditions,
-		restrictionMosaicDeletions: transaction.restrictionDeletions
+		restrictionTokenAdditions: transaction.restrictionAdditions,
+		restrictionTokenDeletions: transaction.restrictionDeletions
 	};
 };
 
@@ -459,7 +459,7 @@ const mosaicAddressRestrictionTransactionFromDTO = (transactionDTO, config) => {
 	const { transaction } = transactionDTO;
 	const baseTransaction = baseTransactionFromDTO(transactionDTO, config);
 	const { mosaicId } = transaction;
-	const mosaicName = config.mosaicInfos[mosaicId]?.name || null;
+	const tokenName = config.tokenInfos[mosaicId]?.name || null;
 	const targetAddress = formatAddress(transaction.targetAddress, config.resolvedAddresses);
 
 	return {
@@ -467,8 +467,8 @@ const mosaicAddressRestrictionTransactionFromDTO = (transactionDTO, config) => {
 		restrictionKey: transaction.restrictionKey,
 		newRestrictionValue: transaction.newRestrictionValue,
 		previousRestrictionValue: transaction.previousRestrictionValue,
-		mosaicId,
-		mosaicName,
+		tokenId: mosaicId,
+		tokenName,
 		targetAddress
 	};
 };
@@ -477,7 +477,7 @@ const mosaicGlobalRestrictionTransactionFromDTO = (transactionDTO, config) => {
 	const { transaction } = transactionDTO;
 	const baseTransaction = baseTransactionFromDTO(transactionDTO, config);
 	const referenceMosaicId = transaction.referenceMosaicId === '0000000000000000' ? transaction.mosaicId : transaction.referenceMosaicId;
-	const mosaicName = config.mosaicInfos[referenceMosaicId]?.name || null;
+	const tokenName = config.tokenInfos[referenceMosaicId]?.name || null;
 
 	return {
 		...baseTransaction,
@@ -486,8 +486,8 @@ const mosaicGlobalRestrictionTransactionFromDTO = (transactionDTO, config) => {
 		newRestrictionValue: transaction.newRestrictionValue,
 		previousRestrictionType: MosaicRestrictionTypeMessage[transaction.previousRestrictionType],
 		previousRestrictionValue: transaction.previousRestrictionValue,
-		referenceMosaicId: referenceMosaicId,
-		mosaicName
+		referenceTokenId: referenceMosaicId,
+		tokenName
 	};
 };
 
@@ -509,14 +509,14 @@ const mosaicMetadataTransactionFromDTO = (transactionDTO, config) => {
 	const { transaction } = transactionDTO;
 	const baseTransaction = baseTransactionFromDTO(transactionDTO, config);
 	const mosaicId = transaction.targetMosaicId;
-	const mosaicName = config.mosaicInfos[mosaicId]?.name || null;
+	const tokenName = config.tokenInfos[mosaicId]?.name || null;
 	const targetAddress = formatAddress(transaction.targetAddress, config.resolvedAddresses);
 
 	return {
 		...baseTransaction,
 		scopedMetadataKey: transaction.scopedMetadataKey,
-		targetMosaicId: mosaicId,
-		targetMosaicName: mosaicName,
+		targetTokenId: mosaicId,
+		targetTokenName: tokenName,
 		targetAddress,
 		metadataValue: transaction.value,
 		valueSizeDelta: transaction.valueSizeDelta
@@ -610,7 +610,7 @@ const accountKeyLinkTransactionFromDTO = (transactionDTO, config) => {
  * identified by their namespace IDs with the transaction location at which they were observed.
  *
  * @param {Array<object>} transactionDTOs - Array of transaction DTOs (with 'transaction' and 'meta').
- * @returns {{ mosaicIds: string[], namespaceIds: string[], addresses: UnresolvedAddressWithLocation[] }}
+ * @returns {{ tokenIds: string[], namespaceIds: string[], addresses: UnresolvedAddressWithLocation[] }}
  * The unresolved identifiers aggregated from the provided DTOs.
  * @see getUnresolvedIdsFromTransactions
  */
@@ -651,7 +651,7 @@ export const getUnresolvedIdsFromTransactionDTOs = transactionDTOs => {
 			mosaic: ['mosaicId']
 		},
 		[TransactionType.MOSAIC_GLOBAL_RESTRICTION]: {
-			mosaic: ['referenceMosaicId']
+			mosaic: ['mosaicId', 'referenceMosaicId']
 		},
 		[TransactionType.ACCOUNT_METADATA]: {
 			address: ['targetAddress']
@@ -669,7 +669,7 @@ export const getUnresolvedIdsFromTransactionDTOs = transactionDTOs => {
 	const config = {
 		fieldsMap,
 		mapNamespaceId: id => id,
-		mapMosaicId: id => id,
+		mapTokenId: id => id,
 		mapTransactionType: type => type,
 		getBodyFromTransaction: transaction => transaction.transaction,
 		getTransactionLocation: transaction => {

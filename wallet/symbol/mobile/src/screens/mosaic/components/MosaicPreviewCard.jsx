@@ -59,7 +59,7 @@ export const MosaicPreviewCard = ({ supply, divisibility, mosaicId }) => {
 	const isDivisible = divisibilityValue > 0;
 	const supplyDisplay = createSupplyDisplayData(supply, divisibilityValue);
 	const smallestSendText = getSmallestFractionText(divisibilityValue);
-	const wholeMosaicsText = $t('screen_mosaic_label_wholeMosaicsOnly');
+	const wholeMosaicsText = $t('screen_mosaic_label_wholeTokensOnly');
 	const smallestSendValueText = isDivisible ? smallestSendText : `${smallestSendText} ${wholeMosaicsText}`;
 
 	return (

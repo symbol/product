@@ -137,7 +137,7 @@ const buildKeyLinkTransactions = (linkedKeys, linkAction, signerPublicKey) => ke
 /** Builds the transfer that asks the node to harvest on the account's behalf. */
 const buildHarvestingRequestTransfer = (signerPublicKey, payload) => ({
 	type: TransactionType.TRANSFER,
-	mosaics: [],
+	tokens: [],
 	message: {
 		type: MessageType.DelegatedHarvesting,
 		payload,
@@ -167,8 +167,8 @@ const buildMultisigBundle = innerTransactions => {
 	const hashLockTransaction = {
 		type: TransactionType.HASH_LOCK,
 		signerPublicKey: currentAccount.publicKey,
-		mosaic: {
-			id: networkProperties.networkCurrency.mosaicId,
+		token: {
+			id: networkProperties.networkCurrency.id,
 			amount: HASH_LOCK_AMOUNT,
 			divisibility: networkProperties.networkCurrency.divisibility
 		},

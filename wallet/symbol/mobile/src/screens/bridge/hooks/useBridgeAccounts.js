@@ -25,7 +25,7 @@ const createBridgeAccountObject = walletController => ({
 	ticker: walletController.ticker,
 	isActive: !!walletController.currentAccount,
 	account: walletController.currentAccount,
-	balance: walletController.currentAccountInfo?.balance || 0,
+	balance: walletController.currentAccountInfo?.balance || '0',
 	tokens: walletController.currentAccountInfo?.tokens || [],
 	isAccountInfoLoaded: walletController.currentAccountInfo?.fetchedAt ? true : false
 });

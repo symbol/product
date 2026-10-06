@@ -10,7 +10,7 @@ export const namespaceInfoWithAddressAlias = {
 	endHeight: 4000,
 	id: 'D748B092093AA7A1',
 	linkedAddress: 'TALZP6U5S2YWPBVKHD3GY3NHYBVZEMSEFKXAGHY',
-	linkedMosaicId: null,
+	linkedTokenId: null,
 	name: 'pasdasdasdas',
 	startHeight: 2000
 };
@@ -21,7 +21,7 @@ export const namespaceInfoWithMosaicAlias = {
 	endHeight: 4000,
 	id: 'D47D7DC85A201C13',
 	linkedAddress: null,
-	linkedMosaicId: '699E9532708D2FB8',
+	linkedTokenId: '699E9532708D2FB8',
 	name: 'pppplllll',
 	startHeight: 2000
 };

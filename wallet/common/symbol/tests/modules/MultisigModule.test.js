@@ -287,8 +287,8 @@ describe('MultisigModule', () => {
 			const hashLockTransaction = {
 				type: TransactionType.HASH_LOCK,
 				signerPublicKey: currentAccount.publicKey,
-				mosaic: {
-					id: networkProperties.networkCurrency.mosaicId,
+				token: {
+					id: networkProperties.networkCurrency.id,
 					amount: HASH_LOCK_AMOUNT,
 					divisibility: networkProperties.networkCurrency.divisibility
 				},

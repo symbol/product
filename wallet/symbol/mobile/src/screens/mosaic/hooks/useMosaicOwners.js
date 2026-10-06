@@ -1,12 +1,12 @@
 import { useAsyncManager } from '@/app/hooks';
 
 /** @typedef {import('@/app/types/Wallet').WalletController} WalletController */
-/** @typedef {import('wallet-common-symbol/src/types/Mosaic').MosaicOwner} MosaicOwner */
+/** @typedef {import('wallet-common-symbol/src/types/Token').TokenOwner} TokenOwner */
 
 /**
  * Return type for useMosaicOwners hook.
  * @typedef {object} UseMosaicOwnersReturnType
- * @property {MosaicOwner[]} owners - The accounts holding the mosaic.
+ * @property {TokenOwner[]} owners - The accounts holding the mosaic.
  * @property {boolean} isLoading - Whether the holders are being fetched.
  * @property {() => void} load - Fetches the holders.
  * @property {() => void} reset - Resets the holders state.
