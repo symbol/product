@@ -1,4 +1,4 @@
-export const mosaicNamesResponse = {
+export const tokenNamesResponse = {
 	'mosaicNames': [
 		{
 			'mosaicId': '72C0212E67A08BCE',

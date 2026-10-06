@@ -1,7 +1,7 @@
 // Real NEM mosaic DTO shapes from the NIS API documentation.
 
 // A mosaic definition as returned by /namespace/mosaic/definition/page (and /account/mosaic/definition/page).
-// Parses to mosaicInfos['test.token'] in local/mosaic.js.
+// Parses to tokenInfos['test.token'] in local/mosaic.js.
 export const mosaicDefinitionDTO = {
 	creator: '10cfe522fe23c015b8ab24ef6a0c32c5de78eb55b2152ed07b6a092121187100',
 	id: { namespaceId: 'test', name: 'token' },

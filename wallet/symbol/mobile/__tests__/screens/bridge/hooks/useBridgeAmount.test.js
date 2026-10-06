@@ -33,7 +33,6 @@ const nonNativeToken = TokenFixtureBuilder
 
 const networkCurrency = {
 	id: nativeToken.id,
-	mosaicId: nativeToken.id,
 	divisibility: nativeToken.divisibility,
 	name: nativeToken.name
 };

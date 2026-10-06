@@ -184,12 +184,23 @@ def test_is_valid_address_only_returns_true_for_valid_addresses_on_network():
 	facade = EthereumNetworkFacade(_create_config())
 
 	# Act + Assert:
-	assert (True, '0x4838b106fce9647bdf1e7877bf73ce8b0bad5f97') == facade.is_valid_address('0x4838b106fce9647bdf1e7877bf73ce8b0bad5f97')
+	assert (True, '0x4838B106FCe9647Bdf1E7877BF73cE8B0BAD5f97') == facade.is_valid_address('0x4838B106FCe9647Bdf1E7877BF73cE8B0BAD5f97')
 
 	assert (False, None) == facade.is_valid_address('NCHESTYVD2P6P646AMY7WSNG73PCPZDUQNSD6JAK')  # nem mainnet
 	assert (False, None) == facade.is_valid_address('TAHTNAEQNDJOBDHHRON7SKU7PO6GAWXAJZ4CB2QG')  # nem testnet
 	assert (False, None) == facade.is_valid_address('NCHEST3QRQS4JZGOO64TH7NFJ2A63YA7TPM5PXI')   # symbol mainnet
 	assert (False, None) == facade.is_valid_address('TAUPP4BRGNQP5KG2QY53FNYZVZ7SDXQVS5BG2IQ')   # symbol testnet
+
+
+def test_is_valid_address_returns_checksum_address_for_valid_addresses():
+	# Arrange:
+	facade = EthereumNetworkFacade(_create_config())
+	expected_checksum_address = '0x4838B106FCe9647Bdf1E7877BF73cE8B0BAD5f97'
+
+	# Act + Assert:
+	assert (True, expected_checksum_address) == facade.is_valid_address('0x4838b106fce9647bdf1e7877bf73ce8b0bad5f97')  # lowercase
+	assert (True, expected_checksum_address) == facade.is_valid_address('0x4838B106FCE9647BDF1E7877BF73CE8B0BAD5F97')  # uppercase
+	assert (True, expected_checksum_address) == facade.is_valid_address('4838b106fce9647bdf1e7877bf73ce8b0bad5f97')  # no prefix
 
 # endregion
 

@@ -11,8 +11,8 @@ import {
 	multisigInfo, 
 	multisigInfoCosigner 
 } from '../__fixtures__/local/account';
-import { mosaicInfos } from '../__fixtures__/local/mosaic';
 import { networkProperties } from '../__fixtures__/local/network';
+import { tokenInfos } from '../__fixtures__/local/token';
 import { currentAccount } from '../__fixtures__/local/wallet';
 import { expect, jest } from '@jest/globals';
 import { ApiError } from 'wallet-common-core';
@@ -20,8 +20,8 @@ import { ApiError } from 'wallet-common-core';
 
 const mockMakeRequest = jest.fn();
 const mockApi = {
-	mosaic: {
-		fetchMosaicInfos: jest.fn()
+	token: {
+		fetchTokenInfos: jest.fn()
 	},
 	namespace: {
 		fetchAccountNamespaces: jest.fn()
@@ -48,7 +48,7 @@ describe('AccountService', () => {
 		}) => {
 			// Arrange:
 			mockMakeRequest.mockResolvedValueOnce(accountResponse);
-			mockApi.mosaic.fetchMosaicInfos.mockResolvedValueOnce(mosaicInfos);
+			mockApi.token.fetchTokenInfos.mockResolvedValueOnce(tokenInfos);
 			mockApi.namespace.fetchAccountNamespaces.mockResolvedValueOnce([]);
 
 			if (shouldThrowMultisigRequest) 
@@ -63,7 +63,7 @@ describe('AccountService', () => {
 			// Assert:
 			expect(result).toStrictEqual(expectedResult);
 			expect(mockMakeRequest).toHaveBeenCalledWith(`${networkProperties.nodeUrl}/accounts/${address}`);
-			expect(mockApi.mosaic.fetchMosaicInfos)
+			expect(mockApi.token.fetchTokenInfos)
 				.toHaveBeenCalledWith(networkProperties, accountResponse.account.mosaics.map(mosaic => mosaic.id));
 			expect(accountService.fetchMultisigInfo).toHaveBeenCalledWith(networkProperties, address);
 			expect(mockApi.namespace.fetchAccountNamespaces).toHaveBeenCalledWith(networkProperties, address);

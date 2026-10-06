@@ -71,7 +71,7 @@ export class AccountService {
      * Fetches the native currency balance of an account from the node.
      * @param {NetworkProperties} networkProperties - Network properties.
      * @param {string} address - Requested account address.
-     * @returns {Promise<number>} - The account balance.
+     * @returns {Promise<string>} - The account balance.
      */
 	fetchAccountBalance = async (networkProperties, address) => {
 		const provider = createEthereumJrpcProvider(networkProperties);

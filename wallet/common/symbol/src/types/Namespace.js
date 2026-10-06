@@ -3,7 +3,7 @@
  * @property {string} id - Namespace id.
  * @property {string} name - Namespace name.
  * @property {"mosaic" | "address" | "none"} aliasType - Namespace alias type.
- * @property {string | null} linkedMosaicId - Linked mosaic id.
+ * @property {string | null} linkedTokenId - Linked token id.
  * @property {string | null} linkedAddress - Linked address.
  * @property {number} startHeight - Namespace registration height.
  * @property {number} endHeight - Namespace expiration height.

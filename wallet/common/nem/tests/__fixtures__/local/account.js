@@ -1,4 +1,4 @@
-import { accountMosaics } from './mosaic';
+import { accountTokens } from './token';
 import { walletStorageAccounts } from './wallet';
 
 const currentAccount = walletStorageAccounts.testnet[0];
@@ -9,7 +9,7 @@ const secondCosignatory = walletStorageAccounts.testnet[2];
 export const accountInfo = {
 	address: currentAccount.address,
 	publicKey: currentAccount.publicKey,
-	mosaics: accountMosaics,
+	tokens: accountTokens,
 	balance: '1.5',
 	importance: 0.0001,
 	isMultisig: false,
@@ -21,7 +21,7 @@ export const accountInfo = {
 export const multisigAccountInfo = {
 	address: multisigAccount.address,
 	publicKey: null,
-	mosaics: [],
+	tokens: [],
 	balance: '5',
 	importance: 0,
 	isMultisig: true,
@@ -34,8 +34,8 @@ export const multisigAccountInfo = {
 export const notFoundAccountInfo = {
 	address: currentAccount.address,
 	publicKey: null,
-	mosaics: [],
-	balance: 0,
+	tokens: [],
+	balance: '0',
 	importance: 0,
 	isMultisig: false,
 	multisigAddresses: [],

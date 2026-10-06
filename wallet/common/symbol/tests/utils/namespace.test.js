@@ -73,7 +73,7 @@ describe('utils/namespace', () => {
 			id: 'D748B092093AA7A1',
 			name: 'foo',
 			aliasType: 'None',
-			linkedMosaicId: null,
+			linkedTokenId: null,
 			linkedAddress: null,
 			startHeight: 2000,
 			endHeight: 4000,
@@ -112,7 +112,7 @@ describe('utils/namespace', () => {
 				id: 'D47D7DC85A201C13',
 				name: 'pppplllll',
 				aliasType: 'Mosaic',
-				linkedMosaicId: '699E9532708D2FB8'
+				linkedTokenId: '699E9532708D2FB8'
 			};
 
 			// Act & Assert:

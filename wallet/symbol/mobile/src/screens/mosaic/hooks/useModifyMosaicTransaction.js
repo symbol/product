@@ -57,7 +57,7 @@ export const useModifyMosaicTransaction = ({
 			const previewData = {
 				type: transaction.type,
 				signerAddress: transaction.signerAddress,
-				mosaicId: transaction.mosaicId,
+				tokenId: transaction.tokenId,
 				action: transaction.action,
 				// The bundle carries the delta in absolute units, the dialog shows the amount the user entered
 				delta: absoluteToRelativeAmount(transaction.delta, divisibility),

@@ -39,16 +39,12 @@ const isBridgeControllersNetworkConnected = bridge =>
 const createSwapPair = bridge => {
 	const { sourceWalletController, sourceTokenInfo } = bridge;
 
-	const sourceAccountTokens = sourceWalletController.currentAccountInfo?.tokens
-		|| sourceWalletController.currentAccountInfo?.mosaics
-		|| [];
+	const sourceAccountTokens = sourceWalletController.currentAccountInfo?.tokens || [];
 	const sourceTokenBalance = sourceAccountTokens.find(token => token.id === sourceTokenInfo.id)?.amount || '0';
 
 	const { targetWalletController, targetTokenInfo } = bridge;
 
-	const targetAccountTokens = targetWalletController.currentAccountInfo?.tokens
-		|| targetWalletController.currentAccountInfo?.mosaics
-		|| [];
+	const targetAccountTokens = targetWalletController.currentAccountInfo?.tokens || [];
 	const targetTokenBalance = targetAccountTokens.find(token => token.id === targetTokenInfo.id)?.amount || '0';
 
 	return {

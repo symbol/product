@@ -28,7 +28,7 @@ export const BridgeAccountDetails = ({ route }) => {
 	const { chainName } = route.params;
 	const walletController = useWalletController(chainName);
 	const { networkIdentifier, currentAccount, currentAccountInfo } = walletController;
-	const tokens = currentAccountInfo?.tokens || currentAccountInfo?.mosaics || [];
+	const tokens = currentAccountInfo?.tokens || [];
 	const tokensDisplayData = tokens.map(token => createTokenDisplayData(token, chainName, networkIdentifier));
 
 	// Send/Receive buttons

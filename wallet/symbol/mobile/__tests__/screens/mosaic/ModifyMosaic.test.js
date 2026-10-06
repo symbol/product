@@ -38,7 +38,7 @@ const SCREEN_TEXT = {
 	textDescription: 'screen_mosaic_modify_description_intro',
 
 	// Mosaic info card field titles
-	textMosaicIdTitle: 'fieldTitle_mosaicId',
+	textFieldTitleTokenId: 'fieldTitle_tokenId',
 	textDivisibilityTitle: 'fieldTitle_divisibility',
 
 	// Supply delta summary
@@ -98,6 +98,7 @@ const transactionFees = TransactionFeeFixtureBuilder
 
 const tokenInfo = {
 	id: TOKEN_ID,
+	name: TOKEN_NAME,
 	names: [TOKEN_NAME],
 	divisibility: TOKEN_DIVISIBILITY,
 	supply: CURRENT_SUPPLY
@@ -113,7 +114,7 @@ const divisibleTokenInfo = {
 const supplyChangeTransaction = {
 	type: 'mosaicSupplyChange',
 	signerAddress: currentAccount.address,
-	mosaicId: TOKEN_ID,
+	tokenId: TOKEN_ID,
 	action: 'Increase',
 	delta: INCREASE_DELTA,
 	fee: { token: { amount: '0.1' } }
@@ -147,8 +148,8 @@ const setupMocks = (overrides = {}) => {
 			[NETWORK_IDENTIFIER]: walletAccounts
 		},
 		networkApi: {
-			mosaic: {
-				fetchMosaicInfo: jest.fn().mockResolvedValue(overrides.token ?? tokenInfo)
+			token: {
+				fetchTokenInfo: jest.fn().mockResolvedValue(overrides.token ?? tokenInfo)
 			}
 		},
 		signTransactionBundle: jest.fn().mockResolvedValue(signedTransactionBundle),
@@ -210,7 +211,7 @@ describe('screens/mosaic/ModifyMosaic', () => {
 			const expectedTexts = [
 				SCREEN_TEXT.textScreenTitle,
 				SCREEN_TEXT.textDescription,
-				SCREEN_TEXT.textMosaicIdTitle,
+				SCREEN_TEXT.textFieldTitleTokenId,
 				SCREEN_TEXT.textDivisibilityTitle,
 				SCREEN_TEXT.textCurrentSupplyLabel,
 				SCREEN_TEXT.textDeltaLabel,
@@ -448,6 +449,8 @@ describe('screens/mosaic/ModifyMosaic', () => {
 				screenTester.pressButton(SCREEN_TEXT.buttonSend);
 				await screenTester.waitForTimer(); // create transaction, open confirmation dialog
 				screenTester.expectText([SCREEN_TEXT.textConfirmDialogTitle]);
+				screenTester.expectTextCount(SCREEN_TEXT.textFieldTitleTokenId, 2); // screen label + dialog row
+				screenTester.expectTextCount(TOKEN_ID, 2);
 
 				screenTester.pressButton(SCREEN_TEXT.buttonConfirm);
 				await screenTester.waitForTimer(); // passcode success, send execution delay

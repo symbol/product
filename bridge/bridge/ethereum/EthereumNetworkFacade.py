@@ -92,7 +92,7 @@ class EthereumNetworkFacade:  # pylint: disable=too-many-instance-attributes
 		"""Checks if an address is valid and belongs to this network."""
 
 		is_valid = Web3.is_address(raw_address)
-		return (is_valid, raw_address if is_valid else None)
+		return (is_valid, Web3.to_checksum_address(raw_address) if is_valid else None)
 
 	def extract_wrap_request_from_transaction(self, is_valid_address, transaction_with_meta_json, _mosaic_id=None):
 		# pylint: disable=invalid-name

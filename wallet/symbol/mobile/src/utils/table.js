@@ -60,8 +60,6 @@ const keyToTypeMap = {
 		'message'
 	],
 	token: [
-		'mosaic',
-		'mosaics',
 		'token',
 		'tokens'
 	],
