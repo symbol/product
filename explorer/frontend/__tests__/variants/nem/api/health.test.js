@@ -1,6 +1,6 @@
-import { runApiTest } from '../test-utils/api';
-import { healthSyncErrorResponse } from '../test-utils/health';
-import { fetchBackendHealthStatus, healthConfig } from '@/app/api/health';
+import { runApiTest } from '../../../test-utils/api';
+import { healthSyncErrorResponse } from '../../../test-utils/health';
+import { fetchBackendHealthStatus, healthConfig } from '@/app/variants/nem/api/health';
 
 jest.mock('@/app/utils/server', () => {
 	return {
@@ -10,7 +10,7 @@ jest.mock('@/app/utils/server', () => {
 });
 
 
-describe('api/health', () => {
+describe('variants/nem/api/health', () => {
 	describe('fetchBackendHealthStatus', () => {
 		it('returns market data', async () => {
 			// Arrange:
