@@ -2,6 +2,7 @@ from collections import namedtuple
 from enum import Enum
 
 from common.symbol.NativeMosaic import normalize_mosaic_id
+from symbolchain.symbol.IdGenerator import is_mosaic_alias
 from zenlog import log
 
 from rest.model.symbol.Block import SymbolBlockView
@@ -63,6 +64,10 @@ ReceiptRecord = namedtuple(
 
 class SymbolDataUnavailable(RuntimeError):
 	"""Raised when Symbol block data is not safely readable."""
+
+
+class SymbolMosaicAliasNotFound(RuntimeError):
+	"""Raised when a requested current Mosaic alias cannot be resolved."""
 
 
 class SortOrder(str, Enum):
@@ -304,11 +309,43 @@ class SymbolDatabase(DatabaseConnectionPool):
 				if readable_height is None:
 					raise SymbolDataUnavailable('Symbol transaction data is unavailable: sync state is unreadable')
 
+				query = self._resolve_transfer_mosaic_id(cursor, query, sync_state)
 				transaction_rows = self._fetch_transaction_rows(cursor, query, sync_state, readable_height)
 				if not transaction_rows:
 					return []
 
 				return self._fetch_transaction_records(cursor, transaction_rows, sync_state)
+
+	@staticmethod
+	def _resolve_transfer_mosaic_id(cursor, query, sync_state):
+		"""Resolves a current Mosaic alias in the transaction read snapshot."""
+
+		transfer_mosaic_id = query.transfer_mosaic_id
+		if transfer_mosaic_id is None or not is_mosaic_alias(int(transfer_mosaic_id, 16)):
+			return query
+
+		if _is_non_public_state(sync_state):
+			raise SymbolDataUnavailable(
+				'Symbol transaction data is unavailable: Mosaic alias state is unsafe in dirty or repairing state')
+
+		cursor.execute(
+			'''
+			SELECT alias_type, alias_mosaic_id, start_height, end_height
+			FROM symbol_namespaces
+			WHERE namespace_id = %s AND alias_mosaic_id IS NOT NULL
+			''',
+			(transfer_mosaic_id.upper(),))
+		result = cursor.fetchone()
+		if not result or result[0] != 'mosaic':
+			raise SymbolMosaicAliasNotFound('Requested Mosaic alias is not currently linked')
+
+		resolved_mosaic_id, start_height, end_height = result[1:]
+
+		latest_height = sync_state['last_synced_height']
+		if start_height > latest_height or (end_height is not None and latest_height >= end_height):
+			raise SymbolMosaicAliasNotFound('Requested Mosaic alias is not currently linked')
+
+		return query._replace(transfer_mosaic_id=resolved_mosaic_id.upper())
 
 	@staticmethod
 	def _fetch_transaction_rows(cursor, query, sync_state, readable_height):
