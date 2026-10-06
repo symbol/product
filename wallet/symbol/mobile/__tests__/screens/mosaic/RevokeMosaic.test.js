@@ -30,7 +30,7 @@ const SCREEN_TEXT = {
 	textScreenTitle: 'screenTitle_RevokeMosaic',
 	textDescription: 'screen_mosaic_revoke_description_intro',
 	textFromTitle: 'screen_mosaic_revoke_title_from',
-	textMosaicIdTitle: 'fieldTitle_mosaicId',
+	textFieldTitleTokenId: 'fieldTitle_tokenId',
 	textDivisibilityTitle: 'fieldTitle_divisibility',
 	textSupplyTitle: 'fieldTitle_supply',
 
@@ -95,6 +95,7 @@ const transactionFees = TransactionFeeFixtureBuilder
 
 const tokenInfo = {
 	id: TOKEN_ID,
+	name: TOKEN_NAME,
 	names: [TOKEN_NAME],
 	divisibility: TOKEN_DIVISIBILITY,
 	supply: TOKEN_SUPPLY
@@ -117,7 +118,7 @@ const revocationTransaction = {
 	type: 'mosaicSupplyRevocation',
 	signerAddress: currentAccount.address,
 	sourceAddress: holderAccountA.address,
-	mosaic: { id: TOKEN_ID, amount: VALID_AMOUNT },
+	token: { id: TOKEN_ID, amount: VALID_AMOUNT },
 	fee: { token: { amount: '0.1' } }
 };
 
@@ -149,8 +150,8 @@ const setupMocks = (overrides = {}) => {
 			[NETWORK_IDENTIFIER]: walletAccounts
 		},
 		networkApi: {
-			mosaic: {
-				fetchMosaicInfo: jest.fn().mockResolvedValue(overrides.token ?? tokenInfo)
+			token: {
+				fetchTokenInfo: jest.fn().mockResolvedValue(overrides.token ?? tokenInfo)
 			}
 		},
 		signTransactionBundle: jest.fn().mockResolvedValue(signedTransactionBundle),
@@ -238,7 +239,7 @@ describe('screens/mosaic/RevokeMosaic', () => {
 			setupMocks();
 			const expectedTexts = [
 				TOKEN_NAME,
-				SCREEN_TEXT.textMosaicIdTitle,
+				SCREEN_TEXT.textFieldTitleTokenId,
 				TOKEN_ID,
 				SCREEN_TEXT.textDivisibilityTitle,
 				SCREEN_TEXT.textSupplyTitle,
@@ -573,6 +574,8 @@ describe('screens/mosaic/RevokeMosaic', () => {
 				screenTester.pressButton(SCREEN_TEXT.buttonSend);
 				await screenTester.waitForTimer(); // create transaction, open confirmation dialog
 				screenTester.expectText([SCREEN_TEXT.textConfirmDialogTitle]);
+				screenTester.expectTextCount(SCREEN_TEXT.textFieldTitleTokenId, 2); // screen label + dialog row
+				screenTester.expectTextCount(TOKEN_ID, 2);
 
 				screenTester.pressButton(SCREEN_TEXT.buttonConfirm);
 				await screenTester.waitForTimer(); // passcode success, send execution delay

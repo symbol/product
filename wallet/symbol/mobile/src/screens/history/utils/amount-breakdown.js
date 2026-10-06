@@ -59,7 +59,7 @@ const updateTokenAmount = (breakdownMap, address, token, changeType) => {
  * @param {AmountBreakdownMap} breakdownMap - The breakdown map to update.
  */
 const processTransferTransaction = (transaction, breakdownMap) => {
-	const tokens = transaction.mosaics ?? transaction.tokens ?? [];
+	const tokens = transaction.tokens ?? [];
 	const { signerAddress } = transaction;
 	const { recipientAddress } = transaction;
 

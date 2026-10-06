@@ -4,7 +4,7 @@ import moment from 'moment';
 
 /**
  * Returns the amount in network currency text.
- * @param {number} amount - Mosaic amount.
+ * @param {number} amount - Token amount.
  * @param {import('../types/Price').Price} price - The price object.
  * @param {NetworkIdentifier} networkIdentifier - Network identifier.
  * @returns {string} The network currency amount text.

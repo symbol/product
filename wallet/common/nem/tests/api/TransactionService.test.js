@@ -1,6 +1,6 @@
 import { Api } from '../../src/api';
 import { TransactionAnnounceGroup, TransactionBundleType, TransactionGroup } from '../../src/constants';
-import { mosaicDefinitionDTO } from '../__fixtures__/api/mosaic-dtos';
+import { mosaicDefinitionDTO } from '../__fixtures__/api/token-dtos';
 import { incomingTransferDTO, outgoingTransferDTO, transactionDTOs, unconfirmedTransferDTO } from '../__fixtures__/api/transaction-dtos';
 import { networkProperties } from '../__fixtures__/local/network';
 import { incomingTransfer, outgoingTransfer, unconfirmedTransfer, walletTransactions } from '../__fixtures__/local/transactions';

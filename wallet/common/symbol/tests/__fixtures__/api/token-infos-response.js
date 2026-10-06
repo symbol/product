@@ -1,4 +1,4 @@
-export const mosaicInfosResponse = [
+export const tokenInfosResponse = [
 	{
 		'mosaic': {
 			'version': 1,

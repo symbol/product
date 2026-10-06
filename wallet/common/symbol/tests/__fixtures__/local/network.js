@@ -15,7 +15,7 @@ export const networkProperties = {
 	},
 	networkCurrency: {
 		name: 'symbol.xym',
-		mosaicId: '72C0212E67A08BCE',
+		id: '72C0212E67A08BCE',
 		divisibility: 6
 	}
 };

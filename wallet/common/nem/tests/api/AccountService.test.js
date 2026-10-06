@@ -1,5 +1,5 @@
 import { multisigAccountResponse, regularAccountResponse } from '../__fixtures__/api/account-dtos';
-import { mosaicDefinitionDTO, ownedMosaicDTOs } from '../__fixtures__/api/mosaic-dtos';
+import { mosaicDefinitionDTO, ownedMosaicDTOs } from '../__fixtures__/api/token-dtos';
 import { accountInfo, multisigAccountInfo, multisigInfo, notFoundAccountInfo } from '../__fixtures__/local/account';
 import { networkProperties } from '../__fixtures__/local/network';
 import { runApiServiceTest } from '../test-utils';

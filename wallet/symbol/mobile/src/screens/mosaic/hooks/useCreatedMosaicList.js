@@ -36,7 +36,7 @@ const AUTO_FILL_MIN_ITEMS = 10;
 export const useCreatedMosaicList = walletController => {
 	const mosaicModule = walletController.modules.mosaic;
 	const { currentAccount, currentAccountInfo, networkProperties } = walletController;
-	const heldMosaics = currentAccountInfo?.tokens ?? currentAccountInfo?.mosaics ?? [];
+	const heldMosaics = currentAccountInfo?.tokens ?? [];
 
 	// Filter
 	const [filter, setFilter] = useState({});

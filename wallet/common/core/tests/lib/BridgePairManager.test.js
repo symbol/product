@@ -1011,19 +1011,19 @@ describe('bridge/BridgePairManager', () => {
 			expect(result[0].requestTransaction.hash).toBe('VALID_HASH');
 		});
 
-		it('maps transaction token from mosaics array when present', async () => {
+		it('maps transaction token from the tokens array when present', async () => {
 			// Arrange:
 			const mocks = await createLoadedManager({ managerOptions: { mode: 'wrap' } });
 			const { bridgeAddress } = mocks.manager.config.nativeNetwork;
-			const mosaic = { id: SYMBOL_TOKEN_ID, amount: '5000000', divisibility: 6 };
+			const token = { id: SYMBOL_TOKEN_ID, amount: '5000000', divisibility: 6 };
 			const transactions = [
 				{
 					signerAddress: SYMBOL_ACCOUNT_ADDRESS,
 					recipientAddress: bridgeAddress,
-					hash: 'TX_WITH_MOSAIC',
+					hash: 'TX_WITH_TOKEN',
 					height: 1,
 					timestamp: 100,
-					mosaics: [mosaic]
+					tokens: [token]
 				}
 			];
 			mocks.nativeWalletController.fetchAccountTransactions.mockResolvedValueOnce(transactions);
@@ -1032,7 +1032,7 @@ describe('bridge/BridgePairManager', () => {
 			const result = await mocks.manager.fetchSentRequests({ pageSize: 5, pageNumber: 1 });
 
 			// Assert:
-			expect(result[0].requestTransaction.token).toStrictEqual(mosaic);
+			expect(result[0].requestTransaction.token).toStrictEqual(token);
 		});
 	});
 
