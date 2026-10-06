@@ -343,13 +343,12 @@ export const symbolBlockInfoResponse = {
 	transactionsHash: '99'.repeat(32),
 	votingEligibleAccountsCount: 1234,
 	harvestingEligibleAccountsCount: '5678',
-	totalVotingBalance: '19000235663367',
+	totalVotingBalance: 19000235.663367,
 	previousImportanceBlockHash: 'AA'.repeat(32),
 	blockType: 'importance'
 };
 
 export const symbolBlockInfoResult = {
 	...symbolBlockInfoResponse,
-	difficulty: '100.00',
-	totalVotingBalance: '19000235.663367'
+	difficulty: '100.00'
 };

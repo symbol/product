@@ -17,21 +17,6 @@ jest.mock('@/app/api/transactions', () => ({
 	fetchTransactionPage: jest.fn()
 }));
 
-jest.mock('@/app/variants/page-config', () => ({
-	__esModule: true,
-	pageConfig: require('../../../../variants/symbol/config/pages').default
-}));
-
-jest.mock('@/app/variants/components', () => ({
-	__esModule: true,
-	variantComponents: require('../../../../variants/symbol/components').default
-}));
-
-jest.mock('@/app/variants/utils', () => ({
-	__esModule: true,
-	utils: require('../../../../variants/symbol/utils')
-}));
-
 const getFieldValue = name => screen.getByText(`field_${name}`, { exact: true }).parentElement.lastElementChild;
 
 describe('Symbol block details', () => {
@@ -142,13 +127,13 @@ describe('Symbol block details', () => {
 			statementCount: 0,
 			votingEligibleAccountsCount: 0,
 			harvestingEligibleAccountsCount: '0',
-			totalVotingBalance: '0.000000'
+			totalVotingBalance: 0
 		});
 
 		// Assert:
 		expect(getFieldValue('statementCount')).toHaveTextContent(/^0$/);
 		expect(getFieldValue('votingEligibleAccountsCount')).toHaveTextContent(/^0$/);
 		expect(getFieldValue('harvestingEligibleAccountsCount')).toHaveTextContent(/^0$/);
-		expect(getFieldValue('totalVotingBalance')).toHaveTextContent('0.000000XYM');
+		expect(getFieldValue('totalVotingBalance')).toHaveTextContent(/^0XYM$/);
 	});
 });

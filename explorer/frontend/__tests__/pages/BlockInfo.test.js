@@ -112,7 +112,7 @@ describe('BlockInfo', () => {
 			expect(screen.getByText(harvesterText)).toBeInTheDocument();
 		});
 
-		it('does not render Symbol fields for NEM', async () => {
+		itVariant('nem')('does not render Symbol fields', async () => {
 			// Act:
 			await renderPage(blockInfoResult);
 
@@ -123,7 +123,7 @@ describe('BlockInfo', () => {
 			].forEach(label => expect(screen.queryByText(label)).not.toBeInTheDocument());
 		});
 
-		it('does not render Merkle or importance sections for NEM', async () => {
+		itVariant('nem')('does not render Merkle or importance sections', async () => {
 			// Act:
 			await renderPage(blockInfoResult);
 
