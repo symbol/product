@@ -674,31 +674,60 @@ class SymbolDatabaseTransactionAliasTest(TestCase):
 		self.assertEqual([(mosaic_b, 999, 2)], [
 			(row.mosaics[0].mosaic_id, row.mosaics[0].amount, bytes(row.hash)[-1]) for row in next_result])
 
-	def test_get_transactions_rejects_corrupt_alias_targets_before_expiration(self):
+	def test_get_transactions_uses_saved_alias_target_without_revalidating_format(self):
 		# Arrange:
-		for target, end_height in ((None, None), ('INVALID', None), ('887E5DB6BB0B21F5', None), (None, 2)):
-			with self.subTest(target=target, end_height=end_height):
+		for saved_target, transaction_target in (('invalid', 'INVALID'), ('887e5db6bb0b21f5', '887E5DB6BB0B21F5')):
+			with self.subTest(saved_target=saved_target):
 				with symbol_test_database(
-					create_symbol_sync_state(last_synced_height=3, finalized_height=2)) as (db_config, puller_database):
-					puller_database.upsert_namespace(create_symbol_namespace(alias_mosaic_id=target, end_height=end_height), [])
+					create_symbol_sync_state(last_synced_height=1, finalized_height=1),
+					[create_symbol_block(1)]) as (db_config, puller_database):
+					puller_database.upsert_namespace(create_symbol_namespace(alias_mosaic_id=saved_target), [])
+					puller_database.upsert_transactions_for_height(1, [
+						create_symbol_mosaic_transfer(1, 1, transaction_target, 10),
+						create_symbol_mosaic_transfer(1, 2, '1234567890ABCDEF', 20)])
 
-					# Act + Assert:
-					with self.assertRaisesRegex(SymbolDataUnavailable, 'stored Mosaic alias target is corrupt'):
-						with SymbolDatabase(db_config) as database:
-							database.get_transactions(TransactionQuery(transfer_mosaic_id='887E5DB6BB0B21F5'))
+					# Act:
+					with SymbolDatabase(db_config) as database:
+						result = database.get_transactions(TransactionQuery(transfer_mosaic_id='887E5DB6BB0B21F5'))
 
-	def test_get_transactions_rejects_corrupt_alias_lifetimes(self):
-		# Arrange:
-		for start_height, end_height in ((0, None), (1, 1), (2, 1)):
-			with self.subTest(start_height=start_height, end_height=end_height):
-				with symbol_test_database(
-					create_symbol_sync_state(last_synced_height=3, finalized_height=2)) as (db_config, puller_database):
-					puller_database.upsert_namespace(create_symbol_namespace(start_height=start_height, end_height=end_height), [])
+					# Assert:
+					self.assertEqual([(transaction_target, 10)], [
+						(row.mosaics[0].mosaic_id, row.mosaics[0].amount) for row in result])
 
-					# Act + Assert:
-					with self.assertRaisesRegex(SymbolDataUnavailable, 'stored Mosaic alias lifetime is corrupt'):
-						with SymbolDatabase(db_config) as database:
-							database.get_transactions(TransactionQuery(transfer_mosaic_id='887E5DB6BB0B21F5'))
+	def test_get_transactions_accepts_saved_zero_start_height_without_revalidating_lifetime_shape(self):
+		# Arrange: start height zero is retained as a node-derived value and remains active at latest height 3.
+		with symbol_test_database(
+			create_symbol_sync_state(last_synced_height=3, finalized_height=2)) as (db_config, puller_database):
+			puller_database.upsert_namespace(create_symbol_namespace(start_height=0, end_height=None), [])
+
+			# Act:
+			with SymbolDatabase(db_config) as database:
+				result = database.get_transactions(TransactionQuery(transfer_mosaic_id='887E5DB6BB0B21F5'))
+
+		# Assert:
+		self.assertEqual([], result)
+
+	def test_get_transactions_returns_not_found_for_expired_alias_without_lifetime_shape_validation(self):
+		# Arrange: end height one is expired at latest height three, regardless of its relation to start height.
+		with symbol_test_database(
+			create_symbol_sync_state(last_synced_height=3, finalized_height=2)) as (db_config, puller_database):
+			puller_database.upsert_namespace(create_symbol_namespace(start_height=2, end_height=1), [])
+
+			# Act + Assert:
+			with self.assertRaisesRegex(SymbolMosaicAliasNotFound, 'not currently linked'):
+				with SymbolDatabase(db_config) as database:
+					database.get_transactions(TransactionQuery(transfer_mosaic_id='887E5DB6BB0B21F5'))
+
+	def test_get_transactions_returns_not_found_for_null_alias_target(self):
+		# Arrange: a Mosaic alias row with no link is not a current Mosaic alias.
+		with symbol_test_database(
+			create_symbol_sync_state(last_synced_height=3, finalized_height=2)) as (db_config, puller_database):
+			puller_database.upsert_namespace(create_symbol_namespace(alias_mosaic_id=None), [])
+
+			# Act + Assert:
+			with self.assertRaisesRegex(SymbolMosaicAliasNotFound, 'not currently linked'):
+				with SymbolDatabase(db_config) as database:
+					database.get_transactions(TransactionQuery(transfer_mosaic_id='887E5DB6BB0B21F5'))
 
 	def test_get_transactions_rejects_not_yet_active_alias(self):
 		# Arrange:
