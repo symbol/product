@@ -2,7 +2,7 @@ from common.symbol.NativeMosaic import NativeMosaicInfo
 from psycopg2 import Error as PsycopgError
 from zenlog import log
 
-from rest.model.symbol.Account import SymbolAccountView, SymbolMultisigView
+from rest.model.symbol.Account import SymbolAccountListView, SymbolAccountView, SymbolMultisigView
 from rest.model.symbol.Receipt import SymbolReceiptView
 from rest.model.symbol.Transaction import SymbolTransactionView
 
@@ -12,7 +12,7 @@ DATABASE_UNAVAILABLE_MESSAGE = 'Symbol database is unavailable'
 class SymbolRestFacade:
 	"""Symbol Rest Facade."""
 
-	def __init__(self, symbol_db, node_config, native_mosaic_info, network):
+	def __init__(self, symbol_db, node_config, native_mosaic_info, network, account_refresh_max_age_seconds=None):
 		"""Creates a Symbol facade with its required database and node dependencies."""
 
 		if symbol_db is None:
@@ -29,6 +29,7 @@ class SymbolRestFacade:
 		self.node_config = node_config
 		self.native_mosaic_info = native_mosaic_info
 		self.network = network
+		self.account_refresh_max_age_seconds = account_refresh_max_age_seconds
 
 	def get_health(self):
 		"""Gets health of the Symbol backend core foundation."""
@@ -128,6 +129,15 @@ class SymbolRestFacade:
 
 		account = self.symbol_db.get_account(address, public_key)
 		return SymbolAccountView(account, self.network, self.native_mosaic_info).to_dict() if account else None
+
+	def get_accounts(self, query):
+		"""Gets snapshot-backed Symbol account list DTOs."""
+
+		if self.account_refresh_max_age_seconds is None:
+			raise ValueError('Symbol account refresh max age is required')
+
+		accounts = self.symbol_db.get_account_list(query, self.account_refresh_max_age_seconds)
+		return [SymbolAccountListView(account, self.network, self.native_mosaic_info).to_dict() for account in accounts]
 
 	def get_multisig(self, address):
 		"""Gets a Symbol multisig DTO by account address."""

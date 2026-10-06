@@ -11,6 +11,9 @@ NETWORK_NAME = "testnet"
 # a mainnet or testnet ID.
 SYMBOL_NATIVE_MOSAIC_ID = "REPLACE_WITH_16_HEX_NETWORK_NATIVE_MOSAIC_ID"
 
+# Required maximum age of the latest successful account refresh, in seconds.
+SYMBOL_ACCOUNT_REFRESH_MAX_AGE_SECONDS = 7200
+
 # REST targets mainnet/testnet XYM and uses the fixed XYM_DIVISIBILITY = 6.
 # Format validation cannot detect a Node/DB/native-ID network mismatch. Deploy
 # the Node, DB and native ID as one network-specific group.

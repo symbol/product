@@ -4,8 +4,8 @@ from unittest import TestCase
 from common.symbol.NativeMosaic import NativeMosaicInfo
 from symbolchain.symbol.Network import Network
 
-from rest.db.SymbolDatabase import SymbolAccountRecord, SymbolMosaicRecord, SymbolMultisigRecord
-from rest.model.symbol.Account import SymbolAccountView, SymbolMultisigView
+from rest.db.SymbolDatabase import AccountListRecord, SymbolAccountRecord, SymbolMosaicRecord, SymbolMultisigRecord
+from rest.model.symbol.Account import SymbolAccountListView, SymbolAccountView, SymbolMultisigView
 from rest.model.symbol.validation import SymbolDataInvalid
 
 from ...test.SymbolAccountTestUtils import ACCOUNT_ADDRESS, OTHER_ADDRESS
@@ -41,6 +41,23 @@ def create_account(**overrides):
 	}
 	values.update(overrides)
 	return SymbolAccountRecord(**values)
+
+
+def create_account_list_record(**overrides):
+	values = {
+		'address': ACCOUNT_ADDRESS,
+		'public_key': bytes.fromhex('01' * 32),
+		'account_type': 'main',
+		'importance_percentage': Decimal('0.025'),
+		'balance_mosaic_id': NATIVE_MOSAIC_INFO.id,
+		'namespaces': ['zeta', 'alpha'],
+		'mosaics': (
+			SymbolMosaicRecord('1234567890ABCDEF', 12345, '1234567890ABCDEF', 2, OTHER_ADDRESS, ('custom',)),
+			SymbolMosaicRecord(NATIVE_MOSAIC_INFO.id, 1234567, None, None, None, ('xym',))
+		)
+	}
+	values.update(overrides)
+	return AccountListRecord(**values)
 
 
 class SymbolAccountViewTest(TestCase):
@@ -364,6 +381,52 @@ class SymbolAccountViewTest(TestCase):
 					Network.TESTNET,
 					NATIVE_MOSAIC_INFO).to_dict()
 				self.assertEqual(expected_status, result['votingKeys'][0]['status'])
+
+
+class SymbolAccountListViewTest(TestCase):
+	def test_to_dict_returns_exact_snapshot_account_list_dto(self):
+		# Arrange:
+		view = SymbolAccountListView(create_account_list_record(), Network.TESTNET, NATIVE_MOSAIC_INFO)
+
+		# Act:
+		result = view.to_dict()
+
+		# Assert:
+		self.assertEqual({
+			'address': 'TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY', 'publicKey': '01' * 32,
+			'accountType': 'main', 'importance': 0.025, 'balance': 1.234567,
+			'namespaces': ['zeta', 'alpha'],
+			'mosaics': [
+				{'id': '1234567890ABCDEF', 'name': 'custom', 'amount': 123.45, 'isCreatedByAccount': False},
+				{'id': '72C0212E67A08BCE', 'name': 'xym', 'amount': 1.234567, 'isCreatedByAccount': False}],
+			'description': None, 'isHarvestingActive': None
+		}, result)
+
+	def test_to_dict_uses_selected_custom_mosaic_divisibility_for_balance(self):
+		# Arrange:
+		account = create_account_list_record(balance_mosaic_id='1234567890ABCDEF')
+
+		# Act:
+		result = SymbolAccountListView(account, Network.TESTNET, NATIVE_MOSAIC_INFO).to_dict()
+
+		# Assert:
+		self.assertEqual(123.45, result['balance'])
+
+	def test_to_dict_preserves_nullable_fields_and_zero_when_rows_are_absent(self):
+		# Arrange:
+		account = create_account_list_record(
+			public_key=None, account_type=None, importance_percentage=0,
+			namespaces=[], mosaics=())
+
+		# Act:
+		result = SymbolAccountListView(account, Network.TESTNET, NATIVE_MOSAIC_INFO).to_dict()
+
+		# Assert:
+		self.assertEqual({
+			'address': 'TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY', 'publicKey': None, 'accountType': None,
+			'importance': 0.0, 'balance': 0, 'namespaces': [], 'mosaics': [], 'description': None,
+			'isHarvestingActive': None
+		}, result)
 
 
 class SymbolAccountViewValidationTest(TestCase):

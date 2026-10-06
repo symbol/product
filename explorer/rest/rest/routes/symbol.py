@@ -14,6 +14,8 @@ from symbolchain.symbol.Network import Address, Network
 from zenlog import log
 
 from rest.db.SymbolDatabase import (
+	AccountListQuery,
+	AccountSortField,
 	ReceiptQuery,
 	SortOrder,
 	SymbolDatabase,
@@ -35,17 +37,21 @@ TRANSACTION_QUERY_PARAMETERS = frozenset([
 ])
 RECEIPT_MAX_OFFSET = 100000
 TRANSACTION_MAX_OFFSET = 100000
+ACCOUNT_LIST_QUERY_PARAMETERS = frozenset(['limit', 'offset', 'sort_field', 'sort_order', 'mosaic_id'])
+ACCOUNT_LIST_MAX_OFFSET = 100000
 MAX_TRANSACTION_HEIGHT = 9223372036854775807
 SYMBOL_TRANSACTION_TYPE_CODES = frozenset(transaction_type.value for transaction_type in TransactionType)
 MOSAIC_ID_PATTERN = re.compile(r'[0-9A-Fa-f]{16}', re.ASCII)
 MAX_NAMESPACE_NAME_SIZE = 64
 MAX_NAMESPACE_DEPTH = 3
 XYM_DIVISIBILITY = 6
+ACCOUNT_REFRESH_MAX_AGE_SETTING = 'SYMBOL_ACCOUNT_REFRESH_MAX_AGE_SECONDS'
 
 
 def setup_symbol_facade(app):
 	network = _create_symbol_network(app.config)
 	native_mosaic_info = _create_native_mosaic_info(app.config)
+	account_refresh_max_age_seconds = _create_account_refresh_max_age_seconds(app.config)
 	config = configparser.ConfigParser()
 	db_path = Path(app.config.get('DATABASE_CONFIG_FILEPATH'))
 
@@ -66,7 +72,7 @@ def setup_symbol_facade(app):
 
 	symbol_db = SymbolDatabase(db_params, native_mosaic_info)
 	app.extensions['symbol_database'] = symbol_db
-	return SymbolRestFacade(symbol_db, node_config, native_mosaic_info, network)
+	return SymbolRestFacade(symbol_db, node_config, native_mosaic_info, network, account_refresh_max_age_seconds)
 
 
 def _create_symbol_network(app_config):
@@ -87,6 +93,17 @@ def _create_native_mosaic_info(app_config):
 		raise ValueError(f'{error.args[0]} is required') from error
 
 	return create_native_mosaic_info(mosaic_id, XYM_DIVISIBILITY)
+
+
+def _create_account_refresh_max_age_seconds(app_config):
+	if ACCOUNT_REFRESH_MAX_AGE_SETTING not in app_config:
+		raise ValueError(f'{ACCOUNT_REFRESH_MAX_AGE_SETTING} is required')
+
+	value = app_config[ACCOUNT_REFRESH_MAX_AGE_SETTING]
+	if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
+		raise ValueError(f'{ACCOUNT_REFRESH_MAX_AGE_SETTING} must be a positive integer')
+
+	return value
 
 
 def setup_symbol_routes(app, symbol_api_facade):
@@ -189,6 +206,22 @@ def setup_symbol_routes(app, symbol_api_facade):
 
 
 def _setup_symbol_account_routes(app, symbol_api_facade, run_symbol_query):
+	@app.route('/api/symbol/accounts')
+	def api_get_symbol_accounts():
+		try:
+			_validate_allowed_query_parameters(ACCOUNT_LIST_QUERY_PARAMETERS)
+			query = _parse_account_list_query()
+		except ValueError as error:
+			abort(400, error)
+
+		error, result = run_symbol_query(
+			lambda: symbol_api_facade.get_accounts(query),
+			'Failed to get Symbol accounts')
+		if error:
+			return error
+
+		return jsonify(result)
+
 	@app.route('/api/symbol/account')
 	def api_get_symbol_account():
 		try:
@@ -322,6 +355,35 @@ def _parse_transaction_query():
 		recipient_address=recipient_address,
 		transfer_mosaic_id=transfer_mosaic_id,
 		include_embedded=embedded)
+
+
+def _parse_account_list_query():
+	limit = _parse_bounded_integer('limit', _get_scalar_parameter('limit', '10'), 1, 100)
+	offset = _parse_bounded_integer('offset', _get_scalar_parameter('offset', '0'), 0, ACCOUNT_LIST_MAX_OFFSET)
+	sort_field_value = _get_scalar_parameter('sort_field', 'ID').upper()
+	try:
+		sort_field = AccountSortField(sort_field_value)
+	except ValueError as error:
+		raise ValueError('sort_field must be ID, IMPORTANCE, or BALANCE') from error
+
+	sort_order = _get_scalar_parameter('sort_order', 'DESC').upper()
+	if sort_order != SortOrder.DESC.value:
+		raise ValueError('sort_order must be DESC')
+
+	mosaic_id = _get_scalar_parameter('mosaic_id')
+	if mosaic_id is not None:
+		if not MOSAIC_ID_PATTERN.fullmatch(mosaic_id):
+			raise ValueError('Invalid mosaic_id')
+
+		mosaic_id = mosaic_id.upper()
+
+	if sort_field == AccountSortField.BALANCE and mosaic_id is None:
+		raise ValueError('mosaic_id is required for BALANCE')
+
+	if sort_field != AccountSortField.BALANCE and mosaic_id is not None:
+		raise ValueError('mosaic_id can only be used with BALANCE')
+
+	return AccountListQuery(sort_field, mosaic_id, limit, offset)
 
 
 def _parse_transaction_type(value):
