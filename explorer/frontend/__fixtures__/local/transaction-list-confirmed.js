@@ -1,0 +1,36 @@
+import {
+	accountKeyLinkConfirmedTransaction,
+	mosaicDefinitionConfirmedTransaction,
+	mosaicSupplyChangeConfirmedTransaction,
+	multisigAccountModificationConfirmedTransaction,
+	multisigConfirmedTransaction,
+	multisigMultisigAccountModificationConfirmedTransaction,
+	multisigNamespaceRegistrationConfirmedTransaction,
+	namespaceRegistrationConfirmedTransaction,
+	transferConfirmedTransaction,
+	transferCustomMosaicOnlyConfirmedTransaction,
+	transferDecimalAmountConfirmedTransaction,
+	transferEncryptedMessageConfirmedTransaction,
+	transferMultipleMosaicsConfirmedTransaction,
+	transferNoMessageConfirmedTransaction
+} from './transaction';
+
+// eslint-disable-next-line no-unused-vars
+const withoutAccountStateChange = ({ accountStateChange, ...transaction }) => transaction;
+
+export const transactionListConfirmed = [
+	transferConfirmedTransaction,
+	transferNoMessageConfirmedTransaction,
+	namespaceRegistrationConfirmedTransaction,
+	mosaicDefinitionConfirmedTransaction,
+	multisigMultisigAccountModificationConfirmedTransaction,
+	multisigAccountModificationConfirmedTransaction,
+	accountKeyLinkConfirmedTransaction,
+	mosaicSupplyChangeConfirmedTransaction,
+	multisigConfirmedTransaction,
+	transferEncryptedMessageConfirmedTransaction,
+	multisigNamespaceRegistrationConfirmedTransaction,
+	transferCustomMosaicOnlyConfirmedTransaction,
+	transferMultipleMosaicsConfirmedTransaction,
+	transferDecimalAmountConfirmedTransaction
+].map(withoutAccountStateChange);
