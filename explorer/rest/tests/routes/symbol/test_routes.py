@@ -5,7 +5,7 @@ from symbolchain.sc import TransactionType
 from symbolchain.symbol.Network import Network
 
 from rest import setup_error_handlers
-from rest.db.SymbolDatabase import ReceiptQuery, SortOrder, SymbolDataUnavailable, TransactionQuery
+from rest.db.SymbolDatabase import ReceiptQuery, SortOrder, SymbolDataUnavailable, SymbolMosaicAliasNotFound, TransactionQuery
 from rest.routes.symbol import setup_symbol_routes
 
 
@@ -677,22 +677,66 @@ def test_transactions_bad_address_key():
 		assert None is facade.transactions_query, query
 
 
-def test_transactions_bad_mosaic():
+def test_transfer_mosaic_filter_normalizes_ids_and_converts_namespace_names():  # pylint: disable=invalid-name
+	# Arrange:
+	facade = SymbolBlockFacade()
+	client = _create_symbol_test_client(facade)
+
+	# Act + Assert:
+	for value, expected in (
+		('72c0212e67a08bce', '72C0212E67A08BCE'),
+		('8000000000000000', '8000000000000000'),
+		('887e5db6bb0b21f5', '887E5DB6BB0B21F5'),
+		('a' * 64, 'D940DD54960E74B8'),
+		('.'.join(['a' * 64] * 3), 'FE5ED24675AB2E09'),
+		('123', 'A8FD86E7F0F23F1F'),
+		('0xabc', '925E72121973547B'),
+		('daoka.my_coin', 'D9ED29F89BC43892'),
+		('daoka.my-coin', '9CCC5B8BC198D8BD'),
+		('namespace.xym', 'B006234ECB50F6DD')
+	):
+		response = client.get('/api/symbol/transactions', query_string={'transferMosaicId': value})
+		assert 200 == response.status_code, value
+		assert expected == facade.transactions_query.transfer_mosaic_id, value
+
+
+def test_transfer_hierarchical_name():
+	# Arrange:
+	facade = SymbolBlockFacade()
+
+	# Act:
+	response = _create_symbol_test_client(facade).get('/api/symbol/transactions?transferMosaicId=namespace.xym.child')
+
+	# Assert:
+	assert 200 == response.status_code
+	assert '8C820498A7C8F866' == facade.transactions_query.transfer_mosaic_id
+
+
+def test_transfer_rejects_bad_input():
 	# Arrange:
 	facade = SymbolBlockFacade()
 	client = _create_symbol_test_client(facade)
 
 	# Act + Assert:
 	for value in (
-		'123', 'GGGGGGGGGGGGGGGG', '0x72C0212E67A08BCE', ' 72C0212E67A08BCE',
-		'namespace.xym', '8000000000000000'
+		'GGGGGGGGGGGGGGGG', ' 72C0212E67A08BCE', 'Namespace.xym', 'a.b.c.d', 'a' * 65,
+		'', '.', '.a', 'a.', 'a..b', '_a', '-a', '日本語', 'a/coin', 'a@coin', 'a#coin', 'a coin', 'a+'
 	):
-		response = client.get(f'/api/symbol/transactions?transferMosaicId={value}')
-		message = (
-			'transferMosaicId must be a mosaic id, not an alias id'
-			if '8000000000000000' == value else 'Invalid transferMosaicId')
-		_assert_bad_request_response(response, message)
+		response = client.get('/api/symbol/transactions', query_string={'transferMosaicId': value})
+		_assert_bad_request_response(response, 'Invalid transferMosaicId')
 		assert None is facade.transactions_query, value
+
+
+def test_transfer_unresolved_404():
+	# Arrange:
+	facade = SymbolBlockFacade()
+	facade.transactions_error = SymbolMosaicAliasNotFound('alias missing')
+
+	# Act:
+	response = _create_symbol_test_client(facade).get('/api/symbol/transactions?transferMosaicId=8000000000000000')
+
+	# Assert:
+	_assert_not_found_response(response)
 
 
 def test_embedded_rejects_invalid_values():
