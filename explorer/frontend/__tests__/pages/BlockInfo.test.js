@@ -1,7 +1,7 @@
 import '@testing-library/jest-dom';
-import { blockInfoResult } from '../test-utils/blocks';
+import { blockWithTransactions, emptyBlock } from '../../__fixtures__/local/block';
+import { transactionListConfirmed } from '../../__fixtures__/local/transaction-list-confirmed';
 import { runGetServerSidePropsTests, runRenderScenarioTests, runTableErrorTest, runTestCases } from '../test-utils/page';
-import { transactionPageResult } from '../test-utils/transactions';
 import * as BlockService from '@/app/api/blocks';
 import * as TransactionService from '@/app/api/transactions';
 import { MAX_TRANSACTION_SQUARES } from '@/app/components/ValueTransactionSquares';
@@ -27,7 +27,7 @@ jest.mock('@/app/api/transactions', () => {
 });
 
 beforeEach(() => {
-	jest.spyOn(TransactionService, 'fetchTransactionPage').mockResolvedValue(transactionPageResult);
+	jest.spyOn(TransactionService, 'fetchTransactionPage').mockResolvedValue(blockTransactionPage);
 	jest.spyOn(BlockService, 'fetchChainStatus').mockResolvedValue(createdChainStatus);
 });
 
@@ -63,15 +63,20 @@ const SCREEN_TEXT = {
 
 const mockedChartText = 'Mocked React ApexCharts';
 const timestampTitleText = `${SCREEN_TEXT.fieldTimestampUTC}::title:${SCREEN_TEXT.fieldTimestamp}`;
-const createdChainStatus = { height: blockInfoResult.height };
+const totalFeeTitle = `${blockWithTransactions.totalFee} XEM`;
+const createdChainStatus = { height: blockWithTransactions.height };
+const blockTransactionPage = {
+	data: transactionListConfirmed.filter(transaction => transaction.height === blockWithTransactions.height),
+	pageNumber: 1
+};
 const transactionSearchCriteria = {
 	pageNumber: 1,
-	height: blockInfoResult.height,
+	height: blockWithTransactions.height,
 	pageSize: 50
 };
 const transactionSquaresSearchCriteria = {
 	pageSize: MAX_TRANSACTION_SQUARES,
-	height: blockInfoResult.height
+	height: blockWithTransactions.height
 };
 const emptyPage = {
 	data: [],
@@ -80,7 +85,7 @@ const emptyPage = {
 
 // NEM specific constants
 
-const nemSafeChainStatus = { height: blockInfoResult.height + config.PUBLIC_NEM_BLOCKCHAIN_UNWIND_LIMIT + 1 };
+const nemSafeChainStatus = { height: blockWithTransactions.height + config.PUBLIC_NEM_BLOCKCHAIN_UNWIND_LIMIT + 1 };
 
 // Tests
 
@@ -92,12 +97,12 @@ describe('BlockInfo', () => {
 			{
 				description: 'returns the block info',
 				config: {
-					responses: { blockInfo: blockInfoResult }
+					responses: { blockInfo: blockWithTransactions }
 				},
 				expected: {
-					requestArguments: { blockInfo: [blockInfoResult.height] },
+					requestArguments: { blockInfo: [blockWithTransactions.height] },
 					result: {
-						props: { blockInfo: blockInfoResult }
+						props: { blockInfo: blockWithTransactions }
 					}
 				}
 			},
@@ -107,7 +112,7 @@ describe('BlockInfo', () => {
 					responses: { blockInfo: null }
 				},
 				expected: {
-					requestArguments: { blockInfo: [blockInfoResult.height] },
+					requestArguments: { blockInfo: [blockWithTransactions.height] },
 					result: { notFound: true }
 				}
 			}
@@ -115,7 +120,7 @@ describe('BlockInfo', () => {
 
 		runGetServerSidePropsTests({
 			getServerSideProps,
-			params: { height: blockInfoResult.height },
+			params: { height: blockWithTransactions.height },
 			requests,
 			cases: getServerSidePropsCases
 		});
@@ -126,29 +131,30 @@ describe('BlockInfo', () => {
 			BlockService.fetchChainStatus.mockResolvedValue(config.chainStatus ?? createdChainStatus);
 			if (config.transactionPage)
 				TransactionService.fetchTransactionPage.mockResolvedValue(config.transactionPage);
-			render(<BlockInfo blockInfo={{ ...blockInfoResult, ...config.blockInfo }} />);
+			render(<BlockInfo blockInfo={config.blockInfo} />);
 		};
 
 		describe('section: block', () => {
 			const blockCases = [
 				{
 					description: 'renders the height, timestamp and total fee',
-					config: {},
+					config: { blockInfo: blockWithTransactions },
 					expected: {
 						texts: [
 							SCREEN_TEXT.sectionBlock,
 							SCREEN_TEXT.fieldHeight,
-							blockInfoResult.height,
+							blockWithTransactions.height,
 							SCREEN_TEXT.fieldStatus,
 							timestampTitleText,
-							SCREEN_TEXT.fieldTotalFee,
-							blockInfoResult.totalFee
-						]
+							SCREEN_TEXT.fieldTotalFee
+						],
+						// The block's only transaction pays the whole total fee, so its table row repeats the amount.
+						titleOccurrences: { [totalFeeTitle]: 2 }
 					}
 				},
 				{
 					description: 'renders the created status for a recent block',
-					config: {},
+					config: { blockInfo: blockWithTransactions },
 					expected: {
 						texts: [SCREEN_TEXT.labelCreated],
 						hiddenTexts: [SCREEN_TEXT.labelSafe, SCREEN_TEXT.labelFinalized]
@@ -157,7 +163,10 @@ describe('BlockInfo', () => {
 				{
 					description: 'renders the safe status for a block buried deeper than the unwind limit',
 					variants: ['nem'],
-					config: { chainStatus: nemSafeChainStatus },
+					config: {
+						blockInfo: blockWithTransactions,
+						chainStatus: nemSafeChainStatus
+					},
 					expected: {
 						texts: [SCREEN_TEXT.labelSafe],
 						hiddenTexts: [SCREEN_TEXT.labelCreated]
@@ -166,7 +175,12 @@ describe('BlockInfo', () => {
 				{
 					description: 'renders the finalized status for a finalized block',
 					variants: ['symbol'],
-					config: { blockInfo: { isFinalized: true } },
+					config: {
+						blockInfo: {
+							...blockWithTransactions,
+							isFinalized: true
+						}
+					},
 					expected: {
 						texts: [SCREEN_TEXT.labelFinalized],
 						hiddenTexts: [SCREEN_TEXT.labelCreated]
@@ -181,7 +195,7 @@ describe('BlockInfo', () => {
 			const treemapCases = [
 				{
 					description: 'renders the chart when the block transactions fit the cap',
-					config: {},
+					config: { blockInfo: blockWithTransactions },
 					expected: {
 						texts: [SCREEN_TEXT.fieldTransactionFees],
 						asyncTexts: [mockedChartText],
@@ -191,7 +205,7 @@ describe('BlockInfo', () => {
 				{
 					description: 'renders the empty message when the block has no transactions',
 					config: {
-						blockInfo: { transactionCount: 0 },
+						blockInfo: emptyBlock,
 						transactionPage: emptyPage
 					},
 					expected: {
@@ -202,7 +216,12 @@ describe('BlockInfo', () => {
 				},
 				{
 					description: 'renders the too many transactions message for a block above the cap',
-					config: { blockInfo: { transactionCount: MAX_TRANSACTION_SQUARES + 1 } },
+					config: {
+						blockInfo: {
+							...blockWithTransactions,
+							transactionCount: MAX_TRANSACTION_SQUARES + 1
+						}
+					},
 					expected: {
 						texts: [SCREEN_TEXT.messageTooManyTransactions],
 						hiddenTexts: [mockedChartText]
@@ -215,7 +234,12 @@ describe('BlockInfo', () => {
 			const runTreemapRequestTest = (description, config, expected) => {
 				it(description, async () => {
 					// Act:
-					renderPage({ blockInfo: { transactionCount: config.transactionCount } });
+					renderPage({
+						blockInfo: {
+							...blockWithTransactions,
+							transactionCount: config.transactionCount
+						}
+					});
 					// the transaction table request is made for any block, so it settles the mount requests first.
 					await waitFor(() => expect(TransactionService.fetchTransactionPage).toHaveBeenCalledWith(transactionSearchCriteria));
 
@@ -251,20 +275,20 @@ describe('BlockInfo', () => {
 			const detailsCases = [
 				{
 					description: 'renders the harvester, size, difficulty, signature and hash',
-					config: {},
+					config: { blockInfo: blockWithTransactions },
 					expected: {
 						texts: [
 							SCREEN_TEXT.fieldHarvester,
-							blockInfoResult.harvester,
+							blockWithTransactions.harvester,
 							SCREEN_TEXT.fieldTransactions,
 							SCREEN_TEXT.fieldSize,
-							`${blockInfoResult.size} B`,
+							`${blockWithTransactions.size} B`,
 							SCREEN_TEXT.fieldDifficulty,
-							`${blockInfoResult.difficulty} %`,
+							`${blockWithTransactions.difficulty} %`,
 							SCREEN_TEXT.fieldSignature,
-							blockInfoResult.signature,
+							blockWithTransactions.signature,
 							SCREEN_TEXT.fieldHash,
-							blockInfoResult.hash
+							blockWithTransactions.hash
 						]
 					}
 				}
@@ -274,12 +298,12 @@ describe('BlockInfo', () => {
 		});
 
 		describe('section: transactions', () => {
-			const renderBlockInfo = () => render(<BlockInfo blockInfo={blockInfoResult} />);
+			const renderBlockInfo = () => render(<BlockInfo blockInfo={blockWithTransactions} />);
 
 			const transactionsCases = [
 				{
 					description: 'renders the table headers and transaction rows',
-					config: {},
+					config: { blockInfo: blockWithTransactions },
 					expected: {
 						texts: [
 							SCREEN_TEXT.sectionTransactions,
@@ -290,7 +314,7 @@ describe('BlockInfo', () => {
 							SCREEN_TEXT.tableFieldValue,
 							SCREEN_TEXT.tableFieldFee
 						],
-						asyncTexts: transactionPageResult.data.map(transaction => truncateString(transaction.hash, 'hash'))
+						asyncTexts: blockTransactionPage.data.map(transaction => truncateString(transaction.hash, 'hash'))
 					}
 				}
 			];
