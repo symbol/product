@@ -38,7 +38,7 @@ const recipientAccount = walletStorageAccounts.testnet[1];
 const signableTransfer = {
 	type: TransactionType.TRANSFER,
 	recipientAddress: recipientAccount.address,
-	mosaics: [{ id: 'nem.xem', name: 'XEM', amount: '10', divisibility: 6 }],
+	tokens: [{ id: 'nem.xem', name: 'XEM', amount: '10', divisibility: 6 }],
 	message: null,
 	fee: { token: { amount: '0.1', divisibility: 6, id: 'nem.xem', name: 'XEM' } },
 	deadline: createDeadline(NETWORK_TIME)

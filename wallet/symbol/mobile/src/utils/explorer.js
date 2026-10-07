@@ -42,11 +42,11 @@ export const createExplorerAccountUrl = (chainName, networkIdentifier, address) 
 };
 
 /**
- * Create a URL to view a token/mosaic on the blockchain explorer.
+ * Create a URL to view a token on the blockchain explorer.
  * @param {ChainName} chainName - The name of the blockchain (e.g., 'symbol', 'ethereum').
  * @param {NetworkIdentifier} networkIdentifier - The network identifier (e.g., 'mainnet', 'testnet').
- * @param {string} tokenId - The token or mosaic identifier.
- * @returns {string} The URL to view the token/mosaic on the explorer.
+ * @param {string} tokenId - The token identifier.
+ * @returns {string} The URL to view the token on the explorer.
  */
 export const createTokenExplorerUrl = (chainName, networkIdentifier, tokenId) => {
 	const baseUrl = config.chains[chainName].explorerURL[networkIdentifier];

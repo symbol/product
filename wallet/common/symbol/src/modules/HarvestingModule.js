@@ -327,7 +327,7 @@ export class HarvestingModule {
 		// Request node for harvesting.
 		transactions.push({
 			type: TransactionType.TRANSFER,
-			mosaics: [],
+			tokens: [],
 			message: {
 				type: MessageType.DelegatedHarvesting,
 				payload: encodeDelegatedHarvestingMessage(

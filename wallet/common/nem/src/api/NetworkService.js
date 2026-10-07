@@ -73,7 +73,7 @@ export class NetworkService {
 			},
 			networkCurrency: {
 				name: NETWORK_CURRENCY_NAME,
-				mosaicId: NETWORK_CURRENCY_ID,
+				id: NETWORK_CURRENCY_ID,
 				divisibility: NETWORK_CURRENCY_DIVISIBILITY
 			}
 		};

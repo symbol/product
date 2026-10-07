@@ -490,7 +490,7 @@ export class BridgePairManager {
 		if (!source.tokenInfo || !target.tokenInfo)
 			throw new Error('Failed to create pending request. Token info is not available');
 
-		const transactionTokens = transaction.mosaics ?? transaction.tokens ?? [];
+		const transactionTokens = transaction.tokens ?? [];
 
 		return {
 			type: mode,

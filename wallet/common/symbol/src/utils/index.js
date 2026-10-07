@@ -1,6 +1,6 @@
 export * from './account';
 export * from './helper';
-export * from './mosaic';
+export * from './token';
 export * from './namespace';
 export * from './network';
 export * from './transaction-from-dto';

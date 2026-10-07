@@ -52,14 +52,14 @@ const multisigDeadline = {
 
 const createFee = amount => ({ token: { amount, divisibility: 6, id: 'nem.xem', name: 'XEM' } });
 
-const nativeMosaic = amount => ({ id: 'nem.xem', name: 'XEM', amount, divisibility: 6 });
+const nativeToken = amount => ({ id: 'nem.xem', name: 'XEM', amount, divisibility: 6 });
 
 // Transfer of native XEM only.
 const transferXem = {
 	type: 257,
 	signerPublicKey: alice.publicKey,
 	recipientAddress: bob.address,
-	mosaics: [nativeMosaic('10')],
+	tokens: [nativeToken('10')],
 	message: null,
 	fee: createFee('0.1'),
 	deadline: standardDeadline
@@ -85,7 +85,7 @@ const transferWithMessage = {
 	type: 257,
 	signerPublicKey: alice.publicKey,
 	recipientAddress: bob.address,
-	mosaics: [nativeMosaic('10')],
+	tokens: [nativeToken('10')],
 	message: { type: 'plain', text: 'Good luck!', payload: '476f6f64206c75636b21', native: { type: 1 } },
 	fee: createFee('0.15'),
 	deadline: standardDeadline
@@ -112,7 +112,7 @@ const transferWithMosaic = {
 	type: 257,
 	signerPublicKey: alice.publicKey,
 	recipientAddress: bob.address,
-	mosaics: [{ id: 'test.token', name: 'test.token', amount: '5', divisibility: 2 }],
+	tokens: [{ id: 'test.token', name: 'test.token', amount: '5', divisibility: 2 }],
 	message: null,
 	fee: createFee('0.2'),
 	deadline: standardDeadline
@@ -145,7 +145,7 @@ const transferWithSubNamespaceMosaic = {
 	type: 257,
 	signerPublicKey: alice.publicKey,
 	recipientAddress: bob.address,
-	mosaics: [{ id: 'makoto.metals.silver', name: 'makoto.metals.silver', amount: '5', divisibility: 2 }],
+	tokens: [{ id: 'makoto.metals.silver', name: 'makoto.metals.silver', amount: '5', divisibility: 2 }],
 	message: null,
 	fee: createFee('0.2'),
 	deadline: standardDeadline
@@ -184,7 +184,7 @@ export const multisigTransfer = {
 		type: 257,
 		signerPublicKey: alice.publicKey,
 		recipientAddress: bob.address,
-		mosaics: [nativeMosaic('10')],
+		tokens: [nativeToken('10')],
 		message: null,
 		fee: createFee('0.1'),
 		deadline: standardDeadline
@@ -453,7 +453,7 @@ export const mosaicSupplyChange = {
 	signerPublicKey: alice.publicKey,
 	fee: createFee('0.15'),
 	deadline: standardDeadline,
-	mosaicId: 'alice.token',
+	tokenId: 'alice.token',
 	action: 1,
 	delta: 1000
 };
@@ -556,7 +556,7 @@ const transferXemRead = {
 	signerAddress: alice.address,
 	signerPublicKey: ALICE_PUBLIC_KEY,
 	recipientAddress: bob.address,
-	mosaics: [nativeMosaic('10')],
+	tokens: [nativeToken('10')],
 	amount: '-10'
 };
 
@@ -574,7 +574,7 @@ const transferWithMosaicRead = {
 	signerAddress: alice.address,
 	signerPublicKey: ALICE_PUBLIC_KEY,
 	recipientAddress: bob.address,
-	mosaics: [resolvedTestToken],
+	tokens: [resolvedTestToken],
 	amount: '0'
 };
 
@@ -697,7 +697,7 @@ const mosaicSupplyChangeRead = {
 	fee: '0.15',
 	signerAddress: alice.address,
 	signerPublicKey: ALICE_PUBLIC_KEY,
-	mosaicId: 'alice.token',
+	tokenId: 'alice.token',
 	action: 1,
 	delta: 1000
 };
@@ -707,7 +707,7 @@ const multisigTransferInnerRead = {
 	signerAddress: alice.address,
 	signerPublicKey: ALICE_PUBLIC_KEY,
 	recipientAddress: bob.address,
-	mosaics: [nativeMosaic('10')],
+	tokens: [nativeToken('10')],
 	amount: '-10'
 };
 
@@ -721,7 +721,7 @@ const multisigTransferRead = {
 	innerTransaction: multisigTransferInnerRead,
 	innerTransactions: [multisigTransferInnerRead],
 	recipientAddress: bob.address,
-	mosaics: [nativeMosaic('10')],
+	tokens: [nativeToken('10')],
 	amount: '-10',
 	cosignatures: [],
 	message: null
@@ -746,7 +746,7 @@ const multisigImportanceTransferRead = {
 	innerTransaction: multisigImportanceTransferInnerRead,
 	innerTransactions: [multisigImportanceTransferInnerRead],
 	recipientAddress: null,
-	mosaics: [],
+	tokens: [],
 	amount: '0',
 	cosignatures: [],
 	message: null

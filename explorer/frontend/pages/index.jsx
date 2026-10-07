@@ -11,7 +11,7 @@ import Separator from '@/app/components/Separator';
 import ValuePrice from '@/app/components/ValuePrice';
 import { MAX_TRANSACTION_SQUARES } from '@/app/components/ValueTransactionSquares';
 import config from '@/app/config';
-import { TRANSACTION_CHART_TYPE, TRANSACTION_GROUP } from '@/app/constants';
+import { DATA_REFRESH_INTERVAL, TRANSACTION_CHART_TYPE, TRANSACTION_GROUP } from '@/app/constants';
 import styles from '@/app/styles/pages/Home.module.scss';
 import { numberToShortString, truncateDecimals, useAsyncCall } from '@/app/utils';
 import { formatTransactionChart, numberToString } from '@/app/utils/common';
@@ -21,7 +21,6 @@ import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 import { useCallback } from 'react';
 
-const DATA_REFRESH_INTERVAL = 60000;
 const RECENT_BLOCK_COUNT = 50;
 
 export const getServerSideProps = async ({ locale }) => {
@@ -77,7 +76,7 @@ const Home = ({
 		DATA_REFRESH_INTERVAL
 	);
 	const blocks = useAsyncCall(() => fetchBlockPage({ pageSize: RECENT_BLOCK_COUNT }), preloadedBlocks, DATA_REFRESH_INTERVAL);
-	const chainStatus = useAsyncCall(fetchChainStatus, null, DATA_REFRESH_INTERVAL);
+	const chainStatus = useAsyncCall(fetchChainStatus, null, DATA_REFRESH_INTERVAL, true);
 
 	const fetchBlockTransactions = useCallback(height => fetchTransactionPage({ pageSize: MAX_TRANSACTION_SQUARES, height }), []);
 

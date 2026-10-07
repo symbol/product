@@ -109,7 +109,7 @@ export const Send = props => {
 	});
 
 	// Derived Token Data
-	const nativeTokenId = networkProperties?.networkCurrency?.id || networkProperties?.networkCurrency?.mosaicId;
+	const nativeTokenId = networkProperties?.networkCurrency?.id;
 	const tokenListFiltered = filterActiveTokens(senderTokenList, chainHeight);
 	const selectedToken = senderTokenList.find(token => token.id === selectedTokenId) || senderTokenList[0];
 	const isMessageEncrypted = isMultisigTransfer ? false : isMessageEncryptedValue;
@@ -226,7 +226,7 @@ export const Send = props => {
 						<StyledText type="title" size="s">{$t('screen_send_title_token')}</StyledText>
 						<Stack gap="s">
 							<SelectToken
-								label={$t('inputLabel_mosaic')}
+								label={$t('inputLabel_token')}
 								value={selectedTokenId}
 								tokens={tokenListFiltered}
 								chainName={walletController.chainName}

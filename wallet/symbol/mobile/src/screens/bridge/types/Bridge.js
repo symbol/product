@@ -18,7 +18,7 @@
  * Token.
  * @typedef {object} SwapToken
  * @property {string} id - Token identifier.
- * @property {string} name - Token name.
+ * @property {string|null} name - Token name, or null when the token has no name.
  * @property {number} divisibility - Token divisibility.
  * @property {string} amount - Amount in relative units.
  * @property {string} [ticker] - Token ticker.

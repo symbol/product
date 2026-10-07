@@ -129,15 +129,15 @@ describe('screens/mosaic/utils/created-mosaic-list', () => {
 	});
 
 	describe('mergeHeldAmounts()', () => {
-		it('merges held amounts and names into the token definitions', () => {
+		it('merges held amounts into the token definitions', () => {
 			// Arrange:
 			const heldTokenDefinition = TokenFixtureBuilder
 				.createWithToken(CHAIN_NAME, NETWORK_IDENTIFIER, 1)
-				.override({ names: ['held.token'] })
+				.override({ name: 'held.token', names: ['held.token'] })
 				.build();
 			const unheldTokenDefinition = TokenFixtureBuilder
 				.createWithToken(CHAIN_NAME, NETWORK_IDENTIFIER, 2)
-				.override({ names: ['unheld.token'] })
+				.override({ name: 'unheld.token', names: ['unheld.token'] })
 				.build();
 			const heldToken = TokenFixtureBuilder
 				.createWithToken(CHAIN_NAME, NETWORK_IDENTIFIER, 1)
@@ -146,13 +146,11 @@ describe('screens/mosaic/utils/created-mosaic-list', () => {
 			const expectedTokens = [
 				{
 					...heldTokenDefinition,
-					amount: '150',
-					name: heldToken.name
+					amount: '150'
 				},
 				{
 					...unheldTokenDefinition,
-					amount: '0',
-					name: 'unheld.token'
+					amount: '0'
 				}
 			];
 
@@ -163,17 +161,17 @@ describe('screens/mosaic/utils/created-mosaic-list', () => {
 			expect(result).toEqual(expectedTokens);
 		});
 
-		it('falls back to the token id as the name when the definition has no names', () => {
+		it('keeps a null name when the definition has no names', () => {
 			// Arrange:
 			const unnamedTokenDefinition = TokenFixtureBuilder
 				.createWithToken(CHAIN_NAME, NETWORK_IDENTIFIER, 3)
-				.override({ names: [] })
+				.override({ name: null, names: [] })
 				.build();
 			const expectedTokens = [
 				{
 					...unnamedTokenDefinition,
 					amount: '0',
-					name: unnamedTokenDefinition.id
+					name: null
 				}
 			];
 

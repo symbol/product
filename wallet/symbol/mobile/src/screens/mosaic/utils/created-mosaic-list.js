@@ -4,8 +4,8 @@ import { isTokenExpired } from '@/app/utils';
 
 /** @typedef {import('@/app/types/Filter').FilterItem} FilterItem */
 /** @typedef {import('@/app/types/Filter').FilterValue} FilterValue */
-/** @typedef {import('wallet-common-symbol/src/types/Mosaic').Mosaic} Mosaic */
-/** @typedef {import('wallet-common-symbol/src/types/Mosaic').MosaicInfo} MosaicInfo */
+/** @typedef {import('wallet-common-symbol/src/types/Token').Token} Token */
+/** @typedef {import('wallet-common-symbol/src/types/Token').TokenInfo} TokenInfo */
 /** @typedef {import('@/app/screens/mosaic/types/Mosaic').CreatedMosaicSection} CreatedMosaicSection */
 
 // Group identifier of the single list section
@@ -36,10 +36,10 @@ export const getCreatedMosaicListFilterConfig = () => [
 /**
  * Filters created mosaics by the active filter values. Expired mosaics are hidden by default;
  * the expired filter reveals them.
- * @param {Mosaic[]} mosaics - The mosaics to filter.
+ * @param {Token[]} mosaics - The mosaics to filter.
  * @param {FilterValue} filter - The active filter values.
  * @param {number} chainHeight - The current chain height used to determine expiration.
- * @returns {Mosaic[]} The filtered mosaics.
+ * @returns {Token[]} The filtered mosaics.
  */
 export const filterCreatedMosaics = (mosaics, filter, chainHeight) => {
 	const filteredByRevokable = filter.revokable
@@ -58,10 +58,10 @@ export const filterCreatedMosaics = (mosaics, filter, chainHeight) => {
 
 /**
  * Merges held mosaic amounts into created mosaic definitions. A matching held entry provides
- * the amount and name; definitions the account does not hold get a zero amount.
- * @param {MosaicInfo[]} mosaicInfos - The created mosaic definitions.
- * @param {Mosaic[]} heldMosaics - The mosaics currently held by the account.
- * @returns {Mosaic[]} The mosaics ready for display.
+ * the amount; definitions the account does not hold get a zero amount.
+ * @param {TokenInfo[]} mosaicInfos - The created mosaic definitions.
+ * @param {Token[]} heldMosaics - The mosaics currently held by the account.
+ * @returns {Token[]} The mosaics ready for display.
  */
 export const mergeHeldAmounts = (mosaicInfos, heldMosaics) => {
 	const heldMosaicsById = new Map(heldMosaics.map(mosaic => [mosaic.id, mosaic]));
@@ -71,8 +71,7 @@ export const mergeHeldAmounts = (mosaicInfos, heldMosaics) => {
 
 		return {
 			...mosaicInfo,
-			amount: heldMosaic?.amount ?? '0',
-			name: heldMosaic?.name ?? mosaicInfo.names?.[0] ?? mosaicInfo.id
+			amount: heldMosaic?.amount ?? '0'
 		};
 	});
 };
@@ -80,7 +79,7 @@ export const mergeHeldAmounts = (mosaicInfos, heldMosaics) => {
 /**
  * Builds the list sections for the created mosaic list. Wraps the mosaics into a single untitled
  * section; returns no sections when the list is empty so the template shows its empty placeholder.
- * @param {Mosaic[]} mosaics - The mosaics to wrap into a section.
+ * @param {Token[]} mosaics - The mosaics to wrap into a section.
  * @returns {CreatedMosaicSection[]} The sections array.
  */
 export const buildCreatedMosaicListSections = mosaics =>
