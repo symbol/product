@@ -17,6 +17,7 @@ from .test.SymbolBlockTestUtils import create_symbol_block, create_symbol_sync_s
 from .test.SymbolDatabaseTestUtils import create_safe_repairing_sync_state, symbol_test_database
 from .test.SymbolMosaicTestUtils import create_symbol_mosaic
 from .test.SymbolTransactionTestUtils import (
+	RECIPIENT_ADDRESS,
 	SIGNER_ADDRESS,
 	SIGNER_PUBLIC_KEY,
 	create_symbol_mosaic_transfer,
@@ -75,9 +76,11 @@ def test_parent_child_full_json(query):
 				'isEmbedded': True,
 				'aggregateHash': 'AA' * 32,
 				'embeddedIndex': 0,
+				'group': 'confirmed',
 				'height': 1,
 				'type': 'TRANSFER',
 				'sender': 'TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI',
+				'signer': 'TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI',
 				'recipient': 'TBJU67Q5BITMUTRRN6IB4I7FLSDQDWZA34I2PMQ',
 				'value': [{'id': '1234567890ABCDEF', 'name': '1234567890ABCDEF', 'amount': 123.45}],
 				'amount': 0,
@@ -90,9 +93,11 @@ def test_parent_child_full_json(query):
 				'isEmbedded': False,
 				'aggregateHash': None,
 				'embeddedIndex': None,
+				'group': 'confirmed',
 				'height': 1,
 				'type': 'AGGREGATE_COMPLETE',
 				'sender': 'TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI',
+				'signer': 'TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI',
 				'recipient': None,
 				'value': [],
 				'amount': 0,
@@ -109,6 +114,75 @@ def test_parent_child_full_json(query):
 	# Assert:
 	assert 200 == response.status_code
 	assert expected == response.json
+
+
+def test_embedded_has_own_signer_address():
+	# Arrange:
+	with symbol_test_database(
+		create_symbol_sync_state(last_synced_height=1, finalized_height=1),
+		[create_symbol_block(1)]) as (db_config, puller_database):
+		parent = create_symbol_transaction(
+			1,
+			10,
+			type=TransactionType.AGGREGATE_COMPLETE.value,
+			hash=bytes.fromhex('AA' * 32),
+			recipient_address=None,
+			address_rows=[{'address': SIGNER_ADDRESS, 'role': 'signer'}])
+		child = create_symbol_transaction(
+			1,
+			0,
+			is_embedded=True,
+			signer_public_key=bytes.fromhex('02' * 32),
+			signer_address=RECIPIENT_ADDRESS,
+			recipient_address=TESTNET_RECIPIENT,
+			address_rows=[
+				{'address': RECIPIENT_ADDRESS, 'role': 'signer'},
+				{'address': TESTNET_RECIPIENT, 'role': 'recipient'}
+			])
+		puller_database.upsert_transactions_for_height(1, [parent, child])
+
+		# Act:
+		with _create_transaction_test_client(db_config) as client:
+			response = client.get('/api/symbol/transactions?embedded=true')
+
+	# Assert:
+	assert 200 == response.status_code
+	assert [
+		{
+			'hash': None,
+			'isEmbedded': True,
+			'aggregateHash': 'AA' * 32,
+			'embeddedIndex': 0,
+			'group': 'confirmed',
+			'height': 1,
+			'type': 'TRANSFER',
+			'sender': 'ND3I6ZLS22YLJIL7AIQHOAN34AOUSRNK6NTDVKQ',
+			'signer': 'ND3I6ZLS22YLJIL7AIQHOAN34AOUSRNK6NTDVKQ',
+			'recipient': 'TBJU67Q5BITMUTRRN6IB4I7FLSDQDWZA34I2PMQ',
+			'value': [],
+			'amount': 0,
+			'fee': None,
+			'timestamp': '2026-01-01T00:00:01Z',
+			'message': None
+		},
+		{
+			'hash': 'AA' * 32,
+			'isEmbedded': False,
+			'aggregateHash': None,
+			'embeddedIndex': None,
+			'group': 'confirmed',
+			'height': 1,
+			'type': 'AGGREGATE_COMPLETE',
+			'sender': 'NCUZDUB4XJ4XV3KSUBQ6NPZPP4RY3CUFZ7HNAPI',
+			'signer': 'NCUZDUB4XJ4XV3KSUBQ6NPZPP4RY3CUFZ7HNAPI',
+			'recipient': None,
+			'value': [],
+			'amount': 0,
+			'fee': 0.000001,
+			'timestamp': '2026-01-01T00:00:01Z',
+			'message': None
+		}
+	] == response.json
 
 
 @pytest.mark.parametrize('query', [
@@ -368,9 +442,11 @@ def test_native_only_no_mosaic_table_200(state_name):
 		'isEmbedded': False,
 		'aggregateHash': None,
 		'embeddedIndex': None,
+		'group': 'confirmed',
 		'height': 2,
 		'type': 'TRANSFER',
 		'sender': 'NCUZDUB4XJ4XV3KSUBQ6NPZPP4RY3CUFZ7HNAPI',
+		'signer': 'NCUZDUB4XJ4XV3KSUBQ6NPZPP4RY3CUFZ7HNAPI',
 		'recipient': 'ND3I6ZLS22YLJIL7AIQHOAN34AOUSRNK6NTDVKQ',
 		'value': [{'id': NATIVE_MOSAIC_INFO.id, 'name': NATIVE_MOSAIC_INFO.id, 'amount': 12.345678}],
 		'amount': 12.345678,
@@ -465,9 +541,11 @@ def test_repairing_safe_list_200(query):
 		'isEmbedded': False,
 		'aggregateHash': None,
 		'embeddedIndex': None,
+		'group': 'confirmed',
 		'height': 2,
 		'type': 'TRANSFER',
 		'sender': 'NCUZDUB4XJ4XV3KSUBQ6NPZPP4RY3CUFZ7HNAPI',
+		'signer': 'NCUZDUB4XJ4XV3KSUBQ6NPZPP4RY3CUFZ7HNAPI',
 		'recipient': 'ND3I6ZLS22YLJIL7AIQHOAN34AOUSRNK6NTDVKQ',
 		'value': [],
 		'amount': 0,
@@ -478,14 +556,17 @@ def test_repairing_safe_list_200(query):
 
 
 def _expected_alias_transaction(hash_value, height, value_amount, **overrides):
+	sender = overrides.get('sender', 'NCUZDUB4XJ4XV3KSUBQ6NPZPP4RY3CUFZ7HNAPI')
 	return {
 		'hash': hash_value,
 		'isEmbedded': False,
 		'aggregateHash': None,
 		'embeddedIndex': None,
+		'group': 'confirmed',
 		'height': height,
 		'type': 'TRANSFER',
-		'sender': 'NCUZDUB4XJ4XV3KSUBQ6NPZPP4RY3CUFZ7HNAPI',
+		'sender': sender,
+		'signer': sender,
 		'recipient': 'ND3I6ZLS22YLJIL7AIQHOAN34AOUSRNK6NTDVKQ',
 		'value': [{'id': ALIAS_TARGET_MOSAIC_ID, 'name': ALIAS_TARGET_MOSAIC_ID, 'amount': value_amount}],
 		'amount': 0,

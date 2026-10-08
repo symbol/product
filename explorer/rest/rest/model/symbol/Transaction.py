@@ -17,14 +17,17 @@ class SymbolTransactionView:
 		transaction = self.transaction
 		value = [self._create_mosaic(mosaic, native_mosaic_info) for mosaic in transaction.mosaics]
 		is_embedded = transaction.is_embedded
+		sender = _address_to_string(transaction.signer_address)
 		return {
 			'hash': None if is_embedded else to_hex_or_none(transaction.hash),
 			'isEmbedded': is_embedded,
 			'aggregateHash': to_hex_or_none(transaction.aggregate_hash) if is_embedded else None,
 			'embeddedIndex': transaction.embedded_index if is_embedded else None,
+			'group': 'confirmed',
 			'height': transaction.height,
 			'type': TransactionType(transaction.transaction_type).name,
-			'sender': _address_to_string(transaction.signer_address),
+			'sender': sender,
+			'signer': sender,
 			'recipient': _address_to_string(transaction.recipient_address),
 			'value': value,
 			'amount': self._native_transfer_amount(native_mosaic_info),
