@@ -30,7 +30,8 @@ RECEIPT_QUERY_PARAMETERS = frozenset([
 ])
 BLOCK_RECEIPT_QUERY_PARAMETERS = frozenset(['limit', 'offset'])
 TRANSACTION_QUERY_PARAMETERS = frozenset([
-	'limit', 'offset', 'height', 'type', 'address', 'signerPublicKey', 'recipientAddress', 'transferMosaicId', 'embedded', 'order'
+	'limit', 'offset', 'height', 'type', 'address', 'senderAddress', 'signerPublicKey', 'recipientAddress',
+	'transferMosaicId', 'embedded', 'order'
 ])
 RECEIPT_MAX_OFFSET = 100000
 TRANSACTION_MAX_OFFSET = 100000
@@ -247,8 +248,12 @@ def _parse_transaction_query():
 	height = _parse_bounded_integer('height', height_arg, 1, MAX_TRANSACTION_HEIGHT) if height_arg is not None else None
 	types = tuple(_parse_transaction_type(value) for value in request.args.getlist('type'))
 	address = _parse_address('address')
+	sender_address = _parse_address('senderAddress')
 	signer_public_key = _parse_public_key('signerPublicKey')
 	recipient_address = _parse_address('recipientAddress')
+	if address is not None and sender_address is not None:
+		raise ValueError('address cannot be combined with senderAddress')
+
 	if address is not None and (signer_public_key is not None or recipient_address is not None):
 		raise ValueError('address cannot be combined with signerPublicKey or recipientAddress')
 
@@ -264,6 +269,7 @@ def _parse_transaction_query():
 		height=height,
 		transaction_types=types,
 		address=address,
+		sender_address=sender_address,
 		signer_public_key=signer_public_key,
 		recipient_address=recipient_address,
 		transfer_mosaic_id=transfer_mosaic_id,

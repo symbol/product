@@ -496,6 +496,8 @@ def test_transactions_default_empty():
 	assert 200 == response.status_code
 	assert [] == response.json
 	assert TransactionQuery() == facade.transactions_query
+	assert facade.transactions_query.include_embedded is False
+	assert facade.transactions_query.sender_address is None
 
 
 def test_transactions_embedded_false():
@@ -514,13 +516,14 @@ def test_transactions_parsed_filters():
 	# Arrange:
 	facade = SymbolBlockFacade()
 	mainnet_address = Network.NETWORKS[0].public_key_to_address(PublicKey('00' * 32))
+	sender_address = Network.NETWORKS[0].public_key_to_address(PublicKey('11' * 32))
 	public_key = 'AB' * 32
 
 	# Act:
 	response = _create_symbol_test_client(facade).get(
 		'/api/symbol/transactions?limit=%20%2B001&offset=%20000&height=%20%2B0001'
 		f'&type={TransactionType.TRANSFER.value}&type={TransactionType.AGGREGATE_COMPLETE.value}'
-		f'&signerPublicKey={public_key}&recipientAddress={mainnet_address}'
+		f'&senderAddress={sender_address}&signerPublicKey={public_key}&recipientAddress={mainnet_address}'
 		'&transferMosaicId=72c0212e67a08bce&embedded=TrUe&order=desc')
 
 	# Assert:
@@ -534,7 +537,22 @@ def test_transactions_parsed_filters():
 		signer_public_key=bytes.fromhex(public_key),
 		recipient_address=bytes.fromhex('682F0A4E106CBC9224DF7AC5E2C6A9D5252E70CB6517D829'),
 		transfer_mosaic_id='72C0212E67A08BCE',
-		include_embedded=True) == facade.transactions_query
+		include_embedded=True,
+		sender_address=sender_address.bytes) == facade.transactions_query
+
+
+def test_transactions_parse_sender_address_into_query_bytes():  # pylint: disable=invalid-name
+	# Arrange:
+	facade = SymbolBlockFacade()
+	sender_address = Network.NETWORKS[0].public_key_to_address(PublicKey('11' * 32))
+
+	# Act:
+	response = _create_symbol_test_client(facade).get(
+		f'/api/symbol/transactions?senderAddress={sender_address}')
+
+	# Assert:
+	assert 200 == response.status_code
+	assert TransactionQuery(sender_address=sender_address.bytes) == facade.transactions_query
 
 
 def test_transactions_address_embedded():
@@ -574,9 +592,13 @@ def test_transactions_address_conflicts():
 	client = _create_symbol_test_client(facade)
 
 	# Act + Assert:
-	for query in (f'address={address}&signerPublicKey={public_key}', f'address={address}&recipientAddress={address}'):
+	for query, message in (
+		(f'address={address}&signerPublicKey={public_key}', 'address cannot be combined with signerPublicKey or recipientAddress'),
+		(f'address={address}&recipientAddress={address}', 'address cannot be combined with signerPublicKey or recipientAddress'),
+		(f'address={address}&senderAddress={address}', 'address cannot be combined with senderAddress')
+	):
 		response = client.get(f'/api/symbol/transactions?{query}')
-		_assert_bad_request_response(response, 'address cannot be combined with signerPublicKey or recipientAddress')
+		_assert_bad_request_response(response, message)
 		assert None is facade.transactions_query, query
 
 
@@ -637,7 +659,7 @@ def test_transactions_scalar_duplicates():
 
 	# Act + Assert:
 	for parameter in (
-		'limit', 'offset', 'height', 'address', 'signerPublicKey', 'recipientAddress',
+		'limit', 'offset', 'height', 'address', 'senderAddress', 'signerPublicKey', 'recipientAddress',
 		'transferMosaicId', 'embedded', 'order'
 	):
 		response = client.get(f'/api/symbol/transactions?{parameter}=1&{parameter}=1')
@@ -669,6 +691,8 @@ def test_transactions_bad_address_key():
 	# Act + Assert:
 	for query, message in (
 		('address=INVALID', 'Invalid address'),
+		('senderAddress=', 'Invalid senderAddress'),
+		('senderAddress=INVALID', 'Invalid senderAddress'),
 		('recipientAddress=INVALID', 'Invalid recipientAddress'),
 		('signerPublicKey=1234', 'Invalid signerPublicKey')
 	):

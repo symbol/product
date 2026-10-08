@@ -6,6 +6,7 @@ from common.symbol.NativeMosaic import NativeMosaicInfo
 from common.symbol.NodeConfiguration import SymbolNodeConfiguration
 from flask import Flask
 from symbolchain.sc import TransactionType
+from symbolchain.symbol.Network import Address
 
 from rest import setup_error_handlers
 from rest.db.SymbolDatabase import SymbolDatabase
@@ -15,7 +16,13 @@ from rest.routes.symbol import setup_symbol_routes
 from .test.SymbolBlockTestUtils import create_symbol_block, create_symbol_sync_state
 from .test.SymbolDatabaseTestUtils import create_safe_repairing_sync_state, symbol_test_database
 from .test.SymbolMosaicTestUtils import create_symbol_mosaic
-from .test.SymbolTransactionTestUtils import create_symbol_mosaic_transfer, create_symbol_namespace, create_symbol_transaction
+from .test.SymbolTransactionTestUtils import (
+	SIGNER_ADDRESS,
+	SIGNER_PUBLIC_KEY,
+	create_symbol_mosaic_transfer,
+	create_symbol_namespace,
+	create_symbol_transaction
+)
 
 NATIVE_MOSAIC_INFO = NativeMosaicInfo('72C0212E67A08BCE', 6)
 TESTNET_SENDER = bytes.fromhex('9889432DE263BB8FE88444A4DA28D3609BD8BB8FAE18AE95')
@@ -24,7 +31,16 @@ ALIAS_ID = '887E5DB6BB0B21F5'
 ALIAS_TARGET_MOSAIC_ID = '1234567890ABCDEF'
 
 
-def test_parent_child_full_json():
+@pytest.mark.parametrize(
+	'query',
+	[
+		'embedded=true',
+		f'embedded=true&senderAddress={Address(TESTNET_SENDER)}',
+		f'embedded=true&signerPublicKey={SIGNER_PUBLIC_KEY.hex()}',
+		f'embedded=true&senderAddress={Address(TESTNET_SENDER)}&signerPublicKey={SIGNER_PUBLIC_KEY.hex()}'
+	],
+	ids=['embedded', 'sender_address', 'signer_public_key', 'sender_and_signer'])
+def test_parent_child_full_json(query):
 	# Arrange:
 	with symbol_test_database(
 		create_symbol_sync_state(last_synced_height=1, finalized_height=1),
@@ -53,48 +69,53 @@ def test_parent_child_full_json():
 			}])
 		puller_database.upsert_transactions_for_height(1, [parent, child])
 		puller_database.upsert_mosaic(create_symbol_mosaic('1234567890ABCDEF', 2))
+		expected = [
+			{
+				'hash': None,
+				'isEmbedded': True,
+				'aggregateHash': 'AA' * 32,
+				'embeddedIndex': 0,
+				'height': 1,
+				'type': 'TRANSFER',
+				'sender': 'TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI',
+				'recipient': 'TBJU67Q5BITMUTRRN6IB4I7FLSDQDWZA34I2PMQ',
+				'value': [{'id': '1234567890ABCDEF', 'name': '1234567890ABCDEF', 'amount': 123.45}],
+				'amount': 0,
+				'fee': None,
+				'timestamp': '2026-01-01T00:00:01Z',
+				'message': {'type': 'plain', 'text': 'Hello'}
+			},
+			{
+				'hash': 'AA' * 32,
+				'isEmbedded': False,
+				'aggregateHash': None,
+				'embeddedIndex': None,
+				'height': 1,
+				'type': 'AGGREGATE_COMPLETE',
+				'sender': 'TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI',
+				'recipient': None,
+				'value': [],
+				'amount': 0,
+				'fee': 0.000001,
+				'timestamp': '2026-01-01T00:00:01Z',
+				'message': None
+			}
+		]
 
 		# Act:
 		with _create_transaction_test_client(db_config) as client:
-			response = client.get('/api/symbol/transactions?embedded=true')
+			response = client.get(f'/api/symbol/transactions?{query}')
 
 	# Assert:
 	assert 200 == response.status_code
-	assert [
-		{
-			'hash': None,
-			'isEmbedded': True,
-			'aggregateHash': 'AA' * 32,
-			'embeddedIndex': 0,
-			'height': 1,
-			'type': 'TRANSFER',
-			'sender': 'TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI',
-			'recipient': 'TBJU67Q5BITMUTRRN6IB4I7FLSDQDWZA34I2PMQ',
-			'value': [{'id': '1234567890ABCDEF', 'name': '1234567890ABCDEF', 'amount': 123.45}],
-			'amount': 0,
-			'fee': None,
-			'timestamp': '2026-01-01T00:00:01Z',
-			'message': {'type': 'plain', 'text': 'Hello'}
-		},
-		{
-			'hash': 'AA' * 32,
-			'isEmbedded': False,
-			'aggregateHash': None,
-			'embeddedIndex': None,
-			'height': 1,
-			'type': 'AGGREGATE_COMPLETE',
-			'sender': 'TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI',
-			'recipient': None,
-			'value': [],
-			'amount': 0,
-			'fee': 0.000001,
-			'timestamp': '2026-01-01T00:00:01Z',
-			'message': None
-		}
-	] == response.json
+	assert expected == response.json
 
 
-def test_no_match_returns_200_empty():
+@pytest.mark.parametrize('query', [
+	f'type={TransactionType.MOSAIC_METADATA.value}',
+	f'senderAddress={Address(TESTNET_SENDER)}'
+], ids=['non_matching_type', 'non_matching_sender'])
+def test_no_match_returns_200_empty(query):
 	# Arrange:
 	with symbol_test_database(
 		create_symbol_sync_state(last_synced_height=1, finalized_height=1),
@@ -102,7 +123,7 @@ def test_no_match_returns_200_empty():
 		_puller_database.upsert_transactions_for_height(1, [create_symbol_transaction(1, 1)])
 		with _create_transaction_test_client(db_config) as client:
 			# Act:
-			response = client.get(f'/api/symbol/transactions?type={TransactionType.MOSAIC_METADATA.value}')
+			response = client.get(f'/api/symbol/transactions?{query}')
 
 	# Assert:
 	assert 200 == response.status_code
@@ -380,37 +401,51 @@ def test_clean_saved_native_name_and_div():
 
 
 @pytest.mark.parametrize('state_name', ['dirty', 'repairing'])
-def test_non_native_unavailable_503(state_name):
+@pytest.mark.parametrize('query', [
+	'height=2',
+	f'height=2&senderAddress={Address(TESTNET_SENDER)}'
+], ids=['without_sender_address', 'with_sender_address'])
+def test_transactions_return_503_when_non_native_mosaic_state_is_unavailable(state_name, query):  # pylint: disable=invalid-name
 	# Arrange:
 	sync_state = _create_non_public_sync_state(state_name)
 	transaction = create_symbol_mosaic_transfer(2, 1, '1234567890ABCDEF', 12345)
+	transaction['signer_address'] = TESTNET_SENDER
+	transaction['address_rows'][0]['address'] = TESTNET_SENDER
 	with symbol_test_database(sync_state, [create_symbol_block(2)]) as (db_config, puller_database):
 		puller_database.upsert_transactions_for_height(2, [transaction])
 		puller_database.upsert_mosaic(create_symbol_mosaic('1234567890ABCDEF', 2))
 		with _create_transaction_test_client(db_config) as client:
 			# Act:
-			response = client.get('/api/symbol/transactions?height=2')
+			response = client.get(f'/api/symbol/transactions?{query}')
 
 	# Assert:
 	assert 503 == response.status_code
 	assert {'status': 503, 'message': 'Symbol backend data is unavailable'} == response.json
 
 
-def test_repair_markerless_list_503():
+@pytest.mark.parametrize(
+	'query',
+	['', f'?senderAddress={Address(SIGNER_ADDRESS)}'],
+	ids=['without_sender_address', 'with_sender_address'])
+def test_repair_markerless_list_503(query):
 	# Arrange:
 	sync_state = create_symbol_sync_state(last_synced_height=2, finalized_height=1, status='repairing')
 	with symbol_test_database(sync_state, [create_symbol_block(2)]) as (db_config, puller_database):
 		puller_database.upsert_transactions_for_height(2, [create_symbol_transaction(2, 1)])
 		with _create_transaction_test_client(db_config) as client:
 			# Act:
-			response = client.get('/api/symbol/transactions')
+			response = client.get(f'/api/symbol/transactions{query}')
 
 	# Assert:
 	assert 503 == response.status_code
 	assert {'status': 503, 'message': 'Symbol backend data is unavailable'} == response.json
 
 
-def test_repairing_safe_list_200():
+@pytest.mark.parametrize(
+	'query',
+	['', f'?senderAddress={Address(SIGNER_ADDRESS)}'],
+	ids=['without_sender_address', 'with_sender_address'])
+def test_repairing_safe_list_200(query):
 	# Arrange: Dirty marker is above the watermark; no current-state Mosaic data is required.
 	sync_state = create_symbol_sync_state(
 		last_synced_height=2,
@@ -421,7 +456,7 @@ def test_repairing_safe_list_200():
 		puller_database.upsert_transactions_for_height(2, [create_symbol_transaction(2, 1)])
 		with _create_transaction_test_client(db_config) as client:
 			# Act:
-			response = client.get('/api/symbol/transactions')
+			response = client.get(f'/api/symbol/transactions{query}')
 
 	# Assert:
 	assert 200 == response.status_code

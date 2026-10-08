@@ -219,6 +219,178 @@ class SymbolDatabaseTransactionsTest(TestCase):  # pylint: disable=too-many-publ
 				())
 		], [_normalize_transaction_binary_fields(record) for record in result])
 
+	def test_get_transactions_sender_address_matches_only_signer_column(self):
+		# Arrange:
+		sender_address = bytes.fromhex('03' * 24)
+		transactions = [
+			create_symbol_transaction(
+				4, 1, signer_address=sender_address,
+				address_rows=[{'address': sender_address, 'role': 'signer'}]),
+			create_symbol_transaction(
+				4, 2, recipient_address=sender_address,
+				address_rows=[
+					{'address': TRANSACTION_SIGNER_ADDRESS, 'role': 'signer'},
+					{'address': sender_address, 'role': 'recipient'}]),
+			create_symbol_transaction(
+				4, 3,
+				address_rows=[
+					{'address': TRANSACTION_SIGNER_ADDRESS, 'role': 'signer'},
+					{'address': sender_address, 'role': 'cosignatory'}]),
+			create_symbol_transaction(
+				4, 4, target_address=sender_address,
+				address_rows=[
+					{'address': TRANSACTION_SIGNER_ADDRESS, 'role': 'signer'},
+					{'address': sender_address, 'role': 'target'}])
+		]
+
+		# Act:
+		result = _query_symbol_transactions(
+			transactions,
+			create_symbol_sync_state(last_synced_height=4, finalized_height=3),
+			TransactionQuery(sender_address=sender_address))
+
+		# Assert:
+		self.assertEqual([1], [bytes(record.hash)[-1] for record in result])
+
+	def test_get_transactions_combines_sender_address_signer_public_key_and_recipient_with_and(self):
+		# Arrange:
+		sender_address = bytes.fromhex('03' * 24)
+		other_sender_address = bytes.fromhex('04' * 24)
+		recipient_address = bytes.fromhex('05' * 24)
+		other_recipient_address = bytes.fromhex('06' * 24)
+		other_public_key = bytes.fromhex('02' * 32)
+		transactions = [
+			create_symbol_transaction(
+				4, 1, signer_address=sender_address, recipient_address=recipient_address,
+				address_rows=[
+					{'address': sender_address, 'role': 'signer'},
+					{'address': recipient_address, 'role': 'recipient'}]),
+			create_symbol_transaction(
+				4, 2, signer_address=sender_address, signer_public_key=other_public_key,
+				recipient_address=recipient_address,
+				address_rows=[
+					{'address': sender_address, 'role': 'signer'},
+					{'address': recipient_address, 'role': 'recipient'}]),
+			create_symbol_transaction(
+				4, 3, signer_address=sender_address, recipient_address=other_recipient_address,
+				address_rows=[
+					{'address': sender_address, 'role': 'signer'},
+					{'address': other_recipient_address, 'role': 'recipient'}]),
+			create_symbol_transaction(
+				4, 4, signer_address=other_sender_address, recipient_address=recipient_address,
+				address_rows=[
+					{'address': other_sender_address, 'role': 'signer'},
+					{'address': recipient_address, 'role': 'recipient'}])
+		]
+
+		# Act:
+		result = _query_symbol_transactions(
+			transactions,
+			create_symbol_sync_state(last_synced_height=4, finalized_height=3),
+			TransactionQuery(
+				sender_address=sender_address,
+				signer_public_key=SIGNER_PUBLIC_KEY,
+				recipient_address=recipient_address))
+
+		# Assert:
+		self.assertEqual([1], [bytes(record.hash)[-1] for record in result])
+
+	def test_get_transactions_combines_sender_address_height_type_and_mosaic_filters_with_and(self):
+		# Arrange:
+		sender_address = bytes.fromhex('03' * 24)
+		other_sender_address = bytes.fromhex('04' * 24)
+		mosaic_id = '1234567890ABCDEF'
+		other_mosaic_id = '234567890ABCDEF0'
+		transactions = [
+			create_symbol_transaction(
+				4, 1, signer_address=sender_address,
+				mosaic_rows=[{'mosaic_id': mosaic_id, 'amount': 1, 'role': 'transfer', 'position': 0}]),
+			create_symbol_transaction(
+				3, 2, signer_address=sender_address,
+				mosaic_rows=[{'mosaic_id': mosaic_id, 'amount': 1, 'role': 'transfer', 'position': 0}]),
+			create_symbol_transaction(
+				4, 3, signer_address=sender_address, type=TransactionType.AGGREGATE_COMPLETE.value,
+				hash=bytes.fromhex('AA' * 32),
+				mosaic_rows=[{'mosaic_id': mosaic_id, 'amount': 1, 'role': 'transfer', 'position': 0}]),
+			create_symbol_transaction(
+				4, 4, signer_address=sender_address,
+				mosaic_rows=[{'mosaic_id': other_mosaic_id, 'amount': 1, 'role': 'transfer', 'position': 0}]),
+			create_symbol_transaction(
+				4, 5, signer_address=other_sender_address,
+				mosaic_rows=[{'mosaic_id': mosaic_id, 'amount': 1, 'role': 'transfer', 'position': 0}])
+		]
+
+		# Act:
+		result = _query_symbol_transactions(
+			transactions,
+			create_symbol_sync_state(last_synced_height=4, finalized_height=3),
+			TransactionQuery(
+				sender_address=sender_address,
+				height=4,
+				transaction_types=(TransactionType.TRANSFER.value,),
+				transfer_mosaic_id=mosaic_id),
+			[create_symbol_mosaic(mosaic_id, 2), create_symbol_mosaic(other_mosaic_id, 2)])
+
+		# Assert:
+		self.assertEqual([1], [bytes(record.hash)[-1] for record in result])
+
+	def test_get_transactions_sender_address_embedded_selection_does_not_promote_child_to_parent(self):
+		# Arrange:
+		sender_address = bytes.fromhex('03' * 24)
+		parent_hash = bytes.fromhex('AA' * 32)
+		parent = create_symbol_transaction(
+			4, 1, type=TransactionType.AGGREGATE_COMPLETE.value, hash=parent_hash)
+		child = create_symbol_transaction(
+			4,
+			0,
+			is_embedded=True,
+			signer_address=sender_address,
+			aggregate_hash=parent_hash,
+			address_rows=[{'address': sender_address, 'role': 'signer'}])
+		transactions = [parent, child]
+		expected_child_identity = [(2, None, parent_hash, 0, True)]
+
+		# Act + Assert:
+		for query, expected in (
+			(TransactionQuery(sender_address=sender_address), []),
+			(TransactionQuery(sender_address=sender_address, include_embedded=False), []),
+			(TransactionQuery(sender_address=sender_address, include_embedded=True), expected_child_identity)
+		):
+			with self.subTest(query=query):
+				result = _query_symbol_transactions(
+					transactions,
+					create_symbol_sync_state(last_synced_height=4, finalized_height=3),
+					query)
+				self.assertEqual(expected, [
+					(record.transaction_id, bytes(record.hash) if record.hash is not None else None,
+						bytes(record.aggregate_hash) if record.aggregate_hash is not None else None,
+						record.embedded_index, record.is_embedded)
+					for record in result])
+
+	def test_get_transactions_sender_address_filters_before_pagination_and_hides_above_watermark(self):
+		# Arrange:
+		sender_address = bytes.fromhex('03' * 24)
+		other_sender_address = bytes.fromhex('04' * 24)
+		transactions = [
+			create_symbol_transaction(4, 1, signer_address=sender_address),
+			create_symbol_transaction(4, 2, signer_address=sender_address),
+			create_symbol_transaction(4, 3, signer_address=other_sender_address),
+			create_symbol_transaction(4, 4, signer_address=sender_address),
+			create_symbol_transaction(5, 5, signer_address=sender_address),
+			create_symbol_transaction(3, 6, signer_address=sender_address)
+		]
+
+		# Act:
+		result = _query_symbol_transactions(
+			transactions,
+			create_symbol_sync_state(last_synced_height=4, finalized_height=3),
+			TransactionQuery(sender_address=sender_address, limit=3, offset=1))
+
+		# Assert:
+		self.assertEqual(
+			[(2, 4), (1, 4), (6, 3)],
+			[(bytes(record.hash)[-1], record.height) for record in result])
+
 	def test_get_transactions_includes_embedded_rows_when_requested(self):
 		# Arrange:
 		parent_hash = bytes.fromhex('AA' * 32)

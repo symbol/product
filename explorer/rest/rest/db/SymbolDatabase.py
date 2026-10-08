@@ -78,8 +78,8 @@ class SortOrder(str, Enum):
 TransactionQuery = namedtuple(
 	'TransactionQuery',
 	['limit', 'offset', 'height', 'transaction_types', 'address', 'signer_public_key', 'recipient_address',
-		'transfer_mosaic_id', 'include_embedded'],
-	defaults=(10, 0, None, (), None, None, None, None, False))
+		'transfer_mosaic_id', 'include_embedded', 'sender_address'],
+	defaults=(10, 0, None, (), None, None, None, None, False, None))
 TransactionMosaicRecord = namedtuple(
 	'TransactionMosaicRecord',
 	['mosaic_id', 'amount', 'role', 'position', 'divisibility', 'alias_names'])
@@ -401,6 +401,7 @@ class SymbolDatabase(DatabaseConnectionPool):
 			(query.address, '''EXISTS (
 				SELECT 1 FROM symbol_transaction_addresses AS addresses
 				WHERE addresses.transaction_id = transactions.id AND addresses.address = %s)'''),
+			(query.sender_address, 'transactions.signer_address = %s'),
 			(query.signer_public_key, 'transactions.signer_public_key = %s'),
 			(query.recipient_address, 'transactions.recipient_address = %s'),
 			(query.transfer_mosaic_id, '''EXISTS (
