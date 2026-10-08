@@ -3,6 +3,7 @@ const transformIgnoreModules = [
 	'react-native',
 	'@react-navigation',
 	'symbol-sdk',
+	'@noble/hashes',
 	'symbol-crypto-wasm-web',
 	'symbol-crypto-wasm-node',
 	'react-native-reanimated',
