@@ -6,7 +6,7 @@ import unittest
 from collections import namedtuple
 from unittest.mock import AsyncMock, Mock, call, patch
 
-import testing.postgresql
+import pytest
 from symbolchain.CryptoTypes import PublicKey
 from symbolchain.nc import TransactionType
 from symbolchain.nem.Network import Address
@@ -35,7 +35,6 @@ from puller.facade.NemPuller import (
 	NEM_NAMESPACE_DURATION,
 	AccountRecord,
 	BlockRecord,
-	DatabaseConfig,
 	MosaicRecord,
 	NamespaceRecord,
 	NemPuller,
@@ -262,16 +261,13 @@ NEM_CONNECTOR_RESPONSE_ACCOUNT_INFO = NemAccountInfo(Address('TALICE6XEEEOBFJVY3
 # endregion
 
 
+@pytest.mark.usefixtures('database_config')
 class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-methods, too-many-lines
+	db_config = None  # pylint: disable=invalid-name
 
 	def setUp(self):
-		self.postgresql = testing.postgresql.Postgresql()
-		self.config_ini = self.create_temp_config_file(DatabaseConfig(**self.postgresql.dsn(), password=''))
+		self.config_ini = self.create_temp_config_file(self.db_config)
 		self.puller = NemPuller('http://localhost:7890', self.config_ini, 'testnet')
-
-	def tearDown(self):
-		# Destroy the temporary PostgreSQL database
-		self.postgresql.stop()
 
 	def create_temp_config_file(self, db_config):  # pylint: disable=no-self-use
 		"""Helper method to create temporary config file"""
