@@ -209,7 +209,7 @@ def test_alias_inputs_return_same_json(mosaic_input):
 	# Arrange:
 	with _alias_search_fixture() as client:
 		# Act:
-		response = client.get('/api/symbol/transactions', query_string={'transferMosaicId': mosaic_input, 'height': 8})
+		response = client.get('/api/symbol/transactions', query_string={'mosaic': mosaic_input, 'height': 8})
 
 	# Assert:
 	assert 200 == response.status_code
@@ -220,7 +220,7 @@ def test_alias_search_uses_current_link_at_requested_historical_height():  # pyl
 	# Arrange: the fixture overwrites old A at height 4 with current B observed at height 8.
 	with _alias_search_fixture() as client:
 		# Act: both A and B have transfers at height 4; only B is searched.
-		response = client.get('/api/symbol/transactions?transferMosaicId=daoka.coin&height=4')
+		response = client.get('/api/symbol/transactions?mosaic=daoka.coin&height=4')
 
 	# Assert:
 	assert 200 == response.status_code
@@ -238,10 +238,10 @@ def test_alias_filters_use_and():
 	with _alias_search_fixture() as client:
 		# Act:
 		response = client.get(
-			f'/api/symbol/transactions?transferMosaicId=daoka.coin&height=4&type={TransactionType.TRANSFER.value}'
+			f'/api/symbol/transactions?mosaic=daoka.coin&height=4&type={TransactionType.TRANSFER.value}'
 			'&address=NCUZDUB4XJ4XV3KSUBQ6NPZPP4RY3CUFZ7HNAPI')
 		wrong_type_response = client.get(
-			f'/api/symbol/transactions?transferMosaicId=daoka.coin&type={TransactionType.MOSAIC_SUPPLY_CHANGE.value}'
+			f'/api/symbol/transactions?mosaic=daoka.coin&type={TransactionType.MOSAIC_SUPPLY_CHANGE.value}'
 			'&address=NCUZDUB4XJ4XV3KSUBQ6NPZPP4RY3CUFZ7HNAPI')
 
 	# Assert:
@@ -259,7 +259,7 @@ def test_alias_embedded_opt_in():
 	with _alias_search_fixture() as client:
 		# Act:
 		response = client.get(
-			'/api/symbol/transactions?transferMosaicId=daoka.coin&height=4&embedded=true'
+			'/api/symbol/transactions?mosaic=daoka.coin&height=4&embedded=true'
 			'&address=NCUZDUB4XJ4XV3KSUBQ6NPZPP4RY3CUFZ7HNAPI')
 
 	# Assert: default exclusion is checked by the preceding historical/address queries.
@@ -276,7 +276,7 @@ def test_alias_orders_height_before_id():
 	with _alias_search_fixture() as client:
 		# Act:
 		response = client.get(
-			'/api/symbol/transactions?transferMosaicId=daoka.coin&address=NCUZDUB4XJ4XV3KSUBQ6NPZPP4RY3CUFZ7HNAPI')
+			'/api/symbol/transactions?mosaic=daoka.coin&address=NCUZDUB4XJ4XV3KSUBQ6NPZPP4RY3CUFZ7HNAPI')
 
 	# Assert:
 	assert 200 == response.status_code
@@ -292,7 +292,7 @@ def test_alias_pages_after_filters():
 	with _alias_search_fixture() as client:
 		# Act:
 		response = client.get(
-			'/api/symbol/transactions?transferMosaicId=daoka.coin&limit=1&offset=2&embedded=true'
+			'/api/symbol/transactions?mosaic=daoka.coin&limit=1&offset=2&embedded=true'
 			'&address=NCUZDUB4XJ4XV3KSUBQ6NPZPP4RY3CUFZ7HNAPI')
 
 	# Assert:
@@ -312,7 +312,7 @@ def test_alias_expiry_uses_latest_height(end_height, expected_status, expected_b
 		puller_database.upsert_namespace(create_symbol_namespace(end_height=end_height), [])
 		with _create_transaction_test_client(db_config) as client:
 			# Act:
-			response = client.get('/api/symbol/transactions?transferMosaicId=daoka.coin&height=1')
+			response = client.get('/api/symbol/transactions?mosaic=daoka.coin&height=1')
 
 	# Assert:
 	assert expected_status == response.status_code
@@ -335,7 +335,7 @@ def test_unresolved_alias_returns_404(namespace_overrides):
 			puller_database.upsert_namespace(create_symbol_namespace(**namespace_overrides), [])
 		with _create_transaction_test_client(db_config) as client:
 			# Act:
-			response = client.get('/api/symbol/transactions?transferMosaicId=daoka.coin')
+			response = client.get('/api/symbol/transactions?mosaic=daoka.coin')
 
 	# Assert:
 	assert 404 == response.status_code
@@ -351,7 +351,7 @@ def test_alias_search_returns_503_for_unsafe_state_even_with_native_target_and_n
 		puller_database.upsert_namespace(create_symbol_namespace(alias_mosaic_id=NATIVE_MOSAIC_INFO.id), [])
 		with _create_transaction_test_client(db_config) as client:
 			# Act:
-			response = client.get('/api/symbol/transactions?transferMosaicId=daoka.coin&height=1&limit=1')
+			response = client.get('/api/symbol/transactions?mosaic=daoka.coin&height=1&limit=1')
 
 	# Assert:
 	assert 503 == response.status_code
@@ -374,7 +374,7 @@ def test_alias_search_prioritizes_unavailable_state_over_missing_or_null_namespa
 			puller_database.upsert_namespace(create_symbol_namespace(**namespace_overrides), [])
 		with _create_transaction_test_client(db_config) as client:
 			# Act:
-			response = client.get('/api/symbol/transactions?transferMosaicId=daoka.coin&height=1')
+			response = client.get('/api/symbol/transactions?mosaic=daoka.coin&height=1')
 
 	# Assert: current-state availability takes precedence over the missing or NULL link's 404.
 	assert 503 == response.status_code
@@ -393,8 +393,8 @@ def test_direct_mosaic_search_succeeds_without_namespace_table():  # pylint: dis
 		try:
 			# Act:
 			with _create_transaction_test_client(db_config) as client:
-				response = client.get(f'/api/symbol/transactions?transferMosaicId={NATIVE_MOSAIC_INFO.id}')
-				alias_response = client.get('/api/symbol/transactions?transferMosaicId=daoka.coin')
+				response = client.get(f'/api/symbol/transactions?mosaic={NATIVE_MOSAIC_INFO.id}')
+				alias_response = client.get('/api/symbol/transactions?mosaic=daoka.coin')
 		finally:
 			with puller_database.connection.cursor() as cursor:
 				cursor.execute('ALTER TABLE symbol_namespaces_hidden_for_test RENAME TO symbol_namespaces')

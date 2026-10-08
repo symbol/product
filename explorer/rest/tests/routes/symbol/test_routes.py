@@ -524,7 +524,7 @@ def test_transactions_parsed_filters():
 		'/api/symbol/transactions?limit=%20%2B001&offset=%20000&height=%20%2B0001'
 		f'&type={TransactionType.TRANSFER.value}&type={TransactionType.AGGREGATE_COMPLETE.value}'
 		f'&senderAddress={sender_address}&signerPublicKey={public_key}&recipientAddress={mainnet_address}'
-		'&transferMosaicId=72c0212e67a08bce&embedded=TrUe&order=desc')
+		'&mosaic=72c0212e67a08bce&embedded=TrUe&order=desc')
 
 	# Assert:
 	assert 200 == response.status_code
@@ -646,10 +646,25 @@ def test_transactions_unknown_params():
 	client = _create_symbol_test_client(facade)
 
 	# Act + Assert:
-	for parameter in ('pageNumber', 'pageSize', 'cursor', 'orderBy', 'types', 'group', 'unknown'):
+	for parameter in ('pageNumber', 'pageSize', 'cursor', 'orderBy', 'types', 'group', 'unknown', 'transferMosaicId'):
 		response = client.get(f'/api/symbol/transactions?{parameter}=1')
 		_assert_bad_request_response(response, f'Unsupported query parameter: {parameter}')
 		assert None is facade.transactions_query, parameter
+
+
+def test_rejects_legacy_mosaic_name():
+	# Arrange:
+	facade = SymbolBlockFacade()
+	client = _create_symbol_test_client(facade)
+
+	# Act + Assert:
+	for query in (
+		'transferMosaicId=72C0212E67A08BCE',
+		'mosaic=72C0212E67A08BCE&transferMosaicId=72C0212E67A08BCE'
+	):
+		response = client.get(f'/api/symbol/transactions?{query}')
+		_assert_bad_request_response(response, 'Unsupported query parameter: transferMosaicId')
+		assert None is facade.transactions_query, query
 
 
 def test_transactions_scalar_duplicates():
@@ -660,7 +675,7 @@ def test_transactions_scalar_duplicates():
 	# Act + Assert:
 	for parameter in (
 		'limit', 'offset', 'height', 'address', 'senderAddress', 'signerPublicKey', 'recipientAddress',
-		'transferMosaicId', 'embedded', 'order'
+		'mosaic', 'embedded', 'order'
 	):
 		response = client.get(f'/api/symbol/transactions?{parameter}=1&{parameter}=1')
 		_assert_bad_request_response(response, f'{parameter} must not be repeated')
@@ -701,7 +716,7 @@ def test_transactions_bad_address_key():
 		assert None is facade.transactions_query, query
 
 
-def test_transfer_mosaic_filter_normalizes_ids_and_converts_namespace_names():  # pylint: disable=invalid-name
+def test_mosaic_filter_normalizes_ids_and_converts_namespace_names():  # pylint: disable=invalid-name
 	# Arrange:
 	facade = SymbolBlockFacade()
 	client = _create_symbol_test_client(facade)
@@ -719,24 +734,24 @@ def test_transfer_mosaic_filter_normalizes_ids_and_converts_namespace_names():  
 		('daoka.my-coin', '9CCC5B8BC198D8BD'),
 		('namespace.xym', 'B006234ECB50F6DD')
 	):
-		response = client.get('/api/symbol/transactions', query_string={'transferMosaicId': value})
+		response = client.get('/api/symbol/transactions', query_string={'mosaic': value})
 		assert 200 == response.status_code, value
 		assert expected == facade.transactions_query.transfer_mosaic_id, value
 
 
-def test_transfer_hierarchical_name():
+def test_mosaic_hierarchical_name():
 	# Arrange:
 	facade = SymbolBlockFacade()
 
 	# Act:
-	response = _create_symbol_test_client(facade).get('/api/symbol/transactions?transferMosaicId=namespace.xym.child')
+	response = _create_symbol_test_client(facade).get('/api/symbol/transactions?mosaic=namespace.xym.child')
 
 	# Assert:
 	assert 200 == response.status_code
 	assert '8C820498A7C8F866' == facade.transactions_query.transfer_mosaic_id
 
 
-def test_transfer_rejects_bad_input():
+def test_mosaic_rejects_bad_input():
 	# Arrange:
 	facade = SymbolBlockFacade()
 	client = _create_symbol_test_client(facade)
@@ -746,18 +761,18 @@ def test_transfer_rejects_bad_input():
 		'GGGGGGGGGGGGGGGG', ' 72C0212E67A08BCE', 'Namespace.xym', 'a.b.c.d', 'a' * 65,
 		'', '.', '.a', 'a.', 'a..b', '_a', '-a', '日本語', 'a/coin', 'a@coin', 'a#coin', 'a coin', 'a+'
 	):
-		response = client.get('/api/symbol/transactions', query_string={'transferMosaicId': value})
-		_assert_bad_request_response(response, 'Invalid transferMosaicId')
+		response = client.get('/api/symbol/transactions', query_string={'mosaic': value})
+		_assert_bad_request_response(response, 'Invalid mosaic')
 		assert None is facade.transactions_query, value
 
 
-def test_transfer_unresolved_404():
+def test_mosaic_unresolved_404():
 	# Arrange:
 	facade = SymbolBlockFacade()
 	facade.transactions_error = SymbolMosaicAliasNotFound('alias missing')
 
 	# Act:
-	response = _create_symbol_test_client(facade).get('/api/symbol/transactions?transferMosaicId=8000000000000000')
+	response = _create_symbol_test_client(facade).get('/api/symbol/transactions?mosaic=8000000000000000')
 
 	# Assert:
 	_assert_not_found_response(response)

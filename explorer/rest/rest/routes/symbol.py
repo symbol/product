@@ -31,7 +31,7 @@ RECEIPT_QUERY_PARAMETERS = frozenset([
 BLOCK_RECEIPT_QUERY_PARAMETERS = frozenset(['limit', 'offset'])
 TRANSACTION_QUERY_PARAMETERS = frozenset([
 	'limit', 'offset', 'height', 'type', 'address', 'senderAddress', 'signerPublicKey', 'recipientAddress',
-	'transferMosaicId', 'embedded', 'order'
+	'mosaic', 'embedded', 'order'
 ])
 RECEIPT_MAX_OFFSET = 100000
 TRANSACTION_MAX_OFFSET = 100000
@@ -257,7 +257,7 @@ def _parse_transaction_query():
 	if address is not None and (signer_public_key is not None or recipient_address is not None):
 		raise ValueError('address cannot be combined with signerPublicKey or recipientAddress')
 
-	transfer_mosaic_id = _parse_transfer_mosaic_id(_get_scalar_parameter('transferMosaicId'))
+	transfer_mosaic_id = _parse_transfer_mosaic_id(_get_scalar_parameter('mosaic'))
 	embedded = _parse_boolean('embedded', _get_scalar_parameter('embedded'))
 	order_value = _get_scalar_parameter('order', 'DESC').upper()
 	if order_value != SortOrder.DESC.value:
@@ -308,15 +308,15 @@ def _parse_transfer_mosaic_id(value):
 
 	parts = value.split('.')
 	if len(parts) > MAX_NAMESPACE_DEPTH:
-		raise ValueError('Invalid transferMosaicId')
+		raise ValueError('Invalid mosaic')
 
 	if any(len(part) > MAX_NAMESPACE_NAME_SIZE for part in parts):
-		raise ValueError('Invalid transferMosaicId')
+		raise ValueError('Invalid mosaic')
 
 	try:
 		return f'{generate_namespace_path(value)[-1]:016X}'
 	except ValueError as error:
-		raise ValueError('Invalid transferMosaicId') from error
+		raise ValueError('Invalid mosaic') from error
 
 
 def _parse_boolean(name, value):
