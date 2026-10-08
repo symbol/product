@@ -30,13 +30,12 @@ RECEIPT_QUERY_PARAMETERS = frozenset([
 ])
 BLOCK_RECEIPT_QUERY_PARAMETERS = frozenset(['limit', 'offset'])
 TRANSACTION_QUERY_PARAMETERS = frozenset([
-	'limit', 'offset', 'height', 'type', 'address', 'senderAddress', 'signerPublicKey', 'recipientAddress',
+	'limit', 'offset', 'height', 'transactionTypes', 'address', 'senderAddress', 'signerPublicKey', 'recipientAddress',
 	'mosaic', 'embedded', 'order'
 ])
 RECEIPT_MAX_OFFSET = 100000
 TRANSACTION_MAX_OFFSET = 100000
 MAX_TRANSACTION_HEIGHT = 9223372036854775807
-SYMBOL_TRANSACTION_TYPE_CODES = frozenset(transaction_type.value for transaction_type in TransactionType)
 MOSAIC_ID_PATTERN = re.compile(r'[0-9A-Fa-f]{16}', re.ASCII)
 MAX_NAMESPACE_NAME_SIZE = 64
 MAX_NAMESPACE_DEPTH = 3
@@ -246,7 +245,7 @@ def _parse_transaction_query():
 	offset = _parse_bounded_integer('offset', _get_scalar_parameter('offset', '0'), 0, TRANSACTION_MAX_OFFSET)
 	height_arg = _get_scalar_parameter('height')
 	height = _parse_bounded_integer('height', height_arg, 1, MAX_TRANSACTION_HEIGHT) if height_arg is not None else None
-	types = tuple(_parse_transaction_type(value) for value in request.args.getlist('type'))
+	types = _parse_transaction_types(_get_scalar_parameter('transactionTypes'))
 	address = _parse_address('address')
 	sender_address = _parse_address('senderAddress')
 	signer_public_key = _parse_public_key('signerPublicKey')
@@ -276,16 +275,26 @@ def _parse_transaction_query():
 		include_embedded=embedded)
 
 
-def _parse_transaction_type(value):
-	try:
-		transaction_type = int(value)
-	except (TypeError, ValueError) as error:
-		raise ValueError('type must be an integer') from error
+def _parse_transaction_types(value):
+	if value is None:
+		return ()
 
-	if transaction_type not in SYMBOL_TRANSACTION_TYPE_CODES:
-		raise ValueError('Unsupported transaction type')
+	if not value:
+		raise ValueError('transactionTypes must not be empty')
 
-	return transaction_type
+	type_names = value.split(',')
+	if any(not type_name for type_name in type_names):
+		raise ValueError('transactionTypes must not contain empty values')
+
+	transaction_types = []
+	for type_name in type_names:
+		normalized_name = type_name.upper()
+		if normalized_name not in TransactionType.__members__:
+			raise ValueError(f'Unknown transactionTypes value: {type_name}')
+
+		transaction_types.append(TransactionType[normalized_name].value)
+
+	return tuple(transaction_types)
 
 
 def _parse_public_key(name):

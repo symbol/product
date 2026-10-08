@@ -186,7 +186,7 @@ def test_embedded_has_own_signer_address():
 
 
 @pytest.mark.parametrize('query', [
-	f'type={TransactionType.MOSAIC_METADATA.value}',
+	'transactionTypes=MOSAIC_METADATA',
 	f'senderAddress={Address(TESTNET_SENDER)}'
 ], ids=['non_matching_type', 'non_matching_sender'])
 def test_no_match_returns_200_empty(query):
@@ -238,10 +238,10 @@ def test_alias_filters_use_and():
 	with _alias_search_fixture() as client:
 		# Act:
 		response = client.get(
-			f'/api/symbol/transactions?mosaic=daoka.coin&height=4&type={TransactionType.TRANSFER.value}'
+			'/api/symbol/transactions?mosaic=daoka.coin&height=4&transactionTypes=TRANSFER'
 			'&address=NCUZDUB4XJ4XV3KSUBQ6NPZPP4RY3CUFZ7HNAPI')
 		wrong_type_response = client.get(
-			f'/api/symbol/transactions?mosaic=daoka.coin&type={TransactionType.MOSAIC_SUPPLY_CHANGE.value}'
+			'/api/symbol/transactions?mosaic=daoka.coin&transactionTypes=MOSAIC_SUPPLY_CHANGE'
 			'&address=NCUZDUB4XJ4XV3KSUBQ6NPZPP4RY3CUFZ7HNAPI')
 
 	# Assert:
@@ -252,6 +252,119 @@ def test_alias_filters_use_and():
 	] == response.json
 	assert 200 == wrong_type_response.status_code
 	assert [] == wrong_type_response.json
+
+
+def test_duplicate_types_same_result():
+	# Arrange:
+	expected = [
+		_expected_alias_transaction('00' * 31 + '04', 4, 444.44),
+		_expected_alias_transaction('00' * 31 + '02', 4, 222.22)
+	]
+	with _alias_search_fixture() as client:
+		# Act:
+		single_type_response = client.get(
+			'/api/symbol/transactions?mosaic=daoka.coin&height=4&transactionTypes=TRANSFER'
+			'&address=NCUZDUB4XJ4XV3KSUBQ6NPZPP4RY3CUFZ7HNAPI')
+		duplicate_type_response = client.get(
+			'/api/symbol/transactions?mosaic=daoka.coin&height=4&transactionTypes=TRANSFER,TRANSFER'
+			'&address=NCUZDUB4XJ4XV3KSUBQ6NPZPP4RY3CUFZ7HNAPI')
+
+	# Assert:
+	assert 200 == single_type_response.status_code
+	assert expected == single_type_response.json
+	assert 200 == duplicate_type_response.status_code
+	assert expected == duplicate_type_response.json
+
+
+def test_type_or_requires_mosaic_match():
+	# Arrange:
+	with _alias_search_fixture() as client:
+		# Act: the height-4 Aggregate matches type/height but its default SIGNER_ADDRESS differs from TESTNET_SENDER and has no mosaics.
+		# other_address_transfer must satisfy type OR and senderAddress/height/mosaic AND on the same Transaction row.
+		response = client.get(
+			f'/api/symbol/transactions?transactionTypes=TRANSFER,AGGREGATE_COMPLETE&'
+			f'senderAddress={Address(TESTNET_SENDER)}&height=4&mosaic={ALIAS_TARGET_MOSAIC_ID}')
+
+	# Assert:
+	assert 200 == response.status_code
+	assert [_expected_alias_transaction(
+		'00' * 31 + '03', 4, 333.33,
+		sender='TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI', recipient='TBJU67Q5BITMUTRRN6IB4I7FLSDQDWZA34I2PMQ')] == response.json
+
+
+def test_type_or_requires_sender_match():
+	# Arrange:
+	parent = create_symbol_transaction(
+		1,
+		1,
+		type=TransactionType.AGGREGATE_COMPLETE.value,
+		hash=bytes.fromhex('00' * 31 + '01'),
+		recipient_address=None,
+		signer_address=TESTNET_SENDER,
+		address_rows=[{'address': TESTNET_SENDER, 'role': 'signer'}])
+	transfer = create_symbol_transaction(
+		1,
+		2,
+		hash=bytes.fromhex('00' * 31 + '02'),
+		signer_address=TESTNET_SENDER,
+		recipient_address=TESTNET_RECIPIENT,
+		address_rows=[
+			{'address': TESTNET_SENDER, 'role': 'signer'},
+			{'address': TESTNET_RECIPIENT, 'role': 'recipient'}
+		])
+	type_only = create_symbol_transaction(
+		1,
+		3,
+		type=TransactionType.AGGREGATE_COMPLETE.value,
+		hash=bytes.fromhex('00' * 31 + '03'))
+	filter_only = create_symbol_transaction(
+		1,
+		4,
+		type=TransactionType.AGGREGATE_BONDED.value,
+		hash=bytes.fromhex('00' * 31 + '04'),
+		signer_address=TESTNET_SENDER,
+		address_rows=[{'address': TESTNET_SENDER, 'role': 'signer'}])
+	common_expected_fields = {
+		'isEmbedded': False,
+		'aggregateHash': None,
+		'embeddedIndex': None,
+		'group': 'confirmed',
+		'height': 1,
+		'sender': 'TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI',
+		'signer': 'TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI',
+		'value': [],
+		'amount': 0,
+		'fee': 0.000001,
+		'timestamp': '2026-01-01T00:00:01Z',
+		'message': None
+	}
+	expected = [
+		{
+			'hash': '00' * 31 + '02',
+			'type': 'TRANSFER',
+			'recipient': 'TBJU67Q5BITMUTRRN6IB4I7FLSDQDWZA34I2PMQ',
+			**common_expected_fields
+		},
+		{
+			'hash': '00' * 31 + '01',
+			'type': 'AGGREGATE_COMPLETE',
+			'recipient': None,
+			**common_expected_fields
+		}
+	]
+	with symbol_test_database(
+		create_symbol_sync_state(last_synced_height=1, finalized_height=1),
+		[create_symbol_block(1)]) as (db_config, puller_database):
+		puller_database.upsert_transactions_for_height(1, [parent, transfer, type_only, filter_only])
+		with _create_transaction_test_client(db_config) as client:
+			# Act:
+			response = client.get(
+				f'/api/symbol/transactions?transactionTypes=TRANSFER,AGGREGATE_COMPLETE&'
+				f'senderAddress={Address(TESTNET_SENDER)}&height=1&embedded=false')
+
+	# Assert:
+	assert 200 == response.status_code
+	assert expected == response.json
 
 
 def test_alias_embedded_opt_in():
