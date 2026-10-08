@@ -34,21 +34,33 @@ builds:
 
   - name: Wallet Common Core
     path: wallet/common/core
+    dependsOn:
+      - wallet/linter
 
   - name: Wallet Common Ethereum
     path: wallet/common/ethereum
+    dependsOn:
+      - wallet/linter
 
   - name: Wallet Common NEM
     path: wallet/common/nem
+    dependsOn:
+      - wallet/linter
 
   - name: Wallet Common Symbol
     path: wallet/common/symbol
+    dependsOn:
+      - wallet/linter
 
   - name: Wallet Common Transport
     path: wallet/common/transport
+    dependsOn:
+      - wallet/linter
 
   - name: Wallet Symbol Mobile
     path: wallet/symbol/mobile
+    dependsOn:
+      - wallet/linter
 
 customBuilds:
   - name: Nightly Job
