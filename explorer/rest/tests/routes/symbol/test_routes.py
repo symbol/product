@@ -609,8 +609,8 @@ def test_transactions_bad_numeric():
 
 	# Act + Assert:
 	for query, message in (
-		('limit=0', 'limit must be between 1 and 100'),
-		('limit=101', 'limit must be between 1 and 100'),
+		('limit=0', 'limit must be between 1 and 250'),
+		('limit=251', 'limit must be between 1 and 250'),
 		('limit=', 'limit must be an integer'),
 		('offset=-1', 'offset must be between 0 and 100000'),
 		('offset=100001', 'offset must be between 0 and 100000'),
@@ -626,18 +626,18 @@ def test_transactions_bad_numeric():
 
 
 def test_transactions_numeric_limits():
-	# Arrange:
-	facade = SymbolBlockFacade()
+	for limit in (1, 100, 101, 250):
+		# Arrange:
+		facade = SymbolBlockFacade()
 
-	# Act:
-	response = _create_symbol_test_client(facade).get(
-		'/api/symbol/transactions?limit=100&offset=100000&height=9223372036854775807')
+		# Act:
+		response = _create_symbol_test_client(facade).get(
+			f'/api/symbol/transactions?limit={limit}&offset=100000&height=9223372036854775807')
 
-	# Assert:
-	assert 200 == response.status_code
-	assert 100 == facade.transactions_query.limit
-	assert 100000 == facade.transactions_query.offset
-	assert 9223372036854775807 == facade.transactions_query.height
+		# Assert:
+		assert 200 == response.status_code, limit
+		assert [] == response.json, limit
+		assert TransactionQuery(limit=limit, offset=100000, height=9223372036854775807) == facade.transactions_query, limit
 
 
 def test_transactions_unknown_params():

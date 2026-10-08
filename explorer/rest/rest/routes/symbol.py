@@ -242,7 +242,7 @@ def _parse_receipt_query(height=None):
 
 
 def _parse_transaction_query():
-	limit = _parse_bounded_integer('limit', _get_scalar_parameter('limit', '10'), 1, 100)
+	limit = _parse_bounded_integer('limit', _get_scalar_parameter('limit', '10'), 1, 250)
 	offset = _parse_bounded_integer('offset', _get_scalar_parameter('offset', '0'), 0, TRANSACTION_MAX_OFFSET)
 	height_arg = _get_scalar_parameter('height')
 	height = _parse_bounded_integer('height', height_arg, 1, MAX_TRANSACTION_HEIGHT) if height_arg is not None else None
