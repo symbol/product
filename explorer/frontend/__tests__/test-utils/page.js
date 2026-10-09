@@ -44,6 +44,11 @@ export const clearFilterChip = chipText => async () => {
 	fireEvent.click(within(filterChip.parentElement).getByText(CLEAR_FILTER_TEXT));
 };
 
+export const selectFilterOption = (filterText, optionText) => async () => {
+	fireEvent.click(await getEnabledFilterChip(filterText));
+	fireEvent.click(within(screen.getByRole('dialog')).getByText(optionText));
+};
+
 // A case may declare `variants: ['nem']` to run only in those variants' passes (skipped in the others).
 export const runTestCases = (runTest, cases) =>
 	cases.forEach(({ description, variants, config, expected }) => {
@@ -141,7 +146,7 @@ export const runTableErrorTest = (description, { renderPage, request }) => {
 		serviceModule[serviceMethod].mockRejectedValue(new Error(`${serviceMethod} request failed`));
 
 		// Act:
-		renderPage();
+		await renderPage();
 
 		// Assert:
 		await waitFor(() => expect(screen.getByText(TRY_AGAIN_TEXT)).toBeInTheDocument());
