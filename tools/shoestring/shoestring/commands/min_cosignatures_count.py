@@ -18,7 +18,9 @@ async def run_main(args):
 	log.info(_('general-connecting-to-node').format(endpoint=api_endpoint))
 	connector = SymbolConnector(api_endpoint)
 
-	public_key = read_public_key_from_private_key_pem_file(args.ca_key_path)
+	public_key = config.transaction.signer_public_key
+	if not public_key:
+		public_key = read_public_key_from_private_key_pem_file(args.ca_key_path)
 	address = config.network.public_key_to_address(public_key)
 	min_cosignatures_count = await calculate_min_cosignatures_count(connector, address)
 	log.info(_('min-cosignatures-count-cosignatures-detected').format(min_cosignatures_count=min_cosignatures_count, address=address))
