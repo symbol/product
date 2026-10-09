@@ -178,6 +178,20 @@ def test_accounts_normalizes_query_case():
 	assert AccountListQuery(AccountSortField.BALANCE, 'ABCDEF0123456789', 1, 2) == facade.accounts_query
 
 
+@pytest.mark.parametrize('sort_field', ['height', 'HEIGHT'])
+def test_accounts_height_case(sort_field):
+	# Arrange:
+	facade = SymbolAccountFacade()
+	client = _create_symbol_test_client(facade)
+
+	# Act:
+	response = client.get(f'/api/symbol/accounts?sort_field={sort_field}')
+
+	# Assert:
+	assert 200 == response.status_code
+	assert AccountListQuery(AccountSortField.HEIGHT, None, 10, 0) == facade.accounts_query
+
+
 @pytest.mark.parametrize('query', [
 	pytest.param('limit=0', id='limit-zero'),
 	pytest.param('limit=-1', id='limit-negative'),
@@ -190,10 +204,12 @@ def test_accounts_normalizes_query_case():
 	pytest.param('offset=abc', id='offset-noninteger'),
 	pytest.param('sort_field=unknown', id='unknown-sort-field'),
 	pytest.param('sort_order=asc', id='ascending-sort'),
+	pytest.param('sort_field=HEIGHT&sort_order=ASC', id='height-ascending-sort'),
 	pytest.param('sort_order=unknown', id='unknown-sort-order'),
 	pytest.param('sort_field=BALANCE', id='balance-missing-mosaic'),
 	pytest.param('sort_field=ID&mosaic_id=1234567890ABCDEF', id='id-with-mosaic'),
 	pytest.param('sort_field=IMPORTANCE&mosaic_id=1234567890ABCDEF', id='importance-with-mosaic'),
+	pytest.param('sort_field=HEIGHT&mosaic_id=1234567890ABCDEF', id='height-with-mosaic'),
 	pytest.param('sort_field=BALANCE&mosaic_id=0x1234567890ABCDEF', id='mosaic-hex-prefix'),
 	pytest.param('sort_field=BALANCE&mosaic_id=1234567890ABCDE', id='mosaic-short'),
 	pytest.param('sort_field=BALANCE&mosaic_id=1234567890ABCDEF%20', id='mosaic-trailing-space'),
@@ -212,6 +228,19 @@ def test_accounts_rejects_invalid_values(query):
 
 	# Assert:
 	assert 400 == response.status_code
+	assert facade.accounts_query is None
+
+
+def test_accounts_height_enum_error():
+	# Arrange:
+	facade = SymbolAccountFacade()
+	client = _create_symbol_test_client(facade)
+
+	# Act:
+	response = client.get('/api/symbol/accounts?sort_field=unknown')
+
+	# Assert:
+	_assert_bad_request_response(response, 'sort_field must be ID, IMPORTANCE, HEIGHT, or BALANCE')
 	assert facade.accounts_query is None
 
 

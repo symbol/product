@@ -1940,19 +1940,27 @@ def test_list_custom_without_rank(symbol_database_config):
 	]) == (response.status_code, response.json)
 
 
-def test_list_http_recovers_fixed_ranks(symbol_database_config):
-	# Arrange: corrupt one required ID rank in an otherwise readable successful run.
+@pytest.mark.parametrize('sort_field', ['ID', 'HEIGHT'], ids=['id', 'height'])
+def test_list_http_recovers_fixed_ranks(symbol_database_config, sort_field):
+	# Arrange: corrupt one required rank in an otherwise readable successful run.
 	_seed_symbol_account_list_database(
 		symbol_database_config, create_symbol_sync_state(100, 100), create_account_list_entries())
 	with PullerSymbolDatabase(symbol_database_config) as writer:
 		with writer.connection.cursor() as cursor:
 			cursor.execute(
 				'UPDATE symbol_account_list_ranks SET sort_value_numeric = 999 WHERE refresh_run_id = %s AND rank_scope = %s AND rank = 0',
-				('selected-run', 'ID'))
+				('selected-run', sort_field))
 		writer.connection.commit()
 		with _account_list_create_app_client(symbol_database_config) as client:
+			query = '' if sort_field == 'ID' else '?sort_field=HEIGHT'
+			expected = _expected_account_list() if sort_field == 'ID' else [
+				_expected_list_item(1, None, 'main', .4, .00005, 1, .00005),
+				_expected_list_item(2, None, 'main', .1, 0, 0, 0),
+				_expected_list_item(4, None, 'main', .2, 0, 2, None),
+				_expected_list_item(3, None, 'main', .3, .00005, 1, .00005)
+			]
 			# Act: read the corrupt scope through the configured app.
-			failed = client.get('/api/symbol/accounts')
+			failed = client.get('/api/symbol/accounts' + query)
 
 			# Assert:
 			assert (503, {'status': 503, 'message': 'Symbol backend data is unavailable'}) == (failed.status_code, failed.json)
@@ -1961,10 +1969,10 @@ def test_list_http_recovers_fixed_ranks(symbol_database_config):
 			writer.finalize_account_refresh('selected-run', NATIVE_MOSAIC_ID, 100, datetime.now(timezone.utc))
 
 			# Act: reuse the same app after the failed request.
-			recovered = client.get('/api/symbol/accounts')
+			recovered = client.get('/api/symbol/accounts' + query)
 
 			# Assert:
-			assert (200, _expected_account_list()) == (recovered.status_code, recovered.json)
+			assert (200, expected) == (recovered.status_code, recovered.json)
 
 
 def _expected_account_list():
@@ -2082,6 +2090,43 @@ def test_list_http_repeatable_read(change):
 	assert (200, expected_new) == (next_response.status_code, next_response.json)
 
 
+def test_http_height_repeatable_read():
+	# Arrange:
+	with symbol_test_database(create_symbol_sync_state(100, 100)) as (config, writer):
+		seed_refresh_run(writer, 'old-run', create_account_list_entries('old-run'))
+		seed_refresh_run(writer, 'new-run', create_account_list_entries('new-run', is_new=True))
+		writer.upsert_account_refresh_state({'last_successful_run_id': 'old-run'})
+		seed_current_mosaic(writer, CUSTOM_MOSAIC_ID, 2, account_address(1))
+		seed_alias(writer, 'account', str(Address(account_address(1))), 'before.account')
+		seed_alias(writer, 'mosaic', CUSTOM_MOSAIC_ID, 'before.mosaic')
+		expected_old = [
+			_expected_list_item(1, None, 'main', .4, .00005, 1, .00005, 'before.mosaic', ('before.account',), True),
+			_expected_list_item(2, None, 'main', .1, 0, 0, 0, 'before.mosaic'),
+			_expected_list_item(4, None, 'main', .2, 0, 2, None, 'before.mosaic'),
+			_expected_list_item(3, None, 'main', .3, .00005, 1, .00005, 'before.mosaic')
+		]
+
+		def update():
+			writer.upsert_account_refresh_state({'last_successful_run_id': 'new-run'})
+
+		expected_new = [
+			_expected_list_item(2, '0C' * 32, 'remote', .4, .00002, .1, .00002, 'before.mosaic'),
+			_expected_list_item(3, '0D' * 32, 'main', .2, .000025, .25, .000025, 'before.mosaic'),
+			_expected_list_item(1, '0B' * 32, 'main', .1, .00001, 2, .00001, 'before.mosaic', ('before.account',), True),
+			_expected_list_item(4, '0E' * 32, 'main', .3, 0, 3, 0, 'before.mosaic')
+		]
+
+		with _account_list_http_client(config, PausingAccountListDatabase) as (client, database):
+			# Act:
+			response = read_during_database_snapshot(
+				database, lambda: client.get('/api/symbol/accounts?sort_field=HEIGHT'), update)
+			next_response = client.get('/api/symbol/accounts?sort_field=HEIGHT')
+
+	# Assert:
+	assert (200, expected_old) == (response.status_code, response.json)
+	assert (200, expected_new) == (next_response.status_code, next_response.json)
+
+
 @pytest.mark.parametrize('state_sql', [
 	'DELETE FROM symbol_account_refresh_state',
 	'UPDATE symbol_account_refresh_state SET status = \'refreshing\'',
@@ -2129,11 +2174,15 @@ def test_account_list_http_age_boundary(seconds, status):
 @pytest.mark.parametrize('query,indices,balance_values', [
 	('', [0, 1, 2, 3], [0, .00005, .00005, 0]),
 	('?sort_field=IMPORTANCE', [2, 1, 3, 0], [.00005, .00005, 0, 0]),
+	('?sort_field=HEIGHT', [2, 0, 3, 1], [.00005, 0, 0, .00005]),
 	(f'?sort_field=BALANCE&mosaic_id={NATIVE_MOSAIC_ID}', [1, 2, 0], [.00005, .00005, 0]),
 	(f'?sort_field=BALANCE&mosaic_id={CUSTOM_MOSAIC_ID}', [3, 1, 2, 0], [2, 1, 1, 0]),
 	('?limit=2&offset=1', [1, 2], [.00005, .00005]),
 	('?limit=2&offset=2', [2, 3], [.00005, 0]),
 	('?limit=2&offset=3', [3], [0]),
+	('?sort_field=HEIGHT&limit=2&offset=1', [0, 3], [0, 0]),
+	('?sort_field=HEIGHT&limit=2&offset=3', [1], [.00005]),
+	('?sort_field=HEIGHT&offset=4', [], []),
 	(f'?sort_field=BALANCE&mosaic_id={CUSTOM_MOSAIC_ID}&limit=2&offset=1', [1, 2], [1, 1]),
 	('?offset=4', [], []),
 	('?offset=100000', [], []),
@@ -2237,13 +2286,14 @@ def test_list_http_returns_nullable_dto():
 	}]) == (response.status_code, response.json)
 
 
-def test_list_http_returns_empty_run():
+@pytest.mark.parametrize('query', ['', '?sort_field=HEIGHT'], ids=['id', 'height'])
+def test_list_http_returns_empty_run(query):
 	# Arrange:
 	with symbol_test_database(create_symbol_sync_state(100, 100)) as (config, writer):
 		seed_refresh_run(writer, 'empty-run', [])
 		with _account_list_http_client(config) as (client, _):
 			# Act:
-			response = client.get('/api/symbol/accounts')
+			response = client.get('/api/symbol/accounts' + query)
 
 	# Assert:
 	assert (200, []) == (response.status_code, response.json)

@@ -78,6 +78,7 @@ class AccountSortField(str, Enum):
 
 	ID = 'ID'
 	IMPORTANCE = 'IMPORTANCE'
+	HEIGHT = 'HEIGHT'
 	BALANCE = 'BALANCE'
 
 
@@ -425,7 +426,7 @@ class SymbolDatabase(DatabaseConnectionPool):
 		return run_id
 
 	def _account_list_scope(self, query):
-		if query.sort_field in (AccountSortField.ID, AccountSortField.IMPORTANCE):
+		if query.sort_field in (AccountSortField.ID, AccountSortField.IMPORTANCE, AccountSortField.HEIGHT):
 			return query.sort_field.value
 
 		if query.sort_field == AccountSortField.BALANCE and query.mosaic_id == self.native_mosaic_info.id:
@@ -444,6 +445,11 @@ class SymbolDatabase(DatabaseConnectionPool):
 		elif scope == 'IMPORTANCE':
 			expected_source = '''SELECT address, importance_percentage AS value, NULL::varchar AS mosaic_id,
 				row_number() OVER (ORDER BY importance_percentage DESC, address ASC)-1 AS rank
+				FROM symbol_account_refresh_accounts WHERE refresh_run_id = %s'''
+			parameters = (run_id,)
+		elif scope == 'HEIGHT':
+			expected_source = '''SELECT address, address_height::numeric AS value, NULL::varchar AS mosaic_id,
+				row_number() OVER (ORDER BY address_height DESC, address ASC)-1 AS rank
 				FROM symbol_account_refresh_accounts WHERE refresh_run_id = %s'''
 			parameters = (run_id,)
 		else:

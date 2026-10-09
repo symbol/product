@@ -72,6 +72,36 @@ class SymbolAccountListDatabaseTest(TestCase):
 		self._assert_account_list_order(
 			list_query(AccountSortField.IMPORTANCE), [account_address(1), account_address(3), account_address(4), account_address(2)])
 
+	def test_get_account_list_orders_height_descending_with_address_ties_and_zero(self):
+		self._assert_account_list_order(
+			list_query(AccountSortField.HEIGHT), [account_address(1), account_address(2), account_address(4), account_address(3)])
+
+	def test_get_account_list_height_uses_snapshot_address_height(self):
+		# Arrange:
+		with symbol_test_database(create_symbol_sync_state(100, 100)) as (config, writer):
+			seed_accounts(writer)
+			with writer.connection.cursor() as cursor:
+				cursor.execute(
+					'''
+					UPDATE symbol_accounts
+					SET address_height = CASE
+						WHEN address = %s THEN 1
+						WHEN address = %s THEN 99
+						WHEN address = %s THEN 2
+						ELSE 3
+					END
+					''',
+					(account_address(1), account_address(2), account_address(3)))
+			writer.connection.commit()
+			with self._create_database(config) as database:
+				# Act:
+				result = database.get_account_list(list_query(AccountSortField.HEIGHT), 7200)
+
+		# Assert:
+		self.assertEqual(
+			[account_address(1), account_address(2), account_address(4), account_address(3)],
+			[row.address for row in result])
+
 	def test_get_account_list_orders_native_balance_descending_with_address_ties(self):
 		self._assert_account_list_order(
 			list_query(AccountSortField.BALANCE, NATIVE_MOSAIC_ID), [account_address(3), account_address(1), account_address(2)])
@@ -183,6 +213,12 @@ class SymbolAccountListDatabaseTest(TestCase):
 					('sort value', 'UPDATE symbol_account_list_ranks SET sort_value_numeric = 99 '
 						'WHERE refresh_run_id = %s AND rank_scope = %s AND rank = 0',
 						('selected-run', 'IMPORTANCE')),
+					('height sort value', 'UPDATE symbol_account_list_ranks SET sort_value_numeric = 99 '
+						'WHERE refresh_run_id = %s AND rank_scope = %s AND rank = 0',
+						('selected-run', 'HEIGHT')),
+					('height mosaic', 'UPDATE symbol_account_list_ranks SET mosaic_id = %s '
+						'WHERE refresh_run_id = %s AND rank_scope = %s AND rank = 0',
+						('0000000000000001', 'selected-run', 'HEIGHT')),
 					('mosaic', 'UPDATE symbol_account_list_ranks SET mosaic_id = %s WHERE refresh_run_id = %s AND rank_scope = %s AND rank = 0',
 						('0000000000000001', 'selected-run', f'BALANCE:{NATIVE_MOSAIC_ID}')),
 				)
@@ -194,6 +230,8 @@ class SymbolAccountListDatabaseTest(TestCase):
 						puller_database.connection.commit()
 						query = {
 							'sort value': list_query(AccountSortField.IMPORTANCE),
+							'height sort value': list_query(AccountSortField.HEIGHT),
+							'height mosaic': list_query(AccountSortField.HEIGHT),
 							'mosaic': list_query(AccountSortField.BALANCE, NATIVE_MOSAIC_ID)
 						}.get(name, list_query(AccountSortField.ID))
 
@@ -264,9 +302,10 @@ def _new_record_rows():
 @pytest.mark.parametrize('sort_field,mosaic_id,indices', [
 	(AccountSortField.ID, None, [0, 1, 2, 3]),
 	(AccountSortField.IMPORTANCE, None, [2, 1, 3, 0]),
+	(AccountSortField.HEIGHT, None, [2, 0, 3, 1]),
 	(AccountSortField.BALANCE, NATIVE_MOSAIC_ID, [1, 2, 0]),
 	(AccountSortField.BALANCE, CUSTOM_MOSAIC_ID, [3, 1, 2, 0])
-], ids=['id', 'importance', 'native-balance', 'custom-balance'])
+], ids=['id', 'importance', 'height', 'native-balance', 'custom-balance'])
 def test_list_excludes_other_run_decoys(sort_field, mosaic_id, indices):
 	# Arrange: same addresses, different values/order; failed run also overwrites current rows.
 	with symbol_test_database(create_symbol_sync_state(100, 100)) as (config, writer):
@@ -381,13 +420,14 @@ def test_list_native_empty_without_rows():
 	assert [] == result
 
 
-def test_list_empty_successful_run():
+@pytest.mark.parametrize('sort_field', [AccountSortField.ID, AccountSortField.HEIGHT], ids=['id', 'height'])
+def test_list_empty_successful_run(sort_field):
 	# Arrange:
 	with symbol_test_database(create_symbol_sync_state(100, 100)) as (config, writer):
 		seed_refresh_run(writer, 'empty-run', [])
 		with SymbolDatabase(config, NATIVE_MOSAIC_INFO, clock=lambda: NOW) as reader:
 			# Act:
-			result = reader.get_account_list(list_query(AccountSortField.ID), 7200)
+			result = reader.get_account_list(list_query(sort_field), 7200)
 
 	# Assert:
 	assert [] == result
@@ -454,6 +494,33 @@ def test_list_rejects_bad_rank_deep_page(statement, parameters):
 			# Act:
 			with pytest.raises(SymbolDataUnavailable) as exception_info:
 				reader.get_account_list(list_query(AccountSortField.ID, offset=100000), 7200)
+
+	# Assert:
+	assert 'ranks' in str(exception_info.value)
+
+
+@pytest.mark.parametrize('statement,parameters', [
+	('DELETE FROM symbol_account_list_ranks WHERE refresh_run_id = %s AND rank_scope = %s', ('selected-run', 'HEIGHT')),
+	('UPDATE symbol_account_list_ranks SET refresh_run_id = %s '
+		'WHERE refresh_run_id = %s AND rank_scope = %s', ('other-run', 'selected-run', 'HEIGHT')),
+	('UPDATE symbol_account_list_ranks SET rank = rank + 1 WHERE refresh_run_id = %s AND rank_scope = %s AND rank = 3',
+		('selected-run', 'HEIGHT')),
+	(
+		'UPDATE symbol_account_list_ranks SET address = CASE rank WHEN 0 THEN %s WHEN 1 THEN %s ELSE address END '
+		'WHERE refresh_run_id = %s AND rank_scope = %s',
+		(account_address(2), account_address(1), 'selected-run', 'HEIGHT'))
+], ids=['missing-height-scope', 'height-wrong-run', 'height-rank-gap', 'height-continuous-but-wrong-order'])
+def test_list_bad_height_rank_deep_page(statement, parameters):
+	# Arrange:
+	with symbol_test_database(create_symbol_sync_state(100, 100)) as (config, writer):
+		seed_accounts(writer)
+		with writer.connection.cursor() as cursor:
+			cursor.execute(statement, parameters)
+		writer.connection.commit()
+		with SymbolDatabase(config, NATIVE_MOSAIC_INFO, clock=lambda: NOW) as reader:
+			# Act:
+			with pytest.raises(SymbolDataUnavailable) as exception_info:
+				reader.get_account_list(list_query(AccountSortField.HEIGHT, offset=100000), 7200)
 
 	# Assert:
 	assert 'ranks' in str(exception_info.value)

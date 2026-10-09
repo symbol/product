@@ -27,7 +27,8 @@ def create_refresh_entry(  # pylint: disable=too-many-arguments,too-many-positio
 	importance_percentage=None,
 	mosaic_rows=None,
 	public_key=None,
-	account_type='main'
+	account_type='main',
+	address_height=None
 ):
 	"""Builds one Puller account-refresh page entry."""
 	address = account_address(identity)
@@ -38,7 +39,7 @@ def create_refresh_entry(  # pylint: disable=too-many-arguments,too-many-positio
 		account_type=account_type,
 		importance=importance,
 		importance_percentage=importance_percentage if importance_percentage is not None else importance,
-		address_height=identity,
+		address_height=identity if address_height is None else address_height,
 		last_seen_height=100)
 	return {
 		'refresh_run_id': refresh_run_id,
@@ -99,24 +100,24 @@ def create_account_list_entries(run_id='selected-run', is_new=False):
 	if is_new:
 		return [
 			create_refresh_entry(
-				run_id, 1, 3, 1, public_key=bytes([11]) * 32,
+				run_id, 1, 3, 1, public_key=bytes([11]) * 32, address_height=3,
 				mosaic_rows=[(NATIVE_MOSAIC_ID, 10), (CUSTOM_MOSAIC_ID, 200)]),
 			create_refresh_entry(
-				run_id, 2, 2, 4, public_key=bytes([12]) * 32, account_type='remote',
+				run_id, 2, 2, 4, public_key=bytes([12]) * 32, account_type='remote', address_height=9,
 				mosaic_rows=[(NATIVE_MOSAIC_ID, 20), (CUSTOM_MOSAIC_ID, 10)]),
 			create_refresh_entry(
-				run_id, 3, 1, 2, public_key=bytes([13]) * 32,
+				run_id, 3, 1, 2, public_key=bytes([13]) * 32, address_height=3,
 				mosaic_rows=[(NATIVE_MOSAIC_ID, 25), (CUSTOM_MOSAIC_ID, 25)]),
 			create_refresh_entry(
-				run_id, 4, 0, 3, public_key=bytes([14]) * 32,
+				run_id, 4, 0, 3, public_key=bytes([14]) * 32, address_height=0,
 				mosaic_rows=[(NATIVE_MOSAIC_ID, 0), (CUSTOM_MOSAIC_ID, 300)])
 		]
 
 	return [
-		create_refresh_entry(run_id, 1, 2, 4, mosaic_rows=[(NATIVE_MOSAIC_ID, 50), (CUSTOM_MOSAIC_ID, 100)]),
-		create_refresh_entry(run_id, 2, 0, 1, mosaic_rows=[(NATIVE_MOSAIC_ID, 0), (CUSTOM_MOSAIC_ID, 0)]),
-		create_refresh_entry(run_id, 3, 1, 3, mosaic_rows=[(NATIVE_MOSAIC_ID, 50), (CUSTOM_MOSAIC_ID, 100)]),
-		create_refresh_entry(run_id, 4, 3, 2, mosaic_rows=[(CUSTOM_MOSAIC_ID, 200)])
+		create_refresh_entry(run_id, 1, 2, 4, address_height=8, mosaic_rows=[(NATIVE_MOSAIC_ID, 50), (CUSTOM_MOSAIC_ID, 100)]),
+		create_refresh_entry(run_id, 2, 0, 1, address_height=8, mosaic_rows=[(NATIVE_MOSAIC_ID, 0), (CUSTOM_MOSAIC_ID, 0)]),
+		create_refresh_entry(run_id, 3, 1, 3, address_height=0, mosaic_rows=[(NATIVE_MOSAIC_ID, 50), (CUSTOM_MOSAIC_ID, 100)]),
+		create_refresh_entry(run_id, 4, 3, 2, address_height=5, mosaic_rows=[(CUSTOM_MOSAIC_ID, 200)])
 	]
 
 

@@ -364,7 +364,7 @@ def _parse_account_list_query():
 	try:
 		sort_field = AccountSortField(sort_field_value)
 	except ValueError as error:
-		raise ValueError('sort_field must be ID, IMPORTANCE, or BALANCE') from error
+		raise ValueError('sort_field must be ID, IMPORTANCE, HEIGHT, or BALANCE') from error
 
 	sort_order = _get_scalar_parameter('sort_order', 'DESC').upper()
 	if sort_order != SortOrder.DESC.value:
