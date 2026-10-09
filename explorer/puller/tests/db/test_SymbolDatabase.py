@@ -6,7 +6,8 @@ from contextlib import ExitStack
 from decimal import Decimal
 from unittest import TestCase
 
-from common.tests.PostgresTestUtils import PostgresTestDatabase, drop_symbol_block_tables_if_present
+import pytest
+from common.tests.PostgresTestUtils import drop_symbol_block_tables_if_present
 from psycopg2 import Error as PsycopgError
 from psycopg2.extras import Json
 from symbolchain.sc import ReceiptType, TransactionType
@@ -284,7 +285,10 @@ def _create_alias_name_rows(namespace_row):
 	return rows
 
 
+@pytest.mark.usefixtures('database_config')
 class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
+	db_config = None  # pylint: disable=invalid-name
+
 	def test_public_symbol_database_api_reports_exact_commit_elapsed_time_for_real_postgresql_commits(self):
 		# Arrange:
 		commit_notifications = []
@@ -2096,11 +2100,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 
 	def setUp(self):
 		self.exit_stack = ExitStack()
-		self.db_config = self.exit_stack.enter_context(PostgresTestDatabase())
-
-	def tearDown(self):
-		self.doCleanups()
-		self.exit_stack.close()
+		self.addCleanup(self.exit_stack.close)
 
 	def _create_database(self):
 		database = self.exit_stack.enter_context(

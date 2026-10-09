@@ -2,21 +2,16 @@ import unittest
 from collections import namedtuple
 
 import psycopg2
-import testing.postgresql
+import pytest
 
 from puller.db.DatabaseConnection import DatabaseConnection
 
 DatabaseConfig = namedtuple('DatabaseConfig', ['database', 'user', 'password', 'host', 'port'])
 
 
+@pytest.mark.usefixtures('database_config')
 class DatabaseConnectionTest(unittest.TestCase):
-
-	def setUp(self):
-		self.postgresql = testing.postgresql.Postgresql()
-		self.db_config = DatabaseConfig(**self.postgresql.dsn(), password='')
-
-	def tearDown(self):
-		self.postgresql.stop()
+	db_config = None  # pylint: disable=invalid-name
 
 	def test_create_database_connection(self):
 		# Arrange + Act:
