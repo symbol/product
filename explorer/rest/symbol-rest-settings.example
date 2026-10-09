@@ -2,6 +2,10 @@
 # Set EXPLORER_REST_SETTINGS to the deployment-specific settings file.
 REST_CHAIN = "symbol"
 
+# Required Symbol network name. It must match the Node, database and native
+# mosaic group: exactly "mainnet" or "testnet".
+NETWORK_NAME = "testnet"
+
 # Replace the placeholder with the XYM mosaic ID for the same network as the
 # configured Symbol Node and Symbol database. This value is intentionally not
 # a mainnet or testnet ID.

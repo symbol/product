@@ -1,6 +1,10 @@
+# pylint: disable=too-many-lines
+
 import json
+import logging
 import tempfile
 from contextlib import contextmanager
+from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from threading import Thread
@@ -12,7 +16,10 @@ from common.symbol.NodeConfiguration import SymbolNodeConfigurationError
 from common.tests.PostgresTestUtils import PostgresTestDatabase, create_unreachable_db_configuration, drop_symbol_block_tables_if_present
 from flask import Flask
 from psycopg2 import OperationalError
+from psycopg2.extras import Json
 from puller.db.SymbolDatabase import SymbolDatabase as PullerSymbolDatabase
+from symbolchain.CryptoTypes import PublicKey
+from symbolchain.symbol.Network import Network
 
 from rest import create_app, setup_symbol_facade
 from rest.facade.SymbolRestFacade import SymbolRestFacade
@@ -20,10 +27,69 @@ from rest.model.common import DatabaseConfig
 from rest.routes.symbol import setup_symbol_routes
 
 from .test.EnvTestUtils import rest_settings_env
+from .test.SymbolAccountTestUtils import ACCOUNT_ADDRESS, OTHER_ADDRESS, create_symbol_account_row
 from .test.SymbolBlockTestUtils import create_symbol_block, create_symbol_importance_block, create_symbol_receipt, create_symbol_sync_state
 from .test.SymbolHealthTestUtils import create_symbol_health
 
 NATIVE_MOSAIC_INFO = NativeMosaicInfo('72C0212E67A08BCE', 6)
+
+
+def _seed_symbol_account_database(database_config, sync_state, current_amount=70000000, malformed_voting=None):
+	_drop_symbol_block_tables_if_present(database_config)
+	with PullerSymbolDatabase(database_config) as database:
+		database.create_tables()
+		database.upsert_sync_state(sync_state)
+		account_row = create_symbol_account_row()
+		if malformed_voting is not None:
+			account_row['voting_public_keys'] = Json(malformed_voting)
+		database.upsert_account_current_state(account_row, [
+			{'address': ACCOUNT_ADDRESS, 'mosaic_id': NATIVE_MOSAIC_INFO.id, 'amount': current_amount, 'updated_at_height': 100},
+			{'address': ACCOUNT_ADDRESS, 'mosaic_id': '1234567890ABCDEF', 'amount': 12345, 'updated_at_height': 100}
+		])
+		database.upsert_mosaic({
+			'mosaic_id': NATIVE_MOSAIC_INFO.id,
+			'owner_address': ACCOUNT_ADDRESS,
+			'start_height': 1,
+			'duration': 0,
+			'expiration_height': None,
+			'supply': 1,
+			'divisibility': 6,
+			'flags': 0,
+			'supply_mutable': False,
+			'transferable': True,
+			'restrictable': False,
+			'revokable': False,
+			'raw_payload': {'mosaic': NATIVE_MOSAIC_INFO.id},
+			'updated_at_height': 100
+		})
+		cursor = database.connection.cursor()
+		try:
+			cursor.execute(
+				'''INSERT INTO symbol_alias_names (artifact_type, artifact_id, name, updated_at_height)
+				VALUES ('account', %s, %s, 100), ('account', %s, %s, 100),
+				('account', %s, %s, 100), ('namespace', %s, %s, 100),
+				('mosaic', %s, %s, 100), ('mosaic', %s, %s, 100),
+				('mosaic', %s, %s, 100), ('mosaic', %s, %s, 100),
+				('namespace', %s, %s, 100)''',
+				('TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY', 'alice.wallet',
+					'TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY', 'alice.payment',
+					'TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI', 'alice.other',
+					'TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY', 'alice.namespace',
+					NATIVE_MOSAIC_INFO.id, 'zeta.mosaic',
+					NATIVE_MOSAIC_INFO.id, 'alpha.mosaic',
+					'1234567890ABCDEF', 'zeta.non-native',
+					'1234567890ABCDEF', 'alpha.non-native',
+					'1234567890ABCDEF', 'non-alias-namespace'))
+			cursor.execute(
+				'''INSERT INTO symbol_namespaces (
+					namespace_id, root_id, name, full_name, depth, registration_type, owner_address,
+					start_height, alias_type, raw_payload, updated_at_height)
+				VALUES ('A95F1F8A96159516', 'A95F1F8A96159516', 'business', 'alice.business',
+					1, 'root', %s, 1, 'none', '{}'::jsonb, 100)''',
+				(ACCOUNT_ADDRESS,))
+			database.connection.commit()
+		finally:
+			cursor.close()
 
 
 class RecordingHTTPServer(ThreadingHTTPServer):
@@ -101,11 +167,13 @@ def _create_app_config(
 	config_dir,
 	db_config_path,
 	symbol_node_url='http://localhost:3000',
-	native_mosaic_id=NATIVE_MOSAIC_INFO.id
+	native_mosaic_id=NATIVE_MOSAIC_INFO.id,
+	network_name='testnet'
 ):
 	app_config_path = Path(config_dir) / 'app.config'
 	with open(app_config_path, 'wt', encoding='utf8') as app_config_file:
 		app_config_file.write('REST_CHAIN="symbol"\n')
+		app_config_file.write(f'NETWORK_NAME="{network_name}"\n')
 		app_config_file.write(f'DATABASE_CONFIG_FILEPATH="{db_config_path}"\n')
 		if native_mosaic_id is not None:
 			app_config_file.write(f'SYMBOL_NATIVE_MOSAIC_ID={native_mosaic_id!r}\n')
@@ -209,6 +277,725 @@ def _expected_receipt(  # pylint: disable=too-many-arguments,too-many-positional
 		'artifactId': artifact_id,
 		'mosaics': mosaics
 	}
+
+
+def _expected_account_detail():
+	return {
+		'address': 'TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY',
+		'publicKey': '01' * 32,
+		'description': None,
+		'namespaces': ['alice.payment', 'alice.wallet'],
+		'balance': 70.0,
+		'importance': 0.025,
+		'accountType': 'main',
+		'isHarvestingActive': None,
+		'mosaics': [
+			{'id': '1234567890ABCDEF', 'name': 'alpha.non-native', 'amount': 12345.0, 'isCreatedByAccount': False},
+			{'id': '72C0212E67A08BCE', 'name': 'alpha.mosaic', 'amount': 70.0, 'isCreatedByAccount': True}
+		],
+		'supplementalKeys': {
+			'linked': 'TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY',
+			'node': 'TAHJNXEF62ZEVSOI3NP7YWODLCAMBNZCY6LTIIY',
+			'vrf': 'TAXQUTQQNS6JEJG7PLC6FRVJ2USS44GLMVULPGQ'
+		},
+		'votingKeys': [
+			{'publicKey': 'AB' * 32, 'startEpoch': 100, 'endEpoch': 200, 'status': 'current'}
+		],
+		'importanceHistory': [{
+			'recalculationBlock': 0,
+			'totalFeesPaid': 1.234567,
+			'beneficiaryCount': 2,
+			'importanceScore': 5000000000
+		}],
+		'isMultisig': False,
+		'cosignatories': [],
+		'cosignatoryOf': [],
+		'height': 123,
+		'harvestedBlocks': None,
+		'harvestedFees': None,
+		'minCosignatories': 0,
+		'remoteAddress': None
+	}
+
+
+# pylint: disable=unidiomatic-typecheck
+def _assert_account_dto_json_types(account):
+	if account['height'] is not None:
+		assert type(account['height']) is int
+	assert type(account['balance']) in (int, float)
+	assert type(account['importance']) in (int, float)
+	assert type(account['isMultisig']) is bool
+	assert type(account['minCosignatories']) is int
+	for mosaic in account['mosaics']:
+		assert type(mosaic['amount']) in (int, float)
+		assert type(mosaic['isCreatedByAccount']) is bool
+	for voting_key in account['votingKeys']:
+		assert type(voting_key['startEpoch']) is int
+		assert type(voting_key['endEpoch']) is int
+	for bucket in account['importanceHistory']:
+		assert type(bucket['recalculationBlock']) is int
+		assert type(bucket['beneficiaryCount']) is int
+		assert type(bucket['importanceScore']) is int
+		assert type(bucket['totalFeesPaid']) in (int, float)
+# pylint: enable=unidiomatic-typecheck
+
+
+# pylint: disable=unidiomatic-typecheck
+def _assert_multisig_dto_json_types(multisig):
+	for field in ('minApproval', 'minRemoval'):
+		assert multisig[field] is None or type(multisig[field]) is int
+# pylint: enable=unidiomatic-typecheck
+
+
+def _assert_not_found_json(response):
+	assert 404 == response.status_code
+	assert {'status': 404, 'message': 'Resource not found'} == response.json
+
+
+def _assert_unavailable_json(response):
+	assert 503 == response.status_code
+	assert {'status': 503, 'message': 'Symbol backend data is unavailable'} == response.json
+
+
+def test_harvest_fields_null_receipt(symbol_database_config):
+	# Arrange:
+	with tempfile.TemporaryDirectory() as temp_directory:
+		db_config_path = _create_config_file(temp_directory, database_config=symbol_database_config)
+		app_config_path = _create_app_config(temp_directory, db_config_path)
+		_seed_symbol_account_database(
+			symbol_database_config,
+			create_symbol_sync_state(last_synced_height=100, finalized_height=100, finalized_epoch=150))
+		with PullerSymbolDatabase(symbol_database_config) as database:
+			database.upsert_blocks([create_symbol_block(1)])
+			database.upsert_receipts_for_height(1, [create_symbol_receipt(
+				1,
+				'harvestFee',
+				'balanceChange',
+				target_address=ACCOUNT_ADDRESS,
+				mosaic_id=NATIVE_MOSAIC_INFO.id,
+				amount=1234567)], 0)
+		with rest_settings_env(app_config_path):
+			app = _create_symbol_app()
+			try:
+				client = app.test_client()
+
+				# Act:
+				address_response = client.get('/api/symbol/account?address=TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY')
+				public_key_response = client.get('/api/symbol/account?publicKey=' + ('01' * 32))
+			finally:
+				app.extensions['symbol_database'].close()
+
+	# Assert:
+	expected_account = _expected_account_detail()
+	assert 200 == address_response.status_code
+	assert 200 == public_key_response.status_code
+	assert expected_account == address_response.json
+	assert expected_account == public_key_response.json
+	_assert_account_dto_json_types(address_response.json)
+	_assert_account_dto_json_types(public_key_response.json)
+	for response in (address_response, public_key_response):
+		assert response.json['harvestedBlocks'] is None
+		assert response.json['harvestedFees'] is None
+
+
+def test_public_key_no_derived_fallback(symbol_database_config):
+	# Arrange:
+	with tempfile.TemporaryDirectory() as temp_directory:
+		db_config_path = _create_config_file(temp_directory, database_config=symbol_database_config)
+		app_config_path = _create_app_config(temp_directory, db_config_path)
+		_seed_symbol_account_database(
+			symbol_database_config,
+			create_symbol_sync_state(last_synced_height=100, finalized_height=100, finalized_epoch=150))
+		decoy_address = Network.TESTNET.public_key_to_address(PublicKey(bytes.fromhex('02' * 32)))
+		with PullerSymbolDatabase(symbol_database_config) as database:
+			database.upsert_account_current_state(
+				create_symbol_account_row(
+					address=decoy_address.bytes,
+					address_text=str(decoy_address),
+					public_key=None),
+				[])
+		with rest_settings_env(app_config_path):
+			app = _create_symbol_app()
+			try:
+				client = app.test_client()
+
+				# Act:
+				decoy_address_response = client.get(f'/api/symbol/account?address={decoy_address}')
+				public_key_response = client.get('/api/symbol/account?publicKey=' + ('02' * 32))
+			finally:
+				app.extensions['symbol_database'].close()
+
+	# Assert:
+	assert 200 == decoy_address_response.status_code
+	assert str(decoy_address) == decoy_address_response.json['address']
+	assert decoy_address_response.json['publicKey'] is None
+	_assert_not_found_json(public_key_response)
+
+
+def test_account_dto_without_receipt(symbol_database_config):
+	# Arrange:
+	with tempfile.TemporaryDirectory() as temp_directory:
+		db_config_path = _create_config_file(temp_directory, database_config=symbol_database_config)
+		app_config_path = _create_app_config(temp_directory, db_config_path)
+		_seed_symbol_account_database(
+			symbol_database_config,
+			create_symbol_sync_state(last_synced_height=100, finalized_height=100, finalized_epoch=150))
+		with rest_settings_env(app_config_path):
+			app = _create_symbol_app()
+			try:
+				client = app.test_client()
+
+				# Act:
+				address_response = client.get('/api/symbol/account?address=TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY')
+				public_key_response = client.get('/api/symbol/account?publicKey=' + ('01' * 32))
+			finally:
+				app.extensions['symbol_database'].close()
+
+	# Assert:
+	expected_account = _expected_account_detail()
+	assert 200 == address_response.status_code
+	assert 200 == public_key_response.status_code
+	assert expected_account == address_response.json
+	assert expected_account == public_key_response.json
+	assert address_response.json['harvestedBlocks'] is None
+	assert address_response.json['harvestedFees'] is None
+	assert public_key_response.json['harvestedBlocks'] is None
+	assert public_key_response.json['harvestedFees'] is None
+	_assert_account_dto_json_types(address_response.json)
+	_assert_account_dto_json_types(public_key_response.json)
+
+
+def test_account_multisig_compat_fields(symbol_database_config):
+	# Arrange:
+	with tempfile.TemporaryDirectory() as temp_directory:
+		db_config_path = _create_config_file(temp_directory, database_config=symbol_database_config)
+		app_config_path = _create_app_config(temp_directory, db_config_path)
+		_seed_symbol_account_database(
+			symbol_database_config,
+			create_symbol_sync_state(last_synced_height=100, finalized_height=100, finalized_epoch=150))
+		with PullerSymbolDatabase(symbol_database_config) as database:
+			database.upsert_multisig(ACCOUNT_ADDRESS, {
+				'address': ACCOUNT_ADDRESS,
+				'min_approval': 2,
+				'min_removal': 1,
+				'cosignatory_addresses': [OTHER_ADDRESS],
+				'multisig_addresses': [OTHER_ADDRESS],
+				'updated_at_height': 100
+			})
+		with rest_settings_env(app_config_path):
+			app = _create_symbol_app()
+			try:
+				client = app.test_client()
+
+				# Act:
+				address_response = client.get('/api/symbol/account?address=TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY')
+				public_key_response = client.get('/api/symbol/account?publicKey=' + ('01' * 32))
+				multisig_response = client.get(
+					'/api/symbol/account/TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY/multisig')
+			finally:
+				app.extensions['symbol_database'].close()
+
+	# Assert:
+	for response in (address_response, public_key_response):
+		assert 200 == response.status_code
+		assert _expected_account_detail() == response.json
+		_assert_account_dto_json_types(response.json)
+		assert response.json['isMultisig'] is False
+		assert [] == response.json['cosignatories']
+		assert [] == response.json['cosignatoryOf']
+		assert 0 == response.json['minCosignatories']
+		assert response.json['remoteAddress'] is None
+	assert 200 == multisig_response.status_code
+	_assert_multisig_dto_json_types(multisig_response.json)
+	assert {
+		'minApproval': 2,
+		'minRemoval': 1,
+		'cosignatoryAddresses': ['TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI'],
+		'multisigAddresses': ['TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI']
+	} == multisig_response.json
+
+
+def test_account_current_beats_snapshot(symbol_database_config):
+	# Arrange:
+	with tempfile.TemporaryDirectory() as temp_directory:
+		db_config_path = _create_config_file(temp_directory, database_config=symbol_database_config)
+		app_config_path = _create_app_config(temp_directory, db_config_path)
+		_seed_symbol_account_database(
+			symbol_database_config,
+			create_symbol_sync_state(last_synced_height=100, finalized_height=100, finalized_epoch=150),
+			current_amount=70000000)
+		with PullerSymbolDatabase(symbol_database_config) as database:
+			database.upsert_account_refresh_page([{
+				'refresh_run_id': 'successful-run',
+				'account_search_order': 1,
+				'account_row': create_symbol_account_row(),
+				'mosaic_rows': [{
+					'address': ACCOUNT_ADDRESS,
+					'mosaic_id': NATIVE_MOSAIC_INFO.id,
+					'amount': 100000000,
+					'updated_at_height': 100
+				}],
+				'snapshot_height': 100,
+				'snapshot_at': datetime(2026, 1, 1, tzinfo=timezone.utc)
+			}], last_scanned_page=1)
+			database.finalize_account_refresh(
+				'successful-run', NATIVE_MOSAIC_INFO.id, 100, datetime(2026, 1, 1, tzinfo=timezone.utc))
+			database.upsert_account_refresh_page([{
+				'refresh_run_id': 'failed-run',
+				'account_search_order': 1,
+				'account_row': create_symbol_account_row(),
+				'mosaic_rows': [{
+					'address': ACCOUNT_ADDRESS,
+					'mosaic_id': NATIVE_MOSAIC_INFO.id,
+					'amount': 200000000,
+					'updated_at_height': 100
+				}],
+				'snapshot_height': 100,
+				'snapshot_at': datetime(2026, 1, 1, 0, 0, 1, tzinfo=timezone.utc)
+			}], last_scanned_page=2)
+			database.mark_account_refresh_failed('failed refresh')
+			database.upsert_account_current_state(create_symbol_account_row(), [
+				{'address': ACCOUNT_ADDRESS, 'mosaic_id': NATIVE_MOSAIC_INFO.id, 'amount': 70000000, 'updated_at_height': 100},
+				{'address': ACCOUNT_ADDRESS, 'mosaic_id': '1234567890ABCDEF', 'amount': 12345, 'updated_at_height': 100}
+			])
+		with rest_settings_env(app_config_path):
+			app = _create_symbol_app()
+			try:
+				client = app.test_client()
+
+				# Act:
+				address_response = client.get('/api/symbol/account?address=TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY')
+				public_key_response = client.get('/api/symbol/account?publicKey=' + ('01' * 32))
+			finally:
+				app.extensions['symbol_database'].close()
+
+	# Assert:
+	assert 200 == address_response.status_code
+	assert 200 == public_key_response.status_code
+	for response in (address_response, public_key_response):
+		assert 70.0 == response.json['balance']
+		assert 70.0 == next(mosaic['amount'] for mosaic in response.json['mosaics'] if mosaic['id'] == NATIVE_MOSAIC_INFO.id)
+		assert {**_expected_account_detail(), 'importance': 1.0} == response.json
+		_assert_account_dto_json_types(response.json)
+	with PullerSymbolDatabase(symbol_database_config) as database:
+		state = database.get_account_refresh_state()
+		cursor = database.connection.cursor()
+		try:
+			cursor.execute(
+				'''SELECT refresh_run_id, amount, snapshot_at
+				FROM symbol_account_refresh_mosaics WHERE address = %s ORDER BY snapshot_at DESC''',
+				(ACCOUNT_ADDRESS,))
+			snapshot_rows = cursor.fetchall()
+		finally:
+			cursor.close()
+	assert 'successful-run' == state['last_successful_run_id']
+	assert 'unhealthy' == state['status']
+	assert 'failed-run' == snapshot_rows[0][0]
+	assert snapshot_rows[0][2] > snapshot_rows[1][2]
+	assert {'failed-run': 200000000, 'successful-run': 100000000} == {
+		row[0]: row[1] for row in snapshot_rows}
+
+
+def test_account_http_uint64_json_type(symbol_database_config):
+	# Arrange:
+	with tempfile.TemporaryDirectory() as temp_directory:
+		db_config_path = _create_config_file(temp_directory, database_config=symbol_database_config)
+		app_config_path = _create_app_config(temp_directory, db_config_path)
+		_seed_symbol_account_database(
+			symbol_database_config,
+			create_symbol_sync_state(last_synced_height=100, finalized_height=100, finalized_epoch=150))
+		with PullerSymbolDatabase(symbol_database_config) as database:
+			with database.connection.cursor() as cursor:
+				cursor.execute(
+					'UPDATE symbol_accounts SET activity_buckets = %s WHERE address = %s',
+					(Json([{
+						'startHeight': '18446744073709551615',
+						'totalFeesPaid': '1234567',
+						'beneficiaryCount': 2,
+						'rawScore': '5000000000'
+					}]), ACCOUNT_ADDRESS))
+			database.connection.commit()
+		with rest_settings_env(app_config_path):
+			app = _create_symbol_app()
+			try:
+				# Act:
+				response = app.test_client().get('/api/symbol/account?address=TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY')
+			finally:
+				app.extensions['symbol_database'].close()
+
+	# Assert:
+	expected_account = _expected_account_detail()
+	expected_account['importanceHistory'][0]['recalculationBlock'] = 18446744073709551615
+	assert 200 == response.status_code
+	assert expected_account == response.json
+	_assert_account_dto_json_types(response.json)
+
+
+def test_account_ignores_refresh_state(symbol_database_config):
+	# Arrange:
+	with tempfile.TemporaryDirectory() as temp_directory:
+		db_config_path = _create_config_file(temp_directory, database_config=symbol_database_config)
+		app_config_path = _create_app_config(temp_directory, db_config_path)
+		_seed_symbol_account_database(
+			symbol_database_config,
+			create_symbol_sync_state(last_synced_height=100, finalized_height=100))
+		with rest_settings_env(app_config_path):
+			app = _create_symbol_app()
+			try:
+				client = app.test_client()
+				with PullerSymbolDatabase(symbol_database_config) as database:
+					cursor = database.connection.cursor()
+					try:
+						cursor.execute('DELETE FROM symbol_account_refresh_state')
+						database.connection.commit()
+					finally:
+						cursor.close()
+
+				# Act:
+				response = client.get('/api/symbol/account?address=TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY')
+
+				# Assert:
+				assert 200 == response.status_code
+				assert 0.025 == response.json['importance']
+				assert 70.0 == response.json['balance']
+
+				for refresh_state in (
+					{'status': 'healthy', 'last_completed_at': datetime(2000, 1, 1)},
+					{'status': 'refreshing', 'last_error': None},
+					{'status': 'stale', 'last_completed_at': datetime(2000, 1, 1)},
+					{'status': 'unhealthy', 'last_error': 'refresh failed'}):
+					with PullerSymbolDatabase(symbol_database_config) as database:
+						database.upsert_account_refresh_state(refresh_state)
+
+					# Act:
+					response = client.get('/api/symbol/account?address=TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY')
+
+					# Assert:
+					assert 200 == response.status_code
+					assert 0.025 == response.json['importance']
+					assert 70.0 == response.json['balance']
+			finally:
+				app.extensions['symbol_database'].close()
+
+
+def test_account_bad_jsonb_recovers(symbol_database_config, caplog):
+	# Arrange:
+	with tempfile.TemporaryDirectory() as temp_directory:
+		db_config_path = _create_config_file(temp_directory, database_config=symbol_database_config)
+		app_config_path = _create_app_config(temp_directory, db_config_path)
+		_seed_symbol_account_database(
+			symbol_database_config,
+			create_symbol_sync_state(last_synced_height=100, finalized_height=100, finalized_epoch=150),
+			malformed_voting=[{'publicKey': 'INVALID-SAVED-VOTING-PUBLIC-KEY'}])
+		with rest_settings_env(app_config_path):
+			app = _create_symbol_app()
+			try:
+				client = app.test_client()
+				caplog.set_level(logging.ERROR, logger='pythonConfig')
+				caplog.clear()
+
+				# Act: fetch the malformed persisted voting key.
+				invalid_response = client.get('/api/symbol/account?address=TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY')
+				error_messages = [record.getMessage() for record in caplog.records if record.levelno >= logging.ERROR]
+
+				# Assert:
+				assert [
+					'Invalid Symbol backend data at accounts.voting_public_keys[0].publicKey: invalid public key'
+				] == error_messages
+				_assert_unavailable_json(invalid_response)
+
+				# Arrange recovery:
+				with PullerSymbolDatabase(symbol_database_config) as database:
+					with database.connection.cursor() as cursor:
+						cursor.execute(
+							'UPDATE symbol_accounts SET voting_public_keys = %s WHERE address = %s',
+							(Json([{'publicKey': 'AB' * 32, 'startEpoch': '100', 'endEpoch': '200'}]), ACCOUNT_ADDRESS))
+					database.connection.commit()
+
+				# Act: fetch after repairing the persisted value.
+				recovered_response = client.get('/api/symbol/account?address=TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY')
+
+				# Assert:
+				assert 200 == recovered_response.status_code
+				assert _expected_account_detail() == recovered_response.json
+				_assert_account_dto_json_types(recovered_response.json)
+			finally:
+				app.extensions['symbol_database'].close()
+
+
+def test_account_sql_error_recovery(symbol_database_config):
+	# Arrange:
+	with tempfile.TemporaryDirectory() as temp_directory:
+		db_config_path = _create_config_file(temp_directory, database_config=symbol_database_config)
+		app_config_path = _create_app_config(temp_directory, db_config_path)
+		_seed_symbol_account_database(
+			symbol_database_config,
+			create_symbol_sync_state(last_synced_height=100, finalized_height=100, finalized_epoch=150))
+		with rest_settings_env(app_config_path):
+			app = _create_symbol_app()
+			try:
+				client = app.test_client()
+				with PullerSymbolDatabase(symbol_database_config) as database:
+					with database.connection.cursor() as cursor:
+						cursor.execute('ALTER TABLE symbol_alias_names RENAME TO symbol_alias_names_hidden_for_test')
+					database.connection.commit()
+					try:
+						# Act: the missing relation aborts the REST transaction.
+						failed_response = client.get('/api/symbol/account?address=TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY')
+					finally:
+						with database.connection.cursor() as cursor:
+							cursor.execute('ALTER TABLE symbol_alias_names_hidden_for_test RENAME TO symbol_alias_names')
+						database.connection.commit()
+
+				# Act: fetch after restoring the relation.
+				recovered_response = client.get('/api/symbol/account?address=TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY')
+			finally:
+				app.extensions['symbol_database'].close()
+
+	# Assert:
+	_assert_unavailable_json(failed_response)
+	assert 200 == recovered_response.status_code
+	assert _expected_account_detail() == recovered_response.json
+	_assert_account_dto_json_types(recovered_response.json)
+
+
+def test_multisig_relation_without_epoch(symbol_database_config):
+	# Arrange:
+	with tempfile.TemporaryDirectory() as temp_directory:
+		db_config_path = _create_config_file(temp_directory, database_config=symbol_database_config)
+		app_config_path = _create_app_config(temp_directory, db_config_path)
+		_seed_symbol_account_database(
+			symbol_database_config,
+			create_symbol_sync_state(last_synced_height=100, finalized_height=None))
+		with PullerSymbolDatabase(symbol_database_config) as database:
+			database.upsert_multisig(ACCOUNT_ADDRESS, {
+				'address': ACCOUNT_ADDRESS,
+				'min_approval': 2,
+				'min_removal': 1,
+				'cosignatory_addresses': [OTHER_ADDRESS, ACCOUNT_ADDRESS],
+				'multisig_addresses': [OTHER_ADDRESS],
+				'updated_at_height': 100
+			})
+		with rest_settings_env(app_config_path):
+			app = _create_symbol_app()
+			try:
+				client = app.test_client()
+
+				# Act:
+				response = client.get('/api/symbol/account/TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY/multisig')
+			finally:
+				app.extensions['symbol_database'].close()
+
+	# Assert:
+	assert 200 == response.status_code
+	assert {
+		'minApproval': 2,
+		'minRemoval': 1,
+		'cosignatoryAddresses': [
+			'TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI',
+			'TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY'
+		],
+		'multisigAddresses': ['TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI']
+	} == response.json
+	_assert_multisig_dto_json_types(response.json)
+
+
+def test_multisig_empty_relation_404(symbol_database_config):
+	# Arrange:
+	with tempfile.TemporaryDirectory() as temp_directory:
+		db_config_path = _create_config_file(temp_directory, database_config=symbol_database_config)
+		app_config_path = _create_app_config(temp_directory, db_config_path)
+		_seed_symbol_account_database(
+			symbol_database_config,
+			create_symbol_sync_state(last_synced_height=100, finalized_height=None))
+		with PullerSymbolDatabase(symbol_database_config) as database:
+			database.upsert_multisig(ACCOUNT_ADDRESS, {
+				'address': ACCOUNT_ADDRESS,
+				'min_approval': 0,
+				'min_removal': 0,
+				'cosignatory_addresses': [],
+				'multisig_addresses': [],
+				'updated_at_height': 100
+			})
+		with rest_settings_env(app_config_path):
+			app = _create_symbol_app()
+			try:
+				client = app.test_client()
+
+				# Act:
+				response = client.get('/api/symbol/account/TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY/multisig')
+			finally:
+				app.extensions['symbol_database'].close()
+
+	# Assert:
+	_assert_not_found_json(response)
+
+
+def test_multisig_missing_relation_404(symbol_database_config):
+	# Arrange:
+	with tempfile.TemporaryDirectory() as temp_directory:
+		db_config_path = _create_config_file(temp_directory, database_config=symbol_database_config)
+		app_config_path = _create_app_config(temp_directory, db_config_path)
+		_seed_symbol_account_database(
+			symbol_database_config,
+			create_symbol_sync_state(last_synced_height=100, finalized_height=None))
+		with rest_settings_env(app_config_path):
+			app = _create_symbol_app()
+			try:
+				client = app.test_client()
+
+				# Act:
+				response = client.get('/api/symbol/account/TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY/multisig')
+			finally:
+				app.extensions['symbol_database'].close()
+
+	# Assert:
+	_assert_not_found_json(response)
+
+
+@pytest.mark.parametrize('sync_state_case', [
+	'dirty',
+	'repairing',
+	'unhealthy',
+	'initialized',
+	'zero_watermark',
+	'null_watermark',
+	'missing'
+])
+def test_multisig_503_precedes_404(symbol_database_config, sync_state_case):
+	# Arrange:
+	with tempfile.TemporaryDirectory() as temp_directory:
+		db_config_path = _create_config_file(temp_directory, database_config=symbol_database_config)
+		app_config_path = _create_app_config(temp_directory, db_config_path)
+		if sync_state_case == 'dirty':
+			sync_state = create_symbol_sync_state(
+				last_synced_height=100,
+				finalized_height=100,
+				dirty_state_from_height=101)
+		elif sync_state_case == 'repairing':
+			sync_state = create_symbol_sync_state(
+				last_synced_height=100,
+				finalized_height=100,
+				status='repairing')
+		elif sync_state_case == 'unhealthy':
+			sync_state = create_symbol_sync_state(
+				last_synced_height=100,
+				finalized_height=100,
+				status='unhealthy')
+		elif sync_state_case == 'initialized':
+			sync_state = create_symbol_sync_state(
+				last_synced_height=100,
+				finalized_height=100,
+				status='initialized')
+		elif sync_state_case == 'zero_watermark':
+			sync_state = create_symbol_sync_state(last_synced_height=0, finalized_height=None)
+		elif sync_state_case == 'null_watermark':
+			sync_state = create_symbol_sync_state(last_synced_height=0, finalized_height=None)
+			sync_state['last_synced_height'] = None
+			sync_state['last_synced_block_hash'] = None
+		else:
+			sync_state = create_symbol_sync_state(last_synced_height=100, finalized_height=100)
+		_seed_symbol_account_database(symbol_database_config, sync_state)
+		with PullerSymbolDatabase(symbol_database_config) as database:
+			if sync_state_case == 'missing':
+				cursor = database.connection.cursor()
+				try:
+					cursor.execute('DELETE FROM symbol_sync_state')
+					database.connection.commit()
+				finally:
+					cursor.close()
+			else:
+				database.upsert_multisig(ACCOUNT_ADDRESS, {
+					'address': ACCOUNT_ADDRESS,
+					'min_approval': 2,
+					'min_removal': 1,
+					'cosignatory_addresses': [OTHER_ADDRESS],
+					'multisig_addresses': [OTHER_ADDRESS],
+					'updated_at_height': 100
+				})
+		with rest_settings_env(app_config_path):
+			app = _create_symbol_app()
+			try:
+				client = app.test_client()
+
+				# Arrange: add a relationship when sync state is missing.
+				with PullerSymbolDatabase(symbol_database_config) as database:
+					if sync_state_case == 'missing':
+						database.upsert_multisig(ACCOUNT_ADDRESS, {
+							'address': ACCOUNT_ADDRESS,
+							'min_approval': 2,
+							'min_removal': 1,
+							'cosignatory_addresses': [OTHER_ADDRESS],
+							'multisig_addresses': [OTHER_ADDRESS],
+							'updated_at_height': 100
+						})
+
+				# Act: fetch with the relationship present.
+				present_relationship_response = client.get(
+					'/api/symbol/account/TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY/multisig')
+
+				# Arrange: remove the relationship for the missing-relation check.
+				with PullerSymbolDatabase(symbol_database_config) as database:
+					database.upsert_multisig(ACCOUNT_ADDRESS, None)
+
+				# Act: fetch after removing the relationship.
+				missing_relationship_response = client.get(
+					'/api/symbol/account/TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY/multisig')
+			finally:
+				app.extensions['symbol_database'].close()
+
+	# Assert:
+	_assert_unavailable_json(present_relationship_response)
+	_assert_unavailable_json(missing_relationship_response)
+
+
+@pytest.mark.parametrize('sync_state_case', [
+	'dirty_above_watermark',
+	'repairing',
+	'unhealthy',
+	'initialized',
+	'null_watermark',
+	'missing',
+	'missing_finalized_epoch'
+])
+def test_account_sync_state_503(symbol_database_config, sync_state_case):
+	# Arrange:
+	with tempfile.TemporaryDirectory() as temp_directory:
+		db_config_path = _create_config_file(temp_directory, database_config=symbol_database_config)
+		app_config_path = _create_app_config(temp_directory, db_config_path)
+		if sync_state_case == 'dirty_above_watermark':
+			sync_state = create_symbol_sync_state(
+				last_synced_height=100, finalized_height=100, finalized_epoch=150, dirty_state_from_height=101)
+		elif sync_state_case == 'repairing':
+			sync_state = create_symbol_sync_state(last_synced_height=100, finalized_height=100, status='repairing')
+		elif sync_state_case == 'unhealthy':
+			sync_state = create_symbol_sync_state(last_synced_height=100, finalized_height=100, status='unhealthy')
+		elif sync_state_case == 'initialized':
+			sync_state = create_symbol_sync_state(last_synced_height=100, finalized_height=100, status='initialized')
+		elif sync_state_case == 'null_watermark':
+			sync_state = create_symbol_sync_state(last_synced_height=100, finalized_height=100)
+			sync_state['last_synced_height'] = None
+			sync_state['last_synced_block_hash'] = None
+		elif sync_state_case == 'missing_finalized_epoch':
+			sync_state = create_symbol_sync_state(last_synced_height=100, finalized_height=100, finalized_epoch=None)
+		else:
+			sync_state = create_symbol_sync_state(last_synced_height=100, finalized_height=100)
+		_seed_symbol_account_database(symbol_database_config, sync_state)
+		if sync_state_case == 'missing':
+			with PullerSymbolDatabase(symbol_database_config) as database:
+				with database.connection.cursor() as cursor:
+					cursor.execute('DELETE FROM symbol_sync_state')
+				database.connection.commit()
+		with rest_settings_env(app_config_path):
+			app = _create_symbol_app()
+			try:
+				# Act: public key 02 is valid but absent from the seeded current state.
+				response = app.test_client().get('/api/symbol/account?publicKey=' + ('02' * 32))
+			finally:
+				app.extensions['symbol_database'].close()
+
+	# Assert:
+	_assert_unavailable_json(response)
 
 
 @pytest.fixture(name='symbol_database_config', scope='module')
@@ -803,6 +1590,54 @@ def test_setup_requires_node_url(symbol_database_config):
 				_create_symbol_app()
 
 
+@pytest.mark.parametrize('network_name,expected_message', [
+	(None, 'NETWORK_NAME is required'),
+	('mainnetx', 'NETWORK_NAME must be either mainnet or testnet')
+])
+def test_network_setup_invalid(network_name, expected_message):
+	# Arrange:
+	with tempfile.TemporaryDirectory() as temp_directory:
+		db_config_path = _create_config_file(
+			temp_directory,
+			database_config=create_unreachable_db_configuration())
+		app_config_path = _create_app_config(temp_directory, db_config_path)
+		app = Flask(__name__)
+		app.config.from_pyfile(app_config_path)
+		if network_name is None:
+			del app.config['NETWORK_NAME']
+		else:
+			app.config['NETWORK_NAME'] = network_name
+
+		# Act + Assert:
+		with pytest.raises(ValueError, match=f'^{expected_message}$') as exception_info:
+			setup_symbol_facade(app)
+
+		# Assert:
+		assert ValueError is exception_info.type
+		assert 'symbol_database' not in app.extensions
+
+
+@pytest.mark.parametrize('network_name,expected_network', [
+	('mainnet', Network.MAINNET),
+	('testnet', Network.TESTNET)
+])
+def test_network_setup_supported(symbol_database_config, network_name, expected_network):
+	# Arrange:
+	with tempfile.TemporaryDirectory() as temp_directory:
+		db_config_path = _create_config_file(temp_directory, database_config=symbol_database_config)
+		app_config_path = _create_app_config(temp_directory, db_config_path, network_name=network_name)
+		app = Flask(__name__)
+		app.config.from_pyfile(app_config_path)
+
+		# Act:
+		facade = setup_symbol_facade(app)
+		try:
+			# Assert:
+			assert expected_network == facade.network
+		finally:
+			app.extensions['symbol_database'].close()
+
+
 def test_symbol_facade_config(symbol_database_config):
 	# Arrange:
 	with tempfile.TemporaryDirectory() as temp_directory:
@@ -824,6 +1659,7 @@ def test_symbol_facade_config(symbol_database_config):
 	assert facade.symbol_db is app.extensions['symbol_database']
 	assert 'http://localhost:3000' == facade.node_config.base_url
 	assert NATIVE_MOSAIC_INFO == facade.native_mosaic_info
+	assert Network.TESTNET == facade.network
 	app.extensions['symbol_database'].close()
 
 
