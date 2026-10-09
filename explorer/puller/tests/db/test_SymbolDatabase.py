@@ -2311,6 +2311,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			'idx_symbol_account_list_ranks_page',
 			'idx_symbol_account_mosaics_address',
 			'idx_symbol_account_mosaics_mosaic',
+			'idx_symbol_account_refresh_accounts_address_height_desc',
 			'idx_symbol_account_refresh_accounts_address_text',
 			'idx_symbol_account_refresh_accounts_importance_desc',
 			'idx_symbol_account_refresh_accounts_search_order',
@@ -2324,6 +2325,28 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			'idx_symbol_accounts_harvesting',
 			'idx_symbol_accounts_importance_desc'
 		], [row[0] for row in cursor.fetchall()])
+
+	def test_create_tables_creates_account_refresh_height_index_definition(self):
+		# Arrange:
+		database = self._create_uninitialized_database()
+		cursor = database.connection.cursor()
+
+		# Act:
+		database.create_tables()
+
+		# Assert:
+		cursor.execute(
+			'''
+			SELECT indexdef
+			FROM pg_indexes
+			WHERE schemaname = 'public'
+				AND indexname = 'idx_symbol_account_refresh_accounts_address_height_desc'
+			''')
+		self.assertEqual(
+			'CREATE INDEX idx_symbol_account_refresh_accounts_address_height_desc '
+			'ON public.symbol_account_refresh_accounts USING btree '
+			'(refresh_run_id, address_height DESC, address)',
+			cursor.fetchone()[0])
 
 	def test_create_tables_creates_account_refresh_state_schema(self):
 		# Arrange:
@@ -2392,6 +2415,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			('refresh_run_id', 'varchar', 'NO', None),
 			('address', 'bytea', 'NO', None),
 			('address_text', 'varchar', 'NO', None),
+			('address_height', 'int8', 'NO', None),
 			('account_search_order', 'int8', 'NO', None),
 			('public_key', 'bytea', 'YES', None),
 			('account_type', 'symbol_account_type', 'YES', None),
@@ -3657,6 +3681,55 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		self.assertEqual(snapshot_at.replace(tzinfo=None), state['last_completed_at'])
 		self.assertIsNone(state['last_error'])
 
+	def test_snapshot_replacement_persists_address_height_independently_from_current_state(self):
+		# Arrange:
+		database = self._create_database()
+		account_row, mosaic_rows = _create_account_row(ADDRESS1, addressHeight='12')
+		database.upsert_account_current_state(account_row, mosaic_rows)
+		snapshot_at = datetime.datetime(2026, 1, 1)
+		_insert_account_refresh_snapshot_rows(database, {
+			'refresh_run_id': 'run-1', 'account_search_order': 0,
+			'account_row': account_row, 'mosaic_rows': mosaic_rows, 'snapshot_height': 20, 'snapshot_at': snapshot_at
+		})
+		cursor = database.connection.cursor()
+		cursor.execute(
+			'''
+			SELECT address_height, account_search_order, snapshot_height
+			FROM symbol_account_refresh_accounts
+			WHERE refresh_run_id = 'run-1'
+			''')
+		self.assertEqual((12, 0, 20), cursor.fetchone())
+		replaced_account_row, replaced_mosaic_rows = _create_account_row(ADDRESS1, addressHeight='0')
+		_insert_account_refresh_snapshot_rows(database, {
+			'refresh_run_id': 'run-1', 'account_search_order': 1,
+			'account_row': replaced_account_row, 'mosaic_rows': replaced_mosaic_rows,
+			'snapshot_height': 21, 'snapshot_at': snapshot_at
+		})
+		current_account_row, current_mosaic_rows = _create_account_row(ADDRESS1, addressHeight='99', observed_height=100)
+
+		# Act:
+		database.upsert_account_current_state(current_account_row, current_mosaic_rows)
+		database.finalize_account_refresh('run-1', NATIVE_MOSAIC_ID, 21, snapshot_at)
+
+		# Assert:
+		cursor = database.connection.cursor()
+		cursor.execute(
+			'''
+			SELECT address_height, account_search_order, snapshot_height
+			FROM symbol_account_refresh_accounts
+			WHERE refresh_run_id = 'run-1'
+			''')
+		self.assertEqual((0, 1, 21), cursor.fetchone())
+		cursor.execute(
+			'''
+			SELECT address_height
+			FROM symbol_accounts
+			WHERE address = %s
+			''',
+			(bytes.fromhex(ADDRESS1),))
+		self.assertEqual((99,), cursor.fetchone())
+		self.assertEqual([(0, bytes.fromhex(ADDRESS1))], self._fetch_rank_addresses(database, 'HEIGHT'))
+
 	def test_finalize_account_refresh_sets_zero_percentage_when_total_importance_is_zero(self):
 		# Arrange:
 		database = self._create_database()
@@ -3679,11 +3752,11 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 	@staticmethod
 	def _seed_account_refresh_snapshot_for_ranks(database):
 		account_row1, mosaic_rows1 = _create_account_row(
-			ADDRESS1, importance='200', mosaics=[{'id': NATIVE_MOSAIC_ID, 'amount': '300'}])
+			ADDRESS1, addressHeight='8', importance='200', mosaics=[{'id': NATIVE_MOSAIC_ID, 'amount': '300'}])
 		account_row2, mosaic_rows2 = _create_account_row(
-			ADDRESS2, importance='100', mosaics=[{'id': NATIVE_MOSAIC_ID, 'amount': '100'}])
+			ADDRESS2, addressHeight='8', importance='100', mosaics=[{'id': NATIVE_MOSAIC_ID, 'amount': '100'}])
 		account_row3, mosaic_rows3 = _create_account_row(
-			ADDRESS3, importance='300', mosaics=[{'id': NATIVE_MOSAIC_ID, 'amount': '200'}])
+			ADDRESS3, addressHeight='0', importance='300', mosaics=[{'id': NATIVE_MOSAIC_ID, 'amount': '200'}])
 		for account_row, mosaic_rows in ((account_row1, mosaic_rows1), (account_row2, mosaic_rows2), (account_row3, mosaic_rows3)):
 			database.upsert_account_current_state(account_row, mosaic_rows)
 		snapshot_at = datetime.datetime(2026, 1, 1)
@@ -3744,6 +3817,31 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			(2, bytes.fromhex(ADDRESS2))
 		], self._fetch_rank_addresses(database, 'IMPORTANCE'))
 
+	def test_finalize_account_refresh_orders_height_scope_by_descending_height_and_address(self):
+		# Arrange:
+		database = self._create_database()
+		self._seed_account_refresh_snapshot_for_ranks(database)
+
+		# Act:
+		database.finalize_account_refresh('run-1', NATIVE_MOSAIC_ID, 10, datetime.datetime(2026, 1, 1))
+
+		# Assert:
+		cursor = database.connection.cursor()
+		cursor.execute(
+			'''
+			SELECT rank, address, sort_value_numeric, mosaic_id
+			FROM symbol_account_list_ranks
+			WHERE refresh_run_id = 'run-1' AND rank_scope = 'HEIGHT'
+			ORDER BY rank
+			''')
+		self.assertEqual([
+			(0, bytes.fromhex(ADDRESS1), Decimal('8'), None),
+			(1, bytes.fromhex(ADDRESS2), Decimal('8'), None),
+			(2, bytes.fromhex(ADDRESS3), Decimal('0'), None)
+		], [
+			(rank, bytes(address), sort_value_numeric, mosaic_id)
+			for rank, address, sort_value_numeric, mosaic_id in cursor.fetchall()])
+
 	def test_finalize_account_refresh_orders_native_balance_scope_by_amount(self):
 		# Arrange:
 		database = self._create_database()
@@ -3785,9 +3883,11 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			'''
 			INSERT INTO symbol_account_list_ranks (
 				refresh_run_id, rank_scope, rank, address, sort_value_numeric, mosaic_id
-			) VALUES ('run-1', 'ID', 0, %s, NULL, NULL)
+			) VALUES
+				('run-1', 'ID', 0, %s, NULL, NULL),
+				('run-1', 'HEIGHT', 0, %s, 10, NULL)
 			''',
-			(bytes.fromhex(ADDRESS1),))
+			(bytes.fromhex(ADDRESS1), bytes.fromhex(ADDRESS1)))
 		database.connection.commit()
 
 		# Act + Assert:
@@ -3801,9 +3901,14 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			('run-1',))
 		self.assertEqual((Decimal('0.123'),), cursor.fetchone())
 		cursor.execute(
-			'SELECT rank_scope, rank, address FROM symbol_account_list_ranks WHERE refresh_run_id = %s',
+			'''
+			SELECT rank_scope, rank, address
+			FROM symbol_account_list_ranks
+			WHERE refresh_run_id = %s
+			ORDER BY rank_scope
+			''',
 			('run-1',))
-		self.assertEqual([('ID', 0, bytes.fromhex(ADDRESS1))], [
+		self.assertEqual([('HEIGHT', 0, bytes.fromhex(ADDRESS1)), ('ID', 0, bytes.fromhex(ADDRESS1))], [
 			(rank_scope, rank, bytes(address))
 			for rank_scope, rank, address in cursor.fetchall()])
 		cursor.execute('SELECT importance_percentage FROM symbol_accounts WHERE address = %s', (bytes.fromhex(ADDRESS1),))
@@ -3955,6 +4060,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			[('run-1', expected_address, expected_mosaic_row['mosaic_id'], expected_mosaic_row['amount'])],
 			[(run_id, bytes(address), mosaic_id, amount) for run_id, address, mosaic_id, amount in refresh_mosaic_results])
 		self.assertEqual([(0, expected_address)], self._fetch_rank_addresses(database, 'ID'))
+		self.assertEqual([(0, expected_address)], self._fetch_rank_addresses(database, 'HEIGHT'))
 		self.assertEqual([(0, expected_address)], self._fetch_rank_addresses(database, 'IMPORTANCE'))
 		self.assertEqual([(0, expected_address)], self._fetch_rank_addresses(database, f'BALANCE:{NATIVE_MOSAIC_ID}'))
 

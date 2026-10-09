@@ -823,23 +823,23 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):  # pylint: disable=too-man
 		cursor = self.puller.symbol_db.connection.cursor()
 		cursor.execute(
 			'''
-			SELECT address, account_search_order, importance, importance_percentage, snapshot_height
+			SELECT address, address_height, account_search_order, importance, importance_percentage, snapshot_height
 			FROM symbol_account_refresh_accounts
 			WHERE refresh_run_id = %s
 			ORDER BY account_search_order
 			''',
 			(refresh_run_id,))
 		actual_results = [
-			(bytes(address), search_order, importance, importance_percentage, snapshot_height)
-			for address, search_order, importance, importance_percentage, snapshot_height in cursor.fetchall()
+			(bytes(address), address_height, search_order, importance, importance_percentage, snapshot_height)
+			for address, address_height, search_order, importance, importance_percentage, snapshot_height in cursor.fetchall()
 		]
 		expected_results = [
-			(bytes.fromhex(_address_hex(index)), index, index + 1, _expected_importance_percentage(index + 1, 5253), 101)
+			(bytes.fromhex(_address_hex(index)), 7, index, index + 1, _expected_importance_percentage(index + 1, 5253), 101)
 			for index in range(100)
 		]
 		expected_results.extend([
-			(bytes.fromhex(_address_hex(100)), 100, 101, _expected_importance_percentage(101, 5253), 101),
-			(bytes.fromhex(_address_hex(101)), 101, 102, _expected_importance_percentage(102, 5253), 101)
+			(bytes.fromhex(_address_hex(100)), 7, 100, 101, _expected_importance_percentage(101, 5253), 101),
+			(bytes.fromhex(_address_hex(101)), 7, 101, 102, _expected_importance_percentage(102, 5253), 101)
 		])
 
 		self.assertEqual(expected_results, actual_results)
@@ -871,6 +871,7 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):  # pylint: disable=too-man
 		# Assert:
 		expected_rank_addresses = {
 			'ID': [bytes.fromhex(_address_hex(index)) for index in range(102)],
+			'HEIGHT': [bytes.fromhex(_address_hex(index)) for index in range(102)],
 			'IMPORTANCE': [bytes.fromhex(_address_hex(index)) for index in reversed(range(102))],
 			f'BALANCE:{NATIVE_MOSAIC_ID}': [
 				bytes.fromhex(_address_hex(index))
@@ -934,6 +935,51 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):  # pylint: disable=too-man
 		self._assert_complete_account_snapshot(state['last_successful_run_id'])
 		self._assert_complete_mosaic_snapshot(state['last_successful_run_id'])
 		self._assert_complete_rank_results(state['last_successful_run_id'])
+
+	def test_refresh_accounts_persists_address_heights_and_height_rank_values(self):
+		# Arrange:
+		page = [
+			create_account_item(_address_hex(1), addressHeight='10', importance='1'),
+			create_account_item(_address_hex(2), addressHeight='0', importance='3'),
+			create_account_item(_address_hex(3), addressHeight='10', importance='2')
+		]
+		connector = FakeConnector(100, {}, account_pages={1: page})
+		set_symbol_connector(self.puller, connector)
+
+		# Act:
+		asyncio.run(self.puller.refresh_accounts())
+
+		# Assert:
+		refresh_run_id = self.puller.symbol_db.get_account_refresh_state()['last_successful_run_id']
+		cursor = self.puller.symbol_db.connection.cursor()
+		cursor.execute(
+			'''
+			SELECT address, address_height
+			FROM symbol_account_refresh_accounts
+			WHERE refresh_run_id = %s
+			ORDER BY address
+			''',
+			(refresh_run_id,))
+		self.assertEqual([
+			(bytes.fromhex(_address_hex(1)), 10),
+			(bytes.fromhex(_address_hex(2)), 0),
+			(bytes.fromhex(_address_hex(3)), 10)
+		], [(bytes(address), address_height) for address, address_height in cursor.fetchall()])
+		cursor.execute(
+			'''
+			SELECT rank, address, sort_value_numeric, mosaic_id
+			FROM symbol_account_list_ranks
+			WHERE refresh_run_id = %s AND rank_scope = 'HEIGHT'
+			ORDER BY rank
+			''',
+			(refresh_run_id,))
+		self.assertEqual([
+			(0, bytes.fromhex(_address_hex(1)), Decimal('10'), None),
+			(1, bytes.fromhex(_address_hex(3)), Decimal('10'), None),
+			(2, bytes.fromhex(_address_hex(2)), Decimal('0'), None)
+		], [
+			(rank, bytes(address), sort_value_numeric, mosaic_id)
+			for rank, address, sort_value_numeric, mosaic_id in cursor.fetchall()])
 
 	def test_refresh_accounts_rolls_back_failed_page_and_records_original_database_error(self):
 		# Arrange:
@@ -1080,6 +1126,7 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):  # pylint: disable=too-man
 		]
 		first_expected_rank_results = [
 			(first_run_id, f'BALANCE:{NATIVE_MOSAIC_ID}', 0, expected_address),
+			(first_run_id, 'HEIGHT', 0, expected_address),
 			(first_run_id, 'ID', 0, expected_address),
 			(first_run_id, 'IMPORTANCE', 0, expected_address)
 		]
@@ -1092,6 +1139,7 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):  # pylint: disable=too-man
 		]
 		second_expected_rank_results = [
 			(second_run_id, f'BALANCE:{NATIVE_MOSAIC_ID}', 0, expected_address),
+			(second_run_id, 'HEIGHT', 0, expected_address),
 			(second_run_id, 'ID', 0, expected_address),
 			(second_run_id, 'IMPORTANCE', 0, expected_address)
 		]

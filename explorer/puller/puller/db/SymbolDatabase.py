@@ -185,6 +185,7 @@ SYMBOL_ACCOUNT_REFRESH_ACCOUNT_DEFINITIONS = [
 	'refresh_run_id varchar NOT NULL',
 	'address bytea NOT NULL',
 	'address_text varchar(39) NOT NULL',
+	'address_height bigint NOT NULL',
 	'account_search_order bigint NOT NULL',
 	'public_key bytea',
 	'account_type symbol_account_type',
@@ -221,6 +222,8 @@ ACCOUNT_REFRESH_INDEXES = [
 	'ON symbol_account_refresh_accounts(refresh_run_id, importance_percentage DESC, address)',
 	'CREATE INDEX IF NOT EXISTS idx_symbol_account_refresh_accounts_search_order '
 	'ON symbol_account_refresh_accounts(refresh_run_id, account_search_order ASC, address)',
+	'CREATE INDEX IF NOT EXISTS idx_symbol_account_refresh_accounts_address_height_desc '
+	'ON symbol_account_refresh_accounts(refresh_run_id, address_height DESC, address)',
 	'CREATE INDEX IF NOT EXISTS idx_symbol_account_refresh_accounts_address_text '
 	'ON symbol_account_refresh_accounts(refresh_run_id, address_text)',
 	'CREATE INDEX IF NOT EXISTS idx_symbol_account_refresh_mosaics_mosaic_amount_desc '
@@ -1586,6 +1589,7 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 				refresh_run_id,
 				address,
 				address_text,
+				address_height,
 				account_search_order,
 				public_key,
 				account_type,
@@ -1598,6 +1602,7 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 				%(refresh_run_id)s,
 				%(address)s,
 				%(address_text)s,
+				%(address_height)s,
 				%(account_search_order)s,
 				%(public_key)s,
 				%(account_type)s,
@@ -1608,6 +1613,7 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 			)
 			ON CONFLICT (refresh_run_id, address) DO UPDATE SET
 				address_text = EXCLUDED.address_text,
+				address_height = EXCLUDED.address_height,
 				account_search_order = EXCLUDED.account_search_order,
 				public_key = EXCLUDED.public_key,
 				account_type = EXCLUDED.account_type,
@@ -1700,6 +1706,27 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 				(total_importance, total_importance, refresh_run_id))
 
 			cursor.execute('DELETE FROM symbol_account_list_ranks WHERE refresh_run_id = %s', (refresh_run_id,))
+			cursor.execute(
+				'''
+				INSERT INTO symbol_account_list_ranks (
+					refresh_run_id,
+					rank_scope,
+					rank,
+					address,
+					sort_value_numeric,
+					mosaic_id
+				)
+				SELECT
+					refresh_run_id,
+					'HEIGHT',
+					ROW_NUMBER() OVER (ORDER BY address_height DESC, address) - 1,
+					address,
+					address_height,
+					NULL
+				FROM symbol_account_refresh_accounts
+				WHERE refresh_run_id = %s
+				''',
+				(refresh_run_id,))
 			cursor.execute(
 				'''
 				INSERT INTO symbol_account_list_ranks (
