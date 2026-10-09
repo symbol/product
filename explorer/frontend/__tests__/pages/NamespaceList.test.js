@@ -1,9 +1,13 @@
 import '@testing-library/jest-dom';
-import { setDevice } from '../test-utils/device';
-import { namespacePageResult } from '../test-utils/namespaces';
+import { namespace, nativeNamespace } from '../../__fixtures__/local/namespace';
+import { namespaceList } from '../../__fixtures__/local/namespace-list';
+import { runGetServerSidePropsTests, runRenderScenarioTests } from '../test-utils/page';
+import * as BlockService from '@/app/api/blocks';
 import * as NamespaceService from '@/app/api/namespaces';
-import NamespaceList, { getServerSideProps } from '@/app/pages/namespaces/index';
-import { render, screen } from '@testing-library/react';
+import NamespaceList, { getServerSideProps } from '@/app/pages/namespaces';
+import { render } from '@testing-library/react';
+
+// Mocks
 
 jest.mock('@/app/api/namespaces', () => {
 	return {
@@ -12,77 +16,147 @@ jest.mock('@/app/api/namespaces', () => {
 	};
 });
 
-jest.mock('@/app/api/stats', () => {
+jest.mock('@/app/api/blocks', () => {
 	return {
 		__esModule: true,
-		...jest.requireActual('@/app/api/stats')
+		...jest.requireActual('@/app/api/blocks')
 	};
 });
 
+beforeEach(() => {
+	jest.spyOn(BlockService, 'fetchChainHight').mockResolvedValue(activeChainHeight);
+});
+
+// Constants
+
+const SCREEN_TEXT = {
+	sectionNamespaces: 'section_namespaces',
+	tableFieldName: 'table_field_name',
+	tableFieldSubNamespaceCount: 'table_field_subNamespaceCount',
+	tableFieldCreator: 'table_field_creator',
+	tableFieldStatus: 'table_field_status',
+	tableFieldRegistrationHeight: 'table_field_registrationHeight',
+	tableFieldExpirationHeight: 'table_field_expirationHeight',
+	labelActive: 'label_active',
+	labelExpired: 'label_expired',
+	valueNeverExpired: 'value_neverExpired'
+};
+
+const activeChainHeight = namespace.expirationHeight - 1;
+const expiredChainHeight = namespace.expirationHeight + 1;
+const namespacePage = {
+	data: namespaceList,
+	pageNumber: 1
+};
+
+// Tests
+
 describe('NamespaceList', () => {
 	describe('getServerSideProps', () => {
-		it('fetches namespace list and statistics', async () => {
-			// Arrange:
-			const locale = 'en';
-			const fetchNamespacePage = jest.spyOn(NamespaceService, 'fetchNamespacePage');
-			fetchNamespacePage.mockResolvedValue(namespacePageResult);
-			const expectedResult = {
-				props: {
-					namespaces: namespacePageResult.data
+		const requests = { namespacePage: [NamespaceService, 'fetchNamespacePage'] };
+
+		const getServerSidePropsCases = [
+			{
+				description: 'returns the namespaces props',
+				config: {
+					responses: { namespacePage }
+				},
+				expected: {
+					requestArguments: { namespacePage: [] },
+					result: {
+						props: { namespaces: namespaceList }
+					}
 				}
-			};
+			}
+		];
 
-			// Act:
-			const result = await getServerSideProps({ locale });
-
-			// Assert:
-			expect(fetchNamespacePage).toHaveBeenCalledWith();
-			expect(result).toEqual(expectedResult);
+		runGetServerSidePropsTests({
+			getServerSideProps,
+			requests,
+			cases: getServerSidePropsCases
 		});
 	});
 
-	describe('page', () => {
-		const runTest = () => {
-			// Arrange:
-			const pageSectionText = 'section_namespaces';
-			const namespaceIds = namespacePageResult.data.map(namespace => namespace.id);
-
-			// Act:
-			render(<NamespaceList namespaces={namespacePageResult.data} />);
-
-			// Assert:
-			expect(screen.getByText(pageSectionText)).toBeInTheDocument();
-			namespaceIds.forEach(id => {
-				expect(screen.getByText(id)).toBeInTheDocument();
-			});
+	describe('render', () => {
+		const renderPage = config => {
+			BlockService.fetchChainHight.mockResolvedValue(config.chainHeight ?? activeChainHeight);
+			render(<NamespaceList namespaces={config.namespaces} />);
 		};
 
-		it('renders page with the list of namespaces on desktop', () => {
-			// Act + Assert:
-			runTest();
-		});
+		describe('section: namespaces', () => {
+			const namespacesCases = [
+				{
+					description: 'renders the table headers and the namespace rows',
+					config: { namespaces: namespaceList },
+					expected: {
+						texts: [
+							SCREEN_TEXT.sectionNamespaces,
+							SCREEN_TEXT.tableFieldName,
+							SCREEN_TEXT.tableFieldSubNamespaceCount,
+							SCREEN_TEXT.tableFieldCreator,
+							SCREEN_TEXT.tableFieldStatus,
+							SCREEN_TEXT.tableFieldRegistrationHeight,
+							SCREEN_TEXT.tableFieldExpirationHeight,
+							...namespaceList.map(item => item.name),
+							...namespaceList.map(item => item.creator)
+						]
+					}
+				},
+				{
+					description: 'renders the sub-namespace count, registration and expiration heights',
+					config: { namespaces: [namespace] },
+					expected: {
+						texts: [
+							namespace.subNamespaceCount,
+							namespace.registrationHeight,
+							namespace.expirationHeight
+						],
+						hiddenTexts: [SCREEN_TEXT.valueNeverExpired]
+					}
+				},
+				{
+					description: 'renders the active status when the chain height is below the expiration height',
+					config: {
+						namespaces: [namespace],
+						chainHeight: activeChainHeight
+					},
+					expected: {
+						titleOccurrences: {
+							[SCREEN_TEXT.labelActive]: 1,
+							[SCREEN_TEXT.labelExpired]: 0
+						}
+					}
+				},
+				{
+					description: 'renders the expired status when the chain height is above the expiration height',
+					config: {
+						namespaces: [namespace],
+						chainHeight: expiredChainHeight
+					},
+					expected: {
+						titleOccurrences: {
+							[SCREEN_TEXT.labelActive]: 0,
+							[SCREEN_TEXT.labelExpired]: 1
+						}
+					}
+				},
+				{
+					description: 'renders the never expired value and the active status when the namespace has an unlimited duration',
+					config: {
+						namespaces: [nativeNamespace],
+						chainHeight: expiredChainHeight
+					},
+					expected: {
+						texts: [SCREEN_TEXT.valueNeverExpired],
+						titleOccurrences: {
+							[SCREEN_TEXT.labelActive]: 1,
+							[SCREEN_TEXT.labelExpired]: 0
+						}
+					}
+				}
+			];
 
-		it('renders page with the list of namespaces on mobile', () => {
-			// Arrange:
-			setDevice('mobile');
-
-			// Act + Assert:
-			runTest();
-		});
-
-		it('renders never expired namespace on desktop', () => {
-			// Arrange:
-			const namespaces = [{
-				...namespacePageResult.data[0],
-				expirationHeight: 0,
-				isUnlimitedDuration: true
-			}];
-
-			// Act:
-			render(<NamespaceList namespaces={namespaces} />);
-
-			// Assert:
-			expect(screen.getByText('value_neverExpired')).toBeInTheDocument();
+			runRenderScenarioTests({ renderPage, cases: namespacesCases });
 		});
 	});
 });
