@@ -88,7 +88,7 @@ describe('variants/nem/api/transactions', () => {
 					expected: { url: firstPageURL }
 				},
 				{
-					description: 'requests the given page number and page size',
+					description: 'requests the given page when "pageNumber" and "pageSize" are provided',
 					config: {
 						params: {
 							pageNumber: 3,
@@ -98,14 +98,14 @@ describe('variants/nem/api/transactions', () => {
 					expected: { url: `${transactionsURL}?limit=123&offset=246` }
 				},
 				{
-					description: 'requests the unconfirmed endpoint for the unconfirmed group',
+					description: 'requests the unconfirmed endpoint when the unconfirmed "group" is provided',
 					config: {
 						params: { group: TRANSACTION_GROUP.UNCONFIRMED }
 					},
 					expected: { url: `${unconfirmedTransactionsURL}?limit=10&offset=0` }
 				},
 				{
-					description: 'sends "from" and "to" as the sender and recipient addresses',
+					description: 'requests the sender and recipient addresses when "from" and "to" are provided',
 					config: {
 						params: {
 							from: senderAddress,
@@ -115,21 +115,21 @@ describe('variants/nem/api/transactions', () => {
 					expected: { url: `${firstPageURL}&senderAddress=${senderAddress}&recipientAddress=${recipientAddress}` }
 				},
 				{
-					description: 'sends "types" as the transaction types',
+					description: 'requests the transaction types when "types" is provided',
 					config: {
 						params: { types: TRANSACTION_TYPE.TRANSFER }
 					},
 					expected: { url: `${firstPageURL}&transactionTypes=${TRANSACTION_TYPE.TRANSFER}` }
 				},
 				{
-					description: 'sends the address as is',
+					description: 'requests the address as is when "address" is provided',
 					config: {
 						params: { address: senderAddress }
 					},
 					expected: { url: `${firstPageURL}&address=${senderAddress}` }
 				},
 				{
-					description: 'sends the address as the recipient when "from" is set',
+					description: 'requests the address as the recipient when "address" and "from" are provided',
 					config: {
 						params: {
 							address: recipientAddress,
@@ -139,7 +139,7 @@ describe('variants/nem/api/transactions', () => {
 					expected: { url: `${firstPageURL}&senderAddress=${senderAddress}&recipientAddress=${recipientAddress}` }
 				},
 				{
-					description: 'sends the address as the sender when "to" is set',
+					description: 'requests the address as the sender when "address" and "to" are provided',
 					config: {
 						params: {
 							address: senderAddress,
@@ -149,7 +149,7 @@ describe('variants/nem/api/transactions', () => {
 					expected: { url: `${firstPageURL}&senderAddress=${senderAddress}&recipientAddress=${recipientAddress}` }
 				},
 				{
-					description: 'sends the mosaic filter as is',
+					description: 'requests the mosaic as is when "mosaic" is provided',
 					config: {
 						params: { mosaic: customMosaic.id }
 					},
@@ -177,7 +177,7 @@ describe('variants/nem/api/transactions', () => {
 					}
 				},
 				{
-					description: 'maps the unconfirmed transactions',
+					description: 'maps the unconfirmed transactions when the unconfirmed "group" is provided',
 					config: {
 						params: { group: TRANSACTION_GROUP.UNCONFIRMED },
 						response: transactionListUnconfirmedResponse
@@ -190,7 +190,7 @@ describe('variants/nem/api/transactions', () => {
 					}
 				},
 				{
-					description: 'marks a transfer as incoming for the recipient address',
+					description: 'marks a transfer as incoming when the recipient "address" is provided',
 					config: {
 						params: { address: recipientAddress },
 						response: [transferConfirmedTransactionResponse]
@@ -209,7 +209,7 @@ describe('variants/nem/api/transactions', () => {
 					}
 				},
 				{
-					description: 'marks a transfer as outgoing for the sender address',
+					description: 'marks a transfer as outgoing when the sender "address" is provided',
 					config: {
 						params: { address: senderAddress },
 						response: [transferConfirmedTransactionResponse]
@@ -228,7 +228,7 @@ describe('variants/nem/api/transactions', () => {
 					}
 				},
 				{
-					description: 'puts the filtered mosaic first',
+					description: 'puts the mosaic first when "mosaic" is provided',
 					config: {
 						params: { mosaic: customMosaic.id },
 						response: [transferMultipleMosaicsConfirmedTransactionResponse]
