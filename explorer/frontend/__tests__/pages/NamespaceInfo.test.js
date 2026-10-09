@@ -1,5 +1,5 @@
 import '@testing-library/jest-dom';
-import { namespaceInfoResult } from '../test-utils/namespaces';
+import { namespace, namespaceWithMosaics, nativeNamespace } from '../../__fixtures__/local/namespace';
 import { runGetServerSidePropsTests, runRenderScenarioTests } from '../test-utils/page';
 import * as BlockService from '@/app/api/blocks';
 import * as NamespaceService from '@/app/api/namespaces';
@@ -49,12 +49,12 @@ const SCREEN_TEXT = {
 };
 
 const remainingBlockCount = 500;
-const activeChainHeight = namespaceInfoResult.expirationHeight - remainingBlockCount;
-const expiredChainHeight = namespaceInfoResult.expirationHeight + remainingBlockCount;
-const expirationCountdownText = `${SCREEN_TEXT.valueExpiration}::value:${remainingBlockCount}`;
+const activeChainHeight = namespaceWithMosaics.expirationHeight - remainingBlockCount;
+const expiredChainHeight = namespaceWithMosaics.expirationHeight + remainingBlockCount;
+const remainingBlocksText = `${SCREEN_TEXT.valueExpiration}::value:${remainingBlockCount}`;
 const createdTimestampText = `${SCREEN_TEXT.fieldTimestampUTC}::title:${SCREEN_TEXT.fieldCreated}`;
-const subNamespacesText = namespaceInfoResult.subNamespaces.join(', ');
-const namespaceMosaic = namespaceInfoResult.namespaceMosaics[0].data[0];
+const subNamespacesText = namespace.subNamespaces.join(', ');
+const namespaceMosaic = namespaceWithMosaics.namespaceMosaics[0].data[0];
 
 // Tests
 
@@ -64,14 +64,14 @@ describe('NamespaceInfo', () => {
 
 		const getServerSidePropsCases = [
 			{
-				description: 'returns the namespace info',
+				description: 'returns the namespace info props',
 				config: {
-					responses: { namespaceInfo: namespaceInfoResult }
+					responses: { namespaceInfo: namespaceWithMosaics }
 				},
 				expected: {
-					requestArguments: { namespaceInfo: [namespaceInfoResult.id] },
+					requestArguments: { namespaceInfo: [namespaceWithMosaics.id] },
 					result: {
-						props: { namespaceInfo: namespaceInfoResult }
+						props: { namespaceInfo: namespaceWithMosaics }
 					}
 				}
 			},
@@ -81,7 +81,7 @@ describe('NamespaceInfo', () => {
 					responses: { namespaceInfo: null }
 				},
 				expected: {
-					requestArguments: { namespaceInfo: [namespaceInfoResult.id] },
+					requestArguments: { namespaceInfo: [namespaceWithMosaics.id] },
 					result: { notFound: true }
 				}
 			}
@@ -89,7 +89,7 @@ describe('NamespaceInfo', () => {
 
 		runGetServerSidePropsTests({
 			getServerSideProps,
-			params: { id: namespaceInfoResult.id },
+			params: { id: namespaceWithMosaics.id },
 			requests,
 			cases: getServerSidePropsCases
 		});
@@ -98,19 +98,19 @@ describe('NamespaceInfo', () => {
 	describe('render', () => {
 		const renderPage = config => {
 			BlockService.fetchChainHight.mockResolvedValue(config.chainHeight ?? activeChainHeight);
-			render(<NamespaceInfo namespaceInfo={{ ...namespaceInfoResult, ...config.namespaceInfo }} />);
+			render(<NamespaceInfo namespaceInfo={config.namespaceInfo} />);
 		};
 
 		describe('section: namespace', () => {
 			const namespaceCases = [
 				{
 					description: 'renders the name and creation info',
-					config: {},
+					config: { namespaceInfo: namespaceWithMosaics },
 					expected: {
 						texts: [SCREEN_TEXT.sectionNamespace, SCREEN_TEXT.fieldName],
 						// The name and the created title also appear in the mosaics section (group header and table header).
 						textOccurrences: {
-							[namespaceInfoResult.name]: 2,
+							[namespaceWithMosaics.name]: 2,
 							[createdTimestampText]: 2
 						}
 					}
@@ -124,34 +124,37 @@ describe('NamespaceInfo', () => {
 			const detailsCases = [
 				{
 					description: 'renders the sub namespaces and the creator',
-					config: {},
+					config: { namespaceInfo: namespace },
 					expected: {
 						texts: [
 							SCREEN_TEXT.fieldSubNamespaces,
 							subNamespacesText,
 							SCREEN_TEXT.fieldCreator,
-							namespaceInfoResult.creator
+							namespace.creator
 						]
 					}
 				},
 				{
-					description: 'renders the expiration countdown and the progress bar for an active namespace',
-					config: {},
+					description: 'renders the remaining blocks and progress bar when the chain height is below the expiration height',
+					config: { namespaceInfo: namespaceWithMosaics },
 					expected: {
 						texts: [
 							SCREEN_TEXT.fieldExpiration,
-							expirationCountdownText,
+							remainingBlocksText,
 							SCREEN_TEXT.fieldRegistrationHeight,
 							SCREEN_TEXT.fieldExpirationHeight,
-							namespaceInfoResult.registrationHeight,
-							namespaceInfoResult.expirationHeight
+							namespaceWithMosaics.registrationHeight,
+							namespaceWithMosaics.expirationHeight
 						],
 						hiddenTexts: [SCREEN_TEXT.valueExpired, SCREEN_TEXT.valueNeverExpired]
 					}
 				},
 				{
-					description: 'renders the expired state for an expired namespace',
-					config: { chainHeight: expiredChainHeight },
+					description: 'renders the expired state when the chain height is above the expiration height',
+					config: {
+						namespaceInfo: namespaceWithMosaics,
+						chainHeight: expiredChainHeight
+					},
 					expected: {
 						texts: [
 							SCREEN_TEXT.valueExpired,
@@ -162,8 +165,8 @@ describe('NamespaceInfo', () => {
 					}
 				},
 				{
-					description: 'renders never expired without the progress bar for an unlimited duration namespace',
-					config: { namespaceInfo: { isUnlimitedDuration: true } },
+					description: 'renders the never expired value without the progress bar when the namespace has an unlimited duration',
+					config: { namespaceInfo: nativeNamespace },
 					expected: {
 						texts: [SCREEN_TEXT.valueNeverExpired],
 						hiddenTexts: [
@@ -183,7 +186,7 @@ describe('NamespaceInfo', () => {
 			const mosaicsCases = [
 				{
 					description: 'renders the mosaics grouped by namespace',
-					config: {},
+					config: { namespaceInfo: namespaceWithMosaics },
 					expected: {
 						texts: [
 							SCREEN_TEXT.sectionMosaics,
@@ -194,17 +197,14 @@ describe('NamespaceInfo', () => {
 							namespaceMosaic.supply,
 							namespaceMosaic.registrationHeight
 						],
-						textOccurrences: { [namespaceInfoResult.name]: 2 },
+						textOccurrences: { [namespaceWithMosaics.name]: 2 },
 						hiddenTexts: [SCREEN_TEXT.messageEmptyTable]
 					}
 				},
 				{
 					description: 'renders the empty message when the namespace has no mosaics',
-					config: { namespaceInfo: { namespaceMosaics: [] } },
-					expected: {
-						texts: [SCREEN_TEXT.messageEmptyTable],
-						hiddenTexts: [namespaceMosaic.name]
-					}
+					config: { namespaceInfo: namespace },
+					expected: { texts: [SCREEN_TEXT.messageEmptyTable] }
 				}
 			];
 

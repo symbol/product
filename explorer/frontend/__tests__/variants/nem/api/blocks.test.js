@@ -33,7 +33,7 @@ describe('variants/nem/api/blocks', () => {
 					expected: { url: `${blocksURL}?limit=10&offset=0` }
 				},
 				{
-					description: 'requests the given page number and page size',
+					description: 'requests the given page when "pageNumber" and "pageSize" are provided',
 					config: {
 						params: {
 							pageNumber: 2,
