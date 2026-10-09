@@ -3684,7 +3684,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 	def test_snapshot_replacement_persists_address_height_independently_from_current_state(self):
 		# Arrange:
 		database = self._create_database()
-		account_row, mosaic_rows = _create_account_row(ADDRESS1, addressHeight='12')
+		account_row, mosaic_rows = _create_account_row(ADDRESS1, addressHeight='12', observed_height=20)
 		database.upsert_account_current_state(account_row, mosaic_rows)
 		snapshot_at = datetime.datetime(2026, 1, 1)
 		_insert_account_refresh_snapshot_rows(database, {
@@ -3699,7 +3699,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			WHERE refresh_run_id = 'run-1'
 			''')
 		self.assertEqual((12, 0, 20), cursor.fetchone())
-		replaced_account_row, replaced_mosaic_rows = _create_account_row(ADDRESS1, addressHeight='0')
+		replaced_account_row, replaced_mosaic_rows = _create_account_row(ADDRESS1, addressHeight='0', observed_height=21)
 		_insert_account_refresh_snapshot_rows(database, {
 			'refresh_run_id': 'run-1', 'account_search_order': 1,
 			'account_row': replaced_account_row, 'mosaic_rows': replaced_mosaic_rows,
