@@ -306,3 +306,49 @@ export const blockInfoResult = {
 	totalFee: 35,
 	transactionCount: 3
 };
+
+export const symbolBlockInfoResponse = {
+	height: 720,
+	hash: '11'.repeat(32),
+	previousHash: '22'.repeat(32),
+	timestamp: '2026-09-15T01:02:03Z',
+	networkTimestamp: 123456,
+	harvester: 'NDE6Y5WNLHID5KRYN3AVNQ7U52XDXLQPHLXHV3OE',
+	beneficiaryAddress: 'NBAEFLTJG3UWXNXHOLUUPSZIDEHB6VJYLLVW5DFG',
+	totalFee: 1.25,
+	transactionCount: 0,
+	statementCount: 7,
+	blockReward: 12.5,
+	isFinalized: true,
+	difficulty: '100000000000000',
+	signature: '33'.repeat(64),
+	size: 424,
+	feeMultiplier: 100,
+	proofGamma: '44'.repeat(32),
+	proofScalar: '55'.repeat(32),
+	proofVerificationHash: '66'.repeat(16),
+	stateHash: '77'.repeat(32),
+	stateHashSubCacheMerkleRoots: [
+		'800A4B4BF724D2F361932767BC1F31C7DB3CCBBE6CBCBC5C0715D6F452C73044',
+		'B30496DE8EBAC598DB0A6526D02AA47F164BDE36FB2F13F0A6FB9F946C2006D0',
+		'97E36A93CCF8DD6B11D9E04CE227D3BFEFFA30E939868320EF892CE293D05698',
+		'E43DC689B7C2875B46252D3AE695CCE8B742A8A97E3A2A297CD9A6CBBDB406DF',
+		'63CD12631DD6FFCAE8ECC418AD66ED2FE738747D2D38329596E7692AF0BC5878',
+		'0'.repeat(64),
+		'0'.repeat(64),
+		'0'.repeat(64),
+		'0'.repeat(64)
+	],
+	receiptsHash: '88'.repeat(32),
+	transactionsHash: '99'.repeat(32),
+	votingEligibleAccountsCount: 1234,
+	harvestingEligibleAccountsCount: '5678',
+	totalVotingBalance: 19000235.663367,
+	previousImportanceBlockHash: 'AA'.repeat(32),
+	blockType: 'importance'
+};
+
+export const symbolBlockInfoResult = {
+	...symbolBlockInfoResponse,
+	difficulty: '100.00'
+};

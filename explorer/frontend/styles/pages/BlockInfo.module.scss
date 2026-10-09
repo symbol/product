@@ -8,12 +8,12 @@
 	max-width: 32rem;
 
 	.firstSectionCard {
-		height: 36rem;
+		min-height: 36rem;
 	}
 }
 
 .secondSectionCard {
-	height: 36rem;
+	min-height: 36rem;
 }
 
 .valueTransactionSquares {
@@ -25,11 +25,11 @@
 		max-width: 100%;
 
 		.firstSectionCard {
-			height: auto;
+			min-height: 0;
 		}
 	}
 
 	.secondSectionCard {
-		height: auto;
+		min-height: 0;
 	}
 }

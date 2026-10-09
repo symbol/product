@@ -1,7 +1,5 @@
-import { stubBlocks } from './fixtures';
-import { stubValue } from './stub';
 import config from '@/app/config';
-import { createApiUrl, makeRequest } from '@/app/utils/server';
+import { createApiUrl, createTryFetchInfoFunction, makeRequest } from '@/app/utils/server';
 
 /**
  * @typedef ChainStatus
@@ -136,4 +134,23 @@ export const fetchChainStatus = async () => {
 	return { height: Number(height), finalizedHeight: Number(finalizedHeight) };
 };
 
-export const fetchBlockInfo = stubValue(stubBlocks[0]);
+/**
+ * Fetches the block info.
+ * @param {number} height - requested block height
+ * @returns {Promise<Object>} block info
+ */
+export const fetchBlockInfo = createTryFetchInfoFunction(async height => {
+	const block = await makeRequest(createApiUrl(`block/${height}`));
+
+	return blockInfoFromDTO(block);
+});
+
+/**
+ * Maps the block info from the DTO.
+ * @param {object} data - raw data from response
+ * @returns {object} mapped block info
+ */
+const blockInfoFromDTO = data => ({
+	...data,
+	difficulty: ((data.difficulty / Math.pow(10, 14)) * 100).toFixed(2)
+});

@@ -1,0 +1,32 @@
+@import '../variables';
+
+.roots {
+	display: flex;
+	flex-direction: column;
+	gap: $spacing-base;
+	margin: 0;
+}
+
+.root {
+	display: grid;
+	grid-template-columns: minmax(0, 12rem) minmax(0, 1fr);
+	gap: $spacing-base;
+
+	dd {
+		min-width: 0;
+		margin: 0;
+	}
+}
+
+.hash > :first-child {
+	min-width: 0;
+	white-space: normal;
+	overflow-wrap: anywhere;
+}
+
+@media #{$screen-mobile} {
+	.root {
+		grid-template-columns: minmax(0, 1fr);
+		gap: $spacing-base / 2;
+	}
+}

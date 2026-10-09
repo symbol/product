@@ -2,5 +2,18 @@
 	"showStatistics": false,
 	"showStatementCount": true,
 	"showBlockReward": true,
-	"showMobileTransactionCount": true
+	"showMobileTransactionCount": true,
+	"showBlockType": true,
+	"showBeneficiary": true,
+	"showProofGamma": true,
+	"showProofScalar": true,
+	"showProofVerificationHash": true,
+	"additionalSections": [
+		{
+			"component": "BlockImportance"
+		},
+		{
+			"component": "BlockMerkle"
+		}
+	]
 }

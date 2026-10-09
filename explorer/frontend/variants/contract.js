@@ -29,6 +29,12 @@
  * @property {boolean} showStatementCount - Whether the statement count is rendered.
  * @property {boolean} showBlockReward - Whether the block reward is rendered.
  * @property {boolean} showMobileTransactionCount - Whether mobile rows render transaction count.
+ * @property {boolean} showBlockType - Whether block details render the block type.
+ * @property {boolean} showBeneficiary - Whether block details render the beneficiary address.
+ * @property {boolean} showProofGamma - Whether block details render the proof gamma.
+ * @property {boolean} showProofScalar - Whether block details render the proof scalar.
+ * @property {boolean} showProofVerificationHash - Whether block details render the proof verification hash.
+ * @property {Array<{component: string}>} additionalSections - Variant-only block detail sections to render.
  */
 
 // Required exports for each API domain.
@@ -79,7 +85,13 @@ export const PAGE_CONFIG_CONTRACT = {
 		'showStatistics',
 		'showStatementCount',
 		'showBlockReward',
-		'showMobileTransactionCount'
+		'showMobileTransactionCount',
+		'showBlockType',
+		'showBeneficiary',
+		'showProofGamma',
+		'showProofScalar',
+		'showProofVerificationHash',
+		'additionalSections'
 	]
 };
 

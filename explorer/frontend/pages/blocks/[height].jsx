@@ -1,5 +1,6 @@
 import { fetchBlockInfo, fetchChainStatus } from '@/app/api/blocks';
 import { fetchTransactionPage } from '@/app/api/transactions';
+import { AdditionalSections } from '@/app/components/AdditionalSections';
 import Field from '@/app/components/Field';
 import FieldTimestamp from '@/app/components/FieldTimestamp';
 import ItemTransactionMobile from '@/app/components/ItemTransactionMobile';
@@ -15,6 +16,7 @@ import ValueTransactionSquares, { MAX_TRANSACTION_SQUARES } from '@/app/componen
 import ValueTransactionType from '@/app/components/ValueTransactionType';
 import styles from '@/app/styles/pages/BlockInfo.module.scss';
 import { useAsyncCall, useDataManager, usePagination } from '@/app/utils';
+import { pageConfig } from '@/app/variants/page-config';
 import Head from 'next/head';
 import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
@@ -119,9 +121,16 @@ const BlockInfo = ({ blockInfo }) => {
 							</Field>
 							<FieldTimestamp value={blockInfo.timestamp} hasTime hasSeconds />
 						</div>
-						<Field title={t('field_totalFee')} description={t('field_totalFee_description')}>
-							<ValueMosaic isNative amount={blockInfo.totalFee} />
-						</Field>
+						<div className="layout-grid-row">
+							<Field title={t('field_totalFee')} description={t('field_totalFee_description')}>
+								<ValueMosaic isNative amount={blockInfo.totalFee} />
+							</Field>
+							{pageConfig.blocks.showBlockType && (
+								<Field title={t('field_blockType')}>
+									{t(`value_blockType_${blockInfo.blockType}`, { defaultValue: blockInfo.blockType })}
+								</Field>
+							)}
+						</div>
 						<Field title={t('field_transactionFees')}>
 							<ValueTransactionSquares
 								isTransactionPreviewEnabled
@@ -138,7 +147,15 @@ const BlockInfo = ({ blockInfo }) => {
 						<Field title={t('field_harvester')} description={t('field_harvester_description')}>
 							<ValueAccount address={blockInfo.harvester} size="sm" />
 						</Field>
+						{pageConfig.blocks.showBeneficiary && (
+							<Field title={t('field_beneficiary')}>
+								<ValueAccount address={blockInfo.beneficiaryAddress} size="sm" />
+							</Field>
+						)}
 						<Field title={t('field_transactions')}>{blockInfo.transactionCount}</Field>
+						{pageConfig.blocks.showStatementCount && (
+							<Field title={t('field_statementCount')}>{blockInfo.statementCount}</Field>
+						)}
 						<Field title={t('field_size')}>{blockInfo.size} B</Field>
 						<Field title={t('field_difficulty')}>{blockInfo.difficulty} %</Field>
 						<Field title={t('field_signature')}>
@@ -147,9 +164,26 @@ const BlockInfo = ({ blockInfo }) => {
 						<Field title={t('field_hash')}>
 							<ValueCopy value={blockInfo.hash} />
 						</Field>
+						{pageConfig.blocks.showProofGamma && (
+							<Field title={t('field_proofGamma')}>
+								<ValueCopy value={blockInfo.proofGamma} />
+							</Field>
+						)}
+						{pageConfig.blocks.showProofScalar && (
+							<Field title={t('field_proofScalar')}>
+								<ValueCopy value={blockInfo.proofScalar} />
+							</Field>
+						)}
+						{pageConfig.blocks.showProofVerificationHash && (
+							<Field title={t('field_proofVerificationHash')}>
+								<ValueCopy value={blockInfo.proofVerificationHash} />
+							</Field>
+						)}
 					</div>
 				</Section>
 			</div>
+
+			<AdditionalSections sections={pageConfig.blocks.additionalSections} componentProps={{ blockInfo }} />
 			<Section title={t('section_transactions')}>
 				<Table
 					columns={tableColumns}

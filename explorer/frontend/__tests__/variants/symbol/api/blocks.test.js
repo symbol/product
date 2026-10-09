@@ -1,6 +1,8 @@
+import { error404Response, runApiTest } from '../../../test-utils/api';
+import { symbolBlockInfoResponse, symbolBlockInfoResult } from '../../../test-utils/blocks';
 import config from '@/app/config';
 import * as serverUtils from '@/app/utils/server';
-import { fetchBlockPage } from '@/app/variants/symbol/api/blocks';
+import { fetchBlockInfo, fetchBlockPage } from '@/app/variants/symbol/api/blocks';
 
 jest.mock('@/app/utils/server', () => ({
 	__esModule: true,
@@ -165,5 +167,36 @@ describe('variants/symbol/api/blocks', () => {
 
 		// Act + Assert:
 		await expect(fetchBlockPage()).rejects.toThrow('Symbol blocks response must be an array');
+	});
+
+	describe('fetchBlockInfo', () => {
+		it('requests the block by height and maps REST values for display', async () => {
+			// Arrange:
+			const height = `${symbolBlockInfoResponse.height}`;
+			const expectedURL = `${symbolApiBaseURL}/block/${height}`;
+
+			// Act + Assert:
+			await runApiTest(fetchBlockInfo, height, symbolBlockInfoResponse, expectedURL, symbolBlockInfoResult);
+		});
+
+		it('rounds difficulty to two decimal places', async () => {
+			// Arrange:
+			const response = { ...symbolBlockInfoResponse, difficulty: '167567890123456' };
+			const expectedResult = { ...symbolBlockInfoResult, difficulty: '167.57' };
+
+			// Act + Assert:
+			await runApiTest(fetchBlockInfo, response.height, response, `${symbolApiBaseURL}/block/${response.height}`, expectedResult);
+		});
+
+		it('returns null for a invalid request', async () => {
+			// Arrange:
+			jest.spyOn(serverUtils, 'makeRequest').mockRejectedValue(error404Response);
+
+			// Act:
+			const result = await fetchBlockInfo('invalid');
+
+			// Assert:
+			expect(result).toBeNull();
+		});
 	});
 });
