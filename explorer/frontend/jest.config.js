@@ -39,7 +39,7 @@ const createJestConfig = nextJest({
 const customJestConfig = {
 	workerThreads: true,
 	testPathIgnorePatterns: ['/test-utils/', ...inactiveVariants.map(variant => `/__tests__/variants/${variant}/`)],
-	coveragePathIgnorePatterns: ['/test-utils/'],
+	coveragePathIgnorePatterns: ['/test-utils/', '/__fixtures__/'],
 	clearMocks: true,
 	coverageProvider: 'babel',
 	moduleNameMapper,

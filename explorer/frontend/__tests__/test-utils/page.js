@@ -8,11 +8,16 @@ const TRY_AGAIN_TEXT = 'button_tryAgain';
 export const expectTexts = async expected => {
 	// Async texts settle the UI first, so the absence checks below cannot pass against a not-yet-rendered state.
 	await Promise.all((expected.asyncTexts || []).map(text => waitFor(() => expect(screen.getByText(text)).toBeInTheDocument())));
+	await Promise.all(Object.entries(expected.asyncTextOccurrences || {}).map(([text, count]) =>
+		waitFor(() => expect(screen.getAllByText(text)).toHaveLength(count))));
 	(expected.hiddenTexts || []).forEach(text => expect(screen.queryByText(text)).not.toBeInTheDocument());
 	(expected.texts || []).forEach(text => expect(screen.getByText(text)).toBeInTheDocument());
 	Object.entries(expected.textOccurrences || {}).forEach(([text, count]) => expect(screen.getAllByText(text)).toHaveLength(count));
 	Object.entries(expected.altOccurrences || {}).forEach(([altText, count]) =>
 		expect(screen.queryAllByAltText(altText)).toHaveLength(count));
+	(expected.titles || []).forEach(title => expect(screen.getByTitle(title)).toBeInTheDocument());
+	Object.entries(expected.titleOccurrences || {}).forEach(([title, count]) =>
+		expect(screen.queryAllByTitle(title)).toHaveLength(count));
 };
 
 export const clickText = text => async () => fireEvent.click(screen.getByText(text));

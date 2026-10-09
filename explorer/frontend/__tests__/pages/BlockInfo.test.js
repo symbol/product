@@ -1,21 +1,16 @@
 import '@testing-library/jest-dom';
-import { blockInfoResult } from '../test-utils/blocks';
-import { transactionPageResult } from '../test-utils/transactions';
-import { itVariant } from '../test-utils/variants';
+import { blockWithTransactions, emptyBlock } from '../../__fixtures__/local/block';
+import { transactionListConfirmed } from '../../__fixtures__/local/transaction-list-confirmed';
+import { runGetServerSidePropsTests, runRenderScenarioTests, runTableErrorTest, runTestCases } from '../test-utils/page';
 import * as BlockService from '@/app/api/blocks';
 import * as TransactionService from '@/app/api/transactions';
 import { MAX_TRANSACTION_SQUARES } from '@/app/components/ValueTransactionSquares';
+import config from '@/app/config';
 import BlockInfo, { getServerSideProps } from '@/app/pages/blocks/[height]';
-import * as utils from '@/app/utils';
-import { act, render, screen } from '@testing-library/react';
-import { mockAllIsIntersecting } from 'react-intersection-observer/test-utils';
+import { truncateString } from '@/app/utils';
+import { render, waitFor } from '@testing-library/react';
 
-jest.mock('@/app/utils', () => {
-	return {
-		__esModule: true,
-		...jest.requireActual('@/app/utils')
-	};
-});
+// Mocks
 
 jest.mock('@/app/api/blocks', () => {
 	return {
@@ -31,195 +26,305 @@ jest.mock('@/app/api/transactions', () => {
 	};
 });
 
+beforeEach(() => {
+	jest.spyOn(TransactionService, 'fetchTransactionPage').mockResolvedValue(blockTransactionPage);
+	jest.spyOn(BlockService, 'fetchChainStatus').mockResolvedValue(createdChainStatus);
+});
+
+// Constants
+
+const SCREEN_TEXT = {
+	sectionBlock: 'section_block',
+	sectionTransactions: 'section_transactions',
+	fieldHeight: 'field_height',
+	fieldStatus: 'field_status',
+	fieldTimestamp: 'field_timestamp',
+	fieldTimestampUTC: 'field_timestampUTC',
+	fieldTotalFee: 'field_totalFee',
+	fieldTransactionFees: 'field_transactionFees',
+	fieldHarvester: 'field_harvester',
+	fieldTransactions: 'field_transactions',
+	fieldSize: 'field_size',
+	fieldDifficulty: 'field_difficulty',
+	fieldSignature: 'field_signature',
+	fieldHash: 'field_hash',
+	labelCreated: 'label_created',
+	labelSafe: 'label_safe',
+	labelFinalized: 'label_finalized',
+	messageEmptyTable: 'message_emptyTable',
+	messageTooManyTransactions: 'message_tooManyTransactionsToVisualize',
+	tableFieldHash: 'table_field_hash',
+	tableFieldType: 'table_field_type',
+	tableFieldSender: 'table_field_sender',
+	tableFieldRecipient: 'table_field_recipient',
+	tableFieldValue: 'table_field_value',
+	tableFieldFee: 'table_field_fee'
+};
+
+const mockedChartText = 'Mocked React ApexCharts';
+const timestampTitleText = `${SCREEN_TEXT.fieldTimestampUTC}::title:${SCREEN_TEXT.fieldTimestamp}`;
+const totalFeeTitle = `${blockWithTransactions.totalFee} XEM`;
+const createdChainStatus = { height: blockWithTransactions.height };
+const blockTransactionPage = {
+	data: transactionListConfirmed.filter(transaction => transaction.height === blockWithTransactions.height),
+	pageNumber: 1
+};
+const transactionSearchCriteria = {
+	pageNumber: 1,
+	height: blockWithTransactions.height,
+	pageSize: 50
+};
+const transactionSquaresSearchCriteria = {
+	pageSize: MAX_TRANSACTION_SQUARES,
+	height: blockWithTransactions.height
+};
+const emptyPage = {
+	data: [],
+	pageNumber: 1
+};
+
+// NEM specific constants
+
+const nemSafeChainStatus = { height: blockWithTransactions.height + config.PUBLIC_NEM_BLOCKCHAIN_UNWIND_LIMIT + 1 };
+
+// Tests
+
 describe('BlockInfo', () => {
-	const renderPage = async (blockInfo, nextPageResult = { data: [], pageNumber: 2 }) => {
-		mockAllIsIntersecting(false);
-		const fetchTransactionPage = jest.spyOn(TransactionService, 'fetchTransactionPage');
-		fetchTransactionPage.mockImplementation(async ({ pageNumber }) => {
-			if (undefined === pageNumber)
-				return transactionPageResult;
-
-			return 1 === pageNumber ? { ...transactionPageResult, pageNumber: 1 } : nextPageResult;
-		});
-		jest.spyOn(BlockService, 'fetchChainStatus').mockResolvedValue({ height: blockInfo.height, finalizedHeight: null });
-
-		await act(async () => {
-			render(<BlockInfo blockInfo={blockInfo} />);
-		});
-
-		return fetchTransactionPage;
-	};
-
 	describe('getServerSideProps', () => {
-		const runTest = async (blockInfoResult, expectedResult) => {
-			// Arrange:
-			const locale = 'en';
-			const params = { height: '1111111' };
+		const requests = { blockInfo: [BlockService, 'fetchBlockInfo'] };
 
-			const fetchBlockInfo = jest.spyOn(BlockService, 'fetchBlockInfo');
-			fetchBlockInfo.mockResolvedValue(blockInfoResult);
-
-			// Act:
-			const result = await getServerSideProps({ locale, params });
-
-			// Assert:
-			expect(fetchBlockInfo).toHaveBeenCalledWith(params.height);
-			expect(result).toEqual(expectedResult);
-		};
-
-		it('returns block info', async () => {
-			// Arrange:
-			const blockInfo = blockInfoResult;
-			const expectedResult = {
-				props: {
-					blockInfo
+		const getServerSidePropsCases = [
+			{
+				description: 'returns the block info',
+				config: {
+					responses: { blockInfo: blockWithTransactions }
+				},
+				expected: {
+					requestArguments: { blockInfo: [blockWithTransactions.height] },
+					result: {
+						props: { blockInfo: blockWithTransactions }
+					}
 				}
-			};
+			},
+			{
+				description: 'returns not found when the block does not exist',
+				config: {
+					responses: { blockInfo: null }
+				},
+				expected: {
+					requestArguments: { blockInfo: [blockWithTransactions.height] },
+					result: { notFound: true }
+				}
+			}
+		];
 
-			// Act + Assert:
-			await runTest(blockInfo, expectedResult);
-		});
-
-		it('returns not found', async () => {
-			// Arrange:
-			const blockInfo = null;
-			const expectedResult = {
-				notFound: true
-			};
-
-			// Act + Assert:
-			await runTest(blockInfo, expectedResult);
+		runGetServerSidePropsTests({
+			getServerSideProps,
+			params: { height: blockWithTransactions.height },
+			requests,
+			cases: getServerSidePropsCases
 		});
 	});
 
-	describe('page', () => {
-		it('renders page with the information about the block', async () => {
-			// Arrange:
-			const pageSectionText = 'section_block';
-			const heightText = blockInfoResult.height;
-			const difficultyText = `${blockInfoResult.difficulty} %`;
-			const sizeText = `${blockInfoResult.size} B`;
-			const harvesterText = blockInfoResult.harvester;
-
-			// Act:
-			await renderPage(blockInfoResult);
-
-			// Assert:
-			expect(screen.getByText(pageSectionText)).toBeInTheDocument();
-			expect(screen.getByText(heightText)).toBeInTheDocument();
-			expect(screen.getByText(difficultyText)).toBeInTheDocument();
-			expect(screen.getByText(sizeText)).toBeInTheDocument();
-			expect(screen.getByText(harvesterText)).toBeInTheDocument();
-		});
-
-		const runStatusLabelTest = async (chainHeightOffset, expectedShownLabelText, expectedHiddenLabelText) => {
-			// Arrange:
-			const spy = jest.spyOn(utils, 'useAsyncCall');
-			spy.mockImplementation(() => ({ height: blockInfoResult.height + chainHeightOffset, finalizedHeight: null }));
-
-			// Act:
-			await renderPage(blockInfoResult);
-
-			// Assert:
-			expect(screen.getByText(expectedShownLabelText)).toBeInTheDocument();
-			expect(screen.queryByText(expectedHiddenLabelText)).not.toBeInTheDocument();
+	describe('render', () => {
+		const renderPage = config => {
+			BlockService.fetchChainStatus.mockResolvedValue(config.chainStatus ?? createdChainStatus);
+			if (config.transactionPage)
+				TransactionService.fetchTransactionPage.mockResolvedValue(config.transactionPage);
+			render(<BlockInfo blockInfo={config.blockInfo} />);
 		};
 
-		itVariant('nem')('renders safe label', async () => {
-			// Arrange:
-			const chainHeightOffset = 361;
-			const expectedShownLabelText = 'label_safe';
-			const expectedHiddenLabelText = 'label_unsafe';
+		describe('section: block', () => {
+			const blockCases = [
+				{
+					description: 'renders the height, timestamp and total fee',
+					config: { blockInfo: blockWithTransactions },
+					expected: {
+						texts: [
+							SCREEN_TEXT.sectionBlock,
+							SCREEN_TEXT.fieldHeight,
+							blockWithTransactions.height,
+							SCREEN_TEXT.fieldStatus,
+							timestampTitleText,
+							SCREEN_TEXT.fieldTotalFee
+						],
+						// The block's only transaction pays the whole total fee, so its table row repeats the amount.
+						titleOccurrences: { [totalFeeTitle]: 2 }
+					}
+				},
+				{
+					description: 'renders the created status for a recent block',
+					config: { blockInfo: blockWithTransactions },
+					expected: {
+						texts: [SCREEN_TEXT.labelCreated],
+						hiddenTexts: [SCREEN_TEXT.labelSafe, SCREEN_TEXT.labelFinalized]
+					}
+				},
+				{
+					description: 'renders the safe status for a block buried deeper than the unwind limit',
+					variants: ['nem'],
+					config: {
+						blockInfo: blockWithTransactions,
+						chainStatus: nemSafeChainStatus
+					},
+					expected: {
+						texts: [SCREEN_TEXT.labelSafe],
+						hiddenTexts: [SCREEN_TEXT.labelCreated]
+					}
+				},
+				{
+					description: 'renders the finalized status for a finalized block',
+					variants: ['symbol'],
+					config: {
+						blockInfo: {
+							...blockWithTransactions,
+							isFinalized: true
+						}
+					},
+					expected: {
+						texts: [SCREEN_TEXT.labelFinalized],
+						hiddenTexts: [SCREEN_TEXT.labelCreated]
+					}
+				}
+			];
 
-			// Act + Assert:
-			await runStatusLabelTest(chainHeightOffset, expectedShownLabelText, expectedHiddenLabelText);
+			runRenderScenarioTests({ renderPage, cases: blockCases });
 		});
 
-		it('renders created label', async () => {
-			// Arrange:
-			const chainHeightOffset = 100;
-			const expectedShownLabelText = 'label_created';
-			const expectedHiddenLabelText = 'label_safe';
+		describe('fee treemap', () => {
+			const treemapCases = [
+				{
+					description: 'renders the chart when the block transactions fit the cap',
+					config: { blockInfo: blockWithTransactions },
+					expected: {
+						texts: [SCREEN_TEXT.fieldTransactionFees],
+						asyncTexts: [mockedChartText],
+						hiddenTexts: [SCREEN_TEXT.messageTooManyTransactions]
+					}
+				},
+				{
+					description: 'renders the empty message when the block has no transactions',
+					config: {
+						blockInfo: emptyBlock,
+						transactionPage: emptyPage
+					},
+					expected: {
+						// The empty message appears twice: the treemap and the empty transactions table.
+						asyncTextOccurrences: { [SCREEN_TEXT.messageEmptyTable]: 2 },
+						hiddenTexts: [mockedChartText]
+					}
+				},
+				{
+					description: 'renders the too many transactions message for a block above the cap',
+					config: {
+						blockInfo: {
+							...blockWithTransactions,
+							transactionCount: MAX_TRANSACTION_SQUARES + 1
+						}
+					},
+					expected: {
+						texts: [SCREEN_TEXT.messageTooManyTransactions],
+						hiddenTexts: [mockedChartText]
+					}
+				}
+			];
 
-			// Act + Assert:
-			await runStatusLabelTest(chainHeightOffset, expectedShownLabelText, expectedHiddenLabelText);
+			runRenderScenarioTests({ renderPage, cases: treemapCases });
+
+			const runTreemapRequestTest = (description, config, expected) => {
+				it(description, async () => {
+					// Act:
+					renderPage({
+						blockInfo: {
+							...blockWithTransactions,
+							transactionCount: config.transactionCount
+						}
+					});
+					// the transaction table request is made for any block, so it settles the mount requests first.
+					await waitFor(() => expect(TransactionService.fetchTransactionPage).toHaveBeenCalledWith(transactionSearchCriteria));
+
+					// Assert: 
+					if (expected.isTreemapRequested) {
+						await waitFor(() =>
+							expect(TransactionService.fetchTransactionPage).toHaveBeenCalledWith(transactionSquaresSearchCriteria));
+					} else {
+						// Give a scheduled treemap request a timer tick to fire before asserting its absence.
+						await new Promise(resolve => setTimeout(resolve));
+						expect(TransactionService.fetchTransactionPage).not.toHaveBeenCalledWith(transactionSquaresSearchCriteria);
+					}
+				});
+			};
+
+			const treemapRequestCases = [
+				{
+					description: 'requests the treemap transactions for a block at the cap',
+					config: { transactionCount: MAX_TRANSACTION_SQUARES },
+					expected: { isTreemapRequested: true }
+				},
+				{
+					description: 'does not request the treemap transactions for a block above the cap',
+					config: { transactionCount: MAX_TRANSACTION_SQUARES + 1 },
+					expected: { isTreemapRequested: false }
+				}
+			];
+
+			runTestCases(runTreemapRequestTest, treemapRequestCases);
 		});
-	});
 
-	describe('transactions', () => {
-		const TRANSACTION_PAGE_SIZE = 50;
+		describe('section: details', () => {
+			const detailsCases = [
+				{
+					description: 'renders the harvester, size, difficulty, signature and hash',
+					config: { blockInfo: blockWithTransactions },
+					expected: {
+						texts: [
+							SCREEN_TEXT.fieldHarvester,
+							blockWithTransactions.harvester,
+							SCREEN_TEXT.fieldTransactions,
+							SCREEN_TEXT.fieldSize,
+							`${blockWithTransactions.size} B`,
+							SCREEN_TEXT.fieldDifficulty,
+							`${blockWithTransactions.difficulty} %`,
+							SCREEN_TEXT.fieldSignature,
+							blockWithTransactions.signature,
+							SCREEN_TEXT.fieldHash,
+							blockWithTransactions.hash
+						]
+					}
+				}
+			];
 
-		it('requests the first transaction page and the fee visualisation data', async () => {
-			// Arrange:
-			const transactionHashes = transactionPageResult.data.map(transaction => utils.truncateString(transaction.hash, 'hash'));
-
-			// Act:
-			const fetchTransactionPage = await renderPage(blockInfoResult);
-
-			// Assert:
-			expect(fetchTransactionPage).toHaveBeenCalledTimes(2);
-			expect(fetchTransactionPage).toHaveBeenCalledWith({
-				pageNumber: 1,
-				height: blockInfoResult.height,
-				pageSize: TRANSACTION_PAGE_SIZE
-			});
-			expect(fetchTransactionPage).toHaveBeenCalledWith({
-				height: blockInfoResult.height,
-				pageSize: MAX_TRANSACTION_SQUARES
-			});
-			transactionHashes.forEach(hash => expect(screen.getByText(hash)).toBeInTheDocument());
-			expect(screen.queryByText('message_emptyTable')).not.toBeInTheDocument();
-			expect(screen.queryByText('message_tooManyTransactionsToVisualize')).not.toBeInTheDocument();
+			runRenderScenarioTests({ renderPage, cases: detailsCases });
 		});
 
-		it('requests the next transaction page from the server', async () => {
-			// Arrange:
-			const fetchTransactionPage = await renderPage(blockInfoResult);
+		describe('section: transactions', () => {
+			const renderBlockInfo = () => render(<BlockInfo blockInfo={blockWithTransactions} />);
 
-			// Act:
-			await act(async () => {
-				mockAllIsIntersecting(true);
+			const transactionsCases = [
+				{
+					description: 'renders the table headers and transaction rows',
+					config: { blockInfo: blockWithTransactions },
+					expected: {
+						texts: [
+							SCREEN_TEXT.sectionTransactions,
+							SCREEN_TEXT.tableFieldHash,
+							SCREEN_TEXT.tableFieldType,
+							SCREEN_TEXT.tableFieldSender,
+							SCREEN_TEXT.tableFieldRecipient,
+							SCREEN_TEXT.tableFieldValue,
+							SCREEN_TEXT.tableFieldFee
+						],
+						asyncTexts: blockTransactionPage.data.map(transaction => truncateString(transaction.hash, 'hash'))
+					}
+				}
+			];
+
+			runRenderScenarioTests({ renderPage, cases: transactionsCases });
+
+			runTableErrorTest('shows the try-again action when the transaction request fails', {
+				renderPage: renderBlockInfo,
+				request: [TransactionService, 'fetchTransactionPage']
 			});
-
-			// Assert:
-			expect(fetchTransactionPage).toHaveBeenCalledWith({
-				pageNumber: 2,
-				height: blockInfoResult.height,
-				pageSize: TRANSACTION_PAGE_SIZE
-			});
-		});
-
-		it('keeps the fee visualisation when the block sits exactly on the cap', async () => {
-			// Arrange:
-			const blockInfo = { ...blockInfoResult, transactionCount: MAX_TRANSACTION_SQUARES };
-
-			// Act:
-			const fetchTransactionPage = await renderPage(blockInfo);
-
-			// Assert:
-			expect(fetchTransactionPage).toHaveBeenCalledTimes(2);
-			expect(fetchTransactionPage).toHaveBeenCalledWith({
-				height: blockInfo.height,
-				pageSize: MAX_TRANSACTION_SQUARES
-			});
-			expect(screen.queryByText('message_tooManyTransactionsToVisualize')).not.toBeInTheDocument();
-		});
-
-		it('skips the fee visualisation when the block is too large for the chart', async () => {
-			// Arrange:
-			const blockInfo = { ...blockInfoResult, transactionCount: MAX_TRANSACTION_SQUARES + 1 };
-
-			// Act:
-			const fetchTransactionPage = await renderPage(blockInfo);
-
-			// Assert:
-			expect(fetchTransactionPage).toHaveBeenCalledTimes(1);
-			expect(fetchTransactionPage).toHaveBeenCalledWith({
-				pageNumber: 1,
-				height: blockInfo.height,
-				pageSize: TRANSACTION_PAGE_SIZE
-			});
-			expect(screen.getByText('message_tooManyTransactionsToVisualize')).toBeInTheDocument();
 		});
 	});
 });

@@ -1,6 +1,11 @@
-import { runApiTest } from '../../../test-utils/api';
-import { blockInfoResponse, blockInfoResult, blockPageResponse, blockPageResult } from '../../../test-utils/blocks';
-import { fetchBlockInfo, fetchBlockPage, fetchChainHight } from '@/app/variants/nem/api/blocks';
+import { blockWithTransactionsResponse, emptyBlockResponse } from '../../../../__fixtures__/api/nem/block-info';
+import { blockListResponse } from '../../../../__fixtures__/api/nem/block-list';
+import { blockWithTransactions, emptyBlock } from '../../../../__fixtures__/local/block';
+import { blockList } from '../../../../__fixtures__/local/block-list';
+import { error404Response, runApiRequestTests, runApiResultTests } from '../../../test-utils/api';
+import { fetchBlockInfo, fetchBlockPage, fetchChainHight, fetchChainStatus } from '@/app/variants/nem/api/blocks';
+
+// Mocks
 
 jest.mock('@/app/utils/server', () => {
 	return {
@@ -9,43 +14,147 @@ jest.mock('@/app/utils/server', () => {
 	};
 });
 
+// Constants
+
+const blocksURL = 'https://explorer.backend/blocks';
+const blockURL = 'https://explorer.backend/block';
+const emptyPageResponse = [];
+const newestBlockListResponse = [emptyBlockResponse];
+
+// Tests
+
 describe('variants/nem/api/blocks', () => {
 	describe('fetchBlockPage', () => {
-		it('fetch block page', async () => {
-			// Arrange:
-			const searchCriteria = {
-				pageNumber: 2,
-				pageSize: 123
-			};
-			const expectedURL = 'https://explorer.backend/blocks?limit=123&offset=123';
-			const expectedResult = blockPageResult;
+		describe('request', () => {
+			const requestCases = [
+				{
+					description: 'requests the first page with the default page size',
+					config: { params: {} },
+					expected: { url: `${blocksURL}?limit=10&offset=0` }
+				},
+				{
+					description: 'requests the given page number and page size',
+					config: {
+						params: {
+							pageNumber: 2,
+							pageSize: 123
+						}
+					},
+					expected: { url: `${blocksURL}?limit=123&offset=123` }
+				}
+			];
 
-			// Act + Assert:
-			await runApiTest(fetchBlockPage, searchCriteria, blockPageResponse, expectedURL, expectedResult);
+			runApiRequestTests({
+				functionToTest: fetchBlockPage,
+				response: emptyPageResponse,
+				cases: requestCases
+			});
 		});
-	});
 
-	describe('fetchBlockInfo', () => {
-		it('fetch block info by height', async () => {
-			// Arrange:
-			const params = '1111111';
-			const expectedURL = 'https://explorer.backend/block/1111111';
-			const expectedResult = blockInfoResult;
+		describe('result', () => {
+			const resultCases = [
+				{
+					description: 'maps the blocks',
+					config: { response: blockListResponse },
+					expected: {
+						result: {
+							data: blockList,
+							pageNumber: 1
+						}
+					}
+				}
+			];
 
-			// Act + Assert:
-			await runApiTest(fetchBlockInfo, params, blockInfoResponse, expectedURL, expectedResult);
+			runApiResultTests({ functionToTest: fetchBlockPage, cases: resultCases });
 		});
 	});
 
 	describe('fetchChainHight', () => {
-		it('fetch chain height', async () => {
-			// Arrange:
-			const params = null;
-			const expectedURL = 'https://explorer.backend/blocks?limit=1&offset=0';
-			const expectedResult = 4695085;
+		describe('request', () => {
+			const requestCases = [
+				{
+					description: 'requests the newest block',
+					config: {},
+					expected: { url: `${blocksURL}?limit=1&offset=0` }
+				}
+			];
 
-			// Act + Assert:
-			await runApiTest(fetchChainHight, params, blockPageResponse, expectedURL, expectedResult);
+			runApiRequestTests({
+				functionToTest: fetchChainHight,
+				response: newestBlockListResponse,
+				cases: requestCases
+			});
+		});
+
+		describe('result', () => {
+			const resultCases = [
+				{
+					description: 'returns the newest block height',
+					config: { response: newestBlockListResponse },
+					expected: { result: emptyBlock.height }
+				}
+			];
+
+			runApiResultTests({ functionToTest: fetchChainHight, cases: resultCases });
+		});
+	});
+
+	describe('fetchChainStatus', () => {
+		describe('result', () => {
+			const resultCases = [
+				{
+					description: 'returns the chain height without a finalized height',
+					config: { response: newestBlockListResponse },
+					expected: {
+						result: {
+							height: emptyBlock.height,
+							finalizedHeight: null
+						}
+					}
+				}
+			];
+
+			runApiResultTests({ functionToTest: fetchChainStatus, cases: resultCases });
+		});
+	});
+
+	describe('fetchBlockInfo', () => {
+		describe('request', () => {
+			const requestCases = [
+				{
+					description: 'requests the block by height',
+					config: { params: blockWithTransactionsResponse.height },
+					expected: { url: `${blockURL}/${blockWithTransactionsResponse.height}` }
+				}
+			];
+
+			runApiRequestTests({
+				functionToTest: fetchBlockInfo,
+				response: blockWithTransactionsResponse,
+				cases: requestCases
+			});
+		});
+
+		describe('result', () => {
+			const resultCases = [
+				{
+					description: 'maps a block with transactions',
+					config: { response: blockWithTransactionsResponse },
+					expected: { result: blockWithTransactions }
+				},
+				{
+					description: 'maps an empty block',
+					config: { response: emptyBlockResponse },
+					expected: { result: emptyBlock }
+				},
+				{
+					description: 'returns null when the block does not exist',
+					config: { error: error404Response },
+					expected: { result: null }
+				}
+			];
+
+			runApiResultTests({ functionToTest: fetchBlockInfo, cases: resultCases });
 		});
 	});
 });
