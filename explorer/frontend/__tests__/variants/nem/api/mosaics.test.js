@@ -1,6 +1,11 @@
-import { runApiTest } from '../../../test-utils/api';
-import { mosaicInfoResponse, mosaicInfoResult, mosaicPageResponse, mosaicPageResult } from '../../../test-utils/mosaics';
+import { customMosaicWithLevyResponse, nativeMosaicResponse } from '../../../../__fixtures__/api/nem/mosaic-info';
+import { mosaicListResponse } from '../../../../__fixtures__/api/nem/mosaic-list';
+import { customMosaicWithLevy, nativeMosaic } from '../../../../__fixtures__/local/mosaic';
+import { mosaicList } from '../../../../__fixtures__/local/mosaic-list';
+import { error404Response, runApiRequestTests, runApiResultTests } from '../../../test-utils/api';
 import { fetchMosaicInfo, fetchMosaicPage } from '@/app/variants/nem/api/mosaics';
+
+// Mocks
 
 jest.mock('@/app/utils/server', () => {
 	return {
@@ -9,31 +14,97 @@ jest.mock('@/app/utils/server', () => {
 	};
 });
 
+// Constants
+
+const mosaicsURL = 'https://explorer.backend/mosaics';
+const mosaicURL = 'https://explorer.backend/mosaic';
+const emptyPageResponse = [];
+
+// Tests
+
 describe('variants/nem/api/mosaics', () => {
 	describe('fetchMosaicPage', () => {
-		it('fetch mosaic page', async () => {
-			// Arrange:
-			const searchCriteria = {
-				pageNumber: 3,
-				pageSize: 123
-			};
-			const expectedURL = 'https://explorer.backend/mosaics?limit=123&offset=246';
-			const expectedResult = mosaicPageResult;
+		describe('request', () => {
+			const requestCases = [
+				{
+					description: 'requests the first page with the default page size',
+					config: { params: {} },
+					expected: { url: `${mosaicsURL}?limit=10&offset=0` }
+				},
+				{
+					description: 'requests the given page when "pageNumber" and "pageSize" are provided',
+					config: {
+						params: {
+							pageNumber: 2,
+							pageSize: 123
+						}
+					},
+					expected: { url: `${mosaicsURL}?limit=123&offset=123` }
+				}
+			];
 
-			// Act + Assert:
-			await runApiTest(fetchMosaicPage, searchCriteria, mosaicPageResponse, expectedURL, expectedResult);
+			runApiRequestTests({
+				functionToTest: fetchMosaicPage,
+				response: emptyPageResponse,
+				cases: requestCases
+			});
+		});
+
+		describe('result', () => {
+			const resultCases = [
+				{
+					description: 'maps the mosaics',
+					config: { response: mosaicListResponse },
+					expected: {
+						result: {
+							data: mosaicList,
+							pageNumber: 1
+						}
+					}
+				}
+			];
+
+			runApiResultTests({ functionToTest: fetchMosaicPage, cases: resultCases });
 		});
 	});
 
 	describe('fetchMosaicInfo', () => {
-		it('fetch mosaic info by id (name)', async () => {
-			// Arrange:
-			const params = 'arustest.shone';
-			const expectedURL = 'https://explorer.backend/mosaic/arustest.shone';
-			const expectedResult = mosaicInfoResult;
+		describe('request', () => {
+			const requestCases = [
+				{
+					description: 'requests the mosaic by id',
+					config: { params: customMosaicWithLevyResponse.namespaceName },
+					expected: { url: `${mosaicURL}/${customMosaicWithLevyResponse.namespaceName}` }
+				}
+			];
 
-			// Act + Assert:
-			await runApiTest(fetchMosaicInfo, params, mosaicInfoResponse, expectedURL, expectedResult);
+			runApiRequestTests({
+				functionToTest: fetchMosaicInfo,
+				response: customMosaicWithLevyResponse,
+				cases: requestCases
+			});
+		});
+
+		describe('result', () => {
+			const resultCases = [
+				{
+					description: 'maps the native mosaic',
+					config: { response: nativeMosaicResponse },
+					expected: { result: nativeMosaic }
+				},
+				{
+					description: 'maps a mosaic with a levy',
+					config: { response: customMosaicWithLevyResponse },
+					expected: { result: customMosaicWithLevy }
+				},
+				{
+					description: 'returns null when the mosaic does not exist',
+					config: { error: error404Response },
+					expected: { result: null }
+				}
+			];
+
+			runApiResultTests({ functionToTest: fetchMosaicInfo, cases: resultCases });
 		});
 	});
 });
