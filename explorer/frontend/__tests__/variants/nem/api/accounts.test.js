@@ -1,14 +1,16 @@
+import { accountHarvestListResponse } from '../../../../__fixtures__/api/nem/account-harvest-list';
 import {
-	accountHarvestedBlockPageResponse,
-	accountHarvestedBlockPageResult,
-	accountInfoResponse,
-	accountInfoResult,
-	accountPageMosaicFilterResponse,
-	accountPageMosaicFilterResult,
-	accountPageResponse,
-	accountPageResult
-} from '../../../test-utils/accounts';
-import { runApiTest } from '../../../test-utils/api';
+	cosignatoryAccountResponse,
+	harvestingAccountResponse,
+	multisigAccountResponse,
+	remoteAccountResponse
+} from '../../../../__fixtures__/api/nem/account-info';
+import { accountListResponse } from '../../../../__fixtures__/api/nem/account-list';
+import { mosaicRichListResponse } from '../../../../__fixtures__/api/nem/mosaic-rich-list';
+import { cosignatoryAccount, harvestingAccount, multisigAccount, remoteAccount } from '../../../../__fixtures__/local/account';
+import { accountHarvestedBlockList } from '../../../../__fixtures__/local/account-harvested-block-list';
+import { accountList, accountRichList } from '../../../../__fixtures__/local/account-list';
+import { error404Response, runApiRequestTests, runApiResultTests } from '../../../test-utils/api';
 import {
 	fetchAccountHarvestedBlockPage,
 	fetchAccountInfo,
@@ -18,135 +20,249 @@ import {
 
 // Mocks
 
-jest.mock('@/app/utils/server', () => ({
-	__esModule: true,
-	...jest.requireActual('@/app/utils/server')
-}));
+jest.mock('@/app/utils/server', () => {
+	return {
+		__esModule: true,
+		...jest.requireActual('@/app/utils/server')
+	};
+});
 
 // Constants
 
-const accountAddress = 'NDHEJKXY6YK7JGRFQT2L7P3O5VMUGR4BWKQNVXXQ';
-const accountPublicKey = '019B4EDDAEFA086A328EB907ECBC5ED0EABD6BBB6F3BA25B22A310CB5917A808';
-const baseSearchCriteria = {
-	pageNumber: 2,
-	pageSize: 123
+const accountsURL = 'https://explorer.backend/accounts';
+const firstPageURL = `${accountsURL}?limit=10&offset=0`;
+const accountURL = 'https://explorer.backend/account';
+const accountHarvestsURL = 'https://explorer.backend/account/harvests';
+const mosaicRichListURL = 'https://explorer.backend/mosaic/rich/list';
+const emptyPageResponse = [];
+const mosaicId = 'testnamespace1.mosaic';
+const harvesterAddress = harvestingAccountResponse.address;
+const remark = 'Testnet harvester';
+const accountWithRemarkResponse = {
+	...harvestingAccountResponse,
+	remark
+};
+const accountWithRemark = {
+	...harvestingAccount,
+	description: remark
 };
 
 // Tests
 
 describe('variants/nem/api/accounts', () => {
 	describe('fetchAccountPage', () => {
-		const runAccountPageTest = (description, config, expected) => {
-			it(description, async () => {
-				// Arrange:
-				const searchCriteria = { ...baseSearchCriteria, ...config.filter };
-				const response = config.response || accountPageResponse;
-				const expectedResult = expected.result || accountPageResult;
+		describe('request', () => {
+			const requestCases = [
+				{
+					description: 'requests the first page with the default page size',
+					config: { params: {} },
+					expected: { url: firstPageURL }
+				},
+				{
+					description: 'requests the given page when "pageNumber" and "pageSize" are provided',
+					config: {
+						params: {
+							pageNumber: 2,
+							pageSize: 123
+						}
+					},
+					expected: { url: `${accountsURL}?limit=123&offset=123` }
+				},
+				{
+					description: 'requests the accounts sorted by height when "isLatest" is provided',
+					config: {
+						params: { isLatest: true }
+					},
+					expected: { url: `${firstPageURL}&sort_field=height` }
+				},
+				{
+					description: 'requests only the harvesting accounts when "isActiveHarvesting" is provided',
+					config: {
+						params: { isActiveHarvesting: true }
+					},
+					expected: { url: `${firstPageURL}&is_harvesting=true` }
+				},
+				{
+					description: 'requests the mosaic rich list when "mosaic" is provided',
+					config: {
+						params: { mosaic: mosaicId }
+					},
+					expected: { url: `${mosaicRichListURL}?limit=10&offset=0&namespace_name=${mosaicId}` }
+				}
+			];
 
-				// Act + Assert:
-				await runApiTest(fetchAccountPage, searchCriteria, response, expected.url, expectedResult);
+			runApiRequestTests({
+				functionToTest: fetchAccountPage,
+				response: emptyPageResponse,
+				cases: requestCases
 			});
-		};
+		});
 
-		const accountPageCases = [
-			{
-				description: 'fetches account page with no filter',
-				config: {},
-				expected: {
-					url: 'https://explorer.backend/accounts?limit=123&offset=123'
-				}
-			},
-			{
-				description: 'fetches account page with mosaic filter',
-				config: { 
-					filter: { mosaic: 'custom.mosaic' }, 
-					response: accountPageMosaicFilterResponse },
-				expected: {
-					url: 'https://explorer.backend/mosaic/rich/list?limit=123&offset=123&namespace_name=custom.mosaic',
-					result: accountPageMosaicFilterResult
-				}
-			},
-			{
-				description: 'fetches account page with isLatest filter',
-				config: { 
-					filter: { isLatest: true } 
+		describe('result', () => {
+			const resultCases = [
+				{
+					description: 'maps the accounts',
+					config: { response: accountListResponse },
+					expected: {
+						result: {
+							data: accountList,
+							pageNumber: 1
+						}
+					}
 				},
-				expected: {
-					url: 'https://explorer.backend/accounts?limit=123&offset=123&sort_field=height'
+				{
+					description: 'maps the mosaic rich list when "mosaic" is provided',
+					config: {
+						params: { mosaic: mosaicId },
+						response: mosaicRichListResponse
+					},
+					expected: {
+						result: {
+							data: accountRichList,
+							pageNumber: 1
+						}
+					}
 				}
-			},
-			{
-				description: 'fetches account page with isActiveHarvesting filter',
-				config: { 
-					filter: { isActiveHarvesting: true } 
-				},
-				expected: {
-					url: 'https://explorer.backend/accounts?limit=123&offset=123&is_harvesting=true'
-				}
-			}
-		];
+			];
 
-		accountPageCases.forEach(({ description, config, expected }) => runAccountPageTest(description, config, expected));
-	});
-
-	describe('fetchAccountHarvestedBlockPage', () => {
-		const runHarvestedBlockPageTest = (description, config, expected) => {
-			it(description, async () => {
-				// Arrange:
-				const searchCriteria = { ...baseSearchCriteria, address: accountAddress, ...config.filter };
-
-				// Act + Assert:
-				await runApiTest(
-					fetchAccountHarvestedBlockPage,
-					searchCriteria,
-					accountHarvestedBlockPageResponse,
-					expected.url,
-					accountHarvestedBlockPageResult
-				);
-			});
-		};
-
-		const harvestedBlockPageCases = [
-			{
-				description: 'requests rewarded blocks only when isRewardedOnly is set',
-				config: { 
-					filter: { isRewardedOnly: true } 
-				},
-				expected: {
-					url: `https://explorer.backend/account/harvests?limit=123&offset=123&address=${accountAddress}&rewardedOnly=true`
-				}
-			},
-			{
-				description: 'requests every harvested block when isRewardedOnly is not set',
-				config: {},
-				expected: {
-					url: `https://explorer.backend/account/harvests?limit=123&offset=123&address=${accountAddress}`
-				}
-			}
-		];
-
-		harvestedBlockPageCases.forEach(({ description, config, expected }) => runHarvestedBlockPageTest(description, config, expected));
+			runApiResultTests({ functionToTest: fetchAccountPage, cases: resultCases });
+		});
 	});
 
 	describe('fetchAccountInfo', () => {
-		it('fetches account info by address', async () => {
-			// Arrange:
-			const expectedURL = `https://explorer.backend/account?address=${accountAddress}`;
-			const expectedResult = accountInfoResult;
+		describe('request', () => {
+			const requestCases = [
+				{
+					description: 'requests the account by address',
+					config: { params: cosignatoryAccountResponse.address },
+					expected: { url: `${accountURL}?address=${cosignatoryAccountResponse.address}` }
+				}
+			];
 
-			// Act + Assert:
-			await runApiTest(fetchAccountInfo, accountAddress, accountInfoResponse, expectedURL, expectedResult);
+			runApiRequestTests({
+				functionToTest: fetchAccountInfo,
+				response: cosignatoryAccountResponse,
+				cases: requestCases
+			});
+		});
+
+		describe('result', () => {
+			const resultCases = [
+				{
+					description: 'maps a cosignatory account',
+					config: { response: cosignatoryAccountResponse },
+					expected: { result: cosignatoryAccount }
+				},
+				{
+					description: 'maps a multisig account',
+					config: { response: multisigAccountResponse },
+					expected: { result: multisigAccount }
+				},
+				{
+					description: 'maps a remote account',
+					config: { response: remoteAccountResponse },
+					expected: { result: remoteAccount }
+				},
+				{
+					description: 'maps a harvesting account',
+					config: { response: harvestingAccountResponse },
+					expected: { result: harvestingAccount }
+				},
+				{
+					description: 'maps the remark to the description',
+					config: { response: accountWithRemarkResponse },
+					expected: { result: accountWithRemark }
+				},
+				{
+					description: 'returns null when the account does not exist',
+					config: { error: error404Response },
+					expected: { result: null }
+				}
+			];
+
+			runApiResultTests({ functionToTest: fetchAccountInfo, cases: resultCases });
+		});
+	});
+
+	describe('fetchAccountHarvestedBlockPage', () => {
+		describe('request', () => {
+			const requestCases = [
+				{
+					description: 'requests the account harvests by address',
+					config: {
+						params: { address: harvesterAddress }
+					},
+					expected: { url: `${accountHarvestsURL}?limit=10&offset=0&address=${harvesterAddress}` }
+				},
+				{
+					description: 'requests only the rewarded harvests when "isRewardedOnly" is provided',
+					config: {
+						params: {
+							address: harvesterAddress,
+							isRewardedOnly: true
+						}
+					},
+					expected: { url: `${accountHarvestsURL}?limit=10&offset=0&address=${harvesterAddress}&rewardedOnly=true` }
+				}
+			];
+
+			runApiRequestTests({
+				functionToTest: fetchAccountHarvestedBlockPage,
+				response: emptyPageResponse,
+				cases: requestCases
+			});
+		});
+
+		describe('result', () => {
+			const resultCases = [
+				{
+					description: 'maps the harvested blocks',
+					config: { response: accountHarvestListResponse },
+					expected: {
+						result: {
+							data: accountHarvestedBlockList,
+							pageNumber: 1
+						}
+					}
+				}
+			];
+
+			runApiResultTests({ functionToTest: fetchAccountHarvestedBlockPage, cases: resultCases });
 		});
 	});
 
 	describe('fetchAccountInfoByPublicKey', () => {
-		it('fetches account info by public key', async () => {
-			// Arrange:
-			const expectedURL = `https://explorer.backend/account?publicKey=${accountPublicKey}`;
-			const expectedResult = accountInfoResult;
+		describe('request', () => {
+			const requestCases = [
+				{
+					description: 'requests the account by public key',
+					config: { params: cosignatoryAccountResponse.publicKey },
+					expected: { url: `${accountURL}?publicKey=${cosignatoryAccountResponse.publicKey}` }
+				}
+			];
 
-			// Act + Assert:
-			await runApiTest(fetchAccountInfoByPublicKey, accountPublicKey, accountInfoResponse, expectedURL, expectedResult);
+			runApiRequestTests({
+				functionToTest: fetchAccountInfoByPublicKey,
+				response: cosignatoryAccountResponse,
+				cases: requestCases
+			});
+		});
+
+		describe('result', () => {
+			const resultCases = [
+				{
+					description: 'maps the account',
+					config: { response: cosignatoryAccountResponse },
+					expected: { result: cosignatoryAccount }
+				},
+				{
+					description: 'returns null when the account does not exist',
+					config: { error: error404Response },
+					expected: { result: null }
+				}
+			];
+
+			runApiResultTests({ functionToTest: fetchAccountInfoByPublicKey, cases: resultCases });
 		});
 	});
 });
