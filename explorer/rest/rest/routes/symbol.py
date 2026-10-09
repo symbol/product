@@ -30,12 +30,12 @@ RECEIPT_QUERY_PARAMETERS = frozenset([
 ])
 BLOCK_RECEIPT_QUERY_PARAMETERS = frozenset(['limit', 'offset'])
 TRANSACTION_QUERY_PARAMETERS = frozenset([
-	'limit', 'offset', 'height', 'type', 'address', 'signerPublicKey', 'recipientAddress', 'transferMosaicId', 'embedded', 'order'
+	'limit', 'offset', 'height', 'transactionTypes', 'address', 'senderAddress', 'signerPublicKey', 'recipientAddress',
+	'mosaic', 'embedded', 'order'
 ])
 RECEIPT_MAX_OFFSET = 100000
 TRANSACTION_MAX_OFFSET = 100000
 MAX_TRANSACTION_HEIGHT = 9223372036854775807
-SYMBOL_TRANSACTION_TYPE_CODES = frozenset(transaction_type.value for transaction_type in TransactionType)
 MOSAIC_ID_PATTERN = re.compile(r'[0-9A-Fa-f]{16}', re.ASCII)
 MAX_NAMESPACE_NAME_SIZE = 64
 MAX_NAMESPACE_DEPTH = 3
@@ -241,18 +241,22 @@ def _parse_receipt_query(height=None):
 
 
 def _parse_transaction_query():
-	limit = _parse_bounded_integer('limit', _get_scalar_parameter('limit', '10'), 1, 100)
+	limit = _parse_bounded_integer('limit', _get_scalar_parameter('limit', '10'), 1, 250)
 	offset = _parse_bounded_integer('offset', _get_scalar_parameter('offset', '0'), 0, TRANSACTION_MAX_OFFSET)
 	height_arg = _get_scalar_parameter('height')
 	height = _parse_bounded_integer('height', height_arg, 1, MAX_TRANSACTION_HEIGHT) if height_arg is not None else None
-	types = tuple(_parse_transaction_type(value) for value in request.args.getlist('type'))
+	types = _parse_transaction_types(_get_scalar_parameter('transactionTypes'))
 	address = _parse_address('address')
+	sender_address = _parse_address('senderAddress')
 	signer_public_key = _parse_public_key('signerPublicKey')
 	recipient_address = _parse_address('recipientAddress')
+	if address is not None and sender_address is not None:
+		raise ValueError('address cannot be combined with senderAddress')
+
 	if address is not None and (signer_public_key is not None or recipient_address is not None):
 		raise ValueError('address cannot be combined with signerPublicKey or recipientAddress')
 
-	transfer_mosaic_id = _parse_transfer_mosaic_id(_get_scalar_parameter('transferMosaicId'))
+	transfer_mosaic_id = _parse_transfer_mosaic_id(_get_scalar_parameter('mosaic'))
 	embedded = _parse_boolean('embedded', _get_scalar_parameter('embedded'))
 	order_value = _get_scalar_parameter('order', 'DESC').upper()
 	if order_value != SortOrder.DESC.value:
@@ -264,22 +268,33 @@ def _parse_transaction_query():
 		height=height,
 		transaction_types=types,
 		address=address,
+		sender_address=sender_address,
 		signer_public_key=signer_public_key,
 		recipient_address=recipient_address,
 		transfer_mosaic_id=transfer_mosaic_id,
 		include_embedded=embedded)
 
 
-def _parse_transaction_type(value):
-	try:
-		transaction_type = int(value)
-	except (TypeError, ValueError) as error:
-		raise ValueError('type must be an integer') from error
+def _parse_transaction_types(value):
+	if value is None:
+		return ()
 
-	if transaction_type not in SYMBOL_TRANSACTION_TYPE_CODES:
-		raise ValueError('Unsupported transaction type')
+	if not value:
+		raise ValueError('transactionTypes must not be empty')
 
-	return transaction_type
+	type_names = value.split(',')
+	if any(not type_name for type_name in type_names):
+		raise ValueError('transactionTypes must not contain empty values')
+
+	transaction_types = []
+	for type_name in type_names:
+		normalized_name = type_name.upper()
+		if normalized_name not in TransactionType.__members__:
+			raise ValueError(f'Unknown transactionTypes value: {type_name}')
+
+		transaction_types.append(TransactionType[normalized_name].value)
+
+	return tuple(transaction_types)
 
 
 def _parse_public_key(name):
@@ -302,15 +317,15 @@ def _parse_transfer_mosaic_id(value):
 
 	parts = value.split('.')
 	if len(parts) > MAX_NAMESPACE_DEPTH:
-		raise ValueError('Invalid transferMosaicId')
+		raise ValueError('Invalid mosaic')
 
 	if any(len(part) > MAX_NAMESPACE_NAME_SIZE for part in parts):
-		raise ValueError('Invalid transferMosaicId')
+		raise ValueError('Invalid mosaic')
 
 	try:
 		return f'{generate_namespace_path(value)[-1]:016X}'
 	except ValueError as error:
-		raise ValueError('Invalid transferMosaicId') from error
+		raise ValueError('Invalid mosaic') from error
 
 
 def _parse_boolean(name, value):

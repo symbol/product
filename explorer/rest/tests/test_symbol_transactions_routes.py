@@ -6,6 +6,7 @@ from common.symbol.NativeMosaic import NativeMosaicInfo
 from common.symbol.NodeConfiguration import SymbolNodeConfiguration
 from flask import Flask
 from symbolchain.sc import TransactionType
+from symbolchain.symbol.Network import Address
 
 from rest import setup_error_handlers
 from rest.db.SymbolDatabase import SymbolDatabase
@@ -15,7 +16,14 @@ from rest.routes.symbol import setup_symbol_routes
 from .test.SymbolBlockTestUtils import create_symbol_block, create_symbol_sync_state
 from .test.SymbolDatabaseTestUtils import create_safe_repairing_sync_state, symbol_test_database
 from .test.SymbolMosaicTestUtils import create_symbol_mosaic
-from .test.SymbolTransactionTestUtils import create_symbol_mosaic_transfer, create_symbol_namespace, create_symbol_transaction
+from .test.SymbolTransactionTestUtils import (
+	RECIPIENT_ADDRESS,
+	SIGNER_ADDRESS,
+	SIGNER_PUBLIC_KEY,
+	create_symbol_mosaic_transfer,
+	create_symbol_namespace,
+	create_symbol_transaction
+)
 
 NATIVE_MOSAIC_INFO = NativeMosaicInfo('72C0212E67A08BCE', 6)
 TESTNET_SENDER = bytes.fromhex('9889432DE263BB8FE88444A4DA28D3609BD8BB8FAE18AE95')
@@ -24,7 +32,16 @@ ALIAS_ID = '887E5DB6BB0B21F5'
 ALIAS_TARGET_MOSAIC_ID = '1234567890ABCDEF'
 
 
-def test_parent_child_full_json():
+@pytest.mark.parametrize(
+	'query',
+	[
+		'embedded=true',
+		f'embedded=true&senderAddress={Address(TESTNET_SENDER)}',
+		f'embedded=true&signerPublicKey={SIGNER_PUBLIC_KEY.hex()}',
+		f'embedded=true&senderAddress={Address(TESTNET_SENDER)}&signerPublicKey={SIGNER_PUBLIC_KEY.hex()}'
+	],
+	ids=['embedded', 'sender_address', 'signer_public_key', 'sender_and_signer'])
+def test_parent_child_full_json(query):
 	# Arrange:
 	with symbol_test_database(
 		create_symbol_sync_state(last_synced_height=1, finalized_height=1),
@@ -53,6 +70,76 @@ def test_parent_child_full_json():
 			}])
 		puller_database.upsert_transactions_for_height(1, [parent, child])
 		puller_database.upsert_mosaic(create_symbol_mosaic('1234567890ABCDEF', 2))
+		expected = [
+			{
+				'hash': None,
+				'isEmbedded': True,
+				'aggregateHash': 'AA' * 32,
+				'embeddedIndex': 0,
+				'group': 'confirmed',
+				'height': 1,
+				'type': 'TRANSFER',
+				'sender': 'TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI',
+				'signer': 'TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI',
+				'recipient': 'TBJU67Q5BITMUTRRN6IB4I7FLSDQDWZA34I2PMQ',
+				'value': [{'id': '1234567890ABCDEF', 'name': '1234567890ABCDEF', 'amount': 123.45}],
+				'amount': 0,
+				'fee': None,
+				'timestamp': '2026-01-01T00:00:01Z',
+				'message': {'type': 'plain', 'text': 'Hello'}
+			},
+			{
+				'hash': 'AA' * 32,
+				'isEmbedded': False,
+				'aggregateHash': None,
+				'embeddedIndex': None,
+				'group': 'confirmed',
+				'height': 1,
+				'type': 'AGGREGATE_COMPLETE',
+				'sender': 'TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI',
+				'signer': 'TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI',
+				'recipient': None,
+				'value': [],
+				'amount': 0,
+				'fee': 0.000001,
+				'timestamp': '2026-01-01T00:00:01Z',
+				'message': None
+			}
+		]
+
+		# Act:
+		with _create_transaction_test_client(db_config) as client:
+			response = client.get(f'/api/symbol/transactions?{query}')
+
+	# Assert:
+	assert 200 == response.status_code
+	assert expected == response.json
+
+
+def test_embedded_has_own_signer_address():
+	# Arrange:
+	with symbol_test_database(
+		create_symbol_sync_state(last_synced_height=1, finalized_height=1),
+		[create_symbol_block(1)]) as (db_config, puller_database):
+		parent = create_symbol_transaction(
+			1,
+			10,
+			type=TransactionType.AGGREGATE_COMPLETE.value,
+			hash=bytes.fromhex('AA' * 32),
+			recipient_address=None,
+			address_rows=[{'address': SIGNER_ADDRESS, 'role': 'signer'}])
+		child = create_symbol_transaction(
+			1,
+			0,
+			is_embedded=True,
+			signer_public_key=bytes.fromhex('02' * 32),
+			signer_address=RECIPIENT_ADDRESS,
+			recipient_address=TESTNET_RECIPIENT,
+			address_rows=[
+				{'address': RECIPIENT_ADDRESS, 'role': 'signer'},
+				{'address': TESTNET_RECIPIENT, 'role': 'recipient'}
+			])
+		puller_database.upsert_transactions_for_height(1, [parent, child])
 
 		# Act:
 		with _create_transaction_test_client(db_config) as client:
@@ -66,24 +153,28 @@ def test_parent_child_full_json():
 			'isEmbedded': True,
 			'aggregateHash': 'AA' * 32,
 			'embeddedIndex': 0,
+			'group': 'confirmed',
 			'height': 1,
 			'type': 'TRANSFER',
-			'sender': 'TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI',
+			'sender': 'ND3I6ZLS22YLJIL7AIQHOAN34AOUSRNK6NTDVKQ',
+			'signer': 'ND3I6ZLS22YLJIL7AIQHOAN34AOUSRNK6NTDVKQ',
 			'recipient': 'TBJU67Q5BITMUTRRN6IB4I7FLSDQDWZA34I2PMQ',
-			'value': [{'id': '1234567890ABCDEF', 'name': '1234567890ABCDEF', 'amount': 123.45}],
+			'value': [],
 			'amount': 0,
 			'fee': None,
 			'timestamp': '2026-01-01T00:00:01Z',
-			'message': {'type': 'plain', 'text': 'Hello'}
+			'message': None
 		},
 		{
 			'hash': 'AA' * 32,
 			'isEmbedded': False,
 			'aggregateHash': None,
 			'embeddedIndex': None,
+			'group': 'confirmed',
 			'height': 1,
 			'type': 'AGGREGATE_COMPLETE',
-			'sender': 'TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI',
+			'sender': 'NCUZDUB4XJ4XV3KSUBQ6NPZPP4RY3CUFZ7HNAPI',
+			'signer': 'NCUZDUB4XJ4XV3KSUBQ6NPZPP4RY3CUFZ7HNAPI',
 			'recipient': None,
 			'value': [],
 			'amount': 0,
@@ -94,7 +185,11 @@ def test_parent_child_full_json():
 	] == response.json
 
 
-def test_no_match_returns_200_empty():
+@pytest.mark.parametrize('query', [
+	'transactionTypes=MOSAIC_METADATA',
+	f'senderAddress={Address(TESTNET_SENDER)}'
+], ids=['non_matching_type', 'non_matching_sender'])
+def test_no_match_returns_200_empty(query):
 	# Arrange:
 	with symbol_test_database(
 		create_symbol_sync_state(last_synced_height=1, finalized_height=1),
@@ -102,7 +197,7 @@ def test_no_match_returns_200_empty():
 		_puller_database.upsert_transactions_for_height(1, [create_symbol_transaction(1, 1)])
 		with _create_transaction_test_client(db_config) as client:
 			# Act:
-			response = client.get(f'/api/symbol/transactions?type={TransactionType.MOSAIC_METADATA.value}')
+			response = client.get(f'/api/symbol/transactions?{query}')
 
 	# Assert:
 	assert 200 == response.status_code
@@ -114,7 +209,7 @@ def test_alias_inputs_return_same_json(mosaic_input):
 	# Arrange:
 	with _alias_search_fixture() as client:
 		# Act:
-		response = client.get('/api/symbol/transactions', query_string={'transferMosaicId': mosaic_input, 'height': 8})
+		response = client.get('/api/symbol/transactions', query_string={'mosaic': mosaic_input, 'height': 8})
 
 	# Assert:
 	assert 200 == response.status_code
@@ -125,7 +220,7 @@ def test_alias_search_uses_current_link_at_requested_historical_height():  # pyl
 	# Arrange: the fixture overwrites old A at height 4 with current B observed at height 8.
 	with _alias_search_fixture() as client:
 		# Act: both A and B have transfers at height 4; only B is searched.
-		response = client.get('/api/symbol/transactions?transferMosaicId=daoka.coin&height=4')
+		response = client.get('/api/symbol/transactions?mosaic=daoka.coin&height=4')
 
 	# Assert:
 	assert 200 == response.status_code
@@ -143,10 +238,10 @@ def test_alias_filters_use_and():
 	with _alias_search_fixture() as client:
 		# Act:
 		response = client.get(
-			f'/api/symbol/transactions?transferMosaicId=daoka.coin&height=4&type={TransactionType.TRANSFER.value}'
+			'/api/symbol/transactions?mosaic=daoka.coin&height=4&transactionTypes=TRANSFER'
 			'&address=NCUZDUB4XJ4XV3KSUBQ6NPZPP4RY3CUFZ7HNAPI')
 		wrong_type_response = client.get(
-			f'/api/symbol/transactions?transferMosaicId=daoka.coin&type={TransactionType.MOSAIC_SUPPLY_CHANGE.value}'
+			'/api/symbol/transactions?mosaic=daoka.coin&transactionTypes=MOSAIC_SUPPLY_CHANGE'
 			'&address=NCUZDUB4XJ4XV3KSUBQ6NPZPP4RY3CUFZ7HNAPI')
 
 	# Assert:
@@ -159,12 +254,125 @@ def test_alias_filters_use_and():
 	assert [] == wrong_type_response.json
 
 
+def test_duplicate_types_same_result():
+	# Arrange:
+	expected = [
+		_expected_alias_transaction('00' * 31 + '04', 4, 444.44),
+		_expected_alias_transaction('00' * 31 + '02', 4, 222.22)
+	]
+	with _alias_search_fixture() as client:
+		# Act:
+		single_type_response = client.get(
+			'/api/symbol/transactions?mosaic=daoka.coin&height=4&transactionTypes=TRANSFER'
+			'&address=NCUZDUB4XJ4XV3KSUBQ6NPZPP4RY3CUFZ7HNAPI')
+		duplicate_type_response = client.get(
+			'/api/symbol/transactions?mosaic=daoka.coin&height=4&transactionTypes=TRANSFER,TRANSFER'
+			'&address=NCUZDUB4XJ4XV3KSUBQ6NPZPP4RY3CUFZ7HNAPI')
+
+	# Assert:
+	assert 200 == single_type_response.status_code
+	assert expected == single_type_response.json
+	assert 200 == duplicate_type_response.status_code
+	assert expected == duplicate_type_response.json
+
+
+def test_type_or_requires_mosaic_match():
+	# Arrange:
+	with _alias_search_fixture() as client:
+		# Act: the height-4 Aggregate matches type/height but its default SIGNER_ADDRESS differs from TESTNET_SENDER and has no mosaics.
+		# other_address_transfer must satisfy type OR and senderAddress/height/mosaic AND on the same Transaction row.
+		response = client.get(
+			f'/api/symbol/transactions?transactionTypes=TRANSFER,AGGREGATE_COMPLETE&'
+			f'senderAddress={Address(TESTNET_SENDER)}&height=4&mosaic={ALIAS_TARGET_MOSAIC_ID}')
+
+	# Assert:
+	assert 200 == response.status_code
+	assert [_expected_alias_transaction(
+		'00' * 31 + '03', 4, 333.33,
+		sender='TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI', recipient='TBJU67Q5BITMUTRRN6IB4I7FLSDQDWZA34I2PMQ')] == response.json
+
+
+def test_type_or_requires_sender_match():
+	# Arrange:
+	parent = create_symbol_transaction(
+		1,
+		1,
+		type=TransactionType.AGGREGATE_COMPLETE.value,
+		hash=bytes.fromhex('00' * 31 + '01'),
+		recipient_address=None,
+		signer_address=TESTNET_SENDER,
+		address_rows=[{'address': TESTNET_SENDER, 'role': 'signer'}])
+	transfer = create_symbol_transaction(
+		1,
+		2,
+		hash=bytes.fromhex('00' * 31 + '02'),
+		signer_address=TESTNET_SENDER,
+		recipient_address=TESTNET_RECIPIENT,
+		address_rows=[
+			{'address': TESTNET_SENDER, 'role': 'signer'},
+			{'address': TESTNET_RECIPIENT, 'role': 'recipient'}
+		])
+	type_only = create_symbol_transaction(
+		1,
+		3,
+		type=TransactionType.AGGREGATE_COMPLETE.value,
+		hash=bytes.fromhex('00' * 31 + '03'))
+	filter_only = create_symbol_transaction(
+		1,
+		4,
+		type=TransactionType.AGGREGATE_BONDED.value,
+		hash=bytes.fromhex('00' * 31 + '04'),
+		signer_address=TESTNET_SENDER,
+		address_rows=[{'address': TESTNET_SENDER, 'role': 'signer'}])
+	common_expected_fields = {
+		'isEmbedded': False,
+		'aggregateHash': None,
+		'embeddedIndex': None,
+		'group': 'confirmed',
+		'height': 1,
+		'sender': 'TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI',
+		'signer': 'TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI',
+		'value': [],
+		'amount': 0,
+		'fee': 0.000001,
+		'timestamp': '2026-01-01T00:00:01Z',
+		'message': None
+	}
+	expected = [
+		{
+			'hash': '00' * 31 + '02',
+			'type': 'TRANSFER',
+			'recipient': 'TBJU67Q5BITMUTRRN6IB4I7FLSDQDWZA34I2PMQ',
+			**common_expected_fields
+		},
+		{
+			'hash': '00' * 31 + '01',
+			'type': 'AGGREGATE_COMPLETE',
+			'recipient': None,
+			**common_expected_fields
+		}
+	]
+	with symbol_test_database(
+		create_symbol_sync_state(last_synced_height=1, finalized_height=1),
+		[create_symbol_block(1)]) as (db_config, puller_database):
+		puller_database.upsert_transactions_for_height(1, [parent, transfer, type_only, filter_only])
+		with _create_transaction_test_client(db_config) as client:
+			# Act:
+			response = client.get(
+				f'/api/symbol/transactions?transactionTypes=TRANSFER,AGGREGATE_COMPLETE&'
+				f'senderAddress={Address(TESTNET_SENDER)}&height=1&embedded=false')
+
+	# Assert:
+	assert 200 == response.status_code
+	assert expected == response.json
+
+
 def test_alias_embedded_opt_in():
 	# Arrange:
 	with _alias_search_fixture() as client:
 		# Act:
 		response = client.get(
-			'/api/symbol/transactions?transferMosaicId=daoka.coin&height=4&embedded=true'
+			'/api/symbol/transactions?mosaic=daoka.coin&height=4&embedded=true'
 			'&address=NCUZDUB4XJ4XV3KSUBQ6NPZPP4RY3CUFZ7HNAPI')
 
 	# Assert: default exclusion is checked by the preceding historical/address queries.
@@ -181,7 +389,7 @@ def test_alias_orders_height_before_id():
 	with _alias_search_fixture() as client:
 		# Act:
 		response = client.get(
-			'/api/symbol/transactions?transferMosaicId=daoka.coin&address=NCUZDUB4XJ4XV3KSUBQ6NPZPP4RY3CUFZ7HNAPI')
+			'/api/symbol/transactions?mosaic=daoka.coin&address=NCUZDUB4XJ4XV3KSUBQ6NPZPP4RY3CUFZ7HNAPI')
 
 	# Assert:
 	assert 200 == response.status_code
@@ -197,7 +405,7 @@ def test_alias_pages_after_filters():
 	with _alias_search_fixture() as client:
 		# Act:
 		response = client.get(
-			'/api/symbol/transactions?transferMosaicId=daoka.coin&limit=1&offset=2&embedded=true'
+			'/api/symbol/transactions?mosaic=daoka.coin&limit=1&offset=2&embedded=true'
 			'&address=NCUZDUB4XJ4XV3KSUBQ6NPZPP4RY3CUFZ7HNAPI')
 
 	# Assert:
@@ -217,7 +425,7 @@ def test_alias_expiry_uses_latest_height(end_height, expected_status, expected_b
 		puller_database.upsert_namespace(create_symbol_namespace(end_height=end_height), [])
 		with _create_transaction_test_client(db_config) as client:
 			# Act:
-			response = client.get('/api/symbol/transactions?transferMosaicId=daoka.coin&height=1')
+			response = client.get('/api/symbol/transactions?mosaic=daoka.coin&height=1')
 
 	# Assert:
 	assert expected_status == response.status_code
@@ -240,7 +448,7 @@ def test_unresolved_alias_returns_404(namespace_overrides):
 			puller_database.upsert_namespace(create_symbol_namespace(**namespace_overrides), [])
 		with _create_transaction_test_client(db_config) as client:
 			# Act:
-			response = client.get('/api/symbol/transactions?transferMosaicId=daoka.coin')
+			response = client.get('/api/symbol/transactions?mosaic=daoka.coin')
 
 	# Assert:
 	assert 404 == response.status_code
@@ -256,7 +464,7 @@ def test_alias_search_returns_503_for_unsafe_state_even_with_native_target_and_n
 		puller_database.upsert_namespace(create_symbol_namespace(alias_mosaic_id=NATIVE_MOSAIC_INFO.id), [])
 		with _create_transaction_test_client(db_config) as client:
 			# Act:
-			response = client.get('/api/symbol/transactions?transferMosaicId=daoka.coin&height=1&limit=1')
+			response = client.get('/api/symbol/transactions?mosaic=daoka.coin&height=1&limit=1')
 
 	# Assert:
 	assert 503 == response.status_code
@@ -279,7 +487,7 @@ def test_alias_search_prioritizes_unavailable_state_over_missing_or_null_namespa
 			puller_database.upsert_namespace(create_symbol_namespace(**namespace_overrides), [])
 		with _create_transaction_test_client(db_config) as client:
 			# Act:
-			response = client.get('/api/symbol/transactions?transferMosaicId=daoka.coin&height=1')
+			response = client.get('/api/symbol/transactions?mosaic=daoka.coin&height=1')
 
 	# Assert: current-state availability takes precedence over the missing or NULL link's 404.
 	assert 503 == response.status_code
@@ -298,8 +506,8 @@ def test_direct_mosaic_search_succeeds_without_namespace_table():  # pylint: dis
 		try:
 			# Act:
 			with _create_transaction_test_client(db_config) as client:
-				response = client.get(f'/api/symbol/transactions?transferMosaicId={NATIVE_MOSAIC_INFO.id}')
-				alias_response = client.get('/api/symbol/transactions?transferMosaicId=daoka.coin')
+				response = client.get(f'/api/symbol/transactions?mosaic={NATIVE_MOSAIC_INFO.id}')
+				alias_response = client.get('/api/symbol/transactions?mosaic=daoka.coin')
 		finally:
 			with puller_database.connection.cursor() as cursor:
 				cursor.execute('ALTER TABLE symbol_namespaces_hidden_for_test RENAME TO symbol_namespaces')
@@ -347,9 +555,11 @@ def test_native_only_no_mosaic_table_200(state_name):
 		'isEmbedded': False,
 		'aggregateHash': None,
 		'embeddedIndex': None,
+		'group': 'confirmed',
 		'height': 2,
 		'type': 'TRANSFER',
 		'sender': 'NCUZDUB4XJ4XV3KSUBQ6NPZPP4RY3CUFZ7HNAPI',
+		'signer': 'NCUZDUB4XJ4XV3KSUBQ6NPZPP4RY3CUFZ7HNAPI',
 		'recipient': 'ND3I6ZLS22YLJIL7AIQHOAN34AOUSRNK6NTDVKQ',
 		'value': [{'id': NATIVE_MOSAIC_INFO.id, 'name': NATIVE_MOSAIC_INFO.id, 'amount': 12.345678}],
 		'amount': 12.345678,
@@ -380,37 +590,51 @@ def test_clean_saved_native_name_and_div():
 
 
 @pytest.mark.parametrize('state_name', ['dirty', 'repairing'])
-def test_non_native_unavailable_503(state_name):
+@pytest.mark.parametrize('query', [
+	'height=2',
+	f'height=2&senderAddress={Address(TESTNET_SENDER)}'
+], ids=['without_sender_address', 'with_sender_address'])
+def test_transactions_return_503_when_non_native_mosaic_state_is_unavailable(state_name, query):  # pylint: disable=invalid-name
 	# Arrange:
 	sync_state = _create_non_public_sync_state(state_name)
 	transaction = create_symbol_mosaic_transfer(2, 1, '1234567890ABCDEF', 12345)
+	transaction['signer_address'] = TESTNET_SENDER
+	transaction['address_rows'][0]['address'] = TESTNET_SENDER
 	with symbol_test_database(sync_state, [create_symbol_block(2)]) as (db_config, puller_database):
 		puller_database.upsert_transactions_for_height(2, [transaction])
 		puller_database.upsert_mosaic(create_symbol_mosaic('1234567890ABCDEF', 2))
 		with _create_transaction_test_client(db_config) as client:
 			# Act:
-			response = client.get('/api/symbol/transactions?height=2')
+			response = client.get(f'/api/symbol/transactions?{query}')
 
 	# Assert:
 	assert 503 == response.status_code
 	assert {'status': 503, 'message': 'Symbol backend data is unavailable'} == response.json
 
 
-def test_repair_markerless_list_503():
+@pytest.mark.parametrize(
+	'query',
+	['', f'?senderAddress={Address(SIGNER_ADDRESS)}'],
+	ids=['without_sender_address', 'with_sender_address'])
+def test_repair_markerless_list_503(query):
 	# Arrange:
 	sync_state = create_symbol_sync_state(last_synced_height=2, finalized_height=1, status='repairing')
 	with symbol_test_database(sync_state, [create_symbol_block(2)]) as (db_config, puller_database):
 		puller_database.upsert_transactions_for_height(2, [create_symbol_transaction(2, 1)])
 		with _create_transaction_test_client(db_config) as client:
 			# Act:
-			response = client.get('/api/symbol/transactions')
+			response = client.get(f'/api/symbol/transactions{query}')
 
 	# Assert:
 	assert 503 == response.status_code
 	assert {'status': 503, 'message': 'Symbol backend data is unavailable'} == response.json
 
 
-def test_repairing_safe_list_200():
+@pytest.mark.parametrize(
+	'query',
+	['', f'?senderAddress={Address(SIGNER_ADDRESS)}'],
+	ids=['without_sender_address', 'with_sender_address'])
+def test_repairing_safe_list_200(query):
 	# Arrange: Dirty marker is above the watermark; no current-state Mosaic data is required.
 	sync_state = create_symbol_sync_state(
 		last_synced_height=2,
@@ -421,7 +645,7 @@ def test_repairing_safe_list_200():
 		puller_database.upsert_transactions_for_height(2, [create_symbol_transaction(2, 1)])
 		with _create_transaction_test_client(db_config) as client:
 			# Act:
-			response = client.get('/api/symbol/transactions')
+			response = client.get(f'/api/symbol/transactions{query}')
 
 	# Assert:
 	assert 200 == response.status_code
@@ -430,9 +654,11 @@ def test_repairing_safe_list_200():
 		'isEmbedded': False,
 		'aggregateHash': None,
 		'embeddedIndex': None,
+		'group': 'confirmed',
 		'height': 2,
 		'type': 'TRANSFER',
 		'sender': 'NCUZDUB4XJ4XV3KSUBQ6NPZPP4RY3CUFZ7HNAPI',
+		'signer': 'NCUZDUB4XJ4XV3KSUBQ6NPZPP4RY3CUFZ7HNAPI',
 		'recipient': 'ND3I6ZLS22YLJIL7AIQHOAN34AOUSRNK6NTDVKQ',
 		'value': [],
 		'amount': 0,
@@ -443,14 +669,17 @@ def test_repairing_safe_list_200():
 
 
 def _expected_alias_transaction(hash_value, height, value_amount, **overrides):
+	sender = overrides.get('sender', 'NCUZDUB4XJ4XV3KSUBQ6NPZPP4RY3CUFZ7HNAPI')
 	return {
 		'hash': hash_value,
 		'isEmbedded': False,
 		'aggregateHash': None,
 		'embeddedIndex': None,
+		'group': 'confirmed',
 		'height': height,
 		'type': 'TRANSFER',
-		'sender': 'NCUZDUB4XJ4XV3KSUBQ6NPZPP4RY3CUFZ7HNAPI',
+		'sender': sender,
+		'signer': sender,
 		'recipient': 'ND3I6ZLS22YLJIL7AIQHOAN34AOUSRNK6NTDVKQ',
 		'value': [{'id': ALIAS_TARGET_MOSAIC_ID, 'name': ALIAS_TARGET_MOSAIC_ID, 'amount': value_amount}],
 		'amount': 0,
