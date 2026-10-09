@@ -153,7 +153,7 @@ def _expected_block_list_item(height, is_finalized, block_reward=None):
 		'height': height,
 		'hash': f'{height:02X}' * 32,
 		'previousHash': f'{height - 1:02X}' * 32,
-		'timestamp': f'2026-01-{height:02d}T00:00:00Z',
+		'timestamp': f'2026-01-{height:02d} 00:00:00',
 		'networkTimestamp': height * 1000,
 		'harvester': 'TBJU67Q5BITMUTRRN6IB4I7FLSDQDWZA34I2PMQ',
 		'beneficiaryAddress': 'TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI',
@@ -217,7 +217,15 @@ def fixture_symbol_database_config():
 		yield db_config
 
 
-def test_symbol_health_with_database(symbol_database_config):
+@pytest.mark.parametrize(('is_null_timestamp', 'expected_last_db_synced_at'), [
+	(False, '2026-01-02 08:04:05'),
+	(True, None)
+], ids=['timestamp', 'null_timestamp'])
+def test_health_sync_timestamp_format(
+	symbol_database_config,
+	is_null_timestamp,
+	expected_last_db_synced_at
+):
 	# Arrange:
 	with tempfile.TemporaryDirectory() as temp_directory:
 		db_config_path = _create_config_file(
@@ -229,23 +237,29 @@ def test_symbol_health_with_database(symbol_database_config):
 			symbol_database_config,
 			create_symbol_sync_state(last_synced_height=1, finalized_height=1),
 			[])
+		with PullerSymbolDatabase(symbol_database_config) as puller_database:
+			with puller_database.connection.cursor() as cursor:
+				if is_null_timestamp:
+					cursor.execute('UPDATE symbol_sync_state SET updated_at = NULL WHERE id = 1')
+				else:
+					cursor.execute(
+						"UPDATE symbol_sync_state SET updated_at = TIMESTAMP '2026-01-02 08:04:05.987654' WHERE id = 1")
+			puller_database.connection.commit()
 		with rest_settings_env(app_config_path):
 			# Act:
 			response = _create_symbol_app().test_client().get('/api/symbol/health')
 
 	# Assert:
 	assert 200 == response.status_code
-	health = response.json
-	assert health['lastDBSyncedAt']
-	health['lastDBSyncedAt'] = None
 	assert create_symbol_health(
 		isHealthy=True,
 		dbUp=True,
 		finalizedHeight=1,
 		backendSynced=True,
+		lastDBSyncedAt=expected_last_db_synced_at,
 		lastDBHeight=1,
 		status='healthy'
-	) == health
+	) == response.json
 
 
 def test_symbol_health_reports_db_error(symbol_database_config):

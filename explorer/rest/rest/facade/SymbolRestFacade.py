@@ -2,6 +2,7 @@ from common.symbol.NativeMosaic import NativeMosaicInfo
 from psycopg2 import Error as PsycopgError
 from zenlog import log
 
+from rest.model.symbol.format import format_timestamp
 from rest.model.symbol.Receipt import SymbolReceiptView
 from rest.model.symbol.Transaction import SymbolTransactionView
 
@@ -61,7 +62,7 @@ class SymbolRestFacade:
 				chain_height = sync_state.get('chain_height')
 				finalized_height = sync_state['finalized_height']
 				last_db_height = sync_state['last_synced_height']
-				last_db_synced_at = sync_state['updated_at'].isoformat() if sync_state['updated_at'] else None
+				last_db_synced_at = format_timestamp(sync_state['updated_at'])
 				status = sync_state['status']
 				backend_synced = 'healthy' == status and last_db_height == chain_height
 				if 'healthy' == status and not backend_synced:
