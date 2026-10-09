@@ -12,7 +12,7 @@ def _expected_list_dict():
 		'height': 2,
 		'hash': '01',
 		'previousHash': '02',
-		'timestamp': '2026-01-02T03:04:05Z',
+		'timestamp': '2026-01-02 03:04:05',
 		'networkTimestamp': 1234,
 		'harvester': 'TATNE7Q5BITMUTRRN6IB4I7FLSDRDWZA34I2PMQ',
 		'beneficiaryAddress': 'TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI',
@@ -152,7 +152,7 @@ class SymbolBlockViewTest(TestCase):
 		result = block_view.to_dict(self.NATIVE_MOSAIC_INFO)
 
 		# Assert:
-		self.assertEqual('2026-01-02T03:04:05Z', result['timestamp'])
+		self.assertEqual('2026-01-02 03:04:05', result['timestamp'])
 
 	def test_can_format_zero_block_reward_as_zero_native_units(self):
 		# Arrange:
