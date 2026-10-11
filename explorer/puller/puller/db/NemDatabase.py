@@ -3,13 +3,12 @@ import json
 from binascii import unhexlify
 from collections import namedtuple
 
+from common.nem.Namespace import NEM_NAMESPACE_GRACE_PERIOD
 from symbolchain.CryptoTypes import PublicKey
 from symbolchain.nc import TransactionType
 from symbolchain.nem.Network import Address
 
 from .DatabaseConnection import DatabaseConnection
-
-NEM_NAMESPACE_GRACE_PERIOD = 30 * 1440
 
 AccountRefreshRecord = namedtuple('AccountRefreshRecord', ['id', 'address'])
 RollbackBlockRecord = namedtuple('RollbackBlockRecord', ['beneficiary', 'signer', 'total_fee'])

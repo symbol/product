@@ -5,6 +5,7 @@ import threading
 from collections import namedtuple
 from queue import Queue
 
+from common.nem.Namespace import NEM_NAMESPACE_DURATION
 from symbolchain.CryptoTypes import PublicKey
 from symbolchain.facade.NemFacade import NemFacade
 from symbolchain.nc import TransactionType
@@ -18,7 +19,6 @@ from puller.db.NemDatabase import NemDatabase
 
 ACCOUNT_KEY_LINK_MODE_ACTIVATE = 1
 NEM_MAX_ROLLBACK_DEPTH = 360
-NEM_NAMESPACE_DURATION = 365 * 1440
 
 
 class NemRollbackError(RuntimeError):

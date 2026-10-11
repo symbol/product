@@ -7,6 +7,7 @@ from collections import namedtuple
 from unittest.mock import AsyncMock, Mock, call, patch
 
 import pytest
+from common.nem.Namespace import NEM_NAMESPACE_DURATION
 from symbolchain.CryptoTypes import PublicKey
 from symbolchain.nc import TransactionType
 from symbolchain.nem.Network import Address
@@ -32,7 +33,6 @@ from symbollightapi.model.Transaction import (
 from puller.db.NemDatabase import AccountRefreshRecord, RollbackMosaicRecord, RollbackNamespaceRegistrationRecord
 from puller.facade.NemPuller import (
 	NEM_MAX_ROLLBACK_DEPTH,
-	NEM_NAMESPACE_DURATION,
 	AccountRecord,
 	BlockRecord,
 	MosaicRecord,

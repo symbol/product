@@ -1,6 +1,7 @@
 # pylint: disable=too-many-lines
 from binascii import hexlify
 
+from common.nem.Namespace import NEM_NAMESPACE_DURATION
 from symbolchain.CryptoTypes import PublicKey
 from symbolchain.nc import TransactionType
 from symbolchain.nem.Network import Address
@@ -20,8 +21,6 @@ from rest.model.nem.Statistic import (
 from rest.model.nem.Transaction import TransactionRecord, TransactionView
 
 from .DatabaseConnection import DatabaseConnectionPool
-
-NEM_NAMESPACE_DURATION = 365 * 1440
 
 
 def _format_bytes(buffer):
