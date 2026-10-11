@@ -21,6 +21,8 @@ from rest.model.nem.Transaction import TransactionRecord, TransactionView
 
 from .DatabaseConnection import DatabaseConnectionPool
 
+NEM_NAMESPACE_DURATION = 365 * 1440
+
 
 def _format_bytes(buffer):
 	return hexlify(buffer).decode('utf8').upper()
@@ -401,6 +403,7 @@ class NemDatabase(DatabaseConnectionPool):
 				LEFT JOIN blocks mb
 					ON ms.registered_height = mb.height
 				WHERE ms.root_namespace = n.root_namespace
+					AND ms.expiration_height IS NULL
 			) m ON true
 			{order_condition}
 		'''
@@ -429,9 +432,9 @@ class NemDatabase(DatabaseConnectionPool):
 				END AS levy_divisibility,
 				m.levy_fee,
 				m.levy_recipient,
-				ns.registered_height AS root_namespace_registered_height,
+				COALESCE(m.expiration_height - {NEM_NAMESPACE_DURATION}, ns.registered_height) AS root_namespace_registered_height,
 				ns_block.timestamp AS root_namespace_registered_timestamp,
-				ns.expiration_height AS root_namespace_expiration_height
+				COALESCE(m.expiration_height, ns.expiration_height) AS root_namespace_expiration_height
 			FROM (
 				SELECT * FROM mosaics m
 				{where_condition}
@@ -443,7 +446,7 @@ class NemDatabase(DatabaseConnectionPool):
 			LEFT JOIN namespaces ns
 				ON ns.root_namespace = m.root_namespace
 			LEFT JOIN blocks ns_block
-				ON ns_block.height = ns.registered_height
+				ON ns_block.height = COALESCE(m.expiration_height - {NEM_NAMESPACE_DURATION}, ns.registered_height)
 			LEFT JOIN blocks m_block
 				ON m_block.height = m.registered_height
 			{order_condition}

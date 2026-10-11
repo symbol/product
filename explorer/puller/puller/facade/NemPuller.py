@@ -394,7 +394,10 @@ class NemPuller:
 	def _restore_rollback_namespaces(self, cursor, rollback_impact):
 		"""Rebuilds affected namespace projections from surviving registrations."""
 
-		root_namespaces = rollback_impact.affected_namespace_roots
+		# a restored mosaic definition stays current until the replayed registrations of its root expire it
+		mosaic_roots = {name.split('.')[0] for name in rollback_impact.affected_mosaic_names - {'nem.xem'}}
+		root_namespaces = rollback_impact.affected_namespace_roots | mosaic_roots
+		self.nem_db.clear_mosaic_expiration_heights(cursor, root_namespaces)
 		self.nem_db.delete_namespaces(cursor, root_namespaces)
 
 		registrations = self.nem_db.get_surviving_namespace_history(
@@ -490,8 +493,8 @@ class NemPuller:
 				self.nem_db.refresh_account_from_snapshot(cursor, account_state[address])
 
 			self._restore_rollback_remote_addresses(cursor, rollback_impact)
-			self._restore_rollback_namespaces(cursor, rollback_impact)
 			self._restore_rollback_mosaics(cursor, rollback_impact)
+			self._restore_rollback_namespaces(cursor, rollback_impact)
 
 			self.nem_db.connection.commit()
 		except Exception:

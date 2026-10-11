@@ -1,4 +1,5 @@
 # pylint: disable=unexpected-keyword-arg
+import copy
 from datetime import timedelta
 
 from symbolchain.CryptoTypes import PublicKey
@@ -30,6 +31,7 @@ from ..test.DatabaseTestUtils import (
 	ACCOUNT_VIEWS,
 	ACCOUNTS,
 	BLOCK_VIEWS,
+	BLOCKS,
 	HARVEST_VIEWS,
 	MOSAIC_RICH_LIST_VIEWS,
 	MOSAIC_VIEWS,
@@ -587,6 +589,18 @@ class NemDatabaseTest(DatabaseTestBase):  # pylint: disable=too-many-public-meth
 	def test_can_query_namespace_by_sub_namespace(self):
 		self._assert_can_query_namespace_by_name('root_sub.sub_1', EXPECTED_NAMESPACE_VIEW_3)
 
+	def test_namespace_omits_mosaics_of_previous_registrations(self):  # pylint: disable=invalid-name
+		# Arrange:
+		self._expire_mosaic('root.mosaic', 100)
+		expected_namespace = copy.copy(EXPECTED_NAMESPACE_VIEW_2)
+		expected_namespace.mosaics = EXPECTED_NAMESPACE_VIEW_2.mosaics[:1]
+
+		# Act:
+		namespace_view = self.nem_db.get_namespace_by_name('root')
+
+		# Assert:
+		self.assertEqual(expected_namespace, namespace_view)
+
 	def test_cannot_query_nonexistent_namespace(self):
 		self._assert_can_query_namespace_by_name('nonexistent', None)
 
@@ -637,6 +651,26 @@ class NemDatabaseTest(DatabaseTestBase):  # pylint: disable=too-many-public-meth
 
 	def test_cannot_query_nonexistent_mosaic(self):
 		self._assert_can_query_mosaic_by_name('nonexistent', None)
+
+	def _expire_mosaic(self, namespace_name, expiration_height):
+		with self.nem_db.connection() as connection:
+			connection.cursor().execute(
+				'UPDATE mosaics SET expiration_height = %s WHERE namespace_name = %s',
+				(expiration_height, namespace_name)
+			)
+			connection.commit()
+
+	def test_can_query_mosaic_of_previous_root_registration_with_its_registration(self):  # pylint: disable=invalid-name
+		# Arrange: the current registration of the root is at height 2, the previous one was at height 1
+		self._expire_mosaic('root.mosaic', 1 + 365 * 1440)
+
+		expected_mosaic = copy.copy(EXPECTED_MOSAIC_VIEW_2)
+		expected_mosaic.root_namespace_registered_height = 1
+		expected_mosaic.root_namespace_registered_timestamp = BLOCKS[0].timestamp
+		expected_mosaic.root_namespace_expiration_height = 1 + 365 * 1440
+
+		# Act + Assert:
+		self._assert_can_query_mosaic_by_name('root.mosaic', expected_mosaic)
 
 	# endregion
 
