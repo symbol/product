@@ -599,12 +599,12 @@ class NemDatabaseTest(DatabaseTestBase):  # pylint: disable=too-many-public-meth
 	def test_can_query_namespace_by_sub_namespace(self):
 		self._assert_can_query_namespace_by_name('root_sub.sub_1', EXPECTED_NAMESPACE_VIEW_3)
 
-	def test_can_query_namespace_without_mosaics_of_previous_registrations(self):  # pylint: disable=invalid-name
+	def test_can_query_namespace_excluding_mosaics_of_previous_registrations(self):  # pylint: disable=invalid-name
 		# Arrange:
 		self._expire_mosaic('root.mosaic', 100)
 
 		expected_namespace = copy.copy(EXPECTED_NAMESPACE_VIEW_2)
-		expected_namespace.mosaics = EXPECTED_NAMESPACE_VIEW_2.mosaics[:1]
+		expected_namespace.mosaics = [mosaic for mosaic in EXPECTED_NAMESPACE_VIEW_2.mosaics if 'root.mosaic' != mosaic['namespace_name']]
 
 		# Act + Assert:
 		self._assert_can_query_namespace_by_name('root', expected_namespace)

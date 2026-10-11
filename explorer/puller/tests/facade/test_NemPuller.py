@@ -2369,7 +2369,7 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 		database.upsert_namespace.assert_not_called()
 		database.update_sub_namespaces.assert_not_called()
 
-	def test_restore_rollback_namespaces_replays_roots_of_affected_mosaics(self):  # pylint: disable=invalid-name
+	def test_restore_rollback_namespaces_includes_roots_of_affected_mosaics(self):  # pylint: disable=invalid-name
 		# Arrange:
 		rollback_impact = Mock(
 			fork_height=10,
@@ -2384,7 +2384,7 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 		# Act:
 		self.puller._restore_rollback_namespaces(cursor, rollback_impact)  # pylint: disable=protected-access
 
-		# Assert: a replayed mosaic definition is current until the replayed registrations of its root expire it
+		# Assert:
 		self.assertEqual([
 			call.clear_mosaic_expiration_heights(cursor, {'root', 'other'}),
 			call.delete_namespaces(cursor, {'root', 'other'}),
