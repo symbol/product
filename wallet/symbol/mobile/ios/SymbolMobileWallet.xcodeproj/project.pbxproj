@@ -31,6 +31,7 @@
 		5972EE1495B10E8994DC6318 /* Carbon-Thin.otf in Resources */ = {isa = PBXBuildFile; fileRef = F665276728D1451AAE8B42EE /* Carbon-Thin.otf */; };
 		5B771B78EDB0DF7176A818D1 /* Rajdhani-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 17BA708BAF174BC6965C0340 /* Rajdhani-Bold.ttf */; };
 		682BB6AF733941A3BA58F0A6 /* Rajdhani-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = C4F8EAB471074EE7B6783421 /* Rajdhani-Medium.ttf */; };
+		68D972ED94505E6B37278DE8 /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 64F6AB3A70B2457238A16ADD /* Images.xcassets */; };
 		6B44514D972258FD47A188E7 /* Protipo-Regular.otf in Resources */ = {isa = PBXBuildFile; fileRef = 328980263DC14BF0BD65F701 /* Protipo-Regular.otf */; };
 		7002CEE365B34AF919065189 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C53FFDE2EE3438500D25CAD /* SceneDelegate.swift */; };
 		7589598ADC35EA6CC2A3B546 /* Protipo-Extrabold-Italic.otf in Resources */ = {isa = PBXBuildFile; fileRef = 7A22043D8B534DE49B6C6F8A /* Protipo-Extrabold-Italic.otf */; };
@@ -53,7 +54,6 @@
 		A675914C9DD4D09D7CEBF532 /* SofiaSansCondensed-ExtraBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 6BEFC7EAD31945ABB0AC3A55 /* SofiaSansCondensed-ExtraBold.ttf */; };
 		AA7F4B2E852EACA66F26F077 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 3297A130D3CF017E5D9C7427 /* PrivacyInfo.xcprivacy */; };
 		AAF02783FB3EA45253C56183 /* Carbon-Bold-Italic.otf in Resources */ = {isa = PBXBuildFile; fileRef = E5C4A7FB03834F3DA4A6AA24 /* Carbon-Bold-Italic.otf */; };
-		ABE022BB553BCB0973C3AA3B /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
 		AD0B6B8BFA58571B0D74C12E /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C53FFDC2EE3438500D25CAD /* AppDelegate.swift */; };
 		B2C29E5658DB1998D132627C /* Carbon-Thin-Italic.otf in Resources */ = {isa = PBXBuildFile; fileRef = AA01B143C66841298B6EC8EF /* Carbon-Thin-Italic.otf */; };
 		B6DD26F9686F459ABFE3175E /* Rajdhani-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = DF71238A1AAD42B3A86EC647 /* Rajdhani-SemiBold.ttf */; };
@@ -99,6 +99,7 @@
 		47691EAAEE5A4A93BFF72463 /* JetBrainsMono-Bold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "JetBrainsMono-Bold.ttf"; path = "../src/assets/fonts/JetBrainsMono-Bold.ttf"; sourceTree = "<group>"; };
 		5709B34CF0A7D63546082F79 /* Pods-SymbolMobileWallet.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-SymbolMobileWallet.release.xcconfig"; path = "Target Support Files/Pods-SymbolMobileWallet/Pods-SymbolMobileWallet.release.xcconfig"; sourceTree = "<group>"; };
 		5A1A6AED453B47C593EB2153 /* Protipo-Bold-Italic.otf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Protipo-Bold-Italic.otf"; path = "../src/assets/fonts/Protipo-Bold-Italic.otf"; sourceTree = "<group>"; };
+		64F6AB3A70B2457238A16ADD /* Images.xcassets */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = NemMobileWallet/Images.xcassets; sourceTree = "<group>"; };
 		6BEFC7EAD31945ABB0AC3A55 /* SofiaSansCondensed-ExtraBold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "SofiaSansCondensed-ExtraBold.ttf"; path = "../src/assets/fonts/SofiaSansCondensed-ExtraBold.ttf"; sourceTree = "<group>"; };
 		788BAFE1C73144A18BB61387 /* Rajdhani-Light.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Rajdhani-Light.ttf"; path = "../src/assets/fonts/Rajdhani-Light.ttf"; sourceTree = "<group>"; };
 		7893F24E413FA754360DA15C /* Pods-App-NemMobileWallet.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-App-NemMobileWallet.release.xcconfig"; path = "Target Support Files/Pods-App-NemMobileWallet/Pods-App-NemMobileWallet.release.xcconfig"; sourceTree = "<group>"; };
@@ -190,6 +191,7 @@
 			isa = PBXGroup;
 			children = (
 				13B07FAE1A68108700A75B9A /* SymbolMobileWallet */,
+				DDBD2386DE2CBF89155F1C59 /* NemMobileWallet */,
 				832341AE1AAA6A7D00B99B32 /* Libraries */,
 				83CBBA001A601CBA00E9B192 /* Products */,
 				2D16E6871FA4F8E400B85C8A /* Frameworks */,
@@ -254,6 +256,14 @@
 				6BEFC7EAD31945ABB0AC3A55 /* SofiaSansCondensed-ExtraBold.ttf */,
 			);
 			name = Resources;
+			sourceTree = "<group>";
+		};
+		DDBD2386DE2CBF89155F1C59 /* NemMobileWallet */ = {
+			isa = PBXGroup;
+			children = (
+				64F6AB3A70B2457238A16ADD /* Images.xcassets */,
+			);
+			name = NemMobileWallet;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -408,7 +418,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				DEB82120E037FD515A63957D /* LaunchScreen.storyboard in Resources */,
-				ABE022BB553BCB0973C3AA3B /* Images.xcassets in Resources */,
 				AA7F4B2E852EACA66F26F077 /* PrivacyInfo.xcprivacy in Resources */,
 				AAF02783FB3EA45253C56183 /* Carbon-Bold-Italic.otf in Resources */,
 				223D3F76F0D12254E4752671 /* Carbon-Bold.otf in Resources */,
@@ -435,6 +444,7 @@
 				E2D9384C2D20EF3E8D735ED5 /* Rajdhani-Regular.ttf in Resources */,
 				29238DD67B9DA4BC60FA7625 /* Rajdhani-SemiBold.ttf in Resources */,
 				A675914C9DD4D09D7CEBF532 /* SofiaSansCondensed-ExtraBold.ttf in Resources */,
+				68D972ED94505E6B37278DE8 /* Images.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
