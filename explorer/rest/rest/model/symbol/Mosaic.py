@@ -1,5 +1,6 @@
 from rest.model.symbol.format import format_amount
 
+
 class SymbolMosaicListView:  # pylint: disable=too-many-instance-attributes
 	"""Current Symbol mosaic metadata; supply is expressed in absolute units."""
 
