@@ -8,6 +8,46 @@ const defaultConfig = getDefaultConfig(__dirname);
 const commonPackagesRoot = path.resolve(__dirname, '../../common');
 const commonPackagesNodeModules = /wallet\/common\/[^/]+\/node_modules\/.*/;
 
+const BRANDS = ['symbol', 'nem'];
+const BRAND_IMPORT = '@/brand';
+const brandsRoot = path.resolve(__dirname, 'brands');
+
+/**
+ * Resolves the brand for this bundle: the "brand" resolver option (set by release
+ * bundling) first, else the BRAND env var (set by the dev server). Throws on a missing
+ * or unknown brand, so a build never silently falls back to another brand.
+ * @param {object} customResolverOptions Metro custom resolver options.
+ * @returns {string} Brand id.
+ */
+const getBrand = customResolverOptions => {
+	const brand = customResolverOptions?.brand ?? process.env.BRAND;
+
+	if (!BRANDS.includes(brand))
+		throw new Error(`Unknown brand "${brand}". Available options: ${BRANDS.join(', ')}.`);
+
+	return brand;
+};
+
+/**
+ * Custom Metro resolver. Redirects "@/brand" imports to the current brand's folder
+ * ("brands/<brand>/..."); every other import falls through to Metro's default resolver.
+ * @param {object} context Metro resolution context.
+ * @param {string} moduleName Requested module path.
+ * @param {string|null} platform Target platform.
+ * @returns {object} Metro resolution.
+ */
+const resolveBrandRequest = (context, moduleName, platform) => {
+	const isBrandImport = moduleName === BRAND_IMPORT || moduleName.startsWith(`${BRAND_IMPORT}/`);
+
+	if (!isBrandImport)
+		return context.resolveRequest(context, moduleName, platform);
+
+	const brand = getBrand(context.customResolverOptions);
+	const brandModulePath = path.join(brandsRoot, brand, moduleName.slice(BRAND_IMPORT.length));
+
+	return context.resolveRequest(context, brandModulePath, platform);
+};
+
 /**
  * Metro configuration
  * https://reactnative.dev/docs/metro.
@@ -27,6 +67,7 @@ const config = {
 	resolver: {
 		blockList: [defaultConfig.resolver.blockList, commonPackagesNodeModules],
 		nodeModulesPaths: [path.resolve(__dirname, 'node_modules')],
+		resolveRequest: resolveBrandRequest,
 		extraNodeModules: {
 			assert: require.resolve('assert'),
 			buffer: require.resolve('buffer'),

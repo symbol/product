@@ -7,12 +7,18 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		00B56B5170881572CF984B16 /* JetBrainsMono-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 47691EAAEE5A4A93BFF72463 /* JetBrainsMono-Bold.ttf */; };
 		02EAEC1958A342448AFCB8B2 /* Protipo-Regular-Italic.otf in Resources */ = {isa = PBXBuildFile; fileRef = 11224DD8F71F41E3AC08FF6D /* Protipo-Regular-Italic.otf */; };
-		0C80B921A6F3F58F76C31292 /* libPods-SymbolMobileWallet.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5DCACB8F33CDC322A6C60F78 /* libPods-SymbolMobileWallet.a */; };
+		138C1EE33E2D3ADF30691BF5 /* Rajdhani-Light.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 788BAFE1C73144A18BB61387 /* Rajdhani-Light.ttf */; };
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
+		167235A118487120A4A9CA86 /* Rajdhani-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = C4F8EAB471074EE7B6783421 /* Rajdhani-Medium.ttf */; };
 		1CBF73DF6D2B48E3AE7849F3 /* Protipo-Bold-Italic.otf in Resources */ = {isa = PBXBuildFile; fileRef = 5A1A6AED453B47C593EB2153 /* Protipo-Bold-Italic.otf */; };
+		1DAB2E3964DBB633B579C9EF /* Protipo-Light.otf in Resources */ = {isa = PBXBuildFile; fileRef = D6CBB3040CCD4D4CB693B4A3 /* Protipo-Light.otf */; };
 		1E42D07D63E743499E1CA400 /* Carbon-Thin-Italic.otf in Resources */ = {isa = PBXBuildFile; fileRef = AA01B143C66841298B6EC8EF /* Carbon-Thin-Italic.otf */; };
+		223D3F76F0D12254E4752671 /* Carbon-Bold.otf in Resources */ = {isa = PBXBuildFile; fileRef = B5F18DC2FE444D6A94FC700C /* Carbon-Bold.otf */; };
 		2519AC528C8548BBAC23D900 /* Protipo-Bold.otf in Resources */ = {isa = PBXBuildFile; fileRef = 2A50CFD300E94CFBB65E227E /* Protipo-Bold.otf */; };
+		29238DD67B9DA4BC60FA7625 /* Rajdhani-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = DF71238A1AAD42B3A86EC647 /* Rajdhani-SemiBold.ttf */; };
+		2A5A09D8773D4A3362150325 /* Protipo-Semibold.otf in Resources */ = {isa = PBXBuildFile; fileRef = 7DE3E43C8FBD4EEEB8A51D55 /* Protipo-Semibold.otf */; };
 		2B76B0E9F63D68EDC942F5B9 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 3297A130D3CF017E5D9C7427 /* PrivacyInfo.xcprivacy */; };
 		2F33E21FDCCC440FA9820A1A /* Protipo-Medium.otf in Resources */ = {isa = PBXBuildFile; fileRef = 42BDF298DDA14D848D4DB8A0 /* Protipo-Medium.otf */; };
 		46E573346ADF475FAD5673AA /* Carbon-Bold.otf in Resources */ = {isa = PBXBuildFile; fileRef = B5F18DC2FE444D6A94FC700C /* Carbon-Bold.otf */; };
@@ -21,17 +27,42 @@
 		5211DA5FB0F4424A9D522393 /* Protipo-Medium-Italic.otf in Resources */ = {isa = PBXBuildFile; fileRef = 98116C12E1D04CBB85D36E47 /* Protipo-Medium-Italic.otf */; };
 		5384E3AE62D546EFBCCA886A /* Protipo-Light.otf in Resources */ = {isa = PBXBuildFile; fileRef = D6CBB3040CCD4D4CB693B4A3 /* Protipo-Light.otf */; };
 		55215DC95CD84530A8A67616 /* Protipo-Extrabold-Italic.otf in Resources */ = {isa = PBXBuildFile; fileRef = 7A22043D8B534DE49B6C6F8A /* Protipo-Extrabold-Italic.otf */; };
+		5658FCF904A2F6DD027CD276 /* Protipo-Regular-Italic.otf in Resources */ = {isa = PBXBuildFile; fileRef = 11224DD8F71F41E3AC08FF6D /* Protipo-Regular-Italic.otf */; };
+		5972EE1495B10E8994DC6318 /* Carbon-Thin.otf in Resources */ = {isa = PBXBuildFile; fileRef = F665276728D1451AAE8B42EE /* Carbon-Thin.otf */; };
+		5B771B78EDB0DF7176A818D1 /* Rajdhani-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 17BA708BAF174BC6965C0340 /* Rajdhani-Bold.ttf */; };
 		682BB6AF733941A3BA58F0A6 /* Rajdhani-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = C4F8EAB471074EE7B6783421 /* Rajdhani-Medium.ttf */; };
+		6B44514D972258FD47A188E7 /* Protipo-Regular.otf in Resources */ = {isa = PBXBuildFile; fileRef = 328980263DC14BF0BD65F701 /* Protipo-Regular.otf */; };
+		7002CEE365B34AF919065189 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C53FFDE2EE3438500D25CAD /* SceneDelegate.swift */; };
+		7589598ADC35EA6CC2A3B546 /* Protipo-Extrabold-Italic.otf in Resources */ = {isa = PBXBuildFile; fileRef = 7A22043D8B534DE49B6C6F8A /* Protipo-Extrabold-Italic.otf */; };
 		7A3897B98FAF4CD28C71CBC5 /* Carbon-Thin.otf in Resources */ = {isa = PBXBuildFile; fileRef = F665276728D1451AAE8B42EE /* Carbon-Thin.otf */; };
 		7C53FFDD2EE3438500D25CAD /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C53FFDC2EE3438500D25CAD /* AppDelegate.swift */; };
 		7C53FFDF2EE3438500D25CAD /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C53FFDE2EE3438500D25CAD /* SceneDelegate.swift */; };
+		7C75EB74B29F8DA41851350C /* Carbon-Regular-Italic.otf in Resources */ = {isa = PBXBuildFile; fileRef = B47967E2115C477DB638BD4E /* Carbon-Regular-Italic.otf */; };
+		7D6F239E51FCB2422E9BD9C7 /* Protipo-Bold-Italic.otf in Resources */ = {isa = PBXBuildFile; fileRef = 5A1A6AED453B47C593EB2153 /* Protipo-Bold-Italic.otf */; };
 		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
 		84D26B65A9F14431A6AC37AA /* Protipo-Regular.otf in Resources */ = {isa = PBXBuildFile; fileRef = 328980263DC14BF0BD65F701 /* Protipo-Regular.otf */; };
+		86936ADAFB5A0461667EB05D /* Carbon-Regular.otf in Resources */ = {isa = PBXBuildFile; fileRef = C4570C237127436D897BD3DC /* Carbon-Regular.otf */; };
 		88D00C9B48184CF1A8002F22 /* Rajdhani-Light.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 788BAFE1C73144A18BB61387 /* Rajdhani-Light.ttf */; };
 		8998A12CA9064B68B1490393 /* Protipo-Semibold-Italic.otf in Resources */ = {isa = PBXBuildFile; fileRef = A5F69D592EEC4949A0D6C659 /* Protipo-Semibold-Italic.otf */; };
 		8A7A18AFC70749B7AEB4DB45 /* SofiaSansCondensed-ExtraBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 6BEFC7EAD31945ABB0AC3A55 /* SofiaSansCondensed-ExtraBold.ttf */; };
+		9204E7998462F8D6FD81E2C2 /* libPods-App-NemMobileWallet.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 95470A84FC4A668561472A82 /* libPods-App-NemMobileWallet.a */; };
+		92F8D919F719159EF1CA41C4 /* Protipo-Light-Italic.otf in Resources */ = {isa = PBXBuildFile; fileRef = E38F7C4F87AC494DB363843A /* Protipo-Light-Italic.otf */; };
+		95D9006524DE78B29D9433A9 /* Protipo-Medium-Italic.otf in Resources */ = {isa = PBXBuildFile; fileRef = 98116C12E1D04CBB85D36E47 /* Protipo-Medium-Italic.otf */; };
+		9674FF90C73CD38DFAC3EB29 /* Protipo-Medium.otf in Resources */ = {isa = PBXBuildFile; fileRef = 42BDF298DDA14D848D4DB8A0 /* Protipo-Medium.otf */; };
+		9BC07CBE131C86453B3E5A8B /* libPods-App-SymbolMobileWallet.a in Frameworks */ = {isa = PBXBuildFile; fileRef = BB1519BBBB86F92DF288D9F6 /* libPods-App-SymbolMobileWallet.a */; };
+		A675914C9DD4D09D7CEBF532 /* SofiaSansCondensed-ExtraBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 6BEFC7EAD31945ABB0AC3A55 /* SofiaSansCondensed-ExtraBold.ttf */; };
+		AA7F4B2E852EACA66F26F077 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 3297A130D3CF017E5D9C7427 /* PrivacyInfo.xcprivacy */; };
+		AAF02783FB3EA45253C56183 /* Carbon-Bold-Italic.otf in Resources */ = {isa = PBXBuildFile; fileRef = E5C4A7FB03834F3DA4A6AA24 /* Carbon-Bold-Italic.otf */; };
+		ABE022BB553BCB0973C3AA3B /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
+		AD0B6B8BFA58571B0D74C12E /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C53FFDC2EE3438500D25CAD /* AppDelegate.swift */; };
+		B2C29E5658DB1998D132627C /* Carbon-Thin-Italic.otf in Resources */ = {isa = PBXBuildFile; fileRef = AA01B143C66841298B6EC8EF /* Carbon-Thin-Italic.otf */; };
 		B6DD26F9686F459ABFE3175E /* Rajdhani-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = DF71238A1AAD42B3A86EC647 /* Rajdhani-SemiBold.ttf */; };
 		CF38AAF44EE844819C2F0A25 /* Carbon-Bold-Italic.otf in Resources */ = {isa = PBXBuildFile; fileRef = E5C4A7FB03834F3DA4A6AA24 /* Carbon-Bold-Italic.otf */; };
+		D6B508CBB7570EA2267A67B7 /* Protipo-Extrabold.otf in Resources */ = {isa = PBXBuildFile; fileRef = 85502AC97CFB48B88BBB3C27 /* Protipo-Extrabold.otf */; };
+		DA92ED5A7EF1E40934DAAD0F /* Protipo-Semibold-Italic.otf in Resources */ = {isa = PBXBuildFile; fileRef = A5F69D592EEC4949A0D6C659 /* Protipo-Semibold-Italic.otf */; };
+		DB5E3ABEBFA23E7F6B16959C /* Protipo-Bold.otf in Resources */ = {isa = PBXBuildFile; fileRef = 2A50CFD300E94CFBB65E227E /* Protipo-Bold.otf */; };
+		DEB82120E037FD515A63957D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
+		E2D9384C2D20EF3E8D735ED5 /* Rajdhani-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 900C107E36334C248137F5A0 /* Rajdhani-Regular.ttf */; };
 		E3C3035B4BA449638C92B980 /* Carbon-Regular-Italic.otf in Resources */ = {isa = PBXBuildFile; fileRef = B47967E2115C477DB638BD4E /* Carbon-Regular-Italic.otf */; };
 		E786AF0DEE2945B19911DA1F /* Rajdhani-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 17BA708BAF174BC6965C0340 /* Rajdhani-Bold.ttf */; };
 		E7DF9F1CE16746129AD122F2 /* Rajdhani-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 900C107E36334C248137F5A0 /* Rajdhani-Regular.ttf */; };
@@ -58,6 +89,8 @@
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = SymbolMobileWallet/Info.plist; sourceTree = "<group>"; };
 		13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = PrivacyInfo.xcprivacy; path = SymbolMobileWallet/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		17BA708BAF174BC6965C0340 /* Rajdhani-Bold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Rajdhani-Bold.ttf"; path = "../src/assets/fonts/Rajdhani-Bold.ttf"; sourceTree = "<group>"; };
+		19FD84AD62E1B73FBA6363CE /* Pods-App-SymbolMobileWallet.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-App-SymbolMobileWallet.release.xcconfig"; path = "Target Support Files/Pods-App-SymbolMobileWallet/Pods-App-SymbolMobileWallet.release.xcconfig"; sourceTree = "<group>"; };
+		236359A49E3F5CC179547121 /* Pods-App-NemMobileWallet.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-App-NemMobileWallet.debug.xcconfig"; path = "Target Support Files/Pods-App-NemMobileWallet/Pods-App-NemMobileWallet.debug.xcconfig"; sourceTree = "<group>"; };
 		2A50CFD300E94CFBB65E227E /* Protipo-Bold.otf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Protipo-Bold.otf"; path = "../src/assets/fonts/Protipo-Bold.otf"; sourceTree = "<group>"; };
 		328980263DC14BF0BD65F701 /* Protipo-Regular.otf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Protipo-Regular.otf"; path = "../src/assets/fonts/Protipo-Regular.otf"; sourceTree = "<group>"; };
 		3297A130D3CF017E5D9C7427 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xml; name = PrivacyInfo.xcprivacy; path = SymbolMobileWallet/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
@@ -66,9 +99,9 @@
 		47691EAAEE5A4A93BFF72463 /* JetBrainsMono-Bold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "JetBrainsMono-Bold.ttf"; path = "../src/assets/fonts/JetBrainsMono-Bold.ttf"; sourceTree = "<group>"; };
 		5709B34CF0A7D63546082F79 /* Pods-SymbolMobileWallet.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-SymbolMobileWallet.release.xcconfig"; path = "Target Support Files/Pods-SymbolMobileWallet/Pods-SymbolMobileWallet.release.xcconfig"; sourceTree = "<group>"; };
 		5A1A6AED453B47C593EB2153 /* Protipo-Bold-Italic.otf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Protipo-Bold-Italic.otf"; path = "../src/assets/fonts/Protipo-Bold-Italic.otf"; sourceTree = "<group>"; };
-		5DCACB8F33CDC322A6C60F78 /* libPods-SymbolMobileWallet.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-SymbolMobileWallet.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		6BEFC7EAD31945ABB0AC3A55 /* SofiaSansCondensed-ExtraBold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "SofiaSansCondensed-ExtraBold.ttf"; path = "../src/assets/fonts/SofiaSansCondensed-ExtraBold.ttf"; sourceTree = "<group>"; };
 		788BAFE1C73144A18BB61387 /* Rajdhani-Light.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Rajdhani-Light.ttf"; path = "../src/assets/fonts/Rajdhani-Light.ttf"; sourceTree = "<group>"; };
+		7893F24E413FA754360DA15C /* Pods-App-NemMobileWallet.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-App-NemMobileWallet.release.xcconfig"; path = "Target Support Files/Pods-App-NemMobileWallet/Pods-App-NemMobileWallet.release.xcconfig"; sourceTree = "<group>"; };
 		7A22043D8B534DE49B6C6F8A /* Protipo-Extrabold-Italic.otf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Protipo-Extrabold-Italic.otf"; path = "../src/assets/fonts/Protipo-Extrabold-Italic.otf"; sourceTree = "<group>"; };
 		7C53FFDC2EE3438500D25CAD /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		7C53FFDE2EE3438500D25CAD /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
@@ -76,18 +109,22 @@
 		81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = LaunchScreen.storyboard; path = SymbolMobileWallet/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		85502AC97CFB48B88BBB3C27 /* Protipo-Extrabold.otf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Protipo-Extrabold.otf"; path = "../src/assets/fonts/Protipo-Extrabold.otf"; sourceTree = "<group>"; };
 		900C107E36334C248137F5A0 /* Rajdhani-Regular.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Rajdhani-Regular.ttf"; path = "../src/assets/fonts/Rajdhani-Regular.ttf"; sourceTree = "<group>"; };
+		95470A84FC4A668561472A82 /* libPods-App-NemMobileWallet.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-App-NemMobileWallet.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		98116C12E1D04CBB85D36E47 /* Protipo-Medium-Italic.otf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Protipo-Medium-Italic.otf"; path = "../src/assets/fonts/Protipo-Medium-Italic.otf"; sourceTree = "<group>"; };
 		A5F69D592EEC4949A0D6C659 /* Protipo-Semibold-Italic.otf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Protipo-Semibold-Italic.otf"; path = "../src/assets/fonts/Protipo-Semibold-Italic.otf"; sourceTree = "<group>"; };
 		AA01B143C66841298B6EC8EF /* Carbon-Thin-Italic.otf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Carbon-Thin-Italic.otf"; path = "../src/assets/fonts/Carbon-Thin-Italic.otf"; sourceTree = "<group>"; };
 		B47967E2115C477DB638BD4E /* Carbon-Regular-Italic.otf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Carbon-Regular-Italic.otf"; path = "../src/assets/fonts/Carbon-Regular-Italic.otf"; sourceTree = "<group>"; };
 		B5F18DC2FE444D6A94FC700C /* Carbon-Bold.otf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Carbon-Bold.otf"; path = "../src/assets/fonts/Carbon-Bold.otf"; sourceTree = "<group>"; };
+		BB1519BBBB86F92DF288D9F6 /* libPods-App-SymbolMobileWallet.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-App-SymbolMobileWallet.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		C4570C237127436D897BD3DC /* Carbon-Regular.otf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Carbon-Regular.otf"; path = "../src/assets/fonts/Carbon-Regular.otf"; sourceTree = "<group>"; };
 		C4F8EAB471074EE7B6783421 /* Rajdhani-Medium.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Rajdhani-Medium.ttf"; path = "../src/assets/fonts/Rajdhani-Medium.ttf"; sourceTree = "<group>"; };
+		C9EE98CC1C3068479ED388B9 /* Pods-App-SymbolMobileWallet.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-App-SymbolMobileWallet.debug.xcconfig"; path = "Target Support Files/Pods-App-SymbolMobileWallet/Pods-App-SymbolMobileWallet.debug.xcconfig"; sourceTree = "<group>"; };
 		D6CBB3040CCD4D4CB693B4A3 /* Protipo-Light.otf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Protipo-Light.otf"; path = "../src/assets/fonts/Protipo-Light.otf"; sourceTree = "<group>"; };
 		DF71238A1AAD42B3A86EC647 /* Rajdhani-SemiBold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Rajdhani-SemiBold.ttf"; path = "../src/assets/fonts/Rajdhani-SemiBold.ttf"; sourceTree = "<group>"; };
 		E38F7C4F87AC494DB363843A /* Protipo-Light-Italic.otf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Protipo-Light-Italic.otf"; path = "../src/assets/fonts/Protipo-Light-Italic.otf"; sourceTree = "<group>"; };
 		E5C4A7FB03834F3DA4A6AA24 /* Carbon-Bold-Italic.otf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Carbon-Bold-Italic.otf"; path = "../src/assets/fonts/Carbon-Bold-Italic.otf"; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
+		EFFC86A5BAD328005C44244B /* NemMobileWallet.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = NemMobileWallet.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		F665276728D1451AAE8B42EE /* Carbon-Thin.otf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Carbon-Thin.otf"; path = "../src/assets/fonts/Carbon-Thin.otf"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -103,7 +140,15 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				0C80B921A6F3F58F76C31292 /* libPods-SymbolMobileWallet.a in Frameworks */,
+				9BC07CBE131C86453B3E5A8B /* libPods-App-SymbolMobileWallet.a in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E7F65E5A923BF3AD2C2DFB91 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				9204E7998462F8D6FD81E2C2 /* libPods-App-NemMobileWallet.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -128,7 +173,8 @@
 			isa = PBXGroup;
 			children = (
 				ED297162215061F000B7C4FE /* JavaScriptCore.framework */,
-				5DCACB8F33CDC322A6C60F78 /* libPods-SymbolMobileWallet.a */,
+				95470A84FC4A668561472A82 /* libPods-App-NemMobileWallet.a */,
+				BB1519BBBB86F92DF288D9F6 /* libPods-App-SymbolMobileWallet.a */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -160,6 +206,7 @@
 			children = (
 				13B07F961A680F5B00A75B9A /* SymbolMobileWallet.app */,
 				00E356EE1AD99517003FC87E /* SymbolMobileWalletTests.xctest */,
+				EFFC86A5BAD328005C44244B /* NemMobileWallet.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -169,6 +216,10 @@
 			children = (
 				3B4392A12AC88292D35C810B /* Pods-SymbolMobileWallet.debug.xcconfig */,
 				5709B34CF0A7D63546082F79 /* Pods-SymbolMobileWallet.release.xcconfig */,
+				7893F24E413FA754360DA15C /* Pods-App-NemMobileWallet.release.xcconfig */,
+				236359A49E3F5CC179547121 /* Pods-App-NemMobileWallet.debug.xcconfig */,
+				C9EE98CC1C3068479ED388B9 /* Pods-App-SymbolMobileWallet.debug.xcconfig */,
+				19FD84AD62E1B73FBA6363CE /* Pods-App-SymbolMobileWallet.release.xcconfig */,
 			);
 			path = Pods;
 			sourceTree = "<group>";
@@ -247,6 +298,27 @@
 			productReference = 13B07F961A680F5B00A75B9A /* SymbolMobileWallet.app */;
 			productType = "com.apple.product-type.application";
 		};
+		AC1085BF59C09D9CA56B017D /* NemMobileWallet */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 3E9B0ECF6C7002BF36D0B6DB /* Build configuration list for PBXNativeTarget "NemMobileWallet" */;
+			buildPhases = (
+				D234D00586BC59E8CD7F1F79 /* [CP] Check Pods Manifest.lock */,
+				28C55F66A96FF6DAF821BF96 /* Sources */,
+				E7F65E5A923BF3AD2C2DFB91 /* Frameworks */,
+				3E0A0A9C51E7EEECDB903D5C /* Resources */,
+				84C74E0452CE41245D185D21 /* Bundle React Native code and images */,
+				4F16215EC18F296C73FBF14D /* [CP] Embed Pods Frameworks */,
+				520D9888B5704FD554438CB6 /* [CP] Copy Pods Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = NemMobileWallet;
+			productName = NemMobileWallet;
+			productReference = EFFC86A5BAD328005C44244B /* NemMobileWallet.app */;
+			productType = "com.apple.product-type.application";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -261,6 +333,9 @@
 						TestTargetID = 13B07F861A680F5B00A75B9A;
 					};
 					13B07F861A680F5B00A75B9A = {
+						LastSwiftMigration = 1620;
+					};
+					AC1085BF59C09D9CA56B017D = {
 						LastSwiftMigration = 1620;
 					};
 				};
@@ -280,6 +355,7 @@
 			targets = (
 				13B07F861A680F5B00A75B9A /* SymbolMobileWallet */,
 				00E356ED1AD99517003FC87E /* SymbolMobileWalletTests */,
+				AC1085BF59C09D9CA56B017D /* NemMobileWallet */,
 			);
 		};
 /* End PBXProject section */
@@ -327,6 +403,41 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		3E0A0A9C51E7EEECDB903D5C /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				DEB82120E037FD515A63957D /* LaunchScreen.storyboard in Resources */,
+				ABE022BB553BCB0973C3AA3B /* Images.xcassets in Resources */,
+				AA7F4B2E852EACA66F26F077 /* PrivacyInfo.xcprivacy in Resources */,
+				AAF02783FB3EA45253C56183 /* Carbon-Bold-Italic.otf in Resources */,
+				223D3F76F0D12254E4752671 /* Carbon-Bold.otf in Resources */,
+				7C75EB74B29F8DA41851350C /* Carbon-Regular-Italic.otf in Resources */,
+				86936ADAFB5A0461667EB05D /* Carbon-Regular.otf in Resources */,
+				B2C29E5658DB1998D132627C /* Carbon-Thin-Italic.otf in Resources */,
+				5972EE1495B10E8994DC6318 /* Carbon-Thin.otf in Resources */,
+				7D6F239E51FCB2422E9BD9C7 /* Protipo-Bold-Italic.otf in Resources */,
+				DB5E3ABEBFA23E7F6B16959C /* Protipo-Bold.otf in Resources */,
+				7589598ADC35EA6CC2A3B546 /* Protipo-Extrabold-Italic.otf in Resources */,
+				D6B508CBB7570EA2267A67B7 /* Protipo-Extrabold.otf in Resources */,
+				92F8D919F719159EF1CA41C4 /* Protipo-Light-Italic.otf in Resources */,
+				1DAB2E3964DBB633B579C9EF /* Protipo-Light.otf in Resources */,
+				95D9006524DE78B29D9433A9 /* Protipo-Medium-Italic.otf in Resources */,
+				9674FF90C73CD38DFAC3EB29 /* Protipo-Medium.otf in Resources */,
+				5658FCF904A2F6DD027CD276 /* Protipo-Regular-Italic.otf in Resources */,
+				6B44514D972258FD47A188E7 /* Protipo-Regular.otf in Resources */,
+				DA92ED5A7EF1E40934DAAD0F /* Protipo-Semibold-Italic.otf in Resources */,
+				2A5A09D8773D4A3362150325 /* Protipo-Semibold.otf in Resources */,
+				00B56B5170881572CF984B16 /* JetBrainsMono-Bold.ttf in Resources */,
+				5B771B78EDB0DF7176A818D1 /* Rajdhani-Bold.ttf in Resources */,
+				138C1EE33E2D3ADF30691BF5 /* Rajdhani-Light.ttf in Resources */,
+				167235A118487120A4A9CA86 /* Rajdhani-Medium.ttf in Resources */,
+				E2D9384C2D20EF3E8D735ED5 /* Rajdhani-Regular.ttf in Resources */,
+				29238DD67B9DA4BC60FA7625 /* Rajdhani-SemiBold.ttf in Resources */,
+				A675914C9DD4D09D7CEBF532 /* SofiaSansCondensed-ExtraBold.ttf in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
@@ -352,16 +463,70 @@
 			files = (
 			);
 			inputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-SymbolMobileWallet/Pods-SymbolMobileWallet-frameworks-${CONFIGURATION}-input-files.xcfilelist",
+				"${PODS_ROOT}/Target Support Files/Pods-App-SymbolMobileWallet/Pods-App-SymbolMobileWallet-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-SymbolMobileWallet/Pods-SymbolMobileWallet-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+				"${PODS_ROOT}/Target Support Files/Pods-App-SymbolMobileWallet/Pods-App-SymbolMobileWallet-frameworks-${CONFIGURATION}-output-files.xcfilelist",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-SymbolMobileWallet/Pods-SymbolMobileWallet-frameworks.sh\"\n";
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-App-SymbolMobileWallet/Pods-App-SymbolMobileWallet-frameworks.sh\"\n";
 			showEnvVarsInLog = 0;
+		};
+		4F16215EC18F296C73FBF14D /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-App-NemMobileWallet/Pods-App-NemMobileWallet-frameworks-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-App-NemMobileWallet/Pods-App-NemMobileWallet-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-App-NemMobileWallet/Pods-App-NemMobileWallet-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		520D9888B5704FD554438CB6 /* [CP] Copy Pods Resources */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-App-NemMobileWallet/Pods-App-NemMobileWallet-resources-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			name = "[CP] Copy Pods Resources";
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-App-NemMobileWallet/Pods-App-NemMobileWallet-resources-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-App-NemMobileWallet/Pods-App-NemMobileWallet-resources.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		84C74E0452CE41245D185D21 /* Bundle React Native code and images */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/.xcode.env.local",
+				"$(SRCROOT)/.xcode.env",
+			);
+			name = "Bundle React Native code and images";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "set -e\n\nWITH_ENVIRONMENT=\"$REACT_NATIVE_PATH/scripts/xcode/with-environment.sh\"\nREACT_NATIVE_XCODE=\"$REACT_NATIVE_PATH/scripts/react-native-xcode.sh\"\n\n/bin/sh -c \"\\\"$WITH_ENVIRONMENT\\\" \\\"$REACT_NATIVE_XCODE\\\"\"\n";
 		};
 		C38B50BA6285516D6DCD4F65 /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -378,7 +543,29 @@
 			outputFileListPaths = (
 			);
 			outputPaths = (
-				"$(DERIVED_FILE_DIR)/Pods-SymbolMobileWallet-checkManifestLockResult.txt",
+				"$(DERIVED_FILE_DIR)/Pods-App-SymbolMobileWallet-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
+		D234D00586BC59E8CD7F1F79 /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-App-NemMobileWallet-checkManifestLockResult.txt",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -391,15 +578,15 @@
 			files = (
 			);
 			inputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-SymbolMobileWallet/Pods-SymbolMobileWallet-resources-${CONFIGURATION}-input-files.xcfilelist",
+				"${PODS_ROOT}/Target Support Files/Pods-App-SymbolMobileWallet/Pods-App-SymbolMobileWallet-resources-${CONFIGURATION}-input-files.xcfilelist",
 			);
 			name = "[CP] Copy Pods Resources";
 			outputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-SymbolMobileWallet/Pods-SymbolMobileWallet-resources-${CONFIGURATION}-output-files.xcfilelist",
+				"${PODS_ROOT}/Target Support Files/Pods-App-SymbolMobileWallet/Pods-App-SymbolMobileWallet-resources-${CONFIGURATION}-output-files.xcfilelist",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-SymbolMobileWallet/Pods-SymbolMobileWallet-resources.sh\"\n";
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-App-SymbolMobileWallet/Pods-App-SymbolMobileWallet-resources.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
 /* End PBXShellScriptBuildPhase section */
@@ -418,6 +605,15 @@
 			files = (
 				7C53FFDD2EE3438500D25CAD /* AppDelegate.swift in Sources */,
 				7C53FFDF2EE3438500D25CAD /* SceneDelegate.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		28C55F66A96FF6DAF821BF96 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AD0B6B8BFA58571B0D74C12E /* AppDelegate.swift in Sources */,
+				7002CEE365B34AF919065189 /* SceneDelegate.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -483,15 +679,18 @@
 		};
 		13B07F941A680F5B00A75B9A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 3B4392A12AC88292D35C810B /* Pods-SymbolMobileWallet.debug.xcconfig */;
+			baseConfigurationReference = C9EE98CC1C3068479ED388B9 /* Pods-App-SymbolMobileWallet.debug.xcconfig */;
 			buildSettings = {
+				APP_DISPLAY_NAME = "Symbol Wallet";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				BRAND = symbol;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 2VBMMA74XQ;
 				ENABLE_BITCODE = NO;
+				EXTRA_PACKAGER_ARGS = "--resolver-option brand=$(BRAND)";
 				INFOPLIST_FILE = SymbolMobileWallet/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -518,14 +717,17 @@
 		};
 		13B07F951A680F5B00A75B9A /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 5709B34CF0A7D63546082F79 /* Pods-SymbolMobileWallet.release.xcconfig */;
+			baseConfigurationReference = 19FD84AD62E1B73FBA6363CE /* Pods-App-SymbolMobileWallet.release.xcconfig */;
 			buildSettings = {
+				APP_DISPLAY_NAME = "Symbol Wallet";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				BRAND = symbol;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 2VBMMA74XQ;
+				EXTRA_PACKAGER_ARGS = "--resolver-option brand=$(BRAND)";
 				INFOPLIST_FILE = SymbolMobileWallet/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -548,6 +750,80 @@
 				VERSIONING_SYSTEM = "apple-generic";
 			};
 			name = Release;
+		};
+		3E2B8AF4CD11BD8A65656C3F /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 7893F24E413FA754360DA15C /* Pods-App-NemMobileWallet.release.xcconfig */;
+			buildSettings = {
+				APP_DISPLAY_NAME = "NEM Wallet";
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				BRAND = nem;
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 2VBMMA74XQ;
+				EXTRA_PACKAGER_ARGS = "--resolver-option brand=$(BRAND)";
+				INFOPLIST_FILE = SymbolMobileWallet/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-ObjC",
+					"-lc++",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.thesymbolsyndicate.nemwallet;
+				PRODUCT_NAME = NemMobileWallet;
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VERSIONING_SYSTEM = "apple-generic";
+			};
+			name = Release;
+		};
+		57E491DFD5333630CC28178A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 236359A49E3F5CC179547121 /* Pods-App-NemMobileWallet.debug.xcconfig */;
+			buildSettings = {
+				APP_DISPLAY_NAME = "NEM Wallet";
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				BRAND = nem;
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 2VBMMA74XQ;
+				ENABLE_BITCODE = NO;
+				EXTRA_PACKAGER_ARGS = "--resolver-option brand=$(BRAND)";
+				INFOPLIST_FILE = SymbolMobileWallet/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-ObjC",
+					"-lc++",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.thesymbolsyndicate.nemwallet;
+				PRODUCT_NAME = NemMobileWallet;
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VERSIONING_SYSTEM = "apple-generic";
+			};
+			name = Debug;
 		};
 		83CBBA201A601CBA00E9B192 /* Debug */ = {
 			isa = XCBuildConfiguration;
@@ -743,6 +1019,15 @@
 			buildConfigurations = (
 				13B07F941A680F5B00A75B9A /* Debug */,
 				13B07F951A680F5B00A75B9A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		3E9B0ECF6C7002BF36D0B6DB /* Build configuration list for PBXNativeTarget "NemMobileWallet" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3E2B8AF4CD11BD8A65656C3F /* Release */,
+				57E491DFD5333630CC28178A /* Debug */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

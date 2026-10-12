@@ -57,6 +57,7 @@ module.exports = {
 	modulePaths: ['<rootDir>'],
 	moduleNameMapper: {
 		'^@/app/(.*)$': '<rootDir>/src/$1',
+		'^@/brand($|/.*)$': '<rootDir>/brands/symbol$1',
 		'^__fixtures__/(.*)$': '<rootDir>/__fixtures__/$1',
 		'^symbol-crypto-wasm-web': '<rootDir>node_modules/symbol-crypto-wasm-node/symbol_crypto_wasm.js',
 		[`\\.(${assetFileExtensions.join('|')})$`]: '<rootDir>/jestAssetTransormer.js'
