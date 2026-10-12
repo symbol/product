@@ -3,9 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "echo 'Choose a brand: npm run dev:symbol | npm run dev:nem' && exit 1",
-    "dev:symbol": "BRAND=symbol react-native start",
-    "dev:nem": "BRAND=nem react-native start",
+    "dev": "react-native start",
     "build:js:symbol": "react-native bundle --entry-file index.js --bundle-output ./bundle.js --resolver-option brand=symbol",
     "build:js:nem": "react-native bundle --entry-file index.js --bundle-output ./bundle.js --resolver-option brand=nem",
     "build:android:dev:symbol": "react-native run-android --mode symbolDebug",

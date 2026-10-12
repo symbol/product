@@ -13,14 +13,15 @@ const BRAND_IMPORT = '@/brand';
 const brandsRoot = path.resolve(__dirname, 'brands');
 
 /**
- * Resolves the brand for this bundle: the "brand" resolver option (set by release
- * bundling) first, else the BRAND env var (set by the dev server). Throws on a missing
- * or unknown brand, so a build never silently falls back to another brand.
+ * Resolves the brand for this bundle from the "brand" resolver option.
+ * The debug app sends it in the bundle URL.
+ * Release bundling passes it as "--resolver-option".
+ * Throws on a missing or unknown brand, so a build never silently falls back to another brand.
  * @param {object} customResolverOptions Metro custom resolver options.
  * @returns {string} Brand id.
  */
 const getBrand = customResolverOptions => {
-	const brand = customResolverOptions?.brand ?? process.env.BRAND;
+	const brand = customResolverOptions?.brand;
 
 	if (!BRANDS.includes(brand))
 		throw new Error(`Unknown brand "${brand}". Available options: ${BRANDS.join(', ')}.`);
