@@ -25,6 +25,8 @@ from rest.facade.SymbolRestFacade import SymbolRestFacade
 from rest.model.common import DatabaseConfig
 
 BLOCK_LIST_QUERY_PARAMETERS = frozenset(['limit', 'fromHeight', 'sort'])
+MOSAIC_QUERY_PARAMETERS = frozenset(['limit', 'offset', 'sort'])
+MOSAIC_MAX_OFFSET = 100000
 RECEIPT_QUERY_PARAMETERS = frozenset([
 	'limit', 'offset', 'group', 'receiptType', 'includedReceiptTypes', 'targetAddress', 'senderAddress'
 ])
@@ -109,6 +111,26 @@ def setup_symbol_routes(app, symbol_api_facade):
 		error, result = _run_symbol_query(
 			lambda: symbol_api_facade.get_blocks(from_height, limit, SortOrder(sort)),
 			'Failed to get Symbol blocks')
+		if error:
+			return error
+
+		return jsonify(result)
+
+	@app.route('/api/symbol/mosaics')
+	def api_get_symbol_mosaics():
+		try:
+			_validate_allowed_query_parameters(MOSAIC_QUERY_PARAMETERS)
+			limit = _parse_bounded_integer('limit', _get_scalar_parameter('limit', '10'), 1, 100)
+			offset = _parse_bounded_integer('offset', _get_scalar_parameter('offset', '0'), 0, MOSAIC_MAX_OFFSET)
+			sort = _get_scalar_parameter('sort', 'DESC').upper()
+			if sort not in ['ASC', 'DESC']:
+				raise ValueError('Sort must be either ASC or DESC')
+		except ValueError as error:
+			abort(400, error)
+
+		error, result = _run_symbol_query(
+			lambda: symbol_api_facade.get_mosaics(limit, offset, SortOrder(sort)),
+			'Failed to get Symbol mosaics')
 		if error:
 			return error
 
