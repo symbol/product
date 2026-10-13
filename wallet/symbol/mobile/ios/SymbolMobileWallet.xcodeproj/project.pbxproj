@@ -7,45 +7,24 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		02EAEC1958A342448AFCB8B2 /* Protipo-Regular-Italic.otf in Resources */ = {isa = PBXBuildFile; fileRef = 11224DD8F71F41E3AC08FF6D /* Protipo-Regular-Italic.otf */; };
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
-		1CBF73DF6D2B48E3AE7849F3 /* Protipo-Bold-Italic.otf in Resources */ = {isa = PBXBuildFile; fileRef = 5A1A6AED453B47C593EB2153 /* Protipo-Bold-Italic.otf */; };
-		1E42D07D63E743499E1CA400 /* Carbon-Thin-Italic.otf in Resources */ = {isa = PBXBuildFile; fileRef = AA01B143C66841298B6EC8EF /* Carbon-Thin-Italic.otf */; };
 		2104A464F65CF999F8440F94 /* NunitoSans-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = D6FC04F3702350057B9208ED /* NunitoSans-Regular.ttf */; };
 		2519AC528C8548BBAC23D900 /* Protipo-Bold.otf in Resources */ = {isa = PBXBuildFile; fileRef = 2A50CFD300E94CFBB65E227E /* Protipo-Bold.otf */; };
 		2B76B0E9F63D68EDC942F5B9 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 3297A130D3CF017E5D9C7427 /* PrivacyInfo.xcprivacy */; };
-		2F33E21FDCCC440FA9820A1A /* Protipo-Medium.otf in Resources */ = {isa = PBXBuildFile; fileRef = 42BDF298DDA14D848D4DB8A0 /* Protipo-Medium.otf */; };
-		46E573346ADF475FAD5673AA /* Carbon-Bold.otf in Resources */ = {isa = PBXBuildFile; fileRef = B5F18DC2FE444D6A94FC700C /* Carbon-Bold.otf */; };
 		4A501D0F7C8943A6B0555965 /* JetBrainsMono-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 47691EAAEE5A4A93BFF72463 /* JetBrainsMono-Bold.ttf */; };
-		4E5A7989F7F0421B8A8679AE /* Carbon-Regular.otf in Resources */ = {isa = PBXBuildFile; fileRef = C4570C237127436D897BD3DC /* Carbon-Regular.otf */; };
-		5211DA5FB0F4424A9D522393 /* Protipo-Medium-Italic.otf in Resources */ = {isa = PBXBuildFile; fileRef = 98116C12E1D04CBB85D36E47 /* Protipo-Medium-Italic.otf */; };
-		5384E3AE62D546EFBCCA886A /* Protipo-Light.otf in Resources */ = {isa = PBXBuildFile; fileRef = D6CBB3040CCD4D4CB693B4A3 /* Protipo-Light.otf */; };
-		55215DC95CD84530A8A67616 /* Protipo-Extrabold-Italic.otf in Resources */ = {isa = PBXBuildFile; fileRef = 7A22043D8B534DE49B6C6F8A /* Protipo-Extrabold-Italic.otf */; };
-		682BB6AF733941A3BA58F0A6 /* Rajdhani-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = C4F8EAB471074EE7B6783421 /* Rajdhani-Medium.ttf */; };
 		68D972ED94505E6B37278DE8 /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 64F6AB3A70B2457238A16ADD /* Images.xcassets */; };
 		7002CEE365B34AF919065189 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C53FFDE2EE3438500D25CAD /* SceneDelegate.swift */; };
-		7A3897B98FAF4CD28C71CBC5 /* Carbon-Thin.otf in Resources */ = {isa = PBXBuildFile; fileRef = F665276728D1451AAE8B42EE /* Carbon-Thin.otf */; };
 		7C53FFDD2EE3438500D25CAD /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C53FFDC2EE3438500D25CAD /* AppDelegate.swift */; };
 		7C53FFDF2EE3438500D25CAD /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C53FFDE2EE3438500D25CAD /* SceneDelegate.swift */; };
 		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
 		84D26B65A9F14431A6AC37AA /* Protipo-Regular.otf in Resources */ = {isa = PBXBuildFile; fileRef = 328980263DC14BF0BD65F701 /* Protipo-Regular.otf */; };
-		88D00C9B48184CF1A8002F22 /* Rajdhani-Light.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 788BAFE1C73144A18BB61387 /* Rajdhani-Light.ttf */; };
-		8998A12CA9064B68B1490393 /* Protipo-Semibold-Italic.otf in Resources */ = {isa = PBXBuildFile; fileRef = A5F69D592EEC4949A0D6C659 /* Protipo-Semibold-Italic.otf */; };
 		8A7A18AFC70749B7AEB4DB45 /* SofiaSansCondensed-ExtraBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 6BEFC7EAD31945ABB0AC3A55 /* SofiaSansCondensed-ExtraBold.ttf */; };
 		9204E7998462F8D6FD81E2C2 /* libPods-App-NemMobileWallet.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 95470A84FC4A668561472A82 /* libPods-App-NemMobileWallet.a */; };
 		986AB71C9CC375E9984F38CC /* NunitoSans-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = CA58C79C8CDEEDC5E14EDB52 /* NunitoSans-Bold.ttf */; };
 		9BC07CBE131C86453B3E5A8B /* libPods-App-SymbolMobileWallet.a in Frameworks */ = {isa = PBXBuildFile; fileRef = BB1519BBBB86F92DF288D9F6 /* libPods-App-SymbolMobileWallet.a */; };
 		AA7F4B2E852EACA66F26F077 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 3297A130D3CF017E5D9C7427 /* PrivacyInfo.xcprivacy */; };
 		AD0B6B8BFA58571B0D74C12E /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C53FFDC2EE3438500D25CAD /* AppDelegate.swift */; };
-		B6DD26F9686F459ABFE3175E /* Rajdhani-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = DF71238A1AAD42B3A86EC647 /* Rajdhani-SemiBold.ttf */; };
-		CF38AAF44EE844819C2F0A25 /* Carbon-Bold-Italic.otf in Resources */ = {isa = PBXBuildFile; fileRef = E5C4A7FB03834F3DA4A6AA24 /* Carbon-Bold-Italic.otf */; };
 		DEB82120E037FD515A63957D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
-		E3C3035B4BA449638C92B980 /* Carbon-Regular-Italic.otf in Resources */ = {isa = PBXBuildFile; fileRef = B47967E2115C477DB638BD4E /* Carbon-Regular-Italic.otf */; };
-		E786AF0DEE2945B19911DA1F /* Rajdhani-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 17BA708BAF174BC6965C0340 /* Rajdhani-Bold.ttf */; };
-		E7DF9F1CE16746129AD122F2 /* Rajdhani-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 900C107E36334C248137F5A0 /* Rajdhani-Regular.ttf */; };
-		EBF7C6C7929147179BC59364 /* Protipo-Light-Italic.otf in Resources */ = {isa = PBXBuildFile; fileRef = E38F7C4F87AC494DB363843A /* Protipo-Light-Italic.otf */; };
-		EE891FB41BFC4EC9AA27133E /* Protipo-Semibold.otf in Resources */ = {isa = PBXBuildFile; fileRef = 7DE3E43C8FBD4EEEB8A51D55 /* Protipo-Semibold.otf */; };
-		F58D2D200AD74523A1EB0DFC /* Protipo-Extrabold.otf in Resources */ = {isa = PBXBuildFile; fileRef = 85502AC97CFB48B88BBB3C27 /* Protipo-Extrabold.otf */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -60,53 +39,32 @@
 
 /* Begin PBXFileReference section */
 		00E356EE1AD99517003FC87E /* SymbolMobileWalletTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SymbolMobileWalletTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		11224DD8F71F41E3AC08FF6D /* Protipo-Regular-Italic.otf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Protipo-Regular-Italic.otf"; path = "../src/assets/fonts/Protipo-Regular-Italic.otf"; sourceTree = "<group>"; };
 		13B07F961A680F5B00A75B9A /* SymbolMobileWallet.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SymbolMobileWallet.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = SymbolMobileWallet/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = SymbolMobileWallet/Info.plist; sourceTree = "<group>"; };
 		13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = PrivacyInfo.xcprivacy; path = SymbolMobileWallet/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
-		17BA708BAF174BC6965C0340 /* Rajdhani-Bold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Rajdhani-Bold.ttf"; path = "../src/assets/fonts/Rajdhani-Bold.ttf"; sourceTree = "<group>"; };
 		19FD84AD62E1B73FBA6363CE /* Pods-App-SymbolMobileWallet.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-App-SymbolMobileWallet.release.xcconfig"; path = "Target Support Files/Pods-App-SymbolMobileWallet/Pods-App-SymbolMobileWallet.release.xcconfig"; sourceTree = "<group>"; };
 		236359A49E3F5CC179547121 /* Pods-App-NemMobileWallet.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-App-NemMobileWallet.debug.xcconfig"; path = "Target Support Files/Pods-App-NemMobileWallet/Pods-App-NemMobileWallet.debug.xcconfig"; sourceTree = "<group>"; };
 		2A50CFD300E94CFBB65E227E /* Protipo-Bold.otf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Protipo-Bold.otf"; path = "../src/assets/fonts/Protipo-Bold.otf"; sourceTree = "<group>"; };
 		328980263DC14BF0BD65F701 /* Protipo-Regular.otf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Protipo-Regular.otf"; path = "../src/assets/fonts/Protipo-Regular.otf"; sourceTree = "<group>"; };
 		3297A130D3CF017E5D9C7427 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xml; name = PrivacyInfo.xcprivacy; path = SymbolMobileWallet/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		3B4392A12AC88292D35C810B /* Pods-SymbolMobileWallet.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-SymbolMobileWallet.debug.xcconfig"; path = "Target Support Files/Pods-SymbolMobileWallet/Pods-SymbolMobileWallet.debug.xcconfig"; sourceTree = "<group>"; };
-		42BDF298DDA14D848D4DB8A0 /* Protipo-Medium.otf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Protipo-Medium.otf"; path = "../src/assets/fonts/Protipo-Medium.otf"; sourceTree = "<group>"; };
 		47691EAAEE5A4A93BFF72463 /* JetBrainsMono-Bold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "JetBrainsMono-Bold.ttf"; path = "../src/assets/fonts/JetBrainsMono-Bold.ttf"; sourceTree = "<group>"; };
 		5709B34CF0A7D63546082F79 /* Pods-SymbolMobileWallet.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-SymbolMobileWallet.release.xcconfig"; path = "Target Support Files/Pods-SymbolMobileWallet/Pods-SymbolMobileWallet.release.xcconfig"; sourceTree = "<group>"; };
-		5A1A6AED453B47C593EB2153 /* Protipo-Bold-Italic.otf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Protipo-Bold-Italic.otf"; path = "../src/assets/fonts/Protipo-Bold-Italic.otf"; sourceTree = "<group>"; };
 		64F6AB3A70B2457238A16ADD /* Images.xcassets */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = NemMobileWallet/Images.xcassets; sourceTree = "<group>"; };
 		6BEFC7EAD31945ABB0AC3A55 /* SofiaSansCondensed-ExtraBold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "SofiaSansCondensed-ExtraBold.ttf"; path = "../src/assets/fonts/SofiaSansCondensed-ExtraBold.ttf"; sourceTree = "<group>"; };
-		788BAFE1C73144A18BB61387 /* Rajdhani-Light.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Rajdhani-Light.ttf"; path = "../src/assets/fonts/Rajdhani-Light.ttf"; sourceTree = "<group>"; };
 		7893F24E413FA754360DA15C /* Pods-App-NemMobileWallet.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-App-NemMobileWallet.release.xcconfig"; path = "Target Support Files/Pods-App-NemMobileWallet/Pods-App-NemMobileWallet.release.xcconfig"; sourceTree = "<group>"; };
-		7A22043D8B534DE49B6C6F8A /* Protipo-Extrabold-Italic.otf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Protipo-Extrabold-Italic.otf"; path = "../src/assets/fonts/Protipo-Extrabold-Italic.otf"; sourceTree = "<group>"; };
 		7C53FFDC2EE3438500D25CAD /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		7C53FFDE2EE3438500D25CAD /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
-		7DE3E43C8FBD4EEEB8A51D55 /* Protipo-Semibold.otf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Protipo-Semibold.otf"; path = "../src/assets/fonts/Protipo-Semibold.otf"; sourceTree = "<group>"; };
 		81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = LaunchScreen.storyboard; path = SymbolMobileWallet/LaunchScreen.storyboard; sourceTree = "<group>"; };
-		85502AC97CFB48B88BBB3C27 /* Protipo-Extrabold.otf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Protipo-Extrabold.otf"; path = "../src/assets/fonts/Protipo-Extrabold.otf"; sourceTree = "<group>"; };
 		87289244F2831996E235A5DF /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; name = Info.plist; path = NemMobileWallet/Info.plist; sourceTree = "<group>"; };
-		900C107E36334C248137F5A0 /* Rajdhani-Regular.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Rajdhani-Regular.ttf"; path = "../src/assets/fonts/Rajdhani-Regular.ttf"; sourceTree = "<group>"; };
 		95470A84FC4A668561472A82 /* libPods-App-NemMobileWallet.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-App-NemMobileWallet.a"; sourceTree = BUILT_PRODUCTS_DIR; };
-		98116C12E1D04CBB85D36E47 /* Protipo-Medium-Italic.otf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Protipo-Medium-Italic.otf"; path = "../src/assets/fonts/Protipo-Medium-Italic.otf"; sourceTree = "<group>"; };
-		A5F69D592EEC4949A0D6C659 /* Protipo-Semibold-Italic.otf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Protipo-Semibold-Italic.otf"; path = "../src/assets/fonts/Protipo-Semibold-Italic.otf"; sourceTree = "<group>"; };
-		AA01B143C66841298B6EC8EF /* Carbon-Thin-Italic.otf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Carbon-Thin-Italic.otf"; path = "../src/assets/fonts/Carbon-Thin-Italic.otf"; sourceTree = "<group>"; };
-		B47967E2115C477DB638BD4E /* Carbon-Regular-Italic.otf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Carbon-Regular-Italic.otf"; path = "../src/assets/fonts/Carbon-Regular-Italic.otf"; sourceTree = "<group>"; };
-		B5F18DC2FE444D6A94FC700C /* Carbon-Bold.otf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Carbon-Bold.otf"; path = "../src/assets/fonts/Carbon-Bold.otf"; sourceTree = "<group>"; };
 		BB1519BBBB86F92DF288D9F6 /* libPods-App-SymbolMobileWallet.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-App-SymbolMobileWallet.a"; sourceTree = BUILT_PRODUCTS_DIR; };
-		C4570C237127436D897BD3DC /* Carbon-Regular.otf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Carbon-Regular.otf"; path = "../src/assets/fonts/Carbon-Regular.otf"; sourceTree = "<group>"; };
-		C4F8EAB471074EE7B6783421 /* Rajdhani-Medium.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Rajdhani-Medium.ttf"; path = "../src/assets/fonts/Rajdhani-Medium.ttf"; sourceTree = "<group>"; };
 		C9EE98CC1C3068479ED388B9 /* Pods-App-SymbolMobileWallet.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-App-SymbolMobileWallet.debug.xcconfig"; path = "Target Support Files/Pods-App-SymbolMobileWallet/Pods-App-SymbolMobileWallet.debug.xcconfig"; sourceTree = "<group>"; };
 		CA58C79C8CDEEDC5E14EDB52 /* NunitoSans-Bold.ttf */ = {isa = PBXFileReference; includeInIndex = 1; name = "NunitoSans-Bold.ttf"; path = "../src/assets/fonts/NunitoSans-Bold.ttf"; sourceTree = "<group>"; };
-		D6CBB3040CCD4D4CB693B4A3 /* Protipo-Light.otf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Protipo-Light.otf"; path = "../src/assets/fonts/Protipo-Light.otf"; sourceTree = "<group>"; };
 		D6FC04F3702350057B9208ED /* NunitoSans-Regular.ttf */ = {isa = PBXFileReference; includeInIndex = 1; name = "NunitoSans-Regular.ttf"; path = "../src/assets/fonts/NunitoSans-Regular.ttf"; sourceTree = "<group>"; };
-		DF71238A1AAD42B3A86EC647 /* Rajdhani-SemiBold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Rajdhani-SemiBold.ttf"; path = "../src/assets/fonts/Rajdhani-SemiBold.ttf"; sourceTree = "<group>"; };
-		E38F7C4F87AC494DB363843A /* Protipo-Light-Italic.otf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Protipo-Light-Italic.otf"; path = "../src/assets/fonts/Protipo-Light-Italic.otf"; sourceTree = "<group>"; };
-		E5C4A7FB03834F3DA4A6AA24 /* Carbon-Bold-Italic.otf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Carbon-Bold-Italic.otf"; path = "../src/assets/fonts/Carbon-Bold-Italic.otf"; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		EFFC86A5BAD328005C44244B /* NemMobileWallet.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = NemMobileWallet.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		F665276728D1451AAE8B42EE /* Carbon-Thin.otf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Carbon-Thin.otf"; path = "../src/assets/fonts/Carbon-Thin.otf"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -209,30 +167,9 @@
 		D1F94C36C372418AB6907E8F /* Resources */ = {
 			isa = PBXGroup;
 			children = (
-				E5C4A7FB03834F3DA4A6AA24 /* Carbon-Bold-Italic.otf */,
-				B5F18DC2FE444D6A94FC700C /* Carbon-Bold.otf */,
-				B47967E2115C477DB638BD4E /* Carbon-Regular-Italic.otf */,
-				C4570C237127436D897BD3DC /* Carbon-Regular.otf */,
-				AA01B143C66841298B6EC8EF /* Carbon-Thin-Italic.otf */,
-				F665276728D1451AAE8B42EE /* Carbon-Thin.otf */,
-				5A1A6AED453B47C593EB2153 /* Protipo-Bold-Italic.otf */,
 				2A50CFD300E94CFBB65E227E /* Protipo-Bold.otf */,
-				7A22043D8B534DE49B6C6F8A /* Protipo-Extrabold-Italic.otf */,
-				85502AC97CFB48B88BBB3C27 /* Protipo-Extrabold.otf */,
-				E38F7C4F87AC494DB363843A /* Protipo-Light-Italic.otf */,
-				D6CBB3040CCD4D4CB693B4A3 /* Protipo-Light.otf */,
-				98116C12E1D04CBB85D36E47 /* Protipo-Medium-Italic.otf */,
-				42BDF298DDA14D848D4DB8A0 /* Protipo-Medium.otf */,
-				11224DD8F71F41E3AC08FF6D /* Protipo-Regular-Italic.otf */,
 				328980263DC14BF0BD65F701 /* Protipo-Regular.otf */,
-				A5F69D592EEC4949A0D6C659 /* Protipo-Semibold-Italic.otf */,
-				7DE3E43C8FBD4EEEB8A51D55 /* Protipo-Semibold.otf */,
 				47691EAAEE5A4A93BFF72463 /* JetBrainsMono-Bold.ttf */,
-				17BA708BAF174BC6965C0340 /* Rajdhani-Bold.ttf */,
-				788BAFE1C73144A18BB61387 /* Rajdhani-Light.ttf */,
-				C4F8EAB471074EE7B6783421 /* Rajdhani-Medium.ttf */,
-				900C107E36334C248137F5A0 /* Rajdhani-Regular.ttf */,
-				DF71238A1AAD42B3A86EC647 /* Rajdhani-SemiBold.ttf */,
 				6BEFC7EAD31945ABB0AC3A55 /* SofiaSansCondensed-ExtraBold.ttf */,
 				CA58C79C8CDEEDC5E14EDB52 /* NunitoSans-Bold.ttf */,
 				D6FC04F3702350057B9208ED /* NunitoSans-Regular.ttf */,
@@ -368,30 +305,9 @@
 				81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */,
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
 				2B76B0E9F63D68EDC942F5B9 /* PrivacyInfo.xcprivacy in Resources */,
-				CF38AAF44EE844819C2F0A25 /* Carbon-Bold-Italic.otf in Resources */,
-				46E573346ADF475FAD5673AA /* Carbon-Bold.otf in Resources */,
-				E3C3035B4BA449638C92B980 /* Carbon-Regular-Italic.otf in Resources */,
-				4E5A7989F7F0421B8A8679AE /* Carbon-Regular.otf in Resources */,
-				1E42D07D63E743499E1CA400 /* Carbon-Thin-Italic.otf in Resources */,
-				7A3897B98FAF4CD28C71CBC5 /* Carbon-Thin.otf in Resources */,
-				1CBF73DF6D2B48E3AE7849F3 /* Protipo-Bold-Italic.otf in Resources */,
 				2519AC528C8548BBAC23D900 /* Protipo-Bold.otf in Resources */,
-				55215DC95CD84530A8A67616 /* Protipo-Extrabold-Italic.otf in Resources */,
-				F58D2D200AD74523A1EB0DFC /* Protipo-Extrabold.otf in Resources */,
-				EBF7C6C7929147179BC59364 /* Protipo-Light-Italic.otf in Resources */,
-				5384E3AE62D546EFBCCA886A /* Protipo-Light.otf in Resources */,
-				5211DA5FB0F4424A9D522393 /* Protipo-Medium-Italic.otf in Resources */,
-				2F33E21FDCCC440FA9820A1A /* Protipo-Medium.otf in Resources */,
-				02EAEC1958A342448AFCB8B2 /* Protipo-Regular-Italic.otf in Resources */,
 				84D26B65A9F14431A6AC37AA /* Protipo-Regular.otf in Resources */,
-				8998A12CA9064B68B1490393 /* Protipo-Semibold-Italic.otf in Resources */,
-				EE891FB41BFC4EC9AA27133E /* Protipo-Semibold.otf in Resources */,
 				4A501D0F7C8943A6B0555965 /* JetBrainsMono-Bold.ttf in Resources */,
-				E786AF0DEE2945B19911DA1F /* Rajdhani-Bold.ttf in Resources */,
-				88D00C9B48184CF1A8002F22 /* Rajdhani-Light.ttf in Resources */,
-				682BB6AF733941A3BA58F0A6 /* Rajdhani-Medium.ttf in Resources */,
-				E7DF9F1CE16746129AD122F2 /* Rajdhani-Regular.ttf in Resources */,
-				B6DD26F9686F459ABFE3175E /* Rajdhani-SemiBold.ttf in Resources */,
 				8A7A18AFC70749B7AEB4DB45 /* SofiaSansCondensed-ExtraBold.ttf in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

@@ -71,29 +71,8 @@
 	<true/>
 	<key>UIAppFonts</key>
 	<array>
-		<string>Carbon-Bold-Italic.otf</string>
-		<string>Carbon-Bold.otf</string>
-		<string>Carbon-Regular-Italic.otf</string>
-		<string>Carbon-Regular.otf</string>
-		<string>Carbon-Thin-Italic.otf</string>
-		<string>Carbon-Thin.otf</string>
-		<string>Protipo-Bold-Italic.otf</string>
 		<string>Protipo-Bold.otf</string>
-		<string>Protipo-Extrabold-Italic.otf</string>
-		<string>Protipo-Extrabold.otf</string>
-		<string>Protipo-Light-Italic.otf</string>
-		<string>Protipo-Light.otf</string>
-		<string>Protipo-Medium-Italic.otf</string>
-		<string>Protipo-Medium.otf</string>
-		<string>Protipo-Regular-Italic.otf</string>
 		<string>Protipo-Regular.otf</string>
-		<string>Protipo-Semibold-Italic.otf</string>
-		<string>Protipo-Semibold.otf</string>
-		<string>Rajdhani-Bold.ttf</string>
-		<string>Rajdhani-Light.ttf</string>
-		<string>Rajdhani-Medium.ttf</string>
-		<string>Rajdhani-Regular.ttf</string>
-		<string>Rajdhani-SemiBold.ttf</string>
 		<string>SofiaSansCondensed-ExtraBold.ttf</string>
 		<string>JetBrainsMono-Bold.ttf</string>
 	</array>
