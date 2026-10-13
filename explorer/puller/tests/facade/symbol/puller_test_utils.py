@@ -5,8 +5,9 @@ from contextlib import ExitStack, contextmanager
 from pathlib import Path
 from unittest import TestCase
 
+import pytest
 from common.symbol.NodeConfiguration import SymbolNodeConfiguration
-from common.tests.PostgresTestUtils import PostgresTestDatabase, drop_symbol_block_tables_if_present
+from common.tests.PostgresTestUtils import drop_symbol_block_tables_if_present
 from symbolchain.sc import ReceiptType, TransactionType
 from symbolchain.symbol.Network import Address, Network
 
@@ -678,21 +679,21 @@ class BoundedNamespaceDetailConnector(BoundedDetailConnector):
 		return self.namespace_by_id[url_path.removeprefix('namespaces/')]
 
 
+@pytest.mark.usefixtures('database_config')
 class SymbolPullerTestBase(TestCase):
+	db_config = None  # pylint: disable=invalid-name
+
 	def setUp(self):
 		self.exit_stack = ExitStack()
+		self.addCleanup(self.exit_stack.close)
 		self.config_dir = self.exit_stack.enter_context(
 			tempfile.TemporaryDirectory()
 		)
-		self.db_config = self.exit_stack.enter_context(PostgresTestDatabase())
 		self.config_ini = create_db_config(self.config_dir, self.db_config)
 		self.puller = create_symbol_puller(self.config_ini, 'testnet')
 		self.exit_stack.enter_context(self.puller.symbol_db)
 		drop_symbol_block_tables_if_present(self.puller.symbol_db)
 		self.puller.symbol_db.create_tables()
-
-	def tearDown(self):
-		self.exit_stack.close()
 
 	@staticmethod
 	def _fetch_block_heights(database):

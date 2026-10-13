@@ -70,9 +70,13 @@ export const fetchBlockInfo = createTryFetchInfoFunction(async height => {
  * @returns {object} mapped block info
  */
 const blockInfoFromDTO = data => ({
-	...data,
+	height: data.height,
+	timestamp: data.timestamp,
+	hash: data.hash,
+	signature: data.signature,
 	harvester: data.signer,
+	size: data.size,
+	difficulty: ((data.difficulty / Math.pow(10, 14)) * 100).toFixed(2),
 	totalFee: data.totalFees,
-	transactionCount: data.totalTransactions,
-	difficulty: ((data.difficulty / Math.pow(10, 14)) * 100).toFixed(2)
+	transactionCount: data.totalTransactions
 });

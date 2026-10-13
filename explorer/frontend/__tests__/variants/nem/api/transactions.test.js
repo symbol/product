@@ -1,17 +1,44 @@
-import { runApiTest } from '../../../test-utils/api';
 import {
-	transactionAccountPageResult,
-	transactionInfoResponse,
-	transactionInfoResult,
-	transactionPageResponse,
-	transactionPageResult,
-	transactionUnconfirmedPageResponse,
-	transactionUnconfirmedPageResult,
-	unsupportedTransactionInfoResponse,
-	unsupportedTransactionInfoResult
-} from '../../../test-utils/transactions';
-import * as serverUtils from '@/app/utils/server';
+	accountKeyLinkConfirmedTransactionResponse,
+	mosaicDefinitionConfirmedTransactionResponse,
+	mosaicSupplyChangeConfirmedTransactionResponse,
+	multisigAccountModificationConfirmedTransactionResponse,
+	multisigConfirmedTransactionResponse,
+	multisigMultisigAccountModificationConfirmedTransactionResponse,
+	multisigNamespaceRegistrationConfirmedTransactionResponse,
+	namespaceRegistrationConfirmedTransactionResponse,
+	transferConfirmedTransactionResponse,
+	transferCustomMosaicOnlyConfirmedTransactionResponse,
+	transferDecimalAmountConfirmedTransactionResponse,
+	transferEncryptedMessageConfirmedTransactionResponse,
+	transferMultipleMosaicsConfirmedTransactionResponse,
+	transferNoMessageConfirmedTransactionResponse
+} from '../../../../__fixtures__/api/nem/transaction-info';
+import { transactionListConfirmedResponse } from '../../../../__fixtures__/api/nem/transaction-list-confirmed';
+import { transactionListUnconfirmedResponse } from '../../../../__fixtures__/api/nem/transaction-list-unconfirmed';
+import {
+	accountKeyLinkConfirmedTransaction,
+	mosaicDefinitionConfirmedTransaction,
+	mosaicSupplyChangeConfirmedTransaction,
+	multisigAccountModificationConfirmedTransaction,
+	multisigConfirmedTransaction,
+	multisigMultisigAccountModificationConfirmedTransaction,
+	multisigNamespaceRegistrationConfirmedTransaction,
+	namespaceRegistrationConfirmedTransaction,
+	transferConfirmedTransaction,
+	transferCustomMosaicOnlyConfirmedTransaction,
+	transferDecimalAmountConfirmedTransaction,
+	transferEncryptedMessageConfirmedTransaction,
+	transferMultipleMosaicsConfirmedTransaction,
+	transferNoMessageConfirmedTransaction
+} from '../../../../__fixtures__/local/transaction';
+import { transactionListConfirmed } from '../../../../__fixtures__/local/transaction-list-confirmed';
+import { transactionListUnconfirmed } from '../../../../__fixtures__/local/transaction-list-unconfirmed';
+import { error404Response, runApiRequestTests, runApiResultTests } from '../../../test-utils/api';
+import { TRANSACTION_DIRECTION, TRANSACTION_GROUP, TRANSACTION_TYPE } from '@/app/constants';
 import { fetchTransactionInfo, fetchTransactionPage } from '@/app/variants/nem/api/transactions';
+
+// Mocks
 
 jest.mock('@/app/utils/server', () => {
 	return {
@@ -20,169 +47,318 @@ jest.mock('@/app/utils/server', () => {
 	};
 });
 
+// Constants
+
+const transactionsURL = 'https://explorer.backend/transactions';
+const firstPageURL = `${transactionsURL}?limit=10&offset=0`;
+const unconfirmedTransactionsURL = 'https://explorer.backend/transactions/unconfirmed';
+const transactionURL = 'https://explorer.backend/transaction';
+const emptyPageResponse = [];
+const unsupportedTransactionType = 'UNKNOWN';
+const senderAddress = transferConfirmedTransaction.sender;
+const recipientAddress = transferConfirmedTransaction.recipient;
+const transferConfirmedListItem = transactionListConfirmed.find(transaction => transaction.hash === transferConfirmedTransaction.hash);
+const transferMultipleMosaicsListItem = transactionListConfirmed.find(transaction =>
+	transaction.hash === transferMultipleMosaicsConfirmedTransaction.hash);
+const [nativeMosaic, customMosaic] = transferMultipleMosaicsListItem.body[0].mosaics;
+const unsupportedTransactionResponse = {
+	...accountKeyLinkConfirmedTransactionResponse,
+	transactionType: unsupportedTransactionType
+};
+const unsupportedTransaction = {
+	...accountKeyLinkConfirmedTransaction,
+	type: unsupportedTransactionType,
+	body: [
+		{
+			type: unsupportedTransactionType,
+			sender: accountKeyLinkConfirmedTransaction.sender
+		}
+	]
+};
+
+// Tests
+
 describe('variants/nem/api/transactions', () => {
 	describe('fetchTransactionPage', () => {
-		// Arrange:
-		const currentAddress = 'NBFQ6XFBKB3DHJCFDKCMJI5MZ53HFQ56AKDLY4JK';
-		const senderAddress = 'FROM000BKB3DHJCFDKCMJI5MZ53HFQ56AKDLY000';
-		const recipientAddress = 'TO00000BKB3DHJCFDKCMJI5MZ53HFQ56AKDLY001';
+		describe('request', () => {
+			const requestCases = [
+				{
+					description: 'requests the first page with the default page size',
+					config: { params: {} },
+					expected: { url: firstPageURL }
+				},
+				{
+					description: 'requests the given page number and page size',
+					config: {
+						params: {
+							pageNumber: 3,
+							pageSize: 123
+						}
+					},
+					expected: { url: `${transactionsURL}?limit=123&offset=246` }
+				},
+				{
+					description: 'requests the unconfirmed endpoint for the unconfirmed group',
+					config: {
+						params: { group: TRANSACTION_GROUP.UNCONFIRMED }
+					},
+					expected: { url: `${unconfirmedTransactionsURL}?limit=10&offset=0` }
+				},
+				{
+					description: 'sends "from" and "to" as the sender and recipient addresses',
+					config: {
+						params: {
+							from: senderAddress,
+							to: recipientAddress
+						}
+					},
+					expected: { url: `${firstPageURL}&senderAddress=${senderAddress}&recipientAddress=${recipientAddress}` }
+				},
+				{
+					description: 'sends "types" as the transaction types',
+					config: {
+						params: { types: TRANSACTION_TYPE.TRANSFER }
+					},
+					expected: { url: `${firstPageURL}&transactionTypes=${TRANSACTION_TYPE.TRANSFER}` }
+				},
+				{
+					description: 'sends the address as is',
+					config: {
+						params: { address: senderAddress }
+					},
+					expected: { url: `${firstPageURL}&address=${senderAddress}` }
+				},
+				{
+					description: 'sends the address as the recipient when "from" is set',
+					config: {
+						params: {
+							address: recipientAddress,
+							from: senderAddress
+						}
+					},
+					expected: { url: `${firstPageURL}&senderAddress=${senderAddress}&recipientAddress=${recipientAddress}` }
+				},
+				{
+					description: 'sends the address as the sender when "to" is set',
+					config: {
+						params: {
+							address: senderAddress,
+							to: recipientAddress
+						}
+					},
+					expected: { url: `${firstPageURL}&senderAddress=${senderAddress}&recipientAddress=${recipientAddress}` }
+				},
+				{
+					description: 'sends the mosaic filter as is',
+					config: {
+						params: { mosaic: customMosaic.id }
+					},
+					expected: { url: `${firstPageURL}&mosaic=${customMosaic.id}` }
+				}
+			];
 
-		it('fetch transaction page', async () => {
-			// Arrange:
-			const searchCriteria = {
-				pageNumber: 3,
-				pageSize: 123
-			};
-			const expectedURL = 'https://explorer.backend/transactions?limit=123&offset=246';
-			const expectedResult = transactionPageResult;
-
-			// Act + Assert:
-			await runApiTest(fetchTransactionPage, searchCriteria, transactionPageResponse, expectedURL, expectedResult);
+			runApiRequestTests({
+				functionToTest: fetchTransactionPage,
+				response: emptyPageResponse,
+				cases: requestCases
+			});
 		});
 
-		it('fetch transaction page with "unconfirmed" filter', async () => {
-			// Arrange:
-			const searchCriteria = {
-				pageNumber: 3,
-				pageSize: 123,
-				group: 'unconfirmed'
-			};
-			const expectedURL = 'https://explorer.backend/transactions/unconfirmed?limit=123&offset=246';
-			const expectedResult = transactionUnconfirmedPageResult;
+		describe('result', () => {
+			const resultCases = [
+				{
+					description: 'maps the confirmed transactions',
+					config: { response: transactionListConfirmedResponse },
+					expected: {
+						result: {
+							data: transactionListConfirmed,
+							pageNumber: 1
+						}
+					}
+				},
+				{
+					description: 'maps the unconfirmed transactions',
+					config: {
+						params: { group: TRANSACTION_GROUP.UNCONFIRMED },
+						response: transactionListUnconfirmedResponse
+					},
+					expected: {
+						result: {
+							data: transactionListUnconfirmed,
+							pageNumber: 1
+						}
+					}
+				},
+				{
+					description: 'marks a transfer as incoming for the recipient address',
+					config: {
+						params: { address: recipientAddress },
+						response: [transferConfirmedTransactionResponse]
+					},
+					expected: {
+						result: {
+							data: [
+								{
+									...transferConfirmedListItem,
+									account: senderAddress,
+									direction: TRANSACTION_DIRECTION.INCOMING
+								}
+							],
+							pageNumber: 1
+						}
+					}
+				},
+				{
+					description: 'marks a transfer as outgoing for the sender address',
+					config: {
+						params: { address: senderAddress },
+						response: [transferConfirmedTransactionResponse]
+					},
+					expected: {
+						result: {
+							data: [
+								{
+									...transferConfirmedListItem,
+									account: recipientAddress,
+									direction: TRANSACTION_DIRECTION.OUTGOING
+								}
+							],
+							pageNumber: 1
+						}
+					}
+				},
+				{
+					description: 'puts the filtered mosaic first',
+					config: {
+						params: { mosaic: customMosaic.id },
+						response: [transferMultipleMosaicsConfirmedTransactionResponse]
+					},
+					expected: {
+						result: {
+							data: [
+								{
+									...transferMultipleMosaicsListItem,
+									value: [customMosaic, nativeMosaic],
+									body: [
+										{
+											...transferMultipleMosaicsListItem.body[0],
+											mosaics: [customMosaic, nativeMosaic]
+										}
+									]
+								}
+							],
+							pageNumber: 1
+						}
+					}
+				}
+			];
 
-			// Act + Assert:
-			await runApiTest(fetchTransactionPage, searchCriteria, transactionUnconfirmedPageResponse, expectedURL, expectedResult);
-		});
-
-		it('fetch transaction page with "from" and "to" filters', async () => {
-			// Arrange:
-			const searchCriteria = {
-				pageNumber: 3,
-				from: senderAddress,
-				to: recipientAddress
-			};
-			// eslint-disable-next-line max-len
-			const expectedURL = `https://explorer.backend/transactions?limit=10&offset=20&senderAddress=${senderAddress}&recipientAddress=${recipientAddress}`;
-			const expectedResult = transactionPageResult;
-
-			// Act + Assert:
-			await runApiTest(fetchTransactionPage, searchCriteria, transactionPageResponse, expectedURL, expectedResult);
-		});
-
-		it('fetch transaction page with "types" filter', async () => {
-			// Arrange:
-			const searchCriteria = {
-				pageNumber: 3,
-				types: 'MULTISIG_ACCOUNT_MODIFICATION'
-			};
-			const expectedURL = 'https://explorer.backend/transactions?limit=10&offset=20&transactionTypes=MULTISIG_ACCOUNT_MODIFICATION';
-			const expectedResult = transactionPageResult;
-
-			// Act + Assert:
-			await runApiTest(fetchTransactionPage, searchCriteria, transactionPageResponse, expectedURL, expectedResult);
-		});
-
-		it('fetch transaction page for specific account with "to" filter', async () => {
-			// Arrange:
-			const searchCriteria = {
-				pageNumber: 3,
-				address: currentAddress
-			};
-			const expectedURL = `https://explorer.backend/transactions?limit=10&offset=20&address=${currentAddress}`;
-			const expectedResult = transactionAccountPageResult;
-
-			// Act + Assert:
-			await runApiTest(fetchTransactionPage, searchCriteria, transactionPageResponse, expectedURL, expectedResult);
-		});
-
-		it('fetch transaction page for specific account with "from" filter', async () => {
-			// Arrange:
-			const searchCriteria = {
-				pageNumber: 3,
-				from: senderAddress,
-				address: currentAddress
-			};
-			// eslint-disable-next-line max-len
-			const expectedURL = `https://explorer.backend/transactions?limit=10&offset=20&senderAddress=${senderAddress}&recipientAddress=${currentAddress}`;
-			const expectedResult = transactionAccountPageResult;
-
-			// Act + Assert:
-			await runApiTest(fetchTransactionPage, searchCriteria, transactionPageResponse, expectedURL, expectedResult);
-		});
-
-		it('fetch transaction page for specific account with "to" filter', async () => {
-			// Arrange:
-			const searchCriteria = {
-				pageNumber: 3,
-				address: currentAddress,
-				to: recipientAddress
-			};
-			// eslint-disable-next-line max-len
-			const expectedURL = `https://explorer.backend/transactions?limit=10&offset=20&senderAddress=${currentAddress}&recipientAddress=${recipientAddress}`;
-			const expectedResult = transactionAccountPageResult;
-
-			// Act + Assert:
-			await runApiTest(fetchTransactionPage, searchCriteria, transactionPageResponse, expectedURL, expectedResult);
+			runApiResultTests({ functionToTest: fetchTransactionPage, cases: resultCases });
 		});
 	});
 
 	describe('fetchTransactionInfo', () => {
-		it('fetch transaction info by hash', async () => {
-			// Arrange:
-			const params = '596E3EC601470D9A5FDF966833566390C13D5DB7D24F5C9C712AC2056D7AE255';
-			const expectedURL = 'https://explorer.backend/transaction/596E3EC601470D9A5FDF966833566390C13D5DB7D24F5C9C712AC2056D7AE255';
-			const expectedResult = transactionInfoResult;
+		describe('request', () => {
+			const requestCases = [
+				{
+					description: 'requests the transaction by hash',
+					config: { params: transferConfirmedTransactionResponse.transactionHash },
+					expected: { url: `${transactionURL}/${transferConfirmedTransactionResponse.transactionHash}` }
+				}
+			];
 
-			// Act + Assert:
-			await runApiTest(fetchTransactionInfo, params, transactionInfoResponse, expectedURL, expectedResult);
+			runApiRequestTests({
+				functionToTest: fetchTransactionInfo,
+				response: transferConfirmedTransactionResponse,
+				cases: requestCases
+			});
 		});
 
-		it('fetch unsupported transaction info by hash', async () => {
-			// Arrange:
-			const params = '596E3EC601470D9A5FDF966833566390C13D5DB7D24F5C9C712AC2056D7AE255';
-			const expectedURL = 'https://explorer.backend/transaction/596E3EC601470D9A5FDF966833566390C13D5DB7D24F5C9C712AC2056D7AE255';
-			const expectedResult = unsupportedTransactionInfoResult;
+		describe('result', () => {
+			const resultCases = [
+				{
+					description: 'maps a transfer',
+					config: { response: transferConfirmedTransactionResponse },
+					expected: { result: transferConfirmedTransaction }
+				},
+				{
+					description: 'maps a transfer without a message',
+					config: { response: transferNoMessageConfirmedTransactionResponse },
+					expected: { result: transferNoMessageConfirmedTransaction }
+				},
+				{
+					description: 'maps a transfer with an encrypted message',
+					config: { response: transferEncryptedMessageConfirmedTransactionResponse },
+					expected: { result: transferEncryptedMessageConfirmedTransaction }
+				},
+				{
+					description: 'maps a transfer with multiple mosaics',
+					config: { response: transferMultipleMosaicsConfirmedTransactionResponse },
+					expected: { result: transferMultipleMosaicsConfirmedTransaction }
+				},
+				{
+					description: 'maps a transfer with a custom mosaic only',
+					config: { response: transferCustomMosaicOnlyConfirmedTransactionResponse },
+					expected: { result: transferCustomMosaicOnlyConfirmedTransaction }
+				},
+				{
+					description: 'maps a transfer with a decimal amount',
+					config: { response: transferDecimalAmountConfirmedTransactionResponse },
+					expected: { result: transferDecimalAmountConfirmedTransaction }
+				},
+				{
+					description: 'maps a mosaic definition',
+					config: { response: mosaicDefinitionConfirmedTransactionResponse },
+					expected: { result: mosaicDefinitionConfirmedTransaction }
+				},
+				{
+					description: 'maps a mosaic supply change',
+					config: { response: mosaicSupplyChangeConfirmedTransactionResponse },
+					expected: { result: mosaicSupplyChangeConfirmedTransaction }
+				},
+				{
+					description: 'maps a namespace registration',
+					config: { response: namespaceRegistrationConfirmedTransactionResponse },
+					expected: { result: namespaceRegistrationConfirmedTransaction }
+				},
+				{
+					description: 'maps a multisig account modification',
+					config: { response: multisigAccountModificationConfirmedTransactionResponse },
+					expected: { result: multisigAccountModificationConfirmedTransaction }
+				},
+				{
+					description: 'maps an account key link',
+					config: { response: accountKeyLinkConfirmedTransactionResponse },
+					expected: { result: accountKeyLinkConfirmedTransaction }
+				},
+				{
+					description: 'maps a multisig with an embedded transfer',
+					config: { response: multisigConfirmedTransactionResponse },
+					expected: { result: multisigConfirmedTransaction }
+				},
+				{
+					description: 'maps a multisig with an embedded namespace registration',
+					config: { response: multisigNamespaceRegistrationConfirmedTransactionResponse },
+					expected: { result: multisigNamespaceRegistrationConfirmedTransaction }
+				},
+				{
+					description: 'maps a multisig with an embedded multisig account modification',
+					config: { response: multisigMultisigAccountModificationConfirmedTransactionResponse },
+					expected: { result: multisigMultisigAccountModificationConfirmedTransaction }
+				},
+				{
+					description: 'maps an unsupported transaction type to the base fields',
+					config: { response: unsupportedTransactionResponse },
+					expected: { result: unsupportedTransaction }
+				},
+				{
+					description: 'returns null when the transaction does not exist',
+					config: { error: error404Response },
+					expected: { result: null }
+				}
+			];
 
-			// Act + Assert:
-			await runApiTest(fetchTransactionInfo, params, unsupportedTransactionInfoResponse, expectedURL, expectedResult);
-		});
-
-		it('fetch account key link info with remote account address from transaction payload', async () => {
-			// Arrange:
-			const hash = '0235992BAA8C323ED0D0E74EE6CE97F635D0997493324F01FAB4B470088C6C0F';
-			const transactionURL = `https://explorer.backend/transaction/${hash}`;
-			const remotePublicKey = '64F0C867C52E8D3F7FE478854DBB197646D06041CC16B56595C03A217AF6564B';
-			const expectedRemoteAddress = 'NA6N267O7JIRQY5WQTM4IFUFRMOUJDB5OAOQ777N';
-			const transactionResponse = {
-				deadline: '2015-03-30 08:31:57',
-				embeddedTransactions: null,
-				fee: 6.0,
-				fromAddress: 'NALICE7GX3PF3WAOWVLXFOQ4ZMOBP7GUMNB2RCYQ',
-				height: 2,
-				signature:
-					'84DD349E10D4669F3C727EE7F58DA8077D85455699E95536BBD0255C8708DAB5FD5C008676E29E3486F079927685218EE49F1D37'
-					+ '3FD95F0769B33F06F75B030A',
-				timestamp: '2015-03-29 20:31:57',
-				toAddress: null,
-				transactionHash: hash,
-				transactionType: 'ACCOUNT_KEY_LINK',
-				value: [{ mode: 1, remoteAccount: remotePublicKey, remoteAddress: expectedRemoteAddress }]
-			};
-			const makeRequestSpy = jest.spyOn(serverUtils, 'makeRequest');
-			makeRequestSpy.mockResolvedValueOnce(transactionResponse);
-
-			// Act:
-			const result = await fetchTransactionInfo(hash);
-
-			// Assert:
-			expect(makeRequestSpy).toHaveBeenCalledTimes(1);
-			expect(makeRequestSpy).toHaveBeenNthCalledWith(1, transactionURL);
-			expect(result.body[0]).toEqual(expect.objectContaining({
-				type: 'ACCOUNT_KEY_LINK',
-				keyLinkAction: 1,
-				linkedPublicKey: remotePublicKey,
-				linkedAddress: expectedRemoteAddress
-			}));
+			runApiResultTests({ functionToTest: fetchTransactionInfo, cases: resultCases });
 		});
 	});
 });

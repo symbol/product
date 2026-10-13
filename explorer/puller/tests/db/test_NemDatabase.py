@@ -5,7 +5,7 @@ from collections import namedtuple
 from pathlib import Path
 
 import psycopg2
-import testing.postgresql
+import pytest
 from symbolchain.CryptoTypes import PublicKey
 from symbolchain.nc import TransactionType
 from symbolchain.nem.Network import Address
@@ -13,8 +13,6 @@ from symbollightapi.model.Transaction import Mosaic
 
 from puller.db.NemDatabase import NemDatabase, RollbackAccountKeyLinkRecord, RollbackMosaicRecord, RollbackNamespaceRegistrationRecord
 from puller.facade.NemPuller import AccountRecord, BlockRecord, MosaicRecord, NamespaceRecord, TransactionRecord
-
-from .test_DatabaseConnection import DatabaseConfig
 
 AccountDbRecord = namedtuple('AccountDbRecord', [
 	*AccountRecord._fields,
@@ -112,15 +110,9 @@ TRANSACTIONS = [
 # endregion
 
 
+@pytest.mark.usefixtures('database_config')
 class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods, too-many-lines
-
-	def setUp(self):
-		self.postgresql = testing.postgresql.Postgresql()
-		self.db_config = DatabaseConfig(**self.postgresql.dsn(), password='')
-
-	def tearDown(self):
-		# Destroy the temporary PostgreSQL database
-		self.postgresql.stop()
+	db_config = None  # pylint: disable=invalid-name
 
 	@staticmethod
 	def _fetch_account_from_db(cursor, address):
