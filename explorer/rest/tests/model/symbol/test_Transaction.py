@@ -67,7 +67,7 @@ class SymbolTransactionViewTest(TestCase):
 			],
 			'amount': 1.234567,
 			'fee': 0.0,
-			'timestamp': '2026-06-09T00:00:00Z',
+			'timestamp': '2026-06-09 00:00:00',
 			'message': {'type': 'plain', 'text': 'Hello'}
 		}, result)
 
@@ -101,7 +101,7 @@ class SymbolTransactionViewTest(TestCase):
 			'value': [],
 			'amount': 0,
 			'fee': None,
-			'timestamp': '2026-06-09T00:00:00Z',
+			'timestamp': '2026-06-09 00:00:00',
 			'message': {'type': 'encrypted', 'text': '00FF'}
 		}, result)
 

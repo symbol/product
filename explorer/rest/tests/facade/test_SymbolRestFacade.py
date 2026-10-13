@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta, timezone
 from unittest import TestCase
 
 from common.symbol.NativeMosaic import NativeMosaicInfo
@@ -55,6 +56,18 @@ class HealthySymbolDatabase:
 			'finalized_height': 8,
 			'last_synced_height': 10,
 			'updated_at': None
+		}
+
+
+class TimestampedHealthySymbolDatabase(HealthySymbolDatabase):
+	@staticmethod
+	def try_get_sync_state():
+		return {
+			'status': 'healthy',
+			'chain_height': 10,
+			'finalized_height': 8,
+			'last_synced_height': 10,
+			'updated_at': datetime(2026, 1, 2, 8, 4, 5, 987654, tzinfo=timezone(timedelta(hours=5)))
 		}
 
 
@@ -238,6 +251,16 @@ class SymbolRestFacadeTest(TestCase):  # pylint: disable=too-many-public-methods
 			'status': 'healthy',
 			'errors': []
 		}, result)
+
+	def test_formats_health_sync_timestamp_as_utc_without_fractional_seconds(self):
+		# Arrange:
+		facade = _create_facade_with_database(TimestampedHealthySymbolDatabase())
+
+		# Act:
+		result = facade.get_health()
+
+		# Assert:
+		self.assertEqual('2026-01-02 03:04:05', result['lastDBSyncedAt'])
 
 	def test_reports_unsynced_when_healthy_state_is_behind_chain_height(self):
 		# Arrange:
