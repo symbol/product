@@ -1,27 +1,5 @@
 import { Primitives } from './primitives';
-import { Platform } from 'react-native';
-
-const Fonts = {
-	primary: {
-		regular: {
-			fontFamily: 'Protipo-Regular'
-		},
-		bold: {
-			fontFamily: 'Protipo-Bold'
-		}
-	},
-	secondary: {
-		bold: {
-			fontFamily: 'SofiaSansCondensed-ExtraBold',
-			fontWeight: Platform.select({ ios: '700', android: undefined })
-		}
-	},
-	monospace: {
-		bold: {
-			fontFamily: 'JetBrainsMono-Bold'
-		}
-	}
-};
+import { Fonts } from '@/brand/fonts';
 
 export const Semantic = {
 	body: {
