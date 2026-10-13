@@ -1,5 +1,7 @@
 import '@testing-library/jest-dom';
-import { accountHarvestedBlockPageResult, accountInfoResult } from '../test-utils/accounts';
+import { cosignatoryAccount, harvestingAccount, multisigAccount, remoteAccount } from '../../__fixtures__/local/account';
+import { accountHarvestedBlockList } from '../../__fixtures__/local/account-harvested-block-list';
+import { accountTransactionListConfirmed } from '../../__fixtures__/local/transaction-list-confirmed';
 import {
 	clearFilterChip,
 	clickText,
@@ -9,22 +11,15 @@ import {
 	runTableErrorTest,
 	toggleFilterChip
 } from '../test-utils/page';
-import { transactionPageResult } from '../test-utils/transactions';
 import { describeVariant } from '../test-utils/variants';
 import * as AccountService from '@/app/api/accounts';
+import * as StatsService from '@/app/api/stats';
 import * as TransactionService from '@/app/api/transactions';
 import AccountInfo, { getServerSideProps } from '@/app/pages/accounts/[address]';
-import * as utils from '@/app/utils';
+import { truncateString } from '@/app/utils';
 import { fireEvent, render, screen } from '@testing-library/react';
 
 // Mocks
-
-jest.mock('@/app/utils', () => {
-	return {
-		__esModule: true,
-		...jest.requireActual('@/app/utils')
-	};
-});
 
 jest.mock('@/app/api/transactions', () => {
 	return {
@@ -40,13 +35,17 @@ jest.mock('@/app/api/accounts', () => {
 	};
 });
 
+jest.mock('@/app/api/stats', () => {
+	return {
+		__esModule: true,
+		...jest.requireActual('@/app/api/stats')
+	};
+});
+
 beforeEach(() => {
-	jest.spyOn(utils, 'useUserCurrencyAmount').mockReturnValue(1000);
-	jest.spyOn(TransactionService, 'fetchTransactionPage').mockResolvedValue(transactionPageResult);
-	jest.spyOn(AccountService, 'fetchAccountHarvestedBlockPage').mockResolvedValue({
-		data: accountHarvestedBlockPageResult.data,
-		pageNumber: 1
-	});
+	jest.spyOn(StatsService, 'fetchPriceByDate').mockResolvedValue(mockedMosaicPrice);
+	jest.spyOn(TransactionService, 'fetchTransactionPage').mockResolvedValue(accountTransactionPage);
+	jest.spyOn(AccountService, 'fetchAccountHarvestedBlockPage').mockResolvedValue(harvestedBlockPage);
 });
 
 // Constants
@@ -58,6 +57,7 @@ const SCREEN_TEXT = {
 	sectionHistory: 'section_history',
 	sectionTransactions: 'section_transactions',
 	sectionHarvested: 'section_harvested',
+	labelHarvesting: 'label_harvesting',
 	labelLinked: 'label_linked',
 	labelMultisig: 'label_multisig',
 	fieldLinkedAccount: 'field_linkedAccount',
@@ -73,12 +73,20 @@ const SCREEN_TEXT = {
 	tableFieldAmount: 'table_field_amount'
 };
 
-const linkedAccountAddress = 'NANQPLR63Z4ONDR3X6JQAC2HQCVPKI4ZDQ6OG6M4';
-const cosignatoryAddresses = ['NANGHZNOAFIKE5QTGOLWP66I2SPJSYLRXY63EODH', 'NAEF6OBWJLW3CBM7U6QVCDRS4XAKBIC4VWACEGVL'];
-const cosignatoryOfAddresses = ['NCYAVMNQOZ3MZETEBD34ACMAX3S57WUSWAZWY3DW'];
+const mockedMosaicPrice = 0.5;
+const balanceInUserCurrencyText = `~${cosignatoryAccount.balance * mockedMosaicPrice} USD`;
+const accountDescription = 'Account description text..';
+const accountTransactionPage = {
+	data: accountTransactionListConfirmed,
+	pageNumber: 1
+};
+const harvestedBlockPage = {
+	data: accountHarvestedBlockList,
+	pageNumber: 1
+};
 const harvestedBlockSearchCriteria = {
 	pageNumber: 1,
-	address: accountInfoResult.address
+	address: harvestingAccount.address
 };
 
 // Tests
@@ -92,33 +100,33 @@ describe('AccountInfo', () => {
 
 		const getServerSidePropsCases = [
 			{
-				description: 'returns the account info and preloads transactions',
+				description: 'returns the account info and preloaded transactions props',
 				config: {
 					responses: {
-						accountInfo: accountInfoResult,
-						transactionPage: transactionPageResult
+						accountInfo: cosignatoryAccount,
+						transactionPage: accountTransactionPage
 					}
 				},
 				expected: {
 					requestArguments: {
-						accountInfo: [accountInfoResult.address],
-						transactionPage: [{ address: accountInfoResult.address }]
+						accountInfo: [cosignatoryAccount.address],
+						transactionPage: [{ address: cosignatoryAccount.address }]
 					},
 					result: {
 						props: {
-							accountInfo: accountInfoResult,
-							preloadedTransactions: transactionPageResult.data
+							accountInfo: cosignatoryAccount,
+							preloadedTransactions: accountTransactionListConfirmed
 						}
 					}
 				}
 			},
 			{
-				description: 'returns not found without fetching transactions',
+				description: 'returns not found when the account does not exist, without fetching transactions',
 				config: {
 					responses: { accountInfo: null }
 				},
 				expected: {
-					requestArguments: { accountInfo: [accountInfoResult.address] },
+					requestArguments: { accountInfo: [cosignatoryAccount.address] },
 					result: { notFound: true }
 				}
 			}
@@ -126,7 +134,7 @@ describe('AccountInfo', () => {
 
 		runGetServerSidePropsTests({
 			getServerSideProps,
-			params: { address: accountInfoResult.address },
+			params: { address: cosignatoryAccount.address },
 			requests,
 			cases: getServerSidePropsCases
 		});
@@ -134,39 +142,58 @@ describe('AccountInfo', () => {
 
 	describe('render', () => {
 		const renderPage = config =>
-			render(<AccountInfo accountInfo={{ ...accountInfoResult, ...config.accountInfo }} preloadedTransactions={[]} />);
+			render(<AccountInfo accountInfo={config.accountInfo} preloadedTransactions={config.preloadedTransactions ?? []} />);
 
 		describe('section: account info', () => {
 			const accountInfoCases = [
 				{
 					description: 'renders the main account fields and mosaics',
-					config: {},
+					config: { accountInfo: cosignatoryAccount },
 					expected: {
 						texts: [
 							SCREEN_TEXT.sectionAccount,
-							accountInfoResult.address,
-							accountInfoResult.description,
-							accountInfoResult.publicKey,
-							accountInfoResult.height,
-							`${accountInfoResult.importance} %`,
-							...accountInfoResult.mosaics.map(mosaic => mosaic.id)
+							cosignatoryAccount.address,
+							cosignatoryAccount.publicKey,
+							cosignatoryAccount.height,
+							`${cosignatoryAccount.importance} %`,
+							...cosignatoryAccount.mosaics.map(mosaic => mosaic.id)
 						],
 						// The balance appears twice: the account balance field and the native mosaic row.
-						textOccurrences: { [accountInfoResult.balance]: 2 },
+						textOccurrences: { [cosignatoryAccount.balance]: 2 },
+						asyncTexts: [balanceInUserCurrencyText]
+					}
+				},
+				{
+					description: 'renders the description when the description is present',
+					config: {
+						accountInfo: {
+							...harvestingAccount,
+							description: accountDescription
+						}
+					},
+					expected: {
+						texts: [accountDescription],
 						hiddenTexts: [SCREEN_TEXT.noDescription]
 					}
 				},
 				{
 					description: 'renders the description placeholder when the description is missing',
-					config: { accountInfo: { description: null } },
-					expected: {
-						texts: [SCREEN_TEXT.noDescription],
-						hiddenTexts: [accountInfoResult.description]
-					}
+					config: { accountInfo: cosignatoryAccount },
+					expected: { texts: [SCREEN_TEXT.noDescription] }
 				},
 				{
-					description: 'does not render the linked label for an ordinary account',
-					config: {},
+					description: 'renders the harvesting label when the account is harvesting',
+					config: { accountInfo: harvestingAccount },
+					expected: { texts: [SCREEN_TEXT.labelHarvesting] }
+				},
+				{
+					description: 'does not render the harvesting label when the account does not harvest',
+					config: { accountInfo: cosignatoryAccount },
+					expected: { hiddenTexts: [SCREEN_TEXT.labelHarvesting] }
+				},
+				{
+					description: 'does not render the linked label when the account is not remote',
+					config: { accountInfo: harvestingAccount },
 					expected: { hiddenTexts: [SCREEN_TEXT.labelLinked] }
 				}
 			];
@@ -179,28 +206,31 @@ describe('AccountInfo', () => {
 				{
 					description: 'renders the linked account field when a linked key exists',
 					config: {
-						accountInfo: { linkedAddress: linkedAccountAddress },
+						accountInfo: cosignatoryAccount,
 						actions: [clickText(SCREEN_TEXT.sectionLinkedKeys)]
 					},
 					expected: {
-						texts: [SCREEN_TEXT.fieldLinkedAccount, linkedAccountAddress],
+						texts: [SCREEN_TEXT.fieldLinkedAccount, cosignatoryAccount.linkedAddress],
 						hiddenTexts: [SCREEN_TEXT.fieldMainAccount, SCREEN_TEXT.messageNoLinkedKeys]
 					}
 				},
 				{
-					description: 'renders the main account field and the linked label for a remote account',
+					description: 'renders the main account field and the linked label when the account is remote',
 					config: {
-						accountInfo: { mainAddress: linkedAccountAddress },
+						accountInfo: remoteAccount,
 						actions: [clickText(SCREEN_TEXT.sectionLinkedKeys)]
 					},
 					expected: {
-						texts: [SCREEN_TEXT.labelLinked, SCREEN_TEXT.fieldMainAccount, linkedAccountAddress],
+						texts: [SCREEN_TEXT.labelLinked, SCREEN_TEXT.fieldMainAccount, remoteAccount.mainAddress],
 						hiddenTexts: [SCREEN_TEXT.fieldLinkedAccount, SCREEN_TEXT.messageNoLinkedKeys]
 					}
 				},
 				{
 					description: 'renders the no linked keys message when the account has no keys',
-					config: { actions: [clickText(SCREEN_TEXT.sectionLinkedKeys)] },
+					config: {
+						accountInfo: harvestingAccount,
+						actions: [clickText(SCREEN_TEXT.sectionLinkedKeys)]
+					},
 					expected: {
 						texts: [SCREEN_TEXT.messageNoLinkedKeys],
 						hiddenTexts: [SCREEN_TEXT.fieldLinkedAccount, SCREEN_TEXT.fieldMainAccount]
@@ -214,37 +244,30 @@ describe('AccountInfo', () => {
 		describe('section: multisig', () => {
 			const multisigCases = [
 				{
-					description: 'renders the cosignatory fields for a multisig account',
-					config: {
-						accountInfo: {
-							cosignatories: cosignatoryAddresses,
-							cosignatoryOf: cosignatoryOfAddresses,
-							isMultisig: true
-						}
-					},
+					description: 'renders the cosignatory fields when the account is multisig',
+					config: { accountInfo: multisigAccount },
 					expected: {
 						texts: [
 							SCREEN_TEXT.sectionMultisig,
 							SCREEN_TEXT.labelMultisig,
 							SCREEN_TEXT.fieldMinCosignatories,
 							SCREEN_TEXT.fieldAccountCosignatories,
-							SCREEN_TEXT.fieldCosignatoryOf,
-							...cosignatoryAddresses,
-							...cosignatoryOfAddresses
-						]
+							...multisigAccount.cosignatories
+						],
+						hiddenTexts: [SCREEN_TEXT.fieldCosignatoryOf]
 					}
 				},
 				{
-					description: 'renders only the cosignatory of field for a cosignatory-only account',
-					config: { accountInfo: { cosignatoryOf: cosignatoryOfAddresses } },
+					description: 'renders only the cosignatory of field when the account is a cosignatory but not multisig',
+					config: { accountInfo: cosignatoryAccount },
 					expected: {
-						texts: [SCREEN_TEXT.sectionMultisig, SCREEN_TEXT.fieldCosignatoryOf, ...cosignatoryOfAddresses],
+						texts: [SCREEN_TEXT.sectionMultisig, SCREEN_TEXT.fieldCosignatoryOf, ...cosignatoryAccount.cosignatoryOf],
 						hiddenTexts: [SCREEN_TEXT.labelMultisig, SCREEN_TEXT.fieldMinCosignatories, SCREEN_TEXT.fieldAccountCosignatories]
 					}
 				},
 				{
-					description: 'is not rendered for an ordinary account',
-					config: {},
+					description: 'does not render the multisig section when the account is neither multisig nor a cosignatory',
+					config: { accountInfo: harvestingAccount },
 					expected: { hiddenTexts: [SCREEN_TEXT.sectionMultisig, SCREEN_TEXT.labelMultisig] }
 				}
 			];
@@ -253,72 +276,81 @@ describe('AccountInfo', () => {
 		});
 
 		describe('section: history', () => {
-			const renderAccountInfo = () =>
-				render(<AccountInfo accountInfo={accountInfoResult} preloadedTransactions={transactionPageResult.data} />);
-
 			const renderHarvestedTab = () => {
-				renderAccountInfo();
+				renderPage({ accountInfo: harvestingAccount });
 				fireEvent.click(screen.getByText(SCREEN_TEXT.sectionHarvested));
 			};
 
-
 			const historyCases = [
 				{
-					description: 'renders the transactions tab',
-					config: { actions: [clickText(SCREEN_TEXT.sectionTransactions)] },
+					description: 'renders the transaction hashes when the transactions tab is selected',
+					config: {
+						accountInfo: cosignatoryAccount,
+						preloadedTransactions: accountTransactionListConfirmed,
+						actions: [clickText(SCREEN_TEXT.sectionTransactions)]
+					},
 					expected: {
 						texts: [SCREEN_TEXT.sectionHistory],
-						asyncTexts: transactionPageResult.data.map(transaction => utils.truncateString(transaction.hash, 'hash'))
+						asyncTexts: accountTransactionListConfirmed.map(transaction => truncateString(transaction.hash, 'hash'))
 					}
 				},
 				{
-					description: 'renders the harvested tab',
-					config: { actions: [clickText(SCREEN_TEXT.sectionHarvested)] },
+					description: 'renders the harvested block heights when the harvested tab is selected',
+					config: {
+						accountInfo: harvestingAccount,
+						actions: [clickText(SCREEN_TEXT.sectionHarvested)]
+					},
 					expected: {
 						texts: [SCREEN_TEXT.sectionHistory],
 						asyncTexts: [
 							SCREEN_TEXT.tableFieldHeight,
 							SCREEN_TEXT.tableFieldType,
 							SCREEN_TEXT.tableFieldAmount,
-							...accountHarvestedBlockPageResult.data.map(block => block.height)
+							...accountHarvestedBlockList.map(block => block.height)
 						]
 					}
 				},
 				{
 					description: 'renders the empty block filter chip',
 					variants: ['nem'],
-					config: { actions: [clickText(SCREEN_TEXT.sectionHarvested)] },
+					config: {
+						accountInfo: harvestingAccount,
+						actions: [clickText(SCREEN_TEXT.sectionHarvested)]
+					},
 					expected: {
-						asyncTexts: [accountHarvestedBlockPageResult.data[0].height],
+						asyncTexts: [accountHarvestedBlockList[0].height],
 						texts: [SCREEN_TEXT.filterHideEmptyBlocks]
 					}
 				},
 				{
 					description: 'does not render the empty block filter chip',
 					variants: ['symbol'],
-					config: { actions: [clickText(SCREEN_TEXT.sectionHarvested)] },
+					config: {
+						accountInfo: harvestingAccount,
+						actions: [clickText(SCREEN_TEXT.sectionHarvested)]
+					},
 					expected: {
-						asyncTexts: [accountHarvestedBlockPageResult.data[0].height],
+						asyncTexts: [accountHarvestedBlockList[0].height],
 						hiddenTexts: [SCREEN_TEXT.filterHideEmptyBlocks]
 					}
 				}
 			];
 
-			runRenderScenarioTests({ renderPage: renderAccountInfo, cases: historyCases });
+			runRenderScenarioTests({ renderPage, cases: historyCases });
 
 			runSearchCriteriaTests({
 				renderPage: renderHarvestedTab,
 				request: [AccountService, 'fetchAccountHarvestedBlockPage'],
 				cases: [
 					{
-						description: 'asks for every harvested block by default',
+						description: 'requests every harvested block by default',
 						config: { actions: [] },
 						expected: { searchCriteria: harvestedBlockSearchCriteria }
 					}
 				]
 			});
 
-			runTableErrorTest('shows the try-again action when the harvested block request fails', {
+			runTableErrorTest('renders the try-again action when the harvested block request fails', {
 				renderPage: renderHarvestedTab,
 				request: [AccountService, 'fetchAccountHarvestedBlockPage']
 			});
@@ -329,17 +361,17 @@ describe('AccountInfo', () => {
 
 				const emptyBlockFilterCases = [
 					{
-						description: 'leaves out empty blocks once the filter is selected',
+						description: 'requests only the rewarded blocks when the empty block filter is selected',
 						config: { actions: [toggleEmptyBlockFilter] },
 						expected: { searchCriteria: { ...harvestedBlockSearchCriteria, isRewardedOnly: true } }
 					},
 					{
-						description: 'shows empty blocks again when the filter chip is toggled off',
+						description: 'requests every harvested block when the empty block filter is deselected',
 						config: { actions: [toggleEmptyBlockFilter, toggleEmptyBlockFilter] },
 						expected: { searchCriteria: harvestedBlockSearchCriteria }
 					},
 					{
-						description: 'shows empty blocks again when the filter is cleared',
+						description: 'requests every harvested block when the empty block filter is cleared',
 						config: { actions: [toggleEmptyBlockFilter, clearEmptyBlockFilter] },
 						expected: { searchCriteria: harvestedBlockSearchCriteria }
 					}
