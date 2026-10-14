@@ -93,7 +93,7 @@ SymbolAccountRecord = namedtuple(
 	'SymbolAccountRecord',
 	['address', 'public_key', 'account_type', 'address_height', 'importance_percentage', 'linked_public_key',
 		'node_public_key', 'vrf_public_key', 'voting_public_keys', 'activity_buckets', 'finalized_epoch', 'alias_names',
-		'mosaics'])
+		'mosaics', 'multisig'], defaults=(None,))
 SymbolMosaicRecord = namedtuple(
 	'SymbolMosaicRecord',
 	['mosaic_id', 'amount', 'metadata_mosaic_id', 'divisibility', 'owner_address', 'alias_names'])
@@ -327,7 +327,7 @@ class SymbolDatabase(DatabaseConnectionPool):
 
 				return self._fetch_transaction_records(cursor, transaction_rows, sync_state)
 
-	def get_account(self, address=None, public_key=None):
+	def try_get_account(self, address=None, public_key=None):
 		"""Gets one current-state Symbol account and its detail relations."""
 
 		with self.connection() as connection:
@@ -353,7 +353,7 @@ class SymbolDatabase(DatabaseConnectionPool):
 
 				return self._fetch_account_record(cursor, account_row, sync_state['finalized_epoch'])
 
-	def get_multisig(self, address):
+	def try_get_multisig(self, address):
 		"""Gets one current-state Symbol multisig relation."""
 
 		with self.connection() as connection:
@@ -383,6 +383,7 @@ class SymbolDatabase(DatabaseConnectionPool):
 		last_synced_height = sync_state.get('last_synced_height')
 		if isinstance(last_synced_height, bool) or not isinstance(last_synced_height, int) or last_synced_height < 1:
 			raise SymbolDataUnavailable('Symbol account data is unavailable')
+
 		if sync_state.get('dirty_state_from_height') is not None:
 			raise SymbolDataUnavailable('Symbol account data is unavailable')
 
@@ -402,6 +403,13 @@ class SymbolDatabase(DatabaseConnectionPool):
 			raise SymbolDataInvalid('accounts.address', 'invalid byte length')
 
 		address_text = str(Address(address))
+		cursor.execute(
+			'''SELECT min_approval, min_removal, cosignatory_addresses, multisig_addresses
+			FROM symbol_multisig WHERE address = %s''',
+			(address,))
+		multisig_row = cursor.fetchone()
+		multisig = SymbolMultisigRecord(*multisig_row) if multisig_row else None
+
 		cursor.execute(
 			'''SELECT account_mosaics.mosaic_id, account_mosaics.amount, mosaics.mosaic_id,
 					mosaics.divisibility, mosaics.owner_address
@@ -444,7 +452,8 @@ class SymbolDatabase(DatabaseConnectionPool):
 			account_row[9],
 			finalized_epoch,
 			tuple(account_aliases),
-			mosaics)
+			mosaics,
+			multisig)
 
 	@staticmethod
 	def _resolve_transfer_mosaic_id(cursor, query, sync_state):

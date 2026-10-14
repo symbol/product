@@ -38,17 +38,19 @@ class RecordingAccountDatabase:
 		self.multisig_record = SymbolMultisigRecord(
 			2, 1, [], [bytes.fromhex('9889432DE263BB8FE88444A4DA28D3609BD8BB8FAE18AE95')])
 
-	def get_account(self, address, public_key):
+	def try_get_account(self, address, public_key):
 		self.account_query = (address, public_key)
+
 		return self.account_record
 
-	def get_multisig(self, address):
+	def try_get_multisig(self, address):
 		self.multisig_query = address
+
 		return self.multisig_record
 
 
 class SymbolRestFacadeAccountTest(TestCase):
-	def test_get_account_passes_search_and_network_to_view(self):
+	def test_try_get_account_passes_search_and_network_to_view(self):
 		# Arrange:
 		database = RecordingAccountDatabase()
 		facade = SymbolRestFacade(
@@ -58,14 +60,15 @@ class SymbolRestFacadeAccountTest(TestCase):
 			Network.TESTNET)
 
 		# Act:
-		result = facade.get_account(None, bytes.fromhex('01' * 32))
+		result = facade.try_get_account(None, bytes.fromhex('01' * 32))
 
 		# Assert:
 		self.assertEqual((None, bytes.fromhex('01' * 32)), database.account_query)
+		self.assertIsNone(database.multisig_query)
 		self.assertEqual('TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY', result['address'])
 		self.assertEqual('TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY', result['supplementalKeys']['linked'])
 
-	def test_get_account_formats_mainnet_account_and_supplemental_keys(self):
+	def test_try_get_account_formats_mainnet_account_and_supplemental_keys(self):
 		# Arrange:
 		database = RecordingAccountDatabase()
 		database.account_record = create_account_record(
@@ -79,7 +82,7 @@ class SymbolRestFacadeAccountTest(TestCase):
 			Network.MAINNET)
 
 		# Act:
-		result = facade.get_account(None, bytes.fromhex('01' * 32))
+		result = facade.try_get_account(None, bytes.fromhex('01' * 32))
 
 		# Assert:
 		self.assertEqual('NCUZDUB4XJ4XV3KSUBQ6NPZPP4RY3CUFZ7HNAPI', result['address'])
@@ -90,7 +93,7 @@ class SymbolRestFacadeAccountTest(TestCase):
 			'vrf': 'NAXQUTQQNS6JEJG7PLC6FRVJ2USS44GLMUL5QKI'
 		}, result['supplementalKeys'])
 
-	def test_get_multisig_preserves_cosignatory_only_threshold_null(self):
+	def test_try_get_multisig_preserves_cosignatory_only_threshold_null(self):
 		# Arrange:
 		database = RecordingAccountDatabase()
 		facade = SymbolRestFacade(
@@ -100,13 +103,13 @@ class SymbolRestFacadeAccountTest(TestCase):
 			Network.TESTNET)
 
 		# Act:
-		result = facade.get_multisig(bytes.fromhex('98FD35818960C7B18B72F49A5598FA9F712A354DB33EDE57'))
+		result = facade.try_get_multisig(bytes.fromhex('98FD35818960C7B18B72F49A5598FA9F712A354DB33EDE57'))
 
 		# Assert:
 		self.assertEqual(None, result['minApproval'])
 		self.assertEqual(None, result['minRemoval'])
 
-	def test_get_multisig_converts_mainnet_related_addresses(self):
+	def test_try_get_multisig_converts_mainnet_related_addresses(self):
 		# Arrange:
 		database = RecordingAccountDatabase()
 		database.multisig_record = SymbolMultisigRecord(
@@ -119,7 +122,7 @@ class SymbolRestFacadeAccountTest(TestCase):
 			Network.MAINNET)
 
 		# Act:
-		result = facade.get_multisig(bytes.fromhex('68FD35818960C7B18B72F49A5598FA9F712A354DB3BF4C77'))
+		result = facade.try_get_multisig(bytes.fromhex('68FD35818960C7B18B72F49A5598FA9F712A354DB3BF4C77'))
 
 		# Assert:
 		self.assertEqual({

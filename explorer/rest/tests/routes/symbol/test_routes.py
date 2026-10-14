@@ -73,16 +73,18 @@ class SymbolAccountFacade:
 		self.account_error = None
 		self.multisig_error = None
 
-	def get_account(self, address, public_key):
+	def try_get_account(self, address, public_key):
 		self.account_query = (address, public_key)
 		if self.account_error:
 			raise self.account_error
+
 		return self.account_result
 
-	def get_multisig(self, address):
+	def try_get_multisig(self, address):
 		self.multisig_query = address
 		if self.multisig_error:
 			raise self.multisig_error
+
 		return self.multisig_result
 
 
@@ -118,7 +120,7 @@ def _assert_not_found_response(response):
 	} == response.json
 
 
-def test_account_address_bytes():
+def test_valid_address_bytes_to_facade():
 	# Arrange:
 	facade = SymbolAccountFacade()
 	address = 'TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY'
@@ -133,7 +135,7 @@ def test_account_address_bytes():
 	assert (bytes.fromhex('98FD35818960C7B18B72F49A5598FA9F712A354DB33EDE57'), None) == facade.account_query
 
 
-def test_account_public_key_hex():
+def test_mixed_public_key_hex_to_bytes():
 	# Arrange:
 	facade = SymbolAccountFacade()
 	client = _create_symbol_test_client(facade)
@@ -236,7 +238,7 @@ def test_multisig_not_found():
 	assert bytes.fromhex('98FD35818960C7B18B72F49A5598FA9F712A354DB33EDE57') == facade.multisig_query
 
 
-def test_account_data_503():
+def test_account_invalid_saved_data_503():
 	# Arrange:
 	facade = SymbolAccountFacade()
 	facade.account_error = SymbolDataInvalid('accounts.voting_public_keys[0].endEpoch', 'invalid integer')
@@ -249,7 +251,7 @@ def test_account_data_503():
 	_assert_symbol_backend_unavailable_response(response)
 
 
-def test_multisig_data_503():
+def test_multisig_invalid_saved_data_503():
 	# Arrange:
 	facade = SymbolAccountFacade()
 	facade.multisig_error = SymbolDataInvalid('multisig.cosignatory_addresses[0]', 'invalid address')

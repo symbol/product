@@ -279,8 +279,8 @@ def _expected_receipt(  # pylint: disable=too-many-arguments,too-many-positional
 	}
 
 
-def _expected_account_detail():
-	return {
+def _expected_account_detail(**field_overrides):
+	expected = {
 		'address': 'TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY',
 		'publicKey': '01' * 32,
 		'description': None,
@@ -314,8 +314,11 @@ def _expected_account_detail():
 		'harvestedBlocks': None,
 		'harvestedFees': None,
 		'minCosignatories': 0,
+		'minRemoval': None,
 		'remoteAddress': None
 	}
+	expected.update(field_overrides)
+	return expected
 
 
 # pylint: disable=unidiomatic-typecheck
@@ -326,6 +329,7 @@ def _assert_account_dto_json_types(account):
 	assert type(account['importance']) in (int, float)
 	assert type(account['isMultisig']) is bool
 	assert type(account['minCosignatories']) is int
+	assert account['minRemoval'] is None or type(account['minRemoval']) is int
 	for mosaic in account['mosaics']:
 		assert type(mosaic['amount']) in (int, float)
 		assert type(mosaic['isCreatedByAccount']) is bool
@@ -432,6 +436,137 @@ def test_public_key_no_derived_fallback(symbol_database_config):
 	_assert_not_found_json(public_key_response)
 
 
+def test_valid_unregistered_address_404(symbol_database_config):
+	# Arrange:
+	with tempfile.TemporaryDirectory() as temp_directory:
+		db_config_path = _create_config_file(temp_directory, database_config=symbol_database_config)
+		app_config_path = _create_app_config(temp_directory, db_config_path)
+		_seed_symbol_account_database(
+			symbol_database_config,
+			create_symbol_sync_state(last_synced_height=100, finalized_height=100, finalized_epoch=150))
+		unregistered_address = Network.TESTNET.public_key_to_address(PublicKey(bytes.fromhex('02' * 32)))
+		with rest_settings_env(app_config_path):
+			app = _create_symbol_app()
+			try:
+				# Act:
+				response = app.test_client().get(f'/api/symbol/account?address={unregistered_address}')
+			finally:
+				app.extensions['symbol_database'].close()
+
+	# Assert:
+	_assert_not_found_json(response)
+
+
+def test_account_multisig_address_scope(symbol_database_config):
+	# Arrange:
+	account_b_address = 'TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI'
+	account_b_public_key = '03' * 32
+	with tempfile.TemporaryDirectory() as temp_directory:
+		db_config_path = _create_config_file(temp_directory, database_config=symbol_database_config)
+		app_config_path = _create_app_config(temp_directory, db_config_path)
+		_seed_symbol_account_database(
+			symbol_database_config,
+			create_symbol_sync_state(last_synced_height=100, finalized_height=100, finalized_epoch=150))
+		with PullerSymbolDatabase(symbol_database_config) as database:
+			database.upsert_account_current_state(
+				create_symbol_account_row(
+					address=OTHER_ADDRESS,
+					address_text=account_b_address,
+					public_key=bytes.fromhex(account_b_public_key),
+					account_type='remote',
+					address_height=456,
+					importance_percentage=0.075,
+					linked_public_key=bytes.fromhex('33' * 32),
+					node_public_key=bytes.fromhex('44' * 32),
+					vrf_public_key=bytes.fromhex('55' * 32),
+					voting_public_keys=Json([{'publicKey': 'CD' * 32, 'startEpoch': 300, 'endEpoch': 400}]),
+					activity_buckets=Json([{
+						'startHeight': '9',
+						'totalFeesPaid': '7654321',
+						'beneficiaryCount': 4,
+						'rawScore': '6000000000'
+					}]),
+				),
+				[])
+			database.upsert_multisig(ACCOUNT_ADDRESS, {
+				'address': ACCOUNT_ADDRESS,
+				'min_approval': 6,
+				'min_removal': 5,
+				'cosignatory_addresses': [OTHER_ADDRESS],
+				'multisig_addresses': [ACCOUNT_ADDRESS, OTHER_ADDRESS],
+				'updated_at_height': 100
+			})
+		with rest_settings_env(app_config_path):
+			app = _create_symbol_app()
+			try:
+				client = app.test_client()
+
+				# Act:
+				responses = {
+					'account_a': client.get('/api/symbol/account?address=TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY'),
+					'multisig_a': client.get('/api/symbol/account/TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY/multisig'),
+					'account_b_address': client.get(f'/api/symbol/account?address={account_b_address}'),
+					'account_b_public_key': client.get(f'/api/symbol/account?publicKey={account_b_public_key}'),
+					'multisig_b': client.get(f'/api/symbol/account/{account_b_address}/multisig')
+				}
+			finally:
+				app.extensions['symbol_database'].close()
+
+	# Assert:
+	expected_a = _expected_account_detail(
+		isMultisig=True,
+		cosignatories=['TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI'],
+		cosignatoryOf=['TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY', 'TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI'],
+		minCosignatories=6,
+		minRemoval=5)
+	expected_b = {
+		'address': account_b_address,
+		'publicKey': account_b_public_key,
+		'description': None,
+		'namespaces': ['alice.other'],
+		'balance': 0,
+		'importance': 0.075,
+		'accountType': 'remote',
+		'isHarvestingActive': None,
+		'mosaics': [],
+		'supplementalKeys': {
+			'linked': 'TB2YLF4MVXZBQ3HF3ESXN7EET67W5TT3G3VZ33Y',
+			'node': 'TD3MWQTWWFVDJGQ4HTKQYN2SO5NNLU7S6647JXY',
+			'vrf': 'TBRGWW4YYYBNSAFNSWRXBBCBFP65XFFABQCPE4I'
+		},
+		'votingKeys': [{'publicKey': 'CD' * 32, 'startEpoch': 300, 'endEpoch': 400, 'status': 'future'}],
+		'importanceHistory': [{
+			'recalculationBlock': 9,
+			'totalFeesPaid': 7.654321,
+			'beneficiaryCount': 4,
+			'importanceScore': 6000000000
+		}],
+		'isMultisig': False,
+		'cosignatories': [],
+		'cosignatoryOf': [],
+		'height': 456,
+		'harvestedBlocks': None,
+		'harvestedFees': None,
+		'minCosignatories': 0,
+		'minRemoval': None,
+		'remoteAddress': None
+	}
+	assert (200, expected_a) == (responses['account_a'].status_code, responses['account_a'].json)
+	assert (200, expected_b) == (responses['account_b_address'].status_code, responses['account_b_address'].json)
+	assert (200, expected_b) == (responses['account_b_public_key'].status_code, responses['account_b_public_key'].json)
+	_assert_account_dto_json_types(responses['account_a'].json)
+	_assert_account_dto_json_types(responses['account_b_address'].json)
+	_assert_account_dto_json_types(responses['account_b_public_key'].json)
+	assert (200, {
+		'minApproval': 6,
+		'minRemoval': 5,
+		'cosignatoryAddresses': ['TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI'],
+		'multisigAddresses': ['TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY', 'TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI']
+	}) == (responses['multisig_a'].status_code, responses['multisig_a'].json)
+	_assert_multisig_dto_json_types(responses['multisig_a'].json)
+	_assert_not_found_json(responses['multisig_b'])
+
+
 def test_account_dto_without_receipt(symbol_database_config):
 	# Arrange:
 	with tempfile.TemporaryDirectory() as temp_directory:
@@ -457,15 +592,11 @@ def test_account_dto_without_receipt(symbol_database_config):
 	assert 200 == public_key_response.status_code
 	assert expected_account == address_response.json
 	assert expected_account == public_key_response.json
-	assert address_response.json['harvestedBlocks'] is None
-	assert address_response.json['harvestedFees'] is None
-	assert public_key_response.json['harvestedBlocks'] is None
-	assert public_key_response.json['harvestedFees'] is None
 	_assert_account_dto_json_types(address_response.json)
 	_assert_account_dto_json_types(public_key_response.json)
 
 
-def test_account_multisig_compat_fields(symbol_database_config):
+def _assert_account_multisig_scenario(symbol_database_config, multisig_row, account_fields, expected_multisig):
 	# Arrange:
 	with tempfile.TemporaryDirectory() as temp_directory:
 		db_config_path = _create_config_file(temp_directory, database_config=symbol_database_config)
@@ -473,46 +604,146 @@ def test_account_multisig_compat_fields(symbol_database_config):
 		_seed_symbol_account_database(
 			symbol_database_config,
 			create_symbol_sync_state(last_synced_height=100, finalized_height=100, finalized_epoch=150))
-		with PullerSymbolDatabase(symbol_database_config) as database:
-			database.upsert_multisig(ACCOUNT_ADDRESS, {
-				'address': ACCOUNT_ADDRESS,
-				'min_approval': 2,
-				'min_removal': 1,
-				'cosignatory_addresses': [OTHER_ADDRESS],
-				'multisig_addresses': [OTHER_ADDRESS],
-				'updated_at_height': 100
-			})
+		if multisig_row is not None:
+			with PullerSymbolDatabase(symbol_database_config) as database:
+				database.upsert_multisig(ACCOUNT_ADDRESS, multisig_row)
 		with rest_settings_env(app_config_path):
 			app = _create_symbol_app()
 			try:
 				client = app.test_client()
 
 				# Act:
-				address_response = client.get('/api/symbol/account?address=TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY')
-				public_key_response = client.get('/api/symbol/account?publicKey=' + ('01' * 32))
-				multisig_response = client.get(
-					'/api/symbol/account/TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY/multisig')
+				responses = (
+					client.get('/api/symbol/account?address=TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY'),
+					client.get('/api/symbol/account?publicKey=' + ('01' * 32)),
+					client.get('/api/symbol/account/TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY/multisig'))
 			finally:
 				app.extensions['symbol_database'].close()
 
 	# Assert:
-	for response in (address_response, public_key_response):
-		assert 200 == response.status_code
-		assert _expected_account_detail() == response.json
-		_assert_account_dto_json_types(response.json)
-		assert response.json['isMultisig'] is False
-		assert [] == response.json['cosignatories']
-		assert [] == response.json['cosignatoryOf']
-		assert 0 == response.json['minCosignatories']
-		assert response.json['remoteAddress'] is None
-	assert 200 == multisig_response.status_code
-	_assert_multisig_dto_json_types(multisig_response.json)
-	assert {
-		'minApproval': 2,
-		'minRemoval': 1,
-		'cosignatoryAddresses': ['TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI'],
-		'multisigAddresses': ['TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI']
-	} == multisig_response.json
+	expected_account = _expected_account_detail(**account_fields)
+	assert 200 == responses[0].status_code
+	assert 200 == responses[1].status_code
+	assert expected_account == responses[0].json
+	assert expected_account == responses[1].json
+	assert 'minApproval' not in responses[0].json
+	assert 'minApproval' not in responses[1].json
+	_assert_account_dto_json_types(responses[0].json)
+	_assert_account_dto_json_types(responses[1].json)
+	assert expected_multisig == (responses[2].status_code, responses[2].json)
+	if 200 == expected_multisig[0]:
+		_assert_multisig_dto_json_types(responses[2].json)
+
+
+def test_account_multisig_both_relations(symbol_database_config):
+	_assert_account_multisig_scenario(
+		symbol_database_config,
+		{
+			'address': ACCOUNT_ADDRESS,
+			'min_approval': 2,
+			'min_removal': 1,
+			'cosignatory_addresses': [OTHER_ADDRESS, ACCOUNT_ADDRESS, OTHER_ADDRESS],
+			'multisig_addresses': [ACCOUNT_ADDRESS, OTHER_ADDRESS, ACCOUNT_ADDRESS],
+			'updated_at_height': 100
+		},
+		{
+			'isMultisig': True,
+			'cosignatories': [
+				'TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI',
+				'TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY',
+				'TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI'],
+			'cosignatoryOf': [
+				'TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY',
+				'TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI',
+				'TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY'],
+			'minCosignatories': 2,
+			'minRemoval': 1
+		},
+		(200, {
+			'minApproval': 2,
+			'minRemoval': 1,
+			'cosignatoryAddresses': [
+				'TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI',
+				'TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY',
+				'TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI'],
+			'multisigAddresses': [
+				'TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY',
+				'TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI',
+				'TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY']
+		}))
+
+
+def test_account_multisig_own_only(symbol_database_config):
+	_assert_account_multisig_scenario(
+		symbol_database_config,
+		{
+			'address': ACCOUNT_ADDRESS,
+			'min_approval': 7,
+			'min_removal': 3,
+			'cosignatory_addresses': [OTHER_ADDRESS],
+			'multisig_addresses': [],
+			'updated_at_height': 100
+		},
+		{
+			'isMultisig': True,
+			'cosignatories': ['TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI'],
+			'cosignatoryOf': [],
+			'minCosignatories': 7,
+			'minRemoval': 3
+		},
+		(200, {
+			'minApproval': 7,
+			'minRemoval': 3,
+			'cosignatoryAddresses': ['TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI'],
+			'multisigAddresses': []
+		}))
+
+
+def test_account_multisig_empty_defaults(symbol_database_config):
+	_assert_account_multisig_scenario(
+		symbol_database_config,
+		{
+			'address': ACCOUNT_ADDRESS,
+			'min_approval': 0,
+			'min_removal': 0,
+			'cosignatory_addresses': [],
+			'multisig_addresses': [],
+			'updated_at_height': 100
+		},
+		{},
+		(404, {'status': 404, 'message': 'Resource not found'}))
+
+
+def test_account_cosignatory_only(symbol_database_config):
+	_assert_account_multisig_scenario(
+		symbol_database_config,
+		{
+			'address': ACCOUNT_ADDRESS,
+			'min_approval': 2,
+			'min_removal': 1,
+			'cosignatory_addresses': [],
+			'multisig_addresses': [OTHER_ADDRESS, ACCOUNT_ADDRESS, OTHER_ADDRESS],
+			'updated_at_height': 100
+		},
+		{
+			'isMultisig': False,
+			'cosignatories': [],
+			'cosignatoryOf': [
+				'TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI',
+				'TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY',
+				'TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI'],
+			'minCosignatories': 0,
+			'minRemoval': None
+		},
+		(200, {
+			'minApproval': None,
+			'minRemoval': None,
+			'cosignatoryAddresses': [],
+			'multisigAddresses': [
+				'TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI',
+				'TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY',
+				'TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI']
+		}))
 
 
 def test_account_current_beats_snapshot(symbol_database_config):
@@ -723,7 +954,78 @@ def test_account_bad_jsonb_recovers(symbol_database_config, caplog):
 				app.extensions['symbol_database'].close()
 
 
-def test_account_sql_error_recovery(symbol_database_config):
+@pytest.mark.parametrize('invalid_case', [
+	pytest.param({
+		'min_approval': 2,
+		'min_removal': 1,
+		'cosignatories': [bytes(23)],
+		'expected_error': 'multisig.cosignatory_addresses[0]: invalid byte length'
+	}, id='invalid-address'),
+	pytest.param({
+		'min_approval': -1,
+		'min_removal': 1,
+		'cosignatories': [OTHER_ADDRESS],
+		'expected_error': 'multisig.min_approval: integer is outside the allowed range'
+	}, id='invalid-min-approval'),
+	pytest.param({
+		'min_approval': 2,
+		'min_removal': -1,
+		'cosignatories': [OTHER_ADDRESS],
+		'expected_error': 'multisig.min_removal: integer is outside the allowed range'
+	}, id='invalid-min-removal')
+])
+def test_account_multisig_invalid_503(symbol_database_config, caplog, invalid_case):
+	# Arrange:
+	with tempfile.TemporaryDirectory() as temp_directory:
+		db_config_path = _create_config_file(temp_directory, database_config=symbol_database_config)
+		app_config_path = _create_app_config(temp_directory, db_config_path)
+		_seed_symbol_account_database(
+			symbol_database_config,
+			create_symbol_sync_state(last_synced_height=100, finalized_height=100, finalized_epoch=150))
+		with PullerSymbolDatabase(symbol_database_config) as database:
+			database.upsert_multisig(ACCOUNT_ADDRESS, {
+				'address': ACCOUNT_ADDRESS,
+				'min_approval': invalid_case['min_approval'],
+				'min_removal': invalid_case['min_removal'],
+				'cosignatory_addresses': invalid_case['cosignatories'],
+				'multisig_addresses': [],
+				'updated_at_height': 100
+			})
+		with rest_settings_env(app_config_path):
+			app = _create_symbol_app()
+			try:
+				client = app.test_client()
+				caplog.set_level(logging.ERROR, logger='pythonConfig')
+				caplog.clear()
+
+				# Act:
+				invalid_response = client.get('/api/symbol/account?address=TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY')
+				error_messages = [record.getMessage() for record in caplog.records if record.levelno >= logging.ERROR]
+
+				# Assert:
+				assert [f"Invalid Symbol backend data at {invalid_case['expected_error']}"] == error_messages
+				_assert_unavailable_json(invalid_response)
+
+				# Arrange:
+				with PullerSymbolDatabase(symbol_database_config) as database:
+					database.upsert_multisig(ACCOUNT_ADDRESS, None)
+
+				# Act:
+				recovered_response = client.get('/api/symbol/account?address=TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY')
+			finally:
+				app.extensions['symbol_database'].close()
+
+	# Assert:
+	assert 200 == recovered_response.status_code
+	assert _expected_account_detail() == recovered_response.json
+	_assert_account_dto_json_types(recovered_response.json)
+
+
+@pytest.mark.parametrize(('table_name', 'hidden_table_name'), [
+	pytest.param('symbol_alias_names', 'symbol_alias_names_hidden_for_test', id='symbol-alias-names'),
+	pytest.param('symbol_multisig', 'symbol_multisig_hidden_for_test', id='symbol-multisig')
+])
+def test_account_sql_error_recovery(symbol_database_config, table_name, hidden_table_name):
 	# Arrange:
 	with tempfile.TemporaryDirectory() as temp_directory:
 		db_config_path = _create_config_file(temp_directory, database_config=symbol_database_config)
@@ -737,23 +1039,25 @@ def test_account_sql_error_recovery(symbol_database_config):
 				client = app.test_client()
 				with PullerSymbolDatabase(symbol_database_config) as database:
 					with database.connection.cursor() as cursor:
-						cursor.execute('ALTER TABLE symbol_alias_names RENAME TO symbol_alias_names_hidden_for_test')
+						cursor.execute(f'ALTER TABLE {table_name} RENAME TO {hidden_table_name}')
 					database.connection.commit()
 					try:
-						# Act: the missing relation aborts the REST transaction.
+						# Act:
 						failed_response = client.get('/api/symbol/account?address=TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY')
+
+						# Assert:
+						_assert_unavailable_json(failed_response)
 					finally:
 						with database.connection.cursor() as cursor:
-							cursor.execute('ALTER TABLE symbol_alias_names_hidden_for_test RENAME TO symbol_alias_names')
+							cursor.execute(f'ALTER TABLE {hidden_table_name} RENAME TO {table_name}')
 						database.connection.commit()
 
-				# Act: fetch after restoring the relation.
+				# Act:
 				recovered_response = client.get('/api/symbol/account?address=TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY')
 			finally:
 				app.extensions['symbol_database'].close()
 
 	# Assert:
-	_assert_unavailable_json(failed_response)
 	assert 200 == recovered_response.status_code
 	assert _expected_account_detail() == recovered_response.json
 	_assert_account_dto_json_types(recovered_response.json)
@@ -933,6 +1237,7 @@ def test_multisig_503_precedes_404(symbol_database_config, sync_state_case):
 				# Act: fetch with the relationship present.
 				present_relationship_response = client.get(
 					'/api/symbol/account/TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY/multisig')
+				_assert_unavailable_json(present_relationship_response)
 
 				# Arrange: remove the relationship for the missing-relation check.
 				with PullerSymbolDatabase(symbol_database_config) as database:
@@ -945,7 +1250,6 @@ def test_multisig_503_precedes_404(symbol_database_config, sync_state_case):
 				app.extensions['symbol_database'].close()
 
 	# Assert:
-	_assert_unavailable_json(present_relationship_response)
 	_assert_unavailable_json(missing_relationship_response)
 
 

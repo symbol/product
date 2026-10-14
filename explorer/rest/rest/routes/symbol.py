@@ -197,10 +197,11 @@ def _setup_symbol_account_routes(app, symbol_api_facade, run_symbol_query):
 			abort(400, error)
 
 		error, result = run_symbol_query(
-			lambda: symbol_api_facade.get_account(address, public_key),
+			lambda: symbol_api_facade.try_get_account(address, public_key),
 			'Failed to get Symbol account')
 		if error:
 			return error
+
 		if result is None:
 			abort(404)
 
@@ -215,10 +216,11 @@ def _setup_symbol_account_routes(app, symbol_api_facade, run_symbol_query):
 			abort(400, error)
 
 		error, result = run_symbol_query(
-			lambda: symbol_api_facade.get_multisig(address),
+			lambda: symbol_api_facade.try_get_multisig(address),
 			'Failed to get Symbol multisig')
 		if error:
 			return error
+
 		if result is None:
 			abort(404)
 

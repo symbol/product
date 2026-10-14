@@ -37,7 +37,8 @@ def create_account(**overrides):
 		'mosaics': (
 			SymbolMosaicRecord('1234567890abcdef', 12345, None, None, None, ()),
 			SymbolMosaicRecord('72c0212e67a08bce', 1234567, '72C0212E67A08BCE', 6, OWNER_ADDRESS, ('xym',))
-		)
+		),
+		'multisig': None
 	}
 	values.update(overrides)
 	return SymbolAccountRecord(**values)
@@ -84,6 +85,7 @@ class SymbolAccountViewTest(TestCase):
 			'harvestedBlocks': None,
 			'harvestedFees': None,
 			'minCosignatories': 0,
+			'minRemoval': None,
 			'remoteAddress': None
 		}, result)
 		self.assertIs(type(result['isMultisig']), bool)
@@ -96,6 +98,67 @@ class SymbolAccountViewTest(TestCase):
 		self.assertIs(type(result['importanceHistory'][0]['recalculationBlock']), int)
 		self.assertIs(type(result['importanceHistory'][0]['beneficiaryCount']), int)
 		self.assertIs(type(result['importanceHistory'][0]['importanceScore']), int)
+
+	def test_to_dict_maps_multisig_relationships_and_thresholds(self):
+		# Arrange:
+		multisig = SymbolMultisigRecord(
+			2, 1, [OTHER_ADDRESS, ACCOUNT_ADDRESS, OTHER_ADDRESS], [ACCOUNT_ADDRESS, OTHER_ADDRESS, ACCOUNT_ADDRESS])
+
+		# Act:
+		result = SymbolAccountView(
+			create_account(multisig=multisig), Network.TESTNET, NATIVE_MOSAIC_INFO).to_dict()
+
+		# Assert:
+		self.assertEqual({
+			'isMultisig': True,
+			'cosignatories': [
+				'TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI',
+				'TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY',
+				'TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI'],
+			'cosignatoryOf': [
+				'TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY',
+				'TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI',
+				'TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY'],
+			'minCosignatories': 2,
+			'minRemoval': 1
+		}, {key: result[key] for key in (
+			'isMultisig', 'cosignatories', 'cosignatoryOf', 'minCosignatories', 'minRemoval')})
+
+	def test_to_dict_defaults_when_multisig_relationships_are_empty_without_using_thresholds(self):
+		# Arrange:
+		multisig = SymbolMultisigRecord(-1, True, [], [])
+
+		# Act:
+		result = SymbolAccountView(
+			create_account(multisig=multisig), Network.TESTNET, NATIVE_MOSAIC_INFO).to_dict()
+
+		# Assert:
+		self.assertEqual({
+			'isMultisig': False,
+			'cosignatories': [],
+			'cosignatoryOf': [],
+			'minCosignatories': 0,
+			'minRemoval': None
+		}, {key: result[key] for key in (
+			'isMultisig', 'cosignatories', 'cosignatoryOf', 'minCosignatories', 'minRemoval')})
+
+	def test_to_dict_rejects_invalid_saved_multisig_values(self):
+		# Arrange:
+		invalid_records = (
+			(SymbolMultisigRecord(1, 1, None, []), 'multisig.cosignatory_addresses'),
+			(SymbolMultisigRecord(1, 1, [], None), 'multisig.multisig_addresses'),
+			(SymbolMultisigRecord(1, 1, [b'bad'], []), 'multisig.cosignatory_addresses[0]'),
+			(SymbolMultisigRecord(1, 1, [], [MAINNET_ACCOUNT_ADDRESS]), 'multisig.multisig_addresses[0]'),
+			(SymbolMultisigRecord(-1, 1, [ACCOUNT_ADDRESS], []), 'multisig.min_approval'),
+			(SymbolMultisigRecord(1, -1, [ACCOUNT_ADDRESS], []), 'multisig.min_removal'))
+
+		# Act + Assert:
+		for multisig, field_path in invalid_records:
+			with self.subTest(field_path=field_path):
+				with self.assertRaises(SymbolDataInvalid) as context:
+					SymbolAccountView(
+						create_account(multisig=multisig), Network.TESTNET, NATIVE_MOSAIC_INFO).to_dict()
+				self.assertEqual(field_path, context.exception.field_path)
 
 	def test_to_dict_normalizes_supported_bytes_like_values(self):
 		# Arrange:
@@ -366,6 +429,27 @@ class SymbolAccountViewTest(TestCase):
 				self.assertEqual(expected_status, result['votingKeys'][0]['status'])
 
 
+class SymbolAccountOwnMultisigViewTest(TestCase):
+	def test_to_dict_maps_multisig_own_only(self):
+		# Arrange:
+		multisig = SymbolMultisigRecord(7, 3, [OTHER_ADDRESS], [])
+
+		# Act:
+		result = SymbolAccountView(
+			create_account(multisig=multisig), Network.TESTNET, NATIVE_MOSAIC_INFO).to_dict()
+
+		# Assert:
+		self.assertEqual({
+			'isMultisig': True,
+			'cosignatories': ['TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI'],
+			'cosignatoryOf': [],
+			'minCosignatories': 7,
+			'minRemoval': 3
+		}, {key: result[key] for key in (
+			'isMultisig', 'cosignatories', 'cosignatoryOf', 'minCosignatories', 'minRemoval')})
+		self.assertIs(type(result['minRemoval']), int)
+
+
 class SymbolAccountViewValidationTest(TestCase):
 
 	def test_to_dict_requires_finalized_epoch_with_empty_voting_keys(self):
@@ -430,7 +514,7 @@ class SymbolAccountViewValidationTest(TestCase):
 			voting_public_keys=[{
 				'publicKey': 'ab' * 32,
 				'startEpoch': 1,
-				'endEpoch': 4294967295
+				'endEpoch': 1
 			}],
 			activity_buckets=[{
 				'startHeight': '18446744073709551615',
@@ -447,8 +531,8 @@ class SymbolAccountViewValidationTest(TestCase):
 
 		# Assert:
 		self.assertEqual(9223372036854775807, result['height'])
-		self.assertEqual('current', result['votingKeys'][0]['status'])
-		self.assertEqual(4294967295, result['votingKeys'][0]['endEpoch'])
+		self.assertEqual('expired', result['votingKeys'][0]['status'])
+		self.assertEqual(1, result['votingKeys'][0]['endEpoch'])
 		self.assertEqual(18446744073709551615, result['importanceHistory'][0]['importanceScore'])
 		self.assertEqual(18446744073709551615, result['importanceHistory'][0]['recalculationBlock'])
 		self.assertIs(type(result['importanceHistory'][0]['recalculationBlock']), int)
@@ -467,12 +551,6 @@ class SymbolAccountViewValidationTest(TestCase):
 			{'finalized_epoch': True},
 			{'finalized_epoch': 5.0},
 			{'finalized_epoch': '5'},
-			{'activity_buckets': [{'rawScore': 1.0, 'startHeight': 0, 'totalFeesPaid': 0, 'beneficiaryCount': 0}]},
-			{'activity_buckets': [{'rawScore': '1.0', 'startHeight': 0, 'totalFeesPaid': 0, 'beneficiaryCount': 0}]},
-			{'voting_public_keys': [{'publicKey': 'ab' * 32, 'startEpoch': 0, 'endEpoch': 1}]},
-			{'voting_public_keys': [{'publicKey': 'ab' * 32, 'startEpoch': True, 'endEpoch': 1}]},
-			{'voting_public_keys': [{'publicKey': 'ab' * 32, 'startEpoch': 1.0, 'endEpoch': 1}]},
-			{'voting_public_keys': [{'publicKey': 'ab' * 32, 'startEpoch': '1.0', 'endEpoch': 1}]},
 			{'voting_public_keys': [{'publicKey': 'ab' * 32, 'startEpoch': '9' * 5000, 'endEpoch': 1}]}
 		)
 
@@ -484,7 +562,7 @@ class SymbolAccountViewValidationTest(TestCase):
 	def test_to_dict_rejects_each_uint64_activity_field_boundary_and_type(self):
 		# Arrange:
 		activity_fields = ('startHeight', 'totalFeesPaid', 'rawScore')
-		invalid_values = (-1, 18446744073709551616, True, 1.0, 'not-a-number')
+		invalid_values = (-1, 18446744073709551616, True, 1.0, '1.0', 'not-a-number')
 		invalid_activity = [
 			(field, value)
 			for field in activity_fields
@@ -521,13 +599,16 @@ class SymbolAccountViewValidationTest(TestCase):
 						create_account(voting_public_keys=[voting_key]), Network.TESTNET, NATIVE_MOSAIC_INFO).to_dict()
 				self.assertEqual(f'accounts.voting_public_keys[0].{field}', context.exception.field_path)
 
+	def test_to_dict_accepts_maximum_voting_epoch_for_both_fields(self):
+		# Arrange:
+		account = create_account(
+			finalized_epoch=2147483647,
+			voting_public_keys=[{'publicKey': 'AB' * 32, 'startEpoch': 4294967295, 'endEpoch': 4294967295}])
+
+		# Act:
+		result = SymbolAccountView(account, Network.TESTNET, NATIVE_MOSAIC_INFO).to_dict()
+
 		# Assert:
-		result = SymbolAccountView(
-			create_account(
-				finalized_epoch=2147483647,
-				voting_public_keys=[{'publicKey': 'AB' * 32, 'startEpoch': 4294967295, 'endEpoch': 4294967295}]),
-			Network.TESTNET,
-			NATIVE_MOSAIC_INFO).to_dict()
 		self.assertEqual(4294967295, result['votingKeys'][0]['startEpoch'])
 		self.assertEqual(4294967295, result['votingKeys'][0]['endEpoch'])
 

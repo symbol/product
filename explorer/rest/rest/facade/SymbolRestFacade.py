@@ -124,14 +124,14 @@ class SymbolRestFacade:
 		transactions = self.symbol_db.get_transactions(query)
 		return [SymbolTransactionView(transaction).to_dict(self.native_mosaic_info) for transaction in transactions]
 
-	def get_account(self, address=None, public_key=None):
+	def try_get_account(self, address=None, public_key=None):
 		"""Gets a Symbol account detail DTO by address or public key."""
 
-		account = self.symbol_db.get_account(address, public_key)
+		account = self.symbol_db.try_get_account(address, public_key)
 		return SymbolAccountView(account, self.network, self.native_mosaic_info).to_dict() if account else None
 
-	def get_multisig(self, address):
+	def try_get_multisig(self, address):
 		"""Gets a Symbol multisig DTO by account address."""
 
-		multisig = self.symbol_db.get_multisig(address)
+		multisig = self.symbol_db.try_get_multisig(address)
 		return SymbolMultisigView(multisig, self.network).to_dict() if multisig else None

@@ -24,6 +24,7 @@ def _invalid(field_path, reason):
 def _bytes(value, field_path, expected_length):
 	if value is None:
 		raise _invalid(field_path, 'value is required')
+
 	if not isinstance(value, (bytes, bytearray, memoryview)):
 		raise _invalid(field_path, 'value is not bytes')
 
@@ -40,6 +41,7 @@ def _bytes(value, field_path, expected_length):
 
 def _address(value, network, field_path):
 	address_bytes = _bytes(value, field_path, Address.SIZE)
+
 	address = Address(address_bytes)
 	if not network.is_valid_address(address):
 		raise _invalid(field_path, 'invalid address')
@@ -55,6 +57,7 @@ def _public_key_address(value, network, field_path):
 def _integer(value, field_path, minimum, maximum):
 	if isinstance(value, bool):
 		raise _invalid(field_path, 'value is not an integer')
+
 	if isinstance(value, int):
 		result = value
 	elif isinstance(value, str) and DECIMAL_INTEGER_PATTERN.fullmatch(value):
@@ -64,6 +67,7 @@ def _integer(value, field_path, minimum, maximum):
 			raise _invalid(field_path, 'value is not an integer') from error
 	else:
 		raise _invalid(field_path, 'value is not an integer')
+
 	if result < minimum or result > maximum:
 		raise _invalid(field_path, 'integer is outside the allowed range')
 
@@ -90,7 +94,9 @@ def _required(mapping, key, field_path):
 def _finite_ratio(value, field_path):
 	if isinstance(value, bool) or not isinstance(value, (Decimal, float, int)):
 		raise _invalid(field_path, 'value is not a finite number')
+
 	ratio = Decimal(str(value))
+
 	if not ratio.is_finite() or ratio < 0 or ratio > 1:
 		raise _invalid(field_path, 'value is outside the allowed range')
 
@@ -138,6 +144,20 @@ class SymbolAccountView:
 		address_height = None if account.address_height is None else _database_integer(
 			account.address_height, 'accounts.address_height', 0, INT64_MAX)
 
+		multisig_fields = _multisig_fields(account.multisig, self.network)
+		if multisig_fields is None:
+			is_multisig = False
+			cosignatories = []
+			cosignatory_of = []
+			min_cosignatories = 0
+			min_removal = None
+		else:
+			cosignatories = multisig_fields['cosignatoryAddresses']
+			cosignatory_of = multisig_fields['multisigAddresses']
+			is_multisig = bool(cosignatories)
+			min_cosignatories = multisig_fields['minApproval'] if multisig_fields['minApproval'] is not None else 0
+			min_removal = multisig_fields['minRemoval']
+
 		return {
 			'address': address,
 			'publicKey': public_key,
@@ -155,15 +175,41 @@ class SymbolAccountView:
 			},
 			'votingKeys': _voting_keys(account.voting_public_keys, account.finalized_epoch),
 			'importanceHistory': _importance_history(account.activity_buckets, self.native_mosaic_info),
-			'isMultisig': False,
-			'cosignatories': [],
-			'cosignatoryOf': [],
+			'isMultisig': is_multisig,
+			'cosignatories': cosignatories,
+			'cosignatoryOf': cosignatory_of,
 			'height': address_height,
 			'harvestedBlocks': None,
 			'harvestedFees': None,
-			'minCosignatories': 0,
+			'minCosignatories': min_cosignatories,
+			'minRemoval': min_removal,
 			'remoteAddress': None
 		}
+
+
+def _multisig_fields(multisig, network):
+	if multisig is None:
+		return None
+
+	cosignatories = _addresses(multisig.cosignatory_addresses, network, 'multisig.cosignatory_addresses')
+	multisig_addresses = _addresses(multisig.multisig_addresses, network, 'multisig.multisig_addresses')
+
+	if not cosignatories and not multisig_addresses:
+		return None
+
+	if not cosignatories:
+		min_approval = None
+		min_removal = None
+	else:
+		min_approval = _database_integer(multisig.min_approval, 'multisig.min_approval', 0, INT32_MAX)
+		min_removal = _database_integer(multisig.min_removal, 'multisig.min_removal', 0, INT32_MAX)
+
+	return {
+		'minApproval': min_approval,
+		'minRemoval': min_removal,
+		'cosignatoryAddresses': cosignatories,
+		'multisigAddresses': multisig_addresses
+	}
 
 
 class SymbolMultisigView:
@@ -176,24 +222,7 @@ class SymbolMultisigView:
 	def to_dict(self):
 		"""Returns the documented Multisig DTO."""
 
-		cosignatories = _addresses(self.multisig.cosignatory_addresses, self.network, 'multisig.cosignatory_addresses')
-		multisig_addresses = _addresses(self.multisig.multisig_addresses, self.network, 'multisig.multisig_addresses')
-		if not cosignatories and not multisig_addresses:
-			return None
-
-		if not cosignatories:
-			min_approval = None
-			min_removal = None
-		else:
-			min_approval = _database_integer(self.multisig.min_approval, 'multisig.min_approval', 0, INT32_MAX)
-			min_removal = _database_integer(self.multisig.min_removal, 'multisig.min_removal', 0, INT32_MAX)
-
-		return {
-			'minApproval': min_approval,
-			'minRemoval': min_removal,
-			'cosignatoryAddresses': cosignatories,
-			'multisigAddresses': multisig_addresses
-		}
+		return _multisig_fields(self.multisig, self.network)
 
 
 def _namespaces(alias_names):
@@ -253,6 +282,7 @@ def _voting_keys(voting_public_keys, finalized_epoch):
 		raise _invalid('sync_state.finalized_epoch', 'value is required')
 
 	finalized = _database_integer(finalized_epoch, 'sync_state.finalized_epoch', 0, INT32_MAX)
+
 	keys = _array(voting_public_keys, 'accounts.voting_public_keys')
 	result = []
 	for index, voting_key in enumerate(keys):

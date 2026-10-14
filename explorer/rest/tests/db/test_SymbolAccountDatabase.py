@@ -2,6 +2,8 @@ from decimal import Decimal
 from threading import Event
 from unittest import TestCase
 
+from psycopg2.extras import Json
+
 from rest.db.SymbolDatabase import SymbolAccountRecord, SymbolDatabase, SymbolDataUnavailable, SymbolMosaicRecord, SymbolMultisigRecord
 from rest.model.symbol.validation import SymbolDataInvalid
 
@@ -37,8 +39,31 @@ def seed_account_alias(puller_database, name, artifact_id='TD6TLAMJMDD3DC3S6SNFL
 		cursor.close()
 
 
+ACCOUNT_B_PUBLIC_KEY = bytes.fromhex('03' * 32)
+
+
+def create_account_b_row():
+	return create_symbol_account_row(
+		address=OTHER_ADDRESS,
+		address_text='TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI',
+		public_key=ACCOUNT_B_PUBLIC_KEY,
+		account_type='remote',
+		address_height=456,
+		importance_percentage=Decimal('0.075'),
+		linked_public_key=bytes.fromhex('33' * 32),
+		node_public_key=bytes.fromhex('44' * 32),
+		vrf_public_key=bytes.fromhex('55' * 32),
+		voting_public_keys=Json([{'publicKey': 'CD' * 32, 'startEpoch': 300, 'endEpoch': 400}]),
+		activity_buckets=Json([{
+			'startHeight': '9',
+			'totalFeesPaid': '7654321',
+			'beneficiaryCount': 4,
+			'rawScore': '6000000000'
+		}]))
+
+
 class SymbolAccountDatabaseTest(TestCase):
-	def test_get_account_reads_current_state_by_address_and_exact_public_key(self):
+	def test_try_get_account_reads_current_state_by_address_and_exact_public_key(self):
 		# Arrange:
 		with symbol_test_database(create_symbol_sync_state(last_synced_height=100, finalized_height=100)) as (db_config, puller_database):
 			seed_account(puller_database)
@@ -70,8 +95,8 @@ class SymbolAccountDatabaseTest(TestCase):
 			database = SymbolDatabase(db_config)
 			try:
 				# Act:
-				by_address = database.get_account(address=ACCOUNT_ADDRESS)
-				by_public_key = database.get_account(public_key=PUBLIC_KEY)
+				by_address = database.try_get_account(address=ACCOUNT_ADDRESS)
+				by_public_key = database.try_get_account(public_key=PUBLIC_KEY)
 			finally:
 				database.close()
 
@@ -79,24 +104,95 @@ class SymbolAccountDatabaseTest(TestCase):
 		self.assertEqual(expected, _normalize_account_binary_fields(by_address))
 		self.assertEqual(expected, _normalize_account_binary_fields(by_public_key))
 
-	def test_get_account_reads_state_and_current_rows_from_one_snapshot(self):
+	def test_try_get_account_filters_multisig_by_account_address(self):
 		# Arrange:
 		with symbol_test_database(create_symbol_sync_state(last_synced_height=100, finalized_height=100)) as (db_config, puller_database):
 			seed_account(puller_database)
+			seed_account(puller_database, create_account_b_row(), [])
+			puller_database.upsert_multisig(ACCOUNT_ADDRESS, {
+				'address': ACCOUNT_ADDRESS,
+				'min_approval': 6,
+				'min_removal': 5,
+				'cosignatory_addresses': [OTHER_ADDRESS],
+				'multisig_addresses': [ACCOUNT_ADDRESS, OTHER_ADDRESS],
+				'updated_at_height': 100
+			})
+			database = SymbolDatabase(db_config)
+			try:
+				# Act:
+				account_a = database.try_get_account(address=ACCOUNT_ADDRESS)
+				account_b_by_address = database.try_get_account(address=OTHER_ADDRESS)
+				account_b_by_public_key = database.try_get_account(public_key=ACCOUNT_B_PUBLIC_KEY)
+			finally:
+				database.close()
+
+		# Assert:
+		self.assertEqual(
+			SymbolMultisigRecord(6, 5, [OTHER_ADDRESS], [ACCOUNT_ADDRESS, OTHER_ADDRESS]),
+			_normalize_multisig_binary_fields(account_a.multisig))
+		expected_b = SymbolAccountRecord(
+			address=OTHER_ADDRESS,
+			public_key=ACCOUNT_B_PUBLIC_KEY,
+			account_type='remote',
+			address_height=456,
+			importance_percentage=Decimal('0.075'),
+			linked_public_key=bytes.fromhex('33' * 32),
+			node_public_key=bytes.fromhex('44' * 32),
+			vrf_public_key=bytes.fromhex('55' * 32),
+			voting_public_keys=[{'publicKey': 'CD' * 32, 'startEpoch': 300, 'endEpoch': 400}],
+			activity_buckets=[{
+				'startHeight': '9',
+				'totalFeesPaid': '7654321',
+				'beneficiaryCount': 4,
+				'rawScore': '6000000000'
+			}],
+			finalized_epoch=2,
+			alias_names=(),
+			mosaics=(),
+			multisig=None)
+		self.assertEqual(expected_b, _normalize_account_binary_fields(account_b_by_address))
+		self.assertEqual(expected_b, _normalize_account_binary_fields(account_b_by_public_key))
+
+	def test_try_get_account_reads_state_and_multisig_from_one_snapshot(self):
+		# Arrange:
+		with symbol_test_database(create_symbol_sync_state(last_synced_height=100, finalized_height=100)) as (db_config, puller_database):
+			seed_account(puller_database)
+			puller_database.upsert_multisig(ACCOUNT_ADDRESS, {
+				'address': ACCOUNT_ADDRESS,
+				'min_approval': 2,
+				'min_removal': 1,
+				'cosignatory_addresses': [OTHER_ADDRESS],
+				'multisig_addresses': [ACCOUNT_ADDRESS],
+				'updated_at_height': 100
+			})
 			with PausingSymbolAccountDatabase(db_config) as database:
 				updated_account = create_symbol_account_row()
 				updated_mosaics = [create_account_mosaic_row(amount=90000000)]
 
+				def update_current_rows():
+					puller_database.upsert_account_current_state(updated_account, updated_mosaics)
+					puller_database.upsert_multisig(ACCOUNT_ADDRESS, {
+						'address': ACCOUNT_ADDRESS,
+						'min_approval': 4,
+						'min_removal': 3,
+						'cosignatory_addresses': [ACCOUNT_ADDRESS],
+						'multisig_addresses': [OTHER_ADDRESS],
+						'updated_at_height': 100
+					})
+
 				# Act:
 				result = read_during_database_snapshot(
 					database,
-					lambda: database.get_account(address=ACCOUNT_ADDRESS),
-					lambda: puller_database.upsert_account_current_state(updated_account, updated_mosaics))
+					lambda: database.try_get_account(address=ACCOUNT_ADDRESS),
+					update_current_rows)
 
 		# Assert:
 		self.assertEqual(70000000, result.mosaics[0].amount)
+		self.assertEqual(
+			SymbolMultisigRecord(2, 1, [OTHER_ADDRESS], [ACCOUNT_ADDRESS]),
+			_normalize_multisig_binary_fields(result.multisig))
 
-	def test_get_account_rejects_unavailable_state_before_lookup(self):
+	def test_try_get_account_rejects_unavailable_state_before_lookup(self):
 		# Arrange:
 		with symbol_test_database(create_symbol_sync_state(last_synced_height=100, finalized_height=None)) as (db_config, puller_database):
 			seed_account(puller_database, create_symbol_account_row(voting_public_keys=[]))
@@ -104,33 +200,33 @@ class SymbolAccountDatabaseTest(TestCase):
 			try:
 				# Act + Assert:
 				with self.assertRaises(SymbolDataUnavailable):
-					database.get_account(address=ACCOUNT_ADDRESS)
+					database.try_get_account(address=ACCOUNT_ADDRESS)
 			finally:
 				database.close()
 
-	def test_get_account_rejects_unreadable_watermark(self):
+	def test_try_get_account_rejects_unreadable_watermark(self):
 		# Arrange:
 		with symbol_test_database(create_symbol_sync_state(last_synced_height=0, finalized_height=1)) as (db_config, _):
 			database = SymbolDatabase(db_config)
 			try:
 				# Act + Assert:
 				with self.assertRaises(SymbolDataUnavailable):
-					database.get_account(address=ACCOUNT_ADDRESS)
+					database.try_get_account(address=ACCOUNT_ADDRESS)
 			finally:
 				database.close()
 
-	def test_get_account_rejects_missing_sync_state_before_lookup(self):
+	def test_try_get_account_rejects_missing_sync_state_before_lookup(self):
 		# Arrange:
 		with symbol_test_database() as (db_config, _):
 			database = SymbolDatabase(db_config)
 			try:
 				# Act + Assert:
 				with self.assertRaises(SymbolDataUnavailable):
-					database.get_account(public_key=PUBLIC_KEY)
+					database.try_get_account(public_key=PUBLIC_KEY)
 			finally:
 				database.close()
 
-	def test_get_account_rejects_null_watermark(self):
+	def test_try_get_account_rejects_null_watermark(self):
 		# Arrange:
 		sync_state = create_symbol_sync_state(last_synced_height=100, finalized_height=100)
 		sync_state['last_synced_height'] = None
@@ -140,11 +236,11 @@ class SymbolAccountDatabaseTest(TestCase):
 			try:
 				# Act + Assert:
 				with self.assertRaises(SymbolDataUnavailable):
-					database.get_account(address=ACCOUNT_ADDRESS)
+					database.try_get_account(address=ACCOUNT_ADDRESS)
 			finally:
 				database.close()
 
-	def test_get_account_rejects_invalid_finalized_epoch(self):
+	def test_try_get_account_rejects_invalid_finalized_epoch(self):
 		# Arrange:
 		sync_state = create_symbol_sync_state(last_synced_height=1, finalized_height=1, finalized_epoch=-1)
 		with symbol_test_database(sync_state) as (db_config, _):
@@ -152,11 +248,11 @@ class SymbolAccountDatabaseTest(TestCase):
 			try:
 				# Act + Assert:
 				with self.assertRaises(SymbolDataInvalid):
-					database.get_account(address=ACCOUNT_ADDRESS)
+					database.try_get_account(address=ACCOUNT_ADDRESS)
 			finally:
 				database.close()
 
-	def test_get_account_rejects_saved_address_with_wrong_byte_length(self):
+	def test_try_get_account_rejects_saved_address_with_wrong_byte_length(self):
 		# Arrange:
 		invalid_address = bytes.fromhex('01' * 23)
 		with symbol_test_database(create_symbol_sync_state(last_synced_height=1, finalized_height=1)) as (db_config, puller_database):
@@ -165,11 +261,11 @@ class SymbolAccountDatabaseTest(TestCase):
 			try:
 				# Act + Assert:
 				with self.assertRaises(SymbolDataInvalid):
-					database.get_account(public_key=PUBLIC_KEY)
+					database.try_get_account(public_key=PUBLIC_KEY)
 			finally:
 				database.close()
 
-	def test_get_account_allows_clean_sync_lag(self):
+	def test_try_get_account_allows_clean_sync_lag(self):
 		# Arrange:
 		with symbol_test_database(create_symbol_sync_state(
 			last_synced_height=10,
@@ -179,14 +275,14 @@ class SymbolAccountDatabaseTest(TestCase):
 			database = SymbolDatabase(db_config)
 			try:
 				# Act:
-				result = database.get_account(address=ACCOUNT_ADDRESS)
+				result = database.try_get_account(address=ACCOUNT_ADDRESS)
 			finally:
 				database.close()
 
 		# Assert:
 		self.assertIsNotNone(result)
 
-	def test_get_account_rejects_nonhealthy_or_dirty_state(self):
+	def test_try_get_account_rejects_nonhealthy_or_dirty_state(self):
 		# Arrange:
 		with symbol_test_database(create_symbol_sync_state(
 			last_synced_height=10,
@@ -211,11 +307,11 @@ class SymbolAccountDatabaseTest(TestCase):
 
 						# Act + Assert:
 						with self.assertRaises(SymbolDataUnavailable):
-							database.get_account(address=ACCOUNT_ADDRESS)
+							database.try_get_account(address=ACCOUNT_ADDRESS)
 			finally:
 				database.close()
 
-	def test_get_multisig_returns_saved_order_and_all_related_addresses(self):
+	def test_try_get_multisig_returns_saved_order_and_all_related_addresses(self):
 		# Arrange:
 		with symbol_test_database(create_symbol_sync_state(last_synced_height=100, finalized_height=None)) as (db_config, puller_database):
 			seed_account(puller_database)
@@ -230,7 +326,7 @@ class SymbolAccountDatabaseTest(TestCase):
 			database = SymbolDatabase(db_config)
 			try:
 				# Act:
-				result = database.get_multisig(ACCOUNT_ADDRESS)
+				result = database.try_get_multisig(ACCOUNT_ADDRESS)
 			finally:
 				database.close()
 
@@ -242,20 +338,20 @@ class SymbolAccountDatabaseTest(TestCase):
 			multisig_addresses=[OTHER_ADDRESS, ACCOUNT_ADDRESS, OTHER_ADDRESS])
 		self.assertEqual(expected, _normalize_multisig_binary_fields(result))
 
-	def test_get_multisig_returns_none_without_account(self):
+	def test_try_get_multisig_returns_none_without_account(self):
 		# Arrange:
 		with symbol_test_database(create_symbol_sync_state(last_synced_height=100, finalized_height=None)) as (db_config, _):
 			database = SymbolDatabase(db_config)
 			try:
 				# Act:
-				result = database.get_multisig(OTHER_ADDRESS)
+				result = database.try_get_multisig(OTHER_ADDRESS)
 			finally:
 				database.close()
 
 		# Assert:
 		self.assertIsNone(result)
 
-	def test_get_account_returns_aliases_in_database_order(self):
+	def test_try_get_account_returns_aliases_in_database_order(self):
 		# Arrange:
 		with symbol_test_database(create_symbol_sync_state(last_synced_height=100, finalized_height=100)) as (db_config, puller_database):
 			seed_account(puller_database)
@@ -264,7 +360,7 @@ class SymbolAccountDatabaseTest(TestCase):
 			database = SymbolDatabase(db_config)
 			try:
 				# Act:
-				result = database.get_account(address=ACCOUNT_ADDRESS)
+				result = database.try_get_account(address=ACCOUNT_ADDRESS)
 			finally:
 				database.close()
 
@@ -275,6 +371,7 @@ class SymbolAccountDatabaseTest(TestCase):
 def _normalize_account_binary_fields(record):
 	"""Normalizes PostgreSQL bytea memoryviews for value-based record comparisons."""
 
+	multisig = None if record.multisig is None else _normalize_multisig_binary_fields(record.multisig)
 	return record._replace(
 		address=bytes(record.address),
 		public_key=bytes(record.public_key) if record.public_key is not None else None,
@@ -282,7 +379,8 @@ def _normalize_account_binary_fields(record):
 		node_public_key=bytes(record.node_public_key) if record.node_public_key is not None else None,
 		vrf_public_key=bytes(record.vrf_public_key) if record.vrf_public_key is not None else None,
 		mosaics=tuple(mosaic._replace(
-			owner_address=bytes(mosaic.owner_address) if mosaic.owner_address is not None else None) for mosaic in record.mosaics))
+			owner_address=bytes(mosaic.owner_address) if mosaic.owner_address is not None else None) for mosaic in record.mosaics),
+		multisig=multisig)
 
 
 def _normalize_multisig_binary_fields(record):
