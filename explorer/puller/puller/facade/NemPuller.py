@@ -5,7 +5,7 @@ import threading
 from collections import namedtuple
 from queue import Queue
 
-from common.nem.Namespace import NEM_NAMESPACE_DURATION
+from common.nem.Constants import NEM_NAMESPACE_DURATION
 from symbolchain.CryptoTypes import PublicKey
 from symbolchain.facade.NemFacade import NemFacade
 from symbolchain.nc import TransactionType

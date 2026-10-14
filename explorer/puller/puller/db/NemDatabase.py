@@ -3,7 +3,7 @@ import json
 from binascii import unhexlify
 from collections import namedtuple
 
-from common.nem.Namespace import NEM_NAMESPACE_GRACE_PERIOD
+from common.nem.Constants import NEM_NAMESPACE_GRACE_PERIOD
 from symbolchain.CryptoTypes import PublicKey
 from symbolchain.nc import TransactionType
 from symbolchain.nem.Network import Address

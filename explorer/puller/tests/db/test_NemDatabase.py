@@ -1077,6 +1077,23 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 		# Assert:
 		self.assertEqual([('affected.token', None), ('unaffected.token', 200)], results)
 
+	def test_clear_mosaic_expiration_heights_is_noop_when_roots_are_empty(self):
+		# Arrange:
+		with NemDatabase(self.db_config) as nem_database:
+			nem_database.create_tables()
+			cursor = nem_database.connection.cursor()
+
+			nem_database.upsert_mosaic(cursor, MOSAICS[0]._replace(root_namespace='root', namespace_name='root.token', registered_height=150))
+
+			cursor.execute('UPDATE mosaics SET expiration_height = 200')
+
+			# Act:
+			nem_database.clear_mosaic_expiration_heights(cursor, set())
+			results = self._fetch_mosaic_expiration_heights(cursor)
+
+		# Assert:
+		self.assertEqual([('root.token', 200)], results)
+
 	def test_can_delete_affected_namespace_roots(self):
 		# Arrange:
 		owner = PublicKey('11' * 32)

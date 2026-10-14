@@ -1,7 +1,7 @@
 # pylint: disable=too-many-lines
 from binascii import hexlify
 
-from common.nem.Namespace import NEM_NAMESPACE_DURATION
+from common.nem.Constants import NEM_NAMESPACE_DURATION
 from symbolchain.CryptoTypes import PublicKey
 from symbolchain.nc import TransactionType
 from symbolchain.nem.Network import Address
