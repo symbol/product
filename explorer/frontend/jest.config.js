@@ -1,6 +1,9 @@
 // Pin the shared suite to the reference variant before next/jest loads deployment .env files.
 process.env.NEXT_PUBLIC_EXPLORER_VARIANT = process.env.JEST_EXPLORER_VARIANT || 'nem';
 
+// Pin the timezone so date formatting tests are deterministic across machines.
+process.env.TZ = 'UTC';
+
 const { VARIANT_IDS } = require('./variants/ids');
 const nextJest = require('next/jest.js'); // eslint-disable-line import/extensions
 const fs = require('fs');

@@ -35,7 +35,7 @@ describe('utils/client', () => {
 			// Assert:
 			expect(document.execCommand).toHaveBeenCalledWith('copy');
 			expect(document.body.removeChild).toHaveBeenCalledTimes(1);
-			expect(document.body.appendChild).toBeCalledWith(expect.objectContaining({
+			expect(document.body.appendChild).toHaveBeenCalledWith(expect.objectContaining({
 				value: textToCopy
 			}));
 		});
