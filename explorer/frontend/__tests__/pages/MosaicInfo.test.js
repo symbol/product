@@ -1,8 +1,8 @@
 import '@testing-library/jest-dom';
-import { accountPageMosaicFilterResult } from '../test-utils/accounts';
-import { mosaicInfoResult } from '../test-utils/mosaics';
+import { accountRichList } from '../../__fixtures__/local/account-list';
+import { customMosaic, customMosaicWithLevy, nativeMosaic } from '../../__fixtures__/local/mosaic';
+import { transactionListConfirmed } from '../../__fixtures__/local/transaction-list-confirmed';
 import { clickText, runGetServerSidePropsTests, runRenderScenarioTests, runTableErrorTest } from '../test-utils/page';
-import { transactionPageResult } from '../test-utils/transactions';
 import * as AccountService from '@/app/api/accounts';
 import * as BlockService from '@/app/api/blocks';
 import * as MosaicService from '@/app/api/mosaics';
@@ -79,16 +79,24 @@ const SCREEN_TEXT = {
 };
 
 const remainingBlockCount = 500;
-const activeChainHeight = mosaicInfoResult.namespaceExpirationHeight - remainingBlockCount;
-const expiredChainHeight = mosaicInfoResult.namespaceExpirationHeight + remainingBlockCount;
-const expirationCountdownText = `${SCREEN_TEXT.valueExpiration}::value:${remainingBlockCount}`;
+const activeChainHeight = customMosaic.namespaceExpirationHeight - remainingBlockCount;
+const expiredChainHeight = customMosaic.namespaceExpirationHeight + remainingBlockCount;
+const remainingBlocksText = `${SCREEN_TEXT.valueExpiration}::value:${remainingBlockCount}`;
 const createdTimestampText = `${SCREEN_TEXT.fieldTimestampUTC}::title:${SCREEN_TEXT.fieldCreated}`;
 const mosaicSearchCriteria = {
 	pageNumber: 1,
-	mosaic: mosaicInfoResult.id
+	mosaic: customMosaic.id
 };
 const emptyPage = {
 	data: [],
+	pageNumber: 1
+};
+const holdersPage = {
+	data: accountRichList,
+	pageNumber: 1
+};
+const transfersPage = {
+	data: transactionListConfirmed.filter(transaction => transaction.value.some(mosaic => mosaic.id === customMosaic.id)),
 	pageNumber: 1
 };
 
@@ -100,15 +108,15 @@ describe('MosaicInfo', () => {
 
 		const getServerSidePropsCases = [
 			{
-				description: 'returns the mosaic info and empty preloaded lists',
+				description: 'returns the mosaic info and empty preloaded lists props',
 				config: {
-					responses: { mosaicInfo: mosaicInfoResult }
+					responses: { mosaicInfo: customMosaic }
 				},
 				expected: {
-					requestArguments: { mosaicInfo: [mosaicInfoResult.id] },
+					requestArguments: { mosaicInfo: [customMosaic.id] },
 					result: {
 						props: {
-							mosaicInfo: mosaicInfoResult,
+							mosaicInfo: customMosaic,
 							preloadedTransactions: [],
 							preloadedAccounts: []
 						}
@@ -121,7 +129,7 @@ describe('MosaicInfo', () => {
 					responses: { mosaicInfo: null }
 				},
 				expected: {
-					requestArguments: { mosaicInfo: [mosaicInfoResult.id] },
+					requestArguments: { mosaicInfo: [customMosaic.id] },
 					result: { notFound: true }
 				}
 			}
@@ -129,7 +137,7 @@ describe('MosaicInfo', () => {
 
 		runGetServerSidePropsTests({
 			getServerSideProps,
-			params: { id: mosaicInfoResult.id },
+			params: { id: customMosaic.id },
 			requests,
 			cases: getServerSidePropsCases
 		});
@@ -137,25 +145,24 @@ describe('MosaicInfo', () => {
 
 	describe('render', () => {
 		const renderPage = config => {
-			const mosaicInfo = { ...mosaicInfoResult, ...config.mosaicInfo };
 			BlockService.fetchChainHight.mockResolvedValue(config.chainHeight ?? activeChainHeight);
-			render(<MosaicInfo mosaicInfo={mosaicInfo} preloadedTransactions={[]} preloadedAccounts={[]} />);
+			render(<MosaicInfo mosaicInfo={config.mosaicInfo} preloadedTransactions={[]} preloadedAccounts={[]} />);
 		};
 
 		describe('section: mosaic', () => {
 			const mosaicCases = [
 				{
 					description: 'renders the name, labels and description',
-					config: {},
+					config: { mosaicInfo: customMosaic },
 					expected: {
 						texts: [
 							SCREEN_TEXT.sectionMosaic,
 							SCREEN_TEXT.fieldName,
-							mosaicInfoResult.name,
+							customMosaic.name,
 							createdTimestampText,
 							SCREEN_TEXT.labelTransferable,
 							SCREEN_TEXT.labelSupplyMutable,
-							mosaicInfoResult.description
+							customMosaic.description
 						],
 						// Both the transferable and the supply mutable labels render the positive icon.
 						altOccurrences: {
@@ -167,16 +174,22 @@ describe('MosaicInfo', () => {
 				},
 				{
 					description: 'renders the description placeholder when the description is missing',
-					config: { mosaicInfo: { description: null } },
+					config: {
+						mosaicInfo: {
+							...customMosaic,
+							description: null
+						}
+					},
 					expected: {
 						texts: [SCREEN_TEXT.noDescription],
-						hiddenTexts: [mosaicInfoResult.description]
+						hiddenTexts: [customMosaic.description]
 					}
 				},
 				{
-					description: 'renders danger icons for a non-transferable, fixed-supply mosaic',
+					description: 'renders danger icons when the mosaic is non-transferable and has a fixed supply',
 					config: {
 						mosaicInfo: {
+							...customMosaic,
 							isTransferable: false,
 							isSupplyMutable: false
 						}
@@ -197,40 +210,43 @@ describe('MosaicInfo', () => {
 			const detailsCases = [
 				{
 					description: 'renders the namespace, supply and registration fields',
-					config: { mosaicInfo: { levy: null } },
+					config: { mosaicInfo: customMosaic },
 					expected: {
 						texts: [
 							SCREEN_TEXT.fieldMosaicNamespace,
-							mosaicInfoResult.rootNamespaceName,
+							customMosaic.rootNamespaceName,
 							SCREEN_TEXT.fieldSupply,
-							mosaicInfoResult.supply,
+							customMosaic.supply,
 							SCREEN_TEXT.fieldDivisibility,
-							mosaicInfoResult.divisibility,
+							customMosaic.divisibility,
 							SCREEN_TEXT.fieldCreator,
-							mosaicInfoResult.creator,
+							customMosaic.creator,
 							SCREEN_TEXT.fieldRegistrationHeight,
-							mosaicInfoResult.registrationHeight
+							customMosaic.registrationHeight
 						]
 					}
 				},
 				{
-					description: 'renders the expiration countdown and the progress bar for an active namespace',
-					config: {},
+					description: 'renders the remaining blocks and progress bar when the chain height is below the expiration height',
+					config: { mosaicInfo: customMosaic },
 					expected: {
 						texts: [
 							SCREEN_TEXT.fieldNamespaceExpiration,
-							expirationCountdownText,
+							remainingBlocksText,
 							SCREEN_TEXT.fieldNamespaceRegistrationHeight,
 							SCREEN_TEXT.fieldNamespaceExpirationHeight,
-							mosaicInfoResult.namespaceRegistrationHeight,
-							mosaicInfoResult.namespaceExpirationHeight
+							customMosaic.namespaceRegistrationHeight,
+							customMosaic.namespaceExpirationHeight
 						],
 						hiddenTexts: [SCREEN_TEXT.valueExpired, SCREEN_TEXT.valueNeverExpired]
 					}
 				},
 				{
-					description: 'renders the expired state for an expired namespace',
-					config: { chainHeight: expiredChainHeight },
+					description: 'renders the expired state when the chain height is above the expiration height',
+					config: {
+						mosaicInfo: customMosaic,
+						chainHeight: expiredChainHeight
+					},
 					expected: {
 						texts: [
 							SCREEN_TEXT.valueExpired,
@@ -241,8 +257,8 @@ describe('MosaicInfo', () => {
 					}
 				},
 				{
-					description: 'renders never expired without the progress bar for an unlimited duration mosaic',
-					config: { mosaicInfo: { isUnlimitedDuration: true } },
+					description: 'renders the never expired text without the progress bar when the mosaic has an unlimited duration',
+					config: { mosaicInfo: nativeMosaic },
 					expected: {
 						texts: [SCREEN_TEXT.valueNeverExpired],
 						hiddenTexts: [
@@ -261,26 +277,26 @@ describe('MosaicInfo', () => {
 		describe('section: associated data', () => {
 			const associatedDataCases = [
 				{
-					description: 'renders the levy fields for a mosaic with levy',
-					config: {},
+					description: 'renders the levy fields when the mosaic has a levy',
+					config: { mosaicInfo: customMosaicWithLevy },
 					expected: {
 						texts: [
 							SCREEN_TEXT.sectionAssociatedData,
 							SCREEN_TEXT.fieldLevyType,
-							mosaicInfoResult.levy.type,
+							customMosaicWithLevy.levy.type,
 							SCREEN_TEXT.fieldLevyMosaic,
-							mosaicInfoResult.levy.mosaic,
+							customMosaicWithLevy.levy.mosaic,
 							SCREEN_TEXT.fieldLevyFee,
-							mosaicInfoResult.levy.fee,
+							customMosaicWithLevy.levy.fee,
 							SCREEN_TEXT.fieldLevyRecipient
 						],
 						// The fixture levy recipient is the creator, so the address appears in both fields.
-						textOccurrences: { [mosaicInfoResult.creator]: 2 }
+						textOccurrences: { [customMosaicWithLevy.creator]: 2 }
 					}
 				},
 				{
-					description: 'is not rendered for a mosaic without levy',
-					config: { mosaicInfo: { levy: null } },
+					description: 'does not render the associated data section when the mosaic has no levy',
+					config: { mosaicInfo: customMosaic },
 					expected: {
 						hiddenTexts: [SCREEN_TEXT.sectionAssociatedData, SCREEN_TEXT.fieldLevyType]
 					}
@@ -292,9 +308,9 @@ describe('MosaicInfo', () => {
 
 		describe('section: distribution', () => {
 			const renderMosaicInfo = () =>
-				render(<MosaicInfo mosaicInfo={mosaicInfoResult} preloadedTransactions={[]} preloadedAccounts={[]} />);
+				render(<MosaicInfo mosaicInfo={customMosaic} preloadedTransactions={[]} preloadedAccounts={[]} />);
 
-			it('requests holders and transfers with the mosaic filter', async () => {
+			it('requests the mosaic holders and transfers', async () => {
 				// Act:
 				renderMosaicInfo();
 
@@ -305,26 +321,26 @@ describe('MosaicInfo', () => {
 
 			describe('tabs', () => {
 				const renderPageWithData = () => {
-					AccountService.fetchAccountPage.mockResolvedValue(accountPageMosaicFilterResult);
-					TransactionService.fetchTransactionPage.mockResolvedValue(transactionPageResult);
+					AccountService.fetchAccountPage.mockResolvedValue(holdersPage);
+					TransactionService.fetchTransactionPage.mockResolvedValue(transfersPage);
 					renderMosaicInfo();
 				};
 
 				const distributionTabCases = [
 					{
-						description: 'renders the holders tab',
+						description: 'renders the holder addresses when the holders tab is selected',
 						config: { actions: [clickText(SCREEN_TEXT.sectionHolders)] },
 						expected: {
 							texts: [SCREEN_TEXT.sectionDistribution],
-							asyncTexts: accountPageMosaicFilterResult.data.map(account => account.address)
+							asyncTexts: holdersPage.data.map(account => account.address)
 						}
 					},
 					{
-						description: 'renders the transfers tab',
+						description: 'renders the transfer hashes when the transfers tab is selected',
 						config: { actions: [clickText(SCREEN_TEXT.sectionTransfers)] },
 						expected: {
 							texts: [SCREEN_TEXT.sectionDistribution],
-							asyncTexts: transactionPageResult.data.map(transaction => truncateString(transaction.hash, 'hash'))
+							asyncTexts: transfersPage.data.map(transaction => truncateString(transaction.hash, 'hash'))
 						}
 					}
 				];
@@ -332,12 +348,12 @@ describe('MosaicInfo', () => {
 				runRenderScenarioTests({ renderPage: renderPageWithData, cases: distributionTabCases });
 			});
 
-			runTableErrorTest('shows the try-again action when the holders request fails', {
+			runTableErrorTest('renders the try-again action when the holders request fails', {
 				renderPage: renderMosaicInfo,
 				request: [AccountService, 'fetchAccountPage']
 			});
 
-			runTableErrorTest('shows the try-again action when the transfers request fails', {
+			runTableErrorTest('renders the try-again action when the transfers request fails', {
 				renderPage: () => {
 					renderMosaicInfo();
 					fireEvent.click(screen.getByText(SCREEN_TEXT.sectionTransfers));

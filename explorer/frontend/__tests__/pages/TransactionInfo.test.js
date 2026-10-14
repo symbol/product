@@ -86,7 +86,7 @@ describe('TransactionInfo', () => {
 
 		const getServerSidePropsCases = [
 			{
-				description: 'returns the transaction info',
+				description: 'returns the transaction info props',
 				config: {
 					responses: { transactionInfo: transferConfirmedTransaction }
 				},
@@ -149,7 +149,7 @@ describe('TransactionInfo', () => {
 					}
 				},
 				{
-					description: 'renders status, hash and block height for a confirmed transaction',
+					description: 'renders the status, hash and block height when the transaction is confirmed',
 					config: { transactionInfo: transferConfirmedTransaction },
 					expected: {
 						texts: [
@@ -161,7 +161,7 @@ describe('TransactionInfo', () => {
 					}
 				},
 				{
-					description: 'renders status and placeholders for an unconfirmed transaction',
+					description: 'renders the status and placeholders when the transaction is unconfirmed',
 					config: { transactionInfo: transferUnconfirmedTransaction },
 					expected: {
 						texts: [SCREEN_TEXT.labelUnconfirmed],
@@ -184,7 +184,7 @@ describe('TransactionInfo', () => {
 					}
 				},
 				{
-					description: 'does not render the amount and the amount in user currency for a zero-amount transaction',
+					description: 'does not render the amount and the amount in user currency when the transaction has a zero amount',
 					config: { transactionInfo: accountKeyLinkConfirmedTransaction },
 					expected: {
 						hiddenTexts: [
@@ -201,7 +201,7 @@ describe('TransactionInfo', () => {
 		describe('section: transaction body', () => {
 			const transactionBodyCases = [
 				{
-					description: 'renders the transfer graphic',
+					description: 'renders the sender, recipient, mosaics and message when the transaction is a transfer',
 					config: { transactionInfo: transferConfirmedTransaction },
 					expected: {
 						texts: [
@@ -238,14 +238,14 @@ describe('TransactionInfo', () => {
 					}
 				},
 				{
-					description: 'is rendered for a multisig transaction',
+					description: 'renders the account state change section when the transaction is multisig',
 					config: { transactionInfo: multisigConfirmedTransaction },
 					expected: {
 						texts: [SCREEN_TEXT.sectionAccountStateChange]
 					}
 				},
 				{
-					description: 'is not rendered for an account key link transaction',
+					description: 'does not render the account state change section when the transaction is an account key link',
 					config: { transactionInfo: accountKeyLinkConfirmedTransaction },
 					expected: {
 						hiddenTexts: [
@@ -262,7 +262,7 @@ describe('TransactionInfo', () => {
 		describe('section: signatures', () => {
 			const signaturesCases = [
 				{
-					description: 'renders the cosignatory signature rows for a multisig transaction',
+					description: 'renders the cosignatory signature rows when the transaction is multisig',
 					config: { transactionInfo: multisigConfirmedTransaction },
 					expected: {
 						texts: [
@@ -275,7 +275,7 @@ describe('TransactionInfo', () => {
 					}
 				},
 				{
-					description: 'is not rendered for a transfer transaction',
+					description: 'does not render the signatures section when the transaction is a transfer',
 					config: { transactionInfo: transferConfirmedTransaction },
 					expected: {
 						hiddenTexts: [
@@ -292,7 +292,7 @@ describe('TransactionInfo', () => {
 		describe('section: fees breakdown', () => {
 			const feesBreakdownCases = [
 				{
-					description: 'renders the fee rows for a multisig transaction',
+					description: 'renders the fee rows when the transaction is multisig',
 					config: { transactionInfo: multisigConfirmedTransaction },
 					expected: {
 						texts: [
@@ -311,7 +311,7 @@ describe('TransactionInfo', () => {
 					}
 				},
 				{
-					description: 'is not rendered for a transfer transaction',
+					description: 'does not render the fees breakdown section when the transaction is a transfer',
 					config: { transactionInfo: transferConfirmedTransaction },
 					expected: {
 						hiddenTexts: [
