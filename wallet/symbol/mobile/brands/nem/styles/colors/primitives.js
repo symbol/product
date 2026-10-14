@@ -1,0 +1,83 @@
+// Temporary placeholder
+export const missingColor = '#f00';
+
+export const Primitives = {
+	white: '#FFFFFF',
+	black: '#000000',
+
+	transparent: 'transparent',
+
+	nemGreen0: '#E9F6F5',
+	nemGreen100: missingColor,
+	nemGreen200: missingColor,
+	nemGreen300: missingColor,
+	nemGreen400: missingColor,
+	nemGreen500: '#50B9AD',
+	nemGreen600: missingColor,
+	nemGreen700: missingColor,
+	nemGreen800: missingColor,
+	nemGreen900: missingColor,
+
+	nemBlue0: missingColor,
+	nemBlue100: '#DDEEF8',
+	nemBlue200: missingColor,
+	nemBlue300: missingColor,
+	nemBlue400: missingColor,
+	nemBlue500: '#65B7E6',
+	nemBlue600: missingColor,
+	nemBlue700: missingColor,
+	nemBlue800: missingColor,
+	nemBlue900: missingColor,
+
+	nemYellow0: '#FFF7E0',
+	nemYellow100: missingColor,
+	nemYellow200: missingColor,
+	nemYellow300: missingColor,
+	nemYellow400: missingColor,
+	nemYellow500: '#FAB700',
+	nemYellow600: missingColor,
+	nemYellow700: missingColor,
+	nemYellow800: missingColor,
+	nemYellow900: missingColor,
+
+	red0: missingColor,
+	red100: '#F7EAEA',
+	red200: missingColor,
+	red300: missingColor,
+	red400: '#B94F4F',
+	red500: '#CC0000',
+	red600: missingColor,
+	red700: missingColor,
+	red800: missingColor,
+	red900: missingColor,
+
+	green0: '#E9F7EF',
+	green100: missingColor,
+	green200: missingColor,
+	green300: missingColor,
+	green400: missingColor,
+	green500: '#287326',
+	green600: missingColor,
+	green700: missingColor,
+	green800: missingColor,
+	green900: missingColor,
+
+	grey0: missingColor,
+	grey100: '#DDDDDD',
+	grey200: missingColor,
+	grey300: '#A8A6A6',
+	grey400: missingColor,
+	grey500: '#6C6C6C',
+	grey600: missingColor,
+	grey700: missingColor,
+	grey800: missingColor,
+	grey900: missingColor,
+
+	lightBlueGrey100: '#F6F9FB',
+	lightBlueGrey200: '#F5F9FB',
+	lightBlueGrey300: '#EEF5F9',
+	lightGrey300: '#F3F4F7',
+
+	darkBlue900: '#0D155C',
+	darkPurple900: '#0B0118'
+};

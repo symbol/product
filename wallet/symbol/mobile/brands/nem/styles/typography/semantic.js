@@ -1,5 +1,27 @@
 import { Primitives } from './primitives';
-import { Fonts } from '@/brand/fonts';
+import { Platform } from 'react-native';
+
+const Fonts = {
+	primary: {
+		regular: {
+			fontFamily: 'NunitoSans-Regular'
+		},
+		bold: {
+			fontFamily: 'NunitoSans-Bold'
+		}
+	},
+	secondary: {
+		bold: {
+			fontFamily: 'NunitoSans-Bold',
+			fontWeight: Platform.select({ ios: '700', android: undefined })
+		}
+	},
+	monospace: {
+		bold: {
+			fontFamily: 'NunitoSans-Bold'
+		}
+	}
+};
 
 export const Semantic = {
 	body: {
@@ -25,8 +47,8 @@ export const Semantic = {
 		},
 		xl: {
 			...Fonts.primary.regular,
-			fontSize: Primitives.xl[0],
-			lineHeight: Primitives.xl[1]
+			fontSize: Primitives.xxl[0],
+			lineHeight: Primitives.xxl[1]
 		}
 	},
 	bodyBold: {
@@ -38,26 +60,22 @@ export const Semantic = {
 		s: {
 			...Fonts.primary.bold,
 			fontSize: Primitives.s[0],
-			lineHeight: Primitives.s[1],
-			textTransform: 'uppercase'
+			lineHeight: Primitives.s[1]
 		},
 		m: {
 			...Fonts.primary.bold,
 			fontSize: Primitives.m[0],
-			lineHeight: Primitives.m[1],
-			textTransform: 'uppercase'
+			lineHeight: Primitives.m[1]
 		},
 		l: {
 			...Fonts.primary.bold,
 			fontSize: Primitives.l[0],
-			lineHeight: Primitives.l[1],
-			textTransform: 'uppercase'
+			lineHeight: Primitives.l[1]
 		},
 		xl: {
 			...Fonts.primary.bold,
-			fontSize: Primitives.xl[0],
-			lineHeight: Primitives.xl[1],
-			textTransform: 'uppercase'
+			fontSize: Primitives.xxl[0],
+			lineHeight: Primitives.xxl[1]
 		}
 	},
 	title: {
@@ -69,27 +87,25 @@ export const Semantic = {
 		m: {
 			...Fonts.secondary.bold,
 			fontSize: Primitives.xl[0],
-			lineHeight: Primitives.xl[1],
-			textTransform: 'uppercase'
+			lineHeight: Primitives.xl[1]
 		},
 		l: {
-			...Fonts.secondary.bold,
+			...Fonts.primary.regular,
 			fontSize: Primitives.xxl[0],
-			lineHeight: Primitives.xxl[1],
-			textTransform: 'uppercase'
+			lineHeight: Primitives.xxl[1]
 		}
 	},
 	button: {
 		s: {
 			...Fonts.secondary.bold,
-			fontSize: Primitives.m[0],
-			lineHeight: Primitives.m[1],
+			fontSize: Primitives.s[0],
+			lineHeight: Primitives.s[1],
 			textTransform: 'uppercase'
 		},
 		m: {
 			...Fonts.secondary.bold,
-			fontSize: Primitives.l[0],
-			lineHeight: Primitives.l[1],
+			fontSize: Primitives.m[0],
+			lineHeight: Primitives.m[1],
 			textTransform: 'uppercase'
 		}
 	},
@@ -103,8 +119,7 @@ export const Semantic = {
 		m: {
 			...Fonts.monospace.bold,
 			fontSize: Primitives.m[0],
-			lineHeight: Primitives.m[1],
-			textTransform: 'uppercase'
+			lineHeight: Primitives.m[1]
 		}
 	},
 	input: {
@@ -130,16 +145,14 @@ export const Semantic = {
 		m: {
 			...Fonts.monospace.bold,
 			fontSize: Primitives.m[0],
-			lineHeight: Primitives.m[1],
-			textTransform: 'uppercase'
+			lineHeight: Primitives.m[1]
 		}
 	},
 	mnemonic: {
 		m: {
 			...Fonts.monospace.bold,
 			fontSize: Primitives.m[0],
-			lineHeight: Primitives.m[1],
-			textTransform: 'uppercase'
+			lineHeight: Primitives.m[1]
 		}
 	}
 };
