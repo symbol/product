@@ -5,7 +5,7 @@ from common.symbol.NativeMosaic import NativeMosaicInfo
 from symbolchain.symbol.Network import Network
 
 from rest.db.SymbolDatabase import SymbolAccountRecord, SymbolMosaicRecord, SymbolMultisigRecord
-from rest.model.symbol.Account import SymbolAccountView, SymbolMultisigView
+from rest.model.symbol.Account import SymbolAccountView
 from rest.model.symbol.validation import SymbolDataInvalid
 
 from ...test.SymbolAccountTestUtils import ACCOUNT_ADDRESS, OTHER_ADDRESS
@@ -147,10 +147,16 @@ class SymbolAccountViewTest(TestCase):
 		invalid_records = (
 			(SymbolMultisigRecord(1, 1, None, []), 'multisig.cosignatory_addresses'),
 			(SymbolMultisigRecord(1, 1, [], None), 'multisig.multisig_addresses'),
+			(SymbolMultisigRecord(1, 1, (), []), 'multisig.cosignatory_addresses'),
+			(SymbolMultisigRecord(1, 1, [], ()), 'multisig.multisig_addresses'),
+			(SymbolMultisigRecord(1, 1, [None], []), 'multisig.cosignatory_addresses[0]'),
+			(SymbolMultisigRecord(1, 1, [], [None]), 'multisig.multisig_addresses[0]'),
 			(SymbolMultisigRecord(1, 1, [b'bad'], []), 'multisig.cosignatory_addresses[0]'),
 			(SymbolMultisigRecord(1, 1, [], [MAINNET_ACCOUNT_ADDRESS]), 'multisig.multisig_addresses[0]'),
 			(SymbolMultisigRecord(-1, 1, [ACCOUNT_ADDRESS], []), 'multisig.min_approval'),
-			(SymbolMultisigRecord(1, -1, [ACCOUNT_ADDRESS], []), 'multisig.min_removal'))
+			(SymbolMultisigRecord(1, -1, [ACCOUNT_ADDRESS], []), 'multisig.min_removal'),
+			(SymbolMultisigRecord(2147483648, 1, [ACCOUNT_ADDRESS], []), 'multisig.min_approval'),
+			(SymbolMultisigRecord(1, 2147483648, [ACCOUNT_ADDRESS], []), 'multisig.min_removal'))
 
 		# Act + Assert:
 		for multisig, field_path in invalid_records:
@@ -430,6 +436,27 @@ class SymbolAccountViewTest(TestCase):
 
 
 class SymbolAccountOwnMultisigViewTest(TestCase):
+	def test_to_dict_converts_multisig_addresses_for_mainnet(self):
+		# Arrange:
+		multisig = SymbolMultisigRecord(
+			1, 1,
+			[bytes.fromhex('687585978CADF2186CE5D92576FC849FBF6ECE7B36CF9635')],
+			[bytes.fromhex('68F6CB4276B16A349A1C3CD50C3752775AD5D3F2F7299640')])
+		account = create_account(address=MAINNET_ACCOUNT_ADDRESS, multisig=multisig, mosaics=())
+
+		# Act:
+		result = SymbolAccountView(account, Network.MAINNET, NATIVE_MOSAIC_INFO).to_dict()
+
+		# Assert:
+		self.assertEqual({
+			'isMultisig': True,
+			'cosignatories': ['NB2YLF4MVXZBQ3HF3ESXN7EET67W5TT3G3HZMNI'],
+			'cosignatoryOf': ['ND3MWQTWWFVDJGQ4HTKQYN2SO5NNLU7S64UZMQA'],
+			'minCosignatories': 1,
+			'minRemoval': 1
+		}, {key: result[key] for key in (
+			'isMultisig', 'cosignatories', 'cosignatoryOf', 'minCosignatories', 'minRemoval')})
+
 	def test_to_dict_maps_multisig_own_only(self):
 		# Arrange:
 		multisig = SymbolMultisigRecord(7, 3, [OTHER_ADDRESS], [])
@@ -448,6 +475,49 @@ class SymbolAccountOwnMultisigViewTest(TestCase):
 		}, {key: result[key] for key in (
 			'isMultisig', 'cosignatories', 'cosignatoryOf', 'minCosignatories', 'minRemoval')})
 		self.assertIs(type(result['minRemoval']), int)
+
+	def test_to_dict_accepts_multisig_threshold_integer_bounds(self):
+		# Arrange:
+		multisig = SymbolMultisigRecord(2147483647, 0, [ACCOUNT_ADDRESS], [])
+
+		# Act:
+		result = SymbolAccountView(
+			create_account(multisig=multisig), Network.TESTNET, NATIVE_MOSAIC_INFO).to_dict()
+
+		# Assert:
+		self.assertEqual(2147483647, result['minCosignatories'])
+		self.assertEqual(0, result['minRemoval'])
+
+	def test_to_dict_rejects_boolean_multisig_threshold(self):
+		# Arrange:
+		invalid_records = (
+			(SymbolMultisigRecord(True, 1, [ACCOUNT_ADDRESS], []), 'multisig.min_approval'),
+			(SymbolMultisigRecord(1, False, [ACCOUNT_ADDRESS], []), 'multisig.min_removal'))
+
+		# Act + Assert:
+		for multisig, field_path in invalid_records:
+			with self.subTest(field_path=field_path), self.assertRaises(SymbolDataInvalid) as context:
+				SymbolAccountView(
+					create_account(multisig=multisig), Network.TESTNET, NATIVE_MOSAIC_INFO).to_dict()
+			self.assertEqual(field_path, context.exception.field_path)
+
+	def test_to_dict_does_not_validate_thresholds_without_own_cosignatories(self):
+		# Arrange:
+		multisig = SymbolMultisigRecord(-1, True, [], [OTHER_ADDRESS])
+
+		# Act:
+		result = SymbolAccountView(
+			create_account(multisig=multisig), Network.TESTNET, NATIVE_MOSAIC_INFO).to_dict()
+
+		# Assert:
+		self.assertEqual({
+			'isMultisig': False,
+			'cosignatories': [],
+			'cosignatoryOf': ['TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI'],
+			'minCosignatories': 0,
+			'minRemoval': None
+		}, {key: result[key] for key in (
+			'isMultisig', 'cosignatories', 'cosignatoryOf', 'minCosignatories', 'minRemoval')})
 
 
 class SymbolAccountViewValidationTest(TestCase):
@@ -665,99 +735,3 @@ class SymbolAccountViewValidationTest(TestCase):
 			with self.subTest(mosaic=mosaic), self.assertRaises(SymbolDataInvalid):
 				SymbolAccountView(
 					create_account(mosaics=(mosaic,)), Network.TESTNET, NATIVE_MOSAIC_INFO).to_dict()
-
-
-class SymbolMultisigViewTest(TestCase):
-	def test_to_dict_preserves_thresholds_and_saved_array_order(self):
-		# Arrange:
-		multisig = SymbolMultisigRecord(
-			2, 1, [OTHER_ADDRESS, ACCOUNT_ADDRESS, OTHER_ADDRESS], [OTHER_ADDRESS, ACCOUNT_ADDRESS])
-
-		# Act:
-		result = SymbolMultisigView(multisig, Network.TESTNET).to_dict()
-
-		# Assert:
-		self.assertEqual({
-			'minApproval': 2,
-			'minRemoval': 1,
-			'cosignatoryAddresses': [
-				'TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI',
-				'TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY',
-				'TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI'],
-			'multisigAddresses': [
-				'TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI', 'TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY']
-		}, result)
-
-	def test_to_dict_returns_none_for_no_relationship(self):
-		# Arrange:
-		multisig = SymbolMultisigRecord(2, 1, [], [])
-
-		# Act + Assert:
-		self.assertEqual(None, SymbolMultisigView(multisig, Network.TESTNET).to_dict())
-
-	def test_to_dict_rejects_missing_address_arrays(self):
-		# Act + Assert:
-		for multisig in (
-			SymbolMultisigRecord(1, 1, None, []),
-			SymbolMultisigRecord(1, 1, [], None),
-			SymbolMultisigRecord(1, 1, (), [])):
-			with self.subTest(multisig=multisig), self.assertRaises(SymbolDataInvalid):
-				SymbolMultisigView(multisig, Network.TESTNET).to_dict()
-
-	def test_to_dict_returns_null_thresholds_for_cosignatory_only_account(self):
-		# Arrange:
-		multisig = SymbolMultisigRecord(-1, True, [], [ACCOUNT_ADDRESS])
-
-		# Act:
-		result = SymbolMultisigView(multisig, Network.TESTNET).to_dict()
-
-		# Assert:
-		self.assertEqual(None, result['minApproval'])
-		self.assertEqual(None, result['minRemoval'])
-
-	def test_to_dict_rejects_invalid_thresholds_when_cosignatories_are_published(self):
-		# Arrange:
-		invalid_thresholds = (
-			(-1, 1, 'multisig.min_approval'),
-			(2147483648, 1, 'multisig.min_approval'),
-			(True, 1, 'multisig.min_approval'),
-			(1, -1, 'multisig.min_removal'),
-			(1, 2147483648, 'multisig.min_removal'),
-			(1, False, 'multisig.min_removal'))
-
-		# Act + Assert:
-		for min_approval, min_removal, field_path in invalid_thresholds:
-			with self.subTest(field_path=field_path, min_approval=min_approval, min_removal=min_removal):
-				multisig = SymbolMultisigRecord(min_approval, min_removal, [ACCOUNT_ADDRESS], [])
-				with self.assertRaises(SymbolDataInvalid) as context:
-					SymbolMultisigView(multisig, Network.TESTNET).to_dict()
-				self.assertEqual(field_path, context.exception.field_path)
-
-	def test_to_dict_rejects_invalid_related_address_values(self):
-		# Arrange:
-		invalid_arrays = (
-			([None], [], 'multisig.cosignatory_addresses[0]'),
-			([], [None], 'multisig.multisig_addresses[0]'),
-			([b'bad'], [], 'multisig.cosignatory_addresses[0]'),
-			([], [b'bad'], 'multisig.multisig_addresses[0]'),
-			([MAINNET_ACCOUNT_ADDRESS], [], 'multisig.cosignatory_addresses[0]'),
-			([], [MAINNET_ACCOUNT_ADDRESS], 'multisig.multisig_addresses[0]'))
-
-		# Act + Assert:
-		for cosignatories, multisig_addresses, field_path in invalid_arrays:
-			with self.subTest(field_path=field_path):
-				multisig = SymbolMultisigRecord(1, 1, cosignatories, multisig_addresses)
-				with self.assertRaises(SymbolDataInvalid) as context:
-					SymbolMultisigView(multisig, Network.TESTNET).to_dict()
-				self.assertEqual(field_path, context.exception.field_path)
-
-	def test_to_dict_accepts_threshold_integer_bounds(self):
-		# Arrange:
-		multisig = SymbolMultisigRecord(2147483647, 0, [ACCOUNT_ADDRESS], [])
-
-		# Act:
-		result = SymbolMultisigView(multisig, Network.TESTNET).to_dict()
-
-		# Assert:
-		self.assertEqual(2147483647, result['minApproval'])
-		self.assertEqual(0, result['minRemoval'])

@@ -207,25 +207,6 @@ def _setup_symbol_account_routes(app, symbol_api_facade, run_symbol_query):
 
 		return jsonify(result)
 
-	@app.route('/api/symbol/account/<address>/multisig')
-	def api_get_symbol_multisig(address):
-		try:
-			_validate_query_parameters(set())
-			address = _parse_account_address(address, symbol_api_facade.network)
-		except ValueError as error:
-			abort(400, error)
-
-		error, result = run_symbol_query(
-			lambda: symbol_api_facade.try_get_multisig(address),
-			'Failed to get Symbol multisig')
-		if error:
-			return error
-
-		if result is None:
-			abort(404)
-
-		return jsonify(result)
-
 
 def _setup_symbol_transactions_route(app, symbol_api_facade, run_symbol_query):
 	@app.route('/api/symbol/transactions')

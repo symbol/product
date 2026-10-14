@@ -2,7 +2,7 @@ from common.symbol.NativeMosaic import NativeMosaicInfo
 from psycopg2 import Error as PsycopgError
 from zenlog import log
 
-from rest.model.symbol.Account import SymbolAccountView, SymbolMultisigView
+from rest.model.symbol.Account import SymbolAccountView
 from rest.model.symbol.format import format_timestamp
 from rest.model.symbol.Receipt import SymbolReceiptView
 from rest.model.symbol.Transaction import SymbolTransactionView
@@ -129,9 +129,3 @@ class SymbolRestFacade:
 
 		account = self.symbol_db.try_get_account(address, public_key)
 		return SymbolAccountView(account, self.network, self.native_mosaic_info).to_dict() if account else None
-
-	def try_get_multisig(self, address):
-		"""Gets a Symbol multisig DTO by account address."""
-
-		multisig = self.symbol_db.try_get_multisig(address)
-		return SymbolMultisigView(multisig, self.network).to_dict() if multisig else None

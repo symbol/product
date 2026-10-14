@@ -212,19 +212,6 @@ def _multisig_fields(multisig, network):
 	}
 
 
-class SymbolMultisigView:
-	"""Formats one Symbol current-state multisig response."""
-
-	def __init__(self, multisig, network):
-		self.multisig = multisig
-		self.network = network
-
-	def to_dict(self):
-		"""Returns the documented Multisig DTO."""
-
-		return _multisig_fields(self.multisig, self.network)
-
-
 def _namespaces(alias_names):
 	if alias_names is None or not isinstance(alias_names, (list, tuple)) or any(not isinstance(name, str) for name in alias_names):
 		raise _invalid('symbol_alias_names.account', 'value is not a string array')

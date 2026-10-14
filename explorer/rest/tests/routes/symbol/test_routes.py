@@ -62,16 +62,13 @@ class SymbolBlockFacade:  # pylint: disable=too-many-instance-attributes
 
 
 class SymbolAccountFacade:
-	"""Recording facade for Account and Multisig route validation tests."""
+	"""Recording facade for Account route validation tests."""
 
 	def __init__(self):
 		self.network = Network.TESTNET
 		self.account_query = None
-		self.multisig_query = None
 		self.account_result = {'address': 'TDUMMY'}
-		self.multisig_result = {'minApproval': 1}
 		self.account_error = None
-		self.multisig_error = None
 
 	def try_get_account(self, address, public_key):
 		self.account_query = (address, public_key)
@@ -79,13 +76,6 @@ class SymbolAccountFacade:
 			raise self.account_error
 
 		return self.account_result
-
-	def try_get_multisig(self, address):
-		self.multisig_query = address
-		if self.multisig_error:
-			raise self.multisig_error
-
-		return self.multisig_result
 
 
 def _create_symbol_test_client(facade):
@@ -156,13 +146,21 @@ def test_mainnet_address_dispatch():
 
 	# Act:
 	account_response = client.get('/api/symbol/account?address=NCUZDUB4XJ4XV3KSUBQ6NPZPP4RY3CUFZ7HNAPI')
-	multisig_response = client.get('/api/symbol/account/ND6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWO7UY5Y/multisig')
 
 	# Assert:
 	assert 200 == account_response.status_code
 	assert (bytes.fromhex('68A991D03CBA797AED52A061E6BF2F7F238D8A85CFCED03D'), None) == facade.account_query
-	assert 200 == multisig_response.status_code
-	assert bytes.fromhex('68FD35818960C7B18B72F49A5598FA9F712A354DB3BF4C77') == facade.multisig_query
+
+
+def test_removed_multisig_url_404():
+	# Arrange:
+	client = _create_symbol_test_client(SymbolAccountFacade())
+
+	# Act:
+	response = client.get('/api/symbol/account/TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY/multisig')
+
+	# Assert:
+	_assert_not_found_response(response)
 
 
 def test_mainnet_rejects_bad_addresses():
@@ -177,11 +175,8 @@ def test_mainnet_rejects_bad_addresses():
 	# Act + Assert:
 	for address in invalid_addresses:
 		account_response = client.get(f'/api/symbol/account?address={address}')
-		multisig_response = client.get(f'/api/symbol/account/{address}/multisig')
 		_assert_bad_request_response(account_response, 'Invalid address')
-		_assert_bad_request_response(multisig_response, 'Invalid address')
 		assert None is facade.account_query
-		assert None is facade.multisig_query
 
 
 def test_account_query_errors():
@@ -210,34 +205,6 @@ def test_account_query_errors():
 		assert None is facade.account_query, query
 
 
-def test_multisig_rejects_invalid_input():
-	# Arrange:
-	facade = SymbolAccountFacade()
-	client = _create_symbol_test_client(facade)
-
-	# Act + Assert:
-	for path in (
-		'/api/symbol/account/TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY/multisig?address=x',
-		'/api/symbol/account/ND6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWO7UY5Y/multisig'):
-		response = client.get(path)
-		_assert_bad_request_response(response, 'Unsupported query parameter' if '?' in path else 'Invalid address')
-		assert None is facade.multisig_query, path
-
-
-def test_multisig_not_found():
-	# Arrange:
-	facade = SymbolAccountFacade()
-	facade.multisig_result = None
-	client = _create_symbol_test_client(facade)
-
-	# Act:
-	response = client.get('/api/symbol/account/TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY/multisig')
-
-	# Assert:
-	_assert_not_found_response(response)
-	assert bytes.fromhex('98FD35818960C7B18B72F49A5598FA9F712A354DB33EDE57') == facade.multisig_query
-
-
 def test_account_invalid_saved_data_503():
 	# Arrange:
 	facade = SymbolAccountFacade()
@@ -246,19 +213,6 @@ def test_account_invalid_saved_data_503():
 
 	# Act:
 	response = client.get('/api/symbol/account?publicKey=' + ('11' * 32))
-
-	# Assert:
-	_assert_symbol_backend_unavailable_response(response)
-
-
-def test_multisig_invalid_saved_data_503():
-	# Arrange:
-	facade = SymbolAccountFacade()
-	facade.multisig_error = SymbolDataInvalid('multisig.cosignatory_addresses[0]', 'invalid address')
-	client = _create_symbol_test_client(facade)
-
-	# Act:
-	response = client.get('/api/symbol/account/TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY/multisig')
 
 	# Assert:
 	_assert_symbol_backend_unavailable_response(response)

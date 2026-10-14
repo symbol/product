@@ -344,13 +344,6 @@ def _assert_account_dto_json_types(account):
 # pylint: enable=unidiomatic-typecheck
 
 
-# pylint: disable=unidiomatic-typecheck
-def _assert_multisig_dto_json_types(multisig):
-	for field in ('minApproval', 'minRemoval'):
-		assert multisig[field] is None or type(multisig[field]) is int
-# pylint: enable=unidiomatic-typecheck
-
-
 def _assert_not_found_json(response):
 	assert 404 == response.status_code
 	assert {'status': 404, 'message': 'Resource not found'} == response.json
@@ -504,10 +497,8 @@ def test_account_multisig_address_scope(symbol_database_config):
 				# Act:
 				responses = {
 					'account_a': client.get('/api/symbol/account?address=TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY'),
-					'multisig_a': client.get('/api/symbol/account/TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY/multisig'),
 					'account_b_address': client.get(f'/api/symbol/account?address={account_b_address}'),
-					'account_b_public_key': client.get(f'/api/symbol/account?publicKey={account_b_public_key}'),
-					'multisig_b': client.get(f'/api/symbol/account/{account_b_address}/multisig')
+					'account_b_public_key': client.get(f'/api/symbol/account?publicKey={account_b_public_key}')
 				}
 			finally:
 				app.extensions['symbol_database'].close()
@@ -557,14 +548,6 @@ def test_account_multisig_address_scope(symbol_database_config):
 	_assert_account_dto_json_types(responses['account_a'].json)
 	_assert_account_dto_json_types(responses['account_b_address'].json)
 	_assert_account_dto_json_types(responses['account_b_public_key'].json)
-	assert (200, {
-		'minApproval': 6,
-		'minRemoval': 5,
-		'cosignatoryAddresses': ['TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI'],
-		'multisigAddresses': ['TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY', 'TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI']
-	}) == (responses['multisig_a'].status_code, responses['multisig_a'].json)
-	_assert_multisig_dto_json_types(responses['multisig_a'].json)
-	_assert_not_found_json(responses['multisig_b'])
 
 
 def test_account_dto_without_receipt(symbol_database_config):
@@ -596,7 +579,7 @@ def test_account_dto_without_receipt(symbol_database_config):
 	_assert_account_dto_json_types(public_key_response.json)
 
 
-def _assert_account_multisig_scenario(symbol_database_config, multisig_row, account_fields, expected_multisig):
+def _assert_account_multisig_scenario(symbol_database_config, multisig_row, account_fields):
 	# Arrange:
 	with tempfile.TemporaryDirectory() as temp_directory:
 		db_config_path = _create_config_file(temp_directory, database_config=symbol_database_config)
@@ -615,8 +598,7 @@ def _assert_account_multisig_scenario(symbol_database_config, multisig_row, acco
 				# Act:
 				responses = (
 					client.get('/api/symbol/account?address=TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY'),
-					client.get('/api/symbol/account?publicKey=' + ('01' * 32)),
-					client.get('/api/symbol/account/TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY/multisig'))
+					client.get('/api/symbol/account?publicKey=' + ('01' * 32)))
 			finally:
 				app.extensions['symbol_database'].close()
 
@@ -630,9 +612,6 @@ def _assert_account_multisig_scenario(symbol_database_config, multisig_row, acco
 	assert 'minApproval' not in responses[1].json
 	_assert_account_dto_json_types(responses[0].json)
 	_assert_account_dto_json_types(responses[1].json)
-	assert expected_multisig == (responses[2].status_code, responses[2].json)
-	if 200 == expected_multisig[0]:
-		_assert_multisig_dto_json_types(responses[2].json)
 
 
 def test_account_multisig_both_relations(symbol_database_config):
@@ -658,19 +637,7 @@ def test_account_multisig_both_relations(symbol_database_config):
 				'TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY'],
 			'minCosignatories': 2,
 			'minRemoval': 1
-		},
-		(200, {
-			'minApproval': 2,
-			'minRemoval': 1,
-			'cosignatoryAddresses': [
-				'TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI',
-				'TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY',
-				'TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI'],
-			'multisigAddresses': [
-				'TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY',
-				'TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI',
-				'TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY']
-		}))
+		})
 
 
 def test_account_multisig_own_only(symbol_database_config):
@@ -690,13 +657,7 @@ def test_account_multisig_own_only(symbol_database_config):
 			'cosignatoryOf': [],
 			'minCosignatories': 7,
 			'minRemoval': 3
-		},
-		(200, {
-			'minApproval': 7,
-			'minRemoval': 3,
-			'cosignatoryAddresses': ['TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI'],
-			'multisigAddresses': []
-		}))
+		})
 
 
 def test_account_multisig_empty_defaults(symbol_database_config):
@@ -710,8 +671,7 @@ def test_account_multisig_empty_defaults(symbol_database_config):
 			'multisig_addresses': [],
 			'updated_at_height': 100
 		},
-		{},
-		(404, {'status': 404, 'message': 'Resource not found'}))
+		{})
 
 
 def test_account_cosignatory_only(symbol_database_config):
@@ -734,16 +694,7 @@ def test_account_cosignatory_only(symbol_database_config):
 				'TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI'],
 			'minCosignatories': 0,
 			'minRemoval': None
-		},
-		(200, {
-			'minApproval': None,
-			'minRemoval': None,
-			'cosignatoryAddresses': [],
-			'multisigAddresses': [
-				'TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI',
-				'TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY',
-				'TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI']
-		}))
+		})
 
 
 def test_account_current_beats_snapshot(symbol_database_config):
@@ -1061,196 +1012,6 @@ def test_account_sql_error_recovery(symbol_database_config, table_name, hidden_t
 	assert 200 == recovered_response.status_code
 	assert _expected_account_detail() == recovered_response.json
 	_assert_account_dto_json_types(recovered_response.json)
-
-
-def test_multisig_relation_without_epoch(symbol_database_config):
-	# Arrange:
-	with tempfile.TemporaryDirectory() as temp_directory:
-		db_config_path = _create_config_file(temp_directory, database_config=symbol_database_config)
-		app_config_path = _create_app_config(temp_directory, db_config_path)
-		_seed_symbol_account_database(
-			symbol_database_config,
-			create_symbol_sync_state(last_synced_height=100, finalized_height=None))
-		with PullerSymbolDatabase(symbol_database_config) as database:
-			database.upsert_multisig(ACCOUNT_ADDRESS, {
-				'address': ACCOUNT_ADDRESS,
-				'min_approval': 2,
-				'min_removal': 1,
-				'cosignatory_addresses': [OTHER_ADDRESS, ACCOUNT_ADDRESS],
-				'multisig_addresses': [OTHER_ADDRESS],
-				'updated_at_height': 100
-			})
-		with rest_settings_env(app_config_path):
-			app = _create_symbol_app()
-			try:
-				client = app.test_client()
-
-				# Act:
-				response = client.get('/api/symbol/account/TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY/multisig')
-			finally:
-				app.extensions['symbol_database'].close()
-
-	# Assert:
-	assert 200 == response.status_code
-	assert {
-		'minApproval': 2,
-		'minRemoval': 1,
-		'cosignatoryAddresses': [
-			'TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI',
-			'TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY'
-		],
-		'multisigAddresses': ['TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI']
-	} == response.json
-	_assert_multisig_dto_json_types(response.json)
-
-
-def test_multisig_empty_relation_404(symbol_database_config):
-	# Arrange:
-	with tempfile.TemporaryDirectory() as temp_directory:
-		db_config_path = _create_config_file(temp_directory, database_config=symbol_database_config)
-		app_config_path = _create_app_config(temp_directory, db_config_path)
-		_seed_symbol_account_database(
-			symbol_database_config,
-			create_symbol_sync_state(last_synced_height=100, finalized_height=None))
-		with PullerSymbolDatabase(symbol_database_config) as database:
-			database.upsert_multisig(ACCOUNT_ADDRESS, {
-				'address': ACCOUNT_ADDRESS,
-				'min_approval': 0,
-				'min_removal': 0,
-				'cosignatory_addresses': [],
-				'multisig_addresses': [],
-				'updated_at_height': 100
-			})
-		with rest_settings_env(app_config_path):
-			app = _create_symbol_app()
-			try:
-				client = app.test_client()
-
-				# Act:
-				response = client.get('/api/symbol/account/TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY/multisig')
-			finally:
-				app.extensions['symbol_database'].close()
-
-	# Assert:
-	_assert_not_found_json(response)
-
-
-def test_multisig_missing_relation_404(symbol_database_config):
-	# Arrange:
-	with tempfile.TemporaryDirectory() as temp_directory:
-		db_config_path = _create_config_file(temp_directory, database_config=symbol_database_config)
-		app_config_path = _create_app_config(temp_directory, db_config_path)
-		_seed_symbol_account_database(
-			symbol_database_config,
-			create_symbol_sync_state(last_synced_height=100, finalized_height=None))
-		with rest_settings_env(app_config_path):
-			app = _create_symbol_app()
-			try:
-				client = app.test_client()
-
-				# Act:
-				response = client.get('/api/symbol/account/TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY/multisig')
-			finally:
-				app.extensions['symbol_database'].close()
-
-	# Assert:
-	_assert_not_found_json(response)
-
-
-@pytest.mark.parametrize('sync_state_case', [
-	'dirty',
-	'repairing',
-	'unhealthy',
-	'initialized',
-	'zero_watermark',
-	'null_watermark',
-	'missing'
-])
-def test_multisig_503_precedes_404(symbol_database_config, sync_state_case):
-	# Arrange:
-	with tempfile.TemporaryDirectory() as temp_directory:
-		db_config_path = _create_config_file(temp_directory, database_config=symbol_database_config)
-		app_config_path = _create_app_config(temp_directory, db_config_path)
-		if sync_state_case == 'dirty':
-			sync_state = create_symbol_sync_state(
-				last_synced_height=100,
-				finalized_height=100,
-				dirty_state_from_height=101)
-		elif sync_state_case == 'repairing':
-			sync_state = create_symbol_sync_state(
-				last_synced_height=100,
-				finalized_height=100,
-				status='repairing')
-		elif sync_state_case == 'unhealthy':
-			sync_state = create_symbol_sync_state(
-				last_synced_height=100,
-				finalized_height=100,
-				status='unhealthy')
-		elif sync_state_case == 'initialized':
-			sync_state = create_symbol_sync_state(
-				last_synced_height=100,
-				finalized_height=100,
-				status='initialized')
-		elif sync_state_case == 'zero_watermark':
-			sync_state = create_symbol_sync_state(last_synced_height=0, finalized_height=None)
-		elif sync_state_case == 'null_watermark':
-			sync_state = create_symbol_sync_state(last_synced_height=0, finalized_height=None)
-			sync_state['last_synced_height'] = None
-			sync_state['last_synced_block_hash'] = None
-		else:
-			sync_state = create_symbol_sync_state(last_synced_height=100, finalized_height=100)
-		_seed_symbol_account_database(symbol_database_config, sync_state)
-		with PullerSymbolDatabase(symbol_database_config) as database:
-			if sync_state_case == 'missing':
-				cursor = database.connection.cursor()
-				try:
-					cursor.execute('DELETE FROM symbol_sync_state')
-					database.connection.commit()
-				finally:
-					cursor.close()
-			else:
-				database.upsert_multisig(ACCOUNT_ADDRESS, {
-					'address': ACCOUNT_ADDRESS,
-					'min_approval': 2,
-					'min_removal': 1,
-					'cosignatory_addresses': [OTHER_ADDRESS],
-					'multisig_addresses': [OTHER_ADDRESS],
-					'updated_at_height': 100
-				})
-		with rest_settings_env(app_config_path):
-			app = _create_symbol_app()
-			try:
-				client = app.test_client()
-
-				# Arrange: add a relationship when sync state is missing.
-				with PullerSymbolDatabase(symbol_database_config) as database:
-					if sync_state_case == 'missing':
-						database.upsert_multisig(ACCOUNT_ADDRESS, {
-							'address': ACCOUNT_ADDRESS,
-							'min_approval': 2,
-							'min_removal': 1,
-							'cosignatory_addresses': [OTHER_ADDRESS],
-							'multisig_addresses': [OTHER_ADDRESS],
-							'updated_at_height': 100
-						})
-
-				# Act: fetch with the relationship present.
-				present_relationship_response = client.get(
-					'/api/symbol/account/TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY/multisig')
-				_assert_unavailable_json(present_relationship_response)
-
-				# Arrange: remove the relationship for the missing-relation check.
-				with PullerSymbolDatabase(symbol_database_config) as database:
-					database.upsert_multisig(ACCOUNT_ADDRESS, None)
-
-				# Act: fetch after removing the relationship.
-				missing_relationship_response = client.get(
-					'/api/symbol/account/TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY/multisig')
-			finally:
-				app.extensions['symbol_database'].close()
-
-	# Assert:
-	_assert_unavailable_json(missing_relationship_response)
 
 
 @pytest.mark.parametrize('sync_state_case', [

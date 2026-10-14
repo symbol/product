@@ -353,28 +353,6 @@ class SymbolDatabase(DatabaseConnectionPool):
 
 				return self._fetch_account_record(cursor, account_row, sync_state['finalized_epoch'])
 
-	def try_get_multisig(self, address):
-		"""Gets one current-state Symbol multisig relation."""
-
-		with self.connection() as connection:
-			with connection.cursor() as cursor:
-				self._start_read_transaction(cursor)
-				sync_state = self._fetch_sync_state(cursor)
-				self._assert_current_state_readable(sync_state)
-				cursor.execute('SELECT 1 FROM symbol_accounts WHERE address = %s', (address,))
-				if not cursor.fetchone():
-					return None
-
-				cursor.execute(
-					'''SELECT min_approval, min_removal, cosignatory_addresses, multisig_addresses
-					FROM symbol_multisig WHERE address = %s''',
-					(address,))
-				multisig_row = cursor.fetchone()
-				if not multisig_row:
-					return None
-
-				return SymbolMultisigRecord(*multisig_row)
-
 	@staticmethod
 	def _assert_current_state_readable(sync_state):
 		if not sync_state or sync_state.get('status') != 'healthy':

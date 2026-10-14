@@ -311,46 +311,6 @@ class SymbolAccountDatabaseTest(TestCase):
 			finally:
 				database.close()
 
-	def test_try_get_multisig_returns_saved_order_and_all_related_addresses(self):
-		# Arrange:
-		with symbol_test_database(create_symbol_sync_state(last_synced_height=100, finalized_height=None)) as (db_config, puller_database):
-			seed_account(puller_database)
-			puller_database.upsert_multisig(ACCOUNT_ADDRESS, {
-				'address': ACCOUNT_ADDRESS,
-				'min_approval': 2,
-				'min_removal': 1,
-				'cosignatory_addresses': [OTHER_ADDRESS, ACCOUNT_ADDRESS, OTHER_ADDRESS],
-				'multisig_addresses': [OTHER_ADDRESS, ACCOUNT_ADDRESS, OTHER_ADDRESS],
-				'updated_at_height': 100
-			})
-			database = SymbolDatabase(db_config)
-			try:
-				# Act:
-				result = database.try_get_multisig(ACCOUNT_ADDRESS)
-			finally:
-				database.close()
-
-		# Assert:
-		expected = SymbolMultisigRecord(
-			min_approval=2,
-			min_removal=1,
-			cosignatory_addresses=[OTHER_ADDRESS, ACCOUNT_ADDRESS, OTHER_ADDRESS],
-			multisig_addresses=[OTHER_ADDRESS, ACCOUNT_ADDRESS, OTHER_ADDRESS])
-		self.assertEqual(expected, _normalize_multisig_binary_fields(result))
-
-	def test_try_get_multisig_returns_none_without_account(self):
-		# Arrange:
-		with symbol_test_database(create_symbol_sync_state(last_synced_height=100, finalized_height=None)) as (db_config, _):
-			database = SymbolDatabase(db_config)
-			try:
-				# Act:
-				result = database.try_get_multisig(OTHER_ADDRESS)
-			finally:
-				database.close()
-
-		# Assert:
-		self.assertIsNone(result)
-
 	def test_try_get_account_returns_aliases_in_database_order(self):
 		# Arrange:
 		with symbol_test_database(create_symbol_sync_state(last_synced_height=100, finalized_height=100)) as (db_config, puller_database):
