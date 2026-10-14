@@ -6,7 +6,7 @@ from symbolchain.symbol.IdGenerator import is_mosaic_alias
 from zenlog import log
 
 from rest.model.symbol.Block import SymbolBlockView
-from rest.model.symbol.Mosaic import SymbolMosaicListView
+from rest.model.symbol.Mosaic import SymbolMosaicView
 
 from .DatabaseConnection import DatabaseConnectionPool
 
@@ -522,7 +522,7 @@ class SymbolDatabase(DatabaseConnectionPool):
 					LIMIT %s OFFSET %s
 					""",
 					(limit, offset))
-				return [self._create_mosaic_list_view(row) for row in cursor.fetchall()]
+				return [self._create_mosaic_view(row) for row in cursor.fetchall()]
 
 	def get_blocks(self, from_height, limit, sort):
 		"""Gets Symbol blocks using fromHeight cursor pagination."""
@@ -631,7 +631,7 @@ class SymbolDatabase(DatabaseConnectionPool):
 		)
 
 	@staticmethod
-	def _create_mosaic_list_view(result):
+	def _create_mosaic_view(result):
 		(
 			mosaic_id,
 			owner_address,
@@ -647,7 +647,7 @@ class SymbolDatabase(DatabaseConnectionPool):
 			alias_names
 		) = result
 
-		return SymbolMosaicListView(
+		return SymbolMosaicView(
 			mosaic_id=mosaic_id,
 			owner_address=_address(owner_address),
 			start_height=start_height,

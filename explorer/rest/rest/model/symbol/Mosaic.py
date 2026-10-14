@@ -1,7 +1,7 @@
 from rest.model.symbol.format import format_amount
 
 
-class SymbolMosaicListView:  # pylint: disable=too-many-instance-attributes
+class SymbolMosaicView:  # pylint: disable=too-many-instance-attributes
 	"""Current Symbol mosaic metadata; supply is expressed in absolute units."""
 
 	def __init__(
@@ -34,7 +34,7 @@ class SymbolMosaicListView:  # pylint: disable=too-many-instance-attributes
 		self.alias_names = alias_names
 
 	def __eq__(self, other):
-		return isinstance(other, SymbolMosaicListView) and all([
+		return isinstance(other, SymbolMosaicView) and all([
 			self.mosaic_id == other.mosaic_id,
 			self.owner_address == other.owner_address,
 			self.start_height == other.start_height,

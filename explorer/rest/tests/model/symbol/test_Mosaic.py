@@ -1,34 +1,21 @@
 import unittest
 
-from rest.model.symbol.Mosaic import SymbolMosaicListView
+from ...test.SymbolMosaicTestUtils import create_symbol_mosaic_view
 
 
-class SymbolMosaicListViewTest(unittest.TestCase):
+class SymbolMosaicViewTest(unittest.TestCase):
 	@staticmethod
-	def _create_default_mosaic_list_view(override=None):
-		mosaic_view = SymbolMosaicListView(
-			mosaic_id='72C0212E67A08BCE',
-			owner_address='TATNE7Q5BITMUTRRN6IB4I7FLSDRDWZA34I2PMQ',
-			start_height=123,
-			expiration_height=579,
-			duration=456,
-			supply=1234567,
-			divisibility=6,
-			supply_mutable=False,
-			transferable=True,
-			restrictable=False,
-			revokable=True,
-			alias_names=['example', 'example.token']
-		)
+	def _create_default_mosaic_view(override=None):
+		mosaic_view = create_symbol_mosaic_view()
 
 		if override:
 			setattr(mosaic_view, override[0], override[1])
 
 		return mosaic_view
 
-	def test_can_create_mosaic_list_view(self):
+	def test_can_create_mosaic_view(self):
 		# Act:
-		mosaic_view = self._create_default_mosaic_list_view()
+		mosaic_view = self._create_default_mosaic_view()
 
 		# Assert:
 		self.assertEqual('72C0212E67A08BCE', mosaic_view.mosaic_id)
@@ -46,7 +33,7 @@ class SymbolMosaicListViewTest(unittest.TestCase):
 
 	def test_can_convert_to_simple_dict(self):
 		# Arrange:
-		mosaic_view = self._create_default_mosaic_list_view()
+		mosaic_view = self._create_default_mosaic_view()
 
 		# Act:
 		result_map = mosaic_view.to_dict()
@@ -70,28 +57,28 @@ class SymbolMosaicListViewTest(unittest.TestCase):
 
 	def test_eq_is_supported(self):
 		# Arrange:
-		mosaic_view = self._create_default_mosaic_list_view()
+		mosaic_view = self._create_default_mosaic_view()
 
 		# Assert:
-		self.assertEqual(mosaic_view, self._create_default_mosaic_list_view())
+		self.assertEqual(mosaic_view, self._create_default_mosaic_view())
 		self.assertNotEqual(mosaic_view, None)
 		self.assertNotEqual(mosaic_view, 'mosaic_view')
-		self.assertNotEqual(mosaic_view, self._create_default_mosaic_list_view(('mosaic_id', '6BED913FA20223F8')))
-		self.assertNotEqual(mosaic_view, self._create_default_mosaic_list_view(('owner_address', 'TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI')))
-		self.assertNotEqual(mosaic_view, self._create_default_mosaic_list_view(('start_height', 124)))
-		self.assertNotEqual(mosaic_view, self._create_default_mosaic_list_view(('expiration_height', None)))
-		self.assertNotEqual(mosaic_view, self._create_default_mosaic_list_view(('duration', 0)))
-		self.assertNotEqual(mosaic_view, self._create_default_mosaic_list_view(('supply', 1234568)))
-		self.assertNotEqual(mosaic_view, self._create_default_mosaic_list_view(('divisibility', 3)))
-		self.assertNotEqual(mosaic_view, self._create_default_mosaic_list_view(('supply_mutable', True)))
-		self.assertNotEqual(mosaic_view, self._create_default_mosaic_list_view(('transferable', False)))
-		self.assertNotEqual(mosaic_view, self._create_default_mosaic_list_view(('restrictable', True)))
-		self.assertNotEqual(mosaic_view, self._create_default_mosaic_list_view(('revokable', False)))
-		self.assertNotEqual(mosaic_view, self._create_default_mosaic_list_view(('alias_names', ['example'])))
+		self.assertNotEqual(mosaic_view, self._create_default_mosaic_view(('mosaic_id', '6BED913FA20223F8')))
+		self.assertNotEqual(mosaic_view, self._create_default_mosaic_view(('owner_address', 'TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI')))
+		self.assertNotEqual(mosaic_view, self._create_default_mosaic_view(('start_height', 124)))
+		self.assertNotEqual(mosaic_view, self._create_default_mosaic_view(('expiration_height', None)))
+		self.assertNotEqual(mosaic_view, self._create_default_mosaic_view(('duration', 0)))
+		self.assertNotEqual(mosaic_view, self._create_default_mosaic_view(('supply', 1234568)))
+		self.assertNotEqual(mosaic_view, self._create_default_mosaic_view(('divisibility', 3)))
+		self.assertNotEqual(mosaic_view, self._create_default_mosaic_view(('supply_mutable', True)))
+		self.assertNotEqual(mosaic_view, self._create_default_mosaic_view(('transferable', False)))
+		self.assertNotEqual(mosaic_view, self._create_default_mosaic_view(('restrictable', True)))
+		self.assertNotEqual(mosaic_view, self._create_default_mosaic_view(('revokable', False)))
+		self.assertNotEqual(mosaic_view, self._create_default_mosaic_view(('alias_names', ['example'])))
 
 	def test_can_convert_unlimited_duration(self):
 		# Arrange:
-		mosaic_view = self._create_default_mosaic_list_view(('duration', 0))
+		mosaic_view = self._create_default_mosaic_view(('duration', 0))
 		mosaic_view.expiration_height = None
 
 		# Act:
@@ -103,7 +90,7 @@ class SymbolMosaicListViewTest(unittest.TestCase):
 
 	def test_can_convert_empty_alias_names(self):
 		# Arrange:
-		mosaic_view = self._create_default_mosaic_list_view(('alias_names', []))
+		mosaic_view = self._create_default_mosaic_view(('alias_names', []))
 
 		# Act:
 		result_map = mosaic_view.to_dict()
@@ -113,7 +100,7 @@ class SymbolMosaicListViewTest(unittest.TestCase):
 
 	def _assert_formatted_supply(self, supply, divisibility, expected_value):
 		# Arrange:
-		mosaic_view = self._create_default_mosaic_list_view(('supply', supply))
+		mosaic_view = self._create_default_mosaic_view(('supply', supply))
 		mosaic_view.divisibility = divisibility
 
 		# Act:
@@ -135,7 +122,7 @@ class SymbolMosaicListViewTest(unittest.TestCase):
 
 	def test_can_convert_mutable_supply(self):
 		# Arrange:
-		mosaic_view = self._create_default_mosaic_list_view(('supply_mutable', True))
+		mosaic_view = self._create_default_mosaic_view(('supply_mutable', True))
 
 		# Act:
 		result_map = mosaic_view.to_dict()
@@ -145,7 +132,7 @@ class SymbolMosaicListViewTest(unittest.TestCase):
 
 	def test_can_convert_non_transferable_mosaic(self):
 		# Arrange:
-		mosaic_view = self._create_default_mosaic_list_view(('transferable', False))
+		mosaic_view = self._create_default_mosaic_view(('transferable', False))
 
 		# Act:
 		result_map = mosaic_view.to_dict()
@@ -155,7 +142,7 @@ class SymbolMosaicListViewTest(unittest.TestCase):
 
 	def test_can_convert_restrictable_mosaic(self):
 		# Arrange:
-		mosaic_view = self._create_default_mosaic_list_view(('restrictable', True))
+		mosaic_view = self._create_default_mosaic_view(('restrictable', True))
 
 		# Act:
 		result_map = mosaic_view.to_dict()
@@ -165,7 +152,7 @@ class SymbolMosaicListViewTest(unittest.TestCase):
 
 	def test_can_convert_non_revokable_mosaic(self):
 		# Arrange:
-		mosaic_view = self._create_default_mosaic_list_view(('revokable', False))
+		mosaic_view = self._create_default_mosaic_view(('revokable', False))
 
 		# Act:
 		result_map = mosaic_view.to_dict()

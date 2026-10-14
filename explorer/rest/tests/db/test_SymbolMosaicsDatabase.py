@@ -3,7 +3,6 @@ from unittest import TestCase
 from psycopg2 import Error as PsycopgError
 
 from rest.db.SymbolDatabase import SortOrder, SymbolDatabase, SymbolDataUnavailable
-from rest.model.symbol.Mosaic import SymbolMosaicListView
 
 from ..test.SymbolBlockTestUtils import create_symbol_sync_state
 from ..test.SymbolDatabaseTestUtils import (
@@ -12,7 +11,7 @@ from ..test.SymbolDatabaseTestUtils import (
 	read_during_database_snapshot,
 	symbol_test_database
 )
-from ..test.SymbolMosaicTestUtils import create_symbol_mosaic
+from ..test.SymbolMosaicTestUtils import create_symbol_mosaic, create_symbol_mosaic_view
 
 
 class SymbolDatabaseMosaicsTest(TestCase):
@@ -49,19 +48,12 @@ class SymbolDatabaseMosaicsTest(TestCase):
 
 		# Assert:
 		self.assertEqual([
-			SymbolMosaicListView(
+			create_symbol_mosaic_view(
 				mosaic_id='1234567890ABCDEF',
 				owner_address='TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI',
 				start_height=10,
 				expiration_height=30,
-				duration=20,
-				supply=1234567,
-				divisibility=6,
-				supply_mutable=False,
-				transferable=True,
-				restrictable=False,
-				revokable=True,
-				alias_names=['example', 'example.token'])
+				duration=20)
 		], result)
 
 	def _assert_mosaic_page(self, query_map, expected_ids):
