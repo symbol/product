@@ -116,26 +116,6 @@ def setup_symbol_routes(app, symbol_api_facade):
 
 		return jsonify(result)
 
-	@app.route('/api/symbol/mosaics')
-	def api_get_symbol_mosaics():
-		try:
-			_validate_allowed_query_parameters(MOSAIC_QUERY_PARAMETERS)
-			limit = _parse_bounded_integer('limit', _get_scalar_parameter('limit', '10'), 1, 100)
-			offset = _parse_bounded_integer('offset', _get_scalar_parameter('offset', '0'), 0, MOSAIC_MAX_OFFSET)
-			sort = _get_scalar_parameter('sort', 'DESC').upper()
-			if sort not in ['ASC', 'DESC']:
-				raise ValueError('Sort must be either ASC or DESC')
-		except ValueError as error:
-			abort(400, error)
-
-		error, result = _run_symbol_query(
-			lambda: symbol_api_facade.get_mosaics(limit, offset, SortOrder(sort)),
-			'Failed to get Symbol mosaics')
-		if error:
-			return error
-
-		return jsonify(result)
-
 	@app.route('/api/symbol/block/<height>')
 	def api_get_symbol_block_by_height(height):
 		try:
@@ -153,6 +133,8 @@ def setup_symbol_routes(app, symbol_api_facade):
 			abort(404)
 
 		return jsonify(result)
+
+	_setup_symbol_mosaic_routes(app, symbol_api_facade, _run_symbol_query)
 
 	@app.route('/api/symbol/receipts')
 	def api_get_symbol_receipts():
@@ -189,6 +171,28 @@ def setup_symbol_routes(app, symbol_api_facade):
 
 		if result is None:
 			abort(404)
+
+		return jsonify(result)
+
+
+def _setup_symbol_mosaic_routes(app, symbol_api_facade, run_symbol_query):
+	@app.route('/api/symbol/mosaics')
+	def api_get_symbol_mosaics():
+		try:
+			_validate_allowed_query_parameters(MOSAIC_QUERY_PARAMETERS)
+			limit = _parse_bounded_integer('limit', _get_scalar_parameter('limit', '10'), 1, 100)
+			offset = _parse_bounded_integer('offset', _get_scalar_parameter('offset', '0'), 0, MOSAIC_MAX_OFFSET)
+			sort = _get_scalar_parameter('sort', 'DESC').upper()
+			if sort not in ['ASC', 'DESC']:
+				raise ValueError('Sort must be either ASC or DESC')
+		except ValueError as error:
+			abort(400, error)
+
+		error, result = run_symbol_query(
+			lambda: symbol_api_facade.get_mosaics(limit, offset, SortOrder(sort)),
+			'Failed to get Symbol mosaics')
+		if error:
+			return error
 
 		return jsonify(result)
 
