@@ -128,14 +128,6 @@ class SymbolDatabaseMosaicsTest(TestCase):
 		# Assert:
 		self.assertEqual([], result)
 
-	def test_get_mosaics_rejects_invalid_sort(self):
-		# Arrange + Act + Assert:
-		with self.assertRaisesRegex(ValueError, 'Sort must be either ASC or DESC'):
-			_query_symbol_mosaics(
-				[],
-				create_symbol_sync_state(last_synced_height=1, finalized_height=1),
-				sort='DESC')
-
 	def _assert_unavailable_mosaic_state(self, sync_state_map):
 		# Act + Assert: current mosaics are unsafe even if their registration height is in the clean prefix.
 		with self.assertRaisesRegex(SymbolDataUnavailable, 'Symbol mosaic data is unavailable'):

@@ -494,9 +494,6 @@ class SymbolDatabase(DatabaseConnectionPool):
 	def get_mosaics(self, limit, offset, sort):
 		"""Gets current mosaics ordered by registration height, then mosaic ID, in the requested direction."""
 
-		if not isinstance(sort, SortOrder):
-			raise ValueError('Sort must be either ASC or DESC')
-
 		with self.connection() as connection:
 			with connection.cursor() as cursor:
 				self._start_read_transaction(cursor)
