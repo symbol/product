@@ -856,9 +856,10 @@ class NemDatabase(DatabaseConnection):  # pylint: disable=too-many-public-method
 
 	@staticmethod
 	def delete_namespaces(cursor, root_namespaces):
-		"""Deletes affected namespace projections before replay."""
+		"""Deletes affected namespace projections before replay except the seeded network currency root."""
 
-		if not root_namespaces:
+		deletable_roots = set(root_namespaces) - {'nem'}
+		if not deletable_roots:
 			return
 
 		cursor.execute(
@@ -866,7 +867,7 @@ class NemDatabase(DatabaseConnection):  # pylint: disable=too-many-public-method
 			DELETE FROM namespaces
 			WHERE root_namespace = ANY(%s)
 			''',
-			(list(root_namespaces),)
+			(list(deletable_roots),)
 		)
 
 	@staticmethod

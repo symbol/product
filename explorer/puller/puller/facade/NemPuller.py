@@ -395,7 +395,7 @@ class NemPuller:
 		"""Rebuilds affected namespace projections from surviving registrations."""
 
 		# a restored mosaic definition stays current until the replayed registrations of its root expire it
-		mosaic_roots = {name.split('.')[0] for name in rollback_impact.affected_mosaic_names - {'nem.xem'}}
+		mosaic_roots = {name.split('.')[0] for name in rollback_impact.affected_mosaic_names}
 		root_namespaces = rollback_impact.affected_namespace_roots | mosaic_roots
 		self.nem_db.clear_mosaic_expiration_heights(cursor, root_namespaces)
 		self.nem_db.delete_namespaces(cursor, root_namespaces)

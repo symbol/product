@@ -2374,7 +2374,7 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 		rollback_impact = Mock(
 			fork_height=10,
 			affected_namespace_roots={'root'},
-			affected_mosaic_names={'other.token', 'other.sub.token', 'nem.xem'}
+			affected_mosaic_names={'other.token', 'other.sub.token'}
 		)
 		database = Mock()
 		database.get_surviving_namespace_history.return_value = []

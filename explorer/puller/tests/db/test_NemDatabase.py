@@ -1112,6 +1112,24 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 		# Assert:
 		self.assertEqual(['unaffected'], results)
 
+	def test_delete_namespaces_preserves_seeded_network_currency_root(self):  # pylint: disable=invalid-name
+		# Arrange:
+		owner = PublicKey('11' * 32)
+		with NemDatabase(self.db_config) as nem_database:
+			nem_database.create_tables()
+			cursor = nem_database.connection.cursor()
+
+			nem_database.seed_network_currency(cursor, owner)
+			nem_database.upsert_namespace(cursor, NamespaceRecord('affected', owner, 100, 200))
+
+			# Act:
+			nem_database.delete_namespaces(cursor, {'nem', 'affected'})
+			cursor.execute('SELECT root_namespace FROM namespaces ORDER BY root_namespace')
+			results = [record[0] for record in cursor.fetchall()]
+
+		# Assert:
+		self.assertEqual(['nem'], results)
+
 	def test_can_update_sub_namespaces(self):
 		# Arrange:
 		with NemDatabase(self.db_config) as nem_database:
