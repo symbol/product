@@ -523,6 +523,11 @@ async def server(aiohttp_client):  # pylint: disable=too-many-statements
 
 			return await self._process(request, account_info)
 
+		async def account_info_batch(self, request):
+			request_json = await request.json()
+			self.request_json_payloads.append(request_json)
+			return await self._process(request, {'data': [ACCOUNT_INFO_1, ACCOUNT_INFO_5]})
+
 		async def account_mosaic_owned(self, request):
 			return await self._process(request, {
 				'data': [
@@ -673,6 +678,7 @@ async def server(aiohttp_client):  # pylint: disable=too-many-statements
 	app.router.add_get('/transaction/get', mock_server.transaction_confirmed)
 	app.router.add_get('/account/transfers/incoming', mock_server.transfers)
 	app.router.add_post('/block/at/public', mock_server.block_at)
+	app.router.add_post('/account/get/batch', mock_server.account_info_batch)
 	app.router.add_post('/transaction/announce', mock_server.announce_transaction)
 	app.router.add_post('/local/chain/blocks-after', mock_server.local_chain_blocks_after)
 	app.router.add_post('/local/block/at', mock_server.local_block_at)
@@ -907,6 +913,24 @@ def _assert_account_info_1(account_info):
 	assert [] == account_info.cosignatory_of
 
 
+def _assert_account_info_5(account_info):
+	assert Address('NBLGATVTVML66WWPSUN5RWKWEBKCPNYLQVWLTLFS') == account_info.address
+	assert 10125.555105 == account_info.vested_balance
+	assert 10125.555105 == account_info.balance
+	assert PublicKey('0F83292A6F9B7882915DF4F64F11BD20161EAB4A56FB051678884E2400005DF8') == account_info.public_key
+	assert 0.003805264452742391 == account_info.importance
+	assert 0 == account_info.harvested_blocks
+	assert 'INACTIVE' == account_info.remote_status
+	assert 1 == account_info.min_cosignatories
+	assert [
+		Address('NADP63FUUAOS2LDXY75SJ4TOLW4S7YXEAGT25IXG'),
+		Address('NA7HZVREMOJWCYQOHQYTMVVXOYFOFF4WX46FP65U')
+	] == account_info.cosignatories
+	assert [
+		Address('NALICE3JX3N72HZ3IODXCO2HWQIWSTCPC5FVGW7I')
+	] == account_info.cosignatory_of
+
+
 async def test_can_query_account_info(server):  # pylint: disable=redefined-outer-name
 	# Arrange:
 	connector = NemConnector(server.make_url(''))
@@ -928,21 +952,30 @@ async def test_can_query_account_info_with_multisig(server):  # pylint: disable=
 
 	# Assert:
 	assert [f'{server.make_url("")}/account/get?address=NBLGATVTVML66WWPSUN5RWKWEBKCPNYLQVWLTLFS'] == server.mock.urls
-	assert Address('NBLGATVTVML66WWPSUN5RWKWEBKCPNYLQVWLTLFS') == account_info.address
-	assert 10125.555105 == account_info.vested_balance
-	assert 10125.555105 == account_info.balance
-	assert PublicKey('0F83292A6F9B7882915DF4F64F11BD20161EAB4A56FB051678884E2400005DF8') == account_info.public_key
-	assert 0.003805264452742391 == account_info.importance
-	assert 0 == account_info.harvested_blocks
-	assert 'INACTIVE' == account_info.remote_status
-	assert 1 == account_info.min_cosignatories
-	assert [
-		Address('NADP63FUUAOS2LDXY75SJ4TOLW4S7YXEAGT25IXG'),
-		Address('NA7HZVREMOJWCYQOHQYTMVVXOYFOFF4WX46FP65U')
-	] == account_info.cosignatories
-	assert [
-		Address('NALICE3JX3N72HZ3IODXCO2HWQIWSTCPC5FVGW7I')
-	] == account_info.cosignatory_of
+	_assert_account_info_5(account_info)
+
+
+async def test_can_query_account_infos(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	connector = NemConnector(server.make_url(''))
+
+	# Act:
+	account_infos = await connector.account_infos([
+		Address('NCXIQA4FF5JB6AMQ53NQ3ZMRD3X3PJEWDJJJIGHT'),
+		Address('NBLGATVTVML66WWPSUN5RWKWEBKCPNYLQVWLTLFS')
+	])
+
+	# Assert:
+	assert [f'{server.make_url("")}/account/get/batch'] == server.mock.urls
+	assert [{
+		'data': [
+			{'account': 'NCXIQA4FF5JB6AMQ53NQ3ZMRD3X3PJEWDJJJIGHT'},
+			{'account': 'NBLGATVTVML66WWPSUN5RWKWEBKCPNYLQVWLTLFS'}
+		]
+	}] == server.mock.request_json_payloads
+	assert 2 == len(account_infos)
+	_assert_account_info_1(account_infos[0])
+	_assert_account_info_5(account_infos[1])
 
 
 async def test_can_query_account_moasics(server):  # pylint: disable=redefined-outer-name
