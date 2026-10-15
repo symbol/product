@@ -1,4 +1,4 @@
-# pylint: disable=unexpected-keyword-arg
+# pylint: disable=unexpected-keyword-arg, too-many-lines
 import copy
 from datetime import timedelta
 
@@ -803,6 +803,28 @@ class NemDatabaseTest(DatabaseTestBase):  # pylint: disable=too-many-public-meth
 
 		# Assert:
 		self.assertEqual(ACCOUNT_STATISTIC_VIEW_WITHOUT_RECENT_HARVEST, account_statistics)
+
+	def _set_vested_balance(self, address, vested_balance):
+		with self.nem_db.connection() as connection:
+			cursor = connection.cursor()
+			cursor.execute('UPDATE accounts SET vested_balance = %s WHERE address = %s', (vested_balance, address.bytes))
+			connection.commit()
+
+	def _assert_eligible_harvest_accounts_with_vested_balance(self, vested_balance, expected_eligible_harvest_accounts):
+		# Arrange:
+		self._set_vested_balance(ACCOUNTS[0].address, vested_balance)
+
+		# Act:
+		account_statistics = self.nem_db.get_account_statistics()
+
+		# Assert:
+		self.assertEqual(expected_eligible_harvest_accounts, account_statistics.eligible_harvest_accounts)
+
+	def test_can_query_account_statistics_counting_account_with_minimum_harvesting_vested_balance_as_eligible(self):
+		self._assert_eligible_harvest_accounts_with_vested_balance(10000000000, 2)
+
+	def test_can_query_account_statistics_excluding_account_below_minimum_harvesting_vested_balance(self):
+		self._assert_eligible_harvest_accounts_with_vested_balance(9999999999, 1)
 
 	# endregion
 
