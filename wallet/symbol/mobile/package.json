@@ -54,6 +54,7 @@
     "symbol-sdk": "3.3.2",
     "wallet-common-core": "file:../../common/core",
     "wallet-common-ethereum": "file:../../common/ethereum",
+    "wallet-common-nem": "file:../../common/nem",
     "wallet-common-symbol": "file:../../common/symbol",
     "wallet-common-transport": "file:../../common/transport"
   },
