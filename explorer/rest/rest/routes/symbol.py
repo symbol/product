@@ -440,6 +440,7 @@ def _parse_account_query(network):
 	public_key = _get_scalar_parameter('publicKey')
 	if (address is None) == (public_key is None):
 		raise ValueError('Exactly one of address or publicKey is required')
+
 	if address is not None:
 		return _parse_account_address(address, network), None
 
@@ -452,12 +453,10 @@ def _validate_query_parameters(allowed_parameters):
 
 
 def _parse_account_address(value, network):
-	try:
-		if not network.is_valid_address_string(value):
-			raise ValueError
-		return Address(value).bytes
-	except (TypeError, ValueError) as error:
-		raise ValueError('Invalid address') from error
+	if not network.is_valid_address_string(value):
+		raise ValueError('Invalid address')
+
+	return Address(value).bytes
 
 
 def _parse_account_search_public_key(value):

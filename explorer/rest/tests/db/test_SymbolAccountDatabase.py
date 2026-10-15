@@ -4,7 +4,7 @@ from unittest import TestCase
 
 from psycopg2.extras import Json
 
-from rest.db.SymbolDatabase import SymbolAccountRecord, SymbolDatabase, SymbolDataUnavailable, SymbolMosaicRecord, SymbolMultisigRecord
+from rest.db.SymbolDatabase import AccountRecord, MosaicRecord, MultisigRecord, SymbolDatabase, SymbolDataUnavailable
 from rest.model.symbol.validation import SymbolDataInvalid
 
 from ..test.SymbolAccountTestUtils import ACCOUNT_ADDRESS, OTHER_ADDRESS, PUBLIC_KEY, create_symbol_account_row
@@ -28,12 +28,18 @@ def seed_account(puller_database, account_row=None, mosaic_rows=None):
 
 
 def seed_account_alias(puller_database, name, artifact_id='TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY'):
+	seed_alias(puller_database, 'account', name, artifact_id)
+
+
+def seed_alias(puller_database, artifact_type, name, artifact_id):
+	"""Seeds an alias with an explicit artifact type and identifier."""
+
 	cursor = puller_database.connection.cursor()
 	try:
 		cursor.execute(
 			'''INSERT INTO symbol_alias_names (artifact_type, artifact_id, name, updated_at_height)
-			VALUES ('account', %s, %s, 100)''',
-			(artifact_id, name))
+			VALUES (%s, %s, %s, 100)''',
+			(artifact_type, artifact_id, name))
 		puller_database.connection.commit()
 	finally:
 		cursor.close()
@@ -67,7 +73,7 @@ class SymbolAccountDatabaseTest(TestCase):
 		# Arrange:
 		with symbol_test_database(create_symbol_sync_state(last_synced_height=100, finalized_height=100)) as (db_config, puller_database):
 			seed_account(puller_database)
-			expected = SymbolAccountRecord(
+			expected = AccountRecord(
 				address=ACCOUNT_ADDRESS,
 				public_key=PUBLIC_KEY,
 				account_type='main',
@@ -85,7 +91,7 @@ class SymbolAccountDatabaseTest(TestCase):
 				}],
 				finalized_epoch=2,
 				alias_names=(),
-				mosaics=(SymbolMosaicRecord(
+				mosaics=(MosaicRecord(
 					mosaic_id='72C0212E67A08BCE',
 					amount=70000000,
 					metadata_mosaic_id=None,
@@ -128,9 +134,9 @@ class SymbolAccountDatabaseTest(TestCase):
 
 		# Assert:
 		self.assertEqual(
-			SymbolMultisigRecord(6, 5, [OTHER_ADDRESS], [ACCOUNT_ADDRESS, OTHER_ADDRESS]),
+			MultisigRecord(6, 5, [OTHER_ADDRESS], [ACCOUNT_ADDRESS, OTHER_ADDRESS]),
 			_normalize_multisig_binary_fields(account_a.multisig))
-		expected_b = SymbolAccountRecord(
+		expected_b = AccountRecord(
 			address=OTHER_ADDRESS,
 			public_key=ACCOUNT_B_PUBLIC_KEY,
 			account_type='remote',
@@ -157,6 +163,8 @@ class SymbolAccountDatabaseTest(TestCase):
 		# Arrange:
 		with symbol_test_database(create_symbol_sync_state(last_synced_height=100, finalized_height=100)) as (db_config, puller_database):
 			seed_account(puller_database)
+			seed_account_alias(puller_database, 'before-account')
+			seed_alias(puller_database, 'mosaic', 'before-mosaic', '72C0212E67A08BCE')
 			puller_database.upsert_multisig(ACCOUNT_ADDRESS, {
 				'address': ACCOUNT_ADDRESS,
 				'min_approval': 2,
@@ -171,6 +179,8 @@ class SymbolAccountDatabaseTest(TestCase):
 
 				def update_current_rows():
 					puller_database.upsert_account_current_state(updated_account, updated_mosaics)
+					seed_account_alias(puller_database, 'after-account')
+					seed_alias(puller_database, 'mosaic', 'after-mosaic', '72C0212E67A08BCE')
 					puller_database.upsert_multisig(ACCOUNT_ADDRESS, {
 						'address': ACCOUNT_ADDRESS,
 						'min_approval': 4,
@@ -188,8 +198,10 @@ class SymbolAccountDatabaseTest(TestCase):
 
 		# Assert:
 		self.assertEqual(70000000, result.mosaics[0].amount)
+		self.assertEqual(('before-account',), result.alias_names)
+		self.assertEqual(('before-mosaic',), result.mosaics[0].alias_names)
 		self.assertEqual(
-			SymbolMultisigRecord(2, 1, [OTHER_ADDRESS], [ACCOUNT_ADDRESS]),
+			MultisigRecord(2, 1, [OTHER_ADDRESS], [ACCOUNT_ADDRESS]),
 			_normalize_multisig_binary_fields(result.multisig))
 
 	def test_try_get_account_rejects_unavailable_state_before_lookup(self):
@@ -199,8 +211,9 @@ class SymbolAccountDatabaseTest(TestCase):
 			database = SymbolDatabase(db_config)
 			try:
 				# Act + Assert:
-				with self.assertRaises(SymbolDataUnavailable):
+				with self.assertRaises(SymbolDataUnavailable) as context:
 					database.try_get_account(address=ACCOUNT_ADDRESS)
+				self.assertEqual('Symbol account data is unavailable', str(context.exception))
 			finally:
 				database.close()
 
@@ -210,8 +223,9 @@ class SymbolAccountDatabaseTest(TestCase):
 			database = SymbolDatabase(db_config)
 			try:
 				# Act + Assert:
-				with self.assertRaises(SymbolDataUnavailable):
+				with self.assertRaises(SymbolDataUnavailable) as context:
 					database.try_get_account(address=ACCOUNT_ADDRESS)
+				self.assertEqual('Symbol account data is unavailable', str(context.exception))
 			finally:
 				database.close()
 
@@ -221,8 +235,9 @@ class SymbolAccountDatabaseTest(TestCase):
 			database = SymbolDatabase(db_config)
 			try:
 				# Act + Assert:
-				with self.assertRaises(SymbolDataUnavailable):
+				with self.assertRaises(SymbolDataUnavailable) as context:
 					database.try_get_account(public_key=PUBLIC_KEY)
+				self.assertEqual('Symbol account data is unavailable', str(context.exception))
 			finally:
 				database.close()
 
@@ -235,8 +250,9 @@ class SymbolAccountDatabaseTest(TestCase):
 			database = SymbolDatabase(db_config)
 			try:
 				# Act + Assert:
-				with self.assertRaises(SymbolDataUnavailable):
+				with self.assertRaises(SymbolDataUnavailable) as context:
 					database.try_get_account(address=ACCOUNT_ADDRESS)
+				self.assertEqual('Symbol account data is unavailable', str(context.exception))
 			finally:
 				database.close()
 
@@ -247,8 +263,9 @@ class SymbolAccountDatabaseTest(TestCase):
 			database = SymbolDatabase(db_config)
 			try:
 				# Act + Assert:
-				with self.assertRaises(SymbolDataInvalid):
+				with self.assertRaises(SymbolDataInvalid) as context:
 					database.try_get_account(address=ACCOUNT_ADDRESS)
+				self.assertEqual('sync_state.finalized_epoch: invalid integer', str(context.exception))
 			finally:
 				database.close()
 
@@ -260,8 +277,9 @@ class SymbolAccountDatabaseTest(TestCase):
 			database = SymbolDatabase(db_config)
 			try:
 				# Act + Assert:
-				with self.assertRaises(SymbolDataInvalid):
+				with self.assertRaises(SymbolDataInvalid) as context:
 					database.try_get_account(public_key=PUBLIC_KEY)
+				self.assertEqual('accounts.address: invalid byte length', str(context.exception))
 			finally:
 				database.close()
 
@@ -306,8 +324,9 @@ class SymbolAccountDatabaseTest(TestCase):
 							dirty_state_from_height=dirty_state_from_height))
 
 						# Act + Assert:
-						with self.assertRaises(SymbolDataUnavailable):
+						with self.assertRaises(SymbolDataUnavailable) as context:
 							database.try_get_account(address=ACCOUNT_ADDRESS)
+						self.assertEqual('Symbol account data is unavailable', str(context.exception))
 			finally:
 				database.close()
 
@@ -326,6 +345,50 @@ class SymbolAccountDatabaseTest(TestCase):
 
 		# Assert:
 		self.assertEqual(('alpha', 'zeta'), result.alias_names)
+
+	def test_try_get_account_separates_account_and_mosaic_aliases_and_ignores_decoys(self):
+		# Arrange:
+		mosaic_id = '1234567890ABCDEF'
+		with symbol_test_database(create_symbol_sync_state(last_synced_height=100, finalized_height=100)) as (db_config, puller_database):
+			seed_account(puller_database, mosaic_rows=[
+				create_account_mosaic_row(),
+				create_account_mosaic_row(mosaic_id=mosaic_id, amount=2)])
+			seed_alias(puller_database, 'account', 'zeta', 'TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY')
+			seed_alias(puller_database, 'account', 'alpha', 'TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY')
+			seed_alias(puller_database, 'mosaic', 'native-zeta', '72C0212E67A08BCE')
+			seed_alias(puller_database, 'mosaic', 'native-alpha', '72C0212E67A08BCE')
+			seed_alias(puller_database, 'mosaic', 'other', mosaic_id)
+			seed_alias(puller_database, 'mosaic', 'wrong-type', 'TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY')
+			seed_alias(puller_database, 'account', 'wrong-type', '72C0212E67A08BCE')
+			seed_alias(puller_database, 'mosaic', 'unrelated', '0000000000000001')
+			database = SymbolDatabase(db_config)
+			try:
+				# Act:
+				result = database.try_get_account(address=ACCOUNT_ADDRESS)
+			finally:
+				database.close()
+
+		# Assert:
+		self.assertEqual(('alpha', 'zeta'), result.alias_names)
+		self.assertEqual((
+			MosaicRecord('1234567890ABCDEF', 2, None, None, None, ('other',)),
+			MosaicRecord('72C0212E67A08BCE', 70000000, None, None, None, ('native-alpha', 'native-zeta'))), result.mosaics)
+
+	def test_try_get_account_reads_account_aliases_when_mosaics_are_absent(self):
+		# Arrange:
+		with symbol_test_database(create_symbol_sync_state(last_synced_height=100, finalized_height=100)) as (db_config, puller_database):
+			seed_account(puller_database, mosaic_rows=[])
+			seed_account_alias(puller_database, 'account-name')
+			database = SymbolDatabase(db_config)
+			try:
+				# Act:
+				result = database.try_get_account(address=ACCOUNT_ADDRESS)
+			finally:
+				database.close()
+
+		# Assert:
+		self.assertEqual(('account-name',), result.alias_names)
+		self.assertEqual((), result.mosaics)
 
 
 def _normalize_account_binary_fields(record):

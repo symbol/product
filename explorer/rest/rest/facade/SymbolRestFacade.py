@@ -23,6 +23,7 @@ class SymbolRestFacade:
 			raise ValueError('Symbol node configuration is required')
 		if not isinstance(native_mosaic_info, NativeMosaicInfo):
 			raise ValueError('Native mosaic information is required')
+
 		if network is None:
 			raise ValueError('Symbol network is required')
 

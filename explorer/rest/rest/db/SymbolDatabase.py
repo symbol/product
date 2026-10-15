@@ -89,16 +89,16 @@ TransactionRecord = namedtuple(
 	'TransactionRecord',
 	['transaction_id', 'hash', 'is_embedded', 'aggregate_hash', 'embedded_index', 'height', 'transaction_type',
 		'signer_address', 'recipient_address', 'effective_fee', 'timestamp', 'message_type', 'message_payload', 'mosaics'])
-SymbolAccountRecord = namedtuple(
-	'SymbolAccountRecord',
+AccountRecord = namedtuple(
+	'AccountRecord',
 	['address', 'public_key', 'account_type', 'address_height', 'importance_percentage', 'linked_public_key',
 		'node_public_key', 'vrf_public_key', 'voting_public_keys', 'activity_buckets', 'finalized_epoch', 'alias_names',
 		'mosaics', 'multisig'], defaults=(None,))
-SymbolMosaicRecord = namedtuple(
-	'SymbolMosaicRecord',
+MosaicRecord = namedtuple(
+	'MosaicRecord',
 	['mosaic_id', 'amount', 'metadata_mosaic_id', 'divisibility', 'owner_address', 'alias_names'])
-SymbolMultisigRecord = namedtuple(
-	'SymbolMultisigRecord', ['min_approval', 'min_removal', 'cosignatory_addresses', 'multisig_addresses'])
+MultisigRecord = namedtuple(
+	'MultisigRecord', ['min_approval', 'min_removal', 'cosignatory_addresses', 'multisig_addresses'])
 
 
 def _bytes_or_none(value):
@@ -335,18 +335,12 @@ class SymbolDatabase(DatabaseConnectionPool):
 				self._start_read_transaction(cursor)
 				sync_state = self._fetch_sync_state(cursor)
 				self._assert_account_state_readable(sync_state)
-				if address is not None:
-					cursor.execute(
-						'''SELECT address, public_key, account_type, address_height, importance_percentage,
-								linked_public_key, node_public_key, vrf_public_key, voting_public_keys, activity_buckets
-							FROM symbol_accounts WHERE address = %s''',
-						(address,))
-				else:
-					cursor.execute(
-						'''SELECT address, public_key, account_type, address_height, importance_percentage,
-								linked_public_key, node_public_key, vrf_public_key, voting_public_keys, activity_buckets
-							FROM symbol_accounts WHERE public_key = %s''',
-						(public_key,))
+				lookup_column, lookup_value = ('address', address) if address is not None else ('public_key', public_key)
+				cursor.execute(
+					f'''SELECT address, public_key, account_type, address_height, importance_percentage,
+							linked_public_key, node_public_key, vrf_public_key, voting_public_keys, activity_buckets
+						FROM symbol_accounts WHERE {lookup_column} = %s''',
+					(lookup_value,))
 				account_row = cursor.fetchone()
 				if not account_row:
 					return None
@@ -371,6 +365,7 @@ class SymbolDatabase(DatabaseConnectionPool):
 		finalized_epoch = sync_state.get('finalized_epoch')
 		if finalized_epoch is None:
 			raise SymbolDataUnavailable('Symbol account data is unavailable')
+
 		if isinstance(finalized_epoch, bool) or not isinstance(finalized_epoch, int) or finalized_epoch < 0 or finalized_epoch > 2147483647:
 			raise SymbolDataInvalid('sync_state.finalized_epoch', 'invalid integer')
 
@@ -386,7 +381,7 @@ class SymbolDatabase(DatabaseConnectionPool):
 			FROM symbol_multisig WHERE address = %s''',
 			(address,))
 		multisig_row = cursor.fetchone()
-		multisig = SymbolMultisigRecord(*multisig_row) if multisig_row else None
+		multisig = MultisigRecord(*multisig_row) if multisig_row else None
 
 		cursor.execute(
 			'''SELECT account_mosaics.mosaic_id, account_mosaics.amount, mosaics.mosaic_id,
@@ -399,25 +394,23 @@ class SymbolDatabase(DatabaseConnectionPool):
 		mosaic_rows = cursor.fetchall()
 		mosaic_ids = [row[0] for row in mosaic_rows]
 		alias_names_by_mosaic = {mosaic_id: [] for mosaic_id in mosaic_ids}
-		if mosaic_ids:
-			cursor.execute(
-				'''SELECT artifact_id, name FROM symbol_alias_names
-				WHERE artifact_type = 'mosaic' AND artifact_id = ANY(%s::varchar[])
-				ORDER BY artifact_id ASC, name ASC''',
-				(mosaic_ids,))
-			for mosaic_id, name in cursor.fetchall():
-				alias_names_by_mosaic[mosaic_id].append(name)
-
 		cursor.execute(
-			'''SELECT name FROM symbol_alias_names
-			WHERE artifact_type = 'account' AND artifact_id = %s
-			ORDER BY name ASC''',
-			(address_text,))
-		account_aliases = [row[0] for row in cursor.fetchall()]
-		mosaics = tuple(SymbolMosaicRecord(
+			'''SELECT artifact_type, artifact_id, name FROM symbol_alias_names
+			WHERE (artifact_type = 'account' AND artifact_id = %s)
+				OR (artifact_type = 'mosaic' AND artifact_id = ANY(%s::varchar[]))
+			ORDER BY artifact_type ASC, artifact_id ASC, name ASC''',
+			(address_text, mosaic_ids))
+		account_aliases = []
+		for artifact_type, artifact_id, name in cursor.fetchall():
+			if artifact_type == 'account':
+				account_aliases.append(name)
+			else:
+				alias_names_by_mosaic[artifact_id].append(name)
+
+		mosaics = tuple(MosaicRecord(
 			row[0], row[1], row[2], row[3], row[4], tuple(alias_names_by_mosaic[row[0]])) for row in mosaic_rows)
 
-		return SymbolAccountRecord(
+		return AccountRecord(
 			address,
 			account_row[1],
 			account_row[2],

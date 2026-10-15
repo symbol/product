@@ -4,7 +4,7 @@ from common.symbol.NativeMosaic import NativeMosaicInfo
 from common.symbol.NodeConfiguration import SymbolNodeConfiguration
 from symbolchain.symbol.Network import Network
 
-from rest.db.SymbolDatabase import SymbolAccountRecord
+from rest.db.SymbolDatabase import AccountRecord
 from rest.facade.SymbolRestFacade import SymbolRestFacade
 
 
@@ -14,7 +14,7 @@ def create_account_record(
 	vrf_public_key=None):
 	"""Creates a minimal valid account record for facade wiring tests."""
 
-	return SymbolAccountRecord(
+	return AccountRecord(
 		address,
 		None,
 		'main',

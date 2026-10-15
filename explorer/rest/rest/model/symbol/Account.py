@@ -28,6 +28,7 @@ def _bytes(value, field_path, expected_length):
 	if not isinstance(value, (bytes, bytearray, memoryview)):
 		raise _invalid(field_path, 'value is not bytes')
 
+	# A released memoryview passes the type check but bytes() raises ValueError; accepted bytes-like subclasses can raise TypeError.
 	try:
 		result = bytes(value)
 	except (TypeError, ValueError) as error:
@@ -55,18 +56,14 @@ def _public_key_address(value, network, field_path):
 
 
 def _integer(value, field_path, minimum, maximum):
-	if isinstance(value, bool):
+	if isinstance(value, bool) or not (
+		isinstance(value, int) or isinstance(value, str) and DECIMAL_INTEGER_PATTERN.fullmatch(value)):
 		raise _invalid(field_path, 'value is not an integer')
 
-	if isinstance(value, int):
-		result = value
-	elif isinstance(value, str) and DECIMAL_INTEGER_PATTERN.fullmatch(value):
-		try:
-			result = int(value)
-		except ValueError as error:
-			raise _invalid(field_path, 'value is not an integer') from error
-	else:
-		raise _invalid(field_path, 'value is not an integer')
+	try:
+		result = int(value)
+	except ValueError as error:
+		raise _invalid(field_path, 'value is not an integer') from error
 
 	if result < minimum or result > maximum:
 		raise _invalid(field_path, 'integer is outside the allowed range')
@@ -229,9 +226,11 @@ def _supplemental_key(value, network, field_path):
 def _balance(mosaics, native_mosaic_info):
 	if not isinstance(mosaics, (list, tuple)):
 		raise _invalid('account_mosaics', 'value is not an array')
+
 	for index, mosaic in enumerate(mosaics):
 		if not hasattr(mosaic, 'mosaic_id'):
 			raise _invalid(f'account_mosaics[{index}]', 'value is not a mosaic row')
+
 		if _mosaic_id(mosaic.mosaic_id, 'account_mosaics.mosaic_id') == native_mosaic_info.id:
 			amount = _database_integer(mosaic.amount, 'account_mosaics.amount', 0, INT64_MAX)
 			return format_amount(amount, native_mosaic_info.divisibility)
@@ -245,6 +244,7 @@ def _mosaics(mosaics, account_address, network, native_mosaic_info):
 		field_path = f'account_mosaics[{index}]'
 		if not isinstance(mosaic.alias_names, (list, tuple)) or any(not isinstance(alias, str) for alias in mosaic.alias_names):
 			raise _invalid(f'{field_path}.alias_names', 'value is not a string array')
+
 		mosaic_id = _mosaic_id(mosaic.mosaic_id, f'{field_path}.mosaic_id')
 		amount = _database_integer(mosaic.amount, f'{field_path}.amount', 0, INT64_MAX)
 		name = mosaic.alias_names[0] if mosaic.alias_names else mosaic_id

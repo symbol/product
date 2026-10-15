@@ -1,10 +1,11 @@
+import sys
 from decimal import Decimal
 from unittest import TestCase
 
 from common.symbol.NativeMosaic import NativeMosaicInfo
 from symbolchain.symbol.Network import Network
 
-from rest.db.SymbolDatabase import SymbolAccountRecord, SymbolMosaicRecord, SymbolMultisigRecord
+from rest.db.SymbolDatabase import AccountRecord, MosaicRecord, MultisigRecord
 from rest.model.symbol.Account import SymbolAccountView
 from rest.model.symbol.validation import SymbolDataInvalid
 
@@ -35,13 +36,13 @@ def create_account(**overrides):
 		'finalized_epoch': 200,
 		'alias_names': ['zeta', 'alpha'],
 		'mosaics': (
-			SymbolMosaicRecord('1234567890abcdef', 12345, None, None, None, ()),
-			SymbolMosaicRecord('72c0212e67a08bce', 1234567, '72C0212E67A08BCE', 6, OWNER_ADDRESS, ('xym',))
+			MosaicRecord('1234567890abcdef', 12345, None, None, None, ()),
+			MosaicRecord('72c0212e67a08bce', 1234567, '72C0212E67A08BCE', 6, OWNER_ADDRESS, ('xym',))
 		),
 		'multisig': None
 	}
 	values.update(overrides)
-	return SymbolAccountRecord(**values)
+	return AccountRecord(**values)
 
 
 class SymbolAccountViewTest(TestCase):
@@ -101,7 +102,7 @@ class SymbolAccountViewTest(TestCase):
 
 	def test_to_dict_maps_multisig_relationships_and_thresholds(self):
 		# Arrange:
-		multisig = SymbolMultisigRecord(
+		multisig = MultisigRecord(
 			2, 1, [OTHER_ADDRESS, ACCOUNT_ADDRESS, OTHER_ADDRESS], [ACCOUNT_ADDRESS, OTHER_ADDRESS, ACCOUNT_ADDRESS])
 
 		# Act:
@@ -126,7 +127,7 @@ class SymbolAccountViewTest(TestCase):
 
 	def test_to_dict_defaults_when_multisig_relationships_are_empty_without_using_thresholds(self):
 		# Arrange:
-		multisig = SymbolMultisigRecord(-1, True, [], [])
+		multisig = MultisigRecord(-1, True, [], [])
 
 		# Act:
 		result = SymbolAccountView(
@@ -145,18 +146,18 @@ class SymbolAccountViewTest(TestCase):
 	def test_to_dict_rejects_invalid_saved_multisig_values(self):
 		# Arrange:
 		invalid_records = (
-			(SymbolMultisigRecord(1, 1, None, []), 'multisig.cosignatory_addresses'),
-			(SymbolMultisigRecord(1, 1, [], None), 'multisig.multisig_addresses'),
-			(SymbolMultisigRecord(1, 1, (), []), 'multisig.cosignatory_addresses'),
-			(SymbolMultisigRecord(1, 1, [], ()), 'multisig.multisig_addresses'),
-			(SymbolMultisigRecord(1, 1, [None], []), 'multisig.cosignatory_addresses[0]'),
-			(SymbolMultisigRecord(1, 1, [], [None]), 'multisig.multisig_addresses[0]'),
-			(SymbolMultisigRecord(1, 1, [b'bad'], []), 'multisig.cosignatory_addresses[0]'),
-			(SymbolMultisigRecord(1, 1, [], [MAINNET_ACCOUNT_ADDRESS]), 'multisig.multisig_addresses[0]'),
-			(SymbolMultisigRecord(-1, 1, [ACCOUNT_ADDRESS], []), 'multisig.min_approval'),
-			(SymbolMultisigRecord(1, -1, [ACCOUNT_ADDRESS], []), 'multisig.min_removal'),
-			(SymbolMultisigRecord(2147483648, 1, [ACCOUNT_ADDRESS], []), 'multisig.min_approval'),
-			(SymbolMultisigRecord(1, 2147483648, [ACCOUNT_ADDRESS], []), 'multisig.min_removal'))
+			(MultisigRecord(1, 1, None, []), 'multisig.cosignatory_addresses'),
+			(MultisigRecord(1, 1, [], None), 'multisig.multisig_addresses'),
+			(MultisigRecord(1, 1, (), []), 'multisig.cosignatory_addresses'),
+			(MultisigRecord(1, 1, [], ()), 'multisig.multisig_addresses'),
+			(MultisigRecord(1, 1, [None], []), 'multisig.cosignatory_addresses[0]'),
+			(MultisigRecord(1, 1, [], [None]), 'multisig.multisig_addresses[0]'),
+			(MultisigRecord(1, 1, [b'bad'], []), 'multisig.cosignatory_addresses[0]'),
+			(MultisigRecord(1, 1, [], [MAINNET_ACCOUNT_ADDRESS]), 'multisig.multisig_addresses[0]'),
+			(MultisigRecord(-1, 1, [ACCOUNT_ADDRESS], []), 'multisig.min_approval'),
+			(MultisigRecord(1, -1, [ACCOUNT_ADDRESS], []), 'multisig.min_removal'),
+			(MultisigRecord(2147483648, 1, [ACCOUNT_ADDRESS], []), 'multisig.min_approval'),
+			(MultisigRecord(1, 2147483648, [ACCOUNT_ADDRESS], []), 'multisig.min_removal'))
 
 		# Act + Assert:
 		for multisig, field_path in invalid_records:
@@ -187,9 +188,10 @@ class SymbolAccountViewTest(TestCase):
 		released_address.release()
 
 		# Act + Assert:
-		with self.assertRaises(SymbolDataInvalid):
+		with self.assertRaises(SymbolDataInvalid) as context:
 			SymbolAccountView(
 				create_account(address=released_address), Network.TESTNET, NATIVE_MOSAIC_INFO).to_dict()
+		self.assertEqual('accounts.address: value is not bytes', str(context.exception))
 
 	def test_to_dict_rejects_saved_address_for_other_network(self):
 		# Act + Assert:
@@ -199,7 +201,7 @@ class SymbolAccountViewTest(TestCase):
 	def test_to_dict_returns_zero_balance_when_native_mosaic_row_is_absent(self):
 		# Arrange:
 		account = create_account(mosaics=(
-			SymbolMosaicRecord('1234567890ABCDEF', 12345, None, None, None, ()),))
+			MosaicRecord('1234567890ABCDEF', 12345, None, None, None, ()),))
 
 		# Act:
 		result = SymbolAccountView(account, Network.TESTNET, NATIVE_MOSAIC_INFO).to_dict()
@@ -211,7 +213,7 @@ class SymbolAccountViewTest(TestCase):
 	def test_to_dict_uses_native_divisibility_without_metadata(self):
 		# Arrange:
 		account = create_account(mosaics=(
-			SymbolMosaicRecord('72C0212E67A08BCE', 1, None, None, None, ()),))
+			MosaicRecord('72C0212E67A08BCE', 1, None, None, None, ()),))
 
 		# Act:
 		result = SymbolAccountView(account, Network.TESTNET, NATIVE_MOSAIC_INFO).to_dict()
@@ -223,7 +225,7 @@ class SymbolAccountViewTest(TestCase):
 	def test_to_dict_marks_other_mosaic_owner_as_not_created_by_account(self):
 		# Arrange:
 		account = create_account(mosaics=(
-			SymbolMosaicRecord('1234567890ABCDEF', 12345, '1234567890ABCDEF', 2, OTHER_ADDRESS, ()),))
+			MosaicRecord('1234567890ABCDEF', 12345, '1234567890ABCDEF', 2, OTHER_ADDRESS, ()),))
 
 		# Act:
 		result = SymbolAccountView(account, Network.TESTNET, NATIVE_MOSAIC_INFO).to_dict()
@@ -235,7 +237,7 @@ class SymbolAccountViewTest(TestCase):
 	def test_to_dict_preserves_zero_amount_with_metadata_divisibility(self):
 		# Arrange:
 		account = create_account(mosaics=(
-			SymbolMosaicRecord('1234567890ABCDEF', 0, '1234567890ABCDEF', 6, OWNER_ADDRESS, ()),))
+			MosaicRecord('1234567890ABCDEF', 0, '1234567890ABCDEF', 6, OWNER_ADDRESS, ()),))
 
 		# Act:
 		result = SymbolAccountView(account, Network.TESTNET, NATIVE_MOSAIC_INFO).to_dict()
@@ -247,7 +249,7 @@ class SymbolAccountViewTest(TestCase):
 	def test_to_dict_preserves_zero_divisibility_with_nonzero_amount(self):
 		# Arrange:
 		account = create_account(mosaics=(
-			SymbolMosaicRecord('1234567890ABCDEF', 123, '1234567890ABCDEF', 0, OWNER_ADDRESS, ()),))
+			MosaicRecord('1234567890ABCDEF', 123, '1234567890ABCDEF', 0, OWNER_ADDRESS, ()),))
 
 		# Act:
 		result = SymbolAccountView(account, Network.TESTNET, NATIVE_MOSAIC_INFO).to_dict()
@@ -258,7 +260,7 @@ class SymbolAccountViewTest(TestCase):
 	def test_to_dict_accepts_maximum_mosaic_divisibility(self):
 		# Arrange:
 		account = create_account(mosaics=(
-			SymbolMosaicRecord('1234567890ABCDEF', 1, '1234567890ABCDEF', 255, OWNER_ADDRESS, ()),))
+			MosaicRecord('1234567890ABCDEF', 1, '1234567890ABCDEF', 255, OWNER_ADDRESS, ()),))
 
 		# Act:
 		result = SymbolAccountView(account, Network.TESTNET, NATIVE_MOSAIC_INFO).to_dict()
@@ -386,7 +388,7 @@ class SymbolAccountViewTest(TestCase):
 			finalized_epoch=0,
 			voting_public_keys=[],
 			activity_buckets=[{'startHeight': 0, 'totalFeesPaid': 0, 'beneficiaryCount': 0, 'rawScore': 0}],
-			mosaics=(SymbolMosaicRecord('0000000000000000', 0, None, None, None, ()),))
+			mosaics=(MosaicRecord('0000000000000000', 0, None, None, None, ()),))
 
 		# Act:
 		result = SymbolAccountView(account, Network.TESTNET, NATIVE_MOSAIC_INFO).to_dict()
@@ -438,7 +440,7 @@ class SymbolAccountViewTest(TestCase):
 class SymbolAccountOwnMultisigViewTest(TestCase):
 	def test_to_dict_converts_multisig_addresses_for_mainnet(self):
 		# Arrange:
-		multisig = SymbolMultisigRecord(
+		multisig = MultisigRecord(
 			1, 1,
 			[bytes.fromhex('687585978CADF2186CE5D92576FC849FBF6ECE7B36CF9635')],
 			[bytes.fromhex('68F6CB4276B16A349A1C3CD50C3752775AD5D3F2F7299640')])
@@ -459,7 +461,7 @@ class SymbolAccountOwnMultisigViewTest(TestCase):
 
 	def test_to_dict_maps_multisig_own_only(self):
 		# Arrange:
-		multisig = SymbolMultisigRecord(7, 3, [OTHER_ADDRESS], [])
+		multisig = MultisigRecord(7, 3, [OTHER_ADDRESS], [])
 
 		# Act:
 		result = SymbolAccountView(
@@ -478,7 +480,7 @@ class SymbolAccountOwnMultisigViewTest(TestCase):
 
 	def test_to_dict_accepts_multisig_threshold_integer_bounds(self):
 		# Arrange:
-		multisig = SymbolMultisigRecord(2147483647, 0, [ACCOUNT_ADDRESS], [])
+		multisig = MultisigRecord(2147483647, 0, [ACCOUNT_ADDRESS], [])
 
 		# Act:
 		result = SymbolAccountView(
@@ -491,8 +493,8 @@ class SymbolAccountOwnMultisigViewTest(TestCase):
 	def test_to_dict_rejects_boolean_multisig_threshold(self):
 		# Arrange:
 		invalid_records = (
-			(SymbolMultisigRecord(True, 1, [ACCOUNT_ADDRESS], []), 'multisig.min_approval'),
-			(SymbolMultisigRecord(1, False, [ACCOUNT_ADDRESS], []), 'multisig.min_removal'))
+			(MultisigRecord(True, 1, [ACCOUNT_ADDRESS], []), 'multisig.min_approval'),
+			(MultisigRecord(1, False, [ACCOUNT_ADDRESS], []), 'multisig.min_removal'))
 
 		# Act + Assert:
 		for multisig, field_path in invalid_records:
@@ -503,7 +505,7 @@ class SymbolAccountOwnMultisigViewTest(TestCase):
 
 	def test_to_dict_does_not_validate_thresholds_without_own_cosignatories(self):
 		# Arrange:
-		multisig = SymbolMultisigRecord(-1, True, [], [OTHER_ADDRESS])
+		multisig = MultisigRecord(-1, True, [], [OTHER_ADDRESS])
 
 		# Act:
 		result = SymbolAccountView(
@@ -593,8 +595,8 @@ class SymbolAccountViewValidationTest(TestCase):
 				'rawScore': '18446744073709551615'
 			}],
 			mosaics=(
-				SymbolMosaicRecord('1234567890ABCDEF', 1, '1234567890ABCDEF', 255, OWNER_ADDRESS, ()),
-				SymbolMosaicRecord('72C0212E67A08BCE', 9223372036854775807, None, None, None, ())))
+				MosaicRecord('1234567890ABCDEF', 1, '1234567890ABCDEF', 255, OWNER_ADDRESS, ()),
+				MosaicRecord('72C0212E67A08BCE', 9223372036854775807, None, None, None, ())))
 
 		# Act:
 		result = SymbolAccountView(account, Network.TESTNET, NATIVE_MOSAIC_INFO).to_dict()
@@ -620,8 +622,7 @@ class SymbolAccountViewValidationTest(TestCase):
 			{'finalized_epoch': 2147483648},
 			{'finalized_epoch': True},
 			{'finalized_epoch': 5.0},
-			{'finalized_epoch': '5'},
-			{'voting_public_keys': [{'publicKey': 'ab' * 32, 'startEpoch': '9' * 5000, 'endEpoch': 1}]}
+			{'finalized_epoch': '5'}
 		)
 
 		# Act + Assert:
@@ -629,10 +630,31 @@ class SymbolAccountViewValidationTest(TestCase):
 			with self.subTest(overrides=overrides), self.assertRaises(SymbolDataInvalid):
 				SymbolAccountView(create_account(**overrides), Network.TESTNET, NATIVE_MOSAIC_INFO).to_dict()
 
+	def test_to_dict_rejects_integer_conversion_failure(self):
+		# Arrange: own the decimal conversion limit instead of relying on the process default.
+		if not hasattr(sys, 'get_int_max_str_digits') or not hasattr(sys, 'set_int_max_str_digits'):
+			self.skipTest('Python does not support configuring the integer string conversion limit')
+
+		original_limit = sys.get_int_max_str_digits()
+		conversion_limit = sys.int_info.str_digits_check_threshold
+		try:
+			sys.set_int_max_str_digits(conversion_limit)
+			long_integer = '9' * (conversion_limit + 1)
+
+			# Act + Assert:
+			with self.assertRaises(SymbolDataInvalid) as context:
+				SymbolAccountView(
+					create_account(voting_public_keys=[{'publicKey': 'ab' * 32, 'startEpoch': long_integer, 'endEpoch': 1}]),
+					Network.TESTNET,
+					NATIVE_MOSAIC_INFO).to_dict()
+			self.assertEqual('accounts.voting_public_keys[0].startEpoch: value is not an integer', str(context.exception))
+		finally:
+			sys.set_int_max_str_digits(original_limit)
+
 	def test_to_dict_rejects_each_uint64_activity_field_boundary_and_type(self):
 		# Arrange:
 		activity_fields = ('startHeight', 'totalFeesPaid', 'rawScore')
-		invalid_values = (-1, 18446744073709551616, True, 1.0, '1.0', 'not-a-number')
+		invalid_values = (-1, 18446744073709551616, True, 1.0, '1.0', 'not-a-number', '', '+1', '-1', ' 1', '1 ', '1e2', '１２', '١٢')
 		invalid_activity = [
 			(field, value)
 			for field in activity_fields
@@ -714,20 +736,20 @@ class SymbolAccountViewValidationTest(TestCase):
 	def test_to_dict_rejects_malformed_mosaic_values(self):
 		# Arrange:
 		invalid_mosaics = (
-			SymbolMosaicRecord('bad', 1, None, None, None, ()),
-			SymbolMosaicRecord('1234567890ABCDEF', -1, None, None, None, ()),
-			SymbolMosaicRecord('1234567890ABCDEF', 1, 'metadata', -1, OWNER_ADDRESS, ()),
-			SymbolMosaicRecord('1234567890ABCDEF', 1, 'metadata', 256, OWNER_ADDRESS, ()),
-			SymbolMosaicRecord('1234567890ABCDEF', 1, 'metadata', True, OWNER_ADDRESS, ()),
-			SymbolMosaicRecord('1234567890ABCDEF', 1, 'metadata', 1.0, OWNER_ADDRESS, ()),
-			SymbolMosaicRecord('1234567890ABCDEF', 1, 'metadata', None, OWNER_ADDRESS, ()),
-			SymbolMosaicRecord('1234567890ABCDEF', 1, 'metadata', 1, b'bad', ()),
-			SymbolMosaicRecord('1234567890ABCDEF', 1, None, None, None, None),
-			SymbolMosaicRecord('1234567890ABCDEF', 1, None, None, None, (None,)),
-			SymbolMosaicRecord('1234567890ABCDEF', True, None, None, None, ()),
-			SymbolMosaicRecord('1234567890ABCDEF', 1.0, None, None, None, ()),
-			SymbolMosaicRecord('1234567890ABCDEF', 9223372036854775808, None, None, None, ()),
-			SymbolMosaicRecord('1234567890ABCDEF', None, None, None, None, ())
+			MosaicRecord('bad', 1, None, None, None, ()),
+			MosaicRecord('1234567890ABCDEF', -1, None, None, None, ()),
+			MosaicRecord('1234567890ABCDEF', 1, 'metadata', -1, OWNER_ADDRESS, ()),
+			MosaicRecord('1234567890ABCDEF', 1, 'metadata', 256, OWNER_ADDRESS, ()),
+			MosaicRecord('1234567890ABCDEF', 1, 'metadata', True, OWNER_ADDRESS, ()),
+			MosaicRecord('1234567890ABCDEF', 1, 'metadata', 1.0, OWNER_ADDRESS, ()),
+			MosaicRecord('1234567890ABCDEF', 1, 'metadata', None, OWNER_ADDRESS, ()),
+			MosaicRecord('1234567890ABCDEF', 1, 'metadata', 1, b'bad', ()),
+			MosaicRecord('1234567890ABCDEF', 1, None, None, None, None),
+			MosaicRecord('1234567890ABCDEF', 1, None, None, None, (None,)),
+			MosaicRecord('1234567890ABCDEF', True, None, None, None, ()),
+			MosaicRecord('1234567890ABCDEF', 1.0, None, None, None, ()),
+			MosaicRecord('1234567890ABCDEF', 9223372036854775808, None, None, None, ()),
+			MosaicRecord('1234567890ABCDEF', None, None, None, None, ())
 		)
 
 		# Act + Assert:
