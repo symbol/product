@@ -5,7 +5,7 @@
  * @property {string} type - The transaction type.
  * @property {string} signerPublicKey - The public key of the transaction signer.
  * @property {string} signerAddress - The address of the transaction signer.
- * @property {number} fee - The transaction fee.
+ * @property {TransactionFee} fee - The transaction fee.
  * @property {number} [deadline] - The transaction deadline.
  * @property {number} [timestamp] - Timestamp the transaction is confirmed.
  * @property {number} [height] - The block height the transaction is included in.

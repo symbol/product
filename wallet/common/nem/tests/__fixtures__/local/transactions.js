@@ -1,3 +1,4 @@
+import { createFee } from './network';
 import { accounts } from './wallet';
 
 const { alice, bob, carol } = accounts;
@@ -16,7 +17,7 @@ export const outgoingTransfer = {
 	},
 	height: 4368990,
 	hash: 'a1b2c3',
-	fee: '0.1',
+	fee: createFee('0.1'),
 	signerAddress: alice.address,
 	signerPublicKey: alice.publicKey,
 	recipientAddress: bob.address,
@@ -45,7 +46,7 @@ export const incomingTransfer = {
 	},
 	height: 4368991,
 	hash: 'd4e5f6',
-	fee: '0.1',
+	fee: createFee('0.1'),
 	signerAddress: bob.address,
 	signerPublicKey: bob.publicKey,
 	recipientAddress: alice.address,
@@ -69,7 +70,7 @@ export const mosaicTransfer = {
 	},
 	height: 4368992,
 	hash: 'aa11bb',
-	fee: '0.15',
+	fee: createFee('0.15'),
 	signerAddress: alice.address,
 	signerPublicKey: alice.publicKey,
 	recipientAddress: bob.address,
@@ -95,7 +96,7 @@ export const encryptedTransfer = {
 	},
 	height: 4368993,
 	hash: 'cc22dd',
-	fee: '0.2',
+	fee: createFee('0.2'),
 	signerAddress: alice.address,
 	signerPublicKey: alice.publicKey,
 	recipientAddress: bob.address,
@@ -125,7 +126,7 @@ export const multisigTransfer = {
 	},
 	height: 4368994,
 	hash: 'ee33ff',
-	fee: '0.15',
+	fee: createFee('0.15'),
 	signerAddress: bob.address,
 	signerPublicKey: bob.publicKey,
 	innerTransaction: {
@@ -181,7 +182,7 @@ export const importanceTransfer = {
 	},
 	height: 4368995,
 	hash: '991122',
-	fee: '0.15',
+	fee: createFee('0.15'),
 	signerAddress: alice.address,
 	signerPublicKey: alice.publicKey,
 	linkAction: 1,
@@ -199,7 +200,7 @@ export const unconfirmedTransfer = {
 	},
 	height: null,
 	hash: null,
-	fee: '0.1',
+	fee: createFee('0.1'),
 	signerAddress: alice.address,
 	signerPublicKey: alice.publicKey,
 	recipientAddress: bob.address,
@@ -223,7 +224,7 @@ export const multisigModification = {
 	},
 	height: 4368996,
 	hash: '112233',
-	fee: '0.5',
+	fee: createFee('0.5'),
 	signerAddress: alice.address,
 	signerPublicKey: alice.publicKey,
 	modifications: [
@@ -243,7 +244,7 @@ export const cosignature = {
 	},
 	height: 4368997,
 	hash: '445566',
-	fee: '0.15',
+	fee: createFee('0.15'),
 	signerAddress: bob.address,
 	signerPublicKey: bob.publicKey,
 	otherTransactionHash: 'cc317a7674d56352b4c711096a7594bd11908bf518293a191fc2faa12eac0fbb',
@@ -260,14 +261,14 @@ export const namespaceRegistration = {
 	},
 	height: 4368998,
 	hash: '778899',
-	fee: '0.15',
+	fee: createFee('0.15'),
 	signerAddress: alice.address,
 	signerPublicKey: alice.publicKey,
 	namespaceName: 'alice',
 	parentName: null,
 	namespaceId: 'alice',
 	rentalFeeSink: NAMESPACE_FEE_SINK,
-	rentalFee: '100'
+	rentalFee: createFee('100')
 };
 
 // Sub-namespace registration: parentName is set and the namespace id is 'parent.name'.
@@ -280,14 +281,14 @@ export const subNamespaceRegistration = {
 	},
 	height: 4368999,
 	hash: 'aabbcc',
-	fee: '0.15',
+	fee: createFee('0.15'),
 	signerAddress: alice.address,
 	signerPublicKey: alice.publicKey,
 	namespaceName: 'vouchers',
 	parentName: 'alice',
 	namespaceId: 'alice.vouchers',
 	rentalFeeSink: NAMESPACE_FEE_SINK,
-	rentalFee: '10'
+	rentalFee: createFee('10')
 };
 
 // Mosaic definition without a levy: properties are parsed into the typed shape and levy is null.
@@ -300,7 +301,7 @@ export const mosaicDefinition = {
 	},
 	height: 4369000,
 	hash: 'ddeeff',
-	fee: '0.15',
+	fee: createFee('0.15'),
 	signerAddress: alice.address,
 	signerPublicKey: alice.publicKey,
 	mosaicDefinition: {
@@ -311,7 +312,7 @@ export const mosaicDefinition = {
 		levy: null
 	},
 	rentalFeeSink: MOSAIC_FEE_SINK,
-	rentalFee: '10'
+	rentalFee: createFee('10')
 };
 
 // Mosaic definition with an absolute levy: the levy recipient is surfaced as an address and its
@@ -325,7 +326,7 @@ export const mosaicDefinitionWithLevy = {
 	},
 	height: 4369001,
 	hash: '123456',
-	fee: '0.15',
+	fee: createFee('0.15'),
 	signerAddress: alice.address,
 	signerPublicKey: alice.publicKey,
 	mosaicDefinition: {
@@ -336,7 +337,7 @@ export const mosaicDefinitionWithLevy = {
 		levy: { type: 1, recipientAddress: bob.address, mosaicId: 'nem.xem', fee: 1000 }
 	},
 	rentalFeeSink: MOSAIC_FEE_SINK,
-	rentalFee: '10'
+	rentalFee: createFee('10')
 };
 
 // Mosaic supply change: supplyType becomes the action and the mosaic id becomes a 'namespace.name' string.
@@ -349,7 +350,7 @@ export const mosaicSupplyChange = {
 	},
 	height: 4369002,
 	hash: '789abc',
-	fee: '0.15',
+	fee: createFee('0.15'),
 	signerAddress: alice.address,
 	signerPublicKey: alice.publicKey,
 	tokenId: 'alice.token',
@@ -377,7 +378,7 @@ export const multisigImportanceTransfer = {
 	},
 	height: 4369003,
 	hash: 'def012',
-	fee: '0.15',
+	fee: createFee('0.15'),
 	signerAddress: bob.address,
 	signerPublicKey: bob.publicKey,
 	innerTransaction: multisigImportanceInner,

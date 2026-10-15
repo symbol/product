@@ -1,4 +1,5 @@
 /** @typedef {import('./Token').Token} Token */
+/** @typedef {import('./Network').TransactionFeeTier} TransactionFeeTier */
 
 /**
  * @typedef {object} Message
@@ -54,7 +55,7 @@
  * @property {number|null} timestamp - Transaction date/time from the history API (Unix ms).
  * @property {Deadline|null} [deadline]
  * @property {number|null} height
- * @property {number|null} fee - Relative fee in native currency.
+ * @property {TransactionFeeTier|null} fee - Relative fee in native currency.
  * @property {string|null} signerAddress
  * @property {string|null} signerPublicKey
  * @property {string|null} [recipientAddress]
