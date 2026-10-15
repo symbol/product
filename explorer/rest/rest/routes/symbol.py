@@ -236,6 +236,25 @@ def _setup_symbol_mosaic_routes(app, symbol_api_facade, run_symbol_query):
 
 		return jsonify(result)
 
+	@app.route('/api/symbol/mosaic/<name>')
+	def api_get_symbol_mosaic(name):
+		try:
+			_validate_allowed_query_parameters(frozenset())
+			mosaic_id = _parse_mosaic_id(name)
+		except ValueError as error:
+			abort(400, error)
+
+		error, result = run_symbol_query(
+			lambda: symbol_api_facade.get_mosaic(mosaic_id),
+			'Failed to get Symbol mosaic')
+		if error:
+			return error
+
+		if result is None:
+			abort(404)
+
+		return jsonify(result)
+
 
 def _setup_symbol_transactions_route(app, symbol_api_facade, run_symbol_query):
 	@app.route('/api/symbol/transactions')
