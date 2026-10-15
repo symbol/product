@@ -647,6 +647,27 @@ class SymbolDatabase(DatabaseConnectionPool):
 					(limit, offset))
 				return [self._create_mosaic_view(row) for row in cursor.fetchall()]
 
+	def get_mosaic(self, mosaic_id):
+		"""Gets current mosaic metadata by mosaic ID or namespace ID."""
+
+		with self.connection() as connection:
+			with connection.cursor() as cursor:
+				self._start_read_transaction(cursor)
+				sync_state = self._fetch_sync_state(cursor)
+				if _get_readable_height(sync_state) is None or _is_non_public_state(sync_state):
+					raise SymbolDataUnavailable('Symbol mosaic data is unavailable')
+
+				try:
+					resolved_mosaic_id = self._resolve_mosaic_id(cursor, mosaic_id, sync_state)
+				except SymbolMosaicAliasNotFound:
+					return None
+
+				cursor.execute(
+					f'SELECT {MOSAIC_COLUMNS} FROM symbol_mosaics WHERE mosaic_id = %s',
+					(resolved_mosaic_id,))
+				result = cursor.fetchone()
+				return self._create_mosaic_view(result) if result else None
+
 	def get_blocks(self, from_height, limit, sort):
 		"""Gets Symbol blocks using fromHeight cursor pagination."""
 

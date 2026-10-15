@@ -12,6 +12,7 @@ from ..test.SymbolDatabaseTestUtils import (
 	symbol_test_database
 )
 from ..test.SymbolMosaicTestUtils import create_symbol_mosaic, create_symbol_mosaic_view
+from ..test.SymbolTransactionTestUtils import create_symbol_namespace
 
 
 def _create_default_mosaic_row():
@@ -193,6 +194,96 @@ class SymbolDatabaseMosaicsTest(TestCase):
 
 		# Assert:
 		self.assertEqual(['1234567890ABCDEF'], [mosaic.mosaic_id for mosaic in result])
+
+
+class SymbolDatabaseMosaicTest(TestCase):
+	def _assert_mosaic_lookup(self, mosaic_id, namespace_map=None):
+		# Arrange:
+		with symbol_test_database(
+			create_symbol_sync_state(10, 9),
+			mosaics=[_create_default_mosaic_row()]) as (db_config, puller_database):
+			if namespace_map:
+				puller_database.upsert_namespace(namespace_map, [])
+
+			# Act:
+			with SymbolDatabase(db_config) as database:
+				result = database.get_mosaic(mosaic_id)
+
+		# Assert:
+		self.assertEqual('1234567890ABCDEF', result.mosaic_id)
+
+	def test_can_get_mosaic_by_id(self):
+		self._assert_mosaic_lookup('1234567890ABCDEF')
+
+	def test_get_mosaic_normalizes_lowercase_id(self):
+		self._assert_mosaic_lookup('1234567890abcdef')
+
+	def test_can_get_mosaic_by_namespace_id(self):
+		self._assert_mosaic_lookup(
+			'887E5DB6BB0B21F5',
+			create_symbol_namespace(alias_mosaic_id='1234567890ABCDEF'))
+
+	def test_get_mosaic_normalizes_lowercase_alias_target(self):
+		self._assert_mosaic_lookup(
+			'887e5db6bb0b21f5',
+			create_symbol_namespace(alias_mosaic_id='1234567890abcdef'))
+
+	def _assert_mosaic_not_found(self, mosaic_id, namespace_map=None):
+		# Arrange:
+		with symbol_test_database(
+			create_symbol_sync_state(10, 9),
+			mosaics=[_create_default_mosaic_row()]) as (db_config, puller_database):
+			if namespace_map:
+				puller_database.upsert_namespace(namespace_map, [])
+
+			# Act + Assert:
+			with SymbolDatabase(db_config) as database:
+				self.assertIsNone(database.get_mosaic(mosaic_id))
+
+	def test_get_mosaic_returns_none_for_unknown_id(self):
+		self._assert_mosaic_not_found('0000000000000001')
+
+	def test_get_mosaic_returns_none_for_unknown_alias(self):
+		self._assert_mosaic_not_found('887E5DB6BB0B21F5')
+
+	def test_get_mosaic_returns_none_for_missing_alias_target(self):
+		self._assert_mosaic_not_found('887E5DB6BB0B21F5', create_symbol_namespace())
+
+	def test_get_mosaic_returns_none_for_unlinked_alias(self):
+		self._assert_mosaic_not_found(
+			'887E5DB6BB0B21F5', create_symbol_namespace(alias_type='none', alias_mosaic_id=None))
+
+	def test_get_mosaic_returns_none_for_address_alias(self):
+		self._assert_mosaic_not_found(
+			'887E5DB6BB0B21F5',
+			create_symbol_namespace(alias_type='address', alias_mosaic_id=None, alias_address=bytes.fromhex('98' * 24)))
+
+	def test_get_mosaic_returns_none_for_expired_alias(self):
+		self._assert_mosaic_not_found(
+			'887E5DB6BB0B21F5', create_symbol_namespace(alias_mosaic_id='1234567890ABCDEF', end_height=10))
+
+	def _assert_unavailable_mosaic_lookup(self, sync_state_map):
+		# Arrange:
+		with symbol_test_database(sync_state_map) as (db_config, _):
+			with SymbolDatabase(db_config) as database:
+				# Act + Assert: unavailable state takes precedence over missing metadata.
+				with self.assertRaisesRegex(SymbolDataUnavailable, 'Symbol mosaic data is unavailable'):
+					database.get_mosaic('1234567890ABCDEF')
+
+	def test_get_mosaic_rejects_missing_sync_state(self):
+		self._assert_unavailable_mosaic_lookup(None)
+
+	def test_get_mosaic_rejects_unhealthy_sync_state(self):
+		self._assert_unavailable_mosaic_lookup(create_symbol_sync_state(2, 1, status='unhealthy'))
+
+	def test_get_mosaic_rejects_zero_last_synced_height(self):
+		self._assert_unavailable_mosaic_lookup(create_symbol_sync_state(0, None))
+
+	def test_get_mosaic_rejects_repairing_sync_state(self):
+		self._assert_unavailable_mosaic_lookup(create_safe_repairing_sync_state())
+
+	def test_get_mosaic_rejects_dirty_sync_state(self):
+		self._assert_unavailable_mosaic_lookup(create_symbol_sync_state(2, 1, dirty_state_from_height=3))
 
 
 def _query_symbol_mosaics(mosaics, sync_state_map, limit=10, offset=0, sort=SortOrder.DESC):
