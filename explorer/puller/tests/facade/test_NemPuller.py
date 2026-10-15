@@ -7,6 +7,7 @@ from collections import namedtuple
 from unittest.mock import AsyncMock, Mock, call, patch
 
 import pytest
+from common.nem.Constants import NEM_NAMESPACE_DURATION
 from symbolchain.CryptoTypes import PublicKey
 from symbolchain.nc import TransactionType
 from symbolchain.nem.Network import Address
@@ -32,7 +33,6 @@ from symbollightapi.model.Transaction import (
 from puller.db.NemDatabase import AccountRefreshRecord, RollbackMosaicRecord, RollbackNamespaceRegistrationRecord
 from puller.facade.NemPuller import (
 	NEM_MAX_ROLLBACK_DEPTH,
-	NEM_NAMESPACE_DURATION,
 	AccountRecord,
 	BlockRecord,
 	MosaicRecord,
@@ -2318,7 +2318,8 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 		]
 		rollback_impact = Mock(
 			fork_height=10,
-			affected_namespace_roots={'root'}
+			affected_namespace_roots={'root'},
+			affected_mosaic_names=set()
 		)
 		database = Mock()
 		database.get_surviving_namespace_history.return_value = namespace_registration_records
@@ -2330,9 +2331,10 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 
 		# Assert:
 		self.assertEqual([
+			call.clear_mosaic_expiration_heights(cursor, {'root'}),
 			call.delete_namespaces(cursor, {'root'}),
 			call.get_surviving_namespace_history(cursor, 10, {'root'})
-		], database.mock_calls[:2])
+		], database.mock_calls[:3])
 		database.get_surviving_namespace_history.assert_called_once_with(
 			cursor,
 			10,
@@ -2351,7 +2353,8 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 		# Arrange:
 		rollback_impact = Mock(
 			fork_height=10,
-			affected_namespace_roots={'orphan'}
+			affected_namespace_roots={'orphan'},
+			affected_mosaic_names=set()
 		)
 		database = Mock()
 		database.get_surviving_namespace_history.return_value = []
@@ -2365,6 +2368,28 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 		database.delete_namespaces.assert_called_once_with(cursor, {'orphan'})
 		database.upsert_namespace.assert_not_called()
 		database.update_sub_namespaces.assert_not_called()
+
+	def test_restore_rollback_namespaces_includes_roots_of_affected_mosaics(self):  # pylint: disable=invalid-name
+		# Arrange:
+		rollback_impact = Mock(
+			fork_height=10,
+			affected_namespace_roots={'root'},
+			affected_mosaic_names={'other.token', 'other.sub.token'}
+		)
+		database = Mock()
+		database.get_surviving_namespace_history.return_value = []
+		cursor = Mock()
+		self.puller.nem_db = database
+
+		# Act:
+		self.puller._restore_rollback_namespaces(cursor, rollback_impact)  # pylint: disable=protected-access
+
+		# Assert:
+		self.assertEqual([
+			call.clear_mosaic_expiration_heights(cursor, {'root', 'other'}),
+			call.delete_namespaces(cursor, {'root', 'other'}),
+			call.get_surviving_namespace_history(cursor, 10, {'root', 'other'})
+		], database.mock_calls)
 
 	def _run_rollback_mosaics_test(self, transactions, namespace_name='root.token'):
 		rollback_impact = Mock(
@@ -2475,7 +2500,7 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 		database.upsert_mosaic.assert_not_called()
 		database.update_mosaic_total_supply.assert_not_called()
 
-	def test_can_repair_rollback_with_expected_operations(self):
+	def test_can_repair_rollback_with_expected_operations(self):  # pylint: disable=too-many-locals
 		# Arrange:
 		first_address = Address('TALICE6XEEEOBFJVY3ZCENZ7WBG6LB4KB7P7KMQX')
 		second_address = Address('TCJLCZSOQ6RGWHTPSV2DW467WZSHK4NBSITND4OF')
@@ -2505,6 +2530,10 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 			self.puller,
 			'_restore_rollback_mosaics'
 		) as mock_restore_mosaics:
+			restore_order = Mock()
+			restore_order.attach_mock(mock_restore_mosaics, 'mosaics')
+			restore_order.attach_mock(mock_restore_namespaces, 'namespaces')
+
 			# Act:
 			self.puller.repair_rollback(rollback_impact, account_state)
 
@@ -2526,6 +2555,9 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 			mock_restore_remote_addresses.assert_called_once_with(cursor, rollback_impact)
 			mock_restore_namespaces.assert_called_once_with(cursor, rollback_impact)
 			mock_restore_mosaics.assert_called_once_with(cursor, rollback_impact)
+
+			# registrations replay over restored mosaics, so they can expire the mosaics of previous registrations
+			self.assertEqual(['mosaics', 'namespaces'], [name for name, _, _ in restore_order.mock_calls])
 			database.connection.commit.assert_called_once_with()
 			database.connection.rollback.assert_not_called()
 
