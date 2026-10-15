@@ -18,6 +18,29 @@ from tests.test.SymbolTestConstants import BENEFICIARY_ADDRESS, RECIPIENT_ADDRES
 NODE_URL = 'http://127.0.0.1:3000'
 NATIVE_MOSAIC_ID = '72C0212E67A08BCE'
 NATIVE_MOSAIC_DIVISIBILITY = 6
+COMPLETE_BATCH_STATE_DURABLE_TABLES = (
+	'symbol_blocks',
+	'symbol_transactions',
+	'symbol_transaction_mosaics',
+	'symbol_transaction_addresses',
+	'symbol_receipts')
+COMPLETE_BATCH_STATE_CURRENT_TABLES = (
+	'symbol_accounts',
+	'symbol_account_mosaics')
+COMPLETE_BATCH_STATE_SUPPLEMENTAL_TABLES = (
+	'symbol_multisig',
+	'symbol_namespaces',
+	'symbol_alias_names',
+	'symbol_mosaics',
+	'symbol_metadata',
+	'symbol_hash_locks',
+	'symbol_secret_locks',
+	'symbol_mosaic_restrictions')
+COMPLETE_BATCH_STATE_TABLE_GROUPS = (
+	COMPLETE_BATCH_STATE_DURABLE_TABLES,
+	COMPLETE_BATCH_STATE_CURRENT_TABLES,
+	COMPLETE_BATCH_STATE_SUPPLEMENTAL_TABLES,
+	('symbol_sync_state',))
 
 
 class RecordingCleanupLogger:
@@ -714,23 +737,8 @@ class SymbolPullerTestBase(TestCase):
 		return state
 
 	def _fetch_complete_batch_state(self):
-		return self._fetch_table_state((
-			'symbol_blocks',
-			'symbol_transactions',
-			'symbol_transaction_mosaics',
-			'symbol_transaction_addresses',
-			'symbol_receipts',
-			'symbol_accounts',
-			'symbol_account_mosaics',
-			'symbol_multisig',
-			'symbol_namespaces',
-			'symbol_alias_names',
-			'symbol_mosaics',
-			'symbol_metadata',
-			'symbol_hash_locks',
-			'symbol_secret_locks',
-			'symbol_mosaic_restrictions',
-			'symbol_sync_state'))
+		table_names = tuple(table_name for group in COMPLETE_BATCH_STATE_TABLE_GROUPS for table_name in group)
+		return self._fetch_table_state(table_names)
 
 	@staticmethod
 	def _fetch_block_hash(database, height):
