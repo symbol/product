@@ -508,6 +508,16 @@ class NemPuller:
 			delay
 		)
 
+	async def _retry_get_account_infos(self, addresses, retries=3, delay=2):
+		"""Retries fetching multiple account infos with exponential backoff."""
+
+		return await self._retry_operation(
+			lambda: self.nem_connector.account_infos(addresses),
+			f'fetching {len(addresses)} accounts',
+			retries,
+			delay
+		)
+
 	async def _retry_get_account_mosaics(self, address, retries=3, delay=2):
 		"""Retries fetching account mosaics with exponential backoff."""
 
@@ -728,12 +738,13 @@ class NemPuller:
 			if not accounts:
 				break
 
-			for account in accounts:
-				account_info = await self._retry_get_account_info(str(account.address))
+			account_infos = await self._retry_get_account_infos([account.address for account in accounts])
+			for account_info in account_infos:
 				refreshed_account = self._create_refreshed_account_record(account_info)
 				self.nem_db.update_refreshed_account(cursor, refreshed_account)
-				last_account_id = account.id
-				total_refreshed += 1
+
+			last_account_id = accounts[-1].id
+			total_refreshed += len(accounts)
 
 			self.nem_db.connection.commit()
 			log.info(f'Refreshed {len(accounts)} accounts in current batch, {total_refreshed} total')
