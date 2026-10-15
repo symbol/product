@@ -109,6 +109,13 @@ class SymbolRestFacade:
 		mosaics = self.symbol_db.get_mosaics(limit, offset, sort)
 		return [mosaic.to_dict() for mosaic in mosaics]
 
+	def get_mosaic(self, mosaic_id):
+		"""Gets a current mosaic by mosaic ID or namespace ID."""
+
+		mosaic = self.symbol_db.get_mosaic(mosaic_id)
+
+		return mosaic.to_dict() if mosaic else None
+
 	def get_block(self, height):
 		"""Gets a Symbol block by height."""
 
