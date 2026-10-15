@@ -193,7 +193,7 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 
 		return cursor.fetchone()
 
-	@staticmethod
+ 	@staticmethod
 	def _fetch_mosaic_expiration_heights(cursor):
 		"""Helper method to fetch the expiration heights of all mosaics from database."""
 
