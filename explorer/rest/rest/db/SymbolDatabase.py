@@ -432,12 +432,22 @@ class SymbolDatabase(DatabaseConnectionPool):
 		"""Resolves a current Mosaic alias in the transaction read snapshot."""
 
 		transfer_mosaic_id = query.transfer_mosaic_id
-		if transfer_mosaic_id is None or not is_mosaic_alias(int(transfer_mosaic_id, 16)):
+		if transfer_mosaic_id is None:
 			return query
+
+		resolved_mosaic_id = SymbolDatabase._resolve_mosaic_id(cursor, transfer_mosaic_id, sync_state)
+		return query._replace(transfer_mosaic_id=resolved_mosaic_id)
+
+	@staticmethod
+	def _resolve_mosaic_id(cursor, mosaic_id, sync_state):
+		"""Resolves a current Mosaic alias in the caller's read snapshot."""
+
+		if not is_mosaic_alias(int(mosaic_id, 16)):
+			return mosaic_id.upper()
 
 		if _is_non_public_state(sync_state):
 			raise SymbolDataUnavailable(
-				'Symbol transaction data is unavailable: Mosaic alias state is unsafe in dirty or repairing state')
+				'Symbol data is unavailable: Mosaic alias state is unsafe in dirty or repairing state')
 
 		cursor.execute(
 			'''
@@ -445,7 +455,7 @@ class SymbolDatabase(DatabaseConnectionPool):
 			FROM symbol_namespaces
 			WHERE namespace_id = %s AND alias_mosaic_id IS NOT NULL
 			''',
-			(transfer_mosaic_id.upper(),))
+			(mosaic_id.upper(),))
 		result = cursor.fetchone()
 		if not result or result[0] != 'mosaic':
 			raise SymbolMosaicAliasNotFound('Requested Mosaic alias is not currently linked')
@@ -456,7 +466,7 @@ class SymbolDatabase(DatabaseConnectionPool):
 		if start_height > latest_height or (end_height is not None and latest_height >= end_height):
 			raise SymbolMosaicAliasNotFound('Requested Mosaic alias is not currently linked')
 
-		return query._replace(transfer_mosaic_id=resolved_mosaic_id.upper())
+		return resolved_mosaic_id.upper()
 
 	@staticmethod
 	def _fetch_transaction_rows(cursor, query, sync_state, readable_height):
