@@ -42,6 +42,21 @@ BLOCK_COLUMNS = '''
 	block_reward
 '''
 
+MOSAIC_COLUMNS = '''
+	mosaic_id,
+	owner_address,
+	start_height,
+	expiration_height,
+	duration,
+	supply,
+	divisibility,
+	supply_mutable,
+	transferable,
+	restrictable,
+	revokable,
+	alias_names
+'''
+
 SYNC_STATE_COLUMNS = [
 	'status',
 	'chain_height',
@@ -624,19 +639,7 @@ class SymbolDatabase(DatabaseConnectionPool):
 
 				cursor.execute(
 					f"""
-					SELECT
-						mosaic_id,
-						owner_address,
-						start_height,
-						expiration_height,
-						duration,
-						supply,
-						divisibility,
-						supply_mutable,
-						transferable,
-						restrictable,
-						revokable,
-						alias_names
+					SELECT {MOSAIC_COLUMNS}
 					FROM symbol_mosaics
 					ORDER BY start_height {sort.value}, mosaic_id {sort.value}
 					LIMIT %s OFFSET %s
