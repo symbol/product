@@ -322,7 +322,7 @@ def _parse_transaction_query():
 	if address is not None and (signer_public_key is not None or recipient_address is not None):
 		raise ValueError('address cannot be combined with signerPublicKey or recipientAddress')
 
-	transfer_mosaic_id = _parse_transfer_mosaic_id(_get_scalar_parameter('mosaic'))
+	transfer_mosaic_id = _parse_mosaic_id(_get_scalar_parameter('mosaic'))
 	embedded = _parse_boolean('embedded', _get_scalar_parameter('embedded'))
 	order_value = _get_scalar_parameter('order', 'DESC').upper()
 	if order_value != SortOrder.DESC.value:
@@ -374,7 +374,7 @@ def _parse_public_key(name):
 		raise ValueError(f'Invalid {name}') from error
 
 
-def _parse_transfer_mosaic_id(value):
+def _parse_mosaic_id(value):
 	if value is None:
 		return None
 
