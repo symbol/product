@@ -630,7 +630,7 @@ class NemDatabase(DatabaseConnectionPool):
 					COUNT(*) FILTER (WHERE balance > 0) AS accounts_with_balance,
 					COUNT(*) FILTER (WHERE last_harvested_height >= %s) AS harvested_accounts,
 					COALESCE(SUM(importance), 0) AS total_importance,
-					COUNT(*) FILTER (WHERE vested_balance > 10000000000) AS eligible_harvest_accounts
+					COUNT(*) FILTER (WHERE vested_balance >= 10000000000) AS eligible_harvest_accounts
 				FROM accounts
 			''', (cutoff_height,))
 			result = cursor.fetchone()
