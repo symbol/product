@@ -1,5 +1,6 @@
-import { CacheScope } from './config';
 import { constants } from 'wallet-common-core';
+
+/** @typedef {import('wallet-common-core').WalletController} WalletController */
 
 const { ControllerEventName } = constants;
 
@@ -10,29 +11,40 @@ const TRANSACTION_EVENT_NAMES = [
 	ControllerEventName.NEW_TRANSACTION_PARTIAL
 ];
 
+const BLOCK_SCOPE_EVENT_NAMES = [ControllerEventName.NEW_BLOCK, ...TRANSACTION_EVENT_NAMES];
+
 /**
- * Subscribes cache invalidation to wallet controller events: new blocks and transaction events
- * clear the owning chain's block scope, and a network switch wipes the whole cache. TTL expiry
- * remains the fallback when the websocket delivers no events.
- * @param {object} requestCache - The request cache to invalidate.
- * @param {object} walletControllers - The wallet controllers mapped to the cache scope they invalidate.
- * @param {object} walletControllers.symbolWalletController - The Symbol wallet controller.
- * @param {object} walletControllers.ethereumWalletController - The Ethereum wallet controller.
- * @returns {void}
+ * Builds the block cache scope key for a chain.
+ * @param {string} chainName - Chain name.
+ * @returns {string} Cache scope.
  */
-export const setupCacheInvalidation = (requestCache, { symbolWalletController, ethereumWalletController }) => {
-	const controllerBlockScopes = [
-		{ walletController: symbolWalletController, blockScope: CacheScope.SYMBOL_BLOCK },
-		{ walletController: ethereumWalletController, blockScope: CacheScope.ETHEREUM_BLOCK }
-	];
+const getBlockScope = chainName => `${chainName}:block`;
 
-	controllerBlockScopes.forEach(({ walletController, blockScope }) => {
-		const blockScopeEventNames = [ControllerEventName.NEW_BLOCK, ...TRANSACTION_EVENT_NAMES];
+/**
+ * Registers listeners on wallet controllers that clear cached requests.
+ * A new block or transaction invalidates the block-scoped entries.
+ * A network change clears the whole cache.
+ * TTL expiry remains the fallback when the websocket delivers no events.
+ * @param {object} requestCache - The request cache to invalidate.
+ * @param {WalletController[]} walletControllers - The wallet controllers to listen to.
+ * @returns {function(): void} Removes the listeners.
+ */
+export const setupCacheInvalidation = (requestCache, walletControllers) => {
+	const subscriptions = walletControllers.flatMap(walletController => {
+		const blockScope = getBlockScope(walletController.chainName);
+		const clearBlockScope = () => requestCache.clear([blockScope]);
+		const clearAll = () => requestCache.clearAll();
 
-		blockScopeEventNames.forEach(eventName => {
-			walletController.on(eventName, () => requestCache.clear([blockScope]));
-		});
-
-		walletController.on(ControllerEventName.NETWORK_CHANGE, () => requestCache.clearAll());
+		return [
+			...BLOCK_SCOPE_EVENT_NAMES.map(eventName => ({ walletController, eventName, listener: clearBlockScope })),
+			{ walletController, eventName: ControllerEventName.NETWORK_CHANGE, listener: clearAll }
+		];
 	});
+
+	subscriptions.forEach(({ walletController, eventName, listener }) => walletController.on(eventName, listener));
+
+	return () => {
+		subscriptions.forEach(({ walletController, eventName, listener }) =>
+			walletController.removeListener(eventName, listener));
+	};
 };
