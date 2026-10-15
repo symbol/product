@@ -14,25 +14,25 @@ from ..test.SymbolDatabaseTestUtils import (
 from ..test.SymbolMosaicTestUtils import create_symbol_mosaic, create_symbol_mosaic_view
 
 
-class SymbolDatabaseMosaicsTest(TestCase):
-	@staticmethod
-	def _create_default_mosaic_row():
-		mosaic_map = create_symbol_mosaic('1234567890ABCDEF', 6)
-		mosaic_map.update({
-			'start_height': 10,
-			'expiration_height': 30,
-			'duration': 20,
-			'supply': 1234567,
-			'flags': 10,
-			'transferable': True,
-			'revokable': True,
-			'updated_at_height': 10
-		})
-		return mosaic_map
+def _create_default_mosaic_row():
+	mosaic_map = create_symbol_mosaic('1234567890ABCDEF', 6)
+	mosaic_map.update({
+		'start_height': 10,
+		'expiration_height': 30,
+		'duration': 20,
+		'supply': 1234567,
+		'flags': 10,
+		'transferable': True,
+		'revokable': True,
+		'updated_at_height': 10
+	})
+	return mosaic_map
 
+
+class SymbolDatabaseMosaicsTest(TestCase):
 	def test_can_get_mosaic_metadata_from_postgresql(self):
 		# Arrange:
-		mosaic_map = self._create_default_mosaic_row()
+		mosaic_map = _create_default_mosaic_row()
 		with symbol_test_database(
 			create_symbol_sync_state(last_synced_height=10, finalized_height=9),
 			mosaics=[mosaic_map]) as (db_config, puller_database):
@@ -150,7 +150,7 @@ class SymbolDatabaseMosaicsTest(TestCase):
 		# Arrange:
 		with symbol_test_database(
 			create_symbol_sync_state(last_synced_height=10, finalized_height=9),
-			mosaics=[self._create_default_mosaic_row()]) as (db_config, puller_database):
+			mosaics=[_create_default_mosaic_row()]) as (db_config, puller_database):
 			def update_mosaic_snapshot():
 				with puller_database.connection.cursor() as cursor:
 					cursor.execute("UPDATE symbol_sync_state SET status = 'unhealthy' WHERE id = 1")
@@ -174,7 +174,7 @@ class SymbolDatabaseMosaicsTest(TestCase):
 		# Arrange:
 		with symbol_test_database(
 			create_symbol_sync_state(last_synced_height=10, finalized_height=9),
-			mosaics=[self._create_default_mosaic_row()]) as (db_config, puller_database):
+			mosaics=[_create_default_mosaic_row()]) as (db_config, puller_database):
 			with SymbolDatabase(db_config) as database:
 				with puller_database.connection.cursor() as cursor:
 					cursor.execute('ALTER TABLE symbol_mosaics RENAME COLUMN supply TO supply_for_test')
