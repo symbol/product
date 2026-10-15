@@ -2820,39 +2820,47 @@ def test_list_http_recovers_height_and_harvesting_requests_after_sql_failure(que
 
 
 @pytest.mark.parametrize('extra_days', [0, 1], ids=['maximum', 'above-maximum'])
-def test_list_window_date_boundary(symbol_database_config, extra_days):
+def test_list_window_date_boundary(extra_days):
 	# Arrange: failure uses unreachable DB to distinguish setup validation from acquisition.
 	setup_now = REFRESH_COMPLETED_AT
 	maximum = setup_now.toordinal() - datetime.min.toordinal()
-	with tempfile.TemporaryDirectory() as directory:
-		db_config = create_unreachable_db_configuration() if extra_days else symbol_database_config
-		db_path = _create_config_file(directory, database_config=db_config)
-		app_path = _create_app_config(directory, db_path)
-		Path(app_path).write_text(Path(app_path).read_text(encoding='utf8').replace(
-			'SYMBOL_HARVESTING_ACTIVE_WINDOW_DAYS=7', f'SYMBOL_HARVESTING_ACTIVE_WINDOW_DAYS={maximum + extra_days}'), encoding='utf8')
-		app = Flask(__name__)
-		app.config.from_pyfile(app_path)
-		if extra_days:
-			# Act + Assert:
+	if extra_days:
+		with tempfile.TemporaryDirectory() as directory:
+			db_path = _create_config_file(directory, database_config=create_unreachable_db_configuration())
+			app_path = _create_app_config(directory, db_path)
+			Path(app_path).write_text(Path(app_path).read_text(encoding='utf8').replace(
+				'SYMBOL_HARVESTING_ACTIVE_WINDOW_DAYS=7', f'SYMBOL_HARVESTING_ACTIVE_WINDOW_DAYS={maximum + extra_days}'), encoding='utf8')
+			app = Flask(__name__)
+			app.config.from_pyfile(app_path)
+
+			# Act + Assert: invalid configuration is rejected before the unreachable DB is acquired.
 			with pytest.raises(ValueError) as exception_info:
 				setup_symbol_facade(app, clock=lambda: setup_now)
 			assert f'SYMBOL_HARVESTING_ACTIVE_WINDOW_DAYS must be at most {maximum} days at setup' == str(exception_info.value)
-		else:
-			# Arrange: the maximum cutoff reaches year 1, and recent blocks still match.
-			with symbol_test_database(create_symbol_sync_state(100, 100)) as (_config, writer):
-				entry = create_refresh_entry('selected-run', 1, 0, 0)
-				seed_refresh_run(writer, 'selected-run', [entry], completed_at=setup_now)
-				writer.upsert_blocks([create_symbol_block(1, timestamp=setup_now, beneficiary_address=account_address(1))])
+	else:
+		# Arrange: the maximum cutoff reaches year 1, and recent blocks still match.
+		with symbol_test_database(create_symbol_sync_state(100, 100)) as (database_config, writer):
+			entry = create_refresh_entry('selected-run', 1, 0, 0)
+			seed_refresh_run(writer, 'selected-run', [entry], completed_at=setup_now)
+			writer.upsert_blocks([create_symbol_block(1, timestamp=setup_now, beneficiary_address=account_address(1))])
+			with tempfile.TemporaryDirectory() as directory:
+				db_path = _create_config_file(directory, database_config=database_config)
+				app_path = _create_app_config(directory, db_path)
+				Path(app_path).write_text(Path(app_path).read_text(encoding='utf8').replace(
+					'SYMBOL_HARVESTING_ACTIVE_WINDOW_DAYS=7', f'SYMBOL_HARVESTING_ACTIVE_WINDOW_DAYS={maximum}'), encoding='utf8')
+				app = Flask(__name__)
+				app.config.from_pyfile(app_path)
+
 				# Act: real setup validates the configuration before wiring the public route.
 				facade = setup_symbol_facade(app, clock=lambda: setup_now)
 				with app.extensions['symbol_database']:
 					setup_symbol_routes(app, facade)
 					response = app.test_client().get('/api/symbol/accounts?is_harvesting=true')
 
-				# Assert:
-				assert maximum == facade.harvesting_active_window_days
-				assert (200, [{
-					'address': str(Address(account_address(1))), 'publicKey': None, 'accountType': 'main', 'importance': 0,
-					'balance': 0, 'namespaces': [], 'mosaics': [], 'description': None,
-					'isHarvestingActive': True, 'isMultisig': False
-				}]) == (response.status_code, response.json)
+					# Assert:
+					assert maximum == facade.harvesting_active_window_days
+					assert (200, [{
+						'address': str(Address(account_address(1))), 'publicKey': None, 'accountType': 'main', 'importance': 0,
+						'balance': 0, 'namespaces': [], 'mosaics': [], 'description': None,
+						'isHarvestingActive': True, 'isMultisig': False
+					}]) == (response.status_code, response.json)
