@@ -43,6 +43,18 @@ class UnreadableBlocksSymbolDatabase:
 		raise SymbolDataUnavailable('Symbol block data is unavailable')
 
 
+class MosaicsReadErrorSymbolDatabase:
+	@staticmethod
+	def get_mosaics(_limit, _offset, _sort):
+		raise PsycopgError('database unavailable')
+
+
+class UnreadableMosaicsSymbolDatabase:
+	@staticmethod
+	def get_mosaics(_limit, _offset, _sort):
+		raise SymbolDataUnavailable('Symbol mosaic data is unavailable')
+
+
 class HealthySymbolDatabase:
 	@staticmethod
 	def check_connection():
@@ -159,6 +171,28 @@ class BlockSymbolDatabase:
 	def get_block(self, height):
 		self.height = height
 		return BlockView() if 1 == height else None
+
+
+class MosaicView:
+	def __init__(self, mosaic_id):
+		self.mosaic_id = mosaic_id
+
+	def to_dict(self):
+		return {'id': self.mosaic_id}
+
+
+class MosaicSymbolDatabase:
+	def __init__(self, mosaics):
+		self.mosaics = mosaics
+		self.limit = None
+		self.offset = None
+		self.sort = None
+
+	def get_mosaics(self, limit, offset, sort):
+		self.limit = limit
+		self.offset = offset
+		self.sort = sort
+		return self.mosaics
 
 
 class ReceiptSymbolDatabase:
@@ -385,6 +419,70 @@ class SymbolRestFacadeTest(TestCase):  # pylint: disable=too-many-public-methods
 		# Act + Assert:
 		with self.assertRaises(SymbolDataUnavailable):
 			facade.get_blocks(1, 10, SortOrder.DESC)
+
+	def test_can_get_mosaics(self):
+		# Arrange:
+		symbol_db = MosaicSymbolDatabase([
+			MosaicView('1234567890ABCDEF'),
+			MosaicView('0000000000000001'),
+			MosaicView('234567890ABCDEF0')
+		])
+		facade = _create_facade_with_database(symbol_db)
+
+		# Act:
+		result = facade.get_mosaics(limit=3, offset=0, sort=SortOrder.DESC)
+
+		# Assert:
+		self.assertEqual([
+			{'id': '1234567890ABCDEF'},
+			{'id': '0000000000000001'},
+			{'id': '234567890ABCDEF0'}
+		], result)
+
+	def _assert_get_mosaics_passes_page_query_to_database(self, sort):
+		# Arrange:
+		symbol_db = MosaicSymbolDatabase([])
+		facade = _create_facade_with_database(symbol_db)
+
+		# Act:
+		facade.get_mosaics(limit=10, offset=20, sort=sort)
+
+		# Assert:
+		self.assertEqual(10, symbol_db.limit)
+		self.assertEqual(20, symbol_db.offset)
+		self.assertEqual(sort, symbol_db.sort)
+
+	def test_get_mosaics_passes_ascending_page_query_to_database(self):
+		self._assert_get_mosaics_passes_page_query_to_database(SortOrder.ASC)
+
+	def test_get_mosaics_passes_descending_page_query_to_database(self):
+		self._assert_get_mosaics_passes_page_query_to_database(SortOrder.DESC)
+
+	def test_get_mosaics_returns_empty_page(self):
+		# Arrange:
+		facade = _create_facade_with_database(MosaicSymbolDatabase([]))
+
+		# Act:
+		result = facade.get_mosaics(limit=10, offset=0, sort=SortOrder.DESC)
+
+		# Assert:
+		self.assertEqual([], result)
+
+	def test_get_mosaics_raises_when_database_read_fails(self):
+		# Arrange:
+		facade = _create_facade_with_database(MosaicsReadErrorSymbolDatabase())
+
+		# Act + Assert:
+		with self.assertRaises(PsycopgError):
+			facade.get_mosaics(10, 0, SortOrder.DESC)
+
+	def test_get_mosaics_propagates_unreadable_data(self):
+		# Arrange:
+		facade = _create_facade_with_database(UnreadableMosaicsSymbolDatabase())
+
+		# Act + Assert:
+		with self.assertRaisesRegex(SymbolDataUnavailable, 'Symbol mosaic data is unavailable'):
+			facade.get_mosaics(10, 0, SortOrder.DESC)
 
 	def test_can_get_block_detail(self):
 		# Arrange:

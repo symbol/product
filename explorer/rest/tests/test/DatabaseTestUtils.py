@@ -1032,7 +1032,8 @@ def initialize_database(db_config, network_name):
 				levy_type int,
 				levy_namespace_name varchar(146),
 				levy_fee bigint,
-				levy_recipient bytea
+				levy_recipient bytea,
+				expiration_height bigint
 			)
 			'''
 		)

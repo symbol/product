@@ -3,13 +3,12 @@ import json
 from binascii import unhexlify
 from collections import namedtuple
 
+from common.nem.Constants import NEM_NAMESPACE_GRACE_PERIOD
 from symbolchain.CryptoTypes import PublicKey
 from symbolchain.nc import TransactionType
 from symbolchain.nem.Network import Address
 
 from .DatabaseConnection import DatabaseConnection
-
-NEM_NAMESPACE_GRACE_PERIOD = 30 * 1440
 
 AccountRefreshRecord = namedtuple('AccountRefreshRecord', ['id', 'address'])
 RollbackBlockRecord = namedtuple('RollbackBlockRecord', ['beneficiary', 'signer', 'total_fee'])
@@ -261,7 +260,8 @@ class NemDatabase(DatabaseConnection):  # pylint: disable=too-many-public-method
 				levy_type int,
 				levy_namespace_name varchar(146),
 				levy_fee bigint,
-				levy_recipient bytea
+				levy_recipient bytea,
+				expiration_height bigint
 			)
 			'''
 		)
@@ -808,46 +808,79 @@ class NemDatabase(DatabaseConnection):  # pylint: disable=too-many-public-method
 	def upsert_namespace(cursor, namespace):
 		"""Insert or update namespace information."""
 
+		# a registration that does not continue the previous one starts the root with an empty tree, so the mosaics
+		# defined before it keep the expiration of the registration they belonged to
 		cursor.execute(
 			'''
+			WITH previous AS (
+				SELECT
+					expiration_height,
+					owner = %(owner)s AND %(registered_height)s < expiration_height + %(grace_period)s AS is_continued
+				FROM namespaces
+				WHERE root_namespace = %(root_namespace)s
+			), expired_mosaics AS (
+				UPDATE mosaics
+				SET expiration_height = previous.expiration_height
+				FROM previous
+				WHERE NOT previous.is_continued
+					AND mosaics.root_namespace = %(root_namespace)s
+					AND mosaics.registered_height < %(registered_height)s
+					AND mosaics.expiration_height IS NULL
+			)
 			INSERT INTO namespaces (
 				root_namespace,
 				owner,
 				registered_height,
 				expiration_height
 			)
-			VALUES (%s, %s, %s, %s)
+			VALUES (%(root_namespace)s, %(owner)s, %(registered_height)s, %(expiration_height)s)
 			ON CONFLICT (root_namespace)
 			DO UPDATE SET
 				owner = EXCLUDED.owner,
 				registered_height = EXCLUDED.registered_height,
 				expiration_height = EXCLUDED.expiration_height,
 				sub_namespaces = CASE
-					WHEN namespaces.owner = EXCLUDED.owner
-						AND EXCLUDED.registered_height < namespaces.expiration_height + %s
+					WHEN (SELECT is_continued FROM previous)
 					THEN namespaces.sub_namespaces
 					ELSE '{}'
 				END
 			''',
-			(
-				namespace.root_namespace,
-				namespace.owner.bytes,
-				namespace.registered_height,
-				namespace.expiration_height,
-				NEM_NAMESPACE_GRACE_PERIOD
-			)
+			{
+				'root_namespace': namespace.root_namespace,
+				'owner': namespace.owner.bytes,
+				'registered_height': namespace.registered_height,
+				'expiration_height': namespace.expiration_height,
+				'grace_period': NEM_NAMESPACE_GRACE_PERIOD
+			}
 		)
 
 	@staticmethod
 	def delete_namespaces(cursor, root_namespaces):
-		"""Deletes affected namespace projections before replay."""
+		"""Deletes affected namespace projections before replay except the seeded network currency root."""
+
+		deletable_roots = set(root_namespaces) - {'nem'}
+		if not deletable_roots:
+			return
+
+		cursor.execute(
+			'''
+			DELETE FROM namespaces
+			WHERE root_namespace = ANY(%s)
+			''',
+			(list(deletable_roots),)
+		)
+
+	@staticmethod
+	def clear_mosaic_expiration_heights(cursor, root_namespaces):
+		"""Clears the expirations that registrations of affected roots gave their mosaics, before the registrations replay."""
 
 		if not root_namespaces:
 			return
 
 		cursor.execute(
 			'''
-			DELETE FROM namespaces
+			UPDATE mosaics
+			SET expiration_height = NULL
 			WHERE root_namespace = ANY(%s)
 			''',
 			(list(root_namespaces),)
@@ -948,7 +981,8 @@ class NemDatabase(DatabaseConnection):  # pylint: disable=too-many-public-method
 				levy_type = EXCLUDED.levy_type,
 				levy_namespace_name = EXCLUDED.levy_namespace_name,
 				levy_fee = EXCLUDED.levy_fee,
-				levy_recipient = EXCLUDED.levy_recipient
+				levy_recipient = EXCLUDED.levy_recipient,
+				expiration_height = NULL
 			''',
 			(
 				mosaic_definition.root_namespace,
