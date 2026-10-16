@@ -1,3 +1,5 @@
+# pylint: disable=too-many-lines
+
 import pytest
 from flask import Flask
 from psycopg2 import OperationalError
@@ -7,6 +9,7 @@ from symbolchain.symbol.Network import Network
 
 from rest import setup_error_handlers
 from rest.db.SymbolDatabase import ReceiptQuery, SortOrder, SymbolDataUnavailable, SymbolMosaicAliasNotFound, TransactionQuery
+from rest.model.symbol.validation import SymbolDataInvalid
 from rest.routes.symbol import setup_symbol_routes
 
 
@@ -58,6 +61,23 @@ class SymbolBlockFacade:  # pylint: disable=too-many-instance-attributes
 		return self.transactions_result
 
 
+class SymbolAccountFacade:
+	"""Recording facade for Account route validation tests."""
+
+	def __init__(self):
+		self.network = Network.TESTNET
+		self.account_query = None
+		self.account_result = {'address': 'TDUMMY'}
+		self.account_error = None
+
+	def try_get_account(self, address, public_key):
+		self.account_query = (address, public_key)
+		if self.account_error:
+			raise self.account_error
+
+		return self.account_result
+
+
 def _create_symbol_test_client(facade):
 	app = Flask(__name__)
 	setup_error_handlers(app)
@@ -88,6 +108,127 @@ def _assert_not_found_response(response):
 		'status': 404,
 		'message': 'Resource not found'
 	} == response.json
+
+
+def test_valid_address_bytes_to_facade():
+	# Arrange:
+	facade = SymbolAccountFacade()
+	address = 'TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY'
+	client = _create_symbol_test_client(facade)
+
+	# Act:
+	response = client.get(f'/api/symbol/account?address={address}')
+
+	# Assert:
+	assert 200 == response.status_code
+	assert {'address': 'TDUMMY'} == response.json
+	assert (bytes.fromhex('98FD35818960C7B18B72F49A5598FA9F712A354DB33EDE57'), None) == facade.account_query
+
+
+def test_mixed_public_key_hex_to_bytes():
+	# Arrange:
+	facade = SymbolAccountFacade()
+	client = _create_symbol_test_client(facade)
+
+	# Act:
+	response = client.get('/api/symbol/account?publicKey=' + ('aB' * 32))
+
+	# Assert:
+	assert 200 == response.status_code
+	assert (None, bytes.fromhex('AB' * 32)) == facade.account_query
+
+
+def test_mainnet_address_dispatch():
+	# Arrange:
+	facade = SymbolAccountFacade()
+	facade.network = Network.MAINNET
+	client = _create_symbol_test_client(facade)
+
+	# Act:
+	account_response = client.get('/api/symbol/account?address=NCUZDUB4XJ4XV3KSUBQ6NPZPP4RY3CUFZ7HNAPI')
+
+	# Assert:
+	assert 200 == account_response.status_code
+	assert (bytes.fromhex('68A991D03CBA797AED52A061E6BF2F7F238D8A85CFCED03D'), None) == facade.account_query
+
+
+def test_removed_multisig_url_404():
+	# Arrange:
+	client = _create_symbol_test_client(SymbolAccountFacade())
+
+	# Act:
+	response = client.get('/api/symbol/account/TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY/multisig')
+
+	# Assert:
+	_assert_not_found_response(response)
+
+
+def test_mainnet_rejects_bad_addresses():
+	# Arrange:
+	facade = SymbolAccountFacade()
+	facade.network = Network.MAINNET
+	client = _create_symbol_test_client(facade)
+	invalid_addresses = (
+		'TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY',
+		'NCUZDUB4XJ4XV3KSUBQ6NPZPP4RY3CUFZ7HNAAI')
+
+	# Act + Assert:
+	for address in invalid_addresses:
+		account_response = client.get(f'/api/symbol/account?address={address}')
+		_assert_bad_request_response(account_response, 'Invalid address')
+		assert None is facade.account_query
+
+
+def test_account_query_errors():
+	# Arrange:
+	facade = SymbolAccountFacade()
+	client = _create_symbol_test_client(facade)
+	queries = (
+		('', 'Exactly one of address or publicKey is required'),
+		('?address=TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY&publicKey=' + '11' * 32,
+			'Exactly one of address or publicKey is required'),
+		('?address=', 'Invalid address'),
+		('?address=TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY&address=TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY',
+			'address must not be repeated'),
+		('?publicKey=' + '11' * 32 + '&publicKey=' + '11' * 32, 'publicKey must not be repeated'),
+		('?publicKey=' + '00' * 32, 'Invalid publicKey'),
+		('?publicKey=' + '11' * 31, 'Invalid publicKey'),
+		('?publicKey=', 'Invalid publicKey'),
+		('?address= TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY', 'Invalid address'),
+		('?address=TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY%20', 'Invalid address'),
+		('?unknown=1', 'Unsupported query parameter'))
+
+	# Act + Assert:
+	for query, message in queries:
+		response = client.get('/api/symbol/account' + query)
+		_assert_bad_request_response(response, message)
+		assert None is facade.account_query, query
+
+
+def test_account_invalid_saved_data_503():
+	# Arrange:
+	facade = SymbolAccountFacade()
+	facade.account_error = SymbolDataInvalid('accounts.voting_public_keys[0].endEpoch', 'invalid integer')
+	client = _create_symbol_test_client(facade)
+
+	# Act:
+	response = client.get('/api/symbol/account?publicKey=' + ('11' * 32))
+
+	# Assert:
+	_assert_symbol_backend_unavailable_response(response)
+
+
+def test_account_unexpected_error_is_500():
+	# Arrange:
+	facade = SymbolAccountFacade()
+	facade.account_error = RuntimeError('unexpected programming error')
+	client = _create_symbol_test_client(facade)
+
+	# Act:
+	response = client.get('/api/symbol/account?publicKey=' + ('11' * 32))
+
+	# Assert:
+	assert 500 == response.status_code
 
 
 def test_blocks_uses_cursor_sort():

@@ -10,6 +10,7 @@ from flask import Flask, abort, jsonify
 from psycopg2 import OperationalError
 from psycopg2.pool import PoolError
 from puller.db.SymbolDatabase import SymbolDatabase as PullerSymbolDatabase
+from symbolchain.symbol.Network import Network
 
 from rest import create_app, load_rest_config, setup_error_handlers, setup_symbol_facade
 from rest.facade.SymbolRestFacade import SymbolRestFacade
@@ -45,6 +46,7 @@ SYMBOL_NODE_ALLOWED_HOSTS="localhost:3000"
 SYMBOL_NODE_ALLOW_LOOPBACK="true"
 SYMBOL_NODE_ALLOW_PRIVATE="false"
 SYMBOL_NATIVE_MOSAIC_ID="72C0212E67A08BCE"
+NETWORK_NAME="testnet"
 ''')
 	return app_config_path
 
@@ -270,7 +272,8 @@ def test_injected_db_errors_return_503(rest_config_path, url):
 		return SymbolRestFacade(
 			FailingDatabase(),
 			SymbolNodeConfiguration.from_url('http://127.0.0.1:3000', allow_loopback=True),
-			NativeMosaicInfo('72C0212E67A08BCE', 6))
+			NativeMosaicInfo('72C0212E67A08BCE', 6),
+			Network.TESTNET)
 
 	# Act:
 	app = create_app(rest_chain_handlers={'symbol': (setup_facade, setup_symbol_routes)})
@@ -421,6 +424,7 @@ SYMBOL_NODE_URL="http://localhost:3000"
 SYMBOL_NODE_ALLOWED_HOSTS="localhost:3000"
 SYMBOL_NODE_ALLOW_LOOPBACK="true"
 SYMBOL_NATIVE_MOSAIC_ID="72C0212E67A08BCE"
+NETWORK_NAME="testnet"
 ''')
 
 	# Act:
@@ -446,6 +450,7 @@ port = 5432
 REST_CHAIN="symbol"
 DATABASE_CONFIG_FILEPATH="{db_config_path}"
 SYMBOL_NATIVE_MOSAIC_ID="72C0212E67A08BCE"
+NETWORK_NAME="testnet"
 ''')
 
 	# Act:
@@ -474,6 +479,7 @@ SYMBOL_NODE_URL="http://localhost"
 SYMBOL_NODE_ALLOWED_HOSTS="localhost:80"
 SYMBOL_NODE_ALLOW_LOOPBACK="true"
 SYMBOL_NATIVE_MOSAIC_ID="72C0212E67A08BCE"
+NETWORK_NAME="testnet"
 ''')
 
 	# Act:
