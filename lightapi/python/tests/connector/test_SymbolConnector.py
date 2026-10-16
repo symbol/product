@@ -70,6 +70,28 @@ MULTISIG_INFO_1 = {
 	}
 }
 
+UNCONFIRMED_TRANSACTIONS = [{
+	'meta': {'height': '0', 'hash': HASHES[0], 'merkleComponentHash': '0' * 64, 'index': 0},
+	'transaction': {
+		'size': 123,
+		'signature': 'a' * 128,
+		'signerPublicKey': 'b' * 64,
+		'version': 1,
+		'network': 104,
+		'type': 16724,
+		'maxFee': '17600',
+		'deadline': '123456789',
+		'recipientAddress': '68F17F8F3647965E8587F4CADD6B4177213DA8CE3E609EF6',
+		'mosaics': [
+			{
+				'id': '6BED913FA20223F8',
+				'amount': '1000000'
+			}
+		]
+	},
+	'id': '1'
+}]
+
 
 def generate_transaction_statuses(status_start_height, status_groups, transaction_hashes):
 	return [
@@ -222,6 +244,12 @@ async def server(aiohttp_client):
 		async def transaction_confirmed(self, request):
 			return await self._process(request, {'meta': {'height': 1234}, 'transaction': {'message': 'foo'}})
 
+		async def transactions_unconfirmed(self, request):
+			return await self._process(request, {
+				'data': UNCONFIRMED_TRANSACTIONS,
+				'pagination': {'pageNumber': 1, 'pageSize': 100}
+			})
+
 		async def transactions_confirmed(self, request):
 			messages = ['sigma', 'beta', 'gamma']
 			return await self._process(request, {
@@ -264,6 +292,7 @@ async def server(aiohttp_client):
 	app.router.add_get(r'/account/{address}/multisig', mock_server.account_multisig)
 	app.router.add_get(f'/transactions/confirmed/{HASHES[0]}', mock_server.transaction_confirmed)
 	app.router.add_get('/transactions/confirmed', mock_server.transactions_confirmed)
+	app.router.add_get('/transactions/unconfirmed', mock_server.transactions_unconfirmed)
 	app.router.add_get(r'/transactionStatus/{transaction_hash}', mock_server.transaction_status)
 	app.router.add_post('/transactionStatus', mock_server.transaction_statuses)
 	app.router.add_put('/transactions', mock_server.announce_transaction)
@@ -755,6 +784,34 @@ async def test_incoming_transactions(server):  # pylint: disable=redefined-outer
 	assert_message('beta', transactions[1])
 	assert_message('gamma', transactions[2])
 	assert_message('sigma', transactions[3])
+
+# endregion
+
+
+# region GET (get_unconfirmed_transactions)
+
+async def test_get_unconfirmed_transactions_returns_transactions(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	connector = SymbolConnector(server.make_url(''))
+
+	# Act:
+	transactions = await connector.get_unconfirmed_transactions()
+
+	# Assert:
+	assert [f'{server.make_url("")}/transactions/unconfirmed?embedded=true&pageSize=100&order=desc'] == server.mock.urls
+	assert UNCONFIRMED_TRANSACTIONS == transactions
+
+
+async def test_get_unconfirmed_transactions_with_start_id(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	connector = SymbolConnector(server.make_url(''))
+	start_id = '2'
+
+	# Act:
+	await connector.get_unconfirmed_transactions(start_id)
+
+	# Assert:
+	assert [f'{server.make_url("")}/transactions/unconfirmed?embedded=true&pageSize=100&order=desc&offset={start_id}'] == server.mock.urls
 
 # endregion
 
