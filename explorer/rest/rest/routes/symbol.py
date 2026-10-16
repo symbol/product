@@ -9,7 +9,7 @@ from common.symbol.ReceiptTypes import RECEIPT_GROUP_LABELS, RECEIPT_TYPE_GROUPS
 from flask import abort, jsonify, request
 from psycopg2 import Error as PsycopgError
 from symbolchain.CryptoTypes import PublicKey
-from symbolchain.sc import TransactionType
+from symbolchain.sc import NamespaceRegistrationType, TransactionType
 from symbolchain.symbol.IdGenerator import generate_namespace_path
 from symbolchain.symbol.Network import Address, Network
 from zenlog import log
@@ -17,6 +17,7 @@ from zenlog import log
 from rest.db.SymbolDatabase import (
 	AccountListQuery,
 	AccountSortField,
+	NamespaceQuery,
 	ReceiptQuery,
 	SortOrder,
 	SymbolDatabase,
@@ -39,6 +40,12 @@ TRANSACTION_QUERY_PARAMETERS = frozenset([
 	'limit', 'offset', 'height', 'transactionTypes', 'address', 'senderAddress', 'signerPublicKey', 'recipientAddress',
 	'mosaic', 'embedded', 'order'
 ])
+NAMESPACE_QUERY_PARAMETERS = frozenset(['limit', 'offset', 'sort', 'aliasType', 'registrationType', 'ownerAddress'])
+NAMESPACE_MAX_OFFSET = 100000
+NAMESPACE_ALIAS_TYPES = {0: 'none', 1: 'mosaic', 2: 'address'}
+NAMESPACE_REGISTRATION_TYPES = {
+	registration_type.value: registration_type.name.lower() for registration_type in NamespaceRegistrationType
+}
 RECEIPT_MAX_OFFSET = 100000
 TRANSACTION_MAX_OFFSET = 100000
 ACCOUNT_LIST_QUERY_PARAMETERS = frozenset(['limit', 'offset', 'sort_field', 'sort_order', 'mosaic_id', 'is_harvesting'])
@@ -181,6 +188,7 @@ def setup_symbol_routes(app, symbol_api_facade):
 		return jsonify(result)
 
 	_setup_symbol_mosaic_routes(app, symbol_api_facade, _run_symbol_query)
+	_setup_symbol_namespace_routes(app, symbol_api_facade, _run_symbol_query)
 
 	@app.route('/api/symbol/receipts')
 	def api_get_symbol_receipts():
@@ -302,6 +310,24 @@ def _setup_symbol_mosaic_routes(app, symbol_api_facade, run_symbol_query):
 		return jsonify(result)
 
 
+def _setup_symbol_namespace_routes(app, symbol_api_facade, run_symbol_query):
+	@app.route('/api/symbol/namespaces')
+	def api_get_symbol_namespaces():
+		try:
+			_validate_allowed_query_parameters(NAMESPACE_QUERY_PARAMETERS)
+			query = _parse_namespace_query()
+		except ValueError as error:
+			abort(400, error)
+
+		error, result = run_symbol_query(
+			lambda: symbol_api_facade.get_namespaces(query),
+			'Failed to get Symbol namespaces')
+		if error:
+			return error
+
+		return jsonify(result)
+
+
 def _setup_symbol_transactions_route(app, symbol_api_facade, run_symbol_query):
 	@app.route('/api/symbol/transactions')
 	def api_get_symbol_transactions():
@@ -399,6 +425,32 @@ def _parse_account_list_query():
 
 	is_harvesting = _parse_boolean('is_harvesting', _get_scalar_parameter('is_harvesting'))
 	return AccountListQuery(sort_field, mosaic_id, limit, offset, is_harvesting)
+
+
+def _parse_namespace_query():
+	limit = _parse_bounded_integer('limit', _get_scalar_parameter('limit', '10'), 1, 100)
+	offset = _parse_bounded_integer('offset', _get_scalar_parameter('offset', '0'), 0, NAMESPACE_MAX_OFFSET)
+	sort_value = _get_scalar_parameter('sort', 'DESC').upper()
+	if sort_value not in ('ASC', 'DESC'):
+		raise ValueError('Sort must be either ASC or DESC')
+
+	alias_type_value = _get_scalar_parameter('aliasType')
+	alias_type = None
+	if alias_type_value is not None:
+		alias_type = _parse_bounded_integer('aliasType', alias_type_value, 0, 2)
+
+	registration_type_value = _get_scalar_parameter('registrationType')
+	registration_type = None
+	if registration_type_value is not None:
+		registration_type = _parse_bounded_integer('registrationType', registration_type_value, 0, 1)
+
+	return NamespaceQuery(
+		limit=limit,
+		offset=offset,
+		sort=SortOrder(sort_value),
+		alias_type=NAMESPACE_ALIAS_TYPES[alias_type] if alias_type is not None else None,
+		registration_type=NAMESPACE_REGISTRATION_TYPES[registration_type] if registration_type is not None else None,
+		owner_address=_parse_address('ownerAddress'))
 
 
 def _parse_transaction_query():

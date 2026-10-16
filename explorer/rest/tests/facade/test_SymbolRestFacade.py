@@ -8,7 +8,7 @@ from psycopg2 import Error as PsycopgError
 from psycopg2 import OperationalError
 from symbolchain.symbol.Network import Network
 
-from rest.db.SymbolDatabase import ReceiptQuery, ReceiptRecord, SortOrder, SymbolDatabase, SymbolDataUnavailable, TransactionQuery
+from rest.db.SymbolDatabase import NamespaceQuery, ReceiptQuery, ReceiptRecord, SortOrder, SymbolDatabase, SymbolDataUnavailable, TransactionQuery
 from rest.facade.SymbolRestFacade import SymbolRestFacade
 
 from ..test.SymbolHealthTestUtils import create_symbol_health
@@ -217,6 +217,24 @@ class TransactionSymbolDatabase:
 		return self.transactions
 
 
+class NamespaceSymbolDatabase:
+	def __init__(self, namespaces):
+		self.namespaces = namespaces
+		self.query = None
+
+	def get_namespaces(self, query):
+		self.query = query
+		return self.namespaces
+
+
+class NamespaceView:
+	def __init__(self, value):
+		self.value = value
+
+	def to_dict(self):
+		return self.value
+
+
 class ReceiptReadErrorSymbolDatabase:
 	@staticmethod
 	def get_receipts(_query):
@@ -232,6 +250,19 @@ def _create_facade_with_database(symbol_db):
 
 
 class SymbolRestFacadeTest(TestCase):  # pylint: disable=too-many-public-methods
+	def test_get_namespaces_formats_each_view(self):
+		# Arrange:
+		expected = [{'id': 'A95F1F8A96159516'}]
+		database = NamespaceSymbolDatabase([NamespaceView(expected[0])])
+		facade = _create_facade_with_database(database)
+
+		# Act:
+		result = facade.get_namespaces(NamespaceQuery())
+
+		# Assert:
+		self.assertEqual(expected, result)
+		self.assertEqual(NamespaceQuery(), database.query)
+
 	def test_get_transactions_passes_query(self):
 		# Arrange:
 		query = TransactionQuery()

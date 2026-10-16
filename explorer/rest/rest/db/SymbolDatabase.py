@@ -1,4 +1,5 @@
-# pylint: disable=too-many-lines
+# pylint: disable=too-many-lines  # Namespace REST data access remains owned by this database facade.
+
 from collections import namedtuple
 from datetime import datetime, timedelta, timezone
 from enum import Enum
@@ -10,6 +11,7 @@ from zenlog import log
 
 from rest.model.symbol.Block import SymbolBlockView
 from rest.model.symbol.Mosaic import SymbolMosaicView
+from rest.model.symbol.Namespace import SymbolNamespaceView
 from rest.model.symbol.validation import SymbolDataInvalid
 
 from .DatabaseConnection import DatabaseConnectionPool
@@ -112,6 +114,10 @@ TransactionQuery = namedtuple(
 TransactionMosaicRecord = namedtuple(
 	'TransactionMosaicRecord',
 	['mosaic_id', 'amount', 'role', 'position', 'divisibility', 'alias_names'])
+NamespaceQuery = namedtuple(
+	'NamespaceQuery',
+	['limit', 'offset', 'sort', 'alias_type', 'registration_type', 'owner_address'],
+	defaults=(10, 0, SortOrder.DESC, None, None, None))
 TransactionRecord = namedtuple(
 	'TransactionRecord',
 	['transaction_id', 'hash', 'is_embedded', 'aggregate_hash', 'embedded_index', 'height', 'transaction_type',
@@ -892,6 +898,278 @@ class SymbolDatabase(DatabaseConnectionPool):
 					LIMIT %s OFFSET %s''',
 					(limit, offset))
 				return [self._create_mosaic_view(row) for row in cursor.fetchall()]
+
+	def get_namespaces(self, query):
+		"""Gets a namespace page and its persisted hierarchy in one snapshot."""
+
+		if not isinstance(query.sort, SortOrder):
+			raise ValueError('Sort must be either ASC or DESC')
+
+		with self.connection() as connection:
+			with connection.cursor() as cursor:
+				self._start_read_transaction(cursor)
+				sync_state = self._fetch_sync_state(cursor)
+				readable_height = self._validate_namespace_sync_state(cursor, sync_state)
+
+				where_clauses, parameters = self._create_namespace_filter(query)
+				cursor.execute(
+					f'''SELECT
+						namespace_id, parent_id, root_id, name, full_name, depth, registration_type,
+						owner_address, start_height, end_height, alias_type, alias_mosaic_id,
+						alias_address, updated_at_height
+					FROM symbol_namespaces
+					WHERE {' AND '.join(where_clauses)}
+					ORDER BY start_height {query.sort.value}, namespace_id ASC
+					LIMIT %s OFFSET %s''',
+					(*parameters, query.limit, query.offset))
+				page_rows = [self._create_namespace_record(row) for row in cursor.fetchall()]
+
+				cursor.execute(
+					f'''SELECT 1 FROM symbol_namespaces
+					WHERE {' AND '.join(where_clauses)}
+						AND (updated_at_height > %s OR start_height > %s)
+					LIMIT 1''',
+					(*parameters, readable_height, readable_height))
+				if cursor.fetchone():
+					raise SymbolDataUnavailable('Symbol namespace data is unavailable')
+
+				if not page_rows:
+					return []
+
+				row_by_id = {row['namespace_id']: row for row in page_rows}
+				self._fetch_namespace_ancestors(cursor, row_by_id)
+				for row in row_by_id.values():
+					self._assert_namespace_row_is_safe(row, readable_height)
+				namespace_levels = {
+					row['namespace_id']: self._create_namespace_levels(row, row_by_id) for row in page_rows}
+				self._validate_namespace_families(cursor, page_rows, readable_height)
+
+				descendant_counts = self._fetch_namespace_descendant_counts(
+					cursor, [row['namespace_id'] for row in page_rows], row_by_id, readable_height)
+				block_timestamps = self._fetch_namespace_block_timestamps(
+					cursor, [row['start_height'] for row in page_rows])
+
+				views = []
+				for row in page_rows:
+					views.append(SymbolNamespaceView(
+						namespace_id=row['namespace_id'],
+						full_name=row['full_name'],
+						levels=namespace_levels[row['namespace_id']],
+						alias_type=row['alias_type'],
+						alias_mosaic_id=row['alias_mosaic_id'],
+						alias_address=self._format_namespace_address(row['alias_address']),
+						owner_address=self._format_namespace_address(row['owner_address']),
+						start_height=row['start_height'],
+						start_timestamp=block_timestamps.get(row['start_height']),
+						registration_type=row['registration_type'],
+						end_height=row['end_height'],
+						sub_namespace_count=descendant_counts[row['namespace_id']]))
+
+				return views
+
+	@staticmethod
+	def _validate_namespace_sync_state(cursor, sync_state):
+		if not sync_state or sync_state.get('status') != 'healthy' or sync_state.get('dirty_state_from_height') is not None:
+			raise SymbolDataUnavailable('Symbol namespace data is unavailable')
+
+		last_synced_height = sync_state.get('last_synced_height')
+		chain_height = sync_state.get('chain_height')
+		last_synced_block_hash = sync_state.get('last_synced_block_hash')
+		invalid_height = not isinstance(last_synced_height, int) or last_synced_height < 1
+		invalid_chain_height = not isinstance(chain_height, int) or chain_height != last_synced_height
+		if invalid_height or invalid_chain_height or not last_synced_block_hash:
+			raise SymbolDataUnavailable('Symbol namespace data is unavailable')
+
+		cursor.execute('SELECT hash FROM symbol_blocks WHERE height = %s', (last_synced_height,))
+		result = cursor.fetchone()
+		if not result or bytes(result[0]) != bytes(last_synced_block_hash):
+			raise SymbolDataUnavailable('Symbol namespace data is unavailable')
+
+		return last_synced_height
+
+	@staticmethod
+	def _create_namespace_filter(query):
+		where_clauses = []
+		parameters = []
+		if query.alias_type is not None:
+			where_clauses.append('alias_type = %s::symbol_namespace_alias_type')
+			parameters.append(query.alias_type)
+		if query.registration_type is not None:
+			where_clauses.append('registration_type = %s::symbol_namespace_registration_type')
+			parameters.append(query.registration_type)
+		if query.owner_address is not None:
+			where_clauses.append('owner_address = %s')
+			parameters.append(query.owner_address)
+		return where_clauses or ['TRUE'], parameters
+
+	@staticmethod
+	def _create_namespace_record(row):
+		fields = (
+			'namespace_id', 'parent_id', 'root_id', 'name', 'full_name', 'depth', 'registration_type',
+			'owner_address', 'start_height', 'end_height', 'alias_type', 'alias_mosaic_id', 'alias_address',
+			'updated_at_height'
+		)
+		record = dict(zip(fields, row))
+		for field in ('namespace_id', 'root_id'):
+			if not SymbolDatabase._is_namespace_id(record[field]):
+				raise SymbolDataInvalid(f'symbol_namespaces.{field}', 'invalid namespace ID')
+		if record['parent_id'] is not None and not SymbolDatabase._is_namespace_id(record['parent_id']):
+			raise SymbolDataInvalid('symbol_namespaces.parent_id', 'invalid namespace ID')
+		if record['alias_mosaic_id'] is not None and not SymbolDatabase._is_namespace_id(record['alias_mosaic_id']):
+			raise SymbolDataInvalid('symbol_namespaces.alias_mosaic_id', 'invalid mosaic ID')
+		return record
+
+	@staticmethod
+	def _is_namespace_id(value):
+		if not isinstance(value, str) or len(value) != 16:
+			return False
+		try:
+			int(value, 16)
+		except ValueError:
+			return False
+		return True
+
+	@staticmethod
+	def _validate_namespace_families(cursor, page_rows, readable_height):
+		root_ids = {row['root_id'] for row in page_rows if row['namespace_id'] == row['root_id']}
+		if not root_ids:
+			return
+
+		cursor.execute(
+			'''SELECT namespace_id, parent_id, root_id, name, full_name, depth, registration_type,
+				owner_address, start_height, end_height, alias_type, alias_mosaic_id, alias_address,
+				updated_at_height
+			FROM symbol_namespaces WHERE root_id = ANY(%s::varchar[])''',
+			(list(root_ids),))
+		family_rows = [SymbolDatabase._create_namespace_record(row) for row in cursor.fetchall()]
+		family_by_id = {row['namespace_id']: row for row in family_rows}
+		for row in family_rows:
+			SymbolDatabase._assert_namespace_row_is_safe(row, readable_height)
+			if row['namespace_id'] == row['root_id']:
+				continue
+
+			parent = family_by_id.get(row['parent_id'])
+			if not parent:
+				raise SymbolDataInvalid('symbol_namespaces.parent_id', 'required ancestor is missing')
+			SymbolDatabase._validate_namespace_child(row, parent)
+
+	@staticmethod
+	def _fetch_namespace_rows(cursor, namespace_ids):
+		cursor.execute(
+			'''SELECT namespace_id, parent_id, root_id, name, full_name, depth, registration_type,
+				owner_address, start_height, end_height, alias_type, alias_mosaic_id, alias_address,
+				updated_at_height
+			FROM symbol_namespaces WHERE namespace_id = ANY(%s::varchar[])''',
+			(list(namespace_ids),))
+		return [SymbolDatabase._create_namespace_record(row) for row in cursor.fetchall()]
+
+	@staticmethod
+	def _fetch_namespace_ancestors(cursor, row_by_id):
+		pending = {row['parent_id'] for row in row_by_id.values() if row['parent_id'] is not None}
+		while pending:
+			missing = pending.difference(row_by_id)
+			if not missing:
+				break
+			rows = SymbolDatabase._fetch_namespace_rows(cursor, missing)
+			fetched = {row['namespace_id']: row for row in rows}
+			if missing.difference(fetched):
+				raise SymbolDataInvalid('symbol_namespaces.parent_id', 'required ancestor is missing')
+			row_by_id.update(fetched)
+			pending = {row['parent_id'] for row in fetched.values() if row['parent_id'] is not None}
+
+	@staticmethod
+	def _fetch_namespace_descendant_counts(  # pylint: disable=too-many-locals
+		cursor, namespace_ids, row_by_id, readable_height):
+		counts = {namespace_id: 0 for namespace_id in namespace_ids}
+		frontier = [(namespace_id, namespace_id) for namespace_id in namespace_ids]
+		seen_by_root = {namespace_id: set() for namespace_id in namespace_ids}
+		while frontier:
+			parent_ids = {parent_id for _, parent_id in frontier}
+			cursor.execute(
+				'''SELECT namespace_id, parent_id, root_id, name, full_name, depth, registration_type,
+					owner_address, start_height, end_height, alias_type, alias_mosaic_id, alias_address,
+					updated_at_height
+				FROM symbol_namespaces WHERE parent_id = ANY(%s::varchar[])''',
+				(list(parent_ids),))
+			children = [SymbolDatabase._create_namespace_record(row) for row in cursor.fetchall()]
+			children_by_parent = {}
+			for child in children:
+				SymbolDatabase._assert_namespace_row_is_safe(child, readable_height)
+				parent = row_by_id.get(child['parent_id'])
+				SymbolDatabase._validate_namespace_child(child, parent)
+				row_by_id[child['namespace_id']] = child
+				children_by_parent.setdefault(child['parent_id'], []).append(child)
+
+			next_frontier = []
+			for root_id, parent_id in frontier:
+				for child in children_by_parent.get(parent_id, ()):
+					child_id = child['namespace_id']
+					if child_id not in seen_by_root[root_id]:
+						seen_by_root[root_id].add(child_id)
+						counts[root_id] += 1
+					next_frontier.append((root_id, child_id))
+			frontier = next_frontier
+
+		return counts
+
+	@staticmethod
+	def _validate_namespace_child(child, parent):
+		if child['root_id'] != parent['root_id'] or child['depth'] != parent['depth'] + 1 or child['registration_type'] != 'child':
+			raise SymbolDataInvalid('symbol_namespaces', 'descendant relationship is inconsistent')
+
+	@staticmethod
+	def _fetch_namespace_block_timestamps(cursor, start_heights):
+		cursor.execute(
+			'SELECT height, timestamp FROM symbol_blocks WHERE height = ANY(%s::bigint[])',
+			(list(set(start_heights)),))
+		return dict(cursor.fetchall())
+
+	@staticmethod
+	def _assert_namespace_row_is_safe(row, readable_height):
+		if row['updated_at_height'] > readable_height or row['start_height'] > readable_height:
+			raise SymbolDataUnavailable('Symbol namespace data is unavailable')
+
+	@staticmethod
+	def _create_namespace_levels(row, row_by_id):
+		path = []
+		current = row
+		seen = set()
+		while True:
+			if current['namespace_id'] in seen:
+				raise SymbolDataInvalid('symbol_namespaces.parent_id', 'namespace hierarchy contains a cycle')
+			seen.add(current['namespace_id'])
+			path.append(current)
+			if current['parent_id'] is None:
+				break
+			current = row_by_id.get(current['parent_id'])
+
+		levels = []
+		for index, level in enumerate(reversed(path)):
+			if level['depth'] != index + 1:
+				raise SymbolDataInvalid('symbol_namespaces.depth', 'namespace depth is inconsistent')
+			if index == 0 and (level['parent_id'] is not None or level['registration_type'] != 'root'):
+				raise SymbolDataInvalid('symbol_namespaces', 'root namespace is inconsistent')
+			if index > 0 and level['registration_type'] != 'child':
+				raise SymbolDataInvalid('symbol_namespaces.registration_type', 'child namespace is inconsistent')
+			expected_root_id = levels[0]['namespaceId'] if levels else level['namespace_id'].upper()
+			if level['root_id'].upper() != expected_root_id:
+				raise SymbolDataInvalid('symbol_namespaces.root_id', 'namespace root is inconsistent')
+			levels.append({
+				'name': level['name'] if level['name'] is not None else level['namespace_id'].upper(),
+				'namespaceId': level['namespace_id'].upper(),
+				'parentId': level['parent_id'].upper() if level['parent_id'] else None
+			})
+
+		return levels
+
+	@staticmethod
+	def _format_namespace_address(value):
+		if value is None:
+			return None
+		try:
+			return _address(value)
+		except (TypeError, ValueError) as error:
+			raise SymbolDataInvalid('symbol_namespaces.address', 'invalid persisted address') from error
 
 	def get_mosaic(self, mosaic_id):
 		"""Gets current mosaic metadata by mosaic ID or namespace ID."""
