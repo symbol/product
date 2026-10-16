@@ -70,24 +70,38 @@ MULTISIG_INFO_1 = {
 	}
 }
 
+COMMON_UNCONFIRMED_META = {'height': '0', 'hash': HASHES[0], 'merkleComponentHash': '0' * 64, 'index': 0}
+COMMON_UNCONFIRMED_TRANSACTION = {
+	'signature': 'a' * 128,
+	'signerPublicKey': 'b' * 64,
+	'network': 104,
+	'deadline': '123456789',
+	'version': 1,
+	'network': 104
+}
+
 UNCONFIRMED_TRANSACTIONS = [{
-	'meta': {'height': '0', 'hash': HASHES[0], 'merkleComponentHash': '0' * 64, 'index': 0},
+	'meta': {**COMMON_UNCONFIRMED_META},
 	'transaction': {
-		'size': 123,
-		'signature': 'a' * 128,
-		'signerPublicKey': 'b' * 64,
-		'version': 1,
-		'network': 104,
+		**COMMON_UNCONFIRMED_TRANSACTION,
 		'type': 16724,
-		'maxFee': '17600',
-		'deadline': '123456789',
 		'recipientAddress': '68F17F8F3647965E8587F4CADD6B4177213DA8CE3E609EF6',
-		'mosaics': [
-			{
-				'id': '6BED913FA20223F8',
-				'amount': '1000000'
-			}
-		]
+		'mosaics': [{'id': '6BED913FA20223F8', 'amount': '1000000'}],
+		'size': 123,
+		'maxFee': '17600'
+	},
+	'id': '1'
+}]
+
+PARTIAL_TRANSACTIONS = [{
+	'meta': {**COMMON_UNCONFIRMED_META},
+	'transaction': {
+		**COMMON_UNCONFIRMED_TRANSACTION,
+		'size': 248,
+		'type': 16961,
+		'maxFee': '45600',
+		'transactionsHash': HASHES[1],
+		'cosignatures': [{'version': '0', 'signerPublicKey': 'c' * 64, 'signature': 'd' * 128}]
 	},
 	'id': '1'
 }]
@@ -250,6 +264,12 @@ async def server(aiohttp_client):
 				'pagination': {'pageNumber': 1, 'pageSize': 100}
 			})
 
+		async def transactions_partial(self, request):
+			return await self._process(request, {
+				'data': PARTIAL_TRANSACTIONS,
+				'pagination': {'pageNumber': 1, 'pageSize': 100}
+			})
+
 		async def transactions_confirmed(self, request):
 			messages = ['sigma', 'beta', 'gamma']
 			return await self._process(request, {
@@ -293,6 +313,7 @@ async def server(aiohttp_client):
 	app.router.add_get(f'/transactions/confirmed/{HASHES[0]}', mock_server.transaction_confirmed)
 	app.router.add_get('/transactions/confirmed', mock_server.transactions_confirmed)
 	app.router.add_get('/transactions/unconfirmed', mock_server.transactions_unconfirmed)
+	app.router.add_get('/transactions/partial', mock_server.transactions_partial)
 	app.router.add_get(r'/transactionStatus/{transaction_hash}', mock_server.transaction_status)
 	app.router.add_post('/transactionStatus', mock_server.transaction_statuses)
 	app.router.add_put('/transactions', mock_server.announce_transaction)
@@ -812,6 +833,47 @@ async def test_get_unconfirmed_transactions_with_start_id(server):  # pylint: di
 
 	# Assert:
 	assert [f'{server.make_url("")}/transactions/unconfirmed?embedded=true&pageSize=100&order=desc&offset={start_id}'] == server.mock.urls
+
+# endregion
+
+
+# region GET (get_partial_transactions)
+
+async def test_get_partial_transactions_returns_transactions(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	connector = SymbolConnector(server.make_url(''))
+
+	# Act:
+	transactions = await connector.get_partial_transactions()
+
+	# Assert:
+	assert [f'{server.make_url("")}/transactions/partial?embedded=true&pageSize=100&order=desc'] == server.mock.urls
+	assert PARTIAL_TRANSACTIONS == transactions
+
+
+async def test_get_partial_transactions_with_start_id(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	connector = SymbolConnector(server.make_url(''))
+	start_id = '2'
+
+	# Act:
+	await connector.get_partial_transactions(start_id)
+
+	# Assert:
+	assert [f'{server.make_url("")}/transactions/partial?embedded=true&pageSize=100&order=desc&offset={start_id}'] == server.mock.urls
+
+
+async def test_get_partial_transactions_with_address(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	connector = SymbolConnector(server.make_url(''))
+	address = Address(SYMBOL_ADDRESSES[0])
+
+	# Act:
+	transactions = await connector.get_partial_transactions(None, address=address)
+
+	# Assert:
+	assert [f'{server.make_url("")}/transactions/partial?embedded=true&pageSize=100&order=desc&address={address}'] == server.mock.urls
+	assert PARTIAL_TRANSACTIONS == transactions
 
 # endregion
 
