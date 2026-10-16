@@ -391,6 +391,7 @@ class SymbolDatabase(DatabaseConnectionPool):
 				# Validate the whole required scope even when the requested page is empty.
 				if scope is not None:
 					self._assert_account_list_ranks(cursor, run_id, scope)
+
 				if query.sort_field == AccountSortField.HEIGHT:
 					self._assert_account_list_height_population(cursor, run_id)
 
@@ -400,8 +401,9 @@ class SymbolDatabase(DatabaseConnectionPool):
 				if not page_members:
 					return []
 
-				page_addresses = [member[0] for member in page_members]
-				harvesting_by_address = {member[0]: member[1] for member in page_members}
+				page_addresses = [address for address, _ in page_members]
+				# pylint: disable-next=unnecessary-comprehension  # Keep the harvesting flag name explicit.
+				harvesting_by_address = {address: is_harvesting_active for address, is_harvesting_active in page_members}
 				account_rows = self._fetch_account_list_accounts(cursor, run_id, page_addresses)
 				mosaic_rows = self._fetch_account_list_mosaics(cursor, run_id, page_addresses)
 				namespaces, mosaic_aliases = self._fetch_account_list_aliases(
@@ -506,36 +508,32 @@ class SymbolDatabase(DatabaseConnectionPool):
 		filter_parameters = harvesting_parameters if query.is_harvesting else ()
 
 		if query.sort_field == AccountSortField.BALANCE and query.mosaic_id and query.mosaic_id != self.native_mosaic_info.id:
-			cursor.execute(
-				f'''SELECT accounts.address, {harvesting_expression} AS is_harvesting_active
+			query_text = f'''SELECT accounts.address, {harvesting_expression} AS is_harvesting_active
 				FROM symbol_account_refresh_mosaics AS mosaics
 				JOIN symbol_account_refresh_accounts AS accounts
 					ON accounts.refresh_run_id = mosaics.refresh_run_id AND accounts.address = mosaics.address
 				WHERE mosaics.refresh_run_id = %s AND mosaics.mosaic_id = %s{harvesting_filter}
-				ORDER BY mosaics.amount DESC, mosaics.address ASC LIMIT %s OFFSET %s''',
-				(*harvesting_parameters, run_id, query.mosaic_id, *filter_parameters, query.limit, query.offset))
-			return [(bytes(row[0]), bool(row[1])) for row in cursor.fetchall()]
-
-		if query.sort_field == AccountSortField.HEIGHT:
-			cursor.execute(
-				f'''SELECT accounts.address, {harvesting_expression} AS is_harvesting_active
+				ORDER BY mosaics.amount DESC, mosaics.address ASC LIMIT %s OFFSET %s'''
+			parameters = (*harvesting_parameters, run_id, query.mosaic_id, *filter_parameters, query.limit, query.offset)
+		elif query.sort_field == AccountSortField.HEIGHT:
+			query_text = f'''SELECT accounts.address, {harvesting_expression} AS is_harvesting_active
 				FROM symbol_account_refresh_accounts AS accounts
 				JOIN symbol_accounts AS current_accounts ON current_accounts.address = accounts.address
 				WHERE accounts.refresh_run_id = %s{harvesting_filter}
 				ORDER BY current_accounts.address_height DESC NULLS LAST, accounts.address ASC
-				LIMIT %s OFFSET %s''',
-				(*harvesting_parameters, run_id, *filter_parameters, query.limit, query.offset))
-			return [(bytes(row[0]), bool(row[1])) for row in cursor.fetchall()]
+				LIMIT %s OFFSET %s'''
+			parameters = (*harvesting_parameters, run_id, *filter_parameters, query.limit, query.offset)
+		else:
+			scope = query.sort_field.value if query.sort_field != AccountSortField.BALANCE else f'BALANCE:{query.mosaic_id}'
+			query_text = f'''SELECT ranks.address, {harvesting_expression} AS is_harvesting_active
+				FROM symbol_account_list_ranks AS ranks
+				JOIN symbol_account_refresh_accounts AS accounts
+					ON accounts.refresh_run_id = ranks.refresh_run_id AND accounts.address = ranks.address
+				WHERE ranks.refresh_run_id = %s AND ranks.rank_scope = %s{harvesting_filter}
+				ORDER BY ranks.rank LIMIT %s OFFSET %s'''
+			parameters = (*harvesting_parameters, run_id, scope, *filter_parameters, query.limit, query.offset)
 
-		scope = query.sort_field.value if query.sort_field != AccountSortField.BALANCE else f'BALANCE:{query.mosaic_id}'
-		cursor.execute(
-			f'''SELECT ranks.address, {harvesting_expression} AS is_harvesting_active
-			FROM symbol_account_list_ranks AS ranks
-			JOIN symbol_account_refresh_accounts AS accounts
-				ON accounts.refresh_run_id = ranks.refresh_run_id AND accounts.address = ranks.address
-			WHERE ranks.refresh_run_id = %s AND ranks.rank_scope = %s{harvesting_filter}
-			ORDER BY ranks.rank LIMIT %s OFFSET %s''',
-			(*harvesting_parameters, run_id, scope, *filter_parameters, query.limit, query.offset))
+		cursor.execute(query_text, parameters)
 		return [(bytes(row[0]), bool(row[1])) for row in cursor.fetchall()]
 
 	@staticmethod
