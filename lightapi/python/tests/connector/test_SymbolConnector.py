@@ -12,99 +12,18 @@ from symbollightapi.model.Endpoint import Endpoint
 from symbollightapi.model.Exceptions import InsufficientBalanceException, NodeException
 from symbollightapi.model.NodeInfo import NodeInfo
 
-from ..test.LightApiTestUtils import HASHES, SYMBOL_ADDRESSES
+from ..test.LightApiTestUtils import (
+	HASHES,
+	MULTISIG_INFO_1,
+	NODE_INFO_1,
+	NODE_INFO_2,
+	NODE_INFO_3,
+	PARTIAL_TRANSACTIONS,
+	SYMBOL_ADDRESSES,
+	UNCONFIRMED_TRANSACTIONS
+)
 
-# region test data
-
-
-NODE_INFO_1 = {
-	'friendlyName': 'The Wolf Farm owned by Tresto(@TrendStream)',
-	'host': 'wolf.importance.jp',
-	'networkGenerationHashSeed': '57F7DA205008026C776CB6AED843393F04CD458E0AA2D9F1D5F31A402072B2D6',
-	'networkIdentifier': 104,
-	'nodePublicKey': 'A4714451910AF026AF7A3960FF87EDCA0BA4E80CABCB350FA2B69439E1CB0B97',
-	'port': 7900,
-	'publicKey': 'D8F4FE47F1F5B1046748067E52725AEBAA1ED9F3CE45D02054011A39671DD9AA',
-	'roles': 3,
-	'version': 16777988
-}
-
-NODE_INFO_2 = {
-	'friendlyName': 'Allnodes619',
-	'host': 'xym619.allnodes.me',
-	'networkGenerationHashSeed': '57F7DA205008026C776CB6AED843393F04CD458E0AA2D9F1D5F31A402072B2D6',
-	'networkIdentifier': 104,
-	'nodePublicKey': 'A19C14033EB508EF6AD48A3E5D1E7DEDF0B1DCBAD1978CD61797017749A1B999',
-	'port': 7900,
-	'publicKey': 'FB744B408D392E0F99701432E0BC8A0D38BEFDEA8019826CCE91458C6E734ADB',
-	'roles': 3,
-	'version': 16777989
-}
-
-NODE_INFO_3 = {
-	'friendlyName': 'tiger',
-	'host': 'tiger.catapult.ninja',
-	'networkGenerationHashSeed': '57F7DA205008026C776CB6AED843393F04CD458E0AA2D9F1D5F31A402072B2D6',
-	'networkIdentifier': 104,
-	'port': 7900,
-	'publicKey': 'C807BE28855D0C87A8A2C032E51790CCB9158C15CBACB8B222E27DFFFEB3697D',
-	'roles': 5,
-	'version': 16777989
-}
-
-MULTISIG_INFO_1 = {
-	'multisig': {
-		'version': 1,
-		'accountAddress': '987BC1722F417C93BA80C4212AA0E4621FB5B18550CC4103',
-		'minApproval': 2,
-		'minRemoval': 3,
-		'cosignatoryAddresses': [
-			'98AAB8782D4452F0DE6C82A778BB6937C509B9A1AFDF2320',
-			'98661D23312F31066CA5298FD453301C930553528FFE0FF1',
-			'98BEC4842DEE913E737CC267D984F5FCC955C981291B3936'
-		],
-		'multisigAddresses': [
-			'98D35CCF663D61C64E6B083C08B1544C3D9538EB01369248',
-			'98996F3C23DDE4258E9D3E0F0BE4BAED48370CA6EDD7DD2C'
-		]
-	}
-}
-
-COMMON_UNCONFIRMED_META = {'height': '0', 'hash': HASHES[0], 'merkleComponentHash': '0' * 64, 'index': 0}
-COMMON_UNCONFIRMED_TRANSACTION = {
-	'signature': 'a' * 128,
-	'signerPublicKey': 'b' * 64,
-	'network': 104,
-	'deadline': '123456789',
-	'version': 1,
-	'network': 104
-}
-
-UNCONFIRMED_TRANSACTIONS = [{
-	'meta': {**COMMON_UNCONFIRMED_META},
-	'transaction': {
-		**COMMON_UNCONFIRMED_TRANSACTION,
-		'type': 16724,
-		'recipientAddress': '68F17F8F3647965E8587F4CADD6B4177213DA8CE3E609EF6',
-		'mosaics': [{'id': '6BED913FA20223F8', 'amount': '1000000'}],
-		'size': 123,
-		'maxFee': '17600'
-	},
-	'id': '1'
-}]
-
-PARTIAL_TRANSACTIONS = [{
-	'meta': {**COMMON_UNCONFIRMED_META},
-	'transaction': {
-		**COMMON_UNCONFIRMED_TRANSACTION,
-		'size': 248,
-		'type': 16961,
-		'maxFee': '45600',
-		'transactionsHash': HASHES[1],
-		'cosignatures': [{'version': '0', 'signerPublicKey': 'c' * 64, 'signature': 'd' * 128}]
-	},
-	'id': '1'
-}]
+# region test utils
 
 
 def generate_transaction_statuses(status_start_height, status_groups, transaction_hashes):
