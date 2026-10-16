@@ -125,6 +125,19 @@ export const Components = {
 			}
 		}
 	},
+	accountCardWidgetBody: {
+		background: Semantic.role.primary.default
+	},
+	accountCardWidgetButton: {
+		default: {
+			background: Semantic.role.primary.weaker,
+			separator: Semantic.role.primary.default,
+			text: Semantic.content.primary.default
+		},
+		disabled: {
+			background: Semantic.role.primary.muted
+		}
+	},
 	dataContainer: {
 		background: Semantic.background.tertiary.darker
 	},
@@ -182,19 +195,24 @@ export const Components = {
 	},
 	statusCard: {
 		neutral: {
-			background: Semantic.role.neutral.default
+			background: Semantic.role.neutral.default,
+			text: Semantic.content.primary.inverse
 		},
 		info: {
-			background: Semantic.role.info.default
+			background: Semantic.role.info.default,
+			text: Semantic.content.primary.inverse
 		},
 		success: {
-			background: Semantic.role.success.default
+			background: Semantic.role.success.default,
+			text: Semantic.content.primary.inverse
 		},
 		warning: {
-			background: Semantic.role.warning.default
+			background: Semantic.role.warning.default,
+			text: Semantic.content.primary.inverse
 		},
 		danger: {
-			background: Semantic.role.danger.default
+			background: Semantic.role.danger.default,
+			text: Semantic.content.primary.inverse
 		}
 	},
 	statusLabel: {
@@ -213,6 +231,20 @@ export const Components = {
 		danger: {
 			text: Semantic.role.danger.default
 		}
+	},
+	amount: {
+		positive: {
+			text: Semantic.role.success.default
+		},
+		negative: {
+			text: Semantic.role.danger.default
+		},
+		neutral: {
+			text: Semantic.content.primary.default
+		}
+	},
+	emptyList: {
+		text: Semantic.content.primary.inverse
 	},
 	navigationMenu: {
 		background: Semantic.background.secondary.default
@@ -484,6 +516,9 @@ export const Components = {
 				surface: Semantic.role.danger.muted
 			}
 		}
+	},
+	controlErrorMessage: {
+		text: Semantic.role.danger.default
 	},
 	select: {
 		default: {

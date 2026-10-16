@@ -161,6 +161,6 @@ const styles = StyleSheet.create({
 	},
 	errorText: {
 		...Typography.Semantic.body.m,
-		color: Colors.Semantic.role.danger.default
+		color: Colors.Components.controlErrorMessage.text
 	}
 });

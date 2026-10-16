@@ -1,69 +1,76 @@
-import { Primitives, missingColor } from './primitives';
+import { Primitives } from './primitives';
 
 export const Semantic = {
 	role: {
 		primary: {
+			muted: Primitives.nemBlue100,
 			default: Primitives.nemBlue500,
-			weaker: missingColor,
-			muted: Primitives.nemBlue100
+			strong: Primitives.nemBlue600,
+			stronger: Primitives.nemBlue700
 		},
 		secondary: {
+			muted: Primitives.nemGreen100,
 			default: Primitives.nemGreen500,
-			weaker: missingColor,
-			muted: Primitives.nemGreen0
+			strong: Primitives.nemGreen600,
+			stronger: Primitives.nemGreen700
 		},
 		danger: {
+			muted: Primitives.red100,
 			default: Primitives.red500,
-			weaker: Primitives.red400,
-			muted:  Primitives.red100
+			strong: Primitives.red600,
+			stronger: Primitives.red700
 		},
 		warning: {
+			muted: Primitives.nemYellow100,
 			default: Primitives.nemYellow500,
-			weaker: missingColor,
-			muted:  Primitives.nemYellow0
+			strong: Primitives.nemYellow600,
+			stronger: Primitives.nemYellow700
 		},
 		success: {
+			muted: Primitives.green100,
 			default: Primitives.green500,
-			weaker: missingColor,
-			muted: Primitives.green0
+			strong: Primitives.green600,
+			stronger: Primitives.green700
 		},
 		info: {
+			muted: Primitives.nemBlue100,
 			default: Primitives.nemBlue500,
-			weaker: missingColor,
-			muted: missingColor
+			strong: Primitives.nemBlue600,
+			stronger: Primitives.nemBlue700
 		},
 		neutral: {
-			default: Primitives.nemBlue500,
-			weaker: missingColor,
-			muted: Primitives.nemBlue100
+			muted: Primitives.grey100,
+			default: Primitives.grey500,
+			strong: Primitives.grey600,
+			stronger: Primitives.grey700
 		}
 	},
 	background: {
 		primary: {
 			lighter: Primitives.lightBlueGrey100,
 			default: Primitives.white,
-			darker: Primitives.lightBlueGrey300
+			darker: Primitives.unnamedColor2
 		},
 		secondary: {
 			default: Primitives.lightBlueGrey200,
 			darker: Primitives.darkPurple900
 		},
 		tertiary: {
-			lighter: Primitives.grey300,
-			default: Primitives.lightBlueGrey100,
-			darker: missingColor
+			lighter: Primitives.grey500,
+			default: Primitives.unnamedColor1,
+			darker: Primitives.black
 		}
 	},
 	content: {
 		primary: {
 			default: Primitives.darkPurple900,
-			muted: Primitives.grey300,
+			muted: Primitives.grey500,
 			inverse: Primitives.white
 		},
 		secondary: {
-			default: missingColor,
-			muted: missingColor,
-			inverse: missingColor
+			default: Primitives.grey700,
+			muted: Primitives.grey500,
+			inverse: Primitives.grey100
 		}
 	},
 	overlay: {
@@ -117,12 +124,25 @@ export const Components = {
 		multisig: {
 			default: {
 				background: Semantic.role.warning.muted,
-				border: Semantic.role.warning.weaker
+				border: Semantic.role.warning.muted
 			},
 			active: {
 				background: Semantic.role.warning.muted,
 				border: Semantic.role.warning.default
 			}
+		}
+	},
+	accountCardWidgetBody: {
+		background: Semantic.background.tertiary.darker
+	},
+	accountCardWidgetButton: {
+		default: {
+			background: Primitives.blackOpacity50,
+			separator: Semantic.background.tertiary.darker,
+			text: Semantic.content.primary.inverse
+		},
+		disabled: {
+			background: Primitives.blackOpacity50
 		}
 	},
 	dataContainer: {
@@ -160,59 +180,78 @@ export const Components = {
 	},
 	alert: {
 		neutral: {
-			background: Semantic.background.secondary.default,
-			text: Semantic.role.neutral.default
+			background: Semantic.role.neutral.muted,
+			text: Semantic.role.neutral.stronger
 		},
 		info: {
-			background: Semantic.background.secondary.default,
-			text: Semantic.role.info.default
+			background: Semantic.role.info.muted,
+			text: Semantic.role.info.stronger
 		},
 		success: {
-			background: Semantic.background.secondary.default,
-			text: Semantic.role.success.default
+			background: Semantic.role.success.muted,
+			text: Semantic.role.success.stronger
 		},
 		warning: {
-			background: Semantic.background.secondary.default,
-			text: Semantic.role.warning.default
+			background: Semantic.role.warning.muted,
+			text: Semantic.role.warning.stronger
 		},
 		danger: {
-			background: Semantic.background.secondary.default,
-			text: Semantic.role.danger.default
+			background: Semantic.role.danger.muted,
+			text: Semantic.role.danger.stronger
 		}
 	},
 	statusCard: {
 		neutral: {
-			background: Semantic.role.neutral.default
+			background: Semantic.role.neutral.muted,
+			text: Semantic.content.primary.default
 		},
 		info: {
-			background: Semantic.role.info.default
+			background: Semantic.role.info.muted,
+			text: Semantic.content.primary.default
 		},
 		success: {
-			background: Semantic.role.success.default
+			background: Semantic.role.success.muted,
+			text: Semantic.content.primary.default
 		},
 		warning: {
-			background: Semantic.role.warning.default
+			background: Semantic.role.warning.muted,
+			text: Semantic.content.primary.default
 		},
 		danger: {
-			background: Semantic.role.danger.default
+			background: Semantic.role.danger.muted,
+			text: Semantic.content.primary.default
 		}
 	},
 	statusLabel: {
 		neutral: {
-			text: Semantic.role.neutral.default
+			text: Semantic.role.neutral.strong
 		},
 		info: {
-			text: Semantic.role.info.default
+			text: Semantic.role.info.strong
 		},
 		success: {
-			text: Semantic.role.success.default
+			text: Semantic.role.success.strong
 		},
 		warning: {
-			text: Semantic.role.warning.default
+			text: Semantic.role.warning.strong
 		},
 		danger: {
-			text: Semantic.role.danger.default
+			text: Semantic.role.danger.strong
 		}
+	},
+	amount: {
+		positive: {
+			text: Semantic.role.success.strong
+		},
+		negative: {
+			text: Semantic.role.danger.strong
+		},
+		neutral: {
+			text: Semantic.content.primary.default
+		}
+	},
+	emptyList: {
+		text: Semantic.content.primary.default
 	},
 	navigationMenu: {
 		background: Semantic.background.tertiary.default
@@ -277,13 +316,13 @@ export const Components = {
 	buttonSendReceive: {
 		primary: {
 			default: {
-				background: Semantic.role.primary.weaker,
-				separator: Semantic.role.primary.muted,
+				background: Semantic.role.secondary.default,
+				separator: Semantic.role.secondary.muted,
 				text: Semantic.content.primary.inverse
 			},
 			disabled: {
-				background: Semantic.role.primary.muted,
-				separator: Semantic.background.primary.darker,
+				background: Semantic.role.secondary.muted,
+				separator: Semantic.background.secondary.darker,
 				text: Semantic.content.primary.muted
 			}
 		}
@@ -314,8 +353,8 @@ export const Components = {
 				text: Semantic.content.primary.inverse
 			},
 			pressed: {
-				border: Semantic.role.danger.weaker,
-				background:Semantic.role.danger.weaker, 
+				border: Semantic.role.danger.strong,
+				background:Semantic.role.danger.strong,
 				text: Semantic.content.primary.inverse
 			},
 			disabled: {
@@ -331,8 +370,8 @@ export const Components = {
 				text: Semantic.content.primary.inverse
 			},
 			pressed: {
-				border: Semantic.role.warning.weaker,
-				background: Semantic.role.warning.weaker,
+				border: Semantic.role.warning.strong,
+				background: Semantic.role.warning.strong,
 				text: Semantic.content.primary.inverse
 			},
 			disabled: {
@@ -348,8 +387,8 @@ export const Components = {
 				text: Semantic.content.primary.inverse
 			},
 			pressed: {
-				border: Semantic.role.neutral.weaker,
-				background: Semantic.role.neutral.weaker,
+				border: Semantic.role.neutral.strong,
+				background: Semantic.role.neutral.strong,
 				text: Semantic.content.primary.inverse
 			},
 			disabled: {
@@ -402,7 +441,7 @@ export const Components = {
 				border: Semantic.role.warning.default
 			},
 			pressed: {
-				background: Semantic.role.warning.weaker,
+				background: Semantic.role.warning.muted,
 				text: Semantic.role.warning.default,
 				border: Semantic.role.warning.default
 			},
@@ -442,12 +481,12 @@ export const Components = {
 				surface: Semantic.role.primary.default
 			},
 			focused: {
-				background: Semantic.role.primary.muted,
+				background: Semantic.background.primary.default,
 				label: Semantic.content.primary.default,
 				placeholder: Semantic.content.primary.default,
 				text: Semantic.content.primary.default,
-				border: Semantic.role.primary.default,
-				surface: Semantic.role.primary.default
+				border: Semantic.role.primary.strong,
+				surface: Semantic.role.primary.strong
 			},
 			disabled: {
 				background: Semantic.background.primary.default,
@@ -464,16 +503,16 @@ export const Components = {
 				label: Semantic.content.primary.default,
 				placeholder: Semantic.content.primary.default,
 				text: Semantic.content.primary.default,
-				border: Semantic.role.danger.weaker,
-				surface: Semantic.role.danger.weaker
+				border: Semantic.role.danger.default,
+				surface: Semantic.role.danger.default
 			},
 			focused: {
-				background: Semantic.role.danger.muted,
+				background: Semantic.background.primary.default,
 				label: Semantic.content.primary.default,
 				placeholder: Semantic.content.primary.default,
 				text: Semantic.content.primary.default,
-				border: Semantic.role.danger.weaker,
-				surface: Semantic.role.danger.weaker
+				border: Semantic.role.danger.strong,
+				surface: Semantic.role.danger.strong
 			},
 			disabled: {
 				background: Semantic.background.primary.default,
@@ -484,6 +523,9 @@ export const Components = {
 				surface: Semantic.role.danger.muted
 			}
 		}
+	},
+	controlErrorMessage: {
+		text: Semantic.role.danger.stronger
 	},
 	select: {
 		default: {

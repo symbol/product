@@ -230,6 +230,6 @@ const styles = StyleSheet.create({
 	},
 	emptyListText: {
 		textAlign: 'center',
-		color: Colors.Semantic.background.tertiary.darker
+		color: Colors.Components.emptyList.text
 	}
 });
