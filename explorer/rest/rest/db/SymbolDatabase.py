@@ -7,6 +7,7 @@ from symbolchain.symbol.Network import Address
 from zenlog import log
 
 from rest.model.symbol.Block import SymbolBlockView
+from rest.model.symbol.Mosaic import SymbolMosaicView
 from rest.model.symbol.validation import SymbolDataInvalid
 
 from .DatabaseConnection import DatabaseConnectionPool
@@ -600,6 +601,39 @@ class SymbolDatabase(DatabaseConnectionPool):
 
 		return mosaics_by_transaction
 
+	def get_mosaics(self, limit, offset, sort):
+		"""Gets current mosaics ordered by registration height, then mosaic ID, in the requested direction."""
+
+		with self.connection() as connection:
+			with connection.cursor() as cursor:
+				self._start_read_transaction(cursor)
+				sync_state = self._fetch_sync_state(cursor)
+				# Current-state rows cannot be reconstructed from the clean block prefix during repair.
+				if _get_readable_height(sync_state) is None or _is_non_public_state(sync_state):
+					raise SymbolDataUnavailable('Symbol mosaic data is unavailable')
+
+				cursor.execute(
+					f"""
+					SELECT
+						mosaic_id,
+						owner_address,
+						start_height,
+						expiration_height,
+						duration,
+						supply,
+						divisibility,
+						supply_mutable,
+						transferable,
+						restrictable,
+						revokable,
+						alias_names
+					FROM symbol_mosaics
+					ORDER BY start_height {sort.value}, mosaic_id {sort.value}
+					LIMIT %s OFFSET %s
+					""",
+					(limit, offset))
+				return [self._create_mosaic_view(row) for row in cursor.fetchall()]
+
 	def get_blocks(self, from_height, limit, sort):
 		"""Gets Symbol blocks using fromHeight cursor pagination."""
 
@@ -704,4 +738,36 @@ class SymbolDatabase(DatabaseConnectionPool):
 			previous_importance_block_hash=_bytes_or_none(result[25]),
 			block_reward=result[26],
 			is_finalized=bool(finalized_height and result[0] <= finalized_height)
+		)
+
+	@staticmethod
+	def _create_mosaic_view(result):
+		(
+			mosaic_id,
+			owner_address,
+			start_height,
+			expiration_height,
+			duration,
+			supply,
+			divisibility,
+			supply_mutable,
+			transferable,
+			restrictable,
+			revokable,
+			alias_names
+		) = result
+
+		return SymbolMosaicView(
+			mosaic_id=mosaic_id,
+			owner_address=_address(owner_address),
+			start_height=start_height,
+			expiration_height=expiration_height,
+			duration=duration,
+			supply=supply,
+			divisibility=divisibility,
+			supply_mutable=supply_mutable,
+			transferable=transferable,
+			restrictable=restrictable,
+			revokable=revokable,
+			alias_names=alias_names
 		)

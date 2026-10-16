@@ -103,6 +103,12 @@ class SymbolRestFacade:
 		blocks = self.symbol_db.get_blocks(from_height, limit, sort)
 		return [block.to_dict(self.native_mosaic_info) for block in blocks]
 
+	def get_mosaics(self, limit, offset, sort):
+		"""Gets a current mosaic page."""
+
+		mosaics = self.symbol_db.get_mosaics(limit, offset, sort)
+		return [mosaic.to_dict() for mosaic in mosaics]
+
 	def get_block(self, height):
 		"""Gets a Symbol block by height."""
 

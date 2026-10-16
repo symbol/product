@@ -5,6 +5,11 @@ The changelog format is based on [Keep a Changelog](https://keepachangelog.com/e
 
 ## next
 
+## [0.0.12] - 14 Oct-2026
+
+### Added
+- Added NEM batch account info query (`account_infos`).
+
 ## [0.0.11] - 17 Sep-2026
 
 ### Added
@@ -77,6 +82,7 @@ The changelog format is based on [Keep a Changelog](https://keepachangelog.com/e
 - treat all HTTP statuses less than 400 as success instead of only HTTP statuses 200 and 404 codes
 - OpenSSL libraries names are different on Windows which cause linking to fail; update to select the correct library name.
 
+[0.0.12]: https://github.com/symbol/product/compare/lightapi/python/v0.0.11...lightapi/python/v0.0.12
 [0.0.11]: https://github.com/symbol/product/compare/lightapi/python/v0.0.10...lightapi/python/v0.0.11
 [0.0.10]: https://github.com/symbol/product/compare/lightapi/python/v0.0.9...lightapi/python/v0.0.10
 [0.0.9]: https://github.com/symbol/product/compare/lightapi/python/v0.0.9...lightapi/python/v0.0.8
