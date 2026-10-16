@@ -859,24 +859,12 @@ class SymbolDatabase(DatabaseConnectionPool):
 					raise SymbolDataUnavailable('Symbol mosaic data is unavailable')
 
 				cursor.execute(
-					f"""
-					SELECT
-						mosaic_id,
-						owner_address,
-						start_height,
-						expiration_height,
-						duration,
-						supply,
-						divisibility,
-						supply_mutable,
-						transferable,
-						restrictable,
-						revokable,
-						alias_names
+					f'''SELECT mosaic_id, owner_address, start_height, expiration_height,
+						duration, supply, divisibility, supply_mutable,
+						transferable, restrictable, revokable, alias_names
 					FROM symbol_mosaics
 					ORDER BY start_height {sort.value}, mosaic_id {sort.value}
-					LIMIT %s OFFSET %s
-					""",
+					LIMIT %s OFFSET %s''',
 					(limit, offset))
 				return [self._create_mosaic_view(row) for row in cursor.fetchall()]
 
@@ -989,18 +977,9 @@ class SymbolDatabase(DatabaseConnectionPool):
 	@staticmethod
 	def _create_mosaic_view(result):
 		(
-			mosaic_id,
-			owner_address,
-			start_height,
-			expiration_height,
-			duration,
-			supply,
-			divisibility,
-			supply_mutable,
-			transferable,
-			restrictable,
-			revokable,
-			alias_names
+			mosaic_id, owner_address, start_height, expiration_height,
+			duration, supply, divisibility, supply_mutable,
+			transferable, restrictable, revokable, alias_names
 		) = result
 
 		return SymbolMosaicView(
