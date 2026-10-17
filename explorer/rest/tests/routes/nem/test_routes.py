@@ -185,6 +185,22 @@ def test_accepts_limit_at_maximum(client):  # pylint: disable=redefined-outer-na
 		_assert_status_code_and_headers(response, 200)
 
 
+@pytest.mark.parametrize('timeout_seconds', ['0', '-1', '1.5', '"1.5"', '"abc"'])
+def test_rejects_bad_node_timeout(database, timeout_seconds):  # pylint: disable=redefined-outer-name, unused-argument
+	with pytest.raises(ValueError, match='NODE_REQUEST_TIMEOUT_SECONDS must be a positive integer'):
+		_create_app([f'NODE_REQUEST_TIMEOUT_SECONDS={timeout_seconds}'])
+
+
+@patch('rest.routes.nem.NemRestFacade')
+def test_uses_default_node_timeout(mock_nem_rest_facade, database):  # pylint: disable=redefined-outer-name, unused-argument
+	# Act:
+	_create_app()
+
+	# Assert:
+	rest_config = mock_nem_rest_facade.call_args.args[1]
+	assert DEFAULT_NODE_REQUEST_TIMEOUT_SECONDS == rest_config.node_request_timeout_seconds
+
+
 def test_invalid_sort_params(client):  # pylint: disable=redefined-outer-name
 
 	for module, extra_params in SORTED_MODULES.items():
@@ -601,22 +617,6 @@ def test_api_nem_health_node_does_not_respond(database):  # pylint: disable=rede
 	assert 1 == len(responses), 'health request did not finish within 3s'
 	_assert_status_code_and_headers(responses[0], 200)
 	assert not responses[0].json['nodeUp']
-
-
-@pytest.mark.parametrize('timeout_seconds', ['0', '-1', '1.5', '"1.5"', '"abc"'])
-def test_rejects_bad_node_timeout(database, timeout_seconds):  # pylint: disable=redefined-outer-name, unused-argument
-	with pytest.raises(ValueError, match='NODE_REQUEST_TIMEOUT_SECONDS must be a positive integer'):
-		_create_app([f'NODE_REQUEST_TIMEOUT_SECONDS={timeout_seconds}'])
-
-
-@patch('rest.routes.nem.NemRestFacade')
-def test_uses_default_node_timeout(mock_nem_rest_facade, database):  # pylint: disable=redefined-outer-name, unused-argument
-	# Act:
-	_create_app()
-
-	# Assert:
-	rest_config = mock_nem_rest_facade.call_args.args[1]
-	assert DEFAULT_NODE_REQUEST_TIMEOUT_SECONDS == rest_config.node_request_timeout_seconds
 
 # endregion
 

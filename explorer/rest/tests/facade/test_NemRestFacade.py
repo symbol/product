@@ -78,6 +78,15 @@ class TestNemRestFacade(DatabaseTestBase):  # pylint: disable=too-many-public-me
 			node_request_timeout_seconds=DEFAULT_NODE_REQUEST_TIMEOUT_SECONDS
 		))
 
+	def _create_facade_with_node(self, node_url, node_request_timeout_seconds):
+		return NemRestFacade(self.db_config, RestConfig(
+			network_name='mainnet',
+			node_url=node_url,
+			max_lag_blocks=2,
+			harvesting_active_window_days=7,
+			node_request_timeout_seconds=node_request_timeout_seconds
+		))
+
 	# region block
 
 	def _assert_can_retrieve_block(self, height, expected_block):
@@ -310,15 +319,6 @@ class TestNemRestFacade(DatabaseTestBase):  # pylint: disable=too-many-public-me
 		self.assertEqual(EXPECTED_BLOCK_2['height'], result['lastDBHeight'])
 		self.assertEqual([{'type': 'synchronization', 'message': 'Connection refused'}], result['errors'])
 
-	def _create_facade_with_node(self, node_url, node_request_timeout_seconds):
-		return NemRestFacade(self.db_config, RestConfig(
-			network_name='mainnet',
-			node_url=node_url,
-			max_lag_blocks=2,
-			harvesting_active_window_days=7,
-			node_request_timeout_seconds=node_request_timeout_seconds
-		))
-
 	def test_can_retrieve_health_when_node_does_not_respond(self):
 		with unresponsive_node_url() as node_url:
 			# Arrange:
@@ -332,15 +332,6 @@ class TestNemRestFacade(DatabaseTestBase):  # pylint: disable=too-many-public-me
 		self.assertFalse(result['nodeUp'])
 		self.assertIsNone(result['nodeHeight'])
 		self.assertEqual(EXPECTED_BLOCK_2['height'], result['lastDBHeight'])
-
-	def test_unconfirmed_transactions_fail_when_node_does_not_respond(self):  # pylint: disable=invalid-name
-		with unresponsive_node_url() as node_url:
-			# Arrange:
-			facade = self._create_facade_with_node(node_url, 1)
-
-			# Act + Assert:
-			with self.assertRaises(NodeException):
-				asyncio.run(asyncio.wait_for(facade.get_unconfirmed_transactions(), 10))
 
 	# endregion
 
@@ -356,6 +347,15 @@ class TestNemRestFacade(DatabaseTestBase):  # pylint: disable=too-many-public-me
 
 		# Assert:
 		self.assertEqual([], result)
+
+	def test_unconfirmed_transactions_fail_when_node_does_not_respond(self):  # pylint: disable=invalid-name
+		with unresponsive_node_url() as node_url:
+			# Arrange:
+			facade = self._create_facade_with_node(node_url, 1)
+
+			# Act + Assert:
+			with self.assertRaises(NodeException):
+				asyncio.run(asyncio.wait_for(facade.get_unconfirmed_transactions(), 10))
 
 	# endregion
 
