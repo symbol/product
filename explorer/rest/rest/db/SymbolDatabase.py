@@ -1,3 +1,4 @@
+# pylint: disable=too-many-lines
 from collections import namedtuple
 from datetime import datetime, timedelta, timezone
 from enum import Enum
