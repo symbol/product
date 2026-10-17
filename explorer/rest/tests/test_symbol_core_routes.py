@@ -4,7 +4,7 @@ import json
 import logging
 import tempfile
 from contextlib import contextmanager
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from threading import Thread
@@ -12,23 +12,37 @@ from unittest.mock import patch
 
 import pytest
 from common.symbol.NativeMosaic import NativeMosaicInfo, NativeMosaicValidationError
-from common.symbol.NodeConfiguration import SymbolNodeConfigurationError
+from common.symbol.NodeConfiguration import SymbolNodeConfiguration, SymbolNodeConfigurationError
 from common.tests.PostgresTestUtils import PostgresTestDatabase, create_unreachable_db_configuration, drop_symbol_block_tables_if_present
 from flask import Flask
 from psycopg2 import OperationalError
 from psycopg2.extras import Json
 from puller.db.SymbolDatabase import SymbolDatabase as PullerSymbolDatabase
 from symbolchain.CryptoTypes import PublicKey
-from symbolchain.symbol.Network import Network
+from symbolchain.symbol.Network import Address, Network
 
 from rest import create_app, setup_symbol_facade
+from rest.db.SymbolDatabase import SymbolDatabase
 from rest.facade.SymbolRestFacade import SymbolRestFacade
 from rest.model.common import DatabaseConfig
 from rest.routes.symbol import setup_symbol_routes
 
 from .test.EnvTestUtils import rest_settings_env
-from .test.SymbolAccountTestUtils import ACCOUNT_ADDRESS, OTHER_ADDRESS, create_symbol_account_row
+from .test.SymbolAccountListTestUtils import (
+	CUSTOM_MOSAIC_ID,
+	NATIVE_MOSAIC_ID,
+	REFRESH_COMPLETED_AT,
+	FailingAccountListDatabase,
+	PausingAccountListDatabase,
+	account_address,
+	create_account_list_entries,
+	create_refresh_entry,
+	seed_current_mosaic,
+	seed_refresh_run
+)
+from .test.SymbolAccountTestUtils import ACCOUNT_ADDRESS, OTHER_ADDRESS, create_symbol_account_row, seed_alias
 from .test.SymbolBlockTestUtils import create_symbol_block, create_symbol_importance_block, create_symbol_receipt, create_symbol_sync_state
+from .test.SymbolDatabaseTestUtils import read_during_database_snapshot, symbol_test_database
 from .test.SymbolHealthTestUtils import create_symbol_health
 
 NATIVE_MOSAIC_INFO = NativeMosaicInfo('72C0212E67A08BCE', 6)
@@ -177,6 +191,8 @@ def _create_app_config(
 		app_config_file.write(f'DATABASE_CONFIG_FILEPATH="{db_config_path}"\n')
 		if native_mosaic_id is not None:
 			app_config_file.write(f'SYMBOL_NATIVE_MOSAIC_ID={native_mosaic_id!r}\n')
+		app_config_file.write('SYMBOL_ACCOUNT_REFRESH_MAX_AGE_SECONDS=7200\n')
+		app_config_file.write('SYMBOL_HARVESTING_ACTIVE_WINDOW_DAYS=7\n')
 		if symbol_node_url:
 			app_config_file.write(f'SYMBOL_NODE_URL="{symbol_node_url}"\n')
 		app_config_file.write('SYMBOL_NODE_ALLOWED_HOSTS="localhost:3000"\n')
@@ -1894,3 +1910,957 @@ def test_native_setup_list_skips_get(symbol_database_config):
 	assert [_expected_block_list_item(1, is_finalized=True)] == response.json
 	# The recording server tracks GET requests only; this proves the configured node received zero GETs.
 	assert not node_server.request_paths
+
+
+def test_list_http_snapshot_dto(symbol_database_config):
+	# Arrange:
+	entries = create_account_list_entries()
+	with tempfile.TemporaryDirectory() as temp_directory:
+		db_config_path = _create_config_file(temp_directory, database_config=symbol_database_config)
+		app_config_path = _create_app_config(temp_directory, db_config_path)
+		_seed_symbol_account_list_database(symbol_database_config, create_symbol_sync_state(100, 100), entries)
+		with rest_settings_env(app_config_path):
+			app = _create_symbol_app()
+			try:
+				# Act:
+				response = app.test_client().get('/api/symbol/accounts')
+			finally:
+				app.extensions['symbol_database'].close()
+
+	# Assert:
+	assert 200 == response.status_code
+	assert _expected_account_list() == response.json
+
+
+@pytest.mark.parametrize('window_days,is_active', [(7, False), (30, True)], ids=['seven-days', 'thirty-days'])
+def test_list_http_setup_harvesting_window(window_days, is_active, symbol_database_config):  # pylint: disable=invalid-name
+	# Arrange: use real setup wiring with one fixed aware UTC clock and an eight-day-old beneficiary block.
+	with tempfile.TemporaryDirectory() as temp_directory:
+		db_config_path = _create_config_file(temp_directory, database_config=symbol_database_config)
+		app_config_path = _create_app_config(temp_directory, db_config_path)
+		Path(app_config_path).write_text(
+			Path(app_config_path).read_text(encoding='utf8').replace(
+				'SYMBOL_HARVESTING_ACTIVE_WINDOW_DAYS=7', f'SYMBOL_HARVESTING_ACTIVE_WINDOW_DAYS={window_days}'),
+			encoding='utf8')
+		_seed_symbol_account_list_database(
+			symbol_database_config, create_symbol_sync_state(100, 100), create_account_list_entries(),
+			completed_at=REFRESH_COMPLETED_AT)
+		with PullerSymbolDatabase(symbol_database_config) as writer:
+			writer.upsert_blocks([
+				create_symbol_block(
+					1, timestamp=REFRESH_COMPLETED_AT - timedelta(days=40),
+					beneficiary_address=account_address(4), signer_address=account_address(2)),
+				create_symbol_block(
+					2, timestamp=REFRESH_COMPLETED_AT - timedelta(days=8),
+					beneficiary_address=account_address(1), signer_address=account_address(2)),
+				create_symbol_block(
+					3, timestamp=REFRESH_COMPLETED_AT - timedelta(days=7),
+					beneficiary_address=account_address(99), signer_address=account_address(3))
+			])
+			with writer.connection.cursor() as cursor:
+				cursor.execute('UPDATE symbol_accounts SET is_harvesting_active = TRUE WHERE address = %s', (account_address(1),))
+			writer.connection.commit()
+			writer.upsert_account_current_state(
+				create_symbol_account_row(
+					address=account_address(1), address_text=str(Address(account_address(1))), public_key=bytes([77]) * 32,
+					importance_percentage=.99, is_harvesting_active=True),
+				[{'address': account_address(1), 'mosaic_id': NATIVE_MOSAIC_ID, 'amount': 999999, 'updated_at_height': 100},
+					{'address': account_address(1), 'mosaic_id': CUSTOM_MOSAIC_ID, 'amount': 888888, 'updated_at_height': 100}])
+
+		app = Flask(__name__)
+		app.config.from_pyfile(app_config_path)
+		facade = setup_symbol_facade(app, clock=lambda: REFRESH_COMPLETED_AT)
+		with app.extensions['symbol_database']:
+			setup_symbol_routes(app, facade)
+			client = app.test_client()
+			expected = _expected_account_list()
+			expected[2]['isHarvestingActive'] = is_active
+			# Act:
+			omitted = client.get('/api/symbol/accounts')
+			false_flag = client.get('/api/symbol/accounts?is_harvesting=false')
+			true_flag = client.get('/api/symbol/accounts?is_harvesting=true')
+
+	# Assert: setup carries the configured window into the request and snapshot values remain unchanged.
+	assert (200, expected) == (omitted.status_code, omitted.json)
+	assert (200, expected) == (false_flag.status_code, false_flag.json)
+	assert (200, [expected[2]] if is_active else []) == (true_flag.status_code, true_flag.json)
+
+
+def test_list_http_harvesting_flags():
+	# Arrange: account 3 is exactly at the cutoff and account 4 is recent; account 1 is a stale saved flag.
+	with symbol_test_database(create_symbol_sync_state(100, 100)) as (config, writer):
+		seed_refresh_run(writer, 'selected-run', create_account_list_entries(), completed_at=REFRESH_COMPLETED_AT)
+		seed_current_mosaic(writer, CUSTOM_MOSAIC_ID, 2)
+		writer.upsert_blocks([
+			create_symbol_block(
+				1, timestamp=REFRESH_COMPLETED_AT + timedelta(seconds=7200) - timedelta(days=7),
+				beneficiary_address=account_address(3)),
+			create_symbol_block(2, timestamp=REFRESH_COMPLETED_AT - timedelta(seconds=1), beneficiary_address=account_address(4))
+		])
+		with writer.connection.cursor() as cursor:
+			cursor.execute('UPDATE symbol_accounts SET is_harvesting_active = TRUE WHERE address = %s', (account_address(1),))
+		writer.connection.commit()
+		with _account_list_http_client(config, clock=lambda: REFRESH_COMPLETED_AT + timedelta(seconds=7200)) as (client, _):
+			# Act:
+			all_response = client.get('/api/symbol/accounts?is_harvesting=false')
+			active_response = client.get('/api/symbol/accounts?is_harvesting=true')
+
+	# Assert: full JSON values are independently checked for both filtering and computed flags.
+	expected_all = _expected_account_list()
+	for item in expected_all:
+		item['isHarvestingActive'] = item['address'] in {str(Address(account_address(3))), str(Address(account_address(4)))}
+	expected_active = [item for item in expected_all if item['isHarvestingActive']]
+	assert (200, expected_all) == (all_response.status_code, all_response.json)
+	assert (200, expected_active) == (active_response.status_code, active_response.json)
+
+
+def test_list_http_multisig_states():
+	# Arrange: account 1 is both, account 2 owns cosignatories, account 3 only participates,
+	# account 4 has no row, and account 5 has an empty row.
+	entries = create_account_list_entries() + [create_refresh_entry('selected-run', 5, 4, 0)]
+	with symbol_test_database(create_symbol_sync_state(100, 100)) as (config, writer):
+		seed_refresh_run(writer, 'selected-run', entries)
+		seed_current_mosaic(writer, CUSTOM_MOSAIC_ID, 2)
+		writer.upsert_multisig(account_address(1), {
+			'address': account_address(1), 'min_approval': 1, 'min_removal': 1,
+			'cosignatory_addresses': [account_address(2)], 'multisig_addresses': [account_address(3)], 'updated_at_height': 100})
+		writer.upsert_multisig(account_address(2), {
+			'address': account_address(2), 'min_approval': 1, 'min_removal': 1,
+			'cosignatory_addresses': [account_address(1)], 'multisig_addresses': [], 'updated_at_height': 100})
+		writer.upsert_multisig(account_address(3), {
+			'address': account_address(3), 'min_approval': 1, 'min_removal': 1,
+			'cosignatory_addresses': [], 'multisig_addresses': [account_address(1)], 'updated_at_height': 100})
+		writer.upsert_multisig(account_address(5), {
+			'address': account_address(5), 'min_approval': 0, 'min_removal': 0,
+			'cosignatory_addresses': [], 'multisig_addresses': [], 'updated_at_height': 100})
+		with _account_list_http_client(config) as (client, _):
+			# Act:
+			response = client.get('/api/symbol/accounts')
+
+	# Assert: own cosignatories make accounts 1 and 2 multisig; participation alone does not.
+	expected = _expected_account_list() + [{
+		'address': str(Address(account_address(5))), 'publicKey': None, 'accountType': 'main',
+		'importance': 0, 'balance': 0, 'namespaces': [], 'mosaics': [], 'description': None,
+		'isHarvestingActive': False, 'isMultisig': False
+	}]
+	for item in expected:
+		item['isMultisig'] = item['address'] in {str(Address(account_address(1))), str(Address(account_address(2)))}
+	assert (200, expected) == (response.status_code, response.json)
+
+
+@pytest.mark.parametrize('mutated_row', [
+	{'min_approval': 1, 'min_removal': 1, 'cosignatory_addresses': [b'bad'], 'multisig_addresses': []},
+	{'min_approval': -1, 'min_removal': 1, 'cosignatory_addresses': [account_address(2)], 'multisig_addresses': []}
+], ids=['bad-cosignatory', 'bad-threshold'])
+def test_list_http_multisig_recovery(symbol_database_config, mutated_row):
+	# Arrange:
+	_seed_symbol_account_list_database(symbol_database_config, create_symbol_sync_state(100, 100), create_account_list_entries())
+	with PullerSymbolDatabase(symbol_database_config) as writer:
+		writer.upsert_multisig(account_address(1), {
+			'address': account_address(1), 'min_approval': 1, 'min_removal': 1,
+			'cosignatory_addresses': [account_address(2)], 'multisig_addresses': [], 'updated_at_height': 100})
+		writer.upsert_multisig(account_address(1), {'address': account_address(1), **mutated_row, 'updated_at_height': 100})
+		with _account_list_create_app_client(symbol_database_config) as client:
+			# Act:
+			failed = client.get('/api/symbol/accounts')
+			writer.upsert_multisig(account_address(1), {
+				'address': account_address(1), 'min_approval': 1, 'min_removal': 1,
+				'cosignatory_addresses': [account_address(2)], 'multisig_addresses': [], 'updated_at_height': 100})
+			recovered = client.get('/api/symbol/accounts')
+
+	# Assert:
+	assert (503, {'status': 503, 'message': 'Symbol backend data is unavailable'}) == (failed.status_code, failed.json)
+	expected = _expected_account_list()
+	expected[2]['isMultisig'] = True
+	assert (200, expected) == (recovered.status_code, recovered.json)
+
+
+def test_list_stale_detail_unchanged(symbol_database_config):
+	# Arrange:
+	entries = create_account_list_entries()
+	with tempfile.TemporaryDirectory() as temp_directory:
+		db_config_path = _create_config_file(temp_directory, database_config=symbol_database_config)
+		app_config_path = _create_app_config(temp_directory, db_config_path)
+		_seed_symbol_account_list_database(
+			symbol_database_config, create_symbol_sync_state(100, 100), entries,
+			completed_at=datetime(2025, 1, 1, tzinfo=timezone.utc))
+		with rest_settings_env(app_config_path):
+			app = _create_symbol_app()
+			try:
+				# Act:
+				list_response = app.test_client().get('/api/symbol/accounts')
+				detail_response = app.test_client().get(f'/api/symbol/account?address={str(Address(account_address(1)))}')
+			finally:
+				app.extensions['symbol_database'].close()
+
+	# Assert:
+	assert 503 == list_response.status_code
+	assert {'status': 503, 'message': 'Symbol backend data is unavailable'} == list_response.json
+	assert 200 == detail_response.status_code
+
+
+@pytest.mark.parametrize('setting,expected_message', [
+	pytest.param(None, 'SYMBOL_ACCOUNT_REFRESH_MAX_AGE_SECONDS is required', id='missing'),
+	pytest.param(True, 'SYMBOL_ACCOUNT_REFRESH_MAX_AGE_SECONDS must be a positive integer', id='bool'),
+	pytest.param('7200', 'SYMBOL_ACCOUNT_REFRESH_MAX_AGE_SECONDS must be a positive integer', id='string'),
+	pytest.param(7200.0, 'SYMBOL_ACCOUNT_REFRESH_MAX_AGE_SECONDS must be a positive integer', id='float'),
+	pytest.param(0, 'SYMBOL_ACCOUNT_REFRESH_MAX_AGE_SECONDS must be a positive integer', id='zero'),
+	pytest.param(-1, 'SYMBOL_ACCOUNT_REFRESH_MAX_AGE_SECONDS must be a positive integer', id='negative')
+])
+def test_list_age_invalid_setup(setting, expected_message):
+	# Arrange:
+	with tempfile.TemporaryDirectory() as temp_directory:
+		db_config_path = _create_config_file(temp_directory, database_config=create_unreachable_db_configuration())
+		app_config_path = _create_app_config(temp_directory, db_config_path)
+		config = Path(app_config_path).read_text(encoding='utf8')
+		config = config.replace('SYMBOL_ACCOUNT_REFRESH_MAX_AGE_SECONDS=7200\n', '')
+		if setting is not None:
+			config += f'SYMBOL_ACCOUNT_REFRESH_MAX_AGE_SECONDS={setting!r}\n'
+		Path(app_config_path).write_text(config, encoding='utf8')
+
+		with rest_settings_env(app_config_path):
+			# Act:
+			with pytest.raises(ValueError) as exception_info:
+				_create_symbol_app()
+
+			# Assert:
+			assert expected_message == str(exception_info.value)
+
+
+@pytest.mark.parametrize('setting,expected_message', [
+	pytest.param(None, 'SYMBOL_HARVESTING_ACTIVE_WINDOW_DAYS is required', id='missing'),
+	pytest.param(True, 'SYMBOL_HARVESTING_ACTIVE_WINDOW_DAYS must be a positive integer', id='bool'),
+	pytest.param('7', 'SYMBOL_HARVESTING_ACTIVE_WINDOW_DAYS must be a positive integer', id='string'),
+	pytest.param(7.0, 'SYMBOL_HARVESTING_ACTIVE_WINDOW_DAYS must be a positive integer', id='float'),
+	pytest.param(0, 'SYMBOL_HARVESTING_ACTIVE_WINDOW_DAYS must be a positive integer', id='zero'),
+	pytest.param(-1, 'SYMBOL_HARVESTING_ACTIVE_WINDOW_DAYS must be a positive integer', id='negative')
+])
+def test_list_window_invalid_setup(setting, expected_message):
+	# Arrange:
+	with tempfile.TemporaryDirectory() as temp_directory:
+		db_config_path = _create_config_file(temp_directory, database_config=create_unreachable_db_configuration())
+		app_config_path = _create_app_config(temp_directory, db_config_path)
+		config = Path(app_config_path).read_text(encoding='utf8')
+		config = config.replace('SYMBOL_HARVESTING_ACTIVE_WINDOW_DAYS=7\n', '')
+		if setting is not None:
+			config += f'SYMBOL_HARVESTING_ACTIVE_WINDOW_DAYS={setting!r}\n'
+		Path(app_config_path).write_text(config, encoding='utf8')
+
+		with rest_settings_env(app_config_path):
+			# Act:
+			with pytest.raises(ValueError) as exception_info:
+				_create_symbol_app()
+
+			# Assert:
+			assert expected_message == str(exception_info.value)
+
+
+@contextmanager
+def _account_list_create_app_client(database_config):
+	"""Creates the real configured app and closes its database after the request sequence."""
+	with tempfile.TemporaryDirectory() as directory:
+		db_path = _create_config_file(directory, database_config=database_config)
+		app_path = _create_app_config(directory, db_path)
+		with rest_settings_env(app_path):
+			app = _create_symbol_app()
+			try:
+				yield app.test_client()
+			finally:
+				app.extensions['symbol_database'].close()
+
+
+def test_list_custom_without_rank(symbol_database_config):
+	# Arrange:
+	_seed_symbol_account_list_database(
+		symbol_database_config, create_symbol_sync_state(100, 100), create_account_list_entries())
+	with PullerSymbolDatabase(symbol_database_config) as writer:
+		with writer.connection.cursor() as cursor:
+			cursor.execute(
+				'DELETE FROM symbol_account_list_ranks WHERE refresh_run_id = %s AND rank_scope = %s',
+				('selected-run', f'BALANCE:{CUSTOM_MOSAIC_ID}'))
+		writer.connection.commit()
+	with _account_list_create_app_client(symbol_database_config) as client:
+		# Act:
+		response = client.get(f'/api/symbol/accounts?sort_field=BALANCE&mosaic_id={CUSTOM_MOSAIC_ID}')
+
+	# Assert:
+	assert (200, [
+		_expected_list_item(4, None, 'main', .2, 2, 2, None),
+		_expected_list_item(3, None, 'main', .3, 1, 1, .00005),
+		_expected_list_item(1, None, 'main', .4, 1, 1, .00005),
+		_expected_list_item(2, None, 'main', .1, 0, 0, 0)
+	]) == (response.status_code, response.json)
+
+
+def test_list_http_recovers_fixed_ranks(symbol_database_config):
+	# Arrange: corrupt one required ID rank in an otherwise readable successful run.
+	_seed_symbol_account_list_database(
+		symbol_database_config, create_symbol_sync_state(100, 100), create_account_list_entries())
+	with PullerSymbolDatabase(symbol_database_config) as writer:
+		with writer.connection.cursor() as cursor:
+			cursor.execute(
+				'UPDATE symbol_account_list_ranks SET sort_value_numeric = 999 WHERE refresh_run_id = %s AND rank_scope = %s AND rank = 0',
+				('selected-run', 'ID'))
+		writer.connection.commit()
+		with _account_list_create_app_client(symbol_database_config) as client:
+			# Act: read the corrupt scope through the configured app.
+			failed = client.get('/api/symbol/accounts')
+
+			# Assert:
+			assert (503, {'status': 503, 'message': 'Symbol backend data is unavailable'}) == (failed.status_code, failed.json)
+
+			# Arrange: repair the stored ranks through the existing Puller writer.
+			writer.finalize_account_refresh('selected-run', NATIVE_MOSAIC_ID, 100, datetime.now(timezone.utc))
+
+			# Act: reuse the same app after the failed request.
+			recovered = client.get('/api/symbol/accounts')
+
+			# Assert:
+			assert (200, _expected_account_list()) == (recovered.status_code, recovered.json)
+
+
+def _expected_account_list():
+	return [
+		{
+			'address': str(Address(account_address(2))), 'publicKey': None, 'accountType': 'main',
+			'importance': 0.1, 'balance': 0.0, 'namespaces': [],
+			'mosaics': [
+				{'id': CUSTOM_MOSAIC_ID, 'name': CUSTOM_MOSAIC_ID, 'amount': 0.0, 'isCreatedByAccount': False},
+				{'id': NATIVE_MOSAIC_ID, 'name': NATIVE_MOSAIC_ID, 'amount': 0.0, 'isCreatedByAccount': False}],
+			'description': None, 'isHarvestingActive': False, 'isMultisig': False
+		},
+		{
+			'address': str(Address(account_address(3))), 'publicKey': None, 'accountType': 'main',
+			'importance': 0.3, 'balance': 0.00005, 'namespaces': [],
+			'mosaics': [
+				{'id': CUSTOM_MOSAIC_ID, 'name': CUSTOM_MOSAIC_ID, 'amount': 1.0, 'isCreatedByAccount': False},
+				{'id': NATIVE_MOSAIC_ID, 'name': NATIVE_MOSAIC_ID, 'amount': 0.00005, 'isCreatedByAccount': False}],
+			'description': None, 'isHarvestingActive': False, 'isMultisig': False
+		},
+		{
+			'address': str(Address(account_address(1))), 'publicKey': None, 'accountType': 'main',
+			'importance': 0.4, 'balance': 0.00005, 'namespaces': [],
+			'mosaics': [
+				{'id': CUSTOM_MOSAIC_ID, 'name': CUSTOM_MOSAIC_ID, 'amount': 1.0, 'isCreatedByAccount': False},
+				{'id': NATIVE_MOSAIC_ID, 'name': NATIVE_MOSAIC_ID, 'amount': 0.00005, 'isCreatedByAccount': False}],
+			'description': None, 'isHarvestingActive': False, 'isMultisig': False
+		},
+		{
+			'address': str(Address(account_address(4))), 'publicKey': None, 'accountType': 'main',
+			'importance': 0.2, 'balance': 0, 'namespaces': [],
+			'mosaics': [{'id': CUSTOM_MOSAIC_ID, 'name': CUSTOM_MOSAIC_ID, 'amount': 2.0, 'isCreatedByAccount': False}],
+			'description': None, 'isHarvestingActive': False, 'isMultisig': False
+		}
+	]
+
+
+@contextmanager
+def _account_list_http_client(config, database_type=SymbolDatabase, clock=None):
+	with database_type(config, NATIVE_MOSAIC_INFO, clock or (lambda: REFRESH_COMPLETED_AT + timedelta(seconds=7200))) as database:
+		app = Flask(__name__)
+		facade = SymbolRestFacade(
+			database, SymbolNodeConfiguration.from_url('http://127.0.0.1:3000', allow_loopback=True),
+			NATIVE_MOSAIC_INFO, Network.TESTNET, 7200, 7)
+		setup_symbol_routes(app, facade)
+		yield app.test_client(), database
+
+
+def _expected_list_item(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+	identity, public_key, account_type, importance, balance, custom_amount, native_amount,
+	custom_name=CUSTOM_MOSAIC_ID, namespaces=(), is_creator=False):
+	mosaics = [{'id': CUSTOM_MOSAIC_ID, 'name': custom_name, 'amount': custom_amount, 'isCreatedByAccount': is_creator}]
+	if native_amount is not None:
+		mosaics.append({'id': NATIVE_MOSAIC_ID, 'name': NATIVE_MOSAIC_ID, 'amount': native_amount, 'isCreatedByAccount': False})
+
+	return {
+		'address': str(Address(account_address(identity))), 'publicKey': public_key, 'accountType': account_type,
+		'importance': importance, 'balance': balance, 'namespaces': list(namespaces), 'mosaics': mosaics,
+		'description': None, 'isHarvestingActive': False, 'isMultisig': False
+	}
+
+
+@pytest.mark.parametrize('change', ['run', 'metadata'])
+def test_list_http_repeatable_read(change):
+	# Arrange: both successful runs contain the same addresses with different attributes and balances.
+	with symbol_test_database(create_symbol_sync_state(100, 100)) as (config, writer):
+		seed_refresh_run(writer, 'old-run', create_account_list_entries('old-run'))
+		seed_refresh_run(writer, 'new-run', create_account_list_entries('new-run', is_new=True))
+		writer.upsert_account_refresh_state({'last_successful_run_id': 'old-run'})
+		seed_current_mosaic(writer, CUSTOM_MOSAIC_ID, 2, account_address(1))
+		seed_alias(writer, 'account', str(Address(account_address(1))), 'before.account')
+		seed_alias(writer, 'mosaic', CUSTOM_MOSAIC_ID, 'before.mosaic')
+		expected_old = [
+			_expected_list_item(2, None, 'main', .1, 0, 0, 0, 'before.mosaic'),
+			_expected_list_item(3, None, 'main', .3, .00005, 1, .00005, 'before.mosaic'),
+			_expected_list_item(1, None, 'main', .4, .00005, 1, .00005, 'before.mosaic', ('before.account',), True),
+			_expected_list_item(4, None, 'main', .2, 0, 2, None, 'before.mosaic')
+		]
+
+		def update():
+			if change == 'run':
+				writer.upsert_account_refresh_state({'last_successful_run_id': 'new-run'})
+			else:
+				with writer.connection.cursor() as cursor:
+					cursor.execute('UPDATE symbol_alias_names SET name = \'after.account\' WHERE artifact_type = \'account\'')
+					cursor.execute('UPDATE symbol_alias_names SET name = \'after.mosaic\' WHERE artifact_type = \'mosaic\'')
+					cursor.execute(
+						'UPDATE symbol_mosaics SET divisibility = 3, owner_address = %s WHERE mosaic_id = %s',
+						(account_address(4), CUSTOM_MOSAIC_ID))
+				writer.connection.commit()
+
+		with _account_list_http_client(config, PausingAccountListDatabase) as (client, database):
+			# Act:
+			response = read_during_database_snapshot(database, lambda: client.get('/api/symbol/accounts'), update)
+			next_response = client.get('/api/symbol/accounts')
+
+	# Assert:
+	assert isinstance(database, PausingAccountListDatabase)
+	assert ('repeatable read', 'on') == database.transaction_settings  # pylint: disable=no-member
+	assert (200, expected_old) == (response.status_code, response.json)
+	if change == 'run':
+		expected_new = [
+			_expected_list_item(4, '0E' * 32, 'main', .3, 0, 3, 0, 'before.mosaic'),
+			_expected_list_item(3, '0D' * 32, 'main', .2, .000025, .25, .000025, 'before.mosaic'),
+			_expected_list_item(2, '0C' * 32, 'remote', .4, .00002, .1, .00002, 'before.mosaic'),
+			_expected_list_item(1, '0B' * 32, 'main', .1, .00001, 2, .00001, 'before.mosaic', ('before.account',), True)
+		]
+	else:
+		expected_new = [
+			_expected_list_item(2, None, 'main', .1, 0, 0, 0, 'after.mosaic'),
+			_expected_list_item(3, None, 'main', .3, .00005, .1, .00005, 'after.mosaic'),
+			_expected_list_item(1, None, 'main', .4, .00005, .1, .00005, 'after.mosaic', ('after.account',)),
+			_expected_list_item(4, None, 'main', .2, 0, .2, None, 'after.mosaic', is_creator=True)
+		]
+	assert (200, expected_new) == (next_response.status_code, next_response.json)
+
+
+def _seed_height_http_fixture(writer):
+	seed_refresh_run(writer, 'selected-run', create_account_list_entries())
+	seed_current_mosaic(writer, CUSTOM_MOSAIC_ID, 2)
+	writer.upsert_account_current_state(
+		create_symbol_account_row(
+			address=account_address(1), address_text=str(Address(account_address(1))), public_key=bytes([77]) * 32,
+			importance_percentage=.99),
+		[{'address': account_address(1), 'mosaic_id': NATIVE_MOSAIC_ID, 'amount': 999999, 'updated_at_height': 100},
+			{'address': account_address(1), 'mosaic_id': CUSTOM_MOSAIC_ID, 'amount': 888888, 'updated_at_height': 100}])
+	writer.upsert_account_current_state(create_symbol_account_row(
+		address=account_address(99), address_text=str(Address(account_address(99))), address_height=999), [])
+	with writer.connection.cursor() as cursor:
+		cursor.execute(
+			'UPDATE symbol_accounts SET address_height = CASE WHEN address = %s THEN 9223372036854775807 '
+			'WHEN address = %s THEN NULL ELSE 4 END',
+			(account_address(1), account_address(2)))
+	writer.connection.commit()
+
+
+def test_list_http_height_returns_snapshot_dto():  # pylint: disable=invalid-name
+	# Arrange: max and NULL heights are legal, ties use address order, and a current-only decoy is excluded.
+	with symbol_test_database(create_symbol_sync_state(100, 100)) as (config, writer):
+		_seed_height_http_fixture(writer)
+		with _account_list_http_client(config) as (client, _):
+			# Act:
+			response = client.get('/api/symbol/accounts?sort_field=HEIGHT')
+
+	# Assert: full DTOs retain snapshot balances and account 4 has no native snapshot row.
+	expected = [_expected_account_list()[index] for index in (2, 3, 1, 0)]
+	assert (200, expected) == (response.status_code, response.json)
+
+
+def test_list_http_height_negative_is_unavailable():  # pylint: disable=invalid-name
+	# Arrange:
+	with symbol_test_database(create_symbol_sync_state(100, 100)) as (config, writer):
+		_seed_height_http_fixture(writer)
+		with writer.connection.cursor() as cursor:
+			cursor.execute('UPDATE symbol_accounts SET address_height = -1 WHERE address = %s', (account_address(1),))
+		writer.connection.commit()
+		with _account_list_http_client(config) as (client, _):
+			# Act:
+			response = client.get('/api/symbol/accounts?sort_field=HEIGHT')
+
+	# Assert:
+	assert (503, {'status': 503, 'message': 'Symbol backend data is unavailable'}) == (response.status_code, response.json)
+
+
+def test_list_http_height_validates_full_population_before_page():  # pylint: disable=invalid-name
+	# Arrange: the missing current row is beyond the requested page.
+	with symbol_test_database(create_symbol_sync_state(100, 100)) as (config, writer):
+		_seed_height_http_fixture(writer)
+		with writer.connection.cursor() as cursor:
+			cursor.execute('DELETE FROM symbol_account_mosaics WHERE address = %s', (account_address(4),))
+			cursor.execute('DELETE FROM symbol_accounts WHERE address = %s', (account_address(4),))
+		writer.connection.commit()
+		with _account_list_http_client(config) as (client, _):
+			# Act:
+			response = client.get('/api/symbol/accounts?sort_field=HEIGHT&limit=1')
+
+	# Assert:
+	assert (503, {'status': 503, 'message': 'Symbol backend data is unavailable'}) == (response.status_code, response.json)
+
+
+def test_list_http_height_missing_current_row_before_filter_and_page():  # pylint: disable=invalid-name
+	# Arrange:
+	with symbol_test_database(create_symbol_sync_state(100, 100)) as (config, writer):
+		seed_refresh_run(writer, 'selected-run', create_account_list_entries())
+		writer.upsert_blocks([create_symbol_block(1, timestamp=REFRESH_COMPLETED_AT, beneficiary_address=account_address(1))])
+		with writer.connection.cursor() as cursor:
+			cursor.execute('DELETE FROM symbol_account_mosaics WHERE address = %s', (account_address(4),))
+			cursor.execute('DELETE FROM symbol_accounts WHERE address = %s', (account_address(4),))
+		writer.connection.commit()
+		with _account_list_http_client(config) as (client, _):
+			# Act:
+			response = client.get('/api/symbol/accounts?sort_field=HEIGHT&is_harvesting=true&limit=1')
+
+	# Assert:
+	assert (503, {'status': 503, 'message': 'Symbol backend data is unavailable'}) == (response.status_code, response.json)
+
+
+def test_list_http_expires_harvesting_with_one_clock_read_per_request():  # pylint: disable=invalid-name
+	# Arrange: refresh remains fresh; only the request clock changes between requests.
+	moments = [REFRESH_COMPLETED_AT]
+	clock_calls = []
+
+	def clock():
+		clock_calls.append(moments[0])
+		return moments[0]
+
+	with symbol_test_database(create_symbol_sync_state(100, 100)) as (config, writer):
+		seed_refresh_run(writer, 'selected-run', create_account_list_entries(), completed_at=REFRESH_COMPLETED_AT)
+		seed_current_mosaic(writer, CUSTOM_MOSAIC_ID, 2)
+		writer.upsert_blocks([create_symbol_block(
+			1, timestamp=REFRESH_COMPLETED_AT - timedelta(days=7), beneficiary_address=account_address(1))])
+		expected = _expected_account_list()
+		expected[2]['isHarvestingActive'] = True
+		with _account_list_http_client(config, clock=clock) as (client, _):
+			# Act + Assert: every request reads the clock once for age and harvesting.
+			first = client.get('/api/symbol/accounts')
+			assert (200, expected) == (first.status_code, first.json)
+			assert [REFRESH_COMPLETED_AT] == clock_calls
+			filtered = client.get('/api/symbol/accounts?is_harvesting=true')
+			assert (200, [expected[2]]) == (filtered.status_code, filtered.json)
+			assert [REFRESH_COMPLETED_AT] * 2 == clock_calls
+			moments[0] += timedelta(seconds=1)
+			expired = client.get('/api/symbol/accounts')
+			assert (200, _expected_account_list()) == (expired.status_code, expired.json)
+			assert [REFRESH_COMPLETED_AT] * 2 + [moments[0]] == clock_calls
+			empty = client.get('/api/symbol/accounts?is_harvesting=true')
+			assert (200, []) == (empty.status_code, empty.json)
+			assert [REFRESH_COMPLETED_AT] * 2 + [moments[0]] * 2 == clock_calls
+
+
+def test_list_http_reads_run_height_harvesting_and_multisig_in_one_snapshot():  # pylint: disable=invalid-name
+	# Arrange: multiple active members distinguish ordering from membership and enrichment.
+	with symbol_test_database(create_symbol_sync_state(100, 100)) as (config, writer):
+		seed_refresh_run(writer, 'old-run', create_account_list_entries('old-run'))
+		seed_refresh_run(writer, 'new-run', create_account_list_entries('new-run', is_new=True))
+		writer.upsert_account_refresh_state({'last_successful_run_id': 'old-run'})
+		seed_current_mosaic(writer, CUSTOM_MOSAIC_ID, 2)
+		writer.upsert_blocks([
+			create_symbol_block(1, timestamp=REFRESH_COMPLETED_AT, beneficiary_address=account_address(1)),
+			create_symbol_block(2, timestamp=REFRESH_COMPLETED_AT, beneficiary_address=account_address(3))])
+		writer.upsert_multisig(account_address(1), {
+			'address': account_address(1), 'min_approval': 1, 'min_removal': 1,
+			'cosignatory_addresses': [account_address(2)], 'multisig_addresses': [], 'updated_at_height': 100})
+		with writer.connection.cursor() as cursor:
+			cursor.execute(
+				'UPDATE symbol_accounts SET address_height = CASE WHEN address = %s THEN 10 WHEN address = %s THEN 5 ELSE 1 END',
+				(account_address(1), account_address(3)))
+		writer.connection.commit()
+
+		def update():
+			writer.upsert_account_refresh_state({'last_successful_run_id': 'new-run'})
+			writer.upsert_blocks([create_symbol_block(1, timestamp=REFRESH_COMPLETED_AT, beneficiary_address=account_address(4))])
+			writer.upsert_multisig(account_address(1), None)
+			writer.upsert_multisig(account_address(3), {
+				'address': account_address(3), 'min_approval': 1, 'min_removal': 1,
+				'cosignatory_addresses': [account_address(2)], 'multisig_addresses': [], 'updated_at_height': 100})
+			with writer.connection.cursor() as cursor:
+				cursor.execute(
+					'UPDATE symbol_accounts SET address_height = CASE WHEN address = %s THEN 20 WHEN address = %s THEN 10 ELSE 1 END',
+					(account_address(3), account_address(4)))
+			writer.connection.commit()
+
+		with _account_list_http_client(config, PausingAccountListDatabase) as (client, database):
+			# Act:
+			old_response = read_during_database_snapshot(
+				database, lambda: client.get('/api/symbol/accounts?sort_field=HEIGHT&is_harvesting=true'), update)
+			new_response = client.get('/api/symbol/accounts?sort_field=HEIGHT&is_harvesting=true')
+
+	# Assert: old membership, swapped heights, changed same-member Multisig, and run payloads are distinguishable.
+	expected_old = [_expected_account_list()[index] for index in (2, 1)]
+	expected_old[0]['isMultisig'] = True
+	for item in expected_old:
+		item['isHarvestingActive'] = True
+	expected_new = [
+		_expected_list_item(3, '0D' * 32, 'main', .2, .000025, .25, .000025),
+		_expected_list_item(4, '0E' * 32, 'main', .3, 0, 3, 0)]
+	expected_new[0]['isMultisig'] = True
+	for item in expected_new:
+		item['isHarvestingActive'] = True
+	assert (200, expected_old) == (old_response.status_code, old_response.json)
+	assert (200, expected_new) == (new_response.status_code, new_response.json)
+	# The injected pausing subclass supplies transaction observations.
+	assert ('repeatable read', 'on') == database.transaction_settings  # pylint: disable=no-member
+
+
+@pytest.mark.parametrize('query', ['', '?sort_field=HEIGHT&is_harvesting=true'])
+@pytest.mark.parametrize('state_sql', [
+	'DELETE FROM symbol_account_refresh_state',
+	'UPDATE symbol_account_refresh_state SET status = \'refreshing\'',
+	'UPDATE symbol_account_refresh_state SET status = \'unhealthy\'',
+	'UPDATE symbol_account_refresh_state SET status = \'stale\'',
+	'UPDATE symbol_account_refresh_state SET last_successful_run_id = NULL',
+	'UPDATE symbol_account_refresh_state SET last_successful_run_id = \'\'',
+	'UPDATE symbol_account_refresh_state SET last_completed_at = NULL',
+	'DELETE FROM symbol_sync_state',
+	'UPDATE symbol_sync_state SET status = \'unhealthy\'',
+	'UPDATE symbol_sync_state SET status = \'repairing\'',
+	'UPDATE symbol_sync_state SET last_synced_height = 0',
+	'UPDATE symbol_sync_state SET dirty_state_from_height = 100'
+])
+def test_list_http_state_unavailable(state_sql, query):
+	# Arrange: existing success remains populated so an old-run fallback would return records.
+	with symbol_test_database(create_symbol_sync_state(100, 100)) as (config, writer):
+		seed_refresh_run(writer, 'selected-run', create_account_list_entries())
+		with writer.connection.cursor() as cursor:
+			cursor.execute(state_sql)
+		writer.connection.commit()
+		with _account_list_http_client(config) as (client, _):
+			# Act:
+			response = client.get('/api/symbol/accounts' + (query + '&' if query else '?') + 'offset=100000')
+
+	# Assert:
+	assert (503, {'status': 503, 'message': 'Symbol backend data is unavailable'}) == (response.status_code, response.json)
+
+
+@pytest.mark.parametrize('seconds,status', [(7199, 200), (7200, 200), (7201, 503)])
+def test_account_list_http_age_boundary(seconds, status):
+	# Arrange:
+	with symbol_test_database(create_symbol_sync_state(100, 100)) as (config, writer):
+		seed_refresh_run(writer, 'selected-run', create_account_list_entries())
+		seed_current_mosaic(writer, CUSTOM_MOSAIC_ID, 2)
+		with _account_list_http_client(config, clock=lambda: REFRESH_COMPLETED_AT + timedelta(seconds=seconds)) as (client, _):
+			# Act:
+			response = client.get('/api/symbol/accounts')
+
+	# Assert:
+	assert status == response.status_code
+	assert (_expected_account_list() if status == 200 else {'status': 503, 'message': 'Symbol backend data is unavailable'}) == response.json
+
+
+def _expected_list_page(indices, balance_values):
+	expected = [_expected_account_list()[index] for index in indices]
+	for item, balance in zip(expected, balance_values):
+		item['balance'] = balance
+	return expected
+
+
+def _assert_selected_run_http_query(query, expected):
+	# Arrange: old and failed run payloads differ from the selected successful run.
+	with symbol_test_database(create_symbol_sync_state(100, 100, chain_height=200, finalized_epoch=None)) as (config, writer):
+		seed_refresh_run(writer, 'old-run', create_account_list_entries('old-run', is_new=True))
+		seed_refresh_run(writer, 'selected-run', create_account_list_entries())
+		writer.upsert_account_refresh_page(create_account_list_entries('failed-run', is_new=True), last_scanned_page=1)
+		writer.upsert_account_refresh_state({'status': 'healthy'})
+		seed_current_mosaic(writer, CUSTOM_MOSAIC_ID, 2)
+		with _account_list_http_client(config) as (client, _):
+			# Act:
+			response = client.get('/api/symbol/accounts' + query)
+
+	# Assert:
+	assert (200, expected) == (response.status_code, response.json)
+
+
+@pytest.mark.parametrize('query,indices,balance_values', [
+	('', [0, 1, 2, 3], [0, .00005, .00005, 0]),
+	('?sort_field=IMPORTANCE', [2, 1, 3, 0], [.00005, .00005, 0, 0]),
+	(f'?sort_field=BALANCE&mosaic_id={NATIVE_MOSAIC_ID}', [1, 2, 0], [.00005, .00005, 0]),
+	(f'?sort_field=BALANCE&mosaic_id={CUSTOM_MOSAIC_ID}', [3, 1, 2, 0], [2, 1, 1, 0])
+], ids=['id', 'importance', 'native-balance', 'custom-balance'])
+def test_list_http_orders_selected_successful_run(query, indices, balance_values):  # pylint: disable=invalid-name
+	_assert_selected_run_http_query(query, _expected_list_page(indices, balance_values))
+
+
+@pytest.mark.parametrize('query,indices,balance_values', [
+	('?limit=2&offset=1', [1, 2], [.00005, .00005]),
+	('?limit=2&offset=2', [2, 3], [.00005, 0]),
+	('?limit=2&offset=3', [3], [0]),
+	(f'?sort_field=BALANCE&mosaic_id={CUSTOM_MOSAIC_ID}&limit=2&offset=1', [1, 2], [1, 1]),
+	('?offset=4', [], []),
+	('?offset=100000', [], []),
+	('?sort_field=BALANCE&mosaic_id=FEDCBA9876543210', [], [])
+], ids=['id-offset-1', 'id-offset-2', 'id-short-page', 'custom-offset', 'id-empty', 'id-large-offset', 'unknown-custom'])
+def test_list_http_paginates_selected_successful_run(query, indices, balance_values):  # pylint: disable=invalid-name
+	_assert_selected_run_http_query(query, _expected_list_page(indices, balance_values))
+
+
+def test_list_http_sql_failure_reuse(caplog):
+	# Arrange:
+	with symbol_test_database(create_symbol_sync_state(100, 100)) as (config, writer):
+		seed_refresh_run(writer, 'selected-run', create_account_list_entries())
+		seed_current_mosaic(writer, CUSTOM_MOSAIC_ID, 2)
+		with _account_list_http_client(config, FailingAccountListDatabase) as (client, database):
+			# Act: provoke a SQL failure through the public request path.
+			with caplog.at_level(logging.ERROR, logger='pythonConfig'):
+				failed = client.get('/api/symbol/accounts')
+
+			# Assert:
+			assert (503, {'status': 503, 'message': 'Symbol backend data is unavailable'}) == (failed.status_code, failed.json)
+			assert ['Failed to get Symbol accounts'] == [record.getMessage() for record in caplog.records if record.levelno >= logging.ERROR]
+			assert 'missing_account_list_column' not in caplog.text
+			assert 'SELECT' not in caplog.text
+
+			# Arrange: stop the injected failure without replacing the app or its database pool.
+			database.should_fail = False
+
+			# Act:
+			recovered = client.get('/api/symbol/accounts')
+
+			# Assert:
+			assert (200, _expected_account_list()) == (recovered.status_code, recovered.json)
+
+
+@pytest.mark.parametrize('statement,parameters', [
+	('UPDATE symbol_account_refresh_accounts SET public_key = %s WHERE address = %s', (b'bad', account_address(1))),
+	('UPDATE symbol_account_refresh_accounts SET importance_percentage = -1 WHERE address = %s', (account_address(1),)),
+	('UPDATE symbol_account_refresh_mosaics SET amount = -1 WHERE address = %s AND mosaic_id = %s', (account_address(1), CUSTOM_MOSAIC_ID)),
+	('UPDATE symbol_mosaics SET divisibility = -1 WHERE mosaic_id = %s', (CUSTOM_MOSAIC_ID,)),
+	('UPDATE symbol_mosaics SET owner_address = %s WHERE mosaic_id = %s', (b'bad', CUSTOM_MOSAIC_ID))
+], ids=['public-key-length', 'importance-range', 'negative-amount', 'divisibility-range', 'owner-address-length'])
+def test_list_http_recovers_fixed_dto(symbol_database_config, statement, parameters, caplog):
+	# Arrange: each case corrupts a different saved DTO input without changing schema constraints.
+	entries = create_account_list_entries()
+	_seed_symbol_account_list_database(symbol_database_config, create_symbol_sync_state(100, 100), entries)
+	with PullerSymbolDatabase(symbol_database_config) as writer:
+		with writer.connection.cursor() as cursor:
+			cursor.execute(statement, parameters)
+		writer.connection.commit()
+		with _account_list_create_app_client(symbol_database_config) as client:
+			# Act: read the malformed data through create_app wiring.
+			with caplog.at_level(logging.ERROR, logger='pythonConfig'):
+				failed = client.get('/api/symbol/accounts')
+
+			# Assert:
+			assert (503, {'status': 503, 'message': 'Symbol backend data is unavailable'}) == (failed.status_code, failed.json)
+			assert 'SELECT' not in caplog.text
+			assert any('Invalid Symbol backend data at ' in record.getMessage() for record in caplog.records)
+			assert 'bad' not in caplog.text
+
+			# Arrange: restore snapshot inputs and current metadata before reusing the same app.
+			seed_refresh_run(writer, 'selected-run', entries, completed_at=datetime.now(timezone.utc))
+			seed_current_mosaic(writer, CUSTOM_MOSAIC_ID, 2)
+
+			# Act:
+			recovered = client.get('/api/symbol/accounts')
+
+			# Assert:
+			assert (200, _expected_account_list()) == (recovered.status_code, recovered.json)
+
+
+def test_list_http_returns_nullable_dto():
+	# Arrange:
+	with symbol_test_database(create_symbol_sync_state(100, 100)) as (config, writer):
+		entry = create_refresh_entry('selected-run', 1, 0, 0, account_type=None)
+		seed_refresh_run(writer, 'selected-run', [entry])
+		with _account_list_http_client(config) as (client, _):
+			# Act:
+			response = client.get('/api/symbol/accounts')
+
+	# Assert:
+	assert (200, [{
+		'address': str(Address(account_address(1))), 'publicKey': None, 'accountType': None, 'importance': 0,
+		'balance': 0, 'namespaces': [], 'mosaics': [], 'description': None,
+		'isHarvestingActive': False, 'isMultisig': False
+	}]) == (response.status_code, response.json)
+
+
+def test_list_http_returns_empty_run():
+	# Arrange:
+	with symbol_test_database(create_symbol_sync_state(100, 100)) as (config, writer):
+		seed_refresh_run(writer, 'empty-run', [])
+		with _account_list_http_client(config) as (client, _):
+			# Act:
+			response = client.get('/api/symbol/accounts')
+
+	# Assert:
+	assert (200, []) == (response.status_code, response.json)
+
+
+def test_list_http_missing_metadata():
+	# Arrange:
+	with symbol_test_database(create_symbol_sync_state(100, 100)) as (config, writer):
+		seed_refresh_run(writer, 'selected-run', create_account_list_entries())
+		with _account_list_http_client(config) as (client, _):
+			# Act:
+			response = client.get('/api/symbol/accounts')
+
+	# Assert:
+	assert (200, [
+		_expected_list_item(2, None, 'main', .1, 0, 0, 0),
+		_expected_list_item(3, None, 'main', .3, .00005, 100, .00005),
+		_expected_list_item(1, None, 'main', .4, .00005, 100, .00005),
+		_expected_list_item(4, None, 'main', .2, 0, 200, None)
+	]) == (response.status_code, response.json)
+
+
+def test_list_http_invalid_address():
+	# Arrange: bytea permits bad length; no constraints are removed.
+	with symbol_test_database(create_symbol_sync_state(100, 100)) as (config, writer):
+		entry = create_refresh_entry('selected-run', 1, 0, 0)
+		entry['account_row']['address'] = b'bad'
+		seed_refresh_run(writer, 'selected-run', [entry])
+		with _account_list_http_client(config) as (client, _):
+			# Act:
+			response = client.get('/api/symbol/accounts')
+
+	# Assert:
+	assert (503, {'status': 503, 'message': 'Symbol backend data is unavailable'}) == (response.status_code, response.json)
+
+
+@pytest.mark.parametrize('seconds,window_days', [(1, 7), (7200, 30), (10**100, 7)])
+def test_list_age_positive_setup(symbol_database_config, seconds, window_days):
+	# Arrange:
+	with tempfile.TemporaryDirectory() as directory:
+		db_path = _create_config_file(directory, database_config=symbol_database_config)
+		app_path = _create_app_config(directory, db_path)
+		Path(app_path).write_text(Path(app_path).read_text(encoding='utf8').replace(
+			'SYMBOL_ACCOUNT_REFRESH_MAX_AGE_SECONDS=7200', f'SYMBOL_ACCOUNT_REFRESH_MAX_AGE_SECONDS={seconds}').replace(
+			'SYMBOL_HARVESTING_ACTIVE_WINDOW_DAYS=7', f'SYMBOL_HARVESTING_ACTIVE_WINDOW_DAYS={window_days}'), encoding='utf8')
+		app = Flask(__name__)
+		app.config.from_pyfile(app_path)
+
+		# Act:
+		facade = setup_symbol_facade(app)
+
+		# Cleanup:
+		app.extensions['symbol_database'].close()
+
+	# Assert:
+	assert seconds == facade.account_refresh_max_age_seconds
+	assert window_days == facade.harvesting_active_window_days
+
+
+def _seed_symbol_account_list_database(database_config, sync_state, entries, completed_at=None):
+	_drop_symbol_block_tables_if_present(database_config)
+	with PullerSymbolDatabase(database_config) as database:
+		database.create_tables()
+		database.upsert_sync_state(sync_state)
+		seed_refresh_run(
+			database, entries[0]['refresh_run_id'], entries,
+			completed_at=completed_at or datetime.now(timezone.utc))
+		seed_current_mosaic(database, CUSTOM_MOSAIC_ID, divisibility=2, owner_address=account_address(99))
+
+
+@pytest.mark.parametrize('query,ordered,balances', [
+	('sort_field=ID', [1, 2, 3], [.00005, .00005, 0]),
+	('sort_field=IMPORTANCE', [1, 3, 2], [.00005, 0, .00005]),
+	(f'sort_field=BALANCE&mosaic_id={NATIVE_MOSAIC_ID}', [1, 2], [.00005, .00005]),
+	(f'sort_field=BALANCE&mosaic_id={CUSTOM_MOSAIC_ID}', [3, 1, 2], [2, 1, 1]),
+	('sort_field=HEIGHT', [3, 1, 2], [0, .00005, .00005])
+], ids=['id', 'importance', 'native', 'custom', 'height'])
+def test_list_http_filtered_pages(query, ordered, balances):
+	# Arrange: inactive rank leader 2 must be removed before offset; account 3 has two qualifying blocks.
+	with symbol_test_database(create_symbol_sync_state(100, 100, chain_height=200, finalized_epoch=None)) as (config, writer):
+		entries = create_account_list_entries()
+		entries[0]['account_row'].update(importance=1, importance_percentage=1)
+		entries[1]['account_row'].update(importance=4, importance_percentage=4)
+		entries[1]['mosaic_rows'][0]['amount'] = 100
+		entries[1]['mosaic_rows'][1]['amount'] = 300
+		seed_refresh_run(writer, 'selected-run', entries)
+		seed_current_mosaic(writer, CUSTOM_MOSAIC_ID, 2)
+		writer.upsert_blocks([
+			create_symbol_block(1, timestamp=REFRESH_COMPLETED_AT, beneficiary_address=account_address(3)),
+			create_symbol_block(2, timestamp=REFRESH_COMPLETED_AT, beneficiary_address=account_address(3)),
+			create_symbol_block(3, timestamp=REFRESH_COMPLETED_AT, beneficiary_address=account_address(1)),
+			create_symbol_block(4, timestamp=REFRESH_COMPLETED_AT, beneficiary_address=account_address(4))])
+		expected_all = _expected_account_list()
+		expected_all[2]['importance'] = .1
+		expected = [expected_all[index] for index in ordered]
+		for item, balance in zip(expected, balances):
+			item['balance'] = balance
+			item['isHarvestingActive'] = True
+		with _account_list_http_client(config) as (client, _):
+			for offset in (0, 1, len(expected) - 1, len(expected), 100000):
+				# Act:
+				response = client.get(f'/api/symbol/accounts?{query}&is_harvesting=true&limit=2&offset={offset}')
+
+				# Assert: full DTOs also expose truncated/duplicated page membership.
+				assert (200, expected[offset:offset + 2]) == (response.status_code, response.json), (query, offset)
+
+
+@pytest.mark.parametrize('query,indices', [
+	('sort_field=HEIGHT', [3, 1, 0, 2]),
+	('sort_field=ID&is_harvesting=true', [2])
+], ids=['height', 'harvesting'])
+def test_list_http_recovers_height_and_harvesting_requests_after_sql_failure(query, indices, caplog):  # pylint: disable=invalid-name
+	# Arrange: active account 1 makes both new query paths reach the injected SQL failure.
+	with symbol_test_database(create_symbol_sync_state(100, 100)) as (config, writer):
+		seed_refresh_run(writer, 'selected-run', create_account_list_entries())
+		seed_current_mosaic(writer, CUSTOM_MOSAIC_ID, 2)
+		writer.upsert_blocks([create_symbol_block(1, timestamp=REFRESH_COMPLETED_AT, beneficiary_address=account_address(1))])
+		with _account_list_http_client(config, FailingAccountListDatabase) as (client, database):
+			# Act:
+			with caplog.at_level(logging.ERROR, logger='pythonConfig'):
+				failed = client.get('/api/symbol/accounts?' + query)
+
+			# Assert:
+			assert (503, {'status': 503, 'message': 'Symbol backend data is unavailable'}) == (failed.status_code, failed.json)
+			assert ['Failed to get Symbol accounts'] == [record.getMessage() for record in caplog.records if record.levelno >= logging.ERROR]
+
+			# Arrange:
+			database.should_fail = False
+			expected = _expected_account_list()
+			expected[2]['isHarvestingActive'] = True
+			expected = [expected[index] for index in indices]
+
+			# Act:
+			recovered = client.get('/api/symbol/accounts?' + query)
+
+			# Assert:
+			assert (200, expected) == (recovered.status_code, recovered.json)
+
+
+@pytest.mark.parametrize('extra_days', [0, 1], ids=['maximum', 'above-maximum'])
+def test_list_window_date_boundary(extra_days):
+	# Arrange: failure uses unreachable DB to distinguish setup validation from acquisition.
+	setup_now = REFRESH_COMPLETED_AT
+	maximum = setup_now.toordinal() - datetime.min.toordinal()
+	if extra_days:
+		with tempfile.TemporaryDirectory() as directory:
+			db_path = _create_config_file(directory, database_config=create_unreachable_db_configuration())
+			app_path = _create_app_config(directory, db_path)
+			Path(app_path).write_text(Path(app_path).read_text(encoding='utf8').replace(
+				'SYMBOL_HARVESTING_ACTIVE_WINDOW_DAYS=7', f'SYMBOL_HARVESTING_ACTIVE_WINDOW_DAYS={maximum + extra_days}'), encoding='utf8')
+			app = Flask(__name__)
+			app.config.from_pyfile(app_path)
+
+			# Act + Assert: invalid configuration is rejected before the unreachable DB is acquired.
+			with pytest.raises(ValueError) as exception_info:
+				setup_symbol_facade(app, clock=lambda: setup_now)
+			assert f'SYMBOL_HARVESTING_ACTIVE_WINDOW_DAYS must be at most {maximum} days at setup' == str(exception_info.value)
+	else:
+		# Arrange: the maximum cutoff reaches year 1, and recent blocks still match.
+		with symbol_test_database(create_symbol_sync_state(100, 100)) as (database_config, writer):
+			entry = create_refresh_entry('selected-run', 1, 0, 0)
+			seed_refresh_run(writer, 'selected-run', [entry], completed_at=setup_now)
+			writer.upsert_blocks([create_symbol_block(1, timestamp=setup_now, beneficiary_address=account_address(1))])
+			with tempfile.TemporaryDirectory() as directory:
+				db_path = _create_config_file(directory, database_config=database_config)
+				app_path = _create_app_config(directory, db_path)
+				Path(app_path).write_text(Path(app_path).read_text(encoding='utf8').replace(
+					'SYMBOL_HARVESTING_ACTIVE_WINDOW_DAYS=7', f'SYMBOL_HARVESTING_ACTIVE_WINDOW_DAYS={maximum}'), encoding='utf8')
+				app = Flask(__name__)
+				app.config.from_pyfile(app_path)
+
+				# Act: real setup validates the configuration before wiring the public route.
+				facade = setup_symbol_facade(app, clock=lambda: setup_now)
+				with app.extensions['symbol_database']:
+					setup_symbol_routes(app, facade)
+					response = app.test_client().get('/api/symbol/accounts?is_harvesting=true')
+
+					# Assert:
+					assert maximum == facade.harvesting_active_window_days
+					assert (200, [{
+						'address': str(Address(account_address(1))), 'publicKey': None, 'accountType': 'main', 'importance': 0,
+						'balance': 0, 'namespaces': [], 'mosaics': [], 'description': None,
+						'isHarvestingActive': True, 'isMultisig': False
+					}]) == (response.status_code, response.json)

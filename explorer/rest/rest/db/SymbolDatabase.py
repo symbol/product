@@ -1,4 +1,5 @@
 from collections import namedtuple
+from datetime import datetime, timedelta, timezone
 from enum import Enum
 
 from common.symbol.NativeMosaic import normalize_mosaic_id
@@ -73,6 +74,15 @@ class SymbolMosaicAliasNotFound(RuntimeError):
 	"""Raised when a requested current Mosaic alias cannot be resolved."""
 
 
+class AccountSortField(str, Enum):
+	"""Canonical ordering fields for the Symbol account list."""
+
+	ID = 'ID'
+	IMPORTANCE = 'IMPORTANCE'
+	BALANCE = 'BALANCE'
+	HEIGHT = 'HEIGHT'
+
+
 class SortOrder(str, Enum):
 	ASC = 'ASC'
 	DESC = 'DESC'
@@ -95,11 +105,22 @@ AccountRecord = namedtuple(
 	['address', 'public_key', 'account_type', 'address_height', 'importance_percentage', 'linked_public_key',
 		'node_public_key', 'vrf_public_key', 'voting_public_keys', 'activity_buckets', 'finalized_epoch', 'alias_names',
 		'mosaics', 'multisig'], defaults=(None,))
+AccountListQuery = namedtuple(
+	'AccountListQuery', ['sort_field', 'mosaic_id', 'limit', 'offset', 'is_harvesting'], defaults=(False,))
+AccountListRecord = namedtuple(
+	'AccountListRecord',
+	['address', 'public_key', 'account_type', 'importance_percentage', 'balance_mosaic_id', 'namespaces', 'mosaics',
+		'is_harvesting_active', 'multisig'], defaults=(False, None))
 MosaicRecord = namedtuple(
 	'MosaicRecord',
 	['mosaic_id', 'amount', 'metadata_mosaic_id', 'divisibility', 'owner_address', 'alias_names'])
 MultisigRecord = namedtuple(
 	'MultisigRecord', ['min_approval', 'min_removal', 'cosignatory_addresses', 'multisig_addresses'])
+AccountListPageContext = namedtuple(
+	'AccountListPageContext', ['last_synced_height', 'now', 'harvesting_active_window_days'])
+AccountListEnrichment = namedtuple(
+	'AccountListEnrichment', ['display_relations', 'harvesting_by_address', 'multisig_rows'])
+INT64_MAX = 9223372036854775807
 
 
 def _bytes_or_none(value):
@@ -151,11 +172,12 @@ def _create_sync_state(columns, result):
 class SymbolDatabase(DatabaseConnectionPool):
 	"""Database access for Symbol Explorer data."""
 
-	def __init__(self, db_config, native_mosaic_info=None):
+	def __init__(self, db_config, native_mosaic_info=None, clock=None):
 		"""Creates a Symbol database accessor with optional native mosaic information."""
 
 		super().__init__(db_config)
 		self.native_mosaic_info = native_mosaic_info
+		self._clock = clock or (lambda: datetime.now(timezone.utc))
 		self._is_closed = False
 
 	def __enter__(self):
@@ -348,6 +370,242 @@ class SymbolDatabase(DatabaseConnectionPool):
 
 				return self._fetch_account_record(cursor, account_row, sync_state['finalized_epoch'])
 
+	# Named snapshot and enrichment values keep transaction ownership explicit in one method.
+	def get_account_list(self, query, max_age_seconds, harvesting_active_window_days):  # pylint: disable=too-many-locals
+		"""Gets a snapshot-backed Symbol account list and current display relations."""
+
+		if self.native_mosaic_info is None:
+			raise SymbolDataUnavailable('Symbol account list native mosaic is unavailable')
+
+		with self.connection() as connection:
+			with connection.cursor() as cursor:
+				self._start_read_transaction(cursor)
+				cursor.execute('SET TRANSACTION READ ONLY')
+				sync_state = self._fetch_sync_state(cursor)
+				self._assert_current_state_readable(sync_state)
+				refresh_state = self._fetch_account_refresh_state(cursor)
+				now = self._clock()
+				now = now.replace(tzinfo=timezone.utc) if now.tzinfo is None else now.astimezone(timezone.utc)
+				run_id = self._assert_account_refresh_readable(refresh_state, max_age_seconds, now)
+				scope = self._account_list_scope(query)
+				# Validate the whole required scope even when the requested page is empty.
+				if scope is not None:
+					self._assert_account_list_ranks(cursor, run_id, scope)
+
+				if query.sort_field == AccountSortField.HEIGHT:
+					self._assert_account_list_height_population(cursor, run_id)
+
+				page_members = self._fetch_account_list_page(
+					cursor, run_id, query, AccountListPageContext(
+						sync_state['last_synced_height'], now, harvesting_active_window_days))
+				if not page_members:
+					return []
+
+				page_addresses = [address for address, _ in page_members]
+				# pylint: disable-next=unnecessary-comprehension  # Keep the harvesting flag name explicit.
+				harvesting_by_address = {address: is_harvesting_active for address, is_harvesting_active in page_members}
+				account_rows = self._fetch_account_list_accounts(cursor, run_id, page_addresses)
+				mosaic_rows = self._fetch_account_list_mosaics(cursor, run_id, page_addresses)
+				namespaces, mosaic_aliases = self._fetch_account_list_aliases(
+					cursor, page_addresses, tuple({row[1] for row in mosaic_rows}))
+				multisig_rows = self._fetch_account_list_multisig(cursor, page_addresses)
+				return self._create_account_list_records(
+					query.mosaic_id or self.native_mosaic_info.id, page_addresses, account_rows, mosaic_rows,
+					AccountListEnrichment((namespaces, mosaic_aliases), harvesting_by_address, multisig_rows))
+
+	@staticmethod
+	def _fetch_account_refresh_state(cursor):
+		cursor.execute(
+			'''SELECT status, last_successful_run_id, last_completed_at
+			FROM symbol_account_refresh_state WHERE id = 1''')
+		row = cursor.fetchone()
+		return dict(zip(('status', 'last_successful_run_id', 'last_completed_at'), row)) if row else None
+
+	@staticmethod
+	def _assert_account_refresh_readable(refresh_state, max_age_seconds, now):
+		if not refresh_state or refresh_state['status'] != 'healthy':
+			raise SymbolDataUnavailable('Symbol account refresh data is unavailable')
+
+		run_id = refresh_state['last_successful_run_id']
+		completed_at = refresh_state['last_completed_at']
+		if not isinstance(run_id, str) or not run_id or completed_at is None:
+			raise SymbolDataUnavailable('Symbol account refresh data is unavailable')
+
+		completed_at = completed_at.replace(tzinfo=timezone.utc) if completed_at.tzinfo is None else completed_at
+		if (now - completed_at).total_seconds() > max_age_seconds:
+			raise SymbolDataUnavailable('Symbol account refresh data is unavailable')
+
+		return run_id
+
+	def _account_list_scope(self, query):
+		if query.sort_field in (AccountSortField.ID, AccountSortField.IMPORTANCE):
+			return query.sort_field.value
+
+		if query.sort_field == AccountSortField.BALANCE and query.mosaic_id == self.native_mosaic_info.id:
+			return f'BALANCE:{query.mosaic_id}'
+
+		# Custom balances read the same-run snapshot directly; custom ranks are not required.
+		return None
+
+	@staticmethod
+	def _assert_account_list_height_population(cursor, run_id):
+		cursor.execute(
+			'''SELECT accounts.address, current_accounts.address, current_accounts.address_height
+			FROM symbol_account_refresh_accounts AS accounts
+			LEFT JOIN symbol_accounts AS current_accounts ON current_accounts.address = accounts.address
+			WHERE accounts.refresh_run_id = %s''',
+			(run_id,))
+		rows = cursor.fetchall()
+		if any(row[1] is None for row in rows) or any(
+			row[2] is not None and (
+				isinstance(row[2], bool) or not isinstance(row[2], int) or row[2] < 0 or row[2] > INT64_MAX)
+			for row in rows):
+			raise SymbolDataUnavailable('Symbol account height data is unavailable')
+
+	@staticmethod
+	def _assert_account_list_ranks(cursor, run_id, scope):
+		if scope == 'ID':
+			expected_source = '''SELECT address, NULL::numeric AS value, NULL::varchar AS mosaic_id,
+				row_number() OVER (ORDER BY account_search_order ASC, address ASC)-1 AS rank
+				FROM symbol_account_refresh_accounts WHERE refresh_run_id = %s'''
+			parameters = (run_id,)
+		elif scope == 'IMPORTANCE':
+			expected_source = '''SELECT address, importance_percentage AS value, NULL::varchar AS mosaic_id,
+				row_number() OVER (ORDER BY importance_percentage DESC, address ASC)-1 AS rank
+				FROM symbol_account_refresh_accounts WHERE refresh_run_id = %s'''
+			parameters = (run_id,)
+		else:
+			mosaic_id = scope.split(':', 1)[1]
+			expected_source = '''SELECT address, amount::numeric AS value, mosaic_id,
+				row_number() OVER (ORDER BY amount DESC, address ASC)-1 AS rank
+				FROM symbol_account_refresh_mosaics
+				WHERE refresh_run_id = %s AND mosaic_id = %s'''
+			parameters = (run_id, mosaic_id)
+
+		cursor.execute(
+			f'''WITH expected AS ({expected_source}), actual AS (
+				SELECT rank, address, sort_value_numeric AS value, mosaic_id
+				FROM symbol_account_list_ranks WHERE refresh_run_id = %s AND rank_scope = %s)
+			SELECT NOT EXISTS (
+				SELECT 1 FROM expected e FULL OUTER JOIN actual a USING (rank)
+				WHERE e.address IS DISTINCT FROM a.address
+				OR e.value IS DISTINCT FROM a.value
+				OR e.mosaic_id IS DISTINCT FROM a.mosaic_id)''',
+			parameters + (run_id, scope))
+		if not cursor.fetchone()[0]:
+			raise SymbolDataUnavailable('Symbol account list ranks are unavailable')
+
+	def _fetch_account_list_page(self, cursor, run_id, query, page_context):
+		cutoff = page_context.now - timedelta(days=page_context.harvesting_active_window_days)
+		cutoff = cutoff.replace(tzinfo=None) if cutoff.tzinfo is not None else cutoff
+		harvesting_expression = '''EXISTS (
+			SELECT 1 FROM symbol_blocks AS blocks
+			WHERE blocks.beneficiary_address = accounts.address
+			AND blocks.timestamp >= %s
+			AND blocks.height <= %s)'''
+		harvesting_filter = f' AND {harvesting_expression}' if query.is_harvesting else ''
+		harvesting_parameters = (cutoff, page_context.last_synced_height)
+		filter_parameters = harvesting_parameters if query.is_harvesting else ()
+
+		if query.sort_field == AccountSortField.BALANCE and query.mosaic_id and query.mosaic_id != self.native_mosaic_info.id:
+			query_text = f'''SELECT accounts.address, {harvesting_expression} AS is_harvesting_active
+				FROM symbol_account_refresh_mosaics AS mosaics
+				JOIN symbol_account_refresh_accounts AS accounts
+					ON accounts.refresh_run_id = mosaics.refresh_run_id AND accounts.address = mosaics.address
+				WHERE mosaics.refresh_run_id = %s AND mosaics.mosaic_id = %s{harvesting_filter}
+				ORDER BY mosaics.amount DESC, mosaics.address ASC LIMIT %s OFFSET %s'''
+			parameters = (*harvesting_parameters, run_id, query.mosaic_id, *filter_parameters, query.limit, query.offset)
+		elif query.sort_field == AccountSortField.HEIGHT:
+			query_text = f'''SELECT accounts.address, {harvesting_expression} AS is_harvesting_active
+				FROM symbol_account_refresh_accounts AS accounts
+				JOIN symbol_accounts AS current_accounts ON current_accounts.address = accounts.address
+				WHERE accounts.refresh_run_id = %s{harvesting_filter}
+				ORDER BY current_accounts.address_height DESC NULLS LAST, accounts.address ASC
+				LIMIT %s OFFSET %s'''
+			parameters = (*harvesting_parameters, run_id, *filter_parameters, query.limit, query.offset)
+		else:
+			scope = query.sort_field.value if query.sort_field != AccountSortField.BALANCE else f'BALANCE:{query.mosaic_id}'
+			query_text = f'''SELECT ranks.address, {harvesting_expression} AS is_harvesting_active
+				FROM symbol_account_list_ranks AS ranks
+				JOIN symbol_account_refresh_accounts AS accounts
+					ON accounts.refresh_run_id = ranks.refresh_run_id AND accounts.address = ranks.address
+				WHERE ranks.refresh_run_id = %s AND ranks.rank_scope = %s{harvesting_filter}
+				ORDER BY ranks.rank LIMIT %s OFFSET %s'''
+			parameters = (*harvesting_parameters, run_id, scope, *filter_parameters, query.limit, query.offset)
+
+		cursor.execute(query_text, parameters)
+		return [(bytes(row[0]), bool(row[1])) for row in cursor.fetchall()]
+
+	@staticmethod
+	def _fetch_account_list_accounts(cursor, run_id, addresses):
+		cursor.execute(
+			'''SELECT address, public_key, account_type, importance_percentage
+			FROM symbol_account_refresh_accounts
+			WHERE refresh_run_id = %s AND address = ANY(%s::bytea[])''',
+			(run_id, addresses))
+		return {bytes(row[0]): (bytes(row[1]) if row[1] is not None else None, *row[2:]) for row in cursor.fetchall()}
+
+	@staticmethod
+	def _fetch_account_list_mosaics(cursor, run_id, addresses):
+		cursor.execute(
+			'''SELECT snapshot.address, snapshot.mosaic_id, snapshot.amount,
+				mosaic.mosaic_id, mosaic.divisibility, mosaic.owner_address
+			FROM symbol_account_refresh_mosaics AS snapshot
+			LEFT JOIN symbol_mosaics AS mosaic ON mosaic.mosaic_id = snapshot.mosaic_id
+			WHERE snapshot.refresh_run_id = %s AND snapshot.address = ANY(%s::bytea[])
+			ORDER BY snapshot.address ASC, snapshot.mosaic_id ASC''',
+			(run_id, addresses))
+		return [(bytes(row[0]), *row[1:5], bytes(row[5]) if row[5] is not None else None) for row in cursor.fetchall()]
+
+	@staticmethod
+	def _fetch_account_list_multisig(cursor, addresses):
+		cursor.execute(
+			'''SELECT address, min_approval, min_removal, cosignatory_addresses, multisig_addresses
+			FROM symbol_multisig WHERE address = ANY(%s::bytea[])''',
+			(addresses,))
+		return {
+			bytes(row[0]): MultisigRecord(*row[1:])
+			for row in cursor.fetchall()
+		}
+
+	def _fetch_account_list_aliases(self, cursor, addresses, mosaic_ids):
+		for address in addresses:
+			if len(address) != Address.SIZE:
+				raise SymbolDataInvalid('accounts.address', 'invalid byte length')
+
+		address_texts = [str(Address(address)) for address in addresses]
+		return self._fetch_alias_names(cursor, address_texts, mosaic_ids)
+
+	@staticmethod
+	def _fetch_alias_names(cursor, account_ids, mosaic_ids):
+		"""Reads account and Mosaic aliases together from the caller's database snapshot."""
+
+		account_aliases = {account_id: [] for account_id in account_ids}
+		mosaic_aliases = {mosaic_id: [] for mosaic_id in mosaic_ids}
+
+		cursor.execute(
+			'''SELECT artifact_type, artifact_id, name FROM symbol_alias_names
+			WHERE (artifact_type = 'account' AND artifact_id = ANY(%s::varchar[]))
+				OR (artifact_type = 'mosaic' AND artifact_id = ANY(%s::varchar[]))
+			ORDER BY artifact_type ASC, artifact_id ASC, name ASC''',
+			(list(account_ids), list(mosaic_ids)))
+		for artifact_type, artifact_id, name in cursor.fetchall():
+			aliases = account_aliases if artifact_type == 'account' else mosaic_aliases
+			aliases[artifact_id].append(name)
+		return account_aliases, mosaic_aliases
+
+	@staticmethod
+	def _create_account_list_records(balance_mosaic_id, addresses, account_rows, mosaic_rows, enrichment):
+		namespaces, mosaic_aliases = enrichment.display_relations
+		mosaics_by_address = {address: [] for address in addresses}
+		for row in mosaic_rows:
+			mosaics_by_address[row[0]].append(MosaicRecord(*row[1:], tuple(mosaic_aliases.get(row[1], ()))))
+
+		return [AccountListRecord(
+			address, *account_rows[address], balance_mosaic_id,
+			tuple(namespaces.get(str(Address(address)), ())), tuple(mosaics_by_address[address]),
+			enrichment.harvesting_by_address[address], enrichment.multisig_rows.get(address)) for address in addresses]
+
 	@staticmethod
 	def _assert_current_state_readable(sync_state):
 		if not sync_state or sync_state.get('status') != 'healthy':
@@ -370,8 +628,8 @@ class SymbolDatabase(DatabaseConnectionPool):
 		if isinstance(finalized_epoch, bool) or not isinstance(finalized_epoch, int) or finalized_epoch < 0 or finalized_epoch > 2147483647:
 			raise SymbolDataInvalid('sync_state.finalized_epoch', 'invalid integer')
 
-	@staticmethod
-	def _fetch_account_record(cursor, account_row, finalized_epoch):
+	@classmethod
+	def _fetch_account_record(cls, cursor, account_row, finalized_epoch):
 		address = bytes(account_row[0])
 		if len(address) != Address.SIZE:
 			raise SymbolDataInvalid('accounts.address', 'invalid byte length')
@@ -393,21 +651,9 @@ class SymbolDatabase(DatabaseConnectionPool):
 			ORDER BY account_mosaics.mosaic_id ASC''',
 			(address,))
 		mosaic_rows = cursor.fetchall()
-		mosaic_ids = [row[0] for row in mosaic_rows]
-		alias_names_by_mosaic = {mosaic_id: [] for mosaic_id in mosaic_ids}
-		cursor.execute(
-			'''SELECT artifact_type, artifact_id, name FROM symbol_alias_names
-			WHERE (artifact_type = 'account' AND artifact_id = %s)
-				OR (artifact_type = 'mosaic' AND artifact_id = ANY(%s::varchar[]))
-			ORDER BY artifact_type ASC, artifact_id ASC, name ASC''',
-			(address_text, mosaic_ids))
-		account_aliases = []
-		for artifact_type, artifact_id, name in cursor.fetchall():
-			if artifact_type == 'account':
-				account_aliases.append(name)
-			else:
-				alias_names_by_mosaic[artifact_id].append(name)
-
+		mosaic_ids = tuple(row[0] for row in mosaic_rows)
+		account_aliases_by_id, alias_names_by_mosaic = cls._fetch_alias_names(
+			cursor, (address_text,), mosaic_ids)
 		mosaics = tuple(MosaicRecord(
 			row[0], row[1], row[2], row[3], row[4], tuple(alias_names_by_mosaic[row[0]])) for row in mosaic_rows)
 
@@ -423,7 +669,7 @@ class SymbolDatabase(DatabaseConnectionPool):
 			account_row[8],
 			account_row[9],
 			finalized_epoch,
-			tuple(account_aliases),
+			tuple(account_aliases_by_id[address_text]),
 			mosaics,
 			multisig)
 
@@ -613,24 +859,12 @@ class SymbolDatabase(DatabaseConnectionPool):
 					raise SymbolDataUnavailable('Symbol mosaic data is unavailable')
 
 				cursor.execute(
-					f"""
-					SELECT
-						mosaic_id,
-						owner_address,
-						start_height,
-						expiration_height,
-						duration,
-						supply,
-						divisibility,
-						supply_mutable,
-						transferable,
-						restrictable,
-						revokable,
-						alias_names
+					f'''SELECT mosaic_id, owner_address, start_height, expiration_height,
+						duration, supply, divisibility, supply_mutable,
+						transferable, restrictable, revokable, alias_names
 					FROM symbol_mosaics
 					ORDER BY start_height {sort.value}, mosaic_id {sort.value}
-					LIMIT %s OFFSET %s
-					""",
+					LIMIT %s OFFSET %s''',
 					(limit, offset))
 				return [self._create_mosaic_view(row) for row in cursor.fetchall()]
 
@@ -743,18 +977,9 @@ class SymbolDatabase(DatabaseConnectionPool):
 	@staticmethod
 	def _create_mosaic_view(result):
 		(
-			mosaic_id,
-			owner_address,
-			start_height,
-			expiration_height,
-			duration,
-			supply,
-			divisibility,
-			supply_mutable,
-			transferable,
-			restrictable,
-			revokable,
-			alias_names
+			mosaic_id, owner_address, start_height, expiration_height,
+			duration, supply, divisibility, supply_mutable,
+			transferable, restrictable, revokable, alias_names
 		) = result
 
 		return SymbolMosaicView(
