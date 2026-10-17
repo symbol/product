@@ -12,63 +12,18 @@ from symbollightapi.model.Endpoint import Endpoint
 from symbollightapi.model.Exceptions import InsufficientBalanceException, NodeException
 from symbollightapi.model.NodeInfo import NodeInfo
 
-from ..test.LightApiTestUtils import HASHES, SYMBOL_ADDRESSES
+from ..test.LightApiTestUtils import (
+	HASHES,
+	MULTISIG_INFO_1,
+	NODE_INFO_1,
+	NODE_INFO_2,
+	NODE_INFO_3,
+	PARTIAL_TRANSACTIONS,
+	SYMBOL_ADDRESSES,
+	UNCONFIRMED_TRANSACTIONS
+)
 
-# region test data
-
-
-NODE_INFO_1 = {
-	'friendlyName': 'The Wolf Farm owned by Tresto(@TrendStream)',
-	'host': 'wolf.importance.jp',
-	'networkGenerationHashSeed': '57F7DA205008026C776CB6AED843393F04CD458E0AA2D9F1D5F31A402072B2D6',
-	'networkIdentifier': 104,
-	'nodePublicKey': 'A4714451910AF026AF7A3960FF87EDCA0BA4E80CABCB350FA2B69439E1CB0B97',
-	'port': 7900,
-	'publicKey': 'D8F4FE47F1F5B1046748067E52725AEBAA1ED9F3CE45D02054011A39671DD9AA',
-	'roles': 3,
-	'version': 16777988
-}
-
-NODE_INFO_2 = {
-	'friendlyName': 'Allnodes619',
-	'host': 'xym619.allnodes.me',
-	'networkGenerationHashSeed': '57F7DA205008026C776CB6AED843393F04CD458E0AA2D9F1D5F31A402072B2D6',
-	'networkIdentifier': 104,
-	'nodePublicKey': 'A19C14033EB508EF6AD48A3E5D1E7DEDF0B1DCBAD1978CD61797017749A1B999',
-	'port': 7900,
-	'publicKey': 'FB744B408D392E0F99701432E0BC8A0D38BEFDEA8019826CCE91458C6E734ADB',
-	'roles': 3,
-	'version': 16777989
-}
-
-NODE_INFO_3 = {
-	'friendlyName': 'tiger',
-	'host': 'tiger.catapult.ninja',
-	'networkGenerationHashSeed': '57F7DA205008026C776CB6AED843393F04CD458E0AA2D9F1D5F31A402072B2D6',
-	'networkIdentifier': 104,
-	'port': 7900,
-	'publicKey': 'C807BE28855D0C87A8A2C032E51790CCB9158C15CBACB8B222E27DFFFEB3697D',
-	'roles': 5,
-	'version': 16777989
-}
-
-MULTISIG_INFO_1 = {
-	'multisig': {
-		'version': 1,
-		'accountAddress': '987BC1722F417C93BA80C4212AA0E4621FB5B18550CC4103',
-		'minApproval': 2,
-		'minRemoval': 3,
-		'cosignatoryAddresses': [
-			'98AAB8782D4452F0DE6C82A778BB6937C509B9A1AFDF2320',
-			'98661D23312F31066CA5298FD453301C930553528FFE0FF1',
-			'98BEC4842DEE913E737CC267D984F5FCC955C981291B3936'
-		],
-		'multisigAddresses': [
-			'98D35CCF663D61C64E6B083C08B1544C3D9538EB01369248',
-			'98996F3C23DDE4258E9D3E0F0BE4BAED48370CA6EDD7DD2C'
-		]
-	}
-}
+# region test utils
 
 
 def generate_transaction_statuses(status_start_height, status_groups, transaction_hashes):
@@ -222,6 +177,18 @@ async def server(aiohttp_client):
 		async def transaction_confirmed(self, request):
 			return await self._process(request, {'meta': {'height': 1234}, 'transaction': {'message': 'foo'}})
 
+		async def transactions_unconfirmed(self, request):
+			return await self._process(request, {
+				'data': UNCONFIRMED_TRANSACTIONS,
+				'pagination': {'pageNumber': 1, 'pageSize': 100}
+			})
+
+		async def transactions_partial(self, request):
+			return await self._process(request, {
+				'data': PARTIAL_TRANSACTIONS,
+				'pagination': {'pageNumber': 1, 'pageSize': 100}
+			})
+
 		async def transactions_confirmed(self, request):
 			messages = ['sigma', 'beta', 'gamma']
 			return await self._process(request, {
@@ -264,6 +231,8 @@ async def server(aiohttp_client):
 	app.router.add_get(r'/account/{address}/multisig', mock_server.account_multisig)
 	app.router.add_get(f'/transactions/confirmed/{HASHES[0]}', mock_server.transaction_confirmed)
 	app.router.add_get('/transactions/confirmed', mock_server.transactions_confirmed)
+	app.router.add_get('/transactions/unconfirmed', mock_server.transactions_unconfirmed)
+	app.router.add_get('/transactions/partial', mock_server.transactions_partial)
 	app.router.add_get(r'/transactionStatus/{transaction_hash}', mock_server.transaction_status)
 	app.router.add_post('/transactionStatus', mock_server.transaction_statuses)
 	app.router.add_put('/transactions', mock_server.announce_transaction)
@@ -755,6 +724,75 @@ async def test_incoming_transactions(server):  # pylint: disable=redefined-outer
 	assert_message('beta', transactions[1])
 	assert_message('gamma', transactions[2])
 	assert_message('sigma', transactions[3])
+
+# endregion
+
+
+# region GET (get_unconfirmed_transactions)
+
+async def test_get_unconfirmed_transactions_returns_transactions(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	connector = SymbolConnector(server.make_url(''))
+
+	# Act:
+	transactions = await connector.get_unconfirmed_transactions()
+
+	# Assert:
+	assert [f'{server.make_url("")}/transactions/unconfirmed?embedded=true&pageSize=100&order=desc'] == server.mock.urls
+	assert UNCONFIRMED_TRANSACTIONS == transactions
+
+
+async def test_get_unconfirmed_transactions_with_start_id(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	connector = SymbolConnector(server.make_url(''))
+	start_id = '2'
+
+	# Act:
+	await connector.get_unconfirmed_transactions(start_id)
+
+	# Assert:
+	assert [f'{server.make_url("")}/transactions/unconfirmed?embedded=true&pageSize=100&order=desc&offset={start_id}'] == server.mock.urls
+
+# endregion
+
+
+# region GET (get_partial_transactions)
+
+async def test_get_partial_transactions_returns_transactions(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	connector = SymbolConnector(server.make_url(''))
+
+	# Act:
+	transactions = await connector.get_partial_transactions()
+
+	# Assert:
+	assert [f'{server.make_url("")}/transactions/partial?embedded=true&pageSize=100&order=desc'] == server.mock.urls
+	assert PARTIAL_TRANSACTIONS == transactions
+
+
+async def test_get_partial_transactions_with_start_id(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	connector = SymbolConnector(server.make_url(''))
+	start_id = '2'
+
+	# Act:
+	await connector.get_partial_transactions(start_id)
+
+	# Assert:
+	assert [f'{server.make_url("")}/transactions/partial?embedded=true&pageSize=100&order=desc&offset={start_id}'] == server.mock.urls
+
+
+async def test_get_partial_transactions_with_address(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	connector = SymbolConnector(server.make_url(''))
+	address = Address(SYMBOL_ADDRESSES[0])
+
+	# Act:
+	transactions = await connector.get_partial_transactions(None, address=address)
+
+	# Assert:
+	assert [f'{server.make_url("")}/transactions/partial?embedded=true&pageSize=100&order=desc&address={address}'] == server.mock.urls
+	assert PARTIAL_TRANSACTIONS == transactions
 
 # endregion
 
