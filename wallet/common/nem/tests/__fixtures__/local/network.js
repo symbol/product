@@ -23,3 +23,12 @@ export const networkInfo = {
 	blockGenerationTargetTime: 60,
 	epochAdjustment: 1427587585
 };
+
+export const createFee = amount => ({ 
+	token: {
+		amount, 
+		divisibility: 6, 
+		id: 'nem.xem', 
+		name: 'XEM' 
+	}
+});

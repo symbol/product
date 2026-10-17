@@ -20,9 +20,11 @@ import { Image, StyleSheet, Text, View } from 'react-native';
 
 /** @typedef {import('@/app/types/Network').NetworkIdentifier} NetworkIdentifier */
 
-const CARD_BACKGROUND_COLOR = Colors.Semantic.role.primary.default;
-const BUTTON_BACKGROUND_COLOR = Colors.Semantic.role.primary.weaker;
-const BUTTON_BACKGROUND_COLOR_DISABLED = Colors.Components.buttonCardEmbedded.primary.disabled.background;
+const CARD_BACKGROUND_COLOR = Colors.Components.accountCardWidgetBody.background;
+const BUTTON_BACKGROUND_COLOR = Colors.Components.accountCardWidgetButton.default.background;
+const BUTTON_SEPARATOR_COLOR = Colors.Components.accountCardWidgetButton.default.separator;
+const BUTTON_TEXT_COLOR = Colors.Components.accountCardWidgetButton.default.text;
+const BUTTON_BACKGROUND_COLOR_DISABLED = Colors.Components.accountCardWidgetButton.disabled.background;
 
 const ART_HEIGHT = Sizes.Semantic.spacing.m * 25;
 const ART_WIDTH = Sizes.Semantic.spacing.m * 32;
@@ -186,18 +188,6 @@ const styles = StyleSheet.create({
 		top: -ART_TOP_OFFSET,
 		resizeMode: 'stretch'
 	},
-	loadingIndicator: {
-		position: 'absolute',
-		top: 0,
-		left: 0,
-		width: '100%',
-		height: '150%',
-		backgroundColor: Colors.Semantic.overlay.primary.default
-	},
-	userCurrencyText: {
-		...Typography.Semantic.body.m,
-		color: Colors.Components.main.text
-	},
 	actionBar: {
 		flexDirection: 'row',
 		backgroundColor: BUTTON_BACKGROUND_COLOR,
@@ -208,7 +198,7 @@ const styles = StyleSheet.create({
 	actionButton: {
 		height: Sizes.Semantic.controlHeight.m,
 		flex: 1,
-		borderRightColor: CARD_BACKGROUND_COLOR,
+		borderRightColor: BUTTON_SEPARATOR_COLOR,
 		borderRightWidth: Sizes.Semantic.borderWidth.s
 	},
 	actionButtonLast: {
@@ -231,6 +221,6 @@ const styles = StyleSheet.create({
 	actionButtonText: {
 		...Typography.Semantic.button.m,
 		fontSize: Typography.Semantic.button.m * 0.9,
-		color: Colors.Components.buttonCardEmbedded.primary.default.text
+		color: BUTTON_TEXT_COLOR
 	}
 });

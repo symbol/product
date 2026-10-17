@@ -33,7 +33,7 @@ export class NetworkService {
 		const isSslEnabled = true;
 		const limit = 30;
 		const order = 'random';
-		const endpoint = `${baseUrl}/api/nem/nodes/peer?only_ssl=${isSslEnabled}&limit=${limit}&order=${order}`;
+		const endpoint = `${baseUrl}/api/nem/nodes?only_ssl=${isSslEnabled}&limit=${limit}&order=${order}`;
 		const nodes = await this.#makeRequest(endpoint);
 
 		return nodes.map(node => node.endpoint);

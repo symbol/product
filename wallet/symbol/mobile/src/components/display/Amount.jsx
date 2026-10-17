@@ -58,9 +58,9 @@ export const Amount = ({ value, ticker, isColored = false, size = 'm', style }) 
 
 	// Color
 	const colorMap = {
-		positive: Colors.Semantic.role.success.default,
-		negative: Colors.Semantic.role.danger.default,
-		neutral: Colors.Components.main.text
+		positive: Colors.Components.amount.positive.text,
+		negative: Colors.Components.amount.negative.text,
+		neutral: Colors.Components.amount.neutral.text
 	};
 
 	let textColor;
