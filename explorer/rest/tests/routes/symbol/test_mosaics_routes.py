@@ -168,3 +168,78 @@ def test_mosaics_backend_unavailable(mosaic_route, error):
 	# Assert:
 	_assert_symbol_backend_unavailable_response(response)
 	facade.get_mosaics.assert_called_once_with(10, 0, SortOrder.DESC)
+
+
+@pytest.mark.parametrize('name,expected_id', [
+	('72C0212E67A08BCE', '72C0212E67A08BCE'),
+	('72c0212e67a08bce', '72C0212E67A08BCE'),
+	('symbol.xym', 'E74B99BA41F4AFEE'),
+])
+def test_mosaic_returns_metadata(mosaic_route, name, expected_id):
+	# Arrange:
+	client, facade = mosaic_route
+	mosaic_map = {'id': '72C0212E67A08BCE', 'aliasNames': ['symbol.xym'], 'supply': 1234567}
+	facade.get_mosaic.return_value = mosaic_map
+
+	# Act:
+	response = client.get(f'/api/symbol/mosaic/{name}')
+
+	# Assert:
+	assert 200 == response.status_code
+	assert mosaic_map == response.json
+	facade.get_mosaic.assert_called_once_with(expected_id)
+
+
+@pytest.mark.parametrize('name', [
+	'symbol..xym', '.symbol', 'symbol.', 'Symbol.xym', 'symbol xym',
+	'a.b.c.d', 'a' * 65, 'symbol.' + 'a' * 65, '72C0212E67A08BC!'
+])
+def test_mosaic_rejects_bad_identifier(mosaic_route, name):
+	# Arrange:
+	client, facade = mosaic_route
+
+	# Act:
+	response = client.get(f'/api/symbol/mosaic/{name}')
+
+	# Assert:
+	_assert_bad_request_response(response, 'Invalid mosaic')
+	facade.get_mosaic.assert_not_called()
+
+
+def test_mosaic_rejects_query_parameters(mosaic_route):
+	# Arrange:
+	client, facade = mosaic_route
+
+	# Act:
+	response = client.get('/api/symbol/mosaic/symbol.xym?limit=1')
+
+	# Assert:
+	_assert_bad_request_response(response, 'Unsupported query parameter: limit')
+	facade.get_mosaic.assert_not_called()
+
+
+@pytest.mark.parametrize('name', ['72C0212E67A08BCE', 'symbol.xym'])
+def test_mosaic_returns_not_found(mosaic_route, name):
+	# Arrange:
+	client, facade = mosaic_route
+	facade.get_mosaic.return_value = None
+
+	# Act:
+	response = client.get(f'/api/symbol/mosaic/{name}')
+
+	# Assert:
+	assert 404 == response.status_code
+	assert {'status': 404, 'message': 'Resource not found'} == response.json
+
+
+@pytest.mark.parametrize('error', [SymbolDataUnavailable(), OperationalError('database unavailable')])
+def test_mosaic_backend_unavailable(mosaic_route, error):
+	# Arrange:
+	client, facade = mosaic_route
+	facade.get_mosaic.side_effect = error
+
+	# Act:
+	response = client.get('/api/symbol/mosaic/symbol.xym')
+
+	# Assert:
+	_assert_symbol_backend_unavailable_response(response)

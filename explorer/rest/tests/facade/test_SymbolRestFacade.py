@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta, timezone
 from unittest import TestCase
+from unittest.mock import create_autospec
 
 from common.symbol.NativeMosaic import NativeMosaicInfo
 from common.symbol.NodeConfiguration import SymbolNodeConfiguration
@@ -7,7 +8,7 @@ from psycopg2 import Error as PsycopgError
 from psycopg2 import OperationalError
 from symbolchain.symbol.Network import Network
 
-from rest.db.SymbolDatabase import ReceiptQuery, ReceiptRecord, SortOrder, SymbolDataUnavailable, TransactionQuery
+from rest.db.SymbolDatabase import ReceiptQuery, ReceiptRecord, SortOrder, SymbolDatabase, SymbolDataUnavailable, TransactionQuery
 from rest.facade.SymbolRestFacade import SymbolRestFacade
 
 from ..test.SymbolHealthTestUtils import create_symbol_health
@@ -491,6 +492,28 @@ class SymbolRestFacadeTest(TestCase):  # pylint: disable=too-many-public-methods
 		# Act + Assert:
 		with self.assertRaisesRegex(SymbolDataUnavailable, 'Symbol mosaic data is unavailable'):
 			facade.get_mosaics(10, 0, SortOrder.DESC)
+
+	def test_can_get_mosaic(self):
+		# Arrange:
+		symbol_db = create_autospec(SymbolDatabase, instance=True, spec_set=True)
+		symbol_db.get_mosaic.return_value = MosaicView('72C0212E67A08BCE')
+		facade = _create_facade_with_database(symbol_db)
+
+		# Act:
+		result = facade.get_mosaic('72C0212E67A08BCE')
+
+		# Assert:
+		self.assertEqual({'id': '72C0212E67A08BCE'}, result)
+		symbol_db.get_mosaic.assert_called_once_with('72C0212E67A08BCE')
+
+	def test_get_mosaic_returns_none_when_missing(self):
+		# Arrange:
+		symbol_db = create_autospec(SymbolDatabase, instance=True, spec_set=True)
+		symbol_db.get_mosaic.return_value = None
+		facade = _create_facade_with_database(symbol_db)
+
+		# Act + Assert:
+		self.assertIsNone(facade.get_mosaic('72C0212E67A08BCE'))
 
 	def test_can_get_block_detail(self):
 		# Arrange:

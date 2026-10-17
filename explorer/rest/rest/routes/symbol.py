@@ -282,6 +282,25 @@ def _setup_symbol_mosaic_routes(app, symbol_api_facade, run_symbol_query):
 
 		return jsonify(result)
 
+	@app.route('/api/symbol/mosaic/<name>')
+	def api_get_symbol_mosaic(name):
+		try:
+			_validate_allowed_query_parameters(frozenset())
+			mosaic_id = _parse_mosaic_id(name)
+		except ValueError as error:
+			abort(400, error)
+
+		error, result = run_symbol_query(
+			lambda: symbol_api_facade.get_mosaic(mosaic_id),
+			'Failed to get Symbol mosaic')
+		if error:
+			return error
+
+		if result is None:
+			abort(404)
+
+		return jsonify(result)
+
 
 def _setup_symbol_transactions_route(app, symbol_api_facade, run_symbol_query):
 	@app.route('/api/symbol/transactions')
@@ -398,7 +417,7 @@ def _parse_transaction_query():
 	if address is not None and (signer_public_key is not None or recipient_address is not None):
 		raise ValueError('address cannot be combined with signerPublicKey or recipientAddress')
 
-	transfer_mosaic_id = _parse_transfer_mosaic_id(_get_scalar_parameter('mosaic'))
+	transfer_mosaic_id = _parse_mosaic_id(_get_scalar_parameter('mosaic'))
 	embedded = _parse_boolean('embedded', _get_scalar_parameter('embedded'))
 	order_value = _get_scalar_parameter('order', 'DESC').upper()
 	if order_value != SortOrder.DESC.value:
@@ -450,7 +469,7 @@ def _parse_public_key(name):
 		raise ValueError(f'Invalid {name}') from error
 
 
-def _parse_transfer_mosaic_id(value):
+def _parse_mosaic_id(value):
 	if value is None:
 		return None
 
