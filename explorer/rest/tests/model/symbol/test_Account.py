@@ -5,8 +5,8 @@ from unittest import TestCase
 from common.symbol.NativeMosaic import NativeMosaicInfo
 from symbolchain.symbol.Network import Network
 
-from rest.db.SymbolDatabase import AccountRecord, MosaicRecord, MultisigRecord
-from rest.model.symbol.Account import SymbolAccountView
+from rest.db.SymbolDatabase import AccountListRecord, AccountRecord, MosaicRecord, MultisigRecord
+from rest.model.symbol.Account import SymbolAccountListView, SymbolAccountView
 from rest.model.symbol.validation import SymbolDataInvalid
 
 from ...test.SymbolAccountTestUtils import ACCOUNT_ADDRESS, OTHER_ADDRESS
@@ -43,6 +43,23 @@ def create_account(**overrides):
 	}
 	values.update(overrides)
 	return AccountRecord(**values)
+
+
+def create_account_list_record(**overrides):
+	values = {
+		'address': ACCOUNT_ADDRESS,
+		'public_key': bytes.fromhex('01' * 32),
+		'account_type': 'main',
+		'importance_percentage': Decimal('0.025'),
+		'balance_mosaic_id': NATIVE_MOSAIC_INFO.id,
+		'namespaces': ['zeta', 'alpha'],
+		'mosaics': (
+			MosaicRecord('1234567890ABCDEF', 12345, '1234567890ABCDEF', 2, OTHER_ADDRESS, ('custom',)),
+			MosaicRecord(NATIVE_MOSAIC_INFO.id, 1234567, None, None, None, ('xym',))
+		)
+	}
+	values.update(overrides)
+	return AccountListRecord(**values)
 
 
 class SymbolAccountViewTest(TestCase):
@@ -146,26 +163,26 @@ class SymbolAccountViewTest(TestCase):
 	def test_to_dict_rejects_invalid_saved_multisig_values(self):
 		# Arrange:
 		invalid_records = (
-			(MultisigRecord(1, 1, None, []), 'multisig.cosignatory_addresses'),
-			(MultisigRecord(1, 1, [], None), 'multisig.multisig_addresses'),
-			(MultisigRecord(1, 1, (), []), 'multisig.cosignatory_addresses'),
-			(MultisigRecord(1, 1, [], ()), 'multisig.multisig_addresses'),
-			(MultisigRecord(1, 1, [None], []), 'multisig.cosignatory_addresses[0]'),
-			(MultisigRecord(1, 1, [], [None]), 'multisig.multisig_addresses[0]'),
-			(MultisigRecord(1, 1, [b'bad'], []), 'multisig.cosignatory_addresses[0]'),
-			(MultisigRecord(1, 1, [], [MAINNET_ACCOUNT_ADDRESS]), 'multisig.multisig_addresses[0]'),
-			(MultisigRecord(-1, 1, [ACCOUNT_ADDRESS], []), 'multisig.min_approval'),
-			(MultisigRecord(1, -1, [ACCOUNT_ADDRESS], []), 'multisig.min_removal'),
-			(MultisigRecord(2147483648, 1, [ACCOUNT_ADDRESS], []), 'multisig.min_approval'),
-			(MultisigRecord(1, 2147483648, [ACCOUNT_ADDRESS], []), 'multisig.min_removal'))
+			(MultisigRecord(1, 1, None, []), 'multisig.cosignatory_addresses: value is not an address array'),
+			(MultisigRecord(1, 1, [], None), 'multisig.multisig_addresses: value is not an address array'),
+			(MultisigRecord(1, 1, (), []), 'multisig.cosignatory_addresses: value is not an address array'),
+			(MultisigRecord(1, 1, [], ()), 'multisig.multisig_addresses: value is not an address array'),
+			(MultisigRecord(1, 1, [None], []), 'multisig.cosignatory_addresses[0]: value is required'),
+			(MultisigRecord(1, 1, [], [None]), 'multisig.multisig_addresses[0]: value is required'),
+			(MultisigRecord(1, 1, [b'bad'], []), 'multisig.cosignatory_addresses[0]: invalid byte length'),
+			(MultisigRecord(1, 1, [], [MAINNET_ACCOUNT_ADDRESS]), 'multisig.multisig_addresses[0]: invalid address'),
+			(MultisigRecord(-1, 1, [ACCOUNT_ADDRESS], []), 'multisig.min_approval: integer is outside the allowed range'),
+			(MultisigRecord(1, -1, [ACCOUNT_ADDRESS], []), 'multisig.min_removal: integer is outside the allowed range'),
+			(MultisigRecord(2147483648, 1, [ACCOUNT_ADDRESS], []), 'multisig.min_approval: integer is outside the allowed range'),
+			(MultisigRecord(1, 2147483648, [ACCOUNT_ADDRESS], []), 'multisig.min_removal: integer is outside the allowed range'))
 
 		# Act + Assert:
-		for multisig, field_path in invalid_records:
-			with self.subTest(field_path=field_path):
+		for multisig, expected_message in invalid_records:
+			with self.subTest(expected_message=expected_message):
 				with self.assertRaises(SymbolDataInvalid) as context:
 					SymbolAccountView(
 						create_account(multisig=multisig), Network.TESTNET, NATIVE_MOSAIC_INFO).to_dict()
-				self.assertEqual(field_path, context.exception.field_path)
+				self.assertEqual(expected_message, str(context.exception))
 
 	def test_to_dict_normalizes_supported_bytes_like_values(self):
 		# Arrange:
@@ -195,8 +212,9 @@ class SymbolAccountViewTest(TestCase):
 
 	def test_to_dict_rejects_saved_address_for_other_network(self):
 		# Act + Assert:
-		with self.assertRaises(SymbolDataInvalid):
+		with self.assertRaises(SymbolDataInvalid) as context:
 			SymbolAccountView(create_account(), Network.MAINNET, NATIVE_MOSAIC_INFO).to_dict()
+		self.assertEqual('accounts.address: invalid address', str(context.exception))
 
 	def test_to_dict_returns_zero_balance_when_native_mosaic_row_is_absent(self):
 		# Arrange:
@@ -437,7 +455,7 @@ class SymbolAccountViewTest(TestCase):
 				self.assertEqual(expected_status, result['votingKeys'][0]['status'])
 
 
-class SymbolAccountOwnMultisigViewTest(TestCase):
+class SymbolAccountViewMultisigTest(TestCase):
 	def test_to_dict_converts_multisig_addresses_for_mainnet(self):
 		# Arrange:
 		multisig = MultisigRecord(
@@ -501,7 +519,7 @@ class SymbolAccountOwnMultisigViewTest(TestCase):
 			with self.subTest(field_path=field_path), self.assertRaises(SymbolDataInvalid) as context:
 				SymbolAccountView(
 					create_account(multisig=multisig), Network.TESTNET, NATIVE_MOSAIC_INFO).to_dict()
-			self.assertEqual(field_path, context.exception.field_path)
+			self.assertEqual(f'{field_path}: value is not an integer', str(context.exception))
 
 	def test_to_dict_does_not_validate_thresholds_without_own_cosignatories(self):
 		# Arrange:
@@ -529,8 +547,9 @@ class SymbolAccountViewValidationTest(TestCase):
 		account = create_account(finalized_epoch=None, voting_public_keys=[])
 
 		# Act + Assert:
-		with self.assertRaises(SymbolDataInvalid):
+		with self.assertRaises(SymbolDataInvalid) as context:
 			SymbolAccountView(account, Network.TESTNET, NATIVE_MOSAIC_INFO).to_dict()
+		self.assertEqual('sync_state.finalized_epoch: value is required', str(context.exception))
 
 	def test_to_dict_rejects_reversed_voting_epoch(self):
 		# Arrange:
@@ -538,8 +557,9 @@ class SymbolAccountViewValidationTest(TestCase):
 			voting_public_keys=[{'publicKey': 'ab' * 32, 'startEpoch': 2, 'endEpoch': 1}])
 
 		# Act + Assert:
-		with self.assertRaises(SymbolDataInvalid):
+		with self.assertRaises(SymbolDataInvalid) as context:
 			SymbolAccountView(account, Network.TESTNET, NATIVE_MOSAIC_INFO).to_dict()
+		self.assertEqual('accounts.voting_public_keys[0].endEpoch: epoch range is reversed', str(context.exception))
 
 	def test_to_dict_rejects_missing_and_null_jsonb_fields_with_field_paths(self):
 		# Arrange:
@@ -549,34 +569,44 @@ class SymbolAccountViewValidationTest(TestCase):
 		for field in voting_fields:
 			missing_key = {'publicKey': 'AB' * 32, 'startEpoch': 1, 'endEpoch': 1}
 			missing_key.pop(field)
-			invalid_values.append((create_account(voting_public_keys=[missing_key]), f'accounts.voting_public_keys[0].{field}'))
+			invalid_values.append((create_account(voting_public_keys=[missing_key]), f'accounts.voting_public_keys[0].{field}: value is required'))
 			null_key = {'publicKey': 'AB' * 32, 'startEpoch': 1, 'endEpoch': 1}
 			null_key[field] = None
-			invalid_values.append((create_account(voting_public_keys=[null_key]), f'accounts.voting_public_keys[0].{field}'))
+			invalid_values.append((create_account(voting_public_keys=[null_key]), f'accounts.voting_public_keys[0].{field}: value is required'))
 		for field in activity_fields:
 			missing_field = {'startHeight': 0, 'totalFeesPaid': 0, 'beneficiaryCount': 0, 'rawScore': 0}
 			missing_field.pop(field)
-			invalid_values.append((create_account(activity_buckets=[missing_field]), f'accounts.activity_buckets[0].{field}'))
+			invalid_values.append((create_account(activity_buckets=[missing_field]), f'accounts.activity_buckets[0].{field}: value is required'))
 			null_field = {'startHeight': 0, 'totalFeesPaid': 0, 'beneficiaryCount': 0, 'rawScore': 0}
 			null_field[field] = None
-			invalid_values.append((create_account(activity_buckets=[null_field]), f'accounts.activity_buckets[0].{field}'))
+			invalid_values.append((create_account(activity_buckets=[null_field]), f'accounts.activity_buckets[0].{field}: value is required'))
 
 		# Act + Assert:
 		for account, field_path in invalid_values:
 			with self.subTest(field_path=field_path):
 				with self.assertRaises(SymbolDataInvalid) as context:
 					SymbolAccountView(account, Network.TESTNET, NATIVE_MOSAIC_INFO).to_dict()
-				self.assertEqual(field_path, context.exception.field_path)
+				self.assertEqual(field_path, str(context.exception))
 
 	def test_to_dict_rejects_invalid_importance_ratio(self):
 		# Arrange:
-		invalid_values = (None, '0.5', True, float('nan'), Decimal('NaN'), Decimal('Infinity'), Decimal('-Infinity'), -0.1, 1.1)
+		invalid_values = (
+			(None, 'accounts.importance_percentage: value is not a finite number'),
+			('0.5', 'accounts.importance_percentage: value is not a finite number'),
+			(True, 'accounts.importance_percentage: value is not a finite number'),
+			(float('nan'), 'accounts.importance_percentage: value is outside the allowed range'),
+			(Decimal('NaN'), 'accounts.importance_percentage: value is outside the allowed range'),
+			(Decimal('Infinity'), 'accounts.importance_percentage: value is outside the allowed range'),
+			(Decimal('-Infinity'), 'accounts.importance_percentage: value is outside the allowed range'),
+			(-0.1, 'accounts.importance_percentage: value is outside the allowed range'),
+			(1.1, 'accounts.importance_percentage: value is outside the allowed range'))
 
 		# Act + Assert:
-		for value in invalid_values:
-			with self.subTest(value=value), self.assertRaises(SymbolDataInvalid):
+		for value, expected_message in invalid_values:
+			with self.subTest(value=value), self.assertRaises(SymbolDataInvalid) as context:
 				SymbolAccountView(
 					create_account(importance_percentage=value), Network.TESTNET, NATIVE_MOSAIC_INFO).to_dict()
+			self.assertEqual(expected_message, str(context.exception))
 
 	def test_to_dict_accepts_persisted_integer_upper_bounds(self):
 		# Arrange:
@@ -614,21 +644,22 @@ class SymbolAccountViewValidationTest(TestCase):
 	def test_to_dict_rejects_persisted_integer_out_of_range_and_wrong_types(self):
 		# Arrange:
 		invalid_accounts = (
-			{'address_height': -1},
-			{'address_height': True},
-			{'address_height': 1.0},
-			{'address_height': 9223372036854775808},
-			{'finalized_epoch': -1},
-			{'finalized_epoch': 2147483648},
-			{'finalized_epoch': True},
-			{'finalized_epoch': 5.0},
-			{'finalized_epoch': '5'}
+			({'address_height': -1}, 'accounts.address_height: integer is outside the allowed range'),
+			({'address_height': True}, 'accounts.address_height: value is not an integer'),
+			({'address_height': 1.0}, 'accounts.address_height: value is not an integer'),
+			({'address_height': 9223372036854775808}, 'accounts.address_height: integer is outside the allowed range'),
+			({'finalized_epoch': -1}, 'sync_state.finalized_epoch: integer is outside the allowed range'),
+			({'finalized_epoch': 2147483648}, 'sync_state.finalized_epoch: integer is outside the allowed range'),
+			({'finalized_epoch': True}, 'sync_state.finalized_epoch: value is not an integer'),
+			({'finalized_epoch': 5.0}, 'sync_state.finalized_epoch: value is not an integer'),
+			({'finalized_epoch': '5'}, 'sync_state.finalized_epoch: value is not an integer')
 		)
 
 		# Act + Assert:
-		for overrides in invalid_accounts:
-			with self.subTest(overrides=overrides), self.assertRaises(SymbolDataInvalid):
+		for overrides, expected_message in invalid_accounts:
+			with self.subTest(overrides=overrides), self.assertRaises(SymbolDataInvalid) as context:
 				SymbolAccountView(create_account(**overrides), Network.TESTNET, NATIVE_MOSAIC_INFO).to_dict()
+			self.assertEqual(expected_message, str(context.exception))
 
 	def test_to_dict_rejects_integer_conversion_failure(self):
 		# Arrange: own the decimal conversion limit instead of relying on the process default.
@@ -654,42 +685,68 @@ class SymbolAccountViewValidationTest(TestCase):
 	def test_to_dict_rejects_each_uint64_activity_field_boundary_and_type(self):
 		# Arrange:
 		activity_fields = ('startHeight', 'totalFeesPaid', 'rawScore')
-		invalid_values = (-1, 18446744073709551616, True, 1.0, '1.0', 'not-a-number', '', '+1', '-1', ' 1', '1 ', '1e2', '１２', '١٢')
+		invalid_values = (
+			(-1, 'integer is outside the allowed range'),
+			(18446744073709551616, 'integer is outside the allowed range'),
+			(True, 'value is not an integer'),
+			(1.0, 'value is not an integer'),
+			('1.0', 'value is not an integer'),
+			('not-a-number', 'value is not an integer'),
+			('', 'value is not an integer'),
+			('+1', 'value is not an integer'),
+			('-1', 'value is not an integer'),
+			(' 1', 'value is not an integer'),
+			('1 ', 'value is not an integer'),
+			('1e2', 'value is not an integer'),
+			('１２', 'value is not an integer'),
+			('١٢', 'value is not an integer'))
 		invalid_activity = [
-			(field, value)
+			(field, value, reason)
 			for field in activity_fields
-			for value in invalid_values
+			for value, reason in invalid_values
 		]
 		invalid_activity.extend(
-			('beneficiaryCount', value) for value in (-1, 4294967296, True, 1.0, 'not-a-number'))
+			('beneficiaryCount', value, reason)
+			for value, reason in (
+				(-1, 'integer is outside the allowed range'),
+				(4294967296, 'integer is outside the allowed range'),
+				(True, 'value is not an integer'),
+				(1.0, 'value is not an integer'),
+				('not-a-number', 'value is not an integer')))
 
 		# Act + Assert:
-		for field, value in invalid_activity:
+		for field, value, reason in invalid_activity:
 			with self.subTest(field=field, value=value):
 				bucket = {'startHeight': 0, 'totalFeesPaid': 0, 'beneficiaryCount': 0, 'rawScore': 0}
 				bucket[field] = value
 				with self.assertRaises(SymbolDataInvalid) as context:
 					SymbolAccountView(
 						create_account(activity_buckets=[bucket]), Network.TESTNET, NATIVE_MOSAIC_INFO).to_dict()
-				self.assertEqual(f'accounts.activity_buckets[0].{field}', context.exception.field_path)
+				self.assertEqual(f'accounts.activity_buckets[0].{field}: {reason}', str(context.exception))
 
 	def test_to_dict_rejects_each_voting_epoch_integer_boundary_and_type(self):
 		# Arrange:
 		invalid_epochs = [
-			(field, value)
+			(field, value, reason)
 			for field in ('startEpoch', 'endEpoch')
-			for value in (-1, 0, 4294967296, True, 1.0, '1.0')
+			for value, reason in (
+				(-1, 'integer is outside the allowed range'),
+				(0, 'integer is outside the allowed range'),
+				(4294967296, 'integer is outside the allowed range'),
+				(True, 'value is not an integer'),
+				(1.0, 'value is not an integer'),
+				('1.0', 'value is not an integer'))
 		]
 
 		# Act + Assert:
-		for field, value in invalid_epochs:
+		for field, value, reason in invalid_epochs:
 			with self.subTest(field=field, value=value):
 				voting_key = {'publicKey': 'AB' * 32, 'startEpoch': 1, 'endEpoch': 1}
 				voting_key[field] = value
 				with self.assertRaises(SymbolDataInvalid) as context:
 					SymbolAccountView(
 						create_account(voting_public_keys=[voting_key]), Network.TESTNET, NATIVE_MOSAIC_INFO).to_dict()
-				self.assertEqual(f'accounts.voting_public_keys[0].{field}', context.exception.field_path)
+				self.assertEqual(f'accounts.voting_public_keys[0].{field}: {reason}', str(context.exception))
 
 	def test_to_dict_accepts_maximum_voting_epoch_for_both_fields(self):
 		# Arrange:
@@ -707,53 +764,141 @@ class SymbolAccountViewValidationTest(TestCase):
 	def test_to_dict_rejects_malformed_saved_bytes_arrays_and_keys(self):
 		# Arrange:
 		invalid_accounts = (
-			{'address': None},
-			{'address': b'bad'},
-			{'public_key': b'bad'},
-			{'public_key': 32},
-			{'node_public_key': b'bad'},
-			{'vrf_public_key': 32},
-			{'account_type': 'unknown'},
-			{'account_type': []},
-			{'linked_public_key': b'bad'},
-			{'linked_public_key': 32},
-			{'voting_public_keys': None},
-			{'voting_public_keys': [None]},
-			{'voting_public_keys': [{'publicKey': 'ab', 'startEpoch': 1, 'endEpoch': 1}]},
-			{'voting_public_keys': [{'publicKey': 'gg' * 32, 'startEpoch': 1, 'endEpoch': 1}]},
-			{'activity_buckets': None},
-			{'activity_buckets': [None]},
-			{'mosaics': None},
-			{'mosaics': (object(),)},
-			{'alias_names': [None]}
+			({'address': None}, 'accounts.address: value is required'),
+			({'address': b'bad'}, 'accounts.address: invalid byte length'),
+			({'public_key': b'bad'}, 'accounts.public_key: invalid byte length'),
+			({'public_key': 32}, 'accounts.public_key: value is not bytes'),
+			({'node_public_key': b'bad'}, 'accounts.node_public_key: invalid byte length'),
+			({'vrf_public_key': 32}, 'accounts.vrf_public_key: value is not bytes'),
+			({'account_type': 'unknown'}, 'accounts.account_type: unknown account type'),
+			({'account_type': []}, 'accounts.account_type: unknown account type'),
+			({'linked_public_key': b'bad'}, 'accounts.linked_public_key: invalid byte length'),
+			({'linked_public_key': 32}, 'accounts.linked_public_key: value is not bytes'),
+			({'voting_public_keys': None}, 'accounts.voting_public_keys: value is not an array'),
+			({'voting_public_keys': [None]}, 'accounts.voting_public_keys[0].publicKey: value is required'),
+			(
+				{'voting_public_keys': [{'publicKey': 'ab', 'startEpoch': 1, 'endEpoch': 1}]},
+				'accounts.voting_public_keys[0].publicKey: invalid public key'),
+			(
+				{'voting_public_keys': [{'publicKey': 'gg' * 32, 'startEpoch': 1, 'endEpoch': 1}]},
+				'accounts.voting_public_keys[0].publicKey: invalid public key'),
+			({'activity_buckets': None}, 'accounts.activity_buckets: value is not an array'),
+			({'activity_buckets': [None]}, 'accounts.activity_buckets[0].startHeight: value is required'),
+			({'mosaics': None}, 'account_mosaics: value is not an array'),
+			({'mosaics': (object(),)}, 'account_mosaics[0]: value is not a mosaic row'),
+			({'alias_names': [None]}, 'symbol_alias_names.account: value is not a string array')
 		)
 
 		# Act + Assert:
-		for overrides in invalid_accounts:
-			with self.subTest(overrides=overrides), self.assertRaises(SymbolDataInvalid):
+		for overrides, expected_message in invalid_accounts:
+			with self.subTest(overrides=overrides), self.assertRaises(SymbolDataInvalid) as context:
 				SymbolAccountView(create_account(**overrides), Network.TESTNET, NATIVE_MOSAIC_INFO).to_dict()
+			self.assertEqual(expected_message, str(context.exception))
 
 	def test_to_dict_rejects_malformed_mosaic_values(self):
 		# Arrange:
 		invalid_mosaics = (
-			MosaicRecord('bad', 1, None, None, None, ()),
-			MosaicRecord('1234567890ABCDEF', -1, None, None, None, ()),
-			MosaicRecord('1234567890ABCDEF', 1, 'metadata', -1, OWNER_ADDRESS, ()),
-			MosaicRecord('1234567890ABCDEF', 1, 'metadata', 256, OWNER_ADDRESS, ()),
-			MosaicRecord('1234567890ABCDEF', 1, 'metadata', True, OWNER_ADDRESS, ()),
-			MosaicRecord('1234567890ABCDEF', 1, 'metadata', 1.0, OWNER_ADDRESS, ()),
-			MosaicRecord('1234567890ABCDEF', 1, 'metadata', None, OWNER_ADDRESS, ()),
-			MosaicRecord('1234567890ABCDEF', 1, 'metadata', 1, b'bad', ()),
-			MosaicRecord('1234567890ABCDEF', 1, None, None, None, None),
-			MosaicRecord('1234567890ABCDEF', 1, None, None, None, (None,)),
-			MosaicRecord('1234567890ABCDEF', True, None, None, None, ()),
-			MosaicRecord('1234567890ABCDEF', 1.0, None, None, None, ()),
-			MosaicRecord('1234567890ABCDEF', 9223372036854775808, None, None, None, ()),
-			MosaicRecord('1234567890ABCDEF', None, None, None, None, ())
+			(MosaicRecord('bad', 1, None, None, None, ()), 'account_mosaics.mosaic_id: invalid mosaic id'),
+			(MosaicRecord('1234567890ABCDEF', -1, None, None, None, ()), 'account_mosaics[0].amount: integer is outside the allowed range'),
+			(
+				MosaicRecord('1234567890ABCDEF', 1, 'metadata', -1, OWNER_ADDRESS, ()),
+				'account_mosaics[0].divisibility: integer is outside the allowed range'),
+			(
+				MosaicRecord('1234567890ABCDEF', 1, 'metadata', 256, OWNER_ADDRESS, ()),
+				'account_mosaics[0].divisibility: integer is outside the allowed range'),
+			(
+				MosaicRecord('1234567890ABCDEF', 1, 'metadata', True, OWNER_ADDRESS, ()),
+				'account_mosaics[0].divisibility: value is not an integer'),
+			(
+				MosaicRecord('1234567890ABCDEF', 1, 'metadata', 1.0, OWNER_ADDRESS, ()),
+				'account_mosaics[0].divisibility: value is not an integer'),
+			(
+				MosaicRecord('1234567890ABCDEF', 1, 'metadata', None, OWNER_ADDRESS, ()),
+				'account_mosaics[0].divisibility: value is not an integer'),
+			(MosaicRecord('1234567890ABCDEF', 1, 'metadata', 1, b'bad', ()), 'account_mosaics[0].owner_address: invalid byte length'),
+			(MosaicRecord('1234567890ABCDEF', 1, None, None, None, None), 'account_mosaics[0].alias_names: value is not a string array'),
+			(MosaicRecord('1234567890ABCDEF', 1, None, None, None, (None,)), 'account_mosaics[0].alias_names: value is not a string array'),
+			(MosaicRecord('1234567890ABCDEF', True, None, None, None, ()), 'account_mosaics[0].amount: value is not an integer'),
+			(MosaicRecord('1234567890ABCDEF', 1.0, None, None, None, ()), 'account_mosaics[0].amount: value is not an integer'),
+			(
+				MosaicRecord('1234567890ABCDEF', 9223372036854775808, None, None, None, ()),
+				'account_mosaics[0].amount: integer is outside the allowed range'),
+			(MosaicRecord('1234567890ABCDEF', None, None, None, None, ()), 'account_mosaics[0].amount: value is not an integer')
 		)
 
 		# Act + Assert:
-		for mosaic in invalid_mosaics:
-			with self.subTest(mosaic=mosaic), self.assertRaises(SymbolDataInvalid):
+		for mosaic, expected_message in invalid_mosaics:
+			with self.subTest(mosaic=mosaic), self.assertRaises(SymbolDataInvalid) as context:
 				SymbolAccountView(
 					create_account(mosaics=(mosaic,)), Network.TESTNET, NATIVE_MOSAIC_INFO).to_dict()
+			self.assertEqual(expected_message, str(context.exception))
+
+
+class SymbolAccountListViewTest(TestCase):
+	def test_to_dict_returns_exact_snapshot_account_list_dto(self):
+		# Arrange:
+		view = SymbolAccountListView(create_account_list_record(), Network.TESTNET, NATIVE_MOSAIC_INFO)
+
+		# Act:
+		result = view.to_dict()
+
+		# Assert:
+		self.assertEqual({
+			'address': 'TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY', 'publicKey': '01' * 32,
+			'accountType': 'main', 'importance': 0.025, 'balance': 1.234567,
+			'namespaces': ['zeta', 'alpha'],
+			'mosaics': [
+				{'id': '1234567890ABCDEF', 'name': 'custom', 'amount': 123.45, 'isCreatedByAccount': False},
+				{'id': '72C0212E67A08BCE', 'name': 'xym', 'amount': 1.234567, 'isCreatedByAccount': False}],
+			'description': None, 'isHarvestingActive': False, 'isMultisig': False
+		}, result)
+
+	def test_to_dict_uses_selected_custom_mosaic_divisibility_for_balance(self):
+		# Arrange:
+		account = create_account_list_record(balance_mosaic_id='1234567890ABCDEF')
+
+		# Act:
+		result = SymbolAccountListView(account, Network.TESTNET, NATIVE_MOSAIC_INFO).to_dict()
+
+		# Assert:
+		self.assertEqual(123.45, result['balance'])
+
+	def test_to_dict_sets_multisig_only_for_saved_cosignatories(self):
+		# Arrange:
+		participant_only = MultisigRecord(1, 1, [], [OTHER_ADDRESS])
+		owner = MultisigRecord(1, 1, [OTHER_ADDRESS], [])
+
+		# Act:
+		participant_result = SymbolAccountListView(
+			create_account_list_record(multisig=participant_only), Network.TESTNET, NATIVE_MOSAIC_INFO).to_dict()
+		owner_result = SymbolAccountListView(
+			create_account_list_record(multisig=owner), Network.TESTNET, NATIVE_MOSAIC_INFO).to_dict()
+
+		# Assert:
+		self.assertFalse(participant_result['isMultisig'])
+		self.assertTrue(owner_result['isMultisig'])
+
+	def test_to_dict_rejects_non_boolean_harvesting_state(self):
+		# Arrange:
+		account = create_account_list_record(is_harvesting_active=None)
+
+		# Act + Assert:
+		with self.assertRaises(SymbolDataInvalid) as context:
+			SymbolAccountListView(account, Network.TESTNET, NATIVE_MOSAIC_INFO).to_dict()
+		self.assertEqual('accounts.is_harvesting_active: value is not a boolean', str(context.exception))
+
+	def test_to_dict_preserves_nullable_fields_and_zero_when_rows_are_absent(self):
+		# Arrange:
+		account = create_account_list_record(
+			public_key=None, account_type=None, importance_percentage=0,
+			namespaces=[], mosaics=())
+
+		# Act:
+		result = SymbolAccountListView(account, Network.TESTNET, NATIVE_MOSAIC_INFO).to_dict()
+
+		# Assert:
+		self.assertEqual({
+			'address': 'TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY', 'publicKey': None, 'accountType': None,
+			'importance': 0.0, 'balance': 0, 'namespaces': [], 'mosaics': [], 'description': None,
+			'isHarvestingActive': False, 'isMultisig': False
+		}, result)

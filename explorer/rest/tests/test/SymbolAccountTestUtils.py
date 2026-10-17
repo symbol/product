@@ -33,3 +33,13 @@ def create_symbol_account_row(address=ACCOUNT_ADDRESS, address_text='TD6TLAMJMDD
 	}
 	row.update(overrides)
 	return row
+
+
+def seed_alias(puller_database, artifact_type, artifact_id, name):
+	"""Writes one current account or mosaic alias row."""
+	with puller_database.connection.cursor() as cursor:
+		cursor.execute(
+			'''INSERT INTO symbol_alias_names (artifact_type, artifact_id, name, updated_at_height)
+			VALUES (%s, %s, %s, %s)''',
+			(artifact_type, artifact_id, name, 100))
+	puller_database.connection.commit()

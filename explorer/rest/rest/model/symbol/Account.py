@@ -121,6 +121,16 @@ def _array(value, field_path):
 	return value
 
 
+def _account_identity(account, network):
+	address = _address(account.address, network, 'accounts.address')
+	public_key = None if account.public_key is None else _bytes(account.public_key, 'accounts.public_key', PublicKey.SIZE).hex().upper()
+	account_type = account.account_type
+	if account_type is not None and (not isinstance(account_type, str) or account_type not in ACCOUNT_TYPE_VALUES):
+		raise _invalid('accounts.account_type', 'unknown account type')
+
+	return address, public_key, account_type
+
+
 class SymbolAccountView:
 	"""Formats one Symbol current-state account detail response."""
 
@@ -133,11 +143,7 @@ class SymbolAccountView:
 		"""Returns the documented Account detail DTO."""
 
 		account = self.account
-		address = _address(account.address, self.network, 'accounts.address')
-		public_key = None if account.public_key is None else _bytes(account.public_key, 'accounts.public_key', PublicKey.SIZE).hex().upper()
-		account_type = account.account_type
-		if account_type is not None and (not isinstance(account_type, str) or account_type not in ACCOUNT_TYPE_VALUES):
-			raise _invalid('accounts.account_type', 'unknown account type')
+		address, public_key, account_type = _account_identity(account, self.network)
 		address_height = None if account.address_height is None else _database_integer(
 			account.address_height, 'accounts.address_height', 0, INT64_MAX)
 
@@ -181,6 +187,40 @@ class SymbolAccountView:
 			'minCosignatories': min_cosignatories,
 			'minRemoval': min_removal,
 			'remoteAddress': None
+		}
+
+
+class SymbolAccountListView:
+	"""Formats one snapshot-backed Symbol account list response."""
+
+	def __init__(self, account, network, native_mosaic_info):
+		self.account = account
+		self.network = network
+		self.native_mosaic_info = native_mosaic_info
+
+	def to_dict(self):
+		"""Returns the documented Account list DTO."""
+
+		account = self.account
+		address, public_key, account_type = _account_identity(account, self.network)
+		if not isinstance(account.is_harvesting_active, bool):
+			raise _invalid('accounts.is_harvesting_active', 'value is not a boolean')
+
+		multisig_fields = _multisig_fields(account.multisig, self.network)
+		mosaics = _mosaics(account.mosaics, address, self.network, self.native_mosaic_info)
+		balance = next((mosaic['amount'] for mosaic in mosaics if mosaic['id'] == account.balance_mosaic_id), 0)
+
+		return {
+			'address': address,
+			'publicKey': public_key,
+			'accountType': account_type,
+			'importance': _finite_ratio(account.importance_percentage, 'accounts.importance_percentage'),
+			'balance': balance,
+			'namespaces': _namespaces(account.namespaces),
+			'mosaics': mosaics,
+			'description': None,
+			'isHarvestingActive': account.is_harvesting_active,
+			'isMultisig': multisig_fields is not None and bool(multisig_fields['cosignatoryAddresses'])
 		}
 
 

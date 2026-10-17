@@ -3315,6 +3315,77 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			bytes(result['last_synced_block_hash'])
 		)
 
+	def test_checkpoint_sync_state_publishes_batch_and_clears_dirty_marker(self):
+		# Arrange:
+		database = self._create_database()
+		database.upsert_sync_state(_create_sync_state(
+			last_synced_height=1,
+			last_synced_block_hash=b'old-checkpoint',
+			dirty_state_from_height=2))
+
+		# Act:
+		database.checkpoint_sync_state(_create_sync_state(
+			chain_height=4,
+			last_synced_height=3,
+			last_synced_block_hash=b'new-checkpoint',
+			dirty_state_from_height=None))
+
+		# Assert:
+		result = database.get_sync_state()
+		self.assertEqual(4, result['chain_height'])
+		self.assertEqual(3, result['last_synced_height'])
+		self.assertEqual(bytes(b'new-checkpoint'), bytes(result['last_synced_block_hash']))
+		self.assertIsNone(result['dirty_state_from_height'])
+
+	def test_checkpoint_sync_state_rolls_back_watermark_and_marker_when_commit_fails(self):
+		# Arrange:
+		database = self._create_database()
+		database.upsert_sync_state(_create_sync_state(
+			last_synced_height=1,
+			last_synced_block_hash=b'old-checkpoint',
+			dirty_state_from_height=2))
+		previous_sync_state = database.get_sync_state()
+		original_connection = database.connection
+		database.connection = FailingCommitConnection(original_connection)
+
+		# Act:
+		try:
+			with self.assertRaisesRegex(RuntimeError, 'commit failed'):
+				database.checkpoint_sync_state(_create_sync_state(
+					last_synced_height=3,
+					last_synced_block_hash=b'new-checkpoint',
+					dirty_state_from_height=None))
+		finally:
+			database.connection = original_connection
+
+		# Assert:
+		# Without production rollback, this read sees the uncommitted replacement state and the snapshot assertion fails.
+		result = database.get_sync_state()
+		self.assertEqual(previous_sync_state, result)
+
+		# Act:
+		database.checkpoint_sync_state(_create_sync_state(
+			chain_height=4,
+			finalized_height=3,
+			finalized_hash=b'finalized-checkpoint',
+			last_synced_height=3,
+			last_synced_block_hash=b'new-checkpoint',
+			dirty_state_from_height=None))
+
+		# Assert:
+		result = database.get_sync_state()
+		result['finalized_hash'] = bytes(result['finalized_hash']) if result['finalized_hash'] is not None else None
+		result['last_synced_block_hash'] = (
+			bytes(result['last_synced_block_hash'])
+			if result['last_synced_block_hash'] is not None else None)
+		self.assertEqual(_create_sync_state(
+			chain_height=4,
+			finalized_height=3,
+			finalized_hash=b'finalized-checkpoint',
+			last_synced_height=3,
+			last_synced_block_hash=b'new-checkpoint',
+			dirty_state_from_height=None), result)
+
 	def test_rejects_invalid_sync_state_status(self):
 		# Arrange:
 		database = self._create_database()

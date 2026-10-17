@@ -8,7 +8,15 @@ from symbolchain.sc import TransactionType
 from symbolchain.symbol.Network import Network
 
 from rest import setup_error_handlers
-from rest.db.SymbolDatabase import ReceiptQuery, SortOrder, SymbolDataUnavailable, SymbolMosaicAliasNotFound, TransactionQuery
+from rest.db.SymbolDatabase import (
+	AccountListQuery,
+	AccountSortField,
+	ReceiptQuery,
+	SortOrder,
+	SymbolDataUnavailable,
+	SymbolMosaicAliasNotFound,
+	TransactionQuery
+)
 from rest.model.symbol.validation import SymbolDataInvalid
 from rest.routes.symbol import setup_symbol_routes
 
@@ -69,6 +77,16 @@ class SymbolAccountFacade:
 		self.account_query = None
 		self.account_result = {'address': 'TDUMMY'}
 		self.account_error = None
+		self.accounts_query = None
+		self.accounts_result = [{'address': 'TDUMMY'}]
+		self.accounts_error = None
+
+	def get_accounts(self, query):
+		self.accounts_query = query
+		if self.accounts_error:
+			raise self.accounts_error
+
+		return self.accounts_result
 
 	def try_get_account(self, address, public_key):
 		self.account_query = (address, public_key)
@@ -1088,3 +1106,131 @@ def test_block_receipts_bad_height():
 	_assert_bad_request_response(
 		client.get('/api/symbol/block/not-a-height/receipts'),
 		"invalid literal for int() with base 10: 'not-a-height'")
+
+
+def test_accounts_defaults():
+	# Arrange:
+	facade = SymbolAccountFacade()
+	client = _create_symbol_test_client(facade)
+
+	# Act:
+	response = client.get('/api/symbol/accounts')
+
+	# Assert:
+	assert 200 == response.status_code
+	assert [{'address': 'TDUMMY'}] == response.json
+	assert AccountListQuery(AccountSortField.ID, None, 10, 0) == facade.accounts_query
+
+
+def test_accounts_normalizes_query_case():
+	# Arrange:
+	facade = SymbolAccountFacade()
+	client = _create_symbol_test_client(facade)
+
+	# Act:
+	response = client.get('/api/symbol/accounts?limit=1&offset=2&sort_field=balance&sort_order=desc&mosaic_id=abCDef0123456789')
+
+	# Assert:
+	assert 200 == response.status_code
+	assert AccountListQuery(AccountSortField.BALANCE, 'ABCDEF0123456789', 1, 2) == facade.accounts_query
+
+
+@pytest.mark.parametrize('value', ['true', 'TRUE', 'false', 'False'])
+def test_accounts_harvesting_boolean(value):
+	# Arrange:
+	facade = SymbolAccountFacade()
+	client = _create_symbol_test_client(facade)
+
+	# Act:
+	response = client.get(f'/api/symbol/accounts?is_harvesting={value}')
+
+	# Assert:
+	assert 200 == response.status_code
+	assert value.lower() == ('true' if facade.accounts_query.is_harvesting else 'false')
+
+
+def test_accounts_height_sort():
+	# Arrange:
+	facade = SymbolAccountFacade()
+	client = _create_symbol_test_client(facade)
+
+	# Act:
+	response = client.get('/api/symbol/accounts?sort_field=height')
+
+	# Assert:
+	assert 200 == response.status_code
+	assert AccountListQuery(AccountSortField.HEIGHT, None, 10, 0) == facade.accounts_query
+
+
+@pytest.mark.parametrize('query', [
+	pytest.param('limit=0', id='limit-zero'),
+	pytest.param('limit=101', id='limit-above-max'),
+	pytest.param('offset=-1', id='offset-negative'),
+	pytest.param('offset=100001', id='offset-above-max'),
+	pytest.param('sort_field=unknown', id='unknown-sort-field'),
+	pytest.param('is_harvesting=', id='empty-harvesting'),
+	pytest.param('is_harvesting=maybe', id='invalid-harvesting'),
+	pytest.param('sort_order=asc', id='ascending-sort'),
+	pytest.param('sort_field=BALANCE', id='balance-missing-mosaic'),
+	pytest.param('sort_field=ID&mosaic_id=1234567890ABCDEF', id='id-with-mosaic'),
+	pytest.param('sort_field=HEIGHT&mosaic_id=1234567890ABCDEF', id='height-with-mosaic'),
+	pytest.param('sort_field=BALANCE&mosaic_id=0x1234567890ABCDEF', id='mosaic-hex-prefix')
+])
+def test_accounts_rejects_invalid_values(query):
+	# Arrange:
+	facade = SymbolAccountFacade()
+	client = _create_symbol_test_client(facade)
+
+	# Act:
+	response = client.get('/api/symbol/accounts?' + query)
+
+	# Assert:
+	assert 400 == response.status_code
+	assert facade.accounts_query is None
+
+
+@pytest.mark.parametrize('query', [
+	pytest.param('limit=1&limit=1', id='limit'),
+	pytest.param('offset=0&offset=0', id='offset'),
+	pytest.param('sort_field=ID&sort_field=ID', id='sort-field'),
+	pytest.param('sort_order=DESC&sort_order=DESC', id='sort-order'),
+	pytest.param('sort_field=BALANCE&mosaic_id=1234567890ABCDEF&mosaic_id=1234567890ABCDEF', id='mosaic-id'),
+	pytest.param('is_harvesting=true&is_harvesting=true', id='harvesting')
+])
+def test_accounts_rejects_scalar_repeats(query):
+	# Arrange:
+	facade = SymbolAccountFacade()
+	client = _create_symbol_test_client(facade)
+
+	# Act:
+	response = client.get('/api/symbol/accounts?' + query)
+
+	# Assert:
+	assert 400 == response.status_code
+	assert facade.accounts_query is None
+
+
+def test_accounts_rejects_unknown_params():
+	# Arrange:
+	facade = SymbolAccountFacade()
+	client = _create_symbol_test_client(facade)
+
+	# Act:
+	response = client.get('/api/symbol/accounts?isLatest=true')
+
+	# Assert:
+	assert 400 == response.status_code
+	assert facade.accounts_query is None
+
+
+def test_accounts_accepts_page_limits():
+	# Arrange:
+	facade = SymbolAccountFacade()
+	client = _create_symbol_test_client(facade)
+
+	# Act:
+	response = client.get('/api/symbol/accounts?limit=100&offset=100000&sort_order=DESC')
+
+	# Assert:
+	assert 200 == response.status_code
+	assert AccountListQuery(AccountSortField.ID, None, 100, 100000) == facade.accounts_query

@@ -747,6 +747,8 @@ def _create_transaction_test_client(db_config):
 			database,
 			SymbolNodeConfiguration.from_url('http://127.0.0.1:3000', allow_loopback=True),
 			NATIVE_MOSAIC_INFO,
-			Network.TESTNET)
+			Network.TESTNET,
+			None,
+			7)
 		setup_symbol_routes(app, facade)
 		yield app.test_client()

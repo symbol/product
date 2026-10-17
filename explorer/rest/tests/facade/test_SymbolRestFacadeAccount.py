@@ -4,7 +4,7 @@ from common.symbol.NativeMosaic import NativeMosaicInfo
 from common.symbol.NodeConfiguration import SymbolNodeConfiguration
 from symbolchain.symbol.Network import Network
 
-from rest.db.SymbolDatabase import AccountRecord
+from rest.db.SymbolDatabase import AccountListRecord, AccountRecord
 from rest.facade.SymbolRestFacade import SymbolRestFacade
 
 
@@ -34,14 +34,51 @@ class RecordingAccountDatabase:
 	def __init__(self):
 		self.account_query = None
 		self.account_record = create_account_record()
+		self.account_list_query = None
+		self.account_list_record = AccountListRecord(
+			bytes.fromhex('98FD35818960C7B18B72F49A5598FA9F712A354DB33EDE57'),
+			None, 'main', 0, '72C0212E67A08BCE', (), ())
 
 	def try_get_account(self, address, public_key):
 		self.account_query = (address, public_key)
 
 		return self.account_record
 
+	def get_account_list(self, query, max_age_seconds, harvesting_active_window_days=7):
+		self.account_list_query = (query, max_age_seconds, harvesting_active_window_days)
+		return [self.account_list_record]
+
 
 class SymbolRestFacadeAccountTest(TestCase):
+	def test_get_accounts_formats_snapshot_list_and_passes_refresh_age(self):
+		# Arrange:
+		database = RecordingAccountDatabase()
+		facade = SymbolRestFacade(
+			database,
+			SymbolNodeConfiguration.from_url('http://127.0.0.1:3000', allow_loopback=True),
+			NativeMosaicInfo('72C0212E67A08BCE', 6),
+			Network.TESTNET,
+			7200,
+			7)
+
+		# Act:
+		result = facade.get_accounts('query')
+
+		# Assert:
+		self.assertEqual(('query', 7200, 7), database.account_list_query)
+		self.assertEqual([{
+			'address': 'TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY',
+			'publicKey': None,
+			'accountType': 'main',
+			'importance': 0.0,
+			'balance': 0,
+			'namespaces': [],
+			'mosaics': [],
+			'description': None,
+			'isHarvestingActive': False,
+			'isMultisig': False
+		}], result)
+
 	def test_try_get_account_passes_search_and_network_to_view(self):
 		# Arrange:
 		database = RecordingAccountDatabase()
@@ -83,3 +120,33 @@ class SymbolRestFacadeAccountTest(TestCase):
 			'node': 'NAHJNXEF62ZEVSOI3NP7YWODLCAMBNZCY4X3FNY',
 			'vrf': 'NAXQUTQQNS6JEJG7PLC6FRVJ2USS44GLMUL5QKI'
 		}, result['supplementalKeys'])
+
+
+class SymbolRestFacadeAccountListConfigurationTest(TestCase):
+	def test_get_accounts_requires_configured_refresh_age(self):
+		# Arrange:
+		facade = SymbolRestFacade(
+			RecordingAccountDatabase(),
+			SymbolNodeConfiguration.from_url('http://127.0.0.1:3000', allow_loopback=True),
+			NativeMosaicInfo('72C0212E67A08BCE', 6), Network.TESTNET)
+
+		# Act:
+		with self.assertRaises(ValueError) as context:
+			facade.get_accounts('query')
+
+		# Assert:
+		self.assertEqual('Symbol account refresh max age is required', str(context.exception))
+
+	def test_get_accounts_requires_configured_harvesting_window(self):
+		# Arrange:
+		facade = SymbolRestFacade(
+			RecordingAccountDatabase(),
+			SymbolNodeConfiguration.from_url('http://127.0.0.1:3000', allow_loopback=True),
+			NativeMosaicInfo('72C0212E67A08BCE', 6), Network.TESTNET, 7200)
+
+		# Act:
+		with self.assertRaises(ValueError) as context:
+			facade.get_accounts('query')
+
+		# Assert:
+		self.assertEqual('Symbol harvesting active window is required', str(context.exception))

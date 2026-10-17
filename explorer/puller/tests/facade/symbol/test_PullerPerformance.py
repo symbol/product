@@ -319,8 +319,8 @@ class SymbolPullerPerformanceTest(SymbolPullerTestBase):
 			'http_get_attempt_count': 4,
 			'http_post_attempt_count': 1,
 			'rate_limit_wait_ms': 0,
-			'db_commit_count': 7,
-			'db_commit_attempt_count': 7,
+			'db_commit_count': 8,
+			'db_commit_attempt_count': 8,
 			'dirty_account_count': 1,
 			'dirty_namespace_count': 0,
 			'dirty_mosaic_count': 0,
@@ -350,8 +350,8 @@ class SymbolPullerPerformanceTest(SymbolPullerTestBase):
 			'http_get_attempt_count': 7,
 			'http_post_attempt_count': 1,
 			'rate_limit_wait_ms': 0,
-			'db_commit_count': 9,
-			'db_commit_attempt_count': 9,
+			'db_commit_count': 10,
+			'db_commit_attempt_count': 10,
 			'dirty_account_count': 1,
 			'dirty_namespace_count': 0,
 			'dirty_mosaic_count': 0,
@@ -460,7 +460,7 @@ class SymbolPullerPerformanceTest(SymbolPullerTestBase):
 			sum(event['db_commit_count'] for event in batch_events),
 			workflow_event['db_commit_count'] - 2)
 		self.assertEqual(22, workflow_event['http_attempt_count'])
-		self.assertEqual(2014, workflow_event['db_commit_count'])
+		self.assertEqual(2016, workflow_event['db_commit_count'])
 		self.assertIsNone(workflow_event['failed_phase'])
 		self.assertEqual(1001, workflow_event['last_completed_height'])
 
@@ -487,7 +487,7 @@ class SymbolPullerPerformanceTest(SymbolPullerTestBase):
 			sum(event['http_attempt_count'] for event in events[:2]) + 3,
 			events[2]['http_attempt_count'])
 		self.assertEqual(
-			sum(event['db_commit_count'] for event in events[:2]) + 1,
+			sum(event['db_commit_count'] for event in events[:2]),
 			events[2]['db_commit_count'])
 
 	def test_sync_block_headers_logs_failed_phase_and_preserves_original_exception(self):
@@ -804,10 +804,10 @@ class SymbolPullerPerformanceTest(SymbolPullerTestBase):
 			'block_fetch_ms', 'transaction_fetch_ms', 'receipt_fetch_ms', 'resolution_fetch_ms', 'account_fetch_ms',
 			'namespace_fetch_ms', 'mosaic_fetch_ms', 'metadata_fetch_ms', 'hash_lock_fetch_ms',
 			'secret_lock_fetch_ms', 'mosaic_restriction_fetch_ms')})
-		self.assertEqual(7, batch_event['db_commit_ms'])
-		self.assertEqual(7, batch_event['db_commit_count'])
-		self.assertEqual(9, workflow_event['db_commit_ms'])
-		self.assertEqual(9, workflow_event['db_commit_count'])
+		self.assertEqual(8, batch_event['db_commit_ms'])
+		self.assertEqual(8, batch_event['db_commit_count'])
+		self.assertEqual(10, workflow_event['db_commit_ms'])
+		self.assertEqual(10, workflow_event['db_commit_count'])
 		self.assertEqual(2, workflow_event['db_commit_ms'] - batch_event['db_commit_ms'])
 		self.assertEqual(2, workflow_event['db_commit_count'] - batch_event['db_commit_count'])
 		expected_batch_db_write_times = {
