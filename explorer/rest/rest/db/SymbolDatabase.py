@@ -884,7 +884,7 @@ class SymbolDatabase(DatabaseConnectionPool):
 					raise SymbolDataUnavailable('Symbol mosaic data is unavailable')
 
 				cursor.execute(
-					f"""
+					f'''
 					SELECT {MOSAIC_COLUMNS}
 					FROM symbol_mosaics
 					ORDER BY start_height {sort.value}, mosaic_id {sort.value}
