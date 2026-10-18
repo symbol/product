@@ -218,6 +218,33 @@ class SymbolNamespacesDatabaseTest(TestCase):
 				NamespaceQuery(limit=1, offset=1, alias_type='none', registration_type='root'))
 
 	@staticmethod
+	def test_rejects_unsafe_filtered_candidate_before_converting_page_rows():
+		# Arrange:
+		sync_state = create_symbol_sync_state(last_synced_height=10, finalized_height=10)
+		rows = [
+			_namespace('GGGGGGGGGGGGGGGG', start_height=3, updated_at_height=1),
+			_namespace(OTHER_ROOT_ID, start_height=2, updated_at_height=11),
+		]
+
+		# Act + Assert: the unsafe candidate takes precedence over the malformed page row.
+		with pytest.raises(SymbolDataUnavailable, match='^Symbol namespace data is unavailable$'):
+			_read_namespaces(
+				sync_state, _blocks(1, 2, 10), rows,
+				NamespaceQuery(limit=1, sort=SortOrder.DESC, alias_type='none', registration_type='root'))
+
+	@staticmethod
+	def test_rejects_unsafe_filtered_candidate_when_offset_returns_empty_page():
+		# Arrange:
+		sync_state = create_symbol_sync_state(last_synced_height=10, finalized_height=10)
+		rows = [_namespace(OTHER_ROOT_ID, start_height=2, updated_at_height=11)]
+
+		# Act + Assert: the safety query remains active after the requested page is empty.
+		with pytest.raises(SymbolDataUnavailable, match='^Symbol namespace data is unavailable$'):
+			_read_namespaces(
+				sync_state, _blocks(2, 10), rows,
+				NamespaceQuery(limit=1, offset=1, sort=SortOrder.DESC, alias_type='none', registration_type='root'))
+
+	@staticmethod
 	def test_root_request_rejects_sibling_above_synced_height():
 		# Arrange:
 		sync_state = create_symbol_sync_state(last_synced_height=10, finalized_height=10)

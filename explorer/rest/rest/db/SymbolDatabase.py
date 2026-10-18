@@ -913,6 +913,15 @@ class SymbolDatabase(DatabaseConnectionPool):
 
 				where_clauses, parameters = self._create_namespace_filter(query)
 				cursor.execute(
+					f'''SELECT 1 FROM symbol_namespaces
+					WHERE {' AND '.join(where_clauses)}
+						AND (updated_at_height > %s OR start_height > %s)
+					LIMIT 1''',
+					(*parameters, readable_height, readable_height))
+				if cursor.fetchone():
+					raise SymbolDataUnavailable('Symbol namespace data is unavailable')
+
+				cursor.execute(
 					f'''SELECT
 						namespace_id, parent_id, root_id, name, full_name, depth, registration_type,
 						owner_address, start_height, end_height, alias_type, alias_mosaic_id,
@@ -923,15 +932,6 @@ class SymbolDatabase(DatabaseConnectionPool):
 					LIMIT %s OFFSET %s''',
 					(*parameters, query.limit, query.offset))
 				page_rows = [self._create_namespace_record(row) for row in cursor.fetchall()]
-
-				cursor.execute(
-					f'''SELECT 1 FROM symbol_namespaces
-					WHERE {' AND '.join(where_clauses)}
-						AND (updated_at_height > %s OR start_height > %s)
-					LIMIT 1''',
-					(*parameters, readable_height, readable_height))
-				if cursor.fetchone():
-					raise SymbolDataUnavailable('Symbol namespace data is unavailable')
 
 				if not page_rows:
 					return []
@@ -949,9 +949,8 @@ class SymbolDatabase(DatabaseConnectionPool):
 				block_timestamps = self._fetch_namespace_block_timestamps(
 					cursor, [row['start_height'] for row in page_rows])
 
-				views = []
-				for row in page_rows:
-					views.append(SymbolNamespaceView(
+				return [
+					SymbolNamespaceView(
 						namespace_id=row['namespace_id'],
 						full_name=row['full_name'],
 						levels=namespace_levels[row['namespace_id']],
@@ -963,9 +962,8 @@ class SymbolDatabase(DatabaseConnectionPool):
 						start_timestamp=block_timestamps.get(row['start_height']),
 						registration_type=row['registration_type'],
 						end_height=row['end_height'],
-						sub_namespace_count=descendant_counts[row['namespace_id']]))
-
-				return views
+						sub_namespace_count=descendant_counts[row['namespace_id']])
+					for row in page_rows]
 
 	@staticmethod
 	def _validate_namespace_sync_state(cursor, sync_state):
@@ -991,15 +989,19 @@ class SymbolDatabase(DatabaseConnectionPool):
 	def _create_namespace_filter(query):
 		where_clauses = []
 		parameters = []
+
 		if query.alias_type is not None:
 			where_clauses.append('alias_type = %s::symbol_namespace_alias_type')
 			parameters.append(query.alias_type)
+
 		if query.registration_type is not None:
 			where_clauses.append('registration_type = %s::symbol_namespace_registration_type')
 			parameters.append(query.registration_type)
+
 		if query.owner_address is not None:
 			where_clauses.append('owner_address = %s')
 			parameters.append(query.owner_address)
+
 		return where_clauses or ['TRUE'], parameters
 
 	@staticmethod
@@ -1010,23 +1012,29 @@ class SymbolDatabase(DatabaseConnectionPool):
 			'updated_at_height'
 		)
 		record = dict(zip(fields, row))
+
 		for field in ('namespace_id', 'root_id'):
 			if not SymbolDatabase._is_namespace_id(record[field]):
 				raise SymbolDataInvalid(f'symbol_namespaces.{field}', 'invalid namespace ID')
+
 		if record['parent_id'] is not None and not SymbolDatabase._is_namespace_id(record['parent_id']):
 			raise SymbolDataInvalid('symbol_namespaces.parent_id', 'invalid namespace ID')
+
 		if record['alias_mosaic_id'] is not None and not SymbolDatabase._is_namespace_id(record['alias_mosaic_id']):
 			raise SymbolDataInvalid('symbol_namespaces.alias_mosaic_id', 'invalid mosaic ID')
+
 		return record
 
 	@staticmethod
 	def _is_namespace_id(value):
 		if not isinstance(value, str) or len(value) != 16:
 			return False
+
 		try:
 			int(value, 16)
 		except ValueError:
 			return False
+
 		return True
 
 	@staticmethod
@@ -1066,14 +1074,17 @@ class SymbolDatabase(DatabaseConnectionPool):
 	@staticmethod
 	def _fetch_namespace_ancestors(cursor, row_by_id):
 		pending = {row['parent_id'] for row in row_by_id.values() if row['parent_id'] is not None}
+
 		while pending:
 			missing = pending.difference(row_by_id)
 			if not missing:
 				break
+
 			rows = SymbolDatabase._fetch_namespace_rows(cursor, missing)
 			fetched = {row['namespace_id']: row for row in rows}
 			if missing.difference(fetched):
 				raise SymbolDataInvalid('symbol_namespaces.parent_id', 'required ancestor is missing')
+
 			row_by_id.update(fetched)
 			pending = {row['parent_id'] for row in fetched.values() if row['parent_id'] is not None}
 
@@ -1134,13 +1145,16 @@ class SymbolDatabase(DatabaseConnectionPool):
 		path = []
 		current = row
 		seen = set()
+
 		while True:
 			if current['namespace_id'] in seen:
 				raise SymbolDataInvalid('symbol_namespaces.parent_id', 'namespace hierarchy contains a cycle')
 			seen.add(current['namespace_id'])
 			path.append(current)
+
 			if current['parent_id'] is None:
 				break
+
 			current = row_by_id.get(current['parent_id'])
 
 		levels = []
