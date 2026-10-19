@@ -10,6 +10,7 @@ from rest.db.SymbolDatabase import NamespaceQuery, SortOrder, SymbolDatabase, Sy
 
 from ..test.SymbolBlockTestUtils import create_symbol_block, create_symbol_sync_state
 from ..test.SymbolDatabaseTestUtils import PausingAfterSyncStateReadSymbolDatabase, read_during_database_snapshot, symbol_test_database
+from ..test.SymbolMosaicTestUtils import create_symbol_mosaic
 from ..test.SymbolNamespaceTestUtils import DEFAULT_NAMESPACE_OWNER as OWNER
 from ..test.SymbolNamespaceTestUtils import (
 	call_with_timeout,
@@ -41,6 +42,14 @@ def _read_namespaces(sync_state, blocks, rows, query=NamespaceQuery()):
 			puller_database.upsert_namespace(row, [])
 		with SymbolDatabase(db_config, NATIVE_MOSAIC_INFO) as database:
 			return database.get_namespaces(query)
+
+
+def _read_namespace_detail(sync_state, blocks, rows, namespace_id, mosaics=()):
+	with symbol_test_database(sync_state, blocks, mosaics) as (db_config, puller_database):
+		for row in rows:
+			puller_database.upsert_namespace(row, [])
+		with SymbolDatabase(db_config, NATIVE_MOSAIC_INFO) as database:
+			return database.try_get_namespace(namespace_id)
 
 
 class SymbolNamespacesDatabaseTest(TestCase):
@@ -654,3 +663,69 @@ def test_rejects_bad_namespace_fields(overrides, field_path, reason):
 	# Assert:
 	assert field_path == error.value.field_path
 	assert reason == error.value.reason
+
+
+def test_namespace_detail_groups_mosaics_by_namespace():  # pylint: disable=invalid-name
+	# Arrange:
+	sync_state = create_symbol_sync_state(last_synced_height=10, finalized_height=10)
+	rows = create_namespace_descendant_rows(ROOT_ID, CHILD_ID, LEAF_ID, NATIVE_MOSAIC_INFO.id)
+	rows[2]['alias_type'] = 'mosaic'
+	rows[2]['alias_mosaic_id'] = NATIVE_MOSAIC_INFO.id
+
+	# Act:
+	detail = _read_namespace_detail(
+		sync_state, _blocks(1, 2, 3, 10), rows, CHILD_ID, [create_symbol_mosaic(NATIVE_MOSAIC_INFO.id, 6)])
+
+	# Assert:
+	assert CHILD_ID == detail.namespace.namespace_id
+	assert [LEAF_ID] == [item['namespaceId'] for item in detail.sub_namespaces]
+	assert [CHILD_ID, LEAF_ID] == [group.namespace_id for group in detail.namespace_mosaics]
+
+
+def test_namespace_detail_rejects_missing_linked_mosaic():  # pylint: disable=invalid-name
+	# Arrange:
+	sync_state = create_symbol_sync_state(last_synced_height=10, finalized_height=10)
+	rows = create_namespace_root_child_rows(ROOT_ID, CHILD_ID, NATIVE_MOSAIC_INFO.id)
+
+	# Act + Assert:
+	with pytest.raises(SymbolDataInvalid, match='^symbol_namespaces.alias_mosaic_id: linked mosaic is missing$'):
+		_read_namespace_detail(sync_state, _blocks(1, 10), rows, ROOT_ID)
+
+
+def test_namespace_detail_rejects_invalid_persisted_mosaic():  # pylint: disable=invalid-name
+	# Arrange:
+	sync_state = create_symbol_sync_state(last_synced_height=10, finalized_height=10)
+	rows = create_namespace_root_child_rows(ROOT_ID, CHILD_ID, NATIVE_MOSAIC_INFO.id)
+	mosaic = create_symbol_mosaic(NATIVE_MOSAIC_INFO.id, 6)
+	with symbol_test_database(sync_state, _blocks(1, 10), [mosaic]) as (db_config, puller_database):
+		for row in rows:
+			puller_database.upsert_namespace(row, [])
+		with puller_database.connection.cursor() as cursor:
+			cursor.execute(
+				'UPDATE symbol_mosaics SET owner_address = %s WHERE mosaic_id = %s',
+				(b'\x00', NATIVE_MOSAIC_INFO.id))
+		puller_database.connection.commit()
+
+		with SymbolDatabase(db_config, NATIVE_MOSAIC_INFO) as database:
+			# Act + Assert:
+			with pytest.raises(SymbolDataInvalid, match='^symbol_mosaics: invalid persisted Mosaic row$'):
+				database.try_get_namespace(ROOT_ID)
+
+
+@pytest.mark.parametrize('malformed_id', [
+	'+000000000000001',
+	' 000000000000001',
+	'１２３４５６７８９０１２３４５６'
+])
+def test_namespace_detail_rejects_invalid_saved_mosaic_id(malformed_id):  # pylint: disable=invalid-name
+	# Arrange:
+	sync_state = create_symbol_sync_state(last_synced_height=10, finalized_height=10)
+	rows = create_namespace_root_child_rows(ROOT_ID, CHILD_ID, malformed_id)
+	mosaic = create_symbol_mosaic(malformed_id, 6)
+
+	# Act + Assert:
+	with pytest.raises(SymbolDataInvalid) as error:
+		_read_namespace_detail(sync_state, _blocks(1, 10), rows, ROOT_ID, [mosaic])
+
+	assert 'symbol_namespaces.alias_mosaic_id' == error.value.field_path
+	assert 'invalid mosaic ID' == error.value.reason

@@ -17,6 +17,7 @@ def fixture_namespace_route():
 	app = Flask(__name__)
 	facade = create_autospec(SymbolRestFacade, instance=True, spec_set=True)
 	facade.get_namespaces.return_value = []
+	facade.try_get_namespace.return_value = {'id': 'A95F1F8A96159516'}
 	setup_error_handlers(app)
 	setup_symbol_routes(app, facade)
 	return app.test_client(), facade
@@ -156,3 +157,57 @@ def test_namespace_unavailable(namespace_route):
 	assert 503 == response.status_code
 	assert {'status': 503, 'message': 'Symbol backend data is unavailable'} == response.json
 	facade.get_namespaces.assert_called_once_with(NamespaceQuery())
+
+
+@pytest.mark.parametrize('value,expected', [
+	('a95f1f8a96159516', 'A95F1F8A96159516'),
+	('ABCDEF0123456789', 'ABCDEF0123456789'),
+	('abc', 'AD6A465CC39E2CCA'),
+	('123', 'A8FD86E7F0F23F1F'),
+	('a_b-c', '8F8C62D64AA47FF7'),
+	('a' * 64 + '.b_c-d.123', 'CF968B9C7666FFB7'),
+	('symbol.xym', 'E74B99BA41F4AFEE'),
+	('0xabc', '925E72121973547B')
+])
+def test_namespace_detail_dispatches_canonical_id(  # pylint: disable=invalid-name
+	value, expected, namespace_route):
+	# Arrange:
+	client, facade = namespace_route
+
+	# Act:
+	response = client.get(f'/api/symbol/namespace/{value}')
+
+	# Assert:
+	assert 200 == response.status_code
+	assert {'id': 'A95F1F8A96159516'} == response.json
+	facade.try_get_namespace.assert_called_once_with(expected)
+
+
+@pytest.mark.parametrize('value', [
+	'A95F1F8A9615951', 'A95F1F8A9615951G', 'Foo', 'foo.', '.foo', 'foo..bar',
+	'foo.bar.baz.qux', 'a' * 65, 'a.' + ('b' * 65), 'a.b.' + ('c' * 65), ' foo', 'foo bar', '日本語'
+])
+def test_namespace_detail_invalid_input(value, namespace_route):
+	# Arrange:
+	client, facade = namespace_route
+
+	# Act:
+	response = client.get(f'/api/symbol/namespace/{value}')
+
+	# Assert:
+	assert 400 == response.status_code
+	assert {'status': 400, 'message': 'Invalid namespace'} == response.json
+	facade.try_get_namespace.assert_not_called()
+
+
+def test_namespace_detail_no_query(namespace_route):
+	# Arrange:
+	client, facade = namespace_route
+
+	# Act:
+	response = client.get('/api/symbol/namespace/symbol?limit=1')
+
+	# Assert:
+	assert 400 == response.status_code
+	assert {'status': 400, 'message': 'Unsupported query parameter: limit'} == response.json
+	facade.try_get_namespace.assert_not_called()
