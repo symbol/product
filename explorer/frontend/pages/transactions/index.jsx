@@ -26,6 +26,8 @@ import {
 	usePagination,
 	useStorage
 } from '@/app/utils';
+import { variantComponents } from '@/app/variants/components';
+import { pageConfig } from '@/app/variants/page-config';
 import Head from 'next/head';
 import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
@@ -51,6 +53,7 @@ const TransactionInfo = ({ preloadedData, stats }) => {
 		preloadedData
 	);
 	const chart = useFilter(fetchTransactionChart, [], true);
+	const TransactionFilter = variantComponents.TransactionFilter || Filter;
 	const chartType = transactionChartFilterToType(chart.filter);
 	const formattedChartData = formatTransactionChart(chart.data, chartType, t);
 
@@ -100,7 +103,7 @@ const TransactionInfo = ({ preloadedData, stats }) => {
 			title: t('filter_type'),
 			conflicts: ['mosaic', 'to'],
 			type: 'transaction-type',
-			options: Object.values(TRANSACTION_TYPE).map(type => ({ type }))
+			options: (pageConfig.transactions?.transactionTypes ?? Object.values(TRANSACTION_TYPE)).map(type => ({ type }))
 		},
 		{
 			name: 'from',
@@ -202,7 +205,7 @@ const TransactionInfo = ({ preloadedData, stats }) => {
 			<Section>
 				<div className="layout-flex-col">
 					<div className="layout-flex-row-mobile-col">
-						<Filter
+						<TransactionFilter
 							isSelectedItemsShown
 							data={transactionFilterConfig}
 							isDisabled={isLoading}

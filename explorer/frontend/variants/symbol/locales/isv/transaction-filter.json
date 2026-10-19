@@ -1,0 +1,7 @@
+{
+	"empty": "Vložite vrednost.",
+	"address": "Vložite validny Symbol adres.",
+	"mosaic": "Vložite 16-znakovy ID Mozaika.",
+	"height": "Vložite pozitivnu vysotu bloka.",
+	"heightRange": "Vložite vysotu bloka od 1 do 9223372036854775807."
+}

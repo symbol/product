@@ -172,7 +172,7 @@ const AccountInfo = ({ accountInfo, preloadedTransactions }) => {
 			title: t('filter_type'),
 			conflicts: ['mosaic', 'to'],
 			type: 'transaction-type',
-			options: Object.values(TRANSACTION_TYPE).map(type => ({ type }))
+			options: (pageConfig.transactions?.transactionTypes ?? Object.values(TRANSACTION_TYPE)).map(type => ({ type }))
 		},
 		{
 			name: 'from',

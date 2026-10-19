@@ -1,0 +1,30 @@
+.modal.modal {
+	box-sizing: border-box;
+	width: min(40rem, calc(100vw - 2rem));
+	max-width: calc(100vw - 2rem);
+}
+
+.form {
+	display: flex;
+	flex: 1;
+	flex-direction: column;
+	gap: 2rem;
+	min-height: 0;
+}
+
+@media (width <= 767.8px) {
+	.modal.modal {
+		width: 100%;
+		max-width: 100%;
+	}
+
+	.form {
+		min-width: 0;
+	}
+}
+
+// Keep the reused TYPE filter and direct fields in one content-sized toolbar.
+.toolbar > div {
+	flex: 0 0 auto;
+	width: auto;
+}
