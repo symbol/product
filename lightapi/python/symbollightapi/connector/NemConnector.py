@@ -50,7 +50,7 @@ class NemAccountInfo:  # pylint: disable=too-many-instance-attributes
 # endregion
 
 
-class NemConnector(BasicConnector):
+class NemConnector(BasicConnector):  # pylint: disable=too-many-public-methods
 	"""Async connector for interacting with a NEM node."""
 
 	def __init__(self, endpoint, network=None):
@@ -180,10 +180,8 @@ class NemConnector(BasicConnector):
 			) for mosaic_json in mosaics_json
 		]
 
-	async def account_info(self, address, forwarded=False):
-		subpath = '/forwarded' if forwarded else ''
-		response_json = await self.get(f'account/get{subpath}?address={address}')
-
+	@staticmethod
+	def _map_to_account_info(response_json):
 		account_json = response_json['account']
 		account_info = NemAccountInfo(Address(account_json['address']))
 		account_info.vested_balance = account_json['vestedBalance'] / MICROXEM_PER_XEM
@@ -203,6 +201,20 @@ class NemConnector(BasicConnector):
 		account_info.cosignatory_of = [Address(cosignatory_of['address']) for cosignatory_of in meta_json['cosignatoryOf']]
 
 		return account_info
+
+	async def account_info(self, address, forwarded=False):
+		subpath = '/forwarded' if forwarded else ''
+		response_json = await self.get(f'account/get{subpath}?address={address}')
+
+		return self._map_to_account_info(response_json)
+
+	async def account_infos(self, addresses):
+		"""Gets account information for multiple accounts in a single request."""
+
+		request = {'data': [{'account': str(address)} for address in addresses]}
+		responses_json = await self.post('account/get/batch', request, 'data')
+
+		return [self._map_to_account_info(response_json) for response_json in responses_json]
 
 	# endregion
 

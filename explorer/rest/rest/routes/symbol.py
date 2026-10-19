@@ -1,5 +1,6 @@
 import configparser
 import re
+from datetime import datetime, timezone
 from pathlib import Path
 
 from common.symbol.NativeMosaic import create_native_mosaic_info
@@ -14,6 +15,8 @@ from symbolchain.symbol.Network import Address, Network
 from zenlog import log
 
 from rest.db.SymbolDatabase import (
+	AccountListQuery,
+	AccountSortField,
 	ReceiptQuery,
 	SortOrder,
 	SymbolDatabase,
@@ -23,8 +26,11 @@ from rest.db.SymbolDatabase import (
 )
 from rest.facade.SymbolRestFacade import SymbolRestFacade
 from rest.model.common import DatabaseConfig
+from rest.model.symbol.validation import SymbolDataInvalid
 
 BLOCK_LIST_QUERY_PARAMETERS = frozenset(['limit', 'fromHeight', 'sort'])
+MOSAIC_QUERY_PARAMETERS = frozenset(['limit', 'offset', 'sort'])
+MOSAIC_MAX_OFFSET = 100000
 RECEIPT_QUERY_PARAMETERS = frozenset([
 	'limit', 'offset', 'group', 'receiptType', 'includedReceiptTypes', 'targetAddress', 'senderAddress'
 ])
@@ -35,15 +41,31 @@ TRANSACTION_QUERY_PARAMETERS = frozenset([
 ])
 RECEIPT_MAX_OFFSET = 100000
 TRANSACTION_MAX_OFFSET = 100000
+ACCOUNT_LIST_QUERY_PARAMETERS = frozenset(['limit', 'offset', 'sort_field', 'sort_order', 'mosaic_id', 'is_harvesting'])
+ACCOUNT_LIST_MAX_OFFSET = 100000
 MAX_TRANSACTION_HEIGHT = 9223372036854775807
 MOSAIC_ID_PATTERN = re.compile(r'[0-9A-Fa-f]{16}', re.ASCII)
 MAX_NAMESPACE_NAME_SIZE = 64
 MAX_NAMESPACE_DEPTH = 3
 XYM_DIVISIBILITY = 6
+ACCOUNT_REFRESH_MAX_AGE_SETTING = 'SYMBOL_ACCOUNT_REFRESH_MAX_AGE_SECONDS'
+HARVESTING_ACTIVE_WINDOW_SETTING = 'SYMBOL_HARVESTING_ACTIVE_WINDOW_DAYS'
 
 
-def setup_symbol_facade(app):
+def setup_symbol_facade(app, clock=None):
+	"""Creates the Symbol facade after validating configuration against the UTC setup clock."""
+
+	network = _create_symbol_network(app.config)
 	native_mosaic_info = _create_native_mosaic_info(app.config)
+	account_refresh_max_age_seconds = _create_required_positive_integer_setting(app.config, ACCOUNT_REFRESH_MAX_AGE_SETTING)
+	harvesting_active_window_days = _create_required_positive_integer_setting(app.config, HARVESTING_ACTIVE_WINDOW_SETTING)
+	# Bound subtraction by datetime.min, not just timedelta's much larger range.
+	# Later UTC request dates can represent at least this many whole days.
+	setup_now = clock() if clock is not None else datetime.now(timezone.utc)
+	max_harvesting_window_days = setup_now.astimezone(timezone.utc).toordinal() - datetime.min.toordinal()
+	if harvesting_active_window_days > max_harvesting_window_days:
+		raise ValueError(f'{HARVESTING_ACTIVE_WINDOW_SETTING} must be at most {max_harvesting_window_days} days at setup')
+
 	config = configparser.ConfigParser()
 	db_path = Path(app.config.get('DATABASE_CONFIG_FILEPATH'))
 
@@ -62,9 +84,21 @@ def setup_symbol_facade(app):
 	node_config = SymbolNodeConfiguration.from_app_config(app.config)
 	node_config.assert_request_allowed(node_config.base_url)
 
-	symbol_db = SymbolDatabase(db_params, native_mosaic_info)
+	symbol_db = SymbolDatabase(db_params, native_mosaic_info, clock)
 	app.extensions['symbol_database'] = symbol_db
-	return SymbolRestFacade(symbol_db, node_config, native_mosaic_info)
+	return SymbolRestFacade(
+		symbol_db, node_config, native_mosaic_info, network, account_refresh_max_age_seconds, harvesting_active_window_days)
+
+
+def _create_symbol_network(app_config):
+	if 'NETWORK_NAME' not in app_config:
+		raise ValueError('NETWORK_NAME is required')
+
+	network_name = app_config['NETWORK_NAME']
+	if network_name not in ('mainnet', 'testnet'):
+		raise ValueError('NETWORK_NAME must be either mainnet or testnet')
+
+	return Network.MAINNET if network_name == 'mainnet' else Network.TESTNET
 
 
 def _create_native_mosaic_info(app_config):
@@ -76,12 +110,26 @@ def _create_native_mosaic_info(app_config):
 	return create_native_mosaic_info(mosaic_id, XYM_DIVISIBILITY)
 
 
+def _create_required_positive_integer_setting(app_config, setting):
+	if setting not in app_config:
+		raise ValueError(f'{setting} is required')
+
+	value = app_config[setting]
+	if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
+		raise ValueError(f'{setting} must be a positive integer')
+
+	return value
+
+
 def setup_symbol_routes(app, symbol_api_facade):
 	def _run_symbol_query(query_fn, error_log):
 		try:
 			return None, query_fn()
 		except (PsycopgError, SymbolDataUnavailable):
 			log.error(error_log)
+			return _service_unavailable('Symbol backend data is unavailable'), None
+		except SymbolDataInvalid as error:
+			log.error(f'Invalid Symbol backend data at {error.field_path}: {error.reason}')
 			return _service_unavailable('Symbol backend data is unavailable'), None
 
 	@app.route('/api/symbol/health')
@@ -132,6 +180,8 @@ def setup_symbol_routes(app, symbol_api_facade):
 
 		return jsonify(result)
 
+	_setup_symbol_mosaic_routes(app, symbol_api_facade, _run_symbol_query)
+
 	@app.route('/api/symbol/receipts')
 	def api_get_symbol_receipts():
 		try:
@@ -149,7 +199,11 @@ def setup_symbol_routes(app, symbol_api_facade):
 		return jsonify(result)
 
 	_setup_symbol_transactions_route(app, symbol_api_facade, _run_symbol_query)
+	_setup_symbol_account_routes(app, symbol_api_facade, _run_symbol_query)
+	_setup_symbol_block_receipts_route(app, symbol_api_facade, _run_symbol_query)
 
+
+def _setup_symbol_block_receipts_route(app, symbol_api_facade, run_symbol_query):
 	@app.route('/api/symbol/block/<height>/receipts')
 	def api_get_symbol_block_receipts(height):
 		try:
@@ -159,9 +213,86 @@ def setup_symbol_routes(app, symbol_api_facade):
 		except ValueError as error:
 			abort(400, error)
 
-		error, result = _run_symbol_query(
+		error, result = run_symbol_query(
 			lambda: symbol_api_facade.get_receipts(query),
 			'Failed to get Symbol block receipts')
+		if error:
+			return error
+
+		if result is None:
+			abort(404)
+
+		return jsonify(result)
+
+
+def _setup_symbol_account_routes(app, symbol_api_facade, run_symbol_query):
+	@app.route('/api/symbol/accounts')
+	def api_get_symbol_accounts():
+		try:
+			_validate_allowed_query_parameters(ACCOUNT_LIST_QUERY_PARAMETERS)
+			query = _parse_account_list_query()
+		except ValueError as error:
+			abort(400, error)
+
+		error, result = run_symbol_query(
+			lambda: symbol_api_facade.get_accounts(query),
+			'Failed to get Symbol accounts')
+		if error:
+			return error
+
+		return jsonify(result)
+
+	@app.route('/api/symbol/account')
+	def api_get_symbol_account():
+		try:
+			address, public_key = _parse_account_query(symbol_api_facade.network)
+		except ValueError as error:
+			abort(400, error)
+
+		error, result = run_symbol_query(
+			lambda: symbol_api_facade.try_get_account(address, public_key),
+			'Failed to get Symbol account')
+		if error:
+			return error
+
+		if result is None:
+			abort(404)
+
+		return jsonify(result)
+
+
+def _setup_symbol_mosaic_routes(app, symbol_api_facade, run_symbol_query):
+	@app.route('/api/symbol/mosaics')
+	def api_get_symbol_mosaics():
+		try:
+			_validate_allowed_query_parameters(MOSAIC_QUERY_PARAMETERS)
+			limit = _parse_bounded_integer('limit', _get_scalar_parameter('limit', '10'), 1, 100)
+			offset = _parse_bounded_integer('offset', _get_scalar_parameter('offset', '0'), 0, MOSAIC_MAX_OFFSET)
+			sort = _get_scalar_parameter('sort', 'DESC').upper()
+			if sort not in ['ASC', 'DESC']:
+				raise ValueError('Sort must be either ASC or DESC')
+		except ValueError as error:
+			abort(400, error)
+
+		error, result = run_symbol_query(
+			lambda: symbol_api_facade.get_mosaics(limit, offset, SortOrder(sort)),
+			'Failed to get Symbol mosaics')
+		if error:
+			return error
+
+		return jsonify(result)
+
+	@app.route('/api/symbol/mosaic/<name>')
+	def api_get_symbol_mosaic(name):
+		try:
+			_validate_allowed_query_parameters(frozenset())
+			mosaic_id = _parse_mosaic_id(name)
+		except ValueError as error:
+			abort(400, error)
+
+		error, result = run_symbol_query(
+			lambda: symbol_api_facade.get_mosaic(mosaic_id),
+			'Failed to get Symbol mosaic')
 		if error:
 			return error
 
@@ -240,6 +371,36 @@ def _parse_receipt_query(height=None):
 		sender_address=_parse_address('senderAddress'))
 
 
+def _parse_account_list_query():
+	limit = _parse_bounded_integer('limit', _get_scalar_parameter('limit', '10'), 1, 100)
+	offset = _parse_bounded_integer('offset', _get_scalar_parameter('offset', '0'), 0, ACCOUNT_LIST_MAX_OFFSET)
+	sort_field_value = _get_scalar_parameter('sort_field', 'ID').upper()
+	try:
+		sort_field = AccountSortField(sort_field_value)
+	except ValueError as error:
+		raise ValueError('sort_field must be ID, IMPORTANCE, BALANCE, or HEIGHT') from error
+
+	sort_order = _get_scalar_parameter('sort_order', 'DESC').upper()
+	if sort_order != SortOrder.DESC.value:
+		raise ValueError('sort_order must be DESC')
+
+	mosaic_id = _get_scalar_parameter('mosaic_id')
+	if mosaic_id is not None:
+		if not MOSAIC_ID_PATTERN.fullmatch(mosaic_id):
+			raise ValueError('Invalid mosaic_id')
+
+		mosaic_id = mosaic_id.upper()
+
+	if sort_field == AccountSortField.BALANCE and mosaic_id is None:
+		raise ValueError('mosaic_id is required for BALANCE')
+
+	if sort_field != AccountSortField.BALANCE and mosaic_id is not None:
+		raise ValueError('mosaic_id can only be used with BALANCE')
+
+	is_harvesting = _parse_boolean('is_harvesting', _get_scalar_parameter('is_harvesting'))
+	return AccountListQuery(sort_field, mosaic_id, limit, offset, is_harvesting)
+
+
 def _parse_transaction_query():
 	limit = _parse_bounded_integer('limit', _get_scalar_parameter('limit', '10'), 1, 250)
 	offset = _parse_bounded_integer('offset', _get_scalar_parameter('offset', '0'), 0, TRANSACTION_MAX_OFFSET)
@@ -256,7 +417,7 @@ def _parse_transaction_query():
 	if address is not None and (signer_public_key is not None or recipient_address is not None):
 		raise ValueError('address cannot be combined with signerPublicKey or recipientAddress')
 
-	transfer_mosaic_id = _parse_transfer_mosaic_id(_get_scalar_parameter('mosaic'))
+	transfer_mosaic_id = _parse_mosaic_id(_get_scalar_parameter('mosaic'))
 	embedded = _parse_boolean('embedded', _get_scalar_parameter('embedded'))
 	order_value = _get_scalar_parameter('order', 'DESC').upper()
 	if order_value != SortOrder.DESC.value:
@@ -308,7 +469,7 @@ def _parse_public_key(name):
 		raise ValueError(f'Invalid {name}') from error
 
 
-def _parse_transfer_mosaic_id(value):
+def _parse_mosaic_id(value):
 	if value is None:
 		return None
 
@@ -395,6 +556,38 @@ def _parse_address(name):
 		return Address(value).bytes
 	except (TypeError, ValueError) as error:
 		raise ValueError(f'Invalid {name}') from error
+
+
+def _parse_account_query(network):
+	_validate_query_parameters({'address', 'publicKey'})
+	address = _get_scalar_parameter('address')
+	public_key = _get_scalar_parameter('publicKey')
+	if (address is None) == (public_key is None):
+		raise ValueError('Exactly one of address or publicKey is required')
+
+	if address is not None:
+		return _parse_account_address(address, network), None
+
+	return None, _parse_account_search_public_key(public_key)
+
+
+def _validate_query_parameters(allowed_parameters):
+	if set(request.args.keys()) - allowed_parameters:
+		raise ValueError('Unsupported query parameter')
+
+
+def _parse_account_address(value, network):
+	if not network.is_valid_address_string(value):
+		raise ValueError('Invalid address')
+
+	return Address(value).bytes
+
+
+def _parse_account_search_public_key(value):
+	if not re.fullmatch(r'[0-9A-Fa-f]{64}', value, re.ASCII) or value == '0' * 64:
+		raise ValueError('Invalid publicKey')
+
+	return PublicKey(value).bytes
 
 
 def _service_unavailable(message):

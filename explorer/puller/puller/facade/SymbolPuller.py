@@ -332,8 +332,10 @@ class SymbolPuller:  # pylint: disable=too-many-instance-attributes
 		except Exception as exception:
 			try:
 				sync_state = self.symbol_db.get_sync_state()
-				if sync_state and sync_state['dirty_state_from_height'] is not None:
-					self.symbol_db.mark_sync_unhealthy()
+				if sync_state:
+					self._record_performance('set_last_completed_height', sync_state['last_synced_height'])
+					if sync_state['dirty_state_from_height'] is not None:
+						self.symbol_db.mark_sync_unhealthy()
 			except Exception as state_error:  # pylint: disable=broad-exception-caught
 				# Preserve the primary failure if the best-effort failure-state update also fails.
 				log.error(f'Failed to record Symbol sync failure: {state_error}')
@@ -401,12 +403,23 @@ class SymbolPuller:  # pylint: disable=too-many-instance-attributes
 		self._active_performance.set_bounds(start_height, chain_height)
 
 		self._record_performance('set_phase', 'block_sync')
+		checkpoint_state = {
+			'chain_height': chain_height,
+			'finalized_height': finalized_height,
+			'finalized_hash': finalized_hash,
+			'finalized_epoch': finalized_epoch,
+			'finalized_point': finalized_point,
+			'is_finalization_capped': is_finalization_capped,
+			'previous_checkpoint_height': (
+				bounded_sync_state['last_synced_height']
+				if bounded_sync_state and bounded_sync_state['last_synced_height'] else None)
+		}
 		last_synced_height, last_synced_block_hash = await self._sync_block_pages(
 			start_height,
 			chain_height,
 			epoch_adjustment_seconds,
 			native_mosaic_info,
-			finalized_height)
+			checkpoint_state)
 		if last_synced_height is None and bounded_sync_state:
 			last_synced_height = bounded_sync_state['last_synced_height']
 			last_synced_block_hash = bounded_sync_state['last_synced_block_hash']
@@ -415,22 +428,57 @@ class SymbolPuller:  # pylint: disable=too-many-instance-attributes
 			finalized_hash = last_synced_block_hash if finalized_height == last_synced_height else self.symbol_db.get_block_hash(finalized_height)
 			if not finalized_hash:
 				raise ValueError(f'Unable to determine finalized hash for height {finalized_height}')
+			checkpoint_state = {**checkpoint_state, 'finalized_hash': finalized_hash}
 
 		self._record_performance('set_phase', 'finalization_lock_cleanup')
 		await self._sync_finalization_lock_cleanup(finalized_height)
 
 		self._record_performance('set_phase', 'sync_state_write')
-		self.symbol_db.upsert_sync_state({
+		self.symbol_db.upsert_sync_state(self._create_published_sync_state(
+			checkpoint_state,
+			last_synced_height,
+			last_synced_block_hash))
+
+	@staticmethod
+	def _create_published_sync_state(
+		checkpoint_state,
+		last_synced_height,
+		last_synced_block_hash
+	):
+		"""Builds sync state whose finalization fields do not exceed the persisted checkpoint."""
+
+		finalized_height = checkpoint_state['finalized_height']
+		finalized_hash = checkpoint_state['finalized_hash']
+		finalized_epoch = checkpoint_state['finalized_epoch']
+		finalized_point = checkpoint_state['finalized_point']
+		if not last_synced_height:
+			published_finalized_height = None
+			published_finalized_hash = None
+			published_finalized_epoch = None
+			published_finalized_point = None
+		elif finalized_height <= last_synced_height:
+			published_finalized_height = finalized_height
+			published_finalized_hash = finalized_hash or (
+				last_synced_block_hash if finalized_height == last_synced_height else None)
+			published_finalized_epoch = finalized_epoch
+			published_finalized_point = finalized_point
+		else:
+			published_finalized_height = last_synced_height
+			published_finalized_hash = last_synced_block_hash
+			published_finalized_epoch = None
+			published_finalized_point = None
+
+		return {
 			'status': 'healthy',
-			'chain_height': chain_height,
-			'finalized_height': finalized_height,
-			'finalized_hash': finalized_hash,
-			'finalized_epoch': finalized_epoch,
-			'finalized_point': finalized_point,
+			'chain_height': checkpoint_state['chain_height'],
+			'finalized_height': published_finalized_height,
+			'finalized_hash': published_finalized_hash,
+			'finalized_epoch': published_finalized_epoch,
+			'finalized_point': published_finalized_point,
 			'last_synced_height': last_synced_height,
 			'last_synced_block_hash': last_synced_block_hash,
 			'dirty_state_from_height': None
-		})
+		}
 
 	@staticmethod
 	def _get_sync_chain_height(node_chain_height, max_height):
@@ -583,7 +631,7 @@ class SymbolPuller:  # pylint: disable=too-many-instance-attributes
 		chain_height,
 		epoch_adjustment_seconds,
 		native_mosaic_info,
-		observed_finalized_height=None
+		checkpoint_state
 	):
 		last_synced_height = None
 		last_synced_block_hash = None
@@ -633,16 +681,20 @@ class SymbolPuller:  # pylint: disable=too-many-instance-attributes
 
 				if is_final_batch:
 					await self._sync_block_batch_with_dirty_state(
-						batch_rows, epoch_adjustment_seconds, native_mosaic_info, batch, observed_finalized_height)
-					self._active_performance.complete_batch(batch)
+						batch_rows, epoch_adjustment_seconds, native_mosaic_info, batch, checkpoint_state)
+					self._checkpoint_sync_batch(batch_rows, checkpoint_state, batch)
+					self._record_performance('complete_batch', batch)
+					self._record_performance('set_last_completed_height', batch.end_height)
 					self._log_performance_event(
 						batch, 'symbol_sync_batch_completed', 'completed')
 					return last_synced_height, last_synced_block_hash
 
 				batch.set_range(batch_rows[0]['height'], batch_rows[-1]['height'])
 				await self._sync_block_batch_with_dirty_state(
-					batch_rows, epoch_adjustment_seconds, native_mosaic_info, batch, observed_finalized_height)
-				self._active_performance.complete_batch(batch)
+					batch_rows, epoch_adjustment_seconds, native_mosaic_info, batch, checkpoint_state)
+				self._checkpoint_sync_batch(batch_rows, checkpoint_state, batch)
+				self._record_performance('complete_batch', batch)
+				self._record_performance('set_last_completed_height', batch.end_height)
 				self._log_performance_event(
 					batch, 'symbol_sync_batch_completed', 'completed')
 			except Exception as exception:
@@ -653,14 +705,43 @@ class SymbolPuller:  # pylint: disable=too-many-instance-attributes
 
 		return last_synced_height, last_synced_block_hash
 
+	def _checkpoint_sync_batch(self, batch_rows, checkpoint_state, batch):
+		"""Publishes a completely written batch before performance state or later work advances."""
+
+		last_row = batch_rows[-1]
+		self._validate_new_finalized_block_hash(last_row['height'], checkpoint_state)
+		batch.set_phase('checkpoint_commit')
+		self.symbol_db.checkpoint_sync_state(self._create_published_sync_state(
+			checkpoint_state,
+			last_row['height'],
+			last_row['hash']))
+
+	def _validate_new_finalized_block_hash(self, batch_end_height, checkpoint_state):
+		"""Rejects a newly covered finalized hash that disagrees with persisted block evidence."""
+
+		if checkpoint_state['is_finalization_capped'] or not checkpoint_state['finalized_hash']:
+			return
+
+		finalized_height = checkpoint_state['finalized_height']
+		previous_checkpoint_height = checkpoint_state['previous_checkpoint_height'] or 0
+		if finalized_height <= previous_checkpoint_height or finalized_height > batch_end_height:
+			return
+
+		local_hash = self.symbol_db.get_block_hash(finalized_height)
+		if not local_hash:
+			raise SymbolRollbackError('Finalized block is missing from local database')
+		if bytes(local_hash) != bytes(checkpoint_state['finalized_hash']):
+			raise SymbolRollbackError('Finalized block hash does not match local database')
+
 	async def _sync_block_batch_with_dirty_state(  # pylint: disable=too-many-locals,too-many-statements
 		self,
 		batch_rows,
 		epoch_adjustment_seconds,
 		native_mosaic_info,
 		batch,
-		observed_finalized_height=None
+		checkpoint_state
 	):
+		observed_finalized_height = checkpoint_state['finalized_height']
 		expected_transaction_counts = {
 			row['height']: TransactionCountExpectation(row['transactions_count'], row['total_transactions_count'])
 			for row in batch_rows

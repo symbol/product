@@ -664,6 +664,12 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 		self._execute_upsert_sync_state(cursor, sync_state)
 		self._commit()
 
+	def checkpoint_sync_state(self, sync_state):
+		"""Publishes one fully written Symbol batch and clears its dirty marker atomically."""
+
+		with self._database_transaction() as cursor:
+			self._execute_upsert_sync_state(cursor, sync_state)
+
 	def mark_sync_write_intent(self, height):
 		"""Persists the earliest height whose batch may start a local write."""
 

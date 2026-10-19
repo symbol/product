@@ -193,6 +193,13 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 
 		return cursor.fetchone()
 
+	@staticmethod
+	def _fetch_mosaic_expiration_heights(cursor):
+		"""Helper method to fetch the expiration heights of all mosaics from database."""
+
+		cursor.execute('SELECT namespace_name, expiration_height FROM mosaics ORDER BY namespace_name')
+		return cursor.fetchall()
+
 	def test_can_create_tables(self):
 		# Arrange:
 		with NemDatabase(self.db_config) as nem_database:
@@ -939,6 +946,154 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 			[]
 		), result)
 
+	def _assert_mosaic_expiration_heights_after_registration(self, registration_owner, registration_height, expected):
+		# Arrange:
+		owner = PublicKey('11' * 32)
+		with NemDatabase(self.db_config) as nem_database:
+			nem_database.create_tables()
+			cursor = nem_database.connection.cursor()
+
+			nem_database.upsert_namespace(cursor, NamespaceRecord('root', owner, 100, 200))
+			nem_database.upsert_mosaic(cursor, MOSAICS[0]._replace(root_namespace='root', namespace_name='root.old', registered_height=150))
+			nem_database.upsert_mosaic(cursor, MOSAICS[0]._replace(root_namespace='other', namespace_name='other.token', registered_height=150))
+
+			# Act:
+			nem_database.upsert_namespace(cursor, NamespaceRecord('root', registration_owner, registration_height, 900000))
+			results = self._fetch_mosaic_expiration_heights(cursor)
+
+		# Assert:
+		self.assertEqual(expected, results)
+
+	def test_same_owner_namespace_renewal_before_grace_period_end_keeps_mosaics_current(self):
+		self._assert_mosaic_expiration_heights_after_registration(
+			PublicKey('11' * 32),
+			200 + (30 * 1440) - 1,
+			[('other.token', None), ('root.old', None)]
+		)
+
+	def test_same_owner_namespace_registration_at_grace_period_end_expires_previous_mosaics(self):
+		self._assert_mosaic_expiration_heights_after_registration(
+			PublicKey('11' * 32),
+			200 + (30 * 1440),
+			[('other.token', None), ('root.old', 200)]
+		)
+
+	def test_other_owner_namespace_registration_expires_previous_mosaics(self):
+		# the height is inside the grace period, so only the owner makes this a new registration
+		self._assert_mosaic_expiration_heights_after_registration(
+			PublicKey('22' * 32),
+			250,
+			[('other.token', None), ('root.old', 200)]
+		)
+
+	def test_namespace_registration_expires_each_mosaic_with_its_own_registration(self):
+		# Arrange:
+		owner = PublicKey('11' * 32)
+		with NemDatabase(self.db_config) as nem_database:
+			nem_database.create_tables()
+			cursor = nem_database.connection.cursor()
+
+			nem_database.upsert_namespace(cursor, NamespaceRecord('root', owner, 100, 200))
+			nem_database.upsert_mosaic(cursor, MOSAICS[0]._replace(root_namespace='root', namespace_name='root.first', registered_height=150))
+			nem_database.upsert_namespace(cursor, NamespaceRecord('root', PublicKey('22' * 32), 1000, 1200))
+			nem_database.upsert_mosaic(cursor, MOSAICS[0]._replace(root_namespace='root', namespace_name='root.second', registered_height=1100))
+
+			# Act:
+			nem_database.upsert_namespace(cursor, NamespaceRecord('root', owner, 10000, 12000))
+			results = self._fetch_mosaic_expiration_heights(cursor)
+
+		# Assert: the mosaic of the first registration keeps the expiration it already has
+		self.assertEqual([('root.first', 200), ('root.second', 1200)], results)
+
+	def test_replayed_namespace_registrations_expire_each_mosaic_with_its_own_registration(self):
+		# Arrange: rollback repair restores the mosaics first and replays the registrations of their root afterwards
+		owner = PublicKey('11' * 32)
+		with NemDatabase(self.db_config) as nem_database:
+			nem_database.create_tables()
+			cursor = nem_database.connection.cursor()
+
+			nem_database.upsert_mosaic(cursor, MOSAICS[0]._replace(root_namespace='root', namespace_name='root.first', registered_height=150))
+			nem_database.upsert_mosaic(cursor, MOSAICS[0]._replace(root_namespace='root', namespace_name='root.second', registered_height=1100))
+			nem_database.upsert_mosaic(cursor, MOSAICS[0]._replace(root_namespace='root', namespace_name='root.third', registered_height=11000))
+
+			# Act:
+			nem_database.upsert_namespace(cursor, NamespaceRecord('root', owner, 100, 200))
+			nem_database.upsert_namespace(cursor, NamespaceRecord('root', PublicKey('22' * 32), 1000, 1200))
+			nem_database.upsert_namespace(cursor, NamespaceRecord('root', owner, 10000, 12000))
+			results = self._fetch_mosaic_expiration_heights(cursor)
+
+		# Assert:
+		self.assertEqual([('root.first', 200), ('root.second', 1200), ('root.third', None)], results)
+
+	def test_replayed_namespace_registration_keeps_mosaic_defined_at_its_height_current(self):
+		# Arrange: a mosaic defined in the block of a registration belongs to that registration
+		with NemDatabase(self.db_config) as nem_database:
+			nem_database.create_tables()
+			cursor = nem_database.connection.cursor()
+
+			nem_database.upsert_mosaic(cursor, MOSAICS[0]._replace(root_namespace='root', namespace_name='root.old', registered_height=150))
+			nem_database.upsert_mosaic(cursor, MOSAICS[0]._replace(root_namespace='root', namespace_name='root.new', registered_height=1000))
+
+			# Act:
+			nem_database.upsert_namespace(cursor, NamespaceRecord('root', PublicKey('11' * 32), 100, 200))
+			nem_database.upsert_namespace(cursor, NamespaceRecord('root', PublicKey('22' * 32), 1000, 1200))
+			results = self._fetch_mosaic_expiration_heights(cursor)
+
+		# Assert:
+		self.assertEqual([('root.new', None), ('root.old', 200)], results)
+
+	def test_mosaic_redefinition_clears_expiration_height(self):
+		# Arrange:
+		with NemDatabase(self.db_config) as nem_database:
+			nem_database.create_tables()
+			cursor = nem_database.connection.cursor()
+
+			nem_database.upsert_namespace(cursor, NamespaceRecord('root', PublicKey('11' * 32), 100, 200))
+			nem_database.upsert_mosaic(cursor, MOSAICS[0]._replace(root_namespace='root', namespace_name='root.token', registered_height=150))
+			nem_database.upsert_namespace(cursor, NamespaceRecord('root', PublicKey('22' * 32), 1000, 1200))
+
+			# Act:
+			nem_database.upsert_mosaic(cursor, MOSAICS[0]._replace(root_namespace='root', namespace_name='root.token', registered_height=1100))
+			results = self._fetch_mosaic_expiration_heights(cursor)
+
+		# Assert:
+		self.assertEqual([('root.token', None)], results)
+
+	def test_can_clear_mosaic_expiration_heights_of_affected_roots(self):
+		# Arrange:
+		with NemDatabase(self.db_config) as nem_database:
+			nem_database.create_tables()
+			cursor = nem_database.connection.cursor()
+
+			for root in ('affected', 'unaffected'):
+				nem_database.upsert_mosaic(cursor, MOSAICS[0]._replace(root_namespace=root, namespace_name=f'{root}.token', registered_height=150))
+
+			cursor.execute('UPDATE mosaics SET expiration_height = 200')
+
+			# Act:
+			nem_database.clear_mosaic_expiration_heights(cursor, {'affected'})
+			results = self._fetch_mosaic_expiration_heights(cursor)
+
+		# Assert:
+		self.assertEqual([('affected.token', None), ('unaffected.token', 200)], results)
+
+	def test_clear_mosaic_expiration_heights_is_noop_when_roots_are_empty(self):
+		# Arrange:
+		with NemDatabase(self.db_config) as nem_database:
+			nem_database.create_tables()
+			cursor = nem_database.connection.cursor()
+
+			nem_database.upsert_mosaic(cursor, MOSAICS[0]._replace(root_namespace='root', namespace_name='root.token', registered_height=150))
+
+			cursor.execute('UPDATE mosaics SET expiration_height = 200')
+
+			# Act:
+			nem_database.clear_mosaic_expiration_heights(cursor, set())
+			results = self._fetch_mosaic_expiration_heights(cursor)
+
+		# Assert:
+		self.assertEqual([('root.token', 200)], results)
+
 	def test_can_delete_affected_namespace_roots(self):
 		# Arrange:
 		owner = PublicKey('11' * 32)
@@ -956,6 +1111,24 @@ class NemDatabaseTest(unittest.TestCase):  # pylint: disable=too-many-public-met
 
 		# Assert:
 		self.assertEqual(['unaffected'], results)
+
+	def test_delete_namespaces_preserves_seeded_network_currency_root(self):  # pylint: disable=invalid-name
+		# Arrange:
+		owner = PublicKey('11' * 32)
+		with NemDatabase(self.db_config) as nem_database:
+			nem_database.create_tables()
+			cursor = nem_database.connection.cursor()
+
+			nem_database.seed_network_currency(cursor, owner)
+			nem_database.upsert_namespace(cursor, NamespaceRecord('affected', owner, 100, 200))
+
+			# Act:
+			nem_database.delete_namespaces(cursor, {'nem', 'affected'})
+			cursor.execute('SELECT root_namespace FROM namespaces ORDER BY root_namespace')
+			results = [record[0] for record in cursor.fetchall()]
+
+		# Assert:
+		self.assertEqual(['nem'], results)
 
 	def test_can_update_sub_namespaces(self):
 		# Arrange:
