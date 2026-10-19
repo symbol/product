@@ -16,7 +16,7 @@ from shoestring.internal.TransactionSerializer import write_transaction_to_file
 from shoestring.internal.VoterConfigurator import VoterConfigurator, inspect_voting_key_files
 
 
-def _load_voting_key_descriptors(directory, current_epoch):
+def _load_voting_key_descriptors_from_disk(directory, current_epoch):
 	voting_key_descriptors = inspect_voting_key_files(directory)
 	active_voting_key_descriptors = []
 	inactive_voting_key_descriptors = []
@@ -26,18 +26,25 @@ def _load_voting_key_descriptors(directory, current_epoch):
 	return (active_voting_key_descriptors, inactive_voting_key_descriptors)
 
 
-async def _get_network_time(resources_directory):
+def _load_connector(resources_directory):
 	api_endpoints = load_api_endpoints(resources_directory)
 
 	log.info(_('general-connecting-to-node').format(endpoint=api_endpoints[0]))
 	connector = SymbolConnector(api_endpoints[0])
-
-	network_time = await connector.network_time()
-	return network_time
+	return connector
 
 
-async def _save_transaction(transaction_config, directories, transaction_builder):
-	network_time = await _get_network_time(directories.resources)
+async def _load_inactive_voting_key_descriptors_from_network(connector, directories, current_epoch):
+	account_public_key = read_public_key_from_public_key_pem_file(directories.certificates / 'ca.pubkey.pem')
+	account_links = await connector.account_links(account_public_key)
+
+	return [
+		voting_public_key for voting_public_key in account_links.voting_public_keys
+		if voting_public_key.end_epoch < current_epoch
+	]
+
+
+async def _save_transaction(transaction_config, network_time, directories, transaction_builder):
 	aggregate_transaction, transaction_hash = transaction_builder.build(
 		network_time.add_hours(transaction_config.timeout_hours),
 		transaction_config.fee_multiplier,
@@ -77,7 +84,7 @@ async def run_main(args):
 
 	# detect the current finalized height and load the voting key files
 	current_finalization_epoch = await get_current_finalization_epoch(config.services.nodewatch, config_manager)
-	(active_voting_key_descriptors, inactive_voting_key_descriptors) = _load_voting_key_descriptors(
+	(active_voting_key_descriptors, inactive_voting_key_descriptors) = _load_voting_key_descriptors_from_disk(
 		directories.voting_keys,
 		current_finalization_epoch)
 
@@ -85,7 +92,7 @@ async def run_main(args):
 		log.warning(_('renew-voting-keys-no-voting-keys-found'))
 
 	max_voting_keys_per_account = int(config_manager.lookup('config-network.properties', [('chain', 'maxVotingKeysPerAccount')])[0])
-	if len(active_voting_key_descriptors) - len(inactive_voting_key_descriptors) >= max_voting_keys_per_account:
+	if len(active_voting_key_descriptors) >= max_voting_keys_per_account:
 		log.error(_('renew-voting-keys-maximum-already-registered'))
 		return
 
@@ -93,7 +100,8 @@ async def run_main(args):
 	transaction_builder = LinkTransactionBuilder(account_public_key, config.network)
 
 	# remove expired root voting keys
-	for descriptor in inactive_voting_key_descriptors:
+	connector = _load_connector(directories.resources)
+	for descriptor in await _load_inactive_voting_key_descriptors_from_network(connector, directories, current_finalization_epoch):
 		transaction_builder.unlink_voting_public_key(descriptor.public_key, descriptor.start_epoch, descriptor.end_epoch)
 
 	# add new root voting key
@@ -102,7 +110,8 @@ async def run_main(args):
 	transaction_builder.link_voting_public_key(voter_configurator.voting_public_key, *new_voting_key_file_epoch_range)
 
 	# generate transaction
-	await _save_transaction(config.transaction, directories, transaction_builder)
+	network_time = await connector.network_time()
+	await _save_transaction(config.transaction, network_time, directories, transaction_builder)
 
 	# clean up voting keys files
 	if args.compact:

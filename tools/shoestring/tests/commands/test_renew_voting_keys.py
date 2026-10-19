@@ -215,6 +215,18 @@ async def test_can_renew_voting_keys_when_some_are_present_and_active(server):  
 				(3000, 3719)))
 
 
+def _make_account_json_with_voting_public_keys(voting_public_keys):
+	return {
+		'account': {
+			'supplementalPublicKeys': {
+				'voting': {
+					'publicKeys': voting_public_keys
+				}
+			}
+		}
+	}
+
+
 async def _assert_can_renew_voting_keys_when_some_are_present_and_inactive(server, should_compact):  # pylint: disable=redefined-outer-name
 	# Arrange:
 	with tempfile.TemporaryDirectory() as output_directory:
@@ -227,6 +239,19 @@ async def _assert_can_renew_voting_keys_when_some_are_present_and_inactive(serve
 			expired_root_voting_public_key_2 = _write_voting_keys_file(voting_keys_directory, 2, 2700, 2799)
 			_write_voting_keys_file(voting_keys_directory, 3, 2800, 2825)  # last epoch matches current epoch
 			_write_voting_keys_file(voting_keys_directory, 4, 2826, 2999)
+
+			server.mock.accounts_by_id_response = _make_account_json_with_voting_public_keys([
+				{
+					'publicKey': str(expired_root_voting_public_key_1),
+					'startEpoch': 2600,
+					'endEpoch': 2699
+				},
+				{
+					'publicKey': str(expired_root_voting_public_key_2),
+					'startEpoch': 2700,
+					'endEpoch': 2799
+				}
+			])
 
 			# Act:
 			await main([
@@ -282,6 +307,85 @@ async def test_can_renew_voting_keys_when_some_are_present_and_inactive_compact_
 
 async def test_can_renew_voting_keys_when_some_are_present_and_inactive_compact_enabled(server):  # pylint: disable=redefined-outer-name
 	await _assert_can_renew_voting_keys_when_some_are_present_and_inactive(server, True)
+
+
+async def _assert_can_renew_voting_keys_when_some_are_present_and_inactive_removed_from_network(
+	server,  # pylint: disable=redefined-outer-name):
+	should_compact
+):
+	# Arrange:
+	with tempfile.TemporaryDirectory() as output_directory:
+		with tempfile.TemporaryDirectory() as package_directory:
+			await _prepare_output_directory(Path(package_directory), Path(output_directory), NodeFeatures.VOTER, server.make_url(''))
+			config_filepath = prepare_shoestring_configuration(package_directory, NodeFeatures.VOTER, server.make_url(''))
+
+			voting_keys_directory = Path(output_directory) / 'keys' / 'voting'
+			_write_voting_keys_file(voting_keys_directory, 1, 2600, 2699)  # simulate removed from network already
+			expired_root_voting_public_key_2 = _write_voting_keys_file(voting_keys_directory, 2, 2700, 2799)
+			_write_voting_keys_file(voting_keys_directory, 3, 2800, 2825)  # last epoch matches current epoch
+			_write_voting_keys_file(voting_keys_directory, 4, 2826, 2999)
+
+			server.mock.accounts_by_id_response = _make_account_json_with_voting_public_keys([
+				{
+					'publicKey': str(expired_root_voting_public_key_2),
+					'startEpoch': 2700,
+					'endEpoch': 2799
+				}
+			])
+
+			# Act:
+			await main([
+				'renew-voting-keys',
+				'--config', str(config_filepath),
+				'--directory', output_directory,
+				*(['--compact'] if should_compact else [])
+			])
+
+			# Assert: inactive voting keys files are deleted, active voting keys files are preserved and new voting keys file is created
+			start_ordinal = 1 if should_compact else 3
+			voting_key_descriptors = inspect_voting_key_files(voting_keys_directory)
+			assert [
+				*([] if should_compact else [
+					(1, 2600, 2699),
+					(2, 2700, 2799)
+				]),
+				(start_ordinal, 2800, 2825),
+				(start_ordinal + 1, 2826, 2999),
+				(start_ordinal + 2, 3000, 3719),
+			] == _map_voting_key_descriptors_to_tuples(voting_key_descriptors)
+
+			# - transaction is created
+			transaction = _read_transaction(output_directory)
+			ca_public_key = read_public_key_from_public_key_pem_file(Path(output_directory) / 'keys' / 'cert' / 'ca.pubkey.pem')
+			assert_aggregate_transaction(PytestAsserter(), transaction, AggregateDescriptor(
+				168 + 2 * 96,
+				200,
+				123456789 + 1 * 60 * 60 * 1000,
+				ca_public_key))
+			assert 2 == len(transaction.transactions)
+
+			assert_link_transaction(PytestAsserter(), transaction.transactions[0], LinkDescriptor(
+				TransactionType.VOTING_KEY_LINK,
+				expired_root_voting_public_key_2,
+				LinkAction.UNLINK,
+				(2700, 2799)))
+			assert_link_transaction(PytestAsserter(), transaction.transactions[1], LinkDescriptor(
+				TransactionType.VOTING_KEY_LINK,
+				voting_key_descriptors[-1].public_key,
+				LinkAction.LINK,
+				(3000, 3719)))
+
+
+async def test_can_renew_voting_keys_when_some_are_present_and_inactive_removed_from_network_compact_disabled(
+	server   # pylint: disable=redefined-outer-name
+):
+	await _assert_can_renew_voting_keys_when_some_are_present_and_inactive_removed_from_network(server, False)
+
+
+async def test_can_renew_voting_keys_when_some_are_present_and_inactive_removed_from_network_compact_enabled(
+	server   # pylint: disable=redefined-outer-name
+):
+	await _assert_can_renew_voting_keys_when_some_are_present_and_inactive_removed_from_network(server, True)
 
 
 async def test_cannot_renew_voting_keys_when_max_keys_are_active(server, caplog):  # pylint: disable=redefined-outer-name
