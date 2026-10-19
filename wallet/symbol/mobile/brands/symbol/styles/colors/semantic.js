@@ -244,7 +244,7 @@ export const Components = {
 		}
 	},
 	emptyList: {
-		text: Semantic.content.primary.inverse
+		text: Primitives.whiteOpacity30
 	},
 	navigationMenu: {
 		background: Semantic.background.secondary.default

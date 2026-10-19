@@ -572,13 +572,13 @@ export const Components = {
 	link: {
 		default: {
 			default: {
-				text: Semantic.content.primary.default
+				text: Semantic.role.secondary.default
 			},
 			pressed: {
 				text: Semantic.role.secondary.default
 			},
 			disabled: {
-				text: Semantic.content.primary.muted
+				text: Semantic.role.secondary.muted
 			}
 		}
 	}
