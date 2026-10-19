@@ -36,7 +36,7 @@
     "react-apexcharts": "^2.0.1",
     "react-csv": "^2.2.2",
     "react-dom": "19.3.0",
-    "react-intersection-observer": "10.0.3",
+    "react-intersection-observer": "11.0.1",
     "react-time-ago": "^7.3.3",
     "react-toastify": "^11.0.5",
     "sass": "^1.49.0",
