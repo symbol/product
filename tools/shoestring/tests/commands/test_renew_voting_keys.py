@@ -215,7 +215,7 @@ async def test_can_renew_voting_keys_when_some_are_present_and_active(server):  
 				(3000, 3719)))
 
 
-async def test_can_renew_voting_keys_when_some_are_present_and_inactive(server):  # pylint: disable=redefined-outer-name
+async def _assert_can_renew_voting_keys_when_some_are_present_and_inactive(server, should_compact):  # pylint: disable=redefined-outer-name
 	# Arrange:
 	with tempfile.TemporaryDirectory() as output_directory:
 		with tempfile.TemporaryDirectory() as package_directory:
@@ -232,15 +232,21 @@ async def test_can_renew_voting_keys_when_some_are_present_and_inactive(server):
 			await main([
 				'renew-voting-keys',
 				'--config', str(config_filepath),
-				'--directory', output_directory
+				'--directory', output_directory,
+				*(['--compact'] if should_compact else [])
 			])
 
 			# Assert: inactive voting keys files are deleted, active voting keys files are preserved and new voting keys file is created
+			start_ordinal = 1 if should_compact else 3
 			voting_key_descriptors = inspect_voting_key_files(voting_keys_directory)
 			assert [
-				(1, 2800, 2825),
-				(2, 2826, 2999),
-				(3, 3000, 3719),
+				*([] if should_compact else [
+					(1, 2600, 2699),
+					(2, 2700, 2799)
+				]),
+				(start_ordinal, 2800, 2825),
+				(start_ordinal + 1, 2826, 2999),
+				(start_ordinal + 2, 3000, 3719),
 			] == _map_voting_key_descriptors_to_tuples(voting_key_descriptors)
 
 			# - transaction is created
@@ -268,6 +274,14 @@ async def test_can_renew_voting_keys_when_some_are_present_and_inactive(server):
 				voting_key_descriptors[-1].public_key,
 				LinkAction.LINK,
 				(3000, 3719)))
+
+
+async def test_can_renew_voting_keys_when_some_are_present_and_inactive_compact_disabled(server):  # pylint: disable=redefined-outer-name
+	await _assert_can_renew_voting_keys_when_some_are_present_and_inactive(server, False)
+
+
+async def test_can_renew_voting_keys_when_some_are_present_and_inactive_compact_enabled(server):  # pylint: disable=redefined-outer-name
+	await _assert_can_renew_voting_keys_when_some_are_present_and_inactive(server, True)
 
 
 async def test_cannot_renew_voting_keys_when_max_keys_are_active(server, caplog):  # pylint: disable=redefined-outer-name
