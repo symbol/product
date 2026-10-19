@@ -105,10 +105,12 @@ async def run_main(args):
 	await _save_transaction(config.transaction, directories, transaction_builder)
 
 	# clean up voting keys files
-	_clean_up_voting_keys_files(directories.voting_keys, inactive_voting_key_descriptors)
+	if args.compact:
+		_clean_up_voting_keys_files(directories.voting_keys, inactive_voting_key_descriptors)
 
 
 def add_arguments(parser):
 	parser.add_argument('--config', help=_('argument-help-config'), required=True)
 	parser.add_argument('--directory', help=_('argument-help-directory').format(default_path=Path.home()), default=str(Path.home()))
+	parser.add_argument('--compact', help=_('argument-help-renew-voting-keys-compact'), action='store_true')
 	parser.set_defaults(func=run_main)
