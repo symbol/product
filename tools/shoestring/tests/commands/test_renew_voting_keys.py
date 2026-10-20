@@ -4,7 +4,7 @@ import tempfile
 from pathlib import Path
 
 import pytest
-from symbolchain.CryptoTypes import PrivateKey
+from symbolchain.CryptoTypes import PrivateKey, PublicKey
 from symbolchain.sc import LinkAction, TransactionFactory, TransactionType
 from symbolchain.symbol.KeyPair import KeyPair
 from symbolchain.symbol.VotingKeysGenerator import VotingKeysGenerator
@@ -215,12 +215,18 @@ async def test_can_renew_voting_keys_when_some_are_present_and_active(server):  
 				(3000, 3719)))
 
 
-def _make_account_json_with_voting_public_keys(voting_public_keys):
+def _make_account_json_with_voting_public_keys(voting_public_key_tuples):
 	return {
 		'account': {
 			'supplementalPublicKeys': {
 				'voting': {
-					'publicKeys': voting_public_keys
+					'publicKeys': [
+						{
+							'publicKey': str(public_key),
+							'startEpoch': start_epoch,
+							'endEpoch': end_epoch
+						} for (public_key, start_epoch, end_epoch) in voting_public_key_tuples
+					]
 				}
 			}
 		}
@@ -241,16 +247,10 @@ async def _assert_can_renew_voting_keys_when_some_are_present_and_inactive(serve
 			_write_voting_keys_file(voting_keys_directory, 4, 2826, 2999)
 
 			server.mock.accounts_by_id_response = _make_account_json_with_voting_public_keys([
-				{
-					'publicKey': str(expired_root_voting_public_key_1),
-					'startEpoch': 2600,
-					'endEpoch': 2699
-				},
-				{
-					'publicKey': str(expired_root_voting_public_key_2),
-					'startEpoch': 2700,
-					'endEpoch': 2799
-				}
+				(PublicKey('00' * PublicKey.SIZE), 2800, 2825),  # not expired, so public key doesn't matter
+				(expired_root_voting_public_key_1, 2600, 2699),
+				(expired_root_voting_public_key_2, 2700, 2799),
+				(PublicKey('00' * PublicKey.SIZE), 2826, 2999)
 			])
 
 			# Act:
@@ -261,7 +261,10 @@ async def _assert_can_renew_voting_keys_when_some_are_present_and_inactive(serve
 				*(['--compact'] if should_compact else [])
 			])
 
-			# Assert: inactive voting keys files are deleted, active voting keys files are preserved and new voting keys file is created
+			# Assert:
+			# in compact mode     - inactive voting keys files are deleted and active voting keys files are preserved
+			# in non-compact mode - all voting keys files are preserved
+			# in both modes       - new voting keys file is created after remaining voting key files
 			start_ordinal = 1 if should_compact else 3
 			voting_key_descriptors = inspect_voting_key_files(voting_keys_directory)
 			assert [
@@ -326,11 +329,9 @@ async def _assert_can_renew_voting_keys_when_some_are_present_and_inactive_remov
 			_write_voting_keys_file(voting_keys_directory, 4, 2826, 2999)
 
 			server.mock.accounts_by_id_response = _make_account_json_with_voting_public_keys([
-				{
-					'publicKey': str(expired_root_voting_public_key_2),
-					'startEpoch': 2700,
-					'endEpoch': 2799
-				}
+				(PublicKey('00' * PublicKey.SIZE), 2800, 2825),  # not expired, so public key doesn't matter
+				(expired_root_voting_public_key_2, 2700, 2799),
+				(PublicKey('00' * PublicKey.SIZE), 2826, 2999)
 			])
 
 			# Act:
@@ -341,7 +342,10 @@ async def _assert_can_renew_voting_keys_when_some_are_present_and_inactive_remov
 				*(['--compact'] if should_compact else [])
 			])
 
-			# Assert: inactive voting keys files are deleted, active voting keys files are preserved and new voting keys file is created
+			# Assert:
+			# in compact mode     - inactive voting keys files are deleted and active voting keys files are preserved
+			# in non-compact mode - all voting keys files are preserved
+			# in both modes       - new voting keys file is created after remaining voting key files
 			start_ordinal = 1 if should_compact else 3
 			voting_key_descriptors = inspect_voting_key_files(voting_keys_directory)
 			assert [
