@@ -185,12 +185,6 @@ def test_accepts_limit_at_maximum(client):  # pylint: disable=redefined-outer-na
 		_assert_status_code_and_headers(response, 200)
 
 
-@pytest.mark.parametrize('timeout_seconds', ['0', '-1', '1.5', '"1.5"', '"abc"'])
-def test_rejects_bad_node_timeout(database, timeout_seconds):  # pylint: disable=redefined-outer-name, unused-argument
-	with pytest.raises(ValueError, match='NODE_REQUEST_TIMEOUT_SECONDS must be a positive integer'):
-		_create_app([f'NODE_REQUEST_TIMEOUT_SECONDS={timeout_seconds}'])
-
-
 @patch('rest.routes.nem.NemRestFacade')
 def test_uses_default_node_timeout(mock_nem_rest_facade, database):  # pylint: disable=redefined-outer-name, unused-argument
 	# Act:

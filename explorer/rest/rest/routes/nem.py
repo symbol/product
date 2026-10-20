@@ -31,21 +31,6 @@ def _validate_pagination(limit, offset):
 		raise ValueError('Offset must be greater than or equal to 0')
 
 
-def _parse_node_request_timeout_seconds(value):
-	"""Parses the node request timeout, rejecting values that are not whole positive seconds."""
-
-	error_message = 'NODE_REQUEST_TIMEOUT_SECONDS must be a positive integer'
-	try:
-		timeout_seconds = int(str(value))
-	except ValueError as error:
-		raise ValueError(error_message) from error
-
-	if timeout_seconds < 1:
-		raise ValueError(error_message)
-
-	return timeout_seconds
-
-
 def setup_nem_facade(app):
 	config = configparser.ConfigParser()
 	db_path = Path(app.config.get('DATABASE_CONFIG_FILEPATH'))
@@ -68,7 +53,7 @@ def setup_nem_facade(app):
 		app.config.get('NODE_URL', 'http://localhost:7890'),
 		int(app.config.get('MAX_LAG_BLOCKS', 2)),
 		int(app.config.get('HARVESTING_ACTIVE_WINDOW_DAYS', DEFAULT_HARVESTING_ACTIVE_WINDOW_DAYS)),
-		_parse_node_request_timeout_seconds(app.config.get('NODE_REQUEST_TIMEOUT_SECONDS', DEFAULT_NODE_REQUEST_TIMEOUT_SECONDS))
+		int(app.config.get('NODE_REQUEST_TIMEOUT_SECONDS', DEFAULT_NODE_REQUEST_TIMEOUT_SECONDS))
 	)
 
 	return NemRestFacade(db_params, rest_config)
