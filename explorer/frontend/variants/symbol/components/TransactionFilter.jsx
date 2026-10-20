@@ -30,7 +30,7 @@ const getLocalizedText = (key, language) => {
 // Client validation checks only the REST input shape. Symbol REST remains responsible for
 // checksum and network validation of addresses.
 const normalizeDirectFilter = (name, input, language) => {
-	const value = String(input ?? '').trim();
+	const value = String(input).trim();
 	if (!value)
 		return { error: getLocalizedText('empty', language) };
 

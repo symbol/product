@@ -281,6 +281,20 @@ describe('variants/symbol/components/TransactionFilter', () => {
 		expect(onChange).not.toHaveBeenCalled();
 	});
 
+	itVariant('symbol')('uses English validation text when the language is undefined', async () => {
+		// Arrange:
+		mockLanguage = undefined;
+		const user = userEvent.setup();
+		const { onChange } = renderFilter();
+
+		// Act:
+		const dialog = await submitDirectFilter(user, 'filter_mosaic', 'invalid');
+
+		// Assert:
+		expect(within(dialog).getByRole('alert')).toHaveTextContent('Enter a 16-character mosaic ID.');
+		expect(onChange).not.toHaveBeenCalled();
+	});
+
 	itVariant('symbol')('normalizes a mosaic ID without numeric conversion', () => {
 		// Arrange:
 		const { onChange } = renderFilter();
