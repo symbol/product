@@ -114,6 +114,12 @@ class SymbolRestFacade:
 		mosaics = self.symbol_db.get_mosaics(limit, offset, sort)
 		return [mosaic.to_dict() for mosaic in mosaics]
 
+	def get_namespaces(self, query):
+		"""Gets a persisted Symbol namespace page."""
+
+		namespaces = self.symbol_db.get_namespaces(query)
+		return [namespace.to_dict() for namespace in namespaces]
+
 	def get_mosaic(self, mosaic_id):
 		"""Gets a current mosaic by mosaic ID or namespace ID."""
 
