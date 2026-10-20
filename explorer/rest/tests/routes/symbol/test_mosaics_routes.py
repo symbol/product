@@ -39,6 +39,27 @@ def test_mosaics_uses_defaults(mosaic_route):
 
 	# Assert:
 	assert 200 == response.status_code
+	assert [] == response.json
+	facade.get_mosaics.assert_called_once_with(10, 0, SortOrder.DESC)
+
+
+def test_mosaics_registration_timestamp(mosaic_route):
+	# Arrange:
+	client, facade = mosaic_route
+	mosaic_map = {
+		'id': '72C0212E67A08BCE',
+		'aliasNames': ['symbol.xym'],
+		'supply': 1234567,
+		'registrationTimestamp': '2026-01-01 00:00:00'
+	}
+	facade.get_mosaics.return_value = [mosaic_map]
+
+	# Act:
+	response = client.get('/api/symbol/mosaics')
+
+	# Assert:
+	assert 200 == response.status_code
+	assert [mosaic_map] == response.json
 	facade.get_mosaics.assert_called_once_with(10, 0, SortOrder.DESC)
 
 
@@ -178,7 +199,12 @@ def test_mosaics_backend_unavailable(mosaic_route, error):
 def test_mosaic_returns_metadata(mosaic_route, name, expected_id):
 	# Arrange:
 	client, facade = mosaic_route
-	mosaic_map = {'id': '72C0212E67A08BCE', 'aliasNames': ['symbol.xym'], 'supply': 1234567}
+	mosaic_map = {
+		'id': '72C0212E67A08BCE',
+		'aliasNames': ['symbol.xym'],
+		'supply': 1234567,
+		'registrationTimestamp': '2026-01-01 00:00:00'
+	}
 	facade.get_mosaic.return_value = mosaic_map
 
 	# Act:

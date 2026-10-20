@@ -1,4 +1,4 @@
-from rest.model.symbol.format import format_amount
+from rest.model.symbol.format import format_amount, format_timestamp
 
 
 class SymbolMosaicView:  # pylint: disable=too-many-instance-attributes
@@ -9,6 +9,7 @@ class SymbolMosaicView:  # pylint: disable=too-many-instance-attributes
 		mosaic_id,
 		owner_address,
 		start_height,
+		registration_timestamp,
 		expiration_height,
 		duration,
 		supply,
@@ -23,6 +24,7 @@ class SymbolMosaicView:  # pylint: disable=too-many-instance-attributes
 		self.mosaic_id = mosaic_id
 		self.owner_address = owner_address
 		self.start_height = start_height
+		self.registration_timestamp = registration_timestamp
 		self.expiration_height = expiration_height
 		self.duration = duration
 		self.supply = supply
@@ -38,6 +40,7 @@ class SymbolMosaicView:  # pylint: disable=too-many-instance-attributes
 			self.mosaic_id == other.mosaic_id,
 			self.owner_address == other.owner_address,
 			self.start_height == other.start_height,
+			self.registration_timestamp == other.registration_timestamp,
 			self.expiration_height == other.expiration_height,
 			self.duration == other.duration,
 			self.supply == other.supply,
@@ -59,6 +62,7 @@ class SymbolMosaicView:  # pylint: disable=too-many-instance-attributes
 			'supply': self.supply,
 			'divisibility': self.divisibility,
 			'registrationHeight': self.start_height,
+			'registrationTimestamp': format_timestamp(self.registration_timestamp),
 			'expirationHeight': self.expiration_height,
 			'value': format_amount(self.supply, self.divisibility),
 			'isUnlimitedDuration': self.duration == 0,
