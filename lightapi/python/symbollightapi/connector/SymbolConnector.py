@@ -302,6 +302,7 @@ class SymbolConnector(BasicConnector):  # pylint: disable=too-many-public-method
 		url_path = 'transactions/partial?embedded=true&pageSize=100&order=desc'
 		if start_id:
 			url_path += f'&offset={start_id}'
+
 		if address:
 			url_path += f'&address={address}'
 
