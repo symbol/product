@@ -64,8 +64,7 @@ describeVariant('nem')('ValueBlockStatus', () => {
 	describe('icon color variant', () => {
 		const runTest = (colorVariant, expectedVariantDirectory) => {
 			// Arrange:
-			const expectedSrc =
-				`/${process.env.NEXT_PUBLIC_EXPLORER_VARIANT}/images/status/${expectedVariantDirectory}/icon-label-confirmed.svg`;
+			const expectedSrc = `/nem/images/status/${expectedVariantDirectory}/icon-label-confirmed.svg`;
 
 			// Act:
 			render(<ValueBlockStatus block={recentBlock} chainStatus={chainStatusSafe} isIconOnly colorVariant={colorVariant} />);

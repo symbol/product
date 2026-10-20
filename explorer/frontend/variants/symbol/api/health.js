@@ -1,11 +1,4 @@
-import { createApiUrl, makeRequest } from '@/app/utils/server';
+// Keep the global health banner hidden until the Symbol backend exists.
+import { resolveNull } from './stub';
 
-export const healthConfig = {
-	isUnavailableWarningEnabled: true
-};
-
-/**
- * Fetches the Symbol Explorer REST health response without rewriting its values.
- * @returns {Promise<object|null>} the health response, including unhealthy/null values.
- */
-export const fetchBackendHealthStatus = async () => makeRequest(createApiUrl('health'));
+export const fetchBackendHealthStatus = resolveNull;
