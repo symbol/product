@@ -34,6 +34,30 @@ class NemWorkflowUtilsTest(unittest.TestCase):
 		# Assert:
 		assert_common_args(self, args)
 
+	def test_add_common_arguments_parses_node_request_timeout(self):
+		# Arrange:
+		parser = argparse.ArgumentParser()
+		add_common_arguments(parser)
+
+		# Act:
+		args = parser.parse_args(['--node-request-timeout-seconds', '25'])
+
+		# Assert:
+		assert_common_args(self, args, node_request_timeout_seconds=25)
+
+	@patch('puller.workflows.nem_workflow_utils.NemPuller')
+	def test_bootstrap_passes_node_request_timeout_to_puller(self, mock_nem_puller):  # pylint: disable=no-self-use
+		# Arrange:
+		create_facade_with_mock_db(mock_nem_puller)
+		args = create_main_args()
+		args.node_request_timeout_seconds = 25
+
+		# Act:
+		bootstrap_nem_workflow(args)
+
+		# Assert:
+		mock_nem_puller.assert_called_once_with('http://localhost:7890', 'test_config.ini', 'testnet', 25)
+
 	@patch('puller.workflows.nem_workflow_utils.NemPuller')
 	def test_bootstrap_logs_target_node_and_network(self, mock_nem_puller):
 		# Arrange:

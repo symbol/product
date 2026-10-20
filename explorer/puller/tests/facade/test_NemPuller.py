@@ -302,6 +302,20 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 		# Act + Assert:
 		self._assert_puller_instance(self.puller, 'testnet')
 
+	def test_create_puller_applies_default_node_request_timeout(self):
+		# Act:
+		puller = NemPuller('http://localhost:7890', self.config_ini)
+
+		# Assert:
+		self.assertEqual(10, puller.nem_connector.timeout_seconds)
+
+	def test_create_puller_applies_custom_node_request_timeout(self):
+		# Act:
+		puller = NemPuller('http://localhost:7890', self.config_ini, 'testnet', 25)
+
+		# Assert:
+		self.assertEqual(25, puller.nem_connector.timeout_seconds)
+
 	def _query_fetch_blocks(self, facade, where_clause='', params=None):  # pylint: disable=no-self-use
 		cursor = facade.nem_db.connection.cursor()
 
