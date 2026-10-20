@@ -1064,6 +1064,7 @@ class SymbolDatabase(DatabaseConnectionPool):
 		selected_ids = {target['namespace_id']} | {row['namespace_id'] for row in descendant_rows}
 		if set(family_by_id) != selected_ids:
 			raise SymbolDataInvalid('symbol_namespaces', 'namespace family is inconsistent')
+
 		for row in family_rows:
 			cls._assert_namespace_row_is_safe(row, readable_height)
 			if row['namespace_id'] == row['root_id']:
