@@ -1,6 +1,7 @@
 import tempfile
 from pathlib import Path
 
+import pytest
 from common.symbol.NativeMosaic import NativeMosaicInfo
 from puller.db.SymbolDatabase import SymbolDatabase as PullerSymbolDatabase
 from symbolchain.symbol.Network import Address
@@ -27,6 +28,8 @@ NATIVE_MOSAIC_INFO = NativeMosaicInfo('72C0212E67A08BCE', 6)
 ROOT_ID = 'A95F1F8A96159516'
 CHILD_ID = 'E74B99BA41F4AFEE'
 LEAF_ID = 'C74B99BA41F4AFEE'
+OTHER_ROOT_ID = 'D95F1F8A96159516'
+THIRD_ROOT_ID = 'B95F1F8A96159516'
 
 
 def _write_config(directory, database_config):
@@ -136,9 +139,9 @@ def test_http_dirty_sync_returns_503():
 	sync_state = create_symbol_sync_state(last_synced_height=10, finalized_height=10, dirty_state_from_height=11)
 	with symbol_test_database() as (database_config, _):
 		client = _create_symbol_client(
-			database_config, sync_state, [create_symbol_block(10)], [_namespace(ROOT_ID)])
+			database_config, sync_state, [create_symbol_block(10)], [])
 		# Act:
-		response = client.get('/api/symbol/namespaces')
+		response = client.get('/api/symbol/namespaces?aliasType=2')
 
 	# Assert:
 	assert 503 == response.status_code
@@ -200,24 +203,58 @@ def test_http_ignores_unrelated_orphan():
 	assert [ROOT_ID] == [item['id'] for item in response.json]
 
 
-def test_http_offset_candidate_503():
+@pytest.mark.parametrize('height_field', ['updated_at_height', 'start_height'])
+def test_http_height_filter_paginates(height_field):
 	# Arrange:
 	sync_state = create_symbol_sync_state(last_synced_height=10, finalized_height=10)
 	rows = [
-		_namespace(ROOT_ID, start_height=2, alias_type='none'),
-		_namespace('D95F1F8A96159516', start_height=9, alias_type='none', updated_at_height=11),
+		_namespace(ROOT_ID, start_height=10, updated_at_height=10, alias_type='none'),
+		_namespace(OTHER_ROOT_ID, start_height=5, updated_at_height=10, alias_type='none'),
+		_namespace(THIRD_ROOT_ID, start_height=9, updated_at_height=10, alias_type='none'),
 	]
+	rows[2][height_field] = 11
 	with symbol_test_database() as (database_config, _):
 		client = _create_symbol_client(
-			database_config, sync_state,
-			[create_symbol_block(2), create_symbol_block(9), create_symbol_block(10)], rows)
+			database_config, sync_state, [create_symbol_block(5), create_symbol_block(10)], rows)
 		# Act:
 		response = client.get(
-			'/api/symbol/namespaces?aliasType=0&registrationType=0&limit=1&offset=1')
+			'/api/symbol/namespaces?aliasType=0&registrationType=0&sort=DESC&limit=1&offset=1')
 
 	# Assert:
-	assert 503 == response.status_code
-	assert {'status': 503, 'message': 'Symbol backend data is unavailable'} == response.json
+	assert 200 == response.status_code
+	assert [OTHER_ROOT_ID] == [item['id'] for item in response.json]
+
+
+def test_http_height_equal_included():
+	# Arrange:
+	sync_state = create_symbol_sync_state(last_synced_height=10, finalized_height=10)
+	rows = [_namespace(ROOT_ID, start_height=10, updated_at_height=10)]
+	with symbol_test_database() as (database_config, _):
+		client = _create_symbol_client(database_config, sync_state, [create_symbol_block(10)], rows)
+		# Act:
+		response = client.get('/api/symbol/namespaces?registrationType=0')
+
+	# Assert:
+	assert 200 == response.status_code
+	assert [ROOT_ID] == [item['id'] for item in response.json]
+
+
+@pytest.mark.parametrize(('query', 'row'), [
+	('limit=1', _namespace(ROOT_ID, start_height=2, updated_at_height=11)),
+	('limit=1&offset=1', _namespace(ROOT_ID, start_height=2, updated_at_height=10)),
+])
+def test_http_empty_height_page(query, row):
+	# Arrange:
+	sync_state = create_symbol_sync_state(last_synced_height=10, finalized_height=10)
+	with symbol_test_database() as (database_config, _):
+		client = _create_symbol_client(
+			database_config, sync_state, [create_symbol_block(2), create_symbol_block(10)], [row])
+		# Act:
+		response = client.get(f'/api/symbol/namespaces?{query}')
+
+	# Assert:
+	assert 200 == response.status_code
+	assert [] == response.json
 
 
 def test_http_ignores_high_sibling():
@@ -256,11 +293,12 @@ def test_http_ignores_sibling_descendant():
 		ROOT_ID, CHILD_ID, str(Address(OWNER)), '72C0212E67A08BCE')] == response.json
 
 
-def test_http_child_descendant_503():
+@pytest.mark.parametrize('height_field', ['updated_at_height', 'start_height'])
+def test_http_child_descendant_503(height_field):
 	# Arrange:
 	sync_state = create_symbol_sync_state(last_synced_height=10, finalized_height=10)
 	rows = create_namespace_descendant_rows(ROOT_ID, CHILD_ID, LEAF_ID, NATIVE_MOSAIC_INFO.id)
-	rows[2]['updated_at_height'] = 11
+	rows[2][height_field] = 11
 	with symbol_test_database() as (database_config, _):
 		client = _create_symbol_client(
 			database_config, sync_state, [create_symbol_block(1), create_symbol_block(10)], rows)
@@ -272,11 +310,12 @@ def test_http_child_descendant_503():
 	assert {'status': 503, 'message': 'Symbol backend data is unavailable'} == response.json
 
 
-def test_http_child_ancestor_503():
+@pytest.mark.parametrize('height_field', ['updated_at_height', 'start_height'])
+def test_http_child_ancestor_503(height_field):
 	# Arrange:
 	sync_state = create_symbol_sync_state(last_synced_height=10, finalized_height=10)
 	rows = create_namespace_root_child_rows(ROOT_ID, CHILD_ID, NATIVE_MOSAIC_INFO.id)
-	rows[0]['updated_at_height'] = 11
+	rows[0][height_field] = 11
 	with symbol_test_database() as (database_config, _):
 		client = _create_symbol_client(
 			database_config, sync_state, [create_symbol_block(1), create_symbol_block(10)], rows)
@@ -288,7 +327,7 @@ def test_http_child_ancestor_503():
 	assert {'status': 503, 'message': 'Symbol backend data is unavailable'} == response.json
 
 
-def test_http_child_self_503():
+def test_http_high_candidate_filtered():
 	# Arrange:
 	sync_state = create_symbol_sync_state(last_synced_height=10, finalized_height=10)
 	rows = create_namespace_root_child_rows(ROOT_ID, CHILD_ID, NATIVE_MOSAIC_INFO.id)
@@ -300,15 +339,16 @@ def test_http_child_self_503():
 		response = client.get('/api/symbol/namespaces?aliasType=1')
 
 	# Assert:
-	assert 503 == response.status_code
-	assert {'status': 503, 'message': 'Symbol backend data is unavailable'} == response.json
+	assert 200 == response.status_code
+	assert [] == response.json
 
 
-def test_http_root_high_child_503():
+@pytest.mark.parametrize('height_field', ['updated_at_height', 'start_height'])
+def test_http_root_high_child_503(height_field):
 	# Arrange:
 	sync_state = create_symbol_sync_state(last_synced_height=10, finalized_height=10)
 	rows = create_namespace_sibling_rows(ROOT_ID, CHILD_ID, LEAF_ID, NATIVE_MOSAIC_INFO.id)
-	rows[2]['updated_at_height'] = 11
+	rows[2][height_field] = 11
 	with symbol_test_database() as (database_config, _):
 		client = _create_symbol_client(
 			database_config, sync_state, [create_symbol_block(1), create_symbol_block(10)], rows)

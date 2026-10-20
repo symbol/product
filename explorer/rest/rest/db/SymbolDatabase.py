@@ -913,24 +913,17 @@ class SymbolDatabase(DatabaseConnectionPool):
 
 				where_clauses, parameters = self._create_namespace_filter(query)
 				cursor.execute(
-					f'''SELECT 1 FROM symbol_namespaces
-					WHERE {' AND '.join(where_clauses)}
-						AND (updated_at_height > %s OR start_height > %s)
-					LIMIT 1''',
-					(*parameters, readable_height, readable_height))
-				if cursor.fetchone():
-					raise SymbolDataUnavailable('Symbol namespace data is unavailable')
-
-				cursor.execute(
 					f'''SELECT
 						namespace_id, parent_id, root_id, name, full_name, depth, registration_type,
 						owner_address, start_height, end_height, alias_type, alias_mosaic_id,
 						alias_address, updated_at_height
 					FROM symbol_namespaces
 					WHERE {' AND '.join(where_clauses)}
+						AND updated_at_height <= %s
+						AND start_height <= %s
 					ORDER BY start_height {query.sort.value}, namespace_id ASC
 					LIMIT %s OFFSET %s''',
-					(*parameters, query.limit, query.offset))
+					(*parameters, readable_height, readable_height, query.limit, query.offset))
 				page_rows = [self._create_namespace_record(row) for row in cursor.fetchall()]
 
 				if not page_rows:

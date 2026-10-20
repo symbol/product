@@ -202,8 +202,7 @@ class SymbolNamespacesDatabaseTest(TestCase):
 		# Assert:
 		self.assertEqual([ROOT_ID], [view.namespace_id for view in views])
 
-	@staticmethod
-	def test_rejects_unsafe_filtered_candidate_hidden_after_offset():
+	def test_filters_overheight_candidate_before_offset(self):
 		# Arrange:
 		sync_state = create_symbol_sync_state(last_synced_height=10, finalized_height=10)
 		rows = [
@@ -211,38 +210,42 @@ class SymbolNamespacesDatabaseTest(TestCase):
 			_namespace(OTHER_ROOT_ID, start_height=9, alias_type='none', updated_at_height=11),
 		]
 
-		# Act + Assert:
-		with pytest.raises(SymbolDataUnavailable, match='^Symbol namespace data is unavailable$'):
-			_read_namespaces(
-				sync_state, _blocks(2, 9, 10), rows,
-				NamespaceQuery(limit=1, offset=1, alias_type='none', registration_type='root'))
+		# Act:
+		views = _read_namespaces(
+			sync_state, _blocks(2, 9, 10), rows,
+			NamespaceQuery(limit=1, offset=1, alias_type='none', registration_type='root'))
 
-	@staticmethod
-	def test_rejects_unsafe_filtered_candidate_before_converting_page_rows():
+		# Assert:
+		self.assertEqual([], views)
+
+	def test_returns_safe_page_when_overheight_candidate_would_precede_it(self):
 		# Arrange:
 		sync_state = create_symbol_sync_state(last_synced_height=10, finalized_height=10)
 		rows = [
-			_namespace('GGGGGGGGGGGGGGGG', start_height=3, updated_at_height=1),
-			_namespace(OTHER_ROOT_ID, start_height=2, updated_at_height=11),
+			_namespace(ROOT_ID, start_height=3, updated_at_height=1),
+			_namespace(OTHER_ROOT_ID, start_height=9, updated_at_height=11),
 		]
 
-		# Act + Assert: the unsafe candidate takes precedence over the malformed page row.
-		with pytest.raises(SymbolDataUnavailable, match='^Symbol namespace data is unavailable$'):
-			_read_namespaces(
-				sync_state, _blocks(1, 2, 10), rows,
-				NamespaceQuery(limit=1, sort=SortOrder.DESC, alias_type='none', registration_type='root'))
+		# Act:
+		views = _read_namespaces(
+			sync_state, _blocks(1, 3, 9, 10), rows,
+			NamespaceQuery(limit=1, sort=SortOrder.DESC, alias_type='none', registration_type='root'))
 
-	@staticmethod
-	def test_rejects_unsafe_filtered_candidate_when_offset_returns_empty_page():
+		# Assert:
+		self.assertEqual([ROOT_ID], [view.namespace_id for view in views])
+
+	def test_returns_empty_page_when_only_filtered_candidates_are_overheight(self):
 		# Arrange:
 		sync_state = create_symbol_sync_state(last_synced_height=10, finalized_height=10)
 		rows = [_namespace(OTHER_ROOT_ID, start_height=2, updated_at_height=11)]
 
-		# Act + Assert: the safety query remains active after the requested page is empty.
-		with pytest.raises(SymbolDataUnavailable, match='^Symbol namespace data is unavailable$'):
-			_read_namespaces(
-				sync_state, _blocks(2, 10), rows,
-				NamespaceQuery(limit=1, offset=1, sort=SortOrder.DESC, alias_type='none', registration_type='root'))
+		# Act:
+		views = _read_namespaces(
+			sync_state, _blocks(2, 10), rows,
+			NamespaceQuery(limit=1, sort=SortOrder.DESC, alias_type='none', registration_type='root'))
+
+		# Assert:
+		self.assertEqual([], views)
 
 	@staticmethod
 	def test_root_request_rejects_sibling_above_synced_height():
@@ -285,15 +288,17 @@ class SymbolNamespacesDatabaseTest(TestCase):
 			[view.to_dict() for view in views])
 
 	@staticmethod
-	def test_rejects_selected_child_above_synced_height():
+	def test_filters_selected_child_above_synced_height():
 		# Arrange:
 		sync_state = create_symbol_sync_state(last_synced_height=10, finalized_height=10)
 		rows = create_namespace_root_child_rows(ROOT_ID, CHILD_ID, NATIVE_MOSAIC_INFO.id)
 		rows[1]['updated_at_height'] = 11
 
-		# Act + Assert:
-		with pytest.raises(SymbolDataUnavailable, match='^Symbol namespace data is unavailable$'):
-			_read_namespaces(sync_state, _blocks(1, 10), rows, NamespaceQuery(alias_type='mosaic'))
+		# Act:
+		views = _read_namespaces(sync_state, _blocks(1, 10), rows, NamespaceQuery(alias_type='mosaic'))
+
+		# Assert:
+		assert [] == views
 
 	def test_selected_child_is_readable_with_high_unrelated_root_and_malformed_sibling(self):
 		# Arrange:
@@ -449,7 +454,15 @@ def test_rejects_high_namespace_rows(kind):
 	if kind == 'ancestor':
 		query = NamespaceQuery(registration_type='child')
 
-	# Act + Assert:
+	# Act:
+	if kind == 'candidate':
+		views = _read_namespaces(sync_state, _blocks(10), rows, query)
+
+		# Assert:
+		assert [] == views
+		return
+
+	# Assert:
 	with pytest.raises(SymbolDataUnavailable, match='^Symbol namespace data is unavailable$'):
 		_read_namespaces(sync_state, _blocks(10), rows, query)
 
