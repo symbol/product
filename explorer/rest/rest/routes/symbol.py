@@ -26,6 +26,7 @@ from rest.db.SymbolDatabase import (
 	TransactionQuery
 )
 from rest.facade.SymbolRestFacade import SymbolRestFacade
+from rest.facade.SymbolTransactionNodeBacking import SymbolNodeNotFound, SymbolTransactionNodeBacking
 from rest.model.common import DatabaseConfig
 from rest.model.symbol.validation import SymbolDataInvalid
 
@@ -93,11 +94,13 @@ def setup_symbol_facade(app, clock=None):
 	)
 	node_config = SymbolNodeConfiguration.from_app_config(app.config)
 	node_config.assert_request_allowed(node_config.base_url)
+	node_backing = SymbolTransactionNodeBacking(node_config, network, native_mosaic_info=native_mosaic_info)
 
 	symbol_db = SymbolDatabase(db_params, native_mosaic_info, clock)
 	app.extensions['symbol_database'] = symbol_db
 	return SymbolRestFacade(
-		symbol_db, node_config, native_mosaic_info, network, account_refresh_max_age_seconds, harvesting_active_window_days)
+		symbol_db, node_config, native_mosaic_info, network, account_refresh_max_age_seconds, harvesting_active_window_days,
+		node_backing=node_backing)
 
 
 def _create_symbol_network(app_config):
@@ -371,6 +374,27 @@ def _setup_symbol_transactions_route(app, symbol_api_facade, run_symbol_query):
 
 		return jsonify(result)
 
+	_setup_symbol_transaction_detail_route(app, symbol_api_facade)
+
+
+def _setup_symbol_transaction_detail_route(app, symbol_api_facade):
+	@app.route('/api/symbol/transaction/<transaction_hash>')
+	async def api_get_symbol_transaction_detail(transaction_hash):
+		try:
+			transaction_hash = _parse_transaction_hash(transaction_hash)
+			_validate_allowed_query_parameters(frozenset())
+		except ValueError as error:
+			abort(400, error)
+
+		try:
+			result = await symbol_api_facade.get_transaction_detail(transaction_hash)
+		except SymbolNodeNotFound:
+			abort(404)
+		except (PsycopgError, SymbolDataUnavailable, SymbolDataInvalid):
+			return _service_unavailable('Symbol backend data is unavailable')
+
+		return jsonify(result)
+
 
 def _validate_allowed_query_parameters(allowed_parameters):
 	unsupported_parameters = sorted(set(request.args.keys()) - allowed_parameters)
@@ -384,6 +408,13 @@ def _parse_block_height(raw_height):
 		raise ValueError('Height must be greater than or equal to 1')
 
 	return height
+
+
+def _parse_transaction_hash(value):
+	if not re.fullmatch(r'[0-9A-Fa-f]{64}', value or '', re.ASCII):
+		raise ValueError('Hash must be a 64-character hexadecimal string')
+
+	return value.upper()
 
 
 def _parse_receipt_query(height=None):

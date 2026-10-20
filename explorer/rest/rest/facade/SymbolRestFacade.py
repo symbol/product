@@ -1,11 +1,15 @@
 from common.symbol.NativeMosaic import NativeMosaicInfo
 from psycopg2 import Error as PsycopgError
+from symbolchain.sc import TransactionType
 from zenlog import log
 
+from rest.db.SymbolTransactionDetail import SymbolDataUnavailable
+from rest.facade.SymbolTransactionNodeBacking import SymbolNodeUnavailable
 from rest.model.symbol.Account import SymbolAccountListView, SymbolAccountView
 from rest.model.symbol.format import format_timestamp
 from rest.model.symbol.Receipt import SymbolReceiptView
-from rest.model.symbol.Transaction import SymbolTransactionView
+from rest.model.symbol.Transaction import SymbolTransactionDetailView, SymbolTransactionView
+from rest.model.symbol.validation import SymbolDataInvalid
 
 DATABASE_UNAVAILABLE_MESSAGE = 'Symbol database is unavailable'
 
@@ -13,10 +17,10 @@ DATABASE_UNAVAILABLE_MESSAGE = 'Symbol database is unavailable'
 class SymbolRestFacade:
 	"""Symbol Rest Facade."""
 
-	# The facade constructor owns each independently configured REST dependency.
+	# The setup boundary owns independently configured REST dependencies.
 	def __init__(  # pylint: disable=too-many-arguments,too-many-positional-arguments
 		self, symbol_db, node_config, native_mosaic_info, network, account_refresh_max_age_seconds=None,
-		harvesting_active_window_days=None):
+		harvesting_active_window_days=None, node_backing=None):
 		"""Creates a Symbol facade with its required database and node dependencies."""
 
 		if symbol_db is None:
@@ -36,6 +40,7 @@ class SymbolRestFacade:
 		self.network = network
 		self.account_refresh_max_age_seconds = account_refresh_max_age_seconds
 		self.harvesting_active_window_days = harvesting_active_window_days
+		self.node_backing = node_backing
 
 	def get_health(self):
 		"""Gets health of the Symbol backend core foundation."""
@@ -173,6 +178,32 @@ class SymbolRestFacade:
 
 		transactions = self.symbol_db.get_transactions(query)
 		return [SymbolTransactionView(transaction).to_dict(self.native_mosaic_info) for transaction in transactions]
+
+	async def get_transaction_detail(self, transaction_hash):
+		"""Gets a confirmed or Node-backed Symbol transaction detail DTO."""
+
+		try:
+			db_result = self.symbol_db.get_transaction_detail(bytes.fromhex(transaction_hash))
+			if db_result.status == 'hit':
+				return SymbolTransactionDetailView(db_result.record, 'confirmed').to_dict(self.native_mosaic_info, self.network)
+
+			if db_result.status not in ('miss', 'confirmed_lag'):
+				raise SymbolDataUnavailable('Symbol transaction detail data is unavailable: confirmed row is not readable')
+
+			status = await self.node_backing.get_status(transaction_hash)
+			group = status['group']
+			if group == 'confirmed':
+				raise SymbolDataUnavailable('Symbol transaction detail data is unavailable: confirmed transaction is not in the database')
+
+			payload = await self.node_backing.get_transaction(group, transaction_hash)
+			record = self.node_backing.to_detail_record(payload, group, transaction_hash)
+			if record.transaction.transaction_type == TransactionType.AGGREGATE_BONDED.value:
+				lock_payload = await self.node_backing.try_get_hash_lock(transaction_hash)
+				record = record._replace(hash_lock=self.node_backing.to_hash_lock_record(lock_payload))
+			record = self.symbol_db.supplement_transaction_detail(bytes.fromhex(transaction_hash), record)
+			return SymbolTransactionDetailView(record, group).to_dict(self.native_mosaic_info, self.network)
+		except (SymbolNodeUnavailable, SymbolDataInvalid) as error:
+			raise SymbolDataUnavailable('Symbol transaction detail data is unavailable') from error
 
 	def try_get_account(self, address=None, public_key=None):
 		"""Gets a Symbol account detail DTO by address or public key."""

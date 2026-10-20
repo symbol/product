@@ -1,3 +1,4 @@
+import asyncio
 from datetime import datetime, timedelta, timezone
 from unittest import TestCase
 from unittest.mock import create_autospec
@@ -270,6 +271,41 @@ class SymbolRestFacadeTest(TestCase):  # pylint: disable=too-many-public-methods
 		# Assert:
 		self.assertEqual(expected, result)
 		self.assertEqual(NamespaceQuery(), database.query)
+
+	def test_get_transaction_detail_rejects_an_unreadable_database_status_without_node_fallback(self):
+		# Arrange:
+		class Database:
+			@staticmethod
+			def get_transaction_detail(_transaction_hash):
+				return type('ReadResult', (), {'status': 'unsafe'})()
+
+		class NodeBacking:
+			@staticmethod
+			async def get_status(_transaction_hash):
+				raise AssertionError('Node must not be queried for an unsafe database status')
+
+		facade = SymbolRestFacade(
+			Database(), _create_node_config(), NATIVE_MOSAIC_INFO, Network.TESTNET, node_backing=NodeBacking())
+
+		# Act + Assert:
+		with self.assertRaisesRegex(
+			SymbolDataUnavailable,
+			'Symbol transaction detail data is unavailable: confirmed row is not readable'
+		):
+			asyncio.run(facade.get_transaction_detail('AB' * 32))
+
+	def test_constructor_keeps_the_injected_node_backing_and_its_configuration(self):
+		# Arrange:
+		sentinel = object()
+		backing = type('NodeBacking', (), {'native_mosaic_info': sentinel})()
+
+		# Act:
+		facade = SymbolRestFacade(
+			HealthySymbolDatabase(), _create_node_config(), NATIVE_MOSAIC_INFO, Network.TESTNET, node_backing=backing)
+
+		# Assert:
+		self.assertIs(backing, facade.node_backing)
+		self.assertIs(sentinel, backing.native_mosaic_info)
 
 	def test_get_transactions_passes_query(self):
 		# Arrange:
