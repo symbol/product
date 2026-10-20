@@ -862,6 +862,22 @@ def test_namespace_detail_returns_503_when_ancestor_chain_contains_cycle():
 	_assert_unavailable(response)
 
 
+def test_namespace_detail_returns_503_when_target_is_in_ancestor_cycle():
+	# Arrange:
+	sync_state = create_symbol_sync_state(last_synced_height=10, finalized_height=10)
+	rows = create_ancestor_cycle_namespaces(ROOT_ID, CHILD_ID, LEAF_ID, MOSAIC_ID)
+	with symbol_test_database() as (database_config, _):
+		client = _create_symbol_client(database_config, sync_state, [create_symbol_block(1), create_symbol_block(10)], rows)
+
+		# Act:
+		response = call_with_timeout(
+			lambda: client.get(f'/api/symbol/namespace/{ROOT_ID}'),
+			'Namespace detail request did not finish when the target is in a cycle')
+
+	# Assert:
+	_assert_unavailable(response)
+
+
 def test_namespace_detail_returns_503_when_root_family_is_inconsistent():
 	# Arrange:
 	sync_state = create_symbol_sync_state(last_synced_height=10, finalized_height=10)

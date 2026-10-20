@@ -1026,6 +1026,7 @@ class SymbolDatabase(DatabaseConnectionPool):
 	@classmethod
 	def _fetch_namespace_descendants(cls, cursor, target, row_by_id, readable_height):
 		frontier = [target['namespace_id']]
+		visited = {target['namespace_id']}
 		descendant_rows = []
 		while frontier:
 			cursor.execute(
@@ -1037,6 +1038,9 @@ class SymbolDatabase(DatabaseConnectionPool):
 			children = [cls._create_namespace_record(row) for row in cursor.fetchall()]
 			next_frontier = []
 			for child in children:
+				if child['namespace_id'] in visited:
+					raise SymbolDataInvalid('symbol_namespaces.parent_id', 'namespace hierarchy contains a cycle')
+				visited.add(child['namespace_id'])
 				cls._assert_namespace_row_is_safe(child, readable_height)
 				parent = row_by_id.get(child['parent_id'])
 				cls._validate_namespace_child(child, parent)
