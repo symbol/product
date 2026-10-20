@@ -1,3 +1,4 @@
+# pylint: disable=too-many-lines  # Namespace list and detail share one HTTP/PostgreSQL integration fixture.
 import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
