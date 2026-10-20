@@ -1,6 +1,7 @@
 # pylint: disable=too-many-lines
 import os
 import tempfile
+import threading
 from pathlib import Path
 from unittest.mock import AsyncMock, patch
 
@@ -9,6 +10,7 @@ import testing.postgresql
 from symbollightapi.model.Exceptions import NodeException
 
 from rest import create_app
+from rest.model.common import DEFAULT_NODE_REQUEST_TIMEOUT_SECONDS
 from rest.routes.nem import MAX_PAGE_LIMIT
 
 from ...test.DatabaseTestUtils import (
@@ -31,6 +33,7 @@ from ...test.DatabaseTestUtils import (
 	transaction_dicts,
 	transaction_hash
 )
+from ...test.NodeTestUtils import unresponsive_node_url
 
 DATABASE_CONFIG_INI = 'db_config.ini'
 
@@ -62,8 +65,7 @@ def database():
 	postgresql.stop()
 
 
-@pytest.fixture
-def app(database):  # pylint: disable=redefined-outer-name, unused-argument
+def _create_app(extra_config_lines=()):
 	with tempfile.TemporaryDirectory() as temp_directory:
 		file_name = Path(temp_directory) / 'app.config'
 
@@ -83,11 +85,18 @@ def app(database):  # pylint: disable=redefined-outer-name, unused-argument
 			config_file.write('REST_CHAIN="nem"\n')
 			config_file.write(f'DATABASE_CONFIG_FILEPATH="{db_config_path}"\n')
 			config_file.write('NETWORK_NAME="mainnet"\n')
+			for line in extra_config_lines:
+				config_file.write(f'{line}\n')
 			config_file.flush()
 
 			temp_file_path = file_name.resolve()
 			os.environ['EXPLORER_REST_SETTINGS'] = str(temp_file_path)
 			return create_app()
+
+
+@pytest.fixture
+def app(database):  # pylint: disable=redefined-outer-name, unused-argument
+	return _create_app()
 
 
 @pytest.fixture
@@ -174,6 +183,16 @@ def test_accepts_limit_at_maximum(client):  # pylint: disable=redefined-outer-na
 
 		# Assert:
 		_assert_status_code_and_headers(response, 200)
+
+
+@patch('rest.routes.nem.NemRestFacade')
+def test_uses_default_node_timeout(mock_nem_rest_facade, database):  # pylint: disable=redefined-outer-name, unused-argument
+	# Act:
+	_create_app()
+
+	# Assert:
+	rest_config = mock_nem_rest_facade.call_args.args[1]
+	assert DEFAULT_NODE_REQUEST_TIMEOUT_SECONDS == rest_config.node_request_timeout_seconds
 
 
 def test_invalid_sort_params(client):  # pylint: disable=redefined-outer-name
@@ -575,6 +594,23 @@ def test_api_nem_health_node_fails(mock_chain_height, client):  # pylint: disabl
 		'lastDBHeight': EXPECTED_BLOCK_VIEW_2.height,
 		'errors': [{'type': 'synchronization', 'message': 'Connection refused'}]
 	} == response.json
+
+
+def test_api_nem_health_node_does_not_respond(database):  # pylint: disable=redefined-outer-name, unused-argument, invalid-name
+	with unresponsive_node_url() as node_url:
+		# Arrange:
+		nem_client = _create_app([f'NODE_URL="{node_url}"', 'NODE_REQUEST_TIMEOUT_SECONDS=1']).test_client()
+		responses = []
+
+		# Act: a daemon thread keeps a missing node timeout from hanging the test run
+		request_thread = threading.Thread(target=lambda: responses.append(nem_client.get('/api/nem/health')), daemon=True)
+		request_thread.start()
+		request_thread.join(3)
+
+	# Assert:
+	assert 1 == len(responses), 'health request did not finish within 3s'
+	_assert_status_code_and_headers(responses[0], 200)
+	assert not responses[0].json['nodeUp']
 
 # endregion
 
