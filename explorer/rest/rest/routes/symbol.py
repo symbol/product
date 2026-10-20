@@ -52,6 +52,9 @@ ACCOUNT_LIST_QUERY_PARAMETERS = frozenset(['limit', 'offset', 'sort_field', 'sor
 ACCOUNT_LIST_MAX_OFFSET = 100000
 MAX_TRANSACTION_HEIGHT = 9223372036854775807
 MOSAIC_ID_PATTERN = re.compile(r'[0-9A-Fa-f]{16}', re.ASCII)
+NAMESPACE_NAME_LEVEL_PATTERN = r'[a-z0-9][a-z0-9_-]{0,63}'
+NAMESPACE_NAME_PATTERN = re.compile(
+	rf'{NAMESPACE_NAME_LEVEL_PATTERN}(?:\.{NAMESPACE_NAME_LEVEL_PATTERN}){{0,2}}', re.ASCII)
 MAX_NAMESPACE_NAME_SIZE = 64
 MAX_NAMESPACE_DEPTH = 3
 XYM_DIVISIBILITY = 6
@@ -327,6 +330,25 @@ def _setup_symbol_namespace_routes(app, symbol_api_facade, run_symbol_query):
 
 		return jsonify(result)
 
+	@app.route('/api/symbol/namespace/<name>')
+	def api_get_symbol_namespace(name):
+		try:
+			_validate_allowed_query_parameters(frozenset())
+			namespace_id = _parse_namespace_id(name)
+		except ValueError as error:
+			abort(400, error)
+
+		error, result = run_symbol_query(
+			lambda: symbol_api_facade.try_get_namespace(namespace_id),
+			'Failed to get Symbol namespace')
+		if error:
+			return error
+
+		if result is None:
+			abort(404)
+
+		return jsonify(result)
+
 
 def _setup_symbol_transactions_route(app, symbol_api_facade, run_symbol_query):
 	@app.route('/api/symbol/transactions')
@@ -539,6 +561,16 @@ def _parse_mosaic_id(value):
 		return f'{generate_namespace_path(value)[-1]:016X}'
 	except ValueError as error:
 		raise ValueError('Invalid mosaic') from error
+
+
+def _parse_namespace_id(value):
+	if MOSAIC_ID_PATTERN.fullmatch(value):
+		return value.upper()
+
+	if not NAMESPACE_NAME_PATTERN.fullmatch(value):
+		raise ValueError('Invalid namespace')
+
+	return f'{generate_namespace_path(value)[-1]:016X}'
 
 
 def _parse_boolean(name, value):
