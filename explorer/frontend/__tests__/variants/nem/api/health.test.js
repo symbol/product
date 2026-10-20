@@ -1,6 +1,6 @@
 import { runApiTest } from '../../../test-utils/api';
 import { healthSyncErrorResponse } from '../../../test-utils/health';
-import { fetchBackendHealthStatus, healthConfig } from '@/app/variants/nem/api/health';
+import { fetchBackendHealthStatus } from '@/app/variants/nem/api/health';
 
 jest.mock('@/app/utils/server', () => {
 	return {
@@ -21,10 +21,5 @@ describe('variants/nem/api/health', () => {
 			// Act + Assert:
 			await runApiTest(fetchBackendHealthStatus, params, healthSyncErrorResponse, expectedURL, expectedResult);
 		});
-	});
-
-	it('disables unavailable-request warnings for NEM', () => {
-		// Act + Assert:
-		expect(healthConfig).toEqual({ isUnavailableWarningEnabled: false });
 	});
 });

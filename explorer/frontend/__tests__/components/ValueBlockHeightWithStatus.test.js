@@ -20,7 +20,7 @@ describeVariant('nem')('ValueBlockHeightWithStatus', () => {
 
 	it('renders the finality status as a body text colored icon next to the height', () => {
 		// Arrange:
-		const expectedSrc = `/${process.env.NEXT_PUBLIC_EXPLORER_VARIANT}/images/status/body/icon-label-confirmed.svg`;
+		const expectedSrc = '/nem/images/status/body/icon-label-confirmed.svg';
 
 		// Act:
 		render(<ValueBlockHeightWithStatus block={block} chainStatus={chainStatusSafe} />);
