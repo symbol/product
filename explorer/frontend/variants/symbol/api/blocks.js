@@ -1,7 +1,5 @@
-import { stubBlocks } from './fixtures';
-import { stubValue } from './stub';
 import config from '@/app/config';
-import { createApiUrl, makeRequest } from '@/app/utils/server';
+import { createApiUrl, createTryFetchInfoFunction, makeRequest } from '@/app/utils/server';
 
 /**
  * @typedef ChainStatus
@@ -136,4 +134,10 @@ export const fetchChainStatus = async () => {
 	return { height: Number(height), finalizedHeight: Number(finalizedHeight) };
 };
 
-export const fetchBlockInfo = stubValue(stubBlocks[0]);
+/**
+ * Fetches the detail of a Symbol block from Explorer REST.
+ * @param {number|string} height - requested block height
+ * @returns {Promise<object|null>} REST block detail, or null when the REST
+ * error response body reports status 400 or 404.
+ */
+export const fetchBlockInfo = createTryFetchInfoFunction(height => makeRequest(createApiUrl(`block/${height}`)));

@@ -1,6 +1,11 @@
 import config from '@/app/config';
 import * as serverUtils from '@/app/utils/server';
-import { fetchBlockPage } from '@/app/variants/symbol/api/blocks';
+import {
+	fetchBlockInfo,
+	fetchBlockPage,
+	fetchChainHight,
+	fetchChainStatus
+} from '@/app/variants/symbol/api/blocks';
 
 jest.mock('@/app/utils/server', () => ({
 	__esModule: true,
@@ -8,10 +13,12 @@ jest.mock('@/app/utils/server', () => ({
 }));
 
 const symbolApiBaseURL = 'https://explorer.backend/api/symbol';
+const symbolNodewatchURL = 'https://nodewatch.backend';
 
 describe('variants/symbol/api/blocks', () => {
 	beforeEach(() => {
 		config.PUBLIC_API_BASE_URL = symbolApiBaseURL;
+		config.PUBLIC_NODEWATCH_URL = symbolNodewatchURL;
 	});
 
 	afterEach(() => {
@@ -165,5 +172,97 @@ describe('variants/symbol/api/blocks', () => {
 
 		// Act + Assert:
 		await expect(fetchBlockPage()).rejects.toThrow('Symbol blocks response must be an array');
+	});
+
+	describe('fetchBlockInfo', () => {
+		it('fetches block detail for the specified height and preserves REST values', async () => {
+			// Arrange:
+			const blockHeight = 822435;
+			const response = {
+				height: blockHeight,
+				hash: '02'.repeat(32),
+				previousHash: '01'.repeat(32),
+				timestamp: '2026-01-02 00:00:00',
+				networkTimestamp: 822435000,
+				harvester: 'TBJU67Q5BITMUTRRN6IB4I7FLSDQDWZA34I2PMQ',
+				beneficiaryAddress: 'TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI',
+				totalFee: 2,
+				transactionCount: 2,
+				statementCount: 2,
+				blockReward: null,
+				isFinalized: true,
+				difficulty: '9007199254740993',
+				signature: '02'.repeat(64),
+				size: 102,
+				feeMultiplier: 2,
+				proofGamma: '02'.repeat(32),
+				proofVerificationHash: '02'.repeat(16),
+				proofScalar: '02'.repeat(32),
+				stateHash: '02'.repeat(32),
+				stateHashSubCacheMerkleRoots: ['ROOT 2'],
+				receiptsHash: '02'.repeat(32),
+				transactionsHash: '02'.repeat(32),
+				votingEligibleAccountsCount: null,
+				harvestingEligibleAccountsCount: '9007199254740993',
+				totalVotingBalance: null,
+				previousImportanceBlockHash: null,
+				blockType: 'nemesis'
+			};
+			const expectedResponse = JSON.parse(JSON.stringify(response));
+			const makeRequest = jest.spyOn(serverUtils, 'makeRequest').mockResolvedValue(response);
+
+			// Act:
+			const result = await fetchBlockInfo(`${blockHeight}`);
+
+			// Assert:
+			expect(makeRequest).toHaveBeenCalledWith(`${symbolApiBaseURL}/block/${blockHeight}`);
+			expect(result).toStrictEqual(expectedResponse);
+		});
+
+		it.each([400, 404])('returns null for REST status %s', async status => {
+			// Arrange:
+			jest.spyOn(serverUtils, 'makeRequest').mockRejectedValue({ response: { data: { status } } });
+
+			// Act:
+			const result = await fetchBlockInfo(822435);
+
+			// Assert:
+			expect(result).toBeNull();
+		});
+
+		it.each([
+			['503 response', { response: { data: { status: 503 } } }],
+			['communication failure', new Error('connection refused')],
+			['timeout', Object.assign(new Error('request timed out'), { code: 'ECONNABORTED' })]
+		])('propagates a %s', async (_description, error) => {
+			// Arrange:
+			jest.spyOn(serverUtils, 'makeRequest').mockRejectedValue(error);
+
+			// Act + Assert:
+			await expect(fetchBlockInfo(822435)).rejects.toBe(error);
+		});
+	});
+
+	it('keeps chain status connected to Nodewatch', async () => {
+		// Arrange:
+		const makeRequest = jest.spyOn(serverUtils, 'makeRequest').mockResolvedValue({ height: '123', finalizedHeight: '120' });
+
+		// Act:
+		const result = await fetchChainStatus();
+
+		// Assert:
+		expect(makeRequest).toHaveBeenCalledWith(`${symbolNodewatchURL}/api/symbol/height`);
+		expect(result).toEqual({ height: 123, finalizedHeight: 120 });
+	});
+
+	it('returns chain height from Nodewatch status', async () => {
+		// Arrange:
+		jest.spyOn(serverUtils, 'makeRequest').mockResolvedValue({ height: '123', finalizedHeight: '120' });
+
+		// Act:
+		const result = await fetchChainHight();
+
+		// Assert:
+		expect(result).toBe(123);
 	});
 });
