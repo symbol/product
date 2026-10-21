@@ -2,7 +2,7 @@ import config from '@/app/config';
 import { TRANSACTION_DIRECTION } from '@/app/constants';
 import { usePagination } from '@/app/utils';
 import * as serverUtils from '@/app/utils/server';
-import { fetchTransactionPage } from '@/app/variants/symbol/api/transactions';
+import { fetchAccountTransactionPage, fetchTransactionPage } from '@/app/variants/symbol/api/transactions';
 import { act, renderHook } from '@testing-library/react';
 
 jest.mock('@/app/utils/server', () => ({
@@ -331,17 +331,37 @@ describe('variants/symbol/api/transactions', () => {
 		expectSingleRequest(makeRequest, expectedURL);
 	});
 
-	it('uses address alone for account history', async () => {
+	it('uses address as the account-history search and reference address', async () => {
 		// Arrange:
-		const makeRequest = jest.spyOn(serverUtils, 'makeRequest').mockResolvedValue([]);
+		const makeRequest = jest.spyOn(serverUtils, 'makeRequest').mockResolvedValue([confirmedTransaction]);
 
 		// Act:
-		await fetchTransactionPage({ address: senderAddress });
+		const result = await fetchAccountTransactionPage({ address: senderAddress });
 
 		// Assert:
 		const expectedURL = `${symbolApiBaseURL}/transactions?limit=10&offset=0&address=${senderAddress}&` +
 			'embedded=false&order=DESC';
 		expectSingleRequest(makeRequest, expectedURL);
+		expect(result).toEqual({
+			data: [{ ...confirmedTransaction, account: recipientAddress, direction: TRANSACTION_DIRECTION.OUTGOING }],
+			pageNumber: 1,
+			isLastPage: false
+		});
+	});
+
+	it.each([
+		{ description: 'omitted', searchParams: undefined },
+		{ description: 'null', searchParams: null }
+	])('defaults $description account-history filters to the unfiltered page', async ({ searchParams }) => {
+		// Arrange:
+		const makeRequest = jest.spyOn(serverUtils, 'makeRequest').mockResolvedValue([]);
+
+		// Act:
+		const result = await fetchAccountTransactionPage(searchParams);
+
+		// Assert:
+		expectSingleRequest(makeRequest, `${symbolApiBaseURL}/transactions?limit=10&offset=0&embedded=false&order=DESC`);
+		expect(result).toEqual({ data: [], pageNumber: 1, isLastPage: true });
 	});
 
 	it('maps an account page from filter to sender and account to recipient', async () => {
@@ -349,15 +369,16 @@ describe('variants/symbol/api/transactions', () => {
 		const makeRequest = jest.spyOn(serverUtils, 'makeRequest').mockResolvedValue([confirmedTransaction]);
 
 		// Act:
-		const result = await fetchTransactionPage({ address: recipientAddress, from: senderAddress });
+		const result = await fetchAccountTransactionPage({ pageNumber: 2, pageSize: 5, address: recipientAddress, from: senderAddress });
 
 		// Assert:
-		const expectedURL = `${symbolApiBaseURL}/transactions?limit=10&offset=0&senderAddress=${senderAddress}&` +
+		const expectedURL = `${symbolApiBaseURL}/transactions?limit=5&offset=5&senderAddress=${senderAddress}&` +
 			`recipientAddress=${recipientAddress}&embedded=false&order=DESC`;
 		expectSingleRequest(makeRequest, expectedURL);
-		expect(result.data[0]).toMatchObject({
-			account: senderAddress,
-			direction: TRANSACTION_DIRECTION.INCOMING
+		expect(result).toEqual({
+			data: [{ ...confirmedTransaction, account: senderAddress, direction: TRANSACTION_DIRECTION.INCOMING }],
+			pageNumber: 2,
+			isLastPage: false
 		});
 	});
 
@@ -366,16 +387,31 @@ describe('variants/symbol/api/transactions', () => {
 		const makeRequest = jest.spyOn(serverUtils, 'makeRequest').mockResolvedValue([confirmedTransaction]);
 
 		// Act:
-		const result = await fetchTransactionPage({ address: senderAddress, to: recipientAddress });
+		const result = await fetchAccountTransactionPage({ address: senderAddress, to: recipientAddress });
 
 		// Assert:
 		const expectedURL = `${symbolApiBaseURL}/transactions?limit=10&offset=0&senderAddress=${senderAddress}&` +
 			`recipientAddress=${recipientAddress}&embedded=false&order=DESC`;
 		expectSingleRequest(makeRequest, expectedURL);
-		expect(result.data[0]).toMatchObject({
-			account: recipientAddress,
-			direction: TRANSACTION_DIRECTION.OUTGOING
+		expect(result).toEqual({
+			data: [{ ...confirmedTransaction, account: recipientAddress, direction: TRANSACTION_DIRECTION.OUTGOING }],
+			pageNumber: 1,
+			isLastPage: false
 		});
+	});
+
+	it('keeps sender and recipient filters available with signer public key', async () => {
+		// Arrange:
+		const makeRequest = jest.spyOn(serverUtils, 'makeRequest').mockResolvedValue([]);
+		const signerPublicKey = 'AB'.repeat(32);
+
+		// Act:
+		await fetchTransactionPage({ from: senderAddress, to: recipientAddress, signerPublicKey });
+
+		// Assert:
+		const expectedURL = `${symbolApiBaseURL}/transactions?limit=10&offset=0&senderAddress=${senderAddress}&` +
+			`recipientAddress=${recipientAddress}&signerPublicKey=${signerPublicKey}&embedded=false&order=DESC`;
+		expectSingleRequest(makeRequest, expectedURL);
 	});
 
 	it('omits the confirmed group and supports the REST signer key filter', async () => {
@@ -401,23 +437,27 @@ describe('variants/symbol/api/transactions', () => {
 		expect(makeRequest).not.toHaveBeenCalled();
 	});
 
-	it('rejects account filters that REST does not allow together', async () => {
+	it.each([
+		{ description: 'from', filters: { from: senderAddress } },
+		{ description: 'to', filters: { to: recipientAddress } },
+		{ description: 'signer public key', filters: { signerPublicKey: 'AB'.repeat(32) } }
+	])('rejects address with $description without requesting REST', async ({ filters }) => {
 		// Arrange:
 		const makeRequest = jest.spyOn(serverUtils, 'makeRequest');
 
 		// Act + Assert:
-		await expect(fetchTransactionPage({ address: senderAddress, signerPublicKey: 'AB'.repeat(32) }))
-			.rejects.toThrow('address cannot be combined with signerPublicKey');
+		await expect(fetchTransactionPage({ address: senderAddress, ...filters }))
+			.rejects.toThrow('address cannot be combined with from, to, or signerPublicKey');
 		expect(makeRequest).not.toHaveBeenCalled();
 	});
 
-	it('rejects an account filter with both direction filters', async () => {
+	it('rejects an account-history filter with both directions without requesting REST', async () => {
 		// Arrange:
 		const makeRequest = jest.spyOn(serverUtils, 'makeRequest');
 
 		// Act + Assert:
-		await expect(fetchTransactionPage({ address: senderAddress, from: senderAddress, to: recipientAddress }))
-			.rejects.toThrow('address cannot be combined with both from and to');
+		await expect(fetchAccountTransactionPage({ address: senderAddress, from: recipientAddress, to: senderAddress }))
+			.rejects.toThrow('Account history cannot combine from and to');
 		expect(makeRequest).not.toHaveBeenCalled();
 	});
 
@@ -486,7 +526,7 @@ describe('variants/symbol/api/transactions', () => {
 		]);
 
 		// Act:
-		const result = await fetchTransactionPage({ address: senderAddress });
+		const result = await fetchTransactionPage({ address: senderAddress, referenceAddress: senderAddress });
 
 		// Assert:
 		expect(result.data).toEqual([
@@ -510,7 +550,7 @@ describe('variants/symbol/api/transactions', () => {
 		const searchParamsBeforeRequest = { ...searchParams, types: [...searchParams.types] };
 
 		// Act:
-		await fetchTransactionPage(searchParams);
+		await fetchAccountTransactionPage(searchParams);
 
 		// Assert:
 		expect(searchParams).toEqual(searchParamsBeforeRequest);

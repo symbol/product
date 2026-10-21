@@ -20,6 +20,15 @@ const HEIGHT_PATTERN = /^\d+$/;
 const MAX_TRANSACTION_HEIGHT = '9223372036854775807';
 const DIRECT_FILTER_NAMES = new Set(['from', 'to', 'mosaic', 'height']);
 
+const activateOnKey = action => event => {
+	if (event.key !== 'Enter' && event.key !== ' ')
+		return;
+
+	event.preventDefault();
+	if (!event.repeat)
+		action();
+};
+
 const getLocalizedText = (key, language) => {
 	const locale = String(language || 'en').toLowerCase().split(/[-_]/)[0];
 	const text = FILTER_TEXT[locale] ?? FILTER_TEXT.en;
@@ -126,6 +135,7 @@ const TransactionFilter = ({ isSelectedItemsShown, data, value, search, isDisabl
 							return (
 								<div
 									role="button"
+									tabIndex={isAvailable ? 0 : -1}
 									className={`${styles.button} ${isActive ? styles.buttonActive : ''} ${
 										!isAvailable ? styles.buttonDisabled : ''
 									}`}
@@ -134,6 +144,7 @@ const TransactionFilter = ({ isSelectedItemsShown, data, value, search, isDisabl
 									aria-disabled={!isAvailable}
 									title={field.title}
 									onClick={() => isAvailable && openField(field)}
+									onKeyDown={activateOnKey(() => isAvailable && openField(field))}
 								>
 									<div className={`${styles.text} ${isActive ? styles.textActive : ''}`}>{field.title}</div>
 								</div>
@@ -148,8 +159,12 @@ const TransactionFilter = ({ isSelectedItemsShown, data, value, search, isDisabl
 						<div
 							className={styles.selectedItem}
 							key={field.name}
+							role="button"
+							tabIndex={isDisabled ? -1 : 0}
 							aria-label={`Remove ${field.title}`}
+							aria-disabled={isDisabled}
 							onClick={() => !isDisabled && removeField(field.name)}
+							onKeyDown={activateOnKey(() => !isDisabled && removeField(field.name))}
 						>
 							{field.type === 'transaction-type'
 								? <ValueTransactionType value={value[field.name]} />

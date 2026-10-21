@@ -24,6 +24,7 @@ const expectedTypes = activeVariant === 'symbol' ? symbolTransactionTypes : nemT
 
 beforeEach(() => {
 	jest.spyOn(TransactionService, 'fetchTransactionPage').mockResolvedValue({ data: [], pageNumber: 1 });
+	jest.spyOn(TransactionService, 'fetchAccountTransactionPage').mockResolvedValue({ data: [], pageNumber: 1 });
 	jest.spyOn(StatsService, 'fetchTransactionChart').mockResolvedValue([]);
 	jest.spyOn(StatsService, 'fetchPriceByDate').mockResolvedValue(0.5);
 });
@@ -31,15 +32,17 @@ beforeEach(() => {
 describe.each([
 	{
 		name: 'Transaction list',
+		requestMethod: 'fetchTransactionPage',
 		renderPage: () => render(<TransactionList preloadedData={[]} stats={transactionStats} />),
 		initialFilter: {}
 	},
 	{
 		name: 'Account history',
+		requestMethod: 'fetchAccountTransactionPage',
 		renderPage: () => render(<AccountInfo accountInfo={cosignatoryAccount} preloadedTransactions={[]} />),
 		initialFilter: { address: cosignatoryAccount.address }
 	}
-])('$name transaction type filter', ({ renderPage, initialFilter }) => {
+])('$name transaction type filter', ({ renderPage, initialFilter, requestMethod }) => {
 	it('offers exactly the active variant types in the configured order', async () => {
 		// Arrange:
 		renderPage();
@@ -57,13 +60,14 @@ describe.each([
 		// Arrange:
 		renderPage();
 		await toggleFilterChip('filter_type')();
-		TransactionService.fetchTransactionPage.mockClear();
+		const request = TransactionService[requestMethod];
+		request.mockClear();
 
 		// Act:
 		fireEvent.click(within(screen.getByRole('dialog')).getByAltText(type));
 
 		// Assert:
-		await waitFor(() => expect(TransactionService.fetchTransactionPage.mock.calls).toEqual([
+		await waitFor(() => expect(request.mock.calls).toEqual([
 			[{ ...initialFilter, pageNumber: 1, types: type }]
 		]));
 		expect(await screen.findByText('message_emptyTable')).toBeInTheDocument();

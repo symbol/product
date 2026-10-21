@@ -48,11 +48,8 @@ const getTransactionFilters = searchParams => {
 	const hasAddress = isPresent(address);
 	const hasFrom = isPresent(from);
 	const hasTo = isPresent(to);
-	if (hasAddress && hasFrom && hasTo)
-		throw new Error('address cannot be combined with both from and to');
-
-	if (hasAddress && !hasFrom && !hasTo && isPresent(signerPublicKey))
-		throw new Error('address cannot be combined with signerPublicKey');
+	if (hasAddress && (hasFrom || hasTo || isPresent(signerPublicKey)))
+		throw new Error('address cannot be combined with from, to, or signerPublicKey');
 
 	if (isPresent(embedded) && !(embedded === false || (typeof embedded === 'string' && embedded.toLowerCase() === 'false')))
 		throw new Error('embedded Symbol transactions are not supported by the shared transaction list');
@@ -68,23 +65,17 @@ const getTransactionFilters = searchParams => {
 	if (isPresent(types) && (!Array.isArray(types) || types.length))
 		filters.transactionTypes = Array.isArray(types) ? types.join(',') : types;
 
-	if (hasAddress && hasFrom) {
-		filters.senderAddress = from;
-		filters.recipientAddress = address;
-	} else if (hasAddress && hasTo) {
-		filters.senderAddress = address;
-		filters.recipientAddress = to;
-	} else if (hasAddress) {
+	if (hasAddress)
 		filters.address = address;
-	} else {
-		if (hasFrom)
-			filters.senderAddress = from;
-		if (hasTo)
-			filters.recipientAddress = to;
-	}
+	if (hasFrom)
+		filters.senderAddress = from;
+
+	if (hasTo)
+		filters.recipientAddress = to;
 
 	if (isPresent(signerPublicKey))
 		filters.signerPublicKey = signerPublicKey;
+
 	if (isPresent(mosaic))
 		filters.mosaic = mosaic;
 
@@ -94,9 +85,9 @@ const getTransactionFilters = searchParams => {
 	return filters;
 };
 
-const transactionFromREST = (transaction, address) => {
-	const isOutgoing = isPresent(address) && transaction.sender === address;
-	const isIncoming = isPresent(address) && transaction.recipient === address;
+const transactionFromREST = (transaction, referenceAddress) => {
+	const isOutgoing = isPresent(referenceAddress) && transaction.sender === referenceAddress;
+	const isIncoming = isPresent(referenceAddress) && transaction.recipient === referenceAddress;
 
 	return {
 		...transaction,
@@ -124,10 +115,30 @@ export const fetchTransactionPage = async (searchParams = {}) => {
 	if (!Array.isArray(transactions))
 		throw new Error('Symbol transactions response must be an array');
 
-	const formatter = transaction => transactionFromREST(transaction, params.address);
+	const formatter = transaction => transactionFromREST(transaction, params.referenceAddress);
 	const isLastPage = !transactions.length || pagination.offset + pagination.pageSize > MAX_TRANSACTION_OFFSET;
 
 	return { ...createPage(transactions, pagination.pageNumber, formatter), isLastPage };
+};
+
+/**
+ * Fetches a confirmed Symbol account-history page, adding the viewed account as the opposite
+ * transaction endpoint when a sender or recipient filter is selected.
+ * @param {object} [searchParams] - account address, page options, and account-history filters.
+ * @returns {Promise<object>} the account transaction page with direction fields.
+ */
+export const fetchAccountTransactionPage = async (searchParams = {}) => {
+	const { address: referenceAddress, from, to, ...filters } = searchParams ?? {};
+	if (isPresent(from) && isPresent(to))
+		throw new Error('Account history cannot combine from and to');
+
+	if (isPresent(from))
+		return fetchTransactionPage({ ...filters, from, to: referenceAddress, referenceAddress });
+
+	if (isPresent(to))
+		return fetchTransactionPage({ ...filters, from: referenceAddress, to, referenceAddress });
+
+	return fetchTransactionPage({ ...filters, address: referenceAddress, referenceAddress });
 };
 
 export const fetchTransactionInfo = stubValue(stubTransactions[0]);

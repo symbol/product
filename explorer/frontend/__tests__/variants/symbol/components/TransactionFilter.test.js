@@ -363,11 +363,11 @@ describe('variants/symbol/components/TransactionFilter', () => {
 		expect(screen.getByText('filter_type').closest('[role="button"]')).toHaveAttribute('aria-disabled', 'true');
 	});
 
-	itVariant('symbol')('uses the shared filter click controls without native buttons', () => {
+	itVariant('symbol')('keeps the filter controls styled as divs with button semantics and tab focus', () => {
 		// Arrange:
 		renderFilter({ from: 'TBFFBEEWH3HNT52R626IA6SAAUC5BQQXA4CC32Y' });
 		const trigger = screen.getByRole('button', { name: 'filter_from' });
-		const selected = screen.getByLabelText('Remove filter_from');
+		const selected = screen.getByRole('button', { name: 'Remove filter_from' });
 
 		// Act:
 		fireEvent.click(trigger);
@@ -375,9 +375,86 @@ describe('variants/symbol/components/TransactionFilter', () => {
 		// Assert:
 		expect(trigger.tagName).toBe('DIV');
 		expect(selected.tagName).toBe('DIV');
-		expect(trigger).not.toHaveAttribute('tabindex');
-		expect(selected).not.toHaveAttribute('tabindex');
+		expect(trigger).toHaveAttribute('tabindex', '0');
+		expect(selected).toHaveAttribute('tabindex', '0');
+		expect(selected).toHaveAttribute('aria-disabled', 'false');
 		expect(screen.getByRole('dialog').querySelector('button')).toBeNull();
+	});
+
+	itVariant('symbol')('focuses a direct filter with Tab and opens it with Enter', async () => {
+		// Arrange:
+		const user = userEvent.setup();
+		renderFilter();
+		const trigger = screen.getByRole('button', { name: 'filter_from' });
+
+		// Act:
+		await user.tab();
+		expect(trigger).toHaveFocus();
+		await user.keyboard('{Enter}');
+
+		// Assert:
+		expect(screen.getByRole('dialog')).toBeInTheDocument();
+	});
+
+	itVariant('symbol')('opens a direct filter once with Space and prevents its default action', () => {
+		// Arrange:
+		renderFilter();
+		const trigger = screen.getByRole('button', { name: 'filter_from' });
+
+		// Act:
+		const dispatchResult = fireEvent.keyDown(trigger, { key: ' ' });
+
+		// Assert:
+		expect(dispatchResult).toBe(false);
+		expect(screen.getByRole('dialog')).toBeInTheDocument();
+	});
+
+	itVariant('symbol')('ignores key repeats and unrelated keys on direct filters', () => {
+		// Arrange:
+		renderFilter();
+		const trigger = screen.getByRole('button', { name: 'filter_from' });
+
+		// Act:
+		const repeatDispatchResult = fireEvent.keyDown(trigger, { key: 'Enter', repeat: true });
+		fireEvent.keyDown(trigger, { key: 'ArrowDown' });
+
+		// Assert:
+		expect(repeatDispatchResult).toBe(false);
+		expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+	});
+
+	itVariant('symbol')('focuses a selected filter with Tab and removes it with Enter', async () => {
+		// Arrange:
+		const user = userEvent.setup();
+		const { onChange } = renderFilter({ from: 'TBFFBEEWH3HNT52R626IA6SAAUC5BQQXA4CC32Y' });
+		const selected = screen.getByRole('button', { name: 'Remove filter_from' });
+
+		// Act:
+		await user.tab();
+		await user.tab();
+		await user.tab();
+		await user.tab();
+		await user.tab();
+		expect(selected).toHaveFocus();
+		await user.keyboard('{Enter}');
+
+		// Assert:
+		expect(onChange).toHaveBeenCalledTimes(1);
+		expect(onChange).toHaveBeenCalledWith({});
+	});
+
+	itVariant('symbol')('removes a selected filter once with Space and prevents its default action', () => {
+		// Arrange:
+		const { onChange } = renderFilter({ from: 'TBFFBEEWH3HNT52R626IA6SAAUC5BQQXA4CC32Y' });
+		const selected = screen.getByRole('button', { name: 'Remove filter_from' });
+
+		// Act:
+		const dispatchResult = fireEvent.keyDown(selected, { key: ' ' });
+
+		// Assert:
+		expect(dispatchResult).toBe(false);
+		expect(onChange).toHaveBeenCalledTimes(1);
+		expect(onChange).toHaveBeenCalledWith({});
 	});
 
 	itVariant('symbol')('removes the selected type without clearing direct conditions', () => {
@@ -414,10 +491,41 @@ describe('variants/symbol/components/TransactionFilter', () => {
 
 		// Act:
 		fireEvent.click(fromButton);
+		fireEvent.keyDown(fromButton, { key: 'Enter' });
 
 		// Assert:
 		expect(fromButton).toHaveAttribute('aria-disabled', 'true');
+		expect(fromButton).toHaveAttribute('tabindex', '-1');
 		expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+	});
+
+	itVariant('symbol')('does not open a conflicted direct filter with the keyboard', () => {
+		// Arrange:
+		renderFilter({ types: 'TRANSFER' });
+		const toButton = screen.getByRole('button', { name: 'filter_to' });
+
+		// Act:
+		fireEvent.keyDown(toButton, { key: ' ' });
+
+		// Assert:
+		expect(toButton).toHaveAttribute('aria-disabled', 'true');
+		expect(toButton).toHaveAttribute('tabindex', '-1');
+		expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+	});
+
+	itVariant('symbol')('does not remove a selected filter while disabled', () => {
+		// Arrange:
+		const { onChange } = renderFilter({ from: 'TBFFBEEWH3HNT52R626IA6SAAUC5BQQXA4CC32Y' }, jest.fn(), jest.fn(), true);
+		const selected = screen.getByRole('button', { name: 'Remove filter_from' });
+
+		// Act:
+		fireEvent.click(selected);
+		fireEvent.keyDown(selected, { key: 'Enter' });
+
+		// Assert:
+		expect(selected).toHaveAttribute('aria-disabled', 'true');
+		expect(selected).toHaveAttribute('tabindex', '-1');
+		expect(onChange).not.toHaveBeenCalled();
 	});
 
 	itVariant('symbol')('does not apply a draft when disabled after opening the dialog', async () => {

@@ -9,12 +9,14 @@ import {
 	runRenderScenarioTests,
 	runSearchCriteriaTests,
 	runTableErrorTest,
+	selectFilterOption,
 	toggleFilterChip
 } from '../test-utils/page';
 import { describeVariant } from '../test-utils/variants';
 import * as AccountService from '@/app/api/accounts';
 import * as StatsService from '@/app/api/stats';
 import * as TransactionService from '@/app/api/transactions';
+import { STORAGE_KEY } from '@/app/constants';
 import AccountInfo, { getServerSideProps } from '@/app/pages/accounts/[address]';
 import { truncateString } from '@/app/utils';
 import { fireEvent, render, screen } from '@testing-library/react';
@@ -44,7 +46,7 @@ jest.mock('@/app/api/stats', () => {
 
 beforeEach(() => {
 	jest.spyOn(StatsService, 'fetchPriceByDate').mockResolvedValue(mockedMosaicPrice);
-	jest.spyOn(TransactionService, 'fetchTransactionPage').mockResolvedValue(accountTransactionPage);
+	jest.spyOn(TransactionService, 'fetchAccountTransactionPage').mockResolvedValue(accountTransactionPage);
 	jest.spyOn(AccountService, 'fetchAccountHarvestedBlockPage').mockResolvedValue(harvestedBlockPage);
 });
 
@@ -89,13 +91,15 @@ const harvestedBlockSearchCriteria = {
 	address: harvestingAccount.address
 };
 
+const accountHistoryContact = { address: 'TBFFBEEWH3HNT52R626IA6SAAUC5BQQXA4CC32Y' };
+
 // Tests
 
 describe('AccountInfo', () => {
 	describe('getServerSideProps', () => {
 		const requests = {
 			accountInfo: [AccountService, 'fetchAccountInfo'],
-			transactionPage: [TransactionService, 'fetchTransactionPage']
+			transactionPage: [TransactionService, 'fetchAccountTransactionPage']
 		};
 
 		const getServerSidePropsCases = [
@@ -141,8 +145,11 @@ describe('AccountInfo', () => {
 	});
 
 	describe('render', () => {
-		const renderPage = config =>
-			render(<AccountInfo accountInfo={config.accountInfo} preloadedTransactions={config.preloadedTransactions ?? []} />);
+		const renderPage = config => {
+			localStorage.setItem(STORAGE_KEY.ADDRESS_BOOK, JSON.stringify(config.contacts ?? []));
+
+			return render(<AccountInfo accountInfo={config.accountInfo} preloadedTransactions={config.preloadedTransactions ?? []} />);
+		};
 
 		describe('section: account info', () => {
 			const accountInfoCases = [
@@ -290,7 +297,13 @@ describe('AccountInfo', () => {
 						actions: [clickText(SCREEN_TEXT.sectionTransactions)]
 					},
 					expected: {
-						texts: [SCREEN_TEXT.sectionHistory],
+						texts: [
+							SCREEN_TEXT.sectionHistory,
+							'label_outgoing',
+							'label_incoming',
+							accountTransactionListConfirmed[1].account
+						],
+						textOccurrences: { [accountTransactionListConfirmed[0].account]: 2 },
 						asyncTexts: accountTransactionListConfirmed.map(transaction => truncateString(transaction.hash, 'hash'))
 					}
 				},
@@ -337,6 +350,62 @@ describe('AccountInfo', () => {
 			];
 
 			runRenderScenarioTests({ renderPage, cases: historyCases });
+
+			runSearchCriteriaTests({
+				renderPage,
+				request: [TransactionService, 'fetchAccountTransactionPage'],
+				cases: [
+					{
+						description: 'keeps the viewed account and selected sender in account history search state',
+						config: {
+							accountInfo: cosignatoryAccount,
+							contacts: [accountHistoryContact],
+							actions: [
+								clickText(SCREEN_TEXT.sectionTransactions),
+								selectFilterOption('filter_from', accountHistoryContact.address)
+							]
+						},
+						expected: {
+							searchCriteria: {
+								pageNumber: 1,
+								address: cosignatoryAccount.address,
+								from: accountHistoryContact.address
+							}
+						}
+					},
+					{
+						description: 'keeps the viewed account and selected recipient in account history search state',
+						config: {
+							accountInfo: cosignatoryAccount,
+							contacts: [accountHistoryContact],
+							actions: [
+								clickText(SCREEN_TEXT.sectionTransactions),
+								selectFilterOption('filter_to', accountHistoryContact.address)
+							]
+						},
+						expected: {
+							searchCriteria: {
+								pageNumber: 1,
+								address: cosignatoryAccount.address,
+								to: accountHistoryContact.address
+							}
+						}
+					},
+					{
+						description: 'restores the address-only account-history search when the filter is cleared',
+						config: {
+							accountInfo: cosignatoryAccount,
+							contacts: [accountHistoryContact],
+							actions: [
+								clickText(SCREEN_TEXT.sectionTransactions),
+								selectFilterOption('filter_from', accountHistoryContact.address),
+								clearFilterChip('filter_from')
+							]
+						},
+						expected: { searchCriteria: { pageNumber: 1, address: cosignatoryAccount.address } }
+					}
+				]
+			});
 
 			runSearchCriteriaTests({
 				renderPage: renderHarvestedTab,
