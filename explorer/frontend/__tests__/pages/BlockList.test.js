@@ -2,6 +2,7 @@ import '@testing-library/jest-dom';
 import { blockWithTransactions } from '../../__fixtures__/local/block';
 import { blockList } from '../../__fixtures__/local/block-list';
 import { blockStats } from '../../__fixtures__/local/block-stats';
+import { blockWithTransactions as symbolBlockWithTransactions } from '../../__fixtures__/local/symbol/block-list';
 import { runGetServerSidePropsTests, runRenderScenarioTests } from '../test-utils/page';
 import * as BlockService from '@/app/api/blocks';
 import * as StatsService from '@/app/api/stats';
@@ -41,7 +42,9 @@ const SCREEN_TEXT = {
 	tableFieldHeight: 'table_field_height',
 	tableFieldHarvester: 'table_field_harvester',
 	tableFieldTransactionCount: 'table_field_transactionCount',
+	tableFieldStatementCount: 'table_field_statementCount',
 	tableFieldTotalFee: 'table_field_totalFee',
+	tableFieldBlockReward: 'table_field_blockReward',
 	fieldTimestamp: 'field_timestamp',
 	fieldTimestampUTC: 'field_timestampUTC',
 	labelCreated: 'label_created',
@@ -152,6 +155,28 @@ describe('BlockList', () => {
 							...blockList.map(block => block.harvester)
 						],
 						titles: [`${blockWithTransactions.totalFee} XEM`]
+					}
+				},
+				{
+					description: 'renders the statement count and the block reward columns',
+					variants: ['symbol'],
+					config: { blocks: [symbolBlockWithTransactions] },
+					expected: {
+						texts: [
+							SCREEN_TEXT.tableFieldStatementCount,
+							SCREEN_TEXT.tableFieldBlockReward,
+							symbolBlockWithTransactions.statementCount
+						],
+						titles: [`${symbolBlockWithTransactions.blockReward} XEM`]
+					}
+				},
+				{
+					description: 'does not render the statement count and the block reward columns',
+					variants: ['nem'],
+					config: { blocks: blockList },
+					expected: {
+						texts: [SCREEN_TEXT.tableFieldTransactionCount, SCREEN_TEXT.tableFieldTotalFee],
+						hiddenTexts: [SCREEN_TEXT.tableFieldStatementCount, SCREEN_TEXT.tableFieldBlockReward]
 					}
 				},
 				{

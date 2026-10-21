@@ -26,6 +26,8 @@
 /**
  * @typedef {object} VariantBlocksPageConfig
  * @property {'page'|'cursor'} paginationMode - pagination mode for the list.
+ * @property {boolean} showStatementCountColumn - Whether the block table shows the statement count column.
+ * @property {boolean} showBlockRewardColumn - Whether the block table shows the block reward column.
  */
 
 // Required exports for each API domain.
@@ -71,7 +73,7 @@ export const STYLE_VARIABLES_CONTRACT = [
 // Required config keys by page.
 export const PAGE_CONFIG_CONTRACT = {
 	account: ['showEmptyBlockFilter'],
-	blocks: ['paginationMode'],
+	blocks: ['paginationMode', 'showStatementCountColumn', 'showBlockRewardColumn'],
 	home: ['showSupernodeCount', 'additionalSections']
 };
 
