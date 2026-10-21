@@ -13,6 +13,7 @@ import ValueMosaic from '@/app/components/ValueMosaic';
 import ValueTimestamp from '@/app/components/ValueTimestamp';
 import styles from '@/app/styles/pages/Home.module.scss';
 import { useAsyncCall, usePagination } from '@/app/utils';
+import { pageConfig } from '@/app/variants/page-config';
 import Head from 'next/head';
 import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
@@ -24,15 +25,19 @@ export const getServerSideProps = async ({ locale }) => {
 	return {
 		props: {
 			blocks: blocksPage.data,
+			nextPageParams: blocksPage.nextPageParams ?? null,
 			stats,
 			...(await serverSideTranslations(locale, ['common']))
 		}
 	};
 };
 
-const Blocks = ({ blocks, stats }) => {
+const Blocks = ({ blocks, nextPageParams, stats }) => {
 	const { t } = useTranslation();
-	const { requestNextPage, data, isLoading, isError, isLastPage } = usePagination(fetchBlockPage, blocks);
+	const { requestNextPage, data, isLoading, isError, isLastPage } = usePagination(fetchBlockPage, blocks, {}, {
+		mode: pageConfig.blocks.paginationMode,
+		initialNextPageParams: nextPageParams
+	});
 	const chainStatus = useAsyncCall(fetchChainStatus, null);
 
 	const tableColumns = [
