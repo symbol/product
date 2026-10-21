@@ -92,6 +92,7 @@ describe('BlockList', () => {
 					result: {
 						props: {
 							blocks: blockList,
+							nextPageParams: null,
 							stats: blockStats
 						}
 					}
