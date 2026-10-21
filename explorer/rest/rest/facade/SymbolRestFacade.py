@@ -139,10 +139,10 @@ class SymbolRestFacade:
 				'namespaceId': group.namespace_id,
 				'namespaceName': group.namespace_name,
 				'data': [
-					{
+					{key: value for key, value in {
 						**mosaic.view.to_dict(),
 						'startTimestamp': format_timestamp(mosaic.start_timestamp)
-					}
+					}.items() if key != 'registrationTimestamp'}
 					for mosaic in group.data
 				]
 			}

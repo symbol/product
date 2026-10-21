@@ -1,10 +1,11 @@
+from datetime import datetime, timezone
 from unittest import TestCase
 
 from psycopg2 import Error as PsycopgError
 
 from rest.db.SymbolDatabase import SortOrder, SymbolDatabase, SymbolDataUnavailable
 
-from ..test.SymbolBlockTestUtils import create_symbol_sync_state
+from ..test.SymbolBlockTestUtils import create_symbol_block, create_symbol_sync_state
 from ..test.SymbolDatabaseTestUtils import (
 	PausingAfterSyncStateReadSymbolDatabase,
 	create_safe_repairing_sync_state,
@@ -30,12 +31,17 @@ def _create_default_mosaic_row():
 	return mosaic_map
 
 
+def _create_registration_blocks(mosaics):
+	return [create_symbol_block(height) for height in sorted({mosaic['start_height'] for mosaic in mosaics})]
+
+
 class SymbolDatabaseMosaicsTest(TestCase):
 	def test_can_get_mosaic_metadata_from_postgresql(self):
 		# Arrange:
 		mosaic_map = _create_default_mosaic_row()
 		with symbol_test_database(
 			create_symbol_sync_state(last_synced_height=10, finalized_height=9),
+			blocks=_create_registration_blocks([mosaic_map]),
 			mosaics=[mosaic_map]) as (db_config, puller_database):
 			with puller_database.connection.cursor() as cursor:
 				cursor.execute(
@@ -53,6 +59,7 @@ class SymbolDatabaseMosaicsTest(TestCase):
 				mosaic_id='1234567890ABCDEF',
 				owner_address='TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI',
 				start_height=10,
+				registration_timestamp=datetime(2026, 1, 10),
 				expiration_height=30,
 				duration=20)
 		], result)
@@ -90,7 +97,10 @@ class SymbolDatabaseMosaicsTest(TestCase):
 			mosaic_map['updated_at_height'] = start_height
 			mosaics.append(mosaic_map)
 
-		with symbol_test_database(create_symbol_sync_state(3, 2), mosaics=mosaics) as (db_config, _puller_database):
+		with symbol_test_database(
+			create_symbol_sync_state(3, 2),
+			blocks=_create_registration_blocks(mosaics),
+			mosaics=mosaics) as (db_config, _puller_database):
 			# Act:
 			with SymbolDatabase(db_config) as database:
 				pages = [database.get_mosaics(2, offset, sort) for offset in (0, 2, 4)]
@@ -120,6 +130,23 @@ class SymbolDatabaseMosaicsTest(TestCase):
 
 		# Assert:
 		self.assertEqual([], result)
+
+	def test_mosaic_queries_raise_unavailable_when_registration_block_is_missing(self):
+		# Arrange:
+		valid_mosaic = _create_default_mosaic_row()
+		missing_mosaic = create_symbol_mosaic('1111111111111111', 6)
+		missing_mosaic.update({'start_height': 9, 'updated_at_height': 9})
+		with symbol_test_database(
+			create_symbol_sync_state(10, 9),
+			blocks=[create_symbol_block(10)],
+			mosaics=[valid_mosaic, missing_mosaic]) as (db_config, _puller_database):
+			with SymbolDatabase(db_config) as database:
+				# Act + Assert: a valid page row cannot hide another row without its registration block.
+				with self.assertRaisesRegex(SymbolDataUnavailable, 'Symbol mosaic data is unavailable'):
+					database.get_mosaics(10, 0, SortOrder.DESC)
+
+				with self.assertRaisesRegex(SymbolDataUnavailable, 'Symbol mosaic data is unavailable'):
+					database.get_mosaic('1111111111111111')
 
 	def _assert_unavailable_mosaic_state(self, sync_state_map):
 		# Act + Assert: current mosaics are unsafe even if their registration height is in the clean prefix.
@@ -151,11 +178,13 @@ class SymbolDatabaseMosaicsTest(TestCase):
 		# Arrange:
 		with symbol_test_database(
 			create_symbol_sync_state(last_synced_height=10, finalized_height=9),
+			blocks=_create_registration_blocks([_create_default_mosaic_row()]),
 			mosaics=[_create_default_mosaic_row()]) as (db_config, puller_database):
 			def update_mosaic_snapshot():
 				with puller_database.connection.cursor() as cursor:
 					cursor.execute("UPDATE symbol_sync_state SET status = 'unhealthy' WHERE id = 1")
 					cursor.execute("UPDATE symbol_mosaics SET supply = 999, alias_names = '[\"after\"]'::jsonb")
+					cursor.execute("UPDATE symbol_blocks SET timestamp = '2026-05-01 12:00:00' WHERE height = 10")
 				puller_database.connection.commit()
 
 			# Act:
@@ -168,6 +197,7 @@ class SymbolDatabaseMosaicsTest(TestCase):
 				# Assert: this request sees the old metadata; the next request sees the unhealthy state.
 				self.assertEqual([1234567], [mosaic.supply for mosaic in result])
 				self.assertEqual([[]], [mosaic.alias_names for mosaic in result])
+				self.assertEqual([datetime(2026, 1, 10)], [mosaic.registration_timestamp for mosaic in result])
 				with self.assertRaises(SymbolDataUnavailable):
 					database.get_mosaics(10, 0, SortOrder.DESC)
 
@@ -175,6 +205,7 @@ class SymbolDatabaseMosaicsTest(TestCase):
 		# Arrange:
 		with symbol_test_database(
 			create_symbol_sync_state(last_synced_height=10, finalized_height=9),
+			blocks=_create_registration_blocks([_create_default_mosaic_row()]),
 			mosaics=[_create_default_mosaic_row()]) as (db_config, puller_database):
 			with SymbolDatabase(db_config) as database:
 				with puller_database.connection.cursor() as cursor:
@@ -199,9 +230,15 @@ class SymbolDatabaseMosaicsTest(TestCase):
 class SymbolDatabaseMosaicTest(TestCase):
 	def _assert_mosaic_lookup(self, mosaic_id, namespace_map=None):
 		# Arrange:
+		mosaic_map = _create_default_mosaic_row()
+		mosaic_map.update({'start_height': 8, 'updated_at_height': 8})
 		with symbol_test_database(
 			create_symbol_sync_state(10, 9),
-			mosaics=[_create_default_mosaic_row()]) as (db_config, puller_database):
+			blocks=[
+				create_symbol_block(8, timestamp=datetime(2020, 3, 4, 5, 6, 7, tzinfo=timezone.utc)),
+				create_symbol_block(10, timestamp=datetime(2026, 1, 10, tzinfo=timezone.utc))
+			],
+			mosaics=[mosaic_map]) as (db_config, puller_database):
 			if namespace_map:
 				puller_database.upsert_namespace(namespace_map, [])
 
@@ -211,6 +248,7 @@ class SymbolDatabaseMosaicTest(TestCase):
 
 		# Assert:
 		self.assertEqual('1234567890ABCDEF', result.mosaic_id)
+		self.assertEqual(datetime(2020, 3, 4, 5, 6, 7), result.registration_timestamp)
 
 	def test_can_get_mosaic_by_id(self):
 		self._assert_mosaic_lookup('1234567890ABCDEF')
@@ -232,6 +270,7 @@ class SymbolDatabaseMosaicTest(TestCase):
 		# Arrange:
 		with symbol_test_database(
 			create_symbol_sync_state(10, 9),
+			blocks=_create_registration_blocks([_create_default_mosaic_row()]),
 			mosaics=[_create_default_mosaic_row()]) as (db_config, puller_database):
 			if namespace_map:
 				puller_database.upsert_namespace(namespace_map, [])
@@ -287,6 +326,9 @@ class SymbolDatabaseMosaicTest(TestCase):
 
 
 def _query_symbol_mosaics(mosaics, sync_state_map, limit=10, offset=0, sort=SortOrder.DESC):
-	with symbol_test_database(sync_state_map, mosaics=mosaics) as (db_config, _puller_database):
+	with symbol_test_database(
+		sync_state_map,
+		blocks=_create_registration_blocks(mosaics),
+		mosaics=mosaics) as (db_config, _puller_database):
 		with SymbolDatabase(db_config) as database:
 			return database.get_mosaics(limit, offset, sort)

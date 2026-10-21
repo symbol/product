@@ -5,7 +5,7 @@ import { runGetServerSidePropsTests, runRenderScenarioTests } from '../test-util
 import * as BlockService from '@/app/api/blocks';
 import * as NamespaceService from '@/app/api/namespaces';
 import NamespaceList, { getServerSideProps } from '@/app/pages/namespaces';
-import { render } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 
 // Mocks
 
@@ -78,6 +78,20 @@ describe('NamespaceList', () => {
 	});
 
 	describe('render', () => {
+		it.each([
+			{ description: 'when the name differs from the ID', name: 'display.namespace', id: 'namespace-id' },
+			{ description: 'when the name and ID match', name: 'namespace', id: 'namespace' }
+		])('renders the namespace name with an ID link $description', ({ name, id }) => {
+			// Arrange:
+			const namespaceRow = { ...namespace, name, id };
+
+			// Act:
+			render(<NamespaceList namespaces={[namespaceRow]} />);
+
+			// Assert:
+			expect(screen.getByRole('link', { name, exact: true })).toHaveAttribute('href', `/namespaces/${id}`);
+		});
+
 		const renderPage = config => {
 			BlockService.fetchChainHight.mockResolvedValue(config.chainHeight ?? activeChainHeight);
 			render(<NamespaceList namespaces={config.namespaces} />);
