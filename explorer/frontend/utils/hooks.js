@@ -115,6 +115,7 @@ export const usePagination = (callback, defaultData, defaultFilter = {}, options
 	const changeFilter = filter => {
 		setData([]);
 		setPageInfo(initialPageInfo);
+		setIsLastPage(false);
 		setFilter(filter);
 		call(filter, [], initialPageInfo);
 	};
