@@ -896,9 +896,11 @@ class SymbolDatabase(DatabaseConnectionPool):
 
 				cursor.execute(
 					f'''
-					SELECT {MOSAIC_COLUMNS}
+					SELECT {MOSAIC_COLUMNS}, registration_block.timestamp
 					FROM symbol_mosaics
-					ORDER BY start_height {sort.value}, mosaic_id {sort.value}
+					LEFT JOIN symbol_blocks AS registration_block
+						ON registration_block.height = symbol_mosaics.start_height
+					ORDER BY symbol_mosaics.start_height {sort.value}, symbol_mosaics.mosaic_id {sort.value}
 					LIMIT %s OFFSET %s''',
 					(limit, offset))
 				return [self._create_mosaic_view(row) for row in cursor.fetchall()]
@@ -1098,8 +1100,11 @@ class SymbolDatabase(DatabaseConnectionPool):
 			mosaic_ids.add(mosaic_id)
 
 		cursor.execute(
-			f'''SELECT {MOSAIC_COLUMNS}, updated_at_height
-			FROM symbol_mosaics WHERE mosaic_id = ANY(%s::varchar[])''',
+			f'''SELECT {MOSAIC_COLUMNS}, registration_block.timestamp, updated_at_height
+			FROM symbol_mosaics
+			LEFT JOIN symbol_blocks AS registration_block
+				ON registration_block.height = symbol_mosaics.start_height
+			WHERE mosaic_id = ANY(%s::varchar[])''',
 			(list(mosaic_ids),))
 		mosaic_rows = {row[0]: row for row in cursor.fetchall()}
 		if mosaic_ids != set(mosaic_rows):
@@ -1113,7 +1118,7 @@ class SymbolDatabase(DatabaseConnectionPool):
 				raise SymbolDataUnavailable('Symbol namespace data is unavailable')
 
 			try:
-				mosaic_views[mosaic_id] = cls._create_mosaic_view(row[:-1])
+				mosaic_views[mosaic_id] = cls._create_mosaic_view(row[:-1], require_registration_timestamp=False)
 			except (TypeError, ValueError) as error:
 				raise SymbolDataInvalid('symbol_mosaics', 'invalid persisted Mosaic row') from error
 
@@ -1355,7 +1360,12 @@ class SymbolDatabase(DatabaseConnectionPool):
 					return None
 
 				cursor.execute(
-					f'SELECT {MOSAIC_COLUMNS} FROM symbol_mosaics WHERE mosaic_id = %s',
+					f'''
+					SELECT {MOSAIC_COLUMNS}, registration_block.timestamp
+					FROM symbol_mosaics
+					LEFT JOIN symbol_blocks AS registration_block
+						ON registration_block.height = symbol_mosaics.start_height
+					WHERE symbol_mosaics.mosaic_id = %s''',
 					(resolved_mosaic_id,))
 				result = cursor.fetchone()
 				return self._create_mosaic_view(result) if result else None
@@ -1467,17 +1477,20 @@ class SymbolDatabase(DatabaseConnectionPool):
 		)
 
 	@staticmethod
-	def _create_mosaic_view(result):
+	def _create_mosaic_view(result, require_registration_timestamp=True):
 		(
 			mosaic_id, owner_address, start_height, expiration_height,
 			duration, supply, divisibility, supply_mutable,
-			transferable, restrictable, revokable, alias_names
+			transferable, restrictable, revokable, alias_names, registration_timestamp
 		) = result
+		if require_registration_timestamp and registration_timestamp is None:
+			raise SymbolDataUnavailable('Symbol mosaic data is unavailable')
 
 		return SymbolMosaicView(
 			mosaic_id=mosaic_id,
 			owner_address=_address(owner_address),
 			start_height=start_height,
+			registration_timestamp=registration_timestamp,
 			expiration_height=expiration_height,
 			duration=duration,
 			supply=supply,
