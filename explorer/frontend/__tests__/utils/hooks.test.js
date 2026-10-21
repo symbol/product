@@ -145,7 +145,7 @@ describe('utils/hooks', () => {
 			expect(result.current.pageNumber).toBe(2);
 		});
 
-		it('does not add a new page to the list when the page number is different', async () => {
+		it('sets the last page to true when an empty page is returned', async () => {
 			// Arrange:
 			const callback = jest.fn().mockImplementation(() => Promise.resolve(page3));
 			const defaultData = page1.data;
@@ -155,7 +155,7 @@ describe('utils/hooks', () => {
 
 			// Request new page:
 			act(() => {
-				result.current.requestNextPage;
+				result.current.requestNextPage();
 			});
 
 			// Wait for the call to finish:
@@ -168,8 +168,8 @@ describe('utils/hooks', () => {
 			expect(result.current.data).toStrictEqual(page1.data);
 			expect(result.current.isLoading).toBe(false);
 			expect(result.current.isError).toBe(false);
-			expect(result.current.isLastPage).toBe(false);
-			expect(result.current.pageNumber).toBe(1);
+			expect(result.current.isLastPage).toBe(true);
+			expect(result.current.pageNumber).toBe(2);
 		});
 
 		it('requests a new page with filter', async () => {
