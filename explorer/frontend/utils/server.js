@@ -18,7 +18,7 @@ export const createSearchCriteria = (searchParams = {}) => {
 // Creates an API URL.
 export const createApiUrl = path => `${config.PUBLIC_API_BASE_URL}/${path}`;
 
-// Creates a search URL, which uses in fetching paged data.
+// Creates a search URL with "page" mode, which uses in fetching paged data.
 export const createSearchURL = (baseURL, searchCriteria) => {
 	const { pageNumber, pageSize, filter } = searchCriteria;
 	const limit = pageSize;
@@ -26,6 +26,18 @@ export const createSearchURL = (baseURL, searchCriteria) => {
 	const params = new URLSearchParams({
 		limit,
 		offset,
+		...filter
+	}).toString();
+
+	return `${baseURL}?${params}`;
+};
+
+// Creates a search URL with "cursor" mode, which uses in fetching paged data.
+export const createCursorURL = (baseURL, searchCriteria) => {
+	const { pageSize, filter } = searchCriteria;
+	const limit = pageSize;
+	const params = new URLSearchParams({
+		limit,
 		...filter
 	}).toString();
 
