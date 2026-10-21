@@ -1,4 +1,5 @@
-// Keep the global health banner hidden until the Symbol backend exists.
-import { resolveNull } from './stub';
+import { createApiUrl, makeRequest } from '@/app/utils/server';
 
-export const fetchBackendHealthStatus = resolveNull;
+export const fetchBackendHealthStatus = async () => {
+	return makeRequest(createApiUrl('health'));
+};
