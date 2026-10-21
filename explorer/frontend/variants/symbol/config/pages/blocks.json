@@ -1,3 +1,5 @@
 {
-	"paginationMode": "cursor"
+	"paginationMode": "cursor",
+	"showStatementCountColumn": true,
+	"showBlockRewardColumn": true
 }

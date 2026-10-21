@@ -55,8 +55,17 @@ const Blocks = ({ blocks, nextPageParams, stats }) => {
 			key: 'transactionCount',
 			size: '6.67rem'
 		},
+		pageConfig.blocks.showStatementCountColumn && {
+			key: 'statementCount',
+			size: '6.67rem'
+		},
 		{
 			key: 'totalFee',
+			size: '7rem',
+			renderValue: value => <ValueMosaic amount={value} isNative />
+		},
+		pageConfig.blocks.showBlockRewardColumn && {
+			key: 'blockReward',
 			size: '7rem',
 			renderValue: value => <ValueMosaic amount={value} isNative />
 		},
@@ -66,7 +75,7 @@ const Blocks = ({ blocks, nextPageParams, stats }) => {
 			renderTitle: () => <FieldTimestamp />,
 			renderValue: value => <ValueTimestamp value={value} hasTime />
 		}
-	];
+	].filter(Boolean);
 
 	return (
 		<div className={styles.wrapper}>

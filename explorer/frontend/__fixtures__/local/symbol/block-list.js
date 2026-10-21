@@ -6,6 +6,7 @@ export const blockWithTransactions = {
 	difficulty: '12.29',
 	totalFee: 0.0312,
 	transactionCount: 1,
+	statementCount: 2,
 	blockReward: 64.531245
 };
 
@@ -17,6 +18,7 @@ export const emptyBlock = {
 	difficulty: '12.20',
 	totalFee: 0,
 	transactionCount: 0,
+	statementCount: 1,
 	blockReward: 0
 };
 

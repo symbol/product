@@ -82,6 +82,7 @@ const createBlockPage = blocks => {
  * @property {string} difficulty - the block difficulty in percent.
  * @property {number} totalFee - the block transactions total fee.
  * @property {number} transactionCount - the number of transactions in the block.
+ * @property {number} statementCount - the number of statements in the block.
  * @property {number} blockReward - the harvesting reward.
  */
 
@@ -98,5 +99,6 @@ const blockListItemFromDTO = data => ({
 	difficulty: ((data.difficulty / Math.pow(10, 14)) * 100).toFixed(2),
 	totalFee: data.totalFee,
 	transactionCount: data.transactionCount,
+	statementCount: data.statementCount,
 	blockReward: data.blockReward ?? 0
 });
