@@ -18,6 +18,7 @@ class NemRestFacade:
 		self.network = NetworkLocator.find_by_name(Network.NETWORKS, rest_config.network_name)
 		self.nem_db = NemDatabase(db_config, self.network, rest_config.harvesting_active_window_days)
 		self.nem_connector = NemConnector(rest_config.node_url, self.network)
+		self.nem_connector.timeout_seconds = rest_config.node_request_timeout_seconds
 		self.max_lag_blocks = rest_config.max_lag_blocks
 		self.statistics_cache = TtlCache(STATISTICS_CACHE_TTL_SECONDS, STATISTICS_CACHE_MAX_ENTRIES)
 		self.statistics_range_cache = TtlCache(STATISTICS_CACHE_TTL_SECONDS, STATISTICS_RANGE_CACHE_MAX_ENTRIES)

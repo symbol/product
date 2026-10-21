@@ -1,4 +1,5 @@
 import unittest
+from datetime import datetime, timedelta, timezone
 
 from ...test.SymbolMosaicTestUtils import create_symbol_mosaic_view
 
@@ -21,6 +22,7 @@ class SymbolMosaicViewTest(unittest.TestCase):
 		self.assertEqual('72C0212E67A08BCE', mosaic_view.mosaic_id)
 		self.assertEqual('TATNE7Q5BITMUTRRN6IB4I7FLSDRDWZA34I2PMQ', mosaic_view.owner_address)
 		self.assertEqual(123, mosaic_view.start_height)
+		self.assertEqual(datetime(2026, 1, 1, tzinfo=timezone.utc), mosaic_view.registration_timestamp)
 		self.assertEqual(579, mosaic_view.expiration_height)
 		self.assertEqual(456, mosaic_view.duration)
 		self.assertEqual(1234567, mosaic_view.supply)
@@ -46,6 +48,7 @@ class SymbolMosaicViewTest(unittest.TestCase):
 			'supply': 1234567,
 			'divisibility': 6,
 			'registrationHeight': 123,
+			'registrationTimestamp': '2026-01-01 00:00:00',
 			'expirationHeight': 579,
 			'value': 1.234567,
 			'isUnlimitedDuration': False,
@@ -66,6 +69,9 @@ class SymbolMosaicViewTest(unittest.TestCase):
 		self.assertNotEqual(mosaic_view, self._create_default_mosaic_view(('mosaic_id', '6BED913FA20223F8')))
 		self.assertNotEqual(mosaic_view, self._create_default_mosaic_view(('owner_address', 'TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI')))
 		self.assertNotEqual(mosaic_view, self._create_default_mosaic_view(('start_height', 124)))
+		self.assertNotEqual(
+			mosaic_view,
+			self._create_default_mosaic_view(('registration_timestamp', datetime(2026, 1, 2, tzinfo=timezone.utc))))
 		self.assertNotEqual(mosaic_view, self._create_default_mosaic_view(('expiration_height', None)))
 		self.assertNotEqual(mosaic_view, self._create_default_mosaic_view(('duration', 0)))
 		self.assertNotEqual(mosaic_view, self._create_default_mosaic_view(('supply', 1234568)))
@@ -75,6 +81,17 @@ class SymbolMosaicViewTest(unittest.TestCase):
 		self.assertNotEqual(mosaic_view, self._create_default_mosaic_view(('restrictable', True)))
 		self.assertNotEqual(mosaic_view, self._create_default_mosaic_view(('revokable', False)))
 		self.assertNotEqual(mosaic_view, self._create_default_mosaic_view(('alias_names', ['example'])))
+
+	def test_registration_timestamp_is_formatted_in_utc(self):
+		# Arrange:
+		registration_timestamp = datetime(2026, 1, 1, 9, 0, 0, tzinfo=timezone(timedelta(hours=9)))
+		mosaic_view = self._create_default_mosaic_view(('registration_timestamp', registration_timestamp))
+
+		# Act:
+		result_map = mosaic_view.to_dict()
+
+		# Assert:
+		self.assertEqual('2026-01-01 00:00:00', result_map['registrationTimestamp'])
 
 	def test_can_convert_unlimited_duration(self):
 		# Arrange:
