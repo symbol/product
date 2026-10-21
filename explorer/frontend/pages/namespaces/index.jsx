@@ -33,7 +33,7 @@ const Blocks = ({ namespaces }) => {
 		{
 			key: 'name',
 			size: '20rem',
-			renderValue: value => <Link href={createPageHref('namespaces', value)}>{value}</Link>
+			renderValue: (value, row) => <Link href={createPageHref('namespaces', row.id)}>{value}</Link>
 		},
 		{
 			key: 'subNamespaceCount',
