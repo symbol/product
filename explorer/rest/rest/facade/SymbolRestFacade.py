@@ -114,6 +114,37 @@ class SymbolRestFacade:
 		mosaics = self.symbol_db.get_mosaics(limit, offset, sort)
 		return [mosaic.to_dict() for mosaic in mosaics]
 
+	def get_namespaces(self, query):
+		"""Gets a persisted Symbol namespace page."""
+
+		namespaces = self.symbol_db.get_namespaces(query)
+		return [namespace.to_dict() for namespace in namespaces]
+
+	def try_get_namespace(self, namespace_id):
+		"""Gets one persisted Symbol namespace detail DTO."""
+
+		detail = self.symbol_db.try_get_namespace(namespace_id)
+		if detail is None:
+			return None
+
+		result = detail.namespace.to_dict()
+		result['subNamespaces'] = detail.sub_namespaces
+		result['namespaceMosaics'] = [
+			{
+				'namespaceId': group.namespace_id,
+				'namespaceName': group.namespace_name,
+				'data': [
+					{
+						**mosaic.view.to_dict(),
+						'startTimestamp': format_timestamp(mosaic.start_timestamp)
+					}
+					for mosaic in group.data
+				]
+			}
+			for group in detail.namespace_mosaics
+		]
+		return result
+
 	def get_mosaic(self, mosaic_id):
 		"""Gets a current mosaic by mosaic ID or namespace ID."""
 

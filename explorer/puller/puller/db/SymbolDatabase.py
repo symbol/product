@@ -602,6 +602,7 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 		cursor.execute('CREATE INDEX IF NOT EXISTS idx_symbol_accounts_eligible ON symbol_accounts(is_eligible_for_harvesting)')
 		cursor.execute('CREATE INDEX IF NOT EXISTS idx_symbol_account_mosaics_address ON symbol_account_mosaics(address)')
 		cursor.execute('CREATE INDEX IF NOT EXISTS idx_symbol_account_mosaics_mosaic ON symbol_account_mosaics(mosaic_id)')
+		cursor.execute('CREATE INDEX IF NOT EXISTS idx_symbol_transactions_height_all ON symbol_transactions(height)')
 		cursor.execute('''
 			CREATE INDEX IF NOT EXISTS idx_symbol_transactions_height_desc
 			ON symbol_transactions(height DESC, id DESC)
@@ -634,6 +635,7 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 			CREATE INDEX IF NOT EXISTS idx_symbol_transaction_mosaics_mosaic_role_height
 			ON symbol_transaction_mosaics(mosaic_id, role, height DESC, transaction_id)
 		''')
+		cursor.execute('CREATE INDEX IF NOT EXISTS idx_symbol_transaction_mosaics_height ON symbol_transaction_mosaics(height)')
 		cursor.execute('''
 			CREATE INDEX IF NOT EXISTS idx_symbol_transaction_addresses_address_height
 			ON symbol_transaction_addresses(address, height DESC, transaction_id)

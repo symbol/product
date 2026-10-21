@@ -2121,6 +2121,23 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 
 		return database
 
+	@staticmethod
+	def _fetch_transaction_height_indexes(cursor):
+		cursor.execute(
+			'''
+			SELECT index_class.relname, index_class.oid
+			FROM pg_index AS index_data
+			JOIN pg_class AS index_class ON index_class.oid = index_data.indexrelid
+			JOIN pg_class AS table_class ON table_class.oid = index_data.indrelid
+			JOIN pg_namespace AS table_namespace ON table_namespace.oid = table_class.relnamespace
+			WHERE table_namespace.nspname = 'public'
+				AND index_class.relname IN (%s, %s)
+			ORDER BY index_class.relname
+			''',
+			('idx_symbol_transaction_mosaics_height', 'idx_symbol_transactions_height_all'))
+
+		return cursor.fetchall()
+
 	def test_create_tables_creates_symbol_tables(self):
 		# Arrange:
 		database = self._create_uninitialized_database()
@@ -3009,8 +3026,10 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		self.assertEqual([
 			'idx_symbol_transaction_addresses_address_height',
 			'idx_symbol_transaction_addresses_height',
+			'idx_symbol_transaction_mosaics_height',
 			'idx_symbol_transaction_mosaics_mosaic_height',
 			'idx_symbol_transaction_mosaics_mosaic_role_height',
+			'idx_symbol_transactions_height_all',
 			'idx_symbol_transactions_height_desc',
 			'idx_symbol_transactions_list_sequence_desc',
 			'idx_symbol_transactions_recipient_height',
@@ -3019,6 +3038,104 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			'idx_symbol_transactions_timestamp',
 			'idx_symbol_transactions_type_height'
 		], indexes)
+
+	def test_create_tables_creates_transaction_height_indexes_with_expected_definitions(self):
+		# Arrange:
+		database = self._create_uninitialized_database()
+		cursor = database.connection.cursor()
+
+		# Act:
+		database.create_tables()
+
+		# Assert:
+		cursor.execute(
+			'''
+			SELECT
+				index_class.relname,
+				table_class.relname,
+				access_method.amname,
+				index_data.indisunique,
+				index_data.indnkeyatts,
+				index_data.indnatts,
+				index_data.indisvalid,
+				index_data.indisready,
+				index_data.indislive,
+				pg_get_indexdef(index_data.indexrelid, 1, true),
+				pg_get_expr(index_data.indexprs, index_data.indrelid),
+				pg_get_expr(index_data.indpred, index_data.indrelid)
+			FROM pg_index AS index_data
+			JOIN pg_class AS index_class ON index_class.oid = index_data.indexrelid
+			JOIN pg_class AS table_class ON table_class.oid = index_data.indrelid
+			JOIN pg_namespace AS table_namespace ON table_namespace.oid = table_class.relnamespace
+			JOIN pg_am AS access_method ON access_method.oid = index_class.relam
+			WHERE table_namespace.nspname = 'public'
+				AND index_class.relname IN (%s, %s)
+			ORDER BY index_class.relname
+			''',
+			('idx_symbol_transaction_mosaics_height', 'idx_symbol_transactions_height_all'))
+		self.assertEqual([
+			(
+				'idx_symbol_transaction_mosaics_height',
+				'symbol_transaction_mosaics',
+				'btree',
+				False,
+				1,
+				1,
+				True,
+				True,
+				True,
+				'height',
+				None,
+				None
+			),
+			(
+				'idx_symbol_transactions_height_all',
+				'symbol_transactions',
+				'btree',
+				False,
+				1,
+				1,
+				True,
+				True,
+				True,
+				'height',
+				None,
+				None
+			)
+		], cursor.fetchall())
+
+	def test_create_tables_adds_missing_height_indexes_to_existing_tables_idempotently(self):
+		# Arrange:
+		database = self._create_database()
+		cursor = database.connection.cursor()
+		cursor.execute('DROP INDEX idx_symbol_transaction_mosaics_height')
+		cursor.execute('DROP INDEX idx_symbol_transactions_height_all')
+		database.connection.commit()
+		cursor.execute(
+			'''
+			SELECT table_name
+			FROM information_schema.tables
+			WHERE table_schema = 'public'
+				AND table_name IN ('symbol_transaction_mosaics', 'symbol_transactions')
+			ORDER BY table_name
+			''')
+		self.assertEqual(['symbol_transaction_mosaics', 'symbol_transactions'], [row[0] for row in cursor.fetchall()])
+
+		# Act:
+		database.create_tables()
+
+		# Assert:
+		created_indexes = self._fetch_transaction_height_indexes(cursor)
+		self.assertEqual([
+			'idx_symbol_transaction_mosaics_height',
+			'idx_symbol_transactions_height_all'
+		], [row[0] for row in created_indexes])
+
+		# Act:
+		database.create_tables()
+
+		# Assert:
+		self.assertEqual(created_indexes, self._fetch_transaction_height_indexes(cursor))
 
 	def test_create_tables_creates_symbol_transaction_partial_indexes_with_predicate(self):
 		# Arrange:
