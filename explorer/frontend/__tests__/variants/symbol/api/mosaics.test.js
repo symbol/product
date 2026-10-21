@@ -15,6 +15,7 @@ const createMosaic = override => ({
 	supply: 1234567,
 	divisibility: 6,
 	registrationHeight: 123,
+	registrationTimestamp: '2026-01-02 03:04:05',
 	expirationHeight: 579,
 	value: 1.234567,
 	isUnlimitedDuration: false,
@@ -75,7 +76,7 @@ describe('variants/symbol/api/mosaics', () => {
 			expect(result.data[0]).toStrictEqual({ ...mosaic, name: '6BED913FA20223F8', namespaceExpirationHeight: 579 });
 		});
 
-		it('maps unlimited expiration without inventing a registration timestamp', async () => {
+		it('maps unlimited expiration and preserves the registration timestamp', async () => {
 			// Arrange:
 			const mosaic = createMosaic({ expirationHeight: null, isUnlimitedDuration: true });
 			jest.spyOn(server, 'makeRequest').mockResolvedValue([mosaic]);
@@ -85,7 +86,7 @@ describe('variants/symbol/api/mosaics', () => {
 
 			// Assert:
 			expect(result.data[0]).toStrictEqual({ ...mosaic, name: '72C0212E67A08BCE', namespaceExpirationHeight: null });
-			expect(result.data[0]).not.toHaveProperty('registrationTimestamp');
+			expect(result.data[0].registrationTimestamp).toBe('2026-01-02 03:04:05');
 			expect(mosaic).not.toHaveProperty('name');
 			expect(mosaic).not.toHaveProperty('namespaceExpirationHeight');
 		});
