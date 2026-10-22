@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 from rest.model.symbol.Mosaic import SymbolMosaicView
 
 
@@ -29,6 +31,7 @@ def create_symbol_mosaic_view(**overrides_map):
 		'mosaic_id': '72C0212E67A08BCE',
 		'owner_address': 'TATNE7Q5BITMUTRRN6IB4I7FLSDRDWZA34I2PMQ',
 		'start_height': 123,
+		'registration_timestamp': datetime(2026, 1, 1, tzinfo=timezone.utc),
 		'expiration_height': 579,
 		'duration': 456,
 		'supply': 1234567,

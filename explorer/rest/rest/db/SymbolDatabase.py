@@ -1,5 +1,5 @@
 # pylint: disable=too-many-lines  # Namespace REST data access remains owned by this database facade.
-
+import re
 from collections import namedtuple
 from datetime import datetime, timedelta, timezone
 from enum import Enum
@@ -60,6 +60,7 @@ MOSAIC_COLUMNS = '''
 	revokable,
 	alias_names
 '''
+SYMBOL_ID_PATTERN = re.compile(r'[0-9A-Fa-f]{16}', re.ASCII)
 
 SYNC_STATE_COLUMNS = [
 	'status',
@@ -118,6 +119,9 @@ NamespaceQuery = namedtuple(
 	'NamespaceQuery',
 	['limit', 'offset', 'sort', 'alias_type', 'registration_type', 'owner_address'],
 	defaults=(10, 0, SortOrder.DESC, None, None, None))
+MosaicDetailRecord = namedtuple('MosaicDetailRecord', ['view', 'start_timestamp'])
+NamespaceMosaicGroupRecord = namedtuple('NamespaceMosaicGroupRecord', ['namespace_id', 'namespace_name', 'data'])
+NamespaceDetailRecord = namedtuple('NamespaceDetailRecord', ['namespace', 'sub_namespaces', 'namespace_mosaics'])
 TransactionRecord = namedtuple(
 	'TransactionRecord',
 	['transaction_id', 'hash', 'is_embedded', 'aggregate_hash', 'embedded_index', 'height', 'transaction_type',
@@ -892,9 +896,11 @@ class SymbolDatabase(DatabaseConnectionPool):
 
 				cursor.execute(
 					f'''
-					SELECT {MOSAIC_COLUMNS}
+					SELECT {MOSAIC_COLUMNS}, registration_block.timestamp
 					FROM symbol_mosaics
-					ORDER BY start_height {sort.value}, mosaic_id {sort.value}
+					LEFT JOIN symbol_blocks AS registration_block
+						ON registration_block.height = symbol_mosaics.start_height
+					ORDER BY symbol_mosaics.start_height {sort.value}, symbol_mosaics.mosaic_id {sort.value}
 					LIMIT %s OFFSET %s''',
 					(limit, offset))
 				return [self._create_mosaic_view(row) for row in cursor.fetchall()]
@@ -942,21 +948,189 @@ class SymbolDatabase(DatabaseConnectionPool):
 				block_timestamps = self._fetch_namespace_block_timestamps(
 					cursor, [row['start_height'] for row in page_rows])
 
-				return [
-					SymbolNamespaceView(
-						namespace_id=row['namespace_id'],
-						full_name=row['full_name'],
-						levels=namespace_levels[row['namespace_id']],
-						alias_type=row['alias_type'],
-						alias_mosaic_id=row['alias_mosaic_id'],
-						alias_address=self._format_namespace_address(row['alias_address']),
-						owner_address=self._format_namespace_address(row['owner_address']),
-						start_height=row['start_height'],
-						start_timestamp=block_timestamps.get(row['start_height']),
-						registration_type=row['registration_type'],
-						end_height=row['end_height'],
-						sub_namespace_count=descendant_counts[row['namespace_id']])
+				return [self._create_namespace_view(
+					row,
+					namespace_levels[row['namespace_id']],
+					block_timestamps.get(row['start_height']),
+					descendant_counts[row['namespace_id']])
 					for row in page_rows]
+
+	def try_get_namespace(self, namespace_id):  # pylint: disable=too-many-locals
+		"""Gets one persisted namespace and its saved descendants and Mosaic aliases."""
+
+		with self.connection() as connection:
+			with connection.cursor() as cursor:
+				self._start_read_transaction(cursor)
+				sync_state = self._fetch_sync_state(cursor)
+				readable_height = self._validate_namespace_sync_state(cursor, sync_state)
+				cursor.execute(
+					'''SELECT namespace_id, parent_id, root_id, name, full_name, depth, registration_type,
+						owner_address, start_height, end_height, alias_type, alias_mosaic_id, alias_address,
+						updated_at_height
+					FROM symbol_namespaces WHERE namespace_id = %s''',
+					(namespace_id,))
+				result = cursor.fetchone()
+				if not result:
+					return None
+
+				target = self._create_namespace_record(result)
+				self._assert_namespace_row_is_safe(target, readable_height)
+				row_by_id = {target['namespace_id']: target}
+				self._fetch_namespace_ancestors(cursor, row_by_id)
+				for row in row_by_id.values():
+					self._assert_namespace_row_is_safe(row, readable_height)
+
+				if target['namespace_id'] == target['root_id']:
+					descendant_rows = self._fetch_namespace_root_descendants(
+						cursor, target, row_by_id, readable_height)
+				else:
+					descendant_rows = self._fetch_namespace_descendants(
+						cursor, target, row_by_id, readable_height)
+
+				namespace_levels = self._create_namespace_levels(target, row_by_id)
+				block_timestamps = self._fetch_namespace_block_timestamps(
+					cursor, [target['start_height']])
+				namespace_view = self._create_namespace_view(
+					target, namespace_levels, block_timestamps.get(target['start_height']), len(descendant_rows))
+
+				all_selected_rows = [target, *descendant_rows]
+				alias_rows = [row for row in all_selected_rows if row['alias_type'] == 'mosaic']
+				mosaic_groups = self._fetch_namespace_mosaic_groups(
+					cursor, alias_rows, readable_height)
+				sub_namespaces = [
+					{
+						'namespaceId': row['namespace_id'].upper(),
+						'namespaceName': self._namespace_public_name(row),
+						'parentId': row['parent_id'].upper()
+					}
+					for row in descendant_rows]
+				return NamespaceDetailRecord(namespace_view, sub_namespaces, mosaic_groups)
+
+	def _create_namespace_view(self, row, namespace_levels, start_timestamp, sub_namespace_count):
+		return SymbolNamespaceView(
+			namespace_id=row['namespace_id'],
+			full_name=row['full_name'],
+			levels=namespace_levels,
+			alias_type=row['alias_type'],
+			alias_mosaic_id=row['alias_mosaic_id'],
+			alias_address=self._format_namespace_address(row['alias_address']),
+			owner_address=self._format_namespace_address(row['owner_address']),
+			start_height=row['start_height'],
+			start_timestamp=start_timestamp,
+			registration_type=row['registration_type'],
+			end_height=row['end_height'],
+			sub_namespace_count=sub_namespace_count)
+
+	@staticmethod
+	def _namespace_public_name(row):
+		return row['full_name'] if row['full_name'] is not None else row['namespace_id'].upper()
+
+	@classmethod
+	def _fetch_namespace_descendants(cls, cursor, target, row_by_id, readable_height):
+		frontier = [target['namespace_id']]
+		visited = {target['namespace_id']}
+		descendant_rows = []
+		while frontier:
+			cursor.execute(
+				'''SELECT namespace_id, parent_id, root_id, name, full_name, depth, registration_type,
+					owner_address, start_height, end_height, alias_type, alias_mosaic_id, alias_address,
+					updated_at_height
+				FROM symbol_namespaces WHERE parent_id = ANY(%s::varchar[])''',
+				(frontier,))
+			children = [cls._create_namespace_record(row) for row in cursor.fetchall()]
+			next_frontier = []
+			for child in children:
+				if child['namespace_id'] in visited:
+					raise SymbolDataInvalid('symbol_namespaces.parent_id', 'namespace hierarchy contains a cycle')
+				visited.add(child['namespace_id'])
+				cls._assert_namespace_row_is_safe(child, readable_height)
+				parent = row_by_id.get(child['parent_id'])
+				cls._validate_namespace_child(child, parent)
+				row_by_id[child['namespace_id']] = child
+				descendant_rows.append(child)
+				next_frontier.append(child['namespace_id'])
+			frontier = next_frontier
+
+		for row in descendant_rows:
+			cls._create_namespace_levels(row, row_by_id)
+		descendant_rows.sort(key=lambda row: (cls._namespace_public_name(row), row['namespace_id'].upper()))
+		return descendant_rows
+
+	@classmethod
+	def _fetch_namespace_root_descendants(cls, cursor, target, row_by_id, readable_height):
+		descendant_rows = cls._fetch_namespace_descendants(cursor, target, row_by_id, readable_height)
+		cursor.execute(
+			'''SELECT namespace_id, parent_id, root_id, name, full_name, depth, registration_type,
+				owner_address, start_height, end_height, alias_type, alias_mosaic_id, alias_address,
+				updated_at_height
+			FROM symbol_namespaces WHERE root_id = %s''',
+			(target['root_id'],))
+		family_rows = [cls._create_namespace_record(row) for row in cursor.fetchall()]
+		family_by_id = {row['namespace_id']: row for row in family_rows}
+		selected_ids = {target['namespace_id']} | {row['namespace_id'] for row in descendant_rows}
+		if set(family_by_id) != selected_ids:
+			raise SymbolDataInvalid('symbol_namespaces', 'namespace family is inconsistent')
+
+		for row in family_rows:
+			cls._assert_namespace_row_is_safe(row, readable_height)
+			if row['namespace_id'] == row['root_id']:
+				if row['parent_id'] is not None or row['registration_type'] != 'root' or row['depth'] != 1:
+					raise SymbolDataInvalid('symbol_namespaces', 'root namespace is inconsistent')
+				continue
+
+			parent = family_by_id[row['parent_id']]
+			cls._validate_namespace_child(row, parent)
+			row_by_id[row['namespace_id']] = row
+
+		for row in family_rows:
+			cls._create_namespace_levels(row, family_by_id)
+		return descendant_rows
+
+	@classmethod
+	def _fetch_namespace_mosaic_groups(cls, cursor, alias_rows, readable_height):
+		if not alias_rows:
+			return []
+
+		mosaic_ids = set()
+		for row in alias_rows:
+			mosaic_id = row['alias_mosaic_id']
+			if not cls._is_namespace_id(mosaic_id):
+				raise SymbolDataInvalid('symbol_namespaces.alias_mosaic_id', 'invalid mosaic ID')
+
+			mosaic_ids.add(mosaic_id)
+
+		cursor.execute(
+			f'''SELECT {MOSAIC_COLUMNS}, registration_block.timestamp, updated_at_height
+			FROM symbol_mosaics
+			LEFT JOIN symbol_blocks AS registration_block
+				ON registration_block.height = symbol_mosaics.start_height
+			WHERE mosaic_id = ANY(%s::varchar[])''',
+			(list(mosaic_ids),))
+		mosaic_rows = {row[0]: row for row in cursor.fetchall()}
+		if mosaic_ids != set(mosaic_rows):
+			raise SymbolDataInvalid('symbol_namespaces.alias_mosaic_id', 'linked mosaic is missing')
+
+		mosaic_views = {}
+		start_heights = []
+		for mosaic_id in mosaic_ids:
+			row = mosaic_rows[mosaic_id]
+			if row[-1] > readable_height or row[2] > readable_height:
+				raise SymbolDataUnavailable('Symbol namespace data is unavailable')
+
+			try:
+				mosaic_views[mosaic_id] = cls._create_mosaic_view(row[:-1], require_registration_timestamp=False)
+			except (TypeError, ValueError) as error:
+				raise SymbolDataInvalid('symbol_mosaics', 'invalid persisted Mosaic row') from error
+
+			start_heights.append(mosaic_views[mosaic_id].start_height)
+		mosaic_timestamps = cls._fetch_namespace_block_timestamps(cursor, start_heights)
+		groups = []
+		for namespace in sorted(alias_rows, key=lambda row: (cls._namespace_public_name(row), row['namespace_id'].upper())):
+			view = mosaic_views[namespace['alias_mosaic_id']]
+			groups.append(NamespaceMosaicGroupRecord(
+				namespace['namespace_id'].upper(), cls._namespace_public_name(namespace),
+				[MosaicDetailRecord(view, mosaic_timestamps.get(view.start_height))]))
+		return groups
 
 	@staticmethod
 	def _validate_namespace_sync_state(cursor, sync_state):
@@ -1020,15 +1194,7 @@ class SymbolDatabase(DatabaseConnectionPool):
 
 	@staticmethod
 	def _is_namespace_id(value):
-		if not isinstance(value, str) or len(value) != 16:
-			return False
-
-		try:
-			int(value, 16)
-		except ValueError:
-			return False
-
-		return True
+		return isinstance(value, str) and SYMBOL_ID_PATTERN.fullmatch(value) is not None
 
 	@staticmethod
 	def _validate_namespace_families(cursor, page_rows, readable_height):
@@ -1194,7 +1360,12 @@ class SymbolDatabase(DatabaseConnectionPool):
 					return None
 
 				cursor.execute(
-					f'SELECT {MOSAIC_COLUMNS} FROM symbol_mosaics WHERE mosaic_id = %s',
+					f'''
+					SELECT {MOSAIC_COLUMNS}, registration_block.timestamp
+					FROM symbol_mosaics
+					LEFT JOIN symbol_blocks AS registration_block
+						ON registration_block.height = symbol_mosaics.start_height
+					WHERE symbol_mosaics.mosaic_id = %s''',
 					(resolved_mosaic_id,))
 				result = cursor.fetchone()
 				return self._create_mosaic_view(result) if result else None
@@ -1306,17 +1477,20 @@ class SymbolDatabase(DatabaseConnectionPool):
 		)
 
 	@staticmethod
-	def _create_mosaic_view(result):
+	def _create_mosaic_view(result, require_registration_timestamp=True):
 		(
 			mosaic_id, owner_address, start_height, expiration_height,
 			duration, supply, divisibility, supply_mutable,
-			transferable, restrictable, revokable, alias_names
+			transferable, restrictable, revokable, alias_names, registration_timestamp
 		) = result
+		if require_registration_timestamp and registration_timestamp is None:
+			raise SymbolDataUnavailable('Symbol mosaic data is unavailable')
 
 		return SymbolMosaicView(
 			mosaic_id=mosaic_id,
 			owner_address=_address(owner_address),
 			start_height=start_height,
+			registration_timestamp=registration_timestamp,
 			expiration_height=expiration_height,
 			duration=duration,
 			supply=supply,
