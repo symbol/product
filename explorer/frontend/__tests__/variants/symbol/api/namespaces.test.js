@@ -1,4 +1,8 @@
-import config from '@/app/config';
+import {
+	childNamespaceResponse, namespaceResponse, namespaceWithMosaicsResponse
+} from '../../../../__fixtures__/api/symbol/namespace-info';
+import { childNamespace, namespace, namespaceWithMosaics } from '../../../../__fixtures__/local/symbol/namespace-info';
+import { runApiRequestTests, runApiResultTests } from '../../../test-utils/api';
 import * as serverUtils from '@/app/utils/server';
 import { fetchNamespaceInfo, fetchNamespacePage } from '@/app/variants/symbol/api/namespaces';
 
@@ -7,17 +11,9 @@ jest.mock('@/app/utils/server', () => ({
 	...jest.requireActual('@/app/utils/server')
 }));
 
-const symbolApiBaseURL = 'https://explorer.backend/api/symbol';
+const symbolApiBaseURL = 'https://explorer.backend';
 
 describe('variants/symbol/api/namespaces', () => {
-	beforeEach(() => {
-		config.PUBLIC_API_BASE_URL = symbolApiBaseURL;
-	});
-
-	afterEach(() => {
-		jest.restoreAllMocks();
-	});
-
 	it('requests the default page and returns the shared page shape', async () => {
 		// Arrange:
 		const makeRequest = jest.spyOn(serverUtils, 'makeRequest').mockResolvedValue([]);
@@ -336,369 +332,131 @@ describe('variants/symbol/api/namespaces', () => {
 		await expect(fetchNamespacePage()).rejects.toBe(error);
 	});
 
-	it('fetches a canonical namespace ID and preserves root namespace fields', async () => {
-		// Arrange:
-		const namespace = {
-			id: 'ABCDEF0123456789',
-			name: 'ABCDEF0123456789',
-			namespaceName: 'root',
-			namespaceLevels: [{ name: 'root', namespaceId: 'ABCDEF0123456789', parentId: null }],
-			aliasType: 'none',
-			aliasMosaicId: null,
-			aliasAddress: null,
-			creator: 'TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI',
-			registrationHeight: 0,
-			startTimestamp: null,
-			registrationType: 'root',
-			expirationHeight: 0,
-			isUnlimitedDuration: false,
-			subNamespaceCount: 0,
-			subNamespaces: [],
-			namespaceMosaics: []
-		};
-		const inputSnapshot = JSON.parse(JSON.stringify(namespace));
-		const makeRequest = jest.spyOn(serverUtils, 'makeRequest').mockResolvedValue(namespace);
-
-		// Act:
-		const result = await fetchNamespaceInfo('ABCDEF0123456789');
-
-		// Assert:
-		expect(makeRequest).toHaveBeenCalledTimes(1);
-		expect(makeRequest).toHaveBeenCalledWith(`${symbolApiBaseURL}/namespace/ABCDEF0123456789`);
-		expect(result).toEqual({
-			...inputSnapshot,
-			name: 'root',
-			registrationTimestamp: null,
-			subNamespaceHierarchy: [],
-			subNamespaces: [],
-			namespaceMosaics: []
-		});
-		expect(JSON.parse(JSON.stringify(result))).toEqual(result);
-	});
-
-	it('fetches a namespace by name and maps its child fields', async () => {
-		// Arrange:
-		const namespace = {
-			id: 'E74B99BA41F4AFEE',
-			name: 'E74B99BA41F4AFEE',
-			namespaceName: 'root.child',
-			namespaceLevels: [
-				{ name: 'root', namespaceId: 'A95F1F8A96159516', parentId: null },
-				{ name: 'child', namespaceId: 'E74B99BA41F4AFEE', parentId: 'A95F1F8A96159516' }
-			],
-			aliasType: 'mosaic',
-			aliasMosaicId: '85BBEA6CC462B244',
-			aliasAddress: null,
-			creator: 'TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI',
-			registrationHeight: 123,
-			startTimestamp: '2026-10-20 01:02:03',
-			registrationType: 'child',
-			expirationHeight: 456,
-			isUnlimitedDuration: false,
-			subNamespaceCount: 0,
-			subNamespaces: [],
-			namespaceMosaics: []
-		};
-		const inputSnapshot = JSON.parse(JSON.stringify(namespace));
-		const makeRequest = jest.spyOn(serverUtils, 'makeRequest').mockResolvedValue(namespace);
-
-		// Act:
-		const result = await fetchNamespaceInfo('root.child');
-
-		// Assert:
-		expect(makeRequest).toHaveBeenCalledTimes(1);
-		expect(makeRequest).toHaveBeenCalledWith(`${symbolApiBaseURL}/namespace/root.child`);
-		expect(result).toEqual({
-			...inputSnapshot,
-			name: 'root.child',
-			registrationTimestamp: '2026-10-20 01:02:03',
-			subNamespaceHierarchy: [],
-			subNamespaces: [],
-			namespaceMosaics: []
-		});
-	});
-
-	it('encodes the namespace path element without a query or extra request', async () => {
-		// Arrange:
-		const makeRequest = jest.spyOn(serverUtils, 'makeRequest').mockResolvedValue({
-			namespaceName: 'root.child',
-			subNamespaces: [],
-			namespaceMosaics: []
-		});
-
-		// Act:
-		await fetchNamespaceInfo('root.child/leaf?name=1');
-
-		// Assert:
-		expect(makeRequest).toHaveBeenCalledTimes(1);
-		expect(makeRequest).toHaveBeenCalledWith(`${symbolApiBaseURL}/namespace/root.child%2Fleaf%3Fname%3D1`);
-	});
-
-	it('maps every descendant to its name while retaining hierarchy and order', async () => {
-		// Arrange:
-		const subNamespaces = [
-			{ namespaceId: 'C74B99BA41F4AFEE', namespaceName: 'root.child.leaf', parentId: 'E74B99BA41F4AFEE' },
-			{ namespaceId: 'D95F1F8A96159516', namespaceName: 'root.zebra', parentId: 'A95F1F8A96159516' },
-			{ namespaceId: 'B95F1F8A96159516', namespaceName: 'root.bird', parentId: 'A95F1F8A96159516' },
-			{ namespaceId: 'E74B99BA41F4AFEE', namespaceName: 'root.child', parentId: 'A95F1F8A96159516' }
-		];
-		const namespace = {
-			id: 'A95F1F8A96159516',
-			name: 'A95F1F8A96159516',
-			namespaceName: 'root',
-			namespaceLevels: [{ name: 'root', namespaceId: 'A95F1F8A96159516', parentId: null }],
-			aliasType: 'none',
-			aliasMosaicId: null,
-			aliasAddress: null,
-			creator: 'TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI',
-			registrationHeight: 10,
-			startTimestamp: '2026-10-20 01:02:03',
-			registrationType: 'root',
-			expirationHeight: null,
-			isUnlimitedDuration: true,
-			subNamespaceCount: 4,
-			subNamespaces,
-			namespaceMosaics: []
-		};
-		const inputSnapshot = JSON.parse(JSON.stringify(namespace));
-		jest.spyOn(serverUtils, 'makeRequest').mockResolvedValue(namespace);
-
-		// Act:
-		const result = await fetchNamespaceInfo(namespace.id);
-
-		// Assert:
-		expect(result.subNamespaces).toEqual(['root.child.leaf', 'root.zebra', 'root.bird', 'root.child']);
-		expect(result.subNamespaceHierarchy).toEqual(inputSnapshot.subNamespaces);
-		expect(result.subNamespaceHierarchy.map(item => item.parentId)).toEqual([
-			'E74B99BA41F4AFEE', 'A95F1F8A96159516', 'A95F1F8A96159516', 'A95F1F8A96159516'
-		]);
-		expect(result.name).toBe('root');
-		expect(result.id).toBe('A95F1F8A96159516');
-		expect(result.registrationTimestamp).toBe('2026-10-20 01:02:03');
-	});
-
-	it('preserves Mosaic groups, duplicate Mosaic entries, and detail fields', async () => {
-		// Arrange:
-		const mosaic = {
-			id: '85BBEA6CC462B244',
-			creator: 'TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI',
-			aliasNames: ['root.xym'],
-			supply: '9007199254740993',
-			divisibility: 6,
-			registrationHeight: 50,
-			expirationHeight: 1000,
-			value: '9007199254.740993',
-			isUnlimitedDuration: false,
-			isSupplyMutable: false,
-			isTransferable: true,
-			isRestrictable: false,
-			isRevokable: false,
-			startTimestamp: '2026-10-20 02:03:04'
-		};
-		const unlimitedMosaic = {
-			...mosaic,
-			id: '72C0212E67A08BCE',
-			aliasNames: [],
-			supply: 0,
-			divisibility: 0,
-			expirationHeight: null,
-			value: 0,
-			isUnlimitedDuration: true,
-			startTimestamp: null
-		};
-		const namespaceMosaics = [
-			{ namespaceId: 'A95F1F8A96159516', namespaceName: 'root', data: [mosaic] },
-			{ namespaceId: 'E74B99BA41F4AFEE', namespaceName: 'root.child', data: [mosaic, unlimitedMosaic] },
-			{ namespaceId: 'B95F1F8A96159516', namespaceName: 'root.bird', data: [mosaic] }
-		];
-		const inputSnapshot = JSON.parse(JSON.stringify(namespaceMosaics));
-		jest.spyOn(serverUtils, 'makeRequest').mockResolvedValue({
-			id: 'A95F1F8A96159516',
-			namespaceName: 'root',
-			startTimestamp: null,
-			subNamespaces: [],
-			namespaceMosaics
-		});
-
-		// Act:
-		const result = await fetchNamespaceInfo('A95F1F8A96159516');
-
-		// Assert:
-		expect(result.namespaceMosaics.map(group => group.namespaceName)).toEqual(['root', 'root.child', 'root.bird']);
-		expect(result.namespaceMosaics.map(group => group.data.map(item => item.id))).toEqual([
-			['85BBEA6CC462B244'],
-			['85BBEA6CC462B244', '72C0212E67A08BCE'],
-			['85BBEA6CC462B244']
-		]);
-		expect(result.namespaceMosaics[0].data[0]).toEqual({
-			...inputSnapshot[0].data[0],
-			name: '85BBEA6CC462B244',
-			namespaceExpirationHeight: 1000,
-			registrationTimestamp: '2026-10-20 02:03:04',
-			displaySupply: '9007199254.740993'
-		});
-		expect(result.namespaceMosaics[1].data[1]).toEqual({
-			...inputSnapshot[1].data[1],
-			name: '72C0212E67A08BCE',
-			namespaceExpirationHeight: null,
-			registrationTimestamp: null,
-			displaySupply: 0
-		});
-	});
-
-	it('maps namespace detail without mutating the input DTO or nested values', async () => {
-		// Arrange:
-		const mosaic = {
-			id: '85BBEA6CC462B244',
-			name: 'root.coin',
-			aliasNames: ['root.coin', 'root.child'],
-			supply: 0,
-			value: 0,
-			divisibility: 0,
-			isSupplyMutable: false,
-			isUnlimitedDuration: false,
-			expirationHeight: 1000,
-			startTimestamp: null
-		};
-		const namespace = {
-			id: 'A95F1F8A96159516',
-			name: 'A95F1F8A96159516',
-			namespaceName: 'root',
-			namespaceLevels: [{ name: 'root', namespaceId: 'A95F1F8A96159516', parentId: null }],
-			startTimestamp: null,
-			isUnlimitedDuration: false,
-			subNamespaces: [
-				{ namespaceId: 'E74B99BA41F4AFEE', namespaceName: 'root.child', parentId: 'A95F1F8A96159516' },
-				{ namespaceId: 'C74B99BA41F4AFEE', namespaceName: 'root.child.leaf', parentId: 'E74B99BA41F4AFEE' }
-			],
-			namespaceMosaics: [
-				{ namespaceId: 'A95F1F8A96159516', namespaceName: 'root', data: [mosaic] },
-				{ namespaceId: 'E74B99BA41F4AFEE', namespaceName: 'root.child', data: [mosaic] }
-			]
-		};
-		const inputSnapshot = JSON.parse(JSON.stringify(namespace));
-		const expectedMosaic = {
-			...inputSnapshot.namespaceMosaics[0].data[0],
-			name: '85BBEA6CC462B244',
-			namespaceExpirationHeight: 1000,
-			registrationTimestamp: null,
-			displaySupply: 0
-		};
-		jest.spyOn(serverUtils, 'makeRequest').mockResolvedValue(namespace);
-
-		// Act:
-		const result = await fetchNamespaceInfo('A95F1F8A96159516');
-
-		// Assert:
-		expect(namespace).toEqual(inputSnapshot);
-		expect(result.name).toBe('root');
-		expect(result.subNamespaces).toEqual(['root.child', 'root.child.leaf']);
-		expect(result.subNamespaces).not.toBe(namespace.subNamespaces);
-		expect(result.subNamespaceHierarchy).toEqual(inputSnapshot.subNamespaces);
-		expect(result.namespaceLevels).toEqual(inputSnapshot.namespaceLevels);
-		expect(result.namespaceMosaics).toEqual([
-			{ ...inputSnapshot.namespaceMosaics[0], data: [expectedMosaic] },
-			{ ...inputSnapshot.namespaceMosaics[1], data: [expectedMosaic] }
-		]);
-		expect(result.namespaceMosaics).not.toBe(namespace.namespaceMosaics);
-		expect(result.namespaceMosaics[0].data).not.toBe(namespace.namespaceMosaics[0].data);
-		expect(result.namespaceMosaics[1].data).not.toBe(namespace.namespaceMosaics[1].data);
-		expect(result.namespaceMosaics[0].data[0]).not.toBe(mosaic);
-		expect(result.namespaceMosaics[1].data[0]).not.toBe(mosaic);
-	});
-
-	it.each([400, 404])('returns null for HTTP %s namespace detail responses', async status => {
-		// Arrange:
-		const error = Object.assign(new Error(`HTTP ${status}`), { response: { data: { status } } });
-		const makeRequest = jest.spyOn(serverUtils, 'makeRequest').mockRejectedValue(error);
-
-		// Act:
-		const result = await fetchNamespaceInfo('root');
-
-		// Assert:
-		expect(result).toBeNull();
-		expect(makeRequest).toHaveBeenCalledTimes(1);
-	});
-
-	it.each([
-		['HTTP 503', Object.assign(new Error('unavailable'), { response: { data: { status: 503 } } })],
-		['HTTP 500', Object.assign(new Error('server failure'), { response: { data: { status: 500 } } })],
-		['network', new Error('network unavailable')],
-		['timeout', Object.assign(new Error('timeout'), { code: 'ECONNABORTED' })]
-	])('propagates %s namespace detail failures', async (_description, error) => {
-		// Arrange:
-		jest.spyOn(serverUtils, 'makeRequest').mockRejectedValue(error);
-
-		// Act + Assert:
-		await expect(fetchNamespaceInfo('root')).rejects.toBe(error);
-	});
-
-	it('uses the REST value for display supply and preserves amount fields and input DTO', async () => {
-		// Arrange:
-		const mosaic = {
-			id: '72C0212E67A08BCE',
-			creator: 'TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI',
-			aliasNames: ['root.xym'],
-			supply: 8388098149704674,
-			divisibility: 6,
-			value: 8388098149.704674,
-			registrationHeight: 123,
-			expirationHeight: 456,
-			isUnlimitedDuration: false,
-			startTimestamp: '2026-10-20 02:03:04'
-		};
-		const numericStringMosaic = {
-			...mosaic,
-			id: '85BBEA6CC462B244',
-			supply: '9007199254740993',
-			value: '9007199254.740993'
-		};
-		const zeroMosaic = {
-			...mosaic,
-			id: '0000000000000000',
-			aliasNames: [],
-			supply: 0,
-			divisibility: 0,
-			value: 0
-		};
-		const namespace = {
-			id: 'A95F1F8A96159516',
-			namespaceName: 'root',
-			startTimestamp: null,
-			subNamespaces: [{ namespaceId: 'E74B99BA41F4AFEE', namespaceName: 'root.child', parentId: 'A95F1F8A96159516' }],
-			namespaceMosaics: [
-				{ namespaceId: 'A95F1F8A96159516', namespaceName: 'root', data: [mosaic, numericStringMosaic, zeroMosaic] },
-				{ namespaceId: 'E74B99BA41F4AFEE', namespaceName: 'root.child', data: [mosaic] }
-			]
-		};
-		const inputSnapshot = JSON.parse(JSON.stringify(namespace));
-		const makeRequest = jest.spyOn(serverUtils, 'makeRequest').mockResolvedValue(namespace);
-
-		// Act:
-		const result = await fetchNamespaceInfo(namespace.id);
-
-		// Assert:
-		expect(makeRequest).toHaveBeenCalledTimes(1);
-		expect(makeRequest).toHaveBeenCalledWith(`${symbolApiBaseURL}/namespace/${namespace.id}`);
-		expect(namespace).toEqual(inputSnapshot);
-		expect(result.name).toBe('root');
-		expect(result.subNamespaces).toEqual(['root.child']);
-		expect(result.subNamespaceHierarchy).toEqual(inputSnapshot.subNamespaces);
-		expect(result.namespaceMosaics.map(group => group.namespaceName)).toEqual(['root', 'root.child']);
-		expect(result.namespaceMosaics[0].data.map(({ supply, value, displaySupply }) => ({ supply, value, displaySupply })))
-			.toEqual([
+	describe('fetchNamespaceInfo', () => {
+		describe('request', () => {
+			const requestCases = [
 				{
-					supply: 8388098149704674,
-					value: 8388098149.704674,
-					displaySupply: 8388098149.704674
+					description: 'requests the namespace by id',
+					config: { params: 'A95F1F8A96159516' },
+					expected: { url: `${symbolApiBaseURL}/namespace/A95F1F8A96159516` }
 				},
 				{
-					supply: '9007199254740993',
-					value: '9007199254.740993',
-					displaySupply: '9007199254.740993'
+					description: 'requests the namespace by name',
+					config: { params: 'symbol.xym' },
+					expected: { url: `${symbolApiBaseURL}/namespace/symbol.xym` }
 				},
-				{ supply: 0, value: 0, displaySupply: 0 }
-			]);
-		expect(result.namespaceMosaics[1].data[0].displaySupply).toBe(8388098149.704674);
+				{
+					description: 'encodes the namespace path element',
+					config: { params: 'symbol.xym/leaf?name=1#test%' },
+					expected: { url: `${symbolApiBaseURL}/namespace/symbol.xym%2Fleaf%3Fname%3D1%23test%25` }
+				}
+			];
+
+			runApiRequestTests({ functionToTest: fetchNamespaceInfo, response: namespaceResponse, cases: requestCases });
+		});
+
+		describe('result', () => {
+			const resultCases = [
+				{
+					description: 'maps a root namespace without descendants or mosaics',
+					config: { params: namespaceResponse.id, response: namespaceResponse },
+					expected: { result: namespace }
+				},
+				{
+					description: 'maps descendants, Mosaic groups and repeated associations in REST order',
+					config: { params: namespaceResponse.id, response: namespaceWithMosaicsResponse },
+					expected: { result: namespaceWithMosaics }
+				},
+				{
+					description: 'preserves non-alphabetic descendant and Mosaic group order without deduplicating associations',
+					config: {
+						response: {
+							...namespaceWithMosaicsResponse,
+							subNamespaces: [
+								namespaceWithMosaicsResponse.subNamespaces[2],
+								namespaceWithMosaicsResponse.subNamespaces[0],
+								namespaceWithMosaicsResponse.subNamespaces[1]
+							],
+							namespaceMosaics: [
+								namespaceWithMosaicsResponse.namespaceMosaics[2],
+								namespaceWithMosaicsResponse.namespaceMosaics[0],
+								namespaceWithMosaicsResponse.namespaceMosaics[1]
+							]
+						}
+					},
+					expected: {
+						result: {
+							...namespaceWithMosaics,
+							subNamespaces: ['symbol.xym.leaf', 'symbol.coin', 'symbol.xym'],
+							subNamespaceHierarchy: [
+								namespaceWithMosaics.subNamespaceHierarchy[2],
+								namespaceWithMosaics.subNamespaceHierarchy[0],
+								namespaceWithMosaics.subNamespaceHierarchy[1]
+							],
+							namespaceMosaics: [
+								namespaceWithMosaics.namespaceMosaics[2],
+								namespaceWithMosaics.namespaceMosaics[0],
+								namespaceWithMosaics.namespaceMosaics[1]
+							]
+						}
+					}
+				},
+				{
+					description: 'maps a child namespace with its ancestors and descendant hierarchy',
+					config: { params: 'symbol.xym', response: childNamespaceResponse },
+					expected: { result: childNamespace }
+				},
+				{
+					description: 'preserves missing timestamps and unlimited namespace duration',
+					config: {
+						response: { ...namespaceResponse, startTimestamp: null, expirationHeight: null, isUnlimitedDuration: true }
+					},
+					expected: {
+						result: {
+							...namespace,
+							startTimestamp: null,
+							registrationTimestamp: null,
+							expirationHeight: null,
+							isUnlimitedDuration: true
+						}
+					}
+				},
+				...[400, 404].map(status => ({
+					description: `returns null for HTTP ${status}`,
+					config: { error: { response: { data: { status } } } },
+					expected: { result: null }
+				}))
+			];
+
+			runApiResultTests({ functionToTest: fetchNamespaceInfo, cases: resultCases });
+		});
+
+		it('maps detail without mutating the input DTO or nested data and without resolving additional APIs', async () => {
+			// Arrange:
+			const input = JSON.parse(JSON.stringify(namespaceWithMosaicsResponse));
+			const snapshot = JSON.parse(JSON.stringify(input));
+			const makeRequest = jest.spyOn(serverUtils, 'makeRequest').mockResolvedValue(input);
+
+			// Act:
+			const result = await fetchNamespaceInfo(input.id);
+
+			// Assert:
+			expect(input).toStrictEqual(snapshot);
+			expect(result).toStrictEqual(namespaceWithMosaics);
+			expect(makeRequest.mock.calls).toEqual([[`${symbolApiBaseURL}/namespace/A95F1F8A96159516`]]);
+		});
+
+		it.each([
+			['HTTP 503', Object.assign(new Error('unavailable'), { response: { data: { status: 503 } } })],
+			['HTTP 500', Object.assign(new Error('server failure'), { response: { data: { status: 500 } } })],
+			['network', new Error('network unavailable')],
+			['timeout', Object.assign(new Error('timeout'), { code: 'ECONNABORTED' })]
+		])('propagates %s namespace detail failures', async (_description, error) => {
+			// Arrange:
+			jest.spyOn(serverUtils, 'makeRequest').mockRejectedValue(error);
+
+			// Act + Assert:
+			await expect(fetchNamespaceInfo('symbol')).rejects.toBe(error);
+		});
 	});
 });

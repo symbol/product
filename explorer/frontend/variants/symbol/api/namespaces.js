@@ -80,8 +80,7 @@ const namespaceDetailFromDTO = data => ({
 			...mosaic,
 			name: mosaic.id,
 			namespaceExpirationHeight: mosaic.expirationHeight,
-			registrationTimestamp: mosaic.startTimestamp,
-			displaySupply: mosaic.value
+			registrationTimestamp: mosaic.startTimestamp
 		}))
 	}))
 });
@@ -100,6 +99,12 @@ export const fetchNamespacePage = async (searchParams = {}) => {
 
 	return createPage(namespaces, searchCriteria.pageNumber, namespaceInfoFromDTO);
 };
+
+/**
+ * Fetches a Symbol namespace detail by canonical ID or namespace name.
+ * @param {string} id - namespace ID or name.
+ * @returns {Promise<object|null>} mapped namespace detail, or null for HTTP 400/404.
+ */
 export const fetchNamespaceInfo = createTryFetchInfoFunction(async id => {
 	const namespace = await makeRequest(createApiUrl(`namespace/${encodeURIComponent(id)}`));
 	return namespaceDetailFromDTO(namespace);

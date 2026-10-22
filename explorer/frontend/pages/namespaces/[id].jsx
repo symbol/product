@@ -53,9 +53,7 @@ const NamespaceInfo = ({ namespaceInfo }) => {
 		{
 			key: 'supply',
 			size: '15rem',
-			renderValue: (value, row) => Object.prototype.hasOwnProperty.call(row, 'displaySupply')
-				? row.displaySupply
-				: value
+			renderValue: value => value
 		},
 		{
 			key: 'registrationHeight',
@@ -66,9 +64,7 @@ const NamespaceInfo = ({ namespaceInfo }) => {
 			key: 'registrationTimestamp',
 			size: '11rem',
 			renderTitle: () => <FieldTimestamp title={t('field_created')} />,
-			renderValue: value => value === null || value === undefined
-				? nullableValueToText(value)
-				: <ValueTimestamp value={value} hasTime />
+			renderValue: value => <ValueTimestamp value={value} hasTime />
 		}
 	];
 
@@ -133,7 +129,7 @@ const NamespaceInfo = ({ namespaceInfo }) => {
 				<Table
 					sections={namespaceInfo.namespaceMosaics}
 					columns={tableColumns}
-					renderItemMobile={data => <ItemMosaicMobile data={data} chainHeight={chainHeight} />}
+					renderItemMobile={data => <ItemMosaicMobile data={data} />}
 					isLastPage={true}
 					isLastColumnAligned={true}
 					renderSectionHeader={section => (

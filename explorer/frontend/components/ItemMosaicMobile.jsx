@@ -4,7 +4,7 @@ import ValueAccount from './ValueAccount';
 import ValueLabel from './ValueLabel';
 import ValueTimestamp from './ValueTimestamp';
 import styles from '@/app/styles/components/ItemMosaicMobile.module.scss';
-import { createExpirationLabel, createPageHref, nullableValueToText } from '@/app/utils';
+import { createExpirationLabel, createPageHref } from '@/app/utils';
 import Link from 'next/link';
 import { useTranslation } from 'next-i18next';
 
@@ -20,9 +20,7 @@ const ItemMosaicMobile = ({ data, chainHeight }) => {
 				<div className={styles.info}>
 					<div className={styles.name}>{name}</div>
 					<div className="layout-flex-row">
-						{registrationTimestamp === null || registrationTimestamp === undefined
-							? <div className={styles.timestamp}>{nullableValueToText(registrationTimestamp)}</div>
-							: <ValueTimestamp className={styles.timestamp} value={registrationTimestamp} />}
+						<ValueTimestamp className={styles.timestamp} value={registrationTimestamp} />
 						<ValueLabel type={status} text={text} />
 					</div>
 				</div>
