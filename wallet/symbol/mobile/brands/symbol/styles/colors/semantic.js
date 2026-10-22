@@ -138,6 +138,18 @@ export const Components = {
 			background: Semantic.role.primary.muted
 		}
 	},
+	actionCard: {
+		default: {
+			background: Semantic.overlay.primary.default
+		},
+		pressed: {
+			background: Semantic.overlay.primary.default
+		}
+	},
+	actionCardContent: {
+		background: Primitives.blackOpacity70,
+		text: Semantic.content.primary.default
+	},
 	dataContainer: {
 		background: Semantic.background.tertiary.darker
 	},

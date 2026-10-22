@@ -145,6 +145,18 @@ export const Components = {
 			background: Primitives.blackOpacity50
 		}
 	},
+	actionCard: {
+		default: {
+			background: Semantic.background.primary.default
+		},
+		pressed: {
+			background: Semantic.background.primary.lighter
+		}
+	},
+	actionCardContent: {
+		background: Semantic.background.primary.default,
+		text: Semantic.content.primary.default
+	},
 	dataContainer: {
 		background: Semantic.background.primary.default
 	},
