@@ -83,12 +83,12 @@ const styles = StyleSheet.create({
 	root: {
 		width: '100%',
 		height: HEADER_HEIGHT,
-		backgroundColor: Colors.Components.titlebar.background,
+		backgroundColor: Colors.Components.header.background,
 		flexDirection: 'row',
 		justifyContent: 'space-between',
 		alignItems: 'center',
 		paddingHorizontal: Sizes.Semantic.layoutPadding.m,
-		boxShadow: Shadows.Components.titlebar
+		boxShadow: Shadows.Components.header
 	},
 	accountSelectorContainer: {
 		width: ACCOUNT_SELECTOR_WIDTH_PERCENT,

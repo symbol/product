@@ -81,7 +81,7 @@ export const Components = {
 	statusbar: {
 		background: Semantic.background.tertiary.darker
 	},
-	titlebar: {
+	header: {
 		background: Semantic.background.tertiary.default
 	},
 	main: {

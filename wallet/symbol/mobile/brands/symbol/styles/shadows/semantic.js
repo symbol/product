@@ -37,9 +37,9 @@ export const Components = {
 	accountCard: Semantic.none,
 	buttonCircle: Semantic.s.bottom,
 	filter: Semantic.none,
+	header: Semantic.none,
 	listItem: Semantic.none,
 	navigationMenu: Semantic.none,
 	settingsItem: Semantic.none,
-	titlebar: Semantic.none,
 	widget: Semantic.none
 };
