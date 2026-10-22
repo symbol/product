@@ -281,6 +281,35 @@ class SymbolConnector(BasicConnector):  # pylint: disable=too-many-public-method
 
 	# endregion
 
+	# region GET (get_unconfirmed_transactions)
+
+	async def get_unconfirmed_transactions(self, start_id=None):
+		"""Gets up to 100 raw unconfirmed transactions including embedded transactions, optionally starting after a transaction id."""
+
+		url_path = 'transactions/unconfirmed?embedded=true&pageSize=100&order=desc'
+		if start_id:
+			url_path += f'&offset={start_id}'
+
+		return await self.get(url_path, 'data')
+
+	# endregion
+
+	# region GET (get_partial_transactions)
+
+	async def get_partial_transactions(self, start_id=None, address=None):
+		"""Gets up to 100 raw partial transactions including embedded transactions, with optional offset and address filters."""
+
+		url_path = 'transactions/partial?embedded=true&pageSize=100&order=desc'
+		if start_id:
+			url_path += f'&offset={start_id}'
+
+		if address:
+			url_path += f'&address={address}'
+
+		return await self.get(url_path, 'data')
+
+	# endregion
+
 	# region PUT (announce_transaction, announce_partial_transaction)
 
 	async def _announce_transaction(self, transaction_payload, url_path):
