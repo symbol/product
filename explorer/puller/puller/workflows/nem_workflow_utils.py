@@ -1,6 +1,6 @@
 from zenlog import log
 
-from puller.facade.NemPuller import NemPuller
+from puller.facade.NemPuller import DEFAULT_NODE_REQUEST_TIMEOUT_SECONDS, NemPuller
 from puller.workflows.log_utils import configure_logging
 
 
@@ -10,6 +10,11 @@ def add_common_arguments(parser):
 	parser.add_argument('--nem-node', help='NEM node(local) url', default='http://localhost:7890')
 	parser.add_argument('--network', help='mainnet or testnet', choices=['mainnet', 'testnet'], default='mainnet')
 	parser.add_argument('--db-config', help='database config file *.ini', default='config.ini')
+	parser.add_argument(
+		'--node-request-timeout-seconds',
+		help='total timeout for a single NEM node request',
+		type=int,
+		default=DEFAULT_NODE_REQUEST_TIMEOUT_SECONDS)
 
 
 def bootstrap_nem_workflow(args):
@@ -17,7 +22,7 @@ def bootstrap_nem_workflow(args):
 
 	configure_logging()
 
-	facade = NemPuller(args.nem_node, args.db_config, args.network)
+	facade = NemPuller(args.nem_node, args.db_config, args.network, args.node_request_timeout_seconds)
 
 	log.info(f'Node URL: {args.nem_node}')
 	log.info(f'Network: {args.network}')

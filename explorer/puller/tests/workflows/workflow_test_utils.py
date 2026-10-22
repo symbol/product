@@ -6,10 +6,11 @@ def parse_args_with_argv(script_name, parse_args, *argv):
 		return parse_args()
 
 
-def assert_common_args(test_case, args, network='mainnet', db_config='config.ini'):
+def assert_common_args(test_case, args, network='mainnet', db_config='config.ini', node_request_timeout_seconds=10):
 	test_case.assertEqual(args.nem_node, 'http://localhost:7890')
 	test_case.assertEqual(args.network, network)
 	test_case.assertEqual(args.db_config, db_config)
+	test_case.assertEqual(args.node_request_timeout_seconds, node_request_timeout_seconds)
 
 
 def create_main_args(batch_size=None, account_remark=None):
@@ -17,6 +18,7 @@ def create_main_args(batch_size=None, account_remark=None):
 	args.nem_node = 'http://localhost:7890'
 	args.network = 'testnet'
 	args.db_config = 'test_config.ini'
+	args.node_request_timeout_seconds = 10
 	args.account_remark = account_remark
 
 	if None is not batch_size:
