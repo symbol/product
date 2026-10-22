@@ -1,7 +1,7 @@
+import { SymbolRouter } from '../../../router/SymbolRouter';
 import { AccountListItem, Spacer, Stack, WidgetContainer } from '@/app/components';
 import { useAccountDisplayData, useWalletController } from '@/app/hooks';
 import { $t } from '@/app/localization';
-import { Router } from '@/app/router/Router';
 import React from 'react';
 
 /** @typedef {import('@/app/types/Account').SymbolAccountInfo} SymbolAccountInfo */
@@ -20,8 +20,8 @@ export const MultisigWidget = ({ multisigAccountList, chainName }) => {
 	const accountsDisplayData = useAccountDisplayData(multisigAccountList.map(item => item.address), chainName);
 
 	// Handlers
-	const handleHeaderPress = () => Router.goToMultisigAccountList();
-	const handleItemPress = item => Router.goToMultisigAccountDetails({
+	const handleHeaderPress = () => SymbolRouter.goToMultisigAccountList();
+	const handleItemPress = item => SymbolRouter.goToMultisigAccountDetails({
 		params: {
 			chainName,
 			accountAddress: item.address,

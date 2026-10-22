@@ -1,9 +1,9 @@
-import { useWalletRefreshLifecycle } from '@/app/hooks';
-import { useMultisigAccountList } from '@/app/screens/multisig/hooks/useMultisigAccountList';
+import { useMultisigAccountList, useWalletRefreshLifecycle } from '@/app/hooks';
 
 /** @typedef {import('@/app/types/Wallet').MainWalletController} MainWalletController */
 /** @typedef {import('@/app/types/Account').SymbolAccountInfo} SymbolAccountInfo */
 /** @typedef {import('@/app/types/Network').ChainName} ChainName */
+/** @typedef {import('@/app/types/RefreshController').RefreshController} RefreshController */
 
 /**
  * Props passed to the MultisigWidget component.
@@ -16,7 +16,6 @@ import { useMultisigAccountList } from '@/app/screens/multisig/hooks/useMultisig
  * Return type of the useMultisigWidget hook.
  * @typedef {object} UseMultisigWidgetReturnType
  * @property {boolean} isVisible - Whether the widget should be shown (true when multisig accounts exist).
- * @property {() => void} refresh - Refreshes the multisig account list.
  * @property {boolean} isLoading - Whether data is being fetched.
  * @property {MultisigWidgetProps} props - Props to pass to the MultisigWidget component.
  */
@@ -26,21 +25,23 @@ import { useMultisigAccountList } from '@/app/screens/multisig/hooks/useMultisig
  * Provides visibility control and widget props derived from the wallet controller.
  * Listens to wallet events for auto-refresh.
  * @param {MainWalletController} walletController - The wallet controller instance.
+ * @param {RefreshController} refreshController - Screen refresh controller.
  * @returns {UseMultisigWidgetReturnType}
  */
-export const useMultisigWidget = walletController => {
+export const useMultisigWidget = (walletController, refreshController) => {
 	const { data, load, reset, isLoading } = useMultisigAccountList(walletController);
 
 	// Subscribe to wallet events for auto-refresh
 	useWalletRefreshLifecycle({
 		walletController,
+		refreshController,
 		onRefresh: load,
-		onClear: reset
+		onClear: reset,
+		shouldLoadOnMount: true
 	});
 
 	return {
 		isVisible: data.length > 0,
-		refresh: load,
 		isLoading,
 		props: {
 			multisigAccountList: data,

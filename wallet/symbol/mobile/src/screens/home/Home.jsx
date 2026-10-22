@@ -1,19 +1,12 @@
 import { Header } from '@/app/app/components';
-import { MultisigAccountWarning, Screen, Spacer, Stack, StyledText } from '@/app/components';
-import { useInit, useWalletController } from '@/app/hooks';
+import { MultisigAccountWarning, Screen, Spacer, Stack, StyledText, WidgetAnimatedWrapper } from '@/app/components';
+import { useInit, useRefreshController, useWalletController } from '@/app/hooks';
 import { useAsyncManager } from '@/app/hooks/useAsyncManager';
 import { $t } from '@/app/localization';
 import { Router } from '@/app/router/Router';
-import { useAddressBookWidget } from '@/app/screens/address-book/hooks';
-import { AddressBookWidget } from '@/app/screens/address-book/widgets/AddressBookWidget';
-import { useHarvestingWidget } from '@/app/screens/harvesting/hooks';
-import { HarvestingWidget } from '@/app/screens/harvesting/widgets';
-import { useHistoryWidget } from '@/app/screens/history/hooks';
-import { HistoryWidget } from '@/app/screens/history/widgets/HistoryWidget';
+import { HistoryHomeWidget } from '@/app/screens/history/widgets/HistoryHomeWidget';
 import { AccountCardWidget } from '@/app/screens/home/components/AccountCardWidget';
-import { WidgetAnimatedWrapper } from '@/app/screens/home/components/WidgetAnimatedWrapper';
-import { useMultisigWidget } from '@/app/screens/multisig/hooks/useMultisigWidget';
-import { MultisigWidget } from '@/app/screens/multisig/widgets/MultisigWidget';
+import { homeScreenConfig } from '@/brand/config/home-screen-config';
 import React from 'react';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 
@@ -37,23 +30,14 @@ export const Home = () => {
 		})
 	});
 
-	// Widgets
-	const historyWidget = useHistoryWidget(walletController);
-	const addressBookWidget = useAddressBookWidget(walletController);
-	const multisigWidget = useMultisigWidget(walletController);
-	const harvestingWidget = useHarvestingWidget(walletController);
-
 	// Data fetching
+	const refreshController = useRefreshController();
 	const fetchData = () => {
 		walletController.fetchAccountInfo();
-		historyWidget.refresh();
-		multisigWidget.refresh();
-		harvestingWidget.refresh();
+		refreshController.refresh();
 	};
 
-	useInit(fetchData, walletController.isWalletReady);
-
-	const isUpdatesWidgetsVisible = historyWidget.isVisible;
+	useInit(walletController.fetchAccountInfo, walletController.isWalletReady);
 
 	return (
 		<Screen refresh={{ onRefresh: fetchData }}>
@@ -91,16 +75,7 @@ export const Home = () => {
 							</Animated.View>
 						)}
 
-						{isUpdatesWidgetsVisible && (
-							<Stack gap="m">
-								<StyledText type="title">
-									{$t('screen_home_title_updates')}
-								</StyledText>
-								<WidgetAnimatedWrapper isVisible={historyWidget.isVisible}>
-									<HistoryWidget {...historyWidget.props} />
-								</WidgetAnimatedWrapper>
-							</Stack>
-						)}
+						<HistoryHomeWidget refreshController={refreshController} />
 
 						<Stack gap="m">
 							<WidgetAnimatedWrapper isVisible>
@@ -108,15 +83,9 @@ export const Home = () => {
 									{$t('screen_home_title_widgets')}
 								</StyledText>
 							</WidgetAnimatedWrapper>
-							<WidgetAnimatedWrapper isVisible={addressBookWidget.isVisible}>
-								<AddressBookWidget {...addressBookWidget.props} />
-							</WidgetAnimatedWrapper>
-							<WidgetAnimatedWrapper isVisible={multisigWidget.isVisible}>
-								<MultisigWidget {...multisigWidget.props} />
-							</WidgetAnimatedWrapper>
-							<WidgetAnimatedWrapper isVisible={harvestingWidget.isVisible}>
-								<HarvestingWidget {...harvestingWidget.props} />
-							</WidgetAnimatedWrapper>
+							{homeScreenConfig.widgets.map(({ id, Component }) => (
+								<Component key={id} refreshController={refreshController} />
+							))}
 						</Stack>
 					</Stack>
 				</Spacer>

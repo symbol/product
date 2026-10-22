@@ -1,7 +1,7 @@
+import { SymbolRouter } from '../../../router/SymbolRouter';
 import { HarvestingSummary } from '../components';
 import { Divider, Spacer, StatusRow, WidgetContainer } from '@/app/components';
 import { $t } from '@/app/localization';
-import { Router } from '@/app/router/Router';
 import { Colors } from '@/app/styles';
 import React from 'react';
 
@@ -14,7 +14,7 @@ import React from 'react';
  * @returns {React.ReactNode} HarvestingWidget component.
  */
 export const HarvestingWidget = ({ summaryViewModel, statusViewModel, ticker }) => {
-	const handleHeaderPress = () => Router.goToHarvesting();
+	const handleHeaderPress = () => SymbolRouter.goToHarvesting();
 
 	return (
 		<WidgetContainer 
