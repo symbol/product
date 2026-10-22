@@ -1,10 +1,12 @@
 import { useColorTransition } from '@/app/hooks';
 import { Colors, Sizes, Typography } from '@/app/styles';
+import { buttonConfig } from '@/brand/config/button-config';
 import React from 'react';
 import { Pressable, StyleSheet } from 'react-native';
 import Animated from 'react-native-reanimated';
 
 /** @typedef {import('@/app/types/ColorVariants').ButtonColorVariants} ButtonColorVariants */
+/** @typedef {import('@/app/types/Button').ButtonType} ButtonType */
 
 /**
  * Button component. A customizable button that supports different visual types and color variants,
@@ -12,13 +14,13 @@ import Animated from 'react-native-reanimated';
  * @param {object} props - Component props.
  * @param {string} props.text - Button text.
  * @param {boolean} [props.isDisabled=false] - Disable button if true.
- * @param {'bordered'|'solid'} [type='bordered'] - Button appearance type (bordered or solid).
+ * @param {ButtonType} [props.type] - Button appearance type (bordered or solid). Defaults to the brand button config.
  * @param {ButtonColorVariants} [props.variant='secondary'] - Button color variant.
  * @param {object} [props.style] - Additional styles for the button container.
  * @param {function(): void} props.onPress - Function to call on button press.
  * @returns {React.ReactNode} Button component.
  */
-export const Button = ({ text, isDisabled = false, type = 'bordered', variant = 'secondary', style, onPress }) => {
+export const Button = ({ text, isDisabled = false, type = buttonConfig.defaultType, variant = 'secondary', style, onPress }) => {
 	// Color and style animations
 	const palette =
 		type === 'solid'
@@ -67,7 +69,7 @@ const styles = StyleSheet.create({
 		height: Sizes.Semantic.controlHeight.m,
 		justifyContent: 'center',
 		alignItems: 'center',
-		borderRadius: Sizes.Semantic.borderRadius.s,
+		borderRadius: Sizes.Semantic.borderRadius[buttonConfig.borderRadius],
 		borderWidth: Sizes.Semantic.borderWidth.m,
 		borderStyle: 'solid'
 	},
