@@ -12,6 +12,7 @@ from puller.db.SymbolDatabase import RollbackRefreshEntries, SymbolDatabase
 from puller.facade.SymbolPuller import ACCOUNT_BATCH_FETCH_SIZE
 from puller.model.symbol.Account import create_account_row
 from puller.model.symbol.Block import create_block_row
+from puller.model.symbol.format import address_from_public_key
 from tests.test.SymbolTestConstants import SIGNER_ADDRESS
 
 from .puller_test_utils import (
@@ -31,6 +32,9 @@ from .puller_test_utils import (
 	statement_path,
 	transaction_path
 )
+
+ACCOUNT_RESTRICTION_TARGET_SIGNER_PUBLIC_KEY = '01' * 32
+ACCOUNT_RESTRICTION_TARGET_SIGNER_ADDRESS = '98A991D03CBA797AED52A061E6BF2F7F238D8A85CF8E8A85'
 
 
 class MalformedAccountsBatchConnector(FakeConnector):
@@ -55,16 +59,16 @@ class EmptyMosaicRestrictionConnector(FakeConnector):
 
 
 class MissingConfiguredAccountConnector(EmptyMosaicRestrictionConnector):
-	def __init__(self, missing_address, *args, **kwargs):
+	def __init__(self, missing_address, *args, missing_addresses=(), **kwargs):
 		super().__init__(*args, **kwargs)
-		self.missing_address = missing_address
+		self.missing_addresses = {missing_address, *missing_addresses}
 
 	async def post(self, url_path, request_payload, *args):
 		response = await super().post(url_path, request_payload, *args)
 		if 'accounts' != url_path:
 			return response
 
-		return [item for item in response if item['account']['address'] != self.missing_address]
+		return [item for item in response if item['account']['address'] not in self.missing_addresses]
 
 
 def _address_hex(index):
@@ -376,7 +380,336 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):  # pylint: disable=too-man
 		)
 		self.assertEqual([(RECIPIENT_ADDRESS.lower(), 'target')], cursor.fetchall())
 
-	def test_refresh_dirty_accounts_for_batch_keeps_non_mosaic_restriction_target(self):
+	def test_refresh_dirty_accounts_for_batch_skips_account_restriction_targets_but_persists_transaction_and_relations(self):
+		# Arrange:
+		block_beneficiary_address = _address_hex(1)
+		addition_target_address = _address_hex(2)
+		deletion_target_address = _address_hex(3)
+		connector = MissingConfiguredAccountConnector(
+			addition_target_address,
+			1,
+			{0: [self._create_block(
+				1,
+				beneficiaryAddress=block_beneficiary_address,
+				transactions_count=1,
+				total_transactions_count=1)]},
+			transactions_by_path={
+				transaction_path(1, 1): {
+					'data': [create_node_transaction(
+						1,
+						type=TransactionType.ACCOUNT_ADDRESS_RESTRICTION.value,
+						restrictionFlags=1,
+						restrictionAdditions=[addition_target_address],
+						restrictionDeletions=[deletion_target_address])],
+					'pagination': {'pageNumber': 1, 'pageSize': ACCOUNT_BATCH_FETCH_SIZE}
+				}
+			},
+			account_by_address=self._account_by_address_text(block_beneficiary_address, SIGNER_ADDRESS),
+			missing_addresses=(deletion_target_address,))
+
+		# Act:
+		blocks, sync_state = self._sync_with_connector(connector)
+
+		# Assert:
+		self.assertEqual([1], blocks)
+		self.assertEqual(1, sync_state['last_synced_height'])
+		self.assertEqual(1, connector.paths.count('accounts'))
+		self.assertEqual([{
+			'addresses': [self._address_text(block_beneficiary_address), self._address_text(SIGNER_ADDRESS)]
+		}], connector.post_payloads)
+		self.assertEqual(1, self._fetch_account_count(block_beneficiary_address))
+		self.assertEqual(1, self._fetch_account_count(SIGNER_ADDRESS))
+		self.assertEqual(0, self._fetch_account_count(addition_target_address))
+		self.assertEqual(0, self._fetch_account_count(deletion_target_address))
+
+		cursor = self.puller.symbol_db.connection.cursor()
+		cursor.execute('SELECT type FROM symbol_transactions')
+		self.assertEqual([(TransactionType.ACCOUNT_ADDRESS_RESTRICTION.value,)], cursor.fetchall())
+		cursor.execute(
+			"SELECT encode(address, 'hex'), role FROM symbol_transaction_addresses ORDER BY role, address"
+		)
+		self.assertEqual([
+			(SIGNER_ADDRESS.lower(), 'signer'),
+			(addition_target_address.lower(), 'target'),
+			(deletion_target_address.lower(), 'target')
+		], cursor.fetchall())
+
+	def _assert_account_restriction_target_is_requested_with_eligible_recipient(self, transactions):
+		# Arrange:
+		block_beneficiary_address = _address_hex(1)
+		connector = FakeConnector(
+			1,
+			{0: [self._create_block(
+				1,
+				beneficiaryAddress=block_beneficiary_address,
+				transactions_count=2,
+				total_transactions_count=2)]},
+			transactions_by_path={
+				transaction_path(1, 1): create_transaction_page(transactions)
+			},
+			account_by_address=self._account_by_address_text(block_beneficiary_address, SIGNER_ADDRESS, RECIPIENT_ADDRESS))
+
+		# Act:
+		self._sync_with_connector(connector)
+
+		# Assert:
+		self.assertEqual(1, connector.paths.count('accounts'))
+		self.assertEqual([{
+			'addresses': [
+				self._address_text(block_beneficiary_address),
+				self._address_text(SIGNER_ADDRESS),
+				self._address_text(RECIPIENT_ADDRESS)
+			]
+		}], connector.post_payloads)
+		self.assertEqual(1, self._fetch_account_count(RECIPIENT_ADDRESS))
+		cursor = self.puller.symbol_db.connection.cursor()
+		cursor.execute(
+			"SELECT role FROM symbol_transaction_addresses WHERE address = decode(%s, 'hex') ORDER BY role",
+			(RECIPIENT_ADDRESS,))
+		self.assertEqual([('recipient',), ('target',)], cursor.fetchall())
+
+	def _assert_account_restriction_target_is_requested_with_separate_transfer_signer(
+		self, transactions, block_beneficiary_address, expected_account_addresses
+	):
+		# Arrange:
+		target_signer_address = ACCOUNT_RESTRICTION_TARGET_SIGNER_ADDRESS
+		self.assertEqual(
+			bytes.fromhex(target_signer_address),
+			address_from_public_key(
+				bytes.fromhex(ACCOUNT_RESTRICTION_TARGET_SIGNER_PUBLIC_KEY),
+				self.puller.symbol_facade.network)
+		)
+		self.assertNotEqual(block_beneficiary_address, target_signer_address)
+		self.assertNotEqual(RECIPIENT_ADDRESS, target_signer_address)
+		connector = FakeConnector(
+			1,
+			{0: [self._create_block(
+				1,
+				beneficiaryAddress=block_beneficiary_address,
+				transactions_count=2,
+				total_transactions_count=2)]},
+			transactions_by_path={
+				transaction_path(1, 1): create_transaction_page(transactions)
+			},
+			account_by_address=self._account_by_address_text(
+				block_beneficiary_address,
+				SIGNER_ADDRESS,
+				ACCOUNT_RESTRICTION_TARGET_SIGNER_ADDRESS,
+				RECIPIENT_ADDRESS)
+		)
+
+		# Act:
+		self._sync_with_connector(connector)
+
+		# Assert:
+		self.assertEqual(1, connector.paths.count('accounts'))
+		target_signer_address_text = self._address_text(target_signer_address)
+		self.assertEqual([{
+			'addresses': [self._address_text(address) for address in expected_account_addresses]
+		}], connector.post_payloads)
+		self.assertEqual(1, connector.post_payloads[0]['addresses'].count(target_signer_address_text))
+		self.assertEqual(1, self._fetch_account_count(target_signer_address))
+
+		cursor = self.puller.symbol_db.connection.cursor()
+		cursor.execute(
+			'''
+			SELECT transaction.type, address.role
+			FROM symbol_transactions AS transaction
+			JOIN symbol_transaction_addresses AS address ON address.transaction_id = transaction.id
+			WHERE address.address = decode(%s, 'hex')
+			ORDER BY address.role::text
+			''',
+			(target_signer_address,))
+		self.assertEqual([
+			(TransactionType.TRANSFER.value, 'signer'),
+			(TransactionType.ACCOUNT_ADDRESS_RESTRICTION.value, 'target')
+		], cursor.fetchall())
+
+	def test_refresh_dirty_accounts_for_batch_keeps_account_restriction_target_with_later_transfer_signer(self):
+		# Arrange:
+		block_beneficiary_address = _address_hex(1)
+		transactions = [
+			create_node_transaction(
+				1,
+				transaction_hash='A' * 64,
+				transaction_id='account-restriction-first',
+				block_index=0,
+				type=TransactionType.ACCOUNT_ADDRESS_RESTRICTION.value,
+				restrictionFlags=1,
+				restrictionAdditions=[ACCOUNT_RESTRICTION_TARGET_SIGNER_ADDRESS],
+				restrictionDeletions=[]),
+			create_node_transaction(
+				1,
+				transaction_hash='B' * 64,
+				transaction_id='transfer-second',
+				block_index=1,
+				type=TransactionType.TRANSFER.value,
+				signerPublicKey=ACCOUNT_RESTRICTION_TARGET_SIGNER_PUBLIC_KEY,
+				recipientAddress=RECIPIENT_ADDRESS)
+		]
+
+		# Act / Assert:
+		self._assert_account_restriction_target_is_requested_with_separate_transfer_signer(
+			transactions,
+			block_beneficiary_address,
+			[
+				block_beneficiary_address,
+				SIGNER_ADDRESS,
+				ACCOUNT_RESTRICTION_TARGET_SIGNER_ADDRESS,
+				RECIPIENT_ADDRESS
+			])
+
+	def test_refresh_dirty_accounts_for_batch_keeps_account_restriction_target_with_earlier_transfer_signer(self):
+		# Arrange:
+		block_beneficiary_address = _address_hex(1)
+		transactions = [
+			create_node_transaction(
+				1,
+				transaction_hash='A' * 64,
+				transaction_id='transfer-first',
+				block_index=0,
+				type=TransactionType.TRANSFER.value,
+				signerPublicKey=ACCOUNT_RESTRICTION_TARGET_SIGNER_PUBLIC_KEY,
+				recipientAddress=RECIPIENT_ADDRESS),
+			create_node_transaction(
+				1,
+				transaction_hash='B' * 64,
+				transaction_id='account-restriction-second',
+				block_index=1,
+				type=TransactionType.ACCOUNT_ADDRESS_RESTRICTION.value,
+				restrictionFlags=1,
+				restrictionAdditions=[ACCOUNT_RESTRICTION_TARGET_SIGNER_ADDRESS],
+				restrictionDeletions=[])
+		]
+
+		# Act / Assert:
+		self._assert_account_restriction_target_is_requested_with_separate_transfer_signer(
+			transactions,
+			block_beneficiary_address,
+			[
+				block_beneficiary_address,
+				ACCOUNT_RESTRICTION_TARGET_SIGNER_ADDRESS,
+				RECIPIENT_ADDRESS,
+				SIGNER_ADDRESS
+			])
+
+	def test_refresh_dirty_accounts_for_batch_requests_account_restriction_target_when_recipient_follows_restriction(self):
+		self._assert_account_restriction_target_is_requested_with_eligible_recipient([
+			create_node_transaction(
+				1,
+				transaction_hash='A' * 64,
+				transaction_id='account-restriction-first',
+				block_index=0,
+				type=TransactionType.ACCOUNT_ADDRESS_RESTRICTION.value,
+				restrictionFlags=1,
+				restrictionAdditions=[RECIPIENT_ADDRESS],
+				restrictionDeletions=[]),
+			create_node_transaction(
+				1,
+				transaction_hash='B' * 64,
+				transaction_id='transfer-second',
+				block_index=1,
+				type=TransactionType.TRANSFER.value,
+				recipientAddress=RECIPIENT_ADDRESS)
+		])
+
+	def test_refresh_dirty_accounts_for_batch_requests_account_restriction_target_when_recipient_precedes_restriction(self):
+		self._assert_account_restriction_target_is_requested_with_eligible_recipient([
+			create_node_transaction(
+				1,
+				transaction_hash='A' * 64,
+				transaction_id='transfer-first',
+				block_index=0,
+				type=TransactionType.TRANSFER.value,
+				recipientAddress=RECIPIENT_ADDRESS),
+			create_node_transaction(
+				1,
+				transaction_hash='B' * 64,
+				transaction_id='account-restriction-second',
+				block_index=1,
+				type=TransactionType.ACCOUNT_ADDRESS_RESTRICTION.value,
+				restrictionFlags=1,
+				restrictionAdditions=[RECIPIENT_ADDRESS],
+				restrictionDeletions=[])
+		])
+
+	def test_refresh_dirty_accounts_for_batch_requests_account_restriction_target_when_it_matches_block_beneficiary(self):
+		# Arrange:
+		connector = FakeConnector(
+			1,
+			{0: [self._create_block(
+				1,
+				beneficiaryAddress=RECIPIENT_ADDRESS,
+				transactions_count=1,
+				total_transactions_count=1)]},
+			transactions_by_path={
+				transaction_path(1, 1): {
+					'data': [create_node_transaction(
+						1,
+						type=TransactionType.ACCOUNT_ADDRESS_RESTRICTION.value,
+						restrictionFlags=1,
+						restrictionAdditions=[RECIPIENT_ADDRESS],
+						restrictionDeletions=[])],
+					'pagination': {'pageNumber': 1, 'pageSize': ACCOUNT_BATCH_FETCH_SIZE}
+				}
+			},
+			account_by_address=self._account_by_address_text(RECIPIENT_ADDRESS, SIGNER_ADDRESS))
+
+		# Act:
+		self._sync_with_connector(connector)
+
+		# Assert:
+		self.assertEqual([{
+			'addresses': [self._address_text(RECIPIENT_ADDRESS), self._address_text(SIGNER_ADDRESS)]
+		}], connector.post_payloads)
+		self.assertEqual(1, self._fetch_account_count(RECIPIENT_ADDRESS))
+
+	def test_refresh_dirty_accounts_for_batch_requests_account_restriction_target_when_it_matches_receipt_address(self):
+		# Arrange:
+		block_beneficiary_address = _address_hex(1)
+		connector = FakeConnector(
+			1,
+			{0: [self._create_block(
+				1,
+				beneficiaryAddress=block_beneficiary_address,
+				transactions_count=1,
+				total_transactions_count=1)]},
+			transactions_by_path={
+				transaction_path(1, 1): {
+					'data': [create_node_transaction(
+						1,
+						type=TransactionType.ACCOUNT_ADDRESS_RESTRICTION.value,
+						restrictionFlags=1,
+						restrictionAdditions=[RECIPIENT_ADDRESS],
+						restrictionDeletions=[])],
+					'pagination': {'pageNumber': 1, 'pageSize': ACCOUNT_BATCH_FETCH_SIZE}
+				}
+			},
+			statement_pages={
+				statement_path(1, 1): {
+					'data': [create_amount_statement_item(
+						1,
+						100,
+						ReceiptType.LOCK_HASH_EXPIRED.value,
+						targetAddress=RECIPIENT_ADDRESS)]
+				}
+			},
+			account_by_address=self._account_by_address_text(block_beneficiary_address, SIGNER_ADDRESS, RECIPIENT_ADDRESS))
+
+		# Act:
+		self._sync_with_connector(connector)
+
+		# Assert:
+		self.assertEqual([{
+			'addresses': [
+				self._address_text(block_beneficiary_address),
+				self._address_text(SIGNER_ADDRESS),
+				self._address_text(RECIPIENT_ADDRESS)
+			]
+		}], connector.post_payloads)
+		self.assertEqual(1, self._fetch_account_count(RECIPIENT_ADDRESS))
+
+	def test_refresh_dirty_accounts_for_batch_keeps_account_metadata_target(self):
 		# Arrange:
 		target_address = '98AB1234567890ABCDEF1234567890ABCDEF1234567890AB'
 		connector = FakeConnector(
