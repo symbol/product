@@ -159,7 +159,7 @@ export const Dropdown = props => {
 	);
 };
 
-const CONTAINER_BORDER_WIDTH = Sizes.Semantic.borderWidth.m;
+const CONTAINER_BORDER_WIDTH = Sizes.Components.control.borderWidth;
 const EXTRA_PIXEL_OFFSET = 0.75;
 
 const styles = StyleSheet.create({
@@ -171,7 +171,7 @@ const styles = StyleSheet.create({
 		flexDirection: 'row',
 		justifyContent: 'space-between',
 		alignItems: 'center',
-		borderRadius: Sizes.Semantic.borderRadius.s,
+		borderRadius: Sizes.Components.control.borderRadius,
 		borderWidth: CONTAINER_BORDER_WIDTH,
 		borderStyle: 'solid'
 	},

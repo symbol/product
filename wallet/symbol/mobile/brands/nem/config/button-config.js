@@ -2,6 +2,5 @@
 
 /** @type {ButtonConfig} */
 export const buttonConfig = {
-	defaultType: 'solid',
-	borderRadius: 'round'
+	defaultType: 'solid'
 };

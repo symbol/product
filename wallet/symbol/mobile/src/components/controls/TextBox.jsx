@@ -5,7 +5,7 @@ import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
 const MULTILINE_NUMBER_OF_LINES = 7;
-const CONTAINER_BORDER_WIDTH = Sizes.Semantic.borderWidth.m;
+const CONTAINER_BORDER_WIDTH = Sizes.Components.control.borderWidth;
 const EXTRA_PIXEL_OFFSET = 0.75;
 
 /**
@@ -126,7 +126,7 @@ const styles = StyleSheet.create({
 		flexDirection: 'row',
 		justifyContent: 'space-between',
 		alignItems: 'center',
-		borderRadius: Sizes.Semantic.borderRadius.s,
+		borderRadius: Sizes.Components.control.borderRadius,
 		borderWidth: CONTAINER_BORDER_WIDTH,
 		borderStyle: 'solid'
 	},

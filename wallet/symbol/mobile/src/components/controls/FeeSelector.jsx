@@ -146,13 +146,13 @@ export const FeeSelector = ({ style, title, feeTiers, value, ticker, onChange })
 };
 
 // Styles
-const CONTAINER_BORDER_WIDTH = Sizes.Semantic.borderWidth.m;
+const CONTAINER_BORDER_WIDTH = Sizes.Components.control.borderWidth;
 const EXTRA_PIXEL_OFFSET = 0.75;
 
 const styles = StyleSheet.create({
 	root: {
 		height: Sizes.Semantic.controlHeight.m,
-		borderRadius: Sizes.Semantic.borderRadius.s,
+		borderRadius: Sizes.Components.control.borderRadius,
 		borderWidth: CONTAINER_BORDER_WIDTH,
 		borderBottomColor: Colors.Components.control.default.default.border,
 		backgroundColor: Colors.Components.control.default.default.background

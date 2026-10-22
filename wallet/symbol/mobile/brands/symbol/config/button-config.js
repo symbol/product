@@ -2,6 +2,5 @@
 
 /** @type {ButtonConfig} */
 export const buttonConfig = {
-	defaultType: 'bordered',
-	borderRadius: 's'
+	defaultType: 'bordered'
 };

@@ -88,7 +88,10 @@ export const Semantic = {
 	}
 };
 
-export const Component = {
+export const Components = {
+	button: {
+		borderRadius: Semantic.borderRadius.s // 4px
+	},
 	circleIcon: {
 		s: {
 			surface: {
@@ -106,5 +109,9 @@ export const Component = {
 				size: Primitives.spacing300 // 24px
 			}
 		}
+	},
+	control: {
+		borderRadius: Semantic.borderRadius.s, // 4px
+		borderWidth: Semantic.borderWidth.m // 2px
 	}
 };
