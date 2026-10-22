@@ -1,27 +1,9 @@
 import { stubMosaics } from './fixtures';
 import { stubValue } from './stub';
-import { createApiUrl, createPage, createSearchURL, makeRequest } from '@/app/utils/server';
+import { createApiUrl, createPage, createSearchCriteria, createSearchURL, makeRequest } from '@/app/utils/server';
 
-const MAX_MOSAIC_LIMIT = 100;
+// REST accepts offsets up to this value; avoid requesting a page beyond it.
 const MAX_MOSAIC_OFFSET = 100000;
-
-const normalizeSafeIntegerParameter = (value, defaultValue, parameterName) => {
-	if (value === undefined || value === null)
-		return defaultValue;
-
-	const isInteger = typeof value === 'number'
-		? Number.isInteger(value)
-		: typeof value === 'string' && /^[+-]?\d+$/.test(value);
-	if (!isInteger)
-		throw new Error(`${parameterName} must be an integer`);
-
-	const normalizedValue = typeof value === 'number' ? value : Number(value);
-
-	if (!Number.isSafeInteger(normalizedValue))
-		throw new Error(`${parameterName} must be a safe integer`);
-
-	return normalizedValue;
-};
 
 const mosaicInfoFromDTO = data => ({
 	...data,
@@ -36,36 +18,12 @@ const mosaicInfoFromDTO = data => ({
  * @returns {Promise<object>} the mosaic page and its pagination state.
  */
 export const fetchMosaicPage = async (searchParams = {}) => {
-	const pageNumber = normalizeSafeIntegerParameter(searchParams.pageNumber, 1, 'pageNumber');
-	const pageSize = normalizeSafeIntegerParameter(searchParams.pageSize, 10, 'limit');
-
-	if (pageNumber < 1)
-		throw new Error('pageNumber must be at least 1');
-
-	if (pageSize < 1 || pageSize > MAX_MOSAIC_LIMIT)
-		throw new Error(`limit must be between 1 and ${MAX_MOSAIC_LIMIT}`);
-
-	const offset = pageSize * (pageNumber - 1);
-
-	if (!Number.isSafeInteger(offset) || offset < 0 || offset > MAX_MOSAIC_OFFSET)
-		throw new Error(`offset must be between 0 and ${MAX_MOSAIC_OFFSET}`);
-
-	let sort;
-	if (searchParams.sort !== undefined && searchParams.sort !== null) {
-		sort = `${searchParams.sort}`.toUpperCase();
-		if (!['ASC', 'DESC'].includes(sort))
-			throw new Error('sort must be either ASC or DESC');
-	}
-
-	const url = createSearchURL(createApiUrl('mosaics'), {
-		pageNumber,
-		pageSize,
-		filter: sort ? { sort } : {}
-	});
+	// Only pagination and sort are supported by the list; ignore UI-only conditions.
+	const { pageNumber, pageSize } = createSearchCriteria(searchParams);
+	const filter = searchParams.sort == null ? {} : { sort: `${searchParams.sort}`.toUpperCase() };
+	const url = createSearchURL(createApiUrl('mosaics'), { pageNumber, pageSize, filter });
 	const mosaics = await makeRequest(url);
-
-	if (!Array.isArray(mosaics))
-		throw new Error('Symbol mosaics response must be an array');
+	const offset = pageSize * (pageNumber - 1);
 
 	return {
 		...createPage(mosaics, pageNumber, mosaicInfoFromDTO),
