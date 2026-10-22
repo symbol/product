@@ -6,6 +6,8 @@ export const Primitives = {
 	black: '#000000',
 
 	transparent: 'transparent',
+	blackOpacity3: 'rgba(0, 0, 0, 0.033)',
+	blackOpacity10: 'rgba(0, 0, 0, 0.1)',
 	blackOpacity50: 'rgba(0, 0, 0, 0.5)',
 
 	nemGreen0: '#E4F4F1',

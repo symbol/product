@@ -1,6 +1,7 @@
 import { Easing } from 'react-native-reanimated';
 
 export * from './colors';
+export * from './shadows';
 export * from './sizes';
 export * from './typography';
 

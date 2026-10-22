@@ -1,7 +1,7 @@
 import { AccountAvatar, StyledText, TouchableNative } from '@/app/components';
 import { Icon } from '@/app/components/visual';
 import { Router } from '@/app/router/Router';
-import { Colors, Sizes } from '@/app/styles';
+import { Colors, Shadows, Sizes } from '@/app/styles';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 
@@ -87,7 +87,8 @@ const styles = StyleSheet.create({
 		flexDirection: 'row',
 		justifyContent: 'space-between',
 		alignItems: 'center',
-		paddingHorizontal: Sizes.Semantic.layoutPadding.m
+		paddingHorizontal: Sizes.Semantic.layoutPadding.m,
+		boxShadow: Shadows.Components.titlebar
 	},
 	accountSelectorContainer: {
 		width: ACCOUNT_SELECTOR_WIDTH_PERCENT,
