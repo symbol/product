@@ -26,7 +26,6 @@ import {
 	usePagination,
 	useStorage
 } from '@/app/utils';
-import { variantComponents } from '@/app/variants/components';
 import { pageConfig } from '@/app/variants/page-config';
 import Head from 'next/head';
 import { useTranslation } from 'next-i18next';
@@ -53,7 +52,6 @@ const TransactionInfo = ({ preloadedData, stats }) => {
 		preloadedData
 	);
 	const chart = useFilter(fetchTransactionChart, [], true);
-	const TransactionFilter = variantComponents.TransactionFilter || Filter;
 	const chartType = transactionChartFilterToType(chart.filter);
 	const formattedChartData = formatTransactionChart(chart.data, chartType, t);
 
@@ -205,7 +203,7 @@ const TransactionInfo = ({ preloadedData, stats }) => {
 			<Section>
 				<div className="layout-flex-col">
 					<div className="layout-flex-row-mobile-col">
-						<TransactionFilter
+						<Filter
 							isSelectedItemsShown
 							data={transactionFilterConfig}
 							isDisabled={isLoading}

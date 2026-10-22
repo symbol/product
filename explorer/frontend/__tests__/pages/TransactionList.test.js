@@ -10,14 +10,14 @@ import {
 	selectFilterOption,
 	toggleFilterChip
 } from '../test-utils/page';
-import { activeVariant } from '../test-utils/variants';
+import { symbolTransactionTypes } from '../test-utils/transaction-types';
+import { itVariant } from '../test-utils/variants';
 import * as StatsService from '@/app/api/stats';
 import * as TransactionService from '@/app/api/transactions';
 import { STORAGE_KEY, TRANSACTION_TYPE } from '@/app/constants';
 import TransactionList, { getServerSideProps } from '@/app/pages/transactions';
 import { truncateString } from '@/app/utils';
 import { render, screen, within } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 
 // Mocks
 
@@ -54,8 +54,6 @@ const SCREEN_TEXT = {
 	filterType: 'filter_type',
 	filterFrom: 'filter_from',
 	filterTo: 'filter_to',
-	filterMosaic: 'filter_mosaic',
-	filterBlock: 'filter_block',
 	buttonCsv: 'button_csv',
 	messageEmptyTable: 'message_emptyTable',
 	tableFieldHash: 'table_field_hash',
@@ -73,11 +71,6 @@ const contact = {
 	address: cosignatoryAccount.address,
 	name: 'Cosignatory'
 };
-const symbolContact = {
-	address: 'TBFFBEEWH3HNT52R626IA6SAAUC5BQQXA4CC32Y',
-	name: 'Symbol sender'
-};
-const directContactAddress = activeVariant === 'symbol' ? symbolContact.address : contact.address;
 const contactOptionText = 'Cosignatory (...4VD)';
 const transactionHashTexts = transactionListConfirmed.map(transaction => truncateString(transaction.hash, 'hash'));
 const blockHeights = [...new Set(transactionListConfirmed.map(transaction => transaction.height))];
@@ -258,19 +251,21 @@ describe('TransactionList', () => {
 		});
 
 		describe('transaction filter', () => {
+			itVariant('symbol')('offers all Symbol transaction types in the configured order', async () => {
+				// Arrange:
+				renderPage({ preloadedData: [] });
+
+				// Act:
+				await toggleFilterChip(SCREEN_TEXT.filterType)();
+
+				// Assert:
+				const icons = within(screen.getByRole('dialog')).getAllByRole('img');
+				expect(icons.map(icon => icon.getAttribute('alt')).filter(alt => alt !== 'Close')).toEqual(symbolTransactionTypes);
+			});
+
 			const selectTransferType = selectFilterOption(SCREEN_TEXT.filterType, SCREEN_TEXT.typeTransfer);
-			const submitDirectFilter = (filterText, value) => async () => {
-				await toggleFilterChip(filterText)();
-				const dialog = screen.getByRole('dialog');
-				const user = userEvent.setup();
-				await user.type(within(dialog).getByRole('textbox'), `${value}{Enter}`);
-			};
-			const selectFromContact = activeVariant === 'symbol'
-				? submitDirectFilter(SCREEN_TEXT.filterFrom, symbolContact.address)
-				: selectFilterOption(SCREEN_TEXT.filterFrom, contactOptionText);
-			const selectToContact = activeVariant === 'symbol'
-				? submitDirectFilter(SCREEN_TEXT.filterTo, symbolContact.address)
-				: selectFilterOption(SCREEN_TEXT.filterTo, contactOptionText);
+			const selectFromContact = selectFilterOption(SCREEN_TEXT.filterFrom, contactOptionText);
+			const selectToContact = selectFilterOption(SCREEN_TEXT.filterTo, contactOptionText);
 
 			const filterCases = [
 				{
@@ -317,7 +312,7 @@ describe('TransactionList', () => {
 						contacts: [contact],
 						actions: [selectFromContact]
 					},
-					expected: { searchCriteria: { pageNumber: 1, from: directContactAddress } }
+					expected: { searchCriteria: { pageNumber: 1, from: contact.address } }
 				},
 				{
 					description: 'requests the transactions sent to the contact when the to filter is selected',
@@ -326,7 +321,7 @@ describe('TransactionList', () => {
 						contacts: [contact],
 						actions: [selectToContact]
 					},
-					expected: { searchCriteria: { pageNumber: 1, to: directContactAddress } }
+					expected: { searchCriteria: { pageNumber: 1, to: contact.address } }
 				}
 			];
 
@@ -334,40 +329,6 @@ describe('TransactionList', () => {
 				renderPage,
 				request: [TransactionService, 'fetchTransactionPage'],
 				cases: filterSearchCriteriaCases
-			});
-
-			runSearchCriteriaTests({
-				renderPage,
-				request: [TransactionService, 'fetchTransactionPage'],
-				cases: [
-					{
-						description: 'applies a Symbol mosaic ID directly',
-						variants: ['symbol'],
-						config: {
-							preloadedData: transactionListConfirmed,
-							actions: [submitDirectFilter(SCREEN_TEXT.filterMosaic, '72c0212e67a08bce')]
-						},
-						expected: { searchCriteria: { pageNumber: 1, mosaic: '72C0212E67A08BCE' } }
-					},
-					{
-						description: 'applies Symbol address and exact large block height together',
-						variants: ['symbol'],
-						config: {
-							preloadedData: transactionListConfirmed,
-							actions: [
-								submitDirectFilter(SCREEN_TEXT.filterFrom, symbolContact.address),
-								submitDirectFilter(SCREEN_TEXT.filterBlock, '9223372036854775807')
-							]
-						},
-						expected: {
-							searchCriteria: {
-								pageNumber: 1,
-								from: symbolContact.address,
-								height: '9223372036854775807'
-							}
-						}
-					}
-				]
 			});
 		});
 	});

@@ -34,9 +34,13 @@ const renderTransactionTypes = type => (
 
 describe('transaction type displays', () => {
 	itVariant('nem')('keeps the existing translated label and icon when Symbol helpers are absent', () => {
+		// Arrange:
 		mockLanguage = 'en';
+
+		// Act:
 		render(renderTransactionTypes('TRANSFER'));
 
+		// Assert:
 		expect(screen.getAllByText('transactionType_TRANSFER')).toHaveLength(2);
 		const icons = screen.getAllByAltText('TRANSFER');
 		expect(icons).toHaveLength(2);
@@ -44,13 +48,21 @@ describe('transaction type displays', () => {
 	});
 
 	itVariant('symbol')('uses Symbol labels and updates when the active display language changes', () => {
+		// Arrange:
 		mockLanguage = 'en';
 		const type = 'AGGREGATE_COMPLETE';
+
+		// Act: render using English labels.
 		const { rerender } = render(renderTransactionTypes(type));
 
+		// Assert:
 		expect(screen.getAllByText('Aggregate Complete')).toHaveLength(2);
+
+		// Act: switch the active language and render again.
 		mockLanguage = 'ja';
 		rerender(renderTransactionTypes(type));
+
+		// Assert:
 		expect(screen.getAllByText('アグリゲートコンプリート')).toHaveLength(2);
 		expect(screen.queryByText('Aggregate Complete')).not.toBeInTheDocument();
 

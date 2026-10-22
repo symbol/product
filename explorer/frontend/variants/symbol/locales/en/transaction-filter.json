@@ -1,7 +1,0 @@
-{
-	"empty": "Enter a value.",
-	"address": "Enter a valid Symbol address.",
-	"mosaic": "Enter a 16-character mosaic ID.",
-	"height": "Enter a positive block height.",
-	"heightRange": "Enter a block height between 1 and 9223372036854775807."
-}

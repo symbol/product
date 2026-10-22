@@ -12,14 +12,15 @@ import {
 	selectFilterOption,
 	toggleFilterChip
 } from '../test-utils/page';
-import { describeVariant } from '../test-utils/variants';
+import { symbolTransactionTypes } from '../test-utils/transaction-types';
+import { describeVariant, itVariant } from '../test-utils/variants';
 import * as AccountService from '@/app/api/accounts';
 import * as StatsService from '@/app/api/stats';
 import * as TransactionService from '@/app/api/transactions';
-import { STORAGE_KEY } from '@/app/constants';
+import { STORAGE_KEY, TRANSACTION_TYPE } from '@/app/constants';
 import AccountInfo, { getServerSideProps } from '@/app/pages/accounts/[address]';
 import { truncateString } from '@/app/utils';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 
 // Mocks
 
@@ -69,6 +70,8 @@ const SCREEN_TEXT = {
 	fieldCosignatoryOf: 'field_cosignatoryOf',
 	messageNoLinkedKeys: 'message_noLinkedKeys',
 	noDescription: 'No description',
+	filterType: 'filter_type',
+	typeTransfer: 'transactionType_TRANSFER',
 	filterHideEmptyBlocks: 'filter_hideEmptyBlocks',
 	tableFieldHeight: 'table_field_height',
 	tableFieldType: 'table_field_type',
@@ -150,6 +153,19 @@ describe('AccountInfo', () => {
 
 			return render(<AccountInfo accountInfo={config.accountInfo} preloadedTransactions={config.preloadedTransactions ?? []} />);
 		};
+
+		itVariant('symbol')('offers all Symbol transaction types in account history in the configured order', async () => {
+			// Arrange:
+			renderPage({ accountInfo: cosignatoryAccount });
+			await clickText(SCREEN_TEXT.sectionTransactions)();
+
+			// Act:
+			await toggleFilterChip(SCREEN_TEXT.filterType)();
+
+			// Assert:
+			const icons = within(screen.getByRole('dialog')).getAllByRole('img');
+			expect(icons.map(icon => icon.getAttribute('alt')).filter(alt => alt !== 'Close')).toEqual(symbolTransactionTypes);
+		});
 
 		describe('section: account info', () => {
 			const accountInfoCases = [
@@ -388,6 +404,24 @@ describe('AccountInfo', () => {
 								pageNumber: 1,
 								address: cosignatoryAccount.address,
 								to: accountHistoryContact.address
+							}
+						}
+					},
+					{
+						description: 'requests account history with the selected transaction type',
+						variants: ['symbol'],
+						config: {
+							accountInfo: cosignatoryAccount,
+							actions: [
+								clickText(SCREEN_TEXT.sectionTransactions),
+								selectFilterOption(SCREEN_TEXT.filterType, SCREEN_TEXT.typeTransfer)
+							]
+						},
+						expected: {
+							searchCriteria: {
+								pageNumber: 1,
+								address: cosignatoryAccount.address,
+								types: TRANSACTION_TYPE.TRANSFER
 							}
 						}
 					},

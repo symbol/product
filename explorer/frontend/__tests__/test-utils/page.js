@@ -30,7 +30,7 @@ export const flushPromises = () => async () => act(async () => {});
 
 // The chip ignores clicks while a request is in flight, so interactions wait for it to be enabled first.
 const getEnabledFilterChip = async chipText => {
-	const filterChip = screen.getByText(chipText).closest('button,[role="button"]');
+	const filterChip = screen.getByText(chipText).closest('[role="button"]');
 	await waitFor(() => expect(filterChip).toHaveAttribute('aria-disabled', 'false'));
 
 	return filterChip;

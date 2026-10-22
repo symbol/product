@@ -2,43 +2,11 @@ import { stubTransactions } from './fixtures';
 import { stubValue } from './stub';
 import { SYMBOL_TRANSACTION_GROUP } from '../constants';
 import { TRANSACTION_DIRECTION } from '@/app/constants';
-import { createApiUrl, createPage, createSearchURL, makeRequest } from '@/app/utils/server';
+import { createApiUrl, createPage, createSearchCriteria, createSearchURL, makeRequest } from '@/app/utils/server';
 
-const DEFAULT_PAGE_SIZE = 10;
-const MAX_PAGE_SIZE = 250;
 const MAX_TRANSACTION_OFFSET = 100000;
 
 const isPresent = value => value !== undefined && value !== null;
-
-const parseInteger = (value, defaultValue, parameterName) => {
-	if (!isPresent(value))
-		return defaultValue;
-
-	if (typeof value === 'boolean')
-		throw new Error(`${parameterName} must be an integer`);
-
-	const parsedValue = Number(value);
-	if (!Number.isSafeInteger(parsedValue))
-		throw new Error(`${parameterName} must be an integer`);
-
-	return parsedValue;
-};
-
-const getPagination = searchParams => {
-	const pageSize = parseInteger(searchParams.pageSize, DEFAULT_PAGE_SIZE, 'pageSize');
-	if (pageSize < 1 || pageSize > MAX_PAGE_SIZE)
-		throw new Error(`pageSize must be between 1 and ${MAX_PAGE_SIZE}`);
-
-	const pageNumber = parseInteger(searchParams.pageNumber, 1, 'pageNumber');
-	if (pageNumber < 1)
-		throw new Error('pageNumber must be greater than or equal to 1');
-
-	const offset = pageSize * (pageNumber - 1);
-	if (offset > MAX_TRANSACTION_OFFSET)
-		throw new Error(`offset must be between 0 and ${MAX_TRANSACTION_OFFSET}`);
-
-	return { pageNumber, pageSize, offset };
-};
 
 const getTransactionFilters = searchParams => {
 	const { address, from, to, group, types, height, mosaic, signerPublicKey, embedded, order } = searchParams;
@@ -67,6 +35,7 @@ const getTransactionFilters = searchParams => {
 
 	if (hasAddress)
 		filters.address = address;
+
 	if (hasFrom)
 		filters.senderAddress = from;
 
@@ -107,8 +76,8 @@ const transactionFromREST = (transaction, referenceAddress) => {
  */
 export const fetchTransactionPage = async (searchParams = {}) => {
 	const params = searchParams ?? {};
-	const pagination = getPagination(params);
-	const filters = getTransactionFilters(params);
+	const pagination = createSearchCriteria(params);
+	const filters = getTransactionFilters(pagination.filter);
 	const url = createSearchURL(createApiUrl('transactions'), { ...pagination, filter: filters });
 	const transactions = await makeRequest(url);
 
@@ -116,7 +85,7 @@ export const fetchTransactionPage = async (searchParams = {}) => {
 		throw new Error('Symbol transactions response must be an array');
 
 	const formatter = transaction => transactionFromREST(transaction, params.referenceAddress);
-	const isLastPage = !transactions.length || pagination.offset + pagination.pageSize > MAX_TRANSACTION_OFFSET;
+	const isLastPage = !transactions.length || pagination.pageSize * pagination.pageNumber > MAX_TRANSACTION_OFFSET;
 
 	return { ...createPage(transactions, pagination.pageNumber, formatter), isLastPage };
 };

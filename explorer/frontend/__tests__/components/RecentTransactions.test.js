@@ -60,21 +60,27 @@ describe('components/RecentTransactions', () => {
 	});
 
 	itVariant('nem')('keeps the existing label and icon when Symbol display helpers are absent', () => {
+		// Arrange:
 		const type = TRANSACTION_TYPE.TRANSFER;
 		const data = [{ ...baseTransaction, type, group: TRANSACTION_GROUP.CONFIRMED }];
 
+		// Act:
 		render(<RecentTransactions data={data} blockTime={blockTime} />);
 
+		// Assert:
 		expect(screen.getByText(`transactionType_${type}`)).toBeInTheDocument();
 		expect(getIconPath(screen.getByAltText(type))).toContain('/nem/images/transaction/transfer.svg');
 	});
 
 	itVariant('symbol')('uses Symbol labels and icons in the transaction preview', () => {
+		// Arrange:
 		const type = SYMBOL_TRANSACTION_TYPE.AGGREGATE_COMPLETE;
 		const data = [{ ...baseTransaction, type, group: TRANSACTION_GROUP.CONFIRMED }];
 
+		// Act:
 		render(<RecentTransactions data={data} blockTime={blockTime} />);
 
+		// Assert:
 		expect(screen.getByText('Aggregate Complete')).toBeInTheDocument();
 		expect(getIconPath(screen.getByAltText(type))).toContain('/symbol/images/transaction/aggregate.svg');
 	});

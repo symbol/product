@@ -1,4 +1,4 @@
-// Independent expectations for the transaction type choices exposed by each variant.
+// Independent expectation for the Symbol transaction type choices exposed by the filter.
 export const symbolTransactionTypes = [
 	'ACCOUNT_ADDRESS_RESTRICTION',
 	'ACCOUNT_KEY_LINK',
@@ -25,14 +25,4 @@ export const symbolTransactionTypes = [
 	'TRANSFER',
 	'VOTING_KEY_LINK',
 	'VRF_KEY_LINK'
-];
-
-export const nemTransactionTypes = [
-	'TRANSFER',
-	'MOSAIC_DEFINITION',
-	'MOSAIC_SUPPLY_CHANGE',
-	'NAMESPACE_REGISTRATION',
-	'MULTISIG_ACCOUNT_MODIFICATION',
-	'ACCOUNT_KEY_LINK',
-	'MULTISIG'
 ];
