@@ -4,13 +4,13 @@ export const accountList = [
 		publicKey: '0101010101010101010101010101010101010101010101010101010101010101',
 		accountType: 'main',
 		importance: 0.09765625,
-		balance: 123456789,
+		balance: 123.456789,
 		namespaces: ['example.namespace'],
 		mosaics: [
 			{
 				id: '1234567890ABCDEF',
 				name: 'example.namespace',
-				amount: 123456789,
+				amount: 123.456789,
 				isCreatedByAccount: true
 			}
 		],

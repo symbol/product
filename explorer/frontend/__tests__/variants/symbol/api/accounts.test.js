@@ -47,7 +47,7 @@ describe('variants/symbol/api/accounts', () => {
 					expected: { url: `${SYMBOL_API_BASE_URL}/accounts?limit=10&offset=0&is_harvesting=true` }
 				},
 				{
-					description: 'preserves the filter request order when both caller filters are set',
+					description: 'requests active harvesting accounts sorted by height when both filters are enabled',
 					config: { params: { isLatest: true, isActiveHarvesting: true } },
 					expected: { url: `${SYMBOL_API_BASE_URL}/accounts?limit=10&offset=0&sort_field=HEIGHT&is_harvesting=true` }
 				},
@@ -143,6 +143,7 @@ describe('variants/symbol/api/accounts', () => {
 			await expect(fetchAccountPage()).rejects.toBe(error);
 			expect(makeRequest).toHaveBeenCalledTimes(1);
 		});
+
 		it('keeps the account list row compatible with CSV output', async () => {
 			// Arrange:
 			jest.spyOn(serverUtils, 'makeRequest').mockResolvedValue([
