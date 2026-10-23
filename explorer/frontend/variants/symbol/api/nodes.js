@@ -2,14 +2,17 @@ import config from '@/app/config';
 import { makeRequest } from '@/app/utils/server';
 
 /**
- * Fetches the node list.
+ * Fetches peer and API-only nodes from Nodewatch.
  * @returns {Promise<Array>} node list
  */
 export const fetchNodeList = async () => {
-	const url = `${config.PUBLIC_NODEWATCH_URL}/api/symbol/nodes/peer`;
-	const nodes = await makeRequest(url);
+	const baseURL = `${config.PUBLIC_NODEWATCH_URL}/api/symbol/nodes`;
+	const [peerNodes, apiNodes] = await Promise.all([
+		makeRequest(`${baseURL}/peer`),
+		makeRequest(`${baseURL}/api`)
+	]);
 
-	return nodes.map(nodeInfoFromDTO);
+	return [...peerNodes, ...apiNodes].map(nodeInfoFromDTO);
 };
 
 /**

@@ -1,6 +1,5 @@
-import { emptyNodeListResponse, nodeListResponse } from '../../../../__fixtures__/api/symbol/node-list';
-import { emptyNodeList, nodeList } from '../../../../__fixtures__/local/symbol/node-list';
-import { runApiRequestTests, runApiResultTests } from '../../../test-utils/api';
+import { apiNodeListResponse, emptyNodeListResponse, peerNodeListResponse } from '../../../../__fixtures__/api/symbol/node-list';
+import { apiNodeList, emptyNodeList, nodeList, peerNodeList } from '../../../../__fixtures__/local/symbol/node-list';
 import * as serverUtils from '@/app/utils/server';
 import { fetchNodeList } from '@/app/variants/symbol/api/nodes';
 
@@ -16,52 +15,53 @@ jest.mock('@/app/utils/server', () => {
 // Constants
 
 const nodewatchPeerNodesURL = 'https://node.list/api/symbol/nodes/peer';
+const nodewatchApiNodesURL = 'https://node.list/api/symbol/nodes/api';
 
 // Tests
 
 describe('variants/symbol/api/nodes', () => {
 	describe('fetchNodeList', () => {
-		describe('request', () => {
-			const requestCases = [
-				{
-					description: 'requests the Symbol peer-node list without query parameters',
-					config: {},
-					expected: { url: nodewatchPeerNodesURL }
-				}
-			];
+		it('requests both Symbol node lists once without query parameters', async () => {
+			// Arrange:
+			const makeRequest = jest.spyOn(serverUtils, 'makeRequest').mockResolvedValue(emptyNodeListResponse);
 
-			runApiRequestTests({
-				functionToTest: fetchNodeList,
-				response: emptyNodeListResponse,
-				cases: requestCases
-			});
+			// Act:
+			await fetchNodeList();
+
+			// Assert:
+			expect(makeRequest.mock.calls).toEqual([[nodewatchPeerNodesURL], [nodewatchApiNodesURL]]);
 		});
 
-		describe('result', () => {
-			const resultCases = [
-				{
-					description: 'maps peer nodes in response order and preserves values in the frontend shape',
-					config: { response: nodeListResponse },
-					expected: { result: nodeList }
-				},
-				{
-					description: 'returns an empty list when Nodewatch returns no peer nodes',
-					config: { response: emptyNodeListResponse },
-					expected: { result: emptyNodeList }
-				}
-			];
+		it.each([
+			['maps peer nodes followed by API-only nodes and preserves values', peerNodeListResponse, apiNodeListResponse, nodeList],
+			['returns peer nodes when there are no API-only nodes', peerNodeListResponse, emptyNodeListResponse, peerNodeList],
+			['returns API-only nodes when there are no peer nodes', emptyNodeListResponse, apiNodeListResponse, apiNodeList],
+			['returns an empty list when both node lists are empty', emptyNodeListResponse, emptyNodeListResponse, emptyNodeList]
+		])('%s', async (description, peerResponse, apiResponse, expected) => {
+			// Arrange:
+			jest.spyOn(serverUtils, 'makeRequest').mockImplementation(url => Promise.resolve(
+				url === nodewatchPeerNodesURL ? peerResponse : apiResponse
+			));
 
-			runApiResultTests({ functionToTest: fetchNodeList, cases: resultCases });
+			// Act:
+			const result = await fetchNodeList();
+
+			// Assert:
+			expect(result).toStrictEqual(expected);
 		});
 
-		it('propagates a Nodewatch request failure', async () => {
+		it.each([
+			['peer', nodewatchPeerNodesURL],
+			['API-only', nodewatchApiNodesURL]
+		])('propagates a %s node-list request failure', async (description, failingURL) => {
 			// Arrange:
 			const error = new Error('Nodewatch request failed');
-			const makeRequest = jest.spyOn(serverUtils, 'makeRequest').mockRejectedValue(error);
+			jest.spyOn(serverUtils, 'makeRequest').mockImplementation(url => (
+				url === failingURL ? Promise.reject(error) : Promise.resolve(emptyNodeListResponse)
+			));
 
 			// Act + Assert:
 			await expect(fetchNodeList()).rejects.toBe(error);
-			expect(makeRequest).toHaveBeenCalledWith(nodewatchPeerNodesURL);
 		});
 	});
 });

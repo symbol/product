@@ -1,4 +1,4 @@
-export const nodeList = [
+export const peerNodeList = [
 	{
 		endpoint: 'https://symbol.shizuilab.com:3001',
 		name: 'ibone74',
@@ -20,5 +20,20 @@ export const nodeList = [
 		roles: 1
 	}
 ];
+
+export const apiNodeList = [
+	{
+		endpoint: 'http://api.symbol.example:3000',
+		name: 'API-only node',
+		version: '1.0.3.5',
+		height: 1486761,
+		mainPublicKey: 'B26D01FC006EAC09B740A3C8F12C1055AE24AFD3268F0364C92D51800FC07361',
+		nodePublicKey: null,
+		balance: 120000.123456,
+		roles: 2
+	}
+];
+
+export const nodeList = [...peerNodeList, ...apiNodeList];
 
 export const emptyNodeList = [];

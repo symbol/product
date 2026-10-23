@@ -1,5 +1,5 @@
 // Contract-based fixture; these values were not fetched from the live Nodewatch API.
-export const nodeListResponse = [
+export const peerNodeListResponse = [
 	{
 		balance: 82375.5549761234,
 		endpoint: 'https://symbol.shizuilab.com:3001',
@@ -43,6 +43,27 @@ export const nodeListResponse = [
 		restVersion: null,
 		roles: 1,
 		version: '0.0.0.0'
+	}
+];
+
+export const apiNodeListResponse = [
+	{
+		balance: 120000.123456,
+		endpoint: 'http://api.symbol.example:3000',
+		finalizedEpoch: 3020,
+		finalizedHash: 'E29E5695EB269B7DD1D76DBF05FDA1731AB24F561D2032248434FA36A27AFB4C',
+		finalizedHeight: 1486740,
+		finalizedPoint: 4,
+		geoLocation: null,
+		height: 1486761,
+		isHealthy: true,
+		isSslEnabled: false,
+		mainPublicKey: 'B26D01FC006EAC09B740A3C8F12C1055AE24AFD3268F0364C92D51800FC07361',
+		name: 'API-only node',
+		nodePublicKey: null,
+		restVersion: '2.4.4',
+		roles: 2,
+		version: '1.0.3.5'
 	}
 ];
 
