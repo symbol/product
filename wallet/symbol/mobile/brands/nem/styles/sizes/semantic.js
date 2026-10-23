@@ -89,8 +89,20 @@ export const Semantic = {
 };
 
 export const Components = {
+	accountCard: {
+		borderRadius: Semantic.borderRadius.m // 8px
+	},
+	accountCardWidget: {
+		borderRadius: Semantic.borderRadius.l // 12px
+	},
+	actionCard: {
+		borderRadius: Semantic.borderRadius.l // 12px
+	},
 	button: {
 		borderRadius: Semantic.borderRadius.round
+	},
+	card: {
+		borderRadius: Semantic.borderRadius.m // 8px
 	},
 	circleIcon: {
 		s: {
@@ -113,5 +125,14 @@ export const Components = {
 	control: {
 		borderRadius: Semantic.borderRadius.s, // 4px
 		borderWidth: Semantic.borderWidth.s // 1px
+	},
+	listItem: {
+		borderRadius: Semantic.borderRadius.m // 8px
+	},
+	settingsListItem: {
+		borderRadius: Semantic.borderRadius.m // 8px
+	},
+	widget: {
+		borderRadius: Semantic.borderRadius.l // 12px
 	}
 };

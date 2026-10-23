@@ -35,6 +35,7 @@ export const WidgetContainer = ({ title, onHeaderPress, backgroundColor, childre
 
 const styles = StyleSheet.create({
 	root: {
+		borderRadius: Sizes.Components.widget.borderRadius,
 		overflow: 'hidden',
 		boxShadow: Shadows.Components.widget
 	},

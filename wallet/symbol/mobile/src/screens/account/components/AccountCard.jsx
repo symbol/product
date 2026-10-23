@@ -161,7 +161,7 @@ const styles = StyleSheet.create({
 	root: {
 		position: 'relative',
 		width: '100%',
-		borderRadius: Sizes.Semantic.borderRadius.m,
+		borderRadius: Sizes.Components.accountCard.borderRadius,
 		borderWidth: Sizes.Semantic.borderWidth.m,
 		overflow: 'hidden',
 		boxShadow: Shadows.Components.accountCard

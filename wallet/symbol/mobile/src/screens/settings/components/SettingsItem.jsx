@@ -4,6 +4,8 @@ import React from 'react';
 import { Image, StyleSheet, View } from 'react-native';
 import Animated, { FadeInRight } from 'react-native-reanimated';
 
+const BORDER_RADIUS = Sizes.Components.settingsListItem.borderRadius;
+
 const iconSourceMap = {
 	network: require('@/app/assets/images/settings/network.png'),
 	language: require('@/app/assets/images/settings/language.png'),
@@ -35,7 +37,7 @@ export const SettingsItem = ({
 
 	return (
 		<Animated.View entering={FadeInRight.delay(animationDelay)}>
-			<TouchableNative style={styles.root} onPress={onPress}>
+			<TouchableNative style={styles.root} containerStyle={styles.container} onPress={onPress}>
 				<Image source={iconSrc} style={styles.icon} />
 				<View style={styles.content}>
 					<StyledText type="title" size="s">{title}</StyledText>
@@ -47,14 +49,17 @@ export const SettingsItem = ({
 };
 
 const styles = StyleSheet.create({
+	container: {
+		borderRadius: BORDER_RADIUS
+	},
 	root: {
 		flexDirection: 'row',
 		minHeight: Sizes.Semantic.spacing.m * 10,
-		borderRadius: Sizes.Semantic.borderRadius.s,
+		borderRadius: BORDER_RADIUS,
 		backgroundColor: Colors.Components.card.background,
 		padding: Sizes.Semantic.layoutSpacing.m,
 		gap: Sizes.Semantic.layoutSpacing.m,
-		boxShadow: Shadows.Components.settingsItem
+		boxShadow: Shadows.Components.settingsListItem
 	},
 	content: {
 		flex: 1

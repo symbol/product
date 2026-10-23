@@ -43,11 +43,12 @@ export const Semantic = {
 
 export const Components = {
 	accountCard: Semantic.s.bottom,
+	accountCardWidget: Semantic.m.bottom,
 	buttonCircle: Semantic.s.bottom,
 	filter: Semantic.xs.bottom,
 	header: Semantic.m.bottom,
 	listItem: Semantic.m.bottom,
 	navigationMenu: Semantic.m.top,
-	settingsItem: Semantic.m.bottom,
+	settingsListItem: Semantic.m.bottom,
 	widget: Semantic.m.bottom
 };

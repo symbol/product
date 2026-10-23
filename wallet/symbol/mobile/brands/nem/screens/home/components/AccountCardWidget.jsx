@@ -2,7 +2,7 @@ import { NemRouter } from '../../../router/NemRouter';
 import { Card, Icon, Spacer, TouchableNative } from '@/app/components';
 import { $t } from '@/app/localization';
 import { AccountCardContent } from '@/app/screens/home/components/AccountCardContent';
-import { Colors, Sizes, Typography } from '@/app/styles';
+import { Colors, Shadows, Sizes, Typography } from '@/app/styles';
 import React from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
 
@@ -17,6 +17,8 @@ const BUTTON_BACKGROUND_COLOR_DISABLED = Colors.Components.accountCardWidgetButt
 const ART_SIZE = Sizes.Semantic.spacing.m * 64;
 const ART_TOP_OFFSET = Sizes.Semantic.spacing.xl;
 const ART_OPACITY = 0.5;
+
+const BORDER_RADIUS = Sizes.Components.accountCardWidget.borderRadius;
 
 /**
  * An internal button component used by the AccountCardWidget action bar, displaying an icon with a text label.
@@ -65,7 +67,7 @@ export const AccountCardWidget = props => {
 	} = props;
 
 	return (
-		<Card style={styles.root} color={CARD_BACKGROUND_COLOR} borderRadius="l">
+		<Card style={styles.root} color={CARD_BACKGROUND_COLOR}>
 			<Image source={require('../../../assets/images/art/nem-logo.png')} style={styles.art} />
 			<Spacer x="m" y="l">
 				<AccountCardContent
@@ -102,7 +104,9 @@ const styles = StyleSheet.create({
 		position: 'relative',
 		width: '100%',
 		marginTop: Sizes.Semantic.spacing.m,
-		overflow: 'hidden'
+		borderRadius: BORDER_RADIUS,
+		overflow: 'hidden',
+		boxShadow: Shadows.Components.accountCardWidget
 	},
 	art: {
 		position: 'absolute',
@@ -116,8 +120,8 @@ const styles = StyleSheet.create({
 	actionBar: {
 		flexDirection: 'row',
 		backgroundColor: BUTTON_BACKGROUND_COLOR,
-		borderBottomLeftRadius: Sizes.Semantic.borderRadius.l,
-		borderBottomRightRadius: Sizes.Semantic.borderRadius.l,
+		borderBottomLeftRadius: BORDER_RADIUS,
+		borderBottomRightRadius: BORDER_RADIUS,
 		overflow: 'hidden'
 	},
 	actionButton: {
