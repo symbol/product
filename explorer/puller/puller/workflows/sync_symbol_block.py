@@ -1,6 +1,6 @@
 import argparse
 
-from puller.facade.SymbolPuller import SymbolPuller
+from puller.facade.SymbolPuller import DEFAULT_MAX_TRANSACTIONS_PER_BATCH, SymbolPuller
 from puller.workflows.symbol_workflow_utils import add_common_arguments, run_symbol_workflow
 
 
@@ -18,6 +18,12 @@ def add_arguments(parser):
 	add_common_arguments(parser)
 	parser.add_argument('--max-height', type=_positive_int, help='maximum block height to sync for manual validation')
 	parser.add_argument('--max-requests-per-second', type=_positive_int, help='maximum Symbol node requests per second')
+	parser.add_argument(
+		'--max-transactions-per-batch',
+		type=_positive_int,
+		default=DEFAULT_MAX_TRANSACTIONS_PER_BATCH,
+		help='maximum embedded-inclusive transactions per processing batch'
+	)
 	parser.set_defaults(run_main=run_main)
 
 
@@ -27,6 +33,7 @@ async def run_main(args, symbol_puller_factory=SymbolPuller, environment=None):
 	puller_kwargs = {}
 	if args.max_requests_per_second is not None:
 		puller_kwargs['max_requests_per_second'] = args.max_requests_per_second
+	puller_kwargs['max_transactions_per_batch'] = args.max_transactions_per_batch
 
 	async def sync_block_headers(puller):
 		await puller.sync_block_headers(args.max_height)
