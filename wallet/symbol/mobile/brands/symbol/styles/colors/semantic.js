@@ -253,6 +253,9 @@ export const Components = {
 		},
 		neutral: {
 			text: Semantic.content.primary.default
+		},
+		inverted: {
+			text: Semantic.content.primary.inverse
 		}
 	},
 	emptyList: {

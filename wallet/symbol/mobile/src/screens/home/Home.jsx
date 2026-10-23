@@ -3,10 +3,9 @@ import { MultisigAccountWarning, Screen, Spacer, Stack, StyledText, WidgetAnimat
 import { useInit, useRefreshController, useWalletController } from '@/app/hooks';
 import { useAsyncManager } from '@/app/hooks/useAsyncManager';
 import { $t } from '@/app/localization';
-import { Router } from '@/app/router/Router';
 import { HistoryHomeWidget } from '@/app/screens/history/widgets/HistoryHomeWidget';
-import { AccountCardWidget } from '@/app/screens/home/components/AccountCardWidget';
 import { homeScreenConfig } from '@/brand/config/home-screen-config';
+import { AccountCardWidget } from '@/brand/screens/home/components/AccountCardWidget';
 import React from 'react';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 
@@ -57,9 +56,6 @@ export const Home = () => {
 								networkIdentifier={walletController.networkIdentifier}
 								isMultisig={isMultisigAccount}
 								onNameChange={renameManager.call}
-								onSwapPress={Router.goToBridgeSwap}
-								onSendPress={Router.goToSend}
-								onDetailsPress={Router.goToAccountDetails}
 							/>
 						</Animated.View>
 

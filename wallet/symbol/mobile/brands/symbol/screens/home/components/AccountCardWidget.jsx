@@ -1,24 +1,12 @@
-import {
-	Amount,
-	Card,
-	CopyButtonContainer,
-	DialogBox,
-	EditButtonContainer,
-	Field,
-	Icon,
-	Spacer,
-	Stack,
-	StyledText,
-	TouchableNative
-} from '@/app/components';
-import { useToggle } from '@/app/hooks';
+import { SymbolRouter } from '../../../router/SymbolRouter';
+import { Card, Icon, Spacer, TouchableNative } from '@/app/components';
 import { $t } from '@/app/localization';
+import { AccountCardContent } from '@/app/screens/home/components/AccountCardContent';
 import { Colors, Sizes, Typography } from '@/app/styles';
-import { getUserCurrencyAmountText, validateAccountName, validateRequired } from '@/app/utils';
 import React from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
 
-/** @typedef {import('@/app/types/Network').NetworkIdentifier} NetworkIdentifier */
+/** @typedef {import('@/app/screens/home/types/Home').AccountCardWidgetProps} AccountCardWidgetProps */
 
 const CARD_BACKGROUND_COLOR = Colors.Components.accountCardWidgetBody.background;
 const BUTTON_BACKGROUND_COLOR = Colors.Components.accountCardWidgetButton.default.background;
@@ -33,15 +21,14 @@ const ART_TOP_OFFSET = Sizes.Semantic.spacing.m * 7;
 const CONTENT_TOP_OFFSET = Sizes.Semantic.spacing.m * 10;
 
 /**
- * ActionButton component.
- *
- * Internal button component for AccountCardWidget action bar.
+ * An internal button component used by the AccountCardWidget action bar, displaying an icon with a text label.
  * @param {object} props - Component props.
  * @param {string} props.icon - Icon name to display.
  * @param {string} props.text - Button label text.
  * @param {boolean} [props.isLast=false] - Whether this is the last button (no right border).
  * @param {boolean} [props.isDisabled=false] - Whether this button is disabled.
  * @param {function(): void} props.onPress - Callback when button is pressed.
+ * @returns {React.ReactNode} ActionButton component.
  */
 const ActionButton = ({ icon, text, isLast = false, isDisabled = false, onPress }) => {
 	const buttonStyle = [
@@ -62,22 +49,9 @@ const ActionButton = ({ icon, text, isLast = false, isDisabled = false, onPress 
 };
 
 /**
- * AccountCardWidget component.
- *
- * A card widget displaying account information including name, balance, and address.
- * Provides action buttons for account details, send, and swap operations.
- * @param {object} props - Component props.
- * @param {string} props.address - Account address to display.
- * @param {string} props.balance - Account balance amount.
- * @param {string} props.name - Account name.
- * @param {import('../../../types/Price').Price} props.price - Current token price for fiat conversion.
- * @param {string} props.ticker - Currency ticker symbol.
- * @param {NetworkIdentifier} props.networkIdentifier - Network identifier for currency formatting.
- * @param {boolean} [props.isMultisig=false] - Whether the account is a multisig account. Disables the send and swap buttons.
- * @param {function(string): void} props.onNameChange - Callback when account name is changed.
- * @param {function(): void} props.onSwapPress - Callback when swap button is pressed.
- * @param {function(): void} props.onSendPress - Callback when send button is pressed.
- * @param {function(): void} props.onDetailsPress - Callback when account details button is pressed.
+ * AccountCardWidget component. A card widget displaying the account name, balance, and address,
+ * with action buttons for account details, send, and swap operations.
+ * @param {AccountCardWidgetProps} props - Component props.
  * @returns {React.ReactNode} AccountCardWidget component.
  */
 export const AccountCardWidget = props => {
@@ -89,86 +63,43 @@ export const AccountCardWidget = props => {
 		ticker,
 		networkIdentifier,
 		isMultisig = false,
-		onNameChange,
-		onSwapPress,
-		onSendPress,
-		onDetailsPress
+		onNameChange
 	} = props;
-
-	// State
-	const [isNameEditShown, toggleNameEdit] = useToggle(false);
-
-	// Validation
-	const nameValidators = [validateRequired(), validateAccountName()];
-
-	const userCurrencyBalanceText = getUserCurrencyAmountText(balance, price, networkIdentifier);
-
-	// Handlers
-	const handleNameChange = newName => {
-		toggleNameEdit();
-		onNameChange(newName);
-	};
 
 	return (
 		<Card style={styles.root} color={CARD_BACKGROUND_COLOR}>
-			<Image source={require('@/app/assets/images/art/wallet-arms.png')} style={styles.art} />
+			<Image source={require('../../../assets/images/art/wallet-arms.png')} style={styles.art} />
 			<Spacer>
-				<Stack>
-					<Field title={$t('fieldTitle_account')}>
-						<EditButtonContainer onEditPress={toggleNameEdit}>
-							<StyledText type="title">
-								{name}
-							</StyledText>
-						</EditButtonContainer>
-					</Field>
-					<Field title={$t('fieldTitle_balance')}>
-						<Amount
-							value={balance}
-							ticker={ticker}
-							size="l"
-						/>
-						{!!userCurrencyBalanceText && (
-							<StyledText>
-								{userCurrencyBalanceText}
-							</StyledText>
-						)}
-					</Field>
-					<Field title={$t('fieldTitle_address')}>
-						<CopyButtonContainer value={address}>
-							<StyledText>{address}</StyledText>
-						</CopyButtonContainer>
-					</Field>
-				</Stack>
+				<AccountCardContent
+					address={address}
+					balance={balance}
+					name={name}
+					price={price}
+					ticker={ticker}
+					networkIdentifier={networkIdentifier}
+					onNameChange={onNameChange}
+				/>
 			</Spacer>
 			<View style={styles.actionBar}>
 				<ActionButton
 					icon="account"
 					text={$t('screen_home_button_accountDetails')}
-					onPress={onDetailsPress}
+					onPress={() => SymbolRouter.goToAccountDetails()}
 				/>
 				<ActionButton
 					icon="send-plane"
 					text={$t('screen_home_button_send')}
 					isDisabled={isMultisig}
-					onPress={onSendPress}
+					onPress={() => SymbolRouter.goToSend()}
 				/>
 				<ActionButton
 					icon="swap"
 					text={$t('screen_home_button_swap')}
 					isLast
 					isDisabled={isMultisig}
-					onPress={onSwapPress}
+					onPress={() => SymbolRouter.goToBridgeSwap()}
 				/>
 			</View>
-			<DialogBox
-				type="prompt"
-				title={$t('screen_home_dialog_renameAccount_title')}
-				text={$t('screen_home_dialog_renameAccount_description')}
-				promptValidators={nameValidators}
-				isVisible={isNameEditShown}
-				onSuccess={handleNameChange}
-				onCancel={toggleNameEdit}
-			/>
 		</Card >
 	);
 };
