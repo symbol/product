@@ -87,8 +87,8 @@ def test_invalid_network_is_rejected(capsys):
 
 @pytest.mark.parametrize(
 	'option',
-	['--max-height', '--max-requests-per-second'],
-	ids=['max-height', 'max-requests-per-second'])
+	['--max-height', '--max-requests-per-second', '--max-transactions-per-batch'],
+	ids=['max-height', 'max-requests-per-second', 'max-transactions-per-batch'])
 def test_sync_block_rejects_non_positive_limit(option, capsys):
 	# Arrange:
 	arguments = _base_arguments('sync-block')
@@ -142,7 +142,8 @@ def test_command_help_describes_single_writer_contract(command, command_specific
 def test_sync_block_dispatches_with_forwarded_limits_and_config():
 	# Arrange:
 	puller_factory = workflow_test_utils.RecordingSymbolPullerFactory()
-	argv = _base_arguments('sync-block') + ['--max-height', '3000', '--max-requests-per-second', '25']
+	argv = _base_arguments('sync-block') + [
+		'--max-height', '3000', '--max-requests-per-second', '25', '--max-transactions-per-batch', '50000']
 	environment = workflow_test_utils.create_symbol_environment('9')
 
 	# Act:
@@ -150,7 +151,7 @@ def test_sync_block_dispatches_with_forwarded_limits_and_config():
 
 	# Assert:
 	puller = puller_factory.puller
-	assert {'max_requests_per_second': 25} == puller.constructor_kwargs
+	assert {'max_requests_per_second': 25, 'max_transactions_per_batch': 50000} == puller.constructor_kwargs
 	assert 1 == puller.symbol_db.create_tables_call_count
 	assert [3000] == puller.synced_max_heights
 	assert ('http://localhost:7890', 'test_config.ini', 'testnet') == puller.constructor_args[:3]
@@ -165,7 +166,7 @@ def test_sync_block_dispatches_with_default_limits():
 	asyncio.run(main(_base_arguments('sync-block'), puller_factory, workflow_test_utils.create_symbol_environment()))
 
 	# Assert:
-	assert not puller_factory.puller.constructor_kwargs
+	assert {'max_transactions_per_batch': 100000} == puller_factory.puller.constructor_kwargs
 	assert [None] == puller_factory.puller.synced_max_heights
 
 
