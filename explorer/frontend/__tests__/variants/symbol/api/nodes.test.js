@@ -39,9 +39,8 @@ describe('variants/symbol/api/nodes', () => {
 			['returns an empty list when both node lists are empty', emptyNodeListResponse, emptyNodeListResponse, emptyNodeList]
 		])('%s', async (description, peerResponse, apiResponse, expected) => {
 			// Arrange:
-			jest.spyOn(serverUtils, 'makeRequest').mockImplementation(url => Promise.resolve(
-				url === nodewatchPeerNodesURL ? peerResponse : apiResponse
-			));
+			jest.spyOn(serverUtils, 'makeRequest').mockImplementation(url =>
+				Promise.resolve(url === nodewatchPeerNodesURL ? peerResponse : apiResponse));
 
 			// Act:
 			const result = await fetchNodeList();
