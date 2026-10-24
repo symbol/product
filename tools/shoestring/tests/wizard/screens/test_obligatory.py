@@ -1,12 +1,20 @@
 import tempfile
 from pathlib import Path
 
+import pytest
 from symbolchain.CryptoTypes import PrivateKey
 from symbolchain.PrivateKeyStorage import PrivateKeyStorage
 
 from shoestring.wizard.screens.obligatory import create
+from shoestring.wizard.ShoestringOperation import ShoestringOperation, build_shoestring_command
 
 # pylint: disable=invalid-name
+
+
+@pytest.fixture(autouse=True)
+def clear_directory_environment(monkeypatch):
+	monkeypatch.delenv('SHOESTRING_HOME', raising=False)
+	monkeypatch.delenv('HOME', raising=False)
 
 
 def create_screen(value):
@@ -24,7 +32,7 @@ def test_can_create_screen():
 	assert 'obligatory' == screen.screen_id
 
 	# - check defaults
-	assert str(Path.home().absolute() / 'symbol') == screen.accessor.destination_directory
+	assert str(Path.cwd()) == screen.accessor.destination_directory
 	assert 'ca.key.pem' == screen.accessor.ca_pem_path
 
 	# - defaults are not valid
@@ -75,9 +83,9 @@ def test_can_generate_diagnostic_accessor_representation():
 	screen = create(None)
 
 	# Act + Assert:
-	assert f'(destination_directory=\'{Path.home().absolute() / "symbol"}\', ca_pem_path=\'ca.key.pem\')' == repr(screen.accessor)
+	assert f'(destination_directory=\'{Path.cwd()}\', ca_pem_path=\'ca.key.pem\')' == repr(screen.accessor)
 	assert [
-		('destination directory', str(Path.home().absolute() / 'symbol')),
+		('destination directory', str(Path.cwd())),
 		('ca pem path', 'ca.key.pem')
 	] == screen.accessor.tokens
 
@@ -88,9 +96,9 @@ def test_can_generate_diagnostic_accessor_representation_main_private_key_not_re
 	screen.require_main_private_key(False)
 
 	# Act + Assert:
-	assert f'(destination_directory=\'{Path.home().absolute() / "symbol"}\', ca_pem_path=\'ca.key.pem\')' == repr(screen.accessor)
+	assert f'(destination_directory=\'{Path.cwd()}\', ca_pem_path=\'ca.key.pem\')' == repr(screen.accessor)
 	assert [
-		('destination directory', str(Path.home().absolute() / 'symbol'))
+		('destination directory', str(Path.cwd()))
 	] == screen.accessor.tokens
 
 
@@ -245,3 +253,72 @@ async def test_generate_is_noop_when_dialog_is_invalid():
 		assert not mock_screens.message_box_shown
 		assert 2 == screen.get_element('tab-list').current_value
 		assert not screen.is_valid()
+
+
+@pytest.mark.parametrize('home', [None, ''])
+def test_destination_defaults_to_current_directory(home, monkeypatch, tmp_path):
+	if home is not None:
+		monkeypatch.setenv('SHOESTRING_HOME', home)
+	monkeypatch.chdir(tmp_path)
+
+	screen = create_screen(None)
+
+	assert str(tmp_path) == screen.accessor.destination_directory
+	assert screen.get_element('destination-directory').is_valid
+
+
+def test_destination_defaults_to_environment_directory(monkeypatch, tmp_path):
+	monkeypatch.setenv('SHOESTRING_HOME', str(tmp_path))
+
+	screen = create_screen(None)
+
+	assert str(tmp_path) == screen.accessor.destination_directory
+	assert screen.get_element('destination-directory').is_valid
+
+
+def test_environment_default_preserves_existing_directory_validation(monkeypatch, tmp_path):
+	directory = str(tmp_path / 'missing')
+	monkeypatch.setenv('SHOESTRING_HOME', directory)
+
+	screen = create_screen(None)
+
+	assert directory == screen.accessor.destination_directory
+	assert not screen.get_element('destination-directory').is_valid
+
+
+@pytest.mark.parametrize('home', ['symbol', '~/symbol', '$HOME/symbol'])
+def test_destination_rejects_relative_environment_directory(home, monkeypatch):
+	monkeypatch.setenv('SHOESTRING_HOME', home)
+
+	with pytest.raises(ValueError, match='SHOESTRING_HOME must be an absolute path'):
+		create(None)
+
+
+async def test_edited_destination_overrides_environment_in_command(monkeypatch, tmp_path):
+	monkeypatch.setenv('SHOESTRING_HOME', str(tmp_path / 'default'))
+	screen = create_screen(None)
+	screen.get_element('destination-directory').input.text = str(tmp_path)
+
+	args = build_shoestring_command(
+		ShoestringOperation.RESET_DATA, screen.accessor.destination_directory, 'shoestring', None, None)
+
+	assert str(tmp_path) == args[args.index('--directory') + 1]
+
+
+@pytest.mark.parametrize('shoestring_home', [None, ''])
+def test_destination_defaults_to_home(shoestring_home, monkeypatch, tmp_path):
+	if shoestring_home is not None:
+		monkeypatch.setenv('SHOESTRING_HOME', shoestring_home)
+	monkeypatch.setenv('HOME', str(tmp_path))
+
+	screen = create_screen(None)
+
+	assert str(tmp_path) == screen.accessor.destination_directory
+	assert screen.get_element('destination-directory').is_valid
+
+
+def test_destination_prefers_shoestring_home_over_home(monkeypatch, tmp_path):
+	monkeypatch.setenv('HOME', str(tmp_path / 'home'))
+	monkeypatch.setenv('SHOESTRING_HOME', str(tmp_path))
+
+	assert str(tmp_path) == create(None).accessor.destination_directory
