@@ -363,6 +363,9 @@ class SymbolPuller:  # pylint: disable=too-many-instance-attributes
 		finalized_height, finalized_hash, finalized_epoch, finalized_point, is_finalization_capped = (
 			self._get_finalized_watermark(chain_info, chain_height)
 		)
+		finalization_epoch_grouping = (
+			self._parse_voting_set_grouping(network_properties)
+			if is_finalization_capped else None)
 		epoch_adjustment_seconds = self._parse_epoch_adjustment(network_properties)
 		self._record_performance('set_phase', 'native_mosaic_fetch')
 		native_mosaic_info = await self._get_native_mosaic_info()
@@ -416,6 +419,7 @@ class SymbolPuller:  # pylint: disable=too-many-instance-attributes
 			'finalized_epoch': finalized_epoch,
 			'finalized_point': finalized_point,
 			'is_finalization_capped': is_finalization_capped,
+			'finalization_epoch_grouping': finalization_epoch_grouping,
 			'previous_checkpoint_height': (
 				bounded_sync_state['last_synced_height']
 				if bounded_sync_state and bounded_sync_state['last_synced_height'] else None)
@@ -473,6 +477,11 @@ class SymbolPuller:  # pylint: disable=too-many-instance-attributes
 			published_finalized_hash = last_synced_block_hash
 			published_finalized_epoch = None
 			published_finalized_point = None
+		if checkpoint_state['is_finalization_capped'] and published_finalized_height:
+			published_finalized_epoch = SymbolPuller._calculate_finalization_epoch(
+				published_finalized_height,
+				checkpoint_state['finalization_epoch_grouping'])
+			published_finalized_point = None
 
 		return {
 			'status': 'healthy',
@@ -509,6 +518,35 @@ class SymbolPuller:  # pylint: disable=too-many-instance-attributes
 			finalized_block['finalizationPoint'],
 			False
 		)
+
+	@staticmethod
+	def _parse_voting_set_grouping(network_properties):
+		"""Reads and validates the node's voting-set grouping for capped finalization."""
+
+		raw_grouping = network_properties['chain']['votingSetGrouping']
+		if is_exact_integer(raw_grouping):
+			grouping = raw_grouping
+		elif isinstance(raw_grouping, str):
+			try:
+				grouping = int(raw_grouping, 16) if raw_grouping.lower().startswith('0x') else int(raw_grouping, 10)
+			except ValueError as exception:
+				raise ValueError('Invalid Symbol chain.votingSetGrouping') from exception
+		else:
+			raise ValueError('Invalid Symbol chain.votingSetGrouping')
+
+		if grouping <= 0:
+			raise ValueError('Invalid Symbol chain.votingSetGrouping')
+
+		return grouping
+
+	@staticmethod
+	def _calculate_finalization_epoch(height, grouping):
+		"""Calculates the core finalization epoch for a positive height and grouping."""
+
+		if 1 == height:
+			return 1
+
+		return 1 + (height + grouping - 1) // grouping
 
 	def _get_bounded_sync_state(self, sync_state, chain_height):
 		"""Returns the state used for this run's forward-sync watermark."""
