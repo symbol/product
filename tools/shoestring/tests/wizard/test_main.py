@@ -19,7 +19,7 @@ from shoestring.wizard.ShoestringOperation import ShoestringOperation
 def wizard_context(monkeypatch, tmp_path):
 	monkeypatch.setenv('LC_MESSAGES', 'en')
 	monkeypatch.delenv('SHOESTRING_HOME', raising=False)
-	monkeypatch.delenv('HOME', raising=False)
+	monkeypatch.setenv('HOME', str(tmp_path / 'ignored-home'))
 	monkeypatch.chdir(tmp_path)
 	# main installs translations globally; restore the original translator after each test.
 	monkeypatch.setattr(builtins, '_', getattr(builtins, '_'))
@@ -56,6 +56,8 @@ async def test_can_start_with_default_destination(wizard, monkeypatch, tmp_path,
 			destination.mkdir()
 		variable = 'HOME' if 'home' == home else 'SHOESTRING_HOME'
 		monkeypatch.setenv(variable, str(destination) if home else '')
+		if 'home' == home:
+			destination = tmp_path
 
 	await main()
 

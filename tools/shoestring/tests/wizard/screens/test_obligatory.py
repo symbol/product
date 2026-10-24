@@ -14,7 +14,6 @@ from shoestring.wizard.ShoestringOperation import ShoestringOperation, build_sho
 @pytest.fixture(autouse=True)
 def clear_directory_environment(monkeypatch):
 	monkeypatch.delenv('SHOESTRING_HOME', raising=False)
-	monkeypatch.delenv('HOME', raising=False)
 
 
 def create_screen(value):
@@ -306,10 +305,11 @@ async def test_edited_destination_overrides_environment_in_command(monkeypatch, 
 
 
 @pytest.mark.parametrize('shoestring_home', [None, ''])
-def test_destination_defaults_to_home(shoestring_home, monkeypatch, tmp_path):
+def test_destination_ignores_home(shoestring_home, monkeypatch, tmp_path):
 	if shoestring_home is not None:
 		monkeypatch.setenv('SHOESTRING_HOME', shoestring_home)
-	monkeypatch.setenv('HOME', str(tmp_path))
+	monkeypatch.setenv('HOME', str(tmp_path / 'home'))
+	monkeypatch.chdir(tmp_path)
 
 	screen = create_screen(None)
 
