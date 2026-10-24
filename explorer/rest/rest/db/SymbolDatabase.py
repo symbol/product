@@ -15,6 +15,7 @@ from rest.model.symbol.Namespace import SymbolNamespaceView
 from rest.model.symbol.validation import SymbolDataInvalid
 
 from .DatabaseConnection import DatabaseConnectionPool
+from .SymbolTransactionDetail import SymbolDataUnavailable, SymbolTransactionDetailMixin, TransactionMosaicRecord
 
 BLOCK_COLUMNS = '''
 	height,
@@ -85,10 +86,6 @@ ReceiptRecord = namedtuple(
 		'mosaic_id', 'amount', 'artifact_id', 'mosaic_divisibility'])
 
 
-class SymbolDataUnavailable(RuntimeError):
-	"""Raised when Symbol block data is not safely readable."""
-
-
 class SymbolMosaicAliasNotFound(RuntimeError):
 	"""Raised when a requested current Mosaic alias cannot be resolved."""
 
@@ -112,9 +109,6 @@ TransactionQuery = namedtuple(
 	['limit', 'offset', 'height', 'transaction_types', 'address', 'signer_public_key', 'recipient_address',
 		'transfer_mosaic_id', 'include_embedded', 'sender_address'],
 	defaults=(10, 0, None, (), None, None, None, None, False, None))
-TransactionMosaicRecord = namedtuple(
-	'TransactionMosaicRecord',
-	['mosaic_id', 'amount', 'role', 'position', 'divisibility', 'alias_names'])
 NamespaceQuery = namedtuple(
 	'NamespaceQuery',
 	['limit', 'offset', 'sort', 'alias_type', 'registration_type', 'owner_address'],
@@ -195,7 +189,7 @@ def _create_sync_state(columns, result):
 	return dict(zip(columns, result))
 
 
-class SymbolDatabase(DatabaseConnectionPool):
+class SymbolDatabase(SymbolTransactionDetailMixin, DatabaseConnectionPool):
 	"""Database access for Symbol Explorer data."""
 
 	def __init__(self, db_config, native_mosaic_info=None, clock=None):

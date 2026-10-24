@@ -1755,6 +1755,8 @@ def test_symbol_facade_config(symbol_database_config):
 	assert 'http://localhost:3000' == facade.node_config.base_url
 	assert NATIVE_MOSAIC_INFO == facade.native_mosaic_info
 	assert Network.TESTNET == facade.network
+	assert facade.node_config is facade.node_backing.node_config
+	assert facade.native_mosaic_info is facade.node_backing.native_mosaic_info
 	app.extensions['symbol_database'].close()
 
 
