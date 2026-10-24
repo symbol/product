@@ -1,5 +1,5 @@
+import { useMultisigAccountList } from './useMultisigAccountList';
 import { useProp } from './useProp';
-import { useMultisigAccountList } from '@/app/screens/multisig/hooks/useMultisigAccountList';
 
 /** @typedef {import('@/app/types/Wallet').MainWalletController} MainWalletController */
 /** @typedef {import('@/app/types/Account').SymbolAccountInfo} SymbolAccountInfo */

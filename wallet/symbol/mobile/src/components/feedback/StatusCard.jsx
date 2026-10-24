@@ -3,7 +3,6 @@ import { Colors, Sizes } from '@/app/styles';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 
-const CONTENT_COLOR = Colors.Semantic.content.primary.inverse;
 const ICON_SIZE = 'm';
 const ICON_SIZE_VALUE = Sizes.Semantic.iconSize[ICON_SIZE];
 
@@ -21,6 +20,7 @@ const ICON_SIZE_VALUE = Sizes.Semantic.iconSize[ICON_SIZE];
  */
 export const StatusCard = ({ variant = 'neutral', statusText, icon, isLoading, children }) => {
 	const pallette = Colors.Components.statusCard[variant];
+	const textStyle = { color: pallette.text };
 
 	return (
 		<Card color={pallette.background} style={styles.root}>
@@ -36,10 +36,10 @@ export const StatusCard = ({ variant = 'neutral', statusText, icon, isLoading, c
 						)}
 						{isLoading && (
 							<View style={styles.loadingIndicator}>
-								<LoadingIndicator size="sm" color={CONTENT_COLOR} />
+								<LoadingIndicator size="sm" color={pallette.text} />
 							</View>
 						)}
-						<StyledText size="xl" inverse>
+						<StyledText size="xl" style={textStyle}>
 							{statusText}
 						</StyledText>
 					</View>

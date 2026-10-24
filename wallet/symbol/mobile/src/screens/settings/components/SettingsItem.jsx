@@ -1,5 +1,5 @@
 import { StyledText, TouchableNative } from '@/app/components';
-import { Colors, Sizes } from '@/app/styles';
+import { Colors, Shadows, Sizes } from '@/app/styles';
 import React from 'react';
 import { Image, StyleSheet, View } from 'react-native';
 import Animated, { FadeInRight } from 'react-native-reanimated';
@@ -53,7 +53,8 @@ const styles = StyleSheet.create({
 		borderRadius: Sizes.Semantic.borderRadius.s,
 		backgroundColor: Colors.Components.card.background,
 		padding: Sizes.Semantic.layoutSpacing.m,
-		gap: Sizes.Semantic.layoutSpacing.m
+		gap: Sizes.Semantic.layoutSpacing.m,
+		boxShadow: Shadows.Components.settingsItem
 	},
 	content: {
 		flex: 1

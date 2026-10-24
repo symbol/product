@@ -9,6 +9,9 @@ const parseNavigationParams = params => {
 };
 
 export class Router {
+	static navigate(routeName, params) {
+		navigationRef.navigate(routeName, parseNavigationParams(params));
+	}
 	static goBack() {
 		navigationRef.goBack();
 	}
@@ -78,18 +81,6 @@ export class Router {
 	static goToBridgeSwapDetails(params) {
 		navigationRef.navigate(RouteName.BridgeSwapDetails, parseNavigationParams(params));
 	}
-	static goToMultisigAccountList(params) {
-		navigationRef.navigate(RouteName.MultisigAccountList, parseNavigationParams(params));
-	}
-	static goToMultisigAccountDetails(params) {
-		navigationRef.navigate(RouteName.MultisigAccountDetails, parseNavigationParams(params));
-	}
-	static goToCreateMultisigAccount(params) {
-		navigationRef.navigate(RouteName.CreateMultisigAccount, parseNavigationParams(params));
-	}
-	static goToModifyMultisigAccount(params) {
-		navigationRef.navigate(RouteName.ModifyMultisigAccount, parseNavigationParams(params));
-	}
 	static goToSettings(params) {
 		navigationRef.navigate(RouteName.Settings, parseNavigationParams(params));
 	}
@@ -113,21 +104,6 @@ export class Router {
 	}
 	static goToEditContact(params) {
 		navigationRef.navigate(RouteName.EditContact, parseNavigationParams(params));
-	}
-	static goToHarvesting(params) {
-		navigationRef.navigate(RouteName.Harvesting, parseNavigationParams(params));
-	}
-	static goToCreateMosaic(params) {
-		navigationRef.navigate(RouteName.CreateMosaic, parseNavigationParams(params));
-	}
-	static goToModifyMosaic(params) {
-		navigationRef.navigate(RouteName.ModifyMosaic, parseNavigationParams(params));
-	}
-	static goToRevokeMosaic(params) {
-		navigationRef.navigate(RouteName.RevokeMosaic, parseNavigationParams(params));
-	}
-	static goToCreatedMosaicList(params) {
-		navigationRef.navigate(RouteName.CreatedMosaicList, parseNavigationParams(params));
 	}
 	static goToScan(params) {
 		navigationRef.navigate(RouteName.Scan, parseNavigationParams(params));

@@ -1,4 +1,5 @@
 import { addressFromPublicKey } from './account';
+import { createTransactionFee } from './fee';
 import { getTokenAmount, tokenListFromDTO } from './token';
 import { decodePlainMessage, isIncomingTransaction, isOutgoingTransaction, nemTimestampToDate } from './transaction';
 import {
@@ -153,7 +154,10 @@ const baseTransactionFromNem = (transaction, config) => {
 		type,
 		timestamp: nemTimestampToDate(Number(transaction.timestamp.value)),
 		deadline: mapDeadline(transaction),
-		fee: absoluteToRelativeAmount(Number(transaction.fee.value), networkProperties.networkCurrency.divisibility),
+		fee: createTransactionFee(
+			networkProperties,
+			absoluteToRelativeAmount(Number(transaction.fee.value), networkProperties.networkCurrency.divisibility)
+		),
 		signerAddress,
 		signerPublicKey
 	};
@@ -262,7 +266,10 @@ const namespaceRegistrationTransactionFromNem = (transaction, config) => {
 		parentName,
 		namespaceId: parentName ? `${parentName}.${namespaceName}` : namespaceName,
 		rentalFeeSink: mapAddress(transaction.rentalFeeSink),
-		rentalFee: absoluteToRelativeAmount(Number(transaction.rentalFee.value), divisibility)
+		rentalFee: createTransactionFee(
+			config.networkProperties,
+			absoluteToRelativeAmount(Number(transaction.rentalFee.value), divisibility)
+		)
 	};
 };
 
@@ -281,7 +288,10 @@ const mosaicDefinitionTransactionFromNem = (transaction, config) => {
 			levy: mapMosaicLevy(mosaicDefinition.levy)
 		},
 		rentalFeeSink: mapAddress(transaction.rentalFeeSink),
-		rentalFee: absoluteToRelativeAmount(Number(transaction.rentalFee.value), divisibility)
+		rentalFee: createTransactionFee(
+			config.networkProperties,
+			absoluteToRelativeAmount(Number(transaction.rentalFee.value), divisibility)
+		)
 	};
 };
 

@@ -1,5 +1,5 @@
 import { TouchableNative } from '@/app/components';
-import { Colors, Sizes } from '@/app/styles';
+import { Colors, Shadows, Sizes } from '@/app/styles';
 import React, { useCallback } from 'react';
 import { StyleSheet, View } from 'react-native';
 
@@ -69,6 +69,7 @@ const styles = StyleSheet.create({
 		backgroundColor: Colors.Components.card.background,
 		borderRadius: Sizes.Semantic.borderRadius.s,
 		paddingHorizontal: Sizes.Semantic.layoutPadding.m,
-		paddingVertical: Sizes.Semantic.layoutPadding.s
+		paddingVertical: Sizes.Semantic.layoutPadding.s,
+		boxShadow: Shadows.Components.listItem
 	}
 });
