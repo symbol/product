@@ -15,6 +15,7 @@ from prompt_toolkit.widgets.toolbars import ValidationToolbar
 from zenlog import log
 
 from shoestring.__main__ import main as shoestring_main
+from shoestring.internal.DirectoryResolver import resolve_directory
 from shoestring.wizard.screens.modal import create as create_message_box_float
 from shoestring.wizard.screens.modal import show as show_message_box
 
@@ -30,6 +31,12 @@ async def main():  # pylint: disable=too-many-locals
 	lang_directory = Path(__file__).resolve().parent.parent / 'lang'
 	lang = gettext.translation('messages', localedir=lang_directory, languages=(os.environ.get('LC_MESSAGES', 'en'), 'en'))
 	lang.install()
+
+	try:
+		resolve_directory()
+	except ValueError as ex:
+		log.error(str(ex))
+		raise SystemExit(2) from ex
 
 	message_box_float = create_message_box_float()
 
