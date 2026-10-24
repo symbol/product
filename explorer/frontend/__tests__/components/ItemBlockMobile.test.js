@@ -27,7 +27,7 @@ describeVariant('nem')('ItemBlockMobile', () => {
 	describe('finality status icon', () => {
 		const runTest = (chainStatus, expectedLabel, expectedShape) => {
 			// Arrange:
-			const expectedSrc = `/${process.env.NEXT_PUBLIC_EXPLORER_VARIANT}/images/status/link/icon-label-${expectedShape}.svg`;
+			const expectedSrc = `/nem/images/status/link/icon-label-${expectedShape}.svg`;
 
 			// Act:
 			render(<ItemBlockMobile data={block} chainStatus={chainStatus} />);

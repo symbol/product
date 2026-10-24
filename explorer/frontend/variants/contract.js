@@ -25,10 +25,9 @@
 
 /**
  * @typedef {object} VariantBlocksPageConfig
- * @property {boolean} showStatistics - Whether the block statistics section is rendered.
- * @property {boolean} showStatementCount - Whether the statement count is rendered.
- * @property {boolean} showBlockReward - Whether the block reward is rendered.
- * @property {boolean} showMobileTransactionCount - Whether mobile rows render transaction count.
+ * @property {'page'|'cursor'} paginationMode - pagination mode for the list.
+ * @property {boolean} showStatementCountColumn - Whether the block table shows the statement count column.
+ * @property {boolean} showBlockRewardColumn - Whether the block table shows the block reward column.
  */
 
 // Required exports for each API domain.
@@ -74,13 +73,8 @@ export const STYLE_VARIABLES_CONTRACT = [
 // Required config keys by page.
 export const PAGE_CONFIG_CONTRACT = {
 	account: ['showEmptyBlockFilter'],
-	home: ['showSupernodeCount', 'additionalSections'],
-	blocks: [
-		'showStatistics',
-		'showStatementCount',
-		'showBlockReward',
-		'showMobileTransactionCount'
-	]
+	blocks: ['paginationMode', 'showStatementCountColumn', 'showBlockRewardColumn'],
+	home: ['showSupernodeCount', 'additionalSections']
 };
 
 // Required variant-local runtime config keys, named per config/index.js.

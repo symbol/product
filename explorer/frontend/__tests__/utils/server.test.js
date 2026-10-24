@@ -1,6 +1,7 @@
 import { error404Response } from '../test-utils/api';
 import {
 	createApiUrl,
+	createCursorURL,
 	createPage,
 	createSearchCriteria,
 	createSearchURL,
@@ -212,6 +213,42 @@ describe('utils/server', () => {
 
 			// Assert:
 			expect(result).toBe(expectedResult);
+		});
+	});
+
+	describe('createCursorURL', () => {
+		const runCreateCursorURLTest = (filter, expectedResult) => {
+			// Arrange:
+			const baseURL = 'http://foo.bar';
+			const searchCriteria = {
+				pageNumber: 3,
+				pageSize: 100,
+				filter
+			};
+
+			// Act:
+			const result = createCursorURL(baseURL, searchCriteria);
+
+			// Assert:
+			expect(result).toBe(expectedResult);
+		};
+
+		it('returns cursor URL without cursor params when filter is empty', () => {
+			// Arrange:
+			const filter = {};
+			const expectedResult = 'http://foo.bar?limit=100';
+
+			// Act + Assert:
+			runCreateCursorURLTest(filter, expectedResult);
+		});
+
+		it('returns cursor URL with cursor params from filter', () => {
+			// Arrange:
+			const filter = { fromHeight: 200 };
+			const expectedResult = 'http://foo.bar?limit=100&fromHeight=200';
+
+			// Act + Assert:
+			runCreateCursorURLTest(filter, expectedResult);
 		});
 	});
 

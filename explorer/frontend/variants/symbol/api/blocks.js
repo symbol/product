@@ -1,119 +1,31 @@
 import { stubBlocks } from './fixtures';
 import { stubValue } from './stub';
 import config from '@/app/config';
-import { createApiUrl, makeRequest } from '@/app/utils/server';
+import { createApiUrl, createCursorURL, createSearchCriteria, makeRequest } from '@/app/utils/server';
+
 
 /**
- * @typedef ChainStatus
- * @property {number} height - the current chain height.
- * @property {number} finalizedHeight - the latest finalized block height.
+ * @typedef BlockPageParams
+ * @property {number} fromHeight - next page starts from this height.
  */
-
-const DEFAULT_BLOCK_LIMIT = 10;
-const MAX_BLOCK_LIMIT = 100;
-const DEFAULT_SORT = 'DESC';
-
-const parseInteger = (value, parameterName) => {
-	const parsedValue = Number(value);
-
-	if (!Number.isInteger(parsedValue))
-		throw new Error(`${parameterName} must be an integer`);
-
-	return parsedValue;
-};
-
-const getLimit = searchParams => {
-	const requestedLimit = searchParams?.limit ?? searchParams?.pageSize ?? DEFAULT_BLOCK_LIMIT;
-	const limit = parseInteger(requestedLimit, 'limit');
-
-	if (limit < 1 || limit > MAX_BLOCK_LIMIT)
-		throw new Error(`limit must be between 1 and ${MAX_BLOCK_LIMIT}`);
-
-	return limit;
-};
-
-const getFromHeight = searchParams => {
-	if (searchParams?.fromHeight === undefined || searchParams.fromHeight === null)
-		return null;
-
-	const fromHeight = parseInteger(searchParams.fromHeight, 'fromHeight');
-
-	if (fromHeight < 1)
-		throw new Error('fromHeight must be greater than or equal to 1');
-
-	return fromHeight;
-};
-
-const getSort = searchParams => {
-	const sort = `${searchParams?.sort || DEFAULT_SORT}`.toUpperCase();
-
-	if (!['ASC', 'DESC'].includes(sort))
-		throw new Error('sort must be either ASC or DESC');
-
-	return sort;
-};
-
-const createBlockSearchURL = ({ limit, fromHeight, sort }) => {
-	const params = new URLSearchParams({ limit: `${limit}` });
-
-	if (null !== fromHeight)
-		params.set('fromHeight', `${fromHeight}`);
-
-	params.set('sort', sort);
-
-	return `${createApiUrl('blocks')}?${params.toString()}`;
-};
-
-const validateBlockHeights = blocks => {
-	if (blocks.some(block => !Number.isInteger(block?.height)))
-		throw new Error('Symbol blocks response must contain integer heights');
-};
-
-const getNextFromHeight = (blocks, sort) => {
-	if (!blocks.length)
-		return null;
-
-	const lastHeight = blocks[blocks.length - 1].height;
-	const nextFromHeight = 'ASC' === sort ? lastHeight + 1 : lastHeight - 1;
-
-	return nextFromHeight > 0 ? nextFromHeight : null;
-};
-
-const createPageState = (blocks, pageNumber, limit, sort) => {
-	const nextFromHeight = getNextFromHeight(blocks, sort);
-	const isLastPage = blocks.length < limit || null === nextFromHeight;
-
-	return {
-		data: blocks,
-		pageNumber,
-		isLastPage,
-		nextPageParams: isLastPage ? null : { fromHeight: nextFromHeight, sort }
-	};
-};
 
 /**
- * Fetches a Symbol block page from Explorer REST.
- *
- * `pageNumber` and `pageSize` are accepted for the shared page contract, but
- * only the REST cursor parameters are sent to the Symbol endpoint.
- * @param {object} [searchParams] - block page and cursor parameters.
- * @returns {Promise<object>} mapped block page state and the next cursor.
+ * @typedef Page
+ * @property {Array<BlockListItem>} data - the page data, an array of block list items.
+ * @property {BlockPageParams|null} nextPageParams - the params to request the next page, null when the page is last.
  */
-export const fetchBlockPage = async (searchParams = {}) => {
-	const limit = getLimit(searchParams);
-	const fromHeight = getFromHeight(searchParams);
-	const sort = getSort(searchParams);
-	const pageNumber = searchParams.pageNumber === undefined || searchParams.pageNumber === null
-		? 1
-		: parseInteger(searchParams.pageNumber, 'pageNumber');
-	const url = createBlockSearchURL({ limit, fromHeight, sort });
+
+/**
+ * Fetches the block page. Cursor - "fromHeight".
+ * @param {object} [searchParams] - search parameters.
+ * @returns {Promise<Page>} block page.
+ */
+export const fetchBlockPage = async searchParams => {
+	const searchCriteria = createSearchCriteria(searchParams);
+	const url = createCursorURL(createApiUrl('blocks'), searchCriteria);
 	const blocks = await makeRequest(url);
 
-	if (!Array.isArray(blocks))
-		throw new Error('Symbol blocks response must be an array');
-	validateBlockHeights(blocks);
-
-	return createPageState(blocks, pageNumber, limit, sort);
+	return createBlockPage(blocks);
 };
 
 /**
@@ -127,6 +39,12 @@ export const fetchChainHight = async () => {
 };
 
 /**
+ * @typedef ChainStatus
+ * @property {number} height - the current chain height.
+ * @property {number} finalizedHeight - the latest finalized block height.
+ */
+
+/**
  * Fetches the chain status from Nodewatch.
  * @returns {Promise<ChainStatus>} the chain status.
  */
@@ -137,3 +55,50 @@ export const fetchChainStatus = async () => {
 };
 
 export const fetchBlockInfo = stubValue(stubBlocks[0]);
+
+/**
+ * Creates the block page with the params for the next page.
+ * @param {Array} blocks - block list DTO from the response.
+ * @returns {Page} block page.
+ */
+const createBlockPage = blocks => {
+	const firstBlockHeight = 1;
+	const lastBlock = blocks[blocks.length - 1];
+	const hasNextPage = !!lastBlock && lastBlock.height > firstBlockHeight;
+	const nextPageParams = hasNextPage ? { fromHeight: lastBlock.height - 1 } : null;
+
+	return {
+		data: blocks.map(blockListItemFromDTO),
+		nextPageParams
+	};
+};
+
+/**
+ * @typedef BlockListItem
+ * @property {number} height - the block height.
+ * @property {string} timestamp - the block time.
+ * @property {string} hash - the block hash.
+ * @property {string} harvester - the block harvester address.
+ * @property {string} difficulty - the block difficulty in percent.
+ * @property {number} totalFee - the block transactions total fee.
+ * @property {number} transactionCount - the number of transactions in the block.
+ * @property {number} statementCount - the number of statements in the block.
+ * @property {number} blockReward - the harvesting reward.
+ */
+
+/**
+ * Maps the block list item from the DTO.
+ * @param {object} data - raw data from response.
+ * @returns {BlockListItem} mapped block list item.
+ */
+const blockListItemFromDTO = data => ({
+	height: data.height,
+	timestamp: data.timestamp,
+	hash: data.hash,
+	harvester: data.harvester,
+	difficulty: ((data.difficulty / Math.pow(10, 14)) * 100).toFixed(2),
+	totalFee: data.totalFee,
+	transactionCount: data.transactionCount,
+	statementCount: data.statementCount,
+	blockReward: data.blockReward ?? 0
+});
