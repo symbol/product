@@ -795,4 +795,4 @@ class SymbolRestFacadeTest(TestCase):  # pylint: disable=too-many-public-methods
 		self.assertEqual([{'transactionType': 'TRANSFER', 'value': []}], result)
 		facade.symbol_connector.get_unconfirmed_transactions.assert_awaited_once_with()
 		symbol_db.get_unconfirmed_transactions.assert_called_once_with(transactions, Network.TESTNET)
-		view.to_dict.assert_called_once_with(NATIVE_MOSAIC_INFO)
+		view.to_dict.assert_called_once_with()

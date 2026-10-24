@@ -284,4 +284,4 @@ class SymbolRestFacade:  # pylint: disable=too-many-instance-attributes
 		unconfirmed_transactions = await self.symbol_connector.get_unconfirmed_transactions()
 
 		views = self.symbol_db.get_unconfirmed_transactions(unconfirmed_transactions, self.network)
-		return [view.to_dict(self.native_mosaic_info) for view in views]
+		return [view.to_dict() for view in views]

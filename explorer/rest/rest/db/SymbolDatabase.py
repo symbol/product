@@ -1527,6 +1527,69 @@ class SymbolDatabase(SymbolTransactionDetailMixin, DatabaseConnectionPool):
 				result = cursor.fetchone()
 				return self._create_mosaic_view(result) if result else None
 
+	def get_unconfirmed_transactions(self, transactions, network):
+		"""Builds pending transaction views and enriches transfer mosaics in one batch."""
+
+		records = [create_unconfirmed_record(item_map, network) for item_map in transactions]
+
+		embedded_by_hash_map = {}
+		for record in records:
+			if record.aggregate_hash is not None:
+				embedded_by_hash_map.setdefault(record.aggregate_hash, []).append(record)
+
+		aggregate_hashes = {
+			record.transaction_hash for record in records if record.transaction_type in AGGREGATE_TYPES
+		}
+
+		mosaic_ids = list(dict.fromkeys(mosaic_id for record in records for mosaic_id, _ in record.mosaics))
+		mosaic_divisibility_map = self.get_mosaic_divisibility(mosaic_ids, self.native_mosaic_info)
+
+		views = []
+		for record in records:
+			if record.aggregate_hash in aggregate_hashes:
+				continue
+			embedded_records = ()
+			if record.transaction_type in AGGREGATE_TYPES:
+				embedded_records = sorted(embedded_by_hash_map.get(record.transaction_hash, []), key=lambda child: child.embedded_index)
+			views.append(SymbolUnconfirmedTransactionView(record, mosaic_divisibility_map, embedded_records))
+
+		return views
+
+	def get_mosaic_divisibility(self, mosaic_ids, native_mosaic_info=None):
+		"""Maps requested IDs to resolved IDs and divisibilities, querying only mosaics without configured metadata."""
+
+		divisibility_map = {native_mosaic_info.id: native_mosaic_info.divisibility} if native_mosaic_info is not None else {}
+		resolved_ids_map = {mosaic_id: mosaic_id.upper() for mosaic_id in mosaic_ids if mosaic_id.upper() in divisibility_map}
+		mosaic_ids_to_resolve = [mosaic_id for mosaic_id in mosaic_ids if mosaic_id not in resolved_ids_map]
+
+		if mosaic_ids_to_resolve:
+			with self.connection() as connection:
+				with connection.cursor() as cursor:
+					self._start_read_transaction(cursor)
+					sync_state = self._fetch_sync_state(cursor)
+					if _get_readable_height(sync_state) is None or _is_non_public_state(sync_state):
+						raise SymbolDataUnavailable('Symbol mosaic data is unavailable')
+
+					for mosaic_id in mosaic_ids_to_resolve:
+						try:
+							resolved_ids_map[mosaic_id] = self._resolve_mosaic_id(cursor, mosaic_id, sync_state)
+						except SymbolMosaicAliasNotFound:
+							continue
+
+					resolved_ids = tuple(dict.fromkeys(
+						resolved_id for resolved_id in resolved_ids_map.values() if resolved_id not in divisibility_map))
+					if resolved_ids:
+						cursor.execute(
+							'SELECT mosaic_id, divisibility FROM symbol_mosaics WHERE mosaic_id IN %s',
+							(resolved_ids,))
+						divisibility_map.update(cursor.fetchall())
+
+		return {
+			requested_id: (resolved_id, divisibility_map[resolved_id])
+			for requested_id, resolved_id in resolved_ids_map.items()
+			if resolved_id in divisibility_map
+		}
+
 	def get_blocks(self, from_height, limit, sort):
 		"""Gets Symbol blocks using fromHeight cursor pagination."""
 
