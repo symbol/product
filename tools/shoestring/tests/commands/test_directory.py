@@ -9,11 +9,6 @@ from shoestring.__main__ import parse_args
 COMMANDS = ['setup', 'upgrade', 'health', 'renew-certificates', 'renew-voting-keys', 'reset-data']
 
 
-@pytest.fixture(autouse=True)
-def clear_home(monkeypatch):
-	monkeypatch.delenv('HOME', raising=False)
-
-
 def _args(command):
 	args = [command, '--config', 'shoestring.ini']
 	if command in ('setup', 'renew-certificates'):
@@ -23,10 +18,7 @@ def _args(command):
 
 @pytest.mark.parametrize('command', COMMANDS)
 @pytest.mark.parametrize('home', [None, ''])
-@pytest.mark.parametrize('fallback_home', [None, ''])
-def test_defaults_to_current_directory(command, home, fallback_home, monkeypatch, tmp_path):
-	if fallback_home is not None:
-		monkeypatch.setenv('HOME', fallback_home)
+def test_defaults_to_current_directory(command, home, monkeypatch, tmp_path):
 	if home is None:
 		monkeypatch.delenv('SHOESTRING_HOME', raising=False)
 	else:
@@ -102,14 +94,11 @@ def test_environment_does_not_affect_commands_without_directory(monkeypatch):
 	assert 'shoestring.ini' == parse_args(['init', 'shoestring.ini']).config
 
 
-@pytest.fixture(name='percent_directory', params=['environment', 'home', 'current'])
+@pytest.fixture(name='percent_directory', params=['environment', 'current'])
 def fixture_percent_directory(request, monkeypatch, tmp_path):
 	directory = tmp_path / '100%_%(prog)s_%%'
-	if 'current' != request.param:
-		variable = 'SHOESTRING_HOME' if 'environment' == request.param else 'HOME'
-		monkeypatch.setenv(variable, str(directory))
-		if 'home' == request.param:
-			monkeypatch.delenv('SHOESTRING_HOME', raising=False)
+	if 'environment' == request.param:
+		monkeypatch.setenv('SHOESTRING_HOME', str(directory))
 	else:
 		monkeypatch.delenv('SHOESTRING_HOME', raising=False)
 		directory.mkdir()
@@ -139,7 +128,7 @@ def test_percent_in_default_directory_does_not_affect_other_commands():
 
 @pytest.mark.parametrize('command', COMMANDS)
 @pytest.mark.parametrize('shoestring_home', [None, ''])
-def test_home_overrides_current_directory(command, shoestring_home, monkeypatch, tmp_path, capsys):
+def test_home_does_not_override_current_directory(command, shoestring_home, monkeypatch, tmp_path, capsys):
 	if shoestring_home is None:
 		monkeypatch.delenv('SHOESTRING_HOME', raising=False)
 	else:
@@ -148,13 +137,13 @@ def test_home_overrides_current_directory(command, shoestring_home, monkeypatch,
 	monkeypatch.setenv('HOME', home)
 	monkeypatch.chdir(tmp_path)
 
-	assert home == parse_args(_args(command)).directory
+	assert str(tmp_path) == parse_args(_args(command)).directory
 	assert 'explicit' == parse_args(_args(command) + ['--directory', 'explicit']).directory
 	with pytest.raises(SystemExit) as ex:
 		parse_args([command, '--help'])
 
 	assert 0 == ex.value.code
-	assert f'default:{home}' in ''.join(capsys.readouterr().out.split())
+	assert f'default:{tmp_path}' in ''.join(capsys.readouterr().out.split())
 
 
 @pytest.mark.parametrize('command', COMMANDS)

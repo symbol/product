@@ -36,7 +36,7 @@ msgstr "shoestring設定ファイルへのパス"
 
 #: shoestring/internal/DirectoryResolver.py:28
 msgid "argument-help-directory"
-msgstr "インストールディレクトリ（デフォルト: {default_path}、SHOESTRING_HOME、HOME またはカレントディレクトリ）"
+msgstr "インストールディレクトリ（デフォルト: {default_path}、SHOESTRING_HOME またはカレントディレクトリ）"
 
 #: shoestring/commands/import_bootstrap.py:50
 msgid "argument-help-import-bootstrap-bootstrap"

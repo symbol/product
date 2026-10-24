@@ -3,7 +3,7 @@ from pathlib import Path
 
 
 def _default_directory():
-	return os.environ.get('SHOESTRING_HOME') or os.environ.get('HOME') or str(Path.cwd())
+	return os.environ.get('SHOESTRING_HOME') or str(Path.cwd())
 
 
 def resolve_directory(directory=None):
@@ -13,7 +13,7 @@ def resolve_directory(directory=None):
 		return directory
 
 	directory = _default_directory()
-	if os.environ.get('SHOESTRING_HOME') and not Path(directory).is_absolute():
+	if not Path(directory).is_absolute():
 		raise ValueError(_('directory-error-home-not-absolute').format(directory=directory))
 
 	return directory
