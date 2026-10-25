@@ -1,6 +1,10 @@
-import { blockWithTransactionsResponse, emptyBlockResponse } from '../../../../__fixtures__/api/nem/block-info';
+import {
+	blockWithTransactionsResponse,
+	delegatedHarvestBlockResponse,
+	emptyBlockResponse
+} from '../../../../__fixtures__/api/nem/block-info';
 import { blockListResponse } from '../../../../__fixtures__/api/nem/block-list';
-import { blockWithTransactions, emptyBlock } from '../../../../__fixtures__/local/block';
+import { blockWithTransactions, delegatedHarvestBlock, emptyBlock } from '../../../../__fixtures__/local/block';
 import { blockList } from '../../../../__fixtures__/local/block-list';
 import { error404Response, runApiRequestTests, runApiResultTests } from '../../../test-utils/api';
 import { fetchBlockInfo, fetchBlockPage, fetchChainHight, fetchChainStatus } from '@/app/variants/nem/api/blocks';
@@ -146,6 +150,11 @@ describe('variants/nem/api/blocks', () => {
 					description: 'maps an empty block',
 					config: { response: emptyBlockResponse },
 					expected: { result: emptyBlock }
+				},
+				{
+					description: 'maps the harvester to the beneficiary when a remote account signs the block',
+					config: { response: delegatedHarvestBlockResponse },
+					expected: { result: delegatedHarvestBlock }
 				},
 				{
 					description: 'returns null when the block does not exist',

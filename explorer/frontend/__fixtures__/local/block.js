@@ -23,3 +23,8 @@ export const emptyBlock = {
 	totalFee: 0,
 	transactionCount: 0
 };
+
+export const delegatedHarvestBlock = {
+	...emptyBlock,
+	harvester: 'TDQIZK6LUOYP7VXPZRLQKPW4Z2BZMSVAVY57C4VD'
+};

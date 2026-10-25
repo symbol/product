@@ -25,3 +25,9 @@ export const emptyBlockResponse = {
 	totalFees: 0,
 	totalTransactions: 0
 };
+
+export const delegatedHarvestBlockResponse = {
+	...emptyBlockResponse,
+	beneficiary: 'TDQIZK6LUOYP7VXPZRLQKPW4Z2BZMSVAVY57C4VD',
+	signer: 'TCLXVFRE4VE2W4OCV6XN6M67MONZ4T2JXTNEIQ7P'
+};
