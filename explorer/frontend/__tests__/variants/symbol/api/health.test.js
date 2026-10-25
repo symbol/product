@@ -1,65 +1,50 @@
-import config from '@/app/config';
-import * as serverUtils from '@/app/utils/server';
-import { fetchBackendHealthStatus, healthConfig } from '@/app/variants/symbol/api/health';
+import { healthWithSyncErrorResponse } from '../../../../__fixtures__/api/symbol/health';
+import { runApiRequestTests, runApiResultTests } from '../../../test-utils/api';
+import { fetchBackendHealthStatus } from '@/app/variants/symbol/api/health';
 
-jest.mock('@/app/utils/server', () => ({
-	__esModule: true,
-	...jest.requireActual('@/app/utils/server')
-}));
+// Mocks
+
+jest.mock('@/app/utils/server', () => {
+	return {
+		__esModule: true,
+		...jest.requireActual('@/app/utils/server')
+	};
+});
+
+// Constants
+
+const healthURL = 'https://explorer.backend/health';
+
+// Tests
 
 describe('variants/symbol/api/health', () => {
-	beforeEach(() => {
-		config.PUBLIC_API_BASE_URL = 'https://explorer.backend/api/symbol';
-	});
+	describe('fetchBackendHealthStatus', () => {
+		describe('request', () => {
+			const requestCases = [
+				{
+					description: 'requests the backend health',
+					config: {},
+					expected: { url: healthURL }
+				}
+			];
 
-	afterEach(() => {
-		jest.restoreAllMocks();
-	});
+			runApiRequestTests({
+				functionToTest: fetchBackendHealthStatus,
+				response: healthWithSyncErrorResponse,
+				cases: requestCases
+			});
+		});
 
-	it('enables unavailable-request warnings for Symbol', () => {
-		// Act + Assert:
-		expect(healthConfig).toEqual({ isUnavailableWarningEnabled: true });
-	});
+		describe('result', () => {
+			const resultCases = [
+				{
+					description: 'returns the exact response with no changes',
+					config: { response: healthWithSyncErrorResponse },
+					expected: { result: healthWithSyncErrorResponse }
+				}
+			];
 
-	it('returns the complete health response without coercing values', async () => {
-		// Arrange:
-		const health = {
-			isHealthy: false,
-			dbUp: false,
-			backendSynced: false,
-			lastDBHeight: null,
-			lastDBSyncedAt: null,
-			finalizedHeight: null,
-			status: 'degraded',
-			errors: [{ type: 'database', message: 'database unavailable' }]
-		};
-		const makeRequest = jest.spyOn(serverUtils, 'makeRequest').mockResolvedValue(health);
-
-		// Act:
-		const result = await fetchBackendHealthStatus();
-
-		// Assert:
-		expect(makeRequest).toHaveBeenCalledWith('https://explorer.backend/api/symbol/health');
-		expect(result).toBe(health);
-	});
-
-	it('preserves a null health response', async () => {
-		// Arrange:
-		jest.spyOn(serverUtils, 'makeRequest').mockResolvedValue(null);
-
-		// Act:
-		const result = await fetchBackendHealthStatus();
-
-		// Assert:
-		expect(result).toBeNull();
-	});
-
-	it('propagates communication failures', async () => {
-		// Arrange:
-		const error = Error('network unavailable');
-		jest.spyOn(serverUtils, 'makeRequest').mockRejectedValue(error);
-
-		// Act + Assert:
-		await expect(fetchBackendHealthStatus()).rejects.toBe(error);
+			runApiResultTests({ functionToTest: fetchBackendHealthStatus, cases: resultCases });
+		});
 	});
 });

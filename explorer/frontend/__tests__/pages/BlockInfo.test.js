@@ -87,6 +87,13 @@ const emptyPage = {
 
 const nemSafeChainStatus = { height: blockWithTransactions.height + config.PUBLIC_NEM_BLOCKCHAIN_UNWIND_LIMIT + 1 };
 
+// Symbol specific constants
+
+const symbolFinalizedChainStatus = {
+	height: blockWithTransactions.height,
+	finalizedHeight: blockWithTransactions.height
+};
+
 // Tests
 
 describe('BlockInfo', () => {
@@ -176,10 +183,8 @@ describe('BlockInfo', () => {
 					description: 'renders the finalized status when the block is finalized',
 					variants: ['symbol'],
 					config: {
-						blockInfo: {
-							...blockWithTransactions,
-							isFinalized: true
-						}
+						blockInfo: blockWithTransactions,
+						chainStatus: symbolFinalizedChainStatus
 					},
 					expected: {
 						texts: [SCREEN_TEXT.labelFinalized],

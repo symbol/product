@@ -1,6 +1,5 @@
 {
-	"showStatistics": true,
-	"showStatementCount": false,
-	"showBlockReward": false,
-	"showMobileTransactionCount": false
+	"paginationMode": "page",
+	"showStatementCountColumn": false,
+	"showBlockRewardColumn": false
 }

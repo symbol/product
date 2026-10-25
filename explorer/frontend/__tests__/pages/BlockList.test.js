@@ -1,13 +1,16 @@
 import '@testing-library/jest-dom';
-import { blockPageResult } from '../test-utils/blocks';
-import { setDevice } from '../test-utils/device';
-import { blockStatisticsResult } from '../test-utils/stats';
+import { blockWithTransactions } from '../../__fixtures__/local/block';
+import { blockList } from '../../__fixtures__/local/block-list';
+import { blockStats } from '../../__fixtures__/local/block-stats';
+import { blockWithTransactions as symbolBlockWithTransactions } from '../../__fixtures__/local/symbol/block-list';
+import { runGetServerSidePropsTests, runRenderScenarioTests } from '../test-utils/page';
 import * as BlockService from '@/app/api/blocks';
 import * as StatsService from '@/app/api/stats';
-import BlockList, { getServerSideProps } from '@/app/pages/blocks/index';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import config from '@/app/config';
+import BlockList, { getServerSideProps } from '@/app/pages/blocks';
+import { render } from '@testing-library/react';
 
-const describeNem = process.env.NEXT_PUBLIC_EXPLORER_VARIANT === 'nem' ? describe : describe.skip;
+// Mocks
 
 jest.mock('@/app/api/blocks', () => {
 	return {
@@ -23,129 +26,190 @@ jest.mock('@/app/api/stats', () => {
 	};
 });
 
-describeNem('BlockList', () => {
+beforeEach(() => {
+	jest.spyOn(BlockService, 'fetchChainStatus').mockResolvedValue(nemCreatedChainStatus);
+});
+
+// Constants
+
+const SCREEN_TEXT = {
+	sectionBlocks: 'section_blocks',
+	fieldBlockGenerationTime: 'field_blockGenerationTime',
+	valueBlockGenerationTime: 'value_blockGenerationTime',
+	fieldAverageFee: 'field_averageFee',
+	valueAverageFee: 'value_averageFee',
+	fieldDifficulty: 'field_difficulty',
+	tableFieldHeight: 'table_field_height',
+	tableFieldHarvester: 'table_field_harvester',
+	tableFieldTransactionCount: 'table_field_transactionCount',
+	tableFieldStatementCount: 'table_field_statementCount',
+	tableFieldTotalFee: 'table_field_totalFee',
+	tableFieldBlockReward: 'table_field_blockReward',
+	fieldTimestamp: 'field_timestamp',
+	fieldTimestampUTC: 'field_timestampUTC',
+	labelCreated: 'label_created',
+	labelSafe: 'label_safe'
+};
+
+const mockedChartText = 'Mocked React ApexCharts';
+const blockGenerationTimeText = `${SCREEN_TEXT.valueBlockGenerationTime}::value:${blockStats.blockTime}`;
+const averageFeeText = `${SCREEN_TEXT.valueAverageFee}::value:${blockStats.blockFee}`;
+const timestampText = `${SCREEN_TEXT.fieldTimestampUTC}::title:${SCREEN_TEXT.fieldTimestamp}`;
+const nemUnwindLimit = config.PUBLIC_NEM_BLOCKCHAIN_UNWIND_LIMIT;
+const nemCreatedChainStatus = {
+	height: blockWithTransactions.height + nemUnwindLimit - 1,
+	finalizedHeight: null
+};
+const nemSafeChainStatus = {
+	height: blockWithTransactions.height + nemUnwindLimit + 1,
+	finalizedHeight: null
+};
+const blockPage = {
+	data: blockList,
+	pageNumber: 1
+};
+
+// Tests
+
+describe('BlockList', () => {
 	describe('getServerSideProps', () => {
-		it('fetches block list and statistics', async () => {
-			// Arrange:
-			const locale = 'en';
-			const fetchBlockPage = jest.spyOn(BlockService, 'fetchBlockPage');
-			fetchBlockPage.mockResolvedValue(blockPageResult);
-			const fetchBlockStats = jest.spyOn(StatsService, 'fetchBlockStats');
-			fetchBlockStats.mockResolvedValue(blockStatisticsResult);
-			const expectedResult = {
-				props: {
-					blocks: blockPageResult.data,
-					blockPage: blockPageResult,
-					isBlockPageError: false,
-					stats: blockStatisticsResult
+		const requests = {
+			blockPage: [BlockService, 'fetchBlockPage'],
+			blockStats: [StatsService, 'fetchBlockStats']
+		};
+
+		const getServerSidePropsCases = [
+			{
+				description: 'returns the blocks and the block stats props',
+				config: {
+					responses: {
+						blockPage,
+						blockStats
+					}
+				},
+				expected: {
+					requestArguments: {
+						blockPage: [],
+						blockStats: []
+					},
+					result: {
+						props: {
+							blocks: blockList,
+							nextPageParams: null,
+							stats: blockStats
+						}
+					}
 				}
-			};
+			}
+		];
 
-			// Act:
-			const result = await getServerSideProps({ locale });
-
-			// Assert:
-			expect(fetchBlockPage).toHaveBeenCalledWith();
-			expect(fetchBlockStats).toHaveBeenCalledWith();
-			expect(result).toEqual(expectedResult);
-		});
-
-		it('returns retryable props without fetching statistics when the list request fails', async () => {
-			// Arrange:
-			const locale = 'en';
-			const fetchBlockPage = jest.spyOn(BlockService, 'fetchBlockPage').mockRejectedValueOnce(Error('block list unavailable'));
-			const fetchBlockStats = jest.spyOn(StatsService, 'fetchBlockStats');
-			const expectedBlockPage = { data: [], pageNumber: 1, isLastPage: false, nextPageParams: null };
-
-			// Act:
-			const result = await getServerSideProps({ locale });
-
-			// Assert:
-			expect(fetchBlockPage).toHaveBeenCalledWith();
-			expect(fetchBlockStats).not.toHaveBeenCalled();
-			expect(result).toEqual({
-				props: {
-					blocks: [],
-					blockPage: expectedBlockPage,
-					isBlockPageError: true,
-					stats: null
-				}
-			});
+		runGetServerSidePropsTests({
+			getServerSideProps,
+			requests,
+			cases: getServerSidePropsCases
 		});
 	});
 
-	describe('page', () => {
-		const runTest = () => {
-			// Arrange:
-			const pageSectionText = 'section_blocks';
-			const blocksHeight = blockPageResult.data.map(block => block.height);
-
-			// Act:
-			render(<BlockList blocks={blockPageResult.data} stats={blockStatisticsResult} />);
-
-			// Assert:
-			expect(screen.getByText(pageSectionText)).toBeInTheDocument();
-			blocksHeight.forEach(height => {
-				expect(screen.getByText(height)).toBeInTheDocument();
-			});
-			expect(screen.getByText(blockPageResult.data[0].height).closest('a')).toHaveAttribute(
-				'href',
-				`/blocks/${blockPageResult.data[0].height}`
-			);
-			expect(screen.getByText(blockPageResult.data[0].harvester).closest('a')).toHaveAttribute(
-				'href',
-				`/accounts/${blockPageResult.data[0].harvester}`
-			);
-			expect(document.querySelector('a[href="/mosaics/nem.xem"]')).toBeInTheDocument();
+	describe('render', () => {
+		const renderPage = config => {
+			BlockService.fetchChainStatus.mockResolvedValue(config.chainStatus ?? nemCreatedChainStatus);
+			render(<BlockList blocks={config.blocks} stats={blockStats} />);
 		};
 
-		it('renders page with the list of blocks on desktop', () => {
-			// Act + Assert:
-			runTest();
+		describe('section: blocks', () => {
+			const blocksCases = [
+				{
+					description: 'renders the block stats',
+					config: { blocks: blockList },
+					expected: {
+						texts: [
+							SCREEN_TEXT.sectionBlocks,
+							SCREEN_TEXT.fieldBlockGenerationTime,
+							blockGenerationTimeText,
+							SCREEN_TEXT.fieldAverageFee,
+							averageFeeText,
+							SCREEN_TEXT.fieldDifficulty,
+							`${blockStats.blockDifficulty}%`
+						],
+						asyncTextOccurrences: { [mockedChartText]: 3 }
+					}
+				}
+			];
+
+			runRenderScenarioTests({ renderPage, cases: blocksCases });
 		});
 
-		it('renders page with the list of blocks on mobile', () => {
-			// Arrange:
-			setDevice('mobile');
+		describe('block table', () => {
+			const blockTableCases = [
+				{
+					description: 'renders the table headers and the block rows',
+					config: { blocks: blockList },
+					expected: {
+						texts: [
+							SCREEN_TEXT.tableFieldHeight,
+							SCREEN_TEXT.tableFieldHarvester,
+							SCREEN_TEXT.tableFieldTransactionCount,
+							SCREEN_TEXT.tableFieldTotalFee,
+							timestampText,
+							...blockList.map(block => block.height),
+							...blockList.map(block => block.harvester)
+						],
+						titles: [`${blockWithTransactions.totalFee} XEM`]
+					}
+				},
+				{
+					description: 'renders the statement count and the block reward columns',
+					variants: ['symbol'],
+					config: { blocks: [symbolBlockWithTransactions] },
+					expected: {
+						texts: [
+							SCREEN_TEXT.tableFieldStatementCount,
+							SCREEN_TEXT.tableFieldBlockReward,
+							symbolBlockWithTransactions.statementCount
+						],
+						titles: [`${symbolBlockWithTransactions.blockReward} XEM`]
+					}
+				},
+				{
+					description: 'does not render the statement count and the block reward columns',
+					variants: ['nem'],
+					config: { blocks: blockList },
+					expected: {
+						texts: [SCREEN_TEXT.tableFieldTransactionCount, SCREEN_TEXT.tableFieldTotalFee],
+						hiddenTexts: [SCREEN_TEXT.tableFieldStatementCount, SCREEN_TEXT.tableFieldBlockReward]
+					}
+				},
+				{
+					description: 'renders the created status when the block depth is below the unwind limit',
+					variants: ['nem'],
+					config: {
+						blocks: [blockWithTransactions],
+						chainStatus: nemCreatedChainStatus
+					},
+					expected: {
+						titleOccurrences: {
+							[SCREEN_TEXT.labelCreated]: 1,
+							[SCREEN_TEXT.labelSafe]: 0
+						}
+					}
+				},
+				{
+					description: 'renders the safe status when the block depth is above the unwind limit',
+					variants: ['nem'],
+					config: {
+						blocks: [blockWithTransactions],
+						chainStatus: nemSafeChainStatus
+					},
+					expected: {
+						titleOccurrences: {
+							[SCREEN_TEXT.labelCreated]: 0,
+							[SCREEN_TEXT.labelSafe]: 1
+						}
+					}
+				}
+			];
 
-			// Act + Assert:
-			runTest();
-		});
-
-		it('renders the block list without statistics when stats are unavailable', () => {
-			// Arrange:
-			const props = { blocks: blockPageResult.data, stats: null };
-
-			// Act:
-			render(<BlockList {...props} />);
-
-			// Assert:
-			expect(screen.getByText('section_blocks')).toBeInTheDocument();
-			expect(screen.getByText(blockPageResult.data[0].height)).toBeInTheDocument();
-			expect(screen.queryByText('field_blockGenerationTime')).not.toBeInTheDocument();
-			expect(screen.queryByText('field_averageFee')).not.toBeInTheDocument();
-			expect(screen.queryByText('field_difficulty')).not.toBeInTheDocument();
-		});
-
-		it('retries the initial list after an SSR failure and renders the recovered blocks', async () => {
-			// Arrange:
-			const failedProps = {
-				blocks: [],
-				blockPage: { data: [], pageNumber: 1, isLastPage: false, nextPageParams: null },
-				isBlockPageError: true,
-				stats: null
-			};
-			const fetchBlockPage = jest.spyOn(BlockService, 'fetchBlockPage').mockResolvedValue(blockPageResult);
-
-			// Act:
-			render(<BlockList {...failedProps} />);
-			fireEvent.click(screen.getByText('button_tryAgain'));
-			await waitFor(() => expect(fetchBlockPage).toHaveBeenCalledTimes(1));
-
-			// Assert:
-			expect(fetchBlockPage).toHaveBeenCalledWith({ pageNumber: 1 });
-			expect(screen.getByText(blockPageResult.data[0].height)).toBeInTheDocument();
-			expect(screen.queryByText('button_tryAgain')).not.toBeInTheDocument();
+			runRenderScenarioTests({ renderPage, cases: blockTableCases });
 		});
 	});
 });

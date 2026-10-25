@@ -1,5 +1,17 @@
-import { STORAGE_KEY } from '@/app/constants';
+import { PAGINATION_MODE, STORAGE_KEY } from '@/app/constants';
 import { useEffect, useRef, useState } from 'react';
+
+const initialPageInfo = { pageNumber: 0, nextPageParams: null };
+const paginationStrategies = {
+	[PAGINATION_MODE.PAGE]: {
+		createRequest: (filter, pageInfo) => ({ pageNumber: pageInfo.pageNumber + 1, ...filter }),
+		isLastPage: page => page.data.length === 0
+	},
+	[PAGINATION_MODE.CURSOR]: {
+		createRequest: (filter, pageInfo) => ({ ...filter, ...pageInfo.nextPageParams }),
+		isLastPage: page => !page.nextPageParams
+	}
+};
 
 // Makes an async call. Handles the loading and error states.
 export const useDataManager = (callback, defaultData, onError, defaultLoadingState = false) => {
@@ -23,114 +35,106 @@ export const useDataManager = (callback, defaultData, onError, defaultLoadingSta
 	return [call, isLoading, data];
 };
 
-/**
- * @typedef {object} PaginationPage
- * @property {Array} data - rows for the requested page.
- * @property {number} pageNumber - the page number requested by the callback.
- * @property {boolean} [isLastPage] - whether no further page should be requested.
- * @property {object|null} [nextPageParams] - cursor parameters for the next page.
- */
-
-/**
- * Makes pagination calls and handles the loading and error states.
- * @param {(request: object) => Promise<PaginationPage>} callback - returns the rows and requested page number.
- * @param {Array} defaultData - initially displayed rows.
- * @param {object} [defaultFilter] - initial filter.
- * @param {object} [options] - initial page and error state.
- * @returns {object} pagination state and actions.
- */
+// Makes a pagination calls. Handles the loading and error states.
 export const usePagination = (callback, defaultData, defaultFilter = {}, options = {}) => {
-	const initialPage = options.initialPage || { data: defaultData, pageNumber: 1 };
-	const [filter, setFilter] = useState(defaultFilter);
-	const [isLoading, setIsLoading] = useState(false);
-	const [isError, setIsError] = useState(!!options.initialError);
-	const [isLastPage, setIsLastPage] = useState(!!initialPage.isLastPage && !options.initialError);
-	const [pageNumber, setPageNumber] = useState(1);
-	const [data, setData] = useState(defaultData);
-	const [page, setPage] = useState(initialPage);
-	const requestIdRef = useRef(0);
-	const requestInFlightRef = useRef(false);
-	const lastRequestRef = useRef({ request: { pageNumber: 1, ...defaultFilter }, pageNumber: 1, data: defaultData });
+	const { mode = PAGINATION_MODE.PAGE, initialNextPageParams = null } = options;
+	const strategy = paginationStrategies[mode];
 
-	const call = (request, expectedPageNumber, currentData) => {
-		const requestId = ++requestIdRef.current;
-		requestInFlightRef.current = true;
-		lastRequestRef.current = { request, pageNumber: expectedPageNumber, data: currentData };
+	// Filter state
+	const [filter, setFilter] = useState(defaultFilter);
+
+	// Page state
+	const [data, setData] = useState(defaultData);
+	const [pageInfo, setPageInfo] = useState({ 
+		pageNumber: 1, 
+		nextPageParams: initialNextPageParams 
+	});
+	const [isLastPage, setIsLastPage] = useState(() => strategy.isLastPage({
+		data: defaultData,
+		nextPageParams: initialNextPageParams
+	}));
+
+	// Request state
+	const [isLoading, setIsLoading] = useState(false);
+	const [isError, setIsError] = useState(false);
+	const requestIdRef = useRef(0);
+
+	// Fetch a page and append it to the data. Ignore stale responses.
+	const call = (filter, data, pageInfo) => {
+		requestIdRef.current += 1;
+		const requestId = requestIdRef.current;
+		const isStale = () => requestId !== requestIdRef.current;
+
+		const applyPage = page => {
+			setData([...data, ...page.data]);
+			setPageInfo({ 
+				pageNumber: pageInfo.pageNumber + 1, 
+				nextPageParams: page.nextPageParams ?? null 
+			});
+			setIsLastPage(strategy.isLastPage(page));
+			setIsLoading(false);
+		};
+
+		const applyError = error => {
+			// eslint-disable-next-line no-console
+			console.error('[Pagination] Error:', error);
+			setIsError(true);
+			setIsLoading(false);
+		};
+
 		setIsError(false);
 		setIsLoading(true);
 		setTimeout(async () => {
 			try {
-				const response = await callback(request);
-				if (requestId !== requestIdRef.current)
-					return;
+				const page = await callback(strategy.createRequest(filter, pageInfo));
 
-				const responseData = response.data;
-				setData([...currentData, ...responseData]);
-				setPage(response);
-				setPageNumber(response.pageNumber);
-				setIsLastPage(response.isLastPage ?? responseData.length === 0);
+				if (!isStale())
+					applyPage(page);
 			} catch (error) {
-				if (requestId !== requestIdRef.current)
-					return;
-
-				// eslint-disable-next-line no-console
-				console.error('[Pagination] Error:', error);
-				setIsError(true);
-			} finally {
-				if (requestId === requestIdRef.current) {
-					requestInFlightRef.current = false;
-					setIsLoading(false);
-				}
+				if (!isStale())
+					applyError(error);
 			}
 		});
 	};
 
-	const createRequest = (nextPageNumber, nextFilter, previousPage) => {
-		if (previousPage?.nextPageParams)
-			return { ...nextFilter, ...previousPage.nextPageParams, pageNumber: nextPageNumber };
-
-		return { pageNumber: nextPageNumber, ...nextFilter };
-	};
-
+	// Request handlers
 	const initialRequest = () => {
 		setFilter(defaultFilter);
 		setIsLoading(false);
 		setIsError(false);
 		setIsLastPage(false);
-		setPageNumber(1);
+		setPageInfo(initialPageInfo);
 		setData(defaultData);
-		setPage(initialPage);
-		call({ pageNumber: 1, ...defaultFilter }, 1, defaultData);
+		call(defaultFilter, defaultData, initialPageInfo);
 	};
-
 	const requestNextPage = () => {
-		if (isLastPage || requestInFlightRef.current)
-			return;
-
-		if (isError) {
-			const { request, pageNumber: failedPageNumber, data: failedData } = lastRequestRef.current;
-			call(request, failedPageNumber, failedData);
-			return;
-		}
-
-		const nextPageNumber = pageNumber + 1;
-		call(createRequest(nextPageNumber, filter, page), nextPageNumber, data);
+		call(filter, data, pageInfo);
 	};
 
+	// Filter handlers
 	const changeFilter = filter => {
 		setData([]);
-		setPageNumber(0);
-		setPage({ data: [], pageNumber: 0 });
+		setPageInfo(initialPageInfo);
 		setIsLastPage(false);
 		setFilter(filter);
-		call({ pageNumber: 1, ...filter }, 1, []);
+		call(filter, [], initialPageInfo);
 	};
-
 	const clearFilter = () => {
 		changeFilter(defaultFilter);
 	};
 
-	return { requestNextPage, initialRequest, data, isLoading, pageNumber, isLastPage, filter, isError, changeFilter, clearFilter };
+	return {
+		requestNextPage,
+		initialRequest,
+		data,
+		isLoading,
+		pageNumber: pageInfo.pageNumber,
+		isLastPage,
+		filter,
+		isError,
+		changeFilter,
+		clearFilter
+	};
 };
 
 // Makes an async call and handle a filter.
@@ -317,35 +321,23 @@ export const useAsyncCall = (callback, defaultData, pollingInterval, isCalledOnM
 	callbackRef.current = callback;
 
 	useEffect(() => {
-		let isActive = true;
-		let requestId = 0;
-		let intervalId;
-
 		const call = async () => {
-			const currentRequestId = ++requestId;
-
 			try {
 				const data = await callbackRef.current();
-				if (!isActive || currentRequestId !== requestId)
-					return;
-
 				setData(data);
 			} catch {
 				// keep the previous data on failure
 			}
 		};
 
-		if (pollingInterval)
-			intervalId = setInterval(() => call(), pollingInterval);
 		if (!pollingInterval || isCalledOnMount)
 			call();
 
-		return () => {
-			isActive = false;
-			requestId++;
-			if (intervalId)
-				clearInterval(intervalId);
-		};
+		if (pollingInterval) {
+			const intervalId = setInterval(() => call(), pollingInterval);
+
+			return () => clearInterval(intervalId);
+		}
 	}, [pollingInterval, isCalledOnMount]);
 
 	return data;
