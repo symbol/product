@@ -358,8 +358,8 @@ class SymbolPuller:  # pylint: disable=too-many-instance-attributes
 			self._get_finalized_watermark(chain_info, chain_height)
 		)
 		finalization_epoch_grouping = int(network_properties['chain']['votingSetGrouping']) if is_finalization_capped else None
-		if 0 == finalization_epoch_grouping:
-			# Core rejects zero even at height 1, so reject it before block writes.
+		if is_finalization_capped and finalization_epoch_grouping <= 0:
+			# Reject non-positive grouping values before block writes.
 			raise ValueError('Symbol chain.votingSetGrouping must be greater than zero')
 		epoch_adjustment_seconds = self._parse_epoch_adjustment(network_properties)
 		self._record_performance('set_phase', 'native_mosaic_fetch')

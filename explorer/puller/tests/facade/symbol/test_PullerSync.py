@@ -2633,32 +2633,35 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 
 	def test_sync_block_headers_rejects_missing_or_invalid_grouping_when_finalization_is_capped(self):
 		# Arrange:
+		# Keep the regression case last so a pre-fix write cannot contaminate later subtests.
 		cases = (
-			('missing', None, KeyError),
-			('zero', '0', ValueError),
-			('malformed', 'not-a-grouping', ValueError),
+			('missing', None, KeyError, 1),
+			('zero', '0', ValueError, 1),
+			('malformed', 'not-a-grouping', ValueError, 1),
+			('negative', '-1', ValueError, 4),
 		)
-		for case_name, grouping, exception_type in cases:
+		for case_name, grouping, exception_type, max_height in cases:
 			with self.subTest(grouping=case_name):
 				network_properties = create_network_properties()
 				if 'missing' == case_name:
 					del network_properties['chain']['votingSetGrouping']
 				else:
 					network_properties['chain']['votingSetGrouping'] = grouping
+				node_finalized_height = max_height + 1
 				connector = FakeConnector(
-					2,
-					{0: [create_node_block(1), create_node_block(2)]},
-					finalized_height=2,
+					node_finalized_height,
+					create_multi_batch_block_pages(node_finalized_height),
+					finalized_height=node_finalized_height,
 					network_properties=network_properties)
 				puller = create_symbol_puller(self.config_ini, 'testnet', connector=connector)
 
 				# Act:
 				with puller.symbol_db:
 					with self.assertRaises(exception_type) as context:
-						asyncio.run(puller.sync_block_headers(max_height=1))
+						asyncio.run(puller.sync_block_headers(max_height=max_height))
 
 					# Assert:
-					if 'zero' == case_name:
+					if case_name in ('zero', 'negative'):
 						self.assertEqual('Symbol chain.votingSetGrouping must be greater than zero', str(context.exception))
 					self.assertEqual(['chain/info', 'network/properties'], connector.paths)
 					self.assertIsNone(puller.symbol_db.get_sync_state())
