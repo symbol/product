@@ -345,7 +345,7 @@ class SymbolPuller:  # pylint: disable=too-many-instance-attributes
 		finally:
 			self._active_performance = None
 
-	async def _sync_block_headers(self, max_height=None):  # pylint: disable=too-many-locals
+	async def _sync_block_headers(self, max_height=None):  # pylint: disable=too-many-locals,too-many-statements
 		"""Runs one non-overlapping Symbol block synchronization attempt."""
 
 		self._record_performance('set_phase', 'chain_info_fetch')
@@ -357,9 +357,10 @@ class SymbolPuller:  # pylint: disable=too-many-instance-attributes
 		finalized_height, finalized_hash, finalized_epoch, finalized_point, is_finalization_capped = (
 			self._get_finalized_watermark(chain_info, chain_height)
 		)
-		finalization_epoch_grouping = (
-			self._parse_voting_set_grouping(network_properties)
-			if is_finalization_capped else None)
+		finalization_epoch_grouping = int(network_properties['chain']['votingSetGrouping']) if is_finalization_capped else None
+		if 0 == finalization_epoch_grouping:
+			# Core rejects zero even at height 1, so reject it before block writes.
+			raise ValueError('Symbol chain.votingSetGrouping must be greater than zero')
 		epoch_adjustment_seconds = self._parse_epoch_adjustment(network_properties)
 		self._record_performance('set_phase', 'native_mosaic_fetch')
 		native_mosaic_info = await self._get_native_mosaic_info()
@@ -512,26 +513,6 @@ class SymbolPuller:  # pylint: disable=too-many-instance-attributes
 			finalized_block['finalizationPoint'],
 			False
 		)
-
-	@staticmethod
-	def _parse_voting_set_grouping(network_properties):
-		"""Reads and validates the node's voting-set grouping for capped finalization."""
-
-		raw_grouping = network_properties['chain']['votingSetGrouping']
-		if is_exact_integer(raw_grouping):
-			grouping = raw_grouping
-		elif isinstance(raw_grouping, str):
-			try:
-				grouping = int(raw_grouping, 16) if raw_grouping.lower().startswith('0x') else int(raw_grouping, 10)
-			except ValueError as exception:
-				raise ValueError('Invalid Symbol chain.votingSetGrouping') from exception
-		else:
-			raise ValueError('Invalid Symbol chain.votingSetGrouping')
-
-		if grouping <= 0:
-			raise ValueError('Invalid Symbol chain.votingSetGrouping')
-
-		return grouping
 
 	@staticmethod
 	def _calculate_finalization_epoch(height, grouping):

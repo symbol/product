@@ -2614,7 +2614,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 					node_finalized_height,
 					create_multi_batch_block_pages(node_finalized_height),
 					finalized_height=node_finalized_height,
-					network_properties=create_network_properties(voting_set_grouping=4))
+					network_properties=create_network_properties(voting_set_grouping='4'))
 
 				# Act:
 				_, sync_state = self._sync_with_connector(connector, max_height=max_height)
@@ -2635,9 +2635,8 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		# Arrange:
 		cases = (
 			('missing', None, KeyError),
-			('zero', 0, ValueError),
+			('zero', '0', ValueError),
 			('malformed', 'not-a-grouping', ValueError),
-			('boolean', True, ValueError)
 		)
 		for case_name, grouping, exception_type in cases:
 			with self.subTest(grouping=case_name):
@@ -2659,8 +2658,8 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 						asyncio.run(puller.sync_block_headers(max_height=1))
 
 					# Assert:
-					if 'missing' != case_name:
-						self.assertEqual('Invalid Symbol chain.votingSetGrouping', str(context.exception))
+					if 'zero' == case_name:
+						self.assertEqual('Symbol chain.votingSetGrouping must be greater than zero', str(context.exception))
 					self.assertEqual(['chain/info', 'network/properties'], connector.paths)
 					self.assertIsNone(puller.symbol_db.get_sync_state())
 
@@ -2673,7 +2672,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 			chain_height,
 			create_multi_batch_block_pages(chain_height),
 			finalized_height=chain_height,
-			network_properties=create_network_properties(voting_set_grouping='0x000003E8'))
+			network_properties=create_network_properties(voting_set_grouping='1000'))
 		database = self.puller.symbol_db
 		recording_database = RecordingCheckpointDatabase(database)
 
@@ -2718,7 +2717,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 			1005,
 			{},
 			finalized_height=1005,
-			network_properties=create_network_properties(voting_set_grouping=1000))
+			network_properties=create_network_properties(voting_set_grouping='1000'))
 
 		# Act:
 		block_heights, sync_state = self._sync_with_connector(connector, max_height=max_height)

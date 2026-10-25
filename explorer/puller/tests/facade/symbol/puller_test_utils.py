@@ -427,6 +427,8 @@ def create_chain_info(chain_height=1, finalized_height=1):
 
 
 def create_network_properties(epoch_adjustment='100s', voting_set_grouping='10'):
+	"""Creates node properties using the string values returned by Symbol REST."""
+
 	return {
 		'network': {'epochAdjustment': epoch_adjustment},
 		'chain': {
