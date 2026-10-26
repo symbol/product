@@ -351,7 +351,7 @@ class SymbolPuller:  # pylint: disable=too-many-instance-attributes
 		finally:
 			self._active_performance = None
 
-	async def _sync_block_headers(self, max_height=None):  # pylint: disable=too-many-locals
+	async def _sync_block_headers(self, max_height=None):  # pylint: disable=too-many-locals,too-many-statements
 		"""Runs one non-overlapping Symbol block synchronization attempt."""
 
 		self._record_performance('set_phase', 'chain_info_fetch')
@@ -363,6 +363,10 @@ class SymbolPuller:  # pylint: disable=too-many-instance-attributes
 		finalized_height, finalized_hash, finalized_epoch, finalized_point, is_finalization_capped = (
 			self._get_finalized_watermark(chain_info, chain_height)
 		)
+		finalization_epoch_grouping = int(network_properties['chain']['votingSetGrouping']) if is_finalization_capped else None
+		if is_finalization_capped and finalization_epoch_grouping <= 0:
+			# Reject non-positive grouping values before block writes.
+			raise ValueError('Symbol chain.votingSetGrouping must be greater than zero')
 		epoch_adjustment_seconds = self._parse_epoch_adjustment(network_properties)
 		self._record_performance('set_phase', 'native_mosaic_fetch')
 		native_mosaic_info = await self._get_native_mosaic_info()
@@ -416,6 +420,7 @@ class SymbolPuller:  # pylint: disable=too-many-instance-attributes
 			'finalized_epoch': finalized_epoch,
 			'finalized_point': finalized_point,
 			'is_finalization_capped': is_finalization_capped,
+			'finalization_epoch_grouping': finalization_epoch_grouping,
 			'previous_checkpoint_height': (
 				bounded_sync_state['last_synced_height']
 				if bounded_sync_state and bounded_sync_state['last_synced_height'] else None)
@@ -473,6 +478,11 @@ class SymbolPuller:  # pylint: disable=too-many-instance-attributes
 			published_finalized_hash = last_synced_block_hash
 			published_finalized_epoch = None
 			published_finalized_point = None
+		if checkpoint_state['is_finalization_capped'] and published_finalized_height:
+			published_finalized_epoch = SymbolPuller._calculate_finalization_epoch(
+				published_finalized_height,
+				checkpoint_state['finalization_epoch_grouping'])
+			published_finalized_point = None
 
 		return {
 			'status': 'healthy',
@@ -509,6 +519,15 @@ class SymbolPuller:  # pylint: disable=too-many-instance-attributes
 			finalized_block['finalizationPoint'],
 			False
 		)
+
+	@staticmethod
+	def _calculate_finalization_epoch(height, grouping):
+		"""Calculates the core finalization epoch for a positive height and grouping."""
+
+		if 1 == height:
+			return 1
+
+		return 1 + (height + grouping - 1) // grouping
 
 	def _get_bounded_sync_state(self, sync_state, chain_height):
 		"""Returns the state used for this run's forward-sync watermark."""
