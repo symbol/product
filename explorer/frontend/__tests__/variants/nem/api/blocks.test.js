@@ -152,7 +152,7 @@ describe('variants/nem/api/blocks', () => {
 					expected: { result: emptyBlock }
 				},
 				{
-					description: 'maps the harvester to the beneficiary when a remote account signs the block',
+					description: 'maps a block signed by a remote account',
 					config: { response: delegatedHarvestBlockResponse },
 					expected: { result: delegatedHarvestBlock }
 				},
