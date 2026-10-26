@@ -1,3 +1,4 @@
+import { createFee } from './network';
 import { accounts } from './wallet';
 import { nemTimestampToDate } from '../../../src/utils';
 
@@ -49,8 +50,6 @@ const multisigDeadline = {
 	timestamp: nemTimestampToDate(MULTISIG_DEADLINE),
 	adjusted: { timestamp: TIMESTAMP, deadline: MULTISIG_DEADLINE }
 };
-
-const createFee = amount => ({ token: { amount, divisibility: 6, id: 'nem.xem', name: 'XEM' } });
 
 const nativeToken = amount => ({ id: 'nem.xem', name: 'XEM', amount, divisibility: 6 });
 
@@ -552,7 +551,7 @@ const transferXemRead = {
 	type: 257,
 	timestamp: CREATION_TIMESTAMP_MS,
 	deadline: standardDeadline,
-	fee: '0.1',
+	fee: createFee('0.1'),
 	signerAddress: alice.address,
 	signerPublicKey: ALICE_PUBLIC_KEY,
 	recipientAddress: bob.address,
@@ -562,7 +561,7 @@ const transferXemRead = {
 
 const transferWithMessageRead = {
 	...transferXemRead,
-	fee: '0.15',
+	fee: createFee('0.15'),
 	message: { type: 'plain', text: 'Good luck!', payload: '476f6f64206c75636b21', native: { type: 1 } }
 };
 
@@ -570,7 +569,7 @@ const transferWithMosaicRead = {
 	type: 257,
 	timestamp: CREATION_TIMESTAMP_MS,
 	deadline: standardDeadline,
-	fee: '0.2',
+	fee: createFee('0.2'),
 	signerAddress: alice.address,
 	signerPublicKey: ALICE_PUBLIC_KEY,
 	recipientAddress: bob.address,
@@ -582,7 +581,7 @@ const importanceTransferRead = {
 	type: 2049,
 	timestamp: CREATION_TIMESTAMP_MS,
 	deadline: standardDeadline,
-	fee: '0.15',
+	fee: createFee('0.15'),
 	signerAddress: alice.address,
 	signerPublicKey: ALICE_PUBLIC_KEY,
 	linkAction: 1,
@@ -594,7 +593,7 @@ const multisigModificationRead = {
 	type: 4097,
 	timestamp: CREATION_TIMESTAMP_MS,
 	deadline: standardDeadline,
-	fee: '0.5',
+	fee: createFee('0.5'),
 	signerAddress: alice.address,
 	signerPublicKey: ALICE_PUBLIC_KEY,
 	modifications: [
@@ -608,7 +607,7 @@ const multisigModificationWithDeltaRead = {
 	type: 4097,
 	timestamp: CREATION_TIMESTAMP_MS,
 	deadline: standardDeadline,
-	fee: '0.5',
+	fee: createFee('0.5'),
 	signerAddress: alice.address,
 	signerPublicKey: ALICE_PUBLIC_KEY,
 	modifications: [{ modificationType: 1, cosignatoryPublicKey: BOB_PUBLIC_KEY }],
@@ -619,7 +618,7 @@ const cosignatureRead = {
 	type: 4098,
 	timestamp: CREATION_TIMESTAMP_MS,
 	deadline: standardDeadline,
-	fee: '0.15',
+	fee: createFee('0.15'),
 	signerAddress: bob.address,
 	signerPublicKey: BOB_PUBLIC_KEY,
 	otherTransactionHash: OTHER_TRANSACTION_HASH_UPPER,
@@ -630,35 +629,35 @@ const namespaceRootRead = {
 	type: 8193,
 	timestamp: CREATION_TIMESTAMP_MS,
 	deadline: standardDeadline,
-	fee: '0.15',
+	fee: createFee('0.15'),
 	signerAddress: alice.address,
 	signerPublicKey: ALICE_PUBLIC_KEY,
 	namespaceName: 'alice',
 	parentName: null,
 	namespaceId: 'alice',
 	rentalFeeSink: NAMESPACE_FEE_SINK,
-	rentalFee: '100'
+	rentalFee: createFee('100')
 };
 
 const namespaceSubRead = {
 	type: 8193,
 	timestamp: CREATION_TIMESTAMP_MS,
 	deadline: standardDeadline,
-	fee: '0.15',
+	fee: createFee('0.15'),
 	signerAddress: alice.address,
 	signerPublicKey: ALICE_PUBLIC_KEY,
 	namespaceName: 'vouchers',
 	parentName: 'alice',
 	namespaceId: 'alice.vouchers',
 	rentalFeeSink: NAMESPACE_FEE_SINK,
-	rentalFee: '10'
+	rentalFee: createFee('10')
 };
 
 const mosaicDefinitionRead = {
 	type: 16385,
 	timestamp: CREATION_TIMESTAMP_MS,
 	deadline: standardDeadline,
-	fee: '0.15',
+	fee: createFee('0.15'),
 	signerAddress: alice.address,
 	signerPublicKey: ALICE_PUBLIC_KEY,
 	mosaicDefinition: {
@@ -669,14 +668,14 @@ const mosaicDefinitionRead = {
 		levy: null
 	},
 	rentalFeeSink: MOSAIC_FEE_SINK,
-	rentalFee: '10'
+	rentalFee: createFee('10')
 };
 
 const mosaicDefinitionWithLevyRead = {
 	type: 16385,
 	timestamp: CREATION_TIMESTAMP_MS,
 	deadline: standardDeadline,
-	fee: '0.15',
+	fee: createFee('0.15'),
 	signerAddress: alice.address,
 	signerPublicKey: ALICE_PUBLIC_KEY,
 	mosaicDefinition: {
@@ -687,14 +686,14 @@ const mosaicDefinitionWithLevyRead = {
 		levy: { type: 1, recipientAddress: bob.address, mosaicId: 'nem.xem', fee: 1000 }
 	},
 	rentalFeeSink: MOSAIC_FEE_SINK,
-	rentalFee: '10'
+	rentalFee: createFee('10')
 };
 
 const mosaicSupplyChangeRead = {
 	type: 16386,
 	timestamp: CREATION_TIMESTAMP_MS,
 	deadline: standardDeadline,
-	fee: '0.15',
+	fee: createFee('0.15'),
 	signerAddress: alice.address,
 	signerPublicKey: ALICE_PUBLIC_KEY,
 	tokenId: 'alice.token',
@@ -715,7 +714,7 @@ const multisigTransferRead = {
 	type: 4100,
 	timestamp: CREATION_TIMESTAMP_MS,
 	deadline: multisigDeadline,
-	fee: '0.15',
+	fee: createFee('0.15'),
 	signerAddress: bob.address,
 	signerPublicKey: BOB_PUBLIC_KEY,
 	innerTransaction: multisigTransferInnerRead,
@@ -740,7 +739,7 @@ const multisigImportanceTransferRead = {
 	type: 4100,
 	timestamp: CREATION_TIMESTAMP_MS,
 	deadline: multisigDeadline,
-	fee: '0.15',
+	fee: createFee('0.15'),
 	signerAddress: bob.address,
 	signerPublicKey: BOB_PUBLIC_KEY,
 	innerTransaction: multisigImportanceTransferInnerRead,

@@ -1,6 +1,6 @@
 import { DropdownModal, Icon, InputAddressDropdown, TouchableNative } from '@/app/components';
 import { $t } from '@/app/localization';
-import { Colors, Sizes, Typography } from '@/app/styles';
+import { Colors, Shadows, Sizes, Typography } from '@/app/styles';
 import { FilterType } from '@/app/types/Filter';
 import React, { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
@@ -194,7 +194,8 @@ const styles = StyleSheet.create({
 		borderRadius: Sizes.Semantic.borderRadius.l,
 		paddingHorizontal: Sizes.Semantic.spacing.m,
 		justifyContent: 'center',
-		alignItems: 'center'
+		alignItems: 'center',
+		boxShadow: Shadows.Components.filter
 	},
 	chip__disabled: {
 		opacity: DISABLED_OPACITY

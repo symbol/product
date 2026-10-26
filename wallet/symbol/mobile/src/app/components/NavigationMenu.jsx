@@ -2,7 +2,7 @@ import { StyledText, TouchableNative } from '@/app/components';
 import { $t } from '@/app/localization';
 import { Router } from '@/app/router/Router';
 import { RouteName } from '@/app/router/config';
-import { Colors, Sizes } from '@/app/styles';
+import { Colors, Shadows, Sizes } from '@/app/styles';
 import React from 'react';
 import { Image, StyleSheet, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -12,24 +12,24 @@ const ICON_SIZE = Sizes.Semantic.spacing.xl;
 
 const ICON_SOURCE_MAP = {
 	[RouteName.Home]: {
-		default: require('@/app/assets/images/navigation/home_d.png'),
-		active: require('@/app/assets/images/navigation/home_a.png')
+		default: require('@/brand/assets/images/navigation/home-default.png'),
+		active: require('@/brand/assets/images/navigation/home-active.png')
 	},
 	[RouteName.History]: {
-		default: require('@/app/assets/images/navigation/history_d.png'),
-		active: require('@/app/assets/images/navigation/history_a.png')
+		default: require('@/brand/assets/images/navigation/history-default.png'),
+		active: require('@/brand/assets/images/navigation/history-active.png')
 	},
 	[RouteName.Scan]: {
-		default: require('@/app/assets/images/navigation/scan_d.png'),
-		active: require('@/app/assets/images/navigation/scan_a.png')
+		default: require('@/brand/assets/images/navigation/scan-default.png'),
+		active: require('@/brand/assets/images/navigation/scan-active.png')
 	},
 	[RouteName.Assets]: {
-		default: require('@/app/assets/images/navigation/assets_d.png'),
-		active: require('@/app/assets/images/navigation/assets_a.png')
+		default: require('@/brand/assets/images/navigation/assets-default.png'),
+		active: require('@/brand/assets/images/navigation/assets-active.png')
 	},
 	[RouteName.Actions]: {
-		default: require('@/app/assets/images/navigation/features_d.png'),
-		active: require('@/app/assets/images/navigation/features_a.png')
+		default: require('@/brand/assets/images/navigation/features-default.png'),
+		active: require('@/brand/assets/images/navigation/features-active.png')
 	}
 };
 
@@ -125,7 +125,8 @@ const styles = StyleSheet.create({
 	root: {
 		width: '100%',
 		backgroundColor: Colors.Components.navigationMenu.background,
-		flexDirection: 'row'
+		flexDirection: 'row',
+		boxShadow: Shadows.Components.navigationMenu
 	},
 	item: {
 		flex: 1,

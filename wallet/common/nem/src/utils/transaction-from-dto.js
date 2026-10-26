@@ -1,4 +1,5 @@
 import { addressFromPublicKey } from './account';
+import { createTransactionFee } from './fee';
 import { getMosaicProperty, getTokenAmount, tokenIdFromRaw, tokenListFromDTO } from './token';
 import { decodePlainMessage, isIncomingTransaction, isOutgoingTransaction, nemTimestampToDate } from './transaction';
 import {
@@ -142,7 +143,10 @@ const baseTransactionFromDTO = (transactionDTO, config) => {
 		height: meta?.height ?? null,
 		hash: meta?.hash?.data ?? null,
 		fee: transaction.fee != null
-			? absoluteToRelativeAmount(transaction.fee, networkProperties.networkCurrency.divisibility)
+			? createTransactionFee(
+				networkProperties,
+				absoluteToRelativeAmount(transaction.fee, networkProperties.networkCurrency.divisibility)
+			)
 			: null,
 		signerAddress,
 		signerPublicKey
@@ -264,7 +268,10 @@ const namespaceRegistrationTransactionFromDTO = (transactionDTO, config) => {
 		parentName,
 		namespaceId: parentName ? `${parentName}.${namespaceName}` : namespaceName,
 		rentalFeeSink: transaction.rentalFeeSink,
-		rentalFee: absoluteToRelativeAmount(transaction.rentalFee, networkProperties.networkCurrency.divisibility)
+		rentalFee: createTransactionFee(
+			networkProperties,
+			absoluteToRelativeAmount(transaction.rentalFee, networkProperties.networkCurrency.divisibility)
+		)
 	};
 };
 
@@ -284,7 +291,10 @@ const mosaicDefinitionTransactionFromDTO = (transactionDTO, config) => {
 			levy: levyFromDTO(mosaicDefinition.levy)
 		},
 		rentalFeeSink: transaction.creationFeeSink,
-		rentalFee: absoluteToRelativeAmount(transaction.creationFee, networkProperties.networkCurrency.divisibility)
+		rentalFee: createTransactionFee(
+			networkProperties,
+			absoluteToRelativeAmount(transaction.creationFee, networkProperties.networkCurrency.divisibility)
+		)
 	};
 };
 

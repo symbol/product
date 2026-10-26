@@ -1,0 +1,593 @@
+import { Primitives } from './primitives';
+
+export const Semantic = {
+	role: {
+		primary: {
+			default: Primitives.purple500,
+			weaker: Primitives.purple700,
+			muted: Primitives.purple800
+		},
+		secondary: {
+			default: Primitives.aqua400,
+			weaker: Primitives.aqua600,
+			muted: Primitives.aqua800
+		},
+		danger: {
+			default: Primitives.red500,
+			weaker: Primitives.red600,
+			muted:  Primitives.red800
+		},
+		warning: {
+			default: Primitives.yellow500,
+			weaker: Primitives.yellow600,
+			muted:  Primitives.yellow800
+		},
+		success: {
+			default: Primitives.green500,
+			weaker: Primitives.green600,
+			muted: Primitives.green800
+		},
+		info: {
+			default: Primitives.blue500,
+			weaker: Primitives.blue600,
+			muted: Primitives.blue800
+		},
+		neutral: {
+			default: Primitives.grey500,
+			weaker: Primitives.grey600,
+			muted: Primitives.grey800
+		}
+	},
+	background: {
+		primary: {
+			lighter: Primitives.darkGraphite500,
+			default: Primitives.darkGraphite600,
+			darker: Primitives.darkGraphite700
+		},
+		secondary: {
+			default: Primitives.darkPurple800,
+			darker: Primitives.darkPurple900
+		},
+		tertiary: {
+			lighter: Primitives.darkGrey400,
+			default: Primitives.darkGrey900,
+			darker: Primitives.black
+		}
+	},
+	content: {
+		primary: {
+			default: Primitives.white,
+			muted: Primitives.whiteOpacity50,
+			inverse: Primitives.black
+		},
+		secondary: {
+			default: Primitives.grey100,
+			muted: Primitives.whiteOpacity50,
+			inverse: Primitives.grey800
+		}
+	},
+	overlay: {
+		primary: {
+			default: '#000C'
+		}
+	}
+};
+
+// <component>.<role(optional)>.<state(optional)>.<property>
+export const Components = {
+	loadingIndicator: {
+		surface: Semantic.role.secondary.default
+	},
+	statusbar: {
+		background: Semantic.background.tertiary.darker
+	},
+	header: {
+		background: Semantic.background.tertiary.default
+	},
+	main: {
+		background: Semantic.background.primary.darker,
+		text: Semantic.content.primary.default
+	},
+	title: {
+		text: Semantic.content.primary.default
+	},
+	passcode: {
+		background: Semantic.background.secondary.default
+	},
+	dialog: {
+		background: Semantic.background.secondary.default
+	},
+	card: {
+		background: Semantic.background.primary.default
+	},
+	cardHeader: {
+		background: Semantic.background.primary.lighter
+	},
+	accountCard: {
+		default: {
+			default: {
+				background: Semantic.background.primary.default,
+				border: Semantic.role.neutral.muted
+			},
+			active: {
+				background: Semantic.background.primary.default,
+				border: Semantic.role.secondary.default
+			}
+		},
+		multisig: {
+			default: {
+				background: Semantic.role.warning.muted,
+				border: Semantic.role.warning.weaker
+			},
+			active: {
+				background: Semantic.role.warning.muted,
+				border: Semantic.role.warning.default
+			}
+		}
+	},
+	accountCardWidgetBody: {
+		background: Semantic.role.primary.default
+	},
+	accountCardWidgetButton: {
+		default: {
+			background: Semantic.role.primary.weaker,
+			separator: Semantic.role.primary.default,
+			text: Semantic.content.primary.default
+		},
+		disabled: {
+			background: Semantic.role.primary.muted
+		}
+	},
+	actionCard: {
+		default: {
+			background: Semantic.overlay.primary.default
+		},
+		pressed: {
+			background: Semantic.overlay.primary.default
+		}
+	},
+	actionCardContent: {
+		background: Primitives.blackOpacity70,
+		text: Semantic.content.primary.default
+	},
+	dataContainer: {
+		background: Semantic.background.tertiary.darker
+	},
+	divider: {
+		default: {
+			background: Semantic.background.primary.default
+		},
+		inverted: {
+			background: Semantic.background.primary.darker
+		},
+		accent: {
+			background: Semantic.background.tertiary.lighter
+		}
+	},
+	popupMessage: {
+		background: Semantic.background.tertiary.darker,
+		text: Semantic.role.secondary.default,
+		border: Semantic.role.secondary.default
+	},
+	networkConnectionStatus: {
+		default: {
+			text: Semantic.content.primary.inverse
+		},
+		connected: {
+			background: Semantic.role.info.default
+		},
+		connecting: {
+			background: Semantic.role.warning.default
+		},
+		disconnected: {
+			background: Semantic.role.danger.default
+		}
+	},
+	alert: {
+		neutral: {
+			background: Semantic.role.neutral.muted,
+			text: Semantic.role.neutral.default
+		},
+		info: {
+			background: Semantic.role.info.muted,
+			text: Semantic.role.info.default
+		},
+		success: {
+			background: Semantic.role.success.muted,
+			text: Semantic.role.success.default
+		},
+		warning: {
+			background: Semantic.role.warning.muted,
+			text: Semantic.role.warning.default
+		},
+		danger: {
+			background: Semantic.role.danger.muted,
+			text: Semantic.role.danger.default
+		}
+	},
+	statusCard: {
+		neutral: {
+			background: Semantic.role.neutral.default,
+			text: Semantic.content.primary.inverse
+		},
+		info: {
+			background: Semantic.role.info.default,
+			text: Semantic.content.primary.inverse
+		},
+		success: {
+			background: Semantic.role.success.default,
+			text: Semantic.content.primary.inverse
+		},
+		warning: {
+			background: Semantic.role.warning.default,
+			text: Semantic.content.primary.inverse
+		},
+		danger: {
+			background: Semantic.role.danger.default,
+			text: Semantic.content.primary.inverse
+		}
+	},
+	statusLabel: {
+		neutral: {
+			text: Semantic.role.neutral.default
+		},
+		info: {
+			text: Semantic.role.info.default
+		},
+		success: {
+			text: Semantic.role.success.default
+		},
+		warning: {
+			text: Semantic.role.warning.default
+		},
+		danger: {
+			text: Semantic.role.danger.default
+		}
+	},
+	amount: {
+		positive: {
+			text: Semantic.role.success.default
+		},
+		negative: {
+			text: Semantic.role.danger.default
+		},
+		neutral: {
+			text: Semantic.content.primary.default
+		},
+		inverted: {
+			text: Semantic.content.primary.inverse
+		}
+	},
+	emptyList: {
+		text: Primitives.whiteOpacity30
+	},
+	navigationMenu: {
+		background: Semantic.background.secondary.default
+	},
+	navigationMenuItem: {
+		default: {
+			background: Semantic.background.secondary.default,
+			text: Semantic.content.primary.default
+		},
+		active: {
+			background: '#1E2F52',
+			text: Semantic.role.secondary.default
+		}
+	},
+	tabs: {
+		background: Semantic.background.tertiary.default
+	},
+	tabsItem: {
+		default: {
+			text: Semantic.role.secondary.default
+		},
+		active: {
+			text: Semantic.role.secondary.default,
+			border: Semantic.role.secondary.default
+		}
+	},
+	summary: {
+		background: Semantic.background.tertiary.darker,
+		text: Semantic.content.primary.default
+	},
+	progress: {
+		background: Semantic.background.tertiary.darker,
+		bar: {
+			default: Semantic.role.secondary.default,
+			success: Semantic.role.success.default,
+			warning: Semantic.role.warning.default,
+			danger: Semantic.role.danger.default
+		}
+	},
+	buttonCardEmbedded: {
+		primary: {
+			default: {
+				background: Semantic.role.primary.weaker,
+				text: Semantic.content.primary.default
+			},
+			disabled: {
+				background: Semantic.role.primary.muted,
+				text: Semantic.content.primary.muted
+			}
+		},
+		neutral: {
+			default: {
+				background: Semantic.background.tertiary.lighter,
+				text: Semantic.content.primary.default
+			},
+			disabled: {
+				background: Semantic.background.tertiary.default,
+				text: Semantic.content.primary.muted
+			}
+		}
+	},
+	buttonSendReceive: {
+		primary: {
+			default: {
+				background: Semantic.role.primary.weaker,
+				separator: Semantic.role.primary.muted,
+				text: Semantic.content.primary.default
+			},
+			disabled: {
+				background: Semantic.role.primary.muted,
+				separator: Semantic.background.primary.darker,
+				text: Semantic.content.primary.muted
+			}
+		}
+	},
+	// Solid button, floating button.
+	buttonSolid: {
+		secondary: {
+			default: {
+				border: Semantic.role.secondary.default,
+				background: Semantic.role.secondary.default,
+				text: Semantic.content.primary.inverse
+			},
+			pressed: {
+				border: Semantic.role.secondary.weaker,
+				background: Semantic.role.secondary.weaker,
+				text: Semantic.content.primary.inverse
+			},
+			disabled: {
+				border: Semantic.role.secondary.muted,
+				background: Semantic.role.secondary.muted,
+				text: Semantic.content.primary.inverse
+			}
+		},
+		danger: {
+			default: {
+				border: Semantic.role.danger.default,
+				background: Semantic.role.danger.default,
+				text: Semantic.content.primary.inverse
+			},
+			pressed: {
+				border: Semantic.role.danger.weaker,
+				background:Semantic.role.danger.weaker, 
+				text: Semantic.content.primary.inverse
+			},
+			disabled: {
+				border: Semantic.role.danger.muted,
+				background: Semantic.role.danger.muted,
+				text: Semantic.content.primary.inverse
+			}
+		},
+		warning: {
+			default: {
+				border: Semantic.role.warning.default,
+				background: Semantic.role.warning.default,
+				text: Semantic.content.primary.inverse
+			},
+			pressed: {
+				border: Semantic.role.warning.weaker,
+				background: Semantic.role.warning.weaker,
+				text: Semantic.content.primary.inverse
+			},
+			disabled: {
+				border: Semantic.role.warning.muted,
+				background: Semantic.role.warning.muted,
+				text: Semantic.content.primary.inverse
+			}
+		},
+		neutral: {
+			default: {
+				border: Semantic.role.neutral.default,
+				background: Semantic.role.neutral.default,
+				text: Semantic.content.primary.inverse
+			},
+			pressed: {
+				border: Semantic.role.neutral.weaker,
+				background: Semantic.role.neutral.weaker,
+				text: Semantic.content.primary.inverse
+			},
+			disabled: {
+				border: Semantic.role.neutral.muted,
+				background: Semantic.role.neutral.muted,
+				text: Semantic.content.primary.inverse
+			}
+		}
+	},
+	// Bordered buttons
+	buttonBordered: {
+		secondary: {
+			default: {
+				background: Semantic.background.secondary.darker,
+				text: Semantic.role.secondary.default,
+				border: Semantic.role.secondary.default
+			},
+			pressed: {
+				background: Semantic.role.secondary.muted,
+				text: Semantic.role.secondary.default,
+				border: Semantic.role.secondary.default
+			},
+			disabled: {
+				background: Semantic.background.secondary.darker,
+				text: Semantic.role.secondary.muted,
+				border: Semantic.role.secondary.muted
+			}
+		},
+		danger: {
+			default: {
+				background: Semantic.background.secondary.darker,
+				text: Semantic.role.danger.default,
+				border: Semantic.role.danger.default
+			},
+			pressed: {
+				background: Semantic.role.danger.muted,
+				text: Semantic.role.danger.default,
+				border: Semantic.role.danger.default
+			},
+			disabled: {
+				background: Semantic.background.secondary.darker,
+				text: Semantic.role.danger.muted,
+				border: Semantic.role.danger.muted
+			}
+		},
+		warning: {
+			default: {
+				background: Semantic.background.secondary.darker,
+				text: Semantic.role.warning.default,
+				border: Semantic.role.warning.default
+			},
+			pressed: {
+				background: Semantic.role.warning.weaker,
+				text: Semantic.role.warning.default,
+				border: Semantic.role.warning.default
+			},
+			disabled: {
+				background: Semantic.background.secondary.darker,
+				text: Semantic.role.warning.muted,
+				border: Semantic.role.warning.muted
+			}
+		},
+		neutral: {
+			default: {
+				background: Semantic.background.secondary.darker,
+				text: Semantic.role.neutral.default,
+				border: Semantic.role.neutral.default
+			},
+			pressed: {
+				background: Semantic.role.neutral.muted,
+				text: Semantic.role.neutral.default,
+				border: Semantic.role.neutral.default
+			},
+			disabled: {
+				background: Semantic.background.secondary.darker,
+				text: Semantic.role.neutral.muted,
+				border: Semantic.role.neutral.muted
+			}
+		}
+	},
+	// Text boxes, inputs, check boxes, switches, radio buttons etc.
+	control: {
+		default: {
+			default: {
+				background: Semantic.background.tertiary.darker,
+				label: Semantic.background.tertiary.lighter,
+				placeholder: Semantic.background.tertiary.lighter,
+				text: Semantic.content.primary.default,
+				border: Semantic.role.primary.default,
+				surface: Semantic.role.primary.default
+			},
+			focused: {
+				background: Semantic.background.tertiary.darker,
+				label: Semantic.background.tertiary.lighter,
+				placeholder: Semantic.background.tertiary.lighter,
+				text: Semantic.content.primary.default,
+				border: Semantic.role.primary.weaker,
+				surface: Semantic.role.primary.weaker
+			},
+			disabled: {
+				background: Semantic.background.tertiary.darker,
+				label: Semantic.background.tertiary.lighter,
+				placeholder: Semantic.background.tertiary.lighter,
+				text: Semantic.background.tertiary.lighter,
+				border: Semantic.role.primary.muted,
+				surface: Semantic.role.primary.muted
+			}
+		},
+		danger: {
+			default: {
+				background: Semantic.background.tertiary.darker,
+				label: Semantic.background.tertiary.lighter,
+				placeholder: Semantic.background.tertiary.lighter,
+				text: Semantic.content.primary.default,
+				border: Semantic.role.danger.default,
+				surface: Semantic.role.danger.default
+			},
+			focused: {
+				background: Semantic.background.tertiary.darker,
+				label: Semantic.background.tertiary.lighter,
+				placeholder: Semantic.background.tertiary.lighter,
+				text: Semantic.content.primary.default,
+				border: Semantic.role.danger.weaker,
+				surface: Semantic.role.danger.weaker
+			},
+			disabled: {
+				background: Semantic.background.tertiary.darker,
+				label: Semantic.background.tertiary.lighter,
+				placeholder: Semantic.background.tertiary.lighter,
+				text: Semantic.background.tertiary.lighter,
+				border: Semantic.role.danger.muted,
+				surface: Semantic.role.danger.muted
+			}
+		}
+	},
+	controlErrorMessage: {
+		text: Semantic.role.danger.default
+	},
+	select: {
+		default: {
+			default: {
+				background: Primitives.transparent
+			},
+			selected: {
+				background: Semantic.role.primary.default
+			}
+		}
+	},
+	// Chips, suggestion buttons etc.
+	chip: {
+		default: {
+			background: Semantic.background.secondary.default,
+			text: Semantic.role.secondary.default
+		},
+		pressed: {
+			background: Semantic.role.secondary.weaker,
+			text: Semantic.role.secondary.default
+		},
+		active: {
+			background: Semantic.role.secondary.default,
+			text: Semantic.content.primary.inverse
+		}
+	},
+	// Tab selector control
+	tabSelector: {
+		default: {
+			background: Semantic.background.secondary.default,
+			text: Semantic.role.secondary.default,
+			border: Semantic.role.secondary.default
+		},
+		pressed: {
+			background: Semantic.role.secondary.weaker,
+			text: Semantic.role.secondary.default
+		},
+		active: {
+			background: Semantic.role.secondary.default,
+			text: Semantic.content.primary.inverse
+		}
+	},
+	// Link, plain text button etc.
+	link: {
+		default: {
+			default: {
+				text: Semantic.role.secondary.default
+			},
+			pressed: {
+				text: Semantic.role.secondary.weaker
+			},
+			disabled: {
+				text: Semantic.role.secondary.muted
+			}
+		}
+	}
+};
