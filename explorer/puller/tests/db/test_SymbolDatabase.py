@@ -2177,9 +2177,289 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			'symbol_secret_locks',
 			'symbol_sync_state',
 			'symbol_transaction_addresses',
+			'symbol_transaction_daily_statistics',
+			'symbol_transaction_monthly_statistics',
 			'symbol_transaction_mosaics',
 			'symbol_transactions'
 		], tables)
+
+	def test_create_tables_creates_transaction_statistics_columns_and_indexes(self):
+		# Arrange:
+		database = self._create_uninitialized_database()
+		cursor = database.connection.cursor()
+
+		# Act:
+		database.create_tables()
+
+		# Assert:
+		cursor.execute(
+			'''
+			SELECT table_name, column_name, udt_name, is_nullable
+			FROM information_schema.columns
+			WHERE table_name IN ('symbol_transaction_daily_statistics', 'symbol_transaction_monthly_statistics')
+			ORDER BY table_name, ordinal_position
+			''')
+		self.assertEqual([
+			('symbol_transaction_daily_statistics', 'bucket_date', 'date', 'NO'),
+			('symbol_transaction_daily_statistics', 'bucket_start', 'timestamp', 'NO'),
+			('symbol_transaction_daily_statistics', 'bucket_end', 'timestamp', 'NO'),
+			('symbol_transaction_daily_statistics', 'first_height', 'int8', 'YES'),
+			('symbol_transaction_daily_statistics', 'last_height', 'int8', 'YES'),
+			('symbol_transaction_daily_statistics', 'transaction_count', 'int8', 'NO'),
+			('symbol_transaction_daily_statistics', 'block_count', 'int4', 'NO'),
+			('symbol_transaction_daily_statistics', 'updated_at_height', 'int8', 'NO'),
+			('symbol_transaction_daily_statistics', 'updated_at', 'timestamp', 'NO'),
+			('symbol_transaction_monthly_statistics', 'bucket_month', 'date', 'NO'),
+			('symbol_transaction_monthly_statistics', 'bucket_start', 'timestamp', 'NO'),
+			('symbol_transaction_monthly_statistics', 'bucket_end', 'timestamp', 'NO'),
+			('symbol_transaction_monthly_statistics', 'first_height', 'int8', 'YES'),
+			('symbol_transaction_monthly_statistics', 'last_height', 'int8', 'YES'),
+			('symbol_transaction_monthly_statistics', 'transaction_count', 'int8', 'NO'),
+			('symbol_transaction_monthly_statistics', 'block_count', 'int4', 'NO'),
+			('symbol_transaction_monthly_statistics', 'updated_at_height', 'int8', 'NO'),
+			('symbol_transaction_monthly_statistics', 'updated_at', 'timestamp', 'NO')
+		], cursor.fetchall())
+
+		cursor.execute(
+			'''
+			SELECT indexname
+			FROM pg_indexes
+			WHERE indexname IN (
+				'idx_symbol_transaction_daily_statistics_bucket_start',
+				'idx_symbol_transaction_daily_statistics_first_height',
+				'idx_symbol_transaction_daily_statistics_last_height',
+				'idx_symbol_transaction_daily_statistics_updated_height',
+				'idx_symbol_transaction_daily_statistics_updated_at',
+				'idx_symbol_transaction_monthly_statistics_bucket_start',
+				'idx_symbol_transaction_monthly_statistics_first_height',
+				'idx_symbol_transaction_monthly_statistics_last_height',
+				'idx_symbol_transaction_monthly_statistics_updated_height',
+				'idx_symbol_transaction_monthly_statistics_updated_at')
+			ORDER BY indexname
+			''')
+		self.assertEqual([
+			'idx_symbol_transaction_daily_statistics_bucket_start',
+			'idx_symbol_transaction_daily_statistics_first_height',
+			'idx_symbol_transaction_daily_statistics_last_height',
+			'idx_symbol_transaction_daily_statistics_updated_at',
+			'idx_symbol_transaction_daily_statistics_updated_height',
+			'idx_symbol_transaction_monthly_statistics_bucket_start',
+			'idx_symbol_transaction_monthly_statistics_first_height',
+			'idx_symbol_transaction_monthly_statistics_last_height',
+			'idx_symbol_transaction_monthly_statistics_updated_at',
+			'idx_symbol_transaction_monthly_statistics_updated_height'
+		], [row[0] for row in cursor.fetchall()])
+
+		cursor.execute(
+			'''
+			SELECT table_name, column_name
+			FROM information_schema.table_constraints
+			JOIN information_schema.key_column_usage USING (constraint_name, table_schema, table_name)
+			WHERE constraint_type = 'PRIMARY KEY'
+				AND table_name IN ('symbol_transaction_daily_statistics', 'symbol_transaction_monthly_statistics')
+			ORDER BY table_name
+			''')
+		self.assertEqual([
+			('symbol_transaction_daily_statistics', 'bucket_date'),
+			('symbol_transaction_monthly_statistics', 'bucket_month')
+		], cursor.fetchall())
+
+	def test_create_tables_backfills_new_statistics_schema_once_and_does_not_rebuild_existing_buckets(self):
+		# Arrange:
+		database = self._create_database()
+		database.upsert_blocks([_create_block(1, timestamp=datetime.datetime(2026, 1, 1, 12), transactions_count=3)])
+		database.upsert_sync_state(_create_sync_state(last_synced_height=1, last_synced_block_hash=b'hash 1'))
+		cursor = database.connection.cursor()
+		cursor.execute('DROP TABLE symbol_transaction_daily_statistics, symbol_transaction_monthly_statistics')
+		database.connection.commit()
+
+		# Act:
+		database.create_tables()
+		cursor.execute(
+			"UPDATE symbol_transaction_daily_statistics SET updated_at = TIMESTAMP '2000-01-01 00:00:00'")
+		cursor.execute(
+			"UPDATE symbol_transaction_monthly_statistics SET updated_at = TIMESTAMP '2000-01-01 00:00:00'")
+		database.connection.commit()
+		database.create_tables()
+
+		# Assert:
+		cursor.execute('SELECT transaction_count, updated_at_height, updated_at FROM symbol_transaction_daily_statistics')
+		self.assertEqual([(3, 1, datetime.datetime(2000, 1, 1))], cursor.fetchall())
+		cursor.execute('SELECT transaction_count, updated_at_height, updated_at FROM symbol_transaction_monthly_statistics')
+		self.assertEqual([(3, 1, datetime.datetime(2000, 1, 1))], cursor.fetchall())
+
+	def test_create_tables_backfill_uses_published_height_and_timestamp_not_physical_maximum(self):
+		# Arrange:
+		database = self._create_database()
+		database.upsert_blocks([
+			_create_block(1, timestamp=datetime.datetime(2026, 1, 1, 12), transactions_count=2),
+			_create_block(2, timestamp=datetime.datetime(2026, 1, 2, 12), transactions_count=4),
+			_create_block(3, timestamp=datetime.datetime(2026, 1, 10, 12), transactions_count=8)
+		])
+		database.upsert_sync_state(_create_sync_state(last_synced_height=2, last_synced_block_hash=b'hash 2'))
+		cursor = database.connection.cursor()
+		cursor.execute('DROP TABLE symbol_transaction_daily_statistics, symbol_transaction_monthly_statistics')
+		database.connection.commit()
+
+		# Act:
+		database.create_tables()
+
+		# Assert:
+		cursor.execute(
+			'SELECT bucket_date, transaction_count, updated_at_height '
+			'FROM symbol_transaction_daily_statistics ORDER BY bucket_date')
+		self.assertEqual([
+			(datetime.date(2026, 1, 1), 2, 2),
+			(datetime.date(2026, 1, 2), 4, 2)
+		], cursor.fetchall())
+		cursor.execute(
+			'SELECT bucket_month, transaction_count, updated_at_height '
+			'FROM symbol_transaction_monthly_statistics ORDER BY bucket_month')
+		self.assertEqual([(datetime.date(2026, 1, 1), 6, 2)], cursor.fetchall())
+
+	def test_upsert_blocks_rebuilds_previously_excluded_period_when_new_head_timestamp_crosses_it(self):
+		# Arrange:
+		database = self._create_database()
+		database.upsert_blocks([
+			_create_block(1, timestamp=datetime.datetime(2026, 1, 1, 1), transactions_count=2),
+			_create_block(2, timestamp=datetime.datetime(2026, 1, 10, 1), transactions_count=4)
+		])
+		database.upsert_sync_state(_create_sync_state(last_synced_height=1, last_synced_block_hash=b'hash 1'))
+		cursor = database.connection.cursor()
+		cursor.execute('DROP TABLE symbol_transaction_daily_statistics, symbol_transaction_monthly_statistics')
+		database.connection.commit()
+		database.create_tables()
+
+		# Act:
+		database.upsert_blocks([_create_block(3, timestamp=datetime.datetime(2026, 1, 20, 1), transactions_count=8)])
+
+		# Assert:
+		cursor.execute(
+			'SELECT bucket_date, transaction_count, block_count, updated_at_height '
+			'FROM symbol_transaction_daily_statistics WHERE bucket_date IN (%s, %s, %s) ORDER BY bucket_date',
+			(datetime.date(2026, 1, 1), datetime.date(2026, 1, 10), datetime.date(2026, 1, 20)))
+		self.assertEqual([
+			(datetime.date(2026, 1, 1), 2, 1, 3),
+			(datetime.date(2026, 1, 10), 4, 1, 3),
+			(datetime.date(2026, 1, 20), 8, 1, 3)
+		], cursor.fetchall())
+
+	def test_upsert_blocks_rebuilds_statistics_from_top_level_counts_and_preserves_empty_periods(self):
+		# Arrange:
+		database = self._create_database()
+		blocks = [
+			_create_block(1, timestamp=datetime.datetime(2026, 1, 1, 12), transactions_count=2, total_transactions_count=20),
+			_create_block(2, timestamp=datetime.datetime(2026, 1, 3, 12), transactions_count=4, total_transactions_count=40),
+			_create_block(3, timestamp=datetime.datetime(2026, 2, 2, 12), transactions_count=8, total_transactions_count=80)
+		]
+
+		# Act:
+		database.upsert_blocks(blocks)
+
+		# Assert:
+		cursor = database.connection.cursor()
+		cursor.execute(
+			'SELECT bucket_date, first_height, last_height, transaction_count, block_count, updated_at_height '
+			'FROM symbol_transaction_daily_statistics ORDER BY bucket_date')
+		daily_rows = cursor.fetchall()
+		self.assertEqual(33, len(daily_rows))
+		self.assertEqual((datetime.date(2026, 1, 1), 1, 1, 2, 1, 3), daily_rows[0])
+		self.assertEqual((datetime.date(2026, 1, 2), None, None, 0, 0, 3), daily_rows[1])
+		self.assertEqual((datetime.date(2026, 1, 3), 2, 2, 4, 1, 3), daily_rows[2])
+		self.assertEqual((datetime.date(2026, 2, 2), 3, 3, 8, 1, 3), daily_rows[-1])
+		cursor.execute(
+			'SELECT bucket_month, first_height, last_height, transaction_count, block_count, updated_at_height '
+			'FROM symbol_transaction_monthly_statistics ORDER BY bucket_month')
+		self.assertEqual([
+			(datetime.date(2026, 1, 1), 1, 2, 6, 2, 3),
+			(datetime.date(2026, 2, 1), 3, 3, 8, 1, 3)
+		], cursor.fetchall())
+
+	def test_repair_rollback_rebuilds_old_timestamp_periods_atomically(self):
+		# Arrange:
+		database = self._create_database()
+		database.upsert_blocks([
+			_create_block(1, timestamp=datetime.datetime(2026, 1, 1, 12), transactions_count=2),
+			_create_block(2, timestamp=datetime.datetime(2026, 2, 1, 12), transactions_count=4)
+		])
+
+		# Act:
+		database.repair_rollback_from_height(
+			2,
+			_create_sync_state(status='repairing', last_synced_height=1, last_synced_block_hash=b'hash 1'),
+			RollbackRefreshEntries())
+
+		# Assert:
+		cursor = database.connection.cursor()
+		cursor.execute(
+			'SELECT bucket_month, transaction_count, block_count, updated_at_height '
+			'FROM symbol_transaction_monthly_statistics ORDER BY bucket_month')
+		self.assertEqual([(datetime.date(2026, 1, 1), 2, 1, 1)], cursor.fetchall())
+
+	def test_repair_rollback_then_replacement_rebuilds_daily_and_monthly_boundary_periods(self):
+		# Arrange:
+		database = self._create_database()
+		database.upsert_blocks([
+			_create_block(1, timestamp=datetime.datetime(2026, 1, 31, 23), transactions_count=2),
+			_create_block(2, timestamp=datetime.datetime(2026, 2, 1, 1), transactions_count=4),
+			_create_block(3, timestamp=datetime.datetime(2026, 2, 2, 1), transactions_count=8)
+		])
+
+		# Act:
+		database.repair_rollback_from_height(
+			2,
+			_create_sync_state(status='repairing', last_synced_height=1, last_synced_block_hash=b'hash 1'),
+			RollbackRefreshEntries())
+		database.upsert_blocks([_create_block(2, timestamp=datetime.datetime(2026, 3, 1, 1), transactions_count=16)])
+
+		# Assert:
+		cursor = database.connection.cursor()
+		cursor.execute(
+			'SELECT bucket_date, transaction_count, block_count, updated_at_height '
+			'FROM symbol_transaction_daily_statistics ORDER BY bucket_date')
+		daily_rows = cursor.fetchall()
+		self.assertEqual(30, len(daily_rows))
+		self.assertEqual((datetime.date(2026, 1, 31), 2, 1, 2), daily_rows[0])
+		self.assertEqual((datetime.date(2026, 2, 1), 0, 0, 2), daily_rows[1])
+		self.assertEqual((datetime.date(2026, 3, 1), 16, 1, 2), daily_rows[-1])
+		cursor.execute(
+			'SELECT bucket_month, transaction_count, block_count, updated_at_height '
+			'FROM symbol_transaction_monthly_statistics ORDER BY bucket_month')
+		self.assertEqual([
+			(datetime.date(2026, 1, 1), 2, 1, 2),
+			(datetime.date(2026, 2, 1), 0, 0, 2),
+			(datetime.date(2026, 3, 1), 16, 1, 2)
+		], cursor.fetchall())
+
+	def test_repair_rollback_failure_after_bucket_rebuild_rolls_back_blocks_buckets_and_state(self):
+		# Arrange:
+		database = self._create_database()
+		database.upsert_blocks([
+			_create_block(1, timestamp=datetime.datetime(2026, 1, 1, 1), transactions_count=2),
+			_create_block(2, timestamp=datetime.datetime(2026, 2, 1, 1), transactions_count=4)
+		])
+		database.upsert_sync_state(_create_sync_state(last_synced_height=2, last_synced_block_hash=b'hash 2'))
+		cursor = database.connection.cursor()
+		cursor.execute('SELECT height, timestamp FROM symbol_blocks ORDER BY height')
+		before_blocks = cursor.fetchall()
+		cursor.execute('SELECT bucket_month, transaction_count, block_count, updated_at_height FROM symbol_transaction_monthly_statistics')
+		before_buckets = cursor.fetchall()
+		before_state = database.get_sync_state()
+
+		# Act + Assert:
+		with self.assertRaisesRegex(KeyError, 'raw_payload'):
+			database.repair_rollback_from_height(
+				2,
+				_create_sync_state(status='repairing', last_synced_height=1, last_synced_block_hash=b'hash 1'),
+				RollbackRefreshEntries(mosaic_entries=[{'row': {}}]))
+
+		cursor.execute('SELECT height, timestamp FROM symbol_blocks ORDER BY height')
+		self.assertEqual(before_blocks, cursor.fetchall())
+		cursor.execute(
+			'SELECT bucket_month, transaction_count, block_count, updated_at_height '
+			'FROM symbol_transaction_monthly_statistics')
+		self.assertEqual(before_buckets, cursor.fetchall())
+		self.assertEqual(before_state, database.get_sync_state())
 
 	def test_create_tables_creates_symbol_account_enum_types(self):
 		# Arrange:
@@ -3026,6 +3306,16 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		self.assertEqual([
 			'idx_symbol_transaction_addresses_address_height',
 			'idx_symbol_transaction_addresses_height',
+			'idx_symbol_transaction_daily_statistics_bucket_start',
+			'idx_symbol_transaction_daily_statistics_first_height',
+			'idx_symbol_transaction_daily_statistics_last_height',
+			'idx_symbol_transaction_daily_statistics_updated_at',
+			'idx_symbol_transaction_daily_statistics_updated_height',
+			'idx_symbol_transaction_monthly_statistics_bucket_start',
+			'idx_symbol_transaction_monthly_statistics_first_height',
+			'idx_symbol_transaction_monthly_statistics_last_height',
+			'idx_symbol_transaction_monthly_statistics_updated_at',
+			'idx_symbol_transaction_monthly_statistics_updated_height',
 			'idx_symbol_transaction_mosaics_height',
 			'idx_symbol_transaction_mosaics_mosaic_height',
 			'idx_symbol_transaction_mosaics_mosaic_role_height',

@@ -2,6 +2,8 @@
 import time
 from collections import namedtuple
 from contextlib import contextmanager
+from datetime import date, datetime
+from datetime import time as datetime_time
 
 from common.symbol.ReceiptTypes import RECEIPT_TYPE_LABELS
 from psycopg2.extras import Json
@@ -126,6 +128,38 @@ SYMBOL_BLOCK_DEFINITIONS = [
 	'created_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP',
 	'updated_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP'
 ]
+SYMBOL_TRANSACTION_DAILY_STATISTICS_DEFINITIONS = [
+	'bucket_date date PRIMARY KEY',
+	'bucket_start timestamp NOT NULL',
+	'bucket_end timestamp NOT NULL',
+	'first_height bigint',
+	'last_height bigint',
+	'transaction_count bigint NOT NULL',
+	'block_count int NOT NULL',
+	'updated_at_height bigint NOT NULL',
+	'updated_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP'
+]
+SYMBOL_TRANSACTION_MONTHLY_STATISTICS_DEFINITIONS = [
+	'bucket_month date PRIMARY KEY',
+	'bucket_start timestamp NOT NULL',
+	'bucket_end timestamp NOT NULL',
+	'first_height bigint',
+	'last_height bigint',
+	'transaction_count bigint NOT NULL',
+	'block_count int NOT NULL',
+	'updated_at_height bigint NOT NULL',
+	'updated_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP'
+]
+SymbolTransactionStatisticsPeriod = namedtuple(
+	'SymbolTransactionStatisticsPeriod',
+	'period table_name key_name interval trunc_unit')
+SymbolTransactionStatisticsRebuild = namedtuple(
+	'SymbolTransactionStatisticsRebuild',
+	'head_height readable_timestamp first_period last_period affected_periods period_definition')
+SYMBOL_TRANSACTION_STATISTICS_PERIODS = (
+	SymbolTransactionStatisticsPeriod('day', 'symbol_transaction_daily_statistics', 'bucket_date', '1 day', 'day'),
+	SymbolTransactionStatisticsPeriod('month', 'symbol_transaction_monthly_statistics', 'bucket_month', '1 month', 'month')
+)
 SYMBOL_ACCOUNT_REFRESH_STATE_DEFINITIONS = [
 	'id int PRIMARY KEY DEFAULT 1',
 	'last_successful_run_id varchar',
@@ -556,10 +590,17 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 		_create_enum_type(cursor, 'symbol_mosaic_restriction_entry_type', SYMBOL_MOSAIC_RESTRICTION_ENTRY_TYPE_VALUES)
 		_create_enum_type(cursor, 'symbol_lock_status', SYMBOL_LOCK_STATUS_VALUES)
 		_create_enum_type(cursor, 'symbol_lock_hash_algorithm', SYMBOL_LOCK_HASH_ALGORITHM_VALUES)
+		# Workflows call create_tables() every run, so backfill only when a bucket table is created.
+		cursor.execute(
+			"SELECT to_regclass('public.symbol_transaction_daily_statistics'), "
+			"to_regclass('public.symbol_transaction_monthly_statistics')")
+		has_missing_statistics_tables = any(value is None for value in cursor.fetchone())
 		# The Symbol schema is greenfield in this phase. Existing databases are recreated
 		# by the deployment lifecycle; CREATE TABLE is not a migration mechanism here.
 		_create_table(cursor, 'symbol_sync_state', SYMBOL_SYNC_STATE_DEFINITIONS)
 		_create_table(cursor, 'symbol_blocks', SYMBOL_BLOCK_DEFINITIONS)
+		_create_table(cursor, 'symbol_transaction_daily_statistics', SYMBOL_TRANSACTION_DAILY_STATISTICS_DEFINITIONS)
+		_create_table(cursor, 'symbol_transaction_monthly_statistics', SYMBOL_TRANSACTION_MONTHLY_STATISTICS_DEFINITIONS)
 		_create_table(cursor, 'symbol_account_refresh_state', SYMBOL_ACCOUNT_REFRESH_STATE_DEFINITIONS)
 		_create_table(cursor, 'symbol_accounts', SYMBOL_ACCOUNT_DEFINITIONS)
 		_create_table(cursor, 'symbol_account_mosaics', SYMBOL_ACCOUNT_MOSAIC_DEFINITIONS)
@@ -596,6 +637,36 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 		cursor.execute('CREATE INDEX IF NOT EXISTS idx_symbol_blocks_height_desc ON symbol_blocks(height DESC)')
 		cursor.execute('CREATE INDEX IF NOT EXISTS idx_symbol_blocks_timestamp ON symbol_blocks(timestamp)')
 		cursor.execute('CREATE INDEX IF NOT EXISTS idx_symbol_blocks_signer_address ON symbol_blocks(signer_address)')
+		cursor.execute(
+			'CREATE INDEX IF NOT EXISTS idx_symbol_transaction_daily_statistics_bucket_start '
+			'ON symbol_transaction_daily_statistics(bucket_start DESC)')
+		cursor.execute(
+			'CREATE INDEX IF NOT EXISTS idx_symbol_transaction_daily_statistics_first_height '
+			'ON symbol_transaction_daily_statistics(first_height)')
+		cursor.execute(
+			'CREATE INDEX IF NOT EXISTS idx_symbol_transaction_daily_statistics_last_height '
+			'ON symbol_transaction_daily_statistics(last_height)')
+		cursor.execute(
+			'CREATE INDEX IF NOT EXISTS idx_symbol_transaction_daily_statistics_updated_height '
+			'ON symbol_transaction_daily_statistics(updated_at_height)')
+		cursor.execute(
+			'CREATE INDEX IF NOT EXISTS idx_symbol_transaction_daily_statistics_updated_at '
+			'ON symbol_transaction_daily_statistics(updated_at)')
+		cursor.execute(
+			'CREATE INDEX IF NOT EXISTS idx_symbol_transaction_monthly_statistics_bucket_start '
+			'ON symbol_transaction_monthly_statistics(bucket_start DESC)')
+		cursor.execute(
+			'CREATE INDEX IF NOT EXISTS idx_symbol_transaction_monthly_statistics_first_height '
+			'ON symbol_transaction_monthly_statistics(first_height)')
+		cursor.execute(
+			'CREATE INDEX IF NOT EXISTS idx_symbol_transaction_monthly_statistics_last_height '
+			'ON symbol_transaction_monthly_statistics(last_height)')
+		cursor.execute(
+			'CREATE INDEX IF NOT EXISTS idx_symbol_transaction_monthly_statistics_updated_height '
+			'ON symbol_transaction_monthly_statistics(updated_at_height)')
+		cursor.execute(
+			'CREATE INDEX IF NOT EXISTS idx_symbol_transaction_monthly_statistics_updated_at '
+			'ON symbol_transaction_monthly_statistics(updated_at)')
 		cursor.execute('CREATE INDEX IF NOT EXISTS idx_symbol_accounts_importance_desc ON symbol_accounts(importance DESC)')
 		cursor.execute('CREATE INDEX IF NOT EXISTS idx_symbol_accounts_address_height ON symbol_accounts(address_height)')
 		cursor.execute('CREATE INDEX IF NOT EXISTS idx_symbol_accounts_harvesting ON symbol_accounts(is_harvesting_active)')
@@ -643,6 +714,9 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 		cursor.execute('CREATE INDEX IF NOT EXISTS idx_symbol_transaction_addresses_height ON symbol_transaction_addresses(height)')
 		for index_sql in SYMBOL_RECEIPT_INDEXES:
 			cursor.execute(index_sql)
+		if has_missing_statistics_tables:
+			readable_height, readable_timestamp = self._get_transaction_statistics_head(cursor)
+			self._rebuild_transaction_statistics(cursor, readable_height, readable_timestamp, None, None)
 		self._commit()
 
 	def check_connection(self):
@@ -761,6 +835,145 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 		except Exception:
 			self.connection.rollback()
 			raise
+
+	@staticmethod
+	def _statistics_period_start(timestamp, period):
+		if 'day' == period:
+			return timestamp.date()
+
+		return date(timestamp.year, timestamp.month, 1)
+
+	@staticmethod
+	def _next_statistics_period(period_start, period):
+		if 'day' == period:
+			return period_start.fromordinal(period_start.toordinal() + 1)
+
+		return date(
+			period_start.year + (1 if 12 == period_start.month else 0),
+			1 if 12 == period_start.month else period_start.month + 1,
+			1)
+
+	@staticmethod
+	def _statistics_period_range(start_timestamp, end_timestamp, period):
+		return (
+			SymbolDatabase._statistics_period_start(start_timestamp, period),
+			SymbolDatabase._statistics_period_start(end_timestamp, period))
+
+	@staticmethod
+	def _statistics_timestamp(period_start):
+		return datetime.combine(period_start, datetime_time.min)
+
+	@staticmethod
+	def _normalize_statistics_timestamp(timestamp):
+		return timestamp.replace(tzinfo=None) if timestamp.tzinfo else timestamp
+
+	@staticmethod
+	def _get_transaction_statistics_head(cursor):
+		cursor.execute('SELECT last_synced_height FROM symbol_sync_state WHERE id = 1')
+		state = cursor.fetchone()
+		if not state or state[0] is None:
+			return None, None
+
+		cursor.execute('SELECT timestamp FROM symbol_blocks WHERE height = %s', (state[0],))
+		head = cursor.fetchone()
+		return (state[0], head[0]) if head else (None, None)
+
+	@staticmethod
+	def _rebuild_transaction_statistics(
+		cursor,
+		readable_height,
+		readable_timestamp,
+		affected_start_timestamp,
+		affected_end_timestamp
+	):
+		"""Rebuilds day/month transaction-count buckets from stored block rows."""
+
+		if readable_height is None or readable_timestamp is None:
+			cursor.execute('DELETE FROM symbol_transaction_daily_statistics')
+			cursor.execute('DELETE FROM symbol_transaction_monthly_statistics')
+			return
+
+		head_height = readable_height
+		cursor.execute(
+			'SELECT MIN(timestamp), MAX(timestamp) FROM symbol_blocks WHERE height <= %s AND timestamp <= %s',
+			(head_height, readable_timestamp))
+		first_timestamp, last_timestamp = cursor.fetchone()
+
+		for period_definition in SYMBOL_TRANSACTION_STATISTICS_PERIODS:
+			first_period, last_period = SymbolDatabase._statistics_period_range(
+				first_timestamp, last_timestamp, period_definition.period)
+			affected_periods = SymbolDatabase._statistics_period_range(
+				affected_start_timestamp or first_timestamp,
+				affected_end_timestamp or last_timestamp,
+				period_definition.period)
+			rebuild = SymbolTransactionStatisticsRebuild(
+				head_height, readable_timestamp, first_period, last_period, affected_periods, period_definition)
+			SymbolDatabase._rebuild_transaction_statistics_period(cursor, rebuild)
+
+	@staticmethod
+	def _rebuild_transaction_statistics_period(cursor, rebuild):
+		affected_first, affected_last = rebuild.affected_periods
+		affected_end_exclusive = SymbolDatabase._next_statistics_period(
+			affected_last, rebuild.period_definition.period)
+		global_end_exclusive = SymbolDatabase._next_statistics_period(
+			rebuild.last_period, rebuild.period_definition.period)
+
+		cursor.execute(
+			f'DELETE FROM {rebuild.period_definition.table_name} '
+			f'WHERE {rebuild.period_definition.key_name} < %s '
+			f'OR {rebuild.period_definition.key_name} >= %s',
+			(rebuild.first_period, global_end_exclusive))
+		cursor.execute(
+			f'DELETE FROM {rebuild.period_definition.table_name} '
+			f'WHERE {rebuild.period_definition.key_name} >= %s '
+			f'AND {rebuild.period_definition.key_name} < %s',
+			(affected_first, affected_end_exclusive))
+		cursor.execute(
+			f'''
+			INSERT INTO {rebuild.period_definition.table_name} (
+				{rebuild.period_definition.key_name}, bucket_start, bucket_end, first_height, last_height,
+				transaction_count, block_count, updated_at_height, updated_at
+			)
+			SELECT period_start::date,
+				period_start,
+				period_start + INTERVAL '{rebuild.period_definition.interval}',
+				NULL, NULL, 0, 0, %s, CURRENT_TIMESTAMP
+			FROM generate_series(
+				%s::timestamp, %s::timestamp, INTERVAL '{rebuild.period_definition.interval}') AS periods(period_start)
+			ON CONFLICT ({rebuild.period_definition.key_name}) DO NOTHING
+			''',
+			(rebuild.head_height, rebuild.first_period, rebuild.last_period))
+		cursor.execute(
+			f'''
+			INSERT INTO {rebuild.period_definition.table_name} (
+				{rebuild.period_definition.key_name}, bucket_start, bucket_end, first_height, last_height,
+				transaction_count, block_count, updated_at_height, updated_at
+			)
+			SELECT DATE_TRUNC('{rebuild.period_definition.trunc_unit}', timestamp)::date,
+				DATE_TRUNC('{rebuild.period_definition.trunc_unit}', timestamp),
+				(DATE_TRUNC('{rebuild.period_definition.trunc_unit}', timestamp) + INTERVAL
+					'{rebuild.period_definition.interval}')::timestamp,
+				MIN(height), MAX(height), SUM(transactions_count)::bigint, COUNT(*)::int, %s, CURRENT_TIMESTAMP
+			FROM symbol_blocks
+			WHERE height <= %s AND timestamp <= %s AND timestamp >= %s AND timestamp < %s
+			GROUP BY DATE_TRUNC('{rebuild.period_definition.trunc_unit}', timestamp)
+			ON CONFLICT ({rebuild.period_definition.key_name}) DO UPDATE SET
+				bucket_start = EXCLUDED.bucket_start,
+				bucket_end = EXCLUDED.bucket_end,
+				first_height = EXCLUDED.first_height,
+				last_height = EXCLUDED.last_height,
+				transaction_count = EXCLUDED.transaction_count,
+				block_count = EXCLUDED.block_count,
+				updated_at_height = EXCLUDED.updated_at_height,
+				updated_at = EXCLUDED.updated_at
+			''',
+			(
+				rebuild.head_height,
+				rebuild.head_height,
+				rebuild.readable_timestamp,
+				SymbolDatabase._statistics_timestamp(affected_first),
+				SymbolDatabase._statistics_timestamp(affected_end_exclusive)
+			))
 
 	def upsert_account_refresh_state(self, refresh_state):
 		"""Upserts supplied fields on the singleton Symbol account refresh state."""
@@ -1817,14 +2030,31 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 		"""Deletes blocks from the supplied height for rollback repair."""
 
 		with self._database_transaction() as cursor:
-			self._delete_rollback_affected_rows_from_height(cursor, height)
+			old_start, old_end = self._delete_rollback_affected_rows_from_height(cursor, height)
+			self._rebuild_transaction_statistics(cursor, None, None, old_start, old_end)
 			self._stale_mark_account_refresh_state_if_needed(cursor, height)
 
 	def repair_rollback_from_height(self, height, sync_state, refresh_entries):
 		"""Repairs rollbacked chain and refreshed current state in one transaction."""
 
 		with self._database_transaction() as cursor:
-			self._delete_rollback_affected_rows_from_height(cursor, height)
+			old_start, old_end = self._delete_rollback_affected_rows_from_height(cursor, height)
+			readable_height = sync_state.get('last_synced_height')
+			cursor.execute('SELECT timestamp FROM symbol_blocks WHERE height = %s', (readable_height,))
+			readable_head = cursor.fetchone()
+			self._rebuild_transaction_statistics(
+				cursor,
+				readable_height if readable_head else None,
+				readable_head[0] if readable_head else None,
+				old_start,
+				old_end)
+			if readable_head:
+				for period_definition in SYMBOL_TRANSACTION_STATISTICS_PERIODS:
+					cursor.execute(
+						f'UPDATE {period_definition.table_name} '
+						'SET updated_at_height = %s, updated_at = CURRENT_TIMESTAMP '
+						'WHERE updated_at_height > %s',
+						(readable_height, readable_height))
 			self._stale_mark_account_refresh_state_if_needed(cursor, height)
 			self._execute_namespace_entries(cursor, refresh_entries.namespace_entries)
 			self._execute_mosaic_entries(cursor, refresh_entries.mosaic_entries)
@@ -1836,6 +2066,8 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 
 	@staticmethod
 	def _delete_rollback_affected_rows_from_height(cursor, height):
+		cursor.execute('SELECT MIN(timestamp), MAX(timestamp) FROM symbol_blocks WHERE height >= %s', (height,))
+		old_timestamp_range = cursor.fetchone()
 		cursor.execute('DELETE FROM symbol_transaction_mosaics WHERE height >= %s', (height,))
 		cursor.execute('DELETE FROM symbol_transaction_addresses WHERE height >= %s', (height,))
 		cursor.execute('DELETE FROM symbol_transactions WHERE height >= %s', (height,))
@@ -1847,6 +2079,7 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 		cursor.execute('DELETE FROM symbol_hash_locks WHERE updated_at_height >= %s', (height,))
 		cursor.execute('DELETE FROM symbol_secret_locks WHERE updated_at_height >= %s', (height,))
 		cursor.execute('DELETE FROM symbol_mosaic_restrictions WHERE updated_at_height >= %s', (height,))
+		return old_timestamp_range
 
 	def upsert_transactions_for_height(self, height, transaction_entries):
 		"""Replaces persisted Symbol transactions and child index rows for one height atomically."""
@@ -2021,6 +2254,15 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 		"""Upserts Symbol block rows atomically."""
 
 		with self._database_transaction() as cursor:
+			old_timestamps = []
+			# Include the previous T so buckets excluded by its cutoff are rebuilt as the head advances.
+			_, previous_head_timestamp = self._get_transaction_statistics_head(cursor)
+			if blocks:
+				cursor.execute(
+					'SELECT timestamp FROM symbol_blocks WHERE height = ANY(%s)',
+					([block['height'] for block in blocks],))
+				old_timestamps = [row[0] for row in cursor.fetchall()]
+
 			for block in blocks:
 				cursor.execute(
 					'''
@@ -2120,3 +2362,19 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 						updated_at = CURRENT_TIMESTAMP
 					''',
 					block)
+
+			if blocks:
+				new_timestamps = [block['timestamp'] for block in blocks]
+				all_timestamps = [
+					self._normalize_statistics_timestamp(timestamp)
+					for timestamp in old_timestamps + new_timestamps + ([previous_head_timestamp] if previous_head_timestamp else [])
+				]
+				batch_head = max(block['height'] for block in blocks)
+				cursor.execute('SELECT timestamp FROM symbol_blocks WHERE height = %s', (batch_head,))
+				batch_head_timestamp = cursor.fetchone()[0]
+				self._rebuild_transaction_statistics(
+					cursor,
+					batch_head,
+					batch_head_timestamp,
+					min(all_timestamps),
+					max(all_timestamps))

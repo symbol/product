@@ -1,6 +1,7 @@
 # pylint: disable=too-many-lines
 import asyncio
 import copy
+import datetime
 import json
 from contextlib import contextmanager
 from unittest.mock import AsyncMock
@@ -287,8 +288,18 @@ class RecordingCheckpointDatabase(DelegatingSymbolDatabase):
 	def __init__(self, database):
 		super().__init__(database)
 		self.published_states = []
+		self.published_statistics = []
 
 	def checkpoint_sync_state(self, sync_state):
+		cursor = self.database.connection.cursor()
+		cursor.execute(
+			'SELECT bucket_date, transaction_count, block_count, updated_at_height '
+			'FROM symbol_transaction_daily_statistics ORDER BY bucket_date')
+		daily_statistics = cursor.fetchall()
+		cursor.execute(
+			'SELECT bucket_month, transaction_count, block_count, updated_at_height '
+			'FROM symbol_transaction_monthly_statistics ORDER BY bucket_month')
+		self.published_statistics.append((daily_statistics, cursor.fetchall()))
 		result = self.database.checkpoint_sync_state(sync_state)
 		self.published_states.append(self.database.get_sync_state())
 		return result
@@ -1154,6 +1165,28 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 			bytes(sync_state['last_synced_block_hash'])
 		)
 		self.assertIsNone(sync_state['dirty_state_from_height'])
+
+	def test_sync_block_headers_rebuilds_transaction_statistics_before_checkpoint(self):
+		# Arrange:
+		database = self.puller.symbol_db
+		recording_database = RecordingCheckpointDatabase(database)
+		transaction_rows = create_complete_aggregate_pair(1, 'A' * 64, 0)
+		connector = FakeConnector(
+			1,
+			{0: [create_node_block(1, transactions_count=1, total_transactions_count=2)]},
+			transactions_by_path={transaction_path(1, 1): create_transaction_page(transaction_rows)},
+			statement_pages={statement_path(1, 1): {'data': []}})
+
+		# Act:
+		with _replace_symbol_database(self.puller, recording_database):
+			self._sync_with_connector(connector)
+
+		# Assert:
+		self.assertEqual([(
+			[(datetime.date(1970, 1, 1), 1, 1, 1)],
+			[(datetime.date(1970, 1, 1), 1, 1, 1)]
+		)], recording_database.published_statistics)
+		self.assertEqual([1], [state['last_synced_height'] for state in recording_database.published_states])
 
 	def test_sync_block_headers_accepts_valid_parent_hash_chain(self):
 		# Arrange:
