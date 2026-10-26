@@ -8,8 +8,6 @@
 
 export const emptyPage = () => Promise.resolve({ data: [], pageNumber: 1 });
 
-export const resolveNull = () => Promise.resolve(null);
-
 export const resolveEmptyList = () => Promise.resolve([]);
 
 export const resolveEmptyObject = () => Promise.resolve({});
