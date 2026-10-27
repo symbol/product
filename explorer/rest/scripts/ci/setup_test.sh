@@ -13,3 +13,5 @@ pg_ctl start --wait
 pg_ctl status
 
 psql -U "${POSTGRES_USER}" --command "CREATE USER ubuntu WITH SUPERUSER PASSWORD 'ubuntu';"
+
+createdb -w -h 127.0.0.1 -U "${POSTGRES_USER}" explorer_rest_test
