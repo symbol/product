@@ -1,21 +1,12 @@
-from unittest.mock import AsyncMock, Mock, create_autospec
+from unittest.mock import create_autospec
 
 import pytest
-from common.symbol.NativeMosaic import NativeMosaicInfo
-from common.symbol.NodeConfiguration import SymbolNodeConfiguration
 from flask import Flask
-from psycopg2 import OperationalError
-from symbolchain.sc import TransactionType
-from symbolchain.symbol.Network import Network
-from symbollightapi.model.Exceptions import HttpException, NodeException
+from symbollightapi.model.Exceptions import NodeException
 
 from rest import setup_error_handlers
-from rest.db.SymbolDatabase import SymbolDatabase, SymbolDataUnavailable
 from rest.facade.SymbolRestFacade import SymbolRestFacade
-from rest.model.symbol.validation import SymbolDataInvalid
 from rest.routes.symbol import setup_symbol_routes
-
-from ...test.SymbolUnconfirmedTransactionTestUtils import get_unconfirmed_transaction
 
 
 @pytest.fixture(name='unconfirmed_route')

@@ -231,7 +231,7 @@ def test_formats_address_lists(transaction_type, field_name):
 	(TransactionType.MOSAIC_SUPPLY_REVOCATION, 'sourceAddress'),
 	(TransactionType.MOSAIC_ADDRESS_RESTRICTION, 'targetAddress'),
 ])
-def test_formats_unresolved_payload_address(transaction_type, field_name):
+def test_formats_unresolved_address(transaction_type, field_name):
 	# Arrange:
 	address = Address.from_namespace_id(NamespaceId(int('887E5DB6BB0B21F5', 16)), Network.TESTNET.identifier)
 	unconfirmed_transaction = get_unconfirmed_transaction(transaction_type)
@@ -248,7 +248,7 @@ def test_formats_unresolved_payload_address(transaction_type, field_name):
 	(TransactionType.ACCOUNT_MOSAIC_RESTRICTION, ['699E9532708D2FB8', '1213766D49458631']),
 	(TransactionType.ACCOUNT_OPERATION_RESTRICTION, [16716, 16724]),
 ])
-def test_preserves_non_address_restriction_lists(transaction_type, restrictions):
+def test_preserves_non_address_lists(transaction_type, restrictions):
 	# Arrange:
 	unconfirmed_transaction = get_unconfirmed_transaction(transaction_type)
 	unconfirmed_transaction['transaction'].update(restrictionAdditions=restrictions[:], restrictionDeletions=restrictions[:])
@@ -326,7 +326,7 @@ def test_formats_transfer_mosaic(divisibility, expected_amount):
 	assert [{'id': mosaic_id, 'name': mosaic_id, 'amount': expected_amount}] == result['value']
 
 
-def test_preserves_raw_mosaic_amount_without_metadata():
+def test_preserves_mosaic_amount():
 	# Arrange:
 	unconfirmed_transaction = get_unconfirmed_transaction(TransactionType.TRANSFER)
 	unconfirmed_transaction['transaction']['mosaics'] = [{'id': '1234567890abcdef', 'amount': '18446744073709551615'}]
