@@ -237,6 +237,18 @@ def _setup_symbol_block_receipts_route(app, symbol_api_facade, run_symbol_query)
 
 
 def _setup_symbol_account_routes(app, symbol_api_facade, run_symbol_query):
+	@app.route('/api/symbol/account/statistics')
+	def api_get_symbol_account_statistics():
+		_validate_allowed_query_parameters(frozenset())
+
+		error, result = run_symbol_query(
+			symbol_api_facade.get_account_statistics,
+			'Failed to get Symbol account statistics')
+		if error:
+			return error
+
+		return jsonify(result)
+
 	@app.route('/api/symbol/accounts')
 	def api_get_symbol_accounts():
 		try:

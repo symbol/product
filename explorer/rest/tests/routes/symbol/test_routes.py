@@ -69,6 +69,16 @@ class SymbolBlockFacade:  # pylint: disable=too-many-instance-attributes
 		return self.transactions_result
 
 
+def _create_account_statistics_result():
+	return {
+		'total': 1, 'harvesting': 1, 'eligibleForHarvesting': 1,
+		'top10AccountsImportance': 100.0, 'harvestingAccountsPercentage': 100.0,
+		'importanceBreakdown': [[100.0, 'TDUMMY']],
+		'harvestingAccountsChart': [[100.0, 'Harvesting'], [0.0, 'Not harvesting']],
+		'pendingVerification': []
+	}
+
+
 class SymbolAccountFacade:
 	"""Recording facade for Account route validation tests."""
 
@@ -80,6 +90,7 @@ class SymbolAccountFacade:
 		self.accounts_query = None
 		self.accounts_result = [{'address': 'TDUMMY'}]
 		self.accounts_error = None
+		self.account_statistics_error = None
 
 	def get_accounts(self, query):
 		self.accounts_query = query
@@ -94,6 +105,12 @@ class SymbolAccountFacade:
 			raise self.account_error
 
 		return self.account_result
+
+	def get_account_statistics(self):
+		if self.account_statistics_error:
+			raise self.account_statistics_error
+
+		return _create_account_statistics_result()
 
 
 def _create_symbol_test_client(facade):
@@ -126,6 +143,77 @@ def _assert_not_found_response(response):
 		'status': 404,
 		'message': 'Resource not found'
 	} == response.json
+
+
+def test_account_stats_full_response():
+	# Arrange:
+	facade = SymbolAccountFacade()
+	client = _create_symbol_test_client(facade)
+	expected_result = {
+		'total': 1, 'harvesting': 1, 'eligibleForHarvesting': 1,
+		'top10AccountsImportance': 100.0, 'harvestingAccountsPercentage': 100.0,
+		'importanceBreakdown': [[100.0, 'TDUMMY']],
+		'harvestingAccountsChart': [[100.0, 'Harvesting'], [0.0, 'Not harvesting']],
+		'pendingVerification': []
+	}
+
+	# Act:
+	response = client.get('/api/symbol/account/statistics')
+
+	# Assert:
+	assert 200 == response.status_code
+	assert expected_result == response.json
+	assert isinstance(response.json['total'], int) and not isinstance(response.json['total'], bool)
+	assert isinstance(response.json['harvesting'], int) and not isinstance(response.json['harvesting'], bool)
+	assert isinstance(response.json['eligibleForHarvesting'], int) and not isinstance(response.json['eligibleForHarvesting'], bool)
+	assert isinstance(response.json['top10AccountsImportance'], float)
+	assert isinstance(response.json['harvestingAccountsPercentage'], float)
+	assert isinstance(response.json['importanceBreakdown'], list)
+	assert isinstance(response.json['importanceBreakdown'][0][0], float)
+	assert isinstance(response.json['importanceBreakdown'][0][1], str)
+	assert isinstance(response.json['harvestingAccountsChart'], list)
+	assert isinstance(response.json['harvestingAccountsChart'][0][0], float)
+	assert isinstance(response.json['harvestingAccountsChart'][0][1], str)
+	assert isinstance(response.json['pendingVerification'], list)
+
+
+def test_account_stats_rejects_params():
+	# Arrange:
+	facade = SymbolAccountFacade()
+	client = _create_symbol_test_client(facade)
+
+	# Act:
+	response = client.get('/api/symbol/account/statistics?limit=1')
+
+	# Assert:
+	_assert_bad_request_response(response, 'Unsupported query parameter: limit')
+	assert facade.account_statistics_error is None
+
+
+def test_account_stats_unavailable():
+	# Arrange:
+	facade = SymbolAccountFacade()
+	facade.account_statistics_error = SymbolDataUnavailable('refresh unavailable')
+	client = _create_symbol_test_client(facade)
+
+	# Act:
+	response = client.get('/api/symbol/account/statistics')
+
+	# Assert:
+	_assert_symbol_backend_unavailable_response(response)
+
+
+def test_account_stats_database_error():
+	# Arrange:
+	facade = SymbolAccountFacade()
+	facade.account_statistics_error = OperationalError('database unavailable')
+	client = _create_symbol_test_client(facade)
+
+	# Act:
+	response = client.get('/api/symbol/account/statistics')
+
+	# Assert:
+	_assert_symbol_backend_unavailable_response(response)
 
 
 def test_valid_address_bytes_to_facade():

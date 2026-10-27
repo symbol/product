@@ -224,6 +224,71 @@ class SymbolAccountListView:
 		}
 
 
+class SymbolAccountStatisticsView:
+	"""Formats the aggregate account statistics response."""
+
+	def __init__(self, statistics):
+		self.statistics = statistics
+
+	def to_dict(self):
+		"""Returns account statistics with percentage values in display units."""
+
+		statistics = self.statistics
+		if statistics.total == 0:
+			top10_importance = 0
+			importance_breakdown = []
+		else:
+			importance_values = [
+				_importance_decimal(value, 'account statistics importance')
+				for value, _ in statistics.top_accounts
+			]
+			importance_rows = [
+				[float(value * 100), address]
+				for value, (_, address) in zip(importance_values, statistics.top_accounts)
+			]
+			top10_importance = sum(importance_values, Decimal(0)) * 100
+			total_importance = _importance_decimal(
+				statistics.total_importance, 'account statistics importance', maximum=None) * 100
+			rest_importance = total_importance - top10_importance
+			if rest_importance > 0:
+				importance_rows.append([float(rest_importance), 'Rest'])
+			importance_breakdown = importance_rows
+			top10_importance = float(top10_importance)
+
+		if statistics.eligible_for_harvesting == 0:
+			harvesting_accounts_percentage = 0
+			harvesting_accounts_chart = []
+		else:
+			harvesting_accounts_percentage = float(
+				Decimal(statistics.harvesting_eligible * 10000 // statistics.eligible_for_harvesting) / Decimal(100))
+			harvesting_accounts_chart = [
+				[harvesting_accounts_percentage, 'Harvesting'],
+				[100 - harvesting_accounts_percentage, 'Not harvesting']
+			]
+
+		return {
+			'total': statistics.total,
+			'harvesting': statistics.harvesting,
+			'eligibleForHarvesting': statistics.eligible_for_harvesting,
+			'top10AccountsImportance': top10_importance,
+			'harvestingAccountsPercentage': harvesting_accounts_percentage,
+			'importanceBreakdown': importance_breakdown,
+			'harvestingAccountsChart': harvesting_accounts_chart,
+			'pendingVerification': []
+		}
+
+
+def _importance_decimal(value, field_path, maximum=1):
+	if isinstance(value, bool) or not isinstance(value, (Decimal, float, int)):
+		raise _invalid(field_path, 'value is not a finite number')
+
+	ratio = Decimal(str(value))
+	if not ratio.is_finite() or ratio < 0 or (maximum is not None and ratio > maximum):
+		raise _invalid(field_path, 'value is outside the allowed range')
+
+	return ratio
+
+
 def _multisig_fields(multisig, network):
 	if multisig is None:
 		return None

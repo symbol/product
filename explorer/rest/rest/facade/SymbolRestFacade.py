@@ -2,7 +2,7 @@ from common.symbol.NativeMosaic import NativeMosaicInfo
 from psycopg2 import Error as PsycopgError
 from zenlog import log
 
-from rest.model.symbol.Account import SymbolAccountListView, SymbolAccountView
+from rest.model.symbol.Account import SymbolAccountListView, SymbolAccountStatisticsView, SymbolAccountView
 from rest.model.symbol.format import format_timestamp
 from rest.model.symbol.Receipt import SymbolReceiptView
 from rest.model.symbol.Transaction import SymbolTransactionView
@@ -191,3 +191,15 @@ class SymbolRestFacade:
 		accounts = self.symbol_db.get_account_list(
 			query, self.account_refresh_max_age_seconds, self.harvesting_active_window_days)
 		return [SymbolAccountListView(account, self.network, self.native_mosaic_info).to_dict() for account in accounts]
+
+	def get_account_statistics(self):
+		"""Gets aggregate statistics from the configured account refresh snapshot."""
+
+		if self.account_refresh_max_age_seconds is None:
+			raise ValueError('Symbol account refresh max age is required')
+		if self.harvesting_active_window_days is None:
+			raise ValueError('Symbol harvesting active window is required')
+
+		statistics = self.symbol_db.get_account_statistics(
+			self.account_refresh_max_age_seconds, self.harvesting_active_window_days)
+		return SymbolAccountStatisticsView(statistics).to_dict()

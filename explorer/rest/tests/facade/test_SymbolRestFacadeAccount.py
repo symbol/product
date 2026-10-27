@@ -1,10 +1,11 @@
+from decimal import Decimal
 from unittest import TestCase
 
 from common.symbol.NativeMosaic import NativeMosaicInfo
 from common.symbol.NodeConfiguration import SymbolNodeConfiguration
 from symbolchain.symbol.Network import Network
 
-from rest.db.SymbolDatabase import AccountListRecord, AccountRecord
+from rest.db.SymbolDatabase import AccountListRecord, AccountRecord, AccountStatisticsRecord
 from rest.facade.SymbolRestFacade import SymbolRestFacade
 
 
@@ -38,6 +39,8 @@ class RecordingAccountDatabase:
 		self.account_list_record = AccountListRecord(
 			bytes.fromhex('98FD35818960C7B18B72F49A5598FA9F712A354DB33EDE57'),
 			None, 'main', 0, '72C0212E67A08BCE', (), ())
+		self.account_statistics_query = None
+		self.account_statistics_record = AccountStatisticsRecord(1, 1, 1, 1, Decimal('1'), ())
 
 	def try_get_account(self, address, public_key):
 		self.account_query = (address, public_key)
@@ -48,8 +51,32 @@ class RecordingAccountDatabase:
 		self.account_list_query = (query, max_age_seconds, harvesting_active_window_days)
 		return [self.account_list_record]
 
+	def get_account_statistics(self, max_age_seconds, harvesting_active_window_days):
+		self.account_statistics_query = (max_age_seconds, harvesting_active_window_days)
+		return self.account_statistics_record
+
 
 class SymbolRestFacadeAccountTest(TestCase):
+	def test_get_account_statistics_formats_snapshot_and_passes_refresh_settings(self):
+		# Arrange:
+		database = RecordingAccountDatabase()
+		facade = SymbolRestFacade(
+			database,
+			SymbolNodeConfiguration.from_url('http://127.0.0.1:3000', allow_loopback=True),
+			NativeMosaicInfo('72C0212E67A08BCE', 6),
+			Network.TESTNET,
+			7200,
+			7)
+
+		# Act:
+		result = facade.get_account_statistics()
+
+		# Assert:
+		self.assertEqual((7200, 7), database.account_statistics_query)
+		self.assertEqual(1, result['total'])
+		self.assertEqual(0.0, result['top10AccountsImportance'])
+		self.assertEqual([], result['pendingVerification'])
+
 	def test_get_accounts_formats_snapshot_list_and_passes_refresh_age(self):
 		# Arrange:
 		database = RecordingAccountDatabase()
@@ -150,3 +177,38 @@ class SymbolRestFacadeAccountListConfigurationTest(TestCase):
 
 		# Assert:
 		self.assertEqual('Symbol harvesting active window is required', str(context.exception))
+
+
+class SymbolRestFacadeAccountStatisticsConfigurationTest(TestCase):
+	def test_get_account_statistics_requires_configured_refresh_age(self):
+		# Arrange:
+		database = RecordingAccountDatabase()
+		facade = SymbolRestFacade(
+			database,
+			SymbolNodeConfiguration.from_url('http://127.0.0.1:3000', allow_loopback=True),
+			NativeMosaicInfo('72C0212E67A08BCE', 6), Network.TESTNET,
+			harvesting_active_window_days=7)
+
+		# Act:
+		with self.assertRaises(ValueError) as context:
+			facade.get_account_statistics()
+
+		# Assert:
+		self.assertEqual('Symbol account refresh max age is required', str(context.exception))
+		self.assertIsNone(database.account_statistics_query)
+
+	def test_get_account_statistics_requires_configured_harvesting_window(self):
+		# Arrange:
+		database = RecordingAccountDatabase()
+		facade = SymbolRestFacade(
+			database,
+			SymbolNodeConfiguration.from_url('http://127.0.0.1:3000', allow_loopback=True),
+			NativeMosaicInfo('72C0212E67A08BCE', 6), Network.TESTNET, account_refresh_max_age_seconds=7200)
+
+		# Act:
+		with self.assertRaises(ValueError) as context:
+			facade.get_account_statistics()
+
+		# Assert:
+		self.assertEqual('Symbol harvesting active window is required', str(context.exception))
+		self.assertIsNone(database.account_statistics_query)
