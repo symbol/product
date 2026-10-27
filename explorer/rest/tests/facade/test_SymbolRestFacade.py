@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from unittest import TestCase
 from unittest.mock import create_autospec
 
@@ -15,7 +15,9 @@ from rest.db.SymbolDatabase import (
 	SortOrder,
 	SymbolDatabase,
 	SymbolDataUnavailable,
-	TransactionQuery
+	TransactionQuery,
+	TransactionRangeRecord,
+	TransactionStatisticsRecord
 )
 from rest.facade.SymbolRestFacade import SymbolRestFacade
 
@@ -225,6 +227,20 @@ class TransactionSymbolDatabase:
 		return self.transactions
 
 
+class TransactionStatisticsSymbolDatabase:
+	def __init__(self):
+		self.statistics = TransactionStatisticsRecord(12, 8, 3, 1.5)
+		self.range_query = None
+		self.range_rows = [TransactionRangeRecord('2026-01-01', 2)]
+
+	def get_transaction_statistics(self):
+		return self.statistics
+
+	def get_transaction_statistics_range(self, start_date, end_date, period_type):
+		self.range_query = (start_date, end_date, period_type)
+		return self.range_rows
+
+
 class NamespaceSymbolDatabase:
 	def __init__(self, namespaces):
 		self.namespaces = namespaces
@@ -283,6 +299,46 @@ class SymbolRestFacadeTest(TestCase):  # pylint: disable=too-many-public-methods
 		# Assert:
 		self.assertIs(query, symbol_db.query)
 		self.assertEqual([], result)
+
+	def test_get_transaction_statistics_formats_contract_fields(self):
+		# Arrange:
+		symbol_db = TransactionStatisticsSymbolDatabase()
+		facade = _create_facade_with_database(symbol_db)
+
+		# Act:
+		result = facade.get_transaction_statistics()
+
+		# Assert:
+		self.assertEqual({
+			'total': 12,
+			'last30Days': 8,
+			'last24Hours': 3,
+			'averagePerBlock': 1.5
+		}, result)
+
+	def test_get_transaction_range_formats_fields(self):
+		# Arrange:
+		symbol_db = TransactionStatisticsSymbolDatabase()
+		facade = _create_facade_with_database(symbol_db)
+
+		# Act:
+		result = facade.get_transaction_statistics_range(date(2026, 1, 1), date(2026, 1, 31), 'DAY')
+
+		# Assert:
+		self.assertEqual({'periodType': 'day', 'data': [{'period': '2026-01-01', 'totalTransactions': 2}]}, result)
+		self.assertEqual((date(2026, 1, 1), date(2026, 1, 31), 'DAY'), symbol_db.range_query)
+
+	def test_get_transaction_range_formats_empty_data(self):
+		# Arrange:
+		symbol_db = TransactionStatisticsSymbolDatabase()
+		symbol_db.range_rows = []
+		facade = _create_facade_with_database(symbol_db)
+
+		# Act:
+		result = facade.get_transaction_statistics_range(date(2026, 1, 1), date(2026, 1, 31), 'MONTH')
+
+		# Assert:
+		self.assertEqual({'periodType': 'month', 'data': []}, result)
 
 	def test_rejects_missing_database(self):
 		# Arrange:

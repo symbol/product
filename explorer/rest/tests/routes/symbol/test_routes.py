@@ -1,5 +1,7 @@
 # pylint: disable=too-many-lines
 
+from datetime import date
+
 import pytest
 from flask import Flask
 from psycopg2 import OperationalError
@@ -67,6 +69,40 @@ class SymbolBlockFacade:  # pylint: disable=too-many-instance-attributes
 			raise self.transactions_error
 
 		return self.transactions_result
+
+
+class SymbolTransactionStatisticsFacade:
+	"""Recording facade for transaction statistics route tests."""
+
+	def __init__(self):
+		self.statistics_result = {
+			'total': 12,
+			'last30Days': 8,
+			'last24Hours': 3,
+			'averagePerBlock': 1.5
+		}
+		self.statistics_calls = 0
+		self.statistics_error = None
+		self.range_query = None
+		self.range_error = None
+
+	@staticmethod
+	def get_health():
+		return {'isHealthy': True, 'errors': []}
+
+	def get_transaction_statistics(self):
+		self.statistics_calls += 1
+		if self.statistics_error:
+			raise self.statistics_error
+
+		return self.statistics_result
+
+	def get_transaction_statistics_range(self, start_date, end_date, period_type):
+		self.range_query = (start_date, end_date, period_type)
+		if self.range_error:
+			raise self.range_error
+		period = '2026-01' if period_type == 'MONTH' else '2026-01-01'
+		return {'periodType': period_type.lower(), 'data': [{'period': period, 'totalTransactions': 2}]}
 
 
 class SymbolAccountFacade:
@@ -1234,3 +1270,109 @@ def test_accounts_accepts_page_limits():
 	# Assert:
 	assert 200 == response.status_code
 	assert AccountListQuery(AccountSortField.ID, None, 100, 100000) == facade.accounts_query
+
+
+def test_tx_stats_response_fields():
+	# Arrange:
+	facade = SymbolTransactionStatisticsFacade()
+	client = _create_symbol_test_client(facade)
+
+	# Act:
+	response = client.get('/api/symbol/transaction/statistics')
+
+	# Assert:
+	assert 200 == response.status_code
+	assert {
+		'total': 12,
+		'last30Days': 8,
+		'last24Hours': 3,
+		'averagePerBlock': 1.5
+	} == response.json
+	assert 1 == facade.statistics_calls
+
+
+@pytest.mark.parametrize('query', [
+	pytest.param('?unknown=1', id='unknown'),
+	pytest.param('?bucket=blocks', id='bucket'),
+	pytest.param('?limit=1', id='limit'),
+])
+def test_tx_stats_route_rejects_queries(query):
+	# Arrange:
+	facade = SymbolTransactionStatisticsFacade()
+	client = _create_symbol_test_client(facade)
+
+	# Act:
+	response = client.get('/api/symbol/transaction/statistics' + query)
+
+	# Assert:
+	assert 400 == response.status_code
+	assert 0 == facade.statistics_calls
+
+
+def test_tx_stats_maps_503():
+	# Arrange:
+	facade = SymbolTransactionStatisticsFacade()
+	facade.statistics_error = SymbolDataUnavailable('backend unavailable')
+	client = _create_symbol_test_client(facade)
+
+	# Act:
+	response = client.get('/api/symbol/transaction/statistics')
+
+	# Assert:
+	_assert_symbol_backend_unavailable_response(response)
+
+
+@pytest.mark.parametrize('period, expected, expected_period', [
+	(' day ', 'DAY', '2026-01-01'), ('mOnTh', 'MONTH', '2026-01')])
+def test_tx_range_normalizes_input(period, expected, expected_period):
+	# Arrange:
+	facade = SymbolTransactionStatisticsFacade()
+	client = _create_symbol_test_client(facade)
+
+	# Act:
+	response = client.get('/api/symbol/transaction/statistics/range', query_string=[
+		('startDate', ' 2026-01-01 '), ('endDate', '2026-01-31'), ('periodType', period),
+		('startDate', 'bad'), ('endDate', 'bad'), ('periodType', 'bad'), ('unknown', 'ignored')])
+
+	# Assert:
+	assert 200 == response.status_code
+	assert (date(2026, 1, 1), date(2026, 1, 31), expected) == facade.range_query
+	assert {'periodType': expected.lower(), 'data': [{'period': expected_period, 'totalTransactions': 2}]} == response.json
+
+
+@pytest.mark.parametrize('query', [
+	{},
+	{'startDate': '', 'endDate': '2026-01-31', 'periodType': 'day'},
+	{'startDate': '2026-01-01', 'periodType': 'day'},
+	{'startDate': '2026-01-01', 'endDate': '2026-01-31'},
+	{'startDate': 'bad', 'endDate': '2026-01-31', 'periodType': 'day'},
+	{'startDate': '2026-01-01', 'endDate': 'bad', 'periodType': 'day'},
+	{'startDate': '2026-02-01', 'endDate': '2026-01-31', 'periodType': 'day'},
+	{'startDate': '2026-01-01', 'endDate': '2026-01-31', 'periodType': 'week'},
+	{'startDate': '2026-01-01', 'endDate': '2026-01-31', 'periodType': ' '},
+])
+def test_tx_range_rejects_invalid(query):
+	# Arrange:
+	facade = SymbolTransactionStatisticsFacade()
+	client = _create_symbol_test_client(facade)
+
+	# Act:
+	response = client.get('/api/symbol/transaction/statistics/range', query_string=query)
+
+	# Assert:
+	assert 400 == response.status_code
+	assert facade.range_query is None
+
+
+@pytest.mark.parametrize('error', [SymbolDataUnavailable('unavailable'), OperationalError('database error')])
+def test_tx_range_maps_503(error):
+	# Arrange:
+	facade = SymbolTransactionStatisticsFacade()
+	facade.range_error = error
+	client = _create_symbol_test_client(facade)
+
+	# Act:
+	response = client.get('/api/symbol/transaction/statistics/range?startDate=2026-01-01&endDate=2026-01-31&periodType=day')
+
+	# Assert:
+	_assert_symbol_backend_unavailable_response(response)

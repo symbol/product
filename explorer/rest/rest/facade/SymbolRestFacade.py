@@ -174,6 +174,26 @@ class SymbolRestFacade:
 		transactions = self.symbol_db.get_transactions(query)
 		return [SymbolTransactionView(transaction).to_dict(self.native_mosaic_info) for transaction in transactions]
 
+	def get_transaction_statistics(self):
+		"""Gets Symbol transaction statistics."""
+
+		statistics = self.symbol_db.get_transaction_statistics()
+		return {
+			'total': statistics.total,
+			'last30Days': statistics.last30_day,
+			'last24Hours': statistics.last24_hours,
+			'averagePerBlock': statistics.average_per_block
+		}
+
+	def get_transaction_statistics_range(self, start_date, end_date, period_type):
+		"""Gets transaction totals for the requested calendar range."""
+
+		rows = self.symbol_db.get_transaction_statistics_range(start_date, end_date, period_type)
+		return {
+			'periodType': period_type.lower(),
+			'data': [{'period': row.period, 'totalTransactions': row.total_transactions} for row in rows]
+		}
+
 	def try_get_account(self, address=None, public_key=None):
 		"""Gets a Symbol account detail DTO by address or public key."""
 

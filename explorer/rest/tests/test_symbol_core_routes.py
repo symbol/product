@@ -1180,6 +1180,311 @@ def test_symbol_blocks_reads_db(symbol_database_config):
 	] == response.json
 
 
+def test_transaction_stats_counts(symbol_database_config):
+	# Arrange:
+	head_timestamp = datetime(2026, 3, 31, 23, 59, 59, 123456, tzinfo=timezone.utc)
+	blocks = [
+		create_symbol_block(
+			1,
+			timestamp=head_timestamp - timedelta(days=30),
+			transactions_count=1,
+			total_transactions_count=10),
+		create_symbol_block(
+			2,
+			timestamp=head_timestamp - timedelta(days=30) + timedelta(microseconds=1),
+			transactions_count=2,
+			total_transactions_count=20),
+		create_symbol_block(
+			3,
+			timestamp=head_timestamp,
+			transactions_count=3,
+			total_transactions_count=30),
+		create_symbol_block(
+			4,
+			timestamp=head_timestamp + timedelta(microseconds=1),
+			transactions_count=999,
+			total_transactions_count=999)
+	]
+	with tempfile.TemporaryDirectory() as temp_directory:
+		db_config_path = _create_config_file(temp_directory, database_config=symbol_database_config)
+		app_config_path = _create_app_config(temp_directory, db_config_path)
+		_seed_symbol_block_tables(
+			symbol_database_config,
+			create_symbol_sync_state(last_synced_height=3, finalized_height=3),
+			blocks)
+		with rest_settings_env(app_config_path):
+			app = _create_symbol_app()
+			try:
+				client = app.test_client()
+
+				# Act:
+				statistics_response = client.get('/api/symbol/transaction/statistics')
+			finally:
+				app.extensions['symbol_database'].close()
+
+	# Assert:
+	assert 200 == statistics_response.status_code
+	assert {
+		'total': 60,
+		'last30Days': 50,
+		'last24Hours': 30,
+		'averagePerBlock': 2.0
+	} == statistics_response.json
+	assert all(isinstance(value, int) for value in statistics_response.json.values() if value != 2.0)
+	assert isinstance(statistics_response.json['averagePerBlock'], float)
+
+
+def test_tx_stats_range_follow_sync(symbol_database_config):
+	# Arrange:
+	blocks = [
+		create_symbol_block(
+			height,
+			timestamp=datetime(2026, 1, 1, tzinfo=timezone.utc),
+			transactions_count=height,
+			total_transactions_count=height * 10)
+		for height in range(1, 5)
+	]
+	with tempfile.TemporaryDirectory() as temp_directory:
+		db_config_path = _create_config_file(temp_directory, database_config=symbol_database_config)
+		app_config_path = _create_app_config(temp_directory, db_config_path)
+		_seed_symbol_block_tables(
+			symbol_database_config,
+			create_symbol_sync_state(last_synced_height=3, finalized_height=3),
+			blocks)
+		with rest_settings_env(app_config_path):
+			app = _create_symbol_app()
+			try:
+				client = app.test_client()
+				range_path = '/api/symbol/transaction/statistics/range?startDate=2026-01-01&endDate=2026-01-01&periodType='
+
+				# Act: Read the initial watermark, L = 3.
+				initial_response = client.get('/api/symbol/transaction/statistics')
+				range_response = client.get(range_path + 'day')
+
+				# Assert: L = 3.
+				assert (200, {'periodType': 'day', 'data': [
+					{'period': '2026-01-01', 'totalTransactions': 6}]}) == (
+					range_response.status_code, range_response.json)
+
+				# Act: Read the monthly range at the same watermark.
+				range_response = client.get(range_path + 'month')
+
+				# Assert:
+				assert (200, {'periodType': 'month', 'data': [
+					{'period': '2026-01', 'totalTransactions': 6}]}) == (
+					range_response.status_code, range_response.json)
+
+				# Act: Lower the watermark to L = 2.
+				with PullerSymbolDatabase(symbol_database_config) as writer:
+					writer.upsert_sync_state(create_symbol_sync_state(last_synced_height=2, finalized_height=2))
+				lowered_response = client.get('/api/symbol/transaction/statistics')
+				range_response = client.get(range_path + 'day')
+
+				# Assert: L = 2 after lowering.
+				assert (200, {'periodType': 'day', 'data': [
+					{'period': '2026-01-01', 'totalTransactions': 3}]}) == (
+					range_response.status_code, range_response.json)
+
+				# Act: Read the monthly range at the same watermark.
+				range_response = client.get(range_path + 'month')
+
+				# Assert:
+				assert (200, {'periodType': 'month', 'data': [
+					{'period': '2026-01', 'totalTransactions': 3}]}) == (
+					range_response.status_code, range_response.json)
+
+				# Act: Update chain height while keeping L = 2.
+				with PullerSymbolDatabase(symbol_database_config) as writer:
+					writer.upsert_sync_state(create_symbol_sync_state(
+						last_synced_height=2, finalized_height=2, chain_height=4))
+				kept_response = client.get('/api/symbol/transaction/statistics')
+				range_response = client.get(range_path + 'day')
+
+				# Assert: L = 2 after the chain height update.
+				assert (200, {'periodType': 'day', 'data': [
+					{'period': '2026-01-01', 'totalTransactions': 3}]}) == (
+					range_response.status_code, range_response.json)
+
+				# Act: Read the monthly range at the same watermark.
+				range_response = client.get(range_path + 'month')
+
+				# Assert:
+				assert (200, {'periodType': 'month', 'data': [
+					{'period': '2026-01', 'totalTransactions': 3}]}) == (
+					range_response.status_code, range_response.json)
+
+				# Act: Release the watermark to L = 4.
+				with PullerSymbolDatabase(symbol_database_config) as writer:
+					writer.upsert_sync_state(create_symbol_sync_state(last_synced_height=4, finalized_height=4))
+				released_response = client.get('/api/symbol/transaction/statistics')
+				range_response = client.get(range_path + 'day')
+
+				# Assert: L = 4.
+				assert (200, {'periodType': 'day', 'data': [
+					{'period': '2026-01-01', 'totalTransactions': 10}]}) == (
+					range_response.status_code, range_response.json)
+
+				# Act: Read the monthly range at the same watermark.
+				range_response = client.get(range_path + 'month')
+
+				# Assert:
+				assert (200, {'periodType': 'month', 'data': [
+					{'period': '2026-01', 'totalTransactions': 10}]}) == (
+					range_response.status_code, range_response.json)
+			finally:
+				app.extensions['symbol_database'].close()
+
+	# Assert:
+	assert (200, {'total': 60, 'last30Days': 60, 'last24Hours': 60, 'averagePerBlock': 2.0}) == (
+		initial_response.status_code, initial_response.json)
+	assert (200, {'total': 30, 'last30Days': 30, 'last24Hours': 30, 'averagePerBlock': 1.5}) == (
+		lowered_response.status_code, lowered_response.json)
+	assert (200, lowered_response.json) == (kept_response.status_code, kept_response.json)
+	assert (200, {'total': 100, 'last30Days': 100, 'last24Hours': 100, 'averagePerBlock': 2.5}) == (
+		released_response.status_code, released_response.json)
+
+
+def test_tx_range_day_month_responses(symbol_database_config):
+	# Arrange:
+	head_timestamp = datetime(2024, 3, 31, 12, 0, tzinfo=timezone.utc)
+	blocks = [
+		create_symbol_block(1, timestamp=datetime(2024, 2, 29, tzinfo=timezone.utc), transactions_count=7),
+		create_symbol_block(2, timestamp=datetime(2024, 3, 30, tzinfo=timezone.utc), transactions_count=0),
+		create_symbol_block(3, timestamp=head_timestamp, transactions_count=11)
+	]
+	with tempfile.TemporaryDirectory() as temp_directory:
+		db_config_path = _create_config_file(temp_directory, database_config=symbol_database_config)
+		app_config_path = _create_app_config(temp_directory, db_config_path)
+		_seed_symbol_block_tables(symbol_database_config, create_symbol_sync_state(3, 3), blocks)
+		with rest_settings_env(app_config_path):
+			app = _create_symbol_app()
+			try:
+				client = app.test_client()
+
+				# Act:
+				query = '?startDate=2024-02-29&endDate=2024-03-31&periodType='
+				day_response = client.get('/api/symbol/transaction/statistics/range' + query + 'day')
+				month_response = client.get('/api/symbol/transaction/statistics/range' + query + 'month')
+			finally:
+				app.extensions['symbol_database'].close()
+
+	# Assert:
+	assert (200, {'periodType': 'day', 'data': [
+		{'period': '2024-02-29', 'totalTransactions': 7},
+		{'period': '2024-03-30', 'totalTransactions': 0},
+		{'period': '2024-03-31', 'totalTransactions': 11}]}) == (day_response.status_code, day_response.json)
+	assert (200, {'periodType': 'month', 'data': [
+		{'period': '2024-02', 'totalTransactions': 7},
+		{'period': '2024-03', 'totalTransactions': 11}]}) == (month_response.status_code, month_response.json)
+	for response in (day_response, month_response):
+		assert isinstance(response.json['periodType'], str)
+		assert all(isinstance(item['period'], str) for item in response.json['data'])
+		assert all(isinstance(item['totalTransactions'], int) for item in response.json['data'])
+		assert all(not isinstance(item['totalTransactions'], bool) for item in response.json['data'])
+		assert all(item['totalTransactions'] >= 0 for item in response.json['data'])
+
+
+@pytest.mark.parametrize('path', [
+	'/api/symbol/transaction/statistics',
+	'/api/symbol/transaction/statistics/range?startDate=2024-01-01&endDate=2024-12-31&periodType=day'
+])
+@pytest.mark.parametrize('sync_state', [
+	pytest.param(create_symbol_sync_state(last_synced_height=1, finalized_height=1, status='unhealthy'), id='unhealthy'),
+	pytest.param(create_symbol_sync_state(last_synced_height=1, finalized_height=1, status='repairing'), id='repairing'),
+	pytest.param(create_symbol_sync_state(last_synced_height=2, finalized_height=1, dirty_state_from_height=2), id='dirty'),
+	pytest.param(
+		dict(create_symbol_sync_state(1, 1), last_synced_height=None, chain_height=None, last_synced_block_hash=None),
+		id='missing-height')
+])
+def test_tx_endpoints_bad_state_503(symbol_database_config, sync_state, path):
+	# Arrange:
+	with tempfile.TemporaryDirectory() as temp_directory:
+		db_config_path = _create_config_file(temp_directory, database_config=symbol_database_config)
+		app_config_path = _create_app_config(temp_directory, db_config_path)
+		_seed_symbol_block_tables(symbol_database_config, sync_state, [create_symbol_block(1)])
+		with rest_settings_env(app_config_path):
+			app = _create_symbol_app()
+			try:
+				# Act:
+				response = app.test_client().get(path)
+			finally:
+				app.extensions['symbol_database'].close()
+
+	# Assert:
+	_assert_unavailable_json(response)
+
+
+@pytest.mark.parametrize('path', [
+	'/api/symbol/transaction/statistics',
+	'/api/symbol/transaction/statistics/range?startDate=2024-01-01&endDate=2024-12-31&periodType=day'
+])
+def test_tx_head_block_missing_503(symbol_database_config, path):
+	# Arrange:
+	sync_state = create_symbol_sync_state(last_synced_height=1, finalized_height=1)
+
+	# Act:
+	response = _get_symbol_response(symbol_database_config, sync_state, [], path)
+
+	# Assert:
+	_assert_unavailable_json(response)
+
+
+@pytest.mark.parametrize('path', [
+	'/api/symbol/transaction/statistics',
+	'/api/symbol/transaction/statistics/range?startDate=2024-01-01&endDate=2024-12-31&periodType=day'
+])
+def test_tx_sync_state_missing_503(symbol_database_config, path):
+	# Arrange:
+	with tempfile.TemporaryDirectory() as temp_directory:
+		db_config_path = _create_config_file(temp_directory, database_config=symbol_database_config)
+		app_config_path = _create_app_config(temp_directory, db_config_path)
+		_create_symbol_block_tables(symbol_database_config)
+		with rest_settings_env(app_config_path):
+			app = _create_symbol_app()
+			try:
+				# Act:
+				response = app.test_client().get(path)
+			finally:
+				app.extensions['symbol_database'].close()
+		_drop_symbol_block_tables_if_present(symbol_database_config)
+
+	# Assert:
+	_assert_unavailable_json(response)
+
+
+@pytest.mark.parametrize('path', [
+	'/api/symbol/transaction/statistics',
+	'/api/symbol/transaction/statistics/range?startDate=2024-01-01&endDate=2024-12-31&periodType=day'
+])
+def test_tx_database_error_503(symbol_database_config, path):
+	# Arrange:
+	with tempfile.TemporaryDirectory() as temp_directory:
+		db_config_path = _create_config_file(temp_directory, database_config=symbol_database_config)
+		app_config_path = _create_app_config(temp_directory, db_config_path)
+		_create_symbol_block_tables(symbol_database_config)
+		with PullerSymbolDatabase(symbol_database_config) as writer:
+			writer.upsert_sync_state(create_symbol_sync_state(last_synced_height=1, finalized_height=1))
+		with rest_settings_env(app_config_path):
+			app = _create_symbol_app()
+			try:
+				with PullerSymbolDatabase(symbol_database_config) as writer:
+					with writer.connection.cursor() as cursor:
+						cursor.execute('ALTER TABLE symbol_blocks RENAME TO symbol_blocks_for_test')
+					writer.connection.commit()
+				# Act:
+				response = app.test_client().get(path)
+			finally:
+				with PullerSymbolDatabase(symbol_database_config) as writer:
+					with writer.connection.cursor() as cursor:
+						cursor.execute('ALTER TABLE symbol_blocks_for_test RENAME TO symbol_blocks')
+					writer.connection.commit()
+				app.extensions['symbol_database'].close()
+		_drop_symbol_block_tables_if_present(symbol_database_config)
+
+	# Assert:
+	_assert_unavailable_json(response)
+
+
 def test_symbol_blocks_reads_rewards(symbol_database_config):
 	# Arrange:
 	with tempfile.TemporaryDirectory() as temp_directory:

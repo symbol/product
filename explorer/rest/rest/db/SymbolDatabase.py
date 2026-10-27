@@ -1,6 +1,7 @@
 # pylint: disable=too-many-lines  # Namespace REST data access remains owned by this database facade.
 import re
 from collections import namedtuple
+from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 from enum import Enum
 
@@ -75,6 +76,7 @@ SYNC_STATE_COLUMNS = [
 	'updated_at'
 ]
 READABLE_BLOCK_STATUSES = frozenset(['healthy', 'repairing'])
+TRANSACTION_STATISTICS_WINDOW = 240
 ReceiptQuery = namedtuple(
 	'ReceiptQuery',
 	['limit', 'offset', 'height', 'receipt_group', 'receipt_type', 'included_receipt_types', 'target_address', 'sender_address'],
@@ -115,6 +117,9 @@ TransactionQuery = namedtuple(
 TransactionMosaicRecord = namedtuple(
 	'TransactionMosaicRecord',
 	['mosaic_id', 'amount', 'role', 'position', 'divisibility', 'alias_names'])
+TransactionStatisticsRecord = namedtuple(
+	'TransactionStatisticsRecord', ['total', 'last30_day', 'last24_hours', 'average_per_block'])
+TransactionRangeRecord = namedtuple('TransactionRangeRecord', ['period', 'total_transactions'])
 NamespaceQuery = namedtuple(
 	'NamespaceQuery',
 	['limit', 'offset', 'sort', 'alias_type', 'registration_type', 'owner_address'],
@@ -375,6 +380,104 @@ class SymbolDatabase(DatabaseConnectionPool):
 					return []
 
 				return self._fetch_transaction_records(cursor, transaction_rows, sync_state)
+
+	def get_transaction_statistics(self):
+		"""Gets transaction statistics from one healthy, repeatable-read snapshot."""
+
+		with self._read_snapshot() as cursor:
+			last_synced_height, head_timestamp = self._fetch_transaction_statistics_head(cursor)
+			cursor.execute(
+				'''
+				WITH bounded_blocks AS NOT MATERIALIZED (
+					SELECT blocks.height, blocks.timestamp AS block_timestamp,
+						blocks.transactions_count, blocks.total_transactions_count,
+						%s::timestamp AS head_timestamp
+					FROM symbol_blocks AS blocks
+					WHERE blocks.height <= %s
+				), latest_blocks AS (
+					SELECT height, transactions_count
+					FROM bounded_blocks
+					ORDER BY height DESC
+					LIMIT %s
+				), totals AS (
+					SELECT
+						COALESCE(SUM(total_transactions_count), 0)::bigint AS total,
+						COALESCE(SUM(total_transactions_count) FILTER (
+							WHERE block_timestamp > head_timestamp - %s
+								AND block_timestamp <= head_timestamp), 0)::bigint AS last30_day,
+						COALESCE(SUM(total_transactions_count) FILTER (
+							WHERE block_timestamp > head_timestamp - %s
+								AND block_timestamp <= head_timestamp), 0)::bigint AS last24_hours
+					FROM bounded_blocks
+				)
+				SELECT totals.total, totals.last30_day, totals.last24_hours,
+					COALESCE(AVG(latest_blocks.transactions_count)::double precision, 0.0)
+				FROM totals CROSS JOIN latest_blocks
+				GROUP BY totals.total, totals.last30_day, totals.last24_hours
+				''',
+				(head_timestamp, last_synced_height, TRANSACTION_STATISTICS_WINDOW, timedelta(days=30), timedelta(hours=24)))
+			result = cursor.fetchone()
+			return TransactionStatisticsRecord(*result)
+
+	def get_transaction_statistics_range(self, start_date, end_date, period_type):
+		"""Aggregates existing blocks in the requested period and published snapshot."""
+
+		if period_type not in ('DAY', 'MONTH'):
+			raise ValueError('Invalid transaction statistics period')
+
+		period_format = 'YYYY-MM-DD' if period_type == 'DAY' else 'YYYY-MM'
+		with self._read_snapshot() as cursor:
+			last_synced_height, head_timestamp = self._fetch_transaction_statistics_head(cursor)
+			cursor.execute(
+				"""
+				SELECT to_char(date_trunc(%s, blocks.timestamp), %s),
+					SUM(blocks.transactions_count)::bigint
+				FROM symbol_blocks AS blocks
+				WHERE blocks.height <= %s
+					AND blocks.timestamp >= %s::date
+					AND blocks.timestamp < %s::date + INTERVAL '1 day'
+					AND blocks.timestamp <= %s
+				GROUP BY 1
+				ORDER BY 1
+				""",
+				(period_type, period_format, last_synced_height, start_date, end_date, head_timestamp))
+			return [TransactionRangeRecord(*row) for row in cursor.fetchall()]
+
+	@contextmanager
+	def _read_snapshot(self):
+		"""Provides one read-only repeatable-read cursor and resets failed connections."""
+
+		with self.connection() as connection:
+			try:
+				with connection.cursor() as cursor:
+					self._start_read_transaction(cursor)
+					cursor.execute('SET TRANSACTION READ ONLY')
+					yield cursor
+			except Exception:
+				connection.rollback()
+				raise
+			connection.commit()
+
+	def _fetch_transaction_statistics_head(self, cursor):
+		"""Returns the exact published height and its timestamp when statistics are safe to read."""
+
+		sync_state = self._fetch_sync_state(cursor)
+		if not sync_state:
+			raise SymbolDataUnavailable('Symbol transaction statistics are unavailable')
+
+		if sync_state['status'] != 'healthy' or sync_state['dirty_state_from_height'] is not None:
+			raise SymbolDataUnavailable('Symbol transaction statistics are unavailable')
+
+		last_synced_height = sync_state['last_synced_height']
+		if isinstance(last_synced_height, bool) or not isinstance(last_synced_height, int) or last_synced_height < 1:
+			raise SymbolDataUnavailable('Symbol transaction statistics are unavailable')
+
+		cursor.execute('SELECT timestamp FROM symbol_blocks WHERE height = %s', (last_synced_height,))
+		result = cursor.fetchone()
+		if not result or not isinstance(result[0], datetime):
+			raise SymbolDataUnavailable('Symbol transaction statistics are unavailable')
+
+		return last_synced_height, result[0]
 
 	def try_get_account(self, address=None, public_key=None):
 		"""Gets one current-state Symbol account and its detail relations."""
