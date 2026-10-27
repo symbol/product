@@ -13,6 +13,7 @@ from zenlog import log
 from rest.model.symbol.Block import BLOCK_STATISTICS_WINDOW, SymbolBlockView
 from rest.model.symbol.Mosaic import SymbolMosaicView
 from rest.model.symbol.Namespace import SymbolNamespaceView
+from rest.model.symbol.UnconfirmedTransaction import AGGREGATE_TYPES, SymbolUnconfirmedTransactionView, create_unconfirmed_record
 from rest.model.symbol.validation import SymbolDataInvalid
 
 from .DatabaseConnection import DatabaseConnectionPool
