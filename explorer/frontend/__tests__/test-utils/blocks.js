@@ -249,6 +249,7 @@ export const blockPageResult = {
 };
 
 export const blockInfoResponse = {
+	beneficiary: 'NAE3GBBXNEBPF6SWSANL5WSJDJZ6W4QQF45CYNZ2',
 	difficulty: 167559929443263,
 	hash: '8040A356D67D2245E4275CCE36D851EEF4F0B81202DD738C1268308E794FFBE3',
 	height: 1111111,

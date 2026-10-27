@@ -480,10 +480,15 @@ def create_chain_info(chain_height=1, finalized_height=1):
 	}
 
 
-def create_network_properties(epoch_adjustment='100s'):
+def create_network_properties(epoch_adjustment='100s', voting_set_grouping='10'):
+	"""Creates node properties using the string values returned by Symbol REST."""
+
 	return {
 		'network': {'epochAdjustment': epoch_adjustment},
-		'chain': {'currencyMosaicId': "0x72C0'212E'67A0'8BCE"}
+		'chain': {
+			'currencyMosaicId': "0x72C0'212E'67A0'8BCE",
+			'votingSetGrouping': voting_set_grouping
+		}
 	}
 
 
@@ -528,7 +533,8 @@ class FakeConnector:  # pylint: disable=too-many-instance-attributes
 		namespace_names=None,
 		mosaics_by_id=None,
 		mosaics_response=None,
-		metadata_by_query=None
+		metadata_by_query=None,
+		network_properties=None
 	):  # pylint: disable=too-many-arguments,too-many-positional-arguments
 		self.chain_height = chain_height
 		self.pages = pages
@@ -546,6 +552,7 @@ class FakeConnector:  # pylint: disable=too-many-instance-attributes
 		self.mosaics_by_id = mosaics_by_id or {}
 		self.mosaics_response = mosaics_response
 		self.metadata_by_query = metadata_by_query or {}
+		self.network_properties = network_properties if network_properties is not None else create_network_properties()
 		self.paths = []
 		self.post_payloads_list = []
 		self.post_requests = []
@@ -559,7 +566,7 @@ class FakeConnector:  # pylint: disable=too-many-instance-attributes
 		if 'chain/info' == url_path:
 			return create_chain_info(self.chain_height, self.finalized_height)
 		if 'network/properties' == url_path:
-			return create_network_properties()
+			return self.network_properties
 		if f'mosaics/{NATIVE_MOSAIC_ID}' == url_path:
 			return create_mosaic_definition()
 		if url_path.startswith('blocks/'):
