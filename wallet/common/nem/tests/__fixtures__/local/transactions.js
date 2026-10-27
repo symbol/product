@@ -171,7 +171,7 @@ export const multisigTransfer = {
 	message: null
 };
 
-// Importance transfer (modelled as an account key link): `mode` becomes the linkAction and
+// Importance transfer (modelled as an account key link): `mode` becomes the linkAction label and
 // `remoteAccount` becomes the remote public key, with its address derived from that public key.
 export const importanceTransfer = {
 	type: 2049,
@@ -185,9 +185,9 @@ export const importanceTransfer = {
 	fee: createFee('0.15'),
 	signerAddress: alice.address,
 	signerPublicKey: alice.publicKey,
-	linkAction: 1,
-	remotePublicKey: bob.publicKey,
-	remoteAccountAddress: bob.address
+	linkAction: 'Link',
+	linkedPublicKey: bob.publicKey,
+	linkedAccountAddress: bob.address
 };
 
 // Unconfirmed transfer: no meta, so height and hash are null.
@@ -213,8 +213,8 @@ export const unconfirmedTransfer = {
 	amount: '-3'
 };
 
-// Multisig account modification: cosignatory changes keyed by public key, plus the minimum
-// cosignatories delta surfaced as minApprovalDelta.
+// Multisig account modification: cosignatory changes split into added and removed public keys with
+// their derived addresses, plus the minimum cosignatories delta surfaced as minApprovalDelta.
 export const multisigModification = {
 	type: 4097,
 	timestamp: 1682040285000,
@@ -227,11 +227,11 @@ export const multisigModification = {
 	fee: createFee('0.5'),
 	signerAddress: alice.address,
 	signerPublicKey: alice.publicKey,
-	modifications: [
-		{ modificationType: 1, cosignatoryPublicKey: bob.publicKey },
-		{ modificationType: 2, cosignatoryPublicKey: carol.publicKey }
-	],
-	minApprovalDelta: 1
+	minApprovalDelta: 1,
+	addressAdditions: [bob.address],
+	addressDeletions: [carol.address],
+	publicKeyAdditions: [bob.publicKey],
+	publicKeyDeletions: [carol.publicKey]
 };
 
 // Standalone cosignature: the cosigned inner transaction hash and the multisig account address.
@@ -248,7 +248,7 @@ export const cosignature = {
 	signerAddress: bob.address,
 	signerPublicKey: bob.publicKey,
 	otherTransactionHash: 'cc317a7674d56352b4c711096a7594bd11908bf518293a191fc2faa12eac0fbb',
-	multisigAccountAddress: alice.address
+	multisigAddress: alice.address
 };
 
 // Root namespace registration: parentName is null and the namespace id is the bare name.
@@ -291,7 +291,7 @@ export const subNamespaceRegistration = {
 	rentalFee: createFee('10')
 };
 
-// Mosaic definition without a levy: properties are parsed into the typed shape and levy is null.
+// Mosaic definition without a levy: properties are parsed into flat token fields and no levy field is set.
 export const mosaicDefinition = {
 	type: 16385,
 	timestamp: 1682040685000,
@@ -304,13 +304,13 @@ export const mosaicDefinition = {
 	fee: createFee('0.15'),
 	signerAddress: alice.address,
 	signerPublicKey: alice.publicKey,
-	mosaicDefinition: {
-		id: 'alice.token',
-		ownerPublicKey: alice.publicKey,
-		description: 'gift vouchers',
-		properties: { divisibility: 3, initialSupply: 1000, supplyMutable: false, transferable: true },
-		levy: null
-	},
+	tokenId: 'alice.token',
+	description: 'gift vouchers',
+	divisibility: 3,
+	initialSupply: 1000,
+	isSupplyMutable: false,
+	isTransferable: true,
+	creatorPublicKey: alice.publicKey,
 	rentalFeeSink: MOSAIC_FEE_SINK,
 	rentalFee: createFee('10')
 };
@@ -329,18 +329,22 @@ export const mosaicDefinitionWithLevy = {
 	fee: createFee('0.15'),
 	signerAddress: alice.address,
 	signerPublicKey: alice.publicKey,
-	mosaicDefinition: {
-		id: 'alice.levied',
-		ownerPublicKey: alice.publicKey,
-		description: 'levied token',
-		properties: { divisibility: 0, initialSupply: 100, supplyMutable: false, transferable: true },
-		levy: { type: 1, recipientAddress: bob.address, mosaicId: 'nem.xem', fee: 1000 }
-	},
+	tokenId: 'alice.levied',
+	description: 'levied token',
+	divisibility: 0,
+	initialSupply: 100,
+	isSupplyMutable: false,
+	isTransferable: true,
+	creatorPublicKey: alice.publicKey,
+	levyType: 'Absolute',
+	levyRecipientAddress: bob.address,
+	levyTokenId: 'nem.xem',
+	levyFee: 1000,
 	rentalFeeSink: MOSAIC_FEE_SINK,
 	rentalFee: createFee('10')
 };
 
-// Mosaic supply change: supplyType becomes the action and the mosaic id becomes a 'namespace.name' string.
+// Mosaic supply change: supplyType becomes the action label and the mosaic id becomes a 'namespace.name' string.
 export const mosaicSupplyChange = {
 	type: 16386,
 	timestamp: 1682040885000,
@@ -354,7 +358,7 @@ export const mosaicSupplyChange = {
 	signerAddress: alice.address,
 	signerPublicKey: alice.publicKey,
 	tokenId: 'alice.token',
-	action: 1,
+	action: 'Increase',
 	delta: 1000
 };
 
@@ -364,9 +368,9 @@ const multisigImportanceInner = {
 	type: 2049,
 	signerAddress: alice.address,
 	signerPublicKey: alice.publicKey,
-	linkAction: 1,
-	remotePublicKey: carol.publicKey,
-	remoteAccountAddress: carol.address
+	linkAction: 'Link',
+	linkedPublicKey: carol.publicKey,
+	linkedAccountAddress: carol.address
 };
 
 export const multisigImportanceTransfer = {

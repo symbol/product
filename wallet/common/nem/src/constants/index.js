@@ -106,10 +106,20 @@ export const LinkAction = {
 	Unlink: 2
 };
 
+export const LinkActionMessage = {
+	[LinkAction.Link]: 'Link',
+	[LinkAction.Unlink]: 'Unlink'
+};
+
 /** NEM mosaic supply change action codes. */
 export const MosaicSupplyChangeAction = {
 	INCREASE: 1,
 	DECREASE: 2
+};
+
+export const MosaicSupplyChangeActionMessage = {
+	[MosaicSupplyChangeAction.INCREASE]: 'Increase',
+	[MosaicSupplyChangeAction.DECREASE]: 'Decrease'
 };
 
 /** NEM multisig account modification type codes. */
@@ -122,6 +132,11 @@ export const MultisigAccountModificationType = {
 export const MosaicTransferFeeType = {
 	ABSOLUTE: 1,
 	PERCENTILE: 2
+};
+
+export const MosaicTransferFeeTypeMessage = {
+	[MosaicTransferFeeType.ABSOLUTE]: 'Absolute',
+	[MosaicTransferFeeType.PERCENTILE]: 'Percentile'
 };
 
 /** Property names used in NEM mosaic definition property arrays. */
