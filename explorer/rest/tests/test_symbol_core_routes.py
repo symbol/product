@@ -2635,15 +2635,19 @@ def test_list_http_recovers_fixed_dto(symbol_database_config, statement, paramet
 			cursor.execute(statement, parameters)
 		writer.connection.commit()
 		with _account_list_create_app_client(symbol_database_config) as client:
+			# Exclude startup logs whose temporary config path can contain the malformed input marker.
+			caplog.clear()
+
 			# Act: read the malformed data through create_app wiring.
 			with caplog.at_level(logging.ERROR, logger='pythonConfig'):
 				failed = client.get('/api/symbol/accounts')
+			error_log = '\n'.join(record.getMessage() for record in caplog.records if record.levelno >= logging.ERROR)
 
 			# Assert:
 			assert (503, {'status': 503, 'message': 'Symbol backend data is unavailable'}) == (failed.status_code, failed.json)
-			assert 'SELECT' not in caplog.text
-			assert any('Invalid Symbol backend data at ' in record.getMessage() for record in caplog.records)
-			assert 'bad' not in caplog.text
+			assert 'SELECT' not in error_log
+			assert 'Invalid Symbol backend data at ' in error_log
+			assert 'bad' not in error_log
 
 			# Arrange: restore snapshot inputs and current metadata before reusing the same app.
 			seed_refresh_run(writer, 'selected-run', entries, completed_at=datetime.now(timezone.utc))
