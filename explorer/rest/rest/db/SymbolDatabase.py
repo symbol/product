@@ -9,7 +9,7 @@ from symbolchain.symbol.IdGenerator import is_mosaic_alias
 from symbolchain.symbol.Network import Address
 from zenlog import log
 
-from rest.model.symbol.Block import SymbolBlockView
+from rest.model.symbol.Block import BLOCK_STATISTICS_WINDOW, SymbolBlockView
 from rest.model.symbol.Mosaic import SymbolMosaicView
 from rest.model.symbol.Namespace import SymbolNamespaceView
 from rest.model.symbol.validation import SymbolDataInvalid
@@ -1414,7 +1414,7 @@ class SymbolDatabase(DatabaseConnectionPool):
 				return [self._create_block_view(result, finalized_height) for result in results]
 
 	def get_block_statistics(self):
-		"""Gets the bounded block rows required for the Symbol block statistics."""
+		"""Gets the latest statistics window and its preceding block, if present."""
 
 		with self.connection() as connection:
 			with connection.cursor() as cursor:
@@ -1424,7 +1424,8 @@ class SymbolDatabase(DatabaseConnectionPool):
 				if readable_height is None:
 					raise SymbolDataUnavailable('Symbol block statistics are unavailable')
 
-				start_height = max(1, readable_height - 240)
+				# Include the preceding block to calculate the first target block time, yielding at most 241 rows.
+				start_height = max(1, readable_height - BLOCK_STATISTICS_WINDOW)
 				cursor.execute(
 					'''
 					SELECT height, timestamp, total_fee, difficulty
