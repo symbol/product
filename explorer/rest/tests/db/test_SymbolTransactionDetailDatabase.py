@@ -787,6 +787,36 @@ class SymbolTransactionDetailValidationDatabaseTest(TestCase):
 
 
 class SymbolTransactionDetailSnapshotSafetyDatabaseTest(TestCase):
+	def test_dirty_and_repairing_details_do_not_expose_native_mosaic_aliases(self):
+		# Arrange:
+		transaction = _complete_transaction(
+			4, 1, mosaic_rows=[{'mosaic_id': NATIVE_MOSAIC_INFO.id, 'amount': 1000000, 'role': 'transfer', 'position': 0}])
+		transaction_hash = 'AB' * 32
+		pending = _pending_detail_record(transaction_hash, mosaics=[{'id': NATIVE_MOSAIC_INFO.id, 'amount': '1000000'}])
+		states = (
+			create_symbol_sync_state(last_synced_height=4, finalized_height=3, dirty_state_from_height=5),
+			create_symbol_sync_state(last_synced_height=4, finalized_height=3, status='repairing'),
+			create_symbol_sync_state(last_synced_height=4, finalized_height=3))
+		for state, expected_aliases in zip(states, (None, None, ['unpublished.name'])):
+			with self.subTest(status=state['status'], dirty=state['dirty_state_from_height']):
+				with symbol_test_database(state, [create_symbol_block(4)], [create_symbol_mosaic(NATIVE_MOSAIC_INFO.id, 6)]) as (
+					db_config, puller_database
+				):
+					puller_database.upsert_transactions_for_height(4, [transaction])
+					with puller_database.connection.cursor() as cursor:
+						cursor.execute(
+							"UPDATE symbol_mosaics SET alias_names = '[\"unpublished.name\"]'::jsonb WHERE mosaic_id = %s",
+							(NATIVE_MOSAIC_INFO.id,))
+					puller_database.connection.commit()
+					with SymbolDatabase(db_config, NATIVE_MOSAIC_INFO) as database:
+						# Act:
+						confirmed = database.get_transaction_detail(transaction['hash']).record
+						supplemented = database.supplement_transaction_detail(bytes.fromhex(transaction_hash), pending)
+
+					# Assert:
+					self.assertEqual(expected_aliases, confirmed.transaction.mosaics[0].alias_names)
+					self.assertEqual(expected_aliases, supplemented.transaction.mosaics[0].alias_names)
+
 	def test_get_transaction_detail_rejects_bonded_transaction_while_state_is_dirty(self):
 		# Arrange:
 		parent = _complete_transaction(
@@ -1024,11 +1054,13 @@ class SymbolTransactionDetailSnapshotSafetyDatabaseTest(TestCase):
 			puller_database.upsert_transactions_for_height(4, [definition, global_restriction])
 			with SymbolDatabase(db_config, NATIVE_MOSAIC_INFO) as database:
 				# Act + Assert:
-				for transaction in (definition, global_restriction):
-					with self.assertRaises(SymbolDataUnavailable) as error:
-						database.get_transaction_detail(transaction['hash'])
-						# Assert:
-						self.assertIn('required mosaic relation', str(error.exception))
+				for transaction, role in ((definition, 'definition'), (global_restriction, 'restriction')):
+					with self.subTest(transaction_type=transaction['type']):
+						with self.assertRaises(SymbolDataUnavailable) as error:
+							database.get_transaction_detail(transaction['hash'])
+						self.assertEqual(
+							f'Symbol transaction detail data is unavailable: missing {role} mosaic relation',
+							str(error.exception))
 
 	def test_get_transaction_detail_uses_one_repeatable_read_snapshot_for_transaction_and_state(self):
 		# Arrange:

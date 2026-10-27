@@ -4,7 +4,7 @@ from symbolchain.sc import TransactionType
 from zenlog import log
 
 from rest.db.SymbolTransactionDetail import SymbolDataUnavailable
-from rest.facade.SymbolTransactionNodeBacking import SymbolNodeUnavailable
+from rest.facade.SymbolTransactionNodeBacking import SymbolNodeNotFound, SymbolNodeUnavailable
 from rest.model.symbol.Account import SymbolAccountListView, SymbolAccountView
 from rest.model.symbol.format import format_timestamp
 from rest.model.symbol.Receipt import SymbolReceiptView
@@ -195,7 +195,11 @@ class SymbolRestFacade:
 			if group == 'confirmed':
 				raise SymbolDataUnavailable('Symbol transaction detail data is unavailable: confirmed transaction is not in the database')
 
-			payload = await self.node_backing.get_transaction(group, transaction_hash)
+			try:
+				payload = await self.node_backing.get_transaction(group, transaction_hash)
+			except SymbolNodeNotFound as error:
+				# The transaction can leave this group after the status lookup.
+				raise SymbolDataUnavailable('Symbol transaction detail data is unavailable: pending detail is missing') from error
 			record = self.node_backing.to_detail_record(payload, group, transaction_hash)
 			if record.transaction.transaction_type == TransactionType.AGGREGATE_BONDED.value:
 				lock_payload = await self.node_backing.try_get_hash_lock(transaction_hash)

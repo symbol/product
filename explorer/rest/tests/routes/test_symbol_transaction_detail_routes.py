@@ -307,6 +307,26 @@ def test_node_missing_status_returns_404():
 	assert [bytes.fromhex(HASH)] == database.hashes
 
 
+@pytest.mark.parametrize('group', ('unconfirmed', 'partial'))
+def test_pending_detail_404_returns_503(group):
+	# Arrange:
+	status_path = f'transactionStatus/{HASH}'
+	detail_path = f'transactions/{group}/{HASH}'
+	transport = FakeTransport({status_path: {'group': group, 'hash': HASH}, detail_path: SymbolNodeNotFound()})
+	database = FakeDatabase(TransactionDetailReadResult(None, 'miss', 10, 10))
+	backing = SymbolTransactionNodeBacking(FakeNodeConfig(), Network.TESTNET, transport=transport, clock=lambda: 100)
+	client = _client(SymbolRestFacade(database, FakeNodeConfig(), NATIVE_MOSAIC_INFO, Network.TESTNET, node_backing=backing))
+
+	# Act:
+	responses = [client.get(f'/api/symbol/transaction/{HASH}') for _ in range(2)]
+
+	# Assert:
+	assert [503, 503] == [response.status_code for response in responses]
+	assert [{'status': 503, 'message': 'Symbol backend data is unavailable'}] * 2 == [response.json for response in responses]
+	assert [status_path, detail_path, detail_path] == transport.paths
+	assert [bytes.fromhex(HASH)] * 2 == database.hashes
+
+
 def test_node_status_unavailable_503():
 	# Arrange:
 	status_path = f'transactionStatus/{HASH}'

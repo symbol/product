@@ -96,7 +96,6 @@ class SymbolTransactionDetailMixin:
 				if record.hash_lock:
 					mosaic_ids = tuple(dict.fromkeys((*mosaic_ids, record.hash_lock.mosaic_id)))
 					self._assert_current_hash_lock(cursor, record.hash_lock.hash, readable_height)
-				mosaic_state = self._fetch_transaction_detail_mosaic_state(cursor, mosaic_ids)
 				namespace_names = self._fetch_transaction_detail_namespace_names(
 					cursor, record.transaction, record.children)
 				if self.native_mosaic_info is None:
@@ -106,6 +105,7 @@ class SymbolTransactionDetailMixin:
 				if _is_non_public_state(sync_state) and (needs_current_mosaic_state or namespace_names or record.hash_lock):
 					raise SymbolDataUnavailable(
 						'Symbol transaction detail data is unavailable: current metadata is unsafe in dirty or repairing state')
+				mosaic_state = {} if _is_non_public_state(sync_state) else self._fetch_transaction_detail_mosaic_state(cursor, mosaic_ids)
 				transaction = self._replace_transaction_detail_mosaics(
 					record.transaction, {record.transaction.transaction_id: record.transaction.mosaics}, mosaic_state)
 				children = tuple(self._replace_transaction_detail_mosaics(
@@ -213,7 +213,6 @@ class SymbolTransactionDetailMixin:
 		transaction = self._replace_transaction_detail_mosaics(transaction, transaction_mosaics)
 		children = tuple(self._replace_transaction_detail_mosaics(child, transaction_mosaics) for child in children)
 		mosaic_ids = self._transaction_detail_mosaic_ids(transaction, children, hash_lock)
-		mosaic_state = self._fetch_transaction_detail_mosaic_state(cursor, mosaic_ids)
 		if self.native_mosaic_info is None:
 			raise SymbolDataUnavailable('Symbol transaction detail data is unavailable: native mosaic is unavailable')
 		needs_current_mosaic_state = any(
@@ -221,6 +220,7 @@ class SymbolTransactionDetailMixin:
 		if _is_non_public_state(sync_state) and (needs_current_mosaic_state or namespace_names):
 			raise SymbolDataUnavailable(
 				'Symbol transaction detail data is unavailable: current metadata is unsafe in dirty or repairing state')
+		mosaic_state = {} if _is_non_public_state(sync_state) else self._fetch_transaction_detail_mosaic_state(cursor, mosaic_ids)
 		transaction = self._replace_transaction_detail_mosaics(transaction, transaction_mosaics, mosaic_state)
 		children = tuple(self._replace_transaction_detail_mosaics(child, transaction_mosaics, mosaic_state) for child in children)
 		self._assert_transaction_detail_relations(transaction, children)
