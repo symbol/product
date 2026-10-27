@@ -1,3 +1,4 @@
+import json
 from decimal import Decimal
 from unittest import TestCase
 
@@ -39,6 +40,37 @@ class SymbolAccountStatisticsViewTest(TestCase):
 		# Assert:
 		self.assertEqual(33.33, result['harvestingAccountsPercentage'])
 		self.assertEqual([[33.33, 'Harvesting'], [66.67, 'Not harvesting']], result['harvestingAccountsChart'])
+
+	def test_to_dict_serializes_six_of_seven_eligible_accounts_as_two_decimal_percentages(self):
+		# Arrange:
+		statistics = AccountStatisticsRecord(
+			7, 6, 7, 6, Decimal('0.7'), (
+				(Decimal('0.16'), 'TONE'), (Decimal('0.15'), 'TTWO'), (Decimal('0.12'), 'TTHREE'),
+				(Decimal('0.10'), 'TFOUR'), (Decimal('0.08'), 'TFIVE'), (Decimal('0.05'), 'TSIX'),
+				(Decimal('0.04'), 'TSEVEN')))
+		expected_chart = [[85.71, 'Harvesting'], [14.29, 'Not harvesting']]
+		expected_response = {
+			'total': 7, 'harvesting': 6, 'eligibleForHarvesting': 7,
+			'top10AccountsImportance': 70.0, 'harvestingAccountsPercentage': 85.71,
+			'importanceBreakdown': [
+				[16.0, 'TONE'], [15.0, 'TTWO'], [12.0, 'TTHREE'], [10.0, 'TFOUR'],
+				[8.0, 'TFIVE'], [5.0, 'TSIX'], [4.0, 'TSEVEN']],
+			'harvestingAccountsChart': expected_chart, 'pendingVerification': []
+		}
+
+		# Act:
+		result = SymbolAccountStatisticsView(statistics).to_dict()
+		serialized_result = json.dumps(result)
+		decoded_result = json.loads(serialized_result)
+		serialized_chart = json.dumps(decoded_result['harvestingAccountsChart'], separators=(',', ':'))
+
+		# Assert:
+		self.assertEqual(expected_response, result)
+		self.assertEqual(expected_response, decoded_result)
+		self.assertEqual('[[85.71,"Harvesting"],[14.29,"Not harvesting"]]', serialized_chart)
+		self.assertIsInstance(decoded_result['harvestingAccountsPercentage'], float)
+		self.assertIsInstance(decoded_result['harvestingAccountsChart'][0][0], float)
+		self.assertIsInstance(decoded_result['harvestingAccountsChart'][1][0], float)
 
 	def test_to_dict_returns_empty_charts_for_empty_eligible_population_and_empty_snapshot(self):
 		# Arrange:

@@ -259,11 +259,12 @@ class SymbolAccountStatisticsView:
 			harvesting_accounts_percentage = 0
 			harvesting_accounts_chart = []
 		else:
-			harvesting_accounts_percentage = float(
-				Decimal(statistics.harvesting_eligible * 10000 // statistics.eligible_for_harvesting) / Decimal(100))
+			harvesting_ratio = Decimal(
+				statistics.harvesting_eligible * 10000 // statistics.eligible_for_harvesting) / Decimal(100)
+			harvesting_accounts_percentage = float(harvesting_ratio)
 			harvesting_accounts_chart = [
 				[harvesting_accounts_percentage, 'Harvesting'],
-				[100 - harvesting_accounts_percentage, 'Not harvesting']
+				[float(Decimal(100) - harvesting_ratio), 'Not harvesting']
 			]
 
 		return {
