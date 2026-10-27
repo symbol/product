@@ -1,5 +1,5 @@
 from decimal import ROUND_HALF_UP, Decimal
-
+from rest.model.format import format_timestamp
 from rest.model.symbol.format import format_amount, format_timestamp, str_or_none, to_hex, to_hex_or_none
 
 BLOCK_STATISTICS_WINDOW = 240
