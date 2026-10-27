@@ -5,6 +5,7 @@ import json
 from contextlib import contextmanager
 from unittest.mock import AsyncMock
 
+from common.tests.PostgresTestUtils import drop_symbol_block_tables_if_present
 from psycopg2 import Error as PsycopgError
 from symbolchain.sc import MosaicSupplyChangeAction, ReceiptType, TransactionType
 from symbolchain.symbol.IdGenerator import generate_namespace_id
@@ -3284,8 +3285,150 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 			bytes.fromhex(f'{2:064X}'),
 			bytes(sync_state['finalized_hash'])
 		)
-		self.assertIsNone(sync_state['finalized_epoch'])
+		self.assertEqual(2, sync_state['finalized_epoch'])
 		self.assertIsNone(sync_state['finalized_point'])
+		self.assertEqual(2, sync_state['last_synced_height'])
+
+	def test_sync_block_headers_publishes_core_finalization_epoch_for_capped_heights(self):
+		# Arrange:
+		cases = (
+			(1, 1),
+			(2, 2),
+			(4, 2),
+			(5, 3)
+		)
+
+		for max_height, expected_epoch in cases:
+			with self.subTest(max_height=max_height):
+				# Arrange:
+				drop_symbol_block_tables_if_present(self.puller.symbol_db)
+				self.puller.symbol_db.create_tables()
+				node_finalized_height = max_height + 1
+				connector = FakeConnector(
+					node_finalized_height,
+					create_multi_batch_block_pages(node_finalized_height),
+					finalized_height=node_finalized_height,
+					network_properties=create_network_properties(voting_set_grouping='4'))
+
+				# Act:
+				_, sync_state = self._sync_with_connector(connector, max_height=max_height)
+
+				# Assert:
+				self.assertEqual(max_height, sync_state['last_synced_height'])
+				self.assertEqual(max_height, sync_state['finalized_height'])
+				self.assertEqual(
+					bytes.fromhex(f'{max_height:064X}'),
+					bytes(sync_state['finalized_hash'])
+				)
+				self.assertEqual(expected_epoch, sync_state['finalized_epoch'])
+				self.assertIsNone(sync_state['finalized_point'])
+				self.assertEqual('healthy', sync_state['status'])
+				self.assertIsNone(sync_state['dirty_state_from_height'])
+
+	def test_sync_block_headers_rejects_missing_or_invalid_grouping_when_finalization_is_capped(self):
+		# Arrange:
+		# Keep the regression case last so a pre-fix write cannot contaminate later subtests.
+		cases = (
+			('missing', None, KeyError, 1),
+			('zero', '0', ValueError, 1),
+			('malformed', 'not-a-grouping', ValueError, 1),
+			('negative', '-1', ValueError, 4),
+		)
+		for case_name, grouping, exception_type, max_height in cases:
+			with self.subTest(grouping=case_name):
+				network_properties = create_network_properties()
+				if 'missing' == case_name:
+					del network_properties['chain']['votingSetGrouping']
+				else:
+					network_properties['chain']['votingSetGrouping'] = grouping
+				node_finalized_height = max_height + 1
+				connector = FakeConnector(
+					node_finalized_height,
+					create_multi_batch_block_pages(node_finalized_height),
+					finalized_height=node_finalized_height,
+					network_properties=network_properties)
+				puller = create_symbol_puller(self.config_ini, 'testnet', connector=connector)
+
+				# Act:
+				with puller.symbol_db:
+					with self.assertRaises(exception_type) as context:
+						asyncio.run(puller.sync_block_headers(max_height=max_height))
+
+					# Assert:
+					if case_name in ('zero', 'negative'):
+						self.assertEqual('Symbol chain.votingSetGrouping must be greater than zero', str(context.exception))
+					self.assertEqual(['chain/info', 'network/properties'], connector.paths)
+					self.assertIsNone(puller.symbol_db.get_sync_state())
+
+	def test_sync_block_headers_calculates_finalization_epoch_at_each_capped_checkpoint(self):
+		# Arrange:
+		chain_height = 1002
+		max_height = 1001
+		first_checkpoint_height = BLOCK_PAGE_FETCH_CONCURRENCY * MAX_PAGE_SIZE
+		connector = FakeConnector(
+			chain_height,
+			create_multi_batch_block_pages(chain_height),
+			finalized_height=chain_height,
+			network_properties=create_network_properties(voting_set_grouping='1000'))
+		database = self.puller.symbol_db
+		recording_database = RecordingCheckpointDatabase(database)
+
+		# Act:
+		with _replace_symbol_database(self.puller, recording_database):
+			_, sync_state = self._sync_with_connector(connector, max_height=max_height)
+
+		# Assert:
+		self.assertEqual(
+			[
+				(first_checkpoint_height, first_checkpoint_height, 2, None),
+				(max_height, max_height, 3, None)
+			],
+			[
+				(
+					state['last_synced_height'],
+					state['finalized_height'],
+					state['finalized_epoch'],
+					state['finalized_point'])
+				for state in recording_database.published_states
+			])
+		self.assertEqual(max_height, sync_state['last_synced_height'])
+		self.assertEqual(max_height, sync_state['finalized_height'])
+		self.assertEqual(bytes.fromhex(f'{max_height:064X}'), bytes(sync_state['finalized_hash']))
+		self.assertEqual(3, sync_state['finalized_epoch'])
+		self.assertIsNone(sync_state['finalized_point'])
+		self.assertIsNone(sync_state['dirty_state_from_height'])
+
+	def test_sync_block_headers_publishes_capped_epoch_without_new_blocks_on_same_limit_rerun(self):
+		# Arrange:
+		max_height = 1000
+		self._seed_blocks(self.puller.symbol_db, range(1, max_height + 1))
+		self.puller.symbol_db.upsert_sync_state(create_sync_state(
+			chain_height=max_height,
+			finalized_height=max_height,
+			finalized_hash=bytes.fromhex(f'{max_height:064X}'),
+			finalized_epoch=None,
+			finalized_point=None,
+			last_synced_height=max_height,
+			last_synced_block_hash=bytes.fromhex(f'{max_height:064X}')))
+		connector = FakeConnector(
+			1005,
+			{},
+			finalized_height=1005,
+			network_properties=create_network_properties(voting_set_grouping='1000'))
+
+		# Act:
+		block_heights, sync_state = self._sync_with_connector(connector, max_height=max_height)
+
+		# Assert:
+		self.assertEqual(list(range(1, max_height + 1)), block_heights)
+		self.assertEqual(max_height, sync_state['last_synced_height'])
+		self.assertEqual(max_height, sync_state['finalized_height'])
+		self.assertEqual(bytes.fromhex(f'{max_height:064X}'), bytes(sync_state['finalized_hash']))
+		self.assertEqual(2, sync_state['finalized_epoch'])
+		self.assertIsNone(sync_state['finalized_point'])
+		self.assertEqual(
+			['chain/info', 'network/properties', f'mosaics/{NATIVE_MOSAIC_ID}'],
+			connector.paths)
 
 	def test_sync_block_headers_continues_from_existing_sync_state(self):
 		# Arrange:
