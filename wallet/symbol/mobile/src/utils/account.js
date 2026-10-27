@@ -5,9 +5,16 @@ import {
 	isPrivateKey as isEthereumPrivateKey,
 	isPublicKey as isEthereumPublicKey
 } from 'wallet-common-ethereum/src/utils/account';
-import { 
-	createPrivateAccount,
-	generateKeyPair,
+import {
+	createPrivateAccount as createNemPrivateAccount,
+	generateKeyPair as generateNemKeyPair,
+	isNemAddress,
+	isPrivateKey as isNemPrivateKey,
+	isPublicKey as isNemPublicKey
+} from 'wallet-common-nem/src/utils/account';
+import {
+	createPrivateAccount as createSymbolPrivateAccount,
+	generateKeyPair as generateSymbolKeyPair,
 	isSymbolAddress,
 	isPrivateKey as isSymbolPrivateKey,
 	isPublicKey as isSymbolPublicKey
@@ -143,7 +150,10 @@ export const isPublicKey = (value, chainName) => {
 	
 	if (chainName === 'ethereum')
 		return isEthereumPublicKey(value);
-	
+
+	if (chainName === 'nem')
+		return isNemPublicKey(value);
+
 	throw new Error(`Unsupported chain name: ${chainName}`);
 };
 
@@ -159,7 +169,10 @@ export const isPrivateKey = (value, chainName) => {
 	
 	if (chainName === 'ethereum')
 		return isEthereumPrivateKey(value);
-	
+
+	if (chainName === 'nem')
+		return isNemPrivateKey(value);
+
 	throw new Error(`Unsupported chain name: ${chainName}`);
 };
 
@@ -176,22 +189,32 @@ export const isAddress = (value, chainName, networkIdentifier) => {
 	
 	if (chainName === 'ethereum')
 		return isEthereumAddress(value);
-	
+
+	if (chainName === 'nem')
+		return isNemAddress(value, networkIdentifier);
+
 	throw new Error(`Unsupported chain name: ${chainName}`);
 };
 
 /**
- * Generates a new private account for the Symbol blockchain.
- * @param {ChainName} chainName - The blockchain name (must be 'symbol').
+ * Generates a new private account for the Symbol or NEM blockchain.
+ * @param {ChainName} chainName - The blockchain name (must be 'symbol' or 'nem').
  * @param {NetworkIdentifier} networkIdentifier - The network identifier.
  * @returns {import('@/app/types/Account').PrivateAccount} The generated private account.
  */
 export const generateAccount = (chainName, networkIdentifier) => {
-	if (chainName !== 'symbol')
-		throw new Error(`Account generation is only supported for Symbol chain. Unsupported chain: ${chainName}`);
-	
-	const { privateKey } = generateKeyPair();
-	
-	return createPrivateAccount(privateKey, networkIdentifier);
+	if (chainName === 'symbol') {
+		const { privateKey } = generateSymbolKeyPair();
+
+		return createSymbolPrivateAccount(privateKey, networkIdentifier);
+	}
+
+	if (chainName === 'nem') {
+		const { privateKey } = generateNemKeyPair();
+
+		return createNemPrivateAccount(privateKey, networkIdentifier);
+	}
+
+	throw new Error(`Account generation is only supported for Symbol and NEM chains. Unsupported chain: ${chainName}`);
 };
 
