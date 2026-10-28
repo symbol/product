@@ -38,13 +38,15 @@ export const formatDate = (dateStr, translate, config = {}) => {
 		return 0 <= num && 10 > num ? '0' + num : num + '';
 	};
 
-	const dateObj = type === 'local' ? dateToLocalDate(dateStr) : new Date(dateStr);
-	const seconds = addZero(dateObj.getSeconds());
-	const minutes = addZero(dateObj.getMinutes());
-	const hour = addZero(dateObj.getHours());
-	const month = 'function' === typeof translate ? translate('month_' + months[dateObj.getMonth()]) : months[dateObj.getMonth()];
-	const day = dateObj.getDate();
-	const year = dateObj.getFullYear();
+	const dateObj = dateToLocalDate(dateStr);
+	const isLocal = 'local' === type;
+	const seconds = addZero(isLocal ? dateObj.getSeconds() : dateObj.getUTCSeconds());
+	const minutes = addZero(isLocal ? dateObj.getMinutes() : dateObj.getUTCMinutes());
+	const hour = addZero(isLocal ? dateObj.getHours() : dateObj.getUTCHours());
+	const monthIndex = isLocal ? dateObj.getMonth() : dateObj.getUTCMonth();
+	const month = 'function' === typeof translate ? translate('month_' + months[monthIndex]) : months[monthIndex];
+	const day = isLocal ? dateObj.getDate() : dateObj.getUTCDate();
+	const year = isLocal ? dateObj.getFullYear() : dateObj.getUTCFullYear();
 
 	let formattedDate = `${month}`;
 	formattedDate += hasDays ? ` ${day}` : '';
