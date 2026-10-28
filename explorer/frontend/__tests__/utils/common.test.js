@@ -1,5 +1,6 @@
 import { accountHarvestedBlockPageResult, accountPageResult } from '../test-utils/accounts';
 import { blockPageResult } from '../test-utils/blocks';
+import { mockUserTimezone } from '../test-utils/timezone';
 import { transactionPageResult } from '../test-utils/transactions';
 import {
 	arrayToText,
@@ -22,12 +23,6 @@ import {
 	truncateDecimals,
 	truncateString
 } from '@/app/utils/common';
-
-beforeEach(() => {
-	Date.prototype.getTimezoneOffset = function () {
-		return 160;
-	};
-});
 
 describe('utils/common', () => {
 	describe('formatDate', () => {
@@ -105,24 +100,14 @@ describe('utils/common', () => {
 		});
 
 		describe('in UTC-5 timezone', () => {
-			const localGetterNames = ['getFullYear', 'getMonth', 'getDate', 'getHours', 'getMinutes', 'getSeconds'];
-			const originalGetters = {};
+			let restoreTimezone;
 
 			beforeEach(() => {
-				// Tests run in UTC, so local getters are shifted to simulate a timezone where local and UTC dates differ.
-				localGetterNames.forEach(name => {
-					originalGetters[name] = Date.prototype[name];
-					const utcGetterName = name.replace('get', 'getUTC');
-					Date.prototype[name] = function () {
-						return new Date(this.getTime() - (5 * 3600000))[utcGetterName]();
-					};
-				});
+				restoreTimezone = mockUserTimezone(300);
 			});
 
 			afterEach(() => {
-				localGetterNames.forEach(name => {
-					Date.prototype[name] = originalGetters[name];
-				});
+				restoreTimezone();
 			});
 
 			it('formats REST timestamp in UTC', () => {
@@ -156,11 +141,15 @@ describe('utils/common', () => {
 	});
 
 	describe('dateToLocalDate', () => {
+		let restoreTimezone;
+
 		beforeEach(() => {
-			// Any local offset must be ignored for REST timestamps, which are always UTC.
-			Date.prototype.getTimezoneOffset = function () {
-				return -120;
-			};
+			// REST timestamps are UTC, so the local timezone must not affect them.
+			restoreTimezone = mockUserTimezone(-540);
+		});
+
+		afterEach(() => {
+			restoreTimezone();
 		});
 
 		const runDateToLocalDateTest = (date, expectedResult) => {
@@ -179,8 +168,8 @@ describe('utils/common', () => {
 			runDateToLocalDateTest('2024-07-15 10:00', '2024-07-15T10:00:00.000Z');
 		});
 
-		it('parses REST timestamp in spring-forward gap as UTC', () => {
-			runDateToLocalDateTest('2024-03-31 02:30:00', '2024-03-31T02:30:00.000Z');
+		it('parses timezone-less ISO timestamp with milliseconds as UTC', () => {
+			runDateToLocalDateTest('2024-07-15T10:00:00.123', '2024-07-15T10:00:00.123Z');
 		});
 
 		it('parses ISO date with timezone designator as is', () => {

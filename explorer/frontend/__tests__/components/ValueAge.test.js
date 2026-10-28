@@ -1,14 +1,11 @@
 import '@testing-library/jest-dom';
 import ValueAge from '@/app/components/ValueAge';
+import { mockUserTimezone } from '../test-utils/timezone';
 import { render, screen } from '@testing-library/react';
 import TimeAgo from 'javascript-time-ago';
 import en from 'javascript-time-ago/locale/en.json';
 
 // Constants
-
-// Checks datetime strings without a timezone, that browsers parse in local time.
-// See https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date#date_time_string_format
-const LOCAL_DATE_TIME_REGEX = /^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}(:\d{2}(\.\d+)?)?$/;
 
 const timezoneOffsetMinutes = {
 	'UTC': 0,
@@ -24,47 +21,25 @@ jest.mock('next/router', () => ({
 
 TimeAgo.addDefaultLocale(en);
 
-let FakeTimersDate;
-
-// Makes date parsing and the timezone offset behave as in a browser running with the given UTC offset.
-const mockUserTimezone = offsetMinutes => {
-	const machineOffsetMinutes = new FakeTimersDate().getTimezoneOffset();
-	const parseShiftMilliseconds = (offsetMinutes - machineOffsetMinutes) * 60000;
-
-	class TimezoneMockDate extends FakeTimersDate {
-		constructor(...args) {
-			if (args.length === 1 && typeof args[0] === 'string' && LOCAL_DATE_TIME_REGEX.test(args[0]))
-				super(new FakeTimersDate(args[0]).getTime() + parseShiftMilliseconds);
-			else
-				super(...args);
-		}
-
-		getTimezoneOffset() {
-			return offsetMinutes;
-		}
-	}
-
-	global.Date = TimezoneMockDate;
-};
-
 // Tests
 
 beforeAll(() => {
 	// "Now" is pinned, so every case value is exactly three hours away from it.
 	jest.useFakeTimers({ now: new Date('2026-06-16T12:00:00.000Z') });
-	FakeTimersDate = global.Date;
 });
 
 describe('components/ValueAge', () => {
+	let restoreTimezone;
+
 	afterEach(() => {
-		global.Date = FakeTimersDate;
+		restoreTimezone();
 	});
 
 	describe('render scenarios', () => {
 		const runRenderTest = (description, config, expected) => {
 			it(description, async () => {
 				// Arrange:
-				mockUserTimezone(timezoneOffsetMinutes[config.timezone]);
+				restoreTimezone = mockUserTimezone(timezoneOffsetMinutes[config.timezone]);
 
 				// Act:
 				render(<ValueAge value={config.value} />);
