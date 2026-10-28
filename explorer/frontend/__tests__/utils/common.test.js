@@ -7,6 +7,7 @@ import {
 	decodeTransactionMessage,
 	formatAccountCSV,
 	formatBlockCSV,
+	dateToLocalDate,
 	formatDate,
 	formatHarvestedBlockCSV,
 	formatMosaicCSV,
@@ -101,6 +102,31 @@ describe('utils/common', () => {
 
 			// Act + Assert:
 			runFormatDateTest(timestamp, config, expectedResult);
+		});
+	});
+
+	describe('dateToLocalDate', () => {
+		beforeEach(() => {
+			// Simulates a timezone with UTC+1 in winter and UTC+2 in summer.
+			Date.prototype.getTimezoneOffset = function () {
+				return this.getTime() < Date.UTC(2024, 2, 31, 1) ? -60 : -120;
+			};
+		});
+
+		const runDateToLocalDateTest = (date, expectedResult) => {
+			// Act:
+			const result = dateToLocalDate(date);
+
+			// Assert:
+			expect(result.toISOString()).toBe(expectedResult);
+		};
+
+		it('applies winter offset to winter date', () => {
+			runDateToLocalDateTest('2024-01-15 10:00:00', '2024-01-15T11:00:00.000Z');
+		});
+
+		it('applies summer offset to summer date', () => {
+			runDateToLocalDateTest('2024-07-15 10:00:00', '2024-07-15T12:00:00.000Z');
 		});
 	});
 
