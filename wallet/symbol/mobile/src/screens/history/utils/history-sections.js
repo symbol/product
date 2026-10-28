@@ -1,8 +1,8 @@
 import { SymbolTransactionType, TransactionGroup } from '@/app/constants';
+import { getTransactionTypeInfo } from '@/app/lib/transaction';
 import { $t } from '@/app/localization';
 import { Colors } from '@/app/styles';
 import { FilterType } from '@/app/types/Filter';
-import { getTransactionTypeLocaleKey } from '@/app/utils';
 
 const SYMBOL_CHAIN_NAME = 'symbol';
 
@@ -27,15 +27,15 @@ export const getHistoryFilterConfig = () => [
 		type: FilterType.SELECT,
 		options: [
 			{
-				label: $t(getTransactionTypeLocaleKey(SymbolTransactionType.TRANSFER, SYMBOL_CHAIN_NAME)),
+				label: $t(getTransactionTypeInfo(SymbolTransactionType.TRANSFER, SYMBOL_CHAIN_NAME).localeKey),
 				value: [SymbolTransactionType.TRANSFER]
 			},
 			{
-				label: $t(getTransactionTypeLocaleKey(SymbolTransactionType.AGGREGATE_BONDED, SYMBOL_CHAIN_NAME)),
+				label: $t(getTransactionTypeInfo(SymbolTransactionType.AGGREGATE_BONDED, SYMBOL_CHAIN_NAME).localeKey),
 				value: [SymbolTransactionType.AGGREGATE_BONDED]
 			},
 			{
-				label: $t(getTransactionTypeLocaleKey(SymbolTransactionType.AGGREGATE_COMPLETE, SYMBOL_CHAIN_NAME)),
+				label: $t(getTransactionTypeInfo(SymbolTransactionType.AGGREGATE_COMPLETE, SYMBOL_CHAIN_NAME).localeKey),
 				value: [SymbolTransactionType.AGGREGATE_COMPLETE]
 			}
 		]

@@ -1,7 +1,7 @@
 import { AccountRow, BooleanView, CopyButtonContainer, Field, MessageView, Stack, StyledText, TokenBalanceRow } from '@/app/components';
 import { useAccountDisplayData, useTokenDisplayData } from '@/app/hooks';
+import { getTransactionTypeInfo } from '@/app/lib/transaction';
 import { $t } from '@/app/localization';
-import { getTransactionTypeLocaleKey } from '@/app/utils';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 
@@ -150,7 +150,7 @@ const renderRowValue = (row, accountsDisplayMap, tokensDisplayMap, translate, ch
 			</CopyButtonContainer>
 		);
 	case 'transactionType':
-		return <StyledText key={key}>{translate(getTransactionTypeLocaleKey(row.value, chainName))}</StyledText>;
+		return <StyledText key={key}>{translate(getTransactionTypeInfo(row.value, chainName).localeKey)}</StyledText>;
 	case 'translate':
 		return <StyledText key={key}>{translate(`fieldValue_${row.value}`)}</StyledText>;
 	case 'text':

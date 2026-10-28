@@ -122,7 +122,7 @@ export const TransactionDetails = ({ route }) => {
 	});
 
 	// SafetyWarning
-	const isDangerous = isTransactionDangerous(transaction);
+	const isDangerous = isTransactionDangerous(transaction, chainName);
 	const safetyWarning = createSafetyWarningAlertData(isDangerous, isCosignable);
 
 	// Block explorer
