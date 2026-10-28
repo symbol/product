@@ -103,6 +103,56 @@ describe('utils/common', () => {
 			// Act + Assert:
 			runFormatDateTest(timestamp, config, expectedResult);
 		});
+
+		describe('in UTC-5 timezone', () => {
+			const localGetterNames = ['getFullYear', 'getMonth', 'getDate', 'getHours', 'getMinutes', 'getSeconds'];
+			const originalGetters = {};
+
+			beforeEach(() => {
+				// Tests run in UTC, so local getters are shifted to simulate a timezone where local and UTC dates differ.
+				localGetterNames.forEach(name => {
+					originalGetters[name] = Date.prototype[name];
+					const utcGetterName = name.replace('get', 'getUTC');
+					Date.prototype[name] = function () {
+						return new Date(this.getTime() - (5 * 3600000))[utcGetterName]();
+					};
+				});
+			});
+
+			afterEach(() => {
+				localGetterNames.forEach(name => {
+					Date.prototype[name] = originalGetters[name];
+				});
+			});
+
+			it('formats REST timestamp in UTC', () => {
+				runFormatDateTest(
+					'2024-06-07 01:01:01',
+					{ hasTime: true, hasSeconds: true },
+					'translated_month_jun 7, 2024 • 01:01:01'
+				);
+			});
+
+			it('formats REST timestamp in local timezone', () => {
+				runFormatDateTest(
+					'2024-06-07 01:01:01',
+					{ hasTime: true, hasSeconds: true, type: 'local' },
+					'translated_month_jun 6, 2024 • 20:01:01'
+				);
+			});
+
+			it('formats date with timezone designator in UTC', () => {
+				runFormatDateTest(
+					'2024-06-07T03:01:01+02:00',
+					{ hasTime: true, hasSeconds: true },
+					'translated_month_jun 7, 2024 • 01:01:01'
+				);
+			});
+
+			it('formats chart date in UTC', () => {
+				runFormatDateTest('2024-06-07', undefined, 'translated_month_jun 7, 2024');
+			});
+		});
 	});
 
 	describe('dateToLocalDate', () => {
