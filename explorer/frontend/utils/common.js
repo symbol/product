@@ -57,14 +57,14 @@ export const formatDate = (dateStr, translate, config = {}) => {
 	return formattedDate;
 };
 
-const UTC_DATE_WITHOUT_TIMEZONE_REGEX = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}(:\d{2})?$/;
+const UTC_DATE_WITHOUT_TIMEZONE_REGEX = /^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}(:\d{2}(\.\d+)?)?$/;
 
 /**
- * Converts date to a local date.
- * Parses REST timestamps (`YYYY-MM-DD HH:mm[:ss]` in UTC without a timezone designator) as UTC
- * and passes any other value to `new Date()`.
+ * Parses a date.
+ * Datetime strings without a timezone designator (`YYYY-MM-DD HH:mm[:ss[.sss]]`, as returned by REST) are parsed as UTC,
+ * because `new Date()` would parse them as local time. Any other value is passed to `new Date()`.
  * @param {string|number|Date} date - Date.
- * @returns {Date} Local date.
+ * @returns {Date} Parsed date.
  */
 export const dateToLocalDate = date => {
 	if ('string' === typeof date && UTC_DATE_WITHOUT_TIMEZONE_REGEX.test(date))
