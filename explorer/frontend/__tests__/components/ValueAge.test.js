@@ -1,6 +1,6 @@
 import '@testing-library/jest-dom';
-import ValueAge from '@/app/components/ValueAge';
 import { mockUserTimezone } from '../test-utils/timezone';
+import ValueAge from '@/app/components/ValueAge';
 import { render, screen } from '@testing-library/react';
 import TimeAgo from 'javascript-time-ago';
 import en from 'javascript-time-ago/locale/en.json';
