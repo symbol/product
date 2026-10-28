@@ -55,17 +55,20 @@ export const formatDate = (dateStr, translate, config = {}) => {
 	return formattedDate;
 };
 
+const UTC_DATE_WITHOUT_TIMEZONE_REGEX = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}(:\d{2})?$/;
+
 /**
  * Converts date to a local date.
- * @param {string} date - Date string.
+ * Parses REST timestamps (`YYYY-MM-DD HH:mm[:ss]` in UTC without a timezone designator) as UTC
+ * and passes any other value to `new Date()`.
+ * @param {string|number|Date} date - Date.
  * @returns {Date} Local date.
  */
 export const dateToLocalDate = date => {
-	const parsedDate = new Date(date);
-	const localTimezoneOffsetMinutes = parsedDate.getTimezoneOffset();
-	const millisecondsCoefficient = 60000;
+	if ('string' === typeof date && UTC_DATE_WITHOUT_TIMEZONE_REGEX.test(date))
+		return new Date(`${date.replace(' ', 'T')}Z`);
 
-	return new Date(parsedDate.getTime() - (localTimezoneOffsetMinutes * millisecondsCoefficient));
+	return new Date(date);
 };
 
 /**

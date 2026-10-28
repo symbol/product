@@ -98,7 +98,7 @@ describe('utils/common', () => {
 				hasSeconds: true,
 				type: 'local'
 			};
-			const expectedResult = 'translated_month_jun 6, 2024 • 22:21:01';
+			const expectedResult = 'translated_month_jun 7, 2024 • 01:01:01';
 
 			// Act + Assert:
 			runFormatDateTest(timestamp, config, expectedResult);
@@ -107,10 +107,9 @@ describe('utils/common', () => {
 
 	describe('dateToLocalDate', () => {
 		beforeEach(() => {
-			// Simulates a timezone with UTC+2 from April to September and UTC+1 otherwise.
+			// Any local offset must be ignored for REST timestamps, which are always UTC.
 			Date.prototype.getTimezoneOffset = function () {
-				const month = this.getUTCMonth();
-				return 3 <= month && 8 >= month ? -120 : -60;
+				return -120;
 			};
 		});
 
@@ -122,12 +121,28 @@ describe('utils/common', () => {
 			expect(result.toISOString()).toBe(expectedResult);
 		};
 
-		it('applies winter offset to winter date', () => {
-			runDateToLocalDateTest('2024-01-15 10:00:00', '2024-01-15T11:00:00.000Z');
+		it('parses REST timestamp as UTC', () => {
+			runDateToLocalDateTest('2024-07-15 10:00:00', '2024-07-15T10:00:00.000Z');
 		});
 
-		it('applies summer offset to summer date', () => {
-			runDateToLocalDateTest('2024-07-15 10:00:00', '2024-07-15T12:00:00.000Z');
+		it('parses REST timestamp without seconds as UTC', () => {
+			runDateToLocalDateTest('2024-07-15 10:00', '2024-07-15T10:00:00.000Z');
+		});
+
+		it('parses REST timestamp in spring-forward gap as UTC', () => {
+			runDateToLocalDateTest('2024-03-31 02:30:00', '2024-03-31T02:30:00.000Z');
+		});
+
+		it('parses ISO date with timezone designator as is', () => {
+			runDateToLocalDateTest('2024-07-15T10:00:00+02:00', '2024-07-15T08:00:00.000Z');
+		});
+
+		it('parses RFC 1123 date as is', () => {
+			runDateToLocalDateTest('Wed, 06 Mar 2024 04:58:02 GMT', '2024-03-06T04:58:02.000Z');
+		});
+
+		it('converts Date object to equal date', () => {
+			runDateToLocalDateTest(new Date('2024-07-15T10:00:00Z'), '2024-07-15T10:00:00.000Z');
 		});
 	});
 
