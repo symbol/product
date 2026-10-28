@@ -47,8 +47,8 @@ export const Semantic = {
 		},
 		xl: {
 			...Fonts.primary.regular,
-			fontSize: Primitives.xxl[0],
-			lineHeight: Primitives.xxl[1]
+			fontSize: Primitives.xl[0],
+			lineHeight: Primitives.xl[1]
 		}
 	},
 	bodyBold: {
