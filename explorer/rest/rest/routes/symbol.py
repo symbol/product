@@ -30,6 +30,7 @@ from rest.model.common import DatabaseConfig
 from rest.model.symbol.validation import SymbolDataInvalid
 
 BLOCK_LIST_QUERY_PARAMETERS = frozenset(['limit', 'fromHeight', 'sort'])
+BLOCK_STATISTICS_QUERY_PARAMETERS = frozenset()
 MOSAIC_QUERY_PARAMETERS = frozenset(['limit', 'offset', 'sort'])
 MOSAIC_MAX_OFFSET = 100000
 RECEIPT_QUERY_PARAMETERS = frozenset([
@@ -167,6 +168,18 @@ def setup_symbol_routes(app, symbol_api_facade):
 		error, result = _run_symbol_query(
 			lambda: symbol_api_facade.get_blocks(from_height, limit, SortOrder(sort)),
 			'Failed to get Symbol blocks')
+		if error:
+			return error
+
+		return jsonify(result)
+
+	@app.route('/api/symbol/block/statistics')
+	def api_get_symbol_block_statistics():
+		_validate_allowed_query_parameters(BLOCK_STATISTICS_QUERY_PARAMETERS)
+
+		error, result = _run_symbol_query(
+			symbol_api_facade.get_block_statistics,
+			'Failed to get Symbol block statistics')
 		if error:
 			return error
 

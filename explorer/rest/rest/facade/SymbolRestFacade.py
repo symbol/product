@@ -4,8 +4,9 @@ from zenlog import log
 
 from rest.db.SymbolDatabase import SymbolDataUnavailable
 from rest.facade.HarvestingProperties import HarvestingPropertiesUnavailable, load_harvesting_properties
+from rest.model.format import format_timestamp
 from rest.model.symbol.Account import SymbolAccountListView, SymbolAccountStatisticsView, SymbolAccountView
-from rest.model.symbol.format import format_timestamp
+from rest.model.symbol.Block import SymbolBlockStatisticsView
 from rest.model.symbol.Receipt import SymbolReceiptView
 from rest.model.symbol.Transaction import SymbolTransactionView
 
@@ -110,6 +111,12 @@ class SymbolRestFacade:
 
 		blocks = self.symbol_db.get_blocks(from_height, limit, sort)
 		return [block.to_dict(self.native_mosaic_info) for block in blocks]
+
+	def get_block_statistics(self):
+		"""Gets Symbol block statistics."""
+
+		blocks = self.symbol_db.get_block_statistics()
+		return SymbolBlockStatisticsView(blocks).to_dict(self.native_mosaic_info)
 
 	def get_mosaics(self, limit, offset, sort):
 		"""Gets a current mosaic page."""

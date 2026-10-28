@@ -1,10 +1,11 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from unittest import TestCase
 
 from common.symbol.NativeMosaic import NativeMosaicInfo
 
-from rest.model.symbol.Block import SymbolBlockView
+from rest.db.SymbolDatabase import BlockStatisticsRecord
+from rest.model.symbol.Block import SymbolBlockStatisticsView, SymbolBlockView
 
 
 def _expected_list_dict():
@@ -169,3 +170,110 @@ class SymbolBlockViewTest(TestCase):
 
 		# Act + Assert:
 		self.assertEqual(1.234567, block_view.to_dict(self.NATIVE_MOSAIC_INFO)['blockReward'])
+
+
+class SymbolBlockStatisticsViewTest(TestCase):
+	NATIVE_MOSAIC_INFO = NativeMosaicInfo('72C0212E67A08BCE', 2)
+
+	def test_formats_charts_and_scalars_from_ascending_rows(self):
+		# Arrange:
+		blocks = [
+			BlockStatisticsRecord(10, datetime(2026, 1, 1, tzinfo=timezone.utc), 100, 10 ** 12),
+			BlockStatisticsRecord(11, datetime(2026, 1, 1, 0, 0, 30, 123000, tzinfo=timezone.utc), 0, 12345000000000),
+			BlockStatisticsRecord(12, datetime(2026, 1, 1, 0, 1, 1, 123000, tzinfo=timezone.utc), 300, 12350000000000)
+		]
+
+		# Act:
+		result = SymbolBlockStatisticsView(blocks).to_dict(self.NATIVE_MOSAIC_INFO)
+
+		# Assert:
+		self.assertEqual({
+			'blockTimeChart': [[11, 30.123], [12, 31.0]],
+			'blockFeeChart': [[10, 1.0], [11, 0.0], [12, 3.0]],
+			'blockDifficultyChart': [[10, '1.00'], [11, '12.35'], [12, '12.35']],
+			'blockTime': 31,
+			'blockFee': 1.3333333333333333,
+			'blockDifficulty': '12.35'
+		}, result)
+
+	def test_formats_single_genesis_with_empty_time_statistics(self):
+		# Arrange:
+		block = BlockStatisticsRecord(1, datetime(2026, 1, 1, tzinfo=timezone.utc), 0, 0)
+
+		# Act:
+		result = SymbolBlockStatisticsView([block]).to_dict(self.NATIVE_MOSAIC_INFO)
+
+		# Assert:
+		self.assertEqual([], result['blockTimeChart'])
+		self.assertIsNone(result['blockTime'])
+		self.assertEqual([[1, 0.0]], result['blockFeeChart'])
+		self.assertEqual(0.0, result['blockFee'])
+		self.assertEqual([[1, '0.00']], result['blockDifficultyChart'])
+		self.assertEqual('0.00', result['blockDifficulty'])
+
+	def test_formats_difficulty_like_frontend_at_rounding_boundaries(self):
+		# Arrange:
+		for difficulty, expected_difficulty in ((12045000000000, '12.04'), (1005000000000, '1.00')):
+			with self.subTest(difficulty=difficulty):
+				block = BlockStatisticsRecord(1, datetime(2026, 1, 1, tzinfo=timezone.utc), 0, difficulty)
+
+				# Act:
+				result = SymbolBlockStatisticsView([block]).to_dict(self.NATIVE_MOSAIC_INFO)
+
+				# Assert:
+				self.assertEqual({
+					'blockTimeChart': [],
+					'blockFeeChart': [[1, 0.0]],
+					'blockDifficultyChart': [[1, expected_difficulty]],
+					'blockTime': None,
+					'blockFee': 0.0,
+					'blockDifficulty': expected_difficulty
+				}, result)
+
+	def test_rounds_half_second_average_up(self):
+		# Arrange:
+		base_timestamp = datetime(2026, 1, 1, tzinfo=timezone.utc)
+		blocks = [
+			BlockStatisticsRecord(10, base_timestamp, 100, 10 ** 12),
+			BlockStatisticsRecord(11, base_timestamp + timedelta(seconds=30), 200, 2 * 10 ** 12),
+			BlockStatisticsRecord(12, base_timestamp + timedelta(seconds=61), 300, 3 * 10 ** 12)
+		]
+
+		# Act:
+		result = SymbolBlockStatisticsView(blocks).to_dict(self.NATIVE_MOSAIC_INFO)
+
+		# Assert:
+		self.assertEqual({
+			'blockTimeChart': [[11, 30.0], [12, 31.0]],
+			'blockFeeChart': [[10, 1.0], [11, 2.0], [12, 3.0]],
+			'blockDifficultyChart': [[10, '1.00'], [11, '2.00'], [12, '3.00']],
+			'blockTime': 31,
+			'blockFee': 2.0,
+			'blockDifficulty': '3.00'
+		}, result)
+
+	def test_formats_240_chart_points_from_241_records_in_ascending_order(self):
+		# Arrange:
+		base_timestamp = datetime(2026, 1, 1, tzinfo=timezone.utc)
+		blocks = []
+		timestamp = base_timestamp
+		for height in range(2, 243):
+			blocks.append(BlockStatisticsRecord(height, timestamp, height * 1000000, height * 10 ** 12))
+			timestamp += timedelta(seconds=10 + ((height + 1) % 3))
+
+		# Act:
+		result = SymbolBlockStatisticsView(blocks).to_dict(NativeMosaicInfo('72C0212E67A08BCE', 6))
+
+		# Assert:
+		self.assertEqual(240, len(result['blockTimeChart']))
+		self.assertEqual(240, len(result['blockFeeChart']))
+		self.assertEqual(240, len(result['blockDifficultyChart']))
+		self.assertEqual([3, 10.0], result['blockTimeChart'][0])
+		self.assertEqual([242, 12.0], result['blockTimeChart'][-1])
+		self.assertEqual([3, 3.0], result['blockFeeChart'][0])
+		self.assertEqual([242, 242.0], result['blockFeeChart'][-1])
+		self.assertEqual([3, '3.00'], result['blockDifficultyChart'][0])
+		self.assertEqual([242, '242.00'], result['blockDifficultyChart'][-1])
+		self.assertEqual(11, result['blockTime'])
+		self.assertEqual(122.5, result['blockFee'])
+		self.assertEqual('242.00', result['blockDifficulty'])
