@@ -442,11 +442,8 @@ class SymbolDatabase(DatabaseConnectionPool):
 					query.mosaic_id or self.native_mosaic_info.id, page_addresses, account_rows, mosaic_rows,
 					AccountListEnrichment((namespaces, mosaic_aliases), harvesting_by_address, multisig_rows))
 
-	def get_account_statistics(self, max_age_seconds, harvesting_active_window_days):
+	def get_account_statistics(self, max_age_seconds, harvesting_active_window_days, harvesting_properties):
 		"""Gets account statistics from one successful refresh run and read snapshot."""
-
-		if self.native_mosaic_info is None:
-			raise SymbolDataUnavailable('Symbol account statistics native mosaic is unavailable')
 
 		with self.connection() as connection:
 			with connection.cursor() as cursor:
@@ -460,13 +457,10 @@ class SymbolDatabase(DatabaseConnectionPool):
 				run_id = self._assert_account_refresh_readable(refresh_state, max_age_seconds, now)
 				cutoff = now - timedelta(days=harvesting_active_window_days)
 				cutoff = cutoff.replace(tzinfo=None)
-				native_divisibility = self.native_mosaic_info.divisibility
-				minimum_native_amount = 10_000 * 10 ** native_divisibility
-				maximum_native_amount = 50_000_000 * 10 ** native_divisibility
 
 				cursor.execute(
 					'''WITH snapshot AS (
-						SELECT address, importance_percentage
+						SELECT address, address_text, importance_percentage
 						FROM symbol_account_refresh_accounts
 						WHERE refresh_run_id = %s
 					), classified AS (
@@ -478,33 +472,35 @@ class SymbolDatabase(DatabaseConnectionPool):
 									AND blocks.timestamp >= %s
 									AND blocks.height <= %s
 							) AS is_active,
-							COALESCE(native_mosaics.amount, 0) >= %s
-								AND COALESCE(native_mosaics.amount, 0) < %s AS is_eligible
+							COALESCE(harvesting_mosaics.amount, 0) >= %s
+								AND COALESCE(harvesting_mosaics.amount, 0) <= %s AS is_eligible
 						FROM snapshot
-						LEFT JOIN symbol_account_refresh_mosaics AS native_mosaics
-							ON native_mosaics.refresh_run_id = %s
-							AND native_mosaics.address = snapshot.address
-							AND native_mosaics.mosaic_id = %s
-					)
+						LEFT JOIN symbol_account_refresh_mosaics AS harvesting_mosaics
+							ON harvesting_mosaics.refresh_run_id = %s
+							AND harvesting_mosaics.address = snapshot.address
+							AND harvesting_mosaics.mosaic_id = %s
+					), statistics AS (
 					SELECT COUNT(*) AS total,
 						COUNT(*) FILTER (WHERE is_active) AS harvesting,
 						COUNT(*) FILTER (WHERE is_eligible) AS eligible_for_harvesting,
 						COUNT(*) FILTER (WHERE is_active AND is_eligible) AS harvesting_eligible,
 						COALESCE(SUM(importance_percentage), 0) AS total_importance
-					FROM classified''',
-					(run_id, cutoff, sync_state['last_synced_height'], minimum_native_amount, maximum_native_amount,
-						run_id, self.native_mosaic_info.id))
-				statistics_row = cursor.fetchone()
-
-				cursor.execute(
-					'''SELECT importance_percentage, address_text
-					FROM symbol_account_refresh_accounts
-					WHERE refresh_run_id = %s
-					ORDER BY importance_percentage DESC, address ASC
-					LIMIT 10''',
-					(run_id,))
-				top_accounts = tuple(cursor.fetchall())
-				return AccountStatisticsRecord(*statistics_row, top_accounts)
+					FROM classified
+					)
+					SELECT statistics.*, top_accounts.importance_percentage, top_accounts.address_text
+					FROM statistics
+					LEFT JOIN LATERAL (
+						SELECT importance_percentage, address_text, address
+						FROM snapshot
+						ORDER BY importance_percentage DESC, address ASC
+						LIMIT 10
+					) AS top_accounts ON TRUE
+					ORDER BY top_accounts.importance_percentage DESC, top_accounts.address ASC''',
+					(run_id, cutoff, sync_state['last_synced_height'], harvesting_properties.minimum_balance,
+						harvesting_properties.maximum_balance, run_id, self.native_mosaic_info.id))
+				rows = cursor.fetchall()
+				top_accounts = tuple((row[5], row[6]) for row in rows if row[6] is not None)
+				return AccountStatisticsRecord(*rows[0][:5], top_accounts)
 
 	@staticmethod
 	def _fetch_account_refresh_state(cursor):

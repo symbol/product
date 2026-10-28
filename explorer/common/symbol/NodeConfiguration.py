@@ -172,22 +172,31 @@ class SymbolNodeConfiguration:
 			)
 		)
 
-	def assert_request_allowed(self, request_url):
-		"""Validates a Symbol node request target against the configured allowed hosts and address policy."""
+	def assert_request_target_allowed(self, request_url):
+		"""Validates the request target without resolving its hostname."""
 
 		scheme, host, port, base_url = _normalize_base_url(request_url)
 		if (scheme, host, port) != (self.scheme, self.host, self.port):
 			raise SymbolNodeConfigurationError('Symbol node request target does not match configured base URL')
+		return base_url
 
-		for _, _, _, _, sockaddr in socket.getaddrinfo(host, port, type=socket.SOCK_STREAM):
-			address = ipaddress.ip_address(sockaddr[0])
-			if _is_forbidden_address(address):
-				raise SymbolNodeConfigurationError('Resolved Symbol node address is not allowed')
-			if address.is_loopback and not self.allow_loopback:
-				raise SymbolNodeConfigurationError('Loopback Symbol node address requires SYMBOL_NODE_ALLOW_LOOPBACK=true')
-			if address.is_private and not address.is_loopback and not self.allow_private:
-				raise SymbolNodeConfigurationError('Private Symbol node address requires SYMBOL_NODE_ALLOW_PRIVATE=true')
+	def assert_resolved_address_allowed(self, resolved_address):
+		"""Validates a numeric address against the configured node address policy."""
 
+		address = ipaddress.ip_address(resolved_address)
+		if _is_forbidden_address(address):
+			raise SymbolNodeConfigurationError('Resolved Symbol node address is not allowed')
+		if address.is_loopback and not self.allow_loopback:
+			raise SymbolNodeConfigurationError('Loopback Symbol node address requires SYMBOL_NODE_ALLOW_LOOPBACK=true')
+		if address.is_private and not address.is_loopback and not self.allow_private:
+			raise SymbolNodeConfigurationError('Private Symbol node address requires SYMBOL_NODE_ALLOW_PRIVATE=true')
+
+	def assert_request_allowed(self, request_url):
+		"""Validates a Symbol node request target against the configured allowed hosts and address policy."""
+
+		base_url = self.assert_request_target_allowed(request_url)
+		for _, _, _, _, sockaddr in socket.getaddrinfo(self.host, self.port, type=socket.SOCK_STREAM):
+			self.assert_resolved_address_allowed(sockaddr[0])
 		return base_url
 
 	def to_dict(self):

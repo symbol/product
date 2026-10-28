@@ -2,6 +2,8 @@ from common.symbol.NativeMosaic import NativeMosaicInfo
 from psycopg2 import Error as PsycopgError
 from zenlog import log
 
+from rest.db.SymbolDatabase import SymbolDataUnavailable
+from rest.facade.HarvestingProperties import HarvestingPropertiesUnavailable, load_harvesting_properties
 from rest.model.symbol.Account import SymbolAccountListView, SymbolAccountStatisticsView, SymbolAccountView
 from rest.model.symbol.format import format_timestamp
 from rest.model.symbol.Receipt import SymbolReceiptView
@@ -16,7 +18,7 @@ class SymbolRestFacade:
 	# The facade constructor owns each independently configured REST dependency.
 	def __init__(  # pylint: disable=too-many-arguments,too-many-positional-arguments
 		self, symbol_db, node_config, native_mosaic_info, network, account_refresh_max_age_seconds=None,
-		harvesting_active_window_days=None):
+		harvesting_active_window_days=None, harvesting_properties_loader=load_harvesting_properties):
 		"""Creates a Symbol facade with its required database and node dependencies."""
 
 		if symbol_db is None:
@@ -36,6 +38,7 @@ class SymbolRestFacade:
 		self.network = network
 		self.account_refresh_max_age_seconds = account_refresh_max_age_seconds
 		self.harvesting_active_window_days = harvesting_active_window_days
+		self.harvesting_properties_loader = harvesting_properties_loader
 
 	def get_health(self):
 		"""Gets health of the Symbol backend core foundation."""
@@ -197,9 +200,15 @@ class SymbolRestFacade:
 
 		if self.account_refresh_max_age_seconds is None:
 			raise ValueError('Symbol account refresh max age is required')
+
 		if self.harvesting_active_window_days is None:
 			raise ValueError('Symbol harvesting active window is required')
 
+		try:
+			harvesting_properties = self.harvesting_properties_loader(self.node_config)
+		except HarvestingPropertiesUnavailable as error:
+			raise SymbolDataUnavailable('Symbol harvesting properties are unavailable') from error
+
 		statistics = self.symbol_db.get_account_statistics(
-			self.account_refresh_max_age_seconds, self.harvesting_active_window_days)
+			self.account_refresh_max_age_seconds, self.harvesting_active_window_days, harvesting_properties)
 		return SymbolAccountStatisticsView(statistics).to_dict()

@@ -1,12 +1,17 @@
-from datetime import timedelta
+from datetime import timedelta, timezone
 from decimal import Decimal
 from unittest import TestCase
 
 from common.symbol.NativeMosaic import NativeMosaicInfo
+from common.symbol.NodeConfiguration import SymbolNodeConfiguration
+from flask import Flask
 from psycopg2 import Error as PsycopgError
-from symbolchain.symbol.Network import Address
+from symbolchain.symbol.Network import Address, Network
 
 from rest.db.SymbolDatabase import AccountStatisticsRecord, SymbolDatabase, SymbolDataUnavailable
+from rest.facade.HarvestingProperties import HarvestingProperties
+from rest.facade.SymbolRestFacade import SymbolRestFacade
+from rest.routes.symbol import setup_symbol_routes
 
 from ..test.SymbolAccountListTestUtils import (
 	CUSTOM_MOSAIC_ID,
@@ -21,6 +26,7 @@ from ..test.SymbolDatabaseTestUtils import PausingAfterSyncStateReadSymbolDataba
 
 NATIVE_MOSAIC_INFO = NativeMosaicInfo(NATIVE_MOSAIC_ID, 6)
 NOW = REFRESH_COMPLETED_AT + timedelta(hours=2)
+HARVESTING_PROPERTIES = HarvestingProperties(10_000_000_000, 49_999_999_999_999)
 
 
 def create_statistics_entries(run_id='selected-run'):
@@ -58,16 +64,65 @@ class SymbolAccountStatisticsDatabaseTest(TestCase):
 			}
 		])
 
-	def test_get_account_statistics_rejects_missing_native_mosaic_configuration(self):
-		# Arrange:
-		with symbol_test_database(create_symbol_sync_state(100, 100)) as (config, _):
-			with SymbolDatabase(config) as database:
+	def test_get_account_statistics_uses_configured_native_mosaic_and_inclusive_atomic_bounds(self):
+		# Arrange: other mosaic balances are decoys and the configured bounds are raw atomic units.
+		amounts = [99, 100, 101, 199, 200, 201, None]
+		entries = [
+			create_refresh_entry('selected-run', identity, identity, 1, mosaic_rows=[
+				(NATIVE_MOSAIC_ID, 10_000_000_000),
+				*(([(CUSTOM_MOSAIC_ID, amount)]) if amount is not None else [])
+			])
+			for identity, amount in enumerate(amounts, 1)
+		]
+		with symbol_test_database(create_symbol_sync_state(100, 100)) as (config, writer):
+			seed_refresh_run(writer, 'selected-run', entries)
+			with SymbolDatabase(config, NativeMosaicInfo(CUSTOM_MOSAIC_ID, 6), clock=lambda: NOW) as database:
 				# Act:
-				with self.assertRaises(SymbolDataUnavailable) as context:
-					database.get_account_statistics(7200, 7)
+				result = database.get_account_statistics(7200, 7, HarvestingProperties(100, 200))
+
+		# Assert: both bounds and their interior are eligible, without divisibility scaling.
+		self.assertEqual(7, result.total)
+		self.assertEqual(4, result.eligible_for_harvesting)
+
+	def test_get_account_statistics_counts_missing_mosaic_as_zero_balance(self):
+		# Arrange: core treats an account without the configured mosaic as having zero balance.
+		with symbol_test_database(create_symbol_sync_state(100, 100)) as (config, writer):
+			seed_refresh_run(writer, 'selected-run', [create_refresh_entry('selected-run', 1, 0, 1)])
+			with self._create_database(config) as database:
+				# Act:
+				result = database.get_account_statistics(7200, 7, HarvestingProperties(0, 200))
 
 		# Assert:
-		self.assertEqual('Symbol account statistics native mosaic is unavailable', str(context.exception))
+		self.assertEqual(1, result.eligible_for_harvesting)
+
+	def test_statistics_http_reports_native_mosaic_counts_and_percentage(self):
+		# Arrange: another mosaic is a decoy and only one eligible account is active.
+		entries = [
+			create_refresh_entry('selected-run', identity, identity, 1, mosaic_rows=[
+				(CUSTOM_MOSAIC_ID, 1), (NATIVE_MOSAIC_ID, amount)])
+			for identity, amount in [(1, 100), (2, 200), (3, 201)]
+		]
+		with symbol_test_database(create_symbol_sync_state(100, 100)) as (config, writer):
+			seed_refresh_run(writer, 'selected-run', entries)
+			writer.upsert_blocks([create_symbol_block(1, timestamp=NOW, beneficiary_address=account_address(1))])
+			with self._create_database(config) as database:
+				facade = SymbolRestFacade(
+					database, SymbolNodeConfiguration.from_url('http://127.0.0.1:3000', allow_loopback=True),
+					NATIVE_MOSAIC_INFO, Network.TESTNET, 7200, 7,
+					harvesting_properties_loader=lambda _: HarvestingProperties(100, 200))
+				app = Flask(__name__)
+				setup_symbol_routes(app, facade)
+				# Act:
+				response = app.test_client().get('/api/symbol/account/statistics')
+
+		# Assert:
+		self.assertEqual(200, response.status_code)
+		body = response.get_json()
+		self.assertEqual(3, body['total'])
+		self.assertEqual(1, body['harvesting'])
+		self.assertEqual(2, body['eligibleForHarvesting'])
+		self.assertEqual(50.0, body['harvestingAccountsPercentage'])
+		self.assertEqual([[50.0, 'Harvesting'], [50.0, 'Not harvesting']], body['harvestingAccountsChart'])
 
 	def test_get_account_statistics_computes_all_snapshot_cohorts_and_bounds_activity(self):
 		# Arrange: account 1 is active+eligible, 2 active-only, 3 eligible-only, and 4 neither.
@@ -81,7 +136,7 @@ class SymbolAccountStatisticsDatabaseTest(TestCase):
 			writer.connection.commit()
 			with self._create_database(config) as database:
 				# Act:
-				result = database.get_account_statistics(7200, 7)
+				result = database.get_account_statistics(7200, 7, HARVESTING_PROPERTIES)
 
 		# Assert: repeated beneficiaries count once; signer-only, outsider, and above-watermark rows do not count.
 		self.assertEqual(4, result.total)
@@ -111,13 +166,13 @@ class SymbolAccountStatisticsDatabaseTest(TestCase):
 			seed_refresh_run(writer, 'selected-run', entries, native_mosaic_id=CUSTOM_MOSAIC_ID)
 			with self._create_database(config, configured_mosaic_info) as database:
 				# Act:
-				result = database.get_account_statistics(7200, 7)
+				result = database.get_account_statistics(7200, 7, HarvestingProperties(10_000_000_000, 49_999_999_999_999))
 
 		# Assert: the configured mosaic yields two eligible accounts; the default-mosaic decoy yields one.
 		self.assertEqual(3, result.total)
 		self.assertEqual(2, result.eligible_for_harvesting)
 
-	def test_get_account_statistics_uses_configured_divisibility_for_inclusive_and_exclusive_bounds(self):
+	def test_get_account_statistics_uses_supplied_atomic_balance_bounds(self):
 		# Arrange:
 		configured_mosaic_info = NativeMosaicInfo(NATIVE_MOSAIC_ID, 3)
 		entries = [
@@ -131,7 +186,7 @@ class SymbolAccountStatisticsDatabaseTest(TestCase):
 			seed_refresh_run(writer, 'selected-run', entries)
 			with self._create_database(config, configured_mosaic_info) as database:
 				# Act:
-				result = database.get_account_statistics(7200, 7)
+				result = database.get_account_statistics(7200, 7, HarvestingProperties(10_000_000, 49_999_999_999))
 
 		# Assert: three accounts meet [10,000,000, 50,000,000,000); six-digit bounds count two instead.
 		self.assertEqual(3, result.eligible_for_harvesting)
@@ -152,10 +207,34 @@ class SymbolAccountStatisticsDatabaseTest(TestCase):
 			])
 			with self._create_database(config) as database:
 				# Act:
-				result = database.get_account_statistics(7200, 3)
+				result = database.get_account_statistics(7200, 3, HARVESTING_PROPERTIES)
 
 		# Assert: only the two-day beneficiary is active for three days; a seven-day hardcode counts both.
 		self.assertEqual(1, result.harvesting)
+
+	def test_get_account_statistics_compares_utc_storage_with_offset_clock(self):
+		# Arrange: timestamp without time zone values represent UTC, including the exact boundary.
+		cutoff = NOW - timedelta(days=7)
+		clock = NOW.astimezone(timezone(timedelta(hours=5, minutes=30)))
+		with symbol_test_database(create_symbol_sync_state(100, 100)) as (config, writer):
+			seed_refresh_run(writer, 'selected-run', [create_refresh_entry('selected-run', i, i, 1) for i in (1, 2, 3)])
+			blocks = [
+				create_symbol_block(
+					i, beneficiary_address=account_address(i),
+					timestamp=(cutoff + timedelta(seconds=delta)).replace(tzinfo=None))
+				for i, delta in [(1, -1), (2, 0), (3, 1)]
+			]
+			writer.upsert_blocks(blocks)
+			with self._create_database(config, clock=lambda: clock) as database:
+				with database.connection() as connection:
+					with connection.cursor() as cursor:
+						cursor.execute("SET TIME ZONE 'America/New_York'")
+					connection.commit()
+				# Act:
+				result = database.get_account_statistics(7200, 7, HARVESTING_PROPERTIES)
+
+		# Assert: UTC storage includes exactly the two boundary-or-later blocks.
+		self.assertEqual(2, result.harvesting)
 
 	def test_get_account_statistics_advancing_clock_moves_inclusive_cutoff(self):
 		# Arrange:
@@ -169,9 +248,9 @@ class SymbolAccountStatisticsDatabaseTest(TestCase):
 			])
 			with self._create_database(config, clock=lambda: clock[0]) as database:
 				# Act:
-				at_boundary = database.get_account_statistics(7201, 7)
+				at_boundary = database.get_account_statistics(7201, 7, HARVESTING_PROPERTIES)
 				clock[0] += timedelta(seconds=1)
-				after_boundary = database.get_account_statistics(7201, 7)
+				after_boundary = database.get_account_statistics(7201, 7, HARVESTING_PROPERTIES)
 
 		# Assert: the exact cutoff is active, but becomes older after the clock advances.
 		self.assertEqual(2, at_boundary.harvesting)
@@ -180,8 +259,8 @@ class SymbolAccountStatisticsDatabaseTest(TestCase):
 	def test_get_account_statistics_orders_top_ties_by_address_at_top_ten_boundary(self):
 		# Arrange:
 		importance_by_identity = {
-			1: 100, 2: 90, 3: 90, 4: 80, 5: 70, 6: 60,
-			7: 50, 8: 40, 9: 30, 10: 20, 11: 20, 12: 10
+			1: 160, 2: 140, 3: 140, 4: 120, 5: 100, 6: 80,
+			7: 70, 8: 60, 9: 50, 10: 40, 11: 40, 12: 0
 		}
 		entries = [
 			create_refresh_entry('selected-run', identity, identity, importance)
@@ -191,7 +270,7 @@ class SymbolAccountStatisticsDatabaseTest(TestCase):
 			seed_refresh_run(writer, 'selected-run', entries)
 			with self._create_database(config) as database:
 				# Act:
-				result = database.get_account_statistics(7200, 7)
+				result = database.get_account_statistics(7200, 7, HARVESTING_PROPERTIES)
 
 		# Assert: tied importance uses address order, including the tie that straddles rank ten.
 		expected_identities = sorted(
@@ -200,6 +279,7 @@ class SymbolAccountStatisticsDatabaseTest(TestCase):
 		expected_addresses = tuple(str(Address(account_address(identity))) for identity in expected_identities)
 		self.assertEqual(expected_addresses, tuple(row[1] for row in result.top_accounts))
 		self.assertEqual(12, result.total)
+		self.assertEqual(Decimal('1'), result.total_importance)
 
 	def test_get_account_statistics_returns_empty_statistics_for_empty_successful_snapshot(self):
 		# Arrange:
@@ -207,7 +287,7 @@ class SymbolAccountStatisticsDatabaseTest(TestCase):
 			seed_refresh_run(writer, 'empty-run', [])
 			with self._create_database(config) as database:
 				# Act:
-				result = database.get_account_statistics(7200, 7)
+				result = database.get_account_statistics(7200, 7, HARVESTING_PROPERTIES)
 
 		# Assert:
 		self.assertEqual(AccountStatisticsRecord(0, 0, 0, 0, Decimal(0), ()), result)
@@ -218,7 +298,7 @@ class SymbolAccountStatisticsDatabaseTest(TestCase):
 			with self._create_database(config) as database:
 				# Act:
 				with self.assertRaises(SymbolDataUnavailable) as context:
-					database.get_account_statistics(7200, 7)
+					database.get_account_statistics(7200, 7, HARVESTING_PROPERTIES)
 
 		# Assert:
 		self.assertEqual('Symbol account refresh data is unavailable', str(context.exception))
@@ -232,7 +312,7 @@ class SymbolAccountStatisticsDatabaseTest(TestCase):
 				with self._create_database(config) as database:
 					# Act:
 					with self.assertRaises(SymbolDataUnavailable) as context:
-						database.get_account_statistics(7200, 7)
+						database.get_account_statistics(7200, 7, HARVESTING_PROPERTIES)
 				# Assert:
 				self.assertEqual('Symbol account refresh data is unavailable', str(context.exception))
 
@@ -244,7 +324,7 @@ class SymbolAccountStatisticsDatabaseTest(TestCase):
 			with self._create_database(config) as database:
 				# Act:
 				with self.assertRaises(SymbolDataUnavailable) as context:
-					database.get_account_statistics(7200, 7)
+					database.get_account_statistics(7200, 7, HARVESTING_PROPERTIES)
 
 		# Assert:
 		self.assertEqual('Symbol account refresh data is unavailable', str(context.exception))
@@ -256,7 +336,7 @@ class SymbolAccountStatisticsDatabaseTest(TestCase):
 				writer, 'selected-run', create_statistics_entries(), completed_at=NOW - timedelta(seconds=7200))
 			with self._create_database(config) as database:
 				# Act:
-				result = database.get_account_statistics(7200, 7)
+				result = database.get_account_statistics(7200, 7, HARVESTING_PROPERTIES)
 
 		# Assert:
 		self.assertEqual(4, result.total)
@@ -268,7 +348,7 @@ class SymbolAccountStatisticsDatabaseTest(TestCase):
 			with self._create_database(config) as database:
 				# Act:
 				with self.assertRaises(SymbolDataUnavailable) as context:
-					database.get_account_statistics(7200, 7)
+					database.get_account_statistics(7200, 7, HARVESTING_PROPERTIES)
 
 		# Assert:
 		self.assertEqual('Symbol account data is unavailable', str(context.exception))
@@ -284,7 +364,7 @@ class SymbolAccountStatisticsDatabaseTest(TestCase):
 					connection.commit()
 				# Act:
 				with self.assertRaises(PsycopgError):
-					database.get_account_statistics(7200, 7)
+					database.get_account_statistics(7200, 7, HARVESTING_PROPERTIES)
 
 	def test_get_account_statistics_reads_refresh_run_and_watermark_from_one_snapshot(self):
 		# Arrange:
@@ -326,9 +406,9 @@ class SymbolAccountStatisticsDatabaseTest(TestCase):
 				# Act:
 				old_result = read_during_database_snapshot(
 					database,
-					lambda: database.get_account_statistics(7200, 7),
+					lambda: database.get_account_statistics(7200, 7, HARVESTING_PROPERTIES),
 					switch_successful_run_and_watermark)
-				new_result = database.get_account_statistics(7200, 7)
+				new_result = database.get_account_statistics(7200, 7, HARVESTING_PROPERTIES)
 
 		# Assert:
 		self.assertEqual((2, 1, 1, 1, Decimal('1')), old_result[:5])
