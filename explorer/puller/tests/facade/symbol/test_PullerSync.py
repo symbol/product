@@ -1,9 +1,11 @@
 # pylint: disable=too-many-lines
 import asyncio
+import copy
 import json
 from contextlib import contextmanager
 from unittest.mock import AsyncMock
 
+from common.tests.PostgresTestUtils import drop_symbol_block_tables_if_present
 from psycopg2 import Error as PsycopgError
 from symbolchain.sc import MosaicSupplyChangeAction, ReceiptType, TransactionType
 from symbolchain.symbol.IdGenerator import generate_namespace_id
@@ -13,6 +15,7 @@ from symbollightapi.model.Exceptions import NodeException
 from puller.facade.SymbolPuller import BLOCK_PAGE_FETCH_CONCURRENCY, MAX_PAGE_SIZE, SymbolRollbackError
 from puller.model.symbol.Block import create_block_row
 from puller.model.symbol.Receipt import create_receipt_rows
+from tests.test.SymbolDatabaseTestUtils import normalize_sync_state
 from tests.test.SymbolLockTestUtils import create_secret_lock_item
 from tests.test.SymbolMetadataTestUtils import (
 	SCOPED_METADATA_KEY,
@@ -50,6 +53,7 @@ from .puller_test_utils import (
 	NoOpRateLimiter,
 	ResponseConnector,
 	SymbolPullerTestBase,
+	create_adaptive_batch_fixture,
 	create_amount_statement_item,
 	create_artifact_expiry_statement,
 	create_complete_aggregate_pair,
@@ -93,6 +97,15 @@ def _assert_checkpoint_transaction_address_rows(test_case, cursor, transaction_h
 	])
 
 
+def _fetch_transaction_counts(database):
+	cursor = database.connection.cursor()
+	cursor.execute(
+		'SELECT b.height, COUNT(t.id) FROM symbol_blocks AS b '
+		'LEFT JOIN symbol_transactions AS t ON t.height = b.height '
+		'GROUP BY b.height ORDER BY b.height')
+	return cursor.fetchall()
+
+
 class FailingSyncWriteIntentDatabase(DelegatingSymbolDatabase):
 	def mark_sync_write_intent(self, height):  # pylint: disable=no-self-use
 		raise RuntimeError(f'write intent failed at height {height}')
@@ -101,6 +114,14 @@ class FailingSyncWriteIntentDatabase(DelegatingSymbolDatabase):
 class FailingSyncTransactionDatabase(DelegatingSymbolDatabase):
 	def upsert_transactions_for_height(self, height, transaction_rows):  # pylint: disable=no-self-use
 		raise RuntimeError(f'transaction write failed at height {height}')
+
+
+class FailingAdaptiveSecondRangeReceiptDatabase(DelegatingSymbolDatabase):
+	def upsert_receipts_for_height(self, height, receipts, block_reward):  # pylint: disable=unused-argument
+		if 5 == height:
+			raise RuntimeError('adaptive second-range receipt write failed')
+
+		return self.database.upsert_receipts_for_height(height, receipts, block_reward)
 
 
 class FailingSyncBlockDatabase(DelegatingSymbolDatabase):
@@ -274,16 +295,6 @@ class RecordingCheckpointDatabase(DelegatingSymbolDatabase):
 		return result
 
 
-def _normalize_sync_state_bytea(sync_state):
-	return {
-		**sync_state,
-		'finalized_hash': bytes(sync_state['finalized_hash']) if sync_state['finalized_hash'] is not None else None,
-		'last_synced_block_hash': (
-			bytes(sync_state['last_synced_block_hash'])
-			if sync_state['last_synced_block_hash'] is not None else None)
-	}
-
-
 class DatabaseObservingPerformanceLogger:
 	def __init__(self, database, state_snapshot=None):
 		self.database = database
@@ -296,9 +307,60 @@ class DatabaseObservingPerformanceLogger:
 		event = json.loads(message)
 		self.events.append(event)
 		if 'symbol_sync_batch_completed' == event['event']:
-			self.completed_sync_states.append(_normalize_sync_state_bytea(self.database.get_sync_state()))
+			self.completed_sync_states.append(normalize_sync_state(self.database.get_sync_state()))
 			if self.state_snapshot:
 				self.completed_state_snapshots.append(self.state_snapshot())
+
+
+def _create_adaptive_sync_fixture(failing_transaction_range=None):
+	blocks, transaction_pages, statement_pages = create_adaptive_batch_fixture(
+		(0, 2, 3, 1, 4, 0, 2),
+		((1, 3), (4, 6), (7, 7)),
+		top_level_counts=(0, 1, 3, 1, 4, 0, 2),
+		transactions_by_height={2: create_complete_aggregate_pair(2, 'A' * 64, 0)},
+		failing_transaction_range=failing_transaction_range)
+	statement_pages[statement_path(1, 3)] = {
+		'data': [create_amount_statement_item(2, 11, ReceiptType.INFLATION.value, 'receipt-2')]
+	}
+	statement_pages[statement_path(4, 6)] = {
+		'data': [
+			create_amount_statement_item(4, 44, ReceiptType.INFLATION.value, 'receipt-4'),
+			create_amount_statement_item(5, 55, ReceiptType.INFLATION.value, 'receipt-5')
+		]
+	}
+	statement_pages[statement_path(7, 7)] = {
+		'data': [create_amount_statement_item(7, 77, ReceiptType.INFLATION.value, 'receipt-7')]
+	}
+
+	return blocks, transaction_pages, statement_pages
+
+
+def _expected_adaptive_transaction_identities(through_height):
+	identities = [
+		(2, bytes.fromhex('A' * 64), None),
+		(2, bytes.fromhex('A' * 64), 0)
+	]
+	for height, transaction_count in ((3, 3), (4, 1), (5, 4), (7, 2)):
+		if height <= through_height:
+			identities.extend(
+				(height, bytes.fromhex(f'{height:060X}{index:04X}'), None)
+				for index in range(transaction_count))
+
+	return [identity for identity in identities if identity[0] <= through_height]
+
+
+def _capture_adaptive_transaction_payloads(transaction_pages):
+	first_range_items = transaction_pages[transaction_path(1, 3)]['data']
+	second_range_items = transaction_pages[transaction_path(4, 6)]['data']
+	return {
+		'aggregate': copy.deepcopy(next(
+			item for item in first_range_items
+			if item['meta']['height'] == '2' and 'aggregateHash' not in item['meta'])),
+		'embedded': copy.deepcopy(next(
+			item for item in first_range_items
+			if item['meta']['height'] == '2' and 'aggregateHash' in item['meta'])),
+		'transfer': copy.deepcopy(next(item for item in second_range_items if item['meta']['height'] == '4'))
+	}
 
 
 @contextmanager
@@ -1938,7 +2000,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 			'last_synced_height': first_batch_end,
 			'last_synced_block_hash': bytes.fromhex(f'{first_batch_end:064X}'),
 			'dirty_state_from_height': first_batch_end + 1
-		}, _normalize_sync_state_bytea(database.get_sync_state()))
+		}, normalize_sync_state(database.get_sync_state()))
 
 	def _assert_failed_checkpoint_rows(self, scenario):
 		database = self.puller.symbol_db
@@ -2032,7 +2094,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 			'last_synced_height': chain_height,
 			'last_synced_block_hash': bytes.fromhex(f'{chain_height:064X}'),
 			'dirty_state_from_height': None
-		}, _normalize_sync_state_bytea(database.get_sync_state()))
+		}, normalize_sync_state(database.get_sync_state()))
 		self.assertEqual(list(range(1, chain_height + 1)), self._fetch_block_heights(database))
 		cursor = database.connection.cursor()
 		cursor.execute('SELECT height, hash FROM symbol_blocks WHERE height <= %s ORDER BY height', (first_batch_end,))
@@ -2067,6 +2129,154 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		self.assertEqual(expected_rows, [
 			(height, bytes(transaction_hash), mosaic_id, amount, role, position)
 			for height, transaction_hash, mosaic_id, amount, role, position in cursor.fetchall()])
+
+	# pylint: disable=too-many-arguments,too-many-positional-arguments,too-many-locals
+	def _assert_adaptive_saved_content(
+		self,
+		database,
+		through_height,
+		expected_receipt_heights,
+		account_last_seen_height,
+		account_mosaic_height,
+		expected_payloads,
+		block_reward_through_height=None,
+		account_first_seen_height=3
+	):
+		# Act:
+		cursor = database.connection.cursor()
+		cursor.execute(
+			'SELECT height, COALESCE(hash, aggregate_hash), embedded_index '
+			'FROM symbol_transactions '
+			'ORDER BY height, COALESCE(hash, aggregate_hash), embedded_index NULLS FIRST')
+		actual_identities = [
+			(height, bytes(transaction_hash), embedded_index)
+			for height, transaction_hash, embedded_index in cursor.fetchall()]
+
+		# Assert:
+		self.assertEqual(list(range(1, through_height + 1)), self._fetch_block_heights(database))
+		self.assertEqual([
+			(height, count)
+			for height, count in ((1, 0), (2, 2), (3, 3), (4, 1), (5, 4), (6, 0), (7, 2))
+			if height <= through_height
+		], _fetch_transaction_counts(database))
+		expected_identities = sorted(
+			_expected_adaptive_transaction_identities(through_height),
+			key=lambda identity: (identity[0], identity[1], -1 if identity[2] is None else identity[2]))
+		self.assertEqual(expected_identities, actual_identities)
+
+		expected_address_rows = sorted([
+			(
+				height,
+				transaction_hash,
+				embedded_index,
+				address,
+				role
+			)
+			for height, transaction_hash, embedded_index in expected_identities
+			for address, role in (
+				((bytes.fromhex(SIGNER_ADDRESS), 'signer'),)
+				if (2, bytes.fromhex('A' * 64), None) == (height, transaction_hash, embedded_index)
+				else ((bytes.fromhex(SIGNER_ADDRESS), 'signer'), (bytes.fromhex(RECIPIENT_ADDRESS), 'recipient')))
+		],
+			key=lambda row: (
+				row[0], row[1], -1 if row[2] is None else row[2], row[3], row[4]))
+		cursor.execute(
+			'SELECT t.height, COALESCE(t.hash, t.aggregate_hash), t.embedded_index, ta.address, ta.role '
+			'FROM symbol_transactions AS t '
+			'JOIN symbol_transaction_addresses AS ta ON ta.transaction_id = t.id '
+			'ORDER BY t.height, COALESCE(t.hash, t.aggregate_hash), t.embedded_index NULLS FIRST, ta.address, ta.role')
+		self.assertEqual(expected_address_rows, [
+			(height, bytes(transaction_hash), embedded_index, bytes(address), role)
+			for height, transaction_hash, embedded_index, address, role in cursor.fetchall()])
+
+		expected_mosaic_rows = [
+			(height, transaction_hash, embedded_index, NATIVE_MOSAIC_ID, height * 1_000, 'transfer', 0)
+			for height, transaction_hash, embedded_index in expected_identities
+			if (2, bytes.fromhex('A' * 64), None) != (height, transaction_hash, embedded_index)]
+		cursor.execute(
+			'SELECT t.height, COALESCE(t.hash, t.aggregate_hash), t.embedded_index, '
+			'tm.mosaic_id, tm.amount, tm.role, tm.position '
+			'FROM symbol_transactions AS t '
+			'JOIN symbol_transaction_mosaics AS tm ON tm.transaction_id = t.id '
+			'ORDER BY t.height, COALESCE(t.hash, t.aggregate_hash), t.embedded_index NULLS FIRST')
+		self.assertEqual(expected_mosaic_rows, [
+			(height, bytes(transaction_hash), embedded_index, mosaic_id, amount, role, position)
+			for height, transaction_hash, embedded_index, mosaic_id, amount, role, position in cursor.fetchall()])
+
+		expected_receipts = [
+			(
+				height,
+				'inflation',
+				'inflation',
+				amount,
+				{
+					'version': 1,
+					'type': ReceiptType.INFLATION.value,
+					'mosaicId': NATIVE_MOSAIC_ID,
+					'amount': str(amount)
+				}
+			)
+			for height, amount in expected_receipt_heights
+		]
+		cursor.execute(
+			'SELECT height, receipt_type, receipt_group, amount, raw_payload '
+			'FROM symbol_receipts ORDER BY height, id')
+		self.assertEqual(expected_receipts, cursor.fetchall())
+		cursor.execute(
+			'SELECT height, block_reward FROM symbol_blocks WHERE block_reward IS NOT NULL ORDER BY height')
+		if block_reward_through_height is None:
+			block_reward_through_height = through_height
+		expected_block_rewards = [
+			(height, dict(expected_receipt_heights).get(height, 0))
+			for height in range(1, block_reward_through_height + 1)]
+		self.assertEqual(expected_block_rewards, cursor.fetchall())
+
+		self._assert_checkpoint_account_rows(
+			cursor, account_first_seen_height, account_last_seen_height, account_mosaic_height)
+
+		expected_bodies = {
+			'aggregate': {
+				'version': 1,
+				'network': 152,
+				'signature': '1' * 128,
+				'recipientAddress': RECIPIENT_ADDRESS,
+				'mosaics': [{'id': NATIVE_MOSAIC_ID, 'amount': '2000'}],
+				'transactionsHash': '9' * 64,
+				'cosignatures': []
+			},
+			'embedded': {
+				'version': 1,
+				'network': 152,
+				'recipientAddress': RECIPIENT_ADDRESS,
+				'mosaics': [{'id': NATIVE_MOSAIC_ID, 'amount': '2000'}]
+			},
+			'transfer': {
+				'version': 1,
+				'network': 152,
+				'signature': '1' * 128,
+				'recipientAddress': RECIPIENT_ADDRESS,
+				'mosaics': [{'id': NATIVE_MOSAIC_ID, 'amount': '4000'}]
+			}
+		}
+		expected_row_selectors = (
+			('aggregate', 'hash = %s', (bytes.fromhex('A' * 64),)),
+			('embedded', 'aggregate_hash = %s AND embedded_index = 0', (bytes.fromhex('A' * 64),)),
+			('transfer', 'hash = %s', (bytes.fromhex(f'{4:060X}0000'),))
+		)
+		for name, selector, parameters in expected_row_selectors:
+			if 'transfer' == name and through_height < 4:
+				continue
+
+			cursor.execute(f'SELECT body, raw_payload FROM symbol_transactions WHERE {selector}', parameters)
+			self.assertEqual(1, cursor.rowcount)
+			self.assertEqual((expected_bodies[name], expected_payloads[name]), cursor.fetchone())
+
+	def _assert_adaptive_checkpoint_snapshot_is_preserved(self, checkpoint_snapshot, persisted_snapshot):
+		# Assert:
+		for table_name in CHECKPOINT_COMMIT_STABLE_TABLES:
+			self.assertTrue(
+				all(row in persisted_snapshot[table_name] for row in checkpoint_snapshot[table_name]),
+				table_name)
 
 	def _assert_restarted_checkpoint_rows(self, scenario, cursor):
 		first_batch_end = scenario['first_batch_end']
@@ -2203,6 +2413,491 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 			state['dirty_state_from_height'] for state in recording_database.published_states])
 		self.assertEqual([chain_height - 1, chain_height], [
 			state['last_synced_height'] for state in logger.completed_sync_states])
+
+	def test_sync_block_headers_splits_one_fetch_window_into_contiguous_transaction_ranges(self):
+		# Arrange:
+		self.puller._max_transactions_per_batch = 5  # pylint: disable=protected-access
+		blocks, transaction_pages, statement_pages = _create_adaptive_sync_fixture()
+		connector = FakeConnector(
+			7,
+			{0: blocks},
+			finalized_height=7,
+			transactions_by_path=transaction_pages,
+			statement_pages=statement_pages)
+		database = self.puller.symbol_db
+		recording_database = RecordingCheckpointDatabase(database)
+
+		# Act:
+		with _replace_symbol_database(self.puller, recording_database):
+			self._sync_with_connector(connector)
+
+		# Assert:
+		self.assertEqual([1, 2, 3, 4, 5, 6, 7], self._fetch_block_heights(database))
+		self.assertEqual([
+			(1, 0), (2, 2), (3, 3), (4, 1), (5, 4), (6, 0), (7, 2)
+		], _fetch_transaction_counts(database))
+		self.assertEqual([
+			(3, bytes.fromhex(f'{3:064X}'), None, 3, bytes.fromhex(f'{3:064X}'), None, None),
+			(6, bytes.fromhex(f'{6:064X}'), None, 6, bytes.fromhex(f'{6:064X}'), None, None),
+			(7, bytes.fromhex(f'{7:064X}'), None, 7, bytes.fromhex(f'{7:064X}'), 4, 5)
+		], [
+			(
+				state['last_synced_height'],
+				bytes(state['last_synced_block_hash']),
+				state['dirty_state_from_height'],
+				state['finalized_height'],
+				bytes(state['finalized_hash']),
+				state['finalized_epoch'],
+				state['finalized_point'])
+			for state in recording_database.published_states
+		])
+		self.assertEqual([
+			transaction_path(1, 3), transaction_path(4, 6), transaction_path(7, 7)
+		], [path for path in connector.paths if path.startswith('transactions/confirmed?')])
+		self.assertEqual([
+			statement_path(1, 3), statement_path(4, 6), statement_path(7, 7)
+		], [path for path in connector.paths if path.startswith('statements/transaction?')])
+		self.assertEqual(1, len([path for path in connector.paths if path.startswith('blocks?pageSize=100&offset=')]))
+		self.assertEqual(7, database.get_sync_state()['last_synced_height'])
+
+	def test_sync_block_headers_uses_each_adaptive_range_count_for_transaction_pages(self):
+		# Arrange:
+		self.puller._max_transactions_per_batch = 150  # pylint: disable=protected-access
+		total_transaction_counts = (90, 60, 80)
+		blocks = [
+			create_node_block(
+				height,
+				transactions_count=transaction_count,
+				total_transactions_count=transaction_count)
+			for height, transaction_count in enumerate(total_transaction_counts, 1)
+		]
+		transactions_by_height = {}
+		transaction_index = 0
+		for height, transaction_count in enumerate(total_transaction_counts, 1):
+			transactions_by_height[height] = []
+			for block_index in range(transaction_count):
+				transaction_index += 1
+				transactions_by_height[height].append(create_node_transaction(
+					height,
+					transaction_hash=f'{transaction_index:064X}',
+					transaction_id=f'transaction-{transaction_index}',
+					block_index=block_index))
+		first_range_transactions = transactions_by_height[1] + transactions_by_height[2]
+		transaction_pages = {
+			transaction_path(1, 2, 1): create_transaction_page(first_range_transactions[:MAX_PAGE_SIZE], page_number=1),
+			transaction_path(1, 2, 2): create_transaction_page(first_range_transactions[MAX_PAGE_SIZE:], page_number=2),
+			transaction_path(3, 3, 1): create_transaction_page(transactions_by_height[3], page_number=1)
+		}
+		statement_pages = {
+			statement_path(1, 2): {'data': []},
+			statement_path(3, 3): {'data': []}
+		}
+		connector = FakeConnector(
+			3,
+			{0: blocks},
+			finalized_height=3,
+			transactions_by_path=transaction_pages,
+			statement_pages=statement_pages)
+
+		# Act:
+		self._sync_with_connector(connector)
+
+		# Assert:
+		self.assertEqual([
+			transaction_path(1, 2, 1), transaction_path(1, 2, 2), transaction_path(3, 3, 1)
+		], [path for path in connector.paths if path.startswith('transactions/confirmed?')])
+		self.assertEqual([(1, 90), (2, 60), (3, 80)], _fetch_transaction_counts(self.puller.symbol_db))
+
+	def test_sync_block_headers_splits_finalized_and_capped_unfinalized_ranges(self):
+		# Arrange:
+		self.puller._max_transactions_per_batch = 150  # pylint: disable=protected-access
+
+		def make_transfers(height, count, first_hash, start_index=0):
+			return [
+				create_node_transaction(
+					height,
+					transaction_hash=f'{first_hash + index:064X}',
+					transaction_id=f'transaction-{height}-{index}',
+					block_index=start_index + index)
+				for index in range(count)
+			]
+
+		height_one_transactions = make_transfers(1, 49, 1)
+		height_two_aggregate = create_complete_aggregate_pair(2, 'B' * 64, 0)
+		height_two_transactions = height_two_aggregate + make_transfers(2, 50, 1000, start_index=1)
+		height_three_transactions = make_transfers(3, 100, 2000)
+		height_four_transactions = make_transfers(4, 80, 3000)
+		blocks = [
+			create_node_block(1, transactions_count=49, total_transactions_count=49),
+			create_node_block(2, transactions_count=51, total_transactions_count=52),
+			create_node_block(3, transactions_count=100, total_transactions_count=100),
+			create_node_block(4, transactions_count=80, total_transactions_count=80),
+			create_node_block(5, transactions_count=20, total_transactions_count=20)
+		]
+		finalized_range_items = height_one_transactions + height_two_transactions
+		transaction_pages = {
+			transaction_path(1, 2, 1): create_transaction_page(finalized_range_items[:MAX_PAGE_SIZE], page_number=1),
+			transaction_path(1, 2, 2): create_transaction_page(finalized_range_items[MAX_PAGE_SIZE:], page_number=2),
+			transaction_path(3, 3, 1): create_transaction_page(height_three_transactions, page_number=1),
+			transaction_path(3, 3, 2): create_transaction_page([], page_number=2),
+			transaction_path(4, 4, 1): create_transaction_page(height_four_transactions, page_number=1)
+		}
+		statement_pages = {
+			statement_path(1, 2): {'data': [create_amount_statement_item(2, 12, item_id='finalized-receipt')]},
+			statement_path(3, 3): {'data': [create_amount_statement_item(3, 33, item_id='unfinalized-receipt')]},
+			statement_path(4, 4): {'data': [create_amount_statement_item(4, 44, item_id='capped-receipt')]}
+		}
+		connector = FakeConnector(
+			5,
+			{0: blocks},
+			finalized_height=2,
+			transactions_by_path=transaction_pages,
+			statement_pages=statement_pages)
+
+		# Act:
+		self._sync_with_connector(connector, max_height=4)
+
+		# Assert:
+		database = self.puller.symbol_db
+		self.assertEqual([1, 2, 3, 4], self._fetch_block_heights(database))
+		self.assertEqual([(1, 49), (2, 52), (3, 100), (4, 80)], _fetch_transaction_counts(database))
+		cursor = database.connection.cursor()
+		cursor.execute(
+			'SELECT height, COUNT(*), COUNT(*) FILTER (WHERE NOT is_embedded) '
+			'FROM symbol_transactions GROUP BY height ORDER BY height')
+		self.assertEqual([(1, 49, 49), (2, 52, 51), (3, 100, 100), (4, 80, 80)], cursor.fetchall())
+		self.assertEqual([
+			transaction_path(1, 2, 1), transaction_path(1, 2, 2),
+			transaction_path(3, 3, 1), transaction_path(3, 3, 2), transaction_path(4, 4, 1)
+		], [path for path in connector.paths if path.startswith('transactions/confirmed?')])
+		self.assertEqual([
+			statement_path(1, 2), statement_path(3, 3), statement_path(4, 4)
+		], [path for path in connector.paths if path.startswith('statements/transaction?')])
+		cursor.execute('SELECT height, amount FROM symbol_receipts ORDER BY height')
+		self.assertEqual([(2, 12), (3, 33), (4, 44)], cursor.fetchall())
+		self.assertEqual({
+			'status': 'healthy',
+			'chain_height': 4,
+			'finalized_height': 2,
+			'finalized_hash': bytes.fromhex(f'{2:064X}'),
+			'finalized_epoch': 4,
+			'finalized_point': 5,
+			'last_synced_height': 4,
+			'last_synced_block_hash': bytes.fromhex(f'{4:064X}'),
+			'dirty_state_from_height': None
+		}, normalize_sync_state(database.get_sync_state()))
+
+	def test_sync_block_headers_keeps_adaptive_checkpoint_and_repairs_after_checkpoint_commit_failure(self):
+		# Arrange:
+		self.puller._max_transactions_per_batch = 5  # pylint: disable=protected-access
+		blocks, transaction_pages, statement_pages = _create_adaptive_sync_fixture()
+		expected_payloads = _capture_adaptive_transaction_payloads(transaction_pages)
+		connector = FakeConnector(
+			7,
+			{0: blocks},
+			finalized_height=7,
+			transactions_by_path=transaction_pages,
+			statement_pages=statement_pages)
+		database = self.puller.symbol_db
+		failing_database = FailingSecondCheckpointCommitDatabase(database)
+		logger = DatabaseObservingPerformanceLogger(database, self._fetch_complete_batch_state)
+		self.puller._performance_logger = logger  # pylint: disable=protected-access
+
+		# Act + Assert:
+		with _replace_symbol_database(self.puller, failing_database):
+			with self.assertRaisesRegex(RuntimeError, 'second checkpoint commit failed'):
+				with _failing_checkpoint_connection(database):
+					self._sync_with_connector(connector)
+
+		# Assert:
+		self._assert_adaptive_saved_content(
+			database,
+			6,
+			((2, 11), (4, 44), (5, 55)),
+			6,
+			6,
+			expected_payloads)
+		failed_snapshot = self._fetch_complete_batch_state()
+		self._assert_adaptive_checkpoint_snapshot_is_preserved(
+			logger.completed_state_snapshots[0], failed_snapshot)
+		sync_state = database.get_sync_state()
+		self.assertEqual({
+			'status': 'unhealthy',
+			'chain_height': 7,
+			'finalized_height': 3,
+			'finalized_hash': bytes.fromhex(f'{3:064X}'),
+			'finalized_epoch': None,
+			'finalized_point': None,
+			'last_synced_height': 3,
+			'last_synced_block_hash': bytes.fromhex(f'{3:064X}'),
+			'dirty_state_from_height': 4
+		}, normalize_sync_state(sync_state))
+		self.assertEqual(2, failing_database.checkpoint_count)
+		self.assertEqual(1, len(logger.completed_state_snapshots))
+		self.assertEqual(3, len(logger.completed_state_snapshots[0]['symbol_blocks']))
+		self.assertEqual(5, len(logger.completed_state_snapshots[0]['symbol_transactions']))
+		self.assertEqual([
+			transaction_path(1, 3), transaction_path(4, 6)
+		], [path for path in connector.paths if path.startswith('transactions/confirmed?')])
+		self.assertEqual([3], [state['last_synced_height'] for state in logger.completed_sync_states])
+		failed_batch_events = [event for event in logger.events if event['event'] == 'symbol_sync_batch_failed']
+		self.assertEqual([(4, 6)], [
+			(event['start_height'], event['end_height']) for event in failed_batch_events])
+		self.assertEqual([(3, 5, 4)], [
+			(event['block_count'], event['transaction_count'], event['start_height'])
+			for event in failed_batch_events])
+
+		# Act: restart with the real writer and the same adaptive cap.
+		restart_connector = FakeConnector(
+			7,
+			{0: blocks, 3: blocks[3:]},
+			finalized_height=7,
+			transactions_by_path=transaction_pages,
+			statement_pages=statement_pages)
+		restart_puller = create_symbol_puller(
+			self.config_ini,
+			'testnet',
+			connector=restart_connector,
+			max_transactions_per_batch=5)
+		with restart_puller.symbol_db:
+			asyncio.run(restart_puller.sync_block_headers())
+
+		# Assert:
+		self._assert_adaptive_saved_content(
+			database,
+			7,
+			((2, 11), (4, 44), (5, 55), (7, 77)),
+			7,
+			7,
+			expected_payloads,
+			account_first_seen_height=6)
+		self._assert_adaptive_checkpoint_snapshot_is_preserved(
+			logger.completed_state_snapshots[0], self._fetch_complete_batch_state())
+		sync_state = database.get_sync_state()
+		self.assertEqual({
+			'status': 'healthy',
+			'chain_height': 7,
+			'finalized_height': 7,
+			'finalized_hash': bytes.fromhex(f'{7:064X}'),
+			'finalized_epoch': 4,
+			'finalized_point': 5,
+			'last_synced_height': 7,
+			'last_synced_block_hash': bytes.fromhex(f'{7:064X}'),
+			'dirty_state_from_height': None
+		}, normalize_sync_state(sync_state))
+		self.assertEqual([
+			transaction_path(4, 6), transaction_path(7, 7)
+		], [path for path in restart_connector.paths if path.startswith('transactions/confirmed?')])
+
+	def test_sync_block_headers_preserves_prior_adaptive_checkpoint_after_later_transaction_fetch_failure(self):
+		# Arrange:
+		self.puller._max_transactions_per_batch = 5  # pylint: disable=protected-access
+		blocks, transaction_pages, statement_pages = _create_adaptive_sync_fixture((4, 6))
+		_, valid_transaction_pages, _ = _create_adaptive_sync_fixture()
+		expected_payloads = _capture_adaptive_transaction_payloads(valid_transaction_pages)
+		connector = FakeConnector(
+			7,
+			{0: blocks},
+			finalized_height=7,
+			transactions_by_path=transaction_pages,
+			statement_pages=statement_pages)
+		database = self.puller.symbol_db
+		logger = DatabaseObservingPerformanceLogger(database, self._fetch_complete_batch_state)
+		self.puller._performance_logger = logger  # pylint: disable=protected-access
+
+		# Act + Assert:
+		with self.assertRaisesRegex(RuntimeError, 'adaptive transaction fetch failed'):
+			self._sync_with_connector(connector)
+
+		# Assert:
+		self._assert_adaptive_saved_content(
+			database,
+			3,
+			((2, 11),),
+			3,
+			3,
+			expected_payloads)
+		sync_state = database.get_sync_state()
+		self.assertEqual({
+			'status': 'healthy',
+			'chain_height': 7,
+			'finalized_height': 3,
+			'finalized_hash': bytes.fromhex(f'{3:064X}'),
+			'finalized_epoch': None,
+			'finalized_point': None,
+			'last_synced_height': 3,
+			'last_synced_block_hash': bytes.fromhex(f'{3:064X}'),
+			'dirty_state_from_height': None
+		}, normalize_sync_state(sync_state))
+		self.assertEqual(1, len(logger.completed_state_snapshots))
+		self.assertEqual(logger.completed_state_snapshots[0], self._fetch_complete_batch_state())
+		self.assertEqual([
+			transaction_path(1, 3), transaction_path(4, 6)
+		], [path for path in connector.paths if path.startswith('transactions/confirmed?')])
+		failed_batch_events = [event for event in logger.events if event['event'] == 'symbol_sync_batch_failed']
+		self.assertEqual([(4, 6, 3, 0)], [
+			(event['start_height'], event['end_height'], event['block_count'], event['transaction_count'])
+			for event in failed_batch_events])
+
+		# Act: restart with the valid node pages and the same adaptive cap.
+		restart_connector = FakeConnector(
+			7,
+			{0: blocks, 3: blocks[3:]},
+			finalized_height=7,
+			transactions_by_path=_create_adaptive_sync_fixture()[1],
+			statement_pages=statement_pages)
+		restart_puller = create_symbol_puller(
+			self.config_ini,
+			'testnet',
+			connector=restart_connector,
+			max_transactions_per_batch=5)
+		with restart_puller.symbol_db:
+			asyncio.run(restart_puller.sync_block_headers())
+
+		# Assert:
+		self._assert_adaptive_saved_content(
+			database,
+			7,
+			((2, 11), (4, 44), (5, 55), (7, 77)),
+			7,
+			7,
+			expected_payloads)
+		sync_state = database.get_sync_state()
+		self.assertEqual({
+			'status': 'healthy',
+			'chain_height': 7,
+			'finalized_height': 7,
+			'finalized_hash': bytes.fromhex(f'{7:064X}'),
+			'finalized_epoch': 4,
+			'finalized_point': 5,
+			'last_synced_height': 7,
+			'last_synced_block_hash': bytes.fromhex(f'{7:064X}'),
+			'dirty_state_from_height': None
+		}, normalize_sync_state(sync_state))
+		self.assertEqual([
+			transaction_path(4, 6), transaction_path(7, 7)
+		], [path for path in restart_connector.paths if path.startswith('transactions/confirmed?')])
+
+	def test_sync_block_headers_applies_adaptive_ranges_to_max_height_partial_window(self):
+		# Arrange:
+		self.puller._max_transactions_per_batch = 5  # pylint: disable=protected-access
+		blocks, transaction_pages, statement_pages = _create_adaptive_sync_fixture()
+		connector = FakeConnector(
+			7,
+			{0: blocks},
+			finalized_height=7,
+			transactions_by_path=transaction_pages,
+			statement_pages=statement_pages)
+
+		# Act:
+		self._sync_with_connector(connector, max_height=6)
+
+		# Assert:
+		self.assertEqual([1, 2, 3, 4, 5, 6], self._fetch_block_heights(self.puller.symbol_db))
+		self.assertEqual([
+			transaction_path(1, 3), transaction_path(4, 6)
+		], [path for path in connector.paths if path.startswith('transactions/confirmed?')])
+		sync_state = self.puller.symbol_db.get_sync_state()
+		self.assertEqual(6, sync_state['last_synced_height'])
+		self.assertIsNone(sync_state['dirty_state_from_height'])
+
+	def test_sync_block_headers_repairs_adaptive_dirty_marker_after_later_receipt_write_failure(self):
+		# Arrange:
+		self.puller._max_transactions_per_batch = 5  # pylint: disable=protected-access
+		blocks, transaction_pages, statement_pages = _create_adaptive_sync_fixture()
+		expected_payloads = _capture_adaptive_transaction_payloads(transaction_pages)
+		connector = FakeConnector(
+			7,
+			{0: blocks},
+			finalized_height=7,
+			transactions_by_path=transaction_pages,
+			statement_pages=statement_pages)
+		database = self.puller.symbol_db
+		failing_database = FailingAdaptiveSecondRangeReceiptDatabase(database)
+		logger = DatabaseObservingPerformanceLogger(database, self._fetch_complete_batch_state)
+		self.puller._performance_logger = logger  # pylint: disable=protected-access
+
+		# Act + Assert:
+		with _replace_symbol_database(self.puller, failing_database):
+			with self.assertRaisesRegex(RuntimeError, 'adaptive second-range receipt write failed'):
+				self._sync_with_connector(connector)
+
+		# Assert:
+		self._assert_adaptive_saved_content(
+			database,
+			6,
+			((2, 11), (4, 44)),
+			3,
+			3,
+			expected_payloads,
+			block_reward_through_height=4)
+		sync_state = database.get_sync_state()
+		self.assertEqual({
+			'status': 'unhealthy',
+			'chain_height': 7,
+			'finalized_height': 3,
+			'finalized_hash': bytes.fromhex(f'{3:064X}'),
+			'finalized_epoch': None,
+			'finalized_point': None,
+			'last_synced_height': 3,
+			'last_synced_block_hash': bytes.fromhex(f'{3:064X}'),
+			'dirty_state_from_height': 4
+		}, normalize_sync_state(sync_state))
+		self.assertEqual(1, len(logger.completed_state_snapshots))
+		failed_snapshot = self._fetch_complete_batch_state()
+		self._assert_adaptive_checkpoint_snapshot_is_preserved(
+			logger.completed_state_snapshots[0], failed_snapshot)
+		self.assertEqual(logger.completed_state_snapshots[0]['symbol_accounts'], failed_snapshot['symbol_accounts'])
+		self.assertEqual(
+			logger.completed_state_snapshots[0]['symbol_account_mosaics'],
+			failed_snapshot['symbol_account_mosaics'])
+		self.assertEqual([
+			transaction_path(1, 3), transaction_path(4, 6)
+		], [path for path in connector.paths if path.startswith('transactions/confirmed?')])
+		self.assertEqual([
+			statement_path(1, 3), statement_path(4, 6)
+		], [path for path in connector.paths if path.startswith('statements/transaction?')])
+
+		# Act: restart with the real writer and the same adaptive cap.
+		restart_connector = FakeConnector(
+			7,
+			{0: blocks, 3: blocks[3:]},
+			finalized_height=7,
+			transactions_by_path=transaction_pages,
+			statement_pages=statement_pages)
+		restart_puller = create_symbol_puller(
+			self.config_ini,
+			'testnet',
+			connector=restart_connector,
+			max_transactions_per_batch=5)
+		with restart_puller.symbol_db:
+			asyncio.run(restart_puller.sync_block_headers())
+
+		# Assert:
+		self._assert_adaptive_saved_content(
+			database,
+			7,
+			((2, 11), (4, 44), (5, 55), (7, 77)),
+			7,
+			7,
+			expected_payloads)
+		self._assert_adaptive_checkpoint_snapshot_is_preserved(
+			logger.completed_state_snapshots[0], self._fetch_complete_batch_state())
+		sync_state = database.get_sync_state()
+		self.assertEqual({
+			'status': 'healthy',
+			'chain_height': 7,
+			'finalized_height': 7,
+			'finalized_hash': bytes.fromhex(f'{7:064X}'),
+			'finalized_epoch': 4,
+			'finalized_point': 5,
+			'last_synced_height': 7,
+			'last_synced_block_hash': bytes.fromhex(f'{7:064X}'),
+			'dirty_state_from_height': None
+		}, normalize_sync_state(sync_state))
+		self.assertEqual([
+			transaction_path(4, 6), transaction_path(7, 7)
+		], [path for path in restart_connector.paths if path.startswith('transactions/confirmed?')])
 
 	def test_sync_block_headers_keeps_prior_checkpoint_after_terminal_next_batch_fetch_failure(self):
 		# Arrange:
@@ -2590,8 +3285,150 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 			bytes.fromhex(f'{2:064X}'),
 			bytes(sync_state['finalized_hash'])
 		)
-		self.assertIsNone(sync_state['finalized_epoch'])
+		self.assertEqual(2, sync_state['finalized_epoch'])
 		self.assertIsNone(sync_state['finalized_point'])
+		self.assertEqual(2, sync_state['last_synced_height'])
+
+	def test_sync_block_headers_publishes_core_finalization_epoch_for_capped_heights(self):
+		# Arrange:
+		cases = (
+			(1, 1),
+			(2, 2),
+			(4, 2),
+			(5, 3)
+		)
+
+		for max_height, expected_epoch in cases:
+			with self.subTest(max_height=max_height):
+				# Arrange:
+				drop_symbol_block_tables_if_present(self.puller.symbol_db)
+				self.puller.symbol_db.create_tables()
+				node_finalized_height = max_height + 1
+				connector = FakeConnector(
+					node_finalized_height,
+					create_multi_batch_block_pages(node_finalized_height),
+					finalized_height=node_finalized_height,
+					network_properties=create_network_properties(voting_set_grouping='4'))
+
+				# Act:
+				_, sync_state = self._sync_with_connector(connector, max_height=max_height)
+
+				# Assert:
+				self.assertEqual(max_height, sync_state['last_synced_height'])
+				self.assertEqual(max_height, sync_state['finalized_height'])
+				self.assertEqual(
+					bytes.fromhex(f'{max_height:064X}'),
+					bytes(sync_state['finalized_hash'])
+				)
+				self.assertEqual(expected_epoch, sync_state['finalized_epoch'])
+				self.assertIsNone(sync_state['finalized_point'])
+				self.assertEqual('healthy', sync_state['status'])
+				self.assertIsNone(sync_state['dirty_state_from_height'])
+
+	def test_sync_block_headers_rejects_missing_or_invalid_grouping_when_finalization_is_capped(self):
+		# Arrange:
+		# Keep the regression case last so a pre-fix write cannot contaminate later subtests.
+		cases = (
+			('missing', None, KeyError, 1),
+			('zero', '0', ValueError, 1),
+			('malformed', 'not-a-grouping', ValueError, 1),
+			('negative', '-1', ValueError, 4),
+		)
+		for case_name, grouping, exception_type, max_height in cases:
+			with self.subTest(grouping=case_name):
+				network_properties = create_network_properties()
+				if 'missing' == case_name:
+					del network_properties['chain']['votingSetGrouping']
+				else:
+					network_properties['chain']['votingSetGrouping'] = grouping
+				node_finalized_height = max_height + 1
+				connector = FakeConnector(
+					node_finalized_height,
+					create_multi_batch_block_pages(node_finalized_height),
+					finalized_height=node_finalized_height,
+					network_properties=network_properties)
+				puller = create_symbol_puller(self.config_ini, 'testnet', connector=connector)
+
+				# Act:
+				with puller.symbol_db:
+					with self.assertRaises(exception_type) as context:
+						asyncio.run(puller.sync_block_headers(max_height=max_height))
+
+					# Assert:
+					if case_name in ('zero', 'negative'):
+						self.assertEqual('Symbol chain.votingSetGrouping must be greater than zero', str(context.exception))
+					self.assertEqual(['chain/info', 'network/properties'], connector.paths)
+					self.assertIsNone(puller.symbol_db.get_sync_state())
+
+	def test_sync_block_headers_calculates_finalization_epoch_at_each_capped_checkpoint(self):
+		# Arrange:
+		chain_height = 1002
+		max_height = 1001
+		first_checkpoint_height = BLOCK_PAGE_FETCH_CONCURRENCY * MAX_PAGE_SIZE
+		connector = FakeConnector(
+			chain_height,
+			create_multi_batch_block_pages(chain_height),
+			finalized_height=chain_height,
+			network_properties=create_network_properties(voting_set_grouping='1000'))
+		database = self.puller.symbol_db
+		recording_database = RecordingCheckpointDatabase(database)
+
+		# Act:
+		with _replace_symbol_database(self.puller, recording_database):
+			_, sync_state = self._sync_with_connector(connector, max_height=max_height)
+
+		# Assert:
+		self.assertEqual(
+			[
+				(first_checkpoint_height, first_checkpoint_height, 2, None),
+				(max_height, max_height, 3, None)
+			],
+			[
+				(
+					state['last_synced_height'],
+					state['finalized_height'],
+					state['finalized_epoch'],
+					state['finalized_point'])
+				for state in recording_database.published_states
+			])
+		self.assertEqual(max_height, sync_state['last_synced_height'])
+		self.assertEqual(max_height, sync_state['finalized_height'])
+		self.assertEqual(bytes.fromhex(f'{max_height:064X}'), bytes(sync_state['finalized_hash']))
+		self.assertEqual(3, sync_state['finalized_epoch'])
+		self.assertIsNone(sync_state['finalized_point'])
+		self.assertIsNone(sync_state['dirty_state_from_height'])
+
+	def test_sync_block_headers_publishes_capped_epoch_without_new_blocks_on_same_limit_rerun(self):
+		# Arrange:
+		max_height = 1000
+		self._seed_blocks(self.puller.symbol_db, range(1, max_height + 1))
+		self.puller.symbol_db.upsert_sync_state(create_sync_state(
+			chain_height=max_height,
+			finalized_height=max_height,
+			finalized_hash=bytes.fromhex(f'{max_height:064X}'),
+			finalized_epoch=None,
+			finalized_point=None,
+			last_synced_height=max_height,
+			last_synced_block_hash=bytes.fromhex(f'{max_height:064X}')))
+		connector = FakeConnector(
+			1005,
+			{},
+			finalized_height=1005,
+			network_properties=create_network_properties(voting_set_grouping='1000'))
+
+		# Act:
+		block_heights, sync_state = self._sync_with_connector(connector, max_height=max_height)
+
+		# Assert:
+		self.assertEqual(list(range(1, max_height + 1)), block_heights)
+		self.assertEqual(max_height, sync_state['last_synced_height'])
+		self.assertEqual(max_height, sync_state['finalized_height'])
+		self.assertEqual(bytes.fromhex(f'{max_height:064X}'), bytes(sync_state['finalized_hash']))
+		self.assertEqual(2, sync_state['finalized_epoch'])
+		self.assertIsNone(sync_state['finalized_point'])
+		self.assertEqual(
+			['chain/info', 'network/properties', f'mosaics/{NATIVE_MOSAIC_ID}'],
+			connector.paths)
 
 	def test_sync_block_headers_continues_from_existing_sync_state(self):
 		# Arrange:

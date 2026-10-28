@@ -1587,6 +1587,45 @@ def test_symbol_block_reads_db(symbol_database_config):
 	assert _expected_block_detail(2, is_finalized=True) == response.json
 
 
+def test_block_stats_http_formats_rows(symbol_database_config):
+	# Arrange:
+	blocks = [
+		create_symbol_block(1, timestamp=datetime(2026, 1, 1, tzinfo=timezone.utc), total_fee=1000000, difficulty=10 ** 12),
+		create_symbol_block(
+			2, timestamp=datetime(2026, 1, 1, 0, 0, 30, 123000, tzinfo=timezone.utc), total_fee=0,
+			difficulty=12345678900000),
+		create_symbol_block(
+			3, timestamp=datetime(2026, 1, 1, 0, 1, 1, 123000, tzinfo=timezone.utc), total_fee=3000000,
+			difficulty=12350000000000),
+		create_symbol_block(4, timestamp=datetime(2026, 1, 1, 0, 2, tzinfo=timezone.utc), total_fee=999999000000)
+	]
+	with tempfile.TemporaryDirectory() as temp_directory:
+		db_config_path = _create_config_file(temp_directory, database_config=symbol_database_config)
+		app_config_path = _create_app_config(temp_directory, db_config_path)
+		_seed_symbol_block_tables(
+			symbol_database_config,
+			create_symbol_sync_state(last_synced_height=3, finalized_height=2),
+			blocks)
+		with rest_settings_env(app_config_path):
+			app = _create_symbol_app()
+			try:
+				# Act:
+				response = app.test_client().get('/api/symbol/block/statistics')
+			finally:
+				app.extensions['symbol_database'].close()
+
+	# Assert:
+	assert 200 == response.status_code
+	assert {
+		'blockTimeChart': [[2, 30.123], [3, 31.0]],
+		'blockFeeChart': [[1, 1.0], [2, 0.0], [3, 3.0]],
+		'blockDifficultyChart': [[1, '1.00'], [2, '12.35'], [3, '12.35']],
+		'blockTime': 31,
+		'blockFee': 1.3333333333333333,
+		'blockDifficulty': '12.35'
+	} == response.json
+
+
 @pytest.mark.parametrize(
 	('total_voting_balance', 'expected_total_voting_balance'),
 	[(19000235663367, 19000235.663367), (0, 0.0)])

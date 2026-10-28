@@ -74,7 +74,7 @@ const blockInfoFromDTO = data => ({
 	timestamp: data.timestamp,
 	hash: data.hash,
 	signature: data.signature,
-	harvester: data.signer,
+	harvester: data.beneficiary,
 	size: data.size,
 	difficulty: ((data.difficulty / Math.pow(10, 14)) * 100).toFixed(2),
 	totalFee: data.totalFees,

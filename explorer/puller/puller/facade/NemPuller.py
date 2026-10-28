@@ -19,6 +19,7 @@ from puller.db.NemDatabase import NemDatabase
 
 ACCOUNT_KEY_LINK_MODE_ACTIVATE = 1
 NEM_MAX_ROLLBACK_DEPTH = 360
+DEFAULT_NODE_REQUEST_TIMEOUT_SECONDS = 10
 
 
 class NemRollbackError(RuntimeError):
@@ -128,7 +129,7 @@ def _format_xem_absolute(relative_amount):
 class NemPuller:
 	"""Facade for pulling data from NEM network."""
 
-	def __init__(self, node_url, config_file, network_type='mainnet'):
+	def __init__(self, node_url, config_file, network_type='mainnet', node_request_timeout_seconds=DEFAULT_NODE_REQUEST_TIMEOUT_SECONDS):
 		"""Creates a facade object."""
 
 		config = configparser.ConfigParser()
@@ -140,6 +141,7 @@ class NemPuller:
 
 		self.nem_db = NemDatabase(DatabaseConfig(**db_config))
 		self.nem_connector = NemConnector(node_url, network)
+		self.nem_connector.timeout_seconds = node_request_timeout_seconds
 		self.nem_facade = NemFacade(str(network))
 
 	@staticmethod

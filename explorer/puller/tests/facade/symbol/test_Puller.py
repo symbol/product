@@ -23,6 +23,66 @@ class CountingRateLimiter:
 
 
 class SymbolPullerTest(TestCase):  # pylint: disable=too-many-public-methods
+	def test_rejects_invalid_max_transactions_per_batch_before_initialization(self):
+		# Arrange:
+		invalid_values = [0, -1, True, '100']
+
+		# Act + Assert:
+		for invalid_value in invalid_values:
+			with self.subTest(invalid_value=invalid_value):
+				with self.assertRaisesRegex(
+					ValueError,
+					'max_transactions_per_batch must be greater than or equal to 1'
+				):
+					SymbolPuller('unused', 'missing.ini', max_transactions_per_batch=invalid_value)
+
+	@staticmethod
+	def _block_rows(*transaction_counts):
+		return [
+			{'height': height, 'total_transactions_count': transaction_count}
+			for height, transaction_count in enumerate(transaction_counts, 1)
+		]
+
+	def test_split_block_rows_keeps_contiguous_ranges_at_and_across_limit(self):
+		# Arrange:
+		block_rows = self._block_rows(2, 3, 1, 5)
+
+		# Act:
+		ranges = SymbolPuller._split_block_rows_by_transaction_count(block_rows, 5)  # pylint: disable=protected-access
+
+		# Assert:
+		self.assertEqual([[1, 2], [3], [4]], [[row['height'] for row in current] for current in ranges])
+
+	def test_split_block_rows_keeps_zero_count_blocks_and_oversized_block(self):
+		# Arrange:
+		block_rows = self._block_rows(0, 7, 0, 1)
+
+		# Act:
+		ranges = SymbolPuller._split_block_rows_by_transaction_count(block_rows, 5)  # pylint: disable=protected-access
+
+		# Assert:
+		self.assertEqual([[1], [2], [3, 4]], [[row['height'] for row in current] for current in ranges])
+
+	def test_split_block_rows_keeps_all_zero_count_blocks_in_one_range(self):
+		# Arrange:
+		block_rows = self._block_rows(0, 0, 0)
+
+		# Act:
+		ranges = SymbolPuller._split_block_rows_by_transaction_count(block_rows, 5)  # pylint: disable=protected-access
+
+		# Assert:
+		self.assertEqual([[1, 2, 3]], [[row['height'] for row in current] for current in ranges])
+
+	def test_split_block_rows_returns_no_empty_ranges_for_empty_input(self):
+		# Arrange:
+		block_rows = []
+
+		# Act:
+		ranges = SymbolPuller._split_block_rows_by_transaction_count(block_rows, 5)  # pylint: disable=protected-access
+
+		# Assert:
+		self.assertEqual([], ranges)
+
 	def test_collect_dirty_mosaic_ids_for_batch_returns_unique_ids_in_first_encounter_order(self):
 		# Arrange:
 		transaction_rows_by_height = {

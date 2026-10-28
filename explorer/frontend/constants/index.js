@@ -86,11 +86,9 @@ export const BACKEND_HEALTH_ERROR = {
 	SYNCHRONIZATION: 'synchronization'
 };
 
-export const BACKEND_HEALTH_STATUS = {
-	INITIAL: 'initial',
-	AVAILABLE: 'available',
-	UNAVAILABLE: 'unavailable',
-	ERROR: 'error'
+export const PAGINATION_MODE = {
+	PAGE: 'page',
+	CURSOR: 'cursor'
 };
 
 export const DATA_REFRESH_INTERVAL = 60000;

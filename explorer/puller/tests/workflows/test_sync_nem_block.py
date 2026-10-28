@@ -59,7 +59,7 @@ class SyncNemBlockTest(unittest.TestCase):
 		asyncio.run(main())
 
 		# Assert:
-		mock_nem_puller.assert_called_once_with('http://localhost:7890', 'test_config.ini', 'testnet')
+		mock_nem_puller.assert_called_once_with('http://localhost:7890', 'test_config.ini', 'testnet', 10)
 		mock_db.create_tables.assert_called_once()
 		if account_remark:
 			mock_db.seed_account_remark.assert_called_once_with(account_remark)

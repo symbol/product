@@ -50,5 +50,5 @@ class RefreshNemAccountsTest(unittest.TestCase):
 
 		# Assert:
 		self.assertIsNone(result)
-		mock_nem_puller.assert_called_once_with('http://localhost:7890', 'test_config.ini', 'testnet')
+		mock_nem_puller.assert_called_once_with('http://localhost:7890', 'test_config.ini', 'testnet', 10)
 		mock_facade.refresh_accounts.assert_called_once_with(100)

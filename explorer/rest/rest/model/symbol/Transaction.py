@@ -13,7 +13,8 @@ from symbolchain.sc import (
 )
 from symbolchain.symbol.Network import Address
 
-from rest.model.symbol.format import format_amount, format_timestamp, to_hex_or_none
+from rest.model.format import format_timestamp
+from rest.model.symbol.format import format_amount, to_hex_or_none
 from rest.model.symbol.validation import SymbolDataInvalid
 
 UINT64_MAX = (1 << 64) - 1

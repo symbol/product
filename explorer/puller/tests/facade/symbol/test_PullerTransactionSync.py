@@ -1,5 +1,6 @@
 # pylint: disable=protected-access,too-many-lines,too-many-public-methods
 import asyncio
+import copy
 
 from symbolchain.sc import TransactionType
 
@@ -9,19 +10,24 @@ from puller.facade.SymbolPuller import (
 	TRANSACTION_PAGE_FETCH_CONCURRENCY,
 	TransactionCountExpectation
 )
-from tests.test.SymbolTestConstants import SIGNER_ADDRESS
+from tests.test.SymbolDatabaseTestUtils import normalize_sync_state
+from tests.test.SymbolTestConstants import RECIPIENT_ADDRESS, SIGNER_ADDRESS
 
 from .puller_test_utils import (
+	NATIVE_MOSAIC_ID,
 	FakeConnector,
 	SymbolPullerTestBase,
+	create_amount_statement_item,
 	create_embedded_node_transaction,
 	create_node_block,
 	create_node_transaction,
 	create_resolution_statement,
+	create_symbol_puller,
 	create_sync_state,
 	create_transaction_page,
 	resolution_path,
 	set_symbol_connector,
+	statement_path,
 	transaction_path
 )
 
@@ -860,6 +866,216 @@ class SymbolPullerTransactionSyncTest(SymbolPullerTestBase):
 			'symbol_mosaic_restrictions': [],
 			'symbol_sync_state': []
 		}, self._fetch_complete_batch_state())
+
+	# pylint: disable=too-many-locals,too-many-statements
+	def test_sync_block_headers_collects_failed_later_range_workers_after_checkpoint_and_resumes(self):
+		# Arrange:
+		self.puller._max_transactions_per_batch = MAX_PAGE_SIZE  # pylint: disable=protected-access
+		first_transaction = create_node_transaction(
+			1, transaction_hash='A' * 64, transaction_id='checkpointed-transaction')
+		later_transactions = _create_transfer_items(MAX_PAGE_SIZE * 2 + 1, height=2, first_index=1000)
+		expected_first_payload = copy.deepcopy(first_transaction)
+		expected_later_payload = copy.deepcopy(later_transactions[0])
+		blocks = [
+			create_node_block(1, transactions_count=1, total_transactions_count=1),
+			create_node_block(
+				2,
+				transactions_count=MAX_PAGE_SIZE * 2 + 1,
+				total_transactions_count=MAX_PAGE_SIZE * 2 + 1)
+		]
+		failed_connector = TransactionPageConcurrencyConnector(
+			2,
+			{0: blocks},
+			finalized_height=2,
+			transactions_by_path={
+				transaction_path(1, 1): create_transaction_page([first_transaction]),
+				transaction_path(2, 2, 1): create_transaction_page(later_transactions[:MAX_PAGE_SIZE], page_number=1),
+				transaction_path(2, 2, 2): create_transaction_page(
+					later_transactions[MAX_PAGE_SIZE:MAX_PAGE_SIZE * 2], page_number=2),
+				transaction_path(2, 2, 3): create_transaction_page(
+					later_transactions[MAX_PAGE_SIZE * 2:], page_number=3)
+			},
+			statement_pages={
+				statement_path(1, 1): {'data': [create_amount_statement_item(1, 11)]},
+				statement_path(2, 2): {'data': [create_amount_statement_item(2, 22)]}
+			},
+			gated_pages=(2, 3),
+			failed_page=2,
+			cleanup_hold_page=3)
+		set_symbol_connector(self.puller, failed_connector)
+		database = self.puller.symbol_db
+
+		# Act:
+		async def sync_until_later_page_failure():
+			sync_task = asyncio.create_task(self.puller.sync_block_headers())
+			try:
+				await failed_connector.wait_for_started(2, 3)
+
+				# Assert that the first partition committed before second-range workers needed cleanup.
+				self.assertEqual({
+					'status': 'healthy',
+					'chain_height': 2,
+					'finalized_height': 1,
+					'finalized_hash': bytes.fromhex(f'{1:064X}'),
+					'finalized_epoch': None,
+					'finalized_point': None,
+					'last_synced_height': 1,
+					'last_synced_block_hash': bytes.fromhex(f'{1:064X}'),
+					'dirty_state_from_height': None
+				}, normalize_sync_state(database.get_sync_state()))
+				self.assertEqual([1], self._fetch_block_heights(database))
+
+				failed_connector.release_page(2)
+				await failed_connector.wait_for_cleanup_hold_started()
+				sync_task.cancel()
+				probe_event = asyncio.Event()
+				asyncio.get_running_loop().call_soon(probe_event.set)
+				await asyncio.wait_for(probe_event.wait(), CONCURRENCY_TEST_TIMEOUT_SECONDS)
+				self.assertFalse(sync_task.done())
+				failed_connector.release_cleanup_hold()
+				with self.assertRaisesRegex(ValueError, 'transaction page 2 failed'):
+					await sync_task
+				self.assertEqual(1, sync_task.cancelling())
+			finally:
+				failed_connector.release_page(2)
+				failed_connector.release_cleanup_hold()
+				if not sync_task.done():
+					sync_task.cancel()
+				await asyncio.gather(sync_task, return_exceptions=True)
+
+		asyncio.run(sync_until_later_page_failure())
+
+		# Assert:
+		self.assertEqual([1, 1, 2, 3], failed_connector.started_pages)
+		self.assertEqual([3], failed_connector.cancelled_pages)
+		self.assertEqual(0, failed_connector.active_transaction_requests)
+		self.assertEqual({
+			'status': 'healthy',
+			'chain_height': 2,
+			'finalized_height': 1,
+			'finalized_hash': bytes.fromhex(f'{1:064X}'),
+			'finalized_epoch': None,
+			'finalized_point': None,
+			'last_synced_height': 1,
+			'last_synced_block_hash': bytes.fromhex(f'{1:064X}'),
+			'dirty_state_from_height': None
+		}, normalize_sync_state(database.get_sync_state()))
+		self.assertEqual([1], self._fetch_block_heights(database))
+		cursor = database.connection.cursor()
+		cursor.execute('SELECT height, amount FROM symbol_receipts ORDER BY height')
+		self.assertEqual([(1, 11)], cursor.fetchall())
+		cursor.execute('SELECT hash, body, raw_payload FROM symbol_transactions')
+		self.assertEqual([(
+			bytes.fromhex('A' * 64),
+			{
+				'version': 1,
+				'network': 152,
+				'signature': '1' * 128,
+				'recipientAddress': RECIPIENT_ADDRESS,
+				'mosaics': [{'id': NATIVE_MOSAIC_ID, 'amount': '1000'}]
+			},
+			expected_first_payload
+		)], [
+			(bytes(transaction_hash), body, raw_payload)
+			for transaction_hash, body, raw_payload in cursor.fetchall()
+		])
+		cursor.execute(
+			'SELECT ta.address, ta.role FROM symbol_transaction_addresses AS ta '
+			'JOIN symbol_transactions AS t ON t.id = ta.transaction_id ORDER BY ta.address, ta.role')
+		self.assertEqual([
+			(bytes.fromhex(SIGNER_ADDRESS), 'signer'),
+			(bytes.fromhex(RECIPIENT_ADDRESS), 'recipient')
+		], [(bytes(address), role) for address, role in cursor.fetchall()])
+		cursor.execute('SELECT mosaic_id, amount, role, position FROM symbol_transaction_mosaics')
+		self.assertEqual([(NATIVE_MOSAIC_ID, 1_000, 'transfer', 0)], cursor.fetchall())
+		cursor.execute('SELECT address, first_seen_height, last_seen_height FROM symbol_accounts ORDER BY address')
+		self.assertEqual([
+			(bytes.fromhex(SIGNER_ADDRESS), 1, 1),
+			(bytes.fromhex(RECIPIENT_ADDRESS), 1, 1)
+		], [(bytes(address), first_seen, last_seen) for address, first_seen, last_seen in cursor.fetchall()])
+		cursor.execute('SELECT address, mosaic_id, amount, updated_at_height FROM symbol_account_mosaics ORDER BY address')
+		self.assertEqual([
+			(address, NATIVE_MOSAIC_ID, 20_000 * 10 ** 6, 1)
+			for address in (bytes.fromhex(SIGNER_ADDRESS), bytes.fromhex(RECIPIENT_ADDRESS))
+		], [
+			(bytes(address), mosaic_id, amount, updated_at_height)
+			for address, mosaic_id, amount, updated_at_height in cursor.fetchall()])
+		self.assertEqual([
+			transaction_path(1, 1), transaction_path(2, 2, 1)
+		], [path for path in failed_connector.paths if path.startswith('transactions/confirmed?')])
+
+		# Act: restart at the durable checkpoint with all later pages available.
+		restart_connector = FakeConnector(
+			2,
+			{1: [blocks[1]]},
+			finalized_height=2,
+			transactions_by_path={
+				transaction_path(2, 2, 1): create_transaction_page(later_transactions[:MAX_PAGE_SIZE], page_number=1),
+				transaction_path(2, 2, 2): create_transaction_page(
+					later_transactions[MAX_PAGE_SIZE:MAX_PAGE_SIZE * 2], page_number=2),
+				transaction_path(2, 2, 3): create_transaction_page(
+					later_transactions[MAX_PAGE_SIZE * 2:], page_number=3)
+			},
+			statement_pages={statement_path(2, 2): {'data': [create_amount_statement_item(2, 22)]}})
+		restart_puller = create_symbol_puller(
+			self.config_ini,
+			'testnet',
+			connector=restart_connector,
+			max_transactions_per_batch=MAX_PAGE_SIZE)
+		with restart_puller.symbol_db:
+			asyncio.run(restart_puller.sync_block_headers())
+
+		# Assert:
+		self.assertEqual([1, 2], self._fetch_block_heights(database))
+		cursor.execute(
+			'SELECT b.height, COUNT(t.id) FROM symbol_blocks AS b '
+			'LEFT JOIN symbol_transactions AS t ON t.height = b.height '
+			'GROUP BY b.height ORDER BY b.height')
+		self.assertEqual([(1, 1), (2, MAX_PAGE_SIZE * 2 + 1)], cursor.fetchall())
+		self.assertEqual([
+			transaction_path(2, 2, 1), transaction_path(2, 2, 2), transaction_path(2, 2, 3)
+		], [path for path in restart_connector.paths if path.startswith('transactions/confirmed?')])
+		self.assertEqual({
+			'status': 'healthy',
+			'chain_height': 2,
+			'finalized_height': 2,
+			'finalized_hash': bytes.fromhex(f'{2:064X}'),
+			'finalized_epoch': 4,
+			'finalized_point': 5,
+			'last_synced_height': 2,
+			'last_synced_block_hash': bytes.fromhex(f'{2:064X}'),
+			'dirty_state_from_height': None
+		}, normalize_sync_state(database.get_sync_state()))
+		cursor.execute('SELECT COUNT(*) FROM symbol_transaction_addresses')
+		self.assertEqual(2 * (MAX_PAGE_SIZE * 2 + 2), cursor.fetchone()[0])
+		cursor.execute('SELECT COUNT(*) FROM symbol_transaction_mosaics')
+		self.assertEqual(MAX_PAGE_SIZE * 2 + 2, cursor.fetchone()[0])
+		cursor.execute('SELECT height, amount FROM symbol_receipts ORDER BY height')
+		self.assertEqual([(1, 11), (2, 22)], cursor.fetchall())
+		cursor.execute(
+			'SELECT body, raw_payload FROM symbol_transactions WHERE hash = %s',
+			(bytes.fromhex(f'{1000:064X}'),))
+		self.assertEqual((
+			{
+				'version': 1,
+				'network': 152,
+				'signature': '1' * 128,
+				'recipientAddress': RECIPIENT_ADDRESS,
+				'mosaics': [{'id': NATIVE_MOSAIC_ID, 'amount': '2000'}]
+			},
+			expected_later_payload
+		), cursor.fetchone())
+		cursor.execute('SELECT first_seen_height, last_seen_height FROM symbol_accounts ORDER BY address')
+		self.assertEqual([(1, 2), (1, 2)], cursor.fetchall())
+		cursor.execute(
+			'SELECT address, mosaic_id, amount, updated_at_height '
+			'FROM symbol_account_mosaics ORDER BY address')
+		self.assertEqual([
+			(address, NATIVE_MOSAIC_ID, 20_000 * 10 ** 6, 2)
+			for address in (bytes.fromhex(SIGNER_ADDRESS), bytes.fromhex(RECIPIENT_ADDRESS))
+		], [
+			(bytes(address), mosaic_id, amount, updated_at_height)
+			for address, mosaic_id, amount, updated_at_height in cursor.fetchall()])
 
 	def test_get_transaction_rows_by_height_stops_after_short_page_when_unfinalized(self):
 		# Arrange:
